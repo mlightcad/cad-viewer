@@ -76,12 +76,12 @@ describe('ACEX_HTML_SHELL_CSS', () => {
     )
   })
 
-  it('pins the phone session panel over the toolbar', () => {
+  it('hides sidebar chrome while a draw session is active', () => {
     expect(ACEX_HTML_SHELL_CSS).toContain('#mlcad-command-session {')
     expect(ACEX_HTML_SHELL_CSS).toContain(
-      '#mlcad-root.mlcad-session-active #mlcad-toolbar {'
+      '#mlcad-root.mlcad-session-active #mlcad-sidebar {'
     )
-    expect(ACEX_HTML_SHELL_CSS).toContain('visibility: hidden')
+    expect(ACEX_HTML_SHELL_CSS).toContain('display: none !important')
     expect(ACEX_HTML_SHELL_CSS).toContain('.mlcad-session-group {')
     expect(ACEX_HTML_SHELL_CSS).toContain('.mlcad-session-metric-stack {')
     expect(ACEX_HTML_SHELL_CSS).toContain('.mlcad-session-actions {')
