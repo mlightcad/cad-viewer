@@ -423,17 +423,19 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     // when a new finger-down starts.
     this.snapLoupe?.hide()
     this.touchSession.start(e.pointerId, e.clientX, e.clientY, () => {
+      // Precise capture only: disable pan and start the jig / loupe.
+      // Before the long-press, one-finger drag is navigation — no rubber-band.
       this.view.setNavigationEnabled(false)
       this.applyClientSample(this.touchSession.x, this.touchSession.y)
       this.refreshLoupe()
     })
-    this.applyClientSample(e.clientX, e.clientY)
     this.parent.setPointerCapture(e.pointerId)
   }
 
   /**
    * Updates the pick preview while the finger is down. Movement past the
    * cancel threshold before the long-press fires is treated as a pan.
+   * Jig / rubber-band updates wait until the loupe (precise capture) opens.
    *
    * @param e - Pointer event for the active touch session.
    */
@@ -442,9 +444,9 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     if (e.pointerId !== this.touchSession.pointerId) return
     const moved = this.touchSession.move(e.clientX, e.clientY, true)
     if (moved === 'panning') return
-    if (!this.visible || !this.touchSession.isPicking) return
+    if (!this.visible || !this.touchSession.isLoupe) return
     this.applyClientSample(e.clientX, e.clientY)
-    if (this.touchSession.isLoupe) this.refreshLoupe()
+    this.refreshLoupe()
   }
 
   /**
@@ -504,10 +506,11 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     if (!touch) return
     const moved = this.touchSession.move(touch.clientX, touch.clientY, true)
     if (moved === 'panning') return
+    if (!this.touchSession.isLoupe) return
     e.preventDefault()
     if (!this.visible) return
     this.applyClientSample(touch.clientX, touch.clientY)
-    if (this.touchSession.isLoupe) this.refreshLoupe()
+    this.refreshLoupe()
   }
 
   /**

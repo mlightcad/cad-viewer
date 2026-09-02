@@ -38,9 +38,6 @@ export function acExOverlayTransformPrefix(el: HTMLElement): string {
   if (el.classList.contains('mlcad-measure-badge--coordinate')) {
     return 'translate(-50%, calc(-50% - 16px))'
   }
-  if (el.classList.contains('mlcad-measure-live-label')) {
-    return 'translate(-50%, -120%)'
-  }
   return 'translate(-50%, -50%)'
 }
 

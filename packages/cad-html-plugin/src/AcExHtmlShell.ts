@@ -1000,17 +1000,6 @@ export const ACEX_HTML_SHELL_CSS = `
       drop-shadow(0 0 4px rgba(255, 213, 79, 0.95))
       drop-shadow(0 0 8px rgba(255, 213, 79, 0.55));
   }
-  .mlcad-measure-live-label {
-    position: absolute;
-    z-index: 2;
-    pointer-events: none;
-    color: var(--mlcad-measure-accent);
-    font-size: 12px;
-    font-weight: 600;
-    text-shadow: 0 0 4px #000, 0 1px 3px #000;
-    transform: translate(-50%, -120%);
-    display: none;
-  }
 
   #mlcad-markup-overlays {
     position: absolute;
@@ -1543,9 +1532,11 @@ export const ACEX_HTML_SHELL_CSS = `
     #mlcad-command-session.is-relative .mlcad-session-group-delta {
       padding-top: 0;
     }
-    #mlcad-root.mlcad-session-active #mlcad-toolbar {
-      visibility: hidden;
-    }
+  }
+
+  /* Free canvas space while measure / markup session chrome is active. */
+  #mlcad-root.mlcad-session-active #mlcad-sidebar {
+    display: none !important;
   }
 `
 

@@ -177,6 +177,7 @@ export type AcExHtmlMessageKey =
   | 'status.coordinates'
   | 'status.angle'
   | 'status.arcLength'
+  | 'status.continuousTotal'
   | 'status.area'
   | 'status.lengthTotal'
   | 'status.areaTotal'
@@ -383,9 +384,11 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupImported: 'Imported {count} markup(s).',
       markupImportFailed: 'Failed to import markups: {error}',
       distance: 'Distance: {value}',
-      coordinates: 'X: {x}  Y: {y}',
+      coordinates: 'X: {x} | Y: {y}',
       angle: 'Angle: {value}',
-      arcLength: 'Arc length: {value}',
+      arcLength:
+        'Arc length: {length} | Radius: {radius} | Angle: {angle} | Chord: {chord}',
+      continuousTotal: 'Total length: {value}',
       area: 'Area: {value}',
       lengthTotal: 'Length total: {value}',
       areaTotal: 'Area total: {value}',
@@ -581,9 +584,11 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupImported: '已导入 {count} 条批注。',
       markupImportFailed: '导入批注失败：{error}',
       distance: '距离：{value}',
-      coordinates: 'X：{x}  Y：{y}',
+      coordinates: 'X：{x} | Y：{y}',
       angle: '角度：{value}',
-      arcLength: '弧长：{value}',
+      arcLength:
+        '弧长：{length} | 半径：{radius} | 总角度：{angle} | 弦长：{chord}',
+      continuousTotal: '总长度：{value}',
       area: '面积：{value}',
       lengthTotal: '长度合计：{value}',
       areaTotal: '面积合计：{value}',
@@ -783,9 +788,11 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupImported: 'Importováno {count} poznámek.',
       markupImportFailed: 'Import poznámek selhal: {error}',
       distance: 'Vzdálenost: {value}',
-      coordinates: 'X: {x}  Y: {y}',
+      coordinates: 'X: {x} | Y: {y}',
       angle: 'Úhel: {value}',
-      arcLength: 'Délka oblouku: {value}',
+      arcLength:
+        'Délka oblouku: {length} | Poloměr: {radius} | Úhel: {angle} | Tětiva: {chord}',
+      continuousTotal: 'Celková délka: {value}',
       area: 'Plocha: {value}',
       lengthTotal: 'Celková délka: {value}',
       areaTotal: 'Celková plocha: {value}',
@@ -988,9 +995,11 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupImported: '{count} işaretleme içe aktarıldı.',
       markupImportFailed: 'İşaretleme içe aktarılamadı: {error}',
       distance: 'Mesafe: {value}',
-      coordinates: 'X: {x}  Y: {y}',
+      coordinates: 'X: {x} | Y: {y}',
       angle: 'Açı: {value}',
-      arcLength: 'Yay uzunluğu: {value}',
+      arcLength:
+        'Yay uzunluğu: {length} | Yarıçap: {radius} | Açı: {angle} | Kiriş: {chord}',
+      continuousTotal: 'Toplam uzunluk: {value}',
       area: 'Alan: {value}',
       lengthTotal: 'Toplam uzunluk: {value}',
       areaTotal: 'Toplam alan: {value}',
@@ -1186,9 +1195,11 @@ const AR_MESSAGES: AcExMessageTree = {
     'markupImported': 'تم استيراد {count} من الملاحظات.',
     'markupImportFailed': 'فشل استيراد الملاحظات: {error}',
     'distance': 'المسافة: {value}',
-    'coordinates': 'X: {x}  Y: {y}',
+    'coordinates': 'X: {x} | Y: {y}',
     'angle': 'الزاوية: {value}',
-    'arcLength': 'طول القوس: {value}',
+    'arcLength':
+      'طول القوس: {length} | نصف القطر: {radius} | الزاوية: {angle} | الوتر: {chord}',
+    'continuousTotal': 'إجمالي الطول: {value}',
     'area': 'المساحة: {value}',
     'lengthTotal': 'إجمالي الطول: {value}',
     'areaTotal': 'إجمالي المساحة: {value}',

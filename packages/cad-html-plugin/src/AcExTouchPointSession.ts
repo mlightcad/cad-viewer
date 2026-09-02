@@ -5,8 +5,7 @@ export const ACEX_TOUCH_POINT_LONG_PRESS_MS = 1000
 
 /**
  * Pointer movement in CSS pixels that cancels a pending long-press so the
- * gesture can be treated as a pan. Offline HTML drawing tools already disable
- * one-finger pan, so callers typically pass `cancelOnMove: false`.
+ * gesture can be treated as a pan instead of a pick.
  */
 export const ACEX_TOUCH_POINT_MOVE_CANCEL_PX = 10
 

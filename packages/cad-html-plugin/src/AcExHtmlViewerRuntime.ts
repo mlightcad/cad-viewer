@@ -722,6 +722,23 @@ async function startViewer(): Promise<void> {
   const sessionDrawStyleRef: {
     current: ReturnType<typeof setupAcExSessionDrawStyle> | null
   } = { current: null }
+  /** Saved side panels closed for canvas space during a draw session. */
+  let chromeBeforeSession: {
+    layerOpen: boolean
+    reviewOpen: boolean
+    measureOpen: boolean
+  } | null = null
+  const sessionChromeRef: {
+    current: {
+      hide: () => void
+      restore: () => void
+    }
+  } = {
+    current: {
+      hide: () => undefined,
+      restore: () => undefined
+    }
+  }
   const applySessionUi = () => {
     const state = measureSession ?? markupSession
     const nowVisible = state != null
@@ -731,7 +748,10 @@ async function startViewer(): Promise<void> {
     )
     drawerSheetsRef.current?.syncInset()
     if (nowVisible && !sessionPanelVisible) {
+      sessionChromeRef.current.hide()
       void acExMaybeShowTouchPointTutorial(i18n)
+    } else if (!nowVisible && sessionPanelVisible) {
+      sessionChromeRef.current.restore()
     }
     sessionPanelVisible = nowVisible
   }
@@ -764,16 +784,40 @@ async function startViewer(): Promise<void> {
   const isToolActive = () =>
     measure?.isActive === true || markup?.isActive === true
 
+  /** True while the snap loupe is open; one-finger pan stays off until it closes. */
+  let preciseCaptureActive = false
+
+  /**
+   * Wires OrbitControls pan for idle nav vs drawing tools.
+   *
+   * Drawing tools keep mouse left-click free for picks, but one-finger touch
+   * pan stays on until precise capture (loupe) so the canvas can still be
+   * dragged before a long-press — matches cad-simple-viewer.
+   */
   const setLeftPanForTools = () => {
     if (isToolActive()) {
       navToolsRef.current?.cancelZoomWindow()
     }
-    setOrbitLeftButtonPan(
-      controls,
-      navToolsRef.current?.isPanEnabled() ?? !isToolActive()
-    )
+    const idlePan = navToolsRef.current?.isPanEnabled() ?? !isToolActive()
+    const drawing = isToolActive()
+    setOrbitPanButtons(controls, {
+      leftMousePan: idlePan,
+      oneFingerPan: (idlePan || drawing) && !preciseCaptureActive
+    })
+    controls.enabled = !preciseCaptureActive
     sessionDrawStyleRef.current?.refresh()
     navToolsRef.current?.syncButtons()
+  }
+
+  /**
+   * Disables navigation while the snap loupe tracks a long-press, then
+   * restores idle / drawing pan rules.
+   *
+   * @param active - True when precise capture (loupe) is visible.
+   */
+  const setPreciseCaptureActive = (active: boolean) => {
+    preciseCaptureActive = active
+    setLeftPanForTools()
   }
 
   const paperWorldToScreen = (
@@ -1207,6 +1251,39 @@ async function startViewer(): Promise<void> {
     onPhoneOpen: drawer => drawerSheets.preparePhoneOpen(drawer)
   })
 
+  // While measure/markup is active, hide the toolbar sidebar and any open
+  // results / layer drawers so the canvas can use the full viewport; restore
+  // previous drawer state when the session ends.
+  sessionChromeRef.current = {
+    hide: () => {
+      if (chromeBeforeSession) return
+      const reviewDrawer = document.getElementById('mlcad-review-drawer')
+      const measureDrawer = document.getElementById('mlcad-measure-drawer')
+      chromeBeforeSession = {
+        layerOpen: layerPanel?.isOpen() === true,
+        reviewOpen: reviewDrawer != null && !reviewDrawer.hidden,
+        measureOpen: measureDrawer != null && !measureDrawer.hidden
+      }
+      toolbarFlyoutsRef.current?.close()
+      layoutMenuRef.current?.close()
+      measureSettingsRef.current?.close()
+      if (chromeBeforeSession.layerOpen) layerPanel?.close()
+      if (chromeBeforeSession.reviewOpen) reviewPanel?.close()
+      if (chromeBeforeSession.measureOpen) measurePanel?.close()
+      resize()
+      render()
+    },
+    restore: () => {
+      const saved = chromeBeforeSession
+      chromeBeforeSession = null
+      if (saved?.layerOpen) layerPanel?.setOpen(true)
+      if (saved?.reviewOpen) reviewPanel?.setOpen(true)
+      if (saved?.measureOpen) measurePanel?.setOpen(true)
+      resize()
+      render()
+    }
+  }
+
   const disposeObject3D = (object: THREE.Object3D) => {
     object.traverse(child => {
       const mesh = child as THREE.Mesh
@@ -1331,7 +1408,8 @@ async function startViewer(): Promise<void> {
     getNavTools: () => navToolsRef.current,
     render,
     refreshSnapLoupeHud,
-    hideSnapLoupe
+    hideSnapLoupe,
+    setPreciseCaptureActive
   })
 
   setupPanCursorFeedback(
@@ -1455,13 +1533,9 @@ async function startViewer(): Promise<void> {
       if (menuId === 'snap') {
         measureSettingsRef.current?.close()
       }
-      if (acExHtmlIsPhoneLayout()) return
-      if (menuId === 'measure') {
-        measurePanel?.close()
-      }
-      if (menuId === 'review') {
-        reviewPanel?.close()
-      }
+      // Measure / review results drawers are reparented onto the sidebar when
+      // opened. Closing the tool strip must not dismiss an open results panel
+      // (phone, pad, and desktop all dismiss the strip on child click).
     },
     onOpen: (menuId, menuRoot) => {
       layoutMenuRef.current?.close()
@@ -1732,6 +1806,12 @@ interface AcExLayerPanelController {
   refreshLayerLabels: () => void
   /** Enables/disables per-layer zoom after the active layout changes. */
   syncLayerZoomButtons: () => void
+  /** Opens or closes the layer drawer. */
+  setOpen: (open: boolean) => void
+  /** Closes the layer drawer. */
+  close: () => void
+  /** Whether the layer drawer is currently open. */
+  isOpen: () => boolean
 }
 
 function setupLayerPanel(
@@ -1899,7 +1979,10 @@ function setupLayerPanel(
       for (const row of layerRows) {
         row.zoomBtn.disabled = !layerExtents.get(row.name)
       }
-    }
+    },
+    setOpen: setDrawerOpen,
+    close: () => setDrawerOpen(false),
+    isOpen: () => !layerDrawer.hidden
   }
 }
 
@@ -1984,22 +2067,23 @@ function createOrbitControls(
   controls.enableRotate = false
   controls.zoomSpeed = 5
   controls.zoomToCursor = true
-  setOrbitLeftButtonPan(controls, true)
+  setOrbitPanButtons(controls, { leftMousePan: true, oneFingerPan: true })
   controls.update()
   return controls
 }
 
 /**
- * Idle pan mode: left + middle mouse pan and one-finger touch pan.
- * Select / zoom-window / drawing tools: middle mouse only; one-finger touch is
- * cleared so it cannot pan — matches {@link AcTrLayoutView} mouse switch and
- * keeps two-finger pinch/pan available.
+ * Configures OrbitControls mouse and touch pan independently.
+ *
+ * Idle pan: left mouse + one-finger touch. Drawing tools: one-finger touch
+ * pan until precise capture, but no left-mouse pan so clicks still pick.
+ * Select / loupe: middle mouse and two-finger gestures only.
  */
-function setOrbitLeftButtonPan(
+function setOrbitPanButtons(
   controls: OrbitControls,
-  enableLeftPan: boolean
+  options: { leftMousePan: boolean; oneFingerPan: boolean }
 ): void {
-  controls.mouseButtons = enableLeftPan
+  controls.mouseButtons = options.leftMousePan
     ? {
         LEFT: THREE.MOUSE.PAN,
         MIDDLE: THREE.MOUSE.PAN
@@ -2007,7 +2091,7 @@ function setOrbitLeftButtonPan(
     : {
         MIDDLE: THREE.MOUSE.PAN
       }
-  controls.touches = enableLeftPan
+  controls.touches = options.oneFingerPan
     ? {
         ONE: THREE.TOUCH.PAN,
         TWO: THREE.TOUCH.DOLLY_PAN
@@ -2066,14 +2150,21 @@ interface AcExToolPointerInputOptions {
   refreshSnapLoupeHud: (clientX: number, clientY: number) => void
   /** Hides the snap-loupe HUD and clears the overlay sample. */
   hideSnapLoupe: () => void
+  /**
+   * Toggles precise-capture mode: disables one-finger pan / OrbitControls
+   * while the loupe is open.
+   *
+   * @param active - True when the snap loupe is visible.
+   */
+  setPreciseCaptureActive: (active: boolean) => void
 }
 
 /**
  * Left-button tool picking / selection on capture so selection can block
- * OrbitControls pan; while a tool is active left pan is already toggled off.
- * Also drives zoom-window picks in both view and measure modes.
+ * OrbitControls pan. While a drawing tool is active, mouse left-pan is off
+ * (clicks pick) but one-finger touch pan stays on until the snap loupe opens.
  * Touch drawing tools defer commit until pointerup so a long-press can open
- * the snap loupe.
+ * the loupe; jig preview also waits until that precise-capture phase.
  *
  * @param options - Canvas, tool accessors, render callback, and loupe HUD.
  */
@@ -2085,11 +2176,24 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
     getNavTools,
     render,
     refreshSnapLoupeHud,
-    hideSnapLoupe
+    hideSnapLoupe,
+    setPreciseCaptureActive
   } = options
   let pendingMove: { clientX: number; clientY: number } | null = null
   let moveRaf = 0
   const touchSession = new AcExTouchPointSession()
+
+  /**
+   * Drops a coalesced pointer-move frame so it cannot revive OSNAP / jig
+   * after a successful pick (or aborted touch gesture).
+   */
+  const cancelPendingPointerMove = () => {
+    if (moveRaf !== 0) {
+      cancelAnimationFrame(moveRaf)
+      moveRaf = 0
+    }
+    pendingMove = null
+  }
 
   /**
    * Whether measure or markup is currently drawing.
@@ -2106,6 +2210,9 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
    * @param clientY - Sample Y in client CSS pixels.
    */
   const commitDrawingPoint = (clientX: number, clientY: number) => {
+    // A move sample queued before this pick must not re-show the OSNAP glyph
+    // after handlePointerDown clears it.
+    cancelPendingPointerMove()
     const measure = getMeasure()
     const markup = getMarkup()
     if (measure?.isActive) {
@@ -2184,6 +2291,10 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
     if (event.pointerType !== 'touch') return
     if (touchSession.phase === 'idle') return
     if (event.pointerId !== touchSession.pointerId) return
+    setPreciseCaptureActive(false)
+    // Loupe moves coalesce into RAF; cancel before commit/abort so a late
+    // flush cannot set live pointer and bring the OSNAP glyph back.
+    cancelPendingPointerMove()
     if (!commit) {
       touchSession.cancel()
       hideSnapLoupe()
@@ -2206,15 +2317,21 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
       const measure = getMeasure()
       const markup = getMarkup()
       if (event.pointerType === 'touch' && isDrawingToolActive()) {
+        // Match cad-simple-viewer: keep the OS from turning a still finger into
+        // scroll / context-menu `pointercancel` before the loupe timer fires.
+        event.preventDefault()
         touchSession.start(event.pointerId, event.clientX, event.clientY, () => {
+          // Precise capture only: lock pan and start jig / loupe preview.
+          setPreciseCaptureActive(true)
+          previewDrawingPoint(touchSession.x, touchSession.y)
           refreshSnapLoupeHud(touchSession.x, touchSession.y)
           render()
         })
-        previewDrawingPoint(event.clientX, event.clientY)
         domElement.setPointerCapture(event.pointerId)
         return
       }
       if (measure?.isActive) {
+        cancelPendingPointerMove()
         if (measure.handlePointerDown(event.clientX, event.clientY)) {
           if (measure.hasSelection) markup?.clearSelection()
           render()
@@ -2222,6 +2339,7 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
         return
       }
       if (markup?.isActive) {
+        cancelPendingPointerMove()
         if (markup.handlePointerDown(event.clientX, event.clientY)) {
           if (markup.hasSelection) measure?.clearSelection()
           render()
@@ -2251,8 +2369,11 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
     const measure = getMeasure()
     const markup = getMarkup()
     const zoomWindow = getNavTools()?.getMode() === 'zoom-window'
-    if (event.pointerType === 'touch' && touchSession.isPicking) {
-      touchSession.move(event.clientX, event.clientY, false)
+    if (event.pointerType === 'touch' && touchSession.phase !== 'idle') {
+      if (event.pointerId !== touchSession.pointerId) return
+      // Movement before the loupe aborts the pick so OrbitControls can pan.
+      touchSession.move(event.clientX, event.clientY, true)
+      if (!touchSession.isLoupe) return
     }
     if (!measure?.isActive && !markup?.isActive && !zoomWindow) return
     pendingMove = { clientX: event.clientX, clientY: event.clientY }

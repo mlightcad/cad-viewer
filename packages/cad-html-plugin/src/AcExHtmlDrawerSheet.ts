@@ -1,6 +1,8 @@
 /**
- * Shared phone-sheet chrome for HTML layer / review / measurement drawers:
- * full-width sheet above the toolbar, grabber to resize height, close arrow.
+ * Shared drawer-sheet chrome for HTML layer / review / measurement drawers:
+ * full-width sheet above the toolbar on phone, grabber to resize height,
+ * close arrow. Results drawers live inside tool-strip wraps; opening one
+ * parks the drawer on the sidebar so dismissing the strip does not hide it.
  *
  * @module AcExHtmlDrawerSheet
  * @packageDocumentation
@@ -16,8 +18,8 @@ export interface AcExHtmlDrawerSheetController {
   /** Recompute `--mlcad-phone-drawer-bottom` from visible chrome. */
   syncInset: () => void
   /**
-   * On phone, moves the drawer onto the sidebar (so closing a strip wrap does
-   * not hide it) and dismisses open tool strips.
+   * Parks the drawer on the sidebar (so closing a strip wrap does not hide
+   * it). On phone, also dismisses open tool strips and syncs the sheet inset.
    */
   preparePhoneOpen: (drawer: HTMLElement) => void
 }
@@ -67,7 +69,7 @@ export function setupAcExHtmlDrawerSheets(options?: {
       drawer.style.maxHeight = ''
       const home = homeParent.get(drawer)
       if (!home) continue
-      // Phone open parks the drawer on the sidebar and closes strip wraps.
+      // Open parks the drawer on the sidebar and closes strip wraps.
       // Reparenting an open drawer into a hidden wrap would hide it while it
       // stays logically open — keep it on the sidebar until the wrap is shown
       // or the drawer is closed.
@@ -106,14 +108,21 @@ export function setupAcExHtmlDrawerSheets(options?: {
     )
   }
 
+  /**
+   * Moves the drawer onto the sidebar before it is shown. Measure / review
+   * drawers are born inside dismissible strip wraps; without reparenting,
+   * closing the strip (pad/desktop child-click, or phone strip dismiss)
+   * would hide an open results panel.
+   */
   const preparePhoneOpen = (drawer: HTMLElement) => {
-    if (!acExHtmlIsPhoneLayout()) return
     const sidebar = document.getElementById('mlcad-sidebar')
     if (sidebar && drawer.parentElement !== sidebar) {
       sidebar.appendChild(drawer)
     }
-    options?.closeStrips?.()
-    syncInset()
+    if (acExHtmlIsPhoneLayout()) {
+      options?.closeStrips?.()
+      syncInset()
+    }
   }
 
   syncInset()
