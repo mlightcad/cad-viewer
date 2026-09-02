@@ -1,7 +1,7 @@
 import {
-  AcDbLinearUnits,
   type AcDbDatabase,
-  type AcDbFormatterOptions
+  type AcDbFormatterOptions,
+  AcDbLinearUnits
 } from '@mlightcad/data-model'
 
 /** Linear/angular unit settings used when formatting measurement labels. */
