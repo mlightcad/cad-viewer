@@ -95,6 +95,9 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     )
     ensureSlotIdAttribute(this.geometry, this._maxSegmentCount)
     this._copyStaticAttributes(reference)
+    if (this._isDashedMaterial()) {
+      this._ensureDistanceAttributes()
+    }
     this._geometryInitialized = true
   }
 
@@ -112,12 +115,76 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
       if (
         key === 'instanceStart' ||
         key === 'instanceEnd' ||
-        key === 'slotId'
+        key === 'slotId' ||
+        // Dash distance storage is batch-sized and managed separately
+        // (see _ensureDistanceAttributes / _chainInstanceDistances).
+        key === 'instanceDistanceStart' ||
+        key === 'instanceDistanceEnd'
       ) {
         continue
       }
       dstGeometry.setAttribute(key, reference.getAttribute(key).clone())
     }
+  }
+
+  /** Whether the batch material renders a dash pattern (dashed lines). */
+  private _isDashedMaterial(): boolean {
+    return (this.material as LineMaterial | undefined)?.dashed === true
+  }
+
+  /**
+   * Allocates `instanceDistanceStart`/`instanceDistanceEnd` storage sized to
+   * the packed segment capacity. Dashed {@link LineMaterial} requires these
+   * attributes to render dash patterns; solid batches skip them entirely.
+   */
+  private _ensureDistanceAttributes() {
+    const geometry = this.geometry as LineSegmentsGeometry
+    if (geometry.getAttribute('instanceDistanceStart')) {
+      return
+    }
+    const distances = new Float32Array(this._maxSegmentCount * 2)
+    const buffer = new THREE.InstancedInterleavedBuffer(distances, 2, 1)
+    geometry.setAttribute(
+      'instanceDistanceStart',
+      new THREE.InterleavedBufferAttribute(buffer, 1, 0)
+    )
+    geometry.setAttribute(
+      'instanceDistanceEnd',
+      new THREE.InterleavedBufferAttribute(buffer, 1, 1)
+    )
+  }
+
+  /**
+   * Recomputes cumulative dash distances for packed segments in
+   * `[fromSegment, toSegment)`, chaining from the last distance written
+   * before `fromSegment` so the dash phase continues across segments
+   * (mirrors `LineSegments2.computeLineDistances()` over the packed buffer).
+   */
+  private _chainInstanceDistances(
+    fromSegment: number,
+    toSegment: number = this._nextSegmentStart
+  ) {
+    const distanceStart = this.geometry.getAttribute(
+      'instanceDistanceStart'
+    ) as THREE.InterleavedBufferAttribute | undefined
+    const distanceEnd = this.geometry.getAttribute('instanceDistanceEnd') as
+      | THREE.InterleavedBufferAttribute
+      | undefined
+    if (!distanceStart || !distanceEnd) {
+      return
+    }
+    const instanceStart = this.geometry.getAttribute('instanceStart')
+    const instanceEnd = this.geometry.getAttribute('instanceEnd')
+    let cumulative = fromSegment > 0 ? distanceEnd.getX(fromSegment - 1) : 0
+    for (let i = fromSegment; i < toSegment; i++) {
+      _segmentStart.fromBufferAttribute(instanceStart, i)
+      _segmentEnd.fromBufferAttribute(instanceEnd, i)
+      distanceStart.setX(i, cumulative)
+      cumulative += _segmentStart.distanceTo(_segmentEnd)
+      distanceEnd.setX(i, cumulative)
+    }
+    distanceStart.data.needsUpdate = true
+    distanceEnd.data.needsUpdate = true
   }
 
   private _validateGeometry(geometry: LineSegmentsGeometry) {
@@ -329,6 +396,18 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
       geometryId
     )
 
+    // Refresh dash distances for this reserved range and any packed segments
+    // after it (rewrites mid-chain shift the cumulative dash phase).
+    if (this._isDashedMaterial()) {
+      this._chainInstanceDistances(
+        segmentStart,
+        Math.max(
+          this._nextSegmentStart,
+          segmentStart + geometryInfo.reservedVertexCount
+        )
+      )
+    }
+
     return geometryId
   }
 
@@ -382,6 +461,11 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     const instanceEnd = this.geometry.getAttribute('instanceEnd')
     instanceStart.needsUpdate = true
     instanceEnd.needsUpdate = true
+
+    // Compaction moves segments, invalidating the cumulative dash chain.
+    if (this._isDashedMaterial()) {
+      this._chainInstanceDistances(0)
+    }
 
     syncBatchDrawVisibilityAfterOptimize(this.geometry, this._geometryInfo)
 
@@ -460,6 +544,23 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     const newPacked = this._getPackedSegmentArray()
     copyArrayContents(oldPacked, newPacked)
     this._copyStaticAttributes(oldGeometry)
+    if (this._isDashedMaterial()) {
+      // Dash distance storage is not cloned with static attributes; rebuild
+      // it at the new capacity and copy the existing chain over.
+      const oldDistanceStart = oldGeometry.getAttribute(
+        'instanceDistanceStart'
+      ) as THREE.InterleavedBufferAttribute | undefined
+      this._ensureDistanceAttributes()
+      if (oldDistanceStart && oldDistanceStart.data?.array) {
+        const newDistanceStart = this.geometry.getAttribute(
+          'instanceDistanceStart'
+        ) as THREE.InterleavedBufferAttribute
+        const dst = newDistanceStart.data.array as Float32Array
+        const src = oldDistanceStart.data.array as Float32Array
+        dst.set(src.subarray(0, Math.min(src.length, dst.length)))
+        newDistanceStart.data.needsUpdate = true
+      }
+    }
     const slotIdAttr = ensureSlotIdAttribute(this.geometry, maxSegmentCount)
     if (oldSlotIdArray) {
       ;(slotIdAttr.array as Float32Array).set(
@@ -677,9 +778,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
       _segmentStart
         .fromBufferAttribute(instanceStart, i)
         .applyMatrix4(matrixWorld)
-      _segmentEnd
-        .fromBufferAttribute(instanceEnd, i)
-        .applyMatrix4(matrixWorld)
+      _segmentEnd.fromBufferAttribute(instanceEnd, i).applyMatrix4(matrixWorld)
 
       const distSq = raycaster.ray.distanceSqToSegment(
         _segmentStart,

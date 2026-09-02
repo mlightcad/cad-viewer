@@ -76,13 +76,17 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     const scale = scales.ltscale * scales.celtscale * traits.lineTypeScale
 
     if (this.isShaderMaterial(traits, options)) {
-      material = AcTrLinePatternShaders.createLineShaderMaterial(
-        traits.lineType.pattern!,
-        rgb,
-        scale,
-        this.options.viewportScaleUniform,
-        AcTrMaterialManager.CameraZoomUniform
-      )
+      if (this.options.linePatternShaderBroken) {
+        material = this.createDashedFatLineMaterial(traits, rgb, scale)
+      } else {
+        material = AcTrLinePatternShaders.createLineShaderMaterial(
+          traits.lineType.pattern!,
+          rgb,
+          scale,
+          this.options.viewportScaleUniform,
+          AcTrMaterialManager.CameraZoomUniform
+        )
+      }
     } else if (options.basicMaterialOnly || traits.lineWeight < 0) {
       material = new THREE.LineBasicMaterial({
         color: rgb
@@ -108,6 +112,43 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
   private resolveLineWidth(lineWeight: AcGiLineWeight): number {
     if (lineWeight < 0) return 1
     return Math.max(1, lineWeight / 40)
+  }
+
+  /**
+   * Builds a dashed {@link LineMaterial} for patterned lines when the GPU
+   * cannot render the custom linetype shader on native `gl.LINES` (see
+   * {@link AcTrStyleManagerOptions.linePatternShaderBroken}). The CAD pattern
+   * is approximated as one dash (sum of pen-down segments) and one gap (sum of
+   * pen-up segments), scaled by the active linetype scale.
+   */
+  private createDashedFatLineMaterial(
+    traits: AcGiSubEntityTraits,
+    rgb: number,
+    scale: number
+  ): THREE.Material {
+    let dashSize = 0
+    let gapSize = 0
+    for (const el of traits.lineType.pattern!) {
+      let len = el.elementLength
+      if (len < 0 && el.elementTypeFlag !== 0) len = Math.abs(len)
+      len *= scale
+      if (len >= 0) dashSize += len
+      else gapSize += Math.abs(len)
+    }
+    // Note: zero-length elements (dots) are folded into the dash sum and only
+    // collapse to a fixed 0.5 dash when the pattern has no pen-down length at
+    // all (pure dot linetypes). The shader path instead renders each dot as a
+    // fixed 0.5 dash — an acceptable approximation for this degraded path.
+    if (dashSize === 0) dashSize = 0.5
+    const dashedLineMaterial = new LineMaterial({
+      color: rgb,
+      linewidth: this.resolveLineWidth(traits.lineWeight),
+      dashed: true,
+      dashSize,
+      gapSize
+    })
+    dashedLineMaterial.resolution.copy(this.options.resolution)
+    return dashedLineMaterial
   }
 
   updateResolution() {

@@ -2855,6 +2855,10 @@ export class AcTrBatchedGroup extends THREE.Group {
         source.getAttribute('instanceColorEnd').clone()
       )
     }
+    // Note: dash distance attributes are not cloned here. The wide-line
+    // batch (AcTrBatchedLine2) owns distance maintenance and recomputes the
+    // cumulative chain from packed positions for every dashed batch, which
+    // also covers geometries entering via appendLine2Geometry.
     AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
     AcTrBufferGeometryUtil.safeComputeBoundingSphere(geometry)
     return geometry
