@@ -15,10 +15,10 @@ import { debounce } from 'lodash-es'
 
 import type { AcTrSpatialSearchOptions } from '../../spatialIndex/AcTrSpatialIndex'
 import type {
-  AcEdDrawStyleSessionHost,
   AcEdSessionAccessory,
   AcEdSessionAccessoryHostInfo
 } from '../command/AcEdSessionAccessory'
+import { AcEdSessionProviderRegistry } from '../command/AcEdSessionProviderRegistry'
 import { AcEdCorsorType, AcEdSelectionSet } from '../input'
 import { AcEditor } from '../input/AcEditor'
 import { AcEdOsnapResolver } from '../input/AcEdOsnapResolver'
@@ -283,8 +283,11 @@ export abstract class AcEdBaseView {
   /** The HTML element to contain this view */
   protected _container: HTMLElement
 
-  /** Optional draw-style session accessory host for measure/markup UI. */
-  private _drawStyleSessionHost: AcEdDrawStyleSessionHost | null = null
+  /**
+   * Long-lived session UI providers for this view (draw-style, etc.).
+   * Feature installs register here; mountable accessories are minted on demand.
+   */
+  readonly sessionProviders = new AcEdSessionProviderRegistry()
 
   /** Events fired by the view for various interactions */
   public readonly events = {
@@ -403,23 +406,6 @@ export abstract class AcEdBaseView {
    */
   set selectionSessionAccessory(value: AcEdSessionAccessory | null) {
     this._editor.inputManager.selectionSessionAccessory = value
-  }
-
-  /**
-   * Draw-style controls host used by measure/markup session accessories.
-   * Set by draw-style install; cleared on dispose/unregister.
-   */
-  get drawStyleSessionHost(): AcEdDrawStyleSessionHost | null {
-    return this._drawStyleSessionHost
-  }
-
-  /**
-   * Registers or clears the draw-style session controls host for this view.
-   *
-   * @param value - Host instance, or `null` when disposed.
-   */
-  set drawStyleSessionHost(value: AcEdDrawStyleSessionHost | null) {
-    this._drawStyleSessionHost = value
   }
 
   /**

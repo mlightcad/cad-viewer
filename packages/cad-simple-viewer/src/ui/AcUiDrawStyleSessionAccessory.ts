@@ -17,7 +17,10 @@ import {
   applyMeasurementStyleToSelection,
   getActiveMeasurementStyle
 } from '../command/measure/AcApMeasurementStore'
-import type { AcEdSessionAccessory } from '../editor/command/AcEdSessionAccessory'
+import {
+  ACED_DRAW_STYLE_SESSION_PROVIDER_ID,
+  type AcEdSessionAccessory
+} from '../editor/command/AcEdSessionAccessory'
 import { acedApplyUiTheme, resolveUiTheme } from '../editor/global/AcEdUiTheme'
 import { AcApI18n } from '../i18n'
 import {
@@ -191,8 +194,12 @@ export class AcUiDrawStyleSessionAccessory {
   /** Closes the palette when the user clicks outside the color control. */
   private readonly onDocumentPointerDown: (event: PointerEvent) => void
 
+  /** Tears down selection-sync subscriptions registered by install. */
+  private selectionUnsubscribe: (() => void) | null = null
+
   /**
-   * Creates controls, registers as the view's draw-style session host, and wires events.
+   * Creates controls and wires events. Install registers this on
+   * {@link AcEdBaseView.sessionProviders}.
    *
    * @param view - 2D view whose container supplies theme and dialog placement.
    */
@@ -266,8 +273,16 @@ export class AcUiDrawStyleSessionAccessory {
     }
     document.addEventListener('pointerdown', this.onDocumentPointerDown, true)
 
-    this.view.drawStyleSessionHost = this
     this.relabel()
+  }
+
+  /**
+   * Stores selection-sync cleanup from install; run from {@link dispose}.
+   *
+   * @param unsubscribe - Cleanup returned by selection binding.
+   */
+  setSelectionUnsubscribe(unsubscribe: () => void): void {
+    this.selectionUnsubscribe = unsubscribe
   }
 
   /**
@@ -282,7 +297,7 @@ export class AcUiDrawStyleSessionAccessory {
     }
   }
 
-  /** Removes listeners, unmounts controls, and clears the view session host. */
+  /** Removes listeners, unmounts controls, and clears the session provider. */
   dispose(): void {
     this.hideColorPanel()
     document.removeEventListener(
@@ -291,8 +306,13 @@ export class AcUiDrawStyleSessionAccessory {
       true
     )
     this.unmount()
-    if (this.view.drawStyleSessionHost === this) {
-      this.view.drawStyleSessionHost = null
+    this.selectionUnsubscribe?.()
+    this.selectionUnsubscribe = null
+    if (
+      this.view.sessionProviders.get(ACED_DRAW_STYLE_SESSION_PROVIDER_ID) ===
+      this
+    ) {
+      this.view.sessionProviders.delete(ACED_DRAW_STYLE_SESSION_PROVIDER_ID)
     }
     this.aciStacks.dispose()
   }

@@ -1,8 +1,10 @@
 import { AcApSettingManager } from '../app/AcApSettingManager'
 import { AcEdSessionAccessoryMountSkippedError } from '../editor/command/AcEdCommand'
-import type {
-  AcEdSessionAccessory,
-  AcEdSessionAccessoryOptions
+import {
+  ACED_DRAW_STYLE_SESSION_PROVIDER_ID,
+  type AcEdDrawStyleSessionHost,
+  type AcEdSessionAccessory,
+  type AcEdSessionAccessoryOptions
 } from '../editor/command/AcEdSessionAccessory'
 import {
   type AcApDrawStyleKind,
@@ -93,7 +95,9 @@ export function acuiBindDrawStyleSessionAccessory(command: {
      *   desktop ribbon already covers the same UI.
      */
     mount(options: AcEdSessionAccessoryOptions) {
-      const host = options.view.drawStyleSessionHost
+      const host = options.view.sessionProviders.get<AcEdDrawStyleSessionHost>(
+        ACED_DRAW_STYLE_SESSION_PROVIDER_ID
+      )
       if (!host) {
         throw new AcEdSessionAccessoryMountSkippedError()
       }

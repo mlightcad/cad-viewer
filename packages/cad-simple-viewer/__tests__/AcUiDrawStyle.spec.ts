@@ -202,13 +202,6 @@ describe('isMarkupDoublePointer', () => {
 describe('acuiBindDrawStyleSessionAccessory', () => {
   it('assigns a draw-style sessionAccessory that mounts the view host', () => {
     const container = { parentElement: null } as unknown as HTMLElement
-    const view = {
-      container,
-      drawStyleSessionHost: null as null | {
-        setActiveKind: jest.Mock
-        createSessionAccessory: () => typeof accessory
-      }
-    }
     const accessory = {
       id: 'draw-style',
       mount: jest.fn(),
@@ -219,8 +212,18 @@ describe('acuiBindDrawStyleSessionAccessory', () => {
       setActiveKind,
       createSessionAccessory: () => accessory
     }
-    view.drawStyleSessionHost = host
-    expect(view.drawStyleSessionHost).toBe(host)
+    const providers = new Map<string, unknown>()
+    const view = {
+      container,
+      sessionProviders: {
+        get: <T,>(id: string) => providers.get(id) as T | undefined,
+        set: (id: string, value: unknown) => {
+          providers.set(id, value)
+        },
+        delete: (id: string) => providers.delete(id)
+      }
+    }
+    view.sessionProviders.set('draw-style', host)
     const command = {
       globalName: 'measuredistance',
       sessionAccessory: null as null | typeof accessory
@@ -234,7 +237,7 @@ describe('acuiBindDrawStyleSessionAccessory', () => {
     })
     expect(setActiveKind).toHaveBeenCalledWith('measure')
     expect(accessory.mount).toHaveBeenCalled()
-    view.drawStyleSessionHost = null
+    view.sessionProviders.delete('draw-style')
     expect(() =>
       command.sessionAccessory!.mount({
         host: container,

@@ -41,11 +41,15 @@ describe('AcApMeasureDrawCmd', () => {
       unmount: jest.fn()
     }
     const setActiveKind = jest.fn()
+    const host = {
+      setActiveKind,
+      createSessionAccessory: () => accessory
+    }
+    const providers = new Map<string, unknown>([['draw-style', host]])
     const view = {
       container,
-      drawStyleSessionHost: {
-        setActiveKind,
-        createSessionAccessory: () => accessory
+      sessionProviders: {
+        get: <T,>(id: string) => providers.get(id) as T | undefined
       }
     }
     const cmd = new MeasureDrawStub()
@@ -91,11 +95,15 @@ describe('AcApMarkupDrawCmd', () => {
       unmount: jest.fn()
     }
     const setActiveKind = jest.fn()
+    const host = {
+      setActiveKind,
+      createSessionAccessory: () => accessory
+    }
+    const providers = new Map<string, unknown>([['draw-style', host]])
     const view = {
       container,
-      drawStyleSessionHost: {
-        setActiveKind,
-        createSessionAccessory: () => accessory
+      sessionProviders: {
+        get: <T,>(id: string) => providers.get(id) as T | undefined
       }
     }
     const cmd = new MarkupDrawStub()
