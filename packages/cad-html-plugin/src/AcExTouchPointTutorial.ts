@@ -1,12 +1,11 @@
+import { acExHtmlIsCompactLayout } from './AcExHtmlDrawerSheet'
+import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import {
   acuiLocalIsoDate,
   acuiShouldShowTouchPointTutorialFromPrefs,
   AcUiTouchPointTutorial,
   type AcUiTouchPointTutorialPrefs
 } from './AcExHtmlSimpleViewerUi'
-
-import { acExHtmlIsCompactLayout } from './AcExHtmlDrawerSheet'
-import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { ACEX_TOUCH_POINT_LONG_PRESS_MS } from './AcExTouchPointSession'
 
 /** `localStorage` key for offline HTML tutorial preferences. */

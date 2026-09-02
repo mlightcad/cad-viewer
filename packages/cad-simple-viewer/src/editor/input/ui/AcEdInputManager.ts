@@ -10,6 +10,7 @@ import {
 
 import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
+import { AcUiTouchPointTutorialDialog } from '../../../ui/AcUiTouchPointTutorialDialog'
 import type {
   AcEdSessionAccessory,
   AcEdSessionAccessoryHostInfo
@@ -83,7 +84,6 @@ import {
   acedIsTouchLongPressContextMenu,
   acedShouldIgnoreCompatMouse
 } from './AcEdTouchPointSession'
-import { AcUiTouchPointTutorialDialog } from '../../../ui/AcUiTouchPointTutorialDialog'
 
 /**
  * Internal control-flow error used to propagate keyword picks out of

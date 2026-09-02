@@ -65,7 +65,6 @@ import {
   createViewerPointsMaterial
 } from './AcExPatternSnapshot'
 import { setupAcExSessionDrawStyle } from './AcExSessionDrawStyle'
-import { acExMaybeShowTouchPointTutorial } from './AcExTouchPointTutorial'
 import {
   ACEX_SNAP_LOUPE_INSET_PX,
   ACEX_SNAP_LOUPE_SIZE_PX,
@@ -83,6 +82,7 @@ import type {
   AcExViewerMode
 } from './AcExSnapshotTypes'
 import { AcExTouchPointSession } from './AcExTouchPointSession'
+import { acExMaybeShowTouchPointTutorial } from './AcExTouchPointTutorial'
 import {
   releaseLayerGroupsGeometryCpuArrays,
   releaseSnapshotBatchBuffers,
