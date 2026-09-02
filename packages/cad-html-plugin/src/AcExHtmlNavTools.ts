@@ -14,7 +14,7 @@ export interface AcExHtmlNavToolsController {
    * @param mode - Target navigation tool.
    */
   setMode: (mode: AcExHtmlNavMode) => void
-  /** Whether left-button pan should be enabled. */
+  /** Whether idle left-button / one-finger pan should be enabled (not drawing). */
   isPanEnabled: () => boolean
   /**
    * Handles canvas left-click while zoom-window is active.

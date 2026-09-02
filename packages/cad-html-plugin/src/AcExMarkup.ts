@@ -245,6 +245,12 @@ export class AcExMarkupController {
   private _mode: AcExMarkupMode | null = null
   private _points: THREE.Vector2[] = []
   private _lastPointer: { x: number; y: number } | null = null
+  /**
+   * True while a live cursor sample should drive callout-anchor preview
+   * (mouse hover, or touch loupe). After the shape’s second point, the text
+   * capsule stays hidden until this is true again.
+   */
+  private _livePointer = false
   private _visible = true
   private _stampIndex = 0
   private _inOverlaySync = false
@@ -571,6 +577,7 @@ export class AcExMarkupController {
     this._mode = null
     this._points = []
     this._lastPointer = null
+    this._livePointer = false
     this._osnapCache = null
     this._awaitingInlineText = false
     this._clearPreview()
@@ -710,10 +717,14 @@ export class AcExMarkupController {
     if (this._awaitingInlineText || isAcExMarkupHtmlTextEditing()) {
       return true
     }
+    // End live preview before resolving so a nested render cannot revive the
+    // OSNAP glyph; confirmed picks show the plus mark only.
+    this._livePointer = false
     if (this._placingShapeCallout) {
       this._lastPointer = { x: clientX, y: clientY }
-      const point = this._resolvePointerWithOsnap(clientX, clientY)
+      const point = this._resolvePointerWithOsnap(clientX, clientY, false)
       this._completeShapeCalloutAnchor(point)
+      this._onOsnapMarker(null, null)
       return true
     }
     // While a markup tool is armed, never select/highlight committed overlays —
@@ -721,7 +732,7 @@ export class AcExMarkupController {
     // steal placement clicks. Idle selection uses {@link handleSelectionPointerDown}.
     if (!this._mode) return false
     this._lastPointer = { x: clientX, y: clientY }
-    const point = this._resolvePointerWithOsnap(clientX, clientY)
+    const point = this._resolvePointerWithOsnap(clientX, clientY, false)
 
     let handled = false
     switch (this._mode) {
@@ -750,6 +761,7 @@ export class AcExMarkupController {
         handled = false
         break
     }
+    this._onOsnapMarker(null, null)
     this._syncConfirmedPointMarks()
     return handled
   }
@@ -757,6 +769,7 @@ export class AcExMarkupController {
   handlePointerMove(clientX: number, clientY: number): void {
     if (this._awaitingInlineText || isAcExMarkupHtmlTextEditing()) return
     if (!this._mode && !this._placingShapeCallout) return
+    this._livePointer = true
     this._lastPointer = { x: clientX, y: clientY }
     this._resolvePointerWithOsnap(clientX, clientY)
     this._refreshActivePreview()
@@ -1204,6 +1217,8 @@ export class AcExMarkupController {
       tipDot,
       existingId: options?.existingId
     }
+    // Capsule / tip wait for the next live cursor (3rd-point capture / loupe).
+    this._setPlacingCalloutChromeVisible(false)
     this._statusEl.textContent = this._i18n.t('status.markupShapeCalloutHint')
     this._syncGripPointerEvents()
     this._refreshActivePreview()
@@ -1221,6 +1236,8 @@ export class AcExMarkupController {
     placing.badge.dataset.wcsY = String(anchor.y)
     placing.tipDot.dataset.wcsX = String(tip.x)
     placing.tipDot.dataset.wcsY = String(tip.y)
+    // Text edit needs the capsule visible even without a live cursor.
+    this._setPlacingCalloutChromeVisible(true)
     this._positionTempDom(placing.badge)
     this._positionTempDom(placing.tipDot)
     this._refreshActivePreview()
@@ -2310,7 +2327,8 @@ export class AcExMarkupController {
 
   private _resolvePointerWithOsnap(
     clientX: number,
-    clientY: number
+    clientY: number,
+    showMarker: boolean = true
   ): THREE.Vector2 {
     const cacheKey = this._view.getSnapCacheKey()
     if (
@@ -2319,14 +2337,16 @@ export class AcExMarkupController {
       this._osnapCache.clientY === clientY &&
       this._osnapCache.cacheKey === cacheKey
     ) {
-      const snap = this._osnapCache.snap
-      if (snap) {
-        this._onOsnapMarker(
-          snap,
-          this._view.wcsToScreen(this._osnapCache.point)
-        )
-      } else {
-        this._onOsnapMarker(null, null)
+      if (showMarker) {
+        const snap = this._osnapCache.snap
+        if (snap) {
+          this._onOsnapMarker(
+            snap,
+            this._view.wcsToScreen(this._osnapCache.point)
+          )
+        } else {
+          this._onOsnapMarker(null, null)
+        }
       }
       return this._osnapCache.point
     }
@@ -2348,10 +2368,12 @@ export class AcExMarkupController {
       point: point.clone(),
       snap: resolved.snap
     }
-    if (resolved.snap) {
-      this._onOsnapMarker(resolved.snap, this._view.wcsToScreen(point))
-    } else {
-      this._onOsnapMarker(null, null)
+    if (showMarker) {
+      if (resolved.snap) {
+        this._onOsnapMarker(resolved.snap, this._view.wcsToScreen(point))
+      } else {
+        this._onOsnapMarker(null, null)
+      }
     }
     return point
   }
@@ -2360,7 +2382,8 @@ export class AcExMarkupController {
     if (this._awaitingInlineText || isAcExMarkupHtmlTextEditing()) {
       // Keep frozen shape+leader visible while typing after anchor is placed.
       if (this._placingShapeCallout) {
-        this._paintPlacingShapeCalloutPreview(this._placingShapeCallout)
+        this._setPlacingCalloutChromeVisible(true)
+        this._paintPlacingShapeCalloutPreview(this._placingShapeCallout, true)
       }
       return
     }
@@ -2374,11 +2397,19 @@ export class AcExMarkupController {
     }
 
     if (this._placingShapeCallout) {
+      const placing = this._placingShapeCallout
+      if (!this._livePointer) {
+        // After the shape’s second point: keep the outline, hide capsule/leader
+        // until the callout anchor is being captured.
+        this._onOsnapMarker(null, null)
+        this._setPlacingCalloutChromeVisible(false)
+        this._paintPlacingShapeCalloutPreview(placing, false)
+        return
+      }
       const cursor = this._resolvePointerWithOsnap(
         this._lastPointer.x,
         this._lastPointer.y
       )
-      const placing = this._placingShapeCallout
       const anchor = point2(cursor)
       const tip = acExComputeLeaderTipOnShape(placing.outline, anchor)
       placing.tip = tip
@@ -2387,9 +2418,19 @@ export class AcExMarkupController {
       placing.badge.dataset.wcsY = String(anchor.y)
       placing.tipDot.dataset.wcsX = String(tip.x)
       placing.tipDot.dataset.wcsY = String(tip.y)
+      this._setPlacingCalloutChromeVisible(true)
       this._positionTempDom(placing.badge)
       this._positionTempDom(placing.tipDot)
-      this._paintPlacingShapeCalloutPreview(placing)
+      this._paintPlacingShapeCalloutPreview(placing, true)
+      return
+    }
+
+    // Rubber-band only while the pointer is live (no preview glued to the
+    // last committed vertex after finger/button up). Drop the OSNAP glyph so
+    // only confirmed plus marks remain until the next live sample.
+    if (!this._livePointer) {
+      this._onOsnapMarker(null, null)
+      this._clearPreview()
       return
     }
 
@@ -2455,7 +2496,8 @@ export class AcExMarkupController {
   }
 
   private _paintPlacingShapeCalloutPreview(
-    placing: AcExPlacingShapeCallout
+    placing: AcExPlacingShapeCallout,
+    withLeader: boolean
   ): void {
     const ctx = acExFitMarkupCanvas(this._previewCanvas, this._root)
     if (!ctx) return
@@ -2498,6 +2540,7 @@ export class AcExMarkupController {
         )
       }
     }
+    if (!withLeader) return
     const tip = this._worldToOverlay(placing.tip)
     const anchor = this._worldToOverlay(placing.anchor)
     acExDrawMarkupLeader(
@@ -2508,6 +2551,15 @@ export class AcExMarkupController {
       false,
       this._scaledCanvasLineWidth(lineWidth, ctx.canvas)
     )
+  }
+
+  /** Shows or hides the temporary callout capsule / tip while placing. */
+  private _setPlacingCalloutChromeVisible(visible: boolean): void {
+    const placing = this._placingShapeCallout
+    if (!placing) return
+    const value = visible ? 'visible' : 'hidden'
+    placing.badge.style.visibility = value
+    placing.tipDot.style.visibility = value
   }
 
   private _clearPreview(): void {

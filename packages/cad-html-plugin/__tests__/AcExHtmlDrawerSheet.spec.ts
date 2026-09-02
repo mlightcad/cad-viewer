@@ -68,7 +68,7 @@ describe('setupAcExHtmlDrawerSheets', () => {
     expect(closeStrips).toHaveBeenCalled()
   })
 
-  it('does not park or close strips on desktop', () => {
+  it('parks the drawer on the sidebar on desktop without closing strips', () => {
     mockPhone(false)
     document.body.innerHTML = `
       <aside id="mlcad-sidebar">
@@ -83,7 +83,9 @@ describe('setupAcExHtmlDrawerSheets', () => {
 
     sheets.preparePhoneOpen(drawer)
 
-    expect(drawer.parentElement?.id).toBe('mlcad-measure-strip-wrap')
+    // Pad/desktop also reparent so dismissing the strip wrap cannot hide an
+    // open results panel; only phone dismisses sibling strips here.
+    expect(drawer.parentElement?.id).toBe('mlcad-sidebar')
     expect(closeStrips).not.toHaveBeenCalled()
   })
 

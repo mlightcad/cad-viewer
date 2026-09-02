@@ -39,7 +39,7 @@ function createController() {
     getReadyStatus: () => 'Ready',
     onOsnapMarker: () => undefined
   })
-  return { controller, root }
+  return { controller, root, statusEl }
 }
 
 describe('AcExMeasureController session actions', () => {
@@ -69,14 +69,16 @@ describe('AcExMeasureController session actions', () => {
     expect(controller.list()).toHaveLength(0)
   })
 
-  it('commits an in-progress continuous measurement on confirmSession', () => {
-    const { controller } = createController()
+  it('commits continuous measurement and reports total length', () => {
+    const { controller, statusEl } = createController()
     controller.setMode('continuous')
     controller.handlePointerDown(0, 0)
     controller.handlePointerDown(10, 0)
+    controller.handlePointerDown(10, 20)
 
     expect(controller.confirmSession()).toBe(true)
     expect(controller.isActive).toBe(false)
-    expect(controller.list()).toHaveLength(1)
+    expect(controller.list()).toHaveLength(2)
+    expect(statusEl.textContent).toBe('Total length: 30')
   })
 })

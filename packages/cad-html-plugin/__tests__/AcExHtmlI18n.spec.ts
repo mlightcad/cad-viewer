@@ -86,6 +86,15 @@ describe('AcExHtmlI18n', () => {
   it('translates messages with parameters', () => {
     const i18n = new AcExHtmlI18n('zh')
     expect(i18n.t('status.distance', { value: '12.5' })).toBe('距离：12.5')
+    expect(
+      i18n.t('status.arcLength', {
+        length: '10',
+        radius: '5',
+        angle: '180°',
+        chord: '10'
+      })
+    ).toBe('弧长：10 | 半径：5 | 总角度：180° | 弦长：10')
+    expect(i18n.t('status.continuousTotal', { value: '30' })).toBe('总长度：30')
     expect(i18n.t('toolbar.measurementPanel')).toBe('看结果')
     expect(i18n.t('measurePanel.empty')).toBe('暂无测量')
     expect(i18n.t('measurePanel.filterArc')).toBe('弧长')

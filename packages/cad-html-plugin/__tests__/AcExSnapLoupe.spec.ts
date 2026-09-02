@@ -60,6 +60,17 @@ describe('AcExTouchPointSession', () => {
     jest.advanceTimersByTime(1)
     expect(onLongPress).toHaveBeenCalledTimes(1)
   })
+
+  it('cancels to pan when moved before the timer', () => {
+    const onLongPress = jest.fn()
+    const session = new AcExTouchPointSession()
+    session.start(7, 0, 0, onLongPress, 350)
+    expect(session.move(20, 0, true)).toBe('panning')
+    expect(session.phase).toBe('panning')
+    jest.advanceTimersByTime(350)
+    expect(onLongPress).not.toHaveBeenCalled()
+    expect(session.end()).toBe('ignore')
+  })
 })
 
 describe('acExLoupeLocalFromCanvasDelta', () => {

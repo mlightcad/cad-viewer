@@ -75,7 +75,11 @@ export class AcExOsnapMarker {
 
   private applyShape(shape: AcExOsnapMarkerShape): void {
     this.shape = shape
-    this.el.className = `mlcad-osnap-marker mlcad-osnap-marker--${shape}`
+    // Preserve hide state — replacing className must not drop `--hidden`.
+    const hidden = this.el.classList.contains('mlcad-osnap-marker--hidden')
+    this.el.className = `mlcad-osnap-marker mlcad-osnap-marker--${shape}${
+      hidden ? ' mlcad-osnap-marker--hidden' : ''
+    }`
   }
 
   private static injectCss(): void {

@@ -15,7 +15,6 @@ import { acExHtmlIcons } from './AcExHtmlIcons'
 import {
   ACEX_OVERLAY_ARROW_SIZE_PX,
   acExPixelsPerWorldUnit,
-  acExPositionClientOverlay,
   acExPositionWcsOverlay,
   acExResetOverlayViewScale,
   acExScaledCanvasLineWidth,
@@ -805,7 +804,7 @@ function lockedSweep(
   }
 }
 
-/** Sync document CSS accent vars used by measure badges / live label. @internal */
+/** Sync document CSS accent vars used by measure badges. @internal */
 function applyMeasureAccentCss(hex: number): void {
   const css = measureColorToCss(hex)
   const r = (hex >> 16) & 0xff
@@ -1007,10 +1006,8 @@ export class AcExMeasureController {
   private _drawFontSize = ACEX_MEASUREMENT_FONT_SIZE
   /** Style of the measurement currently being committed (import or interactive). */
   private _commitStyle: AcExMeasurementSidecarStyle | null = null
-  /** Host for canvas overlays, dots, badges, and the live label. */
+  /** Host for canvas overlays, dots, and badges. */
   private readonly _overlayLayer: HTMLDivElement
-  /** Cursor-following value shown during interactive preview. */
-  private readonly _liveLabel: HTMLDivElement
   /** Hidden file input for sidecar import. */
   private readonly _fileInput: HTMLInputElement
   /** Canvas redraw callbacks invoked from {@link syncOverlays}. */
@@ -1056,8 +1053,9 @@ export class AcExMeasureController {
   /** Last pointer position during an active measure tool (for overlay sync on pan/zoom). */
   private _lastPointer: { x: number; y: number } | null = null
   /**
-   * True while a pointer is down and moving. After lift, session metrics stay
-   * frozen at the last sample until the next press.
+   * True while a live cursor sample should drive rubber-band preview (mouse
+   * hover, or touch loupe / precise capture). After lift, canvas preview stays
+   * hidden until the next live sample — not drawn at the last committed vertex.
    */
   private _livePointer = false
   /** Guards against re-entrant `render()` while {@link syncOverlays} refreshes preview. */
@@ -1098,10 +1096,6 @@ export class AcExMeasureController {
     this._overlayLayer = document.createElement('div')
     this._overlayLayer.id = 'mlcad-measure-overlays'
     this._root.appendChild(this._overlayLayer)
-
-    this._liveLabel = document.createElement('div')
-    this._liveLabel.className = 'mlcad-measure-live-label'
-    this._overlayLayer.appendChild(this._liveLabel)
 
     this._fileInput = document.createElement('input')
     this._fileInput.type = 'file'
@@ -1219,9 +1213,7 @@ export class AcExMeasureController {
 
     if (colorChanged) {
       applyMeasureAccentCss(this._measureColor)
-      this._liveLabel.style.color = this._measureCss()
     }
-    this._liveLabel.style.fontSize = `${this._drawFontSize}px`
 
     const selectionPatch: {
       color?: string
@@ -1355,10 +1347,13 @@ export class AcExMeasureController {
       this._onSessionUi(null)
       return
     }
+    // Metrics only — never pass showMarker (that revived the OSNAP glyph after
+    // a successful pick, undoing the hide in handlePointerDown).
     const cursor = this._lastPointer
       ? this._resolvePointerWithOsnap(
           this._lastPointer.x,
-          this._lastPointer.y
+          this._lastPointer.y,
+          false
         )
       : this._points[this._points.length - 1]
     const lastCommitted = this._points[this._points.length - 1] ?? null
@@ -1667,8 +1662,11 @@ export class AcExMeasureController {
     // endpoint dots coincide with CAD grips/OSNAP and would steal placement clicks.
     // Idle selection uses {@link handleSelectionPointerDown} instead.
     if (!this._mode) return false
+    // End live preview before resolving so a nested render cannot revive the
+    // OSNAP glyph; confirmed picks show the plus mark only.
+    this._livePointer = false
     this._lastPointer = { x: clientX, y: clientY }
-    const point = this._resolvePointerWithOsnap(clientX, clientY)
+    const point = this._resolvePointerWithOsnap(clientX, clientY, false)
 
     let handled = true
     switch (this._mode) {
@@ -1694,7 +1692,7 @@ export class AcExMeasureController {
         handled = true
         break
     }
-    this._livePointer = false
+    this._onOsnapMarker(null, null)
     this._syncSessionUi()
     this._syncConfirmedPointMarks()
     return handled
@@ -1910,9 +1908,8 @@ export class AcExMeasureController {
     })
   }
 
-  /** Removes transient preview lines, label, and preview canvases. @internal */
+  /** Removes transient preview lines, capsules, and preview canvases. @internal */
   private _hidePreview(): void {
-    this._liveLabel.style.display = 'none'
     this._overlayLayer
       .querySelectorAll(
         '.mlcad-measure-canvas--preview, .mlcad-measure-canvas--preview-line, .mlcad-measure-badge--preview'
@@ -1929,12 +1926,17 @@ export class AcExMeasureController {
   }
 
   /**
-   * Resolves the WCS pick (with object snap) and refreshes the on-screen snap marker.
+   * Resolves the WCS pick (with object snap) and optionally refreshes the
+   * on-screen snap marker.
+   *
+   * @param showMarker - When false, resolve silently (confirmed picks keep
+   *   the plus mark only and must not leave a snap glyph behind).
    * @internal
    */
   private _resolvePointerWithOsnap(
     clientX: number,
-    clientY: number
+    clientY: number,
+    showMarker: boolean = true
   ): THREE.Vector2 {
     const cacheKey = this._view.getSnapCacheKey()
     const cached = this._osnapCache
@@ -1944,10 +1946,12 @@ export class AcExMeasureController {
       cached.clientY === clientY &&
       cached.cacheKey === cacheKey
     ) {
-      this._onOsnapMarker(
-        cached.snap,
-        cached.snap ? this._view.wcsToScreen(cached.point) : null
-      )
+      if (showMarker) {
+        this._onOsnapMarker(
+          cached.snap,
+          cached.snap ? this._view.wcsToScreen(cached.point) : null
+        )
+      }
       return cached.point
     }
 
@@ -1966,7 +1970,9 @@ export class AcExMeasureController {
       point: point.clone(),
       snap
     }
-    this._onOsnapMarker(snap, snap ? this._view.wcsToScreen(point) : null)
+    if (showMarker) {
+      this._onOsnapMarker(snap, snap ? this._view.wcsToScreen(point) : null)
+    }
     return point
   }
 
@@ -1979,70 +1985,86 @@ export class AcExMeasureController {
   }
 
   /**
-   * Redraws in-progress preview and object-snap marker after pan/zoom using the last pointer sample.
+   * Redraws in-progress preview after pan/zoom.
+   *
+   * Live cursor (mouse hover / touch loupe) drives the rubber-band to the
+   * next pick. Without a live sample, multi-vertex tools still show geometry
+   * already confirmed in this session (continuous segments, area edges, …).
    * @internal
    */
   private _refreshActivePreview(): void {
-    if (!this._mode || !this._lastPointer) return
-    const { x, y } = this._lastPointer
-    const point = this._resolvePointerWithOsnap(x, y)
+    if (!this._mode) return
 
+    if (this._livePointer && this._lastPointer) {
+      const { x, y } = this._lastPointer
+      const point = this._resolvePointerWithOsnap(x, y)
+      switch (this._mode) {
+        case 'distance':
+          if (this._points.length === 1) {
+            this._previewDistance(point)
+          }
+          break
+        case 'continuous':
+          if (this._points.length >= 1) {
+            this._previewContinuous(point)
+          }
+          break
+        case 'angle':
+          if (this._points.length >= 1) {
+            this._previewAngle(point)
+          }
+          break
+        case 'arc':
+          if (this._points.length >= 1) {
+            this._previewArc(point, x, y)
+          }
+          break
+        case 'area':
+          if (this._points.length >= 1) {
+            this._previewArea(point)
+          }
+          break
+        case 'coordinate':
+          this._previewCoordinate(point)
+          break
+      }
+      this._syncSessionUi()
+      return
+    }
+
+    // Finger/button up: keep confirmed segments, never leave a snap glyph.
+    this._onOsnapMarker(null, null)
     switch (this._mode) {
-      case 'distance':
-        if (this._points.length === 1) {
-          this._previewDistance(point, x, y)
-        }
-        break
       case 'continuous':
-        if (this._points.length >= 1) {
-          this._previewContinuous(point, x, y)
-        }
-        break
-      case 'angle':
-        if (this._points.length >= 1) {
-          this._previewAngle(point, x, y)
-        }
-        break
-      case 'arc':
-        if (this._points.length >= 1) {
-          this._previewArc(point, x, y)
-        }
+        this._previewContinuous(null)
         break
       case 'area':
-        if (this._points.length >= 1) {
-          this._previewArea(point, x, y)
-        }
+        this._previewArea(null)
         break
-      case 'coordinate':
-        this._previewCoordinate(point, x, y)
+      case 'angle':
+        this._previewAngleCommitted()
+        break
+      case 'arc':
+        this._previewArcCommitted()
+        break
+      default:
         break
     }
     this._syncSessionUi()
   }
 
   /**
-   * Positions the cursor-following preview label in root-local coordinates.
-   * @internal
-   */
-  private _showLiveLabel(text: string, clientX: number, clientY: number): void {
-    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
-    this._liveLabel.textContent = text
-    this._liveLabel.style.display = 'block'
-    acExPositionClientOverlay(
-      this._liveLabel,
-      clientX,
-      clientY,
-      rootRect,
-      this._view.getCameraZoom()
-    )
-  }
-
-  /**
-   * Positions live per-segment badges during continuous measurement.
+   * Positions live value capsules (same badge chrome as committed measurements).
+   * Used by continuous segments and distance / angle / arc / coordinate previews.
    * @internal
    */
   private _syncPreviewBadges(
-    items: Array<{ wcs: THREE.Vector2; text: string }>
+    items: Array<{
+      wcs: THREE.Vector2
+      text: string
+      /** Offset capsule like a committed coordinate readout. */
+      coordinate?: boolean
+    }>
   ): void {
     const existing = Array.from(
       this._overlayLayer.querySelectorAll<HTMLDivElement>(
@@ -2065,6 +2087,7 @@ export class AcExMeasureController {
       el.style.borderColor = css
       el.style.fontSize = `${this._drawFontSize}px`
       el.style.display = 'block'
+      el.classList.toggle('mlcad-measure-badge--coordinate', !!item.coordinate)
       this._placeDomAt(el, item.wcs)
     }
   }
@@ -2122,18 +2145,16 @@ export class AcExMeasureController {
     return true
   }
 
-  /** Coordinate tool live preview at the cursor. @internal */
-  private _previewCoordinate(
-    point: THREE.Vector2,
-    clientX: number,
-    clientY: number
-  ): void {
+  /** Coordinate tool live preview capsule at the pick (matches simple-viewer). @internal */
+  private _previewCoordinate(point: THREE.Vector2): void {
     this._hidePreview()
-    this._showLiveLabel(
-      this._formatCoordinateLabel(point.x, point.y),
-      clientX,
-      clientY
-    )
+    this._syncPreviewBadges([
+      {
+        wcs: point,
+        text: this._formatCoordinateLabel(point.x, point.y),
+        coordinate: true
+      }
+    ])
     this._requestRender()
   }
 
@@ -2220,12 +2241,13 @@ export class AcExMeasureController {
    */
   private _pointerDistance(
     point: THREE.Vector2,
-    clientX: number,
-    clientY: number
+    _clientX: number,
+    _clientY: number
   ): boolean {
     this._points.push(point.clone())
     if (this._points.length < 2) {
-      this._previewDistance(point, clientX, clientY)
+      // Wait for a live cursor (mouse move / touch loupe) before rubber-band.
+      this._hidePreview()
       return true
     }
     const [a, b] = this._points
@@ -2237,11 +2259,7 @@ export class AcExMeasureController {
   }
 
   /** Distance tool live preview after the first anchor is set. @internal */
-  private _previewDistance(
-    point: THREE.Vector2,
-    clientX: number,
-    clientY: number
-  ): void {
+  private _previewDistance(point: THREE.Vector2): void {
     if (this._points.length !== 1) {
       this._hidePreview()
       return
@@ -2249,7 +2267,16 @@ export class AcExMeasureController {
     const anchor = this._points[0]!
     this._setPreviewLine([anchor, point], { bothArrows: true })
     const dist = dist2(anchor, point)
-    this._showLiveLabel(this._view.formatLength(dist), clientX, clientY)
+    if (dist < 1e-4) {
+      this._syncPreviewBadges([])
+    } else {
+      this._syncPreviewBadges([
+        {
+          wcs: new THREE.Vector2((anchor.x + point.x) / 2, (anchor.y + point.y) / 2),
+          text: this._view.formatLength(dist)
+        }
+      ])
+    }
     this._requestRender()
   }
 
@@ -2374,29 +2401,36 @@ export class AcExMeasureController {
    */
   private _pointerContinuous(
     point: THREE.Vector2,
-    clientX: number,
-    clientY: number
+    _clientX: number,
+    _clientY: number
   ): boolean {
     if (this._points.length >= 1) {
       const last = this._points[this._points.length - 1]!
       if (dist2(last, point) < 1e-9) return true
     }
     this._points.push(point.clone())
-    this._previewContinuous(point, clientX, clientY)
+    // Confirmed segments stay visible; rubber-band waits for the next live pick.
+    this._previewContinuous(null)
     return true
   }
 
-  /** Continuous tool live preview (polyline + per-segment midpoint badges). @internal */
-  private _previewContinuous(
-    point: THREE.Vector2,
-    _clientX: number,
-    _clientY: number
-  ): void {
+  /**
+   * Continuous tool preview: confirmed vertices, plus optional rubber-band to
+   * a live cursor sample.
+   *
+   * @param point - Live cursor in WCS, or `null` to show only confirmed segments.
+   * @internal
+   */
+  private _previewContinuous(point: THREE.Vector2 | null): void {
     if (this._points.length === 0) {
       this._hidePreview()
       return
     }
-    const pts = [...this._points, point]
+    const pts = point != null ? [...this._points, point] : [...this._points]
+    if (pts.length < 2) {
+      this._hidePreview()
+      return
+    }
     this._setPreviewLine(pts, { segmentArrows: true })
     const items: Array<{ wcs: THREE.Vector2; text: string }> = []
     for (let i = 0; i < pts.length - 1; i++) {
@@ -2410,22 +2444,28 @@ export class AcExMeasureController {
       })
     }
     this._syncPreviewBadges(items)
-    this._liveLabel.style.display = 'none'
     this._requestRender()
   }
 
   /**
-   * Persists each consecutive pair as a normal distance measurement.
+   * Persists each consecutive pair as a normal distance measurement, then
+   * reports the polyline total length in the status bar.
    * @internal
    */
   private _commitContinuous(pointsIn: THREE.Vector2[]): void {
     if (pointsIn.length < 2) return
+    let total = 0
     for (let i = 0; i < pointsIn.length - 1; i++) {
       const a = pointsIn[i]!
       const b = pointsIn[i + 1]!
-      if (dist2(a, b) < 1e-4) continue
+      const segment = dist2(a, b)
+      if (segment < 1e-4) continue
+      total += segment
       this._commitDistance(a, b)
     }
+    this._statusEl.textContent = this._i18n.t('status.continuousTotal', {
+      value: this._view.formatLength(total)
+    })
   }
 
   /**
@@ -2434,12 +2474,12 @@ export class AcExMeasureController {
    */
   private _pointerAngle(
     point: THREE.Vector2,
-    clientX: number,
-    clientY: number
+    _clientX: number,
+    _clientY: number
   ): boolean {
     this._points.push(point.clone())
     if (this._points.length < 3) {
-      this._previewAngle(point, clientX, clientY)
+      this._previewAngleCommitted()
       return true
     }
     const vertex = this._points[0]!
@@ -2452,12 +2492,8 @@ export class AcExMeasureController {
     return true
   }
 
-  /** Angle tool live preview (arms + arc canvas + label). @internal */
-  private _previewAngle(
-    point: THREE.Vector2,
-    clientX: number,
-    clientY: number
-  ): void {
+  /** Angle tool live preview (arms + arc canvas + bisector capsule). @internal */
+  private _previewAngle(point: THREE.Vector2): void {
     if (this._points.length === 0) {
       this._hidePreview()
       return
@@ -2465,13 +2501,36 @@ export class AcExMeasureController {
     const vertex = this._points[0]!
     if (this._points.length === 1) {
       this._setPreviewLine([vertex, point])
+      this._syncPreviewBadges([])
+      this._requestRender()
       return
     }
     const arm1 = this._points[1]!
     this._setPreviewLine([vertex, arm1, vertex, point])
     const deg = calcAngleDeg(vertex, arm1, point)
-    this._showLiveLabel(this._view.formatAngle(deg), clientX, clientY)
+    this._syncPreviewBadges([
+      {
+        wcs: angleBadgeWorld(vertex, arm1, point),
+        text: this._view.formatAngle(deg)
+      }
+    ])
     this._drawPreviewAngleArc(vertex, arm1, point)
+    this._requestRender()
+  }
+
+  /** Confirmed angle arms only (no rubber-band to the next pick). @internal */
+  private _previewAngleCommitted(): void {
+    if (this._points.length < 2) {
+      this._hidePreview()
+      return
+    }
+    const vertex = this._points[0]!
+    const arm1 = this._points[1]!
+    this._setPreviewLine([vertex, arm1])
+    this._syncPreviewBadges([])
+    this._overlayLayer
+      .querySelectorAll('.mlcad-measure-canvas--preview')
+      .forEach(el => el.remove())
     this._requestRender()
   }
 
@@ -2699,13 +2758,13 @@ export class AcExMeasureController {
           start.x - lock.cx
         )
         this._points.push(start)
-        this._previewArc(this._points[0]!, clientX, clientY)
+        this._previewArcCommitted()
         return true
       }
       this._arcLock = null
       this._resetArcLockDirection()
       this._points.push(point.clone())
-      this._previewArc(point, clientX, clientY)
+      this._previewArcCommitted()
       return true
     }
 
@@ -2743,7 +2802,7 @@ export class AcExMeasureController {
 
     this._points.push(point.clone())
     if (this._points.length < 3) {
-      this._previewArc(point, clientX, clientY)
+      this._previewArcCommitted()
       return true
     }
     const start = this._points[0]!
@@ -2763,7 +2822,7 @@ export class AcExMeasureController {
     return true
   }
 
-  /** Arc tool live preview (chord lines or arc stroke + label). @internal */
+  /** Arc tool live preview (chord lines or arc stroke + length capsule). @internal */
   private _previewArc(
     point: THREE.Vector2,
     clientX: number,
@@ -2775,6 +2834,7 @@ export class AcExMeasureController {
     }
     const start = this._points[0]!
     if (this._arcLock && this._points.length === 1) {
+      // Raw cursor (not OSNAP) so nearby bulge rebinding follows the finger/mouse.
       const raw = this._view.screenToWcs(clientX, clientY)
       this._rebindArcLock(raw)
       const geom = this._arcLock
@@ -2789,24 +2849,26 @@ export class AcExMeasureController {
         .querySelectorAll('.mlcad-measure-canvas--preview-line')
         .forEach(el => el.remove())
       if (!sweep) {
-        this._liveLabel.style.display = 'none'
+        this._syncPreviewBadges([])
         this._overlayLayer
           .querySelectorAll('.mlcad-measure-canvas--preview')
           .forEach(el => el.remove())
         this._requestRender()
         return
       }
-      this._showLiveLabel(
-        this._view.formatLength(sweep.length),
-        clientX,
-        clientY
-      )
+      this._syncPreviewBadges([
+        {
+          wcs: sweep.through,
+          text: this._view.formatLength(sweep.length)
+        }
+      ])
       this._drawPreviewArc(geom, start, sweep.through, end)
       this._requestRender()
       return
     }
     if (this._points.length === 1) {
       this._setPreviewLine([start, point])
+      this._syncPreviewBadges([])
       this._requestRender()
       return
     }
@@ -2814,7 +2876,7 @@ export class AcExMeasureController {
     const geom = circleFromThreePoints(start, through, point)
     if (!geom) {
       this._setPreviewLine([start, through, point])
-      this._liveLabel.style.display = 'none'
+      this._syncPreviewBadges([])
       this._overlayLayer
         .querySelectorAll('.mlcad-measure-canvas--preview')
         .forEach(el => el.remove())
@@ -2822,8 +2884,30 @@ export class AcExMeasureController {
       return
     }
     const len = arcLengthThroughMiddle(start, through, point, geom)
-    this._showLiveLabel(this._view.formatLength(len), clientX, clientY)
+    const mid = arcMidThroughMiddle(start, through, point, geom)
+    this._syncPreviewBadges([
+      {
+        wcs: mid,
+        text: this._view.formatLength(len)
+      }
+    ])
     this._drawPreviewArc(geom, start, through, point)
+    this._requestRender()
+  }
+
+  /** Confirmed arc chords only (no rubber-band to the next pick). @internal */
+  private _previewArcCommitted(): void {
+    if (this._points.length < 2) {
+      this._hidePreview()
+      return
+    }
+    const start = this._points[0]!
+    const through = this._points[1]!
+    this._setPreviewLine([start, through])
+    this._syncPreviewBadges([])
+    this._overlayLayer
+      .querySelectorAll('.mlcad-measure-canvas--preview')
+      .forEach(el => el.remove())
     this._requestRender()
   }
 
@@ -2920,8 +3004,14 @@ export class AcExMeasureController {
       dot2,
       badge
     )
+    const sweep = arcSweepThroughMiddle(start, through, end, geom)
+    const angleDeg = (Math.abs(sweep.span) * 180) / Math.PI
+    const chord = dist2(start, end)
     this._statusEl.textContent = this._i18n.t('status.arcLength', {
-      value: this._view.formatLength(len)
+      length: this._view.formatLength(len),
+      radius: this._view.formatLength(geom.r),
+      angle: this._view.formatAngle(angleDeg),
+      chord: this._view.formatLength(chord)
     })
   }
 
@@ -3228,26 +3318,46 @@ export class AcExMeasureController {
     }
 
     this._points.push(point.clone())
-    this._previewArea(point, clientX, clientY)
+    this._previewArea(null)
     return true
   }
 
-  /** Area tool live preview (outline + fill canvas + label). @internal */
-  private _previewArea(
-    point: THREE.Vector2,
-    clientX: number,
-    clientY: number
-  ): void {
+  /**
+   * Area tool preview: confirmed vertices, plus optional rubber-band / fill to
+   * a live cursor sample. Value capsule sits at the polygon centroid.
+   *
+   * @param point - Live cursor in WCS, or `null` for confirmed outline only.
+   * @internal
+   */
+  private _previewArea(point: THREE.Vector2 | null): void {
     if (this._points.length === 0) {
       this._hidePreview()
       return
     }
-    const pts = [...this._points, point]
+    const pts = point != null ? [...this._points, point] : [...this._points]
+    if (pts.length < 2) {
+      this._hidePreview()
+      return
+    }
     this._setPreviewLine(pts)
     if (pts.length >= 3) {
       const area = shoelaceArea(pts)
-      this._showLiveLabel(`${this._view.formatLength(area)}²`, clientX, clientY)
+      if (point != null) {
+        this._syncPreviewBadges([
+          {
+            wcs: centroid(pts),
+            text: `${this._view.formatLength(area)}²`
+          }
+        ])
+      } else {
+        this._syncPreviewBadges([])
+      }
       this._drawPreviewArea(pts)
+    } else {
+      this._syncPreviewBadges([])
+      this._overlayLayer
+        .querySelectorAll('.mlcad-measure-canvas--preview')
+        .forEach(el => el.remove())
     }
     this._requestRender()
   }
