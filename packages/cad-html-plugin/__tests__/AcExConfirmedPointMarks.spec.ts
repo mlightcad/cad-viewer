@@ -2,10 +2,10 @@
  * @jest-environment jsdom
  */
 
-const isMobileOrPad = jest.fn(() => true)
+const isCompactLayout = jest.fn(() => true)
 
-jest.mock('../src/AcExHtmlSimpleViewerUi', () => ({
-  acedIsMobileOrPadUi: () => isMobileOrPad()
+jest.mock('../src/AcExHtmlDrawerSheet', () => ({
+  acExHtmlIsCompactLayout: () => isCompactLayout()
 }))
 
 import { AcExConfirmedPointMarks } from '../src/AcExConfirmedPointMarks'
@@ -13,7 +13,7 @@ import { AcExConfirmedPointMarks } from '../src/AcExConfirmedPointMarks'
 describe('AcExConfirmedPointMarks', () => {
   afterEach(() => {
     document.body.replaceChildren()
-    isMobileOrPad.mockReturnValue(true)
+    isCompactLayout.mockReturnValue(true)
   })
 
   it('renders plus marks on phone/pad and clears them on desktop', () => {
@@ -33,7 +33,7 @@ describe('AcExConfirmedPointMarks', () => {
     expect((els[0] as HTMLElement).style.left).toBe('10px')
     expect((els[0] as HTMLElement).style.top).toBe('20px')
 
-    isMobileOrPad.mockReturnValue(false)
+    isCompactLayout.mockReturnValue(false)
     marks.setWorldPoints([{ x: 5, y: 6 }])
     expect(host.querySelectorAll('.mlcad-confirmed-point-mark')).toHaveLength(0)
   })
