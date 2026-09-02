@@ -140,10 +140,12 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   }
 
   /**
-   * Gets or sets whether a plus-shaped mark should remain at each confirmed
-   * point for the rest of the command (similar to acquired center ticks).
+   * Gets or sets whether a confirmed pick should contribute a plus-shaped mark
+   * while later point prompts in the same command run (similar to acquired
+   * center ticks). Marks appear when the next interactive point prompt starts,
+   * not immediately on confirm, so single-point commands do not flash a mark.
    *
-   * - `undefined` (default): show on phone/pad UI, hide on desktop.
+   * - `undefined` (default): track on phone/pad UI, ignore on desktop.
    * - `true` / `false`: override the platform default.
    *
    * Useful on touch devices where short taps skip the jig preview and users

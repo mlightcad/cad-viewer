@@ -138,7 +138,9 @@ export class AcEdInputManager {
 
   /**
    * Plus marks at confirmed pick points for the active command.
-   * Lives across sequential {@link getPoint} prompts; cleared on command end.
+   * Positions accumulate across sequential {@link getPoint} prompts (including
+   * scripted ones); DOM marks appear only when a later interactive prompt
+   * starts so single-point commands do not flash a mark. Cleared on command end.
    */
   private _confirmedPointMarks: AcEdMarkerManager | null = null
   private _confirmedPointPositions: AcGePoint2dLike[] = []
@@ -1872,8 +1874,14 @@ export class AcEdInputManager {
     const scriptedValue = this.tryGetScriptedPoint(options)
     if (scriptedValue != null) {
       cleanup?.()
-      return Promise.resolve(scriptedValue)
+      // Record for later interactive prompts in the same command; no DOM yet.
+      this.recordConfirmedPointMarkIfNeeded(options, scriptedValue)
+      return scriptedValue
     }
+
+    // Show marks for points confirmed earlier in this command while picking
+    // the next one (avoids a flash when the command ends after a single pick).
+    this.showConfirmedPointMarksIfAny()
 
     const getDynamicValue = (pos: AcGePoint2dLike) => {
       return {
@@ -1895,12 +1903,12 @@ export class AcEdInputManager {
       getDynamicValue,
       drawPreview
     })
-    this.addConfirmedPointMarkIfNeeded(options, value)
+    this.recordConfirmedPointMarkIfNeeded(options, value)
     return value
   }
 
   /**
-   * Whether a confirmed-point plus mark should be shown for this prompt.
+   * Whether a confirmed-point plus mark should be tracked for this prompt.
    *
    * Explicit {@link AcEdPromptPointOptions.showConfirmedPointMark} overrides
    * the phone/pad default.
@@ -1914,15 +1922,24 @@ export class AcEdInputManager {
   }
 
   /**
-   * Appends a plus mark at a confirmed pick when enabled for the prompt.
+   * Records a confirmed pick for later display when enabled for the prompt.
+   * DOM marks are deferred until {@link showConfirmedPointMarksIfAny}.
    */
-  private addConfirmedPointMarkIfNeeded(
+  private recordConfirmedPointMarkIfNeeded(
     options: AcEdPromptPointOptions,
     point: AcGePoint3dLike
   ): void {
     if (!this.shouldShowConfirmedPointMark(options)) return
-    this._confirmedPointMarks ??= new AcEdMarkerManager(this.view)
     this._confirmedPointPositions.push({ x: point.x, y: point.y })
+  }
+
+  /**
+   * Renders plus marks for points already confirmed in this command.
+   * Called at the start of an interactive {@link getPointInternal}.
+   */
+  private showConfirmedPointMarksIfAny(): void {
+    if (this._confirmedPointPositions.length === 0) return
+    this._confirmedPointMarks ??= new AcEdMarkerManager(this.view)
     this._confirmedPointMarks.setHintMarkers(
       this._confirmedPointPositions,
       'plus'
