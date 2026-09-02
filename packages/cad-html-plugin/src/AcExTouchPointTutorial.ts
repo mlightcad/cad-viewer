@@ -1,6 +1,6 @@
-import { acExHtmlIsCompactLayout } from './AcExHtmlDrawerSheet'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import {
+  acedIsMobileOrPadUi,
   acuiLocalIsoDate,
   acuiShouldShowTouchPointTutorialFromPrefs,
   AcUiTouchPointTutorial,
@@ -40,10 +40,13 @@ function writePrefs(prefs: AcUiTouchPointTutorialPrefs): void {
 
 /**
  * Whether the precise point-pick tutorial should appear in exported HTML.
+ *
+ * Uses the same phone/pad gate as the live viewer ({@link acedIsMobileOrPadUi})
+ * so wide tablets and touch devices are included, not only `max-width: 960px`.
  */
 export function acExShouldShowTouchPointTutorial(): boolean {
   return acuiShouldShowTouchPointTutorialFromPrefs(
-    acExHtmlIsCompactLayout,
+    acedIsMobileOrPadUi,
     readPrefs()
   )
 }
@@ -54,10 +57,16 @@ export function acExShouldShowTouchPointTutorial(): boolean {
  */
 export function acExMaybeShowTouchPointTutorial(
   i18n: AcExHtmlI18n,
-  host: HTMLElement = document.body
+  host: HTMLElement = document.getElementById('mlcad-canvas-host') ??
+    document.body
 ): Promise<void> {
+  const theme =
+    document.documentElement.getAttribute('data-mlcad-theme') === 'light'
+      ? ('light' as const)
+      : ('dark' as const)
   return AcUiTouchPointTutorial.maybeShow({
     host,
+    theme,
     longPressMs: ACEX_TOUCH_POINT_LONG_PRESS_MS,
     labels: {
       title: i18n.t('touchPointTutorial.title'),

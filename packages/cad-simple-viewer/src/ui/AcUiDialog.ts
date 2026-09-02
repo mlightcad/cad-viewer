@@ -15,7 +15,9 @@ import {
 export interface AcUiDialogOptions {
   /**
    * Host element that receives the backdrop.
-   * @defaultValue `document.body`
+   *
+   * Prefer the canvas / view container so vertical centering uses the drawing
+   * area height (excluding ribbon and status bar). Defaults to `document.body`.
    */
   host?: HTMLElement
 
@@ -84,6 +86,10 @@ export interface AcUiDialogOptions {
 /**
  * Framework-free modal dialog base built with pure HTML and CSS.
  *
+ * The backdrop fills {@link AcUiDialogOptions.host} (typically the canvas
+ * container) and centers the panel in that box so ribbon / status chrome
+ * outside the host are not used for vertical centering.
+ *
  * Subclasses fill {@link bodyEl} / {@link footerEl} and call {@link show}.
  */
 export class AcUiDialog {
@@ -110,6 +116,9 @@ export class AcUiDialog {
   /** Title text element in the header. */
   protected readonly titleEl: HTMLDivElement
 
+  private readonly host: HTMLElement
+  /** Previous inline `position` on {@link host}, restored on close when we set it. */
+  private readonly hostPositionRestore: string | null
   private readonly onKeyDown: (event: KeyboardEvent) => void
   private readonly closeOnEscape: boolean
   private readonly previouslyFocused: HTMLElement | null
@@ -126,6 +135,9 @@ export class AcUiDialog {
     AcUiDialog.ensureStyles()
 
     const host = options.host ?? document.body
+    this.host = host
+    this.hostPositionRestore = AcUiDialog.ensureHostContainingBlock(host)
+
     const titleId =
       options.titleId ?? `ml-ui-dialog-title-${AcUiDialog.nextTitleId++}`
     this.closeOnEscape = options.closeOnEscape ?? true
@@ -231,6 +243,9 @@ export class AcUiDialog {
     if (this.backdrop.parentNode) {
       this.backdrop.parentNode.removeChild(this.backdrop)
     }
+    if (this.hostPositionRestore !== null) {
+      this.host.style.position = this.hostPositionRestore
+    }
     this.previouslyFocused?.focus()
     this.resolve?.()
     this.resolve = undefined
@@ -294,6 +309,20 @@ export class AcUiDialog {
   }
 
   /**
+   * Ensures {@link host} is a positioned containing block for the absolute
+   * backdrop. Returns the previous inline `position` when it was changed, or
+   * `null` when the host already established a containing block.
+   */
+  private static ensureHostContainingBlock(host: HTMLElement): string | null {
+    // Browsers report `static`; some test environments leave this empty.
+    const position = getComputedStyle(host).position || 'static'
+    if (position !== 'static') return null
+    const previous = host.style.position
+    host.style.position = 'relative'
+    return previous
+  }
+
+  /**
    * Injects shared dialog chrome CSS once per document.
    */
   static ensureStyles(): void {
@@ -303,7 +332,7 @@ export class AcUiDialog {
     style.id = AcUiDialog.styleId
     style.textContent = `
 .ml-ui-dialog-backdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 10050;
   display: flex;
@@ -336,7 +365,6 @@ export class AcUiDialog {
   .ml-ui-dialog:not(.${AcUiDialog.compactClass}) {
     width: 100%;
     max-width: none;
-    border-radius: 0;
     padding-left: max(12px, env(safe-area-inset-left, 0px));
     padding-right: max(12px, env(safe-area-inset-right, 0px));
   }

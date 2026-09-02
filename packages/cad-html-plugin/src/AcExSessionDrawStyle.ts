@@ -256,7 +256,8 @@ export function setupAcExSessionDrawStyle(
     try {
       const initial = aciIndexOf(cssToColor(currentStyle.color))
       const index = await AcUiAciColorDialog.open({
-        host: document.body,
+        host:
+          document.getElementById('mlcad-canvas-host') ?? document.body,
         theme: htmlUiTheme(),
         initialIndex: initial ?? null,
         labels: colorDialogLabels()

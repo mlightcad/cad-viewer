@@ -5,6 +5,7 @@
  * offline HTML viewer (via {@link AcExHtmlSimpleViewerUi}).
  */
 
+import type { AcEdUiTheme } from '../editor/global/AcEdUiTheme'
 import { AcUiDialog } from './AcUiDialog'
 
 /** DOM id of tutorial-specific styles. */
@@ -78,6 +79,8 @@ export interface AcUiTouchPointTutorialPrefs {
 export interface AcUiTouchPointTutorialConfig {
   /** Backdrop host; defaults to `document.body`. */
   host?: HTMLElement
+  /** Theme tokens; defaults to {@link resolveUiTheme} from the host. */
+  theme?: AcEdUiTheme
   labels: AcUiTouchPointTutorialLabels
   /** Long-press delay shown in the demo animation (ms). */
   longPressMs: number
@@ -126,6 +129,7 @@ export class AcUiTouchPointTutorial extends AcUiDialog {
     super({
       host: config.host,
       title: config.labels.title,
+      theme: config.theme,
       layoutWidth: false,
       showCloseButton: false,
       titleAlign: 'center',
