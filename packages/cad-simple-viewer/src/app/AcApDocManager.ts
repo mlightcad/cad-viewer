@@ -3,10 +3,12 @@ import {
   AcCmEventManager,
   AcDbDatabase,
   AcDbFileType,
-  acdbHostApplicationServices,
   AcDbOpenDatabaseOptions,
+  AcDbRenderingCache,
   AcDbSysVarManager,
   AcGeBox2d,
+  acdbHostApplicationServices,
+  acdbSetHostApplicationServicesProvider,
   log
 } from '@mlightcad/data-model'
 import { FontManager } from '@mlightcad/mtext-renderer'
@@ -512,6 +514,7 @@ export class AcApDocManager {
     // On-demand loads go through FontManager's loader, not AcApFontLoader.
     FontManager.instance.baseUrl = fontsUrl
     acdbHostApplicationServices().workingDatabase = doc.database
+    acdbSetHostApplicationServicesProvider(() => acdbHostApplicationServices())
 
     this._commandManager = new AcEdCommandStack()
     this.registerCommands()
@@ -1978,6 +1981,16 @@ export class AcApDocManager {
       resetMarkupSession()
       AcApZoomCmd.clearOriginalViews()
       this.openProgressView.clear()
+      // Block renderings are cached by block name only (no document id), so a
+      // previous open may leave stale geometry in the cache — e.g. a
+      // SolidWorks title block whose ATTDEF defaults were still visible then.
+      // Reopening the same drawing in one session would otherwise re-render
+      // the stale block and keep the duplicate attribute text on screen even
+      // after the database flags were normalized. Drop the scene first so the
+      // cache disposal never touches objects still referenced by the view,
+      // then clear the per-document block cache before every open so blocks
+      // rebuild from the current database state.
+      AcDbRenderingCache.instance.clear()
     }
     this.openProgressView.bindDrawDatabase(this.context.doc.database)
     // Progressive convert/paint is gated by this flag (time-sliced yields in
