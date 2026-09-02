@@ -37,6 +37,7 @@ import {
 } from '../handler'
 import { AcEdPointInputContext } from '../handler/AcEdInputHandler'
 import { AcEdKeywordHandler } from '../handler/AcEdKeywordHandler'
+import { AcEdMarkerManager } from '../marker'
 import {
   AcEdPromptAngleOptions,
   AcEdPromptBoxOptions,
@@ -135,6 +136,14 @@ export class AcEdInputManager {
   /** Stores last confirmed point from getPoint() or getBox() */
   private lastPoint: AcGePoint2dLike | null = null
 
+  /**
+   * Plus marks at confirmed pick points for the active command.
+   * Lives across sequential {@link getPoint} prompts; cleared on command end.
+   */
+  private _confirmedPointMarks: AcEdMarkerManager | null = null
+  private _confirmedPointPositions: AcGePoint2dLike[] = []
+  private readonly _boundRepositionConfirmedPointMarks: () => void
+
   /** Command line UI component */
   private _commandLine: AcEdCommandLine
   /** Phone/pad prompt bar + session panel (hidden on desktop). */
@@ -182,6 +191,8 @@ export class AcEdInputManager {
    */
   constructor(view: AcEdBaseView, editorEvents: AcEditor['events']) {
     this.view = view
+    this._boundRepositionConfirmedPointMarks = () =>
+      this.repositionConfirmedPointMarks()
     this.injectCSS()
     // Newly added UI overlays (command line, previews) are container-local.
     // Ensure absolute-positioned children are anchored to this view only.
@@ -210,9 +221,17 @@ export class AcEdInputManager {
       }
       this._sessionAccessoryController.remountActiveSessionAccessory()
     })
+    this.view.events.viewChanged.addEventListener(
+      this._boundRepositionConfirmedPointMarks
+    )
+    this.view.events.viewResize.addEventListener(
+      this._boundRepositionConfirmedPointMarks
+    )
     // Safety net: if a prompt failed to clean up, close the mobile session
     // panel when the command finishes so the bottom chrome cannot linger.
+    // Also clear confirmed-point plus marks for the finished command.
     editorEvents.commandEnded.addEventListener(() => {
+      this.clearConfirmedPointMarks()
       if (this._mobileChrome.isOpen) {
         this.endMobilePrompt()
       }
@@ -1867,7 +1886,7 @@ export class AcEdInputManager {
     }
 
     const handler = new AcEdPointHandler(options)
-    return this.makeFloatingInputPromise<AcGePoint3dLike>({
+    const value = await this.makeFloatingInputPromise<AcGePoint3dLike>({
       inputCount: 2,
       promptOptions: options,
       disableOSnap: options.disableOSnap,
@@ -1876,6 +1895,50 @@ export class AcEdInputManager {
       getDynamicValue,
       drawPreview
     })
+    this.addConfirmedPointMarkIfNeeded(options, value)
+    return value
+  }
+
+  /**
+   * Whether a confirmed-point plus mark should be shown for this prompt.
+   *
+   * Explicit {@link AcEdPromptPointOptions.showConfirmedPointMark} overrides
+   * the phone/pad default.
+   */
+  private shouldShowConfirmedPointMark(
+    options: AcEdPromptPointOptions
+  ): boolean {
+    const override = options.showConfirmedPointMark
+    if (override !== undefined) return override
+    return acedIsMobileOrPadUi()
+  }
+
+  /**
+   * Appends a plus mark at a confirmed pick when enabled for the prompt.
+   */
+  private addConfirmedPointMarkIfNeeded(
+    options: AcEdPromptPointOptions,
+    point: AcGePoint3dLike
+  ): void {
+    if (!this.shouldShowConfirmedPointMark(options)) return
+    this._confirmedPointMarks ??= new AcEdMarkerManager(this.view)
+    this._confirmedPointPositions.push({ x: point.x, y: point.y })
+    this._confirmedPointMarks.setHintMarkers(
+      this._confirmedPointPositions,
+      'plus'
+    )
+  }
+
+  /** Repositions confirmed-point marks after pan/zoom. */
+  private repositionConfirmedPointMarks(): void {
+    this._confirmedPointMarks?.repositionHints()
+  }
+
+  /** Clears all confirmed-point plus marks for the finished command. */
+  private clearConfirmedPointMarks(): void {
+    this._confirmedPointMarks?.clear()
+    this._confirmedPointMarks = null
+    this._confirmedPointPositions = []
   }
 
   /**

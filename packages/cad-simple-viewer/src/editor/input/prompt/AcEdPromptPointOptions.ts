@@ -14,6 +14,7 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   private _useDashedLine: boolean = false
   private _allowNone: boolean = false
   private _disableOSnap: boolean = false
+  private _showConfirmedPointMark?: boolean
   private _defaultValue?: AcGePoint3d
   private _useDefaultValue: boolean = false
 
@@ -135,6 +136,25 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   set disableOSnap(flag: boolean) {
     if (!this.isReadOnly) {
       this._disableOSnap = flag
+    }
+  }
+
+  /**
+   * Gets or sets whether a plus-shaped mark should remain at each confirmed
+   * point for the rest of the command (similar to acquired center ticks).
+   *
+   * - `undefined` (default): show on phone/pad UI, hide on desktop.
+   * - `true` / `false`: override the platform default.
+   *
+   * Useful on touch devices where short taps skip the jig preview and users
+   * otherwise cannot see points they have already picked.
+   */
+  get showConfirmedPointMark(): boolean | undefined {
+    return this._showConfirmedPointMark
+  }
+  set showConfirmedPointMark(flag: boolean | undefined) {
+    if (!this.isReadOnly) {
+      this._showConfirmedPointMark = flag
     }
   }
 }

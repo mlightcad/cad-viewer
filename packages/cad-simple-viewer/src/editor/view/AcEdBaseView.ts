@@ -1153,7 +1153,13 @@ export abstract class AcEdBaseView {
     this._osnapResolver.clearAcquiredCenters()
   }
 
-  protected onWindowResize() {
+  /**
+   * Updates {@link width} / {@link height} from the size callback or canvas
+   * client size without notifying listeners. Subclasses that must sync
+   * projection (camera frustum, renderer buffer) before notifying should call
+   * this first, then dispatch {@link events.viewResize} themselves.
+   */
+  protected refreshViewSize() {
     if (this._calculateSizeCallback) {
       const { width, height } = this._calculateSizeCallback()
       this._width = Math.max(1, Math.floor(width))
@@ -1162,6 +1168,10 @@ export abstract class AcEdBaseView {
       this._width = Math.max(1, Math.floor(this._canvas.clientWidth))
       this._height = Math.max(1, Math.floor(this._canvas.clientHeight))
     }
+  }
+
+  protected onWindowResize() {
+    this.refreshViewSize()
     this.events.viewResize.dispatch({
       width: this._width,
       height: this._height

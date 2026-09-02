@@ -2301,11 +2301,21 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   protected onWindowResize() {
-    super.onWindowResize()
+    // Refresh size first, then sync WebGL / CSS2D / frustum before notifying
+    // listeners so `worldToScreen` consumers see the new projection.
+    this.refreshViewSize()
     this._renderer.setSize(this.width, this.height)
     this._css2dRenderer.setSize(this.width, this.height)
     this._layoutViewManager.resize(this.width, this.height)
     this._isDirty = true
+    this.events.viewResize.dispatch({
+      width: this.width,
+      height: this.height
+    })
+    // CSS2D badges reproject via `_isDirty`. Canvas overlays (measure /
+    // markup strokes, live preview) paint with `worldToScreen` and listen to
+    // `viewChanged` only — resize must notify them too.
+    this.events.viewChanged.dispatch()
   }
 
   private animate = () => {

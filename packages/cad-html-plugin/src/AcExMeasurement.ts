@@ -9,6 +9,7 @@ import { AcGeCircArc2d, AcGeMathUtil } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import type { AcExCommandSessionUiState } from './AcExCommandSessionPanel'
+import { AcExConfirmedPointMarks } from './AcExConfirmedPointMarks'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import {
@@ -1073,6 +1074,8 @@ export class AcExMeasureController {
     point: THREE.Vector2
     snap: AcExOsnapPoint | null
   } | null = null
+  /** Phone/pad plus marks at confirmed in-progress pick points. */
+  private readonly _confirmedPointMarks: AcExConfirmedPointMarks
 
   /**
    * Creates HTML overlay layers in `root` for measurement graphics.
@@ -1108,6 +1111,11 @@ export class AcExMeasureController {
       void this._handleImportFile()
     })
     this._root.appendChild(this._fileInput)
+
+    this._confirmedPointMarks = new AcExConfirmedPointMarks(
+      this._root,
+      pos => this._confirmedPointMarkScreen(pos)
+    )
 
     this._updateVisibilityToolbar()
   }
@@ -1295,6 +1303,7 @@ export class AcExMeasureController {
     this._osnapCache = null
     this._hidePreview()
     this._onOsnapMarker(null, null)
+    this._confirmedPointMarks.clear()
     this._updateToolbarActive()
     this._syncGripPointerEvents()
     this._updateIdleStatus()
@@ -1316,6 +1325,7 @@ export class AcExMeasureController {
     }
     this._refreshActivePreview()
     this._syncSessionUi()
+    this._syncConfirmedPointMarks()
     this._requestRender()
     return true
   }
@@ -1638,6 +1648,7 @@ export class AcExMeasureController {
         this._lastOverlaySyncKey = overlayKey
       }
       this._refreshActivePreview()
+      this._syncConfirmedPointMarks()
     } finally {
       this._inOverlaySync = false
       this._overlayRootRect = null
@@ -1685,6 +1696,7 @@ export class AcExMeasureController {
     }
     this._livePointer = false
     this._syncSessionUi()
+    this._syncConfirmedPointMarks()
     return handled
   }
 
@@ -3694,6 +3706,31 @@ export class AcExMeasureController {
   } {
     const s = this._view.wcsToScreen(new THREE.Vector2(p.x, p.y))
     return { x: s.x, y: s.y }
+  }
+
+  /**
+   * Host-relative CSS pixels for a confirmed-point plus mark.
+   * @internal
+   */
+  private _confirmedPointMarkScreen(p: { x: number; y: number }): {
+    x: number
+    y: number
+  } {
+    const screen = this._wcsToScreenPoint(p)
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
+    return { x: screen.x - rootRect.left, y: screen.y - rootRect.top }
+  }
+
+  /**
+   * Shows or clears phone/pad plus marks for in-progress `_points`.
+   * @internal
+   */
+  private _syncConfirmedPointMarks(): void {
+    if (!this._mode || this._points.length === 0) {
+      this._confirmedPointMarks.clear()
+      return
+    }
+    this._confirmedPointMarks.setWorldPoints(this._points)
   }
 
   /** View-synced canvas stroke width for the current camera. @internal */
