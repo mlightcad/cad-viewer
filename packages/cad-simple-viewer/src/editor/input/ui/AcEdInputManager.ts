@@ -10,6 +10,7 @@ import {
 
 import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
+import { AcUiTouchPointTutorialDialog } from '../../../ui/AcUiTouchPointTutorialDialog'
 import type {
   AcEdSessionAccessory,
   AcEdSessionAccessoryHostInfo
@@ -332,6 +333,7 @@ export class AcEdInputManager {
     keywords?: AcEdMobileKeywordChip[]
     allowNone: boolean
     showMetrics: boolean
+    touchPointTutorial?: boolean
     onConfirm: () => void
     onCancel: () => void
     onKeyword: (globalName: string) => void
@@ -352,6 +354,9 @@ export class AcEdInputManager {
       }
     )
     this._sessionAccessoryController.remountActiveSessionAccessory()
+    if (args.touchPointTutorial) {
+      void AcUiTouchPointTutorialDialog.maybeShow(this.view.container)
+    }
   }
 
   /** Closes the mobile command chrome and restores desktop CLI visibility. */
@@ -2311,6 +2316,7 @@ export class AcEdInputManager {
         ),
         allowNone,
         showMetrics,
+        touchPointTutorial: true,
         onConfirm: () => noneRejector(),
         onCancel: () => rejector(),
         onKeyword: keywordRejector

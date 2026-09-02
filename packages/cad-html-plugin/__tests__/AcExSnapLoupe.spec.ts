@@ -50,6 +50,16 @@ describe('AcExTouchPointSession', () => {
     expect(onLongPress).toHaveBeenCalledTimes(1)
     expect(session.end()).toBe('commit')
   })
+
+  it('uses one second as the default long-press delay', () => {
+    const onLongPress = jest.fn()
+    const session = new AcExTouchPointSession()
+    session.start(7, 1, 2, onLongPress)
+    jest.advanceTimersByTime(999)
+    expect(onLongPress).not.toHaveBeenCalled()
+    jest.advanceTimersByTime(1)
+    expect(onLongPress).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('acExLoupeLocalFromCanvasDelta', () => {

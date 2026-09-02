@@ -1,7 +1,7 @@
 /**
  * Long-press delay before the snap loupe appears, in milliseconds.
  */
-export const ACED_TOUCH_POINT_LONG_PRESS_MS = 350
+export const ACED_TOUCH_POINT_LONG_PRESS_MS = 1000
 
 /**
  * Pointer movement in CSS pixels that cancels a pending long-press so the

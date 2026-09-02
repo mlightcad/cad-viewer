@@ -57,6 +57,18 @@ export interface AcUiDialogOptions {
   closeOnBackdrop?: boolean
 
   /**
+   * Whether the header close (×) button is shown.
+   * @defaultValue `true`
+   */
+  showCloseButton?: boolean
+
+  /**
+   * Horizontal alignment of the title in the header.
+   * @defaultValue `"start"`
+   */
+  titleAlign?: 'start' | 'center'
+
+  /**
    * Whether pressing Escape closes the dialog.
    * @defaultValue `true`
    */
@@ -147,21 +159,26 @@ export class AcUiDialog {
 
     const header = document.createElement('div')
     header.className = 'ml-ui-dialog-header'
+    if (options.titleAlign === 'center') {
+      header.classList.add('ml-ui-dialog-header--center')
+    }
 
     this.titleEl = document.createElement('div')
     this.titleEl.id = titleId
     this.titleEl.className = 'ml-ui-dialog-title'
     this.titleEl.textContent = options.title
 
-    const closeBtn = document.createElement('button')
-    closeBtn.type = 'button'
-    closeBtn.className = 'ml-ui-dialog-close'
-    closeBtn.setAttribute('aria-label', options.closeLabel ?? 'Close')
-    closeBtn.textContent = '×'
-    closeBtn.addEventListener('click', () => this.close())
-
     header.appendChild(this.titleEl)
-    header.appendChild(closeBtn)
+
+    if (options.showCloseButton !== false) {
+      const closeBtn = document.createElement('button')
+      closeBtn.type = 'button'
+      closeBtn.className = 'ml-ui-dialog-close'
+      closeBtn.setAttribute('aria-label', options.closeLabel ?? 'Close')
+      closeBtn.textContent = '×'
+      closeBtn.addEventListener('click', () => this.close())
+      header.appendChild(closeBtn)
+    }
 
     this.bodyEl = document.createElement('div')
     this.bodyEl.className = 'ml-ui-dialog-body'
@@ -330,6 +347,15 @@ export class AcUiDialog {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 14px;
+}
+
+.ml-ui-dialog-header--center {
+  justify-content: center;
+}
+
+.ml-ui-dialog-header--center .ml-ui-dialog-title {
+  flex: 1;
+  text-align: center;
 }
 
 .ml-ui-dialog-title {

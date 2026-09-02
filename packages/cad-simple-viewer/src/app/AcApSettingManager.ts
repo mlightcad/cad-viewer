@@ -47,6 +47,13 @@ export interface AcApSettings {
   fontMapping: AcApFontMapping
   /** Object snap modes */
   osnapModes: number
+  /** When true, never show the mobile precise point-pick tutorial again. */
+  hideTouchPointTutorial: boolean
+  /**
+   * ISO date (`YYYY-MM-DD`) for which the tutorial is snoozed via
+   * "don't remind me today". Cleared automatically when the date passes.
+   */
+  touchPointTutorialSnoozeDate: string | null
 }
 
 /**
@@ -92,7 +99,9 @@ const DEFAULT_VALUES: AcApSettings = {
     AcDbOsnapMode.Quadrant,
     AcDbOsnapMode.Intersection,
     AcDbOsnapMode.Nearest
-  ])
+  ]),
+  hideTouchPointTutorial: false,
+  touchPointTutorialSnoozeDate: null
 }
 
 /** Default localStorage key for persisting user preferences */

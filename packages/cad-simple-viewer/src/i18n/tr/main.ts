@@ -77,5 +77,13 @@ export default {
     rgb: 'RGB: ',
     input: 'Renk',
     inputPlaceholder: '1-255 veya #RRGGBB'
+  },
+  touchPointTutorial: {
+    title: 'Noktalar nasıl hassas seçilir?',
+    description:
+      'Ekranda yaklaşık 1 saniye basılı tutun. Parmağınızın üstünde bir artı belirir ve hareket ederken geometriye yapışarak daha doğru seçim yapmanızı sağlar.',
+    snoozeToday: 'Bugün tekrar hatırlatma',
+    hideForever: 'Bir daha hatırlatma',
+    ok: 'Anladım'
   }
 }
