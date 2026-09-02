@@ -1,4 +1,5 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
+import { AcDbLinearUnits } from '@mlightcad/data-model'
 
 import {
   formatMeasurementAngle,
@@ -12,13 +13,16 @@ import {
   setMeasurementUnitOverride
 } from '../src/util/AcApMeasurementUnits'
 
-function mockDb(): AcDbDatabase {
+function mockDb(options?: {
+  insunits?: number
+  lunits?: number
+}): AcDbDatabase {
   const db = {
-    _lunits: 2,
+    _lunits: options?.lunits ?? 2,
     _luprec: 4,
     _aunits: 0,
     _auprec: 0,
-    insunits: 4,
+    insunits: options?.insunits ?? 4,
     get lunits() {
       return this._lunits
     },
@@ -33,8 +37,12 @@ function mockDb(): AcDbDatabase {
     },
     formatter: {
       formatLength(value: number, options?: { showUnits?: boolean }) {
-        // insunits = 4 is millimeters, mirroring the real formatter's suffix.
-        const suffix = options?.showUnits === false ? '' : ' mm'
+        const suffix =
+          options?.showUnits === false
+            ? ''
+            : db.insunits === 4
+              ? ' mm'
+              : ''
         return `L${Number(value).toFixed(db._luprec)}:${db._lunits}${suffix}`
       },
       formatAngle(radians: number) {
@@ -125,5 +133,38 @@ describe('AcApMeasurementUnits', () => {
     })
 
     expect(formatMeasurementArea(db, 3125000)).toBe('L3125000.0000:2 mm²')
+  })
+
+  it('skips conversion when drawing INSUNITS is undefined (0)', () => {
+    const db = mockDb({ insunits: 0 })
+    setMeasurementUnitOverride({ lengthUnit: 6 })
+
+    expect(formatMeasurementLength(db, 1000)).toBe('L1000.0000:2')
+    expect(formatMeasurementArea(db, 1000)).toBe('L1000.0000:2²')
+  })
+
+  it('uses decimal length format when converting with architectural LUNITS', () => {
+    const db = mockDb({ lunits: AcDbLinearUnits.Architectural })
+    setMeasurementUnitOverride({ lengthUnit: 6 })
+
+    expect(formatMeasurementLength(db, 1000)).toBe('L1.0000:2 m')
+  })
+
+  it('converts from feet drawing units to millimeters', () => {
+    const db = mockDb({ insunits: 2 })
+    setMeasurementUnitOverride({ lengthUnit: 4 })
+
+    expect(formatMeasurementLength(db, 1)).toBe('L304.8000:2 mm')
+  })
+
+  it('restores follow-drawing length unit after reset', () => {
+    const db = mockDb()
+    setMeasurementUnitOverride({ lengthUnit: 6 })
+    resetMeasurementUnitOverride()
+
+    expect(getEffectiveMeasurementUnits(db).lengthUnit).toBe(
+      MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING
+    )
+    expect(formatMeasurementLength(db, 1000)).toBe('L1000.0000:2 mm')
   })
 })

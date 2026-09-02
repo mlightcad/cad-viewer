@@ -1,4 +1,8 @@
-import type { AcDbDatabase, AcDbFormatterOptions } from '@mlightcad/data-model'
+import {
+  AcDbLinearUnits,
+  type AcDbDatabase,
+  type AcDbFormatterOptions
+} from '@mlightcad/data-model'
 
 /** Linear/angular unit settings used when formatting measurement labels. */
 export interface AcApMeasurementUnits {
@@ -194,14 +198,34 @@ function hasEffectiveUnitOverride(db: AcDbDatabase): boolean {
   )
 }
 
+/** LUNITS values that assume drawing INSUNITS, not arbitrary physical units. */
+function isDrawingNativeLengthFormat(lunits: number): boolean {
+  return (
+    lunits === AcDbLinearUnits.Architectural ||
+    lunits === AcDbLinearUnits.Engineering
+  )
+}
+
 /**
  * Run `fn` with the formatter reading effective measurement units.
  * Drawing system variables are not changed.
  */
-function withMeasurementFormatContext<T>(db: AcDbDatabase, fn: () => T): T {
-  if (!hasEffectiveUnitOverride(db)) return fn()
-
+function withMeasurementFormatContext<T>(
+  db: AcDbDatabase,
+  fn: () => T,
+  formatPatch?: { forceDecimalLength?: boolean }
+): T {
   const units = getEffectiveMeasurementUnits(db)
+  const lunitsForFormat =
+    formatPatch?.forceDecimalLength &&
+    isDrawingNativeLengthFormat(units.lunits)
+      ? AcDbLinearUnits.Decimal
+      : units.lunits
+  const needsPatch =
+    hasEffectiveUnitOverride(db) || lunitsForFormat !== units.lunits
+
+  if (!needsPatch) return fn()
+
   const header = asUnitHeader(db)
   const prev = {
     lunits: header._lunits,
@@ -209,7 +233,7 @@ function withMeasurementFormatContext<T>(db: AcDbDatabase, fn: () => T): T {
     aunits: header._aunits,
     auprec: header._auprec
   }
-  header._lunits = units.lunits
+  header._lunits = lunitsForFormat
   header._luprec = units.luprec
   header._aunits = units.aunits
   header._auprec = units.auprec
@@ -227,23 +251,41 @@ function withMeasurementFormatContext<T>(db: AcDbDatabase, fn: () => T): T {
 function formatMeasurementLengthRaw(
   db: AcDbDatabase,
   value: number,
-  options: AcDbFormatterOptions = MEASUREMENT_LENGTH_FORMAT_OPTIONS
+  options: AcDbFormatterOptions = MEASUREMENT_LENGTH_FORMAT_OPTIONS,
+  formatPatch?: { forceDecimalLength?: boolean }
 ): string {
-  return withMeasurementFormatContext(db, () =>
-    db.formatter.formatLength(value, options)
+  return withMeasurementFormatContext(
+    db,
+    () => db.formatter.formatLength(value, options),
+    formatPatch
   )
+}
+
+/** Merge caller flags with converted-length defaults (units suffix always off). */
+function convertedLengthFormatOptions(
+  options: AcDbFormatterOptions
+): AcDbFormatterOptions {
+  return {
+    ...MEASUREMENT_CONVERTED_LENGTH_FORMAT_OPTIONS,
+    ...options,
+    showUnits: false
+  }
 }
 
 /**
  * Length unit code to convert measurement values to, or `undefined` when labels
  * should stay in drawing units (no override selected, the override equals the
- * drawing's INSUNITS, or the follow-drawing sentinel is active).
+ * drawing's INSUNITS, INSUNITS is undefined, or the follow-drawing sentinel is
+ * active).
  */
 function convertedLengthUnit(db: AcDbDatabase): number | undefined {
+  const fromUnit = db.insunits ?? 0
+  if (fromUnit === 0) return undefined
+
   const target = measurementUnitOverride.lengthUnit
   if (
     target == null ||
-    target === db.insunits ||
+    target === fromUnit ||
     target === MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING
   )
     return undefined
@@ -261,32 +303,36 @@ export function formatMeasurementLength(
     return formatMeasurementLengthRaw(db, value, options)
   }
 
-  const scaled = convertLengthValue(value, db.insunits ?? 0, target)
+  const fromUnit = db.insunits ?? 0
+  const scaled = convertLengthValue(value, fromUnit, target)
   const text = formatMeasurementLengthRaw(
     db,
     scaled,
-    MEASUREMENT_CONVERTED_LENGTH_FORMAT_OPTIONS
+    convertedLengthFormatOptions(options),
+    { forceDecimalLength: true }
   )
   const symbol = measurementLengthUnitSymbol(target)
   return symbol ? `${text} ${symbol}` : text
 }
 
 /** Format an area using effective measurement units (length unit squared). */
-export function formatMeasurementArea(db: AcDbDatabase, value: number): string {
+export function formatMeasurementArea(
+  db: AcDbDatabase,
+  value: number,
+  options: AcDbFormatterOptions = MEASUREMENT_LENGTH_FORMAT_OPTIONS
+): string {
   const target = convertedLengthUnit(db)
   if (target == null) {
-    return `${formatMeasurementLengthRaw(
-      db,
-      value,
-      MEASUREMENT_LENGTH_FORMAT_OPTIONS
-    )}²`
+    return `${formatMeasurementLengthRaw(db, value, options)}²`
   }
 
-  const scaled = convertAreaValue(value, db.insunits ?? 0, target)
+  const fromUnit = db.insunits ?? 0
+  const scaled = convertAreaValue(value, fromUnit, target)
   const text = formatMeasurementLengthRaw(
     db,
     scaled,
-    MEASUREMENT_CONVERTED_LENGTH_FORMAT_OPTIONS
+    convertedLengthFormatOptions(options),
+    { forceDecimalLength: true }
   )
   const symbol = measurementLengthUnitSymbol(target)
   return symbol ? `${text} ${symbol}²` : `${text}²`

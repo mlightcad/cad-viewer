@@ -40,12 +40,12 @@ import {
   isMarkupVisible,
   isMeasurementVisible,
   markupColorToCss,
+  MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING,
   refreshMeasurementValueLabels,
   setMarkupDrawColor,
   setMarkupDrawFontSize,
   setMeasurementUnitOverride,
-  subscribeMeasurementSelection,
-  MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING
+  subscribeMeasurementSelection
 } from '@mlightcad/cad-simple-viewer'
 import {
   AcCmColor,
