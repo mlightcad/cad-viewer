@@ -23,6 +23,7 @@ import {
   measurementFocusBox
 } from './AcApMeasurementGeometry'
 import { runMeasurementEdit } from './AcApMeasurementHistory'
+import { republishMeasurement } from './AcApMeasurementRepublish'
 import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
 import type {
   AcApMeasurementRecord,
@@ -461,6 +462,37 @@ export function resetMeasurementStyleState(): void {
   selectedMeasurementId = undefined
   notifyMeasurementSelection()
   notifyMeasurementsChanged()
+}
+
+/** Committed measurements captured before a regen-style view clear. */
+let regenSnapshot: AcApMeasurementRecord[] | undefined
+
+/**
+ * Snapshot committed measurements before a view-clear redraw so the overlays
+ * can be re-published once the scene is rebuilt.
+ *
+ * REGEN, current-layer changes and the LWDISPLAY toggle discard every HTML
+ * transient group (along with the only in-memory copy of each measurement
+ * record), so without a snapshot the annotations are lost for the session.
+ */
+export function snapshotMeasurementsForRegen(view: AcTrView2d): void {
+  regenSnapshot = collectMeasurementRecords(view)
+}
+
+/**
+ * Re-publish measurements captured by {@link snapshotMeasurementsForRegen}
+ * after a redraw completed. Consumes the snapshot; a no-op when absent.
+ */
+export function restoreMeasurementsAfterRegen(
+  view: AcTrView2d,
+  db: AcDbDatabase
+): void {
+  const records = regenSnapshot
+  regenSnapshot = undefined
+  if (!records) return
+  for (const record of records) {
+    republishMeasurement(view, db, record)
+  }
 }
 
 /**

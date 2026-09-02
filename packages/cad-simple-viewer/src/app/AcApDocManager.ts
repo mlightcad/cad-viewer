@@ -80,6 +80,10 @@ import {
   acapGetDrawStyleSessionAccessory
 } from '../command/AcApDrawStyleSession'
 import { registerMarkupCommands } from '../command/markup/AcApRegisterMarkupCommands'
+import {
+  restoreMeasurementsAfterRegen,
+  snapshotMeasurementsForRegen
+} from '../command/measure/AcApMeasurementStore'
 import { registerMeasureCommands } from '../command/measure/AcApRegisterMeasureCommands'
 import {
   AcEdCalculateSizeCallback,
@@ -1492,8 +1496,13 @@ export class AcApDocManager {
    * for missed fonts so that the drawing can apply new fonts.
    */
   regen() {
+    snapshotMeasurementsForRegen(this.curView as AcTrView2d)
     this.curView.clear()
     this.context.doc.database.regen()
+    restoreMeasurementsAfterRegen(
+      this.curView as AcTrView2d,
+      this.context.doc.database
+    )
   }
 
   /**
