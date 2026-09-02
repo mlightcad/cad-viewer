@@ -11,6 +11,7 @@
 import * as THREE from 'three'
 
 import type { AcExCommandSessionUiState } from './AcExCommandSessionPanel'
+import { AcExConfirmedPointMarks } from './AcExConfirmedPointMarks'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { acExHtmlIcons } from './AcExHtmlIcons'
 import {
@@ -267,6 +268,8 @@ export class AcExMarkupController {
   private _lastSelectPointer:
     | { t: number; x: number; y: number; id: string }
     | undefined
+  /** Phone/pad plus marks at confirmed in-progress pick points. */
+  private readonly _confirmedPointMarks: AcExConfirmedPointMarks
 
   constructor(options: AcExMarkupControllerOptions) {
     this._root = options.root
@@ -300,6 +303,11 @@ export class AcExMarkupController {
       void this._handleImportFile()
     })
     this._root.appendChild(this._fileInput)
+
+    this._confirmedPointMarks = new AcExConfirmedPointMarks(
+      this._root,
+      pos => this._confirmedPointMarkScreen(pos)
+    )
     this._updateVisibilityToolbar()
   }
 
@@ -420,6 +428,29 @@ export class AcExMarkupController {
   } {
     const s = this._view.wcsToScreen(new THREE.Vector2(p.x, p.y))
     return { x: s.x, y: s.y }
+  }
+
+  /**
+   * Host-relative CSS pixels for a confirmed-point plus mark.
+   */
+  private _confirmedPointMarkScreen(p: { x: number; y: number }): {
+    x: number
+    y: number
+  } {
+    const screen = this._wcsToScreenPoint(p)
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
+    return { x: screen.x - rootRect.left, y: screen.y - rootRect.top }
+  }
+
+  /**
+   * Shows or clears phone/pad plus marks for in-progress `_points`.
+   */
+  private _syncConfirmedPointMarks(): void {
+    if (!this._mode || this._points.length === 0) {
+      this._confirmedPointMarks.clear()
+      return
+    }
+    this._confirmedPointMarks.setWorldPoints(this._points)
   }
 
   private _scaledCanvasLineWidth(
@@ -544,6 +575,7 @@ export class AcExMarkupController {
     this._awaitingInlineText = false
     this._clearPreview()
     this._onOsnapMarker(null, null)
+    this._confirmedPointMarks.clear()
     this._updateToolbarActive()
     this._syncGripPointerEvents()
     this._updateIdleStatus()
@@ -667,6 +699,7 @@ export class AcExMarkupController {
         this._lastOverlaySyncKey = overlayKey
       }
       this._refreshActivePreview()
+      this._syncConfirmedPointMarks()
     } finally {
       this._inOverlaySync = false
       this._overlayRootRect = null
@@ -690,24 +723,35 @@ export class AcExMarkupController {
     this._lastPointer = { x: clientX, y: clientY }
     const point = this._resolvePointerWithOsnap(clientX, clientY)
 
+    let handled = false
     switch (this._mode) {
       case 'arrow':
-        return this._pointerTwoPoint(point, 'arrow')
+        handled = this._pointerTwoPoint(point, 'arrow')
+        break
       case 'rect':
-        return this._pointerTwoPoint(point, 'rect')
+        handled = this._pointerTwoPoint(point, 'rect')
+        break
       case 'cloud':
-        return this._pointerTwoPoint(point, 'cloud')
+        handled = this._pointerTwoPoint(point, 'cloud')
+        break
       case 'circle':
-        return this._pointerCircle(point)
+        handled = this._pointerCircle(point)
+        break
       case 'callout':
-        return this._pointerCallout(point, clientX, clientY)
+        handled = this._pointerCallout(point, clientX, clientY)
+        break
       case 'text':
-        return this._pointerText(point)
+        handled = this._pointerText(point)
+        break
       case 'stamp':
-        return this._pointerStamp(point)
+        handled = this._pointerStamp(point)
+        break
       default:
-        return false
+        handled = false
+        break
     }
+    this._syncConfirmedPointMarks()
+    return handled
   }
 
   handlePointerMove(clientX: number, clientY: number): void {

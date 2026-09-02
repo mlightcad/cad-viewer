@@ -14,6 +14,7 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   private _useDashedLine: boolean = false
   private _allowNone: boolean = false
   private _disableOSnap: boolean = false
+  private _showConfirmedPointMark?: boolean
   private _defaultValue?: AcGePoint3d
   private _useDefaultValue: boolean = false
 
@@ -135,6 +136,27 @@ export class AcEdPromptPointOptions extends AcEdPromptOptions<AcGePoint3d> {
   set disableOSnap(flag: boolean) {
     if (!this.isReadOnly) {
       this._disableOSnap = flag
+    }
+  }
+
+  /**
+   * Gets or sets whether a confirmed pick should contribute a plus-shaped mark
+   * while later point prompts in the same command run (similar to acquired
+   * center ticks). Marks appear when the next interactive point prompt starts,
+   * not immediately on confirm, so single-point commands do not flash a mark.
+   *
+   * - `undefined` (default): track on phone/pad UI, ignore on desktop.
+   * - `true` / `false`: override the platform default.
+   *
+   * Useful on touch devices where short taps skip the jig preview and users
+   * otherwise cannot see points they have already picked.
+   */
+  get showConfirmedPointMark(): boolean | undefined {
+    return this._showConfirmedPointMark
+  }
+  set showConfirmedPointMark(flag: boolean | undefined) {
+    if (!this.isReadOnly) {
+      this._showConfirmedPointMark = flag
     }
   }
 }
