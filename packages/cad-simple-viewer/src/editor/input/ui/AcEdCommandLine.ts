@@ -1,5 +1,6 @@
 import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
+import { acedIsMobileOrPadUi } from '../../global/AcEdUiLayout'
 import { AcEdPromptKeywordOptions } from '../prompt'
 import {
   AcEdCommandLineSessionControl,
@@ -10,6 +11,33 @@ import {
 } from '../session'
 import { AcEdMessageType } from './AcEdMessageType'
 
+/** Marks the host container owning a command line (used to route typed keys). */
+const COMMAND_LINE_HOST_CLASS = 'ml-cli-host'
+
+/**
+ * Host container whose command line was last pointed at.
+ *
+ * Split-view hosts build one command line per view, so a keystroke must be
+ * claimed by exactly one of them: only this host captures typed keys when
+ * sibling command lines exist in the document.
+ */
+let typingHost: HTMLElement | null = null
+let typingHostTrackingBound = false
+
+function bindTypingHostTracking() {
+  if (typingHostTrackingBound) return
+  typingHostTrackingBound = true
+  document.addEventListener(
+    'pointerdown',
+    e => {
+      const target = e.target as HTMLElement | null
+      const host = target?.closest?.(`.${COMMAND_LINE_HOST_CLASS}`)
+      if (host) typingHost = host as HTMLElement
+    },
+    true
+  )
+}
+
 /**
  * AutoCAD-style floating command line with Promise-based execution.
  *
@@ -17,7 +45,9 @@ import { AcEdMessageType } from './AcEdMessageType'
  *  - Floating command bar with left terminal glyph + down toggle and right up toggle
  *  - Command history popup
  *  - Message panel above the bar
- *  - Enter repeats last command if input empty
+ *  - Enter or Space repeats last command if input empty
+ *  - Typed keys reach the input without clicking it first; Esc returns focus
+ *    to the canvas so view shortcuts keep working
  *  - Esc cancels current command
  *  - Inline clickable options
  *  - Keyboard navigation
@@ -50,6 +80,8 @@ export class AcEdCommandLine {
   private activeSession?: AcEdCommandLineSessionControl
   private resizeObserver?: ResizeObserver
   private isPromptActive: boolean = false
+  /** Whether the active session consumes Space as text instead of as Enter. */
+  private spaceInsertsText: boolean = false
   private readonly recentMessages: string[] = []
   private recentHideTimer?: ReturnType<typeof setTimeout>
   private isCommandLifecycleBound: boolean = false
@@ -69,6 +101,7 @@ export class AcEdCommandLine {
     this.createUI()
     this.bindEvents()
     this.bindCommandLifecycleEvents()
+    this.bindTypingCapture()
     this.resizeHandler()
     window.addEventListener('resize', () => this.resizeHandler())
     this.resizeObserver = new ResizeObserver(() => this.resizeHandler())
@@ -145,10 +178,12 @@ export class AcEdCommandLine {
   ): Promise<string> {
     const session = new AcEdKeywordSession(this, options, allowTyping)
     this.activeSession = session
+    this.spaceInsertsText = false
     try {
       return await session.start()
     } finally {
       this.activeSession = undefined
+      this.spaceInsertsText = false
     }
   }
 
@@ -163,6 +198,7 @@ export class AcEdCommandLine {
       mode: AcEdPromptInputMode
       allowNone: boolean
       allowTyping?: boolean
+      spaceInsertsText?: boolean
     }
   ): Promise<AcEdPromptInputResult<T>> {
     const session = new AcEdPromptInputSession(
@@ -174,10 +210,12 @@ export class AcEdCommandLine {
       config.allowTyping ?? true
     )
     this.activeSession = session
+    this.spaceInsertsText = config.spaceInsertsText ?? false
     try {
       return await session.start()
     } finally {
       this.activeSession = undefined
+      this.spaceInsertsText = false
     }
   }
 
@@ -611,6 +649,7 @@ export class AcEdCommandLine {
     this.wrapper.appendChild(this.msgPanel)
 
     this.container.appendChild(this.cliContainer)
+    this.container.classList.add(COMMAND_LINE_HOST_CLASS)
   }
 
   /** Bind event listeners */
@@ -658,30 +697,19 @@ export class AcEdCommandLine {
     })
   }
 
-  /** Handle Enter/Escape keys */
+  /** Handle Enter/Space/Escape keys */
   private handleKeyDown(e: KeyboardEvent) {
     // IME / composition safety (important!)
     if (e.isComposing) return
 
     switch (e.key) {
-      case 'Enter': {
+      case 'Enter':
+      case ' ': {
+        // String prompts that accept spaces need Space as literal text.
+        if (e.key === ' ' && this.spaceInsertsText) return
         e.preventDefault()
         e.stopImmediatePropagation()
-
-        if (this.activeSession) {
-          const handled = this.activeSession.handleEnter(this.getInputText())
-          if (!handled) {
-            this.showMessage(
-              this.localize('main.commandLine.invalidInput', 'Invalid input.'),
-              'warning'
-            )
-          }
-          return
-        }
-
-        this.executeCommand(this.getInputText())
-        this.historyIndex = this.history.length
-        this.updatePopups({ showCmd: false, showMsg: false })
+        this.confirmInput()
         return
       }
 
@@ -692,12 +720,15 @@ export class AcEdCommandLine {
         if (this.activeSession) {
           this.activeSession.handleEscape()
           this.activeSession = undefined
-          return
+        } else {
+          this.clear()
+          this.showMessage(this.localize('main.commandLine.canceled'))
+          this.updatePopups({ showCmd: false, showMsg: false })
         }
 
-        this.clear()
-        this.showMessage(this.localize('main.commandLine.canceled'))
-        this.updatePopups({ showCmd: false, showMsg: false })
+        // Hand focus back to the canvas so view shortcuts (Delete, Ctrl+Z)
+        // are not swallowed by the input afterwards.
+        this.textInput.blur()
         return
       }
 
@@ -724,6 +755,99 @@ export class AcEdCommandLine {
         return
       }
     }
+  }
+
+  /** Commit typed input as a command, or repeat the last one when empty. */
+  private confirmInput() {
+    if (this.activeSession) {
+      const handled = this.activeSession.handleEnter(this.getInputText())
+      if (!handled) {
+        this.showMessage(
+          this.localize('main.commandLine.invalidInput', 'Invalid input.'),
+          'warning'
+        )
+      }
+      return
+    }
+
+    this.executeCommand(this.getInputText())
+    this.historyIndex = this.history.length
+    this.updatePopups({ showCmd: false, showMsg: false })
+  }
+
+  /**
+   * Captures typed keys on the document so a command can be started without
+   * clicking the command line first.
+   */
+  private bindTypingCapture() {
+    bindTypingHostTracking()
+    document.addEventListener('keydown', e => {
+      if (!this.shouldCaptureTypedKey(e)) return
+
+      e.preventDefault()
+      e.stopPropagation()
+
+      if (!this.visible) {
+        // Re-show through the setting so `AcEdInputManager` stays the single
+        // source of truth for command line visibility.
+        AcApSettingManager.instance.isShowCommandLine = true
+      }
+
+      if (e.key === ' ') {
+        this.confirmInput()
+        return
+      }
+
+      this.focusInput()
+      this.insertTypedCharacter(e.key)
+    })
+  }
+
+  /** Whether this command line should claim a document-level typed key. */
+  private shouldCaptureTypedKey(e: KeyboardEvent): boolean {
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return false
+    if (e.isComposing || e.keyCode === 229) return false
+    if (e.key.length !== 1) return false
+    if (acedIsMobileOrPadUi()) return false
+    if (document.querySelector('.ml-ui-dialog-backdrop')) return false
+    if (this.hasSiblingCommandLine() && typingHost !== this.container) {
+      return false
+    }
+
+    const focused = document.activeElement as HTMLElement | null
+    if (focused && this.isEditableElement(focused)) return false
+
+    if (e.key === ' ') {
+      // Space still activates a focused control such as a toolbar button.
+      return (
+        focused === null ||
+        focused === document.body ||
+        focused.tagName === 'CANVAS'
+      )
+    }
+
+    return !this.textInput.readOnly
+  }
+
+  private hasSiblingCommandLine(): boolean {
+    return document.querySelectorAll('.ml-cli-text').length > 1
+  }
+
+  private isEditableElement(el: Element): boolean {
+    const tag = el.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true
+    return (el as HTMLElement).isContentEditable === true
+  }
+
+  /** Insert a character captured outside the input at the current caret. */
+  private insertTypedCharacter(char: string) {
+    const input = this.textInput
+    const start = input.selectionStart ?? input.value.length
+    const end = input.selectionEnd ?? start
+    input.value = `${input.value.slice(0, start)}${char}${input.value.slice(end)}`
+    const caret = start + char.length
+    input.setSelectionRange(caret, caret)
+    this.handleInputChange()
   }
 
   /** Handle input change to show auto-complete */

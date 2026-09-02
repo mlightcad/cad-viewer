@@ -734,15 +734,22 @@ export class AcEdInputManager {
       'allowNone' in options
         ? (options as { allowNone: boolean }).allowNone
         : false
+    const mode = this.resolvePromptInputMode(handler)
+    const allowSpaces =
+      'allowSpaces' in options
+        ? (options as { allowSpaces: boolean }).allowSpaces
+        : false
 
     return {
       promise: this._commandLine.getPromptInput(
         keywordOptions,
         text => this.parseCommandLineInput(text, handler, inputCount, options),
         {
-          mode: this.resolvePromptInputMode(handler),
+          mode,
           allowNone,
-          allowTyping
+          allowTyping,
+          // Space confirms a prompt unless the value itself may contain spaces.
+          spaceInsertsText: mode === 'string' && allowSpaces
         }
       ),
       cancel: () => this._commandLine.cancelActiveSession()
@@ -2297,14 +2304,10 @@ export class AcEdInputManager {
         options.promptOptions
       )
       const showMetrics =
-        options.showMetrics ??
-        (options.inputCount === 2 || basePoint != null)
+        options.showMetrics ?? (options.inputCount === 2 || basePoint != null)
 
       const getDynamicValue: AcEdFloatingInputDynamicValueCallback<T> = pos => {
-        this.pushMobileMetrics(
-          pos,
-          basePoint ?? floatingInput.sessionBasePoint
-        )
+        this.pushMobileMetrics(pos, basePoint ?? floatingInput.sessionBasePoint)
         return options.getDynamicValue(pos)
       }
 
