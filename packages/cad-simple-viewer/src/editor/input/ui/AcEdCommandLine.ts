@@ -787,20 +787,40 @@ export class AcEdCommandLine {
       e.preventDefault()
       e.stopPropagation()
 
-      if (!this.visible) {
-        // Re-show through the setting so `AcEdInputManager` stays the single
-        // source of truth for command line visibility.
-        AcApSettingManager.instance.isShowCommandLine = true
-      }
-
       if (e.key === ' ') {
+        this.ensureVisibleForTyping()
         this.confirmInput()
         return
       }
 
-      this.focusInput()
-      this.insertTypedCharacter(e.key)
+      this.captureTypedCharacter(e.key)
     })
+  }
+
+  /**
+   * Types a character that was captured outside the input, e.g. a letter the
+   * dynamic input fields handed over because they only take numbers.
+   *
+   * @returns Whether the command line took the character.
+   */
+  captureTypedCharacter(char: string): boolean {
+    if (!char.length || this.textInput.readOnly) return false
+    this.ensureVisibleForTyping()
+    this.focusInput()
+    this.insertTypedCharacter(char)
+    return true
+  }
+
+  /** Whether the text names a registered command. */
+  hasCommand(text: string): boolean {
+    return !!text.trim() && !!this.resolveCommand(text)
+  }
+
+  private ensureVisibleForTyping() {
+    if (this.visible) return
+    // Re-show through the setting so `AcEdInputManager` stays the single
+    // source of truth for command line visibility.
+    AcApSettingManager.instance.isShowCommandLine = true
   }
 
   /** Whether this command line should claim a document-level typed key. */

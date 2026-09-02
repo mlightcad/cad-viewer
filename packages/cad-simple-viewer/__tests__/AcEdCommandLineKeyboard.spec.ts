@@ -157,6 +157,19 @@ describe('AcEdCommandLine keyboard', () => {
     expect(sendStringToExecute).not.toHaveBeenCalled()
   })
 
+  it('takes a character handed over by the dynamic input fields', () => {
+    expect(cli.captureTypedCharacter('L')).toBe(true)
+    expect(input.value).toBe('L')
+    expect(document.activeElement).toBe(input)
+  })
+
+  it('refuses a handed-over character while the input is read only', () => {
+    cli.setInputReadOnly(true)
+
+    expect(cli.captureTypedCharacter('L')).toBe(false)
+    expect(input.value).toBe('')
+  })
+
   it('does not capture a key again once the input owns focus', () => {
     input.focus()
 

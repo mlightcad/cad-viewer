@@ -14,11 +14,15 @@ export type AcEdPromptInputMode = 'geometric' | 'string' | 'keyword'
 
 /**
  * Result produced by a mixed prompt-input session.
+ *
+ * `command` asks the caller to abandon the prompt and run a registered command
+ * instead, the way AutoCAD does when a command name is typed at a prompt.
  */
 export type AcEdPromptInputResult<T> =
   | { kind: 'value'; value: T }
   | { kind: 'keyword'; keyword: string }
   | { kind: 'none' }
+  | { kind: 'command'; command: string }
 
 /**
  * Interactive command-line session that accepts geometric or textual prompt
@@ -96,7 +100,16 @@ export class AcEdPromptInputSession<T> extends AcEdInputSession<
       return true
     }
 
-    return this.tryResolveKeyword(value)
+    if (this.tryResolveKeyword(value)) return true
+
+    // A command name is not prompt input: starting that command beats
+    // reporting the text as invalid.
+    if (this.cli.hasCommand(value)) {
+      this.finish({ kind: 'command', command: value.trim() })
+      return true
+    }
+
+    return false
   }
 
   handleEscape(): void {
