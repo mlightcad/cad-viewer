@@ -65,6 +65,7 @@ import {
   createViewerPointsMaterial
 } from './AcExPatternSnapshot'
 import { setupAcExSessionDrawStyle } from './AcExSessionDrawStyle'
+import { acExMaybeShowTouchPointTutorial } from './AcExTouchPointTutorial'
 import {
   ACEX_SNAP_LOUPE_INSET_PX,
   ACEX_SNAP_LOUPE_SIZE_PX,
@@ -710,6 +711,7 @@ async function startViewer(): Promise<void> {
   let markup: AcExMarkupController | null = null
   let measureSession: AcExCommandSessionUiState | null = null
   let markupSession: AcExCommandSessionUiState | null = null
+  let sessionPanelVisible = false
   const sessionHost = document.getElementById('mlcad-command-session')
   const sessionPanel = sessionHost
     ? new AcExCommandSessionPanel(sessionHost, i18n)
@@ -722,11 +724,16 @@ async function startViewer(): Promise<void> {
   } = { current: null }
   const applySessionUi = () => {
     const state = measureSession ?? markupSession
+    const nowVisible = state != null
     sessionPanel?.setState(state)
     sessionPanel?.setAccessory(
       state ? (sessionDrawStyleRef.current?.createSessionAccessory() ?? null) : null
     )
     drawerSheetsRef.current?.syncInset()
+    if (nowVisible && !sessionPanelVisible) {
+      void acExMaybeShowTouchPointTutorial(i18n)
+    }
+    sessionPanelVisible = nowVisible
   }
   sessionPanel?.setHandlers({
     onConfirm: () => {

@@ -29,4 +29,17 @@ describe('AcUiDialog', () => {
     expect(panel.classList.contains(AcUiDialog.compactClass)).toBe(true)
     dialog.close()
   })
+
+  it('can hide the header close button and center the title', () => {
+    const dialog = new AcUiDialog({
+      title: 'Centered',
+      showCloseButton: false,
+      titleAlign: 'center'
+    })
+    expect(document.querySelector('.ml-ui-dialog-close')).toBeNull()
+    expect(
+      document.querySelector('.ml-ui-dialog-header--center')
+    ).not.toBeNull()
+    dialog.close()
+  })
 })

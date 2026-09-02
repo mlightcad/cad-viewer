@@ -77,5 +77,13 @@ export default {
     rgb: 'RGB: ',
     input: 'Color',
     inputPlaceholder: '1-255 or #RRGGBB'
+  },
+  touchPointTutorial: {
+    title: 'How to pick points precisely?',
+    description:
+      'Long-press on the screen for about 1 second. A cross appears above your finger and follows as you move, snapping to geometry for more accurate picks.',
+    snoozeToday: "Don't remind me today",
+    hideForever: "Don't remind me again",
+    ok: 'Got it'
   }
 }

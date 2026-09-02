@@ -77,5 +77,13 @@ export default {
     rgb: 'RGB: ',
     input: 'Barva',
     inputPlaceholder: '1-255 nebo #RRGGBB'
+  },
+  touchPointTutorial: {
+    title: 'Jak přesně vybrat bod?',
+    description:
+      'Podržte prst na obrazovce asi 1 sekundu. Nad prstem se objeví kříž, který při pohybu sleduje prst a přichytává se k geometrii pro přesnější výběr.',
+    snoozeToday: 'Dnes už nepřipomínat',
+    hideForever: 'Už nepřipomínat',
+    ok: 'Rozumím'
   }
 }

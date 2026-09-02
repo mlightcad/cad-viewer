@@ -77,5 +77,13 @@ export default {
     rgb: 'RGB: ',
     input: 'اللون',
     inputPlaceholder: '1-255 أو #RRGGBB'
+  },
+  touchPointTutorial: {
+    title: 'كيف أختار النقاط بدقة؟',
+    description:
+      'اضغط مطولاً على الشاشة لمدة ثانية تقريباً. يظهر صليب فوق إصبعك ويتبعه أثناء الحركة ويلتقط إلى الهندسة لاختيار أدق.',
+    snoozeToday: 'لا تذكرني اليوم',
+    hideForever: 'لا تذكرني مرة أخرى',
+    ok: 'فهمت'
   }
 }

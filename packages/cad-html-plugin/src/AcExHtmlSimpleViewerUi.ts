@@ -9,3 +9,11 @@
  */
 
 export { AcUiAciColorDialog } from '@mlightcad/cad-simple-viewer'
+export {
+  acuiLocalIsoDate,
+  acuiShouldShowTouchPointTutorialFromPrefs,
+  AcUiTouchPointTutorial,
+  type AcUiTouchPointTutorialConfig,
+  type AcUiTouchPointTutorialLabels,
+  type AcUiTouchPointTutorialPrefs
+} from '@mlightcad/cad-simple-viewer'

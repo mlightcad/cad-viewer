@@ -135,6 +135,11 @@ export type AcExHtmlMessageKey =
   | 'session.confirm'
   | 'session.cancel'
   | 'session.undo'
+  | 'touchPointTutorial.title'
+  | 'touchPointTutorial.description'
+  | 'touchPointTutorial.snoozeToday'
+  | 'touchPointTutorial.hideForever'
+  | 'touchPointTutorial.ok'
   | 'status.ready'
   | 'status.zoomWindowHint'
   | 'status.measureDistanceHint'
@@ -324,6 +329,14 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       confirm: 'Confirm',
       cancel: 'Cancel',
       undo: 'Undo'
+    },
+    touchPointTutorial: {
+      title: 'How to pick points precisely?',
+      description:
+        'Long-press on the screen for about 1 second. A cross appears above your finger and follows as you move, snapping to geometry for more accurate picks.',
+      snoozeToday: "Don't remind me today",
+      hideForever: "Don't remind me again",
+      ok: 'Got it'
     },
     status: {
       ready: 'Ready',
@@ -521,6 +534,14 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       cancel: '取消',
       undo: '撤销'
     },
+    touchPointTutorial: {
+      title: '怎样可以精确取点？',
+      description:
+        '手指在屏幕上长按1s左右，上方出现十字，手指移动时十字跟随移动并自动捕捉。取点更精准。',
+      snoozeToday: '今日不再提醒',
+      hideForever: '不再提醒',
+      ok: '我知道了'
+    },
     status: {
       ready: '就绪',
       zoomWindowHint: '点击两个角点以窗口缩放。',
@@ -708,6 +729,14 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       confirm: 'Potvrdit',
       cancel: 'Zrušit',
       undo: 'Zpět'
+    },
+    touchPointTutorial: {
+      title: 'Jak přesně vybrat bod?',
+      description:
+        'Podržte prst na obrazovce asi 1 sekundu. Nad prstem se objeví kříž, který při pohybu sleduje prst a přichytává se k geometrii pro přesnější výběr.',
+      snoozeToday: 'Dnes už nepřipomínat',
+      hideForever: 'Už nepřipomínat',
+      ok: 'Rozumím'
     },
     status: {
       ready: 'Připraveno',
@@ -904,6 +933,14 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       confirm: 'Onayla',
       cancel: 'İptal',
       undo: 'Geri al'
+    },
+    touchPointTutorial: {
+      title: 'Noktalar nasıl hassas seçilir?',
+      description:
+        'Ekranda yaklaşık 1 saniye basılı tutun. Parmağınızın üstünde bir artı belirir ve hareket ederken geometriye yapışarak daha doğru seçim yapmanızı sağlar.',
+      snoozeToday: 'Bugün tekrar hatırlatma',
+      hideForever: 'Bir daha hatırlatma',
+      ok: 'Anladım'
     },
     status: {
       ready: 'Hazır',
@@ -1104,6 +1141,14 @@ const AR_MESSAGES: AcExMessageTree = {
     'confirm': 'تأكيد',
     'cancel': 'إلغاء',
     'undo': 'تراجع'
+  },
+  'touchPointTutorial': {
+    'title': 'كيف أختار النقاط بدقة؟',
+    'description':
+      'اضغط مطولاً على الشاشة لمدة ثانية تقريباً. يظهر صليب فوق إصبعك ويتبعه أثناء الحركة ويلتقط إلى الهندسة لاختيار أدق.',
+    'snoozeToday': 'لا تذكرني اليوم',
+    'hideForever': 'لا تذكرني مرة أخرى',
+    'ok': 'فهمت'
   },
   'status': {
     'ready': 'جاهز',
