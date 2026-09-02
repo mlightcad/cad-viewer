@@ -19,8 +19,42 @@ describe('AcUiDialog', () => {
     expect(css).toMatch(
       /@media \(max-width: 600px\) \{[\s\S]*width: 100%;/
     )
+    expect(css).toContain('border-radius: 10px')
+    expect(css).not.toMatch(
+      /@media \(max-width: 600px\) \{[\s\S]*border-radius:\s*0/
+    )
+    expect(css).toContain('position: absolute')
+    expect(css).not.toContain('position: fixed')
 
     dialog.close()
+  })
+
+  it('centers within the host canvas box, not the full viewport', () => {
+    const canvas = document.createElement('div')
+    canvas.style.position = 'absolute'
+    canvas.style.top = '80px'
+    canvas.style.height = '400px'
+    canvas.style.width = '600px'
+    document.body.appendChild(canvas)
+
+    const dialog = new AcUiDialog({ title: 'Canvas', host: canvas })
+    const backdrop = canvas.querySelector(
+      '.ml-ui-dialog-backdrop'
+    ) as HTMLElement
+    expect(backdrop.parentElement).toBe(canvas)
+    expect(canvas.style.position).toBe('absolute')
+
+    dialog.close()
+  })
+
+  it('makes a static host a containing block while open', () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+
+    const dialog = new AcUiDialog({ title: 'Host', host })
+    expect(host.style.position).toBe('relative')
+    dialog.close()
+    expect(host.style.position).toBe('')
   })
 
   it('opts out of layout width with layoutWidth: false', () => {

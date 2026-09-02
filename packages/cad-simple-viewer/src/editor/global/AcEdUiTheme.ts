@@ -53,9 +53,10 @@ export function acedApplyUiTheme(
  *
  * Lookup order:
  * 1. Nearest ancestor with `data-ml-ui-theme`
- * 2. `document.documentElement` attribute
- * 3. `html.dark` class (Element Plus / cad-viewer)
- * 4. Defaults to `'light'`
+ * 2. `document.documentElement` `data-ml-ui-theme`
+ * 3. `document.documentElement` `data-mlcad-theme` (offline HTML viewer)
+ * 4. `html.dark` class (Element Plus / cad-viewer)
+ * 5. Defaults to `'light'`
  *
  * @param from - Optional element to start ancestor walk from
  */
@@ -69,6 +70,9 @@ export function resolveUiTheme(from?: HTMLElement | null): AcEdUiTheme {
 
   const rootAttr = document.documentElement.getAttribute('data-ml-ui-theme')
   if (rootAttr === 'light' || rootAttr === 'dark') return rootAttr
+
+  const htmlTheme = document.documentElement.getAttribute('data-mlcad-theme')
+  if (htmlTheme === 'light' || htmlTheme === 'dark') return htmlTheme
 
   if (document.documentElement.classList.contains('dark')) return 'dark'
   return 'light'

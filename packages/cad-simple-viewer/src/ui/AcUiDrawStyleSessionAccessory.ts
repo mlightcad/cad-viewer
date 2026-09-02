@@ -278,10 +278,12 @@ export class AcUiDrawStyleSessionAccessory {
 
   /**
    * Stores selection-sync cleanup from install; run from {@link dispose}.
+   * Replaces any prior subscription before storing the new one.
    *
    * @param unsubscribe - Cleanup returned by selection binding.
    */
   setSelectionUnsubscribe(unsubscribe: () => void): void {
+    this.selectionUnsubscribe?.()
     this.selectionUnsubscribe = unsubscribe
   }
 

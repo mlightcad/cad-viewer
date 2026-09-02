@@ -1,5 +1,6 @@
 import { AcApSettingManager } from '../app/AcApSettingManager'
 import { acedIsMobileOrPadUi } from '../editor/global/AcEdUiLayout'
+import { resolveUiTheme } from '../editor/global/AcEdUiTheme'
 import { ACED_TOUCH_POINT_LONG_PRESS_MS } from '../editor/input/ui/AcEdTouchPointSession'
 import { AcApI18n } from '../i18n/AcApI18n'
 import {
@@ -34,6 +35,7 @@ export class AcUiTouchPointTutorialDialog {
   static maybeShow(host: HTMLElement = document.body): Promise<void> {
     return AcUiTouchPointTutorial.maybeShow({
       host,
+      theme: resolveUiTheme(host),
       longPressMs: ACED_TOUCH_POINT_LONG_PRESS_MS,
       labels: {
         title: AcApI18n.t('main.touchPointTutorial.title'),
