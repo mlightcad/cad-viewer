@@ -13,6 +13,8 @@ export default {
     lengthSection: '长度',
     lengthType: '类型:',
     lengthPrecision: '精度:',
+    lengthUnit: '单位:',
+    lengthUnitFollowDrawing: '跟随图纸',
     angleSection: '角度',
     angleType: '类型:',
     anglePrecision: '精度:',

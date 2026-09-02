@@ -13,6 +13,8 @@ export default {
     lengthSection: 'Uzunluk',
     lengthType: 'Tür:',
     lengthPrecision: 'Hassasiyet:',
+    lengthUnit: 'Birim:',
+    lengthUnitFollowDrawing: 'Çizimi takip et',
     angleSection: 'Açı',
     angleType: 'Tür:',
     anglePrecision: 'Hassasiyet:',

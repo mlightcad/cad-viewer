@@ -24,6 +24,8 @@ export default {
     lengthSection: 'الطول',
     lengthType: 'النوع:',
     lengthPrecision: 'الدقة:',
+    lengthUnit: 'الوحدة:',
+    lengthUnitFollowDrawing: 'اتبع الرسم',
 
     angleSection: 'الزاوية',
     angleType: 'النوع:',

@@ -1,4 +1,8 @@
-import type { AcDbDatabase, AcDbFormatterOptions } from '@mlightcad/data-model'
+import {
+  type AcDbDatabase,
+  type AcDbFormatterOptions,
+  AcDbLinearUnits
+} from '@mlightcad/data-model'
 
 /** Linear/angular unit settings used when formatting measurement labels. */
 export interface AcApMeasurementUnits {
@@ -10,6 +14,82 @@ export interface AcApMeasurementUnits {
   aunits: number
   /** Angular display precision (AUPREC). */
   auprec: number
+  /** Length display unit (INSUNITS code) or {@link MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING}. */
+  lengthUnit: number
+}
+
+/** Sentinel length unit meaning "follow the drawing units" (no conversion). */
+export const MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING = -1
+
+/** AutoCAD INSUNITS code → scale factor expressed in millimeters. */
+const ACAD_UNIT_TO_MM: Readonly<Record<number, number>> = {
+  0: 1,
+  1: 25.4,
+  2: 304.8,
+  3: 1609344,
+  4: 1,
+  5: 10,
+  6: 1000,
+  7: 1000000,
+  8: 0.0000254,
+  9: 0.0254,
+  10: 914.4,
+  11: 0.0000001,
+  12: 0.000001,
+  13: 0.001,
+  14: 100,
+  15: 10000,
+  16: 100000,
+  17: 1000000000000,
+  18: 149597870700000,
+  19: 9.4607304725808e18,
+  20: 3.085677581491367e19,
+  21: 304.80060960121926,
+  22: 25.400050800101603,
+  23: 914.4018288036576,
+  24: 1609347.2186944375
+}
+
+/** Short Latin suffixes shown after converted measurement lengths. */
+const ACAD_UNIT_SYMBOLS: Readonly<Record<number, string>> = {
+  1: 'in',
+  2: 'ft',
+  4: 'mm',
+  5: 'cm',
+  6: 'm',
+  7: 'km',
+  10: 'yd'
+}
+
+function acapUnitToMm(unit: number): number {
+  if (!Number.isFinite(unit)) return 1
+  return ACAD_UNIT_TO_MM[Math.trunc(unit)] ?? 1
+}
+
+/** Scale a value expressed in `fromUnit` so it is expressed in `toUnit`. */
+export function convertLengthValue(
+  value: number,
+  fromUnit: number,
+  toUnit: number
+): number {
+  const toMm = acapUnitToMm(toUnit)
+  if (toMm === 0) return value
+  return value * (acapUnitToMm(fromUnit) / toMm)
+}
+
+/** Scale an area expressed in `fromUnit` so it is expressed in `toUnit`. */
+export function convertAreaValue(
+  value: number,
+  fromUnit: number,
+  toUnit: number
+): number {
+  const factor = convertLengthValue(1, fromUnit, toUnit)
+  return value * factor * factor
+}
+
+/** Short symbol for a length-unit code, or empty when unknown / follow-drawing. */
+export function measurementLengthUnitSymbol(unit: number): string {
+  return ACAD_UNIT_SYMBOLS[Math.trunc(unit)] ?? ''
 }
 
 /** Numeric value stored on a committed measurement so its badge can be reformatted. */
@@ -22,6 +102,16 @@ export type AcApMeasurementValue =
 /** Display flags for length / area / coordinate measurement labels. */
 export const MEASUREMENT_LENGTH_FORMAT_OPTIONS: AcDbFormatterOptions = {
   showUnits: true,
+  showApproximate: true
+}
+
+/**
+ * Display flags for a length already rescaled to another physical unit. The
+ * formatter must not add the drawing suffix — the target unit symbol is
+ * appended by the caller.
+ */
+const MEASUREMENT_CONVERTED_LENGTH_FORMAT_OPTIONS: AcDbFormatterOptions = {
+  showUnits: false,
   showApproximate: true
 }
 
@@ -61,7 +151,10 @@ export function getEffectiveMeasurementUnits(
     lunits: measurementUnitOverride.lunits ?? db.lunits,
     luprec: measurementUnitOverride.luprec ?? db.luprec,
     aunits: measurementUnitOverride.aunits ?? db.aunits,
-    auprec: measurementUnitOverride.auprec ?? db.auprec
+    auprec: measurementUnitOverride.auprec ?? db.auprec,
+    lengthUnit:
+      measurementUnitOverride.lengthUnit ??
+      MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING
   }
 }
 
@@ -81,6 +174,8 @@ export function setMeasurementUnitOverride(
   if (patch.luprec != null) measurementUnitOverride.luprec = patch.luprec
   if (patch.aunits != null) measurementUnitOverride.aunits = patch.aunits
   if (patch.auprec != null) measurementUnitOverride.auprec = patch.auprec
+  if (patch.lengthUnit != null)
+    measurementUnitOverride.lengthUnit = patch.lengthUnit
 }
 
 /** Clear session measurement unit overrides (document open / tests). */
@@ -103,14 +198,34 @@ function hasEffectiveUnitOverride(db: AcDbDatabase): boolean {
   )
 }
 
+/** LUNITS values that assume drawing INSUNITS, not arbitrary physical units. */
+function isDrawingNativeLengthFormat(lunits: number): boolean {
+  return (
+    lunits === AcDbLinearUnits.Architectural ||
+    lunits === AcDbLinearUnits.Engineering
+  )
+}
+
 /**
  * Run `fn` with the formatter reading effective measurement units.
  * Drawing system variables are not changed.
  */
-function withMeasurementFormatContext<T>(db: AcDbDatabase, fn: () => T): T {
-  if (!hasEffectiveUnitOverride(db)) return fn()
-
+function withMeasurementFormatContext<T>(
+  db: AcDbDatabase,
+  fn: () => T,
+  formatPatch?: { forceDecimalLength?: boolean }
+): T {
   const units = getEffectiveMeasurementUnits(db)
+  const lunitsForFormat =
+    formatPatch?.forceDecimalLength &&
+    isDrawingNativeLengthFormat(units.lunits)
+      ? AcDbLinearUnits.Decimal
+      : units.lunits
+  const needsPatch =
+    hasEffectiveUnitOverride(db) || lunitsForFormat !== units.lunits
+
+  if (!needsPatch) return fn()
+
   const header = asUnitHeader(db)
   const prev = {
     lunits: header._lunits,
@@ -118,7 +233,7 @@ function withMeasurementFormatContext<T>(db: AcDbDatabase, fn: () => T): T {
     aunits: header._aunits,
     auprec: header._auprec
   }
-  header._lunits = units.lunits
+  header._lunits = lunitsForFormat
   header._luprec = units.luprec
   header._aunits = units.aunits
   header._auprec = units.auprec
@@ -132,15 +247,95 @@ function withMeasurementFormatContext<T>(db: AcDbDatabase, fn: () => T): T {
   }
 }
 
+/** Format a linear value without applying a physical-unit conversion. */
+function formatMeasurementLengthRaw(
+  db: AcDbDatabase,
+  value: number,
+  options: AcDbFormatterOptions = MEASUREMENT_LENGTH_FORMAT_OPTIONS,
+  formatPatch?: { forceDecimalLength?: boolean }
+): string {
+  return withMeasurementFormatContext(
+    db,
+    () => db.formatter.formatLength(value, options),
+    formatPatch
+  )
+}
+
+/** Merge caller flags with converted-length defaults (units suffix always off). */
+function convertedLengthFormatOptions(
+  options: AcDbFormatterOptions
+): AcDbFormatterOptions {
+  return {
+    ...MEASUREMENT_CONVERTED_LENGTH_FORMAT_OPTIONS,
+    ...options,
+    showUnits: false
+  }
+}
+
+/**
+ * Length unit code to convert measurement values to, or `undefined` when labels
+ * should stay in drawing units (no override selected, the override equals the
+ * drawing's INSUNITS, INSUNITS is undefined, or the follow-drawing sentinel is
+ * active).
+ */
+function convertedLengthUnit(db: AcDbDatabase): number | undefined {
+  const fromUnit = db.insunits ?? 0
+  if (fromUnit === 0) return undefined
+
+  const target = measurementUnitOverride.lengthUnit
+  if (
+    target == null ||
+    target === fromUnit ||
+    target === MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING
+  )
+    return undefined
+  return target
+}
+
 /** Format a linear distance using effective measurement units. */
 export function formatMeasurementLength(
   db: AcDbDatabase,
   value: number,
   options: AcDbFormatterOptions = MEASUREMENT_LENGTH_FORMAT_OPTIONS
 ): string {
-  return withMeasurementFormatContext(db, () =>
-    db.formatter.formatLength(value, options)
+  const target = convertedLengthUnit(db)
+  if (target == null) {
+    return formatMeasurementLengthRaw(db, value, options)
+  }
+
+  const fromUnit = db.insunits ?? 0
+  const scaled = convertLengthValue(value, fromUnit, target)
+  const text = formatMeasurementLengthRaw(
+    db,
+    scaled,
+    convertedLengthFormatOptions(options),
+    { forceDecimalLength: true }
   )
+  const symbol = measurementLengthUnitSymbol(target)
+  return symbol ? `${text} ${symbol}` : text
+}
+
+/** Format an area using effective measurement units (length unit squared). */
+export function formatMeasurementArea(
+  db: AcDbDatabase,
+  value: number,
+  options: AcDbFormatterOptions = MEASUREMENT_LENGTH_FORMAT_OPTIONS
+): string {
+  const target = convertedLengthUnit(db)
+  if (target == null) {
+    return `${formatMeasurementLengthRaw(db, value, options)}²`
+  }
+
+  const fromUnit = db.insunits ?? 0
+  const scaled = convertAreaValue(value, fromUnit, target)
+  const text = formatMeasurementLengthRaw(
+    db,
+    scaled,
+    convertedLengthFormatOptions(options),
+    { forceDecimalLength: true }
+  )
+  const symbol = measurementLengthUnitSymbol(target)
+  return symbol ? `${text} ${symbol}²` : `${text}²`
 }
 
 /** Format an angle in radians using effective measurement units. */
@@ -163,7 +358,7 @@ export function formatMeasurementValue(
     case 'length':
       return formatMeasurementLength(db, value.value)
     case 'area':
-      return `${formatMeasurementLength(db, value.value)}²`
+      return formatMeasurementArea(db, value.value)
     case 'angle':
       return formatMeasurementAngle(db, value.radians)
     case 'coordinate': {

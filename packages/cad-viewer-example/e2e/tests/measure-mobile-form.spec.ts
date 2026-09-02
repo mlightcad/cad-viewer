@@ -5,6 +5,7 @@ import { expect, test } from '@playwright/test'
  * `ElementPlusError: [ElForm] unexpected width NaN` because the Measurement
  * ribbon units panel used `label-width="auto"` while overflow groups were hidden.
  *
+ * Length/angle unit controls are now one compact row per ribbon item (no ElForm).
  * Phone layouts hide the desktop command line, so the command is started through
  * `AcApDocManager` (same path as typing `measuredistance` on desktop).
  */
@@ -48,7 +49,9 @@ test('measure distance does not log ElForm unexpected width NaN', async ({
   })
   expect(started).toBe(true)
 
-  await expect(page.locator('.ml-ribbon-measure-units').first()).toBeAttached({
+  await expect(
+    page.locator('.ml-ribbon-measure-unit-field').first()
+  ).toBeAttached({
     timeout: 10_000
   })
   await page.waitForTimeout(400)

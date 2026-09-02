@@ -40,6 +40,7 @@ import {
   isMarkupVisible,
   isMeasurementVisible,
   markupColorToCss,
+  MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING,
   refreshMeasurementValueLabels,
   setMarkupDrawColor,
   setMarkupDrawFontSize,
@@ -205,6 +206,7 @@ const measurementLunits = ref(AcDbLinearUnits.Decimal)
 const measurementLuprec = ref(4)
 const measurementAunits = ref(AcDbAngleUnits.DecimalDegrees)
 const measurementAuprec = ref(0)
+const measurementLengthUnit = ref<number>(MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING)
 const isRibbonDisabled = computed(() => isDocumentOpening.value)
 const ribbonColor = ref<AcCmColor | undefined>(new AcCmColor())
 const ribbonColorDisplay = ref('#7b8794')
@@ -868,6 +870,7 @@ const syncMeasurementUnitControls = () => {
   measurementLuprec.value = units.luprec
   measurementAunits.value = units.aunits
   measurementAuprec.value = units.auprec
+  measurementLengthUnit.value = units.lengthUnit
 }
 
 const refreshCurrentMeasurementLabels = () => {
@@ -883,6 +886,7 @@ const applyMeasurementUnitOverride = (
     luprec: number
     aunits: number
     auprec: number
+    lengthUnit: number
   }>
 ) => {
   setMeasurementUnitOverride(patch)
@@ -904,6 +908,10 @@ const handleMeasurementAunitsChange = (value: number) => {
 
 const handleMeasurementAuprecChange = (value: number) => {
   applyMeasurementUnitOverride({ auprec: value })
+}
+
+const handleMeasurementLengthUnitChange = (value: number) => {
+  applyMeasurementUnitOverride({ lengthUnit: value })
 }
 
 /**
@@ -1487,20 +1495,60 @@ const buildBaseTabs = (
       collections: [
         {
           id: 'measurement-length-units-main',
-          layout: 'row',
+          layout: 'column',
+          rows: 3,
           items: [
             {
-              id: 'measurement-length-units-panel',
+              id: 'measurement-length-units-type',
               type: 'custom',
               size: 'small',
               props: {
                 component: MlRibbonMeasurementUnitsPanel,
                 componentProps: {
                   kind: 'length',
+                  field: 'unitType',
                   unitType: measurementLunits.value,
                   precision: measurementLuprec.value,
+                  lengthUnit: measurementLengthUnit.value,
                   'onUpdate:unitType': handleMeasurementLunitsChange,
-                  'onUpdate:precision': handleMeasurementLuprecChange
+                  'onUpdate:precision': handleMeasurementLuprecChange,
+                  'onUpdate:lengthUnit': handleMeasurementLengthUnitChange
+                }
+              }
+            },
+            {
+              id: 'measurement-length-units-precision',
+              type: 'custom',
+              size: 'small',
+              props: {
+                component: MlRibbonMeasurementUnitsPanel,
+                componentProps: {
+                  kind: 'length',
+                  field: 'precision',
+                  unitType: measurementLunits.value,
+                  precision: measurementLuprec.value,
+                  lengthUnit: measurementLengthUnit.value,
+                  'onUpdate:unitType': handleMeasurementLunitsChange,
+                  'onUpdate:precision': handleMeasurementLuprecChange,
+                  'onUpdate:lengthUnit': handleMeasurementLengthUnitChange
+                }
+              }
+            },
+            {
+              id: 'measurement-length-units-unit',
+              type: 'custom',
+              size: 'small',
+              props: {
+                component: MlRibbonMeasurementUnitsPanel,
+                componentProps: {
+                  kind: 'length',
+                  field: 'lengthUnit',
+                  unitType: measurementLunits.value,
+                  precision: measurementLuprec.value,
+                  lengthUnit: measurementLengthUnit.value,
+                  'onUpdate:unitType': handleMeasurementLunitsChange,
+                  'onUpdate:precision': handleMeasurementLuprecChange,
+                  'onUpdate:lengthUnit': handleMeasurementLengthUnitChange
                 }
               }
             }
@@ -1515,16 +1563,34 @@ const buildBaseTabs = (
       collections: [
         {
           id: 'measurement-angle-units-main',
-          layout: 'row',
+          layout: 'column',
+          rows: 3,
           items: [
             {
-              id: 'measurement-angle-units-panel',
+              id: 'measurement-angle-units-type',
               type: 'custom',
               size: 'small',
               props: {
                 component: MlRibbonMeasurementUnitsPanel,
                 componentProps: {
                   kind: 'angle',
+                  field: 'unitType',
+                  unitType: measurementAunits.value,
+                  precision: measurementAuprec.value,
+                  'onUpdate:unitType': handleMeasurementAunitsChange,
+                  'onUpdate:precision': handleMeasurementAuprecChange
+                }
+              }
+            },
+            {
+              id: 'measurement-angle-units-precision',
+              type: 'custom',
+              size: 'small',
+              props: {
+                component: MlRibbonMeasurementUnitsPanel,
+                componentProps: {
+                  kind: 'angle',
+                  field: 'precision',
                   unitType: measurementAunits.value,
                   precision: measurementAuprec.value,
                   'onUpdate:unitType': handleMeasurementAunitsChange,
@@ -2300,6 +2366,7 @@ const ribbonData = computed(() => {
   measurementLuprec.value
   measurementAunits.value
   measurementAuprec.value
+  measurementLengthUnit.value
   const commandByItemId = new Map<string, string>()
   commandByItemId.set('cmd-line', 'line')
   commandByItemId.set('cmd-polyline', 'pline')

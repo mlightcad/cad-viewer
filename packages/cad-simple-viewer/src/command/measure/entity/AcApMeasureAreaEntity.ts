@@ -8,7 +8,7 @@ import {
 import {
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
-  formatMeasurementLength
+  formatMeasurementArea
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import {
@@ -153,7 +153,7 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
     const badge = new AcTrHtmlBadge({
       id: `${this.entityId}-badge`,
       color,
-      text: `${formatMeasurementLength(db, area)}²`,
+      text: formatMeasurementArea(db, area),
       worldPosition: measureCentroid(live),
       layer: MEASUREMENT_LAYER,
       fontSize: this.style.fontSize
@@ -197,7 +197,7 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
 
     const refreshLive = () => {
       area = measureShoelaceArea(live)
-      badge.setText(`${formatMeasurementLength(db, area)}²`)
+      badge.setText(formatMeasurementArea(db, area))
       acapPlaceOverlayHtml(view, badge, measureCentroid(live))
       paintArea(getMeasurementStyle(this.entityId) ?? this.style)
       view.isHtmlDirty = true

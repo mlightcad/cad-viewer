@@ -16,7 +16,7 @@ import {
   acapGetMeasurementColor,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
-  formatMeasurementLength
+  formatMeasurementArea
 } from '../../util'
 import { AcTrView2d } from '../../view'
 import {
@@ -270,7 +270,7 @@ export class AcApMeasureAreaCmd extends AcApMeasureDrawCmd {
               }
               const tempPts = [...points, cursor]
               const area = shoelaceArea(tempPts)
-              liveBadge.setText(`${formatMeasurementLength(db, area)}²`)
+              liveBadge.setText(formatMeasurementArea(db, area))
               liveBadge.setPosition(centroid(tempPts))
               liveBadge.object.visible = true
               drawPolygon(cursor)
