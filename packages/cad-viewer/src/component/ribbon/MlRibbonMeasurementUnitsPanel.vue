@@ -1,5 +1,6 @@
 <template>
   <el-form
+    v-if="!field"
     label-position="left"
     class="ml-ribbon-measure-units"
     size="small"
@@ -47,6 +48,22 @@
       </el-select>
     </el-form-item>
   </el-form>
+  <div v-else class="ml-ribbon-measure-unit-field">
+    <span class="ml-ribbon-measure-unit-field__label">{{ activeFieldLabel }}</span>
+    <el-select
+      :model-value="activeFieldValue"
+      size="small"
+      class="ml-ribbon-measure-unit-field__control"
+      @update:model-value="onFieldChange"
+    >
+      <el-option
+        v-for="opt in activeFieldOptions"
+        :key="opt.value"
+        :label="opt.label"
+        :value="opt.value"
+      />
+    </el-select>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -63,12 +80,18 @@ import { drawingUnitPrecisionOptions } from '../../util/drawingUnitPrecision'
  *
  * Labels are aligned with CSS grid instead of `label-width="auto"`, which
  * makes ElForm report `unexpected width NaN` when overflow groups are hidden.
+ *
+ * When `field` is set, only one compact row is rendered so the ribbon can
+ * allocate one row per dropdown (same layout as the Home Properties panel).
  */
+type MeasurementUnitsField = 'unitType' | 'precision' | 'lengthUnit'
+
 interface RibbonMeasurementUnitsPanelProps {
   kind: 'length' | 'angle'
   unitType: number
   precision: number
   lengthUnit?: number
+  field?: MeasurementUnitsField
 }
 
 const props = defineProps<RibbonMeasurementUnitsPanelProps>()
@@ -187,6 +210,59 @@ const lengthUnitOptions = computed(() => [
     label: `${t('dialog.drawingUnitsDlg.insUnits._10')} (yd)`
   }
 ])
+
+const activeFieldLabel = computed(() => {
+  switch (props.field) {
+    case 'unitType':
+      return typeLabel.value
+    case 'precision':
+      return precisionLabel.value
+    case 'lengthUnit':
+      return unitLabel.value
+    default:
+      return ''
+  }
+})
+
+const activeFieldValue = computed(() => {
+  switch (props.field) {
+    case 'unitType':
+      return props.unitType
+    case 'precision':
+      return props.precision
+    case 'lengthUnit':
+      return props.lengthUnit
+    default:
+      return undefined
+  }
+})
+
+const activeFieldOptions = computed(() => {
+  switch (props.field) {
+    case 'unitType':
+      return unitOptions.value
+    case 'precision':
+      return precisionOptions.value
+    case 'lengthUnit':
+      return lengthUnitOptions.value
+    default:
+      return []
+  }
+})
+
+function onFieldChange(value: number) {
+  switch (props.field) {
+    case 'unitType':
+      emit('update:unitType', value)
+      break
+    case 'precision':
+      emit('update:precision', value)
+      break
+    case 'lengthUnit':
+      emit('update:lengthUnit', value)
+      break
+  }
+}
 </script>
 
 <style scoped>
@@ -217,5 +293,31 @@ const lengthUnitOptions = computed(() => [
 
 .ml-ribbon-measure-units__control {
   width: calc(132px * var(--ml-ribbon-measure-units-scale));
+}
+
+.ml-ribbon-measure-unit-field {
+  --ml-ribbon-measure-unit-scale: var(--ml-rb-scale, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: calc(6px * var(--ml-ribbon-measure-unit-scale));
+  width: 100%;
+  min-height: var(--ml-rb-compact-height, 28px);
+}
+
+.ml-ribbon-measure-unit-field__label {
+  flex: 0 0 auto;
+  font-size: calc(11px * var(--ml-ribbon-measure-unit-scale));
+  color: var(--el-text-color-regular);
+  white-space: nowrap;
+}
+
+.ml-ribbon-measure-unit-field__control {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: calc(132px * var(--ml-ribbon-measure-unit-scale));
+}
+
+.ml-ribbon-measure-unit-field__control :deep(.el-select) {
+  width: 100%;
 }
 </style>

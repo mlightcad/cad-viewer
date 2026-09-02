@@ -1495,16 +1495,54 @@ const buildBaseTabs = (
       collections: [
         {
           id: 'measurement-length-units-main',
-          layout: 'row',
+          layout: 'column',
+          rows: 3,
           items: [
             {
-              id: 'measurement-length-units-panel',
+              id: 'measurement-length-units-type',
               type: 'custom',
               size: 'small',
               props: {
                 component: MlRibbonMeasurementUnitsPanel,
                 componentProps: {
                   kind: 'length',
+                  field: 'unitType',
+                  unitType: measurementLunits.value,
+                  precision: measurementLuprec.value,
+                  lengthUnit: measurementLengthUnit.value,
+                  'onUpdate:unitType': handleMeasurementLunitsChange,
+                  'onUpdate:precision': handleMeasurementLuprecChange,
+                  'onUpdate:lengthUnit': handleMeasurementLengthUnitChange
+                }
+              }
+            },
+            {
+              id: 'measurement-length-units-precision',
+              type: 'custom',
+              size: 'small',
+              props: {
+                component: MlRibbonMeasurementUnitsPanel,
+                componentProps: {
+                  kind: 'length',
+                  field: 'precision',
+                  unitType: measurementLunits.value,
+                  precision: measurementLuprec.value,
+                  lengthUnit: measurementLengthUnit.value,
+                  'onUpdate:unitType': handleMeasurementLunitsChange,
+                  'onUpdate:precision': handleMeasurementLuprecChange,
+                  'onUpdate:lengthUnit': handleMeasurementLengthUnitChange
+                }
+              }
+            },
+            {
+              id: 'measurement-length-units-unit',
+              type: 'custom',
+              size: 'small',
+              props: {
+                component: MlRibbonMeasurementUnitsPanel,
+                componentProps: {
+                  kind: 'length',
+                  field: 'lengthUnit',
                   unitType: measurementLunits.value,
                   precision: measurementLuprec.value,
                   lengthUnit: measurementLengthUnit.value,
@@ -1525,16 +1563,34 @@ const buildBaseTabs = (
       collections: [
         {
           id: 'measurement-angle-units-main',
-          layout: 'row',
+          layout: 'column',
+          rows: 3,
           items: [
             {
-              id: 'measurement-angle-units-panel',
+              id: 'measurement-angle-units-type',
               type: 'custom',
               size: 'small',
               props: {
                 component: MlRibbonMeasurementUnitsPanel,
                 componentProps: {
                   kind: 'angle',
+                  field: 'unitType',
+                  unitType: measurementAunits.value,
+                  precision: measurementAuprec.value,
+                  'onUpdate:unitType': handleMeasurementAunitsChange,
+                  'onUpdate:precision': handleMeasurementAuprecChange
+                }
+              }
+            },
+            {
+              id: 'measurement-angle-units-precision',
+              type: 'custom',
+              size: 'small',
+              props: {
+                component: MlRibbonMeasurementUnitsPanel,
+                componentProps: {
+                  kind: 'angle',
+                  field: 'precision',
                   unitType: measurementAunits.value,
                   precision: measurementAuprec.value,
                   'onUpdate:unitType': handleMeasurementAunitsChange,
