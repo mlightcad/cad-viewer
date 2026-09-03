@@ -121,6 +121,9 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   private mouseClickArmed = false
   /** Whether to suppress UI display while keeping input active */
   private suppressDisplay: boolean = false
+  /** Set once typing moved to the command line: the fields must not steal
+   * focus back on the next preview refresh. */
+  private focusHeld = false
   /** Cached sysvar handler */
   private boundOnInputSysVarChanged: (args: {
     name: string
@@ -188,6 +191,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
         twoInputs: options.inputCount === 2,
         validate: this.validateFn,
         onCancel: this.onCancel,
+        onLetter: options.onLetter,
         onNone: this.onNone,
         onCommit: this.onCommit,
         onChange: this.onChange,
@@ -321,7 +325,11 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     )
     this.parent.removeEventListener('pointermove', this.boundOnPointerMove)
     this.parent.removeEventListener('touchstart', this.boundOnTouchStart)
-    this.parent.removeEventListener('contextmenu', this.boundOnContextMenu, true)
+    this.parent.removeEventListener(
+      'contextmenu',
+      this.boundOnContextMenu,
+      true
+    )
     window.removeEventListener('pointerup', this.boundOnPointerUp)
     window.removeEventListener('pointercancel', this.boundOnPointerCancel)
     window.removeEventListener('touchmove', this.boundOnTouchMove)
@@ -691,6 +699,18 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.requestPreviewRefresh()
   }
 
+  /**
+   * Hands typing over to the command line for the rest of this prompt.
+   *
+   * Without this the next preview refresh refocuses the fields as soon as the
+   * mouse moves, so characters the user started typing in the command line
+   * would land back in the number fields.
+   */
+  releaseFocusToCommandLine() {
+    this.focusHeld = true
+    this.inputs?.blur()
+  }
+
   private updateDynamicPreview(wcsPos: AcGePoint2dLike) {
     this.lastDynamicPoint = { x: wcsPos.x, y: wcsPos.y }
     const defaults = this.getDynamicValue(wcsPos)
@@ -698,7 +718,12 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.inputs?.setValue(defaults.raw)
 
     // Ensure focus stays in input boxes
-    if (this.inputs && !this.inputs.focused && !this.suppressDisplay) {
+    if (
+      this.inputs &&
+      !this.inputs.focused &&
+      !this.suppressDisplay &&
+      !this.focusHeld
+    ) {
       this.inputs.focus()
     }
 
@@ -780,7 +805,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
       this.inputs?.blur()
     } else {
       this.container.style.display = 'flex'
-      if (this.inputs && !this.inputs.focused) {
+      if (this.inputs && !this.inputs.focused && !this.focusHeld) {
         this.inputs.focus()
       }
     }

@@ -739,15 +739,22 @@ export class AcEdInputManager {
       'allowNone' in options
         ? (options as { allowNone: boolean }).allowNone
         : false
+    const mode = this.resolvePromptInputMode(handler)
+    const allowSpaces =
+      'allowSpaces' in options
+        ? (options as { allowSpaces: boolean }).allowSpaces
+        : false
 
     return {
       promise: this._commandLine.getPromptInput(
         keywordOptions,
         text => this.parseCommandLineInput(text, handler, inputCount, options),
         {
-          mode: this.resolvePromptInputMode(handler),
+          mode,
           allowNone,
-          allowTyping
+          allowTyping,
+          // Space confirms a prompt unless the value itself may contain spaces.
+          spaceInsertsText: mode === 'string' && allowSpaces
         }
       ),
       cancel: () => this._commandLine.cancelActiveSession()
@@ -2678,6 +2685,12 @@ export class AcEdInputManager {
           }
           return result
         },
+        onLetter: char => {
+          // Numbers belong in the fields; a letter is the start of a command
+          // or keyword, so hand the rest of this prompt to the command line.
+          floatingInput.releaseFocusToCommandLine()
+          return this._commandLine.captureTypedCharacter(char)
+        },
         onCancel: () => rejector(),
         onNone: () => noneRejector()
       })
@@ -2801,6 +2814,15 @@ export class AcEdInputManager {
             } else {
               rejector()
             }
+            break
+          case 'command':
+            rejector()
+            // Defer so the awaiting command unwinds and runs its own cleanup
+            // before the next command starts drawing on the same view.
+            setTimeout(
+              () => this._commandLine.executeCommand(result.command),
+              0
+            )
             break
         }
       })
