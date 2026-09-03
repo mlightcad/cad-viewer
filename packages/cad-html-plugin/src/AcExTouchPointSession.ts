@@ -10,6 +10,88 @@ export const ACEX_TOUCH_POINT_LONG_PRESS_MS = 1000
 export const ACEX_TOUCH_POINT_MOVE_CANCEL_PX = 10
 
 /**
+ * Ignore compatibility mouse events this long after a touch pick ends.
+ *
+ * Chrome fires a `pointerType: 'mouse'` `pointerdown` then `click` after
+ * touch `pointerup`. Those coordinates are near the finger, so a two-point
+ * command (measure distance) would commit both points from one long-press
+ * and immediately clear the confirmed-point plus mark.
+ */
+export const ACEX_TOUCH_MOUSE_GUARD_MS = 1000
+
+let followingClickSink: ((event: Event) => void) | null = null
+let followingClickSinkTimer: ReturnType<typeof setTimeout> | null = null
+let ignoreCompatMouseUntil = 0
+
+/**
+ * Stops the next `click` in the capture phase and ignores compatibility
+ * mouse events for {@link ACEX_TOUCH_MOUSE_GUARD_MS}.
+ *
+ * Touch picking commits on `pointerup`. The browser then synthesizes a
+ * mouse `pointerdown` + `click` near the finger. A drawing tool would
+ * treat that as a real mouse pick unless this guard stays armed.
+ */
+export function acExSinkFollowingClick() {
+  acExArmTouchMouseGuard()
+  if (followingClickSink) return
+  const sink = (event: Event) => {
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    acExClearFollowingClickSink()
+  }
+  followingClickSink = sink
+  window.addEventListener('click', sink, true)
+  followingClickSinkTimer = setTimeout(() => {
+    acExClearFollowingClickSink()
+  }, ACEX_TOUCH_MOUSE_GUARD_MS)
+}
+
+/**
+ * Removes {@link acExSinkFollowingClick} if it is armed.
+ */
+export function acExClearFollowingClickSink() {
+  if (followingClickSinkTimer != null) {
+    clearTimeout(followingClickSinkTimer)
+    followingClickSinkTimer = null
+  }
+  if (!followingClickSink) return
+  window.removeEventListener('click', followingClickSink, true)
+  followingClickSink = null
+}
+
+/**
+ * Arms the compatibility-mouse ignore window after a touch pick.
+ *
+ * @param now - Current time in milliseconds; defaults to `performance.now()`.
+ */
+export function acExArmTouchMouseGuard(now: number = performance.now()) {
+  ignoreCompatMouseUntil = Math.max(
+    ignoreCompatMouseUntil,
+    now + ACEX_TOUCH_MOUSE_GUARD_MS
+  )
+}
+
+/**
+ * Whether mouse `pointerdown` / `click` should be ignored as leftover from
+ * a touch pick.
+ *
+ * @param now - Current time in milliseconds; defaults to `performance.now()`.
+ */
+export function acExShouldIgnoreCompatMouse(
+  now: number = performance.now()
+): boolean {
+  return followingClickSink != null || now < ignoreCompatMouseUntil
+}
+
+/**
+ * Clears the click sink and mouse guard. Used by tests.
+ */
+export function acExResetTouchMouseGuard() {
+  acExClearFollowingClickSink()
+  ignoreCompatMouseUntil = 0
+}
+
+/**
  * Phases of a one-finger point-pick gesture.
  *
  * - `idle` — no gesture in progress.

@@ -92,7 +92,11 @@ import type {
   AcExSnapshot,
   AcExViewerMode
 } from './AcExSnapshotTypes'
-import { AcExTouchPointSession } from './AcExTouchPointSession'
+import {
+  acExShouldIgnoreCompatMouse,
+  acExSinkFollowingClick,
+  AcExTouchPointSession
+} from './AcExTouchPointSession'
 import { acExMaybeShowTouchPointTutorial } from './AcExTouchPointTutorial'
 import {
   releaseLayerGroupsGeometryCpuArrays,
@@ -2212,9 +2216,6 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
     startY: number
     activated: boolean
   } | null = null
-  let ignoreMouseUntil = 0
-  const TOUCH_MOUSE_GUARD_MS = 1000
-
   const releaseBoxPointerCapture = (pointerId: number) => {
     try {
       if (domElement.hasPointerCapture(pointerId)) {
@@ -2225,9 +2226,6 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
     }
   }
 
-  const armTouchMouseGuard = () => {
-    ignoreMouseUntil = performance.now() + TOUCH_MOUSE_GUARD_MS
-  }
   const selectionRect = document.createElement('div')
   selectionRect.id = 'mlcad-selection-rect'
   selectionRect.hidden = true
@@ -2421,7 +2419,7 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
     acExSetMobileSnapLoupePreciseCapture(false)
     if (gesture) releaseBoxPointerCapture(gesture.pointerId)
     // Compat mouse after touch, not a real mouse box-select.
-    if (gesture?.pointerType === 'touch') armTouchMouseGuard()
+    if (gesture?.pointerType === 'touch') acExSinkFollowingClick()
     if (!gesture) return
     if (!commit || !gesture.activated) {
       if (gesture.kind === 'zoom-window') {
@@ -2481,7 +2479,7 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
         hideSelectionRect()
         acExSetMobileSnapLoupePreciseCapture(false)
         releaseBoxPointerCapture(gesture.pointerId)
-        armTouchMouseGuard()
+        acExSinkFollowingClick()
         if (gesture.kind === 'select') {
           applyClickSelect(event.clientX, event.clientY)
         }
@@ -2494,6 +2492,10 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
     // Loupe moves coalesce into RAF; cancel before commit/abort so a late
     // flush cannot set live pointer and bring the OSNAP glyph back.
     cancelPendingPointerMove()
+    // Chrome synthesizes mouse pointerdown+click after touchup near the finger.
+    // Without this, a two-point tool would commit the second point immediately
+    // and clear the confirmed-point plus mark.
+    acExSinkFollowingClick()
     if (!commit) {
       touchSession.cancel()
       acExHideMobileSnapLoupe()
@@ -2511,7 +2513,7 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
 
   const idlePointerHost: AcExIdlePointerHost = {
     navMode: () => idleNavMode(),
-    shouldIgnoreCompatMouse: () => performance.now() < ignoreMouseUntil,
+    shouldIgnoreCompatMouse: () => acExShouldIgnoreCompatMouse(),
     startTouchBox: (kind, event) => {
       // preventDefault only: do not stopImmediatePropagation so OrbitControls
       // still receives pointerdown and can pan if the finger moves first.
@@ -2593,6 +2595,10 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
     'pointerdown',
     event => {
       if (event.button !== 0) return
+      if (event.pointerType !== 'touch' && acExShouldIgnoreCompatMouse()) {
+        event.stopImmediatePropagation()
+        return
+      }
       const measure = getMeasure()
       const markup = getMarkup()
       if (event.pointerType === 'touch' && isDrawingToolActive()) {
