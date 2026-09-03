@@ -101,7 +101,7 @@ export function toExtents(extents: AcExMutableExtents): AcExExtents | null {
  * Unions XY extents from every line and mesh batch in one layout.
  *
  * Used for initial zoom-to-fit in the offline viewer so hatch pattern shaders
- * receive a realistic {@link acexCameraZoomUniform} instead of zooming to the
+ * receive a realistic {@link AcExCameraZoomUniform} instead of zooming to the
  * often much larger database `EXTMIN`/`EXTMAX` header.
  */
 export function computeLayoutExtents(

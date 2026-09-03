@@ -22,7 +22,7 @@ export interface AcExCssRect {
  * @param canvasCssHeight - Canvas CSS height (same space as `rect.y`).
  * @returns The same rectangle with `y` measured from the canvas bottom.
  */
-export function acExCssTopLeftRectToGl(
+export function acexCssTopLeftRectToGl(
   rect: AcExCssRect,
   canvasCssHeight: number
 ): AcExCssRect {
@@ -42,7 +42,7 @@ export function acExCssTopLeftRectToGl(
  * @param b - Second rectangle.
  * @returns Overlap rectangle, or `null` when there is no usable overlap.
  */
-export function acExIntersectCssRects(
+export function acexIntersectCssRects(
   a: AcExCssRect,
   b: AcExCssRect
 ): AcExCssRect | null {
@@ -65,7 +65,7 @@ export function acExIntersectCssRects(
  * @param screen - CSS rectangle that displays `viewBox`.
  * @returns `box` in the same CSS space as `screen`.
  */
-export function acExWcsBoxToCssRect(
+export function acexWcsBoxToCssRect(
   box: { minX: number; minY: number; maxX: number; maxY: number },
   viewBox: { minX: number; minY: number; maxX: number; maxY: number },
   screen: AcExCssRect
@@ -81,14 +81,14 @@ export function acExWcsBoxToCssRect(
 }
 
 /**
- * Inverse of {@link acExWcsBoxToCssRect}: CSS rectangle → world box.
+ * Inverse of {@link acexWcsBoxToCssRect}: CSS rectangle → world box.
  *
  * @param rect - CSS rectangle inside `screen`.
  * @param viewBox - World extents currently mapped onto `screen`.
  * @param screen - CSS rectangle that displays `viewBox`.
  * @returns Axis-aligned world box corresponding to `rect`.
  */
-export function acExCssRectToWcsBox(
+export function acexCssRectToWcsBox(
   rect: AcExCssRect,
   viewBox: { minX: number; minY: number; maxX: number; maxY: number },
   screen: AcExCssRect

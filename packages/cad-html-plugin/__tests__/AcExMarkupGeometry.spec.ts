@@ -1,19 +1,19 @@
 import {
-  acExComputeLeaderTipOnShape,
-  acExHitTestMarkupShapeOutline,
-  acExIsAttachableShapeMarkup,
-  acExMarkupBounds,
-  acExMarkupFocusExtents,
-  acExMarkupShapeOutlineFromGeometry,
-  acExOverlayArrowSize
+  acexComputeLeaderTipOnShape,
+  acexHitTestMarkupShapeOutline,
+  acexIsAttachableShapeMarkup,
+  acexMarkupBounds,
+  acexMarkupFocusExtents,
+  acexMarkupShapeOutlineFromGeometry,
+  acexOverlayArrowSize
 } from '../src/AcExMarkupGeometry'
 import type { AcExMarkupGeometry } from '../src/AcExMarkupTypes'
 
 const identity = (point: { x: number; y: number }) => point
 
-describe('acExComputeLeaderTipOnShape', () => {
+describe('AcExComputeLeaderTipOnShape', () => {
   it('places tip on circle perimeter toward the cursor', () => {
-    const tip = acExComputeLeaderTipOnShape(
+    const tip = acexComputeLeaderTipOnShape(
       { kind: 'circle', center: { x: 0, y: 0 }, radius: 10 },
       { x: 100, y: 0 }
     )
@@ -22,7 +22,7 @@ describe('acExComputeLeaderTipOnShape', () => {
   })
 
   it('places tip on AABB edge for rect/cloud', () => {
-    const tip = acExComputeLeaderTipOnShape(
+    const tip = acexComputeLeaderTipOnShape(
       {
         kind: 'rect',
         corner1: { x: -5, y: -2 },
@@ -35,17 +35,17 @@ describe('acExComputeLeaderTipOnShape', () => {
   })
 })
 
-describe('acExIsAttachableShapeMarkup', () => {
+describe('AcExIsAttachableShapeMarkup', () => {
   it('is true only for cloud/rect/circle without a callout', () => {
     expect(
-      acExIsAttachableShapeMarkup({
+      acexIsAttachableShapeMarkup({
         type: 'rect',
         corner1: { x: 0, y: 0 },
         corner2: { x: 10, y: 10 }
       })
     ).toBe(true)
     expect(
-      acExIsAttachableShapeMarkup({
+      acexIsAttachableShapeMarkup({
         type: 'circle',
         center: { x: 0, y: 0 },
         radius: 4,
@@ -55,7 +55,7 @@ describe('acExIsAttachableShapeMarkup', () => {
   })
 })
 
-describe('acExHitTestMarkupShapeOutline', () => {
+describe('AcExHitTestMarkupShapeOutline', () => {
   const threshold = 4
 
   it('hits a rect outer frame but not the interior', () => {
@@ -65,10 +65,10 @@ describe('acExHitTestMarkupShapeOutline', () => {
       corner2: { x: 40, y: 20 }
     }
     expect(
-      acExHitTestMarkupShapeOutline(geometry, 20, 0, threshold, identity)
+      acexHitTestMarkupShapeOutline(geometry, 20, 0, threshold, identity)
     ).toBe(true)
     expect(
-      acExHitTestMarkupShapeOutline(geometry, 20, 10, threshold, identity)
+      acexHitTestMarkupShapeOutline(geometry, 20, 10, threshold, identity)
     ).toBe(false)
   })
 
@@ -79,18 +79,18 @@ describe('acExHitTestMarkupShapeOutline', () => {
       radius: 20
     }
     expect(
-      acExHitTestMarkupShapeOutline(geometry, 20, 0, threshold, identity)
+      acexHitTestMarkupShapeOutline(geometry, 20, 0, threshold, identity)
     ).toBe(true)
     expect(
-      acExHitTestMarkupShapeOutline(geometry, 0, 0, threshold, identity)
+      acexHitTestMarkupShapeOutline(geometry, 0, 0, threshold, identity)
     ).toBe(false)
   })
 })
 
-describe('acExMarkupShapeOutlineFromGeometry', () => {
+describe('AcExMarkupShapeOutlineFromGeometry', () => {
   it('maps cloud geometry to an AABB outline', () => {
     expect(
-      acExMarkupShapeOutlineFromGeometry({
+      acexMarkupShapeOutlineFromGeometry({
         type: 'cloud',
         corner1: { x: 1, y: 2 },
         corner2: { x: 3, y: 4 }
@@ -103,10 +103,10 @@ describe('acExMarkupShapeOutlineFromGeometry', () => {
   })
 })
 
-describe('acExMarkupBounds', () => {
+describe('AcExMarkupBounds', () => {
   it('unions a cloud AABB with its attached leader and text-box anchor', () => {
     expect(
-      acExMarkupBounds({
+      acexMarkupBounds({
         type: 'cloud',
         corner1: { x: 0, y: 0 },
         corner2: { x: 20, y: 10 },
@@ -117,7 +117,7 @@ describe('acExMarkupBounds', () => {
 
   it('includes both callout leader tip and text-box anchor', () => {
     expect(
-      acExMarkupBounds({
+      acexMarkupBounds({
         type: 'callout',
         tip: { x: 0, y: 0 },
         anchor: { x: 100, y: -30 }
@@ -126,10 +126,10 @@ describe('acExMarkupBounds', () => {
   })
 })
 
-describe('acExMarkupFocusExtents', () => {
+describe('AcExMarkupFocusExtents', () => {
   it('unions geometry with overlay client rectangles', () => {
     expect(
-      acExMarkupFocusExtents(
+      acexMarkupFocusExtents(
         {
           type: 'callout',
           tip: { x: 0, y: 0 },
@@ -142,13 +142,13 @@ describe('acExMarkupFocusExtents', () => {
   })
 })
 
-describe('acExOverlayArrowSize', () => {
+describe('AcExOverlayArrowSize', () => {
   it('scales arrow heads with stroke width', () => {
-    expect(acExOverlayArrowSize(2, 2)).toBe(12)
-    expect(acExOverlayArrowSize(4, 2)).toBe(24)
+    expect(acexOverlayArrowSize(2, 2)).toBe(12)
+    expect(acexOverlayArrowSize(4, 2)).toBe(24)
   })
 
   it('keeps a 12px arrow for hairline strokes', () => {
-    expect(acExOverlayArrowSize(1, 0)).toBe(12)
+    expect(acexOverlayArrowSize(1, 0)).toBe(12)
   })
 })

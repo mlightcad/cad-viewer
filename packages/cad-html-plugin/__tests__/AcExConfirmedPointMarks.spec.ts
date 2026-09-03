@@ -5,7 +5,7 @@
 const isMobileNavUi = jest.fn(() => true)
 
 jest.mock('../src/AcExHtmlDrawerSheet', () => ({
-  acExHtmlIsMobileNavUi: () => isMobileNavUi()
+  acexHtmlIsMobileNavUi: () => isMobileNavUi()
 }))
 
 import { AcExConfirmedPointMarks } from '../src/AcExConfirmedPointMarks'

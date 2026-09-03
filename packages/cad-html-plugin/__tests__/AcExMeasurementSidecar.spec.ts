@@ -1,5 +1,5 @@
 import {
-  acExMeasurementSidecarFileName,
+  acexMeasurementSidecarFileName,
   parseAcExMeasurementSidecar,
   stringifyAcExMeasurementSidecar
 } from '../src/AcExMeasurementSidecar'
@@ -143,13 +143,13 @@ describe('AcExMeasurementSidecar', () => {
   })
 
   it('suggests sidecar file names', () => {
-    expect(acExMeasurementSidecarFileName('plan.dwg')).toBe(
+    expect(acexMeasurementSidecarFileName('plan.dwg')).toBe(
       'plan.measurement.json'
     )
-    expect(acExMeasurementSidecarFileName('plan.html')).toBe(
+    expect(acexMeasurementSidecarFileName('plan.html')).toBe(
       'plan.measurement.json'
     )
-    expect(acExMeasurementSidecarFileName()).toBe('drawing.measurement.json')
+    expect(acexMeasurementSidecarFileName()).toBe('drawing.measurement.json')
   })
 
   it('keeps legacy arc records that omit the through point', () => {

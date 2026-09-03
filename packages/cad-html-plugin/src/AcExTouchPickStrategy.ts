@@ -19,7 +19,7 @@ export const ACEX_SIMULATED_MOUSE_OFFSET_Y_PX = 52
  *
  * Defaults to `true` when unset so offline HTML matches the live viewer.
  */
-export function acExIsSimulatedMouseEnabled(): boolean {
+export function acexIsSimulatedMouseEnabled(): boolean {
   if (typeof localStorage === 'undefined') return true
   try {
     const raw = localStorage.getItem(ACEX_SIMULATED_MOUSE_STORAGE_KEY)
@@ -35,7 +35,7 @@ export function acExIsSimulatedMouseEnabled(): boolean {
  *
  * @param enabled - True to use the crosshair-above-finger strategy.
  */
-export function acExSetSimulatedMouseEnabled(enabled: boolean): void {
+export function acexSetSimulatedMouseEnabled(enabled: boolean): void {
   if (typeof localStorage === 'undefined') return
   try {
     localStorage.setItem(
@@ -52,9 +52,9 @@ export function acExSetSimulatedMouseEnabled(enabled: boolean): void {
  *
  * @returns The new enabled state.
  */
-export function acExToggleSimulatedMouse(): boolean {
-  const next = !acExIsSimulatedMouseEnabled()
-  acExSetSimulatedMouseEnabled(next)
+export function acexToggleSimulatedMouse(): boolean {
+  const next = !acexIsSimulatedMouseEnabled()
+  acexSetSimulatedMouseEnabled(next)
   return next
 }
 
@@ -144,8 +144,8 @@ const simulatedMouseStrategy = new AcExSimulatedMouseTouchPickStrategy()
  *
  * Re-evaluated each call so toggling mid-command applies on the next sample.
  */
-export function acExTouchPickStrategy(): AcExTouchPickStrategy {
-  return acExIsSimulatedMouseEnabled()
+export function acexTouchPickStrategy(): AcExTouchPickStrategy {
+  return acexIsSimulatedMouseEnabled()
     ? simulatedMouseStrategy
     : loupeStrategy
 }

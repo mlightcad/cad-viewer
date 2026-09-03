@@ -12,12 +12,12 @@
  * Snap and language live under Settings as nested strips (same replace
  * pattern on phone/pad/desktop).
  *
- * @module AcExHtmlToolbarFlyout
+ * @module acexHtmlToolbarFlyout
  * @packageDocumentation
  */
 
 import type { AcExHtmlLocale } from './AcExHtmlI18n'
-import { acExHtmlSyncStripWrapPack } from './AcExHtmlStripWrapPack'
+import { acexHtmlSyncStripWrapPack } from './AcExHtmlStripWrapPack'
 
 /** Strip ids wired by {@link setupAcExHtmlToolbarFlyouts}. */
 export type AcExHtmlStripId =
@@ -197,8 +197,8 @@ export function setupAcExHtmlToolbarFlyouts(
     resolved.find(entry => entry.id === id)
 
   const syncLayout = () => {
-    acExHtmlSyncStripWrapPack()
-    requestAnimationFrame(() => acExHtmlSyncStripWrapPack())
+    acexHtmlSyncStripWrapPack()
+    requestAnimationFrame(() => acexHtmlSyncStripWrapPack())
   }
 
   const syncLocaleSelection = () => {

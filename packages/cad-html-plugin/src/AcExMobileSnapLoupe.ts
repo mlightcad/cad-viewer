@@ -25,7 +25,7 @@ let bridge: AcExMobileSnapLoupeBridge | null = null
  *
  * @param next - Loupe hooks from {@link createAcExHtmlViewerRuntime}, or null.
  */
-export function acExBindMobileSnapLoupe(
+export function acexBindMobileSnapLoupe(
   next: AcExMobileSnapLoupeBridge | null
 ): void {
   bridge = next
@@ -37,7 +37,7 @@ export function acExBindMobileSnapLoupe(
  * @param clientX - Sample X in client CSS pixels.
  * @param clientY - Sample Y in client CSS pixels.
  */
-export function acExRefreshMobileSnapLoupe(
+export function acexRefreshMobileSnapLoupe(
   clientX: number,
   clientY: number
 ): void {
@@ -47,7 +47,7 @@ export function acExRefreshMobileSnapLoupe(
 /**
  * Hides the shared snap loupe if visible.
  */
-export function acExHideMobileSnapLoupe(): void {
+export function acexHideMobileSnapLoupe(): void {
   bridge?.hide()
 }
 
@@ -56,6 +56,6 @@ export function acExHideMobileSnapLoupe(): void {
  *
  * @param active - True while the loupe should block one-finger pan.
  */
-export function acExSetMobileSnapLoupePreciseCapture(active: boolean): void {
+export function acexSetMobileSnapLoupePreciseCapture(active: boolean): void {
   bridge?.setPreciseCaptureActive?.(active)
 }

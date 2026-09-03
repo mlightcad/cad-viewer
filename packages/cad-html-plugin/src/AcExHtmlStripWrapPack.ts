@@ -5,11 +5,11 @@
  * - A single incomplete row stretches so buttons share the strip evenly.
  * - Wrapped rows use a portrait slot; a short last row stays left-aligned.
  *
- * @module AcExHtmlStripWrapPack
+ * @module acexHtmlStripWrapPack
  * @packageDocumentation
  */
 
-import { acExHtmlIsPhoneLayout } from './AcExHtmlDrawerSheet'
+import { acexHtmlIsPhoneLayout } from './AcExHtmlDrawerSheet'
 
 const STRIP_IDS = [
   'mlcad-snap-strip',
@@ -35,7 +35,7 @@ export interface AcExHtmlWrapPackSlot {
  * Computes how many portrait slots fit, and whether a short strip should
  * stretch across the full row.
  */
-export function acExHtmlComputeWrapPackSlot(
+export function acexHtmlComputeWrapPackSlot(
   containerWidth: number,
   buttonHeight: number,
   buttonCount: number = 0
@@ -64,7 +64,7 @@ export function acExHtmlComputeWrapPackSlot(
  * Applies wrap-pack column counts to visible phone strips. No-ops (and
  * clears inline columns) on desktop.
  */
-export function acExHtmlSyncStripWrapPack() {
+export function acexHtmlSyncStripWrapPack() {
   for (const id of STRIP_IDS) {
     const strip = document.getElementById(id)
     if (strip) applyStripWrapPack(strip)
@@ -73,7 +73,7 @@ export function acExHtmlSyncStripWrapPack() {
 
 function applyStripWrapPack(strip: HTMLElement) {
   const wrap = strip.parentElement
-  if (!acExHtmlIsPhoneLayout() || wrap?.hidden) {
+  if (!acexHtmlIsPhoneLayout() || wrap?.hidden) {
     strip.style.removeProperty('grid-template-columns')
     return
   }
@@ -93,7 +93,7 @@ function applyStripWrapPack(strip: HTMLElement) {
     return
   }
   const height = Math.max(...buttons.map(button => button.offsetHeight), 1)
-  const { perRow } = acExHtmlComputeWrapPackSlot(
+  const { perRow } = acexHtmlComputeWrapPackSlot(
     containerWidth,
     height,
     buttons.length

@@ -236,9 +236,9 @@ export function stringifyAcExMarkupSidecar(
 
 /**
  * Suggested sidecar file name for a drawing.
- * @example acExMarkupSidecarFileName('plan.dwg') → 'plan.markup.json'
+ * @example acexMarkupSidecarFileName('plan.dwg') → 'plan.markup.json'
  */
-export function acExMarkupSidecarFileName(drawingName?: string): string {
+export function acexMarkupSidecarFileName(drawingName?: string): string {
   if (!drawingName) return 'drawing.markup.json'
   const base = drawingName.replace(/\.(dwg|dxf|html)$/i, '')
   return `${base}.markup.json`

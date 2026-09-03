@@ -4,7 +4,7 @@ import {
   type AcExHtmlI18n,
   type AcExHtmlLocale
 } from './AcExHtmlI18n'
-import { acExHtmlIcons, acExToolbarButton } from './AcExHtmlIcons'
+import { AcExHtmlIcons, acexToolbarButton } from './AcExHtmlIcons'
 import type { AcExMeasureController } from './AcExMeasurement'
 import type { AcExTrackingOptions } from './AcExMeasureTracking'
 
@@ -193,13 +193,13 @@ export function buildAcExHtmlSnapStrip(): string {
   return `
       <div id="mlcad-snap-strip-wrap" hidden>
         <div id="mlcad-snap-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.snap" aria-label="Object snap">
-          ${acExToolbarButton(acExHtmlIcons.orthoMode, 'Orthogonal mode', {
+          ${acexToolbarButton(AcExHtmlIcons.orthoMode, 'Orthogonal mode', {
             id: 'mlcad-ortho-btn',
             'data-toggle': 'ortho',
             'data-i18n-key': 'settings.ortho',
             'data-i18n-attr': 'title aria-label'
           })}
-          ${acExToolbarButton(acExHtmlIcons.polarTracking, 'Polar tracking', {
+          ${acexToolbarButton(AcExHtmlIcons.polarTracking, 'Polar tracking', {
             id: 'mlcad-polar-btn',
             'data-toggle': 'polar',
             'data-i18n-key': 'settings.polar',

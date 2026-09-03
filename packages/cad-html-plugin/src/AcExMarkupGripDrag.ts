@@ -10,13 +10,13 @@
 
 import type { AcExMarkupPoint2d } from './AcExMarkupTypes'
 import {
-  acExHideMobileSnapLoupe,
-  acExRefreshMobileSnapLoupe
+  acexHideMobileSnapLoupe,
+  acexRefreshMobileSnapLoupe
 } from './AcExMobileSnapLoupe'
 import {
-  acExIsOverlayGrip,
-  acExIsOverlayGripSelected,
-  acExSetOverlayGripsDragging
+  acexIsOverlayGrip,
+  acexIsOverlayGripSelected,
+  acexSetOverlayGripsDragging
 } from './AcExOverlayGrip'
 
 /** Pointer movement (CSS px, squared) before a drag starts. */
@@ -27,7 +27,7 @@ const windowListenerOptions: AddEventListenerOptions = {
   passive: false
 }
 
-/** Options for {@link acExBindMarkupPointerDrag}. */
+/** Options for {@link acexBindMarkupPointerDrag}. */
 export interface AcExMarkupPointerDragOptions {
   /** DOM handle that receives pointerdown. */
   el: HTMLElement
@@ -61,11 +61,11 @@ export interface AcExMarkupPointerDragOptions {
  *
  * @returns Cleanup that removes listeners and cancels an in-progress drag.
  */
-export function acExBindMarkupPointerDrag(
+export function acexBindMarkupPointerDrag(
   options: AcExMarkupPointerDragOptions
 ): () => void {
   const { el, clientToWorld, onDragStart, onMove, onCommit } = options
-  const isGrip = acExIsOverlayGrip(el)
+  const isGrip = acexIsOverlayGrip(el)
   const idleCursor = options.cursor ?? 'grab'
   const showSnapLoupeOpt = options.showSnapLoupe !== false
 
@@ -81,14 +81,14 @@ export function acExBindMarkupPointerDrag(
 
   const dragAllowed = (): boolean => {
     if (options.isEnabled && !options.isEnabled()) return false
-    if (isGrip && !acExIsOverlayGripSelected(el)) return false
+    if (isGrip && !acexIsOverlayGripSelected(el)) return false
     return true
   }
 
   const restoreGrips = () => {
     if (!hidGrips) return
     hidGrips = false
-    acExSetOverlayGripsDragging(false)
+    acexSetOverlayGripsDragging(false)
   }
 
   const onPointerDown = (e: PointerEvent) => {
@@ -120,7 +120,7 @@ export function acExBindMarkupPointerDrag(
     const showSnapLoupe = showSnapLoupeOpt && e.pointerType === 'touch'
 
     const hideSnapLoupe = () => {
-      if (showSnapLoupe) acExHideMobileSnapLoupe()
+      if (showSnapLoupe) acexHideMobileSnapLoupe()
     }
 
     const detach = () => {
@@ -155,13 +155,13 @@ export function acExBindMarkupPointerDrag(
         el.style.cursor = 'grabbing'
         if (isGrip) {
           hidGrips = true
-          acExSetOverlayGripsDragging(true)
+          acexSetOverlayGripsDragging(true)
         }
         onDragStart?.()
       }
       const world = clientToWorld(ev.clientX, ev.clientY)
       if (showSnapLoupe) {
-        acExRefreshMobileSnapLoupe(ev.clientX, ev.clientY)
+        acexRefreshMobileSnapLoupe(ev.clientX, ev.clientY)
       }
       onMove(world, ev)
     }

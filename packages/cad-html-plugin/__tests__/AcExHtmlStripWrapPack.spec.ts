@@ -1,29 +1,29 @@
 /** @jest-environment jsdom */
 
 import {
-  acExHtmlComputeWrapPackSlot,
-  acExHtmlSyncStripWrapPack
+  acexHtmlComputeWrapPackSlot,
+  acexHtmlSyncStripWrapPack
 } from '../src/AcExHtmlStripWrapPack'
 import { ML_UI_MOBILE_MAX_WIDTH } from '../src/AcExHtmlShell'
 
-describe('acExHtmlComputeWrapPackSlot', () => {
+describe('AcExHtmlComputeWrapPackSlot', () => {
   it('stretches a single incomplete row across the full strip', () => {
     // preferredMax = 40 → floor(360/40) = 9; 3 buttons share 360
-    const result = acExHtmlComputeWrapPackSlot(360, 56, 3)
+    const result = acexHtmlComputeWrapPackSlot(360, 56, 3)
     expect(result.preferredMaxWidth).toBe(40)
     expect(result.perRow).toBe(9)
     expect(result.slotWidth).toBeCloseTo(120)
   })
 
   it('keeps a wrapped last row at the full-row slot width', () => {
-    const { perRow, slotWidth } = acExHtmlComputeWrapPackSlot(360, 56, 12)
+    const { perRow, slotWidth } = acexHtmlComputeWrapPackSlot(360, 56, 12)
     expect(perRow).toBe(9)
     expect(slotWidth).toBeCloseTo(40)
     expect(3 * slotWidth).toBeLessThan(360)
   })
 })
 
-describe('acExHtmlSyncStripWrapPack', () => {
+describe('AcExHtmlSyncStripWrapPack', () => {
   const originalMatchMedia = window.matchMedia
 
   afterEach(() => {
@@ -66,23 +66,23 @@ describe('acExHtmlSyncStripWrapPack', () => {
   it('spreads a short strip across equal columns', () => {
     mockPhone(true)
     const strip = mountStrip(3)
-    acExHtmlSyncStripWrapPack()
+    acexHtmlSyncStripWrapPack()
     expect(strip.style.gridTemplateColumns).toBe('repeat(3, minmax(0, 1fr))')
   })
 
   it('uses a full-row column count when buttons wrap', () => {
     mockPhone(true)
     const strip = mountStrip(12)
-    acExHtmlSyncStripWrapPack()
+    acexHtmlSyncStripWrapPack()
     expect(strip.style.gridTemplateColumns).toBe('repeat(9, minmax(0, 1fr))')
   })
 
   it('clears inline columns on desktop', () => {
     mockPhone(true)
     const strip = mountStrip(3)
-    acExHtmlSyncStripWrapPack()
+    acexHtmlSyncStripWrapPack()
     mockPhone(false)
-    acExHtmlSyncStripWrapPack()
+    acexHtmlSyncStripWrapPack()
     expect(strip.style.gridTemplateColumns).toBe('')
   })
 
@@ -93,7 +93,7 @@ describe('acExHtmlSyncStripWrapPack', () => {
       value: 0,
       configurable: true
     })
-    acExHtmlSyncStripWrapPack()
+    acexHtmlSyncStripWrapPack()
     expect(strip.style.gridTemplateColumns).toBe('')
   })
 })

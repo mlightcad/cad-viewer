@@ -5,14 +5,14 @@ import {
   ACEX_OVERLAY_BASE_ZOOM,
   ACEX_OVERLAY_CLOUD_WCS,
   ACEX_OVERLAY_STROKE_WCS,
-  acExOverlayTransform,
-  acExOverlayViewScale,
-  acExPixelsPerWorldUnit,
-  acExPositionWcsOverlay,
-  acExResetOverlayViewScale,
-  acExScaledCanvasLineWidth,
-  acExScaledOverlayArrowSize,
-  acExSeedOverlaySizesFromWcs
+  acexOverlayTransform,
+  acexOverlayViewScale,
+  acexPixelsPerWorldUnit,
+  acexPositionWcsOverlay,
+  acexResetOverlayViewScale,
+  acexScaledCanvasLineWidth,
+  acexScaledOverlayArrowSize,
+  acexSeedOverlaySizesFromWcs
 } from '../src/AcExHtmlOverlayDom'
 
 describe('AcExHtmlOverlayDom', () => {
@@ -20,16 +20,16 @@ describe('AcExHtmlOverlayDom', () => {
     const el = document.createElement('div')
     el.className = 'mlcad-measure-badge'
 
-    expect(acExOverlayViewScale(2, el)).toBe(1)
-    expect(acExOverlayViewScale(4, el)).toBe(2)
-    expect(acExOverlayTransform(el, 2)).toBe('translate(-50%, -50%) scale(2)')
+    expect(acexOverlayViewScale(2, el)).toBe(1)
+    expect(acexOverlayViewScale(4, el)).toBe(2)
+    expect(acexOverlayTransform(el, 2)).toBe('translate(-50%, -50%) scale(2)')
   })
 
   it('resets the zoom anchor when the overlay moves in world space', () => {
     const el = document.createElement('div')
-    acExOverlayViewScale(2, el)
-    acExResetOverlayViewScale(el)
-    expect(acExOverlayViewScale(3, el)).toBe(1)
+    acexOverlayViewScale(2, el)
+    acexResetOverlayViewScale(el)
+    expect(acexOverlayViewScale(3, el)).toBe(1)
   })
 
   it('positions WCS overlays in root-local coordinates', () => {
@@ -39,7 +39,7 @@ describe('AcExHtmlOverlayDom', () => {
     el.className = 'mlcad-markup-dot'
     root.appendChild(el)
 
-    acExPositionWcsOverlay(
+    acexPositionWcsOverlay(
       el,
       { x: 120, y: 80 },
       new DOMRect(20, 10, 400, 300),
@@ -53,8 +53,8 @@ describe('AcExHtmlOverlayDom', () => {
 
   it('scales canvas stroke width with zoom (legacy path)', () => {
     const canvas = document.createElement('canvas')
-    expect(acExScaledCanvasLineWidth(2, canvas, 2)).toBe(2)
-    expect(acExScaledCanvasLineWidth(2, canvas, 4)).toBe(4)
+    expect(acexScaledCanvasLineWidth(2, canvas, 2)).toBe(2)
+    expect(acexScaledCanvasLineWidth(2, canvas, 4)).toBe(4)
   })
 
   it('scales canvas stroke width with WCS via wcsToScreen', () => {
@@ -63,15 +63,15 @@ describe('AcExHtmlOverlayDom', () => {
       x: wcs.x * 10,
       y: wcs.y * 10
     })
-    expect(acExPixelsPerWorldUnit(wcsToScreen)).toBe(10)
+    expect(acexPixelsPerWorldUnit(wcsToScreen)).toBe(10)
 
-    const width = acExScaledCanvasLineWidth(2, canvas, 1, {
+    const width = acexScaledCanvasLineWidth(2, canvas, 1, {
       strokeWidthWcs: 0.25,
       wcsToScreen
     })
     expect(width).toBe(2.5)
 
-    const width2 = acExScaledCanvasLineWidth(2, canvas, 1, {
+    const width2 = acexScaledCanvasLineWidth(2, canvas, 1, {
       strokeWidthWcs: 0.25,
       wcsToScreen: (wcs: { x: number; y: number }) => ({
         x: wcs.x * 20,
@@ -90,7 +90,7 @@ describe('AcExHtmlOverlayDom', () => {
     })
 
     expect(
-      acExScaledCanvasLineWidth(0, canvas, 1, {
+      acexScaledCanvasLineWidth(0, canvas, 1, {
         strokeWidthWcs: 0.4,
         wcsToScreen
       })
@@ -106,7 +106,7 @@ describe('AcExHtmlOverlayDom', () => {
       y: wcs.y * 10
     })
 
-    acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
+    acexSeedOverlaySizesFromWcs(2, wcsToScreen, {
       strokeScreenPx: 0,
       canvases: [canvas]
     })
@@ -120,18 +120,18 @@ describe('AcExHtmlOverlayDom', () => {
       y: wcs.y * 10
     })
 
-    acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
+    acexSeedOverlaySizesFromWcs(2, wcsToScreen, {
       strokeWidthWcs: 0.2,
       canvases: [canvas]
     })
     expect(canvas.dataset[ACEX_OVERLAY_STROKE_WCS]).toBe('0.2')
 
     // Stale constructor WCS would overwrite; omit so dataset wins after style edit.
-    acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
+    acexSeedOverlaySizesFromWcs(2, wcsToScreen, {
       strokeWidthWcs: 0.4,
       canvases: [canvas]
     })
-    const width = acExScaledCanvasLineWidth(2, canvas, 2, { wcsToScreen })
+    const width = acexScaledCanvasLineWidth(2, canvas, 2, { wcsToScreen })
     expect(width).toBe(4)
   })
 
@@ -144,7 +144,7 @@ describe('AcExHtmlOverlayDom', () => {
     })
 
     // Font size without textHeightWcs must not pair with stroke WCS.
-    acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
+    acexSeedOverlaySizesFromWcs(2, wcsToScreen, {
       fontSizePx: 13,
       strokeWidthWcs: 0.4,
       strokeScreenPx: 2.5,
@@ -155,14 +155,14 @@ describe('AcExHtmlOverlayDom', () => {
     expect(canvas.dataset[ACEX_OVERLAY_STROKE_WCS]).toBe('0.4')
     expect(canvas.dataset[ACEX_OVERLAY_CLOUD_WCS]).toBe('1.28')
 
-    acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
+    acexSeedOverlaySizesFromWcs(2, wcsToScreen, {
       strokeWidthWcs: 0.8,
       strokeScreenPx: 2.5,
       canvases: [canvas]
     })
     expect(canvas.dataset[ACEX_OVERLAY_CLOUD_WCS]).toBe('2.56')
 
-    acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
+    acexSeedOverlaySizesFromWcs(2, wcsToScreen, {
       fontSizePx: 13,
       textHeightWcs: 1.3,
       elements: [el]
@@ -174,8 +174,8 @@ describe('AcExHtmlOverlayDom', () => {
   it('scales overlay endpoint grips with zoom', () => {
     const el = document.createElement('div')
     el.className = 'mlcad-markup-dot ml-html-grip'
-    acExPositionWcsOverlay(el, { x: 10, y: 10 }, new DOMRect(0, 0, 100, 100), 2)
-    acExPositionWcsOverlay(el, { x: 10, y: 10 }, new DOMRect(0, 0, 100, 100), 4)
+    acexPositionWcsOverlay(el, { x: 10, y: 10 }, new DOMRect(0, 0, 100, 100), 2)
+    acexPositionWcsOverlay(el, { x: 10, y: 10 }, new DOMRect(0, 0, 100, 100), 4)
     expect(el.style.transform).toBe('translate(-50%, -50%) scale(2)')
   })
 
@@ -187,7 +187,7 @@ describe('AcExHtmlOverlayDom', () => {
       x: wcs.x * 10,
       y: wcs.y * 10
     })
-    acExSeedOverlaySizesFromWcs(2, wcsToScreen, {
+    acexSeedOverlaySizesFromWcs(2, wcsToScreen, {
       fontSizePx: 13,
       textHeightWcs: 1.3,
       arrowSizeWcs: 1.2,
@@ -209,9 +209,9 @@ describe('AcExHtmlOverlayDom', () => {
       x: wcs.x * 5,
       y: wcs.y * 5
     })
-    expect(acExScaledOverlayArrowSize(canvas, at10)).toBe(12)
+    expect(acexScaledOverlayArrowSize(canvas, at10)).toBe(12)
     expect(Number(canvas.dataset[ACEX_OVERLAY_ARROW_WCS])).toBeCloseTo(1.2)
-    expect(acExScaledOverlayArrowSize(canvas, at5)).toBeCloseTo(6)
+    expect(acexScaledOverlayArrowSize(canvas, at5)).toBeCloseTo(6)
   })
 
   it('uses imported arrowSizeWcs instead of seeding from screen pixels', () => {
@@ -220,7 +220,7 @@ describe('AcExHtmlOverlayDom', () => {
       x: wcs.x * 10,
       y: wcs.y * 10
     })
-    expect(acExScaledOverlayArrowSize(canvas, at10, 2.4)).toBeCloseTo(24)
+    expect(acexScaledOverlayArrowSize(canvas, at10, 2.4)).toBeCloseTo(24)
     expect(canvas.dataset[ACEX_OVERLAY_ARROW_WCS]).toBe('2.4')
   })
 })

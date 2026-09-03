@@ -1,5 +1,5 @@
 import type { AcExOsnapMode } from './AcExOsnap'
-import { acExOsnapModeToMarkerType } from './AcExOsnap'
+import { acexOsnapModeToMarkerType } from './AcExOsnap'
 import type { AcExOsnapMarkerShape } from './AcExOsnapMarker'
 
 /** Square loupe size in CSS pixels. */
@@ -78,14 +78,14 @@ export class AcExSnapLoupe {
     this.root.style.display = 'block'
     this.visible = true
     if (snapCanvas && mode) {
-      const shape = acExOsnapModeToMarkerType(mode)
+      const shape = acexOsnapModeToMarkerType(mode)
       if (shape !== this.markerShape) {
         this.markerShape = shape
         this.marker.className = `mlcad-osnap-marker mlcad-osnap-marker--${shape}`
       } else {
         this.marker.classList.remove('mlcad-osnap-marker--hidden')
       }
-      const local = acExLoupeLocalFromCanvasDelta(
+      const local = acexLoupeLocalFromCanvasDelta(
         snapCanvas.x - canvasX,
         snapCanvas.y - canvasY
       )
@@ -129,7 +129,7 @@ export class AcExSnapLoupe {
  *   {@link ACEX_SNAP_LOUPE_ZOOM}.
  * @returns Loupe-local coordinates with origin at the loupe top-left.
  */
-export function acExLoupeLocalFromCanvasDelta(
+export function acexLoupeLocalFromCanvasDelta(
   dx: number,
   dy: number,
   size: number = ACEX_SNAP_LOUPE_SIZE_PX,

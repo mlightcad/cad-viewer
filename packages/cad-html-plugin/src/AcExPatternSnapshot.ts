@@ -18,7 +18,7 @@ import type {
 } from './AcExSnapshotTypes'
 
 /** Shared camera zoom uniform updated by the offline HTML viewer. */
-export const acexCameraZoomUniform = { value: 1.0 }
+export const AcExCameraZoomUniform = { value: 1.0 }
 
 function asShaderMaterial(
   material: THREE.Material
@@ -278,7 +278,7 @@ export function createViewerLineMaterial(
       batch.linePattern.patternLength,
       batch.color,
       batch.linePattern.viewportScale,
-      acexCameraZoomUniform
+      AcExCameraZoomUniform
     )
   }
   return new THREE.LineBasicMaterial({ color: batch.color })
@@ -339,7 +339,7 @@ export function createViewerMeshMaterial(batch: AcExMeshBatch): THREE.Material {
       return createHatchPatternShaderMaterial(
         patternLines,
         batch.hatchPattern.patternAngle,
-        acexCameraZoomUniform,
+        AcExCameraZoomUniform,
         new THREE.Color(batch.color),
         0,
         (batch.side ?? THREE.FrontSide) as THREE.Side

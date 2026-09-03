@@ -8,7 +8,7 @@ export type AcExSelectionMode = 'window' | 'crossing'
  *
  * Window requires full containment; crossing requires intersection.
  */
-export function acExExtentsMatchBox(
+export function acexExtentsMatchBox(
   item: AcExExtents,
   box: AcExExtents,
   mode: AcExSelectionMode
@@ -33,7 +33,7 @@ export function acExExtentsMatchBox(
  * Window vs crossing from drag direction in client (or canvas) space.
  * Left-to-right = window; right-to-left = crossing.
  */
-export function acExSelectionModeFromDrag(
+export function acexSelectionModeFromDrag(
   startX: number,
   endX: number
 ): AcExSelectionMode {

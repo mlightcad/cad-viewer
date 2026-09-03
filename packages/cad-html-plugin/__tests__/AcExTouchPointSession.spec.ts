@@ -3,11 +3,11 @@
  */
 import {
   ACEX_TOUCH_MOUSE_GUARD_MS,
-  acExArmTouchMouseGuard,
-  acExClearFollowingClickSink,
-  acExResetTouchMouseGuard,
-  acExShouldIgnoreCompatMouse,
-  acExSinkFollowingClick,
+  acexArmTouchMouseGuard,
+  acexClearFollowingClickSink,
+  acexResetTouchMouseGuard,
+  acexShouldIgnoreCompatMouse,
+  acexSinkFollowingClick,
   AcExTouchPointSession
 } from '../src/AcExTouchPointSession'
 
@@ -17,7 +17,7 @@ describe('AcExTouchPointSession', () => {
   })
   afterEach(() => {
     jest.useRealTimers()
-    acExResetTouchMouseGuard()
+    acexResetTouchMouseGuard()
   })
 
   it('commits a short tap without opening the loupe', () => {
@@ -41,33 +41,33 @@ describe('AcExTouchPointSession', () => {
   })
 })
 
-describe('acExShouldIgnoreCompatMouse', () => {
+describe('AcExShouldIgnoreCompatMouse', () => {
   afterEach(() => {
-    acExResetTouchMouseGuard()
+    acexResetTouchMouseGuard()
   })
 
   it('ignores mouse after a touch pick so a second nearby point is not committed', () => {
-    acExArmTouchMouseGuard(1000)
-    expect(acExShouldIgnoreCompatMouse(1000)).toBe(true)
+    acexArmTouchMouseGuard(1000)
+    expect(acexShouldIgnoreCompatMouse(1000)).toBe(true)
     expect(
-      acExShouldIgnoreCompatMouse(1000 + ACEX_TOUCH_MOUSE_GUARD_MS - 1)
+      acexShouldIgnoreCompatMouse(1000 + ACEX_TOUCH_MOUSE_GUARD_MS - 1)
     ).toBe(true)
-    expect(acExShouldIgnoreCompatMouse(1000 + ACEX_TOUCH_MOUSE_GUARD_MS)).toBe(
+    expect(acexShouldIgnoreCompatMouse(1000 + ACEX_TOUCH_MOUSE_GUARD_MS)).toBe(
       false
     )
   })
 
   it('stays armed while the following-click sink is still listening', () => {
-    acExSinkFollowingClick()
-    expect(acExShouldIgnoreCompatMouse(1e12)).toBe(true)
-    acExClearFollowingClickSink()
-    expect(acExShouldIgnoreCompatMouse(1e12)).toBe(false)
+    acexSinkFollowingClick()
+    expect(acexShouldIgnoreCompatMouse(1e12)).toBe(true)
+    acexClearFollowingClickSink()
+    expect(acexShouldIgnoreCompatMouse(1e12)).toBe(false)
   })
 })
 
-describe('acExSinkFollowingClick', () => {
+describe('AcExSinkFollowingClick', () => {
   afterEach(() => {
-    acExResetTouchMouseGuard()
+    acexResetTouchMouseGuard()
   })
 
   it('eats the leftover click after a touch pick', () => {
@@ -75,7 +75,7 @@ describe('acExSinkFollowingClick', () => {
     document.body.appendChild(target)
     const later = jest.fn()
     target.addEventListener('click', later)
-    acExSinkFollowingClick()
+    acexSinkFollowingClick()
     target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(later).not.toHaveBeenCalled()
     target.remove()
@@ -87,7 +87,7 @@ describe('acExSinkFollowingClick', () => {
     document.body.appendChild(target)
     const later = jest.fn()
     target.addEventListener('click', later)
-    acExSinkFollowingClick()
+    acexSinkFollowingClick()
     jest.advanceTimersByTime(ACEX_TOUCH_MOUSE_GUARD_MS)
     target.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(later).toHaveBeenCalledTimes(1)

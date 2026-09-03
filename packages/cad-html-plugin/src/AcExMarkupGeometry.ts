@@ -42,7 +42,7 @@ export type AcExMarkupShapeOutline =
  * center toward the cursor with the shape outer frame (AABB for rect/cloud,
  * circle perimeter for circle).
  */
-export function acExComputeLeaderTipOnShape(
+export function acexComputeLeaderTipOnShape(
   outline: AcExMarkupShapeOutline,
   toward: AcExMarkupPoint2d
 ): AcExMarkupPoint2d {
@@ -88,9 +88,9 @@ const CLOUD_HIT_EXTRA_PX = 8
  * Hairline overlays (`baseLineWidth <= 0`) keep a constant
  * {@link ACEX_OVERLAY_ARROW_SIZE_PX}. Use this during jig / live preview so
  * the head stays a fixed screen size while the user zooms. After commit,
- * freeze that size in world units with `acExScaledOverlayArrowSize`.
+ * freeze that size in world units with `acexScaledOverlayArrowSize`.
  */
-export function acExOverlayArrowSize(
+export function acexOverlayArrowSize(
   scaledLineWidth: number,
   baseLineWidth = 2
 ): number {
@@ -102,7 +102,7 @@ export function acExOverlayArrowSize(
 /**
  * Whether geometry is a cloud / rect / circle with no attached callout.
  */
-export function acExIsAttachableShapeMarkup(
+export function acexIsAttachableShapeMarkup(
   geometry: AcExMarkupGeometry
 ): boolean {
   return (
@@ -116,7 +116,7 @@ export function acExIsAttachableShapeMarkup(
 /**
  * Shape outline used to constrain an attached-callout leader tip.
  */
-export function acExMarkupShapeOutlineFromGeometry(
+export function acexMarkupShapeOutlineFromGeometry(
   geometry: AcExMarkupGeometry
 ): AcExMarkupShapeOutline | undefined {
   if (geometry.type === 'circle') {
@@ -141,7 +141,7 @@ export function acExMarkupShapeOutlineFromGeometry(
  * (AABB for cloud/rect, circumference for circle). Does not hit interiors
  * or an already-attached callout leader.
  */
-export function acExHitTestMarkupShapeOutline(
+export function acexHitTestMarkupShapeOutline(
   geometry: AcExMarkupGeometry,
   clientX: number,
   clientY: number,
@@ -159,7 +159,7 @@ export function acExHitTestMarkupShapeOutline(
       const inside =
         clientX >= minX && clientX <= maxX && clientY >= minY && clientY <= maxY
       if (!inside) {
-        return acExDistToRectOutlinePx(clientX, clientY, a, b) <= thresholdPx
+        return acexDistToRectOutlinePx(clientX, clientY, a, b) <= thresholdPx
       }
       const distEdge = Math.min(
         Math.abs(clientX - minX),
@@ -180,7 +180,7 @@ export function acExHitTestMarkupShapeOutline(
       const inside =
         clientX >= minX && clientX <= maxX && clientY >= minY && clientY <= maxY
       if (!inside) {
-        return acExDistToRectOutlinePx(clientX, clientY, a, b) <= tol
+        return acexDistToRectOutlinePx(clientX, clientY, a, b) <= tol
       }
       const distEdge = Math.min(
         Math.abs(clientX - minX),
@@ -215,7 +215,7 @@ interface AcExMarkupCloudVertex {
 /**
  * Fit a canvas to its container and return a 2D context cleared for this frame.
  */
-export function acExFitMarkupCanvas(
+export function acexFitMarkupCanvas(
   canvas: HTMLCanvasElement,
   container: HTMLElement
 ): CanvasRenderingContext2D | null {
@@ -239,7 +239,7 @@ export function acExFitMarkupCanvas(
 }
 
 /** Draw a filled arrow head at `to`, pointing along `from` → `to`. */
-export function acExDrawMarkupArrowHead(
+export function acexDrawMarkupArrowHead(
   ctx: CanvasRenderingContext2D,
   from: { x: number; y: number },
   to: { x: number; y: number },
@@ -270,7 +270,7 @@ export function acExDrawMarkupArrowHead(
 }
 
 /** Draw a leader segment, optionally with an arrow head at the tip. */
-export function acExDrawMarkupLeader(
+export function acexDrawMarkupLeader(
   ctx: CanvasRenderingContext2D,
   tip: { x: number; y: number },
   anchor: { x: number; y: number },
@@ -286,18 +286,18 @@ export function acExDrawMarkupLeader(
   ctx.lineTo(anchor.x, anchor.y)
   ctx.stroke()
   if (withArrow) {
-    acExDrawMarkupArrowHead(
+    acexDrawMarkupArrowHead(
       ctx,
       anchor,
       tip,
       color,
-      arrowSizePx ?? acExOverlayArrowSize(lineWidth)
+      arrowSizePx ?? acexOverlayArrowSize(lineWidth)
     )
   }
 }
 
 /** Map CAD line weight to canvas stroke width in CSS pixels. */
-export function acExMarkupCanvasLineWidth(weight?: number): number {
+export function acexMarkupCanvasLineWidth(weight?: number): number {
   if (weight == null || !Number.isFinite(weight) || weight <= 0) return 0
   return Math.max(1, weight / 28)
 }
@@ -435,7 +435,7 @@ function tessellateMarkupCloud(
 }
 
 /** Stroke a revision cloud on a canvas context (screen projection). */
-export function acExStrokeMarkupCloud(
+export function acexStrokeMarkupCloud(
   ctx: CanvasRenderingContext2D,
   first: AcExMarkupPoint2d,
   second: AcExMarkupPoint2d,
@@ -482,7 +482,7 @@ export function acExStrokeMarkupCloud(
 }
 
 /** Shortest distance from a screen point to a line segment (pixels). */
-export function acExDistToSegmentPx(
+export function acexDistToSegmentPx(
   px: number,
   py: number,
   ax: number,
@@ -500,7 +500,7 @@ export function acExDistToSegmentPx(
 }
 
 /** Distance from a screen point to a rectangle outline (not the interior). */
-export function acExDistToRectOutlinePx(
+export function acexDistToRectOutlinePx(
   px: number,
   py: number,
   a: { x: number; y: number },
@@ -511,15 +511,15 @@ export function acExDistToRectOutlinePx(
   const minY = Math.min(a.y, b.y)
   const maxY = Math.max(a.y, b.y)
   return Math.min(
-    acExDistToSegmentPx(px, py, minX, minY, maxX, minY),
-    acExDistToSegmentPx(px, py, maxX, minY, maxX, maxY),
-    acExDistToSegmentPx(px, py, maxX, maxY, minX, maxY),
-    acExDistToSegmentPx(px, py, minX, maxY, minX, minY)
+    acexDistToSegmentPx(px, py, minX, minY, maxX, minY),
+    acexDistToSegmentPx(px, py, maxX, minY, maxX, maxY),
+    acexDistToSegmentPx(px, py, maxX, maxY, minX, maxY),
+    acexDistToSegmentPx(px, py, minX, maxY, minX, minY)
   )
 }
 
 /** Approximate center of a markup for badge placement / focus. */
-export function acExMarkupCenter(
+export function acexMarkupCenter(
   record: AcExMarkupRecord
 ): AcExMarkupPoint2d | null {
   const g = record.geometry
@@ -582,7 +582,7 @@ function expandExtentsByCallout(
  * Shapes include an attached callout tip and text-box anchor so zoom-to
  * frames the leader together with the shape.
  */
-export function acExMarkupBounds(
+export function acexMarkupBounds(
   geometry: AcExMarkupGeometry
 ): AcExExtents | null {
   switch (geometry.type) {
@@ -630,7 +630,7 @@ export function acExMarkupBounds(
  *
  * Used so zoom-to includes HTML text boxes / badges / stamps.
  */
-export function acExExpandExtentsByClientRects(
+export function acexExpandExtentsByClientRects(
   extents: AcExExtents | null,
   rects: ReadonlyArray<{
     left: number
@@ -652,7 +652,7 @@ export function acExExpandExtentsByClientRects(
 /**
  * Combined zoom-to extents: control geometry plus overlay rectangles.
  */
-export function acExMarkupFocusExtents(
+export function acexMarkupFocusExtents(
   geometry: AcExMarkupGeometry,
   overlayRects: ReadonlyArray<{
     left: number
@@ -662,14 +662,14 @@ export function acExMarkupFocusExtents(
   }>,
   clientToWorld: (clientX: number, clientY: number) => AcExMarkupPoint2d
 ): AcExExtents | null {
-  return acExExpandExtentsByClientRects(
-    acExMarkupBounds(geometry),
+  return acexExpandExtentsByClientRects(
+    acexMarkupBounds(geometry),
     overlayRects,
     clientToWorld
   )
 }
 
-function acExTranslatePoint(
+function acexTranslatePoint(
   p: AcExMarkupPoint2d,
   dx: number,
   dy: number
@@ -677,22 +677,22 @@ function acExTranslatePoint(
   return { x: p.x + dx, y: p.y + dy }
 }
 
-function acExTranslateAttachedCallout(
+function acexTranslateAttachedCallout(
   callout: AcExMarkupAttachedCallout,
   dx: number,
   dy: number
 ): AcExMarkupAttachedCallout {
   return {
     ...callout,
-    tip: acExTranslatePoint(callout.tip, dx, dy),
-    anchor: acExTranslatePoint(callout.anchor, dx, dy)
+    tip: acexTranslatePoint(callout.tip, dx, dy),
+    anchor: acexTranslatePoint(callout.anchor, dx, dy)
   }
 }
 
 /**
  * Translate markup geometry by a world-space offset (including attached callout).
  */
-export function acExTranslateMarkupGeometry(
+export function acexTranslateMarkupGeometry(
   geometry: AcExMarkupGeometry,
   dx: number,
   dy: number
@@ -701,54 +701,54 @@ export function acExTranslateMarkupGeometry(
     case 'cloud':
       return {
         ...geometry,
-        corner1: acExTranslatePoint(geometry.corner1, dx, dy),
-        corner2: acExTranslatePoint(geometry.corner2, dx, dy),
+        corner1: acexTranslatePoint(geometry.corner1, dx, dy),
+        corner2: acexTranslatePoint(geometry.corner2, dx, dy),
         callout: geometry.callout
-          ? acExTranslateAttachedCallout(geometry.callout, dx, dy)
+          ? acexTranslateAttachedCallout(geometry.callout, dx, dy)
           : undefined
       }
     case 'rect':
       return {
         ...geometry,
-        corner1: acExTranslatePoint(geometry.corner1, dx, dy),
-        corner2: acExTranslatePoint(geometry.corner2, dx, dy),
+        corner1: acexTranslatePoint(geometry.corner1, dx, dy),
+        corner2: acexTranslatePoint(geometry.corner2, dx, dy),
         callout: geometry.callout
-          ? acExTranslateAttachedCallout(geometry.callout, dx, dy)
+          ? acexTranslateAttachedCallout(geometry.callout, dx, dy)
           : undefined
       }
     case 'highlight':
       return {
         ...geometry,
-        corner1: acExTranslatePoint(geometry.corner1, dx, dy),
-        corner2: acExTranslatePoint(geometry.corner2, dx, dy)
+        corner1: acexTranslatePoint(geometry.corner1, dx, dy),
+        corner2: acexTranslatePoint(geometry.corner2, dx, dy)
       }
     case 'circle':
       return {
         ...geometry,
-        center: acExTranslatePoint(geometry.center, dx, dy),
+        center: acexTranslatePoint(geometry.center, dx, dy),
         callout: geometry.callout
-          ? acExTranslateAttachedCallout(geometry.callout, dx, dy)
+          ? acexTranslateAttachedCallout(geometry.callout, dx, dy)
           : undefined
       }
     case 'callout':
       return {
         ...geometry,
-        tip: acExTranslatePoint(geometry.tip, dx, dy),
-        anchor: acExTranslatePoint(geometry.anchor, dx, dy)
+        tip: acexTranslatePoint(geometry.tip, dx, dy),
+        anchor: acexTranslatePoint(geometry.anchor, dx, dy)
       }
     case 'arrow':
     case 'line':
       return {
         ...geometry,
-        start: acExTranslatePoint(geometry.start, dx, dy),
-        end: acExTranslatePoint(geometry.end, dx, dy)
+        start: acexTranslatePoint(geometry.start, dx, dy),
+        end: acexTranslatePoint(geometry.end, dx, dy)
       }
     case 'text':
     case 'stamp':
     case 'symbol':
       return {
         ...geometry,
-        position: acExTranslatePoint(geometry.position, dx, dy)
+        position: acexTranslatePoint(geometry.position, dx, dy)
       }
   }
 }
@@ -757,7 +757,7 @@ export function acExTranslateMarkupGeometry(
  * Hit-test markup geometry in screen space.
  * @returns true when the pointer is within `thresholdPx` of the stroke / shape.
  */
-export function acExHitTestMarkup(
+export function acexHitTestMarkup(
   record: AcExMarkupRecord,
   clientX: number,
   clientY: number,
@@ -777,14 +777,14 @@ export function acExHitTestMarkup(
       const a = worldToScreen(g.start)
       const b = worldToScreen(g.end)
       return (
-        acExDistToSegmentPx(clientX, clientY, a.x, a.y, b.x, b.y) <= thresholdPx
+        acexDistToSegmentPx(clientX, clientY, a.x, a.y, b.x, b.y) <= thresholdPx
       )
     }
     case 'callout': {
       const a = worldToScreen(g.tip)
       const b = worldToScreen(g.anchor)
       return (
-        acExDistToSegmentPx(clientX, clientY, a.x, a.y, b.x, b.y) <= thresholdPx
+        acexDistToSegmentPx(clientX, clientY, a.x, a.y, b.x, b.y) <= thresholdPx
       )
     }
     case 'rect':
@@ -871,6 +871,6 @@ function hitAttachedCallout(
   const a = worldToScreen(callout.tip)
   const b = worldToScreen(callout.anchor)
   return (
-    acExDistToSegmentPx(clientX, clientY, a.x, a.y, b.x, b.y) <= thresholdPx
+    acexDistToSegmentPx(clientX, clientY, a.x, a.y, b.x, b.y) <= thresholdPx
   )
 }

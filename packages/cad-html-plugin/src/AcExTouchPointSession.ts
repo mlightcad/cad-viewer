@@ -47,25 +47,25 @@ let ignoreCompatMouseUntil = 0
  * mouse `pointerdown` + `click` near the finger. A drawing tool would
  * treat that as a real mouse pick unless this guard stays armed.
  */
-export function acExSinkFollowingClick() {
-  acExArmTouchMouseGuard()
+export function acexSinkFollowingClick() {
+  acexArmTouchMouseGuard()
   if (followingClickSink) return
   const sink = (event: Event) => {
     event.preventDefault()
     event.stopImmediatePropagation()
-    acExClearFollowingClickSink()
+    acexClearFollowingClickSink()
   }
   followingClickSink = sink
   window.addEventListener('click', sink, true)
   followingClickSinkTimer = setTimeout(() => {
-    acExClearFollowingClickSink()
+    acexClearFollowingClickSink()
   }, ACEX_TOUCH_MOUSE_GUARD_MS)
 }
 
 /**
- * Removes {@link acExSinkFollowingClick} if it is armed.
+ * Removes {@link acexSinkFollowingClick} if it is armed.
  */
-export function acExClearFollowingClickSink() {
+export function acexClearFollowingClickSink() {
   if (followingClickSinkTimer != null) {
     clearTimeout(followingClickSinkTimer)
     followingClickSinkTimer = null
@@ -80,7 +80,7 @@ export function acExClearFollowingClickSink() {
  *
  * @param now - Current time in milliseconds; defaults to `performance.now()`.
  */
-export function acExArmTouchMouseGuard(now: number = performance.now()) {
+export function acexArmTouchMouseGuard(now: number = performance.now()) {
   ignoreCompatMouseUntil = Math.max(
     ignoreCompatMouseUntil,
     now + ACEX_TOUCH_MOUSE_GUARD_MS
@@ -93,7 +93,7 @@ export function acExArmTouchMouseGuard(now: number = performance.now()) {
  *
  * @param now - Current time in milliseconds; defaults to `performance.now()`.
  */
-export function acExShouldIgnoreCompatMouse(
+export function acexShouldIgnoreCompatMouse(
   now: number = performance.now()
 ): boolean {
   return followingClickSink != null || now < ignoreCompatMouseUntil
@@ -102,8 +102,8 @@ export function acExShouldIgnoreCompatMouse(
 /**
  * Clears the click sink and mouse guard. Used by tests.
  */
-export function acExResetTouchMouseGuard() {
-  acExClearFollowingClickSink()
+export function acexResetTouchMouseGuard() {
+  acexClearFollowingClickSink()
   ignoreCompatMouseUntil = 0
 }
 

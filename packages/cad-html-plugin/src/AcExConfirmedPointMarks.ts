@@ -1,4 +1,4 @@
-import { acExHtmlIsMobileNavUi } from './AcExHtmlDrawerSheet'
+import { acexHtmlIsMobileNavUi } from './AcExHtmlDrawerSheet'
 
 /**
  * World-space point used by {@link AcExConfirmedPointMarks}.
@@ -12,7 +12,7 @@ export interface AcExConfirmedPointMarkPos {
  * Temporary plus marks at confirmed pick points during multi-step measure /
  * markup tools on phone and pad.
  *
- * Desktop never shows these marks. Uses {@link acExHtmlIsMobileNavUi} (compact
+ * Desktop never shows these marks. Uses {@link acexHtmlIsMobileNavUi} (compact
  * width or coarse pointer) instead of `acedIsMobileOrPadUi` so measure /
  * markup controllers stay free of the `cad-simple-viewer` barrel and stay
  * aligned with HTML mobile pick chrome (snap loupe, hidden Select/Pan).
@@ -50,7 +50,7 @@ export class AcExConfirmedPointMarks {
    * No-ops visually on desktop (clears any existing marks).
    */
   setWorldPoints(points: readonly AcExConfirmedPointMarkPos[]): void {
-    if (!acExHtmlIsMobileNavUi()) {
+    if (!acexHtmlIsMobileNavUi()) {
       this.clear()
       return
     }

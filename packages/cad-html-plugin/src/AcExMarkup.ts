@@ -4,7 +4,7 @@
  * Creates Design Review–style overlays (cloud, callout, text, rect, circle,
  * arrow, stamp) with sidecar JSON import/export compatible with cad-simple-viewer.
  *
- * @module AcExMarkup
+ * @module acexMarkup
  * @packageDocumentation
  */
 
@@ -13,37 +13,37 @@ import * as THREE from 'three'
 import type { AcExCommandSessionUiState } from './AcExCommandSessionPanel'
 import { AcExConfirmedPointMarks } from './AcExConfirmedPointMarks'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
-import { acExHtmlIcons } from './AcExHtmlIcons'
+import { AcExHtmlIcons } from './AcExHtmlIcons'
 import {
   ACEX_OVERLAY_ARROW_SIZE_PX,
-  acExPositionWcsOverlay,
-  acExResetOverlayViewScale,
-  acExScaledCanvasLineWidth,
-  acExScaledOverlayArrowSize,
-  acExScreenPxToWcs,
-  acExSeedOverlaySizesFromWcs
+  acexPositionWcsOverlay,
+  acexResetOverlayViewScale,
+  acexScaledCanvasLineWidth,
+  acexScaledOverlayArrowSize,
+  acexScreenPxToWcs,
+  acexSeedOverlaySizesFromWcs
 } from './AcExHtmlOverlayDom'
 import {
-  acExComputeLeaderTipOnShape,
-  acExDrawMarkupArrowHead,
-  acExDrawMarkupLeader,
-  acExFitMarkupCanvas,
-  acExHitTestMarkup,
-  acExHitTestMarkupShapeOutline,
-  acExIsAttachableShapeMarkup,
-  acExMarkupBounds,
-  acExMarkupCanvasLineWidth,
-  acExMarkupCenter,
-  acExMarkupFocusExtents,
+  acexComputeLeaderTipOnShape,
+  acexDrawMarkupArrowHead,
+  acexDrawMarkupLeader,
+  acexFitMarkupCanvas,
+  acexHitTestMarkup,
+  acexHitTestMarkupShapeOutline,
+  acexIsAttachableShapeMarkup,
+  acexMarkupBounds,
+  acexMarkupCanvasLineWidth,
+  acexMarkupCenter,
+  acexMarkupFocusExtents,
   type AcExMarkupShapeOutline,
-  acExMarkupShapeOutlineFromGeometry,
-  acExOverlayArrowSize,
-  acExStrokeMarkupCloud,
-  acExTranslateMarkupGeometry
+  acexMarkupShapeOutlineFromGeometry,
+  acexOverlayArrowSize,
+  acexStrokeMarkupCloud,
+  acexTranslateMarkupGeometry
 } from './AcExMarkupGeometry'
-import { acExBindMarkupPointerDrag } from './AcExMarkupGripDrag'
+import { acexBindMarkupPointerDrag } from './AcExMarkupGripDrag'
 import {
-  acExMarkupSidecarFileName,
+  acexMarkupSidecarFileName,
   parseAcExMarkupSidecar,
   stringifyAcExMarkupSidecar
 } from './AcExMarkupSidecar'
@@ -65,8 +65,8 @@ import type {
 import type { AcExTrackingOptions } from './AcExMeasureTracking'
 import { constrainToAcExTracking } from './AcExMeasureTracking'
 import type { AcExOsnapPoint } from './AcExOsnap'
-import { acExIsOverlayGrip, acExOverlayGripClassName } from './AcExOverlayGrip'
-import { acExExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
+import { acexIsOverlayGrip, acexOverlayGripClassName } from './AcExOverlayGrip'
+import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
 import type { AcExExtents } from './AcExSnapshotTypes'
 
 export type { AcExMarkupMode } from './AcExMarkupTypes'
@@ -109,7 +109,7 @@ interface AcExResolvedPoint {
 }
 
 /**
- * View/camera callbacks supplied by {@link AcExHtmlViewerRuntime}.
+ * View/camera callbacks supplied by {@link acexHtmlViewerRuntime}.
  */
 export interface AcExMarkupViewApi {
   screenToWcs: (clientX: number, clientY: number) => THREE.Vector2
@@ -420,11 +420,11 @@ export class AcExMarkupController {
     const arrowSizeWcs =
       style.arrowSizeWcs != null && style.arrowSizeWcs > 0
         ? style.arrowSizeWcs
-        : acExScreenPxToWcs(ACEX_OVERLAY_ARROW_SIZE_PX, wcsToScreen)
+        : acexScreenPxToWcs(ACEX_OVERLAY_ARROW_SIZE_PX, wcsToScreen)
     return {
       ...rest,
       lineWeight: ACEX_MARKUP_LINE_WEIGHT,
-      textHeightWcs: acExScreenPxToWcs(fontSize, wcsToScreen),
+      textHeightWcs: acexScreenPxToWcs(fontSize, wcsToScreen),
       arrowSizeWcs
     }
   }
@@ -465,7 +465,7 @@ export class AcExMarkupController {
     canvas: HTMLCanvasElement,
     strokeWidthWcs?: number
   ): number {
-    return acExScaledCanvasLineWidth(
+    return acexScaledCanvasLineWidth(
       baseLineWidth,
       canvas,
       this._view.getCameraZoom(),
@@ -503,15 +503,15 @@ export class AcExMarkupController {
           style.textHeightWcs =
             style.textHeightWcs * (patch.fontSize / prevFont)
         } else {
-          style.textHeightWcs = acExScreenPxToWcs(patch.fontSize, wcsToScreen)
+          style.textHeightWcs = acexScreenPxToWcs(patch.fontSize, wcsToScreen)
         }
         style.fontSize = patch.fontSize
       }
       if (patch.fontSize != null) {
-        acExSeedOverlaySizesFromWcs(this._view.getCameraZoom(), wcsToScreen, {
+        acexSeedOverlaySizesFromWcs(this._view.getCameraZoom(), wcsToScreen, {
           textHeightWcs: style.textHeightWcs,
           fontSizePx: style.fontSize ?? ACEX_MARKUP_FONT_SIZE,
-          strokeScreenPx: acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
+          strokeScreenPx: acexMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
           elements: item.parts.dom,
           canvases: item.parts.canvases
         })
@@ -840,9 +840,9 @@ export class AcExMarkupController {
       ) {
         continue
       }
-      const bounds = acExMarkupBounds(item.record.geometry)
+      const bounds = acexMarkupBounds(item.record.geometry)
       if (!bounds) continue
-      if (acExExtentsMatchBox(bounds, box, mode)) {
+      if (acexExtentsMatchBox(bounds, box, mode)) {
         next.add(item.record.id)
       }
     }
@@ -903,7 +903,7 @@ export class AcExMarkupController {
       .filter(el => !el.classList.contains('mlcad-markup-dot') && !el.hidden)
       .map(el => el.getBoundingClientRect())
       .filter(rect => rect.width > 0 || rect.height > 0)
-    const extents = acExMarkupFocusExtents(
+    const extents = acexMarkupFocusExtents(
       item.record.geometry,
       rects,
       (clientX, clientY) => this._clientToWorld(clientX, clientY)
@@ -961,7 +961,7 @@ export class AcExMarkupController {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = acExMarkupSidecarFileName(this._drawingName)
+    a.download = acexMarkupSidecarFileName(this._drawingName)
     a.click()
     URL.revokeObjectURL(url)
     this._statusEl.textContent = this._i18n.t('status.markupExported', {
@@ -1051,7 +1051,7 @@ export class AcExMarkupController {
     if (this._points.length === 0) {
       const hit = this._pickAttachableShapeAt(clientX, clientY)
       if (hit) {
-        const outline = acExMarkupShapeOutlineFromGeometry(hit.record.geometry)
+        const outline = acexMarkupShapeOutlineFromGeometry(hit.record.geometry)
         if (outline) {
           this._beginPlacingShapeCallout(outline, {
             existingId: hit.record.id,
@@ -1078,9 +1078,9 @@ export class AcExMarkupController {
       ) {
         continue
       }
-      if (!acExIsAttachableShapeMarkup(item.record.geometry)) continue
+      if (!acexIsAttachableShapeMarkup(item.record.geometry)) continue
       if (
-        acExHitTestMarkupShapeOutline(
+        acexHitTestMarkupShapeOutline(
           item.record.geometry,
           clientX,
           clientY,
@@ -1171,20 +1171,20 @@ export class AcExMarkupController {
     const tipDot = this._makeTempDot(tip, this._drawColor)
     this._statusEl.textContent = this._i18n.t('status.markupTextEditHint')
     const paintLeader = () => {
-      const ctx = acExFitMarkupCanvas(this._previewCanvas, this._root)
+      const ctx = acexFitMarkupCanvas(this._previewCanvas, this._root)
       if (!ctx) return
       const tipS = this._worldToOverlay(tip)
       const anchorS = this._worldToOverlay(anchor)
-      const baseWidth = acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT)
+      const baseWidth = acexMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT)
       const scaled = this._scaledCanvasLineWidth(baseWidth, ctx.canvas)
-      acExDrawMarkupLeader(
+      acexDrawMarkupLeader(
         ctx,
         tipS,
         anchorS,
         this._drawColor,
         true,
         scaled,
-        acExOverlayArrowSize(scaled, baseWidth)
+        acexOverlayArrowSize(scaled, baseWidth)
       )
     }
     paintLeader()
@@ -1220,7 +1220,7 @@ export class AcExMarkupController {
             x: Math.max(outline.corner1.x, outline.corner2.x) + 1,
             y: (outline.corner1.y + outline.corner2.y) / 2
           })
-    const tip = acExComputeLeaderTipOnShape(outline, toward)
+    const tip = acexComputeLeaderTipOnShape(outline, toward)
     const anchor = { ...toward }
     const badge = this._makeTempBadge(anchor, '', this._drawColor)
     const tipDot = this._makeTempDot(tip, this._drawColor)
@@ -1244,7 +1244,7 @@ export class AcExMarkupController {
     const placing = this._placingShapeCallout
     if (!placing || this._awaitingInlineText) return
     const anchor = point2(anchorPoint)
-    const tip = acExComputeLeaderTipOnShape(placing.outline, anchor)
+    const tip = acexComputeLeaderTipOnShape(placing.outline, anchor)
     placing.tip = tip
     placing.anchor = anchor
     placing.badge.dataset.wcsX = String(anchor.x)
@@ -1346,7 +1346,7 @@ export class AcExMarkupController {
     const item = this._committed.find(c => c.record.id === id)
     if (!item) return
     const g = item.record.geometry
-    if (!acExIsAttachableShapeMarkup(g)) return
+    if (!acexIsAttachableShapeMarkup(g)) return
     if (g.type !== 'cloud' && g.type !== 'rect' && g.type !== 'circle') return
     const next: AcExMarkupRecord = {
       ...item.record,
@@ -1433,7 +1433,7 @@ export class AcExMarkupController {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return
     const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
     const screen = this._view.wcsToScreen(new THREE.Vector2(x, y))
-    acExPositionWcsOverlay(el, screen, rootRect, this._view.getCameraZoom())
+    acexPositionWcsOverlay(el, screen, rootRect, this._view.getCameraZoom())
   }
 
   private _commitGeometry(
@@ -1469,14 +1469,14 @@ export class AcExMarkupController {
     // Push before building visuals so the initial redraw can resolve the record.
     this._committed.push({ record, parts })
     this._buildVisuals(record, parts)
-    acExSeedOverlaySizesFromWcs(
+    acexSeedOverlaySizesFromWcs(
       this._view.getCameraZoom(),
       p => this._wcsToScreenPoint(p),
       {
         textHeightWcs: record.style.textHeightWcs,
         arrowSizeWcs: record.style.arrowSizeWcs,
         fontSizePx: record.style.fontSize ?? ACEX_MARKUP_FONT_SIZE,
-        strokeScreenPx: acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
+        strokeScreenPx: acexMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
         elements: parts.dom,
         canvases: parts.canvases
       }
@@ -1501,13 +1501,13 @@ export class AcExMarkupController {
 
     const redraw = () => {
       const live = this._findRecord(markupId) ?? record
-      const ctx = acExFitMarkupCanvas(canvas, this._root)
+      const ctx = acexFitMarkupCanvas(canvas, this._root)
       if (!ctx) return
       this._strokeGeometry(
         ctx,
         live.geometry,
         live.style.color || ACEX_MARKUP_COLOR,
-        acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
+        acexMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
         undefined,
         true,
         live.style.arrowSizeWcs
@@ -1593,7 +1593,7 @@ export class AcExMarkupController {
       g.type === 'rect' ||
       g.type === 'circle'
     ) {
-      const center = acExMarkupCenter(record)
+      const center = acexMarkupCenter(record)
       if (center) {
         centerDot = this._makeDot(center, color, markupId)
         parts.dom.push(centerDot)
@@ -1666,7 +1666,7 @@ export class AcExMarkupController {
   private _placeDomAt(el: HTMLElement, wcs: AcExMarkupPoint2d): void {
     el.dataset.wcsX = String(wcs.x)
     el.dataset.wcsY = String(wcs.y)
-    if (!acExIsOverlayGrip(el)) acExResetOverlayViewScale(el)
+    if (!acexIsOverlayGrip(el)) acexResetOverlayViewScale(el)
     this._positionTempDom(el)
   }
 
@@ -1755,7 +1755,7 @@ export class AcExMarkupController {
       if (!centerDot) return
       const record = this._findRecord(id)
       if (!record) return
-      const center = acExMarkupCenter(record)
+      const center = acexMarkupCenter(record)
       if (center) this._placeDomAt(centerDot, center)
     }
 
@@ -1776,7 +1776,7 @@ export class AcExMarkupController {
     // Text / stamp: drag badge to move position.
     if (badge && (geometryType === 'text' || geometryType === 'stamp')) {
       cleanups.push(
-        acExBindMarkupPointerDrag({
+        acexBindMarkupPointerDrag({
           el: badge,
           clientToWorld,
           showSnapLoupe: false,
@@ -1804,7 +1804,7 @@ export class AcExMarkupController {
     // Standalone callout or shape-attached callout: tip + bubble.
     if (badge && tipDot && (geometryType === 'callout' || hasAttachedCallout)) {
       cleanups.push(
-        acExBindMarkupPointerDrag({
+        acexBindMarkupPointerDrag({
           el: tipDot,
           clientToWorld: clientToWorldOsnap,
           isEnabled,
@@ -1821,7 +1821,7 @@ export class AcExMarkupController {
             ) {
               const outline = shapeOutline()
               if (!outline || !g.callout) return
-              tip = acExComputeLeaderTipOnShape(outline, world)
+              tip = acexComputeLeaderTipOnShape(outline, world)
               g.callout.tip.x = tip.x
               g.callout.tip.y = tip.y
             } else if (g.type === 'callout') {
@@ -1838,7 +1838,7 @@ export class AcExMarkupController {
         })
       )
       cleanups.push(
-        acExBindMarkupPointerDrag({
+        acexBindMarkupPointerDrag({
           el: badge,
           clientToWorld,
           showSnapLoupe: false,
@@ -1879,7 +1879,7 @@ export class AcExMarkupController {
       (geometryType === 'arrow' || geometryType === 'line')
     ) {
       cleanups.push(
-        acExBindMarkupPointerDrag({
+        acexBindMarkupPointerDrag({
           el: startDot,
           clientToWorld: clientToWorldOsnap,
           isEnabled,
@@ -1898,7 +1898,7 @@ export class AcExMarkupController {
         })
       )
       cleanups.push(
-        acExBindMarkupPointerDrag({
+        acexBindMarkupPointerDrag({
           el: endDot,
           clientToWorld: clientToWorldOsnap,
           isEnabled,
@@ -1933,7 +1933,7 @@ export class AcExMarkupController {
       let originGeom: AcExMarkupGeometry | null = null
       let originCenter: AcExMarkupPoint2d | null = null
       cleanups.push(
-        acExBindMarkupPointerDrag({
+        acexBindMarkupPointerDrag({
           el: centerDot,
           clientToWorld: snapCenter ? clientToWorldOsnap : clientToWorld,
           showSnapLoupe: snapCenter,
@@ -1944,14 +1944,14 @@ export class AcExMarkupController {
             const record = this._findRecord(id)
             if (!record) return
             originGeom = structuredClone(record.geometry)
-            originCenter = acExMarkupCenter(record)
+            originCenter = acexMarkupCenter(record)
           },
           onMove: world => {
             const record = this._findRecord(id)
             if (!record || !originGeom || !originCenter) return
             const dx = world.x - originCenter.x
             const dy = world.y - originCenter.y
-            record.geometry = acExTranslateMarkupGeometry(originGeom, dx, dy)
+            record.geometry = acexTranslateMarkupGeometry(originGeom, dx, dy)
             syncAttachedDom(record.geometry)
             this._placeDomAt(centerDot, world)
             redraw()
@@ -1976,7 +1976,7 @@ export class AcExMarkupController {
     id: string
   ): HTMLElement {
     const dot = document.createElement('div')
-    dot.className = acExOverlayGripClassName('markup')
+    dot.className = acexOverlayGripClassName('markup')
     dot.dataset.markupId = id
     dot.dataset.wcsX = String(wcs.x)
     dot.dataset.wcsY = String(wcs.y)
@@ -2028,18 +2028,18 @@ export class AcExMarkupController {
         ctx.lineTo(b.x, b.y)
         ctx.stroke()
         if (g.type === 'arrow') {
-          acExDrawMarkupArrowHead(
+          acexDrawMarkupArrowHead(
             ctx,
             a,
             b,
             color,
             scaleArrowsWithView
-              ? acExScaledOverlayArrowSize(
+              ? acexScaledOverlayArrowSize(
                   ctx.canvas,
                   worldToScreen,
                   arrowSizeWcs
                 )
-              : acExOverlayArrowSize(strokeWidth, lineWidth)
+              : acexOverlayArrowSize(strokeWidth, lineWidth)
           )
         }
         break
@@ -2090,7 +2090,7 @@ export class AcExMarkupController {
         break
       }
       case 'cloud': {
-        acExStrokeMarkupCloud(
+        acexStrokeMarkupCloud(
           ctx,
           g.corner1,
           g.corner2,
@@ -2105,7 +2105,7 @@ export class AcExMarkupController {
       case 'callout': {
         const tip = worldToScreen(g.tip)
         const anchor = worldToScreen(g.anchor)
-        acExDrawMarkupLeader(
+        acexDrawMarkupLeader(
           ctx,
           tip,
           anchor,
@@ -2113,12 +2113,12 @@ export class AcExMarkupController {
           true,
           strokeWidth,
           scaleArrowsWithView
-            ? acExScaledOverlayArrowSize(
+            ? acexScaledOverlayArrowSize(
                 ctx.canvas,
                 worldToScreen,
                 arrowSizeWcs
               )
-            : acExOverlayArrowSize(strokeWidth, lineWidth)
+            : acexOverlayArrowSize(strokeWidth, lineWidth)
         )
         break
       }
@@ -2137,7 +2137,7 @@ export class AcExMarkupController {
     const tip = this._worldToOverlay(callout.tip)
     const anchor = this._worldToOverlay(callout.anchor)
     // Shape-attached leaders have no arrowhead (Design Review).
-    acExDrawMarkupLeader(ctx, tip, anchor, color, false, lineWidth)
+    acexDrawMarkupLeader(ctx, tip, anchor, color, false, lineWidth)
   }
 
   private _editText(id: string, badge: HTMLElement): void {
@@ -2277,7 +2277,7 @@ export class AcExMarkupController {
         }
       }
       if (
-        acExHitTestMarkup(
+        acexHitTestMarkup(
           item.record,
           clientX,
           clientY,
@@ -2359,7 +2359,7 @@ export class AcExMarkupController {
         const y = Number(el.dataset.wcsY)
         if (!Number.isFinite(x) || !Number.isFinite(y)) continue
         const screen = this._view.wcsToScreen(new THREE.Vector2(x, y))
-        acExPositionWcsOverlay(el, screen, rootRect, zoom)
+        acexPositionWcsOverlay(el, screen, rootRect, zoom)
       }
     }
     const placing = this._placingShapeCallout
@@ -2455,7 +2455,7 @@ export class AcExMarkupController {
         this._lastPointer.y
       )
       const anchor = point2(cursor)
-      const tip = acExComputeLeaderTipOnShape(placing.outline, anchor)
+      const tip = acexComputeLeaderTipOnShape(placing.outline, anchor)
       placing.tip = tip
       placing.anchor = anchor
       placing.badge.dataset.wcsX = String(anchor.x)
@@ -2482,10 +2482,10 @@ export class AcExMarkupController {
       this._lastPointer.x,
       this._lastPointer.y
     )
-    const ctx = acExFitMarkupCanvas(this._previewCanvas, this._root)
+    const ctx = acexFitMarkupCanvas(this._previewCanvas, this._root)
     if (!ctx) return
     const color = this._drawColor
-    const lineWidth = acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT)
+    const lineWidth = acexMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT)
 
     if (this._points.length === 0) return
     const a = this._points[0]!
@@ -2506,7 +2506,7 @@ export class AcExMarkupController {
         lineWidth
       )
     } else if (this._mode === 'cloud') {
-      acExStrokeMarkupCloud(
+      acexStrokeMarkupCloud(
         ctx,
         point2(a),
         point2(b),
@@ -2527,14 +2527,14 @@ export class AcExMarkupController {
       const tip = this._worldToOverlay(point2(a))
       const anchor = this._worldToOverlay(point2(b))
       const scaled = this._scaledCanvasLineWidth(lineWidth, ctx.canvas)
-      acExDrawMarkupLeader(
+      acexDrawMarkupLeader(
         ctx,
         tip,
         anchor,
         color,
         true,
         scaled,
-        acExOverlayArrowSize(scaled, lineWidth)
+        acexOverlayArrowSize(scaled, lineWidth)
       )
     }
   }
@@ -2543,10 +2543,10 @@ export class AcExMarkupController {
     placing: AcExPlacingShapeCallout,
     withLeader: boolean
   ): void {
-    const ctx = acExFitMarkupCanvas(this._previewCanvas, this._root)
+    const ctx = acexFitMarkupCanvas(this._previewCanvas, this._root)
     if (!ctx) return
     const color = this._drawColor
-    const lineWidth = acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT)
+    const lineWidth = acexMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT)
     const outline = placing.outline
     // Existing shape is already committed; only preview the new leader.
     if (!placing.existingId) {
@@ -2562,7 +2562,7 @@ export class AcExMarkupController {
           lineWidth
         )
       } else if (outline.kind === 'cloud') {
-        acExStrokeMarkupCloud(
+        acexStrokeMarkupCloud(
           ctx,
           outline.corner1,
           outline.corner2,
@@ -2587,7 +2587,7 @@ export class AcExMarkupController {
     if (!withLeader) return
     const tip = this._worldToOverlay(placing.tip)
     const anchor = this._worldToOverlay(placing.anchor)
-    acExDrawMarkupLeader(
+    acexDrawMarkupLeader(
       ctx,
       tip,
       anchor,
@@ -2607,7 +2607,7 @@ export class AcExMarkupController {
   }
 
   private _clearPreview(): void {
-    const ctx = acExFitMarkupCanvas(this._previewCanvas, this._root)
+    const ctx = acexFitMarkupCanvas(this._previewCanvas, this._root)
     if (ctx) {
       // already cleared by fit
     }
@@ -2668,8 +2668,8 @@ export class AcExMarkupController {
     // Tooltip stays action-oriented (click to hide / show).
     const titleKey = this._visible ? 'toolbar.markupHide' : 'toolbar.markupShow'
     const icon = this._visible
-      ? acExHtmlIcons.markupShow
-      : acExHtmlIcons.markupHide
+      ? AcExHtmlIcons.markupShow
+      : AcExHtmlIcons.markupHide
     const label = this._i18n.t(titleKey)
     buttons.forEach(btn => {
       btn.classList.toggle('active', this._visible)
