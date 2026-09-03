@@ -1,7 +1,7 @@
 /**
  * Measurement tools for the offline HTML viewer (distance, continuous, angle, arc, area, coordinate).
  *
- * @module AcExMeasurement
+ * @module acexMeasurement
  * @packageDocumentation
  */
 
@@ -11,28 +11,28 @@ import * as THREE from 'three'
 import type { AcExCommandSessionUiState } from './AcExCommandSessionPanel'
 import { AcExConfirmedPointMarks } from './AcExConfirmedPointMarks'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
-import { acExHtmlIcons } from './AcExHtmlIcons'
+import { AcExHtmlIcons } from './AcExHtmlIcons'
 import {
   ACEX_OVERLAY_ARROW_SIZE_PX,
-  acExPixelsPerWorldUnit,
-  acExPositionWcsOverlay,
-  acExResetOverlayViewScale,
-  acExScaledCanvasLineWidth,
-  acExScaledOverlayArrowSize,
-  acExScreenPxToWcs,
-  acExSeedOverlaySizesFromWcs
+  acexPixelsPerWorldUnit,
+  acexPositionWcsOverlay,
+  acexResetOverlayViewScale,
+  acexScaledCanvasLineWidth,
+  acexScaledOverlayArrowSize,
+  acexScreenPxToWcs,
+  acexSeedOverlaySizesFromWcs
 } from './AcExHtmlOverlayDom'
 import {
-  acExDrawMarkupArrowHead,
-  acExExpandExtentsByClientRects,
-  acExOverlayArrowSize
+  acexDrawMarkupArrowHead,
+  acexExpandExtentsByClientRects,
+  acexOverlayArrowSize
 } from './AcExMarkupGeometry'
-import { acExBindMarkupPointerDrag } from './AcExMarkupGripDrag'
+import { acexBindMarkupPointerDrag } from './AcExMarkupGripDrag'
 import {
   ACEX_MEASUREMENT_FONT_SIZE,
   ACEX_MEASUREMENT_LINE_WEIGHT,
-  acExMeasureCanvasLineWidth,
-  acExMeasurementSidecarFileName,
+  acexMeasureCanvasLineWidth,
+  acexMeasurementSidecarFileName,
   parseAcExMeasurementSidecar,
   stringifyAcExMeasurementSidecar
 } from './AcExMeasurementSidecar'
@@ -53,8 +53,8 @@ import {
   constrainToAcExTracking
 } from './AcExMeasureTracking'
 import type { AcExOsnapPoint } from './AcExOsnap'
-import { acExIsOverlayGrip, acExOverlayGripClassName } from './AcExOverlayGrip'
-import { acExExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
+import { acexIsOverlayGrip, acexOverlayGripClassName } from './AcExOverlayGrip'
+import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
 import type { AcExExtents } from './AcExSnapshotTypes'
 
 /**
@@ -125,7 +125,7 @@ interface AcExResolvedPoint {
 }
 
 /**
- * View/camera callbacks supplied by {@link AcExHtmlViewerRuntime} so measurement
+ * View/camera callbacks supplied by {@link acexHtmlViewerRuntime} so measurement
  * logic stays decoupled from orthographic pan/zoom implementation details.
  */
 export interface AcExMeasureViewApi {
@@ -339,7 +339,7 @@ function measurementFocusExtents(
   }>,
   clientToWorld: (clientX: number, clientY: number) => { x: number; y: number }
 ): AcExExtents | null {
-  const extents = acExExpandExtentsByClientRects(
+  const extents = acexExpandExtentsByClientRects(
     measurementGeometryExtents(geometry),
     overlayRects,
     clientToWorld
@@ -499,7 +499,7 @@ function interiorAngleArcScreenMetrics(
   const cx = sv.x
   const cy = sv.y
   const rWcs = angleArcRadiusWcs(vertex, arm1, arm2)
-  const r = rWcs * acExPixelsPerWorldUnit(wcsToScreen)
+  const r = rWcs * acexPixelsPerWorldUnit(wcsToScreen)
   const startAngle = Math.atan2(sa1.y - cy, sa1.x - cx)
   const endAngle = Math.atan2(sa2.y - cy, sa2.x - cx)
   const antiClockwise = normaliseAngle(endAngle - startAngle) > Math.PI
@@ -934,7 +934,7 @@ function segmentsIntersect(
  */
 function makeDotEl(): HTMLDivElement {
   const dot = document.createElement('div')
-  dot.className = acExOverlayGripClassName('measure')
+  dot.className = acexOverlayGripClassName('measure')
   return dot
 }
 
@@ -1475,7 +1475,7 @@ export class AcExMeasureController {
     const measure = this._committed.find(item => item.id === id)
     if (!measure) return false
     const rects = measure.parts.dom
-      .filter(el => !acExIsOverlayGrip(el) && !el.hidden)
+      .filter(el => !acexIsOverlayGrip(el) && !el.hidden)
       .map(el => el.getBoundingClientRect())
       .filter(rect => rect.width > 0 || rect.height > 0)
     const extents = measurementFocusExtents(
@@ -1588,7 +1588,7 @@ export class AcExMeasureController {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = acExMeasurementSidecarFileName(this._drawingName)
+    a.download = acexMeasurementSidecarFileName(this._drawingName)
     a.click()
     URL.revokeObjectURL(url)
     this._statusEl.textContent = this._i18n.t('status.measureExported', {
@@ -1783,7 +1783,7 @@ export class AcExMeasureController {
       }
       const bounds = measurementGeometryExtents(measure.record.geometry)
       if (!bounds) continue
-      if (acExExtentsMatchBox(bounds, box, mode)) {
+      if (acexExtentsMatchBox(bounds, box, mode)) {
         next.add(measure.id)
       }
     }
@@ -1907,8 +1907,8 @@ export class AcExMeasureController {
       ? 'toolbar.measureHide'
       : 'toolbar.measureShow'
     const icon = this._visible
-      ? acExHtmlIcons.markupShow
-      : acExHtmlIcons.markupHide
+      ? AcExHtmlIcons.markupShow
+      : AcExHtmlIcons.markupHide
     const label = this._i18n.t(titleKey)
     buttons.forEach(btn => {
       btn.classList.toggle('active', this._visible)
@@ -2142,7 +2142,7 @@ export class AcExMeasureController {
       canvas,
       points,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT),
+      acexMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT),
       undefined,
       options?.bothArrows,
       false,
@@ -2242,7 +2242,7 @@ export class AcExMeasureController {
     }
 
     parts.cleanups.push(
-      acExBindMarkupPointerDrag({
+      acexBindMarkupPointerDrag({
         el: dot,
         clientToWorld: (x, y) => this._clientToWorld(x, y),
         isEnabled: () => this._gripsEnabled(),
@@ -2396,7 +2396,7 @@ export class AcExMeasureController {
       this._touchMeasureGeometry(id, 'length', dist)
     }
     parts.cleanups.push(
-      acExBindMarkupPointerDrag({
+      acexBindMarkupPointerDrag({
         el: startDot,
         clientToWorld: (x, y) => this._clientToWorld(x, y),
         isEnabled,
@@ -2408,7 +2408,7 @@ export class AcExMeasureController {
         },
         onCommit
       }),
-      acExBindMarkupPointerDrag({
+      acexBindMarkupPointerDrag({
         el: endDot,
         clientToWorld: (x, y) => this._clientToWorld(x, y),
         isEnabled,
@@ -2591,7 +2591,7 @@ export class AcExMeasureController {
         arm1,
         arm2,
         style.color,
-        acExMeasureCanvasLineWidth(style.lineWeight),
+        acexMeasureCanvasLineWidth(style.lineWeight),
         style.strokeWidthWcs
       )
     }
@@ -2691,7 +2691,7 @@ export class AcExMeasureController {
       this._touchMeasureGeometry(id, null, 0)
     }
     const bind = (el: HTMLElement, target: THREE.Vector2) =>
-      acExBindMarkupPointerDrag({
+      acexBindMarkupPointerDrag({
         el,
         clientToWorld: (x, y) => this._clientToWorld(x, y),
         isEnabled,
@@ -2969,7 +2969,7 @@ export class AcExMeasureController {
         through,
         end,
         style.color,
-        acExMeasureCanvasLineWidth(style.lineWeight),
+        acexMeasureCanvasLineWidth(style.lineWeight),
         style.strokeWidthWcs
       )
     }
@@ -3135,7 +3135,7 @@ export class AcExMeasureController {
       this._touchMeasureGeometry(id, 'length', len)
     }
     const bind = (el: HTMLElement, target: THREE.Vector2) =>
-      acExBindMarkupPointerDrag({
+      acexBindMarkupPointerDrag({
         el,
         clientToWorld: (x, y) => this._clientToWorld(x, y),
         isEnabled,
@@ -3192,7 +3192,7 @@ export class AcExMeasureController {
         start,
         end,
         style.color,
-        acExMeasureCanvasLineWidth(style.lineWeight),
+        acexMeasureCanvasLineWidth(style.lineWeight),
         style.strokeWidthWcs
       )
     }
@@ -3283,7 +3283,7 @@ export class AcExMeasureController {
       this._touchMeasureGeometry(id, 'length', len)
     }
     const bind = (el: HTMLElement, target: THREE.Vector2) =>
-      acExBindMarkupPointerDrag({
+      acexBindMarkupPointerDrag({
         el,
         clientToWorld: (x, y) => this._clientToWorld(x, y),
         isEnabled,
@@ -3414,7 +3414,7 @@ export class AcExMeasureController {
         canvas,
         points,
         style.color,
-        acExMeasureCanvasLineWidth(style.lineWeight),
+        acexMeasureCanvasLineWidth(style.lineWeight),
         style.strokeWidthWcs
       )
     }
@@ -3491,7 +3491,7 @@ export class AcExMeasureController {
       const dot = dots[index]!
       const target = points[index]!
       parts.cleanups.push(
-        acExBindMarkupPointerDrag({
+        acexBindMarkupPointerDrag({
           el: dot,
           clientToWorld: (x, y) => this._clientToWorld(x, y),
           isEnabled,
@@ -3531,7 +3531,7 @@ export class AcExMeasureController {
         canvas,
         pts,
         style.color || this._measureCss(),
-        acExMeasureCanvasLineWidth(style.lineWeight),
+        acexMeasureCanvasLineWidth(style.lineWeight),
         style.strokeWidthWcs,
         bothArrows,
         bothArrows,
@@ -3546,10 +3546,10 @@ export class AcExMeasureController {
   private _placeDomAt(el: HTMLElement, wcs: { x: number; y: number }): void {
     el.dataset.wcsX = String(wcs.x)
     el.dataset.wcsY = String(wcs.y)
-    if (!acExIsOverlayGrip(el)) acExResetOverlayViewScale(el)
+    if (!acexIsOverlayGrip(el)) acexResetOverlayViewScale(el)
     const screen = this._view.wcsToScreen(new THREE.Vector2(wcs.x, wcs.y))
     const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
-    acExPositionWcsOverlay(el, screen, rootRect, this._view.getCameraZoom())
+    acexPositionWcsOverlay(el, screen, rootRect, this._view.getCameraZoom())
   }
 
   /** Replace selection with a single measurement (grip edit). @internal */
@@ -3663,19 +3663,19 @@ export class AcExMeasureController {
       : bothArrows && screen.length === 2
     if (drawArrows) {
       const arrowSize = scaleArrowsWithView
-        ? acExScaledOverlayArrowSize(
+        ? acexScaledOverlayArrowSize(
             canvas,
             p => this._wcsToScreenPoint(p),
             arrowSizeWcs
           )
-        : acExOverlayArrowSize(scaled, lineWidth)
+        : acexOverlayArrowSize(scaled, lineWidth)
       const last = segmentArrows ? screen.length - 1 : 1
       for (let i = 0; i < last; i++) {
         const a = screen[i]!
         const b = screen[i + 1]!
         if (Math.hypot(b.x - a.x, b.y - a.y) >= arrowSize) {
-          acExDrawMarkupArrowHead(ctx, b, a, strokeCss, arrowSize)
-          acExDrawMarkupArrowHead(ctx, a, b, strokeCss, arrowSize)
+          acexDrawMarkupArrowHead(ctx, b, a, strokeCss, arrowSize)
+          acexDrawMarkupArrowHead(ctx, a, b, strokeCss, arrowSize)
         }
       }
     }
@@ -3766,14 +3766,14 @@ export class AcExMeasureController {
       quantity,
       value
     })
-    acExSeedOverlaySizesFromWcs(
+    acexSeedOverlaySizesFromWcs(
       this._view.getCameraZoom(),
       p => this._wcsToScreenPoint(p),
       {
         textHeightWcs: style.textHeightWcs,
         arrowSizeWcs: style.arrowSizeWcs,
         fontSizePx: style.fontSize,
-        strokeScreenPx: acExMeasureCanvasLineWidth(
+        strokeScreenPx: acexMeasureCanvasLineWidth(
           ACEX_MEASUREMENT_LINE_WEIGHT
         ),
         elements: parts.dom,
@@ -3812,7 +3812,7 @@ export class AcExMeasureController {
       style.arrowSizeWcs != null && style.arrowSizeWcs > 0
         ? style.arrowSizeWcs
         : includeArrow
-          ? acExScreenPxToWcs(ACEX_OVERLAY_ARROW_SIZE_PX, wcsToScreen)
+          ? acexScreenPxToWcs(ACEX_OVERLAY_ARROW_SIZE_PX, wcsToScreen)
           : undefined
     return {
       ...rest,
@@ -3820,7 +3820,7 @@ export class AcExMeasureController {
       textHeightWcs:
         style.textHeightWcs != null && style.textHeightWcs > 0
           ? style.textHeightWcs
-          : acExScreenPxToWcs(style.fontSize, wcsToScreen),
+          : acexScreenPxToWcs(style.fontSize, wcsToScreen),
       ...(arrowSizeWcs != null && arrowSizeWcs > 0 ? { arrowSizeWcs } : {})
     }
   }
@@ -3835,7 +3835,7 @@ export class AcExMeasureController {
     return {
       ...rest,
       lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
-      textHeightWcs: acExScreenPxToWcs(style.fontSize, wcsToScreen)
+      textHeightWcs: acexScreenPxToWcs(style.fontSize, wcsToScreen)
     }
   }
 
@@ -3879,7 +3879,7 @@ export class AcExMeasureController {
     canvas: HTMLCanvasElement,
     strokeWidthWcs?: number
   ): number {
-    return acExScaledCanvasLineWidth(
+    return acexScaledCanvasLineWidth(
       baseLineWidth,
       canvas,
       this._view.getCameraZoom(),
@@ -4157,15 +4157,15 @@ export class AcExMeasureController {
           style.textHeightWcs =
             style.textHeightWcs * (patch.fontSize / prevFont)
         } else {
-          style.textHeightWcs = acExScreenPxToWcs(patch.fontSize, wcsToScreen)
+          style.textHeightWcs = acexScreenPxToWcs(patch.fontSize, wcsToScreen)
         }
         style.fontSize = patch.fontSize
       }
       if (patch.fontSize != null) {
-        acExSeedOverlaySizesFromWcs(this._view.getCameraZoom(), wcsToScreen, {
+        acexSeedOverlaySizesFromWcs(this._view.getCameraZoom(), wcsToScreen, {
           textHeightWcs: style.textHeightWcs,
           fontSizePx: style.fontSize,
-          strokeScreenPx: acExMeasureCanvasLineWidth(
+          strokeScreenPx: acexMeasureCanvasLineWidth(
             ACEX_MEASUREMENT_LINE_WEIGHT
           ),
           elements: measure.parts.dom,
@@ -4208,7 +4208,7 @@ export class AcExMeasureController {
         const y = Number(el.dataset.wcsY)
         if (!Number.isFinite(x) || !Number.isFinite(y)) return
         const screen = this._view.wcsToScreen(new THREE.Vector2(x, y))
-        acExPositionWcsOverlay(el, screen, rootRect, zoom)
+        acexPositionWcsOverlay(el, screen, rootRect, zoom)
       })
   }
 
@@ -4303,7 +4303,7 @@ export class AcExMeasureController {
       arm1,
       arm2,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT)
+      acexMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT)
     )
   }
 
@@ -4424,7 +4424,7 @@ export class AcExMeasureController {
       through,
       end,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT)
+      acexMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT)
     )
   }
 
@@ -4487,7 +4487,7 @@ export class AcExMeasureController {
       canvas,
       points,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT)
+      acexMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT)
     )
   }
 }

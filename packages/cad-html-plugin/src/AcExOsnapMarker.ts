@@ -1,10 +1,10 @@
 import type { AcExOsnapMode } from './AcExOsnap'
-import { acExOsnapModeToMarkerType } from './AcExOsnap'
+import { acexOsnapModeToMarkerType } from './AcExOsnap'
 
 /**
  * Visual shape of an object-snap marker in the offline HTML viewer.
  *
- * Selected by {@link acExOsnapModeToMarkerType} from {@link AcExOsnapMode}:
+ * Selected by {@link acexOsnapModeToMarkerType} from {@link AcExOsnapMode}:
  * - `rect` — endpoint, node
  * - `triangle` — midpoint
  * - `circle` — center
@@ -24,7 +24,7 @@ export type AcExOsnapMarkerShape =
  * Screen-space object snap marker for the offline HTML viewer.
  *
  * Renders a small glyph at the snapped screen position during measurement.
- * Shape follows {@link acExOsnapModeToMarkerType} so behavior matches the
+ * Shape follows {@link acexOsnapModeToMarkerType} so behavior matches the
  * main CAD viewer (square, triangle, circle, diamond, X).
  */
 export class AcExOsnapMarker {
@@ -59,7 +59,7 @@ export class AcExOsnapMarker {
    */
   show(clientX: number, clientY: number, mode: AcExOsnapMode): void {
     const rect = this.host.getBoundingClientRect()
-    const shape = acExOsnapModeToMarkerType(mode)
+    const shape = acexOsnapModeToMarkerType(mode)
     if (shape !== this.shape) {
       this.applyShape(shape)
     }

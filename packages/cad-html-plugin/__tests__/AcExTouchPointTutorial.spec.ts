@@ -15,8 +15,8 @@ jest.mock('../src/AcExHtmlSimpleViewerUi', () => {
 })
 
 import {
-  acExMaybeShowTouchPointTutorial,
-  acExShouldShowTouchPointTutorial
+  acexMaybeShowTouchPointTutorial,
+  acexShouldShowTouchPointTutorial
 } from '../src/AcExTouchPointTutorial'
 import { AcUiDialog } from '../../cad-simple-viewer/src/ui/AcUiDialog'
 
@@ -30,8 +30,8 @@ describe('AcExTouchPointTutorial', () => {
   })
 
   it('shows when mobile/pad UI is active and prefs allow it', () => {
-    expect(acExShouldShowTouchPointTutorial()).toBe(true)
-    void acExMaybeShowTouchPointTutorial({
+    expect(acexShouldShowTouchPointTutorial()).toBe(true)
+    void acexMaybeShowTouchPointTutorial({
       t: (key: string) => key
     } as never)
     expect(document.querySelector('.ml-ui-touch-point-tutorial')).not.toBeNull()
@@ -39,8 +39,8 @@ describe('AcExTouchPointTutorial', () => {
 
   it('does not show on desktop UI', () => {
     isMobileOrPad.mockReturnValue(false)
-    expect(acExShouldShowTouchPointTutorial()).toBe(false)
-    void acExMaybeShowTouchPointTutorial({
+    expect(acexShouldShowTouchPointTutorial()).toBe(false)
+    void acexMaybeShowTouchPointTutorial({
       t: (key: string) => key
     } as never)
     expect(document.querySelector('.ml-ui-touch-point-tutorial')).toBeNull()
@@ -51,6 +51,6 @@ describe('AcExTouchPointTutorial', () => {
       ACEX_TOUCH_POINT_TUTORIAL_PREFS_KEY,
       JSON.stringify({ hideForever: true, snoozeDate: null })
     )
-    expect(acExShouldShowTouchPointTutorial()).toBe(false)
+    expect(acexShouldShowTouchPointTutorial()).toBe(false)
   })
 })

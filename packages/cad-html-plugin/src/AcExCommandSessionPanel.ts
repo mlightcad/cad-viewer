@@ -1,4 +1,4 @@
-import { acExHtmlIsPhoneLayout } from './AcExHtmlDrawerSheet'
+import { acexHtmlIsPhoneLayout } from './AcExHtmlDrawerSheet'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { ML_UI_MOBILE_MAX_WIDTH } from './AcExHtmlShell'
 
@@ -194,7 +194,7 @@ export class AcExCommandSessionPanel {
     const relative = metrics?.hasBasePoint === true
     // No rubber-band yet (and markup): still show X/Y labels, not an empty actions row.
     const absolute = !relative
-    const phone = acExHtmlIsPhoneLayout()
+    const phone = acexHtmlIsPhoneLayout()
     this.root.classList.toggle('is-relative', relative)
     this.root.classList.toggle('is-absolute', absolute)
     this.root.classList.remove('is-actions-only')

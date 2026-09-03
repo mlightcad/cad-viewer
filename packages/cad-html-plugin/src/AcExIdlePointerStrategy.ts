@@ -1,4 +1,4 @@
-import { acExHtmlIsMobileNavUi } from './AcExHtmlDrawerSheet'
+import { acexHtmlIsMobileNavUi } from './AcExHtmlDrawerSheet'
 import type { AcExHtmlNavMode } from './AcExHtmlNavTools'
 
 /**
@@ -134,6 +134,6 @@ const mobileStrategy = new AcExMobileIdlePointerStrategy()
  * Re-evaluated each call so rotating a tablet or resizing the window
  * switches rules without rebinding listeners.
  */
-export function acExIdlePointerStrategy(): AcExIdlePointerStrategy {
-  return acExHtmlIsMobileNavUi() ? mobileStrategy : desktopStrategy
+export function acexIdlePointerStrategy(): AcExIdlePointerStrategy {
+  return acexHtmlIsMobileNavUi() ? mobileStrategy : desktopStrategy
 }

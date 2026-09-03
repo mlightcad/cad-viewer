@@ -6,9 +6,9 @@ import {
   ACEX_SIMULATED_MOUSE_STORAGE_KEY,
   AcExLoupeTouchPickStrategy,
   AcExSimulatedMouseTouchPickStrategy,
-  acExIsSimulatedMouseEnabled,
-  acExSetSimulatedMouseEnabled,
-  acExTouchPickStrategy
+  acexIsSimulatedMouseEnabled,
+  acexSetSimulatedMouseEnabled,
+  acexTouchPickStrategy
 } from '../src/AcExTouchPickStrategy'
 
 describe('AcExTouchPickStrategy', () => {
@@ -17,15 +17,15 @@ describe('AcExTouchPickStrategy', () => {
   })
 
   it('defaults to simulated mouse when unset', () => {
-    expect(acExIsSimulatedMouseEnabled()).toBe(true)
-    expect(acExTouchPickStrategy()).toBeInstanceOf(
+    expect(acexIsSimulatedMouseEnabled()).toBe(true)
+    expect(acexTouchPickStrategy()).toBeInstanceOf(
       AcExSimulatedMouseTouchPickStrategy
     )
   })
 
   it('returns loupe strategy when disabled', () => {
-    acExSetSimulatedMouseEnabled(false)
-    expect(acExTouchPickStrategy()).toBeInstanceOf(AcExLoupeTouchPickStrategy)
+    acexSetSimulatedMouseEnabled(false)
+    expect(acexTouchPickStrategy()).toBeInstanceOf(AcExLoupeTouchPickStrategy)
   })
 
   it('offsets the simulated-mouse sample above the finger', () => {

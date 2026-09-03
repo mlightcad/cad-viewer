@@ -1077,7 +1077,7 @@ function segmentBounds(seg: AcExOsnapSegment): {
  * @param mode - Active snap mode from {@link findSnap} or measurement UI.
  * @returns CSS shape key used by {@link AcExOsnapMarker}.
  */
-export function acExOsnapModeToMarkerType(
+export function acexOsnapModeToMarkerType(
   mode: AcExOsnapMode
 ): 'rect' | 'triangle' | 'x' | 'circle' | 'diamond' | 'intersection' {
   switch (mode) {

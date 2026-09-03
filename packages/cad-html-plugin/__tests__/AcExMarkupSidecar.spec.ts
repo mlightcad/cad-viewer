@@ -1,5 +1,5 @@
 import {
-  acExMarkupSidecarFileName,
+  acexMarkupSidecarFileName,
   parseAcExMarkupSidecar,
   stringifyAcExMarkupSidecar
 } from '../src/AcExMarkupSidecar'
@@ -125,8 +125,8 @@ describe('AcExMarkupSidecar', () => {
   })
 
   it('suggests sidecar file names', () => {
-    expect(acExMarkupSidecarFileName('plan.dwg')).toBe('plan.markup.json')
-    expect(acExMarkupSidecarFileName('plan.html')).toBe('plan.markup.json')
-    expect(acExMarkupSidecarFileName()).toBe('drawing.markup.json')
+    expect(acexMarkupSidecarFileName('plan.dwg')).toBe('plan.markup.json')
+    expect(acexMarkupSidecarFileName('plan.html')).toBe('plan.markup.json')
+    expect(acexMarkupSidecarFileName()).toBe('drawing.markup.json')
   })
 })

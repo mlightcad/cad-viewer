@@ -15,7 +15,7 @@ const MARKUP_DOT = 'mlcad-markup-dot'
 const MEASURE_DOT = 'mlcad-measure-dot'
 
 /** True when `el` is a committed markup / measure endpoint grip. */
-export function acExIsOverlayGrip(el: Element | null | undefined): boolean {
+export function acexIsOverlayGrip(el: Element | null | undefined): boolean {
   if (!el) return false
   return (
     el.classList.contains(MARKUP_DOT) ||
@@ -25,7 +25,7 @@ export function acExIsOverlayGrip(el: Element | null | undefined): boolean {
 }
 
 /** True when the grip belongs to a currently selected overlay. */
-export function acExIsOverlayGripSelected(el: HTMLElement): boolean {
+export function acexIsOverlayGripSelected(el: HTMLElement): boolean {
   return (
     el.classList.contains('mlcad-markup-selected') ||
     el.classList.contains('mlcad-measure-selected')
@@ -35,7 +35,7 @@ export function acExIsOverlayGripSelected(el: HTMLElement): boolean {
 /**
  * Hide or restore every overlay endpoint grip (entity-grip drag behavior).
  */
-export function acExSetOverlayGripsDragging(dragging: boolean): void {
+export function acexSetOverlayGripsDragging(dragging: boolean): void {
   document
     .getElementById('mlcad-markup-overlays')
     ?.classList.toggle(ACEX_OVERLAY_GRIP_DRAGGING_CLASS, dragging)
@@ -45,7 +45,7 @@ export function acExSetOverlayGripsDragging(dragging: boolean): void {
 }
 
 /** CSS class list for a committed overlay endpoint circle. */
-export function acExOverlayGripClassName(kind: 'markup' | 'measure'): string {
+export function acexOverlayGripClassName(kind: 'markup' | 'measure'): string {
   const kindClass = kind === 'markup' ? MARKUP_DOT : MEASURE_DOT
   return `${kindClass} ${ACEX_OVERLAY_GRIP_CLASS}`
 }

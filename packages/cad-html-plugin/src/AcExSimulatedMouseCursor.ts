@@ -70,7 +70,7 @@ function ensureCursor(host: HTMLElement): HTMLDivElement {
  * @param clientX - Sample X in viewport/client CSS pixels.
  * @param clientY - Sample Y in viewport/client CSS pixels.
  */
-export function acExRefreshSimulatedMouseCursor(
+export function acexRefreshSimulatedMouseCursor(
   host: HTMLElement,
   clientX: number,
   clientY: number
@@ -85,7 +85,7 @@ export function acExRefreshSimulatedMouseCursor(
 /**
  * Hides the simulated-mouse crosshair if visible.
  */
-export function acExHideSimulatedMouseCursor(): void {
+export function acexHideSimulatedMouseCursor(): void {
   if (!cursorRoot) return
   cursorRoot.style.display = 'none'
 }
@@ -93,7 +93,7 @@ export function acExHideSimulatedMouseCursor(): void {
 /**
  * Disposes the simulated-mouse cursor HUD (tests / teardown).
  */
-export function acExDisposeSimulatedMouseCursor(): void {
+export function acexDisposeSimulatedMouseCursor(): void {
   cursorRoot?.remove()
   cursorRoot = null
 }
