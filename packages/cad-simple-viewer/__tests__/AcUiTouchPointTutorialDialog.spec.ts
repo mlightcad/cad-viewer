@@ -6,6 +6,7 @@ import {
   AcUiTouchPointTutorial
 } from '../src/ui/touch-point-tutorial'
 import { AcUiDialog } from '../src/ui/AcUiDialog'
+import { ACED_TOUCH_POINT_LONG_PRESS_MS } from '../src/editor/input/ui/AcEdTouchPointTiming'
 
 describe('AcUiTouchPointTutorial', () => {
   afterEach(() => {
@@ -17,7 +18,7 @@ describe('AcUiTouchPointTutorial', () => {
   it('shows the demo animation and dismiss controls', async () => {
     const writePrefs = jest.fn()
     void AcUiTouchPointTutorial.maybeShow({
-      longPressMs: 1000,
+      longPressMs: ACED_TOUCH_POINT_LONG_PRESS_MS,
       labels: {
         title: 'Title',
         description: 'Description',

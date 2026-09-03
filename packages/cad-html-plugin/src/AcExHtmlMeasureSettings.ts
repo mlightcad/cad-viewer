@@ -144,14 +144,6 @@ function savePersistedSettings(state: AcExMeasureSettingsState): void {
   }
 }
 
-/**
- * First-level language picker. The parent icon is the selected locale badge,
- * matching cad-simple-ui-plugin `childIcon: 'selected'`.
- */
-export function buildAcExLanguageToolbarButton(): string {
-  return '<button type="button" class="mlcad-tool-btn has-children" id="mlcad-lang-btn" aria-haspopup="true" aria-expanded="false" data-children-ui="toolbar" data-i18n-key="toolbar.language" data-i18n-attr="title aria-label" title="Language" aria-label="Language"><span class="mlcad-tool-btn-icon" aria-hidden="true"><span class="mlcad-locale-option-badge" id="mlcad-lang-badge">EN</span></span><span class="mlcad-tool-btn-label" data-i18n-key="toolbar.language" data-i18n-text>Language</span></button>'
-}
-
 const LOCALE_LABEL_KEYS: Record<
   AcExHtmlLocale,
   'toolbar.localeEn' | 'toolbar.localeZh' | 'toolbar.localeCs' | 'toolbar.localeTr' | 'toolbar.localeAr'

@@ -10,6 +10,10 @@
 
 export { AcUiAciColorDialog } from '@mlightcad/cad-simple-viewer'
 export {
+  ACED_TOUCH_POINT_LONG_PRESS_MS,
+  ACED_TOUCH_POINT_MOVE_CANCEL_PX
+} from '@mlightcad/cad-simple-viewer/touch-point-timing'
+export {
   acedIsMobileOrPadUi,
   acuiLocalIsoDate,
   acuiShouldShowTouchPointTutorialFromPrefs,

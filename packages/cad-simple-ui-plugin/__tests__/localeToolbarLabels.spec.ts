@@ -82,6 +82,14 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
       },
       mergeLocaleMessage: jest.fn()
     },
+    AcApSettingManager: {
+      instance: {
+        get: jest.fn(() => true),
+        toggle: jest.fn(),
+        set: jest.fn(),
+        clearSessionOverride: jest.fn()
+      }
+    },
     isMarkupVisible: () => true,
     isMeasurementVisible: () => true
   }
