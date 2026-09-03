@@ -47,8 +47,9 @@ export function acExHtmlIsCompactLayout(): boolean {
 
 /**
  * Whether idle touch should unify pan + long-press box select (and hide
- * Select / Pan). Compact width covers phone and pad; coarse pointer covers
- * wider tablets such as iPad landscape.
+ * Select / Pan), and whether confirmed-point plus marks should show.
+ * Compact width covers phone and pad; coarse pointer covers wider tablets
+ * such as iPad landscape.
  */
 export function acExHtmlIsMobileNavUi(): boolean {
   return (
