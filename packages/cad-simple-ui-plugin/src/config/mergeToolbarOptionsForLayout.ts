@@ -2,11 +2,15 @@ import type { AcEdUiLayoutKind } from '@mlightcad/cad-simple-viewer'
 
 import type { AcUiToolbarOptions } from './types'
 
+/** Pad default: hide select/pan; touch drag pans and long-press box-selects. */
+const PAD_DEFAULT_EXCLUDE_ITEMS = ['select', 'pan']
+
 /**
  * Built-in toolbar chrome defaults for each layout kind.
  *
  * Phone: bottom bar, full width, labels, no collapse, `edgeOffset: 0`.
- * Pad/desktop: right-side bar with standard floating chrome.
+ * Pad/desktop: right-side bar with standard floating chrome. Pad also
+ * omits `select` and `pan` via {@link AcUiToolbarOptions.excludeItems}.
  *
  * @param layout - Layout kind to resolve defaults for.
  * @returns Default {@link AcUiToolbarOptions} before caller overrides.
@@ -39,7 +43,7 @@ export function acuiBuiltinToolbarOptionsForLayout(
     }
   }
 
-  return {
+  const desktopPad: AcUiToolbarOptions = {
     enabled: true,
     placement: 'right',
     items: 'default',
@@ -57,6 +61,15 @@ export function acuiBuiltinToolbarOptionsForLayout(
       replaceOnNested: false
     }
   }
+
+  if (layout === 'pad') {
+    return {
+      ...desktopPad,
+      excludeItems: [...PAD_DEFAULT_EXCLUDE_ITEMS]
+    }
+  }
+
+  return desktopPad
 }
 
 /**

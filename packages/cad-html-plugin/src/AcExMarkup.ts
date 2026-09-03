@@ -31,6 +31,7 @@ import {
   acExHitTestMarkup,
   acExHitTestMarkupShapeOutline,
   acExIsAttachableShapeMarkup,
+  acExMarkupBounds,
   acExMarkupCanvasLineWidth,
   acExMarkupCenter,
   acExMarkupFocusExtents,
@@ -65,6 +66,7 @@ import type { AcExTrackingOptions } from './AcExMeasureTracking'
 import { constrainToAcExTracking } from './AcExMeasureTracking'
 import type { AcExOsnapPoint } from './AcExOsnap'
 import { acExIsOverlayGrip, acExOverlayGripClassName } from './AcExOverlayGrip'
+import { acExExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
 import type { AcExExtents } from './AcExSnapshotTypes'
 
 export type { AcExMarkupMode } from './AcExMarkupTypes'
@@ -223,9 +225,9 @@ export class AcExMarkupController {
   private readonly _drawingName: string | undefined
   private readonly _onOsnapMarker: AcExMarkupControllerOptions['onOsnapMarker']
   private readonly _onActiveChange: ((active: boolean) => void) | null
-  private readonly _onSessionUi: ((
-    state: AcExCommandSessionUiState | null
-  ) => void) | null
+  private readonly _onSessionUi:
+    | ((state: AcExCommandSessionUiState | null) => void)
+    | null
   private readonly _onStyleChange: (() => void) | null
   private readonly _onBeforeActivate: (() => void) | null
   private readonly _getTrackingOptions:
@@ -310,9 +312,8 @@ export class AcExMarkupController {
     })
     this._root.appendChild(this._fileInput)
 
-    this._confirmedPointMarks = new AcExConfirmedPointMarks(
-      this._root,
-      pos => this._confirmedPointMarkScreen(pos)
+    this._confirmedPointMarks = new AcExConfirmedPointMarks(this._root, pos =>
+      this._confirmedPointMarkScreen(pos)
     )
     this._updateVisibilityToolbar()
   }
@@ -502,25 +503,18 @@ export class AcExMarkupController {
           style.textHeightWcs =
             style.textHeightWcs * (patch.fontSize / prevFont)
         } else {
-          style.textHeightWcs = acExScreenPxToWcs(
-            patch.fontSize,
-            wcsToScreen
-          )
+          style.textHeightWcs = acExScreenPxToWcs(patch.fontSize, wcsToScreen)
         }
         style.fontSize = patch.fontSize
       }
       if (patch.fontSize != null) {
-        acExSeedOverlaySizesFromWcs(
-          this._view.getCameraZoom(),
-          wcsToScreen,
-          {
-            textHeightWcs: style.textHeightWcs,
-            fontSizePx: style.fontSize ?? ACEX_MARKUP_FONT_SIZE,
-            strokeScreenPx: acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
-            elements: item.parts.dom,
-            canvases: item.parts.canvases
-          }
-        )
+        acExSeedOverlaySizesFromWcs(this._view.getCameraZoom(), wcsToScreen, {
+          textHeightWcs: style.textHeightWcs,
+          fontSizePx: style.fontSize ?? ACEX_MARKUP_FONT_SIZE,
+          strokeScreenPx: acExMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
+          elements: item.parts.dom,
+          canvases: item.parts.canvases
+        })
       }
       item.record.updatedAt = markupNow()
       const color = style.color || ACEX_MARKUP_COLOR
@@ -832,6 +826,29 @@ export class AcExMarkupController {
     return this._trySelectCommittedAt(clientX, clientY)
   }
 
+  /**
+   * Replaces markup selection with items whose geometry AABB matches `box`.
+   *
+   * @returns True when selection state changed.
+   */
+  handleSelectionBox(box: AcExExtents, mode: AcExSelectionMode): boolean {
+    if (this._mode || !this._visible) return false
+    const next = new Set<string>()
+    for (const item of this._committed) {
+      if (
+        !isMarkupOnLayout(item.record.layoutId, this._getActiveLayoutId?.())
+      ) {
+        continue
+      }
+      const bounds = acExMarkupBounds(item.record.geometry)
+      if (!bounds) continue
+      if (acExExtentsMatchBox(bounds, box, mode)) {
+        next.add(item.record.id)
+      }
+    }
+    return this._replaceSelection(next)
+  }
+
   deleteSelected(): void {
     if (this._selectedIds.size === 0) return
     for (const id of [...this._selectedIds]) {
@@ -883,9 +900,7 @@ export class AcExMarkupController {
     const item = this._committed.find(entry => entry.record.id === id)
     if (!item) return false
     const rects = item.parts.dom
-      .filter(
-        el => !el.classList.contains('mlcad-markup-dot') && !el.hidden
-      )
+      .filter(el => !el.classList.contains('mlcad-markup-dot') && !el.hidden)
       .map(el => el.getBoundingClientRect())
       .filter(rect => rect.width > 0 || rect.height > 0)
     const extents = acExMarkupFocusExtents(
@@ -1265,7 +1280,11 @@ export class AcExMarkupController {
           text || undefined
         )
       } else {
-        this._commitShapeWithCallout(placing.outline, callout, text || undefined)
+        this._commitShapeWithCallout(
+          placing.outline,
+          callout,
+          text || undefined
+        )
       }
       this._finishPlacingShapeCallout(false)
       this.cancelMode()
@@ -1760,6 +1779,7 @@ export class AcExMarkupController {
         acExBindMarkupPointerDrag({
           el: badge,
           clientToWorld,
+          showSnapLoupe: false,
           isEnabled,
           cursor: 'move',
           onPointerDown: onSelect,
@@ -1821,6 +1841,7 @@ export class AcExMarkupController {
         acExBindMarkupPointerDrag({
           el: badge,
           clientToWorld,
+          showSnapLoupe: false,
           isEnabled,
           cursor: 'move',
           onPointerDown: onSelect,
@@ -1915,6 +1936,7 @@ export class AcExMarkupController {
         acExBindMarkupPointerDrag({
           el: centerDot,
           clientToWorld: snapCenter ? clientToWorldOsnap : clientToWorld,
+          showSnapLoupe: snapCenter,
           isEnabled,
           cursor: 'move',
           onPointerDown: onSelect,
@@ -2279,6 +2301,28 @@ export class AcExMarkupController {
       this._view.render()
     }
     this._notifyRecordsChanged()
+  }
+
+  /**
+   * Replaces the current markup selection with `next`.
+   *
+   * @returns True when the selected id set changed.
+   */
+  private _replaceSelection(next: Set<string>): boolean {
+    if (
+      next.size === this._selectedIds.size &&
+      [...next].every(id => this._selectedIds.has(id))
+    ) {
+      return false
+    }
+    this._selectedIds.clear()
+    for (const id of next) this._selectedIds.add(id)
+    this._applySelectionStyles()
+    this._onStyleChange?.()
+    this._updateIdleStatus()
+    this._view.render()
+    this._notifyRecordsChanged()
+    return true
   }
 
   private _applySelectionStyles(): void {

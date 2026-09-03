@@ -277,7 +277,8 @@ export const ACEX_HTML_SHELL_CSS = `
   #mlcad-lang-btn .mlcad-locale-option-badge {
     font-size: 12px;
   }
-  #mlcad-zoom-window-rect {
+  #mlcad-zoom-window-rect,
+  #mlcad-selection-rect {
     position: fixed;
     z-index: 25;
     box-sizing: border-box;
@@ -285,7 +286,18 @@ export const ACEX_HTML_SHELL_CSS = `
     border: 1px dashed var(--mlcad-accent, #08e8de);
     background: rgba(8, 232, 222, 0.12);
   }
-  #mlcad-zoom-window-rect[hidden] { display: none; }
+  #mlcad-zoom-window-rect[hidden],
+  #mlcad-selection-rect[hidden] { display: none; }
+  #mlcad-selection-rect[data-mode='window'] {
+    border-style: solid;
+    border-color: #00ff5a;
+    background: rgba(64, 158, 255, 0.12);
+  }
+  #mlcad-selection-rect[data-mode='crossing'] {
+    border-style: dashed;
+    border-color: #00d1ff;
+    background: rgba(64, 158, 255, 0.12);
+  }
 
   #mlcad-layer-drawer,
   #mlcad-review-drawer,
@@ -1349,8 +1361,6 @@ export const ACEX_HTML_SHELL_CSS = `
     .mlcad-tool-btn.has-children::after {
       display: none;
     }
-    #mlcad-toolbar [data-action="select"],
-    #mlcad-toolbar [data-action="pan"],
     #mlcad-snap-menu-btn,
     #mlcad-lang-btn,
     #mlcad-toolbar-toggle,
@@ -1531,6 +1541,13 @@ export const ACEX_HTML_SHELL_CSS = `
     }
     #mlcad-command-session.is-relative .mlcad-session-group-delta {
       padding-top: 0;
+    }
+  }
+
+  @media (max-width: ${ML_UI_COMPACT_MAX_WIDTH}px), (pointer: coarse) {
+    #mlcad-toolbar [data-action="select"],
+    #mlcad-toolbar [data-action="pan"] {
+      display: none !important;
     }
   }
 
@@ -1855,7 +1872,10 @@ function buildAcExHtmlSettingsStrip(): string {
             'data-i18n-key': 'toolbar.language',
             'data-i18n-attr': 'title aria-label',
             'data-children-ui': 'toolbar'
-          }).replace('class="mlcad-tool-btn"', 'class="mlcad-tool-btn has-children"')}
+          }).replace(
+            'class="mlcad-tool-btn"',
+            'class="mlcad-tool-btn has-children"'
+          )}
         </div>
       </div>`
 }

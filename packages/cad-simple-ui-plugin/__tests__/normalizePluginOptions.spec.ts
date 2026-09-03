@@ -44,4 +44,11 @@ describe('acuiNormalizePluginOptions', () => {
     expect(resolved.layout).toBe('auto')
     expect(resolved.layouts).toEqual({})
   })
+
+  it('passes through toolbar excludeItems', () => {
+    const resolved = acuiNormalizePluginOptions({
+      toolbar: { excludeItems: ['select', 'pan'] }
+    })
+    expect(resolved.toolbar.excludeItems).toEqual(['select', 'pan'])
+  })
 })

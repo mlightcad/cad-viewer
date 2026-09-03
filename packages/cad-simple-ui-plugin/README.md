@@ -10,7 +10,7 @@ This plugin provides ready-to-use CAD viewer chrome without Vue, React, or Eleme
 - Nested sub-toolbars (sticky or dismissible) and optional popover menus, with flyout arrows
 - Toolbar placement: `top`, `bottom`, `left`, `right`
 - Optional in-canvas-parent layout: sit against the canvas edge instead of floating over it
-- Default toolbar includes view, measure, review, then export, plus toolbar placement, theme toggle, and a language picker
+- Default toolbar differs by layout: compact phone bar, pad without Select/Pan, full desktop icon strip
 - UI theme follows `COLORTHEME` sysvar and `--ml-ui-*` tokens on `host` automatically
 - Locale follows `AcApI18n.currentLocale` automatically
 - Layer list in a dock panel tab (name, visibility, color), opened from the toolbar layer button
@@ -226,9 +226,25 @@ layouts: {
 
 By default the plugin uses `layout: 'auto'` and follows viewport width via `acedGetUiLayout()` from `@mlightcad/cad-simple-viewer`:
 
-- **phone** (≤600px): bottom toolbar with `size: 'stretch'`, labels; zoom, measure, review, layer, layout, settings
-- **pad** (601–960px): same chrome as desktop unless overridden
-- **desktop** (>960px): right-side default toolbar
+| Kind | Viewport | Chrome | Default buttons (`items: 'default'`) |
+| --- | --- | --- | --- |
+| **phone** | ≤600px | Bottom bar, full width (`size: 'stretch'`), labels, `edgeOffset: 0`, not collapsible, no flyout arrows. Nested strips use `replaceOnNested: true`. | `zoom` (original / extents / window), `measure`, `annotation`, `layer`, `layout`, `settings` (theme, background, reading mode, language) |
+| **pad** | 601–960px | Same floating chrome as desktop (right, icons only, `edgeOffset: 8`). | Desktop set **without** `select` and `pan` (`excludeItems: ['select', 'pan']`). Touch drag pans; a long-press starts window/crossing box select. |
+| **desktop** | >960px | Right-side floating icon toolbar. | `select`, `pan`, `zoom-extent`, `zoom-window`, `layer`, `layout`, `switch-bg`, `reading-mode`, `measure`, `annotation`, `export`, then `toolbar-placement`, `theme`, `locale` |
+
+Phone does **not** inherit top-level `toolbar.items`, `appendItems`, or chrome (placement, labels, size). It only inherits `enabled`, `mountTarget`, and `inCanvasParent`. Pad and desktop inherit the full top-level `toolbar` baseline on top of the built-ins above.
+
+To show Select / Pan on pad again:
+
+```typescript
+layouts: {
+  pad: {
+    toolbar: {
+      excludeItems: []
+    }
+  }
+}
+```
 
 ```typescript
 acuiCreateSimpleUiPlugin({
@@ -270,11 +286,11 @@ plugin.getLayout() // 'phone' | 'pad' | 'desktop'
 plugin.setLayout('auto') // or force a specific kind
 ```
 
-Toolbar configuration is typed as `AcUiToolbarOptions` and can be reused by other packages (for example HTML export in a follow-up PR). Phone defaults include nested **Zoom** (original view / extents / window) and **Settings** (theme / background / language) sub-toolbars.
+Toolbar configuration is typed as `AcUiToolbarOptions`. Use `excludeItems` to omit root button ids after `items` / `appendItems` are resolved (pad built-ins already exclude `select` and `pan`).
 
 ## Custom toolbar
 
-Toolbar buttons are configured through `toolbar.items`. You can start from the built-in set, extend it, or replace it entirely.
+Toolbar buttons are configured through `toolbar.items`. You can start from the built-in set, extend it, or replace it entirely. Pad still applies `excludeItems: ['select', 'pan']` unless you override it with `layouts.pad.toolbar`.
 
 ### Replace the full toolbar at runtime
 

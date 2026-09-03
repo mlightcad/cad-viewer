@@ -44,15 +44,16 @@ export function acapPointerEventToOverlayWorld(
 }
 
 /**
- * View methods used for overlay grip object snap. Duck-typed so jsdom tests
- * can mock a view without loading `@mlightcad/data-model`.
+ * View methods used for overlay grip object snap and the mobile snap loupe.
+ * Duck-typed so jsdom tests can mock a view without loading
+ * `@mlightcad/data-model`.
  */
 interface AcApOverlayOsnapView {
   osnapResolver?: {
     resolve?: (options: {
       cursorWcs: { x: number; y: number; z: number }
       lastPoint: { x: number; y: number; z: number }
-    }) => { x: number; y: number } | undefined
+    }) => { x: number; y: number; type?: number } | undefined
     clearAcquiredCenters?: () => void
   }
   resolveOverlayGripPoint?: (
@@ -60,6 +61,28 @@ interface AcApOverlayOsnapView {
     lastPoint?: { x: number; y: number }
   ) => { x: number; y: number }
   clearOverlayGripOsnap?: () => void
+  lastOverlayGripOsnap?: { x: number; y: number; type: number } | null
+  refreshMobileSnapLoupe?: (
+    clientX: number,
+    clientY: number,
+    snap?: { x: number; y: number; type: number } | null
+  ) => void
+  hideMobileSnapLoupe?: () => void
+}
+
+/**
+ * Refreshes the shared mobile snap loupe for an osnap grip drag sample.
+ */
+function acapRefreshOverlayGripSnapLoupe(
+  view: AcTrView2d,
+  ev: PointerEvent
+): void {
+  const osnapView = view as AcTrView2d & AcApOverlayOsnapView
+  osnapView.refreshMobileSnapLoupe?.(
+    ev.clientX,
+    ev.clientY,
+    osnapView.lastOverlayGripOsnap ?? null
+  )
 }
 
 /**
@@ -172,6 +195,9 @@ function setOverlayGripsDragging(dragging: boolean, root: ParentNode): void {
  * Move / up listeners attach to `window` so CSS2D repositioning does not lose
  * events.
  *
+ * On phone/pad touch, osnap grips also drive the shared mobile snap loupe so
+ * the user can see the magnified sample while moving an endpoint.
+ *
  * @param options - Handle element and drag callbacks.
  * @returns Cleanup that removes listeners and cancels an in-progress drag.
  */
@@ -225,12 +251,20 @@ export function acapBindOverlayPointerDrag(
     const startX = e.clientX
     const startY = e.clientY
     let dragging = false
+    /** Touch + osnap: show the shared mobile snap loupe while dragging. */
+    const showSnapLoupe = useOsnap && e.pointerType === 'touch'
     const lastPoint = acapPointerEventToOverlayWorld(view, e)
     const osnapView = view as AcTrView2d & AcApOverlayOsnapView
 
     const resolveWorld = (ev: PointerEvent): AcApOverlayPoint2d => {
       if (!useOsnap) return acapPointerEventToOverlayWorld(view, ev)
       return acapPointerEventToOverlayWorldMaybeOsnap(view, ev, lastPoint)
+    }
+
+    const hideSnapLoupe = () => {
+      if (showSnapLoupe) {
+        ;(view as AcTrView2d & AcApOverlayOsnapView).hideMobileSnapLoupe?.()
+      }
     }
 
     const detach = () => {
@@ -276,12 +310,16 @@ export function acapBindOverlayPointerDrag(
         onDragStart?.()
       }
       onMove(resolveWorld(ev), ev)
+      if (showSnapLoupe) {
+        acapRefreshOverlayGripSnapLoupe(view, ev)
+      }
       view.isHtmlDirty = true
     }
 
     const onPointerUp = (ev: PointerEvent) => {
       if (ev.pointerId !== pointerId) return
       detach()
+      hideSnapLoupe()
       if (useOsnap && dragging) {
         if (typeof osnapView.clearOverlayGripOsnap === 'function') {
           osnapView.clearOverlayGripOsnap()
@@ -297,6 +335,7 @@ export function acapBindOverlayPointerDrag(
 
     detachActiveDrag?.()
     detachActiveDrag = () => {
+      hideSnapLoupe()
       restoreGrips()
       detach()
     }
