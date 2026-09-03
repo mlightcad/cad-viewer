@@ -266,9 +266,16 @@ export const ACEX_HTML_SHELL_CSS = `
     background: var(--mlcad-ui-border);
   }
   .mlcad-locale-option-badge {
-    font-size: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 12px;
     font-weight: 700;
     line-height: 1;
+    letter-spacing: -0.04em;
+    user-select: none;
   }
   #mlcad-zoom-window-rect,
   #mlcad-selection-rect {

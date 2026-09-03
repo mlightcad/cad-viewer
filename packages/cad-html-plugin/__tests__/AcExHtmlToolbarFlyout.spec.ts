@@ -33,11 +33,11 @@ describe('setupAcExHtmlToolbarFlyouts', () => {
       )}
       ${stripHtml(
         'mlcad-settings-strip',
-        '<button type="button" data-action="toggle-theme"></button><button type="button" id="mlcad-settings-snap-btn" data-action="snap-menu"></button><button type="button" id="mlcad-settings-locale-btn" data-action="locale-menu"></button><button type="button" data-action="switch-bg"></button>'
+        '<button type="button" data-action="toggle-theme"></button><button type="button" id="mlcad-settings-snap-btn" data-action="snap-menu"></button><button type="button" id="mlcad-settings-locale-btn" data-action="locale-menu"><span class="mlcad-tool-btn-icon"><span class="mlcad-locale-option-badge">LANG</span></span></button><button type="button" data-action="switch-bg"></button>'
       )}
       ${stripHtml(
         'mlcad-locale-strip',
-        '<button type="button" data-locale="en"></button><button type="button" data-locale="zh"></button>'
+        '<button type="button" data-locale="en"><span class="mlcad-tool-btn-icon"><span class="mlcad-locale-option-badge">EN</span></span></button><button type="button" data-locale="zh"><span class="mlcad-tool-btn-icon"><span class="mlcad-locale-option-badge">中</span></span></button>'
       )}
     `)
   }
@@ -175,6 +175,29 @@ describe('setupAcExHtmlToolbarFlyouts', () => {
       false
     )
     expect(onStripChange).toHaveBeenCalled()
+    expect(
+      document
+        .getElementById('mlcad-settings-locale-btn')
+        ?.querySelector('.mlcad-tool-btn-icon')?.innerHTML
+    ).toBe('<span class="mlcad-locale-option-badge">EN</span>')
+  })
+
+  it('seeds the language parent with the current locale badge on setup', () => {
+    mountAllStrips()
+    setupAcExHtmlToolbarFlyouts({
+      onItemClick: jest.fn(),
+      getLocale: () => 'zh'
+    })
+    expect(
+      document
+        .getElementById('mlcad-settings-locale-btn')
+        ?.querySelector('.mlcad-tool-btn-icon')?.innerHTML
+    ).toBe('<span class="mlcad-locale-option-badge">中</span>')
+    expect(
+      document
+        .querySelector<HTMLButtonElement>('[data-locale="zh"]')
+        ?.classList.contains('active')
+    ).toBe(true)
   })
 
   it('closes a dismissible zoom strip on canvas click and tool select', () => {

@@ -967,6 +967,7 @@ describe('AcUiToolbar in-canvas-parent layout', () => {
       ?.click()
     const firstStrip = host.querySelector<HTMLElement>('.ml-ex-ui-subtoolbar')
     expect(firstStrip).toBeTruthy()
+    expect(firstStrip?.classList.contains('is-bottom')).toBe(true)
 
     host
       .querySelector<HTMLButtonElement>('[data-toolbar-item-id="locale"]')

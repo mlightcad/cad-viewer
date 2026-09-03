@@ -204,14 +204,19 @@ export function setupAcExHtmlToolbarFlyouts(
   const syncLocaleSelection = () => {
     const locale = options.getLocale?.()
     const localeStrip = find('locale')?.strip
+    let activeBtn: HTMLButtonElement | null = null
     localeStrip
       ?.querySelectorAll<HTMLButtonElement>('[data-locale]')
       .forEach(btn => {
-        btn.classList.toggle(
-          'active',
-          btn.getAttribute('data-locale') === locale
-        )
+        const isActive = btn.getAttribute('data-locale') === locale
+        btn.classList.toggle('active', isActive)
+        if (isActive) activeBtn = btn
       })
+    // Parent uses the current locale badge even before the user opens the strip
+    // (`childIcon: 'selected'` parity with cad-simple-ui-plugin).
+    if (activeBtn) {
+      setAcExHtmlParentChildIcon(NESTED_OPENER_IDS.locale, activeBtn)
+    }
   }
 
   const syncParentExpanded = () => {
@@ -399,6 +404,7 @@ export function setupAcExHtmlToolbarFlyouts(
         const locale = btn.getAttribute('data-locale') as AcExHtmlLocale | null
         if (!locale) return
         options.onLocaleSelect?.(locale)
+        setAcExHtmlParentChildIcon(NESTED_OPENER_IDS.locale, btn)
         if (nestedId === 'locale') {
           // After picking a language, return to the settings strip only.
           returnToSettingsFromNested()
@@ -441,6 +447,9 @@ export function setupAcExHtmlToolbarFlyouts(
     close()
   }
   document.addEventListener('mousedown', handleDocumentClick, true)
+
+  // Seed the language parent with the active locale badge on first paint.
+  syncLocaleSelection()
 
   return {
     close,

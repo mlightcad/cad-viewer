@@ -458,6 +458,8 @@ describe('default toolbar items', () => {
       'locale-tr',
       'locale-ar'
     ])
+    expect(locale?.children?.[0]?.icon).toContain('ml-ex-ui-locale-badge')
+    expect(locale?.children?.[0]?.icon).toContain('EN')
   })
 })
 

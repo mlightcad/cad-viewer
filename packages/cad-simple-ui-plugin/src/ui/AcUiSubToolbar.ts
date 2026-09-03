@@ -373,11 +373,11 @@ export class AcUiSubToolbar {
   }
 
   private syncRootClasses() {
-    const vertical =
-      this.options.placement === 'left' || this.options.placement === 'right'
-    const { chrome } = this.options
+    const { chrome, placement } = this.options
+    const vertical = placement === 'left' || placement === 'right'
     const classes = [
       'ml-ex-ui-subtoolbar',
+      `is-${placement}`,
       vertical ? 'is-vertical' : 'is-horizontal'
     ]
     if (chrome.showLabels) classes.push('has-labels')

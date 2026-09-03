@@ -121,8 +121,14 @@ const LOCALE_LABELS: Record<AcApLocale, string> = {
   ar: 'toolbar.localeAr'
 }
 
+/**
+ * Locale short-code badge for toolbar icons.
+ *
+ * Uses HTML text (not SVG `<text>`) so the glyph stays sharp at the 18px
+ * toolbar icon size. SVG text often looks soft/blurry when CSS-scaled.
+ */
 function localeBadgeIcon(badge: string): string {
-  return `<span style="font-size:10px;font-weight:700;line-height:1">${badge}</span>`
+  return `<span class="ml-ex-ui-locale-badge">${badge}</span>`
 }
 
 function acuiCreateToolbarLocaleItem(
