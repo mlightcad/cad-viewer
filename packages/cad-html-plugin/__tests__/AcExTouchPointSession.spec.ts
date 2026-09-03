@@ -1,15 +1,6 @@
 /**
  * @jest-environment jsdom
  */
-
-// Avoid pulling `@mlightcad/cad-simple-viewer` (needs TextDecoder in jsdom)
-// just for shared timing constants re-exported via AcExHtmlSimpleViewerUi.
-jest.mock('../src/AcExHtmlSimpleViewerUi', () =>
-  jest.requireActual(
-    '../../cad-simple-viewer/src/editor/input/ui/AcEdTouchPointTiming.ts'
-  )
-)
-
 import {
   ACEX_TOUCH_MOUSE_GUARD_MS,
   acExArmTouchMouseGuard,

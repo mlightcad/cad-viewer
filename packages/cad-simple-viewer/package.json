@@ -23,6 +23,8 @@
     "lib",
     "icons.ts",
     "src/ui/icons.ts",
+    "touch-point-timing.ts",
+    "src/editor/input/ui/AcEdTouchPointTiming.ts",
     "README.md",
     "package.json"
   ],
@@ -39,6 +41,11 @@
       "types": "./src/ui/icons.ts",
       "import": "./src/ui/icons.ts",
       "default": "./lib/ui/icons.js"
+    },
+    "./touch-point-timing": {
+      "types": "./src/editor/input/ui/AcEdTouchPointTiming.ts",
+      "import": "./src/editor/input/ui/AcEdTouchPointTiming.ts",
+      "default": "./lib/editor/input/ui/AcEdTouchPointTiming.js"
     }
   },
   "scripts": {

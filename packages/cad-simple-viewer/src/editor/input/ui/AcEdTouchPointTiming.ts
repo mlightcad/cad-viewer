@@ -1,9 +1,10 @@
 /**
  * Shared timing for touch precise point capture.
  *
- * Kept in a tiny module so {@link @mlightcad/cad-html-plugin} can import the
- * value without pulling the full touch-session implementation into the
- * offline viewer IIFE.
+ * Kept in a tiny module and published as
+ * `@mlightcad/cad-simple-viewer/touch-point-timing` so
+ * {@link @mlightcad/cad-html-plugin} can import the values without pulling the
+ * viewer barrel into the offline HTML IIFE or Jest.
  */
 
 /**
