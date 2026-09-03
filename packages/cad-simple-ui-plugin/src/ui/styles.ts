@@ -185,10 +185,25 @@ export function acuiEnsureUiStyles() {
 
     /* Flyout mark: a small opaque right triangle in the corner toward the
        submenu. It sits in the icon padding so the glyph stays clear.
-       Only shown when the toolbar root has .show-children-indicator. */
-    .ml-ex-ui-toolbar.show-children-indicator
+       Only shown when the toolbar/subtoolbar root has .show-children-indicator
+       and an edge class (is-right/is-left/…). Without the edge class the
+       mark must stay hidden — otherwise an unpositioned 6×6 square appears
+       in the middle of nested parents (locale / toolbar placement). */
+    .ml-ex-ui-toolbar.show-children-indicator.is-right
       .ml-ex-ui-toolbar-btn.has-children::after,
-    .ml-ex-ui-subtoolbar.show-children-indicator
+    .ml-ex-ui-toolbar.show-children-indicator.is-left
+      .ml-ex-ui-toolbar-btn.has-children::after,
+    .ml-ex-ui-toolbar.show-children-indicator.is-top
+      .ml-ex-ui-toolbar-btn.has-children::after,
+    .ml-ex-ui-toolbar.show-children-indicator.is-bottom
+      .ml-ex-ui-toolbar-btn.has-children::after,
+    .ml-ex-ui-subtoolbar.show-children-indicator.is-right
+      .ml-ex-ui-toolbar-btn.has-children::after,
+    .ml-ex-ui-subtoolbar.show-children-indicator.is-left
+      .ml-ex-ui-toolbar-btn.has-children::after,
+    .ml-ex-ui-subtoolbar.show-children-indicator.is-top
+      .ml-ex-ui-toolbar-btn.has-children::after,
+    .ml-ex-ui-subtoolbar.show-children-indicator.is-bottom
       .ml-ex-ui-toolbar-btn.has-children::after {
       content: '';
       position: absolute;
@@ -199,6 +214,8 @@ export function acuiEnsureUiStyles() {
     }
 
     .ml-ex-ui-toolbar.show-children-indicator.is-right
+      .ml-ex-ui-toolbar-btn.has-children::after,
+    .ml-ex-ui-subtoolbar.show-children-indicator.is-right
       .ml-ex-ui-toolbar-btn.has-children::after {
       left: 1px;
       bottom: 1px;
@@ -206,6 +223,8 @@ export function acuiEnsureUiStyles() {
     }
 
     .ml-ex-ui-toolbar.show-children-indicator.is-left
+      .ml-ex-ui-toolbar-btn.has-children::after,
+    .ml-ex-ui-subtoolbar.show-children-indicator.is-left
       .ml-ex-ui-toolbar-btn.has-children::after {
       right: 1px;
       bottom: 1px;
@@ -213,6 +232,8 @@ export function acuiEnsureUiStyles() {
     }
 
     .ml-ex-ui-toolbar.show-children-indicator.is-top
+      .ml-ex-ui-toolbar-btn.has-children::after,
+    .ml-ex-ui-subtoolbar.show-children-indicator.is-top
       .ml-ex-ui-toolbar-btn.has-children::after {
       right: 1px;
       bottom: 1px;
@@ -220,6 +241,8 @@ export function acuiEnsureUiStyles() {
     }
 
     .ml-ex-ui-toolbar.show-children-indicator.is-bottom
+      .ml-ex-ui-toolbar-btn.has-children::after,
+    .ml-ex-ui-subtoolbar.show-children-indicator.is-bottom
       .ml-ex-ui-toolbar-btn.has-children::after {
       right: 1px;
       top: 1px;
@@ -363,6 +386,20 @@ export function acuiEnsureUiStyles() {
     .ml-ex-ui-icon svg {
       width: 18px;
       height: 18px;
+    }
+
+    /* Locale short-code badges (EN / 中 / …): fill the icon box like SVG glyphs. */
+    .ml-ex-ui-locale-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      user-select: none;
     }
 
     .ml-ex-ui-subtoolbar.is-overflow-wrap {
