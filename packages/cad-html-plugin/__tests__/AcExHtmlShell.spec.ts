@@ -1,4 +1,8 @@
-import { ACEX_HTML_SHELL_CSS, buildAcExHtmlShellBody } from '../src/AcExHtmlShell'
+import {
+  ACEX_HTML_SHELL_CSS,
+  buildAcExHtmlShellBody,
+  ML_UI_COMPACT_MAX_WIDTH
+} from '../src/AcExHtmlShell'
 
 describe('ACEX_HTML_SHELL_CSS', () => {
   it('hides drawer title rows on the phone breakpoint', () => {
@@ -10,6 +14,15 @@ describe('ACEX_HTML_SHELL_CSS', () => {
     )
     expect(ACEX_HTML_SHELL_CSS).toContain(
       '#mlcad-measure-drawer .mlcad-drawer-header {'
+    )
+  })
+
+  it('hides select and pan on compact and coarse-pointer layouts', () => {
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      `@media (max-width: ${ML_UI_COMPACT_MAX_WIDTH}px), (pointer: coarse)`
+    )
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      '#mlcad-toolbar [data-action="select"],\n    #mlcad-toolbar [data-action="pan"]'
     )
   })
 

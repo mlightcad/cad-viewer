@@ -54,6 +54,7 @@ import {
 } from './AcExMeasureTracking'
 import type { AcExOsnapPoint } from './AcExOsnap'
 import { acExIsOverlayGrip, acExOverlayGripClassName } from './AcExOverlayGrip'
+import { acExExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
 import type { AcExExtents } from './AcExSnapshotTypes'
 
 /**
@@ -308,7 +309,10 @@ function measurementGeometryExtents(
 }
 
 function padDegenerateExtents(extents: AcExExtents): AcExExtents {
-  if (extents.maxX - extents.minX > 1e-8 || extents.maxY - extents.minY > 1e-8) {
+  if (
+    extents.maxX - extents.minX > 1e-8 ||
+    extents.maxY - extents.minY > 1e-8
+  ) {
     return extents
   }
   return {
@@ -993,9 +997,9 @@ export class AcExMeasureController {
   /** Notifies the viewer when measure-tool activity starts or stops. */
   private readonly _onActiveChange: ((active: boolean) => void) | null
   /** Updates the touch session panel (confirm / metrics / chips). */
-  private readonly _onSessionUi: ((
-    state: AcExCommandSessionUiState | null
-  ) => void) | null
+  private readonly _onSessionUi:
+    | ((state: AcExCommandSessionUiState | null) => void)
+    | null
   /** Notifies when selection / session draw style changes. */
   private readonly _onStyleChange: (() => void) | null
   /** Active layout BTR id for stamping / filtering overlays. */
@@ -1106,9 +1110,8 @@ export class AcExMeasureController {
     })
     this._root.appendChild(this._fileInput)
 
-    this._confirmedPointMarks = new AcExConfirmedPointMarks(
-      this._root,
-      pos => this._confirmedPointMarkScreen(pos)
+    this._confirmedPointMarks = new AcExConfirmedPointMarks(this._root, pos =>
+      this._confirmedPointMarkScreen(pos)
     )
 
     this._updateVisibilityToolbar()
@@ -1765,6 +1768,29 @@ export class AcExMeasureController {
   }
 
   /**
+   * Replaces measurement selection with items whose geometry AABB matches `box`.
+   *
+   * @returns True when selection state changed.
+   */
+  handleSelectionBox(box: AcExExtents, mode: AcExSelectionMode): boolean {
+    if (this._mode || !this._visible) return false
+    const next = new Set<string>()
+    for (const measure of this._committed) {
+      if (
+        !isRecordOnLayout(measure.record.layoutId, this._getActiveLayoutId?.())
+      ) {
+        continue
+      }
+      const bounds = measurementGeometryExtents(measure.record.geometry)
+      if (!bounds) continue
+      if (acExExtentsMatchBox(bounds, box, mode)) {
+        next.add(measure.id)
+      }
+    }
+    return this._replaceSelection(next)
+  }
+
+  /**
    * Deletes all selected committed measurements.
    * Handles `Delete` and `Backspace` (Mac keyboard delete).
    */
@@ -2272,7 +2298,10 @@ export class AcExMeasureController {
     } else {
       this._syncPreviewBadges([
         {
-          wcs: new THREE.Vector2((anchor.x + point.x) / 2, (anchor.y + point.y) / 2),
+          wcs: new THREE.Vector2(
+            (anchor.x + point.x) / 2,
+            (anchor.y + point.y) / 2
+          ),
           text: this._view.formatLength(dist)
         }
       ])
@@ -3184,23 +3213,25 @@ export class AcExMeasureController {
         const ea = Math.atan2(se.y - cy, se.x - cx)
         const ccw = shortArcCounterClockwise(start, end, geom)
         return (
-          distPointToArcPx(
-            clientX,
-            clientY,
-            cx,
-            cy,
-            screenR,
-            sa,
-            ea,
-            ccw
-          ) <= threshold
+          distPointToArcPx(clientX, clientY, cx, cy, screenR, sa, ea, ccw) <=
+          threshold
         )
       },
       'length',
       len,
       record
     )
-    this._bindShortArcGrips(record.id, record, geom, start, end, mid, dot1, dot2, badge)
+    this._bindShortArcGrips(
+      record.id,
+      record,
+      geom,
+      start,
+      end,
+      mid,
+      dot1,
+      dot2,
+      badge
+    )
   }
 
   /** Endpoint grips for a legacy short arc (constrained to the circle). @internal */
@@ -3725,10 +3756,7 @@ export class AcExMeasureController {
       this._commitStyle = null
       return
     }
-    const style = this._ensureStyleWcs(
-      record.style,
-      record.type === 'distance'
-    )
+    const style = this._ensureStyleWcs(record.style, record.type === 'distance')
     const committedRecord = { ...record, id: parts.id, style }
     this._committed.push({
       id: parts.id,
@@ -3745,7 +3773,9 @@ export class AcExMeasureController {
         textHeightWcs: style.textHeightWcs,
         arrowSizeWcs: style.arrowSizeWcs,
         fontSizePx: style.fontSize,
-        strokeScreenPx: acExMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT),
+        strokeScreenPx: acExMeasureCanvasLineWidth(
+          ACEX_MEASUREMENT_LINE_WEIGHT
+        ),
         elements: parts.dom,
         canvases: parts.canvases
       }
@@ -4043,6 +4073,37 @@ export class AcExMeasureController {
     this._notifyRecordsChanged()
   }
 
+  /**
+   * Replaces the current measurement selection with `next`.
+   *
+   * @returns True when the selected id set changed.
+   */
+  private _replaceSelection(next: Set<string>): boolean {
+    if (
+      next.size === this._selectedIds.size &&
+      [...next].every(id => this._selectedIds.has(id))
+    ) {
+      return false
+    }
+    for (const id of this._selectedIds) {
+      if (next.has(id)) continue
+      const measure = this._committed.find(m => m.id === id)
+      if (measure) this._applyMeasureSelection(measure, false)
+    }
+    for (const id of next) {
+      if (this._selectedIds.has(id)) continue
+      const measure = this._committed.find(m => m.id === id)
+      if (measure) this._applyMeasureSelection(measure, true)
+    }
+    this._selectedIds.clear()
+    for (const id of next) this._selectedIds.add(id)
+    this._onStyleChange?.()
+    if (!this._mode) this._updateIdleStatus()
+    this._view.render()
+    this._notifyRecordsChanged()
+    return true
+  }
+
   /** @internal */
   private _applyMeasureSelection(
     measure: AcExCommittedMeasure,
@@ -4096,27 +4157,20 @@ export class AcExMeasureController {
           style.textHeightWcs =
             style.textHeightWcs * (patch.fontSize / prevFont)
         } else {
-          style.textHeightWcs = acExScreenPxToWcs(
-            patch.fontSize,
-            wcsToScreen
-          )
+          style.textHeightWcs = acExScreenPxToWcs(patch.fontSize, wcsToScreen)
         }
         style.fontSize = patch.fontSize
       }
       if (patch.fontSize != null) {
-        acExSeedOverlaySizesFromWcs(
-          this._view.getCameraZoom(),
-          wcsToScreen,
-          {
-            textHeightWcs: style.textHeightWcs,
-            fontSizePx: style.fontSize,
-            strokeScreenPx: acExMeasureCanvasLineWidth(
-              ACEX_MEASUREMENT_LINE_WEIGHT
-            ),
-            elements: measure.parts.dom,
-            canvases: measure.parts.canvases
-          }
-        )
+        acExSeedOverlaySizesFromWcs(this._view.getCameraZoom(), wcsToScreen, {
+          textHeightWcs: style.textHeightWcs,
+          fontSizePx: style.fontSize,
+          strokeScreenPx: acExMeasureCanvasLineWidth(
+            ACEX_MEASUREMENT_LINE_WEIGHT
+          ),
+          elements: measure.parts.dom,
+          canvases: measure.parts.canvases
+        })
       }
       // Keep selection highlight on DOM; canvas redraws pick up color.
       for (const el of measure.parts.dom) {

@@ -1,12 +1,12 @@
 import { AcApI18n } from '../../../i18n/AcApI18n'
 import {
-  acedIsMobileOrPadUi,
   acedIsMobileUiLayout,
   acedSubscribeUiLayout,
   ML_UI_MOBILE_MAX_WIDTH,
   ML_UI_SESSION_PANEL_MAX_WIDTH,
   ML_UI_SESSION_PANEL_WIDTH
 } from '../../global/AcEdUiLayout'
+import { acedInteractionStrategy } from './AcEdInteractionStrategy'
 import type { AcEdMobileSessionMetrics } from './AcEdMobileSessionMetrics'
 
 /** Keyword chip shown on the mobile session panel. */
@@ -274,7 +274,7 @@ export class AcEdMobileCommandChrome {
     state: AcEdMobileCommandChromeState,
     callbacks: AcEdMobileCommandChromeCallbacks
   ): void {
-    if (!acedIsMobileOrPadUi()) {
+    if (!acedInteractionStrategy().point.usesSessionChrome) {
       this.hide()
       return
     }

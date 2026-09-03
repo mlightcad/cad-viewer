@@ -1,8 +1,8 @@
 import { AcGeBox2d, AcGePoint2d } from '@mlightcad/data-model'
 
-import { acedIsMobileOrPadUi } from '../../global/AcEdUiLayout'
 import { AcEdBaseView } from '../../view'
 import { AcEdMarker, AcEdMarkerType } from '../marker/AcEdMarker'
+import { acedInteractionStrategy } from './AcEdInteractionStrategy'
 import {
   ACED_SNAP_LOUPE_INSET_PX,
   ACED_SNAP_LOUPE_SIZE_PX,
@@ -75,7 +75,7 @@ export class AcEdSnapLoupe {
   ) {
     const size = ACED_SNAP_LOUPE_SIZE_PX
     const inset = ACED_SNAP_LOUPE_INSET_PX
-    const promptOffset = acedIsMobileOrPadUi()
+    const promptOffset = acedInteractionStrategy().point.usesSessionChrome
       ? parseFloat(
           getComputedStyle(this.view.container).getPropertyValue(
             '--ml-mobile-cmd-prompt-height'

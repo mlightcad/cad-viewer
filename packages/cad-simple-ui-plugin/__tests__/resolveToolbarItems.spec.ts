@@ -26,6 +26,7 @@ jest.mock('@mlightcad/data-model', () => ({
 import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 
 import { acuiCreateDefaultToolbarItems } from '../src/config/defaultToolbarItems'
+import { acuiMergeToolbarOptionsForLayout } from '../src/config/mergeToolbarOptionsForLayout'
 import {
   acuiCreateDefaultToolbarPresetMap,
   acuiFilterVisibleToolbarItems,
@@ -60,6 +61,33 @@ describe('acuiResolveToolbarItems', () => {
     expect(items[0].children?.some(child => child.id === 'zoom-original')).toBe(
       true
     )
+  })
+
+  it('omits excluded root item ids', () => {
+    const items = acuiResolveToolbarItems({
+      items: 'default',
+      excludeItems: ['select', 'pan']
+    })
+    expect(items.some(item => item.id === 'select')).toBe(false)
+    expect(items.some(item => item.id === 'pan')).toBe(false)
+    expect(items[0].id).toBe('zoom-extent')
+  })
+
+  it('keeps excluded ids when excludeItems is empty', () => {
+    const items = acuiResolveToolbarItems({
+      items: 'default',
+      excludeItems: []
+    })
+    expect(items[0].id).toBe('select')
+    expect(items[1].id).toBe('pan')
+  })
+
+  it('applies pad built-in excludeItems after resolving defaults', () => {
+    const merged = acuiMergeToolbarOptionsForLayout('pad', undefined, undefined)
+    const items = acuiResolveToolbarItems(merged, undefined, 'pad')
+    expect(items.some(item => item.id === 'select')).toBe(false)
+    expect(items.some(item => item.id === 'pan')).toBe(false)
+    expect(items[0].id).toBe('zoom-extent')
   })
 
   it('appends custom items after defaults', () => {

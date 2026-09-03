@@ -231,6 +231,15 @@ export interface AcUiToolbarOptions extends AcUiToolbarChromeOptions {
   placement?: AcUiToolbarPlacement
   /** Toolbar items, `'default'`, or a custom list (may include presets and separators). */
   items?: AcUiToolbarItemConfig[] | 'default'
+  /**
+   * Root toolbar item ids to omit after resolving {@link items} and
+   * {@link appendItems}. Does not recurse into submenu children.
+   *
+   * Pad built-in defaults use `['select', 'pan']` because touch already pans
+   * on drag and box-selects after a long-press. Restore those buttons with
+   * `layouts.pad.toolbar.excludeItems: []`.
+   */
+  excludeItems?: string[]
   /** Extra items merged into `items` (default: appended at the end). */
   appendItems?: AcUiToolbarItemConfig[]
   /**
@@ -327,6 +336,8 @@ export interface AcUiSimpleUiPluginOptions {
    *
    * Keys match {@link AcEdUiLayoutKind}. Phone overrides replace phone built-ins;
    * pad/desktop overrides replace the full top-level toolbar for that kind.
+   * Pad built-ins exclude `select` and `pan`; restore them with
+   * `layouts.pad.toolbar.excludeItems: []`.
    */
   layouts?: {
     /** Overrides when {@link AcApSimpleUiPlugin.getLayout} resolves to phone. */

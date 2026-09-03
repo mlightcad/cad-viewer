@@ -99,7 +99,8 @@ export function acuiInsertToolbarItemsAt(
  * `appendItems` when present. Use `appendItemsAfter` or `appendItemsBefore` to
  * control insertion; otherwise items are appended at the end. When both anchor
  * options are set, `appendItemsBefore` takes precedence. Preset references
- * in custom lists are expanded from the built-in item map.
+ * in custom lists are expanded from the built-in item map. Root items whose
+ * ids appear in {@link AcUiToolbarOptions.excludeItems} are then dropped.
  *
  * @param options - Toolbar subsection of plugin options.
  * @param context - Context for default theme/locale/placement items.
@@ -133,6 +134,11 @@ export function acuiResolveToolbarItems(
         before: toolbar.appendItemsBefore
       }
     )
+  }
+
+  if (toolbar.excludeItems?.length) {
+    const excluded = new Set(toolbar.excludeItems)
+    items = items.filter(item => !item.id || !excluded.has(item.id))
   }
 
   return items

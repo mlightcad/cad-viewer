@@ -21,8 +21,15 @@ import type {
 import { AcEdSessionProviderRegistry } from '../command/AcEdSessionProviderRegistry'
 import { AcEdCorsorType, AcEdSelectionSet } from '../input'
 import { AcEditor } from '../input/AcEditor'
-import { AcEdOsnapResolver } from '../input/AcEdOsnapResolver'
+import {
+  type AcEdOsnapPoint,
+  AcEdOsnapResolver
+} from '../input/AcEdOsnapResolver'
 import { AcEdMarkerManager } from '../input/marker'
+import {
+  acedHideMobileSnapLoupe,
+  acedRefreshMobileSnapLoupe
+} from '../input/ui/AcEdMobileSnapLoupe'
 import { AcEdHoverController } from './AcEdHoverController'
 import {
   AcEdSelectionAction,
@@ -32,6 +39,9 @@ import {
   AcEdSpatialQueryResultItemEx,
   isEffectiveSpatialQueryHit
 } from './AcEdSpatialQueryResult'
+import { AcEdViewMode } from './AcEdViewMode'
+
+export { AcEdViewMode } from './AcEdViewMode'
 
 /**
  * Interface to define arguments of mouse event events.
@@ -106,43 +116,6 @@ export interface AcEdViewRenderFrameEventArgs {
    * The camera used for rendering the frame
    */
   camera: unknown
-}
-
-/**
- * Enumeration of view interaction modes.
- *
- * The view mode determines how the view responds to user mouse interactions:
- * - In SELECTION mode, clicks select entities
- * - In PAN mode, clicks and drags pan the view
- *
- * @example
- * ```typescript
- * // Set to selection mode for entity picking
- * view.mode = AcEdViewMode.SELECTION;
- *
- * // Set to pan mode for view navigation
- * view.mode = AcEdViewMode.PAN;
- * ```
- */
-export enum AcEdViewMode {
-  /**
-   * Selection mode - mouse clicks select entities.
-   *
-   * In this mode:
-   * - Single clicks select individual entities
-   * - Drag operations can create selection boxes
-   * - Selected entities are highlighted with grip points
-   */
-  SELECTION = 0,
-  /**
-   * Pan mode - mouse interactions pan the view.
-   *
-   * In this mode:
-   * - Click and drag operations move the view
-   * - The cursor typically changes to indicate pan mode
-   * - Entity selection is disabled
-   */
-  PAN = 1
 }
 
 /**
@@ -276,6 +249,8 @@ export abstract class AcEdBaseView {
 
   /** OSNAP markers shown while dragging overlay measurement / markup grips. */
   private _overlayGripOsnapMarkers: AcEdMarkerManager | null = null
+  /** Last object snap acquired during {@link resolveOverlayGripPoint}, if any. */
+  private _lastOverlayGripOsnap: AcEdOsnapPoint | null = null
 
   /** The HTML canvas element for rendering */
   protected _canvas: HTMLCanvasElement
@@ -1128,6 +1103,7 @@ export abstract class AcEdBaseView {
         ? { x: lastPoint.x, y: lastPoint.y, z: 0 }
         : cursorWcs
     })
+    this._lastOverlayGripOsnap = snapPoint ?? null
     this._overlayGripOsnapMarkers.setHintMarkers(
       AcEdOsnapResolver.displayCenterMarks(
         this._osnapResolver.acquiredCenterMarks,
@@ -1146,9 +1122,41 @@ export abstract class AcEdBaseView {
   }
 
   /**
+   * Last object snap from {@link resolveOverlayGripPoint}, or `null` when the
+   * cursor is not within aperture of any snap.
+   */
+  get lastOverlayGripOsnap(): AcEdOsnapPoint | null {
+    return this._lastOverlayGripOsnap
+  }
+
+  /**
+   * Shows or repositions the shared mobile snap loupe around a client sample.
+   * Used by overlay grip drag and point pick on phone/pad.
+   *
+   * @param clientX - Sample X in viewport/client CSS pixels.
+   * @param clientY - Sample Y in viewport/client CSS pixels.
+   * @param snap - Active object snap in world space, if any.
+   */
+  refreshMobileSnapLoupe(
+    clientX: number,
+    clientY: number,
+    snap?: { x: number; y: number; type: number } | null
+  ): void {
+    acedRefreshMobileSnapLoupe(this, clientX, clientY, snap)
+  }
+
+  /**
+   * Hides the shared mobile snap loupe for this view.
+   */
+  hideMobileSnapLoupe(): void {
+    acedHideMobileSnapLoupe(this)
+  }
+
+  /**
    * Hides overlay grip snap markers and clears acquired centers.
    */
   clearOverlayGripOsnap(): void {
+    this._lastOverlayGripOsnap = null
     this._overlayGripOsnapMarkers?.clear()
     this._osnapResolver.clearAcquiredCenters()
   }

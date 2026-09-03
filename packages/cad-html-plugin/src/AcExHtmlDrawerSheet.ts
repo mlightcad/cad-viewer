@@ -8,7 +8,10 @@
  * @packageDocumentation
  */
 
-import { ML_UI_COMPACT_MAX_WIDTH, ML_UI_MOBILE_MAX_WIDTH } from './AcExHtmlShell'
+import {
+  ML_UI_COMPACT_MAX_WIDTH,
+  ML_UI_MOBILE_MAX_WIDTH
+} from './AcExHtmlShell'
 
 const MIN_HEIGHT = 160
 const DEFAULT_HEIGHT_VH = 0.42
@@ -39,6 +42,19 @@ export function acExHtmlIsCompactLayout(): boolean {
     typeof window !== 'undefined' &&
     window.matchMedia?.(`(max-width: ${ML_UI_COMPACT_MAX_WIDTH}px)`).matches ===
       true
+  )
+}
+
+/**
+ * Whether idle touch should unify pan + long-press box select (and hide
+ * Select / Pan). Compact width covers phone and pad; coarse pointer covers
+ * wider tablets such as iPad landscape.
+ */
+export function acExHtmlIsMobileNavUi(): boolean {
+  return (
+    acExHtmlIsCompactLayout() ||
+    (typeof window !== 'undefined' &&
+      window.matchMedia?.('(pointer: coarse)').matches === true)
   )
 }
 

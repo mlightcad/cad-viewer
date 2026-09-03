@@ -43,6 +43,9 @@ export function acuiNormalizePluginOptions(
           : (options.toolbar?.enabled ?? true),
       placement: options.toolbar?.placement ?? 'right',
       items: options.toolbar?.items ?? 'default',
+      ...(options.toolbar && 'excludeItems' in options.toolbar
+        ? { excludeItems: options.toolbar.excludeItems }
+        : {}),
       appendItems: options.toolbar?.appendItems,
       appendItemsAfter: options.toolbar?.appendItemsAfter,
       appendItemsBefore: options.toolbar?.appendItemsBefore,

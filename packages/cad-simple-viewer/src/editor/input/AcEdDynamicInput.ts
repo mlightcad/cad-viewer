@@ -5,7 +5,7 @@ import {
   AcDbSysVarManager
 } from '@mlightcad/data-model'
 
-import { acedIsMobileOrPadUi } from '../global/AcEdUiLayout'
+import { acedInteractionStrategy } from './ui/AcEdInteractionStrategy'
 
 /**
  * Returns whether cursor dynamic input should be active.
@@ -16,10 +16,11 @@ import { acedIsMobileOrPadUi } from '../global/AcEdUiLayout'
  *
  * @param database - Drawing whose **DYNMODE** value is read. Defaults to the
  *   current working database.
- * @returns `true` when **DYNMODE** is non-zero and the UI is not phone or pad.
+ * @returns `true` when **DYNMODE** is non-zero and the layout allows cursor
+ *   dynamic input ({@link AcEdPointPromptPolicy.showsCursorDynamicInput}).
  */
 export function acedIsDynamicInputEnabled(database?: AcDbDatabase): boolean {
-  if (acedIsMobileOrPadUi()) return false
+  if (!acedInteractionStrategy().point.showsCursorDynamicInput) return false
   const db = database ?? acdbHostApplicationServices().workingDatabase
   const mode = Number(
     AcDbSysVarManager.instance().getVar(AcDbSystemVariables.DYNMODE, db)

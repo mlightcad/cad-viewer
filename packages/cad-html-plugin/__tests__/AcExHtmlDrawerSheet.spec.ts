@@ -2,6 +2,7 @@
 
 import {
   acExHtmlIsCompactLayout,
+  acExHtmlIsMobileNavUi,
   acExHtmlIsPhoneLayout,
   setupAcExHtmlDrawerSheets
 } from '../src/AcExHtmlDrawerSheet'
@@ -44,6 +45,19 @@ describe('setupAcExHtmlDrawerSheets', () => {
         removeEventListener: jest.fn()
       }) as unknown as MediaQueryList
     expect(acExHtmlIsCompactLayout()).toBe(true)
+    expect(acExHtmlIsMobileNavUi()).toBe(true)
+  })
+
+  it('treats a coarse pointer as mobile nav UI', () => {
+    window.matchMedia = (query: string) =>
+      ({
+        matches: query.includes('pointer: coarse'),
+        media: query,
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }) as unknown as MediaQueryList
+    expect(acExHtmlIsCompactLayout()).toBe(false)
+    expect(acExHtmlIsMobileNavUi()).toBe(true)
   })
 
   it('parks the drawer on the sidebar and closes strips on phone', () => {

@@ -5,7 +5,6 @@ import {
   AcGePoint2dLike
 } from '@mlightcad/data-model'
 
-import { acedIsMobileOrPadUi } from '../../global/AcEdUiLayout'
 import { AcEdBaseView } from '../../view'
 import { AcEdOsnapPoint, AcEdOsnapResolver } from '../AcEdOsnapResolver'
 import { constrainToTracking } from '../AcEdPolarTracking'
@@ -22,8 +21,8 @@ import {
   AcEdFloatingInputValidationCallback
 } from './AcEdFloatingInputTypes'
 import { AcEdFloatingMessage } from './AcEdFloatingMessage'
+import { acedInteractionStrategy } from './AcEdInteractionStrategy'
 import { AcEdRubberBand } from './AcEdRubberBand'
-import { AcEdSnapLoupe } from './AcEdSnapLoupe'
 import {
   acedArmTouchMouseGuard,
   acedIsGhostClientOrigin,
@@ -105,8 +104,6 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   private boundOnContextMenu: (e: MouseEvent) => void
   /** Long-press / short-tap state for one-finger point picking. */
   private readonly touchSession = new AcEdTouchPointSession()
-  /** Magnifier HUD shown after a long-press on touch. */
-  private snapLoupe?: AcEdSnapLoupe
   /**
    * When true, a left-button mouse/pen `pointerdown` landed on this prompt's
    * canvas, so the following `click` may commit. Touch never sets this:
@@ -224,7 +221,6 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
       passive: false
     })
     window.addEventListener('touchend', this.boundOnTouchEnd)
-    this.snapLoupe = new AcEdSnapLoupe(view)
 
     // -----------------------------
     // Dynamic input settings listener
@@ -324,9 +320,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     window.removeEventListener('touchend', this.boundOnTouchEnd)
     this.releaseTouchCapture()
     this.touchSession.cancel()
-    this.snapLoupe?.dispose()
+    this.view.hideMobileSnapLoupe()
     this.view.setNavigationEnabled(true)
-    this.view.setSnapLoupe(null)
     AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
       this.boundOnInputSysVarChanged
     )
@@ -398,6 +393,10 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   /**
    * Starts a one-finger pick on touch, or arms a mouse/pen click commit.
    *
+   * Pointer type, not layout: a pad with a mouse still clicks; a desktop
+   * with a touch screen still long-presses. Session chrome / loupe / marks
+   * are {@link acedInteractionStrategy} point policy.
+   *
    * @param e - Pointer event; button 0 only. Touch is handled here; mouse and
    *   pen arm {@link mouseClickArmed} so the following `click` can commit.
    */
@@ -421,7 +420,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     acedArmTouchMouseGuard()
     // A leftover loupe from a previous pointercancel must not stay on screen
     // when a new finger-down starts.
-    this.snapLoupe?.hide()
+    this.view.hideMobileSnapLoupe()
     this.touchSession.start(e.pointerId, e.clientX, e.clientY, () => {
       // Precise capture only: disable pan and start the jig / loupe.
       // Before the long-press, one-finger drag is navigation — no rubber-band.
@@ -478,7 +477,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     if (this.touchSession.isPicking) return
     this.touchSession.cancel()
     this.view.setNavigationEnabled(true)
-    this.snapLoupe?.hide()
+    this.view.hideMobileSnapLoupe()
     this.view.clearCursorPos()
   }
 
@@ -534,7 +533,12 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
    */
   private handleContextMenu(e: MouseEvent) {
     if (!this.visible) return
-    if (!acedIsTouchLongPressContextMenu(e) && !acedIsMobileOrPadUi()) return
+    if (
+      !acedIsTouchLongPressContextMenu(e) &&
+      !acedInteractionStrategy().point.swallowsPromptContextMenu
+    ) {
+      return
+    }
     e.preventDefault()
     e.stopImmediatePropagation()
   }
@@ -552,7 +556,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.releaseTouchCapture()
     const action = this.touchSession.end()
     this.view.setNavigationEnabled(true)
-    this.snapLoupe?.hide()
+    this.view.hideMobileSnapLoupe()
     // Finger-up coords must not seed the next prompt's jig preview.
     this.view.clearCursorPos()
     if (!this.visible || action !== 'commit') return
@@ -591,26 +595,15 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   }
 
   /**
-   * Positions the snap-loupe HUD and overlay viewport around the current
-   * touch sample, including an OSNAP glyph when a snap is active.
+   * Positions the shared mobile snap loupe around the current touch sample,
+   * including an OSNAP glyph when a snap is active.
    */
   private refreshLoupe() {
-    if (!this.snapLoupe) return
-    const canvas = this.view.viewportToCanvas({
-      x: this.touchSession.x,
-      y: this.touchSession.y
-    })
-    if (this.lastOsnapPoint) {
-      const snapScreen = this.view.worldToScreen(this.lastOsnapPoint)
-      this.snapLoupe.show(
-        canvas.x,
-        canvas.y,
-        { x: snapScreen.x, y: snapScreen.y },
-        AcEdOsnapResolver.osnapModeToMarkerType(this.lastOsnapPoint.type)
-      )
-    } else {
-      this.snapLoupe.show(canvas.x, canvas.y)
-    }
+    this.view.refreshMobileSnapLoupe(
+      this.touchSession.x,
+      this.touchSession.y,
+      this.lastOsnapPoint ?? null
+    )
   }
 
   /**
