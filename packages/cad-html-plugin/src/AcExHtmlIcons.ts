@@ -42,6 +42,7 @@ import {
   ICON_POLAR_TRACKING,
   ICON_SELECT,
   ICON_SETTINGS,
+  ICON_SIMULATED_MOUSE,
   ICON_SWITCH_BG,
   ICON_THEME_DARK,
   ICON_THEME_LIGHT,
@@ -140,6 +141,8 @@ export const acExHtmlIcons = {
   clearMarkups: ICON_CLEAR_MARKUPS,
   /** Phone settings parent toolbar icon. */
   settings: ICON_SETTINGS,
+  /** Simulated-mouse touch pick toggle. */
+  simulatedMouse: ICON_SIMULATED_MOUSE,
   /** Toggle drawing background between black and white. */
   switchBg: ICON_SWITCH_BG,
   /** Switch to light UI chrome. */

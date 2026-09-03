@@ -126,15 +126,16 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).toContain('data-action="zoom-original"')
     expect(html).toContain('id="mlcad-layers-btn"')
     expect(html).toContain('id="mlcad-layout-menu-btn"')
-    expect(html).toContain('id="mlcad-lang-btn"')
-    expect(html).toContain('id="mlcad-lang-badge"')
-    expect(html).toContain('id="mlcad-locale-strip-wrap"')
     expect(html).toContain('id="mlcad-settings-btn"')
     expect(html).toContain('id="mlcad-settings-strip-wrap"')
+    expect(html).toContain('id="mlcad-settings-locale-btn"')
+    expect(html).toContain('id="mlcad-locale-strip-wrap"')
+    expect(html).not.toContain('id="mlcad-lang-btn"')
     expect(html).not.toContain('data-measure-mode=')
     expect(html).not.toContain('id="mlcad-measure-menu-btn"')
     expect(html).not.toContain('id="mlcad-markup-menu-btn"')
     expect(html).not.toContain('id="mlcad-snap-menu-btn"')
+    expect(html).not.toContain('id="mlcad-settings-snap-btn"')
     expect(html).not.toContain('id="mlcad-snap-strip-wrap"')
     expect(html).not.toContain('mlcad-tool-separator')
     expect(html).toContain('id="mlcad-status-bar"')
@@ -147,7 +148,7 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).toContain('mlcad-tool-btn-label')
   })
 
-  it('uses Measurement / Review / Snap / Language / Settings parent strips in measure mode', () => {
+  it('uses Measurement / Review / Settings parent strips in measure mode', () => {
     const html = buildAcExHtmlShellBody('#000000', 'measure')
 
     expect(html).toContain('data-action="select"')
@@ -156,11 +157,12 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).toContain('data-action="zoom-original"')
     expect(html).toContain('id="mlcad-measure-menu-btn"')
     expect(html).toContain('id="mlcad-markup-menu-btn"')
-    expect(html).toContain('id="mlcad-snap-menu-btn"')
-    expect(html).toContain('id="mlcad-layout-menu-btn"')
-    expect(html).toContain('id="mlcad-lang-btn"')
     expect(html).toContain('id="mlcad-settings-btn"')
-    expect(html).toContain('id="mlcad-lang-badge"')
+    expect(html).toContain('id="mlcad-settings-snap-btn"')
+    expect(html).toContain('id="mlcad-settings-locale-btn"')
+    expect(html).toContain('id="mlcad-layout-menu-btn"')
+    expect(html).not.toContain('id="mlcad-snap-menu-btn"')
+    expect(html).not.toContain('id="mlcad-lang-btn"')
     expect(html).toContain('has-children')
     expect(html).toContain('id="mlcad-measure-strip-wrap"')
     expect(html).toContain('id="mlcad-markup-strip-wrap"')
@@ -169,7 +171,7 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).toContain('id="mlcad-settings-strip-wrap"')
     expect(html).toContain('data-action="toggle-theme"')
     expect(html).toContain('data-action="switch-bg"')
-    expect(html).toContain('id="mlcad-settings-locale-btn"')
+    expect(html).toContain('data-action="snap-menu"')
     expect(html).not.toContain('mlcad-measure-submenu-template')
     expect(html).not.toContain('mlcad-markup-submenu-template')
     expect(html).toContain('data-measure-mode="distance"')
@@ -206,13 +208,12 @@ describe('buildAcExHtmlShellBody', () => {
     expect(toolbarHtml).not.toContain('data-action="fit"')
     expect(toolbarHtml).not.toContain('data-action="zoom-window"')
     expect(toolbarHtml).not.toContain('data-action="zoom-original"')
+    expect(toolbarHtml).not.toContain('title="Object snap"')
+    expect(toolbarHtml).not.toContain('title="Language"')
     expect(toolbarHtml).toContain('title="Zoom"')
-    expect(toolbarHtml).toContain('title="Object snap"')
-    expect(toolbarHtml).toContain('title="Language"')
     expect(toolbarHtml).toContain('title="Layout"')
     expect(toolbarHtml).toContain('title="Settings"')
     expect(toolbarHtml).toContain('data-children-ui="toolbar"')
-    expect(toolbarHtml).toContain('data-children-ui="sticky-toolbar"')
     expect(toolbarHtml).toContain('data-children-ui="menu"')
     expect(toolbarHtml).toMatch(
       /id="mlcad-measure-menu-btn"[\s\S]*?data-children-ui="toolbar"/
@@ -220,6 +221,16 @@ describe('buildAcExHtmlShellBody', () => {
     expect(toolbarHtml).toMatch(
       /id="mlcad-markup-menu-btn"[\s\S]*?data-children-ui="toolbar"/
     )
+
+    const settingsStrip = html.match(
+      /id="mlcad-settings-strip"[\s\S]*?<\/div>\s*<\/div>/
+    )?.[0]
+    expect(settingsStrip).toBeTruthy()
+    expect(settingsStrip).toContain('id="mlcad-settings-snap-btn"')
+    expect(settingsStrip).toContain('data-children-ui="sticky-toolbar"')
+    expect(settingsStrip).toContain('id="mlcad-settings-locale-btn"')
+    expect(settingsStrip).toContain('title="Language"')
+    expect(settingsStrip).toContain('title="Object snap"')
 
     // Zoom children order: original → extents → window
     const zoomStrip = html.match(

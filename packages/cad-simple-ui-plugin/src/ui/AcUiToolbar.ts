@@ -811,10 +811,9 @@ export class AcUiToolbar {
     )
 
     if (effective.children?.length || acuiIsDynamicToolbarChildren(item)) {
-      const visibleChildren = acuiFilterVisibleToolbarItems(
-        effective.children ?? [],
-        this.openMode
-      ).map(acuiResolveEffectiveToolbarItem)
+      const visibleChildren = this.resolveStripChildItems(
+        effective.children ?? []
+      )
       if (visibleChildren.length === 0) return
 
       if (this.openParentId === item.id) {
@@ -1430,7 +1429,24 @@ export class AcUiToolbar {
       if (item.childIcon === 'selected' && item.selectedChildId) {
         this.selectedChildByParent.set(item.id, item.selectedChildId)
       }
+      if (!acuiIsDynamicToolbarChildren(item) && item.children?.length) {
+        this.seedSelectedChildren(item.children)
+      }
     }
+  }
+
+  /**
+   * Resolves visible strip children, applying {@link acuiResolveParentToolbarDisplay}
+   * so nested parents (e.g. toolbar placement under settings) show the active
+   * child icon.
+   */
+  private resolveStripChildItems(children: AcUiToolbarItem[]): AcUiToolbarItem[] {
+    return acuiFilterVisibleToolbarItems(children, this.openMode).map(child =>
+      acuiResolveParentToolbarDisplay(
+        child,
+        this.selectedChildByParent.get(child.id)
+      )
+    )
   }
 
   /** Closes any open dropdown or sub-toolbar and clears parent expanded state. */
@@ -1557,10 +1573,7 @@ export class AcUiToolbar {
     )
     if (!button) return
 
-    const visibleChildren = acuiFilterVisibleToolbarItems(
-      item.children,
-      this.openMode
-    ).map(acuiResolveEffectiveToolbarItem)
+    const visibleChildren = this.resolveStripChildItems(item.children)
     if (visibleChildren.length === 0) return
 
     this.openChildrenUi(item, button, visibleChildren)
@@ -1587,10 +1600,9 @@ export class AcUiToolbar {
       effective.children?.length ||
       acuiIsDynamicToolbarChildren(effective)
     ) {
-      const visibleChildren = acuiFilterVisibleToolbarItems(
-        effective.children ?? [],
-        this.openMode
-      ).map(acuiResolveEffectiveToolbarItem)
+      const visibleChildren = this.resolveStripChildItems(
+        effective.children ?? []
+      )
       if (visibleChildren.length === 0) return
       this.openNestedSubToolbarUi(
         effective,
@@ -1652,10 +1664,7 @@ export class AcUiToolbar {
           this.closeChildrenUi()
         } else {
           this.openSubToolbar?.refresh(
-            acuiFilterVisibleToolbarItems(
-              stripParent.children ?? [],
-              this.openMode
-            ).map(acuiResolveEffectiveToolbarItem),
+            this.resolveStripChildItems(stripParent.children ?? []),
             this.isDisabled || !this.hasDocument
           )
         }
@@ -1743,16 +1752,35 @@ export class AcUiToolbar {
     if (child.toggle && sticky && this.openSubToolbar) {
       window.setTimeout(() => {
         if (!this.openSubToolbar) return
-        const visibleChildren = acuiFilterVisibleToolbarItems(
-          parent.children ?? [],
-          this.openMode
-        ).map(acuiResolveEffectiveToolbarItem)
         this.openSubToolbar.refresh(
-          visibleChildren,
+          this.resolveStripChildItems(parent.children ?? []),
           this.isDisabled || !this.hasDocument
         )
       }, 0)
       return
+    }
+
+    // Nested parents under an open strip (e.g. placement under settings):
+    // refresh the strip so the parent button shows the newly selected icon.
+    if (
+      parent.childIcon === 'selected' &&
+      this.openSubToolbar &&
+      this.openParentId &&
+      parent.id !== this.openParentId
+    ) {
+      const stripParent = this.items.find(candidate => {
+        if (acuiIsToolbarSeparatorItem(candidate)) return false
+        return candidate.id === this.openParentId
+      })
+      if (stripParent?.children?.length) {
+        window.setTimeout(() => {
+          if (!this.openSubToolbar || !stripParent.children) return
+          this.openSubToolbar.refresh(
+            this.resolveStripChildItems(stripParent.children),
+            this.isDisabled || !this.hasDocument
+          )
+        }, 0)
+      }
     }
 
     if (child.toggle) {

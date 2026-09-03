@@ -22,7 +22,8 @@ export interface AcEdBoxPromptHost {
 
 /**
  * Layout-level point-prompt chrome. Mouse-click vs touch long-press still
- * lives in {@link AcEdFloatingInput} (pointer type, not layout).
+ * lives in {@link AcEdFloatingInput} (pointer type, not layout). Loupe vs
+ * simulated-mouse HUD is {@link acedTouchPickStrategy}.
  */
 export interface AcEdPointPromptPolicy {
   /** Plus marks after each confirmed pick in a multi-point command. */
@@ -39,7 +40,11 @@ export interface AcEdPointPromptPolicy {
    * **DYNMODE** sysvar.
    */
   readonly showsCursorDynamicInput: boolean
-  /** Magnifier HUD while a touch long-press pick is in precise-capture. */
+  /**
+   * Layout supports a magnifier HUD for touch precise capture (grip drag,
+   * or loupe touch-pick strategy). Simulated-mouse picks use a crosshair
+   * instead — see {@link acedTouchPickStrategy}.
+   */
   readonly showsSnapLoupeOnTouchPick: boolean
 }
 
@@ -63,12 +68,15 @@ const MOBILE_POINT_POLICY: AcEdPointPromptPolicy = {
  * Desktop vs phone/pad pointer rules for idle selection, box prompts, and
  * point-prompt chrome.
  *
- * Two independent axes:
- * - **Layout** (this strategy): session chrome, confirmed-point marks, snap
- *   loupe, whether `contextmenu` is Enter.
+ * Three independent axes:
+ * - **Layout** (this strategy): session chrome, confirmed-point marks, whether
+ *   `contextmenu` is Enter, and whether a snap loupe is available.
  * - **Pointer type** (`AcEdFloatingInput`): mouse click-to-commit vs touch
  *   long-press / short-tap. A pad with a mouse still clicks; a desktop with
  *   a touch screen still long-presses.
+ * - **Touch pick HUD** (`acedTouchPickStrategy`): loupe-at-finger vs
+ *   simulated-mouse crosshair above the finger
+ *   (`AcApSettings.useSimulatedMouseOnTouch`).
  *
  * Callers resolve the active strategy via {@link acedInteractionStrategy}
  * instead of branching on {@link acedIsMobileOrPadUi} at each call site.

@@ -54,6 +54,12 @@ export interface AcApSettings {
    * "don't remind me today". Cleared automatically when the date passes.
    */
   touchPointTutorialSnoozeDate: string | null
+  /**
+   * When true (default), touch long-press point picks use a simulated mouse
+   * crosshair above the finger so the fingertip does not obscure the sample.
+   * When false, the magnifier loupe tracks the finger itself.
+   */
+  useSimulatedMouseOnTouch: boolean
 }
 
 /**
@@ -101,7 +107,8 @@ const DEFAULT_VALUES: AcApSettings = {
     AcDbOsnapMode.Nearest
   ]),
   hideTouchPointTutorial: false,
-  touchPointTutorialSnoozeDate: null
+  touchPointTutorialSnoozeDate: null,
+  useSimulatedMouseOnTouch: true
 }
 
 /** Default localStorage key for persisting user preferences */

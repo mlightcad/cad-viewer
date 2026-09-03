@@ -66,6 +66,8 @@ export type AcExHtmlMessageKey =
   | 'toolbar.layers'
   | 'toolbar.layout'
   | 'toolbar.settings'
+  | 'toolbar.simulatedMouseOn'
+  | 'toolbar.simulatedMouseOff'
   | 'toolbar.themeLight'
   | 'toolbar.themeDark'
   | 'toolbar.switchBg'
@@ -247,8 +249,10 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       layers: 'Layers',
       layout: 'Layout',
       settings: 'Settings',
-      themeLight: 'Dark theme',
-      themeDark: 'Light theme',
+      simulatedMouseOn: 'Mouse',
+      simulatedMouseOff: 'Loupe',
+      themeLight: 'Light',
+      themeDark: 'Dark',
       switchBg: 'Background',
       language: 'Language',
       localeEn: 'English',
@@ -454,8 +458,10 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       layers: '图层',
       layout: '布局',
       settings: '设置',
-      themeLight: '深色',
-      themeDark: '浅色',
+      simulatedMouseOn: '鼠标',
+      simulatedMouseOff: '放大',
+      themeLight: '浅色',
+      themeDark: '深色',
       switchBg: '背景',
       language: '语言',
       localeEn: 'English',
@@ -652,8 +658,10 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       layers: 'Hladiny',
       layout: 'Rozvržení',
       settings: 'Nastavení',
-      themeLight: 'Tmavý',
-      themeDark: 'Světlý',
+      simulatedMouseOn: 'Myš',
+      simulatedMouseOff: 'Lupa',
+      themeLight: 'Světlý',
+      themeDark: 'Tmavý',
       switchBg: 'Pozadí',
       language: 'Jazyk',
       localeEn: 'English',
@@ -858,8 +866,10 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       layers: 'Katman',
       layout: 'Düzen',
       settings: 'Ayarlar',
-      themeLight: 'Koyu',
-      themeDark: 'Açık',
+      simulatedMouseOn: 'Fare',
+      simulatedMouseOff: 'Büyüteç',
+      themeLight: 'Açık',
+      themeDark: 'Koyu',
       switchBg: 'Arka plan',
       language: 'Dil',
       localeEn: 'English',
@@ -1067,8 +1077,10 @@ const AR_MESSAGES: AcExMessageTree = {
     'layers': 'طبقات',
     'layout': 'تخطيط',
     'settings': 'إعدادات',
-    'themeLight': 'داكن',
-    'themeDark': 'فاتح',
+    'simulatedMouseOn': 'ماوس',
+    'simulatedMouseOff': 'عدسة',
+    'themeLight': 'فاتح',
+    'themeDark': 'داكن',
     'switchBg': 'خلفية',
     'language': 'اللغة',
     'localeEn': 'English',
@@ -1444,11 +1456,5 @@ export class AcExHtmlI18n {
 
     const badge = document.getElementById('mlcad-lang-badge')
     if (badge) badge.textContent = this.localeBadge
-
-    const langBtn = document.getElementById('mlcad-lang-btn')
-    if (langBtn) {
-      langBtn.setAttribute('title', this.t('toolbar.language'))
-      langBtn.setAttribute('aria-label', this.t('toolbar.language'))
-    }
   }
 }

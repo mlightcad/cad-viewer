@@ -77,6 +77,10 @@ import {
 import { acExSelectionModeFromDrag } from './AcExSelectionBox'
 import { setupAcExSessionDrawStyle } from './AcExSessionDrawStyle'
 import {
+  acExHideSimulatedMouseCursor,
+  acExRefreshSimulatedMouseCursor
+} from './AcExSimulatedMouseCursor'
+import {
   ACEX_SNAP_LOUPE_INSET_PX,
   ACEX_SNAP_LOUPE_SIZE_PX,
   ACEX_SNAP_LOUPE_TOP_INSET_PX,
@@ -92,6 +96,12 @@ import type {
   AcExSnapshot,
   AcExViewerMode
 } from './AcExSnapshotTypes'
+import {
+  acExIsSimulatedMouseEnabled,
+  acExToggleSimulatedMouse,
+  type AcExTouchPickHudHost,
+  acExTouchPickStrategy
+} from './AcExTouchPickStrategy'
 import {
   acExShouldIgnoreCompatMouse,
   acExSinkFollowingClick,
@@ -174,8 +184,7 @@ function applyHtmlTheme(theme: AcExHtmlTheme): void {
   const nextKey = theme === 'light' ? 'toolbar.themeLight' : 'toolbar.themeDark'
   const nextIcon =
     theme === 'light' ? acExHtmlIcons.themeLight : acExHtmlIcons.themeDark
-  const nextTitle =
-    theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'
+  const nextTitle = theme === 'light' ? 'Light' : 'Dark'
   if (icon) icon.innerHTML = nextIcon
   btn.setAttribute('data-i18n-key', nextKey)
   btn.setAttribute('data-i18n-attr', 'title aria-label')
@@ -184,6 +193,36 @@ function applyHtmlTheme(theme: AcExHtmlTheme): void {
   if (label) {
     label.setAttribute('data-i18n-key', nextKey)
     label.setAttribute('data-i18n-text', '')
+  }
+}
+
+/**
+ * Syncs the simulated-mouse settings button label / active class with the
+ * persisted preference.
+ *
+ * @param enabled - Current preference value.
+ * @param i18n - Active i18n instance used to refresh visible labels.
+ */
+function syncSimulatedMouseButton(
+  enabled: boolean,
+  i18n: AcExHtmlI18n
+): void {
+  const btn = document.getElementById('mlcad-simulated-mouse-btn')
+  if (!btn) return
+  const key = enabled
+    ? 'toolbar.simulatedMouseOn'
+    : 'toolbar.simulatedMouseOff'
+  btn.classList.toggle('active', enabled)
+  btn.setAttribute('data-i18n-key', key)
+  btn.setAttribute('data-i18n-attr', 'title aria-label')
+  const title = i18n.t(key)
+  btn.setAttribute('title', title)
+  btn.setAttribute('aria-label', title)
+  const label = btn.querySelector('.mlcad-tool-btn-label')
+  if (label) {
+    label.setAttribute('data-i18n-key', key)
+    label.setAttribute('data-i18n-text', '')
+    label.textContent = title
   }
 }
 
@@ -339,6 +378,7 @@ async function startViewer(): Promise<void> {
   root.style.setProperty('--ml-ui-grip-hot', grip?.hotColorCss ?? '#ff0000')
 
   applyHtmlTheme(loadStoredTheme())
+  syncSimulatedMouseButton(acExIsSimulatedMouseEnabled(), i18n)
   i18n.applyToDocument()
 
   const initialLayout =
@@ -1528,6 +1568,9 @@ async function startViewer(): Promise<void> {
       const next: AcExHtmlTheme = current === 'dark' ? 'light' : 'dark'
       applyHtmlTheme(next)
       i18n.applyToDocument()
+    } else if (action === 'toggle-simulated-mouse') {
+      const enabled = acExToggleSimulatedMouse()
+      syncSimulatedMouseButton(enabled, i18n)
     } else if (action === 'switch-bg') {
       switchDrawingBackground()
     }
@@ -2207,6 +2250,33 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
   let pendingMove: { clientX: number; clientY: number } | null = null
   let moveRaf = 0
   const touchSession = new AcExTouchPointSession()
+  const touchPickHudHost: AcExTouchPickHudHost = {
+    refreshSnapLoupe: (clientX, clientY) => {
+      acExRefreshMobileSnapLoupe(clientX, clientY)
+    },
+    hideSnapLoupe: () => {
+      acExHideMobileSnapLoupe()
+    },
+    refreshSimulatedCursor: (clientX, clientY) => {
+      acExRefreshSimulatedMouseCursor(root, clientX, clientY)
+    },
+    hideSimulatedCursor: () => {
+      acExHideSimulatedMouseCursor()
+    }
+  }
+  const hideTouchPreciseHud = () => {
+    acExHideMobileSnapLoupe()
+    acExHideSimulatedMouseCursor()
+  }
+  const applyTouchPreciseSample = (fingerX: number, fingerY: number) => {
+    const sample = acExTouchPickStrategy().mapFingerToSample(fingerX, fingerY)
+    previewDrawingPoint(sample.x, sample.y)
+    acExTouchPickStrategy().showPreciseHud(
+      touchPickHudHost,
+      sample.x,
+      sample.y
+    )
+  }
   /** Idle box-select / zoom-window rubber band after a long-press or mouse down. */
   let boxGesture: {
     kind: 'select' | 'zoom-window'
@@ -2324,7 +2394,7 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
   }
 
   /**
-   * Applies the latest coalesced pointer-move sample: tool preview, loupe HUD
+   * Applies the latest coalesced pointer-move sample: tool preview, precise HUD
    * while long-pressing, or zoom-window rubber band.
    */
   const flushPointerMove = () => {
@@ -2335,18 +2405,22 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
     const measure = getMeasure()
     const markup = getMarkup()
     if (measure?.isActive) {
-      measure.handlePointerMove(sample.clientX, sample.clientY)
       if (touchSession.isLoupe) {
-        acExRefreshMobileSnapLoupe(sample.clientX, sample.clientY)
+        applyTouchPreciseSample(sample.clientX, sample.clientY)
+        render()
+        return
       }
+      measure.handlePointerMove(sample.clientX, sample.clientY)
       render()
       return
     }
     if (markup?.isActive) {
-      markup.handlePointerMove(sample.clientX, sample.clientY)
       if (touchSession.isLoupe) {
-        acExRefreshMobileSnapLoupe(sample.clientX, sample.clientY)
+        applyTouchPreciseSample(sample.clientX, sample.clientY)
+        render()
+        return
       }
+      markup.handlePointerMove(sample.clientX, sample.clientY)
       render()
       return
     }
@@ -2498,14 +2572,23 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
     acExSinkFollowingClick()
     if (!commit) {
       touchSession.cancel()
-      acExHideMobileSnapLoupe()
+      hideTouchPreciseHud()
       render()
       return
     }
+    const wasPrecise = touchSession.isLoupe
     const action = touchSession.end()
-    acExHideMobileSnapLoupe()
+    hideTouchPreciseHud()
     if (action === 'commit') {
-      commitDrawingPoint(event.clientX, event.clientY)
+      if (wasPrecise) {
+        const sample = acExTouchPickStrategy().mapFingerToSample(
+          event.clientX,
+          event.clientY
+        )
+        commitDrawingPoint(sample.x, sample.y)
+      } else {
+        commitDrawingPoint(event.clientX, event.clientY)
+      }
     } else {
       render()
     }
@@ -2603,17 +2686,16 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
       const markup = getMarkup()
       if (event.pointerType === 'touch' && isDrawingToolActive()) {
         // Match cad-simple-viewer: keep the OS from turning a still finger into
-        // scroll / context-menu `pointercancel` before the loupe timer fires.
+        // scroll / context-menu `pointercancel` before the precise timer fires.
         event.preventDefault()
         touchSession.start(
           event.pointerId,
           event.clientX,
           event.clientY,
           () => {
-            // Precise capture only: lock pan and start jig / loupe preview.
+            // Precise capture only: lock pan and start jig / HUD preview.
             acExSetMobileSnapLoupePreciseCapture(true)
-            previewDrawingPoint(touchSession.x, touchSession.y)
-            acExRefreshMobileSnapLoupe(touchSession.x, touchSession.y)
+            applyTouchPreciseSample(touchSession.x, touchSession.y)
             render()
           }
         )

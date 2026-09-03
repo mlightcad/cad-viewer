@@ -12,6 +12,8 @@ export const ar: Record<string, string> = {
   'toolbar.layerShort': 'الطبقات',
   'toolbar.layout': 'المخطط',
   'toolbar.settings': 'الإعدادات',
+  'toolbar.simulatedMouseOn': 'ماوس',
+  'toolbar.simulatedMouseOff': 'عدسة',
 
   'toolbar.measure': 'القياس',
   'toolbar.measureDistance': 'مسافة',
@@ -60,8 +62,8 @@ export const ar: Record<string, string> = {
   'toolbar.placementLeft': 'يسار',
   'toolbar.placementRight': 'يمين',
 
-  'toolbar.themeLight': 'داكن',
-  'toolbar.themeDark': 'فاتح',
+  'toolbar.themeLight': 'فاتح',
+  'toolbar.themeDark': 'داكن',
 
   'toolbar.locale': 'اللغة',
   'toolbar.localeEn': 'English',

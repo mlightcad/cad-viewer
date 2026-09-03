@@ -228,9 +228,9 @@ By default the plugin uses `layout: 'auto'` and follows viewport width via `aced
 
 | Kind | Viewport | Chrome | Default buttons (`items: 'default'`) |
 | --- | --- | --- | --- |
-| **phone** | ≤600px | Bottom bar, full width (`size: 'stretch'`), labels, `edgeOffset: 0`, not collapsible, no flyout arrows. Nested strips use `replaceOnNested: true`. | `zoom` (original / extents / window), `measure`, `annotation`, `layer`, `layout`, `settings` (theme, background, reading mode, language) |
+| **phone** | ≤600px | Bottom bar, full width (`size: 'stretch'`), labels, `edgeOffset: 0`, not collapsible, no flyout arrows. Nested strips use `replaceOnNested: true`. | `zoom` (original / extents / window), `measure`, `annotation`, `layer`, `layout`, `settings` (simulated mouse, placement, theme, background, reading mode, language) |
 | **pad** | 601–960px | Same floating chrome as desktop (right, icons only, `edgeOffset: 8`). | Desktop set **without** `select` and `pan` (`excludeItems: ['select', 'pan']`). Touch drag pans; a long-press starts window/crossing box select. |
-| **desktop** | >960px | Right-side floating icon toolbar. | `select`, `pan`, `zoom-extent`, `zoom-window`, `layer`, `layout`, `switch-bg`, `reading-mode`, `measure`, `annotation`, `export`, then `toolbar-placement`, `theme`, `locale` |
+| **desktop** | >960px | Right-side floating icon toolbar. | `select`, `pan`, `zoom-extent`, `zoom-window`, `layer`, `layout`, `measure`, `annotation`, `export`, then `settings` (simulated mouse, placement, theme, background, reading mode, language) |
 
 Phone does **not** inherit top-level `toolbar.items`, `appendItems`, or chrome (placement, labels, size). It only inherits `enabled`, `mountTarget`, and `inCanvasParent`. Pad and desktop inherit the full top-level `toolbar` baseline on top of the built-ins above.
 

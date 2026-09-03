@@ -1,7 +1,7 @@
 import { AcApSettingManager } from '../app/AcApSettingManager'
 import { acedIsMobileOrPadUi } from '../editor/global/AcEdUiLayout'
 import { resolveUiTheme } from '../editor/global/AcEdUiTheme'
-import { ACED_TOUCH_POINT_LONG_PRESS_MS } from '../editor/input/ui/AcEdTouchPointSession'
+import { ACED_TOUCH_POINT_LONG_PRESS_MS } from '../editor/input/ui/AcEdTouchPointTiming'
 import { AcApI18n } from '../i18n/AcApI18n'
 import {
   acuiShouldShowTouchPointTutorialFromPrefs,

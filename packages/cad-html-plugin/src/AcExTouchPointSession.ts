@@ -1,13 +1,29 @@
 /**
- * Long-press delay before the snap loupe appears, in milliseconds.
+ * Long-press / short-tap timing and state for offline HTML touch picking.
+ *
+ * Precise-capture delay is shared with cad-simple-viewer via
+ * {@link ACED_TOUCH_POINT_LONG_PRESS_MS}.
  */
-export const ACEX_TOUCH_POINT_LONG_PRESS_MS = 1000
+
+import {
+  ACED_TOUCH_POINT_LONG_PRESS_MS,
+  ACED_TOUCH_POINT_MOVE_CANCEL_PX
+} from './AcExHtmlSimpleViewerUi'
+
+export {
+  ACED_TOUCH_POINT_LONG_PRESS_MS,
+  ACED_TOUCH_POINT_MOVE_CANCEL_PX
+}
 
 /**
- * Pointer movement in CSS pixels that cancels a pending long-press so the
- * gesture can be treated as a pan instead of a pick.
+ * @deprecated Prefer {@link ACED_TOUCH_POINT_LONG_PRESS_MS}.
  */
-export const ACEX_TOUCH_POINT_MOVE_CANCEL_PX = 10
+export const ACEX_TOUCH_POINT_LONG_PRESS_MS = ACED_TOUCH_POINT_LONG_PRESS_MS
+
+/**
+ * @deprecated Prefer {@link ACED_TOUCH_POINT_MOVE_CANCEL_PX}.
+ */
+export const ACEX_TOUCH_POINT_MOVE_CANCEL_PX = ACED_TOUCH_POINT_MOVE_CANCEL_PX
 
 /**
  * Ignore compatibility mouse events this long after a touch pick ends.
@@ -106,8 +122,8 @@ export type AcExTouchPointPhase = 'idle' | 'pending' | 'loupe' | 'panning'
  * exported HTML viewer.
  *
  * - Short tap (`pending` → end): commit at the last sample.
- * - Hold until {@link ACEX_TOUCH_POINT_LONG_PRESS_MS}: enter `loupe`.
- * - Move beyond {@link ACEX_TOUCH_POINT_MOVE_CANCEL_PX} before the timer
+ * - Hold until {@link ACED_TOUCH_POINT_LONG_PRESS_MS}: enter `loupe`.
+ * - Move beyond {@link ACED_TOUCH_POINT_MOVE_CANCEL_PX} before the timer
  *   (when `cancelOnMove` is true): enter `panning` and do not commit.
  */
 export class AcExTouchPointSession {
@@ -191,14 +207,14 @@ export class AcExTouchPointSession {
    * @param y - Sample Y in client CSS pixels.
    * @param onLongPress - Called once when the session enters the `loupe` phase.
    * @param longPressMs - Delay before the loupe appears; defaults to
-   *   {@link ACEX_TOUCH_POINT_LONG_PRESS_MS}.
+   *   {@link ACED_TOUCH_POINT_LONG_PRESS_MS}.
    */
   start(
     pointerId: number,
     x: number,
     y: number,
     onLongPress: () => void,
-    longPressMs: number = ACEX_TOUCH_POINT_LONG_PRESS_MS
+    longPressMs: number = ACED_TOUCH_POINT_LONG_PRESS_MS
   ) {
     this.reset()
     this._phase = 'pending'
@@ -224,14 +240,14 @@ export class AcExTouchPointSession {
    * @param cancelOnMove - When true, movement past the cancel threshold
    *   before the loupe appears aborts the pick.
    * @param cancelPx - Movement threshold in CSS pixels; defaults to
-   *   {@link ACEX_TOUCH_POINT_MOVE_CANCEL_PX}.
+   *   {@link ACED_TOUCH_POINT_MOVE_CANCEL_PX}.
    * @returns `'panning'` when the pick was aborted, otherwise `'continue'`.
    */
   move(
     x: number,
     y: number,
     cancelOnMove: boolean,
-    cancelPx: number = ACEX_TOUCH_POINT_MOVE_CANCEL_PX
+    cancelPx: number = ACED_TOUCH_POINT_MOVE_CANCEL_PX
   ): 'continue' | 'panning' {
     if (this._phase === 'idle' || this._phase === 'panning') return 'continue'
     this._x = x

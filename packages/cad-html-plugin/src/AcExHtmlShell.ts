@@ -1,8 +1,7 @@
 import { acExHtmlIcons, acExToolbarButton } from './AcExHtmlIcons'
 import {
   buildAcExHtmlLocaleStrip,
-  buildAcExHtmlSnapStrip,
-  buildAcExLanguageToolbarButton
+  buildAcExHtmlSnapStrip
 } from './AcExHtmlMeasureSettings'
 import type { AcExViewerMode } from './AcExSnapshotTypes'
 
@@ -176,10 +175,7 @@ export const ACEX_HTML_SHELL_CSS = `
     text-align: center;
     pointer-events: none;
   }
-  /* Phone-only settings entry (hidden on pad/desktop). */
-  #mlcad-settings-btn {
-    display: none;
-  }
+  /* Settings is always on the bar (desktop/pad/phone); language lives under it. */
   /* Flyout mark: opaque corner triangle (cad-simple-ui-plugin is-left style). */
   .mlcad-tool-btn.has-children::after {
     content: '';
@@ -273,9 +269,6 @@ export const ACEX_HTML_SHELL_CSS = `
     font-size: 10px;
     font-weight: 700;
     line-height: 1;
-  }
-  #mlcad-lang-btn .mlcad-locale-option-badge {
-    font-size: 12px;
   }
   #mlcad-zoom-window-rect,
   #mlcad-selection-rect {
@@ -580,11 +573,12 @@ export const ACEX_HTML_SHELL_CSS = `
   #mlcad-status-bar {
     position: absolute; left: 12px; right: 12px; top: 10px; z-index: var(--mlcad-z-chrome);
     display: flex; align-items: center; min-height: 28px; padding: 0 12px;
-    border: 1px solid var(--mlcad-ui-border);
+    border: 1px solid rgba(0, 0, 0, 0.12);
     border-radius: 6px;
-    background: var(--mlcad-ui-bg);
-    color: var(--mlcad-ui-muted);
+    background: var(--mlcad-accent);
+    color: #0b1f1e;
     font-size: 12px;
+    font-weight: 600;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(10px);
     pointer-events: none;
@@ -1361,14 +1355,9 @@ export const ACEX_HTML_SHELL_CSS = `
     .mlcad-tool-btn.has-children::after {
       display: none;
     }
-    #mlcad-snap-menu-btn,
-    #mlcad-lang-btn,
     #mlcad-toolbar-toggle,
     #mlcad-toolbar .mlcad-tool-separator {
       display: none !important;
-    }
-    #mlcad-settings-btn {
-      display: flex !important;
     }
     /* Float above the bottom bar so the wrap does not occupy an in-flow
        rectangle of page background around the rounded strip. */
@@ -1544,6 +1533,7 @@ export const ACEX_HTML_SHELL_CSS = `
     }
   }
 
+  /* Pad / coarse pointer: same toolbar as desktop, minus select and pan. */
   @media (max-width: ${ML_UI_COMPACT_MAX_WIDTH}px), (pointer: coarse) {
     #mlcad-toolbar [data-action="select"],
     #mlcad-toolbar [data-action="pan"] {
@@ -1575,15 +1565,13 @@ export function buildAcExHtmlShellBody(
     viewerMode === 'measure' ? buildAcExMeasureMenuButton() : ''
   const markupToolbar =
     viewerMode === 'measure' ? buildAcExMarkupMenuButton() : ''
-  const snapToolbar = viewerMode === 'measure' ? buildAcExSnapMenuButton() : ''
-  const languageToolbar = buildAcExLanguageToolbarButton()
   const settingsToolbar = buildAcExSettingsMenuButton()
   const submenuTemplates = ''
   const toolStrips = `${buildAcExHtmlZoomStrip()}${
     viewerMode === 'measure'
       ? `${buildAcExMeasureToolStrip()}${buildAcExMarkupToolStrip()}${buildAcExHtmlSnapStrip()}`
       : ''
-  }${buildAcExHtmlSettingsStrip()}${buildAcExHtmlLocaleStrip()}`
+  }${buildAcExHtmlSettingsStrip(viewerMode)}${buildAcExHtmlLocaleStrip()}`
 
   return `
   <div id="mlcad-loading" aria-hidden="true" style="background:${loadingBg}">
@@ -1691,8 +1679,6 @@ export function buildAcExHtmlShellBody(
           'data-i18n-attr': 'title aria-label'
         })}
         ${exportLayouts ? buildAcExLayoutMenuButton() : ''}
-        ${snapToolbar}
-        ${languageToolbar}
         ${settingsToolbar}
         ${acExToolbarButton(acExHtmlIcons.chevronUp, 'Collapse toolbar', {
           id: 'mlcad-toolbar-toggle',
@@ -1850,10 +1836,36 @@ function buildAcExSettingsMenuButton(): string {
   }).replace('class="mlcad-tool-btn"', 'class="mlcad-tool-btn has-children"')
 }
 
-function buildAcExHtmlSettingsStrip(): string {
+function buildAcExHtmlSettingsStrip(viewerMode: AcExViewerMode): string {
+  const snapBtn =
+    viewerMode === 'measure'
+      ? acExToolbarButton(acExHtmlIcons.osnap, 'Object snap', {
+          id: 'mlcad-settings-snap-btn',
+          'aria-haspopup': 'true',
+          'aria-expanded': 'false',
+          'data-action': 'snap-menu',
+          'data-i18n-key': 'toolbar.snap',
+          'data-i18n-attr': 'title aria-label',
+          'data-children-ui': 'sticky-toolbar'
+        }).replace(
+          'class="mlcad-tool-btn"',
+          'class="mlcad-tool-btn has-children"'
+        )
+      : ''
+
   return `<div id="mlcad-settings-strip-wrap" hidden>
         <div id="mlcad-settings-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.settings" aria-label="Settings">
-          ${acExToolbarButton(acExHtmlIcons.themeDark, 'Light theme', {
+          ${acExToolbarButton(acExHtmlIcons.simulatedMouse, 'Mouse', {
+            id: 'mlcad-simulated-mouse-btn',
+            'data-action': 'toggle-simulated-mouse',
+            'data-i18n-key': 'toolbar.simulatedMouseOn',
+            'data-i18n-attr': 'title aria-label'
+          }).replace(
+            'class="mlcad-tool-btn"',
+            'class="mlcad-tool-btn active"'
+          )}
+          ${snapBtn}
+          ${acExToolbarButton(acExHtmlIcons.themeDark, 'Light', {
             id: 'mlcad-theme-btn',
             'data-action': 'toggle-theme',
             'data-i18n-key': 'toolbar.themeDark',
@@ -2083,14 +2095,3 @@ function buildAcExMarkupToolStrip(): string {
   </div>`
 }
 
-function buildAcExSnapMenuButton(): string {
-  return acExToolbarButton(acExHtmlIcons.osnap, 'Object snap', {
-    id: 'mlcad-snap-menu-btn',
-    'aria-haspopup': 'true',
-    'aria-expanded': 'false',
-    'data-action': 'snap-menu',
-    'data-i18n-key': 'toolbar.snap',
-    'data-i18n-attr': 'title aria-label',
-    'data-children-ui': 'sticky-toolbar'
-  }).replace('class="mlcad-tool-btn"', 'class="mlcad-tool-btn has-children"')
-}
