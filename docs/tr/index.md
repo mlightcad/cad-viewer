@@ -14,7 +14,7 @@ hero:
       link: /tr/guide/ui/read-only
     - theme: alt
       text: API Belgeleri
-      link: /api/
+      link: https://cad-viewer.readthedocs.io/en/latest/
 
 features:
   - icon: ⚡

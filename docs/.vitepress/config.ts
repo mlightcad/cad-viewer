@@ -67,7 +67,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: '指南', link: '/zh/guide/ui/read-only' },
-          { text: 'API', link: '/api/' },
+          { text: 'API', link: 'https://cad-viewer.readthedocs.io/en/latest/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('/zh', {
@@ -107,7 +107,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'Guide', link: '/guide/ui/read-only' },
-          { text: 'API', link: '/api/' },
+          { text: 'API', link: 'https://cad-viewer.readthedocs.io/en/latest/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('', {
@@ -147,7 +147,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'ガイド', link: '/ja/guide/ui/read-only' },
-          { text: 'API', link: '/api/' },
+          { text: 'API', link: 'https://cad-viewer.readthedocs.io/en/latest/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('/ja', {
@@ -187,7 +187,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: '가이드', link: '/ko/guide/ui/read-only' },
-          { text: 'API', link: '/api/' },
+          { text: 'API', link: 'https://cad-viewer.readthedocs.io/en/latest/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('/ko', {
@@ -228,7 +228,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'الدليل', link: '/ar/guide/ui/read-only' },
-          { text: 'API', link: '/api/' },
+          { text: 'API', link: 'https://cad-viewer.readthedocs.io/en/latest/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('/ar', {
@@ -268,7 +268,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'Průvodce', link: '/cs/guide/ui/read-only' },
-          { text: 'API', link: '/api/' },
+          { text: 'API', link: 'https://cad-viewer.readthedocs.io/en/latest/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('/cs', {
@@ -308,7 +308,7 @@ export default defineConfig({
       themeConfig: {
         nav: [
           { text: 'Rehber', link: '/tr/guide/ui/read-only' },
-          { text: 'API', link: '/api/' },
+          { text: 'API', link: 'https://cad-viewer.readthedocs.io/en/latest/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('/tr', {
