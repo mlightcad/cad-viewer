@@ -14,20 +14,7 @@ Při vstupu do režimu pouze pro čtení se rozhraní automaticky přizpůsobí 
 
 Režim pouze pro čtení nemá Ribbon ani stavový panel. Rozhraní je orientováno na plátno, přičemž všechny příkazy jsou přístupné prostřednictvím pravého panelu nástrojů a ukotvených panelů:
 
-```
-┌──────────────────────────────────────────────────────┐
-│                                                      │
-│                                                      │
-│                  Canvas + Overlays                   │
-│                                                      │
-│    ┌────┐                                            │
-│    │ R  │   Docked Panels (Layers, Measurements,     │
-│    │ T  │   Entity Info, etc.)                       │
-│    │ B  │                                            │
-│    └────┘                                            │
-│                                                      │
-└──────────────────────────────────────────────────────┘
-```
+<ReviewModeLayout mode="readonly" />
 
 ### Pravý panel nástrojů
 
@@ -67,11 +54,7 @@ Mobil používá design **spodní lišta karet + zásuvkový panel**, který sou
 
 V dolní části obrazovky se zobrazuje šest tlačítek s ikonami:
 
-```
-┌──────┬─────────┬────────┬────────┬────────┬─────────┐
-│ Zoom │ Measure │ Review │ Layers │ Layout │ Setting │
-└──────┴─────────┴────────┴────────┴────────┴─────────┘
-```
+<MobileBottomTabBar mode="readonly" />
 
 | Tlačítko | Funkce |
 |---|---|

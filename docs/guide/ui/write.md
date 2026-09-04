@@ -12,25 +12,7 @@ Write mode is used by default when opening a file, unless read-only or review mo
 
 ### Overall Layout
 
-```
-┌──────────────────────────────────────────────────────┐
-│  Top Ribbon — full AutoCAD-style                     │
-│  File · Draw · Modify · Layers · Properties · Measure│
-│  · Markup                                            │
-├──────────────────────────────────────────────────────┤
-│                                                      │
-│                                                      │
-│                 Canvas + Overlays                     │
-│                                                      │
-│  ┌────────┐         ┌─────────────────┐              │
-│  │Command │         │ Right-Side      │              │
-│  │ Line   │         │ Toolbar        │              │
-│  └────────┘         └─────────────────┘              │
-│                                                      │
-├──────────────────────────────────────────────────────┤
-│  Status Bar + Command Prompt                         │
-└──────────────────────────────────────────────────────┘
-```
+<WriteModeLayout />
 
 ### Top Ribbon
 

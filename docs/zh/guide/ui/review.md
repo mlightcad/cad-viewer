@@ -14,6 +14,9 @@ title: 审阅模式
 
 与只读模式相同：没有 Ribbon 功能区和状态栏，以画布为中心，命令通过右侧工具栏和停靠面板进入。区别在于右侧工具栏多出批注工具组，停靠面板多出审阅面板。
 
+<ReviewModeLayout mode="review" />
+
+
 ### 右侧工具栏
 
 在只读模式的基础上，多出一个**批注工具组**弹出面板，包含：箭头、文字、云线、矩形、圆、标注（Callout）、印章等批注命令。
@@ -49,6 +52,9 @@ title: 审阅模式
 | Layers | 可用 |
 | Layout | 可用 |
 | Setting | 可用 |
+
+<MobileBottomTabBar mode="review" />
+
 
 ### Review 按钮
 

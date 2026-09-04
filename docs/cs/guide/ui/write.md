@@ -12,25 +12,7 @@ Režim zápisu je ve výchozím stavu použit při otevírání souboru, pokud n
 
 ### Celkové rozložení
 
-```
-┌──────────────────────────────────────────────────────┐
-│  Top Ribbon — full AutoCAD-style                     │
-│  File · Draw · Modify · Layers · Properties · Measure│
-│  · Markup                                            │
-├──────────────────────────────────────────────────────┤
-│                                                      │
-│                                                      │
-│                 Canvas + Overlays                     │
-│                                                      │
-│  ┌────────┐         ┌─────────────────┐              │
-│  │Command │         │ Right-Side      │              │
-│  │ Line   │         │ Toolbar        │              │
-│  └────────┘         └─────────────────┘              │
-│                                                      │
-├──────────────────────────────────────────────────────┤
-│  Status Bar + Command Prompt                         │
-└──────────────────────────────────────────────────────┘
-```
+<WriteModeLayout />
 
 ### Horní Ribbon
 

@@ -12,25 +12,7 @@ Salt okunur veya inceleme modu açıkça belirtilmedikçe, bir dosya açıldığ
 
 ### Genel Düzen
 
-```
-┌──────────────────────────────────────────────────────┐
-│  Top Ribbon — full AutoCAD-style                     │
-│  File · Draw · Modify · Layers · Properties · Measure│
-│  · Markup                                            │
-├──────────────────────────────────────────────────────┤
-│                                                      │
-│                                                      │
-│                 Canvas + Overlays                     │
-│                                                      │
-│  ┌────────┐         ┌─────────────────┐              │
-│  │Command │         │ Right-Side      │              │
-│  │ Line   │         │ Toolbar        │              │
-│  └────────┘         └─────────────────┘              │
-│                                                      │
-├──────────────────────────────────────────────────────┤
-│  Status Bar + Command Prompt                         │
-└──────────────────────────────────────────────────────┘
-```
+<WriteModeLayout />
 
 ### Üst Ribbon
 

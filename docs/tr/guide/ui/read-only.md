@@ -14,20 +14,7 @@ Salt okunur moda girildiğinde, arayüz düzenini cihaz türüne göre otomatik 
 
 Salt okunur modda Ribbon ve durum çubuğu yoktur. Arayüz tuval merkezlidir; tüm komutlara sağ taraftaki araç çubuğu ve yerleştirilmiş paneller üzerinden erişilir:
 
-```
-┌──────────────────────────────────────────────────────┐
-│                                                      │
-│                                                      │
-│                  Canvas + Overlays                   │
-│                                                      │
-│    ┌────┐                                            │
-│    │ R  │   Docked Panels (Layers, Measurements,     │
-│    │ T  │   Entity Info, etc.)                       │
-│    │ B  │                                            │
-│    └────┘                                            │
-│                                                      │
-└──────────────────────────────────────────────────────┘
-```
+<ReviewModeLayout mode="readonly" />
 
 ### Sağ Taraf Araç Çubuğu
 
@@ -67,11 +54,7 @@ Mobil, **alt sekme çubuğu + çekmece paneli** tasarımı kullanır; tüm etkil
 
 Ekranın altında altı simge düğmesi görüntülenir:
 
-```
-┌──────┬─────────┬────────┬────────┬────────┬─────────┐
-│ Zoom │ Measure │ Review │ Layers │ Layout │ Setting │
-└──────┴─────────┴────────┴────────┴────────┴─────────┘
-```
+<MobileBottomTabBar mode="readonly" />
 
 | Düğme | İşlev |
 |---|---|

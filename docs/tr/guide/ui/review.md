@@ -14,6 +14,9 @@ title: İnceleme Modu
 
 Salt okunur modla aynı: Ribbon ve durum çubuğu yoktur. Arayüz tuval merkezlidir; komutlara sağ taraf araç çubuğu ve yerleştirilmiş paneller üzerinden erişilir. Fark, sağ taraf araç çubuğunun bir işaretleme araç grubu kazanması ve yerleştirilmiş panellerin bir inceleme paneli kazanmasıdır.
 
+<ReviewModeLayout mode="review" />
+
+
 ### Sağ Taraf Araç Çubuğu
 
 Salt okunur mod araçlarına ek olarak, şu komutları içeren bir **İşaretleme Araç Grubu** açılır paneli vardır: ok, metin, bulut, dikdörtgen, daire, Callout, damga ve diğer işaretleme komutları.
@@ -49,6 +52,9 @@ Mobil alt sekme çubuğundaki **Review düğmesi** bu modda aktiftir ve kullanı
 | Layers | Kullanılabilir |
 | Layout | Kullanılabilir |
 | Setting | Kullanılabilir |
+
+<MobileBottomTabBar mode="review" />
+
 
 ### Review Düğmesi
 
