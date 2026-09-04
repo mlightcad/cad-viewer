@@ -1,0 +1,190 @@
+/**
+ * MLightCAD Viewer Docs — custom theme on top of VitePress default theme.
+ * Brand palette: indigo-blue "engineering blue" with warm amber accent.
+ */
+
+:root {
+  /* Brand palette (light) */
+  --vp-c-brand-1: #2f5fe0;
+  --vp-c-brand-2: #4a77f0;
+  --vp-c-brand-3: #2450c8;
+  --vp-c-brand-soft: rgba(47, 95, 224, 0.14);
+
+  /* Buttons */
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-text: #ffffff;
+  --vp-button-brand-bg: #2f5fe0;
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-hover-text: #ffffff;
+  --vp-button-brand-hover-bg: #4a77f0;
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-active-text: #ffffff;
+  --vp-button-brand-active-bg: #2450c8;
+
+  /* Typography */
+  --vp-font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, 'Helvetica Neue', Arial, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+
+  /* Code blocks */
+  --vp-code-block-bg: #0f1729;
+  --vp-code-tab-divider: rgba(125, 125, 125, 0.25);
+}
+
+.dark {
+  --vp-c-brand-1: #7ba2f5;
+  --vp-c-brand-2: #5c88f2;
+  --vp-c-brand-3: #3b6ee8;
+  --vp-c-brand-soft: rgba(123, 162, 245, 0.16);
+
+  --vp-button-brand-bg: #3b6ee8;
+  --vp-button-brand-hover-bg: #5c88f2;
+  --vp-button-brand-active-bg: #2f5fe0;
+
+  --vp-code-block-bg: #141b2e;
+}
+
+/* ---------- Home hero ---------- */
+
+:root {
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, #2f5fe0 30%, #8b5cf6);
+  --vp-home-hero-image-background-image: linear-gradient(
+    -45deg,
+    rgba(47, 95, 224, 0.28) 45%,
+    rgba(139, 92, 246, 0.28) 55%
+  );
+  --vp-home-hero-image-filter: blur(44px);
+}
+
+.dark {
+  --vp-home-hero-image-background-image: linear-gradient(
+    -45deg,
+    rgba(59, 110, 232, 0.38) 45%,
+    rgba(139, 92, 246, 0.38) 55%
+  );
+}
+
+/* Subtle radial glow behind the hero section */
+.VPHero {
+  position: relative;
+}
+.VPHero::before {
+  content: '';
+  position: absolute;
+  inset: -4rem 0 auto 50%;
+  width: 42rem;
+  height: 24rem;
+  max-width: 100%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(47, 95, 224, 0.12),
+    transparent 65%
+  );
+  pointer-events: none;
+}
+.dark .VPHero::before {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(59, 110, 232, 0.16),
+    transparent 65%
+  );
+}
+
+/* ---------- Home feature cards ---------- */
+
+.VPFeature {
+  border-radius: 12px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease,
+    border-color 0.25s ease;
+}
+.VPFeature:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(15, 23, 41, 0.1);
+  border-color: var(--vp-c-brand-2);
+}
+.dark .VPFeature:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+.VPFeature .icon {
+  background: var(--vp-c-brand-soft);
+  border-radius: 10px;
+}
+
+/* ---------- Navbar / sidebar polish ---------- */
+
+.VPNavBar {
+  backdrop-filter: blur(10px);
+}
+
+.VPSidebarItem.level-2.is-active > .item > .link,
+.VPSidebarItem.level-3.is-active > .item > .link {
+  font-weight: 600;
+}
+
+/* Divider between nav title and content */
+.VPNavBarTitle .divider {
+  padding-right: 24px;
+}
+
+/* ---------- Content typography ---------- */
+
+.vp-doc h1 {
+  letter-spacing: -0.02em;
+}
+
+.vp-doc h2 {
+  padding-top: 24px;
+  border-top: 1px solid var(--vp-c-divider);
+  margin-top: 40px;
+}
+
+/* Inline code chips */
+.vp-doc :not(pre, h1, h2, h3, h4) > code {
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+/* Custom blocks (tip / warning / danger) get softer corners */
+.vp-doc .custom-block {
+  border-radius: 10px;
+}
+
+/* Tables */
+.vp-doc table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.vp-doc th,
+.vp-doc td {
+  border: none;
+  box-shadow: inset 0 -1px 0 var(--vp-c-divider);
+}
+.vp-doc tr:last-child td {
+  box-shadow: none;
+}
+.vp-doc th {
+  background: var(--vp-c-bg-soft);
+}
+
+/* ---------- Scrollbar ---------- */
+
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--vp-c-gray-3);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--vp-c-gray-2);
+}
+
+/* Keep RTL layout intact for Arabic — avoid hard-coded LTR margins */
+[dir='rtl'] .VPFeature:hover {
+  transform: translateY(-3px);
+}
