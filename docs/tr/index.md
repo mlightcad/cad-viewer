@@ -37,7 +37,7 @@ features:
     details: Yerleşik hafif görüntüleyici içeren kendi kendine yeten bir .html dosyası dışa aktarın — kaydırma, yakınlaştırma, katmanlar ve mesafe ölçümü; şifre ve geçerlilik süresi korumalı. Modern herhangi bir tarayıcıda çevrimdışı açılır.
   - icon: 🌍
     title: Çok dilli arayüz
-    details: İngilizce, Çince, Arapça, Çekçe ve Türkçe arayüzler hazır gelir.
+    details: İngilizce, Çince, Arapça, Çekçe, Türkçe, Japonca ve Korece arayüzler hazır gelir.
   - icon: 📱
     title: Duyarlı arayüz
     details: Telefon, tablet ve masaüstüne uyum sağlayan tek arayüz — çizimlerinizi her yerde inceleyin.

@@ -37,7 +37,7 @@ features:
     details: Exportujte samostatný soubor .html s vestavěným lehkým prohlížečem — posouvání, lupa, hladiny a měření vzdálenosti, chráněno heslem a dobou platnosti. Otevřete offline v jakémkoli moderním prohlížeči.
   - icon: 🌍
     title: Vícejazyčné rozhraní
-    details: Vestavěná angličtina, čínština, arabština, čeština a turečtina.
+    details: Vestavěná angličtina, čínština, arabština, čeština, turečtina, japonština a korejština.
   - icon: 📱
     title: Responzivní rozhraní
     details: Jedno rozhraní se přizpůsobí telefonu, tabletu i počítači — revidujte výkresy odkudkoli.

@@ -37,7 +37,7 @@ features:
     details: Export a self-contained .html with an embedded lightweight viewer — pan, zoom, layers and distance measurement, protected by password and expiry. Opens offline in any modern browser.
   - icon: 🌍
     title: Multi-language
-    details: Built-in English, Chinese, Arabic, Czech and Turkish interfaces.
+    details: Built-in English, Chinese, Arabic, Czech, Turkish, Japanese and Korean interfaces.
   - icon: 📱
     title: Responsive UI
     details: One interface that adapts to phones, tablets and desktops — review drawings anywhere.
