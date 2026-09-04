@@ -1,8 +1,8 @@
 ---
-title: Jestler
+title: İşlem Yöntemleri
 ---
 
-# Jestler
+# İşlem Yöntemleri
 
 ## Masaüstü (Fare)
 

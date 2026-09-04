@@ -1,8 +1,8 @@
 ---
-title: Gesta
+title: Způsoby ovládání
 ---
 
-# Gesta
+# Způsoby ovládání
 
 ## Desktop (myš)
 

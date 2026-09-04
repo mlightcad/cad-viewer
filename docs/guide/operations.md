@@ -1,8 +1,8 @@
 ---
-title: Gestures
+title: Operations
 ---
 
-# Gestures
+# Operations
 
 ## Desktop (Mouse)
 
