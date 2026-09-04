@@ -19,4 +19,4 @@ When drawing on a touch screen, the finger itself obscures the target position o
 
 ## Magnifier Mode
 
-If you are not used to the simulated mouse, you can switch to the **Magnifier** mode in **Settings**: a circular magnifier HUD appears at the finger position, magnifying the content in that area, which is suitable for precisely selecting small objects in dense drawings.
+If you are not used to the simulated mouse, you can switch to the **Magnifier** mode in **Settings**: a square magnifier HUD appears in the top-left corner of the screen, magnifying the content near the finger touch point, which is suitable for precisely selecting small objects in dense drawings.

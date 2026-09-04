@@ -19,4 +19,4 @@ Při kreslení na dotykové obrazovce prst sám o sobě překrývá cílovou poz
 
 ## Režim lupy
 
-Pokud si na simulovanou myš nezvyknete, můžete v **Nastavení** přepnout do režimu **lupy**: na pozici prstu se zobrazí kruhová lupa HUD, která zvětší obsah této oblasti – vhodné pro přesný výběr malých objektů v hustých výkresech.
+Pokud si na simulovanou myš nezvyknete, můžete v **Nastavení** přepnout do režimu **lupy**: v levém horním rohu obrazovky se zobrazí čtvercová lupa HUD, která zvětší obsah v okolí dotyku prstu – vhodné pro přesný výběr malých objektů v hustých výkresech.

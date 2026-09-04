@@ -19,4 +19,4 @@ Dokunmatik ekranda çizim yaparken, parmak hedef konumu ekranda örteceği için
 
 ## Büyüteç modu
 
-Sanal fareye alışmadıysanız, **Ayarlar**'dan **büyüteç** moduna de geçebilirsiniz: parmak konumunda dairesel bir büyüteç HUD görüntülenir ve o bölgenin içeriğini büyütür; yoğun çizimlerde küçük nesneleri kesin olarak seçmek için uygundur.
+Sanal fareye alışmadıysanız, **Ayarlar**'dan **büyüteç** moduna da geçebilirsiniz: ekranın sol üst köşesinde kare bir büyüteç HUD görüntülenir ve parmak dokunuşu yakınındaki içeriği büyütür; yoğun çizimlerde küçük nesneleri kesin olarak seçmek için uygundur.
