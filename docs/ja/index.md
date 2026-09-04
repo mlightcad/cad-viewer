@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: 始める
-      link: /ja/guide/ui
+      link: /ja/guide/ui/read-only
     - theme: alt
       text: API リファレンス
       link: /api/

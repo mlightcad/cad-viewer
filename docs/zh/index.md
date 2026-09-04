@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: 快速上手
-      link: /zh/guide/ui
+      link: /zh/guide/ui/read-only
     - theme: alt
       text: API 文档
       link: /api/

@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: ابدأ الآن
-      link: /ar/guide/ui
+      link: /ar/guide/ui/read-only
     - theme: alt
       text: مرجع API
       link: /api/

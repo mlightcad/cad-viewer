@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: Začít
-      link: /cs/guide/ui
+      link: /cs/guide/ui/read-only
     - theme: alt
       text: API dokumentace
       link: /api/

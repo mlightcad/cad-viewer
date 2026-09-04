@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: 시작하기
-      link: /ko/guide/ui
+      link: /ko/guide/ui/read-only
     - theme: alt
       text: API 참조
       link: /api/
