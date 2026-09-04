@@ -4,7 +4,13 @@ const base = process.env.DOCS_BASE || '/cad-viewer/docs/'
 
 function guideSidebar(prefix: string, labels: Record<string, string>) {
   return [
-    { text: labels.ui, link: `${prefix}/guide/ui` },
+    {
+      text: labels.ui,
+      collapsed: false,
+      items: [
+        { text: labels.mainInterface, link: `${prefix}/guide/ui` },
+      ],
+    },
     {
       text: labels.gesturesGroup,
       collapsed: false,
@@ -64,6 +70,7 @@ export default defineConfig({
         sidebar: guideSidebar('', {
           guide: 'Guide',
           ui: 'User Interface',
+          mainInterface: 'Main Interface',
           gesturesGroup: 'Gestures and Aids',
           gestures: 'Gestures',
           simmouse: 'Simulated Mouse',
@@ -101,6 +108,7 @@ export default defineConfig({
         sidebar: guideSidebar('/zh', {
           guide: '指南',
           ui: '用户界面',
+          mainInterface: '主界面',
           gesturesGroup: '手势和辅助显示',
           gestures: '手势',
           simmouse: '模拟鼠标',
@@ -139,6 +147,7 @@ export default defineConfig({
         sidebar: guideSidebar('/ar', {
           guide: 'الدليل',
           ui: 'واجهة المستخدم',
+          mainInterface: 'الواجهة الرئيسية',
           gesturesGroup: 'الإيماءات والمساعدات',
           gestures: 'الإيماءات',
           simmouse: 'الماوس المحاكى',
@@ -176,6 +185,7 @@ export default defineConfig({
         sidebar: guideSidebar('/cs', {
           guide: 'Průvodce',
           ui: 'Uživatelské rozhraní',
+          mainInterface: 'Hlavní rozhraní',
           gesturesGroup: 'Gesta a pomůcky',
           gestures: 'Gesta',
           simmouse: 'Simulovaná myš',
@@ -213,6 +223,7 @@ export default defineConfig({
         sidebar: guideSidebar('/tr', {
           guide: 'Rehber',
           ui: 'Kullanıcı Arayüzü',
+          mainInterface: 'Ana Arayüz',
           gesturesGroup: 'Hareketler ve Yardımcılar',
           gestures: 'Hareketler',
           simmouse: 'Sanal Fare',
@@ -249,6 +260,7 @@ export default defineConfig({
         ],
         sidebar: guideSidebar('/ja', {
           ui: 'ユーザーインターフェース',
+          mainInterface: 'メインインターフェース',
           gesturesGroup: 'ジェスチャと補助表示',
           gestures: 'ジェスチャ',
           simmouse: 'シミュレートマウス',
@@ -285,6 +297,7 @@ export default defineConfig({
         ],
         sidebar: guideSidebar('/ko', {
           ui: '사용자 인터페이스',
+          mainInterface: '메인 인터페이스',
           gesturesGroup: '제스처 및 보조 표시',
           gestures: '제스처',
           simmouse: '시뮬레이션 마우스',
