@@ -14,7 +14,7 @@ hero:
       link: /ar/guide/ui/read-only
     - theme: alt
       text: مرجع API
-      link: /api/
+      link: https://cad-viewer.readthedocs.io/en/latest/
 
 features:
   - icon: ⚡
