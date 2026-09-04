@@ -1,10 +1,12 @@
 ---
-title: Simulovaná myš
+title: Simulovaná myš (Mobilní)
 ---
 
-# Simulovaná myš
+# Simulovaná myš (Mobilní)
 
 Při kreslení na dotykové obrazovce prst sám o sobě překrývá cílovou pozici na obrazovce, což může vést k chybným operacím. Simulovaná myš tento problém řeší: vstupní bod se „zvedne" z místa doteku prstu nad prst a místo prstu se pro přesný vstup použije křížový kurzor.
+
+<TouchPointAnimation />
 
 ## Způsob fungování
 
@@ -16,7 +18,3 @@ Při kreslení na dotykové obrazovce prst sám o sobě překrývá cílovou poz
 
 - Simulovanou myš lze zapnout nebo vypnout v **Nastavení**.
 - Během kreslení lze přepínač kdykoli přepínat.
-
-## Režim lupy
-
-Pokud si na simulovanou myš nezvyknete, můžete v **Nastavení** přepnout do režimu **lupy**: v levém horním rohu obrazovky se zobrazí čtvercová lupa HUD, která zvětší obsah v okolí dotyku prstu – vhodné pro přesný výběr malých objektů v hustých výkresech.

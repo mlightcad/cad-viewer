@@ -1,10 +1,12 @@
 ---
-title: Sanal Fare
+title: Sanal Fare (Mobil)
 ---
 
-# Sanal Fare
+# Sanal Fare (Mobil)
 
 Dokunmatik ekranda çizim yaparken, parmak hedef konumu ekranda örteceği için yanlış işlemlere yol açabilir. Sanal fare bu sorunu çözmek içindir: giriş noktasını parmağın dokunma noktasından parmağın "yukarısına" taşır ve parmak yerine bir çapraz imleç kullanılarak kesin giriş yapılır.
+
+<TouchPointAnimation />
 
 ## Çalışma şekli
 
@@ -16,7 +18,3 @@ Dokunmatik ekranda çizim yaparken, parmak hedef konumu ekranda örteceği için
 
 - **Ayarlar**'dan sanal fare açılabilir veya kapatılabilir.
 - Çizim sırasında da anahtarı istediği zaman değiştirebilirsiniz.
-
-## Büyüteç modu
-
-Sanal fareye alışmadıysanız, **Ayarlar**'dan **büyüteç** moduna da geçebilirsiniz: ekranın sol üst köşesinde kare bir büyüteç HUD görüntülenir ve parmak dokunuşu yakınındaki içeriği büyütür; yoğun çizimlerde küçük nesneleri kesin olarak seçmek için uygundur.
