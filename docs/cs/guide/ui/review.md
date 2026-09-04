@@ -14,6 +14,9 @@ Při vstupu do režimu kontroly rozhraní automaticky zobrazí nástroje a panel
 
 Stejné jako v režimu pouze pro čtení: žádný Ribbon a žádný stavový panel. Rozhraní je orientováno na plátno, příkazy jsou přístupné prostřednictvím pravého panelu nástrojů a ukotvených panelů. Rozdíl spočívá v tom, že pravý panel nástrojů získává skupinu nástrojů pro značky a ukotvené panely získávají panel kontroly.
 
+<ReviewModeLayout mode="review" />
+
+
 ### Pravý panel nástrojů
 
 Kromě nástrojů režimu pouze pro čtení je k dispozici vyskakovací panel **Skupina nástrojů pro značky** obsahující: šipku, text, cloud, obdélník, kružnici, Callout, razítko a další příkazy pro značky.
@@ -49,6 +52,9 @@ Stejné rozložení tabletu jako v režimu pouze pro čtení, ale:
 | Layers | K dispozici |
 | Layout | K dispozici |
 | Setting | K dispozici |
+
+<MobileBottomTabBar mode="review" />
+
 
 ### Tlačítko Review
 

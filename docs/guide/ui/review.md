@@ -14,6 +14,9 @@ Upon entering review mode, the interface automatically displays markup-related t
 
 Same as read-only mode: no Ribbon and no status bar. The interface is canvas-centric, with commands accessed through the right-side toolbar and docked panels. The difference is that the right-side toolbar gains a markup tool group, and the docked panels gain a review panel.
 
+<ReviewModeLayout mode="review" />
+
+
 ### Right-Side Toolbar
 
 In addition to the read-only mode tools, there is a **Markup Tool Group** popup panel containing: arrow, text, cloud, rectangle, circle, callout, stamp, and other markup commands.
@@ -49,6 +52,9 @@ The **Review button** in the mobile bottom tab bar is active and available in th
 | Layers | Available |
 | Layout | Available |
 | Setting | Available |
+
+<MobileBottomTabBar mode="review" />
+
 
 ### Review Button
 

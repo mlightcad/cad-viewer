@@ -14,20 +14,7 @@ Upon entering read-only mode, the interface automatically adapts its layout base
 
 Read-only mode has no Ribbon and no status bar. The interface is canvas-centric, with all commands accessed through the right-side toolbar and docked panels:
 
-```
-┌──────────────────────────────────────────────────────┐
-│                                                      │
-│                                                      │
-│                  Canvas + Overlays                   │
-│                                                      │
-│    ┌────┐                                            │
-│    │ R  │   Docked Panels (Layers, Measurements,     │
-│    │ T  │   Entity Info, etc.)                       │
-│    │ B  │                                            │
-│    └────┘                                            │
-│                                                      │
-└──────────────────────────────────────────────────────┘
-```
+<ReviewModeLayout mode="readonly" />
 
 ### Right-Side Toolbar
 
@@ -67,11 +54,7 @@ Mobile uses a **bottom tab bar + drawer panel** design, concentrating all intera
 
 Six icon buttons are displayed at the bottom of the screen:
 
-```
-┌──────┬─────────┬────────┬────────┬────────┬─────────┐
-│ Zoom │ Measure │ Review │ Layers │ Layout │ Setting │
-└──────┴─────────┴────────┴────────┴────────┴─────────┘
-```
+<MobileBottomTabBar mode="readonly" />
 
 | Button | Function |
 |---|---|
