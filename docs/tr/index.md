@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: Başlayın
-      link: /tr/guide/ui
+      link: /tr/guide/ui/read-only
     - theme: alt
       text: API Belgeleri
       link: /api/

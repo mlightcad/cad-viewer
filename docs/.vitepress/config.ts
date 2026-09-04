@@ -8,7 +8,9 @@ function guideSidebar(prefix: string, labels: Record<string, string>) {
       text: labels.ui,
       collapsed: false,
       items: [
-        { text: labels.mainInterface, link: `${prefix}/guide/ui` },
+        { text: labels.uiReadOnly, link: `${prefix}/guide/ui/read-only` },
+        { text: labels.uiReview, link: `${prefix}/guide/ui/review` },
+        { text: labels.uiWrite, link: `${prefix}/guide/ui/write` },
       ],
     },
     {
@@ -64,14 +66,15 @@ export default defineConfig({
       label: '中文',
       themeConfig: {
         nav: [
-          { text: '指南', link: '/zh/guide/ui' },
+          { text: '指南', link: '/zh/guide/ui/read-only' },
           { text: 'API', link: '/api/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('/zh', {
-          guide: '指南',
           ui: '用户界面',
-          mainInterface: '主界面',
+          uiReadOnly: '只读模式',
+          uiReview: '审阅模式',
+          uiWrite: '读写模式',
           gesturesGroup: '操作和辅助显示',
           gestures: '操作方式',
           simmouse: '模拟鼠标（移动端）',
@@ -103,14 +106,15 @@ export default defineConfig({
       label: 'English',
       themeConfig: {
         nav: [
-          { text: 'Guide', link: '/guide/ui' },
+          { text: 'Guide', link: '/guide/ui/read-only' },
           { text: 'API', link: '/api/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('', {
-          guide: 'Guide',
           ui: 'User Interface',
-          mainInterface: 'Main Interface',
+          uiReadOnly: 'Read-Only Mode',
+          uiReview: 'Review Mode',
+          uiWrite: 'Write Mode',
           gesturesGroup: 'Operations and Aids',
           gestures: 'Operations',
           simmouse: 'Simulated Mouse (Mobile)',
@@ -142,13 +146,15 @@ export default defineConfig({
       label: '日本語',
       themeConfig: {
         nav: [
-          { text: 'ガイド', link: '/ja/guide/ui' },
+          { text: 'ガイド', link: '/ja/guide/ui/read-only' },
           { text: 'API', link: '/api/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('/ja', {
           ui: 'ユーザーインターフェース',
-          mainInterface: 'メインインターフェース',
+          uiReadOnly: '閲覧専用モード',
+          uiReview: 'レビューモード',
+          uiWrite: '編集モード',
           gesturesGroup: '操作と補助表示',
           gestures: '操作方法',
           simmouse: 'シミュレートマウス（モバイル）',
@@ -180,13 +186,15 @@ export default defineConfig({
       label: '한국어',
       themeConfig: {
         nav: [
-          { text: '가이드', link: '/ko/guide/ui' },
+          { text: '가이드', link: '/ko/guide/ui/read-only' },
           { text: 'API', link: '/api/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('/ko', {
           ui: '사용자 인터페이스',
-          mainInterface: '메인 인터페이스',
+          uiReadOnly: '읽기 전용 모드',
+          uiReview: '검토 모드',
+          uiWrite: '쓰기 모드',
           gesturesGroup: '조작 및 보조 표시',
           gestures: '조작 방법',
           simmouse: '시뮬레이션 마우스（모바일）',
@@ -219,14 +227,15 @@ export default defineConfig({
       dir: 'rtl',
       themeConfig: {
         nav: [
-          { text: 'الدليل', link: '/ar/guide/ui' },
+          { text: 'الدليل', link: '/ar/guide/ui/read-only' },
           { text: 'API', link: '/api/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('/ar', {
-          guide: 'الدليل',
           ui: 'واجهة المستخدم',
-          mainInterface: 'الواجهة الرئيسية',
+          uiReadOnly: 'وضع القراءة فقط',
+          uiReview: 'وضع المراجعة',
+          uiWrite: 'وضع القراءة والكتابة',
           gesturesGroup: 'العمليات والمساعدات',
           gestures: 'طرق التشغيل',
           simmouse: 'الماوس المحاكى (للأجهزة المحمولة)',
@@ -258,14 +267,15 @@ export default defineConfig({
       label: 'Čeština',
       themeConfig: {
         nav: [
-          { text: 'Průvodce', link: '/cs/guide/ui' },
+          { text: 'Průvodce', link: '/cs/guide/ui/read-only' },
           { text: 'API', link: '/api/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('/cs', {
-          guide: 'Průvodce',
           ui: 'Uživatelské rozhraní',
-          mainInterface: 'Hlavní rozhraní',
+          uiReadOnly: 'Režim pouze pro čtení',
+          uiReview: 'Režim kontroly',
+          uiWrite: 'Režim čtení a zápisu',
           gesturesGroup: 'Ovládání a pomůcky',
           gestures: 'Způsoby ovládání',
           simmouse: 'Simulovaná myš (Mobilní)',
@@ -297,14 +307,15 @@ export default defineConfig({
       label: 'Türkçe',
       themeConfig: {
         nav: [
-          { text: 'Rehber', link: '/tr/guide/ui' },
+          { text: 'Rehber', link: '/tr/guide/ui/read-only' },
           { text: 'API', link: '/api/' },
           { text: 'GitHub', link: 'https://github.com/mlightcad/cad-viewer' },
         ],
         sidebar: guideSidebar('/tr', {
-          guide: 'Rehber',
           ui: 'Kullanıcı Arayüzü',
-          mainInterface: 'Ana Arayüz',
+          uiReadOnly: 'Salt Okunur Mod',
+          uiReview: 'İnceleme Modu',
+          uiWrite: 'Okuma-Yazma Modu',
           gesturesGroup: 'İşlemler ve Yardımcılar',
           gestures: 'İşlem Yöntemleri',
           simmouse: 'Sanal Fare (Mobil)',
