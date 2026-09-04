@@ -222,4 +222,4 @@ The proprietary parser does **not** expose a standalone “parse DWG” API. Lik
 ## Related Documentation
 
 - [cad-viewer README](./README.md) — project overview, open-source stack, and known limitations of the default parsers
-- [API Docs](https://mlightcad.github.io/cad-viewer/docs/) — `@mlightcad/data-model` and viewer APIs
+- [API Docs](https://cad-viewer.readthedocs.io/en/latest/) — `@mlightcad/data-model` and viewer APIs

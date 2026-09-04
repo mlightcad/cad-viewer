@@ -12,7 +12,7 @@ cad-viewer — `первый в мире веб-просмотрщик и ред
 
 - [**🌐 Домашняя страница**](https://mlightcad.com/)
 - **🌐 Живая демонстрация**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 Документация API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (с версиями) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (последняя/dev) · [MCP-сервер](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 Документация API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (с версиями) · [MCP-сервер](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -111,6 +111,8 @@ pnpm preview:simple
 ```
 
 ## Как пользоваться
+
+Впервые пользуетесь CAD Viewer? В **[руководстве пользователя](https://mlightcad.com/cad-viewer/docs/)** вы найдёте пошаговые инструкции по интерфейсу просмотрщика, операциям на компьютере и сенсорном экране, а также по инструментам пометок и измерений.
 
 ### Операции в настольном браузере
 - **Выделение**: левый клик по объектам

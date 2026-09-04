@@ -12,7 +12,7 @@ Ele também oferece algo que você raramente encontra em outros visualizadores C
 
 - [**🌐 Página inicial**](https://mlightcad.com/)
 - **🌐 Demo ao vivo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 Documentação da API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versionada) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (latest/dev) · [Servidor MCP](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 Documentação da API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versionada) · [Servidor MCP](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -111,6 +111,8 @@ pnpm preview:simple
 ```
 
 ## Como usar
+
+Novo no CAD Viewer? O **[guia do usuário](https://mlightcad.com/cad-viewer/docs/)** traz instruções passo a passo sobre a interface do visualizador, operações em desktop e toque, marcações e ferramentas de medição.
 
 ### Operações no navegador desktop
 - **Selecionar**: Clique com o botão esquerdo nas entidades

@@ -12,7 +12,7 @@ Nabízí také něco, co u jiných CAD prohlížečů jen zřídka najdete — *
 
 - [**🌐 Domovská stránka**](https://mlightcad.com/)
 - **🌐 Živé demo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 Dokumentace API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (verzovaná) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (nejnovější/dev) · [MCP server](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 Dokumentace API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (verzovaná) · [MCP server](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -111,6 +111,8 @@ pnpm preview:simple
 ```
 
 ## Jak používat
+
+Jste v CAD Viewer noví? **[Uživatelská příručka](https://mlightcad.com/cad-viewer/docs/)** nabízí podrobné návody k rozhraní prohlížeče, ovládání na počítači i dotykových zařízeních a k nástrojům pro poznámky a měření.
 
 ### Ovládání v desktopovém prohlížeči
 - **Výběr**: levé tlačítko myši na entitách

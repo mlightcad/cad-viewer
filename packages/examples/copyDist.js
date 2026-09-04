@@ -30,15 +30,11 @@ export async function copyDist() {
   })
   await fs.copy(cadDiffViewerExampleDist, cadDiffViewer, { overwrite: true })
   if (await fs.pathExists(docsSource)) {
+    // The VitePress user guide is the only content deployed under /docs/.
+    // The TypeDoc API reference lives on Read the Docs (see .readthedocs.yaml),
+    // so wipe the target first to drop any stale locally-generated api/ folder.
+    await fs.remove(docsTarget)
     await fs.ensureDir(docsTarget)
-    // Refresh the VitePress site but keep api/ — TypeDoc generates it
-    // directly into public/docs/api (see typedoc.json / "pnpm docs:api").
-    const entries = await fs.readdir(docsTarget)
-    await Promise.all(
-      entries
-        .filter((entry) => entry !== 'api')
-        .map((entry) => fs.remove(path.join(docsTarget, entry)))
-    )
     await fs.copy(docsSource, docsTarget, { overwrite: true })
   }
 }

@@ -222,4 +222,4 @@ cad-viewer 目前为**个人开源项目**（非公司运营），作者**全职
 ## 相关文档
 
 - [cad-viewer README](./README.zh-CN.md) — 项目概览、开源技术栈及默认解析器的已知限制
-- [API 文档](https://mlightcad.github.io/cad-viewer/docs/) — `@mlightcad/data-model` 与查看器 API
+- [API 文档](https://cad-viewer.readthedocs.io/en/latest/) — `@mlightcad/data-model` 与查看器 API
