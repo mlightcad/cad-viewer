@@ -12,7 +12,7 @@ DWG/DXF 파싱, 지오메트리 처리, 렌더링을 브라우저에서 직접 �
 
 - [**🌐 홈페이지**](https://mlightcad.com/)
 - **🌐 라이브 데모**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 API 문서**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (버전별) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (최신/dev) · [MCP 서버](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 API 문서**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (버전별) · [MCP 서버](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -111,6 +111,8 @@ pnpm preview:simple
 ```
 
 ## 사용 방법
+
+CAD Viewer를 처음 사용하시나요? **[사용자 가이드](https://mlightcad.com/cad-viewer/docs/)**에서 뷰어 인터페이스, 데스크톱 및 터치 조작, 마크업, 측정 도구에 대한 단계별 안내를 확인하세요.
 
 ### 데스크톱 브라우저 조작
 - **선택**: 엔티티를 왼쪽 클릭

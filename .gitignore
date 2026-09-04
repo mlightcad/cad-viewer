@@ -24,6 +24,7 @@ auto-imports.d.ts
 *.launch
 .settings/
 *.sublime-workspace
+.trae
 
 # IDE - VSCode
 .vscode/*

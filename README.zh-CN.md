@@ -12,7 +12,7 @@ CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后�
 
 - [**🌐 主页**](https://mlightcad.com/)
 - **🌐 在线演示**：[Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 API 文档**：[Read the Docs](https://cad-viewer.readthedocs.io/en/latest/)（支持版本切换）· [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/)（最新 /dev）· [MCP 服务器](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 API 文档**：[Read the Docs](https://cad-viewer.readthedocs.io/en/latest/)（支持版本切换）· [MCP 服务器](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 项目 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -111,6 +111,8 @@ pnpm preview:simple
 ```
 
 ## 使用说明
+
+初次使用 CAD Viewer？**[用户指南](https://mlightcad.com/cad-viewer/docs/)** 提供了分步说明，涵盖查看器界面、桌面端与触屏操作、批注和测量工具。
 
 ### 桌面浏览器操作
 - **选择**：鼠标左键单击实体

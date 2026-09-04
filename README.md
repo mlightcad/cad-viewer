@@ -12,7 +12,7 @@ It also offers something you will rarely find in other CAD viewers—**one-click
 
 - [**🌐 Home Page**](https://mlightcad.com/)
 - **🌐 Live Demo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 API Docs**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versioned) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (latest/dev) · [MCP Server](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 API Docs**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versioned) · [MCP Server](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -111,6 +111,8 @@ pnpm preview:simple
 ```
 
 ## How to Use
+
+New to CAD Viewer? The **[User Guide](https://mlightcad.com/cad-viewer/docs/)** provides step-by-step instructions for the viewer interface, desktop and touch operations, markup, and measurement tools.
 
 ### Desktop Browser Operations
 - **Select**: Left-click on entities

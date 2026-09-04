@@ -76,10 +76,10 @@ jobs:
             packages/cad-viewer-example/test-results/
           if-no-files-found: ignore
 
-      - name: Build docs
-        run: |
-          DOCS_BASE=/cad-viewer/docs/ pnpm docs:build
-          pnpm docs:api
+      # GitHub Pages hosts the VitePress user guide only. The TypeDoc API
+      # reference is built and served by Read the Docs (see .readthedocs.yaml).
+      - name: Build user guide
+        run: DOCS_BASE=/cad-viewer/docs/ pnpm docs:build
 
       - name: Pre-serve
         run: pnpm pre-serve
