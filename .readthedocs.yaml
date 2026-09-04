@@ -10,7 +10,4 @@ build:
     - corepack pnpm --version
     - corepack pnpm install --frozen-lockfile
     - corepack pnpm build
-    - corepack pnpm docs:build
-    - corepack pnpm docs:site:prepare
-    - mkdir -p "$READTHEDOCS_OUTPUT/html"
-    - cp -R docs/. "$READTHEDOCS_OUTPUT/html/"
+    - corepack pnpm docs:api --out "$READTHEDOCS_OUTPUT/html"

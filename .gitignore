@@ -1,7 +1,8 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
 # compiled output
-docs
+docs/.vitepress/dist/
+docs/.vitepress/cache/
 dist
 dist-runner
 lib

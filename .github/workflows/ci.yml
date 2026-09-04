@@ -77,7 +77,9 @@ jobs:
           if-no-files-found: ignore
 
       - name: Build docs
-        run: pnpm docs:build
+        run: |
+          DOCS_BASE=/cad-viewer/docs/ pnpm docs:build
+          pnpm docs:api
 
       - name: Pre-serve
         run: pnpm pre-serve
