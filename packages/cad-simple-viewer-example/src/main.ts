@@ -7,10 +7,10 @@ import {
 import { acuiRegisterSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
 import {
   AcApDocManager,
+  acapFormatOpenFileErrorMessage,
   AcApOpenDatabaseOptions,
   AcApQNewCmd,
   AcApSettingManager,
-  acapFormatOpenFileErrorMessage,
   acedApplyUiTheme,
   acedIsCompactUiLayout,
   AcEdOpenMode,
@@ -1243,11 +1243,10 @@ class CadViewerApp {
     text.style.lineHeight = '1.4'
     popup.appendChild(text)
 
-    let hideTimer: ReturnType<typeof setTimeout> | undefined
     let removeTimer: ReturnType<typeof setTimeout> | undefined
 
     const dismiss = () => {
-      if (hideTimer != null) clearTimeout(hideTimer)
+      clearTimeout(hideTimer)
       if (removeTimer != null) clearTimeout(removeTimer)
       popup.style.opacity = '0'
       removeTimer = setTimeout(() => {
@@ -1289,7 +1288,7 @@ class CadViewerApp {
 
     // Errors need more reading time (license / open failures can be long).
     const visibleMs = type === 'error' ? 8000 : 1200
-    hideTimer = setTimeout(dismiss, visibleMs)
+    const hideTimer = setTimeout(dismiss, visibleMs)
   }
 
   private clearMessages() {

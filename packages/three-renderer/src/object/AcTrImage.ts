@@ -1,8 +1,7 @@
 import {
-  AcGiImageStyle,
   acdbOleBlobNeedsMetafileRasterization,
-  acdbRasterizeOleMetafile
-} from '@mlightcad/data-model'
+  acdbRasterizeOleMetafile,
+  AcGiImageStyle} from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import type { AcTrDrawMode } from '../draw/AcTrDrawMode'

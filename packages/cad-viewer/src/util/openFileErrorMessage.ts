@@ -1,8 +1,7 @@
 import {
+  type AcApOpenFileErrorParams,
   acapResolveOpenFileErrorMessage,
-  acapResolveOpenFileErrorTitle,
-  type AcApOpenFileErrorParams
-} from '@mlightcad/cad-simple-viewer'
+  acapResolveOpenFileErrorTitle} from '@mlightcad/cad-simple-viewer'
 import type { AcDbOpenDatabaseErrorCode } from '@mlightcad/data-model'
 
 export type OpenFileErrorParams = AcApOpenFileErrorParams
