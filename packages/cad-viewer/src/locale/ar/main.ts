@@ -1484,6 +1484,12 @@ export default {
     failedToOpenFileFontLoadFailed:
       'فشل فتح "{fileName}". تعذر تحميل الخطوط المطلوبة.',
 
+    failedToOpenFileLicenseExpired:
+      'فشل فتح "{fileName}". انتهت صلاحية ترخيص محول DWG.',
+
+    failedToOpenFileLicenseInvalid:
+      'فشل فتح "{fileName}". ترخيص محول DWG مفقود أو غير صالح.',
+
     fetchingDrawingFile:
       'جارٍ جلب ملف الرسم ...',
 
@@ -1518,6 +1524,8 @@ export default {
       failedToOpenFileWorkerOom: 'الرسم كبير جدًا',
       failedToOpenFileWorkerTimeout: 'انتهت مهلة فتح الرسم',
       failedToOpenFileFontLoadFailed: 'فشل تحميل الخطوط',
+      failedToOpenFileLicenseExpired: 'انتهت صلاحية الترخيص',
+      failedToOpenFileLicenseInvalid: 'ترخيص غير صالح',
 
       fontNotFound: 'الخط غير موجود',
       fontNotLoaded: 'لم يتم تحميل الخط',

@@ -1004,6 +1004,10 @@ export default {
       'Failed to open "{fileName}". The operation timed out while parsing the drawing.',
     failedToOpenFileFontLoadFailed:
       'Failed to open "{fileName}". Required fonts could not be loaded.',
+    failedToOpenFileLicenseExpired:
+      'Failed to open "{fileName}". The DWG converter license has expired.',
+    failedToOpenFileLicenseInvalid:
+      'Failed to open "{fileName}". The DWG converter license is missing or invalid.',
     fetchingDrawingFile: 'Fetching file ...',
     unknownEntities:
       'This drawing contains {count} unknown or unsupported entities! Those entities will not be shown.'
@@ -1025,6 +1029,8 @@ export default {
       failedToOpenFileWorkerOom: 'Drawing Too Large',
       failedToOpenFileWorkerTimeout: 'Open Timed Out',
       failedToOpenFileFontLoadFailed: 'Font Load Failed',
+      failedToOpenFileLicenseExpired: 'License Expired',
+      failedToOpenFileLicenseInvalid: 'Invalid License',
       fontNotFound: 'Font Not Found',
       fontNotLoaded: 'Font Not Loaded',
       parsingWarning: 'Issues on Parsing Drawing'

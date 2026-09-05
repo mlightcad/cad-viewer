@@ -34,7 +34,28 @@ export default {
     exportingEntityPreview: 'Exportuji obrázek…',
     collectingMemoryProfile: 'Analyzuji paměť…',
     fontCached: 'Font úspěšně uložen do mezipaměti',
-    fontCacheFailed: 'Uložení fontu do mezipaměti selhalo'
+    fontCacheFailed: 'Uložení fontu do mezipaměti selhalo',
+    failedToOpenFile: 'Nepodařilo se otevřít soubor „{fileName}“!',
+    failedToOpenFileWorkerOom:
+      'Nepodařilo se otevřít „{fileName}“. Výkres je příliš velký pro dostupnou paměť.',
+    failedToOpenFileWorkerTimeout:
+      'Nepodařilo se otevřít „{fileName}“. Při načítání výkresu vypršel časový limit.',
+    failedToOpenFileFontLoadFailed:
+      'Nepodařilo se otevřít „{fileName}“. Potřebné fonty se nepodařilo načíst.',
+    failedToOpenFileLicenseExpired:
+      'Nepodařilo se otevřít „{fileName}“. Licence převodníku DWG vypršela.',
+    failedToOpenFileLicenseInvalid:
+      'Nepodařilo se otevřít „{fileName}“. Licence převodníku DWG chybí nebo je neplatná.'
+  },
+  notification: {
+    title: {
+      failedToOpenFile: 'Nepodařilo se otevřít soubor',
+      failedToOpenFileWorkerOom: 'Výkres je příliš velký',
+      failedToOpenFileWorkerTimeout: 'Vypršel časový limit otevření',
+      failedToOpenFileFontLoadFailed: 'Načtení fontu selhalo',
+      failedToOpenFileLicenseExpired: 'Licence vypršela',
+      failedToOpenFileLicenseInvalid: 'Neplatná licence'
+    }
   },
   progress: {
     start: 'Zahajuji načítání souboru…',

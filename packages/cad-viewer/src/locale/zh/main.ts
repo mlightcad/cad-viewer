@@ -960,6 +960,10 @@ export default {
     failedToOpenFileWorkerTimeout: '无法打开"{fileName}"。解析图纸时操作超时。',
     failedToOpenFileFontLoadFailed:
       '无法打开"{fileName}"。无法加载图纸所需的字体。',
+    failedToOpenFileLicenseExpired:
+      '无法打开"{fileName}"。DWG 转换器许可证已过期。',
+    failedToOpenFileLicenseInvalid:
+      '无法打开"{fileName}"。DWG 转换器许可证缺失或无效。',
     fetchingDrawingFile: '正在加载图纸文件...',
     unknownEntities:
       '这张图纸中包含了{count}个未知或不支持的实体，这些实体将无法显示！'
@@ -981,6 +985,8 @@ export default {
       failedToOpenFileWorkerOom: '图纸过大',
       failedToOpenFileWorkerTimeout: '打开超时',
       failedToOpenFileFontLoadFailed: '字体加载失败',
+      failedToOpenFileLicenseExpired: '许可证已过期',
+      failedToOpenFileLicenseInvalid: '许可证无效',
       fontNotFound: '找不到字体',
       fontNotLoaded: '无法加载字体',
       parsingWarning: '解析图纸问题'

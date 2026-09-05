@@ -121,6 +121,45 @@ describe('AcTrInheritedLayerMaterialMapper', () => {
     expect(getLayerBoundMaterial).toHaveBeenCalled()
   })
 
+  it('does not promote absolute non-foreground colour when only lineweight is ByLayer', () => {
+    // Regression: legend header hatch (ACI 251 gray on layer 0) was promoted to
+    // ByLayer colour and inherited the INSERT layer's ACI 7 → solid white header.
+    const sourceMaterial = new THREE.MeshBasicMaterial({ color: 0x5b5b5b })
+    setMaterialMetadata(sourceMaterial, {
+      layer: '0',
+      materialKey: 'legend-header',
+      isByLayerColor: false,
+      isByLayerLineType: false,
+      isByLayerLineWeight: true,
+      isByLayerTransparency: false,
+      isForeground: false
+    })
+
+    const getLayerBoundMaterial = jest.fn((material: THREE.Material) => material)
+    const renderer = {
+      getLayerBoundMaterial
+    } as unknown as AcTrRenderer
+
+    const mapper = new AcTrInheritedLayerMaterialMapper(
+      () =>
+        ({
+          layer: 'INSERT',
+          color: { isForeground: true, RGB: 0xffffff }
+        }) as Partial<AcGiSubEntityTraits>,
+      renderer
+    )
+
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), sourceMaterial)
+    mesh.userData.layerName = '0'
+
+    mapper.remap([mesh], '0', 'INSERT')
+
+    expect(getMaterialMetadata(sourceMaterial).isByLayerColor).toBe(false)
+    expect(getLayerBoundMaterial).toHaveBeenCalled()
+    const promoted = getLayerBoundMaterial.mock.calls[0][0] as THREE.Material
+    expect(getMaterialMetadata(promoted).isByLayerColor).toBe(false)
+  })
+
   it('sets styleMaterialId when remapping array materials', () => {
     const sourceMaterial = new THREE.LineBasicMaterial({ color: 0xffffff })
     setMaterialMetadata(sourceMaterial, {
