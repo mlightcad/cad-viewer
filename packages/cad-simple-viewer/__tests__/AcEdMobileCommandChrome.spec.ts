@@ -3,6 +3,7 @@
 jest.mock('../src/i18n/AcApI18n', () => ({
   AcApI18n: {
     t: (key: string) => key,
+    currentLocale: 'en',
     events: {
       localeChanged: {
         addEventListener: jest.fn(),
@@ -10,6 +11,20 @@ jest.mock('../src/i18n/AcApI18n', () => ({
       }
     }
   }
+}))
+
+jest.mock('../src/app/AcApDocsUrl', () => ({
+  ACAP_DOCS_PATH_MAGNIFIER: 'guide/magnifier.html',
+  acapDocsUrl: jest.fn(() => 'https://example.com/docs/guide/magnifier.html')
+}))
+
+jest.mock('../src/ui/AcUiHelpPanel', () => ({
+  AcUiHelpPanel: jest.fn().mockImplementation(() => ({
+    showDocs: jest.fn(),
+    setLabels: jest.fn(),
+    dispose: jest.fn(),
+    isOpen: false
+  }))
 }))
 
 import {
@@ -100,6 +115,11 @@ describe('AcEdMobileCommandChrome', () => {
     expect(
       panel.firstElementChild?.classList.contains('ml-mobile-cmd-accessory')
     ).toBe(true)
+    expect(
+      (panel.querySelector('.ml-mobile-cmd-accessory') as HTMLElement).hidden
+    ).toBe(false)
+    expect(panel.querySelector('.ml-mobile-cmd-help')).toBeTruthy()
+    expect(panel.querySelector('.ml-mobile-cmd-accessory-content')).toBeTruthy()
     expect(panel.children[1]?.classList.contains('ml-mobile-cmd-chips')).toBe(
       true
     )
@@ -359,14 +379,18 @@ describe('AcEdMobileCommandChrome', () => {
       { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
     )
     chrome.prepareAccessory()
-    const accessory = chrome.accessoryHost
-    expect(accessory.hidden).toBe(false)
-    accessory.appendChild(document.createElement('span'))
-    expect(accessory.firstElementChild?.tagName).toBe('SPAN')
+    const row = host.querySelector('.ml-mobile-cmd-accessory') as HTMLElement
+    const content = chrome.accessoryHost
+    expect(row.hidden).toBe(false)
+    expect(row.querySelector('.ml-mobile-cmd-help')).toBeTruthy()
+    content.appendChild(document.createElement('span'))
+    expect(content.firstElementChild?.tagName).toBe('SPAN')
 
     chrome.hide()
-    expect(accessory.hidden).toBe(true)
-    expect(accessory.childElementCount).toBe(0)
+    expect(row.hidden).toBe(true)
+    expect(content.childElementCount).toBe(0)
+    // Help icon stays in the row DOM; only custom content is cleared.
+    expect(row.querySelector('.ml-mobile-cmd-help')).toBeTruthy()
     media.restore()
   })
 

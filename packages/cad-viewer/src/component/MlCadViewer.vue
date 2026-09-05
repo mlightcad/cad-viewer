@@ -74,6 +74,12 @@
  *   :base-url="'https://my-cdn.com/cad-data/'"
  * />
  *
+ * // Usage with a self-hosted user-guide root
+ * <MlCadViewer
+ *   :locale="'zh'"
+ *   :docs-base-url="'https://example.com/my-product/docs/'"
+ * />
+ *
  * // Import statement
  * import { MlCadViewer } from '@mlightcad/cad-viewer'
  * ```
@@ -145,6 +151,12 @@ interface Props {
   /** Base URL for loading fonts, templates, and example files (e.g., 'https://example.com/cad-data/') */
   baseUrl?: string
   /**
+   * Absolute root URL for localized user-guide pages (trailing slash optional).
+   * Forwarded to {@link AcApDocManagerOptions.docsBaseUrl} for in-app help links
+   * (e.g. mobile magnifier). Defaults to the public mlightcad docs site.
+   */
+  docsBaseUrl?: string
+  /**
    * URL of the offline HTML viewer runtime (`viewer-runtime.iife.js`).
    * Used only for File menu “Export to HTML”. Copy the file from
    * `@mlightcad/cad-html-plugin` into your app assets when you need HTML export.
@@ -197,6 +209,7 @@ const props = withDefaults(defineProps<Props>(), {
   localFile: undefined,
   background: undefined,
   baseUrl: undefined,
+  docsBaseUrl: undefined,
   htmlViewerRuntimeUrl: './assets/viewer-runtime.iife.js',
   useMainThreadDraw: true,
   theme: 'dark',
@@ -476,6 +489,7 @@ onMounted(async () => {
       container: containerRef.value,
       busyIndicatorHost: layoutRef.value,
       baseUrl: props.baseUrl,
+      docsBaseUrl: props.docsBaseUrl,
       htmlViewerRuntimeUrl: props.htmlViewerRuntimeUrl,
       autoResize: true,
       useMainThreadDraw: props.useMainThreadDraw,

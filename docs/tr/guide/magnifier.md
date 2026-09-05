@@ -6,6 +6,8 @@ title: Büyüteç (Mobil)
 
 Dokunmatik ekranda bir noktayı kesin olarak seçerken parmak hedef konumu örter. Büyüteç bir görsel yardım sağlar: ekranın sol üst köşesinde kare bir büyüteç HUD görüntüleyerek giriş noktası yakınındaki içeriği büyütür ve yoğun çizimlerde küçük nesneleri kesin olarak seçmenize yardımcı olur.
 
+<MagnifierAnimation />
+
 ## Çalışma şekli
 
 - Komut bir nokta belirtmenizi istediğinde, ekrana **yaklaşık 1 saniye** basılı tutun ve sol üst köşede otomatik olarak kare bir büyüteç HUD görüntülenir.

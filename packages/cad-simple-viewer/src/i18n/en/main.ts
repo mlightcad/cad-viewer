@@ -22,7 +22,9 @@ export default {
     x: 'X',
     y: 'Y',
     confirm: 'Confirm',
-    cancel: 'Cancel'
+    cancel: 'Cancel',
+    help: 'Help',
+    back: 'Back'
   },
   inputManager: {
     firstCorner: 'Specify the first corner or',

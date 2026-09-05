@@ -1,24 +1,29 @@
 import type { AcExOsnapMode } from './AcExOsnap'
 import { acexOsnapModeToMarkerType } from './AcExOsnap'
 import type { AcExOsnapMarkerShape } from './AcExOsnapMarker'
+import {
+  ACEX_SNAP_LOUPE_TOP_INSET_PX,
+  acexLoupeLocalFromCanvasDelta,
+  acexResolveLoupePlacement
+} from './AcExSnapLoupeMath'
 
-/** Square loupe size in CSS pixels. */
-export const ACEX_SNAP_LOUPE_SIZE_PX = 128
-/** Magnification relative to the main view. */
-export const ACEX_SNAP_LOUPE_ZOOM = 3
-/** Horizontal offset of the loupe from the canvas host left, in CSS pixels. */
-export const ACEX_SNAP_LOUPE_INSET_PX = 8
-/**
- * Vertical offset of the loupe from the canvas host top, in CSS pixels.
- * Leaves room for `#mlcad-status-bar` (top inset + two 12px lines + gap).
- */
-export const ACEX_SNAP_LOUPE_TOP_INSET_PX = 56
+export {
+  ACEX_SNAP_LOUPE_GAP_BELOW_STATUS_PX,
+  ACEX_SNAP_LOUPE_INSET_PX,
+  ACEX_SNAP_LOUPE_SIZE_PX,
+  ACEX_SNAP_LOUPE_TOP_INSET_PX,
+  ACEX_SNAP_LOUPE_ZOOM,
+  acexLoupeLocalFromCanvasDelta,
+  acexResolveLoupePlacement
+} from './AcExSnapLoupeMath'
 
 /**
  * DOM chrome for the offline HTML snap loupe (border and OSNAP glyph).
  * Geometry is drawn into a WebGL scissor by the viewer runtime.
  */
 export class AcExSnapLoupe {
+  /** Canvas host used for placement measurements. */
+  private readonly host: HTMLElement
   /** Root HUD element (border), positioned over the overlay. */
   private readonly root: HTMLDivElement
   /** OSNAP glyph drawn inside the loupe when a snap is active. */
@@ -27,6 +32,8 @@ export class AcExSnapLoupe {
   private markerShape: AcExOsnapMarkerShape = 'rect'
   /** Whether the HUD is currently displayed. */
   private visible = false
+  /** Last resolved loupe top (host-local CSS px), for the WebGL scissor. */
+  private lastTop = ACEX_SNAP_LOUPE_TOP_INSET_PX
 
   /**
    * Creates the loupe HUD and attaches it to the canvas host.
@@ -34,6 +41,7 @@ export class AcExSnapLoupe {
    * @param host - Element that contains the WebGL canvas (typically `#mlcad-canvas-host`).
    */
   constructor(host: HTMLElement) {
+    this.host = host
     if (getComputedStyle(host).position === 'static') {
       host.style.position = 'relative'
     }
@@ -58,6 +66,14 @@ export class AcExSnapLoupe {
   }
 
   /**
+   * Host-local CSS Y of the loupe top edge from the last {@link show}.
+   * Used by the WebGL scissor so chrome and geometry stay aligned.
+   */
+  get topInsetPx(): number {
+    return this.lastTop
+  }
+
+  /**
    * Shows the HUD below the top status bar. `canvasX`/`canvasY` are the sample
    * in canvas CSS pixels; `snapCanvas` is the snapped canvas position when an
    * object snap hits.
@@ -73,8 +89,10 @@ export class AcExSnapLoupe {
     snapCanvas?: { x: number; y: number },
     mode?: AcExOsnapMode
   ) {
-    this.root.style.left = `${ACEX_SNAP_LOUPE_INSET_PX}px`
-    this.root.style.top = `${ACEX_SNAP_LOUPE_TOP_INSET_PX}px`
+    const placement = acexResolveLoupePlacement(this.host)
+    this.lastTop = placement.y
+    this.root.style.left = `${placement.x}px`
+    this.root.style.top = `${placement.y}px`
     this.root.style.display = 'block'
     this.visible = true
     if (snapCanvas && mode) {
@@ -112,31 +130,5 @@ export class AcExSnapLoupe {
   remove() {
     this.hide()
     this.root.remove()
-  }
-}
-
-/**
- * Maps a canvas-space delta (snap − finger) into loupe-local pixels.
- *
- * The loupe center corresponds to the finger sample; the snap glyph is
- * offset from that center by `delta * zoom`.
- *
- * @param dx - Canvas-space X from finger to snap (CSS pixels).
- * @param dy - Canvas-space Y from finger to snap (CSS pixels).
- * @param size - Loupe width/height in CSS pixels; defaults to
- *   {@link ACEX_SNAP_LOUPE_SIZE_PX}.
- * @param zoom - Magnification relative to the main view; defaults to
- *   {@link ACEX_SNAP_LOUPE_ZOOM}.
- * @returns Loupe-local coordinates with origin at the loupe top-left.
- */
-export function acexLoupeLocalFromCanvasDelta(
-  dx: number,
-  dy: number,
-  size: number = ACEX_SNAP_LOUPE_SIZE_PX,
-  zoom: number = ACEX_SNAP_LOUPE_ZOOM
-): { x: number; y: number } {
-  return {
-    x: size / 2 + dx * zoom,
-    y: size / 2 + dy * zoom
   }
 }

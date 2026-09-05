@@ -4,7 +4,14 @@ import {
   acexIntersectCssRects,
   acexWcsBoxToCssRect
 } from '../src/AcExCssRect'
-import { acexLoupeLocalFromCanvasDelta } from '../src/AcExSnapLoupe'
+import {
+  ACEX_SNAP_LOUPE_GAP_BELOW_STATUS_PX,
+  ACEX_SNAP_LOUPE_INSET_PX,
+  ACEX_SNAP_LOUPE_SIZE_PX,
+  ACEX_SNAP_LOUPE_TOP_INSET_PX,
+  acexLoupeLocalFromCanvasDelta,
+  acexResolveLoupePlacement
+} from '../src/AcExSnapLoupeMath'
 import { AcExTouchPointSession } from '../src/AcExTouchPointSession'
 
 describe('AcExCssRect', () => {
@@ -78,6 +85,51 @@ describe('AcExLoupeLocalFromCanvasDelta', () => {
     expect(acexLoupeLocalFromCanvasDelta(2, 4, 128, 3)).toEqual({
       x: 70,
       y: 76
+    })
+  })
+})
+
+describe('acexResolveLoupePlacement', () => {
+  it('falls back when the status bar is missing', () => {
+    const host = {
+      getBoundingClientRect: () => ({ top: 0, left: 0 })
+    } as HTMLElement
+    expect(acexResolveLoupePlacement(host, null)).toEqual({
+      x: ACEX_SNAP_LOUPE_INSET_PX,
+      y: ACEX_SNAP_LOUPE_TOP_INSET_PX,
+      size: ACEX_SNAP_LOUPE_SIZE_PX
+    })
+  })
+
+  it('places the loupe below the measured status bar with a gap', () => {
+    const host = {
+      getBoundingClientRect: () => ({
+        top: 100,
+        left: 0,
+        bottom: 700,
+        right: 400,
+        width: 400,
+        height: 600
+      })
+    } as HTMLElement
+    const status = {
+      hidden: false,
+      offsetParent: {},
+      getBoundingClientRect: () => ({
+        top: 108,
+        left: 8,
+        bottom: 144,
+        right: 392,
+        width: 384,
+        height: 36
+      })
+    } as HTMLElement
+
+    // barBottom relative to host = 144 - 100 = 44
+    expect(acexResolveLoupePlacement(host, status)).toEqual({
+      x: ACEX_SNAP_LOUPE_INSET_PX,
+      y: 44 + ACEX_SNAP_LOUPE_GAP_BELOW_STATUS_PX,
+      size: ACEX_SNAP_LOUPE_SIZE_PX
     })
   })
 })

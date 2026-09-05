@@ -6,6 +6,8 @@ title: Lupa (Mobilní)
 
 Při přesném vyzvednutí bodu na dotykové obrazovce prst překrývá cílovou pozici. Lupa poskytuje vizuální pomoc: v levém horním rohu obrazovky zobrazí čtvercovou lupu HUD, která zvětší obsah v okolí vstupního bodu a pomůže vám přesně vybrat malé objekty v hustých výkresech.
 
+<MagnifierAnimation />
+
 ## Způsob fungování
 
 - Když příkaz vyžaduje zadání bodu, **dlouze stiskněte** obrazovku asi na 1 sekundu a v levém horním rohu se automaticky zobrazí čtvercová lupa HUD.

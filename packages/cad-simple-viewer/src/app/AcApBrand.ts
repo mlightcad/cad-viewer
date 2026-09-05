@@ -15,8 +15,8 @@ export const MLIGHTCAD_BRAND_NAME = 'mlightcad'
 /** Marketing / demo site. */
 export const MLIGHTCAD_WEBSITE_URL = 'https://mlightcad.github.io/cad-viewer/'
 
-/** API documentation site. */
-export const MLIGHTCAD_DOCS_URL = 'https://mlightcad.github.io/cad-viewer/docs/'
+/** User-guide / docs site root (localized pages live under this base). */
+export const MLIGHTCAD_DOCS_URL = 'https://mlightcad.com/cad-viewer/docs/'
 
 /** Source repository. */
 export const MLIGHTCAD_REPO_URL = 'https://github.com/mlightcad/cad-viewer'

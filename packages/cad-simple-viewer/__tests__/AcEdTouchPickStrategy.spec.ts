@@ -66,16 +66,29 @@ describe('AcEdSimulatedMouseTouchPickStrategy', () => {
     expect(strategy.mapFingerToSample(40, 10).y).toBe(0)
   })
 
-  it('shows the simulated-mouse crosshair HUD', () => {
+  it('shows the simulated-mouse crosshair and magnifier loupe', () => {
     const host = {
       refreshSnapLoupe: jest.fn(),
       hideSnapLoupe: jest.fn(),
       refreshSimulatedCursor: jest.fn(),
       hideSimulatedCursor: jest.fn()
     }
-    strategy.showPreciseHud(host, 10, 20)
-    expect(host.hideSnapLoupe).toHaveBeenCalled()
+    strategy.showPreciseHud(host, 10, 20, null)
     expect(host.refreshSimulatedCursor).toHaveBeenCalledWith(10, 20)
+    expect(host.refreshSnapLoupe).toHaveBeenCalledWith(10, 20, null)
+    expect(host.hideSnapLoupe).not.toHaveBeenCalled()
+  })
+
+  it('hides both the crosshair and the loupe', () => {
+    const host = {
+      refreshSnapLoupe: jest.fn(),
+      hideSnapLoupe: jest.fn(),
+      refreshSimulatedCursor: jest.fn(),
+      hideSimulatedCursor: jest.fn()
+    }
+    strategy.hidePreciseHud(host)
+    expect(host.hideSimulatedCursor).toHaveBeenCalled()
+    expect(host.hideSnapLoupe).toHaveBeenCalled()
   })
 })
 

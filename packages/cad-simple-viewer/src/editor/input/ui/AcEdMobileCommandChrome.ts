@@ -1,4 +1,9 @@
+import {
+  ACAP_DOCS_PATH_MAGNIFIER,
+  acapDocsUrl
+} from '../../../app/AcApDocsUrl'
 import { AcApI18n } from '../../../i18n/AcApI18n'
+import { AcUiHelpPanel } from '../../../ui/AcUiHelpPanel'
 import {
   acedIsMobileUiLayout,
   acedSubscribeUiLayout,
@@ -114,6 +119,12 @@ export class AcEdMobileCommandChrome {
   private readonly sharedActions: HTMLDivElement
   /** Mount row for session accessories at the top of the panel. */
   private readonly accessoryEl: HTMLDivElement
+  /** Left slot inside the accessory row for custom session widgets. */
+  private readonly accessoryContentEl: HTMLDivElement
+  /** Help button on the right of the accessory row. */
+  private readonly helpBtn: HTMLButtonElement
+  /** Lazy full-screen help panel (mobile docs browser). */
+  private helpPanel: AcUiHelpPanel | null = null
   /** Keyword chip container. */
   private readonly chipsEl: HTMLDivElement
   /** Panel cancel (Escape) button. */
@@ -187,6 +198,22 @@ export class AcEdMobileCommandChrome {
     this.accessoryEl.className = 'ml-mobile-cmd-accessory'
     this.accessoryEl.hidden = true
     this.sinkPointer(this.accessoryEl)
+
+    this.accessoryContentEl = document.createElement('div')
+    this.accessoryContentEl.className = 'ml-mobile-cmd-accessory-content'
+
+    this.helpBtn = document.createElement('button')
+    this.helpBtn.type = 'button'
+    this.helpBtn.className = 'ml-mobile-cmd-help'
+    this.helpBtn.innerHTML = helpIcon()
+    this.helpBtn.addEventListener('click', e => {
+      e.preventDefault()
+      e.stopPropagation()
+      this.openHelpPanel()
+    })
+    this.sinkPointer(this.helpBtn)
+
+    this.accessoryEl.append(this.accessoryContentEl, this.helpBtn)
 
     this.chipsEl = document.createElement('div')
     this.chipsEl.className = 'ml-mobile-cmd-chips'
@@ -284,9 +311,10 @@ export class AcEdMobileCommandChrome {
     this.root.hidden = false
     this.root.setAttribute('aria-hidden', 'false')
     this.host.classList.add('ml-mobile-cmd-active')
-    this.host.style.setProperty('--ml-mobile-cmd-prompt-height', '40px')
     this.promptEl.textContent = stripPromptColon(state.prompt)
+    this.syncPromptHeightVar()
     this.confirmBtn.disabled = !state.allowNone
+    this.prepareAccessory()
     this.renderChips(state.keywords)
     if (this.frozenTexts) {
       this.setMetricTexts(this.frozenTexts, this.frozenHasBasePoint)
@@ -310,6 +338,7 @@ export class AcEdMobileCommandChrome {
     if (!this.open) return
     if (partial.prompt != null) {
       this.promptEl.textContent = stripPromptColon(partial.prompt)
+      this.syncPromptHeightVar()
     }
     if (partial.allowNone != null) {
       this.confirmBtn.disabled = !partial.allowNone
@@ -344,6 +373,7 @@ export class AcEdMobileCommandChrome {
     this.open = false
     this.callbacks = null
     this.clearAccessory()
+    this.accessoryEl.hidden = true
     this.layoutUnsub?.()
     this.layoutUnsub = undefined
     this.root.hidden = true
@@ -355,6 +385,8 @@ export class AcEdMobileCommandChrome {
   /** Removes DOM and locale listeners. */
   dispose(): void {
     this.hide()
+    this.helpPanel?.dispose()
+    this.helpPanel = null
     this.localeUnsub?.()
     this.root.remove()
   }
@@ -442,20 +474,22 @@ export class AcEdMobileCommandChrome {
     }
   }
 
-  /** Mount row for session accessories at the top of the bottom panel. */
+  /** Mount slot for custom session accessories (left of the help icon). */
   get accessoryHost(): HTMLElement {
-    return this.accessoryEl
+    return this.accessoryContentEl
   }
 
-  /** Shows the mobile accessory row. */
+  /** Shows the mobile accessory row (custom content slot + help). */
   prepareAccessory(): void {
     this.accessoryEl.hidden = false
   }
 
-  /** Hides the accessory row and clears its children. */
+  /**
+   * Clears custom session accessory content without removing the help icon.
+   * The row stays visible while the panel is open.
+   */
   clearAccessory(): void {
-    this.accessoryEl.replaceChildren()
-    this.accessoryEl.hidden = true
+    this.accessoryContentEl.replaceChildren()
   }
 
   /**
@@ -509,6 +543,27 @@ export class AcEdMobileCommandChrome {
       t('main.mobileCommand.confirm')
     )
     this.cancelBtn.setAttribute('aria-label', t('main.mobileCommand.cancel'))
+    this.helpBtn.setAttribute('aria-label', t('main.mobileCommand.help'))
+    this.helpPanel?.setLabels(this.helpLabels())
+  }
+
+  /** Localized chrome strings for the full-screen help panel. */
+  private helpLabels(): { title: string; back: string } {
+    return {
+      title: AcApI18n.t('main.mobileCommand.help'),
+      back: AcApI18n.t('main.mobileCommand.back')
+    }
+  }
+
+  /** Opens the full-screen magnifier help panel (mobile in-app browser). */
+  private openHelpPanel(): void {
+    if (!this.helpPanel) {
+      this.helpPanel = new AcUiHelpPanel()
+    }
+    this.helpPanel.showDocs({
+      url: acapDocsUrl(ACAP_DOCS_PATH_MAGNIFIER, AcApI18n.currentLocale),
+      labels: this.helpLabels()
+    })
   }
 
   /**
@@ -522,6 +577,23 @@ export class AcEdMobileCommandChrome {
     el.addEventListener('pointerdown', e => {
       e.stopPropagation()
     })
+  }
+
+  /**
+   * Writes the measured prompt bar height to `--ml-mobile-cmd-prompt-height`
+   * so consumers (and loupe fallback) track multi-line prompts.
+   */
+  private syncPromptHeightVar(): void {
+    const apply = () => {
+      if (!this.open) return
+      const height = Math.max(
+        28,
+        Math.round(this.promptEl.getBoundingClientRect().height)
+      )
+      this.host.style.setProperty('--ml-mobile-cmd-prompt-height', `${height}px`)
+    }
+    apply()
+    requestAnimationFrame(apply)
   }
 
   /** Injects mobile command chrome styles once into the document head. */
@@ -546,6 +618,11 @@ function stripPromptColon(message: string): string {
   return message.trim().replace(/[：:]\s*$/, '')
 }
 
+/** SVG markup for the help (?) button. */
+function helpIcon(): string {
+  return '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 15.2a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4zm1.6-5.35c-.62.36-1 .9-1 1.55h-1.5c0-1.18.6-2.05 1.45-2.55.62-.36.95-.7.95-1.25 0-.7-.55-1.2-1.4-1.2-.9 0-1.45.5-1.55 1.3H8.9C9.1 7.95 10.35 7 12.1 7c1.85 0 3.15 1.05 3.15 2.55 0 .95-.5 1.7-1.65 2.3z"/></svg>'
+}
+
 /** SVG markup for the cancel (×) button. */
 function cancelIcon(): string {
   return '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 0 0-1.41 1.42L10.59 12l-4.9 4.89a1 1 0 1 0 1.42 1.42L12 13.41l4.89 4.9a1 1 0 0 0 1.42-1.42L13.41 12l4.9-4.89a1 1 0 0 0-.01-1.4z"/></svg>'
@@ -567,14 +644,17 @@ const MOBILE_CMD_CSS = `
     left: 8px;
     right: 8px;
     z-index: 40;
-    min-height: 32px;
-    padding: 8px 12px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 12px;
     border-radius: 6px;
     background: var(--mlcad-accent, #08e8de);
     color: #0b1f1e;
     border: 1px solid rgba(0, 0, 0, 0.12);
     box-shadow: var(--ml-ui-shadow, 0 2px 12px rgba(0, 0, 0, 0.35));
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     line-height: 1.35;
     pointer-events: none;
@@ -682,6 +762,40 @@ const MOBILE_CMD_CSS = `
   }
   .ml-mobile-cmd-accessory[hidden] {
     display: none;
+  }
+  .ml-mobile-cmd-accessory-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ml-mobile-cmd-help {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    margin: 0;
+    margin-left: auto;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--ml-ui-muted, #9aa0a6);
+    cursor: pointer;
+    line-height: 0;
+  }
+  .ml-mobile-cmd-help:hover,
+  .ml-mobile-cmd-help:focus-visible {
+    color: var(--ml-ui-accent, #08e8de);
+  }
+  .ml-mobile-cmd-help svg {
+    display: block;
+    width: 18px;
+    height: 18px;
   }
   .ml-mobile-cmd-chips {
     display: flex;

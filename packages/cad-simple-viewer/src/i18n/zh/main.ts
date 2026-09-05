@@ -22,7 +22,9 @@ export default {
     x: 'X',
     y: 'Y',
     confirm: '确定',
-    cancel: '取消'
+    cancel: '取消',
+    help: '帮助',
+    back: '返回'
   },
   inputManager: {
     firstCorner: '指定第一个角点或',

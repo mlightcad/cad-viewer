@@ -1,6 +1,7 @@
-import { AcApI18n, type AcTrScene } from '@mlightcad/cad-simple-viewer'
+import { acapGetDocsBaseUrl, AcApI18n, type AcTrScene } from '@mlightcad/cad-simple-viewer'
 import { accmYieldForPaint, type AcDbDatabase } from '@mlightcad/data-model'
 
+import { acexGetDocsBaseUrl, acexSetDocsBaseUrl } from './AcExDocsUrl'
 import { computeLayoutViewExtents } from './AcExLayerExtents'
 import { buildOsnapCatalog } from './AcExOsnapPrimitiveBuilder'
 import { collectLayoutViewports } from './AcExPaperViewportCollector'
@@ -271,8 +272,22 @@ function buildSnapshotMeta(
     initialView,
     viewState: initialView === 'current' ? options.viewState : undefined,
     viewerMode: options.viewerMode ?? 'measure',
-    exportLayouts: options.exportLayouts !== false
+    exportLayouts: options.exportLayouts !== false,
+    docsBaseUrl: resolveDocsBaseUrlForExport()
   }
+}
+
+/**
+ * Prefer the live viewer's configured docs root when exporting HTML.
+ * Falls back to the offline-viewer default when unavailable.
+ */
+function resolveDocsBaseUrlForExport(): string {
+  try {
+    acexSetDocsBaseUrl(acapGetDocsBaseUrl())
+  } catch {
+    // Live viewer docs helper unavailable — keep Acex default.
+  }
+  return acexGetDocsBaseUrl()
 }
 
 function shouldExportOsnap(options: AcApHtmlSnapshotBuilderOptions): boolean {

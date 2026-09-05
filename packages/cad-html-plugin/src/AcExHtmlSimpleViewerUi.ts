@@ -14,6 +14,15 @@ export {
   ACED_TOUCH_POINT_MOVE_CANCEL_PX
 } from '@mlightcad/cad-simple-viewer/touch-point-timing'
 export {
+  AcUiFullscreenPanel,
+  AcUiHelpPanel,
+  type AcUiFullscreenPanelLabels,
+  type AcUiFullscreenPanelOptions,
+  type AcUiHelpPanelLabels,
+  type AcUiHelpPanelOptions,
+  type AcUiHelpPanelShowOptions
+} from '@mlightcad/cad-simple-viewer/fullscreen-panel'
+export {
   acedIsMobileOrPadUi,
   acuiLocalIsoDate,
   acuiShouldShowTouchPointTutorialFromPrefs,

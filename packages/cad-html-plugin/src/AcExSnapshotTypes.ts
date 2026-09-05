@@ -357,6 +357,11 @@ export interface AcExSnapshot {
      */
     viewerMode?: AcExViewerMode
     /**
+     * Absolute root URL for localized user-guide pages. When omitted, the
+     * offline viewer uses the default mlightcad docs site.
+     */
+    docsBaseUrl?: string
+    /**
      * When `false`, paper-space layouts were not exported. The offline viewer
      * hides the layout switcher and may release CPU geometry after the first
      * draw. Defaults to `true` when omitted for snapshots produced before this

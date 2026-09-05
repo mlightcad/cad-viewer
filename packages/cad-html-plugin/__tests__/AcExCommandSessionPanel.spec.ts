@@ -8,6 +8,10 @@ function mountSessionHost(): HTMLElement {
   document.body.innerHTML = `
     <div id="mlcad-root">
       <div id="mlcad-command-session" hidden aria-hidden="true">
+        <div class="mlcad-session-accessory" hidden>
+          <div class="mlcad-session-accessory-content"></div>
+          <button type="button" class="mlcad-session-help" aria-label="Help"></button>
+        </div>
         <div class="mlcad-session-group mlcad-session-group-abs">
           <div class="mlcad-session-metric-stack" data-session-stack="abs">
             <button type="button" class="mlcad-session-metric" data-session-metric="x" disabled>
@@ -323,16 +327,21 @@ describe('AcExCommandSessionPanel', () => {
       chips: []
     })
     panel.setAccessory({ id: 'draw-style', mount, unmount })
-    const slot = host.querySelector('.mlcad-session-accessory') as HTMLElement
-    expect(slot.hidden).toBe(false)
+    const row = host.querySelector('.mlcad-session-accessory') as HTMLElement
+    const content = host.querySelector(
+      '.mlcad-session-accessory-content'
+    ) as HTMLElement
+    expect(row.hidden).toBe(false)
+    expect(host.querySelector('.mlcad-session-help')).toBeTruthy()
     expect(mount).toHaveBeenCalledTimes(1)
-    expect(slot.firstElementChild?.tagName).toBe('SPAN')
+    expect(content.firstElementChild?.tagName).toBe('SPAN')
 
     panel.setAccessory({ id: 'draw-style', mount, unmount })
     expect(mount).toHaveBeenCalledTimes(1)
 
     panel.setState(null)
     expect(unmount).toHaveBeenCalledTimes(1)
-    expect(slot.hidden).toBe(true)
+    expect(row.hidden).toBe(true)
+    expect(row.querySelector('.mlcad-session-help')).toBeTruthy()
   })
 })
