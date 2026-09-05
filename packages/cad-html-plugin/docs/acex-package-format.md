@@ -1,0 +1,188 @@
+# ACEX multi-file package format
+
+Display-only render data for the offline HTML viewer, split so a shell page can
+download geometry **progressively** (fetch one compressed chunk, decompress,
+paint, repeat).
+
+> **Export zip vs hosted files**  
+> CAD export may download a single `.zip` that contains the package directory.
+> That zip is for **distribution only**. Unzip before hosting. The offline
+> viewer does **not** open a zip in place; it fetches `viewer.html`, then
+> `*.acex.json`, then individual `chunks/*.acex.gz` files.
+
+## Directory layout
+
+```text
+drawing/
+  viewer.html                 # HTML/CSS/JS shell only
+  drawing.acex.json           # package manifest (small metadata + indexes)
+  chunks/
+    L0-000.acex.gz            # gzip ACEC geometry (binary, not base64)
+    L0-001.acex.gz
+    L0-osnap-000.osnap.gz     # gzip ACEO OSNAP slice (measure mode)
+    L0-osnap-001.osnap.gz
+    L1-000.acex.gz
+```
+
+### Shell HTML
+
+Contains `#mlcad-package` (JSON) instead of an embedded snapshot:
+
+```html
+<script id="mlcad-package" type="application/json">
+{"manifestUrl":"./drawing.acex.json"}
+</script>
+```
+
+`manifestUrl` may be relative to the HTML file or an absolute CDN URL.
+
+## Versioning
+
+| Field | Where | Meaning |
+|-------|--------|---------|
+| `packageVersion` | manifest | Package / protocol version. Current: **1**. |
+| `snapshotVersion` | manifest + ACEC header | Batch schema version. Matches `ACEX_SNAPSHOT_VERSION` (currently **4**). |
+
+Bump `packageVersion` for breaking manifest changes. Bump `snapshotVersion` for
+breaking batch / ACEC changes. Decoders must reject unsupported versions.
+
+OSNAP catalogs are **not** inlined in the JSON manifest. They ship as optional
+`chunks/L{n}-osnap-{slice}.osnap.gz` binary sidecars so the manifest stays small
+and first paint never waits on snap data.
+
+## Manifest (`*.acex.json`)
+
+MIME: `application/json`
+
+```json
+{
+  "format": "acex-package",
+  "packageVersion": 1,
+  "snapshotVersion": 4,
+  "meta": { "...": "same shape as AcExSnapshot.meta" },
+  "layers": [{ "name": "0", "color": 16777215, "visible": true }],
+  "activeLayoutBtrId": "...",
+  "layouts": [
+    {
+      "btrId": "...",
+      "name": "*Model_Space",
+      "isModelSpace": true,
+      "viewports": null,
+      "chunkIds": ["L0-000", "L0-001"],
+      "osnapChunkIds": ["L0-osnap-000", "L0-osnap-001"]
+    }
+  ],
+  "chunks": [
+    {
+      "id": "L0-000",
+      "href": "chunks/L0-000.acex.gz",
+      "layoutBtrId": "...",
+      "byteLength": 12345,
+      "compressedByteLength": 4000,
+      "lineBatchCount": 12,
+      "meshBatchCount": 3
+    }
+  ],
+  "osnapChunks": [
+    {
+      "id": "L0-osnap-000",
+      "href": "chunks/L0-osnap-000.osnap.gz",
+      "layoutBtrId": "...",
+      "byteLength": 500000,
+      "compressedByteLength": 120000,
+      "primitiveCount": 12000
+    }
+  ]
+}
+```
+
+Notes:
+
+- Geometry and OSNAP catalogs are **not** inlined in the manifest.
+- `chunks` is ordered with the active layout’s geometry first (first-paint hint).
+- `osnapChunks` / `osnapChunkIds` are omitted for view-only exports.
+- Optional `sha256` on chunk refs is reserved; loaders may ignore it.
+- Unknown JSON fields must be ignored by readers (forward compatible).
+
+## Geometry chunk (`*.acex.gz`)
+
+Each file is **raw gzip** of one **ACEC** binary payload (not base64, not a
+multi-entry zip archive). File magic after gunzip is `ACEC` (`0x43454341`).
+
+### ACEC binary (little-endian)
+
+| Offset / field | Type | Description |
+|----------------|------|-------------|
+| magic | `u32` | `0x43454341` (`ACEC`) |
+| version | `u8` | `snapshotVersion` |
+| reserved | `u8` × 3 | Must be `0`; ignore on read |
+| layoutBtrId | length-prefixed UTF-8 | Owning layout |
+| lineBatchCount | `u32` | |
+| line batches | … | Same encoding as ACEX snapshot batches |
+| meshBatchCount | `u32` | |
+| mesh batches | … | Same encoding as ACEX snapshot batches |
+
+Batch records reuse the ACEX feature-flag scheme (`F_LINE_*`, `F_MESH_*`):
+
+- **Append-only flags** — never renumber existing bits.
+- Readers **ignore unknown flag bits** only when those bits carry no payload; new payload-bearing flags require a `snapshotVersion` bump.
+- Geometry buffers are length-prefixed `Float32` / `Uint32` arrays, 4-byte aligned.
+- **v4** `F_MESH_TEXTURE` (128): after other mesh flag payloads, writes `uvs` (`Float32Array`), MIME string, then raw image bytes (length-prefixed). Used for raster IMAGE and OLE frames.
+
+### Geometry chunking rules
+
+1. Split primarily **by layout**.
+2. If a layout’s estimated uncompressed size exceeds ~512 KiB, split further by
+   batch groups into `L{layoutIndex}-{slice:000}`.
+3. Empty layouts still emit one empty chunk so the layout remains addressable.
+
+## OSNAP chunk (`*-osnap-*.osnap.gz`)
+
+Each file is **raw gzip** of one **ACEO** binary payload (measure-mode exports).
+Coordinates are IEEE-754 **float64**; layer names are dictionary-compressed.
+Large catalogs are split (~512 KiB estimated uncompressed per file) so hosts can
+fetch snap slices in **parallel** after the drawing is already visible.
+
+### ACEO binary (little-endian)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| magic | `u32` | `0x4F454341` (`ACEO`) |
+| version | `u8` | Currently **1** |
+| reserved | `u8` × 3 | Must be `0` |
+| layerCount | `u32` | |
+| layers | strings | Length-prefixed UTF-8 dictionary |
+| primitiveCount | `u32` | |
+| primitives | … | kind `u8` + layer index `u32` + kind-specific f64 fields |
+
+Kind codes: `1` line, `2` circle, `3` arc, `4` ellipse, `5` spline, `6` point.
+
+### OSNAP chunking rules
+
+1. Split by layout, then by estimated ACEO size into `L{layoutIndex}-osnap-{slice:000}`.
+2. Each slice is a self-contained ACEO catalog (own layer dictionary).
+3. Loaders concatenate primitives in `osnapChunkIds` order.
+
+## Loading sequence
+
+1. Open `viewer.html`.
+2. Read `#mlcad-package` → `GET` manifest (small JSON).
+3. Initialize viewer chrome from `meta` / `layers` (extents, layer panel).
+4. For the active layout (and model space when paper viewports need it):
+   `GET` each geometry `href` → gunzip → decode ACEC → append batches → paint → yield.
+5. Drawing is usable for pan/zoom. **Then** (measure mode only): fetch all
+   `osnapChunks` for that layout **in parallel** → gunzip → decode ACEO →
+   concatenate → rebuild snap index.
+6. Load remaining layouts lazily when the user switches layout (geometry first,
+   OSNAP last).
+
+## Relationship to single-file HTML
+
+Self-contained HTML still embeds one gzip+base64 **ACEX** snapshot
+(`magic 0x58454341`). Multi-file packages share the same batch schema
+(`snapshotVersion`) but ship geometry as ACEC chunks plus a JSON manifest.
+OSNAP in single-file HTML remains inside the ACEX snapshot; only the multi-file
+package splits it into ACEO sidecars.
+
+Password / expiry protection applies to **single-file** export only in the
+current product UI.

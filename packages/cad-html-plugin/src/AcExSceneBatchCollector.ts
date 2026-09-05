@@ -22,6 +22,11 @@ import {
   readBatchWorldOffset
 } from './AcExBatchBuffers'
 import {
+  encodeTextureForExport,
+  exportUvsForPositionSlice,
+  isTransparentImagePlaceholder
+} from './AcExMeshTextureExport'
+import {
   computeLineDistancesForSegments,
   exportVertexAttributeSlice,
   extractGradientFill,
@@ -464,7 +469,7 @@ function buildMeshBatch(
   object: THREE.Object3D,
   slice: AcExBufferGeometrySlice,
   offset: [number, number, number]
-): AcExMeshBatch {
+): AcExMeshBatch | undefined {
   const style = readMaterialStyle(material)
   const hatchPattern = resolveExportedHatchPattern(object, style.hatchPattern)
   const gradientPositions = style.gradientFill
@@ -480,6 +485,23 @@ function buildMeshBatch(
     side: style.side,
     ...slice
   }
+
+  const meshMaterial = material as THREE.MeshBasicMaterial
+  if (meshMaterial.map) {
+    const texture = encodeTextureForExport(meshMaterial.map)
+    const uvs = exportUvsForPositionSlice(geometry, slice.positions)
+    if (!texture || !uvs) {
+      // Prefer omitting a broken IMAGE/OLE frame over a solid white fill.
+      return undefined
+    }
+    batch.texture = texture
+    batch.uvs = uvs
+    // Textured IMAGE/OLE meshes multiply by material color; keep white so the
+    // PNG is shown at full intensity (matches live AcTrImage).
+    batch.color = 0xffffff
+    batch.side = THREE.DoubleSide
+  }
+
   assignRenderOrder(batch, object, material)
   return batch
 }
@@ -548,15 +570,19 @@ function exportBatchedPoint(
   if (slice.positions.length === 0) {
     return undefined
   }
+  const mesh = buildMeshBatch(
+    batch.geometry,
+    batch.material as THREE.Material,
+    batch,
+    slice,
+    readWorldOffset(batch)
+  )
+  if (!mesh) {
+    return undefined
+  }
   return {
     points: true,
-    ...buildMeshBatch(
-      batch.geometry,
-      batch.material as THREE.Material,
-      batch,
-      slice,
-      readWorldOffset(batch)
-    )
+    ...mesh
   }
 }
 
@@ -646,16 +672,22 @@ export function collectBatchesFromObject3D(
       !(child instanceof AcTrBatchedMesh)
     ) {
       if (!shouldExportPlainDrawable(child)) return
+      const material = readExportMaterial(child)
+      if (isTransparentImagePlaceholder(material)) return
       const rawSlice = exportBufferGeometrySlice(child.geometry)
       if (rawSlice.positions.length === 0) return
-      const material = readExportMaterial(child)
       const style = readMaterialStyle(material)
       const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice, {
         preserveWorldSpaceForPatternFill: !!style.hatchPattern
       })
-      meshBatches.push(
-        buildMeshBatch(child.geometry, material, child, slice, offset)
+      const mesh = buildMeshBatch(
+        child.geometry,
+        material,
+        child,
+        slice,
+        offset
       )
+      if (mesh) meshBatches.push(mesh)
     }
   })
 

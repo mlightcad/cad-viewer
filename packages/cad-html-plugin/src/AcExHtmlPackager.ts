@@ -28,6 +28,24 @@ export interface AcExPackHtmlOptions {
 }
 
 /**
+ * Options for {@link packHtmlPackage}: shell HTML that loads a remote package.
+ */
+export interface AcExPackHtmlPackageOptions {
+  /**
+   * Page `<title>`.
+   * Falls back to {@link AcExSnapshot.meta.title} or `"CAD Drawing"`.
+   */
+  title?: string
+  /** Inline viewer bootstrap script (IIFE). */
+  viewerRuntime: string
+  /**
+   * URL of the `*.acex.json` manifest relative to the HTML file
+   * (or an absolute CDN URL).
+   */
+  manifestUrl: string
+}
+
+/**
  * Builds a self-contained HTML document with an embedded compressed snapshot
  * and inline viewer runtime.
  *
@@ -70,6 +88,46 @@ export function packHtml(
 <body>
 ${buildAcExHtmlShellBody(loadingBg, viewerMode, exportLayouts)}
 ${accessScript}  <script id="mlcad-snapshot" type="${snapshotType}">${encoded.payload}</script>
+  <script>${escapeInlineScript(runtime)}</script>
+</body>
+</html>`
+}
+
+/**
+ * Builds a shell HTML document that loads render data from a package manifest URL.
+ * Contains only HTML/CSS/JS — no embedded geometry.
+ *
+ * @param snapshot - Used for title, locale, background, and viewer mode chrome.
+ * @param options - Runtime source and manifest URL.
+ */
+export function packHtmlPackage(
+  snapshot: AcExSnapshot,
+  options: AcExPackHtmlPackageOptions
+): string {
+  const title = options.title ?? snapshot.meta.title ?? 'CAD Drawing'
+  const runtime = options.viewerRuntime
+  const loadingBg = `#${snapshot.meta.background.toString(16).padStart(6, '0')}`
+  const htmlLang = resolveAcExHtmlLocale(snapshot.meta.locale) ?? 'en'
+  const viewerMode = snapshot.meta.viewerMode ?? 'measure'
+  const exportLayouts = snapshot.meta.exportLayouts !== false
+  const packageConfig = JSON.stringify({
+    manifestUrl: options.manifestUrl
+  })
+
+  return `<!DOCTYPE html>
+<html lang="${htmlLang}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="generator" content="mlightcad-cad-html-plugin" />
+  <title>${escapeHtml(title)}</title>
+  <style>${ACEX_HTML_SHELL_CSS}</style>
+</head>
+<body>
+${buildAcExHtmlShellBody(loadingBg, viewerMode, exportLayouts)}
+  <script id="mlcad-package" type="application/json">${escapeInlineJson(
+    packageConfig
+  )}</script>
   <script>${escapeInlineScript(runtime)}</script>
 </body>
 </html>`

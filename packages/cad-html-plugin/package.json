@@ -10,6 +10,7 @@
   "files": [
     "dist",
     "lib",
+    "docs",
     "README.md",
     "package.json"
   ],

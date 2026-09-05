@@ -188,6 +188,9 @@ export type AcExHtmlMessageKey =
   | 'status.zoomLayer'
   | 'status.loadFailed'
   | 'status.noLayout'
+  | 'status.loadingChunks'
+  | 'status.loadingOsnap'
+  | 'status.buildingOsnap'
   | 'access.title'
   | 'access.passwordPrompt'
   | 'access.passwordPlaceholder'
@@ -402,7 +405,10 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       areaTotal: 'Area total: {value}',
       zoomLayer: 'Zoom: {name}',
       loadFailed: 'Failed to load drawing: {error}',
-      noLayout: 'No layout data in snapshot.'
+      noLayout: 'No layout data in snapshot.',
+      loadingChunks: 'Loading geometry… {loaded}/{total}',
+      loadingOsnap: 'Loading object snap… {loaded}/{total}',
+      buildingOsnap: 'Building object snap index…'
     },
     access: {
       title: 'Protected drawing',
@@ -606,7 +612,10 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       areaTotal: '面积合计：{value}',
       zoomLayer: '缩放：{name}',
       loadFailed: '无法加载图纸：{error}',
-      noLayout: '快照中没有布局数据。'
+      noLayout: '快照中没有布局数据。',
+      loadingChunks: '正在加载几何… {loaded}/{total}',
+      loadingOsnap: '正在加载对象捕捉… {loaded}/{total}',
+      buildingOsnap: '正在构建对象捕捉索引…'
     },
     access: {
       title: '受保护的图纸',
@@ -814,7 +823,10 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       areaTotal: 'Celková plocha: {value}',
       zoomLayer: 'Zoom: {name}',
       loadFailed: 'Nepodařilo se načíst výkres: {error}',
-      noLayout: 'Snímek neobsahuje data rozvržení.'
+      noLayout: 'Snímek neobsahuje data rozvržení.',
+      loadingChunks: 'Načítání geometrie… {loaded}/{total}',
+      loadingOsnap: 'Načítání uchopování… {loaded}/{total}',
+      buildingOsnap: 'Sestavování indexu uchopování…'
     },
     access: {
       title: 'Chráněný výkres',
@@ -1025,7 +1037,10 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       areaTotal: 'Toplam alan: {value}',
       zoomLayer: 'Yakınlaştır: {name}',
       loadFailed: 'Çizim yüklenemedi: {error}',
-      noLayout: 'Anlık görüntüde yerleşim verisi yok.'
+      noLayout: 'Anlık görüntüde yerleşim verisi yok.',
+      loadingChunks: 'Geometri yükleniyor… {loaded}/{total}',
+      loadingOsnap: 'Nesne yakalama yükleniyor… {loaded}/{total}',
+      buildingOsnap: 'Nesne yakalama dizini oluşturuluyor…'
     },
     access: {
       title: 'Korumalı çizim',
@@ -1229,7 +1244,10 @@ const AR_MESSAGES: AcExMessageTree = {
     'areaTotal': 'إجمالي المساحة: {value}',
     'zoomLayer': 'تكبير: {name}',
     'loadFailed': 'فشل تحميل الرسم: {error}',
-    'noLayout': 'لا توجد بيانات تخطيط في اللقطة.'
+    'noLayout': 'لا توجد بيانات تخطيط في اللقطة.',
+    'loadingChunks': 'جاري تحميل الهندسة… {loaded}/{total}',
+    'loadingOsnap': 'جاري تحميل الالتقاط… {loaded}/{total}',
+    'buildingOsnap': 'جاري بناء فهرس الالتقاط…'
   },
   access: {
     title: 'رسم محمي',

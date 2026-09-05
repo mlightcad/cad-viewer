@@ -1216,11 +1216,22 @@ export default {
     }
   },
   chtml: {
+    exportFormat: 'Dışa aktarma biçimi [Tek dosya(S)/Çok dosyalı paket(M)]',
     exportInvisibleLayers: 'Görünmez katmanları dışa aktar',
     exportLayouts: 'Yerleşimleri dışa aktar',
     initialView: 'HTML açılırken başlangıç görünümü',
     viewerMode: 'Çevrimdışı görüntüleyici modu',
     keywords: {
+      single: {
+        display: 'Tek dosya(S)',
+        local: 'Tek dosya',
+        global: 'Single'
+      },
+      multi: {
+        display: 'Çok dosyalı paket(M)',
+        local: 'Çok dosyalı paket',
+        global: 'Multi'
+      },
       yes: {
         display: 'Evet(E)',
         local: 'Evet',

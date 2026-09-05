@@ -71,8 +71,17 @@ export default {
   },
   exportHtmlDlg: {
     title: 'Export to HTML',
-    tabExport: 'Export',
+    tabData: 'Data',
+    tabDisplay: 'Display',
     tabSecurity: 'Security',
+    exportFormat: 'Export format',
+    exportFormatSingle: 'Self-contained HTML',
+    exportFormatSingleHint: 'Single .html file that opens offline',
+    exportFormatMulti: 'Multi-file package (ZIP)',
+    exportFormatMultiHint:
+      'Download a zip; unzip and host for progressive loading. Password and expiry apply only to self-contained HTML',
+    securitySingleOnlyHint:
+      'Password and expiry are available only for self-contained HTML export.',
     layersSection: 'Layers',
     exportInvisibleLayers: 'Export invisible layers',
     exportInvisibleLayersHint:

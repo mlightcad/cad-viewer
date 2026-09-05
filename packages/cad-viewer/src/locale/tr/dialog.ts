@@ -71,8 +71,17 @@ export default {
   },
   exportHtmlDlg: {
     title: 'HTML Olarak Dışa Aktar',
-    tabExport: 'Dışa Aktar',
+    tabData: 'Veri',
+    tabDisplay: 'Görünüm',
     tabSecurity: 'Güvenlik',
+    exportFormat: 'Dışa aktarma biçimi',
+    exportFormatSingle: 'Tek dosyalı HTML',
+    exportFormatSingleHint: 'Çevrimdışı açılabilen tek .html dosyası',
+    exportFormatMulti: 'Çok dosyalı paket (ZIP)',
+    exportFormatMultiHint:
+      'Bir zip indirir; açıp barındırınca aşamalı yükleme yapılır. Parola ve süre yalnızca tek dosyalı HTML için geçerlidir',
+    securitySingleOnlyHint:
+      'Parola ve geçerlilik yalnızca tek dosyalı HTML dışa aktarımında kullanılabilir.',
     layersSection: 'Katmanlar',
     exportInvisibleLayers: 'Görünmez katmanları dışa aktar',
     exportInvisibleLayersHint:
