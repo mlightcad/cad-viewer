@@ -57,7 +57,8 @@ export interface AcApSettings {
   /**
    * When true (default), touch long-press point picks use a simulated mouse
    * crosshair above the finger so the fingertip does not obscure the sample.
-   * When false, the magnifier loupe tracks the finger itself.
+   * When false, the pick sample is the finger contact. In both modes a long
+   * press still shows the magnifier loupe around the active sample.
    */
   useSimulatedMouseOnTouch: boolean
 }

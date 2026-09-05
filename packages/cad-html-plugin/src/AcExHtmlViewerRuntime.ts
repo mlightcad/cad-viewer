@@ -15,6 +15,7 @@ import {
   acexIntersectCssRects,
   acexWcsBoxToCssRect
 } from './AcExCssRect'
+import { acexSetDocsBaseUrl } from './AcExDocsUrl'
 import {
   decryptAcExHtmlSnapshotPayload,
   isAcExHtmlAccessExpired,
@@ -83,7 +84,6 @@ import {
 import {
   ACEX_SNAP_LOUPE_INSET_PX,
   ACEX_SNAP_LOUPE_SIZE_PX,
-  ACEX_SNAP_LOUPE_TOP_INSET_PX,
   ACEX_SNAP_LOUPE_ZOOM,
   AcExSnapLoupe
 } from './AcExSnapLoupe'
@@ -372,6 +372,10 @@ async function startViewer(): Promise<void> {
   const viewerMode: AcExViewerMode = snapshot.meta.viewerMode ?? 'measure'
   const measureEnabled = viewerMode === 'measure'
 
+  if (snapshot.meta.docsBaseUrl) {
+    acexSetDocsBaseUrl(snapshot.meta.docsBaseUrl)
+  }
+
   const grip = snapshot.meta.grip
   root.style.setProperty('--ml-ui-grip-size', `${grip?.size ?? 8}px`)
   root.style.setProperty('--ml-ui-grip-normal', grip?.colorCss ?? '#0080ff')
@@ -599,6 +603,10 @@ async function startViewer(): Promise<void> {
       material.resolution.copy(wideLineResolution)
     }
     updateCameraFrustum(width, height)
+    // Keep OSNAP threshold and committed measure/markup overlays in sync when
+    // the WebGL viewport / camera frustum change (window resize, tool strip, …).
+    recomputeOsnapThresholdWcs()
+    bumpSnapCacheKey()
   }
 
   const zoomToExtents = (extents: AcExExtents) => {
@@ -1031,7 +1039,7 @@ async function startViewer(): Promise<void> {
     }
     const loupeRect = {
       x: ACEX_SNAP_LOUPE_INSET_PX,
-      y: ACEX_SNAP_LOUPE_TOP_INSET_PX,
+      y: snapLoupe.topInsetPx,
       width: ACEX_SNAP_LOUPE_SIZE_PX,
       height: ACEX_SNAP_LOUPE_SIZE_PX
     }
@@ -1329,8 +1337,8 @@ async function startViewer(): Promise<void> {
   })
 
   // While measure/markup is active, hide the toolbar sidebar and any open
-  // results / layer drawers so the canvas can use the full viewport; restore
-  // previous drawer state when the session ends.
+  // results / layer drawers so they do not compete with session chrome.
+  // Do not resize the canvas — session UI floats over the existing viewport.
   sessionChromeRef.current = {
     hide: () => {
       if (chromeBeforeSession) return
@@ -1347,7 +1355,6 @@ async function startViewer(): Promise<void> {
       if (chromeBeforeSession.layerOpen) layerPanel?.close()
       if (chromeBeforeSession.reviewOpen) reviewPanel?.close()
       if (chromeBeforeSession.measureOpen) measurePanel?.close()
-      resize()
       render()
     },
     restore: () => {
@@ -1356,7 +1363,6 @@ async function startViewer(): Promise<void> {
       if (saved?.layerOpen) layerPanel?.setOpen(true)
       if (saved?.reviewOpen) reviewPanel?.setOpen(true)
       if (saved?.measureOpen) measurePanel?.setOpen(true)
-      resize()
       render()
     }
   }

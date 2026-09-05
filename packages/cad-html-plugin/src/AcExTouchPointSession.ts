@@ -8,7 +8,7 @@
 import {
   ACED_TOUCH_POINT_LONG_PRESS_MS,
   ACED_TOUCH_POINT_MOVE_CANCEL_PX
-} from '@mlightcad/cad-simple-viewer/touch-point-timing'
+} from './AcExHtmlSimpleViewerUi'
 
 export {
   ACED_TOUCH_POINT_LONG_PRESS_MS,

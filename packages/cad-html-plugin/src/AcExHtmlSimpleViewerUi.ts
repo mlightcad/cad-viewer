@@ -8,16 +8,21 @@
  * @packageDocumentation
  */
 
-export { AcUiAciColorDialog } from '@mlightcad/cad-simple-viewer'
 export {
   ACED_TOUCH_POINT_LONG_PRESS_MS,
-  ACED_TOUCH_POINT_MOVE_CANCEL_PX
-} from '@mlightcad/cad-simple-viewer/touch-point-timing'
-export {
+  ACED_TOUCH_POINT_MOVE_CANCEL_PX,
+  AcUiAciColorDialog,
+  AcUiFullscreenPanel,
+  AcUiHelpPanel,
   acedIsMobileOrPadUi,
   acuiLocalIsoDate,
   acuiShouldShowTouchPointTutorialFromPrefs,
   AcUiTouchPointTutorial,
+  type AcUiFullscreenPanelLabels,
+  type AcUiFullscreenPanelOptions,
+  type AcUiHelpPanelLabels,
+  type AcUiHelpPanelOptions,
+  type AcUiHelpPanelShowOptions,
   type AcUiTouchPointTutorialConfig,
   type AcUiTouchPointTutorialLabels,
   type AcUiTouchPointTutorialPrefs

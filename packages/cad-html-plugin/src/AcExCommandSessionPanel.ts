@@ -1,6 +1,11 @@
+import {
+  ACEX_DOCS_PATH_MAGNIFIER,
+  acexDocsUrl
+} from './AcExDocsUrl'
 import { acexHtmlIsPhoneLayout } from './AcExHtmlDrawerSheet'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { ML_UI_MOBILE_MAX_WIDTH } from './AcExHtmlShell'
+import { AcUiHelpPanel } from './AcExHtmlSimpleViewerUi'
 
 /** Keyword / action chip on the offline HTML session panel. */
 export interface AcExCommandSessionChip {
@@ -38,13 +43,11 @@ export interface AcExCommandSessionPanelHandlers {
   onChip: (id: string) => void
 }
 
-/**
- * Widget mounted at the top of the session panel (color / font size).
- */
+/** Widget mounted at the top of the session panel (left of the help icon). */
 export interface AcExSessionAccessory {
   /** Stable id so a re-show can replace rather than stack. */
   id: string
-  /** Called when the session panel is shown. `host` is the accessory row. */
+  /** Called when the session panel is shown. `host` is the accessory content slot. */
   mount(host: HTMLElement): void
   /** Called on hide or when a different accessory replaces this one. */
   unmount(): void
@@ -67,6 +70,8 @@ export class AcExCommandSessionPanel {
   private readonly deltaActions: HTMLElement | null
   private readonly sharedActions: HTMLElement | null
   private readonly accessoryEl: HTMLElement
+  private readonly accessoryContentEl: HTMLElement
+  private readonly helpBtn: HTMLButtonElement | null
   private readonly chipsEl: HTMLElement
   private readonly cancelBtn: HTMLButtonElement
   private readonly confirmBtn: HTMLButtonElement
@@ -77,6 +82,7 @@ export class AcExCommandSessionPanel {
   private handlers: AcExCommandSessionPanelHandlers | null = null
   private lastState: AcExCommandSessionUiState | null = null
   private accessory: AcExSessionAccessory | null = null
+  private helpPanel: AcUiHelpPanel | null = null
 
   constructor(host: HTMLElement, i18n: AcExHtmlI18n) {
     this.i18n = i18n
@@ -102,6 +108,19 @@ export class AcExCommandSessionPanel {
         }),
         host.firstChild
       )
+    this.accessoryContentEl =
+      (this.accessoryEl.querySelector(
+        '.mlcad-session-accessory-content'
+      ) as HTMLElement) ??
+      (() => {
+        const el = document.createElement('div')
+        el.className = 'mlcad-session-accessory-content'
+        this.accessoryEl.insertBefore(el, this.accessoryEl.firstChild)
+        return el
+      })()
+    this.helpBtn = this.accessoryEl.querySelector(
+      '.mlcad-session-help'
+    ) as HTMLButtonElement | null
     this.chipsEl = host.querySelector('.mlcad-session-chips') as HTMLElement
     this.cancelBtn = host.querySelector(
       '.mlcad-session-cancel'
@@ -129,6 +148,11 @@ export class AcExCommandSessionPanel {
       e.stopPropagation()
       if (this.confirmBtn.disabled) return
       this.handlers?.onConfirm()
+    })
+    this.helpBtn?.addEventListener('click', e => {
+      e.preventDefault()
+      e.stopPropagation()
+      this.openHelpPanel()
     })
 
     this.relabel()
@@ -159,35 +183,58 @@ export class AcExCommandSessionPanel {
 
     if (!state) {
       this.setAccessory(null)
+      this.accessoryEl.hidden = true
       return
     }
 
+    this.accessoryEl.hidden = false
     this.confirmBtn.disabled = !state.confirmEnabled
     this.renderMetrics(state.metrics)
     this.renderChips(state.chips)
   }
 
   /**
-   * Mounts widgets at the top of the session panel. Pass `null` to clear.
-   * Same `id` is a no-op so live metric updates do not remount controls.
+   * Mounts widgets at the top of the session panel (left of the help icon).
+   * Pass `null` to clear custom content; the help icon remains while the
+   * panel is open. Same `id` is a no-op so live metric updates do not remount.
    */
   setAccessory(next: AcExSessionAccessory | null): void {
     if ((this.accessory?.id ?? null) === (next?.id ?? null)) return
     this.accessory?.unmount()
-    this.accessoryEl.replaceChildren()
+    this.accessoryContentEl.replaceChildren()
     this.accessory = next
     if (next) {
       this.accessoryEl.hidden = false
-      next.mount(this.accessoryEl)
-    } else {
-      this.accessoryEl.hidden = true
+      next.mount(this.accessoryContentEl)
     }
   }
 
   /** Re-applies metric labels after a locale change. */
   refreshLabels(): void {
     this.relabel()
+    this.helpPanel?.setLabels(this.helpLabels())
     if (this.lastState) this.setState(this.lastState)
+  }
+
+  /** Localized chrome strings for the full-screen help panel. */
+  private helpLabels(): { title: string; back: string } {
+    return {
+      title: this.i18n.t('session.help'),
+      back: this.i18n.t('session.back')
+    }
+  }
+
+  /** Opens the full-screen magnifier help panel. */
+  private openHelpPanel(): void {
+    if (!this.helpPanel) {
+      this.helpPanel = new AcUiHelpPanel({
+        host: document.getElementById('mlcad-root') ?? document.body
+      })
+    }
+    this.helpPanel.showDocs({
+      url: acexDocsUrl(ACEX_DOCS_PATH_MAGNIFIER, this.i18n.locale),
+      labels: this.helpLabels()
+    })
   }
 
   private renderMetrics(metrics: AcExCommandSessionMetrics | null): void {
@@ -243,6 +290,7 @@ export class AcExCommandSessionPanel {
       this.i18n.t('session.confirm')
     )
     this.cancelBtn?.setAttribute('aria-label', this.i18n.t('session.cancel'))
+    this.helpBtn?.setAttribute('aria-label', this.i18n.t('session.help'))
   }
 }
 

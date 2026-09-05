@@ -31,8 +31,6 @@ const config: Config = {
     '^lodash-es$': 'lodash',
     '^@mlightcad/cad-simple-viewer/icons$':
       '<rootDir>/packages/cad-simple-viewer/src/ui/icons.ts',
-    '^@mlightcad/cad-simple-viewer/touch-point-timing$':
-      '<rootDir>/packages/cad-simple-viewer/src/editor/input/ui/AcEdTouchPointTiming.ts',
     '^three/examples/jsm/lines/LineMaterial\\.js$':
       '<rootDir>/test/mocks/three/LineMaterial.js',
     '^three/examples/jsm/lines/LineSegments2\\.js$':

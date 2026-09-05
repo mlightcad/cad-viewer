@@ -3,7 +3,9 @@
  *
  * Layout ({@link acedInteractionStrategy}) and pointer type remain separate
  * axes. This strategy chooses how a long-press touch sample is mapped and
- * which HUD is shown during precise capture.
+ * which HUD chrome is shown during precise capture. The magnifier loupe is
+ * shown in both modes after a long press; simulated mouse only changes the
+ * sample offset and whether a crosshair is drawn.
  */
 
 import { AcApSettingManager } from '../../../app/AcApSettingManager'
@@ -88,7 +90,8 @@ export class AcEdLoupeTouchPickStrategy implements AcEdTouchPickStrategy {
 
 /**
  * Simulated mouse: sample and crosshair sit above the finger so the tip
- * does not block the geometry being snapped to.
+ * does not block the geometry being snapped to. The magnifier loupe still
+ * tracks the (offset) sample — it does not conflict with the crosshair.
  */
 export class AcEdSimulatedMouseTouchPickStrategy
   implements AcEdTouchPickStrategy
@@ -106,14 +109,16 @@ export class AcEdSimulatedMouseTouchPickStrategy
   showPreciseHud(
     host: AcEdTouchPickHudHost,
     sampleX: number,
-    sampleY: number
+    sampleY: number,
+    snap?: { x: number; y: number; type: number } | null
   ): void {
-    host.hideSnapLoupe()
     host.refreshSimulatedCursor(sampleX, sampleY)
+    host.refreshSnapLoupe(sampleX, sampleY, snap)
   }
 
   hidePreciseHud(host: AcEdTouchPickHudHost): void {
     host.hideSimulatedCursor()
+    host.hideSnapLoupe()
   }
 }
 

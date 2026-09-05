@@ -22,7 +22,9 @@ export default {
     x: 'X',
     y: 'Y',
     confirm: 'Potvrdit',
-    cancel: 'Zrušit'
+    cancel: 'Zrušit',
+    help: 'Nápověda',
+    back: 'Zpět'
   },
   inputManager: {
     firstCorner: 'Zadejte první roh nebo',

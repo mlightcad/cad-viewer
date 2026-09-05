@@ -6,6 +6,8 @@ title: Magnifier (Mobile)
 
 When precisely picking points on a touch screen, your finger obscures the target position. The magnifier provides a visual aid: a square magnifier HUD is displayed in the top-left corner of the screen, magnifying the content near the input point to help you precisely select small objects in dense drawings.
 
+<MagnifierAnimation />
+
 ## How It Works
 
 - When a command requires you to pick a point, **long-press** the screen for about 1 second, and a square magnifier HUD automatically appears in the top-left corner.

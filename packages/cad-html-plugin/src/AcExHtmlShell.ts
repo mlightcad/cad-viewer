@@ -769,6 +769,40 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-session-accessory[hidden] {
     display: none;
   }
+  .mlcad-session-accessory-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mlcad-session-help {
+    box-sizing: border-box;
+    flex: 0 0 auto;
+    margin: 0;
+    margin-left: auto;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    color: var(--mlcad-ui-muted, #9aa0a6);
+    cursor: pointer;
+    line-height: 0;
+  }
+  .mlcad-session-help:hover,
+  .mlcad-session-help:focus-visible {
+    color: var(--mlcad-accent);
+  }
+  .mlcad-session-help svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
   .mlcad-session-chips {
     display: none !important;
   }
@@ -1548,9 +1582,14 @@ export const ACEX_HTML_SHELL_CSS = `
     }
   }
 
-  /* Free canvas space while measure / markup session chrome is active. */
+  /*
+   * Hide toolbar chrome during measure / markup without changing canvas size.
+   * On phone the sidebar is in the flex column; display:none would expand
+   * #mlcad-canvas-host and shift the drawing. Session panel floats on top.
+   */
   #mlcad-root.mlcad-session-active #mlcad-sidebar {
-    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
   }
 `
 
@@ -1608,7 +1647,12 @@ export function buildAcExHtmlShellBody(
     <div id="mlcad-canvas-host">
       <footer id="mlcad-status-bar" aria-live="polite" hidden></footer>
       <div id="mlcad-command-session" class="mlcad-command-session" hidden aria-hidden="true">
-        <div class="mlcad-session-accessory" hidden></div>
+        <div class="mlcad-session-accessory" hidden>
+          <div class="mlcad-session-accessory-content"></div>
+          <button type="button" class="mlcad-session-help" data-i18n-key="session.help" data-i18n-attr="aria-label" aria-label="Help">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 15.2a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4zm1.6-5.35c-.62.36-1 .9-1 1.55h-1.5c0-1.18.6-2.05 1.45-2.55.62-.36.95-.7.95-1.25 0-.7-.55-1.2-1.4-1.2-.9 0-1.45.5-1.55 1.3H8.9C9.1 7.95 10.35 7 12.1 7c1.85 0 3.15 1.05 3.15 2.55 0 .95-.5 1.7-1.65 2.3z"/></svg>
+          </button>
+        </div>
         <div class="mlcad-session-group mlcad-session-group-abs">
           <div class="mlcad-session-metric-stack" data-session-stack="abs">
             <button type="button" class="mlcad-session-metric" data-session-metric="x" disabled>

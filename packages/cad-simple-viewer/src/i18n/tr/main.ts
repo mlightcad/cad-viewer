@@ -22,7 +22,9 @@ export default {
     x: 'X',
     y: 'Y',
     confirm: 'Onayla',
-    cancel: 'İptal'
+    cancel: 'İptal',
+    help: 'Yardım',
+    back: 'Geri'
   },
   inputManager: {
     firstCorner: 'İlk köşeyi belirtin veya',

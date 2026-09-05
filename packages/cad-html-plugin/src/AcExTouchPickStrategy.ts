@@ -107,7 +107,8 @@ export class AcExLoupeTouchPickStrategy implements AcExTouchPickStrategy {
 
 /**
  * Simulated mouse: sample and crosshair sit above the finger so the tip
- * does not block the geometry being snapped to.
+ * does not block the geometry being snapped to. The magnifier loupe still
+ * tracks the (offset) sample — it does not conflict with the crosshair.
  */
 export class AcExSimulatedMouseTouchPickStrategy
   implements AcExTouchPickStrategy
@@ -127,12 +128,13 @@ export class AcExSimulatedMouseTouchPickStrategy
     sampleX: number,
     sampleY: number
   ): void {
-    host.hideSnapLoupe()
     host.refreshSimulatedCursor(sampleX, sampleY)
+    host.refreshSnapLoupe(sampleX, sampleY)
   }
 
   hidePreciseHud(host: AcExTouchPickHudHost): void {
     host.hideSimulatedCursor()
+    host.hideSnapLoupe()
   }
 }
 
