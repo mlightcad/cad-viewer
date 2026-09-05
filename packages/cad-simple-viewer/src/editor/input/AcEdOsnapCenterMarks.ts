@@ -186,17 +186,30 @@ function collectFromOsnapCenter(
   return points.map(point => markFromPoint(point))
 }
 
-function findBlockSubEntity(
+/** Full INSERT transform (OCS blockTransform + extrusion), matching intersect curves. */
+function fullInsertionTransform(blockRef: AcDbBlockReference): AcGeMatrix3d {
+  return new AcGeMatrix3d()
+    .setFromExtrusionDirection(blockRef.normal)
+    .multiply(blockRef.blockTransform)
+}
+
+/**
+ * Resolves a block-reference sub-entity identified by a spatial-index gsMark.
+ *
+ * Returns the leaf entity and the cumulative transform that maps its local
+ * geometry into the caller space (typically WCS).
+ */
+export function resolveBlockSubEntity(
   blockRef: AcDbBlockReference,
   gsMark: AcDbObjectId,
-  parentMat: AcGeMatrix3d
+  parentMat: AcGeMatrix3d = new AcGeMatrix3d()
 ): { entity: AcDbEntity; transform: AcGeMatrix3d } | undefined {
   const blockTableRecord = blockRef.blockTableRecord
   if (!blockTableRecord) return undefined
 
   const thisMat = new AcGeMatrix3d().multiplyMatrices(
     parentMat,
-    blockRef.blockTransform
+    fullInsertionTransform(blockRef)
   )
   const targetId = canonicalGsMark(gsMark)
 
@@ -205,7 +218,7 @@ function findBlockSubEntity(
       return { entity, transform: thisMat }
     }
     if (entity instanceof AcDbBlockReference) {
-      const nested = findBlockSubEntity(entity, gsMark, thisMat)
+      const nested = resolveBlockSubEntity(entity, gsMark, thisMat)
       if (nested) return nested
     }
   }
@@ -221,7 +234,7 @@ function collectBlockCenterMarks(
     return collectFromOsnapCenter(blockRef, pickPoint)
   }
 
-  const found = findBlockSubEntity(blockRef, gsMark, new AcGeMatrix3d())
+  const found = resolveBlockSubEntity(blockRef, gsMark)
   if (!found) {
     return collectFromOsnapCenter(blockRef, pickPoint, canonicalGsMark(gsMark))
   }

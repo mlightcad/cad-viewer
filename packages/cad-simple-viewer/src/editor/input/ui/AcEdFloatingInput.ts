@@ -113,6 +113,14 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   /** Long-press / short-tap state for one-finger point picking. */
   private readonly touchSession = new AcEdTouchPointSession()
   /**
+   * Latest finger sample waiting for the next animation frame during precise
+   * touch pick. Coalesces high-frequency touchmove into one osnap resolve per
+   * frame so expensive INT tests cannot pile up on the main thread.
+   */
+  private pendingTouchPreciseFinger: { x: number; y: number } | null = null
+  /** `requestAnimationFrame` id for {@link pendingTouchPreciseFinger}, or null. */
+  private touchPreciseRafId: number | null = null
+  /**
    * When true, a left-button mouse/pen `pointerdown` landed on this prompt's
    * canvas, so the following `click` may commit. Touch never sets this:
    * phone/pad hide dynamic input, so a leftover compatibility `click` would
@@ -311,6 +319,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
   override dispose() {
     if (this.disposed) return
+    this.cancelTouchPreciseSchedule()
     super.dispose()
 
     this.parent.removeEventListener('click', this.boundOnClick)
@@ -451,10 +460,12 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     if (e.pointerType !== 'touch') return
     if (e.pointerId !== this.touchSession.pointerId) return
     const moved = this.touchSession.move(e.clientX, e.clientY, true)
-    if (moved === 'panning') return
+    if (moved === 'panning') {
+      this.cancelTouchPreciseSchedule()
+      return
+    }
     if (!this.visible || !this.touchSession.isLoupe) return
-    this.applyTouchPreciseSample(e.clientX, e.clientY)
-    this.refreshTouchPreciseHud()
+    this.scheduleTouchPreciseSample(e.clientX, e.clientY)
   }
 
   /**
@@ -484,6 +495,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     acedSinkFollowingClick()
     this.releaseTouchCapture()
     if (this.touchSession.isPicking) return
+    this.cancelTouchPreciseSchedule()
     this.touchSession.cancel()
     this.view.setNavigationEnabled(true)
     this.hideTouchPreciseHud()
@@ -513,12 +525,14 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     const touch = e.touches[0] ?? e.changedTouches[0]
     if (!touch) return
     const moved = this.touchSession.move(touch.clientX, touch.clientY, true)
-    if (moved === 'panning') return
+    if (moved === 'panning') {
+      this.cancelTouchPreciseSchedule()
+      return
+    }
     if (!this.touchSession.isLoupe) return
     e.preventDefault()
     if (!this.visible) return
-    this.applyTouchPreciseSample(touch.clientX, touch.clientY)
-    this.refreshTouchPreciseHud()
+    this.scheduleTouchPreciseSample(touch.clientX, touch.clientY)
   }
 
   /**
@@ -566,6 +580,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     const wasPrecise = this.touchSession.isLoupe
     const action = this.touchSession.end()
     this.view.setNavigationEnabled(true)
+    this.cancelTouchPreciseSchedule()
     this.hideTouchPreciseHud()
     // Finger-up coords must not seed the next prompt's jig preview.
     this.view.clearCursorPos()
@@ -618,6 +633,34 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   private applyTouchPreciseSample(fingerX: number, fingerY: number) {
     const sample = acedTouchPickStrategy().mapFingerToSample(fingerX, fingerY)
     this.applyClientSample(sample.x, sample.y)
+  }
+
+  /**
+   * Coalesces finger samples to one osnap / HUD update per animation frame.
+   * Touchmove can fire faster than a single INT resolve finishes; running every
+   * event synchronously freezes the UI on dense geometry.
+   */
+  private scheduleTouchPreciseSample(fingerX: number, fingerY: number) {
+    this.pendingTouchPreciseFinger = { x: fingerX, y: fingerY }
+    if (this.touchPreciseRafId != null) return
+    this.touchPreciseRafId = requestAnimationFrame(() => {
+      this.touchPreciseRafId = null
+      const finger = this.pendingTouchPreciseFinger
+      this.pendingTouchPreciseFinger = null
+      if (!finger || this.disposed || !this.visible) return
+      if (!this.touchSession.isLoupe) return
+      this.applyTouchPreciseSample(finger.x, finger.y)
+      this.refreshTouchPreciseHud()
+    })
+  }
+
+  /** Drops any pending coalesced touch sample without applying it. */
+  private cancelTouchPreciseSchedule() {
+    if (this.touchPreciseRafId != null) {
+      cancelAnimationFrame(this.touchPreciseRafId)
+      this.touchPreciseRafId = null
+    }
+    this.pendingTouchPreciseFinger = null
   }
 
   /** HUD host wiring loupe / simulated-mouse helpers to this view. */
