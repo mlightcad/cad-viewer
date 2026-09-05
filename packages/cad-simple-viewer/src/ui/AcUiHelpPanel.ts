@@ -1,8 +1,7 @@
 /**
  * Full-screen help browser built on {@link AcUiFullscreenPanel}.
  *
- * Loads a docs URL in an iframe. Portable (no i18n dependency); re-exported
- * from `@mlightcad/cad-simple-viewer/fullscreen-panel`.
+ * Loads a docs URL in an iframe. Portable (no i18n dependency).
  */
 
 import {

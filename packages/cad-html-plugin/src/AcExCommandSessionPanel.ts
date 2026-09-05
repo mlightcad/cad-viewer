@@ -1,5 +1,3 @@
-import { AcUiHelpPanel } from '@mlightcad/cad-simple-viewer/fullscreen-panel'
-
 import {
   ACEX_DOCS_PATH_MAGNIFIER,
   acexDocsUrl
@@ -7,6 +5,7 @@ import {
 import { acexHtmlIsPhoneLayout } from './AcExHtmlDrawerSheet'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { ML_UI_MOBILE_MAX_WIDTH } from './AcExHtmlShell'
+import { AcUiHelpPanel } from './AcExHtmlSimpleViewerUi'
 
 /** Keyword / action chip on the offline HTML session panel. */
 export interface AcExCommandSessionChip {

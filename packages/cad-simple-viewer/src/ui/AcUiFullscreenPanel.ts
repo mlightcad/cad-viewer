@@ -2,9 +2,8 @@
  * Portable full-screen panel chrome (DOM + CSS only).
  *
  * Base for mobile “push” screens: header with back (`<`) + centered title and a
- * content region. Re-exported from
- * `@mlightcad/cad-simple-viewer/fullscreen-panel` so the offline HTML viewer
- * IIFE can import it without loading the rest of the viewer barrel.
+ * content region. The offline HTML viewer pulls this via the main package
+ * export and tree-shaking (same pattern as {@link AcUiDialog}).
  *
  * Callers supply localized labels — this module does not depend on i18n.
  */

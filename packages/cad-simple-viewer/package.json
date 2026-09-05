@@ -23,11 +23,6 @@
     "lib",
     "icons.ts",
     "src/ui/icons.ts",
-    "touch-point-timing.ts",
-    "src/editor/input/ui/AcEdTouchPointTiming.ts",
-    "fullscreen-panel.ts",
-    "src/ui/AcUiFullscreenPanel.ts",
-    "src/ui/AcUiHelpPanel.ts",
     "README.md",
     "package.json"
   ],
@@ -44,21 +39,6 @@
       "types": "./src/ui/icons.ts",
       "import": "./src/ui/icons.ts",
       "default": "./lib/ui/icons.js"
-    },
-    "./touch-point-timing": {
-      "types": "./src/editor/input/ui/AcEdTouchPointTiming.ts",
-      "import": "./src/editor/input/ui/AcEdTouchPointTiming.ts",
-      "default": "./lib/editor/input/ui/AcEdTouchPointTiming.js"
-    },
-    "./fullscreen-panel": {
-      "types": "./fullscreen-panel.ts",
-      "import": "./fullscreen-panel.ts",
-      "default": "./lib/ui/AcUiFullscreenPanel.js"
-    },
-    "./help-panel": {
-      "types": "./fullscreen-panel.ts",
-      "import": "./fullscreen-panel.ts",
-      "default": "./lib/ui/AcUiHelpPanel.js"
     }
   },
   "scripts": {

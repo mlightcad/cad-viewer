@@ -2,7 +2,7 @@
  * Long-press / short-tap state machine for touch point picking.
  *
  * Timing constants live in {@link ./AcEdTouchPointTiming} so the offline HTML
- * viewer can share the same values without importing this module.
+ * viewer can share the same values without importing this session module.
  */
 
 import {

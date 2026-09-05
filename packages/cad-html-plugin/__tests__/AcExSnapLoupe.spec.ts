@@ -1,3 +1,8 @@
+jest.mock('../src/AcExHtmlSimpleViewerUi', () => ({
+  ACED_TOUCH_POINT_LONG_PRESS_MS: 1000,
+  ACED_TOUCH_POINT_MOVE_CANCEL_PX: 10
+}))
+
 import {
   acexCssRectToWcsBox,
   acexCssTopLeftRectToGl,

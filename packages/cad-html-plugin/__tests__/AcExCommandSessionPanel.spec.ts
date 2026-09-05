@@ -1,5 +1,13 @@
 /** @jest-environment jsdom */
 
+jest.mock('../src/AcExHtmlSimpleViewerUi', () => ({
+  AcUiHelpPanel: jest.fn().mockImplementation(() => ({
+    showDocs: jest.fn(),
+    hide: jest.fn(),
+    setLabels: jest.fn()
+  }))
+}))
+
 import { AcExCommandSessionPanel } from '../src/AcExCommandSessionPanel'
 import { ML_UI_MOBILE_MAX_WIDTH } from '../src/AcExHtmlShell'
 import { AcExHtmlI18n } from '../src/AcExHtmlI18n'
