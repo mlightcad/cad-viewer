@@ -4,9 +4,10 @@
  * These definitions describe **analytic** geometry in world coordinates (WCS, XY plane).
  * All coordinate fields use IEEE-754 `number` (double precision) for measurement-grade
  * accuracy on large-coordinate drawings.
- * They are serialized per layout in {@link AcExLayoutSnapshot.osnap} at export time
- * (see {@link buildOsnapCatalog}) and consumed at runtime by {@link AcExOsnapIndex}
- * instead of tessellated render batches.
+ * Curve/point kinds are serialized per layout in {@link AcExLayoutSnapshot.osnap}
+ * at export time (see {@link buildOsnapCatalog}). Straight `line` edges are omitted
+ * from exported catalogs and rebuilt at runtime from {@link AcExLineBatch} display
+ * geometry by {@link AcExOsnapIndex} (self-contained HTML and multi-file packages).
  *
  * @packageDocumentation
  */
@@ -85,6 +86,9 @@ export interface AcExOsnapPrimitiveBase {
 
 /**
  * A straight line segment (`AcDbLine`, or a non-bulge polyline edge).
+ *
+ * Not written by {@link buildOsnapCatalog}; retained so runtime / tests can
+ * represent tessellated snap edges derived from {@link AcExLineBatch}.
  *
  * @see {@link AcExOsnapLinePrimitive.kind}
  */

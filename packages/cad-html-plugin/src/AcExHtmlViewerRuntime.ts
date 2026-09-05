@@ -60,7 +60,7 @@ import {
   acexRefreshMobileSnapLoupe,
   acexSetMobileSnapLoupePreciseCapture
 } from './AcExMobileSnapLoupe'
-import { AcExOsnapIndex } from './AcExOsnap'
+import { AcExOsnapIndex, estimateOsnapRebuildWork } from './AcExOsnap'
 import { AcExOsnapMarker } from './AcExOsnapMarker'
 import {
   loadAcExPackageLayoutOsnap,
@@ -787,41 +787,55 @@ async function startViewer(): Promise<void> {
     }
   }
 
+  const clearStatusBar = () => {
+    statusEl.textContent = ''
+    statusEl.hidden = true
+  }
+
+  const osnapIndexYield = (): Promise<void> =>
+    // Prefer a macrotask over `accmYieldForPaint` / rAF: waiting a full frame
+    // per slice turned million-edge hybrid indexes into multi-minute jobs.
+    new Promise(resolve => {
+      setTimeout(resolve, 0)
+    })
+
   const rebuildOsnapForLoadedGeometry = async () => {
     if (!measureEnabled) return
     if (!osnapIndex) {
       osnapIndex = new AcExOsnapIndex()
       osnapMarker = new AcExOsnapMarker(root)
     }
-    const primitiveCount = layout.osnap?.primitives.length ?? 0
-    if (primitiveCount > 8000) {
+    const workEstimate =
+      estimateOsnapRebuildWork(layout) +
+      (hasPaperViewports && modelLayout
+        ? estimateOsnapRebuildWork(modelLayout)
+        : 0)
+    if (workEstimate > 8000) {
+      statusEl.hidden = false
       statusEl.textContent = i18n.t('status.buildingOsnap')
       await accmYieldForPaint()
     }
-    await osnapIndex.rebuildAsync(layout, async () => {
-      render()
-      await accmYieldForPaint()
-    })
-    applyOsnapLayerVisibility(osnapIndex)
-    if (hasPaperViewports && modelLayout) {
-      if (!modelOsnapIndex) {
-        modelOsnapIndex = new AcExOsnapIndex()
+    try {
+      await osnapIndex.rebuildAsync(layout, osnapIndexYield)
+      applyOsnapLayerVisibility(osnapIndex)
+      if (hasPaperViewports && modelLayout) {
+        if (!modelOsnapIndex) {
+          modelOsnapIndex = new AcExOsnapIndex()
+        }
+        await modelOsnapIndex.rebuildAsync(modelLayout, osnapIndexYield)
+        applyOsnapLayerVisibility(modelOsnapIndex)
       }
-      await modelOsnapIndex.rebuildAsync(modelLayout, async () => {
-        render()
-        await accmYieldForPaint()
-      })
-      applyOsnapLayerVisibility(modelOsnapIndex)
-    }
-    if (!canSwitchLayouts) {
-      releaseSnapshotOsnapCatalogs(snapshot)
+      if (!canSwitchLayouts) {
+        releaseSnapshotOsnapCatalogs(snapshot)
+      }
+    } finally {
+      clearStatusBar()
     }
   }
 
-  // Embedded path has full geometry now; package path rebuilds after progressive load.
-  if (measureEnabled && !packageSession) {
-    await rebuildOsnapForLoadedGeometry()
-  } else if (measureEnabled) {
+  // Create empty indexes now; hybrid rebuild runs after first paint so the
+  // canvas is interactive while tessellated line snap is prepared.
+  if (measureEnabled) {
     osnapIndex = new AcExOsnapIndex()
     osnapMarker = new AcExOsnapMarker(root)
   }
@@ -1790,12 +1804,19 @@ async function startViewer(): Promise<void> {
         !packageSession.loadedOsnapLayouts.has(layout.btrId) &&
         (layoutRef?.osnapChunkIds?.length ?? 0) > 0
       if (!pendingOsnap) {
-        await osnapIndex.rebuildAsync(layout, async () => {
-          render()
+        // Hybrid rebuild needs resident lineBatches when ACEO has no lines.
+        const workEstimate = estimateOsnapRebuildWork(layout)
+        if (workEstimate > 8000) {
+          statusEl.textContent = i18n.t('status.buildingOsnap')
           await accmYieldForPaint()
-        })
-        for (const [name, visible] of layerVisible) {
-          osnapIndex.setLayerHidden(name, visible === false)
+        }
+        try {
+          await osnapIndex.rebuildAsync(layout, osnapIndexYield)
+          for (const [name, visible] of layerVisible) {
+            osnapIndex.setLayerHidden(name, visible === false)
+          }
+        } finally {
+          clearStatusBar()
         }
       }
     }
@@ -1830,6 +1851,7 @@ async function startViewer(): Promise<void> {
         await rebuildOsnapForLoadedGeometry()
         bumpSnapCacheKey()
         render()
+        measure?.refreshIdleStatus()
       } catch (error) {
         statusEl.textContent = i18n.t('status.loadFailed', {
           error: String(error)
@@ -2137,8 +2159,9 @@ async function startViewer(): Promise<void> {
   lastViewByLayout.set(layout.btrId, initialView)
   // Shared typed arrays back the snapshot and THREE attributes. Releasing
   // them would prevent switching to other layouts later in this session.
-  // Package mode releases after progressive geometry has finished loading.
-  if (!canSwitchLayouts && !packageSession) {
+  // Defer CPU buffer release until after hybrid OSNAP when measure is on —
+  // line snap is rebuilt from resident lineBatches.
+  if (!canSwitchLayouts && !packageSession && !measureEnabled) {
     releaseLayerGroupsGeometryCpuArrays(paperLayerGroups)
     releaseLayerGroupsGeometryCpuArrays(modelLayerGroups)
     releaseSnapshotBatchBuffers(snapshot)
@@ -2154,9 +2177,26 @@ async function startViewer(): Promise<void> {
       }
     })
   }
-  // Reveal the canvas before package chunks finish so each chunk can paint
-  // as soon as it arrives (progressive loading).
+  // Reveal the canvas before package chunks / OSNAP indexing finish so the
+  // drawing paints while background work continues.
   hideLoading()
+
+  if (!packageSession && measureEnabled) {
+    try {
+      await rebuildOsnapForLoadedGeometry()
+      recomputeOsnapThresholdWcs()
+      bumpSnapCacheKey()
+      measure?.refreshIdleStatus()
+      render()
+    } catch (error) {
+      showViewerError(i18n.t('status.loadFailed', { error: String(error) }))
+    }
+    if (!canSwitchLayouts) {
+      releaseLayerGroupsGeometryCpuArrays(paperLayerGroups)
+      releaseLayerGroupsGeometryCpuArrays(modelLayerGroups)
+      releaseSnapshotBatchBuffers(snapshot)
+    }
+  }
 
   if (packageSession) {
     try {
@@ -2177,9 +2217,9 @@ async function startViewer(): Promise<void> {
       measure?.refreshIdleStatus()
       render()
 
-      // Do NOT rebuild OSNAP from tessellated batches here. On large drawings
-      // collectBatchSegments freezes the main thread for seconds and prevents
-      // ACEO fetches from even starting (nothing appears in Network).
+      // ACEO now holds curves/points only (lines come from geometry batches).
+      // Load the small catalog first, then build a hybrid index while CPU
+      // lineBatches are still resident — before releaseSnapshotBatchBuffers.
       if (measureEnabled) {
         for (const target of firstPaintLayouts) {
           await loadPackageLayoutOsnap(target)

@@ -3,8 +3,9 @@
  *
  * Walks layout block table records recursively, expands `AcDbBlockReference`
  * (INSERT) with full insertion transforms, and emits compact analytic primitives
- * for the offline HTML viewer. This path preserves circle/arc/ellipse/spline
- * definitions that would otherwise be lost after tessellation into line batches.
+ * for the offline HTML viewer. Straight line edges are omitted (they duplicate
+ * display {@link AcExLineBatch} data); circle/arc/ellipse/spline/point remain so
+ * measurement-grade analytic snap survives tessellation.
  *
  * @packageDocumentation
  */
@@ -60,7 +61,6 @@ import type {
   AcExOsnapCatalog,
   AcExOsnapCirclePrimitive,
   AcExOsnapEllipsePrimitive,
-  AcExOsnapLinePrimitive,
   AcExOsnapPrimitive,
   AcExOsnapSplinePrimitive
 } from './AcExOsnapPrimitiveTypes'
@@ -109,9 +109,6 @@ function pushGeCircArc(
     normalSign
   })
 }
-
-/** Half-length used when exporting infinite rays/xlines as finite segments. @internal */
-const INFINITE_LINE_HALF_LENGTH = 1_000_000
 
 /** Applies a 4×4 layout/block matrix to a 3D point; returns XY. @internal */
 function transformPoint(
@@ -396,51 +393,43 @@ function isBlockReferenceEntity(
   )
 }
 
-/** Appends a WCS line primitive after transforming endpoints. @internal */
+/**
+ * Line primitives are intentionally not exported into the HTML OSNAP catalog.
+ *
+ * Straight edges duplicate {@link AcExLineBatch} geometry already shipped for
+ * display. The offline viewer rebuilds line snap from those batches after
+ * geometry loads (see {@link AcExOsnapIndex.rebuildAsync}).
+ *
+ * Curve entities (arc / circle / ellipse / spline) and points still go through
+ * dedicated push helpers so measurement-grade analytic snap is preserved.
+ *
+ * @internal
+ */
 function pushLine(
-  out: AcExOsnapPrimitive[],
-  layer: string,
-  matrix: THREE.Matrix4,
-  start: AcGePoint3dLike,
-  end: AcGePoint3dLike
+  _out: AcExOsnapPrimitive[],
+  _layer: string,
+  _matrix: THREE.Matrix4,
+  _start: AcGePoint3dLike,
+  _end: AcGePoint3dLike
 ) {
-  const a = transformPoint(matrix, start)
-  const b = transformPoint(matrix, end)
-  const prim: AcExOsnapLinePrimitive = {
-    kind: 'line',
-    layer,
-    x0: a.x,
-    y0: a.y,
-    x1: b.x,
-    y1: b.y
-  }
-  out.push(prim)
+  // no-op — see function doc
 }
 
 /**
- * Appends a long WCS line segment along a unit direction (ray or xline).
+ * Ray / xline extents are also omitted from the catalog; finite display
+ * segments in lineBatches cover practical endpoint / nearest snap.
  *
  * @internal
  */
 function pushDirectedLine(
-  out: AcExOsnapPrimitive[],
-  layer: string,
-  matrix: THREE.Matrix4,
-  base: AcGePoint3dLike,
-  unitDir: AcGeVector3dLike,
-  bidirectional: boolean
+  _out: AcExOsnapPrimitive[],
+  _layer: string,
+  _matrix: THREE.Matrix4,
+  _base: AcGePoint3dLike,
+  _unitDir: AcGeVector3dLike,
+  _bidirectional: boolean
 ) {
-  const origin = transformPoint(matrix, base)
-  const dir = transformVector(matrix, unitDir)
-  const len = Math.hypot(dir.x, dir.y) || 1
-  const ux = dir.x / len
-  const uy = dir.y / len
-  const half = INFINITE_LINE_HALF_LENGTH
-  const x0 = bidirectional ? origin.x - ux * half : origin.x
-  const y0 = bidirectional ? origin.y - uy * half : origin.y
-  const x1 = origin.x + ux * half
-  const y1 = origin.y + uy * half
-  out.push({ kind: 'line', layer, x0, y0, x1, y1 })
+  // no-op — see function doc
 }
 
 /**
@@ -1374,8 +1363,8 @@ function ellipseFromArc(entity: AcDbArc): AcDbEllipse {
  * @param database - Open drawing database (same instance used for HTML export).
  * @param layoutBtrId - Object id of the layout's owning block table record
  *   (e.g. model space BTR id from the renderer scene).
- * @returns Catalog with {@link AcExOsnapCatalog.primitives} in WCS; empty array
- *   when the BTR id is unknown or the layout has no snap-capable geometry.
+ * @returns Catalog of analytic curve/point primitives in WCS (no `line` kinds).
+ *   Empty when the BTR id is unknown or the layout has no snap-capable curves.
  *
  * @example
  * ```ts
@@ -1409,5 +1398,59 @@ export function buildOsnapCatalog(
     database,
     options.includeLayer
   )
-  return { primitives }
+  // Belt-and-suspenders: never ship line kinds (they duplicate lineBatches).
+  // Also drop non-finite coords so a single NaN polyline cannot poison the
+  // offline RBush index the way it did in the main viewer.
+  return {
+    primitives: primitives.filter(
+      primitive => primitive.kind !== 'line' && isFiniteOsnapPrimitive(primitive)
+    )
+  }
+}
+
+function isFiniteOsnapPrimitive(primitive: AcExOsnapPrimitive): boolean {
+  switch (primitive.kind) {
+    case 'line':
+      return (
+        Number.isFinite(primitive.x0) &&
+        Number.isFinite(primitive.y0) &&
+        Number.isFinite(primitive.x1) &&
+        Number.isFinite(primitive.y1)
+      )
+    case 'circle':
+      return (
+        Number.isFinite(primitive.cx) &&
+        Number.isFinite(primitive.cy) &&
+        Number.isFinite(primitive.r)
+      )
+    case 'arc':
+      return (
+        Number.isFinite(primitive.cx) &&
+        Number.isFinite(primitive.cy) &&
+        Number.isFinite(primitive.r) &&
+        Number.isFinite(primitive.startAngle) &&
+        Number.isFinite(primitive.endAngle)
+      )
+    case 'ellipse':
+      return (
+        Number.isFinite(primitive.cx) &&
+        Number.isFinite(primitive.cy) &&
+        Number.isFinite(primitive.majorX) &&
+        Number.isFinite(primitive.majorY) &&
+        Number.isFinite(primitive.majorR) &&
+        Number.isFinite(primitive.minorR) &&
+        Number.isFinite(primitive.startAngle) &&
+        Number.isFinite(primitive.endAngle)
+      )
+    case 'spline':
+      return (
+        primitive.controlPoints.every(value => Number.isFinite(value)) &&
+        primitive.knots.every(knot => Number.isFinite(knot)) &&
+        primitive.weights.every(weight => Number.isFinite(weight))
+      )
+    case 'point':
+      return Number.isFinite(primitive.x) && Number.isFinite(primitive.y)
+    default:
+      return false
+  }
 }

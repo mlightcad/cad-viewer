@@ -266,6 +266,93 @@ describe('AcExSnapshotCodec', () => {
     expect(decoded.layouts[0]!.viewports?.[0]?.twist).toBeCloseTo(Math.PI / 4)
   })
 
+  it('self-contained HTML payloads shrink when osnap omits duplicated line primitives', () => {
+    const meta = {
+      createdAt: '2026-01-01T00:00:00.000Z',
+      extents: { minX: 0, minY: 0, maxX: 100, maxY: 100 },
+      units: {
+        insunits: 4,
+        lunits: 2,
+        luprec: 4,
+        aunits: 0,
+        auprec: 0,
+        measurement: 1,
+        ltscale: 1,
+        angbase: 0,
+        angdir: 0
+      },
+      background: 0
+    }
+    const lineBatch = {
+      layer: '0',
+      color: 0xff0000,
+      offset: [0, 0, 0] as [number, number, number],
+      positions: f32([0, 0, 0, 10, 0, 0, 10, 10, 0, 0, 10, 0]),
+      indices: Uint32Array.from([0, 1, 1, 2, 2, 3, 3, 0])
+    }
+    const linePrimitives = Array.from({ length: 2000 }, (_, i) => ({
+      kind: 'line' as const,
+      layer: '0',
+      x0: i,
+      y0: 0,
+      x1: i + 1,
+      y1: 1
+    }))
+    const withDuplicatedLines = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta,
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [lineBatch],
+          meshBatches: [],
+          osnap: { primitives: linePrimitives }
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+    const curvesOnly = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta,
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [lineBatch],
+          meshBatches: [],
+          osnap: {
+            primitives: [
+              {
+                kind: 'circle' as const,
+                layer: '0',
+                cx: 5,
+                cy: 5,
+                r: 2,
+                normalSign: 1 as const
+              }
+            ]
+          }
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const legacyPayload = encodeSnapshot(withDuplicatedLines).payload
+    const compactPayload = encodeSnapshot(curvesOnly).payload
+    expect(compactPayload.length).toBeLessThan(legacyPayload.length * 0.25)
+
+    const decoded = decodeSnapshot(compactPayload)
+    expect(decoded.layouts[0]!.osnap?.primitives.every(p => p.kind !== 'line')).toBe(
+      true
+    )
+    expect(decoded.layouts[0]!.lineBatches[0]!.positions.length).toBeGreaterThan(0)
+  })
+
   it('round-trips signed renderOrder so hatch fills stay below linework', () => {
     const snapshot = {
       version: ACEX_SNAPSHOT_VERSION,

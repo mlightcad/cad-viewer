@@ -140,8 +140,15 @@ Batch records reuse the ACEX feature-flag scheme (`F_LINE_*`, `F_MESH_*`):
 
 Each file is **raw gzip** of one **ACEO** binary payload (measure-mode exports).
 Coordinates are IEEE-754 **float64**; layer names are dictionary-compressed.
-Large catalogs are split (~512 KiB estimated uncompressed per file) so hosts can
-fetch snap slices in **parallel** after the drawing is already visible.
+
+**Straight `line` primitives are not stored in ACEO.** They duplicate display
+`lineBatches` already downloaded for rendering. After geometry loads (and before
+CPU batch buffers are released), the viewer extracts snap segments from those
+batches and indexes them together with analytic ACEO curves (circle / arc /
+ellipse / spline / point, including polyline bulge arcs and hatch curve edges).
+
+Large curve catalogs are still split (~512 KiB estimated uncompressed per file)
+so hosts can fetch snap slices after the drawing is already visible.
 
 ### ACEO binary (little-endian)
 
@@ -155,13 +162,14 @@ fetch snap slices in **parallel** after the drawing is already visible.
 | primitiveCount | `u32` | |
 | primitives | … | kind `u8` + layer index `u32` + kind-specific f64 fields |
 
-Kind codes: `1` line, `2` circle, `3` arc, `4` ellipse, `5` spline, `6` point.
+Kind codes: `1` line (legacy / unused on export), `2` circle, `3` arc, `4` ellipse, `5` spline, `6` point.
 
 ### OSNAP chunking rules
 
 1. Split by layout, then by estimated ACEO size into `L{layoutIndex}-osnap-{slice:000}`.
 2. Each slice is a self-contained ACEO catalog (own layer dictionary).
 3. Loaders concatenate primitives in `osnapChunkIds` order.
+4. Empty curve catalogs omit `osnapChunks` / `osnapChunkIds`; line snap still works from geometry.
 
 ## Loading sequence
 
@@ -170,19 +178,23 @@ Kind codes: `1` line, `2` circle, `3` arc, `4` ellipse, `5` spline, `6` point.
 3. Initialize viewer chrome from `meta` / `layers` (extents, layer panel).
 4. For the active layout (and model space when paper viewports need it):
    `GET` each geometry `href` → gunzip → decode ACEC → append batches → paint → yield.
-5. Drawing is usable for pan/zoom. **Then** (measure mode only): fetch all
-   `osnapChunks` for that layout **in parallel** → gunzip → decode ACEO →
-   concatenate → rebuild snap index.
-6. Load remaining layouts lazily when the user switches layout (geometry first,
-   OSNAP last).
+5. Drawing is usable for pan/zoom. **Then** (measure mode):
+   - `GET` ACEO curve chunks (small when lines are omitted) → decode → concatenate.
+   - Build hybrid snap index: **line segments from resident `lineBatches`** + analytic ACEO primitives (yielded / bulk `RBush.load`).
+6. Release CPU geometry buffers after the hybrid index is ready.
+7. Load remaining layouts lazily when the user switches layout (geometry first, OSNAP last).
 
 ## Relationship to single-file HTML
 
-Self-contained HTML still embeds one gzip+base64 **ACEX** snapshot
-(`magic 0x58454341`). Multi-file packages share the same batch schema
-(`snapshotVersion`) but ship geometry as ACEC chunks plus a JSON manifest.
-OSNAP in single-file HTML remains inside the ACEX snapshot; only the multi-file
-package splits it into ACEO sidecars.
+Self-contained HTML embeds one gzip+base64 **ACEX** snapshot
+(`magic 0x58454341`). The **same** snapshot builder is used as for multi-file
+packages: measure-mode OSNAP catalogs omit straight `line` primitives and keep
+only analytic curves/points. The offline runtime rebuilds line snap from the
+embedded `lineBatches` before releasing CPU buffers, so single-file HTML is
+smaller for line-heavy drawings without losing endpoint/midpoint snap.
+
+Multi-file packages additionally split geometry into ACEC chunks and OSNAP into
+ACEO sidecars; the catalog content rules are identical.
 
 Password / expiry protection applies to **single-file** export only in the
 current product UI.
