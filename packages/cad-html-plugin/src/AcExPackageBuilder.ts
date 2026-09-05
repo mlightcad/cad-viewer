@@ -297,8 +297,18 @@ function orderLayoutsForExport(
   return active ? [active, ...rest] : [...layouts]
 }
 
+/**
+ * File-name stem for package files (`{base}.acex.json`, zip-safe path segments).
+ * Keeps only `[A-Za-z0-9._-]`; spaces, `+`, parentheses, and other punctuation
+ * become underscores so {@link zipAcExPackageFiles} / package href checks pass.
+ * The browser download name for the `.zip` itself may still use the original
+ * drawing title via {@link resolveExportDownloadName}.
+ */
 function sanitizeBaseName(name: string): string {
-  const trimmed = name.trim().replace(/\.(dwg|dxf|html|zip)$/i, '')
-  const safe = trimmed.replace(/[^\w.\-()+ ]+/g, '_').replace(/\s+/g, '_')
+  const trimmed = name.trim().replace(/\.(dwg|dxf|html|zip|acex\.json)$/i, '')
+  const safe = trimmed
+    .replace(/[^A-Za-z0-9._-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^[_./-]+|[_./-]+$/g, '')
   return safe.length > 0 ? safe : 'drawing'
 }

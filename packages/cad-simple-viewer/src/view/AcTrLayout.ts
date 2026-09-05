@@ -12,6 +12,7 @@ import { AcEdLayerInfo, AcEdSpatialQueryResultItem } from '../editor'
 import { unionSpatialQueryItems } from '../editor/view/AcEdSpatialQueryResult'
 import { AcTrHierarchicalSpatialIndex } from '../spatialIndex'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
+import { isFiniteSpatialBBox } from './AcTrGroupWcsBboxAssert'
 import { AcTrLayer, AcTrLayerStats } from './AcTrLayer'
 
 /** Options for {@link AcTrLayout.createEntityPreviewRoot}. */
@@ -998,22 +999,28 @@ export class AcTrLayout {
       }
     }
 
-    this._spatialIndex.insert({
-      minX: rootBox.minX,
-      minY: rootBox.minY,
-      maxX: rootBox.maxX,
-      maxY: rootBox.maxY,
-      id: entity.objectId
-    })
+    // Skip non-finite roots (empty THREE.Box3 → ±Infinity, or NaN after a bad
+    // applyMatrix4). Inserting NaN into RBush poisons all spatial searches.
+    if (isFiniteSpatialBBox(rootBox)) {
+      this._spatialIndex.insert({
+        minX: rootBox.minX,
+        minY: rootBox.minY,
+        maxX: rootBox.maxX,
+        maxY: rootBox.maxY,
+        id: entity.objectId
+      })
 
-    if (spatialIndexChildBoxes && spatialIndexChildBoxes.length > 0) {
-      entity.wcsBbox.min.set(rootBox.minX, rootBox.minY, entity.wcsBbox.min.z)
-      entity.wcsBbox.max.set(rootBox.maxX, rootBox.maxY, entity.wcsBbox.max.z)
+      if (spatialIndexChildBoxes && spatialIndexChildBoxes.length > 0) {
+        entity.wcsBbox.min.set(rootBox.minX, rootBox.minY, entity.wcsBbox.min.z)
+        entity.wcsBbox.max.set(rootBox.maxX, rootBox.maxY, entity.wcsBbox.max.z)
+      }
     }
 
     // Some INSERT rendering paths split one block reference into multiple layer
     // groups (AcTrEntity instead of AcTrGroup). Keep child-box index via userData
     // so object snap can still resolve gsMark to sub-entities.
+    // ensureChildIndex may still register a finite root from child unions when
+    // the coarse root above was skipped.
     if (spatialIndexChildBoxes) {
       this._spatialIndex.ensureChildIndex(
         entity.objectId,
@@ -1029,12 +1036,16 @@ export class AcTrLayout {
    * Registers a simple axis-aligned WCS box in the spatial index by object id.
    */
   private registerSpatialIndexBox(objectId: AcDbObjectId, wcsBbox: THREE.Box3) {
-    this._spatialIndex.insert({
+    const box = {
       minX: wcsBbox.min.x,
       minY: wcsBbox.min.y,
       maxX: wcsBbox.max.x,
       maxY: wcsBbox.max.y,
       id: objectId
-    })
+    }
+    if (!isFiniteSpatialBBox(box)) {
+      return
+    }
+    this._spatialIndex.insert(box)
   }
 }

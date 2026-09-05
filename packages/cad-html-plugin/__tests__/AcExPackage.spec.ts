@@ -213,6 +213,16 @@ describe('AcEx package format', () => {
     expect(skeleton.activeLayoutBtrId).toBe('ms')
   })
 
+  it('sanitizes drawing titles with spaces and plus signs for zip-safe paths', () => {
+    const pkg = buildAcExPackage(makeSnapshot(), {
+      viewerRuntime: '/* runtime */',
+      baseName: 'FJP-898E-G-_-V01 + 1'
+    })
+    expect(pkg.manifestFileName).toBe('FJP-898E-G-_-V01_1.acex.json')
+    expect(isSafePackageHref(`./${pkg.manifestFileName}`)).toBe(true)
+    expect(() => zipAcExPackageFiles(pkg)).not.toThrow()
+  })
+
   it('rejects unsafe package hrefs and absolute chunk URLs', () => {
     expect(isSafePackageHref('./demo.acex.json')).toBe(true)
     expect(isSafePackageHref('chunks/L0-000.acex.gz')).toBe(true)
@@ -272,19 +282,19 @@ describe('AcEx package format', () => {
     snapshot.meta.viewerMode = 'measure'
     snapshot.layouts[0]!.osnap = {
       primitives: Array.from({ length: 40 }, (_, i) => ({
-        kind: 'line' as const,
+        kind: 'circle' as const,
         layer: i % 2 === 0 ? '0' : 'A',
-        x0: i,
-        y0: 0,
-        x1: i + 1,
-        y1: 1
+        cx: i,
+        cy: 0,
+        r: 1,
+        normalSign: 1 as const
       }))
     }
 
     const pkg = buildAcExPackage(snapshot, {
       viewerRuntime: '/* runtime */',
       baseName: 'demo',
-      // Force multiple OSNAP chunks (~37 bytes/line → 200 bytes ≈ several slices).
+      // Force multiple OSNAP chunks.
       maxOsnapChunkBytes: 200
     })
 

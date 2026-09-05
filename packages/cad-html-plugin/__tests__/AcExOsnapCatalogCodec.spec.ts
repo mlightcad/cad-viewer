@@ -89,9 +89,12 @@ describe('AcExOsnapCatalogCodec', () => {
 })
 
 describe('AcExOsnapIndex.rebuildAsync', () => {
-  it('bulk-loads RBush after building entries in yieldable batches', async () => {
+  it('bulk-loads RBush after building entries and yields on wall-clock budget', async () => {
     const { AcExOsnapIndex } = await import('../src/AcExOsnap')
-    const primitives = Array.from({ length: 6000 }, (_, i) => ({
+    // Must exceed OSNAP_INDEX_YIELD_CHECK_EVERY (8192) so the scheduler samples
+    // the wall-clock budget at least once.
+    const primitiveCount = 9000
+    const primitives = Array.from({ length: primitiveCount }, (_, i) => ({
       kind: 'line' as const,
       layer: '0',
       x0: i,
@@ -100,6 +103,10 @@ describe('AcExOsnapIndex.rebuildAsync', () => {
       y1: 1
     }))
     let yields = 0
+    let nowCall = 0
+    const nowSpy = jest
+      .spyOn(performance, 'now')
+      .mockImplementation(() => (nowCall++) * 250)
     const index = new AcExOsnapIndex()
     const loadSpy = jest.spyOn(
       (index as unknown as { primitiveTree: { load: (e: unknown) => void } })
@@ -123,9 +130,10 @@ describe('AcExOsnapIndex.rebuildAsync', () => {
     expect(loadSpy).toHaveBeenCalledTimes(1)
     expect(
       (loadSpy.mock.calls[0]![0] as unknown[]).length
-    ).toBe(6000)
+    ).toBe(primitiveCount)
     const snap = index.findSnap(10.1, 0.1, 2)
     expect(snap).toBeTruthy()
     loadSpy.mockRestore()
+    nowSpy.mockRestore()
   })
 })

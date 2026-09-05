@@ -33,7 +33,7 @@ import { buildOsnapCatalog } from '../src/AcExOsnapPrimitiveBuilder'
 import { AcExOsnapIndex } from '../src/AcExOsnap'
 
 describe('buildOsnapCatalog', () => {
-  it('exports snap primitives for geometry inside block references', () => {
+  it('omits line primitives from block references (lines come from geometry batches)', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
 
@@ -49,18 +49,10 @@ describe('buildOsnapCatalog', () => {
     modelSpace.appendEntity(insert)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    const line = catalog.primitives.find(p => p.kind === 'line')
-    expect(line).toEqual({
-      kind: 'line',
-      layer: '0',
-      x0: 100,
-      y0: 50,
-      x1: 110,
-      y1: 50
-    })
+    expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
   })
 
-  it('exports snap primitives for rotated block references', () => {
+  it('omits line primitives from rotated block references', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
 
@@ -77,14 +69,10 @@ describe('buildOsnapCatalog', () => {
     modelSpace.appendEntity(insert)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    const line = catalog.primitives.find(p => p.kind === 'line')
-    expect(line?.x0).toBeCloseTo(0, 5)
-    expect(line?.y0).toBeCloseTo(0, 5)
-    expect(line?.x1).toBeCloseTo(0, 5)
-    expect(line?.y1).toBeCloseTo(10, 5)
+    expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
   })
 
-  it('exports all snap-capable primitives', () => {
+  it('exports analytic curves but omits straight lines', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
     modelSpace.appendEntity(
@@ -104,11 +92,11 @@ describe('buildOsnapCatalog', () => {
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
 
-    expect(catalog.primitives.some(prim => prim.kind === 'line')).toBe(true)
+    expect(catalog.primitives.some(prim => prim.kind === 'line')).toBe(false)
     expect(catalog.primitives.some(prim => prim.kind === 'ellipse')).toBe(true)
   })
 
-  it('exports polyline segments as line primitives', () => {
+  it('omits straight polyline segments from the catalog', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
     const polyline = new AcDbPolyline()
@@ -118,7 +106,7 @@ describe('buildOsnapCatalog', () => {
     modelSpace.appendEntity(polyline)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    expect(catalog.primitives.filter(p => p.kind === 'line').length).toBe(2)
+    expect(catalog.primitives.filter(p => p.kind === 'line').length).toBe(0)
   })
 
   it('snaps nearest on both CCW and CW polyline bulge segments', () => {
@@ -226,7 +214,7 @@ describe('buildOsnapCatalog', () => {
     ).toBeCloseTo(second.radius, 5)
   })
 
-  it('exports snap primitives for dimension anonymous blocks', () => {
+  it('omits dimension extension lines from the catalog (derived from batches at runtime)', () => {
     const db = new AcDbDatabase()
     acdbHostApplicationServices().workingDatabase = db
     const modelSpace = db.tables.blockTable.modelSpace
@@ -244,34 +232,10 @@ describe('buildOsnapCatalog', () => {
     modelSpace.appendEntity(dimension)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    expect(catalog.primitives.length).toBeGreaterThan(0)
-
-    const extensionLine = catalog.primitives.find(
-      (p): p is Extract<typeof p, { kind: 'line' }> =>
-        p.kind === 'line' &&
-        Math.abs(p.x0) < 1e-10 &&
-        Math.abs(p.x1) < 1e-10 &&
-        p.y0 < p.y1
-    )
-    expect(extensionLine).toBeDefined()
-
-    const index = new AcExOsnapIndex(['endpoint'])
-    index.rebuild({
-      btrId: modelSpace.objectId,
-      name: 'Model',
-      isModelSpace: true,
-      lineBatches: [],
-      meshBatches: [],
-      osnap: catalog
-    })
-
-    const endpointSnap = index.findSnap(0.1, extensionLine!.y0 + 0.05, 1)
-    expect(endpointSnap?.mode).toBe('endpoint')
-    expect(endpointSnap?.x).toBeCloseTo(0, 5)
-    expect(endpointSnap?.y).toBeCloseTo(extensionLine!.y0, 5)
+    expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
   })
 
-  it('exports snap primitives for ray, xline, trace, leader, text, and point', () => {
+  it('exports points for text/point and omits ray/xline/trace/leader lines', () => {
     const db = new AcDbDatabase()
     acdbHostApplicationServices().workingDatabase = db
     const modelSpace = db.tables.blockTable.modelSpace
@@ -307,7 +271,7 @@ describe('buildOsnapCatalog', () => {
     modelSpace.appendEntity(point)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    expect(catalog.primitives.some(p => p.kind === 'line')).toBe(true)
+    expect(catalog.primitives.some(p => p.kind === 'line')).toBe(false)
     expect(catalog.primitives.some(p => p.kind === 'point' && p.x === 60)).toBe(
       true
     )
@@ -316,7 +280,7 @@ describe('buildOsnapCatalog', () => {
     )
   })
 
-  it('exports snap primitives for MLINE reference path', () => {
+  it('omits MLINE path lines from the catalog', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
 
@@ -353,26 +317,10 @@ describe('buildOsnapCatalog', () => {
     modelSpace.appendEntity(mline)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    const lines = catalog.primitives.filter(p => p.kind === 'line')
-    expect(lines).toHaveLength(2)
-    expect(lines[0]).toMatchObject({
-      kind: 'line',
-      layer: '0',
-      x0: 0,
-      y0: 0,
-      x1: 10,
-      y1: 0
-    })
-    expect(lines[1]).toMatchObject({
-      kind: 'line',
-      x0: 10,
-      y0: 0,
-      x1: 10,
-      y1: 10
-    })
+    expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
   })
 
-  it('exports snap primitives for MLEADER leader lines and text anchor', () => {
+  it('exports MLEADER text anchors and omits leader lines from the catalog', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
 
@@ -390,7 +338,7 @@ describe('buildOsnapCatalog', () => {
     modelSpace.appendEntity(mleader)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    expect(catalog.primitives.some(p => p.kind === 'line')).toBe(true)
+    expect(catalog.primitives.some(p => p.kind === 'line')).toBe(false)
     expect(
       catalog.primitives.some(
         p => p.kind === 'point' && p.x === 20 && p.y === 20
@@ -402,7 +350,14 @@ describe('buildOsnapCatalog', () => {
       btrId: modelSpace.objectId,
       name: 'Model',
       isModelSpace: true,
-      lineBatches: [],
+      lineBatches: [
+        {
+          layer: '0',
+          color: 0xffffff,
+          offset: [0, 0, 0],
+          positions: Float32Array.from([0, 0, 0, 10, 10, 0])
+        }
+      ],
       meshBatches: [],
       osnap: catalog
     })
@@ -412,7 +367,7 @@ describe('buildOsnapCatalog', () => {
     expect(snap?.y).toBeCloseTo(0, 5)
   })
 
-  it('exports snap primitives for hatch boundary loops', () => {
+  it('omits hatch polyline boundary lines from the catalog', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
 
@@ -431,14 +386,10 @@ describe('buildOsnapCatalog', () => {
     modelSpace.appendEntity(hatch)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    const lines = catalog.primitives.filter(p => p.kind === 'line')
-    expect(lines.length).toBeGreaterThanOrEqual(4)
-    expect(
-      lines.some(p => p.x0 === 0 && p.y0 === 0 && p.x1 === 20 && p.y1 === 0)
-    ).toBe(true)
+    expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
   })
 
-  it('exports snap primitives for hatch edge loops with arcs', () => {
+  it('omits hatch edge-loop lines from the catalog', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
 
@@ -452,10 +403,10 @@ describe('buildOsnapCatalog', () => {
     modelSpace.appendEntity(hatch)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(4)
+    expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
   })
 
-  it('exports snap primitives for raster image frame boundary', () => {
+  it('exports raster image insertion points and omits frame lines', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
 
@@ -466,14 +417,13 @@ describe('buildOsnapCatalog', () => {
     modelSpace.appendEntity(image)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    const lines = catalog.primitives.filter(p => p.kind === 'line')
-    expect(lines.length).toBeGreaterThanOrEqual(4)
+    expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
     expect(
       catalog.primitives.some(p => p.kind === 'point' && p.x === 5 && p.y === 5)
     ).toBe(true)
   })
 
-  it('exports snap primitives for procedural table grid lines', () => {
+  it('exports table insertion points and omits grid lines', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
 
@@ -484,8 +434,7 @@ describe('buildOsnapCatalog', () => {
     modelSpace.appendEntity(table)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    const lines = catalog.primitives.filter(p => p.kind === 'line')
-    expect(lines.length).toBeGreaterThanOrEqual(6)
+    expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
     expect(
       catalog.primitives.some(
         p => p.kind === 'point' && p.x === 10 && p.y === 20
@@ -493,7 +442,7 @@ describe('buildOsnapCatalog', () => {
     ).toBe(true)
   })
 
-  it('exports snap primitives for table anonymous blocks', () => {
+  it('omits table anonymous-block lines from the catalog', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
 
@@ -509,13 +458,44 @@ describe('buildOsnapCatalog', () => {
     modelSpace.appendEntity(table)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    const line = catalog.primitives.find(p => p.kind === 'line')
-    expect(line).toMatchObject({
-      kind: 'line',
-      x0: 0,
-      y0: 0,
-      x1: 12,
-      y1: 0
+    expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
+  })
+
+  it('indexes curve ACEO with lineBatches for hybrid snap', () => {
+    const index = new AcExOsnapIndex()
+    index.rebuild({
+      btrId: 'ms',
+      name: 'Model',
+      isModelSpace: true,
+      lineBatches: [
+        {
+          layer: '0',
+          color: 0xffffff,
+          offset: [0, 0, 0],
+          positions: Float32Array.from([0, 0, 0, 10, 0, 0])
+        }
+      ],
+      meshBatches: [],
+      osnap: {
+        primitives: [
+          {
+            kind: 'circle',
+            layer: '0',
+            cx: 5,
+            cy: 5,
+            r: 2,
+            normalSign: 1
+          }
+        ]
+      }
     })
+
+    const end = index.findSnap(0.1, 0.1, 2)
+    expect(end?.mode).toBe('endpoint')
+    expect(end?.x).toBeCloseTo(0, 5)
+
+    const center = index.findSnap(5.1, 5.1, 2)
+    expect(center?.mode).toBe('center')
+    expect(center?.x).toBeCloseTo(5, 5)
   })
 })

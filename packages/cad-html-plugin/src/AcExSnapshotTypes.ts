@@ -165,6 +165,13 @@ export interface AcExLineBatch {
    * Omitted when `0` (the default linework tier).
    */
   renderOrder?: number
+  /**
+   * When `true`, hybrid OSNAP must not index this batch's vertices.
+   * Set for text/point glyph stroke batches (`bboxIntersectionCheck` drawables)
+   * whose outlines flood snap without matching AutoCAD text snap behavior.
+   * Insertion/node snap for TEXT/MTEXT still comes from analytic ACEO points.
+   */
+  excludeFromOsnap?: boolean
 }
 
 /**
@@ -284,16 +291,16 @@ export interface AcExLayoutSnapshot {
   /**
    * Analytic geometry for object snap (OSNAP) in the offline viewer.
    *
-   * Populated at export time by {@link buildOsnapCatalog} from the drawing database
-   * (not from tessellated THREE batches). Includes lines, arcs, circles, ellipses,
-   * splines, and points in WCS, including entities inside block references.
+   * Populated at export time by {@link buildOsnapCatalog} from the drawing database.
+   * Contains **curve/point** primitives only (circle, arc, ellipse, spline, point,
+   * including polyline bulge arcs). Straight `line` edges are omitted because they
+   * duplicate {@link AcExLineBatch} display geometry; the offline viewer rebuilds
+   * line snap from those batches (self-contained HTML and multi-file packages).
    *
-   * Coordinates are stored as IEEE-754 `number` (double) in JSON for measurement-grade
-   * precision; they are not converted to {@link Float32Array}.
+   * Coordinates are IEEE-754 `number` (double) for measurement-grade precision.
    *
-   * When {@link AcExOsnapCatalog.primitives} is non-empty, {@link AcExOsnapIndex}
-   * uses these definitions exclusively and does **not** snap to discretized
-   * {@link AcExLineBatch} / {@link AcExMeshBatch} vertices.
+   * {@link AcExOsnapIndex} indexes ACEO curves together with tessellated line
+   * segments extracted from resident {@link AcExLineBatch} / mesh edges.
    */
   osnap?: AcExOsnapCatalog
   /**

@@ -4,12 +4,12 @@ import {
   AcTrBatchedMesh,
   AcTrBatchedPoint,
   getMaterialMetadata,
+  getSceneDrawableUserData,
   isBatchGeometryActive,
   isBatchGeometryVisible,
   isHighlightCloneDrawable,
   isHighlightOverlayDescendant,
-  isObjectHierarchyVisible
-} from '@mlightcad/three-renderer'
+  isObjectHierarchyVisible} from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
@@ -155,6 +155,35 @@ type AcTrBatchedExportSource = {
 
 function shouldExportBatchedSlot(info: AcTrPackedGeometryInfo): boolean {
   return isBatchGeometryActive(info.flags) && isBatchGeometryVisible(info.flags)
+}
+
+/**
+ * Text/point glyph batches are bucketed with `bboxIntersectionCheck` so their
+ * stroke vertices are not used for CAD-style object snap.
+ */
+function batchedLineExcludesFromOsnap(
+  batch: AcTrBatchedExportSource
+): boolean {
+  const { count } = batch.mappingStats
+  for (let geometryId = 0; geometryId < count; geometryId++) {
+    let info: AcTrPackedGeometryInfo & { bboxIntersectionCheck?: boolean }
+    try {
+      info = batch.getGeometryRangeAt(geometryId) as AcTrPackedGeometryInfo & {
+        bboxIntersectionCheck?: boolean
+      }
+    } catch {
+      continue
+    }
+    if (!shouldExportBatchedSlot(info)) continue
+    if (info.bboxIntersectionCheck) {
+      return true
+    }
+  }
+  return false
+}
+
+function drawableExcludesFromOsnap(object: THREE.Object3D): boolean {
+  return getSceneDrawableUserData(object).bboxIntersectionCheck === true
 }
 
 /**
@@ -522,6 +551,9 @@ function exportBatchedLine2(
     lineWidth,
     ...slice
   }
+  if (batchedLineExcludesFromOsnap(batch)) {
+    exported.excludeFromOsnap = true
+  }
   assignRenderOrder(exported, batch, batch.material as THREE.Material)
   return exported
 }
@@ -544,6 +576,9 @@ function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
     linePattern,
     lineDistances,
     ...slice
+  }
+  if (batchedLineExcludesFromOsnap(batch)) {
+    exported.excludeFromOsnap = true
   }
   assignRenderOrder(exported, batch, batch.material as THREE.Material)
   return exported
@@ -642,6 +677,9 @@ export function collectBatchesFromObject3D(
         lineWidth: readLineWidth(material),
         ...slice
       }
+      if (drawableExcludesFromOsnap(child)) {
+        exported.excludeFromOsnap = true
+      }
       assignRenderOrder(exported, child, material)
       lineBatches.push(exported)
     } else if (
@@ -664,6 +702,9 @@ export function collectBatchesFromObject3D(
         linePattern,
         lineDistances,
         ...slice
+      }
+      if (drawableExcludesFromOsnap(child)) {
+        exported.excludeFromOsnap = true
       }
       assignRenderOrder(exported, child, material)
       lineBatches.push(exported)

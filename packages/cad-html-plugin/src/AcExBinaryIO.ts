@@ -3,8 +3,13 @@ import { strFromU8, strToU8 } from 'fflate'
 /** Hard cap for length-prefixed strings inside ACEX binary payloads. */
 export const ACEX_MAX_BINARY_STRING_BYTES = 1 * 1024 * 1024
 
-/** Hard cap for a single length-prefixed typed-array payload. */
-export const ACEX_MAX_BINARY_ARRAY_BYTES = 64 * 1024 * 1024
+/**
+ * Hard cap for a single length-prefixed typed-array payload (`Float32Array` /
+ * `Uint32Array`). Large site plans can put tens of millions of vertices in one
+ * line/mesh batch; keep this aligned with the ACEX decompressed payload ceiling
+ * (`512 MiB`).
+ */
+export const ACEX_MAX_BINARY_ARRAY_BYTES = 512 * 1024 * 1024
 
 /**
  * Little-endian binary writer used by ACEX snapshot and ACEC chunk codecs.

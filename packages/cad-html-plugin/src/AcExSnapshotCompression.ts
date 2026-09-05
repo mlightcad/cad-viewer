@@ -6,11 +6,15 @@ export const ACEX_SNAPSHOT_COMPRESSION = 'gzip' as const
 /**
  * Hard cap on gunzip output for ACEX payloads (single-file snapshot or package
  * chunk). Rejects zip bombs after inflate; compressed input is also capped.
+ *
+ * Single-file HTML can exceed 64 MiB once geometry + analytic OSNAP are decoded
+ * (large site plans). Package ACEC/ACEO chunks stay far below this; the cap is
+ * sized for legitimate self-contained exports, not unbounded inflate.
  */
-export const ACEX_MAX_DECOMPRESSED_BYTES = 64 * 1024 * 1024
+export const ACEX_MAX_DECOMPRESSED_BYTES = 512 * 1024 * 1024
 
 /** Hard cap on compressed gzip bytes accepted before inflate. */
-export const ACEX_MAX_COMPRESSED_BYTES = 32 * 1024 * 1024
+export const ACEX_MAX_COMPRESSED_BYTES = 256 * 1024 * 1024
 
 export type AcExSnapshotCompression = typeof ACEX_SNAPSHOT_COMPRESSION
 

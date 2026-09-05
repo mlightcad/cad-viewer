@@ -73,9 +73,9 @@ export interface AcExViewerMetadata {
  * Extracts viewer metadata from an open drawing database (units, extents).
  * Does not serialize entities or DXF/DWG content.
  *
- * Object-snap (OSNAP) curve and line definitions are **not** part of this
- * metadata object. They are stored per layout in
- * {@link AcExLayoutSnapshot.osnap}, built by {@link buildOsnapCatalog} at export time.
+ * Object-snap (OSNAP) curve/point definitions are **not** part of this metadata
+ * object. They are stored per layout in {@link AcExLayoutSnapshot.osnap}
+ * (curves/points only; straight lines come from `lineBatches` at runtime).
  *
  * @param database - Open `AcDbDatabase` to read sysvars and extents from.
  * @param options - Optional title override and background color (default `0x000000`).

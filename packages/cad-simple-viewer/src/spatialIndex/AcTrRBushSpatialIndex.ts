@@ -2,6 +2,7 @@ import { AcDbObjectId } from '@mlightcad/data-model'
 import RBush from 'rbush'
 
 import { AcEdSpatialQueryResultItem } from '../editor/view'
+import { isFiniteSpatialBBox } from '../view/AcTrGroupWcsBboxAssert'
 import {
   AcTrSpatialIndex,
   AcTrSpatialIndexBBox,
@@ -26,6 +27,11 @@ export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
   }
 
   insert(item: AcEdSpatialQueryResultItem) {
+    // RBush parent-node bounds use Math.min/max; a single NaN bbox poisons the
+    // tree so every later search returns empty (pick / osnap fail globally).
+    if (!isFiniteSpatialBBox(item)) {
+      return
+    }
     const hasId = typeof item.id === 'string' && item.id.length > 0
     // Empty ids (hatch fill islands) must not share one Map slot — otherwise
     // later inserts overwrite earlier islands and only the last stays pickable.
@@ -51,8 +57,9 @@ export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
   }
 
   load(items: readonly AcEdSpatialQueryResultItem[]) {
-    this.tree.load(items)
-    for (const item of items) {
+    const finiteItems = items.filter(isFiniteSpatialBBox)
+    this.tree.load(finiteItems)
+    for (const item of finiteItems) {
       if (typeof item.id === 'string' && item.id.length > 0) {
         this.idMap.set(item.id, item)
       }

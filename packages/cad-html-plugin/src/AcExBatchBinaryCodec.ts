@@ -7,6 +7,8 @@ export const F_LINE_PATTERN = 2
 export const F_LINE_DISTANCES = 4
 export const F_LINE_WIDTH = 8
 export const F_LINE_RENDER_ORDER = 16
+/** Text/point glyph strokes — display only; skip hybrid OSNAP. */
+export const F_LINE_EXCLUDE_OSNAP = 32
 
 /** Optional mesh-batch feature flags (append-only; never renumber). */
 export const F_MESH_INDICES = 1
@@ -69,6 +71,9 @@ export function writeLineBatch(
   if (batch.renderOrder != null && batch.renderOrder !== 0) {
     flags |= F_LINE_RENDER_ORDER
   }
+  if (batch.excludeFromOsnap) {
+    flags |= F_LINE_EXCLUDE_OSNAP
+  }
   writer.writeU8(flags)
 
   if (flags & F_LINE_INDICES) {
@@ -116,6 +121,9 @@ export function readLineBatch(reader: AcExBinaryReader): AcExLineBatch {
   }
   if (flags & F_LINE_RENDER_ORDER) {
     batch.renderOrder = reader.readI32()
+  }
+  if (flags & F_LINE_EXCLUDE_OSNAP) {
+    batch.excludeFromOsnap = true
   }
   return batch
 }
