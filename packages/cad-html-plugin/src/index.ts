@@ -37,7 +37,7 @@ export {
   splineToAcGe,
   type AcExOsnapAcGeCurve
 } from './AcExOsnapPrimitiveToAcGe'
-export { packHtml, type AcExPackHtmlOptions } from './AcExHtmlPackager'
+export { packHtml, packHtmlPackage, type AcExPackHtmlOptions, type AcExPackHtmlPackageOptions } from './AcExHtmlPackager'
 export {
   type AcApHtmlExpiryDays,
   type AcExHtmlAccessManifest,
@@ -63,6 +63,55 @@ export {
   resolveAcExHtmlLocale
 } from './AcExHtmlI18n'
 
+export {
+  ACEX_PACKAGE_VERSION,
+  ACEX_DEFAULT_CHUNK_MAX_BYTES,
+  ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES,
+  type AcExPackageVersion,
+  type AcExPackageChunkRef,
+  type AcExPackageOsnapChunkRef,
+  type AcExPackageLayoutRef,
+  type AcExPackageManifest,
+  type AcExPackageFile,
+  type AcExPackageFiles
+} from './AcExPackageTypes'
+export {
+  encodeChunkBinary,
+  decodeChunkBinary,
+  encodeChunkGzip,
+  decodeChunkGzip,
+  ACEC_CHUNK_MAGIC,
+  type AcExGeometryChunk
+} from './AcExChunkBinaryCodec'
+export {
+  buildAcExPackage,
+  splitLayoutIntoSlices,
+  type AcExBuildPackageOptions
+} from './AcExPackageBuilder'
+export {
+  parseAcExPackageManifest,
+  snapshotSkeletonFromManifest,
+  resolveChunkUrl,
+  resolvePackageManifestUrl,
+  isSafePackageHref,
+  loadAcExPackage,
+  loadAcExPackageLayout,
+  loadAcExPackageLayoutOsnap,
+  type AcExPackageLoadProgress,
+  type AcExPackageLoaderOptions
+} from './AcExPackageLoader'
+export {
+  encodeOsnapCatalogBinary,
+  decodeOsnapCatalogBinary,
+  encodeOsnapCatalogGzip,
+  decodeOsnapCatalogGzip,
+  splitOsnapPrimitives,
+  estimateOsnapPrimitiveBytes,
+  ACEO_OSNAP_MAGIC,
+  ACEO_OSNAP_VERSION
+} from './AcExOsnapCatalogCodec'
+export { zipAcExPackageFiles, unzipAcExPackageFiles } from './AcExPackageZip'
+
 /**
  * Default filename of the offline HTML viewer IIFE bundle
  * produced by the viewer build target.
@@ -72,6 +121,7 @@ export const HTML_VIEWER_RUNTIME_FILE = 'viewer-runtime.iife.js'
 export { AcApExportHtmlCmd } from './AcApExportHtmlCmd'
 export { AcApHtmlConvertor } from './AcApHtmlConvertor'
 export {
+  type AcApHtmlExportFormat,
   type AcApHtmlExportOptions,
   captureAcApHtmlViewState,
   resolveAcApHtmlExportOptions

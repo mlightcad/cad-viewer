@@ -71,8 +71,17 @@ export default {
   },
   exportHtmlDlg: {
     title: 'Exportovat do HTML',
-    tabExport: 'Export',
+    tabData: 'Data',
+    tabDisplay: 'Zobrazení',
     tabSecurity: 'Zabezpečení',
+    exportFormat: 'Formát exportu',
+    exportFormatSingle: 'Samostatné HTML',
+    exportFormatSingleHint: 'Jeden soubor .html, který se otevře offline',
+    exportFormatMulti: 'Vícesouborový balíček (ZIP)',
+    exportFormatMultiHint:
+      'Stáhne zip; po rozbalení a nasazení lze načítat postupně. Heslo a platnost platí jen pro samostatné HTML',
+    securitySingleOnlyHint:
+      'Heslo a platnost jsou dostupné pouze pro export samostatného HTML.',
     layersSection: 'Hladiny',
     exportInvisibleLayers: 'Exportovat neviditelné hladiny',
     exportInvisibleLayersHint:

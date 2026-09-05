@@ -75,6 +75,8 @@ function clearLayoutBatchBuffers(layout: AcExLayoutSnapshot): void {
     batch.positions = new Float32Array(0)
     if (batch.indices) batch.indices = new Uint32Array(0)
     if (batch.gradientPositions) batch.gradientPositions = new Float32Array(0)
+    if (batch.uvs) batch.uvs = new Float32Array(0)
+    if (batch.texture) batch.texture = { mimeType: '', bytes: new Uint8Array(0) }
   }
   layout.meshBatches.length = 0
 }

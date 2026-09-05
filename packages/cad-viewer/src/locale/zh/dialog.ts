@@ -71,8 +71,16 @@ export default {
   },
   exportHtmlDlg: {
     title: '导出为 HTML',
-    tabExport: '导出',
+    tabData: '数据',
+    tabDisplay: '显示',
     tabSecurity: '安全',
+    exportFormat: '导出格式',
+    exportFormatSingle: '自包含 HTML',
+    exportFormatSingleHint: '单个 .html 文件，可离线直接打开',
+    exportFormatMulti: '多文件包 (ZIP)',
+    exportFormatMultiHint:
+      '下载 zip；解压后托管可边下载边渲染。密码与有效期仅支持自包含 HTML',
+    securitySingleOnlyHint: '密码与有效期仅适用于自包含 HTML 导出。',
     layersSection: '图层',
     exportInvisibleLayers: '导出不可见图层',
     exportInvisibleLayersHint: '将关闭或冻结图层上的几何图形包含在导出文件中',

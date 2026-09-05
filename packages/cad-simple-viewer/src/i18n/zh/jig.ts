@@ -1204,11 +1204,22 @@ export default {
     }
   },
   chtml: {
+    exportFormat: '导出格式 [单文件(S)/多文件包(M)]',
     exportInvisibleLayers: '是否导出不可见图层',
     exportLayouts: '是否导出布局',
     initialView: '打开 HTML 时的初始视图',
     viewerMode: '离线查看器模式',
     keywords: {
+      single: {
+        display: '单文件(S)',
+        local: '单文件',
+        global: 'Single'
+      },
+      multi: {
+        display: '多文件包(M)',
+        local: '多文件包',
+        global: 'Multi'
+      },
       yes: {
         display: '是(Y)',
         local: '是',

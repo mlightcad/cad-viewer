@@ -11,8 +11,11 @@ import type { AcExOsnapCatalog } from './AcExOsnapPrimitiveTypes'
  * is a backward-compatible flag on v3 batches: hatch fills use `-1` so they
  * sit below linework on the shared Z plane, matching the live viewer's
  * `AcGiSubEntityTraits.drawOrder` / `Object3D.renderOrder` tiers.
+ *
+ * v4 adds optional textured mesh payloads ({@link AcExMeshBatch.uvs} +
+ * {@link AcExMeshBatch.texture}) for raster images and OLE frames.
  */
-export const ACEX_SNAPSHOT_VERSION = 3 as const
+export const ACEX_SNAPSHOT_VERSION = 4 as const
 
 /**
  * Literal type of the supported snapshot schema version.
@@ -181,11 +184,21 @@ export interface AcExGradientFill {
 }
 
 /**
+ * Embedded raster texture for an image / OLE mesh batch (PNG bytes).
+ */
+export interface AcExMeshTexture {
+  /** MIME type, typically `image/png`. */
+  mimeType: string
+  /** Encoded image bytes. */
+  bytes: Uint8Array
+}
+
+/**
  * One packed mesh or point batch (filled regions, MText quads, point glyphs, etc.)
  * rendered in the offline viewer.
  */
 export interface AcExMeshBatch {
-  /** Layer name used for grouping and visibility in the viewer. */
+  /** Layer name used for grouping and visibility in the offline viewer. */
   layer: string
   /** Fill color as 24-bit RGB hex. */
   color: number
@@ -215,6 +228,15 @@ export interface AcExMeshBatch {
    * Required when {@link AcExMeshBatch.gradientFill} is set.
    */
   gradientPositions?: Float32Array
+  /**
+   * Per-vertex UVs `[u0, v0, u1, v1, …]` paired with {@link AcExMeshBatch.texture}.
+   * Vertex count must match {@link AcExMeshBatch.positions}.
+   */
+  uvs?: Float32Array
+  /**
+   * Raster texture for IMAGE / OLE frames. Requires {@link AcExMeshBatch.uvs}.
+   */
+  texture?: AcExMeshTexture
   /** Material side when a custom fill shader is used (`0` = front, `1` = back). */
   side?: number
   /**

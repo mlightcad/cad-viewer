@@ -1213,11 +1213,22 @@ export default {
     }
   },
   chtml: {
+    exportFormat: 'Formát exportu [Jeden soubor(S)/Vícesouborový balíček(M)]',
     exportInvisibleLayers: 'Exportovat neviditelné hladiny',
     exportLayouts: 'Exportovat rozvržení',
     initialView: 'Počáteční pohled při otevření HTML',
     viewerMode: 'Režim offline prohlížeče',
     keywords: {
+      single: {
+        display: 'Jeden soubor(S)',
+        local: 'Jeden soubor',
+        global: 'Single'
+      },
+      multi: {
+        display: 'Vícesouborový balíček(M)',
+        local: 'Vícesouborový balíček',
+        global: 'Multi'
+      },
       yes: {
         display: 'Ano(Y)',
         local: 'Ano',

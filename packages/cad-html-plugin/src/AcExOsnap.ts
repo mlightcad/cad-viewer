@@ -33,6 +33,15 @@ import type {
 export type { AcExOsnapMode, AcExOsnapPoint } from './AcExOsnapPrimitiveTypes'
 export { ACEX_DEFAULT_OSNAP_MODES } from './AcExOsnapPrimitiveTypes'
 
+/** Primitives / segments processed between yields in {@link AcExOsnapIndex.rebuildAsync}. */
+const OSNAP_INDEX_YIELD_BATCH = 2500
+
+function yieldToBrowser(): Promise<void> {
+  return new Promise(resolve => {
+    setTimeout(resolve, 0)
+  })
+}
+
 /**
  * One line segment in WCS (XY) indexed for legacy tessellated object snap.
  * @internal
@@ -608,9 +617,36 @@ export class AcExOsnapIndex {
    * Loads analytic primitives and tessellated segments into RBush trees.
    * Snap candidates are computed lazily during {@link findSnap}.
    *
+   * Prefer {@link rebuildAsync} for large analytic catalogs (~10⁵+ primitives)
+   * so the UI thread can paint between batches.
+   *
    * @param layout - Active layout snapshot (batches + optional {@link AcExLayoutSnapshot.osnap}).
    */
   rebuild(layout: AcExLayoutSnapshot): void {
+    this.resetFromLayout(layout)
+    this.loadPrimitiveTreeSync()
+    this.loadSegmentTreeSync()
+  }
+
+  /**
+   * Like {@link rebuild}, but yields while preparing RBush entries so large
+   * OSNAP catalogs do not freeze the canvas during bounds computation.
+   * Entries are still passed to RBush via a single bulk {@link RBush.load}
+   * (not per-item `insert`).
+   *
+   * @param layout - Active layout snapshot.
+   * @param yieldFn - Called between entry-building batches (defaults to a macrotask yield).
+   */
+  async rebuildAsync(
+    layout: AcExLayoutSnapshot,
+    yieldFn: () => Promise<void> = yieldToBrowser
+  ): Promise<void> {
+    this.resetFromLayout(layout)
+    await this.loadPrimitiveTreeAsync(yieldFn)
+    await this.loadSegmentTreeAsync(yieldFn)
+  }
+
+  private resetFromLayout(layout: AcExLayoutSnapshot): void {
     this.primitiveTree.clear()
     this.segmentTree.clear()
     this.hiddenLayers.clear()
@@ -623,34 +659,82 @@ export class AcExOsnapIndex {
       this.segments = collected.segments
       this.segmentLayers = collected.segmentLayers
     }
+  }
 
-    if (this.primitives.length === 0 && this.segments.length === 0) {
+  private loadPrimitiveTreeSync(): void {
+    if (this.primitives.length === 0) {
       return
     }
+    const primitiveEntries: AcExRbushEntry[] = new Array(this.primitives.length)
+    for (let i = 0; i < this.primitives.length; i++) {
+      primitiveEntries[i] = {
+        ...primitiveBounds(this.primitives[i]!),
+        index: i
+      }
+    }
+    this.primitiveTree.load(primitiveEntries)
+  }
 
-    if (this.primitives.length > 0) {
-      const primitiveEntries: AcExRbushEntry[] = new Array(
-        this.primitives.length
-      )
-      for (let i = 0; i < this.primitives.length; i++) {
+  private loadSegmentTreeSync(): void {
+    if (this.segments.length === 0) {
+      return
+    }
+    const segmentEntries: AcExRbushEntry[] = new Array(this.segments.length)
+    for (let i = 0; i < this.segments.length; i++) {
+      segmentEntries[i] = {
+        ...segmentBounds(this.segments[i]!),
+        index: i
+      }
+    }
+    this.segmentTree.load(segmentEntries)
+  }
+
+  private async loadPrimitiveTreeAsync(
+    yieldFn: () => Promise<void>
+  ): Promise<void> {
+    const count = this.primitives.length
+    if (count === 0) {
+      return
+    }
+    // Build the entry array in yieldable batches, then bulk-load once.
+    // Per-item `insert` is far slower than RBush's packed `load`.
+    const primitiveEntries: AcExRbushEntry[] = new Array(count)
+    for (let start = 0; start < count; start += OSNAP_INDEX_YIELD_BATCH) {
+      const end = Math.min(start + OSNAP_INDEX_YIELD_BATCH, count)
+      for (let i = start; i < end; i++) {
         primitiveEntries[i] = {
           ...primitiveBounds(this.primitives[i]!),
           index: i
         }
       }
-      this.primitiveTree.load(primitiveEntries)
+      if (end < count) {
+        await yieldFn()
+      }
     }
+    this.primitiveTree.load(primitiveEntries)
+  }
 
-    if (this.segments.length > 0) {
-      const segmentEntries: AcExRbushEntry[] = new Array(this.segments.length)
-      for (let i = 0; i < this.segments.length; i++) {
+  private async loadSegmentTreeAsync(
+    yieldFn: () => Promise<void>
+  ): Promise<void> {
+    const count = this.segments.length
+    if (count === 0) {
+      return
+    }
+    const segmentEntries: AcExRbushEntry[] = new Array(count)
+    for (let start = 0; start < count; start += OSNAP_INDEX_YIELD_BATCH) {
+      const end = Math.min(start + OSNAP_INDEX_YIELD_BATCH, count)
+      for (let i = start; i < end; i++) {
         segmentEntries[i] = {
           ...segmentBounds(this.segments[i]!),
           index: i
         }
       }
-      this.segmentTree.load(segmentEntries)
+      if (end < count) {
+        await yieldFn()
+      }
     }
+    this.segmentTree.load(segmentEntries)
   }
 
   /**

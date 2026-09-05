@@ -54,6 +54,11 @@ export class AcApExportHtmlCmd extends AcEdCommand {
   private async promptOptions(): Promise<AcApHtmlExportOptions | undefined> {
     const defaults = resolveAcApHtmlExportOptions()
 
+    const exportFormat = await this.promptExportFormat()
+    if (exportFormat === undefined) {
+      return undefined
+    }
+
     const exportInvisibleLayers = await this.promptYesNo(
       'jig.chtml.exportInvisibleLayers',
       defaults.exportInvisibleLayers
@@ -81,11 +86,52 @@ export class AcApExportHtmlCmd extends AcEdCommand {
     }
 
     return resolveAcApHtmlExportOptions({
+      exportFormat,
       exportInvisibleLayers,
       exportLayouts,
       initialView,
       viewerMode
     })
+  }
+
+  private async promptExportFormat(): Promise<
+    AcApHtmlExportOptions['exportFormat'] | undefined
+  > {
+    const defaults = resolveAcApHtmlExportOptions()
+    const prompt = new AcEdPromptKeywordOptions(
+      AcApI18n.t('jig.chtml.exportFormat')
+    )
+    prompt.allowNone = true
+    const single = prompt.keywords.add(
+      AcApI18n.t('jig.chtml.keywords.single.display'),
+      AcApI18n.t('jig.chtml.keywords.single.global'),
+      AcApI18n.t('jig.chtml.keywords.single.local')
+    )
+    const multi = prompt.keywords.add(
+      AcApI18n.t('jig.chtml.keywords.multi.display'),
+      AcApI18n.t('jig.chtml.keywords.multi.global'),
+      AcApI18n.t('jig.chtml.keywords.multi.local')
+    )
+    prompt.keywords.default =
+      defaults.exportFormat === 'multi' ? multi : single
+
+    const result = await AcApDocManager.instance.editor.getKeywords(prompt)
+    if (result.status === AcEdPromptStatus.Cancel) {
+      return undefined
+    }
+    if (result.status === AcEdPromptStatus.None) {
+      return defaults.exportFormat
+    }
+    if (
+      result.status === AcEdPromptStatus.OK ||
+      result.status === AcEdPromptStatus.Keyword
+    ) {
+      if (!result.stringResult) {
+        return defaults.exportFormat
+      }
+      return result.stringResult === 'Multi' ? 'multi' : 'single'
+    }
+    return undefined
   }
 
   private async promptYesNo(

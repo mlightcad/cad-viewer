@@ -1971,6 +1971,9 @@ export default {
   chtml: {
     ...enJig.chtml,
 
+    exportFormat:
+      'تنسيق التصدير [ملف واحد(S)/حزمة متعددة الملفات(M)]',
+
     exportInvisibleLayers:
       'تصدير الطبقات غير المرئية',
 
@@ -1985,6 +1988,16 @@ export default {
   ,
     keywords: {
       ...enJig.chtml.keywords,
+      single: {
+        display: 'ملف واحد(S)',
+        local: 'ملف واحد',
+        global: 'Single'
+      },
+      multi: {
+        display: 'حزمة متعددة الملفات(M)',
+        local: 'حزمة متعددة الملفات',
+        global: 'Multi'
+      },
       yes: {
         display: 'نعم(Y)',
         local: 'نعم',

@@ -16,10 +16,11 @@ The plugin path is designed for **lazy loading** so the export bundle is only do
 
 - **Display-only snapshot** — layers, layouts, line/mesh batches, extents, and drawing units (no editable DXF/DWG payload)
 - **Self-contained HTML** — gzip/base64 snapshot + inline viewer runtime; opens offline in any modern browser
+- **Multi-file ACEX package** — shell HTML + versioned `*.acex.json` + per-chunk `*.acex.gz`; export downloads a zip (unzip before hosting for progressive load)
 - **Offline viewer** — select / pan / zoom (extents, window, original view), layer panel, layout switching, measurement, Design Review markup annotations, object snap (OSNAP). Select, pan, and zoom tools exit any active measurement or review drawing tool.
 - **i18n** — embedded English / Chinese / Czech / Turkish UI; initial language follows the browser (`zh*` → Chinese, `cs*` → Czech, `tr*` → Turkish, otherwise English); the toolbar language button opens a strip to pick a locale, and the choice persists in `localStorage`
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyHtmlPlugin`
-- **Composable API** — build snapshots from your own pipeline or call `packHtml` with a pre-built snapshot
+- **Composable API** — build snapshots from your own pipeline or call `packHtml` / `buildAcExPackage` with a pre-built snapshot
 
 ## Installation
 
@@ -93,7 +94,34 @@ In [`cad-viewer`](../cad-viewer), use `chtml` to open the export options dialog;
 ```typescript
 import { AcApHtmlConvertor } from '@mlightcad/cad-html-plugin'
 
+// Self-contained .html (default)
 await new AcApHtmlConvertor().convert('my-drawing.dwg')
+
+// Multi-file package as one .zip download (unzip before hosting)
+await new AcApHtmlConvertor().convert('my-drawing.dwg', {
+  exportFormat: 'multi'
+})
+```
+
+`-chtml` prompts for export format (Single / Multi). In `cad-viewer`, the `chtml` dialog offers the same choice.
+
+### Multi-file package (low-level)
+
+See **[docs/acex-package-format.md](./docs/acex-package-format.md)** for the on-disk format.
+
+```typescript
+import {
+  buildAcExPackage,
+  zipAcExPackageFiles,
+  packHtmlPackage
+} from '@mlightcad/cad-html-plugin'
+
+const pkg = buildAcExPackage(snapshot, {
+  viewerRuntime: runtime,
+  baseName: 'my-drawing'
+})
+const zipBytes = zipAcExPackageFiles(pkg)
+// Or serve pkg.files as a static directory after unzip
 ```
 
 ### Low-level snapshot assembly
@@ -161,9 +189,11 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 | `@mlightcad/cad-html-plugin/register` | `registerLazyHtmlPlugin` and registration constants |
 | `AcApExportHtmlCmd`, `AcApHtmlConvertor` | `-chtml` command and full export workflow |
 | `AcApHtmlSnapshotBuilder` | Live Three.js scene → `AcExSnapshotV1` |
-| `packHtml`, `AcExPackHtmlOptions` | Assemble HTML from snapshot + runtime source |
+| `packHtml`, `AcExPackHtmlOptions` | Assemble self-contained HTML from snapshot + runtime |
+| `packHtmlPackage`, `buildAcExPackage`, `zipAcExPackageFiles` | Multi-file package shell, builder, and export zip |
 | `HTML_VIEWER_RUNTIME_FILE` | Default runtime filename (`viewer-runtime.iife.js`) |
-| `AcExSnapshotV1`, `ACEX_SNAPSHOT_VERSION`, batch/layer types | Snapshot schema |
+| `AcExSnapshot`, `ACEX_SNAPSHOT_VERSION`, batch/layer types | Snapshot schema |
+| Package format doc | [`docs/acex-package-format.md`](./docs/acex-package-format.md) |
 | `encodeSnapshot`, `decodeSnapshot` | Gzip/base64 codec for embedded payloads |
 | `collectBatchesFromObject3D` | THREE.js scene → line/mesh batches |
 | `buildViewerMetadata` | Database → viewer meta (units, extents, background, …) |

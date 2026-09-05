@@ -95,8 +95,18 @@ export default {
   exportHtmlDlg: {
     ...enDialog.exportHtmlDlg,
     title: 'تصدير إلى HTML',
-    tabExport: 'تصدير',
+    tabData: 'البيانات',
+    tabDisplay: 'العرض',
     tabSecurity: 'الأمان',
+
+    exportFormat: 'تنسيق التصدير',
+    exportFormatSingle: 'HTML مستقل',
+    exportFormatSingleHint: 'ملف .html واحد يمكن فتحه دون اتصال',
+    exportFormatMulti: 'حزمة متعددة الملفات (ZIP)',
+    exportFormatMultiHint:
+      'يُنزّل zip؛ بعد فك الضغط والاستضافة يمكن التحميل التدريجي. كلمة المرور والصلاحية لـ HTML المستقل فقط',
+    securitySingleOnlyHint:
+      'كلمة المرور والصلاحية متاحتان فقط لتصدير HTML المستقل.',
 
     layersSection: 'الطبقات',
     exportInvisibleLayers: 'تصدير الطبقات غير المرئية',

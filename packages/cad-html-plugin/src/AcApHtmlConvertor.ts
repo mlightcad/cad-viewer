@@ -22,16 +22,19 @@ import {
   resolveAcApHtmlExpiresAt
 } from './AcExHtmlAccess'
 import { packHtml } from './AcExHtmlPackager'
+import { buildAcExPackage } from './AcExPackageBuilder'
+import { zipAcExPackageFiles } from './AcExPackageZip'
 import { encodeSnapshot } from './AcExSnapshotCodec'
 import type { AcExSnapshot } from './AcExSnapshotTypes'
 
 /**
- * Orchestrates export of the active drawing to a downloadable HTML file.
+ * Orchestrates export of the active drawing to a downloadable HTML file
+ * or multi-file ACEX package zip.
  *
  * Workflow:
  * 1. Build a display-only {@link AcExSnapshot} from the current scene and database.
  * 2. Fetch the IIFE viewer runtime (inlined into the HTML).
- * 3. Package snapshot + runtime via `packHtml` and trigger a browser download.
+ * 3. Package as self-contained HTML (`single`) or zip of package files (`multi`).
  *
  * A busy indicator is shown for the duration of the operation. The UI thread
  * is yielded between heavy steps so the browser can repaint.
@@ -86,10 +89,8 @@ export class AcApHtmlConvertor {
    * Exports the document currently open in {@link AcApDocManager}.
    *
    * @param fileName - Optional base name for the download (without extension).
-   *   When omitted, the active document's `fileName` is used. A `.html` suffix
-   *   is always applied; `.dwg` / `.dxf` suffixes on the input are stripped.
-   * @param options - Export options such as invisible-layer inclusion, layout
-   *   inclusion, and initial view.
+   *   When omitted, the active document's `fileName` is used.
+   * @param options - Export options including {@link AcApHtmlExportOptions.exportFormat}.
    * @param view - Optional view to export from. Defaults to the active view.
    * @returns Resolves when packaging and download complete.
    */
@@ -111,11 +112,12 @@ export class AcApHtmlConvertor {
       )
 
       const sourceName = fileName || document.fileName || document.docTitle
+      const baseName = getDrawingExportBaseName(sourceName)
       const snapshot = await this._snapshotBuilder.buildAsync(
         exportView.cadScene,
         document.database,
         {
-          title: getDrawingExportBaseName(sourceName),
+          title: baseName,
           background: exportView.backgroundColor,
           exportInvisibleLayers: resolved.exportInvisibleLayers,
           exportLayouts: resolved.exportLayouts,
@@ -135,6 +137,21 @@ export class AcApHtmlConvertor {
       const viewerRuntime = await this.loadViewerRuntime()
 
       await accmYieldForPaint()
+
+      if (resolved.exportFormat === 'multi') {
+        const pkg = buildAcExPackage(snapshot, {
+          viewerRuntime,
+          baseName
+        })
+        const zipBytes = zipAcExPackageFiles(pkg)
+        await accmYieldForPaint()
+        this.downloadBytes(
+          zipBytes,
+          resolveExportDownloadName(sourceName, 'zip'),
+          'application/zip'
+        )
+        return
+      }
 
       const expiresAt = resolveAcApHtmlExpiresAt(
         resolved.expiryDays,
@@ -168,7 +185,7 @@ export class AcApHtmlConvertor {
    * Skips scene collection; useful for tests, CLI tooling, or re-exporting a
    * snapshot produced elsewhere.
    *
-   * @param snapshot - Complete v1 snapshot to embed in the HTML.
+   * @param snapshot - Complete snapshot to embed in the HTML.
    * @param downloadName - File name passed to the browser download API (should
    *   include the `.html` extension).
    * @returns Resolves when packaging and download complete.
@@ -221,7 +238,24 @@ export class AcApHtmlConvertor {
    * @param downloadName - Value for the anchor `download` attribute.
    */
   private downloadHtml(content: string, downloadName: string) {
-    const blob = new Blob([content], { type: 'text/html;charset=utf-8' })
+    this.downloadBytes(
+      new TextEncoder().encode(content),
+      downloadName,
+      'text/html;charset=utf-8'
+    )
+  }
+
+  /**
+   * Triggers a client-side download of raw bytes.
+   */
+  private downloadBytes(
+    bytes: Uint8Array,
+    downloadName: string,
+    mimeType: string
+  ) {
+    const copy = new Uint8Array(bytes.byteLength)
+    copy.set(bytes)
+    const blob = new Blob([copy], { type: mimeType })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url

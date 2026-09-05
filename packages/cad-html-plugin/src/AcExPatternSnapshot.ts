@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
 import { copyFloat32Range } from './AcExBatchBuffers'
+import { createTextureFromExportedBytes } from './AcExMeshTextureExport'
 import type {
   AcExGradientFill,
   AcExHatchPattern,
@@ -327,10 +328,23 @@ export function transformHatchPatternToWorldSpace(
   }
 }
 
+/** Optional hooks when building viewer materials from exported mesh batches. */
+export interface AcExViewerMeshMaterialOptions {
+  /**
+   * Called after an async IMAGE/OLE texture becomes ready. Offline viewers should
+   * pass their `render()` so the mesh is not stuck at opacity 0 until the next
+   * pan/zoom.
+   */
+  onTextureLoad?: () => void
+}
+
 /**
  * Creates a viewer material for one exported mesh batch.
  */
-export function createViewerMeshMaterial(batch: AcExMeshBatch): THREE.Material {
+export function createViewerMeshMaterial(
+  batch: AcExMeshBatch,
+  options: AcExViewerMeshMaterialOptions = {}
+): THREE.Material {
   if (batch.hatchPattern && batch.hatchPattern.patternLines.length > 0) {
     try {
       const patternLines = batch.hatchPattern.patternLines.map(
@@ -361,6 +375,26 @@ export function createViewerMeshMaterial(batch: AcExMeshBatch): THREE.Material {
     } catch {
       // Fall back to a solid fill if gradient shader creation fails.
     }
+  }
+  if (batch.texture && batch.uvs && batch.uvs.length >= 2) {
+    // Stay invisible until the blob texture decodes — otherwise MeshBasicMaterial
+    // shows a solid white fill (same class of bug as live AcTrImage placeholders).
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false
+    })
+    material.map = createTextureFromExportedBytes(batch.texture, {
+      onLoad: () => {
+        material.opacity = 1
+        material.depthWrite = true
+        material.needsUpdate = true
+        options.onTextureLoad?.()
+      }
+    })
+    return material
   }
   return new THREE.MeshBasicMaterial({
     color: batch.color,

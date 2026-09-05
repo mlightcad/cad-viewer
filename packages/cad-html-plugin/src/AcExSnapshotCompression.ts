@@ -3,6 +3,15 @@ import { gunzipSync, gzipSync } from 'fflate'
 /** Snapshot payload compression stored on the HTML script `type` attribute. */
 export const ACEX_SNAPSHOT_COMPRESSION = 'gzip' as const
 
+/**
+ * Hard cap on gunzip output for ACEX payloads (single-file snapshot or package
+ * chunk). Rejects zip bombs after inflate; compressed input is also capped.
+ */
+export const ACEX_MAX_DECOMPRESSED_BYTES = 64 * 1024 * 1024
+
+/** Hard cap on compressed gzip bytes accepted before inflate. */
+export const ACEX_MAX_COMPRESSED_BYTES = 32 * 1024 * 1024
+
 export type AcExSnapshotCompression = typeof ACEX_SNAPSHOT_COMPRESSION
 
 export interface AcExCompressedSnapshotBinary {
@@ -28,5 +37,12 @@ export function compressSnapshotBinary(
 
 /** Decompresses a gzip snapshot binary payload from an exported HTML file. */
 export function decompressSnapshotBinary(data: Uint8Array): Uint8Array {
-  return gunzipSync(data)
+  if (data.byteLength > ACEX_MAX_COMPRESSED_BYTES) {
+    throw new Error('Compressed payload exceeds size limit')
+  }
+  const result = gunzipSync(data)
+  if (result.byteLength > ACEX_MAX_DECOMPRESSED_BYTES) {
+    throw new Error('Decompressed payload exceeds size limit')
+  }
+  return result
 }
