@@ -1,8 +1,10 @@
 ; Export a self-contained offline HTML viewer (-chtml).
-; Prompts: export invisible layers / export layouts / initial view / viewer mode.
+; Prompts: export format / export invisible layers / export layouts /
+; initial view / viewer mode.
 ; Usage:
 ;   cad-simple-viewer-cli -i drawing.dwg -s examples/export-html.scr -o ./out
 -chtml
+Single
 Yes
 Yes
 Extents
