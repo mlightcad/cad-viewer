@@ -230,9 +230,10 @@ const targets = [
       if (next == null) {
         next = content
       }
-      const replaced = next
-        .replaceAll('registerLibreDwgConverter', 'registerDwgConverter')
-        .replaceAll('./registerLibreDwg', './registerLibreDwg')
+      const replaced = next.replaceAll(
+        'registerLibreDwgConverter',
+        'registerDwgConverter'
+      )
       if (replaced === content && next === content) {
         console.log('  already switched')
         return null
@@ -254,9 +255,35 @@ const targets = [
       if (next == null) {
         next = content
       }
-      const replaced = next
-        .replaceAll('registerLibreDwgConverter', 'registerDwgConverter')
-        .replaceAll('./registerLibreDwg', './registerLibreDwg')
+      const replaced = next.replaceAll(
+        'registerLibreDwgConverter',
+        'registerDwgConverter'
+      )
+      if (replaced === content && next === content) {
+        console.log('  already switched')
+        return null
+      }
+      return replaced
+    }
+  },
+  {
+    path: join(
+      rootDir,
+      'packages',
+      'cad-simple-viewer-example',
+      'src',
+      'htmlConverter.ts'
+    ),
+    label: 'cad-simple-viewer-example/src/htmlConverter.ts',
+    transform(content) {
+      let next = replaceLibreDwgParserWorkerFile(content)
+      if (next == null) {
+        next = content
+      }
+      const replaced = next.replaceAll(
+        'registerLibreDwgConverter',
+        'registerDwgConverter'
+      )
       if (replaced === content && next === content) {
         console.log('  already switched')
         return null

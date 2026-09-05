@@ -34,7 +34,28 @@ export default {
     exportingEntityPreview: 'Exporting image ...',
     collectingMemoryProfile: 'Analyzing memory ...',
     fontCached: 'Font cached successfully',
-    fontCacheFailed: 'Failed to cache font'
+    fontCacheFailed: 'Failed to cache font',
+    failedToOpenFile: 'Failed to open file "{fileName}"!',
+    failedToOpenFileWorkerOom:
+      'Failed to open "{fileName}". The drawing is too large for available memory.',
+    failedToOpenFileWorkerTimeout:
+      'Failed to open "{fileName}". The operation timed out while parsing the drawing.',
+    failedToOpenFileFontLoadFailed:
+      'Failed to open "{fileName}". Required fonts could not be loaded.',
+    failedToOpenFileLicenseExpired:
+      'Failed to open "{fileName}". The DWG converter license has expired.',
+    failedToOpenFileLicenseInvalid:
+      'Failed to open "{fileName}". The DWG converter license is missing or invalid.'
+  },
+  notification: {
+    title: {
+      failedToOpenFile: 'Failed to Open File',
+      failedToOpenFileWorkerOom: 'Drawing Too Large',
+      failedToOpenFileWorkerTimeout: 'Open Timed Out',
+      failedToOpenFileFontLoadFailed: 'Font Load Failed',
+      failedToOpenFileLicenseExpired: 'License Expired',
+      failedToOpenFileLicenseInvalid: 'Invalid License'
+    }
   },
   progress: {
     start: 'Start parsing file ...',

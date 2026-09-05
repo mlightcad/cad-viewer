@@ -142,7 +142,12 @@ export class AcTrInheritedLayerMaterialMapper {
   /**
    * Some DXF conversion paths lose `isByLayerColor` on layer-0 block contents while still
    * retaining other ByLayer markers (lineType/lineWeight/transparency). For AutoCAD-compatible
-   * INSERT inheritance, treat such colors as inheritable when remapping from layer "0".
+   * INSERT inheritance, treat such colours as inheritable when remapping from layer "0".
+   *
+   * That repair is only for the ByLayer→ACI-7 (foreground) case. Explicit absolute colours
+   * (`isByLayerColor === false` and not foreground) must never be promoted — otherwise a
+   * solid hatch with ACI 251 on layer 0 inherits the INSERT layer colour (often ACI 7 white)
+   * and legend headers / non-ByLayer fills wash out.
    *
    * @param material - Material whose ByLayer metadata may need normalization.
    * @param sourceLayerName - Source bucket layer name (typically `"0"`).
@@ -153,6 +158,9 @@ export class AcTrInheritedLayerMaterialMapper {
     sourceLayerName: string
   ): THREE.Material {
     const metadata = getMaterialMetadata(material)
+    if (metadata.isByLayerColor === false && metadata.isForeground !== true) {
+      return material
+    }
     const hasAnyOtherByLayerBinding =
       hasByLayerBinding(metadata) && metadata.isByLayerColor !== true
 

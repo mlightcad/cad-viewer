@@ -34,7 +34,28 @@ export default {
     exportingEntityPreview: 'جارٍ تصدير الصورة ...',
     collectingMemoryProfile: 'جارٍ تحليل الذاكرة ...',
     fontCached: 'تم تخزين الخط بنجاح',
-    fontCacheFailed: 'فشل تخزين الخط'
+    fontCacheFailed: 'فشل تخزين الخط',
+    failedToOpenFile: 'فشل فتح الملف "{fileName}"!',
+    failedToOpenFileWorkerOom:
+      'فشل فتح "{fileName}". الرسم كبير جدًا بالنسبة للذاكرة المتاحة.',
+    failedToOpenFileWorkerTimeout:
+      'فشل فتح "{fileName}". انتهت مهلة العملية أثناء تحليل الرسم.',
+    failedToOpenFileFontLoadFailed:
+      'فشل فتح "{fileName}". تعذر تحميل الخطوط المطلوبة.',
+    failedToOpenFileLicenseExpired:
+      'فشل فتح "{fileName}". انتهت صلاحية ترخيص محول DWG.',
+    failedToOpenFileLicenseInvalid:
+      'فشل فتح "{fileName}". ترخيص محول DWG مفقود أو غير صالح.'
+  },
+  notification: {
+    title: {
+      failedToOpenFile: 'فشل فتح الملف',
+      failedToOpenFileWorkerOom: 'الرسم كبير جدًا',
+      failedToOpenFileWorkerTimeout: 'انتهت مهلة فتح الرسم',
+      failedToOpenFileFontLoadFailed: 'فشل تحميل الخطوط',
+      failedToOpenFileLicenseExpired: 'انتهت صلاحية الترخيص',
+      failedToOpenFileLicenseInvalid: 'ترخيص غير صالح'
+    }
   },
   progress: {
     start: 'بدء تحليل الملف ...',

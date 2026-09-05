@@ -1005,6 +1005,10 @@ export default {
       '"{fileName}" açılamadı. Çizim ayrıştırılırken işlem zaman aşımına uğradı.',
     failedToOpenFileFontLoadFailed:
       '"{fileName}" açılamadı. Gerekli yazı tipleri yüklenemedi.',
+    failedToOpenFileLicenseExpired:
+      '"{fileName}" açılamadı. DWG dönüştürücü lisansı süresi dolmuş.',
+    failedToOpenFileLicenseInvalid:
+      '"{fileName}" açılamadı. DWG dönüştürücü lisansı eksik veya geçersiz.',
     fetchingDrawingFile: 'Dosya alınıyor ...',
     unknownEntities:
       'Bu çizim {count} bilinmeyen veya desteklenmeyen varlık içeriyor! Bu varlıklar gösterilmeyecek.'
@@ -1026,6 +1030,8 @@ export default {
       failedToOpenFileWorkerOom: 'Çizim Çok Büyük',
       failedToOpenFileWorkerTimeout: 'Açma Zaman Aşımı',
       failedToOpenFileFontLoadFailed: 'Yazı Tipi Yüklenemedi',
+      failedToOpenFileLicenseExpired: 'Lisans Süresi Doldu',
+      failedToOpenFileLicenseInvalid: 'Geçersiz Lisans',
       fontNotFound: 'Yazı Tipi Bulunamadı',
       fontNotLoaded: 'Yazı Tipi Yüklenemedi',
       parsingWarning: 'Çizim Ayrıştırma Sorunları'

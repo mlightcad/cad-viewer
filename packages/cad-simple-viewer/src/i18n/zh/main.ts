@@ -34,7 +34,27 @@ export default {
     exportingEntityPreview: '正在导出图片 ...',
     collectingMemoryProfile: '正在分析内存 ...',
     fontCached: '字体已成功缓存',
-    fontCacheFailed: '缓存字体失败'
+    fontCacheFailed: '缓存字体失败',
+    failedToOpenFile: '无法打开文件"{fileName}"！',
+    failedToOpenFileWorkerOom:
+      '无法打开"{fileName}"。图纸过大，超出当前可用内存。',
+    failedToOpenFileWorkerTimeout: '无法打开"{fileName}"。解析图纸时操作超时。',
+    failedToOpenFileFontLoadFailed:
+      '无法打开"{fileName}"。无法加载图纸所需的字体。',
+    failedToOpenFileLicenseExpired:
+      '无法打开"{fileName}"。DWG 转换器许可证已过期。',
+    failedToOpenFileLicenseInvalid:
+      '无法打开"{fileName}"。DWG 转换器许可证缺失或无效。'
+  },
+  notification: {
+    title: {
+      failedToOpenFile: '无法打开文件',
+      failedToOpenFileWorkerOom: '图纸过大',
+      failedToOpenFileWorkerTimeout: '打开超时',
+      failedToOpenFileFontLoadFailed: '字体加载失败',
+      failedToOpenFileLicenseExpired: '许可证已过期',
+      failedToOpenFileLicenseInvalid: '许可证无效'
+    }
   },
   progress: {
     start: '开始解析文件...',

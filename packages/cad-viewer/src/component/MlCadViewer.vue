@@ -637,7 +637,8 @@ eventBus.on('failed-to-open-file', params => {
     message,
     grouping: true,
     type: 'error',
-    showClose: true
+    showClose: true,
+    duration: 8000
   })
   error(resolveOpenFileErrorTitle(t, params.errorCode), message)
 })

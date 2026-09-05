@@ -34,7 +34,28 @@ export default {
     exportingEntityPreview: 'Görüntü dışa aktarılıyor ...',
     collectingMemoryProfile: 'Bellek analiz ediliyor ...',
     fontCached: 'Yazı tipi başarıyla önbelleğe alındı',
-    fontCacheFailed: 'Yazı tipi önbelleğe alınamadı'
+    fontCacheFailed: 'Yazı tipi önbelleğe alınamadı',
+    failedToOpenFile: '"{fileName}" dosyası açılamadı!',
+    failedToOpenFileWorkerOom:
+      '"{fileName}" açılamadı. Çizim mevcut bellek için çok büyük.',
+    failedToOpenFileWorkerTimeout:
+      '"{fileName}" açılamadı. Çizim ayrıştırılırken işlem zaman aşımına uğradı.',
+    failedToOpenFileFontLoadFailed:
+      '"{fileName}" açılamadı. Gerekli yazı tipleri yüklenemedi.',
+    failedToOpenFileLicenseExpired:
+      '"{fileName}" açılamadı. DWG dönüştürücü lisansı süresi dolmuş.',
+    failedToOpenFileLicenseInvalid:
+      '"{fileName}" açılamadı. DWG dönüştürücü lisansı eksik veya geçersiz.'
+  },
+  notification: {
+    title: {
+      failedToOpenFile: 'Dosya Açılamadı',
+      failedToOpenFileWorkerOom: 'Çizim Çok Büyük',
+      failedToOpenFileWorkerTimeout: 'Açma Zaman Aşımı',
+      failedToOpenFileFontLoadFailed: 'Yazı Tipi Yüklenemedi',
+      failedToOpenFileLicenseExpired: 'Lisans Süresi Doldu',
+      failedToOpenFileLicenseInvalid: 'Geçersiz Lisans'
+    }
   },
   progress: {
     start: 'Dosya ayrıştırma başlatılıyor ...',

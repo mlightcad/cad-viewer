@@ -991,6 +991,10 @@ export default {
       'Nepodařilo se otevřít „{fileName}“. Při načítání výkresu vypršel časový limit.',
     failedToOpenFileFontLoadFailed:
       'Nepodařilo se otevřít „{fileName}“. Potřebné fonty se nepodařilo načíst.',
+    failedToOpenFileLicenseExpired:
+      'Nepodařilo se otevřít „{fileName}“. Licence převodníku DWG vypršela.',
+    failedToOpenFileLicenseInvalid:
+      'Nepodařilo se otevřít „{fileName}“. Licence převodníku DWG chybí nebo je neplatná.',
     fetchingDrawingFile: 'Načítám soubor…',
     unknownEntities:
       'Tento výkres obsahuje {count} neznámých nebo nepodporovaných objektů! Tyto objekty nebudou zobrazeny.'
@@ -1012,6 +1016,8 @@ export default {
       failedToOpenFileWorkerOom: 'Výkres je příliš velký',
       failedToOpenFileWorkerTimeout: 'Vypršel časový limit otevření',
       failedToOpenFileFontLoadFailed: 'Načtení fontu selhalo',
+      failedToOpenFileLicenseExpired: 'Licence vypršela',
+      failedToOpenFileLicenseInvalid: 'Neplatná licence',
       fontNotFound: 'Font nenalezen',
       fontNotLoaded: 'Font nenačten',
       parsingWarning: 'Problémy při načítání výkresu'
