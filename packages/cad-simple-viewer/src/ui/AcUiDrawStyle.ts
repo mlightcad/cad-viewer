@@ -7,13 +7,13 @@ import {
   type AcEdSessionAccessoryOptions
 } from '../editor/command/AcEdSessionAccessory'
 import {
-  ACED_SHORTCUT_TOOLBAR_PROVIDER_ID,
-  type AcUiShortCutToolbar
-} from './AcUiShortCutToolbar'
-import {
   type AcApDrawStyleKind,
   acapDrawStyleKindForCommand
 } from '../util/AcApCommandUtil'
+import {
+  ACED_SHORTCUT_TOOLBAR_PROVIDER_ID,
+  type AcUiShortCutToolbar
+} from './AcUiShortCutToolbar'
 
 /**
  * Kind of drawing session served by the draw-style session accessory.
