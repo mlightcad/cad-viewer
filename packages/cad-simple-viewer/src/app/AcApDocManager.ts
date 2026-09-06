@@ -104,6 +104,10 @@ import {
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
 import {
+  AcApOpenDatabaseOptions,
+  AcApOpenViewMode
+} from './AcApOpenDatabaseOptions'
+import {
   acapInstallOpenFileDialog,
   type AcApOpenDocumentDefaultsResolver,
   acapUninstallOpenFileDialog,
@@ -117,10 +121,6 @@ import {
   resetWebworkerReadinessCache
 } from './AcApWebworkerReadiness'
 import { AcApXrefManager } from './AcApXrefManager'
-import {
-  AcApOpenDatabaseOptions,
-  AcApOpenViewMode
-} from './AcDbOpenDatabaseOptions'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
 /** Default ISO drawing template loaded by {@link AcApDocManager.newDocument}. */

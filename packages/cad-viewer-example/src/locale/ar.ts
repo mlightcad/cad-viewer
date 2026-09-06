@@ -65,6 +65,12 @@ export default {
       curveHigh: 'جودة',
       curveHighHint: 'منحنيات أنعم وذاكرة أكبر',
 
+      paperSpaceBackground: 'خلفية مساحة الورق',
+      paperSpaceWhite: 'أبيض',
+      paperSpaceWhiteHint: 'سطح المكتب CAD / معاينة الطباعة',
+      paperSpaceBlack: 'أسود',
+      paperSpaceBlackHint: 'تفضيل عارض الويب',
+
       invalidFileType:
         'نوع الملف غير صالح. يرجى اختيار ملف DWG أو DXF.'
     }

@@ -24,7 +24,7 @@ import type {
 } from '../service/types'
 import { LAYER_LOCKED_FLAG } from '../service/types'
 import type { AcApLayerPreviousSnapshot } from './AcApLayerSessionState'
-import { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
+import { AcApOpenDatabaseOptions } from './AcApOpenDatabaseOptions'
 
 /** Sentinel stored in {@link AcApDocument.docTitle} for unsaved documents. */
 export const ACAP_UNTITLED_DOC_TITLE = 'Untitled'
@@ -94,11 +94,14 @@ export class AcApDocument {
     const openErrorBefore = this._database.lastOpenError
     let isSuccess = true
     try {
-      // Convert to base options for database method
-      const baseOptions: AcDbOpenDatabaseOptions = {
+      // Convert to base options for database method. Viewer-only fields
+      // (`mode`, `progressiveRendering`, `openViewMode`) are ignored by
+      // `AcDbDatabase`; `sysVars` may include `AcCmColor` values that the
+      // published data-model type omits but `setVar` accepts at runtime.
+      const baseOptions = {
         ...options,
         readOnly: this._openMode === AcEdOpenMode.Read
-      }
+      } as AcDbOpenDatabaseOptions
       await this._database.openUri(uri, baseOptions)
       this.docTitle = this._fileName
     } catch {
@@ -135,11 +138,14 @@ export class AcApDocument {
     const openErrorBefore = this._database.lastOpenError
     try {
       const fileExtension = fileName.split('.').pop()?.toLocaleLowerCase()
-      // Convert to base options for database method
-      const baseOptions: AcDbOpenDatabaseOptions = {
+      // Convert to base options for database method. Viewer-only fields
+      // (`mode`, `progressiveRendering`, `openViewMode`) are ignored by
+      // `AcDbDatabase`; `sysVars` may include `AcCmColor` values that the
+      // published data-model type omits but `setVar` accepts at runtime.
+      const baseOptions = {
         ...options,
         readOnly: this._openMode === AcEdOpenMode.Read
-      }
+      } as AcDbOpenDatabaseOptions
       await this._database.read(
         content,
         baseOptions,

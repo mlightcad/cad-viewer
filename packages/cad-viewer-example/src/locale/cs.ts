@@ -65,6 +65,12 @@ export default {
       curveHigh: 'Kvalita',
       curveHighHint: 'Hladší křivky, více paměti',
 
+      paperSpaceBackground: 'Pozadí výkresového prostoru',
+      paperSpaceWhite: 'Bílé',
+      paperSpaceWhiteHint: 'Desktop CAD / náhled tisku',
+      paperSpaceBlack: 'Černé',
+      paperSpaceBlackHint: 'Preferované pro webový prohlížeč',
+
       invalidFileType:
         'Neplatný typ souboru. Nahrajte soubory DWG nebo DXF.'
     }

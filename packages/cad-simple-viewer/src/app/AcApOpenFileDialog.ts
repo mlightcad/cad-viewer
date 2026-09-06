@@ -2,7 +2,7 @@ import { log } from '@mlightcad/data-model'
 
 import { eventBus } from '../editor/global/eventBus'
 import { AcEdOpenMode } from '../editor/view/AcEdOpenMode'
-import type { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
+import type { AcApOpenDatabaseOptions } from './AcApOpenDatabaseOptions'
 
 /** File extensions accepted by the built-in OPEN file dialog. */
 const SUPPORTED_EXTENSIONS = ['.dxf', '.dwg'] as const

@@ -9,12 +9,14 @@ import {
   AcApDocManager,
   acapFormatOpenFileErrorMessage,
   AcApOpenDatabaseOptions,
-  AcApQNewCmd,
   AcApSettingManager,
   acedApplyUiTheme,
   acedIsCompactUiLayout,
   AcEdOpenMode,
+  ACGI_MODEL_SPACE_BACKGROUND,
+  ACGI_PAPER_SPACE_BACKGROUND,
   eventBus,
+  layoutBackgroundColorFromRgb,
   LIBREDWG_PARSER_WORKER_FILE,
   MTEXT_RENDERER_WORKER_FILE
 } from '@mlightcad/cad-simple-viewer'
@@ -133,6 +135,9 @@ class CadViewerApp {
   private documentEventsRegistered = false
   private hasOpenedFile = false
   private isLoadingFile = false
+  private paperSpaceBackground = ACGI_PAPER_SPACE_BACKGROUND
+  private paperSpaceBgWhiteButton: HTMLButtonElement
+  private paperSpaceBgBlackButton: HTMLButtonElement
 
   constructor() {
     this.container = document.getElementById('cad-container') as HTMLDivElement
@@ -144,6 +149,12 @@ class CadViewerApp {
     ) as HTMLButtonElement
     this.viewerPane = document.getElementById('viewerPane') as HTMLElement
     this.emptyState = document.getElementById('emptyState') as HTMLDivElement
+    this.paperSpaceBgWhiteButton = document.getElementById(
+      'paperSpaceBgWhite'
+    ) as HTMLButtonElement
+    this.paperSpaceBgBlackButton = document.getElementById(
+      'paperSpaceBgBlack'
+    ) as HTMLButtonElement
     this.predefinedButtons = document.querySelectorAll(
       '#predefinedFileList .file-list-item'
     ) as NodeListOf<HTMLButtonElement>
@@ -218,6 +229,7 @@ class CadViewerApp {
     ) as HTMLButtonElement
 
     this.setupFileHandling()
+    this.setupPaperSpaceBackgroundOption()
     this.setupPredefinedFileActions()
     this.setupMobileSidebar()
     const fileSidebarResizeHandle = document.getElementById(
@@ -231,6 +243,50 @@ class CadViewerApp {
     this.setupDockMenu()
     this.setupViewerToolbarMenu()
     this.updateEmptyStateVisibility()
+  }
+
+  private setupPaperSpaceBackgroundOption() {
+    const setBackground = (rgb: number) => {
+      this.paperSpaceBackground = rgb
+      const isWhite = rgb === ACGI_PAPER_SPACE_BACKGROUND
+      this.paperSpaceBgWhiteButton.classList.toggle('is-active', isWhite)
+      this.paperSpaceBgBlackButton.classList.toggle('is-active', !isWhite)
+      this.paperSpaceBgWhiteButton.setAttribute(
+        'aria-checked',
+        isWhite ? 'true' : 'false'
+      )
+      this.paperSpaceBgBlackButton.setAttribute(
+        'aria-checked',
+        isWhite ? 'false' : 'true'
+      )
+      if (this.isInitialized) {
+        AcApDocManager.instance.setOpenDocumentDefaults(() =>
+          this.buildOpenOptions()
+        )
+      }
+    }
+
+    this.paperSpaceBgWhiteButton.addEventListener('click', () => {
+      setBackground(ACGI_PAPER_SPACE_BACKGROUND)
+    })
+    this.paperSpaceBgBlackButton.addEventListener('click', () => {
+      setBackground(ACGI_MODEL_SPACE_BACKGROUND)
+    })
+  }
+
+  private buildOpenOptions(
+    overrides: Partial<AcApOpenDatabaseOptions> = {}
+  ): AcApOpenDatabaseOptions {
+    return {
+      minimumChunkSize: 1000,
+      mode: AcEdOpenMode.Write,
+      progressiveRendering: isProgressiveOpenMode(),
+      sysVars: {
+        lwdisplay: false,
+        paperbkcolor: layoutBackgroundColorFromRgb(this.paperSpaceBackground)
+      },
+      ...overrides
+    }
   }
 
   private setupDisplayMenu() {
@@ -844,14 +900,9 @@ class CadViewerApp {
         commandAliases: EXAMPLE_COMMAND_ALIASES,
         // OPENPROF default: main-thread MTEXT (skip worker transfer cost).
         useMainThreadDraw: openProf ? !useWorkers : false,
-        openDocumentDefaults: {
-          minimumChunkSize: 1000,
-          mode: AcEdOpenMode.Write,
-          progressiveRendering: false,
-          sysVars: {
-            lwdisplay: false
-          }
-        },
+        openDocumentDefaults: () => this.buildOpenOptions({
+          progressiveRendering: false
+        }),
         webworkerFileUrls: {
           mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`,
           dwgParser: dwgParserUrl
@@ -1037,8 +1088,12 @@ class CadViewerApp {
     this.setLoadingState(true)
 
     try {
-      const cmd = new AcApQNewCmd()
-      await cmd.execute(AcApDocManager.instance.context)
+      const success = await AcApDocManager.instance.newDocument(
+        this.buildOpenOptions({ progressiveRendering: false })
+      )
+      if (!success) {
+        throw new Error('Failed to create new drawing')
+      }
       this.onFileOpened()
       this.predefinedButtons.forEach(item => item.classList.remove('active'))
       this.updateFileSidebarSubtitle('Tap to browse sample files')
@@ -1076,14 +1131,7 @@ class CadViewerApp {
           AcApDocManager.instance.curDocument.database
         )
       }
-      const options: AcApOpenDatabaseOptions = {
-        minimumChunkSize: 1000,
-        mode: AcEdOpenMode.Write,
-        progressiveRendering: isProgressiveOpenMode(),
-        sysVars: {
-          lwdisplay: false
-        }
-      }
+      const options: AcApOpenDatabaseOptions = this.buildOpenOptions()
 
       const openStartedAt = performance.now()
       const success = await AcApDocManager.instance.openDocument(
@@ -1141,10 +1189,9 @@ class CadViewerApp {
     this.clearMessages()
 
     try {
-      const options: AcApOpenDatabaseOptions = {
-        minimumChunkSize: 1000,
-        mode: AcEdOpenMode.Write
-      }
+      const options: AcApOpenDatabaseOptions = this.buildOpenOptions({
+        progressiveRendering: false
+      })
 
       const success = await AcApDocManager.instance.openUrl(url, options)
 

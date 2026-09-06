@@ -237,6 +237,21 @@ export function toggleBlackWhiteBackgroundColor(color: AcCmColor): AcCmColor {
 }
 
 /**
+ * Builds an {@link AcCmColor} for a packed 24-bit RGB layout background.
+ *
+ * Used when open options or hosts set `MODELBKCOLOR` / `PAPERBKCOLOR` from a
+ * numeric clear colour (e.g. `0xffffff`).
+ *
+ * @param rgb - Packed `0xRRGGBB` colour; only the low 24 bits are used.
+ * @returns `AcCmColor` with `ByColor` method and the given RGB.
+ */
+export function layoutBackgroundColorFromRgb(rgb: number): AcCmColor {
+  const color = new AcCmColor(AcCmColorMethod.ByColor)
+  color.setRGBValue(rgb & 0xffffff)
+  return color
+}
+
+/**
  * Chooses a CSS cursor colour that contrasts with the canvas background.
  *
  * Returns `'black'` on light backgrounds and `'white'` on dark backgrounds so

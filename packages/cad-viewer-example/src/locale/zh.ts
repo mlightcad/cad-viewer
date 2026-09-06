@@ -65,6 +65,12 @@ export default {
       curveHigh: '高精度',
       curveHighHint: '曲线更光滑，占用更多内存',
 
+      paperSpaceBackground: '图纸空间背景',
+      paperSpaceWhite: '白色',
+      paperSpaceWhiteHint: '桌面 CAD / 打印预览',
+      paperSpaceBlack: '黑色',
+      paperSpaceBlackHint: 'Web 查看器常用',
+
       invalidFileType: '文件类型无效，请上传 DWG 或 DXF 文件。'
     }
   }

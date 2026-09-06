@@ -239,6 +239,40 @@
               </button>
             </div>
           </div>
+
+          <div class="setting-block setting-block--full">
+            <h3 class="setting-label">
+              {{ t('example.fileUpload.paperSpaceBackground') }}
+            </h3>
+            <div
+              class="pill-segment"
+              role="radiogroup"
+              :aria-label="t('example.fileUpload.paperSpaceBackground')"
+            >
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': paperSpaceBackground === ACGI_PAPER_SPACE_BACKGROUND }"
+                role="radio"
+                :aria-checked="paperSpaceBackground === ACGI_PAPER_SPACE_BACKGROUND"
+                :title="t('example.fileUpload.paperSpaceWhiteHint')"
+                @click="paperSpaceBackground = ACGI_PAPER_SPACE_BACKGROUND"
+              >
+                {{ t('example.fileUpload.paperSpaceWhite') }}
+              </button>
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': paperSpaceBackground === ACGI_MODEL_SPACE_BACKGROUND }"
+                role="radio"
+                :aria-checked="paperSpaceBackground === ACGI_MODEL_SPACE_BACKGROUND"
+                :title="t('example.fileUpload.paperSpaceBlackHint')"
+                @click="paperSpaceBackground = ACGI_MODEL_SPACE_BACKGROUND"
+              >
+                {{ t('example.fileUpload.paperSpaceBlack') }}
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -252,6 +286,8 @@ import {
   ACDB_DRAW_CIRCLE_SIDES_DRAFT,
   ACDB_DRAW_CIRCLE_SIDES_HIGH,
   ACDB_DRAW_CIRCLE_SIDES_STANDARD,
+  ACGI_MODEL_SPACE_BACKGROUND,
+  ACGI_PAPER_SPACE_BACKGROUND,
   log
 } from '@mlightcad/data-model'
 import type { UploadFile, UploadProps } from 'element-plus'
@@ -267,7 +303,8 @@ interface Props {
     drawNoPlotLayers: boolean,
     progressiveRendering: boolean,
     openViewMode: AcApOpenViewMode | undefined,
-    circleSides: number
+    circleSides: number,
+    paperSpaceBackground: number
   ) => void
   onNewDrawing?: (
     mode: AcEdOpenMode,
@@ -275,7 +312,8 @@ interface Props {
     drawNoPlotLayers: boolean,
     progressiveRendering: boolean,
     openViewMode: AcApOpenViewMode | undefined,
-    circleSides: number
+    circleSides: number,
+    paperSpaceBackground: number
   ) => void
 }
 
@@ -290,6 +328,7 @@ const selectedCircleSides = ref(ACDB_DRAW_CIRCLE_SIDES_DRAFT)
 const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
+const paperSpaceBackground = ref(ACGI_PAPER_SPACE_BACKGROUND)
 
 const openViewModes = computed(() => [
   {
@@ -358,7 +397,8 @@ const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
         drawNoPlotLayers.value,
         progressiveRendering.value,
         resolveOpenViewMode(),
-        selectedCircleSides.value
+        selectedCircleSides.value,
+        paperSpaceBackground.value
       )
     }
   }
@@ -371,7 +411,8 @@ const handleNewDrawing = () => {
     drawNoPlotLayers.value,
     progressiveRendering.value,
     resolveOpenViewMode(),
-    selectedCircleSides.value
+    selectedCircleSides.value,
+    paperSpaceBackground.value
   )
 }
 
@@ -416,7 +457,7 @@ const isValidFile = (file: File): boolean => {
 .upload-main {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  min-height: 0;
   padding: 18px 20px;
 }
 
@@ -462,7 +503,9 @@ const isValidFile = (file: File): boolean => {
 
 .upload-actions {
   display: flex;
+  flex: 1;
   flex-direction: column;
+  min-height: 0;
   gap: 0;
 }
 
@@ -515,20 +558,29 @@ const isValidFile = (file: File): boolean => {
 }
 
 .upload-dropzone {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   width: 100%;
+  min-height: 120px;
   box-sizing: border-box;
 }
 
 .upload-dropzone :deep(.el-upload) {
-  display: block;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   width: 100%;
+  height: 100%;
 }
 
 .upload-dropzone :deep(.el-upload-dragger) {
   display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
   width: 100%;
+  height: 100%;
   box-sizing: border-box;
   padding: 14px 12px;
   border: 1.5px dashed #c7d2fe;

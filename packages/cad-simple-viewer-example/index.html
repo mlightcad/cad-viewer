@@ -434,14 +434,64 @@
         position: absolute;
         inset: 0;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        gap: 1rem;
         z-index: 20;
         pointer-events: none;
       }
 
       .empty-state.hidden {
         display: none;
+      }
+
+      .empty-open-options {
+        pointer-events: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      .empty-open-options-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: #9ca3af;
+      }
+
+      .empty-open-options-pills {
+        display: flex;
+        border: 1px solid #4b5563;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #1f2937;
+      }
+
+      .empty-open-options-pills button {
+        border: none;
+        background: transparent;
+        color: #9ca3af;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 0.4rem 0.85rem;
+        cursor: pointer;
+      }
+
+      .empty-open-options-pills button:not(:last-child) {
+        border-right: 1px solid #4b5563;
+      }
+
+      .empty-open-options-pills button:hover:not(.is-active) {
+        color: #e5e7eb;
+        background: #273447;
+      }
+
+      .empty-open-options-pills button.is-active {
+        background: #2563eb;
+        color: #ffffff;
       }
 
       .open-main-button {
@@ -662,6 +712,30 @@
         </div>
         <section class="viewer-canvas-area">
           <div class="empty-state" id="emptyState">
+            <div class="empty-open-options" role="group" aria-label="Paper space background">
+              <span class="empty-open-options-label">Paper space background</span>
+              <div class="empty-open-options-pills" role="radiogroup" aria-label="Paper space background">
+                <button
+                  type="button"
+                  id="paperSpaceBgWhite"
+                  class="is-active"
+                  role="radio"
+                  aria-checked="true"
+                  title="Desktop CAD / print preview"
+                >
+                  White
+                </button>
+                <button
+                  type="button"
+                  id="paperSpaceBgBlack"
+                  role="radio"
+                  aria-checked="false"
+                  title="Web viewer preference"
+                >
+                  Black
+                </button>
+              </div>
+            </div>
             <button type="button" class="open-main-button" id="centerOpenButton">Open File</button>
           </div>
           <input type="file" id="fileInputElement" accept=".dxf,.dwg" />

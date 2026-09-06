@@ -94,9 +94,10 @@ import {
   AcApOpenViewMode,
   AcEdMTextEditor,
   AcEdOpenMode,
-  eventBus
+  eventBus,
+  layoutBackgroundColorFromRgb
 } from '@mlightcad/cad-simple-viewer'
-import { ACDB_DRAW_CIRCLE_SIDES_DRAFT, log } from '@mlightcad/data-model'
+import { ACDB_DRAW_CIRCLE_SIDES_DRAFT, ACGI_PAPER_SPACE_BACKGROUND, log } from '@mlightcad/data-model'
 import { provideLocale } from '@mlightcad/ui-components'
 import { ElConfigProvider, ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
@@ -201,6 +202,12 @@ interface Props {
    * matching the data-model default for {@link AcApOpenDatabaseOptions.circleSides}.
    */
   circleSides?: number
+  /**
+   * Paper-space (layout) canvas background as packed 24-bit RGB
+   * (e.g. `0xffffff` white, `0x000000` black). Defaults to white.
+   * Mapped to open options as `sysVars.paperbkcolor`.
+   */
+  paperSpaceBackground?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -216,7 +223,8 @@ const props = withDefaults(defineProps<Props>(), {
   mode: AcEdOpenMode.Write,
   progressiveRendering: false,
   openViewMode: undefined,
-  circleSides: ACDB_DRAW_CIRCLE_SIDES_DRAFT
+  circleSides: ACDB_DRAW_CIRCLE_SIDES_DRAFT,
+  paperSpaceBackground: ACGI_PAPER_SPACE_BACKGROUND
 })
 
 const buildOpenOptions = (): AcApOpenDatabaseOptions => ({
@@ -225,6 +233,9 @@ const buildOpenOptions = (): AcApOpenDatabaseOptions => ({
   drawNoPlotLayers: props.drawNoPlotLayers,
   progressiveRendering: props.progressiveRendering,
   circleSides: props.circleSides,
+  sysVars: {
+    paperbkcolor: layoutBackgroundColorFromRgb(props.paperSpaceBackground)
+  },
   ...(props.openViewMode != null ? { openViewMode: props.openViewMode } : {})
 })
 
@@ -458,7 +469,8 @@ watch(
     props.drawNoPlotLayers,
     props.progressiveRendering,
     props.openViewMode,
-    props.circleSides
+    props.circleSides,
+    props.paperSpaceBackground
   ],
   () => {
     if (editorRef.value) {
