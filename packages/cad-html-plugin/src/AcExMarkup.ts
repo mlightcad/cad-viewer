@@ -426,17 +426,20 @@ export class AcExMarkupController {
     if (selectedId) {
       const record = this._findRecord(selectedId)
       if (record) {
-        const mode = record.style.textHeightMode ?? 'adaptive'
+        const fontSize = record.style.fontSize ?? this._drawFontSize
+        const wcsToScreen = (p: { x: number; y: number }) =>
+          this._wcsToScreenPoint(p)
+        const textHeightWcs =
+          record.style.textHeightWcs != null && record.style.textHeightWcs > 0
+            ? record.style.textHeightWcs
+            : acexScreenPxToWcs(fontSize, wcsToScreen)
         return {
           color: record.style.color || this._drawColor,
           lineWeight: ACEX_MARKUP_LINE_WEIGHT,
-          fontSize: record.style.fontSize ?? this._drawFontSize,
-          textHeightMode: mode,
-          ...(mode === 'custom' &&
-          record.style.textHeightWcs != null &&
-          record.style.textHeightWcs > 0
-            ? { textHeightWcs: record.style.textHeightWcs }
-            : {})
+          fontSize,
+          // Editing a committed overlay always presents Custom + world height.
+          textHeightMode: 'custom',
+          textHeightWcs
         }
       }
     }

@@ -522,8 +522,11 @@ export default {
       description: 'Nastaví barvu nových poznámek'
     },
     markupFontSize: {
-      text: 'Velikost písma',
-      description: 'Nastaví velikost písma textových a odkazových poznámek'
+      text: 'Výška textu',
+      description:
+        'Otevře nastavení výšky textu poznámek (přizpůsobit obrazovce nebo světová výška)',
+      fit: 'Fit',
+      wcs: 'WCS'
     },
     measurementColor: {
       text: 'Barva',
@@ -531,9 +534,11 @@ export default {
         'Nastaví barvu vybraného měření, nebo měření, která přidáte příště'
     },
     measurementFontSize: {
-      text: 'Velikost písma',
+      text: 'Výška textu',
       description:
-        'Nastaví velikost písma vybraného měření, nebo měření, která přidáte příště'
+        'Otevře nastavení výšky textu vybraného měření, nebo měření, která přidáte příště',
+      fit: 'Fit',
+      wcs: 'WCS'
     },
     showMarkup: {
       text: 'Zobrazit',

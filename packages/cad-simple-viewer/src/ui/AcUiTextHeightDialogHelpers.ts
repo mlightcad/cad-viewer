@@ -23,6 +23,20 @@ export interface AcUiOpenTextHeightDialogOptions {
   initialTextHeightWcs?: number
 }
 
+/** Input for {@link acuiResolveTextHeightDialogInitials}. */
+export interface AcUiTextHeightDialogInitialsInput {
+  /** True when a measure/markup overlay is selected. */
+  hasSelection: boolean
+  /** Session or selected authoring mode. */
+  sessionMode: AcUiTextHeightMode
+  /** Screen font size (CSS px) for adaptive / calculator seed. */
+  fontSizePx: number
+  /** Known world height from the selected overlay, or session custom when idle. */
+  selectedTextHeightWcs?: number
+  /** View used to derive WCS from {@link fontSizePx} when needed. */
+  view: AcTrView2d
+}
+
 /**
  * Opens the shared text-height dialog with i18n labels and screen→WCS conversion.
  */
@@ -51,6 +65,52 @@ export async function acuiOpenTextHeightDialog(
       convert: AcApI18n.t('main.textHeight.convert')
     }
   })
+}
+
+/**
+ * Resolves dialog seeds when editing a selection vs the session draw style.
+ *
+ * Selected overlays always open on Custom with the first element's world
+ * height (baking Fit-to-screen size from {@link fontSizePx} when the overlay
+ * has no stored WCS). Do not pass the session custom WCS while a selection is
+ * active — that would leak draw defaults into the selected element.
+ */
+export function acuiResolveTextHeightDialogInitials(
+  input: AcUiTextHeightDialogInitialsInput
+): {
+  initialMode: AcUiTextHeightMode
+  initialFontSizePx: number
+  initialTextHeightWcs?: number
+} {
+  const fontSizePx =
+    input.fontSizePx > 0 && Number.isFinite(input.fontSizePx)
+      ? input.fontSizePx
+      : 13
+  if (input.hasSelection) {
+    const wcs =
+      input.selectedTextHeightWcs != null &&
+      input.selectedTextHeightWcs > 0
+        ? input.selectedTextHeightWcs
+        : acapScreenPxToWcs(fontSizePx, input.view)
+    return {
+      initialMode: 'custom',
+      initialFontSizePx: Math.max(
+        1,
+        Math.round(acapWcsToScreenPx(wcs, input.view))
+      ),
+      initialTextHeightWcs: wcs
+    }
+  }
+  return {
+    initialMode: input.sessionMode,
+    initialFontSizePx: fontSizePx,
+    initialTextHeightWcs:
+      input.sessionMode === 'custom' &&
+      input.selectedTextHeightWcs != null &&
+      input.selectedTextHeightWcs > 0
+        ? input.selectedTextHeightWcs
+        : undefined
+  }
 }
 
 /**

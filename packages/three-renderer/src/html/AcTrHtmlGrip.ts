@@ -116,20 +116,6 @@ export class AcTrHtmlGrip extends AcTrHtmlElement {
     })
   }
 
-  /**
-   * Keep the WCS diameter when the grip is moved (do not re-anchor zoom).
-   */
-  override setPosition(worldPosition: { x: number; y: number; z?: number }): void {
-    this.object.position.set(
-      worldPosition.x,
-      worldPosition.y,
-      worldPosition.z ?? 0
-    )
-    this.object.matrixAutoUpdate = true
-    this.object.updateMatrix()
-    this.object.updateMatrixWorld(true)
-  }
-
   /** Update the marker fill color. */
   setColor(color: AcCmColor): void {
     this.element.style.background = acTrHtmlCssColor(color)

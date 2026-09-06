@@ -96,6 +96,33 @@ describe('AcTrHtmlTransientManager', () => {
     manager.dispose()
   })
 
+  it('preserves authored baseZoom when the overlay is moved', () => {
+    const scene = new THREE.Scene()
+    const manager = new AcTrHtmlTransientManager(scene)
+    const element = document.createElement('div')
+    element.style.transform = 'translate(-50%, -50%)'
+
+    manager.add(
+      new AcTrHtmlElement(element, {
+        id: 'wcs-label',
+        worldPosition: { x: 0, y: 0 },
+        scaleWithView: true
+      })
+    )
+
+    const entry = getEntry(manager, 'wcs-label')
+    entry.baseZoom = 1
+    entry.setPosition({ x: 10, y: 20 })
+    expect(entry.baseZoom).toBe(1)
+
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000)
+    camera.zoom = 2
+    entry.object.onAfterRender(null!, null!, camera)
+    expect(element.style.transform).toContain('scale(2, 2)')
+
+    manager.dispose()
+  })
+
   it('adds a selectable group and selects it on child click', () => {
     const scene = new THREE.Scene()
     const manager = new AcTrHtmlTransientManager(scene)

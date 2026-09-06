@@ -530,8 +530,11 @@ export default {
       description: 'Set the color for new markup drawings'
     },
     markupFontSize: {
-      text: 'Font size',
-      description: 'Set the font size for text and callout markups'
+      text: 'Text height',
+      description:
+        'Open text height settings for markups (Fit to screen or world height)',
+      fit: 'Fit',
+      wcs: 'WCS'
     },
     measurementColor: {
       text: 'Color',
@@ -539,9 +542,11 @@ export default {
         'Set the color for the selected measurement, or for measurements you add next'
     },
     measurementFontSize: {
-      text: 'Font size',
+      text: 'Text height',
       description:
-        'Set the font size for the selected measurement, or for measurements you add next'
+        'Open text height settings for the selected measurement, or for measurements you add next',
+      fit: 'Fit',
+      wcs: 'WCS'
     },
     showMarkup: {
       text: 'Show',

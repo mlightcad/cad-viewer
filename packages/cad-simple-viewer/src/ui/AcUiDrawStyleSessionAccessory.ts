@@ -17,7 +17,9 @@ import {
 } from '../command/markup/AcApMarkupUtil'
 import {
   applyMeasurementStyleToSelection,
-  getActiveMeasurementStyle
+  getActiveMeasurementStyle,
+  getMeasurementSnapshot,
+  getSelectedMeasurementId
 } from '../command/measure/AcApMeasurementStore'
 import {
   ACED_DRAW_STYLE_SESSION_PROVIDER_ID,
@@ -47,6 +49,7 @@ import {
 } from './AcUiDrawStyle'
 import {
   acuiOpenTextHeightDialog,
+  acuiResolveTextHeightDialogInitials,
   acuiResolveTextHeightPatch
 } from './AcUiTextHeightDialogHelpers'
 import { createIconElement, ICON_TEXT_HEIGHT } from './icons'
@@ -497,33 +500,52 @@ export class AcUiDrawStyleSessionAccessory {
     this.hideColorPanel()
     try {
       const isMeasure = this.kind === 'measure'
-      const selectedMeasure = isMeasure ? getActiveMeasurementStyle() : undefined
+      const selectedMeasure = isMeasure
+        ? getActiveMeasurementStyle()
+        : undefined
+      const markupSelectedId = getMarkupStore().selectedId
       const selectedMarkup =
-        !isMeasure && getMarkupStore().selectedId
-          ? getMarkupStore().get(getMarkupStore().selectedId!)
+        !isMeasure && markupSelectedId
+          ? getMarkupStore().get(markupSelectedId)
           : undefined
-      const initialMode = isMeasure
-        ? selectedMeasure?.textHeightMode ?? acapGetMeasurementTextHeightMode()
+      const hasSelection =
+        selectedMeasure != null || selectedMarkup != null
+      const sessionMode = isMeasure
+        ? selectedMeasure?.textHeightMode ??
+          acapGetMeasurementTextHeightMode()
         : selectedMarkup?.style.textHeightMode ?? getMarkupTextHeightMode()
-      const initialFontSizePx = isMeasure
+      const fontSizePx = isMeasure
         ? selectedMeasure?.fontSize ?? acapGetMeasurementFontSize()
         : selectedMarkup?.style.fontSize ?? getMarkupFontSize()
-      const initialTextHeightWcs = isMeasure
-        ? selectedMeasure?.textHeightWcs ??
-          acapGetMeasurementCustomTextHeightWcs()
-        : selectedMarkup?.style.textHeightWcs ?? getMarkupCustomTextHeightWcs()
+      const measureId = getSelectedMeasurementId()
+      const selectedTextHeightWcs = isMeasure
+        ? hasSelection
+          ? selectedMeasure?.textHeightWcs ??
+            (measureId
+              ? getMeasurementSnapshot(measureId)?.style.textHeightWcs
+              : undefined)
+          : acapGetMeasurementCustomTextHeightWcs()
+        : hasSelection
+          ? selectedMarkup?.style.textHeightWcs
+          : getMarkupCustomTextHeightWcs()
+
+      const initials = acuiResolveTextHeightDialogInitials({
+        hasSelection,
+        sessionMode: sessionMode ?? 'adaptive',
+        fontSizePx,
+        selectedTextHeightWcs,
+        view: this.view
+      })
 
       const result = await acuiOpenTextHeightDialog({
         view: this.view,
-        initialMode,
-        initialFontSizePx,
-        initialTextHeightWcs
+        ...initials
       })
       if (!result) return
       const patch = acuiResolveTextHeightPatch(
         this.view,
         result,
-        initialFontSizePx
+        initials.initialFontSizePx
       )
       if (isMeasure) {
         acapSetMeasurementTextHeight(

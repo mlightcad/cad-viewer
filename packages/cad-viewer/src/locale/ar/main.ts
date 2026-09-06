@@ -752,8 +752,8 @@ export default {
 
     markupFontSize: {
       ...enMain.verticalToolbar.markupFontSize,
-      text: 'حجم الخط',
-      description: 'تحديد حجم خط النصوص ووسائل الشرح'
+      text: 'ارتفاع النص',
+      description: 'فتح إعدادات ارتفاع النص لعلامات المراجعة'
     },
 
     measurementColor: {
@@ -764,8 +764,8 @@ export default {
 
     measurementFontSize: {
       ...enMain.verticalToolbar.measurementFontSize,
-      text: 'حجم الخط',
-      description: 'تحديد حجم خط القياس المحدد أو القياسات الجديدة'
+      text: 'ارتفاع النص',
+      description: 'فتح إعدادات ارتفاع النص للقياس المحدد أو القياسات الجديدة'
     },
 
     showMarkup: {

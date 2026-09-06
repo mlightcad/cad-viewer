@@ -1236,17 +1236,21 @@ export class AcExMeasureController {
     if (selectedId) {
       const measure = this._committed.find(m => m.id === selectedId)
       if (measure) {
-        const mode = measure.record.style.textHeightMode ?? 'adaptive'
+        const fontSize = measure.record.style.fontSize || this._drawFontSize
+        const wcsToScreen = (p: { x: number; y: number }) =>
+          this._wcsToScreenPoint(p)
+        const textHeightWcs =
+          measure.record.style.textHeightWcs != null &&
+          measure.record.style.textHeightWcs > 0
+            ? measure.record.style.textHeightWcs
+            : acexScreenPxToWcs(fontSize, wcsToScreen)
         return {
           color: measure.record.style.color || this._measureCss(),
           lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
-          fontSize: measure.record.style.fontSize || this._drawFontSize,
-          textHeightMode: mode,
-          ...(mode === 'custom' &&
-          measure.record.style.textHeightWcs != null &&
-          measure.record.style.textHeightWcs > 0
-            ? { textHeightWcs: measure.record.style.textHeightWcs }
-            : {})
+          fontSize,
+          // Editing a committed overlay always presents Custom + world height.
+          textHeightMode: 'custom',
+          textHeightWcs
         }
       }
     }
@@ -4384,8 +4388,14 @@ export class AcExMeasureController {
       }
       // Keep selection highlight on DOM; canvas redraws pick up color.
       for (const el of measure.parts.dom) {
-        if (el.classList.contains('mlcad-measure-badge') && style.fontSize) {
-          el.style.fontSize = `${style.fontSize}px`
+        if (el.classList.contains('mlcad-measure-badge')) {
+          if (style.color) {
+            el.style.color = style.color
+            el.style.borderColor = style.color
+          }
+          if (style.fontSize) {
+            el.style.fontSize = `${style.fontSize}px`
+          }
         } else if (el.classList.contains('mlcad-measure-dot') && style.color) {
           el.style.background = style.color
         }

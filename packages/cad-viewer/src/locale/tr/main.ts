@@ -533,17 +533,22 @@ export default {
       description: 'Yeni işaret çizimleri için rengi ayarlar'
     },
     markupFontSize: {
-      text: 'Yazı Boyutu',
-      description: 'Metin ve çağrı işaretleri için yazı boyutunu ayarlar'
+      text: 'Yazı yüksekliği',
+      description:
+        'İşaretler için yazı yüksekliği ayarlarını açar (ekrana sığdır veya dünya yüksekliği)',
+      fit: 'Fit',
+      wcs: 'WCS'
     },
     measurementColor: {
       text: 'Renk',
       description: 'Seçili ölçümün veya sonraki ölçümlerin rengini ayarlar'
     },
     measurementFontSize: {
-      text: 'Yazı Boyutu',
+      text: 'Yazı yüksekliği',
       description:
-        'Seçili ölçümün veya sonraki ölçümlerin yazı boyutunu ayarlar'
+        'Seçili ölçümün veya sonraki ölçümlerin yazı yüksekliği ayarlarını açar',
+      fit: 'Fit',
+      wcs: 'WCS'
     },
     showMarkup: {
       text: 'Göster',

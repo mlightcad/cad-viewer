@@ -491,16 +491,20 @@ export default {
       description: '设置新建批注的颜色'
     },
     markupFontSize: {
-      text: '字号',
-      description: '设置文字与标注文本框的字号'
+      text: '字高',
+      description: '打开字高设置（适应屏幕或世界坐标高度）',
+      fit: '适应',
+      wcs: 'WCS'
     },
     measurementColor: {
       text: '颜色',
       description: '有选中测量标注时修改其颜色；未选中时用于后续添加的测量标注'
     },
     measurementFontSize: {
-      text: '字号',
-      description: '有选中测量标注时修改其字号；未选中时用于后续添加的测量标注'
+      text: '字高',
+      description: '有选中测量标注时修改其字高；未选中时用于后续添加的测量标注',
+      fit: '适应',
+      wcs: 'WCS'
     },
     showMarkup: {
       text: '显示批注',

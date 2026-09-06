@@ -19,23 +19,32 @@ import {
   AcApDocManager,
   acapDrawStyleKindForCommand,
   acapGetMeasurementColor,
+  acapGetMeasurementCustomTextHeightWcs,
   acapGetMeasurementFontSize,
+  acapGetMeasurementTextHeightMode,
   AcApOpenCmd,
   AcApQNewCmd,
   acapRunDatabaseEdit,
+  acapScreenPxToWcs,
   acapSetMeasurementDrawColor,
-  acapSetMeasurementDrawFontSize,
+  acapSetMeasurementTextHeight,
   type AcEdCommandEventArgs,
   AcEdOpenMode,
   type AcTrView2d,
+  acuiOpenTextHeightDialog,
+  acuiResolveTextHeightDialogInitials,
+  acuiResolveTextHeightPatch,
   applyMarkupStyleToSelection,
   applyMeasurementStyleToSelection,
   cssToMarkupColor,
   defaultMarkupColor,
   getActiveMeasurementStyle,
   getEffectiveMeasurementUnits,
+  getMarkupCustomTextHeightWcs,
   getMarkupFontSize,
   getMarkupStore,
+  getMarkupTextHeightMode,
+  getMeasurementSnapshot,
   getSelectedMeasurementId,
   isMarkupVisible,
   isMeasurementVisible,
@@ -43,7 +52,7 @@ import {
   MEASUREMENT_LENGTH_UNIT_FOLLOW_DRAWING,
   refreshMeasurementValueLabels,
   setMarkupDrawColor,
-  setMarkupDrawFontSize,
+  setMarkupTextHeight,
   setMeasurementUnitOverride,
   subscribeMeasurementSelection
 } from '@mlightcad/cad-simple-viewer'
@@ -159,17 +168,20 @@ import MlLayerSelect from '../common/MlLayerSelect.vue'
 import MlCharacterMapDialog from '../dialog/MlCharacterMapDialog.vue'
 import MlRibbonFileName from './MlRibbonFileName.vue'
 import MlRibbonLanguageSelector from './MlRibbonLanguageSelector.vue'
-import MlRibbonMarkupFontSizeSelect from './MlRibbonMarkupFontSizeSelect.vue'
 import MlRibbonMeasurementUnitsPanel from './MlRibbonMeasurementUnitsPanel.vue'
 import MlRibbonPropertyColorDropdown from './MlRibbonPropertyColorDropdown.vue'
 import MlRibbonPropertyLineTypeSelect from './MlRibbonPropertyLineTypeSelect.vue'
 import MlRibbonPropertyLineWeightSelect from './MlRibbonPropertyLineWeightSelect.vue'
+import MlRibbonTextHeightButton from './MlRibbonTextHeightButton.vue'
 import { classifyOverlaySelection } from './overlaySelectionKind'
 import { useHatchContextualRibbon } from './useHatchContextualRibbon'
 import { useMTextContextualRibbon } from './useMTextContextualRibbon'
 
-/** Shared dropdown width for color / line-weight / font-size in overlay Style panels. */
+/** Shared control width for color / text-height in overlay Style panels. */
 const OVERLAY_STYLE_CONTROL_WIDTH = '120px'
+
+/** Authoring mode for overlay text height (Fit to screen vs world height). */
+type OverlayTextHeightMode = 'adaptive' | 'custom'
 
 interface Props {
   currentLocale?: LocaleProp
@@ -198,10 +210,19 @@ const isMarkupOverlayVisible = ref(true)
 const isMeasurementOverlayVisible = ref(true)
 const markupDrawColor = shallowRef(defaultMarkupColor())
 const markupDrawColorDisplay = ref(markupColorToCss(markupDrawColor.value))
-const markupDrawFontSize = ref(getMarkupFontSize())
+const markupTextHeightMode = ref<OverlayTextHeightMode>(getMarkupTextHeightMode())
+const markupTextHeightWcs = ref<number | undefined>(
+  getMarkupCustomTextHeightWcs()
+)
 const measurementDrawColor = shallowRef(new AcCmColor())
 const measurementDrawColorDisplay = ref('#7b8794')
-const measurementDrawFontSize = ref(acapGetMeasurementFontSize())
+const measurementTextHeightMode = ref<OverlayTextHeightMode>(
+  acapGetMeasurementTextHeightMode()
+)
+const measurementTextHeightWcs = ref<number | undefined>(
+  acapGetMeasurementCustomTextHeightWcs()
+)
+let textHeightDialogOpen = false
 const measurementLunits = ref(AcDbLinearUnits.Decimal)
 const measurementLuprec = ref(4)
 const measurementAunits = ref(AcDbAngleUnits.DecimalDegrees)
@@ -629,7 +650,7 @@ const scheduleActivateRibbonTabForOverlaySelection = () => {
 
 /**
  * Switches to Measurement or Review while a drawing command is active so
- * color / lineweight / font-size can be changed before the overlay is committed.
+ * color / text-height can be changed before the overlay is committed.
  */
 const activateRibbonTabForDrawCommand = (args: AcEdCommandEventArgs) => {
   const kind = acapDrawStyleKindForCommand(args.command?.globalName)
@@ -782,14 +803,29 @@ const syncMarkupStyleControls = () => {
     const color = cssToMarkupColor(selected.style.color)
     markupDrawColor.value = color
     markupDrawColorDisplay.value = selected.style.color
-    markupDrawFontSize.value =
+    const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
+    const fontSize =
       selected.style.fontSize != null && selected.style.fontSize > 0
         ? selected.style.fontSize
         : getMarkupFontSize()
+    const wcs =
+      selected.style.textHeightWcs != null &&
+      selected.style.textHeightWcs > 0
+        ? selected.style.textHeightWcs
+        : view
+          ? acapScreenPxToWcs(fontSize, view)
+          : undefined
+    // Selected overlays always summarize as Custom + first-element WCS.
+    markupTextHeightMode.value = 'custom'
+    markupTextHeightWcs.value = wcs
   } else {
     markupDrawColor.value = defaultMarkupColor()
     markupDrawColorDisplay.value = markupColorToCss(markupDrawColor.value)
-    markupDrawFontSize.value = getMarkupFontSize()
+    markupTextHeightMode.value = getMarkupTextHeightMode()
+    markupTextHeightWcs.value =
+      markupTextHeightMode.value === 'custom'
+        ? getMarkupCustomTextHeightWcs()
+        : undefined
   }
   scheduleActivateRibbonTabForOverlaySelection()
 }
@@ -798,7 +834,12 @@ const syncMarkupStyleControls = () => {
  * Apply a style patch to the currently selected markup and republish it.
  */
 const patchSelectedMarkupStyle = (
-  patch: Partial<{ color: string; fontSize: number }>
+  patch: Partial<{
+    color: string
+    fontSize: number
+    textHeightMode: OverlayTextHeightMode
+    textHeightWcs: number
+  }>
 ) => {
   const view = AcApDocManager.instance?.curView
   if (view) applyMarkupStyleToSelection(view, patch)
@@ -817,13 +858,56 @@ const handleMarkupDrawColorChange = (value?: AcCmColor) => {
 }
 
 /**
- * Updates the session markup draw font size used by text / callout markups.
- * When a markup is selected, also updates that markup's font size.
+ * Opens the shared text-height dialog for Review markups.
  */
-const handleMarkupDrawFontSizeChange = (value: number) => {
-  setMarkupDrawFontSize(value)
-  markupDrawFontSize.value = getMarkupFontSize()
-  patchSelectedMarkupStyle({ fontSize: getMarkupFontSize() })
+const handleMarkupTextHeightClick = async () => {
+  if (textHeightDialogOpen) return
+  const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
+  if (!view) return
+  textHeightDialogOpen = true
+  try {
+    const store = getMarkupStore()
+    const selected = store.selectedId
+      ? store.get(store.selectedId)
+      : undefined
+    const hasSelection = selected != null
+    const fontSizePx =
+      selected?.style.fontSize != null && selected.style.fontSize > 0
+        ? selected.style.fontSize
+        : getMarkupFontSize()
+    const selectedTextHeightWcs = hasSelection
+      ? selected?.style.textHeightWcs
+      : getMarkupCustomTextHeightWcs()
+    const initials = acuiResolveTextHeightDialogInitials({
+      hasSelection,
+      sessionMode: hasSelection
+        ? 'custom'
+        : getMarkupTextHeightMode(),
+      fontSizePx,
+      selectedTextHeightWcs,
+      view
+    })
+    const result = await acuiOpenTextHeightDialog({
+      view,
+      ...initials
+    })
+    if (!result) return
+    const patch = acuiResolveTextHeightPatch(
+      view,
+      result,
+      initials.initialFontSizePx
+    )
+    setMarkupTextHeight(
+      patch.textHeightMode,
+      patch.textHeightMode === 'custom'
+        ? (patch.textHeightWcs ?? patch.fontSize)
+        : patch.fontSize
+    )
+    applyMarkupStyleToSelection(view, patch)
+    syncMarkupStyleControls()
+  } finally {
+    textHeightDialogOpen = false
+  }
 }
 
 const syncMeasurementStyleControls = () => {
@@ -831,7 +915,22 @@ const syncMeasurementStyleControls = () => {
   if (selected) {
     measurementDrawColor.value = selected.color.clone()
     measurementDrawColorDisplay.value = acapCssColor(selected.color)
-    measurementDrawFontSize.value = selected.fontSize
+    const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
+    const measureId = getSelectedMeasurementId()
+    const wcs =
+      selected.textHeightWcs != null && selected.textHeightWcs > 0
+        ? selected.textHeightWcs
+        : measureId
+          ? getMeasurementSnapshot(measureId)?.style.textHeightWcs
+          : undefined
+    const resolvedWcs =
+      wcs != null && wcs > 0
+        ? wcs
+        : view
+          ? acapScreenPxToWcs(selected.fontSize, view)
+          : undefined
+    measurementTextHeightMode.value = 'custom'
+    measurementTextHeightWcs.value = resolvedWcs
   } else {
     const db = getCurrentDatabase()
     if (db) {
@@ -839,7 +938,11 @@ const syncMeasurementStyleControls = () => {
       measurementDrawColor.value = color.clone()
       measurementDrawColorDisplay.value = acapCssColor(color)
     }
-    measurementDrawFontSize.value = acapGetMeasurementFontSize()
+    measurementTextHeightMode.value = acapGetMeasurementTextHeightMode()
+    measurementTextHeightWcs.value =
+      measurementTextHeightMode.value === 'custom'
+        ? acapGetMeasurementCustomTextHeightWcs()
+        : undefined
   }
   scheduleActivateRibbonTabForOverlaySelection()
 }
@@ -853,12 +956,55 @@ const handleMeasurementDrawColorChange = (value?: AcCmColor) => {
   if (view) applyMeasurementStyleToSelection(view, { color: value })
 }
 
-const handleMeasurementDrawFontSizeChange = (value: number) => {
-  acapSetMeasurementDrawFontSize(value)
-  measurementDrawFontSize.value = acapGetMeasurementFontSize()
+/**
+ * Opens the shared text-height dialog for Measurement overlays.
+ */
+const handleMeasurementTextHeightClick = async () => {
+  if (textHeightDialogOpen) return
   const view = AcApDocManager.instance?.curView as AcTrView2d | undefined
-  if (view) {
-    applyMeasurementStyleToSelection(view, { fontSize: acapGetMeasurementFontSize() })
+  if (!view) return
+  textHeightDialogOpen = true
+  try {
+    const selected = getActiveMeasurementStyle()
+    const hasSelection = selected != null
+    const measureId = getSelectedMeasurementId()
+    const fontSizePx =
+      selected?.fontSize ?? acapGetMeasurementFontSize()
+    const selectedTextHeightWcs = hasSelection
+      ? selected?.textHeightWcs ??
+        (measureId
+          ? getMeasurementSnapshot(measureId)?.style.textHeightWcs
+          : undefined)
+      : acapGetMeasurementCustomTextHeightWcs()
+    const initials = acuiResolveTextHeightDialogInitials({
+      hasSelection,
+      sessionMode: hasSelection
+        ? 'custom'
+        : acapGetMeasurementTextHeightMode(),
+      fontSizePx,
+      selectedTextHeightWcs,
+      view
+    })
+    const result = await acuiOpenTextHeightDialog({
+      view,
+      ...initials
+    })
+    if (!result) return
+    const patch = acuiResolveTextHeightPatch(
+      view,
+      result,
+      initials.initialFontSizePx
+    )
+    acapSetMeasurementTextHeight(
+      patch.textHeightMode,
+      patch.textHeightMode === 'custom'
+        ? (patch.textHeightWcs ?? patch.fontSize)
+        : patch.fontSize
+    )
+    applyMeasurementStyleToSelection(view, patch)
+    syncMeasurementStyleControls()
+  } finally {
+    textHeightDialogOpen = false
   }
 }
 
@@ -1254,18 +1400,21 @@ const buildBaseTabs = (
       }
     },
     {
-      id: 'markup-draw-font-size',
+      id: 'markup-draw-text-height',
       type: 'custom',
       size: 'small',
       tooltip: t('main.verticalToolbar.markupFontSize.description'),
       props: {
-        component: MlRibbonMarkupFontSizeSelect,
+        component: MlRibbonTextHeightButton,
         componentProps: {
-          modelValue: markupDrawFontSize.value,
-          options: [10, 12, 14, 16, 18, 20, 24, 28, 32],
+          mode: markupTextHeightMode.value,
+          textHeightWcs: markupTextHeightWcs.value,
+          fitLabel: t('main.verticalToolbar.markupFontSize.fit'),
+          wcsLabel: t('main.verticalToolbar.markupFontSize.wcs'),
           placeholder: t('main.verticalToolbar.markupFontSize.text'),
+          ariaLabel: t('main.verticalToolbar.markupFontSize.description'),
           controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
-          'onUpdate:modelValue': handleMarkupDrawFontSizeChange
+          onClick: handleMarkupTextHeightClick
         }
       }
     }
@@ -1439,18 +1588,21 @@ const buildBaseTabs = (
       }
     },
     {
-      id: 'measurement-draw-font-size',
+      id: 'measurement-draw-text-height',
       type: 'custom',
       size: 'small',
       tooltip: t('main.verticalToolbar.measurementFontSize.description'),
       props: {
-        component: MlRibbonMarkupFontSizeSelect,
+        component: MlRibbonTextHeightButton,
         componentProps: {
-          modelValue: measurementDrawFontSize.value,
-          options: [10, 12, 13, 14, 16, 18, 20, 24, 28, 32],
+          mode: measurementTextHeightMode.value,
+          textHeightWcs: measurementTextHeightWcs.value,
+          fitLabel: t('main.verticalToolbar.measurementFontSize.fit'),
+          wcsLabel: t('main.verticalToolbar.measurementFontSize.wcs'),
           placeholder: t('main.verticalToolbar.measurementFontSize.text'),
+          ariaLabel: t('main.verticalToolbar.measurementFontSize.description'),
           controlWidth: OVERLAY_STYLE_CONTROL_WIDTH,
-          'onUpdate:modelValue': handleMeasurementDrawFontSizeChange
+          onClick: handleMeasurementTextHeightClick
         }
       }
     }
@@ -2354,14 +2506,16 @@ const ribbonData = computed(() => {
   const openMode = docOpenMode.value
   const markupVisible = isMarkupOverlayVisible.value
   const measurementVisible = isMeasurementOverlayVisible.value
-  // Track markup draw style so Review ribbon color / font controls refresh.
+  // Track markup draw style so Review ribbon color / text-height controls refresh.
   markupDrawColor.value
   markupDrawColorDisplay.value
-  markupDrawFontSize.value
+  markupTextHeightMode.value
+  markupTextHeightWcs.value
   // Track measurement draw style so Measurement ribbon controls refresh.
   measurementDrawColor.value
   measurementDrawColorDisplay.value
-  measurementDrawFontSize.value
+  measurementTextHeightMode.value
+  measurementTextHeightWcs.value
   measurementLunits.value
   measurementLuprec.value
   measurementAunits.value

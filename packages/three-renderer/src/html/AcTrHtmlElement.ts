@@ -104,6 +104,10 @@ export class AcTrHtmlElement {
 
   /**
    * Update the world-space anchor position.
+   *
+   * Preserves {@link baseZoom} so WCS-sized overlays (live draw previews and
+   * committed capsules) keep their world height while moving. Callers that
+   * intentionally re-anchor view scale should clear {@link baseZoom} themselves.
    */
   setPosition(worldPosition: { x: number; y: number; z?: number }): void {
     this.object.position.set(
@@ -114,8 +118,6 @@ export class AcTrHtmlElement {
     this.object.matrixAutoUpdate = true
     this.object.updateMatrix()
     this.object.updateMatrixWorld(true)
-    // Re-anchor view scale so the next zoom is relative to this placement.
-    this.baseZoom = undefined
   }
 
   /**

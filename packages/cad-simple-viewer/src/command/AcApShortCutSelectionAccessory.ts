@@ -15,6 +15,7 @@ import type { AcUiShortCutToolbar } from '../ui/AcUiShortCutToolbar'
 import type { AcUiSimpleToolbarItem } from '../ui/AcUiSimpleToolbar'
 import {
   acuiOpenTextHeightDialog,
+  acuiResolveTextHeightDialogInitials,
   acuiResolveTextHeightPatch
 } from '../ui/AcUiTextHeightDialogHelpers'
 import { ICON_TEXT_HEIGHT } from '../ui/icons'
@@ -40,6 +41,7 @@ import {
 import {
   applyMeasurementStyleToSelection,
   getActiveMeasurementStyle,
+  getMeasurementSnapshot,
   getSelectedMeasurementId
 } from './measure/AcApMeasurementStore'
 
@@ -174,36 +176,52 @@ export function acapBindShortCutSelectionAccessory(
     try {
       const selectedMeasure =
         kind === 'measure' ? getActiveMeasurementStyle() : undefined
+      const markupSelectedId = getMarkupStore().selectedId
       const selectedMarkup =
-        kind === 'markup' && getMarkupStore().selectedId
-          ? getMarkupStore().get(getMarkupStore().selectedId!)
+        kind === 'markup' && markupSelectedId
+          ? getMarkupStore().get(markupSelectedId)
           : undefined
-      const initialMode =
+      const hasSelection =
+        selectedMeasure != null || selectedMarkup != null
+      const sessionMode =
         kind === 'measure'
           ? selectedMeasure?.textHeightMode ??
             acapGetMeasurementTextHeightMode()
           : selectedMarkup?.style.textHeightMode ?? getMarkupTextHeightMode()
-      const initialFontSizePx =
+      const fontSizePx =
         kind === 'measure'
           ? selectedMeasure?.fontSize ?? acapGetMeasurementFontSize()
           : selectedMarkup?.style.fontSize ?? getMarkupFontSize()
-      const initialTextHeightWcs =
+      const measureId = getSelectedMeasurementId()
+      const selectedTextHeightWcs =
         kind === 'measure'
-          ? selectedMeasure?.textHeightWcs ??
-            acapGetMeasurementCustomTextHeightWcs()
-          : selectedMarkup?.style.textHeightWcs ?? getMarkupCustomTextHeightWcs()
+          ? hasSelection
+            ? selectedMeasure?.textHeightWcs ??
+              (measureId
+                ? getMeasurementSnapshot(measureId)?.style.textHeightWcs
+                : undefined)
+            : acapGetMeasurementCustomTextHeightWcs()
+          : hasSelection
+            ? selectedMarkup?.style.textHeightWcs
+            : getMarkupCustomTextHeightWcs()
+
+      const initials = acuiResolveTextHeightDialogInitials({
+        hasSelection,
+        sessionMode: sessionMode ?? 'adaptive',
+        fontSizePx,
+        selectedTextHeightWcs,
+        view
+      })
 
       const result = await acuiOpenTextHeightDialog({
         view,
-        initialMode,
-        initialFontSizePx,
-        initialTextHeightWcs
+        ...initials
       })
       if (!result) return
       const patch = acuiResolveTextHeightPatch(
         view,
         result,
-        initialFontSizePx
+        initials.initialFontSizePx
       )
       if (kind === 'measure') {
         acapSetMeasurementTextHeight(
