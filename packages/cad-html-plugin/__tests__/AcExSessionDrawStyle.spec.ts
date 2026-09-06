@@ -6,9 +6,24 @@ import type { AcExHtmlI18n } from '../src/AcExHtmlI18n'
 
 Object.assign(globalThis, { TextDecoder, TextEncoder })
 
-jest.mock('../src/AcExHtmlSimpleViewerUi', () => ({
-  ...jest.requireActual('../../cad-simple-viewer/src/ui/AcUiAciColorDialog.ts')
-}))
+jest.mock('../src/AcExHtmlSimpleViewerUi', () => {
+  const colorDialog = jest.requireActual(
+    '../../cad-simple-viewer/src/ui/AcUiAciColorDialog.ts'
+  )
+  return {
+    ...colorDialog,
+    createIconElement: (icon: unknown) => {
+      const wrap = document.createElement('span')
+      wrap.className = 'ml-ex-ui-icon'
+      wrap.innerHTML = typeof icon === 'string' ? icon : ''
+      return wrap
+    },
+    ICON_TEXT_HEIGHT: '<svg></svg>',
+    AcUiTextHeightDialog: {
+      open: async () => null
+    }
+  }
+})
 
 // Value import after the polyfill: `@mlightcad/data-model` needs TextDecoder in jsdom.
 import { setupAcExSessionDrawStyle } from '../src/AcExSessionDrawStyle'
@@ -27,7 +42,7 @@ describe('setupAcExSessionDrawStyle', () => {
     document.getElementById('ml-ui-dialog-styles')?.remove()
   })
 
-  it('mounts color and font-size controls into the session host, not a canvas overlay', () => {
+  it('mounts color and text-height controls into the session host, not a canvas overlay', () => {
     const canvasRoot = document.createElement('div')
     canvasRoot.id = 'mlcad-canvas-host'
     document.body.appendChild(canvasRoot)
@@ -48,20 +63,11 @@ describe('setupAcExSessionDrawStyle', () => {
 
     expect(host.querySelector('.mlcad-session-style')).toBeTruthy()
     expect(host.querySelector('.mlcad-session-style__swatch')).toBeTruthy()
+    expect(host.querySelector('.mlcad-session-style__text-height')).toBeTruthy()
     expect(host.querySelector('.ml-aci-stacks')).toBeNull()
-    expect(
-      (host.querySelector('.mlcad-session-style__select') as HTMLSelectElement)
-        .value
-    ).toBe('16')
+    expect(host.querySelector('.mlcad-session-style__select')).toBeNull()
     expect(canvasRoot.childElementCount).toBe(0)
     expect(document.querySelector('.ml-draw-style-toolbar')).toBeNull()
-
-    const select = host.querySelector(
-      '.mlcad-session-style__select'
-    ) as HTMLSelectElement
-    select.value = '20'
-    select.dispatchEvent(new Event('change'))
-    expect(applyStyle).toHaveBeenCalledWith('measure', { fontSize: 20 })
 
     accessory.unmount()
     expect(host.querySelector('.mlcad-session-style')).toBeNull()
