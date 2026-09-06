@@ -106,10 +106,13 @@ export default {
     cancel: 'İptal',
     adaptive: 'Ekrana uyarla',
     custom: 'Özel yazı yüksekliği',
-    customPlaceholder: 'WCS yüksekliği',
-    match: 'Yükseklik eşleştir',
-    matchPrompt: 'Bir yazı nesnesi seçin:',
-    matchReject: 'Lütfen bir yazı veya çok satırlı yazı seçin.'
+    customPlaceholder: 'Dünya yüksekliği',
+    fromScreen: 'Ekran boyutundan',
+    fromScreenHint:
+      'Geçerli yakınlaştırmada ekranda istediğiniz yazı boyutunu girin. Sabit bir dünya yüksekliğine dönüştürülür; sonra yakınlaştırınca bu yükseklik değişmez.',
+    screenPxPlaceholder: 'Yazı boyutu',
+    screenUnit: 'px',
+    convert: 'Dönüştür'
   },
   entityPick: {
     cancel: 'Seçimi iptal et'

@@ -37,6 +37,7 @@ import {
   acapStrokeLivePolyline,
   acapStrokeLiveSegment
 } from '../overlay/AcApHtmlLivePreview'
+import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
 import { promptMarkupCapsuleText } from './AcApMarkupCmdUtil'
 import {
   markupCloudVertices,
@@ -49,6 +50,7 @@ import type {
 } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
+  defaultMarkupStyle,
   getMarkupFontSize,
   MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth,
@@ -264,6 +266,7 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
       layoutId
     })
     this._ht.add(this._bubble)
+    acapSyncLiveOverlayTextHeight(this._view, [this._bubble], defaultMarkupStyle())
 
     this._preview = new AcApHtmlLivePreview(
       this._view,
@@ -289,6 +292,9 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
     this._tipDot.setPosition(this._tip)
     this._bubble.setPosition(toward)
+    const style = defaultMarkupStyle()
+    this._bubble.setFontSize(style.fontSize ?? getMarkupFontSize())
+    acapSyncLiveOverlayTextHeight(this._view, [this._bubble], style)
     this.paintPreview()
     this._view.isHtmlDirty = true
   }
@@ -321,7 +327,9 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._color = defaultMarkupColor()
     this._tipDot.setColor(this._color)
     this._bubble.setColor(this._color)
-    this._bubble.setFontSize(getMarkupFontSize())
+    const style = defaultMarkupStyle()
+    this._bubble.setFontSize(style.fontSize ?? getMarkupFontSize())
+    acapSyncLiveOverlayTextHeight(this._view, [this._bubble], style)
     this.paintPreview()
     this._view.isHtmlDirty = true
   }

@@ -106,10 +106,13 @@ export default {
     cancel: 'إلغاء',
     adaptive: 'ملاءمة الشاشة',
     custom: 'ارتفاع نص مخصص',
-    customPlaceholder: 'ارتفاع WCS',
-    match: 'مطابقة الارتفاع',
-    matchPrompt: 'حدد كيان نص:',
-    matchReject: 'يرجى تحديد نص أو نص متعدد الأسطر.'
+    customPlaceholder: 'ارتفاع العالم',
+    fromScreen: 'من حجم الشاشة',
+    fromScreenHint:
+      'أدخل حجم النص المطلوب على الشاشة عند التكبير الحالي. يُحوَّل إلى ارتفاع ثابت في إحداثيات الرسم ويبقى كما هو عند تغيير التكبير لاحقًا.',
+    screenPxPlaceholder: 'حجم الخط',
+    screenUnit: 'px',
+    convert: 'تحويل'
   },
   entityPick: {
     cancel: 'إلغاء التحديد'

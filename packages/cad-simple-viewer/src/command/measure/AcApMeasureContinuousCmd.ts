@@ -20,7 +20,6 @@ import { AcApI18n } from '../../i18n'
 import {
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
-  acapGetMeasurementFontSize,
   acapMeasurementCanvasLineWidth,
   formatMeasurementLength,
   MEASUREMENT_LINE_WEIGHT
@@ -30,6 +29,7 @@ import {
   AcApHtmlLivePreview,
   acapStrokeLivePolyline
 } from '../overlay/AcApHtmlLivePreview'
+import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
 import { placeDistanceMeasurement } from './AcApMeasureDistanceCmd'
 import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
 import { runMeasurementEdit } from './AcApMeasurementHistory'
@@ -96,7 +96,7 @@ export class AcApMeasureContinuousJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   update(cursor: AcGePoint3dLike) {
     this._color = acapGetMeasurementColor(this._db)
-    const fontSize = acapGetMeasurementFontSize()
+    const style = acapGetCurrentMeasurementStyle(this._db)
     const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     const vertices = [...this._points, cursor].map(clonePoint)
     this._preview.acapSetDraw((ctx, view) => {
@@ -104,7 +104,10 @@ export class AcApMeasureContinuousJig extends AcEdPreviewJig<AcGePoint3dLike> {
         segmentArrows: true
       })
     })
-    this.syncBadges(vertices, fontSize)
+    this.syncBadges(vertices, style.fontSize)
+    if (this._badges.length > 0) {
+      acapSyncLiveOverlayTextHeight(this._view, this._badges, style)
+    }
   }
 
   /**
@@ -138,6 +141,11 @@ export class AcApMeasureContinuousJig extends AcEdPreviewJig<AcGePoint3dLike> {
         fontSize
       })
       this._htManager.add(badge)
+      acapSyncLiveOverlayTextHeight(
+        this._view,
+        [badge],
+        acapGetCurrentMeasurementStyle(this._db)
+      )
       this._badges.push(badge)
     }
     while (this._badges.length > needed) {

@@ -279,10 +279,17 @@ export class AcUiShortCutToolbar {
   }
 
   /**
+   * Whether the shell is currently shown (settings or {@link forceVisible}).
+   */
+  get isVisible(): boolean {
+    return !this.shell.hidden
+  }
+
+  /**
    * Marks whether {@link accessoryHost} currently hosts draw-style controls.
    * Drives the divider between accessory and core buttons.
    *
-   * @param active - True when selection draw-style is mounted in the slot.
+   * @param active - True when draw-style is mounted in the slot.
    */
   setAccessoryActive(active: boolean): void {
     this.shell.classList.toggle('has-accessory', active)

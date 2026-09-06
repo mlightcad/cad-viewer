@@ -16,11 +16,11 @@ import {
   ACEX_OVERLAY_ARROW_SIZE_PX,
   acexPixelsPerWorldUnit,
   acexPositionWcsOverlay,
-  acexResetOverlayViewScale,
   acexScaledCanvasLineWidth,
   acexScaledOverlayArrowSize,
   acexScreenPxToWcs,
-  acexSeedOverlaySizesFromWcs
+  acexSeedOverlaySizesFromWcs,
+  acexSyncLiveOverlayTextHeight
 } from './AcExHtmlOverlayDom'
 import {
   acexDrawMarkupArrowHead,
@@ -1355,23 +1355,6 @@ export class AcExMeasureController {
     })
   }
 
-  /**
-   * Returns WCS text height of a committed measurement under the pointer, if any.
-   */
-  tryPickTextHeightAt(clientX: number, clientY: number): number | null {
-    if (!this._visible) return null
-    const measure = this._pickCommittedMeasure(clientX, clientY)
-    if (!measure) return null
-    const style = measure.record.style
-    if (style.textHeightWcs != null && style.textHeightWcs > 0) {
-      return style.textHeightWcs
-    }
-    const fontSize = style.fontSize || this._drawFontSize
-    if (!(fontSize > 0)) return null
-    const wcs = acexScreenPxToWcs(fontSize, p => this._wcsToScreenPoint(p))
-    return wcs > 0 ? wcs : null
-  }
-
   /** CSS stroke/fill color for canvas overlays. @internal */
   private _measureCss(): string {
     return measureColorToCss(this._measureColor)
@@ -2259,6 +2242,7 @@ export class AcExMeasureController {
       el.style.fontSize = `${this._drawFontSize}px`
       el.style.display = 'block'
       el.classList.toggle('mlcad-measure-badge--coordinate', !!item.coordinate)
+      this._syncLiveDomTextHeight(el)
       this._placeDomAt(el, item.wcs)
     }
   }
@@ -3698,10 +3682,26 @@ export class AcExMeasureController {
   private _placeDomAt(el: HTMLElement, wcs: { x: number; y: number }): void {
     el.dataset.wcsX = String(wcs.x)
     el.dataset.wcsY = String(wcs.y)
-    if (!acexIsOverlayGrip(el)) acexResetOverlayViewScale(el)
+    if (el.classList.contains('mlcad-measure-badge--preview')) {
+      this._syncLiveDomTextHeight(el)
+    }
     const screen = this._view.wcsToScreen(new THREE.Vector2(wcs.x, wcs.y))
     const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
     acexPositionWcsOverlay(el, screen, rootRect, this._view.getCameraZoom())
+  }
+
+  /** Apply session text-height mode to a live preview badge. @internal */
+  private _syncLiveDomTextHeight(el: HTMLElement): void {
+    acexSyncLiveOverlayTextHeight(
+      this._view.getCameraZoom(),
+      p => this._wcsToScreenPoint(p),
+      el,
+      {
+        fontSize: this._drawFontSize,
+        textHeightMode: this._drawTextHeightMode,
+        textHeightWcs: this._drawCustomTextHeightWcs
+      }
+    )
   }
 
   /** Replace selection with a single measurement (grip edit). @internal */
@@ -3993,16 +3993,24 @@ export class AcExMeasureController {
     const wcsToScreen = (p: { x: number; y: number }) =>
       this._wcsToScreenPoint(p)
     const { strokeWidthWcs: _omit, ...rest } = style
-    const custom =
+    let textHeightWcs: number
+    if (
       style.textHeightMode === 'custom' &&
       style.textHeightWcs != null &&
       style.textHeightWcs > 0
+    ) {
+      textHeightWcs = style.textHeightWcs
+    } else if (style.textHeightMode === 'adaptive') {
+      textHeightWcs = acexScreenPxToWcs(style.fontSize, wcsToScreen)
+    } else if (style.textHeightWcs != null && style.textHeightWcs > 0) {
+      textHeightWcs = style.textHeightWcs
+    } else {
+      textHeightWcs = acexScreenPxToWcs(style.fontSize, wcsToScreen)
+    }
     return {
       ...rest,
       lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
-      textHeightWcs: custom
-        ? style.textHeightWcs
-        : acexScreenPxToWcs(style.fontSize, wcsToScreen)
+      textHeightWcs
     }
   }
 

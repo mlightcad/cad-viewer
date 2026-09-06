@@ -7,6 +7,10 @@ import {
   type AcEdSessionAccessoryOptions
 } from '../editor/command/AcEdSessionAccessory'
 import {
+  ACED_SHORTCUT_TOOLBAR_PROVIDER_ID,
+  type AcUiShortCutToolbar
+} from './AcUiShortCutToolbar'
+import {
   type AcApDrawStyleKind,
   acapDrawStyleKindForCommand
 } from '../util/AcApCommandUtil'
@@ -72,7 +76,9 @@ export function acuiShouldShowDrawStyleToolbar(
  *
  * Sets the host session kind from the command's global name so color / font-size
  * sync and apply target the measure or markup store while the command runs.
- * Desktop mounts are suppressed when the ribbon already exposes the same UI.
+ * Desktop mounts are suppressed when the ribbon already exposes the same UI, or
+ * when the shortcut toolbar is visible (it owns the desktop draw-style slot).
+ * Mobile mounts still target the session-panel accessory host.
  *
  * @param command - Command that should expose color / font-size session UI.
  */
@@ -91,8 +97,9 @@ export function acuiBindDrawStyleSessionAccessory(command: {
      * Resolves the view host, applies session kind, and mounts controls.
      *
      * @param options - Host element, slot type, and owning view.
-     * @throws {AcEdSessionAccessoryMountSkippedError} When there is no host or
-     *   desktop ribbon already covers the same UI.
+     * @throws {AcEdSessionAccessoryMountSkippedError} When there is no host,
+     *   desktop ribbon already covers the same UI, or the shortcut toolbar
+     *   owns the desktop slot.
      */
     mount(options: AcEdSessionAccessoryOptions) {
       const host = options.view.sessionProviders.get<AcEdDrawStyleSessionHost>(
@@ -105,11 +112,17 @@ export function acuiBindDrawStyleSessionAccessory(command: {
       const kind = acapDrawStyleKindForCommand(command.globalName)
       host.setActiveKind(kind)
 
-      if (
-        options.type === 'desktop' &&
-        !acuiShouldShowDrawStyleToolbar(kind)
-      ) {
-        throw new AcEdSessionAccessoryMountSkippedError()
+      if (options.type === 'desktop') {
+        const shortcut = options.view.sessionProviders.get<AcUiShortCutToolbar>(
+          ACED_SHORTCUT_TOOLBAR_PROVIDER_ID
+        )
+        // Shortcut binder mounts draw-style on desktop; skip top-center chrome.
+        if (shortcut?.isVisible) {
+          throw new AcEdSessionAccessoryMountSkippedError()
+        }
+        if (!acuiShouldShowDrawStyleToolbar(kind)) {
+          throw new AcEdSessionAccessoryMountSkippedError()
+        }
       }
 
       inner = host.createSessionAccessory()

@@ -103,8 +103,11 @@ export type AcExHtmlMessageKey =
   | 'textHeight.adaptive'
   | 'textHeight.custom'
   | 'textHeight.customPlaceholder'
-  | 'textHeight.match'
-  | 'textHeight.matchPrompt'
+  | 'textHeight.fromScreen'
+  | 'textHeight.fromScreenHint'
+  | 'textHeight.screenPxPlaceholder'
+  | 'textHeight.screenUnit'
+  | 'textHeight.convert'
   | 'entityPick.cancel'
   | 'layers.title'
   | 'layers.close'
@@ -314,9 +317,13 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       cancel: 'Cancel',
       adaptive: 'Fit to screen',
       custom: 'Custom text height',
-      customPlaceholder: 'WCS height',
-      match: 'Match height',
-      matchPrompt: 'Select a text entity'
+      customPlaceholder: 'World height',
+      fromScreen: 'From screen size',
+      fromScreenHint:
+        'Enter how large the text should look on screen at the current zoom. It is converted to a fixed world-space height that stays constant when you zoom later.',
+      screenPxPlaceholder: 'Font size',
+      screenUnit: 'px',
+      convert: 'Convert'
     },
     entityPick: {
       cancel: 'Cancel selection'
@@ -549,9 +556,13 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       cancel: '取消',
       adaptive: '自适应屏幕',
       custom: '自定义字高',
-      customPlaceholder: 'WCS 字高',
-      match: '字高匹配',
-      matchPrompt: '选择一个文字对象'
+      customPlaceholder: '世界坐标字高',
+      fromScreen: '按屏幕字号换算',
+      fromScreenHint:
+        '按当前视图缩放，输入希望看到的屏幕字号（像素），换算为固定的世界坐标字高；之后缩放时字的世界高度不变。',
+      screenPxPlaceholder: '屏幕字号',
+      screenUnit: 'px',
+      convert: '换算'
     },
     entityPick: {
       cancel: '取消选择'
@@ -776,9 +787,13 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       cancel: 'Zrušit',
       adaptive: 'Přizpůsobit obrazovce',
       custom: 'Vlastní výška textu',
-      customPlaceholder: 'Výška WCS',
-      match: 'Shoda výšky',
-      matchPrompt: 'Vyberte textovou entitu'
+      customPlaceholder: 'Světová výška',
+      fromScreen: 'Ze velikosti na obrazovce',
+      fromScreenHint:
+        'Zadejte, jak velký má text vypadat na obrazovce při aktuálním zoomu. Přepočítá se na pevnou světovou výšku, která se při pozdějším zoomování nemění.',
+      screenPxPlaceholder: 'Velikost písma',
+      screenUnit: 'px',
+      convert: 'Přepočítat'
     },
     entityPick: {
       cancel: 'Zrušit výběr'
@@ -1011,9 +1026,13 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       cancel: 'İptal',
       adaptive: 'Ekrana uyarla',
       custom: 'Özel yazı yüksekliği',
-      customPlaceholder: 'WCS yüksekliği',
-      match: 'Yükseklik eşleştir',
-      matchPrompt: 'Bir yazı nesnesi seçin'
+      customPlaceholder: 'Dünya yüksekliği',
+      fromScreen: 'Ekran boyutundan',
+      fromScreenHint:
+        'Geçerli yakınlaştırmada ekranda istediğiniz yazı boyutunu girin. Sabit bir dünya yüksekliğine dönüştürülür; sonra yakınlaştırınca bu yükseklik değişmez.',
+      screenPxPlaceholder: 'Yazı boyutu',
+      screenUnit: 'px',
+      convert: 'Dönüştür'
     },
     entityPick: {
       cancel: 'Seçimi iptal et'
@@ -1236,6 +1255,21 @@ const AR_MESSAGES: AcExMessageTree = {
     'rgb': 'RGB: ',
     'input': 'اللون',
     'inputPlaceholder': '1-255 أو #RRGGBB'
+  },
+  'textHeight': {
+    'title': 'ارتفاع النص',
+    'close': 'إغلاق',
+    'ok': 'موافق',
+    'cancel': 'إلغاء',
+    'adaptive': 'ملاءمة الشاشة',
+    'custom': 'ارتفاع نص مخصص',
+    'customPlaceholder': 'ارتفاع العالم',
+    'fromScreen': 'من حجم الشاشة',
+    'fromScreenHint':
+      'أدخل حجم النص المطلوب على الشاشة عند التكبير الحالي. يُحوَّل إلى ارتفاع ثابت في إحداثيات الرسم ويبقى كما هو عند تغيير التكبير لاحقًا.',
+    'screenPxPlaceholder': 'حجم الخط',
+    'screenUnit': 'px',
+    'convert': 'تحويل'
   },
   'layers': {
     'title': 'الطبقات',

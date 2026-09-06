@@ -1,6 +1,9 @@
 /**
  * Dialog for choosing adaptive (screen px) vs custom WCS text height.
  *
+ * Custom mode includes a small calculator that converts a desired on-screen
+ * font size at the current zoom into a fixed world-space height.
+ *
  * @module AcUiTextHeightDialog
  * @packageDocumentation
  */
@@ -31,9 +34,18 @@ export interface AcUiTextHeightDialogLabels {
   cancel: string
   adaptive: string
   custom: string
+  /** Placeholder for the primary WCS height field. */
   customPlaceholder: string
-  match: string
-  matchPrompt?: string
+  /** Calculator section title. */
+  fromScreen: string
+  /** Explains that conversion uses the current canvas zoom. */
+  fromScreenHint: string
+  /** Placeholder for the screen-size input. */
+  screenPxPlaceholder: string
+  /** Unit suffix next to the screen-size input (e.g. `px`). */
+  screenUnit: string
+  /** Apply conversion button. */
+  convert: string
 }
 
 /** Options for {@link AcUiTextHeightDialog.open}. */
@@ -42,15 +54,15 @@ export interface AcUiTextHeightDialogOptions {
   host?: HTMLElement
   theme?: AcEdUiTheme
   initialMode?: AcUiTextHeightMode
-  /** Initial adaptive font size (CSS px). */
+  /** Initial adaptive font size (CSS px); also seeds the calculator. */
   initialFontSizePx?: number
   /** Initial custom WCS height. */
   initialTextHeightWcs?: number
   /**
-   * Invoked when the user clicks "match height". Should resolve to a WCS
-   * height, or `null` / `undefined` when cancelled.
+   * Converts a CSS-pixel size to WCS at the canvas zoom when the dialog opens.
+   * Required for the screen-size calculator.
    */
-  onMatchHeight?: () => Promise<number | null | undefined>
+  screenPxToWcs: (px: number) => number
 }
 
 const STYLE_ID = 'ml-ui-text-height-dialog-styles'
@@ -97,10 +109,48 @@ const DIALOG_CSS = `
   .ml-ui-text-height-dialog .ml-ui-text-height-input:disabled {
     opacity: 0.55;
   }
-  .ml-ui-text-height-dialog .ml-ui-text-height-match {
+  .ml-ui-text-height-dialog .ml-ui-text-height-calc {
+    margin-left: 24px;
+    padding: 10px 12px;
+    border: 1px solid var(--ml-ui-border, #dcdfe6);
+    border-radius: 6px;
+    background: var(--ml-ui-bg-muted, rgba(127, 127, 127, 0.08));
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .ml-ui-text-height-dialog .ml-ui-text-height-calc[data-disabled='true'] {
+    opacity: 0.55;
+    pointer-events: none;
+  }
+  .ml-ui-text-height-dialog .ml-ui-text-height-calc-title {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .ml-ui-text-height-dialog .ml-ui-text-height-calc-hint {
+    font-size: 12px;
+    line-height: 1.45;
+    opacity: 0.78;
+  }
+  .ml-ui-text-height-dialog .ml-ui-text-height-calc-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ml-ui-text-height-dialog .ml-ui-text-height-calc-row .ml-ui-text-height-input {
+    flex: 1 1 auto;
+    max-width: 120px;
+  }
+  .ml-ui-text-height-dialog .ml-ui-text-height-calc-unit {
+    flex: 0 0 auto;
+    font-size: 13px;
+    opacity: 0.8;
+  }
+  .ml-ui-text-height-dialog .ml-ui-text-height-convert {
     flex: 0 0 auto;
     height: 32px;
-    padding: 0 10px;
+    padding: 0 12px;
     border: 1px solid var(--ml-ui-border, #dcdfe6);
     border-radius: 4px;
     background: var(--ml-ui-bg, #fff);
@@ -108,7 +158,7 @@ const DIALOG_CSS = `
     font-size: 13px;
     cursor: pointer;
   }
-  .ml-ui-text-height-dialog .ml-ui-text-height-match:disabled {
+  .ml-ui-text-height-dialog .ml-ui-text-height-convert:disabled {
     opacity: 0.55;
     cursor: default;
   }
@@ -123,6 +173,13 @@ function ensureStyles(): void {
   document.head.appendChild(style)
 }
 
+/** Formats a positive WCS height for the input field. */
+function formatWcsHeight(value: number): string {
+  if (!(value > 0) || !Number.isFinite(value)) return ''
+  const rounded = Number(value.toPrecision(6))
+  return String(rounded)
+}
+
 /**
  * Modal dialog: adaptive screen font size vs custom WCS text height.
  */
@@ -131,9 +188,10 @@ export class AcUiTextHeightDialog extends AcUiDialog {
   private readonly adaptiveRadio: HTMLInputElement
   private readonly customRadio: HTMLInputElement
   private readonly customInput: HTMLInputElement
-  private readonly matchButton: HTMLButtonElement
-  private readonly onMatchHeight?: () => Promise<number | null | undefined>
-  private matching = false
+  private readonly screenPxInput: HTMLInputElement
+  private readonly convertButton: HTMLButtonElement
+  private readonly calcPanel: HTMLDivElement
+  private readonly screenPxToWcs: (px: number) => number
 
   private constructor(options: AcUiTextHeightDialogOptions) {
     super({
@@ -144,7 +202,7 @@ export class AcUiTextHeightDialog extends AcUiDialog {
       theme: options.theme
     })
     ensureStyles()
-    this.onMatchHeight = options.onMatchHeight
+    this.screenPxToWcs = options.screenPxToWcs
 
     const groupName = `ml-ui-text-height-${AcUiTextHeightDialog.nextGroupId++}`
 
@@ -159,7 +217,10 @@ export class AcUiTextHeightDialog extends AcUiDialog {
     this.adaptiveRadio.type = 'radio'
     this.adaptiveRadio.name = groupName
     this.adaptiveRadio.value = 'adaptive'
-    adaptiveLabel.append(this.adaptiveRadio, document.createTextNode(options.labels.adaptive))
+    adaptiveLabel.append(
+      this.adaptiveRadio,
+      document.createTextNode(options.labels.adaptive)
+    )
     adaptiveOption.appendChild(adaptiveLabel)
 
     const customOption = document.createElement('div')
@@ -170,7 +231,10 @@ export class AcUiTextHeightDialog extends AcUiDialog {
     this.customRadio.type = 'radio'
     this.customRadio.name = groupName
     this.customRadio.value = 'custom'
-    customLabel.append(this.customRadio, document.createTextNode(options.labels.custom))
+    customLabel.append(
+      this.customRadio,
+      document.createTextNode(options.labels.custom)
+    )
 
     const customRow = document.createElement('div')
     customRow.className = 'ml-ui-text-height-custom-row'
@@ -180,13 +244,35 @@ export class AcUiTextHeightDialog extends AcUiDialog {
     this.customInput.step = 'any'
     this.customInput.className = 'ml-ui-text-height-input'
     this.customInput.placeholder = options.labels.customPlaceholder
-    this.matchButton = document.createElement('button')
-    this.matchButton.type = 'button'
-    this.matchButton.className = 'ml-ui-text-height-match'
-    this.matchButton.textContent = options.labels.match
-    customRow.append(this.customInput, this.matchButton)
-    customOption.append(customLabel, customRow)
+    customRow.appendChild(this.customInput)
 
+    this.calcPanel = document.createElement('div')
+    this.calcPanel.className = 'ml-ui-text-height-calc'
+    const calcTitle = document.createElement('div')
+    calcTitle.className = 'ml-ui-text-height-calc-title'
+    calcTitle.textContent = options.labels.fromScreen
+    const calcHint = document.createElement('div')
+    calcHint.className = 'ml-ui-text-height-calc-hint'
+    calcHint.textContent = options.labels.fromScreenHint
+    const calcRow = document.createElement('div')
+    calcRow.className = 'ml-ui-text-height-calc-row'
+    this.screenPxInput = document.createElement('input')
+    this.screenPxInput.type = 'number'
+    this.screenPxInput.min = '1'
+    this.screenPxInput.step = '1'
+    this.screenPxInput.className = 'ml-ui-text-height-input'
+    this.screenPxInput.placeholder = options.labels.screenPxPlaceholder
+    const unit = document.createElement('span')
+    unit.className = 'ml-ui-text-height-calc-unit'
+    unit.textContent = options.labels.screenUnit
+    this.convertButton = document.createElement('button')
+    this.convertButton.type = 'button'
+    this.convertButton.className = 'ml-ui-text-height-convert'
+    this.convertButton.textContent = options.labels.convert
+    calcRow.append(this.screenPxInput, unit, this.convertButton)
+    this.calcPanel.append(calcTitle, calcHint, calcRow)
+
+    customOption.append(customLabel, customRow, this.calcPanel)
     optionsRoot.append(adaptiveOption, customOption)
     this.bodyEl.appendChild(optionsRoot)
 
@@ -197,26 +283,29 @@ export class AcUiTextHeightDialog extends AcUiDialog {
       options.initialTextHeightWcs != null &&
       options.initialTextHeightWcs > 0
     ) {
-      this.customInput.value = String(options.initialTextHeightWcs)
-    } else if (
-      options.initialFontSizePx != null &&
-      options.initialFontSizePx > 0 &&
-      initialMode === 'adaptive'
-    ) {
-      // Leave custom empty in adaptive mode; caller may still pass a WCS seed.
+      this.customInput.value = formatWcsHeight(options.initialTextHeightWcs)
+    }
+    if (options.initialFontSizePx != null && options.initialFontSizePx > 0) {
+      this.screenPxInput.value = String(Math.round(options.initialFontSizePx))
     }
 
     const syncEnabled = () => {
       const custom = this.customRadio.checked
       this.customInput.disabled = !custom
-      this.matchButton.disabled = !custom || this.matching || !this.onMatchHeight
+      this.screenPxInput.disabled = !custom
+      this.convertButton.disabled = !custom
+      this.calcPanel.dataset.disabled = custom ? 'false' : 'true'
     }
     this.adaptiveRadio.addEventListener('change', syncEnabled)
     this.customRadio.addEventListener('change', syncEnabled)
     syncEnabled()
 
-    this.matchButton.addEventListener('click', () => {
-      void this.runMatchHeight()
+    this.convertButton.addEventListener('click', () => this.applyScreenPx())
+    this.screenPxInput.addEventListener('keydown', event => {
+      if (event.key === 'Enter') {
+        event.preventDefault()
+        this.applyScreenPx()
+      }
     })
 
     const cancelBtn = document.createElement('button')
@@ -239,7 +328,7 @@ export class AcUiTextHeightDialog extends AcUiDialog {
   /**
    * Opens the dialog and resolves with the confirmed values, or `null` if cancelled.
    *
-   * @param options - Labels, initial values, and optional match-height handler.
+   * @param options - Labels, initial values, and screen↔WCS conversion.
    */
   static open(
     options: AcUiTextHeightDialogOptions
@@ -263,25 +352,20 @@ export class AcUiTextHeightDialog extends AcUiDialog {
     this.close()
   }
 
-  private async runMatchHeight(): Promise<void> {
-    if (!this.onMatchHeight || this.matching) return
-    this.matching = true
-    this.matchButton.disabled = true
-    // Hide dialog while picking so the canvas is free.
-    this.backdrop.style.visibility = 'hidden'
-    try {
-      const height = await this.onMatchHeight()
-      if (height != null && height > 0 && Number.isFinite(height)) {
-        this.customInput.value = String(height)
-        this.customRadio.checked = true
-        this.adaptiveRadio.checked = false
-      }
-    } finally {
-      this.backdrop.style.visibility = ''
-      this.matching = false
-      this.customInput.disabled = !this.customRadio.checked
-      this.matchButton.disabled =
-        !this.customRadio.checked || !this.onMatchHeight
+  private applyScreenPx(): void {
+    if (!this.customRadio.checked) return
+    const px = Number(this.screenPxInput.value)
+    if (!(px > 0) || !Number.isFinite(px)) {
+      this.screenPxInput.focus()
+      return
     }
+    const wcs = this.screenPxToWcs(px)
+    if (!(wcs > 0) || !Number.isFinite(wcs)) {
+      this.screenPxInput.focus()
+      return
+    }
+    this.customInput.value = formatWcsHeight(wcs)
+    this.customInput.focus()
+    this.customInput.select()
   }
 }

@@ -17,6 +17,7 @@ import {
   AcApHtmlLivePreview,
   acapStrokeLiveSegment
 } from '../overlay/AcApHtmlLivePreview'
+import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
 import { createMarkupMeta } from './AcApMarkupCmdUtil'
 import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
 import { commitMarkup } from './AcApMarkupPresenter'
@@ -24,6 +25,8 @@ import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
+  defaultMarkupStyle,
+  getMarkupFontSize,
   MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth,
   markupColorToCss
@@ -52,16 +55,19 @@ class AcApMarkupLineJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._color = color
     this._ht = this._view.htmlTransientManager
     this._badgeId = `live-markup-line-${Date.now()}`
+    const style = defaultMarkupStyle()
     this._badge = new AcTrHtmlBadge({
       id: this._badgeId,
       color,
       text: label,
       worldPosition: p1,
       layer: MARKUP_LIVE_LAYER,
-      layoutId: this._view.activeLayoutBtrId
+      layoutId: this._view.activeLayoutBtrId,
+      fontSize: style.fontSize
     })
     this._badge.object.visible = false
     this._ht.add(this._badge)
+    acapSyncLiveOverlayTextHeight(this._view, [this._badge], style)
 
     this._preview = new AcApHtmlLivePreview(
       this._view,
@@ -79,6 +85,9 @@ class AcApMarkupLineJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._p2 = p2
     this._color = defaultMarkupColor()
     this._badge.setColor(this._color)
+    const style = defaultMarkupStyle()
+    this._badge.setFontSize(style.fontSize ?? getMarkupFontSize())
+    acapSyncLiveOverlayTextHeight(this._view, [this._badge], style)
 
     const lineWidth = markupCanvasLineWidth(MARKUP_LINE_WEIGHT)
     this._preview.acapSetDraw((ctx, view) => {

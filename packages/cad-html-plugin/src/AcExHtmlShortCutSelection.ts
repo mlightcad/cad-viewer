@@ -54,7 +54,6 @@ export interface AcExHtmlShortCutSelectionContext {
   ) => void
   hasSelection: (kind: AcExDrawStyleKind) => boolean
   wcsToScreen?: (p: { x: number; y: number }) => { x: number; y: number }
-  matchTextHeight?: () => Promise<number | null | undefined>
   setExtensionItems: (items: AcUiSimpleToolbarItem[]) => void
 }
 
@@ -148,6 +147,8 @@ async function openTextHeight(
     initialMode: style.textHeightMode ?? 'adaptive',
     initialFontSizePx: style.fontSize,
     initialTextHeightWcs: style.textHeightWcs,
+    screenPxToWcs: (px: number) =>
+      ctx.wcsToScreen ? acexScreenPxToWcs(px, ctx.wcsToScreen) : px,
     labels: {
       title: ctx.i18n.t('textHeight.title'),
       close: ctx.i18n.t('textHeight.close'),
@@ -156,9 +157,12 @@ async function openTextHeight(
       adaptive: ctx.i18n.t('textHeight.adaptive'),
       custom: ctx.i18n.t('textHeight.custom'),
       customPlaceholder: ctx.i18n.t('textHeight.customPlaceholder'),
-      match: ctx.i18n.t('textHeight.match')
-    },
-    onMatchHeight: ctx.matchTextHeight
+      fromScreen: ctx.i18n.t('textHeight.fromScreen'),
+      fromScreenHint: ctx.i18n.t('textHeight.fromScreenHint'),
+      screenPxPlaceholder: ctx.i18n.t('textHeight.screenPxPlaceholder'),
+      screenUnit: ctx.i18n.t('textHeight.screenUnit'),
+      convert: ctx.i18n.t('textHeight.convert')
+    }
   })
   if (!result) return
   if (result.mode === 'custom' && result.textHeightWcs != null) {

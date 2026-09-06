@@ -1,6 +1,9 @@
+import { AcCmColor } from '@mlightcad/data-model'
+
 import {
   measurementSidecarFileName,
   parseMeasurementSidecar,
+  serializeMeasurementStyle,
   stringifyMeasurementSidecar
 } from '../src/command/measure/AcApMeasurementSidecar'
 import type { AcApMeasurementSidecarFile } from '../src/command/measure/AcApMeasurementTypes'
@@ -227,5 +230,42 @@ describe('AcApMeasurementSidecar', () => {
       start: { x: 5, y: 0 },
       end: { x: 0, y: 5 }
     })
+  })
+})
+
+describe('serializeMeasurementStyle text height', () => {
+  const view = {
+    worldToScreen: (p: { x: number; y: number }) => ({
+      x: p.x * 10,
+      y: p.y * 10
+    })
+  } as never
+
+  it('keeps custom WCS height without reconverting from fontSize', () => {
+    const out = serializeMeasurementStyle(
+      {
+        color: new AcCmColor(),
+        lineWeight: 0,
+        fontSize: 20,
+        textHeightMode: 'custom',
+        textHeightWcs: 7.5
+      },
+      view
+    )
+    expect(out.textHeightWcs).toBe(7.5)
+  })
+
+  it('bakes Fit-to-screen fontSize into WCS at the current view', () => {
+    const out = serializeMeasurementStyle(
+      {
+        color: new AcCmColor(),
+        lineWeight: 0,
+        fontSize: 20,
+        textHeightMode: 'adaptive'
+      },
+      view
+    )
+    // ppu = 10 → 20px / 10 = 2 WCS
+    expect(out.textHeightWcs).toBe(2)
   })
 })

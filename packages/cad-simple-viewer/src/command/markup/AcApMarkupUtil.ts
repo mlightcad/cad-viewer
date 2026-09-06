@@ -169,12 +169,22 @@ export function withMarkupStyleWcs(
     style.arrowSizeWcs != null && style.arrowSizeWcs > 0
       ? style.arrowSizeWcs
       : acapScreenPxToWcs(ACAP_OVERLAY_ARROW_SIZE_PX, view)
-  const textHeightWcs =
+  let textHeightWcs: number
+  if (
     style.textHeightMode === 'custom' &&
     style.textHeightWcs != null &&
     style.textHeightWcs > 0
-      ? style.textHeightWcs
-      : acapScreenPxToWcs(fontSize, view)
+  ) {
+    // Custom: keep the authored world height — never re-derive from fontSize.
+    textHeightWcs = style.textHeightWcs
+  } else if (style.textHeightMode === 'adaptive') {
+    // Fit-to-screen: bake the current screen font size into WCS at commit.
+    textHeightWcs = acapScreenPxToWcs(fontSize, view)
+  } else if (style.textHeightWcs != null && style.textHeightWcs > 0) {
+    textHeightWcs = style.textHeightWcs
+  } else {
+    textHeightWcs = acapScreenPxToWcs(fontSize, view)
+  }
   return {
     ...style,
     lineWeight: MARKUP_LINE_WEIGHT,

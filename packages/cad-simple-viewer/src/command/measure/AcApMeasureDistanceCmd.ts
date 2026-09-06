@@ -31,6 +31,7 @@ import {
   AcApHtmlLivePreview,
   acapStrokeLiveSegment
 } from '../overlay/AcApHtmlLivePreview'
+import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
 import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import { AcApMeasureDistanceEntity } from './entity'
@@ -96,6 +97,11 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
       fontSize: acapGetMeasurementFontSize()
     })
     this._htManager.add(this._badge)
+    acapSyncLiveOverlayTextHeight(
+      this._view,
+      [this._badge],
+      acapGetCurrentMeasurementStyle(this._db)
+    )
     // `add()` applies layout visibility and would force the empty capsule on.
     this._badge.object.visible = false
 
@@ -115,7 +121,9 @@ export class AcApMeasureDistanceJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._p2 = p2
     this._color = acapGetMeasurementColor(this._db)
     this._badge.setColor(this._color)
-    this._badge.setFontSize(acapGetMeasurementFontSize())
+    const style = acapGetCurrentMeasurementStyle(this._db)
+    this._badge.setFontSize(style.fontSize)
+    acapSyncLiveOverlayTextHeight(this._view, [this._badge], style)
 
     const dist = calcDist(this._p1, p2)
     const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)

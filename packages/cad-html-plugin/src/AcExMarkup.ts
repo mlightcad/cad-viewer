@@ -17,11 +17,11 @@ import { AcExHtmlIcons } from './AcExHtmlIcons'
 import {
   ACEX_OVERLAY_ARROW_SIZE_PX,
   acexPositionWcsOverlay,
-  acexResetOverlayViewScale,
   acexScaledCanvasLineWidth,
   acexScaledOverlayArrowSize,
   acexScreenPxToWcs,
-  acexSeedOverlaySizesFromWcs
+  acexSeedOverlaySizesFromWcs,
+  acexSyncLiveOverlayTextHeight
 } from './AcExHtmlOverlayDom'
 import {
   acexComputeLeaderTipOnShape,
@@ -65,7 +65,7 @@ import type {
 import type { AcExTrackingOptions } from './AcExMeasureTracking'
 import { constrainToAcExTracking } from './AcExMeasureTracking'
 import type { AcExOsnapPoint } from './AcExOsnap'
-import { acexIsOverlayGrip, acexOverlayGripClassName } from './AcExOverlayGrip'
+import { acexOverlayGripClassName } from './AcExOverlayGrip'
 import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
 import type { AcExSessionHistory } from './AcExSessionHistory'
 import type { AcExExtents } from './AcExSnapshotTypes'
@@ -493,23 +493,6 @@ export class AcExMarkupController {
     })
   }
 
-  /**
-   * Returns WCS text height of a committed markup under the pointer, if any.
-   */
-  tryPickTextHeightAt(clientX: number, clientY: number): number | null {
-    if (!this._visible) return null
-    const hit = this._pickCommitted(clientX, clientY)
-    if (!hit) return null
-    const style = hit.record.style
-    if (style.textHeightWcs != null && style.textHeightWcs > 0) {
-      return style.textHeightWcs
-    }
-    const fontSize = style.fontSize ?? this._drawFontSize
-    if (!(fontSize > 0)) return null
-    const wcs = acexScreenPxToWcs(fontSize, p => this._wcsToScreenPoint(p))
-    return wcs > 0 ? wcs : null
-  }
-
   private _sessionStyle(): AcExMarkupStyle {
     const base = defaultStyle(
       this._drawColor,
@@ -540,16 +523,24 @@ export class AcExMarkupController {
       style.arrowSizeWcs != null && style.arrowSizeWcs > 0
         ? style.arrowSizeWcs
         : acexScreenPxToWcs(ACEX_OVERLAY_ARROW_SIZE_PX, wcsToScreen)
-    const custom =
+    let textHeightWcs: number
+    if (
       style.textHeightMode === 'custom' &&
       style.textHeightWcs != null &&
       style.textHeightWcs > 0
+    ) {
+      textHeightWcs = style.textHeightWcs
+    } else if (style.textHeightMode === 'adaptive') {
+      textHeightWcs = acexScreenPxToWcs(fontSize, wcsToScreen)
+    } else if (style.textHeightWcs != null && style.textHeightWcs > 0) {
+      textHeightWcs = style.textHeightWcs
+    } else {
+      textHeightWcs = acexScreenPxToWcs(fontSize, wcsToScreen)
+    }
     return {
       ...rest,
       lineWeight: ACEX_MARKUP_LINE_WEIGHT,
-      textHeightWcs: custom
-        ? style.textHeightWcs
-        : acexScreenPxToWcs(fontSize, wcsToScreen),
+      textHeightWcs,
       arrowSizeWcs
     }
   }
@@ -708,6 +699,7 @@ export class AcExMarkupController {
     placing.badge.style.borderColor = this._drawColor
     placing.badge.style.fontSize = `${this._drawFontSize}px`
     placing.tipDot.style.background = this._drawColor
+    this._syncLiveDomTextHeight(placing.badge)
   }
 
   setMode(mode: AcExMarkupMode | null, toggleOff = true): void {
@@ -1581,7 +1573,7 @@ export class AcExMarkupController {
     color: string
   ): HTMLElement {
     const badge = document.createElement('div')
-    badge.className = 'mlcad-markup-badge'
+    badge.className = 'mlcad-markup-badge mlcad-markup-badge--preview'
     badge.dataset.wcsX = String(wcs.x)
     badge.dataset.wcsY = String(wcs.y)
     badge.textContent = text
@@ -1591,6 +1583,7 @@ export class AcExMarkupController {
     // Must not intercept canvas clicks while placing the leader anchor.
     badge.style.pointerEvents = 'none'
     this._overlayLayer.appendChild(badge)
+    this._syncLiveDomTextHeight(badge)
     this._positionTempDom(badge)
     return badge
   }
@@ -1848,8 +1841,24 @@ export class AcExMarkupController {
   private _placeDomAt(el: HTMLElement, wcs: AcExMarkupPoint2d): void {
     el.dataset.wcsX = String(wcs.x)
     el.dataset.wcsY = String(wcs.y)
-    if (!acexIsOverlayGrip(el)) acexResetOverlayViewScale(el)
+    if (el.classList.contains('mlcad-markup-badge--preview')) {
+      this._syncLiveDomTextHeight(el)
+    }
     this._positionTempDom(el)
+  }
+
+  /** Apply session text-height mode to a live preview badge. */
+  private _syncLiveDomTextHeight(el: HTMLElement): void {
+    acexSyncLiveOverlayTextHeight(
+      this._view.getCameraZoom(),
+      p => this._wcsToScreenPoint(p),
+      el,
+      {
+        fontSize: this._drawFontSize,
+        textHeightMode: this._drawTextHeightMode,
+        textHeightWcs: this._drawCustomTextHeightWcs
+      }
+    )
   }
 
   /**

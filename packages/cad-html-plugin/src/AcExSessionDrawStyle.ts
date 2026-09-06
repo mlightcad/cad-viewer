@@ -50,11 +50,9 @@ export interface AcExSessionDrawStyleContext {
   /** Apply a patch to session defaults and any selection for `kind`. */
   applyStyle: (kind: AcExDrawStyleKind, patch: AcExDrawStylePatch) => void
   /**
-   * Optional: match WCS text height by picking on the canvas.
-   * When omitted, the match button still appears but returns null.
+   * Optional: WCS↔screen conversion for custom height authoring.
+   * Used by the text-height dialog calculator and style patches.
    */
-  matchTextHeight?: () => Promise<number | null | undefined>
-  /** Optional: WCS↔screen conversion for custom height authoring. */
   wcsToScreen?: (p: { x: number; y: number }) => { x: number; y: number }
 }
 
@@ -315,6 +313,10 @@ export function setupAcExSessionDrawStyle(
         initialMode: currentStyle.textHeightMode ?? 'adaptive',
         initialFontSizePx: currentStyle.fontSize,
         initialTextHeightWcs: currentStyle.textHeightWcs,
+        screenPxToWcs: (px: number) =>
+          ctx.wcsToScreen
+            ? acexScreenPxToWcs(px, ctx.wcsToScreen)
+            : px,
         labels: {
           title: ctx.i18n.t('textHeight.title'),
           close: ctx.i18n.t('textHeight.close'),
@@ -323,9 +325,12 @@ export function setupAcExSessionDrawStyle(
           adaptive: ctx.i18n.t('textHeight.adaptive'),
           custom: ctx.i18n.t('textHeight.custom'),
           customPlaceholder: ctx.i18n.t('textHeight.customPlaceholder'),
-          match: ctx.i18n.t('textHeight.match')
-        },
-        onMatchHeight: ctx.matchTextHeight
+          fromScreen: ctx.i18n.t('textHeight.fromScreen'),
+          fromScreenHint: ctx.i18n.t('textHeight.fromScreenHint'),
+          screenPxPlaceholder: ctx.i18n.t('textHeight.screenPxPlaceholder'),
+          screenUnit: ctx.i18n.t('textHeight.screenUnit'),
+          convert: ctx.i18n.t('textHeight.convert')
+        }
       })
       if (!result || !currentKind) return
       const patch = resolvePatchFromDialog(

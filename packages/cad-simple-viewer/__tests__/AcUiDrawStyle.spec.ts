@@ -246,4 +246,47 @@ describe('acuiBindDrawStyleSessionAccessory', () => {
       })
     ).toThrow()
   })
+
+  it('skips desktop chrome mount when the shortcut toolbar owns the slot', () => {
+    const container = { parentElement: null } as unknown as HTMLElement
+    const accessory = {
+      id: 'draw-style',
+      mount: jest.fn(),
+      unmount: jest.fn()
+    }
+    const host = {
+      setActiveKind: jest.fn(),
+      createSessionAccessory: () => accessory
+    }
+    const providers = new Map<string, unknown>()
+    const view = {
+      container,
+      sessionProviders: {
+        get: <T,>(id: string) => providers.get(id) as T | undefined,
+        set: (id: string, value: unknown) => {
+          providers.set(id, value)
+        },
+        delete: (id: string) => providers.delete(id)
+      }
+    }
+    view.sessionProviders.set('draw-style', host)
+    view.sessionProviders.set('shortcut-toolbar', { isVisible: true })
+    const command = {
+      globalName: 'measuredistance',
+      sessionAccessory: null as null | {
+        id: string
+        mount: (options: unknown) => void
+        unmount: () => void
+      }
+    }
+    acuiBindDrawStyleSessionAccessory(command)
+    expect(() =>
+      command.sessionAccessory!.mount({
+        host: container,
+        type: 'desktop',
+        view: view as never
+      })
+    ).toThrow()
+    expect(accessory.mount).not.toHaveBeenCalled()
+  })
 })

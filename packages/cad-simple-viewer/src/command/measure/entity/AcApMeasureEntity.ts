@@ -266,17 +266,22 @@ export abstract class AcApMeasureEntity
   }
 
   /**
-   * Seeds imported WCS sizes onto HTML overlays and canvases before first paint.
+   * Seeds world-space sizes onto HTML overlays and canvases before first paint.
+   *
+   * Prefers an explicit import {@link textHeightWcs}. Otherwise resolves from
+   * the live style: custom keeps the authored WCS height; Fit-to-screen bakes
+   * the current screen font size into WCS at commit time.
    */
   protected seedOverlaySizes(
     view: AcTrView2d,
     elements: readonly AcTrHtmlElement[],
     canvases: readonly HTMLElement[] = []
   ): void {
+    const sidecar = this.serializeStyle(view)
     acapSeedOverlaySizesFromWcs(view, {
-      textHeightWcs: this.textHeightWcs,
+      textHeightWcs: this.textHeightWcs ?? sidecar.textHeightWcs,
       strokeWidthWcs: this.strokeWidthWcs,
-      arrowSizeWcs: this.arrowSizeWcs,
+      arrowSizeWcs: this.arrowSizeWcs ?? sidecar.arrowSizeWcs,
       fontSizePx: this.style.fontSize,
       strokeScreenPx: acapMeasurementCanvasLineWidth(this.style.lineWeight),
       elements,

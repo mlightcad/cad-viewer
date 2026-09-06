@@ -12,7 +12,6 @@
 export {
   ACED_TOUCH_POINT_LONG_PRESS_MS,
   ACED_TOUCH_POINT_MOVE_CANCEL_PX,
-  AcEdEntityPickCancelChrome,
   AcUiAciColorDialog,
   AcUiFullscreenPanel,
   AcUiHelpPanel,

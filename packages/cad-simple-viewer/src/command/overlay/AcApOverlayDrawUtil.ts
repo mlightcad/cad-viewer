@@ -246,6 +246,47 @@ export function acapSeedOverlaySizesFromWcs(
 }
 
 /**
+ * Keeps live draw-preview overlays sized for the active text-height mode.
+ *
+ * - `'custom'`: seed {@link AcTrHtmlElement.baseZoom} from WCS so capsules
+ *   scale with camera zoom during drawing.
+ * - `'adaptive'` (or missing WCS): disable view sync so size stays constant
+ *   in screen pixels while drawing.
+ */
+export function acapSyncLiveOverlayTextHeight(
+  view: AcEdBaseView,
+  elements: readonly AcTrHtmlElement[],
+  style: {
+    fontSize?: number
+    textHeightMode?: 'adaptive' | 'custom'
+    textHeightWcs?: number
+  }
+): void {
+  const fontSize =
+    style.fontSize != null && style.fontSize > 0 ? style.fontSize : 0
+  const custom =
+    style.textHeightMode === 'custom' &&
+    style.textHeightWcs != null &&
+    style.textHeightWcs > 0 &&
+    fontSize > 0
+  if (custom) {
+    for (const el of elements) {
+      el.scaleWithView = true
+    }
+    acapSeedOverlaySizesFromWcs(view, {
+      textHeightWcs: style.textHeightWcs,
+      fontSizePx: fontSize,
+      elements
+    })
+    return
+  }
+  for (const el of elements) {
+    el.scaleWithView = false
+    el.baseZoom = undefined
+  }
+}
+
+/**
  * Fit a canvas to its container and return a 2D context cleared for this frame.
  *
  * Resizes CSS and buffer dimensions (honoring devicePixelRatio) only when they

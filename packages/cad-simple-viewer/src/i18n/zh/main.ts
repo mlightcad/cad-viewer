@@ -105,10 +105,13 @@ export default {
     cancel: '取消',
     adaptive: '自适应屏幕',
     custom: '自定义字高',
-    customPlaceholder: 'WCS 字高',
-    match: '字高匹配',
-    matchPrompt: '选择一个文字对象：',
-    matchReject: '请选择文字或多行文字对象。'
+    customPlaceholder: '世界坐标字高',
+    fromScreen: '按屏幕字号换算',
+    fromScreenHint:
+      '按当前视图缩放，输入希望看到的屏幕字号（像素），换算为固定的世界坐标字高；之后缩放时字的世界高度不变。',
+    screenPxPlaceholder: '屏幕字号',
+    screenUnit: 'px',
+    convert: '换算'
   },
   entityPick: {
     cancel: '取消选择'

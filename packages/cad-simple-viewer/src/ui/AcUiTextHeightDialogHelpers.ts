@@ -1,18 +1,11 @@
 /**
- * Shared helpers for opening the text-height dialog and matching CAD text height.
+ * Shared helpers for opening the text-height dialog.
  *
  * @module AcUiTextHeightDialogHelpers
  * @packageDocumentation
  */
 
-import { AcDbMText, AcDbText } from '@mlightcad/data-model'
-
-import { AcApDocManager } from '../app/AcApDocManager'
-import { acapWcsToScreenPx } from '../command/overlay/AcApOverlayDrawUtil'
-import {
-  AcEdPromptEntityOptions,
-  AcEdPromptStatus
-} from '../editor'
+import { acapScreenPxToWcs, acapWcsToScreenPx } from '../command/overlay/AcApOverlayDrawUtil'
 import { resolveUiTheme } from '../editor/global/AcEdUiTheme'
 import { AcApI18n } from '../i18n'
 import type { AcTrView2d } from '../view'
@@ -22,48 +15,7 @@ import {
   type AcUiTextHeightMode
 } from './AcUiTextHeightDialog'
 
-/** Reads WCS text height from a CAD text or mtext entity. */
-export function acuiEntityTextHeightWcs(entity: unknown): number | null {
-  if (entity instanceof AcDbText || entity instanceof AcDbMText) {
-    const height = entity.height
-    return height > 0 && Number.isFinite(height) ? height : null
-  }
-  const maybe = entity as { height?: number } | null
-  if (maybe && typeof maybe.height === 'number' && maybe.height > 0) {
-    return maybe.height
-  }
-  return null
-}
-
-/**
- * Prompts the user to pick a Text / MText entity and returns its WCS height.
- *
- * @param view - Active view (unused; DocManager editor is used).
- * @returns WCS height, or `null` when cancelled / invalid.
- */
-export async function acuiMatchTextHeightFromEntity(
-  _view: AcTrView2d
-): Promise<number | null> {
-  const prompt = new AcEdPromptEntityOptions(
-    AcApI18n.t('main.textHeight.matchPrompt')
-  )
-  prompt.addAllowedClass('AcDbText')
-  prompt.addAllowedClass('AcDbMText')
-  prompt.addAllowedClass('Text')
-  prompt.addAllowedClass('MText')
-  prompt.setRejectMessage(AcApI18n.t('main.textHeight.matchReject'))
-
-  const result = await AcApDocManager.instance.editor.getEntity(prompt)
-  if (result.status !== AcEdPromptStatus.OK || !result.objectId) return null
-
-  const entity =
-    AcApDocManager.instance.curDocument.database.tables.blockTable.getEntityById(
-      result.objectId
-    )
-  return acuiEntityTextHeightWcs(entity)
-}
-
-/** Options for {@link acuiOpenTextHeightDialogForKind}. */
+/** Options for {@link acuiOpenTextHeightDialog}. */
 export interface AcUiOpenTextHeightDialogOptions {
   view: AcTrView2d
   initialMode: AcUiTextHeightMode
@@ -72,7 +24,7 @@ export interface AcUiOpenTextHeightDialogOptions {
 }
 
 /**
- * Opens the shared text-height dialog with i18n labels and match-height wiring.
+ * Opens the shared text-height dialog with i18n labels and screen→WCS conversion.
  */
 export async function acuiOpenTextHeightDialog(
   options: AcUiOpenTextHeightDialogOptions
@@ -83,6 +35,7 @@ export async function acuiOpenTextHeightDialog(
     initialMode: options.initialMode,
     initialFontSizePx: options.initialFontSizePx,
     initialTextHeightWcs: options.initialTextHeightWcs,
+    screenPxToWcs: px => acapScreenPxToWcs(px, options.view),
     labels: {
       title: AcApI18n.t('main.textHeight.title'),
       close: AcApI18n.t('main.textHeight.close'),
@@ -91,10 +44,12 @@ export async function acuiOpenTextHeightDialog(
       adaptive: AcApI18n.t('main.textHeight.adaptive'),
       custom: AcApI18n.t('main.textHeight.custom'),
       customPlaceholder: AcApI18n.t('main.textHeight.customPlaceholder'),
-      match: AcApI18n.t('main.textHeight.match'),
-      matchPrompt: AcApI18n.t('main.textHeight.matchPrompt')
-    },
-    onMatchHeight: () => acuiMatchTextHeightFromEntity(options.view)
+      fromScreen: AcApI18n.t('main.textHeight.fromScreen'),
+      fromScreenHint: AcApI18n.t('main.textHeight.fromScreenHint'),
+      screenPxPlaceholder: AcApI18n.t('main.textHeight.screenPxPlaceholder'),
+      screenUnit: AcApI18n.t('main.textHeight.screenUnit'),
+      convert: AcApI18n.t('main.textHeight.convert')
+    }
   })
 }
 

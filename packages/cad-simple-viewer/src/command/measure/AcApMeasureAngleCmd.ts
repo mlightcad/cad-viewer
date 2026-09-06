@@ -26,6 +26,7 @@ import {
   AcApHtmlLivePreview,
   acapStrokeLiveSegment
 } from '../overlay/AcApHtmlLivePreview'
+import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
 import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
 import { AcApMeasureAngleEntity } from './entity'
@@ -156,6 +157,11 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
       transform: 'translate(-50%, calc(-50% - 30px))'
     })
     this._htManager.add(this._badge)
+    acapSyncLiveOverlayTextHeight(
+      this._view,
+      [this._badge],
+      acapGetCurrentMeasurementStyle(this._db)
+    )
     this._badge.object.visible = false
 
     this._preview = new AcApHtmlLivePreview(
@@ -174,7 +180,9 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._arm2 = p
     this._color = acapGetMeasurementColor(this._db)
     this._badge.setColor(this._color)
-    this._badge.setFontSize(acapGetMeasurementFontSize())
+    const style = acapGetCurrentMeasurementStyle(this._db)
+    this._badge.setFontSize(style.fontSize)
+    acapSyncLiveOverlayTextHeight(this._view, [this._badge], style)
 
     const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     this._preview.acapSetDraw((ctx, view) => {

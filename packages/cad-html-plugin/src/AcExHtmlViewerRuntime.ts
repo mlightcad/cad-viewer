@@ -55,7 +55,6 @@ import {
   resolveLayoutViewExtents
 } from './AcExLayerExtents'
 import { AcExMarkupController, type AcExMarkupMode } from './AcExMarkup'
-import { acexMatchTextHeightPick } from './AcExMatchTextHeight'
 import { AcExMeasureController, type AcExMeasureMode } from './AcExMeasurement'
 import {
   acexBindMobileSnapLoupe,
@@ -1119,19 +1118,6 @@ async function startViewer(): Promise<void> {
         else markup!.setDrawStyle(patch)
       },
       wcsToScreen: p => wcsToScreen(new THREE.Vector2(p.x, p.y)),
-      matchTextHeight: () =>
-        acexMatchTextHeightPick({
-          i18n,
-          container: root,
-          statusEl,
-          tryPickAtClientPoint: (clientX, clientY) => {
-            const fromMarkup = markup?.tryPickTextHeightAt(clientX, clientY)
-            if (fromMarkup != null && fromMarkup > 0) return fromMarkup
-            const fromMeasure = measure?.tryPickTextHeightAt(clientX, clientY)
-            if (fromMeasure != null && fromMeasure > 0) return fromMeasure
-            return null
-          }
-        }),
       setExtensionItems: items => toolbar.setExtensionItems(items)
     })
     toolbar.syncActionState()
@@ -1640,20 +1626,7 @@ async function startViewer(): Promise<void> {
           markup!.setDrawStyle(patch)
         }
       },
-      wcsToScreen: p => wcsToScreen(new THREE.Vector2(p.x, p.y)),
-      matchTextHeight: () =>
-        acexMatchTextHeightPick({
-          i18n,
-          container: root,
-          statusEl,
-          tryPickAtClientPoint: (clientX, clientY) => {
-            const fromMarkup = markup?.tryPickTextHeightAt(clientX, clientY)
-            if (fromMarkup != null && fromMarkup > 0) return fromMarkup
-            const fromMeasure = measure?.tryPickTextHeightAt(clientX, clientY)
-            if (fromMeasure != null && fromMeasure > 0) return fromMeasure
-            return null
-          }
-        })
+      wcsToScreen: p => wcsToScreen(new THREE.Vector2(p.x, p.y))
     })
     applySessionUi()
     syncHtmlShortCutSelection()

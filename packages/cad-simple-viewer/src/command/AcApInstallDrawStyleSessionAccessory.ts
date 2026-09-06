@@ -7,6 +7,7 @@ import {
   ACED_DRAW_STYLE_SESSION_PROVIDER_ID,
   type AcEdSessionAccessory
 } from '../editor/command/AcEdSessionAccessory'
+import { acedIsMobileUiLayout } from '../editor/global/AcEdUiLayout'
 import {
   type AcUiDrawStyleKind,
   acuiResolveDrawStyleKind,
@@ -101,10 +102,12 @@ function ensureShortCutToolbar(view: AcTrView2d): AcUiShortCutToolbar {
 }
 
 /**
- * Keeps selection draw-style controls embedded in the shortcut toolbar.
+ * Keeps draw-style controls embedded in the shortcut toolbar.
  *
  * Mounts the shared draw-style controls into {@link AcUiShortCutToolbar.accessoryHost}
- * when a measure/markup overlay is selected and no draw command owns the controls.
+ * when a measure/markup overlay is selected, or when a draw command is active on
+ * desktop layout. On mobile, an active draw command uses the session-panel slot
+ * instead; this binder clears the shortcut accessory in that case.
  * Never uses the desktop top-center selection chrome.
  *
  * @param view - View whose selection accessory is updated.
@@ -159,19 +162,18 @@ function bindSelectionSessionAccessory(
     const markupSelected = getMarkupStore().selectedId != null
     const selected = measureSelected || markupSelected
 
+    // Desktop draw commands share the shortcut slot with selection styling.
+    // Mobile draw commands use the session panel — clear the shortcut slot so
+    // the shared controls row can remount there (and remount on shortcut after).
     const showOnShortcut =
-      !commandActive &&
-      selected &&
+      shortcut.isVisible &&
       kind != null &&
-      acuiShouldShowDrawStyleToolbar(kind)
+      acuiShouldShowDrawStyleToolbar(kind) &&
+      ((commandActive && !acedIsMobileUiLayout()) ||
+        (!commandActive && selected))
 
     if (showOnShortcut) {
       mountSelection()
-    } else if (commandActive) {
-      // Command session will reparent the shared controls row; clear our flag only.
-      selectionMounted = false
-      selectionInner = null
-      shortcut.setAccessoryActive(false)
     } else {
       unmountSelection()
     }

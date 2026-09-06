@@ -33,6 +33,37 @@ export function acexResetOverlayViewScale(el: HTMLElement): void {
   delete el.dataset[ACEX_OVERLAY_BASE_ZOOM]
 }
 
+/**
+ * Seeds or clears view-synced scale for a live preview overlay from draw style.
+ *
+ * Custom WCS keeps world height while zooming; adaptive stays constant in px.
+ */
+export function acexSyncLiveOverlayTextHeight(
+  zoom: number,
+  wcsToScreen: (wcs: { x: number; y: number }) => { x: number; y: number },
+  el: HTMLElement,
+  style: {
+    fontSize: number
+    textHeightMode?: 'adaptive' | 'custom'
+    textHeightWcs?: number
+  }
+): void {
+  const custom =
+    style.textHeightMode === 'custom' &&
+    style.textHeightWcs != null &&
+    style.textHeightWcs > 0 &&
+    style.fontSize > 0
+  if (custom) {
+    acexSeedOverlaySizesFromWcs(zoom, wcsToScreen, {
+      textHeightWcs: style.textHeightWcs,
+      fontSizePx: style.fontSize,
+      elements: [el]
+    })
+    return
+  }
+  acexResetOverlayViewScale(el)
+}
+
 /** CSS transform prefix before optional view-synced `scale()`. */
 export function acexOverlayTransformPrefix(el: HTMLElement): string {
   if (el.classList.contains('mlcad-measure-badge--coordinate')) {

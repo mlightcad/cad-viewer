@@ -106,10 +106,13 @@ export default {
     cancel: 'Zrušit',
     adaptive: 'Přizpůsobit obrazovce',
     custom: 'Vlastní výška textu',
-    customPlaceholder: 'Výška WCS',
-    match: 'Shoda výšky',
-    matchPrompt: 'Vyberte textovou entitu:',
-    matchReject: 'Vyberte text nebo mtext.'
+    customPlaceholder: 'Světová výška',
+    fromScreen: 'Ze velikosti na obrazovce',
+    fromScreenHint:
+      'Zadejte, jak velký má text vypadat na obrazovce při aktuálním zoomu. Přepočítá se na pevnou světovou výšku, která se při pozdějším zoomování nemění.',
+    screenPxPlaceholder: 'Velikost písma',
+    screenUnit: 'px',
+    convert: 'Přepočítat'
   },
   entityPick: {
     cancel: 'Zrušit výběr'

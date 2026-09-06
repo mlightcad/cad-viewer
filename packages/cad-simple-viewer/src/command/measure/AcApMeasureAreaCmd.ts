@@ -21,7 +21,8 @@ import {
 import { AcTrView2d } from '../../view'
 import {
   acapOverlayDash,
-  acapScaledOverlayLineWidth
+  acapScaledOverlayLineWidth,
+  acapSyncLiveOverlayTextHeight
 } from '../overlay/AcApOverlayDrawUtil'
 import { AcApMeasureDrawCmd } from './AcApMeasureDrawCmd'
 import { MEASUREMENT_LIVE_LAYER } from './AcApMeasurementStore'
@@ -155,8 +156,9 @@ export class AcApMeasureAreaCmd extends AcApMeasureDrawCmd {
       layoutId: (context.view as AcTrView2d).activeLayoutBtrId,
       fontSize: style.fontSize
     })
-    liveBadge.object.visible = false
     htManagerLive.add(liveBadge)
+    acapSyncLiveOverlayTextHeight(context.view, [liveBadge], style)
+    liveBadge.object.visible = false
 
     const drawPolygon = (cursor?: AcGePoint3dLike) => {
       const rect = context.view.canvas.getBoundingClientRect()
@@ -270,6 +272,9 @@ export class AcApMeasureAreaCmd extends AcApMeasureDrawCmd {
               }
               const tempPts = [...points, cursor]
               const area = shoelaceArea(tempPts)
+              const liveStyle = acapGetCurrentMeasurementStyle(db)
+              liveBadge.setFontSize(liveStyle.fontSize)
+              acapSyncLiveOverlayTextHeight(context.view, [liveBadge], liveStyle)
               liveBadge.setText(formatMeasurementArea(db, area))
               liveBadge.setPosition(centroid(tempPts))
               liveBadge.object.visible = true

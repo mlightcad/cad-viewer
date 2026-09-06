@@ -35,6 +35,7 @@ import {
   acapStrokeLivePolyline,
   acapStrokeLiveSegment
 } from '../overlay/AcApHtmlLivePreview'
+import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
 import {
   inwardLockAlignment,
   isBetterLockCandidate,
@@ -317,6 +318,11 @@ class AcApArcLockedEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
       fontSize: acapGetMeasurementFontSize()
     })
     this._htManager.add(this._badge)
+    acapSyncLiveOverlayTextHeight(
+      this._view,
+      [this._badge],
+      acapGetCurrentMeasurementStyle(this._db)
+    )
     this._badge.object.visible = false
 
     this._preview = new AcApHtmlLivePreview(
@@ -382,7 +388,9 @@ class AcApArcLockedEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._color = acapGetMeasurementColor(this._db)
     this._indicator.setPosition(snapped)
     this._badge.setColor(this._color)
-    this._badge.setFontSize(acapGetMeasurementFontSize())
+    const style = acapGetCurrentMeasurementStyle(this._db)
+    this._badge.setFontSize(style.fontSize)
+    acapSyncLiveOverlayTextHeight(this._view, [this._badge], style)
 
     const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     const sweep = lockedSweep(this._start, end, this._geom, this.clockwise)
@@ -508,6 +516,11 @@ class AcApMeasureArcEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
       fontSize: acapGetMeasurementFontSize()
     })
     this._htManager.add(this._badge)
+    acapSyncLiveOverlayTextHeight(
+      this._view,
+      [this._badge],
+      acapGetCurrentMeasurementStyle(this._db)
+    )
     this._badge.object.visible = false
 
     this._preview = new AcApHtmlLivePreview(
@@ -526,7 +539,9 @@ class AcApMeasureArcEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._end = toPoint2(p)
     this._color = acapGetMeasurementColor(this._db)
     this._badge.setColor(this._color)
-    this._badge.setFontSize(acapGetMeasurementFontSize())
+    const style = acapGetCurrentMeasurementStyle(this._db)
+    this._badge.setFontSize(style.fontSize)
+    acapSyncLiveOverlayTextHeight(this._view, [this._badge], style)
 
     const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     const arc = AcGeCircArc2d.tryCreateByThreePoints(

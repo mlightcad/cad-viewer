@@ -106,10 +106,13 @@ export default {
     cancel: 'Cancel',
     adaptive: 'Fit to screen',
     custom: 'Custom text height',
-    customPlaceholder: 'WCS height',
-    match: 'Match height',
-    matchPrompt: 'Select a text entity:',
-    matchReject: 'Please select a text or mtext entity.'
+    customPlaceholder: 'World height',
+    fromScreen: 'From screen size',
+    fromScreenHint:
+      'Enter how large the text should look on screen at the current zoom. It is converted to a fixed world-space height that stays constant when you zoom later.',
+    screenPxPlaceholder: 'Font size',
+    screenUnit: 'px',
+    convert: 'Convert'
   },
   entityPick: {
     cancel: 'Cancel selection'
