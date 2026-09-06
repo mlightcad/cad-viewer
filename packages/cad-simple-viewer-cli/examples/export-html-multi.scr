@@ -1,0 +1,13 @@
+; Export a multi-file ACEX package as a zip (-chtml Multi).
+; Unzip before hosting so the offline viewer can fetch chunks progressively.
+; Prompts: export format / export invisible layers / export layouts /
+; initial view / viewer mode.
+; Usage:
+;   cad-simple-viewer-cli -i drawing.dwg -s examples/export-html-multi.scr -o ./out
+-chtml
+Multi
+Yes
+Yes
+Extents
+Measure
+quit

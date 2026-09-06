@@ -9,6 +9,7 @@ Official links:
 - CDN bootstrap (zero-build single HTML): https://mlightcad.github.io/cad-viewer/cdn-bootstrap/cad-viewer.html
 - Offline HTML converter (browser-only): https://mlightcad.github.io/cad-viewer/cad-simple-viewer/html-converter.html
 - Offline HTML demo (self-contained): https://mlightcad.github.io/cad-viewer/self-contained-html/canteen.html
+- Offline HTML demo (progressive multi-file): https://mlightcad.github.io/cad-viewer/self-contained-html/canteen-progressive/viewer.html
 - User guide: https://mlightcad.com/cad-viewer/docs/
 - API docs: https://cad-viewer.readthedocs.io/en/latest/
 - GitHub repository: https://github.com/mlightcad/cad-viewer

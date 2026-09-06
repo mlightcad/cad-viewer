@@ -84,11 +84,21 @@ jobs:
       - name: Pre-serve
         run: pnpm pre-serve
 
-      - name: Export self-contained HTML demo
+      # Builds canteen.html (single-file) and canteen.zip (multi-file ACEX),
+      # then extracts the zip to self-contained-html/canteen-progressive/ so
+      # GitHub Pages can serve progressive chunk loading without a zip download.
+      - name: Export self-contained HTML demos
         if: github.ref == 'refs/heads/main'
         run: node packages/examples/exportDemoHtml.js
         env:
           PLAYWRIGHT_BROWSER_CHANNEL: chrome
+
+      - name: Verify progressive package extracted for Pages
+        if: github.ref == 'refs/heads/main'
+        run: |
+          test -f packages/examples/public/self-contained-html/canteen.html
+          test -f packages/examples/public/self-contained-html/canteen.zip
+          test -f packages/examples/public/self-contained-html/canteen-progressive/viewer.html
 
       # Keep release/pages-only actions out of this job so PR builds do not
       # download softprops/action-gh-release or upload-pages-artifact (GitHub

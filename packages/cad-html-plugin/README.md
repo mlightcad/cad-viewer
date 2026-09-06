@@ -107,7 +107,7 @@ await new AcApHtmlConvertor().convert('my-drawing.dwg', {
 
 ### Multi-file package (low-level)
 
-See **[docs/acex-package-format.md](./docs/acex-package-format.md)** for the on-disk format.
+See **[docs/acex-package-format.md](./docs/acex-package-format.md)** for the on-disk format, and **[docs/acex-web-hosting-guide.md](./docs/acex-web-hosting-guide.md)** for static hosting / CDN deployment.
 
 ```typescript
 import {
@@ -160,7 +160,7 @@ const snapshot = await new AcApHtmlSnapshotBuilder().buildAsync(
 
 ### Headless / CLI
 
-For DXF/DWG → HTML without a browser UI, use [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli) with `examples/export-html.scr` (or your own `.scr` that runs `-chtml`). It runs the same snapshot + `packHtml` pipeline inside Playwright.
+For DXF/DWG → HTML without a browser UI, use [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli) with `examples/export-html.scr` (single-file) or `examples/export-html-multi.scr` (multi-file zip), or your own `.scr` that runs `-chtml`. It runs the same snapshot + pack pipeline inside Playwright.
 
 ## Integration checklist
 
@@ -194,6 +194,7 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 | `HTML_VIEWER_RUNTIME_FILE` | Default runtime filename (`viewer-runtime.iife.js`) |
 | `AcExSnapshot`, `ACEX_SNAPSHOT_VERSION`, batch/layer types | Snapshot schema |
 | Package format doc | [`docs/acex-package-format.md`](./docs/acex-package-format.md) |
+| Web hosting guide | [`docs/acex-web-hosting-guide.md`](./docs/acex-web-hosting-guide.md) |
 | `encodeSnapshot`, `decodeSnapshot` | Gzip/base64 codec for embedded payloads |
 | `collectBatchesFromObject3D` | THREE.js scene → line/mesh batches |
 | `buildViewerMetadata` | Database → viewer meta (units, extents, background, …) |

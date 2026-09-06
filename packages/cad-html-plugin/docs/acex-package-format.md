@@ -9,6 +9,8 @@ paint, repeat).
 > That zip is for **distribution only**. Unzip before hosting. The offline
 > viewer does **not** open a zip in place; it fetches `viewer.html`, then
 > `*.acex.json`, then individual `chunks/*.acex.gz` files.
+> For nginx/CDN setup, caching, and `.gz` Content-Encoding pitfalls, see
+> [acex-web-hosting-guide.md](./acex-web-hosting-guide.md).
 
 ## Directory layout
 

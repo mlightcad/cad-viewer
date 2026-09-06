@@ -218,6 +218,7 @@ Same CLI, different `.scr` files (samples ship with the package):
 |--------|-----|
 | `export-png.scr` | Zoom extents → PNG |
 | `export-html.scr` | Offline HTML (`-chtml`) |
+| `export-html-multi.scr` | Multi-file ACEX package zip (`-chtml` Multi) |
 | `export-dxf.scr` | DXF download |
 | `create-drawing-dxf.scr` | Blank drawing + LINE → DXF |
 | `create-shapes-dxf.scr` | LINE + CIRCLE → DXF |

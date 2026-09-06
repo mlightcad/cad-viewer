@@ -542,6 +542,9 @@ importers:
       '@types/fs-extra':
         specifier: ^11.0.4
         version: 11.0.4
+      fflate:
+        specifier: ^0.8.2
+        version: 0.8.2
       fs-extra:
         specifier: ^11.3.1
         version: 11.3.4

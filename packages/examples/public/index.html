@@ -440,6 +440,33 @@
               <code>packages/examples</code> to generate it.
             </p>
           </article>
+
+          <article class="card card-wide">
+            <h3>Canteen sample drawing (progressive multi-file package)</h3>
+            <div class="pill-row">
+              <span class="pill">Multi-file ACEX</span>
+              <span class="pill">Progressive load</span>
+              <span class="pill">Faster first paint</span>
+            </div>
+            <p>
+              The same <code>canteen.dwg</code> sample as a multi-file ACEX package. The shell HTML loads a small
+              manifest first, then fetches geometry chunks one by one — so you see part of the drawing sooner
+              instead of waiting for a single monolithic payload.
+            </p>
+            <ul>
+              <li><strong>Progressive loading</strong> — paint each compressed chunk as it arrives</li>
+              <li><strong>Hosted unzipped</strong> — open <code>viewer.html</code> on any static file server</li>
+              <li><strong>Same tools</strong> — pan, zoom, layers, and measurement as the single-file demo</li>
+              <li><strong>Zip for distribution</strong> — download the archive, unzip before hosting elsewhere</li>
+            </ul>
+            <a class="button" href="./self-contained-html/canteen-progressive/viewer.html" target="_blank" rel="noopener">Open progressive demo</a>
+            <a class="button secondary" href="./self-contained-html/canteen.zip" rel="noopener">Download package zip</a>
+            <p class="note">
+              CI builds <code>canteen.zip</code> and extracts it to
+              <code>self-contained-html/canteen-progressive/</code> before deploying to GitHub Pages.
+              Locally, <code>pnpm export:demo-html</code> does the same export and unzip step.
+            </p>
+          </article>
         </div>
       </section>
 

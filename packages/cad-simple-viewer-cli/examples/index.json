@@ -48,6 +48,15 @@
       "runnable": true
     },
     {
+      "id": "export-html-multi",
+      "title": "Export HTML (multi-file)",
+      "description": "Export a multi-file ACEX package zip for progressive loading (-chtml Multi).",
+      "script": "export-html-multi.scr",
+      "mode": "read",
+      "inputKind": "file",
+      "runnable": true
+    },
+    {
       "id": "export-dxf",
       "title": "Export DXF",
       "description": "Convert the open drawing to DXF (cdxf).",

@@ -1,7 +1,12 @@
 import { strFromU8, strToU8 } from 'fflate'
 
-/** Hard cap for length-prefixed strings inside ACEX binary payloads. */
-export const ACEX_MAX_BINARY_STRING_BYTES = 1 * 1024 * 1024
+/**
+ * Hard cap for length-prefixed strings inside ACEX binary payloads.
+ * Single-file snapshots still embed measure-mode OSNAP catalogs as UTF-8 JSON,
+ * which can exceed 1 MiB on large drawings. Align with the decompressed ACEX
+ * payload ceiling (`512 MiB`).
+ */
+export const ACEX_MAX_BINARY_STRING_BYTES = 512 * 1024 * 1024
 
 /**
  * Hard cap for a single length-prefixed typed-array payload (`Float32Array` /

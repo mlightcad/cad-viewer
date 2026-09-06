@@ -218,6 +218,7 @@ cad-simple-viewer-cli \
 |------|------|
 | `export-png.scr` | 缩放到范围 → PNG |
 | `export-html.scr` | 离线 HTML（`-chtml`） |
+| `export-html-multi.scr` | 多文件 ACEX 包 zip（`-chtml` Multi） |
 | `export-dxf.scr` | 下载 DXF |
 | `create-drawing-dxf.scr` | 空白图 + LINE → DXF |
 | `create-shapes-dxf.scr` | LINE + CIRCLE → DXF |
