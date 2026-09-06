@@ -170,14 +170,14 @@ describe('setupAcExHtmlDrawerSheets', () => {
     document.body.innerHTML = `
       <nav id="mlcad-toolbar"></nav>
       <div id="mlcad-measure-strip-wrap"></div>
-      <div id="mlcad-command-session"></div>
+      <div class="ml-mobile-cmd"><div class="ml-mobile-cmd-panel"></div></div>
     `
     const toolbar = document.getElementById('mlcad-toolbar') as HTMLElement
     const strip = document.getElementById(
       'mlcad-measure-strip-wrap'
     ) as HTMLElement
-    const session = document.getElementById(
-      'mlcad-command-session'
+    const session = document.querySelector(
+      '.ml-mobile-cmd-panel'
     ) as HTMLElement
     Object.defineProperty(toolbar, 'offsetHeight', { value: 56 })
     Object.defineProperty(strip, 'offsetHeight', { value: 80 })
@@ -191,7 +191,7 @@ describe('setupAcExHtmlDrawerSheets', () => {
       )
     ).toBe('40px')
 
-    session.hidden = true
+    session.closest('.ml-mobile-cmd')!.setAttribute('hidden', '')
     sheets.syncInset()
     expect(
       document.documentElement.style.getPropertyValue(

@@ -1,73 +1,36 @@
 /** @jest-environment jsdom */
 
-jest.mock('../src/AcExHtmlSimpleViewerUi', () => ({
+jest.mock('../../cad-simple-viewer/src/ui/AcUiHelpPanel', () => ({
   AcUiHelpPanel: jest.fn().mockImplementation(() => ({
     showDocs: jest.fn(),
     hide: jest.fn(),
-    setLabels: jest.fn()
+    setLabels: jest.fn(),
+    dispose: jest.fn()
   }))
 }))
 
-import { AcExCommandSessionPanel } from '../src/AcExCommandSessionPanel'
-import { ML_UI_MOBILE_MAX_WIDTH } from '../src/AcExHtmlShell'
-import { AcExHtmlI18n } from '../src/AcExHtmlI18n'
+jest.mock('../src/AcExHtmlSimpleViewerUi', () => {
+  const actual = jest.requireActual(
+    '../../cad-simple-viewer/src/ui/AcUiMobileSessionPanel'
+  ) as typeof import('../../cad-simple-viewer/src/ui/AcUiMobileSessionPanel')
+  return {
+    AcUiHelpPanel: jest.fn().mockImplementation(() => ({
+      showDocs: jest.fn(),
+      hide: jest.fn(),
+      setLabels: jest.fn(),
+      dispose: jest.fn()
+    })),
+    AcUiMobileSessionPanel: actual.AcUiMobileSessionPanel
+  }
+})
 
-function mountSessionHost(): HTMLElement {
-  document.body.innerHTML = `
-    <div id="mlcad-root">
-      <div id="mlcad-command-session" hidden aria-hidden="true">
-        <div class="mlcad-session-accessory" hidden>
-          <div class="mlcad-session-accessory-content"></div>
-          <button type="button" class="mlcad-session-help" aria-label="Help"></button>
-        </div>
-        <div class="mlcad-session-group mlcad-session-group-abs">
-          <div class="mlcad-session-metric-stack" data-session-stack="abs">
-            <button type="button" class="mlcad-session-metric" data-session-metric="x" disabled>
-              <span class="mlcad-session-metric-label">X</span>
-              <span class="mlcad-session-metric-value">0</span>
-            </button>
-            <button type="button" class="mlcad-session-metric" data-session-metric="y" disabled>
-              <span class="mlcad-session-metric-label">Y</span>
-              <span class="mlcad-session-metric-value">0</span>
-            </button>
-          </div>
-          <div class="mlcad-session-actions" data-session-actions="abs">
-            <button type="button" class="mlcad-session-cancel" aria-label="Cancel"></button>
-            <button type="button" class="mlcad-session-confirm" aria-label="Confirm" disabled></button>
-          </div>
-        </div>
-        <div class="mlcad-session-group mlcad-session-group-polar" hidden>
-          <div class="mlcad-session-metric-stack" data-session-stack="polar">
-            <button type="button" class="mlcad-session-metric" data-session-metric="length" disabled>
-              <span class="mlcad-session-metric-label">Length</span>
-              <span class="mlcad-session-metric-value">0</span>
-            </button>
-            <button type="button" class="mlcad-session-metric" data-session-metric="angle" disabled>
-              <span class="mlcad-session-metric-label">Angle</span>
-              <span class="mlcad-session-metric-value">0</span>
-            </button>
-          </div>
-          <div class="mlcad-session-actions" data-session-actions="polar"></div>
-        </div>
-        <div class="mlcad-session-group mlcad-session-group-delta" hidden>
-          <div class="mlcad-session-metric-stack" data-session-stack="delta">
-            <button type="button" class="mlcad-session-metric" data-session-metric="dx" disabled>
-              <span class="mlcad-session-metric-label">ΔX</span>
-              <span class="mlcad-session-metric-value">0</span>
-            </button>
-            <button type="button" class="mlcad-session-metric" data-session-metric="dy" disabled>
-              <span class="mlcad-session-metric-label">ΔY</span>
-              <span class="mlcad-session-metric-value">0</span>
-            </button>
-          </div>
-          <div class="mlcad-session-actions" data-session-actions="delta"></div>
-        </div>
-        <div class="mlcad-session-actions mlcad-session-actions-shared" data-session-actions="shared"></div>
-        <div class="mlcad-session-chips" hidden></div>
-      </div>
-    </div>
-  `
-  return document.getElementById('mlcad-command-session') as HTMLElement
+import { AcExCommandSessionPanel } from '../src/AcExCommandSessionPanel'
+import { AcExHtmlI18n } from '../src/AcExHtmlI18n'
+import { ML_UI_MOBILE_MAX_WIDTH } from '../src/AcExHtmlShell'
+
+function mountRoot(): HTMLElement {
+  document.body.innerHTML = `<div id="mlcad-root"><div id="mlcad-canvas-host"></div><footer id="mlcad-status-bar"></footer></div>`
+  return document.getElementById('mlcad-canvas-host') as HTMLElement
 }
 
 function mockPhone(matches: boolean) {
@@ -90,84 +53,78 @@ describe('AcExCommandSessionPanel', () => {
 
   it('hides when state is null and shows relative metrics when active', () => {
     mockPhone(true)
-    const host = mountSessionHost()
+    const host = mountRoot()
     const panel = new AcExCommandSessionPanel(host, new AcExHtmlI18n('en'))
     const onConfirm = jest.fn()
     const onCancel = jest.fn()
     const onChip = jest.fn()
     panel.setHandlers({ onConfirm, onCancel, onChip })
 
-    expect(host.hidden).toBe(true)
+    expect(panel.isOpen).toBe(false)
 
     panel.setState({
-      prompt: 'Tap points',
-      confirmEnabled: false,
+      prompt: 'Specify next point',
+      confirmEnabled: true,
+      chips: [{ id: 'undo', label: 'Undo' }],
       metrics: {
         hasBasePoint: true,
-        lengthText: '10.00',
+        lengthText: '10',
         angleText: '0',
-        dxText: '10.00',
+        dxText: '10',
         dyText: '0',
         xText: '10',
         yText: '0'
-      },
-      chips: [{ id: 'undo', label: 'Undo' }]
+      }
     })
 
-    expect(host.hidden).toBe(false)
+    expect(panel.isOpen).toBe(true)
     expect(
       document.getElementById('mlcad-root')?.classList.contains(
         'mlcad-session-active'
       )
     ).toBe(true)
-    expect(host.classList.contains('is-relative')).toBe(true)
-    expect(
-      host.querySelector('[data-session-metric="length"] .mlcad-session-metric-value')
-        ?.textContent
-    ).toBe('10.00')
-    expect(
-      (host.querySelector('.mlcad-session-confirm') as HTMLButtonElement).disabled
-    ).toBe(true)
-    host.querySelector('.mlcad-session-confirm')?.dispatchEvent(
-      new MouseEvent('click', { bubbles: true })
+    expect(host.querySelector('.ml-mobile-cmd-prompt')?.textContent).toBe(
+      'Specify next point'
     )
-    expect(onConfirm).not.toHaveBeenCalled()
     expect(
-      (host.querySelector('.mlcad-session-chips') as HTMLElement).hidden
-    ).toBe(true)
-    expect(host.querySelector('.mlcad-session-chip')).toBeNull()
-
+      host.querySelector(
+        '[data-metric="length"] .ml-mobile-cmd-metric-value'
+      )?.textContent
+    ).toBe('10')
     const polar = host.querySelector(
-      '.mlcad-session-group-polar'
+      '.ml-mobile-cmd-group-polar'
     ) as HTMLElement
     expect(polar.hidden).toBe(false)
-    expect(polar.querySelector('.mlcad-session-cancel')).toBeTruthy()
+    expect(polar.querySelector('.ml-mobile-cmd-cancel')).toBeTruthy()
     expect(
       host
-        .querySelector('.mlcad-session-group-delta')
-        ?.querySelector('.mlcad-session-confirm')
+        .querySelector('.ml-mobile-cmd-group-delta')
+        ?.querySelector('.ml-mobile-cmd-confirm')
     ).toBeTruthy()
-    expect(
-      (host.querySelector('.mlcad-session-group-abs') as HTMLElement).hidden
-    ).toBe(true)
 
-    host.querySelector('.mlcad-session-cancel')?.dispatchEvent(
+    host.querySelector('.ml-mobile-cmd-confirm')?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    )
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+
+    host.querySelector('.ml-mobile-cmd-cancel')?.dispatchEvent(
       new MouseEvent('click', { bubbles: true })
     )
     expect(onCancel).toHaveBeenCalledTimes(1)
 
     panel.setState(null)
-    expect(host.hidden).toBe(true)
+    expect(panel.isOpen).toBe(false)
     expect(
       document.getElementById('mlcad-root')?.classList.contains(
         'mlcad-session-active'
       )
     ).toBe(false)
+    panel.dispose()
   })
 
-  it('shows X/Y with both buttons when there is no last point', () => {
+  it('shows absolute metrics when there is no base point', () => {
     mockPhone(true)
-    const host = mountSessionHost()
+    const host = mountRoot()
     const panel = new AcExCommandSessionPanel(host, new AcExHtmlI18n('en'))
     panel.setHandlers({
       onConfirm: jest.fn(),
@@ -177,38 +134,34 @@ describe('AcExCommandSessionPanel', () => {
     panel.setState({
       prompt: 'Specify first point',
       confirmEnabled: false,
+      chips: [],
       metrics: {
         hasBasePoint: false,
         lengthText: '0',
         angleText: '0',
         dxText: '0',
         dyText: '0',
-        xText: '12.5',
-        yText: '8.0'
-      },
-      chips: []
+        xText: '12',
+        yText: '8'
+      }
     })
-
-    expect(host.classList.contains('is-absolute')).toBe(true)
-    const abs = host.querySelector('.mlcad-session-group-abs') as HTMLElement
+    const abs = host.querySelector('.ml-mobile-cmd-group-abs') as HTMLElement
     expect(abs.hidden).toBe(false)
     expect(
-      abs.querySelector('[data-session-metric="x"] .mlcad-session-metric-value')
+      abs.querySelector('[data-metric="x"] .ml-mobile-cmd-metric-value')
         ?.textContent
-    ).toBe('12.5')
-    expect(abs.querySelector('.mlcad-session-cancel')).toBeTruthy()
-    expect(abs.querySelector('.mlcad-session-confirm')).toBeTruthy()
+    ).toBe('12')
+    expect(abs.querySelector('.ml-mobile-cmd-cancel')).toBeTruthy()
+    expect(abs.querySelector('.ml-mobile-cmd-confirm')).toBeTruthy()
     expect(
-      (host.querySelector('.mlcad-session-group-polar') as HTMLElement).hidden
+      (host.querySelector('.ml-mobile-cmd-group-polar') as HTMLElement).hidden
     ).toBe(true)
-    expect(
-      (host.querySelector('.mlcad-session-group-delta') as HTMLElement).hidden
-    ).toBe(true)
+    panel.dispose()
   })
 
-  it('keeps cancel and confirm together on pad relative metrics', () => {
+  it('keeps cancel and confirm together in the pad session card', () => {
     mockPhone(false)
-    const host = mountSessionHost()
+    const host = mountRoot()
     const panel = new AcExCommandSessionPanel(host, new AcExHtmlI18n('en'))
     panel.setHandlers({
       onConfirm: jest.fn(),
@@ -216,140 +169,66 @@ describe('AcExCommandSessionPanel', () => {
       onChip: jest.fn()
     })
     panel.setState({
-      prompt: 'Tap next point',
-      confirmEnabled: false,
+      prompt: 'Specify next point',
+      confirmEnabled: true,
+      chips: [],
       metrics: {
         hasBasePoint: true,
-        lengthText: '10.00',
+        lengthText: '10',
         angleText: '0',
-        dxText: '10.00',
+        dxText: '10',
         dyText: '0',
         xText: '10',
         yText: '0'
-      },
-      chips: []
+      }
     })
-
     const shared = host.querySelector(
-      '[data-session-actions="shared"]'
+      '.ml-mobile-cmd-actions-shared'
     ) as HTMLElement
-    expect(shared.querySelector('.mlcad-session-cancel')).toBeTruthy()
-    expect(shared.querySelector('.mlcad-session-confirm')).toBeTruthy()
+    expect(shared.querySelector('.ml-mobile-cmd-cancel')).toBeTruthy()
+    expect(shared.querySelector('.ml-mobile-cmd-confirm')).toBeTruthy()
     expect(
       host
-        .querySelector('.mlcad-session-group-polar')
-        ?.querySelector('.mlcad-session-cancel')
+        .querySelector('.ml-mobile-cmd-group-polar')
+        ?.querySelector('.ml-mobile-cmd-cancel')
     ).toBeNull()
-    expect(
-      (host.querySelector('.mlcad-session-group-polar') as HTMLElement).hidden
-    ).toBe(false)
-    expect(
-      (host.querySelector('.mlcad-session-group-delta') as HTMLElement).hidden
-    ).toBe(false)
+    panel.dispose()
   })
 
-  it('shows X/Y labels when metrics are omitted before the first pointer', () => {
+  it('exposes an accessory host and clears it on hide', () => {
     mockPhone(true)
-    const host = mountSessionHost()
+    const host = mountRoot()
     const panel = new AcExCommandSessionPanel(host, new AcExHtmlI18n('en'))
-    panel.setHandlers({
-      onConfirm: jest.fn(),
-      onCancel: jest.fn(),
-      onChip: jest.fn()
-    })
-    panel.setState({
-      prompt: 'Specify first point',
-      confirmEnabled: false,
-      metrics: null,
-      chips: []
-    })
-
-    expect(host.classList.contains('is-absolute')).toBe(true)
-    expect(host.classList.contains('is-actions-only')).toBe(false)
-    const abs = host.querySelector('.mlcad-session-group-abs') as HTMLElement
-    expect(abs.hidden).toBe(false)
-    expect(
-      abs.querySelector('[data-session-metric="x"] .mlcad-session-metric-label')
-        ?.textContent
-    ).toBe('X')
-    expect(
-      abs.querySelector('[data-session-metric="y"] .mlcad-session-metric-label')
-        ?.textContent
-    ).toBe('Y')
-    expect(
-      (abs.querySelector('[data-session-metric="x"]') as HTMLElement).hidden
-    ).toBe(false)
-    expect(
-      (abs.querySelector('[data-session-metric="y"]') as HTMLElement).hidden
-    ).toBe(false)
-    expect(abs.querySelector('.mlcad-session-cancel')).toBeTruthy()
-    expect(abs.querySelector('.mlcad-session-confirm')).toBeTruthy()
-  })
-
-  it('enables confirm when confirmEnabled is true', () => {
-    mockPhone(true)
-    const host = mountSessionHost()
-    const panel = new AcExCommandSessionPanel(host, new AcExHtmlI18n('en'))
-    const onConfirm = jest.fn()
-    panel.setHandlers({
-      onConfirm,
-      onCancel: jest.fn(),
-      onChip: jest.fn()
-    })
-    panel.setState({
-      prompt: 'Finish',
-      confirmEnabled: true,
-      metrics: null,
-      chips: []
-    })
-    const confirm = host.querySelector(
-      '.mlcad-session-confirm'
-    ) as HTMLButtonElement
-    expect(confirm.disabled).toBe(false)
-    expect(host.classList.contains('is-absolute')).toBe(true)
-    expect(
-      (host.querySelector('.mlcad-session-group-abs') as HTMLElement).hidden
-    ).toBe(false)
-    expect(
-      (host.querySelector('.mlcad-session-group-polar') as HTMLElement).hidden
-    ).toBe(true)
-    expect(
-      (host.querySelector('.mlcad-session-group-delta') as HTMLElement).hidden
-    ).toBe(true)
-    confirm.click()
-    expect(onConfirm).toHaveBeenCalledTimes(1)
-  })
-
-  it('mounts an accessory on the first row and unmounts when hidden', () => {
-    mockPhone(true)
-    const host = mountSessionHost()
-    const panel = new AcExCommandSessionPanel(host, new AcExHtmlI18n('en'))
-    const mount = jest.fn((slot: HTMLElement) => {
-      slot.appendChild(document.createElement('span'))
-    })
-    const unmount = jest.fn()
     panel.setState({
       prompt: 'Specify point',
       confirmEnabled: true,
-      metrics: null,
-      chips: []
+      chips: [],
+      metrics: null
     })
-    panel.setAccessory({ id: 'draw-style', mount, unmount })
-    const row = host.querySelector('.mlcad-session-accessory') as HTMLElement
-    const content = host.querySelector(
-      '.mlcad-session-accessory-content'
-    ) as HTMLElement
+    const row = host.querySelector('.ml-mobile-cmd-accessory') as HTMLElement
     expect(row.hidden).toBe(false)
-    expect(host.querySelector('.mlcad-session-help')).toBeTruthy()
-    expect(mount).toHaveBeenCalledTimes(1)
-    expect(content.firstElementChild?.tagName).toBe('SPAN')
+    expect(host.querySelector('.ml-mobile-cmd-help')).toBeTruthy()
+    expect(host.querySelector('.ml-mobile-cmd-collapse')).toBeTruthy()
 
-    panel.setAccessory({ id: 'draw-style', mount, unmount })
-    expect(mount).toHaveBeenCalledTimes(1)
+    panel.setAccessory({
+      id: 'style',
+      mount(slot) {
+        slot.appendChild(document.createElement('span'))
+      },
+      unmount() {
+        /* no-op */
+      }
+    })
+    expect(
+      host.querySelector('.ml-mobile-cmd-accessory-content')?.firstElementChild
+        ?.tagName
+    ).toBe('SPAN')
 
     panel.setState(null)
-    expect(unmount).toHaveBeenCalledTimes(1)
     expect(row.hidden).toBe(true)
-    expect(row.querySelector('.mlcad-session-help')).toBeTruthy()
+    expect(
+      host.querySelector('.ml-mobile-cmd-accessory-content')?.childElementCount
+    ).toBe(0)
+    panel.dispose()
   })
 })

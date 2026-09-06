@@ -1050,7 +1050,9 @@ async function startViewer(): Promise<void> {
   let measureSession: AcExCommandSessionUiState | null = null
   let markupSession: AcExCommandSessionUiState | null = null
   let sessionPanelVisible = false
-  const sessionHost = document.getElementById('mlcad-command-session')
+  const sessionHost =
+    document.getElementById('mlcad-canvas-host') ??
+    document.getElementById('mlcad-root')
   const sessionPanel = sessionHost
     ? new AcExCommandSessionPanel(sessionHost, i18n)
     : null

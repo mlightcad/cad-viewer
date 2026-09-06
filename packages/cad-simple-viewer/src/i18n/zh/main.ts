@@ -24,7 +24,9 @@ export default {
     confirm: '确定',
     cancel: '取消',
     help: '帮助',
-    back: '返回'
+    back: '返回',
+    collapse: '收起',
+    expand: '展开'
   },
   inputManager: {
     firstCorner: '指定第一个角点或',

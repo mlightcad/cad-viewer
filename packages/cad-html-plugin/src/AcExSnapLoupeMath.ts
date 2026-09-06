@@ -2,51 +2,35 @@
 export const ACEX_SNAP_LOUPE_SIZE_PX = 128
 /** Magnification relative to the main view. */
 export const ACEX_SNAP_LOUPE_ZOOM = 3
-/** Horizontal / no-prompt vertical offset of the loupe, in CSS pixels. */
+/** Horizontal / vertical offset of the loupe from the canvas top-left. */
 export const ACEX_SNAP_LOUPE_INSET_PX = 8
 /**
- * Gap between the bottom of `#mlcad-status-bar` and the top of the loupe,
- * in CSS pixels.
+ * @deprecated Session prompts live in the bottom panel; loupe stays at top inset.
  */
 export const ACEX_SNAP_LOUPE_GAP_BELOW_STATUS_PX = 8
 /**
- * Fallback vertical offset when the status bar is hidden / unmeasurable.
- * ≈ status top (8) + single-line height (28) + gap (8).
+ * @deprecated Prefer {@link ACEX_SNAP_LOUPE_INSET_PX}; kept for call-site stability.
  */
-export const ACEX_SNAP_LOUPE_TOP_INSET_PX =
-  ACEX_SNAP_LOUPE_INSET_PX + 28 + ACEX_SNAP_LOUPE_GAP_BELOW_STATUS_PX
+export const ACEX_SNAP_LOUPE_TOP_INSET_PX = ACEX_SNAP_LOUPE_INSET_PX
 
 /**
- * Resolves loupe placement below the live status / prompt bar.
+ * Resolves loupe placement at the canvas top-left inset.
  *
- * @param host - Canvas host that contains the loupe (and usually the status bar).
- * @param statusEl - Optional status bar element; defaults to `#mlcad-status-bar`.
+ * Session prompts are in the bottom panel, so the loupe no longer sits below
+ * `#mlcad-status-bar`.
+ *
+ * @param _host - Canvas host (unused; kept for call-site stability).
+ * @param _statusEl - Unused; kept for call-site stability.
  * @returns Loupe `x` / `y` / `size` in host-local CSS pixels.
  */
 export function acexResolveLoupePlacement(
-  host: HTMLElement,
-  statusEl?: HTMLElement | null
+  _host: HTMLElement,
+  _statusEl?: HTMLElement | null
 ): { x: number; y: number; size: number } {
-  const x = ACEX_SNAP_LOUPE_INSET_PX
-  const size = ACEX_SNAP_LOUPE_SIZE_PX
-  const bar =
-    statusEl !== undefined
-      ? statusEl
-      : (document.getElementById('mlcad-status-bar') as HTMLElement | null)
-  if (!bar || bar.hidden || bar.offsetParent === null) {
-    return { x, y: ACEX_SNAP_LOUPE_TOP_INSET_PX, size }
-  }
-  const hostRect = host.getBoundingClientRect()
-  const barRect = bar.getBoundingClientRect()
-  // Status bar may be a sibling under `#mlcad-canvas-host` or `#mlcad-root`.
-  const barBottom = barRect.bottom - hostRect.top
   return {
-    x,
-    y: Math.max(
-      ACEX_SNAP_LOUPE_INSET_PX,
-      barBottom + ACEX_SNAP_LOUPE_GAP_BELOW_STATUS_PX
-    ),
-    size
+    x: ACEX_SNAP_LOUPE_INSET_PX,
+    y: ACEX_SNAP_LOUPE_INSET_PX,
+    size: ACEX_SNAP_LOUPE_SIZE_PX
   }
 }
 

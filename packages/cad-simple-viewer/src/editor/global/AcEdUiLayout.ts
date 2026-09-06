@@ -14,7 +14,7 @@ export const ML_UI_MOBILE_MEDIA_QUERY = `(max-width: ${ML_UI_MOBILE_MAX_WIDTH}px
  * Width (px) of the bottom command/session panel on pad layouts.
  * Phone uses full viewport width (`left: 0; right: 0`).
  *
- * Keep in sync with `.ml-mobile-cmd-panel` and `#mlcad-command-session`.
+ * Keep in sync with `.ml-mobile-cmd-panel` in {@link AcUiMobileSessionPanel}.
  */
 export const ML_UI_SESSION_PANEL_WIDTH = 440
 

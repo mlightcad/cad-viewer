@@ -24,7 +24,9 @@ export default {
     confirm: 'Confirm',
     cancel: 'Cancel',
     help: 'Help',
-    back: 'Back'
+    back: 'Back',
+    collapse: 'Collapse',
+    expand: 'Expand'
   },
   inputManager: {
     firstCorner: 'Specify the first corner or',

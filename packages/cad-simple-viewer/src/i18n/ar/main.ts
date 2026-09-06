@@ -24,7 +24,9 @@ export default {
     confirm: 'تأكيد',
     cancel: 'إلغاء',
     help: 'مساعدة',
-    back: 'رجوع'
+    back: 'رجوع',
+    collapse: 'طي',
+    expand: 'توسيع'
   },
   inputManager: {
     firstCorner: 'حدد الركن الأول أو',

@@ -24,7 +24,9 @@ export default {
     confirm: 'Potvrdit',
     cancel: 'Zrušit',
     help: 'Nápověda',
-    back: 'Zpět'
+    back: 'Zpět',
+    collapse: 'Sbalit',
+    expand: 'Rozbalit'
   },
   inputManager: {
     firstCorner: 'Zadejte první roh nebo',

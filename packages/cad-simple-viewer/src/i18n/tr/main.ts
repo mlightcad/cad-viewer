@@ -24,7 +24,9 @@ export default {
     confirm: 'Onayla',
     cancel: 'İptal',
     help: 'Yardım',
-    back: 'Geri'
+    back: 'Geri',
+    collapse: 'Daralt',
+    expand: 'Genişlet'
   },
   inputManager: {
     firstCorner: 'İlk köşeyi belirtin veya',

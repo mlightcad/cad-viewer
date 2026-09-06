@@ -138,6 +138,8 @@ export type AcExHtmlMessageKey =
   | 'session.cancel'
   | 'session.help'
   | 'session.back'
+  | 'session.collapse'
+  | 'session.expand'
   | 'session.undo'
   | 'touchPointTutorial.title'
   | 'touchPointTutorial.description'
@@ -340,6 +342,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       cancel: 'Cancel',
       help: 'Help',
       back: 'Back',
+      collapse: 'Collapse',
+      expand: 'Expand',
       undo: 'Undo'
     },
     touchPointTutorial: {
@@ -553,6 +557,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       cancel: '取消',
       help: '帮助',
       back: '返回',
+      collapse: '收起',
+      expand: '展开',
       undo: '撤销'
     },
     touchPointTutorial: {
@@ -758,6 +764,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       cancel: 'Zrušit',
       help: 'Nápověda',
       back: 'Zpět',
+      collapse: 'Sbalit',
+      expand: 'Rozbalit',
       undo: 'Zpět'
     },
     touchPointTutorial: {
@@ -971,6 +979,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       cancel: 'İptal',
       help: 'Yardım',
       back: 'Geri',
+      collapse: 'Daralt',
+      expand: 'Genişlet',
       undo: 'Geri al'
     },
     touchPointTutorial: {
@@ -1188,6 +1198,8 @@ const AR_MESSAGES: AcExMessageTree = {
     'cancel': 'إلغاء',
     'help': 'مساعدة',
     'back': 'رجوع',
+    'collapse': 'طي',
+    'expand': 'توسيع',
     'undo': 'تراجع'
   },
   'touchPointTutorial': {

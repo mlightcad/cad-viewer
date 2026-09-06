@@ -29,7 +29,8 @@ jest.mock('../src/ui/AcUiHelpPanel', () => ({
 
 import {
   ML_UI_COMPACT_MEDIA_QUERY,
-  ML_UI_MOBILE_MEDIA_QUERY
+  ML_UI_MOBILE_MEDIA_QUERY,
+  ML_UI_SESSION_PANEL_WIDTH
 } from '../src/editor/global/AcEdUiLayout'
 import { AcEdMobileCommandChrome } from '../src/editor/input/ui/AcEdMobileCommandChrome'
 
@@ -88,7 +89,7 @@ describe('AcEdMobileCommandChrome', () => {
     media.restore()
   })
 
-  it('shows the prompt, disables ✓ when allowNone is false, and maps × to cancel', () => {
+  it('shows the in-panel prompt, disables ✓ when allowNone is false, and maps × to cancel', () => {
     const media = installMatchMedia(
       query =>
         query === ML_UI_MOBILE_MEDIA_QUERY ||
@@ -113,20 +114,16 @@ describe('AcEdMobileCommandChrome', () => {
     )
     const panel = host.querySelector('.ml-mobile-cmd-panel') as HTMLElement
     expect(
-      panel.firstElementChild?.classList.contains('ml-mobile-cmd-accessory')
-    ).toBe(true)
+      panel.querySelector('.ml-mobile-cmd-accessory')
+    ).toBeTruthy()
     expect(
       (panel.querySelector('.ml-mobile-cmd-accessory') as HTMLElement).hidden
     ).toBe(false)
     expect(panel.querySelector('.ml-mobile-cmd-help')).toBeTruthy()
-    expect(panel.querySelector('.ml-mobile-cmd-accessory-content')).toBeTruthy()
-    expect(panel.children[1]?.classList.contains('ml-mobile-cmd-chips')).toBe(
-      true
-    )
+    expect(panel.querySelector('.ml-mobile-cmd-collapse')).toBeTruthy()
+    expect(panel.querySelector('.ml-mobile-cmd-prompt-row')).toBeTruthy()
     expect(panel.querySelector('.ml-mobile-cmd-chip')?.textContent).toBe('Undo')
-    expect(
-      (panel.querySelector('.ml-mobile-cmd-chips') as HTMLElement).hidden
-    ).toBe(false)
+
     const confirm = host.querySelector(
       '.ml-mobile-cmd-confirm'
     ) as HTMLButtonElement
@@ -389,21 +386,109 @@ describe('AcEdMobileCommandChrome', () => {
     chrome.hide()
     expect(row.hidden).toBe(true)
     expect(content.childElementCount).toBe(0)
-    // Help icon stays in the row DOM; only custom content is cleared.
     expect(row.querySelector('.ml-mobile-cmd-help')).toBeTruthy()
     media.restore()
   })
 
-  it('uses 36px confirm/cancel buttons centered in the absolute metrics row', () => {
+  it('collapses to a compact bar that keeps prompt and confirm/cancel', () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_MOBILE_MEDIA_QUERY
+    )
+    chrome.show(
+      {
+        prompt: 'Specify next point:',
+        keywords: [],
+        allowNone: true,
+        showMetrics: true
+      },
+      { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
+    )
+    const panel = host.querySelector('.ml-mobile-cmd-panel') as HTMLElement
+    // Empty accessory → prompt (+ chips) live in the title cluster.
+    expect(panel.classList.contains('is-prompt-in-title')).toBe(true)
+    expect(
+      host.querySelector('.ml-mobile-cmd-accessory .ml-mobile-cmd-prompt-row.is-in-title')
+    ).toBeTruthy()
+    expect(
+      host.querySelector('.ml-mobile-cmd-accessory .ml-mobile-cmd-prompt')
+        ?.textContent
+    ).toBe('Specify next point')
+
+    const collapseBtn = host.querySelector(
+      '.ml-mobile-cmd-collapse'
+    ) as HTMLButtonElement
+    collapseBtn.click()
+    expect(panel.classList.contains('is-collapsed')).toBe(true)
+    expect(
+      (host.querySelector('.ml-mobile-cmd-help') as HTMLButtonElement).hidden
+    ).toBe(true)
+    expect(
+      (host.querySelector('.ml-mobile-cmd-group-abs') as HTMLElement).hidden
+    ).toBe(true)
+    expect(
+      host.querySelector(
+        '.ml-mobile-cmd-actions-compact .ml-mobile-cmd-confirm'
+      )
+    ).toBeTruthy()
+    expect(
+      host.querySelector('.ml-mobile-cmd-accessory .ml-mobile-cmd-prompt')
+        ?.textContent
+    ).toBe('Specify next point')
+    collapseBtn.click()
+    expect(panel.classList.contains('is-collapsed')).toBe(false)
+    expect(
+      (host.querySelector('.ml-mobile-cmd-help') as HTMLButtonElement).hidden
+    ).toBe(false)
+    media.restore()
+  })
+
+  it('keeps accessory widgets in compact mode and hides the prompt', async () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_MOBILE_MEDIA_QUERY
+    )
+    chrome.show(
+      {
+        prompt: 'Specify next point:',
+        keywords: [],
+        allowNone: true,
+        showMetrics: false
+      },
+      { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
+    )
+    chrome.accessoryHost.appendChild(document.createElement('span'))
+    await Promise.resolve()
+    const panel = host.querySelector('.ml-mobile-cmd-panel') as HTMLElement
+    expect(panel.classList.contains('is-prompt-in-title')).toBe(false)
+    expect(
+      host.querySelector('.ml-mobile-cmd-prompt-row.is-in-title')
+    ).toBeNull()
+    expect(
+      (host.querySelector('.ml-mobile-cmd-prompt-row') as HTMLElement).hidden
+    ).toBe(false)
+
+    host.querySelector('.ml-mobile-cmd-collapse')?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    )
+    expect(panel.classList.contains('is-collapsed')).toBe(true)
+    expect(
+      host.querySelector('.ml-mobile-cmd-accessory-content')?.childElementCount
+    ).toBe(1)
+    expect(
+      (host.querySelector('.ml-mobile-cmd-prompt') as HTMLElement).hidden
+    ).toBe(true)
+    expect(
+      (host.querySelector('.ml-mobile-cmd-help') as HTMLButtonElement).hidden
+    ).toBe(true)
+    media.restore()
+  })
+
+  it('uses shared session panel styles with 440px metric-row breakpoint', () => {
     const css = document.getElementById('ml-mobile-cmd-styles')?.textContent ?? ''
     expect(css).toContain('flex: 0 0 36px')
     expect(css).toContain('width: 36px')
     expect(css).toContain('height: 36px')
-    expect(css).toContain(
-      '.ml-mobile-cmd-panel.is-absolute .ml-mobile-cmd-actions-shared'
-    )
-    expect(css).toContain(
-      '.ml-mobile-cmd-panel.is-absolute .ml-mobile-cmd-group-abs'
-    )
+    expect(css).toContain(`min-width: ${ML_UI_SESSION_PANEL_WIDTH}px`)
+    expect(css).toContain('.ml-mobile-cmd-panel.is-collapsed')
+    expect(css).toContain('.ml-mobile-cmd-prompt-row')
   })
 })
