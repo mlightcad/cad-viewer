@@ -4,8 +4,8 @@ import {
 } from '../../../app/AcApDocsUrl'
 import { AcApI18n } from '../../../i18n/AcApI18n'
 import {
-  AcUiMobileSessionPanel,
   type AcUiMobileSessionMetricTexts,
+  AcUiMobileSessionPanel,
   type AcUiMobileSessionPanelLabels
 } from '../../../ui/AcUiMobileSessionPanel'
 import {
