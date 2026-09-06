@@ -274,7 +274,9 @@ function rememberStyle(id: string, style: AcApMeasurementStyle): void {
 export function applyMeasurementStyle(
   view: AcTrView2d,
   group: AcTrHtmlGroup,
-  patch: Partial<Pick<AcApMeasurementStyle, 'color' | 'fontSize'>>
+  patch: Partial<
+    Pick<AcApMeasurementStyle, 'color' | 'fontSize' | 'textHeightMode' | 'textHeightWcs'>
+  >
 ): void {
   const prev = stylesById.get(group.id)
   const color = patch.color?.clone() ?? prev?.color.clone()
@@ -282,11 +284,22 @@ export function applyMeasurementStyle(
   const next: AcApMeasurementStyle = {
     color,
     lineWeight: MEASUREMENT_LINE_WEIGHT,
-    fontSize: patch.fontSize ?? prev?.fontSize ?? MEASUREMENT_FONT_SIZE
+    fontSize: patch.fontSize ?? prev?.fontSize ?? MEASUREMENT_FONT_SIZE,
+    textHeightMode: patch.textHeightMode ?? prev?.textHeightMode ?? 'adaptive',
+    textHeightWcs:
+      patch.textHeightWcs ??
+      (patch.textHeightMode === 'custom' ? undefined : prev?.textHeightWcs)
+  }
+  if (next.textHeightMode === 'custom' && patch.textHeightWcs != null) {
+    next.textHeightWcs = patch.textHeightWcs
   }
   const fontSizeChanged =
-    patch.fontSize != null &&
-    (prev == null || patch.fontSize !== prev.fontSize)
+    (patch.fontSize != null &&
+      (prev == null || patch.fontSize !== prev.fontSize)) ||
+    (patch.textHeightWcs != null &&
+      (prev == null || patch.textHeightWcs !== prev.textHeightWcs)) ||
+    (patch.textHeightMode != null &&
+      (prev == null || patch.textHeightMode !== prev.textHeightMode))
 
   rememberStyle(group.id, next)
   const extras = extrasById.get(group.id)
@@ -295,17 +308,23 @@ export function applyMeasurementStyle(
     if (extras.snapshot) {
       const prevSnap = extras.snapshot.style
       const base = serializeMeasurementStyle(next)
+      const textHeightWcs =
+        next.textHeightMode === 'custom' &&
+        next.textHeightWcs != null &&
+        next.textHeightWcs > 0
+          ? next.textHeightWcs
+          : resolveUpdatedTextHeightWcs(
+              view,
+              next.fontSize,
+              prev?.fontSize,
+              prevSnap.textHeightWcs,
+              fontSizeChanged
+            )
       extras.snapshot = {
         ...extras.snapshot,
         style: {
           ...base,
-          textHeightWcs: resolveUpdatedTextHeightWcs(
-            view,
-            next.fontSize,
-            prev?.fontSize,
-            prevSnap.textHeightWcs,
-            fontSizeChanged
-          ),
+          textHeightWcs,
           ...(prevSnap.arrowSizeWcs != null && prevSnap.arrowSizeWcs > 0
             ? { arrowSizeWcs: prevSnap.arrowSizeWcs }
             : {})
@@ -358,7 +377,9 @@ function resolveUpdatedTextHeightWcs(
  */
 export function applyMeasurementStyleToSelection(
   view: AcTrView2d,
-  patch: Partial<Pick<AcApMeasurementStyle, 'color' | 'fontSize'>>
+  patch: Partial<
+    Pick<AcApMeasurementStyle, 'color' | 'fontSize' | 'textHeightMode' | 'textHeightWcs'>
+  >
 ): void {
   const groups = view.htmlTransientManager
     .getSelectedGroups()

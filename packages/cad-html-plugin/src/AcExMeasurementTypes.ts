@@ -29,6 +29,8 @@ export interface AcExMeasurementSidecarStyle {
   lineWeight: number
   /** Authoring badge font size in CSS pixels (legacy / UI). */
   fontSize: number
+  /** Authoring mode; omitted means adaptive (legacy). */
+  textHeightMode?: 'adaptive' | 'custom'
   /** Badge text height in world units (preferred when restoring overlays). */
   textHeightWcs?: number
   /**

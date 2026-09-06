@@ -148,6 +148,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private toolbarShowChildrenIndicator = true
   /** Whether the toolbar container border is shown. */
   private toolbarShowBorder = true
+  /** Whether each toolbar button draws a permanent outer border. */
+  private toolbarShowButtonBorder = false
   /** Whether toolbar separator dividers are shown. */
   private toolbarShowSeparators = true
   /** Toolbar sizing along the layout axis (`auto` or `stretch`). */
@@ -599,6 +601,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
         size: this.toolbarSize,
         overflow: this.toolbarOverflow,
         showBorder: this.toolbarShowBorder,
+        showButtonBorder: this.toolbarShowButtonBorder,
         showSeparators: this.toolbarShowSeparators,
         inCanvasParent: this.toolbarInCanvasParent,
         subToolbar: this.toolbarSubToolbar,
@@ -704,6 +707,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.toolbarShowChildrenIndicator =
       toolbarOpts.showChildrenIndicator ?? true
     this.toolbarShowBorder = toolbarOpts.showBorder ?? true
+    this.toolbarShowButtonBorder = toolbarOpts.showButtonBorder ?? false
     this.toolbarShowSeparators = toolbarOpts.showSeparators ?? true
     this.toolbarSize = toolbarOpts.size ?? 'auto'
     this.toolbarOverflow = toolbarOpts.overflow ?? 'menu'
@@ -734,6 +738,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       size: this.toolbarSize,
       overflow: this.toolbarOverflow,
       showBorder: this.toolbarShowBorder,
+      showButtonBorder: this.toolbarShowButtonBorder,
       showSeparators: this.toolbarShowSeparators,
       subToolbar: this.toolbarSubToolbar,
       inCanvasParent: this.toolbarInCanvasParent,

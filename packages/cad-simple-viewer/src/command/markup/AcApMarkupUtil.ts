@@ -36,6 +36,12 @@ let markupDrawColor: AcCmColor = createDefaultMarkupColor()
 /** Session draw font size for newly created text / callout markups. */
 let markupDrawFontSize = MARKUP_FONT_SIZE
 
+/** Session text-height authoring mode. */
+let markupTextHeightMode: 'adaptive' | 'custom' = 'adaptive'
+
+/** Session custom WCS text height when mode is `'custom'`. */
+let markupCustomTextHeightWcs: number | undefined
+
 const drawStyleListeners = new Set<() => void>()
 
 function notifyMarkupDrawStyleChanged(): void {
@@ -60,6 +66,16 @@ export function getMarkupFontSize(): number {
   return markupDrawFontSize
 }
 
+/** Current markup text-height authoring mode. */
+export function getMarkupTextHeightMode(): 'adaptive' | 'custom' {
+  return markupTextHeightMode
+}
+
+/** Custom WCS text height for the markup draw session, if any. */
+export function getMarkupCustomTextHeightWcs(): number | undefined {
+  return markupCustomTextHeightWcs
+}
+
 /** Update the session markup draw color (affects current/future markups). */
 export function setMarkupDrawColor(color: AcCmColor): void {
   markupDrawColor = color.clone()
@@ -70,6 +86,29 @@ export function setMarkupDrawColor(color: AcCmColor): void {
 export function setMarkupDrawFontSize(size: number): void {
   if (!Number.isFinite(size) || size <= 0) return
   markupDrawFontSize = size
+  markupTextHeightMode = 'adaptive'
+  markupCustomTextHeightWcs = undefined
+  notifyMarkupDrawStyleChanged()
+}
+
+/**
+ * Sets adaptive (screen) or custom (WCS) text height for new markups.
+ *
+ * @param mode - Authoring mode.
+ * @param value - Font size px when adaptive; WCS height when custom.
+ */
+export function setMarkupTextHeight(
+  mode: 'adaptive' | 'custom',
+  value: number
+): void {
+  if (!Number.isFinite(value) || value <= 0) return
+  markupTextHeightMode = mode
+  if (mode === 'adaptive') {
+    markupDrawFontSize = value
+    markupCustomTextHeightWcs = undefined
+  } else {
+    markupCustomTextHeightWcs = value
+  }
   notifyMarkupDrawStyleChanged()
 }
 
@@ -107,7 +146,13 @@ export function defaultMarkupStyle(): AcApMarkupStyle {
   return {
     color: markupColorToCss(defaultMarkupColor()),
     lineWeight: MARKUP_LINE_WEIGHT,
-    fontSize: getMarkupFontSize()
+    fontSize: getMarkupFontSize(),
+    textHeightMode: markupTextHeightMode,
+    ...(markupTextHeightMode === 'custom' &&
+    markupCustomTextHeightWcs != null &&
+    markupCustomTextHeightWcs > 0
+      ? { textHeightWcs: markupCustomTextHeightWcs }
+      : {})
   }
 }
 
@@ -124,10 +169,16 @@ export function withMarkupStyleWcs(
     style.arrowSizeWcs != null && style.arrowSizeWcs > 0
       ? style.arrowSizeWcs
       : acapScreenPxToWcs(ACAP_OVERLAY_ARROW_SIZE_PX, view)
+  const textHeightWcs =
+    style.textHeightMode === 'custom' &&
+    style.textHeightWcs != null &&
+    style.textHeightWcs > 0
+      ? style.textHeightWcs
+      : acapScreenPxToWcs(fontSize, view)
   return {
     ...style,
     lineWeight: MARKUP_LINE_WEIGHT,
-    textHeightWcs: acapScreenPxToWcs(fontSize, view),
+    textHeightWcs,
     arrowSizeWcs
   }
 }
@@ -154,14 +205,21 @@ export function patchMarkupStyleWcs(
 
   const fontSizeChanged =
     patch.fontSize != null && patch.fontSize !== previous.fontSize
+  const customHeightChanged =
+    patch.textHeightWcs != null && patch.textHeightWcs !== previous.textHeightWcs
+  const mode = next.textHeightMode ?? previous.textHeightMode ?? 'adaptive'
 
   let textHeightWcs = previous.textHeightWcs ?? next.textHeightWcs
-  if (fontSizeChanged) {
+  if (mode === 'custom' && next.textHeightWcs != null && next.textHeightWcs > 0) {
+    textHeightWcs = next.textHeightWcs
+  } else if (fontSizeChanged) {
     if (textHeightWcs != null && textHeightWcs > 0 && prevFont > 0) {
       textHeightWcs = textHeightWcs * (nextFont / prevFont)
     } else {
       textHeightWcs = acapScreenPxToWcs(nextFont, view)
     }
+  } else if (customHeightChanged) {
+    textHeightWcs = next.textHeightWcs
   } else if (textHeightWcs == null || !(textHeightWcs > 0)) {
     textHeightWcs = acapScreenPxToWcs(nextFont, view)
   }
@@ -169,6 +227,7 @@ export function patchMarkupStyleWcs(
   const { strokeWidthWcs: _omitStroke, ...rest } = next
   return {
     ...rest,
+    textHeightMode: mode,
     lineWeight: MARKUP_LINE_WEIGHT,
     textHeightWcs,
     arrowSizeWcs:

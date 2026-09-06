@@ -521,6 +521,75 @@ describe('AcUiToolbar children UI', () => {
     toolbar.destroy()
   })
 
+  it('shows button borders only when showButtonBorder is true', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 800 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const withoutFrame = new AcUiToolbar({
+      host,
+      placement: 'right',
+      items: [{ id: 'layer', label: 'toolbar.layerShort', command: 'layer' }],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    expect(
+      host
+        .querySelector('.ml-ex-ui-toolbar')
+        ?.classList.contains('show-button-border')
+    ).toBe(false)
+    withoutFrame.destroy()
+
+    const withFrame = new AcUiToolbar({
+      host,
+      placement: 'right',
+      showButtonBorder: true,
+      items: [{ id: 'layer', label: 'toolbar.layerShort', command: 'layer' }],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    expect(
+      host
+        .querySelector('.ml-ex-ui-toolbar')
+        ?.classList.contains('show-button-border')
+    ).toBe(true)
+    withFrame.destroy()
+  })
+
+  it('passes showButtonBorder to child strips', () => {
+    const host = document.createElement('div')
+    Object.defineProperty(host, 'clientWidth', { value: 800 })
+    Object.defineProperty(host, 'clientHeight', { value: 600 })
+    document.body.appendChild(host)
+    const toolbar = new AcUiToolbar({
+      host,
+      placement: 'right',
+      showButtonBorder: true,
+      items: [
+        {
+          id: 'measure',
+          label: 'toolbar.measure',
+          childrenUi: 'toolbar',
+          children: [
+            { id: 'distance', label: 'toolbar.distance', command: 'measure' }
+          ]
+        }
+      ],
+      i18n: new AcUiI18n(),
+      onCommand: jest.fn()
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+
+    const sub = host.querySelector('.ml-ex-ui-subtoolbar')
+    expect(sub?.classList.contains('show-button-border')).toBe(true)
+    toolbar.destroy()
+  })
+
   it('applies sideOffset to cross-axis wrap limits for horizontal toolbars', async () => {
     const host = document.createElement('div')
     Object.defineProperty(host, 'clientWidth', { value: 400 })

@@ -55,6 +55,7 @@ import {
 import type { AcExOsnapPoint } from './AcExOsnap'
 import { acexIsOverlayGrip, acexOverlayGripClassName } from './AcExOverlayGrip'
 import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
+import type { AcExSessionHistory } from './AcExSessionHistory'
 import type { AcExExtents } from './AcExSnapshotTypes'
 
 /**
@@ -228,6 +229,11 @@ export interface AcExMeasureControllerOptions {
    * Pass `null` when no measurement tool is active.
    */
   onSessionUi?: (state: AcExCommandSessionUiState | null) => void
+  /**
+   * Optional session undo/redo coordinator (markup + measure).
+   * When set, create/delete/style/import edits are recorded.
+   */
+  sessionHistory?: AcExSessionHistory
 }
 
 /** Teardown callback registered when a measurement overlay is created. @internal */
@@ -1004,10 +1010,15 @@ export class AcExMeasureController {
   private readonly _onStyleChange: (() => void) | null
   /** Active layout BTR id for stamping / filtering overlays. */
   private readonly _getActiveLayoutId: (() => string) | null
+  private readonly _sessionHistory: AcExSessionHistory | null
+  /** True while {@link restoreRecords} rebuilds visuals (skip nested history). */
+  private _restoring = false
   /** Accent color for lines, labels, and canvas overlays. */
   private _measureColor = ACEX_MEASURE_COLOR
   /** Session badge font size for new measurements. */
   private _drawFontSize = ACEX_MEASUREMENT_FONT_SIZE
+  private _drawTextHeightMode: 'adaptive' | 'custom' = 'adaptive'
+  private _drawCustomTextHeightWcs: number | undefined
   /** Style of the measurement currently being committed (import or interactive). */
   private _commitStyle: AcExMeasurementSidecarStyle | null = null
   /** Host for canvas overlays, dots, and badges. */
@@ -1096,6 +1107,7 @@ export class AcExMeasureController {
     this._onSessionUi = options.onSessionUi ?? null
     this._onStyleChange = options.onStyleChange ?? null
     this._getActiveLayoutId = options.getActiveLayoutId ?? null
+    this._sessionHistory = options.sessionHistory ?? null
 
     this._overlayLayer = document.createElement('div')
     this._overlayLayer.id = 'mlcad-measure-overlays'
@@ -1115,6 +1127,52 @@ export class AcExMeasureController {
     )
 
     this._updateVisibilityToolbar()
+
+    this._sessionHistory?.attachMeasure({
+      snapshot: () => this.snapshotRecords(),
+      restore: records => this.restoreRecords(records)
+    })
+  }
+
+  /**
+   * Deep-cloned committed measurement records (all layouts) for undo snapshots.
+   */
+  snapshotRecords(): AcExMeasurementRecord[] {
+    return structuredClone(this._committed.map(item => item.record))
+  }
+
+  /**
+   * Replace all committed measurements from a history snapshot.
+   * Does not itself push a history entry.
+   *
+   * @param records - Measurement sidecar records to restore.
+   */
+  restoreRecords(records: AcExMeasurementRecord[]): void {
+    this._restoring = true
+    try {
+      this.cancelMode()
+      this._deselect(false)
+      for (const measure of [...this._committed]) {
+        this._removeCommitted(measure.id, false)
+      }
+      for (const record of records) {
+        this._publishRecord(structuredClone(record))
+      }
+      this._updateIdleStatus()
+      this._view.render()
+      this._onStyleChange?.()
+    } finally {
+      this._restoring = false
+    }
+  }
+
+  /** Record an undoable measurement mutation when session history is bound. */
+  private _edit(label: string, mutate: () => void): void {
+    if (this._restoring || !this._sessionHistory) {
+      mutate()
+      return
+    }
+    this._sessionHistory.runMeasure(label, mutate)
   }
 
   /**
@@ -1170,23 +1228,38 @@ export class AcExMeasureController {
     color: string
     lineWeight: number
     fontSize: number
+    textHeightMode: 'adaptive' | 'custom'
+    textHeightWcs?: number
   } {
     const selectedId =
       this._selectedIds.size === 1 ? [...this._selectedIds][0] : undefined
     if (selectedId) {
       const measure = this._committed.find(m => m.id === selectedId)
       if (measure) {
+        const mode = measure.record.style.textHeightMode ?? 'adaptive'
         return {
           color: measure.record.style.color || this._measureCss(),
           lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
-          fontSize: measure.record.style.fontSize || this._drawFontSize
+          fontSize: measure.record.style.fontSize || this._drawFontSize,
+          textHeightMode: mode,
+          ...(mode === 'custom' &&
+          measure.record.style.textHeightWcs != null &&
+          measure.record.style.textHeightWcs > 0
+            ? { textHeightWcs: measure.record.style.textHeightWcs }
+            : {})
         }
       }
     }
     return {
       color: this._measureCss(),
       lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
-      fontSize: this._drawFontSize
+      fontSize: this._drawFontSize,
+      textHeightMode: this._drawTextHeightMode,
+      ...(this._drawTextHeightMode === 'custom' &&
+      this._drawCustomTextHeightWcs != null &&
+      this._drawCustomTextHeightWcs > 0
+        ? { textHeightWcs: this._drawCustomTextHeightWcs }
+        : {})
     }
   }
 
@@ -1198,50 +1271,105 @@ export class AcExMeasureController {
     colorHex?: number
     lineWeight?: number
     fontSize?: number
+    textHeightMode?: 'adaptive' | 'custom'
+    textHeightWcs?: number
   }): void {
-    let colorChanged = false
-    if (patch.colorHex != null && Number.isFinite(patch.colorHex)) {
-      this._measureColor = patch.colorHex
-      colorChanged = true
-    } else if (patch.color) {
-      const next = cssColorToHex(patch.color, this._measureColor)
-      if (next !== this._measureColor || patch.color !== this._measureCss()) {
-        this._measureColor = next
+    this._edit('Edit Measurement Style', () => {
+      let colorChanged = false
+      if (patch.colorHex != null && Number.isFinite(patch.colorHex)) {
+        this._measureColor = patch.colorHex
         colorChanged = true
+      } else if (patch.color) {
+        const next = cssColorToHex(patch.color, this._measureColor)
+        if (next !== this._measureColor || patch.color !== this._measureCss()) {
+          this._measureColor = next
+          colorChanged = true
+        }
       }
-    }
-    if (patch.fontSize != null && patch.fontSize > 0) {
-      this._drawFontSize = patch.fontSize
-    }
-
-    if (colorChanged) {
-      applyMeasureAccentCss(this._measureColor)
-    }
-
-    const selectionPatch: {
-      color?: string
-      fontSize?: number
-    } = {}
-    if (colorChanged || patch.colorHex != null || patch.color) {
-      selectionPatch.color = this._measureCss()
-    }
-    if (patch.fontSize != null && patch.fontSize > 0) {
-      selectionPatch.fontSize = patch.fontSize
-    }
-    this._applyStyleToSelection(selectionPatch)
-
-    // Mid-draw: keep in-progress commit style in sync with the session.
-    if (this._commitStyle) {
-      if (selectionPatch.color) this._commitStyle.color = selectionPatch.color
-      this._commitStyle.lineWeight = ACEX_MEASUREMENT_LINE_WEIGHT
-      if (selectionPatch.fontSize != null) {
-        this._commitStyle.fontSize = selectionPatch.fontSize
+      if (patch.fontSize != null && patch.fontSize > 0) {
+        this._drawFontSize = patch.fontSize
       }
-    }
+      if (patch.textHeightMode === 'adaptive') {
+        this._drawTextHeightMode = 'adaptive'
+        this._drawCustomTextHeightWcs = undefined
+      } else if (
+        patch.textHeightMode === 'custom' ||
+        (patch.textHeightWcs != null && patch.textHeightWcs > 0)
+      ) {
+        this._drawTextHeightMode = 'custom'
+        if (patch.textHeightWcs != null && patch.textHeightWcs > 0) {
+          this._drawCustomTextHeightWcs = patch.textHeightWcs
+        }
+      }
 
-    this._refreshActivePreview()
-    this._onStyleChange?.()
-    this._view.render()
+      if (colorChanged) {
+        applyMeasureAccentCss(this._measureColor)
+      }
+
+      const selectionPatch: {
+        color?: string
+        fontSize?: number
+        textHeightMode?: 'adaptive' | 'custom'
+        textHeightWcs?: number
+      } = {}
+      if (colorChanged || patch.colorHex != null || patch.color) {
+        selectionPatch.color = this._measureCss()
+      }
+      if (patch.fontSize != null && patch.fontSize > 0) {
+        selectionPatch.fontSize = patch.fontSize
+      }
+      if (patch.textHeightMode != null) {
+        selectionPatch.textHeightMode = patch.textHeightMode
+      }
+      if (patch.textHeightWcs != null && patch.textHeightWcs > 0) {
+        selectionPatch.textHeightWcs = patch.textHeightWcs
+      }
+      this._applyStyleToSelection(selectionPatch)
+
+      // Mid-draw: keep in-progress commit style in sync with the session.
+      if (this._commitStyle) {
+        if (selectionPatch.color) this._commitStyle.color = selectionPatch.color
+        this._commitStyle.lineWeight = ACEX_MEASUREMENT_LINE_WEIGHT
+        if (selectionPatch.fontSize != null) {
+          this._commitStyle.fontSize = selectionPatch.fontSize
+        }
+        if (selectionPatch.textHeightMode != null) {
+          this._commitStyle.textHeightMode = selectionPatch.textHeightMode
+        }
+        if (
+          selectionPatch.textHeightMode === 'custom' &&
+          selectionPatch.textHeightWcs != null
+        ) {
+          this._commitStyle.textHeightWcs = selectionPatch.textHeightWcs
+        } else if (selectionPatch.textHeightMode === 'adaptive') {
+          this._commitStyle.textHeightWcs = acexScreenPxToWcs(
+            this._commitStyle.fontSize,
+            p => this._wcsToScreenPoint(p)
+          )
+        }
+      }
+
+      this._refreshActivePreview()
+      this._onStyleChange?.()
+      this._view.render()
+    })
+  }
+
+  /**
+   * Returns WCS text height of a committed measurement under the pointer, if any.
+   */
+  tryPickTextHeightAt(clientX: number, clientY: number): number | null {
+    if (!this._visible) return null
+    const measure = this._pickCommittedMeasure(clientX, clientY)
+    if (!measure) return null
+    const style = measure.record.style
+    if (style.textHeightWcs != null && style.textHeightWcs > 0) {
+      return style.textHeightWcs
+    }
+    const fontSize = style.fontSize || this._drawFontSize
+    if (!(fontSize > 0)) return null
+    const wcs = acexScreenPxToWcs(fontSize, p => this._wcsToScreenPoint(p))
+    return wcs > 0 ? wcs : null
   }
 
   /** CSS stroke/fill color for canvas overlays. @internal */
@@ -1323,6 +1451,11 @@ export class AcExMeasureController {
     this._syncConfirmedPointMarks()
     this._requestRender()
     return true
+  }
+
+  /** Whether {@link undoLastVertex} would remove an in-progress pick. */
+  canUndoLastVertex(): boolean {
+    return this._mode != null && this._points.length > 0
   }
 
   /**
@@ -1494,7 +1627,9 @@ export class AcExMeasureController {
 
   /** Remove one committed measurement. */
   removeMeasurement(id: string): void {
-    this._removeCommitted(id, true)
+    this._edit('Delete Measurement', () => {
+      this._removeCommitted(id, true)
+    })
   }
 
   private _notifyRecordsChanged(): void {
@@ -1528,13 +1663,15 @@ export class AcExMeasureController {
    * disposes THREE resources, and returns the viewer to idle status.
    */
   clearAll(): void {
-    this.cancelMode()
-    this._deselect(false)
-    for (const measure of [...this._committed]) {
-      this._removeCommitted(measure.id, false)
-    }
-    this._updateIdleStatus()
-    this._view.render()
+    this._edit('Clear Measurements', () => {
+      this.cancelMode()
+      this._deselect(false)
+      for (const measure of [...this._committed]) {
+        this._removeCommitted(measure.id, false)
+      }
+      this._updateIdleStatus()
+      this._view.render()
+    })
   }
 
   /**
@@ -1604,12 +1741,18 @@ export class AcExMeasureController {
 
   /** Replace all measurements from a parsed sidecar (used by tests / import). */
   loadSidecar(file: AcExMeasurementSidecarFile): void {
-    this.clearAll()
-    for (const record of file.measurements) {
-      this._publishRecord(record)
-    }
-    this._updateIdleStatus()
-    this._view.render()
+    this._edit('Import Measurements', () => {
+      this.cancelMode()
+      this._deselect(false)
+      for (const measure of [...this._committed]) {
+        this._removeCommitted(measure.id, false)
+      }
+      for (const record of file.measurements) {
+        this._publishRecord(record)
+      }
+      this._updateIdleStatus()
+      this._view.render()
+    })
   }
 
   private async _handleImportFile(): Promise<void> {
@@ -1812,13 +1955,15 @@ export class AcExMeasureController {
     }
 
     event?.preventDefault()
-    for (const id of [...this._selectedIds]) {
-      this._removeCommitted(id, false)
-    }
-    this._selectedIds.clear()
-    this._onStyleChange?.()
-    this._updateIdleStatus()
-    this._view.render()
+    this._edit('Delete Measurement', () => {
+      for (const id of [...this._selectedIds]) {
+        this._removeCommitted(id, false)
+      }
+      this._selectedIds.clear()
+      this._onStyleChange?.()
+      this._updateIdleStatus()
+      this._view.render()
+    })
     return true
   }
 
@@ -2247,6 +2392,7 @@ export class AcExMeasureController {
         clientToWorld: (x, y) => this._clientToWorld(x, y),
         isEnabled: () => this._gripsEnabled(),
         onPointerDown: () => this._selectOnly(id),
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
         onMove: world => {
           pos.set(world.x, world.y)
           this._placeDomAt(dot, world)
@@ -2401,6 +2547,7 @@ export class AcExMeasureController {
         clientToWorld: (x, y) => this._clientToWorld(x, y),
         isEnabled,
         onPointerDown: onSelect,
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
         onMove: world => {
           start.set(world.x, world.y)
           this._placeDomAt(startDot, world)
@@ -2413,6 +2560,7 @@ export class AcExMeasureController {
         clientToWorld: (x, y) => this._clientToWorld(x, y),
         isEnabled,
         onPointerDown: onSelect,
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
         onMove: world => {
           end.set(world.x, world.y)
           this._placeDomAt(endDot, world)
@@ -2696,6 +2844,7 @@ export class AcExMeasureController {
         clientToWorld: (x, y) => this._clientToWorld(x, y),
         isEnabled,
         onPointerDown: onSelect,
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
         onMove: world => {
           target.set(world.x, world.y)
           this._placeDomAt(el, world)
@@ -3141,6 +3290,7 @@ export class AcExMeasureController {
         isEnabled,
         onPointerDown: onSelect,
         onDragStart: () => {
+          this._sessionHistory?.beginMeasureCapture()
           dragStart = {
             start: start.clone(),
             through: through.clone(),
@@ -3288,6 +3438,7 @@ export class AcExMeasureController {
         clientToWorld: (x, y) => this._clientToWorld(x, y),
         isEnabled,
         onPointerDown: onSelect,
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
         onMove: world => {
           const projected = project(world)
           target.copy(projected)
@@ -3496,6 +3647,7 @@ export class AcExMeasureController {
           clientToWorld: (x, y) => this._clientToWorld(x, y),
           isEnabled,
           onPointerDown: onSelect,
+          onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
           onMove: world => {
             target.set(world.x, world.y)
             this._placeDomAt(dot, world)
@@ -3615,6 +3767,7 @@ export class AcExMeasureController {
     measure.value = value
     this._onStyleChange?.()
     this._updateIdleStatus()
+    this._sessionHistory?.commitMeasureCapture('Edit Measurement')
   }
 
   /** Draws a WCS polyline on a synced overlay canvas. @internal */
@@ -3756,35 +3909,37 @@ export class AcExMeasureController {
       this._commitStyle = null
       return
     }
-    const style = this._ensureStyleWcs(record.style, record.type === 'distance')
-    const committedRecord = { ...record, id: parts.id, style }
-    this._committed.push({
-      id: parts.id,
-      record: committedRecord,
-      parts,
-      hitTest,
-      quantity,
-      value
+    this._edit('Add Measurement', () => {
+      const style = this._ensureStyleWcs(record.style, record.type === 'distance')
+      const committedRecord = { ...record, id: parts.id, style }
+      this._committed.push({
+        id: parts.id,
+        record: committedRecord,
+        parts,
+        hitTest,
+        quantity,
+        value
+      })
+      acexSeedOverlaySizesFromWcs(
+        this._view.getCameraZoom(),
+        p => this._wcsToScreenPoint(p),
+        {
+          textHeightWcs: style.textHeightWcs,
+          arrowSizeWcs: style.arrowSizeWcs,
+          fontSizePx: style.fontSize,
+          strokeScreenPx: acexMeasureCanvasLineWidth(
+            ACEX_MEASUREMENT_LINE_WEIGHT
+          ),
+          elements: parts.dom,
+          canvases: parts.canvases
+        }
+      )
+      this._positionDomOverlays()
+      this._commitParts = null
+      this._commitStyle = null
+      this.syncLayoutVisibility()
+      this._notifyRecordsChanged()
     })
-    acexSeedOverlaySizesFromWcs(
-      this._view.getCameraZoom(),
-      p => this._wcsToScreenPoint(p),
-      {
-        textHeightWcs: style.textHeightWcs,
-        arrowSizeWcs: style.arrowSizeWcs,
-        fontSizePx: style.fontSize,
-        strokeScreenPx: acexMeasureCanvasLineWidth(
-          ACEX_MEASUREMENT_LINE_WEIGHT
-        ),
-        elements: parts.dom,
-        canvases: parts.canvases
-      }
-    )
-    this._positionDomOverlays()
-    this._commitParts = null
-    this._commitStyle = null
-    this.syncLayoutVisibility()
-    this._notifyRecordsChanged()
   }
 
   /** Default sidecar style from the current session draw style. @internal */
@@ -3792,7 +3947,13 @@ export class AcExMeasureController {
     return this._styleWithWcs({
       color: this._measureCss(),
       lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
-      fontSize: this._drawFontSize
+      fontSize: this._drawFontSize,
+      textHeightMode: this._drawTextHeightMode,
+      ...(this._drawTextHeightMode === 'custom' &&
+      this._drawCustomTextHeightWcs != null &&
+      this._drawCustomTextHeightWcs > 0
+        ? { textHeightWcs: this._drawCustomTextHeightWcs }
+        : {})
     })
   }
 
@@ -3832,10 +3993,16 @@ export class AcExMeasureController {
     const wcsToScreen = (p: { x: number; y: number }) =>
       this._wcsToScreenPoint(p)
     const { strokeWidthWcs: _omit, ...rest } = style
+    const custom =
+      style.textHeightMode === 'custom' &&
+      style.textHeightWcs != null &&
+      style.textHeightWcs > 0
     return {
       ...rest,
       lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
-      textHeightWcs: acexScreenPxToWcs(style.fontSize, wcsToScreen)
+      textHeightWcs: custom
+        ? style.textHeightWcs
+        : acexScreenPxToWcs(style.fontSize, wcsToScreen)
     }
   }
 
@@ -4136,6 +4303,8 @@ export class AcExMeasureController {
   private _applyStyleToSelection(patch: {
     color?: string
     fontSize?: number
+    textHeightMode?: 'adaptive' | 'custom'
+    textHeightWcs?: number
   }): void {
     if (this._selectedIds.size === 0) return
     const wcsToScreen = (p: { x: number; y: number }) =>
@@ -4147,7 +4316,38 @@ export class AcExMeasureController {
       if (patch.color) style.color = patch.color
       style.lineWeight = ACEX_MEASUREMENT_LINE_WEIGHT
       style.strokeWidthWcs = undefined
-      if (patch.fontSize != null && patch.fontSize > 0) {
+
+      const mode =
+        patch.textHeightMode ?? style.textHeightMode ?? 'adaptive'
+      let fontSizeChanged = false
+
+      if (
+        mode === 'custom' &&
+        patch.textHeightWcs != null &&
+        patch.textHeightWcs > 0
+      ) {
+        style.textHeightMode = 'custom'
+        style.textHeightWcs = patch.textHeightWcs
+        if (patch.fontSize != null && patch.fontSize > 0) {
+          style.fontSize = patch.fontSize
+        } else {
+          const perPx = acexScreenPxToWcs(1, wcsToScreen)
+          if (perPx > 0) {
+            style.fontSize = Math.max(
+              1,
+              Math.round(patch.textHeightWcs / perPx)
+            )
+          }
+        }
+        fontSizeChanged = true
+      } else if (mode === 'adaptive' && patch.textHeightMode === 'adaptive') {
+        style.textHeightMode = 'adaptive'
+        if (patch.fontSize != null && patch.fontSize > 0) {
+          style.fontSize = patch.fontSize
+        }
+        style.textHeightWcs = acexScreenPxToWcs(style.fontSize, wcsToScreen)
+        fontSizeChanged = true
+      } else if (patch.fontSize != null && patch.fontSize > 0) {
         const prevFont = style.fontSize
         if (
           style.textHeightWcs != null &&
@@ -4160,8 +4360,10 @@ export class AcExMeasureController {
           style.textHeightWcs = acexScreenPxToWcs(patch.fontSize, wcsToScreen)
         }
         style.fontSize = patch.fontSize
+        fontSizeChanged = true
       }
-      if (patch.fontSize != null) {
+
+      if (fontSizeChanged) {
         acexSeedOverlaySizesFromWcs(this._view.getCameraZoom(), wcsToScreen, {
           textHeightWcs: style.textHeightWcs,
           fontSizePx: style.fontSize,

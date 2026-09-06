@@ -384,6 +384,7 @@ export class AcUiSubToolbar {
     if (chrome.size === 'stretch') classes.push('is-stretch')
     if (chrome.overflow === 'wrap') classes.push('is-overflow-wrap')
     if (!chrome.showBorder) classes.push('no-border')
+    if (chrome.showButtonBorder) classes.push('show-button-border')
     if (chrome.showChildrenIndicator) classes.push('show-children-indicator')
     this.root.className = classes.join(' ')
   }

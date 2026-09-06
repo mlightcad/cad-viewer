@@ -73,6 +73,10 @@ function parseStyle(raw: unknown): AcExMeasurementSidecarStyle | undefined {
     color: raw.color,
     lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
     fontSize,
+    textHeightMode:
+      raw.textHeightMode === 'custom' || raw.textHeightMode === 'adaptive'
+        ? raw.textHeightMode
+        : undefined,
     textHeightWcs: parsePositiveNumber(raw.textHeightWcs),
     arrowSizeWcs: parsePositiveNumber(raw.arrowSizeWcs)
   }

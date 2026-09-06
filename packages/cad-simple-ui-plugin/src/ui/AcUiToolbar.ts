@@ -72,6 +72,11 @@ export interface AcUiToolbarMountOptions {
   overflow?: AcUiToolbarOverflow
   /** When false, hides the toolbar container border line. @default true */
   showBorder?: boolean
+  /**
+   * When true, each button draws a permanent outer border.
+   * @default false
+   */
+  showButtonBorder?: boolean
   /** When false, omits visual separators between toolbar groups. @default true */
   showSeparators?: boolean
   /**
@@ -139,6 +144,8 @@ export class AcUiToolbar {
   private sideOffset: number
   /** Whether the toolbar container border is shown. */
   private showBorder: boolean
+  /** Whether each toolbar button draws a permanent outer border. */
+  private showButtonBorder: boolean
   /** Whether separator dividers are rendered between toolbar groups. */
   private showSeparators: boolean
   /** Whether parent buttons with children show a corner triangle. */
@@ -196,6 +203,7 @@ export class AcUiToolbar {
     this.edgeOffset = options.edgeOffset ?? 8
     this.sideOffset = options.sideOffset ?? 0
     this.showBorder = options.showBorder ?? true
+    this.showButtonBorder = options.showButtonBorder ?? false
     this.showSeparators = options.showSeparators ?? true
     this.showChildrenIndicator = options.showChildrenIndicator ?? true
     this.inCanvasParent = options.inCanvasParent === true
@@ -271,6 +279,7 @@ export class AcUiToolbar {
         | 'size'
         | 'overflow'
         | 'showBorder'
+        | 'showButtonBorder'
         | 'showSeparators'
         | 'showChildrenIndicator'
         | 'subToolbar'
@@ -309,6 +318,9 @@ export class AcUiToolbar {
     }
     if (view.showBorder !== undefined) {
       this.showBorder = view.showBorder
+    }
+    if (view.showButtonBorder !== undefined) {
+      this.showButtonBorder = view.showButtonBorder
     }
     if (view.showSeparators !== undefined) {
       this.showSeparators = view.showSeparators
@@ -447,6 +459,7 @@ export class AcUiToolbar {
         size: this.options.size,
         overflow: this.options.overflow,
         showBorder: this.showBorder,
+        showButtonBorder: this.showButtonBorder,
         showSeparators: this.showSeparators,
         showChildrenIndicator: this.showChildrenIndicator
       },
@@ -634,6 +647,7 @@ export class AcUiToolbar {
     if (this.options.overflow === 'wrap') classes.push('is-overflow-wrap')
     if (this.options.overflow === 'menu') classes.push('is-overflow-menu')
     if (!this.showBorder) classes.push('no-border')
+    if (this.showButtonBorder) classes.push('show-button-border')
     if (this.showChildrenIndicator) classes.push('show-children-indicator')
     this.root.className = classes.join(' ')
   }

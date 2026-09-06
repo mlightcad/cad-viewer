@@ -78,6 +78,12 @@ export interface AcUiToolbarChromeOptions {
    */
   showBorder?: boolean
   /**
+   * When true, each toolbar button draws a permanent outer border.
+   * When false, buttons stay frameless until hover / active.
+   * @default false
+   */
+  showButtonBorder?: boolean
+  /**
    * When false, omits visual separators between toolbar button groups.
    * @default true
    */
@@ -283,8 +289,8 @@ export interface AcUiToolbarOptions extends AcUiToolbarChromeOptions {
  *
  * Each entry's `toolbar` is merged on top of built-in defaults and the top-level
  * {@link AcUiToolbarOptions} baseline (phone inherits only `enabled`,
- * `mountTarget`, and `inCanvasParent` from the top-level toolbar — see
- * {@link acuiMergeToolbarOptionsForLayout}).
+ * `mountTarget`, `inCanvasParent`, and `showButtonBorder` from the top-level
+ * toolbar — see {@link acuiMergeToolbarOptionsForLayout}).
  */
 export interface AcUiLayoutOptions {
   /** Toolbar configuration for this layout kind. */
@@ -367,8 +373,9 @@ export interface AcUiSimpleUiPluginOptions {
   }
   /**
    * Toolbar baseline configuration. Applied fully to pad/desktop. Phone inherits
-   * only {@link AcUiToolbarOptions.mountTarget}, `enabled`, and
-   * {@link AcUiToolbarOptions.inCanvasParent} from this baseline; phone chrome
+   * only {@link AcUiToolbarOptions.mountTarget}, `enabled`,
+   * {@link AcUiToolbarOptions.inCanvasParent}, and
+   * {@link AcUiToolbarOptions.showButtonBorder} from this baseline; phone chrome
    * and items come from built-in phone defaults plus
    * {@link layouts.phone.toolbar} (append items are not inherited on phone).
    */

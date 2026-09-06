@@ -1,4 +1,4 @@
-import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager, acedApplyUiTheme } from '@mlightcad/cad-simple-viewer'
 import {
   type AcDbColorTheme,
   AcDbDatabase,
@@ -20,6 +20,8 @@ function applyThemeToDom(theme: AcDbColorTheme) {
 
   const html = document.documentElement
   html.classList.toggle('dark', theme === 'dark')
+  // Keep simple-viewer chrome tokens (--ml-ui-*) and theme subscribers in sync.
+  acedApplyUiTheme(theme, html)
 }
 
 function updateCurrentTheme(theme: AcDbColorTheme) {

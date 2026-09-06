@@ -16,6 +16,7 @@ import type {
   AcEdSessionAccessoryHostInfo
 } from '../../command/AcEdSessionAccessory'
 import {
+  acedIsMobileUiLayout,
   acedShouldHideDesktopCommandLine,
   acedSubscribeUiLayout
 } from '../../global/AcEdUiLayout'
@@ -61,6 +62,7 @@ import {
 } from '../prompt'
 import { AcEdPromptInputMode } from '../session/AcEdPromptInputSession'
 import { AcEdCommandLine } from './AcEdCommandLine'
+import { AcEdEntityPickCancelChrome } from './AcEdEntityPickCancelChrome'
 import { AcEdFloatingInput } from './AcEdFloatingInput'
 import {
   AcEdFloatingInputBoxCount,
@@ -152,6 +154,8 @@ export class AcEdInputManager {
   private _commandLine: AcEdCommandLine
   /** Phone/pad prompt bar + session panel (hidden on desktop). */
   private _mobileChrome: AcEdMobileCommandChrome
+  /** Top-right X shown during mobile entity picks (below message bar). */
+  private _entityPickCancel: AcEdEntityPickCancelChrome | null = null
   /** Desktop/mobile session accessory host resolution and selection mounts. */
   private readonly _sessionAccessoryController: AcEdSessionAccessoryController
   /** Buffered command-line style inputs (each item is one Enter-confirmed value). */
@@ -391,6 +395,39 @@ export class AcEdInputManager {
     this.syncDesktopCommandLineVisibility()
     this._sessionAccessoryController.remountActiveSessionAccessory()
   }
+
+  /**
+   * Shows the top-right entity-pick cancel button on mobile layouts only.
+   *
+   * @param onCancel - Invoked when the user taps X.
+   */
+  private showEntityPickCancel(onCancel: () => void): void {
+    if (!acedIsMobileUiLayout()) {
+      this.hideEntityPickCancel()
+      return
+    }
+    if (!this._entityPickCancel) {
+      this._entityPickCancel = new AcEdEntityPickCancelChrome({
+        container: this.view.container,
+        onCancel: () => this._entityPickCancelOnCancel?.(),
+        label: AcApI18n.t('main.entityPick.cancel'),
+        topOffsetPx: 48
+      })
+    } else {
+      this._entityPickCancel.setLabel(AcApI18n.t('main.entityPick.cancel'))
+    }
+    this._entityPickCancelOnCancel = onCancel
+    this._entityPickCancel.show()
+  }
+
+  /** Hides the mobile entity-pick cancel button. */
+  private hideEntityPickCancel(): void {
+    this._entityPickCancelOnCancel = null
+    this._entityPickCancel?.hide()
+  }
+
+  /** Latest cancel callback for {@link _entityPickCancel}. */
+  private _entityPickCancelOnCancel: (() => void) | null = null
 
   /**
    * Pushes live length/angle/Δ values into the mobile session panel.
@@ -1747,6 +1784,7 @@ export class AcEdInputManager {
             floatingMessage?.dispose()
             keywordSession?.cancel()
             this._commandLine.clear()
+            this.hideEntityPickCancel()
             this.endMobilePrompt()
           }
           this._activeRejector = rejector
@@ -1766,6 +1804,7 @@ export class AcEdInputManager {
               rejector(new AcEdKeywordInputError(globalName))
             }
           })
+          this.showEntityPickCancel(() => rejector())
 
           keywordSession?.promise.then(keyword => {
             if (settled) return

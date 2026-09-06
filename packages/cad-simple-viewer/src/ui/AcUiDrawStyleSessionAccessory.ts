@@ -8,10 +8,12 @@ import { getMarkupStore } from '../command/markup/AcApMarkupStore'
 import {
   cssToMarkupColor,
   defaultMarkupColor,
+  getMarkupCustomTextHeightWcs,
   getMarkupFontSize,
+  getMarkupTextHeightMode,
   markupColorToCss,
   setMarkupDrawColor,
-  setMarkupDrawFontSize
+  setMarkupTextHeight
 } from '../command/markup/AcApMarkupUtil'
 import {
   applyMeasurementStyleToSelection,
@@ -27,9 +29,11 @@ import {
   acapCssColor,
   acapCssToMeasurementColor,
   acapGetMeasurementColor,
+  acapGetMeasurementCustomTextHeightWcs,
   acapGetMeasurementFontSize,
+  acapGetMeasurementTextHeightMode,
   acapSetMeasurementDrawColor,
-  acapSetMeasurementDrawFontSize
+  acapSetMeasurementTextHeight
 } from '../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../view'
 import { AcUiAciColorDialog } from './AcUiAciColorDialog'
@@ -41,9 +45,11 @@ import {
 import {
   type AcUiDrawStyleKind
 } from './AcUiDrawStyle'
-
-/** Font-size choices shown in the overlay dropdown, in CSS pixels. */
-const FONT_SIZE_OPTIONS = [10, 12, 13, 14, 16, 18, 20, 24, 28, 32]
+import {
+  acuiOpenTextHeightDialog,
+  acuiResolveTextHeightPatch
+} from './AcUiTextHeightDialogHelpers'
+import { createIconElement, ICON_TEXT_HEIGHT } from './icons'
 
 /** DOM id of the injected stylesheet for draw-style controls. */
 const STYLE_ID = 'ml-draw-style-session-accessory-styles'
@@ -73,16 +79,28 @@ const CONTROLS_CSS = `
       border-radius: 50%;
       border: 1px solid #666;
     }
-    .ml-draw-style-toolbar__select {
+    .ml-draw-style-toolbar__text-height {
+      width: 28px;
       height: 28px;
-      min-width: 92px;
-      max-width: 140px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       border: 1px solid var(--ml-ui-border, #dcdfe6);
       border-radius: 4px;
       background: var(--ml-ui-bg, #fff);
       color: inherit;
-      font-size: 12px;
-      padding: 0 6px;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    .ml-draw-style-toolbar__text-height .ml-ex-ui-icon {
+      display: inline-flex;
+      width: 18px;
+      height: 18px;
+    }
+    .ml-draw-style-toolbar__text-height .ml-ex-ui-icon svg {
+      width: 18px;
+      height: 18px;
     }
     .ml-draw-style-toolbar__color {
       position: relative;
@@ -170,8 +188,8 @@ export class AcUiDrawStyleSessionAccessory {
   /** ACI palette stacks rendered inside {@link colorPanel}. */
   private readonly aciStacks: AcUiAciPaletteStacks
 
-  /** Font-size dropdown for the active session. */
-  private readonly fontSizeSelect: HTMLSelectElement
+  /** Opens the text-height settings dialog. */
+  private readonly textHeightButton: HTMLButtonElement
 
   /** Root row reparented into session accessory hosts. */
   private readonly controlsRow: HTMLDivElement
@@ -188,11 +206,17 @@ export class AcUiDrawStyleSessionAccessory {
   /** True while the full-screen mobile ACI dialog is open. */
   private colorDialogOpen = false
 
+  /** True while the text-height dialog is open. */
+  private textHeightDialogOpen = false
+
   /** Timer that closes the palette after pointer leave. */
   private colorLeaveTimer: number | undefined
 
   /** Closes the palette when the user clicks outside the color control. */
   private readonly onDocumentPointerDown: (event: PointerEvent) => void
+
+  /** Refreshes titles when the application locale changes. */
+  private readonly onLocaleChanged = () => this.relabel()
 
   /** Tears down selection-sync subscriptions registered by install. */
   private selectionUnsubscribe: (() => void) | null = null
@@ -226,34 +250,26 @@ export class AcUiDrawStyleSessionAccessory {
     this.colorWrap.appendChild(this.swatch)
     this.colorWrap.appendChild(this.colorPanel)
 
-    this.fontSizeSelect = document.createElement('select')
-    this.fontSizeSelect.className = 'ml-draw-style-toolbar__select'
+    this.textHeightButton = document.createElement('button')
+    this.textHeightButton.type = 'button'
+    this.textHeightButton.className = 'ml-draw-style-toolbar__text-height'
+    this.textHeightButton.appendChild(createIconElement(ICON_TEXT_HEIGHT))
 
     this.controlsRow = document.createElement('div')
     this.controlsRow.className = 'ml-draw-style-toolbar__controls'
     this.controlsRow.setAttribute('role', 'toolbar')
     acedApplyUiTheme(resolveUiTheme(view.container), this.controlsRow)
-    this.controlsRow.append(this.colorWrap, this.fontSizeSelect)
+    this.controlsRow.append(this.colorWrap, this.textHeightButton)
 
     this.swatch.addEventListener('click', event => {
       event.preventDefault()
       event.stopPropagation()
-      if (this.mobileMounted) {
-        void this.openSessionColorDialog()
-        return
-      }
-      if (this.colorPanelOpen) this.hideColorPanel()
-      else this.showColorPanel()
+      void this.openSessionColorDialog()
     })
-    this.colorWrap.addEventListener('mouseenter', () =>
-      this.clearColorLeaveTimer()
-    )
-    this.colorWrap.addEventListener('mouseleave', () =>
-      this.scheduleHideColorPanel()
-    )
-    this.fontSizeSelect.addEventListener('change', () => {
-      const size = Number(this.fontSizeSelect.value)
-      if (size > 0) this.applyFontSize(size)
+    this.textHeightButton.addEventListener('click', event => {
+      event.preventDefault()
+      event.stopPropagation()
+      void this.openTextHeightDialog()
     })
     this.controlsRow.addEventListener('pointerdown', event =>
       event.stopPropagation()
@@ -272,6 +288,7 @@ export class AcUiDrawStyleSessionAccessory {
       }
     }
     document.addEventListener('pointerdown', this.onDocumentPointerDown, true)
+    AcApI18n.events.localeChanged.addEventListener(this.onLocaleChanged)
 
     this.relabel()
   }
@@ -307,6 +324,7 @@ export class AcUiDrawStyleSessionAccessory {
       this.onDocumentPointerDown,
       true
     )
+    AcApI18n.events.localeChanged.removeEventListener(this.onLocaleChanged)
     this.unmount()
     this.selectionUnsubscribe?.()
     this.selectionUnsubscribe = null
@@ -366,7 +384,11 @@ export class AcUiDrawStyleSessionAccessory {
   /** Refreshes control titles from i18n strings. */
   private relabel(): void {
     this.swatch.title = AcApI18n.t('main.drawStyle.color')
-    this.fontSizeSelect.title = AcApI18n.t('main.drawStyle.fontSize')
+    this.textHeightButton.title = AcApI18n.t('main.drawStyle.fontSize')
+    this.textHeightButton.setAttribute(
+      'aria-label',
+      AcApI18n.t('main.drawStyle.fontSize')
+    )
   }
 
   /**
@@ -379,8 +401,7 @@ export class AcUiDrawStyleSessionAccessory {
       const color =
         selected?.color ??
         (db ? acapGetMeasurementColor(db) : acapCssToMeasurementColor('#7b8794'))
-      const fontSize = selected?.fontSize ?? acapGetMeasurementFontSize()
-      this.paint(color, fontSize)
+      this.paint(color)
       return
     }
 
@@ -390,35 +411,18 @@ export class AcUiDrawStyleSessionAccessory {
     const color = selected
       ? cssToMarkupColor(selected.style.color)
       : defaultMarkupColor()
-    const fontSize = selected?.style.fontSize ?? getMarkupFontSize()
-    this.paint(color, fontSize)
+    this.paint(color)
   }
 
   /**
-   * Updates swatch, ACI selection, and font-size dropdown to match session state.
+   * Updates swatch and ACI selection to match session state.
    *
    * @param color - Active draw color.
-   * @param fontSize - Active font size in CSS pixels.
    */
-  private paint(color: AcCmColor, fontSize: number): void {
+  private paint(color: AcCmColor): void {
     const css = acapCssColor(color)
     this.swatchFill.style.background = css
     this.aciStacks.setSelected(aciIndexOf(color))
-
-    const sizes = new Set(FONT_SIZE_OPTIONS)
-    if (Number.isFinite(fontSize) && fontSize > 0)
-      sizes.add(Math.round(fontSize))
-    const sorted = [...sizes].sort((a, b) => a - b)
-    this.fontSizeSelect.replaceChildren()
-    for (const size of sorted) {
-      const option = document.createElement('option')
-      option.value = String(size)
-      option.textContent = `${size} px`
-      this.fontSizeSelect.appendChild(option)
-    }
-    this.fontSizeSelect.value = String(
-      Number.isFinite(fontSize) && fontSize > 0 ? Math.round(fontSize) : 12
-    )
   }
 
   /**
@@ -438,14 +442,7 @@ export class AcUiDrawStyleSessionAccessory {
     applyMarkupStyleToSelection(this.view, { color: markupColorToCss(color) })
   }
 
-  /** Opens the inline ACI palette popover below the swatch. */
-  private showColorPanel(): void {
-    this.clearColorLeaveTimer()
-    this.colorPanelOpen = true
-    this.colorPanel.classList.add('is-open')
-  }
-
-  /** Closes the inline ACI palette popover. */
+  /** Closes the inline ACI palette popover if it was left open. */
   private hideColorPanel(): void {
     this.clearColorLeaveTimer()
     this.colorPanelOpen = false
@@ -453,7 +450,7 @@ export class AcUiDrawStyleSessionAccessory {
   }
 
   /**
-   * Opens the full ACI color dialog on mobile where the inline panel is impractical.
+   * Opens the ACI color dialog (command and selection accessories).
    */
   private async openSessionColorDialog(): Promise<void> {
     if (this.colorDialogOpen) return
@@ -486,12 +483,6 @@ export class AcUiDrawStyleSessionAccessory {
     }
   }
 
-  /** Starts a short delay before closing the palette after pointer leave. */
-  private scheduleHideColorPanel(): void {
-    this.clearColorLeaveTimer()
-    this.colorLeaveTimer = window.setTimeout(() => this.hideColorPanel(), 180)
-  }
-
   /** Cancels a pending palette close timer. */
   private clearColorLeaveTimer(): void {
     if (this.colorLeaveTimer == null) return
@@ -499,18 +490,60 @@ export class AcUiDrawStyleSessionAccessory {
     this.colorLeaveTimer = undefined
   }
 
-  /**
-   * Persists a new font size for the active session and updates selection overlays.
-   *
-   * @param size - Font size in CSS pixels.
-   */
-  private applyFontSize(size: number): void {
-    if (this.kind === 'measure') {
-      acapSetMeasurementDrawFontSize(size)
-      applyMeasurementStyleToSelection(this.view, { fontSize: size })
-      return
+  /** Opens the text-height dialog for the active draw-style kind. */
+  private async openTextHeightDialog(): Promise<void> {
+    if (this.textHeightDialogOpen || this.kind == null) return
+    this.textHeightDialogOpen = true
+    this.hideColorPanel()
+    try {
+      const isMeasure = this.kind === 'measure'
+      const selectedMeasure = isMeasure ? getActiveMeasurementStyle() : undefined
+      const selectedMarkup =
+        !isMeasure && getMarkupStore().selectedId
+          ? getMarkupStore().get(getMarkupStore().selectedId!)
+          : undefined
+      const initialMode = isMeasure
+        ? selectedMeasure?.textHeightMode ?? acapGetMeasurementTextHeightMode()
+        : selectedMarkup?.style.textHeightMode ?? getMarkupTextHeightMode()
+      const initialFontSizePx = isMeasure
+        ? selectedMeasure?.fontSize ?? acapGetMeasurementFontSize()
+        : selectedMarkup?.style.fontSize ?? getMarkupFontSize()
+      const initialTextHeightWcs = isMeasure
+        ? selectedMeasure?.textHeightWcs ??
+          acapGetMeasurementCustomTextHeightWcs()
+        : selectedMarkup?.style.textHeightWcs ?? getMarkupCustomTextHeightWcs()
+
+      const result = await acuiOpenTextHeightDialog({
+        view: this.view,
+        initialMode,
+        initialFontSizePx,
+        initialTextHeightWcs
+      })
+      if (!result) return
+      const patch = acuiResolveTextHeightPatch(
+        this.view,
+        result,
+        initialFontSizePx
+      )
+      if (isMeasure) {
+        acapSetMeasurementTextHeight(
+          patch.textHeightMode,
+          patch.textHeightMode === 'custom'
+            ? (patch.textHeightWcs ?? patch.fontSize)
+            : patch.fontSize
+        )
+        applyMeasurementStyleToSelection(this.view, patch)
+      } else {
+        setMarkupTextHeight(
+          patch.textHeightMode,
+          patch.textHeightMode === 'custom'
+            ? (patch.textHeightWcs ?? patch.fontSize)
+            : patch.fontSize
+        )
+        applyMarkupStyleToSelection(this.view, patch)
+      }
+    } finally {
+      this.textHeightDialogOpen = false
     }
-    setMarkupDrawFontSize(size)
-    applyMarkupStyleToSelection(this.view, { fontSize: size })
   }
 }

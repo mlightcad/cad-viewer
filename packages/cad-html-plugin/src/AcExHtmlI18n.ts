@@ -92,6 +92,20 @@ export type AcExHtmlMessageKey =
   | 'drawStyle.rgb'
   | 'drawStyle.input'
   | 'drawStyle.inputPlaceholder'
+  | 'shortCutToolbar.more'
+  | 'shortCutToolbar.undo'
+  | 'shortCutToolbar.redo'
+  | 'shortCutToolbar.erase'
+  | 'textHeight.title'
+  | 'textHeight.close'
+  | 'textHeight.ok'
+  | 'textHeight.cancel'
+  | 'textHeight.adaptive'
+  | 'textHeight.custom'
+  | 'textHeight.customPlaceholder'
+  | 'textHeight.match'
+  | 'textHeight.matchPrompt'
+  | 'entityPick.cancel'
   | 'layers.title'
   | 'layers.close'
   | 'layers.showAll'
@@ -286,6 +300,26 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       rgb: 'RGB: ',
       input: 'Color',
       inputPlaceholder: '1-255 or #RRGGBB'
+    },
+    shortCutToolbar: {
+      more: 'More',
+      undo: 'Undo',
+      redo: 'Redo',
+      erase: 'Delete'
+    },
+    textHeight: {
+      title: 'Text Height',
+      close: 'Close',
+      ok: 'OK',
+      cancel: 'Cancel',
+      adaptive: 'Fit to screen',
+      custom: 'Custom text height',
+      customPlaceholder: 'WCS height',
+      match: 'Match height',
+      matchPrompt: 'Select a text entity'
+    },
+    entityPick: {
+      cancel: 'Cancel selection'
     },
     layers: {
       title: 'Layers',
@@ -502,6 +536,26 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       input: '颜色',
       inputPlaceholder: '1-255 或 #RRGGBB'
     },
+    shortCutToolbar: {
+      more: '更多',
+      undo: '撤销',
+      redo: '重做',
+      erase: '删除'
+    },
+    textHeight: {
+      title: '字高设置',
+      close: '关闭',
+      ok: '确定',
+      cancel: '取消',
+      adaptive: '自适应屏幕',
+      custom: '自定义字高',
+      customPlaceholder: 'WCS 字高',
+      match: '字高匹配',
+      matchPrompt: '选择一个文字对象'
+    },
+    entityPick: {
+      cancel: '取消选择'
+    },
     layers: {
       title: '图层',
       close: '关闭图层',
@@ -708,6 +762,26 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       rgb: 'RGB: ',
       input: 'Barva',
       inputPlaceholder: '1-255 nebo #RRGGBB'
+    },
+    shortCutToolbar: {
+      more: 'Více',
+      undo: 'Zpět',
+      redo: 'Znovu',
+      erase: 'Smazat'
+    },
+    textHeight: {
+      title: 'Výška textu',
+      close: 'Zavřít',
+      ok: 'OK',
+      cancel: 'Zrušit',
+      adaptive: 'Přizpůsobit obrazovce',
+      custom: 'Vlastní výška textu',
+      customPlaceholder: 'Výška WCS',
+      match: 'Shoda výšky',
+      matchPrompt: 'Vyberte textovou entitu'
+    },
+    entityPick: {
+      cancel: 'Zrušit výběr'
     },
     layers: {
       title: 'Hladiny',
@@ -923,6 +997,26 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       rgb: 'RGB: ',
       input: 'Renk',
       inputPlaceholder: '1-255 veya #RRGGBB'
+    },
+    shortCutToolbar: {
+      more: 'Daha fazla',
+      undo: 'Geri al',
+      redo: 'Yinele',
+      erase: 'Sil'
+    },
+    textHeight: {
+      title: 'Yazı Yüksekliği',
+      close: 'Kapat',
+      ok: 'Tamam',
+      cancel: 'İptal',
+      adaptive: 'Ekrana uyarla',
+      custom: 'Özel yazı yüksekliği',
+      customPlaceholder: 'WCS yüksekliği',
+      match: 'Yükseklik eşleştir',
+      matchPrompt: 'Bir yazı nesnesi seçin'
+    },
+    entityPick: {
+      cancel: 'Seçimi iptal et'
     },
     layers: {
       title: 'Katmanlar',

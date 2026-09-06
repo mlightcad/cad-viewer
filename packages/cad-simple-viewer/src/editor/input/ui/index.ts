@@ -1,5 +1,6 @@
 export * from './AcEdCommandLine'
 export * from './AcEdDesktopSessionAccessoryChrome'
+export * from './AcEdEntityPickCancelChrome'
 export * from './AcEdInputManager'
 export * from './AcEdInteractionStrategy'
 export * from './AcEdMessageType'

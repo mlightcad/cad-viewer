@@ -5,7 +5,7 @@ import {
 import type { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
 import {
   ACED_DRAW_STYLE_SESSION_PROVIDER_ID,
-  type AcEdDrawStyleSessionHost
+  type AcEdSessionAccessory
 } from '../editor/command/AcEdSessionAccessory'
 import {
   type AcUiDrawStyleKind,
@@ -13,9 +13,14 @@ import {
   acuiShouldShowDrawStyleToolbar
 } from '../ui/AcUiDrawStyle'
 import { AcUiDrawStyleSessionAccessory } from '../ui/AcUiDrawStyleSessionAccessory'
+import {
+  ACED_SHORTCUT_TOOLBAR_PROVIDER_ID,
+  AcUiShortCutToolbar
+} from '../ui/AcUiShortCutToolbar'
 import { acapDrawStyleKindForCommand } from '../util/AcApCommandUtil'
 import type { AcTrView2d } from '../view'
 import type { AcApDrawStyleSessionInstallContext } from './AcApDrawStyleSession'
+import { acapBindShortCutToolbarDocState } from './AcApShortCutToolbarDocBind'
 import { getMarkupStore } from './markup/AcApMarkupStore'
 import {
   getSelectedMeasurementId,
@@ -23,7 +28,8 @@ import {
 } from './measure/AcApMeasurementStore'
 
 /**
- * Registers draw-style controls and selection-driven session accessory for a view.
+ * Registers draw-style controls, shortcut toolbar, and selection-driven
+ * shortcut embedding for a view.
  *
  * Idempotent: safe to call from both measure and markup command registration.
  * The provider is stored on {@link AcEdBaseView.sessionProviders} under
@@ -39,6 +45,8 @@ export function acapInstallDrawStyleSessionAccessory(
     ACED_DRAW_STYLE_SESSION_PROVIDER_ID
   )
   if (existing) return existing
+
+  ensureShortCutToolbar(ctx.view)
 
   const host = new AcUiDrawStyleSessionAccessory(ctx.view)
   host.setSelectionUnsubscribe(
@@ -63,8 +71,41 @@ export function acapGetDrawStyleSessionAccessory(
 }
 
 /**
- * Keeps `view.selectionSessionAccessory` in sync with markup/measure selection
- * and ribbon visibility (desktop-only, matching the former Source behavior).
+ * Returns the shortcut toolbar installed for a view, if any.
+ */
+export function acapGetShortCutToolbar(
+  view: AcTrView2d
+): AcUiShortCutToolbar | undefined {
+  return view.sessionProviders.get<AcUiShortCutToolbar>(
+    ACED_SHORTCUT_TOOLBAR_PROVIDER_ID
+  )
+}
+
+/**
+ * Ensures a shortcut toolbar exists on the view container.
+ */
+function ensureShortCutToolbar(view: AcTrView2d): AcUiShortCutToolbar {
+  const existing = view.sessionProviders.get<AcUiShortCutToolbar>(
+    ACED_SHORTCUT_TOOLBAR_PROVIDER_ID
+  )
+  if (existing) return existing
+  const toolbar = new AcUiShortCutToolbar({ container: view.container })
+  const unbindDoc = acapBindShortCutToolbarDocState(toolbar)
+  const originalDispose = toolbar.dispose.bind(toolbar)
+  toolbar.dispose = () => {
+    unbindDoc()
+    originalDispose()
+  }
+  view.sessionProviders.set(ACED_SHORTCUT_TOOLBAR_PROVIDER_ID, toolbar)
+  return toolbar
+}
+
+/**
+ * Keeps selection draw-style controls embedded in the shortcut toolbar.
+ *
+ * Mounts the shared draw-style controls into {@link AcUiShortCutToolbar.accessoryHost}
+ * when a measure/markup overlay is selected and no draw command owns the controls.
+ * Never uses the desktop top-center selection chrome.
  *
  * @param view - View whose selection accessory is updated.
  * @param commandManager - Stack used to detect an active draw command.
@@ -74,36 +115,85 @@ export function acapGetDrawStyleSessionAccessory(
 function bindSelectionSessionAccessory(
   view: AcTrView2d,
   commandManager: AcEdCommandStack,
-  host: AcEdDrawStyleSessionHost
+  host: AcUiDrawStyleSessionAccessory
 ): () => void {
-  const accessory = host.createSessionAccessory()
+  const shortcut = ensureShortCutToolbar(view)
+  let selectionMounted = false
+  let selectionInner: AcEdSessionAccessory | null = null
+
+  const unmountSelection = () => {
+    if (!selectionMounted) return
+    selectionInner?.unmount()
+    selectionInner = null
+    selectionMounted = false
+    shortcut.setAccessoryActive(false)
+  }
+
+  const mountSelection = () => {
+    if (selectionMounted) return
+    selectionInner = host.createSessionAccessory()
+    selectionInner.mount({
+      host: shortcut.accessoryHost,
+      type: 'desktop',
+      view
+    })
+    selectionMounted = true
+    shortcut.setAccessoryActive(true)
+  }
 
   /** Syncs active kind and selection accessory visibility from current state. */
   const sync = () => {
     const kind = resolveKind(commandManager)
     host.setActiveKind(kind)
 
-    if (view.sessionAccessoryHost.type === 'mobile') {
-      view.selectionSessionAccessory = null
-      return
-    }
+    // Never use legacy desktop selection chrome.
+    view.selectionSessionAccessory = null
+    // Prefer the shared controls slot over icon-button extensions.
+    shortcut.setExtensionItems([])
 
-    if (kind == null || !acuiShouldShowDrawStyleToolbar(kind)) {
-      view.selectionSessionAccessory = null
-      return
-    }
+    const commandActive =
+      acapDrawStyleKindForCommand(commandManager.activeCommand?.globalName) !=
+      null
 
-    view.selectionSessionAccessory = accessory
+    const measureSelected = getSelectedMeasurementId() != null
+    const markupSelected = getMarkupStore().selectedId != null
+    const selected = measureSelected || markupSelected
+
+    const showOnShortcut =
+      !commandActive &&
+      selected &&
+      kind != null &&
+      acuiShouldShowDrawStyleToolbar(kind)
+
+    if (showOnShortcut) {
+      mountSelection()
+    } else if (commandActive) {
+      // Command session will reparent the shared controls row; clear our flag only.
+      selectionMounted = false
+      selectionInner = null
+      shortcut.setAccessoryActive(false)
+    } else {
+      unmountSelection()
+    }
   }
 
   const offMarkup = getMarkupStore().subscribe(sync)
   const offMeasure = subscribeMeasurementSelection(sync)
   const onSettingsModified = (args: AcApSettingManagerEventArgs) => {
-    if (args.key === 'isShowRibbon') sync()
+    if (args.key === 'isShowRibbon' || args.key === 'isShowShortCutToolbar') {
+      sync()
+    }
+  }
+  const onCommandWillStart = () => sync()
+  const onCommandEnded = () => {
+    // `activeCommand` is cleared after `commandEnded` in runActive; defer remount.
+    queueMicrotask(() => sync())
   }
   AcApSettingManager.instance.events.modified.addEventListener(
     onSettingsModified
   )
+  view.editor.events.commandWillStart.addEventListener(onCommandWillStart)
+  view.editor.events.commandEnded.addEventListener(onCommandEnded)
   sync()
 
   return () => {
@@ -112,7 +202,11 @@ function bindSelectionSessionAccessory(
     AcApSettingManager.instance.events.modified.removeEventListener(
       onSettingsModified
     )
-    if (view.selectionSessionAccessory === accessory) {
+    view.editor.events.commandWillStart.removeEventListener(onCommandWillStart)
+    view.editor.events.commandEnded.removeEventListener(onCommandEnded)
+    unmountSelection()
+    shortcut.setExtensionItems([])
+    if (view.selectionSessionAccessory) {
       view.selectionSessionAccessory = null
     }
   }

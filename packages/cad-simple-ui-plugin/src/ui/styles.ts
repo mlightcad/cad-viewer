@@ -156,17 +156,24 @@ export function acuiEnsureUiStyles() {
       min-width: var(--ml-ex-ui-toolbar-btn-size);
       min-height: var(--ml-ex-ui-toolbar-btn-size);
       padding: 4px;
-      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      border: 1px solid transparent;
       border-radius: 4px;
-      background: var(--ml-ui-bg, #ffffff);
+      background: transparent;
       color: var(--ml-ui-text, #303133);
       cursor: pointer;
       font-size: 12px;
     }
 
+    .ml-ex-ui-toolbar.show-button-border .ml-ex-ui-toolbar-btn,
+    .ml-ex-ui-subtoolbar.show-button-border .ml-ex-ui-toolbar-btn {
+      border-color: var(--ml-ui-border, #dcdfe6);
+      background: var(--ml-ui-bg, #ffffff);
+    }
+
     @media (hover: hover) {
       .ml-ex-ui-toolbar-btn:hover:not(:disabled) {
-        border-color: var(--ml-ui-accent, #409eff);
+        background: var(--ml-ui-accent-soft, rgba(64, 158, 255, 0.12));
+        border-color: var(--ml-ui-border, #dcdfe6);
         color: var(--ml-ui-accent, #409eff);
       }
     }

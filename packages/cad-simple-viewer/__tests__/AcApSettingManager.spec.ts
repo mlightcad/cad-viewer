@@ -81,6 +81,7 @@ describe('AcApSettingManager layers', () => {
     const settings = AcApSettingManager.instance
     expect(settings.isShowCommandLine).toBe(true)
     expect(settings.isShowToolbar).toBe(true)
+    expect(settings.isShowShortCutToolbar).toBe(true)
     expect(ls.getItem('settings')).toBeNull()
   })
 

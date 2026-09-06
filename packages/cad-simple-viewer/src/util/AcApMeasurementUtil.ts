@@ -21,17 +21,30 @@ export const MEASUREMENT_LINE_WEIGHT = OVERLAY_HAIRLINE_LINE_WEIGHT
 /** Factory default screen font size (CSS px) for measurement badges. */
 export const MEASUREMENT_FONT_SIZE = 13
 
+/** Authoring mode for measurement / markup text height. */
+export type AcApTextHeightMode = 'adaptive' | 'custom'
+
 /** Session draw color for newly created measurements (undefined = use sysvar). */
 let measurementDrawColor: AcCmColor | undefined
 
 /** Session draw font size for newly created measurement badges. */
 let measurementDrawFontSize = MEASUREMENT_FONT_SIZE
 
+/** Session text-height authoring mode. */
+let measurementTextHeightMode: AcApTextHeightMode = 'adaptive'
+
+/** Session custom WCS text height when mode is `'custom'`. */
+let measurementCustomTextHeightWcs: number | undefined
+
 /** Visual style stored on a committed measurement group. */
 export interface AcApMeasurementStyle {
   color: AcCmColor
   lineWeight: AcGiLineWeight
   fontSize: number
+  /** Authoring mode; omitted means adaptive (legacy). */
+  textHeightMode?: AcApTextHeightMode
+  /** World-space text height when {@link textHeightMode} is `'custom'`. */
+  textHeightWcs?: number
 }
 
 /** Returns the current measurement overlay color (session override or MEASUREMENTCOLOR). */
@@ -57,12 +70,46 @@ export function acapSetMeasurementDrawColor(color: AcCmColor): void {
 export function acapSetMeasurementDrawFontSize(size: number): void {
   if (!Number.isFinite(size) || size <= 0) return
   measurementDrawFontSize = size
+  measurementTextHeightMode = 'adaptive'
+  measurementCustomTextHeightWcs = undefined
+}
+
+/** Current measurement text-height authoring mode. */
+export function acapGetMeasurementTextHeightMode(): AcApTextHeightMode {
+  return measurementTextHeightMode
+}
+
+/** Custom WCS text height for the measurement draw session, if any. */
+export function acapGetMeasurementCustomTextHeightWcs(): number | undefined {
+  return measurementCustomTextHeightWcs
+}
+
+/**
+ * Sets adaptive (screen) or custom (WCS) text height for new measurements.
+ *
+ * @param mode - Authoring mode.
+ * @param value - Font size px when adaptive; WCS height when custom.
+ */
+export function acapSetMeasurementTextHeight(
+  mode: AcApTextHeightMode,
+  value: number
+): void {
+  if (!Number.isFinite(value) || value <= 0) return
+  measurementTextHeightMode = mode
+  if (mode === 'adaptive') {
+    measurementDrawFontSize = value
+    measurementCustomTextHeightWcs = undefined
+    return
+  }
+  measurementCustomTextHeightWcs = value
 }
 
 /** Restore factory session measurement draw style (tests / document reset). */
 export function acapResetMeasurementDrawStyle(): void {
   measurementDrawColor = undefined
   measurementDrawFontSize = MEASUREMENT_FONT_SIZE
+  measurementTextHeightMode = 'adaptive'
+  measurementCustomTextHeightWcs = undefined
 }
 
 /** Build a style object from the current measurement draw color / font size. */
@@ -72,7 +119,13 @@ export function acapGetCurrentMeasurementStyle(
   return {
     color: acapGetMeasurementColor(db),
     lineWeight: MEASUREMENT_LINE_WEIGHT,
-    fontSize: acapGetMeasurementFontSize()
+    fontSize: acapGetMeasurementFontSize(),
+    textHeightMode: measurementTextHeightMode,
+    ...(measurementTextHeightMode === 'custom' &&
+    measurementCustomTextHeightWcs != null &&
+    measurementCustomTextHeightWcs > 0
+      ? { textHeightWcs: measurementCustomTextHeightWcs }
+      : {})
   }
 }
 
@@ -83,7 +136,9 @@ export function acapCloneMeasurementStyle(
   return {
     color: style.color.clone(),
     lineWeight: style.lineWeight,
-    fontSize: style.fontSize
+    fontSize: style.fontSize,
+    textHeightMode: style.textHeightMode,
+    textHeightWcs: style.textHeightWcs
   }
 }
 

@@ -163,6 +163,11 @@ function parseRecord(raw: unknown): AcExMarkupRecord | undefined {
         typeof raw.style.fontSize === 'number' && raw.style.fontSize > 0
           ? raw.style.fontSize
           : undefined,
+      textHeightMode:
+        raw.style.textHeightMode === 'custom' ||
+        raw.style.textHeightMode === 'adaptive'
+          ? raw.style.textHeightMode
+          : undefined,
       textHeightWcs: parsePositiveNumber(raw.style.textHeightWcs),
       arrowSizeWcs: parsePositiveNumber(raw.style.arrowSizeWcs)
     },

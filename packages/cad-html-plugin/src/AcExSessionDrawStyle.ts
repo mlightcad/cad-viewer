@@ -1,5 +1,5 @@
 /**
- * Color / font-size controls for the offline HTML session accessory slot.
+ * Color / text-height controls for the offline HTML session accessory slot.
  *
  * @module AcExSessionDrawStyle
  * @packageDocumentation
@@ -9,7 +9,13 @@ import { AcCmColor, AcCmColorUtil } from '@mlightcad/data-model'
 
 import type { AcExSessionAccessory } from './AcExCommandSessionPanel'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
-import { AcUiAciColorDialog } from './AcExHtmlSimpleViewerUi'
+import { acexScreenPxToWcs } from './AcExHtmlOverlayDom'
+import {
+  AcUiAciColorDialog,
+  AcUiTextHeightDialog,
+  type AcUiTextHeightDialogResult,
+  createIconElement,
+  ICON_TEXT_HEIGHT} from './AcExHtmlSimpleViewerUi'
 
 /** Active drawing session that owns the accessory. */
 export type AcExDrawStyleKind = 'measure' | 'markup'
@@ -20,12 +26,18 @@ export interface AcExDrawStyleValues {
   color: string
   /** Badge / text font size in CSS pixels. */
   fontSize: number
+  /** Authoring mode. */
+  textHeightMode?: 'adaptive' | 'custom'
+  /** World-space text height when custom. */
+  textHeightWcs?: number
 }
 
 /** Partial style update from the accessory controls. */
 export interface AcExDrawStylePatch {
   color?: string
   fontSize?: number
+  textHeightMode?: 'adaptive' | 'custom'
+  textHeightWcs?: number
 }
 
 /** Dependencies for {@link setupAcExSessionDrawStyle}. */
@@ -37,10 +49,14 @@ export interface AcExSessionDrawStyleContext {
   getStyle: (kind: AcExDrawStyleKind) => AcExDrawStyleValues
   /** Apply a patch to session defaults and any selection for `kind`. */
   applyStyle: (kind: AcExDrawStyleKind, patch: AcExDrawStylePatch) => void
+  /**
+   * Optional: match WCS text height by picking on the canvas.
+   * When omitted, the match button still appears but returns null.
+   */
+  matchTextHeight?: () => Promise<number | null | undefined>
+  /** Optional: WCS↔screen conversion for custom height authoring. */
+  wcsToScreen?: (p: { x: number; y: number }) => { x: number; y: number }
 }
-
-/** Font-size choices shown in the dropdown (CSS px). */
-const FONT_SIZE_OPTIONS = [10, 12, 13, 14, 16, 18, 20, 24, 28, 32]
 
 const STYLE_ID = 'mlcad-session-style-styles'
 
@@ -68,16 +84,28 @@ const SESSION_STYLE_CSS = `
   border-radius: 50%;
   border: 1px solid #999;
 }
-.mlcad-session-style__select {
+.mlcad-session-style__text-height {
+  width: 28px;
   height: 28px;
-  min-width: 92px;
-  max-width: 140px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 4px;
-  background: rgba(18, 22, 28, 0.95);
+  background: rgba(255, 255, 255, 0.06);
   color: inherit;
-  font-size: 12px;
-  padding: 0 6px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.mlcad-session-style__text-height .ml-ex-ui-icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+.mlcad-session-style__text-height .ml-ex-ui-icon svg {
+  width: 18px;
+  height: 18px;
 }
 `
 
@@ -141,20 +169,43 @@ function ensureStyles(): void {
   style.textContent = SESSION_STYLE_CSS
 }
 
+function resolvePatchFromDialog(
+  result: AcUiTextHeightDialogResult,
+  fallbackFontSize: number,
+  wcsToScreen?: (p: { x: number; y: number }) => { x: number; y: number }
+): AcExDrawStylePatch {
+  if (result.mode === 'custom' && result.textHeightWcs != null) {
+    let fontSize = fallbackFontSize
+    if (wcsToScreen) {
+      const px = acexScreenPxToWcs(1, wcsToScreen)
+      if (px > 0) fontSize = Math.max(1, Math.round(result.textHeightWcs / px))
+    }
+    return {
+      textHeightMode: 'custom',
+      textHeightWcs: result.textHeightWcs,
+      fontSize
+    }
+  }
+  return {
+    textHeightMode: 'adaptive',
+    fontSize: fallbackFontSize
+  }
+}
+
 /** Controller returned by {@link setupAcExSessionDrawStyle}. */
 export interface AcExSessionDrawStyleController {
   /** Sync controls from the active tool. */
   refresh: () => void
   /** Reapply i18n titles after locale change. */
   refreshLabels: () => void
-  /** Color / font-size widgets for the session panel accessory slot. */
+  /** Color / text-height widgets for the session panel accessory slot. */
   createSessionAccessory: () => AcExSessionAccessory
   /** Tear down DOM listeners. */
   dispose: () => void
 }
 
 /**
- * Builds color / font-size controls that mount into the session accessory.
+ * Builds color / text-height controls that mount into the session accessory.
  */
 export function setupAcExSessionDrawStyle(
   ctx: AcExSessionDrawStyleContext
@@ -172,47 +223,29 @@ export function setupAcExSessionDrawStyle(
   swatchFill.className = 'mlcad-session-style__swatch-fill'
   swatch.appendChild(swatchFill)
 
+  const textHeightButton = document.createElement('button')
+  textHeightButton.type = 'button'
+  textHeightButton.className = 'mlcad-session-style__text-height'
+  textHeightButton.appendChild(createIconElement(ICON_TEXT_HEIGHT))
+
   let colorDialogOpen = false
+  let textHeightDialogOpen = false
   let currentKind: AcExDrawStyleKind | undefined
   let sessionMounted = false
   let currentStyle: AcExDrawStyleValues = { color: '#08e8de', fontSize: 12 }
 
-  const fontSizeSelect = document.createElement('select')
-  fontSizeSelect.className = 'mlcad-session-style__select'
-  controlsRow.append(swatch, fontSizeSelect)
+  controlsRow.append(swatch, textHeightButton)
 
   const paint = (style: AcExDrawStyleValues) => {
     currentStyle = style
     const color = cssToColor(style.color)
     swatchFill.style.background = cssColor(color)
-
-    const sizes = new Set(FONT_SIZE_OPTIONS)
-    if (Number.isFinite(style.fontSize) && style.fontSize > 0) {
-      sizes.add(Math.round(style.fontSize))
-    }
-    const sorted = [...sizes].sort((a, b) => a - b)
-    fontSizeSelect.replaceChildren()
-    for (const size of sorted) {
-      const option = document.createElement('option')
-      option.value = String(size)
-      option.textContent = `${size} px`
-      fontSizeSelect.appendChild(option)
-    }
-    fontSizeSelect.value = String(
-      Number.isFinite(style.fontSize) && style.fontSize > 0
-        ? Math.round(style.fontSize)
-        : 12
-    )
-  }
-
-  const applyFontSize = (size: number) => {
-    if (!currentKind || !(size > 0)) return
-    ctx.applyStyle(currentKind, { fontSize: size })
   }
 
   const relabel = () => {
     swatch.title = ctx.i18n.t('drawStyle.color')
-    fontSizeSelect.title = ctx.i18n.t('drawStyle.fontSize')
+    textHeightButton.title = ctx.i18n.t('drawStyle.fontSize')
+    textHeightButton.setAttribute('aria-label', ctx.i18n.t('drawStyle.fontSize'))
   }
 
   const refresh = () => {
@@ -271,13 +304,51 @@ export function setupAcExSessionDrawStyle(
     }
   }
 
+  const openTextHeightDialog = async () => {
+    if (textHeightDialogOpen || !currentKind) return
+    textHeightDialogOpen = true
+    try {
+      const result = await AcUiTextHeightDialog.open({
+        host:
+          document.getElementById('mlcad-canvas-host') ?? document.body,
+        theme: htmlUiTheme(),
+        initialMode: currentStyle.textHeightMode ?? 'adaptive',
+        initialFontSizePx: currentStyle.fontSize,
+        initialTextHeightWcs: currentStyle.textHeightWcs,
+        labels: {
+          title: ctx.i18n.t('textHeight.title'),
+          close: ctx.i18n.t('textHeight.close'),
+          ok: ctx.i18n.t('textHeight.ok'),
+          cancel: ctx.i18n.t('textHeight.cancel'),
+          adaptive: ctx.i18n.t('textHeight.adaptive'),
+          custom: ctx.i18n.t('textHeight.custom'),
+          customPlaceholder: ctx.i18n.t('textHeight.customPlaceholder'),
+          match: ctx.i18n.t('textHeight.match')
+        },
+        onMatchHeight: ctx.matchTextHeight
+      })
+      if (!result || !currentKind) return
+      const patch = resolvePatchFromDialog(
+        result,
+        currentStyle.fontSize,
+        ctx.wcsToScreen
+      )
+      ctx.applyStyle(currentKind, patch)
+      paint({ ...currentStyle, ...patch })
+    } finally {
+      textHeightDialogOpen = false
+    }
+  }
+
   swatch.addEventListener('click', event => {
     event.preventDefault()
     event.stopPropagation()
     void openSessionColorDialog()
   })
-  fontSizeSelect.addEventListener('change', () => {
-    applyFontSize(Number(fontSizeSelect.value))
+  textHeightButton.addEventListener('click', event => {
+    event.preventDefault()
+    event.stopPropagation()
+    void openTextHeightDialog()
   })
   controlsRow.addEventListener('pointerdown', event => event.stopPropagation())
   controlsRow.addEventListener('mousedown', event => event.stopPropagation())

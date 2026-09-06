@@ -40,6 +40,8 @@ import { setupAcExHtmlMeasurePanel } from './AcExHtmlMeasurePanel'
 import { setupAcExHtmlMeasureSettings } from './AcExHtmlMeasureSettings'
 import { setupAcExHtmlNavTools } from './AcExHtmlNavTools'
 import { setupAcExHtmlReviewPanel } from './AcExHtmlReviewPanel'
+import { acexSyncHtmlShortCutSelection } from './AcExHtmlShortCutSelection'
+import { setupAcExHtmlShortCutToolbar } from './AcExHtmlShortCutToolbar'
 import {
   setAcExHtmlParentChildIcon,
   setupAcExHtmlToolbarFlyouts
@@ -53,6 +55,7 @@ import {
   resolveLayoutViewExtents
 } from './AcExLayerExtents'
 import { AcExMarkupController, type AcExMarkupMode } from './AcExMarkup'
+import { acexMatchTextHeightPick } from './AcExMatchTextHeight'
 import { AcExMeasureController, type AcExMeasureMode } from './AcExMeasurement'
 import {
   acexBindMobileSnapLoupe,
@@ -86,6 +89,7 @@ import {
 } from './AcExPatternSnapshot'
 import { acexSelectionModeFromDrag } from './AcExSelectionBox'
 import { setupAcExSessionDrawStyle } from './AcExSessionDrawStyle'
+import { createAcExSessionHistory } from './AcExSessionHistory'
 import {
   acexHideSimulatedMouseCursor,
   acexRefreshSimulatedMouseCursor
@@ -1047,6 +1051,7 @@ async function startViewer(): Promise<void> {
 
   let measure: AcExMeasureController | null = null
   let markup: AcExMarkupController | null = null
+  const sessionHistory = createAcExSessionHistory()
   let measureSession: AcExCommandSessionUiState | null = null
   let markupSession: AcExCommandSessionUiState | null = null
   let sessionPanelVisible = false
@@ -1062,6 +1067,76 @@ async function startViewer(): Promise<void> {
   const sessionDrawStyleRef: {
     current: ReturnType<typeof setupAcExSessionDrawStyle> | null
   } = { current: null }
+  const shortCutToolbarRef: {
+    current: ReturnType<typeof setupAcExHtmlShortCutToolbar> | null
+  } = { current: null }
+
+  const runSessionUndo = () => {
+    if (measure?.canUndoLastVertex()) {
+      measure.undoLastVertex()
+      shortCutToolbarRef.current?.syncActionState()
+      return
+    }
+    sessionHistory.undo()
+    shortCutToolbarRef.current?.syncActionState()
+  }
+  const runSessionRedo = () => {
+    sessionHistory.redo()
+    shortCutToolbarRef.current?.syncActionState()
+  }
+  sessionHistory.subscribe(() => {
+    shortCutToolbarRef.current?.syncActionState()
+  })
+
+  const syncHtmlShortCutSelection = () => {
+    const toolbar = shortCutToolbarRef.current
+    if (!toolbar) return
+    acexSyncHtmlShortCutSelection({
+      i18n,
+      getKind: () => {
+        if (measure?.isActive) return 'measure'
+        if (markup?.isActive) return 'markup'
+        if (measure?.hasSelection) return 'measure'
+        if (markup?.hasSelection) return 'markup'
+        return undefined
+      },
+      hasSelection: kind =>
+        kind === 'measure'
+          ? measure?.hasSelection === true
+          : markup?.hasSelection === true,
+      getStyle: kind => {
+        const style =
+          kind === 'measure' ? measure!.getDrawStyle() : markup!.getDrawStyle()
+        return {
+          color: style.color,
+          fontSize: style.fontSize,
+          textHeightMode: style.textHeightMode,
+          textHeightWcs: style.textHeightWcs
+        }
+      },
+      applyStyle: (kind, patch) => {
+        if (kind === 'measure') measure!.setDrawStyle(patch)
+        else markup!.setDrawStyle(patch)
+      },
+      wcsToScreen: p => wcsToScreen(new THREE.Vector2(p.x, p.y)),
+      matchTextHeight: () =>
+        acexMatchTextHeightPick({
+          i18n,
+          container: root,
+          statusEl,
+          tryPickAtClientPoint: (clientX, clientY) => {
+            const fromMarkup = markup?.tryPickTextHeightAt(clientX, clientY)
+            if (fromMarkup != null && fromMarkup > 0) return fromMarkup
+            const fromMeasure = measure?.tryPickTextHeightAt(clientX, clientY)
+            if (fromMeasure != null && fromMeasure > 0) return fromMeasure
+            return null
+          }
+        }),
+      setExtensionItems: items => toolbar.setExtensionItems(items)
+    })
+    toolbar.syncActionState()
+  }
+
   /** Saved side panels closed for canvas space during a draw session. */
   let chromeBeforeSession: {
     layerOpen: boolean
@@ -1096,6 +1171,7 @@ async function startViewer(): Promise<void> {
       sessionChromeRef.current.restore()
     }
     sessionPanelVisible = nowVisible
+    shortCutToolbarRef.current?.syncActionState()
   }
   sessionPanel?.setHandlers({
     onConfirm: () => {
@@ -1106,7 +1182,7 @@ async function startViewer(): Promise<void> {
       else markup?.cancelSession()
     },
     onChip: id => {
-      if (id === 'undo') measure?.undoLastVertex()
+      if (id === 'undo') runSessionUndo()
     }
   })
   const measureSettingsRef: {
@@ -1439,8 +1515,10 @@ async function startViewer(): Promise<void> {
       },
       onStyleChange: () => {
         sessionDrawStyleRef.current?.refresh()
+        syncHtmlShortCutSelection()
       },
       getActiveLayoutId: () => layout.btrId,
+      sessionHistory,
       view: {
         screenToWcs,
         wcsToScreen,
@@ -1512,10 +1590,12 @@ async function startViewer(): Promise<void> {
       },
       onStyleChange: () => {
         sessionDrawStyleRef.current?.refresh()
+        syncHtmlShortCutSelection()
       },
       getTrackingOptions: () =>
         measureSettingsRef.current?.getTrackingOptions() ?? null,
       getActiveLayoutId: () => layout.btrId,
+      sessionHistory,
       view: {
         screenToWcs,
         wcsToScreen,
@@ -1539,12 +1619,19 @@ async function startViewer(): Promise<void> {
       getKind: () => {
         if (measure?.isActive) return 'measure'
         if (markup?.isActive) return 'markup'
+        if (measure && measure.hasSelection) return 'measure'
+        if (markup?.hasSelection) return 'markup'
         return undefined
       },
       getStyle: kind => {
         const style =
           kind === 'measure' ? measure!.getDrawStyle() : markup!.getDrawStyle()
-        return { color: style.color, fontSize: style.fontSize }
+        return {
+          color: style.color,
+          fontSize: style.fontSize,
+          textHeightMode: style.textHeightMode,
+          textHeightWcs: style.textHeightWcs
+        }
       },
       applyStyle: (kind, patch) => {
         if (kind === 'measure') {
@@ -1552,9 +1639,54 @@ async function startViewer(): Promise<void> {
         } else {
           markup!.setDrawStyle(patch)
         }
-      }
+      },
+      wcsToScreen: p => wcsToScreen(new THREE.Vector2(p.x, p.y)),
+      matchTextHeight: () =>
+        acexMatchTextHeightPick({
+          i18n,
+          container: root,
+          statusEl,
+          tryPickAtClientPoint: (clientX, clientY) => {
+            const fromMarkup = markup?.tryPickTextHeightAt(clientX, clientY)
+            if (fromMarkup != null && fromMarkup > 0) return fromMarkup
+            const fromMeasure = measure?.tryPickTextHeightAt(clientX, clientY)
+            if (fromMeasure != null && fromMeasure > 0) return fromMeasure
+            return null
+          }
+        })
     })
     applySessionUi()
+    syncHtmlShortCutSelection()
+  }
+
+  if (!shortCutToolbarRef.current) {
+    shortCutToolbarRef.current = setupAcExHtmlShortCutToolbar({
+      i18n,
+      container: root,
+      statusEl,
+      actions: {
+        undo: () => runSessionUndo(),
+        redo: () => runSessionRedo(),
+        erase: () => {
+          if (markup?.hasSelection) {
+            markup.deleteSelected()
+            return
+          }
+          if (measure?.hasSelection) {
+            measure.handleSelectionKeyDown('Delete')
+          }
+        }
+      },
+      getActionState: () => ({
+        undo:
+          measure?.canUndoLastVertex() === true || sessionHistory.canUndo(),
+        redo: sessionHistory.canRedo(),
+        erase:
+          markup?.hasSelection === true || measure?.hasSelection === true
+      })
+    })
+    syncHtmlShortCutSelection()
+    shortCutToolbarRef.current.syncActionState()
   }
 
   const toolbarCollapse = setupToolbarCollapse(i18n, () => {

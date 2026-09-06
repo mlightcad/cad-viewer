@@ -57,6 +57,7 @@ export function acuiNormalizePluginOptions(
       size: options.toolbar?.size,
       overflow: options.toolbar?.overflow,
       showBorder: options.toolbar?.showBorder ?? true,
+      showButtonBorder: options.toolbar?.showButtonBorder ?? false,
       showSeparators: options.toolbar?.showSeparators ?? true,
       inCanvasParent: options.toolbar?.inCanvasParent === true,
       subToolbar: options.toolbar?.subToolbar

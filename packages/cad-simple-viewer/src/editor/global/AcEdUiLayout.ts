@@ -50,6 +50,18 @@ export const ML_UI_Z_CANVAS_HTML_OVERLAY = 2
  */
 export const ML_UI_Z_DRAW_STYLE_TOOLBAR = 45
 
+/**
+ * Z-index for the floating shortcut toolbar (undo/redo/erase + selection extensions).
+ *
+ * Above draw-style session chrome; below modal dialogs.
+ */
+export const ML_UI_Z_SHORTCUT_TOOLBAR = 46
+
+/**
+ * Z-index for the mobile entity-pick cancel button (below message / status bar).
+ */
+export const ML_UI_Z_ENTITY_PICK_CANCEL = 47
+
 /** Whether the current viewport matches the narrow mobile UI layout. */
 export function acedIsMobileUiLayout(): boolean {
   return window.matchMedia?.(ML_UI_MOBILE_MEDIA_QUERY).matches ?? false

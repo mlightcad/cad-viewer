@@ -38,6 +38,8 @@ export interface AcExMarkupStyle {
   lineWeight?: number
   /** Authoring font size in CSS pixels for text / callout bubbles (legacy / UI). */
   fontSize?: number
+  /** Authoring mode; omitted means adaptive (legacy). */
+  textHeightMode?: 'adaptive' | 'custom'
   /** Text / callout height in world units (preferred when restoring overlays). */
   textHeightWcs?: number
   /**

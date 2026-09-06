@@ -93,6 +93,27 @@ export default {
     color: 'اللون',
     fontSize: 'ارتفاع النص'
   },
+  shortCutToolbar: {
+    more: 'المزيد',
+    undo: 'تراجع',
+    redo: 'إعادة',
+    erase: 'حذف'
+  },
+  textHeight: {
+    title: 'ارتفاع النص',
+    close: 'إغلاق',
+    ok: 'موافق',
+    cancel: 'إلغاء',
+    adaptive: 'ملاءمة الشاشة',
+    custom: 'ارتفاع نص مخصص',
+    customPlaceholder: 'ارتفاع WCS',
+    match: 'مطابقة الارتفاع',
+    matchPrompt: 'حدد كيان نص:',
+    matchReject: 'يرجى تحديد نص أو نص متعدد الأسطر.'
+  },
+  entityPick: {
+    cancel: 'إلغاء التحديد'
+  },
   colorPicker: {
     title: 'تحديد اللون',
     close: 'إغلاق',

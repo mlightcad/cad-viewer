@@ -1,6 +1,6 @@
 import { AcCmEventManager } from '@mlightcad/data-model'
 
-import { AcEdCommandStack } from '../editor'
+import { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
 
 /**
  * Language/locale id used in the application.

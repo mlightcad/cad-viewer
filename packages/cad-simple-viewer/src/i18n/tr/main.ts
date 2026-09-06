@@ -93,6 +93,27 @@ export default {
     color: 'Renk',
     fontSize: 'Yazı yüksekliği'
   },
+  shortCutToolbar: {
+    more: 'Daha fazla',
+    undo: 'Geri al',
+    redo: 'Yinele',
+    erase: 'Sil'
+  },
+  textHeight: {
+    title: 'Yazı Yüksekliği',
+    close: 'Kapat',
+    ok: 'Tamam',
+    cancel: 'İptal',
+    adaptive: 'Ekrana uyarla',
+    custom: 'Özel yazı yüksekliği',
+    customPlaceholder: 'WCS yüksekliği',
+    match: 'Yükseklik eşleştir',
+    matchPrompt: 'Bir yazı nesnesi seçin:',
+    matchReject: 'Lütfen bir yazı veya çok satırlı yazı seçin.'
+  },
+  entityPick: {
+    cancel: 'Seçimi iptal et'
+  },
   colorPicker: {
     title: 'Renk Seç',
     close: 'Kapat',

@@ -93,6 +93,27 @@ export default {
     color: 'Barva',
     fontSize: 'Výška textu'
   },
+  shortCutToolbar: {
+    more: 'Více',
+    undo: 'Zpět',
+    redo: 'Znovu',
+    erase: 'Smazat'
+  },
+  textHeight: {
+    title: 'Výška textu',
+    close: 'Zavřít',
+    ok: 'OK',
+    cancel: 'Zrušit',
+    adaptive: 'Přizpůsobit obrazovce',
+    custom: 'Vlastní výška textu',
+    customPlaceholder: 'Výška WCS',
+    match: 'Shoda výšky',
+    matchPrompt: 'Vyberte textovou entitu:',
+    matchReject: 'Vyberte text nebo mtext.'
+  },
+  entityPick: {
+    cancel: 'Zrušit výběr'
+  },
   colorPicker: {
     title: 'Vybrat barvu',
     close: 'Zavřít',

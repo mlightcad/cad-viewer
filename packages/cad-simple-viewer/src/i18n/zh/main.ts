@@ -90,7 +90,28 @@ export default {
   },
   drawStyle: {
     color: '颜色',
-    fontSize: '字号'
+    fontSize: '字高'
+  },
+  shortCutToolbar: {
+    more: '更多',
+    undo: '撤销',
+    redo: '重做',
+    erase: '删除'
+  },
+  textHeight: {
+    title: '字高设置',
+    close: '关闭',
+    ok: '确定',
+    cancel: '取消',
+    adaptive: '自适应屏幕',
+    custom: '自定义字高',
+    customPlaceholder: 'WCS 字高',
+    match: '字高匹配',
+    matchPrompt: '选择一个文字对象：',
+    matchReject: '请选择文字或多行文字对象。'
+  },
+  entityPick: {
+    cancel: '取消选择'
   },
   colorPicker: {
     title: '选择颜色',

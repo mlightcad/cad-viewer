@@ -13,6 +13,7 @@ export type AcUiResolvedToolbarChrome = Required<
     | 'size'
     | 'overflow'
     | 'showBorder'
+    | 'showButtonBorder'
     | 'showSeparators'
     | 'showChildrenIndicator'
   >
@@ -40,6 +41,7 @@ export function acuiResolveToolbarChrome(
     size: merged.size ?? 'auto',
     overflow: merged.overflow ?? 'menu',
     showBorder: merged.showBorder ?? true,
+    showButtonBorder: merged.showButtonBorder ?? false,
     showSeparators: merged.showSeparators ?? true,
     showChildrenIndicator: merged.showChildrenIndicator ?? true,
     replaceOnNested: merged.replaceOnNested ?? false

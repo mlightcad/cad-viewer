@@ -40,6 +40,8 @@ export interface AcApMarkupStyle {
    * when restoring overlays so size is independent of camera zoom.
    */
   textHeightWcs?: number
+  /** Authoring mode; omitted means adaptive (legacy). */
+  textHeightMode?: 'adaptive' | 'custom'
   /**
    * Arrow-head length in world units (arrow / callout markups). Prefer this
    * when restoring overlays so arrow size is independent of camera zoom.

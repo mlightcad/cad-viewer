@@ -31,6 +31,7 @@ export function acuiBuiltinToolbarOptionsForLayout(
       size: 'stretch',
       overflow: 'menu',
       showBorder: true,
+      showButtonBorder: false,
       showSeparators: true,
       showChildrenIndicator: false,
       subToolbar: {
@@ -55,6 +56,7 @@ export function acuiBuiltinToolbarOptionsForLayout(
     size: 'auto',
     overflow: 'menu',
     showBorder: true,
+    showButtonBorder: false,
     showSeparators: true,
     showChildrenIndicator: true,
     subToolbar: {
@@ -78,11 +80,14 @@ export function acuiBuiltinToolbarOptionsForLayout(
  * Phone chrome (placement, labels, full width, collapsible) comes from built-in
  * defaults and optional `layouts.phone.toolbar`. Append-item customizations are
  * desktop/pad-only so phone keeps the built-in phone item set.
+ * Button-frame chrome is inherited so a top-level `showButtonBorder` applies on
+ * the phone bottom bar as well.
  */
 const PHONE_INHERITED_TOP_LEVEL_KEYS: (keyof AcUiToolbarOptions)[] = [
   'mountTarget',
   'enabled',
-  'inCanvasParent'
+  'inCanvasParent',
+  'showButtonBorder'
 ]
 
 /**

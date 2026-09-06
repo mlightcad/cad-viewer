@@ -9,6 +9,7 @@ describe('acuiResolveToolbarChrome', () => {
       size: 'auto',
       overflow: 'menu',
       showBorder: true,
+      showButtonBorder: false,
       showSeparators: true,
       showChildrenIndicator: true,
       replaceOnNested: false
@@ -25,12 +26,14 @@ describe('acuiResolveToolbarChrome', () => {
           size: 'stretch',
           overflow: 'wrap',
           showBorder: true,
+          showButtonBorder: true,
           showSeparators: true,
           showChildrenIndicator: true
         },
         {
           showLabels: false,
           showBorder: false,
+          showButtonBorder: false,
           showSeparators: false,
           replaceOnNested: true
         }
@@ -42,6 +45,7 @@ describe('acuiResolveToolbarChrome', () => {
       size: 'stretch',
       overflow: 'wrap',
       showBorder: false,
+      showButtonBorder: false,
       showSeparators: false,
       showChildrenIndicator: true,
       replaceOnNested: true

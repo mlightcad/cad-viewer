@@ -623,6 +623,14 @@ export class AcApDocManager {
   }
 
   /**
+   * Returns the singleton when {@link createInstance} has finished, otherwise
+   * `undefined`. Safe to call while the constructor is still running.
+   */
+  static tryGetInstance(): AcApDocManager | undefined {
+    return AcApDocManager._instance
+  }
+
+  /**
    * Destroy the view and unload all plugins
    */
   async destroy() {

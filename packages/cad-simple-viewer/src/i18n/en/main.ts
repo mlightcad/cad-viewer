@@ -93,6 +93,27 @@ export default {
     color: 'Color',
     fontSize: 'Text height'
   },
+  shortCutToolbar: {
+    more: 'More',
+    undo: 'Undo',
+    redo: 'Redo',
+    erase: 'Delete'
+  },
+  textHeight: {
+    title: 'Text Height',
+    close: 'Close',
+    ok: 'OK',
+    cancel: 'Cancel',
+    adaptive: 'Fit to screen',
+    custom: 'Custom text height',
+    customPlaceholder: 'WCS height',
+    match: 'Match height',
+    matchPrompt: 'Select a text entity:',
+    matchReject: 'Please select a text or mtext entity.'
+  },
+  entityPick: {
+    cancel: 'Cancel selection'
+  },
   colorPicker: {
     title: 'Select Color',
     close: 'Close',
