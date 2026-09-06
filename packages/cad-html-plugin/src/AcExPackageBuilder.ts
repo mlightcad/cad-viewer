@@ -6,7 +6,12 @@ import {
 } from './AcExBatchBinaryCodec'
 import {
   type AcExGeometryChunk,
-  encodeChunkGzip} from './AcExChunkBinaryCodec'
+  encodeChunkGzip
+} from './AcExChunkBinaryCodec'
+import {
+  splitLineBatch,
+  splitMeshBatch
+} from './AcExGeometryBatchSplit'
 import { packHtmlPackage } from './AcExHtmlPackager'
 import {
   encodeOsnapCatalogGzip,
@@ -15,6 +20,7 @@ import {
 import {
   ACEX_DEFAULT_CHUNK_MAX_BYTES,
   ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES,
+  ACEX_MAX_GEOMETRY_BATCH_BYTES,
   ACEX_PACKAGE_VERSION,
   ACEX_SNAPSHOT_VERSION,
   type AcExPackageChunkRef,
@@ -37,6 +43,12 @@ export interface AcExBuildPackageOptions {
   baseName?: string
   /** Max uncompressed ACEC bytes per geometry chunk. */
   maxChunkBytes?: number
+  /**
+   * Max uncompressed bytes of one line/mesh batch piece.
+   * Oversized layer batches are split so chunks can paint progressively.
+   * Defaults to {@link ACEX_MAX_GEOMETRY_BATCH_BYTES}.
+   */
+  maxBatchBytes?: number
   /** Max estimated uncompressed ACEO bytes per OSNAP chunk. */
   maxOsnapChunkBytes?: number
   /**
@@ -54,11 +66,15 @@ interface GeometrySlice {
 
 /**
  * Splits a layout's batches into slices that stay under `maxChunkBytes`.
+ *
+ * Oversized single-layer batches are first cut at `maxBatchBytes` so a busy
+ * layer can download, inflate, and paint in pieces instead of one long task.
  * Empty layouts still produce one empty slice so the layout remains addressable.
  */
 export function splitLayoutIntoSlices(
   layout: AcExLayoutSnapshot,
-  maxChunkBytes: number
+  maxChunkBytes: number,
+  maxBatchBytes: number = ACEX_MAX_GEOMETRY_BATCH_BYTES
 ): GeometrySlice[] {
   const slices: GeometrySlice[] = []
   let current: GeometrySlice = {
@@ -103,11 +119,17 @@ export function splitLayoutIntoSlices(
     current.estimatedBytes += size
   }
 
+  const batchBudget = Math.min(maxChunkBytes, maxBatchBytes)
+
   for (const batch of layout.lineBatches) {
-    pushLine(batch)
+    for (const piece of splitLineBatch(batch, batchBudget)) {
+      pushLine(piece)
+    }
   }
   for (const batch of layout.meshBatches) {
-    pushMesh(batch)
+    for (const piece of splitMeshBatch(batch, batchBudget)) {
+      pushMesh(piece)
+    }
   }
 
   if (
@@ -141,6 +163,7 @@ export function buildAcExPackage(
     options.baseName ?? snapshot.meta.title ?? 'drawing'
   )
   const maxChunkBytes = options.maxChunkBytes ?? ACEX_DEFAULT_CHUNK_MAX_BYTES
+  const maxBatchBytes = options.maxBatchBytes ?? ACEX_MAX_GEOMETRY_BATCH_BYTES
   const maxOsnapChunkBytes =
     options.maxOsnapChunkBytes ?? ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES
   const manifestFileName = `${baseName}.acex.json`
@@ -159,7 +182,7 @@ export function buildAcExPackage(
 
   orderedLayouts.forEach((layout, layoutIndex) => {
     layoutIndexByBtrId.set(layout.btrId, layoutIndex)
-    const slices = splitLayoutIntoSlices(layout, maxChunkBytes)
+    const slices = splitLayoutIntoSlices(layout, maxChunkBytes, maxBatchBytes)
     const chunkIds: string[] = []
 
     slices.forEach((slice, sliceIndex) => {

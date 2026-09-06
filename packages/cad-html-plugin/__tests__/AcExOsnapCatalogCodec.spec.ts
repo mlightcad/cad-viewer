@@ -46,7 +46,13 @@ describe('AcExOsnapCatalogCodec', () => {
           closed: false,
           fitPoints: [0, 0, 2, 0]
         },
-        { kind: 'point', layer: '0', x: 9, y: 8 }
+        { kind: 'point', layer: '0', x: 9, y: 8 },
+        {
+          kind: 'path',
+          layer: 'H',
+          closed: true,
+          vertices: [0, 0, 0, 10, 0, 0, 10, 10, 0, 0, 10, 0]
+        }
       ]
     }
 
@@ -91,7 +97,7 @@ describe('AcExOsnapCatalogCodec', () => {
 describe('AcExOsnapIndex.rebuildAsync', () => {
   it('bulk-loads RBush after building entries and yields on wall-clock budget', async () => {
     const { AcExOsnapIndex } = await import('../src/AcExOsnap')
-    // Must exceed OSNAP_INDEX_YIELD_CHECK_EVERY (8192) so the scheduler samples
+    // Must exceed OSNAP_INDEX_YIELD_CHECK_EVERY (1024) so the scheduler samples
     // the wall-clock budget at least once.
     const primitiveCount = 9000
     const primitives = Array.from({ length: primitiveCount }, (_, i) => ({

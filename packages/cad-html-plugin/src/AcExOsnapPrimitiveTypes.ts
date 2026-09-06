@@ -4,10 +4,13 @@
  * These definitions describe **analytic** geometry in world coordinates (WCS, XY plane).
  * All coordinate fields use IEEE-754 `number` (double precision) for measurement-grade
  * accuracy on large-coordinate drawings.
- * Curve/point kinds are serialized per layout in {@link AcExLayoutSnapshot.osnap}
- * at export time (see {@link buildOsnapCatalog}). Straight `line` edges are omitted
- * from exported catalogs and rebuilt at runtime from {@link AcExLineBatch} display
- * geometry by {@link AcExOsnapIndex} (self-contained HTML and multi-file packages).
+ * Curve/point/path kinds are serialized per layout in {@link AcExLayoutSnapshot.osnap}
+ * at export time (see {@link buildOsnapCatalog}). Ordinary drawing `line` strokes are
+ * omitted from exported catalogs and rebuilt at runtime from {@link AcExLineBatch}
+ * display geometry. Fill/frame boundaries (hatch, TRACE/SOLID, IMAGE clip, …) are
+ * stored as compact {@link AcExOsnapPathPrimitive} records, not exploded line edges.
+ * Wide LWPOLYLINE entities (start/end width) are also stored as a centerline
+ * `path` because they render as meshes and never appear in {@link AcExLineBatch}.
  *
  * @packageDocumentation
  */
@@ -242,6 +245,27 @@ export interface AcExOsnapPointPrimitive extends AcExOsnapPrimitiveBase {
 }
 
 /**
+ * One fill/frame/centerline stored as a vertex chain (hatch loop, TRACE/SOLID,
+ * IMAGE clip path, OLE frame, wide LWPOLYLINE centerline).
+ *
+ * Packed as `[x0, y0, bulge0, x1, y1, bulge1, …]`. A non-zero bulge is the
+ * AutoCAD polyline bulge for the outgoing segment (same as `AcGeCircArc2d`
+ * from start/end/bulge). Indexed by the whole-path bbox at query time so a
+ * 200-edge hatch is one RBush entry, not 200 ACEO lines.
+ */
+export interface AcExOsnapPathPrimitive extends AcExOsnapPrimitiveBase {
+  /** Discriminator for {@link AcExOsnapPrimitive}. */
+  kind: 'path'
+  /**
+   * Vertex pack: three numbers per vertex (`x`, `y`, outgoing `bulge`).
+   * Length is always a multiple of 3 and at least 6 (two vertices).
+   */
+  vertices: number[]
+  /** When `true`, the last vertex connects back to the first. */
+  closed: boolean
+}
+
+/**
  * Discriminated union of all analytic primitives stored in a layout snapshot.
  *
  * Select on {@link AcExOsnapPrimitive.kind} before reading geometry fields.
@@ -253,14 +277,14 @@ export type AcExOsnapPrimitive =
   | AcExOsnapEllipsePrimitive
   | AcExOsnapSplinePrimitive
   | AcExOsnapPointPrimitive
+  | AcExOsnapPathPrimitive
 
 /**
  * Per-layout catalog of analytic geometry used for object snap.
  *
- * Embedded on {@link AcExLayoutSnapshot.osnap} when exporting HTML. When
- * {@link AcExOsnapCatalog.primitives} is non-empty, {@link AcExOsnapIndex}
- * ignores tessellated `lineBatches` / `meshBatches` for snapping and derives
- * discrete snap points from primitives at query time.
+ * Embedded on {@link AcExLayoutSnapshot.osnap} when exporting HTML.
+ * {@link AcExOsnapIndex} indexes ACEO curves/paths together with tessellated
+ * line segments from {@link AcExLineBatch}.
  */
 export interface AcExOsnapCatalog {
   /** Analytic OSNAP geometry serialized into the HTML snapshot. */

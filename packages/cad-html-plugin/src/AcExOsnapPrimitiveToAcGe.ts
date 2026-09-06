@@ -220,5 +220,7 @@ export function primitiveToAcGeCurve(
       return { kind: 'spline', curve: splineToAcGe(prim) }
     case 'point':
       return { kind: 'point', point: new AcGePoint2d(prim.x, prim.y) }
+    case 'path':
+      throw new Error('path primitives must be expanded before curve conversion')
   }
 }

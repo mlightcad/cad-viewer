@@ -17,6 +17,12 @@ import {
   intersectPrimitivePair,
   isIntersectionCapablePrimitive
 } from './AcExOsnapIntersections'
+import {
+  expandOsnapPath,
+  isOsnapPathPrimitive,
+  pathEdgeNearAperture,
+  pathPrimitiveBounds
+} from './AcExOsnapPath'
 import { primitiveToAcGeCurve } from './AcExOsnapPrimitiveToAcGe'
 import type {
   AcExOsnapMode,
@@ -33,14 +39,23 @@ export type { AcExOsnapMode, AcExOsnapPoint } from './AcExOsnapPrimitiveTypes'
 export { ACEX_DEFAULT_OSNAP_MODES } from './AcExOsnapPrimitiveTypes'
 
 /**
- * How often to check the wall-clock budget while walking segments / building
- * RBush entries. Checking every item is wasteful; yielding every ~1000 items via
- * `requestAnimationFrame` made million-edge indexes take minutes of idle waits.
+ * How often to sample the wall-clock budget while walking segments / building
+ * RBush entries. `performance.now()` is cheap; checking only every 8192 items
+ * let a single batch overshoot the slice by tens of milliseconds.
  */
-const OSNAP_INDEX_YIELD_CHECK_EVERY = 8192
+const OSNAP_INDEX_YIELD_CHECK_EVERY = 1024
 
-/** Target main-thread slice length before yielding to the event loop. */
-const OSNAP_INDEX_YIELD_BUDGET_MS = 200
+/**
+ * Target main-thread slice before yielding.
+ *
+ * 200ms is already a Chrome "long task" (~12 frames at 60Hz). 100ms still
+ * hitchs slightly but keeps million-edge indexes from turning into a rAF
+ * wait-per-chunk slog.
+ */
+const OSNAP_INDEX_YIELD_BUDGET_MS = 100
+
+/** Bulk-load this many RBush entries per slice so `load()` itself can yield. */
+const OSNAP_RBUSH_LOAD_CHUNK = 32_768
 
 function yieldToBrowser(): Promise<void> {
   return new Promise(resolve => {
@@ -75,6 +90,50 @@ function createOsnapYieldScheduler(
       return yieldFn().then(() => {
         sliceStart = performance.now()
       })
+    }
+  }
+}
+
+function searchRbushForest(
+  tree: RBush<AcExRbushEntry>,
+  extras: RBush<AcExRbushEntry>[],
+  box: { minX: number; minY: number; maxX: number; maxY: number }
+): AcExRbushEntry[] {
+  if (extras.length === 0) {
+    return tree.search(box)
+  }
+  const hits = tree.search(box).slice()
+  for (const extra of extras) {
+    const part = extra.search(box)
+    for (let i = 0; i < part.length; i++) {
+      hits.push(part[i]!)
+    }
+  }
+  return hits
+}
+
+async function bulkLoadRbush(
+  tree: RBush<AcExRbushEntry>,
+  extras: RBush<AcExRbushEntry>[],
+  entries: AcExRbushEntry[],
+  yieldFn: () => Promise<void>
+): Promise<void> {
+  extras.length = 0
+  tree.clear()
+  if (entries.length === 0) {
+    return
+  }
+  for (let offset = 0; offset < entries.length; offset += OSNAP_RBUSH_LOAD_CHUNK) {
+    const chunk = entries.slice(offset, offset + OSNAP_RBUSH_LOAD_CHUNK)
+    if (offset === 0) {
+      tree.load(chunk)
+    } else {
+      const extra = new RBush<AcExRbushEntry>()
+      extra.load(chunk)
+      extras.push(extra)
+    }
+    if (offset + OSNAP_RBUSH_LOAD_CHUNK < entries.length) {
+      await yieldFn()
     }
   }
 }
@@ -277,152 +336,12 @@ export function mergeConnectedSegments(
 }
 
 /**
- * Reads one vertex from a line batch in WCS (XY).
- *
- * Applies {@link AcExLineBatch.offset} after indexing into the flat
- * {@link AcExLineBatch.positions} buffer (`vertexIndex * 3` stride).
- *
- * @param batch - Exported line batch from the HTML snapshot.
- * @param vertexIndex - Zero-based vertex index referenced by the batch index buffer.
- * @returns Transformed XY coordinates in drawing units.
- * @internal
- */
-function readBatchVertex(
-  batch: AcExLineBatch,
-  vertexIndex: number
-): { x: number; y: number } {
-  const [ox, oy] = batch.offset
-  const base = vertexIndex * 3
-  return {
-    x: toWcsCoord(batch.positions[base]!, ox),
-    y: toWcsCoord(batch.positions[base + 1]!, oy)
-  }
-}
-
-/**
- * Derives logical snap segments from a patterned ({@link AcExLineBatch.linePattern}) line batch.
- *
- * Dashed and dotted lines are drawn with a GPU shader on top of a continuous vertex
- * chain. The snapshot index buffer encodes that chain as shared-vertex edges
- * (`0-1`, `1-2`, …). {@link iterLineSegments} treats every index pair as a separate
- * edge, which makes endpoint snap land on internal tessellation vertices instead of
- * the entity's true ends; unlike AutoCAD, linetype gaps are visual only.
- *
- * This function walks the index graph, traces open chains from endpoints (vertices
- * whose degree is not two), and emits one {@link AcExOsnapSegment} per chain spanning
- * the first and last vertex positions. Closed loops and isolated edges are handled
- * as separate chains.
- *
- * When the batch has no index buffer, falls back to {@link mergeConnectedSegments}
- * over {@link iterLineSegments} output (non-indexed pair storage).
- *
- * @param batch - Line batch with {@link AcExLineBatch.linePattern} set.
- * @returns Logical WCS segments suitable for endpoint / midpoint / nearest snap.
- * @internal
- */
-function extractPatternLineSnapSegments(
-  batch: AcExLineBatch
-): AcExOsnapSegment[] {
-  if (!batch.indices || batch.indices.length < 2) {
-    return mergeConnectedSegments(segmentsFromIterable(iterLineSegments(batch)))
-  }
-
-  const edges: Array<{ a: number; b: number }> = []
-
-  for (let i = 0; i + 1 < batch.indices.length; i += 2) {
-    edges.push({ a: batch.indices[i]!, b: batch.indices[i + 1]! })
-  }
-
-  const adjacency = new Map<number, number[]>()
-  const addEdge = (a: number, b: number) => {
-    if (a === b) return
-    let listA = adjacency.get(a)
-    if (!listA) {
-      listA = []
-      adjacency.set(a, listA)
-    }
-    listA.push(b)
-    let listB = adjacency.get(b)
-    if (!listB) {
-      listB = []
-      adjacency.set(b, listB)
-    }
-    listB.push(a)
-  }
-
-  for (const edge of edges) {
-    addEdge(edge.a, edge.b)
-  }
-
-  const visitedEdges = new Set<string>()
-  const edgeKey = (a: number, b: number) => (a < b ? `${a}:${b}` : `${b}:${a}`)
-  const logical: AcExOsnapSegment[] = []
-
-  const tracePath = (start: number, next: number): number[] => {
-    const path = [start]
-    let prev = start
-    let current = next
-    while (true) {
-      visitedEdges.add(edgeKey(prev, current))
-      path.push(current)
-      const neighbors = adjacency.get(current) ?? []
-      const candidates = neighbors.filter(
-        neighbor =>
-          neighbor !== prev && !visitedEdges.has(edgeKey(current, neighbor))
-      )
-      if (candidates.length !== 1) {
-        break
-      }
-      prev = current
-      current = candidates[0]!
-    }
-    return path
-  }
-
-  for (const edge of edges) {
-    const key = edgeKey(edge.a, edge.b)
-    if (visitedEdges.has(key)) continue
-
-    const degreeA = adjacency.get(edge.a)?.length ?? 0
-    const degreeB = adjacency.get(edge.b)?.length ?? 0
-    let path: number[]
-
-    if (degreeA !== 2) {
-      path = tracePath(edge.a, edge.b)
-    } else if (degreeB !== 2) {
-      path = tracePath(edge.b, edge.a)
-    } else {
-      path = tracePath(edge.a, edge.b)
-    }
-
-    const first = readBatchVertex(batch, path[0]!)
-    const last = readBatchVertex(batch, path[path.length - 1]!)
-    logical.push({
-      x0: first.x,
-      y0: first.y,
-      x1: last.x,
-      y1: last.y
-    })
-  }
-
-  return logical.length > 0
-    ? logical
-    : segmentsFromIterable(iterLineSegments(batch))
-}
-
-/**
  * Extracts WCS snap segments from one exported {@link AcExLineBatch}.
  *
- * Chooses the extraction strategy from batch metadata:
- *
- * - **Patterned lines** (`linePattern` present): delegates to
- *   {@link extractPatternLineSnapSegments} so snap follows entity geometry rather
- *   than shader dash boundaries or per-edge tessellation.
- * - **Solid lines**: yields one segment per index pair / vertex pair via
- *   {@link iterLineSegments} without merging.
- *
- * Used by {@link collectBatchSegments} when building the tessellated fallback
- * path of {@link AcExOsnapIndex}.
+ * Always walks stored segment pairs / index edges via {@link iterLineSegments}.
+ * Patterned (dashed) batches are **not** collapsed to first/last chain ends —
+ * that dropped intermediate WidePolyline / LWPOLYLINE vertices. Linetype gaps
+ * are shader-only; the vertex chain is the entity geometry AutoCAD snaps to.
  *
  * @param batch - One line batch from {@link AcExLayoutSnapshot.lineBatches}.
  * @returns Snap segments in WCS; may be empty when the batch has no geometry.
@@ -430,9 +349,6 @@ function extractPatternLineSnapSegments(
 export function extractLineBatchSnapSegments(
   batch: AcExLineBatch
 ): AcExOsnapSegment[] {
-  if (batch.linePattern) {
-    return extractPatternLineSnapSegments(batch)
-  }
   return segmentsFromIterable(iterLineSegments(batch))
 }
 
@@ -501,9 +417,7 @@ async function collectBatchSegmentsAsync(
     if (batch.excludeFromOsnap) continue
     // Stream solid batches via the generator; avoid materializing the whole
     // batch into an intermediate array before the first yield can run.
-    const source = batch.linePattern
-      ? extractLineBatchSnapSegments(batch)
-      : iterLineSegments(batch)
+    const source = iterLineSegments(batch)
     for (const seg of source) {
       if (!isFiniteSegment(seg)) continue
       segments.push(seg)
@@ -635,6 +549,8 @@ function primitiveBounds(prim: AcExOsnapPrimitive): {
       }
       return { minX, minY, maxX, maxY }
     }
+    case 'path':
+      return pathPrimitiveBounds(prim)
     case 'point':
       return { minX: prim.x, minY: prim.y, maxX: prim.x, maxY: prim.y }
   }
@@ -653,6 +569,9 @@ export class AcExOsnapIndex {
   private primitives: AcExOsnapPrimitive[] = []
   private primitiveTree = new RBush<AcExRbushEntry>()
   private segmentTree = new RBush<AcExRbushEntry>()
+  /** Extra bulk-loaded trees when async rebuild splits {@link OSNAP_RBUSH_LOAD_CHUNK}. */
+  private primitiveTreeExtras: RBush<AcExRbushEntry>[] = []
+  private segmentTreeExtras: RBush<AcExRbushEntry>[] = []
   private modes: Set<AcExOsnapMode>
   private hiddenLayers = new Set<string>()
 
@@ -714,9 +633,8 @@ export class AcExOsnapIndex {
   }
 
   /**
-   * Like {@link rebuild}, but yields while collecting batch segments and while
-   * preparing RBush entries. Entries are still passed to RBush via a single bulk
-   * {@link RBush.load} (not per-item `insert`).
+   * Like {@link rebuild}, but yields while collecting batch segments, filtering
+   * primitives, preparing RBush entries, and bulk-loading the trees in chunks.
    *
    * @param layout - Active layout snapshot.
    * @param yieldFn - Called between work batches (defaults to a macrotask yield).
@@ -725,24 +643,52 @@ export class AcExOsnapIndex {
     layout: AcExLayoutSnapshot,
     yieldFn: () => Promise<void> = yieldToBrowser
   ): Promise<void> {
-    this.resetFromLayout(layout)
+    this.resetIndexState()
+    await this.filterPrimitivesAsync(
+      layout.osnap?.primitives ?? [],
+      yieldFn
+    )
     await this.collectSegmentsFromLayoutAsync(layout, yieldFn)
     await this.loadPrimitiveTreeAsync(yieldFn)
     await this.loadSegmentTreeAsync(yieldFn)
   }
 
-  private resetFromLayout(layout: AcExLayoutSnapshot): void {
+  private resetIndexState(): void {
     this.primitiveTree.clear()
     this.segmentTree.clear()
+    this.primitiveTreeExtras = []
+    this.segmentTreeExtras = []
     this.hiddenLayers.clear()
     this.segments = []
     this.segmentLayers = []
-    // Drop non-finite analytic primitives up front (NaN polyline / bad arcs).
-    // Leaving them out of `this.primitives` avoids any query path that walks
-    // the array without going through the RBush finite filter.
+  }
+
+  private resetFromLayout(layout: AcExLayoutSnapshot): void {
+    this.resetIndexState()
     this.primitives = (layout.osnap?.primitives ?? []).filter(prim =>
       isFiniteBounds(primitiveBounds(prim))
     )
+  }
+
+  private async filterPrimitivesAsync(
+    source: readonly AcExOsnapPrimitive[],
+    yieldFn: () => Promise<void>
+  ): Promise<void> {
+    if (source.length === 0) {
+      this.primitives = []
+      return
+    }
+    const filtered: AcExOsnapPrimitive[] = []
+    const schedule = createOsnapYieldScheduler(yieldFn)
+    for (let i = 0; i < source.length; i++) {
+      const prim = source[i]!
+      if (isFiniteBounds(primitiveBounds(prim))) {
+        filtered.push(prim)
+      }
+      const wait = schedule.afterItem()
+      if (wait) await wait
+    }
+    this.primitives = filtered
   }
 
   private collectSegmentsFromLayout(layout: AcExLayoutSnapshot): void {
@@ -829,7 +775,12 @@ export class AcExOsnapIndex {
       if (wait) await wait
     }
     if (primitiveEntries.length > 0) {
-      this.primitiveTree.load(primitiveEntries)
+      await bulkLoadRbush(
+        this.primitiveTree,
+        this.primitiveTreeExtras,
+        primitiveEntries,
+        yieldFn
+      )
     }
   }
 
@@ -855,7 +806,12 @@ export class AcExOsnapIndex {
       if (wait) await wait
     }
     if (segmentEntries.length > 0) {
-      this.segmentTree.load(segmentEntries)
+      await bulkLoadRbush(
+        this.segmentTree,
+        this.segmentTreeExtras,
+        segmentEntries,
+        yieldFn
+      )
     }
   }
 
@@ -889,28 +845,37 @@ export class AcExOsnapIndex {
       | undefined
 
     const mouse = { x: px, y: py }
-    for (const hit of this.primitiveTree.search(box)) {
+    for (const hit of searchRbushForest(
+      this.primitiveTree,
+      this.primitiveTreeExtras,
+      box
+    )) {
       const prim = this.primitives[hit.index]!
       if (this.hiddenLayers.has(prim.layer)) continue
-      if (prim.kind !== 'circle' && prim.kind !== 'arc') continue
-      const geo = primitiveToAcGeCurve(prim)
-      if (geo.kind !== 'circArc') continue
-      const nearest = geo.curve.nearestPoint({ x: px, y: py })
-      const d2 = distSq(px, py, nearest.x, nearest.y)
-      if (d2 > threshSq) continue
-      const align = inwardArcAlignment(geo.curve, nearest, mouse)
-      if (
-        !best ||
-        isBetterArcLock(d2, align, bestDistSq, bestAlign)
-      ) {
-        bestDistSq = d2
-        bestAlign = align
-        best = {
-          cx: prim.cx,
-          cy: prim.cy,
-          r: prim.r,
-          x: nearest.x,
-          y: nearest.y
+      const arcs =
+        prim.kind === 'path'
+          ? expandOsnapPath(prim).filter(edge => edge.kind === 'arc')
+          : prim.kind === 'circle' || prim.kind === 'arc'
+            ? [prim]
+            : []
+      for (const arcPrim of arcs) {
+        if (arcPrim.kind !== 'circle' && arcPrim.kind !== 'arc') continue
+        const geo = primitiveToAcGeCurve(arcPrim)
+        if (geo.kind !== 'circArc') continue
+        const nearest = geo.curve.nearestPoint({ x: px, y: py })
+        const d2 = distSq(px, py, nearest.x, nearest.y)
+        if (d2 > threshSq) continue
+        const align = inwardArcAlignment(geo.curve, nearest, mouse)
+        if (!best || isBetterArcLock(d2, align, bestDistSq, bestAlign)) {
+          bestDistSq = d2
+          bestAlign = align
+          best = {
+            cx: arcPrim.cx,
+            cy: arcPrim.cy,
+            r: arcPrim.r,
+            x: nearest.x,
+            y: nearest.y
+          }
         }
       }
     }
@@ -1001,8 +966,16 @@ export class AcExOsnapIndex {
     threshold: number
   ): AcExOsnapPoint | undefined {
     const box = searchBox(px, py, threshold)
-    const primHits = this.primitiveTree.search(box)
-    const segHits = this.segmentTree.search(box)
+    const primHits = searchRbushForest(
+      this.primitiveTree,
+      this.primitiveTreeExtras,
+      box
+    )
+    const segHits = searchRbushForest(
+      this.segmentTree,
+      this.segmentTreeExtras,
+      box
+    )
     if (primHits.length === 0 && segHits.length === 0) return undefined
 
     const threshSq = threshold * threshold
@@ -1010,19 +983,27 @@ export class AcExOsnapIndex {
     const paramTol = intersectionToleranceForExtent(extent)
     const geomTol = intersectionGeomToleranceForSnap(extent, threshold)
 
-    const primIndices: number[] = []
     const segIndices: number[] = []
     const primSeen = new Set<number>()
     const segSeen = new Set<number>()
+    const workPrims: AcExOsnapPrimitive[] = []
 
     for (const hit of primHits) {
       const prim = this.primitives[hit.index]!
       if (this.hiddenLayers.has(prim.layer)) continue
-      if (!isIntersectionCapablePrimitive(prim)) continue
       if (primSeen.has(hit.index)) continue
-      if (primIndices.length >= ACEX_MAX_INTERSECTION_SOURCES) continue
       primSeen.add(hit.index)
-      primIndices.push(hit.index)
+      if (isOsnapPathPrimitive(prim)) {
+        for (const edge of expandOsnapPath(prim)) {
+          if (!pathEdgeNearAperture(edge, px, py, threshold)) continue
+          if (workPrims.length >= ACEX_MAX_INTERSECTION_SOURCES) break
+          workPrims.push(edge)
+        }
+        continue
+      }
+      if (!isIntersectionCapablePrimitive(prim)) continue
+      if (workPrims.length >= ACEX_MAX_INTERSECTION_SOURCES) continue
+      workPrims.push(prim)
     }
 
     for (const hit of segHits) {
@@ -1037,12 +1018,10 @@ export class AcExOsnapIndex {
     let bestDistSq = threshSq
     let best: AcExOsnapPoint | undefined
 
-    for (let i = 0; i < primIndices.length; i++) {
-      const indexA = primIndices[i]!
-      const primA = this.primitives[indexA]!
-      for (let j = i + 1; j < primIndices.length; j++) {
-        const indexB = primIndices[j]!
-        const primB = this.primitives[indexB]!
+    for (let i = 0; i < workPrims.length; i++) {
+      const primA = workPrims[i]!
+      for (let j = i + 1; j < workPrims.length; j++) {
+        const primB = workPrims[j]!
         if (
           this.hiddenLayers.has(primA.layer) ||
           this.hiddenLayers.has(primB.layer)
@@ -1090,12 +1069,16 @@ export class AcExOsnapIndex {
       }
     }
 
-    // Hybrid exports keep curves in ACEO and straight edges in line batches.
-    // Without prim×seg pairs, circle/arc ∩ line intersections would disappear.
-    for (const primIndex of primIndices) {
-      const prim = this.primitives[primIndex]!
+    // Hybrid: ACEO curves/path edges × display lineBatches.
+    for (const prim of workPrims) {
       if (this.hiddenLayers.has(prim.layer)) continue
-      if (prim.kind !== 'circle' && prim.kind !== 'arc') continue
+      if (
+        prim.kind !== 'circle' &&
+        prim.kind !== 'arc' &&
+        prim.kind !== 'line'
+      ) {
+        continue
+      }
       for (const segIndex of segIndices) {
         const layer = this.segmentLayers[segIndex]!
         if (this.hiddenLayers.has(layer)) continue
@@ -1177,7 +1160,11 @@ export class AcExOsnapIndex {
       best: undefined as AcExOsnapPoint | undefined
     }
 
-    for (const hit of this.primitiveTree.search(box)) {
+    for (const hit of searchRbushForest(
+      this.primitiveTree,
+      this.primitiveTreeExtras,
+      box
+    )) {
       const prim = this.primitives[hit.index]!
       for (const candidate of collectPrimitiveDiscreteSnapCandidates(
         prim,
@@ -1194,7 +1181,11 @@ export class AcExOsnapIndex {
       }
     }
 
-    for (const hit of this.segmentTree.search(box)) {
+    for (const hit of searchRbushForest(
+      this.segmentTree,
+      this.segmentTreeExtras,
+      box
+    )) {
       const seg = this.segments[hit.index]!
       const layer = this.segmentLayers[hit.index]!
       if (discreteModes.has('endpoint')) {
@@ -1244,7 +1235,11 @@ export class AcExOsnapIndex {
     let bestDistSq = Number.MAX_VALUE
     let best: AcExOsnapPoint | undefined
 
-    for (const hit of this.primitiveTree.search(box)) {
+    for (const hit of searchRbushForest(
+      this.primitiveTree,
+      this.primitiveTreeExtras,
+      box
+    )) {
       if (
         distSqToBounds(px, py, hit.minX, hit.minY, hit.maxX, hit.maxY) >
         threshSq
@@ -1256,8 +1251,15 @@ export class AcExOsnapIndex {
       if (this.hiddenLayers.has(prim.layer)) continue
       if (prim.kind === 'point') continue
 
-      const geo = primitiveToAcGeCurve(prim)
-      const nearest = collectPrimitiveNearestSnapCandidate(prim, px, py, geo)
+      const nearest =
+        prim.kind === 'path'
+          ? collectPrimitiveNearestSnapCandidate(prim, px, py)
+          : collectPrimitiveNearestSnapCandidate(
+              prim,
+              px,
+              py,
+              primitiveToAcGeCurve(prim)
+            )
       if (!nearest) continue
       const d2 = distSq(px, py, nearest.x, nearest.y)
       if (d2 <= threshSq && d2 < bestDistSq) {
@@ -1266,7 +1268,11 @@ export class AcExOsnapIndex {
       }
     }
 
-    for (const hit of this.segmentTree.search(box)) {
+    for (const hit of searchRbushForest(
+      this.segmentTree,
+      this.segmentTreeExtras,
+      box
+    )) {
       if (
         distSqToBounds(px, py, hit.minX, hit.minY, hit.maxX, hit.maxY) >
         threshSq

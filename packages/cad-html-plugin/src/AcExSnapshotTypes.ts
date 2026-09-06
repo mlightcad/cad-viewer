@@ -292,14 +292,18 @@ export interface AcExLayoutSnapshot {
    * Analytic geometry for object snap (OSNAP) in the offline viewer.
    *
    * Populated at export time by {@link buildOsnapCatalog} from the drawing database.
-   * Contains **curve/point** primitives only (circle, arc, ellipse, spline, point,
-   * including polyline bulge arcs). Straight `line` edges are omitted because they
-   * duplicate {@link AcExLineBatch} display geometry; the offline viewer rebuilds
-   * line snap from those batches (self-contained HTML and multi-file packages).
+   * Contains **curve/point/path** primitives (circle, arc, ellipse, spline, point,
+   * polyline bulge arcs, fill/frame `path` records, and wide LWPOLYLINE
+   * centerline `path` records). Straight drawing-line
+   * edges are omitted because they duplicate {@link AcExLineBatch} display
+   * geometry; the offline viewer rebuilds line snap from those batches
+   * (self-contained HTML and multi-file packages). Hatch / TRACE / SOLID / IMAGE
+   * clip / OLE boundaries are stored as compact `path` primitives, not exploded
+   * ACEO lines.
    *
    * Coordinates are IEEE-754 `number` (double) for measurement-grade precision.
    *
-   * {@link AcExOsnapIndex} indexes ACEO curves together with tessellated line
+   * {@link AcExOsnapIndex} indexes ACEO curves/paths together with tessellated line
    * segments extracted from resident {@link AcExLineBatch} / mesh edges.
    */
   osnap?: AcExOsnapCatalog

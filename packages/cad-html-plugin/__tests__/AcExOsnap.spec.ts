@@ -337,7 +337,7 @@ describe('AcExOsnapIndex', () => {
     expect(snap?.mode).toBe('center')
   })
 
-  it('merges patterned line batch segments before endpoint snap', () => {
+  it('walks patterned line batch edges so intermediate vertices stay snappable', () => {
     const batch = {
       layer: '0',
       color: 0xffffff,
@@ -351,7 +351,8 @@ describe('AcExOsnapIndex', () => {
       }
     }
     expect(extractLineBatchSnapSegments(batch)).toEqual([
-      { x0: 0, y0: 0, x1: 10, y1: 0 }
+      { x0: 0, y0: 0, x1: 5, y1: 0 },
+      { x0: 5, y0: 0, x1: 10, y1: 0 }
     ])
 
     const patternedLayout = {
@@ -360,11 +361,16 @@ describe('AcExOsnapIndex', () => {
     }
     const index = new AcExOsnapIndex(['endpoint'])
     index.rebuild(patternedLayout)
+    expect(index.findSnap(5.1, 0.1, 1)).toEqual({
+      x: 5,
+      y: 0,
+      mode: 'endpoint'
+    })
     const snap = index.findSnap(9.8, 0.1, 1)
     expect(snap).toEqual({ x: 10, y: 0, mode: 'endpoint' })
   })
 
-  it('prefers analytic line endpoints over patterned render segments', () => {
+  it('snaps patterned intermediate vertices even when an ACEO line shares the chain', () => {
     const hybridLayout = {
       ...layout,
       lineBatches: [
@@ -396,8 +402,16 @@ describe('AcExOsnapIndex', () => {
     }
     const index = new AcExOsnapIndex(['endpoint'])
     index.rebuild(hybridLayout)
-    const snap = index.findSnap(1.5, 0.2, 2)
-    expect(snap).toEqual({ x: 0, y: 0, mode: 'endpoint' })
+    expect(index.findSnap(1.5, 0.2, 2)).toEqual({
+      x: 2,
+      y: 0,
+      mode: 'endpoint'
+    })
+    expect(index.findSnap(0.2, 0.1, 1)).toEqual({
+      x: 0,
+      y: 0,
+      mode: 'endpoint'
+    })
   })
 
   it('snaps to T-junction where stem ends on crossbar interior', () => {
@@ -740,6 +754,60 @@ describe('AcExOsnapIndex', () => {
     index.rebuild(hybridLayout)
     const snap = index.findSnap(10.1, 0.1, 1)
     expect(snap).toEqual({ x: 10, y: 0, mode: 'intersection' })
+  })
+
+  it('snaps to path-edge × lineBatch intersection', () => {
+    const hybridLayout = {
+      btrId: 'model',
+      name: 'Model',
+      isModelSpace: true,
+      lineBatches: [
+        {
+          layer: '0',
+          color: 0xffffff,
+          offset: [0, 0, 0] as [number, number, number],
+          positions: f32([5, -5, 0, 5, 15, 0])
+        }
+      ],
+      meshBatches: [],
+      osnap: {
+        primitives: [
+          {
+            kind: 'path' as const,
+            layer: '0',
+            closed: true,
+            vertices: [0, 0, 0, 10, 0, 0, 10, 10, 0, 0, 10, 0]
+          }
+        ]
+      }
+    }
+    const index = new AcExOsnapIndex(['intersection'])
+    index.rebuild(hybridLayout)
+    const snap = index.findSnap(5.1, 0.1, 1)
+    expect(snap).toEqual({ x: 5, y: 0, mode: 'intersection' })
+  })
+
+  it('snaps to fill-path endpoints', () => {
+    const index = new AcExOsnapIndex(['endpoint'])
+    index.rebuild({
+      btrId: 'model',
+      name: 'Model',
+      isModelSpace: true,
+      lineBatches: [],
+      meshBatches: [],
+      osnap: {
+        primitives: [
+          {
+            kind: 'path',
+            layer: '0',
+            closed: true,
+            vertices: [0, 0, 0, 20, 0, 0, 20, 10, 0, 0, 10, 0]
+          }
+        ]
+      }
+    })
+    const snap = index.findSnap(0.2, 0.1, 1)
+    expect(snap).toEqual({ x: 0, y: 0, mode: 'endpoint' })
   })
 
   it('rebuilds large tessellated layouts without blowing the call stack', () => {

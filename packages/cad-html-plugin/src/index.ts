@@ -66,6 +66,7 @@ export {
 export {
   ACEX_PACKAGE_VERSION,
   ACEX_DEFAULT_CHUNK_MAX_BYTES,
+  ACEX_MAX_GEOMETRY_BATCH_BYTES,
   ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES,
   type AcExPackageVersion,
   type AcExPackageChunkRef,

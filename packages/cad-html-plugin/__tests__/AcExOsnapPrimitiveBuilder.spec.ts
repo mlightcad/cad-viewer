@@ -1,5 +1,6 @@
 import {
   AcDbAlignedDimension,
+  AcDbAttribute,
   AcDbBlockReference,
   AcDbBlockTableRecord,
   AcDbDatabase,
@@ -11,10 +12,12 @@ import {
   AcDbMLeader,
   AcDbMLeaderContentType,
   AcDbMLine,
+  AcDbOle2Frame,
   AcDbPoint,
   AcDbPolyline,
   AcDbRasterImage,
   AcDbRay,
+  AcDbSolid,
   AcDbTable,
   AcDbText,
   AcDbTrace,
@@ -107,6 +110,76 @@ describe('buildOsnapCatalog', () => {
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line').length).toBe(0)
+    expect(catalog.primitives.filter(p => p.kind === 'path').length).toBe(0)
+  })
+
+  it('exports a wide LWPOLYLINE centerline as one path (mesh, not lineBatches)', () => {
+    const db = new AcDbDatabase()
+    const modelSpace = db.tables.blockTable.modelSpace
+    const polyline = new AcDbPolyline()
+    polyline.addVertexAt(0, new AcGePoint2d(0, 0), 0, 2, 1)
+    polyline.addVertexAt(1, new AcGePoint2d(10, 0), 0, 1, 2)
+    polyline.addVertexAt(2, new AcGePoint2d(10, 10), 0, 2, 2)
+    modelSpace.appendEntity(polyline)
+
+    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
+    const paths = catalog.primitives.filter(p => p.kind === 'path')
+    expect(paths).toHaveLength(1)
+    expect(paths[0]).toMatchObject({
+      kind: 'path',
+      closed: false,
+      vertices: [0, 0, 0, 10, 0, 0, 10, 10, 0]
+    })
+
+    const index = new AcExOsnapIndex(['endpoint', 'midpoint', 'nearest'])
+    index.rebuild({
+      btrId: modelSpace.objectId,
+      name: 'Model',
+      isModelSpace: true,
+      lineBatches: [],
+      meshBatches: [],
+      osnap: catalog
+    })
+    expect(index.findSnap(10.1, 0.1, 1)).toEqual({
+      x: 10,
+      y: 0,
+      mode: 'endpoint'
+    })
+    expect(index.findSnap(5, 0.1, 1)?.mode).toBe('midpoint')
+    expect(index.findSnap(5, 0.1, 1)?.x).toBeCloseTo(5, 5)
+  })
+
+  it('keeps bulge on a wide LWPOLYLINE path so arc nearest still works', () => {
+    const db = new AcDbDatabase()
+    const modelSpace = db.tables.blockTable.modelSpace
+    const polyline = new AcDbPolyline()
+    polyline.addVertexAt(0, new AcGePoint2d(0, 0), 1, 2, 2)
+    polyline.addVertexAt(1, new AcGePoint2d(10, 0), 0, 2, 2)
+    modelSpace.appendEntity(polyline)
+
+    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const path = catalog.primitives.find(p => p.kind === 'path')
+    expect(path?.kind).toBe('path')
+    if (path?.kind === 'path') {
+      expect(path.vertices[2]).toBe(1)
+    }
+
+    const arc = new AcGeCircArc2d({ x: 0, y: 0 }, { x: 10, y: 0 }, 1)
+    const index = new AcExOsnapIndex(['nearest'])
+    index.rebuild({
+      btrId: modelSpace.objectId,
+      name: 'Model',
+      isModelSpace: true,
+      lineBatches: [],
+      meshBatches: [],
+      osnap: catalog
+    })
+    const mid = arc.midPoint
+    const snap = index.findSnap(mid.x, mid.y, 1)
+    expect(snap?.mode).toBe('nearest')
+    expect(snap?.x).toBeCloseTo(mid.x, 5)
+    expect(snap?.y).toBeCloseTo(mid.y, 5)
   })
 
   it('snaps nearest on both CCW and CW polyline bulge segments', () => {
@@ -229,10 +302,9 @@ describe('buildOsnapCatalog', () => {
     const blockName = '*DIM_TEST'
     db.tables.blockTable.add(dimension.createDimBlock(blockName))
     dimension.dimBlockId = blockName
-    modelSpace.appendEntity(dimension)
-
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
+    expect(catalog.primitives.filter(p => p.kind === 'path')).toHaveLength(0)
   })
 
   it('exports points for text/point and omits ray/xline/trace/leader lines', () => {
@@ -253,8 +325,8 @@ describe('buildOsnapCatalog', () => {
     const trace = new AcDbTrace()
     trace.setPointAt(0, new AcGePoint3d(20, 0, 0))
     trace.setPointAt(1, new AcGePoint3d(30, 0, 0))
-    trace.setPointAt(2, new AcGePoint3d(30, 10, 0))
-    trace.setPointAt(3, new AcGePoint3d(20, 10, 0))
+    trace.setPointAt(2, new AcGePoint3d(20, 10, 0))
+    trace.setPointAt(3, new AcGePoint3d(30, 10, 0))
     modelSpace.appendEntity(trace)
 
     const leader = new AcDbLeader()
@@ -272,6 +344,14 @@ describe('buildOsnapCatalog', () => {
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.some(p => p.kind === 'line')).toBe(false)
+    const tracePath = catalog.primitives.find(p => p.kind === 'path')
+    expect(tracePath?.kind).toBe('path')
+    if (tracePath?.kind === 'path') {
+      expect(tracePath.closed).toBe(true)
+      expect(tracePath.vertices).toEqual([
+        20, 0, 0, 30, 0, 0, 30, 10, 0, 20, 10, 0
+      ])
+    }
     expect(catalog.primitives.some(p => p.kind === 'point' && p.x === 60)).toBe(
       true
     )
@@ -367,7 +447,7 @@ describe('buildOsnapCatalog', () => {
     expect(snap?.y).toBeCloseTo(0, 5)
   })
 
-  it('omits hatch polyline boundary lines from the catalog', () => {
+  it('exports hatch polyline boundary as one path', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
 
@@ -387,9 +467,16 @@ describe('buildOsnapCatalog', () => {
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
+    const paths = catalog.primitives.filter(p => p.kind === 'path')
+    expect(paths).toHaveLength(1)
+    expect(paths[0]).toMatchObject({
+      kind: 'path',
+      closed: true,
+      vertices: [0, 0, 0, 20, 0, 0, 20, 10, 0, 0, 10, 0]
+    })
   })
 
-  it('omits hatch edge-loop lines from the catalog', () => {
+  it('exports hatch edge-loop lines as one path', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
 
@@ -404,9 +491,16 @@ describe('buildOsnapCatalog', () => {
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
+    const paths = catalog.primitives.filter(p => p.kind === 'path')
+    expect(paths).toHaveLength(1)
+    expect(paths[0]?.kind).toBe('path')
+    if (paths[0]?.kind === 'path') {
+      expect(paths[0].closed).toBe(true)
+      expect(paths[0].vertices.length).toBe(12)
+    }
   })
 
-  it('exports raster image insertion points and omits frame lines', () => {
+  it('exports raster image insertion points and clip-frame path', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
 
@@ -421,6 +515,12 @@ describe('buildOsnapCatalog', () => {
     expect(
       catalog.primitives.some(p => p.kind === 'point' && p.x === 5 && p.y === 5)
     ).toBe(true)
+    const frame = catalog.primitives.find(p => p.kind === 'path')
+    expect(frame?.kind).toBe('path')
+    if (frame?.kind === 'path') {
+      expect(frame.closed).toBe(true)
+      expect(frame.vertices).toEqual([5, 5, 0, 25, 5, 0, 25, 15, 0, 5, 15, 0])
+    }
   })
 
   it('exports table insertion points and omits grid lines', () => {
@@ -497,5 +597,237 @@ describe('buildOsnapCatalog', () => {
     const center = index.findSnap(5.1, 5.1, 2)
     expect(center?.mode).toBe('center')
     expect(center?.x).toBeCloseTo(5, 5)
+  })
+
+  it('transforms hatch paths inside INSERT and emits INS points', () => {
+    const db = new AcDbDatabase()
+    const modelSpace = db.tables.blockTable.modelSpace
+
+    const blockRecord = new AcDbBlockTableRecord()
+    blockRecord.name = 'HATCH_BLOCK'
+    db.tables.blockTable.add(blockRecord)
+    const hatch = new AcDbHatch()
+    hatch.add(
+      new AcGePolyline2d(
+        [
+          { x: 0, y: 0 },
+          { x: 10, y: 0 },
+          { x: 10, y: 4 },
+          { x: 0, y: 4 }
+        ],
+        true
+      )
+    )
+    blockRecord.appendEntity(hatch)
+
+    const insert = new AcDbBlockReference('HATCH_BLOCK')
+    insert.position = new AcGePoint3d(100, 50, 0)
+    modelSpace.appendEntity(insert)
+
+    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    expect(
+      catalog.primitives.some(
+        p => p.kind === 'point' && p.x === 100 && p.y === 50
+      )
+    ).toBe(true)
+    const path = catalog.primitives.find(p => p.kind === 'path')
+    expect(path?.kind).toBe('path')
+    if (path?.kind === 'path') {
+      expect(path.vertices[0]).toBeCloseTo(100, 5)
+      expect(path.vertices[1]).toBeCloseTo(50, 5)
+      expect(path.vertices[3]).toBeCloseTo(110, 5)
+    }
+  })
+
+  it('zeros path bulge under non-uniform INSERT scale (circular → chord)', () => {
+    const db = new AcDbDatabase()
+    const modelSpace = db.tables.blockTable.modelSpace
+
+    const blockRecord = new AcDbBlockTableRecord()
+    blockRecord.name = 'HATCH_BULGE_NU'
+    db.tables.blockTable.add(blockRecord)
+    const hatch = new AcDbHatch()
+    hatch.add(
+      new AcGePolyline2d(
+        [
+          { x: 0, y: 0, bulge: 1 },
+          { x: 10, y: 0 },
+          { x: 10, y: 4 },
+          { x: 0, y: 4 }
+        ],
+        true
+      )
+    )
+    blockRecord.appendEntity(hatch)
+
+    const insert = new AcDbBlockReference('HATCH_BULGE_NU')
+    insert.position = new AcGePoint3d(0, 0, 0)
+    insert.scaleFactors = new AcGePoint3d(2, 1, 1)
+    modelSpace.appendEntity(insert)
+
+    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const path = catalog.primitives.find(p => p.kind === 'path')
+    expect(path?.kind).toBe('path')
+    if (path?.kind === 'path') {
+      expect(path.vertices[0]).toBeCloseTo(0, 5)
+      expect(path.vertices[3]).toBeCloseTo(20, 5)
+      expect(path.vertices[2]).toBe(0)
+    }
+  })
+
+  it('flips path bulge under mirrored INSERT', () => {
+    const db = new AcDbDatabase()
+    const modelSpace = db.tables.blockTable.modelSpace
+
+    const blockRecord = new AcDbBlockTableRecord()
+    blockRecord.name = 'HATCH_BULGE_MIRROR'
+    db.tables.blockTable.add(blockRecord)
+    const hatch = new AcDbHatch()
+    hatch.add(
+      new AcGePolyline2d(
+        [
+          { x: 0, y: 0, bulge: 1 },
+          { x: 10, y: 0 },
+          { x: 10, y: 4 },
+          { x: 0, y: 4 }
+        ],
+        true
+      )
+    )
+    blockRecord.appendEntity(hatch)
+
+    const insert = new AcDbBlockReference('HATCH_BULGE_MIRROR')
+    insert.position = new AcGePoint3d(0, 0, 0)
+    insert.scaleFactors = new AcGePoint3d(-1, 1, 1)
+    modelSpace.appendEntity(insert)
+
+    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const path = catalog.primitives.find(p => p.kind === 'path')
+    expect(path?.kind).toBe('path')
+    if (path?.kind === 'path') {
+      expect(path.vertices[2]).toBeCloseTo(-1, 5)
+    }
+  })
+
+  it('emits one INS point per MINSERT instance', () => {
+    const db = new AcDbDatabase()
+    const modelSpace = db.tables.blockTable.modelSpace
+
+    const blockRecord = new AcDbBlockTableRecord()
+    blockRecord.name = 'MINSERT_BLOCK'
+    db.tables.blockTable.add(blockRecord)
+    blockRecord.appendEntity(new AcDbPoint())
+
+    const insert = new AcDbBlockReference('MINSERT_BLOCK')
+    insert.position = new AcGePoint3d(0, 0, 0)
+    insert.columnCount = 2
+    insert.rowCount = 2
+    insert.columnSpacing = 30
+    insert.rowSpacing = 20
+    modelSpace.appendEntity(insert)
+
+    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const points = catalog.primitives.filter(p => p.kind === 'point')
+    expect(points).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'point', x: 0, y: 0 }),
+        expect.objectContaining({ kind: 'point', x: 30, y: 0 }),
+        expect.objectContaining({ kind: 'point', x: 0, y: 20 }),
+        expect.objectContaining({ kind: 'point', x: 30, y: 20 })
+      ])
+    )
+  })
+
+  it('exports ATTRIB text points in parent space', () => {
+    const db = new AcDbDatabase()
+    acdbHostApplicationServices().workingDatabase = db
+    const modelSpace = db.tables.blockTable.modelSpace
+
+    const blockRecord = new AcDbBlockTableRecord()
+    blockRecord.name = 'ATTR_BLOCK'
+    db.tables.blockTable.add(blockRecord)
+
+    const insert = new AcDbBlockReference('ATTR_BLOCK')
+    insert.position = new AcGePoint3d(40, 10, 0)
+    modelSpace.appendEntity(insert)
+
+    const attrib = new AcDbAttribute()
+    attrib.position = new AcGePoint3d(45, 12, 0)
+    insert.appendAttributes(attrib)
+
+    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    expect(
+      catalog.primitives.some(
+        p => p.kind === 'point' && p.x === 45 && p.y === 12
+      )
+    ).toBe(true)
+  })
+
+  it('snaps IMAGE clip vertices rather than the unclipped rectangle', () => {
+    const db = new AcDbDatabase()
+    const modelSpace = db.tables.blockTable.modelSpace
+
+    const image = new AcDbRasterImage()
+    image.position = new AcGePoint3d(5, 5, 0)
+    image.width = 20
+    image.height = 10
+    image.isClipped = true
+    image.clipBoundary = [
+      new AcGePoint2d(0, 0),
+      new AcGePoint2d(1, 0),
+      new AcGePoint2d(0.5, 1),
+      new AcGePoint2d(0, 0)
+    ]
+    modelSpace.appendEntity(image)
+
+    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const path = catalog.primitives.find(p => p.kind === 'path')
+    expect(path?.kind).toBe('path')
+    if (path?.kind === 'path') {
+      expect(path.vertices).toEqual([5, 5, 0, 25, 5, 0, 15, 15, 0])
+    }
+
+    const index = new AcExOsnapIndex(['endpoint'])
+    index.rebuild({
+      btrId: modelSpace.objectId,
+      name: 'Model',
+      isModelSpace: true,
+      lineBatches: [],
+      meshBatches: [],
+      osnap: catalog
+    })
+    const snap = index.findSnap(15.1, 14.9, 1)
+    expect(snap).toEqual({ x: 15, y: 15, mode: 'endpoint' })
+  })
+
+  it('skips SOLID fills inside dimension blocks but keeps layout SOLID paths', () => {
+    const db = new AcDbDatabase()
+    const modelSpace = db.tables.blockTable.modelSpace
+    const solid = new AcDbSolid()
+    solid.setPointAt(0, new AcGePoint3d(0, 0, 0))
+    solid.setPointAt(1, new AcGePoint3d(2, 0, 0))
+    solid.setPointAt(2, new AcGePoint3d(0, 1, 0))
+    solid.setPointAt(3, new AcGePoint3d(2, 1, 0))
+    modelSpace.appendEntity(solid)
+
+    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    expect(catalog.primitives.filter(p => p.kind === 'path')).toHaveLength(1)
+  })
+
+  it('exports OLE frame corners as a path', () => {
+    const db = new AcDbDatabase()
+    const modelSpace = db.tables.blockTable.modelSpace
+    const ole = new AcDbOle2Frame()
+    ole.setLocation(new AcGePoint3d(0, 10, 0))
+    ole.setWcsWidth(8)
+    ole.setWcsHeight(4)
+    modelSpace.appendEntity(ole)
+
+    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const path = catalog.primitives.find(p => p.kind === 'path')
+    expect(path?.kind).toBe('path')
+    expect(
+      catalog.primitives.some(p => p.kind === 'point' && p.x === 0 && p.y === 10)
+    ).toBe(true)
   })
 })

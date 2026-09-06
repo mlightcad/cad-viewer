@@ -3,9 +3,12 @@
  *
  * Walks layout block table records recursively, expands `AcDbBlockReference`
  * (INSERT) with full insertion transforms, and emits compact analytic primitives
- * for the offline HTML viewer. Straight line edges are omitted (they duplicate
- * display {@link AcExLineBatch} data); circle/arc/ellipse/spline/point remain so
- * measurement-grade analytic snap survives tessellation.
+ * for the offline HTML viewer. Straight drawing-line edges are omitted (they
+ * duplicate display {@link AcExLineBatch} data). Circle/arc/ellipse/spline/point
+ * remain so measurement-grade analytic snap survives tessellation. Fill/frame
+ * boundaries that are drawn as meshes (hatch, TRACE/SOLID, IMAGE clip, OLE,
+ * and wide LWPOLYLINE centerlines) are stored as compact
+ * {@link AcExOsnapPathPrimitive} records.
  *
  * @packageDocumentation
  */
@@ -14,6 +17,7 @@ import {
   AcDb2dPolyline,
   AcDb3dPolyline,
   AcDbArc,
+  AcDbAttribute,
   AcDbBlockReference,
   type AcDbBlockTableRecord,
   AcDbCircle,
@@ -31,6 +35,7 @@ import {
   AcDbMLine,
   AcDbMText,
   type AcDbObjectId,
+  AcDbOle2Frame,
   AcDbPoint,
   AcDbPolyline,
   AcDbRasterImage,
@@ -64,6 +69,9 @@ import type {
   AcExOsnapPrimitive,
   AcExOsnapSplinePrimitive
 } from './AcExOsnapPrimitiveTypes'
+
+/** Vertex used when packing a fill/frame {@link AcExOsnapPathPrimitive}. */
+type AcExOsnapPathVertex = AcGePoint3dLike & { bulge?: number }
 
 /** Maps entity extrusion normal to arc/circle winding sign. @internal */
 function normalSignFromVector(normal: AcGeVector3dLike): 1 | -1 {
@@ -292,6 +300,13 @@ type AcExBlockReferenceLike = AcDbEntity & {
   blockTableRecord: AcDbBlockTableRecord | undefined
   blockName?: string
   getFullInsertionTransform(): AcGeMatrix3d
+  columnCount?: number
+  rowCount?: number
+  columnSpacing?: number
+  rowSpacing?: number
+  attributeIterator?: () => Iterable<AcDbEntity> & {
+    toArray?: () => AcDbEntity[]
+  }
 }
 
 /** Dimension entity shape whose geometry lives in an anonymous block. @internal */
@@ -430,6 +445,84 @@ function pushDirectedLine(
   _bidirectional: boolean
 ) {
   // no-op — see function doc
+}
+
+/**
+ * Packs a fill/frame boundary as one {@link AcExOsnapPathPrimitive}.
+ *
+ * Mesh-drawn entities (hatch, TRACE/SOLID, IMAGE clip, OLE, wide LWPOLYLINE)
+ * have no edges in {@link AcExLineBatch}; this keeps their outline / centerline
+ * in ACEO without exploding every edge into a `line` primitive.
+ *
+ * Bulge is invariant only under similarity. Vertices are transformed first;
+ * under reflection the bulge sign flips (`det2d < 0`). Under non-uniform
+ * scale/shear a circular bulge becomes elliptical, so the edge degrades to a
+ * chord — matching the former hatch circular-arc boundary fallback.
+ *
+ * @internal
+ */
+function pushCatalogPath(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  vertices: AcExOsnapPathVertex[],
+  closed: boolean
+) {
+  if (vertices.length < 2) return
+  const uniform = scaleIsUniform(matrix)
+  const det2d =
+    matrix.elements[0]! * matrix.elements[5]! -
+    matrix.elements[4]! * matrix.elements[1]!
+  const bulgeSign = det2d < 0 ? -1 : 1
+  const packed: number[] = []
+  for (const vertex of vertices) {
+    const p = transformPoint(matrix, vertex)
+    let bulge = vertex.bulge ?? 0
+    if (AcGeTol.isPositive(Math.abs(bulge))) {
+      bulge = uniform ? bulge * bulgeSign : 0
+    }
+    packed.push(p.x, p.y, bulge)
+  }
+  out.push({ kind: 'path', layer, closed, vertices: packed })
+}
+
+function samePoint2d(a: AcGePoint3dLike, b: AcGePoint3dLike): boolean {
+  return AcGeTol.equal(a.x, b.x) && AcGeTol.equal(a.y, b.y)
+}
+
+function circArc2dBulge(arc: AcGeCircArc2d): number {
+  return (arc.clockwise ? -1 : 1) * Math.tan(arc.deltaAngle / 4)
+}
+
+function appendPathEdge(
+  verts: AcExOsnapPathVertex[],
+  start: AcGePoint3dLike,
+  end: AcGePoint3dLike,
+  bulge: number
+) {
+  if (verts.length === 0) {
+    verts.push({ x: start.x, y: start.y, z: start.z ?? 0, bulge })
+    verts.push({ x: end.x, y: end.y, z: end.z ?? 0, bulge: 0 })
+    return
+  }
+  const last = verts[verts.length - 1]!
+  if (samePoint2d(last, start)) {
+    last.bulge = bulge
+  } else {
+    last.bulge = 0
+    verts.push({ x: start.x, y: start.y, z: start.z ?? 0, bulge })
+  }
+  verts.push({ x: end.x, y: end.y, z: end.z ?? 0, bulge: 0 })
+}
+
+function finalizePathVertices(verts: AcExOsnapPathVertex[]): AcExOsnapPathVertex[] {
+  if (
+    verts.length >= 2 &&
+    samePoint2d(verts[0]!, verts[verts.length - 1]!)
+  ) {
+    verts.pop()
+  }
+  return verts
 }
 
 /**
@@ -723,11 +816,72 @@ function pushSpline(
 }
 
 /**
- * Decomposes `AcDbPolyline` into line and arc primitives.
+ * Matches `AcDbPolyline` `WIDTH_EPSILON`: any start/end width above this
+ * draws the whole LWPOLYLINE as a solid `area` mesh, not a `lineStrip`.
+ */
+const POLYLINE_WIDTH_EPSILON = 1e-6
+
+type AcExLwPolylineVertex = AcExOsnapPathVertex & {
+  startWidth?: number
+  endWidth?: number
+}
+
+function readLwPolylineVertices(entity: AcDbPolyline): AcExLwPolylineVertex[] {
+  const elevation = entity.elevation
+  const runtimeVertices = (
+    entity as unknown as {
+      _geo?: {
+        vertices?: Array<{
+          x: number
+          y: number
+          bulge?: number
+          startWidth?: number
+          endWidth?: number
+        }>
+      }
+    }
+  )._geo?.vertices
+
+  if (runtimeVertices && runtimeVertices.length > 1) {
+    return runtimeVertices.map(vertex => ({
+      x: vertex.x,
+      y: vertex.y,
+      z: elevation,
+      bulge: vertex.bulge,
+      startWidth: vertex.startWidth,
+      endWidth: vertex.endWidth
+    }))
+  }
+
+  return Array.from({ length: entity.numberOfVertices }, (_, i) => {
+    const p = entity.getPoint2dAt(i)
+    return { x: p.x, y: p.y, z: elevation, bulge: 0 as number | undefined }
+  })
+}
+
+/**
+ * True when the LWPOLYLINE is drawn as a wide mesh (`directBatchPrimitive`
+ * `'area'`), matching {@link AcDbPolyline} `hasRenderableWidth`.
+ */
+function polylineHasRenderableWidth(vertices: AcExLwPolylineVertex[]): boolean {
+  return vertices.some(vertex => {
+    const startWidth = Math.max(0, vertex.startWidth ?? 0)
+    const endWidth = Math.max(0, vertex.endWidth ?? 0)
+    return (
+      startWidth > POLYLINE_WIDTH_EPSILON || endWidth > POLYLINE_WIDTH_EPSILON
+    )
+  })
+}
+
+/**
+ * Decomposes `AcDbPolyline` into ACEO primitives.
  *
- * Straight segments become {@link AcExOsnapLinePrimitive}; bulge segments are
- * converted with {@link AcGeCircArc2d} in WCS (endpoints transformed first so
- * rotation/translation of INSERT is respected; bulge is invariant under similarity).
+ * Thin polylines (`lineStrip`) keep bulge arcs in ACEO and omit straight
+ * edges (those duplicate {@link AcExLineBatch}). Wide polylines are drawn as
+ * a filled mesh from the width profile, so they never appear in lineBatches —
+ * their **centerline** (vertices + bulge, the same geometry
+ * {@link AcDbPolyline.subGetOsnapPoints} snaps to) is stored as one
+ * {@link AcExOsnapPathPrimitive}.
  *
  * @internal
  */
@@ -737,22 +891,14 @@ function pushPolyline(
   matrix: THREE.Matrix4,
   entity: AcDbPolyline
 ) {
-  const runtimeVertices = (
-    entity as unknown as {
-      _geo?: { vertices?: Array<{ x: number; y: number; bulge?: number }> }
-    }
-  )._geo?.vertices
-
-  const vertices =
-    runtimeVertices && runtimeVertices.length > 1
-      ? runtimeVertices.map(v => ({ x: v.x, y: v.y, bulge: v.bulge }))
-      : Array.from({ length: entity.numberOfVertices }, (_, i) => {
-          const p = entity.getPoint2dAt(i)
-          return { x: p.x, y: p.y, bulge: 0 as number | undefined }
-        })
-
+  const vertices = readLwPolylineVertices(entity)
   const count = vertices.length
   if (count < 2) return
+
+  if (polylineHasRenderableWidth(vertices)) {
+    pushCatalogPath(out, layer, matrix, vertices, entity.closed)
+    return
+  }
 
   const segmentCount = entity.closed ? count : count - 1
   for (let i = 0; i < segmentCount; i++) {
@@ -760,58 +906,13 @@ function pushPolyline(
     const end = vertices[(i + 1) % count]!
     const bulge = start.bulge ?? 0
     if (AcGeTol.isPositive(Math.abs(bulge))) {
-      const startW = transformPoint(matrix, { x: start.x, y: start.y, z: 0 })
-      const endW = transformPoint(matrix, { x: end.x, y: end.y, z: 0 })
+      const startW = transformPoint(matrix, start)
+      const endW = transformPoint(matrix, end)
       pushGeCircArc(out, layer, new AcGeCircArc2d(startW, endW, bulge))
     } else {
-      pushLine(
-        out,
-        layer,
-        matrix,
-        { x: start.x, y: start.y, z: 0 },
-        { x: end.x, y: end.y, z: 0 }
-      )
+      pushLine(out, layer, matrix, start, end)
     }
   }
-}
-
-/** Appends a WCS arc from a 2D circular arc at a fixed elevation. @internal */
-function pushCircArc2dBoundary(
-  out: AcExOsnapPrimitive[],
-  layer: string,
-  matrix: THREE.Matrix4,
-  arc: AcGeCircArc2d,
-  elevation: number
-) {
-  if (scaleIsUniform(matrix)) {
-    const startW = transformPoint(matrix, {
-      x: arc.startPoint.x,
-      y: arc.startPoint.y,
-      z: elevation
-    })
-    const endW = transformPoint(matrix, {
-      x: arc.endPoint.x,
-      y: arc.endPoint.y,
-      z: elevation
-    })
-    const det2d =
-      matrix.elements[0]! * matrix.elements[5]! -
-      matrix.elements[4]! * matrix.elements[1]!
-    const bulge =
-      (arc.clockwise ? -1 : 1) *
-      Math.tan(arc.deltaAngle / 4) *
-      (det2d < 0 ? -1 : 1)
-    pushGeCircArc(out, layer, new AcGeCircArc2d(startW, endW, bulge))
-    return
-  }
-
-  pushLine(
-    out,
-    layer,
-    matrix,
-    { x: arc.startPoint.x, y: arc.startPoint.y, z: elevation },
-    { x: arc.endPoint.x, y: arc.endPoint.y, z: elevation }
-  )
 }
 
 /** Appends a WCS ellipse arc from a 2D ellipse arc at a fixed elevation. @internal */
@@ -876,21 +977,17 @@ function pushHatchPolyline2d(
   const vertexCount = polyline.numberOfVertices
   if (vertexCount < 2) return
 
-  const segmentCount = polyline.closed ? vertexCount : vertexCount - 1
-  for (let index = 0; index < segmentCount; index++) {
-    const start = polyline.getPointAt(index)
-    const end = polyline.getPointAt((index + 1) % vertexCount)
-    const bulge = polyline.vertices[index]?.bulge ?? 0
-    const start3 = { x: start.x, y: start.y, z: elevation }
-    const end3 = { x: end.x, y: end.y, z: elevation }
-    if (AcGeTol.isPositive(Math.abs(bulge))) {
-      const startW = transformPoint(matrix, start3)
-      const endW = transformPoint(matrix, end3)
-      pushGeCircArc(out, layer, new AcGeCircArc2d(startW, endW, bulge))
-    } else {
-      pushLine(out, layer, matrix, start3, end3)
-    }
+  const vertices: AcExOsnapPathVertex[] = []
+  for (let index = 0; index < vertexCount; index++) {
+    const point = polyline.getPointAt(index)
+    vertices.push({
+      x: point.x,
+      y: point.y,
+      z: elevation,
+      bulge: polyline.vertices[index]?.bulge ?? 0
+    })
   }
+  pushCatalogPath(out, layer, matrix, vertices, polyline.closed)
 }
 
 /** Exports one hatch boundary loop (polyline or edge loop). @internal */
@@ -906,35 +1003,64 @@ function pushHatchLoop(
     return
   }
 
-  if (loop instanceof AcGeLoop2d) {
-    for (const curve of loop.curves) {
-      if (curve instanceof AcGeLine2d) {
-        pushLine(
-          out,
-          layer,
-          matrix,
-          {
-            x: curve.startPoint.x,
-            y: curve.startPoint.y,
-            z: elevation
-          },
-          {
-            x: curve.endPoint.x,
-            y: curve.endPoint.y,
-            z: elevation
-          }
-        )
-      } else if (curve instanceof AcGeCircArc2d) {
-        pushCircArc2dBoundary(out, layer, matrix, curve, elevation)
-      } else if (curve instanceof AcGeEllipseArc2d) {
-        pushEllipseArc2dBoundary(out, layer, matrix, curve, elevation)
-      }
+  if (!(loop instanceof AcGeLoop2d)) return
+
+  const verts: AcExOsnapPathVertex[] = []
+  let splitByEllipse = false
+  const flushOpen = () => {
+    const packed = finalizePathVertices(verts)
+    if (packed.length >= 2) {
+      pushCatalogPath(out, layer, matrix, packed, false)
     }
+    verts.length = 0
+  }
+
+  for (const curve of loop.curves) {
+    if (curve instanceof AcGeLine2d) {
+      appendPathEdge(
+        verts,
+        {
+          x: curve.startPoint.x,
+          y: curve.startPoint.y,
+          z: elevation
+        },
+        {
+          x: curve.endPoint.x,
+          y: curve.endPoint.y,
+          z: elevation
+        },
+        0
+      )
+    } else if (curve instanceof AcGeCircArc2d) {
+      appendPathEdge(
+        verts,
+        {
+          x: curve.startPoint.x,
+          y: curve.startPoint.y,
+          z: elevation
+        },
+        {
+          x: curve.endPoint.x,
+          y: curve.endPoint.y,
+          z: elevation
+        },
+        circArc2dBulge(curve)
+      )
+    } else if (curve instanceof AcGeEllipseArc2d) {
+      splitByEllipse = true
+      flushOpen()
+      pushEllipseArc2dBoundary(out, layer, matrix, curve, elevation)
+    }
+  }
+
+  const packed = finalizePathVertices(verts)
+  if (packed.length >= 2) {
+    pushCatalogPath(out, layer, matrix, packed, !splitByEllipse)
   }
 }
 
 /**
- * Exports hatch boundary loops as line/arc/ellipse primitives.
+ * Exports hatch boundary loops as compact path primitives (plus ellipse edges).
  *
  * Reads internal `_geo.loops` from the data model, mirroring
  * {@link AcDbHatch.subGetOsnapPoints}.
@@ -1021,7 +1147,8 @@ function visitTableEntity(
   out: AcExOsnapPrimitive[],
   blockStack: Set<AcDbObjectId>,
   database: AcDbDatabase,
-  includeLayer?: (layerName: string) => boolean
+  includeLayer?: (layerName: string) => boolean,
+  exportFillBoundaries = true
 ) {
   const layer = effectiveLayer(entity.layer, insertLayer)
   if (includeLayer && !includeLayer(layer)) {
@@ -1031,7 +1158,16 @@ function visitTableEntity(
   if (block && !blockStack.has(block.objectId) && blockHasEntities(block)) {
     blockStack.add(block.objectId)
     const nested = composeTransforms(matrix, blockInsertTransform(entity))
-    visitBlock(block, nested, layer, out, blockStack, database, includeLayer)
+    visitBlock(
+      block,
+      nested,
+      layer,
+      out,
+      blockStack,
+      database,
+      includeLayer,
+      exportFillBoundaries
+    )
     blockStack.delete(block.objectId)
     return
   }
@@ -1067,11 +1203,43 @@ function pushRasterImage(
     }
   }
   if (boundary.length >= 2) {
-    pushVertexPath(out, layer, matrix, boundary, true)
+    pushCatalogPath(out, layer, matrix, boundary, true)
   }
 
   const insertion = transformPoint(matrix, entity.position)
   out.push({ kind: 'point', layer, x: insertion.x, y: insertion.y })
+}
+
+/**
+ * Exports OLE2FRAME rectangle corners and insertion (upper-left) point.
+ *
+ * @internal
+ */
+function pushOle2Frame(
+  out: AcExOsnapPrimitive[],
+  layer: string,
+  matrix: THREE.Matrix4,
+  entity: AcDbOle2Frame
+) {
+  const rect = entity.position()
+  pushCatalogPath(
+    out,
+    layer,
+    matrix,
+    [rect.upperLeft, rect.upperRight, rect.lowerRight, rect.lowerLeft],
+    true
+  )
+  const insertion = transformPoint(matrix, entity.getLocation())
+  out.push({ kind: 'point', layer, x: insertion.x, y: insertion.y })
+}
+
+function iterInsertAttributes(entity: AcExBlockReferenceLike): AcDbEntity[] {
+  const iterator = entity.attributeIterator?.()
+  if (!iterator) return []
+  if (typeof iterator.toArray === 'function') {
+    return iterator.toArray()
+  }
+  return [...iterator]
 }
 
 /**
@@ -1101,7 +1269,8 @@ function visitEntity(
   out: AcExOsnapPrimitive[],
   blockStack: Set<AcDbObjectId>,
   database: AcDbDatabase,
-  includeLayer?: (layerName: string) => boolean
+  includeLayer?: (layerName: string) => boolean,
+  exportFillBoundaries = true
 ) {
   if (!entity.visibility) return
 
@@ -1118,7 +1287,8 @@ function visitEntity(
       out,
       blockStack,
       database,
-      includeLayer
+      includeLayer,
+      exportFillBoundaries
     )
     return
   }
@@ -1127,17 +1297,58 @@ function visitEntity(
     const block = resolveBlockReferenceBlock(entity, database)
     if (!block || blockStack.has(block.objectId)) return
     blockStack.add(block.objectId)
-    const nested = composeTransforms(matrix, entity.getFullInsertionTransform())
+    const insertXform = entity.getFullInsertionTransform()
+    const cols = Math.max(1, entity.columnCount ?? 1)
+    const rows = Math.max(1, entity.rowCount ?? 1)
+    const colSp = entity.columnSpacing ?? 0
+    const rowSp = entity.rowSpacing ?? 0
     const blockInsertLayer = effectiveLayer(entity.layer, insertLayer)
-    visitBlock(
-      block,
-      nested,
-      blockInsertLayer,
-      out,
-      blockStack,
-      database,
-      includeLayer
-    )
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const nested = composeTransforms(matrix, insertXform)
+        if (col !== 0 || row !== 0) {
+          nested.multiply(
+            new THREE.Matrix4().makeTranslation(col * colSp, row * rowSp, 0)
+          )
+        }
+        const ins = transformPoint(nested, { x: 0, y: 0, z: 0 })
+        out.push({
+          kind: 'point',
+          layer: blockInsertLayer,
+          x: ins.x,
+          y: ins.y
+        })
+        visitBlock(
+          block,
+          nested,
+          blockInsertLayer,
+          out,
+          blockStack,
+          database,
+          includeLayer,
+          exportFillBoundaries
+        )
+      }
+    }
+    for (const attrib of iterInsertAttributes(entity)) {
+      if (
+        attrib instanceof AcDbAttribute
+          ? attrib.isInvisible
+          : Boolean((attrib as { isInvisible?: boolean }).isInvisible)
+      ) {
+        continue
+      }
+      visitEntity(
+        attrib,
+        matrix,
+        blockInsertLayer,
+        out,
+        blockStack,
+        database,
+        includeLayer,
+        exportFillBoundaries
+      )
+    }
     blockStack.delete(block.objectId)
     return
   }
@@ -1151,7 +1362,16 @@ function visitEntity(
       matrix,
       dimension.getFullDimBlockTransform()
     )
-    visitBlock(block, nested, layer, out, blockStack, database, includeLayer)
+    visitBlock(
+      block,
+      nested,
+      layer,
+      out,
+      blockStack,
+      database,
+      includeLayer,
+      false
+    )
     blockStack.delete(block.objectId)
     return
   }
@@ -1216,7 +1436,9 @@ function visitEntity(
   }
 
   if (entity instanceof AcDbHatch) {
-    pushHatch(out, layer, matrix, entity)
+    if (exportFillBoundaries) {
+      pushHatch(out, layer, matrix, entity)
+    }
     return
   }
 
@@ -1238,13 +1460,20 @@ function visitEntity(
   }
 
   if (entity instanceof AcDbTrace) {
-    const vertices = [
-      entity.getPointAt(0),
-      entity.getPointAt(1),
-      entity.getPointAt(2),
-      entity.getPointAt(3)
-    ]
-    pushVertexPath(out, layer, matrix, vertices, true)
+    if (exportFillBoundaries) {
+      pushCatalogPath(
+        out,
+        layer,
+        matrix,
+        [
+          entity.getPointAt(0),
+          entity.getPointAt(1),
+          entity.getPointAt(3),
+          entity.getPointAt(2)
+        ],
+        true
+      )
+    }
     return
   }
 
@@ -1286,8 +1515,17 @@ function visitEntity(
     return
   }
 
+  if (entity instanceof AcDbOle2Frame) {
+    if (exportFillBoundaries) {
+      pushOle2Frame(out, layer, matrix, entity)
+    }
+    return
+  }
+
   if (entity instanceof AcDbRasterImage) {
-    pushRasterImage(out, layer, matrix, entity)
+    if (exportFillBoundaries) {
+      pushRasterImage(out, layer, matrix, entity)
+    }
     return
   }
 
@@ -1305,7 +1543,8 @@ function visitBlock(
   out: AcExOsnapPrimitive[],
   blockStack: Set<AcDbObjectId>,
   database: AcDbDatabase,
-  includeLayer?: (layerName: string) => boolean
+  includeLayer?: (layerName: string) => boolean,
+  exportFillBoundaries = true
 ) {
   for (const entity of block.newIterator()) {
     visitEntity(
@@ -1315,7 +1554,8 @@ function visitBlock(
       out,
       blockStack,
       database,
-      includeLayer
+      includeLayer,
+      exportFillBoundaries
     )
   }
 }
@@ -1357,13 +1597,15 @@ function ellipseFromArc(entity: AcDbArc): AcDbEllipse {
  * `AcDbSpline`, `AcDbPolyline`, `AcDb2dPolyline`, `AcDb3dPolyline`, `AcDbHatch`,
  * `AcDbRay`, `AcDbXline`, `AcDbTrace`, `AcDbFace`, `AcDbLeader`, `AcDbMLine`,
  * `AcDbMLeader`, `AcDbText`, `AcDbMText`, `AcDbPoint`, `AcDbRasterImage`,
- * `AcDbTable`, INSERT, and dimension entities (`AcDbDimension` and subclasses
- * via anonymous dim blocks).
+ * `AcDbOle2Frame`, `AcDbTable`, INSERT / MINSERT (with ATTRIB), and dimension
+ * entities (`AcDbDimension` and subclasses via anonymous dim blocks). Hatch /
+ * TRACE / SOLID / IMAGE / OLE fills are stored as `path` primitives except
+ * inside dimension blocks (arrow solids are skipped).
  *
  * @param database - Open drawing database (same instance used for HTML export).
  * @param layoutBtrId - Object id of the layout's owning block table record
  *   (e.g. model space BTR id from the renderer scene).
- * @returns Catalog of analytic curve/point primitives in WCS (no `line` kinds).
+ * @returns Catalog of analytic curve/point/path primitives in WCS (no `line` kinds).
  *   Empty when the BTR id is unknown or the layout has no snap-capable curves.
  *
  * @example
@@ -1450,7 +1692,15 @@ function isFiniteOsnapPrimitive(primitive: AcExOsnapPrimitive): boolean {
       )
     case 'point':
       return Number.isFinite(primitive.x) && Number.isFinite(primitive.y)
-    default:
-      return false
+    case 'path':
+      return (
+        primitive.vertices.length >= 6 &&
+        primitive.vertices.length % 3 === 0 &&
+        primitive.vertices.every(value => Number.isFinite(value))
+      )
+    default: {
+      const _exhaustive: never = primitive
+      return _exhaustive
+    }
   }
 }

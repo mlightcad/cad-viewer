@@ -132,20 +132,36 @@ Batch records reuse the ACEX feature-flag scheme (`F_LINE_*`, `F_MESH_*`):
 ### Geometry chunking rules
 
 1. Split primarily **by layout**.
-2. If a layout’s estimated uncompressed size exceeds ~512 KiB, split further by
-   batch groups into `L{layoutIndex}-{slice:000}`.
-3. Empty layouts still emit one empty chunk so the layout remains addressable.
+2. If a layout’s estimated uncompressed size exceeds
+   `ACEX_DEFAULT_CHUNK_MAX_BYTES` (~2 MiB), split further by batch groups into
+   `L{layoutIndex}-{slice:000}`. Gzip typically compresses a 2 MiB slice to well
+   under 200 KiB; smaller slices add inflate round-trips and slow first open.
+3. Scene collection packs geometry **by layer** (and material). A single busy
+   layer can therefore be tens of megabytes in one line/mesh batch. Before
+   grouping into chunks, any batch larger than `ACEX_MAX_GEOMETRY_BATCH_BYTES`
+   (~2 MiB, same default as the chunk budget) is split into smaller batches of
+   the same layer and style. Hosts can then fetch, inflate, and paint those
+   pieces independently instead of waiting on the whole layer.
+4. Textured IMAGE/OLE mesh batches are **not** split (the bitmap cannot be
+   painted in fragments without duplicating the texture in every chunk).
+5. Empty layouts still emit one empty chunk so the layout remains addressable.
 
 ## OSNAP chunk (`*-osnap-*.osnap.gz`)
 
 Each file is **raw gzip** of one **ACEO** binary payload (measure-mode exports).
 Coordinates are IEEE-754 **float64**; layer names are dictionary-compressed.
 
-**Straight `line` primitives are not stored in ACEO.** They duplicate display
-`lineBatches` already downloaded for rendering. After geometry loads (and before
-CPU batch buffers are released), the viewer extracts snap segments from those
-batches and indexes them together with analytic ACEO curves (circle / arc /
-ellipse / spline / point, including polyline bulge arcs and hatch curve edges).
+**Straight drawing `line` primitives are not stored in ACEO.** They duplicate
+display `lineBatches` already downloaded for rendering. After geometry loads (and
+before CPU batch buffers are released), the viewer extracts snap segments from
+those batches and indexes them together with analytic ACEO curves (circle / arc /
+ellipse / spline / point, including polyline bulge arcs) **and compact `path`
+records** for mesh-drawn fill/frame boundaries (hatch loops, TRACE/SOLID,
+IMAGE/WIPEOUT clip polygons, OLE frames) and **wide LWPOLYLINE centerlines**
+(start/end width; drawn as `area` meshes, not `lineBatches`).
+
+Kind `7` (`path`) is part of ACEO **version 1**. The schema has not had a formal
+release, so adding this kind does not bump the version byte.
 
 Large curve catalogs are still split (~512 KiB estimated uncompressed per file)
 so hosts can fetch snap slices after the drawing is already visible.
@@ -155,14 +171,14 @@ so hosts can fetch snap slices after the drawing is already visible.
 | Field | Type | Description |
 |-------|------|-------------|
 | magic | `u32` | `0x4F454341` (`ACEO`) |
-| version | `u8` | Currently **1** |
+| version | `u8` | Currently **1** (includes kind `7` `path`) |
 | reserved | `u8` × 3 | Must be `0` |
 | layerCount | `u32` | |
 | layers | strings | Length-prefixed UTF-8 dictionary |
 | primitiveCount | `u32` | |
 | primitives | … | kind `u8` + layer index `u32` + kind-specific f64 fields |
 
-Kind codes: `1` line (legacy / unused on export), `2` circle, `3` arc, `4` ellipse, `5` spline, `6` point.
+Kind codes: `1` line (legacy / unused on export), `2` circle, `3` arc, `4` ellipse, `5` spline, `6` point, `7` path (`closed` `u8` + `f64` vertex pack `[x,y,bulge,…]`).
 
 ### OSNAP chunking rules
 
@@ -189,7 +205,7 @@ Kind codes: `1` line (legacy / unused on export), `2` circle, `3` arc, `4` ellip
 Self-contained HTML embeds one gzip+base64 **ACEX** snapshot
 (`magic 0x58454341`). The **same** snapshot builder is used as for multi-file
 packages: measure-mode OSNAP catalogs omit straight `line` primitives and keep
-only analytic curves/points. The offline runtime rebuilds line snap from the
+only analytic curves/points/paths. The offline runtime rebuilds line snap from the
 embedded `lineBatches` before releasing CPU buffers, so single-file HTML is
 smaller for line-heavy drawings without losing endpoint/midpoint snap.
 

@@ -11,7 +11,12 @@ import {
 /** Magic for ACEO osnap catalog payloads (`ACEO` little-endian). */
 export const ACEO_OSNAP_MAGIC = 0x4f454341
 
-/** Current ACEO payload schema version. */
+/**
+ * Current ACEO payload schema version.
+ *
+ * Kind `7` (`path`) is included in version 1; the format has not had a formal
+ * release, so adding a kind does not require a version bump.
+ */
 export const ACEO_OSNAP_VERSION = 1 as const
 
 /** Hard cap on primitives inside one ACEO chunk. */
@@ -26,6 +31,7 @@ const KIND_ARC = 3
 const KIND_ELLIPSE = 4
 const KIND_SPLINE = 5
 const KIND_POINT = 6
+const KIND_PATH = 7
 
 /**
  * Rough uncompressed ACEO size estimate for one primitive (used when splitting
@@ -46,6 +52,8 @@ export function estimateOsnapPrimitiveBytes(
       return 1 + 4 + 64 + 1 + 1
     case 'point':
       return 1 + 4 + 16
+    case 'path':
+      return 1 + 4 + 1 + 4 + primitive.vertices.length * 8
     case 'spline': {
       const floats =
         primitive.controlPoints.length +
@@ -284,6 +292,12 @@ function writePrimitive(
       writer.writeF64(primitive.x)
       writer.writeF64(primitive.y)
       return
+    case 'path':
+      writer.writeU8(KIND_PATH)
+      writer.writeU32(layer)
+      writer.writeU8(primitive.closed ? 1 : 0)
+      writeF64Array(writer, primitive.vertices)
+      return
     default: {
       const _exhaustive: never = primitive
       throw new Error(`Unsupported osnap primitive: ${String(_exhaustive)}`)
@@ -372,6 +386,16 @@ function readPrimitive(
         x: reader.readF64(),
         y: reader.readF64()
       }
+    case KIND_PATH: {
+      const closed = reader.readU8() !== 0
+      const vertices = readF64Array(reader)
+      return {
+        kind: 'path',
+        layer,
+        closed,
+        vertices
+      }
+    }
     default:
       throw new Error(`Unsupported osnap primitive kind: ${kind}`)
   }
