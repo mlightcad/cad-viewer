@@ -1,6 +1,6 @@
 import {
-  type AcApLocale,
   AcApDocManager,
+  type AcApLocale,
   AcApSettingManager,
   AcEdOpenMode,
   type AcEdUiTheme,
