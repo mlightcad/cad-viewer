@@ -2643,7 +2643,7 @@ watch(
 
 const fileMenuItems = computed<FileMenuItemModel[]>(() => {
   locale.value
-  return [
+  const items: FileMenuItemModel[] = [
     {
       id: 'QNew',
       label: t('main.mainMenu.new')
@@ -2655,8 +2655,10 @@ const fileMenuItems = computed<FileMenuItemModel[]>(() => {
     {
       id: 'DrawingUnits',
       label: t('main.mainMenu.drawingUnits')
-    },
-    {
+    }
+  ]
+  if (!AcApDocManager.instance.disableExport) {
+    items.push({
       id: 'Export',
       label: t('main.mainMenu.exportMenu'),
       divided: true,
@@ -2682,13 +2684,14 @@ const fileMenuItems = computed<FileMenuItemModel[]>(() => {
           label: t('main.mainMenu.exportImage')
         }
       ]
-    },
-    {
-      id: 'About',
-      label: t('main.mainMenu.about'),
-      divided: true
-    }
-  ]
+    })
+  }
+  items.push({
+    id: 'About',
+    label: t('main.mainMenu.about'),
+    divided: true
+  })
+  return items
 })
 
 const ribbonTexts = computed<RibbonLocaleTexts>(() => {
@@ -2744,6 +2747,16 @@ const handleHeaderRedo = () => {
 
 const handleFileMenuSelect = async (command: string) => {
   if (isRibbonDisabled.value) return
+  if (
+    AcApDocManager.instance.disableExport &&
+    (command === 'Convert' ||
+      command === 'ExportHtml' ||
+      command === 'ExportPdf' ||
+      command === 'ExportSvg' ||
+      command === 'PngOut')
+  ) {
+    return
+  }
   if (command === 'Convert') {
     const cmd = new AcApConvertToDxfCmd()
     cmd.trigger(AcApDocManager.instance.context)

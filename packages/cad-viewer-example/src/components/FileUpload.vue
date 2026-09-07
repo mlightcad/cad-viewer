@@ -240,7 +240,41 @@
             </div>
           </div>
 
-          <div class="setting-block setting-block--full">
+          <div class="setting-block">
+            <h3 class="setting-label">
+              {{ t('example.fileUpload.export') }}
+            </h3>
+            <div
+              class="pill-segment"
+              role="radiogroup"
+              :aria-label="t('example.fileUpload.export')"
+            >
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': !disableExport }"
+                role="radio"
+                :aria-checked="!disableExport"
+                :title="t('example.fileUpload.exportEnableHint')"
+                @click="disableExport = false"
+              >
+                {{ t('example.fileUpload.exportEnable') }}
+              </button>
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': disableExport }"
+                role="radio"
+                :aria-checked="disableExport"
+                :title="t('example.fileUpload.exportDisableHint')"
+                @click="disableExport = true"
+              >
+                {{ t('example.fileUpload.exportDisable') }}
+              </button>
+            </div>
+          </div>
+
+          <div class="setting-block">
             <h3 class="setting-label">
               {{ t('example.fileUpload.paperSpaceBackground') }}
             </h3>
@@ -304,7 +338,8 @@ interface Props {
     progressiveRendering: boolean,
     openViewMode: AcApOpenViewMode | undefined,
     circleSides: number,
-    paperSpaceBackground: number
+    paperSpaceBackground: number,
+    disableExport: boolean
   ) => void
   onNewDrawing?: (
     mode: AcEdOpenMode,
@@ -313,7 +348,8 @@ interface Props {
     progressiveRendering: boolean,
     openViewMode: AcApOpenViewMode | undefined,
     circleSides: number,
-    paperSpaceBackground: number
+    paperSpaceBackground: number,
+    disableExport: boolean
   ) => void
 }
 
@@ -329,6 +365,7 @@ const useMainThreadDraw = ref(false)
 const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
 const paperSpaceBackground = ref(ACGI_PAPER_SPACE_BACKGROUND)
+const disableExport = ref(false)
 
 const openViewModes = computed(() => [
   {
@@ -398,7 +435,8 @@ const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
         progressiveRendering.value,
         resolveOpenViewMode(),
         selectedCircleSides.value,
-        paperSpaceBackground.value
+        paperSpaceBackground.value,
+        disableExport.value
       )
     }
   }
@@ -412,7 +450,8 @@ const handleNewDrawing = () => {
     progressiveRendering.value,
     resolveOpenViewMode(),
     selectedCircleSides.value,
-    paperSpaceBackground.value
+    paperSpaceBackground.value,
+    disableExport.value
   )
 }
 

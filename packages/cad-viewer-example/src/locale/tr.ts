@@ -71,6 +71,12 @@ export default {
       paperSpaceBlack: 'Siyah',
       paperSpaceBlackHint: 'Web görüntüleyici tercihi',
 
+      export: 'Dışa aktarma',
+      exportEnable: 'Etkin',
+      exportEnableHint: 'DXF/HTML/PDF/SVG/PNG dışa aktarmaya izin ver',
+      exportDisable: 'Devre dışı',
+      exportDisableHint: 'Dışa aktarma komutlarını ve File menü öğelerini gizle',
+
       invalidFileType:
         'Geçersiz dosya türü. Lütfen DWG veya DXF dosyaları yükleyin.'
     }

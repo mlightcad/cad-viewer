@@ -40,6 +40,12 @@ import {
   patchDrawableMaterialFromCache,
   syncStyleMaterialIdFromMaterials
 } from '../util/AcTrObjectUserData'
+import {
+  isThreeLineSegments,
+  isThreeLineSegments2,
+  isThreeMesh,
+  isThreePoints
+} from '../util/AcTrThreeObjectGuards'
 import { isObjectHierarchyVisible } from '../util/AcTrVisibility'
 import { AcTrBatchGeometryUserData } from './AcTrBatchedGeometryInfo'
 import { AcTrBatchedLine } from './AcTrBatchedLine'
@@ -1046,7 +1052,10 @@ export class AcTrBatchedGroup extends THREE.Group {
         return
       }
 
-      if (object instanceof LineSegments2) {
+      // Duck-type across duplicate three.js copies (mtext-renderer vs app).
+      // `instanceof` silently drops glyph LineSegments/Meshes — see
+      // AcTrThreeObjectGuards.
+      if (isThreeLineSegments2(object)) {
         const item = this.addLine2(object, {
           objectId,
           bboxIntersectionCheck: bboxIntersectionCheck
@@ -1058,7 +1067,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         return
       }
 
-      if (object instanceof THREE.LineSegments) {
+      if (isThreeLineSegments(object)) {
         const item = this.addLine(object, {
           position: drawableUserData.position,
           objectId,
@@ -1068,7 +1077,7 @@ export class AcTrBatchedGroup extends THREE.Group {
           entityInfo.push(item)
           this.applyBatchSlotVisibility(item, entityVisible && object.visible)
         }
-      } else if (object instanceof THREE.Mesh) {
+      } else if (isThreeMesh(object)) {
         const item = this.addMesh(
           object,
           {
@@ -1081,7 +1090,7 @@ export class AcTrBatchedGroup extends THREE.Group {
           entityInfo.push(item)
           this.applyBatchSlotVisibility(item, entityVisible && object.visible)
         }
-      } else if (object instanceof THREE.Points) {
+      } else if (isThreePoints(object)) {
         const item = this.addPoint(object, {
           objectId,
           bboxIntersectionCheck: bboxIntersectionCheck

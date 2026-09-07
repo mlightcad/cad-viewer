@@ -20,6 +20,7 @@ import {
   getSceneDrawableUserData,
   resolveMTextRenderRoot
 } from '../util/AcTrObjectUserData'
+import { isThreeGeometryLeaf } from '../util/AcTrThreeObjectGuards'
 import { AcTrEntity } from './AcTrEntity'
 
 /** Scratch box reused by {@link AcTrGlyphEntity.raycast} during bbox fallback. */
@@ -372,8 +373,6 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
   protected hasGeometry(
     object: THREE.Object3D
   ): object is THREE.Mesh | THREE.Line | THREE.Points {
-    return (
-      'geometry' in object && object.geometry instanceof THREE.BufferGeometry
-    )
+    return isThreeGeometryLeaf(object)
   }
 }

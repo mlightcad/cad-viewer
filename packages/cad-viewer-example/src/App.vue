@@ -20,6 +20,7 @@
         :open-view-mode="openViewMode"
         :circle-sides="circleSides"
         :paper-space-background="paperSpaceBackground"
+        :disable-export="disableExport"
         @create="onViewerCreate"
         :base-url="BASE_URL"
       />
@@ -97,6 +98,7 @@ const progressiveRendering = ref(false)
 const openViewMode = ref<AcApOpenViewMode | undefined>(undefined)
 const circleSides = ref(ACDB_DRAW_CIRCLE_SIDES_DRAFT)
 const paperSpaceBackground = ref(ACGI_PAPER_SPACE_BACKGROUND)
+const disableExport = ref(false)
 
 const createNewDrawing = async () => {
   const success = await AcApDocManager.instance.newDocument({
@@ -129,7 +131,8 @@ const applyOpenOptions = (
   enableProgressiveRendering: boolean,
   viewMode: AcApOpenViewMode | undefined,
   sides: number,
-  paperBg: number
+  paperBg: number,
+  exportDisabled: boolean
 ) => {
   selectedMode.value = mode
   useMainThreadDraw.value = mainThreadDraw
@@ -138,6 +141,7 @@ const applyOpenOptions = (
   openViewMode.value = viewMode
   circleSides.value = sides
   paperSpaceBackground.value = paperBg
+  disableExport.value = exportDisabled
 }
 
 // Handle file selection from upload component
@@ -149,7 +153,8 @@ const handleFileSelect = (
   enableProgressiveRendering: boolean,
   viewMode: AcApOpenViewMode | undefined,
   sides: number,
-  paperBg: number
+  paperBg: number,
+  exportDisabled: boolean
 ) => {
   store.isNewDrawing = false
   store.selectedFile = file
@@ -160,7 +165,8 @@ const handleFileSelect = (
     enableProgressiveRendering,
     viewMode,
     sides,
-    paperBg
+    paperBg,
+    exportDisabled
   )
 }
 
@@ -171,7 +177,8 @@ const handleNewDrawing = (
   enableProgressiveRendering: boolean,
   viewMode: AcApOpenViewMode | undefined,
   sides: number,
-  paperBg: number
+  paperBg: number,
+  exportDisabled: boolean
 ) => {
   store.selectedFile = null
   store.isNewDrawing = true
@@ -182,7 +189,8 @@ const handleNewDrawing = (
     enableProgressiveRendering,
     viewMode,
     sides,
-    paperBg
+    paperBg,
+    exportDisabled
   )
 }
 </script>

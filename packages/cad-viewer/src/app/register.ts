@@ -50,6 +50,7 @@ let isCommandRegistered = false
 export const registerCmds = () => {
   if (!isCommandRegistered) {
     const register = AcApDocManager.instance.commandManager
+    const disableExport = AcApDocManager.instance.disableExport
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'layer',
@@ -86,12 +87,14 @@ export const registerCmds = () => {
       'qselect',
       new AcApQSelectCmd()
     )
-    register.addCommand(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      'chtml',
-      'chtml',
-      new AcApExportHtmlDlgCmd()
-    )
+    if (!disableExport) {
+      register.addCommand(
+        AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+        'chtml',
+        'chtml',
+        new AcApExportHtmlDlgCmd()
+      )
+    }
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'units',
@@ -172,6 +175,7 @@ let isDialogRegistered = false
 export const registerDialogs = () => {
   if (!isDialogRegistered) {
     const { registerDialog } = useDialogManager()
+    const disableExport = AcApDocManager.instance.disableExport
     registerDialog({
       name: 'PointStyleDlg',
       component: markRaw(MlPointStyleDlg),
@@ -182,11 +186,13 @@ export const registerDialogs = () => {
       component: markRaw(MlQuickSelectDlg),
       props: {}
     })
-    registerDialog({
-      name: 'ExportHtmlDlg',
-      component: markRaw(MlExportHtmlDlg),
-      props: {}
-    })
+    if (!disableExport) {
+      registerDialog({
+        name: 'ExportHtmlDlg',
+        component: markRaw(MlExportHtmlDlg),
+        props: {}
+      })
+    }
     registerDialog({
       name: 'DrawingUnitsDlg',
       component: markRaw(MlDrawingUnitsDlg),
@@ -267,6 +273,8 @@ export interface RegisterLazyPluginsOptions {
  * Currently registers the PDF plugin (`cpdf`, `ipdf`), the HTML export
  * plugin (`-chtml`), the SVG export plugin (`csvg`), and optionally the CAD
  * Agent plugin (`agent`) when `@mlightcad/cad-agent-plugin` is installed.
+ * When {@link AcApDocManager.disableExport} is true, HTML/SVG export plugins
+ * are skipped and the PDF plugin only exposes `ipdf`.
  * Safe to call multiple times; registration runs once per application lifetime.
  *
  * @param options - Optional HTML plugin settings such as `viewerRuntimeUrl`
@@ -279,9 +287,12 @@ export const registerLazyPlugins = (
   }
 
   const pluginManager = AcApDocManager.instance.pluginManager
-  registerLazyPdfPlugin(pluginManager)
-  registerLazyHtmlPlugin(pluginManager, options.htmlPlugin)
-  registerLazySvgPlugin(pluginManager)
+  const disableExport = AcApDocManager.instance.disableExport
+  registerLazyPdfPlugin(pluginManager, { disableExport })
+  if (!disableExport) {
+    registerLazyHtmlPlugin(pluginManager, options.htmlPlugin)
+    registerLazySvgPlugin(pluginManager)
+  }
 
   if (!isAgentIntegrationStarted) {
     isAgentIntegrationStarted = true

@@ -364,6 +364,16 @@ export interface AcApDocManagerOptions {
   builtinOpenFileDialog?: boolean
 
   /**
+   * When true, drawing export commands are not registered (`cdxf`, `pngout`,
+   * and host UI / lazy plugins for HTML, PDF, SVG export). Defaults to false
+   * (export remains enabled).
+   *
+   * Useful for deployments that must hide export entry points. This is a
+   * product/UX gate, not a DRM boundary: drawing data still exists in memory.
+   */
+  disableExport?: boolean
+
+  /**
    * Default options for files opened through the built-in OPEN command dialog.
    *
    * Can be updated later via {@link AcApDocManager.setOpenDocumentDefaults}.
@@ -428,6 +438,8 @@ export class AcApDocManager {
   private _commandAliasOverrides: Map<string, string[]>
   /** Default options for the built-in OPEN file dialog */
   private _openDocumentDefaults?: AcApOpenDocumentDefaultsResolver
+  /** Whether drawing export commands and related UI entry points are disabled */
+  private _disableExport: boolean
   /** Singleton instance */
   private static _instance?: AcApDocManager
   /** Worker URLs configured at initialization */
@@ -473,6 +485,7 @@ export class AcApDocManager {
       options.commandAliases
     )
     this._openDocumentDefaults = options.openDocumentDefaults
+    this._disableExport = options.disableExport === true
     if (options.useMainThreadDraw) {
       AcTrMTextRenderer.getInstance().setRenderMode('main')
     } else {
@@ -1010,6 +1023,14 @@ export class AcApDocManager {
   }
 
   /**
+   * Whether drawing export commands (and host export UI) are disabled.
+   * Set via {@link AcApDocManagerOptions.disableExport}; defaults to false.
+   */
+  get disableExport() {
+    return this._disableExport
+  }
+
+  /**
    * Resolves colors for creating new entities.
    *
    * Returns:
@@ -1090,7 +1111,7 @@ export class AcApDocManager {
    *
    * This method loads either the specified fonts or the configured default font
    * fallback chains ({@link DEFAULT_FONTS_PRESET}, currently `modern`: text
-   * `hztxt` 鈫?`simsun`, symbol `amgdt`) if no fonts are provided. The loaded
+   * `simsun` → `hztxt`, symbol `amgdt`) if no fonts are provided. The loaded
    * fonts are used for rendering CAD text entities like MText and Text in the viewer.
    *
    * It is better to load default fonts when viewer is initialized so that the viewer can
@@ -1596,8 +1617,8 @@ export class AcApDocManager {
    * Registers all default commands available in the CAD viewer.
    *
    * This method sets up the command system by registering built-in commands including:
-   * - cdxf: Convert to DXF
-   * - pngout: Export to PNG
+   * - cdxf: Convert to DXF (when {@link AcApDocManagerOptions.disableExport} is false)
+   * - pngout: Export to PNG (when {@link AcApDocManagerOptions.disableExport} is false)
    * - log: Output debug information in console
    * - open: Open document
    * - qnew: Quick new document
@@ -1642,8 +1663,10 @@ export class AcApDocManager {
     addSystemCommand('cachefont', 'cachefont', new AcApCacheFontCmd())
     addSystemCommand('circle', 'circle', new AcApCircleCmd())
     addSystemCommand('close', 'close', new AcApCloseCmd())
-    addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
-    addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
+    if (!this._disableExport) {
+      addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
+      addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
+    }
     addSystemCommand('entout', 'entout', new AcApEntityPreviewCmd())
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())

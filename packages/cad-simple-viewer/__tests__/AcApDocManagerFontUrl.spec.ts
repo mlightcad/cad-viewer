@@ -356,6 +356,43 @@ describe('AcApDocManager font URL configuration', () => {
   })
 })
 
+describe('AcApDocManager disableExport', () => {
+  beforeEach(() => {
+    ;(AcApDocManager as unknown as { _instance: unknown })._instance = undefined
+  })
+
+  it('defaults to enabling export commands', () => {
+    const manager = AcApDocManager.createInstance({})
+    expect(manager?.disableExport).toBe(false)
+
+    const addCommand = (
+      manager!.commandManager as unknown as { addCommand: jest.Mock }
+    ).addCommand
+    const registered = addCommand.mock.calls.map(
+      (call: unknown[]) => call[1] as string
+    )
+    expect(registered).toContain('cdxf')
+    expect(registered).toContain('pngout')
+  })
+
+  it('skips built-in export commands when disableExport is true', () => {
+    const manager = AcApDocManager.createInstance({
+      disableExport: true
+    })
+    expect(manager?.disableExport).toBe(true)
+
+    const addCommand = (
+      manager!.commandManager as unknown as { addCommand: jest.Mock }
+    ).addCommand
+    const registered = addCommand.mock.calls.map(
+      (call: unknown[]) => call[1] as string
+    )
+    expect(registered).not.toContain('cdxf')
+    expect(registered).not.toContain('pngout')
+    expect(registered).toContain('open')
+  })
+})
+
 describe('AcApDocManager document sessions', () => {
   beforeEach(() => {
     ;(AcApDocManager as unknown as { _instance: unknown })._instance = undefined

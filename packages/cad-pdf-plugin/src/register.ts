@@ -19,13 +19,21 @@ export const PDF_PLUGIN_TRIGGERS = ['cpdf', 'ipdf'] as const
  *
  * @param pluginManager - Plugin manager that receives the lazy registration
  */
-export function registerLazyPdfPlugin(pluginManager: AcApPluginManager): void {
+export function registerLazyPdfPlugin(
+  pluginManager: AcApPluginManager,
+  options: { disableExport?: boolean } = {}
+): void {
+  const disableExport = options.disableExport === true
+  const triggers = disableExport
+    ? (['ipdf'] as const)
+    : [...PDF_PLUGIN_TRIGGERS]
+
   pluginManager.registerLazyPlugin({
     name: PDF_PLUGIN_NAME,
-    triggers: [...PDF_PLUGIN_TRIGGERS],
+    triggers: [...triggers],
     loader: async () => {
       const { createPdfPlugin } = await import('@mlightcad/cad-pdf-plugin')
-      return createPdfPlugin()
+      return createPdfPlugin({ disableExport })
     }
   })
 }

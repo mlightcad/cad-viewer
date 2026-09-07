@@ -8,6 +8,13 @@ import packageJson from '../package.json'
 import { AcApConvertToPdfCmd } from './AcApConvertToPdfCmd'
 import { AcApImportPdfCmd } from './AcApImportPdfCmd'
 
+export interface AcApPdfPluginOptions {
+  /**
+   * When true, only `ipdf` is registered. Defaults to false.
+   */
+  disableExport?: boolean
+}
+
 /**
  * PDF export/import plugin for cad-simple-viewer.
  *
@@ -22,23 +29,29 @@ export class AcApPdfPlugin implements AcApPlugin {
   /** @inheritdoc */
   description = 'PDF export (cpdf) and import (ipdf) commands'
 
+  private readonly _disableExport: boolean
+
   /** Commands registered in {@link onLoad} for cleanup in {@link onUnload}. */
   private registeredCommands: Array<{ group: string; name: string }> = []
 
+  constructor(options: AcApPdfPluginOptions = {}) {
+    this._disableExport = options.disableExport === true
+  }
+
   /**
-   * Registers `cpdf` and `ipdf` system commands.
+   * Registers `cpdf` (when export is enabled) and `ipdf` system commands.
    *
    * @param _context - Application context (unused)
    * @param commandManager - Command stack used to register PDF commands
    */
   onLoad(_context: AcApContext, commandManager: AcEdCommandStack): void {
     const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
-    commandManager.addCommand(group, 'cpdf', 'cpdf', new AcApConvertToPdfCmd())
+    if (!this._disableExport) {
+      commandManager.addCommand(group, 'cpdf', 'cpdf', new AcApConvertToPdfCmd())
+      this.registeredCommands.push({ group, name: 'cpdf' })
+    }
     commandManager.addCommand(group, 'ipdf', 'ipdf', new AcApImportPdfCmd())
-    this.registeredCommands.push(
-      { group, name: 'cpdf' },
-      { group, name: 'ipdf' }
-    )
+    this.registeredCommands.push({ group, name: 'ipdf' })
   }
 
   /**

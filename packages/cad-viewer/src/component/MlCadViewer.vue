@@ -158,6 +158,12 @@ interface Props {
    */
   docsBaseUrl?: string
   /**
+   * When true, drawing export commands are not registered and the File menu
+   * Export submenu is hidden. Forwarded to {@link AcApDocManagerOptions.disableExport}.
+   * Defaults to false (export remains enabled).
+   */
+  disableExport?: boolean
+  /**
    * URL of the offline HTML viewer runtime (`viewer-runtime.iife.js`).
    * Used only for File menu “Export to HTML”. Copy the file from
    * `@mlightcad/cad-html-plugin` into your app assets when you need HTML export.
@@ -217,6 +223,7 @@ const props = withDefaults(defineProps<Props>(), {
   background: undefined,
   baseUrl: undefined,
   docsBaseUrl: undefined,
+  disableExport: false,
   htmlViewerRuntimeUrl: './assets/viewer-runtime.iife.js',
   useMainThreadDraw: true,
   theme: 'dark',
@@ -502,6 +509,7 @@ onMounted(async () => {
       busyIndicatorHost: layoutRef.value,
       baseUrl: props.baseUrl,
       docsBaseUrl: props.docsBaseUrl,
+      disableExport: props.disableExport,
       htmlViewerRuntimeUrl: props.htmlViewerRuntimeUrl,
       autoResize: true,
       useMainThreadDraw: props.useMainThreadDraw,

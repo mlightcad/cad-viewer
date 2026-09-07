@@ -71,6 +71,12 @@ export default {
       paperSpaceBlack: '黑色',
       paperSpaceBlackHint: 'Web 查看器常用',
 
+      export: '导出',
+      exportEnable: '启用',
+      exportEnableHint: '允许 DXF/HTML/PDF/SVG/PNG 导出',
+      exportDisable: '禁用',
+      exportDisableHint: '隐藏导出命令与 File 菜单项',
+
       invalidFileType: '文件类型无效，请上传 DWG 或 DXF 文件。'
     }
   }
