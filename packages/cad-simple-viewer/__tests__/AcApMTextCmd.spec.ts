@@ -5,6 +5,7 @@ jest.mock('../src/app', () => ({
   AcApDocManager: {
     instance: {
       avaiableFonts: [],
+      getAvaiableFonts: jest.fn(async () => []),
       editor: {
         getBox: mockGetBox
       }

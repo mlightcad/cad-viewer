@@ -993,7 +993,11 @@ export default {
       failedToOpenFileLicenseInvalid: '许可证无效',
       fontNotFound: '找不到字体',
       fontNotLoaded: '无法加载字体',
-      parsingWarning: '解析图纸问题'
+      parsingWarning: '解析图纸问题',
+      systemMessage: '系统消息',
+      systemWarning: '系统警告',
+      systemError: '系统错误',
+      systemInfo: '系统信息'
     }
   }
 }

@@ -85,7 +85,8 @@ import {
   AcEdCalculateSizeCallback,
   AcEdCommand,
   AcEdCommandStack,
-  AcEdOpenMode
+  AcEdOpenMode,
+  eventBus
 } from '../editor'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
 import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser'
@@ -539,9 +540,10 @@ export class AcApDocManager {
     acapBindMarkupSession(this._activeSession.id)
 
     this._fontLoader = new AcApFontLoader()
+    // Share one DefaultFontLoader cache between UI catalog and on-demand draws.
+    FontManager.instance.setFontLoader(this._fontLoader.fontLoader)
     const fontsUrl = this.resolveFontsBaseUrl()
     this._fontLoader.baseUrl = fontsUrl
-    // On-demand loads go through FontManager's loader, not AcApFontLoader.
     FontManager.instance.baseUrl = fontsUrl
     acdbHostApplicationServices().workingDatabase = doc.database
 
@@ -1084,11 +1086,29 @@ export class AcApDocManager {
    * Gets the list of available fonts that can be loaded.
    *
    * Note: These fonts are available for loading but may not be loaded yet.
+   * Prefer {@link getAvaiableFonts} when the catalog may not have been fetched yet
+   * (lazy font loading no longer preloads metadata at viewer init).
    *
    * @returns Array of available font names
    */
   get avaiableFonts() {
     return this._fontLoader.avaiableFonts
+  }
+
+  /**
+   * Fetches font repository metadata (`fonts.json`) if not already cached.
+   * Emits `failed-to-get-avaiable-fonts` and returns `[]` when the catalog cannot
+   * be retrieved.
+   */
+  async getAvaiableFonts() {
+    try {
+      return await this._fontLoader.getAvaiableFonts()
+    } catch {
+      eventBus.emit('failed-to-get-avaiable-fonts', {
+        url: this._fontLoader.baseUrl
+      })
+      return []
+    }
   }
 
   /**

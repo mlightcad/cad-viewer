@@ -1530,7 +1530,11 @@ export default {
       fontNotFound: 'الخط غير موجود',
       fontNotLoaded: 'لم يتم تحميل الخط',
 
-      parsingWarning: 'مشكلات أثناء تحليل الرسم'
+      parsingWarning: 'مشكلات أثناء تحليل الرسم',
+      systemMessage: 'رسالة النظام',
+      systemWarning: 'تحذير النظام',
+      systemError: 'خطأ النظام',
+      systemInfo: 'معلومات النظام'
     }
   }
 

@@ -586,16 +586,16 @@ eventBus.on('message', params => {
   // Also add to notification center
   switch (params.type) {
     case 'success':
-      success('System Message', params.message)
+      success(t('main.notification.title.systemMessage'), params.message)
       break
     case 'warning':
-      warning('System Warning', params.message)
+      warning(t('main.notification.title.systemWarning'), params.message)
       break
     case 'error':
-      error('System Error', params.message)
+      error(t('main.notification.title.systemError'), params.message)
       break
     default:
-      info('System Info', params.message)
+      info(t('main.notification.title.systemInfo'), params.message)
       break
   }
 })

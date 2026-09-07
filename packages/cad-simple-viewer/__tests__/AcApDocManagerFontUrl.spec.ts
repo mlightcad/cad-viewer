@@ -4,6 +4,8 @@ class MockAcApFontLoader {
   private _baseUrl = ''
   load = jest.fn(() => Promise.resolve())
   avaiableFonts = []
+  fontLoader = {}
+  getAvaiableFonts = jest.fn(async () => [])
 
   constructor() {
     mockFontLoaderInstances.push(this)
