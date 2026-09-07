@@ -807,7 +807,8 @@ export default {
     switchBg: {
       ...enMain.verticalToolbar.switchBg,
       text: 'تبديل',
-      description: 'التبديل بين خلفية الرسم السوداء والبيضاء'
+      description: 'التبديل بين خلفية الرسم السوداء والبيضاء',
+      disabledInReadingMode: 'غير متاح أثناء وضع القراءة (اللوحة البيضاء ثابتة)'
     },
 
     zoomToExtent: {

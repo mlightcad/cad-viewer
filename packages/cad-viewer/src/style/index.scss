@@ -5,12 +5,29 @@
   --ml-status-bar-height: 30px;
 }
 
+html,
+body {
+  // Teleported tooltips (e.g. right-docked toolbar) must not grow page width.
+  overflow-x: hidden;
+}
+
 body {
   font-family: Inter, system-ui, Avenir, "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB",
     "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
+}
+
+/**
+ * Constrain Element Plus tooltips so long CJK descriptions wrap instead of
+ * extending past the right edge of a right-docked toolbar.
+ */
+.el-popper[role='tooltip'] {
+  max-width: min(280px, calc(100vw - 24px));
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 a {

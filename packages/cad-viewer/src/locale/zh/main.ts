@@ -532,11 +532,12 @@ export default {
     },
     switchBg: {
       text: '切换背景色',
-      description: '在白色与黑色之间切换绘图背景色'
+      description: '在白色与黑色之间切换绘图背景色',
+      disabledInReadingMode: '阅读模式下不可用（白底固定）'
     },
     readingMode: {
       text: '阅读模式',
-      description: '切换阅读模式：白底黑线，便于阅读复杂图纸'
+      description: '切换阅读模式（白底黑线，便于审阅）'
     },
     zoomToExtent: {
       text: '范围缩放',

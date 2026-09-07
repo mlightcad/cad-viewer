@@ -566,7 +566,9 @@ export default {
     },
     switchBg: {
       text: 'Pozadí',
-      description: 'Přepne pozadí výkresu mezi bílým a černým'
+      description: 'Přepne pozadí výkresu mezi bílým a černým',
+      disabledInReadingMode:
+        'Nedostupné v režimu čtení (bílé plátno je pevné)'
     },
     zoomToExtent: {
       text: 'Zoom vše',
