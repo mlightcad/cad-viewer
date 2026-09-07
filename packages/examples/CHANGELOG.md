@@ -1,5 +1,11 @@
 # @mlightcad/cad-viewer-examples
 
+## 1.7.0
+
+### Minor Changes
+
+- feat: expands mobile and touch review with responsive phone/pad toolbars, a long-press snap loupe, confirmed pick marks, and a command session panel with live metrics. Measurement gains continuous distance, a results list palette, endpoint grips with osnap, unit conversion, and zoom-scaled hairline overlays. HTML export adds multi-file ACEX packages, paper-space background choice, and lazy font catalogs, plus reading mode and a VitePress multi-language docs site
+
 ## 1.6.3
 
 ### Patch Changes
