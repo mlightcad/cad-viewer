@@ -1,4 +1,5 @@
 import {
+  AcApDocManager,
   type AcApLocale,
   AcApSettingManager,
   AcEdOpenMode,
@@ -207,6 +208,40 @@ function acuiCreateSimulatedMouseToolbarItem(): AcUiToolbarItem {
         label: 'toolbar.simulatedMouseOff',
         icon: ICON_SIMULATED_MOUSE,
         action: toggle
+      }
+    }
+  }
+}
+
+/** Whether transient reading mode is active on the current view. */
+function acuiIsReadingModeEnabled(): boolean {
+  try {
+    return AcApDocManager.instance.isReadingModeEnabled()
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Builds the reading-mode toggle (black linework on a white canvas).
+ *
+ * @returns Toggle toolbar item bound to the `readingmode` command.
+ */
+function acuiCreateReadingModeToolbarItem(): AcUiToolbarItem {
+  return {
+    id: 'reading-mode',
+    requiresDocument: true,
+    toggle: {
+      getValue: acuiIsReadingModeEnabled,
+      on: {
+        label: 'toolbar.readingMode',
+        icon: ICON_READING_MODE,
+        command: 'readingmode'
+      },
+      off: {
+        label: 'toolbar.readingMode',
+        icon: ICON_READING_MODE,
+        command: 'readingmode'
       }
     }
   }
@@ -460,15 +495,12 @@ export function acuiCreateSettingsToolbarItem(
         id: 'switch-bg',
         label: 'toolbar.switchBg',
         icon: ICON_SWITCH_BG,
-        command: 'switchbg'
+        command: 'switchbg',
+        // Reading mode forces a white canvas; switching background has no
+        // visible effect until reading mode is turned off.
+        disabled: acuiIsReadingModeEnabled
       },
-      {
-        id: 'reading-mode',
-        label: 'toolbar.readingMode',
-        icon: ICON_READING_MODE,
-        requiresDocument: true,
-        command: 'readingmode'
-      },
+      acuiCreateReadingModeToolbarItem(),
       acuiCreateToolbarLocaleItem(context)
     ]
   }

@@ -6,7 +6,15 @@ import {
   isMeasurementVisible
 } from '@mlightcad/cad-simple-viewer'
 import { MlButtonData, MlToolBar } from '@mlightcad/ui-components'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import {
+  type Component,
+  computed,
+  defineComponent,
+  h,
+  onMounted,
+  onUnmounted,
+  ref
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useDocument, useSettings } from '../../composable'
@@ -50,6 +58,23 @@ const { isDocumentOpening, openMode: docOpenMode } = useDocument()
 const isToolbarDisabled = computed(() => isDocumentOpening.value)
 const markupVisible = ref(isMarkupVisible())
 const measurementVisible = ref(isMeasurementVisible())
+const readingModeEnabled = ref(false)
+
+/** Marks the reading-mode "on" icon so toolbar CSS can highlight the button. */
+const readingModeOnIcon: Component = defineComponent({
+  name: 'IconReadingModeOn',
+  setup() {
+    return () => h(readingMode, { 'data-reading-mode-on': '' })
+  }
+})
+
+/** Marks switch-bg as visually disabled while reading mode owns the canvas. */
+const switchBgDisabledIcon: Component = defineComponent({
+  name: 'IconSwitchBgDisabled',
+  setup() {
+    return () => h(switchBg, { 'data-toolbar-disabled': '' })
+  }
+})
 
 const syncMarkupVisibility = () => {
   markupVisible.value = isMarkupVisible()
@@ -59,22 +84,35 @@ const syncMeasurementVisibility = () => {
   measurementVisible.value = isMeasurementVisible()
 }
 
+const syncReadingMode = () => {
+  try {
+    readingModeEnabled.value = AcApDocManager.instance.isReadingModeEnabled()
+  } catch {
+    readingModeEnabled.value = false
+  }
+}
+
 onMounted(() => {
   const docs = AcApDocManager.instance
   docs.editor.events.commandEnded.addEventListener(syncMarkupVisibility)
   docs.editor.events.commandEnded.addEventListener(syncMeasurementVisibility)
+  docs.editor.events.commandEnded.addEventListener(syncReadingMode)
   docs.events.documentActivated.addEventListener(syncMarkupVisibility)
   docs.events.documentActivated.addEventListener(syncMeasurementVisibility)
+  docs.events.documentActivated.addEventListener(syncReadingMode)
   syncMarkupVisibility()
   syncMeasurementVisibility()
+  syncReadingMode()
 })
 
 onUnmounted(() => {
   const docs = AcApDocManager.instance
   docs.editor.events.commandEnded.removeEventListener(syncMarkupVisibility)
   docs.editor.events.commandEnded.removeEventListener(syncMeasurementVisibility)
+  docs.editor.events.commandEnded.removeEventListener(syncReadingMode)
   docs.events.documentActivated.removeEventListener(syncMarkupVisibility)
   docs.events.documentActivated.removeEventListener(syncMeasurementVisibility)
+  docs.events.documentActivated.removeEventListener(syncReadingMode)
 })
 
 const toolbarSeparator = { type: 'separator' } as MlButtonData
@@ -102,6 +140,7 @@ const visibilityToggle = (
 })
 
 const verticalToolbarData = computed(() => {
+  const readingOn = readingModeEnabled.value
   const items: MlButtonData[] = [
     {
       icon: select,
@@ -134,16 +173,28 @@ const verticalToolbarData = computed(() => {
       description: t('main.verticalToolbar.layer.description')
     },
     {
-      icon: switchBg,
+      icon: readingOn ? switchBgDisabledIcon : switchBg,
       text: t('main.verticalToolbar.switchBg.text'),
       command: 'switchbg',
-      description: t('main.verticalToolbar.switchBg.description')
+      description: readingOn
+        ? t('main.verticalToolbar.switchBg.disabledInReadingMode')
+        : t('main.verticalToolbar.switchBg.description')
     },
     {
-      icon: readingMode,
-      text: t('main.verticalToolbar.readingMode.text'),
       command: 'readingmode',
-      description: t('main.verticalToolbar.readingMode.description')
+      toggle: {
+        value: readingOn,
+        on: {
+          icon: readingModeOnIcon,
+          text: t('main.verticalToolbar.readingMode.text'),
+          description: t('main.verticalToolbar.readingMode.description')
+        },
+        off: {
+          icon: readingMode,
+          text: t('main.verticalToolbar.readingMode.text'),
+          description: t('main.verticalToolbar.readingMode.description')
+        }
+      }
     },
     {
       icon: measure,
@@ -325,6 +376,7 @@ const verticalToolbarData = computed(() => {
 
 const handleCommand = (command?: string) => {
   if (isToolbarDisabled.value || !command) return
+  if (command === 'switchbg' && readingModeEnabled.value) return
   AcApDocManager.instance.sendStringToExecute(command)
 }
 
@@ -365,6 +417,19 @@ const handleToggle = (command: string) => {
   opacity: 0.6;
   pointer-events: none;
   user-select: none;
+}
+
+/* MlToolBar toggles do not apply is-selected; highlight reading mode via icon mark. */
+.ml-vertical-toolbar-container .ml-toolbar-button:has([data-reading-mode-on]) {
+  color: var(--el-button-hover-text-color);
+  background-color: var(--el-button-hover-bg-color);
+  border-color: var(--el-button-hover-border-color);
+}
+
+.ml-vertical-toolbar-container .ml-toolbar-button:has([data-toolbar-disabled]) {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
 }
 
 .acap-svg-icon {

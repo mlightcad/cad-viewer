@@ -574,7 +574,9 @@ export default {
     },
     switchBg: {
       text: 'Switch',
-      description: 'Switches the drawing background between white and black'
+      description: 'Switches the drawing background between white and black',
+      disabledInReadingMode:
+        'Unavailable while reading mode is on (white canvas is fixed)'
     },
     readingMode: {
       text: 'Reading',

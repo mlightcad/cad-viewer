@@ -576,7 +576,9 @@ export default {
     },
     switchBg: {
       text: 'Değiştir',
-      description: 'Çizim arka planını beyaz ve siyah arasında değiştirir'
+      description: 'Çizim arka planını beyaz ve siyah arasında değiştirir',
+      disabledInReadingMode:
+        'Okuma modundayken kullanılamaz (beyaz tuval sabittir)'
     },
     zoomToExtent: {
       text: 'Tümünü Yakınlaştır',
