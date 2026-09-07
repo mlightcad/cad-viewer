@@ -138,9 +138,11 @@ describe('AcEx package format', () => {
     expect(pkg.manifest.format).toBe('acex-package')
     expect(pkg.manifest.packageVersion).toBe(1)
     expect(pkg.html).toContain('id="mlcad-package"')
-    expect(pkg.html).toContain('demo.acex.json')
+    expect(pkg.html).not.toContain('demo.acex.json')
+    expect(pkg.html).toContain('{}')
     expect(pkg.files.some(f => f.path === 'viewer.html')).toBe(true)
-    expect(pkg.files.some(f => f.path === 'demo.acex.json')).toBe(true)
+    expect(pkg.files.some(f => f.path === 'drawing.acex.json')).toBe(true)
+    expect(pkg.manifestFileName).toBe('drawing.acex.json')
     expect(pkg.manifest.chunks.length).toBeGreaterThan(1)
 
     const fileMap = new Map(pkg.files.map(f => [f.path, f.bytes]))
@@ -168,7 +170,7 @@ describe('AcEx package format', () => {
 
     const progresses: number[] = []
     const loaded = await loadAcExPackage({
-      manifestUrl: 'https://cdn.example/demo.acex.json',
+      manifestUrl: 'https://cdn.example/drawing.acex.json',
       fetchImpl,
       onChunk: (_layout, _chunk, progress) => {
         progresses.push(progress.loadedChunks)
@@ -213,12 +215,12 @@ describe('AcEx package format', () => {
     expect(skeleton.activeLayoutBtrId).toBe('ms')
   })
 
-  it('sanitizes drawing titles with spaces and plus signs for zip-safe paths', () => {
+  it('always names the package manifest drawing.acex.json', () => {
     const pkg = buildAcExPackage(makeSnapshot(), {
       viewerRuntime: '/* runtime */',
       baseName: 'FJP-898E-G-_-V01 + 1'
     })
-    expect(pkg.manifestFileName).toBe('FJP-898E-G-_-V01_1.acex.json')
+    expect(pkg.manifestFileName).toBe('drawing.acex.json')
     expect(isSafePackageHref(`./${pkg.manifestFileName}`)).toBe(true)
     expect(() => zipAcExPackageFiles(pkg)).not.toThrow()
   })
@@ -335,7 +337,7 @@ describe('AcEx package format', () => {
     }
 
     const geometryOnly = await loadAcExPackage({
-      manifestUrl: 'https://cdn.example/demo.acex.json',
+      manifestUrl: 'https://cdn.example/drawing.acex.json',
       fetchImpl,
       loadOsnap: false
     })
@@ -343,7 +345,7 @@ describe('AcEx package format', () => {
     expect(geometryOnly.layouts[0]?.lineBatches.length).toBeGreaterThan(0)
 
     const loaded = await loadAcExPackage({
-      manifestUrl: 'https://cdn.example/demo.acex.json',
+      manifestUrl: 'https://cdn.example/drawing.acex.json',
       fetchImpl
     })
     expect(loaded.layouts[0]?.osnap?.primitives).toEqual(

@@ -16,7 +16,7 @@ The plugin path is designed for **lazy loading** so the export bundle is only do
 
 - **Display-only snapshot** — layers, layouts, line/mesh batches, extents, and drawing units (no editable DXF/DWG payload)
 - **Self-contained HTML** — gzip/base64 snapshot + inline viewer runtime; opens offline in any modern browser
-- **Multi-file ACEX package** — shell HTML + versioned `*.acex.json` + per-chunk `*.acex.gz`; export downloads a zip (unzip before hosting for progressive load)
+- **Multi-file ACEX package** — generic `viewer.html` + fixed `drawing.acex.json` + per-chunk `*.acex.gz`; export downloads a zip (unzip before hosting for progressive load). The shell does not hard-code a drawing-specific data path: it probes sibling `drawing.acex.json`, supports `?manifest=` / `?acex=` URLs, and can open a local package folder or a pasted manifest URL when the default file is missing
 - **Offline viewer** — select / pan / zoom (extents, window, original view), layer panel, layout switching, measurement, Design Review markup annotations, object snap (OSNAP). Select, pan, and zoom tools exit any active measurement or review drawing tool.
 - **i18n** — embedded English / Chinese / Czech / Turkish UI; initial language follows the browser (`zh*` → Chinese, `cs*` → Czech, `tr*` → Turkish, otherwise English); the toolbar language button opens a strip to pick a locale, and the choice persists in `localStorage`
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyHtmlPlugin`
@@ -107,22 +107,34 @@ await new AcApHtmlConvertor().convert('my-drawing.dwg', {
 
 ### Multi-file package (low-level)
 
-See **[docs/acex-package-format.md](./docs/acex-package-format.md)** for the on-disk format, and **[docs/acex-web-hosting-guide.md](./docs/acex-web-hosting-guide.md)** for static hosting / CDN deployment.
+See **[docs/acex-package-format.md](./docs/acex-package-format.md)** for the on-disk format, and **[docs/acex-web-hosting-guide.md](./docs/acex-web-hosting-guide.md)** for static hosting / CDN deployment (includes a live progressive demo).
 
 ```typescript
 import {
+  ACEX_DEFAULT_MANIFEST_FILE,
   buildAcExPackage,
   zipAcExPackageFiles,
   packHtmlPackage
 } from '@mlightcad/cad-html-plugin'
 
+// Always writes viewer.html + drawing.acex.json + chunks/
+// (baseName is retained for API compatibility; it does not rename the manifest).
 const pkg = buildAcExPackage(snapshot, {
   viewerRuntime: runtime,
   baseName: 'my-drawing'
 })
+// pkg.manifestFileName === ACEX_DEFAULT_MANIFEST_FILE ('drawing.acex.json')
 const zipBytes = zipAcExPackageFiles(pkg)
 // Or serve pkg.files as a static directory after unzip
 ```
+
+**How generic `viewer.html` finds data** (in order):
+
+1. Query string — `?manifest=<url>` or `?acex=<url>` (relative or absolute `http(s)`)
+2. Sibling file — `./drawing.acex.json` next to the HTML
+3. If missing — UI to pick a local package folder (must contain `drawing.acex.json`) or paste a manifest URL
+
+Unsupported package / snapshot versions surface as an on-page error.
 
 ### Low-level snapshot assembly
 
@@ -191,6 +203,7 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 | `AcApHtmlSnapshotBuilder` | Live Three.js scene → `AcExSnapshotV1` |
 | `packHtml`, `AcExPackHtmlOptions` | Assemble self-contained HTML from snapshot + runtime |
 | `packHtmlPackage`, `buildAcExPackage`, `zipAcExPackageFiles` | Multi-file package shell, builder, and export zip |
+| `ACEX_DEFAULT_MANIFEST_FILE`, `ACEX_DEFAULT_MANIFEST_HREF`, package bootstrap helpers | Canonical `drawing.acex.json` name and generic viewer resolve / probe / directory-fetch helpers |
 | `HTML_VIEWER_RUNTIME_FILE` | Default runtime filename (`viewer-runtime.iife.js`) |
 | `AcExSnapshot`, `ACEX_SNAPSHOT_VERSION`, batch/layer types | Snapshot schema |
 | Package format doc | [`docs/acex-package-format.md`](./docs/acex-package-format.md) |
@@ -213,7 +226,10 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 | `src/AcExSnapshotTypes.ts` | Snapshot schema (v1) |
 | `src/AcExSnapshotCodec.ts` | Encode/decode embedded snapshot script tag |
 | `src/AcExSceneBatchCollector.ts` | THREE.js traversal → export batches |
-| `src/AcExHtmlPackager.ts` | `packHtml` — shell + snapshot + runtime |
+| `src/AcExHtmlPackager.ts` | `packHtml` / `packHtmlPackage` — shell + snapshot or package marker + runtime |
+| `src/AcExPackageBuilder.ts` | Multi-file package builder (`viewer.html` + `drawing.acex.json` + chunks) |
+| `src/AcExHtmlPackageBootstrap.ts` | Generic package resolve (query / sibling / probe / local directory fetch) |
+| `src/AcExHtmlPackageSourceGate.ts` | Folder / URL picker when sibling `drawing.acex.json` is missing |
 | `src/AcExHtmlViewerRuntime.ts` | Offline viewer (built as IIFE) |
 | `src/AcExHtmlShell.ts` | Static HTML/CSS shell markup |
 | `src/AcExOsnap*.ts` | Object snap index and primitives |

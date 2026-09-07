@@ -40,6 +40,7 @@ import {
   AcDbPolyline,
   AcDbRasterImage,
   AcDbRay,
+  AcDbSolid,
   AcDbSpline,
   AcDbTable,
   AcDbText,
@@ -1362,6 +1363,8 @@ function visitEntity(
       matrix,
       dimension.getFullDimBlockTransform()
     )
+    // Keep arrowhead vertices (SOLID / solid-fill HATCH) for snap. Extension
+    // lines are still omitted because pushLine is a no-op for catalog export.
     visitBlock(
       block,
       nested,
@@ -1370,7 +1373,7 @@ function visitEntity(
       blockStack,
       database,
       includeLayer,
-      false
+      true
     )
     blockStack.delete(block.objectId)
     return
@@ -1456,6 +1459,26 @@ function visitEntity(
 
   if (entity instanceof AcDbXline) {
     pushDirectedLine(out, layer, matrix, entity.basePoint, entity.unitDir, true)
+    return
+  }
+
+  if (entity instanceof AcDbSolid) {
+    // Dimension arrowheads are SOLID entities inside anonymous dim blocks.
+    // Always keep their vertices for endpoint / nearest snap — even when
+    // visiting dim blocks with exportFillBoundaries=false (which skips TRACE
+    // fills and other mesh boundaries that are not useful for snapping).
+    pushCatalogPath(
+      out,
+      layer,
+      matrix,
+      [
+        entity.getPointAt(0),
+        entity.getPointAt(1),
+        entity.getPointAt(3),
+        entity.getPointAt(2)
+      ],
+      true
+    )
     return
   }
 
@@ -1599,8 +1622,9 @@ function ellipseFromArc(entity: AcDbArc): AcDbEllipse {
  * `AcDbMLeader`, `AcDbText`, `AcDbMText`, `AcDbPoint`, `AcDbRasterImage`,
  * `AcDbOle2Frame`, `AcDbTable`, INSERT / MINSERT (with ATTRIB), and dimension
  * entities (`AcDbDimension` and subclasses via anonymous dim blocks). Hatch /
- * TRACE / SOLID / IMAGE / OLE fills are stored as `path` primitives except
- * inside dimension blocks (arrow solids are skipped).
+ * TRACE / SOLID / IMAGE / OLE fills are stored as `path` primitives. Dimension
+ * arrowheads (SOLID entities or solid-fill HATCH inserts) keep their vertices
+ * so tips remain snappable; straight dim lines still omit `line` kinds.
  *
  * @param database - Open drawing database (same instance used for HTML export).
  * @param layoutBtrId - Object id of the layout's owning block table record

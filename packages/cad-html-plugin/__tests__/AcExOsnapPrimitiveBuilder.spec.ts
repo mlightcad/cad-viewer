@@ -287,7 +287,7 @@ describe('buildOsnapCatalog', () => {
     ).toBeCloseTo(second.radius, 5)
   })
 
-  it('omits dimension extension lines from the catalog (derived from batches at runtime)', () => {
+  it('omits dimension extension lines but keeps arrow SOLID paths', () => {
     const db = new AcDbDatabase()
     acdbHostApplicationServices().workingDatabase = db
     const modelSpace = db.tables.blockTable.modelSpace
@@ -302,9 +302,17 @@ describe('buildOsnapCatalog', () => {
     const blockName = '*DIM_TEST'
     db.tables.blockTable.add(dimension.createDimBlock(blockName))
     dimension.dimBlockId = blockName
+    modelSpace.appendEntity(dimension)
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
-    expect(catalog.primitives.filter(p => p.kind === 'path')).toHaveLength(0)
+    const arrowPaths = catalog.primitives.filter(p => p.kind === 'path')
+    expect(arrowPaths.length).toBeGreaterThan(0)
+    for (const path of arrowPaths) {
+      if (path.kind !== 'path') continue
+      expect(path.closed).toBe(true)
+      expect(path.vertices.length).toBeGreaterThanOrEqual(9)
+      expect(path.vertices.length % 3).toBe(0)
+    }
   })
 
   it('exports points for text/point and omits ray/xline/trace/leader lines', () => {
@@ -800,18 +808,56 @@ describe('buildOsnapCatalog', () => {
     expect(snap).toEqual({ x: 15, y: 15, mode: 'endpoint' })
   })
 
-  it('skips SOLID fills inside dimension blocks but keeps layout SOLID paths', () => {
+  it('exports SOLID arrow vertices and layout SOLID paths', () => {
     const db = new AcDbDatabase()
+    acdbHostApplicationServices().workingDatabase = db
     const modelSpace = db.tables.blockTable.modelSpace
-    const solid = new AcDbSolid()
-    solid.setPointAt(0, new AcGePoint3d(0, 0, 0))
-    solid.setPointAt(1, new AcGePoint3d(2, 0, 0))
-    solid.setPointAt(2, new AcGePoint3d(0, 1, 0))
-    solid.setPointAt(3, new AcGePoint3d(2, 1, 0))
-    modelSpace.appendEntity(solid)
+
+    const layoutSolid = new AcDbSolid()
+    layoutSolid.setPointAt(0, new AcGePoint3d(0, 0, 0))
+    layoutSolid.setPointAt(1, new AcGePoint3d(2, 0, 0))
+    layoutSolid.setPointAt(2, new AcGePoint3d(0, 1, 0))
+    layoutSolid.setPointAt(3, new AcGePoint3d(2, 1, 0))
+    modelSpace.appendEntity(layoutSolid)
+
+    // Mimic a dimension arrow authored as SOLID inside an anonymous dim block.
+    const arrowSolid = new AcDbSolid()
+    arrowSolid.setPointAt(0, new AcGePoint3d(10, 0, 0))
+    arrowSolid.setPointAt(1, new AcGePoint3d(9, 0.25, 0))
+    arrowSolid.setPointAt(2, new AcGePoint3d(9, -0.25, 0))
+    arrowSolid.setPointAt(3, new AcGePoint3d(9, -0.25, 0))
+    const dimBlock = new AcDbBlockTableRecord()
+    dimBlock.name = '*D_ARROW'
+    dimBlock.appendEntity(arrowSolid)
+    db.tables.blockTable.add(dimBlock)
+
+    const dimension = new AcDbAlignedDimension(
+      new AcGePoint3d(10, 0, 0),
+      new AcGePoint3d(20, 0, 0),
+      new AcGePoint3d(15, 2, 0)
+    )
+    dimension.dimBlockId = dimBlock.name
+    modelSpace.appendEntity(dimension)
 
     const catalog = buildOsnapCatalog(db, modelSpace.objectId)
-    expect(catalog.primitives.filter(p => p.kind === 'path')).toHaveLength(1)
+    const paths = catalog.primitives.filter(p => p.kind === 'path')
+    expect(paths.length).toBeGreaterThanOrEqual(2)
+    expect(
+      paths.some(
+        p =>
+          p.kind === 'path' &&
+          p.vertices[0] === 0 &&
+          p.vertices[1] === 0 &&
+          p.vertices[3] === 2
+      )
+    ).toBe(true)
+    expect(
+      paths.some(
+        p =>
+          p.kind === 'path' &&
+          p.vertices.some((v, i) => i % 3 === 0 && v === 10)
+      )
+    ).toBe(true)
   })
 
   it('exports OLE frame corners as a path', () => {

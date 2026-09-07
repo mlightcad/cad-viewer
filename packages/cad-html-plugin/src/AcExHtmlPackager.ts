@@ -1,5 +1,6 @@
 import type { AcExHtmlAccessManifest } from './AcExHtmlAccess'
 import { resolveAcExHtmlLocale } from './AcExHtmlI18n'
+import { ACEX_DEFAULT_MANIFEST_HREF } from './AcExHtmlPackageBootstrap'
 import { ACEX_HTML_SHELL_CSS, buildAcExHtmlShellBody } from './AcExHtmlShell'
 import { encodeSnapshot, snapshotMimeType } from './AcExSnapshotCodec'
 import type { AcExEncodedSnapshot } from './AcExSnapshotCompression'
@@ -39,10 +40,11 @@ export interface AcExPackHtmlPackageOptions {
   /** Inline viewer bootstrap script (IIFE). */
   viewerRuntime: string
   /**
-   * URL of the `*.acex.json` manifest relative to the HTML file
-   * (or an absolute CDN URL).
+   * Optional URL of the `*.acex.json` manifest relative to the HTML file.
+   * When omitted, the generic viewer probes `./drawing.acex.json` (and query /
+   * folder / URL pickers) at runtime — no drawing-specific path is embedded.
    */
-  manifestUrl: string
+  manifestUrl?: string
 }
 
 /**
@@ -94,11 +96,12 @@ ${accessScript}  <script id="mlcad-snapshot" type="${snapshotType}">${encoded.pa
 }
 
 /**
- * Builds a shell HTML document that loads render data from a package manifest URL.
- * Contains only HTML/CSS/JS — no embedded geometry.
+ * Builds a shell HTML document that loads render data from a package manifest.
+ * Contains only HTML/CSS/JS — no embedded geometry and no drawing-specific
+ * data-file paths by default (see {@link ACEX_DEFAULT_MANIFEST_HREF}).
  *
  * @param snapshot - Used for title, locale, background, and viewer mode chrome.
- * @param options - Runtime source and manifest URL.
+ * @param options - Runtime source and optional manifest URL override.
  */
 export function packHtmlPackage(
   snapshot: AcExSnapshot,
@@ -110,9 +113,12 @@ export function packHtmlPackage(
   const htmlLang = resolveAcExHtmlLocale(snapshot.meta.locale) ?? 'en'
   const viewerMode = snapshot.meta.viewerMode ?? 'measure'
   const exportLayouts = snapshot.meta.exportLayouts !== false
-  const packageConfig = JSON.stringify({
-    manifestUrl: options.manifestUrl
-  })
+  const manifestUrl = options.manifestUrl?.trim()
+  const packageConfig = JSON.stringify(
+    manifestUrl && manifestUrl !== ACEX_DEFAULT_MANIFEST_HREF
+      ? { manifestUrl }
+      : {}
+  )
 
   return `<!DOCTYPE html>
 <html lang="${htmlLang}">
