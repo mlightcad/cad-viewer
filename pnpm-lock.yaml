@@ -5,8 +5,8 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@mlightcad/data-model': ^1.14.4
-  '@mlightcad/libredwg-converter': ^3.14.4
+  '@mlightcad/data-model': ^1.14.5
+  '@mlightcad/libredwg-converter': ^3.14.5
   '@mlightcad/mtext-input-box': ^0.2.25
   '@mlightcad/mtext-renderer': ^0.12.7
   '@mlightcad/ribbon': ^0.1.13
@@ -135,8 +135,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.8(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))(vue@3.5.31(typescript@5.9.3))
@@ -153,8 +153,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
 
   packages/cad-diff-viewer-example:
     dependencies:
@@ -165,11 +165,11 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
       '@mlightcad/libredwg-converter':
-        specifier: ^3.14.4
-        version: 3.14.4(@mlightcad/data-model@1.14.4)
+        specifier: ^3.14.5
+        version: 3.14.5(@mlightcad/data-model@1.14.5)
       '@mlightcad/mtext-renderer':
         specifier: ^0.12.7
         version: 0.12.7(three@0.172.0)
@@ -186,8 +186,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
       '@mlightcad/three-renderer':
         specifier: workspace:*
         version: link:../three-renderer
@@ -219,8 +219,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-svg-plugin
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
       jspdf:
         specifier: ^4.2.1
         version: 4.2.1
@@ -237,14 +237,14 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
 
   packages/cad-simple-viewer:
     devDependencies:
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
       '@mlightcad/mtext-input-box':
         specifier: ^0.2.25
         version: 0.2.25(@mlightcad/mtext-renderer@0.12.7(three@0.172.0))(three@0.172.0)
@@ -294,11 +294,11 @@ importers:
         specifier: workspace:*
         version: link:../cad-svg-plugin
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
       '@mlightcad/libredwg-converter':
-        specifier: ^3.14.4
-        version: 3.14.4(@mlightcad/data-model@1.14.4)
+        specifier: ^3.14.5
+        version: 3.14.5(@mlightcad/data-model@1.14.5)
       '@mlightcad/mtext-renderer':
         specifier: ^0.12.7
         version: 0.12.7(three@0.172.0)
@@ -343,11 +343,11 @@ importers:
         specifier: workspace:*
         version: link:../cad-svg-plugin
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
       '@mlightcad/libredwg-converter':
-        specifier: ^3.14.4
-        version: 3.14.4(@mlightcad/data-model@1.14.4)
+        specifier: ^3.14.5
+        version: 3.14.5(@mlightcad/data-model@1.14.5)
       '@mlightcad/mtext-renderer':
         specifier: ^0.12.7
         version: 0.12.7(three@0.172.0)
@@ -374,8 +374,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
       '@mlightcad/mtext-parser':
         specifier: ^1.4.1
         version: 1.4.1
@@ -404,8 +404,8 @@ importers:
         specifier: workspace:*
         version: link:../cad-svg-plugin
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
       '@mlightcad/ribbon':
         specifier: ^0.1.13
         version: 0.1.13(@element-plus/icons-vue@2.3.2(vue@3.5.31(typescript@5.9.3)))(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
@@ -479,11 +479,11 @@ importers:
         specifier: workspace:*
         version: link:../cad-viewer
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
       '@mlightcad/libredwg-converter':
-        specifier: ^3.14.4
-        version: 3.14.4(@mlightcad/data-model@1.14.4)
+        specifier: ^3.14.5
+        version: 3.14.5(@mlightcad/data-model@1.14.5)
       '@mlightcad/mtext-renderer':
         specifier: ^0.12.7
         version: 0.12.7(three@0.172.0)
@@ -559,8 +559,8 @@ importers:
         version: 1.1.1
     devDependencies:
       '@mlightcad/data-model':
-        specifier: ^1.14.4
-        version: 1.14.4
+        specifier: ^1.14.5
+        version: 1.14.5
       '@mlightcad/mtext-renderer':
         specifier: ^0.12.7
         version: 0.12.7(three@0.172.0)
@@ -2058,27 +2058,27 @@ packages:
   '@microsoft/tsdoc@0.16.0':
     resolution: {integrity: sha512-xgAyonlVVS+q7Vc7qLW0UrJU7rSFcETRWsqdXZtjzRU8dF+6CkozTK4V4y1LwOX7j8r/vHphjDeMeGI4tNGeGA==}
 
-  '@mlightcad/common@1.14.4':
-    resolution: {integrity: sha512-E1IwhLwKCRWMtYo/burfNtM9krxUDVgFKRoWxQXuAjsqp0RepOkcPf1bSnMveLcyWCpM+MBtonlutOzK6NmiDw==}
+  '@mlightcad/common@1.14.5':
+    resolution: {integrity: sha512-2m53z4p4Ha+N2ZRWd8W1HZjIgoukFyO1wg5RmqiHI3tRoNBAXIBl3u6nJJZ4W9fuiaFNeqqCcDlEwvWdtff03g==}
 
-  '@mlightcad/data-model@1.14.4':
-    resolution: {integrity: sha512-iI8GM6yTvLojCOr2kyUzMOP4i8qppj6d6CKl/qPg5KGVO21BoUAn5pJnGl0wbX+lO8P992vFLzTn42zwgF42MA==}
+  '@mlightcad/data-model@1.14.5':
+    resolution: {integrity: sha512-JNd2gpUF7U0kW/14TgGWbsAPXKuYMaHwWpJES9cr3GArpV8do4qPuiyy8PeWCX/Mn1OJGQl/tbPLkQxe5jNvwA==}
 
-  '@mlightcad/geometry-engine@3.14.4':
-    resolution: {integrity: sha512-gm56sLIc4Fwb95Nhs2FTTdxEHqmcTlam+ddnYNI7leX3QfywuBwK2Y6iIBYlCj0fQX5y4Oo5AhQv7mVPkEEEAw==}
+  '@mlightcad/geometry-engine@3.14.5':
+    resolution: {integrity: sha512-hI6k0JGJHUOH98MKLjc/5nnPacjZLna0EpclnsfQMq9vDCE6tJ2MJkk8Td5ivAKWbrF2ntM65eIlXxduSWM7vQ==}
     peerDependencies:
-      '@mlightcad/common': 1.14.4
+      '@mlightcad/common': 1.14.5
 
-  '@mlightcad/graphic-interface@3.14.4':
-    resolution: {integrity: sha512-GKcMSj0rqXxhQ6g7bmlCjiKu6HgDQXVkF28uM6yM4H3kpbdnxG3TJRpBmahwABP+blaPML5fX9mxYoIFQO8glA==}
+  '@mlightcad/graphic-interface@3.14.5':
+    resolution: {integrity: sha512-JvqOYIsmRf3ZOGgo2verdns0LEhIrQzTlusetV7+XrmQYfrbpBfs9N822IQbl6ywpOmqWu2CnAOfDhnUsmSR1Q==}
     peerDependencies:
-      '@mlightcad/common': 1.14.4
-      '@mlightcad/geometry-engine': 3.14.4
+      '@mlightcad/common': 1.14.5
+      '@mlightcad/geometry-engine': 3.14.5
 
-  '@mlightcad/libredwg-converter@3.14.4':
-    resolution: {integrity: sha512-qOmyjHvJMTmmR6c/o6NauJX7+0l7S1qYbOswyfbWQhrG/3/nQFq4+f5EElW5vf15sKshofLzQVScpf/1Zf+PPA==}
+  '@mlightcad/libredwg-converter@3.14.5':
+    resolution: {integrity: sha512-9GPx3s/msxDEfa2dmX+FAVKd7iUYGavQD4LeR//lJS8Zo9pTMLxL4mxfsOWNGG94GOR7griTTXA7L64ek47qCg==}
     peerDependencies:
-      '@mlightcad/data-model': ^1.14.4
+      '@mlightcad/data-model': ^1.14.5
 
   '@mlightcad/libredwg-web@0.7.10':
     resolution: {integrity: sha512-L9wnwQn8cgHIr6I5El/8TgKSXaRacW9vytSpsU19xufmrnAAqEEGcW0MU92PgEiDKuQtU4GBenERIDfSrbY99g==}
@@ -8001,30 +8001,30 @@ snapshots:
   '@microsoft/tsdoc@0.16.0':
     optional: true
 
-  '@mlightcad/common@1.14.4':
+  '@mlightcad/common@1.14.5':
     dependencies:
       loglevel: 1.9.2
 
-  '@mlightcad/data-model@1.14.4':
+  '@mlightcad/data-model@1.14.5':
     dependencies:
-      '@mlightcad/common': 1.14.4
-      '@mlightcad/geometry-engine': 3.14.4(@mlightcad/common@1.14.4)
-      '@mlightcad/graphic-interface': 3.14.4(@mlightcad/common@1.14.4)(@mlightcad/geometry-engine@3.14.4(@mlightcad/common@1.14.4))
+      '@mlightcad/common': 1.14.5
+      '@mlightcad/geometry-engine': 3.14.5(@mlightcad/common@1.14.5)
+      '@mlightcad/graphic-interface': 3.14.5(@mlightcad/common@1.14.5)(@mlightcad/geometry-engine@3.14.5(@mlightcad/common@1.14.5))
       emf-converter: 2.0.2
       uid: 2.0.2
 
-  '@mlightcad/geometry-engine@3.14.4(@mlightcad/common@1.14.4)':
+  '@mlightcad/geometry-engine@3.14.5(@mlightcad/common@1.14.5)':
     dependencies:
-      '@mlightcad/common': 1.14.4
+      '@mlightcad/common': 1.14.5
 
-  '@mlightcad/graphic-interface@3.14.4(@mlightcad/common@1.14.4)(@mlightcad/geometry-engine@3.14.4(@mlightcad/common@1.14.4))':
+  '@mlightcad/graphic-interface@3.14.5(@mlightcad/common@1.14.5)(@mlightcad/geometry-engine@3.14.5(@mlightcad/common@1.14.5))':
     dependencies:
-      '@mlightcad/common': 1.14.4
-      '@mlightcad/geometry-engine': 3.14.4(@mlightcad/common@1.14.4)
+      '@mlightcad/common': 1.14.5
+      '@mlightcad/geometry-engine': 3.14.5(@mlightcad/common@1.14.5)
 
-  '@mlightcad/libredwg-converter@3.14.4(@mlightcad/data-model@1.14.4)':
+  '@mlightcad/libredwg-converter@3.14.5(@mlightcad/data-model@1.14.5)':
     dependencies:
-      '@mlightcad/data-model': 1.14.4
+      '@mlightcad/data-model': 1.14.5
       '@mlightcad/libredwg-web': 0.7.10
 
   '@mlightcad/libredwg-web@0.7.10': {}
