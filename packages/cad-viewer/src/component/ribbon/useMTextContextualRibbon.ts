@@ -2,6 +2,7 @@ import { CircleClose } from '@element-plus/icons-vue'
 import type { AcEdCommandEventArgs } from '@mlightcad/cad-simple-viewer'
 import {
   AcApDocManager,
+  type AcApFontInfo,
   AcApFontUtil,
   AcEdMTextEditor,
   AcGiTextParagraphAlignment
@@ -725,6 +726,7 @@ export function useMTextContextualRibbon({
     const bridge = getMTextEditorBridge()
     bridge.addActiveInputBoxChangeListener?.(handleActiveInputBoxChanged)
     bindEditorEvents(bridge.getActiveInputBox?.() ?? null)
+    void ensureAvailableFontsLoaded()
   })
 
   onUnmounted(() => {
@@ -843,6 +845,9 @@ export function useMTextContextualRibbon({
     applyCurrentFormat(nextFormat)
   }
 
+  /** Remote font catalog for MText pickers (filled asynchronously). */
+  const availableFontCatalog = ref<AcApFontInfo[]>([])
+
   /**
    * Builds the font dropdown options for the current editor context.
    *
@@ -850,7 +855,10 @@ export function useMTextContextualRibbon({
    * available system fonts, and the default fallback.
    */
   const getFontOptions = () => {
-    const availableFonts = AcApDocManager.instance?.avaiableFonts ?? []
+    const availableFonts =
+      availableFontCatalog.value.length > 0
+        ? availableFontCatalog.value
+        : (AcApDocManager.instance?.avaiableFonts ?? [])
     const fontNames = availableFonts.flatMap(fontInfo => fontInfo.name)
     const styleFonts = getTextStyleRecords().map(
       record => record.textStyle.font
@@ -861,6 +869,14 @@ export function useMTextContextualRibbon({
       ...fontNames,
       DEFAULT_MTEXT_FORMAT.fontFamily
     ])
+  }
+
+  /** Ensures the remote font catalog is loaded before MText font pickers open. */
+  const ensureAvailableFontsLoaded = async () => {
+    const fonts = await AcApDocManager.instance?.getAvaiableFonts()
+    if (fonts) {
+      availableFontCatalog.value = fonts
+    }
   }
 
   /**

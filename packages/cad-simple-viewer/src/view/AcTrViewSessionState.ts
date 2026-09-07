@@ -22,6 +22,12 @@ export interface AcTrViewSessionState {
   loadingLayouts: Set<AcDbObjectId>
   /** Missing raster images keyed by entity id. */
   missedImages: Map<AcDbObjectId, string>
+  /**
+   * Missing fonts reported while this document was active.
+   * Parked with the session so FontManager's live map can track the active
+   * document only; restored when the session becomes active again.
+   */
+  missedFonts: Record<string, number>
   /** Selected entity ids at the moment the session was parked. */
   selectionIds: AcDbObjectId[]
 }

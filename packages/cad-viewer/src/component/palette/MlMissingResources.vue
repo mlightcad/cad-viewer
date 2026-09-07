@@ -188,18 +188,19 @@ const canApply = computed(() => {
   return false
 })
 
-const refreshAvailableFonts = () => {
-  availableFontInfos.value = AcApDocManager.instance.avaiableFonts
+const refreshAvailableFonts = async () => {
+  availableFontInfos.value =
+    (await AcApDocManager.instance.getAvaiableFonts()) ?? []
 }
 
 onMounted(() => {
-  refreshAvailableFonts()
+  void refreshAvailableFonts()
 })
 
 watch(
   () => store.dialogs.activeMissingResourceTab,
   tab => {
-    if (tab === 'font') refreshAvailableFonts()
+    if (tab === 'font') void refreshAvailableFonts()
   }
 )
 

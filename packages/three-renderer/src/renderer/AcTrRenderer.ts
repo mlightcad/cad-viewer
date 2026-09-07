@@ -437,6 +437,29 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
+   * Snapshot of session-scoped missed fonts for park/restore.
+   */
+  snapshotMissedFonts(): Record<string, number> {
+    return { ...FontManager.instance.missedFonts }
+  }
+
+  /**
+   * Restores or clears session-scoped missed fonts (main + MText workers).
+   * Fire-and-forget worker sync so document switches stay synchronous.
+   */
+  replaceMissedFonts(fonts: Record<string, number>): void {
+    FontManager.instance.replaceMissedFonts(fonts)
+    void AcTrMTextRenderer.getInstance().replaceMissedFonts(
+      FontManager.instance.missedFonts
+    )
+  }
+
+  /** Clears session-scoped missed fonts for the active document. */
+  clearMissedFonts(): void {
+    this.replaceMissedFonts({})
+  }
+
+  /**
    * Gets whether entity lineweights are displayed.
    */
   get showLineWeight() {
@@ -666,7 +689,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    */
   dispose() {
     this._context.styleManager.dispose()
-    FontManager.instance.missedFonts = {}
+    this.clearMissedFonts()
   }
 
   private linePoints(points: AcGePoint3dLike[]) {

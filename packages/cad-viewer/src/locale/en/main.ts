@@ -1038,7 +1038,11 @@ export default {
       failedToOpenFileLicenseInvalid: 'Invalid License',
       fontNotFound: 'Font Not Found',
       fontNotLoaded: 'Font Not Loaded',
-      parsingWarning: 'Issues on Parsing Drawing'
+      parsingWarning: 'Issues on Parsing Drawing',
+      systemMessage: 'System Message',
+      systemWarning: 'System Warning',
+      systemError: 'System Error',
+      systemInfo: 'System Info'
     }
   }
 }

@@ -1039,7 +1039,11 @@ export default {
       failedToOpenFileLicenseInvalid: 'Geçersiz Lisans',
       fontNotFound: 'Yazı Tipi Bulunamadı',
       fontNotLoaded: 'Yazı Tipi Yüklenemedi',
-      parsingWarning: 'Çizim Ayrıştırma Sorunları'
+      parsingWarning: 'Çizim Ayrıştırma Sorunları',
+      systemMessage: 'Sistem Mesajı',
+      systemWarning: 'Sistem Uyarısı',
+      systemError: 'Sistem Hatası',
+      systemInfo: 'Sistem Bilgisi'
     }
   }
 }

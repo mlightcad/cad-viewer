@@ -143,6 +143,22 @@ export class AcTrMTextRenderer {
   }
 
   /**
+   * Replaces session-scoped missed-font bookkeeping on the main thread and workers.
+   */
+  async replaceMissedFonts(fonts: Record<string, number>): Promise<void> {
+    if (this._renderer) {
+      await this._renderer.replaceMissedFonts(fonts)
+      return
+    }
+    FontManager.instance.replaceMissedFonts(fonts)
+  }
+
+  /** Clears session-scoped missed-font bookkeeping on the main thread and workers. */
+  async clearMissedFonts(): Promise<void> {
+    await this.replaceMissedFonts({})
+  }
+
+  /**
    * Render MText using the current mode asynchronously
    */
   async asyncRenderMText(

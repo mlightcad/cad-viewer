@@ -344,6 +344,10 @@ export class AcTrView2d extends AcEdBaseView {
         count: args.count ?? 0
       })
     })
+    this._renderer.events.fontLoaded.addEventListener(() => {
+      // Lazy load success clears FontManager.missedFonts; refresh status-bar state.
+      eventBus.emit('missed-data-changed', {})
+    })
 
     this._scene = this.createScene()
     this._layerAppearance = new AcTrLayerAppearanceController(
@@ -1509,7 +1513,7 @@ export class AcTrView2d extends AcEdBaseView {
         textHeight: this.resolveMTextEditorTextHeight(mtext),
         initialText: mtext.contents,
         initialAttachmentPoint: mtext.attachmentPoint,
-        toolbarFontFamilies: this.getMTextToolbarFontFamilies()
+        toolbarFontFamilies: await this.getMTextToolbarFontFamilies()
       })
       if (!result) return
 
@@ -1550,10 +1554,12 @@ export class AcTrView2d extends AcEdBaseView {
     return Math.max(Math.abs(p1.y - p0.y), 1e-4)
   }
 
-  private getMTextToolbarFontFamilies() {
+  private async getMTextToolbarFontFamilies() {
+    const availableFonts =
+      (await AcApDocManager.instance.getAvaiableFonts()) ?? []
     return Array.from(
       new Set(
-        AcApDocManager.instance.avaiableFonts
+        availableFonts
           .flatMap(fontInfo => fontInfo.name)
           .map(fontName => fontName.trim())
           .filter(fontName => fontName.length > 0)
@@ -2162,6 +2168,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._externallyFramedLayouts.clear()
     this._loadingLayouts.clear()
     this._renderer.dispose()
+    eventBus.emit('missed-data-changed', {})
   }
 
   /**
@@ -2177,6 +2184,7 @@ export class AcTrView2d extends AcEdBaseView {
       externallyFramedLayouts: this._externallyFramedLayouts,
       loadingLayouts: this._loadingLayouts,
       missedImages: this._missedImages,
+      missedFonts: this._renderer.snapshotMissedFonts(),
       selectionIds: this.selectionSet.ids
     }
   }
@@ -2197,6 +2205,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._externallyFramedLayouts = state.externallyFramedLayouts
     this._loadingLayouts = state.loadingLayouts
     this._missedImages = state.missedImages
+    this._renderer.replaceMissedFonts(state.missedFonts ?? {})
     this.rebindLayerAppearance()
     this._layoutViewManager.resize(this.width, this.height)
     this.selectionSet.clear()
@@ -2204,6 +2213,7 @@ export class AcTrView2d extends AcEdBaseView {
       this.selectionSet.add(state.selectionIds)
     }
     this._isDirty = true
+    eventBus.emit('missed-data-changed', {})
   }
 
   /**
@@ -2223,9 +2233,11 @@ export class AcTrView2d extends AcEdBaseView {
     this._externallyFramedLayouts = new Set()
     this._loadingLayouts = new Set()
     this._missedImages = new Map()
+    this._renderer.clearMissedFonts()
     this.rebindLayerAppearance()
     this.selectionSet.clear()
     this._isDirty = true
+    eventBus.emit('missed-data-changed', {})
     return parked
   }
 
@@ -2241,6 +2253,7 @@ export class AcTrView2d extends AcEdBaseView {
     state.externallyFramedLayouts.clear()
     state.loadingLayouts.clear()
     state.missedImages.clear()
+    state.missedFonts = {}
     state.selectionIds = []
   }
 

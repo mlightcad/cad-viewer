@@ -1025,7 +1025,11 @@ export default {
       failedToOpenFileLicenseInvalid: 'Neplatná licence',
       fontNotFound: 'Font nenalezen',
       fontNotLoaded: 'Font nenačten',
-      parsingWarning: 'Problémy při načítání výkresu'
+      parsingWarning: 'Problémy při načítání výkresu',
+      systemMessage: 'Systémová zpráva',
+      systemWarning: 'Systémové varování',
+      systemError: 'Systémová chyba',
+      systemInfo: 'Systémové informace'
     }
   }
 }

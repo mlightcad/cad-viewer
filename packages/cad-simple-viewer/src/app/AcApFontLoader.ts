@@ -86,6 +86,14 @@ export class AcApFontLoader {
   }
 
   /**
+   * Underlying mtext-renderer loader. Share with {@link FontManager.setFontLoader}
+   * so catalog fetches populate one cache for both drawing and UI.
+   */
+  get fontLoader(): AcTrFontLoader {
+    return this._loader
+  }
+
+  /**
    * Base URL to load fonts
    */
   get baseUrl() {
