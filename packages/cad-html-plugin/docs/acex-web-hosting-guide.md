@@ -44,14 +44,28 @@ DWG/DXF 文件 → 浏览器下载 → 解析实体（AcDb*）→ 细分/三角�
 
 ---
 
+## 在线体验
+
+如果你想先直观体验一下这种「预渲染 + 静态托管」的 DWG Web 看图方案，可以直接打开下面的在线 Demo：
+
+👉 [在线体验 DWG Web Viewer](https://mlightcad.github.io/cad-viewer/self-contained-html/canteen-progressive/viewer.html)
+
+这个 Demo 使用的就是本文介绍的预渲染方案。DWG 图纸在发布之前已经完成了解析和几何细分，用户打开网页后无需再解析原始 DWG 文件，而是直接加载预先生成的显示数据（`viewer.html` + `drawing.acex.json` + `chunks/`）。
+
+由于图纸资源会被浏览器缓存，第一次打开时可能需要等待资源下载；缓存建立之后，再次打开同一个页面会非常快。这也是这种「预渲染 + 静态托管」方案特别适合图纸发布、分享和反复查看场景的原因之一。
+
+可以先实际体验一下，再继续阅读下面的架构和实现细节。
+
+---
+
 ## 2. 产物：一个解压即用的静态目录
 
-multi 导出下载的是一个 `.zip`，但 **zip 仅用于分发**。查看器不会在浏览器里解 zip——它按顺序 `fetch` 清单和各个块文件。**托管前必须先解压**：
+multi 导出下载的是一个 `.zip`（下载文件名仍可按图纸名命名），但 **zip 仅用于分发**。查看器不会在浏览器里解 zip——它按顺序 `fetch` 清单和各个块文件。**托管前必须先解压**：
 
 ```text
 my-drawing/
-  viewer.html                 # 入口页面（HTML/CSS/JS 外壳 + 内联的离线查看器运行时）
-  my_drawing.acex.json        # 包清单（很小的元数据 + 索引）
+  viewer.html                 # 通用入口（HTML/CSS/JS 外壳 + 内联离线查看器；不硬编码图纸数据路径）
+  drawing.acex.json           # 包清单（固定文件名；很小的元数据 + 索引）
   chunks/
     L0-000.acex.gz            # gzip 压缩的几何块（ACEC 二进制，非 base64）
     L0-001.acex.gz
@@ -60,15 +74,24 @@ my-drawing/
     ...
 ```
 
-用户访问 `viewer.html` 后的加载顺序：
+`viewer.html` 是**通用壳**：同一份 HTML 可以配合任意一份 `drawing.acex.json` + `chunks/` 使用。用户访问后的加载顺序：
 
-1. 读取页面内的 `#mlcad-package` 配置，拿到清单地址（默认 `./{name}.acex.json`）；
-2. 下载清单（小 JSON），初始化图层、布局、范围等界面；
+1. 解析数据来源（按优先级）：
+   - URL query：`?manifest=<url>` 或 `?acex=<url>`（相对路径或绝对 `http(s)` URL）；
+   - 页面同级目录下的 `./drawing.acex.json`；
+   - 若默认清单不存在：界面上提供「选择本地文件夹」或「输入清单 URL」。
+2. 下载并校验清单（格式 / `packageVersion` / `snapshotVersion` 不对会显示错误）；
 3. **当前布局**的几何块逐块下载 → gunzip → 解码 → 上屏，画一块刷一块；
 4. 图纸已经可以平移缩放后，再下载 `*.osnap.gz` 捕捉数据（测量/对象捕捉用）；
 5. 其余布局在用户切换时才加载。
 
 查看器运行时已经内联在 `viewer.html` 里，目录中**没有任何额外 JS 依赖**，功能包含：选择 / 平移 / 缩放（范围、窗口、原图）、图层面板、布局切换、测量、批注（Design Review markup）、对象捕捉，以及内嵌的中/英/捷/土多语言界面。
+
+示例：用 query 打开别处托管的清单（块文件仍须与该清单同源、且位于清单所在目录下）：
+
+```text
+https://cdn.example/viewer.html?manifest=https://cdn.example/packages/floor-plan/drawing.acex.json
+```
 
 ---
 
@@ -85,7 +108,7 @@ my-drawing/
   ...
   ```
 
-  浏览器会下载一个 `.zip`。
+  浏览器会下载一个 `.zip`（解压后始终是 `viewer.html` + `drawing.acex.json` + `chunks/`）。
 
 ### 方式二：服务端 / CI 批量转换（云端架构推荐）
 
@@ -118,7 +141,7 @@ quit
 cad-simple-viewer-cli -i ./drawings/floor-plan.dwg \
   -s node_modules/@mlightcad/cad-simple-viewer-cli/examples/export-html-multi.scr \
   -o ./out
-# 输出：./out/floor-plan.zip
+# 输出：./out/floor-plan.zip（包内清单固定为 drawing.acex.json）
 ```
 
 批量目录转换、zip 解压与发布的完整自动化方案见第 6 节。
@@ -159,6 +182,7 @@ await new AcApHtmlConvertor({ viewerRuntimeUrl: './viewer-runtime.iife.js' })
 
 ```typescript
 import {
+  ACEX_DEFAULT_MANIFEST_FILE,
   buildAcExPackage,
   zipAcExPackageFiles,
   unzipAcExPackageFiles
@@ -166,9 +190,10 @@ import {
 
 // snapshot 由 AcApHtmlSnapshotBuilder 从 Three.js 场景构建
 const pkg = buildAcExPackage(snapshot, {
-  viewerRuntime,          // viewer-runtime.iife.js 的文本
-  baseName: 'floor-plan'
+  viewerRuntime // viewer-runtime.iife.js 的文本
+  // baseName 仅保留 API 兼容；清单文件名始终是 drawing.acex.json
 })
+// pkg.manifestFileName === ACEX_DEFAULT_MANIFEST_FILE
 
 const zipBytes = zipAcExPackageFiles(pkg)     // 打成 zip 供下载
 // 或者直接把 pkg.files（[{ path, bytes }, ...]）写到磁盘 / 上传对象存储，
@@ -193,12 +218,18 @@ unzip ./out/floor-plan.zip -d /var/www/cad-packages/floor-plan
 
 发布后把 `https://你的域名/cad-packages/floor-plan/viewer.html` 这个 URL 发给用户即可。建议按**图纸 ID / 版本号**划分目录（如 `/cad-packages/{drawingId}/{version}/`），图纸更新就发一个新版本目录，旧版本自然下线，也便于缓存。
 
+同一份通用 `viewer.html` 也可以单独托管，再用 query 指向各图纸的清单，例如：
+
+```text
+https://你的域名/viewer.html?manifest=https://你的域名/cad-packages/floor-plan/drawing.acex.json
+```
+
 ### 4.2 服务器要求
 
 任何能发静态文件的服务都可以：nginx、Apache、IIS、`npx serve`、Python `-m http.server`，以及阿里云 OSS / AWS S3 + CloudFront 等对象存储静态网站托管。要求只有几条：
 
-1. **必须通过 http(s) 访问**。查看器用 `fetch()` 加载清单和块文件，`file://` 协议下无法工作，不能双击 `viewer.html` 当本地文件用。
-2. **整包同源托管**。加载器出于安全限制会校验：`manifestUrl` 必须与页面同源，块文件必须与清单同源且位于包目录内（拒绝绝对 URL、`..` 跨目录）。所以请把 `viewer.html`、清单、`chunks/` 放在**同一个站点/同一个 CDN 域名**下，不要把块文件拆到另一个域。页面和块一起放在 CDN 域名上是完全没问题的。
+1. **必须通过 http(s) 访问**。查看器用 `fetch()` 加载清单和块文件，`file://` 协议下无法工作，不能双击 `viewer.html` 当本地文件用（若本地没有同级 `drawing.acex.json`，页面会提示选择文件夹或输入 URL）。
+2. **块文件与清单同源、且不得逃出包目录**。相对路径的清单默认相对 `viewer.html` 解析；通过 query / 用户粘贴的**绝对** `http(s)` 清单 URL 可以使用，但每个块仍须与**该清单**同源，并落在清单所在目录下（拒绝 `..` 跨目录）。最简单的做法仍是把 `viewer.html`、`drawing.acex.json`、`chunks/` 放在同一站点目录里一起发布。
 3. **`.gz` 文件按原始字节返回，不要附带 `Content-Encoding: gzip` 响应头**。
    `.acex.gz` / `.osnap.gz` 是 gzip 压缩过的字节，由查看器在 JavaScript 里自己 gunzip。如果 Web 服务器（典型如 Apache 的 `mod_mime` 默认对 `.gz` 后缀设置 `AddEncoding gzip gz`，或某些 CDN/对象存储元数据）给它们加上了 `Content-Encoding: gzip`，浏览器会先自动解压一次，查看器再解压就会报错。请确保这些文件以不透明二进制方式返回（`Content-Type: application/octet-stream` 即可，查看器按 `arrayBuffer` 读取，不依赖 MIME），清单 `.acex.json` 用 `application/json`。
 4. **缓存策略**。块文件内容不可变（同一版本目录内不会变），可以放心地给 `chunks/` 加长缓存（`Cache-Control: public, max-age=31536000, immutable`）；清单文件建议短缓存或 `no-cache`，以便重新导出同目录后客户端能尽快发现更新。按版本号分目录发布时则整目录都可以长缓存。
@@ -244,7 +275,11 @@ npx serve .
 # 打开 http://localhost:3000/viewer.html
 ```
 
-能正常显示图纸、切换布局、测量，即说明托管配置正确。
+能正常显示图纸、切换布局、测量，即说明托管配置正确。也可验证 query：
+
+```text
+http://localhost:3000/viewer.html?manifest=./drawing.acex.json
+```
 
 ---
 
@@ -308,16 +343,19 @@ console.log(`Published: https://drawings.example.com/${path.basename(target)}/vi
 ## 7. FAQ
 
 **Q：能不能直接把 zip 放到服务器上给个链接？**
-不能。zip 只是下载分发用的封装，查看器运行时 fetch 的是解压后的 `viewer.html` / `*.acex.json` / `chunks/*.gz`。要么服务器端解压后托管，要么在你自己的应用里用 `unzipAcExPackageFiles` 在前端解压（注意同源和内存问题，不推荐大图这么做）。
+不能。zip 只是下载分发用的封装，查看器运行时 fetch 的是解压后的 `viewer.html` / `drawing.acex.json` / `chunks/*.gz`。要么服务器端解压后托管，要么在你自己的应用里用 `unzipAcExPackageFiles` 在前端解压（注意同源和内存问题，不推荐大图这么做）。
 
-**Q：打开页面后块文件 404 / 加载失败？**
-检查：是否通过 http(s) 访问；`chunks/` 目录是否随 `viewer.html`、清单一起部署；块文件是否被改了名或路径（清单里的 `href` 是相对路径，需保持目录结构）。
+**Q：打开页面后提示找不到图纸 / 块文件 404？**
+检查：是否通过 http(s) 访问；同级是否有 `drawing.acex.json`；`chunks/` 是否随清单一起部署；query `manifest` 是否指向正确 URL。缺少默认清单时，页面会提供选文件夹或输入 URL 的入口。
+
+**Q：清单版本报错？**
+加载器会校验 `format`、`packageVersion`、`snapshotVersion`。用当前版本的 `cad-html-plugin` 重新导出即可；不要混用新旧协议的块文件。
 
 **Q：块文件下载回来解析报错？**
 多半是服务器对 `.gz` 文件加了 `Content-Encoding: gzip`（浏览器自动解了一次压），按 4.2 第 3 条检查响应头。
 
 **Q：可以把块文件放 CDN、页面放自己域名吗？**
-当前加载器要求页面、清单、块文件同源。把**整个包目录**发布到 CDN 域名、用户直接访问 CDN 上的 `viewer.html` 即可获得 CDN 加速。
+块必须与**清单**同源。可以把整包（含 `viewer.html`）放到 CDN；或单独托管通用 `viewer.html`，用 `?manifest=` 指向 CDN 上的 `drawing.acex.json`（此时块也须在该 CDN 清单目录下）。
 
 **Q：导出的文件名变成了 `floor-plan-2.zip`？**
 目标文件已存在时，导出命名会自动追加序号避免覆盖。重新导出前先删除输出目录里的旧产物（见第 6 节自动化示例中的清理步骤）。

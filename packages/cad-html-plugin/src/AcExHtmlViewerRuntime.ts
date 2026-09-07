@@ -39,6 +39,13 @@ import { setupAcExHtmlLayoutMenu } from './AcExHtmlLayoutMenu'
 import { setupAcExHtmlMeasurePanel } from './AcExHtmlMeasurePanel'
 import { setupAcExHtmlMeasureSettings } from './AcExHtmlMeasureSettings'
 import { setupAcExHtmlNavTools } from './AcExHtmlNavTools'
+import {
+  acexGlobalFetch,
+  chooseInitialManifestHref,
+  probePackageManifest,
+  resolveViewerManifestUrl
+} from './AcExHtmlPackageBootstrap'
+import { promptAcExHtmlPackageSource } from './AcExHtmlPackageSourceGate'
 import { setupAcExHtmlReviewPanel } from './AcExHtmlReviewPanel'
 import { acexSyncHtmlShortCutSelection } from './AcExHtmlShortCutSelection'
 import { setupAcExHtmlShortCutToolbar } from './AcExHtmlShortCutToolbar'
@@ -66,9 +73,7 @@ import { AcExOsnapIndex, estimateOsnapRebuildWork } from './AcExOsnap'
 import { AcExOsnapMarker } from './AcExOsnapMarker'
 import {
   loadAcExPackageLayoutOsnap,
-  parseAcExPackageManifest,
   resolveChunkUrl,
-  resolvePackageManifestUrl,
   snapshotSkeletonFromManifest
 } from './AcExPackageLoader'
 import type { AcExPackageManifest } from './AcExPackageTypes'
@@ -300,6 +305,128 @@ function flipNearBlackWhiteMaterials(root: THREE.Object3D): void {
   })
 }
 
+/**
+ * Resolves a multi-file package session for generic `viewer.html`:
+ * query `?manifest=` / `?acex=` → config → sibling `drawing.acex.json` →
+ * folder / URL picker when the default file is missing.
+ */
+async function openAcExHtmlPackageSession(options: {
+  pageUrl: string
+  search: string
+  configManifestUrl?: string
+  i18n: AcExHtmlI18n
+}): Promise<{
+  manifest: AcExPackageManifest
+  manifestUrl: string
+  fetchImpl: typeof fetch
+} | null> {
+  const { i18n } = options
+  const initial = chooseInitialManifestHref({
+    search: options.search,
+    configManifestUrl: options.configManifestUrl
+  })
+
+  const tryUrl = async (
+    href: string,
+    fetchImpl: typeof fetch = acexGlobalFetch
+  ): Promise<
+    | { ok: true; manifest: AcExPackageManifest; manifestUrl: string }
+    | { ok: false; reason: 'not-found' | 'invalid' | 'network'; error: Error }
+  > => {
+    let manifestUrl: string
+    try {
+      manifestUrl = resolveViewerManifestUrl(href, options.pageUrl)
+    } catch (error) {
+      return {
+        ok: false,
+        reason: 'invalid',
+        error: error instanceof Error ? error : new Error(String(error))
+      }
+    }
+    const probed = await probePackageManifest(manifestUrl, fetchImpl)
+    if (!probed.ok) {
+      return { ok: false, reason: probed.reason, error: probed.error }
+    }
+    return { ok: true, manifest: probed.manifest, manifestUrl }
+  }
+
+  const first = await tryUrl(initial.href)
+  if (first.ok) {
+    return {
+      manifest: first.manifest,
+      manifestUrl: first.manifestUrl,
+      fetchImpl: acexGlobalFetch
+    }
+  }
+
+  // Query / explicit URL failures are fatal (show error, no picker).
+  if (initial.fromQuery || first.reason === 'invalid') {
+    const message =
+      first.reason === 'invalid'
+        ? i18n.t('package.invalidManifest', { error: first.error.message })
+        : i18n.t('package.loadFailed', { error: first.error.message })
+    showViewerError(message)
+    return null
+  }
+
+  // Sibling default missing → let the user pick a folder or paste a URL.
+  let gateErrorKey:
+    | 'package.manifestNotFound'
+    | 'package.invalidManifest'
+    | 'package.folderMissingManifest'
+    | 'package.loadFailed'
+    | undefined = 'package.manifestNotFound'
+  let gateErrorMessage: string | undefined
+
+  for (;;) {
+    let choice: Awaited<ReturnType<typeof promptAcExHtmlPackageSource>>
+    try {
+      choice = await promptAcExHtmlPackageSource(i18n, {
+        errorKey: gateErrorKey,
+        errorMessage: gateErrorMessage
+      })
+    } catch {
+      showViewerError(i18n.t('package.manifestNotFound'))
+      return null
+    }
+
+    if (choice.kind === 'url') {
+      const loaded = await tryUrl(choice.href)
+      if (loaded.ok) {
+        return {
+          manifest: loaded.manifest,
+          manifestUrl: loaded.manifestUrl,
+          fetchImpl: acexGlobalFetch
+        }
+      }
+      gateErrorKey =
+        loaded.reason === 'invalid'
+          ? 'package.invalidManifest'
+          : 'package.loadFailed'
+      gateErrorMessage = i18n.t(gateErrorKey, {
+        error: loaded.error.message
+      })
+      continue
+    }
+
+    const loaded = await tryUrl(choice.manifestUrl, choice.fetchImpl)
+    if (loaded.ok) {
+      return {
+        manifest: loaded.manifest,
+        manifestUrl: loaded.manifestUrl,
+        fetchImpl: choice.fetchImpl
+      }
+    }
+    gateErrorKey =
+      loaded.reason === 'invalid'
+        ? 'package.invalidManifest'
+        : 'package.loadFailed'
+    gateErrorMessage = i18n.t(gateErrorKey, {
+      error: loaded.error.message
+    })
+  }
+}
+
 function bootstrap(): void {
   void accmYieldForPaint().then(() => startViewer())
 }
@@ -386,6 +513,7 @@ async function startViewer(): Promise<void> {
   let packageSession: {
     manifest: AcExPackageManifest
     manifestUrl: string
+    fetchImpl: typeof fetch
     loadedLayouts: Set<string>
     loadedOsnapLayouts: Set<string>
   } | null = null
@@ -395,25 +523,20 @@ async function startViewer(): Promise<void> {
       const config = JSON.parse(packageEl.textContent?.trim() || '{}') as {
         manifestUrl?: string
       }
-      const manifestUrl = config.manifestUrl?.trim()
-      if (!manifestUrl) {
-        throw new Error('Missing manifestUrl in package config')
+      const opened = await openAcExHtmlPackageSession({
+        pageUrl: window.location.href,
+        search: window.location.search,
+        configManifestUrl: config.manifestUrl,
+        i18n
+      })
+      if (!opened) {
+        return
       }
-      const absoluteManifestUrl = resolvePackageManifestUrl(
-        manifestUrl,
-        window.location.href
-      )
-      const manifestResponse = await fetch(absoluteManifestUrl)
-      if (!manifestResponse.ok) {
-        throw new Error(
-          `Failed to load package manifest (${manifestResponse.status})`
-        )
-      }
-      const manifest = parseAcExPackageManifest(await manifestResponse.json())
-      snapshot = snapshotSkeletonFromManifest(manifest)
+      snapshot = snapshotSkeletonFromManifest(opened.manifest)
       packageSession = {
-        manifest,
-        manifestUrl: absoluteManifestUrl,
+        manifest: opened.manifest,
+        manifestUrl: opened.manifestUrl,
+        fetchImpl: opened.fetchImpl,
         loadedLayouts: new Set(),
         loadedOsnapLayouts: new Set()
       }
@@ -638,7 +761,7 @@ async function startViewer(): Promise<void> {
           total: String(chunks.length)
         })
         const url = resolveChunkUrl(packageSession.manifestUrl, chunkRef.href)
-        const response = await fetch(url)
+        const response = await packageSession.fetchImpl(url)
         if (!response.ok) {
           throw new Error(
             `Failed to load geometry chunk (${response.status})`
@@ -713,6 +836,7 @@ async function startViewer(): Promise<void> {
       target.btrId,
       target,
       {
+        fetchImpl: packageSession.fetchImpl,
         yieldFn: async () => {
           paintPackageChunk?.()
           await accmYieldForPaint()

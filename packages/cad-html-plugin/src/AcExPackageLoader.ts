@@ -1,4 +1,5 @@
 import { decodeChunkGzip } from './AcExChunkBinaryCodec'
+import { acexGlobalFetch } from './AcExHtmlPackageBootstrap'
 import { decodeOsnapCatalogGzip } from './AcExOsnapCatalogCodec'
 import type { AcExOsnapPrimitive } from './AcExOsnapPrimitiveTypes'
 import {
@@ -234,7 +235,7 @@ async function fetchCompressedBytes(
 export async function loadAcExPackage(
   options: AcExPackageLoaderOptions
 ): Promise<AcExSnapshot> {
-  const fetchImpl = options.fetchImpl ?? fetch
+  const fetchImpl = options.fetchImpl ?? acexGlobalFetch
   const loadOsnap = options.loadOsnap !== false
   const manifestResponse = await fetchImpl(options.manifestUrl)
   if (!manifestResponse.ok) {
@@ -322,7 +323,7 @@ export async function loadAcExPackageLayout(
   layout: AcExLayoutSnapshot,
   options: Pick<AcExPackageLoaderOptions, 'fetchImpl' | 'onChunk'> = {}
 ): Promise<void> {
-  const fetchImpl = options.fetchImpl ?? fetch
+  const fetchImpl = options.fetchImpl ?? acexGlobalFetch
   const layoutRef = manifest.layouts.find(l => l.btrId === layoutBtrId)
   if (!layoutRef) {
     throw new Error(`Layout not found: ${layoutBtrId}`)
@@ -387,7 +388,7 @@ export async function loadAcExPackageLayoutOsnap(
     return
   }
 
-  const fetchImpl = options.fetchImpl ?? fetch
+  const fetchImpl = options.fetchImpl ?? acexGlobalFetch
   const yieldFn =
     options.yieldFn ??
     (() =>

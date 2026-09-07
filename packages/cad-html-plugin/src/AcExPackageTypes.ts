@@ -115,7 +115,7 @@ export interface AcExPackageFiles {
   html: string
   /** Manifest object (also serialized as `*.acex.json`). */
   manifest: AcExPackageManifest
-  /** Manifest file name at package root (e.g. `drawing.acex.json`). */
+  /** Manifest file name at package root (always `drawing.acex.json`). */
   manifestFileName: string
   /** All package files including HTML, manifest, and chunk `.acex.gz` files. */
   files: AcExPackageFile[]

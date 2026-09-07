@@ -210,6 +210,18 @@ export type AcExHtmlMessageKey =
   | 'status.loadingChunks'
   | 'status.loadingOsnap'
   | 'status.buildingOsnap'
+  | 'package.title'
+  | 'package.hint'
+  | 'package.hintUrlOnly'
+  | 'package.chooseFolder'
+  | 'package.urlPlaceholder'
+  | 'package.openUrl'
+  | 'package.urlRequired'
+  | 'package.manifestNotFound'
+  | 'package.invalidManifest'
+  | 'package.folderMissingManifest'
+  | 'package.folderUnsupported'
+  | 'package.loadFailed'
   | 'access.title'
   | 'access.passwordPrompt'
   | 'access.passwordPlaceholder'
@@ -455,6 +467,24 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       loadingOsnap: 'Loading object snap… {loaded}/{total}',
       buildingOsnap: 'Building object snap index…'
     },
+    package: {
+      title: 'Open drawing package',
+      hint: 'No drawing.acex.json was found next to this page. Choose a local package folder or enter the manifest URL.',
+      hintUrlOnly:
+        'No drawing.acex.json was found next to this page. Enter the manifest URL to open the package.',
+      chooseFolder: 'Choose local folder',
+      urlPlaceholder: 'https://example.com/drawing.acex.json',
+      openUrl: 'Open URL',
+      urlRequired: 'Please enter a manifest URL.',
+      manifestNotFound: 'drawing.acex.json was not found next to this page.',
+      invalidManifest:
+        'The package manifest is invalid or uses an unsupported version: {error}',
+      folderMissingManifest:
+        'The selected folder must contain drawing.acex.json.',
+      folderUnsupported:
+        'This browser cannot open a local package folder. Paste a manifest URL instead.',
+      loadFailed: 'Failed to open package: {error}'
+    },
     access: {
       title: 'Protected drawing',
       passwordPrompt: 'Enter the password to open this file.',
@@ -687,6 +717,22 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       loadingChunks: '正在加载几何… {loaded}/{total}',
       loadingOsnap: '正在加载对象捕捉… {loaded}/{total}',
       buildingOsnap: '正在构建对象捕捉索引…'
+    },
+    package: {
+      title: '打开图纸包',
+      hint: '当前页面同级目录未找到 drawing.acex.json。请选择本地包文件夹，或输入清单 URL。',
+      hintUrlOnly:
+        '当前页面同级目录未找到 drawing.acex.json。请输入清单 URL 以打开图纸包。',
+      chooseFolder: '选择本地文件夹',
+      urlPlaceholder: 'https://example.com/drawing.acex.json',
+      openUrl: '打开 URL',
+      urlRequired: '请输入清单 URL。',
+      manifestNotFound: '当前页面同级目录未找到 drawing.acex.json。',
+      invalidManifest: '包清单无效或版本不受支持：{error}',
+      folderMissingManifest: '所选文件夹必须包含 drawing.acex.json。',
+      folderUnsupported:
+        '当前浏览器无法选择本地包文件夹，请改为输入清单 URL。',
+      loadFailed: '无法打开图纸包：{error}'
     },
     access: {
       title: '受保护的图纸',
@@ -924,6 +970,24 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       loadingChunks: 'Načítání geometrie… {loaded}/{total}',
       loadingOsnap: 'Načítání uchopování… {loaded}/{total}',
       buildingOsnap: 'Sestavování indexu uchopování…'
+    },
+    package: {
+      title: 'Otevřít balíček výkresu',
+      hint: 'Vedle této stránky nebyl nalezen drawing.acex.json. Vyberte místní složku balíčku nebo zadejte URL manifestu.',
+      hintUrlOnly:
+        'Vedle této stránky nebyl nalezen drawing.acex.json. Zadejte URL manifestu pro otevření balíčku.',
+      chooseFolder: 'Vybrat místní složku',
+      urlPlaceholder: 'https://example.com/drawing.acex.json',
+      openUrl: 'Otevřít URL',
+      urlRequired: 'Zadejte URL manifestu.',
+      manifestNotFound: 'drawing.acex.json nebyl vedle této stránky nalezen.',
+      invalidManifest:
+        'Manifest balíčku je neplatný nebo používá nepodporovanou verzi: {error}',
+      folderMissingManifest:
+        'Vybraná složka musí obsahovat drawing.acex.json.',
+      folderUnsupported:
+        'Tento prohlížeč neumí otevřít místní složku balíčku. Zadejte místo toho URL manifestu.',
+      loadFailed: 'Nepodařilo se otevřít balíček: {error}'
     },
     access: {
       title: 'Chráněný výkres',
@@ -1165,6 +1229,24 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       loadingOsnap: 'Nesne yakalama yükleniyor… {loaded}/{total}',
       buildingOsnap: 'Nesne yakalama dizini oluşturuluyor…'
     },
+    package: {
+      title: 'Çizim paketini aç',
+      hint: 'Bu sayfanın yanında drawing.acex.json bulunamadı. Yerel bir paket klasörü seçin veya manifesto URL’sini girin.',
+      hintUrlOnly:
+        'Bu sayfanın yanında drawing.acex.json bulunamadı. Paketi açmak için manifesto URL’sini girin.',
+      chooseFolder: 'Yerel klasör seç',
+      urlPlaceholder: 'https://example.com/drawing.acex.json',
+      openUrl: 'URL aç',
+      urlRequired: 'Lütfen bir manifesto URL’si girin.',
+      manifestNotFound: 'Bu sayfanın yanında drawing.acex.json bulunamadı.',
+      invalidManifest:
+        'Paket manifestosu geçersiz veya desteklenmeyen bir sürüm kullanıyor: {error}',
+      folderMissingManifest:
+        'Seçilen klasör drawing.acex.json içermelidir.',
+      folderUnsupported:
+        'Bu tarayıcı yerel paket klasörü açamıyor. Bunun yerine manifesto URL’si yapıştırın.',
+      loadFailed: 'Paket açılamadı: {error}'
+    },
     access: {
       title: 'Korumalı çizim',
       passwordPrompt: 'Bu dosyayı açmak için parolayı girin.',
@@ -1388,6 +1470,24 @@ const AR_MESSAGES: AcExMessageTree = {
     'loadingChunks': 'جاري تحميل الهندسة… {loaded}/{total}',
     'loadingOsnap': 'جاري تحميل الالتقاط… {loaded}/{total}',
     'buildingOsnap': 'جاري بناء فهرس الالتقاط…'
+  },
+  package: {
+    title: 'فتح حزمة الرسم',
+    hint: 'لم يتم العثور على drawing.acex.json بجانب هذه الصفحة. اختر مجلد الحزمة المحلي أو أدخل عنوان URL للقائمة.',
+    hintUrlOnly:
+      'لم يتم العثور على drawing.acex.json بجانب هذه الصفحة. أدخل عنوان URL للقائمة لفتح الحزمة.',
+    chooseFolder: 'اختيار مجلد محلي',
+    urlPlaceholder: 'https://example.com/drawing.acex.json',
+    openUrl: 'فتح الرابط',
+    urlRequired: 'يرجى إدخال عنوان URL للقائمة.',
+    manifestNotFound: 'لم يتم العثور على drawing.acex.json بجانب هذه الصفحة.',
+    invalidManifest:
+      'قائمة الحزمة غير صالحة أو تستخدم إصداراً غير مدعوم: {error}',
+    folderMissingManifest:
+      'يجب أن يحتوي المجلد المحدد على drawing.acex.json.',
+    folderUnsupported:
+      'لا يمكن لهذا المتصفح فتح مجلد حزمة محلي. الصق عنوان URL للقائمة بدلاً من ذلك.',
+    loadFailed: 'تعذر فتح الحزمة: {error}'
   },
   access: {
     title: 'رسم محمي',

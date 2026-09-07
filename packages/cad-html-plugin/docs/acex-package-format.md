@@ -28,7 +28,17 @@ drawing/
 
 ### Shell HTML
 
-Contains `#mlcad-package` (JSON) instead of an embedded snapshot:
+Contains `#mlcad-package` (JSON marker) instead of an embedded snapshot. By
+default the config is empty — the generic viewer probes sibling
+`drawing.acex.json`, then query / folder / URL pickers:
+
+```html
+<script id="mlcad-package" type="application/json">
+{}
+</script>
+```
+
+Optional override (legacy or custom hosts):
 
 ```html
 <script id="mlcad-package" type="application/json">
@@ -36,7 +46,10 @@ Contains `#mlcad-package` (JSON) instead of an embedded snapshot:
 </script>
 ```
 
-`manifestUrl` may be relative to the HTML file or an absolute CDN URL.
+Runtime resolution order: `?manifest=` / `?acex=` → `#mlcad-package.manifestUrl`
+→ `./drawing.acex.json` → local folder or pasted URL UI. Absolute `http(s)`
+manifest URLs are allowed from the query / picker; chunk hrefs must stay
+relative to that manifest and same-origin with it.
 
 ## Versioning
 

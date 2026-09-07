@@ -39,6 +39,27 @@ export {
 } from './AcExOsnapPrimitiveToAcGe'
 export { packHtml, packHtmlPackage, type AcExPackHtmlOptions, type AcExPackHtmlPackageOptions } from './AcExHtmlPackager'
 export {
+  ACEX_DEFAULT_MANIFEST_FILE,
+  ACEX_DEFAULT_MANIFEST_HREF,
+  ACEX_MANIFEST_QUERY_KEYS,
+  ACEX_PACKAGE_DIRECTORY_ORIGIN,
+  acexGlobalFetch,
+  buildPackageDirectoryFileMap,
+  canOpenLocalPackageFolder,
+  chooseInitialManifestHref,
+  createPackageDirectoryFetch,
+  detectLocalFolderOpenSupport,
+  detectSharedDirectoryRoot,
+  findDefaultManifestInDirectory,
+  isAbsoluteHttpUrl,
+  normalizePackageDirectoryPath,
+  probePackageManifest,
+  readManifestUrlFromSearchParams,
+  resolveViewerManifestUrl,
+  type AcExLocalFolderOpenSupport,
+  type AcExManifestProbeResult
+} from './AcExHtmlPackageBootstrap'
+export {
   type AcApHtmlExpiryDays,
   type AcExHtmlAccessManifest,
   ACEX_HTML_EXPIRY_COUNTDOWN_MS,

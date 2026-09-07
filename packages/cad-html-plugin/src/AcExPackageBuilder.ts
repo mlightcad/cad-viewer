@@ -12,6 +12,7 @@ import {
   splitLineBatch,
   splitMeshBatch
 } from './AcExGeometryBatchSplit'
+import { ACEX_DEFAULT_MANIFEST_FILE } from './AcExHtmlPackageBootstrap'
 import { packHtmlPackage } from './AcExHtmlPackager'
 import {
   encodeOsnapCatalogGzip,
@@ -39,7 +40,10 @@ import type {
 export interface AcExBuildPackageOptions {
   /** Inline viewer runtime IIFE source. */
   viewerRuntime: string
-  /** Base name for files (no extension), e.g. `drawing`. */
+  /**
+   * Optional stem retained for API compatibility. Multi-file packages always
+   * write {@link ACEX_DEFAULT_MANIFEST_FILE} so `viewer.html` stays generic.
+   */
   baseName?: string
   /** Max uncompressed ACEC bytes per geometry chunk. */
   maxChunkBytes?: number
@@ -52,8 +56,9 @@ export interface AcExBuildPackageOptions {
   /** Max estimated uncompressed ACEO bytes per OSNAP chunk. */
   maxOsnapChunkBytes?: number
   /**
-   * Relative or absolute manifest URL embedded in the shell HTML.
-   * Defaults to `./{baseName}.acex.json`.
+   * Optional relative or absolute manifest URL embedded in the shell HTML.
+   * When omitted, the shell stays generic and probes
+   * `./drawing.acex.json` at runtime.
    */
   manifestUrl?: string
 }
@@ -159,15 +164,14 @@ export function buildAcExPackage(
     throw new Error(`Unsupported snapshot version: ${snapshot.version}`)
   }
 
-  const baseName = sanitizeBaseName(
-    options.baseName ?? snapshot.meta.title ?? 'drawing'
-  )
   const maxChunkBytes = options.maxChunkBytes ?? ACEX_DEFAULT_CHUNK_MAX_BYTES
   const maxBatchBytes = options.maxBatchBytes ?? ACEX_MAX_GEOMETRY_BATCH_BYTES
   const maxOsnapChunkBytes =
     options.maxOsnapChunkBytes ?? ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES
-  const manifestFileName = `${baseName}.acex.json`
-  const manifestUrl = options.manifestUrl ?? `./${manifestFileName}`
+  // Generic viewer.html always looks for this sibling name; keep zip contents
+  // aligned so hosting is drop-in (`viewer.html` + `drawing.acex.json`).
+  const manifestFileName = ACEX_DEFAULT_MANIFEST_FILE
+  const manifestUrl = options.manifestUrl
 
   const orderedLayouts = orderLayoutsForExport(
     snapshot.layouts,
@@ -296,7 +300,7 @@ export function buildAcExPackage(
   const html = packHtmlPackage(snapshot, {
     title: snapshot.meta.title,
     viewerRuntime: options.viewerRuntime,
-    manifestUrl
+    ...(manifestUrl ? { manifestUrl } : {})
   })
   files.unshift({
     path: 'viewer.html',
@@ -318,20 +322,4 @@ function orderLayoutsForExport(
   const active = layouts.find(l => l.btrId === activeLayoutBtrId)
   const rest = layouts.filter(l => l.btrId !== activeLayoutBtrId)
   return active ? [active, ...rest] : [...layouts]
-}
-
-/**
- * File-name stem for package files (`{base}.acex.json`, zip-safe path segments).
- * Keeps only `[A-Za-z0-9._-]`; spaces, `+`, parentheses, and other punctuation
- * become underscores so {@link zipAcExPackageFiles} / package href checks pass.
- * The browser download name for the `.zip` itself may still use the original
- * drawing title via {@link resolveExportDownloadName}.
- */
-function sanitizeBaseName(name: string): string {
-  const trimmed = name.trim().replace(/\.(dwg|dxf|html|zip|acex\.json)$/i, '')
-  const safe = trimmed
-    .replace(/[^A-Za-z0-9._-]+/g, '_')
-    .replace(/_+/g, '_')
-    .replace(/^[_./-]+|[_./-]+$/g, '')
-  return safe.length > 0 ? safe : 'drawing'
 }
