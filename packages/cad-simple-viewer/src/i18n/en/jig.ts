@@ -772,6 +772,16 @@ export default {
   mtext: {
     point: 'Specify mtext insertion point'
   },
+  bmpout: {
+    boundsFirstCorner: 'Specify first corner of bounds',
+    boundsSecondCorner: 'Specify opposite corner',
+    longSidePrompt: 'Enter long side size in pixels'
+  },
+  jpgout: {
+    boundsFirstCorner: 'Specify first corner of bounds',
+    boundsSecondCorner: 'Specify opposite corner',
+    longSidePrompt: 'Enter long side size in pixels'
+  },
   pngout: {
     boundsFirstCorner: 'Specify first corner of bounds',
     boundsSecondCorner: 'Specify opposite corner',

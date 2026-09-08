@@ -12,9 +12,9 @@ jest.mock('../src/view', () => ({
 
 import { AcGeBox2d, AcGePoint2d } from '@mlightcad/data-model'
 
-import { AcApPngConvertor } from '../src/command/convert/AcApPngConvertor'
+import { AcApRasterImageConvertor } from '../src/command/convert/AcApRasterImageConvertor'
 
-type PngConvertorTestApi = {
+type RasterImageConvertorTestApi = {
   resolveOutputSize: (
     longSide: number,
     aspect: number
@@ -27,11 +27,11 @@ type PngConvertorTestApi = {
   getBoundsAspect: (bounds: AcGeBox2d) => number
 }
 
-function convertorApi(): PngConvertorTestApi {
-  return new AcApPngConvertor() as unknown as PngConvertorTestApi
+function convertorApi(): RasterImageConvertorTestApi {
+  return new AcApRasterImageConvertor() as unknown as RasterImageConvertorTestApi
 }
 
-describe('AcApPngConvertor sizing helpers', () => {
+describe('AcApRasterImageConvertor sizing helpers', () => {
   it('resolveOutputSize keeps long side on width for landscape aspect', () => {
     const api = convertorApi()
 

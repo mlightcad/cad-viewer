@@ -194,7 +194,9 @@ jest.mock('../src/command', () => {
     'AcApClearMarkupsCmd',
     'AcApClearMeasurementsCmd',
     'AcApCloseCmd',
+    'AcApConvertToBmpCmd',
     'AcApConvertToDxfCmd',
+    'AcApConvertToJpgCmd',
     'AcApConvertToPngCmd',
     'AcApEntityPreviewCmd',
     'AcApCopyCmd',
@@ -375,6 +377,8 @@ describe('AcApDocManager disableExport', () => {
     )
     expect(registered).toContain('cdxf')
     expect(registered).toContain('pngout')
+    expect(registered).toContain('jpgout')
+    expect(registered).toContain('bmpout')
   })
 
   it('skips built-in export commands when disableExport is true', () => {
@@ -391,6 +395,8 @@ describe('AcApDocManager disableExport', () => {
     )
     expect(registered).not.toContain('cdxf')
     expect(registered).not.toContain('pngout')
+    expect(registered).not.toContain('jpgout')
+    expect(registered).not.toContain('bmpout')
     expect(registered).toContain('open')
   })
 })

@@ -30,6 +30,9 @@ export default {
       description:
         'AUNITS ile birlikte kullanılan, açılar için görüntüleme hassasiyetini ayarlar'
     },
+    bmpout: {
+      description: 'BMP olarak dışa aktarır'
+    },
     cdxf: {
       description: 'Geçerli çizimi DXF olarak dışa aktarır'
     },
@@ -219,6 +222,9 @@ export default {
     insunits: {
       description:
         'Eklenen blokların, görüntülerin veya dış referansların otomatik ölçeklendirilmesi için çizim birimlerini belirtir'
+    },
+    jpgout: {
+      description: 'JPEG olarak dışa aktarır'
     },
     laycur: {
       description:

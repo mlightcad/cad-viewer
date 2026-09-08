@@ -1,5 +1,5 @@
 ; Zoom extents, export a multi-file ACEX package zip (-chtml Multi),
-; then export a PNG preview of the extents view.
+; then export a JPEG preview of the extents view.
 ; Prompts for -chtml: export format / export invisible layers / export layouts /
 ; initial view / viewer mode.
 ; Usage:
@@ -12,7 +12,7 @@ Yes
 Yes
 Extents
 Measure
-pngout
+jpgout
 
 1024
 quit

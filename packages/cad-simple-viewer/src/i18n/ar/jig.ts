@@ -1712,6 +1712,32 @@ export default {
     }
   },
 
+  bmpout: {
+    ...enJig.bmpout,
+
+    boundsFirstCorner:
+      'حدد الركن الأول لحدود الصورة',
+
+    boundsSecondCorner:
+      'حدد الركن المقابل',
+
+    longSidePrompt:
+      'أدخل حجم الضلع الأطول بالبكسل'
+  },
+
+  jpgout: {
+    ...enJig.jpgout,
+
+    boundsFirstCorner:
+      'حدد الركن الأول لحدود الصورة',
+
+    boundsSecondCorner:
+      'حدد الركن المقابل',
+
+    longSidePrompt:
+      'أدخل حجم الضلع الأطول بالبكسل'
+  },
+
   pngout: {
     ...enJig.pngout,
 

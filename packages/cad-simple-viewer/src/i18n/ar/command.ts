@@ -60,6 +60,12 @@ export default {
         'تحديد دقة عرض الزوايا بالتكامل مع AUNITS'
     },
 
+    bmpout: {
+      ...enCommand.ACAD.bmpout,
+      description:
+        'تصدير الرسم إلى BMP'
+    },
+
     cdxf: {
       ...enCommand.ACAD.cdxf,
       description:
@@ -378,6 +384,12 @@ export default {
       ...enCommand.ACAD.insunits,
       description:
         'تحديد وحدات الرسم المستخدمة في التحجيم التلقائي للكتل والصور والمراجع الخارجية عند الإدراج'
+    },
+
+    jpgout: {
+      ...enCommand.ACAD.jpgout,
+      description:
+        'تصدير الرسم إلى JPEG'
     },
 
     laycur: {

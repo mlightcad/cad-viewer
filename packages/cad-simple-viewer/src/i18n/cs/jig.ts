@@ -770,6 +770,16 @@ export default {
   mtext: {
     point: 'Zadejte bod vložení víceřádkového textu'
   },
+  bmpout: {
+    boundsFirstCorner: 'Zadejte první roh rozsahu',
+    boundsSecondCorner: 'Zadejte protilehlý roh',
+    longSidePrompt: 'Zadejte velikost delší strany v pixelech'
+  },
+  jpgout: {
+    boundsFirstCorner: 'Zadejte první roh rozsahu',
+    boundsSecondCorner: 'Zadejte protilehlý roh',
+    longSidePrompt: 'Zadejte velikost delší strany v pixelech'
+  },
   pngout: {
     boundsFirstCorner: 'Zadejte první roh rozsahu',
     boundsSecondCorner: 'Zadejte protilehlý roh',

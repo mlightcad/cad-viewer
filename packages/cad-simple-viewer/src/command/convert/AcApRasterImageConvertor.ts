@@ -5,28 +5,49 @@ import { AcApDocManager } from '../../app'
 import { resolveExportDownloadName } from '../../util/AcApExportFileNameUtil'
 import { AcTrView2d } from '../../view'
 
+/** Supported raster export formats. */
+export type AcApRasterImageFormat = 'png' | 'jpeg' | 'bmp'
+
+const JPEG_QUALITY = 0.92
+
 /**
- * Utility class for converting CAD drawings to PNG format.
+ * Utility class for converting CAD drawings to raster image formats
+ * (PNG, JPEG, or BMP).
  *
  * Offscreen export temporarily adjusts the camera only. It does not resize
  * the layout view or touch OrbitControls so the interactive view stays intact.
  */
-export class AcApPngConvertor {
+export class AcApRasterImageConvertor {
+  private readonly _format: AcApRasterImageFormat
+
   /**
-   * Converts the current CAD drawing to PNG format and initiates download.
+   * @param format - Target image format. Defaults to PNG.
+   */
+  constructor(format: AcApRasterImageFormat = 'png') {
+    this._format = format
+  }
+
+  get format(): AcApRasterImageFormat {
+    return this._format
+  }
+
+  /**
+   * Converts the current CAD drawing to the configured format and downloads it.
    *
    * Waits for entity conversion and deferred text/font geometry so scripted
-   * exports (e.g. CLI `pngout`) do not snapshot before glyphs are drawable.
+   * exports (e.g. CLI `pngout` / `jpgout` / `bmpout`) do not snapshot before
+   * glyphs are drawable.
    *
    * @param bounds - Optional world coordinate bounding box to export.
    * @param longSide - Optional maximum dimension (width or height) in pixels.
    */
   async convert(bounds?: AcGeBox2d, longSide?: number) {
+    const tag = this.logTag
     const view = AcApDocManager.instance.curView as AcTrView2d
     const sceneReady = await view.waitUntilIdle()
     if (!sceneReady) {
       console.warn(
-        '[PNGOUT] Timed out waiting for scene idle; exporting current geometry'
+        `[${tag}] Timed out waiting for scene idle; exporting current geometry`
       )
     }
 
@@ -37,7 +58,7 @@ export class AcApPngConvertor {
     const camera = view.internalCamera
 
     if (!scene || !camera || !layoutView) {
-      console.error('[PNGOUT] Scene or camera not available')
+      console.error(`[${tag}] Scene or camera not available`)
       return
     }
 
@@ -130,7 +151,7 @@ export class AcApPngConvertor {
         outputHeight
       )
 
-      this.createFileAndDownloadIt(canvas)
+      this.createFileAndDownloadIt(canvas, finalPixels, outputWidth, outputHeight)
     } finally {
       renderer.setRenderTarget(originalRenderTarget)
       renderTarget?.dispose()
@@ -152,6 +173,21 @@ export class AcApPngConvertor {
       layoutView.render(view.cadScene)
       view.isDirty = true
     }
+  }
+
+  private get logTag(): string {
+    switch (this._format) {
+      case 'jpeg':
+        return 'JPGOUT'
+      case 'bmp':
+        return 'BMPOUT'
+      default:
+        return 'PNGOUT'
+    }
+  }
+
+  private get fileExtension(): string {
+    return this._format === 'jpeg' ? 'jpg' : this._format
   }
 
   private resolveOutputSize(
@@ -303,34 +339,124 @@ export class AcApPngConvertor {
   }
 
   /**
-   * Creates a downloadable PNG file and triggers the download.
+   * Creates a downloadable image file and triggers the download.
    *
-   * This method:
-   * - Exports the canvas to a PNG data URL
-   * - Uses the drawing file name as the download file name
-   * - Creates and triggers a download link
-   *
-   * @param canvas - The canvas element containing the image
+   * @param canvas - Canvas used for PNG/JPEG encoding
+   * @param pixels - RGBA pixel buffer used for BMP encoding
+   * @param width - Image width in pixels
+   * @param height - Image height in pixels
    * @private
    */
-  private createFileAndDownloadIt(canvas: HTMLCanvasElement) {
+  private createFileAndDownloadIt(
+    canvas: HTMLCanvasElement,
+    pixels: Uint8Array,
+    width: number,
+    height: number
+  ) {
     const doc = AcApDocManager.instance.curDocument
     const downloadName = resolveExportDownloadName(
       doc.fileName || doc.docTitle,
-      'png'
+      this.fileExtension
     )
 
-    // Export canvas to PNG data URL
-    const dataURL = canvas.toDataURL('image/png')
+    const dataURL = this.encodeDataUrl(canvas, pixels, width, height)
 
-    // Create a download link and trigger the download
     const downloadLink = document.createElement('a')
     downloadLink.href = dataURL
     downloadLink.download = downloadName
 
-    // Trigger the download
     document.body.appendChild(downloadLink)
     downloadLink.click()
     document.body.removeChild(downloadLink)
+  }
+
+  private encodeDataUrl(
+    canvas: HTMLCanvasElement,
+    pixels: Uint8Array,
+    width: number,
+    height: number
+  ): string {
+    switch (this._format) {
+      case 'jpeg':
+        return this.canvasToJpegDataUrl(canvas)
+      case 'bmp':
+        return this.encodeBmpDataUrl(pixels, width, height)
+      default:
+        return canvas.toDataURL('image/png')
+    }
+  }
+
+  /**
+   * Encodes JPEG with a white backdrop so transparent pixels do not become black.
+   */
+  private canvasToJpegDataUrl(canvas: HTMLCanvasElement): string {
+    const out = document.createElement('canvas')
+    out.width = canvas.width
+    out.height = canvas.height
+    const ctx = out.getContext('2d')!
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, out.width, out.height)
+    ctx.drawImage(canvas, 0, 0)
+    return out.toDataURL('image/jpeg', JPEG_QUALITY)
+  }
+
+  /**
+   * Encodes a 24-bit Windows BMP data URL from top-down RGBA pixels.
+   *
+   * Canvas `toDataURL` does not support BMP, so pixels are written manually
+   * (BGR, bottom-up rows, 4-byte row padding). Transparent pixels are
+   * composited on white so BMP matches JPEG's opaque backdrop.
+   */
+  private encodeBmpDataUrl(
+    pixels: Uint8Array,
+    width: number,
+    height: number
+  ): string {
+    const rowSize = Math.ceil((width * 3) / 4) * 4
+    const imageSize = rowSize * height
+    const fileSize = 14 + 40 + imageSize
+    const buffer = new ArrayBuffer(fileSize)
+    const view = new DataView(buffer)
+    const bytes = new Uint8Array(buffer)
+
+    // BITMAPFILEHEADER
+    view.setUint16(0, 0x4d42, true) // 'BM'
+    view.setUint32(2, fileSize, true)
+    view.setUint32(10, 54, true)
+
+    // BITMAPINFOHEADER
+    view.setUint32(14, 40, true)
+    view.setInt32(18, width, true)
+    view.setInt32(22, height, true) // positive = bottom-up
+    view.setUint16(26, 1, true)
+    view.setUint16(28, 24, true)
+    view.setUint32(34, imageSize, true)
+
+    let offset = 54
+    for (let y = height - 1; y >= 0; y--) {
+      const rowStart = y * width * 4
+      for (let x = 0; x < width; x++) {
+        const i = rowStart + x * 4
+        const alpha = (pixels[i + 3] ?? 255) / 255
+        const inv = 1 - alpha
+        // Composite on white so transparent CAD background stays light.
+        bytes[offset++] = Math.round((pixels[i + 2] ?? 0) * alpha + 255 * inv) // B
+        bytes[offset++] = Math.round((pixels[i + 1] ?? 0) * alpha + 255 * inv) // G
+        bytes[offset++] = Math.round((pixels[i] ?? 0) * alpha + 255 * inv) // R
+      }
+      offset += rowSize - width * 3
+    }
+
+    return `data:image/bmp;base64,${this.bytesToBase64(bytes)}`
+  }
+
+  private bytesToBase64(bytes: Uint8Array): string {
+    const chunkSize = 0x8000
+    const chunks: string[] = []
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize)
+      chunks.push(String.fromCharCode(...chunk))
+    }
+    return btoa(chunks.join(''))
   }
 }
