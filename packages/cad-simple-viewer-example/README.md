@@ -43,20 +43,28 @@ From the monorepo root:
 pnpm dev:simple
 ```
 
+To open the HTML converter page directly:
+
+```bash
+pnpm dev:html-converter
+```
+
 Or from this package:
 
 ```bash
 cd packages/cad-simple-viewer-example
 pnpm dev
+# or: pnpm dev:html-converter
 ```
 
-Vite prints the local URL (default `http://localhost:5173`). Open `/html-converter.html` for the in-browser DWG/DXF → offline HTML converter.
+Vite prints the local URL (default `http://localhost:5173`). With `dev:simple`, open `/html-converter.html` manually for the in-browser DWG/DXF → offline HTML converter.
 
 ### Production
 
 ```bash
 pnpm build
 pnpm preview
+# or open the HTML converter: pnpm preview:html-converter
 ```
 
 The build copies parser workers and `viewer-runtime.iife.js` into `dist/` (see `vite.config.ts`).
