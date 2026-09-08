@@ -251,17 +251,32 @@
         display: none;
       }
 
+      .options-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
       .options-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.75rem 1rem;
-        margin-bottom: 0.25rem;
       }
 
       .security-stack {
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
+      }
+
+      .tab.is-disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .tab-panel.is-disabled {
+        opacity: 0.55;
+        pointer-events: none;
       }
 
       .expiry-grid {
@@ -722,12 +737,24 @@
               type="button"
               class="tab is-active"
               role="tab"
-              id="tabExport"
-              aria-controls="panelExport"
+              id="tabData"
+              aria-controls="panelData"
               aria-selected="true"
-              data-tab="export"
+              data-tab="data"
             >
-              Export
+              Data
+            </button>
+            <button
+              type="button"
+              class="tab"
+              role="tab"
+              id="tabDisplay"
+              aria-controls="panelDisplay"
+              aria-selected="false"
+              data-tab="display"
+              tabindex="-1"
+            >
+              Display
             </button>
             <button
               type="button"
@@ -745,54 +772,98 @@
 
           <div
             class="tab-panel"
-            id="panelExport"
+            id="panelData"
             role="tabpanel"
-            aria-labelledby="tabExport"
+            aria-labelledby="tabData"
           >
-            <div class="options-grid">
+            <div class="options-stack">
               <fieldset>
-                <legend>Layers</legend>
-                <div class="toggle-row">
-                  <div class="toggle-copy">
-                    <span class="toggle-label">Export invisible layers</span>
-                    <span class="hint">Include geometry on off or frozen layers</span>
-                  </div>
-                  <label class="switch">
-                    <input id="exportInvisibleLayers" type="checkbox" checked />
-                    <span></span>
+                <legend>Export format</legend>
+                <div class="choice-grid">
+                  <label class="choice is-selected">
+                    <input type="radio" name="exportFormat" value="single" checked />
+                    <span>
+                      <span class="choice-title">Self-contained HTML</span>
+                      <span class="hint">Single .html file that opens offline</span>
+                    </span>
+                  </label>
+                  <label class="choice">
+                    <input type="radio" name="exportFormat" value="multi" />
+                    <span>
+                      <span class="choice-title">Multi-file package (ZIP)</span>
+                      <span class="hint"
+                        >Download a zip; unzip and host for progressive loading.
+                        Password and expiry apply only to self-contained HTML</span
+                      >
+                    </span>
                   </label>
                 </div>
               </fieldset>
 
-              <fieldset>
-                <legend>Layouts</legend>
-                <div class="toggle-row">
-                  <div class="toggle-copy">
-                    <span class="toggle-label">Export layouts</span>
-                    <span class="hint">Include paper-space layouts in the snapshot</span>
+              <div class="options-grid">
+                <fieldset>
+                  <legend>Layers</legend>
+                  <div class="toggle-row">
+                    <div class="toggle-copy">
+                      <span class="toggle-label">Export invisible layers</span>
+                      <span class="hint"
+                        >Include geometry on off or frozen layers in the exported
+                        file</span
+                      >
+                    </div>
+                    <label class="switch">
+                      <input id="exportInvisibleLayers" type="checkbox" checked />
+                      <span></span>
+                    </label>
                   </div>
-                  <label class="switch">
-                    <input id="exportLayouts" type="checkbox" checked />
-                    <span></span>
-                  </label>
-                </div>
-              </fieldset>
+                </fieldset>
 
+                <fieldset>
+                  <legend>Layouts</legend>
+                  <div class="toggle-row">
+                    <div class="toggle-copy">
+                      <span class="toggle-label">Export layouts</span>
+                      <span class="hint"
+                        >Include paper-space layouts in the exported file</span
+                      >
+                    </div>
+                    <label class="switch">
+                      <input id="exportLayouts" type="checkbox" checked />
+                      <span></span>
+                    </label>
+                  </div>
+                </fieldset>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="tab-panel"
+            id="panelDisplay"
+            role="tabpanel"
+            aria-labelledby="tabDisplay"
+            hidden
+          >
+            <div class="options-stack">
               <fieldset>
                 <legend>Initial view</legend>
                 <div class="choice-grid">
                   <label class="choice is-selected">
                     <input type="radio" name="initialView" value="fit" checked />
                     <span>
-                      <span class="choice-title">Zoom to extents</span>
-                      <span class="hint">Fit the whole drawing when the HTML opens</span>
+                      <span class="choice-title">Extents</span>
+                      <span class="hint"
+                        >Zoom to drawing extents when the HTML is opened</span
+                      >
                     </span>
                   </label>
                   <label class="choice">
                     <input type="radio" name="initialView" value="current" />
                     <span>
-                      <span class="choice-title">Saved viewport</span>
-                      <span class="hint">Use the view last saved in the drawing</span>
+                      <span class="choice-title">Current</span>
+                      <span class="hint"
+                        >Preserve the current view center and zoom</span
+                      >
                     </span>
                   </label>
                 </div>
@@ -809,10 +880,17 @@
                     </span>
                   </label>
                   <label class="choice is-selected">
-                    <input type="radio" name="viewerMode" value="measure" checked />
+                    <input
+                      type="radio"
+                      name="viewerMode"
+                      value="measure"
+                      checked
+                    />
                     <span>
                       <span class="choice-title">Measure &amp; Review</span>
-                      <span class="hint">Adds measurement and markup tools</span>
+                      <span class="hint"
+                        >View tools plus measurement and markup annotations</span
+                      >
                     </span>
                   </label>
                 </div>
@@ -827,7 +905,11 @@
             aria-labelledby="tabSecurity"
             hidden
           >
-            <div class="security-stack">
+            <p class="section-hint" id="securitySingleOnlyHint" hidden>
+              Password and expiry are available only for self-contained HTML
+              export.
+            </p>
+            <div class="security-stack" id="securityControls">
               <fieldset>
                 <legend>Validity</legend>
                 <div class="expiry-grid" id="expiryGrid">

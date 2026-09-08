@@ -1,14 +1,17 @@
 import {
   type AcApHtmlExpiryDays,
+  type AcApHtmlExportFormat,
   AcApHtmlSnapshotBuilder,
   type AcExInitialViewMode,
   type AcExViewerMode,
+  buildAcExPackage,
   captureAcApHtmlViewState,
   encodeSnapshot,
   packHtml,
   protectAcExHtmlEncodedSnapshot,
   resolveAcApHtmlExpiresAt,
-  resolveAcApHtmlExportOptions
+  resolveAcApHtmlExportOptions,
+  zipAcExPackageFiles
 } from '@mlightcad/cad-html-plugin'
 import {
   AcApDocManager,
@@ -37,12 +40,16 @@ const OPEN_OPTIONS: AcApOpenDatabaseOptions = {
   progressiveRendering: false
 }
 
+type ConverterTab = 'data' | 'display' | 'security'
+
 const MESSAGES = {
   invalidType: 'Please choose a .dwg or .dxf file.',
   ready: 'Selected {name}. Adjust options, then convert.',
   opening: 'Opening {name}…',
-  converting: 'Converting {name} to HTML…',
-  converted: 'Download started for {name}.html',
+  convertingHtml: 'Converting {name} to HTML…',
+  convertingZip: 'Converting {name} to multi-file package…',
+  convertedHtml: 'Download started for {name}.html',
+  convertedZip: 'Download started for {name}.zip',
   openFailed: 'Failed to open {name}.',
   convertFailed: 'Conversion failed: {error}',
   expiryCustomRequired: 'Please select a custom expiry date and time.',
@@ -51,6 +58,11 @@ const MESSAGES = {
   copyPasswordFailed: 'Unable to copy the password to the clipboard.',
   runtimeMissing:
     'Failed to load viewer-runtime.iife.js. Rebuild the example package and refresh.'
+} as const
+
+const CONVERT_BUTTON_LABELS = {
+  single: 'Convert and download HTML',
+  multi: 'Convert and download ZIP'
 } as const
 
 const PASSWORD_CHARS =
@@ -166,13 +178,26 @@ class HtmlConverterApp {
     document
       .querySelectorAll<HTMLInputElement>('.choice input[type="radio"]')
       .forEach(input => {
-        input.addEventListener('change', () => this.syncChoiceSelection())
+        input.addEventListener('change', () => {
+          this.syncChoiceSelection()
+          if (input.name === 'exportFormat') {
+            this.syncExportFormatUi()
+          }
+        })
       })
     this.syncChoiceSelection()
+    this.syncExportFormatUi()
 
     document.querySelectorAll<HTMLButtonElement>('.tab').forEach(tab => {
       tab.addEventListener('click', () => {
-        this.activateTab(tab.dataset.tab === 'security' ? 'security' : 'export')
+        const name = tab.dataset.tab
+        if (name !== 'data' && name !== 'display' && name !== 'security') {
+          return
+        }
+        if (name === 'security' && this.readExportFormat() === 'multi') {
+          return
+        }
+        this.activateTab(name)
       })
     })
 
@@ -199,21 +224,72 @@ class HtmlConverterApp {
     })
   }
 
-  private activateTab(tab: 'export' | 'security') {
+  private activateTab(tab: ConverterTab) {
     document.querySelectorAll<HTMLButtonElement>('.tab').forEach(button => {
       const isActive = button.dataset.tab === tab
       button.classList.toggle('is-active', isActive)
       button.setAttribute('aria-selected', isActive ? 'true' : 'false')
       button.tabIndex = isActive ? 0 : -1
     })
-    const exportPanel = document.getElementById('panelExport')
+    const panels: Record<ConverterTab, HTMLElement | null> = {
+      data: document.getElementById('panelData'),
+      display: document.getElementById('panelDisplay'),
+      security: document.getElementById('panelSecurity')
+    }
+    ;(Object.keys(panels) as ConverterTab[]).forEach(name => {
+      const panel = panels[name]
+      if (panel) {
+        panel.hidden = name !== tab
+      }
+    })
+  }
+
+  private readExportFormat(): AcApHtmlExportFormat {
+    const raw = (
+      document.querySelector(
+        'input[name="exportFormat"]:checked'
+      ) as HTMLInputElement | null
+    )?.value
+    return raw === 'multi' ? 'multi' : 'single'
+  }
+
+  private syncExportFormatUi() {
+    const isMulti = this.readExportFormat() === 'multi'
+    const securityTab = document.getElementById(
+      'tabSecurity'
+    ) as HTMLButtonElement | null
+    const securityHint = document.getElementById('securitySingleOnlyHint')
+    const securityControls = document.getElementById('securityControls')
     const securityPanel = document.getElementById('panelSecurity')
-    if (exportPanel) {
-      exportPanel.hidden = tab !== 'export'
+
+    if (securityTab) {
+      securityTab.classList.toggle('is-disabled', isMulti)
+      securityTab.setAttribute('aria-disabled', isMulti ? 'true' : 'false')
+      if (isMulti) {
+        securityTab.tabIndex = -1
+      }
+    }
+    if (securityHint) {
+      securityHint.hidden = !isMulti
+    }
+    if (securityControls) {
+      securityControls.hidden = isMulti
     }
     if (securityPanel) {
-      securityPanel.hidden = tab !== 'security'
+      securityPanel.classList.toggle('is-disabled', isMulti)
     }
+    if (isMulti) {
+      const activeTab = document.querySelector('.tab.is-active') as
+        | HTMLButtonElement
+        | null
+      if (activeTab?.dataset.tab === 'security') {
+        this.activateTab('data')
+      }
+    }
+
+    this.convertButton.textContent = isMulti
+      ? CONVERT_BUTTON_LABELS.multi
+      : CONVERT_BUTTON_LABELS.single
   }
 
   private initSecurityDefaults() {
@@ -474,7 +550,7 @@ class HtmlConverterApp {
   private validateSecurityOptions(
     options: ReturnType<typeof resolveAcApHtmlExportOptions>
   ): string | null {
-    if (options.expiryDays !== 'custom') {
+    if (options.exportFormat === 'multi' || options.expiryDays !== 'custom') {
       return null
     }
     if (options.expiresAt == null) {
@@ -487,6 +563,7 @@ class HtmlConverterApp {
   }
 
   private readExportOptions(): ReturnType<typeof resolveAcApHtmlExportOptions> {
+    const exportFormat = this.readExportFormat()
     const viewerMode = (
       document.querySelector(
         'input[name="viewerMode"]:checked'
@@ -499,19 +576,39 @@ class HtmlConverterApp {
     )?.value as AcExInitialViewMode | undefined
     const expiryDays = this.readExpiryDays()
     return resolveAcApHtmlExportOptions({
+      exportFormat,
       exportInvisibleLayers: this.exportInvisibleLayers.checked,
       exportLayouts: this.exportLayouts.checked,
       initialView: initialView ?? 'fit',
       viewerMode: viewerMode ?? 'measure',
-      expiryDays,
-      expiresAt: expiryDays === 'custom' ? this.readCustomExpiresAt() : null,
-      password: this.exportPassword.value.trim() || undefined
+      expiryDays: exportFormat === 'multi' ? 'never' : expiryDays,
+      expiresAt:
+        exportFormat === 'single' && expiryDays === 'custom'
+          ? this.readCustomExpiresAt()
+          : null,
+      password:
+        exportFormat === 'single'
+          ? this.exportPassword.value.trim() || undefined
+          : undefined
     })
   }
 
-  private triggerDownload(html: string, downloadName: string) {
+  private triggerDownload(
+    data: string | Uint8Array,
+    downloadName: string,
+    mimeType: string
+  ) {
     this.clearDownloadUrl()
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
+    // Copy Uint8Array so Blob gets an ArrayBuffer-backed view (TS DOM typings).
+    const blobPart =
+      typeof data === 'string'
+        ? data
+        : (() => {
+            const copy = new Uint8Array(data.byteLength)
+            copy.set(data)
+            return copy
+          })()
+    const blob = new Blob([blobPart], { type: mimeType })
     this.downloadUrl = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = this.downloadUrl
@@ -522,7 +619,9 @@ class HtmlConverterApp {
     document.body.removeChild(link)
   }
 
-  private async buildHtml(fileName: string): Promise<string> {
+  private async buildExport(
+    fileName: string
+  ): Promise<{ downloadName: string; mimeType: string; data: string | Uint8Array }> {
     const view = AcApDocManager.instance.curView as AcTrView2d
     if (
       !view?.cadScene ||
@@ -540,11 +639,12 @@ class HtmlConverterApp {
     })
 
     const document = AcApDocManager.instance.curDocument
+    const baseName = getDrawingExportBaseName(fileName)
     const snapshot = await new AcApHtmlSnapshotBuilder().buildAsync(
       view.cadScene,
       document.database,
       {
-        title: getDrawingExportBaseName(fileName),
+        title: baseName,
         background: view.backgroundColor,
         exportInvisibleLayers: resolved.exportInvisibleLayers,
         exportLayouts: resolved.exportLayouts,
@@ -559,6 +659,20 @@ class HtmlConverterApp {
       }
     )
 
+    const viewerRuntime = await (this.runtimePromise ?? this.loadViewerRuntime())
+
+    if (resolved.exportFormat === 'multi') {
+      const pkg = buildAcExPackage(snapshot, {
+        viewerRuntime,
+        baseName
+      })
+      return {
+        downloadName: resolveExportDownloadName(fileName, 'zip'),
+        mimeType: 'application/zip',
+        data: zipAcExPackageFiles(pkg)
+      }
+    }
+
     const expiresAt = resolveAcApHtmlExpiresAt(
       resolved.expiryDays,
       Date.now(),
@@ -572,13 +686,18 @@ class HtmlConverterApp {
       }
     )
 
-    const viewerRuntime = await (this.runtimePromise ?? this.loadViewerRuntime())
-    return packHtml(snapshot, {
+    const html = packHtml(snapshot, {
       title: snapshot.meta.title,
       viewerRuntime,
       encoded: protectedSnapshot.encoded,
       accessManifest: protectedSnapshot.manifest
     })
+
+    return {
+      downloadName: resolveExportDownloadName(fileName, 'html'),
+      mimeType: 'text/html;charset=utf-8',
+      data: html
+    }
   }
 
   private async convert() {
@@ -586,7 +705,8 @@ class HtmlConverterApp {
       return
     }
 
-    const securityError = this.validateSecurityOptions(this.readExportOptions())
+    const options = this.readExportOptions()
+    const securityError = this.validateSecurityOptions(options)
     if (securityError) {
       this.setStatus(securityError, true)
       this.activateTab('security')
@@ -594,6 +714,7 @@ class HtmlConverterApp {
     }
 
     const sourceName = this.currentName
+    const isMulti = options.exportFormat === 'multi'
     this.setBusy(true, format(MESSAGES.opening, { name: sourceName }))
     try {
       await this.initialize()
@@ -603,12 +724,19 @@ class HtmlConverterApp {
         return
       }
 
-      this.setStatus(format(MESSAGES.converting, { name: sourceName }))
-      const html = await this.buildHtml(sourceName)
-      const downloadName = resolveExportDownloadName(sourceName, 'html')
-      this.triggerDownload(html, downloadName)
       this.setStatus(
-        format(MESSAGES.converted, {
+        format(isMulti ? MESSAGES.convertingZip : MESSAGES.convertingHtml, {
+          name: sourceName
+        })
+      )
+      const exportResult = await this.buildExport(sourceName)
+      this.triggerDownload(
+        exportResult.data,
+        exportResult.downloadName,
+        exportResult.mimeType
+      )
+      this.setStatus(
+        format(isMulti ? MESSAGES.convertedZip : MESSAGES.convertedHtml, {
           name: drawingBaseName(sourceName)
         })
       )

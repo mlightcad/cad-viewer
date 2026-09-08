@@ -12,9 +12,11 @@
     "clean": "rimraf dist lib tsconfig.tsbuildinfo",
     "copy:workers": "node ../../tools/copy-workers.mjs dist/workers",
     "dev": "vite",
+    "dev:html-converter": "vite --open /html-converter.html",
     "lint": "eslint src/",
     "lint:fix": "eslint --fix --quiet src/",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preview:html-converter": "vite preview --open /html-converter.html"
   },
   "dependencies": {
     "@mlightcad/cad-agent-plugin": "workspace:*",
