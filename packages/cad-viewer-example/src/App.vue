@@ -92,7 +92,7 @@ const showViewer = computed(
 )
 
 const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
-const useMainThreadDraw = ref(false)
+const useMainThreadDraw = ref(true)
 const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
 const openViewMode = ref<AcApOpenViewMode | undefined>(undefined)
