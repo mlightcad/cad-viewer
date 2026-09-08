@@ -1,5 +1,5 @@
+import { AcUiDefaultNotificationUi } from '../../ui/AcUiDefaultNotificationUi'
 import type { AcApDocManager } from '../AcApDocManager'
-import { AcApDefaultNotificationUi } from './AcApDefaultNotificationUi'
 import { AcApNotificationEventBridge } from './AcApNotificationEventBridge'
 import { AcApNotificationStore } from './AcApNotificationStore'
 import type { AcApNotificationCenter } from './AcApNotificationTypes'
@@ -38,8 +38,8 @@ class AcApNotificationService {
   private _center: AcApNotificationCenter = new AcApNotificationStore()
   /** Built-in store instance used when no custom center is installed. */
   private _defaultStore = this._center as AcApNotificationStore
-  /** Optional default DOM bell / panel. */
-  private _defaultUi?: AcApDefaultNotificationUi
+  /** Optional default DOM bell / panel ({@link AcUiDefaultNotificationUi}). */
+  private _defaultUi?: AcUiDefaultNotificationUi
   /** Shared event bridge that writes into {@link _center}. */
   private _bridge?: AcApNotificationEventBridge
   /** Explicit host for the default UI, when provided at install time. */
@@ -154,12 +154,12 @@ class AcApNotificationService {
   }
 
   /**
-   * Mounts (or remounts) {@link AcApDefaultNotificationUi} on {@link resolveHost}.
+   * Mounts (or remounts) {@link AcUiDefaultNotificationUi} on {@link resolveHost}.
    */
   private mountDefaultUi() {
     this.disposeDefaultUi()
     if (typeof document === 'undefined') return
-    this._defaultUi = new AcApDefaultNotificationUi(
+    this._defaultUi = new AcUiDefaultNotificationUi(
       this._center,
       this.resolveHost()
     )

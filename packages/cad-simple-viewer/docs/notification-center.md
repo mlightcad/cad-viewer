@@ -17,7 +17,7 @@ AcApNotificationEventBridge   ← formats title/body, writes into the current Ce
         ▼
 AcApNotificationCenter        ← replaceable: default Store, or a host implementation
         │
-        ├─ Default: AcApDefaultNotificationUi (bell on the canvas)
+        ├─ Default: AcUiDefaultNotificationUi (bell on the canvas)
         └─ Override: your UI (Vue / React / custom DOM …)
 ```
 
@@ -27,6 +27,7 @@ Key points:
 - **The Center is a singleton slot.** Switch it with `acapSetNotificationCenter`; pass `null` to restore the built-in implementation.
 - **Notifications are per document session (MDI).** Each entry is tagged with `sessionId` (`AcApDocSession.id`). `notifications` / `unreadCount` reflect the **active** session only.
 - **Default chrome is canvas-relative**, not viewport-relative. The bell mounts on the view container (`curView.container`) unless you pass another `host`.
+- **Default DOM UI is `AcUi*`** (`src/ui/AcUiDefaultNotificationUi.ts`); the store / bridge / service stay `AcAp*` under `src/app/notification`.
 - **Copy uses `AcApI18n`.** If the host has its own i18n, keep `AcApI18n.setCurrentLocale` in sync, or localize inside your custom Center.
 
 ---
@@ -71,7 +72,7 @@ acapSetNotificationCenter(null)     // restore built-in store + default UI (if e
 
 ### 2.2 Default DOM UI (automatic)
 
-`AcApDefaultNotificationUi` ties chrome visibility to the **active session’s** notification list:
+`AcUiDefaultNotificationUi` ties chrome visibility to the **active session’s** notification list:
 
 | State | Bell | Panel | Backdrop (phone) |
 |---|---|---|---|

@@ -1,28 +1,37 @@
-import {
-  acedGetUiLayout,
-  acedIsHandheldDevice,
-  acedSubscribeUiLayout,
-  type AcEdUiLayoutKind,
-  ML_UI_Z_NOTIFICATION
-} from '../../editor/global/AcEdUiLayout'
-import {
-  acedApplyUiTheme,
-  acedSubscribeUiTheme,
-  resolveUiTheme
-} from '../../editor/global/AcEdUiTheme'
-import { acapI18nTranslate } from '../../util/AcApFormatUnsupportedEntitiesMessage'
+/**
+ * Built-in notification bell / panel for hosts that do not supply their own center.
+ *
+ * Lives under `src/ui` (`AcUi*`) because it is presentational DOM chrome.
+ * The application service / store / event bridge remain under `src/app/notification` (`AcAp*`).
+ *
+ * @module AcUiDefaultNotificationUi
+ * @packageDocumentation
+ */
 import {
   acapGroupNotifications,
   type AcApNotification,
   type AcApNotificationCenter,
   type AcApNotificationGroup,
   type AcApNotificationSource
-} from './AcApNotificationTypes'
+} from '../app/notification/AcApNotificationTypes'
+import {
+  acedGetUiLayout,
+  acedIsHandheldDevice,
+  acedSubscribeUiLayout,
+  type AcEdUiLayoutKind,
+  ML_UI_Z_NOTIFICATION
+} from '../editor/global/AcEdUiLayout'
+import {
+  acedApplyUiTheme,
+  acedSubscribeUiTheme,
+  resolveUiTheme
+} from '../editor/global/AcEdUiTheme'
+import { acapI18nTranslate } from '../util/AcApFormatUnsupportedEntitiesMessage'
 
 /** DOM id for the injected stylesheet. */
-const STYLE_ID = 'acap-notification-center-style'
+const STYLE_ID = 'ml-ui-notification-center-styles'
 /** Root CSS class prefix for the built-in notification chrome. */
-const ROOT_CLASS = 'acap-notification-center'
+const ROOT_CLASS = 'ml-ui-notification-center'
 
 /** Gap between the shortcut toolbar bottom edge and the notification bell. */
 const SHORTCUT_CLEARANCE_PX = 8
@@ -46,7 +55,7 @@ const FALLBACK_TOP_BELOW_SHORTCUT_PX = 12 + 40 + SHORTCUT_CLEARANCE_PX
  *
  * Theme tokens follow {@link resolveUiTheme} / `--ml-ui-*`.
  */
-export class AcApDefaultNotificationUi {
+export class AcUiDefaultNotificationUi {
   /** Canvas / view container the chrome is positioned relative to. */
   private readonly _host: HTMLElement
   /** Center whose active-session list drives the UI. */
