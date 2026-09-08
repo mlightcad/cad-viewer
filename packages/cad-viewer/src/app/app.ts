@@ -7,12 +7,14 @@ import {
   AcApDocManagerOptions
 } from '@mlightcad/cad-simple-viewer'
 
+import { registerCadViewerNotificationCenter } from './cadViewerNotificationCenter'
 import {
   registerCmds,
   registerDialogs,
   registerLazyPlugins,
   type RegisterLazyPluginsOptions,
-  registerMTextColorPicker} from './register'
+  registerMTextColorPicker
+} from './register'
 
 /** Options for {@link initializeCadViewer}. */
 export type InitializeCadViewerOptions = AcApDocManagerOptions & {
@@ -28,7 +30,15 @@ export const initializeCadViewer = (
   options: InitializeCadViewerOptions = {}
 ) => {
   const { htmlViewerRuntimeUrl, ...docOptions } = options
-  AcApDocManager.createInstance(docOptions)
+  AcApDocManager.createInstance({
+    ...docOptions,
+    // Keep the shared event bridge; Vue panel replaces the built-in DOM UI.
+    notificationCenter: {
+      showDefaultUi: false,
+      host: docOptions.busyIndicatorHost ?? docOptions.container
+    }
+  })
+  registerCadViewerNotificationCenter()
   registerCmds()
   registerDialogs()
   registerMTextColorPicker()

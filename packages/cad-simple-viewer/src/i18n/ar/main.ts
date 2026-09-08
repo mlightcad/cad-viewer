@@ -39,6 +39,12 @@ export default {
     collectingMemoryProfile: 'جارٍ تحليل الذاكرة ...',
     fontCached: 'تم تخزين الخط بنجاح',
     fontCacheFailed: 'فشل تخزين الخط',
+    fontsNotFound: 'خطوط غير موجودة في مستودع الخطوط: {fonts}.',
+    fontsNotLoaded: 'تعذر تحميل الخطوط: {fonts}.',
+    fontMissedInDrawing:
+      'الخط "{font}" مطلوب بواسطة {count} من كائنات النص ولكنه غير متاح. يتم العرض باستخدام "{replacementFont}".',
+    fontMissedReplacement: '"{font}" (يُعرض بـ "{replacement}")',
+    failedToGetAvaiableFonts: 'تعذر الحصول على الخطوط من "{url}"!',
     failedToOpenFile: 'فشل فتح الملف "{fileName}"!',
     failedToOpenFileWorkerOom:
       'فشل فتح "{fileName}". الرسم كبير جدًا بالنسبة للذاكرة المتاحة.',
@@ -49,16 +55,42 @@ export default {
     failedToOpenFileLicenseExpired:
       'فشل فتح "{fileName}". انتهت صلاحية ترخيص محول DWG.',
     failedToOpenFileLicenseInvalid:
-      'فشل فتح "{fileName}". ترخيص محول DWG مفقود أو غير صالح.'
+      'فشل فتح "{fileName}". ترخيص محول DWG مفقود أو غير صالح.',
+    unknownEntities:
+      'يحتوي هذا الرسم على {count} عنصر غير معروف أو غير مدعوم. لن يتم عرض هذه العناصر.',
+    tianzhengEntities:
+      'يحتوي هذا الرسم على كيانات مخصصة من TArch / Tianzheng (أو جهات خارجية مشابهة) (حوالي {count}). لا يمكن تحليلها بالكامل في هذه البيئة، لذلك قد لا يُعرض بعض المحتوى.',
+    emptyProxyEntities:
+      'يحتوي هذا الرسم على {count} كيان مخصص بدون رسومات وكيلة. لن يتم عرض هذه العناصر.'
   },
   notification: {
+    center: {
+      title: 'الإشعارات',
+      clearAll: 'مسح الكل',
+      noNotifications: 'لا توجد إشعارات'
+    },
+    group: {
+      fontMissed: 'خطوط مفقودة',
+      fontMissedSummary: '{count} رسائل متعلقة بالخطوط. انقر للتفاصيل.',
+      unsupportedEntities: 'كيانات غير مدعومة',
+      unsupportedEntitiesSummary:
+        '{count} رسائل متعلقة بالتحليل. انقر للتفاصيل.',
+      genericSummary: '{count} رسائل. انقر للتفاصيل.'
+    },
     title: {
       failedToOpenFile: 'فشل فتح الملف',
       failedToOpenFileWorkerOom: 'الرسم كبير جدًا',
       failedToOpenFileWorkerTimeout: 'انتهت مهلة فتح الرسم',
       failedToOpenFileFontLoadFailed: 'فشل تحميل الخطوط',
       failedToOpenFileLicenseExpired: 'انتهت صلاحية الترخيص',
-      failedToOpenFileLicenseInvalid: 'ترخيص غير صالح'
+      failedToOpenFileLicenseInvalid: 'ترخيص غير صالح',
+      fontNotFound: 'الخط غير موجود',
+      fontNotLoaded: 'لم يتم تحميل الخط',
+      parsingWarning: 'مشكلات أثناء تحليل الرسم',
+      systemMessage: 'رسالة النظام',
+      systemWarning: 'تحذير النظام',
+      systemError: 'خطأ النظام',
+      systemInfo: 'معلومات النظام'
     }
   },
   progress: {

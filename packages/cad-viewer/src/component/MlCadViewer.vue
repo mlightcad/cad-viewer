@@ -89,7 +89,6 @@
  */
 import {
   AcApDocManager,
-  AcApFontUtil,
   AcApOpenDatabaseOptions,
   AcApOpenViewMode,
   AcEdMTextEditor,
@@ -103,7 +102,11 @@ import { ElConfigProvider, ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { initializeCadViewer, store } from '../app'
+import {
+  initializeCadViewer,
+  store,
+  unregisterCadViewerNotificationCenter
+} from '../app'
 import {
   ensureColorThemeSync,
   isDark,
@@ -112,14 +115,10 @@ import {
   toggleDark,
   useDocument,
   useLocale,
-  useNotificationCenter,
   useSettings
 } from '../composable'
 import { LocaleProp } from '../locale'
-import {
-  resolveOpenFileErrorMessage,
-  resolveOpenFileErrorTitle
-} from '../util/openFileErrorMessage'
+import { resolveOpenFileErrorMessage } from '../util/openFileErrorMessage'
 import { MlDialogManager, MlFontFileReader } from './common'
 import { MlEntityInfo, MlToolBars } from './layout'
 import { MlNotificationCenter } from './notification'
@@ -251,36 +250,6 @@ const { currentLocale, effectiveLocale, elementPlusLocale } = useLocale(
   props.locale
 )
 provideLocale(currentLocale)
-const {
-  info,
-  warning,
-  error,
-  success,
-  removeWhere,
-  removeResolvedFontMissedNotifications
-} = useNotificationCenter()
-
-const fontMissedNotificationOptions = (fontNames: string[]) => ({
-  source: 'font-missed' as const,
-  fontNames
-})
-
-const formatFontWithReplacement = (fontName: string) =>
-  t('main.message.fontMissedReplacement', {
-    font: fontName,
-    replacement: AcApFontUtil.getReplacementFontName(fontName)
-  })
-
-const formatFontsWithReplacement = (fontNames: string[]) =>
-  fontNames.map(formatFontWithReplacement).join(', ')
-
-const syncFontMissedNotifications = () => {
-  const missedFonts = Object.keys(
-    AcApDocManager.instance.curView.missedData.fonts
-  )
-  removeResolvedFontMissedNotifications(missedFonts)
-}
-
 // Canvas element reference
 const containerRef = ref<HTMLDivElement>()
 const layoutRef = ref<HTMLDivElement>()
@@ -553,6 +522,7 @@ onUnmounted(() => {
 
   AcEdMTextEditor.setDefaultToolbarEnabled(true)
   headerResizeObserver?.disconnect()
+  unregisterCadViewerNotificationCenter()
   AcApDocManager.instance.destroy()
 })
 
@@ -570,85 +540,17 @@ watch(
   { immediate: true }
 )
 
-// Set up global event listeners for various CAD operations and notifications
-// These events are emitted by the underlying CAD engine and other components
-
-// Handle general messages from the CAD system (info, warnings, errors)
+// Toast-only listeners. Notification center entries are written by the shared
+// AcApNotificationEventBridge in cad-simple-viewer.
 eventBus.on('message', params => {
-  // Show both ElMessage and notification center
   ElMessage({
     message: params.message,
     grouping: true,
     type: params.type,
     showClose: true
   })
-
-  // Also add to notification center
-  switch (params.type) {
-    case 'success':
-      success(t('main.notification.title.systemMessage'), params.message)
-      break
-    case 'warning':
-      warning(t('main.notification.title.systemWarning'), params.message)
-      break
-    case 'error':
-      error(t('main.notification.title.systemError'), params.message)
-      break
-    default:
-      info(t('main.notification.title.systemInfo'), params.message)
-      break
-  }
 })
 
-// Handle failure that fonts can't be loaded from remote font repository
-eventBus.on('fonts-not-loaded', params => {
-  const fontNames = params.fonts.map(font => font.fontName)
-  const message = t('main.message.fontsNotLoaded', {
-    fonts: formatFontsWithReplacement(fontNames)
-  })
-  error(t('main.notification.title.fontNotFound'), message, {
-    ...fontMissedNotificationOptions(fontNames),
-    persistent: true
-  })
-})
-
-// Handle failure that fonts can't be found in remote font repository
-eventBus.on('fonts-not-found', params => {
-  const message = t('main.message.fontsNotFound', {
-    fonts: formatFontsWithReplacement(params.fonts)
-  })
-  warning(t('main.notification.title.fontNotFound'), message, {
-    ...fontMissedNotificationOptions(params.fonts)
-  })
-})
-
-// Handle fonts required by the drawing that are not available during rendering
-eventBus.on('font-not-found', params => {
-  const fontName = params.fontName.trim()
-  if (!fontName) return
-
-  removeWhere(
-    notification =>
-      notification.source === 'font-missed' &&
-      notification.fontNames?.includes(fontName) === true
-  )
-
-  warning(
-    t('main.notification.title.fontNotFound'),
-    t('main.message.fontMissedInDrawing', {
-      font: fontName,
-      count: params.count,
-      replacementFont: AcApFontUtil.getReplacementFontName(fontName)
-    }),
-    fontMissedNotificationOptions([fontName])
-  )
-})
-
-eventBus.on('missed-data-changed', () => {
-  syncFontMissedNotifications()
-})
-
-// Handle failures when trying to get available fonts from the system
 eventBus.on('failed-to-get-avaiable-fonts', params => {
   ElMessage({
     message: t('main.message.failedToGetAvaiableFonts', { url: params.url }),
@@ -674,7 +576,6 @@ eventBus.on('failed-to-open-file', params => {
     showClose: true,
     duration: 8000
   })
-  error(resolveOpenFileErrorTitle(t, params.errorCode), message)
 })
 
 // Mirror AutoCAD's LAYERCLOSE behavior: only close when the layer tab is open.
@@ -730,6 +631,12 @@ const closeNotificationCenter = () => {
 
           <!-- Dialog manager for modal dialogs and settings -->
           <ml-dialog-manager v-if="editorRef" />
+
+          <!-- Notification center (anchored to the canvas / main area) -->
+          <ml-notification-center
+            v-if="editorRef && showNotificationCenter"
+            @close="closeNotificationCenter"
+          />
         </main>
 
         <!-- Footer section with command line and status information -->
@@ -748,12 +655,6 @@ const closeNotificationCenter = () => {
 
       <!-- Entity info panel for displaying object properties -->
       <ml-entity-info v-if="editorRef" />
-
-      <!-- Notification center -->
-      <ml-notification-center
-        v-if="editorRef && showNotificationCenter"
-        @close="closeNotificationCenter"
-      />
     </el-config-provider>
   </div>
 </template>

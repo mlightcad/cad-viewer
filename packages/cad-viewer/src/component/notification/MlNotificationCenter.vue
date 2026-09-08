@@ -47,13 +47,21 @@
         <p>{{ t('main.notification.center.noNotifications') }}</p>
       </div>
       <div v-else class="ml-notification-list">
-        <ml-notification-item
-          v-for="notification in notifications"
-          :key="notification.id"
-          :notification="notification"
-          @close="remove(notification.id)"
-          @action="handleAction"
-        />
+        <template v-for="group in notificationGroups" :key="group.key">
+          <ml-notification-group
+            v-if="group.collapsible"
+            :group="group"
+            @clear="clearGroup(group)"
+            @close-item="remove"
+            @action="handleAction"
+          />
+          <ml-notification-item
+            v-else
+            :notification="group.items[0]"
+            @close="remove(group.items[0].id)"
+            @action="handleAction"
+          />
+        </template>
       </div>
     </div>
   </div>
@@ -66,9 +74,12 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
+  groupNotifications,
   type NotificationAction,
+  type NotificationGroup,
   useNotificationCenter
 } from '../../composable/useNotificationCenter'
+import MlNotificationGroup from './MlNotificationGroup.vue'
 import MlNotificationItem from './MlNotificationItem.vue'
 
 interface Props {
@@ -81,7 +92,12 @@ const props = defineProps<Props>()
 const titleText = computed(
   () => props.title ?? t('main.notification.center.title')
 )
-const { notifications, remove, clearAll } = useNotificationCenter()
+const { notifications, remove, clearAll, removeBySource } =
+  useNotificationCenter()
+
+const notificationGroups = computed(() =>
+  groupNotifications(notifications.value)
+)
 
 defineEmits<{
   close: []
@@ -90,15 +106,26 @@ defineEmits<{
 const handleAction = (action: NotificationAction) => {
   action.action()
 }
+
+const clearGroup = (group: NotificationGroup) => {
+  if (group.source) {
+    removeBySource(group.source)
+    return
+  }
+  for (const item of group.items) {
+    remove(item.id)
+  }
+}
 </script>
 
 <style scoped>
 .ml-notification-center {
-  position: fixed;
-  bottom: calc(var(--ml-status-bar-height) + 20px);
-  right: 0; /* align with right border of the window */
+  /* Anchor to the canvas / main area, not the browser viewport. */
+  position: absolute;
+  bottom: 20px;
+  right: 0;
   width: 400px; /* default width on larger screens */
-  max-width: 100vw; /* never exceed the viewport width */
+  max-width: 100%; /* never exceed the canvas host width */
   box-sizing: border-box; /* include borders in width to avoid overflow */
   max-height: 500px;
   background: var(--el-bg-color);

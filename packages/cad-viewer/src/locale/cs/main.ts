@@ -1004,13 +1004,26 @@ export default {
       'Nepodařilo se otevřít „{fileName}“. Licence převodníku DWG chybí nebo je neplatná.',
     fetchingDrawingFile: 'Načítám soubor…',
     unknownEntities:
-      'Tento výkres obsahuje {count} neznámých nebo nepodporovaných objektů! Tyto objekty nebudou zobrazeny.'
+      'Tento výkres obsahuje {count} neznámých nebo nepodporovaných objektů! Tyto objekty nebudou zobrazeny.',
+    tianzhengEntities:
+      'Tento výkres obsahuje vlastní objekty TArch / Tianzheng (nebo podobné třetí strany) (asi {count}). V tomto prostředí je nelze plně zpracovat, takže se část obsahu nemusí zobrazit.',
+    emptyProxyEntities:
+      'Tento výkres obsahuje {count} vlastních objektů bez proxy grafiky! Tyto objekty nebudou zobrazeny.'
   },
   notification: {
     center: {
       title: 'Oznámení',
       clearAll: 'Vymazat vše',
       noNotifications: 'Žádná oznámení'
+    },
+    group: {
+      fontMissed: 'Chybějící fonty',
+      fontMissedSummary:
+        '{count} zpráv o fontech. Kliknutím zobrazíte podrobnosti.',
+      unsupportedEntities: 'Nepodporované objekty',
+      unsupportedEntitiesSummary:
+        '{count} zpráv o načítání. Kliknutím zobrazíte podrobnosti.',
+      genericSummary: '{count} zpráv. Kliknutím zobrazíte podrobnosti.'
     },
     time: {
       justNow: 'Právě teď',

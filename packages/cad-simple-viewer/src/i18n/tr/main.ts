@@ -39,6 +39,12 @@ export default {
     collectingMemoryProfile: 'Bellek analiz ediliyor ...',
     fontCached: 'Yazı tipi başarıyla önbelleğe alındı',
     fontCacheFailed: 'Yazı tipi önbelleğe alınamadı',
+    fontsNotFound: 'Yazı tipi deposunda bulunamadı: {fonts}.',
+    fontsNotLoaded: 'Yazı tipleri yüklenemedi: {fonts}.',
+    fontMissedInDrawing:
+      '"{font}" yazı tipi {count} metin nesnesi tarafından gerekli, ancak kullanılamıyor. "{replacementFont}" ile gösteriliyor.',
+    fontMissedReplacement: '"{font}" ("{replacement}" ile gösteriliyor)',
+    failedToGetAvaiableFonts: '"{url}" adresinden yazı tipleri alınamadı!',
     failedToOpenFile: '"{fileName}" dosyası açılamadı!',
     failedToOpenFileWorkerOom:
       '"{fileName}" açılamadı. Çizim mevcut bellek için çok büyük.',
@@ -49,16 +55,43 @@ export default {
     failedToOpenFileLicenseExpired:
       '"{fileName}" açılamadı. DWG dönüştürücü lisansı süresi dolmuş.',
     failedToOpenFileLicenseInvalid:
-      '"{fileName}" açılamadı. DWG dönüştürücü lisansı eksik veya geçersiz.'
+      '"{fileName}" açılamadı. DWG dönüştürücü lisansı eksik veya geçersiz.',
+    unknownEntities:
+      'Bu çizim {count} bilinmeyen veya desteklenmeyen varlık içeriyor! Bu varlıklar gösterilmeyecek.',
+    tianzhengEntities:
+      'Bu çizim TArch / Tianzheng (veya benzeri üçüncü taraf) özel varlıklar içeriyor (yaklaşık {count}). Bu ortamda tam olarak ayrıştırılamazlar, bu nedenle bazı içerikler görüntülenmeyebilir.',
+    emptyProxyEntities:
+      'Bu çizim proxy grafiği olmayan {count} özel varlık içeriyor! Bu varlıklar gösterilmeyecek.'
   },
   notification: {
+    center: {
+      title: 'Bildirimler',
+      clearAll: 'Tümünü Temizle',
+      noNotifications: 'Bildirim yok'
+    },
+    group: {
+      fontMissed: 'Eksik Yazı Tipleri',
+      fontMissedSummary:
+        '{count} yazı tipi ile ilgili mesaj. Ayrıntılar için tıklayın.',
+      unsupportedEntities: 'Desteklenmeyen Varlıklar',
+      unsupportedEntitiesSummary:
+        '{count} ayrıştırma ile ilgili mesaj. Ayrıntılar için tıklayın.',
+      genericSummary: '{count} mesaj. Ayrıntılar için tıklayın.'
+    },
     title: {
       failedToOpenFile: 'Dosya Açılamadı',
       failedToOpenFileWorkerOom: 'Çizim Çok Büyük',
       failedToOpenFileWorkerTimeout: 'Açma Zaman Aşımı',
       failedToOpenFileFontLoadFailed: 'Yazı Tipi Yüklenemedi',
       failedToOpenFileLicenseExpired: 'Lisans Süresi Doldu',
-      failedToOpenFileLicenseInvalid: 'Geçersiz Lisans'
+      failedToOpenFileLicenseInvalid: 'Geçersiz Lisans',
+      fontNotFound: 'Yazı Tipi Bulunamadı',
+      fontNotLoaded: 'Yazı Tipi Yüklenemedi',
+      parsingWarning: 'Çizim Ayrıştırma Sorunları',
+      systemMessage: 'Sistem Mesajı',
+      systemWarning: 'Sistem Uyarısı',
+      systemError: 'Sistem Hatası',
+      systemInfo: 'Sistem Bilgisi'
     }
   },
   progress: {
