@@ -101,6 +101,7 @@ After install, examples live under `node_modules/@mlightcad/cad-simple-viewer-cl
 | `export-png.scr` | Zoom extents → PNG |
 | `export-html.scr` | Offline HTML (`-chtml`) |
 | `export-html-multi.scr` | Multi-file ACEX package zip (`-chtml` Multi) |
+| `export-html-multi-preview.scr` | Multi ACEX zip + zoom-extents PNG preview (one run) |
 | `export-dxf.scr` | DXF download (`cdxf`) |
 | `create-drawing-dxf.scr` | Blank drawing + LINE → DXF (no `-i`) |
 | `create-shapes-dxf.scr` | Blank drawing + LINE + CIRCLE → DXF |
@@ -108,12 +109,14 @@ After install, examples live under `node_modules/@mlightcad/cad-simple-viewer-cl
 | `freeze-layer-png.scr` | `-layer` Off then PNG (`--mode write`; edit `LAYER_NAME`) |
 | `batch-export-png.mjs` | Scan a folder of drawings → PNG |
 | `batch-export-html.mjs` | Scan a folder → HTML |
+| `batch-export-html-multi-preview.mjs` | Scan a folder → multi ACEX + preview, demo-drawings layout |
 
 Batch helpers (from your project after `npm install -D`):
 
 ```bash
 node node_modules/@mlightcad/cad-simple-viewer-cli/examples/batch-export-png.mjs ./drawings ./out-png
 node node_modules/@mlightcad/cad-simple-viewer-cli/examples/batch-export-html.mjs ./drawings ./out-html
+node node_modules/@mlightcad/cad-simple-viewer-cli/examples/batch-export-html-multi-preview.mjs ./drawings ./out-demo
 ```
 
 ## Programmatic API
