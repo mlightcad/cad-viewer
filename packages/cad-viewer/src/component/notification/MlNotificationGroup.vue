@@ -64,8 +64,7 @@ import { useI18n } from 'vue-i18n'
 
 import type {
   NotificationAction,
-  NotificationGroup,
-  NotificationSource
+  NotificationGroup
 } from '../../composable/useNotificationCenter'
 import MlNotificationItem from './MlNotificationItem.vue'
 
@@ -107,15 +106,13 @@ const typeIcon = computed(() => {
   }
 })
 
-const sourceTitleKey: Record<NotificationSource, string> = {
-  'font-missed': 'main.notification.group.fontMissed',
-  'unsupported-entities': 'main.notification.group.unsupportedEntities'
-}
-
 const title = computed(() => {
   const source = props.group.source
-  if (source && sourceTitleKey[source]) {
-    return t(sourceTitleKey[source])
+  if (source === 'font-missed') {
+    return t('main.notification.group.fontMissed')
+  }
+  if (source === 'unsupported-entities') {
+    return t('main.notification.group.unsupportedEntities')
   }
   return props.group.items[0]?.title ?? ''
 })

@@ -1,8 +1,8 @@
+import type { AcApDocManager } from '../AcApDocManager'
 import { AcApDefaultNotificationUi } from './AcApDefaultNotificationUi'
 import { AcApNotificationEventBridge } from './AcApNotificationEventBridge'
 import { AcApNotificationStore } from './AcApNotificationStore'
 import type { AcApNotificationCenter } from './AcApNotificationTypes'
-import type { AcApDocManager } from '../AcApDocManager'
 
 export interface AcApNotificationServiceOptions {
   /**

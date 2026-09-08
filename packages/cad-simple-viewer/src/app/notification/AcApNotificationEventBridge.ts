@@ -1,8 +1,8 @@
 import type { AcDbParsingTaskStats, AcDbProgressdEventArgs } from '@mlightcad/data-model'
 
 import { eventBus } from '../../editor/global/eventBus'
-import { AcApFontUtil } from '../../util/AcApFontUtil'
 import { acapAnalyzeUnsupportedDrawing } from '../../util/AcApAnalyzeUnsupportedDrawing'
+import { AcApFontUtil } from '../../util/AcApFontUtil'
 import { acapFormatFontsMissedReplacement } from '../../util/AcApFormatFontMissedMessage'
 import {
   acapFormatUnsupportedEntitiesMessage,

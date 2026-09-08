@@ -2,9 +2,8 @@ import {
   acedGetUiLayout,
   acedIsHandheldDevice,
   acedSubscribeUiLayout,
-  ML_UI_Z_NOTIFICATION,
-  type AcEdUiLayoutKind
-} from '../../editor/global/AcEdUiLayout'
+  type AcEdUiLayoutKind,
+  ML_UI_Z_NOTIFICATION} from '../../editor/global/AcEdUiLayout'
 import {
   acedApplyUiTheme,
   acedSubscribeUiTheme,

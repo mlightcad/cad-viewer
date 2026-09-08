@@ -119,15 +119,15 @@ import {
 import { AcApOpenFileProfiler } from './AcApOpenFileProfiler'
 import { AcApOpenFileProgressController } from './AcApOpenFileProgressController'
 import {
-  acapDisposeNotificationService,
-  acapInstallNotificationService
-} from './notification'
-import {
   checkWebworkerReadiness,
   DEFAULT_WEBWORKER_FILE_URLS,
   resetWebworkerReadinessCache
 } from './AcApWebworkerReadiness'
 import { AcApXrefManager } from './AcApXrefManager'
+import {
+  acapDisposeNotificationService,
+  acapInstallNotificationService
+} from './notification'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
 /** Default ISO drawing template loaded by {@link AcApDocManager.newDocument}. */
