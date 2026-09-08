@@ -1017,13 +1017,26 @@ export default {
       'Failed to open "{fileName}". The DWG converter license is missing or invalid.',
     fetchingDrawingFile: 'Fetching file ...',
     unknownEntities:
-      'This drawing contains {count} unknown or unsupported entities! Those entities will not be shown.'
+      'This drawing contains {count} unknown or unsupported entities! Those entities will not be shown.',
+    tianzhengEntities:
+      'This drawing contains TArch / Tianzheng (or similar third-party) custom entities (about {count}). They cannot be fully parsed in this environment, so some content may not display.',
+    emptyProxyEntities:
+      'This drawing contains {count} custom entities without proxy graphics! Those entities will not be shown.'
   },
   notification: {
     center: {
       title: 'Notifications',
       clearAll: 'Clear All',
       noNotifications: 'No notifications'
+    },
+    group: {
+      fontMissed: 'Missing Fonts',
+      fontMissedSummary:
+        '{count} font-related messages. Click to expand details.',
+      unsupportedEntities: 'Unsupported Entities',
+      unsupportedEntitiesSummary:
+        '{count} parsing-related messages. Click to expand details.',
+      genericSummary: '{count} messages. Click to expand details.'
     },
     time: {
       justNow: 'Just now',

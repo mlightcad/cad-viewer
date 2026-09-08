@@ -62,6 +62,13 @@ export const ML_UI_Z_SHORTCUT_TOOLBAR = 46
  */
 export const ML_UI_Z_ENTITY_PICK_CANCEL = 47
 
+/**
+ * Z-index for the built-in notification bell / panel.
+ *
+ * Above shortcut / entity-pick chrome; below modal dialogs (~10050).
+ */
+export const ML_UI_Z_NOTIFICATION = 48
+
 /** Whether the current viewport matches the narrow mobile UI layout. */
 export function acedIsMobileUiLayout(): boolean {
   return window.matchMedia?.(ML_UI_MOBILE_MEDIA_QUERY).matches ?? false

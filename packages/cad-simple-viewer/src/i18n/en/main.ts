@@ -39,6 +39,13 @@ export default {
     collectingMemoryProfile: 'Analyzing memory ...',
     fontCached: 'Font cached successfully',
     fontCacheFailed: 'Failed to cache font',
+    fontsNotFound:
+      'Fonts not found in the font repository: {fonts}.',
+    fontsNotLoaded: 'Failed to load fonts: {fonts}.',
+    fontMissedInDrawing:
+      'Font "{font}" is required by {count} text object(s) but is not available. Displaying with "{replacementFont}".',
+    fontMissedReplacement: '"{font}" (displaying with "{replacement}")',
+    failedToGetAvaiableFonts: 'Failed to get available fonts from "{url}"!',
     failedToOpenFile: 'Failed to open file "{fileName}"!',
     failedToOpenFileWorkerOom:
       'Failed to open "{fileName}". The drawing is too large for available memory.',
@@ -49,16 +56,43 @@ export default {
     failedToOpenFileLicenseExpired:
       'Failed to open "{fileName}". The DWG converter license has expired.',
     failedToOpenFileLicenseInvalid:
-      'Failed to open "{fileName}". The DWG converter license is missing or invalid.'
+      'Failed to open "{fileName}". The DWG converter license is missing or invalid.',
+    unknownEntities:
+      'This drawing contains {count} unknown or unsupported entities! Those entities will not be shown.',
+    tianzhengEntities:
+      'This drawing contains TArch / Tianzheng (or similar third-party) custom entities (about {count}). They cannot be fully parsed in this environment, so some content may not display.',
+    emptyProxyEntities:
+      'This drawing contains {count} custom entities without proxy graphics! Those entities will not be shown.'
   },
   notification: {
+    center: {
+      title: 'Notifications',
+      clearAll: 'Clear All',
+      noNotifications: 'No notifications'
+    },
+    group: {
+      fontMissed: 'Missing Fonts',
+      fontMissedSummary:
+        '{count} font-related messages. Click to expand details.',
+      unsupportedEntities: 'Unsupported Entities',
+      unsupportedEntitiesSummary:
+        '{count} parsing-related messages. Click to expand details.',
+      genericSummary: '{count} messages. Click to expand details.'
+    },
     title: {
       failedToOpenFile: 'Failed to Open File',
       failedToOpenFileWorkerOom: 'Drawing Too Large',
       failedToOpenFileWorkerTimeout: 'Open Timed Out',
       failedToOpenFileFontLoadFailed: 'Font Load Failed',
       failedToOpenFileLicenseExpired: 'License Expired',
-      failedToOpenFileLicenseInvalid: 'Invalid License'
+      failedToOpenFileLicenseInvalid: 'Invalid License',
+      fontNotFound: 'Font Not Found',
+      fontNotLoaded: 'Font Not Loaded',
+      parsingWarning: 'Issues on Parsing Drawing',
+      systemMessage: 'System Message',
+      systemWarning: 'System Warning',
+      systemError: 'System Error',
+      systemInfo: 'System Info'
     }
   },
   progress: {

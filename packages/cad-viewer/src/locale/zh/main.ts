@@ -971,13 +971,24 @@ export default {
       '无法打开"{fileName}"。DWG 转换器许可证缺失或无效。',
     fetchingDrawingFile: '正在加载图纸文件...',
     unknownEntities:
-      '这张图纸中包含了{count}个未知或不支持的实体，这些实体将无法显示！'
+      '这张图纸中包含了{count}个未知或不支持的实体，这些实体将无法显示！',
+    tianzhengEntities:
+      '检测到天正（或同类第三方）自定义图元（约 {count} 个）。当前环境无法完整解析这些图元，部分内容可能无法显示。',
+    emptyProxyEntities:
+      '这张图纸中包含了{count}个缺少代理图形的自定义实体，这些实体将无法显示！'
   },
   notification: {
     center: {
       title: '通知',
       clearAll: '清除全部',
       noNotifications: '暂无通知'
+    },
+    group: {
+      fontMissed: '字体缺失',
+      fontMissedSummary: '共 {count} 条字体相关消息，点击展开查看详情',
+      unsupportedEntities: '不支持的图元',
+      unsupportedEntitiesSummary: '共 {count} 条解析相关消息，点击展开查看详情',
+      genericSummary: '共 {count} 条消息，点击展开查看详情'
     },
     time: {
       justNow: '刚刚',

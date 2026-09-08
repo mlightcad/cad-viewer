@@ -28,3 +28,4 @@ export {
   acapUninstallOpenFileDialog,
   acapUpdateOpenFileDialogOptions
 } from './AcApOpenFileDialog'
+export * from './notification'

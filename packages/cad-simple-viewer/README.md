@@ -42,6 +42,8 @@ npm install @mlightcad/cad-simple-viewer
 
 Please refer to [cad-simple-viewer-example](https://github.com/mlight-lee/cad-simple-viewer-example) on basic usage and advanced usage.
 
+To learn about the built-in notification center (and how to replace the default bell UI while still receiving font-missing and unsupported-entity alerts), see [docs/notification-center.md](./docs/notification-center.md).
+
 While `cad-simple-viewer` doesn't support saving drawings to DWG/DXF files, it provides comprehensive support for **modifying drawings in real-time**. You can add, edit, and delete entities within the drawing, and the viewer will automatically update to reflect these changes.
 
 When you modify entities, you're working directly with the underlying drawing database. The viewer automatically detects these changes and updates the display accordingly. This real-time synchronization ensures that:

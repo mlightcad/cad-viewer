@@ -124,6 +124,10 @@ import {
   resetWebworkerReadinessCache
 } from './AcApWebworkerReadiness'
 import { AcApXrefManager } from './AcApXrefManager'
+import {
+  acapDisposeNotificationService,
+  acapInstallNotificationService
+} from './notification'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
 /** Default ISO drawing template loaded by {@link AcApDocManager.newDocument}. */
@@ -382,6 +386,29 @@ export interface AcApDocManagerOptions {
    * Can be updated later via {@link AcApDocManager.setOpenDocumentDefaults}.
    */
   openDocumentDefaults?: AcApOpenDocumentDefaultsResolver
+
+  /**
+   * Built-in notification center (font missing, unsupported entities, etc.).
+   *
+   * Notifications are scoped per document session (MDI). The default DOM UI is
+   * positioned relative to the canvas host, not the browser window.
+   *
+   * - omitted / `true`: install event bridge + default DOM bell UI
+   * - `false`: do not install bridge or UI (host handles events itself)
+   * - `{ showDefaultUi: false }`: bridge only — host should call
+   *   {@link acapSetNotificationCenter} to supply UI (as cad-viewer does)
+   */
+  notificationCenter?:
+    | boolean
+    | {
+        /**
+         * Host for the default bell/panel. Defaults to the active view canvas
+         * container (`curView.container`).
+         */
+        host?: HTMLElement
+        /** When false, skip the built-in DOM UI. Default true. */
+        showDefaultUi?: boolean
+      }
 }
 
 /**
@@ -598,6 +625,18 @@ export class AcApDocManager {
       enabled: options.builtinOpenFileDialog !== false,
       getOpenDocumentDefaults: () => this.resolveOpenDocumentDefaults()
     })
+
+    if (options.notificationCenter !== false) {
+      const ncOptions =
+        typeof options.notificationCenter === 'object'
+          ? options.notificationCenter
+          : {}
+      acapInstallNotificationService(this, {
+        host: ncOptions.host,
+        showDefaultUi: ncOptions.showDefaultUi !== false,
+        enableBridge: true
+      })
+    }
   }
 
   /**
@@ -663,6 +702,7 @@ export class AcApDocManager {
     }
     this._sessions = []
     acapUninstallOpenFileDialog()
+    acapDisposeNotificationService()
     AcTrMTextRenderer.resetInstance()
     resetWebworkerReadinessCache()
     AcApDocManager._instance = undefined

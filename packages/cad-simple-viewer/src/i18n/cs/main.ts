@@ -39,6 +39,12 @@ export default {
     collectingMemoryProfile: 'Analyzuji paměť…',
     fontCached: 'Font úspěšně uložen do mezipaměti',
     fontCacheFailed: 'Uložení fontu do mezipaměti selhalo',
+    fontsNotFound: 'Fonty nenalezené v úložišti: {fonts}.',
+    fontsNotLoaded: 'Nepodařilo se načíst fonty: {fonts}.',
+    fontMissedInDrawing:
+      'Font „{font}“ vyžaduje {count} textových objektů, ale není k dispozici. Zobrazuje se jako „{replacementFont}“.',
+    fontMissedReplacement: '„{font}“ (zobrazeno fontem „{replacement}“)',
+    failedToGetAvaiableFonts: 'Nepodařilo se získat fonty z „{url}“!',
     failedToOpenFile: 'Nepodařilo se otevřít soubor „{fileName}“!',
     failedToOpenFileWorkerOom:
       'Nepodařilo se otevřít „{fileName}“. Výkres je příliš velký pro dostupnou paměť.',
@@ -49,16 +55,43 @@ export default {
     failedToOpenFileLicenseExpired:
       'Nepodařilo se otevřít „{fileName}“. Licence převodníku DWG vypršela.',
     failedToOpenFileLicenseInvalid:
-      'Nepodařilo se otevřít „{fileName}“. Licence převodníku DWG chybí nebo je neplatná.'
+      'Nepodařilo se otevřít „{fileName}“. Licence převodníku DWG chybí nebo je neplatná.',
+    unknownEntities:
+      'Tento výkres obsahuje {count} neznámých nebo nepodporovaných objektů! Tyto objekty nebudou zobrazeny.',
+    tianzhengEntities:
+      'Tento výkres obsahuje vlastní objekty TArch / Tianzheng (nebo podobné třetí strany) (asi {count}). V tomto prostředí je nelze plně zpracovat, takže se část obsahu nemusí zobrazit.',
+    emptyProxyEntities:
+      'Tento výkres obsahuje {count} vlastních objektů bez proxy grafiky! Tyto objekty nebudou zobrazeny.'
   },
   notification: {
+    center: {
+      title: 'Oznámení',
+      clearAll: 'Vymazat vše',
+      noNotifications: 'Žádná oznámení'
+    },
+    group: {
+      fontMissed: 'Chybějící fonty',
+      fontMissedSummary:
+        '{count} zpráv o fontech. Kliknutím zobrazíte podrobnosti.',
+      unsupportedEntities: 'Nepodporované objekty',
+      unsupportedEntitiesSummary:
+        '{count} zpráv o načítání. Kliknutím zobrazíte podrobnosti.',
+      genericSummary: '{count} zpráv. Kliknutím zobrazíte podrobnosti.'
+    },
     title: {
       failedToOpenFile: 'Nepodařilo se otevřít soubor',
       failedToOpenFileWorkerOom: 'Výkres je příliš velký',
       failedToOpenFileWorkerTimeout: 'Vypršel časový limit otevření',
       failedToOpenFileFontLoadFailed: 'Načtení fontu selhalo',
       failedToOpenFileLicenseExpired: 'Licence vypršela',
-      failedToOpenFileLicenseInvalid: 'Neplatná licence'
+      failedToOpenFileLicenseInvalid: 'Neplatná licence',
+      fontNotFound: 'Font nenalezen',
+      fontNotLoaded: 'Font nenačten',
+      parsingWarning: 'Problémy při načítání výkresu',
+      systemMessage: 'Systémová zpráva',
+      systemWarning: 'Systémové varování',
+      systemError: 'Systémová chyba',
+      systemInfo: 'Systémové informace'
     }
   },
   progress: {
