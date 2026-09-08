@@ -289,6 +289,7 @@ jest.mock('@mlightcad/data-model', () => ({
   AcCmColor: jest.fn(),
   AcCmEventManager: jest.fn().mockImplementation(() => ({
     addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
     dispatch: jest.fn()
   })),
   AcDbDatabaseConverterManager: {
@@ -315,10 +316,12 @@ jest.mock('@mlightcad/data-model', () => ({
 }))
 
 import { AcApDocManager } from '../src/app/AcApDocManager'
+import { acapDisposeNotificationService } from '../src/app/notification'
 
 describe('AcApDocManager font URL configuration', () => {
   beforeEach(() => {
     ;(AcApDocManager as unknown as { _instance: unknown })._instance = undefined
+    acapDisposeNotificationService()
     mockFontLoaderInstances.length = 0
     mockInitialize.mockClear()
     mockSetRenderMode.mockClear()
@@ -363,6 +366,7 @@ describe('AcApDocManager font URL configuration', () => {
 describe('AcApDocManager disableExport', () => {
   beforeEach(() => {
     ;(AcApDocManager as unknown as { _instance: unknown })._instance = undefined
+    acapDisposeNotificationService()
   })
 
   it('defaults to enabling export commands', () => {
@@ -404,6 +408,7 @@ describe('AcApDocManager disableExport', () => {
 describe('AcApDocManager document sessions', () => {
   beforeEach(() => {
     ;(AcApDocManager as unknown as { _instance: unknown })._instance = undefined
+    acapDisposeNotificationService()
   })
 
   it('starts with one document session', () => {
