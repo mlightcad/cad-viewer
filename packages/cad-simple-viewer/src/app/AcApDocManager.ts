@@ -19,7 +19,9 @@ import {
   AcApCacheFontCmd,
   AcApCircleCmd,
   AcApCloseCmd,
+  AcApConvertToBmpCmd,
   AcApConvertToDxfCmd,
+  AcApConvertToJpgCmd,
   AcApConvertToPngCmd,
   AcApCopyCmd,
   AcApDimLinearCmd,
@@ -366,8 +368,8 @@ export interface AcApDocManagerOptions {
 
   /**
    * When true, drawing export commands are not registered (`cdxf`, `pngout`,
-   * and host UI / lazy plugins for HTML, PDF, SVG export). Defaults to false
-   * (export remains enabled).
+   * `jpgout`, `bmpout`, and host UI / lazy plugins for HTML, PDF, SVG export).
+   * Defaults to false (export remains enabled).
    *
    * Useful for deployments that must hide export entry points. This is a
    * product/UX gate, not a DRM boundary: drawing data still exists in memory.
@@ -1638,7 +1640,8 @@ export class AcApDocManager {
    *
    * This method sets up the command system by registering built-in commands including:
    * - cdxf: Convert to DXF (when {@link AcApDocManagerOptions.disableExport} is false)
-   * - pngout: Export to PNG (when {@link AcApDocManagerOptions.disableExport} is false)
+   * - pngout / jpgout / bmpout: Export raster images (when
+   *   {@link AcApDocManagerOptions.disableExport} is false)
    * - log: Output debug information in console
    * - open: Open document
    * - qnew: Quick new document
@@ -1684,7 +1687,9 @@ export class AcApDocManager {
     addSystemCommand('circle', 'circle', new AcApCircleCmd())
     addSystemCommand('close', 'close', new AcApCloseCmd())
     if (!this._disableExport) {
+      addSystemCommand('bmpout', 'bmpout', new AcApConvertToBmpCmd())
       addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
+      addSystemCommand('jpgout', 'jpgout', new AcApConvertToJpgCmd())
       addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
     }
     addSystemCommand('entout', 'entout', new AcApEntityPreviewCmd())

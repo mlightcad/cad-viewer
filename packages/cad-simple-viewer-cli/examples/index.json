@@ -59,7 +59,7 @@
     {
       "id": "export-html-multi-preview",
       "title": "Export HTML multi + preview",
-      "description": "Zoom extents, export multi-file ACEX zip (-chtml Multi), then PNG preview.",
+      "description": "Zoom extents, export multi-file ACEX zip (-chtml Multi), then JPEG preview.",
       "script": "export-html-multi-preview.scr",
       "mode": "read",
       "inputKind": "file",

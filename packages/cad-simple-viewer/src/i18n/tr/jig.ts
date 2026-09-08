@@ -771,6 +771,16 @@ export default {
   mtext: {
     point: 'Çok satırlı metin ekleme noktasını belirtin'
   },
+  bmpout: {
+    boundsFirstCorner: 'Sınırların ilk köşesini belirtin',
+    boundsSecondCorner: 'Karşı köşeyi belirtin',
+    longSidePrompt: 'Uzun kenar boyutunu piksel olarak girin'
+  },
+  jpgout: {
+    boundsFirstCorner: 'Sınırların ilk köşesini belirtin',
+    boundsSecondCorner: 'Karşı köşeyi belirtin',
+    longSidePrompt: 'Uzun kenar boyutunu piksel olarak girin'
+  },
   pngout: {
     boundsFirstCorner: 'Sınırların ilk köşesini belirtin',
     boundsSecondCorner: 'Karşı köşeyi belirtin',

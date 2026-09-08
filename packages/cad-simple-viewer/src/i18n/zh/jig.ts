@@ -761,6 +761,16 @@ export default {
   mtext: {
     point: '指定多行文本插入点'
   },
+  bmpout: {
+    boundsFirstCorner: '指定边界的第一个角点',
+    boundsSecondCorner: '指定对角点',
+    longSidePrompt: '输入长边像素大小'
+  },
+  jpgout: {
+    boundsFirstCorner: '指定边界的第一个角点',
+    boundsSecondCorner: '指定对角点',
+    longSidePrompt: '输入长边像素大小'
+  },
   pngout: {
     boundsFirstCorner: '指定边界的第一个角点',
     boundsSecondCorner: '指定对角点',

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Recursively scan a directory for .dwg / .dxf files, export each to a
- * multi-file ACEX zip + zoom-extents PNG via export-html-multi-preview.scr,
+ * multi-file ACEX zip + zoom-extents JPEG via export-html-multi-preview.scr,
  * then arrange outputs in the demo-drawings package layout:
  *
  *   <outputDir>/<folder>/
@@ -24,15 +24,12 @@ import {
   mkdir,
   mkdtemp,
   readdir,
-  readFile,
   rename,
-  rm,
-  writeFile
+  rm
 } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { chromium } from 'playwright'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const packageRoot = path.resolve(__dirname, '..')
@@ -135,38 +132,18 @@ function unzipWithTar(zipPath, destDir) {
   }
 }
 
-async function pngToJpeg(page, pngPath, jpegPath, quality = 0.85) {
-  const pngBytes = await readFile(pngPath)
-  const jpegB64 = await page.evaluate(
-    async ({ b64, q }) => {
-      const res = await fetch(`data:image/png;base64,${b64}`)
-      const blob = await res.blob()
-      const bitmap = await createImageBitmap(blob)
-      const canvas = document.createElement('canvas')
-      canvas.width = bitmap.width
-      canvas.height = bitmap.height
-      const ctx = canvas.getContext('2d')
-      ctx.fillStyle = '#ffffff'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(bitmap, 0, 0)
-      bitmap.close()
-      const dataUrl = canvas.toDataURL('image/jpeg', q)
-      return dataUrl.slice(dataUrl.indexOf(',') + 1)
-    },
-    { b64: pngBytes.toString('base64'), q: quality }
-  )
-  await writeFile(jpegPath, Buffer.from(jpegB64, 'base64'))
-}
-
-async function packageDrawing(workDir, targetDir, sourceDrawing, page) {
+async function packageDrawing(workDir, targetDir, sourceDrawing) {
   const entries = await readdir(workDir)
   const zipName = entries.find(name => name.toLowerCase().endsWith('.zip'))
-  const pngName = entries.find(name => name.toLowerCase().endsWith('.png'))
+  const jpegName = entries.find(name => {
+    const lower = name.toLowerCase()
+    return lower.endsWith('.jpg') || lower.endsWith('.jpeg')
+  })
   if (!zipName) {
     throw new Error(`No .zip produced in ${workDir}`)
   }
-  if (!pngName) {
-    throw new Error(`No .png preview produced in ${workDir}`)
+  if (!jpegName) {
+    throw new Error(`No .jpg preview produced in ${workDir}`)
   }
 
   // Stage under the same parent as targetDir so rename stays on one volume.
@@ -176,9 +153,8 @@ async function packageDrawing(workDir, targetDir, sourceDrawing, page) {
   try {
     unzipWithTar(path.join(workDir, zipName), stageDir)
 
-    await pngToJpeg(
-      page,
-      path.join(workDir, pngName),
+    await copyFile(
+      path.join(workDir, jpegName),
       path.join(stageDir, 'preview.jpg')
     )
 
@@ -232,31 +208,25 @@ async function main() {
     `Found ${drawings.length} drawing(s). Output (demo-drawings layout): ${outputDir}`
   )
 
-  const browser = await chromium.launch()
-  const page = await browser.newPage()
   const usedFolders = new Set()
   let failed = 0
 
-  try {
-    for (const drawing of drawings) {
-      const folder = drawingFolderName(inputDir, drawing, usedFolders)
-      const targetDir = path.join(outputDir, folder)
-      console.log(`\n=== ${drawing} → ${folder}/ ===`)
+  for (const drawing of drawings) {
+    const folder = drawingFolderName(inputDir, drawing, usedFolders)
+    const targetDir = path.join(outputDir, folder)
+    console.log(`\n=== ${drawing} → ${folder}/ ===`)
 
-      const workDir = await mkdtemp(path.join(os.tmpdir(), 'cad-cli-demo-'))
-      try {
-        await runCli(drawing, workDir)
-        await packageDrawing(workDir, targetDir, drawing, page)
-        console.log(`Packaged ${targetDir}`)
-      } catch (error) {
-        failed++
-        console.error(error instanceof Error ? error.message : String(error))
-      } finally {
-        await rm(workDir, { recursive: true, force: true })
-      }
+    const workDir = await mkdtemp(path.join(os.tmpdir(), 'cad-cli-demo-'))
+    try {
+      await runCli(drawing, workDir)
+      await packageDrawing(workDir, targetDir, drawing)
+      console.log(`Packaged ${targetDir}`)
+    } catch (error) {
+      failed++
+      console.error(error instanceof Error ? error.message : String(error))
+    } finally {
+      await rm(workDir, { recursive: true, force: true })
     }
-  } finally {
-    await browser.close()
   }
 
   console.log(`\nDone. success=${drawings.length - failed} failed=${failed}`)

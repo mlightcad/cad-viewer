@@ -27,6 +27,9 @@ export default {
     auprec: {
       description: '设置角度显示精度（小数位数），与 AUNITS 配合使用'
     },
+    bmpout: {
+      description: '导出为 BMP 图片'
+    },
     cdxf: {
       description: '导出当前图纸为DXF格式'
     },
@@ -186,6 +189,9 @@ export default {
     },
     insunits: {
       description: '指定插入块、图像或外部参照时用于自动缩放的图形单位'
+    },
+    jpgout: {
+      description: '导出为 JPEG 图片'
     },
     laycur: {
       description: '将所选对象的图层属性更改为当前图层',
