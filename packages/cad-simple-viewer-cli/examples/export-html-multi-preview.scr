@@ -1,0 +1,18 @@
+; Zoom extents, export a multi-file ACEX package zip (-chtml Multi),
+; then export a PNG preview of the extents view.
+; Prompts for -chtml: export format / export invisible layers / export layouts /
+; initial view / viewer mode.
+; Usage:
+;   cad-simple-viewer-cli -i drawing.dwg -s examples/export-html-multi-preview.scr -o ./out
+zoom
+e
+-chtml
+Multi
+Yes
+Yes
+Extents
+Measure
+pngout
+
+1024
+quit
