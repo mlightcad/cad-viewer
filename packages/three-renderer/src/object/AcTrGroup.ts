@@ -507,10 +507,10 @@ export class AcTrGroup extends AcTrEntity {
    *
    * When the source {@link isCompacted}, leaf {@link THREE.BufferGeometry}
    * buffers are shared by default so INSERT cache hits avoid deep copies.
-   * Uncompacted templates deep-clone buffers instead: {@link AcDbRenderingCache}
-   * may still run {@link compactForInstancing} on first reuse, which disposes
-   * template leaves — sharing beforehand would corrupt earlier INSERT instances
-   * and stall scene convert / batching.
+   * Uncompacted templates with 2+ drawable children are compacted on the
+   * first {@link fastDeepClone} so dense symbol blocks share buffers instead
+   * of deep-cloning (which OOMed large drawings). Single-child templates
+   * still deep-clone until an explicit {@link compactForInstancing}.
    *
    * Materials are reused. When compacted, detached source-entity shells are
    * not cloned. Callers must treat compacted templates as immutable: batching
@@ -518,10 +518,22 @@ export class AcTrGroup extends AcTrEntity {
    * shared geometries marked with `sharesTemplateGeometry`.
    *
    * @param shareGeometry - Override buffer sharing. Defaults to
-   *   {@link isCompacted} so lazy mid-size compact stays safe.
+   *   {@link isCompacted} (or true after auto-compact above).
    * @returns Independent group instance suitable for one INSERT.
    */
   fastDeepClone(shareGeometry: boolean = this._compacted) {
+    // Dense drawings (many small reused symbols) never reached data-model's
+    // MIN_CHILDREN_TO_COMPACT=8, so every cache hit deep-cloned buffers and
+    // OOMed. Compact the template before the first clone when there are enough
+    // leaves — no prior INSERT has shared aliases yet.
+    if (
+      !this._compacted &&
+      shareGeometry === false &&
+      this.childCount >= 2
+    ) {
+      this.compactForInstancing()
+      shareGeometry = true
+    }
     const cloned = new AcTrGroup([], this.renderContext)
     cloned.copy(this, false)
     this.copyGeometry(this, cloned, shareGeometry)

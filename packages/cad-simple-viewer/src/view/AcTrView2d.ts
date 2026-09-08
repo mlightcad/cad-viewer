@@ -261,10 +261,21 @@ export class AcTrView2d extends AcEdBaseView {
   /** Cooperative yields taken inside progressive {@link batchConvert}. */
   private _progressiveYieldCount = 0
   /**
-   * In-flight glyph/group geometry jobs that await fonts via asyncDraw.
+   * In-flight + queued glyph/group geometry jobs that await fonts via asyncDraw.
    * Counted separately so linework convert can continue while text waits.
    */
   private _pendingGeometryJobs = 0
+  /**
+   * Waiting deferred geometry runners. Capped concurrency avoids scheduling
+   * thousands of INSERT/text `asyncDraw` jobs at once (large multi-sheet DWGs
+   * otherwise flood the main thread and freeze on "Rendering drawing ...").
+   */
+  private _deferredGeometryQueue: Array<{
+    run: () => Promise<void>
+    epoch: number
+  }> = []
+  /** Currently executing deferred geometry runners. */
+  private _deferredGeometryActive = 0
   /** Grip point display and drag editing (Write mode only). */
   private _gripManager: AcEdGripManager
   /** Global keyboard shortcuts for the view (undo/redo, erase, etc.). */
@@ -280,17 +291,27 @@ export class AcTrView2d extends AcEdBaseView {
   })
 
   /**
-   * Wall-time between cooperative yields during progressive open (ms).
-   * Kept relatively large so convert throughput stays close to the
-   * non-progressive path; smaller budgets made open 2–3× slower.
+   * Wall-time between cooperative yields during scene convert (ms).
+   * Used for both progressive and non-progressive opens so large drawings
+   * (e.g. multi-sheet architectural DWGs) cannot freeze the main thread long
+   * enough for Chromium to show "Page Unresponsive" while the overlay still
+   * reads "Rendering drawing ...". Kept relatively large so convert
+   * throughput stays high; smaller budgets made open 2–3× slower.
    */
-  private static readonly PROGRESSIVE_OPEN_YIELD_BUDGET_MS = 300
+  private static readonly OPEN_CONVERT_YIELD_BUDGET_MS = 300
   /**
    * Minimum interval between progressive mid-open paints (ms).
    * Full-scene WebGL paints dominate open wall time on large drawings;
-   * paint much less often than we yield.
+   * paint much less often than we yield. Independent of convert yields —
+   * non-progressive opens still yield without mid-open WebGL paints.
    */
   private static readonly PROGRESSIVE_OPEN_PAINT_INTERVAL_MS = 1000
+  /**
+   * Max concurrent deferred glyph/INSERT geometry finalizers. Large drawings
+   * enqueue thousands of jobs; keep this modest to limit peak JS heap during
+   * "Rendering drawing ..." while retaining reasonable open throughput.
+   */
+  private static readonly DEFERRED_GEOMETRY_CONCURRENCY = 4
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -695,7 +716,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._htmlDirty = false
     this.startAnimationLoop()
     this._numOfEntitiesToProcess = 0
-    this._pendingGeometryJobs = 0
+    this.resetDeferredGeometryQueue()
   }
 
   private getPointerSelectionAction(e: MouseEvent) {
@@ -854,8 +875,9 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Progressive-open counters for OPENPROF / palette (paints while converting,
-   * cooperative yields). Reset when progressive mode is enabled for an open.
+   * Open-convert counters for OPENPROF / palette (cooperative yields during
+   * convert, and mid-open paints when progressive rendering is enabled).
+   * Reset when progressive mode is enabled for an open.
    */
   get progressiveOpenStats() {
     return {
@@ -1891,12 +1913,13 @@ export class AcTrView2d extends AcEdBaseView {
   addEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
     this._numOfEntitiesToProcess += entities.length
-    if (this._progressiveRendering) {
-      this._convertQueue.push(...entities)
-      void this.drainConvertQueue()
-    } else {
-      void this.batchConvert(entities)
-    }
+    // Always serialize convert through one drain loop. Non-progressive opens
+    // used to `void batchConvert(chunk)` per ENTITY flush chunk, which ran
+    // many converts in parallel and OOM'd dense drawings (e.g. cathedral.dwg)
+    // during "Rendering drawing ...". Progressive mid-open paints stay gated
+    // by `_progressiveRendering` inside batchConvert / markProgressiveDirty.
+    this._convertQueue.push(...entities)
+    void this.drainConvertQueue()
   }
 
   /**
@@ -2160,7 +2183,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._convertEpoch++
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
-    this._pendingGeometryJobs = 0
+    this.resetDeferredGeometryQueue()
     this._scene.clear()
     this._isDirty = true
     this._missedImages.clear()
@@ -2198,7 +2221,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._convertEpoch++
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
-    this._pendingGeometryJobs = 0
+    this.resetDeferredGeometryQueue()
     this._scene = state.scene
     this._layoutViewManager = state.layoutViewManager
     this._initializedLayouts = state.initializedLayouts
@@ -2226,7 +2249,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._convertEpoch++
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
-    this._pendingGeometryJobs = 0
+    this.resetDeferredGeometryQueue()
     this._scene = this.createScene()
     this._layoutViewManager = new AcTrLayoutViewManager()
     this._initializedLayouts = new Set()
@@ -2280,8 +2303,9 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Drains the progressive convert queue on a single serial worker so ENTITY
-   * flush chunks can enqueue while conversion overlaps the loading overlay.
+   * Drains the convert queue on a single serial worker so ENTITY flush chunks
+   * can enqueue without overlapping multiple {@link batchConvert} runs (which
+   * spikes heap on large drawings).
    *
    * Concurrent callers share the same promise; if more entities are queued
    * after a drain finishes, a follow-up drain is started.
@@ -2739,6 +2763,10 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * Runs glyph/group geometry finalize off the main convert loop so other
    * entities keep converting while fonts download.
+   *
+   * Jobs are queued with bounded concurrency — unbounded parallel
+   * `asyncDraw` on large INSERT/text drawings can freeze the main thread
+   * during the "Rendering drawing ..." stage.
    */
   private enqueueDeferredGeometry(
     run: () => Promise<void>,
@@ -2748,25 +2776,65 @@ export class AcTrView2d extends AcEdBaseView {
       return
     }
     this._pendingGeometryJobs++
-    void run()
-      .then(() => {
-        // Convert counter often hits 0 before fonts finish; without this,
-        // text added later never paints until the user pans/zooms.
-        if (epoch === this._convertEpoch) {
-          this._isDirty = true
-        }
-      })
-      .catch(error => {
-        log.error('[AcTrView2d] Deferred entity geometry failed:', error)
-      })
-      .finally(() => {
-        if (epoch === this._convertEpoch) {
-          this._pendingGeometryJobs = Math.max(0, this._pendingGeometryJobs - 1)
-          if (this._pendingGeometryJobs === 0) {
+    this._deferredGeometryQueue.push({ run, epoch })
+    this.pumpDeferredGeometryQueue()
+  }
+
+  /**
+   * Starts queued deferred geometry jobs up to
+   * {@link DEFERRED_GEOMETRY_CONCURRENCY}.
+   */
+  private pumpDeferredGeometryQueue(): void {
+    while (
+      this._deferredGeometryActive <
+        AcTrView2d.DEFERRED_GEOMETRY_CONCURRENCY &&
+      this._deferredGeometryQueue.length > 0
+    ) {
+      const job = this._deferredGeometryQueue.shift()!
+      if (job.epoch !== this._convertEpoch) {
+        this._pendingGeometryJobs = Math.max(0, this._pendingGeometryJobs - 1)
+        continue
+      }
+
+      this._deferredGeometryActive++
+      void job
+        .run()
+        .then(() => {
+          // Convert counter often hits 0 before fonts finish; without this,
+          // text added later never paints until the user pans/zooms.
+          if (job.epoch === this._convertEpoch) {
             this._isDirty = true
           }
-        }
-      })
+        })
+        .catch(error => {
+          log.error('[AcTrView2d] Deferred entity geometry failed:', error)
+        })
+        .finally(() => {
+          this._deferredGeometryActive = Math.max(
+            0,
+            this._deferredGeometryActive - 1
+          )
+          if (job.epoch === this._convertEpoch) {
+            this._pendingGeometryJobs = Math.max(
+              0,
+              this._pendingGeometryJobs - 1
+            )
+            if (this._pendingGeometryJobs === 0) {
+              this._isDirty = true
+            }
+          }
+          this.pumpDeferredGeometryQueue()
+        })
+    }
+  }
+
+  /** Drops queued deferred geometry and resets counters for a new epoch. */
+  private resetDeferredGeometryQueue(): void {
+    this._deferredGeometryQueue.length = 0
+    // Keep `_deferredGeometryActive`: in-flight runners still own concurrency
+    // slots until their `finally` runs. Zeroing here lets pump over-schedule
+    // when those completions decrement the counter afterward.
+    this._pendingGeometryJobs = 0
   }
 
   /**
@@ -2826,13 +2894,21 @@ export class AcTrView2d extends AcEdBaseView {
   ) {
     const epoch = this._convertEpoch
     const progressive = this._progressiveRendering && !options.forExport
-    // Time-budgeted yields keep the canvas painting during large open chunks
-    // (count-based yields alone stall on expensive INSERT / hatch batches).
-    // Prefer setTimeout(0) over rAF: waiting a full frame per yield inflated
-    // total open wall time without improving first-paint much.
-    const yieldGate = progressive
-      ? new AcCmUiYieldGate(AcTrView2d.PROGRESSIVE_OPEN_YIELD_BUDGET_MS)
-      : undefined
+    // Time-budgeted yields keep the UI (and optional progressive paints) alive
+    // during large open chunks. Count-based yields alone stall on expensive
+    // INSERT / hatch batches. Prefer setTimeout(0) over rAF: waiting a full
+    // frame per yield inflated total open wall time without improving
+    // first-paint much.
+    //
+    // Always yield for interactive opens — not only when progressiveRendering
+    // is on. Otherwise a long sync convert blocks the main thread, the
+    // progress overlay cannot poll `isProcessingEntities`, and Chromium may
+    // treat the tab as hung ("Page Unresponsive" / kill) at the
+    // "Rendering drawing ..." stage. Mid-open WebGL paints remain gated by
+    // `progressive` / markProgressiveDirty below.
+    const yieldGate = options.forExport
+      ? undefined
+      : new AcCmUiYieldGate(AcTrView2d.OPEN_CONVERT_YIELD_BUDGET_MS)
     const yieldToEventLoop = () =>
       new Promise<void>(resolve => setTimeout(resolve, 0))
     for (let i = 0; i < entities.length; ++i) {
