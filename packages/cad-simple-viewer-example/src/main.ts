@@ -889,7 +889,9 @@ class CadViewerApp {
       acedApplyUiTheme('dark', this.viewerPane)
 
       const openProf = isOpenProfMode()
-      const useWorkers = openProf ? isWorkerOpenMode() : true
+      // Prefer main-thread MTEXT by default (less peak memory). Pass `?worker=1`
+      // with openprof, or rely on worker mode only when explicitly requested.
+      const useWorkers = openProf ? isWorkerOpenMode() : false
       const dwgParserUrl = `./workers/${LIBREDWG_PARSER_WORKER_FILE}`
       registerLibreDwgConverter(dwgParserUrl)
       AcApDocManager.createInstance({
@@ -898,8 +900,8 @@ class CadViewerApp {
         autoResize: true,
         baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/',
         commandAliases: EXAMPLE_COMMAND_ALIASES,
-        // OPENPROF default: main-thread MTEXT (skip worker transfer cost).
-        useMainThreadDraw: openProf ? !useWorkers : false,
+        // Main-thread MTEXT uses less memory; worker mode is opt-in via ?worker=1.
+        useMainThreadDraw: openProf ? !useWorkers : true,
         openDocumentDefaults: () => this.buildOpenOptions({
           progressiveRendering: false
         }),
