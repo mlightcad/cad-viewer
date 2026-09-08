@@ -68,7 +68,14 @@ import type {
 } from '../../composable/useNotificationCenter'
 import MlNotificationItem from './MlNotificationItem.vue'
 
+/**
+ * Collapsible notification group for the Vue notification center panel.
+ *
+ * Used when multiple entries share a groupable source (`font-missed`,
+ * `unsupported-entities`).
+ */
 interface Props {
+  /** Group produced by {@link groupNotifications}. */
   group: NotificationGroup
   /** When true, the group body starts expanded. Defaults to collapsed. */
   defaultExpanded?: boolean
@@ -79,18 +86,29 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
+  /** Clear every item in this group. */
   clear: []
+  /** Dismiss a single item by id. */
   'close-item': [id: string]
+  /** Forward an item action click. */
   action: [action: NotificationAction]
 }>()
 
 const { t } = useI18n()
 const expanded = ref(props.defaultExpanded)
 
+/**
+ * Forwards a notification action to the parent panel.
+ *
+ * @param action - Action clicked on a child item.
+ */
 const forwardAction = (action: NotificationAction) => {
   emit('action', action)
 }
 
+/**
+ * Element Plus icon component for the group's severity.
+ */
 const typeIcon = computed(() => {
   switch (props.group.type) {
     case 'info':
@@ -106,6 +124,9 @@ const typeIcon = computed(() => {
   }
 })
 
+/**
+ * Localized group title for known sources, otherwise the first item title.
+ */
 const title = computed(() => {
   const source = props.group.source
   if (source === 'font-missed') {
@@ -117,6 +138,9 @@ const title = computed(() => {
   return props.group.items[0]?.title ?? ''
 })
 
+/**
+ * Localized summary line including the item count.
+ */
 const summary = computed(() => {
   const count = props.group.items.length
   const source = props.group.source

@@ -25,7 +25,21 @@ export interface AcApUnsupportedDrawingAnalysis {
 }
 
 /**
+ * Options for {@link acapAnalyzeUnsupportedDrawing}.
+ */
+export interface AcApAnalyzeUnsupportedDrawingOptions {
+  /**
+   * When `false`, skip walking block-table entities for empty proxies
+   * (CLASSES-only pass). Default `true`.
+   */
+  scanProxies?: boolean
+}
+
+/**
  * Returns true when a CLASSES entry name looks like a 天正 / TArch class.
+ *
+ * @param name - DXF or C++ class name to test.
+ * @returns `true` when the name starts with a known 天正 prefix.
  */
 export function acapIsTianzhengClassName(
   name: string | undefined | null
@@ -38,6 +52,9 @@ export function acapIsTianzhengClassName(
 
 /**
  * Returns true when a class definition appears to belong to 天正 / TArch.
+ *
+ * @param entry - CLASSES table entry from the drawing database.
+ * @returns `true` when name / cpp name / app name matches 天正 heuristics.
  */
 export function acapIsTianzhengClass(entry: AcDbClass): boolean {
   if (
@@ -51,6 +68,12 @@ export function acapIsTianzhengClass(entry: AcDbClass): boolean {
   return /天正|tarch|tianzheng/i.test(app)
 }
 
+/**
+ * Narrows an entity to a proxy entity with optional graphics metadata.
+ *
+ * @param entity - Database entity to test.
+ * @returns Type predicate for proxy entities.
+ */
 function isProxyEntity(
   entity: AcDbEntity
 ): entity is AcDbEntity & {
@@ -63,6 +86,9 @@ function isProxyEntity(
 
 /**
  * Counts undrawable proxy entities and whether any proxy metadata looks like 天正.
+ *
+ * @param database - Opened drawing database.
+ * @returns Empty-proxy count and a 天正 hint from original class names.
  */
 function scanProxyEntities(database: AcDbDatabase): {
   emptyProxyEntityCount: number
@@ -98,12 +124,13 @@ function scanProxyEntities(database: AcDbDatabase): {
  *
  * @param database - Opened drawing database.
  * @param unknownEntityCount - Count reported at PARSE END; defaults to `0`.
- * @param options.scanProxies - When `false`, skip the entity walk (CLASSES only).
+ * @param options - Analysis flags (see {@link AcApAnalyzeUnsupportedDrawingOptions}).
+ * @returns Aggregated counts and whether a warning should be shown.
  */
 export function acapAnalyzeUnsupportedDrawing(
   database: AcDbDatabase,
   unknownEntityCount = 0,
-  options: { scanProxies?: boolean } = {}
+  options: AcApAnalyzeUnsupportedDrawingOptions = {}
 ): AcApUnsupportedDrawingAnalysis {
   const { scanProxies = true } = options
 

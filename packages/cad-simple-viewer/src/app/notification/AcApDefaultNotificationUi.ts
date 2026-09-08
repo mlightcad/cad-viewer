@@ -3,7 +3,8 @@ import {
   acedIsHandheldDevice,
   acedSubscribeUiLayout,
   type AcEdUiLayoutKind,
-  ML_UI_Z_NOTIFICATION} from '../../editor/global/AcEdUiLayout'
+  ML_UI_Z_NOTIFICATION
+} from '../../editor/global/AcEdUiLayout'
 import {
   acedApplyUiTheme,
   acedSubscribeUiTheme,
@@ -18,7 +19,9 @@ import {
   type AcApNotificationSource
 } from './AcApNotificationTypes'
 
+/** DOM id for the injected stylesheet. */
 const STYLE_ID = 'acap-notification-center-style'
+/** Root CSS class prefix for the built-in notification chrome. */
 const ROOT_CLASS = 'acap-notification-center'
 
 /** Gap between the shortcut toolbar bottom edge and the notification bell. */
@@ -44,22 +47,43 @@ const FALLBACK_TOP_BELOW_SHORTCUT_PX = 12 + 40 + SHORTCUT_CLEARANCE_PX
  * Theme tokens follow {@link resolveUiTheme} / `--ml-ui-*`.
  */
 export class AcApDefaultNotificationUi {
+  /** Canvas / view container the chrome is positioned relative to. */
   private readonly _host: HTMLElement
+  /** Center whose active-session list drives the UI. */
   private readonly _center: AcApNotificationCenter
+  /** Absolute overlay root covering the host. */
   private readonly _root: HTMLDivElement
+  /** Full-host dismiss button shown behind the phone sheet. */
   private readonly _backdrop: HTMLButtonElement
+  /** Badge-bearing bell button. */
   private readonly _bell: HTMLButtonElement
+  /** Unread count badge on the bell. */
   private readonly _badge: HTMLSpanElement
+  /** Notification list panel / phone sheet. */
   private readonly _panel: HTMLDivElement
+  /** Scrollable list body inside the panel. */
   private readonly _list: HTMLDivElement
+  /** Localized panel title element. */
   private readonly _titleEl: HTMLSpanElement
+  /** Keys of collapsible groups the user has expanded. */
   private _expandedGroups = new Set<string>()
+  /** Whether the list panel is currently open. */
   private _panelOpen = false
+  /** Latest UI layout kind from {@link acedGetUiLayout}. */
   private _layoutKind: AcEdUiLayoutKind = 'desktop'
+  /** Unsubscribe callbacks for center / theme / layout subscriptions. */
   private readonly _unsubs: Array<() => void> = []
+  /** Observes host / shortcut toolbar size for top-anchor repositioning. */
   private _shortcutObserver?: ResizeObserver
+  /** Pending `requestAnimationFrame` id for {@link scheduleReposition}. */
   private _repositionRaf = 0
 
+  /**
+   * Builds and mounts the default notification chrome.
+   *
+   * @param center - Center to observe and mutate (clear / remove).
+   * @param host - Element that owns the absolute overlay (typically the canvas container).
+   */
   constructor(center: AcApNotificationCenter, host: HTMLElement) {
     this._center = center
     this._host = host
@@ -155,13 +179,23 @@ export class AcApDefaultNotificationUi {
     this.render()
   }
 
+  /** Outside-click handler that closes the panel on pointerdown. */
   private _onDocPointer: (event: Event) => void
+  /** Window resize handler that schedules chrome repositioning. */
   private _onWindowResize: () => void
 
+  /**
+   * Applies the current UI theme tokens to the overlay root.
+   */
   private applyTheme() {
     acedApplyUiTheme(resolveUiTheme(this._host), this._root)
   }
 
+  /**
+   * Updates layout modifier classes and repositions top-anchored chrome.
+   *
+   * @param kind - Responsive layout kind (`phone` / `pad` / `desktop`).
+   */
   private applyLayout(kind: AcEdUiLayoutKind) {
     this._layoutKind = kind
     const topAnchor = shouldAnchorBelowShortcut(kind)
@@ -228,6 +262,9 @@ export class AcApDefaultNotificationUi {
     }
   }
 
+  /**
+   * Coalesces reposition work onto the next animation frame.
+   */
   private scheduleReposition() {
     if (this._repositionRaf) {
       cancelAnimationFrame(this._repositionRaf)
@@ -238,6 +275,9 @@ export class AcApDefaultNotificationUi {
     })
   }
 
+  /**
+   * Refreshes localized title / aria labels on the bell and panel.
+   */
   private refreshChromeLabels() {
     const title = acapI18nTranslate('main.notification.center.title')
     this._bell.title = title
@@ -246,6 +286,13 @@ export class AcApDefaultNotificationUi {
     this._panel.setAttribute('aria-label', title)
   }
 
+  /**
+   * Opens or closes the notification panel.
+   *
+   * Forced closed when the active session has no messages.
+   *
+   * @param open - Desired open state.
+   */
   private setPanelOpen(open: boolean) {
     if (this._center.notifications.length === 0) {
       open = false
@@ -255,6 +302,9 @@ export class AcApDefaultNotificationUi {
     if (open) this.renderList()
   }
 
+  /**
+   * Syncs root / panel / backdrop visibility from message count and panel state.
+   */
   private syncPanelVisibility() {
     const hasMessages = this._center.notifications.length > 0
     this._root.hidden = !hasMessages
@@ -268,6 +318,9 @@ export class AcApDefaultNotificationUi {
     }
   }
 
+  /**
+   * Reacts to center changes: updates the badge and optionally refreshes the open list.
+   */
   private render() {
     const count = this._center.notifications.length
     if (count === 0) {
@@ -284,6 +337,9 @@ export class AcApDefaultNotificationUi {
     }
   }
 
+  /**
+   * Rebuilds the panel list from the active session's notifications.
+   */
   private renderList() {
     this.refreshChromeLabels()
     this._list.replaceChildren()
@@ -307,6 +363,12 @@ export class AcApDefaultNotificationUi {
     }
   }
 
+  /**
+   * Renders a collapsible group header (and expanded body when open).
+   *
+   * @param group - Groupable notification cluster.
+   * @returns DOM subtree for the group.
+   */
   private renderGroup(group: AcApNotificationGroup): HTMLElement {
     const wrap = document.createElement('div')
     wrap.className = `${ROOT_CLASS}__group`
@@ -337,6 +399,12 @@ export class AcApDefaultNotificationUi {
     return wrap
   }
 
+  /**
+   * Renders a single notification row with optional message and dismiss control.
+   *
+   * @param notification - Entry to display.
+   * @returns DOM subtree for the item.
+   */
   private renderItem(notification: AcApNotification): HTMLElement {
     const item = document.createElement('div')
     item.className = `${ROOT_CLASS}__item ${ROOT_CLASS}__item--${notification.type}`
@@ -365,6 +433,9 @@ export class AcApDefaultNotificationUi {
     return item
   }
 
+  /**
+   * Unsubscribes listeners, disconnects observers, and removes the overlay from the DOM.
+   */
   dispose() {
     for (const unsub of this._unsubs) unsub()
     this._unsubs.length = 0
@@ -380,10 +451,22 @@ export class AcApDefaultNotificationUi {
   }
 }
 
+/**
+ * Whether the bell should sit below the shortcut toolbar for this layout.
+ *
+ * @param kind - Current UI layout kind.
+ * @returns `true` for phone, pad, or handheld devices.
+ */
 function shouldAnchorBelowShortcut(kind: AcEdUiLayoutKind): boolean {
   return kind === 'phone' || kind === 'pad' || acedIsHandheldDevice()
 }
 
+/**
+ * Finds the visible shortcut toolbar shell near the canvas host.
+ *
+ * @param host - Canvas host used for a scoped query first.
+ * @returns Visible toolbar shell element, or `null` when absent / hidden.
+ */
 function findShortcutToolbarShell(host: HTMLElement): HTMLElement | null {
   const visible = (el: Element | null): el is HTMLElement =>
     !!el &&
@@ -400,6 +483,12 @@ function findShortcutToolbarShell(host: HTMLElement): HTMLElement | null {
   return null
 }
 
+/**
+ * Localized title for a notification group header.
+ *
+ * @param group - Group produced by {@link acapGroupNotifications}.
+ * @returns Localized source title, or the first item title as fallback.
+ */
 function groupTitle(group: AcApNotificationGroup): string {
   const source = group.source as AcApNotificationSource | undefined
   if (source === 'font-missed') {
@@ -411,6 +500,12 @@ function groupTitle(group: AcApNotificationGroup): string {
   return group.items[0]?.title ?? ''
 }
 
+/**
+ * Localized summary line under a collapsible group header.
+ *
+ * @param group - Group produced by {@link acapGroupNotifications}.
+ * @returns Localized summary including the item count.
+ */
 function groupSummary(group: AcApNotificationGroup): string {
   const count = group.items.length
   if (group.source === 'font-missed') {
@@ -427,6 +522,12 @@ function groupSummary(group: AcApNotificationGroup): string {
   return acapI18nTranslate('main.notification.group.genericSummary', { count })
 }
 
+/**
+ * Escapes text for safe interpolation into HTML attribute / content strings.
+ *
+ * @param text - Raw text.
+ * @returns HTML-escaped string.
+ */
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -435,6 +536,9 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;')
 }
 
+/**
+ * Injects (or replaces) the built-in notification center stylesheet.
+ */
 function ensureStyles() {
   if (typeof document === 'undefined') return
   const existing = document.getElementById(STYLE_ID)

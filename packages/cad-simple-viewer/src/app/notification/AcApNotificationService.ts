@@ -4,6 +4,10 @@ import { AcApNotificationEventBridge } from './AcApNotificationEventBridge'
 import { AcApNotificationStore } from './AcApNotificationStore'
 import type { AcApNotificationCenter } from './AcApNotificationTypes'
 
+/**
+ * Options for {@link AcApNotificationService.install} /
+ * {@link acapInstallNotificationService}.
+ */
 export interface AcApNotificationServiceOptions {
   /**
    * Host element for the built-in notification bell/panel.
@@ -30,18 +34,29 @@ export interface AcApNotificationServiceOptions {
  * `null` restores the built-in store + UI.
  */
 class AcApNotificationService {
+  /** Currently active center (built-in store or host adapter). */
   private _center: AcApNotificationCenter = new AcApNotificationStore()
+  /** Built-in store instance used when no custom center is installed. */
   private _defaultStore = this._center as AcApNotificationStore
+  /** Optional default DOM bell / panel. */
   private _defaultUi?: AcApDefaultNotificationUi
+  /** Shared event bridge that writes into {@link _center}. */
   private _bridge?: AcApNotificationEventBridge
+  /** Explicit host for the default UI, when provided at install time. */
   private _host?: HTMLElement
+  /** Whether the built-in DOM UI should be mounted when not overridden. */
   private _showDefaultUi = true
+  /** `true` when {@link _center} is a host-supplied override. */
   private _isCustom = false
+  /** Document manager last passed to {@link install}. */
   private _docManager?: AcApDocManager
 
   /**
    * Installs bridge + default UI for a document manager instance.
    * Safe to call once per {@link AcApDocManager.createInstance}.
+   *
+   * @param docManager - Manager whose sessions and events are observed.
+   * @param options - Bridge / UI install flags.
    */
   install(docManager: AcApDocManager, options: AcApNotificationServiceOptions = {}) {
     this._docManager = docManager
@@ -63,10 +78,16 @@ class AcApNotificationService {
     }
   }
 
+  /**
+   * Active notification center (built-in or host override).
+   */
   get center(): AcApNotificationCenter {
     return this._center
   }
 
+  /**
+   * Whether a host-supplied center is currently installed.
+   */
   get isCustom(): boolean {
     return this._isCustom
   }
@@ -97,6 +118,9 @@ class AcApNotificationService {
     }
   }
 
+  /**
+   * Restores the built-in store and remounts the default UI when enabled.
+   */
   private restoreDefault() {
     if (!this._isCustom) {
       if (this._showDefaultUi && !this._defaultUi) {
@@ -117,6 +141,11 @@ class AcApNotificationService {
     }
   }
 
+  /**
+   * Resolves the DOM host for the default bell / panel.
+   *
+   * @returns Explicit host, view container, or `document.body`.
+   */
   private resolveHost(): HTMLElement {
     if (this._host) return this._host
     const viewContainer = this._docManager?.curView?.container
@@ -124,6 +153,9 @@ class AcApNotificationService {
     return document.body
   }
 
+  /**
+   * Mounts (or remounts) {@link AcApDefaultNotificationUi} on {@link resolveHost}.
+   */
   private mountDefaultUi() {
     this.disposeDefaultUi()
     if (typeof document === 'undefined') return
@@ -133,6 +165,9 @@ class AcApNotificationService {
     )
   }
 
+  /**
+   * Tears down the default DOM UI if present.
+   */
   private disposeDefaultUi() {
     this._defaultUi?.dispose()
     this._defaultUi = undefined
@@ -158,10 +193,13 @@ class AcApNotificationService {
   }
 }
 
+/** Process-wide notification service singleton. */
 const notificationService = new AcApNotificationService()
 
 /**
  * Returns the active notification center (built-in or host override).
+ *
+ * @returns The center currently owned by the service.
  */
 export function acapNotificationCenter(): AcApNotificationCenter {
   return notificationService.center
@@ -171,6 +209,8 @@ export function acapNotificationCenter(): AcApNotificationCenter {
  * Installs / replaces the host notification center.
  *
  * Pass `null` to restore the built-in DOM notification center.
+ *
+ * @param center - Custom center adapter, or `null` to restore the default.
  *
  * @example
  * ```ts
@@ -189,6 +229,9 @@ export function acapSetNotificationCenter(
 
 /**
  * @internal Used by {@link AcApDocManager}.
+ *
+ * @param docManager - Manager to bind the bridge to.
+ * @param options - Bridge / UI install flags.
  */
 export function acapInstallNotificationService(
   docManager: AcApDocManager,
@@ -204,4 +247,7 @@ export function acapDisposeNotificationService() {
   notificationService.dispose()
 }
 
+/**
+ * Process-wide service instance (bridge + center + optional default UI).
+ */
 export { notificationService as acapNotificationService }

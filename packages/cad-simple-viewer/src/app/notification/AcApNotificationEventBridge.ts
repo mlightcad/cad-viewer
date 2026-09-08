@@ -26,7 +26,9 @@ import type { AcApNotificationCenter } from './AcApNotificationTypes'
  * Notifications are tagged with the current {@link AcApDocSession.id}.
  */
 export class AcApNotificationEventBridge {
+  /** Document manager whose lifecycle events drive session scoping. */
   private readonly _docManager: AcApDocManager
+  /** Lazily resolves the active center (built-in or host override). */
   private _getCenter: () => AcApNotificationCenter
   /** Parser unknown-entity counts keyed by {@link AcApDocSession.id}. */
   private readonly _pendingUnknownBySession = new Map<string, number>()
@@ -36,22 +38,41 @@ export class AcApNotificationEventBridge {
    * dropping warnings that depended solely on the one-shot PARSE stats).
    */
   private readonly _unsupportedNotifiedSessions = new Set<string>()
+  /** Whether {@link install} has attached listeners. */
   private _installed = false
 
+  /**
+   * Builds options that stamp the active session id onto a new notification.
+   *
+   * @returns `{ sessionId }` when a session is active, otherwise `{}`.
+   */
   private sessionOptions(): { sessionId: string } | Record<string, never> {
     const sessionId = this._docManager.activeSessionId
     return sessionId ? { sessionId } : {}
   }
 
+  /**
+   * Pushes the manager's active session id into the center.
+   */
   private syncActiveSession() {
     this._getCenter().setActiveSession(this._docManager.activeSessionId)
   }
 
+  /**
+   * Drops per-session PARSE / analysis bookkeeping for a closed or reopened session.
+   *
+   * @param sessionId - Session to forget.
+   */
   private forgetSession(sessionId: string) {
     this._pendingUnknownBySession.delete(sessionId)
     this._unsupportedNotifiedSessions.delete(sessionId)
   }
 
+  /**
+   * Handles generic `message` bus events and mirrors them into the center.
+   *
+   * @param params - Message text and severity.
+   */
   private readonly _onMessage = (params: {
     message: string
     type: 'info' | 'warning' | 'error' | 'success'
@@ -82,6 +103,11 @@ export class AcApNotificationEventBridge {
     }
   }
 
+  /**
+   * Handles fonts that failed to load from the remote repository.
+   *
+   * @param params - Failed font descriptors.
+   */
   private readonly _onFontsNotLoaded = (params: {
     fonts: { fontName: string; url: string }[]
   }) => {
@@ -95,6 +121,11 @@ export class AcApNotificationEventBridge {
     )
   }
 
+  /**
+   * Handles fonts that could not be found in the remote repository.
+   *
+   * @param params - Missing font names.
+   */
   private readonly _onFontsNotFound = (params: { fonts: string[] }) => {
     this._getCenter().warning(
       acapI18nTranslate('main.notification.title.fontNotFound'),
@@ -105,6 +136,13 @@ export class AcApNotificationEventBridge {
     )
   }
 
+  /**
+   * Handles a single font required by the drawing that is unavailable at render time.
+   *
+   * Replaces any prior `font-missed` entry for the same font name.
+   *
+   * @param params - Font name and how many text objects require it.
+   */
   private readonly _onFontNotFound = (params: {
     fontName: string
     count: number
@@ -128,6 +166,9 @@ export class AcApNotificationEventBridge {
     )
   }
 
+  /**
+   * Prunes resolved `font-missed` notifications when missed-data changes.
+   */
   private readonly _onMissedDataChanged = () => {
     const missedFonts = Object.keys(
       this._docManager.curView.missedData.fonts
@@ -135,6 +176,11 @@ export class AcApNotificationEventBridge {
     this._getCenter().removeResolvedFontMissedNotifications(missedFonts)
   }
 
+  /**
+   * Handles failure to fetch the available-fonts catalog.
+   *
+   * @param params - Catalog URL that failed.
+   */
   private readonly _onFailedToGetFonts = (params: { url: string }) => {
     this._getCenter().error(
       acapI18nTranslate('main.notification.title.systemError'),
@@ -145,6 +191,11 @@ export class AcApNotificationEventBridge {
     )
   }
 
+  /**
+   * Handles open-file failures and writes a persistent error notification.
+   *
+   * @param params - File name and structured error metadata.
+   */
   private readonly _onFailedToOpenFile = (params: {
     fileName: string
     errorCode?: Parameters<typeof acapFormatOpenFileErrorTitle>[0]
@@ -157,6 +208,11 @@ export class AcApNotificationEventBridge {
     )
   }
 
+  /**
+   * Captures `unknownEntityCount` from PARSE END for the active session.
+   *
+   * @param data - Open-file progress payload.
+   */
   private readonly _onOpenFileProgress = (data: AcDbProgressdEventArgs) => {
     if (
       data.stage === 'CONVERSION' &&
@@ -175,6 +231,9 @@ export class AcApNotificationEventBridge {
     }
   }
 
+  /**
+   * Resets unsupported-entity bookkeeping before a new open starts.
+   */
   private readonly _onDocumentToBeOpened = () => {
     this.syncActiveSession()
     const sessionId = this._docManager.activeSessionId
@@ -185,10 +244,18 @@ export class AcApNotificationEventBridge {
     this._getCenter().removeBySource('unsupported-entities')
   }
 
+  /**
+   * Syncs the active session when a document is created.
+   */
   private readonly _onDocumentCreated = () => {
     this.syncActiveSession()
   }
 
+  /**
+   * Syncs the session and runs unsupported-entity analysis on first activation.
+   *
+   * Subsequent activations for the same open skip re-analysis.
+   */
   private readonly _onDocumentActivated = () => {
     this.syncActiveSession()
     const sessionId = this._docManager.activeSessionId
@@ -200,6 +267,11 @@ export class AcApNotificationEventBridge {
     this.notifyUnsupportedEntities()
   }
 
+  /**
+   * Clears the closed session's notifications and local analysis state.
+   *
+   * @param args - Document about to be destroyed.
+   */
   private readonly _onDocumentToBeDestroyed = (args: AcDbDocumentEventArgs) => {
     const session = this._docManager.sessionFor(args.doc)
     if (session) {
@@ -208,6 +280,10 @@ export class AcApNotificationEventBridge {
     }
   }
 
+  /**
+   * @param docManager - Manager whose events and active session are observed.
+   * @param getCenter - Accessor for the currently installed notification center.
+   */
   constructor(
     docManager: AcApDocManager,
     getCenter: () => AcApNotificationCenter
@@ -216,6 +292,9 @@ export class AcApNotificationEventBridge {
     this._getCenter = getCenter
   }
 
+  /**
+   * Attaches event-bus and document-manager listeners. Idempotent.
+   */
   install() {
     if (this._installed) return
     this._installed = true
@@ -245,6 +324,9 @@ export class AcApNotificationEventBridge {
     )
   }
 
+  /**
+   * Detaches all listeners and clears per-session analysis bookkeeping. Idempotent.
+   */
   uninstall() {
     if (!this._installed) return
     this._installed = false
@@ -275,6 +357,12 @@ export class AcApNotificationEventBridge {
     this._unsupportedNotifiedSessions.clear()
   }
 
+  /**
+   * Analyzes the current document for unsupported entities and writes a warning
+   * when {@link AcApUnsupportedDrawingAnalysis.shouldWarn} is true.
+   *
+   * Marks the active session as notified so later tab switches do not rescan.
+   */
   private notifyUnsupportedEntities() {
     const doc = this._docManager.curDocument
     if (!doc) return
