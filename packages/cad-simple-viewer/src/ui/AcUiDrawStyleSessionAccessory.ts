@@ -359,7 +359,11 @@ export class AcUiDrawStyleSessionAccessory {
    * @param host - Desktop top-center slot or mobile session panel accessory element.
    */
   private mount(host: HTMLElement): void {
-    this.mobileMounted = host.classList.contains('ml-mobile-cmd-accessory')
+    // Session panel mounts into `.ml-mobile-cmd-accessory-content`.
+    this.mobileMounted =
+      host.classList.contains('ml-mobile-cmd-accessory-content') ||
+      host.classList.contains('ml-mobile-cmd-accessory') ||
+      !!host.closest('.ml-mobile-cmd')
     this.hideColorPanel()
     if (this.mobileMounted) {
       this.colorPanel.classList.add('ml-draw-style-toolbar__color-panel--drop-up')

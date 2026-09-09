@@ -78,7 +78,8 @@ export function acuiShouldShowDrawStyleToolbar(
  * sync and apply target the measure or markup store while the command runs.
  * Desktop mounts are suppressed when the ribbon already exposes the same UI, or
  * when the shortcut toolbar is visible (it owns the desktop draw-style slot).
- * Mobile mounts still target the session-panel accessory host.
+ * Phone/pad mounts target the session-panel accessory host (resolved even before
+ * the panel opens so `trigger` can attach controls on the first row).
  *
  * @param command - Command that should expose color / font-size session UI.
  */

@@ -4,9 +4,41 @@ import type {
   AcEdSessionAccessory,
   AcEdSessionAccessoryEventArgs
 } from '../src/editor/command/AcEdSessionAccessory'
+import {
+  ML_UI_COMPACT_MEDIA_QUERY,
+  ML_UI_MOBILE_MEDIA_QUERY
+} from '../src/editor/global/AcEdUiLayout'
 import { AcEdSessionAccessoryController } from '../src/editor/input/ui/AcEdSessionAccessoryController'
 
 type Listener = (args: AcEdSessionAccessoryEventArgs) => void
+type MediaListener = (event: MediaQueryListEvent) => void
+
+function installMatchMedia(matches: (query: string) => boolean) {
+  const descriptor = Object.getOwnPropertyDescriptor(window, 'matchMedia')
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: (query: string) => ({
+      matches: matches(query),
+      media: query,
+      addEventListener: (_type: string, _listener: MediaListener) => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+      onchange: null
+    })
+  })
+  return {
+    restore: () => {
+      if (descriptor) Object.defineProperty(window, 'matchMedia', descriptor)
+      else
+        Reflect.deleteProperty(
+          window as Window & { matchMedia?: unknown },
+          'matchMedia'
+        )
+    }
+  }
+}
 
 function createEventManager() {
   const listeners = new Set<Listener>()
@@ -86,21 +118,47 @@ describe('AcEdSessionAccessoryController', () => {
   })
 
   it('resolves desktop host when the mobile prompt is closed', () => {
+    const media = installMatchMedia(() => false)
     expect(controller.sessionAccessoryHost.type).toBe('desktop')
     expect(
       controller.sessionAccessoryHost.host.classList.contains(
         'ml-desktop-session-accessory__slot'
       )
     ).toBe(true)
+    media.restore()
   })
 
   it('resolves mobile host when the mobile prompt is open', () => {
+    const media = installMatchMedia(() => false)
     isMobilePromptOpen = true
     expect(controller.sessionAccessoryHost.type).toBe('mobile')
     expect(controller.sessionAccessoryHost.host).toBe(mobileAccessoryHost)
+    media.restore()
+  })
+
+  it('resolves mobile host on phone/pad even when the prompt is closed', () => {
+    const media = installMatchMedia(
+      query =>
+        query === ML_UI_MOBILE_MEDIA_QUERY || query === ML_UI_COMPACT_MEDIA_QUERY
+    )
+    expect(isMobilePromptOpen).toBe(false)
+    expect(controller.sessionAccessoryHost.type).toBe('mobile')
+    expect(controller.sessionAccessoryHost.host).toBe(mobileAccessoryHost)
+    media.restore()
+  })
+
+  it('resolves mobile host on pad-width layout even when the prompt is closed', () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_COMPACT_MEDIA_QUERY
+    )
+    expect(isMobilePromptOpen).toBe(false)
+    expect(controller.sessionAccessoryHost.type).toBe('mobile')
+    expect(controller.sessionAccessoryHost.host).toBe(mobileAccessoryHost)
+    media.restore()
   })
 
   it('mounts selection accessories on desktop and yields to command mounts', () => {
+    const media = installMatchMedia(() => false)
     const selection = createAccessory('selection')
     controller.selectionSessionAccessory = selection
 
@@ -145,12 +203,51 @@ describe('AcEdSessionAccessoryController', () => {
       source: 'command'
     })
     expect(selection.mount).toHaveBeenCalledTimes(2)
+    media.restore()
   })
 
   it('does not mount selection accessories on the mobile slot', () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_MOBILE_MEDIA_QUERY
+    )
     isMobilePromptOpen = true
     const selection = createAccessory('selection')
     controller.selectionSessionAccessory = selection
     expect(selection.mount).not.toHaveBeenCalled()
+    media.restore()
+  })
+
+  it('remounts into an emptied mobile host without changing slot', () => {
+    const media = installMatchMedia(() => false)
+    isMobilePromptOpen = true
+    const command = createAccessory('command')
+    const options = {
+      host: mobileAccessoryHost,
+      type: 'mobile' as const,
+      view: { container } as never
+    }
+    events.beforeMountSessionAccessory.dispatch({
+      command: null,
+      accessory: command,
+      options,
+      source: 'command'
+    })
+    command.mount(options)
+    events.afterMountSessionAccessory.dispatch({
+      command: null,
+      accessory: command,
+      options,
+      source: 'command'
+    })
+    expect(mobileAccessoryHost.childElementCount).toBe(1)
+
+    // Simulate a prompt transition that wiped the slot without unmounting.
+    mobileAccessoryHost.replaceChildren()
+    controller.remountActiveSessionAccessory()
+
+    expect(command.unmount).toHaveBeenCalled()
+    expect(command.mount).toHaveBeenCalledTimes(2)
+    expect(mobileAccessoryHost.childElementCount).toBe(1)
+    media.restore()
   })
 })

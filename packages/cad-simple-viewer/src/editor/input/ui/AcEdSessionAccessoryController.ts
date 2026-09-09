@@ -10,6 +10,7 @@ import type {
 } from '../../command/AcEdSessionAccessory'
 import type { AcEdBaseView } from '../../view/AcEdBaseView'
 import { AcEdDesktopSessionAccessoryChrome } from './AcEdDesktopSessionAccessoryChrome'
+import { acedInteractionStrategy } from './AcEdInteractionStrategy'
 import type { AcEdMobileCommandChrome } from './AcEdMobileCommandChrome'
 
 /** Subset of editor events used by the session accessory controller. */
@@ -146,9 +147,19 @@ export class AcEdSessionAccessoryController {
     events.afterUnmountSessionAccessory.addEventListener(this.onAfterUnmount)
   }
 
-  /** Active mount target for the current desktop / mobile-prompt state. */
+  /**
+   * Active mount target for the current layout / mobile-prompt state.
+   *
+   * Phone and pad use the session-panel accessory slot for draw commands even
+   * before the panel is shown, so `command.trigger` can mount controls there
+   * (and `beginMobilePrompt` remount stays a no-op when the host is unchanged).
+   * Desktop keeps the top-center chrome until a mobile prompt is open.
+   */
   get sessionAccessoryHost(): AcEdSessionAccessoryHostInfo {
-    if (this.isMobilePromptOpen()) {
+    if (
+      this.isMobilePromptOpen() ||
+      acedInteractionStrategy().point.usesSessionChrome
+    ) {
       return {
         host: this.getMobileChrome().accessoryHost,
         type: 'mobile'
@@ -200,14 +211,16 @@ export class AcEdSessionAccessoryController {
 
   /**
    * Remounts the active accessory when the host slot changes (mobile prompt
-   * open/close or layout flip).
+   * open/close or layout flip), or when the current host was emptied without
+   * an unmount (e.g. a stale clear).
    */
   remountActiveSessionAccessory(): void {
     if (!this.mounted || this.remounting) return
 
     const { accessory, source, command, options: prev } = this.mounted
     const next = this.sessionAccessoryHost
-    if (prev.host === next.host && prev.type === next.type) return
+    const sameSlot = prev.host === next.host && prev.type === next.type
+    if (sameSlot && next.host.childElementCount > 0) return
 
     this.remounting = true
     try {

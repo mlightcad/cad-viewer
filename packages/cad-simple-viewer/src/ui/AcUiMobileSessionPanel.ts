@@ -93,8 +93,9 @@ const ZERO_TEXTS: AcUiMobileSessionMetricTexts = {
 }
 
 /**
- * Shared phone/pad session chrome: bottom panel with title bar (accessory +
- * help + collapse), in-panel prompt, live metrics, keyword chips, and ✓/×.
+ * Shared phone/pad session chrome: bottom panel with title bar (session
+ * accessory or prompt + help + collapse), message row (prompt + keyword chips
+ * when an accessory owns the title), live metrics, and ✓/×.
  *
  * Compact (collapsed) mode keeps a single-line prompt and confirm/cancel while
  * hiding metrics to reclaim canvas height and cover the bottom toolbar.
@@ -407,18 +408,28 @@ export class AcUiMobileSessionPanel {
   /** Shows the accessory / title row (custom content slot + help + collapse). */
   prepareAccessory(): void {
     this.accessoryEl.hidden = false
+    // Remounts can restore widgets after `show()` already ran placement against
+    // an empty slot — re-sync so the prompt stays on the message row.
+    if (this.open) this.applyMetricVisibility()
   }
 
   /** Clears custom accessory content; help / collapse stay while open. */
   clearAccessory(): void {
     this.accessoryContentEl.replaceChildren()
+    if (this.open) this.applyMetricVisibility()
   }
 
-  /** Hides the panel and clears session callbacks. */
+  /**
+   * Hides the panel without clearing accessory widgets.
+   *
+   * Draw-style (and other) session accessories outlive individual prompts —
+   * `endMobilePrompt` / `beginMobilePrompt` pairs between picks must not wipe
+   * them. Ownership stays with the accessory mount lifecycle
+   * ({@link clearAccessory} via the session-accessory controller).
+   */
   hide(): void {
     this.open = false
     this.callbacks = null
-    this.clearAccessory()
     this.accessoryEl.hidden = true
     this.setCollapsed(false)
     this.layoutUnsub?.()
@@ -472,9 +483,16 @@ export class AcUiMobileSessionPanel {
   }
 
   /**
-   * Places the prompt (and keyword chips) in the title row when there is no
-   * accessory widget; otherwise keeps them on the message row. Compact mode
-   * keeps widgets when present, otherwise shows a truncated prompt.
+   * Places the command prompt vs session accessory on the title row.
+   *
+   * Expanded:
+   * - No accessory widgets → title shows the prompt; chips stay on the message
+   *   row (second row) when present.
+   * - With accessory widgets → title always shows the accessory; the message
+   *   row shows the prompt and keyword chips together.
+   *
+   * Compact mode always shows a truncated command prompt. When accessory
+   * widgets are present they stay on the title row beside the prompt.
    */
   private syncPromptPlacement(collapsed: boolean): void {
     const hasWidgets = this.hasAccessoryWidgets()
@@ -486,18 +504,13 @@ export class AcUiMobileSessionPanel {
     this.accessoryEl.hidden = false
     this.accessoryEl.appendChild(this.titleActions)
     this.chipsEl.hidden = collapsed || !hasChips
+    this.promptRow.classList.remove('is-in-title')
 
     if (collapsed) {
-      this.promptRow.classList.remove('is-in-title')
-      if (promptInTitle) {
-        this.accessoryEl.insertBefore(this.promptEl, this.titleActions)
-        this.promptEl.hidden = false
-      } else {
-        this.promptEl.hidden = true
-        this.promptRow.appendChild(this.promptEl)
-      }
+      // Compact: always show the truncated command message on the title row.
+      this.promptEl.hidden = false
+      this.accessoryEl.insertBefore(this.promptEl, this.titleActions)
       this.promptRow.appendChild(this.chipsEl)
-      // Keep an empty prompt row out of the compact chrome.
       if (this.promptRow.parentElement === this.accessoryEl) {
         this.panel.insertBefore(this.promptRow, this.absGroup)
       }
@@ -513,18 +526,20 @@ export class AcUiMobileSessionPanel {
       this.compactActions.remove()
     }
 
-    // Prompt + chips share one flex-wrap cluster (title or message band).
-    this.promptRow.append(this.promptEl, this.chipsEl)
-    this.promptRow.hidden = false
+    // Message row always sits below the title bar as a panel child.
+    if (this.promptRow.parentElement === this.accessoryEl) {
+      this.panel.insertBefore(this.promptRow, this.absGroup)
+    }
 
     if (promptInTitle) {
-      this.promptRow.classList.add('is-in-title')
-      this.accessoryEl.insertBefore(this.promptRow, this.titleActions)
+      // Title: prompt + help/collapse. Chips (if any) stay on the message row.
+      this.accessoryEl.insertBefore(this.promptEl, this.titleActions)
+      this.promptRow.appendChild(this.chipsEl)
+      this.promptRow.hidden = !hasChips
     } else {
-      this.promptRow.classList.remove('is-in-title')
-      if (this.promptRow.parentElement === this.accessoryEl) {
-        this.panel.insertBefore(this.promptRow, this.absGroup)
-      }
+      // Title: accessory widgets + help/collapse. Message row: prompt + chips.
+      this.promptRow.append(this.promptEl, this.chipsEl)
+      this.promptRow.hidden = false
     }
   }
 
@@ -757,13 +772,6 @@ const MOBILE_CMD_CSS = `
     padding-bottom: 4px;
     border-bottom: 1px solid var(--ml-ui-border, rgba(255, 255, 255, 0.12));
   }
-  .ml-mobile-cmd-prompt-row.is-in-title {
-    flex: 1 1 auto;
-    min-width: 0;
-    min-height: 0;
-    padding: 0;
-    border-bottom: 0;
-  }
   .ml-mobile-cmd-prompt {
     flex: 1 1 10em;
     min-width: min(100%, 8em);
@@ -779,6 +787,10 @@ const MOBILE_CMD_CSS = `
     white-space: normal;
     overflow-wrap: anywhere;
     word-break: break-word;
+  }
+  .ml-mobile-cmd-accessory > .ml-mobile-cmd-prompt {
+    flex: 1 1 auto;
+    min-width: 0;
   }
   .ml-mobile-cmd-panel.is-collapsed .ml-mobile-cmd-prompt {
     white-space: nowrap;
@@ -907,13 +919,6 @@ const MOBILE_CMD_CSS = `
   }
   .ml-mobile-cmd-accessory-content:empty {
     display: none;
-  }
-  .ml-mobile-cmd-panel.is-prompt-in-title .ml-mobile-cmd-prompt {
-    flex: 1 1 10em;
-    min-width: min(100%, 8em);
-  }
-  .ml-mobile-cmd-panel.is-prompt-in-title .ml-mobile-cmd-chips {
-    flex: 0 1 auto;
   }
   .ml-mobile-cmd-title-actions {
     display: flex;
@@ -1078,17 +1083,6 @@ const MOBILE_CMD_CSS = `
       grid-template-areas:
         'accessory accessory'
         'prompt prompt'
-        'abs shared';
-    }
-    .ml-mobile-cmd-panel.is-prompt-in-title.is-relative {
-      grid-template-areas:
-        'accessory accessory'
-        'polar shared'
-        'delta shared';
-    }
-    .ml-mobile-cmd-panel.is-prompt-in-title.is-absolute {
-      grid-template-areas:
-        'accessory accessory'
         'abs shared';
     }
     .ml-mobile-cmd-group-polar { grid-area: polar; }

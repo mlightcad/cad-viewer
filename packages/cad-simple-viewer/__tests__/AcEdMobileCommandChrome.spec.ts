@@ -362,7 +362,7 @@ describe('AcEdMobileCommandChrome', () => {
     media.restore()
   })
 
-  it('exposes an accessory host and clears it on hide', () => {
+  it('exposes an accessory host and keeps widgets across hide/show', () => {
     const media = installMatchMedia(
       query => query === ML_UI_MOBILE_MEDIA_QUERY
     )
@@ -383,10 +383,48 @@ describe('AcEdMobileCommandChrome', () => {
     content.appendChild(document.createElement('span'))
     expect(content.firstElementChild?.tagName).toBe('SPAN')
 
+    // Prompt transitions call hide/show; accessory widgets must survive so the
+    // next prompt keeps draw-style on the title row.
     chrome.hide()
     expect(row.hidden).toBe(true)
-    expect(content.childElementCount).toBe(0)
+    expect(content.childElementCount).toBe(1)
     expect(row.querySelector('.ml-mobile-cmd-help')).toBeTruthy()
+
+    chrome.show(
+      {
+        prompt: 'Specify next point:',
+        keywords: [],
+        allowNone: true,
+        showMetrics: true
+      },
+      { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
+    )
+    const panel = host.querySelector('.ml-mobile-cmd-panel') as HTMLElement
+    expect(content.childElementCount).toBe(1)
+    expect(panel.classList.contains('is-prompt-in-title')).toBe(false)
+    expect(
+      host.querySelector('.ml-mobile-cmd-prompt-row .ml-mobile-cmd-prompt')
+        ?.textContent
+    ).toBe('Specify next point')
+    media.restore()
+  })
+
+  it('clears accessory widgets only via clearAccessory', () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_MOBILE_MEDIA_QUERY
+    )
+    chrome.show(
+      {
+        prompt: 'Specify point',
+        keywords: [],
+        allowNone: true,
+        showMetrics: false
+      },
+      { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
+    )
+    chrome.accessoryHost.appendChild(document.createElement('span'))
+    chrome.clearAccessory()
+    expect(chrome.accessoryHost.childElementCount).toBe(0)
     media.restore()
   })
 
@@ -404,15 +442,18 @@ describe('AcEdMobileCommandChrome', () => {
       { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
     )
     const panel = host.querySelector('.ml-mobile-cmd-panel') as HTMLElement
-    // Empty accessory → prompt (+ chips) live in the title cluster.
+    // Empty accessory → prompt lives in the title; chips stay on the message row.
     expect(panel.classList.contains('is-prompt-in-title')).toBe(true)
     expect(
-      host.querySelector('.ml-mobile-cmd-accessory .ml-mobile-cmd-prompt-row.is-in-title')
-    ).toBeTruthy()
-    expect(
-      host.querySelector('.ml-mobile-cmd-accessory .ml-mobile-cmd-prompt')
+      host.querySelector('.ml-mobile-cmd-accessory > .ml-mobile-cmd-prompt')
         ?.textContent
     ).toBe('Specify next point')
+    expect(
+      host.querySelector('.ml-mobile-cmd-accessory .ml-mobile-cmd-prompt-row')
+    ).toBeNull()
+    expect(
+      (host.querySelector('.ml-mobile-cmd-prompt-row') as HTMLElement).hidden
+    ).toBe(true)
 
     const collapseBtn = host.querySelector(
       '.ml-mobile-cmd-collapse'
@@ -442,7 +483,56 @@ describe('AcEdMobileCommandChrome', () => {
     media.restore()
   })
 
-  it('keeps accessory widgets in compact mode and hides the prompt', async () => {
+  it('moves prompt and chips to the message row when an accessory is mounted', async () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_MOBILE_MEDIA_QUERY
+    )
+    chrome.show(
+      {
+        prompt: 'Specify next point:',
+        keywords: [
+          { displayName: 'Undo', globalName: 'U', enabled: true },
+          { displayName: 'Close', globalName: 'C', enabled: true }
+        ],
+        allowNone: true,
+        showMetrics: false
+      },
+      { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
+    )
+    const panel = host.querySelector('.ml-mobile-cmd-panel') as HTMLElement
+    // No accessory yet → prompt in title; chips on the message row.
+    expect(panel.classList.contains('is-prompt-in-title')).toBe(true)
+    expect(
+      host.querySelector('.ml-mobile-cmd-accessory > .ml-mobile-cmd-prompt')
+    ).toBeTruthy()
+    const messageRow = host.querySelector(
+      '.ml-mobile-cmd-prompt-row'
+    ) as HTMLElement
+    expect(messageRow.hidden).toBe(false)
+    expect(messageRow.querySelector('.ml-mobile-cmd-chips')?.childElementCount).toBe(
+      2
+    )
+    expect(messageRow.contains(host.querySelector('.ml-mobile-cmd-prompt')!)).toBe(
+      false
+    )
+
+    chrome.accessoryHost.appendChild(document.createElement('span'))
+    await Promise.resolve()
+    expect(panel.classList.contains('is-prompt-in-title')).toBe(false)
+    expect(
+      host.querySelector('.ml-mobile-cmd-accessory > .ml-mobile-cmd-prompt')
+    ).toBeNull()
+    expect(messageRow.hidden).toBe(false)
+    expect(
+      messageRow.querySelector('.ml-mobile-cmd-prompt')?.textContent
+    ).toBe('Specify next point')
+    expect(messageRow.querySelector('.ml-mobile-cmd-chips')?.childElementCount).toBe(
+      2
+    )
+    media.restore()
+  })
+
+  it('keeps accessory widgets in compact mode and still shows the prompt', async () => {
     const media = installMatchMedia(
       query => query === ML_UI_MOBILE_MEDIA_QUERY
     )
@@ -460,7 +550,7 @@ describe('AcEdMobileCommandChrome', () => {
     const panel = host.querySelector('.ml-mobile-cmd-panel') as HTMLElement
     expect(panel.classList.contains('is-prompt-in-title')).toBe(false)
     expect(
-      host.querySelector('.ml-mobile-cmd-prompt-row.is-in-title')
+      host.querySelector('.ml-mobile-cmd-accessory > .ml-mobile-cmd-prompt')
     ).toBeNull()
     expect(
       (host.querySelector('.ml-mobile-cmd-prompt-row') as HTMLElement).hidden
@@ -474,8 +564,12 @@ describe('AcEdMobileCommandChrome', () => {
       host.querySelector('.ml-mobile-cmd-accessory-content')?.childElementCount
     ).toBe(1)
     expect(
+      host.querySelector('.ml-mobile-cmd-accessory > .ml-mobile-cmd-prompt')
+        ?.textContent
+    ).toBe('Specify next point')
+    expect(
       (host.querySelector('.ml-mobile-cmd-prompt') as HTMLElement).hidden
-    ).toBe(true)
+    ).toBe(false)
     expect(
       (host.querySelector('.ml-mobile-cmd-help') as HTMLButtonElement).hidden
     ).toBe(true)
