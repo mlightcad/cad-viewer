@@ -36,16 +36,9 @@ const localeLabels: Record<string, Record<string, string>> = {
 let currentLocale = 'en'
 
 jest.mock('@mlightcad/cad-simple-viewer', () => {
-  const layout = jest.requireActual(
-    '../../cad-simple-viewer/src/editor/global/AcEdUiLayout'
-  ) as typeof import('../../cad-simple-viewer/src/editor/global/AcEdUiLayout')
-  const toolbar = jest.requireActual(
-    '../../cad-simple-viewer/src/ui/toolbar'
-  ) as typeof import('../../cad-simple-viewer/src/ui/toolbar')
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
 
-  return {
-    ...layout,
-    ...toolbar,
+  return createCadSimpleViewerMock({
     AcApDocManager: {
       instance: {
         curDocument: { openMode: 8 },
@@ -96,7 +89,7 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
     },
     isMarkupVisible: () => true,
     isMeasurementVisible: () => true
-  }
+  })
 })
 
 jest.mock('@mlightcad/data-model', () => ({

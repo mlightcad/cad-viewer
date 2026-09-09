@@ -52,25 +52,28 @@ const editor = {
   events: { documentActivated }
 }
 
-jest.mock('@mlightcad/cad-simple-viewer', () => ({
-  AcApDocManager: {
-    instance: {
-      curView: undefined
-    }
-  },
-  AcApI18n: {
-    t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
-    mergeLocaleMessage: jest.fn(),
-    events: {
-      localeChanged: {
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn()
+jest.mock('@mlightcad/cad-simple-viewer', () => {
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
+  return createCadSimpleViewerMock({
+    AcApDocManager: {
+      instance: {
+        curView: undefined
       }
     },
-    currentLocale: 'en'
-  },
-  AcApLayerStore: class {}
-}))
+    AcApI18n: {
+      t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
+      mergeLocaleMessage: jest.fn(),
+      events: {
+        localeChanged: {
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn()
+        }
+      },
+      currentLocale: 'en'
+    },
+    AcApLayerStore: class {}
+  })
+})
 
 jest.mock('@mlightcad/data-model', () => ({
   AcCmColor: {

@@ -11,19 +11,12 @@ beforeAll(() => {
 })
 
 jest.mock('@mlightcad/cad-simple-viewer', () => {
-  const layout = jest.requireActual(
-    '../../cad-simple-viewer/src/editor/global/AcEdUiLayout'
-  ) as typeof import('../../cad-simple-viewer/src/editor/global/AcEdUiLayout')
-  const toolbar = jest.requireActual(
-    '../../cad-simple-viewer/src/ui/toolbar'
-  ) as typeof import('../../cad-simple-viewer/src/ui/toolbar')
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
   const openMode = jest.requireActual(
     '../../cad-simple-viewer/src/editor/view/AcEdOpenMode'
   ) as typeof import('../../cad-simple-viewer/src/editor/view/AcEdOpenMode')
 
-  return {
-    ...layout,
-    ...toolbar,
+  return createCadSimpleViewerMock({
     AcApDocManager: {
       instance: {
         curDocument: { openMode: 8 },
@@ -54,7 +47,7 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
     AcApI18n: {
       t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key
     }
-  }
+  })
 })
 
 jest.mock('@mlightcad/data-model', () => ({
