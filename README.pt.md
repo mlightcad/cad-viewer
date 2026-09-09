@@ -50,6 +50,7 @@ Pacotes desktop Linux da comunidade:
 - **Segurança de dados aprimorada** — Os arquivos nunca saem do seu dispositivo, garantindo privacidade total
 - **Integração fácil** — Sem configuração de servidor ou infraestrutura de backend
 - Arquitetura modular para integração fluida com terceiros
+- **Layout móvel e toque** — UI responsiva para telefone/tablet e gestos de toque (pinça para zoom, pan com um dedo, toque para selecionar) integrados em `@mlightcad/cad-simple-viewer`, sem necessidade de um app móvel separado
 - **Exportação para HTML offline** — Exporte o desenho atual como um único arquivo `.html` autossuficiente com visualizador incorporado (pan/zoom, zoom extents, camadas, medição de distância, UI EN/ZH). Abre offline em qualquer navegador; não requer instância do cad-viewer ou backend.
 - Fluxos de trabalho de edição offline e online
 - Motores de renderização 3D THREE.js com técnicas avançadas de otimização
@@ -424,7 +425,7 @@ Legenda:
 
 * [ ] ⏳ Integração com Google Drive
 * [ ] Visualizador WeChat Mini Program
-* [ ] Suporte a navegador mobile (somente leitura)
+* [x] Suporte a navegador mobile (layout responsivo e gestos de toque)
 
 ### Documentação e comunidade
 

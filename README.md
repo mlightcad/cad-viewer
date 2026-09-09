@@ -50,6 +50,7 @@ Community Linux desktop packages:
 - **Enhanced data security** - Files never leave your device, ensuring complete privacy
 - **Easy integration** - No server setup or backend infrastructure needed
 - Modular architecture for seamless third-party integration
+- **Mobile layout & touch** — Responsive phone/tablet UI and touch gestures (pinch-to-zoom, single-finger pan, tap to select) built into `@mlightcad/cad-simple-viewer`, so mobile browsers work without a separate app
 - **Export to offline HTML** — Export the current drawing as one self-contained `.html` file with an embedded viewer (pan/zoom, zoom extents, layers, distance measure, EN/ZH UI). Opens offline in any browser; no cad-viewer instance or backend required.
 - Offline and online editing workflows
 - THREE.js 3D rendering engines with advanced optimization techniques
@@ -424,7 +425,7 @@ Legend:
 
 * [ ] ⏳ Google Drive Integration
 * [ ] WeChat Mini Program viewer
-* [ ] Mobile browser support (read-only)
+* [x] Mobile browser support (responsive layout & touch)
 
 ### Documentation & Community
 

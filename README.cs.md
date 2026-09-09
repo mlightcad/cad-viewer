@@ -50,6 +50,7 @@ Komunitní desktopové balíčky pro Linux:
 - **Vyšší bezpečnost dat** — soubory nikdy neopustí vaše zařízení, zajištění úplného soukromí
 - **Snadná integrace** — není potřeba nastavení serveru ani backendové infrastruktury
 - Modulární architektura pro bezproblémovou integraci třetích stran
+- **Mobilní rozložení a dotykové ovládání** — responzivní UI pro telefon/tablet a dotyková gesta (štípnutí pro zoom, posun jedním prstem, klepnutí pro výběr) vestavěná v `@mlightcad/cad-simple-viewer`, bez nutnosti samostatné mobilní aplikace
 - **Export do offline HTML** — export aktuálního výkresu jako jediného samostatného souboru `.html` s vloženým prohlížečem (posun/přiblížení, přizpůsobení zobrazení, vrstvy, měření vzdálenosti, UI EN/ZH). Otevírá se offline v jakémkoli prohlížeči; není vyžadována instance cad-viewer ani backend.
 - Offline i online editační pracovní postupy
 - 3D vykreslovací engine THREE.js s pokročilými optimalizačními technikami
@@ -424,7 +425,7 @@ Legenda:
 
 * [ ] ⏳ Integrace Google Drive
 * [ ] Prohlížeč pro WeChat Mini Program
-* [ ] Podpora mobilního prohlížeče (pouze pro čtení)
+* [x] Podpora mobilního prohlížeče (responzivní rozložení a dotykové ovládání)
 
 ### Dokumentace a komunita
 

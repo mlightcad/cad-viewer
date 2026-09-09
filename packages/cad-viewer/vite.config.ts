@@ -1,3 +1,5 @@
+import { createRequire } from 'node:module'
+import { dirname, resolve } from 'node:path'
 import {
   defineConfig,
   type ConfigEnv,
@@ -13,6 +15,12 @@ import { libInjectCss } from 'vite-plugin-lib-inject-css'
 import { createLibEntryFileName } from '../vite-config/pluginRollupOutput'
 
 const packageId = 'cad-viewer'
+const require = createRequire(import.meta.url)
+/** Prefer package sources so unused exports (e.g. MlToolBar) can tree-shake. */
+const uiComponentsSrc = resolve(
+  dirname(require.resolve('@mlightcad/ui-components/package.json')),
+  'src/index.ts'
+)
 
 export default defineConfig(({ mode }: ConfigEnv) => {
   const plugins: PluginOption[] = [
@@ -44,6 +52,16 @@ export default defineConfig(({ mode }: ConfigEnv) => {
 
   return {
     outDir: 'dist',
+    resolve: {
+      alias: [
+        {
+          // ui-components' published `module` is a single prebundled file that
+          // always injects MlToolBar CSS. Point at sources so Rollup can drop it.
+          find: /^@mlightcad\/ui-components$/,
+          replacement: uiComponentsSrc
+        }
+      ]
+    },
     build: {
       lib: {
         entry: 'src/index.ts',
