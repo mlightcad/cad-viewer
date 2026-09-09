@@ -4,37 +4,46 @@
     <div class="msp-accessory">
       <div class="msp-accessory-content">
         <!-- Draw-style accessory: color swatch + text-height -->
-        <div class="msp-draw-style" role="toolbar" aria-label="Draw style">
-          <button
-            class="msp-swatch"
-            type="button"
-            :title="labels.color"
-            :aria-label="labels.color"
-          >
-            <span class="msp-swatch-fill"></span>
-          </button>
-          <button
-            class="msp-text-height"
-            type="button"
-            :title="labels.fontSize"
-            :aria-label="labels.fontSize"
-          >
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <text
-                x="2"
-                y="18"
-                font-family="Georgia, Times New Roman, serif"
-                font-size="16"
-                font-weight="600"
-                fill="currentColor"
-              >A</text>
-              <g stroke="#2dd4bf" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" fill="none">
-                <path d="M18 4v16" />
-                <path d="M15.5 6.5 18 4l2.5 2.5" />
-                <path d="M15.5 17.5 18 20l2.5-2.5" />
-              </g>
-            </svg>
-          </button>
+        <div class="msp-accessory-wrap" :class="{ 'is-highlighted': highlightAccessory }">
+          <div class="msp-draw-style" role="toolbar" aria-label="Draw style">
+            <button
+              class="msp-swatch"
+              type="button"
+              :title="labels.color"
+              :aria-label="labels.color"
+            >
+              <span class="msp-swatch-fill"></span>
+            </button>
+            <button
+              class="msp-text-height"
+              type="button"
+              :title="labels.fontSize"
+              :aria-label="labels.fontSize"
+            >
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <text
+                  x="2"
+                  y="18"
+                  font-family="Georgia, Times New Roman, serif"
+                  font-size="16"
+                  font-weight="600"
+                  fill="currentColor"
+                >A</text>
+                <g stroke="#2dd4bf" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" fill="none">
+                  <path d="M18 4v16" />
+                  <path d="M15.5 6.5 18 4l2.5 2.5" />
+                  <path d="M15.5 17.5 18 20l2.5-2.5" />
+                </g>
+              </svg>
+            </button>
+          </div>
+          <!-- Annotation callout, visible only when highlightAccessory is true -->
+          <template v-if="highlightAccessory">
+            <div class="msp-callout-box msp-callout-right" aria-hidden="true">
+              <div class="msp-callout-arrow"></div>
+              <div class="msp-callout-label">{{ calloutLabel }}</div>
+            </div>
+          </template>
         </div>
       </div>
 
@@ -218,6 +227,8 @@ interface Labels {
   fontSize: string
   /** Default prompt shown when prop `prompt` is not provided. */
   defaultPrompt: string
+  /** Label for the accessory callout (annotation). */
+  accessoryLabel: string
 }
 
 const TRANSLATIONS: Record<string, Labels> = {
@@ -236,6 +247,7 @@ const TRANSLATIONS: Record<string, Labels> = {
     color: '颜色',
     fontSize: '文字大小',
     defaultPrompt: '指定第一个点',
+    accessoryLabel: '命令会话附件',
   },
   en: {
     length: 'Length',
@@ -252,6 +264,7 @@ const TRANSLATIONS: Record<string, Labels> = {
     color: 'Color',
     fontSize: 'Text height',
     defaultPrompt: 'Specify first point',
+    accessoryLabel: 'Command session accessory',
   },
   ja: {
     length: '長さ',
@@ -268,6 +281,7 @@ const TRANSLATIONS: Record<string, Labels> = {
     color: '色',
     fontSize: '文字高さ',
     defaultPrompt: '最初の点を指定',
+    accessoryLabel: 'コマンドセッションアクセサリ',
   },
   ko: {
     length: '길이',
@@ -284,6 +298,7 @@ const TRANSLATIONS: Record<string, Labels> = {
     color: '색상',
     fontSize: '글자 높이',
     defaultPrompt: '첫 번째 점 지정',
+    accessoryLabel: '명령 세션 액세서리',
   },
   ar: {
     length: 'الطول',
@@ -300,6 +315,7 @@ const TRANSLATIONS: Record<string, Labels> = {
     color: 'اللون',
     fontSize: 'ارتفاع النص',
     defaultPrompt: 'حدد النقطة الأولى',
+    accessoryLabel: 'ملحق جلسة الأمر',
   },
   cs: {
     length: 'Délka',
@@ -316,6 +332,7 @@ const TRANSLATIONS: Record<string, Labels> = {
     color: 'Barva',
     fontSize: 'Výška textu',
     defaultPrompt: 'Zadejte první bod',
+    accessoryLabel: 'Příslušenství relace příkazu',
   },
   tr: {
     length: 'Uzunluk',
@@ -332,6 +349,7 @@ const TRANSLATIONS: Record<string, Labels> = {
     color: 'Renk',
     fontSize: 'Metin yüksekliği',
     defaultPrompt: 'İlk noktayı belirtin',
+    accessoryLabel: 'Komut oturum aksesuarı',
   },
 }
 
@@ -392,6 +410,10 @@ const props = withDefaults(defineProps<{
     x: string
     y: string
   }
+  /** When true, draws a red callout box + arrow around the accessory. */
+  highlightAccessory?: boolean
+  /** Override the callout label text (otherwise localised default is used). */
+  accessoryLabelOverride?: string
 }>(), {
   initialCompact: false,
   prompt: '',
@@ -406,6 +428,8 @@ const props = withDefaults(defineProps<{
     x: '1234.56',
     y: '789.01',
   }),
+  highlightAccessory: false,
+  accessoryLabelOverride: '',
 })
 
 // ---------------------------------------------------------------------------
@@ -419,6 +443,11 @@ const collapsed = ref<boolean>(props.initialCompact)
 /** Prompt text — use prop override, else the locale-specific default. */
 const promptText = computed(() =>
   (props.prompt || labels.value.defaultPrompt).replace(/[：:]\s*$/, '')
+)
+
+/** Callout label — override via prop, else use locale default. */
+const calloutLabel = computed(() =>
+  props.accessoryLabelOverride || labels.value.accessoryLabel
 )
 
 const panelClasses = computed(() => ({
@@ -482,6 +511,59 @@ const panelClasses = computed(() => ({
 }
 
 /* ---- Draw-style controls ---- */
+.msp-accessory-wrap {
+  display: inline-block;
+  position: relative;
+  padding: 0;
+}
+.msp-accessory-wrap.is-highlighted .msp-draw-style {
+  outline: 2px solid #ff4d4f;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.msp-callout-box {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 10px);
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  z-index: 5;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.msp-callout-arrow {
+  width: 26px;
+  height: 2px;
+  background: #ff4d4f;
+  position: relative;
+  flex-shrink: 0;
+}
+.msp-callout-arrow::after {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 8px solid #ff4d4f;
+}
+.msp-callout-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: #ff4d4f;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(255, 77, 79, 0.35);
+}
+
 .msp-draw-style {
   display: flex;
   align-items: center;
