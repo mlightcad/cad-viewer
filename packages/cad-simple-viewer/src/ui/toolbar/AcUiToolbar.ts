@@ -1,5 +1,14 @@
-import { AcApDocManager, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
+/**
+ * Plain-DOM floating toolbar with sub-toolbars, dropdown menus, and toggles.
+ *
+ * Document open / open-mode state is injected via {@link AcUiToolbar.setDocState}
+ * or {@link acapBindToolbarDocState} — this module never imports DocManager.
+ *
+ * @module AcUiToolbar
+ * @packageDocumentation
+ */
 
+import { AcEdOpenMode } from '../../editor/view/AcEdOpenMode'
 import {
   createIconElement,
   ICON_CHEVRON_DOWN,
@@ -7,32 +16,33 @@ import {
   ICON_CHEVRON_RIGHT,
   ICON_CHEVRON_UP,
   ICON_MORE
-} from '../assets/icons'
-import { acuiResolveToolbarChrome } from '../config/resolveToolbarChrome'
+} from '../icons'
+import { AcUiDropdownMenu } from './AcUiDropdownMenu'
+import { AcUiSubToolbar } from './AcUiSubToolbar'
+import { acuiEnsureToolbarStyles } from './AcUiToolbarStyles'
+import { acuiResolveToolbarChrome } from './resolveToolbarChrome'
 import {
   acuiFilterVisibleToolbarItems,
   acuiIsToolbarItemDisabled,
   acuiItemRequiresDocument,
   acuiResolveEffectiveToolbarItem,
   acuiResolveParentToolbarDisplay
-} from '../config/resolveToolbarItems'
+} from './resolveToolbarItemState'
 import {
   acuiIsDynamicToolbarChildren,
   acuiIsToolbarChildrenStrip,
   acuiIsToolbarSeparatorItem,
   acuiResolveToolbarChildrenUi
-} from '../config/toolbarItemUtils'
+} from './toolbarItemUtils'
 import type {
   AcUiSubToolbarOptions,
+  AcUiToolbarDocState,
+  AcUiToolbarI18n,
   AcUiToolbarItem,
   AcUiToolbarOverflow,
   AcUiToolbarPlacement,
   AcUiToolbarSize
-} from '../config/types'
-import type { AcUiI18n } from '../i18n'
-import { AcUiDropdownMenu } from './AcUiDropdownMenu'
-import { AcUiSubToolbar } from './AcUiSubToolbar'
-import { acuiEnsureUiStyles } from './styles'
+} from './types'
 
 /** Constructor / runtime mount options for {@link AcUiToolbar}. */
 export interface AcUiToolbarMountOptions {
@@ -45,7 +55,7 @@ export interface AcUiToolbarMountOptions {
   /** Toolbar item definitions to render. */
   items: AcUiToolbarItem[]
   /** i18n helper for button labels and tooltips. */
-  i18n: AcUiI18n
+  i18n: AcUiToolbarI18n
   /** Invoked when a leaf item with a `command` is activated. */
   onCommand: (command: string) => void
   /** When true, append a collapse/expand toggle at the end of the toolbar. */
@@ -92,19 +102,24 @@ export interface AcUiToolbarMountOptions {
    */
   inCanvasParent?: boolean
   /**
+   * Positioning host for sub-toolbars / strips. Defaults to {@link host}.
+   * Use a larger ancestor (for example the viewer root) when the mount host is
+   * only as tall as a phone bottom bar so strips can sit above the main bar.
+   */
+  overlayHost?: HTMLElement
+  /**
    * Called when a sub-toolbar or menu opens and
    * {@link AcUiSubToolbarOptions.replaceOnNested} is true, so callers can hide
    * mutually exclusive chrome such as the dock panel.
    */
   onExclusiveOpen?: () => void
+  /**
+   * Optional initial document state. Prefer {@link AcUiToolbar.setDocState} or
+   * {@link acapBindToolbarDocState} after construction.
+   */
+  docState?: Partial<AcUiToolbarDocState>
 }
 
-/**
- * Plain-DOM floating toolbar with sub-toolbars, dropdown menus, and toggles.
- *
- * Disables command buttons while a document is loading and filters items by
- * document open mode.
- */
 export class AcUiToolbar {
   /** Canvas element receiving the toolbar root node. */
   private mountHost: HTMLElement
@@ -176,28 +191,11 @@ export class AcUiToolbar {
     isSeparator: boolean
   }> = []
 
-  /** Re-renders buttons when a document becomes active. */
-  private handleDocumentActivated = () => {
-    this.hasDocument = Boolean(AcApDocManager.instance.curDocument)
-    this.isDisabled = false
-    this.syncRootClasses()
-    this.openMode =
-      AcApDocManager.instance.curDocument?.openMode ?? AcEdOpenMode.Read
-    this.renderButtons()
-  }
-
-  /** Disables the toolbar while a document is opening. */
-  private handleDocumentToBeOpened = () => {
-    this.isDisabled = true
-    this.syncRootClasses()
-    this.closeChildrenUi()
-  }
-
   /**
    * @param options - Host, placement, items, i18n, and command callback.
    */
   constructor(private options: AcUiToolbarMountOptions) {
-    acuiEnsureUiStyles()
+    acuiEnsureToolbarStyles()
     this.mountHost = options.host
     this.themeHost = options.themeHost ?? options.host
     this.edgeOffset = options.edgeOffset ?? 8
@@ -237,14 +235,36 @@ export class AcUiToolbar {
     this.ensureInParentLayout()
     this.setupResizeObserver()
 
-    AcApDocManager.instance.events.documentActivated.addEventListener(
-      this.handleDocumentActivated
-    )
-    AcApDocManager.instance.events.documentToBeOpened.addEventListener(
-      this.handleDocumentToBeOpened
-    )
+    if (options.docState) {
+      this.setDocState(options.docState)
+    } else {
+      this.renderButtons()
+    }
+  }
 
-    this.handleDocumentActivated()
+  /**
+   * Updates document-related enablement and open-mode filtering.
+   *
+   * Hosts with DocManager should use {@link acapBindToolbarDocState}. Offline
+   * HTML / custom hosts call this directly.
+   *
+   * @param state - Partial document state to merge.
+   */
+  setDocState(state: Partial<AcUiToolbarDocState>): void {
+    if (state.hasDocument !== undefined) {
+      this.hasDocument = state.hasDocument
+    }
+    if (state.isOpening !== undefined) {
+      this.isDisabled = state.isOpening
+      if (state.isOpening) {
+        this.closeChildrenUi()
+      }
+    }
+    if (state.openMode !== undefined) {
+      this.openMode = state.openMode
+    }
+    this.syncRootClasses()
+    this.renderButtons()
   }
 
   /**
@@ -346,10 +366,8 @@ export class AcUiToolbar {
     this.scheduleSyncPosition()
   }
 
-  /** Refreshes open mode and re-renders (e.g. after locale or theme change). */
+  /** Re-renders buttons (e.g. after locale or theme change). */
   refresh() {
-    this.openMode =
-      AcApDocManager.instance.curDocument?.openMode ?? AcEdOpenMode.Read
     this.renderButtons()
   }
 
@@ -369,12 +387,11 @@ export class AcUiToolbar {
         : effective.id
       button.title = label
       button.setAttribute('aria-label', label)
-      const labelEl = button.querySelector('.ml-ex-ui-toolbar-btn-label')
+      const labelEl = button.querySelector(
+        '.ml-ex-ui-toolbar-btn-label, .ml-ex-ui-toolbar-btn-text'
+      )
       if (labelEl) {
         labelEl.textContent = label
-      } else if (effective.label && !this.options.showLabels) {
-        const text = button.querySelector('span')
-        if (text) text.textContent = label
       }
     }
     this.openSubToolbar?.refreshLocale()
@@ -596,7 +613,7 @@ export class AcUiToolbar {
     this.scheduleSyncPosition()
   }
 
-  /** Removes listeners, closes dropdowns, and detaches the toolbar DOM. */
+  /** Closes dropdowns and detaches the toolbar DOM. */
   destroy() {
     if (this.layoutFrame !== undefined) {
       cancelAnimationFrame(this.layoutFrame)
@@ -605,12 +622,6 @@ export class AcUiToolbar {
     this.resizeObserver?.disconnect()
     this.resizeObserver = undefined
     this.closeChildrenUi()
-    AcApDocManager.instance.events.documentActivated.removeEventListener(
-      this.handleDocumentActivated
-    )
-    AcApDocManager.instance.events.documentToBeOpened.removeEventListener(
-      this.handleDocumentToBeOpened
-    )
     this.releaseInParentLayout({ keepRoot: false })
     this.root.remove()
   }
@@ -661,6 +672,7 @@ export class AcUiToolbar {
       button.appendChild(createIconElement(effective.icon))
     } else if (effective.label && !this.options.showLabels) {
       const text = document.createElement('span')
+      text.className = 'ml-ex-ui-toolbar-btn-text'
       text.textContent = this.options.i18n.t(effective.label)
       text.style.fontSize = '11px'
       text.style.padding = '0 4px'
@@ -1144,10 +1156,14 @@ export class AcUiToolbar {
   }
 
   /**
-   * Positioning host for sub-toolbars: the canvas slot when in-canvas-parent
-   * so strips overlay the drawing, not the outer flex host.
+   * Positioning host for sub-toolbars: optional {@link AcUiToolbarMountOptions.overlayHost},
+   * otherwise the canvas slot when in-canvas-parent so strips overlay the drawing,
+   * otherwise {@link mountHost}.
    */
   private getOverlayHost(): HTMLElement {
+    if (this.options.overlayHost) {
+      return this.options.overlayHost
+    }
     if (this.inCanvasParent && this.toolbarMain) {
       return this.toolbarMain
     }

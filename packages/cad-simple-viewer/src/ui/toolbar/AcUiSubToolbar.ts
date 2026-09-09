@@ -1,27 +1,27 @@
-import { createIconElement } from '../assets/icons'
-import type { AcUiResolvedToolbarChrome } from '../config/resolveToolbarChrome'
+import { createIconElement } from '../icons'
+import { acuiEnsureToolbarStyles } from './AcUiToolbarStyles'
+import { acuiComputeWrapPackSlot } from './acuiWrapPackLayout'
+import type { AcUiResolvedToolbarChrome } from './resolveToolbarChrome'
 import {
   acuiIsToolbarItemDisabled,
   acuiItemRequiresDocument,
   acuiResolveEffectiveToolbarItem
-} from '../config/resolveToolbarItems'
+} from './resolveToolbarItemState'
 import {
   acuiIsDynamicToolbarChildren,
   acuiIsToolbarSeparatorItem
-} from '../config/toolbarItemUtils'
+} from './toolbarItemUtils'
 import type {
   AcUiSubToolbarPosition,
+  AcUiToolbarI18n,
   AcUiToolbarItem,
   AcUiToolbarPlacement
-} from '../config/types'
-import type { AcUiI18n } from '../i18n'
-import { acuiComputeWrapPackSlot } from './acuiWrapPackLayout'
-import { acuiEnsureUiStyles } from './styles'
+} from './types'
 
 /** Constructor options for {@link AcUiSubToolbar}. */
 export interface AcUiSubToolbarMountOptions {
   /** i18n helper for button tooltips. */
-  i18n: AcUiI18n
+  i18n: AcUiToolbarI18n
   /** Child items to render. */
   items: AcUiToolbarItem[]
   /** Parent toolbar button used for positioning and outside-click exclusion. */
@@ -88,7 +88,7 @@ export class AcUiSubToolbar {
    * @param options - Host, placement, items, and selection callback.
    */
   constructor(private options: AcUiSubToolbarMountOptions) {
-    acuiEnsureUiStyles()
+    acuiEnsureToolbarStyles()
     this.items = options.items
     this.commandsDisabled = options.commandsDisabled
     this.root = document.createElement('div')
@@ -161,7 +161,6 @@ export class AcUiSubToolbar {
 
   /** Updates button labels and tooltips after locale change. */
   refreshLocale() {
-    const { chrome } = this.options
     for (const button of Array.from(
       this.root.querySelectorAll<HTMLButtonElement>('.ml-ex-ui-toolbar-btn')
     )) {
@@ -175,12 +174,11 @@ export class AcUiSubToolbar {
         : effective.id
       button.title = label
       button.setAttribute('aria-label', label)
-      const labelEl = button.querySelector('.ml-ex-ui-toolbar-btn-label')
+      const labelEl = button.querySelector(
+        '.ml-ex-ui-toolbar-btn-label, .ml-ex-ui-toolbar-btn-text'
+      )
       if (labelEl) {
         labelEl.textContent = label
-      } else if (effective.label && !chrome.showLabels) {
-        const text = button.querySelector('span')
-        if (text) text.textContent = label
       }
     }
   }
@@ -276,9 +274,18 @@ export class AcUiSubToolbar {
       left = stretch
         ? crossInset.near
         : Math.min(Math.max(minLeft, left), maxLeft)
-      const minTop = crossInset.near
-      const maxTop = Math.max(minTop, hostHeight - subHeight - crossInset.far)
-      top = Math.min(Math.max(minTop, top), maxTop)
+      if (placement === 'bottom') {
+        // Prefer sitting above the parent bar. Never clamp downward into the
+        // bar's vertical band (that used to cover the phone bottom toolbar when
+        // the overlay host was only as tall as the bar itself).
+        const aboveBar = toolbarRect.top - hostRect.top - subHeight - gap
+        const minTop = crossInset.near
+        top = Math.min(aboveBar, Math.max(minTop, top))
+      } else {
+        const minTop = crossInset.near
+        const maxTop = Math.max(minTop, hostHeight - subHeight - crossInset.far)
+        top = Math.min(Math.max(minTop, top), maxTop)
+      }
     }
 
     this.root.style.left = `${left}px`
@@ -602,6 +609,7 @@ export class AcUiSubToolbar {
         button.appendChild(createIconElement(effective.icon))
       } else if (effective.label && !chrome.showLabels) {
         const text = document.createElement('span')
+        text.className = 'ml-ex-ui-toolbar-btn-text'
         text.textContent = this.options.i18n.t(effective.label)
         text.style.fontSize = '11px'
         text.style.padding = '0 4px'
@@ -635,3 +643,4 @@ export class AcUiSubToolbar {
     })
   }
 }
+

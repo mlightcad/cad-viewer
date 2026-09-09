@@ -1,26 +1,29 @@
 /** Unit tests for toolbar item resolution and open-mode visibility filtering. */
-jest.mock('@mlightcad/cad-simple-viewer', () => ({
-  AcApDocManager: {
-    instance: {
-      curDocument: undefined,
-      isReadingModeEnabled: () => false
-    }
-  },
-  AcApSettingManager: {
-    instance: {
-      get: () => true,
-      toggle: jest.fn()
-    }
-  },
-  /** Minimal mock used by {@link acuiCreateDefaultToolbarItems} markup visibility toggle. */
-  isMarkupVisible: () => true,
-  isMeasurementVisible: () => true,
-  AcEdOpenMode: {
-    Read: 0,
-    Review: 4,
-    Write: 8
-  }
-}))
+jest.mock('@mlightcad/cad-simple-viewer', () => {
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
+  const openMode = jest.requireActual(
+    '../../cad-simple-viewer/src/editor/view/AcEdOpenMode'
+  ) as typeof import('../../cad-simple-viewer/src/editor/view/AcEdOpenMode')
+
+  return createCadSimpleViewerMock({
+    AcApDocManager: {
+      instance: {
+        curDocument: undefined,
+        isReadingModeEnabled: () => false
+      }
+    },
+    AcApSettingManager: {
+      instance: {
+        get: () => true,
+        toggle: jest.fn()
+      }
+    },
+    /** Minimal mock used by {@link acuiCreateDefaultToolbarItems} markup visibility toggle. */
+    isMarkupVisible: () => true,
+    isMeasurementVisible: () => true,
+    AcEdOpenMode: openMode.AcEdOpenMode
+  })
+})
 
 jest.mock('@mlightcad/data-model', () => ({
   acdbHostApplicationServices: () => ({

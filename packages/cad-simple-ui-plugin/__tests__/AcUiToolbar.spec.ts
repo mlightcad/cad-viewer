@@ -11,12 +11,12 @@ beforeAll(() => {
 })
 
 jest.mock('@mlightcad/cad-simple-viewer', () => {
-  const layout = jest.requireActual(
-    '../../cad-simple-viewer/src/editor/global/AcEdUiLayout'
-  ) as typeof import('../../cad-simple-viewer/src/editor/global/AcEdUiLayout')
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
+  const openMode = jest.requireActual(
+    '../../cad-simple-viewer/src/editor/view/AcEdOpenMode'
+  ) as typeof import('../../cad-simple-viewer/src/editor/view/AcEdOpenMode')
 
-  return {
-    ...layout,
+  return createCadSimpleViewerMock({
     AcApDocManager: {
       instance: {
         curDocument: { openMode: 8 },
@@ -30,17 +30,24 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
             removeEventListener: jest.fn()
           }
         }
+      },
+      tryGetInstance() {
+        return this.instance
       }
     },
-    AcEdOpenMode: {
-      Read: 0,
-      Review: 4,
-      Write: 8
+    AcEdOpenMode: openMode.AcEdOpenMode,
+    acapBindToolbarDocState: (tb: { setDocState: (s: object) => void }) => {
+      tb.setDocState({
+        hasDocument: true,
+        isOpening: false,
+        openMode: openMode.AcEdOpenMode.Write
+      })
+      return () => undefined
     },
     AcApI18n: {
       t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key
     }
-  }
+  })
 })
 
 jest.mock('@mlightcad/data-model', () => ({
@@ -53,7 +60,7 @@ jest.mock('@mlightcad/data-model', () => ({
 
 import type { AcUiToolbarItem } from '../src/config/types'
 import { AcUiI18n } from '../src/i18n'
-import { AcUiToolbar } from '../src/ui/AcUiToolbar'
+import { AcUiToolbar } from '@mlightcad/cad-simple-viewer'
 
 function createToolbar(items: AcUiToolbarItem[]) {
   const host = document.createElement('div')
@@ -66,7 +73,12 @@ function createToolbar(items: AcUiToolbarItem[]) {
     placement: 'right',
     items,
     i18n: new AcUiI18n(),
-    onCommand
+    onCommand,
+    docState: {
+      hasDocument: true,
+      isOpening: false,
+      openMode: 8
+    }
   })
   return { host, toolbar, onCommand }
 }
@@ -75,6 +87,7 @@ describe('AcUiToolbar children UI', () => {
   afterEach(() => {
     document.body.replaceChildren()
     document.getElementById('ml-ex-ui-styles')?.remove()
+    document.getElementById('ml-ui-toolbar-styles')?.remove()
   })
 
   it('opens a sticky sub-toolbar that stays open on canvas click', () => {
@@ -850,6 +863,7 @@ describe('AcUiToolbar in-canvas-parent layout', () => {
   afterEach(() => {
     document.body.replaceChildren()
     document.getElementById('ml-ex-ui-styles')?.remove()
+    document.getElementById('ml-ui-toolbar-styles')?.remove()
   })
 
   it('wraps canvas children and sits as a flex sibling', async () => {

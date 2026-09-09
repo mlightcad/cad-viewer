@@ -16,12 +16,12 @@ beforeAll(() => {
 })
 
 jest.mock('@mlightcad/cad-simple-viewer', () => {
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
   const layout = jest.requireActual(
     '../../cad-simple-viewer/src/editor/global/AcEdUiLayout'
   ) as typeof import('../../cad-simple-viewer/src/editor/global/AcEdUiLayout')
 
-  return {
-    ...layout,
+  return createCadSimpleViewerMock({
     acedIsMobileUiLayout: () =>
       window.matchMedia?.(layout.ML_UI_MOBILE_MEDIA_QUERY).matches ?? false,
     acedIsCompactUiLayout: () =>
@@ -37,7 +37,7 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
       },
       currentLocale: 'en'
     }
-  }
+  })
 })
 
 function createPanel(

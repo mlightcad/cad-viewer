@@ -1,4 +1,4 @@
-import { acuiComputeWrapPackSlot } from '../src/ui/acuiWrapPackLayout'
+import { acuiComputeWrapPackSlot } from '../src/ui/toolbar/acuiWrapPackLayout'
 
 describe('acuiComputeWrapPackSlot', () => {
   it('fills a full row evenly so no empty space remains on the right', () => {

@@ -22,24 +22,27 @@ const mockLayouts = [
 
 let currentSpaceId = 'btr-model'
 
-jest.mock('@mlightcad/cad-simple-viewer', () => ({
-  AcApDocManager: {
-    instance: {
-      get curDocument() {
-        return {
-          database: {
-            currentSpaceId,
-            objects: {
-              layout: {
-                newIterator: () => mockLayouts
+jest.mock('@mlightcad/cad-simple-viewer', () => {
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
+  return createCadSimpleViewerMock({
+    AcApDocManager: {
+      instance: {
+        get curDocument() {
+          return {
+            database: {
+              currentSpaceId,
+              objects: {
+                layout: {
+                  newIterator: () => mockLayouts
+                }
               }
             }
           }
         }
       }
     }
-  }
-}))
+  })
+})
 
 jest.mock('@mlightcad/data-model', () => ({
   acdbHostApplicationServices: () => ({

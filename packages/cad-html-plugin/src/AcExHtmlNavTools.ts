@@ -26,7 +26,7 @@ export interface AcExHtmlNavToolsController {
   handlePointerMove: (clientX: number, clientY: number) => void
   /** Cancels an in-progress zoom window (Escape). */
   cancelZoomWindow: () => void
-  /** Re-syncs button `active` after measure/markup start or stop. */
+  /** Re-syncs button pressed state (`active` / `is-toggled`) after measure/markup start or stop. */
   syncButtons: () => void
   /** Reapplies i18n titles. */
   refreshLabels: () => void
@@ -101,19 +101,24 @@ export function setupAcExHtmlNavTools(
     if (options.statusEl) options.statusEl.textContent = text
   }
 
+  const setPressed = (btn: Element, pressed: boolean) => {
+    // Keep `active` for legacy shell CSS / tests; `is-toggled` matches AcUiToolbar.
+    btn.classList.toggle('active', pressed)
+    btn.classList.toggle('is-toggled', pressed)
+    btn.setAttribute('aria-pressed', String(pressed))
+  }
+
   const syncButtons = () => {
     const drawing = options.isDrawingActive()
     NAV_MODE_BUTTONS.forEach(({ mode: navMode, action }) => {
       const pressed = !drawing && mode === navMode
       document.querySelectorAll(`[data-action="${action}"]`).forEach(btn => {
-        btn.classList.toggle('active', pressed)
-        btn.setAttribute('aria-pressed', String(pressed))
+        setPressed(btn, pressed)
       })
     })
     const zoomWindowPressed = !drawing && mode === 'zoom-window'
     document.querySelectorAll('[data-action="zoom-window"]').forEach(btn => {
-      btn.classList.toggle('active', zoomWindowPressed)
-      btn.setAttribute('aria-pressed', String(zoomWindowPressed))
+      setPressed(btn, zoomWindowPressed)
     })
   }
 

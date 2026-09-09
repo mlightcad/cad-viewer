@@ -50,6 +50,21 @@ export type {
 } from './ui/AcUiShortCutToolbar'
 export { AcUiSimpleToolbar } from './ui/AcUiSimpleToolbar'
 export type { AcUiSimpleToolbarItem } from './ui/AcUiSimpleToolbar'
+export { AcEdOpenMode } from './editor/view/AcEdOpenMode'
+export { AcUiToolbar } from './ui/toolbar/AcUiToolbar'
+export type { AcUiToolbarMountOptions } from './ui/toolbar/AcUiToolbar'
+export {
+  acuiEnsureToolbarStyles,
+  acuiRemoveToolbarStylesIfUnused
+} from './ui/toolbar/AcUiToolbarStyles'
+export { acuiCopyDynamicToolbarChildren } from './ui/toolbar/toolbarItemUtils'
+export type {
+  AcUiToolbarDocState,
+  AcUiToolbarI18n,
+  AcUiToolbarItem,
+  AcUiToolbarPlacement,
+  AcUiToolbarChildrenUi
+} from './ui/toolbar/types'
 export { AcUiTextHeightDialog } from './ui/AcUiTextHeightDialog'
 export type {
   AcUiTextHeightDialogLabels,

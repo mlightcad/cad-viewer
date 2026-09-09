@@ -1,3 +1,8 @@
+jest.mock('@mlightcad/cad-simple-viewer', () => {
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
+  return createCadSimpleViewerMock()
+})
+
 import { acuiResolveToolbarChrome } from '../src/config/resolveToolbarChrome'
 
 describe('acuiResolveToolbarChrome', () => {

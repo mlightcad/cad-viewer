@@ -25,40 +25,44 @@ const mockClear = jest.fn((_view?: unknown) => {
   selectionListener?.()
 })
 
-jest.mock('@mlightcad/cad-simple-viewer', () => ({
-  AcApDocManager: {
-    instance: {
-      curView: mockView,
-      curDocument: { database: {} }
-    }
-  },
-  AcApI18n: {
-    t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
-    mergeLocaleMessage: jest.fn()
-  },
-  listLayoutMeasurements: () =>
-    records.filter(
-      record =>
-        record.layoutId == null || record.layoutId === mockView.activeLayoutBtrId
-    ),
-  getMeasurementValueText: (id: string) => valueById.get(id) ?? '',
-  getSelectedMeasurementId: () => selectedId,
-  subscribeMeasurements: (listener: () => void) => {
-    listListener = listener
-    return () => {
-      listListener = undefined
-    }
-  },
-  subscribeMeasurementSelection: (listener: () => void) => {
-    selectionListener = listener
-    return () => {
-      selectionListener = undefined
-    }
-  },
-  focusMeasurement: (...args: unknown[]) => mockFocus(...args),
-  removeMeasurement: (view: unknown, id: string) => mockRemove(view, id),
-  clearLayoutMeasurements: (view: unknown) => mockClear(view)
-}))
+jest.mock('@mlightcad/cad-simple-viewer', () => {
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
+  return createCadSimpleViewerMock({
+    AcApDocManager: {
+      instance: {
+        curView: mockView,
+        curDocument: { database: {} }
+      }
+    },
+    AcApI18n: {
+      t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
+      mergeLocaleMessage: jest.fn()
+    },
+    listLayoutMeasurements: () =>
+      records.filter(
+        record =>
+          record.layoutId == null ||
+          record.layoutId === mockView.activeLayoutBtrId
+      ),
+    getMeasurementValueText: (id: string) => valueById.get(id) ?? '',
+    getSelectedMeasurementId: () => selectedId,
+    subscribeMeasurements: (listener: () => void) => {
+      listListener = listener
+      return () => {
+        listListener = undefined
+      }
+    },
+    subscribeMeasurementSelection: (listener: () => void) => {
+      selectionListener = listener
+      return () => {
+        selectionListener = undefined
+      }
+    },
+    focusMeasurement: (...args: unknown[]) => mockFocus(...args),
+    removeMeasurement: (view: unknown, id: string) => mockRemove(view, id),
+    clearLayoutMeasurements: (view: unknown) => mockClear(view)
+  })
+})
 
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 

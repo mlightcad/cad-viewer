@@ -1,4 +1,5 @@
 import {
+  acapBindToolbarDocState,
   AcApContext,
   AcApDocManager,
   AcApI18n,
@@ -9,7 +10,8 @@ import {
   acedGetUiLayout,
   acedSubscribeUiLayout,
   type AcEdUiLayoutKind,
-  type AcEdUiTheme
+  type AcEdUiTheme,
+  AcUiToolbar
 } from '@mlightcad/cad-simple-viewer'
 
 import packageJson from '../package.json'
@@ -45,7 +47,6 @@ import { AcUiDockPanel, type AcUiDockPanelTab } from './ui/AcUiDockPanel'
 import { AcUiLayerListView } from './ui/AcUiLayerListView'
 import { AcUiMeasurementPaletteView } from './ui/AcUiMeasurementPaletteView'
 import { AcUiReviewPaletteView } from './ui/AcUiReviewPaletteView'
-import { AcUiToolbar } from './ui/AcUiToolbar'
 import { acuiRemoveUiStylesIfUnused } from './ui/styles'
 
 const LAYERS_TAB_ID = 'layers'
@@ -89,6 +90,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
   private readonly layerUiControllerHolder = new AcUiLayerUiControllerHolder()
   /** Configurable toolbar instance. */
   private toolbar?: AcUiToolbar
+  /** Cleanup for {@link acapBindToolbarDocState}. */
+  private toolbarDocUnbind?: () => void
   /** Scoped i18n helper for plugin strings. */
   private i18n?: AcUiI18n
   /** Syncs UI theme with host attribute and database sysvar. */
@@ -572,6 +575,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
       if (this.toolbar.isRootConnected()) {
         return
       }
+      this.toolbarDocUnbind?.()
+      this.toolbarDocUnbind = undefined
       this.toolbar.destroy()
       this.toolbar = undefined
       this.toolbarMountEl = undefined
@@ -613,6 +618,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
           AcApDocManager.instance.sendStringToExecute(command)
         }
       })
+      this.toolbarDocUnbind = acapBindToolbarDocState(this.toolbar)
     } catch (error) {
       console.error('[SimpleUiPlugin] Failed to create viewer toolbar:', error)
       return
@@ -1321,6 +1327,8 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     this.teardownLayerUi()
     this.teardownReviewUi()
     this.teardownMeasurementUi()
+    this.toolbarDocUnbind?.()
+    this.toolbarDocUnbind = undefined
     this.toolbar?.destroy()
     this.dockPanel?.destroy()
 
