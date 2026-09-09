@@ -495,7 +495,9 @@ export class AcUiShortCutToolbar {
         AcApI18n.t('main.shortCutToolbar.expand'))
       : (this.options.labels?.collapse ??
         AcApI18n.t('main.shortCutToolbar.collapse'))
-    const icon = this.collapsed ? ICON_CHEVRON_RIGHT : ICON_CHEVRON_LEFT
+    // Right-anchored bar: expanded → chevron points right (collapse that way);
+    // collapsed → chevron points left (expand back into the canvas).
+    const icon = this.collapsed ? ICON_CHEVRON_LEFT : ICON_CHEVRON_RIGHT
     this.collapseButton.replaceChildren(createIconElement(icon))
     this.collapseButton.title = label
     this.collapseButton.setAttribute('aria-label', label)
