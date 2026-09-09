@@ -7,7 +7,7 @@ import {
   ACED_DRAW_STYLE_SESSION_PROVIDER_ID,
   type AcEdSessionAccessory
 } from '../editor/command/AcEdSessionAccessory'
-import { acedIsMobileUiLayout } from '../editor/global/AcEdUiLayout'
+import { acedIsMobileOrPadUi, acedSubscribeUiLayout } from '../editor/global/AcEdUiLayout'
 import {
   type AcUiDrawStyleKind,
   acuiResolveDrawStyleKind,
@@ -105,9 +105,10 @@ function ensureShortCutToolbar(view: AcTrView2d): AcUiShortCutToolbar {
  * Keeps draw-style controls embedded in the shortcut toolbar.
  *
  * Mounts the shared draw-style controls into {@link AcUiShortCutToolbar.accessoryHost}
- * when a measure/markup overlay is selected, or when a draw command is active on
- * desktop layout. On mobile, an active draw command uses the session-panel slot
- * instead; this binder clears the shortcut accessory in that case.
+ * when a measure/markup overlay is selected (no draw command running), or when a
+ * draw command is active on **desktop** layout. Phone and pad draw commands use
+ * the session-panel accessory slot instead; this binder clears the shortcut
+ * accessory in those cases so controls can remount on the panel.
  * Never uses the desktop top-center selection chrome.
  *
  * @param view - View whose selection accessory is updated.
@@ -163,13 +164,14 @@ function bindSelectionSessionAccessory(
     const selected = measureSelected || markupSelected
 
     // Desktop draw commands share the shortcut slot with selection styling.
-    // Mobile draw commands use the session panel — clear the shortcut slot so
-    // the shared controls row can remount there (and remount on shortcut after).
+    // Phone/pad draw commands use the session panel — clear the shortcut slot
+    // so the shared controls row can remount there (and remount on shortcut
+    // after the command ends, only when an overlay stays selected).
     const showOnShortcut =
       shortcut.isVisible &&
       kind != null &&
       acuiShouldShowDrawStyleToolbar(kind) &&
-      ((commandActive && !acedIsMobileUiLayout()) ||
+      ((commandActive && !acedIsMobileOrPadUi()) ||
         (!commandActive && selected))
 
     if (showOnShortcut) {
@@ -191,6 +193,7 @@ function bindSelectionSessionAccessory(
     // `activeCommand` is cleared after `commandEnded` in runActive; defer remount.
     queueMicrotask(() => sync())
   }
+  const offLayout = acedSubscribeUiLayout(() => sync())
   AcApSettingManager.instance.events.modified.addEventListener(
     onSettingsModified
   )
@@ -201,6 +204,7 @@ function bindSelectionSessionAccessory(
   return () => {
     offMarkup()
     offMeasure()
+    offLayout()
     AcApSettingManager.instance.events.modified.removeEventListener(
       onSettingsModified
     )
