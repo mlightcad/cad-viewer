@@ -25,7 +25,14 @@ import {
   AcUiSimpleToolbar,
   type AcUiSimpleToolbarItem
 } from './AcUiSimpleToolbar'
-import { ICON_ERASE, ICON_REDO, ICON_UNDO } from './icons'
+import {
+  createIconElement,
+  ICON_CHEVRON_LEFT,
+  ICON_CHEVRON_RIGHT,
+  ICON_ERASE,
+  ICON_REDO,
+  ICON_UNDO
+} from './icons'
 
 const STYLE_ID = 'ml-ui-shortcut-toolbar-styles'
 
@@ -83,6 +90,56 @@ const SHELL_CSS = `
   .ml-ui-shortcut-toolbar-shell.has-accessory .ml-ui-shortcut-divider {
     display: block;
   }
+  .ml-ui-shortcut-toolbar-shell.is-collapsed .ml-ui-shortcut-accessory,
+  .ml-ui-shortcut-toolbar-shell.is-collapsed .ml-ui-shortcut-divider,
+  .ml-ui-shortcut-toolbar-shell.is-collapsed .ml-ui-simple-toolbar {
+    display: none !important;
+  }
+  .ml-ui-shortcut-collapse-btn {
+    position: relative;
+    flex: 0 0 auto;
+    width: calc(var(--ml-ui-simple-toolbar-btn-size, 32px) / 2);
+    height: var(--ml-ui-simple-toolbar-btn-size, 32px);
+    margin-left: -4px;
+    margin-right: -4px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    box-sizing: border-box;
+  }
+  .ml-ui-shortcut-collapse-btn:hover {
+    background: var(--ml-ui-accent-soft, rgba(64, 158, 255, 0.12));
+    border-color: var(--ml-ui-border, #dcdfe6);
+  }
+  .ml-ui-shortcut-collapse-btn .ml-ex-ui-icon,
+  .ml-ui-shortcut-collapse-btn .ml-ui-simple-toolbar__icon {
+    display: inline-flex;
+    width: calc(var(--ml-ui-simple-toolbar-btn-size, 32px) / 2);
+    height: calc(var(--ml-ui-simple-toolbar-btn-size, 32px) / 2);
+    align-items: center;
+    justify-content: center;
+  }
+  .ml-ui-shortcut-collapse-btn .ml-ex-ui-icon svg,
+  .ml-ui-shortcut-collapse-btn .ml-ui-simple-toolbar__icon svg {
+    width: calc(var(--ml-ui-simple-toolbar-btn-size, 32px) / 2);
+    height: calc(var(--ml-ui-simple-toolbar-btn-size, 32px) / 2);
+  }
+  .ml-ui-shortcut-collapse-sep {
+    flex: 0 0 auto;
+    width: 1px;
+    align-self: stretch;
+    margin: 2px 0;
+    background: var(--ml-ui-border, #dcdfe6);
+  }
+  .ml-ui-shortcut-toolbar-shell.is-collapsed .ml-ui-shortcut-collapse-sep {
+    display: none;
+  }
   /* Match simple-toolbar icon buttons: no permanent outer frame. */
   .ml-ui-shortcut-accessory .ml-draw-style-toolbar__controls {
     gap: 4px;
@@ -107,7 +164,8 @@ const SHELL_CSS = `
 
 function ensureShellStyles(): void {
   if (typeof document === 'undefined') return
-  if (document.getElementById(STYLE_ID)) return
+  const existing = document.getElementById(STYLE_ID)
+  if (existing) existing.remove()
   const style = document.createElement('style')
   style.id = STYLE_ID
   style.textContent = SHELL_CSS
@@ -139,6 +197,12 @@ export interface AcUiShortCutToolbarOptions {
    */
   forceVisible?: boolean
   /**
+   * When true (default), shows a collapse/expand toggle at the end of the shell.
+   */
+  collapsible?: boolean
+  /** Initial collapsed state when {@link collapsible} is true. Default false. */
+  defaultCollapsed?: boolean
+  /**
    * Command runners. Hosts without DocManager (HTML export) must supply these.
    * When omitted, clicks are no-ops until {@link setActions} is called.
    */
@@ -158,6 +222,8 @@ export interface AcUiShortCutToolbarOptions {
     undo?: string
     redo?: string
     erase?: string
+    collapse?: string
+    expand?: string
   }
 }
 
@@ -173,8 +239,12 @@ export class AcUiShortCutToolbar {
   readonly accessoryHost: HTMLDivElement
 
   private readonly divider: HTMLDivElement
+  private readonly collapseSep: HTMLDivElement | null
+  private readonly collapseButton: HTMLButtonElement | null
   private readonly toolbar: AcUiSimpleToolbar
   private readonly forceVisible: boolean
+  private readonly collapsible: boolean
+  private collapsed: boolean
   private readonly onSettingsModified: (
     args: AcApSettingManagerEventArgs
   ) => void
@@ -197,6 +267,8 @@ export class AcUiShortCutToolbar {
     }
 
     this.forceVisible = options.forceVisible === true
+    this.collapsible = options.collapsible !== false
+    this.collapsed = this.collapsible && options.defaultCollapsed === true
     this.actions = { ...(options.actions ?? {}) }
     this.getActionState = options.getActionState
 
@@ -223,6 +295,26 @@ export class AcUiShortCutToolbar {
       items: this.buildCoreItems()
     })
 
+    if (this.collapsible) {
+      this.collapseSep = document.createElement('div')
+      this.collapseSep.className = 'ml-ui-shortcut-collapse-sep'
+      this.collapseSep.setAttribute('role', 'separator')
+      this.collapseButton = document.createElement('button')
+      this.collapseButton.type = 'button'
+      this.collapseButton.className = 'ml-ui-shortcut-collapse-btn'
+      this.collapseButton.dataset.toolbarItemId = 'shortcut-collapse'
+      this.collapseButton.addEventListener('click', event => {
+        event.stopPropagation()
+        this.toggleCollapsed()
+      })
+      this.shell.append(this.collapseSep, this.collapseButton)
+      this.syncCollapseToggleButton()
+      this.syncCollapsedClass()
+    } else {
+      this.collapseSep = null
+      this.collapseButton = null
+    }
+
     this.onSettingsModified = args => {
       if (args.key === 'isShowShortCutToolbar') this.syncVisibility()
     }
@@ -243,6 +335,11 @@ export class AcUiShortCutToolbar {
   /** Underlying simple toolbar (for advanced callers). */
   get simpleToolbar(): AcUiSimpleToolbar {
     return this.toolbar
+  }
+
+  /** Whether the toolbar is collapsed to the toggle button only. */
+  get isCollapsed(): boolean {
+    return this.collapsed
   }
 
   /**
@@ -296,6 +393,23 @@ export class AcUiShortCutToolbar {
   }
 
   /**
+   * Sets collapsed state when {@link AcUiShortCutToolbarOptions.collapsible} is enabled.
+   *
+   * @param collapsed - Target collapsed state.
+   */
+  setCollapsed(collapsed: boolean): void {
+    if (!this.collapsible || this.collapsed === collapsed) return
+    this.collapsed = collapsed
+    this.syncCollapsedClass()
+    this.syncCollapseToggleButton()
+  }
+
+  /** Toggles collapsed state when collapsible mode is enabled. */
+  toggleCollapsed(): void {
+    this.setCollapsed(!this.collapsed)
+  }
+
+  /**
    * Updates the shell top offset (e.g. when a status bar appears).
    *
    * @param topOffsetPx - CSS top in pixels.
@@ -333,6 +447,7 @@ export class AcUiShortCutToolbar {
       this.options.labels?.more ?? AcApI18n.t('main.shortCutToolbar.more')
     )
     this.toolbar.setItems(this.buildCoreItems())
+    this.syncCollapseToggleButton()
     this.syncActionState()
   }
 
@@ -363,7 +478,28 @@ export class AcUiShortCutToolbar {
     const visible =
       this.forceVisible || AcApSettingManager.instance.isShowShortCutToolbar
     this.shell.hidden = !visible
-    this.toolbar.setVisible(visible)
+    this.toolbar.setVisible(visible && !this.collapsed)
+  }
+
+  private syncCollapsedClass(): void {
+    this.shell.classList.toggle('is-collapsed', this.collapsed)
+    const visible =
+      this.forceVisible || AcApSettingManager.instance.isShowShortCutToolbar
+    this.toolbar.setVisible(visible && !this.collapsed)
+  }
+
+  private syncCollapseToggleButton(): void {
+    if (!this.collapseButton) return
+    const label = this.collapsed
+      ? (this.options.labels?.expand ??
+        AcApI18n.t('main.shortCutToolbar.expand'))
+      : (this.options.labels?.collapse ??
+        AcApI18n.t('main.shortCutToolbar.collapse'))
+    const icon = this.collapsed ? ICON_CHEVRON_RIGHT : ICON_CHEVRON_LEFT
+    this.collapseButton.replaceChildren(createIconElement(icon))
+    this.collapseButton.title = label
+    this.collapseButton.setAttribute('aria-label', label)
+    this.collapseButton.setAttribute('aria-expanded', String(!this.collapsed))
   }
 
   private buildCoreItems(): AcUiSimpleToolbarItem[] {

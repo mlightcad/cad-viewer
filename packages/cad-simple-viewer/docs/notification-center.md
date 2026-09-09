@@ -74,11 +74,11 @@ acapSetNotificationCenter(null)     // restore built-in store + default UI (if e
 
 `AcUiDefaultNotificationUi` ties chrome visibility to the **active session’s** notification list:
 
-| State | Bell | Panel | Backdrop (phone) |
+| State | Bell | Panel | Backdrop (phone / pad) |
 |---|---|---|---|
 | `notifications.length === 0` | Hidden | Hidden | Hidden |
 | Has messages, panel closed | Visible (badge) | Hidden | Hidden |
-| Has messages, user tapped bell | Visible | Visible | Visible on phone |
+| Has messages, user tapped bell | Visible | Visible | Visible on phone / pad |
 
 Interaction rules:
 
@@ -111,14 +111,15 @@ Custom Centers should drive their own show/hide from `subscribe` / reactive `not
 ### Theme and layout
 
 - Styles use `--ml-ui-*` via `acedApplyUiTheme` / `resolveUiTheme` (same tokens as the shortcut toolbar and command line).
-- **Desktop (non-handheld):** bell at the **canvas** bottom-right; panel opens above the bell.
-- **Phone / Pad / handheld:** bell is placed **below** the measured shortcut toolbar (so it does not cover undo/redo/erase). On phone the panel is a top sheet + dimmed backdrop, both clipped to the canvas host.
+- **Desktop / pad:** bell at the **canvas** bottom-right by default. Pad opens a **top sheet** (with backdrop) whose width matches the pad session input panel (`ML_UI_SESSION_PANEL_WIDTH`, capped to the canvas host via `calc(100% - ML_UI_SESSION_PANEL_INSET)`).
+- **Phone:** bell is placed **below** the measured shortcut toolbar (so it does not cover undo/redo/erase). The panel is a full-width top sheet + dimmed backdrop, both clipped to the canvas host.
+- Override the bell corner with `notificationCenter.placement` or `acapSetNotificationUiPlacement` (`bottom-right` | `bottom-left` | `top-right` | `top-left`).
 - The bell is **not** merged into the shortcut toolbar: notifications are system alerts, not drawing shortcuts; toggling visibility would shift toolbar buttons, and the toolbar can be hidden in settings.
 
 ### Options
 
 ```ts
-import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager, acapSetNotificationUiPlacement } from '@mlightcad/cad-simple-viewer'
 
 AcApDocManager.createInstance({
   container: document.getElementById('viewer')!,
@@ -126,9 +127,15 @@ AcApDocManager.createInstance({
     // Mount node for the bell; defaults to curView.container (canvas host)
     host: document.getElementById('viewer')!,
     // true (default): show built-in bell; false: bridge only, host supplies UI
-    showDefaultUi: true
+    showDefaultUi: true,
+    // Optional: override layout default (phone top-right, pad/desktop bottom-right)
+    placement: 'bottom-right'
   }
 })
+
+// Runtime (built-in DOM UI only)
+acapSetNotificationUiPlacement('bottom-left')
+acapSetNotificationUiPlacement(null) // restore layout defaults
 ```
 
 `cad-viewer` uses `showDefaultUi: false` and registers a Vue notification center.

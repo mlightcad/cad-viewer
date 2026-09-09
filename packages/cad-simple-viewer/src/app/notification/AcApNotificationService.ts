@@ -1,8 +1,13 @@
-import { AcUiDefaultNotificationUi } from '../../ui/AcUiDefaultNotificationUi'
+import {
+  AcUiDefaultNotificationUi,
+  type AcUiNotificationBellPlacement
+} from '../../ui/AcUiDefaultNotificationUi'
 import type { AcApDocManager } from '../AcApDocManager'
 import { AcApNotificationEventBridge } from './AcApNotificationEventBridge'
 import { AcApNotificationStore } from './AcApNotificationStore'
 import type { AcApNotificationCenter } from './AcApNotificationTypes'
+
+export type { AcUiNotificationBellPlacement }
 
 /**
  * Options for {@link AcApNotificationService.install} /
@@ -24,6 +29,14 @@ export interface AcApNotificationServiceOptions {
    * When `false`, skips the event bridge entirely. Default `true`.
    */
   enableBridge?: boolean
+  /**
+   * Corner for the built-in notification bell.
+   *
+   * When omitted: phone uses `top-right` (below the shortcut toolbar); pad and
+   * desktop use `bottom-right`. Pass a value to override, or call
+   * {@link acapSetNotificationUiPlacement} later.
+   */
+  placement?: AcUiNotificationBellPlacement
 }
 
 /**
@@ -46,6 +59,8 @@ class AcApNotificationService {
   private _host?: HTMLElement
   /** Whether the built-in DOM UI should be mounted when not overridden. */
   private _showDefaultUi = true
+  /** Explicit bell placement; `undefined` uses layout defaults. */
+  private _placement?: AcUiNotificationBellPlacement
   /** `true` when {@link _center} is a host-supplied override. */
   private _isCustom = false
   /** Document manager last passed to {@link install}. */
@@ -62,6 +77,7 @@ class AcApNotificationService {
     this._docManager = docManager
     this._host = options.host
     this._showDefaultUi = options.showDefaultUi !== false
+    this._placement = options.placement
 
     if (options.enableBridge !== false) {
       this._bridge?.uninstall()
@@ -76,6 +92,26 @@ class AcApNotificationService {
     if (!this._isCustom && this._showDefaultUi) {
       this.mountDefaultUi()
     }
+  }
+
+  /**
+   * Explicit bell placement, or `undefined` when using layout defaults.
+   */
+  get placement(): AcUiNotificationBellPlacement | undefined {
+    return this._placement
+  }
+
+  /**
+   * Sets or clears the built-in notification bell corner.
+   *
+   * Applies immediately when the default DOM UI is mounted. Pass `undefined`
+   * to restore layout-based defaults.
+   *
+   * @param placement - Corner placement, or `undefined` for auto.
+   */
+  setPlacement(placement: AcUiNotificationBellPlacement | undefined) {
+    this._placement = placement
+    this._defaultUi?.setPlacement(placement)
   }
 
   /**
@@ -161,7 +197,8 @@ class AcApNotificationService {
     if (typeof document === 'undefined') return
     this._defaultUi = new AcUiDefaultNotificationUi(
       this._center,
-      this.resolveHost()
+      this.resolveHost(),
+      { placement: this._placement }
     )
   }
 
@@ -190,6 +227,7 @@ class AcApNotificationService {
     this._docManager = undefined
     this._host = undefined
     this._showDefaultUi = true
+    this._placement = undefined
   }
 }
 
@@ -225,6 +263,40 @@ export function acapSetNotificationCenter(
   center: AcApNotificationCenter | null
 ) {
   notificationService.setCenter(center)
+}
+
+/**
+ * Returns the explicit built-in notification bell placement, if any.
+ *
+ * @returns Placement override, or `undefined` when using layout defaults.
+ */
+export function acapGetNotificationUiPlacement():
+  | AcUiNotificationBellPlacement
+  | undefined {
+  return notificationService.placement
+}
+
+/**
+ * Sets the built-in notification bell corner (default DOM UI only).
+ *
+ * Pass `undefined` / omit override via `null` to restore layout defaults:
+ * phone `top-right`, pad / desktop `bottom-right`.
+ *
+ * Has no effect when a custom center replaced the default UI
+ * (`showDefaultUi: false` or {@link acapSetNotificationCenter}).
+ *
+ * @param placement - Corner placement, or `null` / `undefined` for auto.
+ *
+ * @example
+ * ```ts
+ * acapSetNotificationUiPlacement('bottom-left')
+ * acapSetNotificationUiPlacement(null) // restore auto
+ * ```
+ */
+export function acapSetNotificationUiPlacement(
+  placement: AcUiNotificationBellPlacement | null | undefined
+) {
+  notificationService.setPlacement(placement ?? undefined)
 }
 
 /**

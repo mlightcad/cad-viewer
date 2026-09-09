@@ -126,7 +126,8 @@ import {
 import { AcApXrefManager } from './AcApXrefManager'
 import {
   acapDisposeNotificationService,
-  acapInstallNotificationService
+  acapInstallNotificationService,
+  type AcUiNotificationBellPlacement
 } from './notification'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
@@ -408,6 +409,13 @@ export interface AcApDocManagerOptions {
         host?: HTMLElement
         /** When false, skip the built-in DOM UI. Default true. */
         showDefaultUi?: boolean
+        /**
+         * Corner for the built-in notification bell.
+         *
+         * When omitted: phone `top-right`, pad / desktop `bottom-right`.
+         * Change later with {@link acapSetNotificationUiPlacement}.
+         */
+        placement?: AcUiNotificationBellPlacement
       }
 }
 
@@ -634,6 +642,7 @@ export class AcApDocManager {
       acapInstallNotificationService(this, {
         host: ncOptions.host,
         showDefaultUi: ncOptions.showDefaultUi !== false,
+        placement: ncOptions.placement,
         enableBridge: true
       })
     }

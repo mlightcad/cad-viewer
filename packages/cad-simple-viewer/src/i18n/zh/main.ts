@@ -127,7 +127,9 @@ export default {
     more: '更多',
     undo: '撤销',
     redo: '重做',
-    erase: '删除'
+    erase: '删除',
+    collapse: '收起工具栏',
+    expand: '展开工具栏'
   },
   textHeight: {
     title: '字高设置',
