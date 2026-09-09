@@ -6,6 +6,7 @@ import WriteModeLayout from './components/WriteModeLayout.vue'
 import ReviewModeLayout from './components/ReviewModeLayout.vue'
 import MobileBottomTabBar from './components/MobileBottomTabBar.vue'
 import MobileSessionPanel from './components/MobileSessionPanel.vue'
+import ShortcutToolbar from './components/ShortcutToolbar.vue'
 
 export default {
   extends: DefaultTheme,
@@ -16,5 +17,6 @@ export default {
     app.component('ReviewModeLayout', ReviewModeLayout)
     app.component('MobileBottomTabBar', MobileBottomTabBar)
     app.component('MobileSessionPanel', MobileSessionPanel)
+    app.component('ShortcutToolbar', ShortcutToolbar)
   },
 }
