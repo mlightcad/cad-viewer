@@ -96,6 +96,8 @@ export type AcExHtmlMessageKey =
   | 'shortCutToolbar.undo'
   | 'shortCutToolbar.redo'
   | 'shortCutToolbar.erase'
+  | 'shortCutToolbar.collapse'
+  | 'shortCutToolbar.expand'
   | 'textHeight.title'
   | 'textHeight.close'
   | 'textHeight.ok'
@@ -320,7 +322,9 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       more: 'More',
       undo: 'Undo',
       redo: 'Redo',
-      erase: 'Delete'
+      erase: 'Delete',
+      collapse: 'Collapse toolbar',
+      expand: 'Expand toolbar'
     },
     textHeight: {
       title: 'Text Height',
@@ -577,7 +581,9 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       more: '更多',
       undo: '撤销',
       redo: '重做',
-      erase: '删除'
+      erase: '删除',
+      collapse: '收起工具栏',
+      expand: '展开工具栏'
     },
     textHeight: {
       title: '字高设置',
@@ -824,7 +830,9 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       more: 'Více',
       undo: 'Zpět',
       redo: 'Znovu',
-      erase: 'Smazat'
+      erase: 'Smazat',
+      collapse: 'Sbalit panel nástrojů',
+      expand: 'Rozbalit panel nástrojů'
     },
     textHeight: {
       title: 'Výška textu',
@@ -1081,7 +1089,9 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       more: 'Daha fazla',
       undo: 'Geri al',
       redo: 'Yinele',
-      erase: 'Sil'
+      erase: 'Sil',
+      collapse: 'Araç çubuğunu daralt',
+      expand: 'Araç çubuğunu genişlet'
     },
     textHeight: {
       title: 'Yazı Yüksekliği',

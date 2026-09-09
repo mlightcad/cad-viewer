@@ -131,7 +131,9 @@ export default {
     more: 'More',
     undo: 'Undo',
     redo: 'Redo',
-    erase: 'Delete'
+    erase: 'Delete',
+    collapse: 'Collapse toolbar',
+    expand: 'Expand toolbar'
   },
   textHeight: {
     title: 'Text Height',

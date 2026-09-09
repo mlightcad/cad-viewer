@@ -65,7 +65,9 @@ export function setupAcExHtmlShortCutToolbar(
       more: ctx.i18n.t('shortCutToolbar.more'),
       undo: ctx.i18n.t('shortCutToolbar.undo'),
       redo: ctx.i18n.t('shortCutToolbar.redo'),
-      erase: ctx.i18n.t('shortCutToolbar.erase')
+      erase: ctx.i18n.t('shortCutToolbar.erase'),
+      collapse: ctx.i18n.t('shortCutToolbar.collapse'),
+      expand: ctx.i18n.t('shortCutToolbar.expand')
     }
   })
 

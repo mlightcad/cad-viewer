@@ -130,7 +130,9 @@ export default {
     more: 'Daha fazla',
     undo: 'Geri al',
     redo: 'Yinele',
-    erase: 'Sil'
+    erase: 'Sil',
+    collapse: 'Araç çubuğunu daralt',
+    expand: 'Araç çubuğunu genişlet'
   },
   textHeight: {
     title: 'Yazı Yüksekliği',

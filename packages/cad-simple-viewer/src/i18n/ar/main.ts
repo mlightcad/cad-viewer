@@ -129,7 +129,9 @@ export default {
     more: 'المزيد',
     undo: 'تراجع',
     redo: 'إعادة',
-    erase: 'حذف'
+    erase: 'حذف',
+    collapse: 'طي شريط الأدوات',
+    expand: 'توسيع شريط الأدوات'
   },
   textHeight: {
     title: 'ارتفاع النص',

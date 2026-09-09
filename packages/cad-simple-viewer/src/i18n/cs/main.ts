@@ -130,7 +130,9 @@ export default {
     more: 'Více',
     undo: 'Zpět',
     redo: 'Znovu',
-    erase: 'Smazat'
+    erase: 'Smazat',
+    collapse: 'Sbalit panel nástrojů',
+    expand: 'Rozbalit panel nástrojů'
   },
   textHeight: {
     title: 'Výška textu',

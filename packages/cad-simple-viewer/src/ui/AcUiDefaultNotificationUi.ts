@@ -16,9 +16,10 @@ import {
 } from '../app/notification/AcApNotificationTypes'
 import {
   acedGetUiLayout,
-  acedIsHandheldDevice,
   acedSubscribeUiLayout,
   type AcEdUiLayoutKind,
+  ML_UI_SESSION_PANEL_INSET,
+  ML_UI_SESSION_PANEL_WIDTH,
   ML_UI_Z_NOTIFICATION
 } from '../editor/global/AcEdUiLayout'
 import {
@@ -43,15 +44,37 @@ const SHORTCUT_CLEARANCE_PX = 8
 const FALLBACK_TOP_BELOW_SHORTCUT_PX = 12 + 40 + SHORTCUT_CLEARANCE_PX
 
 /**
+ * Corner placement for the built-in notification bell.
+ *
+ * Panel presentation still follows layout kind (phone / pad sheet vs desktop
+ * popover); this only controls where the bell sits on the canvas host.
+ */
+export type AcUiNotificationBellPlacement =
+  | 'bottom-right'
+  | 'bottom-left'
+  | 'top-right'
+  | 'top-left'
+
+/** Options for {@link AcUiDefaultNotificationUi}. */
+export interface AcUiDefaultNotificationUiOptions {
+  /**
+   * Explicit bell corner. When omitted, phone uses `top-right` (below the
+   * shortcut toolbar) and pad / desktop use `bottom-right`.
+   */
+  placement?: AcUiNotificationBellPlacement
+}
+
+/**
  * Built-in notification UI for hosts that do not supply their own center.
  *
  * Interaction (aligned with iOS Notification Center ideas, adapted to CAD chrome):
  * - Hidden entirely when there are no notifications (no idle bell clutter).
  * - With messages: show only a badge-bearing bell; the list opens on tap.
  * - Anchored to the **canvas host** (view container), not the browser window.
- * - Desktop (fine pointer): bell at the host's bottom-right; panel pops above it.
- * - Phone / pad / handheld: bell sits **below** the shortcut toolbar (measured
- *   live) so it never covers undo/redo/erase; panel is a top sheet on phone.
+ * - Desktop / pad: bell at the host's bottom-right by default; pad panel is a
+ *   top sheet sized like the session input panel.
+ * - Phone: bell sits **below** the shortcut toolbar (measured live); panel is
+ *   a full-width top sheet + dimmed backdrop.
  *
  * Theme tokens follow {@link resolveUiTheme} / `--ml-ui-*`.
  */
@@ -62,7 +85,7 @@ export class AcUiDefaultNotificationUi {
   private readonly _center: AcApNotificationCenter
   /** Absolute overlay root covering the host. */
   private readonly _root: HTMLDivElement
-  /** Full-host dismiss button shown behind the phone sheet. */
+  /** Full-host dismiss button shown behind phone / pad sheets. */
   private readonly _backdrop: HTMLButtonElement
   /** Badge-bearing bell button. */
   private readonly _bell: HTMLButtonElement
@@ -80,6 +103,8 @@ export class AcUiDefaultNotificationUi {
   private _panelOpen = false
   /** Latest UI layout kind from {@link acedGetUiLayout}. */
   private _layoutKind: AcEdUiLayoutKind = 'desktop'
+  /** Explicit placement override; `undefined` means layout-based default. */
+  private _placement?: AcUiNotificationBellPlacement
   /** Unsubscribe callbacks for center / theme / layout subscriptions. */
   private readonly _unsubs: Array<() => void> = []
   /** Observes host / shortcut toolbar size for top-anchor repositioning. */
@@ -92,10 +117,16 @@ export class AcUiDefaultNotificationUi {
    *
    * @param center - Center to observe and mutate (clear / remove).
    * @param host - Element that owns the absolute overlay (typically the canvas container).
+   * @param options - Optional bell placement override.
    */
-  constructor(center: AcApNotificationCenter, host: HTMLElement) {
+  constructor(
+    center: AcApNotificationCenter,
+    host: HTMLElement,
+    options: AcUiDefaultNotificationUiOptions = {}
+  ) {
     this._center = center
     this._host = host
+    this._placement = options.placement
     ensureStyles()
 
     if (getComputedStyle(host).position === 'static') {
@@ -194,6 +225,27 @@ export class AcUiDefaultNotificationUi {
   private _onWindowResize: () => void
 
   /**
+   * Explicit placement override, or `undefined` when using layout defaults.
+   */
+  get placement(): AcUiNotificationBellPlacement | undefined {
+    return this._placement
+  }
+
+  /**
+   * Sets or clears the bell corner placement.
+   *
+   * Pass `undefined` to restore layout-based defaults (phone `top-right`,
+   * pad / desktop `bottom-right`).
+   *
+   * @param placement - Corner placement, or `undefined` for auto.
+   */
+  setPlacement(placement: AcUiNotificationBellPlacement | undefined) {
+    if (this._placement === placement) return
+    this._placement = placement
+    this.applyLayout(this._layoutKind)
+  }
+
+  /**
    * Applies the current UI theme tokens to the overlay root.
    */
   private applyTheme() {
@@ -207,19 +259,32 @@ export class AcUiDefaultNotificationUi {
    */
   private applyLayout(kind: AcEdUiLayoutKind) {
     this._layoutKind = kind
-    const topAnchor = shouldAnchorBelowShortcut(kind)
+    const placement = this.resolvePlacement()
+    const topAnchor = isTopPlacement(placement)
+    const rightSide = isRightPlacement(placement)
     this._root.classList.toggle(`${ROOT_CLASS}--phone`, kind === 'phone')
     this._root.classList.toggle(`${ROOT_CLASS}--pad`, kind === 'pad')
     this._root.classList.toggle(`${ROOT_CLASS}--desktop`, kind === 'desktop')
+    this._root.classList.toggle(`${ROOT_CLASS}--sheet`, usesSheetPanel(kind))
     this._root.classList.toggle(`${ROOT_CLASS}--top-anchor`, topAnchor)
     this._root.classList.toggle(`${ROOT_CLASS}--bottom-anchor`, !topAnchor)
+    this._root.classList.toggle(`${ROOT_CLASS}--right`, rightSide)
+    this._root.classList.toggle(`${ROOT_CLASS}--left`, !rightSide)
     this.syncPanelVisibility()
     this.scheduleReposition()
   }
 
   /**
-   * Places the bell (and non-phone panel) below the live shortcut toolbar on
-   * phone/pad/handheld. Desktop uses CSS bottom-right on the full-host root.
+   * Effective bell placement (explicit override or layout default).
+   */
+  private resolvePlacement(): AcUiNotificationBellPlacement {
+    if (this._placement) return this._placement
+    return this._layoutKind === 'phone' ? 'top-right' : 'bottom-right'
+  }
+
+  /**
+   * Places the bell below the live shortcut toolbar when using a top
+   * placement. Bottom placements use CSS on the full-host root.
    *
    * The root always covers the canvas host (`inset: 0`) so panel `width: 100%`
    * resolves against the drawing area, not the 36px bell box.
@@ -231,12 +296,24 @@ export class AcUiDefaultNotificationUi {
     this._root.style.bottom = ''
     this._root.style.left = ''
 
-    if (!shouldAnchorBelowShortcut(this._layoutKind)) {
+    // Sheet panels (phone / pad) are positioned by CSS, not under the bell.
+    if (usesSheetPanel(this._layoutKind)) {
+      this._panel.style.top = ''
+      this._panel.style.right = ''
+      this._panel.style.left = ''
+      this._panel.style.bottom = ''
+    }
+
+    if (!isTopPlacement(this.resolvePlacement())) {
       this._bell.style.top = ''
       this._bell.style.right = ''
       this._bell.style.bottom = ''
-      this._panel.style.top = ''
-      this._panel.style.right = ''
+      this._bell.style.left = ''
+      if (!usesSheetPanel(this._layoutKind)) {
+        this._panel.style.top = ''
+        this._panel.style.right = ''
+        this._panel.style.left = ''
+      }
       return
     }
 
@@ -257,17 +334,29 @@ export class AcUiDefaultNotificationUi {
     }
 
     top = Math.max(gap, top)
+    const edge = '12px'
+    const rightSide = isRightPlacement(this.resolvePlacement())
     this._bell.style.top = `${top}px`
-    this._bell.style.right = '12px'
     this._bell.style.bottom = 'auto'
-
-    // Phone uses a full-width top sheet; pad keeps a popover under the bell.
-    if (this._layoutKind === 'phone') {
-      this._panel.style.top = ''
-      this._panel.style.right = ''
+    if (rightSide) {
+      this._bell.style.right = edge
+      this._bell.style.left = 'auto'
     } else {
+      this._bell.style.left = edge
+      this._bell.style.right = 'auto'
+    }
+
+    // Desktop popover under the bell when top-placed via API.
+    if (!usesSheetPanel(this._layoutKind)) {
       this._panel.style.top = `${top + 44}px`
-      this._panel.style.right = '12px'
+      this._panel.style.bottom = 'auto'
+      if (rightSide) {
+        this._panel.style.right = edge
+        this._panel.style.left = 'auto'
+      } else {
+        this._panel.style.left = edge
+        this._panel.style.right = 'auto'
+      }
     }
   }
 
@@ -319,7 +408,7 @@ export class AcUiDefaultNotificationUi {
     this._root.hidden = !hasMessages
     this._panel.hidden = !hasMessages || !this._panelOpen
     const showBackdrop =
-      hasMessages && this._panelOpen && this._layoutKind === 'phone'
+      hasMessages && this._panelOpen && usesSheetPanel(this._layoutKind)
     this._backdrop.hidden = !showBackdrop
     this._bell.setAttribute('aria-expanded', String(this._panelOpen))
     if (hasMessages) {
@@ -461,13 +550,28 @@ export class AcUiDefaultNotificationUi {
 }
 
 /**
- * Whether the bell should sit below the shortcut toolbar for this layout.
+ * Whether the layout uses a top sheet panel (phone full-bleed / pad session width).
  *
  * @param kind - Current UI layout kind.
- * @returns `true` for phone, pad, or handheld devices.
  */
-function shouldAnchorBelowShortcut(kind: AcEdUiLayoutKind): boolean {
-  return kind === 'phone' || kind === 'pad' || acedIsHandheldDevice()
+function usesSheetPanel(kind: AcEdUiLayoutKind): boolean {
+  return kind === 'phone' || kind === 'pad'
+}
+
+/**
+ * @param placement - Bell placement.
+ * @returns `true` when the bell is top-anchored.
+ */
+function isTopPlacement(placement: AcUiNotificationBellPlacement): boolean {
+  return placement === 'top-right' || placement === 'top-left'
+}
+
+/**
+ * @param placement - Bell placement.
+ * @returns `true` when the bell is on the right edge.
+ */
+function isRightPlacement(placement: AcUiNotificationBellPlacement): boolean {
+  return placement === 'top-right' || placement === 'bottom-right'
 }
 
 /**
@@ -599,13 +703,13 @@ function ensureStyles() {
   align-items: center;
   justify-content: center;
 }
-.${ROOT_CLASS}--bottom-anchor .${ROOT_CLASS}__bell {
+.${ROOT_CLASS}--bottom-anchor.${ROOT_CLASS}--right .${ROOT_CLASS}__bell {
   right: 12px;
   bottom: max(12px, env(safe-area-inset-bottom, 0px));
 }
-.${ROOT_CLASS}--top-anchor .${ROOT_CLASS}__bell {
-  /* top/right applied inline from shortcut-toolbar measurement */
-  right: 12px;
+.${ROOT_CLASS}--bottom-anchor.${ROOT_CLASS}--left .${ROOT_CLASS}__bell {
+  left: 12px;
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
 }
 .${ROOT_CLASS}__bell:hover {
   color: var(--ml-ui-accent);
@@ -634,20 +738,27 @@ function ensureStyles() {
   box-shadow: var(--ml-ui-shadow);
   overflow: hidden;
 }
-.${ROOT_CLASS}--bottom-anchor .${ROOT_CLASS}__panel {
+.${ROOT_CLASS}--bottom-anchor.${ROOT_CLASS}--right:not(.${ROOT_CLASS}--sheet) .${ROOT_CLASS}__panel {
   right: 12px;
   bottom: calc(max(12px, env(safe-area-inset-bottom, 0px)) + 44px);
   width: min(360px, calc(100% - 24px));
   max-height: min(420px, 60%);
   border-radius: 8px;
 }
-.${ROOT_CLASS}--top-anchor .${ROOT_CLASS}__panel {
-  /* top/right set inline under the bell on pad; phone overrides below */
+.${ROOT_CLASS}--bottom-anchor.${ROOT_CLASS}--left:not(.${ROOT_CLASS}--sheet) .${ROOT_CLASS}__panel {
+  left: 12px;
+  bottom: calc(max(12px, env(safe-area-inset-bottom, 0px)) + 44px);
+  width: min(360px, calc(100% - 24px));
+  max-height: min(420px, 60%);
+  border-radius: 8px;
+}
+.${ROOT_CLASS}--top-anchor:not(.${ROOT_CLASS}--sheet) .${ROOT_CLASS}__panel {
+  /* top/left/right set inline under the bell */
   width: min(360px, calc(100% - 24px));
   max-height: min(420px, 55%);
   border-radius: 8px;
 }
-.${ROOT_CLASS}--phone.${ROOT_CLASS}--top-anchor .${ROOT_CLASS}__panel {
+.${ROOT_CLASS}--phone.${ROOT_CLASS}--sheet .${ROOT_CLASS}__panel {
   /* Sheet spans the canvas host, not the browser viewport. */
   top: 0;
   left: 0;
@@ -657,6 +768,21 @@ function ensureStyles() {
   border-radius: 0 0 12px 12px;
   border-left: none;
   border-right: none;
+  border-top: none;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.${ROOT_CLASS}--pad.${ROOT_CLASS}--sheet .${ROOT_CLASS}__panel {
+  /* Same top-sheet interaction as phone; width matches pad session panel.
+   * Cap against the canvas host (100%), not the browser viewport (100vw),
+   * so a narrow host inside a wide window does not overflow the drawing area. */
+  top: 0;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: ${ML_UI_SESSION_PANEL_WIDTH}px;
+  max-width: calc(100% - ${ML_UI_SESSION_PANEL_INSET}px);
+  max-height: min(55%, 420px);
+  border-radius: 0 0 12px 12px;
   border-top: none;
   padding-top: env(safe-area-inset-top, 0px);
 }
