@@ -40,7 +40,8 @@ import {
   ICON_ZOOM_EXTENT,
   ICON_ZOOM_WINDOW,
   isMarkupVisible,
-  isMeasurementVisible} from '@mlightcad/cad-simple-viewer'
+  isMeasurementVisible
+} from '@mlightcad/cad-simple-viewer'
 import {
   nextTick,
   onMounted,
@@ -48,11 +49,9 @@ import {
   ref,
   watch
 } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { useDocument, useSettings } from '../../composable'
 
-const { t } = useI18n()
 const features = useSettings()
 const { isDocumentOpening, openMode: docOpenMode } = useDocument()
 
@@ -80,8 +79,10 @@ const syncReadingMode = () => {
   }
 }
 
+/** Prefer AcApI18n; keys are resolved at runtime by AcUiToolbar. */
 const i18n = {
-  t: (key: string) => t(key)
+  // eslint-disable-next-line @intlify/vue-i18n/no-dynamic-keys -- toolbar label keys are data-driven
+  t: (key: string) => AcApI18n.t(key)
 }
 
 const handleLocaleChanged = () => {

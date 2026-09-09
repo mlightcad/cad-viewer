@@ -11,7 +11,8 @@ import {
   acedSubscribeUiLayout,
   type AcEdUiLayoutKind,
   type AcEdUiTheme,
-  AcUiToolbar} from '@mlightcad/cad-simple-viewer'
+  AcUiToolbar
+} from '@mlightcad/cad-simple-viewer'
 
 import packageJson from '../package.json'
 import {
