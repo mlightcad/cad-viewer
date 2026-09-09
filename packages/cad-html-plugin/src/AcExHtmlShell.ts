@@ -1,8 +1,5 @@
-import { AcExHtmlIcons, acexToolbarButton } from './AcExHtmlIcons'
-import {
-  buildAcExHtmlLocaleStrip,
-  buildAcExHtmlSnapStrip
-} from './AcExHtmlMeasureSettings'
+import { AcExHtmlIcons } from './AcExHtmlIcons'
+import { buildAcExHtmlPolarAnglesPanel } from './AcExHtmlMeasureSettings'
 import type { AcExViewerMode } from './AcExSnapshotTypes'
 
 /**
@@ -126,13 +123,50 @@ export const ACEX_HTML_SHELL_CSS = `
 
   #mlcad-toolbar {
     flex-shrink: 0;
-    display: flex; flex-direction: column; gap: 4px;
-    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  /* AcUiToolbar chrome replaces the old .mlcad-tool-btn shell styles. */
+  #mlcad-toolbar .ml-ex-ui-toolbar {
+    position: relative !important;
+    inset: auto !important;
+    left: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: none !important;
     background: var(--mlcad-ui-bg);
     border: 1px solid var(--mlcad-ui-border);
     border-radius: 8px;
     box-shadow: var(--mlcad-shadow);
     backdrop-filter: blur(12px);
+    --ml-ex-ui-toolbar-btn-size: var(--mlcad-toolbar-width);
+  }
+  #mlcad-toolbar .ml-ex-ui-toolbar.is-left,
+  #mlcad-toolbar .ml-ex-ui-toolbar.is-right {
+    flex-direction: column;
+  }
+  #mlcad-toolbar .ml-ex-ui-toolbar.is-bottom,
+  #mlcad-toolbar .ml-ex-ui-toolbar.is-top {
+    flex-direction: row;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  #mlcad-sidebar > #mlcad-toolbar.ml-ex-ui-toolbar-host {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  /* Phone strips mount on #mlcad-root so they can sit above the bottom bar. */
+  #mlcad-root > .ml-ex-ui-subtoolbar {
+    z-index: calc(var(--mlcad-z-chrome) + 1);
   }
   .mlcad-tool-btn {
     position: relative;
@@ -1332,17 +1366,12 @@ export function buildAcExHtmlShellBody(
   viewerMode: AcExViewerMode = 'measure',
   exportLayouts = true
 ): string {
-  const measureToolbar =
-    viewerMode === 'measure' ? buildAcExMeasureMenuButton() : ''
-  const markupToolbar =
-    viewerMode === 'measure' ? buildAcExMarkupMenuButton() : ''
-  const settingsToolbar = buildAcExSettingsMenuButton()
-  const submenuTemplates = ''
-  const toolStrips = `${buildAcExHtmlZoomStrip()}${
+  // exportLayouts is applied at runtime by AcExHtmlMainToolbar options.
+  void exportLayouts
+  const measureChrome =
     viewerMode === 'measure'
-      ? `${buildAcExMeasureToolStrip()}${buildAcExMarkupToolStrip()}${buildAcExHtmlSnapStrip()}`
+      ? `${buildAcExHtmlPolarAnglesPanel()}${buildAcExMeasureDrawer()}${buildAcExReviewDrawer()}`
       : ''
-  }${buildAcExHtmlSettingsStrip(viewerMode)}${buildAcExHtmlLocaleStrip()}`
 
   return `
   <div id="mlcad-loading" aria-hidden="true" style="background:${loadingBg}">
@@ -1373,41 +1402,8 @@ export function buildAcExHtmlShellBody(
       <footer id="mlcad-status-bar" aria-live="polite" hidden></footer>
     </div>
     <aside id="mlcad-sidebar">
-      <nav id="mlcad-toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.viewerTools" aria-label="Viewer tools">
-        ${acexToolbarButton(AcExHtmlIcons.select, 'Select', {
-          'data-action': 'select',
-          'aria-pressed': 'false',
-          'data-i18n-key': 'toolbar.select',
-          'data-i18n-attr': 'title aria-label'
-        })}
-        ${acexToolbarButton(AcExHtmlIcons.pan, 'Pan', {
-          'data-action': 'pan',
-          'aria-pressed': 'true',
-          'data-i18n-key': 'toolbar.pan',
-          'data-i18n-attr': 'title aria-label'
-        })}
-        ${buildAcExZoomMenuButton()}
-        ${viewerMode === 'measure' ? buildAcExToolbarSeparator() : ''}
-        ${measureToolbar}
-        ${markupToolbar}
-        ${viewerMode === 'measure' ? buildAcExToolbarSeparator() : ''}
-        ${acexToolbarButton(AcExHtmlIcons.layer, 'Layers', {
-          id: 'mlcad-layers-btn',
-          'aria-haspopup': 'dialog',
-          'aria-expanded': 'false',
-          'data-i18n-key': 'toolbar.layers',
-          'data-i18n-attr': 'title aria-label'
-        })}
-        ${exportLayouts ? buildAcExLayoutMenuButton() : ''}
-        ${settingsToolbar}
-        ${acexToolbarButton(AcExHtmlIcons.chevronUp, 'Collapse toolbar', {
-          id: 'mlcad-toolbar-toggle',
-          'aria-expanded': 'true',
-          'data-i18n-key': 'toolbar.collapse',
-          'data-i18n-attr': 'title aria-label'
-        })}
-      </nav>
-      ${toolStrips}
+      <nav id="mlcad-toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.viewerTools" aria-label="Viewer tools"></nav>
+      ${measureChrome}
       <div id="mlcad-layer-drawer" role="dialog" data-i18n-attr="aria-label" data-i18n-key="layers.title" aria-label="Layers" hidden>
         ${buildAcExDrawerSheetChrome('mlcad-layer-sheet-close', 'layers.close', 'Close layers')}
         <div class="mlcad-drawer-header">
@@ -1426,11 +1422,7 @@ export function buildAcExHtmlShellBody(
       </div>
     </aside>
   </div>
-  ${submenuTemplates}`
-}
-
-function buildAcExToolbarSeparator(): string {
-  return '<div class="mlcad-tool-separator" aria-hidden="true"></div>'
+`
 }
 
 function buildAcExDrawerSheetChrome(
@@ -1496,217 +1488,6 @@ function buildAcExReviewDrawer(): string {
         </div>
       </div>`
 }
-
-function buildAcExLayoutMenuButton(): string {
-  return acexToolbarButton(AcExHtmlIcons.layout, 'Layout', {
-    id: 'mlcad-layout-menu-btn',
-    'aria-haspopup': 'menu',
-    'aria-expanded': 'false',
-    'data-action': 'layout-menu',
-    'data-i18n-key': 'toolbar.layout',
-    'data-i18n-attr': 'title aria-label',
-    'data-children-ui': 'menu'
-  }).replace('class="mlcad-tool-btn"', 'class="mlcad-tool-btn has-children"')
-}
-
-function buildAcExZoomMenuButton(): string {
-  return acexToolbarButton(AcExHtmlIcons.zoomExtent, 'Zoom', {
-    id: 'mlcad-zoom-menu-btn',
-    'aria-haspopup': 'true',
-    'aria-expanded': 'false',
-    'data-action': 'zoom-menu',
-    'data-i18n-key': 'toolbar.zoom',
-    'data-i18n-attr': 'title aria-label',
-    'data-children-ui': 'toolbar'
-  }).replace('class="mlcad-tool-btn"', 'class="mlcad-tool-btn has-children"')
-}
-
-function buildAcExHtmlZoomStrip(): string {
-  return `<div id="mlcad-zoom-strip-wrap" hidden>
-        <div id="mlcad-zoom-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.zoom" aria-label="Zoom">
-          ${acexToolbarButton(AcExHtmlIcons.zoomOriginal, 'Original', {
-            'data-action': 'zoom-original',
-            'data-i18n-key': 'toolbar.zoomOriginal',
-            'data-i18n-attr': 'title aria-label'
-          })}
-          ${acexToolbarButton(AcExHtmlIcons.zoomExtent, 'Extents', {
-            'data-action': 'fit',
-            'data-i18n-key': 'toolbar.zoomExtents',
-            'data-i18n-attr': 'title aria-label'
-          })}
-          ${acexToolbarButton(AcExHtmlIcons.zoomWindow, 'Window', {
-            'data-action': 'zoom-window',
-            'aria-pressed': 'false',
-            'data-i18n-key': 'toolbar.zoomWindow',
-            'data-i18n-attr': 'title aria-label'
-          })}
-        </div>
-      </div>`
-}
-
-function buildAcExSettingsMenuButton(): string {
-  return acexToolbarButton(AcExHtmlIcons.settings, 'Settings', {
-    id: 'mlcad-settings-btn',
-    'aria-haspopup': 'true',
-    'aria-expanded': 'false',
-    'data-action': 'settings-menu',
-    'data-i18n-key': 'toolbar.settings',
-    'data-i18n-attr': 'title aria-label',
-    'data-children-ui': 'toolbar'
-  }).replace('class="mlcad-tool-btn"', 'class="mlcad-tool-btn has-children"')
-}
-
-function buildAcExHtmlSettingsStrip(viewerMode: AcExViewerMode): string {
-  const snapBtn =
-    viewerMode === 'measure'
-      ? acexToolbarButton(AcExHtmlIcons.osnap, 'Object snap', {
-          id: 'mlcad-settings-snap-btn',
-          'aria-haspopup': 'true',
-          'aria-expanded': 'false',
-          'data-action': 'snap-menu',
-          'data-i18n-key': 'toolbar.snap',
-          'data-i18n-attr': 'title aria-label',
-          'data-children-ui': 'sticky-toolbar'
-        }).replace(
-          'class="mlcad-tool-btn"',
-          'class="mlcad-tool-btn has-children"'
-        )
-      : ''
-
-  return `<div id="mlcad-settings-strip-wrap" hidden>
-        <div id="mlcad-settings-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.settings" aria-label="Settings">
-          ${acexToolbarButton(AcExHtmlIcons.simulatedMouse, 'Mouse', {
-            id: 'mlcad-simulated-mouse-btn',
-            'data-action': 'toggle-simulated-mouse',
-            'data-i18n-key': 'toolbar.simulatedMouseOn',
-            'data-i18n-attr': 'title aria-label'
-          }).replace(
-            'class="mlcad-tool-btn"',
-            'class="mlcad-tool-btn active"'
-          )}
-          ${snapBtn}
-          ${acexToolbarButton(AcExHtmlIcons.themeDark, 'Light', {
-            id: 'mlcad-theme-btn',
-            'data-action': 'toggle-theme',
-            'data-i18n-key': 'toolbar.themeDark',
-            'data-i18n-attr': 'title aria-label'
-          })}
-          ${acexToolbarButton(AcExHtmlIcons.switchBg, 'Background', {
-            'data-action': 'switch-bg',
-            'data-i18n-key': 'toolbar.switchBg',
-            'data-i18n-attr': 'title aria-label'
-          })}
-          ${acexToolbarButton(AcExHtmlIcons.language, 'Language', {
-            id: 'mlcad-settings-locale-btn',
-            'aria-haspopup': 'true',
-            'aria-expanded': 'false',
-            'data-action': 'locale-menu',
-            'data-i18n-key': 'toolbar.language',
-            'data-i18n-attr': 'title aria-label',
-            'data-children-ui': 'toolbar'
-          }).replace(
-            'class="mlcad-tool-btn"',
-            'class="mlcad-tool-btn has-children"'
-          )}
-        </div>
-      </div>`
-}
-
-function buildAcExMeasureMenuButton(): string {
-  return acexToolbarButton(AcExHtmlIcons.measure, 'Measure', {
-    id: 'mlcad-measure-menu-btn',
-    'aria-haspopup': 'true',
-    'aria-expanded': 'false',
-    'data-action': 'measure-menu',
-    'data-i18n-key': 'toolbar.measure',
-    'data-i18n-attr': 'title aria-label',
-    'data-children-ui': 'toolbar'
-  }).replace('class="mlcad-tool-btn"', 'class="mlcad-tool-btn has-children"')
-}
-
-function buildAcExMarkupMenuButton(): string {
-  return acexToolbarButton(AcExHtmlIcons.annotation, 'Review', {
-    id: 'mlcad-markup-menu-btn',
-    'aria-haspopup': 'true',
-    'aria-expanded': 'false',
-    'data-action': 'markup-menu',
-    'data-i18n-key': 'toolbar.annotation',
-    'data-i18n-attr': 'title aria-label',
-    'data-children-ui': 'toolbar'
-  }).replace('class="mlcad-tool-btn"', 'class="mlcad-tool-btn has-children"')
-}
-
-function buildAcExMeasureToolStrip(): string {
-  return `<div id="mlcad-measure-strip-wrap" hidden>
-    <div id="mlcad-measure-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.measure" aria-label="Measure">
-      ${acexToolbarButton(AcExHtmlIcons.measureDistance, 'Distance', {
-        'data-action': 'measure',
-        'data-measure-mode': 'distance',
-        'data-i18n-key': 'toolbar.measureDistance',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.measureContinuous, 'Continuous', {
-        'data-action': 'measure',
-        'data-measure-mode': 'continuous',
-        'data-i18n-key': 'toolbar.measureContinuous',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.measureAngle, 'Angle', {
-        'data-action': 'measure',
-        'data-measure-mode': 'angle',
-        'data-i18n-key': 'toolbar.measureAngle',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.measureArc, 'Arc', {
-        'data-action': 'measure',
-        'data-measure-mode': 'arc',
-        'data-i18n-key': 'toolbar.measureArc',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.measureArea, 'Area', {
-        'data-action': 'measure',
-        'data-measure-mode': 'area',
-        'data-i18n-key': 'toolbar.measureArea',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.measureCoordinate, 'XY', {
-        'data-action': 'measure',
-        'data-measure-mode': 'coordinate',
-        'data-i18n-key': 'toolbar.measureCoordinate',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.measurementPanel, 'Results', {
-        'data-action': 'measure-panel',
-        'aria-pressed': 'false',
-        'data-i18n-key': 'toolbar.measurementPanel',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.markupShow, 'Hide', {
-        'data-action': 'measure-visibility',
-        'data-i18n-key': 'toolbar.measureHide',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.clearMeasurements, 'Clear', {
-        'data-action': 'clear-measurements',
-        'data-i18n-key': 'toolbar.clearMeasurements',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${buildAcExToolbarSeparator()}
-      ${acexToolbarButton(AcExHtmlIcons.markupImport, 'Import', {
-        'data-action': 'measure-import',
-        'data-i18n-key': 'toolbar.measureImport',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.markupExport, 'Export', {
-        'data-action': 'measure-export',
-        'data-i18n-key': 'toolbar.measureExport',
-        'data-i18n-attr': 'title aria-label'
-      })}
-    </div>
-    ${buildAcExMeasureDrawer()}
-  </div>`
-}
-
 function buildAcExMeasureDrawer(): string {
   return `<div id="mlcad-measure-drawer" role="dialog" data-i18n-attr="aria-label" data-i18n-key="measurePanel.title" aria-label="Measurements" hidden>
         ${buildAcExDrawerSheetChrome('mlcad-measure-sheet-close', 'measurePanel.close', 'Close measurements')}
@@ -1736,82 +1517,5 @@ function buildAcExMeasureDrawer(): string {
           </table>
         </div>
       </div>`
-}
-
-function buildAcExMarkupToolStrip(): string {
-  return `<div id="mlcad-markup-strip-wrap" hidden>
-    <div id="mlcad-markup-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.annotation" aria-label="Review">
-      ${acexToolbarButton(AcExHtmlIcons.markupCloud, 'Cloud', {
-        'data-action': 'markup',
-        'data-markup-mode': 'cloud',
-        'data-i18n-key': 'toolbar.markupCloud',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.markupRect, 'Rect', {
-        'data-action': 'markup',
-        'data-markup-mode': 'rect',
-        'data-i18n-key': 'toolbar.markupRect',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.markupCircle, 'Circle', {
-        'data-action': 'markup',
-        'data-markup-mode': 'circle',
-        'data-i18n-key': 'toolbar.markupCircle',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.markupCallout, 'Callout', {
-        'data-action': 'markup',
-        'data-markup-mode': 'callout',
-        'data-i18n-key': 'toolbar.markupCallout',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.markupArrow, 'Arrow', {
-        'data-action': 'markup',
-        'data-markup-mode': 'arrow',
-        'data-i18n-key': 'toolbar.markupArrow',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.markupText, 'Text', {
-        'data-action': 'markup',
-        'data-markup-mode': 'text',
-        'data-i18n-key': 'toolbar.markupText',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.markupStamp, 'Stamp', {
-        'data-action': 'markup',
-        'data-markup-mode': 'stamp',
-        'data-i18n-key': 'toolbar.markupStamp',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.markupPanel, 'Results', {
-        'data-action': 'markup-panel',
-        'aria-pressed': 'false',
-        'data-i18n-key': 'toolbar.markupPanel',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.markupShow, 'Hide', {
-        'data-action': 'markup-visibility',
-        'data-i18n-key': 'toolbar.markupHide',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.clearMarkups, 'Clear', {
-        'data-action': 'clear-markups',
-        'data-i18n-key': 'toolbar.clearMarkups',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${buildAcExToolbarSeparator()}
-      ${acexToolbarButton(AcExHtmlIcons.markupImport, 'Import', {
-        'data-action': 'markup-import',
-        'data-i18n-key': 'toolbar.markupImport',
-        'data-i18n-attr': 'title aria-label'
-      })}
-      ${acexToolbarButton(AcExHtmlIcons.markupExport, 'Export', {
-        'data-action': 'markup-export',
-        'data-i18n-key': 'toolbar.markupExport',
-        'data-i18n-attr': 'title aria-label'
-      })}
-    </div>
-    ${buildAcExReviewDrawer()}
-  </div>`
 }
 

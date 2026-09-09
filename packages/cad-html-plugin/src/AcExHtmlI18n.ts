@@ -79,6 +79,7 @@ export type AcExHtmlMessageKey =
   | 'toolbar.localeAr'
   | 'toolbar.collapse'
   | 'toolbar.expand'
+  | 'toolbar.moreOverflow'
   | 'settings.ortho'
   | 'settings.polar'
   | 'settings.polarAngles'
@@ -299,7 +300,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeTr: 'Türkçe',
       localeAr: 'العربية',
       collapse: 'Collapse toolbar',
-      expand: 'Expand toolbar'
+      expand: 'Expand toolbar',
+      moreOverflow: 'More tools'
     },
     settings: {
       ortho: 'Toggle orthogonal mode',
@@ -558,7 +560,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
       collapse: '收起工具栏',
-      expand: '展开工具栏'
+      expand: '展开工具栏',
+      moreOverflow: '更多工具'
     },
     settings: {
       ortho: '切换正交模式',
@@ -807,7 +810,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
       collapse: 'Sbalit panel nástrojů',
-      expand: 'Rozbalit panel nástrojů'
+      expand: 'Rozbalit panel nástrojů',
+      moreOverflow: 'Další nástroje'
     },
     settings: {
       ortho: 'Přepnout ortogonální režim',
@@ -1066,7 +1070,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
       collapse: 'Araç çubuğunu daralt',
-      expand: 'Araç çubuğunu genişlet'
+      expand: 'Araç çubuğunu genişlet',
+      moreOverflow: 'Diğer araçlar'
     },
     settings: {
       ortho: 'Dik modu aç/kapat',
@@ -1329,7 +1334,8 @@ const AR_MESSAGES: AcExMessageTree = {
     'localeTr': 'Türkçe',
     'localeAr': 'العربية',
     'collapse': 'طي شريط الأدوات',
-    'expand': 'توسيع شريط الأدوات'
+    'expand': 'توسيع شريط الأدوات',
+    'moreOverflow': 'المزيد من الأدوات'
   },
   'settings': {
     'ortho': 'تبديل الوضع المتعامد',

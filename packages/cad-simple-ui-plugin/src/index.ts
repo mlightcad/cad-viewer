@@ -60,6 +60,7 @@ export {
   acuiToolbarPreset
 } from './config/toolbarItemUtils'
 export { AcUiI18n, acuiRegisterSimpleUiI18n } from './i18n'
-export type { AcUiToolbarMountOptions } from './ui/AcUiToolbar'
+export type { AcUiToolbarMountOptions } from '@mlightcad/cad-simple-viewer'
+export { AcUiToolbar } from '@mlightcad/cad-simple-viewer'
 export type { AcApLayerInfo } from '@mlightcad/cad-simple-viewer'
 export { AcApLayerStore } from '@mlightcad/cad-simple-viewer'

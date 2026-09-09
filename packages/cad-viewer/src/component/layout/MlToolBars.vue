@@ -1,80 +1,68 @@
 <script setup lang="ts">
+/**
+ * Vertical main toolbar for cad-viewer, backed by shared {@link AcUiToolbar}.
+ */
 import {
+  acapBindToolbarDocState,
   AcApDocManager,
+  AcApI18n,
   AcEdOpenMode,
+  AcUiToolbar,
+  type AcUiToolbarItem,
+  ICON_ANNOTATION,
+  ICON_ANNOTATION_HIDE,
+  ICON_ANNOTATION_SHOW,
+  ICON_CLEAR_MARKUPS,
+  ICON_CLEAR_MEASUREMENTS,
+  ICON_LAYER,
+  ICON_MARKUP_ARROW,
+  ICON_MARKUP_CALLOUT,
+  ICON_MARKUP_EXPORT,
+  ICON_MARKUP_IMPORT,
+  ICON_MARKUP_PANEL,
+  ICON_MARKUP_STAMP,
+  ICON_MARKUP_TEXT,
+  ICON_MEASURE,
+  ICON_MEASURE_ANGLE,
+  ICON_MEASURE_ARC,
+  ICON_MEASURE_AREA,
+  ICON_MEASURE_CONTINUOUS,
+  ICON_MEASURE_DISTANCE,
+  ICON_MEASURE_POINT,
+  ICON_MEASUREMENT_PANEL,
+  ICON_PAN,
+  ICON_READING_MODE,
+  ICON_REV_CIRCLE,
+  ICON_REV_CLOUD,
+  ICON_REV_RECT,
+  ICON_SELECT,
+  ICON_SWITCH_BG,
+  ICON_ZOOM_EXTENT,
+  ICON_ZOOM_WINDOW,
   isMarkupVisible,
-  isMeasurementVisible
-} from '@mlightcad/cad-simple-viewer'
-import { MlButtonData, MlToolBar } from '@mlightcad/ui-components'
+  isMeasurementVisible} from '@mlightcad/cad-simple-viewer'
 import {
-  type Component,
-  computed,
-  defineComponent,
-  h,
+  nextTick,
   onMounted,
   onUnmounted,
-  ref
+  ref,
+  watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useDocument, useSettings } from '../../composable'
-import { markComponentConfigRaw } from '../../composable/markComponentConfigRaw'
-import {
-  clearMarkups,
-  clearMeasurements,
-  exportIcon,
-  importIcon,
-  layer,
-  markupArrow,
-  markupCallout,
-  markupHide,
-  markupPanel,
-  markupShow,
-  markupStamp,
-  markupTools,
-  measure,
-  measureAngle,
-  measureArc,
-  measureArea,
-  measureContinuous,
-  measureDistance,
-  measurementPanel,
-  measurePoint,
-  pan,
-  readingMode,
-  revCircle,
-  revCloud,
-  revRect,
-  revText,
-  select,
-  switchBg,
-  zoomToBox,
-  zoomToExtent
-} from '../../svg/toolbarIcons'
 
 const { t } = useI18n()
 const features = useSettings()
 const { isDocumentOpening, openMode: docOpenMode } = useDocument()
-const isToolbarDisabled = computed(() => isDocumentOpening.value)
+
+const hostRef = ref<HTMLElement | null>(null)
+let toolbar: AcUiToolbar | undefined
+let unbindDoc: (() => void) | undefined
+
 const markupVisible = ref(isMarkupVisible())
 const measurementVisible = ref(isMeasurementVisible())
 const readingModeEnabled = ref(false)
-
-/** Marks the reading-mode "on" icon so toolbar CSS can highlight the button. */
-const readingModeOnIcon: Component = defineComponent({
-  name: 'IconReadingModeOn',
-  setup() {
-    return () => h(readingMode, { 'data-reading-mode-on': '' })
-  }
-})
-
-/** Marks switch-bg as visually disabled while reading mode owns the canvas. */
-const switchBgDisabledIcon: Component = defineComponent({
-  name: 'IconSwitchBgDisabled',
-  setup() {
-    return () => h(switchBg, { 'data-toolbar-disabled': '' })
-  }
-})
 
 const syncMarkupVisibility = () => {
   markupVisible.value = isMarkupVisible()
@@ -92,6 +80,299 @@ const syncReadingMode = () => {
   }
 }
 
+const i18n = {
+  t: (key: string) => t(key)
+}
+
+const handleLocaleChanged = () => {
+  // vue-i18n is synced first (listener registered in locale/i18n.ts at module load).
+  toolbar?.refreshLocale()
+}
+
+const toolbarSeparator = (): AcUiToolbarItem => ({
+  id: `separator-${Math.random().toString(36).slice(2, 8)}`,
+  type: 'separator'
+})
+
+const buildItems = (): AcUiToolbarItem[] => {
+  const readingOn = readingModeEnabled.value
+  const items: AcUiToolbarItem[] = [
+    {
+      id: 'select',
+      label: 'main.verticalToolbar.select.text',
+      icon: ICON_SELECT,
+      command: 'select'
+    },
+    {
+      id: 'pan',
+      label: 'main.verticalToolbar.pan.text',
+      icon: ICON_PAN,
+      command: 'pan'
+    },
+    {
+      id: 'zoom-extent',
+      label: 'main.verticalToolbar.zoomToExtent.text',
+      icon: ICON_ZOOM_EXTENT,
+      command: 'zoom\nall'
+    },
+    {
+      id: 'zoom-window',
+      label: 'main.verticalToolbar.zoomToBox.text',
+      icon: ICON_ZOOM_WINDOW,
+      command: 'zoom\nwindow'
+    },
+    {
+      id: 'layer',
+      label: 'main.verticalToolbar.layer.text',
+      icon: ICON_LAYER,
+      command: 'layer'
+    },
+    {
+      id: 'switch-bg',
+      label: 'main.verticalToolbar.switchBg.text',
+      icon: ICON_SWITCH_BG,
+      command: 'switchbg',
+      disabled: () => readingModeEnabled.value
+    },
+    {
+      id: 'reading-mode',
+      label: 'main.verticalToolbar.readingMode.text',
+      icon: ICON_READING_MODE,
+      command: 'readingmode',
+      toggle: {
+        getValue: () => readingModeEnabled.value,
+        on: { icon: ICON_READING_MODE },
+        off: { icon: ICON_READING_MODE }
+      }
+    },
+    {
+      id: 'measure',
+      label: 'main.verticalToolbar.measure.text',
+      icon: ICON_MEASURE,
+      childrenUi: 'sticky-toolbar',
+      children: [
+        {
+          id: 'measure-distance',
+          label: 'main.verticalToolbar.measureDistance.text',
+          icon: ICON_MEASURE_DISTANCE,
+          command: 'measuredistance'
+        },
+        {
+          id: 'measure-continuous',
+          label: 'main.verticalToolbar.measureContinuous.text',
+          icon: ICON_MEASURE_CONTINUOUS,
+          command: 'measurecontinuous'
+        },
+        {
+          id: 'measure-angle',
+          label: 'main.verticalToolbar.measureAngle.text',
+          icon: ICON_MEASURE_ANGLE,
+          command: 'measureangle'
+        },
+        {
+          id: 'measure-area',
+          label: 'main.verticalToolbar.measureArea.text',
+          icon: ICON_MEASURE_AREA,
+          command: 'measurearea'
+        },
+        {
+          id: 'measure-arc',
+          label: 'main.verticalToolbar.measureArc.text',
+          icon: ICON_MEASURE_ARC,
+          command: 'measurearc'
+        },
+        {
+          id: 'measure-point',
+          label: 'main.verticalToolbar.measurePoint.text',
+          icon: ICON_MEASURE_POINT,
+          command: 'measurepoint'
+        },
+        {
+          id: 'measurement-panel',
+          label: 'main.verticalToolbar.measurementPanel.text',
+          icon: ICON_MEASUREMENT_PANEL,
+          command: 'measurementpanel'
+        },
+        {
+          id: 'measurement-vis',
+          label: measurementVisible.value
+            ? 'main.verticalToolbar.hideMeasurements.text'
+            : 'main.verticalToolbar.showMeasurements.text',
+          icon: measurementVisible.value
+            ? ICON_ANNOTATION_HIDE
+            : ICON_ANNOTATION_SHOW,
+          command: 'measurementvis',
+          toggle: {
+            getValue: () => measurementVisible.value,
+            on: {
+              label: 'main.verticalToolbar.hideMeasurements.text',
+              icon: ICON_ANNOTATION_HIDE
+            },
+            off: {
+              label: 'main.verticalToolbar.showMeasurements.text',
+              icon: ICON_ANNOTATION_SHOW
+            }
+          }
+        },
+        {
+          id: 'clear-measurements',
+          label: 'main.verticalToolbar.clearMeasurements.text',
+          icon: ICON_CLEAR_MEASUREMENTS,
+          command: 'clearmeasurements'
+        },
+        toolbarSeparator(),
+        {
+          id: 'measurement-import',
+          label: 'main.verticalToolbar.measurementImport.text',
+          icon: ICON_MARKUP_IMPORT,
+          command: 'measurementimport'
+        },
+        {
+          id: 'measurement-export',
+          label: 'main.verticalToolbar.measurementExport.text',
+          icon: ICON_MARKUP_EXPORT,
+          command: 'measurementexport'
+        }
+      ]
+    }
+  ]
+
+  items.push({
+    id: 'annotation',
+    label: 'main.verticalToolbar.annotation.text',
+    icon: ICON_ANNOTATION,
+    minOpenMode: AcEdOpenMode.Review,
+    childrenUi: 'sticky-toolbar',
+    children: [
+      {
+        id: 'markup-cloud',
+        label: 'main.verticalToolbar.markupCloud.text',
+        icon: ICON_REV_CLOUD,
+        command: 'markupcloud'
+      },
+      {
+        id: 'markup-callout',
+        label: 'main.verticalToolbar.markupCallout.text',
+        icon: ICON_MARKUP_CALLOUT,
+        command: 'markupcallout'
+      },
+      {
+        id: 'markup-text',
+        label: 'main.verticalToolbar.markupText.text',
+        icon: ICON_MARKUP_TEXT,
+        command: 'markuptext'
+      },
+      {
+        id: 'markup-rect',
+        label: 'main.verticalToolbar.markupRect.text',
+        icon: ICON_REV_RECT,
+        command: 'markuprect'
+      },
+      {
+        id: 'markup-circle',
+        label: 'main.verticalToolbar.markupCircle.text',
+        icon: ICON_REV_CIRCLE,
+        command: 'markupcircle'
+      },
+      {
+        id: 'markup-arrow',
+        label: 'main.verticalToolbar.markupArrow.text',
+        icon: ICON_MARKUP_ARROW,
+        command: 'markuparrow'
+      },
+      {
+        id: 'markup-stamp',
+        label: 'main.verticalToolbar.markupStamp.text',
+        icon: ICON_MARKUP_STAMP,
+        command: 'markupstamp'
+      },
+      {
+        id: 'markup-panel',
+        label: 'main.verticalToolbar.markupPanel.text',
+        icon: ICON_MARKUP_PANEL,
+        command: 'markuppanel'
+      },
+      {
+        id: 'markup-vis',
+        label: markupVisible.value
+          ? 'main.verticalToolbar.hideMarkup.text'
+          : 'main.verticalToolbar.showMarkup.text',
+        icon: markupVisible.value ? ICON_ANNOTATION_HIDE : ICON_ANNOTATION_SHOW,
+        command: 'markupvis',
+        toggle: {
+          getValue: () => markupVisible.value,
+          on: {
+            label: 'main.verticalToolbar.hideMarkup.text',
+            icon: ICON_ANNOTATION_HIDE
+          },
+          off: {
+            label: 'main.verticalToolbar.showMarkup.text',
+            icon: ICON_ANNOTATION_SHOW
+          }
+        }
+      },
+      {
+        id: 'clear-markups',
+        label: 'main.verticalToolbar.clearMarkups.text',
+        icon: ICON_CLEAR_MARKUPS,
+        command: 'clearmarkups'
+      },
+      toolbarSeparator(),
+      {
+        id: 'markup-import',
+        label: 'main.verticalToolbar.markupImport.text',
+        icon: ICON_MARKUP_IMPORT,
+        command: 'markupimport'
+      },
+      {
+        id: 'markup-export',
+        label: 'main.verticalToolbar.markupExport.text',
+        icon: ICON_MARKUP_EXPORT,
+        command: 'markupexport'
+      }
+    ]
+  })
+
+  void readingOn
+  void docOpenMode
+  return items
+}
+
+const ensureToolbar = () => {
+  const host = hostRef.value
+  if (!host || toolbar) return
+  toolbar = new AcUiToolbar({
+    host,
+    placement: 'right',
+    // Match AcUiShortCutToolbar shell `right: 12px`.
+    edgeOffset: 12,
+    items: buildItems(),
+    i18n,
+    collapsible: true,
+    onCommand: command => {
+      if (isDocumentOpening.value || !command) return
+      if (command === 'switchbg' && readingModeEnabled.value) return
+      AcApDocManager.instance.sendStringToExecute(command)
+    }
+  })
+  unbindDoc = acapBindToolbarDocState(toolbar)
+  // Re-measure after the host has a real canvas-sized box (see host CSS note).
+  void nextTick(() => {
+    toolbar?.refresh()
+  })
+}
+
+const destroyToolbar = () => {
+  unbindDoc?.()
+  unbindDoc = undefined
+  toolbar?.destroy()
+  toolbar = undefined
+}
+
+const refreshToolbarItems = () => {
+  toolbar?.updateItems(buildItems())
+}
+
 onMounted(() => {
   const docs = AcApDocManager.instance
   docs.editor.events.commandEnded.addEventListener(syncMarkupVisibility)
@@ -100,9 +381,14 @@ onMounted(() => {
   docs.events.documentActivated.addEventListener(syncMarkupVisibility)
   docs.events.documentActivated.addEventListener(syncMeasurementVisibility)
   docs.events.documentActivated.addEventListener(syncReadingMode)
+  AcApI18n.events.localeChanged.addEventListener(handleLocaleChanged)
   syncMarkupVisibility()
   syncMeasurementVisibility()
   syncReadingMode()
+
+  if (features.isShowToolbar) {
+    ensureToolbar()
+  }
 })
 
 onUnmounted(() => {
@@ -113,337 +399,61 @@ onUnmounted(() => {
   docs.events.documentActivated.removeEventListener(syncMarkupVisibility)
   docs.events.documentActivated.removeEventListener(syncMeasurementVisibility)
   docs.events.documentActivated.removeEventListener(syncReadingMode)
+  AcApI18n.events.localeChanged.removeEventListener(handleLocaleChanged)
+  destroyToolbar()
 })
 
-const toolbarSeparator = { type: 'separator' } as MlButtonData
-
-const visibilityToggle = (
-  command: string,
-  visible: boolean,
-  show: { text: string; description: string },
-  hide: { text: string; description: string }
-): MlButtonData => ({
-  command,
-  toggle: {
-    value: visible,
-    on: {
-      icon: markupShow,
-      text: show.text,
-      description: show.description
-    },
-    off: {
-      icon: markupHide,
-      text: hide.text,
-      description: hide.description
+watch(
+  () => features.isShowToolbar,
+  show => {
+    if (show) {
+      ensureToolbar()
+      refreshToolbarItems()
+    } else {
+      destroyToolbar()
     }
   }
-})
+)
 
-const verticalToolbarData = computed(() => {
-  const readingOn = readingModeEnabled.value
-  const items: MlButtonData[] = [
-    {
-      icon: select,
-      text: t('main.verticalToolbar.select.text'),
-      command: 'select',
-      description: t('main.verticalToolbar.select.description')
-    },
-    {
-      icon: pan,
-      text: t('main.verticalToolbar.pan.text'),
-      command: 'pan',
-      description: t('main.verticalToolbar.pan.description')
-    },
-    {
-      icon: zoomToExtent,
-      text: t('main.verticalToolbar.zoomToExtent.text'),
-      command: 'zoom\\nall',
-      description: t('main.verticalToolbar.zoomToExtent.description')
-    },
-    {
-      icon: zoomToBox,
-      text: t('main.verticalToolbar.zoomToBox.text'),
-      command: 'zoom\\nwindow',
-      description: t('main.verticalToolbar.zoomToBox.description')
-    },
-    {
-      icon: layer,
-      text: t('main.verticalToolbar.layer.text'),
-      command: 'layer',
-      description: t('main.verticalToolbar.layer.description')
-    },
-    {
-      icon: readingOn ? switchBgDisabledIcon : switchBg,
-      text: t('main.verticalToolbar.switchBg.text'),
-      command: 'switchbg',
-      description: readingOn
-        ? t('main.verticalToolbar.switchBg.disabledInReadingMode')
-        : t('main.verticalToolbar.switchBg.description')
-    },
-    {
-      command: 'readingmode',
-      toggle: {
-        value: readingOn,
-        on: {
-          icon: readingModeOnIcon,
-          text: t('main.verticalToolbar.readingMode.text'),
-          description: t('main.verticalToolbar.readingMode.description')
-        },
-        off: {
-          icon: readingMode,
-          text: t('main.verticalToolbar.readingMode.text'),
-          description: t('main.verticalToolbar.readingMode.description')
-        }
-      }
-    },
-    {
-      icon: measure,
-      text: t('main.verticalToolbar.measure.text'),
-      command: '',
-      description: t('main.verticalToolbar.measure.description'),
-      childrenType: 'sticky',
-      children: [
-        {
-          icon: measureDistance,
-          text: t('main.verticalToolbar.measureDistance.text'),
-          command: 'measuredistance',
-          description: t('main.verticalToolbar.measureDistance.description')
-        },
-        {
-          icon: measureContinuous,
-          text: t('main.verticalToolbar.measureContinuous.text'),
-          command: 'measurecontinuous',
-          description: t('main.verticalToolbar.measureContinuous.description')
-        },
-        {
-          icon: measureAngle,
-          text: t('main.verticalToolbar.measureAngle.text'),
-          command: 'measureangle',
-          description: t('main.verticalToolbar.measureAngle.description')
-        },
-        {
-          icon: measureArea,
-          text: t('main.verticalToolbar.measureArea.text'),
-          command: 'measurearea',
-          description: t('main.verticalToolbar.measureArea.description')
-        },
-        {
-          icon: measureArc,
-          text: t('main.verticalToolbar.measureArc.text'),
-          command: 'measurearc',
-          description: t('main.verticalToolbar.measureArc.description')
-        },
-        {
-          icon: measurePoint,
-          text: t('main.verticalToolbar.measurePoint.text'),
-          command: 'measurepoint',
-          description: t('main.verticalToolbar.measurePoint.description')
-        },
-        {
-          icon: measurementPanel,
-          text: t('main.verticalToolbar.measurementPanel.text'),
-          command: 'measurementpanel',
-          description: t('main.verticalToolbar.measurementPanel.description')
-        },
-        visibilityToggle(
-          'measurementvis',
-          measurementVisible.value,
-          {
-            text: t('main.verticalToolbar.showMeasurements.text'),
-            description: t('main.verticalToolbar.showMeasurements.description')
-          },
-          {
-            text: t('main.verticalToolbar.hideMeasurements.text'),
-            description: t('main.verticalToolbar.hideMeasurements.description')
-          }
-        ),
-        {
-          icon: clearMeasurements,
-          text: t('main.verticalToolbar.clearMeasurements.text'),
-          command: 'clearmeasurements',
-          description: t('main.verticalToolbar.clearMeasurements.description')
-        },
-        toolbarSeparator,
-        {
-          icon: importIcon,
-          text: t('main.verticalToolbar.measurementImport.text'),
-          command: 'measurementimport',
-          description: t('main.verticalToolbar.measurementImport.description')
-        },
-        {
-          icon: exportIcon,
-          text: t('main.verticalToolbar.measurementExport.text'),
-          command: 'measurementexport',
-          description: t('main.verticalToolbar.measurementExport.description')
-        }
-      ]
-    }
-  ]
-
-  // Only show review markup tools in Review mode or higher
-  if (docOpenMode.value >= AcEdOpenMode.Review) {
-    items.push({
-      icon: markupTools,
-      text: t('main.verticalToolbar.annotation.text'),
-      command: '',
-      description: t('main.verticalToolbar.annotation.description'),
-      childrenType: 'sticky',
-      children: [
-        {
-          icon: revCloud,
-          text: t('main.verticalToolbar.markupCloud.text'),
-          command: 'markupcloud',
-          description: t('main.verticalToolbar.markupCloud.description')
-        },
-        {
-          icon: markupCallout,
-          text: t('main.verticalToolbar.markupCallout.text'),
-          command: 'markupcallout',
-          description: t('main.verticalToolbar.markupCallout.description')
-        },
-        {
-          icon: revText,
-          text: t('main.verticalToolbar.markupText.text'),
-          command: 'markuptext',
-          description: t('main.verticalToolbar.markupText.description')
-        },
-        {
-          icon: revRect,
-          text: t('main.verticalToolbar.markupRect.text'),
-          command: 'markuprect',
-          description: t('main.verticalToolbar.markupRect.description')
-        },
-        {
-          icon: revCircle,
-          text: t('main.verticalToolbar.markupCircle.text'),
-          command: 'markupcircle',
-          description: t('main.verticalToolbar.markupCircle.description')
-        },
-        {
-          icon: markupArrow,
-          text: t('main.verticalToolbar.markupArrow.text'),
-          command: 'markuparrow',
-          description: t('main.verticalToolbar.markupArrow.description')
-        },
-        {
-          icon: markupStamp,
-          text: t('main.verticalToolbar.markupStamp.text'),
-          command: 'markupstamp',
-          description: t('main.verticalToolbar.markupStamp.description')
-        },
-        {
-          icon: markupPanel,
-          text: t('main.verticalToolbar.markupPanel.text'),
-          command: 'markuppanel',
-          description: t('main.verticalToolbar.markupPanel.description')
-        },
-        visibilityToggle(
-          'markupvis',
-          markupVisible.value,
-          {
-            text: t('main.verticalToolbar.showMarkup.text'),
-            description: t('main.verticalToolbar.showMarkup.description')
-          },
-          {
-            text: t('main.verticalToolbar.hideMarkup.text'),
-            description: t('main.verticalToolbar.hideMarkup.description')
-          }
-        ),
-        {
-          icon: clearMarkups,
-          text: t('main.verticalToolbar.clearMarkups.text'),
-          command: 'clearmarkups',
-          description: t('main.verticalToolbar.clearMarkups.description')
-        },
-        toolbarSeparator,
-        {
-          icon: importIcon,
-          text: t('main.verticalToolbar.markupImport.text'),
-          command: 'markupimport',
-          description: t('main.verticalToolbar.markupImport.description')
-        },
-        {
-          icon: exportIcon,
-          text: t('main.verticalToolbar.markupExport.text'),
-          command: 'markupexport',
-          description: t('main.verticalToolbar.markupExport.description')
-        }
-      ]
-    })
+watch(
+  [markupVisible, measurementVisible, readingModeEnabled, docOpenMode],
+  () => {
+    refreshToolbarItems()
   }
-  return markComponentConfigRaw(items)
+)
+
+watch(isDocumentOpening, opening => {
+  toolbar?.setDocState({ isOpening: opening })
 })
-
-const handleCommand = (command?: string) => {
-  if (isToolbarDisabled.value || !command) return
-  if (command === 'switchbg' && readingModeEnabled.value) return
-  AcApDocManager.instance.sendStringToExecute(command)
-}
-
-const handleToggle = (command: string) => {
-  handleCommand(command)
-}
 </script>
 
 <template>
   <div
-    v-if="features.isShowToolbar"
-    :class="{ 'is-disabled': isToolbarDisabled }"
-    :aria-disabled="isToolbarDisabled"
-    class="ml-vertical-toolbar-container"
-  >
-    <ml-tool-bar
-      :items="verticalToolbarData"
-      collapsible
-      size="small"
-      direction="vertical"
-      placement="left"
-      @click="handleCommand"
-      @toggle="handleToggle"
-    />
-  </div>
+    ref="hostRef"
+    class="ml-vertical-toolbar-host"
+    :hidden="!features.isShowToolbar"
+    aria-hidden="true"
+  />
 </template>
 
 <style>
-.ml-vertical-toolbar-container {
-  position: fixed;
-  right: 30px;
-  top: 50%;
-  transform: translateY(-50%);
+/*
+ * Keep the overlay host filling the canvas main area so syncPosition can
+ * vertically center the bar on the right edge.
+ */
+.ml-vertical-toolbar-host,
+.ml-vertical-toolbar-host.ml-ex-ui-toolbar-host {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
   z-index: 3;
-}
-
-.ml-vertical-toolbar-container.is-disabled {
-  opacity: 0.6;
   pointer-events: none;
-  user-select: none;
 }
 
-/* MlToolBar toggles do not apply is-selected; highlight reading mode via icon mark. */
-.ml-vertical-toolbar-container .ml-toolbar-button:has([data-reading-mode-on]) {
-  color: var(--el-button-hover-text-color);
-  background-color: var(--el-button-hover-bg-color);
-  border-color: var(--el-button-hover-border-color);
-}
-
-.ml-vertical-toolbar-container .ml-toolbar-button:has([data-toolbar-disabled]) {
-  opacity: 0.45;
-  pointer-events: none;
-  cursor: not-allowed;
-}
-
-.acap-svg-icon {
-  display: inline-flex;
-  width: 1em;
-  height: 1em;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-.acap-svg-icon svg {
-  width: 1em;
-  height: 1em;
-  display: block;
+.ml-vertical-toolbar-host .ml-ex-ui-toolbar,
+.ml-vertical-toolbar-host .ml-ex-ui-subtoolbar,
+.ml-vertical-toolbar-host .ml-ex-ui-dropdown {
+  pointer-events: auto;
 }
 </style>

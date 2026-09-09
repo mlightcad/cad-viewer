@@ -39,9 +39,13 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
   const layout = jest.requireActual(
     '../../cad-simple-viewer/src/editor/global/AcEdUiLayout'
   ) as typeof import('../../cad-simple-viewer/src/editor/global/AcEdUiLayout')
+  const toolbar = jest.requireActual(
+    '../../cad-simple-viewer/src/ui/toolbar'
+  ) as typeof import('../../cad-simple-viewer/src/ui/toolbar')
 
   return {
     ...layout,
+    ...toolbar,
     AcApDocManager: {
       instance: {
         curDocument: { openMode: 8 },
@@ -103,11 +107,10 @@ jest.mock('@mlightcad/data-model', () => ({
   })
 }))
 
-import { AcApI18n } from '@mlightcad/cad-simple-viewer'
+import { AcApI18n, AcUiToolbar } from '@mlightcad/cad-simple-viewer'
 
 import { acuiCreatePhoneToolbarItems } from '../src/config/defaultToolbarItems'
 import { AcUiI18n } from '../src/i18n'
-import { AcUiToolbar } from '../src/ui/AcUiToolbar'
 
 function getLayerLabel(host: HTMLElement) {
   return host.querySelector(

@@ -1,7 +1,6 @@
-import { createIconElement } from '../assets/icons'
-import { acuiIsToolbarSeparatorItem } from '../config/toolbarItemUtils'
-import type { AcUiToolbarItem } from '../config/types'
-import type { AcUiI18n } from '../i18n'
+import { createIconElement } from '../icons'
+import { acuiIsToolbarSeparatorItem } from './toolbarItemUtils'
+import type { AcUiToolbarI18n, AcUiToolbarItem } from './types'
 
 /**
  * Fixed-position dropdown menu for toolbar submenu items.
@@ -32,7 +31,7 @@ export class AcUiDropdownMenu {
    * @param themeHost - Theme host so `--ml-ui-*` CSS variables are inherited.
    */
   constructor(
-    private i18n: AcUiI18n,
+    private i18n: AcUiToolbarI18n,
     items: AcUiToolbarItem[],
     anchor: HTMLElement,
     private themeHost: HTMLElement
@@ -129,3 +128,4 @@ export class AcUiDropdownMenu {
     this.root.style.left = `${Math.max(8, left)}px`
   }
 }
+
