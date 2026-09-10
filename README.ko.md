@@ -41,6 +41,14 @@ DWG/DXF 파싱, 지오메트리 처리, 렌더링을 브라우저에서 직접 �
 - [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — 시스템 Electron을 사용하는 Arch Linux 소스 패키지(약 5.4 MB)
 - [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — 완전 오프라인 도면 열기를 위한 번들 폰트/템플릿이 포함된 Arch Linux 바이너리 패키지
 
+### 데모 앱 (Demo Apps)
+
+cad-viewer를 자체 제품에 통합하는 방법을 보여주는 공식 샘플 앱입니다:
+
+- [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer)용 최소 vanilla TypeScript 호스트. 로컬 또는 CDN DXF/DWG를 열고, 작은 툴바로 명령을 실행하며, 전체 Vue UI 없이 HTML/PDF/SVG 내보내기 플러그인을 지연 로드합니다.
+- [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) 기반의 전체 기능 Vue 3 앱. 메뉴, 리본, 대화상자, 명령줄, 상태 표시줄 포함([라이브 데모](https://mlightcad.github.io/cad-viewer-example/)).
+- [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js “CAD 드라이브” 데모. DWG/DXF 청크 이어받기 업로드, SQLite 파일 목록과 미리보기, **브라우저 라이브 파싱**(`cad-simple-viewer`) 또는 **서버측 ACEX 프리렌더**(더 빠른 로딩, 낮은 메모리)로 도면 열기를 지원합니다.
+
 ![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
 ## 기능

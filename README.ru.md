@@ -41,6 +41,14 @@ cad-viewer — `первый в мире веб-просмотрщик и ред
 - [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — исходный пакет Arch Linux с системным Electron (~5.4 MB)
 - [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — бинарный пакет Arch Linux со встроенными шрифтами/шаблонами для полностью офлайн открытия чертежей
 
+### Демо-приложения (Demo Apps)
+
+Официальные примеры, показывающие, как встроить cad-viewer в собственный продукт:
+
+- [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — Минимальный vanilla TypeScript-хост для [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer): открытие локальных или CDN DXF/DWG, команды через компактную панель инструментов и ленивая загрузка плагинов экспорта HTML/PDF/SVG без полного Vue UI.
+- [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — Полнофункциональное Vue 3-приложение на [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) с меню, лентами, диалогами, командной строкой и строкой состояния ([живая демонстрация](https://mlightcad.github.io/cad-viewer-example/)).
+- [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js-демо «CAD-диск»: возобновляемая chunk-загрузка DWG/DXF, список файлов в SQLite с превью и открытие чертежей через **живой разбор в браузере** (`cad-simple-viewer`) или **серверный ACEX-пререндер** (быстрее открытие, меньше памяти).
+
 ![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
 ## Возможности
