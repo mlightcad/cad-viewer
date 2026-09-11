@@ -11,9 +11,7 @@ import {
   type AcExCommandSessionUiState
 } from './AcExCommandSessionPanel'
 import {
-  acexCssRectToWcsBox,
   acexCssTopLeftRectToGl,
-  acexIntersectCssRects,
   acexWcsBoxToCssRect
 } from './AcExCssRect'
 import { acexSetDocsBaseUrl } from './AcExDocsUrl'
@@ -76,6 +74,7 @@ import {
 } from './AcExPackageLoader'
 import type { AcExPackageManifest } from './AcExPackageTypes'
 import {
+  computeOnscreenPaperViewportPass,
   computeViewportCamera,
   findDrillThroughViewport,
   modelPointToPaper,
@@ -1365,81 +1364,6 @@ async function startViewer(): Promise<void> {
     }
   }
 
-  const renderPaperViewports = () => {
-    const viewports = layout.viewports
-    if (
-      layout.isModelSpace ||
-      !viewports?.length ||
-      modelRoot.children.length === 0
-    ) {
-      return
-    }
-    const { width, height } = getCanvasSize()
-    if (width <= 0 || height <= 0) return
-
-    const autoClear = renderer.autoClear
-    renderer.autoClear = false
-    renderer.getViewport(savedViewportBox)
-    renderer.clearDepth()
-
-    for (const viewport of viewports) {
-      const pMin = paperWorldToScreen(
-        viewport.paper.minX,
-        viewport.paper.minY,
-        width,
-        height
-      )
-      const pMax = paperWorldToScreen(
-        viewport.paper.maxX,
-        viewport.paper.maxY,
-        width,
-        height
-      )
-      const minX = Math.min(pMin.x, pMax.x)
-      const maxX = Math.max(pMin.x, pMax.x)
-      const minY = Math.min(pMin.y, pMax.y)
-      const maxY = Math.max(pMin.y, pMax.y)
-      const vpW = maxX - minX
-      const vpH = maxY - minY
-      if (vpW < 1 || vpH < 1) continue
-
-      const scissorX = minX
-      const scissorY = height - maxY
-      renderer.setViewport(scissorX, scissorY, vpW, vpH)
-      renderer.setScissor(scissorX, scissorY, vpW, vpH)
-      renderer.setScissorTest(true)
-
-      const fitted = computeViewportCamera(viewport.model, vpW, vpH)
-      viewportCamera.left = -fitted.aspect * fitted.frustum
-      viewportCamera.right = fitted.aspect * fitted.frustum
-      viewportCamera.top = fitted.frustum
-      viewportCamera.bottom = -fitted.frustum
-      viewportCamera.position.set(
-        fitted.centerX,
-        fitted.centerY,
-        ACEX_CAMERA_DISTANCE
-      )
-      viewportCamera.lookAt(fitted.centerX, fitted.centerY, 0)
-      const twist = viewport.twist ?? 0
-      viewportCamera.up.set(-Math.sin(twist), Math.cos(twist), 0)
-      viewportCamera.setRotationFromEuler(new THREE.Euler(0, 0, twist))
-      viewportCamera.zoom = fitted.zoom
-      viewportCamera.updateProjectionMatrix()
-      AcExCameraZoomUniform.value = fitted.zoom
-      renderer.render(modelScene, viewportCamera)
-      renderer.setScissorTest(false)
-    }
-
-    renderer.setViewport(
-      savedViewportBox.x,
-      savedViewportBox.y,
-      savedViewportBox.z,
-      savedViewportBox.w
-    )
-    renderer.autoClear = autoClear
-    AcExCameraZoomUniform.value = camera.zoom
-  }
-
   /**
    * Fits an orthographic camera so `extents` fills a CSS rectangle of
    * `vpW` × `vpH`, matching {@link computeViewportCamera}.
@@ -1469,6 +1393,78 @@ async function startViewer(): Promise<void> {
     target.zoom = fitted.zoom
     target.updateProjectionMatrix()
     AcExCameraZoomUniform.value = fitted.zoom
+  }
+
+  const renderPaperViewports = () => {
+    const viewports = layout.viewports
+    if (
+      layout.isModelSpace ||
+      !viewports?.length ||
+      modelRoot.children.length === 0
+    ) {
+      return
+    }
+    const { width, height } = getCanvasSize()
+    if (width <= 0 || height <= 0) return
+
+    const autoClear = renderer.autoClear
+    renderer.autoClear = false
+    renderer.getViewport(savedViewportBox)
+    renderer.clearDepth()
+
+    const canvasRect = { x: 0, y: 0, width, height }
+    for (const viewport of viewports) {
+      const pMin = paperWorldToScreen(
+        viewport.paper.minX,
+        viewport.paper.minY,
+        width,
+        height
+      )
+      const pMax = paperWorldToScreen(
+        viewport.paper.maxX,
+        viewport.paper.maxY,
+        width,
+        height
+      )
+      const minX = Math.min(pMin.x, pMax.x)
+      const maxX = Math.max(pMin.x, pMax.x)
+      const minY = Math.min(pMin.y, pMax.y)
+      const maxY = Math.max(pMin.y, pMax.y)
+      const pass = computeOnscreenPaperViewportPass(
+        viewport,
+        {
+          x: minX,
+          y: minY,
+          width: maxX - minX,
+          height: maxY - minY
+        },
+        canvasRect
+      )
+      if (!pass) continue
+
+      const gl = acexCssTopLeftRectToGl(pass.hit, height)
+      renderer.setViewport(gl.x, gl.y, gl.width, gl.height)
+      renderer.setScissor(gl.x, gl.y, gl.width, gl.height)
+      renderer.setScissorTest(true)
+      applyOrthoFit(
+        viewportCamera,
+        pass.model,
+        pass.hit.width,
+        pass.hit.height,
+        viewport.twist ?? 0
+      )
+      renderer.render(modelScene, viewportCamera)
+      renderer.setScissorTest(false)
+    }
+
+    renderer.setViewport(
+      savedViewportBox.x,
+      savedViewportBox.y,
+      savedViewportBox.z,
+      savedViewportBox.w
+    )
+    renderer.autoClear = autoClear
+    AcExCameraZoomUniform.value = camera.zoom
   }
 
   /**
@@ -1519,22 +1515,13 @@ async function startViewer(): Promise<void> {
     ) {
       for (const viewport of layout.viewports) {
         const magRect = acexWcsBoxToCssRect(viewport.paper, viewBox, loupeRect)
-        const hit = acexIntersectCssRects(magRect, loupeRect)
-        if (!hit) continue
-        const paperHit = acexCssRectToWcsBox(hit, viewBox, loupeRect)
-        const corners = [
-          paperPointToModel(viewport, paperHit.minX, paperHit.minY),
-          paperPointToModel(viewport, paperHit.maxX, paperHit.minY),
-          paperPointToModel(viewport, paperHit.maxX, paperHit.maxY),
-          paperPointToModel(viewport, paperHit.minX, paperHit.maxY)
-        ]
-        const modelBox: AcExExtents = {
-          minX: Math.min(...corners.map(c => c.x)),
-          minY: Math.min(...corners.map(c => c.y)),
-          maxX: Math.max(...corners.map(c => c.x)),
-          maxY: Math.max(...corners.map(c => c.y))
-        }
-        const nestedGl = acexCssTopLeftRectToGl(hit, height)
+        const pass = computeOnscreenPaperViewportPass(
+          viewport,
+          magRect,
+          loupeRect
+        )
+        if (!pass) continue
+        const nestedGl = acexCssTopLeftRectToGl(pass.hit, height)
         renderer.setScissor(
           nestedGl.x,
           nestedGl.y,
@@ -1550,9 +1537,9 @@ async function startViewer(): Promise<void> {
         renderer.clearDepth()
         applyOrthoFit(
           loupeCamera,
-          modelBox,
-          hit.width,
-          hit.height,
+          pass.model,
+          pass.hit.width,
+          pass.hit.height,
           viewport.twist ?? 0
         )
         renderer.render(modelScene, loupeCamera)
