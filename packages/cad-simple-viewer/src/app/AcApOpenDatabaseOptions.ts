@@ -11,7 +11,7 @@ import { AcEdOpenMode } from '../editor/view'
 export enum AcApOpenViewMode {
   /** Poll converted geometry and frame the full drawing (`zoomToFitDrawing`). */
   Extents = 'extents',
-  /** Restore AutoCAD's saved view (layout limits, VPORT `*ACTIVE`, EXTMIN/EXTMAX). */
+  /** Restore AutoCAD's saved view (layout limits or VPORT `*ACTIVE`). */
   Saved = 'saved'
 }
 
