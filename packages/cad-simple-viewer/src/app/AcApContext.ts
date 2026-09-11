@@ -6,6 +6,10 @@ import {
   AcDbSysVarManager
 } from '@mlightcad/data-model'
 
+import {
+  restoreMeasurementsAfterRegen,
+  snapshotMeasurementsForRegen
+} from '../command/measure/AcApMeasurementStore'
 import { AcEdBaseView } from '../editor/view/AcEdBaseView'
 import { AcTrView2d } from '../view'
 import { AcApDocument } from './AcApDocument'
@@ -148,8 +152,10 @@ export class AcApContext {
           currentView.renderer.showLineWeight = showLineWeight
           // Existing line objects may need different geometry/material classes.
           // Regenerate to rebuild scene content using the new display mode.
+          snapshotMeasurementsForRegen(currentView)
           currentView.clear()
           args.database.regen()
+          restoreMeasurementsAfterRegen(currentView, args.database)
         }
       }
     })

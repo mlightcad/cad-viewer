@@ -188,6 +188,13 @@ export interface AcEdFloatingInputOptions<T> {
   onCancel?: AcEdFloatingInputCancelCallback
 
   /**
+   * Callback invoked when the user types an alphabetic key into the fields.
+   * The fields accept numbers only, so the character belongs to the command
+   * line; return true to consume the key.
+   */
+  onLetter?: (char: string) => boolean
+
+  /**
    * Callback invoked when user enters no value and prompt allows none.
    */
   onNone?: AcEdFloatingInputNoneCallback

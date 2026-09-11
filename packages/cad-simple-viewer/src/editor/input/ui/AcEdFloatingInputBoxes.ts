@@ -47,6 +47,13 @@ export interface AcEdFloatingInputBoxesOptions<T> {
   onCancel?: AcEdFloatingInputCancelCallback
 
   /**
+   * Callback invoked when the user types an alphabetic key. The fields only
+   * accept numbers, so the character belongs to the command line; return true
+   * to consume the key.
+   */
+  onLetter?: (char: string) => boolean
+
+  /**
    * Callback invoked when Enter submits "none" (AllowNone + empty typed input).
    */
   onNone?: AcEdFloatingInputNoneCallback
@@ -112,6 +119,7 @@ export class AcEdFloatingInputBoxes<T> {
   private onCommit?: AcEdFloatingInputCommitCallback<T>
   private onChange?: AcEdFloatingInputChangeCallback<T>
   private onCancel?: AcEdFloatingInputCancelCallback
+  private onLetter?: (char: string) => boolean
   private onNone?: AcEdFloatingInputNoneCallback
   private validateFn: AcEdFloatingInputValidationCallback<T>
   private allowNone: boolean
@@ -144,6 +152,7 @@ export class AcEdFloatingInputBoxes<T> {
     this.onCommit = options.onCommit
     this.onChange = options.onChange
     this.onCancel = options.onCancel
+    this.onLetter = options.onLetter
     this.onNone = options.onNone
     this.allowNone = options.allowNone ?? false
     this.useDefaultValue = options.useDefaultValue ?? false
@@ -219,7 +228,8 @@ export class AcEdFloatingInputBoxes<T> {
   }
 
   /**
-   * Handles keyboard events (Enter for commit, Escape for cancel).
+   * Handles keyboard events (Enter or Space to commit, Escape to cancel,
+   * letters handed over to the command line).
    */
   private handleKeyDown(e: KeyboardEvent): void {
     // Find out which input element triggers this event
@@ -230,7 +240,15 @@ export class AcEdFloatingInputBoxes<T> {
       nextInput = this.xInput
     }
 
-    if (e.key === 'Enter') {
+    // The fields hold numbers only, so a letter is the start of a command or
+    // keyword and belongs to the command line instead.
+    if (/^[a-z]$/i.test(e.key) && this.onLetter?.(e.key)) {
+      e.preventDefault()
+      e.stopPropagation()
+      return
+    }
+
+    if (e.key === 'Enter' || e.key === ' ') {
       if (this.useDefaultValue && !this.userTyped) {
         const committed =
           !this.onCommit || this.onCommit(this.defaultValue as T)

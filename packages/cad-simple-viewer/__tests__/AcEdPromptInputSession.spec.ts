@@ -10,7 +10,10 @@ describe('AcEdPromptInputSession precedence', () => {
       setInputReadOnly: jest.fn(),
       renderKeywordPrompt: jest.fn(),
       focusInput: jest.fn(),
-      clear: jest.fn()
+      clear: jest.fn(),
+      hasCommand: jest.fn(
+        (text: string) => text.trim().toUpperCase() === 'LINE'
+      )
     }) as any
 
   const createSession = (
@@ -29,8 +32,12 @@ describe('AcEdPromptInputSession precedence', () => {
       false,
       true
     )
-    const resolved: Array<{ kind: string; value?: unknown; keyword?: string }> =
-      []
+    const resolved: Array<{
+      kind: string
+      value?: unknown
+      keyword?: string
+      command?: string
+    }> = []
     ;(session as any).resolve = (value: unknown) => resolved.push(value as any)
     return { session, resolved }
   }
@@ -58,5 +65,45 @@ describe('AcEdPromptInputSession precedence', () => {
 
     expect(handled).toBe(true)
     expect(resolved[0]).toEqual({ kind: 'keyword', keyword: 'Close' })
+  })
+
+  test('geometric mode hands a registered command name back to the caller', () => {
+    const options = new AcEdPromptKeywordOptions('pick')
+
+    const { session, resolved } = createSession(options, 'geometric')
+    const handled = session.handleEnter('line')
+
+    expect(handled).toBe(true)
+    expect(resolved[0]).toEqual({ kind: 'command', command: 'line' })
+  })
+
+  test('geometric mode keeps prompt keywords ahead of command names', () => {
+    const options = new AcEdPromptKeywordOptions('pick')
+    options.keywords.add('Line', 'Line', 'LINE')
+
+    const { session, resolved } = createSession(options, 'geometric')
+    session.handleEnter('LINE')
+
+    expect(resolved[0]).toEqual({ kind: 'keyword', keyword: 'Line' })
+  })
+
+  test('geometric mode still rejects text that is neither value nor command', () => {
+    const options = new AcEdPromptKeywordOptions('pick')
+
+    const { session, resolved } = createSession(options, 'geometric')
+    const handled = session.handleEnter('zzz')
+
+    expect(handled).toBe(false)
+    expect(resolved).toHaveLength(0)
+  })
+
+  test('string mode keeps arbitrary text as the value instead of a command', () => {
+    const options = new AcEdPromptKeywordOptions('name')
+
+    const { session, resolved } = createSession(options, 'string')
+    const handled = session.handleEnter('LINE')
+
+    expect(handled).toBe(false)
+    expect(resolved).toHaveLength(0)
   })
 })
