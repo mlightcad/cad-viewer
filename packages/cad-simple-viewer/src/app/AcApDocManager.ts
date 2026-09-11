@@ -6,7 +6,6 @@ import {
   acdbHostApplicationServices,
   AcDbOpenDatabaseOptions,
   AcDbSysVarManager,
-  AcGeBox2d,
   log
 } from '@mlightcad/data-model'
 import { FontManager } from '@mlightcad/mtext-renderer'
@@ -2166,7 +2165,10 @@ export class AcApDocManager {
       //    and frame batch-derived geometry bounds once entities land.
       //
       // 3. **Saved** (Write default) in model space: restore VPORT
-      //    `*ACTIVE`, then frame EXTMIN/EXTMAX when no saved view exists.
+      //    `*ACTIVE` via `getActiveVportBox(aspect)` (structural / max-span
+      //    checks only — not vs header EXTMIN/EXTMAX, which often span
+      //    outliers and reject a valid tight saved view). When missing or
+      //    implausible, poll `zoomToFitDrawing`.
       //
       // 4. **Fallback** (paper without limits, or model with empty
       //    extents 鈥?typically DXF): poll `zoomToFitDrawing` and frame
@@ -2197,19 +2199,22 @@ export class AcApDocManager {
         view.zoomToFitDrawing()
       } else if (!isPaperSpaceActive) {
         const canvasAspect = view.width / Math.max(view.height, 1)
-        const vport = db.tables.viewportTable.getActiveVport()
-        // Restore AutoCAD's saved *ACTIVE view without EXTMIN/EXTMAX heuristics.
-        // Many real drawings store a valid saved view far from $EXTMIN/$EXTMAX
-        // (e.g. title-block extents vs. model content at large coordinates).
-        const activeModelViewBox = vport?.modelViewBox(canvasAspect)
+        // Restore *ACTIVE without comparing to header EXTMIN/EXTMAX.
+        // Extents-relative heuristics reject valid saved views that sit in a
+        // dense island while $EXTMAX still spans a mirrored/outlier wing
+        // (center offset fails). Raw `modelViewBox` alone still accepts
+        // stale zoomed-out saves; `getActiveVportBox` without extents keeps
+        // structural checks + a max-span guard for those.
+        const activeModelViewBox =
+          db.tables.viewportTable.getActiveVportBox(canvasAspect)
 
         if (activeModelViewBox) {
           view.zoomTo(activeModelViewBox)
           framedSynchronously = true
-        } else if (this.hasUsableDrawingExtents(db)) {
-          view.zoomTo(new AcGeBox2d(db.extmin, db.extmax))
-          framedSynchronously = true
         } else {
+          // No plausible saved view (missing VPORT or zoomed absurdly far).
+          // Frame converted scene bounds — do not trust header extents alone
+          // (often a title-block island while model content sits far away).
           if (progressiveRendering) {
             view.beginProgressiveOpenFit()
           }
@@ -2241,36 +2246,6 @@ export class AcApDocManager {
       this.openProgressView.endProgressiveOpenFit()
       this.regen()
     }
-  }
-
-  /**
-   * Checks whether EXTMIN/EXTMAX describe a real drawing area usable for
-   * view framing.
-   *
-   * AutoCAD marks unsaved/invalid extents with ±1e20 sentinel values (and
-   * some writers emit other degenerate near-zero/huge pairs). Framing such
-   * a box zooms the camera out to effectively infinity and the drawing
-   * renders as a black canvas, so those sentinels must fall through to
-   * `zoomToFitDrawing()` instead.
-   *
-   * @param db - Input database whose header extents are checked.
-   * @returns True when EXTMIN/EXTMAX are finite, sane and span a real area.
-   * @private
-   */
-  private hasUsableDrawingExtents(db: AcDbDatabase): boolean {
-    if (db.extents.isEmpty()) return false
-
-    // Anything at or beyond this magnitude is a "no saved extents"
-    // sentinel, not a coordinate a real drawing occupies.
-    const SENTINEL_LIMIT = 1e15
-    const values = [db.extmin.x, db.extmin.y, db.extmax.x, db.extmax.y]
-    if (
-      values.some(value => !Number.isFinite(value)) ||
-      values.some(value => Math.abs(value) >= SENTINEL_LIMIT)
-    ) {
-      return false
-    }
-    return db.extmax.x > db.extmin.x && db.extmax.y > db.extmin.y
   }
 
   /**
