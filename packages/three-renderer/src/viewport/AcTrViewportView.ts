@@ -8,6 +8,12 @@ import * as THREE from 'three'
 
 import { AcTrRenderer } from '../renderer/AcTrRenderer'
 import { AcTrBaseView } from './AcTrBaseView'
+import {
+  type AcTrCssRect,
+  acTrCssRectToWcsBox,
+  acTrCssTopLeftRectToGl,
+  acTrIntersectCssRects
+} from './AcTrCssRect'
 
 /**
  * This class represents view to show viewport.
@@ -260,32 +266,68 @@ export class AcTrViewportView extends AcTrBaseView {
   }
 
   /**
-   * Render the specified scene in this viewport view
-   * @param scene Input the scene to render
+   * Clips this paper viewport to the parent canvas and returns the CSS
+   * rectangle plus the model-space box that should fill it.
+   *
+   * A zoomed paper viewport can map to more CSS pixels than WebGL
+   * `MAX_VIEWPORT_DIMS`. Clamping that rect shifts NDC (right-side content
+   * appears in view) and further zoom draws nothing. The on-screen
+   * intersection stays within GPU limits.
+   *
+   * @returns On-canvas CSS rect and matching model box, or `null` when the
+   *   viewport is fully off-screen or has an empty mapping.
    */
-  render(scene: THREE.Object3D) {
+  computeOnscreenPass(): { hit: AcTrCssRect; modelBox: AcGeBox2d } | null {
     const viewportWindowBox = AcTrViewportView.calculateViewportWindowBox(
       this._parentView,
       this._viewport
     )
-    if (!viewportWindowBox.isEmpty()) {
-      const vpW = viewportWindowBox.size.width
-      const vpH = viewportWindowBox.size.height
-
-      if (vpW !== this._width || vpH !== this._height) {
-        this._width = vpW
-        this._height = vpH
-        this._frustum = vpH / 2
-        this.zoomTo(this._viewport.viewBox, 1.0)
-        this.applyViewTwist()
-      }
-
-      const y = this._parentView.height - viewportWindowBox.min.y - vpH
-      this._renderer.setViewport(viewportWindowBox.min.x, y, vpW, vpH)
-      this._renderer.setScissor(viewportWindowBox.min.x, y, vpW, vpH)
-      this._renderer.setScissorTest(true)
-      this._renderer.render(scene, this._camera)
-      this._renderer.setScissorTest(false)
+    if (viewportWindowBox.isEmpty()) return null
+    const size = viewportWindowBox.size
+    const cssVp: AcTrCssRect = {
+      x: viewportWindowBox.min.x,
+      y: viewportWindowBox.min.y,
+      width: size.width,
+      height: size.height
     }
+    const hit = acTrIntersectCssRects(cssVp, {
+      x: 0,
+      y: 0,
+      width: this._parentView.width,
+      height: this._parentView.height
+    })
+    if (!hit) return null
+    // Map the CSS clip onto the DCS view box. Do not send corners through
+    // `paperPointToModel`: that applies `viewTwistAngle`, and `render()`
+    // already calls `applyViewTwist()` after `zoomTo`. Using the twisted
+    // AABB would zoom out fully on-screen twisted viewports.
+    const mapped = acTrCssRectToWcsBox(hit, this._viewport.viewBox, cssVp)
+    const modelBox = new AcGeBox2d()
+    modelBox.expandByPoint({ x: mapped.minX, y: mapped.minY })
+    modelBox.expandByPoint({ x: mapped.maxX, y: mapped.maxY })
+    if (modelBox.isEmpty()) return null
+    return { hit, modelBox }
+  }
+
+  /**
+   * Render the specified scene in this viewport view
+   * @param scene Input the scene to render
+   */
+  render(scene: THREE.Object3D) {
+    const pass = this.computeOnscreenPass()
+    if (!pass) return
+
+    this._width = pass.hit.width
+    this._height = pass.hit.height
+    this._frustum = pass.hit.height / 2
+    this.zoomTo(pass.modelBox, 1.0)
+    this.applyViewTwist()
+
+    const gl = acTrCssTopLeftRectToGl(pass.hit, this._parentView.height)
+    this._renderer.setViewport(gl.x, gl.y, gl.width, gl.height)
+    this._renderer.setScissor(gl.x, gl.y, gl.width, gl.height)
+    this._renderer.setScissorTest(true)
+    this._renderer.render(scene, this._camera)
+    this._renderer.setScissorTest(false)
   }
 }
