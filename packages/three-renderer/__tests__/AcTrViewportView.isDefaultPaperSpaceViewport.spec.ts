@@ -57,6 +57,63 @@ describe('AcTrViewportView twist', () => {
   })
 })
 
+describe('AcTrViewportView.computeOnscreenPass', () => {
+  it('clips an oversized paper-viewport window to the parent canvas', () => {
+    const parent = new AcTrBaseView(createMockRenderer(), 800, 600)
+    parent.internalCamera.position.set(5, 5, 500)
+    parent.internalCamera.zoom = 10000
+    parent.internalCamera.updateProjectionMatrix()
+    parent.internalCamera.updateMatrixWorld()
+
+    const view = new AcTrViewportView(
+      parent,
+      createViewport(0),
+      createMockRenderer()
+    )
+    const pass = view.computeOnscreenPass()
+    expect(pass).not.toBeNull()
+    expect(pass!.hit.x).toBeGreaterThanOrEqual(-1e-6)
+    expect(pass!.hit.y).toBeGreaterThanOrEqual(-1e-6)
+    expect(pass!.hit.x + pass!.hit.width).toBeLessThanOrEqual(800 + 1e-6)
+    expect(pass!.hit.y + pass!.hit.height).toBeLessThanOrEqual(600 + 1e-6)
+
+    const full = view.viewport.viewBox
+    const visibleW = pass!.modelBox.max.x - pass!.modelBox.min.x
+    const fullW = full.max.x - full.min.x
+    expect(visibleW).toBeLessThan(fullW * 0.5)
+  })
+
+  it('keeps the full DCS view box when the paper viewport is on-screen', () => {
+    const parent = new AcTrBaseView(createMockRenderer(), 800, 600)
+    const view = new AcTrViewportView(
+      parent,
+      createViewport(Math.PI / 4),
+      createMockRenderer()
+    )
+    const pass = view.computeOnscreenPass()
+    expect(pass).not.toBeNull()
+    const full = view.viewport.viewBox
+    expect(pass!.modelBox.min.x).toBeCloseTo(full.min.x)
+    expect(pass!.modelBox.min.y).toBeCloseTo(full.min.y)
+    expect(pass!.modelBox.max.x).toBeCloseTo(full.max.x)
+    expect(pass!.modelBox.max.y).toBeCloseTo(full.max.y)
+  })
+
+  it('returns null when the paper viewport is fully off-screen', () => {
+    const parent = new AcTrBaseView(createMockRenderer(), 800, 600)
+    parent.internalCamera.position.set(1e6, 1e6, 500)
+    parent.internalCamera.updateProjectionMatrix()
+    parent.internalCamera.updateMatrixWorld()
+
+    const view = new AcTrViewportView(
+      parent,
+      createViewport(0),
+      createMockRenderer()
+    )
+    expect(view.computeOnscreenPass()).toBeNull()
+  })
+})
+
 describe('AcTrViewportView.isDefaultPaperSpaceViewport', () => {
   it('detects the classic looks-at-itself default', () => {
     expect(

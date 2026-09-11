@@ -1,3 +1,8 @@
+import {
+  type AcExCssRect,
+  acexCssRectToWcsBox,
+  acexIntersectCssRects
+} from './AcExCssRect'
 import type { AcExExtents, AcExViewportSnapshot } from './AcExSnapshotTypes'
 
 const EPS = 1e-12
@@ -181,6 +186,43 @@ export function computeViewportCamera(
     frustum,
     aspect
   }
+}
+
+/**
+ * Clips a paper viewport's CSS rectangle to `clip` and returns the model-space
+ * box that should fill the overlap.
+ *
+ * Zooming paper space can map a viewport to more CSS pixels than WebGL
+ * `MAX_VIEWPORT_DIMS`. Clamping that rect shifts NDC (right-side content
+ * appears in view) and further zoom draws nothing. The on-screen intersection
+ * stays within GPU limits.
+ *
+ * The CSS clip is mapped onto the DCS view box. Do not send corners through
+ * {@link paperPointToModel}: that applies twist, and the renderer already
+ * applies twist after fitting the camera.
+ *
+ * @returns On-canvas CSS rect and matching model extents, or `null` when the
+ *   viewport is fully outside `clip` or has an empty mapping.
+ */
+export function computeOnscreenPaperViewportPass(
+  viewport: AcExViewportSnapshot,
+  cssVp: AcExCssRect,
+  clip: AcExCssRect
+): { hit: AcExCssRect; model: AcExExtents } | null {
+  const hit = acexIntersectCssRects(cssVp, clip)
+  if (!hit) return null
+  const model = acexCssRectToWcsBox(hit, viewport.model, cssVp)
+  if (
+    model.maxX - model.minX <= EPS ||
+    model.maxY - model.minY <= EPS ||
+    !Number.isFinite(model.minX) ||
+    !Number.isFinite(model.minY) ||
+    !Number.isFinite(model.maxX) ||
+    !Number.isFinite(model.maxY)
+  ) {
+    return null
+  }
+  return { hit, model }
 }
 
 /**

@@ -1,5 +1,6 @@
 import type { AcExViewportSnapshot } from '../src/AcExSnapshotTypes'
 import {
+  computeOnscreenPaperViewportPass,
   computeViewportCamera,
   findDrillThroughViewport,
   modelPointToPaper,
@@ -79,6 +80,51 @@ describe('AcExPaperViewport', () => {
     expect(fitted.frustum).toBe(50)
     expect(fitted.aspect).toBe(2)
     expect(fitted.zoom).toBe(2)
+  })
+
+  it('clips an oversized paper-viewport CSS window to the canvas', () => {
+    const pass = computeOnscreenPaperViewportPass(
+      viewport,
+      { x: -50000, y: -20000, width: 100000, height: 50000 },
+      { x: 0, y: 0, width: 800, height: 600 }
+    )
+    expect(pass).not.toBeNull()
+    expect(pass!.hit).toEqual({ x: 0, y: 0, width: 800, height: 600 })
+    const visibleW = pass!.model.maxX - pass!.model.minX
+    const fullW = viewport.model.maxX - viewport.model.minX
+    expect(visibleW).toBeLessThan(fullW * 0.5)
+    expect(pass!.hit.width).toBeLessThanOrEqual(800)
+    expect(pass!.hit.height).toBeLessThanOrEqual(600)
+  })
+
+  it('keeps the full DCS view box when the paper viewport is on-screen', () => {
+    const twisted: AcExViewportSnapshot = {
+      ...viewport,
+      twist: Math.PI / 4
+    }
+    const cssVp = { x: 10, y: 20, width: 200, height: 100 }
+    const pass = computeOnscreenPaperViewportPass(twisted, cssVp, {
+      x: 0,
+      y: 0,
+      width: 800,
+      height: 600
+    })
+    expect(pass).not.toBeNull()
+    expect(pass!.hit).toEqual(cssVp)
+    expect(pass!.model.minX).toBeCloseTo(viewport.model.minX)
+    expect(pass!.model.minY).toBeCloseTo(viewport.model.minY)
+    expect(pass!.model.maxX).toBeCloseTo(viewport.model.maxX)
+    expect(pass!.model.maxY).toBeCloseTo(viewport.model.maxY)
+  })
+
+  it('returns null when the paper viewport is fully off-screen', () => {
+    expect(
+      computeOnscreenPaperViewportPass(
+        viewport,
+        { x: 2000, y: 2000, width: 100, height: 100 },
+        { x: 0, y: 0, width: 800, height: 600 }
+      )
+    ).toBeNull()
   })
 
   it('detects paper layouts that carry viewports', () => {
