@@ -302,18 +302,12 @@ importers:
       '@mlightcad/pdf-renderer':
         specifier: workspace:*
         version: link:../pdf-renderer
-      '@mlightcad/three-renderer':
-        specifier: workspace:*
-        version: link:../three-renderer
       commander:
         specifier: ^12.1.0
         version: 12.1.0
       playwright:
         specifier: ^1.49.1
         version: 1.59.1
-      three:
-        specifier: ^0.172.0
-        version: 0.172.0
     devDependencies:
       '@types/node':
         specifier: ^20.14.9
