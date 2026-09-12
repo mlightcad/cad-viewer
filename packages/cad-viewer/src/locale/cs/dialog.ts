@@ -121,6 +121,21 @@ export default {
     copyPasswordSuccess: 'Heslo bylo zkopírováno do schránky.',
     copyPasswordFailed: 'Heslo se nepodařilo zkopírovat do schránky.'
   },
+  exportPdfDlg: {
+    title: 'Exportovat do PDF',
+    modelSpaceSection: 'Modelový prostor',
+    modelSpaceDisplay: 'Zobrazení',
+    modelSpaceDisplayHint: 'Exportovat obsah aktuálně zobrazený ve výřezu',
+    modelSpaceExtents: 'Rozsah',
+    modelSpaceExtentsHint:
+      'Exportovat rozsah všech objektů v aktuálním prostoru',
+    paperSpaceSection: 'Výkresový prostor',
+    exportLayouts: 'Exportovat rozvržení',
+    exportLayoutsHint:
+      'Zahrnout rozvržení výkresového prostoru jako další stránky PDF',
+    yes: 'Ano',
+    no: 'Ne'
+  },
   quickSelectDlg: {
     title: 'Rychlý výběr',
     applyTo: 'Použít na',

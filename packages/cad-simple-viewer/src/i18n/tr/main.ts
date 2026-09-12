@@ -35,6 +35,7 @@ export default {
   message: {
     fetchingDrawingFile: 'Dosya alınıyor ...',
     exportingDxf: 'DXF dışa aktarılıyor ...',
+    exportingPdf: 'PDF dışa aktarılıyor ...',
     exportingEntityPreview: 'Görüntü dışa aktarılıyor ...',
     collectingMemoryProfile: 'Bellek analiz ediliyor ...',
     fontCached: 'Yazı tipi başarıyla önbelleğe alındı',

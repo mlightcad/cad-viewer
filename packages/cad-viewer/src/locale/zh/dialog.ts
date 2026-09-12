@@ -117,6 +117,19 @@ export default {
     copyPasswordSuccess: '密码已复制到剪贴板。',
     copyPasswordFailed: '无法复制密码到剪贴板。'
   },
+  exportPdfDlg: {
+    title: '导出为 PDF',
+    modelSpaceSection: '模型空间',
+    modelSpaceDisplay: '显示',
+    modelSpaceDisplayHint: '导出当前视口中显示的内容',
+    modelSpaceExtents: '范围',
+    modelSpaceExtentsHint: '导出当前空间中所有对象的范围',
+    paperSpaceSection: '图纸空间',
+    exportLayouts: '导出布局',
+    exportLayoutsHint: '将图纸空间布局作为额外的 PDF 页面导出',
+    yes: '是',
+    no: '否'
+  },
   quickSelectDlg: {
     title: '快速选择',
     applyTo: '应用到',

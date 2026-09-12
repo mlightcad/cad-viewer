@@ -1,4 +1,53 @@
+import { createRequire } from 'node:module'
+
 import type { ManualChunksOption, OutputOptions } from 'rollup'
+import type { Alias } from 'vite'
+
+function resolvePackageEntry(
+  req: NodeRequire,
+  name: string
+): string | undefined {
+  try {
+    return req.resolve(name)
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Resolves peer packages from the example app so nested imports inside
+ * `cad-pdf-plugin/dist` (pnpm isolation) still bundle.
+ *
+ * Resolve the package entry (`require.resolve(name)`), not `name/package.json`:
+ * many `@mlightcad/*` packages omit `package.json` from `exports`.
+ */
+export function examplePeerPackageAliases(fromPackageDir: string): Alias[] {
+  const require = createRequire(fromPackageDir + '/package.json')
+  const fallbackRequire = createRequire(
+    fromPackageDir + '/../cad-simple-viewer/package.json'
+  )
+  const names = [
+    '@mlightcad/mtext-renderer',
+    '@mlightcad/three-renderer',
+    'three'
+  ] as const
+  const aliases: Alias[] = []
+  for (const name of names) {
+    const direct = resolvePackageEntry(require, name)
+    const fallback = direct
+      ? undefined
+      : resolvePackageEntry(fallbackRequire, name)
+    const replacement = direct ?? fallback
+    if (!replacement) {
+      continue
+    }
+    aliases.push({
+      find: name === 'three' ? /^three$/ : name,
+      replacement
+    })
+  }
+  return aliases
+}
 
 /** Export plugins with a separate lazy `/register` entry. */
 export const PLUGIN_PACKAGE_IDS = [
@@ -79,6 +128,13 @@ function matchThreePackage(id: string): boolean {
  * Groups monorepo packages into predictable Rollup chunks for example app builds.
  */
 export const exampleManualChunks: ManualChunksOption = (id: string) => {
+  if (
+    matchMonorepoPackage(id, 'pdf-renderer') ||
+    /(?:^|\/)pdf-lib(?:\/|$)/.test(id.replace(/\\/g, '/'))
+  ) {
+    return 'cad-pdf-plugin'
+  }
+
   for (const pluginId of PLUGIN_PACKAGE_IDS) {
     if (!matchMonorepoPackage(id, pluginId)) {
       continue

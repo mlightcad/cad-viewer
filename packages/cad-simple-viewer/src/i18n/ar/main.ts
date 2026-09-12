@@ -35,6 +35,7 @@ export default {
   message: {
     fetchingDrawingFile: 'جارٍ جلب ملف الرسم ...',
     exportingDxf: 'جارٍ تصدير DXF ...',
+    exportingPdf: 'جارٍ تصدير PDF ...',
     exportingEntityPreview: 'جارٍ تصدير الصورة ...',
     collectingMemoryProfile: 'جارٍ تحليل الذاكرة ...',
     fontCached: 'تم تخزين الخط بنجاح',

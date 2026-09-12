@@ -40,6 +40,9 @@ export default {
     cpdf: {
       description: 'Exportuje aktuální výkres do PDF'
     },
+    '-cpdf': {
+      description: 'Exportuje aktuální výkres do PDF pomocí příkazového řádku'
+    },
     cecolor: {
       description: 'Nastaví aktuální výchozí barvu pro nově vytvářené objekty'
     },

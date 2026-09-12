@@ -19,6 +19,7 @@
           "projects": [
             "@mlightcad/cad-html-plugin",
             "@mlightcad/cad-pdf-plugin",
+            "@mlightcad/pdf-renderer",
             "@mlightcad/cad-svg-plugin"
           ],
           "target": "build"

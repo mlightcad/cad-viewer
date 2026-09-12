@@ -1270,5 +1270,31 @@ export default {
         global: 'Measure'
       }
     }
+  },
+  cpdf: {
+    modelSpaceFit: 'Rám modelového prostoru [Rozsah(E)/Zobrazení(D)]',
+    exportLayouts: 'Exportovat rozvržení',
+    keywords: {
+      extents: {
+        display: 'Rozsah(E)',
+        local: 'Rozsah',
+        global: 'Extents'
+      },
+      display: {
+        display: 'Zobrazení(D)',
+        local: 'Zobrazení',
+        global: 'Display'
+      },
+      yes: {
+        display: 'Ano(Y)',
+        local: 'Ano',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Ne(N)',
+        local: 'Ne',
+        global: 'No'
+      }
+    }
   }
 }

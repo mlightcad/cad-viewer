@@ -2763,7 +2763,9 @@ const handleFileMenuSelect = async (command: string) => {
   } else if (command === 'ExportHtml') {
     AcApDocManager.instance.sendStringToExecute('chtml')
   } else if (command === 'ExportPdf') {
-    await runLazyCommand('cpdf')
+    // Same path as chtml/csvg: DocManager lazy-loads the plugin then runs cpdf.
+    // Avoid a separate await+execute that raced Vite's first-time pdf-lib optimize.
+    AcApDocManager.instance.sendStringToExecute('cpdf')
   } else if (command === 'ExportSvg') {
     AcApDocManager.instance.sendStringToExecute('csvg')
   } else if (command === 'PngOut') {

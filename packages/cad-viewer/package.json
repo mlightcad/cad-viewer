@@ -46,6 +46,7 @@
     "@mlightcad/cad-agent-plugin": "workspace:*",
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-pdf-plugin": "workspace:*",
+    "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.14.5",
@@ -72,6 +73,7 @@
     "@mlightcad/cad-agent-plugin": "workspace:*",
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-pdf-plugin": "workspace:*",
+    "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.14.5",
@@ -91,6 +93,9 @@
       "optional": true
     },
     "@mlightcad/cad-pdf-plugin": {
+      "optional": true
+    },
+    "@mlightcad/pdf-renderer": {
       "optional": true
     },
     "@mlightcad/cad-svg-plugin": {

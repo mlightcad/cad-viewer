@@ -18,6 +18,7 @@ import {
   AcApCountListCmd,
   AcApDrawingUnitsCmd,
   AcApExportHtmlDlgCmd,
+  AcApExportPdfDlgCmd,
   AcApInsertPaletteCmd,
   AcApLayerStateCmd,
   AcApMarkupPanelCmd,
@@ -38,6 +39,7 @@ import {
   MlAttEditDlg,
   MlDrawingUnitsDlg,
   MlExportHtmlDlg,
+  MlExportPdfDlg,
   MlPointStyleDlg,
   MlQuickSelectDlg,
   MlTextStyleDlg
@@ -93,6 +95,12 @@ export const registerCmds = () => {
         'chtml',
         'chtml',
         new AcApExportHtmlDlgCmd()
+      )
+      register.addCommand(
+        AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+        'cpdf',
+        'cpdf',
+        new AcApExportPdfDlgCmd()
       )
     }
     register.addCommand(
@@ -192,6 +200,11 @@ export const registerDialogs = () => {
         component: markRaw(MlExportHtmlDlg),
         props: {}
       })
+      registerDialog({
+        name: 'ExportPdfDlg',
+        component: markRaw(MlExportPdfDlg),
+        props: {}
+      })
     }
     registerDialog({
       name: 'DrawingUnitsDlg',
@@ -270,11 +283,12 @@ export interface RegisterLazyPluginsOptions {
 /**
  * Registers lazy plugins that load on first use of their trigger commands.
  *
- * Currently registers the PDF plugin (`cpdf`, `ipdf`), the HTML export
+ * Currently registers the PDF plugin (`-cpdf`, `ipdf`), the HTML export
  * plugin (`-chtml`), the SVG export plugin (`csvg`), and optionally the CAD
  * Agent plugin (`agent`) when `@mlightcad/cad-agent-plugin` is installed.
  * When {@link AcApDocManager.disableExport} is true, HTML/SVG export plugins
- * are skipped and the PDF plugin only exposes `ipdf`.
+ * are skipped and the PDF plugin only exposes `ipdf`. Host UI commands
+ * `chtml` / `cpdf` open export dialogs and load the plugins on confirm.
  * Safe to call multiple times; registration runs once per application lifetime.
  *
  * @param options - Optional HTML plugin settings such as `viewerRuntimeUrl`

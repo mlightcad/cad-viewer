@@ -1261,5 +1261,31 @@ export default {
         global: 'Measure'
       }
     }
+  },
+  cpdf: {
+    modelSpaceFit: '模型空间范围 [范围(E)/显示(D)]',
+    exportLayouts: '是否导出布局',
+    keywords: {
+      extents: {
+        display: '范围(E)',
+        local: '范围',
+        global: 'Extents'
+      },
+      display: {
+        display: '显示(D)',
+        local: '显示',
+        global: 'Display'
+      },
+      yes: {
+        display: '是(Y)',
+        local: '是',
+        global: 'Yes'
+      },
+      no: {
+        display: '否(N)',
+        local: '否',
+        global: 'No'
+      }
+    }
   }
 }
