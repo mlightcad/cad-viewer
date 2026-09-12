@@ -8,7 +8,8 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import {
   type AcPdfExportOptions,
-  exportDatabaseToPdf} from '@mlightcad/pdf-renderer'
+  exportDatabaseToPdf
+} from '@mlightcad/pdf-renderer'
 
 import {
   type AcApPdfExportOptions,

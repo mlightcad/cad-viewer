@@ -44,8 +44,10 @@ export function createViewerPdfGlyphProvider(): AcPdfGlyphProvider {
       try {
         const renderer = AcTrMTextRenderer.getInstance()
         const object = (await renderer.asyncRenderMText(
-          data,
-          style
+          // AcGi and mtext-renderer attachment enums are structurally compatible
+          // at runtime but diverge in the TypeScript type graph.
+          data as never,
+          style as never
         )) as SceneNode
         const contents =
           (data as { contents?: string }).contents ??
@@ -60,8 +62,8 @@ export function createViewerPdfGlyphProvider(): AcPdfGlyphProvider {
       try {
         const renderer = AcTrMTextRenderer.getInstance()
         const object = (await renderer.asyncRenderShape(
-          shape,
-          style ?? {}
+          shape as never,
+          (style ?? {}) as never
         )) as SceneNode
         return extractGlyphResult(object) as AcPdfShapeGlyphResult
       } catch {

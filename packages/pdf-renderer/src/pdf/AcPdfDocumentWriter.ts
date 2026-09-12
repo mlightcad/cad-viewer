@@ -7,7 +7,8 @@ import { AcPdfOcgManager } from './AcPdfOcgManager'
 import {
   type AcPdfPageLayoutInput,
   computePageLayout,
-  PDF_MIN_STROKE_PT} from './AcPdfPageLayout'
+  PDF_MIN_STROKE_PT
+} from './AcPdfPageLayout'
 
 export interface AcPdfWriteOptions extends AcPdfPageLayoutInput {
   background: 'none' | number
