@@ -78,6 +78,12 @@ export default {
         'تصدير الرسم الحالي إلى PDF'
     },
 
+    '-cpdf': {
+      ...enCommand.ACAD['-cpdf'],
+      description:
+        'تصدير الرسم الحالي إلى PDF باستخدام خيارات سطر الأوامر'
+    },
+
     cecolor: {
       ...enCommand.ACAD.cecolor,
       description:

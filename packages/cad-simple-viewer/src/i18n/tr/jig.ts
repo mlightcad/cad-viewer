@@ -1273,5 +1273,31 @@ export default {
         global: 'Measure'
       }
     }
+  },
+  cpdf: {
+    modelSpaceFit: 'Model alanı çerçevesi [Kapsam(K)/Görüntü(G)]',
+    exportLayouts: 'Yerleşimleri dışa aktar',
+    keywords: {
+      extents: {
+        display: 'Kapsam(K)',
+        local: 'Kapsam',
+        global: 'Extents'
+      },
+      display: {
+        display: 'Görüntü(G)',
+        local: 'Görüntü',
+        global: 'Display'
+      },
+      yes: {
+        display: 'Evet(E)',
+        local: 'Evet',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Hayır(H)',
+        local: 'Hayır',
+        global: 'No'
+      }
+    }
   }
 }

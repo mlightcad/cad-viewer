@@ -1273,5 +1273,31 @@ export default {
         global: 'Measure'
       }
     }
+  },
+  cpdf: {
+    modelSpaceFit: 'Model space frame [Extents(E)/Display(D)]',
+    exportLayouts: 'Export layouts',
+    keywords: {
+      extents: {
+        display: 'Extents(E)',
+        local: 'Extents',
+        global: 'Extents'
+      },
+      display: {
+        display: 'Display(D)',
+        local: 'Display',
+        global: 'Display'
+      },
+      yes: {
+        display: 'Yes(Y)',
+        local: 'Yes',
+        global: 'Yes'
+      },
+      no: {
+        display: 'No(N)',
+        local: 'No',
+        global: 'No'
+      }
+    }
   }
 }

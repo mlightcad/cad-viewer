@@ -160,6 +160,21 @@ export default {
     copyPasswordFailed: 'تعذر نسخ كلمة المرور إلى الحافظة.'
   },
 
+  exportPdfDlg: {
+    ...enDialog.exportPdfDlg,
+    title: 'تصدير إلى PDF',
+    modelSpaceSection: 'مساحة النموذج',
+    modelSpaceDisplay: 'العرض',
+    modelSpaceDisplayHint: 'تصدير المحتوى المعروض حاليًا في نافذة العرض',
+    modelSpaceExtents: 'الامتدادات',
+    modelSpaceExtentsHint: 'تصدير امتدادات جميع الكائنات في المساحة الحالية',
+    paperSpaceSection: 'مساحة الورق',
+    exportLayouts: 'تصدير المخططات',
+    exportLayoutsHint: 'تضمين مخططات مساحة الورق كصفحات PDF إضافية',
+    yes: 'نعم',
+    no: 'لا'
+  },
+
   quickSelectDlg: {
     ...enDialog.quickSelectDlg,
 

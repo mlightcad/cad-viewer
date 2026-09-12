@@ -39,6 +39,10 @@ export default {
     cpdf: {
       description: 'Geçerli çizimi PDF olarak dışa aktarır'
     },
+    '-cpdf': {
+      description:
+        'Geçerli çizimi komut satırı seçenekleriyle PDF olarak dışa aktarır'
+    },
     cecolor: {
       description:
         'Yeni oluşturulan nesneler için geçerli varsayılan rengi ayarlar'

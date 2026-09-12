@@ -2055,5 +2055,35 @@ export default {
         global: 'Measure'
       },
     },
+  },
+
+  cpdf: {
+    ...enJig.cpdf,
+    modelSpaceFit:
+      'إطار مساحة النموذج [الامتدادات(E)/العرض(D)]',
+    exportLayouts: 'تصدير المخططات',
+    keywords: {
+      ...enJig.cpdf.keywords,
+      extents: {
+        display: 'الامتدادات(E)',
+        local: 'الامتدادات',
+        global: 'Extents'
+      },
+      display: {
+        display: 'العرض(D)',
+        local: 'العرض',
+        global: 'Display'
+      },
+      yes: {
+        display: 'نعم(Y)',
+        local: 'نعم',
+        global: 'Yes'
+      },
+      no: {
+        display: 'لا(N)',
+        local: 'لا',
+        global: 'No'
+      }
+    }
   }
 }

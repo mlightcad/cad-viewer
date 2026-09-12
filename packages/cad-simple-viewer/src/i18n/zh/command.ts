@@ -36,6 +36,9 @@ export default {
     cpdf: {
       description: '导出当前图纸为PDF格式'
     },
+    '-cpdf': {
+      description: '使用命令行选项将当前图纸导出为PDF'
+    },
     cecolor: {
       description: '设置新创建对象的当前默认颜色'
     },

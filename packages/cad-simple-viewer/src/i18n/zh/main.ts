@@ -35,6 +35,7 @@ export default {
   message: {
     fetchingDrawingFile: '正在加载图纸文件...',
     exportingDxf: '正在导出 DXF ...',
+    exportingPdf: '正在导出 PDF ...',
     exportingEntityPreview: '正在导出图片 ...',
     collectingMemoryProfile: '正在分析内存 ...',
     fontCached: '字体已成功缓存',

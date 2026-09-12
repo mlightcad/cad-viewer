@@ -18,8 +18,9 @@ export interface AcApPdfPluginOptions {
 /**
  * PDF export/import plugin for cad-simple-viewer.
  *
- * Registers `cpdf` and `ipdf` commands when loaded. Register this plugin
- * lazily via {@link registerLazyPdfPlugin} so PDF libraries are fetched on demand.
+ * Registers `-cpdf` and `ipdf` when loaded. Also registers `cpdf` when no UI
+ * dialog command is already present. Register this plugin lazily via
+ * {@link registerLazyPdfPlugin} so the PDF renderer is fetched on demand.
  */
 export class AcApPdfPlugin implements AcApPlugin {
   /** @inheritdoc */
@@ -27,7 +28,7 @@ export class AcApPdfPlugin implements AcApPlugin {
   /** @inheritdoc */
   version = packageJson.version
   /** @inheritdoc */
-  description = 'PDF export (cpdf) and import (ipdf) commands'
+  description = 'PDF export (-cpdf / cpdf) and import (ipdf) commands'
 
   private readonly _disableExport: boolean
 
@@ -39,7 +40,8 @@ export class AcApPdfPlugin implements AcApPlugin {
   }
 
   /**
-   * Registers `cpdf` (when export is enabled) and `ipdf` system commands.
+   * Registers `-cpdf` (when export is enabled) and `ipdf` system commands.
+   * Registers `cpdf` only when a host UI has not already claimed that name.
    *
    * @param _context - Application context (unused)
    * @param commandManager - Command stack used to register PDF commands
@@ -47,8 +49,13 @@ export class AcApPdfPlugin implements AcApPlugin {
   onLoad(_context: AcApContext, commandManager: AcEdCommandStack): void {
     const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
     if (!this._disableExport) {
-      commandManager.addCommand(group, 'cpdf', 'cpdf', new AcApConvertToPdfCmd())
-      this.registeredCommands.push({ group, name: 'cpdf' })
+      const exportCmd = new AcApConvertToPdfCmd()
+      commandManager.addCommand(group, '-cpdf', '-cpdf', exportCmd)
+      this.registeredCommands.push({ group, name: '-cpdf' })
+      if (!commandManager.lookupGlobalCmd('cpdf')) {
+        commandManager.addCommand(group, 'cpdf', 'cpdf', exportCmd)
+        this.registeredCommands.push({ group, name: 'cpdf' })
+      }
     }
     commandManager.addCommand(group, 'ipdf', 'ipdf', new AcApImportPdfCmd())
     this.registeredCommands.push({ group, name: 'ipdf' })

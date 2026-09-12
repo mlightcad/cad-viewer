@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url'
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
-import { exampleRollupOutput } from '../vite-config/pluginRollupOutput'
+import { examplePeerPackageAliases, exampleRollupOutput } from '../vite-config/pluginRollupOutput'
 import {
   LIBREDWG_CONVERTER_PACKAGE,
   LIBREDWG_PARSER_WASM_FILE,
@@ -39,6 +39,9 @@ export default defineConfig(() => {
 
   return {
     base: './',
+    resolve: {
+      alias: examplePeerPackageAliases(__dirname)
+    },
     server: {
       // Local pnpm overrides point at sibling realdwg-web packages.
       fs: {

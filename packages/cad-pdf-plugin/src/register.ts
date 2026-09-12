@@ -6,10 +6,12 @@ export const PDF_PLUGIN_NAME = 'PdfPlugin'
 /**
  * Trigger commands handled by {@link PDF_PLUGIN_NAME}.
  *
- * - `cpdf` — export drawing to PDF
+ * - `-cpdf` — export drawing to PDF via command-line prompts
+ * - `cpdf` — same as `-cpdf` when no UI dialog is registered; in cad-viewer,
+ *   `cpdf` opens the export dialog and loads this plugin on confirm via `-cpdf`
  * - `ipdf` — import vector geometry from PDF
  */
-export const PDF_PLUGIN_TRIGGERS = ['cpdf', 'ipdf'] as const
+export const PDF_PLUGIN_TRIGGERS = ['-cpdf', 'cpdf', 'ipdf'] as const
 
 /**
  * Registers the PDF plugin for lazy loading.
