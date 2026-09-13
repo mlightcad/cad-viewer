@@ -631,9 +631,9 @@ export class AcUiMobileSessionPanel {
     const rowWidth = this.accessoryEl.clientWidth
     const rowStyle = getComputedStyle(this.accessoryEl)
     const gap = parseFloat(rowStyle.columnGap || rowStyle.gap || '0') || 0
-    const siblings = (
-      [...this.accessoryEl.children] as HTMLElement[]
-    ).filter(el => el !== this.promptEl && !el.hidden)
+    const siblings = Array.from(this.accessoryEl.children).filter(
+      (el): el is HTMLElement => el !== this.promptEl && !(el as HTMLElement).hidden
+    )
     let used = 0
     for (const el of siblings) {
       used += el.getBoundingClientRect().width
