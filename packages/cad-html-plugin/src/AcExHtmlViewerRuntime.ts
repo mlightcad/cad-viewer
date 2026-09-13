@@ -16,10 +16,6 @@ import {
 } from './AcExCssRect'
 import { acexSetDocsBaseUrl } from './AcExDocsUrl'
 import {
-  acedClearDomSelection,
-  acedGuardCanvasTouchCallout
-} from './AcExHtmlSimpleViewerUi'
-import {
   decryptAcExHtmlSnapshotPayload,
   isAcExHtmlAccessExpired,
   parseAcExHtmlAccessManifest
@@ -53,6 +49,10 @@ import { promptAcExHtmlPackageSource } from './AcExHtmlPackageSourceGate'
 import { setupAcExHtmlReviewPanel } from './AcExHtmlReviewPanel'
 import { acexSyncHtmlShortCutSelection } from './AcExHtmlShortCutSelection'
 import { setupAcExHtmlShortCutToolbar } from './AcExHtmlShortCutToolbar'
+import {
+  acedClearDomSelection,
+  acedGuardCanvasTouchCallout
+} from './AcExHtmlSimpleViewerUi'
 import {
   type AcExIdlePointerHost,
   acexIdlePointerStrategy
