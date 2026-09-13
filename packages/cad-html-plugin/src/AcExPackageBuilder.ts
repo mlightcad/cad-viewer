@@ -4,14 +4,8 @@ import {
   estimateLineBatchBytes,
   estimateMeshBatchBytes
 } from './AcExBatchBinaryCodec'
-import {
-  type AcExGeometryChunk,
-  encodeChunkGzip
-} from './AcExChunkBinaryCodec'
-import {
-  splitLineBatch,
-  splitMeshBatch
-} from './AcExGeometryBatchSplit'
+import { type AcExGeometryChunk, encodeChunkGzip } from './AcExChunkBinaryCodec'
+import { splitLineBatch, splitMeshBatch } from './AcExGeometryBatchSplit'
 import { ACEX_DEFAULT_MANIFEST_FILE } from './AcExHtmlPackageBootstrap'
 import { packHtmlPackage } from './AcExHtmlPackager'
 import {
@@ -152,14 +146,19 @@ export function splitLayoutIntoSlices(
   return slices
 }
 
+export type AcExBuildPackageDataOptions = Omit<
+  AcExBuildPackageOptions,
+  'viewerRuntime' | 'manifestUrl'
+>
+
 /**
- * Builds a multi-file ACEX package from an in-memory {@link AcExSnapshot}.
- * Active layout chunks are listed first so hosts can prioritize first paint.
+ * Builds package manifest + chunk files (no HTML shell).
+ * Used by multi-file zip export and self-contained embedded progressive HTML.
  */
-export function buildAcExPackage(
+export function buildAcExPackageData(
   snapshot: AcExSnapshot,
-  options: AcExBuildPackageOptions
-): AcExPackageFiles {
+  options: AcExBuildPackageDataOptions = {}
+): Omit<AcExPackageFiles, 'html'> {
   if (snapshot.version !== ACEX_SNAPSHOT_VERSION) {
     throw new Error(`Unsupported snapshot version: ${snapshot.version}`)
   }
@@ -168,10 +167,7 @@ export function buildAcExPackage(
   const maxBatchBytes = options.maxBatchBytes ?? ACEX_MAX_GEOMETRY_BATCH_BYTES
   const maxOsnapChunkBytes =
     options.maxOsnapChunkBytes ?? ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES
-  // Generic viewer.html always looks for this sibling name; keep zip contents
-  // aligned so hosting is drop-in (`viewer.html` + `drawing.acex.json`).
   const manifestFileName = ACEX_DEFAULT_MANIFEST_FILE
-  const manifestUrl = options.manifestUrl
 
   const orderedLayouts = orderLayoutsForExport(
     snapshot.layouts,
@@ -297,21 +293,32 @@ export function buildAcExPackage(
     bytes: strToU8(manifestJson)
   })
 
-  const html = packHtmlPackage(snapshot, {
-    title: snapshot.meta.title,
-    viewerRuntime: options.viewerRuntime,
-    ...(manifestUrl ? { manifestUrl } : {})
-  })
-  files.unshift({
-    path: 'viewer.html',
-    bytes: strToU8(html)
-  })
-
   return {
-    html,
     manifest,
     manifestFileName,
     files
+  }
+}
+
+/**
+ * Builds a multi-file ACEX package from an in-memory {@link AcExSnapshot}.
+ * Active layout chunks are listed first so hosts can prioritize first paint.
+ */
+export function buildAcExPackage(
+  snapshot: AcExSnapshot,
+  options: AcExBuildPackageOptions
+): AcExPackageFiles {
+  const data = buildAcExPackageData(snapshot, options)
+  const html = packHtmlPackage(snapshot, {
+    title: snapshot.meta.title,
+    viewerRuntime: options.viewerRuntime,
+    ...(options.manifestUrl ? { manifestUrl: options.manifestUrl } : {})
+  })
+  return {
+    html,
+    manifest: data.manifest,
+    manifestFileName: data.manifestFileName,
+    files: [{ path: 'viewer.html', bytes: strToU8(html) }, ...data.files]
   }
 }
 

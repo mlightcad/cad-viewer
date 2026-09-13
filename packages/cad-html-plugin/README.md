@@ -202,6 +202,7 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 | `AcApExportHtmlCmd`, `AcApHtmlConvertor` | `-chtml` command and full export workflow |
 | `AcApHtmlSnapshotBuilder` | Live Three.js scene → `AcExSnapshotV1` |
 | `packHtml`, `AcExPackHtmlOptions` | Assemble self-contained HTML from snapshot + runtime |
+| `packHtmlEmbeddedPackage`, `shouldEmbedAcExChunks` | Progressive self-contained HTML (large drawings) |
 | `packHtmlPackage`, `buildAcExPackage`, `zipAcExPackageFiles` | Multi-file package shell, builder, and export zip |
 | `ACEX_DEFAULT_MANIFEST_FILE`, `ACEX_DEFAULT_MANIFEST_HREF`, package bootstrap helpers | Canonical `drawing.acex.json` name and generic viewer resolve / probe / directory-fetch helpers |
 | `HTML_VIEWER_RUNTIME_FILE` | Default runtime filename (`viewer-runtime.iife.js`) |
@@ -227,6 +228,7 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 | `src/AcExSnapshotCodec.ts` | Encode/decode embedded snapshot script tag |
 | `src/AcExSceneBatchCollector.ts` | THREE.js traversal → export batches |
 | `src/AcExHtmlPackager.ts` | `packHtml` / `packHtmlPackage` — shell + snapshot or package marker + runtime |
+| `src/AcExHtmlEmbeddedPackage.ts` | Auto progressive embed for large self-contained HTML (+ per-chunk AES) |
 | `src/AcExPackageBuilder.ts` | Multi-file package builder (`viewer.html` + `drawing.acex.json` + chunks) |
 | `src/AcExHtmlPackageBootstrap.ts` | Generic package resolve (query / sibling / probe / local directory fetch) |
 | `src/AcExHtmlPackageSourceGate.ts` | Folder / URL picker when sibling `drawing.acex.json` is missing |

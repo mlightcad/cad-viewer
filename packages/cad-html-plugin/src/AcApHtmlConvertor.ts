@@ -21,6 +21,10 @@ import {
   protectAcExHtmlEncodedSnapshot,
   resolveAcApHtmlExpiresAt
 } from './AcExHtmlAccess'
+import {
+  packHtmlEmbeddedPackage,
+  shouldEmbedAcExChunks
+} from './AcExHtmlEmbeddedPackage'
 import { packHtml } from './AcExHtmlPackager'
 import { buildAcExPackage } from './AcExPackageBuilder'
 import { zipAcExPackageFiles } from './AcExPackageZip'
@@ -35,6 +39,8 @@ import type { AcExSnapshot } from './AcExSnapshotTypes'
  * 1. Build a display-only {@link AcExSnapshot} from the current scene and database.
  * 2. Fetch the IIFE viewer runtime (inlined into the HTML).
  * 3. Package as self-contained HTML (`single`) or zip of package files (`multi`).
+ *    For `single`, large drawings automatically embed progressive ACEC chunks;
+ *    small drawings keep a monolithic ACEX payload.
  *
  * A busy indicator is shown for the duration of the operation. The UI thread
  * is yielded between heavy steps so the browser can repaint.
@@ -158,19 +164,9 @@ export class AcApHtmlConvertor {
         Date.now(),
         resolved.expiresAt
       )
-      const protectedSnapshot = await protectAcExHtmlEncodedSnapshot(
-        encodeSnapshot(snapshot),
-        {
-          expiresAt,
-          password: resolved.password || undefined
-        }
-      )
-
-      const html = packHtml(snapshot, {
-        title: snapshot.meta.title,
-        viewerRuntime,
-        encoded: protectedSnapshot.encoded,
-        accessManifest: protectedSnapshot.manifest
+      const html = await this.packSelfContainedHtml(snapshot, viewerRuntime, {
+        expiresAt,
+        password: resolved.password || undefined
       })
 
       await accmYieldForPaint()
@@ -197,18 +193,44 @@ export class AcApHtmlConvertor {
       await accmYieldForPaint()
       const viewerRuntime = await this.loadViewerRuntime()
       await accmYieldForPaint()
-      const protectedSnapshot = await protectAcExHtmlEncodedSnapshot(
-        encodeSnapshot(snapshot),
-        { expiresAt: null }
-      )
-      const html = packHtml(snapshot, {
-        title: snapshot.meta.title,
-        viewerRuntime,
-        encoded: protectedSnapshot.encoded,
-        accessManifest: protectedSnapshot.manifest
+      const html = await this.packSelfContainedHtml(snapshot, viewerRuntime, {
+        expiresAt: null
       })
       await accmYieldForPaint()
       this.downloadHtml(html, downloadName)
+    })
+  }
+
+  /**
+   * Packages a snapshot as self-contained HTML.
+   * Large drawings embed progressive ACEC chunks; small ones keep a monolithic ACEX.
+   */
+  private async packSelfContainedHtml(
+    snapshot: AcExSnapshot,
+    viewerRuntime: string,
+    options: { expiresAt: number | null; password?: string }
+  ): Promise<string> {
+    if (shouldEmbedAcExChunks(snapshot)) {
+      return packHtmlEmbeddedPackage(snapshot, {
+        title: snapshot.meta.title,
+        viewerRuntime,
+        expiresAt: options.expiresAt,
+        password: options.password
+      })
+    }
+
+    const protectedSnapshot = await protectAcExHtmlEncodedSnapshot(
+      encodeSnapshot(snapshot),
+      {
+        expiresAt: options.expiresAt,
+        password: options.password
+      }
+    )
+    return packHtml(snapshot, {
+      title: snapshot.meta.title,
+      viewerRuntime,
+      encoded: protectedSnapshot.encoded,
+      accessManifest: protectedSnapshot.manifest
     })
   }
 

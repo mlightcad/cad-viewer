@@ -12,6 +12,14 @@ paint, repeat).
 > For nginx/CDN setup, caching, and `.gz` Content-Encoding pitfalls, see
 > [acex-web-hosting-guide.md](./acex-web-hosting-guide.md).
 
+> **Self-contained HTML (large drawings)**  
+> When estimated geometry exceeds ~8 MiB, `single` HTML export embeds the same
+> ACEC/ACEO chunks inline (`#mlcad-package` with `mode: "embedded"`) and paints
+> progressively after each inflate. Chunk size defaults to ~12 MiB (larger than
+> the hosted-package 2 MiB default). Password protection encrypts the manifest
+> and **each chunk** independently (shared PBKDF2 salt). Smaller drawings still
+> use a monolithic `#mlcad-snapshot` ACEX payload.
+
 ## Directory layout
 
 ```text
