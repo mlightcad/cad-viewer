@@ -68,6 +68,8 @@ export const ACEX_HTML_SHELL_CSS = `
     inset: 0;
     min-width: 0;
     min-height: 0;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
   }
   #mlcad-canvas-host canvas,
   #mlcad-root > canvas {
@@ -75,6 +77,10 @@ export const ACEX_HTML_SHELL_CSS = `
     width: 100%;
     height: 100%;
     touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .mlcad-snap-loupe {

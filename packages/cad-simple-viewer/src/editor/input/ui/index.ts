@@ -1,3 +1,4 @@
+export * from './AcEdCanvasTouchCalloutGuard'
 export * from './AcEdCommandLine'
 export * from './AcEdDesktopSessionAccessoryChrome'
 export * from './AcEdEntityPickCancelChrome'
