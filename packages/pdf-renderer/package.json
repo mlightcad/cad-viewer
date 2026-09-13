@@ -43,9 +43,9 @@
     "pdf-lib": "^1.17.1"
   },
   "devDependencies": {
-    "@mlightcad/data-model": "^1.14.5"
+    "@mlightcad/data-model": "^1.14.6"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "^1.14.5"
+    "@mlightcad/data-model": "^1.14.6"
   }
 }

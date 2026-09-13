@@ -83,11 +83,12 @@ export class AcTrMText extends AcTrGlyphEntity {
    * @inheritdoc
    */
   protected override async renderAsync(renderer: AcTrMTextRenderer) {
-    return renderer.asyncRenderMText(
+    const rendered = await renderer.asyncRenderMText(
       this.toPlanViewMTextData(),
       this._style,
       this._colorSettings
     )
+    return rendered
   }
 
   /**
