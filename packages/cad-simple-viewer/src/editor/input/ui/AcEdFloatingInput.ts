@@ -130,6 +130,8 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   private mouseClickArmed = false
   /** Whether to suppress UI display while keeping input active */
   private suppressDisplay: boolean = false
+  /** When false, click / touch pick must not commit (string prompts). */
+  private allowPickCommit = true
   /** Cached sysvar handler */
   private boundOnInputSysVarChanged: (args: {
     name: string
@@ -153,6 +155,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     super(view, options)
 
     this.allowPrompt = options.allowPrompt !== false
+    this.allowPickCommit = options.allowPickCommit !== false
     this.suppressDisplay = !this.isDynamicInputEnabled()
     this.orthoReferencePoint =
       options.orthoReferencePoint ?? options.basePoint ?? undefined
@@ -391,6 +394,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
 
   private handleClick(e: MouseEvent) {
     if (!this.visible) return
+    if (!this.allowPickCommit) return
     // Mouse/pen: commit only after this prompt saw a canvas pointerdown.
     // Touch commits on pointerup. Compatibility mouse events after a long-press
     // (including while the finger is still moving the loupe) must not commit
@@ -422,6 +426,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
    */
   private handlePointerDown(e: PointerEvent) {
     if (!this.visible || e.button !== 0) return
+    if (!this.allowPickCommit) return
     if (e.pointerType !== 'touch') {
       // Long-press (and finger move while the loupe is open) must not arm a
       // mouse click. Compatibility `pointerdown` after touch `pointerup` also

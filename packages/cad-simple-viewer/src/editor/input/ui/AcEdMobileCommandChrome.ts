@@ -31,11 +31,15 @@ export type AcEdMobileMetricTexts = AcUiMobileSessionMetricTexts
 /**
  * Callbacks for the mobile command chrome.
  *
- * `onConfirm` is empty-Enter / `allowNone` (panel ✓). Typed coordinate commit
- * is a separate future path (numeric keypad) and must not use `onConfirm`.
+ * For point / actions sessions, `onConfirm` is empty-Enter / `allowNone`
+ * (panel ✓). Typed coordinate commit is a separate future path (numeric
+ * keypad) and must not use `onConfirm`.
+ *
+ * For string sessions (`showStringInput`), `onConfirm` commits the typed
+ * value from {@link AcEdMobileCommandChrome.getStringValue}.
  */
 export interface AcEdMobileCommandChromeCallbacks {
-  /** Panel ✓ — empty Enter / None. */
+  /** Panel ✓ — empty Enter / None, or commit string input. */
   onConfirm: () => void
   /** Panel × — Escape. */
   onCancel: () => void
@@ -49,10 +53,16 @@ export interface AcEdMobileCommandChromeState {
   prompt: string
   /** Visible keyword chips. */
   keywords: AcEdMobileKeywordChip[]
-  /** Enables the ✓ button (maps to empty Enter). */
+  /** Enables the ✓ button (maps to empty Enter). Ignored when string input is shown. */
   allowNone: boolean
   /** When false, the metric row is hidden (typed-only numeric prompts). */
   showMetrics: boolean
+  /** Replace the metric row with a text field for {@link AcEdInputManager.getString}. */
+  showStringInput?: boolean
+  /** Initial value for the string field. */
+  stringValue?: string
+  /** Placeholder for the string field. */
+  stringPlaceholder?: string
 }
 
 /**
@@ -108,6 +118,9 @@ export class AcEdMobileCommandChrome {
         prompt: state.prompt,
         allowNone: state.allowNone,
         showMetrics: state.showMetrics,
+        showStringInput: state.showStringInput,
+        stringValue: state.stringValue,
+        stringPlaceholder: state.stringPlaceholder,
         keywords: state.keywords.map(kw => ({
           displayName: kw.displayName,
           id: kw.globalName,
@@ -132,6 +145,9 @@ export class AcEdMobileCommandChrome {
       prompt: partial.prompt,
       allowNone: partial.allowNone,
       showMetrics: partial.showMetrics,
+      showStringInput: partial.showStringInput,
+      stringValue: partial.stringValue,
+      stringPlaceholder: partial.stringPlaceholder,
       keywords: partial.keywords?.map(kw => ({
         displayName: kw.displayName,
         id: kw.globalName,
@@ -149,6 +165,16 @@ export class AcEdMobileCommandChrome {
    */
   setMetrics(metrics: AcEdMobileSessionMetrics, texts: AcEdMobileMetricTexts) {
     this.panel.setMetrics(metrics.hasBasePoint, texts)
+  }
+
+  /** Current session string field value. */
+  getStringValue(): string {
+    return this.panel.getStringValue()
+  }
+
+  /** Focuses the session string field when string input mode is active. */
+  focusStringInput(): void {
+    this.panel.focusStringInput()
   }
 
   /** Hides the chrome and clears session callbacks. */

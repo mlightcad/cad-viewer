@@ -1288,6 +1288,7 @@ async function startViewer(): Promise<void> {
   }
   sessionPanel?.setHandlers({
     onConfirm: () => {
+      if (markup?.confirmSession(sessionPanel.getStringValue())) return
       measure?.confirmSession()
     },
     onCancel: () => {

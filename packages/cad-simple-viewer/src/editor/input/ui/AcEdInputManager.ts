@@ -363,6 +363,9 @@ export class AcEdInputManager {
     keywords?: AcEdMobileKeywordChip[]
     allowNone: boolean
     showMetrics: boolean
+    showStringInput?: boolean
+    stringValue?: string
+    stringPlaceholder?: string
     touchPointTutorial?: boolean
     onConfirm: () => void
     onCancel: () => void
@@ -375,7 +378,10 @@ export class AcEdInputManager {
         prompt: args.prompt,
         keywords: args.keywords ?? [],
         allowNone: args.allowNone,
-        showMetrics: args.showMetrics
+        showMetrics: args.showMetrics,
+        showStringInput: args.showStringInput,
+        stringValue: args.stringValue,
+        stringPlaceholder: args.stringPlaceholder
       },
       {
         onConfirm: args.onConfirm,
@@ -1294,7 +1300,11 @@ export class AcEdInputManager {
           inputCount: 1,
           promptOptions: options,
           handler,
-          getDynamicValue
+          getDynamicValue,
+          showMetrics: false,
+          showStringInput: true,
+          // String value comes from the session panel / typed boxes, not picks.
+          allowPickCommit: false
         })
       },
       value => new AcEdPromptResult(AcEdPromptStatus.OK, value),
@@ -2635,6 +2645,10 @@ export class AcEdInputManager {
     onCommit?: AcEdFloatingInputCommitCallback<T>
     onFloatingInputCreated?: (input: AcEdFloatingInput<T>) => void
     showMetrics?: boolean
+    /** Session-panel text field instead of X/Y metrics (mobile string prompts). */
+    showStringInput?: boolean
+    /** When false, canvas pick does not commit (string prompts). */
+    allowPickCommit?: boolean
   }): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       this.active = true
@@ -2672,11 +2686,22 @@ export class AcEdInputManager {
       const defaultBehavior = this.resolvePromptDefaultValue(
         options.promptOptions
       )
-      const showMetrics =
-        options.showMetrics ?? (options.inputCount === 2 || basePoint != null)
+      const showStringInput =
+        options.showStringInput === true &&
+        acedInteractionStrategy().point.usesSessionChrome
+      const showMetrics = showStringInput
+        ? false
+        : (options.showMetrics ??
+          (options.inputCount === 2 || basePoint != null))
+      const allowPickCommit = options.allowPickCommit !== false
 
       const getDynamicValue: AcEdFloatingInputDynamicValueCallback<T> = pos => {
-        this.pushMobileMetrics(pos, basePoint ?? floatingInput.sessionBasePoint)
+        if (!showStringInput) {
+          this.pushMobileMetrics(
+            pos,
+            basePoint ?? floatingInput.sessionBasePoint
+          )
+        }
         return options.getDynamicValue(pos)
       }
 
@@ -2693,6 +2718,7 @@ export class AcEdInputManager {
         allowNone,
         useDefaultValue: defaultBehavior.useDefaultValue,
         defaultValue: defaultBehavior.defaultValue,
+        allowPickCommit,
         validate: validate,
         getDynamicValue,
         drawPreview: (pos: AcGePoint2dLike) => {
@@ -2761,6 +2787,21 @@ export class AcEdInputManager {
         rejector(new AcEdKeywordInputError(keyword))
       }
 
+      const commitMobileString = () => {
+        const raw = this._mobileChrome.getStringValue()
+        if (!raw.trim() && defaultBehavior.useDefaultValue) {
+          resolver(defaultBehavior.defaultValue as T)
+          return
+        }
+        const parsed = options.handler.parse(raw)
+        if (parsed != null) {
+          resolver(parsed)
+          return
+        }
+        // Invalid: keep the session open and refocus the field.
+        this._mobileChrome.focusStringInput()
+      }
+
       this.beginMobilePrompt({
         prompt: options.promptOptions.getDisplayMessage(),
         keywords: this.mobileKeywordChips(
@@ -2768,8 +2809,19 @@ export class AcEdInputManager {
         ),
         allowNone,
         showMetrics,
-        touchPointTutorial: true,
-        onConfirm: () => noneRejector(),
+        showStringInput,
+        stringValue:
+          showStringInput && defaultBehavior.useDefaultValue
+            ? String(defaultBehavior.defaultValue ?? '')
+            : undefined,
+        touchPointTutorial: !showStringInput,
+        onConfirm: () => {
+          if (showStringInput) {
+            commitMobileString()
+          } else {
+            noneRejector()
+          }
+        },
         onCancel: () => rejector(),
         onKeyword: keywordRejector
       })

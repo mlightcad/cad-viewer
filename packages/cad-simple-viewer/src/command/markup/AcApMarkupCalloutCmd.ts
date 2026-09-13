@@ -12,6 +12,7 @@ import {
   AcEdPromptPointOptions,
   AcEdPromptStatus
 } from '../../editor'
+import { acedIsMobileOrPadUi } from '../../editor/global/AcEdUiLayout'
 import { AcApI18n } from '../../i18n'
 import { type AcTrView2d, pickAttachableShapeMarkupAt } from '../../view'
 import {
@@ -53,6 +54,9 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private readonly _bubbleId: string
   private _color: AcCmColor
   private _anchor: AcGePoint3dLike
+  private _capsuleRevealed = false
+  /** Desktop: wait for a real pointer move before showing the capsule preview. */
+  private _desktopMoveArm?: (e: PointerEvent) => void
   private _unsubDrawStyle?: () => void
 
   constructor(
@@ -92,6 +96,9 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
       layoutId
     })
     this._ht.add(this._bubble)
+    // `add()` applies layout visibility. Keep the empty capsule off until a
+    // live preview starts (desktop mouse move / mobile long-press capture).
+    this._bubble.object.visible = false
     acapSyncLiveOverlayTextHeight(this._view, [this._bubble], defaultMarkupStyle())
 
     this._preview = new AcApHtmlLivePreview(
@@ -103,6 +110,7 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._unsubDrawStyle = subscribeMarkupDrawStyle(() =>
       this.applyCurrentStyle()
     )
+    this.armDesktopCapsulePreview()
 
     this._view.isHtmlDirty = true
   }
@@ -116,6 +124,7 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._anchor = { x: anchor.x, y: anchor.y, z: anchor.z ?? 0 }
     this._color = defaultMarkupColor()
     this._bubble.setPosition(this._anchor)
+    this.syncCapsulePreviewVisibility()
     const style = defaultMarkupStyle()
     this._bubble.setFontSize(style.fontSize ?? getMarkupFontSize())
     acapSyncLiveOverlayTextHeight(this._view, [this._bubble], style)
@@ -128,6 +137,43 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     return this._bubble
   }
 
+  /** Show the capsule for text entry (or if the user confirmed without a drag). */
+  revealCapsule(): void {
+    this.disarmDesktopCapsulePreview()
+    this._capsuleRevealed = true
+    this._bubble.object.visible = true
+    this._view.isHtmlDirty = true
+  }
+
+  /**
+   * Desktop: show after the user moves the mouse (ignore leftover cursor from
+   * `showAt`). Mobile: show as soon as long-press capture starts jig updates.
+   */
+  private syncCapsulePreviewVisibility(): void {
+    if (!this._capsuleRevealed && acedIsMobileOrPadUi()) {
+      this._capsuleRevealed = true
+    }
+    this._bubble.object.visible = this._capsuleRevealed
+  }
+
+  private armDesktopCapsulePreview(): void {
+    if (acedIsMobileOrPadUi()) return
+    const canvas = this._view.canvas
+    this._desktopMoveArm = (e: PointerEvent) => {
+      if (e.pointerType === 'touch') return
+      // Only arm; `update()` applies visibility at the live cursor position.
+      this._capsuleRevealed = true
+      this.disarmDesktopCapsulePreview()
+    }
+    canvas.addEventListener('pointermove', this._desktopMoveArm)
+  }
+
+  private disarmDesktopCapsulePreview(): void {
+    if (!this._desktopMoveArm) return
+    this._view.canvas.removeEventListener('pointermove', this._desktopMoveArm)
+    this._desktopMoveArm = undefined
+  }
+
   /**
    * Called when point input ends. Keep leader + bubble visible while the user
    * types callout text; {@link disposePreview} cleans up afterwards.
@@ -138,6 +184,7 @@ class AcApMarkupCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   /** Remove frozen preview graphics after text entry (or cancel). */
   disposePreview() {
+    this.disarmDesktopCapsulePreview()
     this._unsubDrawStyle?.()
     this._unsubDrawStyle = undefined
     this._preview.acapDispose()
@@ -227,8 +274,12 @@ export class AcApMarkupCalloutCmd extends AcApMarkupDrawCmd {
         if (anchorResult.status !== AcEdPromptStatus.OK) return
         const anchor = anchorResult.value!
 
-        // 3. Type in the capsule (same as double-click edit)
-        const text = await promptMarkupCapsuleText(jig.capsule)
+        // 3. Type in the capsule (same as double-click edit); phone/pad uses
+        // the session-panel string field.
+        jig.revealCapsule()
+        const text = await promptMarkupCapsuleText(jig.capsule, {
+          messageKey: 'jig.markup.callout.content'
+        })
 
         const meta = createMarkupMeta(
           'callout',

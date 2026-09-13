@@ -37,6 +37,14 @@ export interface AcExCommandSessionUiState {
   confirmEnabled: boolean
   metrics: AcExCommandSessionMetrics | null
   chips: AcExCommandSessionChip[]
+  /**
+   * When set, the third row is a text field instead of X/Y metrics.
+   * Confirm commits {@link AcExCommandSessionPanel.getStringValue}.
+   */
+  stringInput?: {
+    value?: string
+    placeholder?: string
+  } | null
 }
 
 /** Click handlers for confirm / cancel / chips. */
@@ -70,7 +78,7 @@ export class AcExCommandSessionPanel {
   private accessory: AcExSessionAccessory | null = null
   private layoutMql: MediaQueryList | null = null
   private readonly onLayoutChange = () => {
-    if (this.lastState) this.applyState(this.lastState)
+    this.reapplyLastState()
   }
 
   /**
@@ -161,7 +169,7 @@ export class AcExCommandSessionPanel {
   /** Re-applies metric labels after a locale change. */
   refreshLabels(): void {
     this.panel.refreshLabels()
-    if (this.lastState) this.applyState(this.lastState)
+    this.reapplyLastState()
   }
 
   /** Removes listeners and DOM. */
@@ -171,15 +179,46 @@ export class AcExCommandSessionPanel {
     this.panel.dispose()
   }
 
+  /** Current session string field value. */
+  getStringValue(): string {
+    return this.panel.getStringValue()
+  }
+
+  /** Focuses the session string field when string input mode is active. */
+  focusStringInput(): void {
+    this.panel.focusStringInput()
+  }
+
+  /**
+   * Re-shows {@link lastState}, copying the live string field into state first
+   * so layout / locale remounts do not wipe typed text.
+   */
+  private reapplyLastState(): void {
+    if (!this.lastState) return
+    if (this.lastState.stringInput != null) {
+      this.lastState = {
+        ...this.lastState,
+        stringInput: {
+          ...this.lastState.stringInput,
+          value: this.panel.getStringValue()
+        }
+      }
+    }
+    this.applyState(this.lastState)
+  }
+
   private applyState(state: AcExCommandSessionUiState): void {
     this.syncCollapsedHeightVar()
     const handlers = this.handlers
+    const stringMode = state.stringInput != null
     this.panel.show(
       {
         prompt: state.prompt,
-        allowNone: state.confirmEnabled,
-        // Always show metric chrome; absolute X/Y when no base point yet.
-        showMetrics: true,
+        allowNone: stringMode ? true : state.confirmEnabled,
+        showMetrics: !stringMode,
+        showStringInput: stringMode,
+        stringValue: state.stringInput?.value,
+        stringPlaceholder: state.stringInput?.placeholder,
         keywords: state.chips.map(chip => ({
           displayName: chip.label,
           id: chip.id,
@@ -193,6 +232,8 @@ export class AcExCommandSessionPanel {
       }
     )
     this.panel.prepareAccessory()
+
+    if (stringMode) return
 
     if (state.metrics) {
       this.panel.setMetrics(state.metrics.hasBasePoint, {
