@@ -285,6 +285,8 @@ export class AcTrView2d extends AcEdBaseView {
   private _gripManager: AcEdGripManager
   /** Global keyboard shortcuts for the view (undo/redo, erase, etc.). */
   private _keyHandler: AcEdViewKeyHandler
+  /** Removes iOS canvas long-press callout listeners registered in the constructor. */
+  private _disposeCanvasTouchCallout: (() => void) | undefined
   /** Transient reading mode forces black linework on a white canvas. */
   private readonly _readingMode = new AcApReadingModeState({
     getCurrentBackgroundColor: () => this._renderer.currentBackgroundColor,
@@ -346,9 +348,13 @@ export class AcTrView2d extends AcEdBaseView {
     renderer.domElement.style.maxHeight = '100%'
     // Keep one-finger picks (measure snap loupe) from being stolen by the
     // browser scroll / long-press copy-selection callout (especially iOS).
-    acedGuardCanvasTouchCallout(renderer.domElement, container)
+    const disposeCanvasTouchCallout = acedGuardCanvasTouchCallout(
+      renderer.domElement,
+      container
+    )
 
     super(renderer.domElement, container)
+    this._disposeCanvasTouchCallout = disposeCanvasTouchCallout
     this._gripManager = new AcEdGripManager(this)
     this._keyHandler = new AcEdViewKeyHandler(this)
     if (options.calculateSizeCallback) {
@@ -2439,6 +2445,18 @@ export class AcTrView2d extends AcEdBaseView {
       cancelAnimationFrame(this._rafId)
       this._rafId = null
     }
+  }
+
+  /**
+   * Releases canvas DOM listeners and stops the animation loop.
+   *
+   * Call when this view will no longer be used (manager destroy / split
+   * view teardown). Safe to call more than once.
+   */
+  dispose() {
+    this._disposeCanvasTouchCallout?.()
+    this._disposeCanvasTouchCallout = undefined
+    this.stopAnimationLoop()
   }
 
   /**

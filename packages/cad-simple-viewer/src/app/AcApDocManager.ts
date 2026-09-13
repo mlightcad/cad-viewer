@@ -699,8 +699,6 @@ export class AcApDocManager {
    */
   async destroy() {
     await this._pluginManager.unloadAllPlugins()
-    this._splitView?.stopAnimationLoop()
-    this._splitView = undefined
     for (const session of [...this._sessions]) {
       session.context.dispose()
       session.doc.destroy()
@@ -709,6 +707,9 @@ export class AcApDocManager {
       }
     }
     this._sessions = []
+    this._splitView?.dispose()
+    this._splitView = undefined
+    this._mainView.dispose()
     acapUninstallOpenFileDialog()
     acapDisposeNotificationService()
     AcTrMTextRenderer.resetInstance()

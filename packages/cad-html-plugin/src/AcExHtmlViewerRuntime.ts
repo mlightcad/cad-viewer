@@ -592,6 +592,7 @@ async function startViewer(): Promise<void> {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   canvasHost.insertBefore(renderer.domElement, canvasHost.firstChild)
   // Block iOS Safari Copy / selection callout on long-press so the snap loupe wins.
+  // Page-lifetime canvas: no dispose path; listeners end with document unload.
   acedGuardCanvasTouchCallout(renderer.domElement, canvasHost)
 
   const scene = new THREE.Scene()

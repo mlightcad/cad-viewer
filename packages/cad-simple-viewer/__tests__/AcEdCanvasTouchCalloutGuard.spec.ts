@@ -40,6 +40,21 @@ describe('acedGuardCanvasTouchCallout', () => {
     expect(selectEvent.defaultPrevented).toBe(true)
 
     dispose()
+
+    const touchAfter = new Event('touchstart', {
+      bubbles: true,
+      cancelable: true
+    })
+    canvas.dispatchEvent(touchAfter)
+    expect(touchAfter.defaultPrevented).toBe(false)
+
+    const selectAfter = new Event('selectstart', {
+      bubbles: true,
+      cancelable: true
+    })
+    canvas.dispatchEvent(selectAfter)
+    expect(selectAfter.defaultPrevented).toBe(false)
+
     host.remove()
   })
 
