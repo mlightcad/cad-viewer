@@ -757,4 +757,49 @@ describe('AcEdMobileCommandChrome', () => {
     expect(css).toContain('text-overflow: ellipsis')
     expect(css).toContain('is-compact-prompt-hidden')
   })
+
+  it('replaces the metric row with a string field and commits via ✓', () => {
+    const media = installMatchMedia(
+      query =>
+        query === ML_UI_MOBILE_MEDIA_QUERY ||
+        query === ML_UI_COMPACT_MEDIA_QUERY
+    )
+    const onConfirm = jest.fn()
+    chrome.show(
+      {
+        prompt: 'Enter markup text',
+        keywords: [],
+        allowNone: false,
+        showMetrics: false,
+        showStringInput: true,
+        stringValue: 'Note'
+      },
+      { onConfirm, onCancel: jest.fn(), onKeyword: jest.fn() }
+    )
+
+    const panel = host.querySelector('.ml-mobile-cmd-panel') as HTMLElement
+    expect(panel.classList.contains('is-string-input')).toBe(true)
+    expect(
+      (host.querySelector('.ml-mobile-cmd-group-abs') as HTMLElement).hidden
+    ).toBe(true)
+    const input = host.querySelector(
+      '.ml-mobile-cmd-string-input'
+    ) as HTMLTextAreaElement
+    expect(input).toBeTruthy()
+    expect(input.tagName).toBe('TEXTAREA')
+    expect(input.rows).toBe(1)
+    expect(input.value).toBe('Note')
+    expect(chrome.getStringValue()).toBe('Note')
+
+    input.value = 'Line one\nLine two'
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+    const confirm = host.querySelector(
+      '.ml-mobile-cmd-confirm'
+    ) as HTMLButtonElement
+    expect(confirm.disabled).toBe(false)
+    confirm.click()
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+    expect(chrome.getStringValue()).toBe('Line one\nLine two')
+    media.restore()
+  })
 })

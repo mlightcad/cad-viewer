@@ -59,6 +59,15 @@ export interface AcUiMobileSessionPanelState {
   allowNone: boolean
   /** When false, the metric row is hidden (actions-only). */
   showMetrics: boolean
+  /**
+   * When true, the third row shows a text field instead of X/Y (or relative)
+   * metrics. Confirm commits the typed string via the same ✓ control.
+   */
+  showStringInput?: boolean
+  /** Initial / current value for {@link showStringInput}. */
+  stringValue?: string
+  /** Placeholder for the string field. */
+  stringPlaceholder?: string
 }
 
 /** Construction options for {@link AcUiMobileSessionPanel}. */
@@ -95,11 +104,11 @@ const ZERO_TEXTS: AcUiMobileSessionMetricTexts = {
 /**
  * Shared phone/pad session chrome: bottom panel with title bar (session
  * accessory or prompt + help + collapse), message row (prompt + keyword chips
- * when an accessory owns the title), live metrics, and ✓/×.
+ * when an accessory owns the title), live metrics or a string field, and ✓/×.
  *
  * Compact (collapsed) mode is a single row:
  * accessory (if any), command message in leftover space, expand, ✓/×.
- * Metrics and keyword chips stay hidden.
+ * Metrics, string field, and keyword chips stay hidden.
  */
 export class AcUiMobileSessionPanel {
   private readonly host: HTMLElement
@@ -124,6 +133,9 @@ export class AcUiMobileSessionPanel {
   private readonly absGroup: HTMLDivElement
   private readonly polarGroup: HTMLDivElement
   private readonly deltaGroup: HTMLDivElement
+  private readonly stringGroup: HTMLDivElement
+  private readonly stringInput: HTMLTextAreaElement
+  private readonly stringActions: HTMLDivElement
   private readonly absStack: HTMLDivElement
   private readonly polarStack: HTMLDivElement
   private readonly deltaStack: HTMLDivElement
@@ -143,6 +155,7 @@ export class AcUiMobileSessionPanel {
   private open = false
   private collapsed = false
   private showMetrics = false
+  private showStringInput = false
   private hasBasePoint = false
   private frozenTexts: AcUiMobileSessionMetricTexts | null = null
   private frozenHasBasePoint = false
@@ -303,12 +316,44 @@ export class AcUiMobileSessionPanel {
     this.deltaGroup.className = 'ml-mobile-cmd-group ml-mobile-cmd-group-delta'
     this.deltaGroup.append(this.deltaStack, this.deltaActions)
 
+    this.stringInput = document.createElement('textarea')
+    this.stringInput.className = 'ml-mobile-cmd-string-input'
+    this.stringInput.rows = 1
+    this.stringInput.autocomplete = 'off'
+    this.stringInput.spellcheck = false
+    this.stringInput.addEventListener('input', () => {
+      this.syncStringInputHeight()
+    })
+    this.stringInput.addEventListener('keydown', e => {
+      // Enter inserts a newline. Ctrl/Cmd+Enter commits (same as ✓).
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        e.stopPropagation()
+        if (this.confirmBtn.disabled) return
+        this.callbacks?.onConfirm()
+      } else if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        this.callbacks?.onCancel()
+      }
+    })
+    this.sinkPointer(this.stringInput)
+
+    this.stringActions = document.createElement('div')
+    this.stringActions.className = 'ml-mobile-cmd-actions'
+
+    this.stringGroup = document.createElement('div')
+    this.stringGroup.className = 'ml-mobile-cmd-group ml-mobile-cmd-group-string'
+    this.stringGroup.hidden = true
+    this.stringGroup.append(this.stringInput, this.stringActions)
+
     this.panel.append(
       this.accessoryEl,
       this.promptRow,
       this.absGroup,
       this.polarGroup,
       this.deltaGroup,
+      this.stringGroup,
       this.sharedActions
     )
     this.root.appendChild(this.panel)
@@ -345,12 +390,17 @@ export class AcUiMobileSessionPanel {
   ): void {
     this.callbacks = callbacks
     this.open = true
-    this.showMetrics = state.showMetrics
+    this.showStringInput = state.showStringInput === true
+    this.showMetrics = this.showStringInput ? false : state.showMetrics
     this.root.hidden = false
     this.root.setAttribute('aria-hidden', 'false')
     this.host.classList.add(this.activeClass)
     this.promptEl.textContent = stripPromptColon(state.prompt)
-    this.confirmBtn.disabled = !state.allowNone
+    // String mode: ✓ commits typed text (always enabled). Point / actions:
+    // ✓ is empty-Enter / allowNone.
+    this.confirmBtn.disabled = this.showStringInput ? false : !state.allowNone
+    this.stringInput.value = state.stringValue ?? ''
+    this.stringInput.placeholder = state.stringPlaceholder ?? ''
     this.prepareAccessory()
     this.renderChips(state.keywords)
     if (this.frozenTexts) {
@@ -360,10 +410,23 @@ export class AcUiMobileSessionPanel {
     }
     this.layoutUnsub?.()
     this.layoutUnsub = this.subscribeLayout?.(() => {
-      if (this.open) this.applyMetricVisibility()
+      if (this.open) {
+        this.applyMetricVisibility()
+        if (this.showStringInput) this.syncStringInputHeight()
+      }
     })
     this.applyMetricVisibility()
     this.refreshLabels()
+    if (this.showStringInput) {
+      this.syncStringInputHeight()
+      // Defer so the soft keyboard opens after the panel paints.
+      requestAnimationFrame(() => {
+        if (this.open && this.showStringInput) {
+          this.syncStringInputHeight()
+          this.stringInput.focus()
+        }
+      })
+    }
   }
 
   /**
@@ -377,17 +440,74 @@ export class AcUiMobileSessionPanel {
       this.promptEl.textContent = stripPromptColon(partial.prompt)
       if (this.collapsed) this.scheduleCompactPromptVisibility()
     }
-    if (partial.allowNone != null) {
+    if (partial.showStringInput != null) {
+      this.showStringInput = partial.showStringInput
+      if (this.showStringInput) this.showMetrics = false
+      this.confirmBtn.disabled = this.showStringInput
+        ? false
+        : partial.allowNone != null
+          ? !partial.allowNone
+          : this.confirmBtn.disabled
+      this.applyMetricVisibility()
+    }
+    if (partial.allowNone != null && !this.showStringInput) {
       this.confirmBtn.disabled = !partial.allowNone
+    }
+    if (partial.stringValue != null) {
+      this.stringInput.value = partial.stringValue
+      this.syncStringInputHeight()
+    }
+    if (partial.stringPlaceholder != null) {
+      this.stringInput.placeholder = partial.stringPlaceholder
     }
     if (partial.keywords) {
       this.renderChips(partial.keywords)
       this.applyMetricVisibility()
     }
-    if (partial.showMetrics != null) {
+    if (partial.showMetrics != null && !this.showStringInput) {
       this.showMetrics = partial.showMetrics
       this.applyMetricVisibility()
     }
+  }
+
+  /** Current value of the session string field (empty when not in string mode). */
+  getStringValue(): string {
+    return this.stringInput.value
+  }
+
+  /** Focuses the session string field when string input mode is active. */
+  focusStringInput(): void {
+    if (!this.open || !this.showStringInput) return
+    this.stringInput.focus()
+  }
+
+  /**
+   * Sizes the string field from 1 to 3 lines of content. Taller content
+   * scrolls inside a 3-line viewport so the right-hand actions/divider stay
+   * matched to the visible field height.
+   */
+  private syncStringInputHeight(): void {
+    if (!this.open || !this.showStringInput) return
+    const el = this.stringInput
+    const style = getComputedStyle(el)
+    const fontSize = parseFloat(style.fontSize) || 14
+    const lineHeight = parseFloat(style.lineHeight) || fontSize * 1.35
+    const padY =
+      (parseFloat(style.paddingTop) || 0) +
+      (parseFloat(style.paddingBottom) || 0)
+    const borderY =
+      (parseFloat(style.borderTopWidth) || 0) +
+      (parseFloat(style.borderBottomWidth) || 0)
+    const minH = lineHeight + padY + borderY
+    const maxH = lineHeight * 3 + padY + borderY
+
+    // Collapse first so scrollHeight reflects the current value.
+    el.style.height = `${minH}px`
+    el.style.overflowY = 'hidden'
+    const contentH = el.scrollHeight
+    const next = Math.min(Math.max(contentH, minH), maxH)
+    el.style.height = `${next}px`
+    el.style.overflowY = contentH > maxH + 0.5 ? 'auto' : 'hidden'
   }
 
   /**
@@ -440,6 +560,11 @@ export class AcUiMobileSessionPanel {
   hide(): void {
     this.open = false
     this.callbacks = null
+    this.showStringInput = false
+    this.stringInput.value = ''
+    this.stringInput.placeholder = ''
+    this.stringInput.style.height = ''
+    this.stringInput.style.overflowY = ''
     this.accessoryEl.hidden = true
     if (this.compactPromptRaf) {
       cancelAnimationFrame(this.compactPromptRaf)
@@ -718,8 +843,9 @@ export class AcUiMobileSessionPanel {
   }
 
   private applyMetricVisibility(): void {
-    const relative = this.showMetrics && this.hasBasePoint
-    const absolute = this.showMetrics && !this.hasBasePoint
+    const stringMode = this.showStringInput
+    const relative = !stringMode && this.showMetrics && this.hasBasePoint
+    const absolute = !stringMode && this.showMetrics && !this.hasBasePoint
     const phone = this.isPhoneLayout()
     const collapsed = this.collapsed
 
@@ -733,8 +859,12 @@ export class AcUiMobileSessionPanel {
     this.panel.classList.toggle('is-relative', relative && !collapsed)
     this.panel.classList.toggle('is-absolute', absolute && !collapsed)
     this.panel.classList.toggle(
+      'is-string-input',
+      stringMode && !collapsed
+    )
+    this.panel.classList.toggle(
       'is-actions-only',
-      !collapsed && !relative && !absolute
+      !collapsed && !relative && !absolute && !stringMode
     )
     this.panel.classList.toggle('is-collapsed', collapsed)
 
@@ -743,15 +873,24 @@ export class AcUiMobileSessionPanel {
     this.absStack.hidden = !absolute
     this.absGroup.hidden = collapsed
       ? true
-      : phone
-        ? relative
-        : !absolute
+      : stringMode
+        ? true
+        : phone
+          ? relative
+          : !absolute
+    this.stringGroup.hidden = collapsed || !stringMode
     this.chipsEl.hidden = collapsed || this.chipsEl.childElementCount === 0
 
     this.syncPromptPlacement(collapsed)
 
     if (collapsed) {
       // Actions already placed by syncPromptPlacement.
+    } else if (stringMode) {
+      if (phone) {
+        this.stringActions.append(this.cancelBtn, this.confirmBtn)
+      } else {
+        this.sharedActions.append(this.cancelBtn, this.confirmBtn)
+      }
     } else if (phone && relative) {
       this.polarActions.appendChild(this.cancelBtn)
       this.deltaActions.appendChild(this.confirmBtn)
@@ -971,12 +1110,50 @@ const MOBILE_CMD_CSS = `
   .ml-mobile-cmd-group[hidden] {
     display: none;
   }
+  .ml-mobile-cmd-string-input {
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--ml-ui-border, rgba(255, 255, 255, 0.16));
+    border-radius: 8px;
+    background: var(--ml-ui-bg-elevated, rgba(255, 255, 255, 0.06));
+    color: var(--ml-ui-text, #e8eaed);
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.35;
+    outline: none;
+    resize: none;
+    overflow-y: hidden;
+    white-space: pre-wrap;
+    word-break: break-word;
+    /* 1-line floor; JS grows up to 3 lines via syncStringInputHeight. */
+    height: calc(1.35em + 16px + 2px);
+  }
+  .ml-mobile-cmd-string-input:focus {
+    border-color: var(--ml-ui-accent, #08e8de);
+  }
+  .ml-mobile-cmd-string-input::placeholder {
+    color: var(--ml-ui-muted, #9aa0a6);
+  }
   .ml-mobile-cmd-panel.is-relative .ml-mobile-cmd-group-polar {
     border-bottom: 1px solid var(--ml-ui-border, rgba(255, 255, 255, 0.12));
     padding-bottom: 0;
   }
-  .ml-mobile-cmd-group:not(:has(.ml-mobile-cmd-metric-stack:not([hidden]))) {
+  .ml-mobile-cmd-group:not(.ml-mobile-cmd-group-string):not(
+      :has(.ml-mobile-cmd-metric-stack:not([hidden]))
+    ) {
     justify-content: flex-end;
+  }
+  .ml-mobile-cmd-group-string {
+    align-items: stretch;
+  }
+  .ml-mobile-cmd-group-string .ml-mobile-cmd-actions {
+    align-self: stretch;
+    align-items: center;
+    border-left: 1px solid var(--ml-ui-border, rgba(255, 255, 255, 0.12));
+    padding-left: 12px;
   }
   .ml-mobile-cmd-metric-stack {
     flex: 1;
@@ -1000,7 +1177,9 @@ const MOBILE_CMD_CSS = `
     padding-left: 12px;
     border-left: 1px solid var(--ml-ui-border, rgba(255, 255, 255, 0.12));
   }
-  .ml-mobile-cmd-group:not(:has(.ml-mobile-cmd-metric-stack:not([hidden])))
+  .ml-mobile-cmd-group:not(.ml-mobile-cmd-group-string):not(
+      :has(.ml-mobile-cmd-metric-stack:not([hidden]))
+    )
     .ml-mobile-cmd-actions {
     border-left: 0;
     padding-left: 0;
@@ -1227,12 +1406,31 @@ const MOBILE_CMD_CSS = `
         'prompt prompt'
         'abs shared';
     }
+    .ml-mobile-cmd-panel.is-string-input {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: stretch;
+      row-gap: 0;
+      column-gap: 8px;
+      grid-template-areas:
+        'accessory accessory'
+        'prompt prompt'
+        'string shared';
+    }
     .ml-mobile-cmd-group-polar { grid-area: polar; }
     .ml-mobile-cmd-group-delta { grid-area: delta; }
     .ml-mobile-cmd-group-abs { grid-area: abs; }
+    .ml-mobile-cmd-group-string { grid-area: string; }
     .ml-mobile-cmd-actions-shared { grid-area: shared; }
     .ml-mobile-cmd-accessory { grid-area: accessory; }
     .ml-mobile-cmd-prompt-row { grid-area: prompt; }
+    .ml-mobile-cmd-panel.is-string-input .ml-mobile-cmd-group-string {
+      align-items: stretch;
+    }
+    .ml-mobile-cmd-panel.is-string-input .ml-mobile-cmd-actions-shared {
+      align-self: stretch;
+      align-items: center;
+    }
     .ml-mobile-cmd-panel.is-relative .ml-mobile-cmd-group-polar {
       padding-bottom: 6px;
     }

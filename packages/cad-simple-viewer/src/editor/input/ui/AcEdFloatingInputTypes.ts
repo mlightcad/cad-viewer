@@ -209,4 +209,11 @@ export interface AcEdFloatingInputOptions<T> {
    * Mirrors AutoCAD's `PromptPointOptions.AllowNone`.
    */
   allowNone?: boolean
+
+  /**
+   * When false, canvas click / touch pick does not commit a value.
+   * Used by string prompts that collect text from the session panel or
+   * floating input boxes only. Default: true.
+   */
+  allowPickCommit?: boolean
 }

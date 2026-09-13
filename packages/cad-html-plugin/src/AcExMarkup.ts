@@ -23,6 +23,7 @@ import {
   acexSeedOverlaySizesFromWcs,
   acexSyncLiveOverlayTextHeight
 } from './AcExHtmlOverlayDom'
+import { acedIsMobileOrPadUi } from './AcExHtmlSimpleViewerUi'
 import {
   acexComputeLeaderTipOnShape,
   acexDrawMarkupArrowHead,
@@ -282,6 +283,10 @@ export class AcExMarkupController {
   /** Blocks canvas placement while an inline text session is open. */
   private _awaitingInlineText = false
   private _inlineAbort: AbortController | null = null
+  /** Resolves a mobile session-panel string prompt (✓ / ×). */
+  private _stringWaiter: {
+    resolve: (value: string | undefined) => void
+  } | null = null
   /** True while a peer create tool (e.g. measure) is armed. */
   private _peerToolActive = false
   private _lastSelectPointer:
@@ -746,11 +751,42 @@ export class AcExMarkupController {
 
   /** Escape equivalent for the session panel × button. */
   cancelSession(): boolean {
+    if (this._stringWaiter) {
+      const resolve = this._stringWaiter.resolve
+      this._stringWaiter = null
+      this._awaitingInlineText = false
+      this._syncGripPointerEvents()
+      // Same as desktop inline Escape: resolve undefined and let the prompt
+      // `.then` handlers apply default-label / empty-text commit rules. Do not
+      // call cancelMode() here — that would tear down `_mode` /
+      // `_placingShapeCallout` before those handlers run.
+      resolve(undefined)
+      this._syncSessionUi()
+      return true
+    }
     return this.handleKeyDown('Escape')
+  }
+
+  /**
+   * Session panel ✓ during a string prompt — commits typed text.
+   *
+   * @param text - Value from {@link AcExCommandSessionPanel.getStringValue}.
+   * @returns True when a string wait was active.
+   */
+  confirmSession(text: string): boolean {
+    if (!this._stringWaiter) return false
+    const resolve = this._stringWaiter.resolve
+    this._stringWaiter = null
+    this._awaitingInlineText = false
+    this._syncGripPointerEvents()
+    resolve(text)
+    this._syncSessionUi()
+    return true
   }
 
   private _syncSessionUi(): void {
     if (!this._onSessionUi) return
+    if (this._stringWaiter) return
     if (!this._mode) {
       this._onSessionUi(null)
       return
@@ -774,6 +810,11 @@ export class AcExMarkupController {
   private _abortInlineText(): void {
     this._inlineAbort?.abort()
     this._inlineAbort = null
+    if (this._stringWaiter) {
+      const resolve = this._stringWaiter.resolve
+      this._stringWaiter = null
+      resolve(undefined)
+    }
     this._awaitingInlineText = false
   }
 
@@ -794,6 +835,53 @@ export class AcExMarkupController {
         }
       }
     )
+  }
+
+  /**
+   * Collects markup text: session-panel field on phone/pad, in-place edit on desktop.
+   */
+  private _promptMarkupText(options: {
+    el: HTMLElement
+    listenOn?: HTMLElement
+    multiline?: boolean
+    initialText?: string
+    prompt: string
+  }): Promise<string | undefined> {
+    if (acedIsMobileOrPadUi() && this._onSessionUi) {
+      return this._promptSessionString({
+        prompt: options.prompt,
+        initialText: options.initialText
+      })
+    }
+    return this._beginInlineText({
+      el: options.el,
+      listenOn: options.listenOn,
+      multiline: options.multiline,
+      initialText: options.initialText
+    })
+  }
+
+  private _promptSessionString(options: {
+    prompt: string
+    initialText?: string
+    placeholder?: string
+  }): Promise<string | undefined> {
+    this._abortInlineText()
+    this._awaitingInlineText = true
+    this._syncGripPointerEvents()
+    return new Promise(resolve => {
+      this._stringWaiter = { resolve }
+      this._onSessionUi?.({
+        prompt: options.prompt,
+        confirmEnabled: true,
+        metrics: null,
+        chips: [],
+        stringInput: {
+          value: options.initialText ?? '',
+          placeholder: options.placeholder
+        }
+      })
+    })
   }
 
   refreshIdleStatus(): void {
@@ -1296,12 +1384,14 @@ export class AcExMarkupController {
     if (this._awaitingInlineText) return true
     const defaultLabel = this._i18n.t('status.markupDefaultLabel')
     const badge = this._makeTempBadge(point2(point), '', this._drawColor)
-    this._statusEl.textContent = this._i18n.t('status.markupTextEditHint')
-    void this._beginInlineText({
+    const prompt = this._i18n.t('status.markupTextEditHint')
+    this._statusEl.textContent = prompt
+    void this._promptMarkupText({
       el: badge,
       listenOn: badge,
       multiline: false,
-      initialText: ''
+      initialText: '',
+      prompt
     }).then(text => {
       badge.remove()
       if (this._mode !== 'text') return
@@ -1342,7 +1432,8 @@ export class AcExMarkupController {
     const defaultLabel = this._i18n.t('status.markupDefaultLabel')
     const badge = this._makeTempBadge(anchor, '', this._drawColor)
     const tipDot = this._makeTempDot(tip, this._drawColor)
-    this._statusEl.textContent = this._i18n.t('status.markupTextEditHint')
+    const prompt = this._i18n.t('status.markupTextEditHint')
+    this._statusEl.textContent = prompt
     const paintLeader = () => {
       const ctx = acexFitMarkupCanvas(this._previewCanvas, this._root)
       if (!ctx) return
@@ -1361,11 +1452,12 @@ export class AcExMarkupController {
       )
     }
     paintLeader()
-    void this._beginInlineText({
+    void this._promptMarkupText({
       el: badge,
       listenOn: badge,
       multiline: true,
-      initialText: ''
+      initialText: '',
+      prompt
     }).then(text => {
       badge.remove()
       tipDot.remove()
@@ -1431,11 +1523,12 @@ export class AcExMarkupController {
     this._refreshActivePreview()
 
     this._statusEl.textContent = this._i18n.t('status.markupTextEditHint')
-    void this._beginInlineText({
+    void this._promptMarkupText({
       el: placing.badge,
       listenOn: placing.badge,
       multiline: true,
-      initialText: ''
+      initialText: '',
+      prompt: this._i18n.t('status.markupTextEditHint')
     }).then(text => {
       // Cancelled via tool switch / abort — do not commit.
       if (this._placingShapeCallout !== placing) return
@@ -2360,11 +2453,12 @@ export class AcExMarkupController {
     ).trim()
     const multiline = item.record.type !== 'text'
     this._syncGripPointerEvents()
-    void this._beginInlineText({
+    void this._promptMarkupText({
       el: badge,
       listenOn: badge,
       multiline,
-      initialText: current
+      initialText: current,
+      prompt: this._i18n.t('status.markupTextEditHint')
     }).then(next => {
       this._syncGripPointerEvents()
       if (next === undefined || next === current) return
