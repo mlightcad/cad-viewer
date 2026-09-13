@@ -539,7 +539,10 @@ describe('AcEdMobileCommandChrome', () => {
     chrome.show(
       {
         prompt: 'Specify next point:',
-        keywords: [],
+        keywords: [
+          { displayName: 'Undo', globalName: 'U', enabled: true },
+          { displayName: 'Close', globalName: 'C', enabled: true }
+        ],
         allowNone: true,
         showMetrics: false
       },
@@ -563,16 +566,180 @@ describe('AcEdMobileCommandChrome', () => {
     expect(
       host.querySelector('.ml-mobile-cmd-accessory-content')?.childElementCount
     ).toBe(1)
+    const accessory = host.querySelector(
+      '.ml-mobile-cmd-accessory'
+    ) as HTMLElement
+    const prompt = host.querySelector(
+      '.ml-mobile-cmd-accessory > .ml-mobile-cmd-prompt'
+    ) as HTMLElement
+    const expand = host.querySelector(
+      '.ml-mobile-cmd-collapse'
+    ) as HTMLElement
+    expect(prompt?.textContent).toBe('Specify next point')
+    // Order: accessory content → prompt → expand (title actions).
+    const kids = [...accessory.children]
+    expect(kids.indexOf(host.querySelector('.ml-mobile-cmd-accessory-content')!)).toBeLessThan(
+      kids.indexOf(prompt)
+    )
+    expect(kids.indexOf(prompt)).toBeLessThan(
+      kids.indexOf(host.querySelector('.ml-mobile-cmd-title-actions')!)
+    )
+    expect(expand).toBeTruthy()
+    // Keyword chips never appear in compact mode.
     expect(
-      host.querySelector('.ml-mobile-cmd-accessory > .ml-mobile-cmd-prompt')
-        ?.textContent
-    ).toBe('Specify next point')
-    expect(
-      (host.querySelector('.ml-mobile-cmd-prompt') as HTMLElement).hidden
-    ).toBe(false)
+      (host.querySelector('.ml-mobile-cmd-chips') as HTMLElement).hidden
+    ).toBe(true)
     expect(
       (host.querySelector('.ml-mobile-cmd-help') as HTMLButtonElement).hidden
     ).toBe(true)
+    media.restore()
+  })
+
+  it('hides the compact prompt when less than one third of the text fits', async () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_MOBILE_MEDIA_QUERY
+    )
+    chrome.show(
+      {
+        prompt: 'Specify next point for a very long command message:',
+        keywords: [],
+        allowNone: true,
+        showMetrics: false
+      },
+      { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
+    )
+    chrome.accessoryHost.appendChild(document.createElement('span'))
+    await Promise.resolve()
+
+    host.querySelector('.ml-mobile-cmd-collapse')?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    )
+
+    const prompt = host.querySelector(
+      '.ml-mobile-cmd-accessory > .ml-mobile-cmd-prompt'
+    ) as HTMLElement
+    expect(prompt).toBeTruthy()
+
+    // jsdom has no real layout — stub intrinsic text width vs leftover slot.
+    const gbcr = jest
+      .spyOn(Element.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: Element) {
+        if (
+          this instanceof HTMLSpanElement &&
+          (this as HTMLSpanElement).style.visibility === 'hidden'
+        ) {
+          return {
+            width: 120,
+            height: 14,
+            top: 0,
+            left: 0,
+            bottom: 14,
+            right: 120,
+            x: 0,
+            y: 0,
+            toJSON: () => ({})
+          } as DOMRect
+        }
+        return {
+          width: 0,
+          height: 0,
+          top: 0,
+          left: 0,
+          bottom: 0,
+          right: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({})
+        } as DOMRect
+      })
+    Object.defineProperty(prompt, 'clientWidth', {
+      configurable: true,
+      get: () => 30 // < 120/3 → hide
+    })
+
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+
+    expect(prompt.hidden).toBe(true)
+    expect(
+      host
+        .querySelector('.ml-mobile-cmd-panel')
+        ?.classList.contains('is-compact-prompt-hidden')
+    ).toBe(true)
+    gbcr.mockRestore()
+    media.restore()
+  })
+
+  it('keeps the compact prompt when at least one third of the text fits', async () => {
+    const media = installMatchMedia(
+      query => query === ML_UI_MOBILE_MEDIA_QUERY
+    )
+    chrome.show(
+      {
+        prompt: 'Specify next point:',
+        keywords: [],
+        allowNone: true,
+        showMetrics: false
+      },
+      { onConfirm: jest.fn(), onCancel: jest.fn(), onKeyword: jest.fn() }
+    )
+    chrome.accessoryHost.appendChild(document.createElement('span'))
+    await Promise.resolve()
+
+    host.querySelector('.ml-mobile-cmd-collapse')?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    )
+
+    const prompt = host.querySelector(
+      '.ml-mobile-cmd-accessory > .ml-mobile-cmd-prompt'
+    ) as HTMLElement
+
+    const gbcr = jest
+      .spyOn(Element.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: Element) {
+        if (
+          this instanceof HTMLSpanElement &&
+          (this as HTMLSpanElement).style.visibility === 'hidden'
+        ) {
+          return {
+            width: 90,
+            height: 14,
+            top: 0,
+            left: 0,
+            bottom: 14,
+            right: 90,
+            x: 0,
+            y: 0,
+            toJSON: () => ({})
+          } as DOMRect
+        }
+        return {
+          width: 0,
+          height: 0,
+          top: 0,
+          left: 0,
+          bottom: 0,
+          right: 0,
+          x: 0,
+          y: 0,
+          toJSON: () => ({})
+        } as DOMRect
+      })
+    Object.defineProperty(prompt, 'clientWidth', {
+      configurable: true,
+      get: () => 40 // >= 90/3 → show (ellipsis ok)
+    })
+
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+
+    expect(prompt.hidden).toBe(false)
+    expect(
+      host
+        .querySelector('.ml-mobile-cmd-panel')
+        ?.classList.contains('is-compact-prompt-hidden')
+    ).toBe(false)
+    gbcr.mockRestore()
     media.restore()
   })
 
@@ -584,5 +751,10 @@ describe('AcEdMobileCommandChrome', () => {
     expect(css).toContain(`min-width: ${ML_UI_SESSION_PANEL_WIDTH}px`)
     expect(css).toContain('.ml-mobile-cmd-panel.is-collapsed')
     expect(css).toContain('.ml-mobile-cmd-prompt-row')
+    expect(css).toContain(
+      '.ml-mobile-cmd-panel.is-collapsed .ml-mobile-cmd-accessory-content'
+    )
+    expect(css).toContain('text-overflow: ellipsis')
+    expect(css).toContain('is-compact-prompt-hidden')
   })
 })
