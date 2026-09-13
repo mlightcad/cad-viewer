@@ -29,6 +29,16 @@ const LOCAL_UI_COMPONENTS_ROOT = resolve(
   __dirname,
   '../../../ui-components'
 )
+const LOCAL_MTEXT_RENDERER_ROOT = resolve(
+  __dirname,
+  '../../../mtext-renderer/packages/mtext-renderer'
+)
+const LOCAL_MTEXT_RENDERER_DIST = resolve(LOCAL_MTEXT_RENDERER_ROOT, 'dist')
+const LOCAL_MTEXT_RENDERER_ENTRY = resolve(LOCAL_MTEXT_RENDERER_DIST, 'index.js')
+const LOCAL_MTEXT_RENDERER_WORKER = resolve(
+  LOCAL_MTEXT_RENDERER_DIST,
+  MTEXT_RENDERER_WORKER_FILE
+)
 
 function isEnvFlagEnabled(name: string): boolean {
   const flag = process.env[name]
@@ -74,6 +84,8 @@ export default defineConfig(({ command, mode }) => {
     command === 'serve' &&
     useLocalUiComponents(mode) &&
     existsSync(LOCAL_UI_COMPONENTS_SRC)
+  const linkLocalMtextRenderer =
+    command === 'serve' && existsSync(LOCAL_MTEXT_RENDERER_ENTRY)
   if (command === 'serve') {
     aliases.push({
       find: /^@mlightcad\/cad-pdf-plugin\/register$/,
@@ -83,6 +95,16 @@ export default defineConfig(({ command, mode }) => {
       find: /^@mlightcad\/(cad-svg-plugin|cad-pdf-plugin|pdf-renderer|three-renderer|cad-simple-viewer|cad-viewer)$/,
       replacement: resolve(__dirname, '../$1/src')
     })
+    if (linkLocalMtextRenderer) {
+      console.info(
+        '[cad-viewer-example] Aliasing @mlightcad/mtext-renderer to local dist:',
+        LOCAL_MTEXT_RENDERER_DIST
+      )
+      aliases.push({
+        find: '@mlightcad/mtext-renderer',
+        replacement: LOCAL_MTEXT_RENDERER_DIST
+      })
+    }
     if (linkLocalDataModel) {
       aliases.push({
         find: '@mlightcad/data-model',
@@ -114,7 +136,11 @@ export default defineConfig(({ command, mode }) => {
     }
   }
 
-  aliases.push(...examplePeerPackageAliases(__dirname))
+  aliases.push(
+    ...examplePeerPackageAliases(__dirname).filter(
+      alias => alias.find !== '@mlightcad/mtext-renderer'
+    )
+  )
 
   const libredwgDist = `./node_modules/${LIBREDWG_CONVERTER_PACKAGE}/dist`
   const libredwgWasmSrc = resolve(
@@ -124,6 +150,9 @@ export default defineConfig(({ command, mode }) => {
     'dist',
     LIBREDWG_PARSER_WASM_FILE
   )
+  const mtextWorkerSrc = linkLocalMtextRenderer
+    ? LOCAL_MTEXT_RENDERER_WORKER
+    : `./node_modules/@mlightcad/cad-simple-viewer/dist/${MTEXT_RENDERER_WORKER_FILE}`
 
   const plugins = [
     vue(),
@@ -131,7 +160,7 @@ export default defineConfig(({ command, mode }) => {
     viteStaticCopy({
       targets: [
         {
-          src: `./node_modules/@mlightcad/cad-simple-viewer/dist/${MTEXT_RENDERER_WORKER_FILE}`,
+          src: mtextWorkerSrc,
           dest: 'assets',
           rename: { stripBase: true }
         },
@@ -189,7 +218,8 @@ export default defineConfig(({ command, mode }) => {
           ? [
               ...devSourcePackages.map(name => `@mlightcad/${name}`),
               ...(linkLocalDataModel ? ['@mlightcad/data-model'] : []),
-              ...(linkLocalUiComponents ? ['@mlightcad/ui-components'] : [])
+              ...(linkLocalUiComponents ? ['@mlightcad/ui-components'] : []),
+              ...(linkLocalMtextRenderer ? ['@mlightcad/mtext-renderer'] : [])
             ]
           : []
     },
@@ -197,7 +227,8 @@ export default defineConfig(({ command, mode }) => {
       fs: {
         allow: [
           resolve(__dirname, '../..'),
-          ...(linkLocalUiComponents ? [LOCAL_UI_COMPONENTS_ROOT] : [])
+          ...(linkLocalUiComponents ? [LOCAL_UI_COMPONENTS_ROOT] : []),
+          ...(linkLocalMtextRenderer ? [LOCAL_MTEXT_RENDERER_ROOT] : [])
         ]
       }
     },

@@ -67,6 +67,10 @@ import {
   readLayoutBackgroundColor
 } from '../editor/global/AcEdUiColor'
 import { ML_UI_Z_CANVAS_HTML_OVERLAY } from '../editor/global/AcEdUiLayout'
+import {
+  acedEntityIntersectsSelectionBox,
+  acedNeedsCrossingGeometryRefine
+} from '../editor/view/AcEdSelectionBoxIntersect'
 import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
@@ -1747,6 +1751,46 @@ export class AcTrView2d extends AcEdBaseView {
    */
   selectByBox(box: AcGeBox2d) {
     this.selectByBoxWithMode(box, 'crossing', 'add')
+  }
+
+  /**
+   * Drops crossing spatial hits whose curve geometry misses the pick box.
+   *
+   * Large closed polylines (site boundaries, frames) have AABBs that cover
+   * huge empty interiors. Without this refine, crossing a small INSERT inside
+   * that interior also selects those polylines and can stall highlight work.
+   */
+  protected override refineCrossingSelectionHits(
+    box: AcGeBox2d,
+    results: AcEdSpatialQueryResultItemEx[]
+  ): AcDbObjectId[] {
+    const database = AcApDocManager.instance.curDocument?.database
+    if (!database) {
+      return results.map(item => item.id)
+    }
+
+    const ids: AcDbObjectId[] = []
+    for (const item of results) {
+      if (!acedNeedsCrossingGeometryRefine(item)) {
+        ids.push(item.id)
+        continue
+      }
+
+      const entityBox = new AcGeBox2d(
+        { x: item.minX, y: item.minY },
+        { x: item.maxX, y: item.maxY }
+      )
+      if (box.containsBox(entityBox)) {
+        ids.push(item.id)
+        continue
+      }
+
+      const entity = database.tables.blockTable.getEntityById(item.id)
+      if (!entity || acedEntityIntersectsSelectionBox(entity, box)) {
+        ids.push(item.id)
+      }
+    }
+    return ids
   }
 
   /**

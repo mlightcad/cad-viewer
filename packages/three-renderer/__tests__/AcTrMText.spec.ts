@@ -60,6 +60,26 @@ describe('AcTrMText wcsBbox', () => {
     expect(box.max.toArray()).toEqual([14, 22, 0])
   })
 
+  it('keeps selection boxes in parent-local space when the glyph is parented', () => {
+    const parent = new THREE.Object3D()
+    parent.position.set(1000, 2000, 0)
+    parent.updateMatrixWorld(true)
+
+    const host = createGeometryHost()
+    parent.add(host)
+    host.add(createBoxMesh({ x: 10, y: 20, z: 0 }))
+    host.updateMatrixWorld(true)
+
+    const box = host.computeGeometryBox()
+
+    // Geometry is at local (10,20); parent translation must not be baked into
+    // wcsBbox or INSERT spatial refresh would apply that transform twice.
+    expect(box.min.x).toBeCloseTo(10)
+    expect(box.min.y).toBeCloseTo(20)
+    expect(box.max.x).toBeCloseTo(14)
+    expect(box.max.y).toBeCloseTo(22)
+  })
+
   it('keeps renderer logical space when it overlaps rendered geometry', () => {
     const host = createGeometryHost()
     host.add(createBoxMesh({ x: 10, y: 20, z: 0 }))

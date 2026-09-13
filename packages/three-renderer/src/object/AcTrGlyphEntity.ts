@@ -312,13 +312,28 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
    * each child box is transformed by the child's matrix before being unioned
    * into the result.
    *
+   * The result is expressed in **this entity's parent-local space** (world
+   * space when unparented). That matches the {@link wcsBbox} convention used
+   * by {@link AcTrGroup} source entities: block-local for INSERT contents and
+   * attributes (after the cache's inverse transform), WCS for standalone
+   * entities. Using full `matrixWorld` here would bake an already-parented
+   * INSERT transform into `wcsBbox`, and a later
+   * {@link AcTrGroup} spatial refresh would apply that INSERT matrix again —
+   * pushing attribute boxes millions of units away and breaking pick /
+   * window / crossing selection for blocks such as `gc200`.
+   *
    * @returns Bounding box containing all child meshes, lines, and points.
    */
   protected computeGeometryBox() {
     const box = new THREE.Box3()
     const childBox = new THREE.Box3()
+    const toParentLocal = new THREE.Matrix4()
 
     this.updateMatrixWorld(true)
+    if (this.parent) {
+      toParentLocal.copy(this.parent.matrixWorld).invert()
+    }
+
     this.traverse(object => {
       if (!this.hasGeometry(object)) return
 
@@ -329,6 +344,9 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
 
       object.updateMatrixWorld(true)
       childBox.copy(boundingBox).applyMatrix4(object.matrixWorld)
+      if (this.parent) {
+        childBox.applyMatrix4(toParentLocal)
+      }
       box.union(childBox)
     })
 

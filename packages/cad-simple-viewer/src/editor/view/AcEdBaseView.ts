@@ -885,17 +885,33 @@ export abstract class AcEdBaseView {
 
   /**
    * Collects ids using window or crossing selection rules.
+   *
+   * Crossing hits come from entity AABBs in the spatial index. Long polylines
+   * can therefore match a pick rectangle that sits in empty interior space.
+   * Subclasses with access to the drawing database should override
+   * {@link refineCrossingSelectionHits} to drop those false positives.
    */
   protected collectSelectionIdsByBox(box: AcGeBox2d, mode: AcEdSelectionMode) {
-    const results = this.search(box, { selectionMode: mode })
-    const ids: AcDbObjectId[] = []
-    results.forEach(item => {
-      if (!isEffectiveSpatialQueryHit(item)) {
-        return
-      }
-      ids.push(item.id)
-    })
-    return ids
+    const results = this.search(box, { selectionMode: mode }).filter(
+      isEffectiveSpatialQueryHit
+    )
+    if (mode === 'crossing') {
+      return this.refineCrossingSelectionHits(box, results)
+    }
+    return results.map(item => item.id)
+  }
+
+  /**
+   * Optional crossing-selection refinement after the spatial query.
+   *
+   * Default keeps the AABB hits unchanged. {@link AcTrView2d} overrides this
+   * to test curve geometry against the pick box.
+   */
+  protected refineCrossingSelectionHits(
+    _box: AcGeBox2d,
+    results: AcEdSpatialQueryResultItemEx[]
+  ): AcDbObjectId[] {
+    return results.map(item => item.id)
   }
 
   /**
