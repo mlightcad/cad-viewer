@@ -97,8 +97,9 @@ const ZERO_TEXTS: AcUiMobileSessionMetricTexts = {
  * accessory or prompt + help + collapse), message row (prompt + keyword chips
  * when an accessory owns the title), live metrics, and ✓/×.
  *
- * Compact (collapsed) mode keeps a single-line prompt and confirm/cancel while
- * hiding metrics to reclaim canvas height and cover the bottom toolbar.
+ * Compact (collapsed) mode is a single row:
+ * accessory (if any), command message in leftover space, expand, ✓/×.
+ * Metrics and keyword chips stay hidden.
  */
 export class AcUiMobileSessionPanel {
   private readonly host: HTMLElement
@@ -147,6 +148,8 @@ export class AcUiMobileSessionPanel {
   private frozenHasBasePoint = false
   private layoutUnsub?: () => void
   private accessoryObserver?: MutationObserver
+  private compactPromptObserver?: ResizeObserver
+  private compactPromptRaf = 0
 
   constructor(options: AcUiMobileSessionPanelOptions) {
     this.host = options.host
@@ -248,6 +251,12 @@ export class AcUiMobileSessionPanel {
     this.accessoryObserver.observe(this.accessoryContentEl, {
       childList: true
     })
+    if (typeof ResizeObserver !== 'undefined') {
+      this.compactPromptObserver = new ResizeObserver(() => {
+        this.scheduleCompactPromptVisibility()
+      })
+      this.compactPromptObserver.observe(this.accessoryEl)
+    }
 
     this.cancelBtn = document.createElement('button')
     this.cancelBtn.type = 'button'
@@ -366,6 +375,7 @@ export class AcUiMobileSessionPanel {
     if (!this.open) return
     if (partial.prompt != null) {
       this.promptEl.textContent = stripPromptColon(partial.prompt)
+      if (this.collapsed) this.scheduleCompactPromptVisibility()
     }
     if (partial.allowNone != null) {
       this.confirmBtn.disabled = !partial.allowNone
@@ -431,6 +441,10 @@ export class AcUiMobileSessionPanel {
     this.open = false
     this.callbacks = null
     this.accessoryEl.hidden = true
+    if (this.compactPromptRaf) {
+      cancelAnimationFrame(this.compactPromptRaf)
+      this.compactPromptRaf = 0
+    }
     this.setCollapsed(false)
     this.layoutUnsub?.()
     this.layoutUnsub = undefined
@@ -470,6 +484,12 @@ export class AcUiMobileSessionPanel {
   /** Removes DOM. */
   dispose(): void {
     this.hide()
+    if (this.compactPromptRaf) {
+      cancelAnimationFrame(this.compactPromptRaf)
+      this.compactPromptRaf = 0
+    }
+    this.compactPromptObserver?.disconnect()
+    this.compactPromptObserver = undefined
     this.accessoryObserver?.disconnect()
     this.accessoryObserver = undefined
     this.helpPanel?.dispose()
@@ -491,8 +511,10 @@ export class AcUiMobileSessionPanel {
    * - With accessory widgets → title always shows the accessory; the message
    *   row shows the prompt and keyword chips together.
    *
-   * Compact mode always shows a truncated command prompt. When accessory
-   * widgets are present they stay on the title row beside the prompt.
+   * Compact mode keeps a single row:
+   * `[accessory?] [prompt (remaining space)] [expand] [✓ ×]`.
+   * Keyword chips never appear. The prompt uses leftover space only (ellipsis
+   * on overflow) and is hidden when less than one third of the text fits.
    */
   private syncPromptPlacement(collapsed: boolean): void {
     const hasWidgets = this.hasAccessoryWidgets()
@@ -507,7 +529,7 @@ export class AcUiMobileSessionPanel {
     this.promptRow.classList.remove('is-in-title')
 
     if (collapsed) {
-      // Compact: always show the truncated command message on the title row.
+      // Compact: prompt sits after accessory content, before expand / actions.
       this.promptEl.hidden = false
       this.accessoryEl.insertBefore(this.promptEl, this.titleActions)
       this.promptRow.appendChild(this.chipsEl)
@@ -517,6 +539,7 @@ export class AcUiMobileSessionPanel {
       this.promptRow.hidden = true
       this.accessoryEl.appendChild(this.compactActions)
       this.compactActions.append(this.cancelBtn, this.confirmBtn)
+      this.scheduleCompactPromptVisibility()
       return
     }
 
@@ -525,6 +548,7 @@ export class AcUiMobileSessionPanel {
     if (this.compactActions.parentElement === this.accessoryEl) {
       this.compactActions.remove()
     }
+    this.panel.classList.remove('is-compact-prompt-hidden')
 
     // Message row always sits below the title bar as a panel child.
     if (this.promptRow.parentElement === this.accessoryEl) {
@@ -541,6 +565,105 @@ export class AcUiMobileSessionPanel {
       this.promptRow.append(this.promptEl, this.chipsEl)
       this.promptRow.hidden = false
     }
+  }
+
+  /** Defers compact prompt show/hide until after flex layout settles. */
+  private scheduleCompactPromptVisibility(): void {
+    if (!this.collapsed || !this.open) return
+    if (this.compactPromptRaf) cancelAnimationFrame(this.compactPromptRaf)
+    this.compactPromptRaf = requestAnimationFrame(() => {
+      this.compactPromptRaf = 0
+      this.syncCompactPromptVisibility()
+    })
+  }
+
+  /**
+   * In compact mode the prompt only uses leftover width after accessory,
+   * expand, and ✓/×. Hide it when that width is under one third of the full
+   * message text width (partial text uses CSS ellipsis). When hidden, the
+   * accessory stays left-aligned and expand / ✓/× stay right-aligned.
+   *
+   * Avoids temporarily unhiding the prompt to measure — that would thrash
+   * layout and re-enter via {@link ResizeObserver} every frame.
+   */
+  private syncCompactPromptVisibility(): void {
+    if (!this.collapsed || !this.open) {
+      this.panel.classList.remove('is-compact-prompt-hidden')
+      return
+    }
+
+    const text = this.promptEl.textContent?.trim() ?? ''
+    if (!text) {
+      this.applyCompactPromptHidden(true)
+      return
+    }
+
+    const fullWidth = this.measurePromptTextWidth()
+    if (fullWidth <= 0) {
+      this.applyCompactPromptHidden(false)
+      return
+    }
+    const available = this.measureCompactPromptAvailableWidth()
+    this.applyCompactPromptHidden(available < fullWidth / 3)
+  }
+
+  /** Applies compact prompt visibility only when the decision changes. */
+  private applyCompactPromptHidden(hide: boolean): void {
+    if (
+      this.promptEl.hidden === hide &&
+      this.panel.classList.contains('is-compact-prompt-hidden') === hide
+    ) {
+      return
+    }
+    this.promptEl.hidden = hide
+    this.panel.classList.toggle('is-compact-prompt-hidden', hide)
+  }
+
+  /**
+   * Leftover width for the compact prompt. Uses the live flex slot when the
+   * prompt is visible; otherwise infers space from the row minus siblings so
+   * we never flash the prompt back on just to measure.
+   */
+  private measureCompactPromptAvailableWidth(): number {
+    if (!this.promptEl.hidden) {
+      return this.promptEl.clientWidth
+    }
+    const rowWidth = this.accessoryEl.clientWidth
+    const rowStyle = getComputedStyle(this.accessoryEl)
+    const gap = parseFloat(rowStyle.columnGap || rowStyle.gap || '0') || 0
+    const siblings = Array.from(this.accessoryEl.children).filter(
+      (el): el is HTMLElement => el !== this.promptEl && !(el as HTMLElement).hidden
+    )
+    let used = 0
+    for (const el of siblings) {
+      used += el.getBoundingClientRect().width
+    }
+    // Showing the prompt inserts one more flex item → one extra gap.
+    return Math.max(0, rowWidth - used - gap * siblings.length)
+  }
+
+  /** Intrinsic single-line width of the current prompt text. */
+  private measurePromptTextWidth(): number {
+    const probe = document.createElement('span')
+    const style = getComputedStyle(this.promptEl)
+    probe.textContent = this.promptEl.textContent
+    // Prefer longhand font props — `font` shorthand is empty in some engines.
+    const font =
+      style.font ||
+      `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`.trim()
+    probe.style.cssText = [
+      'position:absolute',
+      'visibility:hidden',
+      'pointer-events:none',
+      'white-space:nowrap',
+      `font:${font}`,
+      `letter-spacing:${style.letterSpacing}`,
+      `text-transform:${style.textTransform}`
+    ].join(';')
+    document.body.appendChild(probe)
+    const width = probe.getBoundingClientRect().width
+    probe.remove()
+    return width
   }
 
   private refreshCollapseLabel(): void {
@@ -754,6 +877,12 @@ const MOBILE_CMD_CSS = `
     border-bottom: 0;
     flex: 1;
     min-width: 0;
+    flex-wrap: nowrap;
+  }
+  /* Accessory keeps intrinsic width; prompt may not steal space from it. */
+  .ml-mobile-cmd-panel.is-collapsed .ml-mobile-cmd-accessory-content {
+    flex: 0 0 auto;
+    min-width: 0;
   }
   .ml-mobile-cmd-prompt-row {
     display: flex;
@@ -792,13 +921,21 @@ const MOBILE_CMD_CSS = `
     flex: 1 1 auto;
     min-width: 0;
   }
+  /* Compact: fill leftover space only; ellipsis when truncated. */
   .ml-mobile-cmd-panel.is-collapsed .ml-mobile-cmd-prompt {
+    flex: 1 1 0;
+    min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    overflow-wrap: normal;
+    word-break: normal;
   }
   .ml-mobile-cmd-panel.is-collapsed .ml-mobile-cmd-prompt[hidden] {
     display: none;
+  }
+  .ml-mobile-cmd-panel.is-collapsed .ml-mobile-cmd-chips {
+    display: none !important;
   }
   .ml-mobile-cmd-actions-compact {
     display: none;
@@ -819,6 +956,11 @@ const MOBILE_CMD_CSS = `
   }
   .ml-mobile-cmd-panel.is-collapsed .ml-mobile-cmd-title-actions {
     margin-left: 0;
+    flex: 0 0 auto;
+  }
+  /* No prompt: accessory left, expand + ✓/× right. */
+  .ml-mobile-cmd-panel.is-collapsed.is-compact-prompt-hidden .ml-mobile-cmd-title-actions {
+    margin-left: auto;
   }
   .ml-mobile-cmd-group {
     display: flex;
