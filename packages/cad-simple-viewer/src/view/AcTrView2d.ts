@@ -48,6 +48,7 @@ import {
   AcEdConditionWaiter,
   AcEdCorsorType,
   AcEdGripManager,
+  acedGuardCanvasTouchCallout,
   acedInteractionStrategy,
   acedIsTouchDerivedMouseEvent,
   AcEdMTextEditor,
@@ -344,11 +345,8 @@ export class AcTrView2d extends AcEdBaseView {
     renderer.domElement.style.maxWidth = '100%'
     renderer.domElement.style.maxHeight = '100%'
     // Keep one-finger picks (measure snap loupe) from being stolen by the
-    // browser scroll / long-press context-menu gesture.
-    renderer.domElement.style.touchAction = 'none'
-    renderer.domElement.style.userSelect = 'none'
-    renderer.domElement.style.setProperty('-webkit-user-select', 'none')
-    renderer.domElement.style.setProperty('-webkit-touch-callout', 'none')
+    // browser scroll / long-press copy-selection callout (especially iOS).
+    acedGuardCanvasTouchCallout(renderer.domElement, container)
 
     super(renderer.domElement, container)
     this._gripManager = new AcEdGripManager(this)

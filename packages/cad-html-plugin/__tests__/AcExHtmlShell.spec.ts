@@ -37,6 +37,14 @@ describe('ACEX_HTML_SHELL_CSS', () => {
     expect(ACEX_HTML_SHELL_CSS).toContain('transform: translate(-50%, -50%);')
   })
 
+  it('suppresses iOS canvas long-press copy / selection callout', () => {
+    expect(ACEX_HTML_SHELL_CSS).toContain('-webkit-touch-callout: none')
+    expect(ACEX_HTML_SHELL_CSS).toContain('-webkit-user-select: none')
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      '-webkit-tap-highlight-color: transparent'
+    )
+  })
+
   it('aliases Element Plus primary so shared measure-tool SVGs resolve', () => {
     expect(ACEX_HTML_SHELL_CSS).toContain(
       '--el-color-primary: var(--mlcad-accent)'

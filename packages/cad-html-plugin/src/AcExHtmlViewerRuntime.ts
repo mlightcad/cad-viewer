@@ -16,6 +16,10 @@ import {
 } from './AcExCssRect'
 import { acexSetDocsBaseUrl } from './AcExDocsUrl'
 import {
+  acedClearDomSelection,
+  acedGuardCanvasTouchCallout
+} from './AcExHtmlSimpleViewerUi'
+import {
   decryptAcExHtmlSnapshotPayload,
   isAcExHtmlAccessExpired,
   parseAcExHtmlAccessManifest
@@ -587,6 +591,8 @@ async function startViewer(): Promise<void> {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   canvasHost.insertBefore(renderer.domElement, canvasHost.firstChild)
+  // Block iOS Safari Copy / selection callout on long-press so the snap loupe wins.
+  acedGuardCanvasTouchCallout(renderer.domElement, canvasHost)
 
   const scene = new THREE.Scene()
   const originalBackground = snapshot.meta.background >>> 0
@@ -3212,6 +3218,7 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
         boxGesture.activated = true
         boxGesture.startX = touchSession.x
         boxGesture.startY = touchSession.y
+        acedClearDomSelection()
         acexSetMobileSnapLoupePreciseCapture(true)
         if (kind === 'zoom-window') {
           getNavTools()?.handlePointerDown(touchSession.x, touchSession.y)
@@ -3292,6 +3299,7 @@ function setupToolPointerInput(options: AcExToolPointerInputOptions): void {
           event.clientY,
           () => {
             // Precise capture only: lock pan and start jig / HUD preview.
+            acedClearDomSelection()
             acexSetMobileSnapLoupePreciseCapture(true)
             applyTouchPreciseSample(touchSession.x, touchSession.y)
             render()

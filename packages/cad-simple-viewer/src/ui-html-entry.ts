@@ -10,10 +10,15 @@
  */
 
 export {
+  acedApplyCanvasTouchCalloutStyles,
+  acedClearDomSelection,
+  acedGuardCanvasTouchCallout
+} from './editor/input/ui/AcEdCanvasTouchCalloutGuard'
+export { AcEdEntityPickCancelChrome } from './editor/input/ui/AcEdEntityPickCancelChrome'
+export {
   ACED_TOUCH_POINT_LONG_PRESS_MS,
   ACED_TOUCH_POINT_MOVE_CANCEL_PX
 } from './editor/input/ui/AcEdTouchPointTiming'
-export { AcEdEntityPickCancelChrome } from './editor/input/ui/AcEdEntityPickCancelChrome'
 export {
   acedIsMobileOrPadUi,
   acedIsMobileUiLayout

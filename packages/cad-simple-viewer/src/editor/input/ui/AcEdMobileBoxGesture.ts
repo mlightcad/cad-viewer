@@ -1,3 +1,4 @@
+import { acedClearDomSelection } from './AcEdCanvasTouchCalloutGuard'
 import {
   ACED_TOUCH_POINT_LONG_PRESS_MS,
   acedArmTouchMouseGuard,
@@ -104,6 +105,7 @@ export function acedAttachMobileBoxGesture(
       activated = true
       startClientX = session.x
       startClientY = session.y
+      acedClearDomSelection()
       host.setNavigationEnabled?.(false)
       host.onActivate(session.x, session.y)
     })
