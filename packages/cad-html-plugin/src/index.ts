@@ -143,6 +143,8 @@ export {
   type AcExBuildPackageDataOptions
 } from './AcExPackageBuilder'
 export {
+  ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY,
+  createAcExOrderedBytePrefetcher,
   parseAcExPackageManifest,
   snapshotSkeletonFromManifest,
   resolveChunkUrl,
@@ -151,6 +153,8 @@ export {
   loadAcExPackage,
   loadAcExPackageLayout,
   loadAcExPackageLayoutOsnap,
+  type AcExOrderedBytePrefetcher,
+  type AcExOrderedPrefetchedItem,
   type AcExPackageLoadProgress,
   type AcExPackageLoaderOptions
 } from './AcExPackageLoader'
