@@ -1,11 +1,13 @@
 import { strFromU8, zipSync } from 'fflate'
 
-import { buildAcExPackage, splitLayoutIntoSlices } from '../src/AcExPackageBuilder'
+import { decodeChunkGzip, encodeChunkGzip } from '../src/AcExChunkBinaryCodec'
 import {
-  decodeChunkGzip,
-  encodeChunkGzip
-} from '../src/AcExChunkBinaryCodec'
+  buildAcExPackage,
+  splitLayoutIntoSlices
+} from '../src/AcExPackageBuilder'
 import {
+  ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY,
+  createAcExOrderedBytePrefetcher,
   isSafePackageHref,
   loadAcExPackage,
   parseAcExPackageManifest,
@@ -17,8 +19,8 @@ import {
   unzipAcExPackageFiles,
   zipAcExPackageFiles
 } from '../src/AcExPackageZip'
-import { ACEX_SNAPSHOT_VERSION } from '../src/AcExSnapshotTypes'
 import type { AcExSnapshot } from '../src/AcExSnapshotTypes'
+import { ACEX_SNAPSHOT_VERSION } from '../src/AcExSnapshotTypes'
 
 function f32(values: number[]): Float32Array {
   return Float32Array.from(values)
@@ -114,7 +116,9 @@ describe('AcEx package format', () => {
     const { compressed } = encodeChunkGzip(chunk)
     const decoded = decodeChunkGzip(compressed)
     expect(decoded.layoutBtrId).toBe('ms')
-    expect(decoded.lineBatches[0]?.positions).toEqual(chunk.lineBatches[0]!.positions)
+    expect(decoded.lineBatches[0]?.positions).toEqual(
+      chunk.lineBatches[0]!.positions
+    )
   })
 
   it('splits oversized layouts into multiple slices', () => {
@@ -233,7 +237,10 @@ describe('AcEx package format', () => {
     expect(isSafePackageHref('/abs.acex.gz')).toBe(false)
 
     expect(() =>
-      resolveChunkUrl('https://cdn.example/pkg/demo.acex.json', 'chunks/a.acex.gz')
+      resolveChunkUrl(
+        'https://cdn.example/pkg/demo.acex.json',
+        'chunks/a.acex.gz'
+      )
     ).not.toThrow()
     expect(() =>
       resolveChunkUrl(
@@ -246,7 +253,10 @@ describe('AcEx package format', () => {
     ).toThrow(/relative package path/)
 
     expect(
-      resolvePackageManifestUrl('./demo.acex.json', 'https://cdn.example/pkg/viewer.html')
+      resolvePackageManifestUrl(
+        './demo.acex.json',
+        'https://cdn.example/pkg/viewer.html'
+      )
     ).toBe('https://cdn.example/pkg/demo.acex.json')
     expect(() =>
       resolvePackageManifestUrl(
@@ -351,5 +361,173 @@ describe('AcEx package format', () => {
     expect(loaded.layouts[0]?.osnap?.primitives).toEqual(
       snapshot.layouts[0]!.osnap!.primitives
     )
+  })
+
+  it('downloads geometry chunks in parallel but decodes them in order', async () => {
+    const snapshot = makeSnapshot()
+    // Force enough small chunks to fill the download window.
+    snapshot.layouts[0]!.lineBatches = Array.from({ length: 12 }, (_, i) => ({
+      layer: '0',
+      color: i % 2 === 0 ? 0xff0000 : 0x00ff00,
+      offset: [0, 0, 0] as [number, number, number],
+      positions: f32([0, i, 0, 10, i, 0])
+    }))
+    const pkg = buildAcExPackage(snapshot, {
+      viewerRuntime: '/* runtime */',
+      baseName: 'demo',
+      maxChunkBytes: 120
+    })
+    expect(pkg.manifest.chunks.length).toBeGreaterThanOrEqual(4)
+
+    const fileMap = new Map(pkg.files.map(f => [f.path, f.bytes]))
+
+    const buildTrackingFetch = () => {
+      let active = 0
+      const state = { active: 0, maxActive: 0 }
+      const fetchImpl: typeof fetch = async (input: RequestInfo | URL) => {
+        const url = String(input)
+        const path =
+          [...fileMap.keys()].find(
+            key => url === key || url.endsWith(`/${key}`) || url.endsWith(key)
+          ) ?? null
+        const bytes = path ? fileMap.get(path) : undefined
+        if (!bytes || !path) {
+          return new Response(null, { status: 404 })
+        }
+        const isChunk = path.endsWith('.acex.gz')
+        if (isChunk) {
+          active += 1
+          state.active = active
+          state.maxActive = Math.max(state.maxActive, active)
+          // Later chunks resolve first → bytes arrive out of order.
+          const indexMatch = /-(\d+)\.acex\.gz$/.exec(path)
+          const index = indexMatch ? Number(indexMatch[1]) : 0
+          await new Promise(resolve => setTimeout(resolve, 45 - index * 4))
+        }
+        try {
+          if (path.endsWith('.json')) {
+            return new Response(strFromU8(bytes), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            })
+          }
+          const copy = new Uint8Array(bytes.byteLength)
+          copy.set(bytes)
+          return new Response(copy, { status: 200 })
+        } finally {
+          if (isChunk) {
+            active -= 1
+            state.active = active
+          }
+        }
+      }
+      return { fetchImpl, state }
+    }
+
+    // Default: bounded parallel window, strictly ordered callbacks.
+    const parallel = buildTrackingFetch()
+    const progresses: number[] = []
+    const loaded = await loadAcExPackage({
+      manifestUrl: 'https://cdn.example/drawing.acex.json',
+      fetchImpl: parallel.fetchImpl,
+      loadOsnap: false,
+      onChunk: (_layout, _chunk, progress) => {
+        progresses.push(progress.loadedChunks)
+      }
+    })
+    expect(parallel.state.maxActive).toBeGreaterThan(1)
+    expect(parallel.state.maxActive).toBeLessThanOrEqual(
+      ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY
+    )
+    expect(progresses).toEqual(pkg.manifest.chunks.map((_, index) => index + 1))
+    expect(loaded.layouts[0]?.lineBatches.length).toBe(12)
+    expect(loaded.layouts[0]?.meshBatches.length).toBe(1)
+
+    // fetchConcurrency: 1 fully serializes downloads.
+    const serial = buildTrackingFetch()
+    await loadAcExPackage({
+      manifestUrl: 'https://cdn.example/drawing.acex.json',
+      fetchImpl: serial.fetchImpl,
+      loadOsnap: false,
+      fetchConcurrency: 1
+    })
+    expect(serial.state.maxActive).toBe(1)
+  })
+
+  it('prefetcher keeps the download window full and consumes in order', async () => {
+    const items = [0, 1, 2, 3]
+    const deferred = items.map(() => {
+      let resolve!: (value: Uint8Array) => void
+      const promise = new Promise<Uint8Array>(res => {
+        resolve = res
+      })
+      return { promise, resolve }
+    })
+    let active = 0
+    let maxActive = 0
+    const prefetcher = createAcExOrderedBytePrefetcher(items, 3, async item => {
+      active += 1
+      maxActive = Math.max(maxActive, active)
+      try {
+        return await deferred[item]!.promise
+      } finally {
+        active -= 1
+      }
+    })
+    // Window of three launches on startup.
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(maxActive).toBe(3)
+
+    const first = prefetcher.next()
+    // Items 2 and 1 finish before item 0.
+    deferred[2]!.resolve(Uint8Array.of(22))
+    deferred[1]!.resolve(Uint8Array.of(11))
+    await Promise.resolve()
+    let settled = false
+    void first.then(() => {
+      settled = true
+    })
+    await Promise.resolve()
+    expect(settled).toBe(false)
+
+    deferred[0]!.resolve(Uint8Array.of(0))
+    const a = await first
+    expect(a).not.toBeNull()
+    expect(a!.index).toBe(0)
+    // Consuming item 0 slides the window to launch item 3.
+    const b = await prefetcher.next()
+    expect(b?.index).toBe(1)
+    expect(b?.bytes[0]).toBe(11)
+    const c = await prefetcher.next()
+    expect(c?.index).toBe(2)
+    expect(c?.bytes[0]).toBe(22)
+
+    let thirdSettled = false
+    const last = prefetcher.next()
+    void last.then(() => {
+      thirdSettled = true
+    })
+    await Promise.resolve()
+    expect(thirdSettled).toBe(false)
+    deferred[3]!.resolve(Uint8Array.of(33))
+    const d = await last
+    expect(d?.index).toBe(3)
+    expect(d?.bytes[0]).toBe(33)
+    expect(await prefetcher.next()).toBeNull()
+  })
+
+  it('never fetches when the item list is empty', async () => {
+    let calls = 0
+    const prefetcher = createAcExOrderedBytePrefetcher([], 6, async () => {
+      calls += 1
+      return new Uint8Array()
+    })
+    // Let the startup launch window settle; no fetch may fire.
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(calls).toBe(0)
+    expect(await prefetcher.next()).toBeNull()
+    expect(calls).toBe(0)
   })
 })

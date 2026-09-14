@@ -44,6 +44,7 @@ import { setupAcExHtmlMeasurePanel } from './AcExHtmlMeasurePanel'
 import { setupAcExHtmlMeasureSettings } from './AcExHtmlMeasureSettings'
 import { setupAcExHtmlNavTools } from './AcExHtmlNavTools'
 import {
+  ACEX_PACKAGE_DIRECTORY_ORIGIN,
   acexGlobalFetch,
   chooseInitialManifestHref,
   probePackageManifest,
@@ -76,6 +77,8 @@ import {
 import { AcExOsnapIndex, estimateOsnapRebuildWork } from './AcExOsnap'
 import { AcExOsnapMarker } from './AcExOsnapMarker'
 import {
+  ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY,
+  createAcExOrderedBytePrefetcher,
   loadAcExPackageLayoutOsnap,
   resolveChunkUrl,
   snapshotSkeletonFromManifest
@@ -885,7 +888,9 @@ async function startViewer(): Promise<void> {
 
   const packageLayoutHasChunks = (btrId: string): boolean => {
     if (!packageSession) return false
-    const ref = packageSession.manifest.layouts.find(item => item.btrId === btrId)
+    const ref = packageSession.manifest.layouts.find(
+      item => item.btrId === btrId
+    )
     return (ref?.chunkIds.length ?? 0) > 0
   }
 
@@ -944,6 +949,20 @@ async function startViewer(): Promise<void> {
   }
 
   /**
+   * Download window for package chunks. Remote packages fetch up to six
+   * chunks in parallel so latency/bandwidth overlap; inflate + GPU upload +
+   * paint still consume chunks strictly in `chunkIds` order below, so
+   * progressive rendering is unchanged. Embedded / local-directory packages
+   * resolve bytes from DOM nodes / an in-memory map (with synchronous base64
+   * decode), where a wider window only adds startup jank — keep them serial.
+   */
+  const packageChunkFetchConcurrency = packageSession?.manifestUrl.startsWith(
+    ACEX_PACKAGE_DIRECTORY_ORIGIN
+  )
+    ? 1
+    : ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY
+
+  /**
    * Fetches package geometry chunks into `target` batches. When `uploadToGpu` is
    * true, paints each chunk; when false, only restores CPU arrays (hybrid OSNAP)
    * without touching an already-resident GPU scene.
@@ -953,48 +972,62 @@ async function startViewer(): Promise<void> {
     options: { uploadToGpu: boolean }
   ): Promise<void> => {
     if (!packageSession) return
-    const layoutRef = packageSession.manifest.layouts.find(
+    const session = packageSession
+    const layoutRef = session.manifest.layouts.find(
       item => item.btrId === target.btrId
     )
     if (!layoutRef) {
-      packageSession.loadedLayouts.add(target.btrId)
+      session.loadedLayouts.add(target.btrId)
       return
     }
 
     const chunkById = new Map(
-      packageSession.manifest.chunks.map(chunk => [chunk.id, chunk])
+      session.manifest.chunks.map(chunk => [chunk.id, chunk])
     )
     const chunks = layoutRef.chunkIds
       .map(id => chunkById.get(id))
       .filter((chunk): chunk is NonNullable<typeof chunk> => chunk != null)
 
+    // Parallel download window; bytes may arrive out of order but the
+    // prefetcher hands them back in manifest (paint) order.
+    const prefetcher = createAcExOrderedBytePrefetcher(
+      chunks,
+      packageChunkFetchConcurrency,
+      async chunkRef => {
+        const url = resolveChunkUrl(session.manifestUrl, chunkRef.href)
+        const response = await session.fetchImpl(url)
+        if (!response.ok) {
+          throw new Error(`Failed to load geometry chunk (${response.status})`)
+        }
+        const contentLength = response.headers.get('content-length')
+        if (contentLength != null) {
+          const declared = Number(contentLength)
+          if (
+            Number.isFinite(declared) &&
+            declared > ACEX_MAX_COMPRESSED_BYTES
+          ) {
+            throw new Error('Geometry chunk exceeds size limit')
+          }
+        }
+        const buffer = await response.arrayBuffer()
+        if (buffer.byteLength > ACEX_MAX_COMPRESSED_BYTES) {
+          throw new Error('Geometry chunk exceeds size limit')
+        }
+        return new Uint8Array(buffer)
+      }
+    )
+
     let loadedChunks = 0
-    for (const chunkRef of chunks) {
+    for (;;) {
+      const entry = await prefetcher.next()
+      if (!entry) {
+        break
+      }
       statusEl.textContent = i18n.t('status.loadingChunks', {
         loaded: String(loadedChunks),
         total: String(chunks.length)
       })
-      const url = resolveChunkUrl(packageSession.manifestUrl, chunkRef.href)
-      const response = await packageSession.fetchImpl(url)
-      if (!response.ok) {
-        throw new Error(`Failed to load geometry chunk (${response.status})`)
-      }
-      const contentLength = response.headers.get('content-length')
-      if (contentLength != null) {
-        const declared = Number(contentLength)
-        if (
-          Number.isFinite(declared) &&
-          declared > ACEX_MAX_COMPRESSED_BYTES
-        ) {
-          throw new Error('Geometry chunk exceeds size limit')
-        }
-      }
-      const buffer = await response.arrayBuffer()
-      if (buffer.byteLength > ACEX_MAX_COMPRESSED_BYTES) {
-        throw new Error('Geometry chunk exceeds size limit')
-      }
-      const compressed = new Uint8Array(buffer)
-      const decoded = decodeChunkGzip(compressed)
+      const decoded = decodeChunkGzip(entry.bytes)
       const lineStart = target.lineBatches.length
       const meshStart = target.meshBatches.length
       target.lineBatches.push(...decoded.lineBatches)
@@ -1021,7 +1054,7 @@ async function startViewer(): Promise<void> {
       })
     }
 
-    packageSession.loadedLayouts.add(target.btrId)
+    session.loadedLayouts.add(target.btrId)
   }
 
   const loadPackageLayoutGeometry = async (
@@ -1109,6 +1142,7 @@ async function startViewer(): Promise<void> {
       target,
       {
         fetchImpl: packageSession.fetchImpl,
+        fetchConcurrency: packageChunkFetchConcurrency,
         yieldFn: async () => {
           paintPackageChunk?.()
           await accmYieldForPaint()
@@ -1153,11 +1187,7 @@ async function startViewer(): Promise<void> {
     }
     // Drop CPU for layouts not needed for first paint (still in gzip).
     const keep = new Set<string>([layout.btrId])
-    if (
-      !layout.isModelSpace &&
-      hasPaperViewports &&
-      modelLayout
-    ) {
+    if (!layout.isModelSpace && hasPaperViewports && modelLayout) {
       keep.add(modelLayout.btrId)
     } else if (layout.isModelSpace && modelLayout) {
       keep.add(modelLayout.btrId)
@@ -1170,7 +1200,10 @@ async function startViewer(): Promise<void> {
     layout.meshBatches
   )
   /** Per-layout layer extents kept after CPU batch release for layer-zoom. */
-  const layerExtentsByLayout = new Map<string, Map<string, AcExExtents | null>>()
+  const layerExtentsByLayout = new Map<
+    string,
+    Map<string, AcExExtents | null>
+  >()
   layerExtentsByLayout.set(layout.btrId, new Map(layerExtents))
   let layoutExtents = resolveLayoutViewExtents(
     layout,

@@ -43,6 +43,14 @@ export interface AcExPackageLoaderOptions {
   loadOsnap?: boolean
   /** When set, only these layout BTR ids are fetched (others stay empty). */
   layoutFilter?: ReadonlySet<string> | string[]
+  /**
+   * Maximum geometry chunk fetches launched ahead of the ordered
+   * inflate/paint loop. Defaults to
+   * {@link ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY}. Decoding and `onChunk`
+   * callbacks still run one at a time in manifest order. Pass `1` for
+   * non-network fetch backends (embedded / local directory packages).
+   */
+  fetchConcurrency?: number
 }
 
 export interface AcExPackageOsnapLoadOptions {
@@ -51,11 +59,104 @@ export interface AcExPackageOsnapLoadOptions {
    * Called after each OSNAP chunk is decoded (before the next decode).
    * Use to update status UI and yield for paint.
    */
-  onChunk?: (
-    progress: AcExPackageLoadProgress
-  ) => void | Promise<void>
+  onChunk?: (progress: AcExPackageLoadProgress) => void | Promise<void>
   /** Yield between decode steps so the canvas stays responsive. */
   yieldFn?: () => Promise<void>
+  /**
+   * Maximum OSNAP chunk fetches in flight. Defaults to
+   * {@link ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY}. Decodes stay serial so
+   * parallel ACEO gunzips cannot freeze the main thread.
+   */
+  fetchConcurrency?: number
+}
+
+/**
+ * Default chunk download window for remote (HTTP) packages.
+ *
+ * Matches the common per-origin HTTP/1.1 connection budget and stays polite
+ * on HTTP/2. Only compressed bytes are buffered, so the window costs little
+ * memory; inflate/paint remains strictly serial and ordered.
+ */
+export const ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY = 6
+
+/** One ordered entry handed back by {@link createAcExOrderedBytePrefetcher}. */
+export interface AcExOrderedPrefetchedItem<T> {
+  item: T
+  index: number
+  bytes: Uint8Array
+}
+
+/**
+ * Sliding-window prefetcher over an ordered item list.
+ *
+ * Up to `concurrency` byte fetches are in flight at once, but `next()` always
+ * resolves strictly in input order: an item downloaded out of order waits as
+ * compressed bytes until earlier items are consumed. This lets hosted packages
+ * download chunks in parallel while decode / GPU upload / paint happen one
+ * chunk at a time (progressive rendering, no main-thread decode burst).
+ */
+export interface AcExOrderedBytePrefetcher<T> {
+  next(): Promise<AcExOrderedPrefetchedItem<T> | null>
+}
+
+/**
+ * Creates {@link AcExOrderedBytePrefetcher}. The first fetch window starts
+ * immediately; a new fetch is launched each time the consumer takes an item,
+ * keeping the pipeline full until every item has been requested.
+ */
+export function createAcExOrderedBytePrefetcher<T>(
+  items: readonly T[],
+  concurrency: number,
+  fetchBytes: (item: T, index: number) => Promise<Uint8Array>
+): AcExOrderedBytePrefetcher<T> {
+  const total = items.length
+  // Never launch for an empty item list: the window must stay 0 so
+  // `fetchBytes` is only ever invoked with a valid index.
+  const windowSize =
+    total > 0
+      ? Math.max(
+          1,
+          Math.min(
+            Number.isFinite(concurrency) ? Math.floor(concurrency) : 1,
+            total
+          )
+        )
+      : 0
+  const inflight: Array<Promise<Uint8Array> | undefined> = new Array(total)
+  let launched = 0
+  let consumed = 0
+
+  const launch = (index: number): void => {
+    const promise = Promise.resolve().then(() =>
+      fetchBytes(items[index]!, index)
+    )
+    // The consumer aborts on the first failure and never awaits trailing
+    // window requests; attach a no-op handler so they do not surface as
+    // unhandled promise rejections. The ordered await still receives the
+    // rejection when that entry is consumed.
+    promise.catch(() => {})
+    inflight[index] = promise
+    launched += 1
+  }
+
+  while (launched < windowSize) {
+    launch(launched)
+  }
+
+  return {
+    async next() {
+      if (consumed >= total) {
+        return null
+      }
+      const index = consumed
+      consumed += 1
+      const bytes = await inflight[index]!
+      if (launched < total) {
+        launch(launched)
+      }
+      return { item: items[index]!, index, bytes }
+    }
+  }
 }
 
 const SAFE_PACKAGE_HREF =
@@ -166,7 +267,10 @@ export function resolveChunkUrl(manifestUrl: string, href: string): string {
   } catch {
     throw new Error('Invalid chunk or manifest URL')
   }
-  if (resolved.protocol !== manifest.protocol || resolved.host !== manifest.host) {
+  if (
+    resolved.protocol !== manifest.protocol ||
+    resolved.host !== manifest.host
+  ) {
     throw new Error('Chunk URL must share the manifest origin')
   }
   const basePath = manifest.pathname.replace(/[^/]*$/, '')
@@ -229,6 +333,11 @@ async function fetchCompressedBytes(
 
 /**
  * Fetches the package manifest, then progressively downloads geometry chunks.
+ *
+ * Chunk bytes download through a bounded parallel window (see
+ * {@link createAcExOrderedBytePrefetcher}), but gunzip, batch append, and the
+ * `onChunk` paint callback run strictly one at a time in manifest order, so
+ * progressive rendering is unchanged while network time is overlapped.
  * OSNAP sidecars load afterward (unless {@link AcExPackageLoaderOptions.loadOsnap}
  * is `false`) so display data is not blocked by snap catalogs.
  */
@@ -237,6 +346,8 @@ export async function loadAcExPackage(
 ): Promise<AcExSnapshot> {
   const fetchImpl = options.fetchImpl ?? acexGlobalFetch
   const loadOsnap = options.loadOsnap !== false
+  const concurrency =
+    options.fetchConcurrency ?? ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY
   const manifestResponse = await fetchImpl(options.manifestUrl)
   if (!manifestResponse.ok) {
     throw new Error(
@@ -261,20 +372,30 @@ export async function loadAcExPackage(
     chunk => filter == null || filter.has(chunk.layoutBtrId)
   )
 
+  const prefetcher = createAcExOrderedBytePrefetcher(
+    chunksToLoad,
+    concurrency,
+    chunkRef =>
+      fetchCompressedBytes(
+        fetchImpl,
+        resolveChunkUrl(options.manifestUrl, chunkRef.href),
+        'geometry chunk'
+      )
+  )
+
   let loadedChunks = 0
-  for (const chunkRef of chunksToLoad) {
+  for (;;) {
+    const entry = await prefetcher.next()
+    if (!entry) {
+      break
+    }
+    const chunkRef = entry.item
     const layout = layoutById.get(chunkRef.layoutBtrId)
     if (!layout) {
       throw new Error('Unknown layout for package chunk')
     }
 
-    const url = resolveChunkUrl(options.manifestUrl, chunkRef.href)
-    const compressed = await fetchCompressedBytes(
-      fetchImpl,
-      url,
-      'geometry chunk'
-    )
-    const decoded = decodeChunkGzip(compressed)
+    const decoded = decodeChunkGzip(entry.bytes)
     if (decoded.layoutBtrId !== chunkRef.layoutBtrId) {
       throw new Error('Chunk layout mismatch')
     }
@@ -321,9 +442,14 @@ export async function loadAcExPackageLayout(
   manifestUrl: string,
   layoutBtrId: string,
   layout: AcExLayoutSnapshot,
-  options: Pick<AcExPackageLoaderOptions, 'fetchImpl' | 'onChunk'> = {}
+  options: Pick<
+    AcExPackageLoaderOptions,
+    'fetchImpl' | 'onChunk' | 'fetchConcurrency'
+  > = {}
 ): Promise<void> {
   const fetchImpl = options.fetchImpl ?? acexGlobalFetch
+  const concurrency =
+    options.fetchConcurrency ?? ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY
   const layoutRef = manifest.layouts.find(l => l.btrId === layoutBtrId)
   if (!layoutRef) {
     throw new Error(`Layout not found: ${layoutBtrId}`)
@@ -333,15 +459,25 @@ export async function loadAcExPackageLayout(
     .map(id => chunkById.get(id))
     .filter((c): c is AcExPackageChunkRef => c != null)
 
+  const prefetcher = createAcExOrderedBytePrefetcher(
+    chunks,
+    concurrency,
+    chunkRef =>
+      fetchCompressedBytes(
+        fetchImpl,
+        resolveChunkUrl(manifestUrl, chunkRef.href),
+        'geometry chunk'
+      )
+  )
+
   let loadedChunks = 0
-  for (const chunkRef of chunks) {
-    const url = resolveChunkUrl(manifestUrl, chunkRef.href)
-    const compressed = await fetchCompressedBytes(
-      fetchImpl,
-      url,
-      'geometry chunk'
-    )
-    const decoded = decodeChunkGzip(compressed)
+  for (;;) {
+    const entry = await prefetcher.next()
+    if (!entry) {
+      break
+    }
+    const chunkRef = entry.item
+    const decoded = decodeChunkGzip(entry.bytes)
     appendBatches(layout, decoded.lineBatches, decoded.meshBatches)
     loadedChunks += 1
     await options.onChunk?.(layout, chunkRef, {
@@ -356,9 +492,11 @@ export async function loadAcExPackageLayout(
 /**
  * Loads OSNAP ACEO chunks for one layout (no-op when absent).
  *
- * Prefetches the next compressed chunk while decoding the current one, but
- * never gunzips/decodes more than one chunk at a time — parallel decode of
- * dozens of ~500 KiB ACEO payloads freezes the main thread on large drawings.
+ * Compressed chunks download through a bounded parallel window
+ * ({@link createAcExOrderedBytePrefetcher}), but gunzip/decode never runs on
+ * more than one chunk at a time and primitives are assembled in
+ * `osnapChunkIds` order — parallel decode of dozens of ~500 KiB ACEO payloads
+ * would freeze the main thread on large drawings.
  */
 export async function loadAcExPackageLayoutOsnap(
   manifest: AcExPackageManifest,
@@ -389,6 +527,8 @@ export async function loadAcExPackageLayoutOsnap(
   }
 
   const fetchImpl = options.fetchImpl ?? acexGlobalFetch
+  const concurrency =
+    options.fetchConcurrency ?? ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY
   const yieldFn =
     options.yieldFn ??
     (() =>
@@ -401,29 +541,26 @@ export async function loadAcExPackageLayoutOsnap(
     totalPrimitives > 0 ? new Array(totalPrimitives) : []
   let writeOffset = 0
 
-  const fetchCompressed = async (
-    chunkRef: AcExPackageOsnapChunkRef
-  ): Promise<Uint8Array> => {
-    const url = resolveChunkUrl(manifestUrl, chunkRef.href)
-    return fetchCompressedBytes(fetchImpl, url, 'osnap chunk')
-  }
+  const prefetcher = createAcExOrderedBytePrefetcher(
+    refs,
+    concurrency,
+    chunkRef =>
+      fetchCompressedBytes(
+        fetchImpl,
+        resolveChunkUrl(manifestUrl, chunkRef.href),
+        'osnap chunk'
+      )
+  )
 
-  let nextFetch =
-    refs.length > 0 ? fetchCompressed(refs[0]!) : Promise.resolve(null)
-
-  for (let i = 0; i < refs.length; i++) {
-    const chunkRef = refs[i]!
-    const compressed = await nextFetch
-    nextFetch =
-      i + 1 < refs.length
-        ? fetchCompressed(refs[i + 1]!)
-        : Promise.resolve(null)
-
-    if (!compressed) {
-      throw new Error('Missing osnap chunk bytes')
+  let loadedChunks = 0
+  for (;;) {
+    const entry = await prefetcher.next()
+    if (!entry) {
+      break
     }
+    const chunkRef = entry.item
 
-    const decoded = decodeOsnapCatalogGzip(compressed)
+    const decoded = decodeOsnapCatalogGzip(entry.bytes)
     const slice = decoded.primitives
     if (totalPrimitives > 0) {
       for (let p = 0; p < slice.length; p++) {
@@ -435,8 +572,9 @@ export async function loadAcExPackageLayoutOsnap(
       }
     }
 
+    loadedChunks += 1
     await options.onChunk?.({
-      loadedChunks: i + 1,
+      loadedChunks,
       totalChunks: refs.length,
       layoutBtrId,
       chunkId: chunkRef.id
