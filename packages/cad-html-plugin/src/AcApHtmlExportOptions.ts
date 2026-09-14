@@ -15,7 +15,8 @@ const HTML_VIEWER_CAMERA_FRUSTUM = 400
 /**
  * HTML export packaging mode.
  *
- * - `single` — one self-contained `.html` with embedded snapshot (default).
+ * - `single` — one self-contained `.html` (default). Small drawings embed a
+ *   monolithic ACEX snapshot; large drawings embed progressive ACEC chunks.
  * - `multi` — multi-file ACEX package zipped as one `.zip` download; unzip before hosting.
  */
 export type AcApHtmlExportFormat = 'single' | 'multi'
@@ -64,7 +65,7 @@ export interface AcApHtmlExportOptions {
   expiresAt?: number | null
   /**
    * Optional password required to open the exported HTML. When set, the snapshot
-   * payload is encrypted in the file.
+   * or each embedded progressive chunk is AES-GCM encrypted.
    * Ignored when {@link AcApHtmlExportOptions.exportFormat} is `'multi'`.
    */
   password?: string

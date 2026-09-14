@@ -12,15 +12,16 @@ export type AcApHtmlExpiryDays = 1 | 7 | 30 | 'never' | 'custom'
 /**
  * Access metadata embedded in protected HTML exports.
  *
- * When {@link AcExHtmlAccessManifest.encrypted} is `true`, the snapshot payload
- * is AES-GCM encrypted and requires the export password to decode.
+ * When {@link AcExHtmlAccessManifest.encrypted} is `true`, the monolithic
+ * snapshot or each embedded progressive chunk is AES-GCM encrypted and requires
+ * the export password to decode.
  */
 export interface AcExHtmlAccessManifest {
   /** Manifest schema version. */
   v: typeof ACEX_HTML_ACCESS_VERSION
   /** Unix timestamp (ms) after which the file must not open; `null` = no expiry. */
   expiresAt: number | null
-  /** When `true`, the snapshot script body is password-encrypted. */
+  /** When `true`, the snapshot or embedded chunk payloads are password-encrypted. */
   encrypted: boolean
   /** Base64 PBKDF2 salt; present when {@link AcExHtmlAccessManifest.encrypted} is `true`. */
   salt?: string
@@ -170,29 +171,68 @@ export function buildAcExHtmlAccessManifest(options: {
 }
 
 /**
+ * Derives an AES-GCM key from a password and optional salt.
+ * When `saltBase64` is omitted, a fresh random salt is generated.
+ */
+export async function createAcExHtmlAccessKey(
+  password: string,
+  saltBase64?: string
+): Promise<{ key: CryptoKey; salt: string }> {
+  const salt =
+    saltBase64 != null && saltBase64.trim()
+      ? new Uint8Array(base64ToUint8(saltBase64))
+      : crypto.getRandomValues(new Uint8Array(SALT_BYTES))
+  const key = await deriveAcExHtmlAccessKey(password, salt)
+  return { key, salt: uint8ToBase64(salt) }
+}
+
+/**
+ * Encrypts raw bytes with AES-GCM. Returns `iv || ciphertext`.
+ */
+export async function encryptAcExHtmlBytes(
+  key: CryptoKey,
+  plain: Uint8Array
+): Promise<Uint8Array> {
+  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES))
+  const plainCopy = new Uint8Array(plain)
+  const encrypted = new Uint8Array(
+    await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plainCopy)
+  )
+  const combined = new Uint8Array(iv.length + encrypted.length)
+  combined.set(iv, 0)
+  combined.set(encrypted, iv.length)
+  return combined
+}
+
+/**
+ * Decrypts AES-GCM bytes produced by {@link encryptAcExHtmlBytes}.
+ *
+ * @throws When the key is wrong or the ciphertext is invalid.
+ */
+export async function decryptAcExHtmlBytes(
+  key: CryptoKey,
+  combined: Uint8Array
+): Promise<Uint8Array> {
+  const iv = new Uint8Array(combined.subarray(0, IV_BYTES))
+  const ciphertext = new Uint8Array(combined.subarray(IV_BYTES))
+  return new Uint8Array(
+    await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext)
+  )
+}
+
+/**
  * Encrypts a gzip-compressed snapshot payload for password-protected HTML export.
  */
 export async function encryptAcExHtmlSnapshotPayload(
   password: string,
   payload: string
 ): Promise<{ encryptedPayload: string; salt: string }> {
-  const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES))
-  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES))
-  const key = await deriveAcExHtmlAccessKey(password, salt)
+  const { key, salt } = await createAcExHtmlAccessKey(password)
   const plainBytes = new Uint8Array(base64ToUint8(payload))
-  const encrypted = new Uint8Array(
-    await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv: new Uint8Array(iv) },
-      key,
-      plainBytes
-    )
-  )
-  const combined = new Uint8Array(iv.length + encrypted.length)
-  combined.set(iv, 0)
-  combined.set(encrypted, iv.length)
+  const combined = await encryptAcExHtmlBytes(key, plainBytes)
   return {
     encryptedPayload: uint8ToBase64(combined),
-    salt: uint8ToBase64(salt)
+    salt
   }
 }
 
@@ -206,15 +246,22 @@ export async function decryptAcExHtmlSnapshotPayload(
   encryptedPayload: string,
   saltBase64: string
 ): Promise<string> {
-  const salt = new Uint8Array(base64ToUint8(saltBase64))
-  const key = await deriveAcExHtmlAccessKey(password, salt)
-  const combined = base64ToUint8(encryptedPayload)
-  const iv = new Uint8Array(combined.subarray(0, IV_BYTES))
-  const ciphertext = new Uint8Array(combined.subarray(IV_BYTES))
-  const plainBytes = new Uint8Array(
-    await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext)
+  const { key } = await createAcExHtmlAccessKey(password, saltBase64)
+  const plainBytes = await decryptAcExHtmlBytes(
+    key,
+    base64ToUint8(encryptedPayload)
   )
   return uint8ToBase64(plainBytes)
+}
+
+/** Encodes bytes as standard base64 (for HTML embedding). */
+export function acExHtmlBytesToBase64(bytes: Uint8Array): string {
+  return uint8ToBase64(bytes)
+}
+
+/** Decodes standard base64 to bytes. */
+export function acExHtmlBase64ToBytes(base64: string): Uint8Array {
+  return base64ToUint8(base64)
 }
 
 /**
