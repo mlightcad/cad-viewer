@@ -104,6 +104,19 @@ export interface AcExHtmlMainToolbarHandlers {
   onCollapse?: () => void
 }
 
+/**
+ * Progressive enablement while package geometry / OSNAP indexes load.
+ *
+ * - Geometry pending: the whole toolbar is disabled (`isOpening`); canvas zoom
+ *   via OrbitControls stays available.
+ * - Geometry ready, OSNAP pending: navigation / layers / settings work;
+ *   measure and annotation stay disabled until the snap index is ready.
+ */
+export interface AcExHtmlToolbarReadiness {
+  geometry: boolean
+  osnap: boolean
+}
+
 /** Options for {@link setupAcExHtmlMainToolbar}. */
 export interface AcExHtmlMainToolbarOptions {
   /** Empty `#mlcad-toolbar` mount (or another host in the sidebar). */
@@ -119,6 +132,11 @@ export interface AcExHtmlMainToolbarOptions {
   /** BTR id of the layout currently shown. */
   getActiveLayoutBtrId: () => string
   handlers: AcExHtmlMainToolbarHandlers
+  /**
+   * Shared readiness flags mutated by {@link AcExHtmlMainToolbarController}
+   * setters. Optional for tests that only build item lists.
+   */
+  readiness?: AcExHtmlToolbarReadiness
 }
 
 /** Handles returned by {@link setupAcExHtmlMainToolbar}. */
@@ -133,8 +151,18 @@ export interface AcExHtmlMainToolbarController {
   syncLayout: () => void
   /** Re-renders toggle icons (theme, visibility, nav, etc.). */
   refresh: () => void
-  /** Marks the drawing as loaded for enablement / open-mode filters. */
-  setDocumentReady: (ready: boolean) => void
+  /**
+   * Marks prerender / package geometry as loaded. Until true the whole toolbar
+   * is disabled; canvas wheel / pinch zoom remains available.
+   */
+  setGeometryReady: (ready: boolean) => void
+  /**
+   * Marks OSNAP catalog load + index rebuild as finished. Until true (and
+   * geometry is ready), measure and annotation buttons stay disabled.
+   */
+  setOsnapReady: (ready: boolean) => void
+  /** Current geometry / OSNAP readiness flags. */
+  getReadiness: () => Readonly<AcExHtmlToolbarReadiness>
   /** Tears down the toolbar and snap strip listeners. */
   destroy: () => void
 }
@@ -381,7 +409,8 @@ function createZoomItem(handlers: AcExHtmlMainToolbarHandlers): AcUiToolbarItem 
 }
 
 function createMeasureItem(
-  handlers: AcExHtmlMainToolbarHandlers
+  handlers: AcExHtmlMainToolbarHandlers,
+  readiness: AcExHtmlToolbarReadiness
 ): AcUiToolbarItem {
   const modeChild = (
     id: string,
@@ -399,6 +428,7 @@ function createMeasureItem(
     id: 'measure',
     label: 'toolbar.measure',
     icon: AcExHtmlIcons.measure,
+    disabled: () => !readiness.geometry || !readiness.osnap,
     childrenUi: 'toolbar',
     children: [
       modeChild(
@@ -483,7 +513,8 @@ function createMeasureItem(
 }
 
 function createAnnotationItem(
-  handlers: AcExHtmlMainToolbarHandlers
+  handlers: AcExHtmlMainToolbarHandlers,
+  readiness: AcExHtmlToolbarReadiness
 ): AcUiToolbarItem {
   const modeChild = (
     id: string,
@@ -502,6 +533,7 @@ function createAnnotationItem(
     label: 'toolbar.annotation',
     icon: AcExHtmlIcons.annotation,
     minOpenMode: AcEdOpenMode.Review,
+    disabled: () => !readiness.geometry || !readiness.osnap,
     childrenUi: 'toolbar',
     children: [
       modeChild(
@@ -659,6 +691,7 @@ export function acexHtmlCreateMainToolbarItems(
   options: AcExHtmlMainToolbarOptions
 ): AcUiToolbarItem[] {
   const { viewerMode, exportLayouts, handlers, i18n } = options
+  const readiness = options.readiness ?? { geometry: true, osnap: true }
   const hideNav = acexHtmlIsMobileNavUi()
   const items: AcUiToolbarItem[] = []
 
@@ -684,8 +717,8 @@ export function acexHtmlCreateMainToolbarItems(
   if (viewerMode === 'measure') {
     items.push(
       { type: 'separator', id: 'sep-measure' },
-      createMeasureItem(handlers),
-      createAnnotationItem(handlers),
+      createMeasureItem(handlers, readiness),
+      createAnnotationItem(handlers, readiness),
       { type: 'separator', id: 'sep-layers' }
     )
   }
@@ -765,9 +798,24 @@ export function setupAcExHtmlMainToolbar(
     document.getElementById('mlcad-root') ??
     document.body
 
+  const readiness: AcExHtmlToolbarReadiness = options.readiness ?? {
+    geometry: false,
+    osnap: false
+  }
+  options.readiness = readiness
+
   let phone = acexHtmlIsPhoneLayout()
   const chrome = resolveChrome(phone)
   let items = acexHtmlCreateMainToolbarItems(options)
+
+  const openMode =
+    options.viewerMode === 'measure' ? AcEdOpenMode.Review : AcEdOpenMode.Read
+
+  const polarPanel = document.getElementById('mlcad-polar-angles')
+
+  const closePolarAngles = () => {
+    if (polarPanel) polarPanel.hidden = true
+  }
 
   const toolbar = new AcUiToolbar({
     host: options.host,
@@ -797,19 +845,18 @@ export function setupAcExHtmlMainToolbar(
       options.handlers.onExclusiveOpen?.()
     },
     docState: {
-      hasDocument: true,
-      isOpening: false,
-      openMode:
-        options.viewerMode === 'measure'
-          ? AcEdOpenMode.Review
-          : AcEdOpenMode.Read
+      hasDocument: readiness.geometry,
+      isOpening: !readiness.geometry,
+      openMode
     }
   })
 
-  const polarPanel = document.getElementById('mlcad-polar-angles')
-
-  const closePolarAngles = () => {
-    if (polarPanel) polarPanel.hidden = true
+  const applyGeometryDocState = () => {
+    toolbar.setDocState({
+      hasDocument: readiness.geometry,
+      isOpening: !readiness.geometry,
+      openMode
+    })
   }
 
   const afterRender = () => {
@@ -876,17 +923,16 @@ export function setupAcExHtmlMainToolbar(
     refresh: () => {
       toolbar.refresh()
     },
-    setDocumentReady: ready => {
-      toolbar.setDocState({
-        hasDocument: ready,
-        isOpening: false,
-        openMode:
-          options.viewerMode === 'measure'
-            ? AcEdOpenMode.Review
-            : AcEdOpenMode.Read
-      })
+    setGeometryReady: ready => {
+      readiness.geometry = ready
+      applyGeometryDocState()
       afterRender()
     },
+    setOsnapReady: ready => {
+      readiness.osnap = ready
+      toolbar.refresh()
+    },
+    getReadiness: () => ({ ...readiness }),
     destroy: () => {
       closePolarAngles()
       toolbar.destroy()

@@ -11,13 +11,22 @@ import {
   type AcUiShortCutToolbarActionState,
   type AcUiSimpleToolbarItem
 } from './AcExHtmlSimpleViewerUi'
+import {
+  ACEX_HTML_TOP_CHROME_GAP_PX,
+  ACEX_HTML_TOP_CHROME_NEAR_TOP_PX,
+  acexHtmlTopChromeBottomOffset,
+  getAcExHtmlTopChrome
+} from './AcExHtmlTopChrome'
 
 /** Dependencies for {@link setupAcExHtmlShortCutToolbar}. */
 export interface AcExHtmlShortCutToolbarContext {
   i18n: AcExHtmlI18n
   /** Host, typically `#mlcad-root`. */
   container: HTMLElement
-  /** Status / message bar used to offset the toolbar below it. */
+  /**
+   * Status / message bar (optional). Top offset is derived from `#mlcad-top-chrome`
+   * when present so expiry and the message bar share one measured row.
+   */
   statusEl?: HTMLElement | null
   actions: {
     undo: () => void
@@ -37,20 +46,15 @@ export interface AcExHtmlShortCutToolbarController {
   dispose: () => void
 }
 
-function computeTopOffset(statusEl: HTMLElement | null | undefined): number {
-  const gap = 8
-  const nearTop = 12
-  if (!statusEl || statusEl.hidden || !statusEl.textContent?.trim()) {
-    return nearTop
-  }
-  const rect = statusEl.getBoundingClientRect()
-  const root = statusEl.offsetParent as HTMLElement | null
-  const rootTop = root?.getBoundingClientRect().top ?? 0
-  return Math.max(nearTop, rect.bottom - rootTop + gap)
+function computeTopOffset(container: HTMLElement): number {
+  return acexHtmlTopChromeBottomOffset(container, {
+    gapPx: ACEX_HTML_TOP_CHROME_GAP_PX,
+    nearTopPx: ACEX_HTML_TOP_CHROME_NEAR_TOP_PX
+  })
 }
 
 /**
- * Creates a force-visible shortcut toolbar aligned under the HTML status bar.
+ * Creates a force-visible shortcut toolbar aligned under the HTML top chrome.
  */
 export function setupAcExHtmlShortCutToolbar(
   ctx: AcExHtmlShortCutToolbarContext
@@ -58,7 +62,7 @@ export function setupAcExHtmlShortCutToolbar(
   const toolbar = new AcUiShortCutToolbar({
     container: ctx.container,
     forceVisible: true,
-    topOffsetPx: computeTopOffset(ctx.statusEl),
+    topOffsetPx: computeTopOffset(ctx.container),
     actions: ctx.actions,
     getActionState: ctx.getActionState,
     labels: {
@@ -72,15 +76,17 @@ export function setupAcExHtmlShortCutToolbar(
   })
 
   const syncTopOffset = () => {
-    toolbar.setTopOffset(computeTopOffset(ctx.statusEl))
+    toolbar.setTopOffset(computeTopOffset(ctx.container))
   }
 
-  const observer =
-    ctx.statusEl != null
-      ? new MutationObserver(() => syncTopOffset())
-      : null
-  if (ctx.statusEl && observer) {
-    observer.observe(ctx.statusEl, {
+  const chrome =
+    getAcExHtmlTopChrome(ctx.container) ??
+    (ctx.statusEl?.closest('#mlcad-top-chrome') as HTMLElement | null) ??
+    ctx.statusEl ??
+    null
+  const observer = chrome != null ? new MutationObserver(() => syncTopOffset()) : null
+  if (chrome && observer) {
+    observer.observe(chrome, {
       attributes: true,
       characterData: true,
       childList: true,

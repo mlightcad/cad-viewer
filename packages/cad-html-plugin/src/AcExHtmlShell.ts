@@ -86,7 +86,7 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-snap-loupe {
     position: absolute;
     left: 8px;
-    top: 56px;
+    top: 8px;
     width: 128px;
     height: 128px;
     box-sizing: border-box;
@@ -622,9 +622,32 @@ export const ACEX_HTML_SHELL_CSS = `
     max-height: var(--mlcad-review-max-height);
   }
 
+  /*
+   * Top canvas chrome: message bar + expiry share one row. Shortcut toolbar
+   * and snap loupe stack below (see AcExHtmlTopChrome / ShortCutToolbar /
+   * SnapLoupeMath).
+   */
+  #mlcad-top-chrome {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    top: 10px;
+    z-index: var(--mlcad-z-chrome);
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    box-sizing: border-box;
+    pointer-events: none;
+  }
   #mlcad-status-bar {
-    position: absolute; left: 12px; right: 12px; top: 10px; z-index: var(--mlcad-z-chrome);
-    display: flex; align-items: center; min-height: 28px; padding: 0 12px;
+    position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
+    /* Block layout so text-overflow: ellipsis works on direct textContent. */
+    display: block;
+    min-height: 28px;
+    line-height: 28px;
+    padding: 0 12px;
     border: 1px solid rgba(0, 0, 0, 0.12);
     border-radius: 6px;
     background: var(--mlcad-accent);
@@ -637,6 +660,10 @@ export const ACEX_HTML_SHELL_CSS = `
     opacity: 1;
     transform: translateY(0);
     transition: opacity 0.18s ease, transform 0.18s ease;
+    /* Shrink before the expiry badge; clip with an ellipsis when too narrow. */
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
   #mlcad-status-bar:empty,
   #mlcad-status-bar[hidden] {
@@ -1087,11 +1114,10 @@ export const ACEX_HTML_SHELL_CSS = `
     display: none !important;
   }
   .mlcad-expiry-badge {
-    position: fixed;
-    top: var(--mlcad-ui-inset);
-    right: var(--mlcad-ui-inset);
-    z-index: 40;
-    max-width: min(360px, calc(100vw - 2 * var(--mlcad-ui-inset)));
+    position: relative;
+    flex: 0 0 auto;
+    margin-left: auto;
+    max-width: none;
     padding: 8px 12px;
     border-radius: 6px;
     border: 1px solid var(--mlcad-ui-border);
@@ -1100,7 +1126,9 @@ export const ACEX_HTML_SHELL_CSS = `
     color: var(--mlcad-ui-text);
     font-size: 12px;
     line-height: 1.4;
+    white-space: nowrap;
     pointer-events: none;
+    box-sizing: border-box;
   }
   .mlcad-expiry-badge[hidden] {
     display: none !important;
@@ -1331,7 +1359,7 @@ export const ACEX_HTML_SHELL_CSS = `
       width: 12px;
       height: 12px;
     }
-    #mlcad-status-bar {
+    #mlcad-top-chrome {
       left: 8px;
       right: 8px;
       top: 8px;
@@ -1405,7 +1433,9 @@ export function buildAcExHtmlShellBody(
   </div>
   <div id="mlcad-root">
     <div id="mlcad-canvas-host">
-      <footer id="mlcad-status-bar" aria-live="polite" hidden></footer>
+      <div id="mlcad-top-chrome">
+        <footer id="mlcad-status-bar" aria-live="polite" hidden></footer>
+      </div>
     </div>
     <aside id="mlcad-sidebar">
       <nav id="mlcad-toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.viewerTools" aria-label="Viewer tools"></nav>

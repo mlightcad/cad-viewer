@@ -2066,6 +2066,19 @@ async function startViewer(): Promise<void> {
     })
   }
 
+  const markGeometryReady = (ready: boolean) => {
+    mainToolbarRef.current?.setGeometryReady(ready)
+  }
+  const markOsnapReady = (ready: boolean) => {
+    // View-only HTML has no measure/annotation buttons; treat OSNAP as ready
+    // whenever geometry is ready so readiness stays consistent.
+    if (!measureEnabled) {
+      mainToolbarRef.current?.setOsnapReady(true)
+      return
+    }
+    mainToolbarRef.current?.setOsnapReady(ready)
+  }
+
   layerPanel = setupLayerPanel({
     snapshot,
     layerVisible,
@@ -2194,6 +2207,8 @@ async function startViewer(): Promise<void> {
       packageSession != null && !packageSession.loadedLayouts.has(layout.btrId)
 
     if (needsPackageLoad && packageSession) {
+      markGeometryReady(false)
+      markOsnapReady(false)
       try {
         await loadPackageLayoutGeometry(layout)
         if (
@@ -2204,6 +2219,7 @@ async function startViewer(): Promise<void> {
         ) {
           await loadPackageLayoutGeometry(modelLayout)
         }
+        markGeometryReady(true)
       } catch (error) {
         statusEl.textContent = i18n.t('status.loadFailed', {
           error: String(error)
@@ -2231,6 +2247,11 @@ async function startViewer(): Promise<void> {
         layerPanel?.syncLayerZoomButtons()
         measure?.syncLayoutVisibility()
         markup?.syncLayoutVisibility()
+        markGeometryReady(true)
+        markOsnapReady(
+          !measureEnabled ||
+            packageSession.loadedOsnapLayouts.has(previousLayout.btrId)
+        )
         mainToolbarRef.current?.refresh()
         recomputeOsnapThresholdWcs()
         bumpSnapCacheKey()
@@ -2271,6 +2292,10 @@ async function startViewer(): Promise<void> {
     layoutExtents = resolveLayoutViewExtents(layout)
     layerPanel?.syncLayerZoomButtons()
 
+    if (measureEnabled) {
+      markOsnapReady(false)
+    }
+
     if (osnapIndex) {
       // Defer rebuild when ACEO sidecars are still pending — tessellating all
       // line/mesh batches first would freeze the UI and delay Network fetches.
@@ -2294,8 +2319,12 @@ async function startViewer(): Promise<void> {
           for (const [name, visible] of layerVisible) {
             osnapIndex.setLayerHidden(name, visible === false)
           }
-        } finally {
           clearStatusBar()
+        } catch (error) {
+          statusEl.textContent = i18n.t('status.loadFailed', {
+            error: String(error)
+          })
+          // Continue the layout switch; measure unlocks in the OSNAP paths below.
         }
       }
     }
@@ -2327,11 +2356,17 @@ async function startViewer(): Promise<void> {
         bumpSnapCacheKey()
         render()
         measure?.refreshIdleStatus()
+        markOsnapReady(true)
       } catch (error) {
         statusEl.textContent = i18n.t('status.loadFailed', {
           error: String(error)
         })
+        // Geometry is already on screen; unlock measure/annotation even if
+        // OSNAP indexing failed (snap will be degraded / unavailable).
+        markOsnapReady(true)
       }
+    } else if (measureEnabled) {
+      markOsnapReady(true)
     }
   }
 
@@ -2377,8 +2412,6 @@ async function startViewer(): Promise<void> {
   renderer.domElement.addEventListener('contextmenu', event => {
     event.preventDefault()
   })
-
-  mainToolbarRef.current?.setDocumentReady(true)
 
   i18n.setOnChange(() => {
     readyStatus = ''
@@ -2492,27 +2525,39 @@ async function startViewer(): Promise<void> {
       onExpire: () => {
         // Keep the canvas mounted under the expired gate; interaction is blocked
         // by the loading overlay.
+        shortCutToolbarRef.current?.syncTopOffset()
       }
     })
+    shortCutToolbarRef.current?.syncTopOffset()
   }
   // Reveal the canvas before package chunks / OSNAP indexing finish so the
-  // drawing paints while background work continues.
+  // drawing paints while background work continues. Toolbar stays disabled
+  // until geometry is ready; canvas wheel / pinch zoom still works.
   hideLoading()
 
-  if (!packageSession && measureEnabled) {
-    try {
-      await rebuildOsnapForLoadedGeometry()
-      recomputeOsnapThresholdWcs()
-      bumpSnapCacheKey()
-      measure?.refreshIdleStatus()
-      render()
-    } catch (error) {
-      showViewerError(i18n.t('status.loadFailed', { error: String(error) }))
-    }
-    if (!canSwitchLayouts) {
-      releaseLayerGroupsGeometryCpuArrays(paperLayerGroups)
-      releaseLayerGroupsGeometryCpuArrays(modelLayerGroups)
-      releaseSnapshotBatchBuffers(snapshot)
+  if (!packageSession) {
+    markGeometryReady(true)
+    if (measureEnabled) {
+      markOsnapReady(false)
+      try {
+        await rebuildOsnapForLoadedGeometry()
+        recomputeOsnapThresholdWcs()
+        bumpSnapCacheKey()
+        measure?.refreshIdleStatus()
+        render()
+        markOsnapReady(true)
+      } catch (error) {
+        showViewerError(i18n.t('status.loadFailed', { error: String(error) }))
+        // Drawing is visible; allow measure/annotation without a full snap index.
+        markOsnapReady(true)
+      }
+      if (!canSwitchLayouts) {
+        releaseLayerGroupsGeometryCpuArrays(paperLayerGroups)
+        releaseLayerGroupsGeometryCpuArrays(modelLayerGroups)
+        releaseSnapshotBatchBuffers(snapshot)
+      }
+    } else {
+      markOsnapReady(true)
     }
   }
 
@@ -2534,11 +2579,13 @@ async function startViewer(): Promise<void> {
       bumpSnapCacheKey()
       measure?.refreshIdleStatus()
       render()
+      markGeometryReady(true)
 
       // ACEO now holds curves/points only (lines come from geometry batches).
       // Load the small catalog first, then build a hybrid index while CPU
       // lineBatches are still resident — before releaseSnapshotBatchBuffers.
       if (measureEnabled) {
+        markOsnapReady(false)
         for (const target of firstPaintLayouts) {
           await loadPackageLayoutOsnap(target)
         }
@@ -2547,6 +2594,9 @@ async function startViewer(): Promise<void> {
         bumpSnapCacheKey()
         measure?.refreshIdleStatus()
         render()
+        markOsnapReady(true)
+      } else {
+        markOsnapReady(true)
       }
 
       if (!canSwitchLayouts) {
@@ -2556,6 +2606,10 @@ async function startViewer(): Promise<void> {
       }
     } catch (error) {
       showViewerError(i18n.t('status.loadFailed', { error: String(error) }))
+      // Unlock chrome even when package geometry / OSNAP failed mid-stream so
+      // the toolbar does not stay permanently disabled after the error gate.
+      markGeometryReady(true)
+      markOsnapReady(true)
     }
   }
 }

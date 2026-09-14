@@ -74,9 +74,9 @@ export class AcExSnapLoupe {
   }
 
   /**
-   * Shows the HUD below the top status bar. `canvasX`/`canvasY` are the sample
-   * in canvas CSS pixels; `snapCanvas` is the snapped canvas position when an
-   * object snap hits.
+   * Shows the HUD below the top chrome row (message / expiry) when present.
+   * `canvasX`/`canvasY` are the sample in canvas CSS pixels; `snapCanvas` is
+   * the snapped canvas position when an object snap hits.
    *
    * @param canvasX - Sample X in canvas CSS pixels (finger / loupe center).
    * @param canvasY - Sample Y in canvas CSS pixels.

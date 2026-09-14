@@ -1,3 +1,6 @@
+/**
+ * @jest-environment jsdom
+ */
 jest.mock('../src/AcExHtmlSimpleViewerUi', () => ({
   ACED_TOUCH_POINT_LONG_PRESS_MS: 1000,
   ACED_TOUCH_POINT_MOVE_CANCEL_PX: 10
@@ -13,7 +16,6 @@ import {
   ACEX_SNAP_LOUPE_GAP_BELOW_STATUS_PX,
   ACEX_SNAP_LOUPE_INSET_PX,
   ACEX_SNAP_LOUPE_SIZE_PX,
-  ACEX_SNAP_LOUPE_TOP_INSET_PX,
   acexLoupeLocalFromCanvasDelta,
   acexResolveLoupePlacement
 } from '../src/AcExSnapLoupeMath'
@@ -95,31 +97,41 @@ describe('AcExLoupeLocalFromCanvasDelta', () => {
 })
 
 describe('acexResolveLoupePlacement', () => {
-  it('places the loupe at the top inset', () => {
-    const host = {
-      getBoundingClientRect: () => ({ top: 0, left: 0 })
-    } as HTMLElement
+  it('places the loupe at the top inset when chrome is empty', () => {
+    document.body.innerHTML = `
+      <div id="mlcad-canvas-host">
+        <div id="mlcad-top-chrome">
+          <footer id="mlcad-status-bar" hidden></footer>
+        </div>
+      </div>
+    `
+    const host = document.getElementById('mlcad-canvas-host')!
     expect(acexResolveLoupePlacement(host, null)).toEqual({
       x: ACEX_SNAP_LOUPE_INSET_PX,
       y: ACEX_SNAP_LOUPE_INSET_PX,
       size: ACEX_SNAP_LOUPE_SIZE_PX
     })
-    expect(
-      acexResolveLoupePlacement(host, {
-        hidden: false,
-        offsetParent: {},
-        getBoundingClientRect: () => ({
-          top: 108,
-          left: 8,
-          bottom: 144,
-          right: 392,
-          width: 384,
-          height: 36
-        })
-      } as HTMLElement)
-    ).toEqual({
+  })
+
+  it('places the loupe below a visible top chrome row', () => {
+    document.body.innerHTML = `
+      <div id="mlcad-canvas-host">
+        <div id="mlcad-top-chrome">
+          <footer id="mlcad-status-bar">Ready</footer>
+          <div id="mlcad-expiry-badge">Expires</div>
+        </div>
+      </div>
+    `
+    const host = document.getElementById('mlcad-canvas-host')!
+    const chrome = document.getElementById('mlcad-top-chrome')!
+    host.getBoundingClientRect = () =>
+      ({ top: 0, left: 0, bottom: 600, right: 800, width: 800, height: 600 }) as DOMRect
+    chrome.getBoundingClientRect = () =>
+      ({ top: 10, left: 12, bottom: 46, right: 788, width: 776, height: 36 }) as DOMRect
+
+    expect(acexResolveLoupePlacement(host)).toEqual({
       x: ACEX_SNAP_LOUPE_INSET_PX,
-      y: ACEX_SNAP_LOUPE_INSET_PX,
+      y: 46 + ACEX_SNAP_LOUPE_GAP_BELOW_STATUS_PX,
       size: ACEX_SNAP_LOUPE_SIZE_PX
     })
   })

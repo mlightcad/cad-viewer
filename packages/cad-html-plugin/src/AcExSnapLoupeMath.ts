@@ -1,12 +1,15 @@
+import {
+  acexHtmlTopChromeBottomOffset,
+  getAcExHtmlTopChrome
+} from './AcExHtmlTopChrome'
+
 /** Square loupe size in CSS pixels. */
 export const ACEX_SNAP_LOUPE_SIZE_PX = 128
 /** Magnification relative to the main view. */
 export const ACEX_SNAP_LOUPE_ZOOM = 3
 /** Horizontal / vertical offset of the loupe from the canvas top-left. */
 export const ACEX_SNAP_LOUPE_INSET_PX = 8
-/**
- * @deprecated Session prompts live in the bottom panel; loupe stays at top inset.
- */
+/** Gap between the top chrome row and the loupe when the row is visible. */
 export const ACEX_SNAP_LOUPE_GAP_BELOW_STATUS_PX = 8
 /**
  * @deprecated Prefer {@link ACEX_SNAP_LOUPE_INSET_PX}; kept for call-site stability.
@@ -14,22 +17,25 @@ export const ACEX_SNAP_LOUPE_GAP_BELOW_STATUS_PX = 8
 export const ACEX_SNAP_LOUPE_TOP_INSET_PX = ACEX_SNAP_LOUPE_INSET_PX
 
 /**
- * Resolves loupe placement at the canvas top-left inset.
+ * Resolves loupe placement at the canvas top-left, below `#mlcad-top-chrome`
+ * when the message bar and/or expiry badge are visible.
  *
- * Session prompts are in the bottom panel, so the loupe no longer sits below
- * `#mlcad-status-bar`.
- *
- * @param _host - Canvas host (unused; kept for call-site stability).
- * @param _statusEl - Unused; kept for call-site stability.
+ * @param host - Canvas host (`#mlcad-canvas-host`).
+ * @param _statusEl - Unused; kept for call-site stability (chrome is preferred).
  * @returns Loupe `x` / `y` / `size` in host-local CSS pixels.
  */
 export function acexResolveLoupePlacement(
-  _host: HTMLElement,
+  host: HTMLElement,
   _statusEl?: HTMLElement | null
 ): { x: number; y: number; size: number } {
+  const chrome = getAcExHtmlTopChrome(host)
   return {
     x: ACEX_SNAP_LOUPE_INSET_PX,
-    y: ACEX_SNAP_LOUPE_INSET_PX,
+    y: acexHtmlTopChromeBottomOffset(host, {
+      chrome,
+      gapPx: ACEX_SNAP_LOUPE_GAP_BELOW_STATUS_PX,
+      nearTopPx: ACEX_SNAP_LOUPE_INSET_PX
+    }),
     size: ACEX_SNAP_LOUPE_SIZE_PX
   }
 }
