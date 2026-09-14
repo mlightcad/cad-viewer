@@ -42,9 +42,26 @@ export function encodeSnapshot(snapshot: AcExSnapshot): AcExEncodedSnapshot {
  * @throws When decompression, parsing, or version validation fails.
  */
 export function decodeSnapshot(payload: string): AcExSnapshot {
-  const bytes = base64ToUint8(payload.trim())
-  const binary = decompressSnapshotBinary(bytes)
+  return decodeSnapshotFromCompressedBytes(snapshotPayloadToCompressedBytes(payload))
+}
+
+/**
+ * Decodes a gzip-compressed ACEX binary (no base64).
+ * Prefer this when the runtime already retains compressed bytes for later
+ * per-layout rehydration after CPU release.
+ */
+export function decodeSnapshotFromCompressedBytes(
+  compressed: Uint8Array
+): AcExSnapshot {
+  const binary = decompressSnapshotBinary(compressed)
   return decodeSnapshotBinary(binary)
+}
+
+/**
+ * Converts a monolithic snapshot `<script>` body to gzip bytes.
+ */
+export function snapshotPayloadToCompressedBytes(payload: string): Uint8Array {
+  return base64ToUint8(payload.trim())
 }
 
 /**

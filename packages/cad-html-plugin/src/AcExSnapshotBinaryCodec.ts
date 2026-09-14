@@ -1,5 +1,12 @@
+import { strFromU8 } from 'fflate'
+
 import { readLineBatch, readMeshBatch, writeLineBatch, writeMeshBatch } from './AcExBatchBinaryCodec'
 import { AcExBinaryReader, AcExBinaryWriter } from './AcExBinaryIO'
+import {
+  ACEO_OSNAP_MAGIC,
+  decodeOsnapCatalogBinary,
+  encodeOsnapCatalogBinary
+} from './AcExOsnapCatalogCodec'
 import {
   ACEX_SNAPSHOT_VERSION,
   type AcExLayoutSnapshot,
@@ -15,6 +22,7 @@ const MAGIC = 0x58454341 // 'ACEX' little-endian
  *
  * Metadata and small JSON-friendly fields are length-prefixed UTF-8 JSON;
  * geometry buffers are stored as raw {@link Float32Array} / {@link Uint32Array} bytes.
+ * Layout OSNAP catalogs use uncompressed ACEO (same schema as package sidecars).
  *
  * @param snapshot - Snapshot to encode; {@link AcExSnapshot.version} must match
  *   {@link ACEX_SNAPSHOT_VERSION}.
@@ -83,7 +91,7 @@ function writeLayout(writer: AcExBinaryWriter, layout: AcExLayoutSnapshot): void
   writer.writeString(layout.btrId)
   writer.writeString(layout.name)
   writer.writeU8(layout.isModelSpace ? 1 : 0)
-  writer.writeJson(layout.osnap ?? null)
+  writeLayoutOsnap(writer, layout.osnap)
   writer.writeJson(layout.viewports ?? null)
 
   writer.writeU32(layout.lineBatches.length)
@@ -97,12 +105,24 @@ function writeLayout(writer: AcExBinaryWriter, layout: AcExLayoutSnapshot): void
   }
 }
 
+function writeLayoutOsnap(
+  writer: AcExBinaryWriter,
+  osnap: AcExLayoutSnapshot['osnap']
+): void {
+  if (!osnap || osnap.primitives.length === 0) {
+    writer.writeU32(0)
+    return
+  }
+  const bytes = encodeOsnapCatalogBinary(osnap)
+  writer.writeU32(bytes.length)
+  writer.writeBytes(bytes)
+}
+
 function readLayout(reader: AcExBinaryReader): AcExLayoutSnapshot {
   const btrId = reader.readString()
   const name = reader.readString()
   const isModelSpace = reader.readU8() !== 0
-  const osnapValue = reader.readJson<AcExLayoutSnapshot['osnap'] | null>()
-  const osnap = osnapValue ?? undefined
+  const osnap = readLayoutOsnap(reader)
   const viewportsValue = reader.readJson<
     AcExLayoutSnapshot['viewports'] | null
   >()
@@ -129,4 +149,36 @@ function readLayout(reader: AcExBinaryReader): AcExLayoutSnapshot {
     osnap,
     viewports
   }
+}
+
+/**
+ * Reads a layout OSNAP payload: ACEO bytes, empty, or legacy UTF-8 JSON.
+ */
+function readLayoutOsnap(
+  reader: AcExBinaryReader
+): AcExLayoutSnapshot['osnap'] {
+  const length = reader.readU32()
+  if (length === 0) {
+    return undefined
+  }
+  const bytes = reader.readBytes(length)
+  if (isAceoPayload(bytes)) {
+    return decodeOsnapCatalogBinary(bytes)
+  }
+  // Legacy monolithic ACEX stored osnap as length-prefixed JSON (`null` / object).
+  const text = strFromU8(bytes)
+  if (text.length === 0 || text === 'null') {
+    return undefined
+  }
+  return JSON.parse(text) as AcExLayoutSnapshot['osnap']
+}
+
+function isAceoPayload(bytes: Uint8Array): boolean {
+  if (bytes.length < 4) return false
+  const magic =
+    bytes[0]! |
+    (bytes[1]! << 8) |
+    (bytes[2]! << 16) |
+    (bytes[3]! << 24)
+  return (magic >>> 0) === ACEO_OSNAP_MAGIC
 }

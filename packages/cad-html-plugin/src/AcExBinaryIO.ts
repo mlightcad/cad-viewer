@@ -2,9 +2,9 @@ import { strFromU8, strToU8 } from 'fflate'
 
 /**
  * Hard cap for length-prefixed strings inside ACEX binary payloads.
- * Single-file snapshots still embed measure-mode OSNAP catalogs as UTF-8 JSON,
- * which can exceed 1 MiB on large drawings. Align with the decompressed ACEX
- * payload ceiling (`512 MiB`).
+ * Align with the decompressed ACEX payload ceiling (`512 MiB`). Layout OSNAP
+ * catalogs in monolithic ACEX are stored as ACEO bytes (not JSON); legacy
+ * JSON osnap blobs may still appear when reading older exports.
  */
 export const ACEX_MAX_BINARY_STRING_BYTES = 512 * 1024 * 1024
 

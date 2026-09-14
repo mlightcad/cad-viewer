@@ -281,11 +281,21 @@ export function collectAcExEmbeddedChunkBytes(
 /**
  * Creates an in-memory fetch for an embedded package.
  * When `decryptKey` is set, chunk bodies are decrypted on each fetch.
+ *
+ * Pass a mutable {@link Map} for `chunkBytes`. When `consumeOnFetch` is true
+ * (default), each successful chunk read is removed from the map so compressed
+ * payloads do not stay resident after decode. Keep `consumeOnFetch: false`
+ * when the viewer may unload and reload layouts (multi-layout switching).
  */
 export function createAcExEmbeddedPackageFetch(options: {
   manifest: AcExPackageManifest
-  chunkBytes: ReadonlyMap<string, Uint8Array>
+  chunkBytes: Map<string, Uint8Array>
   decryptKey?: CryptoKey | null
+  /**
+   * When true, delete each chunk from `chunkBytes` after a successful read.
+   * Defaults to `true`.
+   */
+  consumeOnFetch?: boolean
 }): { manifestUrl: string; fetchImpl: typeof fetch } {
   const manifestFileName = ACEX_DEFAULT_MANIFEST_FILE
   const manifestUrl = new URL(
@@ -295,6 +305,8 @@ export function createAcExEmbeddedPackageFetch(options: {
   const origin = new URL(ACEX_PACKAGE_DIRECTORY_ORIGIN).origin
   const manifestText = `${JSON.stringify(options.manifest)}\n`
   const decryptKey = options.decryptKey ?? null
+  const consumeOnFetch = options.consumeOnFetch !== false
+  const chunkBytes = options.chunkBytes
 
   const fetchImpl: typeof fetch = async input => {
     const url = new URL(String(input))
@@ -308,17 +320,19 @@ export function createAcExEmbeddedPackageFetch(options: {
         headers: { 'Content-Type': 'application/json' }
       })
     }
-    const stored = options.chunkBytes.get(rel)
+    const stored = chunkBytes.get(rel)
     if (!stored) {
       return new Response(null, { status: 404 })
     }
-    let bytes = stored
-    if (decryptKey) {
-      bytes = await decryptAcExHtmlBytes(decryptKey, stored)
+    // Decrypt yields a fresh buffer; otherwise reuse the map entry and avoid
+    // an extra full-chunk copy on the progressive-load hot path.
+    const bytes = decryptKey
+      ? await decryptAcExHtmlBytes(decryptKey, stored)
+      : stored
+    if (consumeOnFetch) {
+      chunkBytes.delete(rel)
     }
-    const copy = new Uint8Array(bytes.byteLength)
-    copy.set(bytes)
-    return new Response(copy, { status: 200 })
+    return new Response(bytes as BlobPart, { status: 200 })
   }
 
   return { manifestUrl, fetchImpl }

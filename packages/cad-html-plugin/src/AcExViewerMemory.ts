@@ -3,6 +3,34 @@ import * as THREE from 'three'
 import type { AcExLayoutSnapshot, AcExSnapshot } from './AcExSnapshotTypes'
 
 /**
+ * True when a layout still holds tessellated CPU batches.
+ */
+export function layoutHasBatchGeometry(layout: AcExLayoutSnapshot): boolean {
+  return layout.lineBatches.length > 0 || layout.meshBatches.length > 0
+}
+
+/**
+ * Copies geometry + OSNAP catalog from a freshly decoded layout onto a
+ * skeleton / previously released layout (same `btrId`).
+ */
+export function assignLayoutGeometryFrom(
+  target: AcExLayoutSnapshot,
+  source: AcExLayoutSnapshot
+): void {
+  target.lineBatches = source.lineBatches
+  target.meshBatches = source.meshBatches
+  target.osnap = source.osnap
+}
+
+/**
+ * Clears tessellated batch typed arrays on one layout so inactive package
+ * layouts can be unloaded and re-fetched later.
+ */
+export function releaseLayoutBatchBuffers(layout: AcExLayoutSnapshot): void {
+  clearLayoutBatchBuffers(layout)
+}
+
+/**
  * Clears tessellated batch typed arrays on every snapshot layout.
  *
  * Call only after the THREE scene has uploaded geometry to the GPU and any
@@ -11,6 +39,22 @@ import type { AcExLayoutSnapshot, AcExSnapshot } from './AcExSnapshotTypes'
 export function releaseSnapshotBatchBuffers(snapshot: AcExSnapshot): void {
   for (const layout of snapshot.layouts) {
     clearLayoutBatchBuffers(layout)
+  }
+}
+
+/**
+ * Clears CPU batches for every layout except the ones that must stay resident
+ * until GPU upload / hybrid OSNAP finish (typically the active layout and
+ * model space when paper viewports need it).
+ */
+export function releaseInactiveLayoutBatchBuffers(
+  snapshot: AcExSnapshot,
+  keepBtrIds: ReadonlySet<string>
+): void {
+  for (const layout of snapshot.layouts) {
+    if (keepBtrIds.has(layout.btrId)) continue
+    clearLayoutBatchBuffers(layout)
+    layout.osnap = undefined
   }
 }
 

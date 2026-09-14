@@ -198,6 +198,10 @@ export function isTransparentImagePlaceholder(
 
 /**
  * Builds a THREE texture from exported PNG (or other) bytes.
+ *
+ * Uses `texture.bytes` directly for the Blob (no intermediate copy). Callers
+ * that still hold a snapshot batch should clear {@link AcExMeshTexture.bytes}
+ * from `onLoad` once the GPU texture is ready.
  */
 export function createTextureFromExportedBytes(
   texture: AcExMeshTexture,
@@ -206,8 +210,7 @@ export function createTextureFromExportedBytes(
     onError?: () => void
   } = {}
 ): THREE.Texture {
-  const bytes = copyBytes(texture.bytes)
-  const blob = new Blob([bytes as BlobPart], {
+  const blob = new Blob([texture.bytes as BlobPart], {
     type: texture.mimeType || 'image/png'
   })
   const url = URL.createObjectURL(blob)
@@ -228,8 +231,12 @@ export function createTextureFromExportedBytes(
   return result
 }
 
-function copyBytes(bytes: Uint8Array): Uint8Array {
-  const copy = new Uint8Array(bytes.byteLength)
-  copy.set(bytes)
-  return copy
+/**
+ * Drops PNG/JPEG payload bytes from an exported mesh texture after GPU upload.
+ */
+export function releaseExportedTextureBytes(
+  texture: AcExMeshTexture | undefined
+): void {
+  if (!texture) return
+  texture.bytes = new Uint8Array(0)
 }

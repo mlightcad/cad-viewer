@@ -167,6 +167,47 @@ describe('AcExHtmlEmbeddedPackage', () => {
     expect(loaded.layouts[0]?.lineBatches.length).toBe(
       snapshot.layouts[0]!.lineBatches.length
     )
+    // Default consumeOnFetch clears compressed payloads after progressive load.
+    expect(chunkBytes.size).toBe(0)
+  })
+
+  it('keeps chunk bytes when consumeOnFetch is false for layout reload', async () => {
+    const snapshot = makeSnapshot({
+      lineCount: 4,
+      positionsPerLine: 6
+    })
+    const html = await packHtmlEmbeddedPackage(snapshot, {
+      viewerRuntime: '/* runtime */',
+      maxChunkBytes: 400,
+      maxBatchBytes: 400
+    })
+    const config = extractPackageConfig(html)
+    if (!config || config.encrypted) {
+      throw new Error('expected plaintext embedded config')
+    }
+    const chunkBytes = extractEmbeddedChunkBytes(html)
+    const initialSize = chunkBytes.size
+    expect(initialSize).toBeGreaterThan(0)
+
+    const session = createAcExEmbeddedPackageFetch({
+      manifest: config.manifest,
+      chunkBytes,
+      consumeOnFetch: false
+    })
+    await loadAcExPackage({
+      manifestUrl: session.manifestUrl,
+      fetchImpl: session.fetchImpl
+    })
+    expect(chunkBytes.size).toBe(initialSize)
+
+    // Second load still works from the retained map.
+    const again = await loadAcExPackage({
+      manifestUrl: session.manifestUrl,
+      fetchImpl: session.fetchImpl
+    })
+    expect(again.layouts[0]?.lineBatches.length).toBe(
+      snapshot.layouts[0]!.lineBatches.length
+    )
   })
 
   it('encrypts the manifest and each chunk independently', async () => {

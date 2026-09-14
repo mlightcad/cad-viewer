@@ -14,6 +14,8 @@ import type { AcExOsnapCatalog } from './AcExOsnapPrimitiveTypes'
  *
  * v4 adds optional textured mesh payloads ({@link AcExMeshBatch.uvs} +
  * {@link AcExMeshBatch.texture}) for raster images and OLE frames.
+ * Monolithic ACEX layout OSNAP is stored as ACEO bytes (legacy JSON still
+ * decodes); package ACEC chunk schema is unchanged.
  */
 export const ACEX_SNAPSHOT_VERSION = 4 as const
 
