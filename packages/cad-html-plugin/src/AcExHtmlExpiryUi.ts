@@ -86,7 +86,11 @@ function ensureExpiryBadge(): HTMLElement {
     badge.id = 'mlcad-expiry-badge'
     badge.className = 'mlcad-expiry-badge'
     badge.hidden = true
-    document.body.appendChild(badge)
+  }
+  const chrome = document.getElementById('mlcad-top-chrome')
+  const mount = chrome ?? document.body
+  if (badge.parentElement !== mount) {
+    mount.appendChild(badge)
   }
   return badge
 }
