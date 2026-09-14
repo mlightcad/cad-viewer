@@ -260,6 +260,9 @@ export function parseAcExEmbeddedPackageConfig(
 /**
  * Collects embedded chunk script payloads into a path → bytes map.
  * Bytes are still ciphertext when scripts use the encrypted MIME type.
+ *
+ * Prefer {@link readAcExEmbeddedChunkFromDom} for the offline viewer so large
+ * drawings do not decode every chunk into a resident Map at open time.
  */
 export function collectAcExEmbeddedChunkBytes(
   root: ParentNode = document
@@ -271,28 +274,128 @@ export function collectAcExEmbeddedChunkBytes(
   scripts.forEach(script => {
     const href = script.getAttribute(ACEX_EMBEDDED_CHUNK_HREF_ATTR)?.trim()
     if (!href) return
-    const payload = script.textContent?.trim() ?? ''
-    if (!payload) return
+    const raw = script.textContent ?? ''
+    if (raw.length === 0) return
+    const payload =
+      raw.charCodeAt(0) <= 32 || raw.charCodeAt(raw.length - 1) <= 32
+        ? raw.trim()
+        : raw
+    if (payload.length === 0) return
     out.set(href, acExHtmlBase64ToBytes(payload))
   })
   return out
 }
 
 /**
- * Creates an in-memory fetch for an embedded package.
+ * Decodes one embedded chunk from an HTML `<script data-acex-href>` node.
+ * Used for on-demand reload without keeping every gzip payload in a JS Map.
+ */
+export function readAcExEmbeddedChunkFromDom(
+  href: string,
+  root: ParentNode = document
+): Uint8Array | undefined {
+  const scripts = root.querySelectorAll(
+    `script[${ACEX_EMBEDDED_CHUNK_HREF_ATTR}]`
+  )
+  for (let i = 0; i < scripts.length; i++) {
+    const script = scripts[i]!
+    const scriptHref = script.getAttribute(ACEX_EMBEDDED_CHUNK_HREF_ATTR)?.trim()
+    if (scriptHref !== href) continue
+    const raw = script.textContent ?? ''
+    if (raw.length === 0) return undefined
+    // Avoid String#trim on multi-megabyte payloads when packer wrote no padding.
+    const payload =
+      raw.charCodeAt(0) <= 32 || raw.charCodeAt(raw.length - 1) <= 32
+        ? raw.trim()
+        : raw
+    if (payload.length === 0) return undefined
+    return acExHtmlBase64ToBytes(payload)
+  }
+  return undefined
+}
+
+/**
+ * Decodes one embedded chunk from `<script data-acex-href>` and removes the
+ * script node from the DOM so its multi-megabyte base64 text can be GC'd.
+ *
+ * The decoded bytes are returned for the caller to cache. Re-reading the same
+ * href afterwards returns `undefined` because the node is gone — callers must
+ * cache the bytes themselves (see {@link createAcExDomEmbeddedPackageFetch}).
+ */
+export function consumeAcExEmbeddedChunkFromDom(
+  href: string,
+  root: ParentNode = document
+): Uint8Array | undefined {
+  const scripts = root.querySelectorAll(
+    `script[${ACEX_EMBEDDED_CHUNK_HREF_ATTR}]`
+  )
+  for (let i = 0; i < scripts.length; i++) {
+    const script = scripts[i]!
+    const scriptHref = script.getAttribute(ACEX_EMBEDDED_CHUNK_HREF_ATTR)?.trim()
+    if (scriptHref !== href) continue
+    const raw = script.textContent ?? ''
+    if (raw.length === 0) return undefined
+    // Avoid String#trim on multi-megabyte payloads when packer wrote no padding.
+    const payload =
+      raw.charCodeAt(0) <= 32 || raw.charCodeAt(raw.length - 1) <= 32
+        ? raw.trim()
+        : raw
+    if (payload.length === 0) return undefined
+    const bytes = acExHtmlBase64ToBytes(payload)
+    // Detach the script node after decoding so a decode failure leaves the
+    // node in the DOM for inspection or retry.
+    script.remove()
+    return bytes
+  }
+  return undefined
+}
+
+/**
+ * Creates a fetch for an embedded package that reads each chunk from the HTML
+ * document once, decodes it, caches the bytes, and removes the `<script>` node
+ * so the multi-megabyte base64 text can be garbage collected.
+ *
+ * Subsequent reads (layout switches, OSNAP rebuilds) are served from the
+ * in-memory byte cache, so progressive rendering and re-fetch on layout
+ * switch keep working without keeping the DOM text alive.
+ */
+export function createAcExDomEmbeddedPackageFetch(options: {
+  manifest: AcExPackageManifest
+  decryptKey?: CryptoKey | null
+  root?: ParentNode
+}): { manifestUrl: string; fetchImpl: typeof fetch } {
+  const root = options.root ?? document
+  const chunkBytesCache = new Map<string, Uint8Array>()
+  return createAcExEmbeddedPackageFetch({
+    manifest: options.manifest,
+    decryptKey: options.decryptKey,
+    getChunk: async href => {
+      const cached = chunkBytesCache.get(href)
+      if (cached) return cached
+      const bytes = consumeAcExEmbeddedChunkFromDom(href, root)
+      if (bytes) chunkBytesCache.set(href, bytes)
+      return bytes
+    }
+  })
+}
+
+/**
+ * Creates an in-memory (or getter-backed) fetch for an embedded package.
  * When `decryptKey` is set, chunk bodies are decrypted on each fetch.
  *
- * Pass a mutable {@link Map} for `chunkBytes`. When `consumeOnFetch` is true
- * (default), each successful chunk read is removed from the map so compressed
- * payloads do not stay resident after decode. Keep `consumeOnFetch: false`
- * when the viewer may unload and reload layouts (multi-layout switching).
+ * Prefer {@link createAcExDomEmbeddedPackageFetch} in the offline viewer.
+ * The `chunkBytes` Map path remains for tests.
  */
 export function createAcExEmbeddedPackageFetch(options: {
   manifest: AcExPackageManifest
-  chunkBytes: Map<string, Uint8Array>
+  chunkBytes?: Map<string, Uint8Array>
+  /**
+   * Async chunk resolver. When set, takes precedence over {@link chunkBytes}.
+   */
+  getChunk?: (href: string) => Promise<Uint8Array | undefined>
   decryptKey?: CryptoKey | null
   /**
-   * When true, delete each chunk from `chunkBytes` after a successful read.
+   * When using {@link chunkBytes}, delete each entry after a successful read.
    * Defaults to `true`.
    */
   consumeOnFetch?: boolean
@@ -307,6 +410,7 @@ export function createAcExEmbeddedPackageFetch(options: {
   const decryptKey = options.decryptKey ?? null
   const consumeOnFetch = options.consumeOnFetch !== false
   const chunkBytes = options.chunkBytes
+  const getChunk = options.getChunk
 
   const fetchImpl: typeof fetch = async input => {
     const url = new URL(String(input))
@@ -320,16 +424,21 @@ export function createAcExEmbeddedPackageFetch(options: {
         headers: { 'Content-Type': 'application/json' }
       })
     }
-    const stored = chunkBytes.get(rel)
+
+    let stored: Uint8Array | undefined
+    if (getChunk) {
+      stored = await getChunk(rel)
+    } else if (chunkBytes) {
+      stored = chunkBytes.get(rel)
+    }
     if (!stored) {
       return new Response(null, { status: 404 })
     }
-    // Decrypt yields a fresh buffer; otherwise reuse the map entry and avoid
-    // an extra full-chunk copy on the progressive-load hot path.
+
     const bytes = decryptKey
       ? await decryptAcExHtmlBytes(decryptKey, stored)
       : stored
-    if (consumeOnFetch) {
+    if (consumeOnFetch && chunkBytes) {
       chunkBytes.delete(rel)
     }
     return new Response(bytes as BlobPart, { status: 200 })

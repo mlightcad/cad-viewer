@@ -29,9 +29,7 @@ import {
   setupAcExHtmlDrawerSheets
 } from './AcExHtmlDrawerSheet'
 import {
-  ACEX_EMBEDDED_CHUNK_HREF_ATTR,
-  collectAcExEmbeddedChunkBytes,
-  createAcExEmbeddedPackageFetch,
+  createAcExDomEmbeddedPackageFetch,
   decryptAcExEmbeddedManifest,
   parseAcExEmbeddedPackageConfig
 } from './AcExHtmlEmbeddedPackage'
@@ -317,15 +315,14 @@ function flipNearBlackWhiteMaterials(root: THREE.Object3D): void {
  * Opens a self-contained HTML that embeds progressive ACEX chunks
  * (`#mlcad-package` with `mode: "embedded"`).
  *
- * Returns the decoded chunk map so the caller can choose
- * `consumeOnFetch` after it knows whether layouts can switch.
+ * Chunk `<script>` nodes stay in the document; bytes are re-read on demand
+ * so open does not decode every gzip payload into a resident Map / IndexedDB.
  */
 async function openAcExHtmlEmbeddedPackageSession(
   packageEl: HTMLElement,
   i18n: AcExHtmlI18n
 ): Promise<{
   manifest: AcExPackageManifest
-  chunkBytes: Map<string, Uint8Array>
   decryptKey: CryptoKey | null
   expiresAt: number | null
 } | null> {
@@ -394,15 +391,8 @@ async function openAcExHtmlEmbeddedPackageSession(
     manifest = config.manifest
   }
 
-  const chunkBytes = collectAcExEmbeddedChunkBytes(document)
-  // Drop chunk script nodes after reading so the DOM can reclaim the text.
-  document
-    .querySelectorAll(`script[${ACEX_EMBEDDED_CHUNK_HREF_ATTR}]`)
-    .forEach(node => node.remove())
-
   return {
     manifest,
-    chunkBytes,
     decryptKey,
     expiresAt
   }
@@ -622,10 +612,9 @@ async function startViewer(): Promise<void> {
     loadedLayouts: Set<string>
     loadedOsnapLayouts: Set<string>
   } | null = null
-  /** Embedded progressive chunks; kept when layouts can switch for reload. */
+  /** Embedded progressive package pending fetch wiring after layout flags. */
   let pendingEmbedded: {
     manifest: AcExPackageManifest
-    chunkBytes: Map<string, Uint8Array>
     decryptKey: CryptoKey | null
     expiresAt: number | null
   } | null = null
@@ -755,17 +744,11 @@ async function startViewer(): Promise<void> {
 
   const modelLayout = snapshot.layouts.find(item => item.isModelSpace)
   const hasPaperViewports = snapshotHasPaperViewports(snapshot.layouts)
-  const canSwitchLayouts =
-    snapshot.meta.exportLayouts !== false &&
-    (snapshot.layouts.length > 1 || hasPaperViewports)
 
   if (pendingEmbedded) {
-    const embeddedFetch = createAcExEmbeddedPackageFetch({
+    const embeddedFetch = createAcExDomEmbeddedPackageFetch({
       manifest: pendingEmbedded.manifest,
-      chunkBytes: pendingEmbedded.chunkBytes,
-      decryptKey: pendingEmbedded.decryptKey,
-      // Keep compressed chunks when layouts can switch so unload/reload works.
-      consumeOnFetch: !canSwitchLayouts
+      decryptKey: pendingEmbedded.decryptKey
     })
     packageSession = {
       manifest: pendingEmbedded.manifest,
