@@ -4,7 +4,11 @@ import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import {
+  assignLayoutGeometryFrom,
+  layoutHasBatchGeometry,
+  releaseInactiveLayoutBatchBuffers,
   releaseLayerGroupsGeometryCpuArrays,
+  releaseLayoutBatchBuffers,
   releaseSnapshotBatchBuffers,
   releaseSnapshotOsnapCatalogs
 } from '../src/AcExViewerMemory'
@@ -82,6 +86,50 @@ function makeSnapshot(overrides: Record<string, unknown> = {}) {
 }
 
 describe('AcExViewerMemory', () => {
+  it('layoutHasBatchGeometry reflects cleared batches', () => {
+    const snapshot = makeSnapshot()
+    const layout = snapshot.layouts[0]!
+    expect(layoutHasBatchGeometry(layout)).toBe(true)
+    releaseLayoutBatchBuffers(layout)
+    expect(layoutHasBatchGeometry(layout)).toBe(false)
+  })
+
+  it('releaseInactiveLayoutBatchBuffers keeps selected layouts', () => {
+    const snapshot = makeSnapshot()
+    releaseInactiveLayoutBatchBuffers(snapshot, new Set(['ms']))
+    expect(layoutHasBatchGeometry(snapshot.layouts[0]!)).toBe(true)
+    expect(layoutHasBatchGeometry(snapshot.layouts[1]!)).toBe(false)
+    expect(snapshot.layouts[1]!.osnap).toBeUndefined()
+  })
+
+  it('assignLayoutGeometryFrom moves batches onto a skeleton layout', () => {
+    const snapshot = makeSnapshot()
+    const source = snapshot.layouts[0]!
+    const target = {
+      btrId: 'ms',
+      name: 'Model',
+      isModelSpace: true,
+      lineBatches: [] as typeof source.lineBatches,
+      meshBatches: [] as typeof source.meshBatches,
+      osnap: undefined as typeof source.osnap
+    }
+    assignLayoutGeometryFrom(target, source)
+    expect(layoutHasBatchGeometry(target)).toBe(true)
+    expect(target.osnap?.primitives).toHaveLength(1)
+  })
+
+  it('releaseLayoutBatchBuffers clears one layout only', () => {
+    const snapshot = makeSnapshot()
+    const first = snapshot.layouts[0]!
+    const second = snapshot.layouts[1]!
+
+    releaseLayoutBatchBuffers(first)
+
+    expect(first.lineBatches).toHaveLength(0)
+    expect(second.lineBatches).toHaveLength(1)
+    expect(second.lineBatches[0]!.positions.length).toBeGreaterThan(0)
+  })
+
   it('releaseSnapshotBatchBuffers clears every layout', () => {
     const snapshot = makeSnapshot()
 

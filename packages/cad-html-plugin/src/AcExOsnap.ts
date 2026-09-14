@@ -438,6 +438,97 @@ function isFiniteSegment(seg: AcExOsnapSegment): boolean {
   )
 }
 
+/** Packed segment store: avoids one JS object (+ repeated layer string) per edge. */
+interface AcExPackedSegments {
+  coords: Float64Array
+  layerIds: Uint16Array
+  layerNames: string[]
+}
+
+function emptyPackedSegments(): AcExPackedSegments {
+  return {
+    coords: new Float64Array(0),
+    layerIds: new Uint16Array(0),
+    layerNames: []
+  }
+}
+
+function packSegments(
+  segments: AcExOsnapSegment[],
+  segmentLayers: string[]
+): AcExPackedSegments {
+  const count = segments.length
+  if (count === 0) return emptyPackedSegments()
+
+  const layerNames: string[] = []
+  const layerIndex = new Map<string, number>()
+  const layerIds = new Uint16Array(count)
+  const coords = new Float64Array(count * 4)
+
+  for (let i = 0; i < count; i++) {
+    const layer = segmentLayers[i]!
+    let id = layerIndex.get(layer)
+    if (id == null) {
+      id = layerNames.length
+      if (id > 0xffff) {
+        throw new Error('Osnap layer dictionary exceeds Uint16 range')
+      }
+      layerNames.push(layer)
+      layerIndex.set(layer, id)
+    }
+    layerIds[i] = id
+    const seg = segments[i]!
+    const o = i * 4
+    coords[o] = seg.x0
+    coords[o + 1] = seg.y0
+    coords[o + 2] = seg.x1
+    coords[o + 3] = seg.y1
+  }
+
+  return { coords, layerIds, layerNames }
+}
+
+function packedSegmentCount(store: AcExPackedSegments): number {
+  return store.layerIds.length
+}
+
+function packedSegmentAt(
+  store: AcExPackedSegments,
+  index: number
+): AcExOsnapSegment {
+  const o = index * 4
+  return {
+    x0: store.coords[o]!,
+    y0: store.coords[o + 1]!,
+    x1: store.coords[o + 2]!,
+    y1: store.coords[o + 3]!
+  }
+}
+
+function packedSegmentLayerAt(
+  store: AcExPackedSegments,
+  index: number
+): string {
+  return store.layerNames[store.layerIds[index]!]!
+}
+
+function packedSegmentBounds(
+  store: AcExPackedSegments,
+  index: number
+): { minX: number; minY: number; maxX: number; maxY: number } {
+  const o = index * 4
+  const x0 = store.coords[o]!
+  const y0 = store.coords[o + 1]!
+  const x1 = store.coords[o + 2]!
+  const y1 = store.coords[o + 3]!
+  return {
+    minX: Math.min(x0, x1),
+    minY: Math.min(y0, y1),
+    maxX: Math.max(x0, x1),
+    maxY: Math.max(y0, y1)
+  }
+}
+
 /**
  * Rough item count for deciding whether to show a "building OSNAP" status.
  * Counts analytic primitives + line-batch edges only (meshes are not indexed).
@@ -564,8 +655,7 @@ function primitiveBounds(prim: AcExOsnapPrimitive): {
  * intersection candidates are computed on pointer query from nearby geometry.
  */
 export class AcExOsnapIndex {
-  private segments: AcExOsnapSegment[] = []
-  private segmentLayers: string[] = []
+  private packedSegments: AcExPackedSegments = emptyPackedSegments()
   private primitives: AcExOsnapPrimitive[] = []
   private primitiveTree = new RBush<AcExRbushEntry>()
   private segmentTree = new RBush<AcExRbushEntry>()
@@ -659,8 +749,7 @@ export class AcExOsnapIndex {
     this.primitiveTreeExtras = []
     this.segmentTreeExtras = []
     this.hiddenLayers.clear()
-    this.segments = []
-    this.segmentLayers = []
+    this.packedSegments = emptyPackedSegments()
   }
 
   private resetFromLayout(layout: AcExLayoutSnapshot): void {
@@ -696,8 +785,10 @@ export class AcExOsnapIndex {
       return
     }
     const collected = collectBatchSegments(layout)
-    this.segments = collected.segments
-    this.segmentLayers = collected.segmentLayers
+    this.packedSegments = packSegments(
+      collected.segments,
+      collected.segmentLayers
+    )
   }
 
   private async collectSegmentsFromLayoutAsync(
@@ -708,8 +799,10 @@ export class AcExOsnapIndex {
       return
     }
     const collected = await collectBatchSegmentsAsync(layout, yieldFn)
-    this.segments = collected.segments
-    this.segmentLayers = collected.segmentLayers
+    this.packedSegments = packSegments(
+      collected.segments,
+      collected.segmentLayers
+    )
   }
 
   private loadPrimitiveTreeSync(): void {
@@ -734,12 +827,13 @@ export class AcExOsnapIndex {
   }
 
   private loadSegmentTreeSync(): void {
-    if (this.segments.length === 0) {
+    const count = packedSegmentCount(this.packedSegments)
+    if (count === 0) {
       return
     }
     const segmentEntries: AcExRbushEntry[] = []
-    for (let i = 0; i < this.segments.length; i++) {
-      const bounds = segmentBounds(this.segments[i]!)
+    for (let i = 0; i < count; i++) {
+      const bounds = packedSegmentBounds(this.packedSegments, i)
       if (!isFiniteBounds(bounds)) {
         continue
       }
@@ -787,14 +881,14 @@ export class AcExOsnapIndex {
   private async loadSegmentTreeAsync(
     yieldFn: () => Promise<void>
   ): Promise<void> {
-    const count = this.segments.length
+    const count = packedSegmentCount(this.packedSegments)
     if (count === 0) {
       return
     }
     const schedule = createOsnapYieldScheduler(yieldFn)
     const segmentEntries: AcExRbushEntry[] = []
     for (let i = 0; i < count; i++) {
-      const bounds = segmentBounds(this.segments[i]!)
+      const bounds = packedSegmentBounds(this.packedSegments, i)
       if (!isFiniteBounds(bounds)) {
         continue
       }
@@ -904,7 +998,10 @@ export class AcExOsnapIndex {
     threshold: number
   ): AcExOsnapPoint | undefined {
     if (threshold <= 0) return undefined
-    if (this.primitives.length === 0 && this.segments.length === 0) {
+    if (
+      this.primitives.length === 0 &&
+      packedSegmentCount(this.packedSegments) === 0
+    ) {
       return undefined
     }
 
@@ -1007,7 +1104,7 @@ export class AcExOsnapIndex {
     }
 
     for (const hit of segHits) {
-      const layer = this.segmentLayers[hit.index]!
+      const layer = packedSegmentLayerAt(this.packedSegments, hit.index)
       if (this.hiddenLayers.has(layer)) continue
       if (segSeen.has(hit.index)) continue
       if (segIndices.length >= ACEX_MAX_INTERSECTION_SOURCES) continue
@@ -1045,12 +1142,12 @@ export class AcExOsnapIndex {
 
     for (let i = 0; i < segIndices.length; i++) {
       const indexA = segIndices[i]!
-      const segA = this.segments[indexA]!
-      const layerA = this.segmentLayers[indexA]!
+      const segA = packedSegmentAt(this.packedSegments, indexA)
+      const layerA = packedSegmentLayerAt(this.packedSegments, indexA)
       for (let j = i + 1; j < segIndices.length; j++) {
         const indexB = segIndices[j]!
-        const segB = this.segments[indexB]!
-        const layerB = this.segmentLayers[indexB]!
+        const segB = packedSegmentAt(this.packedSegments, indexB)
+        const layerB = packedSegmentLayerAt(this.packedSegments, indexB)
         if (this.hiddenLayers.has(layerA) || this.hiddenLayers.has(layerB)) {
           continue
         }
@@ -1080,9 +1177,9 @@ export class AcExOsnapIndex {
         continue
       }
       for (const segIndex of segIndices) {
-        const layer = this.segmentLayers[segIndex]!
+        const layer = packedSegmentLayerAt(this.packedSegments, segIndex)
         if (this.hiddenLayers.has(layer)) continue
-        const seg = this.segments[segIndex]!
+        const seg = packedSegmentAt(this.packedSegments, segIndex)
         const asLine: AcExOsnapPrimitive = {
           kind: 'line',
           layer,
@@ -1186,8 +1283,8 @@ export class AcExOsnapIndex {
       this.segmentTreeExtras,
       box
     )) {
-      const seg = this.segments[hit.index]!
-      const layer = this.segmentLayers[hit.index]!
+      const seg = packedSegmentAt(this.packedSegments, hit.index)
+      const layer = packedSegmentLayerAt(this.packedSegments, hit.index)
       if (discreteModes.has('endpoint')) {
         this.considerDiscreteCandidate(
           px,
@@ -1280,10 +1377,14 @@ export class AcExOsnapIndex {
         continue
       }
 
-      const layer = this.segmentLayers[hit.index]!
+      const layer = packedSegmentLayerAt(this.packedSegments, hit.index)
       if (this.hiddenLayers.has(layer)) continue
 
-      const near = closestPointOnSegment(px, py, this.segments[hit.index]!)
+      const near = closestPointOnSegment(
+        px,
+        py,
+        packedSegmentAt(this.packedSegments, hit.index)
+      )
       if (near.distSq <= threshSq && near.distSq < bestDistSq) {
         bestDistSq = near.distSq
         best = { x: near.x, y: near.y, mode: 'nearest' }
@@ -1291,28 +1392,6 @@ export class AcExOsnapIndex {
     }
 
     return best
-  }
-}
-
-/**
- * Axis-aligned bounds of one tessellated snap segment in WCS.
- *
- * @param seg - Segment whose endpoints define the bounding box.
- * @returns `{ minX, minY, maxX, maxY }` used by the segment RBush in
- *   {@link AcExOsnapIndex.rebuild}.
- * @internal
- */
-function segmentBounds(seg: AcExOsnapSegment): {
-  minX: number
-  minY: number
-  maxX: number
-  maxY: number
-} {
-  return {
-    minX: Math.min(seg.x0, seg.x1),
-    minY: Math.min(seg.y0, seg.y1),
-    maxX: Math.max(seg.x0, seg.x1),
-    maxY: Math.max(seg.y0, seg.y1)
   }
 }
 

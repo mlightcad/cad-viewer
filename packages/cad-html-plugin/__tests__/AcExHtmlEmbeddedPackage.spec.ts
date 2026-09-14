@@ -167,6 +167,118 @@ describe('AcExHtmlEmbeddedPackage', () => {
     expect(loaded.layouts[0]?.lineBatches.length).toBe(
       snapshot.layouts[0]!.lineBatches.length
     )
+    // Default consumeOnFetch clears compressed payloads after progressive load.
+    expect(chunkBytes.size).toBe(0)
+  })
+
+  it('reloads geometry by re-reading chunk scripts from the HTML DOM', async () => {
+    const snapshot = makeSnapshot({
+      lineCount: 4,
+      positionsPerLine: 6
+    })
+    const html = await packHtmlEmbeddedPackage(snapshot, {
+      viewerRuntime: '/* runtime */',
+      maxChunkBytes: 400,
+      maxBatchBytes: 400
+    })
+    const config = extractPackageConfig(html)
+    if (!config || config.encrypted) {
+      throw new Error('expected plaintext embedded config')
+    }
+
+    // Minimal DOM stub builder: each embedded chunk script from the packed
+    // HTML. `remove` mirrors the real Element API so
+    // `consumeAcExEmbeddedChunkFromDom` can detach nodes after decoding.
+    const buildScriptNodes = (): Array<{
+      getAttribute: (name: string) => string | null
+      textContent: string
+      remove: () => void
+      _detached: boolean
+    }> => {
+      const nodes: Array<{
+        getAttribute: (name: string) => string | null
+        textContent: string
+        remove: () => void
+        _detached: boolean
+      }> = []
+      const re = new RegExp(
+        `<script type="[^"]+" ${ACEX_EMBEDDED_CHUNK_HREF_ATTR}="([^"]+)">([A-Za-z0-9+/=\\s]+)<\\/script>`,
+        'g'
+      )
+      for (const match of html.matchAll(re)) {
+        const href = match[1]!
+        const payload = match[2]!
+        nodes.push({
+          getAttribute: name =>
+            name === ACEX_EMBEDDED_CHUNK_HREF_ATTR ? href : null,
+          textContent: payload,
+          _detached: false,
+          remove() {
+            this._detached = true
+          }
+        })
+      }
+      expect(nodes.length).toBe(config.manifest.chunks.length)
+      return nodes
+    }
+    const buildRoot = (nodes: Array<{ _detached: boolean }>) =>
+      ({
+        querySelectorAll: () =>
+          nodes.filter(node => !node._detached) as unknown as Element[]
+      }) as unknown as ParentNode
+
+    const {
+      createAcExDomEmbeddedPackageFetch,
+      consumeAcExEmbeddedChunkFromDom,
+      readAcExEmbeddedChunkFromDom
+    } = await import('../src/AcExHtmlEmbeddedPackage')
+
+    // `readAcExEmbeddedChunkFromDom` keeps the node in the DOM.
+    const readNodes = buildScriptNodes()
+    const readRoot = buildRoot(readNodes)
+    const href = config.manifest.chunks[0]!.href
+    const once = readAcExEmbeddedChunkFromDom(href, readRoot)
+    const twice = readAcExEmbeddedChunkFromDom(href, readRoot)
+    expect(once?.byteLength).toBeGreaterThan(0)
+    expect(Array.from(once ?? [])).toEqual(Array.from(twice ?? []))
+    expect(readNodes.every(n => !n._detached)).toBe(true)
+
+    // `consumeAcExEmbeddedChunkFromDom` returns the same bytes but detaches
+    // the script node so its base64 text can be GC'd.
+    const consumeNodes = buildScriptNodes()
+    const consumeRoot = buildRoot(consumeNodes)
+    const beforeCount = consumeNodes.filter(n => !n._detached).length
+    const consumed = consumeAcExEmbeddedChunkFromDom(href, consumeRoot)
+    expect(consumed?.byteLength).toBe(once?.byteLength)
+    expect(consumeNodes.filter(n => !n._detached).length).toBe(beforeCount - 1)
+    // A second consume on the same href returns undefined — the node is gone.
+    expect(consumeAcExEmbeddedChunkFromDom(href, consumeRoot)).toBeUndefined()
+
+    // First progressive load detaches every script as chunks are read.
+    const sessionNodes = buildScriptNodes()
+    const sessionRoot = buildRoot(sessionNodes)
+    const session = createAcExDomEmbeddedPackageFetch({
+      manifest: config.manifest,
+      root: sessionRoot
+    })
+    const loaded = await loadAcExPackage({
+      manifestUrl: session.manifestUrl,
+      fetchImpl: session.fetchImpl
+    })
+    expect(loaded.layouts[0]?.lineBatches.length).toBe(
+      snapshot.layouts[0]!.lineBatches.length
+    )
+    // Every chunk script has been detached after the first progressive load.
+    expect(sessionNodes.every(n => n._detached)).toBe(true)
+
+    // Layout-switch reload is served from the in-memory byte cache, not DOM.
+    const again = await loadAcExPackage({
+      manifestUrl: session.manifestUrl,
+      fetchImpl: session.fetchImpl
+    })
+    expect(again.layouts[0]?.lineBatches.length).toBe(
+      snapshot.layouts[0]!.lineBatches.length
+    )
   })
 
   it('encrypts the manifest and each chunk independently', async () => {

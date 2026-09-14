@@ -8,7 +8,10 @@ import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
 import { copyFloat32Range } from './AcExBatchBuffers'
-import { createTextureFromExportedBytes } from './AcExMeshTextureExport'
+import {
+  createTextureFromExportedBytes,
+  releaseExportedTextureBytes
+} from './AcExMeshTextureExport'
 import type {
   AcExGradientFill,
   AcExHatchPattern,
@@ -388,6 +391,8 @@ export function createViewerMeshMaterial(
     })
     material.map = createTextureFromExportedBytes(batch.texture, {
       onLoad: () => {
+        // PNG/JPEG bytes are no longer needed once the GPU texture exists.
+        releaseExportedTextureBytes(batch.texture)
         material.opacity = 1
         material.depthWrite = true
         material.needsUpdate = true

@@ -10,7 +10,8 @@ import { readMeshBatch, writeMeshBatch } from '../src/AcExBatchBinaryCodec'
 import { AcExBinaryReader, AcExBinaryWriter } from '../src/AcExBinaryIO'
 import {
   exportUvsForPositionSlice,
-  isTransparentImagePlaceholder
+  isTransparentImagePlaceholder,
+  releaseExportedTextureBytes
 } from '../src/AcExMeshTextureExport'
 import { decodeSnapshot, encodeSnapshot } from '../src/AcExSnapshotCodec'
 import { ACEX_SNAPSHOT_VERSION } from '../src/AcExSnapshotTypes'
@@ -119,5 +120,14 @@ describe('AcEx mesh texture export', () => {
         })
       )
     ).toBe(false)
+  })
+
+  it('releaseExportedTextureBytes clears PNG payloads after GPU upload', () => {
+    const texture = {
+      mimeType: 'image/png',
+      bytes: Uint8Array.from([1, 2, 3, 4])
+    }
+    releaseExportedTextureBytes(texture)
+    expect(texture.bytes).toHaveLength(0)
   })
 })
