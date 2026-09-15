@@ -41,10 +41,16 @@ export class AcTrLine extends AcTrEntity {
     this.wcsBbox = built.wcsBbox
 
     if (built.kind === 'fat') {
+      const fatMaterial = material as LineMaterial
       const line = new LineSegments2(
         built.geometry as LineSegmentsGeometry,
-        material as LineMaterial
+        fatMaterial
       )
+      // Dashed LineMaterial requires per-instance line distances on the
+      // geometry to render the dash pattern.
+      if (fatMaterial.dashed) {
+        line.computeLineDistances()
+      }
       line.position.copy(built.worldOffset)
       getSceneDrawableUserData(line).styleMaterialId = material.id
       this.add(line)

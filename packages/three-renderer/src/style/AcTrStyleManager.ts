@@ -45,6 +45,7 @@ export class AcTrStyleManager {
     maxFragmentUniforms: 1024,
     resolution: new THREE.Vector2(1, 1),
     showLineWeight: false,
+    linePatternShaderBroken: false,
     currentBackgroundColor: ACGI_MODEL_SPACE_BACKGROUND
   }
   private pointMgr: AcTrPointMaterialManager

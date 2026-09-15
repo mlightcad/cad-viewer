@@ -23,6 +23,11 @@ class LineMaterial {
     this.userData = {}
     this.color = new MockColor(parameters.color ?? 0xffffff)
     this.linewidth = parameters.linewidth ?? 1
+    this.dashed = parameters.dashed ?? false
+    this.dashScale = parameters.dashScale ?? 1
+    this.dashSize = parameters.dashSize ?? 1
+    this.dashOffset = parameters.dashOffset ?? 0
+    this.gapSize = parameters.gapSize ?? 1
     this.resolution = {
       x: 1,
       y: 1,
