@@ -15,8 +15,8 @@ import {
   type AcApPdfExportOptions,
   resolveAcApPdfExportOptions
 } from './AcApPdfExportOptions'
-import { createViewerPdfGlyphProvider } from './AcApPdfGlyphProvider'
 import { resolveViewerTextFont } from './AcApPdfFontResolver'
+import { createViewerPdfGlyphProvider } from './AcApPdfGlyphProvider'
 
 /**
  * Converts the current CAD drawing to a vector PDF and downloads it.

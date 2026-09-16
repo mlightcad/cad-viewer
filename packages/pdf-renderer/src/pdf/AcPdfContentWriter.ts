@@ -1,3 +1,4 @@
+import { AcGeMatrix3d } from '@mlightcad/data-model'
 import { deflate } from 'pako'
 import {
   PDFArray,
@@ -10,8 +11,6 @@ import {
   PDFRef
 } from 'pdf-lib'
 
-import { AcGeMatrix3d } from '@mlightcad/data-model'
-
 import { AcPdfMatrixUtil } from '../renderer/AcPdfMatrixUtil'
 import type {
   AcPdfFillStyle,
@@ -20,8 +19,8 @@ import type {
   AcPdfPoint,
   AcPdfStrokeStyle
 } from '../renderer/AcPdfStyle'
-import { pdfHexText } from './AcPdfMarkedContent'
 import type { AcPdfFontManager } from './AcPdfFontManager'
+import { pdfHexText } from './AcPdfMarkedContent'
 import { setPageNamedResource } from './AcPdfOcgManager'
 
 const KAPPA = 0.5522847498307936

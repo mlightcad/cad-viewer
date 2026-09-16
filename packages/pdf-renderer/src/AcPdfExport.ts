@@ -9,8 +9,8 @@ import {
 import { PDFDocument, PDFImage } from 'pdf-lib'
 
 import type { AcPdfExportOptions } from './AcPdfExportOptions'
-import { AcPdfFontManager } from './pdf/AcPdfFontManager'
 import { createPdfFormRegistry } from './pdf/AcPdfContentWriter'
+import { AcPdfFontManager } from './pdf/AcPdfFontManager'
 import { AcPdfOcgManager } from './pdf/AcPdfOcgManager'
 import { AcPdfEntity } from './renderer/AcPdfEntity'
 import { AcPdfRenderer } from './renderer/AcPdfRenderer'

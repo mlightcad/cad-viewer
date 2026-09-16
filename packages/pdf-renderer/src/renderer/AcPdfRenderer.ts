@@ -36,14 +36,6 @@ import type { AcPdfWriteOptions } from '../pdf/AcPdfDocumentWriter'
 import { AcPdfDocumentWriter } from '../pdf/AcPdfDocumentWriter'
 import type { AcPdfFontManager } from '../pdf/AcPdfFontManager'
 import { stripMtextCodes } from '../pdf/AcPdfMarkedContent'
-import {
-  ASCENT_RATIO,
-  DESCENT_RATIO,
-  OVERLINE_OFFSET_RATIO,
-  STRIKE_OFFSET_RATIO,
-  UNDERLINE_OFFSET_RATIO,
-  layoutMText
-} from './AcPdfTextLayout'
 import type {
   AcPdfGlyphBox,
   AcPdfGlyphPrimitives,
@@ -53,6 +45,13 @@ import { AcPdfEntity } from './AcPdfEntity'
 import { AcPdfGroup } from './AcPdfGroup'
 import type { AcPdfOp, AcPdfPoint } from './AcPdfStyle'
 import { AcPdfStyleContext, AcPdfStyleUtil } from './AcPdfStyleUtil'
+import {
+  ASCENT_RATIO,
+  DESCENT_RATIO,
+  layoutMText,
+  OVERLINE_OFFSET_RATIO,
+  STRIKE_OFFSET_RATIO,
+  UNDERLINE_OFFSET_RATIO} from './AcPdfTextLayout'
 
 const DEFAULT_POINT_RADIUS = 0.5
 

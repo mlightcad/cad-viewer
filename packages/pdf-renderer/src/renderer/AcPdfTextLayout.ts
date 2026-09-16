@@ -10,18 +10,16 @@
  * against the entity's column width.
  */
 import {
-  AcGiMTextFlowDirection,
-  type AcGiMTextData
-} from '@mlightcad/data-model'
+  type AcGiMTextData,
+  AcGiMTextFlowDirection} from '@mlightcad/data-model'
 
 import {
-  parseMText,
   type AcPdfMTextJustify,
   type AcPdfMTextParagraph,
   type AcPdfMTextSegment,
+  type AcPdfMTextStack,
   type AcPdfMTextStyle,
-  type AcPdfMTextStack
-} from './AcPdfMTextParser'
+  parseMText} from './AcPdfMTextParser'
 import type { AcPdfRgb } from './AcPdfStyle'
 
 /** Baseline-to-baseline distance of single-spaced text, in heights. */

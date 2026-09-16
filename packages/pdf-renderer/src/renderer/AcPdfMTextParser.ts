@@ -11,12 +11,11 @@
  * paragraph breaks, carrying `\pxq*` alignment per paragraph.
  */
 import {
+  type MTextColor,
   MTextContext,
-  MTextParser as MTextTokenizer,
   MTextParagraphAlignment,
-  TokenType,
-  type MTextColor
-} from '@mlightcad/mtext-parser'
+  MTextParser as MTextTokenizer,
+  TokenType} from '@mlightcad/mtext-parser'
 
 import type { AcPdfRgb } from './AcPdfStyle'
 

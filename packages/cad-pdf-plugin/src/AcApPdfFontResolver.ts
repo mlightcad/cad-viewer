@@ -1,5 +1,4 @@
 import { AcApFontUtil } from '@mlightcad/cad-simple-viewer'
-
 import type { AcPdfTextFontResolver } from '@mlightcad/pdf-renderer'
 
 /**
@@ -27,7 +26,7 @@ export const resolveViewerTextFont: AcPdfTextFontResolver = async fontName => {
     console.warn(
       `[cad-pdf-plugin] No embeddable font for "${fontName}" ` +
         `(catalog=${info ? info.type : 'miss'}, url=${info?.url ? 'yes' : 'no'}); ` +
-        `texts using it are painted as vector glyphs`
+        'texts using it are painted as vector glyphs'
     )
     return undefined
   }
@@ -36,7 +35,7 @@ export const resolveViewerTextFont: AcPdfTextFontResolver = async fontName => {
     if (!res.ok) {
       console.warn(
         `[cad-pdf-plugin] Font "${fontName}" fetch failed (${res.status} ${info.url}); ` +
-          `texts using it are painted as vector glyphs`
+          'texts using it are painted as vector glyphs'
       )
       return undefined
     }
@@ -46,7 +45,7 @@ export const resolveViewerTextFont: AcPdfTextFontResolver = async fontName => {
     console.warn(
       `[cad-pdf-plugin] Font "${fontName}" fetch errored (${info.url}): ` +
         `${error instanceof Error ? error.message : String(error)}; ` +
-        `texts using it are painted as vector glyphs`
+        'texts using it are painted as vector glyphs'
     )
     return undefined
   }

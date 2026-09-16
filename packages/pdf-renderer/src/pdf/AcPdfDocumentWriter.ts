@@ -3,9 +3,9 @@ import { PDFDocument, PDFImage } from 'pdf-lib'
 
 import type { AcPdfEntity } from '../renderer/AcPdfEntity'
 import type { AcPdfOp } from '../renderer/AcPdfStyle'
-import type { AcPdfFontManager } from './AcPdfFontManager'
-import { AcPdfContentWriter } from './AcPdfContentWriter'
 import type { AcPdfFormRegistry } from './AcPdfContentWriter'
+import { AcPdfContentWriter } from './AcPdfContentWriter'
+import type { AcPdfFontManager } from './AcPdfFontManager'
 import { AcPdfOcgManager } from './AcPdfOcgManager'
 import {
   type AcPdfPageLayoutInput,
