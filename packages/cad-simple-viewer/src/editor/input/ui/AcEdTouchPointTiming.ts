@@ -10,7 +10,7 @@
  * Long-press delay before precise capture activates (simulated mouse or
  * snap loupe), in milliseconds.
  */
-export const ACED_TOUCH_POINT_LONG_PRESS_MS = 1000
+export const ACED_TOUCH_POINT_LONG_PRESS_MS = 500
 
 /**
  * Pointer movement in CSS pixels that cancels a pending long-press so the

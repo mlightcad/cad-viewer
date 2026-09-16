@@ -102,7 +102,7 @@ describe('acedAttachMobileBoxGesture', () => {
       clientX: 40,
       clientY: 50
     })
-    jest.advanceTimersByTime(1000)
+    jest.advanceTimersByTime(500)
     expect(onActivate).toHaveBeenCalledWith(40, 50)
     expect(setNavigationEnabled).toHaveBeenCalledWith(false)
 
@@ -141,7 +141,7 @@ describe('acedAttachMobileBoxGesture', () => {
       clientX: 30,
       clientY: 0
     })
-    jest.advanceTimersByTime(1000)
+    jest.advanceTimersByTime(500)
     expect(onActivate).not.toHaveBeenCalled()
   })
 })

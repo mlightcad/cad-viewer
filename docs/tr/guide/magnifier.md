@@ -10,7 +10,7 @@ Dokunmatik ekranda bir noktayı kesin olarak seçerken parmak hedef konumu örte
 
 ## Çalışma şekli
 
-- Komut bir nokta belirtmenizi istediğinde, ekrana **yaklaşık 1 saniye** basılı tutun ve sol üst köşede otomatik olarak kare bir büyüteç HUD görüntülenir.
+- Komut bir nokta belirtmenizi istediğinde, ekrana **yaklaşık 0,5 saniye** basılı tutun ve sol üst köşede otomatik olarak kare bir büyüteç HUD görüntülenir.
 - Büyütülen alan geçerli giriş noktasını izler: büyüteç, parmak tarafından engellenmeden giriş noktası yakınındaki kesin konumu görmenize yardımcı olur.
 - Büyüteç yalnızca görsel yardım sağlar ve giriş konumunu değiştirmez.
 

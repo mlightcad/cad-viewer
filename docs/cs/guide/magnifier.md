@@ -10,7 +10,7 @@ Při přesném vyzvednutí bodu na dotykové obrazovce prst překrývá cílovou
 
 ## Způsob fungování
 
-- Když příkaz vyžaduje zadání bodu, **dlouze stiskněte** obrazovku asi na 1 sekundu a v levém horním rohu se automaticky zobrazí čtvercová lupa HUD.
+- Když příkaz vyžaduje zadání bodu, **dlouze stiskněte** obrazovku asi na 0,5 sekundy a v levém horním rohu se automaticky zobrazí čtvercová lupa HUD.
 - Zvětšená oblast sleduje aktuální vstupní bod: lupa pomáhá vidět přesnou pozici v okolí vstupního bodu, aniž by ji zakrýval prst.
 - Lupa poskytuje pouze vizuální pomoc a nemění vstupní pozici.
 
