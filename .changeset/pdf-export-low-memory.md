@@ -81,3 +81,12 @@ Reduce peak memory of PDF export to prevent crashes on large drawings
   defers `embedFont`'s object creation to serialization time, and the
   renderer exposes a `textFontManager` getter so the finalize call actually
   reaches the manager (a setter-only property read back as `undefined`).
+- OLE2Frame pictures now embed instead of silently vanishing: pdf-lib can
+  only embed JPEG and PNG, but OLE frames deliver BMP / GIF rasters and WMF /
+  EMF metafiles, and the old code labeled every non-JPEG blob as PNG so
+  `embedPng` threw on the BMP bytes and the surrounding catch skipped the
+  image entirely (export showed only the frame outline). Non-embeddable
+  rasters are now decoded through `createImageBitmap` + canvas and re-encoded
+  as PNG, WMF / EMF metafiles rasterize through the data-model's
+  `acdbRasterizeOleMetafile`, and images that still cannot convert are
+  skipped explicitly instead of throwing.
