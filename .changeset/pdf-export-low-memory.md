@@ -67,3 +67,17 @@ Reduce peak memory of PDF export to prevent crashes on large drawings
   brace-group style scoping, and baseline advances of
   `5/3 × lineSpaceFactor × height` with word/character wrapping against the
   entity column width.
+- Vector-glyph extraction no longer chains stroke-font strokes together:
+  mtext-renderer emits SHX glyph strokes as `THREE.LineSegments` (which
+  extends `Line`, so `isLine` is true for both), and the glyph provider
+  expanded every line node as one continuous polyline — connecting the last
+  point of each stroke to the first point of the next, across characters.
+  Vertex pairs now emit as independent 2-point polylines.
+- Embedded font programs now carry the mandatory `/Length1` entry on their
+  FontFile2 streams: pdf-lib omits it (PDF 32000 Table 126), which made
+  Acrobat report "An error exists on this page" for every page painting with
+  the font (other viewers tolerated it). The font manager also gained a
+  `finalize` step (called before both `doc.save` sites) because pdf-lib
+  defers `embedFont`'s object creation to serialization time, and the
+  renderer exposes a `textFontManager` getter so the finalize call actually
+  reaches the manager (a setter-only property read back as `undefined`).

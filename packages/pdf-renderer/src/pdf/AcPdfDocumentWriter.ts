@@ -67,6 +67,9 @@ export class AcPdfDocumentWriter {
       doc.setTitle(options.title)
     }
     await AcPdfDocumentWriter.writePage(doc, entities, options)
+    // Flush deferred font embeds and repair their font programs (see
+    // AcPdfFontManager.finalize) before serialization.
+    await options.fonts?.finalize()
     return doc.save({ useObjectStreams: true })
   }
 
