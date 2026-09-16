@@ -476,7 +476,12 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
         ? Math.atan2(dv.y, dv.x)
         : (mtext.rotation ?? 0)
     const rotationDeg = (rotation * 180) / Math.PI
-    const n = mtext.normal
+    // `normal` is typed only in newer data-model revisions (absent from the
+    // published ^1.14.6 typings, which also never populate it at runtime) —
+    // read it structurally so both revisions compile; when undefined the
+    // default +Z normal applies.
+    const n = (mtext as { normal?: { x: number; y: number; z: number } })
+      .normal
     const nz = n && (n.x !== 0 || n.y !== 0 || n.z !== 0) ? n.z : 1
     const cos = Math.cos(rotation)
     const sin = Math.sin(rotation)
