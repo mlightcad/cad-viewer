@@ -27,6 +27,14 @@ import { AcTrEntity } from './AcTrEntity'
 const _raycastBox = /*@__PURE__*/ new THREE.Box3()
 /** Scratch point reused by {@link AcTrGlyphEntity.raycast} during bbox fallback. */
 const _raycastPoint = /*@__PURE__*/ new THREE.Vector3()
+/** Identity matrix for detecting post-inverse attribute transforms. */
+const _identityMatrix = /*@__PURE__*/ new THREE.Matrix4()
+/** Scratch matrix used when folding an inverse INSERT transform into placement. */
+const _collapseMatrix = /*@__PURE__*/ new THREE.Matrix4()
+/** Scratch used to convert mtext-renderer logical boxes into parent-local space. */
+const _logicalBox = /*@__PURE__*/ new THREE.Box3()
+/** Scratch inverse of the parent world matrix for logical-box conversion. */
+const _toParentLocal = /*@__PURE__*/ new THREE.Matrix4()
 
 /**
  * Base display object for CAD entities rendered through the shared mtext-renderer
@@ -254,6 +262,10 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
    */
   protected attachRendered(rendered: MTextObject) {
     this.add(rendered)
+    // Fold WCS placement under an inverse INSERT matrix into true block-local
+    // space before flatten/unbatch. Must run while the renderer hierarchy is
+    // still intact so the placement root can absorb this.matrix.
+    this.collapseInverseParentTransformIntoPlacement(rendered)
     const renderRoot = resolveMTextRenderRoot(rendered)
     if (this.resolveDrawMode() === 'unbatch') {
       this.markDrawableUnbatched(renderRoot)
@@ -280,6 +292,52 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
   }
 
   /**
+   * Converts WCS-positioned attribute glyphs into block-local placement.
+   *
+   * {@link AcDbRenderingCache.draw} applies the inverse INSERT matrix to
+   * attribute entities before glyphs are built. The mtext-renderer then
+   * places glyphs with a WCS insertion point under that inverse. The product
+   * cancels for rendering, but mirrored INSERT scales make
+   * {@link THREE.Matrix4.decompose} unreliable on the inverse — unbatched
+   * cloning can then land tens of millions of units away and inflate
+   * zoom-to-extents / layer-fit boxes (e.g. DOOR_FIRE_TEXT attributes).
+   *
+   * Fold `this.matrix · placementLocal` into the placement root and reset
+   * this entity to identity so attributes sit in true block-local space
+   * under the INSERT transform.
+   *
+   * @param rendered Rendered glyph object returned by the shared mtext-renderer.
+   */
+  private collapseInverseParentTransformIntoPlacement(rendered: MTextObject) {
+    // `matrix` is authoritative after applyFullMatrix4 (matrixAutoUpdate false).
+    if (this.matrixAutoUpdate) {
+      this.updateMatrix()
+    }
+    if (this.matrix.equals(_identityMatrix)) {
+      return
+    }
+
+    const renderRoot = resolveMTextRenderRoot(rendered)
+    if (renderRoot.matrixAutoUpdate) {
+      renderRoot.updateMatrix()
+    }
+    // Keep the exact product matrix — do not decompose. Mirrored INSERT
+    // inverses have negative determinants that THREE cannot round-trip via TRS.
+    _collapseMatrix.copy(this.matrix).multiply(renderRoot.matrix)
+    renderRoot.matrixAutoUpdate = false
+    renderRoot.matrix.copy(_collapseMatrix)
+    renderRoot.matrixWorldNeedsUpdate = true
+
+    this.position.set(0, 0, 0)
+    this.quaternion.identity()
+    this.scale.set(1, 1, 1)
+    this.matrix.identity()
+    this.matrixAutoUpdate = true
+    this.matrixWorldNeedsUpdate = true
+    this.updateMatrixWorld(true)
+  }
+
+  /**
    * Rebuilds the entity selection box used by the scene spatial index.
    *
    * The box exposed by the mtext renderer describes its logical layout, including
@@ -289,16 +347,26 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
    * geometry so legitimate spacing is preserved while displaced renderer boxes
    * are ignored.
    *
+   * {@link MTextObject.box} is authored in world space at draw time. When this
+   * glyph is parented (INSERT attributes), convert it to parent-local space
+   * before intersecting or unioning with {@link computeGeometryBox}.
+   *
    * @param rendered Rendered glyph object whose logical box is used as fallback.
    */
   protected updateSelectionBox(rendered: MTextObject) {
     const geometryBox = this.computeGeometryBox()
+    _logicalBox.copy(rendered.box)
+    if (!_logicalBox.isEmpty() && this.parent) {
+      this.parent.updateMatrixWorld(true)
+      _toParentLocal.copy(this.parent.matrixWorld).invert()
+      _logicalBox.applyMatrix4(_toParentLocal)
+    }
     if (geometryBox.isEmpty()) {
-      this.wcsBbox = rendered.box
+      this.wcsBbox = _logicalBox.clone()
       return
     }
-    if (!rendered.box.isEmpty() && rendered.box.intersectsBox(geometryBox)) {
-      this.wcsBbox = geometryBox.clone().union(rendered.box)
+    if (!_logicalBox.isEmpty() && _logicalBox.intersectsBox(geometryBox)) {
+      this.wcsBbox = geometryBox.clone().union(_logicalBox)
       return
     }
     this.wcsBbox = geometryBox

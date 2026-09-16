@@ -216,6 +216,49 @@ describe('AcTrMText', () => {
     expect(placementRoot.children).toHaveLength(2)
   })
 
+  it('folds inverse INSERT matrix into WCS placement so mirrored scales stay local', () => {
+    const context = new AcTrRenderContext(new AcTrStyleManager(), unbatchPolicy)
+    const insert = new THREE.Object3D()
+    // Thin mirrored Y — THREE.Matrix4.decompose cannot represent this inverse.
+    insert.position.set(592909.8248335773, 3124651.1516687754, 0)
+    insert.rotation.z = 1.8245795716825401
+    insert.scale.set(5.353306447087925, -0.2001236053492903, 0.2001236055046306)
+    insert.updateMatrixWorld(true)
+
+    const entity = new AcTrMText(
+      {
+        text: 'FJM5428',
+        position: { x: 592909.8651438681, y: 3124651.724989663, z: 0 }
+      } as never,
+      { layer: 'DOOR_FIRE_TEXT', color: 7 } as never,
+      {} as never,
+      context,
+      true
+    )
+    insert.add(entity)
+    // Apply inverse without TRS decompose (matches AcTrEntity.applyMatrix).
+    const inverse = insert.matrixWorld.clone().invert()
+    entity.matrixAutoUpdate = false
+    entity.matrix.copy(inverse)
+    entity.matrixWorldNeedsUpdate = true
+    entity.updateMatrixWorld(true)
+
+    const wcs = { x: 592909.8651438681, y: 3124651.724989663, z: 0 }
+    const placementRoot = createPlacementRoot(wcs, [0, 8])
+    const mtext = createSyncMTextObject(placementRoot)
+    privateMethods.attachRendered.call(entity, mtext)
+
+    expect(entity.matrix.equals(new THREE.Matrix4())).toBe(true)
+    expect(Math.abs(placementRoot.matrix.elements[12])).toBeLessThan(10)
+    expect(Math.abs(placementRoot.matrix.elements[13])).toBeLessThan(10)
+
+    insert.updateMatrixWorld(true)
+    const world = new THREE.Vector3()
+    placementRoot.getWorldPosition(world)
+    expect(world.x).toBeCloseTo(wcs.x, 1)
+    expect(world.y).toBeCloseTo(wcs.y, 1)
+  })
+
   it('flattens render leaves when resolveDrawMode returns batch', () => {
     const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
     const entity = new AcTrMText(
@@ -235,6 +278,56 @@ describe('AcTrMText', () => {
     expect(entity.children.every(child => child instanceof THREE.Mesh)).toBe(
       true
     )
+  })
+
+  it('keeps mirrored INSERT glyph world positions after batch flatten', () => {
+    const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
+    const insert = new THREE.Object3D()
+    insert.position.set(592909.8248335773, 3124651.1516687754, 0)
+    insert.rotation.z = 1.8245795716825401
+    insert.scale.set(5.353306447087925, -0.2001236053492903, 0.2001236055046306)
+    insert.updateMatrixWorld(true)
+
+    const entity = new AcTrMText(
+      {
+        text: 'FJM5428',
+        position: { x: 592909.8651438681, y: 3124651.724989663, z: 0 }
+      } as never,
+      { layer: 'DOOR_FIRE_TEXT', color: 7 } as never,
+      {} as never,
+      context,
+      true
+    )
+    insert.add(entity)
+    const inverse = insert.matrixWorld.clone().invert()
+    entity.matrixAutoUpdate = false
+    entity.matrix.copy(inverse)
+    entity.matrixWorldNeedsUpdate = true
+    entity.updateMatrixWorld(true)
+
+    const wcs = { x: 592909.8651438681, y: 3124651.724989663, z: 0 }
+    const placementRoot = createPlacementRoot(wcs, [0, 8])
+    const expectedGlyphWorld: THREE.Vector3[] = []
+    placementRoot.updateMatrixWorld(true)
+    for (const child of placementRoot.children) {
+      const world = new THREE.Vector3()
+      child.getWorldPosition(world)
+      expectedGlyphWorld.push(world)
+    }
+
+    privateMethods.attachRendered.call(
+      entity,
+      createSyncMTextObject(placementRoot)
+    )
+
+    expect(entity.children).toHaveLength(2)
+    insert.updateMatrixWorld(true)
+    for (let i = 0; i < entity.children.length; i++) {
+      const world = new THREE.Vector3()
+      entity.children[i].getWorldPosition(world)
+      expect(world.x).toBeCloseTo(expectedGlyphWorld[i].x, 1)
+      expect(world.y).toBeCloseTo(expectedGlyphWorld[i].y, 1)
+    }
   })
 
   it('fastDeepClone keeps AcTrMText so INSERT clones can still asyncDraw', () => {

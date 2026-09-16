@@ -456,8 +456,7 @@ export class AcTrGroup extends AcTrEntity {
         }
       })
     }
-    this.applyMatrix4(threeMatrix)
-    this.updateMatrixWorld(true)
+    this.applyFullMatrix4(threeMatrix)
     this.syncWcsBboxFromChildBoxes()
   }
 
