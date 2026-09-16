@@ -2,6 +2,7 @@ import {
   AcCmColor,
   AcCmTransparency,
   acdbDrawTessellateOptions,
+  acdbRasterizeOleMetafile,
   AcDbRenderingCache,
   AcGeArea2d,
   AcGeCircArc3d,
@@ -1008,9 +1009,23 @@ async function blobToImageOp(
   if (type.includes('svg')) {
     return null
   }
-  const format: 'png' | 'jpg' = type.includes('jpeg') || type.includes('jpg')
-    ? 'jpg'
-    : 'png'
+  // pdf-lib can only embed JPEG and PNG. OLE frames deliver BMP / GIF raster
+  // pictures and WMF / EMF metafiles (see AcDbOle2Frame), so convert every
+  // other blob to PNG first instead of letting embedPng fail silently.
+  let format: 'png' | 'jpg'
+  let raster: Blob = blob
+  if (type.includes('jpeg') || type.includes('jpg')) {
+    format = 'jpg'
+  } else if (type.includes('png')) {
+    format = 'png'
+  } else {
+    const converted = await convertToEmbeddablePng(blob)
+    if (!converted) {
+      return null
+    }
+    raster = converted
+    format = 'png'
+  }
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
@@ -1021,7 +1036,7 @@ async function blobToImageOp(
     maxX = Math.max(maxX, pt.x)
     maxY = Math.max(maxY, pt.y)
   }
-  const bytes = new Uint8Array(await blob.arrayBuffer())
+  const bytes = new Uint8Array(await raster.arrayBuffer())
   return {
     kind: 'image',
     bytes,
@@ -1030,5 +1045,65 @@ async function blobToImageOp(
     y: minY,
     width: maxX - minX,
     height: maxY - minY
+  }
+}
+
+/**
+ * Converts a non-embeddable image blob (BMP / GIF raster or WMF / EMF
+ * metafile) to PNG. Returns `undefined` when no conversion path applies or
+ * decoding fails — callers then skip the image instead of failing the export.
+ */
+async function convertToEmbeddablePng(blob: Blob): Promise<Blob | undefined> {
+  try {
+    const type = blob.type || ''
+    if (type === 'image/wmf' || type === 'image/emf') {
+      return await acdbRasterizeOleMetafile(blob)
+    }
+    return await decodeRasterBlobToPng(blob)
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Decodes a browser-supported raster blob (BMP, GIF, WebP, …) and re-encodes
+ * its first frame as PNG through a canvas.
+ */
+async function decodeRasterBlobToPng(blob: Blob): Promise<Blob | undefined> {
+  if (typeof createImageBitmap !== 'function') {
+    return undefined
+  }
+  let bitmap: ImageBitmap
+  try {
+    bitmap = await createImageBitmap(blob)
+  } catch {
+    return undefined
+  }
+  try {
+    if (typeof OffscreenCanvas === 'function') {
+      const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        return undefined
+      }
+      ctx.drawImage(bitmap, 0, 0)
+      return await canvas.convertToBlob({ type: 'image/png' })
+    }
+    if (typeof document !== 'undefined') {
+      const canvas = document.createElement('canvas')
+      canvas.width = bitmap.width
+      canvas.height = bitmap.height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        return undefined
+      }
+      ctx.drawImage(bitmap, 0, 0)
+      return await new Promise<Blob | undefined>(resolve => {
+        canvas.toBlob(out => resolve(out ?? undefined), 'image/png')
+      })
+    }
+    return undefined
+  } finally {
+    bitmap.close()
   }
 }
