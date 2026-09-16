@@ -145,21 +145,18 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
       object: THREE.Object3D
       relativeMatrix: THREE.Matrix4
     }> = []
-    const position = new THREE.Vector3()
-    const quaternion = new THREE.Quaternion()
-    const scale = new THREE.Vector3()
 
-    // Reconstruct the object's local TRS from the relative matrix. We intentionally restore
-    // the transform onto the object itself instead of applying the matrix to its geometry.
+    // Restore the relative transform onto the leaf itself (not baked into geometry).
+    // Copy the exact 4×4 — Matrix4.decompose cannot round-trip mirrored INSERT
+    // scales (negative determinants), which previously corrupted batched glyph
+    // placement after collapseInverseParentTransformIntoPlacement.
     function applyRelativeMatrix(
       object: THREE.Object3D,
       relativeMatrix: THREE.Matrix4
     ) {
-      relativeMatrix.decompose(position, quaternion, scale)
-      object.position.copy(position)
-      object.quaternion.copy(quaternion)
-      object.scale.copy(scale)
-      object.updateMatrix()
+      object.matrixAutoUpdate = false
+      object.matrix.copy(relativeMatrix)
+      object.matrixWorldNeedsUpdate = true
     }
 
     // Walk the subtree and collect only leaf render objects. Any intermediate groups are
@@ -391,15 +388,39 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   }
 
   /**
-   * @inheritdoc
+   * Applies a world/block transform to this entity's local matrix.
+   *
+   * Intentionally avoids {@link THREE.Object3D.applyMatrix4}, which decomposes
+   * into position/quaternion/scale and cannot represent mirrored INSERT scales
+   * (`scale.y < 0`, etc.). Those decompositions corrupt attribute inverses and
+   * push DOOR_FIRE_TEXT / similar labels tens of millions of units away.
+   *
+   * After this call {@link matrixAutoUpdate} is `false` so the exact 4×4 matrix
+   * (including reflection) is what {@link updateMatrixWorld} propagates.
    */
   applyMatrix(matrix: AcGeMatrix3d) {
     const threeMatrix = AcTrMatrixUtil.createMatrix4(matrix)
-    this.applyMatrix4(threeMatrix)
-    this.updateMatrixWorld(true)
+    this.applyFullMatrix4(threeMatrix)
     if (!this._wcsBbox.isEmpty()) {
       this._wcsBbox.applyMatrix4(threeMatrix)
     }
+  }
+
+  /**
+   * Left-multiplies {@link matrix} by `threeMatrix` without TRS decomposition.
+   *
+   * @param threeMatrix - Transform to apply in parent-local space.
+   */
+  protected applyFullMatrix4(threeMatrix: THREE.Matrix4) {
+    // When matrixAutoUpdate is already false, `matrix` is authoritative —
+    // updateMatrix() would wipe reflections by recomposing from TRS.
+    if (this.matrixAutoUpdate) {
+      this.updateMatrix()
+    }
+    this.matrix.multiplyMatrices(threeMatrix, this.matrix)
+    this.matrixAutoUpdate = false
+    this.matrixWorldNeedsUpdate = true
+    this.updateMatrixWorld(true)
   }
 
   /**

@@ -2707,11 +2707,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
 
     const cloned = source.clone() as THREE.Object3D
-    source.updateMatrixWorld(true)
-    source.matrixWorld.decompose(_v1, _unbatchedQuaternion, _unbatchedScale)
-    cloned.position.copy(_v1)
-    cloned.quaternion.copy(_unbatchedQuaternion)
-    cloned.scale.copy(_unbatchedScale)
+    this.copyWorldMatrixOntoClone(source, cloned)
     if (this.hasMaterial(source) && this.hasMaterial(cloned)) {
       cloned.material = source.material
       const sourceDrawable = getSceneDrawableUserData(source)
@@ -2729,8 +2725,6 @@ export class AcTrBatchedGroup extends THREE.Group {
         )
       }
     }
-    cloned.updateMatrix()
-    cloned.updateMatrixWorld(true)
     this.finalizeUnbatchedLineClone(cloned)
     return cloned
   }
@@ -2786,13 +2780,7 @@ export class AcTrBatchedGroup extends THREE.Group {
    */
   private cloneUnbatchedSubtree(source: THREE.Object3D) {
     const cloned = source.clone(true) as THREE.Object3D
-    source.updateMatrixWorld(true)
-    source.matrixWorld.decompose(_v1, _unbatchedQuaternion, _unbatchedScale)
-    cloned.position.copy(_v1)
-    cloned.quaternion.copy(_unbatchedQuaternion)
-    cloned.scale.copy(_unbatchedScale)
-    cloned.updateMatrix()
-    cloned.updateMatrixWorld(true)
+    this.copyWorldMatrixOntoClone(source, cloned)
 
     const sourceDrawable = getSceneDrawableUserData(source)
     const clonedDrawable = getSceneDrawableUserData(cloned)
@@ -2817,6 +2805,26 @@ export class AcTrBatchedGroup extends THREE.Group {
     })
 
     return cloned
+  }
+
+  /**
+   * Places an unbatched clone in world space using the source's exact
+   * {@link THREE.Object3D.matrixWorld}.
+   *
+   * Avoids {@link THREE.Matrix4.decompose}: mirrored INSERT scales produce
+   * negative determinants that do not round-trip through TRS, which previously
+   * shoved attribute text (e.g. DOOR_FIRE_TEXT) tens of millions of units away
+   * and blew up zoom-to-extents / layer-fit boxes.
+   */
+  private copyWorldMatrixOntoClone(
+    source: THREE.Object3D,
+    cloned: THREE.Object3D
+  ) {
+    source.updateMatrixWorld(true)
+    cloned.matrixAutoUpdate = false
+    cloned.matrix.copy(source.matrixWorld)
+    cloned.matrixWorld.copy(source.matrixWorld)
+    cloned.matrixWorldNeedsUpdate = false
   }
 
   /**
@@ -3097,7 +3105,5 @@ function hasPreviewDrawableGeometry(
 
 const _v1 = /*@__PURE__*/ new THREE.Vector3()
 const _v2 = /*@__PURE__*/ new THREE.Vector3()
-const _unbatchedQuaternion = /*@__PURE__*/ new THREE.Quaternion()
-const _unbatchedScale = /*@__PURE__*/ new THREE.Vector3()
 const _intersectBox = /*@__PURE__*/ new THREE.Box3()
 const _intersectScratchBox = /*@__PURE__*/ new THREE.Box3()

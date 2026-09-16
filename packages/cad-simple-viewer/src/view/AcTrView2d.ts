@@ -3293,7 +3293,11 @@ export class AcTrView2d extends AcEdBaseView {
       // buckets, so selection/highlight still maps back to the same database object.
       // Within each layer bucket, the object id remains unique in scene indexing.
       const entity = new AcTrEntity(renderContext)
-      entity.applyMatrix4(group.matrix)
+      // Copy the INSERT matrix exactly — applyMatrix4 decomposes and drops
+      // reflections from mirrored block scales.
+      entity.matrix.copy(group.matrix)
+      entity.matrixAutoUpdate = false
+      entity.matrixWorldNeedsUpdate = true
       entity.objectId = groupObjectId
       entity.ownerId = group.ownerId
       // If block-definition entities are on layer "0", this bucket now uses the layer
@@ -3312,6 +3316,7 @@ export class AcTrView2d extends AcEdBaseView {
       for (let i = 0; i < objects.length; i++) {
         entity.add(objects[i])
       }
+      entity.updateMatrixWorld(true)
       this._layerAppearance.refreshTextMaterialsInObjectTree(entity)
       this._scene.addEntity(entity, true)
       this.applySessionHiddenObjectState(groupObjectId)
