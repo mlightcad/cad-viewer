@@ -96,7 +96,22 @@ function captureDataUrl(fileName: string, href: string) {
   capturedFiles.push({ fileName, base64 })
 }
 
+/**
+ * Blobs registered by `URL.createObjectURL`, so downloads can be read back
+ * directly. Fetching huge blob URLs (hundreds of MB) returns an empty body
+ * in headless Chromium, which silently produced empty export files.
+ */
+const blobByUrl = new Map<string, Blob>()
+
 function installDownloadCapture() {
+  const origCreateObjectURL = URL.createObjectURL.bind(URL)
+  URL.createObjectURL = (obj: Blob | MediaSource) => {
+    const url = origCreateObjectURL(obj as Blob)
+    if (obj instanceof Blob) {
+      blobByUrl.set(url, obj)
+    }
+    return url
+  }
   document.addEventListener(
     'click',
     event => {
@@ -134,6 +149,14 @@ function installDownloadCapture() {
       }
 
       const task = (async () => {
+        const blob = blobByUrl.get(href)
+        if (blob) {
+          capturedFiles.push({
+            fileName,
+            base64: bytesToBase64(new Uint8Array(await blob.arrayBuffer()))
+          })
+          return
+        }
         const response = await fetch(href)
         if (!response.ok) {
           throw new Error(`Failed to fetch download "${fileName}"`)

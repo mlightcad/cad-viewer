@@ -132,6 +132,14 @@ export default {
     paperSpaceSection: 'Paper space',
     exportLayouts: 'Export layouts',
     exportLayoutsHint: 'Include paper-space layouts as additional PDF pages',
+    textModeSection: 'Text',
+    textMode: 'Text rendering',
+    textModeText: 'Text objects',
+    textModeTextHint:
+      'Keep text selectable/searchable and shrink the file (SHX text stays vector)',
+    textModeVector: 'Vector outlines',
+    textModeVectorHint:
+      'Convert text to lines and fills, matching the screen, but the file is larger',
     yes: 'Yes',
     no: 'No'
   },

@@ -6,13 +6,16 @@
 
 export { exportDatabaseToPdf } from './AcPdfExport'
 export type { AcPdfExportOptions } from './AcPdfExportOptions'
+export { AcPdfFontManager } from './pdf/AcPdfFontManager'
+export type { AcPdfTextFontResolver } from './pdf/AcPdfFontManager'
+export type { AcPdfFormRegistry } from './pdf/AcPdfContentWriter'
 export { AcPdfEntity } from './renderer/AcPdfEntity'
 export { AcPdfRenderer } from './renderer/AcPdfRenderer'
 export type { AcPdfStyleContext } from './renderer/AcPdfStyleUtil'
 export { AcPdfStyleUtil } from './renderer/AcPdfStyleUtil'
 export type {
   AcPdfGlyphBox,
-  AcPdfGlyphPrimitive,
+  AcPdfGlyphPrimitives,
   AcPdfGlyphProvider,
   AcPdfMTextGlyphResult,
   AcPdfShapeGlyphResult

@@ -2062,6 +2062,7 @@ export default {
     modelSpaceFit:
       'إطار مساحة النموذج [الامتدادات(E)/العرض(D)]',
     exportLayouts: 'تصدير المخططات',
+    textMode: 'عرض النص [نص(N)/متجه(M)]',
     keywords: {
       ...enJig.cpdf.keywords,
       extents: {

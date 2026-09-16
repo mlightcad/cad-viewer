@@ -1,5 +1,6 @@
 import type { AcGiFontMapping } from '@mlightcad/data-model'
 
+import type { AcPdfTextFontResolver } from './pdf/AcPdfFontManager'
 import type { AcPdfGlyphProvider } from './text/AcPdfGlyphProvider'
 
 /**
@@ -69,6 +70,25 @@ export interface AcPdfExportOptions {
    * produce no visible geometry (ActualText may still be reserved later).
    */
   glyphProvider?: AcPdfGlyphProvider
+  /**
+   * How MTEXT/TEXT are painted.
+   *
+   * - `'vector'` (default): glyphs are tessellated into line/fill geometry
+   *   through {@link glyphProvider}. Self-contained but heavy — dense text
+   *   dominates the PDF size.
+   * - `'text'`: laid-out text lines are painted as real PDF text objects
+   *   through fonts embedded (subset) via {@link textFontResolver}. Keeps
+   *   text selectable/searchable and shrinks the file dramatically; text
+   *   whose font cannot be resolved/embedded, or that the font does not
+   *   cover, silently falls back to `'vector'`.
+   */
+  textMode?: 'vector' | 'text'
+  /**
+   * Resolves embeddable font programs (TTF/OTF/WOFF bytes) by CAD font name
+   * for {@link textMode} `'text'`. Return `undefined` for fonts without an
+   * embeddable program (SHX shapes).
+   */
+  textFontResolver?: AcPdfTextFontResolver
   /**
    * Block table record object id to export. Overrides {@link blockName}
    * and the current space when set.

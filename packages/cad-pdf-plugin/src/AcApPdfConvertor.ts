@@ -15,6 +15,7 @@ import {
   type AcApPdfExportOptions,
   resolveAcApPdfExportOptions
 } from './AcApPdfExportOptions'
+import { resolveViewerTextFont } from './AcApPdfFontResolver'
 import { createViewerPdfGlyphProvider } from './AcApPdfGlyphProvider'
 
 /**
@@ -48,7 +49,11 @@ export class AcApPdfConvertor {
         background: 'none',
         fit: resolved.modelSpaceFit === 'display' ? 'current' : 'extents',
         layouts: resolved.exportLayouts ? 'all' : 'current',
-        glyphProvider: createViewerPdfGlyphProvider()
+        glyphProvider: createViewerPdfGlyphProvider(),
+        textMode: resolved.textMode
+      }
+      if (resolved.textMode === 'text') {
+        pdfOptions.textFontResolver = resolveViewerTextFont
       }
 
       if (resolved.modelSpaceFit === 'display') {

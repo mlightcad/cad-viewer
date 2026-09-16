@@ -171,6 +171,12 @@ export default {
     paperSpaceSection: 'مساحة الورق',
     exportLayouts: 'تصدير المخططات',
     exportLayoutsHint: 'تضمين مخططات مساحة الورق كصفحات PDF إضافية',
+    textModeSection: 'النص',
+    textMode: 'عرض النص',
+    textModeText: 'كائنات نصية',
+    textModeTextHint: 'يبقي النص قابلاً للتحديد/البحث ويصغر الملف (نص SHX يبقى متجهًا)',
+    textModeVector: 'مخططات متجهة',
+    textModeVectorHint: 'يحوّل النص إلى خطوط وتعبئة مطابقة للشاشة، لكن الملف أكبر',
     yes: 'نعم',
     no: 'لا'
   },

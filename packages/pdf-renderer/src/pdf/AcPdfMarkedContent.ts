@@ -1,71 +1,25 @@
-import type { PDFContext } from 'pdf-lib'
-import { PDFHexString, PDFName, PDFOperator } from 'pdf-lib'
-
-const BDC = 'BDC'
-const EMC = 'EMC'
-
 /**
- * Encodes a Unicode string as a PDF text string (UTF-16BE with BOM).
+ * Encodes a Unicode string as a PDF text string (UTF-16BE with BOM) rendered
+ * as hex inside content streams.
  */
-export function pdfActualText(text: string): PDFHexString {
-  return PDFHexString.fromText(text)
-}
-
-export function beginOcgOperator(resourceName: string): PDFOperator {
-  return PDFOperator.of(BDC as never, [
-    PDFName.of('OC'),
-    PDFName.of(resourceName)
-  ])
-}
-
-export function beginSpanActualText(
-  context: PDFContext,
-  text: string
-): PDFOperator {
-  const dict = context.obj({
-    ActualText: pdfActualText(text)
-  })
-  return PDFOperator.of(BDC as never, [PDFName.of('Span'), dict as never])
-}
-
-export function beginEntityOperator(
-  context: PDFContext,
-  payload: {
-    handle?: string
-    type?: string
-    name?: string
-    layer?: string
+export function pdfHexText(text: string): string {
+  let hex = 'FEFF'
+  for (let i = 0; i < text.length; i++) {
+    hex += text.charCodeAt(i).toString(16).padStart(4, '0').toUpperCase()
   }
-): PDFOperator {
-  const dict: Record<string, string> = {}
-  if (payload.handle) {
-    dict.Handle = payload.handle
-  }
-  if (payload.type) {
-    dict.Type = payload.type
-  }
-  if (payload.name) {
-    dict.Name = payload.name
-  }
-  if (payload.layer) {
-    dict.Layer = payload.layer
-  }
-  return PDFOperator.of(BDC as never, [
-    PDFName.of('Entity'),
-    context.obj(dict) as never
-  ])
-}
-
-export function endMarkedContent(): PDFOperator {
-  return PDFOperator.of(EMC as never)
+  return `<${hex}>`
 }
 
 /**
  * Strips common MTEXT formatting so ActualText is closer to the visible string.
+ *
+ * `\P` (paragraph break) is matched case-sensitively on purpose: the
+ * case-insensitive flag also consumed the `\p` of paragraph-property codes
+ * like `\pxqc;`, leaking their trailing text ("xqc;") into the output.
  */
 export function stripMtextCodes(raw: string): string {
   return raw
-    .replace(/\\P/gi, '\n')
+    .replace(/\\P/g, '\n')
     .replace(/\\~+/g, ' ')
     .replace(/\{\\[^;]*;/g, '')
     .replace(/\\[A-Za-z][^;\\]*;?/g, '')

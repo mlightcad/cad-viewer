@@ -1,23 +1,20 @@
 import {
   accmYieldForPaint,
+  type AcDbBlockTableRecord,
   AcDbDatabase,
   AcDbRenderingCache,
   AcDbViewport,
   acgiIsLightBackground
 } from '@mlightcad/data-model'
-import {
-  PDFDict,
-  PDFDocument,
-  PDFHexString,
-  PDFName,
-  PDFPage,
-  PDFRef,
-  PDFString
-} from 'pdf-lib'
+import { PDFDocument, PDFImage } from 'pdf-lib'
 
 import type { AcPdfExportOptions } from './AcPdfExportOptions'
+import { createPdfFormRegistry } from './pdf/AcPdfContentWriter'
+import { AcPdfFontManager } from './pdf/AcPdfFontManager'
+import { AcPdfOcgManager } from './pdf/AcPdfOcgManager'
 import { AcPdfEntity } from './renderer/AcPdfEntity'
 import { AcPdfRenderer } from './renderer/AcPdfRenderer'
+import type { AcPdfOp } from './renderer/AcPdfStyle'
 import {
   attachPdfEntityMeta,
   buildViewportModelContent,
@@ -35,107 +32,47 @@ export async function exportDatabaseToPdf(
   db: AcDbDatabase,
   options: AcPdfExportOptions = {}
 ): Promise<Uint8Array> {
-  if (options.layouts === 'all' && !options.blockName && !options.blockId) {
-    const pages = await exportAllLayouts(db, options)
-    if (pages) {
-      return pages
-    }
-  }
+  const layouts =
+    options.layouts === 'all' && !options.blockName && !options.blockId
+      ? collectExportLayouts(db)
+      : undefined
 
   AcPdfRenderer.prepareExport()
-
-  const renderer = new AcPdfRenderer()
-  renderer.insunits = db.insunits ?? 4
-  renderer.ltscale = options.ltscale ?? db.ltscale
-  renderer.celtscale = options.celtscale ?? db.celtscale
-  renderer.showLineWeight = options.showLineWeight ?? !!db.lwdisplay
-  renderer.configureExport(options)
-
-  const background =
-    options.background === 'none' || options.background == null
-      ? 0xffffff
-      : options.background
-  renderer.currentBackgroundColor = background
-  renderer.changeForeground(acgiIsLightBackground(background) ? 0x000000 : 0xffffff)
-
-  const block = options.blockId
-    ? db.tables.blockTable.getIdAt(options.blockId)
-    : options.blockName
-      ? db.tables.blockTable.getAt(options.blockName)
-      : (db.tables.blockTable.getIdAt(db.currentSpaceId) ??
-        db.tables.blockTable.modelSpace)
-  if (!block) {
-    throw new Error(
-      `Block '${options.blockName}' was not found in the drawing database`
-    )
-  }
-
-  renderer.context.database = db
-  const isPaper = isPaperSpaceBlock(db, block)
-  const viewportEntities: AcDbViewport[] = []
-  const paperOrModelRoots: AcPdfEntity[] = []
-
-  for (const entity of block.newIterator()) {
-    const typeName = String(
-      (entity as { type?: string }).type ??
-        (entity as { dxfTypeName?: string }).dxfTypeName ??
-        ''
-    )
-
-    if (isPaper && entity instanceof AcDbViewport) {
-      viewportEntities.push(entity)
-      continue
-    }
-
-    const drawable = entity.worldDraw(renderer)
-    if (drawable instanceof AcPdfEntity) {
-      attachPdfEntityMeta(drawable, entity, typeName)
-      paperOrModelRoots.push(drawable)
-    }
-  }
-
-  const viewportContents: AcPdfEntity[] = []
-  if (isPaper && viewportEntities.length > 0) {
-    // Collect model geometry, wait for async TEXT/MTEXT glyphs, then clone
-    // into each viewport. Cloning before awaitPending left empty text ops.
-    const modelRoots = collectModelSpaceRoots(db, renderer)
-    await renderer.awaitPending()
-    for (const viewport of viewportEntities) {
-      const built = buildViewportModelContent(viewport, modelRoots, renderer)
-      if (built) {
-        viewportContents.push(built.content)
-        if (built.border) {
-          paperOrModelRoots.push(built.border)
-        }
-      }
-    }
-  }
-
-  // Viewport model content sits under paper-space annotations / borders.
-  const roots = isPaper
-    ? [...viewportContents, ...paperOrModelRoots]
-    : paperOrModelRoots
-
+  const renderer = createConfiguredRenderer(db, options)
   try {
-    return await renderer.exportAsync(roots)
+    if (layouts) {
+      return await exportLayoutsToPdf(db, options, renderer, layouts)
+    }
+    const block = resolveTargetBlock(db, options)
+    if (!block) {
+      throw new Error(
+        `Block '${options.blockName}' was not found in the drawing database`
+      )
+    }
+    const roots = await collectLayoutRoots(db, renderer, block, {})
+    const bytes = await renderer.exportAsync(roots)
+    return bytes
   } finally {
     AcDbRenderingCache.instance.clear()
   }
 }
 
-async function exportAllLayouts(
-  db: AcDbDatabase,
-  options: AcPdfExportOptions
-): Promise<Uint8Array | null> {
+interface ExportLayoutEntry {
+  layoutName?: string
+  blockTableRecordId: string
+  tabOrder?: number
+}
+
+/**
+ * Lists layouts ordered by tab, or `null` when the database does not expose a
+ * layout table (single-layout export then runs as before).
+ */
+function collectExportLayouts(db: AcDbDatabase): ExportLayoutEntry[] | null {
   const layoutTable = (
     db as {
       objects?: {
         layout?: {
-          newIterator?: () => Iterable<{
-            layoutName?: string
-            blockTableRecordId: string
-            tabOrder?: number
-          }>
+          newIterator?: () => Iterable<ExportLayoutEntry>
         }
       }
     }
@@ -143,113 +80,198 @@ async function exportAllLayouts(
   if (!layoutTable?.newIterator) {
     return null
   }
-  const layouts = [...layoutTable.newIterator()]
+  const entries = [...layoutTable.newIterator()]
+  const layouts = entries
     .filter(layout => !!layout.blockTableRecordId)
     .sort((a, b) => (a.tabOrder ?? 0) - (b.tabOrder ?? 0))
-  if (layouts.length <= 1) {
-    return null
-  }
-  const pages: Uint8Array[] = []
-  const modelSpaceId = db.tables.blockTable.modelSpace.objectId
-  for (const layout of layouts) {
-    const isModel = layout.blockTableRecordId === modelSpaceId
-    pages.push(
-      await exportDatabaseToPdf(db, {
-        ...options,
-        layouts: 'current',
-        blockId: layout.blockTableRecordId,
-        // Model-space “Display” framing must not clip paper-space pages.
-        fitBox: isModel ? options.fitBox : undefined,
-        fit: isModel ? options.fit : 'extents',
-        title: options.title
-          ? `${options.title} - ${layout.layoutName ?? ''}`
-          : layout.layoutName
-      })
-    )
-    // Keep the host busy spinner animating between layout pages.
-    await accmYieldForPaint()
-  }
-  return mergePdfPages(pages)
+  return layouts.length > 1 ? layouts : null
 }
 
-async function mergePdfPages(pages: Uint8Array[]): Promise<Uint8Array> {
-  if (pages.length === 1) {
-    return pages[0]
+function createConfiguredRenderer(
+  db: AcDbDatabase,
+  options: AcPdfExportOptions
+): AcPdfRenderer {
+  const renderer = new AcPdfRenderer()
+  renderer.insunits = db.insunits ?? 4
+  renderer.ltscale = options.ltscale ?? db.ltscale
+  renderer.celtscale = options.celtscale ?? db.celtscale
+  renderer.showLineWeight = options.showLineWeight ?? !!db.lwdisplay
+  renderer.configureExport(options)
+  if (options.textMode === 'text' && options.textFontResolver) {
+    renderer.textFontManager = new AcPdfFontManager(options.textFontResolver)
   }
-  const out = await PDFDocument.create()
-  for (const bytes of pages) {
-    const src = await PDFDocument.load(bytes)
-    const copied = await out.copyPages(src, src.getPageIndices())
-    for (const page of copied) {
-      out.addPage(page)
-    }
+
+  const background =
+    options.background === 'none' || options.background == null
+      ? 0xffffff
+      : options.background
+  renderer.currentBackgroundColor = background
+  renderer.changeForeground(acgiIsLightBackground(background) ? 0x000000 : 0xffffff)
+  renderer.context.database = db
+  return renderer
+}
+
+function resolveTargetBlock(
+  db: AcDbDatabase,
+  options: AcPdfExportOptions
+): AcDbBlockTableRecord | undefined {
+  if (options.blockId) {
+    return db.tables.blockTable.getIdAt(options.blockId)
   }
-  // copyPages keeps page Resources.Properties → OCG refs, but not Catalog
-  // OCProperties — without it, viewers hide the Layers panel.
-  rebuildMergedOcProperties(out)
-  out.setProducer('MLightCAD pdf-renderer')
-  return out.save({ useObjectStreams: true })
+  if (options.blockName) {
+    return db.tables.blockTable.getAt(options.blockName)
+  }
+  return (
+    db.tables.blockTable.getIdAt(db.currentSpaceId) ??
+    db.tables.blockTable.modelSpace
+  )
 }
 
 /**
- * Rebuilds Catalog.OCProperties after merging layout pages, and collapses
- * duplicate OCG dicts that share the same display name across pages.
+ * Resolves a layout entry's block table record.
+ *
+ * Some DWG databases never register the model-space block record handle in
+ * the database handle registry, so `getIdAt` fails for the Model layout even
+ * though the record itself is reachable via `blockTable.modelSpace`. Match on
+ * the model-space object id first, then fall back to the registry lookup.
  */
-function rebuildMergedOcProperties(doc: PDFDocument) {
-  const nameToRef = new Map<string, PDFRef>()
-  for (const page of doc.getPages()) {
-    mergePageOcgs(page, nameToRef)
+function resolveLayoutBlock(
+  db: AcDbDatabase,
+  layout: ExportLayoutEntry
+): AcDbBlockTableRecord | undefined {
+  if (layout.blockTableRecordId === db.tables.blockTable.modelSpace.objectId) {
+    return db.tables.blockTable.modelSpace
   }
-  if (nameToRef.size === 0) {
-    return
-  }
-  const ocgRefs = [...nameToRef.values()]
-  const order = doc.context.obj(ocgRefs)
-  const ocProperties = doc.context.obj({
-    OCGs: ocgRefs,
-    D: {
-      Order: order,
-      ON: ocgRefs
-    }
-  })
-  doc.catalog.set(PDFName.of('OCProperties'), ocProperties)
+  return db.tables.blockTable.getIdAt(layout.blockTableRecordId)
 }
 
-function mergePageOcgs(page: PDFPage, nameToRef: Map<string, PDFRef>) {
-  const resources = page.node.Resources()
-  if (!resources) {
-    return
-  }
-  const props = resources.lookup(PDFName.of('Properties'))
-  if (!(props instanceof PDFDict)) {
-    return
-  }
-  for (const [key, value] of props.entries()) {
-    if (!(value instanceof PDFRef)) {
-      continue
-    }
-    const ocgDict = page.doc.context.lookup(value)
-    if (!(ocgDict instanceof PDFDict)) {
-      continue
-    }
-    const type = ocgDict.get(PDFName.of('Type'))
-    if (type !== PDFName.of('OCG')) {
-      continue
-    }
-    const label = decodeOcgName(ocgDict.get(PDFName.of('Name')))
-    const existing = nameToRef.get(label)
-    if (existing) {
-      // Point this page at the canonical OCG so the Layers panel has one entry.
-      props.set(key, existing)
-    } else {
-      nameToRef.set(label, value)
-    }
-  }
+/** Lazily populated, export-scoped model-space drawable tree. */
+interface ModelRootCache {
+  roots?: AcPdfEntity[]
 }
 
-function decodeOcgName(nameObj: unknown): string {
-  if (nameObj instanceof PDFHexString || nameObj instanceof PDFString) {
-    return nameObj.decodeText()
+function getModelRoots(
+  db: AcDbDatabase,
+  renderer: AcPdfRenderer,
+  cache: ModelRootCache
+): AcPdfEntity[] {
+  if (!cache.roots) {
+    cache.roots = collectModelSpaceRoots(db, renderer)
   }
-  return String(nameObj ?? '')
+  return cache.roots
+}
+
+/**
+ * Walks one layout block and returns its page roots.
+ *
+ * Model space is traversed at most once per export: the same drawable tree
+ * backs the model page and every paper-space viewport (see
+ * {@link AcPdfViewportContent}), avoiding both repeated tessellation and
+ * per-viewport geometry clones.
+ */
+async function collectLayoutRoots(
+  db: AcDbDatabase,
+  renderer: AcPdfRenderer,
+  block: AcDbBlockTableRecord,
+  modelCache: ModelRootCache
+): Promise<AcPdfEntity[]> {
+  if (!isPaperSpaceBlock(db, block)) {
+    return getModelRoots(db, renderer, modelCache)
+  }
+
+  const viewportEntities: AcDbViewport[] = []
+  const paperRoots: AcPdfEntity[] = []
+
+  for (const entity of block.newIterator()) {
+    const typeName = String(
+      (entity as { type?: string }).type ??
+        (entity as { dxfTypeName?: string }).dxfTypeName ??
+      ''
+    )
+
+    if (entity instanceof AcDbViewport) {
+      viewportEntities.push(entity)
+      continue
+    }
+
+    const drawable = entity.worldDraw(renderer)
+    if (drawable instanceof AcPdfEntity) {
+      attachPdfEntityMeta(drawable, entity, typeName)
+      paperRoots.push(drawable)
+    }
+  }
+
+  const viewportContents: AcPdfEntity[] = []
+  if (viewportEntities.length > 0) {
+    for (const viewport of viewportEntities) {
+      const built = buildViewportModelContent(
+        viewport,
+        () => getModelRoots(db, renderer, modelCache),
+        renderer
+      )
+      if (built) {
+        viewportContents.push(built.content)
+        if (built.border) {
+          paperRoots.push(built.border)
+        }
+      }
+    }
+  }
+
+  // Viewport model content sits under paper-space annotations / borders.
+  return [...viewportContents, ...paperRoots]
+}
+
+/**
+ * Paints every layout into one PDF document.
+ *
+ * Pages share the pdf-lib document, the OCG manager (one OCG per CAD layer
+ * across pages) and the embedded-image cache. Compared with rendering one
+ * PDF per layout and merging via `load`/`copyPages`, this keeps neither
+ * finished page bytes nor parsed source documents in memory while later
+ * pages are still being built.
+ */
+async function exportLayoutsToPdf(
+  db: AcDbDatabase,
+  options: AcPdfExportOptions,
+  renderer: AcPdfRenderer,
+  layouts: ExportLayoutEntry[]
+): Promise<Uint8Array> {
+  const doc = await PDFDocument.create()
+  doc.setProducer('MLightCAD pdf-renderer')
+  doc.setCreator('MLightCAD')
+  if (options.title) {
+    doc.setTitle(options.title)
+  }
+  const ocg = new AcPdfOcgManager(doc)
+  const imageCache = new Map<AcPdfOp, PDFImage>()
+  // One document-scoped Form XObject registry: identical glyph/geometry
+  // forms are embedded once per document instead of once per page.
+  const formRegistry = createPdfFormRegistry()
+  const modelCache: ModelRootCache = {}
+  const modelSpaceId = db.tables.blockTable.modelSpace.objectId
+
+  for (const layout of layouts) {
+    const block = resolveLayoutBlock(db, layout)
+    if (!block) {
+      continue
+    }
+    const isModel = layout.blockTableRecordId === modelSpaceId
+    const roots = await collectLayoutRoots(db, renderer, block, modelCache)
+    await renderer.renderToDocument(doc, roots, {
+      ocg,
+      imageCache,
+      formRegistry,
+      // Model-space “Display” framing must not clip paper-space pages.
+      fitBox: isModel ? options.fitBox : undefined
+    })
+    // Explicit roots were handed to the page; release renderer-side
+    // drawables so only the page's pdf-lib objects stay resident.
+    renderer.resetCollected()
+    // Keep the host busy spinner animating between layout pages.
+    await accmYieldForPaint()
+  }
+
+  const bytes = await doc.save({ useObjectStreams: true })
+  return bytes
 }

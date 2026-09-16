@@ -54,6 +54,45 @@
       </ml-fieldset-group>
 
       <ml-fieldset-group
+        :title="t('dialog.exportPdfDlg.textModeSection')"
+        class="ml-export-pdf-dlg__section"
+      >
+        <el-radio-group
+          v-model="form.textMode"
+          class="ml-export-pdf-dlg__card-group"
+        >
+          <label
+            class="ml-export-pdf-dlg__card"
+            :class="{ 'is-selected': form.textMode === 'text' }"
+          >
+            <el-radio value="text" class="ml-export-pdf-dlg__card-radio" />
+            <span class="ml-export-pdf-dlg__card-body">
+              <span class="ml-export-pdf-dlg__card-title">{{
+                t('dialog.exportPdfDlg.textModeText')
+              }}</span>
+              <span class="ml-export-pdf-dlg__card-hint">{{
+                t('dialog.exportPdfDlg.textModeTextHint')
+              }}</span>
+            </span>
+          </label>
+          <label
+            class="ml-export-pdf-dlg__card"
+            :class="{ 'is-selected': form.textMode === 'vector' }"
+          >
+            <el-radio value="vector" class="ml-export-pdf-dlg__card-radio" />
+            <span class="ml-export-pdf-dlg__card-body">
+              <span class="ml-export-pdf-dlg__card-title">{{
+                t('dialog.exportPdfDlg.textModeVector')
+              }}</span>
+              <span class="ml-export-pdf-dlg__card-hint">{{
+                t('dialog.exportPdfDlg.textModeVectorHint')
+              }}</span>
+            </span>
+          </label>
+        </el-radio-group>
+      </ml-fieldset-group>
+
+      <ml-fieldset-group
         :title="t('dialog.exportPdfDlg.paperSpaceSection')"
         class="ml-export-pdf-dlg__section"
       >
@@ -122,6 +161,10 @@ export interface MlExportPdfDlgForm {
    * When `true`, every layout is exported as its own PDF page.
    */
   exportLayouts: boolean
+  /**
+   * How MTEXT/TEXT are painted: real PDF text objects or vector outlines.
+   */
+  textMode: 'vector' | 'text'
 }
 
 /**
@@ -146,7 +189,8 @@ const visible = computed({
 /** Export options bound to the dialog form controls. */
 const form = reactive<MlExportPdfDlgForm>({
   modelSpaceFit: 'extents',
-  exportLayouts: true
+  exportLayouts: true,
+  textMode: 'text'
 })
 
 /**
@@ -155,6 +199,7 @@ const form = reactive<MlExportPdfDlgForm>({
 function resetForm() {
   form.modelSpaceFit = 'extents'
   form.exportLayouts = true
+  form.textMode = 'text'
 }
 
 /**
@@ -171,7 +216,8 @@ async function handleOk() {
   const docManager = AcApDocManager.instance
   const options: AcApPdfExportOptions = {
     modelSpaceFit: form.modelSpaceFit,
-    exportLayouts: form.exportLayouts
+    exportLayouts: form.exportLayouts,
+    textMode: form.textMode
   }
 
   try {

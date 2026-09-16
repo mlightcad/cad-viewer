@@ -9,7 +9,8 @@ import {
   AcGeBox2d,
   AcGePoint3d
 } from '@mlightcad/data-model'
-import { PDFDocument } from 'pdf-lib'
+import pako from 'pako'
+import { PDFDocument, PDFRawStream } from 'pdf-lib'
 
 import { exportDatabaseToPdf } from '../src/AcPdfExport'
 import { AcPdfMatrixUtil } from '../src/renderer/AcPdfMatrixUtil'
@@ -124,8 +125,23 @@ describe('AcPdfPaperViewport', () => {
     })
     const doc = await PDFDocument.load(bytes)
     expect(doc.getPageCount()).toBe(2)
-    // Paper page must be larger than a border-only export.
-    expect(bytes.byteLength).toBeGreaterThan(800)
+    // Paper page must paint the shared model geometry through the viewport
+    // (marked-content entity), not only the paper-space border lines. Content
+    // streams may be Flate-compressed, so decode every stream before scanning
+    // for the marker.
+    const streams: string[] = []
+    for (const [, obj] of doc.context.enumerateIndirectObjects()) {
+      if (obj instanceof PDFRawStream) {
+        let text: string
+        try {
+          text = new TextDecoder('latin1').decode(pako.inflate(obj.contents))
+        } catch {
+          text = new TextDecoder('latin1').decode(obj.contents)
+        }
+        streams.push(text)
+      }
+    }
+    expect(streams.some(text => text.includes('VIEWPORT_CONTENT'))).toBe(true)
   })
 
   it('keeps async MTEXT glyphs when cloning model content into a viewport', async () => {
@@ -164,22 +180,19 @@ describe('AcPdfPaperViewport', () => {
         renderMText: async () => {
           await new Promise(resolve => setTimeout(resolve, 10))
           return {
-            primitives: [
-              {
-                kind: 'fill' as const,
-                points: [
-                  { x: -5, y: -5 },
-                  { x: 5, y: -5 },
-                  { x: 0, y: 5 }
-                ]
-              }
-            ],
+            primitives: {
+              triangles: new Float32Array([-5, -5, 5, -5, 0, 5]),
+              polylines: new Float32Array(0)
+            },
             actualText: 'TITLE',
             box: { min: { x: -5, y: -5 }, max: { x: 5, y: 5 } }
           }
         },
         renderShape: () => ({
-          primitives: [],
+          primitives: {
+            triangles: new Float32Array(0),
+            polylines: new Float32Array(0)
+          },
           box: { min: { x: 0, y: 0 }, max: { x: 0, y: 0 } }
         })
       }

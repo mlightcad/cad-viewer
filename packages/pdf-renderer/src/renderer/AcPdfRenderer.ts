@@ -6,6 +6,7 @@ import {
   AcGeArea2d,
   AcGeCircArc3d,
   AcGeEllipseArc3d,
+  AcGeMatrix3d,
   AcGePoint3d,
   AcGePoint3dLike,
   ACGI_DARK_THEME_FOREGROUND,
@@ -22,6 +23,7 @@ import {
   AcGiSubEntityTraits,
   AcGiTextStyle
 } from '@mlightcad/data-model'
+import { PDFDocument } from 'pdf-lib'
 
 import type { AcPdfExportOptions } from '../AcPdfExportOptions'
 import { shadingFromGradient } from '../hatch/AcPdfGradient'
@@ -30,13 +32,26 @@ import {
   isComplexLineType,
   walkLineType
 } from '../linetype/AcPdfLineTypeStroker'
+import type { AcPdfWriteOptions } from '../pdf/AcPdfDocumentWriter'
 import { AcPdfDocumentWriter } from '../pdf/AcPdfDocumentWriter'
+import type { AcPdfFontManager } from '../pdf/AcPdfFontManager'
 import { stripMtextCodes } from '../pdf/AcPdfMarkedContent'
-import type { AcPdfGlyphProvider } from '../text/AcPdfGlyphProvider'
+import type {
+  AcPdfGlyphBox,
+  AcPdfGlyphPrimitives,
+  AcPdfGlyphProvider
+} from '../text/AcPdfGlyphProvider'
 import { AcPdfEntity } from './AcPdfEntity'
 import { AcPdfGroup } from './AcPdfGroup'
 import type { AcPdfOp, AcPdfPoint } from './AcPdfStyle'
 import { AcPdfStyleContext, AcPdfStyleUtil } from './AcPdfStyleUtil'
+import {
+  ASCENT_RATIO,
+  DESCENT_RATIO,
+  layoutMText,
+  OVERLINE_OFFSET_RATIO,
+  STRIKE_OFFSET_RATIO,
+  UNDERLINE_OFFSET_RATIO} from './AcPdfTextLayout'
 
 const DEFAULT_POINT_RADIUS = 0.5
 
@@ -71,7 +86,29 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
   private _glyphProvider?: AcPdfGlyphProvider
   private _fitBox?: AcPdfExportOptions['fitBox']
   private _embedTextActualText = true
+  /** `'text'` paints MTEXT/TEXT as real PDF text through `_fonts`. */
+  private _textMode: 'vector' | 'text' = 'vector'
+  private _fonts?: AcPdfFontManager
   private readonly _pending: Promise<void>[] = []
+  /**
+   * Reuses rendered glyph primitives for identical text content + style.
+   *
+   * ATTRIB texts render once per INSERT instance, so drawings with thousands
+   * of block references carrying the same attribute values re-tessellate the
+   * same glyphs over and over; each result then dominated heap use. Cached
+   * entries are shared read-only and re-positioned through a per-entity
+   * translation matrix (paint bakes transformed copies, so sharing is safe).
+   */
+  private readonly _mtextGlyphCache = new Map<string, AcPdfCachedGlyph>()
+  private readonly _shapeGlyphCache = new Map<string, AcPdfCachedGlyph>()
+  private readonly _mtextGlyphInflight = new Map<
+    string,
+    Promise<AcPdfCachedGlyph>
+  >()
+  private readonly _shapeGlyphInflight = new Map<
+    string,
+    Promise<AcPdfCachedGlyph>
+  >()
   private readonly _context: AcGiContext
 
   constructor() {
@@ -148,6 +185,17 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     this._insunits = value
   }
 
+  /**
+   * Enables `textMode: 'text'` with the document font manager. Called by the
+   * export entry point when the host provided a font resolver; text entities
+   * then paint as real PDF text when an embeddable, coverage-complete font
+   * is available, and fall back to vector glyphs otherwise.
+   */
+  set textFontManager(fonts: AcPdfFontManager) {
+    this._fonts = fonts
+    this._textMode = 'text'
+  }
+
   configureExport(options: AcPdfExportOptions) {
     this._title = options.title
     this._paper = options.paper
@@ -156,6 +204,7 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     this._glyphProvider = options.glyphProvider
     this._fitBox = options.fitBox
     this._embedTextActualText = options.embedTextActualText !== false
+    this._textMode = options.textMode === 'text' ? 'text' : 'vector'
     if (options.fontMapping) {
       this.setFontMapping(options.fontMapping)
     }
@@ -332,10 +381,6 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
 
   mtext(mtext: AcGiMTextData, style: AcGiTextStyle, _delay?: boolean) {
     const entity = new AcPdfEntity()
-    const provider = this._glyphProvider
-    if (!provider) {
-      return this.pushEntity(entity)
-    }
     const mapped = this.resolveStyle(style)
     const fill = AcPdfStyleUtil.fillStyle(
       this._subEntityTraits,
@@ -345,20 +390,251 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       this._subEntityTraits,
       this.styleContext
     )
-    const pending = Promise.resolve(provider.renderMText(mtext, mapped)).then(
-      result => {
-        applyGlyphs(entity, result.primitives, result.box, stroke, fill)
-        if (this._embedTextActualText) {
-          entity.actualText =
-            result.actualText ||
-            stripMtextCodes(
-              (mtext as { contents?: string }).contents ?? ''
-            )
+    // Capture synchronously: the source entity may move before promises resolve.
+    const position = { x: mtext.position.x, y: mtext.position.y }
+    if (this._textMode === 'text' && this._fonts) {
+      const fonts = this._fonts
+      const fontName = mapped.font
+      const contents = mtext.text ?? ''
+      if (contents.trim() !== '') {
+        const pending = Promise.resolve(fonts.load(fontName)).then(ok => {
+          if (
+            ok &&
+            this.applyTextLayout(entity, mtext, fontName, fill, position)
+          ) {
+            return
+          }
+          // No embeddable program or the font misses glyphs: vector glyphs.
+          this.applyVectorMtext(entity, mtext, mapped, fill, stroke, position)
+        })
+        this._pending.push(pending)
+        return this.pushEntity(entity)
+      }
+    }
+    this.applyVectorMtext(entity, mtext, mapped, fill, stroke, position)
+    return this.pushEntity(entity)
+  }
+
+  /**
+   * Lays `mtext` out as real PDF text runs (entity-local, then translated
+   * to `position`). Returns `false` when a laid-out run's mapped font does
+   * not cover its characters so the caller falls back to vector glyphs.
+   */
+  private applyTextLayout(
+    entity: AcPdfEntity,
+    mtext: AcGiMTextData,
+    fontName: string,
+    fill: ReturnType<typeof AcPdfStyleUtil.fillStyle>,
+    position: { x: number; y: number }
+  ): boolean {
+    const fonts = this._fonts
+    if (!fonts) {
+      return false
+    }
+    // Run fonts (`\F`) map through the font-mapping table like entity fonts;
+    // unloaded run fonts measure through the entity font so line math stays
+    // stable (the per-run covers check below still rejects the entity then).
+    const measure = (text: string, size: number, font?: string) => {
+      if (font) {
+        const width = fonts.widthOfText(
+          this._fontMapping[font] ?? font,
+          text,
+          size
+        )
+        if (width !== undefined) {
+          return width
         }
       }
+      return fonts.widthOfText(fontName, text, size)
+    }
+    const layout = layoutMText({ data: mtext, measure })
+    const joined = layout.lines.map(line => line.text).join('\n')
+    if (joined.trim() === '') {
+      return false
+    }
+    // Every run must paint: a missing or glyph-incomplete run font falls
+    // back to the entity font; if that misses too, the vector path takes over.
+    const fontFor = (raw: string | undefined): string => {
+      const mapped = raw ? (this._fontMapping[raw] ?? raw) : fontName
+      return fonts.has(mapped) ? mapped : fontName
+    }
+    for (const line of layout.lines) {
+      for (const run of line.runs) {
+        if (run.text !== '' && !fonts.covers(fontFor(run.font), run.text)) {
+          return false
+        }
+      }
+    }
+    // Text plane frame. libredwg leaves MTEXT `rotation` at 0 and encodes the
+    // real angle in the direction vector, so derive the baseline angle from a
+    // planar direction whenever present. Up = normal × baseline flattened to
+    // XY; a negative-Z extrusion (mirrored OCS) makes the projected frame
+    // left-handed, rendered as mirrored glyphs through the op's `flipX`.
+    const dv = mtext.directionVector
+    const rotation =
+      dv && Math.hypot(dv.x, dv.y) > 1e-9
+        ? Math.atan2(dv.y, dv.x)
+        : (mtext.rotation ?? 0)
+    const rotationDeg = (rotation * 180) / Math.PI
+    // `normal` is typed only in newer data-model revisions (absent from the
+    // published ^1.14.6 typings, which also never populate it at runtime) —
+    // read it structurally so both revisions compile; when undefined the
+    // default +Z normal applies.
+    const n = (mtext as { normal?: { x: number; y: number; z: number } })
+      .normal
+    const nz = n && (n.x !== 0 || n.y !== 0 || n.z !== 0) ? n.z : 1
+    const cos = Math.cos(rotation)
+    const sin = Math.sin(rotation)
+    const upX = -nz * sin
+    const upY = nz * cos
+    const flipX = nz < 0
+    const angleDeg = flipX ? rotationDeg + 180 : rotationDeg
+    for (const line of layout.lines) {
+      for (const run of line.runs) {
+        const x = line.dx + run.dx
+        const y = line.dy + run.dy
+        if (run.text !== '') {
+          entity.addOp({
+            kind: 'text',
+            text: run.text,
+            hex: '',
+            font: fontFor(run.font),
+            size: run.size,
+            x: x * cos + y * upX,
+            y: x * sin + y * upY,
+            angleDeg,
+            hScale: run.hScale,
+            tracking: run.tracking,
+            obliqueDeg: run.obliqueDeg || undefined,
+            flipX,
+            style: run.rgb ? { ...fill, rgb: run.rgb } : fill
+          })
+        }
+        // Stacked-fraction rules and run decorations draw as strokes in the
+        // same rotated frame, colored like the run.
+        const ruleStyle = {
+          rgb: run.rgb ?? fill.rgb,
+          opacity: fill.opacity,
+          lineWidth: 0.03 * run.size
+        }
+        const addRule = (x0: number, y0: number, x1: number, y1: number) => {
+          entity.addOp({
+            kind: 'stroke',
+            points: [
+              { x: x0 * cos + y0 * upX, y: x0 * sin + y0 * upY },
+              { x: x1 * cos + y1 * upX, y: x1 * sin + y1 * upY }
+            ],
+            style: ruleStyle
+          })
+        }
+        if (run.bar) {
+          addRule(
+            x + run.bar.dx0,
+            y + run.bar.dy,
+            x + run.bar.dx1,
+            y + run.bar.dy
+          )
+        }
+        if (run.text !== '') {
+          if (run.underline) {
+            addRule(x, y + UNDERLINE_OFFSET_RATIO * run.size, x + run.width, y + UNDERLINE_OFFSET_RATIO * run.size)
+          }
+          if (run.overline) {
+            addRule(x, y + OVERLINE_OFFSET_RATIO * run.size, x + run.width, y + OVERLINE_OFFSET_RATIO * run.size)
+          }
+          if (run.strike) {
+            addRule(x, y + STRIKE_OFFSET_RATIO * run.size, x + run.width, y + STRIKE_OFFSET_RATIO * run.size)
+          }
+          const runAscent = run.dy + ASCENT_RATIO * run.size
+          const runDescent = run.dy - DESCENT_RATIO * run.size
+          const corners: AcPdfPoint[] = [
+            { x, y: runDescent },
+            { x: x + run.width, y: runDescent },
+            { x: x + run.width, y: runAscent },
+            { x, y: runAscent }
+          ]
+          if (run.bar) {
+            const by = y + run.bar.dy
+            corners.push(
+              { x: x + run.bar.dx0, y: by },
+              { x: x + run.bar.dx1, y: by }
+            )
+          }
+          for (const corner of corners) {
+            entity.box.expandByPoint({
+              x: corner.x * cos + corner.y * upX,
+              y: corner.x * sin + corner.y * upY
+            })
+          }
+        }
+      }
+    }
+    entity.applyMatrix(
+      new AcGeMatrix3d().makeTranslation(position.x, position.y, 0)
     )
+    return true
+  }
+
+  /**
+   * Vector-glyph fallback: tessellated text primitives through the glyph
+   * provider, deduplicated by content + style (`_mtextGlyphCache`).
+   */
+  private applyVectorMtext(
+    entity: AcPdfEntity,
+    mtext: AcGiMTextData,
+    mapped: AcGiTextStyle,
+    fill: ReturnType<typeof AcPdfStyleUtil.fillStyle>,
+    stroke: ReturnType<typeof AcPdfStyleUtil.strokeStyle>,
+    position: { x: number; y: number }
+  ): void {
+    const provider = this._glyphProvider
+    if (!provider) {
+      return
+    }
+    const key = mtextGlyphKey(mtext, mapped)
+    const cached = this._mtextGlyphCache.get(key)
+    if (cached) {
+      this.applyCachedGlyphs(entity, cached, position, stroke, fill)
+      if (this._embedTextActualText && cached.actualText) {
+        entity.actualText = cached.actualText
+      }
+      return
+    }
+    const contents = (mtext as { contents?: string }).contents ?? ''
+    const inflight = this._mtextGlyphInflight.get(key)
+    if (!inflight) {
+      const render = Promise.resolve(provider.renderMText(mtext, mapped)).then(
+        result => {
+          const entry: AcPdfCachedGlyph = {
+            primitives: result.primitives,
+            box: result.box,
+            actualText: this._embedTextActualText
+              ? result.actualText || stripMtextCodes(contents)
+              : undefined
+          }
+          this._mtextGlyphCache.set(key, entry)
+          return entry
+        }
+      )
+      this.trackGlyphInflight(this._mtextGlyphInflight, key, render)
+      const pending = render.then(entry => {
+        this.applyCachedGlyphs(entity, entry, position, stroke, fill)
+        if (this._embedTextActualText && entry.actualText) {
+          entity.actualText = entry.actualText
+        }
+      })
+      this._pending.push(pending)
+      return
+    }
+    // Identical glyph work already in flight: reuse its result instead of
+    // rendering the same text again.
+    const pending = inflight.then(entry => {
+      this.applyCachedGlyphs(entity, entry, position, stroke, fill)
+      if (this._embedTextActualText && entry.actualText) {
+        entity.actualText = entry.actualText
+      }
+    })
     this._pending.push(pending)
-    return this.pushEntity(entity)
   }
 
   shape(shape: AcGiShapeData, style?: AcGiTextStyle, _delay?: boolean) {
@@ -376,9 +652,30 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       this._subEntityTraits,
       this.styleContext
     )
-    const pending = Promise.resolve(provider.renderShape(shape, mapped)).then(
-      result => {
-        applyGlyphs(entity, result.primitives, result.box, stroke, fill)
+    const position = { x: shape.position.x, y: shape.position.y }
+    const key = shapeGlyphKey(shape, mapped)
+    const cached = this._shapeGlyphCache.get(key)
+    if (cached) {
+      this.applyCachedGlyphs(entity, cached, position, stroke, fill)
+      return this.pushEntity(entity)
+    }
+    const inflight = this._shapeGlyphInflight.get(key)
+    if (!inflight) {
+      const render = Promise.resolve(provider.renderShape(shape, mapped)).then(
+        result => {
+          const entry: AcPdfCachedGlyph = {
+            primitives: result.primitives,
+            box: result.box
+          }
+          this._shapeGlyphCache.set(key, entry)
+          return entry
+        }
+      )
+      this.trackGlyphInflight(this._shapeGlyphInflight, key, render)
+    }
+    const pending = (inflight ?? this._shapeGlyphInflight.get(key)!).then(
+      entry => {
+        this.applyCachedGlyphs(entity, entry, position, stroke, fill)
       }
     )
     this._pending.push(pending)
@@ -418,6 +715,44 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     }
   }
 
+  /** Keeps one in-flight render per key; drops the entry once settled. */
+  private trackGlyphInflight(
+    map: Map<string, Promise<AcPdfCachedGlyph>>,
+    key: string,
+    promise: Promise<AcPdfCachedGlyph>
+  ): void {
+    map.set(key, promise)
+    promise.then(
+      () => {
+        if (map.get(key) === promise) {
+          map.delete(key)
+        }
+      },
+      () => {
+        map.delete(key)
+      }
+    )
+  }
+
+  /**
+   * Paints a cached glyph result into `entity`, re-positioning the shared
+   * text-local primitives at this instance's position via a translation
+   * matrix (ops stay shared; the writer maps them with a Form XObject or a
+   * numeric bake).
+   */
+  private applyCachedGlyphs(
+    entity: AcPdfEntity,
+    entry: AcPdfCachedGlyph,
+    position: { x: number; y: number },
+    stroke: ReturnType<typeof AcPdfStyleUtil.strokeStyle>,
+    fill: ReturnType<typeof AcPdfStyleUtil.fillStyle>
+  ): void {
+    applyGlyphs(entity, entry.primitives, entry.box, stroke, fill)
+    if (position.x !== 0 || position.y !== 0) {
+      entity.applyMatrix(new AcGeMatrix3d().makeTranslation(position.x, position.y, 0))
+    }
+  }
+
   async exportAsync(roots?: AcPdfEntity[]): Promise<Uint8Array> {
     await this.awaitPending()
     // Prefer explicit roots from top-level worldDraw return values. The
@@ -425,15 +760,56 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     // untransformed block templates in place while returning applyMatrix'd
     // clones that are never pushed here.
     const entities = roots ?? this._entities
-    return AcPdfDocumentWriter.write(entities, {
+    return AcPdfDocumentWriter.write(entities, this.writeOptions())
+  }
+
+  /**
+   * Paints one layout page into an existing document.
+   *
+   * Multi-layout exports reuse one {@link PDFDocument} (plus a shared OCG
+   * manager and image cache via `overrides`) so finished pages never have to
+   * be serialized, re-parsed and copied into a merge document.
+   */
+  async renderToDocument(
+    doc: PDFDocument,
+    roots?: AcPdfEntity[],
+    overrides: Partial<AcPdfWriteOptions> = {}
+  ): Promise<void> {
+    await this.awaitPending()
+    const entities = roots ?? this._entities
+    await AcPdfDocumentWriter.writePage(
+      doc,
+      entities,
+      this.writeOptions(overrides)
+    )
+  }
+
+  /**
+   * Drops drawables accumulated in the renderer's internal entity list.
+   *
+   * Multi-page exports pass explicit roots to every page; the internal list
+   * only retains block templates and stale drawables. Clearing it between
+   * pages lets per-page paper-space geometry be collected while earlier
+   * pages remain alive only inside the shared PDF document.
+   */
+  resetCollected(): void {
+    this._entities.length = 0
+  }
+
+  private writeOptions(
+    overrides: Partial<AcPdfWriteOptions> = {}
+  ): AcPdfWriteOptions {
+    return {
       insunits: this._insunits,
       background: this._pageBackground,
       title: this._title,
       paper: this._paper,
       marginMm: this._marginMm,
       fitBox: this._fitBox,
-      embedTextActualText: this._embedTextActualText
-    })
+      embedTextActualText: this._embedTextActualText,
+      fonts: this._fonts,
+      ...overrides
+    }
   }
 
   private appendStrokedPoints(
@@ -480,10 +856,18 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
               undefined
             )
           ).then(result => {
-            applyGlyphs(entity, result.primitives, result.box, dashless, {
+            // Glyph geometry is text-local; this entity mixes world-space
+            // stroke marks, so paint the glyph through a child entity that
+            // carries the placement translation on its own matrix.
+            const glyphNode = new AcPdfEntity()
+            applyGlyphs(glyphNode, result.primitives, result.box, dashless, {
               rgb: dashless.rgb,
               opacity: dashless.opacity
             })
+            glyphNode.applyMatrix(
+              new AcGeMatrix3d().makeTranslation(shape.x, shape.y, 0)
+            )
+            entity.addChild(glyphNode)
           })
           this._pending.push(pending)
         }
@@ -521,30 +905,87 @@ function toPdfPoints(points: Array<{ x: number; y: number }>): AcPdfPoint[] {
   return points.map(p => ({ x: p.x, y: p.y }))
 }
 
+/** Cached glyph render result shared read-only across identical texts. */
+interface AcPdfCachedGlyph {
+  /** Flat text-local geometry, shared by reference with every instance. */
+  primitives: AcPdfGlyphPrimitives
+  /** Bounding box of the text-local primitives. */
+  box: AcPdfGlyphBox
+  actualText?: string
+}
+
+/**
+ * Cache key covering every mtext field that changes rendered geometry.
+ * `position` is excluded on purpose: reuse translates shared primitives.
+ * `style.lastHeight` is a scratch value that does not affect rendering.
+ */
+function mtextGlyphKey(mtext: AcGiMTextData, style: AcGiTextStyle): string {
+  return JSON.stringify([
+    mtext.text ?? '',
+    mtext.height,
+    mtext.width,
+    mtext.rotation ?? null,
+    mtext.directionVector ?? null,
+    mtext.attachmentPoint ?? null,
+    mtext.drawingDirection ?? null,
+    mtext.lineSpaceFactor ?? null,
+    mtext.widthFactor ?? null,
+    glyphStyleKey(style)
+  ])
+}
+
+/** Cache key covering every shape field that changes rendered geometry. */
+function shapeGlyphKey(shape: AcGiShapeData, style?: AcGiTextStyle): string {
+  return JSON.stringify([
+    shape.name ?? null,
+    shape.shapeNumber ?? null,
+    shape.size,
+    shape.rotation ?? null,
+    shape.directionVector ?? null,
+    shape.widthFactor ?? null,
+    style ? glyphStyleKey(style) : null
+  ])
+}
+
+function glyphStyleKey(style: AcGiTextStyle): string {
+  return [
+    style.name,
+    style.standardFlag,
+    style.fixedTextHeight,
+    style.widthFactor,
+    style.obliqueAngle,
+    style.textGenerationFlag,
+    style.font,
+    style.bigFont,
+    style.extendedFont ?? ''
+  ].join('\u0000')
+}
+
+/**
+ * Paints a rendered glyph set into `entity` as one compact op per primitive
+ * kind. Geometry is text-local (relative to the text's insertion point); the
+ * caller positions it via `entity.applyMatrix`.
+ */
 function applyGlyphs(
   entity: AcPdfEntity,
-  primitives: Array<{
-    kind: 'stroke' | 'fill'
-    points: Array<{ x: number; y: number }>
-  }>,
+  primitives: AcPdfGlyphPrimitives,
   box: { min: { x: number; y: number }; max: { x: number; y: number } },
   strokeStyle: ReturnType<typeof AcPdfStyleUtil.strokeStyle>,
   fillStyle: ReturnType<typeof AcPdfStyleUtil.fillStyle>
 ) {
-  for (const primitive of primitives) {
-    if (primitive.kind === 'stroke') {
-      entity.addOp({
-        kind: 'stroke',
-        points: primitive.points,
-        style: strokeStyle
-      })
-    } else if (primitive.points.length >= 3) {
-      entity.addOp({
-        kind: 'fill',
-        loops: [primitive.points],
-        style: fillStyle
-      })
-    }
+  if (primitives.triangles.length >= 6) {
+    entity.addOp({
+      kind: 'triangles',
+      data: primitives.triangles,
+      style: fillStyle
+    })
+  }
+  if (primitives.polylines.length >= 2) {
+    entity.addOp({
+      kind: 'polylines',
+      data: primitives.polylines,
+      style: strokeStyle
+    })
   }
   entity.box.min.set(box.min.x, box.min.y)
   entity.box.max.set(box.max.x, box.max.y)
