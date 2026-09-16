@@ -27,6 +27,8 @@ type SceneNode = {
   geometry?: Geom
   isMesh?: boolean
   isLine?: boolean
+  isLineSegments?: boolean
+  isLineLoop?: boolean
   updateMatrixWorld?(force?: boolean): void
   traverse(callback: (object: SceneNode) => void): void
 }
@@ -115,6 +117,7 @@ function extractGlyphPrimitives(
     pos: BufferAttr
     index: { count: number; getX(i: number): number } | null
     isMesh: boolean
+    isSegments: boolean
   }
   const sources: Source[] = []
   let triangleFloats = 0
@@ -139,19 +142,28 @@ function extractGlyphPrimitives(
         elements: node.matrixWorld?.elements,
         pos,
         index,
-        isMesh: true
+        isMesh: true,
+        isSegments: false
       })
       triangleFloats += triCount * 6
       return
     }
     if (node.isLine) {
+      // three.js: LineSegments extends Line, so `isLine` is true for both.
+      // Stroke-font glyphs (SHX) arrive as LineSegments where every vertex
+      // PAIR is an independent stroke — expanding them as one continuous
+      // polyline would connect glyph strokes end-to-end.
+      const segments = !!node.isLineSegments
       sources.push({
         elements: node.matrixWorld?.elements,
         pos,
         index: null,
-        isMesh: false
+        isMesh: false,
+        isSegments: segments
       })
-      lineFloats += pos.count * 2 + 1
+      lineFloats += segments
+        ? Math.floor(pos.count / 2) * 5
+        : pos.count * 2 + 1
     }
   })
 
@@ -209,6 +221,20 @@ function extractGlyphPrimitives(
           const y = p.y - originY
           triangles[triOffset++] = x
           triangles[triOffset++] = y
+          expand(x, y)
+        }
+      }
+    } else if (source.isSegments) {
+      // One polyline per vertex pair: each stroke stays independent.
+      const pairCount = Math.floor(pos.count / 2)
+      for (let s = 0; s < pairCount; s++) {
+        polylines[lineOffset++] = 2
+        for (let k = 0; k < 2; k++) {
+          const p = world(s * 2 + k)
+          const x = p.x - originX
+          const y = p.y - originY
+          polylines[lineOffset++] = x
+          polylines[lineOffset++] = y
           expand(x, y)
         }
       }

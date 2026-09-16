@@ -272,6 +272,9 @@ async function exportLayoutsToPdf(
     await accmYieldForPaint()
   }
 
+  // Flush deferred font embeds and repair their font programs (see
+  // AcPdfFontManager.finalize) before serialization.
+  await renderer.textFontManager?.finalize()
   const bytes = await doc.save({ useObjectStreams: true })
   return bytes
 }

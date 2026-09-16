@@ -196,6 +196,11 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     this._textMode = 'text'
   }
 
+  /** Bound font manager, or `undefined` while the host provided none. */
+  get textFontManager(): AcPdfFontManager | undefined {
+    return this._fonts
+  }
+
   configureExport(options: AcPdfExportOptions) {
     this._title = options.title
     this._paper = options.paper

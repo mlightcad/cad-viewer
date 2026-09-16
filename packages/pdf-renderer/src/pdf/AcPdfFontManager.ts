@@ -1,6 +1,16 @@
 import fontkit from '@pdf-lib/fontkit'
 import { inflate } from 'pako'
-import { PDFDocument, PDFFont, PDFRef } from 'pdf-lib'
+import {
+  decodePDFRawStream,
+  PDFArray,
+  PDFDict,
+  PDFDocument,
+  PDFFont,
+  PDFName,
+  PDFNumber,
+  PDFRawStream,
+  PDFRef
+} from 'pdf-lib'
 
 import type { AcPdfOp } from '../renderer/AcPdfStyle'
 
@@ -322,6 +332,62 @@ export class AcPdfFontManager {
     this._embedded.set(fontName, pdfFont)
     this._names.set(fontName, `FT${this._names.size}`)
     return pdfFont
+  }
+
+  /**
+   * pdf-lib defers `embedFont`'s object creation to save time: the call only
+   * reserves a reference, so the font dictionaries do not exist yet. This
+   * must be awaited before the document is serialized (see the two `doc.save`
+   * call sites) — it flushes pdf-lib's pending embeds and then repairs the
+   * font programs it materialized.
+   *
+   * The repair: pdf-lib writes FontFile2 streams without the mandatory
+   * `/Length1` entry (the uncompressed TrueType program byte length, PDF
+   * 32000 Table 126). Acrobat refuses to load such font programs and reports
+   * "An error exists on this page" for every page that paints with the font,
+   * so set it explicitly from the normalized font bytes we handed to
+   * `embedFont`.
+   */
+  async finalize(): Promise<void> {
+    const doc = this._doc
+    if (!doc || this._embedded.size === 0) {
+      return
+    }
+    await doc.flush()
+    for (const [fontName, pdfFont] of this._embedded) {
+      this.patchFontFileLength1(fontName, pdfFont)
+    }
+  }
+
+  private patchFontFileLength1(fontName: string, pdfFont: PDFFont): void {
+    const doc = this._doc
+    const font = this._loaded.get(fontName)
+    if (!doc || !font?.bytes?.byteLength) {
+      return
+    }
+    const context = doc.context
+    const type0 = context.lookup(pdfFont.ref)
+    if (!(type0 instanceof PDFDict)) {
+      return
+    }
+    const descendants = type0.lookup(PDFName.of('DescendantFonts'), PDFArray)
+    const cidFont = descendants?.lookup(0)
+    if (!(cidFont instanceof PDFDict)) {
+      return
+    }
+    const descriptor = cidFont.lookup(PDFName.of('FontDescriptor'), PDFDict)
+    if (!descriptor) {
+      return
+    }
+    const file = context.lookup(descriptor.get(PDFName.of('FontFile2')))
+    if (!(file instanceof PDFRawStream)) {
+      return
+    }
+    // The embedded program is the SUBSET pdf-lib generated, so its
+    // uncompressed length differs from the source font bytes — derive
+    // /Length1 from the stream's own decoded payload.
+    const decoded = decodePDFRawStream(file).decode()
+    file.dict.set(PDFName.of('Length1'), PDFNumber.of(decoded.length))
   }
 
   /** Page-resource entry for `fontName`, or `undefined` before embedding. */
