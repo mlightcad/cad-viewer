@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 jest.mock('../src/AcExHtmlSimpleViewerUi', () => ({
-  ACED_TOUCH_POINT_LONG_PRESS_MS: 1000,
+  ACED_TOUCH_POINT_LONG_PRESS_MS: 500,
   ACED_TOUCH_POINT_MOVE_CANCEL_PX: 10
 }))
 
@@ -65,11 +65,11 @@ describe('AcExTouchPointSession', () => {
     expect(session.end()).toBe('commit')
   })
 
-  it('uses one second as the default long-press delay', () => {
+  it('uses half a second as the default long-press delay', () => {
     const onLongPress = jest.fn()
     const session = new AcExTouchPointSession()
     session.start(7, 1, 2, onLongPress)
-    jest.advanceTimersByTime(999)
+    jest.advanceTimersByTime(499)
     expect(onLongPress).not.toHaveBeenCalled()
     jest.advanceTimersByTime(1)
     expect(onLongPress).toHaveBeenCalledTimes(1)

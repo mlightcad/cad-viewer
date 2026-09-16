@@ -10,7 +10,7 @@ When precisely picking points on a touch screen, your finger obscures the target
 
 ## How It Works
 
-- When a command requires you to pick a point, **long-press** the screen for about 1 second, and a square magnifier HUD automatically appears in the top-left corner.
+- When a command requires you to pick a point, **long-press** the screen for about 0.5 seconds, and a square magnifier HUD automatically appears in the top-left corner.
 - The magnified area follows the current input point: the magnifier helps you see the exact position near the input point without being blocked by your finger.
 - The magnifier only provides visual assistance and does not change the input position.
 

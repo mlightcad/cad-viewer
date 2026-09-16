@@ -163,7 +163,7 @@ export default {
   touchPointTutorial: {
     title: '怎样可以精确取点？',
     description:
-      '手指在屏幕上长按1s左右，上方出现十字，手指移动时十字跟随移动并自动捕捉。取点更精准。',
+      '手指在屏幕上长按0.5s左右，上方出现十字，手指移动时十字跟随移动并自动捕捉。取点更精准。',
     snoozeToday: '今日不再提醒',
     hideForever: '不再提醒',
     ok: '我知道了'

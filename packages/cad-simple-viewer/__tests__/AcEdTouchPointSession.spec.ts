@@ -43,11 +43,11 @@ describe('AcEdTouchPointSession', () => {
     expect(session.end()).toBe('commit')
   })
 
-  it('uses one second as the default long-press delay', () => {
+  it('uses half a second as the default long-press delay', () => {
     const onLongPress = jest.fn()
     const session = new AcEdTouchPointSession()
     session.start(1, 10, 20, onLongPress)
-    jest.advanceTimersByTime(999)
+    jest.advanceTimersByTime(499)
     expect(onLongPress).not.toHaveBeenCalled()
     jest.advanceTimersByTime(1)
     expect(onLongPress).toHaveBeenCalledTimes(1)

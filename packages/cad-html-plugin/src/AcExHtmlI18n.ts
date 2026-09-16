@@ -408,7 +408,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     touchPointTutorial: {
       title: 'How to pick points precisely?',
       description:
-        'Long-press on the screen for about 1 second. A cross appears above your finger and follows as you move, snapping to geometry for more accurate picks.',
+        'Long-press on the screen for about 0.5 seconds. A cross appears above your finger and follows as you move, snapping to geometry for more accurate picks.',
       snoozeToday: 'Don\'t remind me today',
       hideForever: 'Don\'t remind me again',
       ok: 'Got it'
@@ -668,7 +668,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     touchPointTutorial: {
       title: '怎样可以精确取点？',
       description:
-        '手指在屏幕上长按1s左右，上方出现十字，手指移动时十字跟随移动并自动捕捉。取点更精准。',
+        '手指在屏幕上长按0.5s左右，上方出现十字，手指移动时十字跟随移动并自动捕捉。取点更精准。',
       snoozeToday: '今日不再提醒',
       hideForever: '不再提醒',
       ok: '我知道了'
@@ -918,7 +918,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     touchPointTutorial: {
       title: 'Jak přesně vybrat bod?',
       description:
-        'Podržte prst na obrazovce asi 1 sekundu. Nad prstem se objeví kříž, který při pohybu sleduje prst a přichytává se k geometrii pro přesnější výběr.',
+        'Podržte prst na obrazovce asi 0,5 sekundy. Nad prstem se objeví kříž, který při pohybu sleduje prst a přichytává se k geometrii pro přesnější výběr.',
       snoozeToday: 'Dnes už nepřipomínat',
       hideForever: 'Už nepřipomínat',
       ok: 'Rozumím'
@@ -1178,7 +1178,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     touchPointTutorial: {
       title: 'Noktalar nasıl hassas seçilir?',
       description:
-        'Ekranda yaklaşık 1 saniye basılı tutun. Parmağınızın üstünde bir artı belirir ve hareket ederken geometriye yapışarak daha doğru seçim yapmanızı sağlar.',
+        'Ekranda yaklaşık 0,5 saniye basılı tutun. Parmağınızın üstünde bir artı belirir ve hareket ederken geometriye yapışarak daha doğru seçim yapmanızı sağlar.',
       snoozeToday: 'Bugün tekrar hatırlatma',
       hideForever: 'Bir daha hatırlatma',
       ok: 'Anladım'
@@ -1431,7 +1431,7 @@ const AR_MESSAGES: AcExMessageTree = {
   'touchPointTutorial': {
     'title': 'كيف أختار النقاط بدقة؟',
     'description':
-      'اضغط مطولاً على الشاشة لمدة ثانية تقريباً. يظهر صليب فوق إصبعك ويتبعه أثناء الحركة ويلتقط إلى الهندسة لاختيار أدق.',
+      'اضغط مطولاً على الشاشة لمدة نصف ثانية تقريباً. يظهر صليب فوق إصبعك ويتبعه أثناء الحركة ويلتقط إلى الهندسة لاختيار أدق.',
     'snoozeToday': 'لا تذكرني اليوم',
     'hideForever': 'لا تذكرني مرة أخرى',
     'ok': 'فهمت'
