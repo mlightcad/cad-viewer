@@ -13,6 +13,7 @@ import {
   isDefaultPaperSpaceViewport,
   resolveViewportBoxes
 } from './AcPdfPaperViewport'
+import { AcPdfViewportContent } from './AcPdfViewportContent'
 
 /**
  * Attaches common PDF metadata copied from the source database entity.
@@ -63,10 +64,15 @@ export function collectModelSpaceRoots(
 
 /**
  * Builds clipped, model→paper transformed content for one user viewport.
+ *
+ * `resolveModelRoots` is invoked only for viewports that actually show model
+ * geometry, so layouts without usable viewports never traverse model space.
+ * The returned content paints the shared roots on demand — no per-viewport
+ * geometry clone is created.
  */
 export function buildViewportModelContent(
   viewport: AcDbViewport,
-  modelRoots: AcPdfEntity[],
+  resolveModelRoots: () => AcPdfEntity[],
   renderer: AcPdfRenderer
 ): { content: AcPdfEntity; border: AcPdfEntity | undefined } | null {
   if (isDefaultPaperSpaceViewport(viewport)) {
@@ -78,20 +84,12 @@ export function buildViewportModelContent(
   }
 
   const matrix = buildModelToPaperMatrix(boxes.paper, boxes.model, boxes.twist)
-  const content = new AcPdfEntity()
-  content.entityType = 'VIEWPORT_CONTENT'
+  const content = new AcPdfViewportContent(
+    resolveModelRoots(),
+    matrix,
+    boxes.paper
+  )
   content.objectId = viewport.objectId
-  content.setClipBox(boxes.paper)
-
-  for (const root of modelRoots) {
-    // Clone after glyphs are filled (caller awaits renderer.awaitPending).
-    // Deep-copy ops so later paint transforms cannot alias across viewports.
-    const cloned = root.fastDeepClone(false)
-    cloned.applyMatrix(matrix)
-    content.addChild(cloned)
-  }
-  // Page framing must stay on the paper frame, not the full transformed model.
-  content.box.copy(boxes.paper)
 
   let border = viewport.worldDraw(renderer)
   if (!(border instanceof AcPdfEntity)) {

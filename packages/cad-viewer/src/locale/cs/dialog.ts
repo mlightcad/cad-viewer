@@ -133,6 +133,14 @@ export default {
     exportLayouts: 'Exportovat rozvržení',
     exportLayoutsHint:
       'Zahrnout rozvržení výkresového prostoru jako další stránky PDF',
+    textModeSection: 'Text',
+    textMode: 'Vykreslení textu',
+    textModeText: 'Textové objekty',
+    textModeTextHint:
+      'Text zůstane volitelný/vyhledatelný a soubor se zmenší (SHX text zůstane vektorový)',
+    textModeVector: 'Vektorové obrysy',
+    textModeVectorHint:
+      'Převede text na čáry a výplně podle obrazovky, ale soubor je větší',
     yes: 'Ano',
     no: 'Ne'
   },

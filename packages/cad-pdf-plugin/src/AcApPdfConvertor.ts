@@ -16,6 +16,7 @@ import {
   resolveAcApPdfExportOptions
 } from './AcApPdfExportOptions'
 import { createViewerPdfGlyphProvider } from './AcApPdfGlyphProvider'
+import { resolveViewerTextFont } from './AcApPdfFontResolver'
 
 /**
  * Converts the current CAD drawing to a vector PDF and downloads it.
@@ -48,7 +49,11 @@ export class AcApPdfConvertor {
         background: 'none',
         fit: resolved.modelSpaceFit === 'display' ? 'current' : 'extents',
         layouts: resolved.exportLayouts ? 'all' : 'current',
-        glyphProvider: createViewerPdfGlyphProvider()
+        glyphProvider: createViewerPdfGlyphProvider(),
+        textMode: resolved.textMode
+      }
+      if (resolved.textMode === 'text') {
+        pdfOptions.textFontResolver = resolveViewerTextFont
       }
 
       if (resolved.modelSpaceFit === 'display') {

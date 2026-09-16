@@ -136,6 +136,14 @@ export default {
     exportLayouts: 'Yerleşimleri dışa aktar',
     exportLayoutsHint:
       'Kağıt alanı yerleşimlerini ek PDF sayfaları olarak dahil et',
+    textModeSection: 'Metin',
+    textMode: 'Metin işleme',
+    textModeText: 'Metin nesneleri',
+    textModeTextHint:
+      'Metni seçilebilir/aranabilir tutar ve dosyayı küçültür (SHX metin vektör kalır)',
+    textModeVector: 'Vektör konturlar',
+    textModeVectorHint:
+      'Metni çizgi ve dolguya dönüştürür, ekrana uygun, ancak dosya daha büyük',
     yes: 'Evet',
     no: 'Hayır'
   },

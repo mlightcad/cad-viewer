@@ -1274,6 +1274,7 @@ export default {
   cpdf: {
     modelSpaceFit: 'Rám modelového prostoru [Rozsah(E)/Zobrazení(D)]',
     exportLayouts: 'Exportovat rozvržení',
+    textMode: 'Vykreslení textu [Text(T)/Vektor(V)]',
     keywords: {
       extents: {
         display: 'Rozsah(E)',
@@ -1284,6 +1285,16 @@ export default {
         display: 'Zobrazení(D)',
         local: 'Zobrazení',
         global: 'Display'
+      },
+      text: {
+        display: 'Text(T)',
+        local: 'Text',
+        global: 'Text'
+      },
+      vector: {
+        display: 'Vektor(V)',
+        local: 'Vektor',
+        global: 'Vector'
       },
       yes: {
         display: 'Ano(Y)',

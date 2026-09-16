@@ -1277,6 +1277,7 @@ export default {
   cpdf: {
     modelSpaceFit: 'Model alanı çerçevesi [Kapsam(K)/Görüntü(G)]',
     exportLayouts: 'Yerleşimleri dışa aktar',
+    textMode: 'Metin işleme [Metin(M)/Vektör(V)]',
     keywords: {
       extents: {
         display: 'Kapsam(K)',
@@ -1287,6 +1288,16 @@ export default {
         display: 'Görüntü(G)',
         local: 'Görüntü',
         global: 'Display'
+      },
+      text: {
+        display: 'Metin(M)',
+        local: 'Metin',
+        global: 'Text'
+      },
+      vector: {
+        display: 'Vektör(V)',
+        local: 'Vektör',
+        global: 'Vector'
       },
       yes: {
         display: 'Evet(E)',

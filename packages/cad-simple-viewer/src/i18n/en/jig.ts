@@ -1277,6 +1277,7 @@ export default {
   cpdf: {
     modelSpaceFit: 'Model space frame [Extents(E)/Display(D)]',
     exportLayouts: 'Export layouts',
+    textMode: 'Text rendering [Text(T)/Vector(V)]',
     keywords: {
       extents: {
         display: 'Extents(E)',
@@ -1287,6 +1288,16 @@ export default {
         display: 'Display(D)',
         local: 'Display',
         global: 'Display'
+      },
+      text: {
+        display: 'Text(T)',
+        local: 'Text',
+        global: 'Text'
+      },
+      vector: {
+        display: 'Vector(V)',
+        local: 'Vector',
+        global: 'Vector'
       },
       yes: {
         display: 'Yes(Y)',

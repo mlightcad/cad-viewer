@@ -213,8 +213,14 @@ export class AcPdfEntity implements AcGiEntity {
         writer.save()
         writer.clipRect(this._clipBox)
       }
-      for (const op of this._ops) {
-        writer.drawOp(localToDrawing ? transformOpByMatrix(op, localToDrawing) : op)
+      if (this._ops.length > 0) {
+        writer.drawOps(
+          this._ops,
+          localToDrawing
+            ? op => transformOpByMatrix(op, localToDrawing)
+            : undefined,
+          localToDrawing
+        )
       }
       const childCtx: AcPdfPaintContext = {
         ...ctx,
@@ -275,7 +281,16 @@ export class AcPdfEntity implements AcGiEntity {
     }
   }
 
-  fastDeepClone(shareGeometry: boolean = false): AcPdfEntity {
+  /**
+   * Clones this node (used by `AcDbRenderingCache` to stamp INSERT instances).
+   *
+   * Shares draw ops with the source by default: ops are treated as immutable
+   * across the whole pipeline (paint bakes transformed copies via
+   * `transformOpByMatrix`, boxes are per-entity), so sharing turns per-INSERT
+   * cloning from O(points) deep copies into O(ops) reference copies — the
+   * dominant memory multiplier on INSERT-heavy drawings.
+   */
+  fastDeepClone(shareGeometry: boolean = true): AcPdfEntity {
     const cloned = new AcPdfEntity()
     cloned._objectId = this._objectId
     cloned._ownerId = this._ownerId
@@ -322,12 +337,33 @@ function cloneOp(op: AcPdfOp): AcPdfOp {
       style: { ...op.style, rgb: { ...op.style.rgb } }
     }
   }
+  if (op.kind === 'triangles') {
+    // Flat buffers are immutable; share them even on deep clones.
+    return {
+      kind: 'triangles',
+      data: op.data,
+      style: { ...op.style, rgb: { ...op.style.rgb } }
+    }
+  }
+  if (op.kind === 'polylines') {
+    return {
+      kind: 'polylines',
+      data: op.data,
+      style: { ...op.style, rgb: { ...op.style.rgb } }
+    }
+  }
   if (op.kind === 'circle') {
     return {
       kind: 'circle',
       x: op.x,
       y: op.y,
       r: op.r,
+      style: { ...op.style, rgb: { ...op.style.rgb } }
+    }
+  }
+  if (op.kind === 'text') {
+    return {
+      ...op,
       style: { ...op.style, rgb: { ...op.style.rgb } }
     }
   }
@@ -391,6 +427,18 @@ function transformOpByMatrix(op: AcPdfOp, matrix: AcGeMatrix3d): AcPdfOp {
       style: { ...op.style, rgb: { ...op.style.rgb } }
     }
   }
+  if (op.kind === 'triangles') {
+    // Numeric bake keeps the shared float32 buffer untouched; callers that
+    // care about allocation use the writer's Form XObject path instead.
+    return { ...op, data: transformFlatPoints(op.data, matrix) }
+  }
+  if (op.kind === 'polylines') {
+    return {
+      ...op,
+      data: transformFlatPolylines(op.data, matrix),
+      style: { ...op.style, lineWidth: op.style.lineWidth * scale }
+    }
+  }
   if (op.kind === 'circle') {
     const c = map({ x: op.x, y: op.y })
     const edge = map({ x: op.x + op.r, y: op.y })
@@ -402,6 +450,9 @@ function transformOpByMatrix(op: AcPdfOp, matrix: AcGeMatrix3d): AcPdfOp {
       r,
       style: { ...op.style, rgb: { ...op.style.rgb } }
     }
+  }
+  if (op.kind === 'text') {
+    return transformTextOp(op, map)
   }
   if (op.kind === 'gradient') {
     const mapCoord = (x: number, y: number) => {
@@ -449,4 +500,109 @@ function composeCtm(
   local: AcGeMatrix3d
 ): AcGeMatrix3d {
   return parent ? parent.clone().multiply(local) : local.clone()
+}
+
+/**
+ * Bakes an affine matrix into a text op.
+ *
+ * The baseline origin maps directly; the glyph frame's advance (`u`) and up
+ * (`v`) directions are transformed to derive the new rotation, font size and
+ * width factor — so INSERT block transforms (translate/rotate/scale/mirror)
+ * keep text glued to its geometry. A transform with negative determinant
+ * (mirror) flips the frame's handedness: the op keeps `flipX` enabled (or
+ * gains it) so glyphs render mirrored instead of collapsing into a 180°
+ * baseline turn with absorbed width factor.
+ */
+function transformTextOp(
+  op: Extract<AcPdfOp, { kind: 'text' }>,
+  map: (p: { x: number; y: number }) => { x: number; y: number }
+): Extract<AcPdfOp, { kind: 'text' }> {
+  const origin = map({ x: op.x, y: op.y })
+  const rad = (op.angleDeg * Math.PI) / 180
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  // Advance direction (`u`): negated for flipped ops (glyph x-axis reversed);
+  // the up direction (`v`) is the unflipped perpendicular in both cases.
+  const ux = op.flipX === true ? -cos : cos
+  const uy = op.flipX === true ? -sin : sin
+  const dir = map({ x: op.x + ux, y: op.y + uy })
+  const perp = map({ x: op.x - sin, y: op.y + cos })
+  const du = { x: dir.x - origin.x, y: dir.y - origin.y }
+  const dv = { x: perp.x - origin.x, y: perp.y - origin.y }
+  const su = Math.hypot(du.x, du.y)
+  const sv = Math.hypot(dv.x, dv.y)
+  const fallback: Extract<AcPdfOp, { kind: 'text' }> = {
+    ...op,
+    x: origin.x,
+    y: origin.y,
+    style: { ...op.style, rgb: { ...op.style.rgb } }
+  }
+  if (!(su > 0) || !(sv > 0)) {
+    // Degenerate transform (zero scale): keep orientation, move the origin.
+    return fallback
+  }
+  // Cross product sign = transformed frame handedness.
+  const cross = du.x * dv.y - du.y * dv.x
+  const flipX = cross < 0
+  const angleRad = flipX ? Math.atan2(-du.y, -du.x) : Math.atan2(du.y, du.x)
+  return {
+    ...fallback,
+    flipX,
+    angleDeg: (angleRad * 180) / Math.PI,
+    size: op.size * sv,
+    hScale: Math.abs(op.hScale * (su / sv))
+  }
+}
+
+/** Bakes an affine matrix into a flat `[x, y, ...]` coordinate buffer. */
+function transformFlatPoints(
+  data: Float32Array,
+  matrix: AcGeMatrix3d
+): Float32Array {
+  const out = new Float32Array(data.length)
+  for (let i = 0; i + 1 < data.length; i += 2) {
+    const p = AcPdfMatrixUtil.transformPoint(matrix, {
+      x: data[i],
+      y: data[i + 1],
+      z: 0
+    })
+    out[i] = p.x
+    out[i + 1] = p.y
+  }
+  return out
+}
+
+/**
+ * Bakes an affine matrix into a flat polyline buffer, preserving the
+ * vertex-count prefixes (`[n, x, y, ..., n, ...]`).
+ */
+function transformFlatPolylines(
+  data: Float32Array,
+  matrix: AcGeMatrix3d
+): Float32Array {
+  const out = new Float32Array(data.length)
+  let i = 0
+  while (i < data.length) {
+    const n = data[i]
+    if (!(n >= 2) || i + 1 + n * 2 > data.length) {
+      // Malformed tail: copy verbatim.
+      for (; i < data.length; i++) {
+        out[i] = data[i]
+      }
+      break
+    }
+    out[i] = n
+    i++
+    for (let k = 0; k < n; k++) {
+      const p = AcPdfMatrixUtil.transformPoint(matrix, {
+        x: data[i],
+        y: data[i + 1],
+        z: 0
+      })
+      out[i] = p.x
+      out[i + 1] = p.y
+      i += 2
+    }
+  }
+  return out
 }

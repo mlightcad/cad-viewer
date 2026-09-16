@@ -20,6 +20,17 @@ export interface AcApPdfExportOptions {
    * When `false`, only the current space is exported. Defaults to `true`.
    */
   exportLayouts?: boolean
+  /**
+   * How MTEXT/TEXT are painted.
+   *
+   * - `'text'` (default): laid-out text is painted as real PDF text through
+   *   fonts resolved from the viewer font catalog — text stays
+   *   selectable/searchable and the file shrinks dramatically. Texts whose
+   *   font is SHX or cannot be embedded fall back to vector glyphs.
+   * - `'vector'`: glyphs are tessellated into line/fill geometry
+   *   (self-contained, but dense text dominates the file size).
+   */
+  textMode?: 'vector' | 'text'
 }
 
 /**
@@ -31,6 +42,7 @@ export function resolveAcApPdfExportOptions(
   return {
     modelSpaceFit:
       options.modelSpaceFit === 'display' ? 'display' : 'extents',
-    exportLayouts: options.exportLayouts !== false
+    exportLayouts: options.exportLayouts !== false,
+    textMode: options.textMode === 'vector' ? 'vector' : 'text'
   }
 }

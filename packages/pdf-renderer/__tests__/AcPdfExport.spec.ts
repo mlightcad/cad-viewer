@@ -209,21 +209,18 @@ describe('exportDatabaseToPdf', () => {
       title: 'actual-text',
       glyphProvider: {
         renderMText: () => ({
-          primitives: [
-            {
-              kind: 'fill',
-              points: [
-                { x: 0, y: 0 },
-                { x: 2, y: 0 },
-                { x: 1, y: 2 }
-              ]
-            }
-          ],
+          primitives: {
+            triangles: new Float32Array([0, 0, 2, 0, 1, 2]),
+            polylines: new Float32Array(0)
+          },
           actualText: '房间',
           box: { min: { x: 0, y: 0 }, max: { x: 2, y: 2 } }
         }),
         renderShape: () => ({
-          primitives: [],
+          primitives: {
+            triangles: new Float32Array(0),
+            polylines: new Float32Array(0)
+          },
           box: { min: { x: 0, y: 0 }, max: { x: 0, y: 0 } }
         })
       }
@@ -303,5 +300,46 @@ describe('exportDatabaseToPdf', () => {
     }
     expect(names).toContain('钉柱')
     expect(names).toContain('WALL')
+  })
+
+  it('exports model space even when its block handle is missing from the registry', async () => {
+    const db = createDb()
+    ensureModelLayout(db)
+    const modelLine = new AcDbLine(
+      new AcGePoint3d(0, 0, 0),
+      new AcGePoint3d(100, 0, 0)
+    )
+    db.tables.blockTable.modelSpace.appendEntity(modelLine)
+
+    // Some DWG files (e.g. 23-26弱电.dwg) never register the model-space
+    // block record handle in the database handle registry, so `getIdAt`
+    // cannot resolve the Model layout's blockTableRecordId. Simulate that
+    // quirk by dropping the registry entry.
+    const registry = (
+      db as unknown as { _handleRegistry: Map<string, unknown> }
+    )._handleRegistry
+    registry.delete(db.tables.blockTable.modelSpace.objectId)
+    expect(
+      db.tables.blockTable.getIdAt(db.tables.blockTable.modelSpace.objectId)
+    ).toBeUndefined()
+
+    const paperBtr = new AcDbBlockTableRecord()
+    paperBtr.name = '*Paper_Space0'
+    db.tables.blockTable.add(paperBtr)
+    const paperLayout = new AcDbLayout()
+    paperLayout.layoutName = 'Layout1'
+    paperLayout.tabOrder = 1
+    paperLayout.blockTableRecordId = paperBtr.objectId
+    db.objects.layout.setAt(paperLayout.layoutName, paperLayout)
+
+    const bytes = await exportDatabaseToPdf(db, {
+      title: 'model-handle-missing',
+      layouts: 'all'
+    })
+    const doc = await PDFDocument.load(bytes)
+    // Model page (with content) plus the empty paper layout page — the old
+    // code silently skipped the unresolvable Model layout and produced a
+    // near-empty PDF.
+    expect(doc.getPageCount()).toBe(2)
   })
 })

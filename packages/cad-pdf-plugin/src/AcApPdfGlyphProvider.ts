@@ -5,10 +5,8 @@ import type {
 } from '@mlightcad/data-model'
 import type {
   AcPdfGlyphBox,
-  AcPdfGlyphPrimitive,
-  AcPdfGlyphProvider,
-  AcPdfMTextGlyphResult,
-  AcPdfShapeGlyphResult
+  AcPdfGlyphPrimitives,
+  AcPdfGlyphProvider
 } from '@mlightcad/pdf-renderer'
 import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
@@ -34,10 +32,22 @@ type SceneNode = {
 }
 
 /**
- * Turns the viewer's already-initialized mtext renderer into PDF stroke/fill
- * primitives so TEXT/MTEXT are not dropped during export.
+ * Turns the viewer's already-initialized mtext renderer into PDF glyph
+ * geometry so TEXT/MTEXT are not dropped during export.
+ *
+ * Geometry is emitted as flat float32 buffers relative to the text's own
+ * insertion point. Large drawings carry tens of thousands of MTEXT instances;
+ * the previous per-triangle object graphs (`{x, y}` points inside
+ * per-primitive arrays) retained ~25 objects per triangle in the renderer's
+ * glyph cache and exhausted the tab's heap. Buffers are shared by reference
+ * across identical texts, so a drawing's unique text content costs ~24 bytes
+ * per triangle.
  */
 export function createViewerPdfGlyphProvider(): AcPdfGlyphProvider {
+  const empty: AcPdfGlyphPrimitives = {
+    triangles: new Float32Array(0),
+    polylines: new Float32Array(0)
+  }
   const emptyBox = { min: { x: 0, y: 0 }, max: { x: 0, y: 0 } }
   return {
     async renderMText(data: AcGiMTextData, style: AcGiTextStyle) {
@@ -53,9 +63,14 @@ export function createViewerPdfGlyphProvider(): AcPdfGlyphProvider {
           (data as { contents?: string }).contents ??
           (data as { text?: string }).text ??
           ''
-        return extractGlyphResult(object, contents) as AcPdfMTextGlyphResult
+        const { primitives, box } = extractGlyphPrimitives(
+          object,
+          data.position?.x ?? 0,
+          data.position?.y ?? 0
+        )
+        return { primitives, actualText: contents, box }
       } catch {
-        return { primitives: [], actualText: '', box: emptyBox }
+        return { primitives: empty, actualText: '', box: emptyBox }
       }
     },
     async renderShape(shape: AcGiShapeData, style?: AcGiTextStyle) {
@@ -65,42 +80,46 @@ export function createViewerPdfGlyphProvider(): AcPdfGlyphProvider {
           shape as never,
           (style ?? {}) as never
         )) as SceneNode
-        return extractGlyphResult(object) as AcPdfShapeGlyphResult
+        const { primitives, box } = extractGlyphPrimitives(
+          object,
+          shape.position?.x ?? 0,
+          shape.position?.y ?? 0
+        )
+        return { primitives, box }
       } catch {
-        return { primitives: [], box: emptyBox }
+        return { primitives: empty, box: emptyBox }
       }
     }
   }
 }
 
-function applyWorldMatrix(
-  elements: number[],
-  x: number,
-  y: number,
-  z: number
-): { x: number; y: number } {
-  const w = elements[3] * x + elements[7] * y + elements[11] * z + elements[15]
-  const invW = w === 0 ? 1 : 1 / w
-  return {
-    x: (elements[0] * x + elements[4] * y + elements[8] * z + elements[12]) * invW,
-    y: (elements[1] * x + elements[5] * y + elements[9] * z + elements[13]) * invW
-  }
+interface GlyphExtraction {
+  primitives: AcPdfGlyphPrimitives
+  box: AcPdfGlyphBox
 }
 
-function extractGlyphResult(
+/**
+ * Builds flat triangle/polyline buffers from the rendered scene graph,
+ * baking each node's world matrix and translating the result so (0,0) is the
+ * text's insertion point.
+ */
+function extractGlyphPrimitives(
   root: SceneNode,
-  actualText = ''
-): {
-  primitives: AcPdfGlyphPrimitive[]
-  actualText: string
-  box: AcPdfGlyphBox
-} {
-  const primitives: AcPdfGlyphPrimitive[] = []
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
+  originX: number,
+  originY: number
+): GlyphExtraction {
   root.updateMatrixWorld?.(true)
+
+  type Source = {
+    elements?: number[]
+    pos: BufferAttr
+    index: { count: number; getX(i: number): number } | null
+    isMesh: boolean
+  }
+  const sources: Source[] = []
+  let triangleFloats = 0
+  let lineFloats = 0
+
   root.traverse(node => {
     const geom = node.geometry
     if (!geom) {
@@ -110,51 +129,105 @@ function extractGlyphResult(
     if (!pos || pos.count < 1) {
       return
     }
-    const elements = node.matrixWorld?.elements
-    const expand = (x: number, y: number) => {
-      minX = Math.min(minX, x)
-      minY = Math.min(minY, y)
-      maxX = Math.max(maxX, x)
-      maxY = Math.max(maxY, y)
-    }
-    const worldPoint = (i: number) => {
-      const p = elements
-        ? applyWorldMatrix(elements, pos.getX(i), pos.getY(i), pos.getZ(i))
-        : { x: pos.getX(i), y: pos.getY(i) }
-      expand(p.x, p.y)
-      return p
-    }
     if (node.isMesh) {
       const index = geom.getIndex()
       const triCount = index ? index.count / 3 : Math.floor(pos.count / 3)
-      for (let t = 0; t < triCount; t++) {
-        const points = [0, 1, 2].map(k =>
-          worldPoint(index ? index.getX(t * 3 + k) : t * 3 + k)
-        )
-        primitives.push({ kind: 'fill', points })
+      if (triCount < 1) {
+        return
       }
+      sources.push({
+        elements: node.matrixWorld?.elements,
+        pos,
+        index,
+        isMesh: true
+      })
+      triangleFloats += triCount * 6
       return
     }
     if (node.isLine) {
-      const points: Array<{ x: number; y: number }> = []
-      for (let i = 0; i < pos.count; i++) {
-        points.push(worldPoint(i))
-      }
-      if (points.length >= 2) {
-        primitives.push({ kind: 'stroke', points })
-      }
+      sources.push({
+        elements: node.matrixWorld?.elements,
+        pos,
+        index: null,
+        isMesh: false
+      })
+      lineFloats += pos.count * 2 + 1
     }
   })
-  if (!Number.isFinite(minX)) {
-    return {
-      primitives,
-      actualText,
-      box: { min: { x: 0, y: 0 }, max: { x: 0, y: 0 } }
+
+  const triangles = new Float32Array(triangleFloats)
+  const polylines = new Float32Array(lineFloats)
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  const expand = (x: number, y: number) => {
+    if (x < minX) {
+      minX = x
+    }
+    if (y < minY) {
+      minY = y
+    }
+    if (x > maxX) {
+      maxX = x
+    }
+    if (y > maxY) {
+      maxY = y
     }
   }
-  return {
-    primitives,
-    actualText,
-    box: { min: { x: minX, y: minY }, max: { x: maxX, y: maxY } }
+  let triOffset = 0
+  let lineOffset = 0
+
+  for (const source of sources) {
+    const el = source.elements
+    const pos = source.pos
+    // Full 4x4 transform with perspective divide, matching the previous
+    // per-point `applyWorldMatrix` behavior.
+    const world = (i: number): { x: number; y: number } => {
+      const x = pos.getX(i)
+      const y = pos.getY(i)
+      if (!el) {
+        return { x, y }
+      }
+      const z = pos.getZ(i)
+      const w = el[3] * x + el[7] * y + el[11] * z + el[15]
+      const invW = w === 0 ? 1 : 1 / w
+      return {
+        x: (el[0] * x + el[4] * y + el[8] * z + el[12]) * invW,
+        y: (el[1] * x + el[5] * y + el[9] * z + el[13]) * invW
+      }
+    }
+    if (source.isMesh) {
+      const count = source.index
+        ? source.index.count / 3
+        : Math.floor(pos.count / 3)
+      for (let t = 0; t < count; t++) {
+        for (let k = 0; k < 3; k++) {
+          const vi = source.index ? source.index.getX(t * 3 + k) : t * 3 + k
+          const p = world(vi)
+          const x = p.x - originX
+          const y = p.y - originY
+          triangles[triOffset++] = x
+          triangles[triOffset++] = y
+          expand(x, y)
+        }
+      }
+    } else {
+      polylines[lineOffset++] = pos.count
+      for (let i = 0; i < pos.count; i++) {
+        const p = world(i)
+        const x = p.x - originX
+        const y = p.y - originY
+        polylines[lineOffset++] = x
+        polylines[lineOffset++] = y
+        expand(x, y)
+      }
+    }
   }
+
+  const primitives: AcPdfGlyphPrimitives = { triangles, polylines }
+  const box: AcPdfGlyphBox = Number.isFinite(minX)
+    ? { min: { x: minX, y: minY }, max: { x: maxX, y: maxY } }
+    : { min: { x: 0, y: 0 }, max: { x: 0, y: 0 } }
+  return { primitives, box }
 }

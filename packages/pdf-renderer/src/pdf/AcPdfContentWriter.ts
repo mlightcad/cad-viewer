@@ -1,51 +1,28 @@
-import { AcGeMatrix3d } from '@mlightcad/data-model'
+import { deflate } from 'pako'
 import {
-  appendBezierCurve,
-  closePath,
-  concatTransformationMatrix,
-  LineCapStyle,
-  LineJoinStyle,
-  lineTo,
-  moveTo,
-  PDFContentStream,
+  PDFArray,
   PDFDict,
   PDFDocument,
   PDFImage,
   PDFName,
-  PDFOperator,
-  PDFOperatorNames,
   PDFPage,
-  PDFRef,
-  popGraphicsState,
-  pushGraphicsState,
-  setDashPattern,
-  setFillingRgbColor,
-  setGraphicsState,
-  setLineCap,
-  setLineJoin,
-  setLineWidth,
-  setStrokingRgbColor,
-  stroke
+  PDFRawStream,
+  PDFRef
 } from 'pdf-lib'
+
+import { AcGeMatrix3d } from '@mlightcad/data-model'
 
 import { AcPdfMatrixUtil } from '../renderer/AcPdfMatrixUtil'
 import type {
   AcPdfFillStyle,
   AcPdfGradientOp,
   AcPdfOp,
-  AcPdfPoint
+  AcPdfPoint,
+  AcPdfStrokeStyle
 } from '../renderer/AcPdfStyle'
-import {
-  beginEntityOperator,
-  beginOcgOperator,
-  beginSpanActualText,
-  endMarkedContent
-} from './AcPdfMarkedContent'
+import { pdfHexText } from './AcPdfMarkedContent'
+import type { AcPdfFontManager } from './AcPdfFontManager'
 import { setPageNamedResource } from './AcPdfOcgManager'
-
-const fillEvenOdd = () => PDFOperator.of(PDFOperatorNames.FillEvenOdd)
-const clipEvenOdd = () => PDFOperator.of(PDFOperatorNames.ClipEvenOdd)
-const endPath = () => PDFOperator.of(PDFOperatorNames.EndPath)
 
 const KAPPA = 0.5522847498307936
 
@@ -55,23 +32,173 @@ export interface AcPdfContentWriterOptions {
    * page CTM. `0` CAD hairlines are raised to this value.
    */
   minUserLineWidth?: number
+  /**
+   * Cache of embedded images shared across pages of one document. When
+   * omitted the writer owns a private cache.
+   */
+  imageCache?: Map<AcPdfOp, PDFImage>
+  /**
+   * Document-scoped Form XObject registry shared across the pages of one
+   * export so identical glyph/geometry forms are embedded once.
+   */
+  formRegistry?: AcPdfFormRegistry
+  /** Embedded-font registry for `text` draw ops. */
+  fonts?: AcPdfFontManager
 }
 
 /**
- * Thin wrapper around pdf-lib operators in CAD drawing coordinates.
+ * Document-scoped Form XObject dedup state shared by every per-page writer of
+ * one export. `entries` maps stable form keys to their stream object plus the
+ * resource name used on every page that invokes the form; `bufferIds` gives
+ * shared flat buffers a stable identity across the per-page writers.
+ */
+export interface AcPdfFormRegistry {
+  entries: Map<string, { name: string; ref: PDFRef }>
+  bufferIds: WeakMap<Float32Array, string>
+  nameSeq: number
+  bufferSeq: number
+}
+
+export function createPdfFormRegistry(): AcPdfFormRegistry {
+  return {
+    entries: new Map(),
+    bufferIds: new WeakMap(),
+    nameSeq: 0,
+    bufferSeq: 0
+  }
+}
+
+/**
+ * Flate-compresses stream bytes for embedding (`/Filter /FlateDecode`).
+ * Returns `null` for tiny streams where the compression overhead outweighs
+ * the savings, or when the platform deflate fails.
+ */
+function flateStreamBytes(bytes: Uint8Array): Uint8Array | null {
+  if (bytes.length < 256) {
+    return null
+  }
+  try {
+    return deflate(bytes)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Formats a number as a PDF real/integer operand.
  *
- * When constructed without a page, operators are captured for a Form XObject.
+ * `String(n)` gives the shortest round-trip form; exponent notation (invalid
+ * inside content streams) is expanded to plain decimal.
+ */
+function pdfNum(n: number): string {
+  if (Number.isInteger(n) && Math.abs(n) < 1e15) {
+    return String(n)
+  }
+  if (!Number.isFinite(n)) {
+    return '0'
+  }
+  const s = String(n)
+  if (s.indexOf('e') < 0 && s.indexOf('E') < 0) {
+    return s
+  }
+  let t = n.toFixed(20)
+  if (t.indexOf('e') >= 0 || t.indexOf('E') >= 0) {
+    return '0'
+  }
+  if (t.indexOf('.') >= 0) {
+    t = t.replace(/0+$/, '').replace(/\.$/, '')
+  }
+  return t === '' || t === '-' ? '0' : t
+}
+
+function pdfLiteral(text: string): string {
+  return (
+    '(' +
+    text
+      .replace(/\\/g, '\\\\')
+      .replace(/\(/g, '\\(')
+      .replace(/\)/g, '\\)')
+      .replace(/\r/g, '\\r')
+      .replace(/\n/g, '\\n') +
+    ')'
+  )
+}
+
+/**
+ * Formats a glyph-space coordinate. Float32 buffers carry binary artifacts
+ * (`0.1` reads back as `0.10000000149011612`), so values are rounded to 4
+ * decimals — far below visual tolerance for text geometry — keeping both the
+ * content streams and the JS string churn small.
+ */
+function pdfCompact(n: number): string {
+  const r = Math.round(n * 1e4) / 1e4
+  return Number.isFinite(r) ? String(r) : '0'
+}
+
+/** Bounding box of a flat `[x, y, ...]` coordinate buffer. */
+function flatBounds(data: Float32Array): {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+} {
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  for (let i = 0; i + 1 < data.length; i += 2) {
+    const x = data[i]
+    const y = data[i + 1]
+    if (x < minX) {
+      minX = x
+    }
+    if (y < minY) {
+      minY = y
+    }
+    if (x > maxX) {
+      maxX = x
+    }
+    if (y > maxY) {
+      maxY = y
+    }
+  }
+  return { minX, minY, maxX, maxY }
+}
+
+/** Mean of the X/Y affine scale factors of `matrix`. */
+function affineScale2d(matrix: AcGeMatrix3d): number {
+  const el = matrix.elements
+  const sx = Math.hypot(el[0], el[1])
+  const sy = Math.hypot(el[4], el[5])
+  const scale = (sx + sy) / 2
+  return Number.isFinite(scale) && scale > 0 ? scale : 1
+}
+
+/**
+ * Serializes CAD drawables into raw PDF content-stream text.
+ *
+ * pdf-lib's `pushOperators` path retains one JS object graph per operand
+ * (PDFNumber wrappers, arg arrays, operator objects), which multiplies large
+ * drawings' content by ~20-30x in heap terms — enough to exhaust the tab on
+ * drawings with millions of points. This writer emits the exact same
+ * operators as compact text instead, and {@link flushToPage} registers the
+ * bytes as one `PDFRawStream` appended to the page's `/Contents` array.
  */
 export class AcPdfContentWriter {
   private readonly _page: PDFPage | null
   private readonly _doc: PDFDocument
   private readonly _opacityStates = new Map<number, string>()
-  private readonly _images = new Map<AcPdfOp, PDFImage>()
+  private readonly _images: Map<AcPdfOp, PDFImage>
+  private readonly _imageNames = new Map<PDFImage, string>()
   private readonly _minUserLineWidth: number
-  private readonly _captured: PDFOperator[] = []
-  private readonly _formXObjects = new Map<string, string>()
+  /** Shared Form XObject registry (per document unless overridden). */
+  private readonly _forms: AcPdfFormRegistry
+  /** Embedded-font registry for `text` draw ops. */
+  private readonly _fonts?: AcPdfFontManager
+  private readonly _chunks: string[] = []
+  private readonly _segments: Uint8Array[] = []
+  private _segmentLength = 0
   private _shadingCount = 0
-  private _formCount = 0
 
   constructor(
     page: PDFPage | null,
@@ -81,15 +208,17 @@ export class AcPdfContentWriter {
     this._page = page
     this._doc = doc
     this._minUserLineWidth = Math.max(options.minUserLineWidth ?? 0, 0)
-  }
-
-  get capturedOperators(): PDFOperator[] {
-    return this._captured
+    this._images = options.imageCache ?? new Map<AcPdfOp, PDFImage>()
+    this._forms = options.formRegistry ?? createPdfFormRegistry()
+    this._fonts = options.fonts
   }
 
   createNestedWriter(): AcPdfContentWriter {
     return new AcPdfContentWriter(null, this._doc, {
-      minUserLineWidth: this._minUserLineWidth
+      minUserLineWidth: this._minUserLineWidth,
+      imageCache: this._images,
+      formRegistry: this._forms,
+      fonts: this._fonts
     })
   }
 
@@ -101,33 +230,93 @@ export class AcPdfContentWriter {
     bbox: { minX: number; minY: number; maxX: number; maxY: number },
     paint: (formWriter: AcPdfContentWriter) => void
   ): string | null {
-    const existing = this._formXObjects.get(key)
+    const existing = this.hasForm(key)
     if (existing) {
       return existing
     }
     const formWriter = this.createNestedWriter()
     paint(formWriter)
-    if (formWriter.capturedOperators.length === 0) {
+    const bytes = formWriter.buildBytes()
+    if (bytes.length === 0) {
       return null
     }
-    const ref = this.createFormXObject(formWriter.capturedOperators, bbox)
+    const ref = this.createFormXObject(bytes, bbox)
     return this.registerForm(key, ref)
   }
 
-  private push(...ops: PDFOperator[]) {
-    if (this._page) {
-      this._page.pushOperators(...ops)
+  flushToPage(page: PDFPage): void {
+    const bytes = this.buildBytes()
+    if (bytes.length === 0) {
+      return
+    }
+    const ref = this.registerRawStream(bytes)
+    // normalize() turns a direct Contents ref into an array and (on first
+    // call) wraps prior streams with q/Q. Appending keeps paint order: our
+    // stream is self-contained (opens with `q`, installs its own `cm`).
+    page.node.normalize()
+    const contents = page.node.Contents()
+    if (contents instanceof PDFArray) {
+      contents.push(ref)
     } else {
-      this._captured.push(...ops)
+      page.node.set(PDFName.of('Contents'), ref)
+    }
+  }
+
+  /**
+   * Registers raw stream bytes, Flate-compressing large payloads
+   * (`/Filter /FlateDecode`) — content streams of big drawings compress
+   * ~10x, which is most of the exported file's size.
+   */
+  private registerRawStream(bytes: Uint8Array): PDFRef {
+    const compressed = flateStreamBytes(bytes)
+    const dict = this._doc.context.obj(
+      compressed ? { Filter: 'FlateDecode' } : {}
+    )
+    return this._doc.context.register(
+      PDFRawStream.of(dict, compressed ?? bytes)
+    )
+  }
+
+  private compact(): void {
+    if (this._chunks.length === 0) {
+      return
+    }
+    const joined = this._chunks.join('')
+    this._chunks.length = 0
+    const bytes = new Uint8Array(joined.length)
+    for (let i = 0; i < joined.length; i++) {
+      bytes[i] = joined.charCodeAt(i) & 0xff
+    }
+    this._segments.push(bytes)
+    this._segmentLength += bytes.length
+  }
+
+  buildBytes(): Uint8Array {
+    this.compact()
+    const out = new Uint8Array(this._segmentLength)
+    let offset = 0
+    for (const segment of this._segments) {
+      out.set(segment, offset)
+      offset += segment.length
+    }
+    return out
+  }
+
+  /** Appends a raw content-stream chunk (also used by the document writer). */
+  push(chunk: string): void {
+    this._chunks.push(chunk)
+    // Bound the string-object count on huge drawings: join periodically.
+    if (this._chunks.length >= 1024) {
+      this.compact()
     }
   }
 
   save() {
-    this.push(pushGraphicsState())
+    this.push('q\n')
   }
 
   restore() {
-    this.push(popGraphicsState())
+    this.push('Q\n')
   }
 
   /**
@@ -136,27 +325,27 @@ export class AcPdfContentWriter {
    */
   clipRect(box: { min: { x: number; y: number }; max: { x: number; y: number } }) {
     this.push(
-      moveTo(box.min.x, box.min.y),
-      lineTo(box.max.x, box.min.y),
-      lineTo(box.max.x, box.max.y),
-      lineTo(box.min.x, box.max.y),
-      closePath(),
-      clipEvenOdd(),
-      endPath()
+      `${pdfNum(box.min.x)} ${pdfNum(box.min.y)} m ` +
+        `${pdfNum(box.max.x)} ${pdfNum(box.min.y)} l ` +
+        `${pdfNum(box.max.x)} ${pdfNum(box.max.y)} l ` +
+        `${pdfNum(box.min.x)} ${pdfNum(box.max.y)} l h W* n\n`
     )
   }
 
   concatMatrix(matrix: AcGeMatrix3d) {
     const m = AcPdfMatrixUtil.toPdfMatrix(matrix)
-    this.push(concatTransformationMatrix(m.a, m.b, m.c, m.d, m.e, m.f))
+    this.push(
+      `${pdfNum(m.a)} ${pdfNum(m.b)} ${pdfNum(m.c)} ${pdfNum(m.d)} ` +
+        `${pdfNum(m.e)} ${pdfNum(m.f)} cm\n`
+    )
   }
 
   beginOcg(resourceName: string) {
-    this.push(beginOcgOperator(resourceName))
+    this.push(`/OC /${resourceName} BDC\n`)
   }
 
   beginActualText(text: string) {
-    this.push(beginSpanActualText(this._doc.context, text))
+    this.push(`/Span << /ActualText ${pdfHexText(text)} >> BDC\n`)
   }
 
   beginEntity(payload: {
@@ -165,32 +354,57 @@ export class AcPdfContentWriter {
     name?: string
     layer?: string
   }) {
-    this.push(beginEntityOperator(this._doc.context, payload))
+    let dict = ''
+    if (payload.handle) {
+      dict += ` /Handle ${pdfLiteral(payload.handle)}`
+    }
+    if (payload.type) {
+      dict += ` /Type ${pdfLiteral(payload.type)}`
+    }
+    if (payload.name) {
+      dict += ` /Name ${pdfLiteral(payload.name)}`
+    }
+    if (payload.layer) {
+      dict += ` /Layer ${pdfLiteral(payload.layer)}`
+    }
+    this.push(`/Entity <<${dict} >> BDC\n`)
   }
 
   endMarked() {
-    this.push(endMarkedContent())
+    this.push('EMC\n')
   }
 
   invokeForm(resourceName: string) {
-    this.push(PDFOperator.of(PDFOperatorNames.DrawObject, [PDFName.of(resourceName)]))
+    this.push(`/${resourceName} Do\n`)
   }
 
+  /**
+   * Registers (or reuses) a Form XObject under `key` and returns its resource
+   * name. Names are unique document-wide through the shared registry; the
+   * resource is added to this page's `/XObject` dict so cross-page reuse
+   * keeps working.
+   */
   registerForm(key: string, ref: PDFRef): string {
-    const existing = this._formXObjects.get(key)
-    if (existing) {
-      return existing
+    const entry = this._forms.entries.get(key)
+    if (entry) {
+      this.ensurePageForm(entry.name, entry.ref)
+      return entry.name
     }
-    const name = `Fm${++this._formCount}`
-    this._formXObjects.set(key, name)
-    if (this._page) {
-      this._page.node.setXObject(PDFName.of(name), ref)
-    }
+    const name = `Fm${++this._forms.nameSeq}`
+    this._forms.entries.set(key, { name, ref })
+    this.ensurePageForm(name, ref)
     return name
   }
 
   hasForm(key: string): string | undefined {
-    return this._formXObjects.get(key)
+    return this._forms.entries.get(key)?.name
+  }
+
+  /** Adds a form (or image) resource to the current page if one exists. */
+  private ensurePageForm(name: string, ref: PDFRef): void {
+    if (this._page) {
+      this._page.node.setXObject(PDFName.of(name), ref)
+    }
   }
 
   async embedImage(op: Extract<AcPdfOp, { kind: 'image' }>) {
@@ -210,11 +424,18 @@ export class AcPdfContentWriter {
 
   drawOp(op: AcPdfOp) {
     if (op.kind === 'stroke') {
-      this.strokePolyline(op.points, op.style, op.closed === true)
+      this.strokePaths(
+        [{ points: op.points, closed: op.closed === true }],
+        op.style
+      )
       return
     }
     if (op.kind === 'fill') {
       this.fillLoops(op.loops, op.style)
+      return
+    }
+    if (op.kind === 'text') {
+      this.paintText(op)
       return
     }
     if (op.kind === 'circle') {
@@ -225,44 +446,390 @@ export class AcPdfContentWriter {
       this.fillGradient(op)
       return
     }
+    if (op.kind === 'triangles') {
+      this.paintTriangles(op)
+      return
+    }
+    if (op.kind === 'polylines') {
+      this.paintFlatPolylines(op)
+      return
+    }
     this.drawEmbeddedImage(op)
   }
 
+  /**
+   * Paints a run of ops from one entity, coalescing adjacent draws that share
+   * the same style.
+   *
+   * Dense geometry (polyline meshes, patterned hatches, complex linetypes)
+   * produces hundreds of stroke ops whose styles are identical. Independent
+   * subpaths in a single stroked path render identically (caps apply per
+   * subpath, no joins across moves). Consecutive opaque fills likewise
+   * combine under even-odd.
+   *
+   * Compact glyph ops (`triangles`/`polylines`) are matched on the raw op
+   * before `map` so their shared float32 buffers are never copied per
+   * instance: triangles go through one Form XObject per unique glyph set
+   * (color/opacity set outside, `cm` per instance), polylines serialize
+   * inline with the matrix baked numerically.
+   */
+  drawOps(
+    ops: AcPdfOp[],
+    map?: (op: AcPdfOp) => AcPdfOp,
+    matrix?: AcGeMatrix3d
+  ) {
+    const resolve = map ?? ((op: AcPdfOp) => op)
+    for (let i = 0; i < ops.length; ) {
+      const raw = ops[i]
+      if (raw.kind === 'triangles') {
+        this.paintTriangles(raw, matrix)
+        i++
+        continue
+      }
+      if (raw.kind === 'polylines') {
+        this.paintFlatPolylines(raw, matrix)
+        i++
+        continue
+      }
+      const op = resolve(raw)
+      if (op.kind === 'text') {
+        this.paintText(op)
+        i++
+        continue
+      }
+      if (op.kind === 'stroke') {
+        const paths: Array<{ points: AcPdfPoint[]; closed: boolean }> = [
+          { points: op.points, closed: op.closed === true }
+        ]
+        let j = i + 1
+        while (j < ops.length) {
+          const rawNext = ops[j]
+          if (
+            rawNext.kind === 'triangles' ||
+            rawNext.kind === 'polylines' ||
+            rawNext.kind === 'image' ||
+            rawNext.kind === 'gradient' ||
+            rawNext.kind === 'circle' ||
+            rawNext.kind === 'text'
+          ) {
+            break
+          }
+          const next = resolve(rawNext)
+          if (next.kind !== 'stroke' || !sameStrokeStyle(op.style, next.style)) {
+            break
+          }
+          paths.push({ points: next.points, closed: next.closed === true })
+          j++
+        }
+        this.strokePaths(paths, op.style)
+        i = j
+        continue
+      }
+      if (op.kind === 'fill' && op.style.opacity >= 0.999) {
+        const loops: AcPdfPoint[][] = [...op.loops]
+        let j = i + 1
+        while (j < ops.length) {
+          const rawNext = ops[j]
+          if (
+            rawNext.kind === 'triangles' ||
+            rawNext.kind === 'polylines' ||
+            rawNext.kind === 'image' ||
+            rawNext.kind === 'gradient' ||
+            rawNext.kind === 'circle' ||
+            rawNext.kind === 'text'
+          ) {
+            break
+          }
+          const next = resolve(rawNext)
+          if (
+            next.kind !== 'fill' ||
+            next.style.opacity < 0.999 ||
+            !sameFillStyle(op.style, next.style)
+          ) {
+            break
+          }
+          loops.push(...next.loops)
+          j++
+        }
+        this.fillLoops(loops, op.style)
+        i = j
+        continue
+      }
+      this.drawOp(op)
+      i++
+    }
+  }
+
+  /**
+   * Paints one laid-out line of real PDF text (`BT … ET`).
+   *
+   * The op's glyph string was encoded through the embedded subset font by
+   * {@link AcPdfFontManager.embedOp} before painting; ops whose font failed
+   * to embed (empty `hex`/`glyphHex`) are skipped. Rotation, the CAD width
+   * factor and the `\Q` oblique shear collapse into the text matrix:
+   * glyph advances scale by `size * hScale` along the baseline and `size`
+   * perpendicular to it, sheared by `tan(oblique)` after scaling. Tracking
+   * runs paint as one TJ array with per-glyph displacement numbers.
+   */
+  private paintText(op: Extract<AcPdfOp, { kind: 'text' }>) {
+    const glyphHex = op.glyphHex
+    const tracked = glyphHex !== undefined && glyphHex.length > 0
+    if (!op.hex && !tracked) {
+      return
+    }
+    const resource = this._fonts?.resourceFor(op.font)
+    if (!resource) {
+      return
+    }
+    if (this._page) {
+      setPageNamedResource(this._page, 'Font', resource.name, resource.ref)
+    }
+    const rad = (op.angleDeg * Math.PI) / 180
+    const cos = Math.cos(rad)
+    const sin = Math.sin(rad)
+    // `flipX` mirrors glyphs about their local vertical axis: the text
+    // matrix x-axis is negated (R(θ)·S(-size·hScale, size)). `\Q` oblique
+    // shears glyph space after scaling: Tm = R(θ)·Sh(tan)·S, so the c/d
+    // columns gain a `tan·cos` / `tan·sin` term.
+    const flip = op.flipX === true ? -1 : 1
+    const shear = op.obliqueDeg
+      ? Math.tan((op.obliqueDeg * Math.PI) / 180)
+      : 0
+    let chunk = 'q\n'
+    chunk += this.applyOpacity(op.style.opacity)
+    chunk += `${pdfNum(op.style.rgb.r)} ${pdfNum(op.style.rgb.g)} ${pdfNum(op.style.rgb.b)} rg\n`
+    chunk += 'BT\n'
+    chunk += `/${resource.name} 1 Tf\n`
+    chunk +=
+      `${pdfNum(op.size * op.hScale * cos * flip)} ${pdfNum(op.size * op.hScale * sin * flip)} ` +
+      `${pdfNum(op.size * (shear * cos - sin))} ${pdfNum(op.size * (shear * sin + cos))} ` +
+      `${pdfNum(op.x)} ${pdfNum(op.y)} Tm\n`
+    if (tracked) {
+      // Per-glyph tracking: each displacement number adds the advance that
+      // tracking owes (see embedOp); zero adjustments stay out of the array.
+      const adjust = op.charAdjust ?? []
+      const parts: string[] = []
+      glyphHex.forEach((hex, index) => {
+        if (index > 0) {
+          const t = adjust[index - 1] ?? 0
+          if (t !== 0) {
+            parts.push(pdfNum(t))
+          }
+        }
+        parts.push(`<${hex}>`)
+      })
+      chunk += `[${parts.join(' ')}] TJ\nET\nQ\n`
+      this.push(chunk)
+      return
+    }
+    chunk += `<${op.hex}> Tj\nET\nQ\n`
+    this.push(chunk)
+  }
+
+  /**
+   * Paints a flat triangle glyph set.
+   *
+   * The unique glyph geometry is emitted once into a Form XObject keyed by
+   * buffer identity; every instance then costs one `q cm /FmN Do Q`. Fill
+   * color and opacity are installed in the graphics state before `Do` — PDF
+   * forms execute inside the current graphics state, so one form serves all
+   * layers/colors.
+   */
+  private paintTriangles(op: Extract<AcPdfOp, { kind: 'triangles' }>, matrix?: AcGeMatrix3d) {
+    const data = op.data
+    if (data.length < 6) {
+      return
+    }
+    if (!this._page) {
+      // Nested writer (form content): serialize inline, no color operators.
+      this.push(this.bakedTrianglesChunk(data, matrix) + 'f\n')
+      return
+    }
+    const name = this.ensureTrianglesForm(data)
+    if (!name) {
+      return
+    }
+    let chunk = 'q\n'
+    chunk += this.applyOpacity(op.style.opacity)
+    chunk += `${pdfNum(op.style.rgb.r)} ${pdfNum(op.style.rgb.g)} ${pdfNum(op.style.rgb.b)} rg\n`
+    if (matrix) {
+      const m = AcPdfMatrixUtil.toPdfMatrix(matrix)
+      chunk += `${pdfNum(m.a)} ${pdfNum(m.b)} ${pdfNum(m.c)} ${pdfNum(m.d)} ${pdfNum(m.e)} ${pdfNum(m.f)} cm\n`
+    }
+    chunk += `/${name} Do\nQ\n`
+    this.push(chunk)
+  }
+
+  /** Creates (once) and names the Form XObject for a triangle buffer. */
+  private ensureTrianglesForm(data: Float32Array): string | null {
+    const key = this.compactFormKey(data)
+    const existing = this.hasForm(key)
+    if (existing) {
+      return existing
+    }
+    const bbox = flatBounds(data)
+    if (
+      !Number.isFinite(bbox.minX) ||
+      !Number.isFinite(bbox.minY) ||
+      !Number.isFinite(bbox.maxX) ||
+      !Number.isFinite(bbox.maxY)
+    ) {
+      return null
+    }
+    const bytes = this.trianglesFormBytes(data)
+    if (bytes.length === 0) {
+      return null
+    }
+    const ref = this.createFormXObject(bytes, bbox)
+    return this.registerForm(key, ref)
+  }
+
+  /** Serializes triangle geometry (paths + single fill) into PDF bytes. */
+  private trianglesFormBytes(data: Float32Array): Uint8Array {
+    const writer = this.createNestedWriter()
+    writer.push(this.bakedTrianglesChunk(data, undefined) + 'f\n')
+    return writer.buildBytes()
+  }
+
+  /** Closed-triangle subpaths for a flat triangle buffer. */
+  private bakedTrianglesChunk(
+    data: Float32Array,
+    matrix: AcGeMatrix3d | undefined
+  ): string {
+    const el = matrix?.elements
+    let chunk = ''
+    for (let i = 0; i + 5 < data.length; i += 6) {
+      chunk += this.flatPointChunk(data, i, el) + ' m '
+      chunk += this.flatPointChunk(data, i + 2, el) + ' l '
+      chunk += this.flatPointChunk(data, i + 4, el) + ' l h\n'
+    }
+    return chunk
+  }
+
+  private flatPointChunk(
+    data: Float32Array,
+    i: number,
+    el: number[] | undefined
+  ): string {
+    let x = data[i]
+    let y = data[i + 1]
+    if (el) {
+      const tx = el[0] * x + el[4] * y + el[12]
+      const ty = el[1] * x + el[5] * y + el[13]
+      x = tx
+      y = ty
+    }
+    return `${pdfCompact(x)} ${pdfCompact(y)}`
+  }
+
+  /**
+   * Paints a flat polyline glyph set inline (strokes carry per-instance line
+   * widths, so they are not form-shared), baking the matrix numerically.
+   */
+  private paintFlatPolylines(
+    op: Extract<AcPdfOp, { kind: 'polylines' }>,
+    matrix?: AcGeMatrix3d
+  ) {
+    const data = op.data
+    if (data.length < 5) {
+      return
+    }
+    const el = matrix?.elements
+    const scale = matrix ? affineScale2d(matrix) : 1
+    const lineWidth = Math.max(
+      op.style.lineWidth * scale,
+      this._minUserLineWidth
+    )
+    let chunk = 'q\n'
+    chunk += this.applyOpacity(op.style.opacity)
+    chunk += `${pdfNum(op.style.rgb.r)} ${pdfNum(op.style.rgb.g)} ${pdfNum(op.style.rgb.b)} RG ${pdfNum(lineWidth)} w 1 J 1 j\n`
+    if (op.style.dashArray && op.style.dashArray.length > 0) {
+      chunk += `[${op.style.dashArray.map(d => pdfNum(d * scale)).join(' ')}] 0 d\n`
+    }
+    let i = 0
+    while (i < data.length) {
+      const n = data[i]
+      if (!(n >= 2) || i + 1 + n * 2 > data.length) {
+        break
+      }
+      i++
+      for (let k = 0; k < n; k++) {
+        let x = data[i]
+        let y = data[i + 1]
+        i += 2
+        if (el) {
+          const tx = el[0] * x + el[4] * y + el[12]
+          const ty = el[1] * x + el[5] * y + el[13]
+          x = tx
+          y = ty
+        }
+        chunk += `${pdfCompact(x)} ${pdfCompact(y)} ${k === 0 ? 'm' : 'l'}\n`
+      }
+    }
+    chunk += 'S\nQ\n'
+    this.push(chunk)
+  }
+
+  /** Stable string key for a shared flat buffer (Form XObject cache key). */
+  private compactFormKey(data: Float32Array): string {
+    let id = this._forms.bufferIds.get(data)
+    if (!id) {
+      id = `tri${++this._forms.bufferSeq}`
+      this._forms.bufferIds.set(data, id)
+    }
+    return id
+  }
+
   createFormXObject(
-    operators: PDFOperator[],
+    bytes: Uint8Array,
     bbox: { minX: number; minY: number; maxX: number; maxY: number },
     resources?: PDFDict
   ): PDFRef {
+    const compressed = flateStreamBytes(bytes)
     const dict = this._doc.context.obj({
       Type: 'XObject',
       Subtype: 'Form',
       BBox: [bbox.minX, bbox.minY, bbox.maxX, bbox.maxY],
       Matrix: [1, 0, 0, 1, 0, 0],
+      ...(compressed ? { Filter: 'FlateDecode' } : {}),
       ...(resources ? { Resources: resources } : {})
     })
-    const stream = PDFContentStream.of(dict, operators, false)
-    return this._doc.context.register(stream)
+    return this._doc.context.register(
+      PDFRawStream.of(dict, compressed ?? bytes)
+    )
   }
 
   private drawEmbeddedImage(op: Extract<AcPdfOp, { kind: 'image' }>) {
     const image = this._images.get(op)
-    if (!image || !(op.width > 0) || !(op.height > 0) || !this._page) {
+    if (!image || !(op.width > 0) || !(op.height > 0)) {
       return
     }
-    this._page.drawImage(image, {
-      x: op.x,
-      y: op.y,
-      width: op.width,
-      height: op.height
-    })
+    const name = this.ensureImageName(image)
+    this.push(
+      `q ${pdfNum(op.width)} 0 0 ${pdfNum(op.height)} ` +
+        `${pdfNum(op.x)} ${pdfNum(op.y)} cm /${name} Do Q\n`
+    )
   }
 
-  private applyOpacity(opacity: number) {
+  private ensureImageName(image: PDFImage): string {
+    const existing = this._imageNames.get(image)
+    if (existing) {
+      return existing
+    }
+    const name = `Im${this._imageNames.size + 1}`
+    this._imageNames.set(image, name)
+    if (this._page) {
+      this._page.node.setXObject(PDFName.of(name), image.ref)
+    }
+    return name
+  }
+
+  private applyOpacity(opacity: number): string {
     if (opacity >= 0.999) {
-      return
+      return ''
     }
     const key = this.ensureOpacityState(opacity)
-    this.push(setGraphicsState(key))
+    return `/${key} gs\n`
   }
 
   private ensureOpacityState(opacity: number): string {
@@ -284,77 +851,71 @@ export class AcPdfContentWriter {
     return name
   }
 
-  private strokePolyline(
-    points: AcPdfPoint[],
-    style: {
-      rgb: { r: number; g: number; b: number }
-      opacity: number
-      lineWidth: number
-      dashArray?: number[]
-    },
-    closed: boolean
+  private strokePaths(
+    paths: Array<{ points: AcPdfPoint[]; closed: boolean }>,
+    style: AcPdfStrokeStyle
   ) {
-    if (points.length < 2) {
+    const drawable = paths.filter(path => path.points.length >= 2)
+    if (drawable.length === 0) {
       return
     }
-    this.save()
-    this.applyOpacity(style.opacity)
+    let chunk = 'q\n'
+    chunk += this.applyOpacity(style.opacity)
     const lineWidth = Math.max(style.lineWidth, this._minUserLineWidth)
-    this.push(
-      setStrokingRgbColor(style.rgb.r, style.rgb.g, style.rgb.b),
-      setLineWidth(lineWidth),
-      setLineCap(LineCapStyle.Round),
-      setLineJoin(LineJoinStyle.Round)
-    )
+    chunk +=
+      `${pdfNum(style.rgb.r)} ${pdfNum(style.rgb.g)} ${pdfNum(style.rgb.b)} RG ` +
+      `${pdfNum(lineWidth)} w 1 J 1 j\n`
     if (style.dashArray && style.dashArray.length > 0) {
-      this.push(setDashPattern(style.dashArray, 0))
+      chunk += `[${style.dashArray.map(pdfNum).join(' ')}] 0 d\n`
     }
-    this.appendPolyline(points, closed)
-    this.push(stroke())
-    this.restore()
+    for (const path of drawable) {
+      chunk += this.polylineChunk(path.points, path.closed)
+    }
+    chunk += 'S\nQ\n'
+    this.push(chunk)
   }
 
   private fillLoops(loops: AcPdfPoint[][], style: AcPdfFillStyle) {
     if (loops.length === 0) {
       return
     }
-    this.save()
-    this.applyOpacity(style.opacity)
-    this.push(setFillingRgbColor(style.rgb.r, style.rgb.g, style.rgb.b))
+    let chunk = 'q\n'
+    chunk += this.applyOpacity(style.opacity)
+    chunk += `${pdfNum(style.rgb.r)} ${pdfNum(style.rgb.g)} ${pdfNum(style.rgb.b)} rg\n`
     for (const loop of loops) {
       if (loop.length < 3) {
         continue
       }
-      this.appendPolyline(loop, true)
+      chunk += this.polylineChunk(loop, true)
     }
-    this.push(fillEvenOdd())
-    this.restore()
+    chunk += 'f*\nQ\n'
+    this.push(chunk)
   }
 
   private fillGradient(op: AcPdfGradientOp) {
     if (op.loops.length === 0 || !this._page) {
       return
     }
-    this.save()
-    this.applyOpacity(op.style.opacity)
+    let chunk = 'q\n'
+    chunk += this.applyOpacity(op.style.opacity)
     for (const loop of op.loops) {
       if (loop.length < 3) {
         continue
       }
-      this.appendPolyline(loop, true)
+      chunk += this.polylineChunk(loop, true)
     }
-    this.push(clipEvenOdd(), endPath())
-
+    chunk += 'W* n\n'
     if (op.strips && op.strips.length > 0) {
       for (const strip of op.strips) {
         if (strip.points.length < 3) {
           continue
         }
-        this.push(setFillingRgbColor(strip.rgb.r, strip.rgb.g, strip.rgb.b))
-        this.appendPolyline(strip.points, true)
-        this.push(fillEvenOdd())
+        chunk +=
+          `${pdfNum(strip.rgb.r)} ${pdfNum(strip.rgb.g)} ${pdfNum(strip.rgb.b)} rg\n`
+        chunk += this.polylineChunk(strip.points, true)
+        chunk += 'f*\n'
       }
-      this.restore()
+      this.push(chunk + 'Q\n')
       return
     }
 
@@ -375,38 +936,71 @@ export class AcPdfContentWriter {
     })
     const shadingRef = this._doc.context.register(shading)
     setPageNamedResource(this._page, 'Shading', name, shadingRef)
-    this.push(PDFOperator.of('sh' as never, [PDFName.of(name)]))
-    this.restore()
+    chunk += `/${name} sh\nQ\n`
+    this.push(chunk)
   }
 
   private fillCircle(x: number, y: number, r: number, style: AcPdfFillStyle) {
     if (!(r > 0)) {
       return
     }
-    this.save()
-    this.applyOpacity(style.opacity)
-    this.push(setFillingRgbColor(style.rgb.r, style.rgb.g, style.rgb.b))
     const ox = r * KAPPA
-    this.push(
-      moveTo(x + r, y),
-      appendBezierCurve(x + r, y + ox, x + ox, y + r, x, y + r),
-      appendBezierCurve(x - ox, y + r, x - r, y + ox, x - r, y),
-      appendBezierCurve(x - r, y - ox, x - ox, y - r, x, y - r),
-      appendBezierCurve(x + ox, y - r, x + r, y - ox, x + r, y),
-      closePath(),
-      fillEvenOdd()
-    )
-    this.restore()
+    let chunk = 'q\n'
+    chunk += this.applyOpacity(style.opacity)
+    chunk += `${pdfNum(style.rgb.r)} ${pdfNum(style.rgb.g)} ${pdfNum(style.rgb.b)} rg\n`
+    chunk += `${pdfNum(x + r)} ${pdfNum(y)} m `
+    chunk += `${pdfNum(x + r)} ${pdfNum(y + ox)} ${pdfNum(x + ox)} ${pdfNum(y + r)} ${pdfNum(x)} ${pdfNum(y + r)} c `
+    chunk += `${pdfNum(x - ox)} ${pdfNum(y + r)} ${pdfNum(x - r)} ${pdfNum(y + ox)} ${pdfNum(x - r)} ${pdfNum(y)} c `
+    chunk += `${pdfNum(x - r)} ${pdfNum(y - ox)} ${pdfNum(x - ox)} ${pdfNum(y - r)} ${pdfNum(x)} ${pdfNum(y - r)} c `
+    chunk += `${pdfNum(x + ox)} ${pdfNum(y - r)} ${pdfNum(x + r)} ${pdfNum(y - ox)} ${pdfNum(x + r)} ${pdfNum(y)} c `
+    chunk += 'h f*\nQ\n'
+    this.push(chunk)
   }
 
-  private appendPolyline(points: AcPdfPoint[], closed: boolean) {
-    const first = points[0]
-    this.push(moveTo(first.x, first.y))
+  private polylineChunk(points: AcPdfPoint[], closed: boolean): string {
+    let chunk = `${pdfNum(points[0].x)} ${pdfNum(points[0].y)} m`
     for (let i = 1; i < points.length; i++) {
-      this.push(lineTo(points[i].x, points[i].y))
+      chunk += ` ${pdfNum(points[i].x)} ${pdfNum(points[i].y)} l`
     }
     if (closed) {
-      this.push(closePath())
+      chunk += ' h'
+    }
+    return chunk + '\n'
+  }
+}
+
+function sameRgb(
+  a: { r: number; g: number; b: number },
+  b: { r: number; g: number; b: number }
+): boolean {
+  return a.r === b.r && a.g === b.g && a.b === b.b
+}
+
+function sameDashArray(a?: number[], b?: number[]): boolean {
+  if (a === b) {
+    return true
+  }
+  if (!a || !b || a.length !== b.length) {
+    return false
+  }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return false
     }
   }
+  return true
+}
+
+function sameStrokeStyle(a: AcPdfStrokeStyle, b: AcPdfStrokeStyle): boolean {
+  return (
+    a === b ||
+    (a.opacity === b.opacity &&
+      a.lineWidth === b.lineWidth &&
+      sameRgb(a.rgb, b.rgb) &&
+      sameDashArray(a.dashArray, b.dashArray))
+  )
+}
+
+function sameFillStyle(a: AcPdfFillStyle, b: AcPdfFillStyle): boolean {
+  return a === b || (a.opacity === b.opacity && sameRgb(a.rgb, b.rgb))
 }

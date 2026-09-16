@@ -53,10 +53,57 @@ export class AcApConvertToPdfCmd extends AcEdCommand {
       return undefined
     }
 
+    const textMode = await this.promptTextMode()
+    if (textMode === undefined) {
+      return undefined
+    }
+
     return resolveAcApPdfExportOptions({
       modelSpaceFit,
-      exportLayouts
+      exportLayouts,
+      textMode
     })
+  }
+
+  /**
+   * Prompts how text is painted: real PDF text (small file, selectable) or
+   * vector glyph outlines (current behaviour).
+   */
+  private async promptTextMode(): Promise<'vector' | 'text' | undefined> {
+    const defaults = resolveAcApPdfExportOptions()
+    const prompt = new AcEdPromptKeywordOptions(
+      AcApI18n.t('jig.cpdf.textMode')
+    )
+    prompt.allowNone = true
+    const text = prompt.keywords.add(
+      AcApI18n.t('jig.cpdf.keywords.text.display'),
+      AcApI18n.t('jig.cpdf.keywords.text.global'),
+      AcApI18n.t('jig.cpdf.keywords.text.local')
+    )
+    const vector = prompt.keywords.add(
+      AcApI18n.t('jig.cpdf.keywords.vector.display'),
+      AcApI18n.t('jig.cpdf.keywords.vector.global'),
+      AcApI18n.t('jig.cpdf.keywords.vector.local')
+    )
+    prompt.keywords.default = defaults.textMode === 'vector' ? vector : text
+
+    const result = await AcApDocManager.instance.editor.getKeywords(prompt)
+    if (result.status === AcEdPromptStatus.Cancel) {
+      return undefined
+    }
+    if (result.status === AcEdPromptStatus.None) {
+      return defaults.textMode
+    }
+    if (
+      result.status === AcEdPromptStatus.OK ||
+      result.status === AcEdPromptStatus.Keyword
+    ) {
+      if (!result.stringResult) {
+        return defaults.textMode
+      }
+      return result.stringResult === 'Vector' ? 'vector' : 'text'
+    }
+    return undefined
   }
 
   private async promptModelSpaceFit(): Promise<

@@ -7,6 +7,7 @@
 export { AcApConvertToPdfCmd } from './AcApConvertToPdfCmd'
 export { AcApImportPdfCmd } from './AcApImportPdfCmd'
 export { AcApPdfConvertor } from './AcApPdfConvertor'
+export { resolveViewerTextFont } from './AcApPdfFontResolver'
 export {
   type AcApPdfExportOptions,
   type AcApPdfModelSpaceFit,
