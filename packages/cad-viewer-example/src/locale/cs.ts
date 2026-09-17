@@ -50,6 +50,13 @@ export default {
       off: 'Vypnuto',
       progressiveOffHint: 'Čekat na dokončení převodu',
 
+      waitForText: 'Čekat na text',
+      waitForTextGeometry: 'Čekat v progressu na dokončení textové geometrie',
+      waitForTextOnHint:
+        'Ponechat „Rendering drawing ...“ dokud nedoběhne text',
+      waitForTextOffHint:
+        'Skrýt progress po převodu entit (výchozí); export stále čeká na text',
+
       nonPlottable: 'Netisknutelné',
       nonPlottableLayers: 'Netisknutelné hladiny',
       hide: 'Skrýt',
@@ -65,7 +72,7 @@ export default {
       curveHigh: 'Kvalita',
       curveHighHint: 'Hladší křivky, více paměti',
 
-      paperSpaceBackground: 'Pozadí výkresového prostoru',
+      paperSpaceBackground: 'Pozadí papíru',
       paperSpaceWhite: 'Bílé',
       paperSpaceWhiteHint: 'Desktop CAD / náhled tisku',
       paperSpaceBlack: 'Černé',

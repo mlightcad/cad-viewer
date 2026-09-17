@@ -456,6 +456,12 @@ export class AcApDocManager {
   private _busyIndicator: AcApBusyIndicator
   /** Open-file progress overlay and event normalization */
   private _openFileProgress: AcApOpenFileProgressController
+  /**
+   * When true, the open progress overlay waits for deferred text geometry
+   * ({@link AcTrView2d.isProcessingEntities}). Driven by
+   * {@link AcApOpenDatabaseOptions.waitForTextGeometry}.
+   */
+  private _waitForTextGeometryOnOpen = false
   /** Optional OPENPROF session profiler (console stage timings) */
   private _openFileProfiler = new AcApOpenFileProfiler()
   /** Command manager */
@@ -596,9 +602,12 @@ export class AcApDocManager {
     const busyHost = options.busyIndicatorHost ?? view.container
     this._busyIndicatorHost = busyHost
     this._openFileProgress = new AcApOpenFileProgressController(busyHost)
-    this._openFileProgress.setSceneBusyGate(
-      () => this.openProgressView.isProcessingEntities
-    )
+    this._openFileProgress.setSceneBusyGate(() => {
+      if (this._waitForTextGeometryOnOpen) {
+        return this.openProgressView.isProcessingEntities
+      }
+      return this.openProgressView.isConvertingEntities
+    })
     this._openFileProgress.setOnHidden(() => this.onOpenProgressHidden())
     this._busyIndicator = new AcApBusyIndicator(busyHost)
     acapBindCommandServices({
@@ -2113,6 +2122,7 @@ export class AcApDocManager {
     // open view mode uses zoom-to-fit — not for restored VPORT/saved views.
     this.openProgressView.progressiveRendering =
       options?.progressiveRendering ?? false
+    this._waitForTextGeometryOnOpen = options?.waitForTextGeometry === true
     this._openFileProgress.setSeeThroughOverlay(
       options?.progressiveRendering ?? false
     )
@@ -2287,7 +2297,8 @@ export class AcApDocManager {
     if (options == null) {
       options = {
         drawNoPlotLayers: false,
-        progressiveRendering: false
+        progressiveRendering: false,
+        waitForTextGeometry: false
       }
     } else {
       this.stripObsoleteFontOpenOptions(options)
@@ -2296,6 +2307,9 @@ export class AcApDocManager {
       }
       if (options.progressiveRendering == null) {
         options.progressiveRendering = false
+      }
+      if (options.waitForTextGeometry == null) {
+        options.waitForTextGeometry = false
       }
     }
     return options

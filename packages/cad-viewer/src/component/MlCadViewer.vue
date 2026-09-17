@@ -195,6 +195,12 @@ interface Props {
    */
   progressiveRendering?: boolean
   /**
+   * Whether the open-file progress overlay waits for deferred text geometry.
+   * When omitted, {@link AcApDocManager} defaults to `false`.
+   * Export/CLI still wait via {@link AcTrView2d.waitUntilIdle}.
+   */
+  waitForTextGeometry?: boolean
+  /**
    * How to frame the view when the document finishes opening.
    * When omitted, Read and Review use {@link AcApOpenViewMode.Extents};
    * Write uses {@link AcApOpenViewMode.Saved}.
@@ -228,6 +234,7 @@ const props = withDefaults(defineProps<Props>(), {
   theme: 'dark',
   mode: AcEdOpenMode.Write,
   progressiveRendering: false,
+  waitForTextGeometry: false,
   openViewMode: undefined,
   circleSides: ACDB_DRAW_CIRCLE_SIDES_DRAFT,
   paperSpaceBackground: ACGI_PAPER_SPACE_BACKGROUND
@@ -238,6 +245,7 @@ const buildOpenOptions = (): AcApOpenDatabaseOptions => ({
   mode: props.mode,
   drawNoPlotLayers: props.drawNoPlotLayers,
   progressiveRendering: props.progressiveRendering,
+  waitForTextGeometry: props.waitForTextGeometry,
   circleSides: props.circleSides,
   sysVars: {
     paperbkcolor: layoutBackgroundColorFromRgb(props.paperSpaceBackground)
@@ -444,6 +452,7 @@ watch(
     props.mode,
     props.drawNoPlotLayers,
     props.progressiveRendering,
+    props.waitForTextGeometry,
     props.openViewMode,
     props.circleSides,
     props.paperSpaceBackground

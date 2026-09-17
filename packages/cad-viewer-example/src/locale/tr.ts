@@ -50,6 +50,13 @@ export default {
       off: 'Kapalı',
       progressiveOffHint: 'Dönüşüm tamamlanana kadar bekle',
 
+      waitForText: 'Metni bekle',
+      waitForTextGeometry: 'Açılış ilerlemesinde metin geometrisini bekle',
+      waitForTextOnHint:
+        'Metin bitene kadar “Rendering drawing ...” kalsın',
+      waitForTextOffHint:
+        'Varlık dönüşümü bitince ilerlemeyi gizle (varsayılan); dışa aktarma yine metni bekler',
+
       nonPlottable: 'Yazdırılamayan',
       nonPlottableLayers: 'Yazdırılamayan katmanlar',
       hide: 'Gizle',
@@ -65,7 +72,7 @@ export default {
       curveHigh: 'Kalite',
       curveHighHint: 'Daha pürüzsüz eğriler, daha fazla bellek',
 
-      paperSpaceBackground: 'Kağıt alanı arka planı',
+      paperSpaceBackground: 'Kağıt arka planı',
       paperSpaceWhite: 'Beyaz',
       paperSpaceWhiteHint: 'Masaüstü CAD / yazdırma önizlemesi',
       paperSpaceBlack: 'Siyah',

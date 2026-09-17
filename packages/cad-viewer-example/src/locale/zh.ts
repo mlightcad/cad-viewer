@@ -50,6 +50,11 @@ export default {
       off: '关',
       progressiveOffHint: '转换完成后再显示',
 
+      waitForText: '进度等待文字',
+      waitForTextGeometry: '打开进度是否等待文字几何',
+      waitForTextOnHint: '“Rendering drawing ...” 等到文字渲染完',
+      waitForTextOffHint: '实体转换结束后关闭进度（默认）；导出仍会等文字完成',
+
       nonPlottable: '不打印图层',
       nonPlottableLayers: '不打印图层',
       hide: '隐藏',

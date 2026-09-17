@@ -45,7 +45,7 @@
     "@mlightcad/cad-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.14.7",
     "@mlightcad/libredwg-converter": "^3.14.7",
-    "@mlightcad/mtext-renderer": "^0.12.11",
+    "@mlightcad/mtext-renderer": "^0.12.12",
     "@mlightcad/three-renderer": "workspace:*",
     "element-plus": "^2.12.0",
     "lodash-es": "4.17.21",

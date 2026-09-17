@@ -50,6 +50,13 @@ export default {
       off: 'إيقاف',
       progressiveOffHint: 'الانتظار حتى اكتمال التحويل',
 
+      waitForText: 'انتظار النص',
+      waitForTextGeometry: 'إبقاء شريط التقدم حتى انتهاء هندسة النص',
+      waitForTextOnHint:
+        'الإبقاء على “Rendering drawing ...” حتى اكتمال النص',
+      waitForTextOffHint:
+        'إخفاء التقدم بعد تحويل الكيانات (افتراضي)؛ التصدير ما زال ينتظر النص',
+
       nonPlottable: 'غير قابل للطباعة',
       nonPlottableLayers: 'الطبقات غير القابلة للطباعة',
       hide: 'إخفاء',
@@ -65,7 +72,7 @@ export default {
       curveHigh: 'جودة',
       curveHighHint: 'منحنيات أنعم وذاكرة أكبر',
 
-      paperSpaceBackground: 'خلفية مساحة الورق',
+      paperSpaceBackground: 'خلفية الورق',
       paperSpaceWhite: 'أبيض',
       paperSpaceWhiteHint: 'سطح المكتب CAD / معاينة الطباعة',
       paperSpaceBlack: 'أسود',
