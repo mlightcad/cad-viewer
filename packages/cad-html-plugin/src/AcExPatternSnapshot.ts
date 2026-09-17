@@ -2,7 +2,8 @@ import {
   AcTrLinePatternShaders,
   type AcTrPatternLine,
   createGradientHatchShaderMaterialFromUniforms,
-  createHatchPatternShaderMaterial
+  createHatchPatternShaderMaterial,
+  wrapPatternBaseToLocalFrame
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
@@ -328,6 +329,41 @@ export function transformHatchPatternToWorldSpace(
       dashLengths: [...line.dashLengths],
       patternLength: line.patternLength
     }))
+  }
+}
+
+/**
+ * Moves a world-space hatch pattern into the same local frame as rebased mesh
+ * vertices (`batch.offset`), then period-wraps each line base so the offline
+ * hatch shader keeps float32 precision at large survey coordinates.
+ */
+export function rebaseHatchPatternToLocalOffset(
+  pattern: AcExHatchPattern,
+  offset: [number, number, number]
+): AcExHatchPattern {
+  return {
+    patternAngle: pattern.patternAngle,
+    patternLines: pattern.patternLines.map(line => {
+      const base = new THREE.Vector2(
+        line.base[0] - offset[0],
+        line.base[1] - offset[1]
+      )
+      const patternOffset = new THREE.Vector2(line.offset[0], line.offset[1])
+      wrapPatternBaseToLocalFrame(
+        base,
+        patternOffset,
+        line.angle,
+        pattern.patternAngle,
+        line.patternLength
+      )
+      return {
+        angle: line.angle,
+        base: [base.x, base.y] as [number, number],
+        offset: [line.offset[0], line.offset[1]] as [number, number],
+        dashLengths: [...line.dashLengths],
+        patternLength: line.patternLength
+      }
+    })
   }
 }
 

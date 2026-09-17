@@ -33,6 +33,7 @@ export {
   createHatchPatternShaderMaterial,
   type AcTrPatternLine
 } from './style/AcTrHatchPatternShaders'
+export { wrapPatternBaseToLocalFrame } from './style/AcTrFillMaterialManager'
 export * from './util/AcTrMTextColorUtil'
 export { AcTrMatrixUtil } from './util/AcTrMatrixUtil'
 export {

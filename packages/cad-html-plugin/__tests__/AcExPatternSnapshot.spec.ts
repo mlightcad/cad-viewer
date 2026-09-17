@@ -9,6 +9,7 @@ import {
   extractGradientFill,
   extractHatchPattern,
   extractLinePattern,
+  rebaseHatchPatternToLocalOffset,
   transformHatchPatternToWorldSpace
 } from '../src/AcExPatternSnapshot'
 import {
@@ -200,5 +201,27 @@ describe('AcExPatternSnapshot', () => {
         }
       ]
     })
+  })
+
+  it('rebases world hatch pattern bases into a local float32-safe frame', () => {
+    const pattern = {
+      patternAngle: 0,
+      patternLines: [
+        {
+          angle: Math.PI / 4,
+          base: [10_650_010, 3_200_020] as [number, number],
+          offset: [0, 5] as [number, number],
+          dashLengths: [] as number[],
+          patternLength: 0
+        }
+      ]
+    }
+    const local = rebaseHatchPatternToLocalOffset(pattern, [
+      10_650_000,
+      3_200_000,
+      0
+    ])
+    const base = local.patternLines[0]!.base
+    expect(Math.hypot(base[0], base[1])).toBeLessThan(5)
   })
 })

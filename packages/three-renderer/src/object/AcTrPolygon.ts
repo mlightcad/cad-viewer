@@ -32,6 +32,45 @@ function hasFillVertices(geometry: THREE.BufferGeometry | undefined): boolean {
   return !!position && position.count > 0
 }
 
+/**
+ * Bounding-box center of tessellated hatch loops in float64 WCS.
+ * Used as the origin-shift for patterned hatches so GPU float32 pattern math
+ * (`fract` / `floor` on `v_pos`) stays precise at large survey coordinates.
+ */
+function computeLocalOriginFromLoops(
+  loops: AcGePoint2dLike[][]
+): THREE.Vector3 | undefined {
+  const box = new THREE.Box3()
+  let hasPoint = false
+  for (const loop of loops) {
+    for (const point of loop) {
+      if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+        continue
+      }
+      box.expandByPoint(_tmpPoint.set(point.x, point.y, 0))
+      hasPoint = true
+    }
+  }
+  if (!hasPoint || box.isEmpty()) {
+    return undefined
+  }
+  return box.getCenter(new THREE.Vector3())
+}
+
+/** Returns hatch loops translated so `origin` becomes the local (0,0). */
+function offsetLoops(
+  loops: AcGePoint2d[][],
+  origin: THREE.Vector3
+): AcGePoint2d[][] {
+  return loops.map(loop =>
+    loop.map(
+      point => new AcGePoint2d(point.x - origin.x, point.y - origin.y)
+    )
+  )
+}
+
+const _tmpPoint = /*@__PURE__*/ new THREE.Vector3()
+
 export class AcTrPolygon extends AcTrEntity {
   private _traits: AcGiSubEntityTraits
 
@@ -55,8 +94,23 @@ export class AcTrPolygon extends AcTrEntity {
       loop => loop.length >= 3
     )
 
+    // Patterned hatches sample object-space `position` in the fragment shader.
+    // Keep vertices near the origin (and shift pattern `base` by the same
+    // offset) so float32 `fract`/`floor` still resolve fine line spacing at
+    // large WCS coordinates. Solid/gradient fills do not need this here —
+    // gradient uses normalized attrs; solid rebases in buildAreaGeometry.
+    const isPatterned = this.isPatternedHatch(traits)
+    let localOrigin: THREE.Vector3 | undefined
+    let boundariesForGeometry = pointBoundaries
+    if (isPatterned) {
+      localOrigin = computeLocalOriginFromLoops(pointBoundaries)
+      if (localOrigin) {
+        boundariesForGeometry = offsetLoops(pointBoundaries, localOrigin)
+      }
+    }
+
     const geometries: THREE.BufferGeometry[] = []
-    this.buildHatchGeometry(pointBoundaries, hierarchy, geometries)
+    this.buildHatchGeometry(boundariesForGeometry, hierarchy, geometries)
 
     let geometry: THREE.BufferGeometry | undefined
     if (geometries.length === 1) {
@@ -73,7 +127,9 @@ export class AcTrPolygon extends AcTrEntity {
         geometry.dispose()
         return
       }
-      this.wcsBbox = boundingBox
+      this.wcsBbox = localOrigin
+        ? boundingBox.clone().translate(localOrigin)
+        : boundingBox
 
       this.addGradientPositionAttribute(geometry, traits)
 
@@ -83,12 +139,18 @@ export class AcTrPolygon extends AcTrEntity {
         maxX: this.wcsBbox.max.x,
         maxY: this.wcsBbox.max.y
       }
+      const rebaseOffset = localOrigin
+        ? new THREE.Vector2(localOrigin.x, localOrigin.y)
+        : undefined
       const material = this.styleManager.getFillMaterial(
         traits,
-        undefined,
+        rebaseOffset,
         gradientBounds
       )
       const mesh = new THREE.Mesh(geometry, material)
+      if (localOrigin) {
+        mesh.position.set(localOrigin.x, localOrigin.y, localOrigin.z)
+      }
       this.add(mesh)
       this.finalizeLeafDrawables()
     } else if (hasRenderableBoundaries) {

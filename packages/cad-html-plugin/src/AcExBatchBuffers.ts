@@ -199,20 +199,19 @@ export function rebasePlainDrawableSliceAroundCentroid(
  * Converts one plain scene-graph drawable into the local+offset representation
  * expected by the offline HTML viewer.
  *
- * Pattern-fill meshes stay world-baked with a zero offset so their hatch pattern
- * metadata (transformed via `bakedWorldMatrix`) stays aligned with the fill boundary.
+ * Pattern-fill meshes follow the same centroid rebase as other plain meshes so
+ * hatch shader sampling stays float32-precise. Callers must also rebase hatch
+ * pattern bases with {@link rebaseHatchPatternToLocalOffset}.
  */
 export function exportPlainDrawableSlice(
   object: THREE.Object3D,
   slice: AcExPlainDrawableSlice,
-  options: { preserveWorldSpaceForPatternFill?: boolean } = {}
+  _options: { preserveWorldSpaceForPatternFill?: boolean } = {}
 ): { slice: AcExPlainDrawableSlice; offset: [number, number, number] } {
   object.updateMatrixWorld(true)
   const worldSlice = bakePlainDrawableSlice(slice, object.matrixWorld)
 
-  if (options.preserveWorldSpaceForPatternFill) {
-    return { slice: worldSlice, offset: [0, 0, 0] }
-  }
-
+  // Legacy option kept for call-site compatibility; pattern fills now rebase
+  // like other meshes (world-baked verts + zero offset caused blocky hatches).
   return rebasePlainDrawableSliceAroundCentroid(worldSlice)
 }
