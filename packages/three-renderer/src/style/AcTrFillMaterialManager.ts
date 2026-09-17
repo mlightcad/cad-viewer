@@ -60,7 +60,8 @@ function rotatePatternVec2(
  * periods in the sample frame preserves the pattern phase.
  *
  * @param base - Mutable base already subtracted by the geometry origin.
- * @param offset - Pattern offset already rotated by `-lineAngle`.
+ * @param offset - Pattern offset already rotated by `-lineAngle` (same frame as
+ *   the hatch shader uniform / exported AcEx hatch line offset).
  * @param lineAngle - Definition-line angle in radians.
  * @param patternAngle - Hatch-level pattern angle in radians.
  * @param patternLength - Dash repeat length (`0` for continuous lines).
