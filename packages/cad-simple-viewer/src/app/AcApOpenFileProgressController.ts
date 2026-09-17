@@ -21,7 +21,9 @@ import { isOpenFileProgressComplete } from './openFileProgress'
  *
  * When progressive scene convert is still draining after CONVERSION `END`,
  * the overlay stays up (see-through) until {@link setSceneBusyGate} reports
- * idle so geometry can appear under the spinner.
+ * idle so geometry can appear under the spinner. The gate typically tracks
+ * entity convert only — deferred glyph jobs may continue after the overlay
+ * hides.
  */
 export class AcApOpenFileProgressController {
   private readonly _progress: AcApProgress
@@ -73,7 +75,7 @@ export class AcApOpenFileProgressController {
 
   /**
    * Gate that returns true while the view still has entities to convert.
-   * Used to keep the overlay until progressive scene convert finishes.
+   * Used to keep the overlay until scene convert finishes (not deferred text).
    */
   setSceneBusyGate(gate: (() => boolean) | undefined): void {
     this._sceneBusyGate = gate

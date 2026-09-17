@@ -208,6 +208,40 @@
 
           <div class="setting-block">
             <h3 class="setting-label">
+              {{ t('example.fileUpload.waitForText') }}
+            </h3>
+            <div
+              class="pill-segment"
+              role="radiogroup"
+              :aria-label="t('example.fileUpload.waitForTextGeometry')"
+            >
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': waitForTextGeometry }"
+                role="radio"
+                :aria-checked="waitForTextGeometry"
+                :title="t('example.fileUpload.waitForTextOnHint')"
+                @click="waitForTextGeometry = true"
+              >
+                {{ t('example.fileUpload.on') }}
+              </button>
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': !waitForTextGeometry }"
+                role="radio"
+                :aria-checked="!waitForTextGeometry"
+                :title="t('example.fileUpload.waitForTextOffHint')"
+                @click="waitForTextGeometry = false"
+              >
+                {{ t('example.fileUpload.off') }}
+              </button>
+            </div>
+          </div>
+
+          <div class="setting-block">
+            <h3 class="setting-label">
               {{ t('example.fileUpload.nonPlottable') }}
             </h3>
             <div
@@ -336,6 +370,7 @@ interface Props {
     useMainThreadDraw: boolean,
     drawNoPlotLayers: boolean,
     progressiveRendering: boolean,
+    waitForTextGeometry: boolean,
     openViewMode: AcApOpenViewMode | undefined,
     circleSides: number,
     paperSpaceBackground: number,
@@ -346,6 +381,7 @@ interface Props {
     useMainThreadDraw: boolean,
     drawNoPlotLayers: boolean,
     progressiveRendering: boolean,
+    waitForTextGeometry: boolean,
     openViewMode: AcApOpenViewMode | undefined,
     circleSides: number,
     paperSpaceBackground: number,
@@ -364,6 +400,7 @@ const selectedCircleSides = ref(ACDB_DRAW_CIRCLE_SIDES_DRAFT)
 const useMainThreadDraw = ref(true)
 const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
+const waitForTextGeometry = ref(false)
 const paperSpaceBackground = ref(ACGI_PAPER_SPACE_BACKGROUND)
 const disableExport = ref(false)
 
@@ -433,6 +470,7 @@ const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
         useMainThreadDraw.value,
         drawNoPlotLayers.value,
         progressiveRendering.value,
+        waitForTextGeometry.value,
         resolveOpenViewMode(),
         selectedCircleSides.value,
         paperSpaceBackground.value,
@@ -448,6 +486,7 @@ const handleNewDrawing = () => {
     useMainThreadDraw.value,
     drawNoPlotLayers.value,
     progressiveRendering.value,
+    waitForTextGeometry.value,
     resolveOpenViewMode(),
     selectedCircleSides.value,
     paperSpaceBackground.value,

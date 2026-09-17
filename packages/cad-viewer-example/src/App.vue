@@ -17,6 +17,7 @@
         :use-main-thread-draw="useMainThreadDraw"
         :draw-no-plot-layers="drawNoPlotLayers"
         :progressive-rendering="progressiveRendering"
+        :wait-for-text-geometry="waitForTextGeometry"
         :open-view-mode="openViewMode"
         :circle-sides="circleSides"
         :paper-space-background="paperSpaceBackground"
@@ -95,6 +96,7 @@ const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
 const useMainThreadDraw = ref(true)
 const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
+const waitForTextGeometry = ref(false)
 const openViewMode = ref<AcApOpenViewMode | undefined>(undefined)
 const circleSides = ref(ACDB_DRAW_CIRCLE_SIDES_DRAFT)
 const paperSpaceBackground = ref(ACGI_PAPER_SPACE_BACKGROUND)
@@ -105,6 +107,7 @@ const createNewDrawing = async () => {
     mode: selectedMode.value,
     drawNoPlotLayers: drawNoPlotLayers.value,
     progressiveRendering: progressiveRendering.value,
+    waitForTextGeometry: waitForTextGeometry.value,
     circleSides: circleSides.value,
     sysVars: {
       paperbkcolor: layoutBackgroundColorFromRgb(paperSpaceBackground.value)
@@ -129,6 +132,7 @@ const applyOpenOptions = (
   mainThreadDraw: boolean,
   showNoPlotLayers: boolean,
   enableProgressiveRendering: boolean,
+  enableWaitForTextGeometry: boolean,
   viewMode: AcApOpenViewMode | undefined,
   sides: number,
   paperBg: number,
@@ -138,6 +142,7 @@ const applyOpenOptions = (
   useMainThreadDraw.value = mainThreadDraw
   drawNoPlotLayers.value = showNoPlotLayers
   progressiveRendering.value = enableProgressiveRendering
+  waitForTextGeometry.value = enableWaitForTextGeometry
   openViewMode.value = viewMode
   circleSides.value = sides
   paperSpaceBackground.value = paperBg
@@ -151,6 +156,7 @@ const handleFileSelect = (
   mainThreadDraw: boolean,
   showNoPlotLayers: boolean,
   enableProgressiveRendering: boolean,
+  enableWaitForTextGeometry: boolean,
   viewMode: AcApOpenViewMode | undefined,
   sides: number,
   paperBg: number,
@@ -163,6 +169,7 @@ const handleFileSelect = (
     mainThreadDraw,
     showNoPlotLayers,
     enableProgressiveRendering,
+    enableWaitForTextGeometry,
     viewMode,
     sides,
     paperBg,
@@ -175,6 +182,7 @@ const handleNewDrawing = (
   mainThreadDraw: boolean,
   showNoPlotLayers: boolean,
   enableProgressiveRendering: boolean,
+  enableWaitForTextGeometry: boolean,
   viewMode: AcApOpenViewMode | undefined,
   sides: number,
   paperBg: number,
@@ -187,6 +195,7 @@ const handleNewDrawing = (
     mainThreadDraw,
     showNoPlotLayers,
     enableProgressiveRendering,
+    enableWaitForTextGeometry,
     viewMode,
     sides,
     paperBg,

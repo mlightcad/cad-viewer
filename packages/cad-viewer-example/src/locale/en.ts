@@ -50,6 +50,13 @@ export default {
       off: 'Off',
       progressiveOffHint: 'Wait until fully converted',
 
+      waitForText: 'Wait for text',
+      waitForTextGeometry: 'Hold open progress until text geometry finishes',
+      waitForTextOnHint:
+        'Keep “Rendering drawing ...” until deferred text is done',
+      waitForTextOffHint:
+        'Hide progress after entity convert (default); export still waits for text',
+
       nonPlottable: 'Non-plottable',
       nonPlottableLayers: 'Non-plottable layers',
       hide: 'Hide',
@@ -65,7 +72,7 @@ export default {
       curveHigh: 'Quality',
       curveHighHint: 'Smoother curves, more memory',
 
-      paperSpaceBackground: 'Paper space background',
+      paperSpaceBackground: 'Paper background',
       paperSpaceWhite: 'White',
       paperSpaceWhiteHint: 'Desktop CAD / print preview',
       paperSpaceBlack: 'Black',

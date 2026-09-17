@@ -46,12 +46,12 @@
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.14.7",
     "@mlightcad/mtext-parser": "^1.4.1",
-    "@mlightcad/mtext-renderer": "^0.12.11"
+    "@mlightcad/mtext-renderer": "^0.12.12"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.14.7",
     "@mlightcad/mtext-parser": "^1.4.1",
-    "@mlightcad/mtext-renderer": "^0.12.11"
+    "@mlightcad/mtext-renderer": "^0.12.12"
   }
 }

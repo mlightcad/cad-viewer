@@ -87,6 +87,23 @@ export interface AcApOpenDatabaseOptions extends Omit<
   progressiveRendering?: boolean
 
   /**
+   * Whether the open-file progress overlay ("Rendering drawing ...") waits for
+   * deferred text / INSERT glyph geometry to finish.
+   *
+   * - `false` (default): hide the overlay once entity convert finishes
+   *   ({@link AcTrView2d.isConvertingEntities}). Text may still finalize in
+   *   the deferred geometry pool afterward.
+   * - `true`: keep the overlay until convert **and** deferred glyph jobs are
+   *   idle ({@link AcTrView2d.isProcessingEntities}).
+   *
+   * Export / CLI completeness is **not** controlled by this flag. Callers that
+   * need fully drawable text (HTML/PDF/PNG, headless scripts) still wait via
+   * {@link AcTrView2d.waitUntilIdle} /
+   * {@link AcTrView2d.ensureEntitiesConvertedForExport}.
+   */
+  waitForTextGeometry?: boolean
+
+  /**
    * How to frame the view when the document finishes opening.
    *
    * When omitted, Read and Review modes use {@link AcApOpenViewMode.Extents};
