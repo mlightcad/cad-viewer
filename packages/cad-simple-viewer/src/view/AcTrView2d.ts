@@ -24,6 +24,7 @@ import {
   log
 } from '@mlightcad/data-model'
 import { AcDbSystemVariables } from '@mlightcad/data-model'
+import { FontManager } from '@mlightcad/mtext-renderer'
 import {
   AcTrEntity,
   AcTrGlyphEntity,
@@ -281,6 +282,12 @@ export class AcTrView2d extends AcEdBaseView {
   }> = []
   /** Currently executing deferred geometry runners. */
   private _deferredGeometryActive = 0
+  /**
+   * Debounced glyph rebuild after {@link FontManager.events.fontLoaded} so a
+   * burst of lazy face loads (simsun + malgun, etc.) triggers one redraw pass.
+   */
+  private _fontLoadedRedrawTimer: ReturnType<typeof setTimeout> | null = null
+  private _fontLoadedRedrawEpoch = 0
   /** Grip point display and drag editing (Write mode only). */
   private _gripManager: AcEdGripManager
   /** Global keyboard shortcuts for the view (undo/redo, erase, etc.). */
@@ -373,9 +380,12 @@ export class AcTrView2d extends AcEdBaseView {
         count: args.count ?? 0
       })
     })
-    this._renderer.events.fontLoaded.addEventListener(() => {
+    this._renderer.events.fontLoaded.addEventListener(args => {
       // Lazy load success clears FontManager.missedFonts; refresh status-bar state.
       eventBus.emit('missed-data-changed', {})
+      // On-demand faces (e.g. style `malgun`) may finish after the first glyph
+      // bake. Rebuild text so Hangul is not left as permanent '?'.
+      this.scheduleGlyphRedrawAfterFontLoad(args?.fontName)
     })
 
     this._scene = this.createScene()
@@ -2229,6 +2239,7 @@ export class AcTrView2d extends AcEdBaseView {
     // Invalidate any in-flight progressive convert so it neither paints into
     // the cleared scene nor double-decrements the processing counter.
     this._convertEpoch++
+    this.clearFontLoadedRedrawTimer()
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
     this.resetDeferredGeometryQueue()
@@ -2267,6 +2278,7 @@ export class AcTrView2d extends AcEdBaseView {
    */
   restoreSessionState(state: AcTrViewSessionState): void {
     this._convertEpoch++
+    this.clearFontLoadedRedrawTimer()
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
     this.resetDeferredGeometryQueue()
@@ -2295,6 +2307,7 @@ export class AcTrView2d extends AcEdBaseView {
   beginNewSession(): AcTrViewSessionState {
     const parked = this.captureSessionState()
     this._convertEpoch++
+    this.clearFontLoadedRedrawTimer()
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
     this.resetDeferredGeometryQueue()
@@ -2456,6 +2469,7 @@ export class AcTrView2d extends AcEdBaseView {
   dispose() {
     this._disposeCanvasTouchCallout?.()
     this._disposeCanvasTouchCallout = undefined
+    this.clearFontLoadedRedrawTimer()
     this.stopAnimationLoop()
   }
 
@@ -2808,6 +2822,100 @@ export class AcTrView2d extends AcEdBaseView {
     return (
       threeEntity instanceof AcTrGlyphEntity || threeEntity instanceof AcTrGroup
     )
+  }
+
+  private clearFontLoadedRedrawTimer() {
+    if (this._fontLoadedRedrawTimer != null) {
+      clearTimeout(this._fontLoadedRedrawTimer)
+      this._fontLoadedRedrawTimer = null
+    }
+  }
+
+  /**
+   * Coalesces late font-load notifications into one glyph rebuild pass.
+   */
+  private scheduleGlyphRedrawAfterFontLoad(fontName?: string) {
+    this.clearFontLoadedRedrawTimer()
+    const epoch = this._convertEpoch
+    this._fontLoadedRedrawTimer = setTimeout(() => {
+      this._fontLoadedRedrawTimer = null
+      if (epoch !== this._convertEpoch) {
+        return
+      }
+      void this.redrawGlyphEntitiesAfterFontLoad(epoch, fontName)
+    }, 50)
+  }
+
+  /**
+   * Rebuilds text after a late {@link FontManager.events.fontLoaded}.
+   *
+   * Live {@link AcTrGlyphEntity} shells (rare: mid-convert / not yet batched)
+   * are re-drawn in place. Committed text is already flattened into batches and
+   * disposed, so on-demand faces (style `malgun` → Noto Sans KR) need a database
+   * regen once conversion is idle — otherwise Hangul stays baked as '?'.
+   */
+  private async redrawGlyphEntitiesAfterFontLoad(
+    epoch: number,
+    fontName?: string
+  ) {
+    if (epoch !== this._convertEpoch) {
+      return
+    }
+    // Drop overlapping redraws from a rapid fontLoaded burst.
+    const redrawEpoch = ++this._fontLoadedRedrawEpoch
+    const glyphs: AcTrGlyphEntity[] = []
+    for (const layout of this._scene.layouts.values()) {
+      layout.layers.forEach(layer => {
+        layer.internalObject.traverse(obj => {
+          if (obj instanceof AcTrGlyphEntity) {
+            glyphs.push(obj)
+          }
+        })
+      })
+    }
+    for (const glyph of glyphs) {
+      if (
+        epoch !== this._convertEpoch ||
+        redrawEpoch !== this._fontLoadedRedrawEpoch
+      ) {
+        return
+      }
+      await glyph.asyncDraw()
+    }
+    if (glyphs.length > 0) {
+      if (epoch === this._convertEpoch) {
+        this._isDirty = true
+      }
+      return
+    }
+
+    // Default preset loads during open are covered by awaitFontsBeforeDraw;
+    // regenerating for those would thrash after every open.
+    if (fontName) {
+      const defaults = FontManager.instance.defaultFonts
+      const normalized = fontName.toLowerCase()
+      if (
+        defaults.has(fontName) ||
+        defaults.has(normalized) ||
+        [...defaults].some(name => name.toLowerCase() === normalized)
+      ) {
+        return
+      }
+    }
+
+    if (
+      epoch !== this._convertEpoch ||
+      redrawEpoch !== this._fontLoadedRedrawEpoch ||
+      this.isProcessingEntities
+    ) {
+      return
+    }
+
+    const db = AcApDocManager.instance?.curDocument?.database
+    if (!db) {
+      return
+    }
+    db.regen()
   }
 
   private groupHasPendingGlyphGeometry(group: AcTrGroup): boolean {

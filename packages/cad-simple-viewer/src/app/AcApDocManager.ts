@@ -581,6 +581,10 @@ export class AcApDocManager {
     const fontsUrl = this.resolveFontsBaseUrl()
     this._fontLoader.baseUrl = fontsUrl
     FontManager.instance.baseUrl = fontsUrl
+    // Always push the URL into AcTrMTextRenderer (workers). DefaultFontLoader
+    // skips onFontUrlChanged when the value equals its built-in default, which
+    // would leave workers on an unset/stale font base URL.
+    AcTrMTextRenderer.getInstance().setFontUrl(fontsUrl)
     acdbHostApplicationServices().workingDatabase = doc.database
 
     this._commandManager = new AcEdCommandStack()
@@ -2464,7 +2468,9 @@ export class AcApDocManager {
     mtextRenderer.initialize(
       webworkerFileUrls?.mtextRender ?? DEFAULT_WEBWORKER_FILE_URLS.mtextRender
     )
-    void mtextRenderer.setDefaultFonts(DEFAULT_FONTS_PRESET)
+    void mtextRenderer.setDefaultFonts([
+      ...FontManager.instance.defaultFonts
+    ])
   }
 
   /**
