@@ -25,6 +25,7 @@ const mockSetRenderMode = jest.fn()
 const mockSetDefaultFonts = jest.fn(() => Promise.resolve())
 const mockSetLazyFontLoading = jest.fn(() => Promise.resolve())
 const mockSetAwaitFontsBeforeDraw = jest.fn(() => Promise.resolve())
+const mockSetFontUrl = jest.fn()
 
 jest.mock('../src/app/AcApFontLoader', () => ({
   AcApFontLoader: MockAcApFontLoader
@@ -37,7 +38,8 @@ jest.mock('@mlightcad/three-renderer', () => ({
       setRenderMode: mockSetRenderMode,
       setDefaultFonts: mockSetDefaultFonts,
       setLazyFontLoading: mockSetLazyFontLoading,
-      setAwaitFontsBeforeDraw: mockSetAwaitFontsBeforeDraw
+      setAwaitFontsBeforeDraw: mockSetAwaitFontsBeforeDraw,
+      setFontUrl: mockSetFontUrl
     })),
     resetInstance: jest.fn()
   }
@@ -328,6 +330,7 @@ describe('AcApDocManager font URL configuration', () => {
     mockSetDefaultFonts.mockClear()
     mockSetLazyFontLoading.mockClear()
     mockSetAwaitFontsBeforeDraw.mockClear()
+    mockSetFontUrl.mockClear()
   })
 
   it('configures the font loader to download fonts from the custom base URL', async () => {
@@ -347,7 +350,8 @@ describe('AcApDocManager font URL configuration', () => {
     AcApDocManager.createInstance({})
 
     expect(mockInitialize).toHaveBeenCalled()
-    expect(mockSetDefaultFonts).toHaveBeenCalledWith('modern')
+    expect(mockSetDefaultFonts).toHaveBeenCalledWith(['simsun', 'hztxt'])
+    expect(mockSetFontUrl).toHaveBeenCalled()
   })
 
   it('configures main-thread mtext rendering before initializing workers', () => {

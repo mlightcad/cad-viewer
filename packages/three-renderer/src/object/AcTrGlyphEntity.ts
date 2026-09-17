@@ -172,6 +172,7 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
     if (!mtextRenderer) return
 
     try {
+      this.clearRenderedGeometry()
       this._rendered = await this.renderAsync(mtextRenderer)
       this.attachRendered(this._rendered)
     } catch (error) {
@@ -179,6 +180,34 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
         `Failed to render ${this.describeRenderFailure()} with the following error:\n`,
         error
       )
+    }
+  }
+
+  /**
+   * Drops previously attached glyph meshes so {@link asyncDraw} can rebuild
+   * after a late {@link FontManager.events.fontLoaded} (e.g. on-demand `malgun`).
+   */
+  protected clearRenderedGeometry() {
+    if (this._rendered) {
+      this._rendered.removeFromParent()
+      this._rendered.traverse(obj => {
+        const mesh = obj as THREE.Mesh
+        if (mesh.geometry) {
+          mesh.geometry.dispose()
+        }
+      })
+      this._rendered = undefined
+    }
+    // Flattened leaves may still sit as direct children after the first draw.
+    while (this.children.length > 0) {
+      const child = this.children[0]
+      this.remove(child)
+      child.traverse(obj => {
+        const mesh = obj as THREE.Mesh
+        if (mesh.geometry) {
+          mesh.geometry.dispose()
+        }
+      })
     }
   }
 

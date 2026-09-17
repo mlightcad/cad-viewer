@@ -59,6 +59,13 @@ function useLocalUiComponents(mode: string): boolean {
   )
 }
 
+function useLocalMtextRenderer(mode: string): boolean {
+  return (
+    mode === 'local-mtext-renderer' ||
+    isEnvFlagEnabled('CAD_VIEWER_USE_LOCAL_MTEXT_RENDERER')
+  )
+}
+
 export default defineConfig(({ command, mode }) => {
   const hasViewerRuntime = existsSync(resolve(__dirname, VIEWER_RUNTIME_SRC))
   if (!hasViewerRuntime) {
@@ -85,7 +92,9 @@ export default defineConfig(({ command, mode }) => {
     useLocalUiComponents(mode) &&
     existsSync(LOCAL_UI_COMPONENTS_SRC)
   const linkLocalMtextRenderer =
-    command === 'serve' && existsSync(LOCAL_MTEXT_RENDERER_ENTRY)
+    command === 'serve' &&
+    useLocalMtextRenderer(mode) &&
+    existsSync(LOCAL_MTEXT_RENDERER_ENTRY)
   if (command === 'serve') {
     aliases.push({
       find: /^@mlightcad\/cad-pdf-plugin\/register$/,
@@ -104,6 +113,14 @@ export default defineConfig(({ command, mode }) => {
         find: '@mlightcad/mtext-renderer',
         replacement: LOCAL_MTEXT_RENDERER_DIST
       })
+    } else if (
+      useLocalMtextRenderer(mode) &&
+      !existsSync(LOCAL_MTEXT_RENDERER_ENTRY)
+    ) {
+      console.warn(
+        '[cad-viewer-example] Local mtext-renderer alias requested but not found at:',
+        LOCAL_MTEXT_RENDERER_ENTRY
+      )
     }
     if (linkLocalDataModel) {
       aliases.push({
@@ -138,7 +155,8 @@ export default defineConfig(({ command, mode }) => {
 
   aliases.push(
     ...examplePeerPackageAliases(__dirname).filter(
-      alias => alias.find !== '@mlightcad/mtext-renderer'
+      alias =>
+        !linkLocalMtextRenderer || alias.find !== '@mlightcad/mtext-renderer'
     )
   )
 

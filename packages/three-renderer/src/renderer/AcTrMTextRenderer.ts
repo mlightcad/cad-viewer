@@ -95,7 +95,7 @@ export class AcTrMTextRenderer {
    */
   setFontUrl(value: string) {
     this._fontUrl = value
-    this.applyFontUrl()
+    void this.applyFontUrl()
   }
 
   /**
@@ -265,7 +265,7 @@ export class AcTrMTextRenderer {
       this._renderer.setDefaultMode(this._renderMode)
     }
 
-    this.applyFontUrl()
+    void this.applyFontUrl()
     void this.applyDefaultFonts()
     void this.applyLazyFontLoading()
     void this.applyAwaitFontsBeforeDraw()
@@ -329,9 +329,9 @@ export class AcTrMTextRenderer {
     }
   }
 
-  private applyFontUrl() {
+  private async applyFontUrl() {
     if (this._renderer && this._fontUrl) {
-      this._renderer.setFontUrl(this._fontUrl)
+      await this._renderer.setFontUrl(this._fontUrl)
     }
   }
 
