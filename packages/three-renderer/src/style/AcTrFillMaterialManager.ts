@@ -34,6 +34,74 @@ export interface AcTrFillMaterialOptions {
   side?: AcTrMaterialSide
 }
 
+const PATTERN_BASE_WRAP_EPS = 1e-9
+
+const _wrapScratch = /*@__PURE__*/ new THREE.Vector2()
+
+/** Matches hatch shader `rotate` (column-vector convention). */
+function rotatePatternVec2(
+  x: number,
+  y: number,
+  angle: number,
+  out: THREE.Vector2
+): THREE.Vector2 {
+  const c = Math.cos(angle)
+  const s = Math.sin(angle)
+  return out.set(c * x - s * y, c * y + s * x)
+}
+
+/**
+ * Wraps an origin-shifted pattern `base` into one pattern period so
+ * `v_pos - base` stays float32-friendly in the hatch shader.
+ *
+ * Pattern bases are often near WCS (0,0) while geometry is origin-shifted to a
+ * far survey coordinate. Subtracting `rebaseOffset` alone leaves `|base|` huge,
+ * and `fract(dist / spacing)` collapses again. Reducing `base` by integer
+ * periods in the sample frame preserves the pattern phase.
+ *
+ * @param base - Mutable base already subtracted by the geometry origin.
+ * @param offset - Pattern offset already rotated by `-lineAngle` (same frame as
+ *   the hatch shader uniform / exported AcEx hatch line offset).
+ * @param lineAngle - Definition-line angle in radians.
+ * @param patternAngle - Hatch-level pattern angle in radians.
+ * @param patternLength - Dash repeat length (`0` for continuous lines).
+ */
+export function wrapPatternBaseToLocalFrame(
+  base: THREE.Vector2,
+  offset: THREE.Vector2,
+  lineAngle: number,
+  patternAngle: number,
+  patternLength: number
+): void {
+  const spacing = Math.abs(offset.y)
+  if (
+    spacing <= PATTERN_BASE_WRAP_EPS &&
+    patternLength <= PATTERN_BASE_WRAP_EPS
+  ) {
+    return
+  }
+
+  // samplePos = rotate(v - base, -(lineAngle + patternAngle))
+  const totalAngle = lineAngle + patternAngle
+  const inSample = rotatePatternVec2(base.x, base.y, -totalAngle, _wrapScratch)
+
+  if (spacing > PATTERN_BASE_WRAP_EPS) {
+    const periods = Math.round(inSample.y / spacing)
+    inSample.y -= periods * spacing
+    // Parallel-line steps also shift dash phase by offset.x (AutoCAD PAT model).
+    inSample.x -= periods * offset.x
+  }
+  if (patternLength > PATTERN_BASE_WRAP_EPS) {
+    inSample.x -= Math.round(inSample.x / patternLength) * patternLength
+  } else {
+    // Continuous lines ignore along-line phase; clear it so `base` stays small
+    // in XY and `v_pos - base` does not reintroduce large float32 magnitudes.
+    inSample.x = 0
+  }
+
+  rotatePatternVec2(inSample.x, inSample.y, totalAngle, base)
+}
+
 /**
  * Material manager for hatch and solid fill entities.
  *
@@ -225,6 +293,16 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       for (let i = numberOfDashes; i < maxPatternSegmentCount; ++i) {
         dashLengths[i] = 0
       }
+
+      // Keep (v_pos - base) small after geometry origin-shift. Pattern bases are
+      // often near WCS 0 while verts are rebased to a far local origin.
+      wrapPatternBaseToLocalFrame(
+        base,
+        offset,
+        hatchPatternLine.angle,
+        style.patternAngle,
+        patternLength
+      )
 
       const angle = hatchPatternLine.angle
       const patternLine = {

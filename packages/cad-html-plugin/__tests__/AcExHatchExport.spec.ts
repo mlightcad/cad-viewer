@@ -12,7 +12,8 @@ import { decodeSnapshot, encodeSnapshot } from '../src/AcExSnapshotCodec'
 import { ACEX_SNAPSHOT_VERSION } from '../src/AcExSnapshotTypes'
 
 function createPatternedHatchMaterial(
-  styleManager: AcTrStyleManager
+  styleManager: AcTrStyleManager,
+  rebaseOffset?: THREE.Vector2
 ): THREE.ShaderMaterial {
   const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
   traits.layer = 'A-HATCH'
@@ -30,7 +31,10 @@ function createPatternedHatchMaterial(
       }
     ]
   }
-  return styleManager.getFillMaterial(traits) as THREE.ShaderMaterial
+  return styleManager.getFillMaterial(
+    traits,
+    rebaseOffset
+  ) as THREE.ShaderMaterial
 }
 
 function cloneUnbatchedHatchMesh(source: THREE.Mesh): THREE.Mesh {
@@ -159,7 +163,7 @@ describe('patterned hatch HTML export', () => {
     expect(viewerMaterial).toBeInstanceOf(THREE.ShaderMaterial)
   })
 
-  it('world-bakes patterned hatch clones that keep local geometry under object transforms', () => {
+  it('rebases patterned hatch verts and pattern bases around the mesh centroid', () => {
     const styleManager = new AcTrStyleManager()
     const material = createPatternedHatchMaterial(styleManager)
     const geometry = new THREE.BufferGeometry()
@@ -183,10 +187,62 @@ describe('patterned hatch HTML export', () => {
     expect(meshBatches).toHaveLength(1)
 
     const exported = meshBatches[0]!
-    expect(exported.offset).toEqual([0, 0, 0])
+    expect(Math.hypot(exported.offset[0], exported.offset[1])).toBeGreaterThan(
+      50
+    )
+    expect(Math.abs(exported.positions[0]!)).toBeLessThan(20)
+    expect(Math.abs(exported.positions[1]!)).toBeLessThan(20)
     expect(exported.hatchPattern?.patternLines.length).toBeGreaterThan(0)
-    expect(exported.positions[0]).toBeCloseTo(100, 3)
-    expect(exported.positions[1]).toBeCloseTo(200, 3)
+
+    const base = exported.hatchPattern!.patternLines[0]!.base
+    expect(Math.hypot(base[0], base[1])).toBeLessThan(20)
     expect(createViewerMeshMaterial(exported).type).toBe('ShaderMaterial')
+  })
+
+  it('keeps large-coordinate origin-shifted hatches local after HTML export', () => {
+    const originX = 10_650_000
+    const originY = 3_200_000
+    const styleManager = new AcTrStyleManager()
+    const material = createPatternedHatchMaterial(
+      styleManager,
+      new THREE.Vector2(originX, originY)
+    )
+
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(
+        new Float32Array([-5, -5, 0, 5, -5, 0, -5, 5, 0]),
+        3
+      )
+    )
+
+    // Live patterned hatches keep local verts + mesh translation.
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(originX, originY, 0)
+    mesh.updateMatrixWorld(true)
+
+    const { meshBatches } = collectBatchesFromObject3D(mesh)
+    expect(meshBatches).toHaveLength(1)
+
+    const exported = meshBatches[0]!
+    expect(exported.offset[0]).toBeCloseTo(originX, 3)
+    expect(exported.offset[1]).toBeCloseTo(originY, 3)
+    expect(Math.abs(exported.positions[0]!)).toBeLessThan(10)
+    expect(Math.abs(exported.positions[1]!)).toBeLessThan(10)
+
+    const exportedBase = exported.hatchPattern!.patternLines[0]!.base
+    const spacing = Math.abs(
+      exported.hatchPattern!.patternLines[0]!.offset[1]
+    )
+    expect(Math.hypot(exportedBase[0], exportedBase[1])).toBeLessThan(
+      spacing + 5
+    )
+
+    const viewerMaterial = createViewerMeshMaterial(exported) as THREE.ShaderMaterial
+    const viewerBase = (
+      viewerMaterial.uniforms.u_patternLines.value[0] as { base: THREE.Vector2 }
+    ).base
+    expect(Math.hypot(viewerBase.x, viewerBase.y)).toBeLessThan(spacing + 5)
   })
 })

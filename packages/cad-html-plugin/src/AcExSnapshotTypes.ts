@@ -105,13 +105,20 @@ export interface AcExLinePattern {
 
 /**
  * One hatch pattern definition line serialized for offline playback.
+ *
+ * {@link AcExHatchPatternLine.offset} is stored in the same frame as the live
+ * hatch shader uniform (already rotated by `-angle` in
+ * {@link AcTrFillMaterialManager}), not as a raw DXF/PAT definition offset.
  */
 export interface AcExHatchPatternLine {
   /** Pattern line angle in radians. */
   angle: number
   /** Pattern origin in hatch object space. */
   base: [number, number]
-  /** Spacing offset between repeated pattern lines. */
+  /**
+   * Spacing offset between repeated pattern lines, in the hatch shader's
+   * line-local frame (pre-rotated by `-angle`).
+   */
   offset: [number, number]
   /** Dash and gap lengths for this pattern line. */
   dashLengths: number[]

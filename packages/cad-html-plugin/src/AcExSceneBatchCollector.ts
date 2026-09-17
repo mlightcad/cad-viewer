@@ -32,6 +32,7 @@ import {
   extractGradientFill,
   extractHatchPattern,
   extractLinePattern,
+  rebaseHatchPatternToLocalOffset,
   transformHatchPatternToWorldSpace
 } from './AcExPatternSnapshot'
 import type { AcExLineBatch, AcExMeshBatch } from './AcExSnapshotTypes'
@@ -468,12 +469,19 @@ function resolveExportedHatchPattern(
   if (!hatchPattern) {
     return undefined
   }
+  // Prefer the clone-time world matrix (geometry may already be baked and the
+  // object pose reset). Otherwise use matrixWorld so origin-shifted live
+  // patterned hatches keep pattern bases in the same frame as world-baked verts.
   const bakedWorldMatrix = (object.userData as { bakedWorldMatrix?: number[] })
     .bakedWorldMatrix
-  if (!bakedWorldMatrix || bakedWorldMatrix.length < 16) {
-    return hatchPattern
+  if (bakedWorldMatrix && bakedWorldMatrix.length >= 16) {
+    return transformHatchPatternToWorldSpace(hatchPattern, bakedWorldMatrix)
   }
-  return transformHatchPatternToWorldSpace(hatchPattern, bakedWorldMatrix)
+  object.updateMatrixWorld(true)
+  return transformHatchPatternToWorldSpace(
+    hatchPattern,
+    Array.from(object.matrixWorld.elements)
+  )
 }
 
 function readWorldOffset(object: THREE.Object3D): [number, number, number] {
@@ -500,7 +508,13 @@ function buildMeshBatch(
   offset: [number, number, number]
 ): AcExMeshBatch | undefined {
   const style = readMaterialStyle(material)
-  const hatchPattern = resolveExportedHatchPattern(object, style.hatchPattern)
+  const worldHatchPattern = resolveExportedHatchPattern(
+    object,
+    style.hatchPattern
+  )
+  const hatchPattern = worldHatchPattern
+    ? rebaseHatchPatternToLocalOffset(worldHatchPattern, offset)
+    : undefined
   const gradientPositions = style.gradientFill
     ? exportVertexAttributeSlice(geometry, 'gradientPosition')
     : undefined
@@ -717,10 +731,10 @@ export function collectBatchesFromObject3D(
       if (isTransparentImagePlaceholder(material)) return
       const rawSlice = exportBufferGeometrySlice(child.geometry)
       if (rawSlice.positions.length === 0) return
-      const style = readMaterialStyle(material)
-      const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice, {
-        preserveWorldSpaceForPatternFill: !!style.hatchPattern
-      })
+      // Pattern fills rebase like other meshes; hatch bases are shifted to the
+      // same local offset in buildMeshBatch (world-baked verts caused blocky
+      // hatch shaders at large survey coordinates).
+      const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice)
       const mesh = buildMeshBatch(
         child.geometry,
         material,
