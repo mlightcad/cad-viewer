@@ -77,6 +77,10 @@ const mockAppendLine2Geometry = jest.fn().mockReturnValue(true)
 const mockAppendPointGeometry = jest.fn().mockReturnValue(true)
 const mockAppendMeshGeometry = jest.fn().mockReturnValue(true)
 const mockSetCompareDisplay = jest.fn()
+const mockRerenderPoints = jest.fn()
+const mockCollectPointObjectWorldBoxes = jest.fn(
+  (out: Map<string, THREE.Box3> = new Map()) => out
+)
 
 jest.mock('@mlightcad/three-renderer', () => {
   const THREE = require('three')
@@ -95,6 +99,8 @@ jest.mock('@mlightcad/three-renderer', () => {
       group.appendPointGeometry = mockAppendPointGeometry
       group.appendMeshGeometry = mockAppendMeshGeometry
       group.setCompareDisplay = mockSetCompareDisplay
+      group.rerenderPoints = mockRerenderPoints
+      group.collectPointObjectWorldBoxes = mockCollectPointObjectWorldBoxes
       return group
     }),
     AcTrGroup: class AcTrGroup {}
@@ -137,6 +143,9 @@ describe('AcTrLayout bounding box', () => {
     mockAppendLine2Geometry.mockReturnValue(true)
     mockAppendPointGeometry.mockReturnValue(true)
     mockAppendMeshGeometry.mockReturnValue(true)
+    mockCollectPointObjectWorldBoxes.mockImplementation(
+      (out: Map<string, THREE.Box3> = new Map()) => out
+    )
     lastCapturedExclude = undefined
   })
 
@@ -465,6 +474,44 @@ describe('AcTrLayout spatial index', () => {
     expect(collectBoxSelectionIds(layout, pickBox, 'window')).toEqual([
       'INSERT-window'
     ])
+  })
+
+  it('refreshes point spatial-index boxes after PDSIZE rerender', () => {
+    const layout = new AcTrLayout()
+    layout.addLayer(createLayerInfo())
+
+    const point = createEntity('point-1')
+    point.wcsBbox = new THREE.Box3(
+      new THREE.Vector3(100, 200, 0),
+      new THREE.Vector3(100, 200, 0)
+    )
+    layout.addEntity(point)
+
+    const farPick = {
+      min: { x: 101.5, y: 198.5 },
+      max: { x: 102.5, y: 201.5 }
+    } as unknown as import('@mlightcad/data-model').AcGeBox2d
+    expect(layout.search(farPick).some(hit => hit.id === 'point-1')).toBe(
+      false
+    )
+
+    mockCollectPointObjectWorldBoxes.mockImplementation(
+      (out: Map<string, THREE.Box3> = new Map()) => {
+        out.set(
+          'point-1',
+          new THREE.Box3(
+            new THREE.Vector3(98, 198, 0),
+            new THREE.Vector3(102, 202, 0)
+          )
+        )
+        return out
+      }
+    )
+
+    layout.rerenderPoints(35, 2)
+
+    expect(mockRerenderPoints).toHaveBeenCalledWith(35, 2)
+    expect(layout.search(farPick).some(hit => hit.id === 'point-1')).toBe(true)
   })
 })
 

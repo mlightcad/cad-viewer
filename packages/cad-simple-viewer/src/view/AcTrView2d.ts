@@ -1424,11 +1424,12 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * Re-render points with latest point style settings
    * @param displayMode Input display mode of points
+   * @param displaySize Input display size of points (`PDSIZE`)
    */
-  rerenderPoints(displayMode: number) {
+  rerenderPoints(displayMode: number, displaySize: number = 0) {
     const activeLayout = this._scene.activeLayout
     if (activeLayout) {
-      activeLayout.rerenderPoints(displayMode)
+      activeLayout.rerenderPoints(displayMode, displaySize)
       this._isDirty = true
     }
   }

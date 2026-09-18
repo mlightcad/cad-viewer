@@ -112,6 +112,13 @@ export class AcTrBufferGeometryUtil {
    *
    * Uses only complete vertex pairs so the attribute length always matches
    * `position.count`. Call after sanitizing or rebasing segment positions.
+   *
+   * When an existing `lineDistance` attribute is present, each segment pair keeps
+   * its start phase and only the end value is updated from the new length. That
+   * preserves entity-local dash phases after GroupCompactor merges (each leaf
+   * starts at 0). A full chain restart (`0, d0, d0, d0+d1, ...`) is used only
+   * when building distances from scratch — chaining across merged independent
+   * segments would push later entities into linetype gaps (A4107 WSP connectors).
    */
   static recomputeLineDistanceForLineSegments(
     geometry: THREE.BufferGeometry,
@@ -148,6 +155,12 @@ export class AcTrBufferGeometryUtil {
       ) as THREE.BufferAttribute
     }
 
+    const existing = geometry.getAttribute('lineDistance') as
+      | THREE.BufferAttribute
+      | undefined
+    const preserveStarts =
+      !!existing && existing.count >= vertexCount
+
     const lineDistances = new Float32Array(vertexCount)
     for (let i = 0; i < vertexCount; i += 2) {
       if (worldMatrix) {
@@ -162,8 +175,13 @@ export class AcTrBufferGeometryUtil {
         _vector2.fromBufferAttribute(positionAttribute, i + 1)
       }
 
-      lineDistances[i] = i === 0 ? 0 : lineDistances[i - 1]
-      lineDistances[i + 1] = lineDistances[i] + _vector1.distanceTo(_vector2)
+      const start = preserveStarts
+        ? existing!.getX(i)
+        : i === 0
+          ? 0
+          : lineDistances[i - 1]
+      lineDistances[i] = start
+      lineDistances[i + 1] = start + _vector1.distanceTo(_vector2)
     }
 
     geometry.setAttribute(

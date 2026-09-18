@@ -53,7 +53,11 @@ import { AcTrBatchedLine2 } from './AcTrBatchedLine2'
 import { AcTrBatchedMesh } from './AcTrBatchedMesh'
 import { AcTrBatchedPoint } from './AcTrBatchedPoint'
 import type { AcTrBatchCompareRole } from './highlight'
-import { type AcTrBatchHighlightKind } from './highlight'
+import {
+  type AcTrBatchHighlightKind,
+  type AcTrBatchHighlightState,
+  installBatchHighlightRenderer
+} from './highlight'
 
 /**
  * Union of batch container classes resolved by {@link THREE.Object3D.getObjectById}
@@ -452,16 +456,23 @@ export class AcTrBatchedGroup extends THREE.Group {
   }
 
   /**
-   * Rebuilds point-symbol batches for a new point display mode.
+   * Rebuilds point-symbol batches for a new point display mode and size.
+   *
+   * @param displayMode - `PDMODE` value.
+   * @param displaySize - `PDSIZE` value used to scale unit symbol templates.
    */
-  rerenderPoints(displayMode: number) {
+  rerenderPoints(displayMode: number, displaySize: number = 0) {
     const creator = AcTrPointSymbolCreator.instance
-    const pointSymbol = creator.create(displayMode)
+    const pointSymbol = creator.create(
+      displayMode,
+      { x: 0, y: 0, z: 0 },
+      displaySize
+    )
 
     if (pointSymbol.line) {
       this._pointSymbolBatches.forEach(batches => {
         batches.forEach(item => {
-          item.resetGeometry(displayMode)
+          item.resetGeometry(displayMode, displaySize)
         })
       })
     }
@@ -472,6 +483,58 @@ export class AcTrBatchedGroup extends THREE.Group {
         item.visible = isShowPoint
       })
     })
+  }
+
+  /**
+   * Collects world-space AABBs for point and point-symbol batch slots.
+   *
+   * Used after {@link rerenderPoints} so layouts can refresh spatial-index
+   * boxes when `PDMODE` / `PDSIZE` change marker size.
+   *
+   * @param out - Map of object id to world AABB; values are unioned when the
+   *   same id appears in multiple slots.
+   * @returns The same map instance passed in {@link out}.
+   */
+  collectPointObjectWorldBoxes(
+    out: Map<string, THREE.Box3> = new Map()
+  ): Map<string, THREE.Box3> {
+    const scratch = new THREE.Box3()
+
+    const absorbBatch = (
+      batch: AcTrBatchedLine | AcTrBatchedPoint
+    ) => {
+      batch.updateMatrixWorld(true)
+      for (let i = 0; i < batch.geometryCount; i++) {
+        let info: { objectId?: string; vertexCount: number }
+        try {
+          info = batch.getGeometryAt(i)
+        } catch {
+          continue
+        }
+        if (!info.objectId || info.vertexCount <= 0) {
+          continue
+        }
+        if (!batch.getBoundingBoxAt(i, scratch)) {
+          continue
+        }
+        scratch.applyMatrix4(batch.matrixWorld)
+        const existing = out.get(info.objectId)
+        if (existing) {
+          existing.union(scratch)
+        } else {
+          out.set(info.objectId, scratch.clone())
+        }
+      }
+    }
+
+    this._pointSymbolBatches.forEach(batches => {
+      batches.forEach(absorbBatch)
+    })
+    this._pointBatches.forEach(batches => {
+      batches.forEach(absorbBatch)
+    })
+
+    return out
   }
 
   /**
@@ -564,7 +627,9 @@ export class AcTrBatchedGroup extends THREE.Group {
         continue
       }
       for (const batch of batches) {
-        batch.material = material
+        // Each batch keeps a private material clone so highlight-mask uniforms
+        // never leak across containers that share the same style cache entry.
+        batch.material = this.createOwnedBatchMaterial(material)
       }
       if (material.id !== oldId) {
         group.delete(oldId)
@@ -721,11 +786,14 @@ export class AcTrBatchedGroup extends THREE.Group {
         }
 
         if (rebound === material) {
-          this.refreshLayerBoundMaterialColor(
-            material,
-            layerTraits,
-            styleManager
-          )
+          // Each batch owns a material clone; refresh color on every clone.
+          for (const batch of batches!) {
+            this.refreshLayerBoundMaterialColor(
+              batch.material as THREE.Material,
+              layerTraits,
+              styleManager
+            )
+          }
           continue
         }
 
@@ -1160,7 +1228,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         new AcTrBatchedLine(
           AcTrBatchedGroup.INITIAL_LINE_VERTEX_CAPACITY,
           AcTrBatchedGroup.INITIAL_LINE_INDEX_CAPACITY,
-          material
+          this.createOwnedBatchMaterial(material)
         )
     )
 
@@ -1205,7 +1273,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       () =>
         new AcTrBatchedLine2(
           AcTrBatchedGroup.INITIAL_LINE_VERTEX_CAPACITY,
-          material
+          this.createOwnedBatchMaterial(material)
         )
     )
 
@@ -1245,7 +1313,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       () =>
         new AcTrBatchedPoint(
           AcTrBatchedGroup.INITIAL_POINT_VERTEX_CAPACITY,
-          material
+          this.createOwnedBatchMaterial(material)
         )
     )
 
@@ -1293,7 +1361,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         const batch = new AcTrBatchedMesh(
           AcTrBatchedGroup.INITIAL_MESH_VERTEX_CAPACITY,
           AcTrBatchedGroup.INITIAL_MESH_INDEX_CAPACITY,
-          material
+          this.createOwnedBatchMaterial(material)
         )
         batch.renderOrder = drawOrder
         return batch
@@ -2311,7 +2379,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         new AcTrBatchedLine(
           AcTrBatchedGroup.INITIAL_LINE_VERTEX_CAPACITY,
           AcTrBatchedGroup.INITIAL_LINE_INDEX_CAPACITY,
-          material
+          this.createOwnedBatchMaterial(material)
         )
     )
 
@@ -2357,7 +2425,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       () =>
         new AcTrBatchedLine2(
           AcTrBatchedGroup.INITIAL_LINE_VERTEX_CAPACITY,
-          material
+          this.createOwnedBatchMaterial(material)
         )
     )
 
@@ -2426,7 +2494,7 @@ export class AcTrBatchedGroup extends THREE.Group {
         const batch = new AcTrBatchedMesh(
           AcTrBatchedGroup.INITIAL_MESH_VERTEX_CAPACITY,
           AcTrBatchedGroup.INITIAL_MESH_INDEX_CAPACITY,
-          material
+          this.createOwnedBatchMaterial(material)
         )
         // All CAD geometry lives on the same Z plane, so depth test alone
         // cannot decide which primitive wins on a shared pixel. Use the
@@ -2475,7 +2543,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       () => {
         const batch = new AcTrBatchedPoint(
           AcTrBatchedGroup.INITIAL_POINT_VERTEX_CAPACITY,
-          material
+          this.createOwnedBatchMaterial(material)
         )
         batch.visible = object.visible
         return batch
@@ -2540,6 +2608,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
 
     if (best) {
+      this.ensureBatchHighlightRenderer(best)
       return best
     }
 
@@ -2556,7 +2625,37 @@ export class AcTrBatchedGroup extends THREE.Group {
     list.push(batch)
     this._originBatchById.set(batch.id, batch)
     this.add(batch)
+    this.ensureBatchHighlightRenderer(batch)
     return batch
+  }
+
+  /**
+   * Clones a style-cached material for exclusive use by one batch container.
+   *
+   * Batches are still grouped by the source `material.id`, but each container
+   * must own a distinct `THREE.Material` instance. Highlight mask uniforms are
+   * stored on the material; sharing one instance across point-symbol and line
+   * batches lets a selected slot tint the same slot index in sibling batches.
+   */
+  private createOwnedBatchMaterial(source: THREE.Material): THREE.Material {
+    const owned = AcTrMaterialUtil.cloneMaterial(source) as THREE.Material
+    setMaterialMetadata(owned, { ...getMaterialMetadata(source) })
+    return owned
+  }
+
+  /**
+   * Ensures the batch rebinds its own highlight mask before every draw.
+   *
+   * Required when multiple batches share one style-cached material; otherwise
+   * a selected sibling's mask stays bound and other batches' slot 0 tint.
+   */
+  private ensureBatchHighlightRenderer(batch: AcTrOriginBatch) {
+    const state = (
+      batch as AcTrOriginBatch & { _highlightState?: AcTrBatchHighlightState }
+    )._highlightState
+    if (state) {
+      installBatchHighlightRenderer(batch, state)
+    }
   }
 
   /**

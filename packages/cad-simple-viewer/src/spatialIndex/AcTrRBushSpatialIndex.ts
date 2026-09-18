@@ -107,6 +107,16 @@ export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
     this.idMap.delete(id)
   }
 
+  /**
+   * Returns the item currently indexed for {@link id}, when present.
+   */
+  getById(id: AcDbObjectId): AcEdSpatialQueryResultItem | undefined {
+    if (!(typeof id === 'string' && id.length > 0)) {
+      return undefined
+    }
+    return this.idMap.get(id)
+  }
+
   clear() {
     this.tree.clear()
     this.idMap.clear()

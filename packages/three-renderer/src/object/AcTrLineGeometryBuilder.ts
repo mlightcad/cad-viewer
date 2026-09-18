@@ -123,10 +123,15 @@ export function buildLineGeometry(
   }
 
   const vertices = new Float32Array(maxVertexCount * 3)
+  // Exactly one index pair per polyline edge. Allocating maxVertexCount*2 left a
+  // trailing (0,0) pair (typed-array zero-fill) that became a phantom zero-length
+  // segment after toNonIndexed / LineSegments pairing — visible as duplicate
+  // verts in dashed-line batches (e.g. A4107 WSP connectors).
+  const indexCount = (maxVertexCount - 1) * 2
   const indices =
     maxVertexCount * 2 > 65535
-      ? new Uint32Array(maxVertexCount * 2)
-      : new Uint16Array(maxVertexCount * 2)
+      ? new Uint32Array(indexCount)
+      : new Uint16Array(indexCount)
 
   for (let i = 0, pos = 0; i < maxVertexCount; i++) {
     const point = points[i]

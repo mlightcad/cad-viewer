@@ -254,8 +254,9 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
    * using {@link AcTrPointSymbolCreator}.
    *
    * @param displayMode - Point style mode passed to the symbol creator.
+   * @param displaySize - Point display size (`PDSIZE`) used to scale symbols.
    */
-  resetGeometry(displayMode: number) {
+  resetGeometry(displayMode: number, displaySize: number = 0) {
     // Backup user data
     const userData = this.getUserData()
 
@@ -265,7 +266,11 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
     const creator = AcTrPointSymbolCreator.instance
     userData.forEach(item => {
       if (item.position) {
-        const geometry = creator.create(displayMode)
+        const geometry = creator.create(
+          displayMode,
+          item.position,
+          displaySize
+        )
         if (geometry.line) {
           const worldOffset = new THREE.Vector3(
             item.position.x,
