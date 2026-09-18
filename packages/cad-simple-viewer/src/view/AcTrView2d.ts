@@ -1207,15 +1207,20 @@ export class AcTrView2d extends AcEdBaseView {
             threeEntity instanceof AcTrGroup &&
             (threeEntity as AcTrGroup).isOnTheSameLayer
           ) {
-            // Children authored on layer "0" inherit the INSERT layer for
-            // ByLayer traits (color, etc.), same as the primary-document path.
+            threeEntity.userData.insertLayerName = threeEntity.layerName
+          }
+          await this.finishEntityGeometry(threeEntity, false)
+          if (
+            threeEntity instanceof AcTrGroup &&
+            (threeEntity as AcTrGroup).isOnTheSameLayer
+          ) {
+            // Remap after glyph geometry exists — see same-layer commit path.
             this._inheritedLayerMaterialMapper.remap(
               (threeEntity as AcTrGroup).children,
               '0',
               threeEntity.layerName
             )
           }
-          await this.finishEntityGeometry(threeEntity, false)
           layout.addEntity(threeEntity)
           threeEntity.dispose()
         } catch (error) {
@@ -3187,13 +3192,10 @@ export class AcTrView2d extends AcEdBaseView {
             threeEntity instanceof AcTrGroup &&
             (threeEntity as AcTrGroup).isOnTheSameLayer
           ) {
-            // Even when a block expands to a single layer bucket, children authored on
-            // layer "0" still inherit the INSERT layer for ByLayer traits (color, etc.).
-            this._inheritedLayerMaterialMapper.remap(
-              (threeEntity as AcTrGroup).children,
-              '0',
-              threeEntity.layerName
-            )
+            // Layer-0 inheritance must run AFTER finishEntityGeometry so TEXT/
+            // MTEXT glyph materials exist. Remapping earlier (before asyncDraw)
+            // leaves GM/GB-style labels as ACI-7 white while the block frame
+            // remaps correctly (GAS-Meter / GAS-Box, A517B / A517E).
             threeEntity.userData.insertLayerName = threeEntity.layerName
           }
           const isMultiLayerGroup =
@@ -3232,6 +3234,13 @@ export class AcTrView2d extends AcEdBaseView {
               }
               if (threeEntity instanceof AcTrGroup) {
                 this.syncGroupSpatialBoundsForIndexing(threeEntity)
+                if ((threeEntity as AcTrGroup).isOnTheSameLayer) {
+                  this._inheritedLayerMaterialMapper.remap(
+                    (threeEntity as AcTrGroup).children,
+                    '0',
+                    threeEntity.layerName
+                  )
+                }
               }
               this._scene.addEntity(threeEntity, isExtendBbox)
               this.applySessionHiddenObjectState(entity.objectId)
