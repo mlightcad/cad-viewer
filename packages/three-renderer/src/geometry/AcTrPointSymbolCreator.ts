@@ -450,11 +450,29 @@ export class AcTrPointSymbolCreator {
     )
   }
 
+  /**
+   * Resolves the world-unit scale applied to unit point-symbol templates.
+   *
+   * Templates are authored so the circle diameter (and overall marker size for
+   * modes that include a circle) equals `1`. Positive {@link displaySize}
+   * (`PDSIZE`) is an absolute size in drawing units, matching AutoCAD.
+   * Non-positive sizes keep the unit template (viewport-relative `PDSIZE`
+   * handling is applied by callers when they can supply a viewport height).
+   *
+   * @param displaySize - Point display size from `PDSIZE` / {@link AcGiPointStyle.displaySize}.
+   * @returns Scale factor applied to cloned symbol geometry.
+   */
+  static resolveDisplayScale(displaySize: number): number {
+    return displaySize > 0 ? displaySize : 1
+  }
+
   create(
     displayMode: number | null = null,
-    _point: AcGePoint3dLike = { x: 0, y: 0, z: 0 }
+    _point: AcGePoint3dLike = { x: 0, y: 0, z: 0 },
+    displaySize: number = 0
   ): AcTrPointSymbolGeometry {
     const result: AcTrPointSymbolGeometry = {}
+    const scale = AcTrPointSymbolCreator.resolveDisplayScale(displaySize)
     if (displayMode == null || displayMode == 0) {
       result.point = new THREE.BufferGeometry().setFromPoints([_originPoint])
     } else if (displayMode == 1) {
@@ -467,6 +485,9 @@ export class AcTrPointSymbolCreator {
         )
       } else {
         result.line = pointSymbolGeometry.clone()
+        if (scale !== 1) {
+          result.line.scale(scale, scale, scale)
+        }
 
         // For those display mode, there is one point at the center of point symbol
         if (displayMode == 32 || displayMode == 64 || displayMode == 96) {

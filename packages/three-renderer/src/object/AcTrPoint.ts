@@ -30,7 +30,9 @@ export class AcTrPoint extends AcTrEntity {
     super(context)
     this._point = point
     const pointSymbol = AcTrPointSymbolCreator.instance.create(
-      style.displayMode
+      style.displayMode,
+      point,
+      style.displaySize
     )
 
     this.isShowPoint = pointSymbol.point != null

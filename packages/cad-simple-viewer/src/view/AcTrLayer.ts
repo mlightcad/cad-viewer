@@ -224,15 +224,14 @@ export class AcTrLayer {
       ([oldId, material]) => material.id !== Number(oldId)
     )
 
-    if (needsIdPatch) {
-      for (const id in materials) {
-        const oldId = Number(id)
-        const material = materials[id]
-        if (material.id === oldId) {
-          continue
-        }
-        this.updateMaterial(oldId, material)
-      }
+    // Always push cache materials into batch containers. Batches own private
+    // material clones (highlight isolation); an in-place colour refresh on the
+    // style-manager cache (same material id) would otherwise leave clones stale
+    // after switchbg / ACI-7 foreground inversion.
+    for (const id in materials) {
+      const oldId = Number(id)
+      const material = materials[id]
+      this.updateMaterial(oldId, material)
     }
 
     this._group.syncAppearanceFromRecord(
@@ -285,9 +284,29 @@ export class AcTrLayer {
   /**
    * Re-render points with latest point style settings
    * @param displayMode Input display mode of points
+   * @param displaySize Input display size of points (`PDSIZE`)
    */
-  rerenderPoints(displayMode: number) {
-    this._group.rerenderPoints(displayMode)
+  rerenderPoints(displayMode: number, displaySize: number = 0) {
+    this._group.rerenderPoints(displayMode, displaySize)
+  }
+
+  /**
+   * Collects world-space AABBs for point / point-symbol batch slots in this layer.
+   *
+   * @param out - Map of object id to world AABB; values are unioned across layers.
+   * @returns The same map instance passed in {@link out}.
+   */
+  collectPointObjectWorldBoxes(
+    out: Map<string, THREE.Box3> = new Map()
+  ): Map<string, THREE.Box3> {
+    return this._group.collectPointObjectWorldBoxes(out)
+  }
+
+  /**
+   * Applies ACI-7 / foreground colour to owned batch material clones in this layer.
+   */
+  repaintForegroundMaterials(color: number) {
+    this._group.repaintForegroundMaterials(color)
   }
 
   /**

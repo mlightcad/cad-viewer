@@ -21,6 +21,7 @@ import {
   AcGeMatrix3d,
   AcGePoint2d,
   AcGePoint2dLike,
+  acgiForegroundColorForBackground,
   log
 } from '@mlightcad/data-model'
 import { AcDbSystemVariables } from '@mlightcad/data-model'
@@ -1047,6 +1048,11 @@ export class AcTrView2d extends AcEdBaseView {
     this._layerAppearance.refreshTextMaterialsInObjectTree(
       this._scene.internalScene
     )
+    // Style-manager changeForeground only updates cache entries; batch
+    // containers own private material clones and must be repainted too.
+    this._scene.repaintForegroundMaterials(
+      acgiForegroundColorForBackground(value)
+    )
     this.resyncForegroundLayersForBackground()
     if (this._readingMode.isEnabled) {
       this._readingMode.noteLayoutBackground(value)
@@ -1424,11 +1430,12 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * Re-render points with latest point style settings
    * @param displayMode Input display mode of points
+   * @param displaySize Input display size of points (`PDSIZE`)
    */
-  rerenderPoints(displayMode: number) {
+  rerenderPoints(displayMode: number, displaySize: number = 0) {
     const activeLayout = this._scene.activeLayout
     if (activeLayout) {
-      activeLayout.rerenderPoints(displayMode)
+      activeLayout.rerenderPoints(displayMode, displaySize)
       this._isDirty = true
     }
   }

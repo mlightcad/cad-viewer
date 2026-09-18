@@ -450,12 +450,13 @@ export function installBatchHighlightRenderer(
       material,
       group
     )
-    if (
-      (!state.hasAnyHighlight() && !state.needsCompareUniforms()) ||
-      !material
-    ) {
+    if (!material) {
       return
     }
+    // Always rebind this batch's mask. Style-manager materials are shared
+    // across batch containers; skipping when this batch has no highlight
+    // leaves the previous draw's mask in the shared uniforms so slot 0 of
+    // every later batch incorrectly draws as selected.
     bindBatchHighlightUniforms(material, state)
   }
 }

@@ -285,6 +285,18 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
   }
 
   /**
+   * Returns the first-level (root) item for {@link id}, when present.
+   *
+   * Does not clear or inspect child indexes.
+   */
+  getRootById(id: AcDbObjectId): AcEdSpatialQueryResultItem | undefined {
+    const root = this.rootIndex as AcTrSpatialIndex & {
+      getById?: (id: AcDbObjectId) => AcEdSpatialQueryResultItem | undefined
+    }
+    return root.getById?.(id)
+  }
+
+  /**
    * Aggregates memory / cardinality stats from the root index and all children.
    */
   getStats(): AcTrSpatialIndexStats {

@@ -320,14 +320,56 @@ export class AcTrLayout {
 
   /**
    * Re-render points with latest point style settings.
-   * Updates the visual representation of all point entities across all layers.
+   * Updates the visual representation of all point entities across all layers
+   * and refreshes spatial-index boxes so enlarged markers stay selectable.
    *
    * @param displayMode - Input display mode of points
+   * @param displaySize - Input display size of points (`PDSIZE`)
    */
-  rerenderPoints(displayMode: number) {
+  rerenderPoints(displayMode: number, displaySize: number = 0) {
     this._layers.forEach(layer => {
-      layer.rerenderPoints(displayMode)
+      layer.rerenderPoints(displayMode, displaySize)
     })
+    this.refreshPointSpatialIndexes()
+  }
+
+  /**
+   * Syncs root spatial-index boxes with point / point-symbol batch AABBs after
+   * a `PDMODE` / `PDSIZE` refresh.
+   *
+   * Pure point entities replace their root box. Block references that own a
+   * child index only expand so coarse INSERT bounds are never shrunk to the
+   * point-symbol subset.
+   */
+  private refreshPointSpatialIndexes() {
+    const boxes = new Map<string, THREE.Box3>()
+    this._layers.forEach(layer => {
+      layer.collectPointObjectWorldBoxes(boxes)
+    })
+
+    boxes.forEach((box, objectId) => {
+      if (this._spatialIndex.hasChildIndex(objectId)) {
+        const existing = this._spatialIndex.getRootById(objectId)
+        if (existing) {
+          this._spatialIndex.insert({
+            id: objectId,
+            minX: Math.min(existing.minX, box.min.x),
+            minY: Math.min(existing.minY, box.min.y),
+            maxX: Math.max(existing.maxX, box.max.x),
+            maxY: Math.max(existing.maxY, box.max.y)
+          })
+          return
+        }
+      }
+      this.registerSpatialIndexBox(objectId, box)
+    })
+  }
+
+  /**
+   * Applies ACI-7 / foreground colour to owned batch material clones in this layout.
+   */
+  repaintForegroundMaterials(color: number) {
+    this._layers.forEach(layer => layer.repaintForegroundMaterials(color))
   }
 
   /**
