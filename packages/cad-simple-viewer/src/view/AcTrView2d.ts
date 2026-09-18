@@ -32,7 +32,8 @@ import {
   AcTrGroup,
   AcTrHtmlTransientManager,
   AcTrRenderer,
-  AcTrViewportView
+  AcTrViewportView,
+  hasPendingComplexLineTypeGlyphs
 } from '@mlightcad/three-renderer'
 import { AcTrMatrixUtil } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
@@ -2811,9 +2812,10 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * Finishes geometry for a converted entity.
    *
-   * Glyph entities and block groups use {@link AcTrEntity.asyncDraw} so
-   * {@link FontManager.awaitFontsBeforeDraw} can wait for fonts without
-   * relying on a full-scene regen. Other entities keep the sync finalize path.
+   * Glyph entities, complex-linetype lines, and block groups use
+   * {@link AcTrEntity.asyncDraw} so {@link FontManager.awaitFontsBeforeDraw}
+   * can wait for fonts without relying on a full-scene regen. Other entities
+   * keep the sync finalize path.
    */
   private async finishEntityGeometry(
     threeEntity: AcTrEntity,
@@ -2825,6 +2827,12 @@ export class AcTrView2d extends AcEdBaseView {
       if (!this.groupHasPendingGlyphGeometry(threeEntity)) {
         return
       }
+      await threeEntity.asyncDraw()
+      return
+    }
+    // Complex TEXT/SHAPE linetypes attach stroke children immediately while
+    // glyph shells still need asyncDraw — do not treat stroke children as done.
+    if (hasPendingComplexLineTypeGlyphs(threeEntity)) {
       await threeEntity.asyncDraw()
       return
     }
@@ -2843,7 +2851,7 @@ export class AcTrView2d extends AcEdBaseView {
     if (threeEntity instanceof AcTrGroup) {
       return this.groupHasPendingGlyphGeometry(threeEntity)
     }
-    return false
+    return hasPendingComplexLineTypeGlyphs(threeEntity)
   }
 
   private clearFontLoadedRedrawTimer() {

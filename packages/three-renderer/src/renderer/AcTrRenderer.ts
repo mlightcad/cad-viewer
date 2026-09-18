@@ -19,6 +19,7 @@ import { FontManager } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import type { AcTrBatchDrawPolicy } from '../draw/AcTrBatchDrawPolicy'
+import { isComplexLineType } from '../linetype'
 import {
   AcTrEntity,
   AcTrGroup,
@@ -577,6 +578,10 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    */
   lineSegments(array: Float32Array, itemSize: number, indices: Uint16Array) {
     if (this._directCapture !== 'off') {
+      if (isComplexLineType(this._subEntityTraits.lineType.pattern)) {
+        this.missDirectCapture()
+        return this.createEntity() as AcTrLineSegments
+      }
       if (
         this.tryCaptureDirectPayload({
           kind: 'lineSegments',
@@ -695,6 +700,10 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   private linePoints(points: AcGePoint3dLike[]) {
     if (this._directCapture !== 'off') {
       if (points.length < 2) {
+        this.missDirectCapture()
+        return this.createEntity()
+      }
+      if (isComplexLineType(this._subEntityTraits.lineType.pattern)) {
         this.missDirectCapture()
         return this.createEntity()
       }
