@@ -6,11 +6,20 @@ import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeome
 
 import { resolveAnchorFromBox } from '../draw/AcTrBatchDrawPolicy'
 import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
+import {
+  asyncComplexLineTypeGlyphs,
+  buildComplexLineTypeGeometry,
+  hasPendingComplexLineTypeGlyphs,
+  isComplexLineType,
+  syncComplexLineTypeGlyphs
+} from '../linetype'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrBufferGeometryUtil, getSceneDrawableUserData } from '../util'
 import { AcTrEntity } from './AcTrEntity'
 
 export class AcTrLineSegments extends AcTrEntity {
+  private _hasComplexGlyphs = false
+
   constructor(
     array: Float32Array,
     itemSize: number,
@@ -19,6 +28,15 @@ export class AcTrLineSegments extends AcTrEntity {
     context: AcTrRenderContext
   ) {
     super(context)
+
+    if (
+      isComplexLineType(traits.lineType.pattern) &&
+      this.buildComplexFromSegments(array, itemSize, indices, traits, context)
+    ) {
+      this._hasComplexGlyphs = hasPendingComplexLineTypeGlyphs(this)
+      this.finalizeLeafDrawables()
+      return
+    }
 
     const material = this.styleManager.getLineMaterial(traits)
     const box = new THREE.Box3()
@@ -88,10 +106,91 @@ export class AcTrLineSegments extends AcTrEntity {
     this.finalizeLeafDrawables()
   }
 
+  get hasComplexLinetypeGlyphs(): boolean {
+    return this._hasComplexGlyphs || hasPendingComplexLineTypeGlyphs(this)
+  }
+
+  /**
+   * Stroke children attach immediately while glyph shells stay empty until
+   * sync/async draw. Report not-yet-drawable so {@link AcTrGroup} still
+   * finalizes this entity (and refreshes bbox) instead of skipping it.
+   */
+  override hasDrawableGeometry(): boolean {
+    if (hasPendingComplexLineTypeGlyphs(this)) {
+      return false
+    }
+    return super.hasDrawableGeometry()
+  }
+
+  override syncDraw(): void {
+    if (!this.hasComplexLinetypeGlyphs) {
+      return
+    }
+    syncComplexLineTypeGlyphs(this)
+  }
+
+  override async asyncDraw(): Promise<void> {
+    if (!this.hasComplexLinetypeGlyphs) {
+      return
+    }
+    await asyncComplexLineTypeGlyphs(this)
+  }
+
   override resolveDrawMode(): AcTrDrawMode {
     return this.batchDrawPolicy.resolveDrawMode({
       anchor: resolveAnchorFromBox(this.wcsBbox)
     })
+  }
+
+  private buildComplexFromSegments(
+    array: Float32Array,
+    itemSize: number,
+    indices: Uint16Array,
+    traits: AcGiSubEntityTraits,
+    context: AcTrRenderContext
+  ): boolean {
+    // Each index pair is walked independently, so the dash phase restarts per
+    // segment. Continuous polylines should use line strips (`lines()`), not
+    // disjoint lineSegments, when complex linetype phase continuity matters.
+    const segmentCount = Math.floor(indices.length / 2)
+    let builtAny = false
+    const unionBox = new THREE.Box3()
+
+    for (let i = 0; i < segmentCount; i++) {
+      const i1 = indices[i * 2]
+      const i2 = indices[i * 2 + 1]
+      const base1 = i1 * itemSize
+      const base2 = i2 * itemSize
+      const points = [
+        {
+          x: array[base1],
+          y: array[base1 + 1],
+          z: array[base1 + 2] ?? 0
+        },
+        {
+          x: array[base2],
+          y: array[base2 + 1],
+          z: array[base2 + 2] ?? 0
+        }
+      ]
+      const shell = new AcTrEntity(context)
+      if (buildComplexLineTypeGeometry(shell, points, traits, context)) {
+        builtAny = true
+        while (shell.children.length > 0) {
+          const child = shell.children[0]
+          shell.remove(child)
+          this.add(child)
+        }
+        if (!shell.wcsBbox.isEmpty()) {
+          unionBox.union(shell.wcsBbox)
+        }
+      }
+    }
+
+    if (builtAny && !unionBox.isEmpty()) {
+      this.wcsBbox = unionBox
+    }
+    return builtAny
   }
 
   private setBoundingBox(

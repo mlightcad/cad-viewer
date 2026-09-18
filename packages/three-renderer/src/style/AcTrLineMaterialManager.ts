@@ -2,6 +2,7 @@ import { AcGiLineWeight, AcGiSubEntityTraits } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
+import { isComplexLineType } from '../linetype'
 import { AcTrLinePatternShaders } from './AcTrLinePatternShaders'
 import { AcTrMaterialManager } from './AcTrMaterialManager'
 
@@ -52,7 +53,8 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     return !!(
       !options.basicMaterialOnly &&
       traits.lineType.pattern &&
-      traits.lineType.pattern.length > 0
+      traits.lineType.pattern.length > 0 &&
+      !isComplexLineType(traits.lineType.pattern)
     )
   }
 

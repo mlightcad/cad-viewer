@@ -5,6 +5,7 @@ import {
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
+import { isComplexLineType } from '../linetype'
 import { AcTrFillMaterialManager } from './AcTrFillMaterialManager'
 import { AcTrLineMaterialManager } from './AcTrLineMaterialManager'
 import {
@@ -89,7 +90,9 @@ export class AcTrStyleManager {
     basicMaterialOnly?: boolean
   ): THREE.Material {
     const hasLinePattern = !!(
-      traits.lineType.pattern && traits.lineType.pattern.length > 0
+      traits.lineType.pattern &&
+      traits.lineType.pattern.length > 0 &&
+      !isComplexLineType(traits.lineType.pattern)
     )
     const showLineWeight =
       this.options.showLineWeight || this._forceShowLineWeight

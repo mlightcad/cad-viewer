@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 
 import type { ManualChunksOption, OutputOptions } from 'rollup'
@@ -8,7 +9,17 @@ function resolvePackageEntry(
   name: string
 ): string | undefined {
   try {
-    return req.resolve(name)
+    // `require.resolve` follows the Node "require"/"main" condition, which for
+    // our libraries is often `*.umd.cjs`. Vite example apps import with ESM
+    // named exports, so prefer the sibling ESM build when present.
+    const resolved = req.resolve(name)
+    if (resolved.endsWith('.umd.cjs')) {
+      const esm = resolved.slice(0, -'.umd.cjs'.length) + '.js'
+      if (existsSync(esm)) {
+        return esm
+      }
+    }
+    return resolved
   } catch {
     return undefined
   }

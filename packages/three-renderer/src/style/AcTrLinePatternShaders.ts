@@ -1,6 +1,8 @@
 import { AcGiLineTypePatternElement } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
+import { normalizeComplexPatternElement } from '../linetype'
+
 export class AcTrLinePatternShaders {
   /**
    * Creates line shader by given pattern.
@@ -17,17 +19,16 @@ export class AcTrLinePatternShaders {
 
     const ltypeElementLenArr: number[] = []
     for (let i = 0; i < pattern.length; i++) {
-      let len = pattern[i].elementLength
-      if (len < 0 && pattern[i].elementTypeFlag !== 0) {
-        // If current element is a complex linetype element.
-        // Since we don"t support this kind of linetype now, we'll need to make its length possitive,
-        // in order to draw a line segment for this case!
-        // TODO: support complex ltype, thus we can remove unsupportedLineTypes
-        len = Math.abs(len)
+      // Complex TEXT/SHAPE elements are expanded to geometry elsewhere
+      // (`buildComplexLineTypeGeometry`); this shader only handles simple
+      // dash/gap patterns. Skip complex elements if one reaches here.
+      const normalized = normalizeComplexPatternElement(pattern[i])
+      if (normalized.elementTypeFlag !== 0) {
+        continue
       }
-      len *= scale
-      ltypeElementLenArr[i] = len
-      totalLength += Math.abs(ltypeElementLenArr[i])
+      const len = pattern[i].elementLength * scale
+      ltypeElementLenArr.push(len)
+      totalLength += Math.abs(len)
     }
     // Because we cannot (or, it's kind of hard to) draw a dot, let's draw a short dash.
     // A really small value doesn't look good, so, use a fixed small value now!
@@ -36,6 +37,11 @@ export class AcTrLinePatternShaders {
         ltypeElementLenArr[i] = 0.5 /*totalLength * 0.01 * scale*/
         totalLength += ltypeElementLenArr[i]
       }
+    }
+
+    if (ltypeElementLenArr.length === 0) {
+      ltypeElementLenArr.push(1)
+      totalLength = 1
     }
 
     return this.createLineShaderMaterialFromScaledPattern(
