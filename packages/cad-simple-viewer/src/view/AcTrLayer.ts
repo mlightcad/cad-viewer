@@ -224,15 +224,14 @@ export class AcTrLayer {
       ([oldId, material]) => material.id !== Number(oldId)
     )
 
-    if (needsIdPatch) {
-      for (const id in materials) {
-        const oldId = Number(id)
-        const material = materials[id]
-        if (material.id === oldId) {
-          continue
-        }
-        this.updateMaterial(oldId, material)
-      }
+    // Always push cache materials into batch containers. Batches own private
+    // material clones (highlight isolation); an in-place colour refresh on the
+    // style-manager cache (same material id) would otherwise leave clones stale
+    // after switchbg / ACI-7 foreground inversion.
+    for (const id in materials) {
+      const oldId = Number(id)
+      const material = materials[id]
+      this.updateMaterial(oldId, material)
     }
 
     this._group.syncAppearanceFromRecord(
@@ -301,6 +300,13 @@ export class AcTrLayer {
     out: Map<string, THREE.Box3> = new Map()
   ): Map<string, THREE.Box3> {
     return this._group.collectPointObjectWorldBoxes(out)
+  }
+
+  /**
+   * Applies ACI-7 / foreground colour to owned batch material clones in this layer.
+   */
+  repaintForegroundMaterials(color: number) {
+    this._group.repaintForegroundMaterials(color)
   }
 
   /**

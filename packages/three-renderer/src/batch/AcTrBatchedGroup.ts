@@ -2630,6 +2630,50 @@ export class AcTrBatchedGroup extends THREE.Group {
   }
 
   /**
+   * Applies ACI-7 / foreground colour to every owned batch material clone.
+   *
+   * Style-manager cache entries are updated by {@link AcTrMaterialManager.changeForeground};
+   * batch containers keep private clones so they must be repainted separately.
+   *
+   * @param color - Resolved foreground colour for the current canvas background.
+   */
+  repaintForegroundMaterials(color: number) {
+    const threeColor = new THREE.Color(color)
+    const paint = (material: THREE.Material) => {
+      if (getMaterialMetadata(material).isForeground === true) {
+        AcTrMaterialUtil.setMaterialColor(material, threeColor)
+      }
+    }
+
+    for (const group of this.groups) {
+      group.forEach(batches => {
+        batches.forEach(batch => {
+          const material = batch.material
+          if (Array.isArray(material)) {
+            material.forEach(paint)
+          } else if (material) {
+            paint(material)
+          }
+        })
+      })
+    }
+
+    this._unbatchedObjects.traverse(object => {
+      if (!('material' in object)) {
+        return
+      }
+      const material = (
+        object as THREE.Mesh | THREE.Line | THREE.LineSegments | THREE.Points
+      ).material
+      if (Array.isArray(material)) {
+        material.forEach(paint)
+      } else if (material) {
+        paint(material)
+      }
+    })
+  }
+
+  /**
    * Clones a style-cached material for exclusive use by one batch container.
    *
    * Batches are still grouped by the source `material.id`, but each container

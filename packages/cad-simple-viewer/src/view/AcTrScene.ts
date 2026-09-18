@@ -442,6 +442,13 @@ export class AcTrScene {
   }
 
   /**
+   * Applies ACI-7 / foreground colour to owned batch material clones across layouts.
+   */
+  repaintForegroundMaterials(color: number) {
+    this._layouts.forEach(layout => layout.repaintForegroundMaterials(color))
+  }
+
+  /**
    * Add the specified transient entity into this scene
    * @param entity Input one transient entity
    */

@@ -366,6 +366,13 @@ export class AcTrLayout {
   }
 
   /**
+   * Applies ACI-7 / foreground colour to owned batch material clones in this layout.
+   */
+  repaintForegroundMaterials(color: number) {
+    this._layers.forEach(layer => layer.repaintForegroundMaterials(color))
+  }
+
+  /**
    * Return true if the object with the specified object id is intersected with the ray by using raycast.
    *
    * @param objectId - Input object id of object to check for intersection with the ray.

@@ -21,6 +21,7 @@ import {
   AcGeMatrix3d,
   AcGePoint2d,
   AcGePoint2dLike,
+  acgiForegroundColorForBackground,
   log
 } from '@mlightcad/data-model'
 import { AcDbSystemVariables } from '@mlightcad/data-model'
@@ -1046,6 +1047,11 @@ export class AcTrView2d extends AcEdBaseView {
     this._renderer.currentBackgroundColor = value
     this._layerAppearance.refreshTextMaterialsInObjectTree(
       this._scene.internalScene
+    )
+    // Style-manager changeForeground only updates cache entries; batch
+    // containers own private material clones and must be repainted too.
+    this._scene.repaintForegroundMaterials(
+      acgiForegroundColorForBackground(value)
     )
     this.resyncForegroundLayersForBackground()
     if (this._readingMode.isEnabled) {
