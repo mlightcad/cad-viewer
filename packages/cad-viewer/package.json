@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-viewer",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -49,7 +49,7 @@
     "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.14.7",
+    "@mlightcad/data-model": "^1.14.8",
     "@mlightcad/ribbon": "^0.1.13",
     "@mlightcad/three-renderer": "workspace:*",
     "@mlightcad/three-viewcube": "0.0.9",
@@ -76,7 +76,7 @@
     "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.14.7",
+    "@mlightcad/data-model": "^1.14.8",
     "@mlightcad/three-renderer": "workspace:*",
     "@vueuse/core": "^11.1.0",
     "element-plus": "^2.12.0",

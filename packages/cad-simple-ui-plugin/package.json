@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-simple-ui-plugin",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -39,10 +39,10 @@
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.14.7"
+    "@mlightcad/data-model": "^1.14.8"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.14.7"
+    "@mlightcad/data-model": "^1.14.8"
   }
 }
