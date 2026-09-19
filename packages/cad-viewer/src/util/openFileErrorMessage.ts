@@ -1,7 +1,9 @@
 import {
   type AcApOpenFileErrorParams,
   acapResolveOpenFileErrorMessage,
-  acapResolveOpenFileErrorTitle} from '@mlightcad/cad-simple-viewer'
+  acapResolveOpenFileErrorTitle,
+  acapResolveOpenFileErrorToastMessage
+} from '@mlightcad/cad-simple-viewer'
 import type { AcDbOpenDatabaseErrorCode } from '@mlightcad/data-model'
 
 export type OpenFileErrorParams = AcApOpenFileErrorParams
@@ -9,13 +11,23 @@ export type OpenFileErrorParams = AcApOpenFileErrorParams
 type TranslateFn = (key: string, params?: Record<string, string>) => string
 
 /**
- * Resolves a user-facing open-file failure message from structured error metadata.
+ * Resolves a detailed open-file failure message for the notification center.
  */
 export function resolveOpenFileErrorMessage(
   t: TranslateFn,
   params: OpenFileErrorParams
 ): string {
   return acapResolveOpenFileErrorMessage(t, params)
+}
+
+/**
+ * Resolves a short open-file failure toast (details live in the notification center).
+ */
+export function resolveOpenFileErrorToastMessage(
+  t: TranslateFn,
+  params: OpenFileErrorParams
+): string {
+  return acapResolveOpenFileErrorToastMessage(t, params)
 }
 
 /**

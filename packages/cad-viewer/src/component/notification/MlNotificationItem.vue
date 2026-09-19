@@ -34,9 +34,11 @@
         </div>
       </div>
 
-      <p v-if="notification.message" class="ml-notification-item-message">
-        {{ notification.message }}
-      </p>
+      <p
+        v-if="notification.message"
+        class="ml-notification-item-message"
+        v-html="formattedMessage"
+      ></p>
 
       <div class="ml-notification-item-footer">
         <span class="ml-notification-item-time">
@@ -55,6 +57,7 @@ import {
   SuccessFilled,
   WarningFilled
 } from '@element-plus/icons-vue'
+import { acapFormatMessageHtml } from '@mlightcad/cad-simple-viewer'
 import { ElButton, ElIcon } from 'element-plus'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -76,6 +79,12 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const formattedMessage = computed(() =>
+  props.notification.message
+    ? acapFormatMessageHtml(props.notification.message)
+    : ''
+)
 
 const typeIcon = computed(() => {
   switch (props.notification.type) {
@@ -195,6 +204,11 @@ const formatTime = (timestamp: Date) => {
   color: var(--el-text-color-regular);
   line-height: 1.4;
   word-wrap: break-word;
+}
+
+.ml-notification-item-message :deep(a) {
+  color: var(--el-color-primary);
+  text-decoration: underline;
 }
 
 .ml-notification-item-footer {

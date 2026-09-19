@@ -118,7 +118,7 @@ import {
   useSettings
 } from '../composable'
 import { LocaleProp } from '../locale'
-import { resolveOpenFileErrorMessage } from '../util/openFileErrorMessage'
+import { resolveOpenFileErrorToastMessage } from '../util/openFileErrorMessage'
 import { MlDialogManager, MlFontFileReader } from './common'
 import { MlEntityInfo, MlToolBars } from './layout'
 import { MlNotificationCenter } from './notification'
@@ -353,7 +353,7 @@ const openFileFromUrl = async (url: string) => {
   } catch (error) {
     log.error('Failed to open file from URL:', error)
     ElMessage({
-      message: resolveOpenFileErrorMessage(t, { fileName: url }),
+      message: resolveOpenFileErrorToastMessage(t, { fileName: url }),
       grouping: true,
       type: 'error',
       showClose: true
@@ -403,7 +403,7 @@ const openLocalFile = async (file: File) => {
     }
   } catch {
     ElMessage({
-      message: resolveOpenFileErrorMessage(t, { fileName: file.name }),
+      message: resolveOpenFileErrorToastMessage(t, { fileName: file.name }),
       grouping: true,
       type: 'error',
       showClose: true
@@ -577,9 +577,8 @@ eventBus.on('open-local-file-started', ({ mode }) => {
 // Handle file opening failures with user-friendly error messages
 eventBus.on('failed-to-open-file', params => {
   endPendingOpen()
-  const message = resolveOpenFileErrorMessage(t, params)
   ElMessage({
-    message,
+    message: resolveOpenFileErrorToastMessage(t, params),
     grouping: true,
     type: 'error',
     showClose: true,
