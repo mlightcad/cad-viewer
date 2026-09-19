@@ -53,6 +53,16 @@ describe('AcPdfStyleUtil', () => {
     const style = AcPdfStyleUtil.strokeStyle(createTraits(), ctx)
     expect(style.rgb).toEqual({ r: 1, g: 0, b: 0 })
     expect(style.lineWidth).toBe(0)
+    expect(style.exactWidth).toBe(true)
+  })
+
+  it('uses exactWidth hairline when showLineWeight is off so the page min floor is skipped', () => {
+    const style = AcPdfStyleUtil.strokeStyle(createTraits(), {
+      ...ctx,
+      showLineWeight: false
+    })
+    expect(style.lineWidth).toBe(0)
+    expect(style.exactWidth).toBe(true)
   })
 
   it('darkens true-colour white strokes on white paper', () => {
