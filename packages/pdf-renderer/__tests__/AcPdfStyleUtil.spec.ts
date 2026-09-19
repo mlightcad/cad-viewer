@@ -132,4 +132,30 @@ describe('AcPdfStyleUtil', () => {
     expect(transparency.isByAlpha).toBe(true)
     expect(style.opacity).toBeCloseTo(128 / 255, 5)
   })
+
+  it('omits dashArray for complex TEXT linetypes (including LibreDWG swap)', () => {
+    const style = AcPdfStyleUtil.strokeStyle(
+      createTraits({
+        lineType: {
+          type: 'ByLayer',
+          name: 'VCP',
+          standardFlag: 0,
+          description: '6" VCP C700  - 6" VCP C700 -',
+          totalPatternLength: 2.25,
+          pattern: [
+            { elementLength: 1.05, elementTypeFlag: 0 },
+            {
+              elementLength: -0.6,
+              elementTypeFlag: 0,
+              shapeNumber: 2,
+              text: ' '
+            },
+            { elementLength: -0.6, elementTypeFlag: 0 }
+          ]
+        }
+      }),
+      ctx
+    )
+    expect(style.dashArray).toBeUndefined()
+  })
 })

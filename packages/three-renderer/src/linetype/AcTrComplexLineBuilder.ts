@@ -13,7 +13,6 @@ import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeome
 
 import { AcTrEntity } from '../object/AcTrEntity'
 import { AcTrGlyphEntity } from '../object/AcTrGlyphEntity'
-import { buildLineGeometry } from '../object/AcTrLineGeometryBuilder'
 import { AcTrMText } from '../object/AcTrMText'
 import { AcTrShape } from '../object/AcTrShape'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
@@ -174,34 +173,78 @@ function createPlacementGlyph(
   return null
 }
 
-function appendStrokeGeometry(
+function appendComplexStrokes(
   entity: AcTrEntity,
-  points: AcGePoint3dLike[],
+  strokes: Array<Array<{ x: number; y: number; z?: number }>>,
   material: THREE.Material,
   box: THREE.Box3
 ): void {
-  const built = buildLineGeometry(points, material)
-  if (!built) {
+  let segmentCount = 0
+  for (const stroke of strokes) {
+    if (stroke.length >= 2) {
+      segmentCount += stroke.length - 1
+    }
+  }
+  if (segmentCount === 0) {
     return
   }
-  box.union(built.wcsBbox)
 
-  if (built.kind === 'fat') {
-    const line = new LineSegments2(
-      built.geometry as LineSegmentsGeometry,
-      material as LineMaterial
-    )
-    line.position.copy(built.worldOffset)
+  // One origin for every dash. A per-dash worldOffset is a large coordinate
+  // stored in float32; short dashes then snap to different grid cells and
+  // the line looks pixelated when zoomed.
+  let minX = Infinity
+  let minY = Infinity
+  let minZ = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  let maxZ = -Infinity
+  for (const stroke of strokes) {
+    for (const p of stroke) {
+      const z = p.z ?? 0
+      if (p.x < minX) minX = p.x
+      if (p.y < minY) minY = p.y
+      if (z < minZ) minZ = z
+      if (p.x > maxX) maxX = p.x
+      if (p.y > maxY) maxY = p.y
+      if (z > maxZ) maxZ = z
+    }
+  }
+  const ox = (minX + maxX) / 2
+  const oy = (minY + maxY) / 2
+  const oz = (minZ + maxZ) / 2
+  box.expandByPoint(new THREE.Vector3(minX, minY, minZ))
+  box.expandByPoint(new THREE.Vector3(maxX, maxY, maxZ))
+
+  const positions = new Float32Array(segmentCount * 6)
+  let pos = 0
+  for (const stroke of strokes) {
+    for (let i = 1; i < stroke.length; i++) {
+      const a = stroke[i - 1]
+      const b = stroke[i]
+      positions[pos++] = a.x - ox
+      positions[pos++] = a.y - oy
+      positions[pos++] = (a.z ?? 0) - oz
+      positions[pos++] = b.x - ox
+      positions[pos++] = b.y - oy
+      positions[pos++] = (b.z ?? 0) - oz
+    }
+  }
+
+  const worldOffset = new THREE.Vector3(ox, oy, oz)
+  if (material instanceof LineMaterial) {
+    const geometry = new LineSegmentsGeometry()
+    geometry.setPositions(positions)
+    const line = new LineSegments2(geometry, material)
+    line.position.copy(worldOffset)
     getSceneDrawableUserData(line).styleMaterialId = material.id
     entity.add(line)
     return
   }
 
-  const line = new THREE.LineSegments(
-    built.geometry as THREE.BufferGeometry,
-    material
-  )
-  line.position.copy(built.worldOffset)
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  const line = new THREE.LineSegments(geometry, material)
+  line.position.copy(worldOffset)
   entity.add(line)
 }
 
@@ -226,20 +269,10 @@ export function buildComplexLineTypeGeometry(
 
   // Solid strokes — complex patterns are already excluded from the dash
   // shader via isComplexLineType; keep lineweight-aware materials.
-  const material = context.styleManager.getLineMaterial(traits)
+  const material = context.styleManager.getLineMaterial(traits, false, true)
   const box = new THREE.Box3()
 
-  for (const stroke of walked.strokes) {
-    if (stroke.length < 2) {
-      continue
-    }
-    appendStrokeGeometry(
-      entity,
-      stroke.map(p => ({ x: p.x, y: p.y, z: p.z ?? 0 })),
-      material,
-      box
-    )
-  }
+  appendComplexStrokes(entity, walked.strokes, material, box)
 
   for (const placement of walked.placements) {
     const glyph = createPlacementGlyph(

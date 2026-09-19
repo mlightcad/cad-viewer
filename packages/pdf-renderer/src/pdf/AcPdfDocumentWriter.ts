@@ -2,7 +2,6 @@ import { AcGeBox2d, AcGeMatrix3d } from '@mlightcad/data-model'
 import { PDFDocument, PDFImage } from 'pdf-lib'
 
 import type { AcPdfEntity } from '../renderer/AcPdfEntity'
-import type { AcPdfOp } from '../renderer/AcPdfStyle'
 import type { AcPdfFormRegistry } from './AcPdfContentWriter'
 import { AcPdfContentWriter } from './AcPdfContentWriter'
 import type { AcPdfFontManager } from './AcPdfFontManager'
@@ -10,6 +9,7 @@ import { AcPdfOcgManager } from './AcPdfOcgManager'
 import {
   type AcPdfPageLayoutInput,
   computePageLayout,
+  pdfRebaseOrigin,
   PDF_MIN_STROKE_PT
 } from './AcPdfPageLayout'
 
@@ -29,10 +29,10 @@ export interface AcPdfWriteOptions extends AcPdfPageLayoutInput {
   ocg?: AcPdfOcgManager
   /**
    * Shared embedded-image cache across pages of one document. Keyed by the
-   * draw op identity, so an image used on several pages is decoded/embedded
-   * only once.
+   * image byte buffer so transformed paint copies still resolve, and an
+   * image used on several pages is decoded/embedded only once.
    */
-  imageCache?: Map<AcPdfOp, PDFImage>
+  imageCache?: Map<Uint8Array, PDFImage>
   /**
    * Embedded-font registry for `text` draw ops (`textMode: 'text'`). Shared
    * across the pages of one document so fonts embed (subset) once and glyph
@@ -135,15 +135,24 @@ export class AcPdfDocumentWriter {
     }
 
     writer.save()
+    // Large survey coordinates lose precision once a viewer applies the page
+    // CTM in float32. Subtract the framing-box center in double precision and
+    // fold that origin into the CTM translation so both the path numbers and
+    // the `cm` operands stay small — the same local-origin rebase three-renderer
+    // applies before uploading vertex buffers.
+    const origin = pdfRebaseOrigin(bbox)
+    const drawingRebase = origin
+      ? new AcGeMatrix3d().makeTranslation(-origin.x, -origin.y, 0)
+      : undefined
     const drawingToPage = new AcGeMatrix3d().set(
       layout.scale,
       0,
       0,
-      layout.offsetX,
+      layout.offsetX + (origin ? origin.x * layout.scale : 0),
       0,
       layout.scale,
       0,
-      layout.offsetY,
+      layout.offsetY + (origin ? origin.y * layout.scale : 0),
       0,
       0,
       1,
@@ -165,7 +174,9 @@ export class AcPdfDocumentWriter {
         writer,
         ocg,
         embedActualText: options.embedTextActualText !== false,
-        formReuse: false
+        formReuse: false,
+        localToDrawing: drawingRebase,
+        drawingRebase
       })
     }
     writer.restore()
@@ -254,23 +265,31 @@ function splitDominantCluster(
  */
 function unionDrawableBoxes(entities: AcPdfEntity[]): AcGeBox2d {
   let boxes: AcGeBox2d[] = []
-  for (const entity of entities) {
+  const visit = (entity: AcPdfEntity) => {
     if (!entity.visible) {
-      continue
+      return
     }
     const box = entity.box
-    if (box.isEmpty()) {
-      continue
-    }
     if (
-      !Number.isFinite(box.min.x) ||
-      !Number.isFinite(box.min.y) ||
-      !Number.isFinite(box.max.x) ||
-      !Number.isFinite(box.max.y)
+      !box.isEmpty() &&
+      Number.isFinite(box.min.x) &&
+      Number.isFinite(box.min.y) &&
+      Number.isFinite(box.max.x) &&
+      Number.isFinite(box.max.y)
     ) {
-      continue
+      boxes.push(box)
     }
-    boxes.push(box)
+    // Async mtext groups keep an empty parent box until/unless refreshed;
+    // still consider children so INSERT/arc-aligned labels frame correctly.
+    for (let i = 0; i < entity.childCount; i++) {
+      const child = entity.childAt(i)
+      if (child) {
+        visit(child)
+      }
+    }
+  }
+  for (const entity of entities) {
+    visit(entity)
   }
   const fallback = new AcGeBox2d()
   for (const box of boxes) {

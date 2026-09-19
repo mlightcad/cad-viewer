@@ -18,11 +18,18 @@ export interface AcPdfPaintContext {
   embedActualText?: boolean
   formReuse?: boolean
   /**
-   * Maps this node's local coordinates into drawing space (the space the
-   * page CTM already maps to PDF). Prefer baking over PDF `cm` so INSERT
-   * placement does not depend on left-multiply conjugation.
+   * Maps this node's local coordinates into the page user space (drawing
+   * space, or that space translated by {@link drawingRebase}). Prefer baking
+   * over PDF `cm` so INSERT placement does not depend on left-multiply
+   * conjugation.
    */
   localToDrawing?: AcGeMatrix3d
+  /**
+   * Page-level translation from drawing space into the rebased user space
+   * the page CTM expects. Clip rectangles are already in drawing space, so
+   * they use this matrix alone — not the entity's own transform.
+   */
+  drawingRebase?: AcGeMatrix3d
 }
 
 /**
@@ -133,6 +140,11 @@ export class AcPdfEntity implements AcGiEntity {
     return this._children.length
   }
 
+  /** Returns the child at `index`, or `undefined` when out of range. */
+  childAt(index: number): AcPdfEntity | undefined {
+    return this._children[index]
+  }
+
   addOp(op: AcPdfOp) {
     this._ops.push(op)
   }
@@ -211,7 +223,11 @@ export class AcPdfEntity implements AcGiEntity {
     if (!paintedAsForm) {
       if (this._clipBox) {
         writer.save()
-        writer.clipRect(this._clipBox)
+        writer.clipRect(
+          ctx.drawingRebase
+            ? AcPdfMatrixUtil.mapRect(this._clipBox, ctx.drawingRebase)
+            : this._clipBox
+        )
       }
       if (this._ops.length > 0) {
         writer.drawOps(

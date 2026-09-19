@@ -39,14 +39,14 @@ export function attachPdfEntityMeta(
 }
 
 /**
- * Walks model space once and returns PDF drawables for viewport reuse.
+ * Walks one block's entities into PDF drawables (skipping viewports).
  */
-export function collectModelSpaceRoots(
-  db: AcDbDatabase,
+function walkBlockDrawables(
+  block: AcDbBlockTableRecord,
   renderer: AcPdfRenderer
 ): AcPdfEntity[] {
   const roots: AcPdfEntity[] = []
-  for (const entity of db.tables.blockTable.modelSpace.newIterator()) {
+  for (const entity of block.newIterator()) {
     if (entity instanceof AcDbViewport) continue
     const typeName = String(
       (entity as { type?: string }).type ??
@@ -60,6 +60,39 @@ export function collectModelSpaceRoots(
     }
   }
   return roots
+}
+
+/**
+ * Walks a block twice so INSERT cache templates receive async mtext/image
+ * ops before clones snapshot them.
+ *
+ * `AcDbRenderingCache` stores the first-drawn template by reference, then
+ * hands each INSERT a `fastDeepClone`. Text/mtext fill their op lists in
+ * microtasks (`awaitPending`). Cloning beforehand copies empty `_ops`
+ * arrays, so arc-aligned labels (and any other async text) inside blocks
+ * never appear in the PDF. Warming the cache, awaiting, then re-walking
+ * makes hits clone already-filled templates.
+ */
+export async function collectBlockRoots(
+  block: AcDbBlockTableRecord,
+  renderer: AcPdfRenderer
+): Promise<AcPdfEntity[]> {
+  walkBlockDrawables(block, renderer)
+  await renderer.awaitPending()
+  renderer.resetCollected()
+  const roots = walkBlockDrawables(block, renderer)
+  await renderer.awaitPending()
+  return roots
+}
+
+/**
+ * Walks model space and returns PDF drawables for viewport reuse.
+ */
+export async function collectModelSpaceRoots(
+  db: AcDbDatabase,
+  renderer: AcPdfRenderer
+): Promise<AcPdfEntity[]> {
+  return collectBlockRoots(db.tables.blockTable.modelSpace, renderer)
 }
 
 /**

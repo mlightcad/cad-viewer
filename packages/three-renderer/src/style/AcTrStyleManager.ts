@@ -87,8 +87,12 @@ export class AcTrStyleManager {
    */
   getLineMaterial(
     traits: AcGiSubEntityTraits,
-    basicMaterialOnly?: boolean
+    basicMaterialOnly?: boolean,
+    fatLines?: boolean
   ): THREE.Material {
+    if (fatLines) {
+      return this.lineMgr.getMaterial(traits, { fatLines: true })!
+    }
     const hasLinePattern = !!(
       traits.lineType.pattern &&
       traits.lineType.pattern.length > 0 &&

@@ -5,6 +5,7 @@ import {
   AcPdfEntity,
   type AcPdfPaintContext
 } from '../renderer/AcPdfEntity'
+import { AcPdfMatrixUtil } from '../renderer/AcPdfMatrixUtil'
 import type { AcPdfOp } from '../renderer/AcPdfStyle'
 
 /**
@@ -88,7 +89,11 @@ export class AcPdfViewportContent extends AcPdfEntity {
     const clipBox = this.clipBox
     if (clipBox) {
       writer.save()
-      writer.clipRect(clipBox)
+      writer.clipRect(
+        ctx.drawingRebase
+          ? AcPdfMatrixUtil.mapRect(clipBox, ctx.drawingRebase)
+          : clipBox
+      )
     }
     const localToDrawing = ctx.localToDrawing
       ? ctx.localToDrawing.clone().multiply(this._modelToPaper)

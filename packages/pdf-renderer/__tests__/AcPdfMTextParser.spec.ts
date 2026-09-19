@@ -116,6 +116,23 @@ describe('parseMText', () => {
 })
 
 describe('layoutMText', () => {
+  it('keeps baseline-centered glyphs finite when width is Infinity', () => {
+    const layout = layoutMText({
+      data: makeData({
+        text: 'H',
+        height: 0.7,
+        width: Infinity,
+        attachmentPoint: 11
+      }),
+      measure
+    })
+    expect(layout.lines).toHaveLength(1)
+    expect(layout.lines[0].text).toBe('H')
+    expect(Number.isFinite(layout.lines[0].dx)).toBe(true)
+    expect(Number.isFinite(layout.lines[0].dy)).toBe(true)
+    expect(layout.lines[0].dy).toBe(0)
+    expect(layout.lines[0].dx).toBeCloseTo(-layout.lines[0].width / 2)
+  })
   it('lays out the 8A8 fixture centered with 5/3 baseline spacing', () => {
     const layout = layoutMText({
       data: makeData({

@@ -32,10 +32,12 @@ export interface AcPdfContentWriterOptions {
    */
   minUserLineWidth?: number
   /**
-   * Cache of embedded images shared across pages of one document. When
-   * omitted the writer owns a private cache.
+   * Cache of embedded images shared across pages of one document. Keyed by
+   * the image `bytes` buffer (not the op object): paint transforms clone
+   * image ops via `{...op}`, so an object-identity cache would miss and
+   * silently skip every rebased / viewport-mapped image.
    */
-  imageCache?: Map<AcPdfOp, PDFImage>
+  imageCache?: Map<Uint8Array, PDFImage>
   /**
    * Document-scoped Form XObject registry shared across the pages of one
    * export so identical glyph/geometry forms are embedded once.
@@ -187,7 +189,7 @@ export class AcPdfContentWriter {
   private readonly _page: PDFPage | null
   private readonly _doc: PDFDocument
   private readonly _opacityStates = new Map<number, string>()
-  private readonly _images: Map<AcPdfOp, PDFImage>
+  private readonly _images: Map<Uint8Array, PDFImage>
   private readonly _imageNames = new Map<PDFImage, string>()
   private readonly _minUserLineWidth: number
   /** Shared Form XObject registry (per document unless overridden). */
@@ -207,7 +209,7 @@ export class AcPdfContentWriter {
     this._page = page
     this._doc = doc
     this._minUserLineWidth = Math.max(options.minUserLineWidth ?? 0, 0)
-    this._images = options.imageCache ?? new Map<AcPdfOp, PDFImage>()
+    this._images = options.imageCache ?? new Map<Uint8Array, PDFImage>()
     this._forms = options.formRegistry ?? createPdfFormRegistry()
     this._fonts = options.fonts
   }
@@ -407,7 +409,7 @@ export class AcPdfContentWriter {
   }
 
   async embedImage(op: Extract<AcPdfOp, { kind: 'image' }>) {
-    if (this._images.has(op) || op.bytes.byteLength === 0) {
+    if (this._images.has(op.bytes) || op.bytes.byteLength === 0) {
       return
     }
     try {
@@ -415,7 +417,7 @@ export class AcPdfContentWriter {
         op.format === 'jpg'
           ? await this._doc.embedJpg(op.bytes)
           : await this._doc.embedPng(op.bytes)
-      this._images.set(op, image)
+      this._images.set(op.bytes, image)
     } catch {
       // Skip images pdf-lib cannot embed (for example SVG bytes).
     }
@@ -735,10 +737,10 @@ export class AcPdfContentWriter {
     }
     const el = matrix?.elements
     const scale = matrix ? affineScale2d(matrix) : 1
-    const lineWidth = Math.max(
-      op.style.lineWidth * scale,
-      this._minUserLineWidth
-    )
+    const scaledWidth = op.style.lineWidth * scale
+    const lineWidth = op.style.exactWidth
+      ? Math.max(scaledWidth, 0)
+      : Math.max(scaledWidth, this._minUserLineWidth)
     let chunk = 'q\n'
     chunk += this.applyOpacity(op.style.opacity)
     chunk += `${pdfNum(op.style.rgb.r)} ${pdfNum(op.style.rgb.g)} ${pdfNum(op.style.rgb.b)} RG ${pdfNum(lineWidth)} w 1 J 1 j\n`
@@ -799,7 +801,9 @@ export class AcPdfContentWriter {
   }
 
   private drawEmbeddedImage(op: Extract<AcPdfOp, { kind: 'image' }>) {
-    const image = this._images.get(op)
+    // Lookup by `bytes` so transformed op copies (rebase / viewport CTM)
+    // still find the image embedded against the raw op.
+    const image = this._images.get(op.bytes)
     if (!image || !(op.width > 0) || !(op.height > 0)) {
       return
     }
@@ -860,7 +864,9 @@ export class AcPdfContentWriter {
     }
     let chunk = 'q\n'
     chunk += this.applyOpacity(style.opacity)
-    const lineWidth = Math.max(style.lineWidth, this._minUserLineWidth)
+    const lineWidth = style.exactWidth
+      ? Math.max(style.lineWidth, 0)
+      : Math.max(style.lineWidth, this._minUserLineWidth)
     chunk +=
       `${pdfNum(style.rgb.r)} ${pdfNum(style.rgb.g)} ${pdfNum(style.rgb.b)} RG ` +
       `${pdfNum(lineWidth)} w 1 J 1 j\n`
@@ -995,6 +1001,7 @@ function sameStrokeStyle(a: AcPdfStrokeStyle, b: AcPdfStrokeStyle): boolean {
     a === b ||
     (a.opacity === b.opacity &&
       a.lineWidth === b.lineWidth &&
+      !!a.exactWidth === !!b.exactWidth &&
       sameRgb(a.rgb, b.rgb) &&
       sameDashArray(a.dashArray, b.dashArray))
   )
