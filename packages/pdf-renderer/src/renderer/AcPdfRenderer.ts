@@ -37,7 +37,8 @@ import {
   isComplexShapeElement,
   isComplexTextElement,
   resolveLinetypeEmbeddedText,
-  walkLineType} from '../linetype/AcPdfLineTypeStroker'
+  walkLineType
+} from '../linetype/AcPdfLineTypeStroker'
 import type { AcPdfWriteOptions } from '../pdf/AcPdfDocumentWriter'
 import { AcPdfDocumentWriter } from '../pdf/AcPdfDocumentWriter'
 import type { AcPdfFontManager } from '../pdf/AcPdfFontManager'
