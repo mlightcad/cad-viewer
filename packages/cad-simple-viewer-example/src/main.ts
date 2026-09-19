@@ -6,8 +6,9 @@ import {
 } from '@mlightcad/cad-simple-ui-plugin'
 import { acuiRegisterSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
 import {
+  acapAppendLinkedText,
   AcApDocManager,
-  acapFormatOpenFileErrorMessage,
+  acapFormatOpenFileErrorToastMessage,
   AcApOpenDatabaseOptions,
   AcApSettingManager,
   acedApplyUiTheme,
@@ -875,7 +876,7 @@ class CadViewerApp {
     })
 
     eventBus.on('failed-to-open-file', params => {
-      this.showMessage(acapFormatOpenFileErrorMessage(params), 'error')
+      this.showMessage(acapFormatOpenFileErrorToastMessage(params), 'error')
       this.finishLoadingState()
     })
 
@@ -1287,7 +1288,7 @@ class CadViewerApp {
     }
 
     const text = document.createElement('span')
-    text.textContent = message
+    acapAppendLinkedText(text, message)
     text.style.flex = '1'
     text.style.lineHeight = '1.4'
     popup.appendChild(text)

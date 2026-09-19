@@ -1006,8 +1006,11 @@ export default {
     failedToGetAvaiableFonts:
       '"{url}" adresinden kullanılabilir yazı tipleri alınamadı!',
     failedToOpenFile: '"{fileName}" dosyası açılamadı!',
+    failedToOpenFileToast:
+      '"{fileName}" açılamadı. Ayrıntılar için bildirim merkezine bakın.',
     failedToOpenFileWorkerOom:
-      '"{fileName}" açılamadı. Çizim mevcut bellek için çok büyük.',
+      '"{fileName}" açılamadı. Ayrıştırma, yetersiz bellek nedeniyle başarısız oldu (LibreDWG parser). Büyük çizimleri çökmeden açmak için ticari DWG parser satın almak üzere {dwgParserLink} bağlantısına tıklayabilirsiniz.',
+    failedToOpenFileWorkerOomLink: 'bu sayfa',
     failedToOpenFileWorkerTimeout:
       '"{fileName}" açılamadı. Çizim ayrıştırılırken işlem zaman aşımına uğradı.',
     failedToOpenFileFontLoadFailed:
@@ -1047,7 +1050,7 @@ export default {
     },
     title: {
       failedToOpenFile: 'Dosya Açılamadı',
-      failedToOpenFileWorkerOom: 'Çizim Çok Büyük',
+      failedToOpenFileWorkerOom: 'Yetersiz Bellek',
       failedToOpenFileWorkerTimeout: 'Açma Zaman Aşımı',
       failedToOpenFileFontLoadFailed: 'Yazı Tipi Yüklenemedi',
       failedToOpenFileLicenseExpired: 'Lisans Süresi Doldu',

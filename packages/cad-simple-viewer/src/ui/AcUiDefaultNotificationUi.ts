@@ -28,6 +28,7 @@ import {
   resolveUiTheme
 } from '../editor/global/AcEdUiTheme'
 import { acapI18nTranslate } from '../util/AcApFormatUnsupportedEntitiesMessage'
+import { acapAppendLinkedText } from '../util/AcApMessageLink'
 
 /** DOM id for the injected stylesheet. */
 const STYLE_ID = 'ml-ui-notification-center-styles'
@@ -525,7 +526,7 @@ export class AcUiDefaultNotificationUi {
     if (notification.message) {
       const message = document.createElement('div')
       message.className = `${ROOT_CLASS}__item-message`
-      message.textContent = notification.message
+      acapAppendLinkedText(message, notification.message)
       item.appendChild(message)
     }
     return item
@@ -825,6 +826,10 @@ function ensureStyles() {
   color: var(--ml-ui-text-muted);
   line-height: 1.4;
   word-break: break-word;
+}
+.${ROOT_CLASS}__item-message a {
+  color: var(--ml-ui-accent);
+  text-decoration: underline;
 }
 .${ROOT_CLASS}__item--warning .${ROOT_CLASS}__item-title {
   color: var(--el-color-warning, #e6a23c);

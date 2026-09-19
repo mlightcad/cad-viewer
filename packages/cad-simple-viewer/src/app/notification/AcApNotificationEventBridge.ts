@@ -10,7 +10,8 @@ import {
 } from '../../util/AcApFormatUnsupportedEntitiesMessage'
 import {
   acapFormatOpenFileErrorMessage,
-  acapFormatOpenFileErrorTitle
+  acapFormatOpenFileErrorTitle,
+  type AcApOpenFileErrorParams
 } from '../../util/AcApOpenFileErrorMessage'
 import type {
   AcApDocManager,
@@ -196,11 +197,7 @@ export class AcApNotificationEventBridge {
    *
    * @param params - File name and structured error metadata.
    */
-  private readonly _onFailedToOpenFile = (params: {
-    fileName: string
-    errorCode?: Parameters<typeof acapFormatOpenFileErrorTitle>[0]
-    errorMessage?: string
-  }) => {
+  private readonly _onFailedToOpenFile = (params: AcApOpenFileErrorParams) => {
     this._getCenter().error(
       acapFormatOpenFileErrorTitle(params.errorCode),
       acapFormatOpenFileErrorMessage(params),

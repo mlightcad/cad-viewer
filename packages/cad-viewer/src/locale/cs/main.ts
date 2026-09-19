@@ -992,8 +992,11 @@ export default {
     fontCacheFailed: 'Nepodařilo se uložit font „{fileName}“ do mezipaměti.',
     failedToGetAvaiableFonts: 'Nepodařilo se získat dostupné fonty z „{url}“!',
     failedToOpenFile: 'Nepodařilo se otevřít soubor „{fileName}“!',
+    failedToOpenFileToast:
+      'Nepodařilo se otevřít „{fileName}“. Podrobnosti najdete v centru oznámení.',
     failedToOpenFileWorkerOom:
-      'Nepodařilo se otevřít „{fileName}“. Výkres je příliš velký pro dostupnou paměť.',
+      'Nepodařilo se otevřít „{fileName}“. Analýza selhala kvůli nedostatku dostupné paměti (LibreDWG parser). Kliknutím na {dwgParserLink} můžete zakoupit komerční DWG parser a otevírat velké výkresy bez tohoto pádu.',
+    failedToOpenFileWorkerOomLink: 'tuto stránku',
     failedToOpenFileWorkerTimeout:
       'Nepodařilo se otevřít „{fileName}“. Při načítání výkresu vypršel časový limit.',
     failedToOpenFileFontLoadFailed:
@@ -1033,7 +1036,7 @@ export default {
     },
     title: {
       failedToOpenFile: 'Nepodařilo se otevřít soubor',
-      failedToOpenFileWorkerOom: 'Výkres je příliš velký',
+      failedToOpenFileWorkerOom: 'Nedostatek paměti',
       failedToOpenFileWorkerTimeout: 'Vypršel časový limit otevření',
       failedToOpenFileFontLoadFailed: 'Načtení fontu selhalo',
       failedToOpenFileLicenseExpired: 'Licence vypršela',
