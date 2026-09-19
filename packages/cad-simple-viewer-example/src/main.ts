@@ -6,8 +6,8 @@ import {
 } from '@mlightcad/cad-simple-ui-plugin'
 import { acuiRegisterSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
 import {
-  AcApDocManager,
   acapAppendLinkedText,
+  AcApDocManager,
   acapFormatOpenFileErrorToastMessage,
   AcApOpenDatabaseOptions,
   AcApSettingManager,

@@ -9,9 +9,9 @@ import {
   acapI18nTranslate
 } from '../../util/AcApFormatUnsupportedEntitiesMessage'
 import {
-  type AcApOpenFileErrorParams,
   acapFormatOpenFileErrorMessage,
-  acapFormatOpenFileErrorTitle
+  acapFormatOpenFileErrorTitle,
+  type AcApOpenFileErrorParams
 } from '../../util/AcApOpenFileErrorMessage'
 import type {
   AcApDocManager,
