@@ -47,8 +47,11 @@ export default {
     fontMissedReplacement: '"{font}" (يُعرض بـ "{replacement}")',
     failedToGetAvaiableFonts: 'تعذر الحصول على الخطوط من "{url}"!',
     failedToOpenFile: 'فشل فتح الملف "{fileName}"!',
+    failedToOpenFileToast:
+      'فشل فتح "{fileName}". راجع مركز الإشعارات للتفاصيل.',
     failedToOpenFileWorkerOom:
-      'فشل فتح "{fileName}". الرسم كبير جدًا بالنسبة للذاكرة المتاحة.',
+      'فشل فتح "{fileName}". فشل التحليل بسبب نفاد الذاكرة المتاحة (محلل LibreDWG). يمكنك النقر على {dwgParserLink} لشراء محلل DWG التجاري وفتح الرسومات الكبيرة دون حدوث هذا الانهيار.',
+    failedToOpenFileWorkerOomLink: 'هذه الصفحة',
     failedToOpenFileWorkerTimeout:
       'فشل فتح "{fileName}". انتهت مهلة العملية أثناء تحليل الرسم.',
     failedToOpenFileFontLoadFailed:
@@ -80,7 +83,7 @@ export default {
     },
     title: {
       failedToOpenFile: 'فشل فتح الملف',
-      failedToOpenFileWorkerOom: 'الرسم كبير جدًا',
+      failedToOpenFileWorkerOom: 'نفاد الذاكرة',
       failedToOpenFileWorkerTimeout: 'انتهت مهلة فتح الرسم',
       failedToOpenFileFontLoadFailed: 'فشل تحميل الخطوط',
       failedToOpenFileLicenseExpired: 'انتهت صلاحية الترخيص',

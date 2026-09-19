@@ -104,9 +104,9 @@ export class AcApDocument {
       } as AcDbOpenDatabaseOptions
       await this._database.openUri(uri, baseOptions)
       this.docTitle = this._fileName
-    } catch {
+    } catch (error) {
       isSuccess = false
-      this.emitOpenFileFailed(uri, openErrorBefore)
+      this.emitOpenFileFailed(uri, openErrorBefore, error)
     }
     return isSuccess
   }
@@ -152,9 +152,9 @@ export class AcApDocument {
         fileExtension == 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
       )
       this.docTitle = this._fileName
-    } catch {
+    } catch (error) {
       isSuccess = false
-      this.emitOpenFileFailed(fileName, openErrorBefore)
+      this.emitOpenFileFailed(fileName, openErrorBefore, error)
     }
     return isSuccess
   }
@@ -421,19 +421,27 @@ export class AcApDocument {
 
   /**
    * Emits `failed-to-open-file` with structured error details from the database.
+   *
+   * Falls back to normalizing {@link caughtError} when `lastOpenError` is missing
+   * or stale (for example when the failure was re-wrapped across package copies).
    */
   private emitOpenFileFailed(
     fileName: string,
-    openErrorBefore: AcDbOpenDatabaseError | null = null
+    openErrorBefore: AcDbOpenDatabaseError | null = null,
+    caughtError?: unknown
   ): void {
-    const openError = this._database.lastOpenError
+    let openError = this._database.lastOpenError
     const isFreshOpenError = openError != null && openError !== openErrorBefore
+    if (!isFreshOpenError && caughtError != null) {
+      openError = AcDbOpenDatabaseError.from(caughtError)
+    }
     eventBus.emit('failed-to-open-file', {
       fileName,
-      ...(isFreshOpenError && {
-        errorCode: openError.code,
-        errorMessage: openError.message
-      })
+      ...(openError != null &&
+        (isFreshOpenError || caughtError != null) && {
+          errorCode: openError.code,
+          errorMessage: openError.message
+        })
     })
   }
 

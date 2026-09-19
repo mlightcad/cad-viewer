@@ -1005,8 +1005,11 @@ export default {
     fontCacheFailed: 'Failed to cache font "{fileName}".',
     failedToGetAvaiableFonts: 'Failed to get avaiable fonts from "{url}"!',
     failedToOpenFile: 'Failed to open file "{fileName}"!',
+    failedToOpenFileToast:
+      'Failed to open "{fileName}". Check the notification center for details.',
     failedToOpenFileWorkerOom:
-      'Failed to open "{fileName}". The drawing is too large for available memory.',
+      'Failed to open "{fileName}". Parsing failed because available memory was insufficient (LibreDWG parser). You can click {dwgParserLink} to purchase the commercial DWG parser and open large drawings without this crash.',
+    failedToOpenFileWorkerOomLink: 'this page',
     failedToOpenFileWorkerTimeout:
       'Failed to open "{fileName}". The operation timed out while parsing the drawing.',
     failedToOpenFileFontLoadFailed:
@@ -1046,7 +1049,7 @@ export default {
     },
     title: {
       failedToOpenFile: 'Failed to Open File',
-      failedToOpenFileWorkerOom: 'Drawing Too Large',
+      failedToOpenFileWorkerOom: 'Insufficient Memory',
       failedToOpenFileWorkerTimeout: 'Open Timed Out',
       failedToOpenFileFontLoadFailed: 'Font Load Failed',
       failedToOpenFileLicenseExpired: 'License Expired',
