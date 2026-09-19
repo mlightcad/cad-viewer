@@ -44,14 +44,14 @@
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.14.9",
+    "@mlightcad/data-model": "^1.14.11",
     "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",
     "pdfjs-dist": "^5.6.205"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.14.9",
+    "@mlightcad/data-model": "^1.14.11",
     "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*"
   }
