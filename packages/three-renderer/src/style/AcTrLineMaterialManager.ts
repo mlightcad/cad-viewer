@@ -8,6 +8,12 @@ import { AcTrMaterialManager } from './AcTrMaterialManager'
 
 export interface AcTrLineMaterialOptions {
   basicMaterialOnly?: boolean
+  /**
+   * Antialiased screen-space strokes (Line2) even when lineweight is ByLayer
+   * or lineweight display is off. Used by complex TEXT/SHAPE linetypes:
+   * WebGL's 1px `GL_LINES` stay device pixels when zoomed and look stair-stepped.
+   */
+  fatLines?: boolean
 }
 
 /**
@@ -37,12 +43,13 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     const mode = this.getMaterialMode(traits, options)
     const drawOrderSuffix = this.buildDrawOrderSuffix(traits)
     const colorKey = this.buildKeyColorSegment(traits)
+    const fatSuffix = options.fatLines ? '_aaline' : ''
 
     if (mode === 'shader') {
       return `${traits.layer}_${mode}_${traits.lineType.name}_${colorKey}_${traits.lineTypeScale}_${lineWidth}${drawOrderSuffix}`
     }
 
-    return `${traits.layer}_${mode}_${colorKey}_${lineWidth}${drawOrderSuffix}`
+    return `${traits.layer}_${mode}_${colorKey}_${lineWidth}${fatSuffix}${drawOrderSuffix}`
   }
 
   /** Returns true if a shader material is required. */
@@ -50,6 +57,9 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     traits: AcGiSubEntityTraits,
     options: AcTrLineMaterialOptions
   ): boolean {
+    if (options.fatLines) {
+      return false
+    }
     return !!(
       !options.basicMaterialOnly &&
       traits.lineType.pattern &&
@@ -62,6 +72,7 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     traits: AcGiSubEntityTraits,
     options: AcTrLineMaterialOptions
   ): 'shader' | 'basic' | 'fat' {
+    if (options.fatLines) return 'fat'
     if (this.isShaderMaterial(traits, options)) return 'shader'
     return options.basicMaterialOnly ? 'basic' : 'fat'
   }
@@ -85,7 +96,10 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
         this.options.viewportScaleUniform,
         AcTrMaterialManager.CameraZoomUniform
       )
-    } else if (options.basicMaterialOnly || traits.lineWeight < 0) {
+    } else if (
+      !options.fatLines &&
+      (options.basicMaterialOnly || traits.lineWeight < 0)
+    ) {
       material = new THREE.LineBasicMaterial({
         color: rgb
       })

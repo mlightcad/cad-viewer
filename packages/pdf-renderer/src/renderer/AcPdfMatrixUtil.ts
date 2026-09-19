@@ -42,6 +42,24 @@ export class AcPdfMatrixUtil {
     }
   }
 
+  /**
+   * Returns `box` mapped by `matrix` without mutating the input.
+   * Used to rebase clip rectangles that are already in drawing space.
+   */
+  static mapRect(
+    box: { min: { x: number; y: number }; max: { x: number; y: number } },
+    matrix: AcGeMatrix3d
+  ): { min: { x: number; y: number }; max: { x: number; y: number } } {
+    const copy = new AcGeBox2d()
+    copy.min.set(box.min.x, box.min.y)
+    copy.max.set(box.max.x, box.max.y)
+    this.transformBox(copy, matrix)
+    return {
+      min: { x: copy.min.x, y: copy.min.y },
+      max: { x: copy.max.x, y: copy.max.y }
+    }
+  }
+
   static transformBox(box: AcGeBox2d, matrix: AcGeMatrix3d): void {
     if (box.isEmpty()) {
       return

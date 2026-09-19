@@ -14,10 +14,9 @@ import { AcPdfFontManager } from './pdf/AcPdfFontManager'
 import { AcPdfOcgManager } from './pdf/AcPdfOcgManager'
 import { AcPdfEntity } from './renderer/AcPdfEntity'
 import { AcPdfRenderer } from './renderer/AcPdfRenderer'
-import type { AcPdfOp } from './renderer/AcPdfStyle'
 import {
-  attachPdfEntityMeta,
   buildViewportModelContent,
+  collectBlockRoots,
   collectModelSpaceRoots,
   isPaperSpaceBlock
 } from './viewport/AcPdfPaperSpaceExport'
@@ -150,13 +149,13 @@ interface ModelRootCache {
   roots?: AcPdfEntity[]
 }
 
-function getModelRoots(
+async function getModelRoots(
   db: AcDbDatabase,
   renderer: AcPdfRenderer,
   cache: ModelRootCache
-): AcPdfEntity[] {
+): Promise<AcPdfEntity[]> {
   if (!cache.roots) {
-    cache.roots = collectModelSpaceRoots(db, renderer)
+    cache.roots = await collectModelSpaceRoots(db, renderer)
   }
   return cache.roots
 }
@@ -180,33 +179,23 @@ async function collectLayoutRoots(
   }
 
   const viewportEntities: AcDbViewport[] = []
-  const paperRoots: AcPdfEntity[] = []
-
   for (const entity of block.newIterator()) {
-    const typeName = String(
-      (entity as { type?: string }).type ??
-        (entity as { dxfTypeName?: string }).dxfTypeName ??
-      ''
-    )
-
     if (entity instanceof AcDbViewport) {
       viewportEntities.push(entity)
-      continue
-    }
-
-    const drawable = entity.worldDraw(renderer)
-    if (drawable instanceof AcPdfEntity) {
-      attachPdfEntityMeta(drawable, entity, typeName)
-      paperRoots.push(drawable)
     }
   }
 
+  // Paper-space INSERTs hit the same async-clone race as model space; use
+  // the two-pass collector so block text is filled before INSERT clones.
+  const paperRoots = await collectBlockRoots(block, renderer)
+
   const viewportContents: AcPdfEntity[] = []
   if (viewportEntities.length > 0) {
+    const modelRoots = await getModelRoots(db, renderer, modelCache)
     for (const viewport of viewportEntities) {
       const built = buildViewportModelContent(
         viewport,
-        () => getModelRoots(db, renderer, modelCache),
+        () => modelRoots,
         renderer
       )
       if (built) {
@@ -244,7 +233,7 @@ async function exportLayoutsToPdf(
     doc.setTitle(options.title)
   }
   const ocg = new AcPdfOcgManager(doc)
-  const imageCache = new Map<AcPdfOp, PDFImage>()
+  const imageCache = new Map<Uint8Array, PDFImage>()
   // One document-scoped Form XObject registry: identical glyph/geometry
   // forms are embedded once per document instead of once per page.
   const formRegistry = createPdfFormRegistry()

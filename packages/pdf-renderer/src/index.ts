@@ -23,8 +23,23 @@ export type {
 export { tessellateHatchPattern } from './hatch/AcPdfHatchTessellator'
 export { shadingFromGradient } from './hatch/AcPdfGradient'
 export {
+  COMPLEX_LTYPE_ABSOLUTE_ROTATION,
+  COMPLEX_LTYPE_SHAPE,
+  COMPLEX_LTYPE_TEXT,
   isComplexLineType,
+  isComplexShapeElement,
+  isComplexTextElement,
+  normalizeComplexPattern,
+  normalizeComplexPatternElement,
+  resolveLinetypeEmbeddedText,
+  uprightLinetypeAngle,
   walkLineType
+} from './linetype/AcPdfLineTypeStroker'
+export type {
+  AcPdfComplexPatternElement,
+  AcPdfLineWalkPlacement,
+  AcPdfLineWalkResult,
+  AcPdfLineWalkShape
 } from './linetype/AcPdfLineTypeStroker'
 export { effectivePdfLayer } from './pdf/AcPdfEffectiveLayer'
 export {

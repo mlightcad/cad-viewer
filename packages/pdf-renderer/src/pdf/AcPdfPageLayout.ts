@@ -15,6 +15,15 @@ export const A4_HEIGHT_PT = 210 * PDF_POINTS_PER_MM
 export const PDF_PAGE_PADDING_FRACTION = 0.02
 
 /**
+ * Absolute drawing-coordinate magnitude above which page content is rebased.
+ *
+ * PDF viewers (PDFium, Acrobat) evaluate content-stream numbers and the CTM
+ * in float32. At this magnitude the ulp exceeds typical CAD feature sizes, so
+ * strokes stair-step. Matches three-renderer's local-origin rebase threshold.
+ */
+export const PDF_REBASE_THRESHOLD = 1e6
+
+/**
  * Minimum stroke width in PDF points after the drawing→page CTM.
  *
  * CAD lineweights are millimetres in drawing space. On kilometre-scale
@@ -36,6 +45,36 @@ export interface AcPdfPageLayout {
   scale: number
   offsetX: number
   offsetY: number
+}
+
+/**
+ * Framing-box center used as the page-local origin when coordinates are large.
+ *
+ * Content is written relative to this origin and the same offset is folded
+ * into the page CTM, so viewers only see small user-space numbers. Returns
+ * `undefined` when the frame is empty or already float32-safe.
+ */
+export function pdfRebaseOrigin(
+  bbox: AcGeBox2d
+): { x: number; y: number } | undefined {
+  if (bbox.isEmpty()) {
+    return undefined
+  }
+  const maxAbs = Math.max(
+    Math.abs(bbox.min.x),
+    Math.abs(bbox.max.x),
+    Math.abs(bbox.min.y),
+    Math.abs(bbox.max.y)
+  )
+  if (!(maxAbs >= PDF_REBASE_THRESHOLD) || !Number.isFinite(maxAbs)) {
+    return undefined
+  }
+  const x = (bbox.min.x + bbox.max.x) / 2
+  const y = (bbox.min.y + bbox.max.y) / 2
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return undefined
+  }
+  return { x, y }
 }
 
 /**

@@ -64,7 +64,8 @@ describe('buildComplexLineTypeGeometry', () => {
       } else if (
         child !== line &&
         (child instanceof THREE.LineSegments ||
-          (child as { isLineSegments2?: boolean }).isLineSegments2)
+          (child as { isLineSegments2?: boolean }).isLineSegments2 ||
+          (child as THREE.Mesh).isMesh)
       ) {
         strokeCount++
       }

@@ -139,6 +139,15 @@ export class AcPdfFontManager {
   private readonly _loaded = new Map<string, LoadedFont | null>()
   private readonly _loading = new Map<string, Promise<boolean>>()
   private readonly _embedded = new Map<string, PDFFont>()
+  /**
+   * Single-flight embed per font name. Parallel {@link embedOp} calls (one
+   * TEXT entity can produce several runs that `Promise.all` encodes together)
+   * must share one subset `PDFFont` — racing `embedFont({ subset: true })`
+   * yields distinct subset fonts whose glyph ids then paint through whichever
+   * font `resourceFor` kept last, scrambling characters (e.g. "Dashed line"
+   * → "lineSz Iline").
+   */
+  private readonly _embedding = new Map<string, Promise<PDFFont | null>>()
   /** Per-font page-resource names (`FT0`, `FT1`, …) assigned at embed time. */
   private readonly _names = new Map<string, string>()
   private _doc: PDFDocument | null = null
@@ -306,14 +315,34 @@ export class AcPdfFontManager {
   }
 
   private async embedProgram(fontName: string): Promise<PDFFont | null> {
+    const cached = this._embedded.get(fontName)
+    if (cached) {
+      return cached
+    }
+    const inflight = this._embedding.get(fontName)
+    if (inflight) {
+      return inflight
+    }
+    const pending = this.embedProgramExclusive(fontName).finally(() => {
+      this._embedding.delete(fontName)
+    })
+    this._embedding.set(fontName, pending)
+    return pending
+  }
+
+  private async embedProgramExclusive(
+    fontName: string
+  ): Promise<PDFFont | null> {
+    // Re-check after awaiting the single-flight gate: a sibling may have
+    // finished embedding while we were queued.
+    const cached = this._embedded.get(fontName)
+    if (cached) {
+      return cached
+    }
     const doc = this._doc
     const font = this._loaded.get(fontName)
     if (!doc || !font) {
       return null
-    }
-    const cached = this._embedded.get(fontName)
-    if (cached) {
-      return cached
     }
     try {
       const pdfFont = await doc.embedFont(font.bytes, { subset: true })

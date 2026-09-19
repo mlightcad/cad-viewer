@@ -15,6 +15,13 @@ export interface AcPdfStrokeStyle {
   /** Stroke width in drawing units. `0` is a PDF hairline. */
   lineWidth: number
   dashArray?: number[]
+  /**
+   * When set, {@link lineWidth} is used as-is. The page minimum stroke
+   * (kept so hairline CAD linework stays visible) must not apply to
+   * linetype glyphs: that floor is often thicker than the embedded text
+   * and turns SHX strokes into zoom-invariant blobs.
+   */
+  exactWidth?: boolean
 }
 
 export interface AcPdfFillStyle {

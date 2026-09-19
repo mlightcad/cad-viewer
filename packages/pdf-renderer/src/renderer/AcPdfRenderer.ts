@@ -1,6 +1,7 @@
 import {
   AcCmColor,
   AcCmTransparency,
+  AcDbDatabase,
   acdbDrawTessellateOptions,
   acdbRasterizeOleMetafile,
   AcDbRenderingCache,
@@ -17,6 +18,7 @@ import {
   AcGiImageStyle,
   acgiIsLightBackground,
   AcGiLineWeight,
+  AcGiMTextAttachmentPoint,
   AcGiMTextData,
   AcGiPointStyle,
   AcGiRenderer,
@@ -30,7 +32,11 @@ import type { AcPdfExportOptions } from '../AcPdfExportOptions'
 import { shadingFromGradient } from '../hatch/AcPdfGradient'
 import { tessellateHatchPattern } from '../hatch/AcPdfHatchTessellator'
 import {
+  type AcPdfLineWalkPlacement,
   isComplexLineType,
+  isComplexShapeElement,
+  isComplexTextElement,
+  resolveLinetypeEmbeddedText,
   walkLineType
 } from '../linetype/AcPdfLineTypeStroker'
 import type { AcPdfWriteOptions } from '../pdf/AcPdfDocumentWriter'
@@ -618,7 +624,14 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
               ? result.actualText || stripMtextCodes(contents)
               : undefined
           }
-          this._mtextGlyphCache.set(key, entry)
+          // Empty results are usually "font not ready yet"; caching them would
+          // permanently suppress every later instance with the same key.
+          const hasGeometry =
+            entry.primitives.triangles.length >= 6 ||
+            entry.primitives.polylines.length >= 2
+          if (hasGeometry) {
+            this._mtextGlyphCache.set(key, entry)
+          }
           return entry
         }
       )
@@ -834,55 +847,195 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       for (const stroke of walked.strokes) {
         entity.addOp({ kind: 'stroke', points: stroke, style: dashless })
       }
-      for (const shape of walked.shapes) {
-        const ds = Math.max(style.lineWidth, 0.5) * 2
-        entity.addOp({
-          kind: 'stroke',
-          points: [
-            { x: shape.x, y: shape.y },
-            {
-              x: shape.x + Math.cos(shape.angle) * ds,
-              y: shape.y + Math.sin(shape.angle) * ds
-            }
-          ],
-          style: dashless
-        })
-        if (this._glyphProvider && (shape.element.shapeName || shape.element.text)) {
-          const pending = Promise.resolve(
-            this._glyphProvider.renderShape(
-              {
-                position: { x: shape.x, y: shape.y, z: 0 },
-                size: shape.element.scale ?? ds,
-                rotation: shape.angle,
-                name: shape.element.shapeName,
-                shapeNumber: shape.element.shapeNumber,
-                widthFactor: 1,
-                obliqingAngle: 0
-              } as AcGiShapeData,
-              undefined
-            )
-          ).then(result => {
-            // Glyph geometry is text-local; this entity mixes world-space
-            // stroke marks, so paint the glyph through a child entity that
-            // carries the placement translation on its own matrix.
-            const glyphNode = new AcPdfEntity()
-            applyGlyphs(glyphNode, result.primitives, result.box, dashless, {
-              rgb: dashless.rgb,
-              opacity: dashless.opacity
-            })
-            glyphNode.applyMatrix(
-              new AcGeMatrix3d().makeTranslation(shape.x, shape.y, 0)
-            )
-            entity.addChild(glyphNode)
-          })
-          this._pending.push(pending)
-        }
+      for (const placement of walked.placements) {
+        this.appendComplexLineTypePlacement(entity, placement, scale, dashless)
       }
       return
     }
     if (pts.length >= 2) {
       entity.addOp({ kind: 'stroke', points: pts, style })
     }
+  }
+
+  /**
+   * Injects TEXT/SHAPE glyphs for one complex-linetype placement.
+   *
+   * Matches {@link AcTrComplexLineBuilder}: TEXT via MiddleCenter MTEXT,
+   * SHAPE via shape glyphs, with LibreDWG blank-text description fallback.
+   */
+  private appendComplexLineTypePlacement(
+    entity: AcPdfEntity,
+    placement: AcPdfLineWalkPlacement,
+    lineTypeScale: number,
+    dashless: ReturnType<typeof AcPdfStyleUtil.strokeStyle>
+  ) {
+    const provider = this._glyphProvider
+    if (!provider) {
+      return
+    }
+    const flag = placement.element.elementTypeFlag
+    const size = Math.max(
+      (placement.element.scale ?? 0.1) * lineTypeScale,
+      1e-6
+    )
+    const textStyle = this.resolveComplexLineTypeTextStyle(placement)
+    const fill = AcPdfStyleUtil.fillStyle(
+      this._subEntityTraits,
+      this.styleContext
+    )
+
+    if (isComplexTextElement(flag)) {
+      const text = resolveLinetypeEmbeddedText(
+        placement.element.text,
+        this._subEntityTraits.lineType.description
+      )
+      if (text.trim().length === 0) {
+        return
+      }
+      const mtext: AcGiMTextData = {
+        text,
+        height: size,
+        width: 0,
+        position: { x: placement.x, y: placement.y, z: 0 },
+        rotation: placement.angle,
+        attachmentPoint: AcGiMTextAttachmentPoint.MiddleCenter,
+        widthFactor: textStyle.widthFactor || 1
+      }
+      const mapped = this.resolveStyle(textStyle)
+      // Embedded labels are only a fraction of a unit tall. The page minimum
+      // stroke is often thicker than the letter, so SHX strokes become blobs
+      // that stay blocky at any zoom. Real PDF text is resolution-independent;
+      // the vector fallback uses a width proportional to the text height.
+      const glyphStroke = {
+        ...dashless,
+        lineWidth: size * 0.06,
+        exactWidth: true
+      }
+      const pending = this.paintComplexLineTypeText(
+        entity,
+        mtext,
+        mapped,
+        fill,
+        glyphStroke,
+        provider
+      )
+      this._pending.push(pending)
+      return
+    }
+
+    if (
+      isComplexShapeElement(flag) ||
+      placement.element.shapeNumber != null ||
+      placement.element.shapeName
+    ) {
+      const shape: AcGiShapeData = {
+        name: placement.element.shapeName,
+        shapeNumber: placement.element.shapeNumber,
+        size,
+        position: { x: placement.x, y: placement.y, z: 0 },
+        rotation: placement.angle,
+        widthFactor: textStyle.widthFactor || 1
+      }
+      const mapped = this.resolveStyle(textStyle)
+      const glyphStroke = {
+        ...dashless,
+        lineWidth: size * 0.06,
+        exactWidth: true
+      }
+      const pending = Promise.resolve(
+        provider.renderShape(shape, mapped)
+      ).then(result => {
+        const glyphNode = new AcPdfEntity()
+        applyGlyphs(glyphNode, result.primitives, result.box, glyphStroke, fill)
+        glyphNode.applyMatrix(
+          new AcGeMatrix3d().makeTranslation(placement.x, placement.y, 0)
+        )
+        entity.addChild(glyphNode)
+      })
+      this._pending.push(pending)
+    }
+  }
+
+  /**
+   * Paints one linetype TEXT placement.
+   *
+   * Prefers real PDF text (resolution-independent). Falls back to the glyph
+   * provider when the font cannot be embedded (typical for SHX).
+   */
+  private async paintComplexLineTypeText(
+    entity: AcPdfEntity,
+    mtext: AcGiMTextData,
+    style: AcGiTextStyle,
+    fill: ReturnType<typeof AcPdfStyleUtil.fillStyle>,
+    glyphStroke: ReturnType<typeof AcPdfStyleUtil.strokeStyle>,
+    provider: AcPdfGlyphProvider
+  ): Promise<void> {
+    const position = { x: mtext.position.x, y: mtext.position.y }
+    if (this._textMode === 'text' && this._fonts) {
+      const ok = await this._fonts.load(style.font)
+      if (ok) {
+        const textNode = new AcPdfEntity()
+        if (this.applyTextLayout(textNode, mtext, style.font, fill, position)) {
+          entity.addChild(textNode)
+          return
+        }
+      }
+    }
+    const result = await provider.renderMText(mtext, style)
+    const glyphNode = new AcPdfEntity()
+    applyGlyphs(glyphNode, result.primitives, result.box, glyphStroke, fill)
+    glyphNode.applyMatrix(
+      new AcGeMatrix3d().makeTranslation(position.x, position.y, 0)
+    )
+    entity.addChild(glyphNode)
+  }
+
+  private resolveComplexLineTypeTextStyle(
+    placement: AcPdfLineWalkPlacement
+  ): AcGiTextStyle {
+    const empty: AcGiTextStyle = {
+      name: '',
+      standardFlag: 0,
+      fixedTextHeight: 0,
+      widthFactor: 1,
+      obliqueAngle: 0,
+      textGenerationFlag: 0,
+      lastHeight: 0,
+      font: '',
+      bigFont: '',
+      extendedFont: ''
+    }
+    const database = this._context.database as AcDbDatabase | undefined
+    const styleObjectId = placement.element.styleObjectId
+    if (database && styleObjectId) {
+      const record = database.openObjectForRead(styleObjectId) as
+        | { textStyle?: AcGiTextStyle }
+        | undefined
+      if (record?.textStyle) {
+        return { ...record.textStyle }
+      }
+    }
+
+    const styleName = placement.element.style?.trim()
+    if (database && styleName) {
+      const record = database.tables.textStyleTable.getAt(styleName) as
+        | { textStyle?: AcGiTextStyle }
+        | undefined
+      if (record?.textStyle) {
+        return { ...record.textStyle }
+      }
+    }
+
+    if (database) {
+      const standard = database.tables.textStyleTable.getAt('Standard') as
+        | { textStyle?: AcGiTextStyle }
+        | undefined
+      if (standard?.textStyle) {
+        return { ...standard.textStyle }
+      }
+    }
+
+    return empty
   }
 
   private pushStrokedPolyline(
