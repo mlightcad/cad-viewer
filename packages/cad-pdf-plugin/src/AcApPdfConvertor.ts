@@ -26,7 +26,9 @@ import { createViewerPdfGlyphProvider } from './AcApPdfGlyphProvider'
  * their own drawable extents.
  *
  * When {@link AcApPdfExportOptions.exportLayouts} is true, every layout becomes
- * one PDF page. A busy indicator is shown for the duration.
+ * one PDF page. Stroke widths follow the drawing `LWDISPLAY` flag: on uses
+ * object lineweights, off emits true PDF hairlines. A busy indicator is shown
+ * for the duration.
  */
 export class AcApPdfConvertor {
   /**

@@ -52,13 +52,22 @@ export class AcPdfStyleUtil {
       ctx
     )
     const opacity = this.resolveOpacity(traits)
-    const style: AcPdfStrokeStyle = {
-      rgb: rgbFromPacked(packed),
-      opacity: opacity ?? 1,
-      lineWidth: ctx.showLineWeight
-        ? this.resolveStrokeWidth(traits.lineWeight, ctx.insunits)
-        : 0
-    }
+    // When LWDISPLAY is off (`showLineWeight` false), emit a true PDF hairline
+    // (`0 w`) and skip the page minimum stroke floor. That floor only keeps
+    // zero-width CAD strokes visible when lineweights are enabled but resolve
+    // to 0.
+    const style: AcPdfStrokeStyle = ctx.showLineWeight
+      ? {
+          rgb: rgbFromPacked(packed),
+          opacity: opacity ?? 1,
+          lineWidth: this.resolveStrokeWidth(traits.lineWeight, ctx.insunits)
+        }
+      : {
+          rgb: rgbFromPacked(packed),
+          opacity: opacity ?? 1,
+          lineWidth: 0,
+          exactWidth: true
+        }
     const dashArray = this.strokeDasharray(traits, ctx)
     if (dashArray) {
       style.dashArray = dashArray

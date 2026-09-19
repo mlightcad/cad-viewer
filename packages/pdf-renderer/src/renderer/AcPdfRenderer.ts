@@ -43,6 +43,11 @@ import type { AcPdfWriteOptions } from '../pdf/AcPdfDocumentWriter'
 import { AcPdfDocumentWriter } from '../pdf/AcPdfDocumentWriter'
 import type { AcPdfFontManager } from '../pdf/AcPdfFontManager'
 import { stripMtextCodes } from '../pdf/AcPdfMarkedContent'
+import {
+  buildPointSymbol,
+  POINT_CENTER_DOT_RATIO,
+  resolvePointDisplayScale
+} from '../point/AcPdfPointSymbol'
 import type {
   AcPdfGlyphBox,
   AcPdfGlyphPrimitives,
@@ -265,19 +270,59 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     return this.pushEntity(new AcPdfGroup(entities))
   }
 
+  /**
+   * Draws an AutoCAD point marker from `PDMODE` / `PDSIZE`.
+   *
+   * Mode 0 stays a filled dot. Every other mode strokes the same unit symbol
+   * as the canvas viewer, placed at `point`, instead of a filled disk.
+   */
   point(point: AcGePoint3d, style: AcGiPointStyle) {
     const entity = new AcPdfEntity()
-    const r =
-      style.displaySize > 0 ? style.displaySize / 2 : DEFAULT_POINT_RADIUS
-    entity.addOp({
-      kind: 'circle',
-      x: point.x,
-      y: point.y,
-      r,
-      style: AcPdfStyleUtil.pointStyle(this._subEntityTraits, this.styleContext)
-    })
-    entity.box.expandByPoint({ x: point.x - r, y: point.y - r })
-    entity.box.expandByPoint({ x: point.x + r, y: point.y + r })
+    const mode = style.displayMode ?? 0
+    const symbol = buildPointSymbol(mode)
+    const scale = resolvePointDisplayScale(style.displaySize)
+    if (symbol.strokes.length > 0) {
+      const stroke = AcPdfStyleUtil.strokeStyle(
+        this._subEntityTraits,
+        this.styleContext
+      )
+      delete stroke.dashArray
+      for (const poly of symbol.strokes) {
+        const pts = poly.points.map(p => ({
+          x: point.x + p.x * scale,
+          y: point.y + p.y * scale
+        }))
+        entity.addOp({
+          kind: 'stroke',
+          points: pts,
+          closed: poly.closed,
+          style: stroke
+        })
+        for (const p of pts) {
+          entity.box.expandByPoint(p)
+        }
+      }
+    }
+    if (symbol.centerDot) {
+      const r =
+        symbol.strokes.length === 0
+          ? style.displaySize > 0
+            ? style.displaySize / 2
+            : DEFAULT_POINT_RADIUS
+          : scale * POINT_CENTER_DOT_RATIO
+      entity.addOp({
+        kind: 'circle',
+        x: point.x,
+        y: point.y,
+        r,
+        style: AcPdfStyleUtil.pointStyle(
+          this._subEntityTraits,
+          this.styleContext
+        )
+      })
+      entity.box.expandByPoint({ x: point.x - r, y: point.y - r })
+      entity.box.expandByPoint({ x: point.x + r, y: point.y + r })
+    }
     return this.pushEntity(entity)
   }
 
