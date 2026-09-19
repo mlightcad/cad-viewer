@@ -32,13 +32,12 @@ import type { AcPdfExportOptions } from '../AcPdfExportOptions'
 import { shadingFromGradient } from '../hatch/AcPdfGradient'
 import { tessellateHatchPattern } from '../hatch/AcPdfHatchTessellator'
 import {
+  type AcPdfLineWalkPlacement,
   isComplexLineType,
   isComplexShapeElement,
   isComplexTextElement,
   resolveLinetypeEmbeddedText,
-  walkLineType,
-  type AcPdfLineWalkPlacement
-} from '../linetype/AcPdfLineTypeStroker'
+  walkLineType} from '../linetype/AcPdfLineTypeStroker'
 import type { AcPdfWriteOptions } from '../pdf/AcPdfDocumentWriter'
 import { AcPdfDocumentWriter } from '../pdf/AcPdfDocumentWriter'
 import type { AcPdfFontManager } from '../pdf/AcPdfFontManager'
