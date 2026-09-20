@@ -66,6 +66,38 @@ export interface AcTrFontNotFoundEventArgs {
 export type AcTrDirectCaptureState = 'off' | 'capturing' | 'captured' | 'missed'
 
 /**
+ * Shared stand-in entity returned by draw calls while a direct-batch capture
+ * session is active.
+ *
+ * A capture runs `entity.worldDraw(renderer)` purely for its side effects: the
+ * first matching draw call is recorded into a payload and the returned drawable
+ * is discarded right afterwards. Each capture previously constructed a fresh
+ * `AcTrEntity` just to be discarded, which cost one allocation + `dispose` per
+ * captured entity (~2s for 434k entities). The shared
+ * placeholder is created once per renderer instead. It is intentionally empty:
+ * the capture path attaches geometry to the payload, never to the drawable, so
+ * the same instance survives every capture session it is handed out for.
+ * `dispose()` is intentionally a no-op so callers releasing the capture result
+ * cannot tear the shared instance down. It is never created without an owning
+ * render context, and it never receives geometry children.
+ */
+class AcTrDirectCapturePlaceholder extends AcTrEntity {
+  /**
+   * Keeps the shared placeholder usable after callers release the capture
+   * result, which is when a real entity would release geometry/materials.
+   */
+  override dispose() {}
+
+  /**
+   * Keeps the shared placeholder detached without letting three.js allocate a
+   * disposal event for it.
+   */
+  override removeFromParent(): this {
+    return this
+  }
+}
+
+/**
  * Primitive payload captured from a single `worldDraw` draw call for the
  * direct-batch fast path (skip temporary drawable allocate → clone → dispose).
  *
@@ -125,6 +157,14 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * cancel, or {@link takeDirectCapture}.
    */
   private _capturedDirectPayload: AcTrDirectCapturePayload | null = null
+  /**
+   * Lazily created placeholder returned by draw calls during a direct-batch
+   * capture session. One instance is reused for every captured entity so the
+   * fast path never allocates a throw-away `AcTrEntity`.
+   *
+   * @see {@link createDirectCapturePlaceholder}
+   */
+  private _directCapturePlaceholder: AcTrEntity | null = null
 
   public readonly events: {
     fontNotFound: AcCmEventManager<AcTrFontNotFoundEventArgs>
@@ -527,12 +567,29 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
+   * Returns the shared placeholder for the active direct-batch capture session.
+   *
+   * The placeholder is created on first use and reused for every captured
+   * entity, so the capture fast path allocates no throw-away drawables. It is
+   * dispose-immune (see {@link AcTrDirectCapturePlaceholder}) and stays empty
+   * and detached for its whole lifetime.
+   */
+  createDirectCapturePlaceholder() {
+    if (!this._directCapturePlaceholder) {
+      this._directCapturePlaceholder = new AcTrDirectCapturePlaceholder(
+        this._context
+      )
+    }
+    return this._directCapturePlaceholder
+  }
+
+  /**
    * @inheritdoc
    */
   group(entities: AcTrEntity[]) {
     if (this._directCapture !== 'off') {
       this.missDirectCapture()
-      return this.createEntity() as AcTrGroup
+      return this.createDirectCapturePlaceholder() as AcTrGroup
     }
     return new AcTrGroup(entities, this._context)
   }
@@ -543,9 +600,9 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   point(point: AcGePoint3d, style: AcGiPointStyle) {
     if (this._directCapture !== 'off') {
       if (this.tryCaptureDirectPayload({ kind: 'point', point, style })) {
-        return this.createEntity() as AcTrPoint
+        return this.createDirectCapturePlaceholder() as AcTrPoint
       }
-      return this.createEntity() as AcTrPoint
+      return this.createDirectCapturePlaceholder() as AcTrPoint
     }
     return new AcTrPoint(point, this._subEntityTraits, style, this._context)
   }
@@ -580,7 +637,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     if (this._directCapture !== 'off') {
       if (isComplexLineType(this._subEntityTraits.lineType.pattern)) {
         this.missDirectCapture()
-        return this.createEntity() as AcTrLineSegments
+        return this.createDirectCapturePlaceholder() as AcTrLineSegments
       }
       if (
         this.tryCaptureDirectPayload({
@@ -590,9 +647,9 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
           indices
         })
       ) {
-        return this.createEntity() as AcTrLineSegments
+        return this.createDirectCapturePlaceholder() as AcTrLineSegments
       }
-      return this.createEntity() as AcTrLineSegments
+      return this.createDirectCapturePlaceholder() as AcTrLineSegments
     }
     return new AcTrLineSegments(
       array,
@@ -609,9 +666,9 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   area(area: AcGeArea2d) {
     if (this._directCapture !== 'off') {
       if (this.tryCaptureDirectPayload({ kind: 'area', area })) {
-        return this.createEntity() as AcTrPolygon
+        return this.createDirectCapturePlaceholder() as AcTrPolygon
       }
-      return this.createEntity() as AcTrPolygon
+      return this.createDirectCapturePlaceholder() as AcTrPolygon
     }
     return new AcTrPolygon(area, this._subEntityTraits, this._context)
   }
@@ -622,7 +679,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   mtext(mtext: AcGiMTextData, style: AcGiTextStyle, delay?: boolean) {
     if (this._directCapture !== 'off') {
       this.missDirectCapture()
-      return this.createEntity() as AcTrMText
+      return this.createDirectCapturePlaceholder() as AcTrMText
     }
     return new AcTrMText(
       mtext,
@@ -639,7 +696,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   shape(shape: AcGiShapeData, style?: AcGiTextStyle, delay?: boolean) {
     if (this._directCapture !== 'off') {
       this.missDirectCapture()
-      return this.createEntity() as AcTrShape
+      return this.createDirectCapturePlaceholder() as AcTrShape
     }
     return new AcTrShape(
       shape,
@@ -656,7 +713,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   image(blob: Blob, style: AcGiImageStyle) {
     if (this._directCapture !== 'off') {
       this.missDirectCapture()
-      return this.createEntity() as AcTrImage
+      return this.createDirectCapturePlaceholder() as AcTrImage
     }
     return new AcTrImage(blob, style, this._context)
   }
@@ -701,17 +758,17 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     if (this._directCapture !== 'off') {
       if (points.length < 2) {
         this.missDirectCapture()
-        return this.createEntity()
+        return this.createDirectCapturePlaceholder()
       }
       if (isComplexLineType(this._subEntityTraits.lineType.pattern)) {
         this.missDirectCapture()
-        return this.createEntity()
+        return this.createDirectCapturePlaceholder()
       }
       if (this.tryCaptureDirectPayload({ kind: 'lineStrip', points })) {
         // Placeholder so worldDraw can attach objectId / layer metadata.
-        return this.createEntity()
+        return this.createDirectCapturePlaceholder()
       }
-      return this.createEntity()
+      return this.createDirectCapturePlaceholder()
     }
 
     if (points.length < 2) {
