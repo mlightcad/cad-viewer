@@ -433,6 +433,12 @@ export class AcTrBatchedPoint extends AcTrBatchedPointBase {
    *
    * Iterates the slot's vertex range in the non-indexed position buffer.
    *
+   * This class keeps the mixin cache rather than scanning packed vertices on
+   * every aggregate query. POINT slot counts are typically tiny; a dense point
+   * cloud is usually one slot with many vertices, where a cached AABB is
+   * cheaper than a full-buffer rescan. See {@link AcTrBatchedLine} for the
+   * opposite cost profile (many 2-vertex slots).
+   *
    * @param geometryId - Slot index to query.
    * @param target - Reusable {@link THREE.Box3} that receives the result.
    * @returns `target` when the id is valid, otherwise `null`.
