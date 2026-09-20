@@ -1,10 +1,10 @@
 import {
+  acdbDrawTessellateOptions,
   AcGeArea2d,
   AcGeIndexNode,
   AcGePoint2dLike,
   AcGePoint3dLike,
-  AcGiSubEntityTraits,
-  acdbDrawTessellateOptions
+  AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
@@ -532,29 +532,39 @@ export function buildAreaGeometry(
   // they always use AcTrPolygon, and probing would only duplicate tessellation.
   //
   // Align tessellation with AcTrPolygon (same options, cached results) so both
-  // paths see identical boundary points for equivalence testing. Two data-model
-  // API shapes are supported:
-  //   - modern: area.tessellate(options) + area.buildHierarchy(options)
-  //   - legacy / test fakes: area.getPoints(segments) + area.buildHierarchy()
+  // paths see identical boundary points for equivalence testing.
   //
   // When the modern API is probed and the fast path rejects the loop, pass the
   // tessellate-cached area into AcTrPolygon so the general path does not
-  // tessellate a second time.
+  // tessellate a second time. Test fakes may only expose the legacy
+  // getPoints/buildHierarchy shape; those are handled via a narrow optional API.
   let pointBoundaries: AcGePoint2dLike[][] | undefined
   let hierarchy: AcGeIndexNode | undefined
   let areaForGeneralPath: AcGeArea2d = area
   if (!style.gradient && !_forceGeneralAreaPath) {
     const tessellateOptions = acdbDrawTessellateOptions({ context })
-    if (typeof (area as any).tessellate === 'function') {
-      pointBoundaries = (area as any).tessellate(tessellateOptions)
+    const areaApi = area as AcGeArea2d & {
+      tessellate?: (options: unknown) => AcGePoint2dLike[][]
+      getPoints?: (segments?: number) => AcGePoint2dLike[][]
+      buildHierarchy?: (options?: unknown) => AcGeIndexNode
+    }
+    if (typeof areaApi.tessellate === 'function') {
+      pointBoundaries = areaApi.tessellate(tessellateOptions)
       const areaCached = Object.create(area, {
         tessellate: { value: () => pointBoundaries }
       }) as AcGeArea2d
-      hierarchy = (areaCached as any).buildHierarchy(tessellateOptions)
+      hierarchy = (
+        areaCached as AcGeArea2d & {
+          buildHierarchy: (options?: unknown) => AcGeIndexNode
+        }
+      ).buildHierarchy(tessellateOptions)
       areaForGeneralPath = areaCached
-    } else if (typeof (area as any).getPoints === 'function') {
-      pointBoundaries = (area as any).getPoints(100)
-      hierarchy = (area as any).buildHierarchy()
+    } else if (
+      typeof areaApi.getPoints === 'function' &&
+      typeof areaApi.buildHierarchy === 'function'
+    ) {
+      pointBoundaries = areaApi.getPoints(100)
+      hierarchy = areaApi.buildHierarchy()
     }
   }
   // If neither API exists (or the probe was skipped), fast-path variables stay
