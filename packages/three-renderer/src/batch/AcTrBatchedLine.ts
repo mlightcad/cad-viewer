@@ -481,6 +481,99 @@ export class AcTrBatchedLine extends AcTrBatchedLineBase {
   }
 
   /**
+   * Materializes the `lineDistance` attribute when the current material is a
+   * pattern (dashed linetype) shader that consumes it. Called from
+   * {@link AcTrBatchedGroup.updateMaterial} after a layer rebind swaps a
+   * dash-capable material onto a batch whose packed geometry never carried
+   * the attribute (solid lines skip it to save ~25% of line vertex memory).
+   *
+   * Distances are rebuilt per packed slot so every entity restarts its dash
+   * phase at zero instead of chaining across slots.
+   */
+  ensureLineDistanceAttribute() {
+    const batchGeometry = this.geometry
+    if (batchGeometry.hasAttribute('lineDistance')) {
+      return
+    }
+    const material = Array.isArray(this.material)
+      ? this.material[0]
+      : this.material
+    if (
+      material == null ||
+      !AcTrBufferGeometryUtil.hasPatternLineShader(material)
+    ) {
+      // Only per-vertex dash pattern shaders consume lineDistance.
+      return
+    }
+
+    const packedPosition = batchGeometry.getAttribute('position') as
+      | THREE.BufferAttribute
+      | undefined
+    if (!packedPosition) return
+    const packedIndex = batchGeometry.getIndex() as THREE.BufferAttribute | null
+
+    // Sizing pass: scratch arrays cover the largest active slot.
+    let maxSlotVertices = 2
+    let maxSlotIndices = 2
+    for (let i = 0; i < this._geometryCount; i++) {
+      const info = this._geometryInfo[i]
+      if (!isBatchGeometryActive(info.flags)) continue
+      maxSlotVertices = Math.max(maxSlotVertices, info.vertexCount)
+      maxSlotIndices = Math.max(maxSlotIndices, info.indexCount)
+    }
+
+    const itemSize = packedPosition.itemSize
+    const distances = new Float32Array(packedPosition.count)
+    const slotGeometry = new THREE.BufferGeometry()
+    const positionScratch = new Float32Array(maxSlotVertices * itemSize)
+    const indexScratch = packedIndex
+      ? new Uint32Array(maxSlotIndices)
+      : undefined
+
+    for (let i = 0; i < this._geometryCount; i++) {
+      const info = this._geometryInfo[i]
+      if (!isBatchGeometryActive(info.flags)) continue
+      const vertexCount = info.vertexCount
+      if (vertexCount < 2) continue
+
+      // Rebuild the slot's local geometry in the scratch object and reuse the
+      // eager distance computation (segment-pair cumulative, entity-local).
+      positionScratch.set(
+        packedPosition.array.subarray(
+          info.vertexStart * itemSize,
+          (info.vertexStart + vertexCount) * itemSize
+        ),
+        0
+      )
+      slotGeometry.setAttribute(
+        'position',
+        new THREE.BufferAttribute(
+          positionScratch.subarray(0, vertexCount * itemSize),
+          itemSize
+        )
+      )
+      if (indexScratch && packedIndex) {
+        for (let k = 0; k < info.indexCount; k++) {
+          indexScratch[k] =
+            packedIndex.array[info.indexStart + k] - info.vertexStart
+        }
+        slotGeometry.setIndex(
+          new THREE.BufferAttribute(indexScratch.subarray(0, info.indexCount), 1)
+        )
+      }
+      AcTrBufferGeometryUtil.computeSegmentLineDistances(slotGeometry)
+      const slotDistances = slotGeometry.getAttribute(
+        'lineDistance'
+      ) as THREE.BufferAttribute
+      distances.set(slotDistances.array, info.vertexStart)
+    }
+
+    const attribute = new THREE.Float32BufferAttribute(distances, 1)
+    attribute.needsUpdate = true
+    batchGeometry.setAttribute('lineDistance', attribute)
+  }
+
+  /**
    * Compacts active geometry ranges to reclaim gaps left by deletions.
    *
    * Unlike {@link AcTrBatchedMesh.optimize}, advances cursors by **reserved**
