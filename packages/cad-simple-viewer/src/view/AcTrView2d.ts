@@ -246,7 +246,7 @@ export class AcTrView2d extends AcEdBaseView {
    * When true, entity conversion during document open yields cooperatively so
    * geometry paints incrementally while the open overlay is still visible.
    */
-  private _progressiveRendering = false
+  private _progressiveRendering = true
   /**
    * Serial convert queue for progressive opens. Chunks from `entityAppended`
    * enqueue here and a single drain loop runs {@link batchConvert}, so scene
@@ -2865,11 +2865,13 @@ export class AcTrView2d extends AcEdBaseView {
 
   /**
    * Waits until {@link startTextStyleFontPreload} has finished (or starts a
-   * fallback preload from the current document if STYLE was missed).
+   * fallback preload from this view's bound draw database if STYLE was missed).
    */
   async awaitTextStyleFontsReady(): Promise<void> {
     if (!this._textStyleFontPreloadPromise) {
-      const db = AcApDocManager.instance?.curDocument?.database
+      // Prefer the database bound to this canvas — not curDocument — so
+      // split-view / multi-session opens preload the correct style table.
+      const db = this._renderer.context.database
       if (db) {
         this.startTextStyleFontPreload(db)
       } else {
@@ -3180,7 +3182,7 @@ export class AcTrView2d extends AcEdBaseView {
     // paths), kick it off without blocking linework convert. Glyph finalize
     // awaits the promise via {@link awaitTextStyleFontsReady}.
     if (!options.forExport && !this._textStyleFontPreloadPromise) {
-      const db = AcApDocManager.instance?.curDocument?.database
+      const db = this._renderer.context.database
       if (db) {
         this.startTextStyleFontPreload(db)
       }

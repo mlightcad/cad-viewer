@@ -2121,10 +2121,10 @@ export class AcApDocManager {
     // batchConvert). Camera auto-fit is started separately in onAfter when the
     // open view mode uses zoom-to-fit — not for restored VPORT/saved views.
     this.openProgressView.progressiveRendering =
-      options?.progressiveRendering ?? false
+      options?.progressiveRendering ?? true
     this._waitForTextGeometryOnOpen = options?.waitForTextGeometry === true
     this._openFileProgress.setSeeThroughOverlay(
-      options?.progressiveRendering ?? false
+      options?.progressiveRendering ?? true
     )
     // OPENPROF: start stage timings before db.read / entity flush.
     this._openFileProfiler.begin(this.context.doc.database)
@@ -2202,7 +2202,7 @@ export class AcApDocManager {
       const layoutLimits = activeLayout?.limits
       const openViewMode = this.resolveOpenViewMode(options)
 
-      const progressiveRendering = options?.progressiveRendering ?? false
+      const progressiveRendering = options?.progressiveRendering ?? true
       let framedSynchronously = false
       if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
         view.zoomTo(layoutLimits)
@@ -2297,7 +2297,7 @@ export class AcApDocManager {
     if (options == null) {
       options = {
         drawNoPlotLayers: false,
-        progressiveRendering: false,
+        progressiveRendering: true,
         waitForTextGeometry: false
       }
     } else {
@@ -2306,7 +2306,7 @@ export class AcApDocManager {
         options.drawNoPlotLayers = false
       }
       if (options.progressiveRendering == null) {
-        options.progressiveRendering = false
+        options.progressiveRendering = true
       }
       if (options.waitForTextGeometry == null) {
         options.waitForTextGeometry = false
@@ -2574,7 +2574,11 @@ export class AcApDocManager {
       if (args.subStage === 'STYLE' && args.subStageStatus === 'END') {
         const session = this._sessions.find(item => item.doc === doc)
         const view = (session?.context.view as AcTrView2d) ?? this.curView
-        view.startTextStyleFontPreload(doc.database)
+        // Prefer the opening doc's session view so split-canvas opens do not
+        // kick preload on the wrong renderer.
+        if (view) {
+          view.startTextStyleFontPreload(doc.database)
+        }
       }
 
       if (args.subStage !== 'HEADER') {
