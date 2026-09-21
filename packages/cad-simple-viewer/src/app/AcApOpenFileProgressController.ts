@@ -21,9 +21,10 @@ import { isOpenFileProgressComplete } from './openFileProgress'
  *
  * When scene convert is still draining after CONVERSION `END`, the overlay
  * stays up (see-through during progressive open) with "Rendering drawing ..."
- * until {@link setSceneBusyGate} reports idle. Progressive opens typically
- * gate on convert **and** deferred glyph jobs so pan/zoom stay blocked while
- * the canvas is still catching up under the spinner.
+ * until {@link setSceneBusyGate} reports idle. The gate tracks entity convert
+ * by default; when {@link AcApOpenDatabaseOptions.waitForTextGeometry} is on
+ * it also waits for deferred glyph jobs so pan/zoom stay blocked while text
+ * catches up.
  */
 export class AcApOpenFileProgressController {
   private readonly _progress: AcApProgress

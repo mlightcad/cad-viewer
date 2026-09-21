@@ -858,12 +858,11 @@ export class AcTrView2d extends AcEdBaseView {
    * fully drawable scene (export, scripted zoom) should wait on this (as
    * {@link waitUntilIdle} / {@link zoomToFitDrawing} do).
    *
-   * The open-file progress overlay uses this during progressive open (and when
-   * {@link AcApOpenDatabaseOptions.waitForTextGeometry} is set) so
-   * "Rendering drawing ..." stays up until convert **and** deferred glyph
-   * jobs finish. Non-progressive opens without that flag use
-   * {@link isConvertingEntities} instead and may hide the spinner while text
-   * geometry continues in the deferred pool.
+   * The open-file progress overlay uses this only when
+   * {@link AcApOpenDatabaseOptions.waitForTextGeometry} is set, so
+   * "Rendering drawing ..." can stay up until deferred glyph jobs finish.
+   * Otherwise the overlay uses {@link isConvertingEntities} and may hide
+   * while text geometry continues in the deferred pool (pan/zoom enabled).
    */
   get isProcessingEntities() {
     return this._numOfEntitiesToProcess > 0 || this._pendingGeometryJobs > 0

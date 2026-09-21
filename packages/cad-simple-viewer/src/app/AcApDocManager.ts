@@ -603,15 +603,13 @@ export class AcApDocManager {
     this._busyIndicatorHost = busyHost
     this._openFileProgress = new AcApOpenFileProgressController(busyHost)
     this._openFileProgress.setSceneBusyGate(() => {
-      const view = this.openProgressView
-      // Progressive open keeps "Rendering drawing ..." up through deferred
-      // glyph/INSERT finalize. Otherwise the spinner drops as soon as the
-      // convert counter hits 0 (deferred jobs already enqueued), and users
-      // pan/zoom a still-busy canvas.
-      if (this._waitForTextGeometryOnOpen || view.progressiveRendering) {
-        return view.isProcessingEntities
+      // `waitForTextGeometry` alone decides whether "Rendering drawing ..."
+      // stays up through deferred glyph finalize. Progressive open only
+      // controls mid-open paints / see-through dimming — not this gate.
+      if (this._waitForTextGeometryOnOpen) {
+        return this.openProgressView.isProcessingEntities
       }
-      return view.isConvertingEntities
+      return this.openProgressView.isConvertingEntities
     })
     this._openFileProgress.setOnHidden(() => this.onOpenProgressHidden())
     this._busyIndicator = new AcApBusyIndicator(busyHost)
