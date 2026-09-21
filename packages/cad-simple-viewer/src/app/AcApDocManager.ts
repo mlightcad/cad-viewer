@@ -2569,6 +2569,14 @@ export class AcApDocManager {
         data: args.data
       })
 
+      // Text styles are in the table when STYLE ends — start font download
+      // immediately so it overlaps LAYER / BLOCK / ENTITY parse and linework.
+      if (args.subStage === 'STYLE' && args.subStageStatus === 'END') {
+        const session = this._sessions.find(item => item.doc === doc)
+        const view = (session?.context.view as AcTrView2d) ?? this.curView
+        view.startTextStyleFontPreload(doc.database)
+      }
+
       if (args.subStage !== 'HEADER') {
         return
       }

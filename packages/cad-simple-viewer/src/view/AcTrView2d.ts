@@ -290,6 +290,16 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private _fontLoadedRedrawTimer: ReturnType<typeof setTimeout> | null = null
   private _fontLoadedRedrawEpoch = 0
+  /**
+   * Convert epoch for which text-style font preload was started.
+   */
+  private _textStyleFontPreloadEpoch = -1
+  /**
+   * In-flight (or resolved) preload of {@link AcDbTextStyleTable.fonts}.
+   * Started at conversion stage `STYLE` END so download overlaps LAYER/BLOCK/
+   * ENTITY parse and linework convert; glyph jobs await this before draw.
+   */
+  private _textStyleFontPreloadPromise: Promise<void> | null = null
   /** Grip point display and drag editing (Write mode only). */
   private _gripManager: AcEdGripManager
   /** Global keyboard shortcuts for the view (undo/redo, erase, etc.). */
@@ -2815,6 +2825,61 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Starts loading fonts referenced by the drawing text style table.
+   *
+   * Call when conversion stage `STYLE` ends so the download overlaps later
+   * parse stages and linework convert. Does not block the caller — glyph
+   * finalize awaits {@link awaitTextStyleFontsReady} instead.
+   *
+   * @param database - Database whose text style table has just been filled.
+   */
+  startTextStyleFontPreload(database: AcDbDatabase): void {
+    const epoch = this._convertEpoch
+    if (
+      this._textStyleFontPreloadEpoch === epoch &&
+      this._textStyleFontPreloadPromise
+    ) {
+      return
+    }
+    this._textStyleFontPreloadEpoch = epoch
+    let names: string[] = []
+    try {
+      names = database.tables.textStyleTable.fonts ?? []
+    } catch {
+      this._textStyleFontPreloadPromise = Promise.resolve()
+      return
+    }
+    if (names.length === 0) {
+      this._textStyleFontPreloadPromise = Promise.resolve()
+      return
+    }
+    this._textStyleFontPreloadPromise = FontManager.instance
+      .requestFonts(names)
+      .then(
+        () => undefined,
+        () => {
+          // Glyph draw still falls back via FontManager defaults / '?'.
+        }
+      )
+  }
+
+  /**
+   * Waits until {@link startTextStyleFontPreload} has finished (or starts a
+   * fallback preload from the current document if STYLE was missed).
+   */
+  async awaitTextStyleFontsReady(): Promise<void> {
+    if (!this._textStyleFontPreloadPromise) {
+      const db = AcApDocManager.instance?.curDocument?.database
+      if (db) {
+        this.startTextStyleFontPreload(db)
+      } else {
+        return
+      }
+    }
+    await this._textStyleFontPreloadPromise
+  }
+
+  /**
    * Finishes geometry for a converted entity.
    *
    * Glyph entities, complex-linetype lines, and block groups use
@@ -2826,6 +2891,17 @@ export class AcTrView2d extends AcEdBaseView {
     threeEntity: AcTrEntity,
     _progressive: boolean
   ) {
+    const needsGlyphDraw =
+      (threeEntity instanceof AcTrGroup &&
+        this.groupHasPendingGlyphGeometry(threeEntity)) ||
+      hasPendingComplexLineTypeGlyphs(threeEntity) ||
+      (threeEntity instanceof AcTrGlyphEntity &&
+        !threeEntity.hasDrawableGeometry())
+
+    if (needsGlyphDraw) {
+      await this.awaitTextStyleFontsReady()
+    }
+
     if (threeEntity instanceof AcTrGroup) {
       // Linework-only INSERTs (no empty glyph shells) skip asyncDraw; spatial
       // boxes are refreshed by syncGroupSpatialBoundsForIndexing after commit.
@@ -2924,8 +3000,10 @@ export class AcTrView2d extends AcEdBaseView {
       return
     }
 
-    // Default preset loads during open are covered by awaitFontsBeforeDraw;
-    // regenerating for those would thrash after every open.
+    // Default/symbol preset faces are requested in the background under lazy
+    // loading (mtext-renderer awaitFontsBeforeDraw only waits on content/style
+    // fonts). Regenerating for every default face load would thrash after open;
+    // style fonts that finish late still take the regen path below.
     if (fontName) {
       const defaults = FontManager.instance.defaultFonts
       const normalized = fontName.toLowerCase()
@@ -3038,6 +3116,8 @@ export class AcTrView2d extends AcEdBaseView {
     // slots until their `finally` runs. Zeroing here lets pump over-schedule
     // when those completions decrement the counter afterward.
     this._pendingGeometryJobs = 0
+    this._textStyleFontPreloadPromise = null
+    this._textStyleFontPreloadEpoch = -1
   }
 
   /**
@@ -3096,6 +3176,15 @@ export class AcTrView2d extends AcEdBaseView {
     options: { forExport?: boolean } = {}
   ) {
     const epoch = this._convertEpoch
+    // Fallback: if STYLE-stage preload never started (e.g. non-conversion open
+    // paths), kick it off without blocking linework convert. Glyph finalize
+    // awaits the promise via {@link awaitTextStyleFontsReady}.
+    if (!options.forExport && !this._textStyleFontPreloadPromise) {
+      const db = AcApDocManager.instance?.curDocument?.database
+      if (db) {
+        this.startTextStyleFontPreload(db)
+      }
+    }
     const progressive = this._progressiveRendering && !options.forExport
     // Time-budgeted yields keep the UI (and optional progressive paints) alive
     // during large open chunks. Count-based yields alone stall on expensive
