@@ -2007,6 +2007,25 @@ export class AcTrView2d extends AcEdBaseView {
    */
   addEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
+    // Mark each owner layout as loaded as soon as the open-time ENTITY stream
+    // enqueues work. Progressive convert may not have committed scene entities
+    // yet (`entityCount` still 0); without this, `loadLayoutEntitiesIfNeeded`
+    // (from `onAfterOpenDocument` → `setActiveLayout`) re-iterates the BTR,
+    // double-increments `_numOfEntitiesToProcess`, and keeps
+    // "Rendering drawing ..." up long after linework should have finished —
+    // so waitForTextGeometry:false cannot release pan/zoom on time.
+    for (let i = 0; i < entities.length; i++) {
+      const ownerId = entities[i]?.ownerId
+      if (!ownerId) continue
+      let layout = this._scene.layouts.get(ownerId)
+      if (!layout) {
+        this._scene.addEmptyLayout(ownerId)
+        layout = this._scene.layouts.get(ownerId)
+      }
+      if (layout && !layout.isLoaded) {
+        layout.isLoaded = true
+      }
+    }
     this._numOfEntitiesToProcess += entities.length
     // Always serialize convert through one drain loop. Non-progressive opens
     // used to `void batchConvert(chunk)` per ENTITY flush chunk, which ran
@@ -2657,6 +2676,17 @@ export class AcTrView2d extends AcEdBaseView {
 
       const existingLayout = this._scene.layouts.get(layoutBtrId)
       if (existingLayout && existingLayout.isLoaded) {
+        // Streamed layouts flip `isLoaded` from `addEntity` before scene
+        // commits finish. Still repair the viewport-view race when entities
+        // are already in the scene but AcTrViewportView creation was skipped.
+        const layoutView = this._layoutViewManager.getAt(layoutBtrId)
+        if (
+          existingLayout.entityCount > 0 &&
+          layoutView &&
+          layoutView.viewportCount === 0
+        ) {
+          this.ensureViewportViews(blockTableRecord, layoutView)
+        }
         return
       }
       if (this._loadingLayouts.has(layoutBtrId)) {
@@ -2704,6 +2734,11 @@ export class AcTrView2d extends AcEdBaseView {
       // is only for layouts whose entities were never streamed in
       // (typically non-active paper-space layouts loaded on first user
       // visit).
+      //
+      // Note: `addEntity` now sets `isLoaded` when the open stream
+      // enqueues work, so the common progressive-open race (entityCount
+      // still 0 at `onAfterOpenDocument` while the convert queue is full)
+      // is handled by the `isLoaded` early return above.
       if (existingLayout && existingLayout.entityCount > 0) {
         existingLayout.isLoaded = true
         return
