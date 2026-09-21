@@ -191,7 +191,7 @@ interface Props {
   drawNoPlotLayers?: boolean
   /**
    * Whether to render entities incrementally while a drawing is opening.
-   * When omitted, {@link AcApDocManager} defaults to `false`.
+   * When omitted, {@link AcApDocManager} defaults to `true`.
    */
   progressiveRendering?: boolean
   /**
@@ -233,7 +233,7 @@ const props = withDefaults(defineProps<Props>(), {
   useMainThreadDraw: true,
   theme: 'dark',
   mode: AcEdOpenMode.Write,
-  progressiveRendering: false,
+  progressiveRendering: true,
   waitForTextGeometry: false,
   openViewMode: undefined,
   circleSides: ACDB_DRAW_CIRCLE_SIDES_DRAFT,

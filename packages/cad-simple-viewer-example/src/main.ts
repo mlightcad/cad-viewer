@@ -57,16 +57,16 @@ function isOpenProfMode(): boolean {
 }
 
 /**
- * Progressive open is off by default. Pass `progressive=1` (or `true`) to
- * enable for A/B comparison with OPENPROF.
+ * Progressive open is on by default. Pass `progressive=0` (or `false`) to
+ * disable for A/B comparison with OPENPROF.
  */
 function isProgressiveOpenMode(): boolean {
   const params = new URLSearchParams(window.location.search)
   if (!params.has('progressive')) {
-    return false
+    return true
   }
   const value = params.get('progressive')
-  return value === '1' || value === 'true'
+  return value !== '0' && value !== 'false'
 }
 
 /**
@@ -903,9 +903,7 @@ class CadViewerApp {
         commandAliases: EXAMPLE_COMMAND_ALIASES,
         // Main-thread MTEXT uses less memory; worker mode is opt-in via ?worker=1.
         useMainThreadDraw: openProf ? !useWorkers : true,
-        openDocumentDefaults: () => this.buildOpenOptions({
-          progressiveRendering: false
-        }),
+        openDocumentDefaults: () => this.buildOpenOptions(),
         webworkerFileUrls: {
           mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`,
           dwgParser: dwgParserUrl
@@ -1092,7 +1090,7 @@ class CadViewerApp {
 
     try {
       const success = await AcApDocManager.instance.newDocument(
-        this.buildOpenOptions({ progressiveRendering: false })
+        this.buildOpenOptions()
       )
       if (!success) {
         throw new Error('Failed to create new drawing')
@@ -1192,9 +1190,7 @@ class CadViewerApp {
     this.clearMessages()
 
     try {
-      const options: AcApOpenDatabaseOptions = this.buildOpenOptions({
-        progressiveRendering: false
-      })
+      const options: AcApOpenDatabaseOptions = this.buildOpenOptions()
 
       const success = await AcApDocManager.instance.openUrl(url, options)
 
