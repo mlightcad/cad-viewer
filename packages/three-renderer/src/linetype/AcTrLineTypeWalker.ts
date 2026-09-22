@@ -81,7 +81,16 @@ export function normalizeComplexPatternElement(
     shapeNumber !== 0 &&
     (shapeNumber & ~COMPLEX_LTYPE_FLAG_MASK) === 0
 
-  if (shapeNumLooksLikeFlag && (flag === 0 || !flagLooksPure)) {
+  if (
+    shapeNumLooksLikeFlag &&
+    // flag === 0: DXF 75 was stored in elementTypeFlag (TEXT, shapecode 0).
+    // flag >= 16: a real shape code was stored in elementTypeFlag (e.g. 132)
+    // while DXF 74 landed in shapeNumber. Small impure values such as 10 are
+    // stray LibreDWG shape_flag bits on simple dashes (BORDER2), not shape
+    // codes — swapping those invents a SHAPE element whose "shape number" is
+    // the dash index.
+    (flag === 0 || (!flagLooksPure && flag >= 16))
+  ) {
     return {
       ...el,
       elementTypeFlag: shapeNumber,
@@ -99,14 +108,44 @@ export function normalizeComplexPattern(
 }
 
 /**
+ * True when one pattern element is a real embedded TEXT or SHAPE.
+ *
+ * LibreDWG sometimes writes a non-zero `shape_flag` on ordinary dashes
+ * (BORDER2 / DASHEDX2 use 10, DASHDOTX2 uses 4 with shape number 0). Those
+ * are not TEXT/SHAPE elements: treating them as complex stamps the linetype
+ * preview, or an empty shape, once per pattern cycle and the line looks like
+ * it was drawn many times.
+ *
+ * A text element counts when `text` is non-empty, including a single space —
+ * that space is LibreDWG's stand-in for a label that still lives in the
+ * linetype description. A shape element counts only with a non-zero shape
+ * number or a shape name.
+ */
+export function isComplexPatternElement(
+  element: AcTrComplexPatternElement
+): boolean {
+  const flag = element.elementTypeFlag ?? 0
+  if (isComplexTextElement(flag)) {
+    return (element.text ?? '').length > 0
+  }
+  if (isComplexShapeElement(flag)) {
+    return (
+      (element.shapeNumber != null && element.shapeNumber !== 0) ||
+      !!element.shapeName
+    )
+  }
+  return false
+}
+
+/**
  * True when a linetype pattern embeds SHAPE/TEXT elements.
  */
 export function isComplexLineType(
   pattern: AcGiLineTypePatternElement[] | undefined
 ): boolean {
-  return !!normalizeComplexPattern(pattern)?.some(
-    element => element.elementTypeFlag !== 0
-  )
+  const normalized = normalizeComplexPattern(pattern)
+  const strict = !!normalized?.some(isComplexPatternElement)
+  return strict
 }
 
 export function isComplexTextElement(flag: number): boolean {
@@ -250,14 +289,19 @@ export function uprightLinetypeAngle(angle: number): number {
  * gaps from the following repeat.
  */
 function penUpSlotLength(
-  scaled: Array<{ len: number; gap: boolean; element: AcTrComplexPatternElement }>,
+  scaled: Array<{
+    len: number
+    gap: boolean
+    isComplex?: boolean
+    element: AcTrComplexPatternElement
+  }>,
   index: number
 ): number {
   const start = index % scaled.length
   let slot = scaled[start].len
   for (let i = start + 1; i < scaled.length; i++) {
     const item = scaled[i]
-    if (item.element.elementTypeFlag !== 0) {
+    if (item.isComplex ?? isComplexPatternElement(item.element)) {
       break
     }
     if (!item.gap) {
@@ -300,10 +344,12 @@ export function walkLineType(
     if (len === 0) {
       len = 0.5
     }
+    const isComplex = isComplexPatternElement(element)
     return {
       element,
       len: Math.abs(len) * scale,
-      gap: element.elementTypeFlag === 0 && element.elementLength < 0
+      gap: !isComplex && element.elementLength < 0,
+      isComplex
     }
   })
   let cycle = 0
@@ -319,7 +365,7 @@ export function walkLineType(
   while (dist < total - EPS) {
     const item = scaled[index % scaled.length]
     const take = Math.min(item.len, total - dist)
-    if (item.element.elementTypeFlag !== 0) {
+    if (item.isComplex) {
       // Center text/shape in the pen-up slot (this element + following gaps),
       // then apply authored X/Y offsets in the line-local frame. AutoCAD
       // embeds labels in the space between dashes; placing at slot start

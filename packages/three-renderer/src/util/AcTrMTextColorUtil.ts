@@ -27,16 +27,26 @@ export class AcTrMTextColorUtil {
    */
   static buildColorSettingsFromTraits(
     traits: AcGiSubEntityTraits,
-    backgroundColor: number = ACGI_PAPER_SPACE_BACKGROUND
+    backgroundColor: number = ACGI_PAPER_SPACE_BACKGROUND,
+    layerColor?: AcCmColor | null
   ): ColorSettings {
     const context = AcGiContext.fromBackgroundColor(backgroundColor)
     const color = this.normalizeEntityColor(traits.color)
     const resolvedRgb = context.resolveSubEntityTraitsRgb({ ...traits, color })
+    const layerRgb = layerColor
+      ? context.resolveSubEntityTraitsRgb({
+          ...traits,
+          color: this.normalizeEntityColor(layerColor)
+        })
+      : resolvedRgb
+    // Inline `\C0` is ByBlock. An entity with its own ACI is not that colour;
+    // model-space ByBlock displays as white unless the entity itself is ByBlock.
+    const byBlockColor = color.isByBlock ? resolvedRgb : 0xffffff
     return {
       layer: traits.layer,
       color: this.toMTextColor(color),
-      byLayerColor: resolvedRgb,
-      byBlockColor: resolvedRgb
+      byLayerColor: layerRgb,
+      byBlockColor
     }
   }
 

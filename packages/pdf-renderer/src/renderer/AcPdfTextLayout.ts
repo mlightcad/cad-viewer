@@ -309,7 +309,11 @@ export function layoutMText(params: AcPdfTextLayoutParams): AcPdfTextLayout {
     size: height,
     hScale
   })
-  const step = (data.lineSpaceFactor ?? 1) * LINE_SPACING_RATIO * height
+  const factorSpacing = (data.lineSpaceFactor ?? 1) * LINE_SPACING_RATIO * height
+  const step =
+    data.lineSpaceStyle === 2
+      ? factorSpacing
+      : Math.max(factorSpacing, LINE_SPACING_RATIO * height)
   // `Infinity` means "do not wrap" (arc-aligned glyphs, unwrapped TEXT).
   // A finite column is required; otherwise centered attachment shifts the
   // run to -Infinity and the text never lands on the page.
