@@ -21,14 +21,6 @@ import * as THREE from 'three'
 import type { AcTrBatchDrawPolicy } from '../draw/AcTrBatchDrawPolicy'
 import { isComplexLineType } from '../linetype'
 import {
-  captureCoalescedLine,
-  installBlockLineCoalescePatch,
-  isAcTrCoalescedLineRef,
-  isFatLineMaterial,
-  mergeCoalescedBlockLines,
-  AcTrLineVertexBuilder
-} from './AcTrBlockLineCoalesce'
-import {
   AcTrEntity,
   AcTrGroup,
   AcTrImage,
@@ -43,6 +35,14 @@ import {
 import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
 import { AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport/AcTrCamera'
+import {
+  AcTrLineVertexBuilder,
+  captureCoalescedLine,
+  installBlockLineCoalescePatch,
+  isAcTrCoalescedLineRef,
+  isFatLineMaterial,
+  mergeCoalescedBlockLines
+} from './AcTrBlockLineCoalesce'
 import {
   AcTrEntityPreview,
   type AcTrEntityPreviewOptions,
