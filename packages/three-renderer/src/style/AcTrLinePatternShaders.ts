@@ -22,9 +22,9 @@ export class AcTrLinePatternShaders {
 
     const ltypeElementLenArr: number[] = []
     for (let i = 0; i < pattern.length; i++) {
-      // Complex TEXT/SHAPE elements are expanded to geometry elsewhere
-      // (`buildComplexLineTypeGeometry`); this shader only handles simple
-      // dash/gap patterns. Skip complex elements if one reaches here.
+      // TEXT/SHAPE elements are expanded by `buildComplexLineTypeGeometry`.
+      // Skip them here. Density fallback also uses this shader: glyphs are
+      // omitted and the remaining dash/gap cycle is shorter than AutoCAD's.
       const normalized = normalizeComplexPatternElement(pattern[i])
       if (isComplexPatternElement(normalized)) {
         continue

@@ -209,5 +209,7 @@ describe('buildComplexLineTypeGeometry', () => {
     const line = new AcTrLine(points, traits, context)
     expect(line.hasComplexLinetypeGlyphs).toBe(false)
     expect(line.children.length).toBeGreaterThan(0)
+    // Density fallback: GPU dash mesh, no SHAPE glyph shells.
+    expect(line.children[0]).toBeInstanceOf(THREE.LineSegments)
   })
 })

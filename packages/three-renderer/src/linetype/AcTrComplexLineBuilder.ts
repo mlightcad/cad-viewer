@@ -76,6 +76,10 @@ export function resolveLineTypeScale(
  * the GPU dash shader (pre-#651 behaviour). FENCELINE1 at LTSCALE 0.01 on a
  * multi-kilometre fence otherwise creates 100k+ shape placements and freezes
  * the main thread during open.
+ *
+ * The fallback omits TEXT/SHAPE glyphs. The dash shader also skips those
+ * elements when computing cycle length, so remaining dashes are denser than
+ * AutoCAD's full pattern. That is an intentional open-time tradeoff.
  */
 export const MAX_COMPLEX_LINETYPE_CYCLES = 4096
 
@@ -317,8 +321,9 @@ export function buildComplexLineTypeGeometry(
   }
   const walked = walkLineType(points, pattern, lineTypeScale)
 
-  // Solid strokes — complex patterns are already excluded from the dash
-  // shader via isComplexLineType; keep lineweight-aware materials.
+  // Solid strokes with a lineweight-aware material. The GPU dash shader is
+  // the fallback when this function returns false (simple pattern, or a
+  // complex pattern over {@link MAX_COMPLEX_LINETYPE_CYCLES}).
   const material = context.styleManager.getLineMaterial(traits, false, true)
   const box = new THREE.Box3()
 

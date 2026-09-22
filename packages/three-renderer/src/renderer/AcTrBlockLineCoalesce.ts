@@ -4,7 +4,6 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
 import { AcTrEntity } from '../object/AcTrEntity'
 import { AcTrGroup } from '../object/AcTrGroup'
-import { AcTrBufferGeometryUtil } from '../util'
 
 /**
  * Shared vertex buffer for one block-template draw.
@@ -110,9 +109,10 @@ export function isAcTrCoalescedLineRef(
 }
 
 /**
- * Wraps block-template draws so simple lines can skip per-entity meshes.
- * Nested `draw` calls share one depth counter. Renderers without the hooks
- * are unchanged.
+ * Wraps {@link AcDbRenderingCache.draw} so simple lines can skip per-entity
+ * meshes. That method is only used for block-template (INSERT) builds.
+ * Nested `draw` calls push their own vertex builder. Renderers without the
+ * hooks are unchanged.
  */
 let _blockLineCoalescePatched = false
 
@@ -236,27 +236,49 @@ export function mergeCoalescedBlockLines(
     const originY = (bucket.minY + bucket.maxY) * 0.5
     const originZ = (bucket.minZ + bucket.maxZ) * 0.5
     const positions = new Float32Array(bucket.floats)
+    const wantsDashDistance = bucket.material instanceof THREE.ShaderMaterial
+    const lineDistances = wantsDashDistance
+      ? new Float32Array(bucket.floats / 3)
+      : null
     let p = 0
+    let d = 0
     for (let r = 0; r < bucket.refs.length; r++) {
       const ref = bucket.refs[r]
       const data = ref.builder.buffer
       const end = ref.offset + ref.floatCount
+      // Restart dash phase per original line. Accumulating across the merged
+      // mesh would make DASHED/HIDDEN/CENTER inherit leftover phase.
+      let dist = 0
       for (let i = ref.offset; i + 5 < end; i += 3) {
-        positions[p++] = data[i] - originX
-        positions[p++] = data[i + 1] - originY
-        positions[p++] = data[i + 2] - originZ
-        positions[p++] = data[i + 3] - originX
-        positions[p++] = data[i + 4] - originY
-        positions[p++] = data[i + 5] - originZ
+        const x0 = data[i] - originX
+        const y0 = data[i + 1] - originY
+        const z0 = data[i + 2] - originZ
+        const x1 = data[i + 3] - originX
+        const y1 = data[i + 4] - originY
+        const z1 = data[i + 5] - originZ
+        positions[p++] = x0
+        positions[p++] = y0
+        positions[p++] = z0
+        positions[p++] = x1
+        positions[p++] = y1
+        positions[p++] = z1
+        if (lineDistances) {
+          lineDistances[d++] = dist
+          dist += Math.hypot(x1 - x0, y1 - y0, z1 - z0)
+          lineDistances[d++] = dist
+        }
       }
     }
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    if (lineDistances) {
+      geometry.setAttribute(
+        'lineDistance',
+        new THREE.BufferAttribute(lineDistances, 1)
+      )
+    }
     const line = new THREE.LineSegments(geometry, bucket.material)
     line.position.set(originX, originY, originZ)
-    if (bucket.material instanceof THREE.ShaderMaterial) {
-      AcTrBufferGeometryUtil.computeLineDistances(line)
-    }
     const entity = new AcTrEntity(context)
     entity.layerName = bucket.layerName
     entity.visible = bucket.visible
