@@ -165,8 +165,11 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
       object: THREE.Object3D,
       rootMatrixWorldInverse: THREE.Matrix4
     ) {
-      // Copy first because we will mutate the hierarchy during traversal.
-      const children = [...object.children]
+      // Detach the whole child list at once. Object3D.remove() is O(n) per
+      // call, so removing 20k block lines one by one is quadratic and froze
+      // large INSERT opens.
+      const children = object.children
+      object.children = []
       for (const child of children) {
         // Propagate INSERT layer-0 inheritance downward. Nested AcTrGroup nodes
         // already carry the nested INSERT layer (set by AcDbRenderingCache
@@ -194,15 +197,8 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
           // Keep descending until we reach actual render leaves.
           traverseAndCollectChildren(child, rootMatrixWorldInverse)
         } else {
-          // Refresh world matrices before computing the leaf transform relative to `root`.
-          child.updateMatrixWorld(true)
-
-          // Convert from world space into `root` local space:
-          //   relative = inverse(rootWorld) * childWorld
-          // This preserves the final rendered placement after the child is re-parented
-          // directly under `root`.
-          // flatten() removes intermediate AcTrEntity nodes; bake entity visibility onto
-          // render leaves so batched drawing still honors DXF group code 60.
+          // root.updateMatrixWorld(true) already refreshed this subtree.
+          // Visibility must be read before parent is cleared.
           child.visible = isObjectHierarchyVisible(child)
           objectsToReparent.push({
             object: child,
@@ -211,10 +207,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
               .multiply(child.matrixWorld)
           })
         }
-
-        // Detach the current child from its old parent so that the old nested hierarchy is
-        // removed completely before we attach the collected leaves back under `root`.
-        object.remove(child)
+        child.parent = null
       }
     }
 

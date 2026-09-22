@@ -473,6 +473,27 @@ describe('AcTrMTextColorUtil', () => {
     expect(material.color.getHex()).toBe(0xffff00)
   })
 
+  it('resolves inline ByLayer from the layer colour when the entity colour is explicit', () => {
+    const entity = new AcCmColor()
+    entity.colorIndex = 4
+    const layer = new AcCmColor()
+    layer.colorIndex = 7
+
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.color = entity
+    traits.layer = 'TEXT'
+
+    const settings = AcTrMTextColorUtil.buildColorSettingsFromTraits(
+      traits,
+      0x000000,
+      layer
+    )
+
+    expect(settings.color.aci).toBe(4)
+    expect(settings.byLayerColor).toBe(0xffffff)
+    expect(settings.byBlockColor).toBe(0xffffff)
+  })
+
   it('normalizes numeric trait colours when snapshotting entity traits', () => {
     const traits = AcTrMTextColorUtil.snapshotEntityTraits({
       ...AcTrSubEntityTraitsUtil.createDefaultTraits(),

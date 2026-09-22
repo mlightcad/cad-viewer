@@ -11,7 +11,33 @@ describe('AcTrLineTypeWalker', () => {
     expect(
       isComplexLineType([
         { elementLength: 5, elementTypeFlag: 0 },
-        { elementLength: -2, elementTypeFlag: 2 }
+        { elementLength: -2, elementTypeFlag: 2, text: 'GAS' }
+      ])
+    ).toBe(true)
+  })
+
+  it('ignores stray LibreDWG flags on simple dashes', () => {
+    // BORDER2 / DASHEDX2: shape_flag 10 and a sequential shape number, no text.
+    expect(
+      isComplexLineType([
+        { elementLength: 0.25, elementTypeFlag: 10, shapeNumber: 0, text: '' },
+        { elementLength: -0.125, elementTypeFlag: 10, shapeNumber: 1, text: '' },
+        { elementLength: 0, elementTypeFlag: 10, shapeNumber: 4, text: '' },
+        { elementLength: -0.125, elementTypeFlag: 10, shapeNumber: 5, text: '' }
+      ])
+    ).toBe(false)
+    // DASHDOTX2: shape bit set but shape number 0.
+    expect(
+      isComplexLineType([
+        { elementLength: 0.5, elementTypeFlag: 4, shapeNumber: 0 },
+        { elementLength: -0.25, elementTypeFlag: 4, shapeNumber: 0 }
+      ])
+    ).toBe(false)
+    // Real embedded text still counts, including flag 10 with a label.
+    expect(
+      isComplexLineType([
+        { elementLength: 1, elementTypeFlag: 0 },
+        { elementLength: -0.5, elementTypeFlag: 10, text: '+' }
       ])
     ).toBe(true)
   })
@@ -85,7 +111,7 @@ describe('AcTrLineTypeWalker', () => {
       [
         { elementLength: 4, elementTypeFlag: 0 },
         { elementLength: -2, elementTypeFlag: 0 },
-        { elementLength: 2, elementTypeFlag: 4 }
+        { elementLength: 2, elementTypeFlag: 4, shapeNumber: 133 }
       ],
       1
     )

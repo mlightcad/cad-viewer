@@ -82,6 +82,8 @@ export class AcTrGroup extends AcTrEntity {
       } else {
         this.add(entity)
         this.registerSourceEntities(entity)
+        this.storeBoxes(entity, true)
+        return
       }
       this.storeBoxes(entity)
     })
@@ -170,6 +172,15 @@ export class AcTrGroup extends AcTrEntity {
   get wcsChildBoxes() {
     this.materializeWcsChildBoxes()
     return this._wcsChildBoxes
+  }
+
+  /**
+   * Number of per-child boxes, including a lazy template that has not been
+   * copied yet.
+   */
+  get childBoxCount() {
+    const pending = this._wcsChildBoxesTemplate?.length ?? 0
+    return this._wcsChildBoxes.length + pending
   }
 
   /**
@@ -428,7 +439,7 @@ export class AcTrGroup extends AcTrEntity {
     // Materialize before storeBoxes so appended attribute boxes are not lost.
     this.materializeWcsChildBoxes()
     this.registerSourceEntities(entity)
-    this.storeBoxes(entity)
+    this.storeBoxes(entity, true)
     this.syncWcsBboxFromChildBoxes()
   }
 
@@ -457,6 +468,14 @@ export class AcTrGroup extends AcTrEntity {
       })
     }
     this.applyFullMatrix4(threeMatrix)
+    if (this._wcsChildBoxesTemplate) {
+      // Keep the per-child list lazy. Transform only the aggregate box so a
+      // 100k-box floor plan does not materialize on every INSERT.
+      if (!this._wcsBbox.isEmpty()) {
+        this._wcsBbox.applyMatrix4(threeMatrix)
+      }
+      return
+    }
     this.syncWcsBboxFromChildBoxes()
   }
 
@@ -481,9 +500,22 @@ export class AcTrGroup extends AcTrEntity {
     // one pass. Struct copies are cheap compared to geometry / source-entity
     // clones; the snapshot also prevents later in-place transforms on the
     // source group from corrupting cached templates.
-    object.materializeWcsChildBoxes()
-    this._wcsChildBoxes = []
-    this._wcsChildBoxesTemplate = object._wcsChildBoxes.map(box => ({ ...box }))
+    // Compacted templates are immutable. Clones share that box array and apply
+    // the INSERT transform lazily, instead of allocating one box object per
+    // child per INSERT (floor-plan blocks are 100k+ boxes).
+    if (object._compacted && !object._wcsChildBoxesPendingMatrix) {
+      this._wcsChildBoxes = []
+      this._wcsChildBoxesTemplate =
+        object._wcsChildBoxes.length > 0
+          ? object._wcsChildBoxes
+          : (object._wcsChildBoxesTemplate ?? object._wcsChildBoxes)
+    } else {
+      object.materializeWcsChildBoxes()
+      this._wcsChildBoxes = []
+      this._wcsChildBoxesTemplate = object._wcsChildBoxes.map(box => ({
+        ...box
+      }))
+    }
     this._wcsChildBoxesPendingMatrix = null
 
     if (object._compacted) {
@@ -648,6 +680,51 @@ export class AcTrGroup extends AcTrEntity {
   }
 
   /**
+   * Appends spatial boxes for block lines that were merged into shared
+   * geometries and therefore have no per-entity scene-graph node.
+   */
+  addExternalChildBoxes(
+    boxes: readonly {
+      minX: number
+      minY: number
+      maxX: number
+      maxY: number
+      id: string
+    }[]
+  ) {
+    for (let i = 0; i < boxes.length; i++) {
+      const box = boxes[i]
+      if (AcTrGroup.isFiniteEntityBox(box)) {
+        this._wcsChildBoxes.push({
+          minX: box.minX,
+          minY: box.minY,
+          maxX: box.maxX,
+          maxY: box.maxY,
+          id: box.id
+        })
+      }
+    }
+    this.syncWcsBboxFromChildBoxes()
+  }
+
+  /**
+   * Marks this group as a shared block template after simple lines were
+   * already merged into a few meshes.
+   *
+   * {@link AcDbRenderingCache} only compacts templates with at least eight
+   * direct children. A coalesced block often has one mesh, so
+   * {@link fastDeepClone} would otherwise deep-copy that buffer for every
+   * INSERT. Sealing shares the buffer and drops the empty source shells.
+   */
+  sealForSharedClone() {
+    if (this._compacted) {
+      return
+    }
+    this._compacted = true
+    this.releaseDetachedSourceShells()
+  }
+
+  /**
    * Recomputes the aggregate {@link wcsBbox} as the union of {@link _wcsChildBoxes}.
    *
    * {@link _wcsChildBoxes} is the source of truth for per-child spatial-index
@@ -707,7 +784,7 @@ export class AcTrGroup extends AcTrEntity {
    * @param object - Block-definition entity or nested group whose bounds
    *   should be recorded for spatial indexing.
    */
-  private storeBoxes(object: THREE.Object3D) {
+  private storeBoxes(object: THREE.Object3D, knownSource = false) {
     if (object instanceof AcTrGroup) {
       // Use the public getter so a still-lazy nested group materializes first.
       object.wcsChildBoxes.forEach(box => {
@@ -723,7 +800,9 @@ export class AcTrGroup extends AcTrEntity {
     }
 
     const scratch = new THREE.Box3()
-    if (this._sourceEntities.includes(object)) {
+    // Callers that just registered `object` pass knownSource so a 20k-line
+    // block does not pay Array.includes (O(n²)) once per entity.
+    if (knownSource || this._sourceEntities.includes(object)) {
       this.appendSourceEntityWcsChildBox(object, scratch)
       return
     }
