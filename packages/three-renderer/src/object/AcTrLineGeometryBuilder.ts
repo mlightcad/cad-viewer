@@ -182,7 +182,7 @@ function buildSmallFillLoopGeometry(
     return null
   }
 
-  const area = signedArea2d(points)
+  let area = signedArea2d(points)
   if (Math.abs(area) < SMALL_FILL_LOOP_MIN_AREA) {
     return null
   }
@@ -190,6 +190,14 @@ function buildSmallFillLoopGeometry(
   // triangulation would fill the crossing lobes instead. Only earcut decides.
   if (hasSelfIntersection(points)) {
     return null
+  }
+  // ShapeGeometry forces one winding before earcut, and the fill material
+  // culls the other side. A clockwise boundary (common for edge-loop solid
+  // hatches) would otherwise be triangulated clockwise and disappear.
+  // Reverse the ring so the fan matches that front-facing winding.
+  if (area < 0) {
+    points.reverse()
+    area = -area
   }
   // A 3-point loop has exactly one triangulation; a 4-point loop has two and
   // only one of them is valid when the quad is concave. Pick the one whose

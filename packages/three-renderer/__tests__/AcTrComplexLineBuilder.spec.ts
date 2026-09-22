@@ -2,6 +2,8 @@ import * as THREE from 'three'
 
 import {
   buildComplexLineTypeGeometry,
+  estimateComplexLineTypeCycles,
+  MAX_COMPLEX_LINETYPE_CYCLES,
   resolveLinetypeEmbeddedText
 } from '../src/linetype/AcTrComplexLineBuilder'
 import { AcTrEntity } from '../src/object/AcTrEntity'
@@ -168,5 +170,44 @@ describe('buildComplexLineTypeGeometry', () => {
 
     expect(line.hasComplexLinetypeGlyphs).toBe(true)
     expect(line.hasDrawableGeometry()).toBe(false)
+  })
+
+  it('falls back when pattern cycles exceed the density cap', () => {
+    const context = new AcTrRenderContext()
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.lineTypeScale = 0.01
+    traits.lineType = {
+      ...traits.lineType,
+      name: 'FENCELINE1',
+      pattern: [
+        { elementLength: 6.35, elementTypeFlag: 0 },
+        {
+          elementLength: -2.54,
+          elementTypeFlag: 4,
+          shapeNumber: 133
+        },
+        { elementLength: -2.54, elementTypeFlag: 0 },
+        { elementLength: 25.4, elementTypeFlag: 0 }
+      ],
+      totalPatternLength: 36.83
+    }
+
+    const points = [
+      { x: 0, y: 0, z: 0 },
+      { x: 43809, y: 0, z: 0 }
+    ]
+    expect(
+      estimateComplexLineTypeCycles(points, traits.lineType.pattern!, 0.01)
+    ).toBeGreaterThan(MAX_COMPLEX_LINETYPE_CYCLES)
+
+    const entity = new AcTrEntity(context)
+    expect(
+      buildComplexLineTypeGeometry(entity, points, traits, context)
+    ).toBe(false)
+    expect(entity.children.length).toBe(0)
+
+    const line = new AcTrLine(points, traits, context)
+    expect(line.hasComplexLinetypeGlyphs).toBe(false)
+    expect(line.children.length).toBeGreaterThan(0)
   })
 })

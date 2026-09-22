@@ -101,7 +101,12 @@ function resolveLineAdvance(baseHeight: number, mtext: AcGiMTextData): number {
     typeof mtext.lineSpaceFactor === 'number'
       ? mtext.lineSpaceFactor
       : DEFAULT_LINE_SPACE_FACTOR
-  return baseHeight * Math.max(factor, 0) * LINE_SPACING_SCALE_FACTOR
+  const factorSpacing = baseHeight * Math.max(factor, 0) * LINE_SPACING_SCALE_FACTOR
+  // DXF group 73: 2 = Exact; omitted/0/1 = At Least (taller chars override to single spacing).
+  if (mtext.lineSpaceStyle === 2) {
+    return factorSpacing
+  }
+  return Math.max(factorSpacing, baseHeight * LINE_SPACING_SCALE_FACTOR)
 }
 
 function resolveWrapWidth(mtext: AcGiMTextData): number | null {

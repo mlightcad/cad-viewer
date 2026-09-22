@@ -1,7 +1,9 @@
 export {
   asyncComplexLineTypeGlyphs,
   buildComplexLineTypeGeometry,
+  estimateComplexLineTypeCycles,
   hasPendingComplexLineTypeGlyphs,
+  MAX_COMPLEX_LINETYPE_CYCLES,
   resolveLineTypeScale,
   resolveLinetypeEmbeddedText,
   syncComplexLineTypeGlyphs
@@ -11,6 +13,7 @@ export {
   COMPLEX_LTYPE_SHAPE,
   COMPLEX_LTYPE_TEXT,
   isComplexLineType,
+  isComplexPatternElement,
   isComplexShapeElement,
   isComplexTextElement,
   normalizeComplexPattern,

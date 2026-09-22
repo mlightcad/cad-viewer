@@ -21,6 +21,14 @@ import * as THREE from 'three'
 import type { AcTrBatchDrawPolicy } from '../draw/AcTrBatchDrawPolicy'
 import { isComplexLineType } from '../linetype'
 import {
+  captureCoalescedLine,
+  installBlockLineCoalescePatch,
+  isAcTrCoalescedLineRef,
+  isFatLineMaterial,
+  mergeCoalescedBlockLines,
+  AcTrLineVertexBuilder
+} from './AcTrBlockLineCoalesce'
+import {
   AcTrEntity,
   AcTrGroup,
   AcTrImage,
@@ -152,6 +160,10 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * marks the capture `'missed'`.
    */
   private _directCapture: AcTrDirectCaptureState = 'off'
+  /** Depth of {@link AcDbRenderingCache.draw} block-template builds. */
+  private _blockLineCoalesceDepth = 0
+  /** One vertex buffer per nested block-template draw. */
+  private _lineVertexBuilders: AcTrLineVertexBuilder[] = []
   /**
    * Payload stored while `_directCapture` is `'captured'`; cleared on miss,
    * cancel, or {@link takeDirectCapture}.
@@ -591,7 +603,36 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
       this.missDirectCapture()
       return this.createDirectCapturePlaceholder() as AcTrGroup
     }
-    return new AcTrGroup(entities, this._context)
+    const drawable: AcTrEntity[] = []
+    const coalesced = []
+    for (let i = 0; i < entities.length; i++) {
+      const entity = entities[i]
+      if (isAcTrCoalescedLineRef(entity)) {
+        coalesced.push(entity)
+      } else {
+        drawable.push(entity as AcTrEntity)
+      }
+    }
+    if (coalesced.length === 0) {
+      return new AcTrGroup(drawable, this._context)
+    }
+    const merged = mergeCoalescedBlockLines(coalesced, this._context)
+    const group = new AcTrGroup(
+      drawable.concat(merged.entities),
+      this._context
+    )
+    group.addExternalChildBoxes(merged.boxes)
+    // Sealing a group that still has thousands of text, hatch, and nested
+    // symbol leaves marks it compacted and skips AcTrGroupCompactor. Cache
+    // clones then duplicate every leaf. Compact those groups here. A block
+    // that coalesced down to a handful of meshes still seals so a single
+    // mesh is shared instead of deep-copied.
+    if (group.childCount >= 8) {
+      group.compactForInstancing()
+    } else if (coalesced.length >= 2) {
+      group.sealForSharedClone()
+    }
+    return group
   }
 
   /**
@@ -774,7 +815,45 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     if (points.length < 2) {
       return this.createEntity()
     }
+    if (
+      this._blockLineCoalesceDepth > 0 &&
+      !isComplexLineType(this._subEntityTraits.lineType.pattern)
+    ) {
+      const material = this.styleManager.getLineMaterial(
+        this._subEntityTraits,
+        false
+      )
+      if (!isFatLineMaterial(material)) {
+        const builder =
+          this._lineVertexBuilders[this._lineVertexBuilders.length - 1]
+        if (builder) {
+          return captureCoalescedLine(
+            points,
+            material,
+            this._subEntityTraits.layer,
+            builder
+          ) as unknown as AcTrEntity
+        }
+      }
+    }
     return new AcTrLine(points, this._subEntityTraits, this._context, false)
+  }
+
+  /**
+   * Enables simple-line merging for the current block-template draw.
+   * Nested block draws increment the same counter.
+   */
+  beginBlockLineCoalesce() {
+    this._blockLineCoalesceDepth++
+    this._lineVertexBuilders.push(new AcTrLineVertexBuilder())
+  }
+
+  /** Ends one block-template draw started by {@link beginBlockLineCoalesce}. */
+  endBlockLineCoalesce() {
+    if (this._blockLineCoalesceDepth > 0) {
+      this._blockLineCoalesceDepth--
+    }
+    this._lineVertexBuilders.pop()
   }
 
   /**
@@ -785,3 +864,5 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     AcTrMaterialManager.CameraZoomUniform.value = zoom
   }
 }
+
+installBlockLineCoalescePatch()

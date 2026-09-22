@@ -145,7 +145,7 @@ function build(
 /**
  * Asserts the fast path and the general path describe the same filled region:
  * identical covered area, identical used vertices, identical WCS bounds and
- * offset, and a single consistent winding per path.
+ * offset, and the same front-facing triangle winding.
  */
 function expectSameFill(
   fast: AcTrBuiltDirectGeometry,
@@ -158,7 +158,7 @@ function expectSameFill(
 
   expect(usedVertexKeys(fast)).toEqual(usedVertexKeys(general))
 
-  for (const built of [fast, general]) {
+  const winding = (built: AcTrBuiltDirectGeometry) => {
     const signs = new Set(
       localTriangles(built.geometry).map(triangle =>
         Math.sign(signedTriangleArea(triangle[0], triangle[1], triangle[2]))
@@ -166,7 +166,9 @@ function expectSameFill(
     )
     expect(signs.size).toBe(1)
     expect(signs.has(0)).toBe(false)
+    return [...signs][0]
   }
+  expect(winding(fast)).toBe(winding(general))
 
   expect(fast.wcsBbox.min.x).toBe(general.wcsBbox.min.x)
   expect(fast.wcsBbox.min.y).toBe(general.wcsBbox.min.y)
@@ -213,6 +215,17 @@ function expectFastPathMatchesGeneral(area: AcGeArea2d) {
 }
 
 describe('buildAreaGeometry single-loop fast path', () => {
+  it('matches the general path for a clockwise rectangle (edge-loop hatch)', () => {
+    expectFastPathMatchesGeneral(
+      areaFromLoop([
+        { x: 0, y: 0 },
+        { x: 0, y: 6 },
+        { x: 10, y: 6 },
+        { x: 10, y: 0 }
+      ])
+    )
+  })
+
   it('matches the general path for a closed rectangle loop (SOLID quad)', () => {
     expectFastPathMatchesGeneral(areaFromVertices(rectangle(0, 0, 10, 6)))
   })

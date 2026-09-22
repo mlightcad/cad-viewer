@@ -71,6 +71,47 @@ export function resolveLineTypeScale(
   return (options.ltscale || 1) * (options.celtscale || 1) * traits.lineTypeScale
 }
 
+/**
+ * Max pattern cycles to expand into strokes/glyphs. Beyond this, fall back to
+ * the GPU dash shader (pre-#651 behaviour). FENCELINE1 at LTSCALE 0.01 on a
+ * multi-kilometre fence otherwise creates 100k+ shape placements and freezes
+ * the main thread during open.
+ */
+export const MAX_COMPLEX_LINETYPE_CYCLES = 4096
+
+/**
+ * Estimates how many pattern repeats {@link walkLineType} would emit for the
+ * given polyline and scaled pattern.
+ */
+export function estimateComplexLineTypeCycles(
+  points: AcGePoint3dLike[],
+  pattern: NonNullable<AcGiSubEntityTraits['lineType']['pattern']>,
+  scale: number
+): number {
+  if (points.length < 2 || pattern.length === 0 || !(scale > 0)) {
+    return 0
+  }
+  let total = 0
+  for (let i = 1; i < points.length; i++) {
+    total += Math.hypot(
+      points[i].x - points[i - 1].x,
+      points[i].y - points[i - 1].y
+    )
+  }
+  if (!(total > 0)) {
+    return 0
+  }
+  let cycle = 0
+  for (const el of pattern) {
+    const len = el.elementLength === 0 ? 0.5 : Math.abs(el.elementLength)
+    cycle += len * scale
+  }
+  if (!(cycle > 0)) {
+    return 0
+  }
+  return total / cycle
+}
+
 function resolveTextStyleForElement(
   placement: AcTrLineWalkPlacement,
   context: AcTrRenderContext
@@ -250,7 +291,8 @@ function appendComplexStrokes(
 
 /**
  * Expands a complex (TEXT/SHAPE) linetype into solid stroke pieces plus glyph
- * shells under {@link entity}. Returns `false` when the pattern is simple.
+ * shells under {@link entity}. Returns `false` when the pattern is simple
+ * or too dense to expand safely (caller uses the GPU dash path instead).
  */
 export function buildComplexLineTypeGeometry(
   entity: AcTrEntity,
@@ -265,6 +307,14 @@ export function buildComplexLineTypeGeometry(
   }
 
   const lineTypeScale = resolveLineTypeScale(traits, context)
+  const estimatedCycles = estimateComplexLineTypeCycles(
+    points,
+    pattern,
+    lineTypeScale
+  )
+  if (estimatedCycles > MAX_COMPLEX_LINETYPE_CYCLES) {
+    return false
+  }
   const walked = walkLineType(points, pattern, lineTypeScale)
 
   // Solid strokes — complex patterns are already excluded from the dash
