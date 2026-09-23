@@ -6,6 +6,7 @@ import {
   buildAreaGeometry,
   buildLineGeometry,
   buildLineSegmentsGeometry,
+  buildOffsetRingDirectGeometry,
   buildPointGeometry,
   isDirectBatchRejectedMaterial,
   resolveAnchorFromBox} from '@mlightcad/three-renderer'
@@ -127,6 +128,23 @@ function buildFromCapture(
 
   if (payload.kind === 'area') {
     const built = buildAreaGeometry(payload.area, traits, renderer.context)
+    if (!built) {
+      return null
+    }
+    if (isDirectBatchRejectedMaterial(built.material)) {
+      built.geometry.dispose()
+      return null
+    }
+    return built
+  }
+
+  if (payload.kind === 'offsetRing') {
+    const built = buildOffsetRingDirectGeometry(
+      payload.outer,
+      payload.inner,
+      traits,
+      renderer.context
+    )
     if (!built) {
       return null
     }

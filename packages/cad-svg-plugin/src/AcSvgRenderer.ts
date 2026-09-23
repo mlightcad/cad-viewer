@@ -7,8 +7,10 @@ import {
   AcGeBox2d,
   AcGeCircArc3d,
   AcGeEllipseArc3d,
+  AcGePoint2d,
   AcGePoint3d,
   AcGePoint3dLike,
+  AcGePolyline2d,
   ACGI_DARK_THEME_FOREGROUND,
   ACGI_LIGHT_THEME_FOREGROUND,
   AcGiContext,
@@ -269,6 +271,29 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
         acdbDrawTessellateOptions(this)
       )
     )
+  }
+
+  /**
+   * @inheritdoc
+   *
+   * SVG has no separate ring primitive. Rebuild the two loops as an area so
+   * the fill matches the previous closed wide-polyline output.
+   */
+  offsetRing(outer: AcGePoint3dLike[], inner: AcGePoint3dLike[]) {
+    const area = new AcGeArea2d()
+    area.add(
+      new AcGePolyline2d(
+        outer.map(point => new AcGePoint2d(point.x, point.y)),
+        true
+      )
+    )
+    area.add(
+      new AcGePolyline2d(
+        inner.map(point => new AcGePoint2d(point.x, point.y)),
+        true
+      )
+    )
+    return this.area(area)
   }
 
   /**
