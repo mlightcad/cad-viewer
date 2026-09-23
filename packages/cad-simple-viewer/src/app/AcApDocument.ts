@@ -95,9 +95,10 @@ export class AcApDocument {
     let isSuccess = true
     try {
       // Convert to base options for database method. Viewer-only fields
-      // (`mode`, `progressiveRendering`, `openViewMode`) are ignored by
-      // `AcDbDatabase`; `sysVars` may include `AcCmColor` values that the
-      // published data-model type omits but `setVar` accepts at runtime.
+      // (`mode`, `progressiveRendering`, `openViewMode`, deprecated
+      // `waitForTextGeometry`) are ignored by `AcDbDatabase`; `sysVars` may
+      // include `AcCmColor` values that the published data-model type omits
+      // but `setVar` accepts at runtime.
       const baseOptions = {
         ...options,
         readOnly: this._openMode === AcEdOpenMode.Read
@@ -139,9 +140,10 @@ export class AcApDocument {
     try {
       const fileExtension = fileName.split('.').pop()?.toLocaleLowerCase()
       // Convert to base options for database method. Viewer-only fields
-      // (`mode`, `progressiveRendering`, `openViewMode`) are ignored by
-      // `AcDbDatabase`; `sysVars` may include `AcCmColor` values that the
-      // published data-model type omits but `setVar` accepts at runtime.
+      // (`mode`, `progressiveRendering`, `openViewMode`, deprecated
+      // `waitForTextGeometry`) are ignored by `AcDbDatabase`; `sysVars` may
+      // include `AcCmColor` values that the published data-model type omits
+      // but `setVar` accepts at runtime.
       const baseOptions = {
         ...options,
         readOnly: this._openMode === AcEdOpenMode.Read

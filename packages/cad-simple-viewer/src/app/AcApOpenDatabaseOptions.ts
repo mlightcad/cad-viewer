@@ -76,34 +76,40 @@ export interface AcApOpenDatabaseOptions extends Omit<
    */
   mode?: AcEdOpenMode
   /**
-   * Whether to render entities incrementally while a drawing is opening.
+   * Whether opening a drawing is progressive.
    *
-   * When `true` (default), entity conversion yields across event-loop turns
-   * with time-budgeted yields so geometry appears progressively and the
-   * camera can reframe as batches land. When `false`, conversion still runs
-   * asynchronously but the canvas is not redrawn until every entity is
-   * converted; zoom-to-fit also waits for conversion to finish.
+   * This flag controls both stages of progressive rendering. The deprecated
+   * {@link waitForTextGeometry} option used to control only the second stage
+   * and is ignored.
+   *
+   * - `false` (default): conversion still runs asynchronously, but the canvas
+   *   is not redrawn until every entity is converted, and the overlay stays
+   *   up until convert **and** deferred glyph jobs are idle
+   *   ({@link AcTrView2d.isProcessingEntities}). Zoom-to-fit also waits for
+   *   conversion to finish.
+   * - `true`: entity conversion yields across event-loop turns so geometry
+   *   paints as batches land and the camera can reframe. The open-file
+   *   overlay ("Rendering drawing ...") hides once entity convert finishes
+   *   ({@link AcTrView2d.isConvertingEntities}). Deferred text / INSERT glyph
+   *   geometry may still finalize afterward, and pan/zoom are already enabled.
+   *
+   * Export / CLI completeness is not controlled by this flag. Callers that
+   * need fully drawable text (HTML/PDF/PNG, headless scripts) still wait via
+   * {@link AcTrView2d.waitUntilIdle} /
+   * {@link AcTrView2d.ensureEntitiesConvertedForExport}.
    */
   progressiveRendering?: boolean
 
   /**
-   * Whether the open-file progress overlay ("Rendering drawing ...") waits for
-   * deferred text / INSERT glyph geometry to finish.
+   * @deprecated Ignored. Both stages of progressive rendering — mid-open
+   * paints during entity convert, and whether the open overlay waits for
+   * deferred text / INSERT glyph geometry — are controlled by
+   * {@link progressiveRendering}.
    *
-   * - `false` (default): hide the overlay once entity convert finishes
-   *   ({@link AcTrView2d.isConvertingEntities}). Text may still finalize in
-   *   the deferred geometry pool afterward, and pan/zoom are already enabled.
-   * - `true`: keep the overlay until convert **and** deferred glyph jobs are
-   *   idle ({@link AcTrView2d.isProcessingEntities}), so "Rendering drawing ..."
-   *   stays visible while text catches up.
-   *
-   * Independent of {@link progressiveRendering}: progressive only controls
-   * mid-open paints and see-through dimming during convert.
-   *
-   * Export / CLI completeness is **not** controlled by this flag. Callers that
-   * need fully drawable text (HTML/PDF/PNG, headless scripts) still wait via
-   * {@link AcTrView2d.waitUntilIdle} /
-   * {@link AcTrView2d.ensureEntitiesConvertedForExport}.
+   * This option used to control only the text stage (`true` kept
+   * "Rendering drawing ..." up until glyphs finished; `false` hid it when
+   * entity convert finished) and was easy to confuse with
+   * `progressiveRendering`. {@link AcApDocManager} strips it with a warning.
    */
   waitForTextGeometry?: boolean
 

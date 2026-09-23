@@ -190,14 +190,18 @@ interface Props {
    */
   drawNoPlotLayers?: boolean
   /**
-   * Whether to render entities incrementally while a drawing is opening.
-   * When omitted, {@link AcApDocManager} defaults to `true`.
+   * Whether opening a drawing is progressive.
+   *
+   * Controls both stages: mid-open paints during entity convert, and whether
+   * the open overlay waits for deferred text geometry. When `false` (default),
+   * the canvas waits until entities and deferred text geometry are idle.
+   * When `true`, geometry paints as it converts and the overlay hides when
+   * entity convert finishes. Deprecated `waitForTextGeometry` is ignored.
    */
   progressiveRendering?: boolean
   /**
-   * Whether the open-file progress overlay waits for deferred text geometry.
-   * When omitted, {@link AcApDocManager} defaults to `false`.
-   * Export/CLI still wait via {@link AcTrView2d.waitUntilIdle}.
+   * @deprecated Ignored. Both stages of progressive rendering are controlled
+   * by {@link progressiveRendering}. Kept so existing templates still compile.
    */
   waitForTextGeometry?: boolean
   /**
@@ -233,8 +237,7 @@ const props = withDefaults(defineProps<Props>(), {
   useMainThreadDraw: true,
   theme: 'dark',
   mode: AcEdOpenMode.Write,
-  progressiveRendering: true,
-  waitForTextGeometry: false,
+  progressiveRendering: false,
   openViewMode: undefined,
   circleSides: ACDB_DRAW_CIRCLE_SIDES_DRAFT,
   paperSpaceBackground: ACGI_PAPER_SPACE_BACKGROUND
@@ -245,7 +248,6 @@ const buildOpenOptions = (): AcApOpenDatabaseOptions => ({
   mode: props.mode,
   drawNoPlotLayers: props.drawNoPlotLayers,
   progressiveRendering: props.progressiveRendering,
-  waitForTextGeometry: props.waitForTextGeometry,
   circleSides: props.circleSides,
   sysVars: {
     paperbkcolor: layoutBackgroundColorFromRgb(props.paperSpaceBackground)
@@ -452,7 +454,6 @@ watch(
     props.mode,
     props.drawNoPlotLayers,
     props.progressiveRendering,
-    props.waitForTextGeometry,
     props.openViewMode,
     props.circleSides,
     props.paperSpaceBackground

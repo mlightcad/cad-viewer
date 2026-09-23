@@ -46,14 +46,9 @@ export default {
       progressive: '渐进显示',
       progressiveRendering: '渐进渲染',
       on: '开',
-      progressiveOnHint: '加载过程中显示图形',
+      progressiveOnHint: '加载过程中显示图形；实体转换结束即关闭进度',
       off: '关',
-      progressiveOffHint: '转换完成后再显示',
-
-      waitForText: '进度等待文字',
-      waitForTextGeometry: '打开进度是否等待文字几何',
-      waitForTextOnHint: '“Rendering drawing ...” 等到文字渲染完',
-      waitForTextOffHint: '实体转换结束后关闭进度（默认）；导出仍会等文字完成',
+      progressiveOffHint: '实体和文字都转换完成后再显示',
 
       nonPlottable: '不打印图层',
       nonPlottableLayers: '不打印图层',

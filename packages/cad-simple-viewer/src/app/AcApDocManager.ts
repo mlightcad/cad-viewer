@@ -456,12 +456,6 @@ export class AcApDocManager {
   private _busyIndicator: AcApBusyIndicator
   /** Open-file progress overlay and event normalization */
   private _openFileProgress: AcApOpenFileProgressController
-  /**
-   * When true, the open progress overlay waits for deferred text geometry
-   * ({@link AcTrView2d.isProcessingEntities}). Driven by
-   * {@link AcApOpenDatabaseOptions.waitForTextGeometry}.
-   */
-  private _waitForTextGeometryOnOpen = false
   /** Optional OPENPROF session profiler (console stage timings) */
   private _openFileProfiler = new AcApOpenFileProfiler()
   /** Command manager */
@@ -603,10 +597,12 @@ export class AcApDocManager {
     this._busyIndicatorHost = busyHost
     this._openFileProgress = new AcApOpenFileProgressController(busyHost)
     this._openFileProgress.setSceneBusyGate(() => {
-      // `waitForTextGeometry` alone decides whether "Rendering drawing ..."
-      // stays up through deferred glyph finalize. Progressive open only
-      // controls mid-open paints / see-through dimming — not this gate.
-      if (this._waitForTextGeometryOnOpen) {
+      // `progressiveRendering` controls both stages of an open: mid-open
+      // paints, and whether "Rendering drawing ..." waits for deferred
+      // text / INSERT glyphs. Deprecated `waitForTextGeometry` is ignored.
+      // Off (default): stay up until convert and glyph jobs are idle.
+      // On: hide once entity convert finishes.
+      if (!this.openProgressView.progressiveRendering) {
         return this.openProgressView.isProcessingEntities
       }
       return this.openProgressView.isConvertingEntities
@@ -2120,14 +2116,14 @@ export class AcApDocManager {
       this.openProgressView.clear()
     }
     this.openProgressView.bindDrawDatabase(this.context.doc.database)
-    // Progressive convert/paint is gated by this flag (time-sliced yields in
-    // batchConvert). Camera auto-fit is started separately in onAfter when the
-    // open view mode uses zoom-to-fit — not for restored VPORT/saved views.
+    // `progressiveRendering` gates both stages: time-sliced mid-open paints
+    // in batchConvert, and whether the open overlay waits for deferred text.
+    // Camera auto-fit is started separately in onAfter when the open view
+    // mode uses zoom-to-fit — not for restored VPORT/saved views.
     this.openProgressView.progressiveRendering =
-      options?.progressiveRendering ?? true
-    this._waitForTextGeometryOnOpen = options?.waitForTextGeometry === true
+      options?.progressiveRendering ?? false
     this._openFileProgress.setSeeThroughOverlay(
-      options?.progressiveRendering ?? true
+      options?.progressiveRendering ?? false
     )
     // OPENPROF: start stage timings before db.read / entity flush.
     this._openFileProfiler.begin(this.context.doc.database)
@@ -2205,7 +2201,7 @@ export class AcApDocManager {
       const layoutLimits = activeLayout?.limits
       const openViewMode = this.resolveOpenViewMode(options)
 
-      const progressiveRendering = options?.progressiveRendering ?? true
+      const progressiveRendering = options?.progressiveRendering ?? false
       let framedSynchronously = false
       if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
         view.zoomTo(layoutLimits)
@@ -2300,22 +2296,38 @@ export class AcApDocManager {
     if (options == null) {
       options = {
         drawNoPlotLayers: false,
-        progressiveRendering: true,
-        waitForTextGeometry: false
+        progressiveRendering: false
       }
     } else {
       this.stripObsoleteFontOpenOptions(options)
+      this.stripDeprecatedWaitForTextGeometry(options)
       if (options.drawNoPlotLayers == null) {
         options.drawNoPlotLayers = false
       }
       if (options.progressiveRendering == null) {
-        options.progressiveRendering = true
-      }
-      if (options.waitForTextGeometry == null) {
-        options.waitForTextGeometry = false
+        options.progressiveRendering = false
       }
     }
     return options
+  }
+
+  /**
+   * Drops deprecated {@link AcApOpenDatabaseOptions.waitForTextGeometry}.
+   *
+   * Both stages of progressive rendering — mid-open paints, and whether the
+   * open overlay waits for deferred text — are controlled by
+   * `progressiveRendering`. The old flag is stripped so it cannot be forwarded
+   * into `db.read`.
+   */
+  private stripDeprecatedWaitForTextGeometry(options: AcApOpenDatabaseOptions) {
+    if (options.waitForTextGeometry == null) {
+      return
+    }
+    delete options.waitForTextGeometry
+    console.warn(
+      '[AcApDocManager] Ignoring deprecated open option waitForTextGeometry; ' +
+        'both stages of progressive rendering are controlled by progressiveRendering.'
+    )
   }
 
   /**

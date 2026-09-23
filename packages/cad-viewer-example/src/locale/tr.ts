@@ -46,16 +46,10 @@ export default {
       progressive: 'Aşamalı',
       progressiveRendering: 'Aşamalı oluşturma',
       on: 'Açık',
-      progressiveOnHint: 'Yükleme sırasında geometriyi göster',
+      progressiveOnHint:
+        'Yükleme sırasında geometriyi göster; varlık dönüşümü bitince ilerleme gizlenir',
       off: 'Kapalı',
-      progressiveOffHint: 'Dönüşüm tamamlanana kadar bekle',
-
-      waitForText: 'Metni bekle',
-      waitForTextGeometry: 'Açılış ilerlemesinde metin geometrisini bekle',
-      waitForTextOnHint:
-        'Metin bitene kadar “Rendering drawing ...” kalsın',
-      waitForTextOffHint:
-        'Varlık dönüşümü bitince ilerlemeyi gizle (varsayılan); dışa aktarma yine metni bekler',
+      progressiveOffHint: 'Varlık ve metin geometrisi dönüşene kadar bekle',
 
       nonPlottable: 'Yazdırılamayan',
       nonPlottableLayers: 'Yazdırılamayan katmanlar',

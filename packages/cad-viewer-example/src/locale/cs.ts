@@ -46,16 +46,10 @@ export default {
       progressive: 'Průběžné',
       progressiveRendering: 'Průběžné vykreslování',
       on: 'Zapnuto',
-      progressiveOnHint: 'Zobrazit geometrii během načítání',
+      progressiveOnHint:
+        'Zobrazit geometrii během načítání; progress se skryje po převodu entit',
       off: 'Vypnuto',
-      progressiveOffHint: 'Čekat na dokončení převodu',
-
-      waitForText: 'Čekat na text',
-      waitForTextGeometry: 'Čekat v progressu na dokončení textové geometrie',
-      waitForTextOnHint:
-        'Ponechat „Rendering drawing ...“ dokud nedoběhne text',
-      waitForTextOffHint:
-        'Skrýt progress po převodu entit (výchozí); export stále čeká na text',
+      progressiveOffHint: 'Čekat na dokončení převodu entit i textu',
 
       nonPlottable: 'Netisknutelné',
       nonPlottableLayers: 'Netisknutelné hladiny',
