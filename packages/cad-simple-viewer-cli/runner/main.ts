@@ -4,6 +4,8 @@ import {
   AcApDocManager,
   AcApI18n,
   type AcApLocale,
+  type AcApOpenDatabaseOptions,
+  AcApOpenViewMode,
   AcEdOpenMode,
   AcTrView2d,
   LIBREDWG_PARSER_WORKER_FILE,
@@ -40,6 +42,8 @@ async function waitForSceneIdle(timeoutMs = SCENE_IDLE_TIMEOUT_MS) {
 
 export type CadViewerCliOpenMode = 'read' | 'write'
 
+export type CadViewerCliOpenViewMode = 'extents' | 'saved'
+
 export interface CadViewerCliCapturedFile {
   fileName: string
   base64: string
@@ -50,21 +54,26 @@ export interface CadViewerCliRunResult {
   files: CadViewerCliCapturedFile[]
 }
 
+export interface CadViewerCliRunOptions {
+  locale?: string
+  mode?: CadViewerCliOpenMode
+  /**
+   * When true (and no drawing bytes), create a blank ISO template document
+   * before running the script. Useful for create-from-scratch examples.
+   */
+  startBlank?: boolean
+  openViewMode?: CadViewerCliOpenViewMode
+  drawNoPlotLayers?: boolean
+  circleSides?: number
+}
+
 declare global {
   interface Window {
     runCadScript: (
       fileName: string | null,
       bytes: Uint8Array | null,
       script: string,
-      options?: {
-        locale?: string
-        mode?: CadViewerCliOpenMode
-        /**
-         * When true (and no drawing bytes), create a blank ISO template document
-         * before running the script. Useful for create-from-scratch examples.
-         */
-        startBlank?: boolean
-      }
+      options?: CadViewerCliRunOptions
     ) => Promise<CadViewerCliRunResult>
   }
 }
@@ -183,6 +192,44 @@ function resolveOpenMode(mode?: CadViewerCliOpenMode): AcEdOpenMode {
   return mode === 'write' ? AcEdOpenMode.Write : AcEdOpenMode.Read
 }
 
+function resolveOpenViewMode(
+  mode?: CadViewerCliOpenViewMode
+): AcApOpenViewMode | undefined {
+  if (mode === 'extents') {
+    return AcApOpenViewMode.Extents
+  }
+  if (mode === 'saved') {
+    return AcApOpenViewMode.Saved
+  }
+  return undefined
+}
+
+/**
+ * Builds open-database options for the CLI runner.
+ *
+ * Progressive rendering is always forced off so drawings open as quickly as
+ * possible — headless scripts do not need mid-open paints.
+ */
+function buildOpenOptions(
+  options: CadViewerCliRunOptions
+): AcApOpenDatabaseOptions {
+  const openOptions: AcApOpenDatabaseOptions = {
+    mode: resolveOpenMode(options.mode),
+    progressiveRendering: false
+  }
+  const openViewMode = resolveOpenViewMode(options.openViewMode)
+  if (openViewMode != null) {
+    openOptions.openViewMode = openViewMode
+  }
+  if (options.drawNoPlotLayers != null) {
+    openOptions.drawNoPlotLayers = options.drawNoPlotLayers
+  }
+  if (options.circleSides != null) {
+    openOptions.circleSides = options.circleSides
+  }
+  return openOptions
+}
+
 function resolveLocale(locale?: string): AcApLocale | undefined {
   if (!locale) {
     return undefined
@@ -250,21 +297,21 @@ window.runCadScript = async (fileName, bytes, script, options = {}) => {
 
   const docManager = AcApDocManager.instance
   const hasDrawing = !!(bytes && bytes.byteLength > 0 && fileName)
+  const openOptions = buildOpenOptions(options)
 
   if (hasDrawing) {
     const buffer = bytes!.buffer.slice(
       bytes!.byteOffset,
       bytes!.byteOffset + bytes!.byteLength
     )
-    const opened = await docManager.openDocument(fileName!, buffer, {
-      mode: resolveOpenMode(options.mode)
-    })
+    const opened = await docManager.openDocument(fileName!, buffer, openOptions)
     if (!opened) {
       throw new Error(`Failed to open "${fileName}".`)
     }
   } else if (options.startBlank !== false) {
     // No -i: start from ISO template in write mode (scripts may still call qnew).
     const created = await docManager.newDocument({
+      ...openOptions,
       mode: AcEdOpenMode.Write
     })
     if (!created) {
