@@ -46,8 +46,10 @@ export interface AcExHtmlMainToolbarHandlers {
   setNavMode: (mode: 'select' | 'pan' | 'zoom-window') => void
   /** Zoom to drawing extents. */
   fit: () => void
-  /** Restore the view captured when the HTML first opened. */
-  restoreOriginalView: () => void
+  /** Zoom to the dominant geometry cluster (outlier-aware). */
+  fitSmart: () => void
+  /** Restore AutoCAD's saved view (VPORT / layout limits). */
+  restoreSavedView: () => void
   /** Cancel zoom-window rubber band without changing idle nav mode. */
   cancelZoomWindow: () => void
   /** Open or close the layer drawer. */
@@ -188,7 +190,9 @@ export function acexHtmlAnnotateToolbarDom(scope: ParentNode = document): void {
   const attrs: Record<string, Record<string, string>> = {
     select: { 'data-action': 'select' },
     pan: { 'data-action': 'pan' },
-    'zoom-original': { 'data-action': 'zoom-original' },
+    'zoom-saved': { 'data-action': 'zoom-saved' },
+    'zoom-original': { 'data-action': 'zoom-saved' },
+    'zoom-smart-extents': { 'data-action': 'zoom-smart-extents' },
     'zoom-extent': { 'data-action': 'fit' },
     'zoom-window': { 'data-action': 'zoom-window' },
     'measure-distance': {
@@ -381,12 +385,12 @@ function createZoomItem(handlers: AcExHtmlMainToolbarHandlers): AcUiToolbarItem 
     selectedChildId: 'zoom-extent',
     children: [
       {
-        id: 'zoom-original',
-        label: 'toolbar.zoomOriginal',
-        icon: AcExHtmlIcons.zoomOriginal,
+        id: 'zoom-saved',
+        label: 'toolbar.zoomSaved',
+        icon: AcExHtmlIcons.zoomSaved,
         action: () => {
           handlers.cancelZoomWindow()
-          handlers.restoreOriginalView()
+          handlers.restoreSavedView()
         }
       },
       {
@@ -396,6 +400,15 @@ function createZoomItem(handlers: AcExHtmlMainToolbarHandlers): AcUiToolbarItem 
         action: () => {
           handlers.cancelZoomWindow()
           handlers.fit()
+        }
+      },
+      {
+        id: 'zoom-smart-extents',
+        label: 'toolbar.zoomSmartExtents',
+        icon: AcExHtmlIcons.zoomSmart,
+        action: () => {
+          handlers.cancelZoomWindow()
+          handlers.fitSmart()
         }
       },
       {

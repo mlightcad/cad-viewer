@@ -1,4 +1,8 @@
 import { toWcsCoord } from './AcExBatchBuffers'
+import {
+  type AcExClusterBox,
+  unionDominantCluster
+} from './AcExExtentCluster'
 import type {
   AcExExtents,
   AcExLayoutSnapshot,
@@ -183,6 +187,228 @@ export function resolveLayoutViewExtents(
       maxY: 1
     }
   )
+}
+
+/**
+ * One batch AABB captured before CPU buffers are released, so intelligent fit
+ * can still peel outliers after {@link releaseSnapshotBatchBuffers}.
+ */
+export interface AcExBatchExtentEntry {
+  /** Layer name for visibility filtering. */
+  layer: string
+  /** World XY AABB of the batch at capture time. */
+  extents: AcExExtents
+}
+
+/**
+ * Collects per-batch AABBs from still-resident layout geometry.
+ *
+ * Call before CPU typed arrays are cleared. Entries survive buffer release and
+ * drive {@link computeIntelligentExtentsFromBatchEntries}.
+ */
+export function collectLayoutBatchExtentEntries(
+  layout: Pick<AcExLayoutSnapshot, 'lineBatches' | 'meshBatches'>
+): AcExBatchExtentEntry[] {
+  const entries: AcExBatchExtentEntry[] = []
+  const consider = (batch: AcExLineBatch | AcExMeshBatch) => {
+    if (batch.positions.length < 3) return
+    const bucket = createEmptyExtents()
+    expandExtentsFromBatch(bucket, batch)
+    const extents = toExtents(bucket)
+    if (!extents) return
+    entries.push({ layer: batch.layer, extents })
+  }
+  for (const batch of layout.lineBatches) {
+    consider(batch)
+  }
+  for (const batch of layout.meshBatches) {
+    consider(batch)
+  }
+  return entries
+}
+
+/**
+ * Dominant-cluster fit from cached batch AABBs (and optional viewport frames).
+ *
+ * Outlier-scale batches are omitted entirely when vertex sampling is unavailable
+ * (post CPU-release), so a single corrupt ARC AABB cannot dominate the fit
+ * even when fewer than 8 boxes remain.
+ */
+export function computeIntelligentExtentsFromBatchEntries(
+  entries: ReadonlyArray<AcExBatchExtentEntry>,
+  options?: {
+    isLayerVisible?: (layerName: string) => boolean
+    viewports?: ReadonlyArray<{ paper: AcExExtents }>
+    /**
+     * When set, oversized batches are expanded into vertex samples instead of
+     * being dropped. Only useful while CPU positions are still resident.
+     */
+    sampleFromLayout?: Pick<
+      AcExLayoutSnapshot,
+      'lineBatches' | 'meshBatches'
+    >
+  }
+): AcExExtents | null {
+  const isLayerVisible = options?.isLayerVisible
+  const visible = entries.filter(
+    entry => !isLayerVisible || isLayerVisible(entry.layer)
+  )
+  if (visible.length === 0 && !(options?.viewports?.length)) {
+    return null
+  }
+
+  const sizes = visible.map(entry =>
+    Math.max(
+      entry.extents.maxX - entry.extents.minX,
+      entry.extents.maxY - entry.extents.minY,
+      1e-9
+    )
+  )
+  for (const viewport of options?.viewports ?? []) {
+    sizes.push(
+      Math.max(
+        viewport.paper.maxX - viewport.paper.minX,
+        viewport.paper.maxY - viewport.paper.minY,
+        1e-9
+      )
+    )
+  }
+  sizes.sort((a, b) => a - b)
+  const medianSize = sizes[Math.floor(sizes.length / 2)] || 1
+  const hugeSpan = Math.max(medianSize * 50, 1e10)
+
+  const boxes: AcExClusterBox[] = []
+  const canSample = options?.sampleFromLayout != null
+  for (const entry of visible) {
+    const span = Math.max(
+      entry.extents.maxX - entry.extents.minX,
+      entry.extents.maxY - entry.extents.minY
+    )
+    if (span >= hugeSpan) {
+      if (canSample) {
+        // Prefer live vertex sampling when buffers are still resident; the
+        // matching batch is found by layer + identical AABB.
+        const layout = options!.sampleFromLayout!
+        const matched =
+          findBatchWithExtents(layout.lineBatches, entry) ??
+          findBatchWithExtents(layout.meshBatches, entry)
+        if (matched && matched.positions.length >= 3) {
+          sampleBatchVertexBoxes(matched, boxes)
+          continue
+        }
+      }
+      // Drop the poisoned batch AABB so it cannot union into the fit.
+      continue
+    }
+    boxes.push(entry.extents)
+  }
+  for (const viewport of options?.viewports ?? []) {
+    boxes.push(viewport.paper)
+  }
+  const peeled = peelFarCenterBoxes(boxes)
+  return unionDominantCluster(peeled.length > 0 ? peeled : boxes)
+}
+
+/**
+ * Drops boxes whose center sits outlier-scale away from the median center.
+ *
+ * Catches tiny corrupt entities (near-zero AABB at 1e75) that the span-based
+ * huge-batch filter misses, including when fewer than 8 boxes remain.
+ */
+function peelFarCenterBoxes(boxes: AcExClusterBox[]): AcExClusterBox[] {
+  if (boxes.length < 2) {
+    return boxes
+  }
+  const centers = boxes.map(box => ({
+    x: (box.minX + box.maxX) / 2,
+    y: (box.minY + box.maxY) / 2,
+    box
+  }))
+  const xs = centers.map(c => c.x).sort((a, b) => a - b)
+  const ys = centers.map(c => c.y).sort((a, b) => a - b)
+  const medX = xs[Math.floor(xs.length / 2)]!
+  const medY = ys[Math.floor(ys.length / 2)]!
+  const sizes = boxes.map(box =>
+    Math.max(box.maxX - box.minX, box.maxY - box.minY, 1e-9)
+  )
+  sizes.sort((a, b) => a - b)
+  const medianSize = sizes[Math.floor(sizes.length / 2)] || 1
+  const limit = Math.max(medianSize * 50, 1e10)
+  const kept = centers.filter(
+    c => Math.hypot(c.x - medX, c.y - medY) <= limit
+  )
+  return kept.length > 0 ? kept.map(c => c.box) : boxes
+}
+
+function findBatchWithExtents(
+  batches: ReadonlyArray<AcExLineBatch | AcExMeshBatch>,
+  entry: AcExBatchExtentEntry
+): AcExLineBatch | AcExMeshBatch | undefined {
+  for (const batch of batches) {
+    if (batch.layer !== entry.layer) continue
+    if (batch.positions.length < 3) continue
+    const bucket = createEmptyExtents()
+    expandExtentsFromBatch(bucket, batch)
+    const extents = toExtents(bucket)
+    if (
+      extents &&
+      extents.minX === entry.extents.minX &&
+      extents.minY === entry.extents.minY &&
+      extents.maxX === entry.extents.maxX &&
+      extents.maxY === entry.extents.maxY
+    ) {
+      return batch
+    }
+  }
+  return undefined
+}
+
+/**
+ * Computes zoom-to-fit extents using the dominant geometry cluster.
+ *
+ * Each visible batch contributes one AABB. Batches whose span is outlier-scale
+ * relative to the median are expanded into sampled vertex points so real
+ * geometry co-batched with a far corrupt entity is kept. Far outliers are then
+ * peeled with the same majority-gap heuristic used by the PDF exporter.
+ *
+ * @param layout - Layout batches and optional viewport frames.
+ * @param isLayerVisible - Optional visibility predicate; omitted layers count.
+ * @returns Clustered extents, or the naive layout union when clustering does
+ *   not shrink the set, or `null` when empty.
+ */
+export function computeIntelligentLayoutExtents(
+  layout: Pick<AcExLayoutSnapshot, 'lineBatches' | 'meshBatches' | 'viewports'>,
+  isLayerVisible?: (layerName: string) => boolean
+): AcExExtents | null {
+  const entries = collectLayoutBatchExtentEntries(layout)
+  return (
+    computeIntelligentExtentsFromBatchEntries(entries, {
+      isLayerVisible,
+      viewports: layout.viewports,
+      sampleFromLayout: layout
+    }) ?? computeLayoutViewExtents(layout)
+  )
+}
+
+/** Caps how many vertex samples are taken from one oversized batch. */
+const SMART_EXTENT_MAX_SAMPLES = 256
+
+function sampleBatchVertexBoxes(
+  batch: AcExLineBatch | AcExMeshBatch,
+  out: AcExClusterBox[]
+): void {
+  const positions = batch.positions
+  const offset = batch.offset
+  const vertexCount = Math.floor(positions.length / 3)
+  if (vertexCount <= 0) return
+  const step = Math.max(1, Math.ceil(vertexCount / SMART_EXTENT_MAX_SAMPLES))
+  for (let i = 0; i < vertexCount; i += step) {
+    const base = i * 3
+    const x = toWcsCoord(positions[base]!, offset[0])
+    const y = toWcsCoord(positions[base + 1]!, offset[1])
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue
+    out.push({ minX: x, minY: y, maxX: x, maxY: y })
+  }
 }
 
 /**

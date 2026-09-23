@@ -1,5 +1,6 @@
 import {
   ACEX_SNAPSHOT_VERSION,
+  type AcExExtents,
   type AcExLayerSnapshot,
   type AcExSnapshot,
   type AcExSnapshotVersion,
@@ -65,6 +66,11 @@ export interface AcExPackageLayoutRef {
   isModelSpace: boolean
   /** Paper-space viewports (model space omits this). */
   viewports?: AcExViewportSnapshot[]
+  /**
+   * AutoCAD saved view for this layout (model: VPORT `*ACTIVE`; paper: limits).
+   * Omitted when the drawing has no usable saved view.
+   */
+  savedView?: AcExExtents
   /** Geometry chunks for this layout, in paint order. */
   chunkIds: string[]
   /**

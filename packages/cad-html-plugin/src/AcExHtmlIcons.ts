@@ -49,6 +49,7 @@ import {
   ICON_ZOOM_BOX,
   ICON_ZOOM_EXTENT,
   ICON_ZOOM_ORIGINAL,
+  ICON_ZOOM_SMART,
   ICON_ZOOM_WINDOW
 } from '@mlightcad/cad-simple-viewer/icons'
 
@@ -63,6 +64,8 @@ export const AcExHtmlIcons = {
   pan: ICON_PAN,
   /** Zoom-to-extents toolbar icon. */
   zoomExtent: ICON_ZOOM_EXTENT,
+  /** Intelligent zoom-to-extents (dominant cluster) toolbar icon. */
+  zoomSmart: ICON_ZOOM_SMART,
   /** Zoom-window / per-layer zoom-to-box toolbar icon. */
   zoomBox: ICON_ZOOM_BOX,
   /** Measure-distance toolbar icon. */
@@ -85,8 +88,10 @@ export const AcExHtmlIcons = {
   layout: ICON_LAYOUT,
   /** Per-layer zoom-to-box button icon (same glyph as zoom window). */
   zoomWindow: ICON_ZOOM_WINDOW,
-  /** Restore the viewport captured when the HTML first opened. */
+  /** Restore AutoCAD's saved view (VPORT / layout limits). */
   zoomOriginal: ICON_ZOOM_ORIGINAL,
+  /** Alias for {@link AcExHtmlIcons.zoomOriginal} (saved-view action). */
+  zoomSaved: ICON_ZOOM_ORIGINAL,
   /** “Show all layers” action icon. */
   layerOn: ICON_LAYER_ON,
   /** “Hide all layers” action icon. */

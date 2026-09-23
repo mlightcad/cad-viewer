@@ -5,6 +5,7 @@ import { acexGetDocsBaseUrl, acexSetDocsBaseUrl } from './AcExDocsUrl'
 import { computeLayoutViewExtents } from './AcExLayerExtents'
 import { buildOsnapCatalog } from './AcExOsnapPrimitiveBuilder'
 import { collectLayoutViewports } from './AcExPaperViewportCollector'
+import { captureAcExSavedViewExtents } from './AcExSavedView'
 import { collectBatchesFromObject3D } from './AcExSceneBatchCollector'
 import {
   ACEX_SNAPSHOT_VERSION,
@@ -61,6 +62,11 @@ export interface AcApHtmlSnapshotBuilderOptions {
    * Offline viewer capability profile. When `'view'`, OSNAP catalogs are omitted.
    */
   viewerMode?: AcExViewerMode
+  /**
+   * Canvas width/height used when resolving model-space VPORT `*ACTIVE` into
+   * {@link AcExLayoutSnapshot.savedView}. Defaults to 16:9 when omitted.
+   */
+  canvasAspectRatio?: number
 }
 
 /**
@@ -407,6 +413,12 @@ function collectLayoutSnapshot(
     }
   }
   const isModelSpace = btrId === scene.modelSpaceBtrId
+  const savedView = captureAcExSavedViewExtents(
+    database,
+    btrId,
+    isModelSpace,
+    options.canvasAspectRatio
+  )
   return {
     btrId,
     name: layoutNames.get(btrId) ?? resolveBlockName(database, btrId),
@@ -416,7 +428,8 @@ function collectLayoutSnapshot(
     osnap: shouldExportOsnap(options)
       ? buildOsnapCatalog(database, btrId, { includeLayer })
       : undefined,
-    viewports: collectLayoutViewports(database, btrId, isModelSpace)
+    viewports: collectLayoutViewports(database, btrId, isModelSpace),
+    ...(savedView ? { savedView } : {})
   }
 }
 
