@@ -63,12 +63,11 @@ import {
   acexIdlePointerStrategy
 } from './AcExIdlePointerStrategy'
 import {
+  type AcExBatchExtentEntry,
   collectLayoutBatchExtentEntries,
   computeIntelligentExtentsFromBatchEntries,
   computeLayerExtentsMap,
-  resolveLayoutViewExtents,
-  type AcExBatchExtentEntry
-} from './AcExLayerExtents'
+  resolveLayoutViewExtents} from './AcExLayerExtents'
 import { AcExMarkupController } from './AcExMarkup'
 import { AcExMeasureController } from './AcExMeasurement'
 import {
