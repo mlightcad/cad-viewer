@@ -270,6 +270,13 @@ export class AcTrView2d extends AcEdBaseView {
   /** Cooperative yields taken inside progressive {@link batchConvert}. */
   private _progressiveYieldCount = 0
   /**
+   * Saved view was not applied at open. Frame batch bounds once linework
+   * convert drains, so the canvas is not blank until deferred glyphs finish.
+   * Applied on a timer so it does not run on the entity-parse stack.
+   */
+  private _openLineworkFramePending = false
+  private _openLineworkFrameTimer: ReturnType<typeof setTimeout> | null = null
+  /**
    * In-flight + queued glyph/group geometry jobs that await fonts via asyncDraw.
    * Counted separately so linework convert can continue while text waits.
    */
@@ -1467,6 +1474,43 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * When open framing waits on {@link zoomToFitDrawing}, show the linework
+   * bounds as soon as entity convert drains. The final fit still runs after
+   * deferred glyphs so text extents can refine the camera.
+   */
+  requestOpenLineworkFrame() {
+    this._openLineworkFramePending = true
+    this.scheduleOpenLineworkFrame()
+  }
+
+  private cancelOpenLineworkFrame() {
+    this._openLineworkFramePending = false
+    if (this._openLineworkFrameTimer != null) {
+      clearTimeout(this._openLineworkFrameTimer)
+      this._openLineworkFrameTimer = null
+    }
+  }
+
+  private scheduleOpenLineworkFrame() {
+    if (
+      this._openLineworkFrameTimer != null ||
+      !this._openLineworkFramePending
+    ) {
+      return
+    }
+    const delay = this.isConvertingEntities ? 50 : 0
+    this._openLineworkFrameTimer = setTimeout(() => {
+      this._openLineworkFrameTimer = null
+      if (!this._openLineworkFramePending) return
+      if (this.isConvertingEntities) {
+        this.scheduleOpenLineworkFrame()
+        return
+      }
+      this.frameOpenLineworkIfReady()
+    }, delay)
+  }
+
+  /**
    * @inheritdoc
    */
   zoomToFitDrawing(timeout: number = 0, layoutBtrId?: AcDbObjectId) {
@@ -2307,6 +2351,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.clearFontLoadedRedrawTimer()
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
+    this.cancelOpenLineworkFrame()
     this.resetDeferredGeometryQueue()
     this._entityProcessingIdleAt = 0
     this._scene.clear()
@@ -2345,6 +2390,7 @@ export class AcTrView2d extends AcEdBaseView {
   restoreSessionState(state: AcTrViewSessionState): void {
     this._convertEpoch++
     this.clearFontLoadedRedrawTimer()
+    this.cancelOpenLineworkFrame()
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
     this.resetDeferredGeometryQueue()
@@ -2375,6 +2421,7 @@ export class AcTrView2d extends AcEdBaseView {
     const parked = this.captureSessionState()
     this._convertEpoch++
     this.clearFontLoadedRedrawTimer()
+    this.cancelOpenLineworkFrame()
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
     this.resetDeferredGeometryQueue()
@@ -2538,6 +2585,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._disposeCanvasTouchCallout?.()
     this._disposeCanvasTouchCallout = undefined
     this.clearFontLoadedRedrawTimer()
+    this.cancelOpenLineworkFrame()
     this.stopAnimationLoop()
   }
 
@@ -2904,7 +2952,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._textStyleFontPreloadPromise = FontManager.instance
       .requestFonts(names)
       .then(
-        () => undefined,
+        () => {},
         () => {
           // Glyph draw still falls back via FontManager defaults / '?'.
         }
@@ -3136,8 +3184,7 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private pumpDeferredGeometryQueue(): void {
     while (
-      this._deferredGeometryActive <
-        AcTrView2d.DEFERRED_GEOMETRY_CONCURRENCY &&
+      this._deferredGeometryActive < AcTrView2d.DEFERRED_GEOMETRY_CONCURRENCY &&
       this._deferredGeometryQueue.length > 0
     ) {
       const job = this._deferredGeometryQueue.shift()!
@@ -3653,6 +3700,24 @@ export class AcTrView2d extends AcEdBaseView {
       this._isDirty = true
     }
     this.stampEntityProcessingIdle()
+  }
+
+  /**
+   * Zooms to batch geometry once, after entity convert has drained.
+   */
+  private frameOpenLineworkIfReady() {
+    if (!this._openLineworkFramePending || this.isConvertingEntities) {
+      return
+    }
+    const box = this.resolveLayoutFitBox()
+    if (!box || box.isEmpty()) {
+      this._openLineworkFramePending = false
+      return
+    }
+    this._openLineworkFramePending = false
+    // Programmatic so a progressive open does not treat this as a user zoom
+    // and skip the glyph-aware final fit.
+    this._progressiveOpenFit.frameProgrammatically(box)
   }
 
   /**

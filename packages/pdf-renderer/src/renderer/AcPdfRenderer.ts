@@ -9,8 +9,10 @@ import {
   AcGeCircArc3d,
   AcGeEllipseArc3d,
   AcGeMatrix3d,
+  AcGePoint2d,
   AcGePoint3d,
   AcGePoint3dLike,
+  AcGePolyline2d,
   ACGI_DARK_THEME_FOREGROUND,
   ACGI_LIGHT_THEME_FOREGROUND,
   AcGiContext,
@@ -434,6 +436,23 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       })
     }
     return this.pushEntity(entity)
+  }
+
+  offsetRing(outer: AcGePoint3dLike[], inner: AcGePoint3dLike[]) {
+    const area = new AcGeArea2d()
+    area.add(
+      new AcGePolyline2d(
+        outer.map(point => new AcGePoint2d(point.x, point.y)),
+        true
+      )
+    )
+    area.add(
+      new AcGePolyline2d(
+        inner.map(point => new AcGePoint2d(point.x, point.y)),
+        true
+      )
+    )
+    return this.area(area)
   }
 
   mtext(mtext: AcGiMTextData, style: AcGiTextStyle, _delay?: boolean) {

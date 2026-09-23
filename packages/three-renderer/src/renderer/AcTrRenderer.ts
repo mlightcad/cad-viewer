@@ -4,8 +4,10 @@ import {
   AcGeArea2d,
   AcGeCircArc3d,
   AcGeEllipseArc3d,
+  AcGePoint2d,
   AcGePoint3d,
   AcGePoint3dLike,
+  AcGePolyline2d,
   AcGiFontMapping,
   AcGiImageStyle,
   AcGiMTextData,
@@ -32,6 +34,7 @@ import {
   AcTrPolygon,
   AcTrShape
 } from '../object'
+import { buildOffsetRingDirectGeometry } from '../object/AcTrLineGeometryBuilder'
 import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
 import { AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport/AcTrCamera'
@@ -136,6 +139,15 @@ export type AcTrDirectCapturePayload =
       kind: 'area'
       /** Area geometry in drawing coordinates. */
       area: AcGeArea2d
+    }
+  | {
+      /**
+       * Closed wide polyline captured from {@link AcTrRenderer.offsetRing}.
+       * `outer[i]` and `inner[i]` are the two offsets of one centerline sample.
+       */
+      kind: 'offsetRing'
+      outer: AcGePoint3dLike[]
+      inner: AcGePoint3dLike[]
     }
   | {
       /** Indexed line segments captured from {@link AcTrRenderer.lineSegments}. */
@@ -617,10 +629,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
       return new AcTrGroup(drawable, this._context)
     }
     const merged = mergeCoalescedBlockLines(coalesced, this._context)
-    const group = new AcTrGroup(
-      drawable.concat(merged.entities),
-      this._context
-    )
+    const group = new AcTrGroup(drawable.concat(merged.entities), this._context)
     group.addExternalChildBoxes(merged.boxes)
     // Sealing a group that still has thousands of text, hatch, and nested
     // symbol leaves marks it compacted and skips AcTrGroupCompactor. Cache
@@ -712,6 +721,47 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
       return this.createDirectCapturePlaceholder() as AcTrPolygon
     }
     return new AcTrPolygon(area, this._subEntityTraits, this._context)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  offsetRing(outer: AcGePoint3dLike[], inner: AcGePoint3dLike[]) {
+    if (this._directCapture !== 'off') {
+      if (this.tryCaptureDirectPayload({ kind: 'offsetRing', outer, inner })) {
+        return this.createDirectCapturePlaceholder()
+      }
+      return this.createDirectCapturePlaceholder()
+    }
+    const built = buildOffsetRingDirectGeometry(
+      outer,
+      inner,
+      this._subEntityTraits,
+      this._context
+    )
+    if (!built) {
+      // Strip triangulation rejects collapsed or non-aligned loops. Rebuild
+      // the same two boundaries as an area so the fill is not dropped.
+      return this.area(this.offsetRingArea(outer, inner))
+    }
+    const entity = new AcTrEntity(this._context)
+    const mesh = new THREE.Mesh(built.geometry, built.material)
+    mesh.position.copy(built.worldOffset)
+    entity.add(mesh)
+    entity.wcsBbox = built.wcsBbox
+    return entity
+  }
+
+  private offsetRingArea(outer: AcGePoint3dLike[], inner: AcGePoint3dLike[]) {
+    const area = new AcGeArea2d()
+    const toLoop = (points: AcGePoint3dLike[]) =>
+      new AcGePolyline2d(
+        points.map(point => new AcGePoint2d(point.x, point.y)),
+        true
+      )
+    area.add(toLoop(outer))
+    area.add(toLoop(inner))
+    return area
   }
 
   /**

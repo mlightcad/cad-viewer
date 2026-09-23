@@ -78,12 +78,18 @@ const SMALL_FILL_LOOP_AREA_EPSILON = 1e-9
 export interface AcTrAreaBuildStats {
   /** Builds served by the single-loop (≤ 4 point) fan triangulation. */
   smallLoopFastPath: number
+  /**
+   * Builds served by an index-aligned outer/inner strip.
+   * Wide closed polylines produce this shape; earcut on those rings is O(n²).
+   */
+  offsetRingFastPath: number
   /** Builds that fell back to `THREE.Shape` + earcut. */
   generalPath: number
 }
 
 const _areaBuildStats: AcTrAreaBuildStats = {
   smallLoopFastPath: 0,
+  offsetRingFastPath: 0,
   generalPath: 0
 }
 
@@ -95,6 +101,7 @@ export function getAreaBuildStats(): AcTrAreaBuildStats {
 /** Resets the fill-build counters. */
 export function resetAreaBuildStats(): void {
   _areaBuildStats.smallLoopFastPath = 0
+  _areaBuildStats.offsetRingFastPath = 0
   _areaBuildStats.generalPath = 0
 }
 
@@ -378,9 +385,12 @@ function buildSmallFillLoopMesh(
  * @returns `true` when the material is a non-`LineMaterial` shader and must
  *   fall back to the legacy drawable path.
  */
-export function isDirectBatchRejectedMaterial(material: THREE.Material): boolean {
+export function isDirectBatchRejectedMaterial(
+  material: THREE.Material
+): boolean {
   return (
-    material instanceof THREE.ShaderMaterial && !(material instanceof LineMaterial)
+    material instanceof THREE.ShaderMaterial &&
+    !(material instanceof LineMaterial)
   )
 }
 
@@ -509,6 +519,134 @@ export function buildPointGeometry(
     material,
     position: point
   }
+}
+
+/**
+ * Triangulates an index-aligned outer/inner ring as a quad strip.
+ *
+ * `AcDbPolyline` calls this only for a closed wide polyline whose two offset
+ * loops share centerline order. Each quad is two triangles. The vertex count
+ * is the two loops combined; this pass does not add samples.
+ */
+function buildOffsetRingMesh(
+  outer: AcGePoint3dLike[],
+  inner: AcGePoint3dLike[]
+): THREE.BufferGeometry | null {
+  const outerCount = openLoopCount(outer)
+  const innerCount = openLoopCount(inner)
+  if (outerCount !== innerCount || outerCount < 3) {
+    return null
+  }
+
+  let areaSum = 0
+  for (let i = 0; i < outerCount; i++) {
+    const next = (i + 1) % outerCount
+    areaSum += signedPointTriangleArea(outer[i], outer[next], inner[next])
+    areaSum += signedPointTriangleArea(outer[i], inner[next], inner[i])
+  }
+  if (!Number.isFinite(areaSum) || areaSum === 0) {
+    return null
+  }
+  const flip = areaSum < 0
+
+  const positions = new Float32Array(outerCount * 2 * 3)
+  for (let i = 0; i < outerCount; i++) {
+    const outerPoint = outer[i]
+    const innerPoint = inner[i]
+    if (
+      !Number.isFinite(outerPoint.x) ||
+      !Number.isFinite(outerPoint.y) ||
+      !Number.isFinite(innerPoint.x) ||
+      !Number.isFinite(innerPoint.y)
+    ) {
+      return null
+    }
+    positions[i * 3] = outerPoint.x
+    positions[i * 3 + 1] = outerPoint.y
+    positions[i * 3 + 2] = outerPoint.z ?? 0
+    const innerOffset = (outerCount + i) * 3
+    positions[innerOffset] = innerPoint.x
+    positions[innerOffset + 1] = innerPoint.y
+    positions[innerOffset + 2] = innerPoint.z ?? 0
+  }
+
+  const indices = new Uint32Array(outerCount * 6)
+  let cursor = 0
+  for (let i = 0; i < outerCount; i++) {
+    const next = (i + 1) % outerCount
+    const outerStart = i
+    const outerEnd = next
+    const innerStart = outerCount + i
+    const innerEnd = outerCount + next
+    if (!flip) {
+      indices[cursor++] = outerStart
+      indices[cursor++] = outerEnd
+      indices[cursor++] = innerEnd
+      indices[cursor++] = outerStart
+      indices[cursor++] = innerEnd
+      indices[cursor++] = innerStart
+    } else {
+      indices[cursor++] = outerStart
+      indices[cursor++] = innerEnd
+      indices[cursor++] = outerEnd
+      indices[cursor++] = outerStart
+      indices[cursor++] = innerStart
+      indices[cursor++] = innerEnd
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry()
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geometry.setIndex(new THREE.BufferAttribute(indices, 1))
+  return geometry
+}
+
+/**
+ * Builds a rebased direct-batch mesh for an explicit offset ring.
+ *
+ * `AcDbPolyline` has already decided these loops are one closed wide polyline.
+ */
+export function buildOffsetRingDirectGeometry(
+  outer: AcGePoint3dLike[],
+  inner: AcGePoint3dLike[],
+  traits: AcGiSubEntityTraits,
+  context: AcTrRenderContext
+): AcTrBuiltDirectGeometry | null {
+  const geometry = buildOffsetRingMesh(outer, inner)
+  if (!geometry) return null
+  const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
+  if (!boundingBox || boundingBox.isEmpty()) {
+    geometry.dispose()
+    return null
+  }
+  _areaBuildStats.offsetRingFastPath++
+  const wcsBbox = boundingBox.clone()
+  const worldOffset = wcsBbox.getCenter(new THREE.Vector3())
+  rebaseGeometryPositions(geometry, worldOffset)
+  return {
+    kind: 'mesh',
+    geometry,
+    worldOffset,
+    wcsBbox,
+    material: context.styleManager.getFillMaterial(traits)
+  }
+}
+
+/** Drops a repeated closing vertex so a closed loop can be stitched by index. */
+function openLoopCount(points: Array<{ x: number; y: number }>): number {
+  const count = points.length
+  if (count > 1 && isSamePoint2d(points[0], points[count - 1])) {
+    return count - 1
+  }
+  return count
+}
+
+function signedPointTriangleArea(
+  a: AcGePoint2dLike,
+  b: AcGePoint2dLike,
+  c: AcGePoint2dLike
+): number {
+  return ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) * 0.5
 }
 
 /**

@@ -13,6 +13,7 @@ import * as THREE from 'three'
 import {
   type AcTrBuiltDirectGeometry,
   buildAreaGeometry,
+  buildOffsetRingDirectGeometry,
   getAreaBuildStats,
   resetAreaBuildStats,
   setForceGeneralAreaPath
@@ -193,7 +194,7 @@ function expectFastPathMatchesGeneral(area: AcGeArea2d) {
   const fast = build(area, context)
   expect(getAreaBuildStats()).toEqual({
     smallLoopFastPath: 1,
-    generalPath: 0
+    generalPath: 0, offsetRingFastPath: 0
   })
 
   resetAreaBuildStats()
@@ -206,7 +207,7 @@ function expectFastPathMatchesGeneral(area: AcGeArea2d) {
   }
   expect(getAreaBuildStats()).toEqual({
     smallLoopFastPath: 0,
-    generalPath: 1
+    generalPath: 1, offsetRingFastPath: 0
   })
 
   expectSameFill(fast, general)
@@ -311,7 +312,7 @@ describe('buildAreaGeometry single-loop fast path', () => {
     expect(built.geometry.getAttribute('position').count).toBeGreaterThan(4)
     expect(getAreaBuildStats()).toEqual({
       smallLoopFastPath: 0,
-      generalPath: 1
+      generalPath: 1, offsetRingFastPath: 0
     })
     built.geometry.dispose()
   })
@@ -334,7 +335,7 @@ describe('buildAreaGeometry single-loop fast path', () => {
     )
     expect(getAreaBuildStats()).toEqual({
       smallLoopFastPath: 0,
-      generalPath: 1
+      generalPath: 1, offsetRingFastPath: 0
     })
     // Pin whatever earcut produces today so a future earcut change is visible.
     expect(built).not.toBeNull()
@@ -370,7 +371,7 @@ describe('buildAreaGeometry single-loop fast path', () => {
     const built = build(area, new AcTrRenderContext())
     expect(getAreaBuildStats()).toEqual({
       smallLoopFastPath: 0,
-      generalPath: 1
+      generalPath: 1, offsetRingFastPath: 0
     })
     // Outer 100 minus the 4-unit hole.
     expect(totalArea(built)).toBeCloseTo(96, 3)
@@ -404,7 +405,7 @@ describe('AcDbSolid / AcDbTrace fill capacity', () => {
       )
       expect(getAreaBuildStats()).toEqual({
         smallLoopFastPath: 1,
-        generalPath: 0
+        generalPath: 0, offsetRingFastPath: 0
       })
       // 3 corners → one triangle; 4 corners → two.
       expect(built.geometry.getIndex()!.count).toBe(cornerCount === 3 ? 3 : 6)
@@ -424,5 +425,82 @@ describe('AcDbSolid / AcDbTrace fill capacity', () => {
     }
 
     expectFastPathMatchesGeneral(areaFromVertices(trace.subGetGripPoints()))
+  })
+})
+
+describe('buildOffsetRingDirectGeometry', () => {
+  function ringPoints(radius: number, count: number) {
+    const points: AcGePoint3dLike[] = []
+    for (let i = 0; i < count; i++) {
+      const angle = (i / count) * Math.PI * 2
+      points.push({
+        x: Math.cos(angle) * radius,
+        y: Math.sin(angle) * radius,
+        z: 0
+      })
+    }
+    return points
+  }
+
+  function ringArea(outer: AcGePoint3dLike[], inner: AcGePoint3dLike[]) {
+    const area = new AcGeArea2d()
+    area.add(
+      new AcGePolyline2d(
+        outer.map(point => new AcGePoint2d(point.x, point.y)),
+        true
+      )
+    )
+    area.add(
+      new AcGePolyline2d(
+        inner.map(point => new AcGePoint2d(point.x, point.y)),
+        true
+      )
+    )
+    return area
+  }
+
+  it('stitches an aligned ring and matches the general path covered area', () => {
+    const outer = ringPoints(10, 16)
+    const inner = ringPoints(8, 16)
+    const context = new AcTrRenderContext()
+    resetAreaBuildStats()
+    const fast = buildOffsetRingDirectGeometry(
+      outer,
+      inner,
+      defaultTraits,
+      context
+    )
+    expect(fast).not.toBeNull()
+    if (!fast) return
+    expect(getAreaBuildStats()).toEqual({
+      smallLoopFastPath: 0,
+      generalPath: 0,
+      offsetRingFastPath: 1
+    })
+    expect(fast.geometry.getIndex()!.count).toBe(16 * 6)
+
+    const general = build(ringArea(outer, inner), context)
+    expect(Math.abs(totalArea(fast) - totalArea(general))).toBeLessThan(1e-3)
+    fast.geometry.dispose()
+    general.geometry.dispose()
+  })
+
+  it('builds a multi-thousand-vertex ring without the general path', () => {
+    const count = 4000
+    resetAreaBuildStats()
+    const started = performance.now()
+    const built = buildOffsetRingDirectGeometry(
+      ringPoints(100, count),
+      ringPoints(99, count),
+      defaultTraits,
+      new AcTrRenderContext()
+    )
+    const elapsed = performance.now() - started
+    expect(built).not.toBeNull()
+    expect(elapsed).toBeLessThan(500)
+    expect(getAreaBuildStats().offsetRingFastPath).toBe(1)
+    expect(getAreaBuildStats().generalPath).toBe(0)
+    expect(built!.geometry.getIndex()!.count).toBe(count * 6)
+    built!.geometry.dispose()
   })
 })

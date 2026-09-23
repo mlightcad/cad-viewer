@@ -2211,6 +2211,7 @@ export class AcApDocManager {
           view.beginProgressiveOpenFit()
         }
         view.zoomToFitDrawing()
+        view.requestOpenLineworkFrame()
       } else if (!isPaperSpaceActive) {
         const canvasAspect = view.width / Math.max(view.height, 1)
         // Restore *ACTIVE without comparing to header EXTMIN/EXTMAX.
@@ -2233,12 +2234,14 @@ export class AcApDocManager {
             view.beginProgressiveOpenFit()
           }
           view.zoomToFitDrawing()
+          view.requestOpenLineworkFrame()
         }
       } else {
         if (progressiveRendering) {
           view.beginProgressiveOpenFit()
         }
         view.zoomToFitDrawing()
+        view.requestOpenLineworkFrame()
       }
 
       // Tell the view we've already framed the startup layout, so that
