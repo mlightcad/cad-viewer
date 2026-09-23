@@ -53,7 +53,8 @@ function fakeHandlers(): AcExHtmlMainToolbarHandlers {
   return {
     setNavMode: jest.fn(),
     fit: jest.fn(),
-    restoreOriginalView: jest.fn(),
+    fitSmart: jest.fn(),
+    restoreSavedView: jest.fn(),
     cancelZoomWindow: jest.fn(),
     toggleLayerDrawer: jest.fn(),
     switchLayout: jest.fn(),
@@ -170,5 +171,28 @@ describe('AcExHtmlMainToolbar readiness', () => {
     ).toBe(false)
 
     toolbar.destroy()
+  })
+
+  it('exposes saved and smart-extents zoom children', () => {
+    const items = acexHtmlCreateMainToolbarItems({
+      host: document.createElement('div'),
+      i18n: fakeI18n(),
+      viewerMode: 'measure',
+      exportLayouts: false,
+      layouts: [],
+      getActiveLayoutBtrId: () => '1',
+      handlers: fakeHandlers()
+    })
+    const zoom = items.find(item => item.id === 'zoom')
+    const childIds = zoom?.children?.map(child => child.id) ?? []
+    expect(childIds).toEqual(
+      expect.arrayContaining([
+        'zoom-saved',
+        'zoom-extent',
+        'zoom-smart-extents',
+        'zoom-window'
+      ])
+    )
+    expect(childIds).not.toContain('zoom-original')
   })
 })

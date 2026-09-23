@@ -134,7 +134,9 @@ export class AcApHtmlConvertor {
             (resolved.exportLayouts ||
               exportView.activeLayoutBtrId === exportView.modelSpaceBtrId)
               ? captureAcApHtmlViewState(exportView)
-              : undefined
+              : undefined,
+          canvasAspectRatio:
+            exportView.width / Math.max(exportView.height, 1)
         }
       )
 

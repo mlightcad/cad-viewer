@@ -33,7 +33,9 @@ export type AcExHtmlMessageKey =
   | 'toolbar.pan'
   | 'toolbar.zoom'
   | 'toolbar.zoomExtents'
+  | 'toolbar.zoomSmartExtents'
   | 'toolbar.zoomWindow'
+  | 'toolbar.zoomSaved'
   | 'toolbar.zoomOriginal'
   | 'toolbar.measureDistance'
   | 'toolbar.measureContinuous'
@@ -255,8 +257,10 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       pan: 'Pan',
       zoom: 'Zoom',
       zoomExtents: 'Extents',
+      zoomSmartExtents: 'Smart extents',
       zoomWindow: 'Window',
-      zoomOriginal: 'Original',
+      zoomSaved: 'Saved',
+      zoomOriginal: 'Saved',
       measureDistance: 'Distance',
       measureContinuous: 'Continuous',
       measureAngle: 'Angle',
@@ -516,8 +520,10 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       pan: '平移',
       zoom: '缩放',
       zoomExtents: '范围',
+      zoomSmartExtents: '智能范围',
       zoomWindow: '窗口',
-      zoomOriginal: '原始',
+      zoomSaved: '保存的视图',
+      zoomOriginal: '保存的视图',
       measureDistance: '测距离',
       measureContinuous: '连续测',
       measureAngle: '测角度',
@@ -766,8 +772,10 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       pan: 'Posun',
       zoom: 'Přiblížení',
       zoomExtents: 'Rozsah',
+      zoomSmartExtents: 'Chytrý rozsah',
       zoomWindow: 'Okno',
-      zoomOriginal: 'Původní',
+      zoomSaved: 'Uložený',
+      zoomOriginal: 'Uložený',
       measureDistance: 'Vzdálenost',
       measureContinuous: 'Spojité',
       measureAngle: 'Úhel',
@@ -1026,8 +1034,10 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       pan: 'Kaydır',
       zoom: 'Yakınlaştır',
       zoomExtents: 'Sınırlar',
+      zoomSmartExtents: 'Akıllı sınırlar',
       zoomWindow: 'Pencere',
-      zoomOriginal: 'Orijinal',
+      zoomSaved: 'Kayıtlı',
+      zoomOriginal: 'Kayıtlı',
       measureDistance: 'Mesafe',
       measureContinuous: 'Sürekli',
       measureAngle: 'Açı',
@@ -1289,8 +1299,10 @@ const AR_MESSAGES: AcExMessageTree = {
     'pan': 'تحريك',
     'zoom': 'تكبير/تصغير',
     'zoomExtents': 'ملاءمة',
+    'zoomSmartExtents': 'ملاءمة ذكية',
     'zoomWindow': 'نافذة',
-    'zoomOriginal': 'أصلي',
+    'zoomSaved': 'محفوظ',
+    'zoomOriginal': 'محفوظ',
     'measureDistance': 'مسافة',
     'measureContinuous': 'مستمر',
     'measureAngle': 'زاوية',

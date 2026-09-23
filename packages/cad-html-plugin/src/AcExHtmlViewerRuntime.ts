@@ -63,8 +63,11 @@ import {
   acexIdlePointerStrategy
 } from './AcExIdlePointerStrategy'
 import {
+  collectLayoutBatchExtentEntries,
+  computeIntelligentExtentsFromBatchEntries,
   computeLayerExtentsMap,
-  resolveLayoutViewExtents
+  resolveLayoutViewExtents,
+  type AcExBatchExtentEntry
 } from './AcExLayerExtents'
 import { AcExMarkupController } from './AcExMarkup'
 import { AcExMeasureController } from './AcExMeasurement'
@@ -914,10 +917,27 @@ async function startViewer(): Promise<void> {
   }
 
   /**
+   * Per-batch AABBs captured while CPU positions are resident. Intelligent fit
+   * must use this after {@link releaseCpuAfterGpuUpload} clears batches —
+   * including model space loaded as a paper-viewport sidecar.
+   */
+  const batchExtentsByLayout = new Map<string, AcExBatchExtentEntry[]>()
+  const refreshBatchExtentCache = (target: AcExLayoutSnapshot) => {
+    const entries = collectLayoutBatchExtentEntries(target)
+    if (entries.length > 0) {
+      batchExtentsByLayout.set(target.btrId, entries)
+    }
+  }
+
+  /**
    * After GPU upload (+ hybrid OSNAP when measure is on), drop CPU typed arrays.
    * GPU buffers stay; layout switch reloads from package chunks or monolithic gzip.
    */
   const releaseCpuAfterGpuUpload = () => {
+    // Snapshot every layout that still has CPU batches (active + sidecar model).
+    for (const target of snapshot.layouts) {
+      refreshBatchExtentCache(target)
+    }
     releaseLayerGroupsGeometryCpuArrays(paperLayerGroups)
     releaseLayerGroupsGeometryCpuArrays(modelLayerGroups)
     releaseSnapshotBatchBuffers(snapshot)
@@ -1205,6 +1225,7 @@ async function startViewer(): Promise<void> {
     Map<string, AcExExtents | null>
   >()
   layerExtentsByLayout.set(layout.btrId, new Map(layerExtents))
+  refreshBatchExtentCache(layout)
   let layoutExtents = resolveLayoutViewExtents(
     layout,
     snapshot.meta.viewExtents ?? snapshot.meta.extents
@@ -1341,13 +1362,13 @@ async function startViewer(): Promise<void> {
     bumpSnapCacheKey()
   }
 
-  const zoomToExtents = (extents: AcExExtents) => {
+  const zoomToExtents = (extents: AcExExtents, margin = 0.9) => {
     const { width, height } = getCanvasSize()
     const spanX = Math.max(extents.maxX - extents.minX, FLOAT_TOL)
     const spanY = Math.max(extents.maxY - extents.minY, FLOAT_TOL)
     const centerX = (extents.minX + extents.maxX) / 2
     const centerY = (extents.minY + extents.maxY) / 2
-    const zoom = Math.min(width / spanX, height / spanY) * 0.9
+    const zoom = Math.min(width / spanX, height / spanY) * margin
     flyTo(centerX, centerY, zoom)
     render()
   }
@@ -1355,6 +1376,24 @@ async function startViewer(): Promise<void> {
   const fit = () => {
     // Initial open and toolbar "Zoom extents" both use batch-derived layout bounds.
     zoomToExtents(layoutExtents)
+  }
+
+  const fitSmart = () => {
+    const cached = batchExtentsByLayout.get(layout.btrId) ?? []
+    const liveEntries =
+      layout.lineBatches.length > 0 || layout.meshBatches.length > 0
+        ? collectLayoutBatchExtentEntries(layout)
+        : []
+    const entries = liveEntries.length > 0 ? liveEntries : cached
+    const smart = computeIntelligentExtentsFromBatchEntries(entries, {
+      isLayerVisible: layerName => layerVisible.get(layerName) !== false,
+      viewports: layout.viewports,
+      sampleFromLayout:
+        liveEntries.length > 0
+          ? layout
+          : undefined
+    })
+    zoomToExtents(smart ?? layoutExtents)
   }
 
   const captureViewState = () => ({
@@ -1370,14 +1409,22 @@ async function startViewer(): Promise<void> {
     string,
     { centerX: number; centerY: number; zoom: number }
   >()
-  const restoreOriginalView = () => {
+  const restoreSavedView = () => {
+    const savedExtents = layout.savedView
+    if (savedExtents) {
+      // Exact AutoCAD saved box — no extra 0.9 framing margin.
+      zoomToExtents(savedExtents, 1)
+      return
+    }
+    // Legacy snapshots without embedded savedView: fall back to the view
+    // captured when the layout was first framed (previous "Original" behavior).
     const saved = originalByLayout.get(layout.btrId)
     if (saved) {
       flyTo(saved.centerX, saved.centerY, saved.zoom)
-    } else {
-      fit()
+      render()
+      return
     }
-    render()
+    fit()
   }
 
   let readyStatus = ''
@@ -1906,6 +1953,12 @@ async function startViewer(): Promise<void> {
       layerExtents.set(name, extents)
     }
     layerExtentsByLayout.set(layout.btrId, new Map(layerExtents))
+    refreshBatchExtentCache(layout)
+    layoutExtents = resolveLayoutViewExtents(
+      layout,
+      snapshot.meta.viewExtents ?? snapshot.meta.extents
+    )
+    layerPanel?.syncLayerZoomButtons()
     render()
   }
   requestViewerTextureRepaint = () => {
@@ -2158,11 +2211,17 @@ async function startViewer(): Promise<void> {
           markup?.cancelMode()
           fit()
         },
-        restoreOriginalView: () => {
+        fitSmart: () => {
           navToolsRef.current?.cancelZoomWindow()
           measure?.cancelMode()
           markup?.cancelMode()
-          restoreOriginalView()
+          fitSmart()
+        },
+        restoreSavedView: () => {
+          navToolsRef.current?.cancelZoomWindow()
+          measure?.cancelMode()
+          markup?.cancelMode()
+          restoreSavedView()
         },
         cancelZoomWindow: () => navToolsRef.current?.cancelZoomWindow(),
         toggleLayerDrawer: () => {
@@ -2616,6 +2675,7 @@ async function startViewer(): Promise<void> {
         layerExtents.set(name, extents)
       }
       layerExtentsByLayout.set(layout.btrId, new Map(layerExtents))
+      refreshBatchExtentCache(layout)
     }
     layerPanel?.syncLayerZoomButtons()
 
@@ -2909,6 +2969,7 @@ async function startViewer(): Promise<void> {
         layerExtents.set(name, extents)
       }
       layerExtentsByLayout.set(layout.btrId, new Map(layerExtents))
+      refreshBatchExtentCache(layout)
       layerPanel?.syncLayerZoomButtons()
 
       // ACEO now holds curves/points only (lines come from geometry batches).

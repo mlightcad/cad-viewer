@@ -214,6 +214,7 @@ export function buildAcExPackageData(
       name: layout.name,
       isModelSpace: layout.isModelSpace,
       viewports: layout.viewports,
+      ...(layout.savedView ? { savedView: layout.savedView } : {}),
       chunkIds
     }
 

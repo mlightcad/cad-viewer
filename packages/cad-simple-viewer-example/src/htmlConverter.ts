@@ -655,7 +655,8 @@ class HtmlConverterApp {
           (resolved.exportLayouts ||
             view.activeLayoutBtrId === view.modelSpaceBtrId)
             ? captureAcApHtmlViewState(view)
-            : undefined
+            : undefined,
+        canvasAspectRatio: view.width / Math.max(view.height, 1)
       }
     )
 
