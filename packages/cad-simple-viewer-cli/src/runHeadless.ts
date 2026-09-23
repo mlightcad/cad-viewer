@@ -15,9 +15,40 @@ import { chromium } from 'playwright'
 export type CadViewerCliOpenMode = 'read' | 'write'
 
 /**
+ * How the view is framed immediately after a document opens.
+ *
+ * Matches {@link AcApOpenViewMode} in `@mlightcad/cad-simple-viewer`.
+ *
+ * - `extents` — zoom to the full drawing extents
+ * - `saved` — restore AutoCAD's saved view (layout limits / VPORT `*ACTIVE`)
+ */
+export type CadViewerCliOpenViewMode = 'extents' | 'saved'
+
+/**
+ * Open-database options forwarded to the headless runner (excluding mode).
+ *
+ * Progressive rendering is always forced off in CLI mode so drawings open
+ * as quickly as possible; it is not configurable here.
+ */
+export interface CadViewerCliOpenOptions {
+  /** How to frame the view after open. */
+  openViewMode?: CadViewerCliOpenViewMode
+  /**
+   * Whether entities on non-plottable ("no-plot") layers are drawn.
+   * Default when omitted: `false` (web viewer semantics).
+   */
+  drawNoPlotLayers?: boolean
+  /**
+   * Max segments used to tessellate a full circle when drawing.
+   * Default when omitted: draft quality (50).
+   */
+  circleSides?: number
+}
+
+/**
  * Options for {@link runHeadless}.
  */
-export interface RunHeadlessOptions {
+export interface RunHeadlessOptions extends CadViewerCliOpenOptions {
   /** Path to the `.scr` command script (required). */
   scriptPath: string
   /**
@@ -77,6 +108,9 @@ declare global {
         locale?: string
         mode?: CadViewerCliOpenMode
         startBlank?: boolean
+        openViewMode?: CadViewerCliOpenViewMode
+        drawNoPlotLayers?: boolean
+        circleSides?: number
       }
     ) => Promise<{ ok: true; files: CapturedFile[] }>
   }
@@ -291,7 +325,8 @@ function startStaticServer(root: string): Promise<{
  * entity convert / deferred font geometry before executing the script so
  * exports such as `pngout` include rendered text.
  *
- * @param options - Script path, optional input drawing, output dir, locale, mode, logfile
+ * @param options - Script path, optional input drawing, output dir, locale,
+ *   open mode / view / tessellation options, logfile
  * @returns Absolute output directory and list of saved file paths
  * @throws If the script or input file is missing, the file type is unsupported,
  *   the runner build is missing, or the in-page script fails
@@ -354,14 +389,36 @@ export async function runHeadless(
     const page = await context.newPage()
     await page.goto(`${server.url}/index.html`, { waitUntil: 'networkidle' })
 
+    const openExtras = {
+      openViewMode: options.openViewMode,
+      drawNoPlotLayers: options.drawNoPlotLayers,
+      circleSides: options.circleSides
+    }
+
     let result: { ok: true; files: CapturedFile[] }
     try {
       result = await page.evaluate(
-        async ({ name, data, script, locale, mode: openMode, startBlank }) => {
+        async ({
+          name,
+          data,
+          script,
+          locale,
+          mode: openMode,
+          startBlank,
+          openViewMode,
+          drawNoPlotLayers,
+          circleSides
+        }) => {
+          const runOptions = {
+            locale,
+            mode: openMode,
+            openViewMode,
+            drawNoPlotLayers,
+            circleSides
+          }
           if (data == null || name == null) {
             return window.runCadScript(null, null, script, {
-              locale,
-              mode: openMode,
+              ...runOptions,
               startBlank
             })
           }
@@ -371,8 +428,7 @@ export async function runHeadless(
             bytes[i] = binary.charCodeAt(i)
           }
           return window.runCadScript(name, bytes, script, {
-            locale,
-            mode: openMode,
+            ...runOptions,
             startBlank: false
           })
         },
@@ -382,7 +438,8 @@ export async function runHeadless(
           script: scriptText,
           locale: options.locale,
           mode,
-          startBlank: !absoluteInput
+          startBlank: !absoluteInput,
+          ...openExtras
         }
       )
     } catch (error) {

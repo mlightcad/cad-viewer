@@ -3,7 +3,11 @@ import path from 'node:path'
 
 import { Command } from 'commander'
 
-import { type CadViewerCliOpenMode,runHeadless } from './runHeadless.js'
+import {
+  type CadViewerCliOpenMode,
+  type CadViewerCliOpenViewMode,
+  runHeadless
+} from './runHeadless.js'
 
 const program = new Command()
 
@@ -12,6 +16,38 @@ function parseMode(value: string): CadViewerCliOpenMode {
     return value
   }
   throw new Error(`Invalid --mode "${value}". Expected "read" or "write".`)
+}
+
+function parseOpenViewMode(value: string): CadViewerCliOpenViewMode {
+  if (value === 'extents' || value === 'saved') {
+    return value
+  }
+  throw new Error(
+    `Invalid --open-view-mode "${value}". Expected "extents" or "saved".`
+  )
+}
+
+function parseBooleanFlag(flag: string, value: string): boolean {
+  const normalized = value.trim().toLowerCase()
+  if (normalized === 'true' || normalized === '1' || normalized === 'yes') {
+    return true
+  }
+  if (normalized === 'false' || normalized === '0' || normalized === 'no') {
+    return false
+  }
+  throw new Error(
+    `Invalid ${flag} "${value}". Expected "true" or "false".`
+  )
+}
+
+function parseCircleSides(value: string): number {
+  const n = Number(value)
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n < 1) {
+    throw new Error(
+      `Invalid --circle-sides "${value}". Expected a positive integer.`
+    )
+  }
+  return n
 }
 
 program
@@ -35,11 +71,31 @@ program
     '--mode <read|write>',
     'Document open mode (default: read with -i, write without -i)'
   )
+  .option(
+    '--open-view-mode <extents|saved>',
+    'Frame view after open: extents (full drawing) or saved (AutoCAD VPORT). Default: extents in read, saved in write'
+  )
+  .option(
+    '--draw-no-plot-layers <true|false>',
+    'Draw entities on non-plottable layers (default: false)'
+  )
+  .option(
+    '--circle-sides <n>',
+    'Max segments for circle tessellation (default: 50 draft)',
+    parseCircleSides
+  )
   .option('--locale <code>', 'UI locale for prompts/keywords (e.g. en, zh)', 'en')
   .option('--logfile <path>', 'Append runtime log lines to this file')
   .action(async opts => {
     try {
       const mode = opts.mode ? parseMode(opts.mode) : undefined
+      const openViewMode = opts.openViewMode
+        ? parseOpenViewMode(opts.openViewMode)
+        : undefined
+      const drawNoPlotLayers =
+        opts.drawNoPlotLayers != null
+          ? parseBooleanFlag('--draw-no-plot-layers', opts.drawNoPlotLayers)
+          : undefined
       const result = await runHeadless({
         inputPath: opts.input
           ? /^https?:\/\//i.test(opts.input)
@@ -49,6 +105,9 @@ program
         scriptPath: path.resolve(opts.script),
         outputDir: opts.output ? path.resolve(opts.output) : undefined,
         mode,
+        openViewMode,
+        drawNoPlotLayers,
+        circleSides: opts.circleSides,
         locale: opts.locale,
         logfile: opts.logfile ? path.resolve(opts.logfile) : undefined
       })
