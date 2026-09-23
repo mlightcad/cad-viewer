@@ -208,40 +208,6 @@
 
           <div class="setting-block">
             <h3 class="setting-label">
-              {{ t('example.fileUpload.waitForText') }}
-            </h3>
-            <div
-              class="pill-segment"
-              role="radiogroup"
-              :aria-label="t('example.fileUpload.waitForTextGeometry')"
-            >
-              <button
-                type="button"
-                class="pill-option"
-                :class="{ 'is-active': waitForTextGeometry }"
-                role="radio"
-                :aria-checked="waitForTextGeometry"
-                :title="t('example.fileUpload.waitForTextOnHint')"
-                @click="waitForTextGeometry = true"
-              >
-                {{ t('example.fileUpload.on') }}
-              </button>
-              <button
-                type="button"
-                class="pill-option"
-                :class="{ 'is-active': !waitForTextGeometry }"
-                role="radio"
-                :aria-checked="!waitForTextGeometry"
-                :title="t('example.fileUpload.waitForTextOffHint')"
-                @click="waitForTextGeometry = false"
-              >
-                {{ t('example.fileUpload.off') }}
-              </button>
-            </div>
-          </div>
-
-          <div class="setting-block">
-            <h3 class="setting-label">
               {{ t('example.fileUpload.nonPlottable') }}
             </h3>
             <div
@@ -274,7 +240,7 @@
             </div>
           </div>
 
-          <div class="setting-block">
+          <div class="setting-block setting-block--half">
             <h3 class="setting-label">
               {{ t('example.fileUpload.export') }}
             </h3>
@@ -308,7 +274,7 @@
             </div>
           </div>
 
-          <div class="setting-block">
+          <div class="setting-block setting-block--half">
             <h3 class="setting-label">
               {{ t('example.fileUpload.paperSpaceBackground') }}
             </h3>
@@ -370,7 +336,6 @@ interface Props {
     useMainThreadDraw: boolean,
     drawNoPlotLayers: boolean,
     progressiveRendering: boolean,
-    waitForTextGeometry: boolean,
     openViewMode: AcApOpenViewMode | undefined,
     circleSides: number,
     paperSpaceBackground: number,
@@ -381,7 +346,6 @@ interface Props {
     useMainThreadDraw: boolean,
     drawNoPlotLayers: boolean,
     progressiveRendering: boolean,
-    waitForTextGeometry: boolean,
     openViewMode: AcApOpenViewMode | undefined,
     circleSides: number,
     paperSpaceBackground: number,
@@ -399,8 +363,7 @@ const selectedOpenViewMode = ref<OpenViewModeChoice>('auto')
 const selectedCircleSides = ref(ACDB_DRAW_CIRCLE_SIDES_DRAFT)
 const useMainThreadDraw = ref(true)
 const drawNoPlotLayers = ref(false)
-const progressiveRendering = ref(true)
-const waitForTextGeometry = ref(false)
+const progressiveRendering = ref(false)
 const paperSpaceBackground = ref(ACGI_PAPER_SPACE_BACKGROUND)
 const disableExport = ref(false)
 
@@ -470,7 +433,6 @@ const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
         useMainThreadDraw.value,
         drawNoPlotLayers.value,
         progressiveRendering.value,
-        waitForTextGeometry.value,
         resolveOpenViewMode(),
         selectedCircleSides.value,
         paperSpaceBackground.value,
@@ -486,7 +448,6 @@ const handleNewDrawing = () => {
     useMainThreadDraw.value,
     drawNoPlotLayers.value,
     progressiveRendering.value,
-    waitForTextGeometry.value,
     resolveOpenViewMode(),
     selectedCircleSides.value,
     paperSpaceBackground.value,
@@ -732,7 +693,8 @@ const isValidFile = (file: File): boolean => {
 
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Six tracks so a row of three options is thirds and a row of two is halves. */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px 12px;
 }
 
@@ -740,10 +702,15 @@ const isValidFile = (file: File): boolean => {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  grid-column: span 2;
 }
 
 .setting-block--full {
   grid-column: 1 / -1;
+}
+
+.setting-block--half {
+  grid-column: span 3;
 }
 
 .setting-label {
@@ -815,6 +782,11 @@ const isValidFile = (file: File): boolean => {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .setting-block,
+  .setting-block--half {
+    grid-column: auto;
+  }
+
   .setting-block--full {
     grid-column: 1 / -1;
   }
@@ -831,6 +803,8 @@ const isValidFile = (file: File): boolean => {
     grid-template-columns: 1fr;
   }
 
+  .setting-block,
+  .setting-block--half,
   .setting-block--full {
     grid-column: auto;
   }

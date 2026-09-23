@@ -108,6 +108,7 @@ import { sortPickResults } from './AcTrPickResultUtil'
 import { AcTrProgressiveOpenFitController } from './AcTrProgressiveOpenFitController'
 import { AcTrScene } from './AcTrScene'
 import type { AcTrViewSessionState } from './AcTrViewSessionState'
+import { shouldRegenDatabaseAfterFontLoad } from './fontLoadRegen'
 
 /**
  * Options to customize view
@@ -246,7 +247,7 @@ export class AcTrView2d extends AcEdBaseView {
    * When true, entity conversion during document open yields cooperatively so
    * geometry paints incrementally while the open overlay is still visible.
    */
-  private _progressiveRendering = true
+  private _progressiveRendering = false
   /**
    * Serial convert queue for progressive opens. Chunks from `entityAppended`
    * enqueue here and a single drain loop runs {@link batchConvert}, so scene
@@ -290,6 +291,12 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private _fontLoadedRedrawTimer: ReturnType<typeof setTimeout> | null = null
   private _fontLoadedRedrawEpoch = 0
+  /**
+   * `performance.now()` when convert and deferred glyph jobs last reached
+   * idle together. Zero until that first transition. Used to ignore the
+   * open-time `fontLoaded` regen that replays the loading spinner.
+   */
+  private _entityProcessingIdleAt = 0
   /**
    * Convert epoch for which text-style font preload was started.
    */
@@ -858,10 +865,13 @@ export class AcTrView2d extends AcEdBaseView {
    * fully drawable scene (export, scripted zoom) should wait on this (as
    * {@link waitUntilIdle} / {@link zoomToFitDrawing} do).
    *
-   * The open-file progress overlay intentionally uses
-   * {@link isConvertingEntities} instead so "Rendering drawing ..." can hide
-   * once linework convert finishes while text geometry continues in the
-   * deferred pool.
+   * The open-file progress overlay uses this when
+   * {@link AcApOpenDatabaseOptions.progressiveRendering} is off, so
+   * "Rendering drawing ..." stays up until deferred glyph jobs finish.
+   * When progressive rendering is on, the overlay uses
+   * {@link isConvertingEntities} and may hide while text geometry continues
+   * in the deferred pool (pan/zoom enabled). Deprecated `waitForTextGeometry`
+   * no longer selects this gate.
    */
   get isProcessingEntities() {
     return this._numOfEntitiesToProcess > 0 || this._pendingGeometryJobs > 0
@@ -2006,6 +2016,25 @@ export class AcTrView2d extends AcEdBaseView {
    */
   addEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
+    // Mark each owner layout as loaded as soon as the open-time ENTITY stream
+    // enqueues work. Progressive convert may not have committed scene entities
+    // yet (`entityCount` still 0); without this, `loadLayoutEntitiesIfNeeded`
+    // (from `onAfterOpenDocument` → `setActiveLayout`) re-iterates the BTR,
+    // double-increments `_numOfEntitiesToProcess`, and keeps
+    // "Rendering drawing ..." up long after linework should have finished —
+    // so progressive rendering cannot release pan/zoom on time.
+    for (let i = 0; i < entities.length; i++) {
+      const ownerId = entities[i]?.ownerId
+      if (!ownerId) continue
+      let layout = this._scene.layouts.get(ownerId)
+      if (!layout) {
+        this._scene.addEmptyLayout(ownerId)
+        layout = this._scene.layouts.get(ownerId)
+      }
+      if (layout && !layout.isLoaded) {
+        layout.isLoaded = true
+      }
+    }
     this._numOfEntitiesToProcess += entities.length
     // Always serialize convert through one drain loop. Non-progressive opens
     // used to `void batchConvert(chunk)` per ENTITY flush chunk, which ran
@@ -2279,6 +2308,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
     this.resetDeferredGeometryQueue()
+    this._entityProcessingIdleAt = 0
     this._scene.clear()
     this._isDirty = true
     this._missedImages.clear()
@@ -2318,6 +2348,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
     this.resetDeferredGeometryQueue()
+    this._entityProcessingIdleAt = 0
     this._scene = state.scene
     this._layoutViewManager = state.layoutViewManager
     this._initializedLayouts = state.initializedLayouts
@@ -2347,6 +2378,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
     this.resetDeferredGeometryQueue()
+    this._entityProcessingIdleAt = 0
     this._scene = this.createScene()
     this._layoutViewManager = new AcTrLayoutViewManager()
     this._initializedLayouts = new Set()
@@ -2656,6 +2688,17 @@ export class AcTrView2d extends AcEdBaseView {
 
       const existingLayout = this._scene.layouts.get(layoutBtrId)
       if (existingLayout && existingLayout.isLoaded) {
+        // Streamed layouts flip `isLoaded` from `addEntity` before scene
+        // commits finish. Still repair the viewport-view race when entities
+        // are already in the scene but AcTrViewportView creation was skipped.
+        const layoutView = this._layoutViewManager.getAt(layoutBtrId)
+        if (
+          existingLayout.entityCount > 0 &&
+          layoutView &&
+          layoutView.viewportCount === 0
+        ) {
+          this.ensureViewportViews(blockTableRecord, layoutView)
+        }
         return
       }
       if (this._loadingLayouts.has(layoutBtrId)) {
@@ -2703,6 +2746,11 @@ export class AcTrView2d extends AcEdBaseView {
       // is only for layouts whose entities were never streamed in
       // (typically non-active paper-space layouts loaded on first user
       // visit).
+      //
+      // Note: `addEntity` now sets `isLoaded` when the open stream
+      // enqueues work, so the common progressive-open race (entityCount
+      // still 0 at `onAfterOpenDocument` while the convert queue is full)
+      // is handled by the `isLoaded` early return above.
       if (existingLayout && existingLayout.entityCount > 0) {
         existingLayout.isLoaded = true
         return
@@ -2964,8 +3012,11 @@ export class AcTrView2d extends AcEdBaseView {
    *
    * Live {@link AcTrGlyphEntity} shells (rare: mid-convert / not yet batched)
    * are re-drawn in place. Committed text is already flattened into batches and
-   * disposed, so on-demand faces (style `malgun` → Noto Sans KR) need a database
-   * regen once conversion is idle — otherwise Hangul stays baked as '?'.
+   * disposed. A database regen does not rebuild those batches — `entityAppended`
+   * skips ids the view already has — but it does replay open-file CONVERSION
+   * progress. That replay is skipped while the open has just gone idle
+   * ({@link shouldRegenDatabaseAfterFontLoad}); a face that arrives later can
+   * still regen.
    */
   private async redrawGlyphEntitiesAfterFontLoad(
     epoch: number,
@@ -3020,8 +3071,24 @@ export class AcTrView2d extends AcEdBaseView {
 
     if (
       epoch !== this._convertEpoch ||
-      redrawEpoch !== this._fontLoadedRedrawEpoch ||
-      this.isProcessingEntities
+      redrawEpoch !== this._fontLoadedRedrawEpoch
+    ) {
+      return
+    }
+
+    const msSinceIdle =
+      this._entityProcessingIdleAt > 0
+        ? performance.now() - this._entityProcessingIdleAt
+        : null
+    // Open-time text awaits its fonts, then this debounced callback runs.
+    // Regen here only flashes the loading spinner again after
+    // "Rendering drawing ..." has already hidden (progressive rendering on).
+    if (
+      !shouldRegenDatabaseAfterFontLoad(
+        this.isProcessingEntities,
+        0,
+        msSinceIdle
+      )
     ) {
       return
     }
@@ -3105,6 +3172,7 @@ export class AcTrView2d extends AcEdBaseView {
             if (this._pendingGeometryJobs === 0) {
               this._isDirty = true
             }
+            this.stampEntityProcessingIdle()
           }
           this.pumpDeferredGeometryQueue()
         })
@@ -3583,6 +3651,17 @@ export class AcTrView2d extends AcEdBaseView {
       // the user pans/zooms (animate bails when !_isDirty && !_htmlDirty &&
       // !stillLoading).
       this._isDirty = true
+    }
+    this.stampEntityProcessingIdle()
+  }
+
+  /**
+   * Records the moment convert and deferred glyph jobs are both idle.
+   * Intermediate completions (linework done, text still queued) do not stamp.
+   */
+  private stampEntityProcessingIdle() {
+    if (this._numOfEntitiesToProcess === 0 && this._pendingGeometryJobs === 0) {
+      this._entityProcessingIdleAt = performance.now()
     }
   }
 }

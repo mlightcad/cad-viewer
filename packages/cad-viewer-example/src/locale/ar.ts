@@ -46,16 +46,10 @@ export default {
       progressive: 'العرض التدريجي',
       progressiveRendering: 'العرض التدريجي',
       on: 'تشغيل',
-      progressiveOnHint: 'إظهار عناصر الرسم أثناء التحميل',
+      progressiveOnHint:
+        'إظهار عناصر الرسم أثناء التحميل؛ يُخفى التقدم عند انتهاء تحويل الكيانات',
       off: 'إيقاف',
-      progressiveOffHint: 'الانتظار حتى اكتمال التحويل',
-
-      waitForText: 'انتظار النص',
-      waitForTextGeometry: 'إبقاء شريط التقدم حتى انتهاء هندسة النص',
-      waitForTextOnHint:
-        'الإبقاء على “Rendering drawing ...” حتى اكتمال النص',
-      waitForTextOffHint:
-        'إخفاء التقدم بعد تحويل الكيانات (افتراضي)؛ التصدير ما زال ينتظر النص',
+      progressiveOffHint: 'الانتظار حتى اكتمال تحويل الكيانات والنص',
 
       nonPlottable: 'غير قابل للطباعة',
       nonPlottableLayers: 'الطبقات غير القابلة للطباعة',

@@ -46,16 +46,10 @@ export default {
       progressive: 'Progressive',
       progressiveRendering: 'Progressive rendering',
       on: 'On',
-      progressiveOnHint: 'Show geometry while loading',
+      progressiveOnHint:
+        'Show geometry while loading; progress hides when entities finish',
       off: 'Off',
-      progressiveOffHint: 'Wait until fully converted',
-
-      waitForText: 'Wait for text',
-      waitForTextGeometry: 'Hold open progress until text geometry finishes',
-      waitForTextOnHint:
-        'Keep “Rendering drawing ...” until deferred text is done',
-      waitForTextOffHint:
-        'Hide progress after entity convert (default); export still waits for text',
+      progressiveOffHint: 'Wait until entities and text are fully converted',
 
       nonPlottable: 'Non-plottable',
       nonPlottableLayers: 'Non-plottable layers',
