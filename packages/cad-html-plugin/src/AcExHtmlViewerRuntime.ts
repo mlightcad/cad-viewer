@@ -2674,8 +2674,11 @@ async function startViewer(): Promise<void> {
         layerExtents.set(name, extents)
       }
       layerExtentsByLayout.set(layout.btrId, new Map(layerExtents))
-      refreshBatchExtentCache(layout)
     }
+    // Always attempt a refresh (same as paintPackageChunk). When CPU batches
+    // were already released, collect yields nothing and the helper keeps the
+    // pre-release cache so fitSmart still works.
+    refreshBatchExtentCache(layout)
     layerPanel?.syncLayerZoomButtons()
 
     if (measureEnabled) {
