@@ -13,9 +13,9 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin/register'
 import {
+  accmYieldForPaint,
   AcDbDatabaseConverterManager,
-  AcDbFileType,
-  accmYieldForPaint
+  AcDbFileType
 } from '@mlightcad/data-model'
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 
@@ -65,6 +65,11 @@ export interface CadViewerCliRunOptions {
   openViewMode?: CadViewerCliOpenViewMode
   drawNoPlotLayers?: boolean
   circleSides?: number
+  /**
+   * Resource base URL for fonts and drawing templates.
+   * Fonts load from `${baseUrl}fonts/`. When omitted, the default CDN is used.
+   */
+  baseUrl?: string
 }
 
 declare global {
@@ -246,7 +251,7 @@ function resolveLocale(locale?: string): AcApLocale | undefined {
   return undefined
 }
 
-async function ensureViewer(): Promise<void> {
+async function ensureViewer(options: CadViewerCliRunOptions = {}): Promise<void> {
   if (ready) {
     return
   }
@@ -267,7 +272,7 @@ async function ensureViewer(): Promise<void> {
     width: 1280,
     height: 720,
     autoResize: false,
-    baseUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/',
+    ...(options.baseUrl ? { baseUrl: options.baseUrl } : {}),
     useMainThreadDraw: true,
     webworkerFileUrls: {
       dwgParser: dwgParserUrl,
@@ -286,7 +291,7 @@ async function ensureViewer(): Promise<void> {
 }
 
 window.runCadScript = async (fileName, bytes, script, options = {}) => {
-  await ensureViewer()
+  await ensureViewer(options)
   capturedFiles.length = 0
   pendingCaptures.length = 0
 

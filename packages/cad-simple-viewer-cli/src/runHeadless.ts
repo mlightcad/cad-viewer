@@ -60,6 +60,11 @@ export interface RunHeadlessOptions extends CadViewerCliOpenOptions {
   outputDir?: string
   /** UI locale for command prompts / keywords (`en`, `zh`, …). */
   locale?: string
+  /**
+   * Resource base URL passed to {@link AcApDocManager} (`fonts/` and templates).
+   * When omitted, the runner uses the default CDN `cad-data` URL.
+   */
+  baseUrl?: string
   /** Document open mode. Default: `read` with input, `write` without input. */
   mode?: CadViewerCliOpenMode
   /** Optional log file path (append). */
@@ -111,6 +116,7 @@ declare global {
         openViewMode?: CadViewerCliOpenViewMode
         drawNoPlotLayers?: boolean
         circleSides?: number
+        baseUrl?: string
       }
     ) => Promise<{ ok: true; files: CapturedFile[] }>
   }
@@ -326,7 +332,7 @@ function startStaticServer(root: string): Promise<{
  * exports such as `pngout` include rendered text.
  *
  * @param options - Script path, optional input drawing, output dir, locale,
- *   open mode / view / tessellation options, logfile
+ *   open mode / view / tessellation options, resource base URL, logfile
  * @returns Absolute output directory and list of saved file paths
  * @throws If the script or input file is missing, the file type is unsupported,
  *   the runner build is missing, or the in-page script fails
@@ -392,7 +398,8 @@ export async function runHeadless(
     const openExtras = {
       openViewMode: options.openViewMode,
       drawNoPlotLayers: options.drawNoPlotLayers,
-      circleSides: options.circleSides
+      circleSides: options.circleSides,
+      baseUrl: options.baseUrl
     }
 
     let result: { ok: true; files: CapturedFile[] }
@@ -407,14 +414,16 @@ export async function runHeadless(
           startBlank,
           openViewMode,
           drawNoPlotLayers,
-          circleSides
+          circleSides,
+          baseUrl
         }) => {
           const runOptions = {
             locale,
             mode: openMode,
             openViewMode,
             drawNoPlotLayers,
-            circleSides
+            circleSides,
+            baseUrl
           }
           if (data == null || name == null) {
             return window.runCadScript(null, null, script, {

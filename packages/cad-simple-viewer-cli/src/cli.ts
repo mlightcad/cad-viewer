@@ -40,6 +40,20 @@ function parseBooleanFlag(flag: string, value: string): boolean {
   )
 }
 
+function parseBaseUrl(value: string): string {
+  const trimmed = value.trim()
+  let url: URL
+  try {
+    url = new URL(trimmed)
+  } catch {
+    throw new Error(`Invalid --base-url "${value}". Expected an http(s) URL.`)
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error(`Invalid --base-url "${value}". Expected an http(s) URL.`)
+  }
+  return trimmed
+}
+
 function parseCircleSides(value: string): number {
   const n = Number(value)
   if (!Number.isFinite(n) || !Number.isInteger(n) || n < 1) {
@@ -85,6 +99,11 @@ program
     parseCircleSides
   )
   .option('--locale <code>', 'UI locale for prompts/keywords (e.g. en, zh)', 'en')
+  .option(
+    '--base-url <url>',
+    'Resource base URL for fonts and templates (default: CDN cad-data). Fonts load from <url>/fonts/',
+    parseBaseUrl
+  )
   .option('--logfile <path>', 'Append runtime log lines to this file')
   .action(async opts => {
     try {
@@ -108,6 +127,7 @@ program
         openViewMode,
         drawNoPlotLayers,
         circleSides: opts.circleSides,
+        baseUrl: opts.baseUrl,
         locale: opts.locale,
         logfile: opts.logfile ? path.resolve(opts.logfile) : undefined
       })
