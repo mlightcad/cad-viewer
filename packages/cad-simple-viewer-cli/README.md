@@ -41,6 +41,12 @@ cad-simple-viewer-cli \
 
 # No input file: start from a blank ISO drawing (write mode)
 cad-simple-viewer-cli -s ./create-drawing-dxf.scr -o ./out --mode write
+
+# Host fonts and templates yourself (fonts live under <base-url>/fonts/)
+cad-simple-viewer-cli \
+  -i ./drawing.dwg \
+  -s ./export-png.scr \
+  --base-url https://cdn.example.com/cad-data/
 ```
 
 With a local install, use `npx`:
@@ -61,6 +67,7 @@ npx cad-simple-viewer-cli -i ./drawing.dwg -s ./export-png.scr -o ./out
 | `--draw-no-plot-layers <true\|false>` | Draw entities on non-plottable layers (default: `false`) |
 | `--circle-sides <n>` | Max segments for circle tessellation (default: `50` draft) |
 | `--locale <code>` | Prompt/keyword locale (`en`, `zh`, …) |
+| `--base-url <url>` | Resource base URL for fonts and templates (`http(s)`). Fonts load from `<url>/fonts/`. Default: CDN `cad-data` |
 | `--logfile <path>` | Append start / finish / download log lines |
 
 Progressive rendering is always off in CLI mode so drawings open as quickly as possible (headless scripts do not need mid-open paints).
@@ -137,6 +144,7 @@ const { outputDir, savedFiles } = await runHeadless({
   openViewMode: 'extents',      // optional: 'extents' | 'saved'
   drawNoPlotLayers: false,      // optional
   circleSides: 50,              // optional
+  baseUrl: 'https://cdn.example.com/cad-data/', // optional
   locale: 'en',                 // optional
   logfile: './cli.log'          // optional
 })
