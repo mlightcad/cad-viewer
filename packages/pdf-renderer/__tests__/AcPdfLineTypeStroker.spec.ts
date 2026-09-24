@@ -77,6 +77,42 @@ describe('AcPdfLineTypeStroker', () => {
     expect(result.placements[0].element.text).toBe('VCP')
   })
 
+  it('draws continuous when the line is shorter than one pattern cycle', () => {
+    // WSP UL6A 6 inch: cycle 2.35; hatch-side segment length 2 (A5C59).
+    const pattern = [
+      { elementLength: 1.05, elementTypeFlag: 0 },
+      {
+        elementLength: -0.65,
+        elementTypeFlag: 2,
+        text: ' 6%%34 WSP UL6A',
+        scale: 0.1
+      },
+      { elementLength: -0.65, elementTypeFlag: 0 }
+    ]
+    const short = walkLineType(
+      [
+        { x: -1, y: 0.5 },
+        { x: 1, y: 0.5 }
+      ],
+      pattern,
+      1
+    )
+    expect(short.placements).toHaveLength(0)
+    expect(short.strokes).toHaveLength(1)
+    expect(short.strokes[0]).toHaveLength(2)
+
+    const longEnough = walkLineType(
+      [
+        { x: 0, y: 0 },
+        { x: 2.35, y: 0 }
+      ],
+      pattern,
+      1
+    )
+    expect(longEnough.placements.length).toBeGreaterThan(0)
+    expect(longEnough.strokes.length).toBeGreaterThan(0)
+  })
+
   it('walks dash-gap-shape along a polyline', () => {
     const result = walkLineType(
       [
