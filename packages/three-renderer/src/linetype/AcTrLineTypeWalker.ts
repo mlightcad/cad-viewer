@@ -360,6 +360,12 @@ export function walkLineType(
     strokes.push(pts)
     return { strokes, placements }
   }
+  // AutoCAD: if a line is too short to hold even one dash sequence, draw a
+  // continuous stroke between the endpoints (no partial dashes / TEXT / SHAPE).
+  if (total + EPS < cycle) {
+    strokes.push(pts)
+    return { strokes, placements }
+  }
   let dist = 0
   let index = 0
   while (dist < total - EPS) {
