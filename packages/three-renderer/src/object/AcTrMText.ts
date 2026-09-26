@@ -81,10 +81,12 @@ export class AcTrMText extends AcTrGlyphEntity {
    */
   protected override getDrawPosition() {
     // Complex-linetype labels store WCS placement on this.position.
+    const textPos = this._text.position
     if (
-      this._text.position.x === 0 &&
-      this._text.position.y === 0 &&
-      this._text.position.z === 0 &&
+      textPos &&
+      textPos.x === 0 &&
+      textPos.y === 0 &&
+      textPos.z === 0 &&
       (this.position.x !== 0 || this.position.y !== 0 || this.position.z !== 0)
     ) {
       return {
@@ -93,7 +95,7 @@ export class AcTrMText extends AcTrGlyphEntity {
         z: this.position.z
       }
     }
-    return this._text.position
+    return textPos
   }
 
   /**
