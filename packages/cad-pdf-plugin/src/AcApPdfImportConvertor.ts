@@ -45,7 +45,20 @@ export class AcApPdfImportConvertor {
    *
    * @param context - Application context for the target document
    */
-  importFromFilePicker(context: AcApContext): Promise<void> {
+  async importFromFilePicker(context: AcApContext): Promise<void> {
+    const file = await this.pickPdfFile()
+    if (!file) return
+
+    const buffer = await file.arrayBuffer()
+    await this.convert(context, buffer)
+  }
+
+  /**
+   * Opens the browser file picker.
+   *
+   * Resolves `undefined` when the user cancels the picker.
+   */
+  private pickPdfFile(): Promise<File | undefined> {
     return new Promise(resolve => {
       const input = document.createElement('input')
       input.type = 'file'
@@ -54,30 +67,17 @@ export class AcApPdfImportConvertor {
       document.body.appendChild(input)
 
       let settled = false
-
-      const finish = () => {
+      const finish = (file?: File) => {
         if (settled) return
         settled = true
         input.remove()
-        resolve()
+        resolve(file)
       }
 
-      input.addEventListener(
-        'change',
-        async () => {
-          try {
-            const file = input.files?.[0]
-            if (!file) return
-            const buffer = await file.arrayBuffer()
-            await this.convert(context, buffer)
-          } finally {
-            finish()
-          }
-        },
-        { once: true }
-      )
-
-      input.addEventListener('cancel', finish, { once: true })
+      input.addEventListener('change', () => finish(input.files?.[0]), {
+        once: true
+      })
+      input.addEventListener('cancel', () => finish(), { once: true })
       input.click()
     })
   }
@@ -143,6 +143,7 @@ export class AcApPdfImportConvertor {
       )
     } catch (err) {
       log.error('[PdfImport] Failed to import PDF:', err)
+      throw err
     }
   }
 
@@ -623,7 +624,7 @@ export class AcApPdfImportConvertor {
 }
 
 /**
- * Approximates a cubic Bأ©zier curve as a polyline.
+ * Approximates a cubic Bezier curve as a polyline.
  *
  * @param p0 - Start point
  * @param p1 - First control point
