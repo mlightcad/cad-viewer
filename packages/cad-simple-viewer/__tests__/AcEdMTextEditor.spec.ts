@@ -73,8 +73,11 @@ jest.mock(
   { virtual: true }
 )
 
+jest.mock('@mlightcad/mtext-parser', () => ({
+  MTextColor: class MTextColor {}
+}))
+
 jest.mock('@mlightcad/mtext-renderer', () => ({
-  MTextColor: class MTextColor {},
   MTextAttachmentPoint: { TopLeft: 1 }
 }))
 

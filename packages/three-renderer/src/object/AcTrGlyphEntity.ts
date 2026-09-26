@@ -196,7 +196,10 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
       this._rendered.removeFromParent()
       this._rendered.traverse(obj => {
         const mesh = obj as THREE.Mesh
-        if (mesh.geometry) {
+        if (
+          mesh.geometry &&
+          !getSceneDrawableUserData(mesh).sharesTemplateGeometry
+        ) {
           mesh.geometry.dispose()
         }
       })
@@ -208,10 +211,52 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
       this.remove(child)
       child.traverse(obj => {
         const mesh = obj as THREE.Mesh
-        if (mesh.geometry) {
+        if (
+          mesh.geometry &&
+          !getSceneDrawableUserData(mesh).sharesTemplateGeometry
+        ) {
           mesh.geometry.dispose()
         }
       })
+    }
+  }
+
+  /**
+   * Copies drawable leaves from a template drawn at the identity transform,
+   * aliasing buffer geometry. Caller must set this object's placement.
+   */
+  adoptSharedGeometryFrom(template: AcTrGlyphEntity): void {
+    while (this.children.length > 0) {
+      this.remove(this.children[0])
+    }
+    this._rendered = undefined
+    this.copyGeometry(template, this, true)
+    this.traverse(object => {
+      getSceneDrawableUserData(object).bboxIntersectionCheck = true
+    })
+    this.updateMatrixWorld(true)
+    const box = new THREE.Box3()
+    const childBox = new THREE.Box3()
+    this.traverse(object => {
+      if (object === this) {
+        return
+      }
+      const mesh = object as THREE.Mesh
+      if (!mesh.geometry) {
+        return
+      }
+      const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(
+        mesh.geometry as THREE.BufferGeometry
+      )
+      if (!boundingBox) {
+        return
+      }
+      object.updateMatrixWorld(true)
+      childBox.copy(boundingBox).applyMatrix4(object.matrixWorld)
+      box.union(childBox)
+    })
+    if (!box.isEmpty()) {
+      this.wcsBbox = box
     }
   }
 

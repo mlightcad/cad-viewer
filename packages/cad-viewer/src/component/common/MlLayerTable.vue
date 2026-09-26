@@ -225,15 +225,28 @@
             {{ scope.row.linetype }}
           </div>
           <div
-            v-else
+            v-else-if="
+              editingCell?.rowName === scope.row.name &&
+              editingCell?.field === 'linetype'
+            "
             class="ml-layer-table-cell ml-layer-table-select-cell"
             @click.stop
           >
             <MlLineTypeSelect
+              ref="linetypeSelectRef"
               :model-value="scope.row.linetype"
-              @change="emitChange(scope.row, 'linetype', $event)"
+              @change="onLinetypeCommit(scope.row, $event)"
+              @visible-change="onEditorVisibleChange"
             />
           </div>
+          <button
+            v-else
+            type="button"
+            class="ml-layer-table-cell ml-layer-table-text-cell ml-layer-table-edit-trigger"
+            @click.stop="beginEdit(scope.row, 'linetype')"
+          >
+            {{ scope.row.linetype }}
+          </button>
         </template>
       </el-table-column>
 
@@ -252,7 +265,10 @@
             {{ formatLineWeightLabel(scope.row.lineWeight) }}
           </div>
           <div
-            v-else
+            v-else-if="
+              editingCell?.rowName === scope.row.name &&
+              editingCell?.field === 'lineWeight'
+            "
             class="ml-layer-table-cell ml-layer-table-select-cell"
             @click.stop
           >
@@ -261,9 +277,18 @@
               :placeholder="
                 t('main.toolPalette.layerManager.layerList.lineWeightDefault')
               "
-              @change="emitChange(scope.row, 'lineWeight', $event)"
+              @change="onLineWeightCommit(scope.row, $event)"
+              @visible-change="onEditorVisibleChange"
             />
           </div>
+          <button
+            v-else
+            type="button"
+            class="ml-layer-table-cell ml-layer-table-text-cell ml-layer-table-edit-trigger"
+            @click.stop="beginEdit(scope.row, 'lineWeight')"
+          >
+            {{ formatLineWeightLabel(scope.row.lineWeight) }}
+          </button>
         </template>
       </el-table-column>
 
@@ -361,6 +386,8 @@ export type { MlLayerTableChangeField, MlLayerTableRow } from './MlLayerTable'
 
 const DRAFT_ROW_KEY = '__ml_draft_new_layer__'
 
+type LayerPropertyEditorField = 'linetype' | 'lineWeight'
+
 const props = withDefaults(
   defineProps<{
     /** Rows to display in the table. */
@@ -406,9 +433,19 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const draftInputRef = ref<InputInstance>()
+const linetypeSelectRef = ref<{ open?: () => void } | null>(null)
 const colorDialogVisible = ref(false)
 const colorTargetLayer = ref<MlLayerTableRow | null>(null)
 const oldColor = ref<string | undefined>(undefined)
+/**
+ * At most one property editor is mounted. Drawings with hundreds of layers and
+ * hundreds of complex linetypes otherwise instantiate a full `el-option` tree
+ * per row and OOM (655 layers × ~900 linetypes ≈ 0.5M DOM nodes).
+ */
+const editingCell = ref<{
+  rowName: string
+  field: LayerPropertyEditorField
+} | null>(null)
 
 const editableLayers = computed(() =>
   props.layers.filter(layer => !layer.isDraft)
@@ -470,6 +507,37 @@ const emitChange = (
 ) => {
   if (props.readonly || row.isDraft) return
   emit('change', { layerName: row.name, field, value })
+}
+
+const beginEdit = async (
+  row: MlLayerTableRow,
+  field: LayerPropertyEditorField
+) => {
+  if (props.readonly || row.isDraft) return
+  editingCell.value = { rowName: row.name, field }
+  if (field !== 'linetype') return
+  await nextTick()
+  linetypeSelectRef.value?.open?.()
+}
+
+const clearPropertyEditor = () => {
+  editingCell.value = null
+}
+
+const onLinetypeCommit = (row: MlLayerTableRow, value: string) => {
+  emitChange(row, 'linetype', value)
+  clearPropertyEditor()
+}
+
+const onLineWeightCommit = (row: MlLayerTableRow, value: number) => {
+  emitChange(row, 'lineWeight', value)
+  clearPropertyEditor()
+}
+
+const onEditorVisibleChange = (visible: boolean) => {
+  if (!visible) {
+    clearPropertyEditor()
+  }
 }
 
 const formatLayerColorName = (row: MlLayerTableRow) => {
@@ -710,6 +778,26 @@ defineExpose({
 
 .ml-layer-table-select-cell {
   justify-content: stretch;
+}
+
+.ml-layer-table-edit-trigger {
+  width: 100%;
+  justify-content: flex-start;
+  margin: 0;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: var(--el-border-radius-base);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.ml-layer-table-edit-trigger:hover {
+  border-color: var(--el-border-color);
+  background: var(--el-fill-color-blank);
 }
 
 .ml-layer-table-select-cell :deep(.ml-linetype-select),

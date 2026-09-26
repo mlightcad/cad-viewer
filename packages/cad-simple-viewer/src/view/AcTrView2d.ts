@@ -244,6 +244,14 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private readonly _convertingLayers = new Set<string>()
   /**
+   * Object ids claimed by an in-flight interactive {@link batchConvert},
+   * including deferred glyph commits that have not yet called
+   * {@link AcTrScene.addEntity}. Without this, a second convert pass can
+   * append another batched slot for the same id (visible as doubled TEXT
+   * linetype labels) because {@link hasEntity} is still false.
+   */
+  private readonly _claimedConvertObjectIds = new Set<string>()
+  /**
    * When true, entity conversion during document open yields cooperatively so
    * geometry paints incrementally while the open overlay is still visible.
    */
@@ -2351,6 +2359,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.clearFontLoadedRedrawTimer()
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
+    this._claimedConvertObjectIds.clear()
     this.cancelOpenLineworkFrame()
     this.resetDeferredGeometryQueue()
     this._entityProcessingIdleAt = 0
@@ -2393,6 +2402,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.cancelOpenLineworkFrame()
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
+    this._claimedConvertObjectIds.clear()
     this.resetDeferredGeometryQueue()
     this._entityProcessingIdleAt = 0
     this._scene = state.scene
@@ -2424,6 +2434,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.cancelOpenLineworkFrame()
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
+    this._claimedConvertObjectIds.clear()
     this.resetDeferredGeometryQueue()
     this._entityProcessingIdleAt = 0
     this._scene = this.createScene()
@@ -3350,6 +3361,24 @@ export class AcTrView2d extends AcEdBaseView {
           : this._entityDisplay.shouldConvert(entity)
         if (!shouldConvert) {
           continue
+        }
+
+        // Interactive open can enqueue the same objectId twice (layout/chunk
+        // re-queue) while deferred glyph commit has not yet called addEntity.
+        // Re-expanding then appends a second batched slot → doubled TEXT labels.
+        // Claim the id as soon as convert starts so later passes skip it.
+        if (!options.forExport) {
+          const objectId = String(entity.objectId ?? '')
+          if (
+            objectId &&
+            (this.hasEntity(objectId) ||
+              this._claimedConvertObjectIds.has(objectId))
+          ) {
+            continue
+          }
+          if (objectId) {
+            this._claimedConvertObjectIds.add(objectId)
+          }
         }
 
         // Fast path: entities that declare a single batchable primitive append
