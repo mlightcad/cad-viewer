@@ -2,9 +2,9 @@ import {
   AcCmColor,
   ACGI_LIGHT_THEME_FOREGROUND
 } from '@mlightcad/data-model'
+import { MTextColor } from '@mlightcad/mtext-parser'
 import {
   buildWorkerMaterialColorSettings,
-  MTextColor,
   serializeMTextColor
 } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'

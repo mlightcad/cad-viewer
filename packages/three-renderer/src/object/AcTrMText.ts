@@ -62,9 +62,37 @@ export class AcTrMText extends AcTrGlyphEntity {
   }
 
   /**
+   * Key for sharing mesh buffers across identical complex-linetype TEXT labels.
+   * Placement is applied via this object's transform, not baked into the key.
+   */
+  get linetypeGlyphShareKey(): string {
+    return [
+      this._text.text,
+      this._text.height,
+      this._style.font ?? '',
+      this._style.extendedFont ?? '',
+      this._style.widthFactor ?? 1,
+      this._text.widthFactor ?? 1
+    ].join('\0')
+  }
+
+  /**
    * @inheritdoc
    */
   protected override getDrawPosition() {
+    // Complex-linetype labels store WCS placement on this.position.
+    if (
+      this._text.position.x === 0 &&
+      this._text.position.y === 0 &&
+      this._text.position.z === 0 &&
+      (this.position.x !== 0 || this.position.y !== 0 || this.position.z !== 0)
+    ) {
+      return {
+        x: this.position.x,
+        y: this.position.y,
+        z: this.position.z
+      }
+    }
     return this._text.position
   }
 

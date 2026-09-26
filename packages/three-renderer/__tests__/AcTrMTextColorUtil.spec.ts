@@ -9,7 +9,7 @@ import { setMaterialMetadata, getMaterialMetadata } from '../src/style/AcTrMater
 import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../src/util/AcTrEntityTraitsUtil'
 import { AcTrMTextColorUtil } from '../src/util/AcTrMTextColorUtil'
-import { MTextColor } from '@mlightcad/mtext-renderer'
+import { MTextColor } from '@mlightcad/mtext-parser'
 
 describe('AcTrMTextColorUtil', () => {
   it('uses resolved traits rgb for ByLayer instead of hard-coded white', () => {

@@ -11,5 +11,5 @@ export {
   MTextColor,
   MTextParagraphAlignment,
   MTextParagraphAlignment as AcGiTextParagraphAlignment
-} from '@mlightcad/mtext-renderer'
+} from '@mlightcad/mtext-parser'
 export { type MTextToolbarColorPickerFactory } from '@mlightcad/mtext-input-box'

@@ -176,14 +176,13 @@ export function buildLineTypeOptions(db?: AcDbDatabase): LineTypeOption[] {
     if (!name || seen.has(name)) continue
 
     seen.add(name)
-    const previewSvgString =
-      callPreviewSvgString(record as PreviewSvgProvider) ??
-      callPreviewSvgString(record.linetype as PreviewSvgProvider)
-
+    // Do not eagerly call `toPreviewSvgString` for every record. Drawings with
+    // hundreds of complex TEXT linetypes (and N layer-table selects) otherwise
+    // allocate megabytes of SVG strings up front. Dropdown rows use the CSS
+    // dash preview; the selected value can still resolve SVG on demand.
     options.push({
       value: name,
       label: name,
-      previewSvgString,
       lineType: record.linetype
     })
   }
