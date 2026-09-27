@@ -1,5 +1,13 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.7.2
+
+### Patch Changes
+
+- feat: draws complex TEXT and SHAPE linetypes as strokes and glyphs, renders closed wide polylines as offset rings, and adds HTML export smart extents plus AutoCAD saved-view zoom. The CLI gains a self-hosted base URL and open-view, no-plot, and circle-sides options. Dynamic blocks and arc-aligned text come with the data-model upgrade. Drawing open is faster with font preload and lighter line batches, and fixes cover raster and OLE textures, PDF PDMODE, and progressive open.
+- Updated dependencies
+  - @mlightcad/three-renderer@1.7.2
+
 ## 1.7.1
 
 ### Patch Changes
