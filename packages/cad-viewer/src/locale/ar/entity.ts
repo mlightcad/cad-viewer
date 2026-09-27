@@ -31,6 +31,8 @@ export default {
     MText: 'نص متعدد الأسطر',
 
     OrdinateDimension: 'بُعد إحداثي',
+    Ole2Frame: 'Ole2Frame',
+    OleFrame: 'OleFrame',
     Point: 'نقطة',
     Polyline: 'متعدد الخطوط',
 
@@ -75,7 +77,12 @@ export default {
     BY_STYLE: 'حسب النمط',
     UserDefined: 'محدد بواسطة المستخدم',
     Predefined: 'مُعرّف مسبقًا',
-    Custom: 'مخصص'
+    Custom: 'مخصص',
+    Link: 'رابط',
+    Embedded: 'مضمّن',
+    Static: 'ثابت',
+    ModelSpace: 'مساحة النموذج',
+    PaperSpace: 'مساحة الورق'
   },
 
   property: {
@@ -88,6 +95,7 @@ export default {
     pattern: 'النمط',
     shape: 'الشكل',
     table: 'الجدول',
+    ole: 'OLE',
     others: 'أخرى',
 
     name: 'الاسم',
@@ -180,6 +188,29 @@ export default {
 
     vertices: 'الرؤوس',
     closed: 'مغلق',
+
+    image: 'صورة',
+    width: 'العرض',
+    height: 'الارتفاع',
+    brightness: 'السطوع',
+    contrast: 'التباين',
+    fade: 'التلاشي',
+    isImageShown: 'إظهار الصورة',
+    isImageTransparent: 'الشفافية',
+    isClipped: 'مقصوص',
+    isShownClipped: 'إظهار القص',
+
+    scaleWidth: 'مقياس العرض',
+    scaleHeight: 'مقياس الارتفاع',
+    lockAspect: 'قفل نسبة العرض إلى الارتفاع',
+    oleVersion: 'إصدار OLE',
+    userType: 'نوع المستخدم',
+    oleObjectType: 'نوع OLE',
+    tileMode: 'وضع التجانب',
+    linkName: 'اسم الرابط',
+    linkPath: 'مسار الرابط',
+    outputQuality: 'جودة الإخراج',
+    autoOutputQuality: 'جودة الإخراج التلقائية',
 
     dimBlockId: 'معرّف كتلة البُعد',
 

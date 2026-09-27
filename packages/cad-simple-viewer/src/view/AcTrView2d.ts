@@ -252,6 +252,13 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private readonly _claimedConvertObjectIds = new Set<string>()
   /**
+   * Per-objectId convert generation. Bumped by {@link updateEntity} so an
+   * in-flight progressive {@link batchConvert} / deferred commit for the same
+   * id cannot `addEntity` after the scene was cleared for reconversion
+   * (ghost RasterImage / pre-replacement pixels).
+   */
+  private readonly _entityConvertGeneration = new Map<string, number>()
+  /**
    * When true, entity conversion during document open yields cooperatively so
    * geometry paints incrementally while the open overlay is still visible.
    */
@@ -2173,6 +2180,20 @@ export class AcTrView2d extends AcEdBaseView {
 
     for (let i = 0; i < entities.length; ++i) {
       const item = entities[i]
+      const objectId = String(item.objectId ?? '')
+      if (objectId) {
+        // Invalidate in-flight commits for this id before releasing the claim /
+        // clearing the scene, so a stale progressive convert cannot re-add the
+        // pre-update drawable after (or instead of) the reconversion pass.
+        this._entityConvertGeneration.set(
+          objectId,
+          (this._entityConvertGeneration.get(objectId) ?? 0) + 1
+        )
+        // Allow reconversion: open-time batchConvert claims objectIds to prevent
+        // duplicate progressive slots. updateEntity must release that claim or
+        // batchConvert skips the entity (scene already cleared → blank RasterImage).
+        this._claimedConvertObjectIds.delete(objectId)
+      }
       if (this._scene.hasEntity(item.objectId)) {
         this._scene.removeEntity(item.objectId)
       }
@@ -2187,6 +2208,7 @@ export class AcTrView2d extends AcEdBaseView {
         this.highlight(selectedIds)
       }
       this._gripManager.refresh()
+      this._isDirty = true
     })()
     this._isDirty = true
     // Not sure why texture for image entity isn't updated even if 'isDirty' flag is already set to true.
@@ -2360,6 +2382,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
     this._claimedConvertObjectIds.clear()
+    this._entityConvertGeneration.clear()
     this.cancelOpenLineworkFrame()
     this.resetDeferredGeometryQueue()
     this._entityProcessingIdleAt = 0
@@ -2403,6 +2426,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
     this._claimedConvertObjectIds.clear()
+    this._entityConvertGeneration.clear()
     this.resetDeferredGeometryQueue()
     this._entityProcessingIdleAt = 0
     this._scene = state.scene
@@ -2435,6 +2459,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._convertQueue.length = 0
     this._numOfEntitiesToProcess = 0
     this._claimedConvertObjectIds.clear()
+    this._entityConvertGeneration.clear()
     this.resetDeferredGeometryQueue()
     this._entityProcessingIdleAt = 0
     this._scene = this.createScene()
@@ -3367,8 +3392,9 @@ export class AcTrView2d extends AcEdBaseView {
         // re-queue) while deferred glyph commit has not yet called addEntity.
         // Re-expanding then appends a second batched slot → doubled TEXT labels.
         // Claim the id as soon as convert starts so later passes skip it.
+        const objectId = String(entity.objectId ?? '')
+        let convertGen = 0
         if (!options.forExport) {
-          const objectId = String(entity.objectId ?? '')
           if (
             objectId &&
             (this.hasEntity(objectId) ||
@@ -3378,6 +3404,7 @@ export class AcTrView2d extends AcEdBaseView {
           }
           if (objectId) {
             this._claimedConvertObjectIds.add(objectId)
+            convertGen = this._entityConvertGeneration.get(objectId) ?? 0
           }
         }
 
@@ -3386,25 +3413,33 @@ export class AcTrView2d extends AcEdBaseView {
         const directMeta = tryBuildDirectEntityMeta(entity, this._renderer)
         if (directMeta) {
           let added = false
+          let superseded = false
           try {
-            added = this._scene.addDirectEntity(
-              directMeta,
-              shouldExtendBboxForDirectEntity(entity)
-            )
-            if (added) {
-              this.applySessionHiddenObjectState(entity.objectId)
-              if (progressive) {
-                this.markProgressiveDirty()
-                this._progressiveOpenFit.afterGeometryBatch(
-                  () => this.resolveLayoutFitBox(),
-                  i
-                )
+            if (
+              objectId &&
+              (this._entityConvertGeneration.get(objectId) ?? 0) !== convertGen
+            ) {
+              superseded = true
+            } else {
+              added = this._scene.addDirectEntity(
+                directMeta,
+                shouldExtendBboxForDirectEntity(entity)
+              )
+              if (added) {
+                this.applySessionHiddenObjectState(entity.objectId)
+                if (progressive) {
+                  this.markProgressiveDirty()
+                  this._progressiveOpenFit.afterGeometryBatch(
+                    () => this.resolveLayoutFitBox(),
+                    i
+                  )
+                }
               }
             }
           } finally {
             directMeta.geometry.dispose()
           }
-          if (added) {
+          if (superseded || added) {
             continue
           }
           // Append refused (e.g. invisible) — fall through to the legacy path.
@@ -3446,7 +3481,8 @@ export class AcTrView2d extends AcEdBaseView {
                   this.handleGroup(
                     threeEntity as AcTrGroup,
                     progressive,
-                    epoch
+                    epoch,
+                    convertGen
                   ),
                 epoch
               )
@@ -3454,7 +3490,8 @@ export class AcTrView2d extends AcEdBaseView {
               await this.handleGroup(
                 threeEntity as AcTrGroup,
                 progressive,
-                epoch
+                epoch,
+                convertGen
               )
             }
           } else {
@@ -3464,6 +3501,14 @@ export class AcTrView2d extends AcEdBaseView {
             const commitEntity = async () => {
               await this.finishEntityGeometry(threeEntity, progressive)
               if (epoch !== this._convertEpoch) {
+                threeEntity.dispose()
+                return
+              }
+              if (
+                objectId &&
+                (this._entityConvertGeneration.get(objectId) ?? 0) !==
+                  convertGen
+              ) {
                 threeEntity.dispose()
                 return
               }
@@ -3523,6 +3568,8 @@ export class AcTrView2d extends AcEdBaseView {
           const fileName = entity.imageFileName
           if (fileName && !entity.image) {
             this._missedImages.set(entity.objectId, fileName)
+          } else if (entity.image) {
+            this._missedImages.delete(entity.objectId)
           }
         }
       } catch (error) {
@@ -3583,10 +3630,19 @@ export class AcTrView2d extends AcEdBaseView {
   private async handleGroup(
     group: AcTrGroup,
     progressive: boolean,
-    epoch: number = this._convertEpoch
+    epoch: number = this._convertEpoch,
+    convertGen: number = 0
   ) {
     await this.finishEntityGeometry(group, progressive)
     if (epoch !== this._convertEpoch) {
+      group.dispose()
+      return
+    }
+    const objectId = String(group.objectId ?? '')
+    if (
+      objectId &&
+      (this._entityConvertGeneration.get(objectId) ?? 0) !== convertGen
+    ) {
       group.dispose()
       return
     }
@@ -3727,6 +3783,9 @@ export class AcTrView2d extends AcEdBaseView {
       // the user pans/zooms (animate bails when !_isDirty && !_htmlDirty &&
       // !stillLoading).
       this._isDirty = true
+      // Missed images (and fonts already tracked) are collected during convert;
+      // notify the Resources / External References palette once the queue is idle.
+      eventBus.emit('missed-data-changed', {})
     }
     this.stampEntityProcessingIdle()
   }

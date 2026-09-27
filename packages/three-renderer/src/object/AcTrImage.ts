@@ -153,4 +153,17 @@ export class AcTrImage extends AcTrEntity {
     this._material.needsUpdate = true
     this._textureReady = true
   }
+
+  /**
+   * Convert-time entities are disposed immediately after
+   * {@link AcTrBatchedGroup.addEntity} clones the textured leaf into the scene.
+   * Default {@link AcTrEntity.dispose} frees material.map and would blank the
+   * scene copy when the clone still shares that texture — skip releasing the
+   * mesh resources here.
+   */
+  override dispose() {
+    this.removeFromParent()
+    this.clear()
+    this._mesh = undefined
+  }
 }

@@ -20,10 +20,12 @@
         >
           <ml-layer-list :editor="props.editor" />
         </div>
-        <ml-entity-properties
+        <div
           v-else-if="store.dialogs.activePaletteTab === 'entityProperties'"
-          :entity-props-list="properties"
-        />
+          class="ml-entity-properties-wrapper"
+        >
+          <ml-entity-properties :entity-props-list="properties" />
+        </div>
         <div
           v-else-if="store.dialogs.activePaletteTab === 'countList'"
           class="ml-count-list-wrapper"
@@ -288,6 +290,16 @@ const properties = computed(() => {
   width: 100%;
   height: 100%;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-entity-properties-wrapper {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
