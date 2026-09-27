@@ -73,7 +73,7 @@ If you want to evaluate the proprietary parser before purchase, you can apply fo
 
 1. Send an email to [mlight.lee@outlook.com](mailto:mlight.lee@outlook.com) with your **company information** and **intended use case**.
 2. **Personal / individual applications are not accepted at this time** — trial licenses are available for **companies and organizations** only.
-3. Your email **must include a GitHub username**. We use this account to grant access to the private npm package **`@mlight-cad/dwg-converter`** via the GitHub organization [**mlight-cad**](https://github.com/mlight-cad).
+3. Your email **must include a GitHub username**. We use this account to grant read access to the private npm package **`@mlightcad/dwg-converter`**.
 
 ### Email template
 
@@ -108,9 +108,9 @@ Thank you,
 
 If your application is approved:
 
-1. You will receive a **GitHub organization invitation** to join **mlight-cad**, sent to the GitHub account listed in your application.
-2. **Accept the invitation** in GitHub (via the email notification or under **Settings → Organizations**).
-3. Once you are a member of **mlight-cad**, you can install and use the **`@mlight-cad/dwg-converter`** package with that GitHub account (configure npm/pnpm/yarn to authenticate with GitHub Packages as described in the integration notes provided with access).
+1. We will grant the GitHub account listed in your application **read access** to the private npm package **`@mlightcad/dwg-converter`**.
+2. You will receive **integration notes** describing how to authenticate npm/pnpm/yarn with GitHub Packages and install the package.
+3. Follow those notes to install and register the converter in your project.
 
 For commercial production use after the trial, please refer to the [Licensing Terms](#licensing-terms) above and contact us to purchase a perpetual license.
 
@@ -128,7 +128,7 @@ Typical integration (conceptual):
 
 ```typescript
 import { AcDbDatabaseConverterManager, AcDbFileType } from '@mlightcad/data-model'
-import { AcDbDwgConverter } from '@mlight-cad/dwg-converter'
+import { AcDbDwgConverter } from '@mlightcad/dwg-converter'
 
 const converter = new AcDbDwgConverter({ /* options */ })
 AcDbDatabaseConverterManager.instance.register(AcDbFileType.DWG, converter)
@@ -196,7 +196,7 @@ Email [mlight.lee@outlook.com](mailto:mlight.lee@outlook.com) with a brief descr
 
 ### How do we apply for a trial license?
 
-See the [Trial License](#trial-license) section above. Send an application email with your company details, intended use, and a **GitHub username**. If approved, you will be invited to the **mlight-cad** GitHub organization to access **`@mlight-cad/dwg-converter`**.
+See the [Trial License](#trial-license) section above. Send an application email with your company details, intended use, and a **GitHub username**. If approved, that account will be granted read access to **`@mlightcad/dwg-converter`**, along with integration notes for installing the package.
 
 ### Does the proprietary parser support 3D entities in DWG?
 
