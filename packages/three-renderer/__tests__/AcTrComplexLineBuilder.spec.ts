@@ -212,4 +212,53 @@ describe('buildComplexLineTypeGeometry', () => {
     // Density fallback: GPU dash mesh, no SHAPE glyph shells.
     expect(line.children[0]).toBeInstanceOf(THREE.LineSegments)
   })
+
+  it('keeps every TEXT placement on long pipes (no subsample)', () => {
+    const context = new AcTrRenderContext()
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.lineType = {
+      ...traits.lineType,
+      name: '8IN_PVC',
+      pattern: [
+        { elementLength: 1, elementTypeFlag: 0 },
+        {
+          elementLength: -0.5,
+          elementTypeFlag: 2,
+          text: '8"',
+          scale: 0.1,
+          rotation: 0
+        },
+        { elementLength: -0.5, elementTypeFlag: 0 }
+      ],
+      totalPatternLength: 2
+    }
+
+    const points = [
+      { x: 0, y: 0, z: 0 },
+      { x: 200, y: 0, z: 0 }
+    ]
+    const cycles = estimateComplexLineTypeCycles(
+      points,
+      traits.lineType.pattern!,
+      1
+    )
+    expect(cycles).toBeLessThanOrEqual(MAX_COMPLEX_LINETYPE_CYCLES)
+    expect(Math.ceil(cycles)).toBeGreaterThan(48)
+
+    const entity = new AcTrEntity(context)
+    expect(
+      buildComplexLineTypeGeometry(entity, points, traits, context)
+    ).toBe(true)
+    let glyphCount = 0
+    entity.traverse(child => {
+      if (child instanceof AcTrGlyphEntity) {
+        glyphCount++
+      }
+    })
+    expect(glyphCount).toBeGreaterThan(48)
+    expect(Math.abs(glyphCount - Math.round(cycles))).toBeLessThanOrEqual(2)
+
+    const line = new AcTrLine(points, traits, context)
+    expect(line.hasComplexLinetypeGlyphs).toBe(true)
+  })
 })

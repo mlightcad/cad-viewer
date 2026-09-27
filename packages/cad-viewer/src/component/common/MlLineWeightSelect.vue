@@ -9,6 +9,7 @@
       :popper-class="popperClass"
       :disabled="props.disabled || !lineWeightItems.length"
       @command="onSelect"
+      @visible-change="onVisibleChange"
     >
       <button
         type="button"
@@ -107,6 +108,7 @@ const popperClass = computed(() =>
 const emit = defineEmits<{
   (e: 'update:modelValue', value: AcGiLineWeight): void
   (e: 'change', value: AcGiLineWeight): void
+  (e: 'visible-change', visible: boolean): void
 }>()
 
 /**
@@ -204,6 +206,10 @@ const currentPreviewWidth = computed(
 function onSelect(value: AcGiLineWeight) {
   emit('update:modelValue', value)
   emit('change', value)
+}
+
+function onVisibleChange(visible: boolean) {
+  emit('visible-change', visible)
 }
 </script>
 

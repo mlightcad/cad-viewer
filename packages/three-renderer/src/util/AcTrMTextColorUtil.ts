@@ -5,7 +5,8 @@ import {
   acgiForegroundColorForBackground,
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
-import { ColorSettings, MTextColor } from '@mlightcad/mtext-renderer'
+import { MTextColor } from '@mlightcad/mtext-parser'
+import { ColorSettings } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import { getMaterialMetadata } from '../style/AcTrMaterialMetadata'

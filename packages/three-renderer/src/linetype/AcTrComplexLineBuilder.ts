@@ -172,16 +172,22 @@ function createPlacementGlyph(
       traits.lineType.description
     )
     if (text.trim().length > 0) {
+      // Glyph mesh is built at the local origin; WCS placement lives on the
+      // Object3D so identical labels can share one mtext-renderer pass and
+      // still land on every cycle (see asyncComplexLineTypeGlyphs).
       const mtext: AcGiMTextData = {
         text,
         height: size,
         width: 0,
-        position: { x: placement.x, y: placement.y, z: placement.z },
-        rotation: placement.angle,
+        position: { x: 0, y: 0, z: 0 },
+        rotation: 0,
         attachmentPoint: AcGiMTextAttachmentPoint.MiddleCenter,
         widthFactor: style.widthFactor || 1
       }
-      return new AcTrMText(mtext, traits, style, context, true)
+      const glyph = new AcTrMText(mtext, traits, style, context, true)
+      glyph.position.set(placement.x, placement.y, placement.z)
+      glyph.rotation.z = placement.angle
+      return glyph
     }
     // Blank TEXT after description fallback — do not invent a shape.
     return null
@@ -354,16 +360,21 @@ export function buildComplexLineTypeGeometry(
 /**
  * Draws deferred glyph children of a complex-linetype entity and refreshes
  * the parent bounding box.
+ *
+ * Identical TEXT labels share one mtext-renderer pass: the template is drawn
+ * at the identity transform, then replicas alias its leaf buffers and keep
+ * their own Object3D placement. Batching clones geometry later, so sharing
+ * only cuts open-time render cost (hundreds of Arial mesh jobs → one per
+ * unique string on the entity).
  */
 export function syncComplexLineTypeGlyphs(entity: AcTrEntity): void {
-  entity.traverse(child => {
-    if (child === entity) {
-      return
-    }
-    if (child instanceof AcTrGlyphEntity && !child.hasDrawableGeometry()) {
-      child.syncDraw()
-    }
-  })
+  const { textGroups, others } = collectPendingComplexGlyphs(entity)
+  for (const group of textGroups.values()) {
+    drawSharedTextGroupSync(group)
+  }
+  for (const glyph of others) {
+    glyph.syncDraw()
+  }
   refreshComplexLineTypeBbox(entity)
 }
 
@@ -373,19 +384,97 @@ export function syncComplexLineTypeGlyphs(entity: AcTrEntity): void {
 export async function asyncComplexLineTypeGlyphs(
   entity: AcTrEntity
 ): Promise<void> {
+  const { textGroups, others } = collectPendingComplexGlyphs(entity)
   const tasks: Promise<void>[] = []
+  for (const group of textGroups.values()) {
+    tasks.push(drawSharedTextGroupAsync(group))
+  }
+  for (const glyph of others) {
+    tasks.push(glyph.asyncDraw())
+  }
+  if (tasks.length > 0) {
+    await Promise.all(tasks)
+  }
+  refreshComplexLineTypeBbox(entity)
+}
+
+type GlyphPlacement = { x: number; y: number; z: number; rz: number }
+
+function snapshotGlyphPlacements(group: AcTrMText[]): GlyphPlacement[] {
+  return group.map(g => ({
+    x: g.position.x,
+    y: g.position.y,
+    z: g.position.z,
+    rz: g.rotation.z
+  }))
+}
+
+function applyGlyphPlacement(glyph: AcTrMText, p: GlyphPlacement): void {
+  glyph.position.set(p.x, p.y, p.z)
+  glyph.rotation.set(0, 0, p.rz)
+}
+
+/**
+ * Draw the first label at identity, then instance the rest with shared buffers.
+ */
+function drawSharedTextGroupSync(group: AcTrMText[]): void {
+  const placements = snapshotGlyphPlacements(group)
+  const template = group[0]
+  template.position.set(0, 0, 0)
+  template.rotation.set(0, 0, 0)
+  template.syncDraw()
+  for (let i = 0; i < group.length; i++) {
+    applyGlyphPlacement(group[i], placements[i])
+    if (i > 0) {
+      group[i].adoptSharedGeometryFrom(template)
+    }
+  }
+}
+
+async function drawSharedTextGroupAsync(group: AcTrMText[]): Promise<void> {
+  const placements = snapshotGlyphPlacements(group)
+  const template = group[0]
+  template.position.set(0, 0, 0)
+  template.rotation.set(0, 0, 0)
+  await template.asyncDraw()
+  for (let i = 0; i < group.length; i++) {
+    applyGlyphPlacement(group[i], placements[i])
+    if (i > 0) {
+      group[i].adoptSharedGeometryFrom(template)
+    }
+  }
+}
+
+function collectPendingComplexGlyphs(entity: AcTrEntity): {
+  textGroups: Map<string, AcTrMText[]>
+  others: AcTrGlyphEntity[]
+} {
+  const pending: AcTrGlyphEntity[] = []
   entity.traverse(child => {
     if (child === entity) {
       return
     }
     if (child instanceof AcTrGlyphEntity && !child.hasDrawableGeometry()) {
-      tasks.push(child.asyncDraw())
+      pending.push(child)
     }
   })
-  if (tasks.length > 0) {
-    await Promise.all(tasks)
+
+  const textGroups = new Map<string, AcTrMText[]>()
+  const others: AcTrGlyphEntity[] = []
+  for (const glyph of pending) {
+    if (glyph instanceof AcTrMText) {
+      const key = glyph.linetypeGlyphShareKey
+      let group = textGroups.get(key)
+      if (!group) {
+        group = []
+        textGroups.set(key, group)
+      }
+      group.push(glyph)
+    } else {
+      others.push(glyph)
+    }
   }
-  refreshComplexLineTypeBbox(entity)
+  return { textGroups, others }
 }
 
 /**

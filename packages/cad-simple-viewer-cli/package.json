@@ -58,7 +58,8 @@
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/data-model": "^1.14.13",
     "@mlightcad/libredwg-converter": "^3.14.13",
-    "@mlightcad/mtext-renderer": "^0.12.13",
+    "@mlightcad/mtext-parser": "^1.5.2",
+    "@mlightcad/mtext-renderer": "^0.13.0",
     "commander": "^12.1.0",
     "playwright": "^1.49.1"
   },
