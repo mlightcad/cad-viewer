@@ -1,5 +1,5 @@
 /**
- * Product page for the commercial DWG parser (`@mlight-cad/dwg-converter`).
+ * Product page for the commercial DWG parser (`@mlightcad/dwg-converter`).
  * Shown when LibreDWG runs out of memory while opening a drawing.
  */
 export const ACAP_DWG_PARSER_PRODUCT_URL =

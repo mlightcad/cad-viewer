@@ -73,7 +73,7 @@
 
 1. 发送邮件至 [mlight.lee@outlook.com](mailto:mlight.lee@outlook.com)，说明**公司基本信息**与**预期用途**。
 2. **暂不接受个人申请** — 试用授权目前仅面向**公司与组织**。
-3. 邮件中**必须提供 GitHub 用户名**。我们将通过 GitHub 组织 [**mlight-cad**](https://github.com/mlight-cad) 为该账户授予私有 npm 包 **`@mlight-cad/dwg-converter`** 的访问权限。
+3. 邮件中**必须提供 GitHub 用户名**。我们将为该账户授予私有 npm 包 **`@mlightcad/dwg-converter`** 的读取权限。
 
 ### 邮件模板
 
@@ -108,9 +108,9 @@
 
 若申请获批：
 
-1. 我们将向申请邮件中提供的 GitHub 账户发送加入 **mlight-cad** 组织的**邀请**。
-2. 请在 GitHub 中**接受邀请**（通过邮件通知，或在 **Settings → Organizations** 中操作）。
-3. 加入 **mlight-cad** 组织后，即可使用该 GitHub 账户安装并使用 **`@mlight-cad/dwg-converter`** 包（需按随附集成说明配置 npm/pnpm/yarn 对 GitHub Packages 的认证）。
+1. 我们将为申请邮件中提供的 GitHub 账户授予私有 npm 包 **`@mlightcad/dwg-converter`** 的**读取权限**。
+2. 您将收到**集成说明**，介绍如何配置 npm/pnpm/yarn 对 GitHub Packages 的认证并安装该包。
+3. 按说明在项目中安装并注册 converter。
 
 试用结束后如需用于商业生产环境，请参阅上文 [授权条款](#授权条款) 并联系我们购买永久授权。
 
@@ -128,7 +128,7 @@
 
 ```typescript
 import { AcDbDatabaseConverterManager, AcDbFileType } from '@mlightcad/data-model'
-import { AcDbDwgConverter } from '@mlight-cad/dwg-converter'
+import { AcDbDwgConverter } from '@mlightcad/dwg-converter'
 
 const converter = new AcDbDwgConverter({ /* options */ })
 AcDbDatabaseConverterManager.instance.register(AcDbFileType.DWG, converter)
@@ -196,7 +196,7 @@ cad-viewer 目前为**个人开源项目**（非公司运营），作者**全职
 
 ### 如何申请试用授权？
 
-请参阅上文 [试用授权（Trial License）](#试用授权trial-license) 一节。发送申请邮件时需提供公司信息、预期用途及 **GitHub 用户名**。审批通过后，您将被邀请加入 **mlight-cad** GitHub 组织，以访问 **`@mlight-cad/dwg-converter`** 包。
+请参阅上文 [试用授权（Trial License）](#试用授权trial-license) 一节。发送申请邮件时需提供公司信息、预期用途及 **GitHub 用户名**。审批通过后，该账户将获得 **`@mlightcad/dwg-converter`** 的读取权限，并收到安装该包的集成说明。
 
 ### 是否支持 DWG 中的三维实体（3D Entity）？
 
