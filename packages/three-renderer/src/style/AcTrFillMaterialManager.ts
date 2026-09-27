@@ -195,6 +195,8 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       material = this.createHatchShaderMaterial(traits, rgb, options, threeSide)
     }
 
+    this.applyTransparency(material, traits)
+
     // Store side in userData so getBackSideVariant can check idempotency.
     // Draw-order metadata is stamped by the base material manager from
     // `traits.drawOrder`.
@@ -202,6 +204,28 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       side
     })
     return material
+  }
+
+  /**
+   * Honours {@link AcGiSubEntityTraits.transparency} on fill meshes.
+   * Fully transparent fills (alpha 0) stay raycastable for IMAGE/OLE frames
+   * while remaining invisible — matching AutoCAD pick-through-frame behaviour.
+   */
+  private applyTransparency(
+    material: THREE.Material,
+    traits: AcGiSubEntityTraits
+  ) {
+    const transparency = traits.transparency
+    if (!transparency || typeof transparency.alpha !== 'number') {
+      return
+    }
+    const alpha = transparency.alpha
+    if (alpha >= 255) {
+      return
+    }
+    material.transparent = true
+    material.opacity = Math.max(0, Math.min(1, alpha / 255))
+    material.depthWrite = alpha > 0
   }
 
   private createGradientShaderMaterial(
@@ -389,14 +413,16 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
         bounds.minY,
         bounds.maxX,
         bounds.maxY,
+        `a${this.transparencyKey(traits)}`,
         sideSuffix,
         drawOrderSuffix
       ].join('_')
     }
 
     const isSolid = !style.definitionLines || style.definitionLines.length === 0
+    const alphaKey = this.transparencyKey(traits)
     if (isSolid) {
-      return `solid_${traits.layer}_${colorKey}${sideSuffix}${drawOrderSuffix}`
+      return `solid_${traits.layer}_${colorKey}_a${alphaKey}${sideSuffix}${drawOrderSuffix}`
     }
 
     const patternHash = style.definitionLines
@@ -423,9 +449,15 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       options.rebaseOffset.x,
       options.rebaseOffset.y,
       patternHash,
+      `a${alphaKey}`,
       sideSuffix,
       drawOrderSuffix
     ].join('_')
+  }
+
+  private transparencyKey(traits: AcGiSubEntityTraits): number {
+    const alpha = traits.transparency?.alpha
+    return typeof alpha === 'number' ? alpha : 255
   }
 
   /**

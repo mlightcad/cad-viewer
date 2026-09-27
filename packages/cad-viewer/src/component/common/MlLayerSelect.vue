@@ -390,14 +390,17 @@ function onStateIconClick(item: LayerSelectOption, state: LayerStateKey) {
 
 .ml-layer-select-option {
   display: grid;
-  grid-template-columns: 16px 16px 16px 84px 12px 1fr;
+  /* minmax(0, 1fr) so long names ellipsis instead of widening the menu */
+  grid-template-columns: 16px 16px 16px 84px 12px minmax(0, 1fr);
   align-items: center;
   column-gap: 8px;
   width: 100%;
   min-width: 0;
+  box-sizing: border-box;
 }
 
 .ml-layer-select-text {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -480,13 +483,27 @@ function onStateIconClick(item: LayerSelectOption, state: LayerStateKey) {
   /*
    * Teleported dropdown is outside `.ml-ribbon`, so use `--ml-rb-popper-scale`
    * from `ml-ribbon-popper--size-*` (same as built-in ribbon selects).
+   *
+   * Wider than the ribbon trigger so icons + line preview + name fit; clip
+   * overflow so EP's content-sized dropdown cannot paint past the panel.
    */
   --ml-layer-select-font-size: calc(
     var(--el-font-size-small) * var(--ml-rb-popper-scale, 1)
   );
-  width: 340px;
+  width: 360px;
+  min-width: 360px;
+  max-width: 360px;
+  box-sizing: border-box;
+  overflow: hidden;
   font-family: inherit;
   font-size: var(--ml-layer-select-font-size);
+}
+
+:global(.ml-layer-select-popper .el-select-dropdown) {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 :global(.ml-layer-select-popper .el-select-dropdown__wrap) {
@@ -496,6 +513,9 @@ function onStateIconClick(item: LayerSelectOption, state: LayerStateKey) {
 :global(.ml-layer-select-popper .el-select-dropdown__item) {
   height: calc(36px * var(--ml-rb-popper-scale, 1));
   line-height: calc(36px * var(--ml-rb-popper-scale, 1));
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
   font-family: inherit;
   font-size: var(--ml-layer-select-font-size);
 }
@@ -510,6 +530,13 @@ function onStateIconClick(item: LayerSelectOption, state: LayerStateKey) {
 .ml-layer-select-header {
   padding: 6px 8px 8px;
   border-bottom: 1px solid var(--el-border-color-lighter);
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.ml-layer-select-search {
+  width: 100%;
+  max-width: 100%;
 }
 
 .ml-layer-select-search :deep(.el-input__wrapper) {

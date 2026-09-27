@@ -2971,15 +2971,28 @@ export class AcTrBatchedGroup extends THREE.Group {
     const cloned = source.clone() as THREE.Object3D
     this.copyWorldMatrixOntoClone(source, cloned)
     if (this.hasMaterial(source) && this.hasMaterial(cloned)) {
-      cloned.material = source.material
+      const sourceMaterial = source.material
+      // Textured leaves (AcTrImage) must own cloned geometry/material/map:
+      // AcTrView2d disposes the convert-time entity right after addEntity, and
+      // sharing those resources leaves a blank mesh in the scene.
+      const ownsTexturedMaterial = this.materialHasTextureMap(sourceMaterial)
+      if (ownsTexturedMaterial) {
+        cloned.material = this.cloneUnbatchedTexturedMaterial(sourceMaterial)
+        if (this.hasGeometry(source) && this.hasGeometry(cloned)) {
+          cloned.geometry = source.geometry.clone()
+        }
+      } else {
+        cloned.material = sourceMaterial
+      }
       const sourceDrawable = getSceneDrawableUserData(source)
       const clonedDrawable = getSceneDrawableUserData(cloned)
       clonedDrawable.styleMaterialId =
         sourceDrawable.styleMaterialId ?? this.getMaterialId(source.material)
       clonedDrawable.bboxIntersectionCheck =
         sourceDrawable.bboxIntersectionCheck
-      clonedDrawable.sharesTemplateGeometry =
-        sourceDrawable.sharesTemplateGeometry
+      clonedDrawable.sharesTemplateGeometry = ownsTexturedMaterial
+        ? false
+        : sourceDrawable.sharesTemplateGeometry
       clonedDrawable.bakedWorldMatrix = source.matrixWorld.toArray()
       if (sourceDrawable.textEntityTraits) {
         clonedDrawable.textEntityTraits = AcTrMTextColorUtil.cloneEntityTraits(
@@ -2988,6 +3001,40 @@ export class AcTrBatchedGroup extends THREE.Group {
       }
     }
     this.finalizeUnbatchedLineClone(cloned)
+    return cloned
+  }
+
+  /**
+   * True when a material (or any entry in a material array) carries a color map.
+   */
+  private materialHasTextureMap(
+    material: THREE.Material | THREE.Material[]
+  ): boolean {
+    if (Array.isArray(material)) {
+      return material.some(item => this.materialHasTextureMap(item))
+    }
+    return !!(material as THREE.MeshBasicMaterial).map
+  }
+
+  /**
+   * Deep-clones a textured material so convert-time {@link AcTrEntity.dispose}
+   * cannot free the map still referenced by the scene's unbatched copy.
+   */
+  private cloneUnbatchedTexturedMaterial(
+    material: THREE.Material | THREE.Material[]
+  ): THREE.Material | THREE.Material[] {
+    if (Array.isArray(material)) {
+      return material.map(item =>
+        this.cloneUnbatchedTexturedMaterial(item)
+      ) as THREE.Material[]
+    }
+    const cloned = material.clone()
+    const sourceMap = (material as THREE.MeshBasicMaterial).map
+    if (sourceMap) {
+      const mapClone = sourceMap.clone()
+      mapClone.needsUpdate = true
+      ;(cloned as THREE.MeshBasicMaterial).map = mapClone
+    }
     return cloned
   }
 
