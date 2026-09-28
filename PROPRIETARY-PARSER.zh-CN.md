@@ -43,7 +43,7 @@
 
 您**不得**：
 
-- **将解析器作为独立的 DWG 解析库或 SDK 二次分发或单独售卖。** 授权范围是在您自己的应用或服务中使用，而非对外提供 competing 的解析器产品。此限制用于避免与解析器本身的商业冲突。
+- **将解析器作为独立的 DWG 解析库或 SDK 二次分发或单独售卖。** 授权范围是在您自己的应用或服务中使用，而非对外提供具有竞争性的解析器产品。此限制用于避免与解析器本身的商业冲突。
 
 若您的场景不符合上述说明（例如计划向第三方提供解析器 SDK），请联系我们单独协商。
 
@@ -109,34 +109,19 @@
 若申请获批：
 
 1. 我们将为申请邮件中提供的 GitHub 账户授予私有 npm 包 **`@mlightcad/dwg-converter`** 的**读取权限**。
-2. 您将收到**集成说明**，介绍如何配置 npm/pnpm/yarn 对 GitHub Packages 的认证并安装该包。
-3. 按说明在项目中安装并注册 converter。
+2. 请按 Wiki 指南 [Install and Use Proprietary DWG Converter](https://github.com/mlightcad/cad-viewer/wiki/Install-and-Use-Proprietary-DWG-Converter) 配置 GitHub Packages 认证、安装包并注册 converter。
 
 试用结束后如需用于商业生产环境，请参阅上文 [授权条款](#授权条款) 并联系我们购买永久授权。
 
 ---
 
-## 与现有数据模型的集成
+## 安装与集成
 
-专有解析器以**可注册的 converter** 形式提供，与开源解析器接入同一套流程。
+安装方式（私有 registry 代理或 tarball URL）以及 converter 注册步骤，请参阅 Wiki：
 
-- 输出符合 MIT 授权的 **`@mlightcad/data-model`**：`AcDbDatabase`、`AcDb*` 实体、图层表、块等结构。
-- 通过 **`AcDbDatabaseConverterManager`** 注册，与当前的 `AcDbLibreDwgConverter` 机制相同。
-- 解析完成后，现有 **MIT 渲染、图层、选择与交互管线**（`cad-simple-viewer`、`cad-viewer`、各插件等）**无需改动**。
-
-典型集成方式（示意）：
-
-```typescript
-import { AcDbDatabaseConverterManager, AcDbFileType } from '@mlightcad/data-model'
-import { AcDbDwgConverter } from '@mlightcad/dwg-converter'
-
-const converter = new AcDbDwgConverter({ /* options */ })
-AcDbDatabaseConverterManager.instance.register(AcDbFileType.DWG, converter)
-```
+**[Install and Use Proprietary DWG Converter](https://github.com/mlightcad/cad-viewer/wiki/Install-and-Use-Proprietary-DWG-Converter)**
 
 完整可运行示例（认证、Worker 资源、注册与数据库浏览）见 [realdwg-web-example](https://github.com/mlightcad/realdwg-web-example)。
-
-若使用专有解析器以满足合规要求，请**不要**再注册基于 GPL 的 `libredwg-converter`。
 
 ---
 
@@ -215,11 +200,12 @@ cad-viewer 目前为**个人开源项目**（非公司运营），作者**全职
 
 ### 如何使用专有 DWG 解析器？
 
-专有解析器**不提供独立的“直接解析 DWG”API**。其接入方式与开源的 [`libredwg-converter`](https://github.com/mlightcad/realdwg-web/tree/main/packages/libredwg-converter) 相同：实现 **`AcDbDatabaseConverter`** 接口，并通过 **`AcDbDatabaseConverterManager`** 注册。解析完成后，您通过 MIT 授权的 **`@mlightcad/data-model`**（`AcDbDatabase`、各类实体、符号表等）访问 DWG 内容——与上文 [与现有数据模型的集成](#与现有数据模型的集成) 描述的路径一致。
+请参阅 Wiki：[Install and Use Proprietary DWG Converter](https://github.com/mlightcad/cad-viewer/wiki/Install-and-Use-Proprietary-DWG-Converter)。该包实现 **`AcDbDatabaseConverter`**，并通过 **`AcDbDatabaseConverterManager`** 注册；解析完成后通过 MIT 授权的 **`@mlightcad/data-model`** 访问图纸数据。
 
 ---
 
 ## 相关文档
 
+- [Install and Use Proprietary DWG Converter](https://github.com/mlightcad/cad-viewer/wiki/Install-and-Use-Proprietary-DWG-Converter) — GitHub Packages 安装与 converter 注册
 - [cad-viewer README](./README.zh-CN.md) — 项目概览、开源技术栈及默认解析器的已知限制
 - [API 文档](https://cad-viewer.readthedocs.io/en/latest/) — `@mlightcad/data-model` 与查看器 API

@@ -109,34 +109,19 @@ Thank you,
 If your application is approved:
 
 1. We will grant the GitHub account listed in your application **read access** to the private npm package **`@mlightcad/dwg-converter`**.
-2. You will receive **integration notes** describing how to authenticate npm/pnpm/yarn with GitHub Packages and install the package.
-3. Follow those notes to install and register the converter in your project.
+2. Follow the wiki guide [Install and Use Proprietary DWG Converter](https://github.com/mlightcad/cad-viewer/wiki/Install-and-Use-Proprietary-DWG-Converter) to authenticate with GitHub Packages, install the package, and register the converter.
 
 For commercial production use after the trial, please refer to the [Licensing Terms](#licensing-terms) above and contact us to purchase a perpetual license.
 
 ---
 
-## Integration with the Existing Data Model
+## Installation and Integration
 
-The proprietary parser is delivered as a **registerable converter** that plugs into the same pipeline as the open-source stack.
+Step-by-step install options (private registry proxy or tarball URL) and converter registration are documented in the wiki:
 
-- Output conforms to the MIT-licensed **`@mlightcad/data-model`**: `AcDbDatabase`, `AcDb*` entities, layer tables, blocks, and related structures.
-- You register it via **`AcDbDatabaseConverterManager`**, the same mechanism used by `AcDbLibreDwgConverter` today.
-- After parsing, your existing **MIT rendering, layer, selection, and interaction pipeline** (`cad-simple-viewer`, `cad-viewer`, plugins, etc.) works unchanged.
-
-Typical integration (conceptual):
-
-```typescript
-import { AcDbDatabaseConverterManager, AcDbFileType } from '@mlightcad/data-model'
-import { AcDbDwgConverter } from '@mlightcad/dwg-converter'
-
-const converter = new AcDbDwgConverter({ /* options */ })
-AcDbDatabaseConverterManager.instance.register(AcDbFileType.DWG, converter)
-```
+**[Install and Use Proprietary DWG Converter](https://github.com/mlightcad/cad-viewer/wiki/Install-and-Use-Proprietary-DWG-Converter)**
 
 For a complete working sample (authentication, worker assets, registration, and database browsing), see [realdwg-web-example](https://github.com/mlightcad/realdwg-web-example).
-
-Do **not** register the GPL-based `libredwg-converter` if you rely on the proprietary parser for compliance.
 
 ---
 
@@ -215,11 +200,12 @@ For longer evaluation or production pilots, apply for a formal [trial license](#
 
 ### How do we use the proprietary DWG parser?
 
-The proprietary parser does **not** expose a standalone “parse DWG” API. Like the open-source [`libredwg-converter`](https://github.com/mlightcad/realdwg-web/tree/main/packages/libredwg-converter), it implements the **`AcDbDatabaseConverter`** interface and registers with **`AcDbDatabaseConverterManager`**. After conversion, you work with the resulting drawing through the MIT-licensed **`@mlightcad/data-model`** (`AcDbDatabase`, entities, symbol tables, and so on)—the same integration path described in [Integration with the Existing Data Model](#integration-with-the-existing-data-model).
+See the wiki guide [Install and Use Proprietary DWG Converter](https://github.com/mlightcad/cad-viewer/wiki/Install-and-Use-Proprietary-DWG-Converter). The package implements **`AcDbDatabaseConverter`** and registers with **`AcDbDatabaseConverterManager`**; after conversion you work with MIT-licensed **`@mlightcad/data-model`**.
 
 ---
 
 ## Related Documentation
 
+- [Install and Use Proprietary DWG Converter](https://github.com/mlightcad/cad-viewer/wiki/Install-and-Use-Proprietary-DWG-Converter) — GitHub Packages install and converter registration
 - [cad-viewer README](./README.md) — project overview, open-source stack, and known limitations of the default parsers
 - [API Docs](https://cad-viewer.readthedocs.io/en/latest/) — `@mlightcad/data-model` and viewer APIs
