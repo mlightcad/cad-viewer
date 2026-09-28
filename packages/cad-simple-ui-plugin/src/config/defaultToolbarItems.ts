@@ -53,6 +53,7 @@ import {
   ICON_TOOLBAR_PLACEMENT,
   ICON_ZOOM_EXTENT,
   ICON_ZOOM_ORIGINAL,
+  ICON_ZOOM_SMART,
   ICON_ZOOM_WINDOW
 } from '../assets/icons'
 import { acuiCreateLayoutToolbarItem } from './createLayoutToolbarItem'
@@ -437,7 +438,10 @@ function acuiCreateAnnotationToolbarItem(): AcUiToolbarItem {
 }
 
 /**
- * Builds the phone-layout zoom parent with original / extents / window children.
+ * Builds the zoom parent with saved / extents / smart / window children.
+ *
+ * Matches the HTML export offline viewer zoom strip
+ * (`childrenUi: 'toolbar'`, four child actions).
  *
  * @returns Zoom toolbar item with dismissible icon sub-toolbar children.
  */
@@ -447,18 +451,26 @@ export function acuiCreateZoomToolbarItem(): AcUiToolbarItem {
     label: 'toolbar.zoom',
     icon: ICON_ZOOM_EXTENT,
     childrenUi: 'toolbar',
+    childIcon: 'selected',
+    selectedChildId: 'zoom-extent',
     children: [
       {
-        id: 'zoom-original',
-        label: 'toolbar.zoomOriginal',
+        id: 'zoom-saved',
+        label: 'toolbar.zoomSaved',
         icon: ICON_ZOOM_ORIGINAL,
-        command: 'zoom\noriginal'
+        command: 'zoom\nsaved'
       },
       {
         id: 'zoom-extent',
         label: 'toolbar.zoomExtent',
         icon: ICON_ZOOM_EXTENT,
         command: 'zoom\nall'
+      },
+      {
+        id: 'zoom-smart-extents',
+        label: 'toolbar.zoomSmartExtents',
+        icon: ICON_ZOOM_SMART,
+        command: 'zoom\nsmart'
       },
       {
         id: 'zoom-window',
@@ -528,18 +540,7 @@ export function acuiCreateDefaultToolbarItems(
       icon: ICON_PAN,
       command: 'pan'
     },
-    {
-      id: 'zoom-extent',
-      label: 'toolbar.zoomExtent',
-      icon: ICON_ZOOM_EXTENT,
-      command: 'zoom\nall'
-    },
-    {
-      id: 'zoom-window',
-      label: 'toolbar.zoomWindow',
-      icon: ICON_ZOOM_WINDOW,
-      command: 'zoom\nwindow'
-    },
+    acuiCreateZoomToolbarItem(),
     {
       id: 'layer',
       label: 'toolbar.layer',

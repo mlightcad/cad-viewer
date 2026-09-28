@@ -539,12 +539,24 @@ export default {
       text: '阅读模式',
       description: '切换阅读模式（白底黑线，便于审阅）'
     },
+    zoom: {
+      text: '缩放',
+      description: '缩放工具：保存的视图、范围、智能范围、窗口'
+    },
+    zoomSaved: {
+      text: '保存的视图',
+      description: '恢复 AutoCAD 保存的视图（VPORT / 布局界限），或打开时的初始视口'
+    },
     zoomToExtent: {
-      text: '范围缩放',
+      text: '范围',
       description: '缩放以显示所有对象'
     },
+    zoomSmartExtents: {
+      text: '智能范围',
+      description: '缩放到主要几何簇，忽略远处异常图元'
+    },
     zoomToBox: {
-      text: '矩形缩放',
+      text: '窗口',
       description: '缩放以显示矩形窗口内的对象'
     }
   },

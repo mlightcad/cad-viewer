@@ -898,6 +898,16 @@ export default {
         local: 'الأصلي',
         global: 'Original'
       },
+      saved: {
+        display: 'المحفوظ(V)',
+        local: 'المحفوظ',
+        global: 'Saved'
+      },
+      smart: {
+        display: 'ذكي(I)',
+        local: 'ذكي',
+        global: 'Smart'
+      },
       scale: {
         display: 'مقياس(S)',
         local: 'مقياس',

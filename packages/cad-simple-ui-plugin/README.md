@@ -228,9 +228,9 @@ By default the plugin uses `layout: 'auto'` and follows viewport width via `aced
 
 | Kind | Viewport | Chrome | Default buttons (`items: 'default'`) |
 | --- | --- | --- | --- |
-| **phone** | ≤600px | Bottom bar, full width (`size: 'stretch'`), labels, `edgeOffset: 0`, not collapsible, no flyout arrows. Nested strips use `replaceOnNested: true`. | `zoom` (original / extents / window), `measure`, `annotation`, `layer`, `layout`, `settings` (simulated mouse, placement, theme, background, reading mode, language) |
+| **phone** | ≤600px | Bottom bar, full width (`size: 'stretch'`), labels, `edgeOffset: 0`, not collapsible, no flyout arrows. Nested strips use `replaceOnNested: true`. | `zoom` (saved / extents / smart extents / window), `measure`, `annotation`, `layer`, `layout`, `settings` (simulated mouse, placement, theme, background, reading mode, language) |
 | **pad** | 601–960px | Same floating chrome as desktop (right, icons only, `edgeOffset: 8`). | Desktop set **without** `select` and `pan` (`excludeItems: ['select', 'pan']`). Touch drag pans; a long-press starts window/crossing box select. |
-| **desktop** | >960px | Right-side floating icon toolbar. | `select`, `pan`, `zoom-extent`, `zoom-window`, `layer`, `layout`, `measure`, `annotation`, `export`, then `settings` (simulated mouse, placement, theme, background, reading mode, language) |
+| **desktop** | >960px | Right-side floating icon toolbar. | `select`, `pan`, `zoom` (saved / extents / smart extents / window), `layer`, `layout`, `measure`, `annotation`, `export`, then `settings` (simulated mouse, placement, theme, background, reading mode, language) |
 
 Phone does **not** inherit top-level `toolbar.items`, `appendItems`, or chrome (placement, labels, size). It only inherits `enabled`, `mountTarget`, and `inCanvasParent`. Pad and desktop inherit the full top-level `toolbar` baseline on top of the built-ins above.
 
@@ -354,7 +354,7 @@ See `cad-simple-viewer-example` (`demoToolbarPresets.ts`) for a working layout s
 | `preset` | Reference a built-in button by id (custom layouts only; use `{ preset: 'pan' }`) |
 | `disabled` | `boolean` or `() => boolean` |
 
-Built-in preset ids include: `select`, `pan`, `zoom-extent`, `layer`, `measure`, `export`, `toolbar-placement`, `switch-bg`, `theme`, `locale`, and nested ids such as `placement-top`, `measure-distance`, `export-html`, `locale-en`, `locale-zh`, `locale-cs`, `locale-tr`, etc.
+Built-in preset ids include: `select`, `pan`, `zoom` (saved / extents / smart extents / window), `layer`, `measure`, `export`, `toolbar-placement`, `switch-bg`, `theme`, `locale`, and nested ids such as `placement-top`, `measure-distance`, `export-html`, `locale-en`, `locale-zh`, `locale-cs`, `locale-tr`, etc.
 
 ### 1. Default toolbar + extra buttons
 
@@ -397,7 +397,7 @@ acuiCreateSimpleUiPlugin({
     items: [
       acuiToolbarPreset('select'),
       acuiToolbarPreset('pan'),
-      acuiToolbarPreset('zoom-extent'),
+      acuiToolbarPreset('zoom'),
       acuiCreateToolbarSeparator('sep-tools'),
       acuiToolbarPreset('layer'),
       acuiToolbarPreset('measure'),

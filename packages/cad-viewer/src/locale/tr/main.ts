@@ -580,13 +580,28 @@ export default {
       disabledInReadingMode:
         'Okuma modundayken kullanılamaz (beyaz tuval sabittir)'
     },
+    zoom: {
+      text: 'Yakınlaştır',
+      description:
+        'Yakınlaştırma araçları: kayıtlı görünüm, sınırlar, akıllı sınırlar ve pencere'
+    },
+    zoomSaved: {
+      text: 'Kayıtlı',
+      description:
+        'AutoCAD kayıtlı görünümünü (VPORT / düzen limitleri) veya açılış görünümünü geri yükler'
+    },
     zoomToExtent: {
-      text: 'Tümünü Yakınlaştır',
+      text: 'Sınırlar',
       description:
         'Tüm varlıkların maksimum sınırlarını görüntülemek için yakınlaştırır'
     },
+    zoomSmartExtents: {
+      text: 'Akıllı sınırlar',
+      description:
+        'Uzak aykırı varlıkları yok sayarak baskın geometri kümesine yakınlaştırır'
+    },
     zoomToBox: {
-      text: 'Pencereyi Yakınlaştır',
+      text: 'Pencere',
       description:
         'Dikdörtgen bir pencereyle belirtilen alanı görüntülemek için yakınlaştırır'
     }

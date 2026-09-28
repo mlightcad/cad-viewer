@@ -1213,6 +1213,16 @@ export default {
         local: 'Original',
         global: 'Original'
       },
+      saved: {
+        display: 'Saved(V)',
+        local: 'Saved',
+        global: 'Saved'
+      },
+      smart: {
+        display: 'Smart(I)',
+        local: 'Smart',
+        global: 'Smart'
+      },
       scale: {
         display: 'Scale(S)',
         local: 'Scale',
