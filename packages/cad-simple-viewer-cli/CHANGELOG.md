@@ -1,5 +1,17 @@
 # @mlightcad/cad-simple-viewer-cli
 
+## 1.7.3
+
+### Patch Changes
+
+- feat: brings smart extents and AutoCAD saved-view zoom to live viewer toolbars, and cuts open-time stalls by speeding INSERT indexing and font regeneration. Fallback fonts preload before the first glyph bake so text no longer flashes with missing glyphs, and docs link the proprietary DWG converter install guide to the wiki
+- Updated dependencies
+  - @mlightcad/cad-html-plugin@1.7.3
+  - @mlightcad/cad-pdf-plugin@1.7.3
+  - @mlightcad/cad-simple-viewer@1.7.3
+  - @mlightcad/cad-svg-plugin@1.7.3
+  - @mlightcad/pdf-renderer@1.7.3
+
 ## 1.7.2
 
 ### Patch Changes

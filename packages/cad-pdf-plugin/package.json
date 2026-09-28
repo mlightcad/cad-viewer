@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-pdf-plugin",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -45,7 +45,7 @@
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.15.0",
-    "@mlightcad/mtext-parser": "^1.5.2",
+    "@mlightcad/mtext-parser": "^1.5.3",
     "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*",
     "pdfjs-dist": "^5.6.205"
@@ -53,7 +53,7 @@
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.15.0",
-    "@mlightcad/mtext-parser": "^1.5.2",
+    "@mlightcad/mtext-parser": "^1.5.3",
     "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*"
   }

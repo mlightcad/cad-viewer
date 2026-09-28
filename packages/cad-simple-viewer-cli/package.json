@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-simple-viewer-cli",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "AcCoreConsole-style headless CLI: run .scr command scripts against DXF/DWG drawings",
   "license": "MIT",
   "type": "module",
@@ -58,8 +58,8 @@
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/data-model": "^1.15.0",
     "@mlightcad/libredwg-converter": "^3.15.0",
-    "@mlightcad/mtext-parser": "^1.5.2",
-    "@mlightcad/mtext-renderer": "^0.13.0",
+    "@mlightcad/mtext-parser": "^1.5.3",
+    "@mlightcad/mtext-renderer": "^0.13.1",
     "commander": "^12.1.0",
     "playwright": "^1.49.1"
   },

@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/pdf-renderer",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -46,11 +46,11 @@
   },
   "devDependencies": {
     "@mlightcad/data-model": "^1.15.0",
-    "@mlightcad/mtext-parser": "^1.5.2",
+    "@mlightcad/mtext-parser": "^1.5.3",
     "@types/pako": "^1.0.7"
   },
   "peerDependencies": {
     "@mlightcad/data-model": "^1.15.0",
-    "@mlightcad/mtext-parser": "^1.5.2"
+    "@mlightcad/mtext-parser": "^1.5.3"
   }
 }
