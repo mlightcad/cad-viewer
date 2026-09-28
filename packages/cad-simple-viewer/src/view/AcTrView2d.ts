@@ -31,6 +31,7 @@ import {
   AcTrGlyphEntity,
   AcTrGroup,
   AcTrHtmlTransientManager,
+  AcTrMTextRenderer,
   AcTrRenderer,
   AcTrViewportView,
   hasPendingComplexLineTypeGlyphs
@@ -3011,21 +3012,31 @@ export class AcTrView2d extends AcEdBaseView {
     try {
       names = database.tables.textStyleTable.fonts ?? []
     } catch {
+      names = []
+    }
+    // Style fonts alone are not enough: awaitFontsBeforeDraw only *awaits*
+    // content/style faces and kicks default/symbol fallbacks in the background.
+    // Drawings with empty primary font files (font falls back to the STYLE name)
+    // need those fallbacks loaded before the first glyph bake, otherwise Latin
+    // (and often all) text is permanently baked as '?'.
+    const fallbackFonts = FontManager.instance.getFontsToLoad()
+    const preloadNames = [...new Set([...names, ...fallbackFonts])]
+    if (preloadNames.length === 0) {
       this._textStyleFontPreloadPromise = Promise.resolve()
       return
     }
-    if (names.length === 0) {
-      this._textStyleFontPreloadPromise = Promise.resolve()
-      return
-    }
-    this._textStyleFontPreloadPromise = FontManager.instance
-      .requestFonts(names)
-      .then(
-        () => {},
-        () => {
-          // Glyph draw still falls back via FontManager defaults / '?'.
-        }
-      )
+    const mtextRenderer = AcTrMTextRenderer.getInstance()
+    this._textStyleFontPreloadPromise = Promise.all([
+      FontManager.instance.requestFonts(preloadNames),
+      // Worker isolates have their own FontManager; main-thread requestFonts
+      // alone does not populate them before asyncRenderMText.
+      mtextRenderer.loadFonts(fallbackFonts)
+    ]).then(
+      () => {},
+      () => {
+        // Glyph draw still falls back via FontManager defaults / '?'.
+      }
+    )
   }
 
   /**
