@@ -143,6 +143,21 @@ export class AcTrMTextRenderer {
   }
 
   /**
+   * Loads fonts into the active renderer (main thread and/or worker pool).
+   *
+   * Use for fallback faces that {@link FontManager.awaitFontsBeforeDraw} only
+   * requests in the background — e.g. {@link FontManager.getFontsToLoad} —
+   * so glyph draw does not bake permanent '?' placeholders.
+   */
+  async loadFonts(fonts: readonly string[]): Promise<void> {
+    this.ensureRendererCreated()
+    if (!this._renderer || fonts.length === 0) {
+      return
+    }
+    await this._renderer.loadFonts(fonts)
+  }
+
+  /**
    * Replaces session-scoped missed-font bookkeeping on the main thread and workers.
    */
   async replaceMissedFonts(fonts: Record<string, number>): Promise<void> {
