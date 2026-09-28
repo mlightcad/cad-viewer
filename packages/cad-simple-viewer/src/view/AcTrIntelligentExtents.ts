@@ -1,10 +1,10 @@
 import { AcGeBox2d } from '@mlightcad/data-model'
 
-import { isFiniteSpatialBBox } from './AcTrGroupWcsBboxAssert'
 import {
   type AcTrClusterBox,
   unionDominantCluster
 } from './AcTrExtentCluster'
+import { isFiniteSpatialBBox } from './AcTrGroupWcsBboxAssert'
 
 /**
  * One finite AABB used as a candidate for intelligent zoom-to-fit.

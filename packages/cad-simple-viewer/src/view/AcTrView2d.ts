@@ -78,7 +78,6 @@ import {
 import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
-import { computeIntelligentExtents } from './AcTrIntelligentExtents'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
 import type { AcApCompareDisplayOptions } from './AcApCompareDisplay'
 import {
@@ -100,6 +99,7 @@ import {
   unionGroupWcsChildBoxes
 } from './AcTrGroupWcsBboxAssert'
 import { AcTrInheritedLayerMaterialMapper } from './AcTrInheritedLayerMaterialMapper'
+import { computeIntelligentExtents } from './AcTrIntelligentExtents'
 import { AcTrLayer } from './AcTrLayer'
 import { AcTrLayerAppearanceController } from './AcTrLayerAppearanceController'
 import { AcTrLayout } from './AcTrLayout'
