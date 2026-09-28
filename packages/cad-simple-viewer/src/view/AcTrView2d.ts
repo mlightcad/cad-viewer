@@ -3193,10 +3193,15 @@ export class AcTrView2d extends AcEdBaseView {
       return
     }
 
-    const msSinceIdle =
-      this._entityProcessingIdleAt > 0
-        ? performance.now() - this._entityProcessingIdleAt
-        : null
+    // Font load before the first convert idle (empty scene, ENTITY stream not
+    // started yet). Glyph jobs await that font. regen() here replays the
+    // in-flight database: measured as thousands of duplicate convert claims
+    // and a ~1GB heap spike at the start of open.
+    if (this._entityProcessingIdleAt <= 0) {
+      return
+    }
+
+    const msSinceIdle = performance.now() - this._entityProcessingIdleAt
     // Open-time text awaits its fonts, then this debounced callback runs.
     // Regen here only flashes the loading spinner again after
     // "Rendering drawing ..." has already hidden (progressive rendering on).
@@ -3733,6 +3738,12 @@ export class AcTrView2d extends AcEdBaseView {
     if (groupChildBoxes.length > 0) {
       group.wcsBbox = aggregateSpatialBbox.clone()
     }
+    // Every layer fragment shares one INSERT object id, and the child spatial
+    // index is keyed by that id. Attaching the full child-box list to each
+    // fragment makes addEntity rebuild the same index once per layer. A
+    // whole-floor block (00-1~4F: 181515 children, 81 layers) spent ~74s
+    // there while "Rendering drawing ..." stayed up.
+    let registeredChildIndex = false
     objectsGroupByLayer.forEach((objects, layerName) => {
       // Nested layer-0 may already be resolved to an inner INSERT layer during
       // flatten. Remaining "0" buckets inherit this (outermost) INSERT layer.
@@ -3779,7 +3790,10 @@ export class AcTrView2d extends AcEdBaseView {
       const entityUserData = entity.userData as {
         spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
       }
-      entityUserData.spatialIndexChildBoxes = groupChildBoxes
+      if (!registeredChildIndex && groupChildBoxes.length > 0) {
+        entityUserData.spatialIndexChildBoxes = groupChildBoxes
+        registeredChildIndex = true
+      }
 
       // Important:
       // DO NOT USE spread operator when adding objects because it may be one very large array

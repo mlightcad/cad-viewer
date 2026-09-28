@@ -6,6 +6,7 @@ import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrMatrixUtil, effectiveLayer } from '../util'
 import { AcTrEntity } from './AcTrEntity'
 import { AcTrGroupCompactor } from './AcTrGroupCompactor'
+
 export interface AcTrEntityBox {
   minX: number
   minY: number
@@ -284,11 +285,9 @@ export class AcTrGroup extends AcTrEntity {
     for (const entity of this._sourceEntities) {
       this.appendSourceEntityWcsChildBox(entity, scratch)
     }
+    const sourceEntities = new Set(this._sourceEntities)
     this.children.forEach(child => {
-      if (
-        child instanceof AcTrEntity &&
-        !this._sourceEntities.includes(child)
-      ) {
+      if (child instanceof AcTrEntity && !sourceEntities.has(child)) {
         this.appendTreeEntityWcsChildBox(child, scratch)
       }
     })
@@ -324,11 +323,12 @@ export class AcTrGroup extends AcTrEntity {
       }
     }
 
+    const sourceEntities = new Set(this._sourceEntities)
     this.children.forEach(child => {
       if (!(child instanceof AcTrEntity)) {
         return
       }
-      if (this._sourceEntities.includes(child)) {
+      if (sourceEntities.has(child)) {
         return
       }
       const existing = boxById.get(child.objectId)
@@ -359,6 +359,7 @@ export class AcTrGroup extends AcTrEntity {
    * {@link syncDraw} on each entity that has not yet produced drawable children.
    */
   override syncDraw(): void {
+    const sourceEntities = new Set(this.getSourceEntities())
     const finalizeDeferredEntity = (child: AcTrEntity) => {
       if (child.hasDrawableGeometry()) {
         return
@@ -366,7 +367,7 @@ export class AcTrGroup extends AcTrEntity {
       child.syncDraw()
     }
 
-    this.getSourceEntities().forEach(finalizeDeferredEntity)
+    sourceEntities.forEach(finalizeDeferredEntity)
     this.traverse(child => {
       if (child === this) {
         return
@@ -374,7 +375,7 @@ export class AcTrGroup extends AcTrEntity {
       if (!(child instanceof AcTrEntity)) {
         return
       }
-      if (this.getSourceEntities().includes(child)) {
+      if (sourceEntities.has(child)) {
         return
       }
       finalizeDeferredEntity(child)
@@ -387,15 +388,16 @@ export class AcTrGroup extends AcTrEntity {
    * children can wait for fonts without using the sync fallback path.
    */
   override async asyncDraw(): Promise<void> {
-    const tasks: Promise<void>[] = []
-    const finalizeDeferredEntity = (child: AcTrEntity) => {
+    const sourceEntities = new Set(this.getSourceEntities())
+    const tasks: Array<() => Promise<void>> = []
+    const enqueue = (child: AcTrEntity) => {
       if (child.hasDrawableGeometry()) {
         return
       }
-      tasks.push(child.asyncDraw())
+      tasks.push(() => child.asyncDraw())
     }
 
-    this.getSourceEntities().forEach(finalizeDeferredEntity)
+    sourceEntities.forEach(enqueue)
     this.traverse(child => {
       if (child === this) {
         return
@@ -403,13 +405,26 @@ export class AcTrGroup extends AcTrEntity {
       if (!(child instanceof AcTrEntity)) {
         return
       }
-      if (this.getSourceEntities().includes(child)) {
+      if (sourceEntities.has(child)) {
         return
       }
-      finalizeDeferredEntity(child)
+      enqueue(child)
     })
-    if (tasks.length > 0) {
-      await Promise.all(tasks)
+    // Start glyph draws in small batches and return to the event loop so a
+    // block with tens of thousands of texts cannot allocate them all at once.
+    const chunkSize = 24
+    let budgetStart = performance.now()
+    for (let i = 0; i < tasks.length; i += chunkSize) {
+      const end = Math.min(i + chunkSize, tasks.length)
+      const pending: Promise<void>[] = []
+      for (let j = i; j < end; j++) {
+        pending.push(tasks[j]())
+      }
+      await Promise.all(pending)
+      if (end < tasks.length && performance.now() - budgetStart >= 32) {
+        await new Promise<void>(resolve => setTimeout(resolve, 0))
+        budgetStart = performance.now()
+      }
     }
     this.refreshWcsChildBoxesFromChildren()
   }
