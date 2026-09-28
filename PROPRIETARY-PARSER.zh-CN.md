@@ -43,7 +43,7 @@
 
 您**不得**：
 
-- **将解析器作为独立的 DWG 解析库或 SDK 二次分发或单独售卖。** 授权范围是在您自己的应用或服务中使用，而非对外提供 competing 的解析器产品。此限制用于避免与解析器本身的商业冲突。
+- **将解析器作为独立的 DWG 解析库或 SDK 二次分发或单独售卖。** 授权范围是在您自己的应用或服务中使用，而非对外提供具有竞争性的解析器产品。此限制用于避免与解析器本身的商业冲突。
 
 若您的场景不符合上述说明（例如计划向第三方提供解析器 SDK），请联系我们单独协商。
 
@@ -113,6 +113,155 @@
 3. 按说明在项目中安装并注册 converter。
 
 试用结束后如需用于商业生产环境，请参阅上文 [授权条款](#授权条款) 并联系我们购买永久授权。
+
+---
+
+## 安装 `@mlightcad/dwg-converter`
+
+专有包 **`@mlightcad/dwg-converter`** 发布在 **GitHub Packages**，而其他 `@mlightcad/*` 包（例如 `@mlightcad/data-model`、`@mlightcad/cad-viewer`）发布在公共 **npm registry**。npm / pnpm 只支持按 **scope** 映射 registry，**没有**官方的「同一 scope 下按 package 分流 registry」能力。
+
+因此**不能**指望仅靠一行 `.npmrc`：
+
+```ini
+@mlightcad:registry=https://npm.pkg.github.com
+```
+
+就只从 GitHub Packages 拉取 `@mlightcad/dwg-converter`。这样做会把**所有** `@mlightcad/*` 包都导向 GitHub Packages，导致公共包安装失败。
+
+**版本说明：** `@mlightcad/dwg-converter` 会持续发布新版本。下文示例中的 `1.2.3`（以及 tarball URL 中的 hash）请一律替换为**您实际需要的版本**，不要直接照抄本文中的版本号。
+
+### 生成具备 `read:packages` 权限的 `GITHUB_TOKEN`
+
+安装前需先创建可读取私有包的 GitHub personal access token。GitHub Packages 的 npm registry 目前仅支持 **personal access token (classic)**；fine-grained token 尚不可用于该场景。
+
+**前置条件**
+
+- 用于生成 token 的 GitHub 账户须已具备 `@mlightcad/dwg-converter` 的**读取权限**（试用或购买审批通过后授予）。
+- Token 必须包含 **`read:packages`** 权限（package read）。
+
+**操作步骤**
+
+1. 使用已获得包读取权限的 GitHub 账户登录。
+2. 打开 **Settings → Developer settings → Personal access tokens → Tokens (classic)**  
+   （直达链接：[https://github.com/settings/tokens](https://github.com/settings/tokens)）。
+3. 点击 **Generate new token → Generate new token (classic)**。
+4. 为 token 填写清晰名称（例如 `dwg-converter-install`），并按贵司安全策略设置过期时间。
+5. 在 **Select scopes** 中勾选 **`read:packages`**。仅用于安装时，无需 `write:packages` 或 `delete:packages`。
+6. 点击 **Generate token**，并立即复制 token（仅显示一次）。
+7. 在本地 shell 或 CI 中将 token 暴露为环境变量 `GITHUB_TOKEN`，例如：
+
+   ```bash
+   # macOS / Linux
+   export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+   # Windows PowerShell
+   $env:GITHUB_TOKEN = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+   # Windows CMD
+   set GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+
+8. 若**客户端会直接访问** GitHub Packages（见下文方案二），在 `.npmrc` 中增加**按主机认证**的配置：
+
+   ```ini
+   //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+   ```
+
+   这只表示访问 `npm.pkg.github.com` 时带上凭证，**不会**改写 `@mlightcad` scope 的 registry，因此不会影响 npmjs.org 上的其他 `@mlightcad/*` 公共包。请**不要**配置 `@mlightcad:registry=https://npm.pkg.github.com`。
+
+   若采用方案一（私有 registry 代理），客户端通常**不需要**这一行，把 token 配在代理侧即可。
+
+**安全说明**
+
+- 将 token 视为密码。**不要**提交到 git，也不要粘贴到公开 issue。
+- 优先使用环境变量（或 CI 密钥库），避免把 token 明文写进 `.npmrc`。
+- 在 GitHub Actions 中，可将仓库 Secret（例如 `GH_PACKAGES_TOKEN`）映射为安装任务中的 `GITHUB_TOKEN` / `NODE_AUTH_TOKEN`。
+
+Token 配置完成后，从以下安装方案中任选其一。
+
+### 方案一：统一私有 registry，代理 npm 与 GitHub Packages
+
+若您可以运维（或已在使用）私有 npm registry——例如 Verdaccio、JFrog Artifactory、Sonatype Nexus，或云厂商 npm registry——让客户端统一指向该 registry，由它按包决定上游来源：
+
+```text
+                ┌── npmjs.org          （@mlightcad/data-model 等）
+client ──→ 私有 registry
+                └── GitHub Packages    （@mlightcad/dwg-converter）
+```
+
+客户端 `.npmrc`：
+
+```ini
+registry=https://npm.example.com/
+```
+
+在私有 registry 中配置路由，例如：
+
+| 包 | 上游 |
+|----|------|
+| `@mlightcad/foo`（公共包） | `https://registry.npmjs.org` |
+| `@mlightcad/dwg-converter` | `https://npm.pkg.github.com` |
+
+之后客户端可正常安装，例如：
+
+```bash
+pnpm add @mlightcad/dwg-converter@1.2.3
+```
+
+若您已维护私有 registry，这是更干净的长期方案。若项目很小、只需一两个 GitHub Packages 依赖，方案二通常更轻量。
+
+### 方案二：将依赖固定为 GitHub Packages 的 tarball URL
+
+若只有少数 GitHub Packages 依赖，可在 `package.json` 中把 `@mlightcad/dwg-converter` 直接写成其 **tarball URL**。包管理器会按该 URL 下载，而不再按 `@mlightcad` scope 选择 registry。
+
+1. 配置 GitHub Packages 认证（仍需要 —— tarball URL **不能**绕过认证）：
+
+   ```ini
+   # .npmrc
+   registry=https://registry.npmjs.org/
+   //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+   ```
+
+2. 查询您所需版本的 tarball URL：
+
+   ```bash
+   npm view @mlightcad/dwg-converter@1.2.3 \
+     --registry=https://npm.pkg.github.com \
+     dist.tarball
+   ```
+
+   典型输出示例：
+
+   ```text
+   https://npm.pkg.github.com/download/@mlightcad/dwg-converter/1.2.3/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ```
+
+   也可执行 `npm view @mlightcad/dwg-converter@1.2.3 --registry=https://npm.pkg.github.com`，从返回的 `dist.tarball` 字段读取完整 URL。
+
+3. 将该 URL 写入 `package.json`（再次提醒：使用**您自己的**版本与 tarball URL）：
+
+   ```json
+   {
+     "dependencies": {
+       "@mlightcad/data-model": "^1.0.0",
+       "@mlightcad/dwg-converter": "https://npm.pkg.github.com/download/@mlightcad/dwg-converter/1.2.3/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+     }
+   }
+   ```
+
+4. 正常安装：
+
+   ```bash
+   pnpm install
+   ```
+
+**方案二的注意点：**
+
+- 升级时需重新查询 tarball URL，并更新 `package.json` / lockfile，比普通 semver 范围更麻烦。
+- CI 与本地安装仍需具备该包读取权限的 GitHub token（`.npmrc` 中的 `//npm.pkg.github.com/:_authToken=...`）。
+- URL 依赖的认证行为可能与普通 registry 依赖略有差异，请务必保留 GitHub Packages 的认证配置。
+
+方案二适合试用与小型团队。若需要频繁升级或有较多私有包，更建议采用方案一（或将私有包改到独立 scope，例如 `@mlightcad-private/*`，再映射到 GitHub Packages）。
 
 ---
 
