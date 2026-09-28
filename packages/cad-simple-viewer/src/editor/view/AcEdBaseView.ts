@@ -529,6 +529,16 @@ export abstract class AcEdBaseView {
   abstract zoomToFitLayer(layerName: string): boolean
 
   /**
+   * Zooms to the dominant geometry cluster, peeling far outlier entities.
+   *
+   * Falls back to {@link zoomToFitDrawing} when clustering cannot produce a
+   * tighter box (empty scene, too few boxes, or no outliers).
+   *
+   * @param timeout - Maximum time (ms) to wait for entity conversion. Default: 0.
+   */
+  abstract zoomToSmartExtents(timeout?: number): void
+
+  /**
    * Moves the current view to the specified 2D point at the given scale.
    *
    * @param point - Target location in world coordinates to fly the view to.

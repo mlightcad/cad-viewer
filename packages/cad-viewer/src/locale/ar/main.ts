@@ -811,15 +811,34 @@ export default {
       disabledInReadingMode: 'غير متاح أثناء وضع القراءة (اللوحة البيضاء ثابتة)'
     },
 
+    zoom: {
+      ...enMain.verticalToolbar.zoom,
+      text: 'تكبير',
+      description: 'أدوات التكبير: محفوظ، ملاءمة، ملاءمة ذكية، ونافذة'
+    },
+
+    zoomSaved: {
+      ...enMain.verticalToolbar.zoomSaved,
+      text: 'محفوظ',
+      description:
+        'استعادة العرض المحفوظ في AutoCAD (VPORT / حدود التخطيط) أو عرض وقت الفتح'
+    },
+
     zoomToExtent: {
       ...enMain.verticalToolbar.zoomToExtent,
-      text: 'ملاءمة الرسم',
+      text: 'ملاءمة',
       description: 'إظهار كامل حدود جميع عناصر الرسم'
+    },
+
+    zoomSmartExtents: {
+      ...enMain.verticalToolbar.zoomSmartExtents,
+      text: 'ملاءمة ذكية',
+      description: 'التكبير إلى مجموعة الهندسة الرئيسية مع تجاهل العناصر البعيدة الشاذة'
     },
 
     zoomToBox: {
       ...enMain.verticalToolbar.zoomToBox,
-      text: 'تكبير نافذة',
+      text: 'نافذة',
       description: 'تكبير منطقة محددة بواسطة نافذة مستطيلة'
     }
   },

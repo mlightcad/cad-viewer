@@ -920,6 +920,18 @@ export class AcTrLayout {
   }
 
   /**
+   * Collects finite spatial-index AABBs for intelligent zoom-to-fit.
+   *
+   * Prefers child-level boxes when present so INSERT/hatch islands contribute
+   * separately rather than one oversized root union.
+   *
+   * @returns Flat list of finite world XY boxes.
+   */
+  collectSpatialExtentBoxes(): AcEdSpatialQueryResultItem[] {
+    return this._spatialIndex.all().filter(isFiniteSpatialBBox)
+  }
+
+  /**
    * Returns all layers that contain renderable entities associated with
    * the specified AutoCAD object ID.
    *

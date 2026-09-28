@@ -99,6 +99,7 @@ import {
   unionGroupWcsChildBoxes
 } from './AcTrGroupWcsBboxAssert'
 import { AcTrInheritedLayerMaterialMapper } from './AcTrInheritedLayerMaterialMapper'
+import { computeIntelligentExtents } from './AcTrIntelligentExtents'
 import { AcTrLayer } from './AcTrLayer'
 import { AcTrLayerAppearanceController } from './AcTrLayerAppearanceController'
 import { AcTrLayout } from './AcTrLayout'
@@ -1565,6 +1566,38 @@ export class AcTrView2d extends AcEdBaseView {
       }
     }
     return false
+  }
+
+  /**
+   * @inheritdoc
+   */
+  zoomToSmartExtents(timeout: number = 0) {
+    const waiter = new AcEdConditionWaiter(
+      () => !this.isProcessingEntities,
+      () => {
+        const smart = this.resolveSmartFitBox()
+        if (smart) {
+          this.zoomTo(smart)
+          this._isDirty = true
+          this.endProgressiveOpenFit()
+          return
+        }
+        this._progressiveOpenFit.applyFinalFit(() => this.resolveLayoutFitBox())
+        this.endProgressiveOpenFit()
+      },
+      300,
+      timeout
+    )
+    waiter.start()
+  }
+
+  /**
+   * Resolves intelligent zoom extents from spatial-index entity boxes.
+   */
+  private resolveSmartFitBox(): AcGeBox2d | undefined {
+    const activeLayout = this._scene.activeLayout
+    if (!activeLayout) return undefined
+    return computeIntelligentExtents(activeLayout.collectSpatialExtentBoxes())
   }
 
   /**

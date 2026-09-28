@@ -68,9 +68,12 @@ describe('acuiResolveToolbarItems', () => {
       'layout',
       'settings'
     ])
-    expect(items[0].children?.some(child => child.id === 'zoom-original')).toBe(
+    expect(items[0].children?.some(child => child.id === 'zoom-saved')).toBe(
       true
     )
+    expect(
+      items[0].children?.some(child => child.id === 'zoom-smart-extents')
+    ).toBe(true)
   })
 
   it('omits excluded root item ids', () => {
@@ -80,7 +83,7 @@ describe('acuiResolveToolbarItems', () => {
     })
     expect(items.some(item => item.id === 'select')).toBe(false)
     expect(items.some(item => item.id === 'pan')).toBe(false)
-    expect(items[0].id).toBe('zoom-extent')
+    expect(items[0].id).toBe('zoom')
   })
 
   it('keeps excluded ids when excludeItems is empty', () => {
@@ -97,7 +100,7 @@ describe('acuiResolveToolbarItems', () => {
     const items = acuiResolveToolbarItems(merged, undefined, 'pad')
     expect(items.some(item => item.id === 'select')).toBe(false)
     expect(items.some(item => item.id === 'pan')).toBe(false)
-    expect(items[0].id).toBe('zoom-extent')
+    expect(items[0].id).toBe('zoom')
   })
 
   it('appends custom items after defaults', () => {

@@ -1210,6 +1210,16 @@ export default {
         local: 'Původní',
         global: 'Original'
       },
+      saved: {
+        display: 'Uložený(V)',
+        local: 'Uložený',
+        global: 'Saved'
+      },
+      smart: {
+        display: 'Chytrý(I)',
+        local: 'Chytrý',
+        global: 'Smart'
+      },
       scale: {
         display: 'Měřítko(S)',
         local: 'Měřítko',

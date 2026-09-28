@@ -570,12 +570,26 @@ export default {
       disabledInReadingMode:
         'Nedostupné v režimu čtení (bílé plátno je pevné)'
     },
+    zoom: {
+      text: 'Zoom',
+      description: 'Nástroje zoomu: uložený pohled, rozsah, chytrý rozsah a okno'
+    },
+    zoomSaved: {
+      text: 'Uložený',
+      description:
+        'Obnoví uložený pohled AutoCAD (VPORT / limity rozvržení) nebo pohled při otevření'
+    },
     zoomToExtent: {
-      text: 'Zoom vše',
+      text: 'Rozsah',
       description: 'Zvětší na maximální rozsah všech objektů'
     },
+    zoomSmartExtents: {
+      text: 'Chytrý rozsah',
+      description:
+        'Zvětší na dominantní geometrický shluk a ignoruje vzdálené odlehlé objekty'
+    },
     zoomToBox: {
-      text: 'Zoom okno',
+      text: 'Okno',
       description: 'Zvětší na oblast určenou obdélníkovým oknem'
     }
   },

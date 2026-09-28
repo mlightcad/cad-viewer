@@ -583,12 +583,26 @@ export default {
       description:
         'Toggles reading mode: black linework on a white canvas for easier review'
     },
+    zoom: {
+      text: 'Zoom',
+      description: 'Zoom tools: saved view, extents, smart extents, and window'
+    },
+    zoomSaved: {
+      text: 'Saved',
+      description:
+        'Restores AutoCAD saved view (VPORT / layout limits), or the open-time view'
+    },
     zoomToExtent: {
-      text: 'Zoom Extents',
+      text: 'Extents',
       description: 'Zooms to display the maximum extents of all entities'
     },
+    zoomSmartExtents: {
+      text: 'Smart extents',
+      description:
+        'Zooms to the dominant geometry cluster, ignoring far outlier entities'
+    },
     zoomToBox: {
-      text: 'Zoom Window',
+      text: 'Window',
       description: 'Zooms to display an area specified by a rectangular window'
     }
   },

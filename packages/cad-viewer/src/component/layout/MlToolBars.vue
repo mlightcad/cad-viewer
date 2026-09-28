@@ -38,6 +38,8 @@ import {
   ICON_SELECT,
   ICON_SWITCH_BG,
   ICON_ZOOM_EXTENT,
+  ICON_ZOOM_ORIGINAL,
+  ICON_ZOOM_SMART,
   ICON_ZOOM_WINDOW,
   isMarkupVisible,
   isMeasurementVisible
@@ -111,16 +113,38 @@ const buildItems = (): AcUiToolbarItem[] => {
       command: 'pan'
     },
     {
-      id: 'zoom-extent',
-      label: 'main.verticalToolbar.zoomToExtent.text',
+      id: 'zoom',
+      label: 'main.verticalToolbar.zoom.text',
       icon: ICON_ZOOM_EXTENT,
-      command: 'zoom\nall'
-    },
-    {
-      id: 'zoom-window',
-      label: 'main.verticalToolbar.zoomToBox.text',
-      icon: ICON_ZOOM_WINDOW,
-      command: 'zoom\nwindow'
+      childrenUi: 'toolbar',
+      childIcon: 'selected',
+      selectedChildId: 'zoom-extent',
+      children: [
+        {
+          id: 'zoom-saved',
+          label: 'main.verticalToolbar.zoomSaved.text',
+          icon: ICON_ZOOM_ORIGINAL,
+          command: 'zoom\nsaved'
+        },
+        {
+          id: 'zoom-extent',
+          label: 'main.verticalToolbar.zoomToExtent.text',
+          icon: ICON_ZOOM_EXTENT,
+          command: 'zoom\nall'
+        },
+        {
+          id: 'zoom-smart-extents',
+          label: 'main.verticalToolbar.zoomSmartExtents.text',
+          icon: ICON_ZOOM_SMART,
+          command: 'zoom\nsmart'
+        },
+        {
+          id: 'zoom-window',
+          label: 'main.verticalToolbar.zoomToBox.text',
+          icon: ICON_ZOOM_WINDOW,
+          command: 'zoom\nwindow'
+        }
+      ]
     },
     {
       id: 'layer',

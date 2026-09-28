@@ -1213,6 +1213,16 @@ export default {
         local: 'Orijinal',
         global: 'Original'
       },
+      saved: {
+        display: 'Kayıtlı(V)',
+        local: 'Kayıtlı',
+        global: 'Saved'
+      },
+      smart: {
+        display: 'Akıllı(I)',
+        local: 'Akıllı',
+        global: 'Smart'
+      },
       scale: {
         display: 'Ölçek(Ö)',
         local: 'Ölçek',

@@ -1201,6 +1201,16 @@ export default {
         local: '原始视口',
         global: 'Original'
       },
+      saved: {
+        display: '保存的视图(V)',
+        local: '保存的视图',
+        global: 'Saved'
+      },
+      smart: {
+        display: '智能范围(I)',
+        local: '智能范围',
+        global: 'Smart'
+      },
       scale: {
         display: '比例(S)',
         local: '比例',
