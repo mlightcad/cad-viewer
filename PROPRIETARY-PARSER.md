@@ -109,183 +109,19 @@ Thank you,
 If your application is approved:
 
 1. We will grant the GitHub account listed in your application **read access** to the private npm package **`@mlightcad/dwg-converter`**.
-2. You will receive **integration notes** describing how to authenticate npm/pnpm/yarn with GitHub Packages and install the package.
-3. Follow those notes to install and register the converter in your project.
+2. Follow the wiki guide [Install and Use Proprietary DWG Converter](https://github.com/mlightcad/cad-viewer/wiki/Install-and-Use-Proprietary-DWG-Converter) to authenticate with GitHub Packages, install the package, and register the converter.
 
 For commercial production use after the trial, please refer to the [Licensing Terms](#licensing-terms) above and contact us to purchase a perpetual license.
 
 ---
 
-## Installing `@mlightcad/dwg-converter`
+## Installation and Integration
 
-The proprietary package **`@mlightcad/dwg-converter`** is published to **GitHub Packages**, while other `@mlightcad/*` packages (for example `@mlightcad/data-model`, `@mlightcad/cad-viewer`) are published to the public **npm registry**. npm and pnpm support **scope-level** registry mapping only — there is **no official package-level** registry mapping within the same scope.
+Step-by-step install options (private registry proxy or tarball URL) and converter registration are documented in the wiki:
 
-That means you **cannot** rely on a single `.npmrc` line such as:
-
-```ini
-@mlightcad:registry=https://npm.pkg.github.com
-```
-
-to fetch only `@mlightcad/dwg-converter` from GitHub Packages. Doing so would incorrectly route **all** `@mlightcad/*` packages to GitHub Packages and break installs of the public packages.
-
-**Version note:** `@mlightcad/dwg-converter` is updated regularly. In every example below, replace `1.2.3` (and any tarball hash) with the **exact version you need**. Do not copy version numbers from this document without checking the release that was delivered to you.
-
-### Create a `GITHUB_TOKEN` with `read:packages`
-
-Before installing, create a GitHub personal access token that can read private packages. GitHub Packages currently authenticates with a **personal access token (classic)**; fine-grained tokens are not supported for the npm registry.
-
-**Prerequisites**
-
-- The GitHub account used for the token must already have **read access** to `@mlightcad/dwg-converter` (granted after trial or purchase approval).
-- The token must include the **`read:packages`** scope (package read permission).
-
-**Steps**
-
-1. Sign in to GitHub with the account that has package access.
-2. Open **Settings → Developer settings → Personal access tokens → Tokens (classic)**  
-   (direct link: [https://github.com/settings/tokens](https://github.com/settings/tokens)).
-3. Click **Generate new token → Generate new token (classic)**.
-4. Give the token a clear name (for example `dwg-converter-install`) and an expiration that fits your security policy.
-5. Under **Select scopes**, enable **`read:packages`**. You do not need `write:packages` or `delete:packages` for install-only use.
-6. Click **Generate token**, then copy the token immediately (it is shown only once).
-7. Expose the token as `GITHUB_TOKEN` in your shell or CI, for example:
-
-   ```bash
-   # macOS / Linux
-   export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-   # Windows PowerShell
-   $env:GITHUB_TOKEN = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-
-   # Windows CMD
-   set GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   ```
-
-8. When the **client** talks to GitHub Packages directly (Option 2 below), add a **host-level** auth entry in `.npmrc`:
-
-   ```ini
-   //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-   ```
-
-   This only attaches credentials when requesting `npm.pkg.github.com`. It does **not** remap the `@mlightcad` scope, so public `@mlightcad/*` packages on npmjs.org are unaffected. Do **not** add `@mlightcad:registry=https://npm.pkg.github.com`.
-
-   If you use Option 1 (a private registry proxy), clients typically do **not** need this line — put the token on the proxy instead.
-
-**Security notes**
-
-- Treat the token like a password. Do **not** commit it to git or paste it into public issues.
-- Prefer environment variables (or your CI secret store) over hard-coding the token in `.npmrc`.
-- In GitHub Actions, you can map a repository secret (for example `GH_PACKAGES_TOKEN`) to `GITHUB_TOKEN` / `NODE_AUTH_TOKEN` for the install job.
-
-After the token is configured, choose **one** of the install approaches below.
-
-### Option 1: Unified private registry that proxies npm and GitHub Packages
-
-If you can operate (or already use) a private npm registry — for example Verdaccio, JFrog Artifactory, Sonatype Nexus, or a cloud vendor npm registry — point all clients at that registry and let it decide where each package comes from:
-
-```text
-                ┌── npmjs.org          (@mlightcad/data-model, …)
-client ──→ private registry
-                └── GitHub Packages    (@mlightcad/dwg-converter)
-```
-
-Client `.npmrc`:
-
-```ini
-registry=https://npm.example.com/
-```
-
-Configure the private registry so that:
-
-| Package | Upstream |
-|---------|----------|
-| `@mlightcad/foo` (public packages) | `https://registry.npmjs.org` |
-| `@mlightcad/dwg-converter` | `https://npm.pkg.github.com` |
-
-Clients then install normally, for example:
-
-```bash
-pnpm add @mlightcad/dwg-converter@1.2.3
-```
-
-This is the cleanest long-term setup when you already maintain a private registry. For a small project that only needs one or two GitHub Packages, Option 2 is usually lighter.
-
-### Option 2: Pin `@mlightcad/dwg-converter` to a GitHub Packages tarball URL
-
-If you only need a small number of GitHub Packages dependencies, pin `@mlightcad/dwg-converter` to its **tarball URL** in `package.json`. Package managers then download that URL directly instead of resolving the package through the `@mlightcad` scope registry.
-
-1. Authenticate to GitHub Packages (still required — a tarball URL does **not** bypass auth):
-
-   ```ini
-   # .npmrc
-   registry=https://registry.npmjs.org/
-   //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
-   ```
-
-2. Resolve the tarball URL for the version you need:
-
-   ```bash
-   npm view @mlightcad/dwg-converter@1.2.3 \
-     --registry=https://npm.pkg.github.com \
-     dist.tarball
-   ```
-
-   Example output:
-
-   ```text
-   https://npm.pkg.github.com/download/@mlightcad/dwg-converter/1.2.3/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-   ```
-
-   You can also inspect the full metadata with `npm view @mlightcad/dwg-converter@1.2.3 --registry=https://npm.pkg.github.com` and read `dist.tarball`.
-
-3. Put that URL into `package.json` (again, use **your** version and tarball URL):
-
-   ```json
-   {
-     "dependencies": {
-       "@mlightcad/data-model": "^1.0.0",
-       "@mlightcad/dwg-converter": "https://npm.pkg.github.com/download/@mlightcad/dwg-converter/1.2.3/xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-     }
-   }
-   ```
-
-4. Install as usual:
-
-   ```bash
-   pnpm install
-   ```
-
-**Caveats for Option 2:**
-
-- Upgrades require fetching a new tarball URL and updating `package.json` / the lockfile — more friction than a normal semver range.
-- CI and local installs still need a valid GitHub token with read access to the package (`//npm.pkg.github.com/:_authToken=...`).
-- Authentication behavior for URL dependencies can differ slightly from normal registry dependencies; keep the GitHub Packages auth entry in `.npmrc`.
-
-Option 2 works well for evaluation and small teams. Prefer Option 1 (or a separate private scope such as `@mlightcad-private/*` mapped to GitHub Packages) if you expect frequent upgrades or many private packages.
-
----
-
-## Integration with the Existing Data Model
-
-The proprietary parser is delivered as a **registerable converter** that plugs into the same pipeline as the open-source stack.
-
-- Output conforms to the MIT-licensed **`@mlightcad/data-model`**: `AcDbDatabase`, `AcDb*` entities, layer tables, blocks, and related structures.
-- You register it via **`AcDbDatabaseConverterManager`**, the same mechanism used by `AcDbLibreDwgConverter` today.
-- After parsing, your existing **MIT rendering, layer, selection, and interaction pipeline** (`cad-simple-viewer`, `cad-viewer`, plugins, etc.) works unchanged.
-
-Typical integration (conceptual):
-
-```typescript
-import { AcDbDatabaseConverterManager, AcDbFileType } from '@mlightcad/data-model'
-import { AcDbDwgConverter } from '@mlightcad/dwg-converter'
-
-const converter = new AcDbDwgConverter({ /* options */ })
-AcDbDatabaseConverterManager.instance.register(AcDbFileType.DWG, converter)
-```
+**[Install and Use Proprietary DWG Converter](https://github.com/mlightcad/cad-viewer/wiki/Install-and-Use-Proprietary-DWG-Converter)**
 
 For a complete working sample (authentication, worker assets, registration, and database browsing), see [realdwg-web-example](https://github.com/mlightcad/realdwg-web-example).
-
-Do **not** register the GPL-based `libredwg-converter` if you rely on the proprietary parser for compliance.
 
 ---
 
@@ -364,11 +200,12 @@ For longer evaluation or production pilots, apply for a formal [trial license](#
 
 ### How do we use the proprietary DWG parser?
 
-The proprietary parser does **not** expose a standalone “parse DWG” API. Like the open-source [`libredwg-converter`](https://github.com/mlightcad/realdwg-web/tree/main/packages/libredwg-converter), it implements the **`AcDbDatabaseConverter`** interface and registers with **`AcDbDatabaseConverterManager`**. After conversion, you work with the resulting drawing through the MIT-licensed **`@mlightcad/data-model`** (`AcDbDatabase`, entities, symbol tables, and so on)—the same integration path described in [Integration with the Existing Data Model](#integration-with-the-existing-data-model).
+See the wiki guide [Install and Use Proprietary DWG Converter](https://github.com/mlightcad/cad-viewer/wiki/Install-and-Use-Proprietary-DWG-Converter). The package implements **`AcDbDatabaseConverter`** and registers with **`AcDbDatabaseConverterManager`**; after conversion you work with MIT-licensed **`@mlightcad/data-model`**.
 
 ---
 
 ## Related Documentation
 
+- [Install and Use Proprietary DWG Converter](https://github.com/mlightcad/cad-viewer/wiki/Install-and-Use-Proprietary-DWG-Converter) — GitHub Packages install and converter registration
 - [cad-viewer README](./README.md) — project overview, open-source stack, and known limitations of the default parsers
 - [API Docs](https://cad-viewer.readthedocs.io/en/latest/) — `@mlightcad/data-model` and viewer APIs
