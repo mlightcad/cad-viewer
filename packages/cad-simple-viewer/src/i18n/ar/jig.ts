@@ -2008,7 +2008,7 @@ export default {
     ...enJig.chtml,
 
     exportFormat:
-      'تنسيق التصدير [ملف واحد(S)/حزمة متعددة الملفات(M)]',
+      'تنسيق التصدير',
 
     exportInvisibleLayers:
       'تصدير الطبقات غير المرئية',
@@ -2070,9 +2070,9 @@ export default {
   cpdf: {
     ...enJig.cpdf,
     modelSpaceFit:
-      'إطار مساحة النموذج [الامتدادات(E)/العرض(D)]',
+      'إطار مساحة النموذج',
     exportLayouts: 'تصدير المخططات',
-    textMode: 'عرض النص [نص(N)/متجه(M)]',
+    textMode: 'عرض النص',
     keywords: {
       ...enJig.cpdf.keywords,
       extents: {

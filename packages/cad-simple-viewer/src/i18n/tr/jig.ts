@@ -1236,7 +1236,7 @@ export default {
     }
   },
   chtml: {
-    exportFormat: 'Dışa aktarma biçimi [Tek dosya(S)/Çok dosyalı paket(M)]',
+    exportFormat: 'Dışa aktarma biçimi',
     exportInvisibleLayers: 'Görünmez katmanları dışa aktar',
     exportLayouts: 'Yerleşimleri dışa aktar',
     initialView: 'HTML açılırken başlangıç görünümü',
@@ -1285,9 +1285,9 @@ export default {
     }
   },
   cpdf: {
-    modelSpaceFit: 'Model alanı çerçevesi [Kapsam(K)/Görüntü(G)]',
+    modelSpaceFit: 'Model alanı çerçevesi',
     exportLayouts: 'Yerleşimleri dışa aktar',
-    textMode: 'Metin işleme [Metin(M)/Vektör(V)]',
+    textMode: 'Metin işleme',
     keywords: {
       extents: {
         display: 'Kapsam(K)',

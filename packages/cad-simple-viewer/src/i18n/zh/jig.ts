@@ -1224,7 +1224,7 @@ export default {
     }
   },
   chtml: {
-    exportFormat: '导出格式 [单文件(S)/多文件包(M)]',
+    exportFormat: '导出格式',
     exportInvisibleLayers: '是否导出不可见图层',
     exportLayouts: '是否导出布局',
     initialView: '打开 HTML 时的初始视图',
@@ -1273,9 +1273,9 @@ export default {
     }
   },
   cpdf: {
-    modelSpaceFit: '模型空间范围 [范围(E)/显示(D)]',
+    modelSpaceFit: '模型空间范围',
     exportLayouts: '是否导出布局',
-    textMode: '文字渲染方式 [文字(T)/矢量(V)]',
+    textMode: '文字渲染方式',
     keywords: {
       extents: {
         display: '范围(E)',
