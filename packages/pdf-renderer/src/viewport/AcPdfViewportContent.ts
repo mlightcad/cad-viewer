@@ -78,7 +78,9 @@ export class AcPdfViewportContent extends AcPdfEntity {
     if (ocgName) {
       writer.beginOcg(ocgName)
     }
-    if (this.objectId) {
+    const embedEntity =
+      ctx.embedEntityMarkedContent === true && !!this.objectId
+    if (embedEntity) {
       writer.beginEntity({
         handle: this.objectId,
         type: 'VIEWPORT_CONTENT',
@@ -105,7 +107,7 @@ export class AcPdfViewportContent extends AcPdfEntity {
       writer.restore()
     }
 
-    if (this.objectId) {
+    if (embedEntity) {
       writer.endMarked()
     }
     if (ocgName) {

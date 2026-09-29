@@ -20,7 +20,7 @@ import type {
   AcPdfStrokeStyle
 } from '../renderer/AcPdfStyle'
 import type { AcPdfFontManager } from './AcPdfFontManager'
-import { pdfHexText } from './AcPdfMarkedContent'
+import { pdfEntityText, pdfHexText } from './AcPdfMarkedContent'
 import { setPageNamedResource } from './AcPdfOcgManager'
 
 const KAPPA = 0.5522847498307936
@@ -79,7 +79,9 @@ function flateStreamBytes(bytes: Uint8Array): Uint8Array | null {
     return null
   }
   try {
-    return deflate(bytes)
+    // Level 9: CAD content streams are highly repetitive (layers, Entity/OCG
+    // tags, path ops); max compression is worth the extra CPU on export.
+    return deflate(bytes, { level: 9 })
   } catch {
     return null
   }
@@ -92,11 +94,16 @@ function flateStreamBytes(bytes: Uint8Array): Uint8Array | null {
  * inside content streams) is expanded to plain decimal.
  */
 function pdfNum(n: number): string {
-  if (Number.isInteger(n) && Math.abs(n) < 1e15) {
-    return String(n)
-  }
   if (!Number.isFinite(n)) {
     return '0'
+  }
+  // Float noise from cos(90°) etc. must not appear as near-zero operands —
+  // snap tiny values so text matrices stay clean for strict viewers.
+  if (Math.abs(n) > 0 && Math.abs(n) < 1e-12) {
+    return '0'
+  }
+  if (Number.isInteger(n) && Math.abs(n) < 1e15) {
+    return String(n)
   }
   const s = String(n)
   if (s.indexOf('e') < 0 && s.indexOf('E') < 0) {
@@ -110,19 +117,6 @@ function pdfNum(n: number): string {
     t = t.replace(/0+$/, '').replace(/\.$/, '')
   }
   return t === '' || t === '-' ? '0' : t
-}
-
-function pdfLiteral(text: string): string {
-  return (
-    '(' +
-    text
-      .replace(/\\/g, '\\\\')
-      .replace(/\(/g, '\\(')
-      .replace(/\)/g, '\\)')
-      .replace(/\r/g, '\\r')
-      .replace(/\n/g, '\\n') +
-    ')'
-  )
 }
 
 /**
@@ -231,7 +225,7 @@ export class AcPdfContentWriter {
     bbox: { minX: number; minY: number; maxX: number; maxY: number },
     paint: (formWriter: AcPdfContentWriter) => void
   ): string | null {
-    const existing = this.hasForm(key)
+    const existing = this.reuseForm(key)
     if (existing) {
       return existing
     }
@@ -355,18 +349,28 @@ export class AcPdfContentWriter {
     name?: string
     layer?: string
   }) {
+    // Property values are UTF-16BE hex strings (ASCII in the content stream).
+    // A latin1 literal path truncates Unicode with `& 0xff`, turning code units
+    // whose low byte is `)` into unescaped string terminators and leaving
+    // garbage operators that Acrobat reports as "An error exists on this page".
+    // `/EntityType` avoids colliding with PDF's `/Type` object key. Prefer
+    // omitting Entity markers on large drawings (see embedEntityMarkedContent).
     let dict = ''
     if (payload.handle) {
-      dict += ` /Handle ${pdfLiteral(payload.handle)}`
+      const v = pdfEntityText(payload.handle)
+      if (v) dict += ` /Handle ${v}`
     }
     if (payload.type) {
-      dict += ` /Type ${pdfLiteral(payload.type)}`
+      const v = pdfEntityText(payload.type)
+      if (v) dict += ` /EntityType ${v}`
     }
     if (payload.name) {
-      dict += ` /Name ${pdfLiteral(payload.name)}`
+      const v = pdfEntityText(payload.name)
+      if (v) dict += ` /Name ${v}`
     }
     if (payload.layer) {
-      dict += ` /Layer ${pdfLiteral(payload.layer)}`
+      const v = pdfEntityText(payload.layer)
+      if (v) dict += ` /Layer ${v}`
     }
     this.push(`/Entity <<${dict} >> BDC\n`)
   }
@@ -399,6 +403,21 @@ export class AcPdfContentWriter {
 
   hasForm(key: string): string | undefined {
     return this._forms.entries.get(key)?.name
+  }
+
+  /**
+   * Reuses a document-scoped Form on the *current* page. Cache hits must still
+   * call {@link ensurePageForm}: multi-layout exports share Form XObjects
+   * across pages, and Acrobat rejects `/Name Do` when the name is missing
+   * from that page's `/XObject` dictionary.
+   */
+  private reuseForm(key: string): string | undefined {
+    const entry = this._forms.entries.get(key)
+    if (!entry) {
+      return undefined
+    }
+    this.ensurePageForm(entry.name, entry.ref)
+    return entry.name
   }
 
   /** Adds a form (or image) resource to the current page if one exists. */
@@ -664,7 +683,7 @@ export class AcPdfContentWriter {
   /** Creates (once) and names the Form XObject for a triangle buffer. */
   private ensureTrianglesForm(data: Float32Array): string | null {
     const key = this.compactFormKey(data)
-    const existing = this.hasForm(key)
+    const existing = this.reuseForm(key)
     if (existing) {
       return existing
     }

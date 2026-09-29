@@ -13,6 +13,7 @@ import pako from 'pako'
 import { PDFDocument, PDFRawStream } from 'pdf-lib'
 
 import { exportDatabaseToPdf } from '../src/AcPdfExport'
+import { pdfEntityText } from '../src/pdf/AcPdfMarkedContent'
 import { AcPdfMatrixUtil } from '../src/renderer/AcPdfMatrixUtil'
 import {
   buildModelToPaperMatrix,
@@ -121,7 +122,9 @@ describe('AcPdfPaperViewport', () => {
 
     const bytes = await exportDatabaseToPdf(db, {
       title: 'viewport-content',
-      layouts: 'all'
+      layouts: 'all',
+      // Opt in so the VIEWPORT_CONTENT Entity marker is present for the assert.
+      embedEntityMarkedContent: true
     })
     const doc = await PDFDocument.load(bytes)
     expect(doc.getPageCount()).toBe(2)
@@ -141,7 +144,11 @@ describe('AcPdfPaperViewport', () => {
         streams.push(text)
       }
     }
-    expect(streams.some(text => text.includes('VIEWPORT_CONTENT'))).toBe(true)
+    expect(
+      streams.some(text =>
+        text.includes(pdfEntityText('VIEWPORT_CONTENT') ?? '')
+      )
+    ).toBe(true)
   })
 
   it('keeps async MTEXT glyphs when cloning model content into a viewport', async () => {

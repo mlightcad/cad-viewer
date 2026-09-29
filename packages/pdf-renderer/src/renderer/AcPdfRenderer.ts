@@ -100,6 +100,7 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
   private _glyphProvider?: AcPdfGlyphProvider
   private _fitBox?: AcPdfExportOptions['fitBox']
   private _embedTextActualText = true
+  private _embedEntityMarkedContent = false
   /** `'text'` paints MTEXT/TEXT as real PDF text through `_fonts`. */
   private _textMode: 'vector' | 'text' = 'vector'
   private _fonts?: AcPdfFontManager
@@ -223,6 +224,7 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     this._glyphProvider = options.glyphProvider
     this._fitBox = options.fitBox
     this._embedTextActualText = options.embedTextActualText !== false
+    this._embedEntityMarkedContent = options.embedEntityMarkedContent === true
     this._textMode = options.textMode === 'text' ? 'text' : 'vector'
     if (options.fontMapping) {
       this.setFontMapping(options.fontMapping)
@@ -890,6 +892,7 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       marginMm: this._marginMm,
       fitBox: this._fitBox,
       embedTextActualText: this._embedTextActualText,
+      embedEntityMarkedContent: this._embedEntityMarkedContent,
       fonts: this._fonts,
       ...overrides
     }

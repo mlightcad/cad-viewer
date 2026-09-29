@@ -16,6 +16,11 @@ export interface AcPdfPaintContext {
   ocg?: AcPdfOcgManager
   insertLayer?: string
   embedActualText?: boolean
+  /**
+   * When true, wrap drawables in `/Entity <<…>> BDC` markers. Defaults to
+   * false — see {@link AcPdfExportOptions.embedEntityMarkedContent}.
+   */
+  embedEntityMarkedContent?: boolean
   formReuse?: boolean
   /**
    * Maps this node's local coordinates into the page user space (drawing
@@ -198,7 +203,9 @@ export class AcPdfEntity implements AcGiEntity {
     if (ocgName) {
       writer.beginOcg(ocgName)
     }
-    if (this._objectId || isInsert) {
+    const embedEntity =
+      ctx.embedEntityMarkedContent === true && (!!this._objectId || isInsert)
+    if (embedEntity) {
       writer.beginEntity({
         handle: this._objectId || undefined,
         type: isInsert ? 'INSERT' : this._entityType || undefined,
@@ -254,7 +261,7 @@ export class AcPdfEntity implements AcGiEntity {
     if (text) {
       writer.endMarked()
     }
-    if (this._objectId || isInsert) {
+    if (embedEntity) {
       writer.endMarked()
     }
     if (ocgName) {
