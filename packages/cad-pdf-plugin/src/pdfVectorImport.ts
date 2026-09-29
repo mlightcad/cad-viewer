@@ -50,6 +50,22 @@ export interface PdfImportOps {
   fillStroke: number
   eoFillStroke: number
   endPath: number
+  setStrokeRGBColor: number
+  setFillRGBColor: number
+  beginText: number
+  endText: number
+  setFont: number
+  setTextMatrix: number
+  moveText: number
+  setLeadingMoveText: number
+  nextLine: number
+  setLeading: number
+  setCharSpacing: number
+  setWordSpacing: number
+  setHScale: number
+  setTextRise: number
+  setTextRenderingMode: number
+  showText: number
 }
 
 export interface PdfImportOperatorList {
@@ -60,6 +76,27 @@ export interface PdfImportOperatorList {
 export interface PdfImportedSubpath {
   points: PdfImportPoint[]
   layerName?: string
+  /** `#rrggbb` from the stroke or fill color that painted this path. */
+  color?: string
+}
+
+/** One PDF text-showing run, placed on the glyph baseline. */
+export interface PdfImportedText {
+  text: string
+  position: PdfImportPoint
+  /** CAD text height in millimeters. */
+  height: number
+  /** Rotation in radians, counterclockwise from +X. */
+  rotation: number
+  widthFactor: number
+  layerName?: string
+  /** `#rrggbb` fill color, or the stroke color for stroke-only text. */
+  color?: string
+}
+
+export interface PdfImportPageContent {
+  subpaths: PdfImportedSubpath[]
+  texts: PdfImportedText[]
 }
 
 type PdfMatrix = [number, number, number, number, number, number]
@@ -81,9 +118,10 @@ export function extractPdfImportSubpaths(
   viewport: PdfImportViewport,
   ocgLayers: ReadonlyMap<string, { layerName: string }>,
   fallbackLayerName?: string
-): PdfImportedSubpath[] {
+): PdfImportPageContent {
   const { fnArray, argsArray } = opList
-  const result: PdfImportedSubpath[] = []
+  const subpathResult: PdfImportedSubpath[] = []
+  const textResult: PdfImportedText[] = []
 
   // PDF.js 5.x normally packs path construction into OPS.constructPath.
   // The packed stream uses DrawOPS values from PDF.js shared/util:
@@ -104,7 +142,34 @@ export function extractPdfImportSubpaths(
   let curY = 0
 
   let ctm: PdfMatrix = [1, 0, 0, 1, 0, 0]
-  const ctmStack: PdfMatrix[] = []
+  let fillColor = '#000000'
+  let strokeColor = '#000000'
+  // Text state parameters (Tf/Tc/Tw/Tz/TL/Tr/Ts) are graphics-state fields and
+  // must round-trip with q/Q. Tm/Tlm and the text cursor are not.
+  let fontSize = 0
+  let textHScale = 1
+  let textRise = 0
+  let leading = 0
+  let charSpacing = 0
+  let wordSpacing = 0
+  let textRenderingMode = 0
+  const graphicsStack: Array<{
+    ctm: PdfMatrix
+    fillColor: string
+    strokeColor: string
+    fontSize: number
+    textHScale: number
+    textRise: number
+    leading: number
+    charSpacing: number
+    wordSpacing: number
+    textRenderingMode: number
+  }> = []
+
+  let textMatrix: PdfMatrix = [1, 0, 0, 1, 0, 0]
+  let textLineMatrix: PdfMatrix = [1, 0, 0, 1, 0, 0]
+  let textX = 0
+  let textY = 0
 
   const cloneMatrix = (matrix: PdfMatrix): PdfMatrix => [
     matrix[0],
@@ -140,11 +205,16 @@ export function extractPdfImportSubpaths(
     currentPathLayerName = activeLayerName
   }
 
-  const commit = () => {
+  const commit = (color: string = strokeColor) => {
     flush()
-    result.push(...subpaths)
+    for (const subpath of subpaths) {
+      subpathResult.push({ ...subpath, color })
+    }
     subpaths = []
   }
+
+  const paintColor = (paintOp: number) =>
+    paintOp === ops.fill || paintOp === ops.eoFill ? fillColor : strokeColor
 
   const discard = () => {
     current = []
@@ -341,7 +411,7 @@ export function extractPdfImportSubpaths(
       case ops.eoFillStroke:
       case ops.closeFillStroke:
       case ops.closeEOFillStroke:
-        commit()
+        commit(paintColor(paintOp))
         break
 
       case ops.endPath:
@@ -358,15 +428,134 @@ export function extractPdfImportSubpaths(
     const rawArgs = Array.isArray(value) ? (value as unknown[]) : []
 
     if (fn === ops.save) {
-      ctmStack.push(cloneMatrix(ctm))
+      graphicsStack.push({
+        ctm: cloneMatrix(ctm),
+        fillColor,
+        strokeColor,
+        fontSize,
+        textHScale,
+        textRise,
+        leading,
+        charSpacing,
+        wordSpacing,
+        textRenderingMode
+      })
       continue
     }
 
     if (fn === ops.restore) {
-      const restored = ctmStack.pop()
+      const restored = graphicsStack.pop()
       if (restored) {
-        ctm = restored
+        ctm = restored.ctm
+        fillColor = restored.fillColor
+        strokeColor = restored.strokeColor
+        fontSize = restored.fontSize
+        textHScale = restored.textHScale
+        textRise = restored.textRise
+        leading = restored.leading
+        charSpacing = restored.charSpacing
+        wordSpacing = restored.wordSpacing
+        textRenderingMode = restored.textRenderingMode
       }
+      continue
+    }
+
+    if (fn === ops.setFillRGBColor) {
+      const color = readCssColor(rawArgs[0])
+      if (color) fillColor = color
+      continue
+    }
+
+    if (fn === ops.setStrokeRGBColor) {
+      const color = readCssColor(rawArgs[0])
+      if (color) strokeColor = color
+      continue
+    }
+
+    if (fn === ops.beginText) {
+      textMatrix = [1, 0, 0, 1, 0, 0]
+      textLineMatrix = [1, 0, 0, 1, 0, 0]
+      textX = 0
+      textY = 0
+      continue
+    }
+
+    if (fn === ops.endText) {
+      continue
+    }
+
+    if (fn === ops.setFont) {
+      const size = Number(rawArgs[1])
+      if (Number.isFinite(size)) fontSize = size
+      continue
+    }
+
+    if (fn === ops.setTextMatrix) {
+      const matrix = readMatrix(rawArgs)
+      if (matrix) {
+        textMatrix = matrix
+        textLineMatrix = cloneMatrix(matrix)
+        textX = 0
+        textY = 0
+      }
+      continue
+    }
+
+    if (fn === ops.moveText) {
+      moveTextLine(Number(rawArgs[0]), Number(rawArgs[1]))
+      continue
+    }
+
+    if (fn === ops.setLeadingMoveText) {
+      const ty = Number(rawArgs[1])
+      leading = -ty
+      moveTextLine(Number(rawArgs[0]), ty)
+      continue
+    }
+
+    if (fn === ops.nextLine) {
+      moveTextLine(0, -leading)
+      continue
+    }
+
+    if (fn === ops.setLeading) {
+      const value = Number(rawArgs[0])
+      if (Number.isFinite(value)) leading = value
+      continue
+    }
+
+    if (fn === ops.setCharSpacing) {
+      const value = Number(rawArgs[0])
+      if (Number.isFinite(value)) charSpacing = value
+      continue
+    }
+
+    if (fn === ops.setWordSpacing) {
+      const value = Number(rawArgs[0])
+      if (Number.isFinite(value)) wordSpacing = value
+      continue
+    }
+
+    if (fn === ops.setHScale) {
+      const value = Number(rawArgs[0])
+      if (Number.isFinite(value)) textHScale = value / 100
+      continue
+    }
+
+    if (fn === ops.setTextRise) {
+      const value = Number(rawArgs[0])
+      if (Number.isFinite(value)) textRise = value
+      continue
+    }
+
+    if (fn === ops.setTextRenderingMode) {
+      const value = Number(rawArgs[0])
+      if (Number.isFinite(value)) textRenderingMode = value
+      continue
+    }
+
+    if (fn === ops.showText) {
+      showGlyphs(rawArgs[0])
       continue
     }
 
@@ -481,7 +670,7 @@ export function extractPdfImportSubpaths(
       case ops.closeFillStroke:
       case ops.closeEOFillStroke:
         closePath()
-        commit()
+        commit(paintColor(fn))
         break
 
       case ops.stroke:
@@ -489,7 +678,7 @@ export function extractPdfImportSubpaths(
       case ops.eoFill:
       case ops.fillStroke:
       case ops.eoFillStroke:
-        commit()
+        commit(paintColor(fn))
         break
 
       case ops.endPath:
@@ -499,7 +688,78 @@ export function extractPdfImportSubpaths(
   }
 
   commit()
-  return result
+  return { subpaths: subpathResult, texts: textResult }
+
+  // Hoisted so the operator loop above can call them.
+  function moveTextLine(tx: number, ty: number) {
+    const shift: PdfMatrix = [1, 0, 0, 1, tx, ty]
+    textLineMatrix = multiplyMatrix(shift, textLineMatrix)
+    textMatrix = cloneMatrix(textLineMatrix)
+    textX = 0
+    textY = 0
+  }
+
+  function showGlyphs(glyphs: unknown) {
+    const list = asNumberList(glyphs)
+    if (!list) return
+
+    let text = ''
+    let advance = 0
+    const widthAdvanceScale = fontSize * 0.001
+    for (let index = 0; index < list.length; index++) {
+      const glyph = list[index]
+      if (typeof glyph === 'number') {
+        // TJ spacing is in thousandths of a unit; a positive value moves left.
+        advance += (-glyph * fontSize) / 1000
+        continue
+      }
+      if (!glyph || typeof glyph !== 'object') continue
+      const record = glyph as {
+        unicode?: unknown
+        fontChar?: unknown
+        width?: unknown
+        isSpace?: unknown
+      }
+      const unicode = typeof record.unicode === 'string' ? record.unicode : ''
+      const fontChar =
+        typeof record.fontChar === 'string' ? record.fontChar : ''
+      text += unicode || fontChar
+      const width = typeof record.width === 'number' ? record.width : 0
+      const spacing = (record.isSpace ? wordSpacing : 0) + charSpacing
+      advance += width * widthAdvanceScale + spacing
+    }
+
+    text = text.split('\u0000').join('')
+    const paints = (textRenderingMode & 3) !== 3
+    if (paints && fontSize !== 0 && text.length > 0) {
+      const origin = textPointToCad(textX, textY + textRise)
+      const alongX = textPointToCad(textX + textHScale, textY + textRise)
+      const alongY = textPointToCad(textX, textY + textRise + fontSize)
+      const dx = alongX.x - origin.x
+      const dy = alongX.y - origin.y
+      const height = Math.hypot(alongY.x - origin.x, alongY.y - origin.y)
+      const unitY = fontSize > 0 ? height / fontSize : 0
+      const widthFactor = unitY > 1e-9 ? Math.hypot(dx, dy) / unitY : textHScale
+      if (height > 1e-9) {
+        textResult.push({
+          text,
+          position: origin,
+          height,
+          rotation: Math.atan2(dy, dx),
+          widthFactor,
+          layerName: activeLayerName,
+          color: (textRenderingMode & 3) === 1 ? strokeColor : fillColor
+        })
+      }
+    }
+    textX += advance * textHScale
+  }
+
+  function textPointToCad(x: number, y: number) {
+    const userX = textMatrix[0] * x + textMatrix[2] * y + textMatrix[4]
+    const userY = textMatrix[1] * x + textMatrix[3] * y + textMatrix[5]
+    return pagePointToCadPoint(userX, userY)
+  }
 }
 
 /**
@@ -512,6 +772,35 @@ export function extractPdfImportSubpaths(
  * @param steps - Number of line segments to generate
  * @returns Sampled points along the curve (excluding `p0`)
  */
+function readCssColor(value: unknown): string | undefined {
+  if (typeof value === 'string' && /^#[0-9a-fA-F]{6}$/.test(value)) {
+    return value.toLowerCase()
+  }
+  return undefined
+}
+
+function readMatrix(rawArgs: unknown[]): PdfMatrix | undefined {
+  const nested =
+    rawArgs.length === 1 ? asNumberList(rawArgs[0]) : undefined
+  const source = nested && nested.length >= 6 ? nested : rawArgs
+  if (source.length < 6) return undefined
+  return [
+    Number(source[0]),
+    Number(source[1]),
+    Number(source[2]),
+    Number(source[3]),
+    Number(source[4]),
+    Number(source[5])
+  ]
+}
+
+function asNumberList(value: unknown): ArrayLike<unknown> | undefined {
+  if (Array.isArray(value) || ArrayBuffer.isView(value)) {
+    return value as ArrayLike<unknown>
+  }
+  return undefined
+}
+
 function cubicBezier(
   p0: PdfImportPoint,
   p1: PdfImportPoint,

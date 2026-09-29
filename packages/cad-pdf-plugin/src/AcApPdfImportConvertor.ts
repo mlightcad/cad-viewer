@@ -1,7 +1,15 @@
-import type { AcApContext } from '@mlightcad/cad-simple-viewer'
 import {
+  type AcApContext,
+  AcApDocManager,
+  AcApI18n,
+  AcEdCorsorType
+} from '@mlightcad/cad-simple-viewer'
+import {
+  AcCmColor,
+  type AcDbEntity,
   AcDbLine,
   AcDbPolyline,
+  AcDbText,
   AcGePoint2d,
   AcGePoint3d,
   log
@@ -17,6 +25,7 @@ import {
 } from './pdfOptionalContent'
 import {
   extractPdfImportSubpaths,
+  type PdfImportedText,
   type PdfImportOps,
   type PdfImportPoint
 } from './pdfVectorImport'
@@ -36,7 +45,7 @@ const PDF_WORKER_URL = new URL(
 )
 pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL.href
 
-type PdfVectorEntity = AcDbPolyline | AcDbLine
+type PdfVectorEntity = AcDbPolyline | AcDbLine | AcDbText
 
 /**
  * Converts a PDF file into CAD entities appended to the current document's
@@ -53,11 +62,16 @@ export class AcApPdfImportConvertor {
    * @param context - Application context for the target document
    */
   async importFromFilePicker(context: AcApContext): Promise<void> {
-    const file = await this.pickPdfFile()
-    if (!file) return
+    try {
+      const file = await this.pickPdfFile()
+      if (!file) return
 
-    const buffer = await file.arrayBuffer()
-    await this.convert(context, buffer)
+      const buffer = await file.arrayBuffer()
+      await this.convert(context, buffer)
+    } finally {
+      // Chrome drops an SVG data-URI cursor after the native file dialog.
+      restoreViewCursor(context)
+    }
   }
 
   /**
@@ -115,6 +129,17 @@ export class AcApPdfImportConvertor {
   }
 
   async convert(context: AcApContext, data: ArrayBuffer, pageNumber = 1) {
+    await AcApDocManager.instance.withBusyIndicator(
+      () => this.importPage(context, data, pageNumber),
+      AcApI18n.t('main.message.importingPdf')
+    )
+  }
+
+  private async importPage(
+    context: AcApContext,
+    data: ArrayBuffer,
+    pageNumber: number
+  ) {
     try {
       const pdf = await pdfjsLib.getDocument({ data }).promise
       const page = await pdf.getPage(pageNumber)
@@ -146,7 +171,7 @@ export class AcApPdfImportConvertor {
           )
         : undefined
 
-      const subpaths = extractPdfImportSubpaths(
+      const { subpaths, texts } = extractPdfImportSubpaths(
         operatorList,
         pdfjsLib.OPS as unknown as PdfImportOps,
         viewport,
@@ -159,7 +184,18 @@ export class AcApPdfImportConvertor {
         if (subpath.layerName) {
           usedLayerNames.add(subpath.layerName)
         }
-        const entity = this.subpathToEntity(subpath.points, subpath.layerName)
+        const entity = this.subpathToEntity(
+          subpath.points,
+          subpath.layerName,
+          subpath.color
+        )
+        if (entity) entities.push(entity)
+      }
+      for (const textRun of texts) {
+        if (textRun.layerName) {
+          usedLayerNames.add(textRun.layerName)
+        }
+        const entity = this.textToEntity(textRun)
         if (entity) entities.push(entity)
       }
 
@@ -198,7 +234,8 @@ export class AcApPdfImportConvertor {
 
   private subpathToEntity(
     pts: PdfImportPoint[],
-    layerName?: string
+    layerName?: string,
+    color?: string
   ): PdfVectorEntity | null {
     if (pts.length < 2) return null
 
@@ -210,6 +247,7 @@ export class AcApPdfImportConvertor {
       if (layerName) {
         line.layer = layerName
       }
+      applyPdfColor(line, color)
       return line
     }
 
@@ -217,6 +255,7 @@ export class AcApPdfImportConvertor {
     if (layerName) {
       poly.layer = layerName
     }
+    applyPdfColor(poly, color)
 
     for (let i = 0; i < pts.length; i++) {
       poly.addVertexAt(i, new AcGePoint2d(pts[i].x, pts[i].y))
@@ -233,6 +272,49 @@ export class AcApPdfImportConvertor {
 
     return poly
   }
+
+  private textToEntity(run: PdfImportedText): AcDbText | null {
+    if (!run.text || run.height <= 0) return null
+
+    const text = new AcDbText()
+    text.textString = run.text
+    text.position = new AcGePoint3d(run.position.x, run.position.y, 0)
+    text.height = run.height
+    text.rotation = run.rotation
+    if (Number.isFinite(run.widthFactor) && run.widthFactor > 0) {
+      text.widthFactor = run.widthFactor
+    }
+    if (run.layerName) {
+      text.layer = run.layerName
+    }
+    applyPdfColor(text, run.color)
+    return text
+  }
+}
+
+function applyPdfColor(entity: AcDbEntity, color?: string) {
+  if (!color) return
+  const match = /^#([0-9a-fA-F]{6})$/.exec(color)
+  if (!match) return
+  const value = Number.parseInt(match[1], 16)
+  entity.color = new AcCmColor().setRGB(
+    (value >> 16) & 255,
+    (value >> 8) & 255,
+    value & 255
+  )
+}
+
+function restoreViewCursor(context: AcApContext) {
+  const view = context.view
+  if (!view) return
+  const cursor = view.editor.currentCursor ?? AcEdCorsorType.Crosshair
+  const canvas = view.canvas
+  const apply = () => {
+    canvas.style.cursor = 'default'
+    view.editor.setCursor(cursor)
+  }
+  apply()
+  window.requestAnimationFrame(apply)
 }
 
 function databaseLayerNames(context: AcApContext): string[] {
