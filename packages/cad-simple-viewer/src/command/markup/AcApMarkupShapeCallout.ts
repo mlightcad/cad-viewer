@@ -302,8 +302,10 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._bubble.setPosition(toward)
     this.syncCapsulePreviewVisibility()
     const style = defaultMarkupStyle()
-    this._bubble.setFontSize(style.fontSize ?? getMarkupFontSize())
-    acapSyncLiveOverlayTextHeight(this._view, [this._bubble], style)
+    const fontSize = style.fontSize ?? getMarkupFontSize()
+    this._bubble.setFontSize(fontSize)
+    this._tipDot.setFontSize(fontSize)
+    acapSyncLiveOverlayTextHeight(this._view, [this._bubble, this._tipDot], style)
     this.paintPreview()
     this._view.isHtmlDirty = true
   }
@@ -375,8 +377,10 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._tipDot.setColor(this._color)
     this._bubble.setColor(this._color)
     const style = defaultMarkupStyle()
-    this._bubble.setFontSize(style.fontSize ?? getMarkupFontSize())
-    acapSyncLiveOverlayTextHeight(this._view, [this._bubble], style)
+    const fontSize = style.fontSize ?? getMarkupFontSize()
+    this._bubble.setFontSize(fontSize)
+    this._tipDot.setFontSize(fontSize)
+    acapSyncLiveOverlayTextHeight(this._view, [this._bubble, this._tipDot], style)
     this.paintPreview()
     this._view.isHtmlDirty = true
   }

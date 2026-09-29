@@ -15,6 +15,7 @@ import {
 import type { AcTrView2d } from '../../view'
 import {
   ACAP_OVERLAY_ARROW_SIZE_PX,
+  acapScaleWcsWithFont,
   acapScreenPxToWcs,
   acapSeedOverlaySizesFromWcs
 } from '../overlay/AcApOverlayDrawUtil'
@@ -320,14 +321,18 @@ export function applyMeasurementStyle(
               prevSnap.textHeightWcs,
               fontSizeChanged
             )
+      const prevFont = prev?.fontSize ?? MEASUREMENT_FONT_SIZE
+      const arrowSizeWcs = acapScaleWcsWithFont(
+        prevSnap.arrowSizeWcs,
+        prevFont,
+        next.fontSize
+      )
       extras.snapshot = {
         ...extras.snapshot,
         style: {
           ...base,
           textHeightWcs,
-          ...(prevSnap.arrowSizeWcs != null && prevSnap.arrowSizeWcs > 0
-            ? { arrowSizeWcs: prevSnap.arrowSizeWcs }
-            : {})
+          ...(arrowSizeWcs != null && arrowSizeWcs > 0 ? { arrowSizeWcs } : {})
         }
       }
     }
@@ -337,6 +342,7 @@ export function applyMeasurementStyle(
     const snap = extrasById.get(group.id)?.snapshot?.style
     acapSeedOverlaySizesFromWcs(view, {
       textHeightWcs: snap?.textHeightWcs,
+      arrowSizeWcs: snap?.arrowSizeWcs,
       fontSizePx: next.fontSize,
       strokeScreenPx: acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT),
       elements: [...(group.children ?? [])],

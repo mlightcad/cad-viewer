@@ -3,6 +3,7 @@
  */
 
 import type { AcTrView2d } from '../../../view'
+import { MEASURE_ANGLE_BADGE_OFFSET_FRACTION } from '../AcApMeasureAngleArc'
 
 /**
  * Select a measurement HTML group (syncs store selection via onSelectedChanged).
@@ -48,7 +49,7 @@ export function measureAngleBadgeWorld(
     by = u1x
   }
   const badgeOffset = Math.max(
-    Math.min(wLen1, wLen2) * 0.4,
+    Math.min(wLen1, wLen2) * MEASURE_ANGLE_BADGE_OFFSET_FRACTION,
     Math.max(wLen1, wLen2) * 0.15
   )
   return {

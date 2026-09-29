@@ -20,8 +20,17 @@ import {
   acexScaledOverlayArrowSize,
   acexScreenPxToWcs,
   acexSeedOverlaySizesFromWcs,
+  acexScaleWcsWithFont,
   acexSyncLiveOverlayTextHeight
 } from './AcExHtmlOverlayDom'
+import {
+  acexAdaptiveMeasureBadgeFontSize,
+  acexScaleMeasureOverlayPx,
+  acexScreenAngleBadgeRefLengthPx,
+  acexScreenArcLengthPx,
+  acexScreenAreaBadgeRefLengthPx,
+  acexScreenSegmentLengthPx
+} from './AcExMeasureBadgeFont'
 import {
   acexDrawMarkupArrowHead,
   acexExpandExtentsByClientRects,
@@ -462,8 +471,13 @@ function distPointToArcPx(
   return best
 }
 
-/** Fraction of the shorter world-space arm used as the dimension arc radius. */
-const ANGLE_ARC_RADIUS_WCS_FRACTION = 0.3
+/**
+ * Fraction of the shorter world-space arm used as the dimension arc radius
+ * (arm midpoints when both arms are equal length).
+ */
+const ANGLE_ARC_RADIUS_WCS_FRACTION = 0.5
+/** Bisector offset for the value capsule, slightly outside the dimension arc. */
+const ANGLE_BADGE_OFFSET_FRACTION = 0.55
 
 /**
  * World-space radius of the interior angle dimension arc.
@@ -644,7 +658,7 @@ function angleBadgeWorld(
     by = u1x
   }
   const offset = Math.max(
-    Math.min(wLen1, wLen2) * 0.4,
+    Math.min(wLen1, wLen2) * ANGLE_BADGE_OFFSET_FRACTION,
     Math.max(wLen1, wLen2) * 0.15
   )
   return new THREE.Vector2(vertex.x + bx * offset, vertex.y + by * offset)
@@ -2222,6 +2236,11 @@ export class AcExMeasureController {
       text: string
       /** Offset capsule like a committed coordinate readout. */
       coordinate?: boolean
+      /**
+       * Screen length of the labeled segment. When set under Fit-to-screen,
+       * font size is capped so the capsule is at most half this length.
+       */
+      segmentScreenLengthPx?: number
     }>
   ): void {
     const existing = Array.from(
@@ -2243,7 +2262,18 @@ export class AcExMeasureController {
       el.textContent = item.text
       el.style.color = css
       el.style.borderColor = css
-      el.style.fontSize = `${this._drawFontSize}px`
+      const fontSize =
+        item.segmentScreenLengthPx != null
+          ? acexAdaptiveMeasureBadgeFontSize(
+              item.text,
+              {
+                fontSize: this._drawFontSize,
+                textHeightMode: this._drawTextHeightMode
+              },
+              item.segmentScreenLengthPx
+            )
+          : this._drawFontSize
+      el.style.fontSize = `${fontSize}px`
       el.style.display = 'block'
       el.classList.toggle('mlcad-measure-badge--coordinate', !!item.coordinate)
       this._syncLiveDomTextHeight(el)
@@ -2258,7 +2288,12 @@ export class AcExMeasureController {
    */
   private _setPreviewLine(
     points: THREE.Vector2[],
-    options?: { bothArrows?: boolean; segmentArrows?: boolean }
+    options?: {
+      bothArrows?: boolean
+      segmentArrows?: boolean
+      arrowSizePx?: number
+      segmentArrowSizesPx?: readonly number[]
+    }
   ): void {
     let canvas = this._overlayLayer.querySelector<HTMLCanvasElement>(
       '.mlcad-measure-canvas--preview-line'
@@ -2280,7 +2315,9 @@ export class AcExMeasureController {
       options?.bothArrows,
       false,
       undefined,
-      options?.segmentArrows
+      options?.segmentArrows,
+      options?.arrowSizePx,
+      options?.segmentArrowSizesPx
     )
   }
 
@@ -2425,8 +2462,30 @@ export class AcExMeasureController {
       return
     }
     const anchor = this._points[0]!
-    this._setPreviewLine([anchor, point], { bothArrows: true })
     const dist = dist2(anchor, point)
+    const linePx = acexScreenSegmentLengthPx(
+      p => this._wcsToScreenPoint(p),
+      anchor,
+      point
+    )
+    let arrowSizePx = ACEX_OVERLAY_ARROW_SIZE_PX
+    if (dist >= 1e-4) {
+      const label = this._view.formatLength(dist)
+      const fontSize = acexAdaptiveMeasureBadgeFontSize(
+        label,
+        {
+          fontSize: this._drawFontSize,
+          textHeightMode: this._drawTextHeightMode
+        },
+        linePx
+      )
+      arrowSizePx = acexScaleMeasureOverlayPx(
+        ACEX_OVERLAY_ARROW_SIZE_PX,
+        this._drawFontSize,
+        fontSize
+      )
+    }
+    this._setPreviewLine([anchor, point], { bothArrows: true, arrowSizePx })
     if (dist < 1e-4) {
       this._syncPreviewBadges([])
     } else {
@@ -2436,7 +2495,8 @@ export class AcExMeasureController {
             (anchor.x + point.x) / 2,
             (anchor.y + point.y) / 2
           ),
-          text: this._view.formatLength(dist)
+          text: this._view.formatLength(dist),
+          segmentScreenLengthPx: linePx
         }
       ])
     }
@@ -2457,11 +2517,18 @@ export class AcExMeasureController {
     const end = b.clone()
     const dist = dist2(start, end)
     const id = this._startCommit(existing?.id)
+    const label = this._view.formatLength(dist)
+    this._clampCommitBadgeForRef(
+      label,
+      acexScreenSegmentLengthPx(p => this._wcsToScreenPoint(p), start, end),
+      existing,
+      { scaleArrows: true }
+    )
     this._addPersistentLine([start, end], { bothArrows: true })
     const dot1 = this._addDot(start)
     const dot2 = this._addDot(end)
     const mid = new THREE.Vector2((start.x + end.x) / 2, (start.y + end.y) / 2)
-    const badge = this._addBadge(mid, this._view.formatLength(dist))
+    const badge = this._addBadge(mid, label)
     const record =
       existing ??
       this._makeRecord(id, 'distance', {
@@ -2484,7 +2551,7 @@ export class AcExMeasureController {
     )
     this._bindDistanceGrips(id, record, start, end, mid, dot1, dot2, badge)
     this._statusEl.textContent = this._i18n.t('status.distance', {
-      value: this._view.formatLength(dist)
+      value: label
     })
   }
 
@@ -2596,18 +2663,48 @@ export class AcExMeasureController {
       this._hidePreview()
       return
     }
-    this._setPreviewLine(pts, { segmentArrows: true })
-    const items: Array<{ wcs: THREE.Vector2; text: string }> = []
+    const items: Array<{
+      wcs: THREE.Vector2
+      text: string
+      segmentScreenLengthPx: number
+    }> = []
+    const segmentArrowSizesPx: number[] = []
     for (let i = 0; i < pts.length - 1; i++) {
       const a = pts[i]!
       const b = pts[i + 1]!
       const dist = dist2(a, b)
-      if (dist < 1e-4) continue
+      const linePx = acexScreenSegmentLengthPx(
+        p => this._wcsToScreenPoint(p),
+        a,
+        b
+      )
+      if (dist < 1e-4) {
+        segmentArrowSizesPx.push(ACEX_OVERLAY_ARROW_SIZE_PX)
+        continue
+      }
+      const text = this._view.formatLength(dist)
+      const fontSize = acexAdaptiveMeasureBadgeFontSize(
+        text,
+        {
+          fontSize: this._drawFontSize,
+          textHeightMode: this._drawTextHeightMode
+        },
+        linePx
+      )
+      segmentArrowSizesPx.push(
+        acexScaleMeasureOverlayPx(
+          ACEX_OVERLAY_ARROW_SIZE_PX,
+          this._drawFontSize,
+          fontSize
+        )
+      )
       items.push({
         wcs: new THREE.Vector2((a.x + b.x) / 2, (a.y + b.y) / 2),
-        text: this._view.formatLength(dist)
+        text,
+        segmentScreenLengthPx: linePx
       })
     }
+    this._setPreviewLine(pts, { segmentArrows: true, segmentArrowSizesPx })
     this._syncPreviewBadges(items)
     this._requestRender()
   }
@@ -2673,10 +2770,17 @@ export class AcExMeasureController {
     const arm1 = this._points[1]!
     this._setPreviewLine([vertex, arm1, vertex, point])
     const deg = calcAngleDeg(vertex, arm1, point)
+    const text = this._view.formatAngle(deg)
     this._syncPreviewBadges([
       {
         wcs: angleBadgeWorld(vertex, arm1, point),
-        text: this._view.formatAngle(deg)
+        text,
+        segmentScreenLengthPx: acexScreenAngleBadgeRefLengthPx(
+          p => this._wcsToScreenPoint(p),
+          vertex,
+          arm1,
+          point
+        )
       }
     ])
     this._drawPreviewAngleArc(vertex, arm1, point)
@@ -2714,6 +2818,17 @@ export class AcExMeasureController {
     const arm2 = arm2In.clone()
     const deg = calcAngleDeg(vertex, arm1, arm2)
     const id = this._startCommit(existing?.id)
+    const label = this._view.formatAngle(deg)
+    this._clampCommitBadgeForRef(
+      label,
+      acexScreenAngleBadgeRefLengthPx(
+        p => this._wcsToScreenPoint(p),
+        vertex,
+        arm1,
+        arm2
+      ),
+      existing
+    )
     this._addPersistentLine([vertex, arm1])
     this._addPersistentLine([vertex, arm2])
     const canvas = makeOverlayCanvas(this._overlayLayer)
@@ -2739,7 +2854,7 @@ export class AcExMeasureController {
     const dot2 = this._addDot(arm2)
 
     const badgePos = angleBadgeWorld(vertex, arm1, arm2)
-    const badge = this._addBadge(badgePos, this._view.formatAngle(deg))
+    const badge = this._addBadge(badgePos, label)
     const record =
       existing ??
       this._makeRecord(id, 'angle', {
@@ -3025,7 +3140,13 @@ export class AcExMeasureController {
       this._syncPreviewBadges([
         {
           wcs: sweep.through,
-          text: this._view.formatLength(sweep.length)
+          text: this._view.formatLength(sweep.length),
+          segmentScreenLengthPx: acexScreenArcLengthPx(
+            p => this._wcsToScreenPoint(p),
+            { x: geom.cx, y: geom.cy },
+            geom.r,
+            sweep.length
+          )
         }
       ])
       this._drawPreviewArc(geom, start, sweep.through, end)
@@ -3054,7 +3175,13 @@ export class AcExMeasureController {
     this._syncPreviewBadges([
       {
         wcs: mid,
-        text: this._view.formatLength(len)
+        text: this._view.formatLength(len),
+        segmentScreenLengthPx: acexScreenArcLengthPx(
+          p => this._wcsToScreenPoint(p),
+          { x: geom.cx, y: geom.cy },
+          geom.r,
+          len
+        )
       }
     ])
     this._drawPreviewArc(geom, start, through, point)
@@ -3095,6 +3222,17 @@ export class AcExMeasureController {
     const len = arcLengthThroughMiddle(start, through, end, geom)
     const mid = arcMidThroughMiddle(start, through, end, geom)
     const id = this._startCommit(existing?.id)
+    const label = this._view.formatLength(len)
+    this._clampCommitBadgeForRef(
+      label,
+      acexScreenArcLengthPx(
+        p => this._wcsToScreenPoint(p),
+        { x: geom.cx, y: geom.cy },
+        geom.r,
+        len
+      ),
+      existing
+    )
     const canvas = makeOverlayCanvas(this._overlayLayer)
     this._trackCanvas(canvas)
     const redraw = () => {
@@ -3116,7 +3254,7 @@ export class AcExMeasureController {
     const dot1 = this._addDot(start)
     const dotThrough = this._addDot(through)
     const dot2 = this._addDot(end)
-    const badge = this._addBadge(mid, this._view.formatLength(len))
+    const badge = this._addBadge(mid, label)
     const record =
       existing ??
       this._makeRecord(id, 'arc', {
@@ -3336,9 +3474,20 @@ export class AcExMeasureController {
     }
     redraw()
     this._registerRedraw(redraw, () => canvas.remove())
+    const label = this._view.formatLength(len)
+    this._clampCommitBadgeForRef(
+      label,
+      acexScreenArcLengthPx(
+        p => this._wcsToScreenPoint(p),
+        { x: geom.cx, y: geom.cy },
+        geom.r,
+        len
+      ),
+      record
+    )
     const dot1 = this._addDot(start)
     const dot2 = this._addDot(end)
-    const badge = this._addBadge(mid, this._view.formatLength(len))
+    const badge = this._addBadge(mid, label)
     this._finishCommit(
       (clientX, clientY, threshold) => {
         const sc = this._view.wcsToScreen(new THREE.Vector2(geom.cx, geom.cy))
@@ -3513,10 +3662,15 @@ export class AcExMeasureController {
     if (pts.length >= 3) {
       const area = shoelaceArea(pts)
       if (point != null) {
+        const text = `${this._view.formatLength(area)}²`
         this._syncPreviewBadges([
           {
             wcs: centroid(pts),
-            text: `${this._view.formatLength(area)}²`
+            text,
+            segmentScreenLengthPx: acexScreenAreaBadgeRefLengthPx(
+              p => this._wcsToScreenPoint(p),
+              pts
+            )
           }
         ])
       } else {
@@ -3544,6 +3698,12 @@ export class AcExMeasureController {
     const points = pointsIn.map(p => p.clone())
     const area = shoelaceArea(points)
     const id = this._startCommit(existing?.id)
+    const label = `${this._view.formatLength(area)}²`
+    this._clampCommitBadgeForRef(
+      label,
+      acexScreenAreaBadgeRefLengthPx(p => this._wcsToScreenPoint(p), points),
+      existing
+    )
     // Outline stroke comes from the area canvas (fill + stroke).
     const canvas = makeOverlayCanvas(this._overlayLayer)
     this._trackCanvas(canvas)
@@ -3562,7 +3722,7 @@ export class AcExMeasureController {
 
     const dots = points.map(p => this._addDot(p))
     const mid = centroid(points)
-    const badge = this._addBadge(mid, `${this._view.formatLength(area)}²`)
+    const badge = this._addBadge(mid, label)
     const record =
       existing ??
       this._makeRecord(id, 'area', {
@@ -3784,7 +3944,9 @@ export class AcExMeasureController {
     bothArrows = false,
     scaleArrowsWithView = false,
     arrowSizeWcs?: number,
-    segmentArrows = false
+    segmentArrows = false,
+    arrowSizePx?: number,
+    segmentArrowSizesPx?: readonly number[]
   ): void {
     if (points.length < 2) return
     const synced = this._syncCanvas(canvas)
@@ -3819,17 +3981,22 @@ export class AcExMeasureController {
       ? screen.length >= 2
       : bothArrows && screen.length === 2
     if (drawArrows) {
-      const arrowSize = scaleArrowsWithView
-        ? acexScaledOverlayArrowSize(
-            canvas,
-            p => this._wcsToScreenPoint(p),
-            arrowSizeWcs
-          )
-        : acexOverlayArrowSize(scaled, lineWidth)
+      const fallback =
+        arrowSizePx != null && arrowSizePx > 0
+          ? arrowSizePx
+          : scaleArrowsWithView
+            ? acexScaledOverlayArrowSize(
+                canvas,
+                p => this._wcsToScreenPoint(p),
+                arrowSizeWcs
+              )
+            : acexOverlayArrowSize(scaled, lineWidth)
       const last = segmentArrows ? screen.length - 1 : 1
       for (let i = 0; i < last; i++) {
         const a = screen[i]!
         const b = screen[i + 1]!
+        const sized = segmentArrowSizesPx?.[i]
+        const arrowSize = sized != null && sized > 0 ? sized : fallback
         if (Math.hypot(b.x - a.x, b.y - a.y) >= arrowSize) {
           acexDrawMarkupArrowHead(ctx, b, a, strokeCss, arrowSize)
           acexDrawMarkupArrowHead(ctx, a, b, strokeCss, arrowSize)
@@ -3846,6 +4013,7 @@ export class AcExMeasureController {
     dot.dataset.wcsY = String(wcs.y)
     const css = this._commitCss()
     if (css) dot.style.background = css
+    dot.style.fontSize = `${this._commitFontSize()}px`
     this._overlayLayer.appendChild(dot)
     this._positionDomOverlays()
     this._trackDom(dot)
@@ -4079,7 +4247,8 @@ export class AcExMeasureController {
       id,
       type,
       layoutId: this._getActiveLayoutId?.(),
-      style: this._defaultStyle(),
+      // Prefer the in-progress commit style (may include Fit-to-screen clamps).
+      style: { ...(this._commitStyle ?? this._defaultStyle()) },
       geometry
     }
   }
@@ -4092,6 +4261,46 @@ export class AcExMeasureController {
   /** Badge font size for the measurement currently being committed. @internal */
   private _commitFontSize(): number {
     return this._commitStyle?.fontSize ?? this._drawFontSize
+  }
+
+  /**
+   * Fit-to-screen: clamp commit badge font (and optionally endpoint arrows) so
+   * the capsule stays within half of `refLengthScreenPx`. Skipped when importing
+   * an existing record or when using custom WCS text height.
+   * @internal
+   */
+  private _clampCommitBadgeForRef(
+    label: string,
+    refLengthScreenPx: number,
+    existing?: AcExMeasurementRecord,
+    options?: { scaleArrows?: boolean }
+  ): void {
+    if (!this._commitStyle) {
+      this._commitStyle = this._defaultStyle()
+    }
+    if (existing || this._commitStyle.textHeightMode === 'custom') return
+    const preferredFont = this._commitStyle.fontSize
+    const clamped = acexAdaptiveMeasureBadgeFontSize(
+      label,
+      this._commitStyle,
+      refLengthScreenPx
+    )
+    const wcsToScreen = (p: { x: number; y: number }) =>
+      this._wcsToScreenPoint(p)
+    const next: AcExMeasurementSidecarStyle = {
+      ...this._commitStyle,
+      fontSize: clamped,
+      textHeightWcs: acexScreenPxToWcs(clamped, wcsToScreen)
+    }
+    if (options?.scaleArrows) {
+      const arrowPx = acexScaleMeasureOverlayPx(
+        ACEX_OVERLAY_ARROW_SIZE_PX,
+        preferredFont,
+        clamped
+      )
+      next.arrowSizeWcs = acexScreenPxToWcs(arrowPx, wcsToScreen)
+    }
+    this._commitStyle = next
   }
 
   /** Resolve live style for a committed (or in-progress) measurement id. @internal */
@@ -4303,6 +4512,9 @@ export class AcExMeasureController {
         }
       } else if (el.classList.contains('mlcad-measure-dot')) {
         el.style.background = baseCss
+        if (measure.record.style.fontSize) {
+          el.style.fontSize = `${measure.record.style.fontSize}px`
+        }
       }
     }
     for (const canvas of measure.parts.canvases) {
@@ -4331,6 +4543,7 @@ export class AcExMeasureController {
 
       const mode =
         patch.textHeightMode ?? style.textHeightMode ?? 'adaptive'
+      const prevFont = style.fontSize
       let fontSizeChanged = false
 
       if (
@@ -4360,7 +4573,6 @@ export class AcExMeasureController {
         style.textHeightWcs = acexScreenPxToWcs(style.fontSize, wcsToScreen)
         fontSizeChanged = true
       } else if (patch.fontSize != null && patch.fontSize > 0) {
-        const prevFont = style.fontSize
         if (
           style.textHeightWcs != null &&
           style.textHeightWcs > 0 &&
@@ -4376,8 +4588,14 @@ export class AcExMeasureController {
       }
 
       if (fontSizeChanged) {
+        style.arrowSizeWcs = acexScaleWcsWithFont(
+          style.arrowSizeWcs,
+          prevFont,
+          style.fontSize
+        )
         acexSeedOverlaySizesFromWcs(this._view.getCameraZoom(), wcsToScreen, {
           textHeightWcs: style.textHeightWcs,
+          arrowSizeWcs: style.arrowSizeWcs,
           fontSizePx: style.fontSize,
           strokeScreenPx: acexMeasureCanvasLineWidth(
             ACEX_MEASUREMENT_LINE_WEIGHT
@@ -4396,8 +4614,9 @@ export class AcExMeasureController {
           if (style.fontSize) {
             el.style.fontSize = `${style.fontSize}px`
           }
-        } else if (el.classList.contains('mlcad-measure-dot') && style.color) {
-          el.style.background = style.color
+        } else if (el.classList.contains('mlcad-measure-dot')) {
+          if (style.color) el.style.background = style.color
+          if (style.fontSize) el.style.fontSize = `${style.fontSize}px`
         }
       }
     }

@@ -3,6 +3,17 @@ import { AcCmColor } from '@mlightcad/data-model'
 import { acTrHtmlCssColor } from './AcTrHtmlColorUtil'
 import { AcTrHtmlElement, type AcTrHtmlElementOptions } from './AcTrHtmlElement'
 
+/** Reference font size used to author px padding / radius on measure badges. */
+export const AC_TR_HTML_BADGE_REF_FONT_PX = 13
+/** Vertical padding at {@link AC_TR_HTML_BADGE_REF_FONT_PX}. */
+export const AC_TR_HTML_BADGE_PAD_Y_PX = 3
+/** Horizontal padding at {@link AC_TR_HTML_BADGE_REF_FONT_PX}. */
+export const AC_TR_HTML_BADGE_PAD_X_PX = 14
+/** Border-radius at {@link AC_TR_HTML_BADGE_REF_FONT_PX}. */
+export const AC_TR_HTML_BADGE_RADIUS_PX = 20
+/** Border width at {@link AC_TR_HTML_BADGE_REF_FONT_PX}. */
+export const AC_TR_HTML_BADGE_BORDER_PX = 1
+
 /**
  * Options for a capsule / label badge.
  */
@@ -22,6 +33,8 @@ export interface AcTrHtmlBadgeOptions extends AcTrHtmlElementOptions {
 
 /**
  * Capsule-shaped HTML label used for overlay text (e.g. measurement results).
+ *
+ * Padding and radius use `em` so the capsule scales with {@link setFontSize}.
  */
 export class AcTrHtmlBadge extends AcTrHtmlElement {
   constructor(options: AcTrHtmlBadgeOptions) {
@@ -41,7 +54,7 @@ export class AcTrHtmlBadge extends AcTrHtmlElement {
     this.element.textContent = text
   }
 
-  /** Update the badge font size (CSS px). */
+  /** Update the badge font size (CSS px); capsule padding tracks via `em`. */
   setFontSize(fontSize: number): void {
     if (!(fontSize > 0)) return
     this.element.style.fontSize = `${fontSize}px`
@@ -64,12 +77,17 @@ export class AcTrHtmlBadge extends AcTrHtmlElement {
     el.className = 'ml-html-badge'
     el.textContent = text
     const css = acTrHtmlCssColor(color)
-    const size = fontSize != null && fontSize > 0 ? fontSize : 13
+    const size =
+      fontSize != null && fontSize > 0 ? fontSize : AC_TR_HTML_BADGE_REF_FONT_PX
+    const padY = AC_TR_HTML_BADGE_PAD_Y_PX / AC_TR_HTML_BADGE_REF_FONT_PX
+    const padX = AC_TR_HTML_BADGE_PAD_X_PX / AC_TR_HTML_BADGE_REF_FONT_PX
+    const radius = AC_TR_HTML_BADGE_RADIUS_PX / AC_TR_HTML_BADGE_REF_FONT_PX
+    const border = AC_TR_HTML_BADGE_BORDER_PX / AC_TR_HTML_BADGE_REF_FONT_PX
     el.style.cssText =
       `background:var(--ml-ui-bg, rgba(255,255,255,0.95));color:${css};` +
-      `border:1px solid ${css};box-sizing:border-box;` +
+      `border:${border}em solid ${css};box-sizing:border-box;` +
       `font-size:${size}px;font-family:sans-serif;font-weight:500;` +
-      'padding:3px 14px;border-radius:20px;pointer-events:none;' +
+      `padding:${padY}em ${padX}em;border-radius:${radius}em;pointer-events:none;` +
       `transform:${transform ?? 'translate(-50%,-50%)'};white-space:nowrap;` +
       'box-shadow:var(--ml-ui-shadow, 0 1px 4px rgba(0,0,0,0.2));'
     return el

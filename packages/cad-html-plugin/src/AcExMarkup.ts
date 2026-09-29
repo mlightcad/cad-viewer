@@ -21,6 +21,7 @@ import {
   acexScaledOverlayArrowSize,
   acexScreenPxToWcs,
   acexSeedOverlaySizesFromWcs,
+  acexScaleWcsWithFont,
   acexSyncLiveOverlayTextHeight
 } from './AcExHtmlOverlayDom'
 import { acedIsMobileOrPadUi } from './AcExHtmlSimpleViewerUi'
@@ -619,6 +620,10 @@ export class AcExMarkupController {
 
       const mode =
         patch.textHeightMode ?? style.textHeightMode ?? 'adaptive'
+      const prevFont =
+        style.fontSize != null && style.fontSize > 0
+          ? style.fontSize
+          : ACEX_MARKUP_FONT_SIZE
       let fontSizeChanged = false
 
       if (
@@ -652,10 +657,6 @@ export class AcExMarkupController {
         style.textHeightWcs = acexScreenPxToWcs(font, wcsToScreen)
         fontSizeChanged = true
       } else if (patch.fontSize != null && patch.fontSize > 0) {
-        const prevFont =
-          style.fontSize != null && style.fontSize > 0
-            ? style.fontSize
-            : ACEX_MARKUP_FONT_SIZE
         if (
           style.textHeightWcs != null &&
           style.textHeightWcs > 0 &&
@@ -671,9 +672,19 @@ export class AcExMarkupController {
       }
 
       if (fontSizeChanged) {
+        const nextFont =
+          style.fontSize != null && style.fontSize > 0
+            ? style.fontSize
+            : ACEX_MARKUP_FONT_SIZE
+        style.arrowSizeWcs = acexScaleWcsWithFont(
+          style.arrowSizeWcs,
+          prevFont,
+          nextFont
+        )
         acexSeedOverlaySizesFromWcs(this._view.getCameraZoom(), wcsToScreen, {
           textHeightWcs: style.textHeightWcs,
-          fontSizePx: style.fontSize ?? ACEX_MARKUP_FONT_SIZE,
+          arrowSizeWcs: style.arrowSizeWcs,
+          fontSizePx: nextFont,
           strokeScreenPx: acexMarkupCanvasLineWidth(ACEX_MARKUP_LINE_WEIGHT),
           elements: item.parts.dom,
           canvases: item.parts.canvases
@@ -693,6 +704,9 @@ export class AcExMarkupController {
           }
         } else if (el.classList.contains('mlcad-markup-dot')) {
           el.style.background = color
+          if (style.fontSize) {
+            el.style.fontSize = `${style.fontSize}px`
+          }
         }
       }
     }
@@ -707,6 +721,7 @@ export class AcExMarkupController {
     placing.badge.style.borderColor = this._drawColor
     placing.badge.style.fontSize = `${this._drawFontSize}px`
     placing.tipDot.style.background = this._drawColor
+    placing.tipDot.style.fontSize = `${this._drawFontSize}px`
     this._syncLiveDomTextHeight(placing.badge)
   }
 
@@ -2276,6 +2291,9 @@ export class AcExMarkupController {
     dot.dataset.wcsX = String(wcs.x)
     dot.dataset.wcsY = String(wcs.y)
     dot.style.background = color
+    if (this._drawFontSize > 0) {
+      dot.style.fontSize = `${this._drawFontSize}px`
+    }
     this._overlayLayer.appendChild(dot)
     return dot
   }
@@ -2638,6 +2656,10 @@ export class AcExMarkupController {
           el.style.borderColor = baseColor
         } else if (el.classList.contains('mlcad-markup-dot')) {
           el.style.background = baseColor
+          const fontSize = item.record.style.fontSize
+          if (fontSize != null && fontSize > 0) {
+            el.style.fontSize = `${fontSize}px`
+          }
         }
       }
       for (const canvas of item.parts.canvases) {

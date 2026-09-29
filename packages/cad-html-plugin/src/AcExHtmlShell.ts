@@ -823,11 +823,15 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-measure-dot {
     position: absolute;
     z-index: 3;
-    width: 10px;
-    height: 10px;
+    /* em size tracks the paired badge font-size (set inline on the dot) */
+    font-size: 12px;
+    width: 0.55em;
+    height: 0.55em;
+    min-width: 5px;
+    min-height: 5px;
     border-radius: 50%;
     background: var(--mlcad-measure-accent);
-    border: 2px solid rgba(255, 255, 255, 0.9);
+    border: 0.12em solid rgba(255, 255, 255, 0.9);
     box-sizing: border-box;
     transform: translate(-50%, -50%);
     visibility: hidden;
@@ -838,9 +842,9 @@ export const ACEX_HTML_SHELL_CSS = `
     visibility: visible;
     pointer-events: auto;
     box-shadow:
-      0 0 0 2px rgba(255, 213, 79, 0.75),
-      0 0 10px rgba(255, 213, 79, 0.95),
-      0 0 18px rgba(255, 213, 79, 0.55);
+      0 0 0 0.12em rgba(255, 213, 79, 0.75),
+      0 0 0.45em rgba(255, 213, 79, 0.9),
+      0 0 0.8em rgba(255, 213, 79, 0.5);
   }
   #mlcad-measure-overlays.mlcad-grip-dragging .mlcad-measure-dot {
     visibility: hidden !important;
@@ -849,10 +853,11 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-measure-badge {
     position: absolute;
     z-index: 2;
-    padding: 3px 10px;
-    border-radius: 14px;
+    /* em padding/radius/border so the capsule scales with font-size */
+    padding: 0.25em 0.833em;
+    border-radius: 1.167em;
     background: var(--mlcad-ui-bg-elevated);
-    border: 1px solid var(--mlcad-measure-accent-border);
+    border: 0.083em solid var(--mlcad-measure-accent-border);
     color: var(--mlcad-measure-accent);
     font-size: 12px;
     font-weight: 600;
@@ -927,11 +932,14 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   .mlcad-markup-preview-dot {
     position: absolute;
-    width: 10px;
-    height: 10px;
+    font-size: 12px;
+    width: 0.55em;
+    height: 0.55em;
+    min-width: 5px;
+    min-height: 5px;
     border-radius: 50%;
     background: var(--mlcad-markup-accent);
-    border: 2px solid rgba(255, 255, 255, 0.9);
+    border: 0.12em solid rgba(255, 255, 255, 0.9);
     box-sizing: border-box;
     transform: translate(-50%, -50%);
     pointer-events: none;
@@ -939,11 +947,14 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-markup-dot {
     position: absolute;
     z-index: 3;
-    width: 10px;
-    height: 10px;
+    font-size: 12px;
+    width: 0.55em;
+    height: 0.55em;
+    min-width: 5px;
+    min-height: 5px;
     border-radius: 50%;
     background: var(--mlcad-markup-accent);
-    border: 2px solid rgba(255, 255, 255, 0.9);
+    border: 0.12em solid rgba(255, 255, 255, 0.9);
     box-sizing: border-box;
     transform: translate(-50%, -50%);
     visibility: hidden;
@@ -954,9 +965,9 @@ export const ACEX_HTML_SHELL_CSS = `
     visibility: visible;
     pointer-events: auto;
     box-shadow:
-      0 0 0 2px rgba(255, 213, 79, 0.75),
-      0 0 10px rgba(255, 213, 79, 0.95),
-      0 0 18px rgba(255, 213, 79, 0.55);
+      0 0 0 0.12em rgba(255, 213, 79, 0.75),
+      0 0 0.45em rgba(255, 213, 79, 0.9),
+      0 0 0.8em rgba(255, 213, 79, 0.5);
   }
   #mlcad-markup-overlays.mlcad-grip-dragging .mlcad-markup-dot {
     visibility: hidden !important;

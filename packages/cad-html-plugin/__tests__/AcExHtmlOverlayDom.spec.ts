@@ -196,6 +196,7 @@ describe('AcExHtmlOverlayDom', () => {
     })
     expect(grip.dataset[ACEX_OVERLAY_BASE_ZOOM]).toBe('2')
     expect(badge.dataset[ACEX_OVERLAY_BASE_ZOOM]).toBe('2')
+    expect(grip.style.fontSize).toBe('13px')
     expect(grip.dataset[ACEX_OVERLAY_ARROW_WCS]).toBe('1.2')
   })
 
