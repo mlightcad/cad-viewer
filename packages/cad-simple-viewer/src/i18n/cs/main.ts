@@ -36,6 +36,7 @@ export default {
     fetchingDrawingFile: 'Načítám soubor…',
     exportingDxf: 'Exportuji DXF…',
     exportingPdf: 'Exportuji PDF…',
+    importingPdf: 'Importuji PDF…',
     exportingEntityPreview: 'Exportuji obrázek…',
     collectingMemoryProfile: 'Analyzuji paměť…',
     fontCached: 'Font úspěšně uložen do mezipaměti',
