@@ -40,6 +40,14 @@ export interface AcPdfExportOptions {
   includeHiddenLayers?: boolean
   /** Wrap exploded text with PDF `/ActualText`. Defaults to true. */
   embedTextActualText?: boolean
+  /**
+   * Emit `/Entity <<…>> BDC` markers (handle / type / name / layer) around
+   * each drawable. Off by default: the markers dominate file size on dense
+   * drawings and have tripped Acrobat's content-stream validator when block
+   * names contained bytes that broke PDF literals. Enable only when a
+   * downstream tool needs the metadata.
+   */
+  embedEntityMarkedContent?: boolean
   /** Overlay invisible PDF text for search. Defaults to false. */
   embedInvisibleText?: boolean
   /** Embed a CAD JSON sidecar. Defaults to false. */

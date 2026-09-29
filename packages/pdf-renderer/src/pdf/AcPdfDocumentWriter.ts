@@ -22,6 +22,11 @@ export interface AcPdfWriteOptions extends AcPdfPageLayoutInput {
   }
   embedTextActualText?: boolean
   /**
+   * Emit `/Entity` marked-content markers. Defaults to false — see
+   * {@link AcPdfExportOptions.embedEntityMarkedContent}.
+   */
+  embedEntityMarkedContent?: boolean
+  /**
    * Shared OCG manager used when painting several pages into one document,
    * so identical CAD layers resolve to a single OCG instead of being merged
    * afterwards by parsing finished page bytes.
@@ -174,6 +179,7 @@ export class AcPdfDocumentWriter {
         writer,
         ocg,
         embedActualText: options.embedTextActualText !== false,
+        embedEntityMarkedContent: options.embedEntityMarkedContent === true,
         formReuse: false,
         localToDrawing: drawingRebase,
         drawingRebase
