@@ -8,8 +8,8 @@ import {
 import {
   acapAdaptiveMeasureBadgeFontSize,
   acapMeasurementCanvasLineWidth,
-  acapScreenAreaBadgeRefLengthPx,
   type AcApMeasurementStyle,
+  acapScreenAreaBadgeRefLengthPx,
   formatMeasurementArea
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'

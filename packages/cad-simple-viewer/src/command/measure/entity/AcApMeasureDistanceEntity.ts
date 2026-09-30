@@ -7,9 +7,9 @@ import { AcTrHtmlBadge, AcTrHtmlCanvasOverlay, AcTrHtmlGrip } from '@mlightcad/t
 import {
   acapAdaptiveMeasureBadgeFontSize,
   acapMeasurementCanvasLineWidth,
+  type AcApMeasurementStyle,
   acapScaleMeasureOverlayPx,
   acapScreenSegmentLengthPx,
-  type AcApMeasurementStyle,
   formatMeasurementLength
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'

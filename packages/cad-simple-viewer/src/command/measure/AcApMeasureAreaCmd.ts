@@ -16,8 +16,8 @@ import {
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
   acapMeasurementCanvasLineWidth,
-  acapScreenAreaBadgeRefLengthPx,
   type AcApMeasurementStyle,
+  acapScreenAreaBadgeRefLengthPx,
   formatMeasurementArea
 } from '../../util'
 import { AcTrView2d } from '../../view'

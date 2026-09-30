@@ -18,11 +18,17 @@ import {
   acexPositionWcsOverlay,
   acexScaledCanvasLineWidth,
   acexScaledOverlayArrowSize,
+  acexScaleWcsWithFont,
   acexScreenPxToWcs,
   acexSeedOverlaySizesFromWcs,
-  acexScaleWcsWithFont,
   acexSyncLiveOverlayTextHeight
 } from './AcExHtmlOverlayDom'
+import {
+  acexDrawMarkupArrowHead,
+  acexExpandExtentsByClientRects,
+  acexOverlayArrowSize
+} from './AcExMarkupGeometry'
+import { acexBindMarkupPointerDrag } from './AcExMarkupGripDrag'
 import {
   acexAdaptiveMeasureBadgeFontSize,
   acexScaleMeasureOverlayPx,
@@ -31,12 +37,6 @@ import {
   acexScreenAreaBadgeRefLengthPx,
   acexScreenSegmentLengthPx
 } from './AcExMeasureBadgeFont'
-import {
-  acexDrawMarkupArrowHead,
-  acexExpandExtentsByClientRects,
-  acexOverlayArrowSize
-} from './AcExMarkupGeometry'
-import { acexBindMarkupPointerDrag } from './AcExMarkupGripDrag'
 import {
   ACEX_MEASUREMENT_FONT_SIZE,
   ACEX_MEASUREMENT_LINE_WEIGHT,

@@ -23,9 +23,9 @@ import {
   acapGetMeasurementColor,
   acapGetMeasurementFontSize,
   acapMeasurementCanvasLineWidth,
+  type AcApMeasurementStyle,
   acapScaleMeasureOverlayPx,
   acapScreenSegmentLengthPx,
-  type AcApMeasurementStyle,
   formatMeasurementLength,
   MEASUREMENT_LINE_WEIGHT
 } from '../../util'

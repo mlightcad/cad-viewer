@@ -1,7 +1,7 @@
 import { AcCmColor } from '@mlightcad/data-model'
 
-import { acTrHtmlCssColor } from './AcTrHtmlColorUtil'
 import { AC_TR_HTML_BADGE_REF_FONT_PX } from './AcTrHtmlBadge'
+import { acTrHtmlCssColor } from './AcTrHtmlColorUtil'
 import {
   AC_TR_HTML_DOT_BORDER_EM,
   AC_TR_HTML_DOT_SIZE_EM

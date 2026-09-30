@@ -19,9 +19,9 @@ import {
   acexPositionWcsOverlay,
   acexScaledCanvasLineWidth,
   acexScaledOverlayArrowSize,
+  acexScaleWcsWithFont,
   acexScreenPxToWcs,
   acexSeedOverlaySizesFromWcs,
-  acexScaleWcsWithFont,
   acexSyncLiveOverlayTextHeight
 } from './AcExHtmlOverlayDom'
 import { acedIsMobileOrPadUi } from './AcExHtmlSimpleViewerUi'

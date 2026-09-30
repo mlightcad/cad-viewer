@@ -1,8 +1,8 @@
 import { AcCmColor } from '@mlightcad/data-model'
 
+import { AC_TR_HTML_BADGE_REF_FONT_PX } from './AcTrHtmlBadge'
 import { acTrHtmlCssColor } from './AcTrHtmlColorUtil'
 import { AcTrHtmlElement, type AcTrHtmlElementOptions } from './AcTrHtmlElement'
-import { AC_TR_HTML_BADGE_REF_FONT_PX } from './AcTrHtmlBadge'
 
 /** Dot diameter as a fraction of the paired badge font size. */
 export const AC_TR_HTML_DOT_SIZE_EM = 0.55

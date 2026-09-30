@@ -18,8 +18,8 @@ import {
   acapGetMeasurementColor,
   acapGetMeasurementFontSize,
   acapMeasurementCanvasLineWidth,
-  acapScreenAngleBadgeRefLengthPx,
   type AcApMeasurementStyle,
+  acapScreenAngleBadgeRefLengthPx,
   formatMeasurementAngle,
   MEASUREMENT_LINE_WEIGHT
 } from '../../util'

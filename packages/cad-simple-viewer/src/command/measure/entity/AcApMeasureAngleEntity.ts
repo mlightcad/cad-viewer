@@ -11,8 +11,8 @@ import {
 import {
   acapAdaptiveMeasureBadgeFontSize,
   acapMeasurementCanvasLineWidth,
-  acapScreenAngleBadgeRefLengthPx,
   type AcApMeasurementStyle,
+  acapScreenAngleBadgeRefLengthPx,
   formatMeasurementAngle
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
