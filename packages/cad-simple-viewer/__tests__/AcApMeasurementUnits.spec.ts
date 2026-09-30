@@ -101,6 +101,18 @@ describe('AcApMeasurementUnits', () => {
     ).toBe('X L1.0:2 mm  Y L2.0:2 mm')
   })
 
+  it('keeps trailing zeros on near-right angles (formatter toFixed strip bug)', () => {
+    // AcDbFormatter.formatDecimal turns toFixed(0) of 90.16 ("90") into "9"
+    // via /\.?0+$/. Measurement formatting must pre-round so labels stay "90°".
+    const { AcDbDatabase } = require('@mlightcad/data-model') as {
+      AcDbDatabase: new () => AcDbDatabase
+    }
+    const db = new AcDbDatabase()
+    const radians = (90.16096030272212 * Math.PI) / 180
+    expect(formatMeasurementAngle(db, radians)).toBe('90°')
+    expect(formatMeasurementAngle(db, Math.PI / 2)).toBe('90°')
+  })
+
   it('converts length to the selected unit and appends its symbol', () => {
     const db = mockDb() // insunits = 4 (millimeters)
     setMeasurementUnitOverride({ lengthUnit: 6 }) // meters

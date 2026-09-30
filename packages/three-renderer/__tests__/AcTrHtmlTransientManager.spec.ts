@@ -424,10 +424,10 @@ describe('AcTrHtmlTransientManager', () => {
       'style[data-ml-html-selection]'
     ) as HTMLStyleElement | null
     const css = style?.textContent ?? ''
-    expect(css).toContain('drop-shadow(0 0 1.5px #ffd54f)')
-    expect(css).toContain('drop-shadow(0 0 4px rgba(255, 213, 79, 0.95))')
-    expect(css).toContain('drop-shadow(0 0 8px rgba(255, 213, 79, 0.55))')
-    expect(css).toContain('outline: 2px solid rgba(255, 213, 79, 0.85)')
+    expect(css).toContain('drop-shadow(0 0 0.12em #ffd54f)')
+    expect(css).toContain('drop-shadow(0 0 0.3em rgba(255, 213, 79, 0.95))')
+    expect(css).toContain('drop-shadow(0 0 0.6em rgba(255, 213, 79, 0.55))')
+    expect(css).toContain('outline: 0.075em solid rgba(255, 213, 79, 0.85)')
     expect(css).not.toContain('color: #ffd54f')
 
     manager.dispose()

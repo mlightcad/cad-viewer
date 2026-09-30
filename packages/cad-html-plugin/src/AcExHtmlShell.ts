@@ -841,10 +841,11 @@ export const ACEX_HTML_SHELL_CSS = `
   .mlcad-measure-dot.mlcad-measure-selected {
     visibility: visible;
     pointer-events: auto;
+    /* Hard ring at half original em thickness + soft glow */
     box-shadow:
-      0 0 0 0.12em rgba(255, 213, 79, 0.75),
-      0 0 0.45em rgba(255, 213, 79, 0.9),
-      0 0 0.8em rgba(255, 213, 79, 0.5);
+      0 0 0 0.06em rgba(255, 213, 79, 0.75),
+      0 0 0.35em rgba(255, 213, 79, 0.9),
+      0 0 0.7em rgba(255, 213, 79, 0.5);
   }
   #mlcad-measure-overlays.mlcad-grip-dragging .mlcad-measure-dot {
     visibility: hidden !important;
@@ -870,18 +871,21 @@ export const ACEX_HTML_SHELL_CSS = `
     transform: translate(-50%, calc(-50% - 16px));
   }
   .mlcad-measure-badge.mlcad-measure-selected {
-    outline: 2px solid rgba(255, 213, 79, 0.85);
-    outline-offset: 1px;
+    /* Hard ring at half original em thickness + soft glow */
+    outline: 0.075em solid rgba(255, 213, 79, 0.85);
+    outline-offset: 0.04em;
     box-shadow:
-      0 0 0 2px rgba(255, 213, 79, 0.4),
-      0 0 12px rgba(255, 213, 79, 0.75),
+      0 0 0 0.075em rgba(255, 213, 79, 0.4),
+      0 0 0.45em rgba(255, 213, 79, 0.85),
+      0 0 0.9em rgba(255, 213, 79, 0.55),
       0 2px 8px rgba(0, 0, 0, 0.35);
   }
   .mlcad-measure-canvas.mlcad-measure-selected {
+    /* font-size is seeded from the paired badge so em tracks text size */
     filter:
-      drop-shadow(0 0 1.5px #ffd54f)
-      drop-shadow(0 0 4px rgba(255, 213, 79, 0.95))
-      drop-shadow(0 0 8px rgba(255, 213, 79, 0.55));
+      drop-shadow(0 0 0.12em #ffd54f)
+      drop-shadow(0 0 0.3em rgba(255, 213, 79, 0.95))
+      drop-shadow(0 0 0.6em rgba(255, 213, 79, 0.55));
   }
 
   #mlcad-markup-overlays {
@@ -965,9 +969,9 @@ export const ACEX_HTML_SHELL_CSS = `
     visibility: visible;
     pointer-events: auto;
     box-shadow:
-      0 0 0 0.12em rgba(255, 213, 79, 0.75),
-      0 0 0.45em rgba(255, 213, 79, 0.9),
-      0 0 0.8em rgba(255, 213, 79, 0.5);
+      0 0 0 0.06em rgba(255, 213, 79, 0.75),
+      0 0 0.35em rgba(255, 213, 79, 0.9),
+      0 0 0.7em rgba(255, 213, 79, 0.5);
   }
   #mlcad-markup-overlays.mlcad-grip-dragging .mlcad-markup-dot {
     visibility: hidden !important;
@@ -975,18 +979,19 @@ export const ACEX_HTML_SHELL_CSS = `
   }
   .mlcad-markup-badge.mlcad-markup-selected,
   .mlcad-markup-stamp.mlcad-markup-selected {
-    outline: 2px solid rgba(255, 213, 79, 0.85);
-    outline-offset: 1px;
+    outline: 0.075em solid rgba(255, 213, 79, 0.85);
+    outline-offset: 0.04em;
     box-shadow:
-      0 0 0 2px rgba(255, 213, 79, 0.4),
-      0 0 12px rgba(255, 213, 79, 0.75),
+      0 0 0 0.075em rgba(255, 213, 79, 0.4),
+      0 0 0.45em rgba(255, 213, 79, 0.85),
+      0 0 0.9em rgba(255, 213, 79, 0.55),
       0 2px 8px rgba(0, 0, 0, 0.35);
   }
   .mlcad-markup-canvas.mlcad-markup-selected {
     filter:
-      drop-shadow(0 0 1.5px #ffd54f)
-      drop-shadow(0 0 4px rgba(255, 213, 79, 0.95))
-      drop-shadow(0 0 8px rgba(255, 213, 79, 0.55));
+      drop-shadow(0 0 0.12em #ffd54f)
+      drop-shadow(0 0 0.3em rgba(255, 213, 79, 0.95))
+      drop-shadow(0 0 0.6em rgba(255, 213, 79, 0.55));
   }
 
   #mlcad-loading {

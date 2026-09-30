@@ -411,6 +411,11 @@ function paintMeasurementGroup(
     colorful.setColor?.(style.color)
     colorful.setFontSize?.(style.fontSize)
   }
+  if (style.fontSize > 0) {
+    for (const overlay of group.canvases ?? []) {
+      overlay.canvas.style.fontSize = `${style.fontSize}px`
+    }
+  }
 
   const extras = extrasById.get(group.id)
   extras?.redraw?.(style)

@@ -246,6 +246,13 @@ export function acapSeedOverlaySizesFromWcs(
     }
   }
 
+  if (fontSizePx != null && fontSizePx > 0) {
+    for (const canvas of canvases ?? []) {
+      // Selection glow (drop-shadow em) tracks the paired badge font size.
+      canvas.style.fontSize = `${fontSizePx}px`
+    }
+  }
+
   // Pair text screen/WCS axes only — never mix fontSize with strokeWidthWcs.
   if (
     !(fontSizePx != null && fontSizePx > 0) ||

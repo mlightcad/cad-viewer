@@ -1,4 +1,5 @@
 import {
+  AcDbAngleUnits,
   type AcDbDatabase,
   type AcDbFormatterOptions,
   AcDbLinearUnits
@@ -338,15 +339,63 @@ export function formatMeasurementArea(
   return symbol ? `${text} ${symbol}²` : `${text}²`
 }
 
+/**
+ * Rounds `value` to `precision` decimal places.
+ *
+ * Used to work around {@link AcDbFormatter} `formatDecimal`: for non-integers it
+ * runs `toFixed(precision)` then strips with `/\.?0+$/`, which turns `"90"` into
+ * `"9"` (and `"100"` into `"1"`). Pre-rounding lets whole numbers hit the
+ * `Number.isInteger` fast path that returns the full digit string.
+ */
+function quantizeDecimal(value: number, precision: number): number {
+  if (!Number.isFinite(value)) return value
+  const p = Math.max(0, Math.floor(precision))
+  const factor = 10 ** p
+  const quantized = Math.round(value * factor) / factor
+  return Object.is(quantized, -0) ? 0 : quantized
+}
+
+/**
+ * Pre-round an included angle so {@link AcDbFormatter.formatAngle} cannot drop
+ * trailing zeros from the decimal-degree (or similar) display string.
+ */
+function radiansForMeasurementFormat(
+  radians: number,
+  aunits: number,
+  auprec: number
+): number {
+  switch (aunits) {
+    case AcDbAngleUnits.DecimalDegrees: {
+      const deg = quantizeDecimal((radians * 180) / Math.PI, auprec)
+      return (deg * Math.PI) / 180
+    }
+    case AcDbAngleUnits.Gradians: {
+      // π rad = 200 gon
+      const grads = quantizeDecimal(radians * (200 / Math.PI), auprec)
+      return grads * (Math.PI / 200)
+    }
+    case AcDbAngleUnits.Radians:
+      return quantizeDecimal(radians, auprec)
+    default:
+      return radians
+  }
+}
+
 /** Format an angle in radians using effective measurement units. */
 export function formatMeasurementAngle(
   db: AcDbDatabase,
   radians: number,
   options: AcDbFormatterOptions = MEASUREMENT_ANGLE_FORMAT_OPTIONS
 ): string {
-  return withMeasurementFormatContext(db, () =>
-    db.formatter.formatAngle(radians, options)
-  )
+  return withMeasurementFormatContext(db, () => {
+    const { aunits, auprec } = getEffectiveMeasurementUnits(db)
+    const value = radiansForMeasurementFormat(radians, aunits, auprec)
+    return db.formatter.formatAngle(value, {
+      ...MEASUREMENT_ANGLE_FORMAT_OPTIONS,
+      ...options,
+      applyAngbaseAngdir: false
+    })
+  })
 }
 
 /** Format a stored measurement value for a badge label. */
