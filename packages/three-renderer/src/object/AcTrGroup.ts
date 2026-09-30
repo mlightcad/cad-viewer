@@ -2,11 +2,11 @@ import { AcDbObjectId, AcGeMatrix3d } from '@mlightcad/data-model'
 import { FontManager } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import {
   asyncDrawSharedGlyphGroup,
   syncDrawSharedGlyphGroup
 } from '../linetype/AcTrComplexLineBuilder'
+import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrMatrixUtil, effectiveLayer } from '../util'
 import { AcTrEntity } from './AcTrEntity'
 import { AcTrGlyphEntity } from './AcTrGlyphEntity'
