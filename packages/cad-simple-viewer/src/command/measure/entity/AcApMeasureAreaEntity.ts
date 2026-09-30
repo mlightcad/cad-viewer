@@ -6,14 +6,18 @@ import {
 } from '@mlightcad/three-renderer'
 
 import {
+  acapAdaptiveMeasureBadgeFontSize,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
+  acapScreenAreaBadgeRefLengthPx,
   formatMeasurementArea
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import {
   acapBindOverlayPointerDrag,
-  acapPlaceOverlayHtml
+  acapPlaceOverlayHtml,
+  acapScreenPxToWcs,
+  acapSeedOverlaySizesFromWcs
 } from '../../overlay'
 import { runMeasurementEdit } from '../AcApMeasurementHistory'
 import { republishMeasurement } from '../AcApMeasurementRepublish'
@@ -150,13 +154,36 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
       layer: MEASUREMENT_LAYER,
       layoutId
     })
+    const label = formatMeasurementArea(db, area)
+    const importedTextHeight =
+      this.textHeightWcs != null && this.textHeightWcs > 0
+        ? this.textHeightWcs
+        : undefined
+    let badgeFontSize = this.style.fontSize
+    let textHeightWcs = importedTextHeight
+    if (importedTextHeight == null) {
+      if (
+        this.style.textHeightMode === 'custom' &&
+        this.style.textHeightWcs != null &&
+        this.style.textHeightWcs > 0
+      ) {
+        textHeightWcs = this.style.textHeightWcs
+      } else {
+        badgeFontSize = acapAdaptiveMeasureBadgeFontSize(
+          label,
+          this.style,
+          acapScreenAreaBadgeRefLengthPx(p => view.worldToScreen(p), live)
+        )
+        textHeightWcs = acapScreenPxToWcs(badgeFontSize, view)
+      }
+    }
     const badge = new AcTrHtmlBadge({
       id: `${this.entityId}-badge`,
       color,
-      text: formatMeasurementArea(db, area),
+      text: label,
       worldPosition: measureCentroid(live),
       layer: MEASUREMENT_LAYER,
-      fontSize: this.style.fontSize
+      fontSize: badgeFontSize
     })
     const dots = live.map(
       (p, i) =>
@@ -167,11 +194,16 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
           layer: MEASUREMENT_LAYER
         })
     )
-    this.seedOverlaySizes(
-      view,
-      [badge, ...dots],
-      [persistOverlay.canvas]
-    )
+    const sidecar = this.serializeStyle(view)
+    acapSeedOverlaySizesFromWcs(view, {
+      textHeightWcs: textHeightWcs ?? sidecar.textHeightWcs,
+      strokeWidthWcs: this.strokeWidthWcs,
+      arrowSizeWcs: this.arrowSizeWcs ?? sidecar.arrowSizeWcs,
+      fontSizePx: badgeFontSize,
+      strokeScreenPx: acapMeasurementCanvasLineWidth(this.style.lineWeight),
+      elements: [badge, ...dots],
+      canvases: [persistOverlay.canvas]
+    })
     const paintArea = (paintStyle = this.style) =>
       drawMeasureAreaOnCanvas(
         persistOverlay.canvas,
@@ -275,9 +307,20 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
         for (const bind of pendingGrips) bind()
       },
       extras: {
-        style: this.style,
+        style: this.committedLiveStyle(badgeFontSize, textHeightWcs),
         value: { kind: 'area', value: area },
-        snapshot: this.toRecord(layoutId, view),
+        snapshot: (() => {
+          const snapshot = this.toRecord(layoutId, view)
+          if (
+            importedTextHeight == null &&
+            textHeightWcs != null &&
+            textHeightWcs > 0
+          ) {
+            snapshot.style.fontSize = badgeFontSize
+            snapshot.style.textHeightWcs = textHeightWcs
+          }
+          return snapshot
+        })(),
         redraw: paintArea
       }
     }

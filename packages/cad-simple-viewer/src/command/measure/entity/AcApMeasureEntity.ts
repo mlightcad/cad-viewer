@@ -7,6 +7,7 @@ import {
   AcTrHtmlGroup} from '@mlightcad/three-renderer'
 
 import {
+  acapCloneMeasurementStyle,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle
 } from '../../../util'
@@ -263,6 +264,25 @@ export abstract class AcApMeasureEntity
   /** Sidecar style including world-space sizes at the current view. */
   protected serializeStyle(view?: AcTrView2d): AcApMeasurementSidecarStyle {
     return serializeMeasurementStyle(this.style, view)
+  }
+
+  /**
+   * Live store style for a just-drawn measurement.
+   *
+   * Fit-to-screen may clamp the badge font below the session preference; the
+   * committed live style must match what was painted so later color-only
+   * paints do not restore the unclamped size.
+   */
+  protected committedLiveStyle(
+    badgeFontSize: number,
+    textHeightWcs?: number
+  ): AcApMeasurementStyle {
+    const style = acapCloneMeasurementStyle(this.style)
+    style.fontSize = badgeFontSize
+    if (textHeightWcs != null && textHeightWcs > 0) {
+      style.textHeightWcs = textHeightWcs
+    }
+    return style
   }
 
   /**

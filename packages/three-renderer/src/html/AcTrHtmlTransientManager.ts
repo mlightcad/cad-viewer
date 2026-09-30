@@ -45,9 +45,9 @@ function ensureSelectionStyles(): void {
 }
 .ml-html-dot.${AC_TR_HTML_SELECTED_CLASS} {
   box-shadow:
-    0 0 0 2px rgba(255, 213, 79, 0.75),
-    0 0 10px rgba(255, 213, 79, 0.95),
-    0 0 18px rgba(255, 213, 79, 0.55);
+    0 0 0 0.12em rgba(255, 213, 79, 0.75),
+    0 0 0.45em rgba(255, 213, 79, 0.9),
+    0 0 0.8em rgba(255, 213, 79, 0.5);
 }
 .${AC_TR_HTML_CANVAS_CLASS}.${AC_TR_HTML_SELECTED_CLASS} {
   filter:

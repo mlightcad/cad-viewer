@@ -9,14 +9,18 @@ import {
 } from '@mlightcad/three-renderer'
 
 import {
+  acapAdaptiveMeasureBadgeFontSize,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
+  acapScreenAngleBadgeRefLengthPx,
   formatMeasurementAngle
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import {
   acapBindOverlayPointerDrag,
-  acapPlaceOverlayHtml
+  acapPlaceOverlayHtml,
+  acapScreenPxToWcs,
+  acapSeedOverlaySizesFromWcs
 } from '../../overlay'
 import { runMeasurementEdit } from '../AcApMeasurementHistory'
 import { republishMeasurement } from '../AcApMeasurementRepublish'
@@ -182,19 +186,52 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
       worldPosition: live.arm2,
       layer: MEASUREMENT_LAYER
     })
+    const label = formatMeasurementAngle(db, (degrees * Math.PI) / 180)
+    const importedTextHeight =
+      this.textHeightWcs != null && this.textHeightWcs > 0
+        ? this.textHeightWcs
+        : undefined
+    let badgeFontSize = this.style.fontSize
+    let textHeightWcs = importedTextHeight
+    if (importedTextHeight == null) {
+      if (
+        this.style.textHeightMode === 'custom' &&
+        this.style.textHeightWcs != null &&
+        this.style.textHeightWcs > 0
+      ) {
+        textHeightWcs = this.style.textHeightWcs
+      } else {
+        badgeFontSize = acapAdaptiveMeasureBadgeFontSize(
+          label,
+          this.style,
+          acapScreenAngleBadgeRefLengthPx(
+            p => view.worldToScreen(p),
+            live.vertex,
+            live.arm1,
+            live.arm2
+          )
+        )
+        textHeightWcs = acapScreenPxToWcs(badgeFontSize, view)
+      }
+    }
     const badge = new AcTrHtmlBadge({
       id: `${this.entityId}-badge`,
       color,
-      text: formatMeasurementAngle(db, (degrees * Math.PI) / 180),
+      text: label,
       worldPosition: measureAngleBadgeWorld(live.vertex, live.arm1, live.arm2),
       layer: MEASUREMENT_LAYER,
-      fontSize: this.style.fontSize
+      fontSize: badgeFontSize
     })
-    this.seedOverlaySizes(
-      view,
-      [dotV, dot1, dot2, badge],
-      [persistOverlay.canvas]
-    )
+    const sidecar = this.serializeStyle(view)
+    acapSeedOverlaySizesFromWcs(view, {
+      textHeightWcs: textHeightWcs ?? sidecar.textHeightWcs,
+      strokeWidthWcs: this.strokeWidthWcs,
+      arrowSizeWcs: this.arrowSizeWcs ?? sidecar.arrowSizeWcs,
+      fontSizePx: badgeFontSize,
+      strokeScreenPx: acapMeasurementCanvasLineWidth(this.style.lineWeight),
+      elements: [dotV, dot1, dot2, badge],
+      canvases: [persistOverlay.canvas]
+    })
     const paintAngle = (paintStyle = this.style) =>
       drawMeasureAngleArcOnCanvas(
         persistOverlay.canvas,
@@ -320,9 +357,20 @@ export class AcApMeasureAngleEntity extends AcApMeasureEntity {
         for (const bind of pendingGrips) bind()
       },
       extras: {
-        style: this.style,
+        style: this.committedLiveStyle(badgeFontSize, textHeightWcs),
         value: { kind: 'angle', radians: (degrees * Math.PI) / 180 },
-        snapshot: this.toRecord(layoutId, view),
+        snapshot: (() => {
+          const snapshot = this.toRecord(layoutId, view)
+          if (
+            importedTextHeight == null &&
+            textHeightWcs != null &&
+            textHeightWcs > 0
+          ) {
+            snapshot.style.fontSize = badgeFontSize
+            snapshot.style.textHeightWcs = textHeightWcs
+          }
+          return snapshot
+        })(),
         redraw: paintAngle
       }
     }

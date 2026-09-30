@@ -21,11 +21,13 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
+  acapAdaptiveMeasureBadgeFontSize,
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
   acapGetMeasurementFontSize,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
+  acapScreenArcLengthPx,
   formatMeasurementLength,
   MEASUREMENT_LINE_WEIGHT
 } from '../../util'
@@ -389,8 +391,6 @@ class AcApArcLockedEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._indicator.setPosition(snapped)
     this._badge.setColor(this._color)
     const style = acapGetCurrentMeasurementStyle(this._db)
-    this._badge.setFontSize(style.fontSize)
-    acapSyncLiveOverlayTextHeight(this._view, [this._badge], style)
 
     const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     const sweep = lockedSweep(this._start, end, this._geom, this.clockwise)
@@ -412,7 +412,23 @@ class AcApArcLockedEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
       this._badge.object.visible = false
       return
     }
-    this._badge.setText(formatMeasurementLength(this._db, sweep.length))
+    const label = formatMeasurementLength(this._db, sweep.length)
+    const fontSize = acapAdaptiveMeasureBadgeFontSize(
+      label,
+      style,
+      acapScreenArcLengthPx(
+        pt => this._view.worldToScreen(pt),
+        { x: this._geom.cx, y: this._geom.cy },
+        this._geom.r,
+        sweep.length
+      )
+    )
+    this._badge.setFontSize(fontSize)
+    acapSyncLiveOverlayTextHeight(this._view, [this._badge], {
+      ...style,
+      fontSize
+    })
+    this._badge.setText(label)
     this._badge.setPosition(sweep.through)
     this._badge.object.visible = true
   }
@@ -540,8 +556,6 @@ class AcApMeasureArcEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._color = acapGetMeasurementColor(this._db)
     this._badge.setColor(this._color)
     const style = acapGetCurrentMeasurementStyle(this._db)
-    this._badge.setFontSize(style.fontSize)
-    acapSyncLiveOverlayTextHeight(this._view, [this._badge], style)
 
     const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     const arc = AcGeCircArc2d.tryCreateByThreePoints(
@@ -574,12 +588,28 @@ class AcApMeasureArcEndJig extends AcEdPreviewJig<AcGePoint3dLike> {
       )
     })
 
-    if (!arc) {
+    if (!arc || !geom) {
       this._badge.object.visible = false
       return
     }
 
-    this._badge.setText(formatMeasurementLength(this._db, arc.length))
+    const label = formatMeasurementLength(this._db, arc.length)
+    const fontSize = acapAdaptiveMeasureBadgeFontSize(
+      label,
+      style,
+      acapScreenArcLengthPx(
+        pt => this._view.worldToScreen(pt),
+        { x: geom.cx, y: geom.cy },
+        geom.r,
+        arc.length
+      )
+    )
+    this._badge.setFontSize(fontSize)
+    acapSyncLiveOverlayTextHeight(this._view, [this._badge], {
+      ...style,
+      fontSize
+    })
+    this._badge.setText(label)
     this._badge.setPosition(arc.midPoint)
     this._badge.object.visible = true
   }

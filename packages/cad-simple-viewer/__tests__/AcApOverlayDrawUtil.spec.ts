@@ -7,6 +7,7 @@ import {
   acapOverlayDash,
   acapScaledOverlayArrowSize,
   acapScaledOverlayLineWidth,
+  acapScaleWcsWithFont,
   acapSeedOverlaySizesFromWcs
 } from '../src/command/overlay/AcApOverlayDrawUtil'
 import type { AcEdBaseView } from '../src/editor'
@@ -132,6 +133,12 @@ describe('AcApOverlayDrawUtil arrow and dash scale', () => {
     const canvas = document.createElement('canvas')
     expect(acapScaledOverlayArrowSize(canvas, mockView(10), 2.4)).toBeCloseTo(24)
     expect(Number(canvas.dataset[ACAP_OVERLAY_ARROW_WCS])).toBe(2.4)
+  })
+
+  it('scales WCS overlay sizes with font changes', () => {
+    expect(acapScaleWcsWithFont(1.2, 12, 24)).toBeCloseTo(2.4)
+    expect(acapScaleWcsWithFont(1.2, 12, 12)).toBe(1.2)
+    expect(acapScaleWcsWithFont(undefined, 12, 24)).toBeUndefined()
   })
 
   it('seeds cloud lobe WCS from the stroke screen/WCS pair', () => {

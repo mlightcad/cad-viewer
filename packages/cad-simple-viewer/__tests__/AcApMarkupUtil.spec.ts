@@ -7,6 +7,7 @@ import {
   MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth,
   markupColorToCss,
+  patchMarkupStyleWcs,
   resolveMarkupLineWeight,
   withMarkupStyleWcs
 } from '../src/command/markup/AcApMarkupUtil'
@@ -99,5 +100,29 @@ describe('withMarkupStyleWcs text height', () => {
       view
     )
     expect(out.textHeightWcs).toBe(2)
+  })
+})
+
+describe('patchMarkupStyleWcs', () => {
+  const view = {
+    worldToScreen: (p: { x: number; y: number }) => ({
+      x: p.x * 10,
+      y: p.y * 10
+    })
+  } as unknown as AcEdBaseView
+
+  it('scales arrowSizeWcs with font size changes', () => {
+    const previous = {
+      color: '#f00',
+      lineWeight: 0 as const,
+      fontSize: 12,
+      textHeightMode: 'adaptive' as const,
+      textHeightWcs: 1.2,
+      arrowSizeWcs: 0.8
+    }
+    const next = { ...previous, fontSize: 24, textHeightWcs: 2.4 }
+    const out = patchMarkupStyleWcs(previous, next, view, { fontSize: 24 })
+    expect(out.arrowSizeWcs).toBeCloseTo(1.6)
+    expect(out.textHeightWcs).toBeCloseTo(2.4)
   })
 })

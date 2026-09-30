@@ -6,14 +6,18 @@ import {
 } from '@mlightcad/three-renderer'
 
 import {
+  acapAdaptiveMeasureBadgeFontSize,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
+  acapScreenArcLengthPx,
   formatMeasurementLength
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import {
   acapBindOverlayPointerDrag,
-  acapPlaceOverlayHtml
+  acapPlaceOverlayHtml,
+  acapScreenPxToWcs,
+  acapSeedOverlaySizesFromWcs
 } from '../../overlay'
 import { runMeasurementEdit } from '../AcApMeasurementHistory'
 import { republishMeasurement } from '../AcApMeasurementRepublish'
@@ -261,19 +265,55 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
       worldPosition: live.end,
       layer: MEASUREMENT_LAYER
     })
+    const label = formatMeasurementLength(db, arcLen)
+    const importedTextHeight =
+      this.textHeightWcs != null && this.textHeightWcs > 0
+        ? this.textHeightWcs
+        : undefined
+    let badgeFontSize = this.style.fontSize
+    let textHeightWcs = importedTextHeight
+    if (importedTextHeight == null) {
+      if (
+        this.style.textHeightMode === 'custom' &&
+        this.style.textHeightWcs != null &&
+        this.style.textHeightWcs > 0
+      ) {
+        textHeightWcs = this.style.textHeightWcs
+      } else {
+        badgeFontSize = acapAdaptiveMeasureBadgeFontSize(
+          label,
+          this.style,
+          acapScreenArcLengthPx(
+            p => view.worldToScreen(p),
+            { x: live.geom.cx, y: live.geom.cy },
+            live.geom.r,
+            arcLen
+          )
+        )
+        textHeightWcs = acapScreenPxToWcs(badgeFontSize, view)
+      }
+    }
     const badge = new AcTrHtmlBadge({
       id: `${this.entityId}-badge`,
       color,
-      text: formatMeasurementLength(db, arcLen),
+      text: label,
       worldPosition: midPoint(),
       layer: MEASUREMENT_LAYER,
-      fontSize: this.style.fontSize
+      fontSize: badgeFontSize
     })
-    this.seedOverlaySizes(
-      view,
-      dotThrough ? [dot1, dotThrough, dot2, badge] : [dot1, dot2, badge],
-      [persistOverlay.canvas]
-    )
+    const overlayElements = dotThrough
+      ? [dot1, dotThrough, dot2, badge]
+      : [dot1, dot2, badge]
+    const sidecar = this.serializeStyle(view)
+    acapSeedOverlaySizesFromWcs(view, {
+      textHeightWcs: textHeightWcs ?? sidecar.textHeightWcs,
+      strokeWidthWcs: this.strokeWidthWcs,
+      arrowSizeWcs: this.arrowSizeWcs ?? sidecar.arrowSizeWcs,
+      fontSizePx: badgeFontSize,
+      strokeScreenPx: acapMeasurementCanvasLineWidth(this.style.lineWeight),
+      elements: overlayElements,
+      canvases: [persistOverlay.canvas]
+    })
     const paintArc = (paintStyle = this.style) =>
       drawMeasureArcOnCanvas(
         persistOverlay.canvas,
@@ -448,9 +488,20 @@ export class AcApMeasureArcEntity extends AcApMeasureEntity {
         for (const bind of pendingGrips) bind()
       },
       extras: {
-        style: this.style,
+        style: this.committedLiveStyle(badgeFontSize, textHeightWcs),
         value: { kind: 'length', value: arcLen },
-        snapshot: this.toRecord(layoutId, view),
+        snapshot: (() => {
+          const snapshot = this.toRecord(layoutId, view)
+          if (
+            importedTextHeight == null &&
+            textHeightWcs != null &&
+            textHeightWcs > 0
+          ) {
+            snapshot.style.fontSize = badgeFontSize
+            snapshot.style.textHeightWcs = textHeightWcs
+          }
+          return snapshot
+        })(),
         redraw: paintArc
       }
     }

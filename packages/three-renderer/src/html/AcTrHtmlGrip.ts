@@ -1,6 +1,11 @@
 import { AcCmColor } from '@mlightcad/data-model'
 
+import { AC_TR_HTML_BADGE_REF_FONT_PX } from './AcTrHtmlBadge'
 import { acTrHtmlCssColor } from './AcTrHtmlColorUtil'
+import {
+  AC_TR_HTML_DOT_BORDER_EM,
+  AC_TR_HTML_DOT_SIZE_EM
+} from './AcTrHtmlDot'
 import {
   AC_TR_HTML_SELECTED_CLASS,
   AcTrHtmlElement,
@@ -102,15 +107,21 @@ export function acTrSetHtmlGripsDragging(
 export interface AcTrHtmlGripOptions extends AcTrHtmlElementOptions {
   /** Marker fill color */
   color: AcCmColor
+  /**
+   * CSS font size used as the em root for diameter / border.
+   * Defaults to {@link AC_TR_HTML_BADGE_REF_FONT_PX}.
+   */
+  fontSize?: number
 }
 
 /**
  * Circular overlay endpoint, shown only when the parent HTML group is selected.
  * Visual matches {@link AcTrHtmlDot} and scales with view using WCS size.
+ * Diameter tracks the paired badge font via `em`.
  */
 export class AcTrHtmlGrip extends AcTrHtmlElement {
   constructor(options: AcTrHtmlGripOptions) {
-    super(AcTrHtmlGrip.createElement(options.color), {
+    super(AcTrHtmlGrip.createElement(options.color, options.fontSize), {
       ...options,
       scaleWithView: options.scaleWithView ?? true
     })
@@ -121,14 +132,30 @@ export class AcTrHtmlGrip extends AcTrHtmlElement {
     this.element.style.background = acTrHtmlCssColor(color)
   }
 
-  private static createElement(color: AcCmColor): HTMLDivElement {
+  /**
+   * Update the em root so diameter / border stay proportional to the badge font.
+   */
+  setFontSize(fontSize: number): void {
+    if (!(fontSize > 0)) return
+    this.element.style.fontSize = `${fontSize}px`
+  }
+
+  private static createElement(
+    color: AcCmColor,
+    fontSize?: number
+  ): HTMLDivElement {
     injectHtmlGripCss()
     const el = document.createElement('div')
     el.className = `ml-html-dot ${AC_TR_HTML_GRIP_CLASS}`
+    const size =
+      fontSize != null && fontSize > 0 ? fontSize : AC_TR_HTML_BADGE_REF_FONT_PX
     el.style.cssText =
-      'width:12px;height:12px;border-radius:50%;' +
-      `background:${acTrHtmlCssColor(color)};border:2px solid var(--ml-ui-border, #fff);box-sizing:border-box;` +
-      'transform:translate(-50%,-50%);cursor:grab;'
+      `font-size:${size}px;` +
+      `width:${AC_TR_HTML_DOT_SIZE_EM}em;height:${AC_TR_HTML_DOT_SIZE_EM}em;` +
+      'min-width:5px;min-height:5px;border-radius:50%;' +
+      `background:${acTrHtmlCssColor(color)};` +
+      `border:${AC_TR_HTML_DOT_BORDER_EM}em solid var(--ml-ui-border, #fff);` +
+      'box-sizing:border-box;transform:translate(-50%,-50%);cursor:grab;'
     return el
   }
 }

@@ -165,6 +165,22 @@ export function acapOverlayDash(
 }
 
 /**
+ * Scales a world-space overlay length (arrow head, etc.) with a font-size change
+ * so arrows stay proportional to the value capsule when the user resizes text.
+ */
+export function acapScaleWcsWithFont(
+  sizeWcs: number | undefined,
+  prevFontPx: number,
+  nextFontPx: number
+): number | undefined {
+  if (!(sizeWcs != null && sizeWcs > 0)) return sizeWcs
+  if (!(prevFontPx > 0) || !(nextFontPx > 0) || nextFontPx === prevFontPx) {
+    return sizeWcs
+  }
+  return sizeWcs * (nextFontPx / prevFontPx)
+}
+
+/**
  * Orthographic `baseZoom` that makes a fixed CSS size match a world-space size
  * at the current view (for {@link AcTrHtmlElement.scaleWithView}).
  */
@@ -241,6 +257,8 @@ export function acapSeedOverlaySizesFromWcs(
   const baseZoom = acapBaseZoomFromWcsSize(fontSizePx, textHeightWcs, view)
   if (baseZoom == null) return
   for (const el of elements ?? []) {
+    const sized = el as { setFontSize?: (size: number) => void }
+    sized.setFontSize?.(fontSizePx)
     if (el.scaleWithView) el.baseZoom = baseZoom
   }
 }

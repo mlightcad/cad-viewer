@@ -9,7 +9,7 @@ import {
 
 import type { AcEdBaseView } from '../../editor'
 import { acCmColorToCssHex, parseCssToAcCmColor } from '../../util/AcApCssColor'
-import { ACAP_OVERLAY_ARROW_SIZE_PX, acapScreenPxToWcs } from '../overlay/AcApOverlayDrawUtil'
+import { ACAP_OVERLAY_ARROW_SIZE_PX, acapScaleWcsWithFont, acapScreenPxToWcs } from '../overlay/AcApOverlayDrawUtil'
 import type { AcApMarkupStyle } from './AcApMarkupTypes'
 
 /** Factory default markup color (ACI red) used to seed the draw style. */
@@ -235,15 +235,17 @@ export function patchMarkupStyleWcs(
   }
 
   const { strokeWidthWcs: _omitStroke, ...rest } = next
+  let arrowSizeWcs =
+    previous.arrowSizeWcs != null && previous.arrowSizeWcs > 0
+      ? previous.arrowSizeWcs
+      : next.arrowSizeWcs
+  arrowSizeWcs = acapScaleWcsWithFont(arrowSizeWcs, prevFont, nextFont)
   return {
     ...rest,
     textHeightMode: mode,
     lineWeight: MARKUP_LINE_WEIGHT,
     textHeightWcs,
-    arrowSizeWcs:
-      previous.arrowSizeWcs != null && previous.arrowSizeWcs > 0
-        ? previous.arrowSizeWcs
-        : next.arrowSizeWcs
+    arrowSizeWcs
   }
 }
 

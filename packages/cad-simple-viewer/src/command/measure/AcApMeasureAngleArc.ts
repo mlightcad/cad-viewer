@@ -5,8 +5,16 @@
  * target stay aligned across zoom.
  */
 
-/** Fraction of the shorter world-space arm used as the dimension arc radius. */
-export const MEASURE_ANGLE_ARC_RADIUS_FRACTION = 0.3
+/**
+ * Fraction of the shorter world-space arm used as the dimension arc radius
+ * (arm midpoints when both arms are equal length).
+ */
+export const MEASURE_ANGLE_ARC_RADIUS_FRACTION = 0.5
+
+/**
+ * Bisector offset for the value capsule, slightly outside the dimension arc.
+ */
+export const MEASURE_ANGLE_BADGE_OFFSET_FRACTION = 0.55
 
 /**
  * World-space radius of the interior angle dimension arc.

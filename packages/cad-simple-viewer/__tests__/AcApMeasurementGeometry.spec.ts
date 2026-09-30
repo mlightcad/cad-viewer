@@ -56,7 +56,7 @@ describe('hitTestMeasurementGeometry', () => {
       arm1: { x: 20, y: 0 },
       arm2: { x: 0, y: 20 }
     }
-    const onArc = 20 * 0.3 * Math.SQRT1_2
+    const onArc = 20 * 0.5 * Math.SQRT1_2
     expect(
       hitTestMeasurementGeometry(
         geometry,
@@ -65,7 +65,7 @@ describe('hitTestMeasurementGeometry', () => {
         threshold
       )
     ).toBe(true)
-    // Former screen-space floor of 15px along the bisector.
+    // Former screen-space floor of 15px along the bisector (inside the mid-arm arc).
     expect(
       hitTestMeasurementGeometry(
         geometry,

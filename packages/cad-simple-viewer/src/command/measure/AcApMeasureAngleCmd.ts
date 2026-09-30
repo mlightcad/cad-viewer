@@ -13,11 +13,13 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
+  acapAdaptiveMeasureBadgeFontSize,
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
   acapGetMeasurementFontSize,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
+  acapScreenAngleBadgeRefLengthPx,
   formatMeasurementAngle,
   MEASUREMENT_LINE_WEIGHT
 } from '../../util'
@@ -181,8 +183,6 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._color = acapGetMeasurementColor(this._db)
     this._badge.setColor(this._color)
     const style = acapGetCurrentMeasurementStyle(this._db)
-    this._badge.setFontSize(style.fontSize)
-    acapSyncLiveOverlayTextHeight(this._view, [this._badge], style)
 
     const lineWidth = acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)
     this._preview.acapSetDraw((ctx, view) => {
@@ -206,7 +206,23 @@ class AcApMeasureAngleJig extends AcEdPreviewJig<AcGePoint3dLike> {
     })
 
     const deg = calcAngleDeg(this._vertex, this._arm1, p)
-    this._badge.setText(formatMeasurementAngle(this._db, (deg * Math.PI) / 180))
+    const label = formatMeasurementAngle(this._db, (deg * Math.PI) / 180)
+    const fontSize = acapAdaptiveMeasureBadgeFontSize(
+      label,
+      style,
+      acapScreenAngleBadgeRefLengthPx(
+        pt => this._view.worldToScreen(pt),
+        this._vertex,
+        this._arm1,
+        p
+      )
+    )
+    this._badge.setFontSize(fontSize)
+    acapSyncLiveOverlayTextHeight(this._view, [this._badge], {
+      ...style,
+      fontSize
+    })
+    this._badge.setText(label)
     this._badge.setPosition(this._vertex)
     this._badge.object.visible = true
   }

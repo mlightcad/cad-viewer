@@ -10,12 +10,14 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import {
+  acapAdaptiveMeasureBadgeFontSize,
   acapColorToCssAlpha,
   acapCssColor,
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementColor,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
+  acapScreenAreaBadgeRefLengthPx,
   formatMeasurementArea
 } from '../../util'
 import { AcTrView2d } from '../../view'
@@ -273,9 +275,21 @@ export class AcApMeasureAreaCmd extends AcApMeasureDrawCmd {
               const tempPts = [...points, cursor]
               const area = shoelaceArea(tempPts)
               const liveStyle = acapGetCurrentMeasurementStyle(db)
-              liveBadge.setFontSize(liveStyle.fontSize)
-              acapSyncLiveOverlayTextHeight(context.view, [liveBadge], liveStyle)
-              liveBadge.setText(formatMeasurementArea(db, area))
+              const label = formatMeasurementArea(db, area)
+              const fontSize = acapAdaptiveMeasureBadgeFontSize(
+                label,
+                liveStyle,
+                acapScreenAreaBadgeRefLengthPx(
+                  pt => context.view.worldToScreen(pt),
+                  tempPts
+                )
+              )
+              liveBadge.setFontSize(fontSize)
+              acapSyncLiveOverlayTextHeight(context.view, [liveBadge], {
+                ...liveStyle,
+                fontSize
+              })
+              liveBadge.setText(label)
               liveBadge.setPosition(centroid(tempPts))
               liveBadge.object.visible = true
               drawPolygon(cursor)

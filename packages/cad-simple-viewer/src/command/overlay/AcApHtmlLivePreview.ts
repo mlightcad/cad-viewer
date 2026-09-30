@@ -146,7 +146,12 @@ export function acapStrokeLiveSegment(
   b: AcApHtmlLivePoint,
   color: string | AcCmColor,
   lineWidth: number,
-  options?: { dashed?: boolean; arrow?: boolean | 'both' }
+  options?: {
+    dashed?: boolean
+    arrow?: boolean | 'both'
+    /** Override arrow-head length in CSS px (default tracks stroke width). */
+    arrowSizePx?: number
+  }
 ): void {
   const css = typeof color === 'string' ? color : acapCssColor(color)
   const sa = view.worldToScreen(a)
@@ -161,7 +166,10 @@ export function acapStrokeLiveSegment(
   ctx.stroke()
   if (options?.dashed) ctx.setLineDash([])
   if (options?.arrow) {
-    const size = acapOverlayArrowSize(strokeWidth, lineWidth)
+    const size =
+      options.arrowSizePx != null && options.arrowSizePx > 0
+        ? options.arrowSizePx
+        : acapOverlayArrowSize(strokeWidth, lineWidth)
     if (options.arrow === 'both') {
       if (Math.hypot(sb.x - sa.x, sb.y - sa.y) >= size) {
         acapDrawOverlayArrowHead(ctx, sb, sa, css, size)
@@ -189,7 +197,15 @@ export function acapStrokeLivePolyline(
   points: AcApHtmlLivePoint[],
   color: string | AcCmColor,
   lineWidth: number,
-  options?: { dashed?: boolean; closed?: boolean; segmentArrows?: boolean }
+  options?: {
+    dashed?: boolean
+    closed?: boolean
+    segmentArrows?: boolean
+    /** Uniform arrow-head length in CSS px. */
+    arrowSizePx?: number
+    /** Per-segment arrow lengths in CSS px (overrides {@link arrowSizePx}). */
+    segmentArrowSizesPx?: readonly number[]
+  }
 ): void {
   if (points.length < 2) return
   const css = typeof color === 'string' ? color : acapCssColor(color)
@@ -209,10 +225,15 @@ export function acapStrokeLivePolyline(
   ctx.stroke()
   if (options?.dashed) ctx.setLineDash([])
   if (options?.segmentArrows) {
-    const size = acapOverlayArrowSize(strokeWidth, lineWidth)
+    const fallback =
+      options.arrowSizePx != null && options.arrowSizePx > 0
+        ? options.arrowSizePx
+        : acapOverlayArrowSize(strokeWidth, lineWidth)
     for (let i = 0; i < screen.length - 1; i++) {
       const a = screen[i]!
       const b = screen[i + 1]!
+      const sized = options.segmentArrowSizesPx?.[i]
+      const size = sized != null && sized > 0 ? sized : fallback
       if (Math.hypot(b.x - a.x, b.y - a.y) >= size) {
         acapDrawOverlayArrowHead(ctx, b, a, css, size)
         acapDrawOverlayArrowHead(ctx, a, b, css, size)

@@ -17,6 +17,22 @@ export const ACEX_OVERLAY_ARROW_SIZE_PX = 12
 export const ACEX_OVERLAY_ARROW_WCS = 'overlayArrowWcs'
 
 /**
+ * Scales a world-space overlay length (arrow head, etc.) with a font-size change
+ * so arrows stay proportional to the value capsule when the user resizes text.
+ */
+export function acexScaleWcsWithFont(
+  sizeWcs: number | undefined,
+  prevFontPx: number,
+  nextFontPx: number
+): number | undefined {
+  if (!(sizeWcs != null && sizeWcs > 0)) return sizeWcs
+  if (!(prevFontPx > 0) || !(nextFontPx > 0) || nextFontPx === prevFontPx) {
+    return sizeWcs
+  }
+  return sizeWcs * (nextFontPx / prevFontPx)
+}
+
+/**
  * Scale factor for HTML measure/markup overlays relative to first layout.
  */
 export function acexOverlayViewScale(zoom: number, el: HTMLElement): number {
@@ -249,6 +265,13 @@ export function acexSeedOverlaySizesFromWcs(
   if (baseZoom == null) return
   for (const el of elements ?? []) {
     el.dataset[ACEX_OVERLAY_BASE_ZOOM] = String(baseZoom)
+    if (
+      el.classList.contains('mlcad-measure-dot') ||
+      el.classList.contains('mlcad-markup-dot') ||
+      el.classList.contains('mlcad-markup-preview-dot')
+    ) {
+      el.style.fontSize = `${fontSizePx}px`
+    }
   }
 }
 
