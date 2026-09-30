@@ -412,7 +412,7 @@ function paintMeasurementGroup(
     colorful.setFontSize?.(style.fontSize)
   }
   if (style.fontSize > 0) {
-    for (const overlay of group.canvases) {
+    for (const overlay of group.canvases ?? []) {
       overlay.canvas.style.fontSize = `${style.fontSize}px`
     }
   }

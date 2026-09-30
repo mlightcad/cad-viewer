@@ -90,6 +90,7 @@ function makeGroup(id: string): AcTrHtmlGroup {
     id,
     layer: MEASUREMENT_LAYER,
     children: [],
+    canvases: [],
     dispose: jest.fn()
   } as unknown as AcTrHtmlGroup
 }
