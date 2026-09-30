@@ -41,6 +41,7 @@ export type AcExHtmlMessageKey =
   | 'toolbar.measureContinuous'
   | 'toolbar.measureAngle'
   | 'toolbar.measureArc'
+  | 'toolbar.measureRadius'
   | 'toolbar.measureArea'
   | 'toolbar.measureCoordinate'
   | 'toolbar.clearMeasurements'
@@ -143,6 +144,7 @@ export type AcExHtmlMessageKey =
   | 'measurePanel.filterGroup'
   | 'measurePanel.filterDistance'
   | 'measurePanel.filterArc'
+  | 'measurePanel.filterRadius'
   | 'measurePanel.filterAngle'
   | 'measurePanel.filterArea'
   | 'measurePanel.empty'
@@ -174,6 +176,7 @@ export type AcExHtmlMessageKey =
   | 'status.measureContinuousHint'
   | 'status.measureAngleHint'
   | 'status.measureArcHint'
+  | 'status.measureRadiusHint'
   | 'status.measureAreaHint'
   | 'status.measureCoordinateHint'
   | 'status.measureExported'
@@ -205,6 +208,7 @@ export type AcExHtmlMessageKey =
   | 'status.coordinates'
   | 'status.angle'
   | 'status.arcLength'
+  | 'status.radius'
   | 'status.continuousTotal'
   | 'status.area'
   | 'status.lengthTotal'
@@ -265,6 +269,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureContinuous: 'Continuous',
       measureAngle: 'Angle',
       measureArc: 'Arc',
+      measureRadius: 'Radius',
       measureArea: 'Area',
       measureCoordinate: 'XY',
       clearMeasurements: 'Clear',
@@ -386,6 +391,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       filterGroup: 'Filter by type',
       filterDistance: 'Distance',
       filterArc: 'Arc',
+      filterRadius: 'Radius',
       filterAngle: 'Angle',
       filterArea: 'Area',
       empty: 'No measurements yet',
@@ -430,6 +436,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
         'Click vertex, then two points on each arm (object snap enabled).',
       measureArcHint:
         'Click a circle or arc to measure along it, or click start, a point on the arc, then end (object snap enabled). Ctrl (⌘ on Mac) switches major/minor arc.',
+      measureRadiusHint:
+        'Click a circle or arc to measure its radius (object snap enabled).',
       measureCoordinateHint:
         'Click a point to read its X/Y coordinates (object snap enabled).',
       measureExported: 'Exported {count} measurement(s).',
@@ -466,6 +474,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       angle: 'Angle: {value}',
       arcLength:
         'Arc length: {length} | Radius: {radius} | Angle: {angle} | Chord: {chord}',
+      radius: 'Radius: {value}',
       continuousTotal: 'Total length: {value}',
       area: 'Area: {value}',
       lengthTotal: 'Length total: {value}',
@@ -528,6 +537,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureContinuous: '连续测',
       measureAngle: '测角度',
       measureArc: '测弧长',
+      measureRadius: '测半径',
       measureArea: '测面积',
       measureCoordinate: '测坐标',
       clearMeasurements: '清除',
@@ -648,6 +658,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       filterGroup: '按类型筛选',
       filterDistance: '距离',
       filterArc: '弧长',
+      filterRadius: '半径',
       filterAngle: '角度',
       filterArea: '面积',
       empty: '暂无测量',
@@ -689,6 +700,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureAngleHint: '依次点击顶点与两条边上的点（已启用对象捕捉）。',
       measureArcHint:
         '点击圆或圆弧可沿其测量；否则依次点击弧起点、弧上一点与弧端点（已启用对象捕捉）。锁定后按 Ctrl（Mac 为 Control 或 ⌘）可在大弧与小弧之间切换。',
+      measureRadiusHint: '点击圆或圆弧以测量半径（已启用对象捕捉）。',
       measureCoordinateHint: '点击一点以读取其 X/Y 坐标（已启用对象捕捉）。',
       measureExported: '已导出 {count} 条测量。',
       measureImported: '已导入 {count} 条测量。',
@@ -722,6 +734,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       angle: '角度：{value}',
       arcLength:
         '弧长：{length} | 半径：{radius} | 总角度：{angle} | 弦长：{chord}',
+      radius: '半径：{value}',
       continuousTotal: '总长度：{value}',
       area: '面积：{value}',
       lengthTotal: '长度合计：{value}',
@@ -780,6 +793,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureContinuous: 'Spojité',
       measureAngle: 'Úhel',
       measureArc: 'Oblouk',
+      measureRadius: 'Poloměr',
       measureArea: 'Plocha',
       measureCoordinate: 'Souřadnice',
       clearMeasurements: 'Vymazat',
@@ -900,6 +914,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       filterGroup: 'Filtrovat podle typu',
       filterDistance: 'Vzdálenost',
       filterArc: 'Oblouk',
+      filterRadius: 'Poloměr',
       filterAngle: 'Úhel',
       filterArea: 'Plocha',
       empty: 'Zatím žádná měření',
@@ -942,6 +957,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
         'Klikněte na vrchol, poté na dva body na každém rameni (uchopení objektů zapnuto).',
       measureArcHint:
         'Klikněte na kružnici nebo oblouk pro měření podél něj, nebo klikněte na začátek, bod na oblouku a konec (uchopení objektů zapnuto). Ctrl (⌘ na Macu) přepíná velký/malý oblouk.',
+      measureRadiusHint:
+        'Klikněte na kružnici nebo oblouk pro změření poloměru (uchopení objektů zapnuto).',
       measureAreaHint:
         'Klepejte na vrcholy mnohoúhelníku; dokončete klepnutím na ✓ po alespoň třech bodech.',
       measureCoordinateHint:
@@ -980,6 +997,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       angle: 'Úhel: {value}',
       arcLength:
         'Délka oblouku: {length} | Poloměr: {radius} | Úhel: {angle} | Tětiva: {chord}',
+      radius: 'Poloměr: {value}',
       continuousTotal: 'Celková délka: {value}',
       area: 'Plocha: {value}',
       lengthTotal: 'Celková délka: {value}',
@@ -1042,6 +1060,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       measureContinuous: 'Sürekli',
       measureAngle: 'Açı',
       measureArc: 'Yay',
+      measureRadius: 'Yarıçap',
       measureArea: 'Alan',
       measureCoordinate: 'XY',
       clearMeasurements: 'Temizle',
@@ -1162,6 +1181,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       filterGroup: 'Türe göre filtrele',
       filterDistance: 'Mesafe',
       filterArc: 'Yay',
+      filterRadius: 'Yarıçap',
       filterAngle: 'Açı',
       filterArea: 'Alan',
       empty: 'Henüz ölçüm yok',
@@ -1204,6 +1224,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
         'Önce köşe noktasını, sonra her koldan birer nokta tıklayın (nesne yakalama etkin).',
       measureArcHint:
         'Ölçmek için bir çember veya yaya tıklayın; ya da yay başlangıcı, yay üzerindeki bir nokta ve yay sonunu tıklayın (nesne yakalama etkin). Ctrl (Mac’te ⌘) büyük/küçük yay arasında geçiş yapar.',
+      measureRadiusHint:
+        'Yarıçap ölçmek için bir çember veya yaya tıklayın (nesne yakalama etkin).',
       measureAreaHint:
         'Çokgen köşelerini dokunun; en az üç noktadan sonra bitirmek için ✓.',
       measureCoordinateHint:
@@ -1243,6 +1265,7 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       angle: 'Açı: {value}',
       arcLength:
         'Yay uzunluğu: {length} | Yarıçap: {radius} | Açı: {angle} | Kiriş: {chord}',
+      radius: 'Yarıçap: {value}',
       continuousTotal: 'Toplam uzunluk: {value}',
       area: 'Alan: {value}',
       lengthTotal: 'Toplam uzunluk: {value}',
@@ -1307,6 +1330,7 @@ const AR_MESSAGES: AcExMessageTree = {
     'measureContinuous': 'مستمر',
     'measureAngle': 'زاوية',
     'measureArc': 'قوس',
+    'measureRadius': 'نصف القطر',
     'measureArea': 'مساحة',
     'measureCoordinate': 'إحداثيات',
     'clearMeasurements': 'مسح',
@@ -1417,6 +1441,7 @@ const AR_MESSAGES: AcExMessageTree = {
     'filterGroup': 'التصفية حسب النوع',
     'filterDistance': 'مسافة',
     'filterArc': 'قوس',
+    'filterRadius': 'نصف القطر',
     'filterAngle': 'زاوية',
     'filterArea': 'مساحة',
     'empty': 'لا توجد قياسات حتى الآن',
@@ -1455,6 +1480,7 @@ const AR_MESSAGES: AcExMessageTree = {
     'measureContinuousHint': 'انقر على نقاط متتالية لقياس كل قطعة؛ انقر ✓ للإنهاء. اضغط مطولاً للالتقاط الدقيق.',
     'measureAngleHint': 'انقر على رأس الزاوية، ثم نقطة على كل ضلع (التقاط الكائنات مفعّل).',
     'measureArcHint': 'انقر على دائرة أو قوس للقياس عليه، أو انقر على نقطة البداية ثم نقطة على القوس ثم نقطة النهاية (التقاط الكائنات مفعّل). استخدم Ctrl (⌘ على Mac) للتبديل بين القوس الأكبر والأصغر.',
+    'measureRadiusHint': 'انقر على دائرة أو قوس لقياس نصف القطر (التقاط الكائنات مفعّل).',
     'measureAreaHint': 'انقر على رؤوس المضلع؛ انقر ✓ للإنهاء بعد ثلاث نقاط على الأقل.',
     'measureCoordinateHint': 'انقر على نقطة لقراءة إحداثيات X/Y الخاصة بها (التقاط الكائنات مفعّل).',
     'measureExported': 'تم تصدير {count} من القياسات.',
@@ -1488,6 +1514,7 @@ const AR_MESSAGES: AcExMessageTree = {
     'angle': 'الزاوية: {value}',
     'arcLength':
       'طول القوس: {length} | نصف القطر: {radius} | الزاوية: {angle} | الوتر: {chord}',
+    'radius': 'نصف القطر: {value}',
     'continuousTotal': 'إجمالي الطول: {value}',
     'area': 'المساحة: {value}',
     'lengthTotal': 'إجمالي الطول: {value}',

@@ -877,13 +877,19 @@ describe('AcExOsnapIndex', () => {
       x: 10,
       y: 0
     })
-    expect(index.findCircleOrArcNear(50.2, 0, 1)).toEqual({
+    const arcHit = index.findCircleOrArcNear(50.2, 0, 1)
+    expect(arcHit).toMatchObject({
       cx: 40,
       cy: 0,
       r: 10,
       x: 50,
       y: 0
     })
+    expect(arcHit?.arc).toBeDefined()
+    expect(arcHit!.arc!.start.x).toBeCloseTo(50, 5)
+    expect(arcHit!.arc!.start.y).toBeCloseTo(0, 5)
+    expect(arcHit!.arc!.end.x).toBeCloseTo(40, 5)
+    expect(arcHit!.arc!.end.y).toBeCloseTo(10, 5)
     expect(index.findCircleOrArcNear(30, 0, 1)).toBeUndefined()
   })
 

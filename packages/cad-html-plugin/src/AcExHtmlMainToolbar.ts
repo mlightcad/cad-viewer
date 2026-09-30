@@ -205,6 +205,7 @@ export function acexHtmlAnnotateToolbarDom(scope: ParentNode = document): void {
     },
     'measure-angle': { 'data-action': 'measure', 'data-measure-mode': 'angle' },
     'measure-arc': { 'data-action': 'measure', 'data-measure-mode': 'arc' },
+    'measure-radius': { 'data-action': 'measure', 'data-measure-mode': 'radius' },
     'measure-area': { 'data-action': 'measure', 'data-measure-mode': 'area' },
     'measure-coordinate': {
       'data-action': 'measure',
@@ -467,6 +468,12 @@ function createMeasureItem(
         'toolbar.measureArc',
         AcExHtmlIcons.measureArc,
         'arc'
+      ),
+      modeChild(
+        'measure-radius',
+        'toolbar.measureRadius',
+        AcExHtmlIcons.measureRadius,
+        'radius'
       ),
       modeChild(
         'measure-area',

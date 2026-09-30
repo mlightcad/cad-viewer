@@ -14,6 +14,7 @@ export type AcExMeasurementType =
   | 'angle'
   | 'area'
   | 'arc'
+  | 'radius'
   | 'point'
 
 /** 2D world point stored in a measurement sidecar. */
@@ -74,6 +75,14 @@ export interface AcExMeasurementArcGeometry {
   through?: AcExMeasurementPoint2d
 }
 
+/** Radial dimension from circle/arc center to a circumference point. */
+export interface AcExMeasurementRadiusGeometry {
+  type: 'radius'
+  center: AcExMeasurementPoint2d
+  /** Point on the circumference that defines the dimension direction. */
+  point: AcExMeasurementPoint2d
+}
+
 export interface AcExMeasurementPointGeometry {
   type: 'point'
   position: AcExMeasurementPoint2d
@@ -84,6 +93,7 @@ export type AcExMeasurementGeometry =
   | AcExMeasurementAngleGeometry
   | AcExMeasurementAreaGeometry
   | AcExMeasurementArcGeometry
+  | AcExMeasurementRadiusGeometry
   | AcExMeasurementPointGeometry
 
 /** One committed measurement in a sidecar file. */

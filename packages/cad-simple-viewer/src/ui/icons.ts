@@ -97,6 +97,11 @@ export const ICON_MEASURE_ARC = measureToolIcon(
   `<g fill="none" stroke-linejoin="miter"><path stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" d="M4.9 11.6A8.3 8.3 0 0 1 13.2 3.3"/><path stroke="currentColor" stroke-width="1.35" stroke-linecap="square" d="M10.4 11.6H13.2V8.8"/><path stroke="currentColor" stroke-width="1.35" stroke-linecap="butt" d="M13.2 11.6v1.7"/><rect stroke="${TOOL_ICON_ACCENT}" stroke-width="1.15" x="3.65" y="10.35" width="2.5" height="2.5"/><rect stroke="${TOOL_ICON_ACCENT}" stroke-width="1.15" x="11.95" y="2.05" width="2.5" height="2.5"/></g>`
 )
 
+/** Measure radius icon (circle with a radial dimension line over a ruler). */
+export const ICON_MEASURE_RADIUS = measureToolIcon(
+  `<circle fill="none" stroke="${TOOL_ICON_ACCENT}" stroke-width="1.4" cx="9.1" cy="7.3" r="4.7"/><circle fill="${TOOL_ICON_ACCENT}" cx="9.1" cy="7.3" r="1.05"/><path fill="none" stroke="${TOOL_ICON_ACCENT}" stroke-width="1.35" stroke-linecap="round" d="M9.1 7.3 13.35 3.7"/><path fill="${TOOL_ICON_ACCENT}" d="M13.35 3.7 11.15 4.2 12.55 5.7Z"/>`
+)
+
 /** Measure point / coordinates icon (axes, dashed projections, and a point over a ruler). */
 export const ICON_MEASURE_POINT = measureToolIcon(
   `<g fill="none" stroke="${TOOL_ICON_ACCENT}" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="1.4" d="M4 4.8v7.4h7.6"/><path stroke-width="1.2" stroke-dasharray="1.7 1.2" d="M4 6.9h7M11 12.2V6.9"/></g><path fill="${TOOL_ICON_ACCENT}" d="M4 2.5 2.45 4.8h3.1ZM13.8 12.2 11.5 10.7v3Z"/><circle fill="${TOOL_ICON_ACCENT}" cx="11" cy="6.9" r="1.3"/>`

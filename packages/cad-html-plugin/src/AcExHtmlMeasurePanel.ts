@@ -17,15 +17,17 @@ const TYPE_I18N: Record<AcExMeasurementType, string> = {
   angle: 'toolbar.measureAngle',
   area: 'toolbar.measureArea',
   arc: 'toolbar.measureArc',
+  radius: 'toolbar.measureRadius',
   point: 'toolbar.measureCoordinate'
 }
 
-const FILTER_TYPES = ['distance', 'arc', 'angle', 'area'] as const
+const FILTER_TYPES = ['distance', 'arc', 'radius', 'angle', 'area'] as const
 type AcExMeasureFilterType = (typeof FILTER_TYPES)[number]
 
 const FILTER_I18N: Record<AcExMeasureFilterType, AcExHtmlMessageKey> = {
   distance: 'measurePanel.filterDistance',
   arc: 'measurePanel.filterArc',
+  radius: 'measurePanel.filterRadius',
   angle: 'measurePanel.filterAngle',
   area: 'measurePanel.filterArea'
 }

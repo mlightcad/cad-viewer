@@ -172,6 +172,7 @@ describe('buildAcExHtmlShellBody', () => {
     expect(html).toContain('id="mlcad-layer-drawer"')
     expect(html).toContain('data-measure-filter="distance"')
     expect(html).toContain('data-measure-filter="arc"')
+    expect(html).toContain('data-measure-filter="radius"')
     expect(html).toContain('data-measure-filter="angle"')
     expect(html).toContain('data-measure-filter="area"')
     expect(html).toContain('mlcad-review-detail-close')

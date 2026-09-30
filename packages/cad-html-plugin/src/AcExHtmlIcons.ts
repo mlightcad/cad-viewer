@@ -35,6 +35,7 @@ import {
   ICON_MEASURE_CONTINUOUS,
   ICON_MEASURE_COORDINATE,
   ICON_MEASURE_DISTANCE,
+  ICON_MEASURE_RADIUS,
   ICON_MEASUREMENT_PANEL,
   ICON_ORTHO_MODE,
   ICON_OSNAP,
@@ -76,6 +77,8 @@ export const AcExHtmlIcons = {
   measureAngle: ICON_MEASURE_ANGLE,
   /** Measure-arc-length toolbar icon. */
   measureArc: ICON_MEASURE_ARC,
+  /** Measure-radius toolbar icon. */
+  measureRadius: ICON_MEASURE_RADIUS,
   /** Measure-area toolbar icon. */
   measureArea: ICON_MEASURE_AREA,
   /** Measure-coordinate toolbar icon. */

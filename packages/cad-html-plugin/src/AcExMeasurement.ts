@@ -1,5 +1,5 @@
 /**
- * Measurement tools for the offline HTML viewer (distance, continuous, angle, arc, area, coordinate).
+ * Measurement tools for the offline HTML viewer (distance, continuous, angle, arc, radius, area, coordinate).
  *
  * @module acexMeasurement
  * @packageDocumentation
@@ -61,7 +61,7 @@ import {
   type AcExTrackingOptions,
   constrainToAcExTracking
 } from './AcExMeasureTracking'
-import type { AcExOsnapPoint } from './AcExOsnap'
+import type { AcExCircleOrArcNearHit, AcExOsnapPoint } from './AcExOsnap'
 import { acexIsOverlayGrip, acexOverlayGripClassName } from './AcExOverlayGrip'
 import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
 import type { AcExSessionHistory } from './AcExSessionHistory'
@@ -99,6 +99,7 @@ const MEASURE_HIT_THRESHOLD_PX = 10
  * - `continuous` — chained linear distances (successive vertices until Enter/Esc).
  * - `angle` — three-point angle (vertex + two arm endpoints).
  * - `arc` — three-point arc length (start, point on arc, end).
+ * - `radius` — circle/arc radius (click a circle or arc).
  * - `area` — multi-point polygon area.
  * - `coordinate` — single-point X/Y readout in drawing units.
  */
@@ -107,6 +108,7 @@ export type AcExMeasureMode =
   | 'continuous'
   | 'angle'
   | 'arc'
+  | 'radius'
   | 'area'
   | 'coordinate'
 
@@ -172,14 +174,12 @@ export interface AcExMeasureViewApi {
 
   /**
    * Circle or circular-arc under `(x, y)` in WCS, used to lock arc-length
-   * picks onto that circumference. `x`/`y` on the result are the nearest
-   * point on the drawn stroke (not a radial projection onto the full circle).
-   * Omit when the snapshot has no osnap catalog.
+   * picks onto that circumference and to hover-highlight the entity before
+   * pick. `x`/`y` on the result are the nearest point on the drawn stroke
+   * (not a radial projection onto the full circle). Omit when the snapshot
+   * has no osnap catalog.
    */
-  findCircleOrArcNear?: (
-    x: number,
-    y: number
-  ) => { cx: number; cy: number; r: number; x: number; y: number } | null
+  findCircleOrArcNear?: (x: number, y: number) => AcExCircleOrArcNearHit | null
 
   /**
    * Formats a linear value using snapshot unit precision (e.g. `LUPREC`).
@@ -307,6 +307,10 @@ function measurementGeometryExtents(
         x: geometry.center.x + geometry.radius,
         y: geometry.center.y + geometry.radius
       })
+      break
+    case 'radius':
+      add(geometry.center)
+      add(geometry.point)
       break
     case 'point':
       add(geometry.position)
@@ -1829,6 +1833,9 @@ export class AcExMeasureController {
       case 'arc':
         handled = this._pointerArc(point, clientX, clientY)
         break
+      case 'radius':
+        handled = this._pointerRadius(point, clientX, clientY)
+        break
       case 'area':
         handled = this._pointerArea(point, clientX, clientY)
         break
@@ -2023,6 +2030,8 @@ export class AcExMeasureController {
         return this._i18n.t('status.measureAngleHint')
       case 'arc':
         return this._i18n.t('status.measureArcHint')
+      case 'radius':
+        return this._i18n.t('status.measureRadiusHint')
       case 'area':
         return this._i18n.t('status.measureAreaHint')
       case 'coordinate':
@@ -2084,7 +2093,7 @@ export class AcExMeasureController {
   private _hidePreview(): void {
     this._overlayLayer
       .querySelectorAll(
-        '.mlcad-measure-canvas--preview, .mlcad-measure-canvas--preview-line, .mlcad-measure-badge--preview'
+        '.mlcad-measure-canvas--preview, .mlcad-measure-canvas--preview-line, .mlcad-measure-canvas--hover-entity, .mlcad-measure-badge--preview'
       )
       .forEach(el => el.remove())
   }
@@ -2172,31 +2181,42 @@ export class AcExMeasureController {
       const point = this._resolvePointerWithOsnap(x, y)
       switch (this._mode) {
         case 'distance':
+          this._clearCircleArcHoverHighlight()
           if (this._points.length === 1) {
             this._previewDistance(point)
           }
           break
         case 'continuous':
+          this._clearCircleArcHoverHighlight()
           if (this._points.length >= 1) {
             this._previewContinuous(point)
           }
           break
         case 'angle':
+          this._clearCircleArcHoverHighlight()
           if (this._points.length >= 1) {
             this._previewAngle(point)
           }
           break
         case 'arc':
-          if (this._points.length >= 1) {
+          if (this._points.length === 0) {
+            this._syncCircleArcHoverHighlight(x, y, point)
+          } else {
+            this._clearCircleArcHoverHighlight()
             this._previewArc(point, x, y)
           }
           break
+        case 'radius':
+          this._syncCircleArcHoverHighlight(x, y, point)
+          break
         case 'area':
+          this._clearCircleArcHoverHighlight()
           if (this._points.length >= 1) {
             this._previewArea(point)
           }
           break
         case 'coordinate':
+          this._clearCircleArcHoverHighlight()
           this._previewCoordinate(point)
           break
       }
@@ -2206,6 +2226,7 @@ export class AcExMeasureController {
 
     // Finger/button up: keep confirmed segments, never leave a snap glyph.
     this._onOsnapMarker(null, null)
+    this._clearCircleArcHoverHighlight()
     switch (this._mode) {
       case 'continuous':
         this._previewContinuous(null)
@@ -2619,6 +2640,249 @@ export class AcExMeasureController {
         onMove: world => {
           end.set(world.x, world.y)
           this._placeDomAt(endDot, world)
+          refresh()
+        },
+        onCommit
+      })
+    )
+    this._syncGripPointerEvents()
+  }
+
+  /**
+   * Radius tool: click a circle or arc to commit immediately.
+   * Clicks that miss circular geometry are ignored.
+   * @internal
+   */
+  private _pointerRadius(
+    point: THREE.Vector2,
+    clientX: number,
+    clientY: number
+  ): boolean {
+    const raw = this._view.screenToWcs(clientX, clientY)
+    const lock =
+      this._view.findCircleOrArcNear?.(raw.x, raw.y) ??
+      this._view.findCircleOrArcNear?.(point.x, point.y)
+    if (!lock || !(lock.r > 0)) return true
+    const center = new THREE.Vector2(lock.cx, lock.cy)
+    const onCircle = pointLiesOnCircle(point, lock)
+      ? point.clone()
+      : new THREE.Vector2(lock.x, lock.y)
+    const rim = snapPointToCircle(onCircle, lock)
+    this._commitRadius(center, rim)
+    this._hidePreview()
+    this._exitCreateModeKeepStatus()
+    return true
+  }
+
+  /** Formats a radius badge / status value with the CAD `R` prefix. @internal */
+  private _formatRadiusLabel(radius: number): string {
+    return `R ${this._view.formatLength(radius)}`
+  }
+
+  /**
+   * Hover-highlight the circle/arc under the cursor while radius (or the first
+   * pick of arc) is active, so the user can see which entity will be measured.
+   * @internal
+   */
+  private _syncCircleArcHoverHighlight(
+    clientX: number,
+    clientY: number,
+    point: THREE.Vector2
+  ): void {
+    const raw = this._view.screenToWcs(clientX, clientY)
+    const hit =
+      this._view.findCircleOrArcNear?.(raw.x, raw.y) ??
+      this._view.findCircleOrArcNear?.(point.x, point.y)
+    if (!hit || !(hit.r > 0)) {
+      this._clearCircleArcHoverHighlight()
+      return
+    }
+    this._drawCircleArcHoverHighlight(hit)
+    this._requestRender()
+  }
+
+  /** Removes the circle/arc hover-highlight overlay. @internal */
+  private _clearCircleArcHoverHighlight(): void {
+    this._overlayLayer
+      .querySelectorAll('.mlcad-measure-canvas--hover-entity')
+      .forEach(el => el.remove())
+  }
+
+  /**
+   * Strokes the hovered circle (full) or arc (open sweep) in measure accent.
+   * @internal
+   */
+  private _drawCircleArcHoverHighlight(hit: AcExCircleOrArcNearHit): void {
+    let canvas = this._overlayLayer.querySelector<HTMLCanvasElement>(
+      '.mlcad-measure-canvas--hover-entity'
+    )
+    if (!canvas) {
+      canvas = makeOverlayCanvas(this._overlayLayer)
+      canvas.classList.add('mlcad-measure-canvas--hover-entity')
+    }
+    const synced = this._syncCanvas(canvas)
+    if (!synced) return
+    const { ctx, dpr } = synced
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.save()
+    ctx.scale(dpr, dpr)
+
+    const rootRect = this._overlayRootOffset()
+    const sc = this._view.wcsToScreen(new THREE.Vector2(hit.cx, hit.cy))
+    const cx = sc.x - rootRect.left
+    const cy = sc.y - rootRect.top
+    const onCurve = this._view.wcsToScreen(new THREE.Vector2(hit.x, hit.y))
+    const screenR = Math.hypot(onCurve.x - sc.x, onCurve.y - sc.y)
+    if (!(screenR > 0.5)) {
+      ctx.restore()
+      return
+    }
+
+    ctx.beginPath()
+    if (hit.arc) {
+      const ss = this._view.wcsToScreen(
+        new THREE.Vector2(hit.arc.start.x, hit.arc.start.y)
+      )
+      const se = this._view.wcsToScreen(
+        new THREE.Vector2(hit.arc.end.x, hit.arc.end.y)
+      )
+      const st = this._view.wcsToScreen(
+        new THREE.Vector2(hit.arc.through.x, hit.arc.through.y)
+      )
+      const sa = Math.atan2(ss.y - sc.y, ss.x - sc.x)
+      const ea = Math.atan2(se.y - sc.y, se.x - sc.x)
+      const midA = Math.atan2(st.y - sc.y, st.x - sc.x)
+      const antiClockwise = !isAngleOnSweep(sa, midA, ea)
+      ctx.arc(cx, cy, screenR, sa, ea, antiClockwise)
+    } else {
+      ctx.arc(cx, cy, screenR, 0, Math.PI * 2)
+    }
+    ctx.strokeStyle = this._measureCss()
+    ctx.lineWidth = this._scaledCanvasLineWidth(4, canvas)
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  /**
+   * Persists a radius measurement: radial line with arrows, endpoint dots,
+   * and midpoint badge.
+   * @internal
+   */
+  private _commitRadius(
+    centerIn: THREE.Vector2,
+    pointIn: THREE.Vector2,
+    existing?: AcExMeasurementRecord
+  ): void {
+    const center = centerIn.clone()
+    const point = pointIn.clone()
+    const radius = dist2(center, point)
+    const id = this._startCommit(existing?.id)
+    const label = this._formatRadiusLabel(radius)
+    this._clampCommitBadgeForRef(
+      label,
+      acexScreenSegmentLengthPx(p => this._wcsToScreenPoint(p), center, point),
+      existing,
+      { scaleArrows: true }
+    )
+    this._addPersistentLine([center, point], { bothArrows: true })
+    const dot1 = this._addDot(center)
+    const dot2 = this._addDot(point)
+    const mid = new THREE.Vector2(
+      (center.x + point.x) / 2,
+      (center.y + point.y) / 2
+    )
+    const badge = this._addBadge(mid, label)
+    const record =
+      existing ??
+      this._makeRecord(id, 'radius', {
+        type: 'radius',
+        center: { x: center.x, y: center.y },
+        point: { x: point.x, y: point.y }
+      })
+    this._finishCommit(
+      (clientX, clientY, threshold) => {
+        const sa = this._view.wcsToScreen(center)
+        const sb = this._view.wcsToScreen(point)
+        return (
+          distPointToSegmentPx(clientX, clientY, sa.x, sa.y, sb.x, sb.y) <=
+          threshold
+        )
+      },
+      null,
+      radius,
+      record
+    )
+    this._bindRadiusGrips(id, record, center, point, mid, dot1, dot2, badge)
+    this._statusEl.textContent = this._i18n.t('status.radius', {
+      value: this._view.formatLength(radius)
+    })
+  }
+
+  /** Endpoint grips for a radius measurement. @internal */
+  private _bindRadiusGrips(
+    id: string,
+    record: AcExMeasurementRecord,
+    center: THREE.Vector2,
+    point: THREE.Vector2,
+    mid: THREE.Vector2,
+    centerDot: HTMLElement,
+    pointDot: HTMLElement,
+    badge: HTMLElement
+  ): void {
+    const parts = this._committed.find(m => m.id === id)?.parts
+    if (!parts) return
+    const g = record.geometry
+    if (g.type !== 'radius') return
+    g.center.x = center.x
+    g.center.y = center.y
+    g.point.x = point.x
+    g.point.y = point.y
+
+    const refresh = () => {
+      mid.set((center.x + point.x) / 2, (center.y + point.y) / 2)
+      const radius = dist2(center, point)
+      badge.textContent = this._formatRadiusLabel(radius)
+      this._placeDomAt(badge, mid)
+      g.center.x = center.x
+      g.center.y = center.y
+      g.point.x = point.x
+      g.point.y = point.y
+      for (const fn of this._redrawListeners) fn()
+      this._view.render()
+      return radius
+    }
+
+    const isEnabled = () => this._gripsEnabled()
+    const onSelect = () => this._selectOnly(id)
+    const onCommit = () => {
+      const radius = refresh()
+      this._touchMeasureGeometry(id, null, radius)
+    }
+    parts.cleanups.push(
+      acexBindMarkupPointerDrag({
+        el: centerDot,
+        clientToWorld: (x, y) => this._clientToWorld(x, y),
+        isEnabled,
+        onPointerDown: onSelect,
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
+        onMove: world => {
+          center.set(world.x, world.y)
+          this._placeDomAt(centerDot, world)
+          refresh()
+        },
+        onCommit
+      }),
+      acexBindMarkupPointerDrag({
+        el: pointDot,
+        clientToWorld: (x, y) => this._clientToWorld(x, y),
+        isEnabled,
+        onPointerDown: onSelect,
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
+        onMove: world => {
+          point.set(world.x, world.y)
+          this._placeDomAt(pointDot, world)
           refresh()
         },
         onCommit
@@ -4082,7 +4346,10 @@ export class AcExMeasureController {
       return
     }
     this._edit('Add Measurement', () => {
-      const style = this._ensureStyleWcs(record.style, record.type === 'distance')
+      const style = this._ensureStyleWcs(
+        record.style,
+        record.type === 'distance' || record.type === 'radius'
+      )
       const committedRecord = { ...record, id: parts.id, style }
       this._committed.push({
         id: parts.id,
@@ -4349,6 +4616,13 @@ export class AcExMeasureController {
           } else {
             this._commitShortArc(record)
           }
+          break
+        case 'radius':
+          this._commitRadius(
+            new THREE.Vector2(g.center.x, g.center.y),
+            new THREE.Vector2(g.point.x, g.point.y),
+            record
+          )
           break
         case 'point':
           this._commitCoordinate(

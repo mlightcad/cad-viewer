@@ -68,7 +68,7 @@ describe('setupAcExHtmlMeasurePanel', () => {
 
     expect(document.querySelectorAll('tr[data-measure-id]')).toHaveLength(2)
     expect(document.querySelector('.mlcad-measure-search')).toBeNull()
-    expect(document.querySelectorAll('[data-measure-filter]')).toHaveLength(4)
+    expect(document.querySelectorAll('[data-measure-filter]')).toHaveLength(5)
 
     const angleFilter = document.querySelector(
       '[data-measure-filter="angle"]'
