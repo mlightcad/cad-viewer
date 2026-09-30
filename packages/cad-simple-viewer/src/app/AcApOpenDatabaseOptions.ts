@@ -83,15 +83,14 @@ export interface AcApOpenDatabaseOptions extends Omit<
    * and is ignored.
    *
    * - `false` (default): conversion still runs asynchronously, but the canvas
-   *   is not redrawn until every entity is converted, and the overlay stays
-   *   up until convert **and** deferred glyph jobs are idle
-   *   ({@link AcTrView2d.isProcessingEntities}). Zoom-to-fit also waits for
-   *   conversion to finish.
+   *   is not redrawn until every entity is converted. The open-file overlay
+   *   stays up until deferred text / INSERT glyph jobs finish
+   *   ({@link AcTrView2d.isProcessingEntities}).
    * - `true`: entity conversion yields across event-loop turns so geometry
-   *   paints as batches land and the camera can reframe. The open-file
-   *   overlay ("Rendering drawing ...") hides once entity convert finishes
-   *   ({@link AcTrView2d.isConvertingEntities}). Deferred text / INSERT glyph
-   *   geometry may still finalize afterward, and pan/zoom are already enabled.
+   *   paints as batches land and the camera can reframe. The overlay hides
+   *   once entity convert finishes ({@link AcTrView2d.isConvertingEntities}).
+   *   Deferred text / INSERT glyph geometry may still finalize afterward, and
+   *   pan/zoom are already enabled.
    *
    * Export / CLI completeness is not controlled by this flag. Callers that
    * need fully drawable text (HTML/PDF/PNG, headless scripts) still wait via

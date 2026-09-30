@@ -1,12 +1,14 @@
 export {
   asyncComplexLineTypeGlyphs,
+  asyncDrawSharedGlyphGroup,
   buildComplexLineTypeGeometry,
   estimateComplexLineTypeCycles,
   hasPendingComplexLineTypeGlyphs,
   MAX_COMPLEX_LINETYPE_CYCLES,
   resolveLineTypeScale,
   resolveLinetypeEmbeddedText,
-  syncComplexLineTypeGlyphs
+  syncComplexLineTypeGlyphs,
+  syncDrawSharedGlyphGroup
 } from './AcTrComplexLineBuilder'
 export {
   COMPLEX_LTYPE_ABSOLUTE_ROTATION,

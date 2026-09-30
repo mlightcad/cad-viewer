@@ -445,6 +445,101 @@ async function drawSharedTextGroupAsync(group: AcTrMText[]): Promise<void> {
   }
 }
 
+type SharedPlacement = { x: number; y: number; z: number; rz: number }
+
+function snapshotSharedPlacements(group: AcTrGlyphEntity[]): SharedPlacement[] {
+  return group.map(glyph => ({
+    x: glyph.position.x,
+    y: glyph.position.y,
+    z: glyph.position.z,
+    rz: glyph.rotation.z
+  }))
+}
+
+function applySharedPlacement(
+  glyph: AcTrGlyphEntity,
+  placement: SharedPlacement
+): void {
+  glyph.position.set(placement.x, placement.y, placement.z)
+  glyph.rotation.set(0, 0, placement.rz)
+}
+
+function prepareSharedGlyphGroup(group: AcTrGlyphEntity[]): {
+  placements: SharedPlacement[]
+  template: AcTrGlyphEntity
+} {
+  if (group[0] instanceof AcTrShape) {
+    for (const glyph of group) {
+      if (glyph instanceof AcTrShape) {
+        glyph.hoistBakedPlacement()
+      }
+    }
+  }
+  const placements = snapshotSharedPlacements(group)
+  const template = group[0]
+  template.position.set(0, 0, 0)
+  template.rotation.set(0, 0, 0)
+  return { placements, template }
+}
+
+function applySharedGlyphCopies(
+  group: AcTrGlyphEntity[],
+  placements: SharedPlacement[],
+  template: AcTrGlyphEntity
+): void {
+  for (let i = 0; i < group.length; i++) {
+    applySharedPlacement(group[i], placements[i])
+    if (i > 0) {
+      group[i].adoptSharedGeometryFrom(template)
+    }
+  }
+}
+
+/**
+ * Draws identical complex-linetype glyphs with one renderer pass.
+ *
+ * SHAPE symbols bake placement into the renderer payload. Those are moved onto
+ * the Object3D first so the shared mesh stays at the local origin.
+ *
+ * @param group - Glyphs that share {@link AcTrGlyphEntity.glyphStyleShareKey}.
+ */
+export function syncDrawSharedGlyphGroup(group: AcTrGlyphEntity[]): void {
+  if (group.length === 0) {
+    return
+  }
+  const { placements, template } = prepareSharedGlyphGroup(group)
+  template.syncDraw()
+  applySharedGlyphCopies(group, placements, template)
+}
+
+/**
+ * Async variant of {@link syncDrawSharedGlyphGroup}.
+ *
+ * Yields while aliasing large glyph groups so open-file progress can paint.
+ *
+ * @param group - Glyphs that share {@link AcTrGlyphEntity.glyphStyleShareKey}.
+ */
+export async function asyncDrawSharedGlyphGroup(
+  group: AcTrGlyphEntity[]
+): Promise<void> {
+  if (group.length === 0) {
+    return
+  }
+  const { placements, template } = prepareSharedGlyphGroup(group)
+  await template.asyncDraw()
+  let budgetStart = performance.now()
+  for (let i = 0; i < group.length; i++) {
+    applySharedPlacement(group[i], placements[i])
+    if (i > 0) {
+      group[i].adoptSharedGeometryFrom(template)
+    }
+    if (i > 0 && i % 64 === 0 && performance.now() - budgetStart >= 32) {
+      await new Promise<void>(resolve => setTimeout(resolve, 0))
+      budgetStart = performance.now()
+    }
+  }
+}
+
 function collectPendingComplexGlyphs(entity: AcTrEntity): {
   textGroups: Map<string, AcTrMText[]>
   others: AcTrGlyphEntity[]
