@@ -1,7 +1,7 @@
 import {
+  AcDbAngleUnits,
   type AcDbDatabase,
   type AcDbFormatterOptions,
-  AcDbAngleUnits,
   AcDbLinearUnits
 } from '@mlightcad/data-model'
 
