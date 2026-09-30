@@ -76,6 +76,11 @@ export class AcTrMText extends AcTrGlyphEntity {
     ].join('\0')
   }
 
+  /** @inheritdoc */
+  protected override contentShareKey(): string {
+    return this.linetypeGlyphShareKey
+  }
+
   /**
    * @inheritdoc
    */

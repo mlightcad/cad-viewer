@@ -115,6 +115,37 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
   }
 
   /**
+   * Groups identical complex-linetype glyphs so one mesh can be shared.
+   *
+   * Includes color and layer because shared leaves also share materials.
+   * Placement is not part of the key.
+   */
+  get glyphStyleShareKey(): string {
+    return `${this.colorShareToken()}\0${this.contentShareKey()}`
+  }
+
+  /**
+   * Content identity for {@link glyphStyleShareKey}, without placement.
+   */
+  protected contentShareKey(): string {
+    return this.constructor.name
+  }
+
+  /**
+   * Stable color token for glyph mesh sharing.
+   */
+  private colorShareToken(): string {
+    const color = this._entityTraits.color
+    if (color.isByLayer) {
+      return `L:${this._entityTraits.layer ?? ''}`
+    }
+    if (color.isByBlock) {
+      return 'B'
+    }
+    return `C:${color.colorIndex ?? ''}:${color.RGB ?? ''}`
+  }
+
+  /**
    * Returns the insertion point used to resolve batch versus unbatch placement.
    *
    * @returns World-space insertion point for this glyph entity.

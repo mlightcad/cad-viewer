@@ -2,9 +2,14 @@ import { AcDbObjectId, AcGeMatrix3d } from '@mlightcad/data-model'
 import { FontManager } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
+import {
+  asyncDrawSharedGlyphGroup,
+  syncDrawSharedGlyphGroup
+} from '../linetype/AcTrComplexLineBuilder'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrMatrixUtil, effectiveLayer } from '../util'
 import { AcTrEntity } from './AcTrEntity'
+import { AcTrGlyphEntity } from './AcTrGlyphEntity'
 import { AcTrGroupCompactor } from './AcTrGroupCompactor'
 
 export interface AcTrEntityBox {
@@ -350,6 +355,31 @@ export class AcTrGroup extends AcTrEntity {
   }
 
   /**
+   * Groups handle-less complex-linetype glyphs that can share one mesh.
+   *
+   * Real TEXT/MTEXT/SHAPE entities keep their database handle and are drawn
+   * individually. Generated linetype symbols have no handle.
+   *
+   * @returns True when `child` was added to a shared group.
+   */
+  private bucketSharedLinetypeGlyph(
+    child: AcTrEntity,
+    shared: Map<string, AcTrGlyphEntity[]>
+  ): boolean {
+    if (child.objectId || !(child instanceof AcTrGlyphEntity)) {
+      return false
+    }
+    const key = child.glyphStyleShareKey
+    const bucket = shared.get(key)
+    if (bucket) {
+      bucket.push(child)
+    } else {
+      shared.set(key, [child])
+    }
+    return true
+  }
+
+  /**
    * Finishes deferred geometry for block-definition entities and attributes,
    * then refreshes spatial-index bounds.
    *
@@ -360,8 +390,12 @@ export class AcTrGroup extends AcTrEntity {
    */
   override syncDraw(): void {
     const sourceEntities = new Set(this.getSourceEntities())
+    const shared = new Map<string, AcTrGlyphEntity[]>()
     const finalizeDeferredEntity = (child: AcTrEntity) => {
       if (child.hasDrawableGeometry()) {
+        return
+      }
+      if (this.bucketSharedLinetypeGlyph(child, shared)) {
         return
       }
       child.syncDraw()
@@ -380,6 +414,9 @@ export class AcTrGroup extends AcTrEntity {
       }
       finalizeDeferredEntity(child)
     })
+    for (const group of shared.values()) {
+      syncDrawSharedGlyphGroup(group)
+    }
     this.refreshWcsChildBoxesFromChildren()
   }
 
@@ -390,8 +427,12 @@ export class AcTrGroup extends AcTrEntity {
   override async asyncDraw(): Promise<void> {
     const sourceEntities = new Set(this.getSourceEntities())
     const tasks: Array<() => Promise<void>> = []
+    const shared = new Map<string, AcTrGlyphEntity[]>()
     const enqueue = (child: AcTrEntity) => {
       if (child.hasDrawableGeometry()) {
+        return
+      }
+      if (this.bucketSharedLinetypeGlyph(child, shared)) {
         return
       }
       tasks.push(() => child.asyncDraw())
@@ -410,6 +451,9 @@ export class AcTrGroup extends AcTrEntity {
       }
       enqueue(child)
     })
+    for (const group of shared.values()) {
+      tasks.push(() => asyncDrawSharedGlyphGroup(group))
+    }
     // Start glyph draws in small batches and return to the event loop so a
     // block with tens of thousands of texts cannot allocate them all at once.
     const chunkSize = 24

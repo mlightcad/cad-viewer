@@ -585,6 +585,7 @@ export class AcApDocManager {
     // skips onFontUrlChanged when the value equals its built-in default, which
     // would leave workers on an unset/stale font base URL.
     AcTrMTextRenderer.getInstance().setFontUrl(fontsUrl)
+    this.installFontFileLoadTimeout()
     acdbHostApplicationServices().workingDatabase = doc.database
 
     this._commandManager = new AcEdCommandStack()
@@ -597,15 +598,13 @@ export class AcApDocManager {
     this._busyIndicatorHost = busyHost
     this._openFileProgress = new AcApOpenFileProgressController(busyHost)
     this._openFileProgress.setSceneBusyGate(() => {
-      // `progressiveRendering` controls both stages of an open: mid-open
-      // paints, and whether "Rendering drawing ..." waits for deferred
-      // text / INSERT glyphs. Deprecated `waitForTextGeometry` is ignored.
-      // Off (default): stay up until convert and glyph jobs are idle.
-      // On: hide once entity convert finishes.
-      if (!this.openProgressView.progressiveRendering) {
-        return this.openProgressView.isProcessingEntities
-      }
-      return this.openProgressView.isConvertingEntities
+      const view = this.openProgressView
+      // Progressive open hides when entity convert finishes so pan/zoom work
+      // while glyphs catch up. Default open keeps "Rendering drawing ..."
+      // until deferred glyph jobs finish as well.
+      return view.progressiveRendering
+        ? view.isConvertingEntities
+        : view.isProcessingEntities
     })
     this._openFileProgress.setOnHidden(() => this.onOpenProgressHidden())
     this._busyIndicator = new AcApBusyIndicator(busyHost)
@@ -1625,6 +1624,52 @@ export class AcApDocManager {
   regen() {
     this.curView.clear()
     this.context.doc.database.regen()
+  }
+
+  /**
+   * Rejects a font-file download that never completes.
+   *
+   * {@link FontManager} awaits `FileLoader.loadAsync` with no deadline. Open
+   * always awaits main-thread {@link FontManager.requestFonts} from
+   * {@link AcTrView2d.awaitTextStyleFontsReady} before deferred glyph jobs,
+   * including when MTEXT geometry itself is drawn in workers. A stalled CDN
+   * therefore keeps `_pendingGeometryJobs` nonzero and the open overlay up.
+   *
+   * Worker isolates also load fonts, but {@link AcTrView2d.startTextStyleFontPreload}
+   * races that path with the same deadline; in-worker render requests still
+   * fall back to WebWorkerRenderer's request timeout.
+   */
+  private installFontFileLoadTimeout() {
+    const manager = FontManager.instance as unknown as {
+      loader?: {
+        loadAsync: (url: string) => Promise<unknown>
+        __cadFontLoadTimeout?: boolean
+      }
+    }
+    const loader = manager.loader
+    if (!loader || loader.__cadFontLoadTimeout) {
+      return
+    }
+    const original = loader.loadAsync.bind(loader)
+    // Keep in sync with AcTrView2d text-style font preload race.
+    const timeoutMs = 30_000
+    loader.loadAsync = (url: string) =>
+      new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          reject(new Error(`Font load timed out after ${timeoutMs}ms`))
+        }, timeoutMs)
+        original(url).then(
+          value => {
+            clearTimeout(timer)
+            resolve(value)
+          },
+          error => {
+            clearTimeout(timer)
+            reject(error)
+          }
+        )
+      })
+    loader.__cadFontLoadTimeout = true
   }
 
   /**

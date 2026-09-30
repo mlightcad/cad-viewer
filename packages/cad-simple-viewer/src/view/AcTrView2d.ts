@@ -3010,7 +3010,22 @@ export class AcTrView2d extends AcEdBaseView {
     this._textStyleFontPreloadEpoch = epoch
     let names: string[] = []
     try {
-      names = database.tables.textStyleTable.fonts ?? []
+      const table = database.tables.textStyleTable
+      names = [...(table.fonts ?? [])]
+      // `fonts` is DXF group 3/4 file names only. TrueType styles store the
+      // face on `font` / `extendedFont` (仿宋, SimHei).
+      if (table.newIterator) {
+        for (const record of table.newIterator()) {
+          const style = record.textStyle as {
+            font?: string
+            bigFont?: string
+            extendedFont?: string
+          }
+          if (style?.font) names.push(style.font)
+          if (style?.bigFont) names.push(style.bigFont)
+          if (style?.extendedFont) names.push(style.extendedFont)
+        }
+      }
     } catch {
       names = []
     }
@@ -3026,13 +3041,29 @@ export class AcTrView2d extends AcEdBaseView {
       return
     }
     const mtextRenderer = AcTrMTextRenderer.getInstance()
-    this._textStyleFontPreloadPromise = Promise.all([
+    // Same deadline as AcApDocManager.installFontFileLoadTimeout. Covers both
+    // main-thread requestFonts and worker-pool loadFonts so a stalled CDN
+    // cannot pin deferred glyph jobs / the open overlay indefinitely.
+    const preloadTimeoutMs = 30_000
+    const preload = Promise.all([
       FontManager.instance.requestFonts(preloadNames),
       // Worker isolates have their own FontManager; main-thread requestFonts
       // alone does not populate them before asyncRenderMText.
       mtextRenderer.loadFonts(fallbackFonts)
+    ])
+    this._textStyleFontPreloadPromise = Promise.race([
+      preload,
+      new Promise<never>((_, reject) => {
+        setTimeout(() => {
+          reject(
+            new Error(
+              `Text-style font preload timed out after ${preloadTimeoutMs}ms`
+            )
+          )
+        }, preloadTimeoutMs)
+      })
     ]).then(
-      () => {},
+      () => undefined,
       () => {
         // Glyph draw still falls back via FontManager defaults / '?'.
       }
