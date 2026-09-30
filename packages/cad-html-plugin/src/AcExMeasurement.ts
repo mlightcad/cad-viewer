@@ -4519,6 +4519,9 @@ export class AcExMeasureController {
     }
     for (const canvas of measure.parts.canvases) {
       canvas.classList.toggle('mlcad-measure-selected', selected)
+      if (measure.record.style.fontSize) {
+        canvas.style.fontSize = `${measure.record.style.fontSize}px`
+      }
     }
     this._syncGripPointerEvents()
   }

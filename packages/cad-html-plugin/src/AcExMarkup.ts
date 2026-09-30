@@ -2654,6 +2654,10 @@ export class AcExMarkupController {
         ) {
           el.style.color = baseColor
           el.style.borderColor = baseColor
+          const fontSize = item.record.style.fontSize
+          if (fontSize != null && fontSize > 0) {
+            el.style.fontSize = `${fontSize}px`
+          }
         } else if (el.classList.contains('mlcad-markup-dot')) {
           el.style.background = baseColor
           const fontSize = item.record.style.fontSize
@@ -2664,6 +2668,10 @@ export class AcExMarkupController {
       }
       for (const canvas of item.parts.canvases) {
         canvas.classList.toggle('mlcad-markup-selected', selected)
+        const fontSize = item.record.style.fontSize
+        if (fontSize != null && fontSize > 0) {
+          canvas.style.fontSize = `${fontSize}px`
+        }
       }
     }
     for (const fn of this._redrawListeners) fn()

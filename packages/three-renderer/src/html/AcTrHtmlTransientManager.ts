@@ -36,24 +36,28 @@ function ensureSelectionStyles(): void {
 .ml-html-callout.${AC_TR_HTML_SELECTED_CLASS},
 .ml-html-stamp.${AC_TR_HTML_SELECTED_CLASS} .ml-html-stamp-badge,
 .ml-html-stamp.${AC_TR_HTML_SELECTED_CLASS} img {
-  outline: 2px solid rgba(255, 213, 79, 0.85);
-  outline-offset: 1px;
+  /* Hard ring at half the original em thickness + soft glow */
+  outline: 0.075em solid rgba(255, 213, 79, 0.85);
+  outline-offset: 0.04em;
   box-shadow:
-    0 0 0 2px rgba(255, 213, 79, 0.4),
-    0 0 12px rgba(255, 213, 79, 0.75),
+    0 0 0 0.075em rgba(255, 213, 79, 0.4),
+    0 0 0.45em rgba(255, 213, 79, 0.85),
+    0 0 0.9em rgba(255, 213, 79, 0.55),
     var(--ml-ui-shadow, 0 1px 4px rgba(0, 0, 0, 0.2));
 }
-.ml-html-dot.${AC_TR_HTML_SELECTED_CLASS} {
+.ml-html-dot.${AC_TR_HTML_SELECTED_CLASS},
+.ml-html-grip.${AC_TR_HTML_SELECTED_CLASS} {
   box-shadow:
-    0 0 0 0.12em rgba(255, 213, 79, 0.75),
-    0 0 0.45em rgba(255, 213, 79, 0.9),
-    0 0 0.8em rgba(255, 213, 79, 0.5);
+    0 0 0 0.06em rgba(255, 213, 79, 0.75),
+    0 0 0.35em rgba(255, 213, 79, 0.9),
+    0 0 0.7em rgba(255, 213, 79, 0.5);
 }
 .${AC_TR_HTML_CANVAS_CLASS}.${AC_TR_HTML_SELECTED_CLASS} {
+  /* font-size is seeded from the paired badge so em tracks text size */
   filter:
-    drop-shadow(0 0 1.5px #ffd54f)
-    drop-shadow(0 0 4px rgba(255, 213, 79, 0.95))
-    drop-shadow(0 0 8px rgba(255, 213, 79, 0.55));
+    drop-shadow(0 0 0.12em #ffd54f)
+    drop-shadow(0 0 0.3em rgba(255, 213, 79, 0.95))
+    drop-shadow(0 0 0.6em rgba(255, 213, 79, 0.55));
 }
 `
   document.head.appendChild(style)
