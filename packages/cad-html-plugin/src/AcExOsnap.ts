@@ -23,7 +23,11 @@ import {
   pathEdgeNearAperture,
   pathPrimitiveBounds
 } from './AcExOsnapPath'
-import { primitiveToAcGeCurve } from './AcExOsnapPrimitiveToAcGe'
+import {
+  arcWcsPoint,
+  normalizeArcDelta,
+  primitiveToAcGeCurve
+} from './AcExOsnapPrimitiveToAcGe'
 import type {
   AcExOsnapMode,
   AcExOsnapPoint,
@@ -37,6 +41,27 @@ import type {
 
 export type { AcExOsnapMode, AcExOsnapPoint } from './AcExOsnapPrimitiveTypes'
 export { ACEX_DEFAULT_OSNAP_MODES } from './AcExOsnapPrimitiveTypes'
+
+/**
+ * Circle or circular-arc under the cursor for measure lock / hover highlight.
+ * `x`/`y` are the nearest point on the drawn stroke.
+ */
+export type AcExCircleOrArcNearHit = {
+  cx: number
+  cy: number
+  r: number
+  x: number
+  y: number
+  /**
+   * Present for open arcs (including polyline bulge segments). Omitted for
+   * full circles — highlight then strokes the complete circumference.
+   */
+  arc?: {
+    start: { x: number; y: number }
+    end: { x: number; y: number }
+    through: { x: number; y: number }
+  }
+}
 
 /**
  * How often to sample the wall-clock budget while walking segments / building
@@ -928,15 +953,13 @@ export class AcExOsnapIndex {
     px: number,
     py: number,
     threshold: number
-  ): { cx: number; cy: number; r: number; x: number; y: number } | undefined {
+  ): AcExCircleOrArcNearHit | undefined {
     if (threshold <= 0 || this.primitives.length === 0) return undefined
     const threshSq = threshold * threshold
     const box = searchBox(px, py, threshold)
     let bestDistSq = threshSq
     let bestAlign = -Infinity
-    let best:
-      | { cx: number; cy: number; r: number; x: number; y: number }
-      | undefined
+    let best: AcExCircleOrArcNearHit | undefined
 
     const mouse = { x: px, y: py }
     for (const hit of searchRbushForest(
@@ -963,12 +986,49 @@ export class AcExOsnapIndex {
         if (!best || isBetterArcLock(d2, align, bestDistSq, bestAlign)) {
           bestDistSq = d2
           bestAlign = align
-          best = {
+          const base: AcExCircleOrArcNearHit = {
             cx: arcPrim.cx,
             cy: arcPrim.cy,
             r: arcPrim.r,
             x: nearest.x,
             y: nearest.y
+          }
+          if (arcPrim.kind === 'arc') {
+            const start = arcWcsPoint(
+              arcPrim.cx,
+              arcPrim.cy,
+              arcPrim.r,
+              arcPrim.startAngle,
+              arcPrim.normalSign
+            )
+            const end = arcWcsPoint(
+              arcPrim.cx,
+              arcPrim.cy,
+              arcPrim.r,
+              arcPrim.endAngle,
+              arcPrim.normalSign
+            )
+            const delta = normalizeArcDelta(
+              arcPrim.startAngle,
+              arcPrim.endAngle
+            )
+            const mid = arcWcsPoint(
+              arcPrim.cx,
+              arcPrim.cy,
+              arcPrim.r,
+              arcPrim.startAngle + delta / 2,
+              arcPrim.normalSign
+            )
+            best = {
+              ...base,
+              arc: {
+                start: { x: start.x, y: start.y },
+                end: { x: end.x, y: end.y },
+                through: { x: mid.x, y: mid.y }
+              }
+            }
+          } else {
+            best = base
           }
         }
       }

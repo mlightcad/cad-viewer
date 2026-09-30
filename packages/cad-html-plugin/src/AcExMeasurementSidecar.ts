@@ -32,6 +32,7 @@ const MEASUREMENT_TYPES: readonly AcExMeasurementType[] = [
   'angle',
   'area',
   'arc',
+  'radius',
   'point'
 ]
 
@@ -118,6 +119,9 @@ function parseGeometry(
         end: raw.end,
         ...(isPoint(raw.through) ? { through: raw.through } : {})
       }
+    case 'radius':
+      if (!isPoint(raw.center) || !isPoint(raw.point)) return undefined
+      return { type, center: raw.center, point: raw.point }
     case 'point':
       if (!isPoint(raw.position)) return undefined
       return { type, position: raw.position }

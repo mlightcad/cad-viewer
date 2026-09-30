@@ -81,4 +81,52 @@ describe('AcExMeasureController session actions', () => {
     expect(controller.list()).toHaveLength(2)
     expect(statusEl.textContent).toBe('Total length: 30')
   })
+
+  it('does not commit radius from two free points', () => {
+    const { controller } = createController()
+    controller.setMode('radius')
+    controller.handlePointerDown(0, 0)
+    controller.handlePointerDown(10, 0)
+
+    expect(controller.isActive).toBe(true)
+    expect(controller.list()).toHaveLength(0)
+  })
+
+  it('commits radius from a locked circle/arc in one click', () => {
+    const root = document.createElement('div')
+    root.id = 'mlcad-root'
+    document.body.appendChild(root)
+    const statusEl = document.createElement('div')
+    const view: AcExMeasureViewApi = {
+      screenToWcs: (x, y) => new THREE.Vector2(x, y),
+      wcsToScreen: wcs => ({ x: wcs.x, y: wcs.y }),
+      render: () => undefined,
+      getSnapCacheKey: () => 0,
+      getCameraZoom: () => 1,
+      resolvePoint: (clientX, clientY) => ({
+        point: new THREE.Vector2(clientX, clientY),
+        snap: null
+      }),
+      findCircleOrArcNear: () => ({ cx: 0, cy: 0, r: 5, x: 5, y: 0 }),
+      formatLength: value => String(value),
+      formatAngle: value => String(value),
+      zoomToExtents: () => undefined
+    }
+    const controller = new AcExMeasureController({
+      root,
+      i18n: new AcExHtmlI18n('en'),
+      view,
+      statusEl,
+      getReadyStatus: () => 'Ready',
+      onOsnapMarker: () => undefined
+    })
+    controller.setMode('radius')
+    controller.handlePointerDown(5, 0)
+
+    expect(controller.isActive).toBe(false)
+    expect(controller.list()).toHaveLength(1)
+    expect(controller.list()[0]?.type).toBe('radius')
+    expect(controller.list()[0]?.valueText).toBe('R 5')
+    expect(statusEl.textContent).toBe('Radius: 5')
+  })
 })

@@ -76,7 +76,11 @@ import {
   acexRefreshMobileSnapLoupe,
   acexSetMobileSnapLoupePreciseCapture
 } from './AcExMobileSnapLoupe'
-import { AcExOsnapIndex, estimateOsnapRebuildWork } from './AcExOsnap'
+import {
+  type AcExCircleOrArcNearHit,
+  AcExOsnapIndex,
+  estimateOsnapRebuildWork
+} from './AcExOsnap'
 import { AcExOsnapMarker } from './AcExOsnapMarker'
 import {
   ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY,
@@ -2020,13 +2024,32 @@ async function startViewer(): Promise<void> {
               if (hit) {
                 const onCurve = modelPointToPaper(viewport, hit.x, hit.y)
                 const center = modelPointToPaper(viewport, hit.cx, hit.cy)
-                return {
+                const result: AcExCircleOrArcNearHit = {
                   cx: center.x,
                   cy: center.y,
                   r: modelScale === 0 ? hit.r : hit.r / modelScale,
                   x: onCurve.x,
                   y: onCurve.y
                 }
+                if (hit.arc) {
+                  const start = modelPointToPaper(
+                    viewport,
+                    hit.arc.start.x,
+                    hit.arc.start.y
+                  )
+                  const end = modelPointToPaper(
+                    viewport,
+                    hit.arc.end.x,
+                    hit.arc.end.y
+                  )
+                  const through = modelPointToPaper(
+                    viewport,
+                    hit.arc.through.x,
+                    hit.arc.through.y
+                  )
+                  result.arc = { start, end, through }
+                }
+                return result
               }
             }
           }
