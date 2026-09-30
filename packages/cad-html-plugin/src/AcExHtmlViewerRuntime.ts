@@ -77,9 +77,9 @@ import {
   acexSetMobileSnapLoupePreciseCapture
 } from './AcExMobileSnapLoupe'
 import {
+  type AcExCircleOrArcNearHit,
   AcExOsnapIndex,
-  estimateOsnapRebuildWork,
-  type AcExCircleOrArcNearHit
+  estimateOsnapRebuildWork
 } from './AcExOsnap'
 import { AcExOsnapMarker } from './AcExOsnapMarker'
 import {
