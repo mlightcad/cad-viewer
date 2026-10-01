@@ -497,6 +497,18 @@ export abstract class AcEdBaseView {
   abstract zoomTo(box: AcGeBox2d, margin: number): void
 
   /**
+   * Returns the axis-aligned world XY extents of drawable geometry in the
+   * active layout.
+   *
+   * Prefer this over database header `EXTMIN`/`EXTMAX` (`database.extents`)
+   * for framing and export: real DWGs often ship stale header boxes that are
+   * many times larger than the geometry that is actually drawn.
+   *
+   * @returns Drawable extents, or `undefined` when the scene has no geometry.
+   */
+  abstract getDrawingExtents(): AcGeBox2d | undefined
+
+  /**
    * Zooms the view to fit all visible entities in the current drawing.
    *
    * This method automatically calculates the bounding box of all entities
