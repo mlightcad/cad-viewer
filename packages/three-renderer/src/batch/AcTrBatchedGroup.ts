@@ -60,6 +60,44 @@ import {
 } from './highlight'
 
 /**
+ * Allocates the next entity draw-order Z offset.
+ *
+ * Wired by the view to {@link AcTrRenderer.allocateDrawOrderZ} so later
+ * entities occlude earlier ones (wipeout masking). Defaults to `0` so unit
+ * tests that construct {@link AcTrBatchedGroup} directly stay unchanged.
+ */
+export type AcTrDrawOrderZAllocator = () => number
+
+let activeDrawOrderZAllocator: AcTrDrawOrderZAllocator = () => 0
+
+/** Sets the process-wide draw-order Z allocator used when packing batches. */
+export function setAcTrDrawOrderZAllocator(
+  allocator: AcTrDrawOrderZAllocator
+): void {
+  activeDrawOrderZAllocator = allocator
+}
+
+/** Restores the no-op allocator (Z stays 0). */
+export function clearAcTrDrawOrderZAllocator(): void {
+  activeDrawOrderZAllocator = () => 0
+}
+
+/**
+ * Elevates linework-tier geometry so later entities occlude earlier ones.
+ * Hatch-tier fills (`drawOrder < 0`) keep Z unchanged so they stay under
+ * linework via `renderOrder` regardless of creation order.
+ */
+function applyDrawOrderZ(
+  worldOffset: THREE.Vector3,
+  material: THREE.Material
+): void {
+  const drawOrder = getMaterialMetadata(material).drawOrder ?? 0
+  if (drawOrder >= 0) {
+    worldOffset.z += activeDrawOrderZAllocator()
+  }
+}
+
+/**
  * Union of batch container classes resolved by {@link THREE.Object3D.getObjectById}
  * when {@link AcTrBatchedGroup} performs entity-level operations.
  *
@@ -1224,6 +1262,20 @@ export class AcTrBatchedGroup extends THREE.Group {
       if (drawableUserData.noBatch) {
         const cloned = this.cloneUnbatchedObject(object)
         cloned.visible = entityVisible && object.visible
+        // Elevate later unbatched linework so wipeouts can occlude it.
+        // Hatch-tier unbatched meshes keep Z=0 (under linework via renderOrder).
+        const material = (cloned as THREE.Mesh).material as
+          | THREE.Material
+          | THREE.Material[]
+          | undefined
+        const firstMaterial = Array.isArray(material) ? material[0] : material
+        if (
+          firstMaterial &&
+          (getMaterialMetadata(firstMaterial).drawOrder ?? 0) >= 0
+        ) {
+          cloned.position.z += activeDrawOrderZAllocator()
+          cloned.updateMatrix()
+        }
         getSceneDrawableUserData(cloned).bboxIntersectionCheck =
           bboxIntersectionCheck
         this._unbatchedObjects.add(cloned)
@@ -1342,6 +1394,8 @@ export class AcTrBatchedGroup extends THREE.Group {
       return false
     }
 
+    applyDrawOrderZ(worldOffset, material)
+
     const hasIndex = geometry.getIndex() !== null
     const batches = hasIndex ? this._lineWithIndexBatches : this._lineBatches
     const batchedLine = this.resolveOriginBatch(
@@ -1390,6 +1444,8 @@ export class AcTrBatchedGroup extends THREE.Group {
       return false
     }
 
+    applyDrawOrderZ(worldOffset, material)
+
     const batchedLine = this.resolveOriginBatch(
       this._line2Batches,
       material.id,
@@ -1429,6 +1485,8 @@ export class AcTrBatchedGroup extends THREE.Group {
     if (options.visible === false) {
       return false
     }
+
+    applyDrawOrderZ(worldOffset, material)
 
     const batchedPoint = this.resolveOriginBatch(
       this._pointBatches,
@@ -1472,6 +1530,8 @@ export class AcTrBatchedGroup extends THREE.Group {
     if (options.visible === false) {
       return false
     }
+
+    applyDrawOrderZ(worldOffset, material)
 
     const hasIndex = geometry.getIndex() !== null
     const batches = hasIndex ? this._meshWithIndexBatches : this._meshBatches
@@ -2490,6 +2550,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     const worldOffset = new THREE.Vector3().setFromMatrixPosition(
       object.matrixWorld
     )
+    applyDrawOrderZ(worldOffset, material)
     const batchedLine = this.resolveOriginBatch(
       batches,
       material.id,
@@ -2537,6 +2598,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     const worldOffset = new THREE.Vector3().setFromMatrixPosition(
       object.matrixWorld
     )
+    applyDrawOrderZ(worldOffset, material)
     const batchedLine = this.resolveOriginBatch(
       this._line2Batches,
       material.id,
@@ -2603,6 +2665,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     const worldOffset = new THREE.Vector3().setFromMatrixPosition(
       object.matrixWorld
     )
+    applyDrawOrderZ(worldOffset, material)
     const batchedMesh = this.resolveOriginBatch(
       batches,
       material.id,
@@ -2655,6 +2718,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     const worldOffset = new THREE.Vector3().setFromMatrixPosition(
       object.matrixWorld
     )
+    applyDrawOrderZ(worldOffset, material)
     const batchedPoint = this.resolveOriginBatch(
       this._pointBatches,
       material.id,
@@ -2760,6 +2824,52 @@ export class AcTrBatchedGroup extends THREE.Group {
     const threeColor = new THREE.Color(color)
     const paint = (material: THREE.Material) => {
       if (getMaterialMetadata(material).isForeground === true) {
+        AcTrMaterialUtil.setMaterialColor(material, threeColor)
+      }
+    }
+
+    for (const group of this.groups) {
+      group.forEach(batches => {
+        batches.forEach(batch => {
+          const material = batch.material
+          if (Array.isArray(material)) {
+            material.forEach(paint)
+          } else if (material) {
+            paint(material)
+          }
+        })
+      })
+    }
+
+    this._unbatchedObjects.traverse(object => {
+      if (!('material' in object)) {
+        return
+      }
+      const material = (
+        object as THREE.Mesh | THREE.Line | THREE.LineSegments | THREE.Points
+      ).material
+      if (Array.isArray(material)) {
+        material.forEach(paint)
+      } else if (material) {
+        paint(material)
+      }
+    })
+  }
+
+  /**
+   * Applies canvas-background colour to every owned batch material clone
+   * marked as {@link getMaterialMetadata}'s `isBackgroundFill` (wipeouts).
+   *
+   * Style-manager cache entries are updated by
+   * {@link AcTrMaterialManager.changeBackground}; batch containers keep
+   * private clones so they must be repainted separately.
+   *
+   * @param color - Current canvas background colour.
+   */
+  repaintBackgroundMaterials(color: number) {
+    const threeColor = new THREE.Color(color)
+    const paint = (material: THREE.Material) => {
+      if (getMaterialMetadata(material).isBackgroundFill === true) {
         AcTrMaterialUtil.setMaterialColor(material, threeColor)
       }
     }

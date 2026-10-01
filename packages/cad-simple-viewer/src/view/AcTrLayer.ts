@@ -310,6 +310,13 @@ export class AcTrLayer {
   }
 
   /**
+   * Updates wipeout / background-fill materials after a canvas theme flip.
+   */
+  repaintBackgroundMaterials(color: number) {
+    this._group.repaintBackgroundMaterials(color)
+  }
+
+  /**
    * Return true if this layer contains the entity with the specified object id. Otherwise, return false.
    * @param objectId Input the object id of one entity
    * @returns Return true if this layer contains the entity with the specified object id. Otherwise,

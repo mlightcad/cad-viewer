@@ -449,6 +449,13 @@ export class AcTrScene {
   }
 
   /**
+   * Updates wipeout / background-fill materials after a canvas theme flip.
+   */
+  repaintBackgroundMaterials(color: number) {
+    this._layouts.forEach(layout => layout.repaintBackgroundMaterials(color))
+  }
+
+  /**
    * Add the specified transient entity into this scene
    * @param entity Input one transient entity
    */
