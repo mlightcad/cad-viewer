@@ -1,7 +1,7 @@
 import {
   AcApDocManager,
-  resolveDrawingExtents,
-  type AcTrView2d
+  type AcTrView2d,
+  resolveDrawingExtents
 } from '@mlightcad/cad-simple-viewer'
 
 /**
