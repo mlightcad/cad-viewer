@@ -1539,7 +1539,7 @@ export class AcTrView2d extends AcEdBaseView {
           this.endProgressiveOpenFit()
           return
         }
-        this._progressiveOpenFit.applyFinalFit(() => this.resolveLayoutFitBox())
+        this._progressiveOpenFit.applyFinalFit(() => this.getDrawingExtents())
         this.endProgressiveOpenFit()
         const originalBtrId = layoutBtrId ?? this.activeLayoutBtrId
         if (originalBtrId) {
@@ -1583,7 +1583,7 @@ export class AcTrView2d extends AcEdBaseView {
           this.endProgressiveOpenFit()
           return
         }
-        this._progressiveOpenFit.applyFinalFit(() => this.resolveLayoutFitBox())
+        this._progressiveOpenFit.applyFinalFit(() => this.getDrawingExtents())
         this.endProgressiveOpenFit()
       },
       300,
@@ -2307,10 +2307,14 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Resolves the 2D box to frame for the active layout once entities are
-   * converted. Uses {@link AcTrScene.box}, which is derived from batch geometry.
+   * Returns the 2D box of drawable geometry in the active layout.
+   *
+   * Uses {@link AcTrScene.box}, which is derived from batch geometry — not
+   * database header `EXTMIN`/`EXTMAX`, which are often stale on real DWGs.
+   *
+   * @inheritdoc
    */
-  private resolveLayoutFitBox(): AcGeBox2d | undefined {
+  getDrawingExtents(): AcGeBox2d | undefined {
     const sceneBox = this._scene.box
     if (sceneBox && !sceneBox.isEmpty()) {
       return AcTrGeometryUtil.threeBox3dToGeBox2d(sceneBox)
@@ -2339,7 +2343,7 @@ export class AcTrView2d extends AcEdBaseView {
    *    populated. Many parsers leave this empty (we've seen `(0,0)-(0,0)`),
    *    so it sits below the viewport-based heuristic.
    *
-   * 4. **`resolveLayoutFitBox`** (entity extents from batch geometry) —
+   * 4. **`getDrawingExtents`** (entity extents from batch geometry) —
    *    last-resort fallback for layouts with no viewports and no
    *    sensible limits/extents (e.g. a freshly created empty paper).
    *    Vulnerable to scale-mismatch outliers, but better than no zoom.
@@ -2391,7 +2395,7 @@ export class AcTrView2d extends AcEdBaseView {
             )
           )
         } else {
-          const box = this.resolveLayoutFitBox()
+          const box = this.getDrawingExtents()
           if (box) {
             this.zoomTo(box)
           }
@@ -3510,7 +3514,7 @@ export class AcTrView2d extends AcEdBaseView {
                 if (progressive) {
                   this.markProgressiveDirty()
                   this._progressiveOpenFit.afterGeometryBatch(
-                    () => this.resolveLayoutFitBox(),
+                    () => this.getDrawingExtents(),
                     i
                   )
                 }
@@ -3609,7 +3613,7 @@ export class AcTrView2d extends AcEdBaseView {
               if (progressive) {
                 this.markProgressiveDirty()
                 this._progressiveOpenFit.afterGeometryBatch(
-                  () => this.resolveLayoutFitBox(),
+                  () => this.getDrawingExtents(),
                   i
                 )
               }
@@ -3854,7 +3858,7 @@ export class AcTrView2d extends AcEdBaseView {
     if (progressive) {
       this.markProgressiveDirty()
       this._progressiveOpenFit.afterGeometryBatch(() =>
-        this.resolveLayoutFitBox()
+        this.getDrawingExtents()
       )
     }
   }
@@ -3886,7 +3890,7 @@ export class AcTrView2d extends AcEdBaseView {
     if (!this._openLineworkFramePending || this.isConvertingEntities) {
       return
     }
-    const box = this.resolveLayoutFitBox()
+    const box = this.getDrawingExtents()
     if (!box || box.isEmpty()) {
       this._openLineworkFramePending = false
       return

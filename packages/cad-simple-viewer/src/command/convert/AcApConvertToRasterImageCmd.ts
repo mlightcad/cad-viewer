@@ -1,4 +1,4 @@
-import { AcGeBox2d, AcGePoint2d } from '@mlightcad/data-model'
+import { AcGeBox2d } from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../../app'
 import {
@@ -8,6 +8,7 @@ import {
   AcEdPromptStatus
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
+import { resolveDrawingExtents } from '../../util'
 import { AcTrView2d } from '../../view'
 import {
   AcApRasterImageConvertor,
@@ -64,7 +65,11 @@ export class AcApConvertToRasterImageCmd extends AcEdCommand {
     if (boxResult.status === AcEdPromptStatus.OK && boxResult.value) {
       bounds = boxResult.value
     } else if (boxResult.status === AcEdPromptStatus.None) {
-      bounds = this.getCurrentDrawingBounds()
+      const resolved = await this.resolveDefaultExportBounds(view)
+      if (!resolved) {
+        return
+      }
+      bounds = resolved
     } else {
       // User canceled or prompt failed: abort command gracefully.
       return
@@ -98,14 +103,17 @@ export class AcApConvertToRasterImageCmd extends AcEdCommand {
   }
 
   /**
-   * Returns the current drawing extents projected to XY bounds.
+   * Resolves default export bounds from drawable geometry (same source as
+   * ZOOM Extents), waiting for conversion so CLI scripts do not frame a
+   * stale empty scene or header EXTMIN/EXTMAX.
    */
-  private getCurrentDrawingBounds(): AcGeBox2d {
-    const db = AcApDocManager.instance.curDocument.database
-    const ext = db.extents
-    return new AcGeBox2d(
-      new AcGePoint2d(ext.min.x, ext.min.y),
-      new AcGePoint2d(ext.max.x, ext.max.y)
+  private async resolveDefaultExportBounds(
+    view: AcTrView2d
+  ): Promise<AcGeBox2d | undefined> {
+    await view.waitUntilIdle()
+    return resolveDrawingExtents(
+      view,
+      AcApDocManager.instance.curDocument.database
     )
   }
 
