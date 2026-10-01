@@ -373,6 +373,13 @@ export class AcTrLayout {
   }
 
   /**
+   * Updates wipeout / background-fill materials after a canvas theme flip.
+   */
+  repaintBackgroundMaterials(color: number) {
+    this._layers.forEach(layer => layer.repaintBackgroundMaterials(color))
+  }
+
+  /**
    * Return true if the object with the specified object id is intersected with the ray by using raycast.
    *
    * @param objectId - Input object id of object to check for intersection with the ray.

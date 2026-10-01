@@ -37,6 +37,9 @@ export class AcSvgStyleUtil {
     ctx: AcSvgStyleContext,
     kind: AcSvgPrimitiveKind
   ): number {
+    if (traits.isBackgroundFill) {
+      return ctx.backgroundColor
+    }
     if (
       kind === 'fill' &&
       traits.color.isForeground &&

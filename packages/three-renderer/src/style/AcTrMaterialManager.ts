@@ -506,6 +506,13 @@ export abstract class AcTrMaterialManager<T> {
           acgiForegroundColorForBackground(this.options.currentBackgroundColor)
         )
       )
+    } else if (isBackgroundFill) {
+      // Wipeouts (and any other bg-tracked fills) are born with the current
+      // canvas colour so the first frame matches MODELBKCOLOR / PAPERBKCOLOR.
+      AcTrMaterialUtil.setMaterialColor(
+        material,
+        new THREE.Color(this.options.currentBackgroundColor)
+      )
     }
 
     const resolvedByLayerBindings =

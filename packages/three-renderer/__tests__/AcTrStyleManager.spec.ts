@@ -313,6 +313,33 @@ describe('AcTrStyleManager', () => {
     expect(lineworkFillMaterial.color.getHex()).toBe(0xffffff)
   })
 
+  it('wipeout fills fuse with the canvas background and track theme flips (#671)', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0xffffff
+
+    const wipeoutTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    wipeoutTraits.layer = '0'
+    // Entity colour is typically ACI 7 / ByLayer — must not paint black.
+    wipeoutTraits.color = new AcCmColor().setForeground()
+    wipeoutTraits.drawOrder = 0
+    wipeoutTraits.isBackgroundFill = true
+
+    const material = styleManager.getFillMaterial(
+      wipeoutTraits
+    ) as THREE.MeshBasicMaterial
+    const metadata = getMaterialMetadata(material)
+
+    expect(metadata.isBackgroundFill).toBe(true)
+    expect(metadata.isForeground).toBe(false)
+    expect(material.color.getHex()).toBe(0xffffff)
+
+    styleManager.currentBackgroundColor = 0x000000
+    expect(material.color.getHex()).toBe(0x000000)
+
+    styleManager.currentBackgroundColor = 0xffffff
+    expect(material.color.getHex()).toBe(0xffffff)
+  })
+
   it('keeps patterned foreground hatches as visible shader linework', () => {
     // Patterned hatches differ from solid foreground fills: their visible
     // component is the pattern lines themselves, which behave like linework

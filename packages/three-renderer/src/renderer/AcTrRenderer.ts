@@ -161,6 +161,13 @@ export type AcTrDirectCapturePayload =
     }
 
 export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
+  /**
+   * Z step between successive entities. Keeps the stack within typical
+   * orthographic near/far ranges for drawings with hundreds of thousands
+   * of entities while remaining above float32 depth precision.
+   */
+  private static readonly DRAW_ORDER_Z_STEP = 1e-4
+
   private _context: AcTrRenderContext
   private _renderer: THREE.WebGLRenderer
   private _subEntityTraits: AcGiSubEntityTraits
@@ -189,6 +196,12 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @see {@link createDirectCapturePlaceholder}
    */
   private _directCapturePlaceholder: AcTrEntity | null = null
+  /**
+   * Monotonic Z used so later entities occlude earlier ones on the shared
+   * CAD plane (needed for wipeouts to mask prior linework). Reset when the
+   * view clears / starts a new convert.
+   */
+  private _drawOrderZ = 0
 
   public readonly events: {
     fontNotFound: AcCmEventManager<AcTrFontNotFoundEventArgs>
@@ -400,10 +413,8 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
-   * Repaints materials explicitly registered as background-follow fills.
-   *
-   * The current fill manager keeps solid hatches on the foreground path, so
-   * this is mostly an extension point for future fill styles.
+   * Repaints materials explicitly registered as background-follow fills
+   * (currently wipeouts via {@link AcGiSubEntityTraits.isBackgroundFill}).
    *
    * @param color - New background color (typically the canvas bg).
    */
@@ -424,6 +435,23 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
   set currentBackgroundColor(value: number) {
     this._context.styleManager.currentBackgroundColor = value
+  }
+
+  /**
+   * Next Z offset for entity draw-order occlusion on the shared CAD plane.
+   *
+   * Later entities receive a larger Z so depth testing lets them cover
+   * earlier linework / fills (AutoCAD creation-order / SORTENTS behaviour).
+   */
+  allocateDrawOrderZ(): number {
+    const z = this._drawOrderZ
+    this._drawOrderZ += AcTrRenderer.DRAW_ORDER_Z_STEP
+    return z
+  }
+
+  /** Resets the draw-order Z counter (call when clearing / regenerating). */
+  resetDrawOrderZ(): void {
+    this._drawOrderZ = 0
   }
 
   /** Shared style/material cache used by entity conversion and layer updates. */

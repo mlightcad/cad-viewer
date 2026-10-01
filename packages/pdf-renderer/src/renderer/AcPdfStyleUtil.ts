@@ -38,6 +38,9 @@ export class AcPdfStyleUtil {
     ctx: AcPdfStyleContext,
     _kind: AcPdfPrimitiveKind
   ): number {
+    if (traits.isBackgroundFill) {
+      return ctx.backgroundColor
+    }
     return AcGiContext.fromBackgroundColor(
       ctx.backgroundColor
     ).resolveSubEntityTraitsRgb(traits)
@@ -79,6 +82,13 @@ export class AcPdfStyleUtil {
     traits: AcGiSubEntityTraits,
     ctx: AcPdfStyleContext
   ): AcPdfFillStyle {
+    // Wipeouts must match the paper exactly — skip contrastAgainstPaper.
+    if (traits.isBackgroundFill) {
+      return {
+        rgb: rgbFromPacked(ctx.backgroundColor),
+        opacity: this.resolveOpacity(traits) ?? 1
+      }
+    }
     const packed = this.contrastAgainstPaper(
       this.resolveRgb(traits, ctx, 'fill'),
       ctx

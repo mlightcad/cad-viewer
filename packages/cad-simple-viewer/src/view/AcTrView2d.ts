@@ -34,7 +34,8 @@ import {
   AcTrMTextRenderer,
   AcTrRenderer,
   AcTrViewportView,
-  hasPendingComplexLineTypeGlyphs
+  hasPendingComplexLineTypeGlyphs,
+  setAcTrDrawOrderZAllocator
 } from '@mlightcad/three-renderer'
 import { AcTrMatrixUtil } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
@@ -415,6 +416,9 @@ export class AcTrView2d extends AcEdBaseView {
     renderer.setSize(this.width, this.height)
 
     this._renderer = new AcTrRenderer(renderer)
+    // Shared across all layer batched groups so later entities (e.g. wipeouts)
+    // occlude earlier linework via depth, matching AutoCAD draw order.
+    setAcTrDrawOrderZAllocator(() => this._renderer.allocateDrawOrderZ())
     const fontMapping = AcApSettingManager.instance.fontMapping
     this._renderer.setFontMapping(fontMapping)
     this._renderer.events.fontNotFound.addEventListener(args => {
@@ -1098,6 +1102,9 @@ export class AcTrView2d extends AcEdBaseView {
     this._scene.repaintForegroundMaterials(
       acgiForegroundColorForBackground(value)
     )
+    // Wipeouts track the canvas background (isBackgroundFill); repaint their
+    // batch-owned clones the same way as ACI-7 foreground materials.
+    this._scene.repaintBackgroundMaterials(value)
     this.resyncForegroundLayersForBackground()
     if (this._readingMode.isEnabled) {
       this._readingMode.noteLayoutBackground(value)
@@ -2425,6 +2432,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.resetDeferredGeometryQueue()
     this._entityProcessingIdleAt = 0
     this._scene.clear()
+    this._renderer.resetDrawOrderZ()
     this._isDirty = true
     this._missedImages.clear()
     this._initializedLayouts.clear()

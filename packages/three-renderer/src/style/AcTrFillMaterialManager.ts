@@ -144,11 +144,16 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
    * Hatch-tier fills (`drawOrder < 0`, including solid and patterned
    * hatches) also invert with the theme so ACI 7 stays visible against
    * both light and dark canvases, matching AutoCAD model-space behaviour.
+   *
+   * Background fills (wipeouts) never invert — they fuse with the canvas.
    */
   protected shouldTrackForeground(
     traits: AcGiSubEntityTraits,
     _options: AcTrFillMaterialOptions
   ): boolean {
+    if (traits.isBackgroundFill) {
+      return false
+    }
     const style = traits.fillType
     const isVisibleHatch =
       (traits.drawOrder ?? 0) < 0 &&
@@ -158,6 +163,17 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       traits.color.isForeground &&
       ((traits.drawOrder ?? 0) >= 0 || isVisibleHatch)
     )
+  }
+
+  /**
+   * Wipeouts opt into canvas-background tracking so the masked area stays
+   * fused with MODELBKCOLOR / PAPERBKCOLOR across theme flips.
+   */
+  protected shouldTrackBackground(
+    traits: AcGiSubEntityTraits,
+    _options: AcTrFillMaterialOptions
+  ): boolean {
+    return traits.isBackgroundFill === true
   }
 
   /**
@@ -393,6 +409,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
     const style = traits.fillType
     const sideSuffix = options.side === 'back' ? '_back' : ''
     const drawOrderSuffix = this.buildDrawOrderSuffix(traits)
+    const bgFillSuffix = traits.isBackgroundFill ? '_bgfill' : ''
     const colorKey = this.buildKeyColorSegment(traits)
     // Use colour semantics + layer + rebaseOffset + pattern info for key
     if (style.gradient) {
@@ -415,14 +432,15 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
         bounds.maxY,
         `a${this.transparencyKey(traits)}`,
         sideSuffix,
-        drawOrderSuffix
+        drawOrderSuffix,
+        bgFillSuffix
       ].join('_')
     }
 
     const isSolid = !style.definitionLines || style.definitionLines.length === 0
     const alphaKey = this.transparencyKey(traits)
     if (isSolid) {
-      return `solid_${traits.layer}_${colorKey}_a${alphaKey}${sideSuffix}${drawOrderSuffix}`
+      return `solid_${traits.layer}_${colorKey}_a${alphaKey}${sideSuffix}${drawOrderSuffix}${bgFillSuffix}`
     }
 
     const patternHash = style.definitionLines
@@ -451,7 +469,8 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       patternHash,
       `a${alphaKey}`,
       sideSuffix,
-      drawOrderSuffix
+      drawOrderSuffix,
+      bgFillSuffix
     ].join('_')
   }
 
