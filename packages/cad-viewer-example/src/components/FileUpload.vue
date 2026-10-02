@@ -18,6 +18,10 @@
           </div>
         </section>
 
+        <p class="font-cdn-notice">
+          {{ t('example.fileUpload.fontCdnNotice') }}
+        </p>
+
         <div class="upload-actions">
           <button
             type="button"
@@ -55,14 +59,28 @@
         </div>
       </div>
 
-      <section class="settings-section">
-        <header class="settings-header">
+      <section
+        class="settings-section"
+        :class="{ 'is-expanded': isSettingsExpanded }"
+      >
+        <button
+          type="button"
+          class="settings-header"
+          :aria-expanded="isSettingsExpanded"
+          aria-controls="open-options-panel"
+          @click="toggleSettings"
+        >
           <h2 class="settings-title">
             {{ t('example.fileUpload.openOptions') }}
           </h2>
-        </header>
+          <span class="settings-chevron" aria-hidden="true">&#x25BC;</span>
+        </button>
 
-        <div class="settings-grid">
+        <div
+          id="open-options-panel"
+          class="settings-grid"
+          :hidden="!isSettingsExpanded"
+        >
           <div class="setting-block setting-block--full">
             <h3 class="setting-label">
               {{ t('example.fileUpload.initialView') }}
@@ -326,7 +344,7 @@ import {
 } from '@mlightcad/data-model'
 import type { UploadFile, UploadProps } from 'element-plus'
 import { ElIcon, ElUpload } from 'element-plus'
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 interface Props {
@@ -358,6 +376,18 @@ const { t } = useI18n({ useScope: 'global' })
 
 type OpenViewModeChoice = 'auto' | AcApOpenViewMode
 
+const MOBILE_MAX_WIDTH = '(max-width: 768px)'
+
+const getIsMobileLayout = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia(MOBILE_MAX_WIDTH).matches
+
+const isMobileLayout = ref(getIsMobileLayout())
+const settingsExpanded = ref(!getIsMobileLayout())
+const isSettingsExpanded = computed(
+  () => !isMobileLayout.value || settingsExpanded.value
+)
+
 const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
 const selectedOpenViewMode = ref<OpenViewModeChoice>('auto')
 const selectedCircleSides = ref(ACDB_DRAW_CIRCLE_SIDES_DRAFT)
@@ -366,6 +396,35 @@ const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
 const paperSpaceBackground = ref(ACGI_PAPER_SPACE_BACKGROUND)
 const disableExport = ref(false)
+
+let mobileMediaQuery: MediaQueryList | null = null
+
+const syncMobileLayout = () => {
+  const matches = mobileMediaQuery?.matches ?? false
+  const wasMobile = isMobileLayout.value
+  isMobileLayout.value = matches
+  if (matches && !wasMobile) {
+    settingsExpanded.value = false
+  } else if (!matches) {
+    settingsExpanded.value = true
+  }
+}
+
+const toggleSettings = () => {
+  if (!isMobileLayout.value) return
+  settingsExpanded.value = !settingsExpanded.value
+}
+
+onMounted(() => {
+  mobileMediaQuery = window.matchMedia(MOBILE_MAX_WIDTH)
+  syncMobileLayout()
+  mobileMediaQuery.addEventListener('change', syncMobileLayout)
+})
+
+onUnmounted(() => {
+  mobileMediaQuery?.removeEventListener('change', syncMobileLayout)
+  mobileMediaQuery = null
+})
 
 const openViewModes = computed(() => [
   {
@@ -540,6 +599,17 @@ const isValidFile = (file: File): boolean => {
   line-height: 1.35;
 }
 
+.font-cdn-notice {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .upload-actions {
   display: flex;
   flex: 1;
@@ -681,7 +751,17 @@ const isValidFile = (file: File): boolean => {
 }
 
 .settings-header {
-  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: default;
 }
 
 .settings-title {
@@ -691,11 +771,28 @@ const isValidFile = (file: File): boolean => {
   color: #334155;
 }
 
+.settings-chevron {
+  display: none;
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.settings-section.is-expanded .settings-chevron {
+  transform: rotate(180deg);
+}
+
 .settings-grid {
   display: grid;
   /* Six tracks so a row of three options is thirds and a row of two is halves. */
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px 12px;
+}
+
+.settings-grid[hidden] {
+  display: none;
 }
 
 .setting-block {
@@ -776,6 +873,21 @@ const isValidFile = (file: File): boolean => {
   .settings-section {
     border-left: none;
     border-top: 1px solid #e8edf5;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .settings-header {
+    margin-bottom: 0;
+    cursor: pointer;
+  }
+
+  .settings-section.is-expanded .settings-header {
+    margin-bottom: 10px;
+  }
+
+  .settings-chevron {
+    display: inline-block;
   }
 
   .settings-grid {

@@ -14,7 +14,6 @@ import {
   acedApplyUiTheme,
   acedIsCompactUiLayout,
   AcEdOpenMode,
-  ACGI_MODEL_SPACE_BACKGROUND,
   ACGI_PAPER_SPACE_BACKGROUND,
   eventBus,
   layoutBackgroundColorFromRgb,
@@ -136,9 +135,6 @@ class CadViewerApp {
   private documentEventsRegistered = false
   private hasOpenedFile = false
   private isLoadingFile = false
-  private paperSpaceBackground = ACGI_PAPER_SPACE_BACKGROUND
-  private paperSpaceBgWhiteButton: HTMLButtonElement
-  private paperSpaceBgBlackButton: HTMLButtonElement
 
   constructor() {
     this.container = document.getElementById('cad-container') as HTMLDivElement
@@ -150,12 +146,6 @@ class CadViewerApp {
     ) as HTMLButtonElement
     this.viewerPane = document.getElementById('viewerPane') as HTMLElement
     this.emptyState = document.getElementById('emptyState') as HTMLDivElement
-    this.paperSpaceBgWhiteButton = document.getElementById(
-      'paperSpaceBgWhite'
-    ) as HTMLButtonElement
-    this.paperSpaceBgBlackButton = document.getElementById(
-      'paperSpaceBgBlack'
-    ) as HTMLButtonElement
     this.predefinedButtons = document.querySelectorAll(
       '#predefinedFileList .file-list-item'
     ) as NodeListOf<HTMLButtonElement>
@@ -230,7 +220,6 @@ class CadViewerApp {
     ) as HTMLButtonElement
 
     this.setupFileHandling()
-    this.setupPaperSpaceBackgroundOption()
     this.setupPredefinedFileActions()
     this.setupMobileSidebar()
     const fileSidebarResizeHandle = document.getElementById(
@@ -246,35 +235,6 @@ class CadViewerApp {
     this.updateEmptyStateVisibility()
   }
 
-  private setupPaperSpaceBackgroundOption() {
-    const setBackground = (rgb: number) => {
-      this.paperSpaceBackground = rgb
-      const isWhite = rgb === ACGI_PAPER_SPACE_BACKGROUND
-      this.paperSpaceBgWhiteButton.classList.toggle('is-active', isWhite)
-      this.paperSpaceBgBlackButton.classList.toggle('is-active', !isWhite)
-      this.paperSpaceBgWhiteButton.setAttribute(
-        'aria-checked',
-        isWhite ? 'true' : 'false'
-      )
-      this.paperSpaceBgBlackButton.setAttribute(
-        'aria-checked',
-        isWhite ? 'false' : 'true'
-      )
-      if (this.isInitialized) {
-        AcApDocManager.instance.setOpenDocumentDefaults(() =>
-          this.buildOpenOptions()
-        )
-      }
-    }
-
-    this.paperSpaceBgWhiteButton.addEventListener('click', () => {
-      setBackground(ACGI_PAPER_SPACE_BACKGROUND)
-    })
-    this.paperSpaceBgBlackButton.addEventListener('click', () => {
-      setBackground(ACGI_MODEL_SPACE_BACKGROUND)
-    })
-  }
-
   private buildOpenOptions(
     overrides: Partial<AcApOpenDatabaseOptions> = {}
   ): AcApOpenDatabaseOptions {
@@ -284,7 +244,7 @@ class CadViewerApp {
       progressiveRendering: isProgressiveOpenMode(),
       sysVars: {
         lwdisplay: false,
-        paperbkcolor: layoutBackgroundColorFromRgb(this.paperSpaceBackground)
+        paperbkcolor: layoutBackgroundColorFromRgb(ACGI_PAPER_SPACE_BACKGROUND)
       },
       ...overrides
     }

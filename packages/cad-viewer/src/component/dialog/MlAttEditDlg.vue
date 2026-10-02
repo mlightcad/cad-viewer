@@ -47,6 +47,7 @@
           name="attribute"
         >
           <el-table
+            ref="tableRef"
             :data="rows"
             height="120"
             highlight-current-row
@@ -54,6 +55,7 @@
             row-key="objectId"
             class="ml-att-edit-dlg__table"
             @current-change="handleRowChange"
+            @row-click="handleRowClick"
           >
             <el-table-column
               prop="tag"
@@ -277,6 +279,7 @@ import {
 import {
   AcCmColor,
   AcDbAttribute,
+  AcDbDatabase,
   AcDbTextHorizontalMode,
   AcDbTextVerticalMode,
   AcGiLineWeight
@@ -301,6 +304,7 @@ import { useI18n } from 'vue-i18n'
 
 import {
   findAttributePrompt,
+  isAttributeEntity,
   listBlockAttributes,
   promptAttributedBlockReference,
   useAttEdit,
@@ -384,6 +388,9 @@ const blockName = ref('—')
 const textStyleNames = ref<string[]>([])
 const suppressSync = ref(false)
 const propColor = shallowRef<AcCmColor>(createByLayerColor())
+const tableRef = ref<{ setCurrentRow?: (row?: AttributeRow) => void } | null>(
+  null
+)
 
 const textForm = reactive<TextFormState>({
   styleName: 'Standard',
@@ -697,6 +704,9 @@ function loadFromTarget() {
   selectedObjectId.value = rows.value[0]?.objectId ?? null
   isDirty.value = false
   syncFormsFromRow(currentRow.value)
+  nextTick(() => {
+    tableRef.value?.setCurrentRow?.(currentRow.value ?? undefined)
+  })
 }
 
 function syncFormsFromRow(row: AttributeRow | null) {
@@ -762,6 +772,19 @@ function handleColorChange(color: AcCmColor | undefined) {
 }
 
 function handleRowChange(row: AttributeRow | undefined) {
+  selectAttributeRow(row)
+}
+
+/**
+ * Prefer `@row-click` for switching attributes. Some browsers (notably Firefox)
+ * do not reliably emit `@current-change` when `current-row-key` is controlled,
+ * which made multi-attribute blocks appear uneditable beyond the first row.
+ */
+function handleRowClick(row: AttributeRow) {
+  selectAttributeRow(row)
+}
+
+function selectAttributeRow(row: AttributeRow | undefined) {
   if (!row) return
   if (row.objectId === selectedObjectId.value) return
   commitTextFormToRow()
@@ -771,6 +794,61 @@ function handleRowChange(row: AttributeRow | undefined) {
   }
   selectedObjectId.value = row.objectId
   syncFormsFromRow(row)
+}
+
+function applyRowToAttribute(opened: AcDbAttribute, row: AttributeRow) {
+  opened.textString = row.value
+  if (opened.isMTextAttribute && opened.mtext) {
+    opened.mtext.contents = row.value
+  }
+
+  opened.styleName = row.styleName
+  opened.height = row.height
+  opened.widthFactor = row.widthFactor
+  opened.rotation = degToRad(row.rotationDeg)
+  opened.oblique = degToRad(row.obliqueDeg)
+
+  const justify = parseJustification(row.justification)
+  opened.horizontalMode = justify.horizontal
+  opened.verticalMode = justify.vertical
+
+  opened.layer = row.layer
+  opened.lineType = row.lineType
+  opened.color = AcCmColor.fromString(row.colorKey) ?? createByLayerColor()
+  opened.lineWeight = row.lineWeight
+}
+
+function openAttributeForWrite(
+  db: AcDbDatabase,
+  blockRef: NonNullable<ReturnType<typeof getTargetBlockReference>>,
+  attr: AcDbAttribute
+): AcDbAttribute | undefined {
+  const tryOpen = () => {
+    const opened = db.openEntityForWrite(attr)
+    return isAttributeEntity(opened) ? opened : undefined
+  }
+
+  try {
+    const opened = tryOpen()
+    if (opened) return opened
+  } catch {
+    // Fall through to re-sync and retry.
+  }
+
+  // Attributes live on the INSERT map; a failed earlier sync can leave them
+  // out of the handle registry so open-for-write throws for N>1 cases.
+  const sync = (
+    blockRef as { syncAttributeDatabases?: () => void }
+  ).syncAttributeDatabases
+  if (typeof sync === 'function') {
+    sync.call(blockRef)
+  }
+
+  try {
+    return tryOpen()
+  } catch {
+    return isAttributeEntity(attr) ? attr : undefined
+  }
 }
 
 function applyRowsToDatabase() {
@@ -786,37 +864,31 @@ function applyRowsToDatabase() {
   }
 
   const rowById = new Map(rows.value.map(row => [row.objectId, row]))
+  const rowByTag = new Map(
+    rows.value.map(row => [row.tag.trim().toUpperCase(), row])
+  )
 
-  acapRunDatabaseEdit(db, 'Edit Attributes', () => {
-    for (const attr of listBlockAttributes(blockRef)) {
-      const row = rowById.get(attr.objectId)
-      if (!row || attr.isConst) continue
+  try {
+    acapRunDatabaseEdit(db, 'Edit Attributes', () => {
+      for (const attr of listBlockAttributes(blockRef)) {
+        const row =
+          rowById.get(attr.objectId) ??
+          rowByTag.get((attr.tag || '').trim().toUpperCase())
+        if (!row || attr.isConst) continue
 
-      const opened = db.openEntityForWrite(attr)
-      if (!(opened instanceof AcDbAttribute)) continue
-
-      opened.textString = row.value
-      if (opened.isMTextAttribute && opened.mtext) {
-        opened.mtext.contents = row.value
+        const opened = openAttributeForWrite(db, blockRef, attr)
+        if (!opened) {
+          throw new Error(
+            `Attribute ${attr.tag || attr.objectId} is not writable`
+          )
+        }
+        applyRowToAttribute(opened, row)
       }
-
-      opened.styleName = row.styleName
-      opened.height = row.height
-      opened.widthFactor = row.widthFactor
-      opened.rotation = degToRad(row.rotationDeg)
-      opened.oblique = degToRad(row.obliqueDeg)
-
-      const justify = parseJustification(row.justification)
-      opened.horizontalMode = justify.horizontal
-      opened.verticalMode = justify.vertical
-
-      opened.layer = row.layer
-      opened.lineType = row.lineType
-      opened.color =
-        AcCmColor.fromString(row.colorKey) ?? createByLayerColor()
-      opened.lineWeight = row.lineWeight
-    }
-  })
+    })
+  } catch (error) {
+    console.error('[AttEdit] Failed to apply attribute edits', error)
+    return false
+  }
 
   // Attributes are drawn inside the INSERT; rebuild the owning block reference.
   AcApDocManager.instance?.curView?.updateEntity(blockRef)
@@ -839,7 +911,7 @@ function handleApply() {
 }
 
 function handleOk() {
-  applyRowsToDatabase()
+  if (!applyRowsToDatabase()) return
   clearTarget()
   visible.value = false
 }
