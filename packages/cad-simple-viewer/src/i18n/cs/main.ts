@@ -36,6 +36,7 @@ export default {
     fetchingDrawingFile: 'Načítám soubor…',
     exportingDxf: 'Exportuji DXF…',
     exportingPdf: 'Exportuji PDF…',
+    calculatingSmartExtents: 'Počítám chytrý rozsah…',
     importingPdf: 'Importuji PDF…',
     exportingEntityPreview: 'Exportuji obrázek…',
     collectingMemoryProfile: 'Analyzuji paměť…',

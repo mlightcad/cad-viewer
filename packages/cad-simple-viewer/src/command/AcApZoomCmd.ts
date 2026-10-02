@@ -130,11 +130,17 @@ export class AcApZoomCmd extends AcEdCommand {
   /**
    * Zooms to the dominant geometry cluster (smart extents).
    *
+   * Shows the same busy overlay used by PDF/HTML export while the cluster is
+   * computed, and yields so the spinner can paint before synchronous work.
+   *
    * @param context - Current command context.
    */
-  private zoomToSmart(context: AcApContext) {
+  private async zoomToSmart(context: AcApContext) {
     this.rememberViewBeforeZoom(context)
-    context.view.zoomToSmartExtents()
+    await this.withBusyIndicator(
+      () => context.view.zoomToSmartExtents(),
+      AcApI18n.t('main.message.calculatingSmartExtents')
+    )
   }
 
   /**
@@ -488,7 +494,7 @@ export class AcApZoomCmd extends AcEdCommand {
       return
     }
     if (keyword === 'Smart') {
-      this.zoomToSmart(context)
+      await this.zoomToSmart(context)
       return
     }
   }

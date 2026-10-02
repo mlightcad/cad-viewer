@@ -37,23 +37,31 @@ export class AcEdConditionWaiter {
   /**
    * Starts checking the condition at the defined interval.
    * Executes the action once when the condition becomes true or when timeout is reached.
+   *
+   * When the condition is already satisfied, the action runs immediately so
+   * callers (zoom extents / smart extents) are not delayed by one interval tick.
    */
   public start(): void {
     if (this.timerId !== null) return // already running
 
+    if (this.condition()) {
+      this.executeAndStop()
+      return
+    }
+
     // Periodically check condition
-    this.timerId = window.setInterval(() => {
+    this.timerId = setInterval(() => {
       if (this.condition()) {
         this.executeAndStop()
       }
-    }, this.checkInterval)
+    }, this.checkInterval) as unknown as number
 
     // Setup timeout if provided
     if (this.timeout > 0) {
-      this.timeoutId = window.setTimeout(() => {
+      this.timeoutId = setTimeout(() => {
         log.warn('AcEdConditionWaiter: Timeout reached.')
         this.executeAndStop()
-      }, this.timeout)
+      }, this.timeout) as unknown as number
     }
   }
 

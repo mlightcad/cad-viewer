@@ -36,6 +36,7 @@ export default {
     fetchingDrawingFile: 'Fetching file ...',
     exportingDxf: 'Exporting DXF ...',
     exportingPdf: 'Exporting PDF ...',
+    calculatingSmartExtents: 'Calculating smart extents ...',
     importingPdf: 'Importing PDF ...',
     exportingEntityPreview: 'Exporting image ...',
     collectingMemoryProfile: 'Analyzing memory ...',

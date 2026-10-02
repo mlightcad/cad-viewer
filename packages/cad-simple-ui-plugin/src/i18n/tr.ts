@@ -9,7 +9,7 @@ export const tr: Record<string, string> = {
   'toolbar.pan': 'Kaydır',
   'toolbar.zoom': 'Yakınlaştır',
   'toolbar.zoomExtent': 'Sınırlar',
-  'toolbar.zoomSmartExtents': 'Akıllı sınırlar',
+  'toolbar.zoomSmartExtents': 'Akıllı',
   'toolbar.zoomWindow': 'Pencere',
   'toolbar.zoomSaved': 'Kayıtlı',
   'toolbar.zoomOriginal': 'Kayıtlı',

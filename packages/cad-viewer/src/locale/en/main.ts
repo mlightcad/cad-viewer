@@ -597,7 +597,7 @@ export default {
       description: 'Zooms to display the maximum extents of all entities'
     },
     zoomSmartExtents: {
-      text: 'Smart extents',
+      text: 'Smart',
       description:
         'Zooms to the dominant geometry cluster, ignoring far outlier entities'
     },

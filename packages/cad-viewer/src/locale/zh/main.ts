@@ -552,7 +552,7 @@ export default {
       description: '缩放以显示所有对象'
     },
     zoomSmartExtents: {
-      text: '智能范围',
+      text: '智能',
       description: '缩放到主要几何簇，忽略远处异常图元'
     },
     zoomToBox: {

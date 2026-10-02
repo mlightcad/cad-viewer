@@ -9,7 +9,7 @@ export const en: Record<string, string> = {
   'toolbar.pan': 'Pan',
   'toolbar.zoom': 'Zoom',
   'toolbar.zoomExtent': 'Extents',
-  'toolbar.zoomSmartExtents': 'Smart extents',
+  'toolbar.zoomSmartExtents': 'Smart',
   'toolbar.zoomWindow': 'Window',
   'toolbar.zoomSaved': 'Saved',
   'toolbar.zoomOriginal': 'Saved',

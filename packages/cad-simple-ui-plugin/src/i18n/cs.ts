@@ -9,7 +9,7 @@ export const cs: Record<string, string> = {
   'toolbar.pan': 'Posun',
   'toolbar.zoom': 'Zoom',
   'toolbar.zoomExtent': 'Rozsah',
-  'toolbar.zoomSmartExtents': 'Chytrý rozsah',
+  'toolbar.zoomSmartExtents': 'Chytrý',
   'toolbar.zoomWindow': 'Okno',
   'toolbar.zoomSaved': 'Uložený',
   'toolbar.zoomOriginal': 'Uložený',
