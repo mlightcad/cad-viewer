@@ -1581,7 +1581,7 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   zoomToSmartExtents(timeout: number = 0): Promise<void> {
-    return new Promise(resolve => {
+    return new Promise((resolve, reject) => {
       const waiter = new AcEdConditionWaiter(
         () => !this.isProcessingEntities,
         () => {
@@ -1592,14 +1592,19 @@ export class AcTrView2d extends AcEdBaseView {
                 this.zoomTo(smart)
                 this._isDirty = true
                 this.endProgressiveOpenFit()
+                resolve()
                 return
               }
               this._progressiveOpenFit.applyFinalFit(() =>
                 this.getDrawingExtents()
               )
               this.endProgressiveOpenFit()
-            } finally {
               resolve()
+            } catch (error) {
+              // Always clear progressive-open framing so a failed smart fit
+              // cannot leave the open-fit overlay/state stuck indefinitely.
+              this.endProgressiveOpenFit()
+              reject(error)
             }
           })()
         },
@@ -1686,7 +1691,11 @@ export class AcTrView2d extends AcEdBaseView {
       return undefined
     }
 
-    if (entity instanceof AcDbAttribute) {
+    if (
+      entity instanceof AcDbAttribute ||
+      entity.type === 'Attrib' ||
+      entity.type === 'Attribute'
+    ) {
       const owner =
         AcApDocManager.instance.curDocument.database.tables.blockTable.getEntityById(
           entity.ownerId

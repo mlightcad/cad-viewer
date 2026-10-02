@@ -14,6 +14,8 @@ export default {
     fileUpload: {
       title: '选择要查看的 CAD 文件',
       subtitle: '将 DWG 或 DXF 图纸导入查看器',
+      fontCdnNotice:
+        '如果您所在的国家或地区存在网络访问限制，请记得打开 VPN。默认字库文件托管在 GitHub 上，网络受限时访问字体会非常慢，可能导致打开图纸缓慢或图纸中的文字无法正常显示。',
       newDrawing: '新建图纸',
       or: '或',
       dropFile: '拖放文件或',

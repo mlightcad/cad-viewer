@@ -14,6 +14,8 @@ export default {
     fileUpload: {
       title: 'Görüntülenecek CAD Dosyasını Seçin',
       subtitle: 'DWG veya DXF çizimlerini görüntüleyiciye aktarın',
+      fontCdnNotice:
+        'If you are in a country or region with network access restrictions, please turn on a VPN. Default font files are hosted on GitHub; when access is limited they load very slowly, which can make opening drawings slow or cause text not to display correctly.',
       newDrawing: 'Yeni Çizim',
       or: 'veya',
       dropFile: 'Dosyayı bırakın veya',
