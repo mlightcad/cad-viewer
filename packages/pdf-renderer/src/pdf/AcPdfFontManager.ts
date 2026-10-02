@@ -195,6 +195,15 @@ export class AcPdfFontManager {
     return (this._loaded.get(fontName) ?? null) !== null
   }
 
+  /**
+   * True when {@link load} has finished for `fontName` (success or negative
+   * cache). Used by collect passes to keep waiting while a font is still in
+   * flight without looping forever after a failed resolve.
+   */
+  isSettled(fontName: string): boolean {
+    return this._loaded.has(fontName)
+  }
+
   /** True when the parsed font covers every code point of `text`. */
   covers(fontName: string, text: string): boolean {
     const font = this._loaded.get(fontName)
