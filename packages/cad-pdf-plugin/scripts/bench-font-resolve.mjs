@@ -13,7 +13,7 @@ const FONT_URL =
   'https://cdn.jsdelivr.net/gh/mlightcad/cad-data/fonts/arial.woff'
 const LOOPS = Number(process.env.LOOPS ?? 20)
 
-/** Mirrors AcApMeshFontProgramCache name lookup. */
+/** Mirrors IndexedDB / catalog name lookup for bench purposes. */
 const byName = new Map()
 
 function hrMs(start) {

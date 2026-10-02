@@ -106,6 +106,21 @@ describe('parseMText', () => {
     expect(segments[2].style.underline).toBe(false)
   })
 
+  it('resolves \\\\C256 to byLayerColor and \\\\C0 to byBlockColor', () => {
+    const paragraphs = parseMText(
+      '{\\C256;green}{\\C0;block}{\\C3;aci}',
+      { size: 4, hScale: 1 },
+      { byLayerColor: 0x00ff00, byBlockColor: 0xffffff }
+    )
+    const segments = paragraphs[0].segments
+    expect(segments[0].text).toBe('green')
+    expect(segments[0].style.rgb).toEqual({ r: 0, g: 1, b: 0 })
+    expect(segments[1].text).toBe('block')
+    expect(segments[1].style.rgb).toEqual({ r: 1, g: 1, b: 1 })
+    expect(segments[2].text).toBe('aci')
+    expect(segments[2].style.rgb).toEqual({ r: 0, g: 1, b: 0 })
+  })
+
   it('expands %% control codes during layout', () => {
     const layout = layoutMText({
       data: makeData({ text: '%%c50' }),
@@ -190,6 +205,58 @@ describe('layoutMText', () => {
     }
     expect(runs[0].dy).toBeCloseTo(-0.6 * 4 + 1.3 * 4)
     expect(runs[1].dy).toBeCloseTo(-1.3 * 4 + 1.3 * 4)
+  })
+
+  it('keeps a short Latin run after CJK on the same line with overhang', () => {
+    // Mirrors mtext-renderer processWord: `秘密-FJP-898E-G` may overshoot the
+    // column by up to 2×height×hScale without whole-word wrapping.
+    // Units: 秘,密, -FJP-898E-G → 4+4+22 = 30. Cap 24 → overflow 6 ≤ 8.
+    const layout = layoutMText({
+      data: makeData({
+        text: '秘密-FJP-898E-G',
+        height: 4,
+        width: 24,
+        widthFactor: 1
+      }),
+      measure
+    })
+    expect(layout.lines).toHaveLength(1)
+    expect(layout.lines[0].text).toBe('秘密-FJP-898E-G')
+  })
+
+  it('whole-word wraps Latin when overhang exceeds the AutoCAD allowance', () => {
+    // Units: 秘,密, -FJP-898E-G-EXTRA → 4+4+34 = 42. Cap 24 → overflow 18 > 8.
+    const layout = layoutMText({
+      data: makeData({
+        text: '秘密-FJP-898E-G-EXTRA',
+        height: 4,
+        width: 24,
+        widthFactor: 1
+      }),
+      measure
+    })
+    expect(layout.lines.length).toBeGreaterThan(1)
+    expect(layout.lines[0].text).toBe('秘密')
+    expect(layout.lines[1].text.startsWith('-FJP')).toBe(true)
+  })
+
+  it('falls back to the text-style width factor when the entity omits it', () => {
+    const layout = layoutMText({
+      data: makeData({ text: '技', height: 4, widthFactor: undefined }),
+      styleWidthFactor: 0.667,
+      measure
+    })
+    expect(layout.lines[0].runs[0].hScale).toBeCloseTo(0.667)
+    expect(layout.lines[0].runs[0].width).toBeCloseTo(4 * 0.667)
+  })
+
+  it('adds tracking per glyph like mtext-renderer instead of multiplying advance', () => {
+    // Latin 'ab': raw = 4; add → 4 + 2×0.1×4 = 4.8 (multiply would be 4.4).
+    const layout = layoutMText({
+      data: makeData({ text: '\\T1.1;ab', height: 4 }),
+      measure
+    })
+    expect(layout.lines[0].width).toBeCloseTo(4 + 2 * 0.1 * 4)
   })
 
   it('honors the line space factor on baseline advances', () => {

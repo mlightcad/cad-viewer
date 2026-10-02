@@ -1,15 +1,14 @@
-import { AcGiSubEntityTraits } from '@mlightcad/data-model'
 import {
+  AcCmColor,
   ACGI_MODEL_SPACE_BACKGROUND,
-  acgiForegroundColorForBackground
+  acgiForegroundColorForBackground,
+  AcGiSubEntityTraits
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrFillMaterialManager } from './AcTrFillMaterialManager'
 import { AcTrLineMaterialManager } from './AcTrLineMaterialManager'
-import {
-  AcTrMaterialCacheStats
-} from './AcTrMaterialManager'
+import { AcTrMaterialCacheStats } from './AcTrMaterialManager'
 import { AcTrPointMaterialManager } from './AcTrPointMaterialManager'
 import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
 
@@ -87,10 +86,17 @@ export class AcTrStyleManager {
   getLineMaterial(
     traits: AcGiSubEntityTraits,
     basicMaterialOnly?: boolean,
-    fatLines?: boolean
+    fatLines?: boolean,
+    layerColor?: AcCmColor,
+    layerColorRgb?: number
   ): THREE.Material {
     if (fatLines) {
-      return this.lineMgr.getMaterial(traits, { fatLines: true })!
+      return this.lineMgr.getMaterial(
+        traits,
+        { fatLines: true },
+        layerColorRgb,
+        layerColor
+      )!
     }
     const hasLinePattern = !!(
       traits.lineType.pattern && traits.lineType.pattern.length > 0
@@ -98,9 +104,14 @@ export class AcTrStyleManager {
     const showLineWeight =
       this.options.showLineWeight || this._forceShowLineWeight
     const forceBasicMaterial = !showLineWeight && !hasLinePattern
-    return this.lineMgr.getMaterial(traits, {
-      basicMaterialOnly: basicMaterialOnly || forceBasicMaterial
-    })!
+    return this.lineMgr.getMaterial(
+      traits,
+      {
+        basicMaterialOnly: basicMaterialOnly || forceBasicMaterial
+      },
+      layerColorRgb,
+      layerColor
+    )!
   }
 
   /**
@@ -189,11 +200,18 @@ export class AcTrStyleManager {
    */
   getMTextFillMaterial(
     traits: AcGiSubEntityTraits,
-    rebaseOffset: THREE.Vector2 = _rebaseOffset
+    rebaseOffset: THREE.Vector2 = _rebaseOffset,
+    layerColor?: AcCmColor,
+    layerColorRgb?: number
   ): THREE.Material {
-    return this.fillMgr.getMaterial(traits, {
-      rebaseOffset
-    })
+    return this.fillMgr.getMaterial(
+      traits,
+      {
+        rebaseOffset
+      },
+      layerColorRgb,
+      layerColor
+    )
   }
 
   /**

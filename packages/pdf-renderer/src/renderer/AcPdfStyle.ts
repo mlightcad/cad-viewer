@@ -127,7 +127,7 @@ export type AcPdfOp =
        * up direction stays unchanged.
        */
       flipX?: boolean
-      /** `\T` tracking: glyph advance multiplier, 1 = default. */
+      /** `\T` tracking: 1 = default; 1.1 adds 0.1×height between glyphs. */
       tracking?: number
       /** `\Q` oblique shear angle in degrees (positive leans forward). */
       obliqueDeg?: number

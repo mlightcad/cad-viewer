@@ -10,26 +10,30 @@
  * values composing per mtext-renderer semantics — and groups words between
  * paragraph breaks, carrying `\pxq*` alignment per paragraph.
  */
+import { AcCmColorUtil } from '@mlightcad/data-model'
 import {
   type MTextColor,
   MTextContext,
   MTextParagraphAlignment,
   MTextParser as MTextTokenizer,
-  TokenType} from '@mlightcad/mtext-parser'
+  TokenType
+} from '@mlightcad/mtext-parser'
 
 import type { AcPdfRgb } from './AcPdfStyle'
+import { rgbFromPacked } from './AcPdfStyle'
 
-/** Minimal standard ACI palette (7 = background-dependent: keeps entity color). */
-const ACI_BASIC: Record<number, AcPdfRgb | undefined> = {
-  1: { r: 255, g: 0, b: 0 },
-  2: { r: 255, g: 255, b: 0 },
-  3: { r: 0, g: 255, b: 0 },
-  4: { r: 0, g: 255, b: 255 },
-  5: { r: 0, g: 0, b: 255 },
-  6: { r: 255, g: 0, b: 255 },
-  7: undefined,
-  8: { r: 128, g: 128, b: 128 },
-  9: { r: 192, g: 192, b: 192 }
+/**
+ * Colour resolution context for inline `\C` / `\c` codes.
+ *
+ * ACI 0 (ByBlock) and 256 (ByLayer) must resolve to concrete RGB here —
+ * returning `undefined` would incorrectly keep the entity colour (e.g. ACI 7
+ * white) for `\C256` green layer text.
+ */
+export interface AcPdfMTextColorContext {
+  /** Resolved layer colour as packed 0xRRGGBB. */
+  byLayerColor: number
+  /** Resolved block / ByBlock display colour as packed 0xRRGGBB. */
+  byBlockColor: number
 }
 
 export type AcPdfMTextJustify = 'left' | 'center' | 'right'
@@ -39,7 +43,7 @@ export interface AcPdfMTextStyle {
   size: number
   /** Width factor (style factor × `\W`). */
   hScale: number
-  /** `\T` tracking: 1 = none, 1.1 = +10% advance per glyph. */
+  /** `\T` tracking: 1 = none; 1.1 adds 0.1×height×hScale per glyph. */
   tracking: number
   /** `\Q` oblique angle in degrees. */
   obliqueDeg: number
@@ -91,30 +95,50 @@ function toJustify(
 }
 
 /** Resolves an inline color override; "keep entity color" states → undefined. */
-function toRgb(color: MTextColor): AcPdfRgb | undefined {
+function toRgb(
+  color: MTextColor,
+  colors?: AcPdfMTextColorContext
+): AcPdfRgb | undefined {
   const rgb = color.rgb
   if (rgb) {
-    return { r: rgb[0], g: rgb[1], b: rgb[2] }
+    return { r: rgb[0] / 255, g: rgb[1] / 255, b: rgb[2] / 255 }
   }
   const aci = color.aci
-  if (aci === null || aci === 0 || aci === 7 || aci === 256) {
+  if (aci === null || aci === undefined) {
     return undefined
   }
-  return ACI_BASIC[aci]
+  // ACI 7 is canvas foreground — keep the entity fill (already contrasted).
+  if (aci === 7) {
+    return undefined
+  }
+  if (aci === 256) {
+    return colors ? rgbFromPacked(colors.byLayerColor) : undefined
+  }
+  if (aci === 0) {
+    return colors ? rgbFromPacked(colors.byBlockColor) : undefined
+  }
+  const packed = AcCmColorUtil.getColorByIndex(aci)
+  return typeof packed === 'number' ? rgbFromPacked(packed) : undefined
 }
 
 /**
  * Parses `raw` MTEXT contents into paragraphs of styled segments. `base.size`
  * is the entity's text height and `base.hScale` its style width factor; both
  * seed the tokenizer's root context so brace-group restores fall back to them.
+ *
+ * @param colors - Optional ByLayer / ByBlock swatches for `\C256` / `\C0`.
  */
 export function parseMText(
   raw: string,
-  base: { size: number; hScale: number }
+  base: { size: number; hScale: number },
+  colors?: AcPdfMTextColorContext
 ): AcPdfMTextParagraph[] {
   const root = new MTextContext()
   root.capHeight = { value: base.size, isRelative: false }
   root.widthFactor = { value: base.hScale, isRelative: false }
+  // Seed ACI 7 so an explicit `\C256` / `\C0` is detected as a colour change
+  // (mtext-parser defaults the root colour to ByLayer 256).
+  root.color.aci = 7
   const tokenizer = new MTextTokenizer(raw, root, {
     // `\P` starts a fresh paragraph: AutoCAD resets paragraph properties.
     resetParagraphParameters: true
@@ -182,7 +206,7 @@ export function parseMText(
       ctx.color.aci !== prevCtx.color.aci ||
       ctx.color.rgbValue !== prevCtx.color.rgbValue
     ) {
-      rgb = toRgb(ctx.color)
+      rgb = toRgb(ctx.color, colors)
     }
     if (JSON.stringify(ctx.fontFace) !== JSON.stringify(prevCtx.fontFace)) {
       const family = ctx.fontFace.family

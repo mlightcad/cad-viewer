@@ -90,10 +90,6 @@ import {
   eventBus
 } from '../editor'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
-import {
-  rememberMeshFontProgramByName,
-  rememberMeshFontProgramByUrl
-} from '../util/AcApMeshFontProgramCache'
 import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser'
 import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
 import { AcTrView2d } from '../view'
@@ -1665,11 +1661,6 @@ export class AcApDocManager {
         original(url).then(
           value => {
             clearTimeout(timer)
-            // MeshFont discards the source ArrayBuffer after parse; retain it
-            // so PDF text-mode export can embed without a second network fetch.
-            if (value instanceof ArrayBuffer && value.byteLength > 0) {
-              this.rememberLoadedFontProgram(url, value)
-            }
             resolve(value)
           },
           error => {
@@ -1679,34 +1670,6 @@ export class AcApDocManager {
         )
       })
     loader.__cadFontLoadTimeout = true
-  }
-
-  /**
-   * Indexes a freshly downloaded font program for {@link AcApFontUtil}
-   * PDF / embed reuse.
-   */
-  private rememberLoadedFontProgram(url: string, data: ArrayBuffer) {
-    rememberMeshFontProgramByUrl(url, data)
-    for (const info of this.avaiableFonts) {
-      if (!info.url || info.url !== url) continue
-      const type = String(info.type ?? '').toLowerCase()
-      if (
-        type &&
-        type !== 'mesh' &&
-        type !== 'ttf' &&
-        type !== 'otf' &&
-        type !== 'woff' &&
-        type !== 'woff2'
-      ) {
-        continue
-      }
-      for (const name of info.name ?? []) {
-        rememberMeshFontProgramByName(name, data)
-      }
-      if (info.file) {
-        rememberMeshFontProgramByName(info.file, data)
-      }
-    }
   }
 
   /**

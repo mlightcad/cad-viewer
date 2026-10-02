@@ -3,8 +3,11 @@ import type {
   AcGiShapeData,
   AcGiTextStyle
 } from '@mlightcad/data-model'
+import { MTextColor } from '@mlightcad/mtext-parser'
 import type {
   AcPdfGlyphBox,
+  AcPdfGlyphColorGroup,
+  AcPdfGlyphColorSettings,
   AcPdfGlyphPrimitives,
   AcPdfGlyphProvider
 } from '@mlightcad/pdf-renderer'
@@ -22,9 +25,14 @@ type Geom = {
   getIndex(): { count: number; getX(i: number): number } | null
 }
 
+type MaterialLike = {
+  color?: { getHex?: () => number }
+}
+
 type SceneNode = {
   matrixWorld?: { elements: number[] }
   geometry?: Geom
+  material?: MaterialLike | MaterialLike[]
   isMesh?: boolean
   isLine?: boolean
   isLineSegments?: boolean
@@ -52,25 +60,30 @@ export function createViewerPdfGlyphProvider(): AcPdfGlyphProvider {
   }
   const emptyBox = { min: { x: 0, y: 0 }, max: { x: 0, y: 0 } }
   return {
-    async renderMText(data: AcGiMTextData, style: AcGiTextStyle) {
+    async renderMText(
+      data: AcGiMTextData,
+      style: AcGiTextStyle,
+      colorSettings?: AcPdfGlyphColorSettings
+    ) {
       try {
         const renderer = AcTrMTextRenderer.getInstance()
         const object = (await renderer.asyncRenderMText(
           // AcGi and mtext-renderer attachment enums are structurally compatible
           // at runtime but diverge in the TypeScript type graph.
           data as never,
-          style as never
+          style as never,
+          toMTextColorSettings(colorSettings) as never
         )) as SceneNode
         const contents =
           (data as { contents?: string }).contents ??
           (data as { text?: string }).text ??
           ''
-        const { primitives, box } = extractGlyphPrimitives(
+        const { primitives, colorGroups, box } = extractGlyphPrimitives(
           object,
           data.position?.x ?? 0,
           data.position?.y ?? 0
         )
-        return { primitives, actualText: contents, box }
+        return { primitives, colorGroups, actualText: contents, box }
       } catch {
         return { primitives: empty, actualText: '', box: emptyBox }
       }
@@ -95,15 +108,57 @@ export function createViewerPdfGlyphProvider(): AcPdfGlyphProvider {
   }
 }
 
+function toMTextColorSettings(settings?: AcPdfGlyphColorSettings): {
+  color: MTextColor
+  byLayerColor: number
+  byBlockColor: number
+  layer?: string
+} | undefined {
+  if (!settings) {
+    return undefined
+  }
+  const color = new MTextColor()
+  if (settings.entityIsByLayer) {
+    color.aci = 256
+  } else if (settings.entityIsByBlock) {
+    color.aci = 0
+  } else if (settings.entityIsForeground) {
+    color.aci = 7
+  } else if (typeof settings.entityAci === 'number') {
+    color.aci = settings.entityAci
+  } else if (typeof settings.entityRgb === 'number') {
+    color.rgbValue = settings.entityRgb
+  } else {
+    color.aci = 7
+  }
+  return {
+    color,
+    byLayerColor: settings.byLayerColor,
+    byBlockColor: settings.byBlockColor,
+    layer: settings.layer
+  }
+}
+
 interface GlyphExtraction {
   primitives: AcPdfGlyphPrimitives
+  colorGroups?: AcPdfGlyphColorGroup[]
   box: AcPdfGlyphBox
+}
+
+type Source = {
+  elements?: number[]
+  pos: BufferAttr
+  index: { count: number; getX(i: number): number } | null
+  isMesh: boolean
+  isSegments: boolean
+  rgb: number
 }
 
 /**
  * Builds flat triangle/polyline buffers from the rendered scene graph,
  * baking each node's world matrix and translating the result so (0,0) is the
- * text's insertion point.
+ * text's insertion point. Geometry is also grouped by material colour so
+ * inline `\C` overrides survive vector PDF export.
  */
 function extractGlyphPrimitives(
   root: SceneNode,
@@ -112,16 +167,9 @@ function extractGlyphPrimitives(
 ): GlyphExtraction {
   root.updateMatrixWorld?.(true)
 
-  type Source = {
-    elements?: number[]
-    pos: BufferAttr
-    index: { count: number; getX(i: number): number } | null
-    isMesh: boolean
-    isSegments: boolean
-  }
   const sources: Source[] = []
-  let triangleFloats = 0
-  let lineFloats = 0
+  const triangleFloatsByColor = new Map<number, number>()
+  const lineFloatsByColor = new Map<number, number>()
 
   root.traverse(node => {
     const geom = node.geometry
@@ -132,6 +180,7 @@ function extractGlyphPrimitives(
     if (!pos || pos.count < 1) {
       return
     }
+    const rgb = readMaterialRgb(node) ?? 0xffffff
     if (node.isMesh) {
       const index = geom.getIndex()
       const triCount = index ? index.count / 3 : Math.floor(pos.count / 3)
@@ -143,58 +192,72 @@ function extractGlyphPrimitives(
         pos,
         index,
         isMesh: true,
-        isSegments: false
+        isSegments: false,
+        rgb
       })
-      triangleFloats += triCount * 6
+      triangleFloatsByColor.set(
+        rgb,
+        (triangleFloatsByColor.get(rgb) ?? 0) + triCount * 6
+      )
       return
     }
     if (node.isLine) {
-      // three.js: LineSegments extends Line, so `isLine` is true for both.
-      // Stroke-font glyphs (SHX) arrive as LineSegments where every vertex
-      // PAIR is an independent stroke — expanding them as one continuous
-      // polyline would connect glyph strokes end-to-end.
       const segments = !!node.isLineSegments
       sources.push({
         elements: node.matrixWorld?.elements,
         pos,
         index: null,
         isMesh: false,
-        isSegments: segments
+        isSegments: segments,
+        rgb
       })
-      lineFloats += segments
+      const floats = segments
         ? Math.floor(pos.count / 2) * 5
         : pos.count * 2 + 1
+      lineFloatsByColor.set(rgb, (lineFloatsByColor.get(rgb) ?? 0) + floats)
     }
   })
 
-  const triangles = new Float32Array(triangleFloats)
-  const polylines = new Float32Array(lineFloats)
+  const colors = [
+    ...new Set([
+      ...triangleFloatsByColor.keys(),
+      ...lineFloatsByColor.keys()
+    ])
+  ]
+  const groups = new Map<
+    number,
+    {
+      triangles: Float32Array
+      polylines: Float32Array
+      triOffset: number
+      lineOffset: number
+    }
+  >()
+  for (const rgb of colors) {
+    groups.set(rgb, {
+      triangles: new Float32Array(triangleFloatsByColor.get(rgb) ?? 0),
+      polylines: new Float32Array(lineFloatsByColor.get(rgb) ?? 0),
+      triOffset: 0,
+      lineOffset: 0
+    })
+  }
+
   let minX = Infinity
   let minY = Infinity
   let maxX = -Infinity
   let maxY = -Infinity
   const expand = (x: number, y: number) => {
-    if (x < minX) {
-      minX = x
-    }
-    if (y < minY) {
-      minY = y
-    }
-    if (x > maxX) {
-      maxX = x
-    }
-    if (y > maxY) {
-      maxY = y
-    }
+    if (x < minX) minX = x
+    if (y < minY) minY = y
+    if (x > maxX) maxX = x
+    if (y > maxY) maxY = y
   }
-  let triOffset = 0
-  let lineOffset = 0
 
   for (const source of sources) {
+    const group = groups.get(source.rgb)
+    if (!group) continue
     const el = source.elements
     const pos = source.pos
-    // Full 4x4 transform with perspective divide, matching the previous
-    // per-point `applyWorldMatrix` behavior.
     const world = (i: number): { x: number; y: number } => {
       const x = pos.getX(i)
       const y = pos.getY(i)
@@ -219,41 +282,83 @@ function extractGlyphPrimitives(
           const p = world(vi)
           const x = p.x - originX
           const y = p.y - originY
-          triangles[triOffset++] = x
-          triangles[triOffset++] = y
+          group.triangles[group.triOffset++] = x
+          group.triangles[group.triOffset++] = y
           expand(x, y)
         }
       }
     } else if (source.isSegments) {
-      // One polyline per vertex pair: each stroke stays independent.
       const pairCount = Math.floor(pos.count / 2)
       for (let s = 0; s < pairCount; s++) {
-        polylines[lineOffset++] = 2
+        group.polylines[group.lineOffset++] = 2
         for (let k = 0; k < 2; k++) {
           const p = world(s * 2 + k)
           const x = p.x - originX
           const y = p.y - originY
-          polylines[lineOffset++] = x
-          polylines[lineOffset++] = y
+          group.polylines[group.lineOffset++] = x
+          group.polylines[group.lineOffset++] = y
           expand(x, y)
         }
       }
     } else {
-      polylines[lineOffset++] = pos.count
+      group.polylines[group.lineOffset++] = pos.count
       for (let i = 0; i < pos.count; i++) {
         const p = world(i)
         const x = p.x - originX
         const y = p.y - originY
-        polylines[lineOffset++] = x
-        polylines[lineOffset++] = y
+        group.polylines[group.lineOffset++] = x
+        group.polylines[group.lineOffset++] = y
         expand(x, y)
       }
     }
+  }
+
+  const colorGroups: AcPdfGlyphColorGroup[] = []
+  let totalTri = 0
+  let totalLine = 0
+  for (const [rgb, group] of groups) {
+    const primitives: AcPdfGlyphPrimitives = {
+      triangles: group.triangles,
+      polylines: group.polylines
+    }
+    if (primitives.triangles.length >= 6 || primitives.polylines.length >= 2) {
+      colorGroups.push({ rgb, primitives })
+    }
+    totalTri += group.triangles.length
+    totalLine += group.polylines.length
+  }
+
+  // Combined buffers keep callers that ignore colorGroups working.
+  const triangles = new Float32Array(totalTri)
+  const polylines = new Float32Array(totalLine)
+  let triOffset = 0
+  let lineOffset = 0
+  for (const group of colorGroups) {
+    triangles.set(group.primitives.triangles, triOffset)
+    triOffset += group.primitives.triangles.length
+    polylines.set(group.primitives.polylines, lineOffset)
+    lineOffset += group.primitives.polylines.length
   }
 
   const primitives: AcPdfGlyphPrimitives = { triangles, polylines }
   const box: AcPdfGlyphBox = Number.isFinite(minX)
     ? { min: { x: minX, y: minY }, max: { x: maxX, y: maxY } }
     : { min: { x: 0, y: 0 }, max: { x: 0, y: 0 } }
-  return { primitives, box }
+  return {
+    primitives,
+    // Always surface groups when present so a lone `\C256` green run is not
+    // painted with the entity fill (often ACI 7 white).
+    colorGroups: colorGroups.length > 0 ? colorGroups : undefined,
+    box
+  }
+}
+
+function readMaterialRgb(node: SceneNode): number | undefined {
+  const material = node.material
+  if (!material) {
+    return undefined
+  }
+  const first = Array.isArray(material) ? material[0] : material
+  const hex = first?.color?.getHex?.()
+  return typeof hex === 'number' ? hex : undefined
 }

@@ -52,12 +52,15 @@ import {
 } from '../point/AcPdfPointSymbol'
 import type {
   AcPdfGlyphBox,
+  AcPdfGlyphColorGroup,
+  AcPdfGlyphColorSettings,
   AcPdfGlyphPrimitives,
   AcPdfGlyphProvider
 } from '../text/AcPdfGlyphProvider'
 import { AcPdfEntity } from './AcPdfEntity'
 import { AcPdfGroup } from './AcPdfGroup'
 import type { AcPdfOp, AcPdfPoint } from './AcPdfStyle'
+import { rgbFromPacked } from './AcPdfStyle'
 import { AcPdfStyleContext, AcPdfStyleUtil } from './AcPdfStyleUtil'
 import {
   ASCENT_RATIO,
@@ -254,6 +257,51 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       foregroundColor: this._foregroundColor,
       showLineWeight: this._showLineWeight,
       insunits: this._insunits
+    }
+  }
+
+  /**
+   * Resolves ByLayer / ByBlock swatches for MTEXT inline `\C256` / `\C0`.
+   *
+   * Matches cad-viewer screen semantics: ByBlock on a non-ByBlock entity
+   * displays as white; ByLayer uses the layer-table colour when available.
+   */
+  private resolveMTextColorContext(): {
+    byLayerColor: number
+    byBlockColor: number
+  } {
+    const { byLayerColor, byBlockColor } = this.resolveGlyphColorSettings()
+    return { byLayerColor, byBlockColor }
+  }
+
+  /** Colour settings passed into the vector glyph provider / text layout. */
+  private resolveGlyphColorSettings(): AcPdfGlyphColorSettings {
+    const traits = this._subEntityTraits
+    const ctx = this.styleContext
+    const database = this._context.database as AcDbDatabase | undefined
+    const layerRecord = database?.tables.layerTable.getAt(traits.layer)
+    const layerColor = layerRecord?.color
+    const byLayerColor =
+      layerColor != null
+        ? AcGiContext.fromBackgroundColor(
+            ctx.backgroundColor
+          ).resolveSubEntityTraitsRgb({
+            ...traits,
+            color: layerColor
+          })
+        : AcPdfStyleUtil.resolveRgb(traits, ctx, 'text')
+    const byBlockColor = traits.color.isByBlock
+      ? AcPdfStyleUtil.resolveRgb(traits, ctx, 'text')
+      : 0xffffff
+    return {
+      byLayerColor,
+      byBlockColor,
+      layer: traits.layer,
+      entityAci: traits.color.isByACI ? traits.color.colorIndex : null,
+      entityRgb: traits.color.isByColor ? traits.color.RGB : null,
+      entityIsByLayer: traits.color.isByLayer,
+      entityIsByBlock: traits.color.isByBlock,
+      entityIsForeground: traits.color.isForeground
     }
   }
 
@@ -497,7 +545,16 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
         // INSERT templates are cloned in the same turn as worldDraw; deferring
         // layout through `Promise.then` leaves empty ops in the parent cache.
         if (fonts.has(fontName)) {
-          if (this.applyTextLayout(entity, mtext, fontName, fill, localPos)) {
+          if (
+            this.applyTextLayout(
+              entity,
+              mtext,
+              fontName,
+              fill,
+              localPos,
+              mapped.widthFactor
+            )
+          ) {
             return this.pushEntity(entity)
           }
           this.applyVectorMtext(entity, mtext, mapped, fill, stroke, localPos)
@@ -535,7 +592,8 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     mtext: AcGiMTextData,
     fontName: string,
     fill: ReturnType<typeof AcPdfStyleUtil.fillStyle>,
-    position: { x: number; y: number }
+    position: { x: number; y: number },
+    styleWidthFactor?: number
   ): boolean {
     const fonts = this._fonts
     if (!fonts) {
@@ -557,7 +615,14 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       }
       return fonts.widthOfText(fontName, text, size)
     }
-    const layout = layoutMText({ data: mtext, measure })
+    const layout = layoutMText({
+      data: mtext,
+      measure,
+      // Style group-41 width factor when the entity does not set its own —
+      // without this, text-mode PDF paints unflattened glyphs vs the viewer.
+      styleWidthFactor,
+      colors: this.resolveMTextColorContext()
+    })
     const joined = layout.lines.map(line => line.text).join('\n')
     if (joined.trim() === '') {
       return false
@@ -599,17 +664,30 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     const upY = nz * cos
     const flipX = nz < 0
     const angleDeg = flipX ? rotationDeg + 180 : rotationDeg
+    const styleCtx = this.styleContext
     for (const line of layout.lines) {
       for (const run of line.runs) {
         const x = line.dx + run.dx
         const y = line.dy + run.dy
         if (run.text !== '') {
+          const font = fontFor(run.font)
+          // Capital-A scale: CAD height → TrueType em so glyphs match the
+          // viewer mesh-font size (mtext-renderer fontScaleFactor).
+          const size = run.size * fonts.scaleFactor(font)
+          // Inline `\C` whites (ACI 7 / true white from a dark canvas) must
+          // contrast against PDF paper or they vanish on a white page.
+          const runFill = run.rgb
+            ? {
+                ...fill,
+                rgb: AcPdfStyleUtil.contrastRgb(run.rgb, styleCtx)
+              }
+            : fill
           entity.addOp({
             kind: 'text',
             text: run.text,
             hex: '',
-            font: fontFor(run.font),
-            size: run.size,
+            font,
+            size,
             x: x * cos + y * upX,
             y: x * sin + y * upY,
             angleDeg,
@@ -617,13 +695,16 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
             tracking: run.tracking,
             obliqueDeg: run.obliqueDeg || undefined,
             flipX,
-            style: run.rgb ? { ...fill, rgb: run.rgb } : fill
+            style: runFill
           })
         }
         // Stacked-fraction rules and run decorations draw as strokes in the
         // same rotated frame, colored like the run.
+        const ruleRgb = run.rgb
+          ? AcPdfStyleUtil.contrastRgb(run.rgb, styleCtx)
+          : fill.rgb
         const ruleStyle = {
-          rgb: run.rgb ?? fill.rgb,
+          rgb: ruleRgb,
           opacity: fill.opacity,
           lineWidth: 0.03 * run.size
         }
@@ -706,7 +787,8 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     if (!provider) {
       return
     }
-    const key = mtextGlyphKey(mtext, mapped)
+    const glyphColors = this.resolveGlyphColorSettings()
+    const key = mtextGlyphKey(mtext, mapped, glyphColors)
     const cached = this._mtextGlyphCache.get(key)
     if (cached) {
       this.applyCachedGlyphs(entity, cached, position, stroke, fill)
@@ -718,10 +800,12 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     const contents = (mtext as { contents?: string }).contents ?? ''
     const inflight = this._mtextGlyphInflight.get(key)
     if (!inflight) {
-      const render = Promise.resolve(provider.renderMText(mtext, mapped)).then(
-        result => {
+      const render = Promise.resolve(
+        provider.renderMText(mtext, mapped, glyphColors)
+      ).then(result => {
           const entry: AcPdfCachedGlyph = {
             primitives: result.primitives,
+            colorGroups: result.colorGroups,
             box: result.box,
             actualText: this._embedTextActualText
               ? result.actualText || stripMtextCodes(contents)
@@ -731,7 +815,13 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
           // permanently suppress every later instance with the same key.
           const hasGeometry =
             entry.primitives.triangles.length >= 6 ||
-            entry.primitives.polylines.length >= 2
+            entry.primitives.polylines.length >= 2 ||
+            (entry.colorGroups?.some(
+              g =>
+                g.primitives.triangles.length >= 6 ||
+                g.primitives.polylines.length >= 2
+            ) ??
+              false)
           if (hasGeometry) {
             this._mtextGlyphCache.set(key, entry)
           }
@@ -897,7 +987,15 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     stroke: ReturnType<typeof AcPdfStyleUtil.strokeStyle>,
     fill: ReturnType<typeof AcPdfStyleUtil.fillStyle>
   ): void {
-    applyGlyphs(entity, entry.primitives, entry.box, stroke, fill)
+    applyGlyphs(
+      entity,
+      entry.primitives,
+      entry.box,
+      stroke,
+      fill,
+      entry.colorGroups,
+      this.styleContext
+    )
     if (position.x !== 0 || position.y !== 0) {
       entity.applyMatrix(
         new AcGeMatrix3d().makeTranslation(position.x, position.y, 0)
@@ -1083,7 +1181,15 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
         provider.renderShape(shape, mapped)
       ).then(result => {
         const glyphNode = new AcPdfEntity()
-        applyGlyphs(glyphNode, result.primitives, result.box, glyphStroke, fill)
+        applyGlyphs(
+          glyphNode,
+          result.primitives,
+          result.box,
+          glyphStroke,
+          fill,
+          undefined,
+          this.styleContext
+        )
         glyphNode.applyMatrix(
           new AcGeMatrix3d().makeTranslation(placement.x, placement.y, 0)
         )
@@ -1112,15 +1218,33 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       const ok = await this._fonts.load(style.font)
       if (ok) {
         const textNode = new AcPdfEntity()
-        if (this.applyTextLayout(textNode, mtext, style.font, fill, position)) {
+        if (
+          this.applyTextLayout(
+            textNode,
+            mtext,
+            style.font,
+            fill,
+            position,
+            style.widthFactor
+          )
+        ) {
           entity.addChild(textNode)
           return
         }
       }
     }
-    const result = await provider.renderMText(mtext, style)
+    const glyphColors = this.resolveGlyphColorSettings()
+    const result = await provider.renderMText(mtext, style, glyphColors)
     const glyphNode = new AcPdfEntity()
-    applyGlyphs(glyphNode, result.primitives, result.box, glyphStroke, fill)
+    applyGlyphs(
+      glyphNode,
+      result.primitives,
+      result.box,
+      glyphStroke,
+      fill,
+      result.colorGroups,
+      this.styleContext
+    )
     glyphNode.applyMatrix(
       new AcGeMatrix3d().makeTranslation(position.x, position.y, 0)
     )
@@ -1205,6 +1329,8 @@ function toPdfPoints(points: Array<{ x: number; y: number }>): AcPdfPoint[] {
 interface AcPdfCachedGlyph {
   /** Flat text-local geometry, shared by reference with every instance. */
   primitives: AcPdfGlyphPrimitives
+  /** Per-colour groups when the MTEXT has inline `\C` overrides. */
+  colorGroups?: AcPdfGlyphColorGroup[]
   /** Bounding box of the text-local primitives. */
   box: AcPdfGlyphBox
   actualText?: string
@@ -1215,7 +1341,11 @@ interface AcPdfCachedGlyph {
  * `position` is excluded on purpose: reuse translates shared primitives.
  * `style.lastHeight` is a scratch value that does not affect rendering.
  */
-function mtextGlyphKey(mtext: AcGiMTextData, style: AcGiTextStyle): string {
+function mtextGlyphKey(
+  mtext: AcGiMTextData,
+  style: AcGiTextStyle,
+  colors?: AcPdfGlyphColorSettings
+): string {
   return JSON.stringify([
     mtext.text ?? '',
     mtext.height,
@@ -1226,7 +1356,15 @@ function mtextGlyphKey(mtext: AcGiMTextData, style: AcGiTextStyle): string {
     mtext.drawingDirection ?? null,
     mtext.lineSpaceFactor ?? null,
     mtext.widthFactor ?? null,
-    glyphStyleKey(style)
+    glyphStyleKey(style),
+    colors?.byLayerColor ?? null,
+    colors?.byBlockColor ?? null,
+    colors?.layer ?? null,
+    colors?.entityAci ?? null,
+    colors?.entityRgb ?? null,
+    colors?.entityIsByLayer ?? null,
+    colors?.entityIsByBlock ?? null,
+    colors?.entityIsForeground ?? null
   ])
 }
 
@@ -1267,21 +1405,51 @@ function applyGlyphs(
   primitives: AcPdfGlyphPrimitives,
   box: { min: { x: number; y: number }; max: { x: number; y: number } },
   strokeStyle: ReturnType<typeof AcPdfStyleUtil.strokeStyle>,
-  fillStyle: ReturnType<typeof AcPdfStyleUtil.fillStyle>
+  fillStyle: ReturnType<typeof AcPdfStyleUtil.fillStyle>,
+  colorGroups?: AcPdfGlyphColorGroup[],
+  styleCtx?: AcPdfStyleContext
 ) {
-  if (primitives.triangles.length >= 6) {
-    entity.addOp({
-      kind: 'triangles',
-      data: primitives.triangles,
-      style: fillStyle
-    })
-  }
-  if (primitives.polylines.length >= 2) {
-    entity.addOp({
-      kind: 'polylines',
-      data: primitives.polylines,
-      style: strokeStyle
-    })
+  if (colorGroups && colorGroups.length > 0) {
+    for (const group of colorGroups) {
+      // Viewer mesh materials bake ACI 7 as white on a dark canvas; contrast
+      // against PDF paper so those glyphs stay visible (and green `\C256`
+      // groups remain unchanged).
+      const packed = styleCtx
+        ? AcPdfStyleUtil.contrastAgainstPaper(group.rgb, styleCtx)
+        : group.rgb
+      const rgb = rgbFromPacked(packed)
+      const groupFill = { ...fillStyle, rgb }
+      const groupStroke = { ...strokeStyle, rgb }
+      if (group.primitives.triangles.length >= 6) {
+        entity.addOp({
+          kind: 'triangles',
+          data: group.primitives.triangles,
+          style: groupFill
+        })
+      }
+      if (group.primitives.polylines.length >= 2) {
+        entity.addOp({
+          kind: 'polylines',
+          data: group.primitives.polylines,
+          style: groupStroke
+        })
+      }
+    }
+  } else {
+    if (primitives.triangles.length >= 6) {
+      entity.addOp({
+        kind: 'triangles',
+        data: primitives.triangles,
+        style: fillStyle
+      })
+    }
+    if (primitives.polylines.length >= 2) {
+      entity.addOp({
+        kind: 'polylines',
+        data: primitives.polylines,
+        style: strokeStyle
+      })
+    }
   }
   entity.box.min.set(box.min.x, box.min.y)
   entity.box.max.set(box.max.x, box.max.y)

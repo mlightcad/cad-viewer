@@ -92,8 +92,18 @@ export abstract class AcTrMaterialManager<T> {
   /**
    * Returns (or creates) a material matching traits.
    * Subclasses provide buildKey() and createMaterialImpl().
+   *
+   * @param layerColorRgb - Optional resolved layer swatch for ByLayer traits
+   *   (e.g. MText `\C256`). When omitted, ByLayer materials fall back to white
+   *   until a later {@link updateLayerMaterial} refresh.
+   * @param layerColor - Optional full layer colour (ACI-7 / foreground tracking).
    */
-  getMaterial(traits: AcGiSubEntityTraits, options: T): THREE.Material {
+  getMaterial(
+    traits: AcGiSubEntityTraits,
+    options: T,
+    layerColorRgb?: number,
+    layerColor?: AcCmColor
+  ): THREE.Material {
     const key = this.buildKey(traits, options)
 
     // cache original traits
@@ -106,11 +116,32 @@ export abstract class AcTrMaterialManager<T> {
 
     // hit cache
     if (this.cache[key]) {
-      return this.cache[key]
+      const cached = this.cache[key]
+      // First ByLayer create without a swatch leaves white fallback. When a
+      // later caller (e.g. MText `\C256`) supplies the layer RGB, paint the
+      // shared layer material in place — it is keyed by layer name, so only
+      // that layer's ByLayer glyphs are affected.
+      if (
+        traits.color.isByLayer &&
+        typeof layerColorRgb === 'number' &&
+        getMaterialMetadata(cached).isForeground !== true
+      ) {
+        const swatch =
+          layerColor ?? new AcCmColor().setRGBValue(layerColorRgb)
+        this.refreshMaterialResolvedColor(cached, { color: swatch })
+      }
+      return cached
     }
 
     // otherwise create
-    return this.createMaterial(key, traits, options)
+    return this.createMaterial(
+      key,
+      traits,
+      options,
+      undefined,
+      layerColorRgb,
+      layerColor
+    )
   }
 
   /**

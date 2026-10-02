@@ -23,6 +23,18 @@ export interface AcPdfGlyphPrimitives {
 }
 
 /**
+ * One colour group inside a multi-colour MTEXT glyph set.
+ *
+ * Used when inline `\C` codes paint segments differently from the entity
+ * colour; the PDF writer emits one triangles/polylines op per group.
+ */
+export interface AcPdfGlyphColorGroup {
+  /** Packed 0xRRGGBB fill/stroke colour for this group. */
+  rgb: number
+  primitives: AcPdfGlyphPrimitives
+}
+
+/**
  * Optional host-supplied glyph engine.
  *
  * `pdf-renderer` stays free of Three.js / mtext-renderer. Viewers inject an
@@ -37,8 +49,31 @@ export interface AcPdfGlyphBox {
   max: { x: number; y: number }
 }
 
+/**
+ * Colour context for resolving ByLayer / ByBlock while tessellating MTEXT.
+ * Mirrors mtext-renderer's {@code ColorSettings} without importing it here.
+ */
+export interface AcPdfGlyphColorSettings {
+  byLayerColor: number
+  byBlockColor: number
+  layer?: string
+  /** Entity ACI when the entity uses an indexed colour (7 = foreground). */
+  entityAci?: number | null
+  /** Packed entity RGB when the entity uses a true colour. */
+  entityRgb?: number | null
+  entityIsByLayer?: boolean
+  entityIsByBlock?: boolean
+  entityIsForeground?: boolean
+}
+
 export interface AcPdfMTextGlyphResult {
   primitives: AcPdfGlyphPrimitives
+  /**
+   * Per-colour geometry when the MTEXT has inline `\C` overrides. When
+   * present and non-empty, the writer prefers these over {@link primitives}
+   * so `\C256` green is not painted with the entity white fill.
+   */
+  colorGroups?: AcPdfGlyphColorGroup[]
   actualText: string
   box: AcPdfGlyphBox
 }
@@ -51,7 +86,8 @@ export interface AcPdfShapeGlyphResult {
 export interface AcPdfGlyphProvider {
   renderMText(
     data: AcGiMTextData,
-    style: AcGiTextStyle
+    style: AcGiTextStyle,
+    colorSettings?: AcPdfGlyphColorSettings
   ): Promise<AcPdfMTextGlyphResult> | AcPdfMTextGlyphResult
   renderShape(
     shape: AcGiShapeData,

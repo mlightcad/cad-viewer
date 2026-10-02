@@ -82,6 +82,19 @@ describe('AcPdfStyleUtil', () => {
     expect(style.rgb).toEqual({ r: 0, g: 0, b: 0 })
   })
 
+  it('contrasts baked canvas-foreground white against white paper', () => {
+    // Vector MTEXT colour groups often carry ACI 7 as 0xffffff from a dark
+    // viewer canvas; without contrast those glyphs vanish on PDF paper.
+    expect(AcPdfStyleUtil.contrastAgainstPaper(0xffffff, ctx)).toBe(0x000000)
+    expect(AcPdfStyleUtil.contrastRgb({ r: 1, g: 1, b: 1 }, ctx)).toEqual({
+      r: 0,
+      g: 0,
+      b: 0
+    })
+    // Layer green must stay green.
+    expect(AcPdfStyleUtil.contrastAgainstPaper(0x00ff00, ctx)).toBe(0x00ff00)
+  })
+
   it('keeps ACI 7 solid hatch fills visible on white paper', () => {
     const style = AcPdfStyleUtil.fillStyle(
       createTraits({
