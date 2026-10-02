@@ -547,8 +547,10 @@ export abstract class AcEdBaseView {
    * tighter box (empty scene, too few boxes, or no outliers).
    *
    * @param timeout - Maximum time (ms) to wait for entity conversion. Default: 0.
+   * @returns Resolves when the zoom has been applied (or skipped if still waiting
+   *   was cancelled — currently always resolves after the fit action runs).
    */
-  abstract zoomToSmartExtents(timeout?: number): void
+  abstract zoomToSmartExtents(timeout?: number): void | Promise<void>
 
   /**
    * Moves the current view to the specified 2D point at the given scale.

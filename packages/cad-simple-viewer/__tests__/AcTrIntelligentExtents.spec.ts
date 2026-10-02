@@ -1,4 +1,7 @@
-import { computeIntelligentExtents } from '../src/view/AcTrIntelligentExtents'
+import {
+  computeIntelligentExtents,
+  computeIntelligentExtentsAsync
+} from '../src/view/AcTrIntelligentExtents'
 
 describe('computeIntelligentExtents', () => {
   it('drops outlier-scale AABBs so they cannot dominate the fit', () => {
@@ -34,5 +37,26 @@ describe('computeIntelligentExtents', () => {
 
   it('returns undefined for an empty input', () => {
     expect(computeIntelligentExtents([])).toBeUndefined()
+  })
+
+  it('async path matches sync extents for the same input', async () => {
+    const site = Array.from({ length: 40 }, (_, i) => ({
+      minX: 1000 + (i % 10) * 50,
+      minY: 2000 + Math.floor(i / 10) * 50,
+      maxX: 1020 + (i % 10) * 50,
+      maxY: 2020 + Math.floor(i / 10) * 50
+    }))
+    const entries = [
+      ...site,
+      {
+        minX: 1e75,
+        minY: 1e63,
+        maxX: 1e75 + 10,
+        maxY: 1e63 + 10
+      }
+    ]
+    const sync = computeIntelligentExtents(entries)
+    const asyncResult = await computeIntelligentExtentsAsync(entries)
+    expect(asyncResult).toEqual(sync)
   })
 })

@@ -9,7 +9,7 @@ export const zh: Record<string, string> = {
   'toolbar.pan': '平移',
   'toolbar.zoom': '缩放',
   'toolbar.zoomExtent': '范围',
-  'toolbar.zoomSmartExtents': '智能范围',
+  'toolbar.zoomSmartExtents': '智能',
   'toolbar.zoomWindow': '窗口',
   'toolbar.zoomSaved': '保存的视图',
   'toolbar.zoomOriginal': '保存的视图',

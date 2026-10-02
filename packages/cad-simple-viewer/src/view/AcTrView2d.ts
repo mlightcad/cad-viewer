@@ -101,7 +101,7 @@ import {
   unionGroupWcsChildBoxes
 } from './AcTrGroupWcsBboxAssert'
 import { AcTrInheritedLayerMaterialMapper } from './AcTrInheritedLayerMaterialMapper'
-import { computeIntelligentExtents } from './AcTrIntelligentExtents'
+import { computeIntelligentExtentsAsync } from './AcTrIntelligentExtents'
 import { AcTrLayer } from './AcTrLayer'
 import { AcTrLayerAppearanceController } from './AcTrLayerAppearanceController'
 import { AcTrLayout } from './AcTrLayout'
@@ -111,6 +111,7 @@ import { sortPickResults } from './AcTrPickResultUtil'
 import { AcTrProgressiveOpenFitController } from './AcTrProgressiveOpenFitController'
 import { AcTrScene } from './AcTrScene'
 import type { AcTrViewSessionState } from './AcTrViewSessionState'
+import { AcTrWorkSlice } from './AcTrWorkSlice'
 import { shouldRegenDatabaseAfterFontLoad } from './fontLoadRegen'
 
 /**
@@ -1579,33 +1580,61 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * @inheritdoc
    */
-  zoomToSmartExtents(timeout: number = 0) {
-    const waiter = new AcEdConditionWaiter(
-      () => !this.isProcessingEntities,
-      () => {
-        const smart = this.resolveSmartFitBox()
-        if (smart) {
-          this.zoomTo(smart)
-          this._isDirty = true
-          this.endProgressiveOpenFit()
-          return
-        }
-        this._progressiveOpenFit.applyFinalFit(() => this.getDrawingExtents())
-        this.endProgressiveOpenFit()
-      },
-      300,
-      timeout
-    )
-    waiter.start()
+  zoomToSmartExtents(timeout: number = 0): Promise<void> {
+    return new Promise(resolve => {
+      const waiter = new AcEdConditionWaiter(
+        () => !this.isProcessingEntities,
+        () => {
+          void (async () => {
+            try {
+              const smart = await this.resolveSmartFitBox()
+              if (smart) {
+                this.zoomTo(smart)
+                this._isDirty = true
+                this.endProgressiveOpenFit()
+                return
+              }
+              this._progressiveOpenFit.applyFinalFit(() =>
+                this.getDrawingExtents()
+              )
+              this.endProgressiveOpenFit()
+            } finally {
+              resolve()
+            }
+          })()
+        },
+        300,
+        timeout
+      )
+      waiter.start()
+    })
   }
 
   /**
    * Resolves intelligent zoom extents from spatial-index entity boxes.
+   * Reuses the layout cache until entity geometry extents are invalidated.
+   * Collects and clusters cooperatively so the UI thread stays responsive.
    */
-  private resolveSmartFitBox(): AcGeBox2d | undefined {
+  private async resolveSmartFitBox(): Promise<AcGeBox2d | undefined> {
     const activeLayout = this._scene.activeLayout
     if (!activeLayout) return undefined
-    return computeIntelligentExtents(activeLayout.collectSpatialExtentBoxes())
+    const cached = activeLayout.cachedSmartExtents
+    if (cached) {
+      return cached
+    }
+    const generation = activeLayout.smartExtentsGeneration
+    const work = new AcTrWorkSlice()
+    const entries = await activeLayout.collectSpatialExtentBoxesAsync(work)
+    const smart = await computeIntelligentExtentsAsync(entries, work)
+    // Geometry changed while we yielded: discard this result (a newer cache
+    // may already exist; otherwise the caller falls back to drawing extents).
+    if (activeLayout.smartExtentsGeneration !== generation) {
+      return activeLayout.cachedSmartExtents
+    }
+    if (smart) {
+      activeLayout.cachedSmartExtents = smart
+    }
+    return smart
   }
 
   /**

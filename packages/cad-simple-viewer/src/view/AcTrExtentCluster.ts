@@ -99,6 +99,35 @@ export function unionDominantCluster(
   return unionBoxes(working) ?? fallback
 }
 
+/**
+ * Async variant of {@link unionDominantCluster} that yields between peel
+ * iterations so large drawings do not freeze the UI thread.
+ *
+ * Produces the same box as the synchronous version for the same input.
+ */
+export async function unionDominantClusterAsync(
+  boxes: AcTrClusterBox[],
+  work: { maybeYield(): Promise<void>; yieldNow(): Promise<void> }
+): Promise<AcTrClusterBox | null> {
+  if (boxes.length === 0) {
+    return null
+  }
+  const fallback = unionBoxes(boxes)
+  if (boxes.length < 8) {
+    return fallback
+  }
+  let working = boxes.slice()
+  let previous = -1
+  while (working.length !== previous) {
+    previous = working.length
+    await work.maybeYield()
+    working = splitDominantCluster(working, 'x')
+    await work.maybeYield()
+    working = splitDominantCluster(working, 'y')
+  }
+  return unionBoxes(working) ?? fallback
+}
+
 function unionBoxes(boxes: AcTrClusterBox[]): AcTrClusterBox | null {
   if (boxes.length === 0) {
     return null

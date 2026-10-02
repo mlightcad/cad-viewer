@@ -584,7 +584,7 @@ export default {
       description: 'Zvětší na maximální rozsah všech objektů'
     },
     zoomSmartExtents: {
-      text: 'Chytrý rozsah',
+      text: 'Chytrý',
       description:
         'Zvětší na dominantní geometrický shluk a ignoruje vzdálené odlehlé objekty'
     },

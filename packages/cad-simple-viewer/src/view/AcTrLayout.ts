@@ -97,6 +97,13 @@ export class AcTrLayout {
   private _spatialIndex: AcTrHierarchicalSpatialIndex
   /** Cached layout bounds derived from packed batch vertex buffers */
   private _cachedBox: THREE.Box3
+  /** Cached smart-extents box; cleared whenever layout geometry extents change */
+  private _cachedSmartExtents: AcGeBox2d | undefined
+  /**
+   * Bumped whenever {@link _cachedSmartExtents} is cleared so in-flight async
+   * smart-extents work can detect stale results and skip writing the cache.
+   */
+  private _smartExtentsGeneration = 0
   /** When true, {@link box} is recomputed from batch geometry on next read */
   private _boxDirty: boolean
   /** Entity ids excluded from layout bounds (e.g. RAY/XLINE) */
@@ -133,6 +140,7 @@ export class AcTrLayout {
     this._group = new THREE.Group()
     this._spatialIndex = new AcTrHierarchicalSpatialIndex()
     this._cachedBox = new THREE.Box3()
+    this._cachedSmartExtents = undefined
     this._boxDirty = true
     this._extentExcludedObjectIds = new Set()
     this._layers = new Map()
@@ -196,6 +204,12 @@ export class AcTrLayout {
 
   private invalidateBox() {
     this._boxDirty = true
+    this.clearSmartExtentsCache()
+  }
+
+  private clearSmartExtentsCache() {
+    this._cachedSmartExtents = undefined
+    this._smartExtentsGeneration++
   }
 
   /**
@@ -311,6 +325,7 @@ export class AcTrLayout {
     })
     this._layers.clear()
     this._cachedBox.makeEmpty()
+    this.clearSmartExtentsCache()
     this._boxDirty = true
     this._extentExcludedObjectIds.clear()
     this._insertLayerByObjectId.clear()
@@ -363,6 +378,8 @@ export class AcTrLayout {
       }
       this.registerSpatialIndexBox(objectId, box)
     })
+    // Point symbol AABBs feed smart extents; discard any cached fit.
+    this.clearSmartExtentsCache()
   }
 
   /**
@@ -936,6 +953,53 @@ export class AcTrLayout {
    */
   collectSpatialExtentBoxes(): AcEdSpatialQueryResultItem[] {
     return this._spatialIndex.all().filter(isFiniteSpatialBBox)
+  }
+
+  /**
+   * Async variant of {@link collectSpatialExtentBoxes} that yields while
+   * flattening large spatial indexes.
+   *
+   * @param work - Cooperative yield helper.
+   */
+  async collectSpatialExtentBoxesAsync(work: {
+    maybeYield(): Promise<void>
+  }): Promise<AcEdSpatialQueryResultItem[]> {
+    const all = await this._spatialIndex.allAsync(work)
+    const result: AcEdSpatialQueryResultItem[] = []
+    for (let i = 0; i < all.length; i++) {
+      const item = all[i]!
+      if (isFiniteSpatialBBox(item)) {
+        result.push(item)
+      }
+      if ((i & 0x7ff) === 0x7ff) {
+        await work.maybeYield()
+      }
+    }
+    return result
+  }
+
+  /**
+   * Returns the cached smart-extents box when still valid for this layout.
+   */
+  get cachedSmartExtents(): AcGeBox2d | undefined {
+    return this._cachedSmartExtents
+  }
+
+  /**
+   * Generation counter for smart-extents cache invalidation. Capture before
+   * async work and compare after; mismatch means geometry changed mid-flight.
+   */
+  get smartExtentsGeneration(): number {
+    return this._smartExtentsGeneration
+  }
+
+  /**
+   * Stores the last computed smart-extents box until geometry extents change.
+   * Only write when {@link smartExtentsGeneration} still matches the value
+   * captured before the async computation started.
+   */
+  set cachedSmartExtents(box: AcGeBox2d | undefined) {
+    this._cachedSmartExtents = box
   }
 
   /**

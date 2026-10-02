@@ -6,7 +6,7 @@ export const ar: Record<string, string> = {
   'toolbar.pan': 'تحريك العرض',
   'toolbar.zoom': 'تكبير',
   'toolbar.zoomExtent': 'ملاءمة',
-  'toolbar.zoomSmartExtents': 'ملاءمة ذكية',
+  'toolbar.zoomSmartExtents': 'ذكية',
   'toolbar.zoomWindow': 'نافذة',
   'toolbar.zoomSaved': 'محفوظ',
   'toolbar.zoomOriginal': 'محفوظ',

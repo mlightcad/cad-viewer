@@ -36,6 +36,7 @@ export default {
     fetchingDrawingFile: 'Dosya alınıyor ...',
     exportingDxf: 'DXF dışa aktarılıyor ...',
     exportingPdf: 'PDF dışa aktarılıyor ...',
+    calculatingSmartExtents: 'Akıllı sınırlar hesaplanıyor ...',
     importingPdf: 'PDF içe aktarılıyor ...',
     exportingEntityPreview: 'Görüntü dışa aktarılıyor ...',
     collectingMemoryProfile: 'Bellek analiz ediliyor ...',

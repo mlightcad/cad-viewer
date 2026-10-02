@@ -596,7 +596,7 @@ export default {
         'Tüm varlıkların maksimum sınırlarını görüntülemek için yakınlaştırır'
     },
     zoomSmartExtents: {
-      text: 'Akıllı sınırlar',
+      text: 'Akıllı',
       description:
         'Uzak aykırı varlıkları yok sayarak baskın geometri kümesine yakınlaştırır'
     },

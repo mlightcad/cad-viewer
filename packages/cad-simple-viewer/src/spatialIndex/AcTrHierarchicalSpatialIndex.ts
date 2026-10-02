@@ -275,6 +275,45 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
   }
 
   /**
+   * Async variant of {@link all} that yields while flattening large child
+   * indexes so smart-extents collection does not freeze the UI thread.
+   *
+   * Produces the same ordered list as {@link all} for the same index contents.
+   *
+   * @param work - Cooperative yield helper (optional).
+   */
+  async allAsync(work?: {
+    maybeYield(): Promise<void>
+  }): Promise<AcEdSpatialQueryResultItem[]> {
+    const result: AcEdSpatialQueryResultItem[] = []
+    let sinceYield = 0
+    const roots = this.rootIndex.all()
+
+    for (let r = 0; r < roots.length; r++) {
+      const hit = roots[r]!
+      const child = this.childIndexes.get(hit.id)
+      if (child) {
+        const children = child.all()
+        for (let i = 0; i < children.length; i++) {
+          result.push(children[i] as AcEdSpatialQueryResultItem)
+          sinceYield++
+          if (work && (sinceYield & 0x7ff) === 0x7ff) {
+            await work.maybeYield()
+          }
+        }
+      } else {
+        result.push(hit as AcEdSpatialQueryResultItem)
+        sinceYield++
+        if (work && (sinceYield & 0x7ff) === 0x7ff) {
+          await work.maybeYield()
+        }
+      }
+    }
+
+    return result
+  }
+
+  /**
    * Checks whether a second-level index exists for the specified id.
    *
    * @param id Root item id.
