@@ -8,6 +8,7 @@ import * as THREE from 'three'
 import { setMaterialMetadata, getMaterialMetadata } from '../src/style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../src/util/AcTrEntityTraitsUtil'
+import { AcTrMaterialUtil } from '../src/util/AcTrMaterialUtil'
 import { AcTrMTextColorUtil } from '../src/util/AcTrMTextColorUtil'
 import { MTextColor } from '@mlightcad/mtext-parser'
 
@@ -62,6 +63,47 @@ describe('AcTrMTextColorUtil', () => {
         ACGI_PAPER_SPACE_BACKGROUND
       )
     ).toBe(0xffffff)
+  })
+
+  it('does not rematerialize inline C256 ByLayer glyphs when entity is ACI 7', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0x000000
+
+    const color = new AcCmColor()
+    color.setForeground()
+    const traits = AcTrMTextColorUtil.snapshotEntityTraits({
+      ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
+      color,
+      layer: 'DIM'
+    })
+
+    const byLayerTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    byLayerTraits.color.setByLayer()
+    byLayerTraits.layer = 'DIM'
+    const byLayerMaterial = styleManager.getMTextFillMaterial(byLayerTraits)
+    // Simulate ColorSettings.byLayerColor green applied after material create.
+    AcTrMaterialUtil.setMaterialColor(byLayerMaterial, new THREE.Color(0x00ff00))
+    setMaterialMetadata(byLayerMaterial, {
+      ...getMaterialMetadata(byLayerMaterial),
+      isByLayerColor: true,
+      isForeground: false
+    })
+
+    const root = new THREE.Group()
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), byLayerMaterial)
+    mesh.userData.mtextColor = (() => {
+      const c = new MTextColor()
+      c.aci = 256
+      return c
+    })()
+    root.add(mesh)
+
+    AcTrMTextColorUtil.rematerializeTextHierarchy(root, traits, styleManager)
+
+    expect(mesh.material).toBe(byLayerMaterial)
+    const material = mesh.material as THREE.MeshBasicMaterial
+    expect(material.color.getHex()).toBe(0x00ff00)
+    expect(getMaterialMetadata(material).isForeground).toBe(false)
   })
 
   it('rematerializes text meshes from entity traits with ACI 7 foreground', () => {

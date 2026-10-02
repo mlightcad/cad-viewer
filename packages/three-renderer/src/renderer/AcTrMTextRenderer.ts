@@ -14,8 +14,9 @@ import {
 } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
+import { getMaterialMetadata } from '../style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
-import { AcTrSubEntityTraitsUtil } from '../util'
+import { AcTrMaterialUtil, AcTrSubEntityTraitsUtil } from '../util'
 
 class AcTrMTextStyleManager implements StyleManager {
   public unsupportedTextStyles: Record<string, number> = {}
@@ -33,7 +34,9 @@ class AcTrMTextStyleManager implements StyleManager {
     // Route MText glyph fills through the dedicated helper so their
     // linework-tier `drawOrder` semantics stay explicit even though
     // they are rasterized as meshes.
-    return this._styleManager.getMTextFillMaterial(entityTraits)
+    const material = this._styleManager.getMTextFillMaterial(entityTraits)
+    this.applyByLayerColorFromSettings(material, traits)
+    return material
   }
 
   getLineBasicMaterial(traits: ColorSettings): THREE.Material {
@@ -41,7 +44,33 @@ class AcTrMTextStyleManager implements StyleManager {
       traits,
       this._styleManager.currentBackgroundColor
     )
-    return this._styleManager.getLineMaterial(entityTraits, true)
+    const material = this._styleManager.getLineMaterial(entityTraits, true)
+    this.applyByLayerColorFromSettings(material, traits)
+    return material
+  }
+
+  /**
+   * `getMaterial` creates ByLayer materials with a white RGB fallback when no
+   * layer-table swatch is passed. Inline `\C256` carries the resolved layer
+   * colour on {@link ColorSettings.byLayerColor} — apply it so glyphs are not
+   * born white before a later layer sync.
+   */
+  private applyByLayerColorFromSettings(
+    material: THREE.Material,
+    traits: ColorSettings
+  ): void {
+    if (traits.color.aci !== 256) {
+      return
+    }
+    const rgb = traits.byLayerColor
+    if (typeof rgb !== 'number') {
+      return
+    }
+    const metadata = getMaterialMetadata(material)
+    if (metadata.isForeground === true) {
+      return
+    }
+    AcTrMaterialUtil.setMaterialColor(material, new THREE.Color(rgb))
   }
 }
 
