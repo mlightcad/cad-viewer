@@ -150,6 +150,10 @@ describe('ArcAlignedText-like PDF export', () => {
     renderer.textFontManager = new AcPdfFontManager(async name =>
       name.toLowerCase().includes('arial') ? fontBytes : undefined
     )
+    // Real PDF text requires the font to be loaded before mtext(); export
+    // paints vector glyphs while embeddable fonts are still in flight so
+    // nested INSERT templates are not cloned empty.
+    await renderer.textFontManager.load('arial')
 
     const glyphs = [
       renderer.mtext(makeGlyph('H', 10, 20, 0.3), style) as AcPdfEntity,

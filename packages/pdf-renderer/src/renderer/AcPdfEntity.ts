@@ -278,6 +278,20 @@ export class AcPdfEntity implements AcGiEntity {
     this.transformBoxesRecursive(matrix)
   }
 
+  /**
+   * Maps this node's local geometry box through its own CTM into parent space.
+   *
+   * Used when text glyphs are filled asynchronously after the INSERT's inverse
+   * (or a pre-applied position translation) is already on `_matrix`. Fresh
+   * local boxes must be rebased once so framing matches paint.
+   */
+  rebaseLocalBoxThroughMatrix() {
+    if (!this._matrix || this._box.isEmpty()) {
+      return
+    }
+    AcPdfMatrixUtil.transformBox(this._box, this._matrix)
+  }
+
   private transformBoxesRecursive(matrix: AcGeMatrix3d) {
     AcPdfMatrixUtil.transformBox(this._box, matrix)
     for (const child of this._children) {

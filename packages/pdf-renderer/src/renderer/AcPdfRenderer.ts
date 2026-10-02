@@ -106,6 +106,12 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
   private _fonts?: AcPdfFontManager
   private readonly _pending: Promise<void>[] = []
   /**
+   * Counts async glyph/font/image work scheduled during the current collect
+   * pass. {@link collectBlockRoots} re-walks until a pass schedules none, so
+   * nested INSERT clones capture already-filled leaf templates.
+   */
+  private _deferredWork = 0
+  /**
    * Reuses rendered glyph primitives for identical text content + style.
    *
    * ATTRIB texts render once per INSERT instance, so drawings with thousands
@@ -469,27 +475,53 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       this.styleContext
     )
     // Capture synchronously: the source entity may move before promises resolve.
+    // Bake the WCS/insertion translation onto the entity *before* returning so
+    // AcDbRenderingCache can apply the INSERT inverse next (inverse × T). If
+    // translation were deferred until async glyph/font work finishes, the
+    // inverse would land first and compose as T × inverse — ATTRIB labels on
+    // scaled/rotated INSERTs then paint at a far outlier (title-block text
+    // appears as a distant speck while the block itself is empty of labels).
     const position = { x: mtext.position.x, y: mtext.position.y }
+    if (position.x !== 0 || position.y !== 0) {
+      entity.applyMatrix(
+        new AcGeMatrix3d().makeTranslation(position.x, position.y, 0)
+      )
+    }
+    const localPos = { x: 0, y: 0 }
     if (this._textMode === 'text' && this._fonts) {
       const fonts = this._fonts
       const fontName = mapped.font
       const contents = mtext.text ?? ''
       if (contents.trim() !== '') {
-        const pending = Promise.resolve(fonts.load(fontName)).then(ok => {
-          if (
-            ok &&
-            this.applyTextLayout(entity, mtext, fontName, fill, position)
-          ) {
-            return
+        // Prefer a synchronous path when the font is already loaded. Nested
+        // INSERT templates are cloned in the same turn as worldDraw; deferring
+        // layout through `Promise.then` leaves empty ops in the parent cache.
+        if (fonts.has(fontName)) {
+          if (this.applyTextLayout(entity, mtext, fontName, fill, localPos)) {
+            return this.pushEntity(entity)
           }
-          // No embeddable program or the font misses glyphs: vector glyphs.
-          this.applyVectorMtext(entity, mtext, mapped, fill, stroke, position)
-        })
-        this._pending.push(pending)
+          this.applyVectorMtext(entity, mtext, mapped, fill, stroke, localPos)
+          return this.pushEntity(entity)
+        }
+        // Font not ready yet. Keep collectBlockRoots looping until load
+        // settles — otherwise a warm glyph cache can finalize the export as
+        // vector-only while fonts.load() is still in flight, and searchable
+        // textMode:'text' output is lost. Once settled (success or miss),
+        // stop deferring so failed resolves do not spin forever.
+        if (!fonts.isSettled(fontName)) {
+          this.trackPending(
+            fonts.load(fontName).then(() => {
+              /* next collect pass uses sync text when load succeeded */
+            })
+          )
+        }
+        // Paint vector glyphs immediately (same warm-up as textMode:'vector')
+        // so nested INSERT clones capture filled leaf templates while we wait.
+        this.applyVectorMtext(entity, mtext, mapped, fill, stroke, localPos)
         return this.pushEntity(entity)
       }
     }
-    this.applyVectorMtext(entity, mtext, mapped, fill, stroke, position)
+    this.applyVectorMtext(entity, mtext, mapped, fill, stroke, localPos)
     return this.pushEntity(entity)
   }
 
@@ -647,9 +679,14 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
         }
       }
     }
-    entity.applyMatrix(
-      new AcGeMatrix3d().makeTranslation(position.x, position.y, 0)
-    )
+    if (position.x !== 0 || position.y !== 0) {
+      entity.applyMatrix(
+        new AcGeMatrix3d().makeTranslation(position.x, position.y, 0)
+      )
+    } else {
+      // Position was pre-baked in mtext(); rebase the local layout box.
+      entity.rebaseLocalBoxThroughMatrix()
+    }
     return true
   }
 
@@ -708,7 +745,7 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
           entity.actualText = entry.actualText
         }
       })
-      this._pending.push(pending)
+      this.trackPending(pending)
       return
     }
     // Identical glyph work already in flight: reuse its result instead of
@@ -719,7 +756,7 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
         entity.actualText = entry.actualText
       }
     })
-    this._pending.push(pending)
+    this.trackPending(pending)
   }
 
   shape(shape: AcGiShapeData, style?: AcGiTextStyle, _delay?: boolean) {
@@ -738,10 +775,17 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       this.styleContext
     )
     const position = { x: shape.position.x, y: shape.position.y }
+    // Same race as mtext: bake translation before INSERT inverse can land.
+    if (position.x !== 0 || position.y !== 0) {
+      entity.applyMatrix(
+        new AcGeMatrix3d().makeTranslation(position.x, position.y, 0)
+      )
+    }
+    const localPos = { x: 0, y: 0 }
     const key = shapeGlyphKey(shape, mapped)
     const cached = this._shapeGlyphCache.get(key)
     if (cached) {
-      this.applyCachedGlyphs(entity, cached, position, stroke, fill)
+      this.applyCachedGlyphs(entity, cached, localPos, stroke, fill)
       return this.pushEntity(entity)
     }
     const inflight = this._shapeGlyphInflight.get(key)
@@ -760,10 +804,10 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     }
     const pending = (inflight ?? this._shapeGlyphInflight.get(key)!).then(
       entry => {
-        this.applyCachedGlyphs(entity, entry, position, stroke, fill)
+        this.applyCachedGlyphs(entity, entry, localPos, stroke, fill)
       }
     )
-    this._pending.push(pending)
+    this.trackPending(pending)
     return this.pushEntity(entity)
   }
 
@@ -777,7 +821,7 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       entity.box.expandByPoint({ x: op.x, y: op.y })
       entity.box.expandByPoint({ x: op.x + op.width, y: op.y + op.height })
     })
-    this._pending.push(pending)
+    this.trackPending(pending)
     return this.pushEntity(entity)
   }
 
@@ -798,6 +842,27 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     if (this._pending.length > 0) {
       await this.awaitPending()
     }
+  }
+
+  /**
+   * Starts a collect pass that tracks whether any async draw work is queued.
+   * Pair with {@link endCollectPass}.
+   */
+  beginCollectPass(): void {
+    this._deferredWork = 0
+  }
+
+  /**
+   * Returns true when the pass scheduled async glyph/font/image work that
+   * will fill entity ops only after {@link awaitPending}.
+   */
+  endCollectPass(): boolean {
+    return this._deferredWork > 0
+  }
+
+  private trackPending(pending: Promise<void>): void {
+    this._deferredWork++
+    this._pending.push(pending)
   }
 
   /** Keeps one in-flight render per key; drops the entry once settled. */
@@ -834,7 +899,12 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
   ): void {
     applyGlyphs(entity, entry.primitives, entry.box, stroke, fill)
     if (position.x !== 0 || position.y !== 0) {
-      entity.applyMatrix(new AcGeMatrix3d().makeTranslation(position.x, position.y, 0))
+      entity.applyMatrix(
+        new AcGeMatrix3d().makeTranslation(position.x, position.y, 0)
+      )
+    } else {
+      // Position was pre-baked (mtext/shape); box is still text-local.
+      entity.rebaseLocalBoxThroughMatrix()
     }
   }
 
@@ -986,7 +1056,7 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
         glyphStroke,
         provider
       )
-      this._pending.push(pending)
+      this.trackPending(pending)
       return
     }
 
@@ -1019,7 +1089,7 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
         )
         entity.addChild(glyphNode)
       })
-      this._pending.push(pending)
+      this.trackPending(pending)
     }
   }
 

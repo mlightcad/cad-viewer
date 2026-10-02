@@ -8,6 +8,12 @@ import {
 } from '@mlightcad/mtext-renderer'
 
 import { AcApDocManager } from '../app/AcApDocManager'
+import {
+  getMeshFontProgramByName,
+  getMeshFontProgramByUrl,
+  rememberMeshFontProgramByName,
+  rememberMeshFontProgramByUrl
+} from './AcApMeshFontProgramCache'
 
 export type {
   FontInfo,
@@ -152,6 +158,122 @@ export class AcApFontUtil {
     aliases?: string[],
     encoding?: string
   ): Promise<FontLoadStatus> {
-    return FontManager.instance.cacheFont(data, fileName, aliases, encoding)
+    const resolvedFileName =
+      fileName ??
+      (typeof File !== 'undefined' && data instanceof File ? data.name : '')
+    const status = await FontManager.instance.cacheFont(
+      data,
+      fileName,
+      aliases,
+      encoding
+    )
+    const isMesh = /\.(ttf|otf|woff2?)$/i.test(resolvedFileName)
+    if (status.status === 'Success' && isMesh) {
+      const buffer =
+        data instanceof ArrayBuffer ? data : await data.arrayBuffer()
+      const names = [
+        resolvedFileName,
+        ...(aliases ?? []),
+        ...(status.fontName ? [status.fontName] : [])
+      ]
+      AcApFontUtil.rememberMeshFontProgram(buffer, names, status.url || undefined)
+    }
+    return status
+  }
+
+  /**
+   * Returns a previously downloaded mesh font program if this session already
+   * loaded it for on-screen rendering (or a prior PDF embed).
+   *
+   * {@link FontManager} / {@link MeshFont} keep parsed glyph tables, not the
+   * original TTF/OTF/WOFF bytes. Those bytes are retained separately when the
+   * viewer FileLoader (or {@link rememberMeshFontProgram}) first obtains them
+   * so PDF text-mode export can embed without a second network fetch.
+   *
+   * @returns A view over the cached buffer, or `undefined` when not retained.
+   */
+  static getLoadedMeshFontProgram(
+    fontName: string
+  ): Uint8Array | undefined {
+    const byName = getMeshFontProgramByName(fontName)
+    if (byName && byName.byteLength > 0) {
+      return new Uint8Array(byName)
+    }
+    const info = AcApFontUtil.findFontInfoByName(fontName)
+    if (info?.url) {
+      const byUrl = getMeshFontProgramByUrl(info.url)
+      if (byUrl && byUrl.byteLength > 0) {
+        return new Uint8Array(byUrl)
+      }
+    }
+    const replacement = AcApFontUtil.getReplacementFontName(fontName)
+    if (replacement && replacement !== fontName) {
+      const byReplacement = getMeshFontProgramByName(replacement)
+      if (byReplacement && byReplacement.byteLength > 0) {
+        return new Uint8Array(byReplacement)
+      }
+      const replacementInfo = AcApFontUtil.findFontInfoByName(replacement)
+      if (replacementInfo?.url) {
+        const byReplacementUrl = getMeshFontProgramByUrl(replacementInfo.url)
+        if (byReplacementUrl && byReplacementUrl.byteLength > 0) {
+          return new Uint8Array(byReplacementUrl)
+        }
+      }
+    }
+    return undefined
+  }
+
+  /**
+   * Retains raw mesh font bytes for later PDF embedding / repeat resolves.
+   *
+   * @param data - Font file program
+   * @param names - Logical names / aliases to index under
+   * @param url - Optional catalog download URL
+   */
+  static rememberMeshFontProgram(
+    data: ArrayBuffer,
+    names?: readonly string[],
+    url?: string
+  ): void {
+    if (data.byteLength <= 0) return
+    if (url) {
+      rememberMeshFontProgramByUrl(url, data)
+    }
+    for (const name of names ?? []) {
+      rememberMeshFontProgramByName(name, data)
+    }
+  }
+
+  /**
+   * Called when the viewer FileLoader finishes a font download so PDF export
+   * can reuse the same program bytes.
+   */
+  static rememberMeshFontProgramFromUrl(
+    url: string,
+    data: ArrayBuffer
+  ): void {
+    if (!url || data.byteLength <= 0) return
+    rememberMeshFontProgramByUrl(url, data)
+    const list = AcApDocManager.instance?.avaiableFonts ?? []
+    for (const info of list) {
+      if (!info.url || info.url !== url) continue
+      const type = String(info.type ?? '').toLowerCase()
+      if (
+        type &&
+        type !== 'mesh' &&
+        type !== 'ttf' &&
+        type !== 'otf' &&
+        type !== 'woff' &&
+        type !== 'woff2'
+      ) {
+        continue
+      }
+      for (const name of info.name ?? []) {
+        rememberMeshFontProgramByName(name, data)
+      }
+      if (info.file) {
+        rememberMeshFontProgramByName(info.file, data)
+      }
+    }
   }
 }

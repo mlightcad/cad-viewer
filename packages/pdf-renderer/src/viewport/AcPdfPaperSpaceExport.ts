@@ -3,8 +3,10 @@ import {
   type AcDbBlockTableRecord,
   AcDbDatabase,
   AcDbEntity,
+  AcDbRenderingCache,
   AcDbViewport,
-  AcGePoint3d} from '@mlightcad/data-model'
+  AcGePoint3d
+} from '@mlightcad/data-model'
 
 import { AcPdfEntity } from '../renderer/AcPdfEntity'
 import type { AcPdfRenderer } from '../renderer/AcPdfRenderer'
@@ -63,25 +65,36 @@ function walkBlockDrawables(
 }
 
 /**
- * Walks a block twice so INSERT cache templates receive async mtext/image
- * ops before clones snapshot them.
+ * Walks a block until INSERT cache templates capture filled text ops.
  *
  * `AcDbRenderingCache` stores the first-drawn template by reference, then
  * hands each INSERT a `fastDeepClone`. Text/mtext fill their op lists in
  * microtasks (`awaitPending`). Cloning beforehand copies empty `_ops`
- * arrays, so arc-aligned labels (and any other async text) inside blocks
- * never appear in the PDF. Warming the cache, awaiting, then re-walking
- * makes hits clone already-filled templates.
+ * arrays, so labels inside blocks never appear in the PDF.
+ *
+ * Nested INSERTs make a single warm-up pass insufficient: a parent template
+ * caches *clones* of child blocks, so waiting only fills the child templates
+ * while the parent's nested clones stay empty. Rebuilding from a cleared
+ * cache after fonts/glyphs are warm lets leaf text paint synchronously, so
+ * parents clone already-filled children. Loop until a pass schedules no
+ * deferred work.
  */
 export async function collectBlockRoots(
   block: AcDbBlockTableRecord,
   renderer: AcPdfRenderer
 ): Promise<AcPdfEntity[]> {
-  walkBlockDrawables(block, renderer)
-  await renderer.awaitPending()
-  renderer.resetCollected()
-  const roots = walkBlockDrawables(block, renderer)
-  await renderer.awaitPending()
+  let roots: AcPdfEntity[] = []
+  for (let pass = 0; pass < 4; pass++) {
+    AcDbRenderingCache.instance.clear()
+    renderer.resetCollected()
+    renderer.beginCollectPass()
+    roots = walkBlockDrawables(block, renderer)
+    const hadDeferred = renderer.endCollectPass()
+    await renderer.awaitPending()
+    if (!hadDeferred) {
+      return roots
+    }
+  }
   return roots
 }
 

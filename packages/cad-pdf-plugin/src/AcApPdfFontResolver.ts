@@ -11,9 +11,10 @@ import type { AcPdfTextFontResolver } from '@mlightcad/pdf-renderer'
  * Only a catalog *miss* falls through to the replacement — a direct SHX hit
  * stays SHX so those texts keep their vector-glyph appearance in the PDF.
  *
- * The catalog entry's `url` is fetched on demand; bytes are not kept between
- * calls beyond pdf-lib's own embed cache, so a document using several CJK
- * faces embeds each subset once regardless of how many texts reference it.
+ * Prefer the session mesh-font program cache populated when the viewer
+ * FileLoader (or an earlier PDF resolve) already downloaded the face. MeshFont
+ * itself keeps only parsed glyph tables, so without that cache PDF export would
+ * `fetch` the catalog URL again. Fall back to `fetch` when the cache misses.
  *
  * SHX fonts have no embeddable program and resolve `undefined` — the renderer
  * then paints those texts as vector glyphs, matching the on-screen fallback.
@@ -30,6 +31,16 @@ export const resolveViewerTextFont: AcPdfTextFontResolver = async fontName => {
     )
     return undefined
   }
+
+  const cached =
+    AcApFontUtil.getLoadedMeshFontProgram(fontName) ??
+    (info.name?.[0]
+      ? AcApFontUtil.getLoadedMeshFontProgram(info.name[0])
+      : undefined)
+  if (cached && cached.byteLength > 0) {
+    return cached
+  }
+
   try {
     const res = await fetch(info.url)
     if (!res.ok) {
@@ -39,8 +50,15 @@ export const resolveViewerTextFont: AcPdfTextFontResolver = async fontName => {
       )
       return undefined
     }
-    const bytes = new Uint8Array(await res.arrayBuffer())
-    return bytes.byteLength > 0 ? bytes : undefined
+    const buffer = await res.arrayBuffer()
+    if (buffer.byteLength <= 0) {
+      return undefined
+    }
+    const names = [fontName, ...(info.name ?? []), info.file].filter(
+      (n): n is string => typeof n === 'string' && n.length > 0
+    )
+    AcApFontUtil.rememberMeshFontProgram(buffer, names, info.url)
+    return new Uint8Array(buffer)
   } catch (error) {
     console.warn(
       `[cad-pdf-plugin] Font "${fontName}" fetch errored (${info.url}): ` +
