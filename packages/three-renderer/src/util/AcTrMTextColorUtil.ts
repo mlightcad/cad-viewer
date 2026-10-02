@@ -211,11 +211,16 @@ export class AcTrMTextColorUtil {
       // Reconstruct stashes per-glyph ACI. Preserve true inline `\C` overrides
       // (e.g. 90/255) while recovering baked entity ACI 7.
       const glyphAci = glyphColor?.aci
+      // Inline `\C256` is ByLayer (layer colour), not the entity ACI 7 colour.
+      // Rematerializing it with the entity foreground material turns green
+      // layer text white (e.g. FJP-898E-G on a green layer).
+      if (glyphAci === 256) {
+        return false
+      }
       if (
         typeof glyphAci === 'number' &&
         glyphAci !== 7 &&
-        glyphAci !== 0 &&
-        glyphAci !== 256
+        glyphAci !== 0
       ) {
         return false
       }
@@ -230,14 +235,16 @@ export class AcTrMTextColorUtil {
       }
 
       // Rematerialize ByLayer-bound materials that should follow entity ACI 7.
-      if (metadata.isByLayerColor === true) {
+      // Inline `\C256` returns early above; without a stashed glyph colour,
+      // ByLayer on an ACI-7 entity usually means lost foreground tracking.
+      if (metadata.isByLayerColor === true && glyphColor == null) {
         return true
       }
-      // Glyph explicitly carries entity ACI 7 / ByLayer / ByBlock — recover it.
+      // Glyph explicitly carries entity ACI 7 / ByBlock — recover it.
+      // Do not treat ACI 256 as entity colour (that is layer colour).
       if (
         glyphAci === 7 ||
         glyphAci === 0 ||
-        glyphAci === 256 ||
         (glyphColor?.isRgb &&
           glyphColor.rgbValue ===
             acgiForegroundColorForBackground(
