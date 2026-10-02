@@ -11,10 +11,11 @@ import type { AcPdfTextFontResolver } from '@mlightcad/pdf-renderer'
  * Only a catalog *miss* falls through to the replacement — a direct SHX hit
  * stays SHX so those texts keep their vector-glyph appearance in the PDF.
  *
- * Prefer the session mesh-font program cache populated when the viewer
- * FileLoader (or an earlier PDF resolve) already downloaded the face. MeshFont
- * itself keeps only parsed glyph tables, so without that cache PDF export would
- * `fetch` the catalog URL again. Fall back to `fetch` when the cache misses.
+ * Prefer IndexedDB (`AcApFontUtil.getCachedMeshFontProgram`) when the face was
+ * already cached during rendering. Fall back to `fetch` the catalog URL, then
+ * persist the program to IndexedDB for later exports. MeshFont itself keeps
+ * only parsed glyph tables, so without IDB/fetch PDF export would have nothing
+ * to embed.
  *
  * SHX fonts have no embeddable program and resolve `undefined` — the renderer
  * then paints those texts as vector glyphs, matching the on-screen fallback.
@@ -32,11 +33,7 @@ export const resolveViewerTextFont: AcPdfTextFontResolver = async fontName => {
     return undefined
   }
 
-  const cached =
-    AcApFontUtil.getLoadedMeshFontProgram(fontName) ??
-    (info.name?.[0]
-      ? AcApFontUtil.getLoadedMeshFontProgram(info.name[0])
-      : undefined)
+  const cached = await AcApFontUtil.getCachedMeshFontProgram(fontName)
   if (cached && cached.byteLength > 0) {
     return cached
   }
@@ -54,10 +51,10 @@ export const resolveViewerTextFont: AcPdfTextFontResolver = async fontName => {
     if (buffer.byteLength <= 0) {
       return undefined
     }
-    const names = [fontName, ...(info.name ?? []), info.file].filter(
+    const aliases = [fontName, ...(info.name ?? [])].filter(
       (n): n is string => typeof n === 'string' && n.length > 0
     )
-    AcApFontUtil.rememberMeshFontProgram(buffer, names, info.url)
+    await AcApFontUtil.persistMeshFontProgram(buffer, info.file, aliases)
     return new Uint8Array(buffer)
   } catch (error) {
     console.warn(

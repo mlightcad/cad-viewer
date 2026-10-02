@@ -235,9 +235,9 @@ export class AcTrMTextColorUtil {
       }
 
       // Rematerialize ByLayer-bound materials that should follow entity ACI 7.
-      // Inline `\C256` returns early above; without a stashed glyph colour,
-      // ByLayer on an ACI-7 entity usually means lost foreground tracking.
-      if (metadata.isByLayerColor === true && glyphColor == null) {
+      // Inline `\C256` (glyphAci === 256) returns early above and must keep
+      // the layer colour — do not paint it with the entity foreground.
+      if (metadata.isByLayerColor === true) {
         return true
       }
       // Glyph explicitly carries entity ACI 7 / ByBlock — recover it.

@@ -120,8 +120,12 @@ export class AcPdfStyleUtil {
    * vanish. Hatches use the same contrast as strokes: AutoCAD plots ACI 7
    * as foreground, and the Three.js viewer inverts hatch-tier ACI 7 so it
    * stays visible against both light and dark canvases.
+   *
+   * Also used for MTEXT inline / vector glyph colours: the viewer rematerializes
+   * ACI 7 as canvas-foreground white on a dark UI, and those baked whites must
+   * flip to the PDF paper foreground or the glyphs disappear.
    */
-  private static contrastAgainstPaper(
+  static contrastAgainstPaper(
     packed: number,
     ctx: AcPdfStyleContext
   ): number {
@@ -133,6 +137,18 @@ export class AcPdfStyleUtil {
       return ctx.foregroundColor
     }
     return packed
+  }
+
+  /** Contrasts an already-resolved `{r,g,b}` swatch against the paper. */
+  static contrastRgb(
+    rgb: { r: number; g: number; b: number },
+    ctx: AcPdfStyleContext
+  ): { r: number; g: number; b: number } {
+    const packed =
+      (Math.round(rgb.r * 255) << 16) |
+      (Math.round(rgb.g * 255) << 8) |
+      Math.round(rgb.b * 255)
+    return rgbFromPacked(this.contrastAgainstPaper(packed, ctx))
   }
 
   private static resolveStrokeWidth(

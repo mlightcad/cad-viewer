@@ -1,17 +1,17 @@
 const mockFindFontInfoByName = jest.fn()
 const mockGetReplacementFontName = jest.fn()
-const mockGetLoadedMeshFontProgram = jest.fn()
-const mockRememberMeshFontProgram = jest.fn()
+const mockGetCachedMeshFontProgram = jest.fn()
+const mockPersistMeshFontProgram = jest.fn()
 
 jest.mock('@mlightcad/cad-simple-viewer', () => ({
   AcApFontUtil: {
     findFontInfoByName: (...args: unknown[]) => mockFindFontInfoByName(...args),
     getReplacementFontName: (...args: unknown[]) =>
       mockGetReplacementFontName(...args),
-    getLoadedMeshFontProgram: (...args: unknown[]) =>
-      mockGetLoadedMeshFontProgram(...args),
-    rememberMeshFontProgram: (...args: unknown[]) =>
-      mockRememberMeshFontProgram(...args)
+    getCachedMeshFontProgram: (...args: unknown[]) =>
+      mockGetCachedMeshFontProgram(...args),
+    persistMeshFontProgram: (...args: unknown[]) =>
+      mockPersistMeshFontProgram(...args)
   }
 }))
 
@@ -23,8 +23,9 @@ describe('resolveViewerTextFont', () => {
   beforeEach(() => {
     mockFindFontInfoByName.mockReset()
     mockGetReplacementFontName.mockReset()
-    mockGetLoadedMeshFontProgram.mockReset()
-    mockRememberMeshFontProgram.mockReset()
+    mockGetCachedMeshFontProgram.mockReset()
+    mockPersistMeshFontProgram.mockReset()
+    mockPersistMeshFontProgram.mockResolvedValue(undefined)
     globalThis.fetch = jest.fn()
   })
 
@@ -32,7 +33,7 @@ describe('resolveViewerTextFont', () => {
     globalThis.fetch = originalFetch
   })
 
-  it('returns cached program bytes without fetching', async () => {
+  it('returns IndexedDB program bytes without fetching', async () => {
     const cached = new Uint8Array([10, 20, 30])
     mockFindFontInfoByName.mockReturnValue({
       name: ['simsun'],
@@ -40,16 +41,16 @@ describe('resolveViewerTextFont', () => {
       type: 'mesh',
       url: 'https://cdn.example.com/fonts/simsun.woff'
     })
-    mockGetLoadedMeshFontProgram.mockReturnValue(cached)
+    mockGetCachedMeshFontProgram.mockResolvedValue(cached)
 
     const result = await resolveViewerTextFont('simsun')
 
     expect(result).toBe(cached)
     expect(globalThis.fetch).not.toHaveBeenCalled()
-    expect(mockRememberMeshFontProgram).not.toHaveBeenCalled()
+    expect(mockPersistMeshFontProgram).not.toHaveBeenCalled()
   })
 
-  it('fetches and remembers when the session cache misses', async () => {
+  it('fetches and persists when IndexedDB misses', async () => {
     const url = 'https://cdn.example.com/fonts/arial.ttf'
     mockFindFontInfoByName.mockReturnValue({
       name: ['arial'],
@@ -57,7 +58,7 @@ describe('resolveViewerTextFont', () => {
       type: 'mesh',
       url
     })
-    mockGetLoadedMeshFontProgram.mockReturnValue(undefined)
+    mockGetCachedMeshFontProgram.mockResolvedValue(undefined)
     const body = new Uint8Array([1, 2, 3, 4]).buffer
     ;(globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -67,10 +68,10 @@ describe('resolveViewerTextFont', () => {
     const result = await resolveViewerTextFont('arial')
 
     expect(globalThis.fetch).toHaveBeenCalledWith(url)
-    expect(mockRememberMeshFontProgram).toHaveBeenCalledWith(
+    expect(mockPersistMeshFontProgram).toHaveBeenCalledWith(
       body,
-      expect.arrayContaining(['arial', 'arial.ttf']),
-      url
+      'arial.ttf',
+      expect.arrayContaining(['arial'])
     )
     expect(result).toEqual(new Uint8Array(body))
   })
@@ -89,6 +90,6 @@ describe('resolveViewerTextFont', () => {
 
     expect(result).toBeUndefined()
     expect(globalThis.fetch).not.toHaveBeenCalled()
-    expect(mockGetLoadedMeshFontProgram).not.toHaveBeenCalled()
+    expect(mockGetCachedMeshFontProgram).not.toHaveBeenCalled()
   })
 })

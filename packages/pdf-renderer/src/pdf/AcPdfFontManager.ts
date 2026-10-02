@@ -23,6 +23,32 @@ interface LoadedFont {
   bytes: Uint8Array
   /** Parsed fontkit font used for metrics and glyph encoding. */
   fk: fontkit.Font
+  /**
+   * AutoCAD maps TrueType text height to capital-A height
+   * (`unitsPerEm / A.yMax`). Applied to PDF text size and advances so
+   * text-mode export matches the viewer's mesh-font scale.
+   */
+  scaleFactor: number
+}
+
+/**
+ * Capital-A scale used by mtext-renderer mesh fonts. Returns `1` when the
+ * face has no Latin A (typical pure-symbol fonts).
+ */
+function computeFontScaleFactor(fk: fontkit.Font): number {
+  const unitsPerEm = fk.unitsPerEm || 1000
+  if (!fk.hasGlyphForCodePoint(0x41)) {
+    return 1
+  }
+  const glyph = fk.glyphForCodePoint(0x41)
+  if (!glyph || glyph.id === 0) {
+    return 1
+  }
+  const yMax = glyph.bbox?.maxY
+  if (!yMax || yMax <= 0) {
+    return 1
+  }
+  return unitsPerEm / yMax
 }
 
 const WOFF1_SIGNATURE = 0x774f4646 // 'wOFF'
@@ -176,7 +202,11 @@ export class AcPdfFontManager {
         try {
           const program = decodeFontProgram(new Uint8Array(bytes))
           const fk = fontkit.create(program)
-          this._loaded.set(fontName, { bytes: program, fk })
+          this._loaded.set(fontName, {
+            bytes: program,
+            fk,
+            scaleFactor: computeFontScaleFactor(fk)
+          })
           return true
         } catch {
           this._loaded.set(fontName, null)
@@ -219,8 +249,16 @@ export class AcPdfFontManager {
   }
 
   /**
-   * Advance width of `text` at `size` in drawing units (kerning included),
-   * or `undefined` when the font is not loaded.
+   * AutoCAD capital-A scale for `fontName` (1 when unloaded / no Latin A).
+   * Multiply CAD text height by this when painting PDF text ops.
+   */
+  scaleFactor(fontName: string): number {
+    return this._loaded.get(fontName)?.scaleFactor ?? 1
+  }
+
+  /**
+   * Advance width of `text` at CAD `size` in drawing units (kerning and
+   * capital-A scale included), or `undefined` when the font is not loaded.
    */
   widthOfText(
     fontName: string,
@@ -237,7 +275,9 @@ export class AcPdfFontManager {
     for (const glyph of run.glyphs) {
       total += glyph.advanceWidth
     }
-    return (total / font.fk.unitsPerEm) * size * hScale
+    return (
+      (total / font.fk.unitsPerEm) * size * font.scaleFactor * hScale
+    )
   }
 
   /**
@@ -275,9 +315,11 @@ export class AcPdfFontManager {
    *
    * Tracking runs (`op.tracking !== 1`) encode per glyph instead: `glyphHex`
    * carries each subset glyph id and `charAdjust` the TJ displacement after
-   * each glyph that widens the advance by `advance × (k−1)` — a TJ number
-   * moves the pen by `−(t/1000)` text-space units, so
-   * `t = −1000 · advance_em · (k−1)`.
+   * each glyph. Matches mtext-renderer: add `(k−1) × CAD_height` of visual
+   * space between glyphs (not `advance × (k−1)`, which over-spaces full-em
+   * CJK). Text ops set `size = CAD_height × scaleFactor` so Tm matches mesh
+   * capital-A scale; a TJ number moves the pen by `−(t/1000) · size · hScale`,
+   * so `t = −1000 · (k−1) / scaleFactor` yields the unscaled height addend.
    */
   async embedOp(doc: PDFDocument, op: Extract<AcPdfOp, { kind: 'text' }>): Promise<void> {
     this.bindDoc(doc)
@@ -308,15 +350,18 @@ export class AcPdfFontManager {
     }
     const glyphHex: string[] = []
     const charAdjust: number[] = []
-    const scale = 1000 / font.fk.unitsPerEm
     const glyphs = font.fk.layout(op.text).glyphs
+    // Divide by capital-A scale: op.size already includes it, but layout
+    // tracking is keyed to CAD height (see runAdvance / applyTextLayout).
+    const scale = font.scaleFactor > 0 ? font.scaleFactor : 1
+    const trackingTj = (-1000 * (tracking - 1)) / scale
     glyphs.forEach((glyph, index) => {
       // Encoding each glyph's own code points registers exactly the painted
       // glyphs with the subset embedder (ligatures encode as one glyph).
       const text = String.fromCodePoint(...glyph.codePoints)
       glyphHex.push(pdfFont.encodeText(text).toString().slice(1, -1))
       if (index < glyphs.length - 1) {
-        charAdjust.push(-scale * glyph.advanceWidth * (tracking - 1))
+        charAdjust.push(trackingTj)
       }
     })
     op.glyphHex = glyphHex

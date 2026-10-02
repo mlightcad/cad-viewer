@@ -14,12 +14,14 @@ import {
   AcGiMTextFlowDirection} from '@mlightcad/data-model'
 
 import {
+  type AcPdfMTextColorContext,
   type AcPdfMTextJustify,
   type AcPdfMTextParagraph,
   type AcPdfMTextSegment,
   type AcPdfMTextStack,
   type AcPdfMTextStyle,
-  parseMText} from './AcPdfMTextParser'
+  parseMText
+} from './AcPdfMTextParser'
 import type { AcPdfRgb } from './AcPdfStyle'
 
 /** Baseline-to-baseline distance of single-spaced text, in heights. */
@@ -52,7 +54,7 @@ export interface AcPdfTextLayoutRun {
   size: number
   /** Width factor (style factor × `\W`). */
   hScale: number
-  /** `\T` tracking: 1 = default advance, 1.1 = +10% per glyph. */
+  /** `\T` tracking: 1 = default; 1.1 adds 0.1×height×hScale per glyph. */
   tracking: number
   /** `\Q` oblique (shear) angle in degrees. */
   obliqueDeg: number
@@ -104,6 +106,14 @@ export interface AcPdfTextLayoutParams {
    * layout applies both itself. Return `undefined` when no metrics exist.
    */
   measure: (text: string, size: number, font?: string) => number | undefined
+  /**
+   * Text-style width factor (DXF group 41). Used when `data.widthFactor` is
+   * unset/≤0 — same fallback as mtext-renderer
+   * (`mtextData.widthFactor || style.widthFactor || 1`).
+   */
+  styleWidthFactor?: number
+  /** ByLayer / ByBlock swatches for inline `\C256` / `\C0`. */
+  colors?: AcPdfMTextColorContext
 }
 
 interface WrapItem {
@@ -113,6 +123,22 @@ interface WrapItem {
 }
 
 type MeasureFn = AcPdfTextLayoutParams['measure']
+
+/**
+ * True when every code point is Basic Latin / Latin-1 — same predicate as
+ * mtext-renderer's Latin soft-wrap overhang exception.
+ */
+function isLatinAsciiRun(text: string): boolean {
+  if (text.length === 0) {
+    return false
+  }
+  for (const ch of text) {
+    if ((ch.codePointAt(0) ?? 0) >= 0x0100) {
+      return false
+    }
+  }
+  return true
+}
 
 /** Splits a run's text into wrap units: words for Latin, chars for CJK. */
 function wrapUnits(line: string): string[] {
@@ -140,19 +166,28 @@ function wrapUnits(line: string): string[] {
   return units
 }
 
-/** Advance of `text` for one style: metrics × width factor × tracking. */
+/**
+ * Advance of `text` for one style.
+ *
+ * Matches mtext-renderer `penAdvance`: apply width factor to the glyph
+ * advance, then add `(tracking − 1) × size × hScale` per character. Multiplying
+ * the full advance by tracking over-spaces CJK full-em cells.
+ */
 function runAdvance(
   text: string,
   style: AcPdfMTextStyle,
   measure: MeasureFn
 ): number {
+  const n = [...text].length
   const raw = measure(text, style.size, style.fontName)
-  if (raw === undefined) {
-    return (
-      text.length * style.size * CHAR_FALLBACK_RATIO * style.hScale * style.tracking
-    )
+  const base =
+    raw === undefined
+      ? n * style.size * CHAR_FALLBACK_RATIO * style.hScale
+      : raw * style.hScale
+  if (style.tracking === 1 || n === 0) {
+    return base
   }
-  return raw * style.hScale * style.tracking
+  return base + n * (style.tracking - 1) * style.size * style.hScale
 }
 
 /** Total advance of a stack part (plain inline runs only). */
@@ -302,13 +337,25 @@ function trimTrailingSpaces(items: WrapItem[]): void {
 export function layoutMText(params: AcPdfTextLayoutParams): AcPdfTextLayout {
   const { data, measure } = params
   const height = data.height > 0 ? data.height : 1
-  const hScale = data.widthFactor && data.widthFactor > 0 ? data.widthFactor : 1
+  // Prefer the entity width factor; fall back to the text style (group 41).
+  // Screen mtext-renderer uses the same `||` chain so PDF text mode stays flat
+  // when only the style carries a sub-1.0 factor (common for Chinese notes).
+  const hScale =
+    (data.widthFactor && data.widthFactor > 0 ? data.widthFactor : 0) ||
+    (params.styleWidthFactor && params.styleWidthFactor > 0
+      ? params.styleWidthFactor
+      : 0) ||
+    1
 
   // The parser already expands `%%` symbol codes inline.
-  const paragraphs = parseMText(data.text ?? '', {
-    size: height,
-    hScale
-  })
+  const paragraphs = parseMText(
+    data.text ?? '',
+    {
+      size: height,
+      hScale
+    },
+    params.colors
+  )
   const factorSpacing = (data.lineSpaceFactor ?? 1) * LINE_SPACING_RATIO * height
   const step =
     data.lineSpaceStyle === 2
@@ -343,10 +390,22 @@ export function layoutMText(params: AcPdfTextLayoutParams): AcPdfTextLayout {
         !isSpace &&
         currentWidth + width > maxWidthLimit
       ) {
-        trimTrailingSpaces(current)
-        wrapped.push({ items: current, justify: paragraph.justify })
-        current = []
-        currentWidth = 0
+        // Match mtext-renderer: a short Latin/ASCII run after CJK (e.g.
+        // `FJP-898E-G`) may stay on the line with a small overhang instead of
+        // whole-word wrapping — AutoCAD keeps drawing-number tokens attached.
+        const overflow = currentWidth + width - maxWidthLimit
+        const allowOverflow = item.style.size * item.style.hScale * 2
+        const keepLatinOverhang =
+          isLatinAsciiRun(item.text ?? '') &&
+          width <= maxWidthLimit &&
+          overflow > 0 &&
+          overflow <= allowOverflow
+        if (!keepLatinOverhang) {
+          trimTrailingSpaces(current)
+          wrapped.push({ items: current, justify: paragraph.justify })
+          current = []
+          currentWidth = 0
+        }
       }
       if (isSpace && current.length === 0) {
         continue

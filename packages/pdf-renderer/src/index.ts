@@ -15,6 +15,8 @@ export type { AcPdfStyleContext } from './renderer/AcPdfStyleUtil'
 export { AcPdfStyleUtil } from './renderer/AcPdfStyleUtil'
 export type {
   AcPdfGlyphBox,
+  AcPdfGlyphColorGroup,
+  AcPdfGlyphColorSettings,
   AcPdfGlyphPrimitives,
   AcPdfGlyphProvider,
   AcPdfMTextGlyphResult,
