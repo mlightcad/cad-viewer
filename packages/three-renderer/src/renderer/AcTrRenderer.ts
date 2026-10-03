@@ -670,7 +670,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    */
   replaceMissedFonts(fonts: Record<string, number>): void {
     FontManager.instance.replaceMissedFonts(fonts)
-    void AcTrMTextRenderer.getInstance().replaceMissedFonts(
+    void this._context.mtextRenderer.replaceMissedFonts(
       FontManager.instance.missedFonts
     )
   }

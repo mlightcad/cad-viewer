@@ -4,6 +4,8 @@ const mockRendererInstances: Array<{
   setDefaultFonts: jest.Mock
   setStyleManager: jest.Mock
   loadFonts: jest.Mock
+  asyncRenderMText: jest.Mock
+  asyncRenderShape: jest.Mock
   destroy: jest.Mock
 }> = []
 
@@ -14,16 +16,25 @@ const mockUnifiedRenderer = jest.fn().mockImplementation(() => {
     setDefaultFonts: jest.fn(() => Promise.resolve()),
     setStyleManager: jest.fn(),
     loadFonts: jest.fn(() => Promise.resolve({ loaded: [] })),
+    asyncRenderMText: jest.fn(() => Promise.resolve({})),
+    asyncRenderShape: jest.fn(() => Promise.resolve({})),
     destroy: jest.fn()
   }
   mockRendererInstances.push(renderer)
   return renderer
 })
+const mockFontManager = {
+  getFontsToLoad: jest.fn(() => ['txt', 'symbol']),
+  requestFonts: jest.fn(() => Promise.resolve([]))
+}
 
 jest.mock('@mlightcad/mtext-renderer', () => ({
   UnifiedRenderer: mockUnifiedRenderer,
+  FontManager: { instance: mockFontManager },
   createDefaultColorSettings: jest.fn(() => ({}))
 }))
+
+import { log } from '@mlightcad/data-model'
 
 import { AcTrMTextRenderer } from '../src/renderer/AcTrMTextRenderer'
 import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
@@ -33,7 +44,193 @@ describe('AcTrMTextRenderer', () => {
     ;(AcTrMTextRenderer as unknown as { _instance: unknown })._instance = null
     mockRendererInstances.length = 0
     mockUnifiedRenderer.mockClear()
+    mockFontManager.getFontsToLoad.mockClear()
+    mockFontManager.requestFonts.mockClear()
   })
+
+  it('keeps configuration idle and warms only the actual drawing pipeline', async () => {
+    const configuration = AcTrMTextRenderer.getInstance()
+    configuration.setWorkerUrl('/mtext-worker.js')
+    const scope = configuration.createScope(new AcTrStyleManager())
+    expect(mockRendererInstances).toHaveLength(0)
+
+    const ready = scope.ensureDefaultFontsReady()
+    expect(scope.ensureDefaultFontsReady()).toBe(ready)
+    await ready
+    expect(mockRendererInstances).toHaveLength(1)
+    expect(mockUnifiedRenderer).toHaveBeenCalledWith('worker', {
+      workerUrl: '/mtext-worker.js'
+    })
+    expect(mockRendererInstances[0].loadFonts).toHaveBeenCalledTimes(1)
+    expect(mockRendererInstances[0].loadFonts).toHaveBeenCalledWith(
+      ['txt', 'symbol'],
+      { scope: 'all' }
+    )
+    expect(mockFontManager.requestFonts).not.toHaveBeenCalled()
+    scope.dispose()
+  })
+
+  it('warms main-thread fallback fonts without creating a worker pipeline', async () => {
+    const configuration = AcTrMTextRenderer.getInstance()
+    configuration.setRenderMode('main')
+    const scope = configuration.createScope(new AcTrStyleManager())
+    await scope.ensureDefaultFontsReady()
+    expect(mockFontManager.requestFonts).toHaveBeenCalledWith(['txt', 'symbol'])
+    expect(mockRendererInstances).toHaveLength(0)
+    scope.dispose()
+  })
+
+  it.each(['asyncRenderMText', 'asyncRenderShape'] as const)(
+    '%s waits for fallback readiness in the drawing pipeline',
+    async method => {
+      const configuration = AcTrMTextRenderer.getInstance()
+      configuration.setWorkerUrl('/mtext-worker.js')
+      const scope = configuration.createScope(new AcTrStyleManager())
+      scope.initialize()
+      let finishLoad!: () => void
+      const renderer = mockRendererInstances[0]
+      renderer.loadFonts.mockImplementation(
+        () =>
+          new Promise<void>(resolve => {
+            finishLoad = resolve
+          })
+      )
+      const result = scope[method]({} as never, {} as never)
+      expect(renderer[method]).not.toHaveBeenCalled()
+      finishLoad()
+      await result
+      expect(renderer[method]).toHaveBeenCalledTimes(1)
+      scope.dispose()
+    }
+  )
+
+  it.each(['asyncRenderMText', 'asyncRenderShape'] as const)(
+    '%s does not dispatch after disposal during font preload',
+    async method => {
+      const configuration = AcTrMTextRenderer.getInstance()
+      configuration.setWorkerUrl('/mtext-worker.js')
+      const scope = configuration.createScope(new AcTrStyleManager())
+      scope.initialize()
+      const renderer = mockRendererInstances[0]
+      renderer.loadFonts.mockReturnValue(new Promise(() => {}))
+      const result = scope[method]({} as never, {} as never)
+      scope.dispose()
+      await expect(result).rejects.toThrow('disposed')
+      expect(renderer[method]).not.toHaveBeenCalled()
+      expect(mockRendererInstances).toHaveLength(1)
+    }
+  )
+
+  it('rejects an obsolete draw when the pipeline is reinitialized during preload', async () => {
+    const configuration = AcTrMTextRenderer.getInstance()
+    configuration.setWorkerUrl('/mtext-worker.js')
+    const scope = configuration.createScope(new AcTrStyleManager())
+    scope.initialize()
+    mockRendererInstances[0].loadFonts.mockReturnValue(new Promise(() => {}))
+    const result = scope.asyncRenderMText({} as never, {} as never)
+    scope.initialize()
+    await expect(result).rejects.toThrow('replaced')
+    expect(mockRendererInstances[0].asyncRenderMText).not.toHaveBeenCalled()
+    expect(mockRendererInstances[1].asyncRenderMText).not.toHaveBeenCalled()
+    scope.dispose()
+  })
+
+  it('ends pending preload on disposal and prevents scoped worker resurrection', async () => {
+    jest.useFakeTimers()
+    try {
+      const configuration = AcTrMTextRenderer.getInstance()
+      configuration.setWorkerUrl('/mtext-worker.js')
+      const scope = configuration.createScope(new AcTrStyleManager())
+      scope.initialize()
+      let finishLoad!: () => void
+      mockRendererInstances[0].loadFonts.mockImplementation(
+        () =>
+          new Promise<void>(resolve => {
+            finishLoad = resolve
+          })
+      )
+      const ready = scope.ensureDefaultFontsReady()
+      expect(jest.getTimerCount()).toBe(1)
+      scope.dispose()
+      await ready
+      expect(jest.getTimerCount()).toBe(0)
+      finishLoad()
+      await Promise.resolve()
+      expect(scope.getRendererLoadedFontCount()).toBe(0)
+      await expect(scope.loadFonts(['late'])).rejects.toThrow('disposed')
+      expect(() => scope.initialize('/late-worker.js')).toThrow('disposed')
+      expect(() => scope.ensureDefaultFontsReady()).toThrow('disposed')
+      expect(mockRendererInstances).toHaveLength(1)
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
+  it('preserves the existing fallback deadline when a font request stalls', async () => {
+    jest.useFakeTimers()
+    const configuration = AcTrMTextRenderer.getInstance()
+    configuration.setWorkerUrl('/mtext-worker.js')
+    const scope = configuration.createScope(new AcTrStyleManager())
+    try {
+      scope.initialize()
+      mockRendererInstances[0].loadFonts.mockReturnValue(new Promise(() => {}))
+      const ready = scope.ensureDefaultFontsReady()
+      const settled = jest.fn()
+      void ready.then(settled)
+      jest.advanceTimersByTime(29_999)
+      await Promise.resolve()
+      expect(settled).not.toHaveBeenCalled()
+      jest.advanceTimersByTime(1)
+      await ready
+      expect(settled).toHaveBeenCalledTimes(1)
+    } finally {
+      scope.dispose()
+      jest.useRealTimers()
+    }
+  })
+
+  it('allows the application configuration facade to be explicitly reinitialized', () => {
+    const configuration = AcTrMTextRenderer.getInstance()
+    configuration.initialize('/first-worker.js')
+    configuration.dispose()
+    configuration.initialize('/next-worker.js')
+    expect(mockRendererInstances).toHaveLength(2)
+    expect(mockRendererInstances[0].destroy).toHaveBeenCalledTimes(1)
+    configuration.dispose()
+  })
+
+  it.each([false, true])(
+    'observes background configuration failures and reports only active scopes (disposed=%s)',
+    async disposed => {
+      const configuration = AcTrMTextRenderer.getInstance()
+      configuration.setWorkerUrl('/mtext-worker.js')
+      const scope = configuration.createScope(new AcTrStyleManager())
+      scope.initialize()
+      let fail!: (error: Error) => void
+      mockRendererInstances[0].setFontUrl.mockImplementation(
+        () =>
+          new Promise<void>((_, reject) => {
+            fail = reject
+          })
+      )
+      const warning = jest.spyOn(log, 'warn').mockImplementation(() => {})
+      try {
+        scope.setFontUrl('/fonts/')
+        if (disposed) scope.dispose()
+        fail(new Error('Worker request failed'))
+        await Promise.resolve()
+        await Promise.resolve()
+        if (disposed) expect(warning).not.toHaveBeenCalled()
+        else
+          expect(warning).toHaveBeenCalledWith(
+            'Failed to configure text renderer: Error: Worker request failed'
+          )
+      } finally {
+        warning.mockRestore()
+        scope.dispose()
+      }
+    }
+  )
 
   it('creates lazy isolated text pipelines without replacing host materials', async () => {
     const host = AcTrMTextRenderer.getInstance()
