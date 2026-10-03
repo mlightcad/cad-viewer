@@ -140,6 +140,42 @@ manager.events.workersReady.addEventListener(({ ready }) => {
 })
 ```
 
+## Native reference admission
+
+`AcApDocManager.createInstance({ overlayLimits })` accepts one explicit policy
+for all references owned by that manager, including hidden and parked documents.
+All six limits are required nonnegative safe integers; omitting the option leaves
+admission unbounded. Choose product limits separately from this library mechanism.
+`manager.overlayUsage` returns an immutable snapshot. `AcApOverlayCapacityError`
+identifies the exceeded dimension, requested aggregate and configured limit.
+
+| Limit | Accounting boundary |
+| --- | --- |
+| `references` | Active references plus detached preparations; replacement needs both slots until commit. |
+| `preparations` | Outstanding public parse/geometry preparations, released when ready or actually settled after failure/cancellation. |
+| `inputBytes` | Sum of encoded file sizes, checked before parsing and conservatively charged until removal. Already-parsed databases contribute zero encoded bytes. |
+| `entities` | Native database estimator's entity count, including block definitions. |
+| `databaseBytes` | Existing native database estimate, checked before and after geometry preparation. |
+| `layoutBytes` | Existing layout geometry-buffer, mapping and spatial-index statistics, checked before returning a ready handle. |
+
+An over-budget replacement leaves the old reference visible. Successful commit
+transfers the reservation to the session without releasing/reacquiring capacity;
+removing the old reference then releases its charge. Dispose unused prepared
+handles. Hiding a drawing frees no capacity. Removal, session closure and manager
+cleanup release ownership; a noncooperative public preparation remains charged
+until its promise settles, even after cancellation. There is no eviction or queue.
+Source revision changes during preparation or before commit are rejected; source
+databases must remain immutable while attached.
+
+These are admission and retained-layout policies, **not an exact memory ceiling**.
+Input buffers are already supplied by callers, so this API does not control their
+downloads. Decode/tessellation allocations occur before their estimates can be
+checked. Fonts, textures, material/block caches, private deferred work after native
+cancellation, externally retained objects, the primary drawing and actual GPU
+memory are outside these counters. No file-size-to-GPU multiplier is used.
+The same database in two references is conservatively charged twice. A host must
+qualify its capacity and recovery policy before advertising support for large files.
+
 ## Native reference interaction
 
 `view.pickDrawingEntities(point, radiusPx)` returns source-qualified occurrences

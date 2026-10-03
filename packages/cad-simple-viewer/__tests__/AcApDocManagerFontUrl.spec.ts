@@ -32,6 +32,10 @@ const mockSetAwaitFontsBeforeDraw = jest.fn(() => Promise.resolve())
 const mockSetFontUrl = jest.fn()
 const mockLoadFonts = jest.fn(() => Promise.resolve([]))
 const mockReadOverlayDatabase = jest.fn(async () => true)
+const mockEstimateOverlayDatabase = jest.fn(() => ({
+  entityCount: 1,
+  totalBytes: 16
+}))
 
 jest.mock('../src/app/AcApFontLoader', () => ({
   AcApFontLoader: MockAcApFontLoader
@@ -307,6 +311,7 @@ jest.mock('../src/command', () => {
 })
 
 jest.mock('@mlightcad/data-model', () => ({
+  acdbEstimateDatabaseMemory: mockEstimateOverlayDatabase,
   AcDbDatabase: jest
     .fn()
     .mockImplementation(() => ({ read: mockReadOverlayDatabase })),
@@ -341,6 +346,7 @@ jest.mock('@mlightcad/data-model', () => ({
 
 import {
   AcApDocManager,
+  type AcApDocManagerOptions,
   type AcApPreparedOverlay
 } from '../src/app/AcApDocManager'
 import { AcApDocSession } from '../src/app/AcApDocSession'
@@ -610,12 +616,14 @@ describe('AcApDocManager overlay attachment transactions', () => {
       clear: jest.fn(),
       setLayerVisibility: jest.fn().mockReturnValue(true),
       copyLayerVisibilityFrom: jest.fn(),
+      stats: { summary: { totalSize: { geometry: 4, mapping: 2 } } },
+      spatialIndexStats: { estimatedBytes: 2 },
       visible: true
     } as unknown as AcTrLayout
   }
 
-  function setup() {
-    const manager = AcApDocManager.createInstance({})!
+  function setup(options: AcApDocManagerOptions = {}) {
+    const manager = AcApDocManager.createInstance(options)!
     const view = manager.curView as AcTrView2d
     const state = manager as unknown as {
       _sessions: AcApDocSession[]
@@ -641,6 +649,187 @@ describe('AcApDocManager overlay attachment transactions', () => {
     ;(AcApDocManager as unknown as { _instance: unknown })._instance = undefined
     acapDisposeNotificationService()
     mockReadOverlayDatabase.mockReset().mockResolvedValue(true)
+    mockEstimateOverlayDatabase
+      .mockReset()
+      .mockReturnValue({ entityCount: 1, totalBytes: 16 })
+  })
+
+  const overlayLimits = {
+    references: 2,
+    preparations: 1,
+    inputBytes: 12,
+    entities: 2,
+    databaseBytes: 64,
+    layoutBytes: 16
+  }
+
+  it('refuses input before parsing and holds cancelled noncooperative parsing until settlement', async () => {
+    const { manager, prepare } = setup({ overlayLimits })
+    await expect(
+      manager.loadOverlay('large.dxf', new ArrayBuffer(13))
+    ).rejects.toMatchObject({ dimension: 'inputBytes' })
+    expect(mockReadOverlayDatabase).not.toHaveBeenCalled()
+    const parse = deferred<boolean>()
+    mockReadOverlayDatabase.mockReturnValueOnce(parse.promise)
+    const abort = new AbortController()
+    const pending = manager.loadOverlay('first.dxf', new ArrayBuffer(4), {
+      signal: abort.signal
+    })
+    const rejected = expect(pending).rejects.toMatchObject({
+      name: 'AbortError'
+    })
+    abort.abort()
+    expect(manager.overlayUsage).toMatchObject({
+      references: 1,
+      preparations: 1,
+      inputBytes: 4
+    })
+    await expect(
+      manager.loadOverlay('second.dxf', new ArrayBuffer(4))
+    ).rejects.toMatchObject({ dimension: 'preparations' })
+    expect(mockReadOverlayDatabase).toHaveBeenCalledTimes(1)
+    parse.resolve(true)
+    await rejected
+    expect(prepare).not.toHaveBeenCalled()
+    expect(
+      Object.values(manager.overlayUsage!).every(value => value === 0)
+    ).toBe(true)
+  })
+
+  it('charges both versions through preparation and releases only the retired version at commit', async () => {
+    const { manager, prepare, owner } = setup({ overlayLimits })
+    const old = layout()
+    prepare.mockResolvedValueOnce(old).mockResolvedValueOnce(layout())
+    const id = await manager.loadOverlay('old.dxf', new ArrayBuffer(4))
+    manager.setOverlayVisible(id, false)
+    const ready = await manager.prepareOverlay('new.dxf', new ArrayBuffer(5), {
+      replaceOverlayId: id
+    })
+    expect(manager.overlayUsage).toEqual({
+      references: 2,
+      preparations: 0,
+      inputBytes: 9,
+      entities: 2,
+      databaseBytes: 32,
+      layoutBytes: 16
+    })
+    expect(old.clear).not.toHaveBeenCalled()
+    const next = ready.commit()
+    ready.dispose()
+    expect(old.clear).toHaveBeenCalledTimes(1)
+    expect(owner.overlays.get(next)?.layout.visible).toBe(false)
+    expect(manager.overlayUsage).toEqual({
+      references: 1,
+      preparations: 0,
+      inputBytes: 5,
+      entities: 1,
+      databaseBytes: 16,
+      layoutBytes: 8
+    })
+    manager.removeOverlay(next)
+    expect(manager.overlayUsage?.references).toBe(0)
+  })
+
+  it('refuses model and layout excess without removing the current reference', async () => {
+    const { manager, prepare, owner } = setup({ overlayLimits })
+    const old = layout()
+    prepare.mockResolvedValueOnce(old)
+    const id = await manager.loadOverlay('old.dxf', new ArrayBuffer(4))
+    const activeUsage = manager.overlayUsage
+    mockEstimateOverlayDatabase.mockReturnValueOnce({
+      entityCount: 2,
+      totalBytes: 16
+    })
+    await expect(
+      manager.loadOverlay('large.dxf', new ArrayBuffer(4), {
+        replaceOverlayId: id
+      })
+    ).rejects.toMatchObject({ dimension: 'entities' })
+    expect(prepare).toHaveBeenCalledTimes(1)
+    const large = layout()
+    Object.assign(large, {
+      stats: { summary: { totalSize: { geometry: 40, mapping: 2 } } }
+    })
+    prepare.mockResolvedValueOnce(large)
+    await expect(
+      manager.loadOverlay('large.dxf', new ArrayBuffer(4), {
+        replaceOverlayId: id
+      })
+    ).rejects.toMatchObject({ dimension: 'layoutBytes' })
+    expect(large.clear).toHaveBeenCalledTimes(1)
+    expect(old.clear).not.toHaveBeenCalled()
+    expect(owner.overlays.get(id)?.layout).toBe(old)
+    expect(manager.overlayUsage).toEqual(activeUsage)
+    manager.clearOverlays()
+    expect(manager.overlayUsage?.references).toBe(0)
+  })
+
+  it('retains admission until an ignored geometry cancellation releases its late layout', async () => {
+    const { manager, prepare } = setup({ overlayLimits })
+    const geometry = deferred<AcTrLayout>()
+    prepare.mockReturnValueOnce(geometry.promise)
+    const abort = new AbortController()
+    const pending = manager.prepareOverlayDatabase(
+      { renderingRevision: 1 } as AcDbDatabase,
+      { signal: abort.signal }
+    )
+    const rejected = expect(pending).rejects.toMatchObject({
+      name: 'AbortError'
+    })
+    await Promise.resolve()
+    expect(prepare).toHaveBeenCalledTimes(1)
+    abort.abort()
+    expect(manager.overlayUsage?.preparations).toBe(1)
+    const late = layout()
+    geometry.resolve(late)
+    await rejected
+    expect(late.clear).toHaveBeenCalledTimes(1)
+    expect(
+      Object.values(manager.overlayUsage!).every(value => value === 0)
+    ).toBe(true)
+  })
+
+  it('keeps parked references charged across documents and releases them on clear', async () => {
+    const { manager, prepare, owner, state, view, originalScene } = setup({
+      overlayLimits
+    })
+    prepare.mockImplementation(async () => layout())
+    await manager.loadOverlay('first.dxf', new ArrayBuffer(4))
+    owner.viewState = { scene: originalScene } as never
+    const next = new AcApDocSession('next', {
+      ...owner.context,
+      doc: {}
+    } as never)
+    state._sessions.push(next)
+    state._activeSession = next
+    Object.assign(view, { cadScene: scene() })
+    await manager.loadOverlay('second.dxf', new ArrayBuffer(4))
+    await expect(
+      manager.loadOverlay('third.dxf', new ArrayBuffer(1))
+    ).rejects.toMatchObject({ dimension: 'references' })
+    expect(manager.overlayUsage?.references).toBe(2)
+    manager.clearOverlays()
+    expect(owner.overlays.size).toBe(0)
+    expect(next.overlays.size).toBe(0)
+    expect(
+      Object.values(manager.overlayUsage!).every(value => value === 0)
+    ).toBe(true)
+  })
+
+  it('rejects changed source revisions before publication and releases a ready handle only once', async () => {
+    const { manager, prepare, originalScene } = setup({ overlayLimits })
+    const prepared = layout()
+    prepare.mockResolvedValue(prepared)
+    const db = { renderingRevision: 1 } as AcDbDatabase
+    const ready = await manager.prepareOverlayDatabase(db)
+    Object.assign(db, { renderingRevision: 2 })
+    expect(() => ready.commit()).toThrow('changed during preparation')
+    ready.dispose()
+    expect(prepared.clear).toHaveBeenCalledTimes(1)
+    expect(originalScene.internalScene.add).not.toHaveBeenCalled()
+    expect(
+      Object.values(manager.overlayUsage!).every(value => value === 0)
+    ).toBe(true)
   })
 
   it('queries only committed sources in the live session and retires retained source handles', async () => {

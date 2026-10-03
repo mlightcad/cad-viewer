@@ -6,6 +6,11 @@ export * from './AcApFontLoader'
 export * from './AcApCommandServices'
 export * from './AcApDocument'
 export * from './AcApDocManager'
+export type {
+  AcApOverlayLimits,
+  AcApOverlayUsage
+} from './AcApOverlayAdmission'
+export { AcApOverlayCapacityError } from './AcApOverlayAdmission'
 export * from './AcApWorkerAssets'
 export * from './AcApOpenFileProfiler'
 export * from './AcApXrefManager'

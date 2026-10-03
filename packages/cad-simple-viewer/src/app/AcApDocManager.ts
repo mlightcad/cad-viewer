@@ -2,6 +2,7 @@ import {
   AcCmColor,
   AcCmEventManager,
   AcDbDatabase,
+  acdbEstimateDatabaseMemory,
   AcDbFileType,
   acdbHostApplicationServices,
   AcDbOpenDatabaseOptions,
@@ -118,6 +119,10 @@ import {
 } from './AcApOpenFileDialog'
 import { AcApOpenFileProfiler } from './AcApOpenFileProfiler'
 import { AcApOpenFileProgressController } from './AcApOpenFileProgressController'
+import {
+  AcApOverlayAdmission,
+  type AcApOverlayLimits
+} from './AcApOverlayAdmission'
 import {
   checkWebworkerReadiness,
   DEFAULT_WEBWORKER_FILE_URLS,
@@ -246,6 +251,12 @@ const DEFAULT_FONTS_PRESET = 'modern' as const
  * Options for creating AcApDocManager instance
  */
 export interface AcApDocManagerOptions {
+  /**
+   * Explicit aggregate reference policy across all document sessions. Omission
+   * leaves admission unbounded. Estimates do not bound parser/rendering peaks
+   * or actual GPU memory; see AcApOverlayLimits before choosing a policy.
+   */
+  overlayLimits?: AcApOverlayLimits
   /**
    * Optional HTML container element for rendering. If not provided, a new container will be created
    */
@@ -507,6 +518,7 @@ export class AcApDocManager {
   /** Monotonically increasing counter used to generate overlay ids */
   private _nextOverlayId = 1
   private _overlayAttachmentsClosed = false
+  private readonly _overlayAdmission?: AcApOverlayAdmission
   /** Names last requested by {@link ensurePresetFontsForOpen} (OPENPROF). */
   private _lastPresetFontsForOpen: string[] = []
 
@@ -538,6 +550,9 @@ export class AcApDocManager {
    * @private
    */
   private constructor(options: AcApDocManagerOptions = {}) {
+    this._overlayAdmission = options.overlayLimits
+      ? new AcApOverlayAdmission(options.overlayLimits)
+      : undefined
     this._baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
     acapSetDocsBaseUrl(options.docsBaseUrl ?? ACAP_DEFAULT_DOCS_BASE_URL)
     this._commandAliasOverrides = this.normalizeCommandAliasConfig(
@@ -1440,7 +1455,8 @@ export class AcApDocManager {
         )
         acTrCheckOverlaySignal(attachmentSignal)
         return db
-      }
+      },
+      content.byteLength
     )
   }
 
@@ -1473,7 +1489,8 @@ export class AcApDocManager {
 
   private async prepareOverlayAttachment(
     options: AcApOverlayOptions,
-    readDatabase: (signal: AbortSignal) => Promise<AcDbDatabase>
+    readDatabase: (signal: AbortSignal) => Promise<AcDbDatabase>,
+    inputBytes = 0
   ): Promise<AcApPreparedOverlay> {
     // Keep listener ownership and identity stable if the caller reuses its options.
     options = { ...options }
@@ -1505,6 +1522,10 @@ export class AcApDocManager {
     for (const [controller, replacing] of session.overlayAttachments) {
       if (replacement && replacing === replacement) controller.abort()
     }
+    // The previous reference remains charged until successful replacement.
+    // An aborted parser keeps its slot until its actual promise settles.
+    const reservation = this._overlayAdmission?.reserve(inputBytes)
+    let preparationSettled = false
     const controller = new AbortController()
     const abort = () => controller.abort()
     let layout: AcTrLayout | undefined
@@ -1525,6 +1546,7 @@ export class AcApDocManager {
         owned.internalObject.removeFromParent()
         owned.clear()
       }
+      if (preparationSettled) reservation?.release()
     }
     const check = () => {
       acTrCheckOverlaySignal(controller.signal)
@@ -1546,6 +1568,11 @@ export class AcApDocManager {
     try {
       const db = await readDatabase(controller.signal)
       check()
+      const revision = db.renderingRevision
+      if (reservation) {
+        const estimate = acdbEstimateDatabaseMemory(db)
+        reservation.database(estimate.entityCount, estimate.totalBytes)
+      }
       const prepared = await view.prepareOverlayEntities(db, {
         signal: controller.signal,
         transform
@@ -1558,6 +1585,24 @@ export class AcApDocManager {
       }
       layout = prepared
       check()
+      const checkRevision = () => {
+        if (db.renderingRevision !== revision) {
+          throw new Error('Reference database changed during preparation')
+        }
+      }
+      checkRevision()
+      if (reservation) {
+        // Rendering can populate native model caches without editing geometry.
+        const estimate = acdbEstimateDatabaseMemory(db)
+        reservation.database(estimate.entityCount, estimate.totalBytes)
+        const sizes = layout.stats.summary.totalSize
+        reservation.layout(
+          sizes.geometry +
+            sizes.mapping +
+            layout.spatialIndexStats.estimatedBytes
+        )
+        reservation.ready()
+      }
       state = 'ready'
       return {
         dispose,
@@ -1566,6 +1611,7 @@ export class AcApDocManager {
             throw new Error('Overlay was already committed')
           try {
             check()
+            checkRevision()
             if (state !== 'ready' || !layout) {
               throw new DOMException(
                 'Overlay attachment was disposed',
@@ -1581,7 +1627,11 @@ export class AcApDocManager {
             // Native publication and the caller's metadata update share one
             // synchronous turn. The previous layout survives until this point.
             scene.internalScene.add(layout.internalObject)
-            session.overlays.set(id, { db, layout })
+            session.overlays.set(id, {
+              db,
+              layout,
+              releaseAdmission: reservation?.release
+            })
             layout = undefined
             state = 'committed'
             cleanup()
@@ -1597,7 +1647,15 @@ export class AcApDocManager {
     } catch (error) {
       dispose()
       throw error
+    } finally {
+      preparationSettled = true
+      if (controller.signal.aborted) reservation?.release()
     }
+  }
+
+  /** Immutable admission snapshot; excludes host data and transient peaks. */
+  get overlayUsage() {
+    return this._overlayAdmission?.usage
   }
 
   /**
@@ -1616,6 +1674,7 @@ export class AcApDocManager {
       const scene = this.sessionCadScene(session)
       scene.internalScene.remove(overlay.layout.internalObject)
       overlay.layout.clear()
+      overlay.releaseAdmission?.()
       session.overlays.delete(overlayId)
       AcApXrefManager.instance.forgetOverlay(overlayId)
       if (!session.viewState) {
@@ -3048,6 +3107,7 @@ export class AcApDocManager {
     for (const overlay of session.overlays.values()) {
       scene.internalScene.remove(overlay.layout.internalObject)
       overlay.layout.clear()
+      overlay.releaseAdmission?.()
     }
     session.overlays.clear()
   }

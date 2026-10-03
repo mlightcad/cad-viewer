@@ -13,6 +13,8 @@ export interface AcApDocSessionOverlay {
   db: AcDbDatabase
   /** Layout that owns the overlay geometry. */
   layout: AcTrLayout
+  /** Releases the manager's reference charge after native layout disposal. */
+  releaseAdmission?: () => void
 }
 
 /**
