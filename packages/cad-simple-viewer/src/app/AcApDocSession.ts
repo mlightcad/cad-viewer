@@ -28,6 +28,8 @@ export class AcApDocSession {
   readonly context: AcApContext
   /** Overlay databases rendered into this session's scene. */
   readonly overlays = new Map<string, AcApDocSessionOverlay>()
+  /** In-flight preparations, with the existing overlay id they may replace. */
+  readonly overlayAttachments = new Map<AbortController, string | undefined>()
   /**
    * Parked GPU/camera/selection state while this document is inactive.
    * Undefined while the session owns the shared view.

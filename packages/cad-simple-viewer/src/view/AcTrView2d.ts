@@ -32,7 +32,6 @@ import {
   AcTrGlyphEntity,
   AcTrGroup,
   AcTrHtmlTransientManager,
-  AcTrMTextRenderer,
   AcTrRenderer,
   AcTrViewportView,
   hasPendingComplexLineTypeGlyphs,
@@ -112,6 +111,8 @@ import { AcTrLayerAppearanceController } from './AcTrLayerAppearanceController'
 import { AcTrLayout } from './AcTrLayout'
 import { AcTrLayoutView } from './AcTrLayoutView'
 import { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
+import { acTrPrepareOverlay } from './AcTrOverlay'
+import type { AcTrOverlayOptions } from './AcTrOverlayOptions'
 import { sortPickResults } from './AcTrPickResultUtil'
 import { AcTrProgressiveOpenFitController } from './AcTrProgressiveOpenFitController'
 import { AcTrScene } from './AcTrScene'
@@ -168,6 +169,10 @@ export const DEFAULT_VIEW_2D_OPTIONS: AcTrView2dOptions = {
 export class AcTrView2d extends AcEdBaseView {
   /** The Three.js renderer wrapper for CAD rendering */
   private _renderer: AcTrRenderer
+  /** Prepared reference jobs invalidated when this canvas is cleared/disposed. */
+  private _disposed = false
+  private _overlayEpoch = 0
+  private _overlayPreparations = new Set<AbortController>()
   /**
    * ID of the currently scheduled requestAnimationFrame callback.
    *
@@ -388,7 +393,7 @@ export class AcTrView2d extends AcEdBaseView {
       // Preset (fallback) + STYLE-table faces must both be ready before glyph
       // bake. Linework convert does not await this promise.
       const ready = Promise.all([
-        this.awaitPresetFontsReadySafe(),
+        this._renderer.context.mtextRenderer.ensureDefaultFontsReady(),
         this.awaitTextStyleFontsReady()
       ]).then(
         () => undefined,
@@ -399,20 +404,6 @@ export class AcTrView2d extends AcEdBaseView {
       })
     }
     return this._deferredFontsReady
-  }
-
-  /**
-   * Awaits DocManager preset preload when the singleton exists.
-   * No-op in unit tests that construct a view without a manager.
-   */
-  private async awaitPresetFontsReadySafe(): Promise<void> {
-    const singleton = AcApDocManager as unknown as {
-      _instance?: AcApDocManager
-    }
-    if (!singleton._instance) {
-      return
-    }
-    await singleton._instance.awaitPresetFontsReady()
   }
 
   /**
@@ -954,6 +945,11 @@ export class AcTrView2d extends AcEdBaseView {
     return this._renderer
   }
 
+  /** Whether this native view has permanently released its rendering resources. */
+  get isDisposed(): boolean {
+    return this._disposed
+  }
+
   /** Grip point manager for the view (Write mode only). */
   get gripManager() {
     return this._gripManager
@@ -1312,68 +1308,52 @@ export class AcTrView2d extends AcEdBaseView {
    * document (e.g. via `new AcDbDatabase().read(...)`).
    * @returns The layout containing the converted overlay entities.
    */
-  async addOverlayEntities(overlayDb: AcDbDatabase): Promise<AcTrLayout> {
-    const layout = new AcTrLayout()
-    layout.isReference = true
-    layout.internalObject.userData.isReference = true
-    this._scene.internalScene.add(layout.internalObject)
-
-    for (const layer of overlayDb.tables.layerTable.newIterator()) {
-      layout.addLayer({
-        name: layer.name,
-        isOff: layer.isOff,
-        isFrozen: layer.isFrozen,
-        color: layer.color
-      })
+  async addOverlayEntities(
+    overlayDb: AcDbDatabase,
+    options: AcTrOverlayOptions = {}
+  ): Promise<AcTrLayout> {
+    const scene = this._scene
+    const epoch = this._overlayEpoch
+    const layout = await this.prepareOverlayEntities(overlayDb, options)
+    if (epoch !== this._overlayEpoch || options.signal?.aborted) {
+      layout.clear()
+      throw new DOMException('Overlay attachment was cancelled', 'AbortError')
     }
-
-    const previousDatabase = this._renderer.context.database
-    this._renderer.context.database = overlayDb
-    try {
-      const modelSpace = overlayDb.tables.blockTable.modelSpace
-      for (const entity of modelSpace.newIterator()) {
-        if (entity instanceof AcDbViewport) continue
-        try {
-          const threeEntity = this.drawEntity(entity, false)
-          if (!threeEntity) continue
-
-          threeEntity.objectId = entity.objectId
-          threeEntity.ownerId = entity.ownerId
-          threeEntity.layerName = entity.layer
-          threeEntity.visible = entity.visibility !== false
-          if (
-            threeEntity instanceof AcTrGroup &&
-            (threeEntity as AcTrGroup).isOnTheSameLayer
-          ) {
-            threeEntity.userData.insertLayerName = threeEntity.layerName
-          }
-          await this.finishEntityGeometry(threeEntity, false)
-          if (
-            threeEntity instanceof AcTrGroup &&
-            (threeEntity as AcTrGroup).isOnTheSameLayer
-          ) {
-            // Remap after glyph geometry exists — see same-layer commit path.
-            this._inheritedLayerMaterialMapper.remap(
-              (threeEntity as AcTrGroup).children,
-              '0',
-              threeEntity.layerName
-            )
-          }
-          layout.addEntity(threeEntity)
-          threeEntity.dispose()
-        } catch (error) {
-          // One unconvertible entity must not abort the whole overlay.
-          log.error(
-            `[AcTrView2d] Failed to convert overlay entity ${entity.objectId} (${entity.type}):`,
-            error
-          )
-        }
-      }
-    } finally {
-      this._renderer.context.database = previousDatabase
-    }
-
+    scene.internalScene.add(layout.internalObject)
+    this._isDirty = true
     return layout
+  }
+
+  /**
+   * Prepares a reference off-scene. The caller owns the returned layout until
+   * publication and must clear it if its document session no longer exists.
+   */
+  async prepareOverlayEntities(
+    overlayDb: AcDbDatabase,
+    options: AcTrOverlayOptions = {}
+  ): Promise<AcTrLayout> {
+    if (this._disposed)
+      throw new DOMException('Overlay view was disposed', 'AbortError')
+    const epoch = this._overlayEpoch
+    const controller = new AbortController()
+    const abort = () => controller.abort()
+    options.signal?.addEventListener('abort', abort, { once: true })
+    if (options.signal?.aborted) controller.abort()
+    this._overlayPreparations.add(controller)
+    try {
+      const layout = await acTrPrepareOverlay(this._renderer, overlayDb, {
+        ...options,
+        signal: controller.signal
+      })
+      if (epoch !== this._overlayEpoch || controller.signal.aborted) {
+        layout.clear()
+        throw new DOMException('Overlay view was cleared', 'AbortError')
+      }
+      return layout
+    } finally {
+      this._overlayPreparations.delete(controller)
+      options.signal?.removeEventListener('abort', abort)
+    }
   }
 
   /**
@@ -2544,6 +2524,8 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   clear() {
+    this._overlayEpoch++
+    for (const controller of this._overlayPreparations) controller.abort()
     // Invalidate any in-flight progressive convert so it neither paints into
     // the cleared scene nor double-decrements the processing counter.
     this._convertEpoch++
@@ -2555,16 +2537,15 @@ export class AcTrView2d extends AcEdBaseView {
     this.cancelOpenLineworkFrame()
     this.resetDeferredGeometryQueue()
     this._entityProcessingIdleAt = 0
-    this._scene.clear()
+    this._scene.clear({ preserveReferences: true })
     this._renderer.resetDrawOrderZ()
     this._isDirty = true
     this._missedImages.clear()
     this._initializedLayouts.clear()
     this._externallyFramedLayouts.clear()
     this._loadingLayouts.clear()
-    this._renderer.dispose()
-    // Drop block templates when the scene is torn down (next open / close).
-    AcDbRenderingCache.instance.clear()
+    // Only the host renderer scope is reset; parked reference scopes survive.
+    this._renderer.resetResources()
     eventBus.emit('missed-data-changed', {})
   }
 
@@ -2575,6 +2556,7 @@ export class AcTrView2d extends AcEdBaseView {
    */
   captureSessionState(): AcTrViewSessionState {
     return {
+      rendererScope: this._renderer.captureResourceScope(),
       scene: this._scene,
       layoutViewManager: this._layoutViewManager,
       initializedLayouts: this._initializedLayouts,
@@ -2592,6 +2574,7 @@ export class AcTrView2d extends AcEdBaseView {
    * @param state - Snapshot previously returned by {@link captureSessionState} or {@link beginNewSession}.
    */
   restoreSessionState(state: AcTrViewSessionState): void {
+    this._renderer.restoreResourceScope(state.rendererScope)
     this._convertEpoch++
     this.clearFontLoadedRedrawTimer()
     this.cancelOpenLineworkFrame()
@@ -2625,6 +2608,7 @@ export class AcTrView2d extends AcEdBaseView {
    */
   beginNewSession(): AcTrViewSessionState {
     const parked = this.captureSessionState()
+    this._renderer.beginResourceScope()
     this._convertEpoch++
     this.clearFontLoadedRedrawTimer()
     this.cancelOpenLineworkFrame()
@@ -2654,7 +2638,18 @@ export class AcTrView2d extends AcEdBaseView {
    * @param state - Parked snapshot to discard.
    */
   disposeSessionState(state: AcTrViewSessionState): void {
+    if (state.scene === this._scene) {
+      this._convertEpoch++
+      this.clearFontLoadedRedrawTimer()
+      this.cancelOpenLineworkFrame()
+      this._convertQueue.length = 0
+      this._numOfEntitiesToProcess = 0
+      this._claimedConvertObjectIds.clear()
+      this._entityConvertGeneration.clear()
+      this.resetDeferredGeometryQueue()
+    }
     state.scene.clear()
+    this._renderer.releaseResourceScope(state.rendererScope)
     state.layoutViewManager = new AcTrLayoutViewManager()
     state.initializedLayouts.clear()
     state.externallyFramedLayouts.clear()
@@ -2790,6 +2785,13 @@ export class AcTrView2d extends AcEdBaseView {
    * view teardown). Safe to call more than once.
    */
   dispose() {
+    if (this._disposed) return
+    this._disposed = true
+    this._convertEpoch++
+    this._overlayEpoch++
+    for (const controller of this._overlayPreparations) controller.abort()
+    this._scene.clear()
+    this._renderer.dispose()
     this._disposeCanvasTouchCallout?.()
     this._disposeCanvasTouchCallout = undefined
     this.clearFontLoadedRedrawTimer()
@@ -3163,16 +3165,15 @@ export class AcTrView2d extends AcEdBaseView {
     const plan = planTextStyleFontPreload(styleFonts, fallbackFonts, {
       firstDefaultFont: firstDefault
     })
-    const mtextRenderer = AcTrMTextRenderer.getInstance()
+    const mtextRenderer = this._renderer.context.mtextRenderer
     const parseSite =
       mtextRenderer.getRenderMode() === 'worker' ? 'worker' : 'main'
     const singleton = AcApDocManager as unknown as {
       _instance?: AcApDocManager
     }
-    const preset =
-      singleton._instance?.lastPresetFontsForOpen?.length
-        ? [...singleton._instance.lastPresetFontsForOpen]
-        : [...fallbackFonts]
+    const preset = singleton._instance?.lastPresetFontsForOpen?.length
+      ? [...singleton._instance.lastPresetFontsForOpen]
+      : [...fallbackFonts]
     this._fontPreloadDiag = {
       critical: [...plan.critical],
       workerWarm: [],
@@ -3986,7 +3987,8 @@ export class AcTrView2d extends AcEdBaseView {
       objectsGroupByLayer.forEach((objects, layerName) => {
         // Nested layer-0 may already be resolved to an inner INSERT layer during
         // flatten. Remaining "0" buckets inherit this (outermost) INSERT layer.
-        const effectiveLayerName = layerName === '0' ? groupLayerName : layerName
+        const effectiveLayerName =
+          layerName === '0' ? groupLayerName : layerName
 
         // Material remap must still treat authored layer-0 drawables as layer-0
         // ByLayer even when nest resolution already rewrote layerName.
@@ -4106,11 +4108,12 @@ export class AcTrView2d extends AcEdBaseView {
   private stampEntityProcessingIdle() {
     if (this._numOfEntitiesToProcess === 0 && this._pendingGeometryJobs === 0) {
       this._entityProcessingIdleAt = performance.now()
-      // Release block templates after INSERT convert/glyph work finishes.
-      // Clearing at converter END was too early (convert still draining);
-      // keeping templates until the next open kept baked shells in memory and
-      // OOMed large drawings.
-      AcDbRenderingCache.instance.clear()
+      // Retire block lookups only after conversion drains. Scene instances can
+      // still borrow template buffers; terminal release belongs to scene disposal.
+      const context = this._renderer.context
+      if (context.database) {
+        AcDbRenderingCache.forContext(context, context.database).invalidate()
+      }
     }
   }
 }

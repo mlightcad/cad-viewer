@@ -289,10 +289,14 @@ export class AcTrScene {
   }
 
   /**
-   * Clear scene
+   * Clear host scene geometry. A host regeneration may preserve independently
+   * owned reference roots; full document teardown removes those owners first.
    * @returns Return this scene
    */
-  clear() {
+  clear(options: { preserveReferences?: boolean } = {}) {
+    const references = options.preserveReferences
+      ? this._scene.children.filter(root => root.userData.isReference === true)
+      : []
     this._layouts.forEach(layout => {
       this._scene.remove(layout.internalObject)
       layout.clear()
@@ -303,6 +307,7 @@ export class AcTrScene {
     this._htmlTransientManager.clear()
     this._previewOverlayManager.clear()
     this._scene.clear()
+    this._scene.add(...references)
     this._transientManager = new AcTrTransientManager(this._scene)
     this._htmlTransientManager = new AcTrHtmlTransientManager(this._scene)
     this._previewOverlayManager = new AcTrPreviewOverlayManager(this._scene)

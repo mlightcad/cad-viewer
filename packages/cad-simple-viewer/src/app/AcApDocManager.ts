@@ -77,9 +77,7 @@ import {
   resetMarkupSession,
   resetMeasurementSession
 } from '../command'
-import {
-  acapGetDrawStyleSessionAccessory
-} from '../command/AcApDrawStyleSession'
+import { acapGetDrawStyleSessionAccessory } from '../command/AcApDrawStyleSession'
 import { registerMarkupCommands } from '../command/markup/AcApRegisterMarkupCommands'
 import { registerMeasureCommands } from '../command/measure/AcApRegisterMeasureCommands'
 import {
@@ -91,18 +89,19 @@ import {
 } from '../editor'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
 import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser'
-import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
 import { AcTrView2d } from '../view'
 import type { AcApCompareDisplayOptions } from '../view/AcApCompareDisplay'
 import type { AcTrLayout } from '../view/AcTrLayout'
+import {
+  acTrCheckOverlaySignal,
+  acTrSnapshotOverlayTransform,
+  AcTrOverlayOptions
+} from '../view/AcTrOverlayOptions'
 import { AcApBusyIndicator } from './AcApBusyIndicator'
 import { acapBindCommandServices } from './AcApCommandServices'
 import { AcApContext } from './AcApContext'
 import { AcApDocSession } from './AcApDocSession'
-import {
-  ACAP_DEFAULT_DOCS_BASE_URL,
-  acapSetDocsBaseUrl
-} from './AcApDocsUrl'
+import { ACAP_DEFAULT_DOCS_BASE_URL, acapSetDocsBaseUrl } from './AcApDocsUrl'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
 import {
@@ -130,6 +129,24 @@ import {
 } from './notification'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
+/** Target and placement for a read-only, independently owned overlay. */
+export interface AcApOverlayOptions extends AcTrOverlayOptions {
+  /** Defaults to the active session's view. A parked shared view is ambiguous. */
+  targetView?: AcTrView2d
+  /** Existing overlay to replace only after successful preparation. */
+  replaceOverlayId?: string
+}
+
+/**
+ * An owned, detached native reference ready for synchronous publication.
+ * Call commit once, or dispose to abandon it. Dispose after commit is a no-op.
+ * Aborting, closing the owner or superseding its replacement disposes it too.
+ */
+export interface AcApPreparedOverlay {
+  commit(): string
+  dispose(): void
+}
+
 /** Default ISO drawing template loaded by {@link AcApDocManager.newDocument}. */
 const DEFAULT_NEW_DRAWING_TEMPLATE = 'templates/acadiso.dxf'
 /**
@@ -487,11 +504,7 @@ export class AcApDocManager {
   private _workersReadyCheckPromise?: Promise<boolean>
   /** Monotonically increasing counter used to generate overlay ids */
   private _nextOverlayId = 1
-  /**
-   * In-flight / completed preset (default+symbol) font load started at open.
-   * Reused across opens so IndexedDB/mesh parse is not repeated.
-   */
-  private _presetFontsForOpenPromise: Promise<void> | null = null
+  private _overlayAttachmentsClosed = false
   /** Names last requested by {@link ensurePresetFontsForOpen} (OPENPROF). */
   private _lastPresetFontsForOpen: string[] = []
 
@@ -716,6 +729,9 @@ export class AcApDocManager {
    * Destroy the view and unload all plugins
    */
   async destroy() {
+    this._overlayAttachmentsClosed = true
+    AcApXrefManager.instance.clearAll()
+    this.clearOverlays()
     await this._pluginManager.unloadAllPlugins()
     for (const session of [...this._sessions]) {
       session.context.dispose()
@@ -877,7 +893,8 @@ export class AcApDocManager {
       mode: doc.openMode
     })
     if (targetView === currentView) {
-      this.parkActiveSession()
+      // Closing the active document already disposed and removed its session.
+      if (this._sessions.includes(this._activeSession)) this.parkActiveSession()
       this._activeSession = session
       session.context.resume()
       if (session.viewState) {
@@ -1234,62 +1251,21 @@ export class AcApDocManager {
   }
 
   /**
-   * Starts loading the active default/symbol preset chain
-   * ({@link FontManager.getFontsToLoad}) so it overlaps DWG/DXF parse.
-   *
-   * Preset faces are drawing-independent. Callers must not await this from
-   * the open hot path — linework convert continues; glyph finalize awaits
-   * {@link awaitPresetFontsReady} instead.
-   *
-   * - Worker mode: {@link AcTrMTextRenderer.loadFonts} with `scope: 'all'` so
-   *   every isolate has fallbacks before glyph bake (no main-thread dual parse).
-   * - Main mode: {@link FontManager.requestFonts} (full await, including mesh).
-   *
-   * The promise is reused for the process lifetime. A 30s deadline matches
-   * {@link installFontFileLoadTimeout} so a stalled CDN cannot pin the open
-   * overlay; on timeout glyph draw still falls back to `'?'`.
+   * Starts loading the default/symbol preset in the opening view's render
+   * scope so it overlaps DWG/DXF parse. The scope owns the readiness promise,
+   * worker dispatch and deadline; another document has its own readiness.
+   * Linework conversion does not await this gate. Deferred glyphs wait on
+   * their captured rendering scope before baking geometry.
    */
   ensurePresetFontsForOpen(): Promise<void> {
-    if (this._presetFontsForOpenPromise) {
-      return this._presetFontsForOpenPromise
-    }
-    const names = [...FontManager.instance.getFontsToLoad()]
-    this._lastPresetFontsForOpen = names
-    if (names.length === 0) {
-      this._presetFontsForOpenPromise = Promise.resolve()
-      return this._presetFontsForOpenPromise
-    }
-    const mtextRenderer = AcTrMTextRenderer.getInstance()
-    const parseSite =
-      mtextRenderer.getRenderMode() === 'worker' ? 'worker' : 'main'
-    // Keep in sync with installFontFileLoadTimeout / text-style preload race.
-    const timeoutMs = 30_000
-    const load =
-      parseSite === 'worker'
-        ? mtextRenderer.loadFonts(names, { scope: 'all' }).then(() => undefined)
-        : FontManager.instance.requestFonts(names).then(() => undefined)
-    this._presetFontsForOpenPromise = new Promise<void>(resolve => {
-      const timer = setTimeout(() => {
-        // Glyph draw still falls back via FontManager defaults / '?'.
-        resolve()
-      }, timeoutMs)
-      load.then(
-        () => {
-          clearTimeout(timer)
-          resolve()
-        },
-        () => {
-          clearTimeout(timer)
-          resolve()
-        }
-      )
-    })
-    return this._presetFontsForOpenPromise
+    this._lastPresetFontsForOpen = [...FontManager.instance.getFontsToLoad()]
+    return this.openProgressView.renderer.context.mtextRenderer.ensureDefaultFontsReady()
   }
 
   /**
-   * Waits until {@link ensurePresetFontsForOpen} has finished (starting it if
-   * open never kicked it off). Used by deferred glyph finalize.
+   * Waits for the opening view's preset preload, starting it if necessary.
+   * Entity jobs use their own render scope so a later active-view change cannot
+   * redirect an in-flight font wait.
    */
   async awaitPresetFontsReady(): Promise<void> {
     await this.ensurePresetFontsForOpen()
@@ -1402,9 +1378,9 @@ export class AcApDocManager {
    * Unlike {@link openDocument}, this parses the file into a standalone
    * {@link AcDbDatabase} that never becomes `curDocument` — it isn't touched
    * by undo, the layer panel/table, or selection. Overlay geometry currently
-   * covers top-level entities (lines, arcs, polylines, text, hatch, etc.);
-   * block (INSERT) expansion, viewports, and dimensions are not yet
-   * supported and are skipped.
+   * uses the native model-space conversion path, including block expansion
+   * and deferred glyphs. Paper-space viewports are skipped. Selection, snaps
+   * and host editing do not yet include reference geometry.
    *
    * @param fileName - Input file name, used to determine DWG vs DXF from its extension.
    * @param content - Input file content as an `ArrayBuffer`.
@@ -1423,44 +1399,200 @@ export class AcApDocManager {
   async loadOverlay(
     fileName: string,
     content: ArrayBuffer,
-    options: AcDbOpenDatabaseOptions & { targetView?: AcTrView2d } = {}
+    options: AcDbOpenDatabaseOptions & AcApOverlayOptions = {}
   ): Promise<string> {
-    const { targetView, ...dbOptions } = options
-    const db = new AcDbDatabase()
-    const fileExtension = fileName.split('.').pop()?.toLocaleLowerCase()
-    await acapWithSecondaryDatabase(db, async () => {
-      await db.read(
-        content,
-        { readOnly: true, ...dbOptions },
-        fileExtension === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
-      )
-    })
-    return this.registerOverlayDatabase(db, { targetView })
+    const prepared = await this.prepareOverlay(fileName, content, options)
+    try {
+      return prepared.commit()
+    } finally {
+      prepared.dispose()
+    }
   }
 
   /**
-   * Registers an already-parsed read-only database as an overlay.
-   *
-   * Prefer this when the caller already loaded the secondary database (e.g.
-   * XATTACH extents preview) to avoid reading the same file twice.
-   *
-   * @param db - Secondary database to draw into the target view.
-   * @param options.targetView - Canvas that receives the overlay (defaults to
-   *   the active view). Used by side-by-side → overlay compare without moving scenes.
+   * Parses and prepares an independently owned DWG/DXF reference off-scene.
+   * The caller must commit or dispose the returned handle. This boundary lets
+   * a native reference owner publish geometry and its metadata in one turn.
+   */
+  async prepareOverlay(
+    fileName: string,
+    content: ArrayBuffer,
+    options: AcDbOpenDatabaseOptions & AcApOverlayOptions = {}
+  ): Promise<AcApPreparedOverlay> {
+    const { targetView, transform, replaceOverlayId, signal, ...dbOptions } =
+      options
+    return this.prepareOverlayAttachment(
+      { targetView, transform, replaceOverlayId, signal },
+      async attachmentSignal => {
+        const db = new AcDbDatabase()
+        const extension = fileName.split('.').pop()?.toLocaleLowerCase()
+        await db.read(
+          content,
+          {
+            ...dbOptions,
+            readOnly: true,
+            activateWorkingDatabase: false,
+            signal: attachmentSignal
+          },
+          extension === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
+        )
+        acTrCheckOverlaySignal(attachmentSignal)
+        return db
+      }
+    )
+  }
+
+  /**
+   * Registers an already-parsed database as a display-only reference. It does
+   * not transfer entities to the host database or alter that database's mode.
+   * Placement is completed off-scene; replacement retains the old geometry
+   * until the new layout is ready. The source database must not be mutated
+   * while its reference renderer is using it.
    */
   async registerOverlayDatabase(
     db: AcDbDatabase,
-    options?: { targetView?: AcTrView2d }
+    options: AcApOverlayOptions = {}
   ): Promise<string> {
-    const view = options?.targetView ?? (this.curView as AcTrView2d)
-    const layout = await view.addOverlayEntities(db)
-    const overlayId = `overlay-${this._nextOverlayId++}`
-    // Bind overlay to the session that owns the target view when possible
+    const prepared = await this.prepareOverlayDatabase(db, options)
+    try {
+      return prepared.commit()
+    } finally {
+      prepared.dispose()
+    }
+  }
+
+  /** Prepares an already-parsed source using the same owned commit boundary. */
+  async prepareOverlayDatabase(
+    db: AcDbDatabase,
+    options: AcApOverlayOptions = {}
+  ): Promise<AcApPreparedOverlay> {
+    return this.prepareOverlayAttachment(options, async () => db)
+  }
+
+  private async prepareOverlayAttachment(
+    options: AcApOverlayOptions,
+    readDatabase: (signal: AbortSignal) => Promise<AcDbDatabase>
+  ): Promise<AcApPreparedOverlay> {
+    // Keep listener ownership and identity stable if the caller reuses its options.
+    options = { ...options }
+    acTrCheckOverlaySignal(options.signal)
+    if (this._overlayAttachmentsClosed) {
+      throw new DOMException('Document manager was destroyed', 'AbortError')
+    }
+    const transform = acTrSnapshotOverlayTransform(options.transform)
+    const view = options.targetView ?? (this.curView as AcTrView2d)
+    if (view.isDisposed)
+      throw new DOMException('Overlay view was disposed', 'AbortError')
+    // Resolve before the first await. Parked sessions can share a view, so
+    // first-match/fallback-to-active lookup would silently reassign ownership.
     const session =
-      this._sessions.find(s => s.context.view === view) ?? this._activeSession
-    session.overlays.set(overlayId, { db, layout })
-    view.isDirty = true
-    return overlayId
+      this._activeSession.context.view === view
+        ? this._activeSession
+        : this._sessions.find(s => s.context.view === view && !s.viewState)
+    if (!session || !this._sessions.includes(session)) {
+      throw new Error('Overlay target has no live document session')
+    }
+    const scene = this.sessionCadScene(session)
+    const replacement = options.replaceOverlayId
+    if (replacement && !session.overlays.has(replacement)) {
+      throw new Error(
+        'Overlay replacement does not belong to the target session'
+      )
+    }
+    // A newer replacement supersedes any unfinished preparation for this id.
+    for (const [controller, replacing] of session.overlayAttachments) {
+      if (replacement && replacing === replacement) controller.abort()
+    }
+    const controller = new AbortController()
+    const abort = () => controller.abort()
+    let layout: AcTrLayout | undefined
+    let state: 'preparing' | 'ready' | 'committed' | 'disposed' = 'preparing'
+    const cleanup = () => {
+      session.overlayAttachments.delete(controller)
+      options.signal?.removeEventListener('abort', abort)
+      controller.signal.removeEventListener('abort', dispose)
+    }
+    const dispose = () => {
+      if (state === 'disposed' || state === 'committed') return
+      state = 'disposed'
+      cleanup()
+      controller.abort()
+      if (layout) {
+        const owned = layout
+        layout = undefined
+        owned.internalObject.removeFromParent()
+        owned.clear()
+      }
+    }
+    const check = () => {
+      acTrCheckOverlaySignal(controller.signal)
+      if (
+        this._overlayAttachmentsClosed ||
+        view.isDisposed ||
+        !this._sessions.includes(session) ||
+        this.sessionCadScene(session) !== scene ||
+        (replacement && !session.overlays.has(replacement))
+      ) {
+        throw new DOMException('Overlay document session changed', 'AbortError')
+      }
+    }
+    controller.signal.addEventListener('abort', dispose, { once: true })
+    options.signal?.addEventListener('abort', abort, { once: true })
+    if (options.signal?.aborted) abort()
+    if (!controller.signal.aborted)
+      session.overlayAttachments.set(controller, replacement)
+    try {
+      const db = await readDatabase(controller.signal)
+      check()
+      const prepared = await view.prepareOverlayEntities(db, {
+        signal: controller.signal,
+        transform
+      })
+      // Abort may already have disposed the pending owner while a native
+      // preparation ignored cancellation. Its late layout still needs release.
+      if (controller.signal.aborted) {
+        prepared.clear()
+        acTrCheckOverlaySignal(controller.signal)
+      }
+      layout = prepared
+      check()
+      state = 'ready'
+      return {
+        dispose,
+        commit: () => {
+          if (state === 'committed')
+            throw new Error('Overlay was already committed')
+          try {
+            check()
+            if (state !== 'ready' || !layout) {
+              throw new DOMException(
+                'Overlay attachment was disposed',
+                'AbortError'
+              )
+            }
+            const id = `overlay-${this._nextOverlayId++}`
+            if (replacement)
+              layout.visible = session.overlays.get(replacement)!.layout.visible
+            // Native publication and the caller's metadata update share one
+            // synchronous turn. The previous layout survives until this point.
+            scene.internalScene.add(layout.internalObject)
+            session.overlays.set(id, { db, layout })
+            layout = undefined
+            state = 'committed'
+            cleanup()
+            if (replacement) this.removeOverlay(replacement)
+            view.isDirty = true
+            return id
+          } catch (error) {
+            dispose()
+            throw error
+          }
+        }
+      }
+    } catch (error) {
+      dispose()
+      throw error
+    }
   }
 
   /**
@@ -1473,10 +1605,14 @@ export class AcApDocManager {
     for (const session of this._sessions) {
       const overlay = session.overlays.get(overlayId)
       if (!overlay) continue
+      for (const [controller, replacing] of session.overlayAttachments) {
+        if (replacing === overlayId) controller.abort()
+      }
       const scene = this.sessionCadScene(session)
       scene.internalScene.remove(overlay.layout.internalObject)
       overlay.layout.clear()
       session.overlays.delete(overlayId)
+      AcApXrefManager.instance.forgetOverlay(overlayId)
       if (!session.viewState) {
         ;(session.context.view as AcTrView2d).isDirty = true
       }
@@ -1512,11 +1648,7 @@ export class AcApDocManager {
     const sessions = view
       ? this._sessions.filter(s => s.context.view === view)
       : this._sessions
-    for (const session of sessions) {
-      for (const overlayId of [...session.overlays.keys()]) {
-        this.removeOverlay(overlayId)
-      }
-    }
+    for (const session of sessions) this.clearSessionOverlays(session)
   }
 
   /**
@@ -1528,7 +1660,10 @@ export class AcApDocManager {
     if (!view) {
       return Array.from(this._activeSession.overlays.keys())
     }
-    const session = this._sessions.find(s => s.context.view === view)
+    const session =
+      this._activeSession.context.view === view
+        ? this._activeSession
+        : this._sessions.find(s => s.context.view === view && !s.viewState)
     return session ? Array.from(session.overlays.keys()) : []
   }
 
@@ -2228,9 +2363,8 @@ export class AcApDocManager {
       mode: this.getDocumentEventMode(options)
     })
     if (replaceCurrent) {
-      // Drop xref sessions first so their overlay ids are removed via unload.
-      AcApXrefManager.instance.clearAll()
-      this.clearOverlays()
+      // Replace only this document; other tabs can share the same canvas.
+      this.clearSessionOverlays(this._activeSession)
       // Drop overlay / markup history before view.clear() disposes HTML.
       resetMeasurementSession()
       resetMarkupSession()
@@ -2623,12 +2757,10 @@ export class AcApDocManager {
    */
   private registerWorkers(webworkerFileUrls?: AcApWebworkerFiles) {
     const mtextRenderer = AcTrMTextRenderer.getInstance()
-    mtextRenderer.initialize(
+    mtextRenderer.setWorkerUrl(
       webworkerFileUrls?.mtextRender ?? DEFAULT_WEBWORKER_FILE_URLS.mtextRender
     )
-    void mtextRenderer.setDefaultFonts([
-      ...FontManager.instance.defaultFonts
-    ])
+    void mtextRenderer.setDefaultFonts([...FontManager.instance.defaultFonts])
   }
 
   /**
@@ -2811,8 +2943,7 @@ export class AcApDocManager {
   private resetActiveSessionToUntitled(session: AcApDocSession) {
     const oldDoc = session.doc
     const oldId = session.id
-    AcApXrefManager.instance.clearAll()
-    this.clearOverlays()
+    this.clearSessionOverlays(session)
     resetMeasurementSession()
     resetMarkupSession()
     this.curView.clear()
@@ -2840,6 +2971,9 @@ export class AcApDocManager {
    * @param session - Session whose overlays should be disposed.
    */
   private clearSessionOverlays(session: AcApDocSession) {
+    AcApXrefManager.instance.clearDocument(session.id)
+    for (const controller of session.overlayAttachments.keys())
+      controller.abort()
     const scene = this.sessionCadScene(session)
     for (const overlay of session.overlays.values()) {
       scene.internalScene.remove(overlay.layout.internalObject)

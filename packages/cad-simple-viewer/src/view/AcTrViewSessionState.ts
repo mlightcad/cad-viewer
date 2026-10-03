@@ -1,4 +1,5 @@
 import type { AcDbObjectId } from '@mlightcad/data-model'
+import type { AcTrRendererResourceScope } from '@mlightcad/three-renderer'
 
 import type { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
 import type { AcTrScene } from './AcTrScene'
@@ -10,6 +11,8 @@ import type { AcTrScene } from './AcTrScene'
  * showing a different document.
  */
 export interface AcTrViewSessionState {
+  /** Host render context and materials retained with this scene. */
+  rendererScope: AcTrRendererResourceScope
   /** Scene graph for this document (layouts, layers, HTML transients). */
   scene: AcTrScene
   /** Per-layout cameras for this document. */

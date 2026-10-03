@@ -128,15 +128,15 @@ export class AcTrLayout {
    * layers created after {@link setCompareDisplay} so late layer groups
    * still receive role tints.
    */
-  private _compareDisplayOptions?: Parameters<
-    AcTrLayer['setCompareDisplay']
-  >[0]
+  private _compareDisplayOptions?: Parameters<AcTrLayer['setCompareDisplay']>[0]
 
   /**
    * Creates a new layout instance.
    * Initializes the layout with empty collections and a spatial index.
+   * @param releaseResources - Optional owned reference-renderer cleanup, called
+   * once by clear(), after geometry is released. Omit for reusable host layouts.
    */
-  constructor() {
+  constructor(private releaseResources?: () => void) {
     this._group = new THREE.Group()
     this._spatialIndex = new AcTrHierarchicalSpatialIndex()
     this._cachedBox = new THREE.Box3()
@@ -330,6 +330,9 @@ export class AcTrLayout {
     this._extentExcludedObjectIds.clear()
     this._insertLayerByObjectId.clear()
     this._spatialIndex.clear()
+    const release = this.releaseResources
+    this.releaseResources = undefined
+    release?.()
     return this
   }
 

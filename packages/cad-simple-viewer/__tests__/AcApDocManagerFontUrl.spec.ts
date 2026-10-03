@@ -21,6 +21,9 @@ class MockAcApFontLoader {
 }
 
 const mockInitialize = jest.fn()
+const mockSetWorkerUrl = jest.fn()
+const mockPresetReady = Promise.resolve()
+const mockEnsureDefaultFontsReady = jest.fn(() => mockPresetReady)
 const mockSetRenderMode = jest.fn()
 const mockGetRenderMode = jest.fn(() => 'worker')
 const mockSetDefaultFonts = jest.fn(() => Promise.resolve())
@@ -28,6 +31,7 @@ const mockSetLazyFontLoading = jest.fn(() => Promise.resolve())
 const mockSetAwaitFontsBeforeDraw = jest.fn(() => Promise.resolve())
 const mockSetFontUrl = jest.fn()
 const mockLoadFonts = jest.fn(() => Promise.resolve([]))
+const mockReadOverlayDatabase = jest.fn(async () => true)
 
 jest.mock('../src/app/AcApFontLoader', () => ({
   AcApFontLoader: MockAcApFontLoader
@@ -37,6 +41,7 @@ jest.mock('@mlightcad/three-renderer', () => ({
   AcTrMTextRenderer: {
     getInstance: jest.fn(() => ({
       initialize: mockInitialize,
+      setWorkerUrl: mockSetWorkerUrl,
       setRenderMode: mockSetRenderMode,
       getRenderMode: mockGetRenderMode,
       setDefaultFonts: mockSetDefaultFonts,
@@ -57,7 +62,10 @@ jest.mock('../src/view', () => ({
       enqueueScriptInputs: jest.fn(),
       inputManager: {
         isMobilePromptOpen: false,
-        mobileChrome: { prepareAccessory: jest.fn(), clearAccessory: jest.fn() },
+        mobileChrome: {
+          prepareAccessory: jest.fn(),
+          clearAccessory: jest.fn()
+        },
         sessionAccessoryHost: {
           host: {},
           type: 'desktop'
@@ -65,7 +73,11 @@ jest.mock('../src/view', () => ({
         selectionSessionAccessory: null
       }
     },
-    renderer: {},
+    renderer: {
+      context: {
+        mtextRenderer: { ensureDefaultFontsReady: mockEnsureDefaultFontsReady }
+      }
+    },
     clear: jest.fn(),
     zoomToFitDrawing: jest.fn(),
     zoomToSmartExtents: jest.fn(),
@@ -113,7 +125,9 @@ jest.mock('../src/app/AcApDocument', () => ({
 jest.mock('../src/app/AcApXrefManager', () => ({
   AcApXrefManager: {
     instance: {
-      clearAll: jest.fn()
+      clearAll: jest.fn(),
+      clearDocument: jest.fn(),
+      forgetOverlay: jest.fn()
     }
   }
 }))
@@ -293,6 +307,9 @@ jest.mock('../src/command', () => {
 })
 
 jest.mock('@mlightcad/data-model', () => ({
+  AcDbDatabase: jest
+    .fn()
+    .mockImplementation(() => ({ read: mockReadOverlayDatabase })),
   AcCmColor: jest.fn(),
   AcCmEventManager: jest.fn().mockImplementation(() => ({
     addEventListener: jest.fn(),
@@ -322,7 +339,15 @@ jest.mock('@mlightcad/data-model', () => ({
   }
 }))
 
-import { AcApDocManager } from '../src/app/AcApDocManager'
+import {
+  AcApDocManager,
+  type AcApPreparedOverlay
+} from '../src/app/AcApDocManager'
+import { AcApDocSession } from '../src/app/AcApDocSession'
+import type { AcApContext } from '../src/app/AcApContext'
+import type { AcDbDatabase } from '@mlightcad/data-model'
+import type { AcTrLayout } from '../src/view/AcTrLayout'
+import type { AcTrView2d } from '../src/view/AcTrView2d'
 import { acapDisposeNotificationService } from '../src/app/notification'
 
 describe('AcApDocManager font URL configuration', () => {
@@ -331,6 +356,7 @@ describe('AcApDocManager font URL configuration', () => {
     acapDisposeNotificationService()
     mockFontLoaderInstances.length = 0
     mockInitialize.mockClear()
+    mockSetWorkerUrl.mockClear()
     mockSetRenderMode.mockClear()
     mockGetRenderMode.mockClear()
     mockGetRenderMode.mockReturnValue('worker')
@@ -355,23 +381,25 @@ describe('AcApDocManager font URL configuration', () => {
     expect(mockFontLoaderInstances[0].load).toHaveBeenCalledWith(['simkai'])
   })
 
-  it('syncs the default fonts preset to the mtext renderer after worker init', () => {
+  it('configures font workers without allocating the singleton worker pool', () => {
     AcApDocManager.createInstance({})
 
-    expect(mockInitialize).toHaveBeenCalled()
+    expect(mockSetWorkerUrl).toHaveBeenCalled()
+    expect(mockInitialize).not.toHaveBeenCalled()
     expect(mockSetDefaultFonts).toHaveBeenCalledWith(['simsun', 'hztxt'])
     expect(mockSetFontUrl).toHaveBeenCalled()
   })
 
-  it('configures main-thread mtext rendering before initializing workers', () => {
+  it('configures main-thread rendering before setting the worker URL', () => {
     AcApDocManager.createInstance({
       useMainThreadDraw: true
     })
 
     expect(mockSetRenderMode).toHaveBeenCalledWith('main')
-    expect(mockInitialize).toHaveBeenCalled()
+    expect(mockSetWorkerUrl).toHaveBeenCalled()
+    expect(mockInitialize).not.toHaveBeenCalled()
     expect(mockSetRenderMode.mock.invocationCallOrder[0]).toBeLessThan(
-      mockInitialize.mock.invocationCallOrder[0]
+      mockSetWorkerUrl.mock.invocationCallOrder[0]
     )
   })
 })
@@ -384,53 +412,68 @@ describe('AcApDocManager preset fonts for open', () => {
     mockGetRenderMode.mockReturnValue('worker')
     mockLoadFonts.mockReset()
     mockLoadFonts.mockResolvedValue([])
+    mockEnsureDefaultFontsReady.mockClear()
   })
 
-  it('loads the full preset into all workers and reuses the promise', async () => {
-    const manager = AcApDocManager.createInstance({})
-    mockLoadFonts.mockClear()
+  it('uses readiness owned by the opening renderer and retains preset diagnostics', async () => {
+    const manager = AcApDocManager.createInstance({})!
+    const first = manager.ensurePresetFontsForOpen()
+    const second = manager.ensurePresetFontsForOpen()
 
-    const first = manager!.ensurePresetFontsForOpen()
-    const second = manager!.ensurePresetFontsForOpen()
-    expect(first).toBe(second)
-
+    expect(first).toBe(mockPresetReady)
+    expect(second).toBe(mockPresetReady)
     await first
-
-    expect(mockLoadFonts).toHaveBeenCalledTimes(1)
-    const call = mockLoadFonts.mock.calls[0] as unknown as [
-      string[],
-      { scope?: string } | undefined
-    ]
-    const names = call[0]
-    const options = call[1]
-    expect(names.length).toBeGreaterThan(0)
-    expect(names).toEqual(
+    expect(mockEnsureDefaultFontsReady).toHaveBeenCalledTimes(2)
+    expect(mockLoadFonts).not.toHaveBeenCalled()
+    expect(manager.lastPresetFontsForOpen).toEqual(
       expect.arrayContaining(['simsun', 'hztxt', 'amgdt'])
     )
-    expect(options).toEqual({ scope: 'all' })
-    expect(manager!.lastPresetFontsForOpen).toEqual(names)
   })
 
-  it('loads preset via FontManager.requestFonts in main-thread mode', async () => {
-    const { FontManager } = await import('@mlightcad/mtext-renderer')
-    const requestFonts = jest
-      .spyOn(FontManager.instance, 'requestFonts')
-      .mockResolvedValue([])
-    mockGetRenderMode.mockReturnValue('main')
+  it('warms the opening view when a different document is current', async () => {
+    const manager = AcApDocManager.createInstance({})!
+    const openingReady = Promise.resolve()
+    const ensureOpening = jest.fn(() => openingReady)
+    ;(manager as unknown as { _openingSession: unknown })._openingSession = {
+      context: {
+        view: {
+          renderer: {
+            context: {
+              mtextRenderer: { ensureDefaultFontsReady: ensureOpening }
+            }
+          }
+        }
+      }
+    }
 
-    const manager = AcApDocManager.createInstance({
-      useMainThreadDraw: true
-    })
-    mockLoadFonts.mockClear()
-    requestFonts.mockClear()
+    expect(manager.ensurePresetFontsForOpen()).toBe(openingReady)
+    expect(ensureOpening).toHaveBeenCalledTimes(1)
+    expect(mockEnsureDefaultFontsReady).not.toHaveBeenCalled()
+    await openingReady
+  })
 
-    await manager!.ensurePresetFontsForOpen()
+  it('uses a new primary scope readiness instead of retaining the previous document promise', async () => {
+    const manager = AcApDocManager.createInstance({})!
+    const first = manager.ensurePresetFontsForOpen()
+    const nextReady = Promise.resolve()
+    const nextEnsure = jest.fn(() => nextReady)
+    const renderer = manager.curView.renderer as unknown as {
+      context: {
+        mtextRenderer: { ensureDefaultFontsReady: () => Promise<void> }
+      }
+    }
+    renderer.context = {
+      mtextRenderer: { ensureDefaultFontsReady: nextEnsure }
+    }
 
+    const second = manager.ensurePresetFontsForOpen()
+
+    expect(first).toBe(mockPresetReady)
+    expect(second).toBe(nextReady)
+    expect(second).not.toBe(first)
+    expect(nextEnsure).toHaveBeenCalledTimes(1)
     expect(mockLoadFonts).not.toHaveBeenCalled()
-    expect(requestFonts).toHaveBeenCalledTimes(1)
-    const requested = requestFonts.mock.calls[0][0] as readonly string[]
-    expect(requested.length).toBeGreaterThan(0)
-    requestFonts.mockRestore()
+    await second
   })
 
   it('kicks ensurePresetFontsForOpen from onBeforeOpenDocument without awaiting it', () => {
@@ -438,16 +481,17 @@ describe('AcApDocManager preset fonts for open', () => {
     let ensureCalled = false
     let ensureSettled = false
     let settleTimer: ReturnType<typeof setTimeout> | undefined
-    ;(manager as unknown as { ensurePresetFontsForOpen: () => Promise<void> }).ensurePresetFontsForOpen =
-      () => {
-        ensureCalled = true
-        return new Promise<void>(resolve => {
-          settleTimer = setTimeout(() => {
-            ensureSettled = true
-            resolve()
-          }, 50)
-        })
-      }
+    ;(
+      manager as unknown as { ensurePresetFontsForOpen: () => Promise<void> }
+    ).ensurePresetFontsForOpen = () => {
+      ensureCalled = true
+      return new Promise<void>(resolve => {
+        settleTimer = setTimeout(() => {
+          ensureSettled = true
+          resolve()
+        }, 50)
+      })
+    }
     ;(
       manager as unknown as {
         _openFileProgress: { setSeeThroughOverlay: (v: boolean) => void }
@@ -458,7 +502,6 @@ describe('AcApDocManager preset fonts for open', () => {
         _openFileProfiler: { begin: (db: unknown) => void }
       }
     )._openFileProfiler.begin = jest.fn()
-
     ;(
       manager as unknown as {
         onBeforeOpenDocument: (options?: unknown, replace?: boolean) => void
@@ -530,9 +573,9 @@ describe('AcApDocManager document sessions', () => {
 
   it('activateDocument is a no-op for the current document', async () => {
     const manager = AcApDocManager.createInstance({})
-    await expect(
-      manager!.activateDocument(manager!.curDocument)
-    ).resolves.toBe(true)
+    await expect(manager!.activateDocument(manager!.curDocument)).resolves.toBe(
+      true
+    )
     expect(manager!.documentCount).toBe(1)
   })
 
@@ -542,5 +585,463 @@ describe('AcApDocManager document sessions', () => {
     await manager!.closeDocument()
     expect(manager!.documentCount).toBe(1)
     expect(manager!.curDocument).not.toBe(first)
+  })
+})
+
+describe('AcApDocManager overlay attachment transactions', () => {
+  function deferred<T>() {
+    let resolve!: (value: T) => void
+    let reject!: (error: Error) => void
+    const promise = new Promise<T>((yes, no) => {
+      resolve = yes
+      reject = no
+    })
+    return { promise, resolve, reject }
+  }
+
+  function scene() {
+    return { internalScene: { add: jest.fn(), remove: jest.fn() } }
+  }
+
+  function layout() {
+    return {
+      internalObject: { removeFromParent: jest.fn() },
+      clear: jest.fn(),
+      visible: true
+    } as unknown as AcTrLayout
+  }
+
+  function setup() {
+    const manager = AcApDocManager.createInstance({})!
+    const view = manager.curView as AcTrView2d
+    const state = manager as unknown as {
+      _sessions: AcApDocSession[]
+      _activeSession: AcApDocSession
+    }
+    const originalScene = scene()
+    const prepare = jest.fn<Promise<AcTrLayout>, unknown[]>()
+    Object.assign(view, {
+      cadScene: originalScene,
+      prepareOverlayEntities: prepare
+    })
+    return {
+      manager,
+      view,
+      state,
+      originalScene,
+      prepare,
+      owner: state._activeSession
+    }
+  }
+
+  beforeEach(() => {
+    ;(AcApDocManager as unknown as { _instance: unknown })._instance = undefined
+    acapDisposeNotificationService()
+    mockReadOverlayDatabase.mockReset().mockResolvedValue(true)
+  })
+
+  it('publishes late parsing into its captured parked document, not the new active scene', async () => {
+    const { manager, view, state, originalScene, prepare, owner } = setup()
+    const parse = deferred<boolean>()
+    mockReadOverlayDatabase.mockReturnValueOnce(parse.promise)
+    const ready = layout()
+    prepare.mockResolvedValue(ready)
+    const pending = manager.loadOverlay('source.dxf', new ArrayBuffer(0))
+    const otherScene = scene()
+    owner.viewState = { scene: originalScene } as unknown as NonNullable<
+      AcApDocSession['viewState']
+    >
+    const next = new AcApDocSession('next', {
+      view,
+      doc: {}
+    } as unknown as AcApContext)
+    state._sessions.push(next)
+    state._activeSession = next
+    Object.assign(view, { cadScene: otherScene })
+    parse.resolve(true)
+    const id = await pending
+    expect(owner.overlays.get(id)?.layout).toBe(ready)
+    expect(next.overlays.size).toBe(0)
+    expect(originalScene.internalScene.add).toHaveBeenCalledWith(
+      ready.internalObject
+    )
+    expect(otherScene.internalScene.add).not.toHaveBeenCalled()
+    expect(mockReadOverlayDatabase).toHaveBeenCalledWith(
+      expect.any(ArrayBuffer),
+      expect.objectContaining({
+        readOnly: true,
+        activateWorkingDatabase: false,
+        signal: expect.any(AbortSignal)
+      }),
+      'DXF'
+    )
+  })
+
+  it('cancels parsing on clear and never starts preparing its late result', async () => {
+    const { manager, prepare } = setup()
+    const parse = deferred<boolean>()
+    mockReadOverlayDatabase.mockReturnValueOnce(parse.promise)
+    const pending = manager.loadOverlay('source.dwg', new ArrayBuffer(0))
+    manager.clearOverlays()
+    parse.resolve(true)
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+    expect(prepare).not.toHaveBeenCalled()
+  })
+
+  it('retains the previous overlay if replacement preparation fails', async () => {
+    const { manager, prepare, originalScene, owner } = setup()
+    const old = layout()
+    prepare.mockResolvedValueOnce(old)
+    const oldId = await manager.registerOverlayDatabase({} as AcDbDatabase)
+    prepare.mockRejectedValueOnce(new Error('conversion failed'))
+    await expect(
+      manager.registerOverlayDatabase({} as AcDbDatabase, {
+        replaceOverlayId: oldId
+      })
+    ).rejects.toThrow('conversion failed')
+    expect(owner.overlays.get(oldId)?.layout).toBe(old)
+    expect(old.clear).not.toHaveBeenCalled()
+    expect(originalScene.internalScene.remove).not.toHaveBeenCalled()
+  })
+
+  it('adds the prepared replacement before removing the old reference', async () => {
+    const { manager, prepare, originalScene, owner } = setup()
+    const old = layout()
+    prepare.mockResolvedValueOnce(old)
+    const oldId = await manager.registerOverlayDatabase({} as AcDbDatabase)
+    const work = deferred<AcTrLayout>()
+    prepare.mockReturnValueOnce(work.promise)
+    const pending = manager.registerOverlayDatabase({} as AcDbDatabase, {
+      replaceOverlayId: oldId
+    })
+    await Promise.resolve()
+    expect(old.clear).not.toHaveBeenCalled()
+    const ready = layout()
+    work.resolve(ready)
+    const id = await pending
+    expect(owner.overlays.has(oldId)).toBe(false)
+    expect(owner.overlays.get(id)?.layout).toBe(ready)
+    expect(old.clear).toHaveBeenCalledTimes(1)
+    const adds = originalScene.internalScene.add.mock.invocationCallOrder
+    expect(adds[1]).toBeLessThan(
+      originalScene.internalScene.remove.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('disposes late preparation when its document was removed', async () => {
+    const { manager, prepare, state, originalScene } = setup()
+    const work = deferred<AcTrLayout>()
+    prepare.mockReturnValueOnce(work.promise)
+    const pending = manager.registerOverlayDatabase({} as AcDbDatabase)
+    await Promise.resolve()
+    state._sessions = []
+    const ready = layout()
+    work.resolve(ready)
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+    expect(ready.clear).toHaveBeenCalledTimes(1)
+    expect(originalScene.internalScene.add).not.toHaveBeenCalled()
+  })
+
+  it('supersedes an unfinished replacement without losing the existing one', async () => {
+    const { manager, prepare, owner } = setup()
+    const old = layout()
+    prepare.mockResolvedValueOnce(old)
+    const oldId = await manager.registerOverlayDatabase({} as AcDbDatabase)
+    const first = deferred<AcTrLayout>()
+    const second = deferred<AcTrLayout>()
+    prepare
+      .mockReturnValueOnce(first.promise)
+      .mockReturnValueOnce(second.promise)
+    const a = manager.registerOverlayDatabase({} as AcDbDatabase, {
+      replaceOverlayId: oldId
+    })
+    await Promise.resolve()
+    const b = manager.registerOverlayDatabase({} as AcDbDatabase, {
+      replaceOverlayId: oldId
+    })
+    await Promise.resolve()
+    const stale = layout()
+    first.resolve(stale)
+    await expect(a).rejects.toMatchObject({ name: 'AbortError' })
+    expect(stale.clear).toHaveBeenCalledTimes(1)
+    expect(owner.overlays.get(oldId)?.layout).toBe(old)
+    const ready = layout()
+    second.resolve(ready)
+    const id = await b
+    expect(owner.overlays.get(id)?.layout).toBe(ready)
+  })
+
+  it('snapshots caller placement before parsing yields', async () => {
+    const { manager, prepare } = setup()
+    const parse = deferred<boolean>()
+    mockReadOverlayDatabase.mockReturnValueOnce(parse.promise)
+    prepare.mockResolvedValue(layout())
+    const transform = {
+      position: { x: 10, y: 20, z: 0 },
+      scale: 2,
+      rotationRad: 0.5
+    }
+    const pending = manager.loadOverlay('source.dxf', new ArrayBuffer(0), {
+      transform
+    })
+    transform.position.x = 999
+    transform.scale = 100
+    parse.resolve(true)
+    await pending
+    expect(prepare).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        transform: {
+          position: { x: 10, y: 20, z: 0 },
+          scale: 2,
+          rotationRad: 0.5
+        }
+      })
+    )
+  })
+
+  it('rejects failed reads and invalid placement without publishing partial content', async () => {
+    const { manager, prepare, originalScene } = setup()
+    mockReadOverlayDatabase.mockRejectedValueOnce(new Error('parse failed'))
+    await expect(
+      manager.loadOverlay('bad.dxf', new ArrayBuffer(0))
+    ).rejects.toThrow('parse failed')
+    await expect(
+      manager.loadOverlay('source.dxf', new ArrayBuffer(0), {
+        transform: {
+          position: { x: NaN, y: 0, z: 0 },
+          scale: 1,
+          rotationRad: 0
+        }
+      })
+    ).rejects.toThrow('finite values')
+    expect(mockReadOverlayDatabase).toHaveBeenCalledTimes(1)
+    expect(prepare).not.toHaveBeenCalled()
+    expect(originalScene.internalScene.add).not.toHaveBeenCalled()
+  })
+
+  it('restores the next document without recapturing the released active session', async () => {
+    const { manager, view, state, owner } = setup()
+    const next = new AcApDocSession('next', {
+      ...owner.context,
+      doc: { ...owner.doc },
+      resume: jest.fn()
+    } as unknown as AcApContext)
+    const parked = { scene: scene() } as unknown as NonNullable<
+      AcApDocSession['viewState']
+    >
+    next.viewState = parked
+    // closeDocument has removed the previous session and released its scope;
+    // activateDocument must not park that disposed context for a second time.
+    state._sessions = [next]
+    ;(view.captureSessionState as jest.Mock).mockImplementation(() => {
+      throw new Error('Drawing resource scope is disposed')
+    })
+    jest
+      .spyOn(
+        manager as unknown as { setActiveLayout(): void },
+        'setActiveLayout'
+      )
+      .mockImplementation(() => undefined)
+    jest
+      .spyOn(
+        manager as unknown as { syncProgressOverlayHost(): void },
+        'syncProgressOverlayHost'
+      )
+      .mockImplementation(() => undefined)
+    await expect(manager.activateDocument(next.doc)).resolves.toBe(true)
+    expect(view.captureSessionState).not.toHaveBeenCalled()
+    expect(view.restoreSessionState).toHaveBeenCalledWith(parked)
+    expect(manager.activeSessionId).toBe('next')
+  })
+
+  it('keeps prepared replacements detached and disposes abandoned resources once', async () => {
+    const { manager, prepare, originalScene } = setup()
+    const old = layout()
+    prepare.mockResolvedValueOnce(old)
+    const oldId = await manager.registerOverlayDatabase({} as AcDbDatabase)
+    const ready = layout()
+    prepare.mockResolvedValueOnce(ready)
+    const pending = await manager.prepareOverlayDatabase({} as AcDbDatabase, {
+      replaceOverlayId: oldId
+    })
+    expect(originalScene.internalScene.add).toHaveBeenCalledTimes(1)
+    expect(manager.getOverlayLayout(oldId)).toBe(old)
+    pending.dispose()
+    pending.dispose()
+    expect(ready.clear).toHaveBeenCalledTimes(1)
+    expect(old.clear).not.toHaveBeenCalled()
+    expect(() => pending.commit()).toThrow('cancelled')
+  })
+
+  it('releases already-prepared geometry on abort or document clear before commit', async () => {
+    const { manager, prepare, originalScene } = setup()
+    const aborted = layout()
+    const cleared = layout()
+    prepare.mockResolvedValueOnce(aborted).mockResolvedValueOnce(cleared)
+    const controller = new AbortController()
+    const first = await manager.prepareOverlayDatabase({} as AcDbDatabase, {
+      signal: controller.signal
+    })
+    controller.abort()
+    expect(aborted.clear).toHaveBeenCalledTimes(1)
+    expect(() => first.commit()).toThrow('cancelled')
+    const second = await manager.prepareOverlayDatabase({} as AcDbDatabase)
+    manager.clearOverlays()
+    expect(cleared.clear).toHaveBeenCalledTimes(1)
+    expect(() => second.commit()).toThrow('cancelled')
+    expect(originalScene.internalScene.add).not.toHaveBeenCalled()
+  })
+
+  it('commits synchronously and leaves published geometry alive after handle disposal', async () => {
+    const { manager, prepare } = setup()
+    const ready = layout()
+    prepare.mockResolvedValueOnce(ready)
+    const handle = await manager.prepareOverlayDatabase({} as AcDbDatabase)
+    const id = handle.commit()
+    expect(manager.getOverlayLayout(id)).toBe(ready)
+    handle.dispose()
+    handle.dispose()
+    expect(ready.clear).not.toHaveBeenCalled()
+    expect(() => handle.commit()).toThrow('already committed')
+    manager.removeOverlay(id)
+    expect(ready.clear).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects commit into a directly disposed view and releases its prepared layout once', async () => {
+    const { manager, prepare, view, originalScene } = setup()
+    const ready = layout()
+    prepare.mockResolvedValueOnce(ready)
+    const handle = await manager.prepareOverlayDatabase({} as AcDbDatabase)
+    Object.assign(view, { isDisposed: true })
+    expect(() => handle.commit()).toThrow('session changed')
+    handle.dispose()
+    expect(ready.clear).toHaveBeenCalledTimes(1)
+    expect(originalScene.internalScene.add).not.toHaveBeenCalled()
+    await expect(
+      manager.prepareOverlayDatabase({} as AcDbDatabase)
+    ).rejects.toMatchObject({ name: 'AbortError' })
+  })
+
+  it('replaces an existing native reference after overlapping Xref preparations without a handoff gap', async () => {
+    const { manager, prepare } = setup()
+    const { AcApXrefManager: NativeXref } = jest.requireActual<
+      typeof import('../src/app/AcApXrefManager')
+    >('../src/app/AcApXrefManager')
+    ;(NativeXref as unknown as { _instance: unknown })._instance = undefined
+    const xrefs = NativeXref.instance
+    const input = {
+      blockName: 'survey',
+      fileName: 'survey.dxf',
+      sourcePath: 'survey.dxf',
+      sourceDb: {} as AcDbDatabase
+    }
+    const old = layout()
+    prepare.mockResolvedValueOnce(old)
+    const initial = await xrefs.attachOverlay(input)
+    const nativePrepare = manager.prepareOverlayDatabase.bind(manager)
+    const preparedFirst = deferred<AcApPreparedOverlay>()
+    const deliverFirst = deferred<AcApPreparedOverlay>()
+    jest
+      .spyOn(manager, 'prepareOverlayDatabase')
+      .mockImplementationOnce(async (db, options) => {
+        const handle = await nativePrepare(db, options)
+        preparedFirst.resolve(handle)
+        return deliverFirst.promise
+      })
+    const stale = layout()
+    prepare.mockResolvedValueOnce(stale)
+    const first = xrefs.attachOverlay(input)
+    const rejected = expect(first).rejects.toMatchObject({ name: 'AbortError' })
+    const firstHandle = await preparedFirst.promise
+    expect(manager.getOverlayLayout(initial.overlayId)).toBe(old)
+    const finishSecond = deferred<AcTrLayout>()
+    prepare.mockReturnValueOnce(finishSecond.promise)
+    const second = xrefs.attachOverlay(input)
+    deliverFirst.resolve(firstHandle)
+    await rejected
+    expect(stale.clear).toHaveBeenCalledTimes(1)
+    expect(old.clear).not.toHaveBeenCalled()
+    expect(manager.getOverlayLayout(initial.overlayId)).toBe(old)
+    const latest = layout()
+    finishSecond.resolve(latest)
+    const current = await second
+    expect(manager.getOverlayIds()).toEqual([current.overlayId])
+    expect(manager.getOverlayLayout(current.overlayId)).toBe(latest)
+    expect(xrefs.sessions).toEqual([current])
+    expect(current.id).toBe(initial.id)
+    expect(old.clear).toHaveBeenCalledTimes(1)
+    expect(latest.clear).not.toHaveBeenCalled()
+  })
+
+  it('replaces only the active document and lists its overlays on a shared canvas', async () => {
+    const { manager, view, state, owner, prepare } = setup()
+    const active = layout()
+    prepare.mockResolvedValueOnce(active)
+    const activeId = await manager.registerOverlayDatabase({} as AcDbDatabase)
+    const parked = new AcApDocSession('parked', {
+      ...owner.context,
+      doc: { ...owner.doc }
+    } as unknown as AcApContext)
+    const retained = layout()
+    parked.viewState = { scene: scene() } as unknown as NonNullable<
+      AcApDocSession['viewState']
+    >
+    parked.overlays.set('retained', {
+      db: {} as AcDbDatabase,
+      layout: retained
+    })
+    state._sessions.unshift(parked)
+    expect(manager.getOverlayIds(view)).toEqual([activeId])
+    const xrefs = jest.requireMock('../src/app/AcApXrefManager').AcApXrefManager
+      .instance
+    xrefs.clearDocument.mockClear()
+    xrefs.clearAll.mockClear()
+    jest.requireMock('../src/command').AcApZoomCmd.clearOriginalViews =
+      jest.fn()
+    const opening = manager as unknown as {
+      _openFileProgress: { setSeeThroughOverlay: (value: boolean) => void }
+      _openFileProfiler: { begin: (db: unknown) => void }
+      onBeforeOpenDocument: (options: unknown, replace: boolean) => void
+    }
+    opening._openFileProgress.setSeeThroughOverlay = jest.fn()
+    opening._openFileProfiler.begin = jest.fn()
+    jest.spyOn(manager, 'ensurePresetFontsForOpen').mockResolvedValue(undefined)
+    opening.onBeforeOpenDocument({}, true)
+    expect(active.clear).toHaveBeenCalledTimes(1)
+    expect(retained.clear).not.toHaveBeenCalled()
+    expect(parked.overlays.has('retained')).toBe(true)
+    expect(xrefs.clearDocument).toHaveBeenCalledWith(owner.id)
+    expect(xrefs.clearDocument).not.toHaveBeenCalledWith(parked.id)
+    expect(xrefs.clearAll).not.toHaveBeenCalled()
+  })
+
+  it('closes a parked document without removing active-document references', async () => {
+    const { manager, state, owner, prepare } = setup()
+    const active = layout()
+    prepare.mockResolvedValueOnce(active)
+    const activeId = await manager.registerOverlayDatabase({} as AcDbDatabase)
+    const parked = new AcApDocSession('parked', {
+      ...owner.context,
+      doc: { ...owner.doc }
+    } as unknown as AcApContext)
+    const removed = layout()
+    const pending = new AbortController()
+    parked.viewState = { scene: scene() } as unknown as NonNullable<
+      AcApDocSession['viewState']
+    >
+    parked.overlays.set('removed', { db: {} as AcDbDatabase, layout: removed })
+    parked.overlayAttachments.set(pending, 'removed')
+    state._sessions.push(parked)
+    const xrefs = jest.requireMock('../src/app/AcApXrefManager').AcApXrefManager
+      .instance
+    xrefs.clearDocument.mockClear()
+    await expect(manager.closeDocument(parked.doc)).resolves.toBe(true)
+    expect(pending.signal.aborted).toBe(true)
+    expect(removed.clear).toHaveBeenCalledTimes(1)
+    expect(active.clear).not.toHaveBeenCalled()
+    expect(manager.getOverlayIds()).toEqual([activeId])
+    expect(xrefs.clearDocument).toHaveBeenCalledWith(parked.id)
+    expect(xrefs.clearDocument).not.toHaveBeenCalledWith(owner.id)
   })
 })

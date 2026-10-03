@@ -8,7 +8,10 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import type { AcTrLayout } from '../view/AcTrLayout'
+import {
+  acTrCheckOverlaySignal,
+  type AcTrOverlayTransform
+} from '../view/AcTrOverlayOptions'
 import { AcApDocManager } from './AcApDocManager'
 
 /**
@@ -17,14 +20,7 @@ import { AcApDocManager } from './AcApDocManager'
  * Position, uniform scale, and Z-axis rotation are applied to the overlay
  * layout's internal scene object so the xref appears aligned with the host INSERT.
  */
-export interface AcApXrefTransform {
-  /** Insertion point in world coordinates. */
-  position: AcGePoint3dLike
-  /** Uniform scale factor applied on all axes. */
-  scale: number
-  /** Rotation about the Z axis, in radians. */
-  rotationRad: number
-}
+export type AcApXrefTransform = AcTrOverlayTransform
 
 /**
  * One loaded external-reference display session.
@@ -36,6 +32,8 @@ export interface AcApXrefTransform {
 export interface AcApXrefSession {
   /** Unique session id (e.g. `xref-1`). */
   id: string
+  /** Host document session; source block names are only unique within it. */
+  documentId: string
   /** Host block-table record name for this xref. */
   blockName: string
   /** Host INSERT object id, when an INSERT was created. */
@@ -64,10 +62,12 @@ export interface AcApXrefAttachOptions {
   sourceDb?: AcDbDatabase
   /** Source file path or display name stored on the session. */
   sourcePath: string
-  /** Optional transform applied to the overlay layout after load. */
+  /** Optional transform applied before the overlay layout enters the scene. */
   transform?: AcApXrefTransform
   /** When set, associates the session with an existing host INSERT. */
   insertId?: AcDbObjectId
+  /** Cancels unfinished parsing or geometry preparation. */
+  signal?: AbortSignal
 }
 
 /**
@@ -83,6 +83,7 @@ export class AcApXrefManager {
   private _sessions = new Map<string, AcApXrefSession>()
   /** Monotonic counter used to generate unique session ids. */
   private _nextId = 1
+  private _pending = new Map<string, AbortController>()
 
   /**
    * Returns the shared {@link AcApXrefManager} singleton.
@@ -123,7 +124,11 @@ export class AcApXrefManager {
    */
   getSessionByBlockName(blockName: string): AcApXrefSession | undefined {
     for (const session of this._sessions.values()) {
-      if (session.blockName === blockName) return session
+      if (
+        session.blockName === blockName &&
+        session.documentId === AcApDocManager.instance.activeSessionId
+      )
+        return session
     }
     return undefined
   }
@@ -133,49 +138,78 @@ export class AcApXrefManager {
    *
    * Does not mutate the host database — callers create BTR/INSERT separately.
    * If a session already exists for {@link AcApXrefAttachOptions.blockName},
-   * it is unloaded first.
+   * it remains visible until the replacement has been prepared successfully.
    *
    * @param options - Overlay source, block name, and optional transform / INSERT link.
    * @returns The newly registered {@link AcApXrefSession}.
    * @throws If neither `sourceDb` nor `content` is provided.
    */
-  async attachOverlay(options: AcApXrefAttachOptions): Promise<AcApXrefSession> {
-    const existing = this.getSessionByBlockName(options.blockName)
-    if (existing) {
-      this.unload(existing.id)
-    }
-
-    let overlayId: string
-    if (options.sourceDb) {
-      overlayId = await AcApDocManager.instance.registerOverlayDatabase(
-        options.sourceDb
-      )
-    } else if (options.content) {
-      overlayId = await AcApDocManager.instance.loadOverlay(
-        options.fileName,
-        options.content
-      )
-    } else {
+  async attachOverlay(
+    options: AcApXrefAttachOptions
+  ): Promise<AcApXrefSession> {
+    options = { ...options }
+    acTrCheckOverlaySignal(options.signal)
+    if (!options.sourceDb && !options.content) {
       throw new Error(
         'AcApXrefManager.attachOverlay requires sourceDb or content'
       )
     }
-
-    const layout = AcApDocManager.instance.getOverlayLayout(overlayId)
-    if (layout && options.transform) {
-      applyOverlayTransform(layout, options.transform)
+    const manager = AcApDocManager.instance
+    const documentId = manager.activeSessionId
+    const key = `${documentId}\0${options.blockName}`
+    this._pending.get(key)?.abort()
+    const controller = new AbortController()
+    const abort = () => controller.abort()
+    options.signal?.addEventListener('abort', abort, { once: true })
+    if (options.signal?.aborted) controller.abort()
+    this._pending.set(key, controller)
+    const existing = this.getSessionByBlockName(options.blockName)
+    const attachment = {
+      targetView: manager.curView,
+      transform: options.transform,
+      replaceOverlayId: existing?.overlayId,
+      signal: controller.signal
     }
-
-    const session: AcApXrefSession = {
-      id: `xref-${this._nextId++}`,
-      blockName: options.blockName,
-      insertId: options.insertId,
-      overlayId,
-      sourcePath: options.sourcePath,
-      visible: true
+    try {
+      const prepared = options.sourceDb
+        ? await manager.prepareOverlayDatabase(options.sourceDb, attachment)
+        : await manager.prepareOverlay(
+            options.fileName,
+            options.content!,
+            attachment
+          )
+      try {
+        if (
+          controller.signal.aborted ||
+          this._pending.get(key) !== controller
+        ) {
+          throw new DOMException(
+            'Overlay attachment was cancelled',
+            'AbortError'
+          )
+        }
+        const overlayId = prepared.commit()
+        // No await between native commit and metadata adoption: a subsequent
+        // replacement always captures the currently published native id.
+        const session: AcApXrefSession = {
+          id: existing?.id ?? `xref-${this._nextId++}`,
+          documentId,
+          blockName: options.blockName,
+          insertId: options.insertId,
+          overlayId,
+          sourcePath: options.sourcePath,
+          visible: existing?.visible ?? true
+        }
+        if (!session.visible) manager.setOverlayVisible(overlayId, false)
+        this._sessions.set(session.id, session)
+        return session
+      } finally {
+        prepared.dispose()
+      }
+    } finally {
+      if (this._pending.get(key) === controller) this._pending.delete(key)
+      options.signal?.removeEventListener('abort', abort)
     }
-    this._sessions.set(session.id, session)
-    return session
   }
 
   /**
@@ -220,6 +254,7 @@ export class AcApXrefManager {
   unload(id: string): boolean {
     const session = this._sessions.get(id)
     if (!session) return false
+    this._pending.get(`${session.documentId}\0${session.blockName}`)?.abort()
     AcApDocManager.instance.removeOverlay(session.overlayId)
     this._sessions.delete(id)
     return true
@@ -241,8 +276,31 @@ export class AcApXrefManager {
    * Drops every reference session and overlay (e.g. before opening a new document).
    */
   clearAll(): void {
+    for (const controller of this._pending.values()) controller.abort()
     for (const id of [...this._sessions.keys()]) {
       this.unload(id)
+    }
+  }
+
+  /** Ends only the reference sessions and pending work owned by one document. */
+  clearDocument(documentId: string): void {
+    const prefix = `${documentId}\0`
+    for (const [key, controller] of this._pending) {
+      if (key.startsWith(prefix)) controller.abort()
+    }
+    for (const session of [...this._sessions.values()]) {
+      if (session.documentId === documentId) this.unload(session.id)
+    }
+  }
+
+  /**
+   * Forgets metadata when the native overlay owner removes geometry directly.
+   * Does not abort preparation: a successful replacement removes the old id
+   * during its synchronous commit and adopts the new id immediately afterward.
+   */
+  forgetOverlay(overlayId: string): void {
+    for (const session of this._sessions.values()) {
+      if (session.overlayId === overlayId) this._sessions.delete(session.id)
     }
   }
 
@@ -292,27 +350,4 @@ export class AcApXrefManager {
 
     return { record: xrefRecord, insert }
   }
-}
-
-/**
- * Applies an {@link AcApXrefTransform} to an overlay layout's internal scene object.
- *
- * Sets position, uniform scale, and Z-axis rotation so the overlay aligns with
- * the corresponding host INSERT.
- *
- * @param layout - Overlay layout whose internal object should be transformed.
- * @param transform - Position, scale, and rotation to apply.
- */
-function applyOverlayTransform(
-  layout: AcTrLayout,
-  transform: AcApXrefTransform
-): void {
-  const obj = layout.internalObject
-  obj.position.set(
-    transform.position.x,
-    transform.position.y,
-    transform.position.z ?? 0
-  )
-  obj.scale.set(transform.scale, transform.scale, transform.scale)
-  obj.rotation.set(0, 0, transform.rotationRad)
 }
