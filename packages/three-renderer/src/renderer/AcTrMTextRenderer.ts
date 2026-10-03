@@ -95,6 +95,11 @@ export class AcTrMTextRenderer {
   private _defaultFonts?: DefaultFontsPreset | string | readonly string[]
   private _lazyFontLoading?: boolean
   private _awaitFontsBeforeDraw?: boolean
+  /**
+   * Fonts successfully pushed into the active worker pool (or main renderer)
+   * via {@link loadFonts}. Cleared when the unified renderer is destroyed.
+   */
+  private _rendererLoadedFonts = new Set<string>()
 
   private constructor() {
     // Do nothing for now
@@ -148,6 +153,13 @@ export class AcTrMTextRenderer {
   }
 
   /**
+   * Current MText render mode (`worker` by default until {@link setRenderMode}).
+   */
+  getRenderMode(): RenderMode {
+    return this._renderMode ?? 'worker'
+  }
+
+  /**
    * Sets the default text and symbol font fallback chains on the active renderer
    * and syncs them to Web Workers.
    *
@@ -182,16 +194,48 @@ export class AcTrMTextRenderer {
   /**
    * Loads fonts into the active renderer (main thread and/or worker pool).
    *
-   * Use for fallback faces that {@link FontManager.awaitFontsBeforeDraw} only
-   * requests in the background — e.g. {@link FontManager.getFontsToLoad} —
-   * so glyph draw does not bake permanent '?' placeholders.
+   * Skips faces already synced into this renderer session so open-time
+   * preload (and later background fallback loads) do not re-parse large mesh
+   * fonts into every worker.
+   *
+   * Use for style faces and for fallback faces that
+   * {@link FontManager.awaitFontsBeforeDraw} only requests in the background —
+   * e.g. {@link FontManager.getFontsToLoad} — so glyph draw does not bake
+   * permanent '?' placeholders.
+   *
+   * @returns Names that were actually sent to the renderer this call.
    */
-  async loadFonts(fonts: readonly string[]): Promise<void> {
+  async loadFonts(
+    fonts: readonly string[],
+    options?: { scope?: 'one' | 'all' }
+  ): Promise<string[]> {
     this.ensureRendererCreated()
     if (!this._renderer || fonts.length === 0) {
-      return
+      return []
     }
-    await this._renderer.loadFonts(fonts)
+    const pending = fonts.filter(name => {
+      const key = normalizeRendererFontKey(name)
+      return !!key && !this._rendererLoadedFonts.has(key)
+    })
+    if (pending.length === 0) {
+      return []
+    }
+    await this._renderer.loadFonts(pending, options)
+    for (const name of pending) {
+      const key = normalizeRendererFontKey(name)
+      if (key) {
+        this._rendererLoadedFonts.add(key)
+      }
+    }
+    return pending
+  }
+
+  /**
+   * Fonts already synced into the active renderer via {@link loadFonts}.
+   * Useful for OPENPERF / diagnostics.
+   */
+  getRendererLoadedFontCount(): number {
+    return this._rendererLoadedFonts.size
   }
 
   /**
@@ -298,6 +342,7 @@ export class AcTrMTextRenderer {
       this._renderer.destroy()
       this._renderer = undefined
     }
+    this._rendererLoadedFonts.clear()
 
     const mode = this._renderMode ?? 'worker'
     const workerConfig = this._workerUrl ? { workerUrl: this._workerUrl } : {}
@@ -360,6 +405,7 @@ export class AcTrMTextRenderer {
       this._renderer.destroy()
       this._renderer = undefined
     }
+    this._rendererLoadedFonts.clear()
     this._workerUrl = undefined
     this._renderMode = undefined
     this._defaultFonts = undefined
@@ -404,4 +450,18 @@ export class AcTrMTextRenderer {
       await this._renderer.setAwaitFontsBeforeDraw(this._awaitFontsBeforeDraw)
     }
   }
+}
+
+function normalizeRendererFontKey(fontName: string): string {
+  if (fontName == null) return ''
+  let name = String(fontName).trim()
+  if (!name) return ''
+  const dotIndex = name.lastIndexOf('.')
+  if (
+    dotIndex > 0 &&
+    (dotIndex === name.length - 4 || dotIndex === name.length - 5)
+  ) {
+    name = name.substring(0, dotIndex)
+  }
+  return name.toLowerCase()
 }

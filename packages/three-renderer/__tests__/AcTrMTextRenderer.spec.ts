@@ -3,6 +3,7 @@ const mockRendererInstances: Array<{
   setDefaultMode: jest.Mock
   setDefaultFonts: jest.Mock
   setStyleManager: jest.Mock
+  loadFonts: jest.Mock
   destroy: jest.Mock
 }> = []
 
@@ -12,6 +13,7 @@ const mockUnifiedRenderer = jest.fn().mockImplementation(() => {
     setDefaultMode: jest.fn(),
     setDefaultFonts: jest.fn(() => Promise.resolve()),
     setStyleManager: jest.fn(),
+    loadFonts: jest.fn(() => Promise.resolve({ loaded: [] })),
     destroy: jest.fn()
   }
   mockRendererInstances.push(renderer)
@@ -61,6 +63,7 @@ describe('AcTrMTextRenderer', () => {
     const renderer = AcTrMTextRenderer.getInstance()
 
     renderer.setRenderMode('worker')
+    expect(renderer.getRenderMode()).toBe('worker')
     renderer.initialize('./assets/mtext-renderer-worker.js')
 
     expect(mockUnifiedRenderer).toHaveBeenCalledWith('worker', {
@@ -140,5 +143,28 @@ describe('AcTrMTextRenderer', () => {
     expect(mockRendererInstances[0].setDefaultFonts).toHaveBeenCalledWith(
       'r12r14'
     )
+  })
+
+  it('skips loadFonts for faces already synced into the renderer session', async () => {
+    const renderer = AcTrMTextRenderer.getInstance()
+    renderer.initialize('./assets/mtext-renderer-worker.js')
+
+    const first = await renderer.loadFonts(['simsun', 'hztxt'], { scope: 'one' })
+    expect(first).toEqual(['simsun', 'hztxt'])
+    expect(mockRendererInstances[0].loadFonts).toHaveBeenCalledTimes(1)
+    expect(mockRendererInstances[0].loadFonts).toHaveBeenCalledWith(
+      ['simsun', 'hztxt'],
+      { scope: 'one' }
+    )
+
+    mockRendererInstances[0].loadFonts.mockClear()
+    const second = await renderer.loadFonts(['SimSun.ttf', 'amgdt'])
+    expect(second).toEqual(['amgdt'])
+    expect(mockRendererInstances[0].loadFonts).toHaveBeenCalledTimes(1)
+    expect(mockRendererInstances[0].loadFonts).toHaveBeenCalledWith(
+      ['amgdt'],
+      undefined
+    )
+    expect(renderer.getRendererLoadedFontCount()).toBe(3)
   })
 })
