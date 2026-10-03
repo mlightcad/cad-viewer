@@ -30,6 +30,7 @@ import {
   acedHideMobileSnapLoupe,
   acedRefreshMobileSnapLoupe
 } from '../input/ui/AcEdMobileSnapLoupe'
+import type { AcEdDrawingPickResult } from './AcEdDrawingPickResult'
 import { AcEdHoverController } from './AcEdHoverController'
 import {
   AcEdSelectionAction,
@@ -612,6 +613,16 @@ export abstract class AcEdBaseView {
     hitRadius?: number,
     pickOneOnly?: boolean
   ): AcEdSpatialQueryResultItemEx[]
+
+  /**
+   * Picks source-qualified native occurrences for inspection and snapping.
+   * Read-only references participate here, while {@link pick} and selection
+   * sets remain confined to the editable drawing.
+   */
+  abstract pickDrawingEntities(
+    point?: AcGePoint2dLike,
+    hitRadius?: number
+  ): AcEdDrawingPickResult[]
 
   /**
    * Select entities intersected with the specified bounding box in the world

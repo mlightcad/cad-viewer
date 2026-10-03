@@ -5,6 +5,7 @@ import {
   AcDbDatabase,
   AcDbLayerTableRecord,
   AcDbLine,
+  AcGeBox2d,
   acdbWithDatabase,
   acdbHostApplicationServices
 } from '@mlightcad/data-model'
@@ -74,6 +75,84 @@ describe('detached native overlay preparation', () => {
       ensure.mockRestore()
     }
   })
+
+  it.each([
+    { isOff: false, isFrozen: false },
+    { isOff: true, isFrozen: false },
+    { isOff: false, isFrozen: true }
+  ])(
+    'registers mixed-layer native reference geometry with initial layer state %p',
+    async state => {
+      const database = new AcDbDatabase()
+      const { insert, edges } = acdbWithDatabase(database, () => {
+        database.createDefaultData()
+        database.tables.layerTable.add(
+          new AcDbLayerTableRecord({
+            name: 'BASE',
+            isOff: state.isOff,
+            standardFlags: state.isFrozen ? 1 : 0
+          })
+        )
+        database.tables.layerTable.add(
+          new AcDbLayerTableRecord({ name: 'DETAIL' })
+        )
+        const block = new AcDbBlockTableRecord({ name: 'MIXED' })
+        database.tables.blockTable.add(block)
+        const edges = ['0', 'DETAIL'].map((layerName, index) => {
+          const edge = new AcDbLine(
+            { x: 0, y: index * 10, z: 0 },
+            { x: 10, y: index * 10, z: 0 }
+          )
+          edge.layer = layerName
+          block.appendEntity(edge)
+          return edge
+        })
+        const insert = new AcDbBlockReference('MIXED')
+        insert.layer = 'BASE'
+        database.tables.blockTable.modelSpace.appendEntity(insert)
+        return { insert, edges }
+      })
+      expect(database.tables.layerTable.getAt('BASE')!.isFrozen).toBe(
+        state.isFrozen
+      )
+      const layout = await acTrPrepareOverlay(host, database)
+      try {
+        const inherited = layout.getLayer('BASE')!
+        const detail = layout.getLayer('DETAIL')!
+        expect(inherited.hasEntity(insert.objectId)).toBe(true)
+        expect(detail.hasEntity(insert.objectId)).toBe(true)
+        expect(inherited.visible).toBe(!state.isOff && !state.isFrozen)
+        expect(detail.visible).toBe(true)
+        expect(detail.getEntityVisible(insert.objectId)).toBe(!state.isFrozen)
+        const hit = layout.search(
+          new AcGeBox2d().setFromPoints([
+            { x: -1, y: -1 },
+            { x: 11, y: 11 }
+          ])
+        )[0]
+        expect(
+          hit.children?.map(child => child.occurrence?.entityId).sort()
+        ).toEqual(edges.map(edge => edge.objectId).sort())
+        // Freeze does not discard geometry; native thaw restores named fragments.
+        if (state.isFrozen) {
+          const base = database.tables.layerTable.getAt('BASE')!
+          base.isFrozen = false
+          expect(base.isFrozen).toBe(false)
+          layout.updateLayer({
+            name: base.name,
+            isOff: base.isOff,
+            isFrozen: base.isFrozen,
+            color: base.color
+          })
+          layout.applyInsertLayerFreeze('BASE', false)
+          expect(inherited.visible).toBe(true)
+          expect(detail.getEntityVisible(insert.objectId)).toBe(true)
+        }
+      } finally {
+        layout.clear()
+      }
+    }
+  )
 
   it('keeps interleaved source contexts separate and applies placement before returning', async () => {
     const gate = deferred()

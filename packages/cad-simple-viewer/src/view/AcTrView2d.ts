@@ -73,6 +73,7 @@ import {
   readLayoutBackgroundColor
 } from '../editor/global/AcEdUiColor'
 import { ML_UI_Z_CANVAS_HTML_OVERLAY } from '../editor/global/AcEdUiLayout'
+import type { AcEdDrawingPickResult } from '../editor/view/AcEdDrawingPickResult'
 import {
   acedEntityIntersectsSelectionBox,
   acedNeedsCrossingGeometryRefine
@@ -99,11 +100,9 @@ import {
   shouldExtendBboxForDirectEntity,
   tryBuildDirectEntityMeta
 } from './AcTrDirectBatch'
+import { acTrPickDrawingEntities } from './AcTrDrawingPick'
 import { AcTrEntityDisplayController } from './AcTrEntityDisplayController'
-import {
-  assertAcTrGroupWcsBboxesConsistent,
-  unionGroupWcsChildBoxes
-} from './AcTrGroupWcsBboxAssert'
+import { unionGroupWcsChildBoxes } from './AcTrGroupWcsBboxAssert'
 import { AcTrInheritedLayerMaterialMapper } from './AcTrInheritedLayerMaterialMapper'
 import { computeIntelligentExtentsAsync } from './AcTrIntelligentExtents'
 import { AcTrLayer } from './AcTrLayer'
@@ -115,6 +114,7 @@ import { acTrPrepareOverlay } from './AcTrOverlay'
 import type { AcTrOverlayOptions } from './AcTrOverlayOptions'
 import { sortPickResults } from './AcTrPickResultUtil'
 import { AcTrProgressiveOpenFitController } from './AcTrProgressiveOpenFitController'
+import { acTrRegisterGroup } from './AcTrRegisterGroup'
 import { AcTrScene } from './AcTrScene'
 import type { AcTrViewSessionState } from './AcTrViewSessionState'
 import { AcTrWorkSlice } from './AcTrWorkSlice'
@@ -1938,6 +1938,62 @@ export class AcTrView2d extends AcEdBaseView {
 
     const sortedResults = sortPickResults(results, point)
     return pickOneOnly ? sortedResults.slice(0, 1) : sortedResults
+  }
+
+  /** Source-qualified native picks; edit selection continues to use pick(). */
+  pickDrawingEntities(
+    point: AcGePoint2dLike = this.curPos,
+    hitRadius: number = this.selectionBoxSize
+  ): AcEdDrawingPickResult[] {
+    const view = this.activeLayoutView
+    const aperture = view.pointToBox(point, hitRadius)
+    const threshold = Math.max(aperture.size.width, aperture.size.height) / 2
+    const raycaster = view.resetRaycaster(point, threshold)
+    const sources = AcApDocManager.instance.getDrawingPickSources(this)
+    let results = sources.flatMap(source =>
+      acTrPickDrawingEntities(source, aperture, raycaster)
+    )
+    const host = sources.find(source => source.referenceId === undefined)
+    const modelLayout = this._scene.modelSpaceLayout
+    if (
+      host &&
+      modelLayout &&
+      view.layoutBtrId !== this._scene.modelSpaceBtrId
+    ) {
+      const tolerance = (aperture.size.width + aperture.size.height) / 2
+      for (const viewport of view.viewportViews) {
+        if (
+          !viewport.containsPaperPoint(point) ||
+          viewport.isNearPaperBorder(point, tolerance)
+        )
+          continue
+        const modelPoint = viewport.paperPointToModel(point)
+        const modelRadius = threshold * viewport.paperToModelScale
+        if (!(modelRadius > 0)) continue
+        // The frame remains editable near its border; interior picks use the
+        // existing viewport camera and return points in displayed paper WCS.
+        results = results.filter(
+          hit =>
+            hit.referenceId !== undefined || hit.rootId !== viewport.viewport.id
+        )
+        results.push(
+          ...acTrPickDrawingEntities(
+            {
+              database: host.database,
+              layout: modelLayout,
+              viewport,
+              isCurrent: () =>
+                host.isCurrent() &&
+                this._scene.modelSpaceLayout === modelLayout &&
+                Array.from(view.viewportViews).includes(viewport)
+            },
+            aperture,
+            viewport.resetRaycaster(modelPoint, modelRadius)
+          )
+        )
+      }
+    }
+    return sortPickResults(results, point)
   }
 
   /**
@@ -3883,13 +3939,7 @@ export class AcTrView2d extends AcEdBaseView {
     }
 
     const childBoxes: AcEdSpatialQueryResultItem[] = group.wcsChildBoxes.map(
-      box => ({
-        minX: box.minX,
-        minY: box.minY,
-        maxX: box.maxX,
-        maxY: box.maxY,
-        id: box.id
-      })
+      box => ({ ...box })
     )
     group.wcsBbox = unionGroupWcsChildBoxes(group)
 
@@ -3920,133 +3970,18 @@ export class AcTrView2d extends AcEdBaseView {
         group.dispose()
         return
       }
-      this.syncGroupSpatialBoundsForIndexing(group)
-
-      const children = group.children
-      const objectsGroupByLayer: Map<string, THREE.Object3D[]> = new Map()
-      children.forEach(child => {
-        if (child.visible === false) {
-          return
+      acTrRegisterGroup(group, this._inheritedLayerMaterialMapper, {
+        addEntity: entity => {
+          this._layerAppearance.refreshTextMaterialsInObjectTree(entity)
+          const tAdd = performance.now()
+          this._scene.addEntity(entity, true)
+          this._convertPhaseMs.addEntity += performance.now() - tAdd
+          this.applySessionHiddenObjectState(entity.objectId)
+        },
+        setEntityVisible: (id, visible) => {
+          this._scene.setEntityVisible(id, visible)
         }
-        const layerName = child.userData.layerName
-        if (!objectsGroupByLayer.has(layerName)) {
-          objectsGroupByLayer.set(layerName, [])
-        }
-        objectsGroupByLayer.get(layerName)?.push(child)
       })
-      // Important:
-      // Sometimes one group may contain huge amount of objects (> 100,000). So it is important
-      // to re-parent object with the fast approach. Calling add/remove method in THREE.Object3D
-      // is very slow because it do lots of things
-      // - Remove children from old group
-      // - Insert them into new group
-      // - Reset parent pointer
-      // - Do one updateMatrixWorld() at the end (optional)
-      // So we operate its children directly.
-      group.children = []
-      for (const child of children) {
-        child.parent = null
-      }
-
-      const renderContext = group.renderContext
-      const groupObjectId = group.objectId
-      const groupLayerName = group.layerName
-
-      // AcDbRenderingCache.draw (and similar paths such as AcDbTable) already call
-      // applyMatrix on the group, which updates wcsBbbox and wcsChildBoxes to WCS.
-      // Do not multiply group.matrix here — that would double-transform spatial bounds.
-      if (process.env.NODE_ENV !== 'production') {
-        assertAcTrGroupWcsBboxesConsistent(group)
-      }
-
-      const groupChildBoxes: AcEdSpatialQueryResultItem[] =
-        group.wcsChildBoxes.map(box => ({
-          minX: box.minX,
-          minY: box.minY,
-          maxX: box.maxX,
-          maxY: box.maxY,
-          id: box.id
-        }))
-      const aggregateSpatialBbox =
-        groupChildBoxes.length > 0
-          ? unionGroupWcsChildBoxes(group)
-          : group.wcsBbox.clone()
-      if (groupChildBoxes.length > 0) {
-        group.wcsBbox = aggregateSpatialBbox.clone()
-      }
-      // Every layer fragment shares one INSERT object id, and the child spatial
-      // index is keyed by that id. Attaching the full child-box list to each
-      // fragment makes addEntity rebuild the same index once per layer. A
-      // whole-floor block (00-1~4F: 181515 children, 81 layers) spent ~74s
-      // there while "Rendering drawing ..." stayed up.
-      let registeredChildIndex = false
-      objectsGroupByLayer.forEach((objects, layerName) => {
-        // Nested layer-0 may already be resolved to an inner INSERT layer during
-        // flatten. Remaining "0" buckets inherit this (outermost) INSERT layer.
-        const effectiveLayerName =
-          layerName === '0' ? groupLayerName : layerName
-
-        // Material remap must still treat authored layer-0 drawables as layer-0
-        // ByLayer even when nest resolution already rewrote layerName.
-        const sourceLayerForMaterials = objects.some(object => {
-          const data = object.userData as {
-            authoredLayerName?: string
-            layerName?: string
-          }
-          return (data.authoredLayerName ?? layerName) === '0'
-        })
-          ? '0'
-          : layerName
-
-        // Keep runtime layer metadata/material cache aligned with the inherited layer so
-        // later layer style edits (color, linetype, lineweight, transparency) target this
-        // object set correctly.
-        this._inheritedLayerMaterialMapper.remap(
-          objects,
-          sourceLayerForMaterials,
-          effectiveLayerName
-        )
-
-        // One INSERT can expand to children from multiple layers. Here we create one
-        // render entity per layer bucket but preserve the INSERT object id for all
-        // buckets, so selection/highlight still maps back to the same database object.
-        // Within each layer bucket, the object id remains unique in scene indexing.
-        const entity = new AcTrEntity(renderContext)
-        // Copy the INSERT matrix exactly — applyMatrix4 decomposes and drops
-        // reflections from mirrored block scales.
-        entity.matrix.copy(group.matrix)
-        entity.matrixAutoUpdate = false
-        entity.matrixWorldNeedsUpdate = true
-        entity.objectId = groupObjectId
-        entity.ownerId = group.ownerId
-        // If block-definition entities are on layer "0", this bucket now uses the layer
-        // of the block reference itself (effectiveLayerName).
-        entity.layerName = effectiveLayerName
-        entity.userData.insertLayerName = groupLayerName
-        entity.wcsBbox = aggregateSpatialBbox.clone()
-        const entityUserData = entity.userData as {
-          spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
-        }
-        if (!registeredChildIndex && groupChildBoxes.length > 0) {
-          entityUserData.spatialIndexChildBoxes = groupChildBoxes
-          registeredChildIndex = true
-        }
-
-        // Important:
-        // DO NOT USE spread operator when adding objects because it may be one very large array
-        // and can result in maximum call stack size exceeded
-        for (let i = 0; i < objects.length; i++) {
-          entity.add(objects[i])
-        }
-        entity.updateMatrixWorld(true)
-        this._layerAppearance.refreshTextMaterialsInObjectTree(entity)
-        const tAdd = performance.now()
-        this._scene.addEntity(entity, true)
-        this._convertPhaseMs.addEntity += performance.now() - tAdd
-        this.applySessionHiddenObjectState(groupObjectId)
-        entity.dispose()
-      })
-      group.dispose()
 
       if (progressive) {
         this.markProgressiveDirty()

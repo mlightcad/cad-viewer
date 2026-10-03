@@ -91,12 +91,12 @@ import { AcApPluginManager } from '../plugin/AcApPluginManager'
 import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser'
 import { AcTrView2d } from '../view'
 import type { AcApCompareDisplayOptions } from '../view/AcApCompareDisplay'
+import type { AcTrDrawingPickSource } from '../view/AcTrDrawingPick'
 import type { AcTrLayout } from '../view/AcTrLayout'
 import {
   acTrCheckOverlaySignal,
-  acTrSnapshotOverlayTransform,
-  AcTrOverlayOptions
-} from '../view/AcTrOverlayOptions'
+  AcTrOverlayOptions,
+  acTrSnapshotOverlayTransform} from '../view/AcTrOverlayOptions'
 import { AcApBusyIndicator } from './AcApBusyIndicator'
 import { acapBindCommandServices } from './AcApCommandServices'
 import { AcApContext } from './AcApContext'
@@ -1665,6 +1665,50 @@ export class AcApDocManager {
         ? this._activeSession
         : this._sessions.find(s => s.context.view === view && !s.viewState)
     return session ? Array.from(session.overlays.keys()) : []
+  }
+
+  /**
+   * Published sources belonging to this live canvas. Detached preparations and
+   * parked document sessions are never interactive. Ownership is checked again
+   * when a consumer uses a retained hit (for example an acquired snap center).
+   */
+  getDrawingPickSources(view: AcTrView2d): AcTrDrawingPickSource[] {
+    const scene = view.cadScene
+    const session = this._sessions.find(
+      s =>
+        s.context.view === view &&
+        !s.viewState &&
+        this.sessionCadScene(s) === scene
+    )
+    if (!session) return []
+    const database = session.doc.database
+    const current = () =>
+      !view.isDisposed &&
+      this._sessions.includes(session) &&
+      !session.viewState &&
+      session.context.view === view &&
+      view.cadScene === scene &&
+      session.doc.database === database
+    const sources: AcTrDrawingPickSource[] = []
+    const host = scene.activeLayout
+    if (host)
+      sources.push({
+        database,
+        layout: host,
+        isCurrent: () => current() && scene.activeLayout === host
+      })
+    for (const [referenceId, overlay] of session.overlays) {
+      sources.push({
+        referenceId,
+        database: overlay.db,
+        layout: overlay.layout,
+        isCurrent: () =>
+          current() &&
+          session.overlays.get(referenceId) === overlay &&
+          overlay.layout.internalObject.parent === scene.internalScene
+      })
+    }
+    return sources
   }
 
   /** @deprecated Prefer {@link getOverlayIds}. */

@@ -9,9 +9,9 @@ import { AcTrInheritedLayerMaterialMapper } from './AcTrInheritedLayerMaterialMa
 import { AcTrLayout } from './AcTrLayout'
 import {
   acTrCheckOverlaySignal,
-  acTrSnapshotOverlayTransform,
-  AcTrOverlayOptions
-} from './AcTrOverlayOptions'
+  AcTrOverlayOptions,
+  acTrSnapshotOverlayTransform} from './AcTrOverlayOptions'
+import { acTrRegisterGroup } from './AcTrRegisterGroup'
 
 /**
  * Builds a detached reference layout using its own native renderer context.
@@ -88,19 +88,24 @@ export async function acTrPrepareOverlay(
         drawable.ownerId = entity.ownerId
         drawable.layerName = entity.layer
         drawable.visible = entity.visibility !== false
-        const sameLayerGroup =
-          drawable instanceof AcTrGroup && drawable.isOnTheSameLayer
-        if (sameLayerGroup) {
-          drawable.userData.insertLayerName = drawable.layerName
-        }
         // Native asyncDraw handles deferred glyphs, linetypes and nested groups
         // using the reference context, without borrowing host font-preload state.
         await finishOverlayGeometry(drawable, controller.signal)
         check()
-        if (sameLayerGroup) {
-          mapper.remap(drawable.children, '0', drawable.layerName)
+        if (drawable instanceof AcTrGroup) {
+          const group = drawable
+          drawable = null // The shared registration owner consumes this group.
+          acTrRegisterGroup(group, mapper, {
+            addEntity: entity => {
+              layout.addEntity(entity)
+            },
+            setEntityVisible: (id, visible) => {
+              layout.setEntityVisible(id, visible)
+            }
+          })
+        } else {
+          layout.addEntity(drawable)
         }
-        layout.addEntity(drawable)
       } finally {
         drawable?.dispose()
       }

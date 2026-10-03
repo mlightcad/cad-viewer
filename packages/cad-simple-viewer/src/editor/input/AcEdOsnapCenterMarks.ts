@@ -1,28 +1,26 @@
 import {
   AcDb2dPolyline,
   AcDbArc,
-  AcDbBlockReference,
   AcDbCircle,
   AcDbEllipse,
   AcDbEntity,
-  AcDbObjectId,
   AcDbOsnapMode,
   AcDbPolyline,
-  AcGeCircArc2d,
-  AcGeMatrix3d,
   AcGePoint2dLike,
   AcGePoint3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
+
+import type { AcEdDrawingPickResult } from '../view/AcEdDrawingPickResult'
 
 /** Geometric center acquired by hovering circular geometry. */
 export interface AcEdOsnapCenterMark {
   x: number
   y: number
   z: number
+  /** Captured occurrence used to retire ticks when its source is no longer visible/current. */
+  source?: AcEdDrawingPickResult
 }
-
-const BULGE_EPS = 1e-10
 
 /**
  * Max AutoCAD-style acquired center ticks kept during one point prompt.
@@ -37,38 +35,6 @@ function hypot2(ax: number, ay: number, bx: number, by: number) {
   return Math.hypot(ax - bx, ay - by)
 }
 
-function distToSegment(
-  px: number,
-  py: number,
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number
-) {
-  const dx = x1 - x0
-  const dy = y1 - y0
-  const lenSq = dx * dx + dy * dy
-  if (lenSq < 1e-18) return hypot2(px, py, x0, y0)
-  let t = ((px - x0) * dx + (py - y0) * dy) / lenSq
-  t = Math.max(0, Math.min(1, t))
-  return hypot2(px, py, x0 + t * dx, y0 + t * dy)
-}
-
-function tryBulgeArc(
-  start: AcGePoint2dLike,
-  end: AcGePoint2dLike,
-  bulge: number
-): AcGeCircArc2d | undefined {
-  if (!(Math.abs(bulge) > BULGE_EPS)) return undefined
-  try {
-    const arc = new AcGeCircArc2d(start, end, bulge)
-    if (!(arc.radius > 0) || !Number.isFinite(arc.radius)) return undefined
-    return arc
-  } catch {
-    return undefined
-  }
-}
-
 function markFromPoint(point: AcGePoint3dLike): AcEdOsnapCenterMark {
   return {
     x: point.x,
@@ -77,189 +43,51 @@ function markFromPoint(point: AcGePoint3dLike): AcEdOsnapCenterMark {
   }
 }
 
-function transformMark(
-  mark: AcEdOsnapCenterMark,
-  matrix: AcGeMatrix3d
-): AcEdOsnapCenterMark {
-  const point = new AcGePoint3d(mark.x, mark.y, mark.z).applyMatrix4(matrix)
-  return markFromPoint(point)
-}
-
-/**
- * Child spatial-index ids may get a `#n` suffix when the same object appears
- * more than once in a block. Strip that before matching database object ids.
- */
-export function canonicalGsMark(id: AcDbObjectId): AcDbObjectId {
-  if (typeof id !== 'string') return id
-  return id.replace(/#\d+$/, '')
-}
-
-function polylineVertices(entity: AcDbPolyline | AcDb2dPolyline): Array<{
-  x: number
-  y: number
-  bulge: number
-}> {
-  if (entity instanceof AcDb2dPolyline) {
-    const count = entity.numberOfVertices
-    return Array.from({ length: count }, (_, i) => {
-      const p = entity.getPointAt(i)
-      return { x: p.x, y: p.y, bulge: entity.getBulgeAt(i) }
-    })
-  }
-
-  const runtimeVertices = (
-    entity as unknown as {
-      _geo?: { vertices?: Array<{ x: number; y: number; bulge?: number }> }
-    }
-  )._geo?.vertices
-  if (runtimeVertices && runtimeVertices.length > 0) {
-    return runtimeVertices.map(vertex => ({
-      x: vertex.x,
-      y: vertex.y,
-      bulge: vertex.bulge ?? 0
-    }))
-  }
-
-  const count = entity.numberOfVertices
-  return Array.from({ length: count }, (_, i) => {
-    const p = entity.getPoint2dAt(i)
-    return { x: p.x, y: p.y, bulge: 0 }
-  })
-}
-
 function collectPolylineArcCenter(
   entity: AcDbPolyline | AcDb2dPolyline,
   pickPoint: AcGePoint3dLike
 ): AcEdOsnapCenterMark | undefined {
-  const vertices = polylineVertices(entity)
-  if (vertices.length < 2) return undefined
-
-  const segmentCount = entity.closed ? vertices.length : vertices.length - 1
-  let bestDist = Number.POSITIVE_INFINITY
-  let bestArc: AcGeCircArc2d | undefined
-
-  for (let i = 0; i < segmentCount; i++) {
-    const start = vertices[i]!
-    const end = vertices[(i + 1) % vertices.length]!
-    const arc = tryBulgeArc(start, end, start.bulge)
-    let dist: number
-    if (arc) {
-      const nearest = arc.nearestPoint(pickPoint)
-      dist = hypot2(pickPoint.x, pickPoint.y, nearest.x, nearest.y)
-    } else {
-      dist = distToSegment(
-        pickPoint.x,
-        pickPoint.y,
-        start.x,
-        start.y,
-        end.x,
-        end.y
-      )
-    }
-    if (dist < bestDist) {
-      bestDist = dist
-      bestArc = arc
+  let bestDistance = Infinity
+  let bestCenter: AcGePoint3dLike | undefined
+  const pick = new AcGePoint3d(pickPoint)
+  // Native primitives already include elevation/extrusion and bulge geometry.
+  for (const primitive of entity.subGetIntersectCurves()) {
+    const nearest =
+      primitive.kind === 'circArc'
+        ? primitive.arc.nearestPoint(pick)
+        : primitive.kind === 'line'
+          ? primitive.line.closestPointToPoint(pick, true, new AcGePoint3d())
+          : undefined
+    if (!nearest) continue
+    const distance = nearest.distanceToSquared(pick)
+    if (distance < bestDistance) {
+      bestDistance = distance
+      bestCenter =
+        primitive.kind === 'circArc' ? primitive.arc.center : undefined
     }
   }
-
-  if (!bestArc) return undefined
-  return markFromPoint({
-    x: bestArc.center.x,
-    y: bestArc.center.y,
-    z: entity.elevation
-  })
+  return bestCenter ? markFromPoint(bestCenter) : undefined
 }
 
 function collectFromOsnapCenter(
   entity: AcDbEntity,
-  pickPoint: AcGePoint3dLike,
-  gsMark?: AcDbObjectId
+  pickPoint: AcGePoint3dLike
 ): AcEdOsnapCenterMark[] {
   const points: AcGePoint3dLike[] = []
-  entity.subGetOsnapPoints(
-    AcDbOsnapMode.Center,
-    pickPoint,
-    pickPoint,
-    points,
-    gsMark
-  )
+  entity.subGetOsnapPoints(AcDbOsnapMode.Center, pickPoint, pickPoint, points)
   return points.map(point => markFromPoint(point))
-}
-
-/** Full INSERT transform (OCS blockTransform + extrusion), matching intersect curves. */
-function fullInsertionTransform(blockRef: AcDbBlockReference): AcGeMatrix3d {
-  return new AcGeMatrix3d()
-    .setFromExtrusionDirection(blockRef.normal)
-    .multiply(blockRef.blockTransform)
-}
-
-/**
- * Resolves a block-reference sub-entity identified by a spatial-index gsMark.
- *
- * Returns the leaf entity and the cumulative transform that maps its local
- * geometry into the caller space (typically WCS).
- */
-export function resolveBlockSubEntity(
-  blockRef: AcDbBlockReference,
-  gsMark: AcDbObjectId,
-  parentMat: AcGeMatrix3d = new AcGeMatrix3d()
-): { entity: AcDbEntity; transform: AcGeMatrix3d } | undefined {
-  const blockTableRecord = blockRef.blockTableRecord
-  if (!blockTableRecord) return undefined
-
-  const thisMat = new AcGeMatrix3d().multiplyMatrices(
-    parentMat,
-    fullInsertionTransform(blockRef)
-  )
-  const targetId = canonicalGsMark(gsMark)
-
-  for (const entity of blockTableRecord.newIterator()) {
-    if (entity.objectId === gsMark || entity.objectId === targetId) {
-      return { entity, transform: thisMat }
-    }
-    if (entity instanceof AcDbBlockReference) {
-      const nested = resolveBlockSubEntity(entity, gsMark, thisMat)
-      if (nested) return nested
-    }
-  }
-  return undefined
-}
-
-function collectBlockCenterMarks(
-  blockRef: AcDbBlockReference,
-  pickPoint: AcGePoint3dLike,
-  gsMark?: AcDbObjectId
-): AcEdOsnapCenterMark[] {
-  if (!gsMark) {
-    return collectFromOsnapCenter(blockRef, pickPoint)
-  }
-
-  const found = resolveBlockSubEntity(blockRef, gsMark)
-  if (!found) {
-    return collectFromOsnapCenter(blockRef, pickPoint, canonicalGsMark(gsMark))
-  }
-
-  const inverse = found.transform.clone().invert()
-  const localPick = new AcGePoint3d(pickPoint).applyMatrix4(inverse)
-  return collectCenterMarksFromEntity(found.entity, localPick).map(mark =>
-    transformMark(mark, found.transform)
-  )
 }
 
 /**
  * Collects AutoCAD-style center ticks for circular geometry under the cursor.
  *
- * Circle, arc, ellipse, polyline bulge segments, and the same geometry nested
- * in block references each contribute a center.
+ * Receives a resolved leaf in its source drawing frame. The source-aware caller
+ * owns occurrence traversal and transforms the returned points to display WCS.
  */
 export function collectCenterMarksFromEntity(
   entity: AcDbEntity,
-  pickPoint: AcGePoint3dLike,
-  gsMark?: AcDbObjectId
+  pickPoint: AcGePoint3dLike
 ): AcEdOsnapCenterMark[] {
-  if (entity instanceof AcDbBlockReference) {
-    return collectBlockCenterMarks(entity, pickPoint, gsMark)
-  }
   if (entity instanceof AcDbCircle) {
     return [markFromPoint(entity.center)]
   }
@@ -273,7 +101,7 @@ export function collectCenterMarksFromEntity(
     const mark = collectPolylineArcCenter(entity, pickPoint)
     return mark ? [mark] : []
   }
-  return collectFromOsnapCenter(entity, pickPoint, gsMark)
+  return collectFromOsnapCenter(entity, pickPoint)
 }
 
 /** Appends newly hovered centers without dropping marks acquired earlier. */
@@ -290,7 +118,11 @@ export function mergeAcquiredCenterMarks(
   const merged = [...existing]
   let changed = existing.length > ACED_MAX_ACQUIRED_CENTER_MARKS
   for (const mark of incoming) {
-    const idx = merged.findIndex(item => centerMarksCoincide(item, mark))
+    const idx = merged.findIndex(
+      item =>
+        centerMarksCoincide(item, mark) &&
+        sameCenterSource(item.source, mark.source)
+    )
     if (idx >= 0) {
       if (idx !== merged.length - 1) {
         const [kept] = merged.splice(idx, 1)
@@ -307,6 +139,23 @@ export function mergeAcquiredCenterMarks(
     return merged.slice(merged.length - ACED_MAX_ACQUIRED_CENTER_MARKS)
   }
   return changed ? merged : (existing as AcEdOsnapCenterMark[])
+}
+
+function sameCenterSource(
+  a?: AcEdDrawingPickResult,
+  b?: AcEdDrawingPickResult
+): boolean {
+  if (!a || !b) return a === b
+  return (
+    a.database === b.database &&
+    a.referenceId === b.referenceId &&
+    a.viewportId === b.viewportId &&
+    a.rootId === b.rootId &&
+    a.path.length === b.path.length &&
+    a.path.every((id, index) => id === b.path[index]) &&
+    a.instancePath.length === b.instancePath.length &&
+    a.instancePath.every((id, index) => id === b.instancePath[index])
+  )
 }
 
 export function centerMarksCoincide(

@@ -410,7 +410,8 @@ export class AcTrLayout {
     const layers = this.getLayersByObjectId(objectId)
     for (let index = 0; index < layers.length; ++index) {
       const layer = layers[index]
-      if (layer && layer.isIntersectWith(objectId, raycaster)) return true
+      if (layer?.visible && layer.isIntersectWith(objectId, raycaster))
+        return true
     }
     return false
   }

@@ -140,6 +140,44 @@ manager.events.workersReady.addEventListener(({ ready }) => {
 })
 ```
 
+## Native reference interaction
+
+`view.pickDrawingEntities(point, radiusPx)` returns source-qualified occurrences
+for read-only inspection and native object snapping. `view.pick()` and editable
+selection sets continue to contain host drawing IDs only. Never feed reference
+handles into an edit selection set: handles can repeat in different databases.
+
+Each result identifies its database, optional committed `referenceId`, root entity,
+nested native `path`, and `instancePath` (including MINSERT cells). Its `transform`
+maps native entity geometry to displayed WCS. Paper viewport occurrences also have
+`viewportId`. Retain the complete result when retaining identity; an entity handle
+alone cannot distinguish these occurrences. `isCurrent()` rejects stale source,
+session, placement, database revision and visibility snapshots.
+
+The query reuses each layout's native spatial index and raycast, applying the
+inverse placement to the aperture. The existing snap resolver consumes these
+results, calls native entity snap methods and native curve intersection helpers,
+and retires acquired centers whose source is no longer current. Source databases
+and the process-global working database are never switched or modified by queries.
+Prepared references participate only after commit; failed replacement leaves the
+previous reference interactive. Host and reference groups share layer registration.
+
+Current qualification is plan-view placement with translation, positive uniform
+scale and Z rotation, plus native nested INSERT transforms. Uniform planar scales
+and reflections preserve native distance modes. Under nonuniform scale or shear,
+transformed line/spline nearest and intersection queries are supported; unsupported
+circular/elliptic metric modes and intersections are omitted. These occurrences
+can still return affine-safe points such as endpoints and centers. Native area
+picking remains conservative for text/fills and unsupported curved nearest queries.
+Existing intersection source/pair/time/primitive limits remain; they do not bound
+the cost of native primitive collection. Acquired marker repaint remains tied to
+normal input refresh, although stale points are rejected by the next query.
+
+Top-level source layer OFF/FROZEN registration and resource cleanup are covered by
+offline tests. Full nested-layer freeze/thaw rendering and regeneration still need
+qualification before product adoption. These checks do not establish browser/GPU
+behavior, arbitrary reprojection, real DWG fidelity, or supported package releases.
+
 ## Available Exports
 
 ### Core Classes

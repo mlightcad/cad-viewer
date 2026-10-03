@@ -1,4 +1,5 @@
 export * from './AcEdBaseView'
+export * from './AcEdDrawingPickResult'
 export * from './AcEdHoverController'
 export * from './AcEdLayerInfo'
 export * from './AcEdOpenMode'

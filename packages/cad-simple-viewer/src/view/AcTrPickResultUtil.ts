@@ -1,17 +1,17 @@
 import { AcGePoint2dLike } from '@mlightcad/data-model'
 
-import { AcEdSpatialQueryResultItemEx } from '../editor'
+type PickBounds = { minX: number; minY: number; maxX: number; maxY: number }
 
-export function sortPickResults(
-  results: AcEdSpatialQueryResultItemEx[],
+export function sortPickResults<T extends PickBounds>(
+  results: T[],
   point: AcGePoint2dLike
 ) {
   return [...results].sort((a, b) => comparePickResults(a, b, point))
 }
 
 function comparePickResults(
-  a: AcEdSpatialQueryResultItemEx,
-  b: AcEdSpatialQueryResultItemEx,
+  a: PickBounds,
+  b: PickBounds,
   point: AcGePoint2dLike
 ) {
   const areaDelta = bboxArea(a) - bboxArea(b)
@@ -24,14 +24,11 @@ function comparePickResults(
   return 0
 }
 
-function bboxArea(item: AcEdSpatialQueryResultItemEx) {
+function bboxArea(item: PickBounds) {
   return Math.max(item.maxX - item.minX, 0) * Math.max(item.maxY - item.minY, 0)
 }
 
-function squaredDistanceToBox(
-  point: AcGePoint2dLike,
-  item: AcEdSpatialQueryResultItemEx
-) {
+function squaredDistanceToBox(point: AcGePoint2dLike, item: PickBounds) {
   const dx =
     point.x < item.minX
       ? item.minX - point.x

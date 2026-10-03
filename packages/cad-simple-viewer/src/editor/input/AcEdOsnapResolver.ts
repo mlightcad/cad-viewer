@@ -1,17 +1,12 @@
 import {
-  AcDbArc,
   AcDbBlockReference,
-  AcDbCircle,
-  AcDbEntity,
+  AcDbDatabase,
   acdbHasOsnapMode,
-  acdbHostApplicationServices,
-  AcDbLine,
   acdbMaskToOsnapModes,
-  AcDbObjectId,
   AcDbOsnapMode,
-  AcGeBox3d,
   AcGeGeometryUtil,
-  AcGeMatrix3d,
+  acgeIntersectCurves,
+  AcGeIntersectPrimitive,
   AcGePoint2dLike,
   AcGePoint3d,
   AcGePoint3dLike
@@ -20,16 +15,16 @@ import {
 import { AcApSettingManager } from '../../app/AcApSettingManager'
 import { AcEdBaseView } from '../view/AcEdBaseView'
 import {
-  AcEdSpatialQueryResultItemEx,
-  isEffectiveSpatialQueryHit
-} from '../view/AcEdSpatialQueryResult'
+  acEdDrawingIntersectCurves,
+  acEdDrawingOsnapPoints,
+  acEdDrawingPointVisible
+} from '../view/AcEdDrawingGeometry'
+import type { AcEdDrawingPickResult } from '../view/AcEdDrawingPickResult'
 import {
   type AcEdOsnapCenterMark,
-  canonicalGsMark,
   centerMarksCoincide,
   collectCenterMarksFromEntity,
-  mergeAcquiredCenterMarks,
-  resolveBlockSubEntity
+  mergeAcquiredCenterMarks
 } from './AcEdOsnapCenterMarks'
 import { AcEdMarkerType } from './marker/AcEdMarker'
 
@@ -56,146 +51,24 @@ const DEFAULT_HIT_RADIUS_PX = 20
  */
 const MAX_INTERSECTION_SOURCES = 16
 
-/** Hard cap on pairwise `intersectWith` calls per resolve. */
+/** Hard cap on native pairwise primitive intersection calls per resolve. */
 const MAX_INTERSECTION_PAIR_TESTS = 48
 
 /** Wall-clock budget for pairwise intersection math per resolve. */
 const INTERSECTION_TIME_BUDGET_MS = 8
 
-/**
- * Skip leaf entities whose curve primitive count exceeds this. Fat polylines /
- * splines must not expand into INT snap on every touch move.
- */
-const MAX_PRIMITIVES_PER_SOURCE = 32
-
 type IntersectionSource = {
-  key: string
-  box: AcGeBox3d
-  entity: AcDbEntity
-  /** Maps entity-local geometry into WCS. Identity for model-space entities. */
-  transform: AcGeMatrix3d
+  candidate: AcEdDrawingPickResult
+  curves: AcGeIntersectPrimitive[]
 }
 
-function boxesOverlapXY(a: AcGeBox3d, b: AcGeBox3d): boolean {
+function boxesOverlapXY(
+  a: AcEdDrawingPickResult,
+  b: AcEdDrawingPickResult
+): boolean {
   return (
-    a.min.x <= b.max.x &&
-    a.max.x >= b.min.x &&
-    a.min.y <= b.max.y &&
-    a.max.y >= b.min.y
+    a.minX <= b.maxX && a.maxX >= b.minX && a.minY <= b.maxY && a.maxY >= b.minY
   )
-}
-
-function boxFromSpatialItem(item: {
-  minX: number
-  minY: number
-  maxX: number
-  maxY: number
-}): AcGeBox3d {
-  return new AcGeBox3d(
-    { x: item.minX, y: item.minY, z: -Infinity },
-    { x: item.maxX, y: item.maxY, z: Infinity }
-  )
-}
-
-function isIdentityTransform(matrix: AcGeMatrix3d): boolean {
-  return matrix.equals(AcGeMatrix3d.IDENTITY)
-}
-
-/**
- * Builds a disposable entity whose geometry is `entity` transformed by
- * `matrix`, without mutating database-resident entities.
- *
- * Returns the original entity when `matrix` is identity. Returns `undefined`
- * when the entity type cannot be safely copied for cross-transform INT.
- */
-function transformedEntityCopy(
-  entity: AcDbEntity,
-  matrix: AcGeMatrix3d
-): AcDbEntity | undefined {
-  if (isIdentityTransform(matrix)) return entity
-
-  if (entity instanceof AcDbLine) {
-    return new AcDbLine(
-      new AcGePoint3d(entity.startPoint).applyMatrix4(matrix),
-      new AcGePoint3d(entity.endPoint).applyMatrix4(matrix)
-    )
-  }
-
-  if (entity instanceof AcDbCircle) {
-    const scale = matrix.getMaxScaleOnAxis()
-    if (!(scale > 0) || !Number.isFinite(scale)) return undefined
-    return new AcDbCircle(
-      new AcGePoint3d(entity.center).applyMatrix4(matrix),
-      entity.radius * scale,
-      entity.normal
-    )
-  }
-
-  if (entity instanceof AcDbArc) {
-    const scale = matrix.getMaxScaleOnAxis()
-    if (!(scale > 0) || !Number.isFinite(scale)) return undefined
-    return new AcDbArc(
-      new AcGePoint3d(entity.center).applyMatrix4(matrix),
-      entity.radius * scale,
-      entity.startAngle,
-      entity.endAngle,
-      entity.normal
-    )
-  }
-
-  return undefined
-}
-
-function isLightIntersectionEntity(entity: AcDbEntity): boolean {
-  const count = entity.subGetIntersectCurves().length
-  return count > 0 && count <= MAX_PRIMITIVES_PER_SOURCE
-}
-
-/**
- * Maps local intersect points through `frame` into WCS.
- */
-function mapIntersectPointsToWcs(
-  local: AcGePoint3d[],
-  frame: AcGeMatrix3d
-): AcGePoint3d[] {
-  if (isIdentityTransform(frame)) return local
-  return local.map(point =>
-    new AcGePoint3d(point.x, point.y, point.z).applyMatrix4(frame)
-  )
-}
-
-/**
- * Intersects two osnap sources without mutating database entities.
- * Same-frame pairs use local `intersectWith` then map to WCS; cross-frame
- * pairs express one entity in the other's local space via a disposable copy.
- * Tries B→A first, then A→B, so order does not drop polyline/spline partners
- * when the other side is a transformable Line/Circle/Arc.
- */
-function intersectSources(
-  a: IntersectionSource,
-  b: IntersectionSource
-): AcGePoint3d[] {
-  if (a.transform.equals(b.transform)) {
-    return mapIntersectPointsToWcs(a.entity.intersectWith(b.entity), a.transform)
-  }
-
-  const bToA = new AcGeMatrix3d().multiplyMatrices(
-    a.transform.clone().invert(),
-    b.transform
-  )
-  const bInA = transformedEntityCopy(b.entity, bToA)
-  if (bInA) {
-    return mapIntersectPointsToWcs(a.entity.intersectWith(bInA), a.transform)
-  }
-
-  const aToB = new AcGeMatrix3d().multiplyMatrices(
-    b.transform.clone().invert(),
-    a.transform
-  )
-  const aInB = transformedEntityCopy(a.entity, aToB)
-  if (!aInB) return []
-
-  return mapIntersectPointsToWcs(b.entity.intersectWith(aInB), b.transform)
 }
 
 /**
@@ -215,7 +88,18 @@ export class AcEdOsnapResolver {
    * snaps to that center.
    */
   get acquiredCenterMarks(): readonly AcEdOsnapCenterMark[] {
+    this.pruneAcquiredCenters()
     return this._acquiredCenters
+  }
+
+  private pruneAcquiredCenters(): void {
+    const current = this._acquiredCenters.filter(
+      mark =>
+        !mark.source ||
+        (mark.source.isCurrent() && acEdDrawingPointVisible(mark.source, mark))
+    )
+    if (current.length !== this._acquiredCenters.length)
+      this._acquiredCenters = current
   }
 
   /** Clears acquired center ticks. Call when an input session ends. */
@@ -241,11 +125,12 @@ export class AcEdOsnapResolver {
    * Resolves the best osnap point near the cursor, matching command-input behavior.
    */
   resolve(options: AcEdOsnapResolveOptions): AcEdOsnapPoint | undefined {
+    this.pruneAcquiredCenters()
     const hitRadiusPx = options.hitRadiusPx ?? DEFAULT_HIT_RADIUS_PX
     const lastPoint = options.lastPoint ?? options.cursorWcs
     const p1 = this._view.screenToWorld({ x: 0, y: 0 })
     const p2 = this._view.screenToWorld({ x: hitRadiusPx, y: 0 })
-    const threshold = Math.abs(p2.x - p1.x)
+    const threshold = Math.hypot(p2.x - p1.x, p2.y - p1.y)
     const snapPoints = this.collectOsnapPoints(
       options.cursorWcs,
       lastPoint,
@@ -327,132 +212,53 @@ export class AcEdOsnapResolver {
     }
   }
 
-  private collectOsnapPointsByMode(
-    entity: AcDbEntity,
-    osnapMode: AcDbOsnapMode,
-    osnapPoints: AcEdOsnapPoint[],
-    pickPoint: AcGePoint3dLike,
-    lastPoint: AcGePoint3dLike,
-    gsMark?: AcDbObjectId
-  ) {
-    const start = osnapPoints.length
-    entity.subGetOsnapPoints(
-      osnapMode,
-      pickPoint,
-      lastPoint,
-      osnapPoints,
-      gsMark
-    )
-
-    for (let i = start; i < osnapPoints.length; i++) {
-      osnapPoints[i].type = osnapMode
-    }
-  }
-
-  private collectOsnapPointsInAvailableModes(
-    entity: AcDbEntity,
-    osnapPoints: AcEdOsnapPoint[],
-    pickPoint: AcGePoint3dLike,
-    lastPoint: AcGePoint3dLike,
-    gsMark?: AcDbObjectId
-  ) {
-    const modes = acdbMaskToOsnapModes(AcApSettingManager.instance.osnapModes)
-    modes.forEach(mode => {
-      // Intersection requires pairwise entity tests; see collectIntersectionOsnapPoints.
-      if (mode === AcDbOsnapMode.Intersection) return
-      this.collectOsnapPointsByMode(
-        entity,
-        mode,
-        osnapPoints,
-        pickPoint,
-        lastPoint,
-        gsMark
-      )
-    })
-  }
-
   private collectIntersectionOsnapPoints(
-    pickResults: AcEdSpatialQueryResultItemEx[],
-    modelSpace: { getIdAt: (id: AcDbObjectId) => AcDbEntity | undefined },
+    candidates: readonly AcEdDrawingPickResult[],
     osnapPoints: AcEdOsnapPoint[],
     cursorWcs: AcGePoint2dLike,
     threshold: number
   ) {
     const sources: IntersectionSource[] = []
-    const seenKeys = new Set<string>()
-
-    const tryAdd = (source: IntersectionSource) => {
-      if (sources.length >= MAX_INTERSECTION_SOURCES) return
-      if (seenKeys.has(source.key)) return
-      if (source.box.isEmpty()) return
-      if (!isLightIntersectionEntity(source.entity)) return
-      seenKeys.add(source.key)
-      sources.push(source)
-    }
-
-    for (const item of pickResults) {
+    const seen = new Map<AcDbDatabase, Set<string>>()
+    for (const candidate of candidates) {
       if (sources.length >= MAX_INTERSECTION_SOURCES) break
-      if (!isEffectiveSpatialQueryHit(item)) continue
-      const entity = modelSpace.getIdAt(item.id)
-      if (!entity) continue
-
-      if (item.children && item.children.length > 0) {
-        // INSERT (and other hierarchical hits): only the aperture-hit children.
-        // Never expand the whole block definition into INT snap.
-        for (const child of item.children) {
-          if (sources.length >= MAX_INTERSECTION_SOURCES) break
-          const gsMark = canonicalGsMark(child.id)
-          const key = `${item.id}:${gsMark}`
-          if (entity instanceof AcDbBlockReference) {
-            const found = resolveBlockSubEntity(entity, gsMark)
-            if (!found) continue
-            tryAdd({
-              key,
-              box: boxFromSpatialItem(child),
-              entity: found.entity,
-              transform: found.transform
-            })
-          } else {
-            tryAdd({
-              key,
-              box: boxFromSpatialItem(child),
-              entity,
-              transform: new AcGeMatrix3d()
-            })
-          }
-        }
-        continue
+      const key = JSON.stringify([
+        candidate.referenceId,
+        candidate.viewportId,
+        candidate.rootId,
+        candidate.path,
+        candidate.instancePath
+      ])
+      let databaseKeys = seen.get(candidate.database)
+      if (!databaseKeys) {
+        databaseKeys = new Set()
+        seen.set(candidate.database, databaseKeys)
       }
-
-      if (entity instanceof AcDbBlockReference) {
-        // Coarse root hit without children — skip. Whole-block intersectWith
-        // would expand every nested curve and freeze dense blocks on mobile.
-        continue
-      }
-
-      tryAdd({
-        key: item.id,
-        box: entity.geometricExtents,
-        entity,
-        transform: new AcGeMatrix3d()
-      })
+      if (databaseKeys.has(key)) continue
+      databaseKeys.add(key)
+      const curves = acEdDrawingIntersectCurves(candidate)
+      if (curves.length > 0) sources.push({ candidate, curves })
     }
-
-    if (sources.length < 2) return
-
     const threshSq = threshold * threshold
     const started = performance.now()
     let pairTests = 0
-
     for (let i = 0; i < sources.length; i++) {
       for (let j = i + 1; j < sources.length; j++) {
         if (pairTests >= MAX_INTERSECTION_PAIR_TESTS) return
         if (performance.now() - started > INTERSECTION_TIME_BUDGET_MS) return
-        if (!boxesOverlapXY(sources[i].box, sources[j].box)) continue
-
+        if (!boxesOverlapXY(sources[i].candidate, sources[j].candidate))
+          continue
         pairTests++
-        const points = intersectSources(sources[i], sources[j])
-        for (const point of points) {
+        for (const point of acgeIntersectCurves(
+          sources[i].curves,
+          sources[j].curves
+        )) {
+          if (![point.x, point.y, point.z].every(Number.isFinite)) continue
+          if (
+            !acEdDrawingPointVisible(sources[i].candidate, point) ||
+            !acEdDrawingPointVisible(sources[j].candidate, point)
+          )
+            continue
           const dx = point.x - cursorWcs.x
           const dy = point.y - cursorWcs.y
           if (dx * dx + dy * dy > threshSq) continue
@@ -473,63 +279,42 @@ export class AcEdOsnapResolver {
     hitRadiusPx: number,
     threshold: number
   ): AcEdOsnapPoint[] {
-    const results = this._view.pick(cursorWcs, hitRadiusPx)
-    const db = acdbHostApplicationServices().workingDatabase
-    const modelSpace = db.tables.blockTable.modelSpace
+    const candidates = this._view
+      .pickDrawingEntities(cursorWcs, hitRadiusPx)
+      .filter(candidate => candidate.isCurrent())
     const osnapPoints: AcEdOsnapPoint[] = []
     const pickPoint = AcGeGeometryUtil.point2dToPoint3d(cursorWcs)
     const last = AcGeGeometryUtil.point2dToPoint3d(lastPoint)
-
-    results.forEach(item => {
-      const entity = modelSpace.getIdAt(item.id)
-      if (!entity) return
-
-      if (item.children && item.children.length > 0) {
-        item.children.forEach(child =>
-          this.collectOsnapPointsInAvailableModes(
-            entity,
-            osnapPoints,
-            pickPoint,
-            last,
-            canonicalGsMark(child.id)
-          )
-        )
-      } else {
-        this.collectOsnapPointsInAvailableModes(
-          entity,
-          osnapPoints,
+    const modes = acdbMaskToOsnapModes(AcApSettingManager.instance.osnapModes)
+    for (const candidate of candidates) {
+      for (const mode of modes) {
+        if (mode === AcDbOsnapMode.Intersection) continue
+        for (const point of acEdDrawingOsnapPoints(
+          candidate,
+          mode,
           pickPoint,
           last
-        )
+        )) {
+          if (![point.x, point.y, point.z].every(Number.isFinite)) continue
+          if (!acEdDrawingPointVisible(candidate, point)) continue
+          osnapPoints.push({ x: point.x, y: point.y, z: point.z, type: mode })
+        }
       }
-    })
-
-    if (
-      acdbHasOsnapMode(
-        AcApSettingManager.instance.osnapModes,
-        AcDbOsnapMode.Intersection
-      )
-    ) {
+    }
+    if (modes.includes(AcDbOsnapMode.Intersection)) {
       this.collectIntersectionOsnapPoints(
-        results,
-        modelSpace,
+        candidates,
         osnapPoints,
         cursorWcs,
         threshold
       )
     }
-
-    this.updateAcquiredCenters(results, modelSpace, pickPoint)
-
+    this.updateAcquiredCenters(candidates, pickPoint)
     return osnapPoints
   }
 
   private updateAcquiredCenters(
-    results: Array<{
-      id: AcDbObjectId
-      children?: Array<{ id: AcDbObjectId }>
-    }>,
-    modelSpace: { getIdAt: (id: AcDbObjectId) => AcDbEntity | undefined },
+    candidates: readonly AcEdDrawingPickResult[],
     pickPoint: AcGePoint3dLike
   ) {
     if (
@@ -541,26 +326,27 @@ export class AcEdOsnapResolver {
       this._acquiredCenters = []
       return
     }
-
     const hovered: AcEdOsnapCenterMark[] = []
-    results.forEach(item => {
-      const entity = modelSpace.getIdAt(item.id)
-      if (!entity) return
-      if (item.children && item.children.length > 0) {
-        item.children.forEach(child => {
-          hovered.push(
-            ...collectCenterMarksFromEntity(
-              entity,
-              pickPoint,
-              canonicalGsMark(child.id)
-            )
-          )
-        })
-      } else {
-        hovered.push(...collectCenterMarksFromEntity(entity, pickPoint))
+    for (const candidate of candidates) {
+      if (candidate.entity instanceof AcDbBlockReference) continue
+      if (
+        !candidate.transform.elements.every(Number.isFinite) ||
+        candidate.transform.determinant() === 0
+      )
+        continue
+      const localPick = new AcGePoint3d(pickPoint).applyMatrix4(
+        candidate.transform.clone().invert()
+      )
+      for (const mark of collectCenterMarksFromEntity(
+        candidate.entity,
+        localPick
+      )) {
+        const point = new AcGePoint3d(mark).applyMatrix4(candidate.transform)
+        if (![point.x, point.y, point.z].every(Number.isFinite)) continue
+        if (!acEdDrawingPointVisible(candidate, point)) continue
+        hovered.push({ x: point.x, y: point.y, z: point.z, source: candidate })
       }
-    })
-
+    }
     this._acquiredCenters = mergeAcquiredCenterMarks(
       this._acquiredCenters,
       hovered

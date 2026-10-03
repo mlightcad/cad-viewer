@@ -349,6 +349,7 @@ import type { AcDbDatabase } from '@mlightcad/data-model'
 import type { AcTrLayout } from '../src/view/AcTrLayout'
 import type { AcTrView2d } from '../src/view/AcTrView2d'
 import { acapDisposeNotificationService } from '../src/app/notification'
+import * as THREE from 'three'
 
 describe('AcApDocManager font URL configuration', () => {
   beforeEach(() => {
@@ -638,6 +639,47 @@ describe('AcApDocManager overlay attachment transactions', () => {
     ;(AcApDocManager as unknown as { _instance: unknown })._instance = undefined
     acapDisposeNotificationService()
     mockReadOverlayDatabase.mockReset().mockResolvedValue(true)
+  })
+
+  it('queries only committed sources in the live session and retires retained source handles', async () => {
+    const { manager, view, state, originalScene, prepare, owner } = setup()
+    const nativeScene = new THREE.Scene()
+    Object.assign(originalScene, { internalScene: nativeScene })
+    const first = layout()
+    Object.assign(first, { internalObject: new THREE.Group() })
+    prepare.mockResolvedValue(first)
+    const db = {} as AcDbDatabase
+    const ready = await manager.prepareOverlayDatabase(db)
+    expect(manager.getDrawingPickSources(view)).toEqual([])
+    const id = ready.commit()
+    const published = manager.getDrawingPickSources(view)[0]
+    expect(published.database).toBe(db)
+    expect(published.referenceId).toBe(id)
+    expect(published.isCurrent()).toBe(true)
+
+    const next = layout()
+    Object.assign(next, { internalObject: new THREE.Group() })
+    prepare.mockResolvedValue(next)
+    const replacement = await manager.prepareOverlayDatabase(db, {
+      replaceOverlayId: id
+    })
+    expect(
+      manager.getDrawingPickSources(view).map(source => source.referenceId)
+    ).toEqual([id])
+    const nextId = replacement.commit()
+    expect(published.isCurrent()).toBe(false)
+    const current = manager.getDrawingPickSources(view)[0]
+    expect(current.referenceId).toBe(nextId)
+    expect(current.isCurrent()).toBe(true)
+
+    owner.viewState = { scene: originalScene } as never
+    expect(manager.getDrawingPickSources(view)).toEqual([])
+    expect(current.isCurrent()).toBe(false)
+    owner.viewState = undefined
+    expect(manager.getDrawingPickSources(view)[0].isCurrent()).toBe(true)
+    state._sessions = []
+    expect(current.isCurrent()).toBe(false)
+    manager.removeOverlay(nextId)
   })
 
   it('publishes late parsing into its captured parked document, not the new active scene', async () => {
