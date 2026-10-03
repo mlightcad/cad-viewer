@@ -27,7 +27,7 @@ export interface AcApNotificationAction {
 }
 
 /**
- * One notification entry stored in a session bucket.
+ * One notification entry stored in a document or shared-runtime bucket.
  */
 export interface AcApNotification {
   /** Stable id assigned by the store (`notification-N`). */
@@ -55,9 +55,9 @@ export interface AcApNotification {
   fontNames?: string[]
   /**
    * {@link AcApDocSession.id} of the document this notification belongs to.
-   * Assigned by the store when omitted (uses the active session).
+   * `null` explicitly selects the shared runtime. Omitted uses the active session.
    */
-  sessionId?: string
+  sessionId?: string | null
 }
 
 /**
@@ -68,16 +68,16 @@ export type AcApNotificationInput = Omit<AcApNotification, 'id' | 'timestamp'>
 /**
  * Host-replaceable notification center API.
  *
- * Notifications are **per document session** (MDI). {@link notifications} and
- * {@link unreadCount} always reflect the active session set via
- * {@link setActiveSession}. Hosts such as `cad-viewer` can call
+ * Notifications combine the shared runtime and active document session (MDI).
+ * {@link notifications} and {@link unreadCount} follow {@link setActiveSession}
+ * while runtime entries remain visible. Hosts such as `cad-viewer` can call
  * {@link acapSetNotificationCenter} to supply their own UI while reusing the
  * shared event bridge.
  */
 export interface AcApNotificationCenter {
-  /** Notifications for the active document session only. */
+  /** Notifications for the runtime and active document session. */
   readonly notifications: readonly AcApNotification[]
-  /** Number of notifications in the active session (same as list length). */
+  /** Number of visible notifications (same as list length). */
   readonly unreadCount: number
   /**
    * Inserts a notification into the resolved session bucket.
@@ -144,16 +144,16 @@ export interface AcApNotificationCenter {
    * @param id - Notification id previously returned by {@link add}.
    */
   remove(id: string): void
-  /** Clears notifications for the active session. */
+  /** Dismisses visible runtime and active-session notifications. */
   clear(): void
   /**
-   * Removes notifications matching a predicate from the active session.
+   * Removes visible runtime/document notifications matching a predicate.
    *
    * @param predicate - Return `true` for entries that should be removed.
    */
   removeWhere(predicate: (notification: AcApNotification) => boolean): void
   /**
-   * Removes all active-session notifications with the given {@link source}.
+   * Removes visible runtime/document notifications with the given {@link source}.
    *
    * @param source - Producer to clear.
    */
@@ -163,11 +163,9 @@ export interface AcApNotificationCenter {
    *
    * @param missedFontNames - Fonts that are still unresolved; entries whose
    *   `fontNames` no longer intersect this set are removed. An empty set removes
-   *   every `font-missed` entry in the active session.
+   *   every visible `font-missed` entry.
    */
-  removeResolvedFontMissedNotifications(
-    missedFontNames: Iterable<string>
-  ): void
+  removeResolvedFontMissedNotifications(missedFontNames: Iterable<string>): void
   /**
    * Switches which document's list is exposed via {@link notifications}.
    * Called by the event bridge on document activate.

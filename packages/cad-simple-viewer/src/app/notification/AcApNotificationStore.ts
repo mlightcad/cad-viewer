@@ -9,13 +9,13 @@ import type {
  * In-memory notification store used by the built-in DOM notification UI and as
  * a reference implementation for custom centers.
  *
- * Notifications are kept in per-session buckets. {@link notifications} /
- * {@link unreadCount} / mutation helpers (except {@link clearSession} and
- * {@link remove} by id) operate on the active session.
+ * Notifications have document buckets and a shared-runtime bucket (`null`).
+ * List/dismiss operations include the runtime and active document. Closing a
+ * document removes only its own bucket.
  */
 export class AcApNotificationStore implements AcApNotificationCenter {
-  /** Per-session notification lists keyed by {@link AcApDocSession.id}. */
-  private readonly _buckets = new Map<string, AcApNotification[]>()
+  /** Document buckets keyed by session id; `null` owns runtime notifications. */
+  private readonly _buckets = new Map<string | null, AcApNotification[]>()
   /** Session currently exposed via {@link notifications}. */
   private _activeSessionId: string | null = null
   /** Monotonic counter used to allocate notification ids. */
@@ -24,17 +24,17 @@ export class AcApNotificationStore implements AcApNotificationCenter {
   private readonly _listeners = new Set<() => void>()
 
   /**
-   * Notifications for the active document session only.
+   * Notifications for the runtime and active document session.
    */
   get notifications(): readonly AcApNotification[] {
-    return this.activeList()
+    return this.visibleList()
   }
 
   /**
-   * Number of notifications in the active session.
+   * Number of visible runtime and document notifications.
    */
   get unreadCount(): number {
-    return this.activeList().length
+    return this.visibleList().length
   }
 
   /**
@@ -67,24 +67,31 @@ export class AcApNotificationStore implements AcApNotificationCenter {
   }
 
   /**
-   * Returns the mutable list for the active session, or an empty array.
+   * Returns visible runtime and document entries, newest first.
    */
-  private activeList(): AcApNotification[] {
-    if (this._activeSessionId == null) return []
-    return this._buckets.get(this._activeSessionId) ?? []
+  private visibleList(): AcApNotification[] {
+    const runtime = this._buckets.get(null) ?? []
+    const document =
+      this._activeSessionId == null
+        ? []
+        : (this._buckets.get(this._activeSessionId) ?? [])
+    return [...runtime, ...document].sort(
+      (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+    )
   }
 
   /**
-   * Replaces the active session's list, deleting the bucket when empty.
+   * Replaces visible buckets without touching parked documents.
    *
-   * @param list - Next notification list for the active session.
+   * @param list - Next visible notification list.
    */
-  private setActiveList(list: AcApNotification[]) {
-    if (this._activeSessionId == null) return
-    if (list.length === 0) {
-      this._buckets.delete(this._activeSessionId)
-    } else {
-      this._buckets.set(this._activeSessionId, list)
+  private setVisibleList(list: AcApNotification[]) {
+    const keys =
+      this._activeSessionId == null ? [null] : [null, this._activeSessionId]
+    for (const key of keys) {
+      const entries = list.filter(entry => entry.sessionId === key)
+      if (entries.length) this._buckets.set(key, entries)
+      else this._buckets.delete(key)
     }
   }
 
@@ -92,10 +99,14 @@ export class AcApNotificationStore implements AcApNotificationCenter {
    * Resolves which session bucket an add should target.
    *
    * @param explicit - Optional `sessionId` from the input payload.
-   * @returns Session id, or `null` when neither explicit nor active is set.
+   * @returns Document id, `null` for runtime, or undefined when no document is active.
    */
-  private resolveSessionId(explicit?: string): string | null {
-    return explicit ?? this._activeSessionId
+  private resolveSessionId(
+    explicit?: string | null
+  ): string | null | undefined {
+    return explicit === null
+      ? null
+      : (explicit ?? this._activeSessionId ?? undefined)
   }
 
   /**
@@ -133,7 +144,7 @@ export class AcApNotificationStore implements AcApNotificationCenter {
    */
   add(notification: AcApNotificationInput): string {
     const sessionId = this.resolveSessionId(notification.sessionId)
-    if (sessionId == null) {
+    if (sessionId === undefined) {
       // No active document yet — drop rather than creating an orphan bucket.
       return ''
     }
@@ -240,31 +251,30 @@ export class AcApNotificationStore implements AcApNotificationCenter {
   }
 
   /**
-   * Clears notifications for the active session only.
+   * Dismisses all visible notifications. Parked document buckets are preserved.
    */
   clear(): void {
-    if (this._activeSessionId == null) return
-    if (!this._buckets.has(this._activeSessionId)) return
-    this._buckets.delete(this._activeSessionId)
+    if (!this.visibleList().length) return
+    this.setVisibleList([])
     this.emitChange()
   }
 
   /**
-   * Removes notifications matching a predicate from the active session.
+   * Removes visible notifications matching a predicate.
    *
    * @param predicate - Return `true` for entries that should be removed.
    */
   removeWhere(predicate: (notification: AcApNotification) => boolean): void {
-    const list = this.activeList()
+    const list = this.visibleList()
     if (list.length === 0) return
     const next = list.filter(n => !predicate(n))
     if (next.length === list.length) return
-    this.setActiveList(next)
+    this.setVisibleList(next)
     this.emitChange()
   }
 
   /**
-   * Removes all active-session notifications with the given source.
+   * Removes visible notifications with the given source.
    *
    * @param source - Producer to clear.
    */

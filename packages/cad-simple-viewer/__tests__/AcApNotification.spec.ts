@@ -26,7 +26,9 @@ describe('AcApNotificationStore (per-session)', () => {
     store.setActiveSession('doc-1')
     store.warning('A fonts', undefined, { source: 'font-missed' })
     store.setActiveSession('doc-2')
-    store.warning('B unsupported', undefined, { source: 'unsupported-entities' })
+    store.warning('B unsupported', undefined, {
+      source: 'unsupported-entities'
+    })
 
     expect(store.notifications).toHaveLength(1)
     expect(store.notifications[0].title).toBe('B unsupported')
@@ -75,6 +77,57 @@ describe('AcApNotificationStore (per-session)', () => {
   it('ignores add when no active session and no sessionId', () => {
     const store = new AcApNotificationStore()
     expect(store.info('orphan')).toBe('')
+    expect(store.notifications).toHaveLength(0)
+  })
+
+  it('keeps shared font warnings when switching and closing documents', () => {
+    const store = new AcApNotificationStore()
+    const font = store.warning('Missing face', undefined, {
+      source: 'font-missed',
+      fontNames: ['missing'],
+      sessionId: null
+    })
+    expect(font).not.toBe('')
+    store.setActiveSession('doc-1')
+    const document = store.warning('Unsupported object')
+    store.setActiveSession('doc-2')
+    expect(store.notifications.map(n => n.id)).toEqual([font])
+    store.clearSession('doc-1')
+    expect(store.notifications.map(n => n.id)).toEqual([font])
+    store.setActiveSession(null)
+    expect(store.notifications.map(n => n.id)).toEqual([font])
+    expect(store.notifications.find(n => n.id === document)).toBeUndefined()
+  })
+
+  it('resolves runtime font warnings without clearing parked document alerts', () => {
+    const store = new AcApNotificationStore()
+    store.setActiveSession('doc-1')
+    store.warning('Document alert')
+    store.warning('Missing face', undefined, {
+      source: 'font-missed',
+      fontNames: ['missing'],
+      sessionId: null
+    })
+    store.setActiveSession('doc-2')
+    store.removeResolvedFontMissedNotifications([])
+    expect(store.notifications).toHaveLength(0)
+    store.setActiveSession('doc-1')
+    expect(store.notifications.map(n => n.title)).toEqual(['Document alert'])
+  })
+
+  it('dismisses visible runtime alerts while preserving other documents', () => {
+    const store = new AcApNotificationStore()
+    store.setActiveSession('parked')
+    store.info('Keep')
+    store.setActiveSession('active')
+    store.info('Dismiss document')
+    store.info('Dismiss runtime', undefined, { sessionId: null })
+    store.clear()
+    expect(store.notifications).toHaveLength(0)
+    store.setActiveSession('parked')
+    expect(store.notifications.map(n => n.title)).toEqual(['Keep'])
+    store.info('Runtime', undefined, { sessionId: null })
+    store.dispose()
     expect(store.notifications).toHaveLength(0)
   })
 })
@@ -240,4 +293,3 @@ describe('acapResolveUnsupportedEntitiesMessage', () => {
     ).toBe('PROXY:4')
   })
 })
-

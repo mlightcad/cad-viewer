@@ -25,7 +25,7 @@ Key points:
 
 - **The bridge only writes to the Center; it does not draw UI.** Swapping UI does not require re-subscribing to `eventBus`.
 - **The Center is a singleton slot.** Switch it with `acapSetNotificationCenter`; pass `null` to restore the built-in implementation.
-- **Notifications are per document session (MDI).** Each entry is tagged with `sessionId` (`AcApDocSession.id`). `notifications` / `unreadCount` reflect the **active** session only.
+- **Document and runtime ownership are explicit.** An omitted `sessionId` selects the active document; `sessionId: null` selects the shared runtime. Lists/counts combine runtime entries with the active document. Font events use the runtime because shared workers do not identify a source document; switching or closing a document does not clear those warnings.
 - **Default chrome is canvas-relative**, not viewport-relative. The bell mounts on the view container (`curView.container`) unless you pass another `host`.
 - **Default DOM UI is `AcUi*`** (`src/ui/AcUiDefaultNotificationUi.ts`); the store / bridge / service stay `AcAp*` under `src/app/notification`.
 - **Copy uses `AcApI18n`.** If the host has its own i18n, keep `AcApI18n.setCurrentLocale` in sync, or localize inside your custom Center.
@@ -72,7 +72,7 @@ acapSetNotificationCenter(null)     // restore built-in store + default UI (if e
 
 ### 2.2 Default DOM UI (automatic)
 
-`AcUiDefaultNotificationUi` ties chrome visibility to the **active session’s** notification list:
+`AcUiDefaultNotificationUi` ties chrome visibility to the visible runtime and active-session notification list:
 
 | State | Bell | Panel | Backdrop (phone / pad) |
 |---|---|---|---|
@@ -92,10 +92,10 @@ There is no separate “force show empty panel” mode in the built-in UI.
 
 Mutations that empty the active list hide the default UI:
 
-- `clear()` — active session only
+- `clear()` — dismisses runtime and active-session entries, preserving parked documents
 - `remove(id)` / `removeWhere` / `removeBySource`
 - `clearSession(sessionId)` — when closing a document (bridge calls this on `documentToBeDestroyed`)
-- Switching sessions via `setActiveSession` — UI follows the **new** active list (may appear empty even if another tab still has messages)
+- Switching sessions via `setActiveSession` — UI follows the new active list while retaining runtime entries
 
 Custom Centers should drive their own show/hide from `subscribe` / reactive `notifications` (for example hide a status-bar badge when `unreadCount === 0`).
 
@@ -146,145 +146,23 @@ acapSetNotificationUiPlacement(null) // restore layout defaults
 
 ### 4.1 Interface
 
-Your object must implement `AcApNotificationCenter` (core methods):
+Reuse `AcApNotificationStore` and subscribe your UI to its visible list. It already
+implements document/runtime ownership, dismissal, missing-font resolution and
+cleanup; hosts should not maintain a second copy of those rules.
 
 ```ts
-import type {
-  AcApNotification,
-  AcApNotificationCenter,
-  AcApNotificationInput,
-  AcApNotificationSource
-} from '@mlightcad/cad-simple-viewer'
+import { AcApNotificationStore } from '@mlightcad/cad-simple-viewer'
 
-class MyNotificationCenter implements AcApNotificationCenter {
-  private buckets = new Map<string, AcApNotification[]>()
-  private activeSessionId: string | null = null
-  private nextId = 1
-  private listeners = new Set<() => void>()
-
-  private activeList() {
-    if (this.activeSessionId == null) return []
-    return this.buckets.get(this.activeSessionId) ?? []
-  }
-
-  get notifications() {
-    return this.activeList()
-  }
-
-  get unreadCount() {
-    return this.activeList().length
-  }
-
-  setActiveSession(sessionId: string | null) {
-    this.activeSessionId = sessionId
-    this.emit()
-  }
-
-  clearSession(sessionId: string) {
-    this.buckets.delete(sessionId)
-    this.emit()
-  }
-
-  add(notification: AcApNotificationInput): string {
-    const sessionId = notification.sessionId ?? this.activeSessionId
-    if (sessionId == null) return ''
-
-    const entry: AcApNotification = {
-      ...notification,
-      sessionId,
-      id: `n-${this.nextId++}`,
-      timestamp: new Date()
-    }
-    const list = this.buckets.get(sessionId) ?? []
-    this.buckets.set(sessionId, [entry, ...list])
-    this.emit()
-    // Update your UI / toast here
-    return entry.id
-  }
-
-  info(title: string, message?: string, options?: Partial<AcApNotification>) {
-    return this.add({ type: 'info', title, message, ...options })
-  }
-
-  warning(title: string, message?: string, options?: Partial<AcApNotification>) {
-    return this.add({ type: 'warning', title, message, ...options })
-  }
-
-  error(title: string, message?: string, options?: Partial<AcApNotification>) {
-    return this.add({
-      type: 'error',
-      title,
-      message,
-      persistent: true,
-      ...options
-    })
-  }
-
-  success(title: string, message?: string, options?: Partial<AcApNotification>) {
-    return this.add({ type: 'success', title, message, ...options })
-  }
-
-  remove(id: string) {
-    for (const [sessionId, list] of this.buckets) {
-      const next = list.filter(n => n.id !== id)
-      if (next.length === list.length) continue
-      if (next.length === 0) this.buckets.delete(sessionId)
-      else this.buckets.set(sessionId, next)
-      this.emit()
-      return
-    }
-  }
-
-  clear() {
-    if (this.activeSessionId == null) return
-    this.buckets.delete(this.activeSessionId)
-    this.emit()
-  }
-
-  removeWhere(predicate: (n: AcApNotification) => boolean) {
-    if (this.activeSessionId == null) return
-    const list = this.activeList()
-    const next = list.filter(n => !predicate(n))
-    if (next.length === list.length) return
-    if (next.length === 0) this.buckets.delete(this.activeSessionId)
-    else this.buckets.set(this.activeSessionId, next)
-    this.emit()
-  }
-
-  removeBySource(source: AcApNotificationSource) {
-    this.removeWhere(n => n.source === source)
-  }
-
-  removeResolvedFontMissedNotifications(missedFontNames: Iterable<string>) {
-    const missed = new Set(missedFontNames)
-    this.removeWhere(n => {
-      if (n.source !== 'font-missed') return false
-      if (missed.size === 0) return true
-      if (!n.fontNames?.length) return false
-      return !n.fontNames.some(name => missed.has(name))
-    })
-  }
-
-  subscribe(listener: () => void) {
-    this.listeners.add(listener)
-    return () => this.listeners.delete(listener)
-  }
-
-  dispose() {
-    this.listeners.clear()
-    this.buckets.clear()
-    this.activeSessionId = null
-  }
-
-  private emit() {
-    for (const listener of this.listeners) listener()
-  }
+class MyNotificationCenter extends AcApNotificationStore {
+  // Connect subscribe() to your UI lifecycle and render notifications/unreadCount.
 }
 ```
 
-Implement `subscribe` / `dispose` when possible so UI can observe list changes and resources are released when the Center is swapped.
-
-`setActiveSession` / `clearSession` are **required**: the event bridge calls them on document activate / close so MDI tabs keep separate notification lists.
+A custom implementation of `AcApNotificationCenter` must honor explicit
+`sessionId: null` runtime entries. `clearSession(id)` removes only that document;
+`clear()` dismisses the currently visible runtime/document entries. `dispose()`
+releases every bucket and subscription. Runtime font warnings describe unavailable
+faces, not per-document object counts.
 
 ### 4.2 When to register
 

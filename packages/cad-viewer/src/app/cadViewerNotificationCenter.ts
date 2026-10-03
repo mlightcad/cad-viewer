@@ -22,13 +22,13 @@ export function createCadViewerNotificationCenterAdapter(): AcApNotificationCent
 
   return {
     /**
-     * Active-session notifications from the Vue store.
+     * Visible runtime and active-document notifications from the Vue store.
      */
     get notifications() {
       return vue.notifications.value
     },
     /**
-     * Active-session unread count from the Vue store.
+     * Visible runtime and active-document unread count from the Vue store.
      */
     get unreadCount() {
       return vue.unreadCount.value
@@ -83,7 +83,7 @@ export function createCadViewerNotificationCenterAdapter(): AcApNotificationCent
       vue.remove(id)
     },
     /**
-     * Clears the active session's notifications.
+     * Dismisses visible runtime and active-document notifications.
      */
     clear() {
       vue.clear()
@@ -95,7 +95,7 @@ export function createCadViewerNotificationCenterAdapter(): AcApNotificationCent
       vue.removeWhere(predicate as (n: AcApNotification) => boolean)
     },
     /**
-     * @param source - Producer to clear from the active session.
+     * @param source - Producer to clear from visible runtime/document entries.
      */
     removeBySource(source: AcApNotificationSource) {
       vue.removeBySource(source)

@@ -1,8 +1,10 @@
-import type { AcDbParsingTaskStats, AcDbProgressdEventArgs } from '@mlightcad/data-model'
+import type {
+  AcDbParsingTaskStats,
+  AcDbProgressdEventArgs
+} from '@mlightcad/data-model'
 
 import { eventBus } from '../../editor/global/eventBus'
 import { acapAnalyzeUnsupportedDrawing } from '../../util/AcApAnalyzeUnsupportedDrawing'
-import { AcApFontUtil } from '../../util/AcApFontUtil'
 import { acapFormatFontsMissedReplacement } from '../../util/AcApFormatFontMissedMessage'
 import {
   acapFormatUnsupportedEntitiesMessage,
@@ -13,10 +15,7 @@ import {
   acapFormatOpenFileErrorTitle,
   type AcApOpenFileErrorParams
 } from '../../util/AcApOpenFileErrorMessage'
-import type {
-  AcApDocManager,
-  AcDbDocumentEventArgs
-} from '../AcApDocManager'
+import type { AcApDocManager, AcDbDocumentEventArgs } from '../AcApDocManager'
 import type { AcApNotificationCenter } from './AcApNotificationTypes'
 
 /**
@@ -24,7 +23,8 @@ import type { AcApNotificationCenter } from './AcApNotificationTypes'
  * {@link AcApNotificationCenter}.
  *
  * Shared by the built-in DOM center and host overrides (e.g. cad-viewer).
- * Notifications are tagged with the current {@link AcApDocSession.id}.
+ * Document notifications use the current session; font-catalogue notifications
+ * belong to the shared rendering runtime, including late worker font events.
  */
 export class AcApNotificationEventBridge {
   /** Document manager whose lifecycle events drive session scoping. */
@@ -118,7 +118,7 @@ export class AcApNotificationEventBridge {
       acapI18nTranslate('main.message.fontsNotLoaded', {
         fonts: acapFormatFontsMissedReplacement(fontNames)
       }),
-      { source: 'font-missed', fontNames, persistent: true, ...this.sessionOptions() }
+      { source: 'font-missed', fontNames, persistent: true, sessionId: null }
     )
   }
 
@@ -133,12 +133,13 @@ export class AcApNotificationEventBridge {
       acapI18nTranslate('main.message.fontsNotFound', {
         fonts: acapFormatFontsMissedReplacement(params.fonts)
       }),
-      { source: 'font-missed', fontNames: params.fonts, ...this.sessionOptions() }
+      { source: 'font-missed', fontNames: params.fonts, sessionId: null }
     )
   }
 
   /**
-   * Handles a single font required by the drawing that is unavailable at render time.
+   * Handles a font unavailable in the shared runtime. Worker events have no
+   * document identity, so their counters must not be presented as drawing counts.
    *
    * Replaces any prior `font-missed` entry for the same font name.
    *
@@ -158,12 +159,10 @@ export class AcApNotificationEventBridge {
     )
     center.warning(
       acapI18nTranslate('main.notification.title.fontNotFound'),
-      acapI18nTranslate('main.message.fontMissedInDrawing', {
-        font: fontName,
-        count: params.count,
-        replacementFont: AcApFontUtil.getReplacementFontName(fontName)
+      acapI18nTranslate('main.message.fontsNotFound', {
+        fonts: acapFormatFontsMissedReplacement([fontName])
       }),
-      { source: 'font-missed', fontNames: [fontName], ...this.sessionOptions() }
+      { source: 'font-missed', fontNames: [fontName], sessionId: null }
     )
   }
 
@@ -171,9 +170,7 @@ export class AcApNotificationEventBridge {
    * Prunes resolved `font-missed` notifications when missed-data changes.
    */
   private readonly _onMissedDataChanged = () => {
-    const missedFonts = Object.keys(
-      this._docManager.curView.missedData.fonts
-    )
+    const missedFonts = Object.keys(this._docManager.curView.missedData.fonts)
     this._getCenter().removeResolvedFontMissedNotifications(missedFonts)
   }
 
@@ -188,7 +185,7 @@ export class AcApNotificationEventBridge {
       acapI18nTranslate('main.message.failedToGetAvaiableFonts', {
         url: params.url
       }),
-      this.sessionOptions()
+      { sessionId: null }
     )
   }
 
@@ -369,9 +366,13 @@ export class AcApNotificationEventBridge {
       ? (this._pendingUnknownBySession.get(sessionId) ?? 0)
       : 0
 
-    const classOnly = acapAnalyzeUnsupportedDrawing(doc.database, unknownCount, {
-      scanProxies: false
-    })
+    const classOnly = acapAnalyzeUnsupportedDrawing(
+      doc.database,
+      unknownCount,
+      {
+        scanProxies: false
+      }
+    )
     const analysis =
       classOnly.isTianzhengDrawing || classOnly.unknownEntityCount > 0
         ? classOnly

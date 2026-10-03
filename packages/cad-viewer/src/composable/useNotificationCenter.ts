@@ -4,8 +4,8 @@ import {
   type AcApNotification,
   type AcApNotificationAction,
   type AcApNotificationGroup,
-  type AcApNotificationSource
-} from '@mlightcad/cad-simple-viewer'
+  type AcApNotificationSource,
+  AcApNotificationStore} from '@mlightcad/cad-simple-viewer'
 import { computed, ref } from 'vue'
 
 /**
@@ -35,162 +35,37 @@ export function groupNotifications(
   return acapGroupNotifications(notifications)
 }
 
-/**
- * Singleton service that stores notifications **per document session** (MDI).
- *
- * {@link useNotificationCenter} exposes only the active session's list as Vue
- * refs so the panel and status-bar badge update when switching documents.
- */
-class NotificationCenter {
-  private buckets = ref<Record<string, Notification[]>>({})
-  private activeSessionId = ref<string | null>(null)
-  private nextId = 1
+/** Vue reactivity over the native store's document/runtime ownership rules. */
+class NotificationCenter extends AcApNotificationStore {
+  private readonly revision = ref(0)
 
-  private listFor(sessionId: string | null): Notification[] {
-    if (sessionId == null) return []
-    return this.buckets.value[sessionId] ?? []
+  constructor() {
+    super()
+    this.observe()
   }
 
-  private setList(sessionId: string, list: Notification[]) {
-    const next = { ...this.buckets.value }
-    if (list.length === 0) {
-      delete next[sessionId]
-    } else {
-      next[sessionId] = list
-    }
-    this.buckets.value = next
+  private observe() {
+    this.subscribe(() => {
+      this.revision.value++
+    })
   }
 
-  get allNotifications() {
-    return computed(() => this.listFor(this.activeSessionId.value))
-  }
+  readonly allNotifications = computed(() => {
+    this.revision.value
+    return [...this.notifications]
+  })
+  readonly unreadCountRef = computed(() => this.allNotifications.value.length)
+  readonly hasNotifications = computed(() => this.unreadCountRef.value > 0)
 
-  get unreadCount() {
-    return computed(() => this.listFor(this.activeSessionId.value).length)
-  }
-
-  get hasNotifications() {
-    return computed(() => this.listFor(this.activeSessionId.value).length > 0)
-  }
-
-  setActiveSession(sessionId: string | null) {
-    this.activeSessionId.value = sessionId
-  }
-
-  clearSession(sessionId: string) {
-    if (!(sessionId in this.buckets.value)) return
-    const next = { ...this.buckets.value }
-    delete next[sessionId]
-    this.buckets.value = next
-  }
-
-  /**
-   * Clears every session bucket. Used when the viewer unmounts so a remount
-   * with reused session ids (e.g. `doc-1`) does not show stale alerts.
-   */
-  dispose() {
-    this.buckets.value = {}
-    this.activeSessionId.value = null
-    this.nextId = 1
-  }
-
-  add(notification: Omit<Notification, 'id' | 'timestamp'>) {
-    const sessionId = notification.sessionId ?? this.activeSessionId.value
-    if (sessionId == null) {
-      return ''
-    }
-
-    const newNotification: Notification = {
-      ...notification,
-      sessionId,
-      id: `notification-${this.nextId++}`,
-      timestamp: new Date()
-    }
-
-    this.setList(sessionId, [newNotification, ...this.listFor(sessionId)])
-    return newNotification.id
-  }
-
-  remove(id: string) {
-    for (const sessionId of Object.keys(this.buckets.value)) {
-      const list = this.buckets.value[sessionId]
-      const index = list.findIndex(n => n.id === id)
-      if (index < 0) continue
-      const next = list.slice()
-      next.splice(index, 1)
-      this.setList(sessionId, next)
-      return
-    }
-  }
-
-  clear() {
-    const sessionId = this.activeSessionId.value
-    if (sessionId == null) return
-    this.clearSession(sessionId)
+  override dispose() {
+    super.dispose()
+    this.revision.value++
+    // This application service survives viewer unmount/remount.
+    this.observe()
   }
 
   clearAll() {
     this.clear()
-  }
-
-  removeWhere(predicate: (notification: Notification) => boolean) {
-    const sessionId = this.activeSessionId.value
-    if (sessionId == null) return
-    const list = this.listFor(sessionId)
-    const next = list.filter(notification => !predicate(notification))
-    if (next.length === list.length) return
-    this.setList(sessionId, next)
-  }
-
-  removeBySource(source: NotificationSource) {
-    this.removeWhere(notification => notification.source === source)
-  }
-
-  removeResolvedFontMissedNotifications(missedFontNames: Iterable<string>) {
-    const missed = new Set(missedFontNames)
-    this.removeWhere(notification => {
-      if (notification.source !== 'font-missed') return false
-      if (missed.size === 0) return true
-      if (!notification.fontNames?.length) return false
-      return !notification.fontNames.some(fontName => missed.has(fontName))
-    })
-  }
-
-  info(title: string, message?: string, options?: Partial<Notification>) {
-    return this.add({
-      type: 'info',
-      title,
-      message,
-      ...options
-    })
-  }
-
-  warning(title: string, message?: string, options?: Partial<Notification>) {
-    return this.add({
-      type: 'warning',
-      title,
-      message,
-      ...options
-    })
-  }
-
-  error(title: string, message?: string, options?: Partial<Notification>) {
-    return this.add({
-      type: 'error',
-      title,
-      message,
-      persistent: true,
-      ...options
-    })
-  }
-
-  success(title: string, message?: string, options?: Partial<Notification>) {
-    return this.add({
-      type: 'success',
-      title,
-      message,
-      ...options
-    })
   }
 }
 
@@ -205,7 +80,7 @@ const notificationCenter = new NotificationCenter()
 export function useNotificationCenter() {
   return {
     notifications: notificationCenter.allNotifications,
-    unreadCount: notificationCenter.unreadCount,
+    unreadCount: notificationCenter.unreadCountRef,
     hasNotifications: notificationCenter.hasNotifications,
     setActiveSession:
       notificationCenter.setActiveSession.bind(notificationCenter),
