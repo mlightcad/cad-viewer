@@ -53,6 +53,8 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
   protected _colorSettings: ColorSettings
   /** Snapshot of color/layer traits used for rematerialization and unbatched drawables. */
   protected _entityTraits: AcTrMTextEntityTraits
+  private _drawGeneration = 0
+  private _disposed = false
 
   /**
    * Creates a glyph entity with shared trait and color state.
@@ -183,8 +185,9 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
    * No-op when the mtext-renderer has not been initialized yet.
    */
   override syncDraw(): void {
-    const mtextRenderer = AcTrMTextRenderer.getInstance()
-    if (!mtextRenderer) return
+    if (this._disposed || this.renderContext.isDisposed) return
+    this._drawGeneration++
+    const mtextRenderer = this.renderContext.mtextRenderer
 
     try {
       this._rendered = this.renderSync(mtextRenderer)
@@ -203,19 +206,44 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
    * No-op when the mtext-renderer has not been initialized yet.
    */
   override async asyncDraw() {
-    const mtextRenderer = AcTrMTextRenderer.getInstance()
-    if (!mtextRenderer) return
+    if (this._disposed || this.renderContext.isDisposed) return
+    const generation = ++this._drawGeneration
+    const mtextRenderer = this.renderContext.mtextRenderer
 
     try {
       this.clearRenderedGeometry()
-      this._rendered = await this.renderAsync(mtextRenderer)
-      this.attachRendered(this._rendered)
+      const rendered = await this.renderAsync(mtextRenderer)
+      if (
+        this._disposed ||
+        this.renderContext.isDisposed ||
+        generation !== this._drawGeneration
+      ) {
+        AcTrEntity.disposeObject(rendered)
+        return
+      }
+      this._rendered = rendered
+      this.attachRendered(rendered)
     } catch (error) {
+      if (
+        this._disposed ||
+        this.renderContext.isDisposed ||
+        generation !== this._drawGeneration
+      )
+        return
       log.info(
         `Failed to render ${this.describeRenderFailure()} with the following error:\n`,
         error
       )
     }
+  }
+
+  /** Invalidates in-flight font work before releasing the current geometry. */
+  override dispose(): void {
+    if (this._disposed) return
+    this._disposed = true
+    this._drawGeneration++
+    super.dispose()
+    this._rendered = undefined
   }
 
   /**

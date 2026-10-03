@@ -113,8 +113,6 @@ function pad(s: string, n: number) {
     const readMs = performance.now() - tRead0
     stageTimer.close(performance.now())
 
-    const cache = AcDbRenderingCache.instance
-    cache.clear()
     AcDbRenderingCache.resetProfile()
     AcDbRenderingCache.profiling = true
 
@@ -125,6 +123,7 @@ function pad(s: string, n: number) {
     } as unknown as THREE.WebGLRenderer
     const renderer = new AcTrRenderer(webgl)
     renderer.context.database = db
+    AcDbRenderingCache.forContext(renderer.context, db).invalidate()
 
     const byType = new Map<
       string,

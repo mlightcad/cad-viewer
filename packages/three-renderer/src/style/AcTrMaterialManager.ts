@@ -13,6 +13,7 @@ import {
   AcTrByLayerBindingFlags,
   getMaterialMetadata,
   hasByLayerBinding,
+  registerManagedMaterial,
   setMaterialMetadata
 } from './AcTrMaterialMetadata'
 import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
@@ -64,6 +65,7 @@ export abstract class AcTrMaterialManager<T> {
 
   /** Options shared with subclasses (viewport scale, zoom uniforms, etc.) */
   protected options: AcTrStyleManagerOptions
+  private disposed = false
 
   constructor(options: AcTrStyleManagerOptions) {
     this.options = options
@@ -104,6 +106,7 @@ export abstract class AcTrMaterialManager<T> {
     layerColorRgb?: number,
     layerColor?: AcCmColor
   ): THREE.Material {
+    if (this.disposed) throw new Error('Material scope is disposed')
     const key = this.buildKey(traits, options)
 
     // cache original traits
@@ -126,8 +129,7 @@ export abstract class AcTrMaterialManager<T> {
         typeof layerColorRgb === 'number' &&
         getMaterialMetadata(cached).isForeground !== true
       ) {
-        const swatch =
-          layerColor ?? new AcCmColor().setRGBValue(layerColorRgb)
+        const swatch = layerColor ?? new AcCmColor().setRGBValue(layerColorRgb)
         this.refreshMaterialResolvedColor(cached, { color: swatch })
       }
       return cached
@@ -290,6 +292,8 @@ export abstract class AcTrMaterialManager<T> {
    * Clears all cached materials.
    */
   dispose(): void {
+    if (this.disposed) return
+    this.disposed = true
     Object.values(this.cache).forEach(m => m.dispose())
     this.cache = {}
     this.keyToTraits = {}
@@ -328,7 +332,7 @@ export abstract class AcTrMaterialManager<T> {
   ): THREE.Material | undefined {
     const metadata = getMaterialMetadata(material)
     const key = metadata.materialKey
-    if (!key) return undefined
+    if (!key || this.cache[key] !== material) return undefined
 
     const traits = this.keyToTraits[key]
     if (!traits) return undefined
@@ -563,6 +567,7 @@ export abstract class AcTrMaterialManager<T> {
     })
 
     this.cache[key] = material
+    registerManagedMaterial(material)
     return material
   }
 

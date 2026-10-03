@@ -26,12 +26,41 @@ jest.mock('@mlightcad/mtext-renderer', () => ({
 }))
 
 import { AcTrMTextRenderer } from '../src/renderer/AcTrMTextRenderer'
+import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
 
 describe('AcTrMTextRenderer', () => {
   beforeEach(() => {
     ;(AcTrMTextRenderer as unknown as { _instance: unknown })._instance = null
     mockRendererInstances.length = 0
     mockUnifiedRenderer.mockClear()
+  })
+
+  it('creates lazy isolated text pipelines without replacing host materials', async () => {
+    const host = AcTrMTextRenderer.getInstance()
+    host.setRenderMode('main')
+    host.setFontUrl('https://cdn.example.com/fonts/')
+    host.overrideStyleManager(new AcTrStyleManager())
+    host.initialize()
+    const original = mockRendererInstances[0]
+
+    const first = host.createScope(new AcTrStyleManager())
+    const second = host.createScope(new AcTrStyleManager())
+    expect(mockRendererInstances).toHaveLength(1)
+    await first.loadFonts(['txt.shx'])
+    await second.loadFonts(['txt.shx'])
+    expect(mockRendererInstances).toHaveLength(3)
+    expect(original.setStyleManager).toHaveBeenCalledTimes(1)
+    expect(mockRendererInstances[1].setFontUrl).toHaveBeenCalledWith(
+      'https://cdn.example.com/fonts/'
+    )
+    expect(mockRendererInstances[1].setStyleManager.mock.calls[0][0]).not.toBe(
+      mockRendererInstances[2].setStyleManager.mock.calls[0][0]
+    )
+    first.dispose()
+    expect(mockRendererInstances[1].destroy).toHaveBeenCalledTimes(1)
+    expect(original.destroy).not.toHaveBeenCalled()
+    expect(mockRendererInstances[2].destroy).not.toHaveBeenCalled()
+    second.dispose()
   })
 
   it('applies a custom font URL to the renderer when initialized later', () => {
@@ -149,7 +178,9 @@ describe('AcTrMTextRenderer', () => {
     const renderer = AcTrMTextRenderer.getInstance()
     renderer.initialize('./assets/mtext-renderer-worker.js')
 
-    const first = await renderer.loadFonts(['simsun', 'hztxt'], { scope: 'one' })
+    const first = await renderer.loadFonts(['simsun', 'hztxt'], {
+      scope: 'one'
+    })
     expect(first).toEqual(['simsun', 'hztxt'])
     expect(mockRendererInstances[0].loadFonts).toHaveBeenCalledTimes(1)
     expect(mockRendererInstances[0].loadFonts).toHaveBeenCalledWith(

@@ -1,5 +1,18 @@
 import * as THREE from 'three'
 
+/** Ownership cannot live in userData: material clones copy that metadata. */
+const managedMaterials = new WeakSet<THREE.Material>()
+
+/** Registers a material owned by a style manager or drawing resource scope. */
+export function registerManagedMaterial(material: THREE.Material): void {
+  managedMaterials.add(material)
+}
+
+/** Entity disposal releases geometry, but must leave borrowed materials alone. */
+export function isManagedMaterial(material: THREE.Material): boolean {
+  return managedMaterials.has(material)
+}
+
 /**
  * Immutable ByLayer binding semantics carried with a cached material.
  *

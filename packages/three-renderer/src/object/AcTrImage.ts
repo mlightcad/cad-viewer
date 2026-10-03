@@ -1,11 +1,13 @@
 import {
   acdbOleBlobNeedsMetafileRasterization,
   acdbRasterizeOleMetafile,
-  AcGiImageStyle} from '@mlightcad/data-model'
+  AcGiImageStyle
+} from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
+import { registerManagedMaterial } from '../style/AcTrMaterialMetadata'
 import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import { AcTrEntity } from './AcTrEntity'
 
@@ -31,6 +33,7 @@ export class AcTrImage extends AcTrEntity {
 
     const shape = new THREE.Shape(style.boundary as unknown as THREE.Vector2[])
     const geometry = new THREE.ShapeGeometry(shape)
+    context.ownResource(geometry)
     this.generateUVs(geometry)
 
     // Spatial pick / box selection index entities via wcsBbox. Without this,
@@ -48,6 +51,8 @@ export class AcTrImage extends AcTrEntity {
       opacity: 0,
       depthWrite: false
     })
+    registerManagedMaterial(this._material)
+    context.ownResource(this._material)
 
     this._mesh = new THREE.Mesh(geometry, this._material)
     this.add(this._mesh)
@@ -104,23 +109,32 @@ export class AcTrImage extends AcTrEntity {
   }
 
   private loadRasterTexture(blob: Blob): Promise<void> {
+    if (this.renderContext.isDisposed) return Promise.resolve()
     return new Promise(resolve => {
       const blobUrl = URL.createObjectURL(blob)
+      let revoked = false
+      const revokeUrl = () => {
+        if (revoked) return
+        revoked = true
+        URL.revokeObjectURL(blobUrl)
+      }
+      this.renderContext.ownResource({ dispose: revokeUrl })
       const textureLoader = new THREE.TextureLoader()
       const texture = textureLoader.load(
         blobUrl,
         () => {
-          URL.revokeObjectURL(blobUrl)
+          revokeUrl()
           this.applyTexture(texture)
           resolve()
         },
         undefined,
         () => {
-          URL.revokeObjectURL(blobUrl)
+          revokeUrl()
           this._textureReady = true
           resolve()
         }
       )
+      this.renderContext.ownResource(texture)
       texture.colorSpace = THREE.SRGBColorSpace
     })
   }
@@ -133,6 +147,7 @@ export class AcTrImage extends AcTrEntity {
         maxHeight: 4096,
         dpiScale: 1
       })
+      if (this.renderContext.isDisposed) return
       if (!png) {
         this._textureReady = true
         return
@@ -146,6 +161,7 @@ export class AcTrImage extends AcTrEntity {
   }
 
   private applyTexture(texture: THREE.Texture) {
+    if (this.renderContext.isDisposed) return
     this._material.map = texture
     this._material.opacity = 1
     this._material.transparent = true
@@ -158,8 +174,8 @@ export class AcTrImage extends AcTrEntity {
    * Convert-time entities are disposed immediately after
    * {@link AcTrBatchedGroup.addEntity} clones the textured leaf into the scene.
    * Default {@link AcTrEntity.dispose} frees material.map and would blank the
-   * scene copy when the clone still shares that texture — skip releasing the
-   * mesh resources here.
+   * scene copy when the clone still shares that texture. The source context
+   * owns the original geometry, material and texture until all layouts detach.
    */
   override dispose() {
     this.removeFromParent()

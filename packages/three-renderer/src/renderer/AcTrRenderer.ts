@@ -1,5 +1,7 @@
 import {
   AcCmEventManager,
+  AcDbDatabase,
+  AcDbRenderingCache,
   acdbDrawTessellateOptions,
   AcGeArea2d,
   AcGeCircArc3d,
@@ -36,6 +38,7 @@ import {
 } from '../object'
 import { buildOffsetRingDirectGeometry } from '../object/AcTrLineGeometryBuilder'
 import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
+import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport/AcTrCamera'
 import {
@@ -60,6 +63,13 @@ export interface AcTrFontNotFoundEventArgs {
   fontName: string
   /** Number of characters using this font; set when the font is missing. */
   count?: number
+}
+
+declare const resourceScopeBrand: unique symbol
+
+/** Opaque ownership handle used when a document's scene is parked. */
+export interface AcTrRendererResourceScope {
+  readonly [resourceScopeBrand]: true
 }
 
 /**
@@ -202,6 +212,24 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * view clears / starts a new convert.
    */
   private _drawOrderZ = 0
+  private readonly _referenceRenderers = new Set<AcTrRenderer>()
+  private _parentRenderer?: AcTrRenderer
+  private _disposed = false
+  private readonly _resourceScopes = new Map<
+    AcTrRendererResourceScope,
+    {
+      context: AcTrRenderContext
+      drawOrderZ: number
+    }
+  >()
+  private _activeResourceScope = {} as AcTrRendererResourceScope
+  private readonly _lineResolution = new THREE.Vector2()
+  private readonly _fontNotFoundHandler = (args: AcTrFontNotFoundEventArgs) => {
+    this.events.fontNotFound.dispatch(args)
+  }
+  private readonly _fontLoadedHandler = (args: AcTrFontNotFoundEventArgs) => {
+    this.events.fontLoaded.dispatch(args)
+  }
 
   public readonly events: {
     fontNotFound: AcCmEventManager<AcTrFontNotFoundEventArgs>
@@ -211,21 +239,105 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     fontLoaded: new AcCmEventManager<AcTrFontNotFoundEventArgs>()
   }
 
-  constructor(renderer: THREE.WebGLRenderer) {
+  constructor(renderer: THREE.WebGLRenderer, context?: AcTrRenderContext) {
     this._renderer = renderer
-    this._context = new AcTrRenderContext()
+    if (!context) {
+      const styles = new AcTrStyleManager()
+      const text = AcTrMTextRenderer.getInstance().createScope(styles)
+      context = new AcTrRenderContext(styles, undefined, text)
+      context.ownResource(text)
+    }
+    this._context = context
+    this._resourceScopes.set(this._activeResourceScope, {
+      context,
+      drawOrderZ: 0
+    })
     const size = renderer.getSize(new THREE.Vector2())
+    this._lineResolution.copy(size)
     this._context.styleManager.updateLineResolution(size.x, size.y)
-    AcTrMTextRenderer.getInstance().overrideStyleManager(
-      this._context.styleManager
+    this._context.mtextRenderer.overrideStyleManager(this._context.styleManager)
+    FontManager.instance.events.fontNotFound.addEventListener(
+      this._fontNotFoundHandler
     )
-    FontManager.instance.events.fontNotFound.addEventListener(args => {
-      this.events.fontNotFound.dispatch(args)
-    })
-    FontManager.instance.events.fontLoaded.addEventListener(args => {
-      this.events.fontLoaded.dispatch(args)
-    })
+    FontManager.instance.events.fontLoaded.addEventListener(
+      this._fontLoadedHandler
+    )
     this._subEntityTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+  }
+
+  /**
+   * Independent conversion resources for one reference database. Only WebGL,
+   * the camera uniforms and application font files are shared with the host.
+   * Clear the reference layout before disposing this renderer.
+   */
+  createReferenceRenderer(database: AcDbDatabase): AcTrRenderer {
+    this.assertActive()
+    const styles = new AcTrStyleManager()
+    Object.assign(styles.options, this.styleManager.options, {
+      resolution: this.styleManager.options.resolution.clone(),
+      ltscale: database.ltscale,
+      celtscale: database.celtscale,
+      showLineWeight: database.lwdisplay
+    })
+    const context = new AcTrRenderContext(
+      styles,
+      this.batchDrawPolicy,
+      AcTrMTextRenderer.getInstance().createScope(styles)
+    )
+    context.ownResource(context.mtextRenderer)
+    context.database = database
+    const renderer = new AcTrRenderer(this._renderer, context)
+    renderer._parentRenderer = this
+    renderer.updateLineResolution(
+      this._lineResolution.x,
+      this._lineResolution.y
+    )
+    this._referenceRenderers.add(renderer)
+    return renderer
+  }
+
+  /** Captures ownership without releasing any scene resources. */
+  captureResourceScope(): AcTrRendererResourceScope {
+    this.assertActive()
+    const owned = this._resourceScopes.get(this._activeResourceScope)
+    if (!owned) throw new Error('The active resource scope has been released')
+    owned.drawOrderZ = this._drawOrderZ
+    return this._activeResourceScope
+  }
+
+  /** Starts a new host document while retaining the parked document's resources. */
+  beginResourceScope(): void {
+    this.assertHostScope()
+    if (this._resourceScopes.has(this._activeResourceScope))
+      this.captureResourceScope()
+    const context = this.createHostContext()
+    this._activeResourceScope = {} as AcTrRendererResourceScope
+    this._resourceScopes.set(this._activeResourceScope, {
+      context,
+      drawOrderZ: 0
+    })
+    this.activateContext(context, 0)
+  }
+
+  /** Restores only a live scope belonging to this renderer. */
+  restoreResourceScope(scope: AcTrRendererResourceScope): void {
+    this.assertHostScope()
+    const owned = this._resourceScopes.get(scope)
+    if (!owned)
+      throw new Error('Resource scope does not belong to this renderer')
+    if (this._resourceScopes.has(this._activeResourceScope))
+      this.captureResourceScope()
+    this._activeResourceScope = scope
+    this.activateContext(owned.context, owned.drawOrderZ)
+  }
+
+  /** Releases a document after its scene has been detached and cleared. */
+  releaseResourceScope(scope: AcTrRendererResourceScope): void {
+    this.assertHostScope()
+    const owned = this._resourceScopes.get(scope)
+    if (!owned) return
+    this._resourceScopes.delete(scope)
+    this.releaseContext(owned.context)
   }
 
   /**
@@ -312,6 +424,9 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   get subEntityTraits() {
+    this.assertActive()
+    if (this._context.isDisposed)
+      throw new Error('Drawing resource scope is disposed')
     return this._subEntityTraits
   }
 
@@ -323,6 +438,9 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * sync is required when the canvas background changes.
    */
   get context(): AcTrRenderContext {
+    this.assertActive()
+    if (this._context.isDisposed)
+      throw new Error('Drawing resource scope is disposed')
     this._context.syncBackgroundColor(
       this._context.styleManager.currentBackgroundColor
     )
@@ -352,14 +470,18 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
 
   setSize(width: number, height: number) {
     this._renderer.setSize(width, height)
-    this._context.styleManager.updateLineResolution(width, height)
+    this.updateLineResolution(width, height)
   }
 
   /**
    * Updates wide-line shader resolution without resizing the canvas.
    */
   updateLineResolution(width: number, height: number) {
+    this._lineResolution.set(width, height)
     this._context.styleManager.updateLineResolution(width, height)
+    for (const renderer of this._referenceRenderers) {
+      renderer.updateLineResolution(width, height)
+    }
   }
 
   /**
@@ -420,6 +542,9 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    */
   changeBackground(color: number) {
     this._context.styleManager.changeBackground(color)
+    for (const renderer of this._referenceRenderers) {
+      renderer.changeBackground(color)
+    }
   }
 
   /**
@@ -435,6 +560,9 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
   set currentBackgroundColor(value: number) {
     this._context.styleManager.currentBackgroundColor = value
+    for (const renderer of this._referenceRenderers) {
+      renderer.currentBackgroundColor = value
+    }
   }
 
   /**
@@ -866,11 +994,93 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
-   * Clears all cached materials and releases its memory
+   * Replaces scene resources while retaining the host document binding for REGEN.
+   * Old contexts remain invalid so deferred glyphs cannot populate the new scene.
+   * The caller must first detach and clear its layouts.
    */
-  dispose() {
-    this._context.styleManager.dispose()
+  resetResources() {
+    this.assertHostScope()
+    const database = this._context.database
+    const oldScope = this._activeResourceScope
+    this.beginResourceScope()
+    this._context.database = database
+    this.releaseResourceScope(oldScope)
     this.clearMissedFonts()
+  }
+
+  /** Releases only owned conversion resources, never the borrowed WebGL renderer. */
+  dispose() {
+    if (this._disposed) return
+    this._disposed = true
+    for (const renderer of this._referenceRenderers) renderer.dispose()
+    this._referenceRenderers.clear()
+    for (const { context } of this._resourceScopes.values()) {
+      this.releaseContext(context)
+    }
+    this._resourceScopes.clear()
+    this.resetConversionState()
+    FontManager.instance.events.fontNotFound.removeEventListener(
+      this._fontNotFoundHandler
+    )
+    FontManager.instance.events.fontLoaded.removeEventListener(
+      this._fontLoadedHandler
+    )
+    if (this._parentRenderer) {
+      this._parentRenderer._referenceRenderers.delete(this)
+    }
+  }
+
+  private createHostContext(): AcTrRenderContext {
+    const styles = new AcTrStyleManager()
+    Object.assign(styles.options, this.styleManager.options, {
+      resolution: this.styleManager.options.resolution.clone()
+    })
+    const text = AcTrMTextRenderer.getInstance().createScope(styles)
+    const context = new AcTrRenderContext(styles, this.batchDrawPolicy, text)
+    context.ownResource(text)
+    return context
+  }
+
+  private activateContext(
+    context: AcTrRenderContext,
+    drawOrderZ: number
+  ): void {
+    this._context = context
+    this.resetConversionState()
+    this._drawOrderZ = drawOrderZ
+    this._subEntityTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    context.styleManager.updateLineResolution(
+      this._lineResolution.x,
+      this._lineResolution.y
+    )
+    context.mtextRenderer.overrideStyleManager(context.styleManager)
+  }
+
+  private releaseContext(context: AcTrRenderContext): void {
+    context.dispose()
+    AcDbRenderingCache.releaseContext(context)
+    context.styleManager.dispose()
+  }
+
+  private resetConversionState(): void {
+    this.cancelDirectCapture()
+    this._directCapturePlaceholder = null
+    this._lineVertexBuilders.length = 0
+    this._blockLineCoalesceDepth = 0
+    this.resetDrawOrderZ()
+  }
+
+  private assertHostScope(): void {
+    this.assertActive()
+    if (this._parentRenderer) {
+      throw new Error(
+        'Reference renderers have one resource scope and must be disposed'
+      )
+    }
+  }
+
+  private assertActive() {
+    if (this._disposed) throw new Error('Renderer is disposed')
   }
 
   private linePoints(points: AcGePoint3dLike[]) {

@@ -11,6 +11,8 @@ import {
   alwaysBatchDrawPolicy
 } from '../draw/AcTrBatchDrawPolicy'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
+import { AcTrMTextRenderer } from './AcTrMTextRenderer'
+import { claimContextResource } from './AcTrResourceOwnership'
 
 /**
  * Per-renderer shared services passed into drawable objects during conversion.
@@ -28,7 +30,11 @@ import { AcTrStyleManager } from '../style/AcTrStyleManager'
  */
 export class AcTrRenderContext extends AcGiContext {
   readonly styleManager: AcTrStyleManager
+  readonly mtextRenderer: AcTrMTextRenderer
   batchDrawPolicy: AcTrBatchDrawPolicy
+  /** Invalidates deferred geometry belonging to a released drawing scope. */
+  private _isDisposed = false
+  private readonly _resources = new Set<{ dispose(): void }>()
 
   /**
    * Database being drawn. Narrows {@link AcGiContext.database} from `unknown`
@@ -38,11 +44,35 @@ export class AcTrRenderContext extends AcGiContext {
 
   constructor(
     styleManager: AcTrStyleManager = new AcTrStyleManager(),
-    batchDrawPolicy: AcTrBatchDrawPolicy = alwaysBatchDrawPolicy
+    batchDrawPolicy: AcTrBatchDrawPolicy = alwaysBatchDrawPolicy,
+    mtextRenderer: AcTrMTextRenderer = AcTrMTextRenderer.getInstance()
   ) {
     super()
     this.styleManager = styleManager
+    this.mtextRenderer = mtextRenderer
     this.batchDrawPolicy = batchDrawPolicy
+  }
+
+  get isDisposed(): boolean {
+    return this._isDisposed
+  }
+
+  /** Resources borrowed by scene clones remain owned by their source context. */
+  ownResource(resource: { dispose(): void }): void {
+    if (!claimContextResource(this, resource)) return
+    if (this._isDisposed) {
+      resource.dispose()
+    } else {
+      this._resources.add(resource)
+    }
+  }
+
+  /** Invalidates pending work and releases source-owned image resources once. */
+  dispose(): void {
+    if (this._isDisposed) return
+    this._isDisposed = true
+    for (const resource of this._resources) resource.dispose()
+    this._resources.clear()
   }
 
   /**

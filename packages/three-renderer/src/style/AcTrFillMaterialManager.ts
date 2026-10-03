@@ -122,7 +122,7 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
   getBackSideVariant(material: THREE.Material): THREE.Material {
     const metadata = getMaterialMetadata(material)
     const key = metadata.materialKey
-    if (!key) return material
+    if (!key || this.cache[key] !== material) return material
 
     // Already a back-side material — return as-is (idempotent).
     if (metadata.side === 'back') return material

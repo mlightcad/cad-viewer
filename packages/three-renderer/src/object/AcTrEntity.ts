@@ -3,7 +3,9 @@ import * as THREE from 'three'
 
 import type { AcTrBatchDrawPolicy } from '../draw/AcTrBatchDrawPolicy'
 import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
-import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
+import type { AcTrRenderContext } from '../renderer/AcTrRenderContext'
+import { isContextOwnedResource } from '../renderer/AcTrResourceOwnership'
+import { isManagedMaterial } from '../style/AcTrMaterialMetadata'
 import {
   AcTrMaterialUtil,
   AcTrMatrixUtil,
@@ -251,7 +253,11 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
       object instanceof THREE.Line ||
       object instanceof THREE.Points
     ) {
-      if (object.geometry && !sharesTemplateGeometry) {
+      if (
+        object.geometry &&
+        !sharesTemplateGeometry &&
+        !isContextOwnedResource(object.geometry)
+      ) {
         object.geometry.dispose()
       }
     }
@@ -268,21 +274,26 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
         ? object.material
         : [object.material]
       materials.forEach(material => {
+        if (isManagedMaterial(material)) return
         material.dispose()
         // Dispose textures (if any) used by the material
-        material.map?.dispose()
-        material.envMap?.dispose()
-        material.lightMap?.dispose()
-        material.bumpMap?.dispose()
-        material.normalMap?.dispose()
-        material.roughnessMap?.dispose()
-        material.metalnessMap?.dispose()
-        material.alphaMap?.dispose()
+        for (const texture of [
+          material.map,
+          material.envMap,
+          material.lightMap,
+          material.bumpMap,
+          material.normalMap,
+          material.roughnessMap,
+          material.metalnessMap,
+          material.alphaMap
+        ]) {
+          if (texture && !isContextOwnedResource(texture)) texture.dispose()
+        }
       })
     }
 
     // Step 4: Recursively dispose of all child objects
-    object.children.forEach(child => this.disposeObject(child))
+    for (const child of [...object.children]) this.disposeObject(child)
 
     // Step 5: Clean up references
     if ('geometry' in object) object.geometry = null // This clears the geometry reference

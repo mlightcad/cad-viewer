@@ -83,7 +83,8 @@ class AcTrMTextStyleManager implements StyleManager {
 }
 
 /**
- * Singleton class for managing MText rendering using WebWorkerRenderer
+ * CAD text renderer facade. The application singleton supplies font setup;
+ * drawing scopes own independent material reconstruction and worker state.
  */
 export class AcTrMTextRenderer {
   private static _instance: AcTrMTextRenderer | null = null
@@ -95,6 +96,7 @@ export class AcTrMTextRenderer {
   private _defaultFonts?: DefaultFontsPreset | string | readonly string[]
   private _lazyFontLoading?: boolean
   private _awaitFontsBeforeDraw?: boolean
+  private _configurationSource?: AcTrMTextRenderer
   /**
    * Fonts successfully pushed into the active worker pool (or main renderer)
    * via {@link loadFonts}. Cleared when the unified renderer is destroyed.
@@ -113,6 +115,18 @@ export class AcTrMTextRenderer {
       AcTrMTextRenderer._instance = new AcTrMTextRenderer()
     }
     return AcTrMTextRenderer._instance
+  }
+
+  /**
+   * Creates an independently disposable text/material pipeline using this
+   * renderer's font configuration. Font files remain shared through the font
+   * manager; worker state and reconstructed materials belong to the new scope.
+   */
+  createScope(styleManager: AcTrStyleManager): AcTrMTextRenderer {
+    const scope = new AcTrMTextRenderer()
+    scope._configurationSource = this
+    scope.overrideStyleManager(styleManager)
+    return scope
   }
 
   /**
@@ -136,6 +150,7 @@ export class AcTrMTextRenderer {
    * @param value - URL to load fonts
    */
   setFontUrl(value: string) {
+    this.inheritConfiguration()
     this._fontUrl = value
     void this.applyFontUrl()
   }
@@ -145,6 +160,7 @@ export class AcTrMTextRenderer {
    * @param mode - Render mode
    */
   setRenderMode(mode: RenderMode) {
+    this.inheritConfiguration()
     this._renderMode = mode
     if (this._renderer) {
       this._renderer.setDefaultMode(mode)
@@ -156,6 +172,7 @@ export class AcTrMTextRenderer {
    * Current MText render mode (`worker` by default until {@link setRenderMode}).
    */
   getRenderMode(): RenderMode {
+    this.inheritConfiguration()
     return this._renderMode ?? 'worker'
   }
 
@@ -168,6 +185,7 @@ export class AcTrMTextRenderer {
   async setDefaultFonts(
     fonts: DefaultFontsPreset | string | readonly string[]
   ): Promise<void> {
+    this.inheritConfiguration()
     this._defaultFonts = fonts
     await this.applyDefaultFonts()
   }
@@ -176,6 +194,7 @@ export class AcTrMTextRenderer {
    * Mirrors {@link FontManager.lazyFontLoading} onto the main thread and worker pool.
    */
   async setLazyFontLoading(enabled: boolean): Promise<void> {
+    this.inheritConfiguration()
     this._lazyFontLoading = enabled
     FontManager.instance.lazyFontLoading = enabled
     await this.applyLazyFontLoading()
@@ -186,6 +205,7 @@ export class AcTrMTextRenderer {
    * wait for referenced fonts before building glyph geometry.
    */
   async setAwaitFontsBeforeDraw(enabled: boolean): Promise<void> {
+    this.inheritConfiguration()
     this._awaitFontsBeforeDraw = enabled
     FontManager.instance.awaitFontsBeforeDraw = enabled
     await this.applyAwaitFontsBeforeDraw()
@@ -262,6 +282,7 @@ export class AcTrMTextRenderer {
     textStyle: TextStyle,
     colorSettings: ColorSettings = createDefaultColorSettings()
   ): Promise<MTextObject> {
+    this.ensureRendererCreated()
     if (!this._renderer) {
       throw new Error('AcTrMTextRenderer not initialized!')
     }
@@ -298,6 +319,7 @@ export class AcTrMTextRenderer {
     textStyle: TextStyle,
     colorSettings: ColorSettings = createDefaultColorSettings()
   ): Promise<MTextObject> {
+    this.ensureRendererCreated()
     if (!this._renderer) {
       throw new Error('AcTrMTextRenderer not initialized!')
     }
@@ -334,6 +356,7 @@ export class AcTrMTextRenderer {
    * @param workerUrl - URL to the worker script used when render mode is `worker`
    */
   initialize(workerUrl?: string | URL): void {
+    this.inheritConfiguration()
     if (workerUrl !== undefined) {
       this._workerUrl = workerUrl
     }
@@ -411,6 +434,9 @@ export class AcTrMTextRenderer {
     this._defaultFonts = undefined
     this._lazyFontLoading = undefined
     this._awaitFontsBeforeDraw = undefined
+    this._configurationSource = undefined
+    this._styleManager = undefined
+    this._fontUrl = undefined
   }
 
   /**
@@ -422,9 +448,24 @@ export class AcTrMTextRenderer {
   }
 
   private ensureRendererCreated() {
-    if (!this._renderer && this._workerUrl) {
+    if (!this._renderer) this.inheritConfiguration()
+    if (!this._renderer && (this._workerUrl || this._renderMode === 'main')) {
       this.initialize(this._workerUrl)
     }
+  }
+
+  /** Configuration is resolved lazily after application/worker setup completes. */
+  private inheritConfiguration(): void {
+    const source = this._configurationSource
+    if (!source) return
+    source.inheritConfiguration()
+    this._workerUrl = source._workerUrl
+    this._fontUrl = source._fontUrl
+    this._renderMode = source._renderMode
+    this._defaultFonts = source._defaultFonts
+    this._lazyFontLoading = source._lazyFontLoading
+    this._awaitFontsBeforeDraw = source._awaitFontsBeforeDraw
+    this._configurationSource = undefined
   }
 
   private async applyFontUrl() {

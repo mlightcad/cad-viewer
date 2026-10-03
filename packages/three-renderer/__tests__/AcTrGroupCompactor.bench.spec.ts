@@ -100,7 +100,7 @@ const runBench = process.env.RUN_BLOCK_CACHE_BENCH === '1' && DXF_PATH !== ''
     let totalBefore = 0
     let totalAfter = 0
     let measured = 0
-    const cache = new AcDbRenderingCache()
+    const cache = AcDbRenderingCache.forContext(renderer.context, db)
     const color = new AcCmColor().setForeground()
 
     for (const { block, count } of sample) {
@@ -146,7 +146,7 @@ const runBench = process.env.RUN_BLOCK_CACHE_BENCH === '1' && DXF_PATH !== ''
         `[bench] ${block.name}: entities=${count}, drawn=${entities.length}, children ${before}->${after} (drawables=${drawableAfter}), compact=${compactMs.toFixed(1)}ms, clone=${cloneMs.toFixed(1)}ms, compacted=${group.isCompacted}`
       )
 
-      cache.clear()
+      cache.invalidate()
       const tMiss0 = performance.now()
       cache.draw(renderer, block, color, [], true)
       const missMs = performance.now() - tMiss0
@@ -178,7 +178,7 @@ const runBench = process.env.RUN_BLOCK_CACHE_BENCH === '1' && DXF_PATH !== ''
     )
     expect(totalAfter).toBeLessThanOrEqual(totalBefore)
 
-    cache.clear()
+    cache.invalidate()
     const tPre0 = performance.now()
     await cache.prebuildAll(renderer, db.tables.blockTable.newIterator())
     console.log(
