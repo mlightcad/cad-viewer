@@ -550,9 +550,10 @@ export class AcApDocManager {
    * @private
    */
   private constructor(options: AcApDocManagerOptions = {}) {
-    this._overlayAdmission = options.overlayLimits
-      ? new AcApOverlayAdmission(options.overlayLimits)
-      : undefined
+    this._overlayAdmission =
+      options.overlayLimits === undefined
+        ? undefined
+        : new AcApOverlayAdmission(options.overlayLimits)
     this._baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
     acapSetDocsBaseUrl(options.docsBaseUrl ?? ACAP_DEFAULT_DOCS_BASE_URL)
     this._commandAliasOverrides = this.normalizeCommandAliasConfig(

@@ -664,6 +664,9 @@ describe('AcApDocManager overlay attachment transactions', () => {
   }
 
   it('refuses input before parsing and holds cancelled noncooperative parsing until settlement', async () => {
+    expect(() =>
+      AcApDocManager.createInstance({ overlayLimits: null as never })
+    ).toThrow(RangeError)
     const { manager, prepare } = setup({ overlayLimits })
     await expect(
       manager.loadOverlay('large.dxf', new ArrayBuffer(13))
