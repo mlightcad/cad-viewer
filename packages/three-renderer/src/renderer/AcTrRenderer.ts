@@ -54,7 +54,6 @@ import {
   type AcTrEntityPreviewOptions,
   type AcTrEntityPreviewResult
 } from './AcTrEntityPreview'
-import { AcTrMTextRenderer } from './AcTrMTextRenderer'
 import { AcTrRenderContext } from './AcTrRenderContext'
 
 /** Event payload when a mapped font cannot be resolved during rendering. */
@@ -241,12 +240,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
 
   constructor(renderer: THREE.WebGLRenderer, context?: AcTrRenderContext) {
     this._renderer = renderer
-    if (!context) {
-      const styles = new AcTrStyleManager()
-      const text = AcTrMTextRenderer.getInstance().createScope(styles)
-      context = new AcTrRenderContext(styles, undefined, text)
-      context.ownResource(text)
-    }
+    if (!context) context = new AcTrRenderContext()
     this._context = context
     this._resourceScopes.set(this._activeResourceScope, {
       context,
@@ -279,12 +273,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
       celtscale: database.celtscale,
       showLineWeight: database.lwdisplay
     })
-    const context = new AcTrRenderContext(
-      styles,
-      this.batchDrawPolicy,
-      AcTrMTextRenderer.getInstance().createScope(styles)
-    )
-    context.ownResource(context.mtextRenderer)
+    const context = new AcTrRenderContext(styles, this.batchDrawPolicy)
     context.database = database
     const renderer = new AcTrRenderer(this._renderer, context)
     renderer._parentRenderer = this
@@ -651,33 +640,10 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
-   * Fonts list which can't be found
+   * Shared runtime font availability diagnostics, without source attribution.
    */
   get missedFonts() {
     return FontManager.instance.missedFonts
-  }
-
-  /**
-   * Snapshot of session-scoped missed fonts for park/restore.
-   */
-  snapshotMissedFonts(): Record<string, number> {
-    return { ...FontManager.instance.missedFonts }
-  }
-
-  /**
-   * Restores or clears session-scoped missed fonts (main + MText workers).
-   * Fire-and-forget worker sync so document switches stay synchronous.
-   */
-  replaceMissedFonts(fonts: Record<string, number>): void {
-    FontManager.instance.replaceMissedFonts(fonts)
-    void this._context.mtextRenderer.replaceMissedFonts(
-      FontManager.instance.missedFonts
-    )
-  }
-
-  /** Clears session-scoped missed fonts for the active document. */
-  clearMissedFonts(): void {
-    this.replaceMissedFonts({})
   }
 
   /**
@@ -1005,7 +971,6 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     this.beginResourceScope()
     this._context.database = database
     this.releaseResourceScope(oldScope)
-    this.clearMissedFonts()
   }
 
   /** Releases only owned conversion resources, never the borrowed WebGL renderer. */
@@ -1035,10 +1000,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     Object.assign(styles.options, this.styleManager.options, {
       resolution: this.styleManager.options.resolution.clone()
     })
-    const text = AcTrMTextRenderer.getInstance().createScope(styles)
-    const context = new AcTrRenderContext(styles, this.batchDrawPolicy, text)
-    context.ownResource(text)
-    return context
+    return new AcTrRenderContext(styles, this.batchDrawPolicy)
   }
 
   private activateContext(

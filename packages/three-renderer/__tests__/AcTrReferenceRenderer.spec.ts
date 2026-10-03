@@ -1,4 +1,5 @@
 import { AcCmColor, AcDbDatabase } from '@mlightcad/data-model'
+import { FontManager } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import { AcTrEntity } from '../src/object/AcTrEntity'
@@ -142,6 +143,23 @@ describe('reference renderer resource ownership', () => {
 
     host.beginResourceScope()
     expect(host.context.database).toBeUndefined()
+  })
+
+  it('preserves another source missing-font diagnostics through reset, park, restore and detach', () => {
+    const fonts = FontManager.instance
+    const previous = { ...fonts.missedFonts }
+    const reference = host.createReferenceRenderer(new AcDbDatabase())
+    try {
+      fonts.replaceMissedFonts({ __reference_b_missing_font__: 2 })
+      host.resetResources()
+      const parked = host.captureResourceScope()
+      host.beginResourceScope()
+      host.restoreResourceScope(parked)
+      reference.dispose()
+      expect(host.missedFonts).toEqual({ __reference_b_missing_font__: 2 })
+    } finally {
+      fonts.replaceMissedFonts(previous)
+    }
   })
 
   it('propagates viewport state but preserves parked references across host reset', () => {

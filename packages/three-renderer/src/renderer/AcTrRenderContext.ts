@@ -44,12 +44,13 @@ export class AcTrRenderContext extends AcGiContext {
 
   constructor(
     styleManager: AcTrStyleManager = new AcTrStyleManager(),
-    batchDrawPolicy: AcTrBatchDrawPolicy = alwaysBatchDrawPolicy,
-    mtextRenderer: AcTrMTextRenderer = AcTrMTextRenderer.getInstance()
+    batchDrawPolicy: AcTrBatchDrawPolicy = alwaysBatchDrawPolicy
   ) {
     super()
     this.styleManager = styleManager
-    this.mtextRenderer = mtextRenderer
+    this.mtextRenderer =
+      AcTrMTextRenderer.getInstance().createScope(styleManager)
+    this.ownResource(this.mtextRenderer)
     this.batchDrawPolicy = batchDrawPolicy
   }
 

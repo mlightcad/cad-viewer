@@ -10,6 +10,7 @@ import {
   RenderMode,
   ShapeData,
   StyleManager,
+  TextRenderOptions,
   TextStyle,
   UnifiedRenderer
 } from '@mlightcad/mtext-renderer'
@@ -83,8 +84,8 @@ class AcTrMTextStyleManager implements StyleManager {
 }
 
 /**
- * CAD text renderer facade. The application singleton supplies font setup;
- * drawing scopes own independent material reconstruction and worker state.
+ * CAD text renderer facade. The application owns one font/computation pipeline;
+ * drawing scopes own material reconstruction and cancellation only.
  */
 export class AcTrMTextRenderer {
   private static _instance: AcTrMTextRenderer | null = null
@@ -92,12 +93,13 @@ export class AcTrMTextRenderer {
   private _renderer?: UnifiedRenderer
   private _fontUrl?: string
   private _renderMode?: RenderMode
-  private _styleManager?: AcTrStyleManager
+  private _materialAdapter?: AcTrMTextStyleManager
   private _defaultFonts?: DefaultFontsPreset | string | readonly string[]
   private _lazyFontLoading?: boolean
   private _awaitFontsBeforeDraw?: boolean
-  private _configurationSource?: AcTrMTextRenderer
-  private _isScope = false
+  private readonly _owner?: AcTrMTextRenderer
+  private readonly _scopes = new Set<AcTrMTextRenderer>()
+  private _requests = new AbortController()
   private _disposed = false
   private _defaultFontsReady?: Promise<void>
   private _finishDefaultFontsReady?: () => void
@@ -105,10 +107,12 @@ export class AcTrMTextRenderer {
    * Fonts successfully pushed into the active worker pool (or main renderer)
    * via {@link loadFonts}. Cleared when the unified renderer is destroyed.
    */
-  private _rendererLoadedFonts = new Set<string>()
+  private _rendererLoadedFonts = new Map<string, 'one' | 'all'>()
+  private _fontLoads = new Map<string, Promise<boolean>>()
+  private _fontLoadGeneration = 0
 
-  private constructor() {
-    // Do nothing for now
+  private constructor(owner?: AcTrMTextRenderer) {
+    this._owner = owner
   }
 
   /**
@@ -122,15 +126,14 @@ export class AcTrMTextRenderer {
   }
 
   /**
-   * Creates an independently disposable text/material pipeline using this
-   * renderer's font configuration. Font files remain shared through the font
-   * manager; worker state and reconstructed materials belong to the new scope.
+   * Creates a material/cancellation scope that borrows the application's font
+   * computation pipeline. Closing a drawing never destroys the shared workers.
    */
   createScope(styleManager: AcTrStyleManager): AcTrMTextRenderer {
     this.assertActive()
-    const scope = new AcTrMTextRenderer()
-    scope._isScope = true
-    scope._configurationSource = this
+    const owner = this._owner ?? this
+    const scope = new AcTrMTextRenderer(owner)
+    owner._scopes.add(scope)
     scope.overrideStyleManager(styleManager)
     return scope
   }
@@ -142,19 +145,12 @@ export class AcTrMTextRenderer {
    */
   overrideStyleManager(value: AcTrStyleManager) {
     this.assertActive()
-    this._styleManager = value
-    // Apply immediately when the unified renderer already exists (e.g. re-init
-    // or late override). Otherwise reconstruct would keep DefaultStyleManager
-    // materials without `isForeground` tracking.
-    if (this._renderer) {
-      const styleManager = new AcTrMTextStyleManager(value)
-      this._renderer.setStyleManager(styleManager)
-    }
+    this._materialAdapter = new AcTrMTextStyleManager(value)
   }
 
   /** Configures the next initialization without allocating a worker pool. */
   setWorkerUrl(value: string | URL): void {
-    this.inheritConfiguration()
+    this.assertOwner()
     this._workerUrl = value
   }
 
@@ -163,7 +159,7 @@ export class AcTrMTextRenderer {
    * @param value - URL to load fonts
    */
   setFontUrl(value: string) {
-    this.inheritConfiguration()
+    this.assertOwner()
     this._fontUrl = value
     this.observeConfiguration(this.applyFontUrl())
   }
@@ -173,8 +169,11 @@ export class AcTrMTextRenderer {
    * @param mode - Render mode
    */
   setRenderMode(mode: RenderMode) {
-    this.inheritConfiguration()
-    if (this._renderMode !== mode) this.resetDefaultFontsReady()
+    this.assertOwner()
+    if (this._renderMode !== mode) {
+      this.resetDefaultFontsReady()
+      this.resetFontLoads()
+    }
     this._renderMode = mode
     if (this._renderer) {
       this._renderer.setDefaultMode(mode)
@@ -186,8 +185,8 @@ export class AcTrMTextRenderer {
    * Current MText render mode (`worker` by default until {@link setRenderMode}).
    */
   getRenderMode(): RenderMode {
-    this.inheritConfiguration()
-    return this._renderMode ?? 'worker'
+    this.assertActive()
+    return this._owner?.getRenderMode() ?? this._renderMode ?? 'worker'
   }
 
   /**
@@ -199,7 +198,7 @@ export class AcTrMTextRenderer {
   async setDefaultFonts(
     fonts: DefaultFontsPreset | string | readonly string[]
   ): Promise<void> {
-    this.inheritConfiguration()
+    this.assertOwner()
     this.resetDefaultFontsReady()
     this._defaultFonts = fonts
     await this.applyDefaultFonts()
@@ -209,7 +208,7 @@ export class AcTrMTextRenderer {
    * Mirrors {@link FontManager.lazyFontLoading} onto the main thread and worker pool.
    */
   async setLazyFontLoading(enabled: boolean): Promise<void> {
-    this.inheritConfiguration()
+    this.assertOwner()
     this._lazyFontLoading = enabled
     FontManager.instance.lazyFontLoading = enabled
     await this.applyLazyFontLoading()
@@ -220,7 +219,7 @@ export class AcTrMTextRenderer {
    * wait for referenced fonts before building glyph geometry.
    */
   async setAwaitFontsBeforeDraw(enabled: boolean): Promise<void> {
-    this.inheritConfiguration()
+    this.assertOwner()
     this._awaitFontsBeforeDraw = enabled
     FontManager.instance.awaitFontsBeforeDraw = enabled
     await this.applyAwaitFontsBeforeDraw()
@@ -238,43 +237,105 @@ export class AcTrMTextRenderer {
    * e.g. {@link FontManager.getFontsToLoad} — so glyph draw does not bake
    * permanent '?' placeholders.
    *
-   * @returns Names that were actually sent to the renderer this call.
+   * @returns Newly requested faces confirmed loaded at the requested coverage.
    */
   async loadFonts(
     fonts: readonly string[],
     options?: { scope?: 'one' | 'all' }
   ): Promise<string[]> {
+    this.assertActive()
+    if (this._owner) return this._owner.loadFonts(fonts, options)
     this.ensureRendererCreated()
     if (!this._renderer || fonts.length === 0) {
       return []
     }
-    const pending = fonts.filter(name => {
-      const key = normalizeRendererFontKey(name)
-      return !!key && !this._rendererLoadedFonts.has(key)
-    })
-    if (pending.length === 0) {
-      return []
-    }
     const renderer = this._renderer
-    await renderer.loadFonts(pending, options)
-    if (this._disposed || this._renderer !== renderer) return []
-    for (const name of pending) {
+    const generation = this._fontLoadGeneration
+    const coverage =
+      this.getRenderMode() === 'main' ? 'all' : (options?.scope ?? 'one')
+    const requested = new Map<string, string>()
+    const waiting = new Map<string, Promise<boolean>>()
+    const pending = new Map<string, string>()
+    const prerequisites: Promise<boolean>[] = []
+    for (const name of fonts) {
       const key = normalizeRendererFontKey(name)
-      if (key) {
-        this._rendererLoadedFonts.add(key)
+      const loaded = this._rendererLoadedFonts.get(key)
+      if (!key || loaded === 'all' || loaded === coverage || requested.has(key))
+        continue
+      requested.set(key, name)
+      const existing =
+        this._fontLoads.get(`all:${key}`) ??
+        this._fontLoads.get(`${coverage}:${key}`)
+      if (existing) waiting.set(key, existing)
+      else {
+        pending.set(key, name)
+        // An all-worker upgrade follows an already running one-worker warmup.
+        const warmingOne = this._fontLoads.get(`one:${key}`)
+        if (coverage === 'all' && warmingOne) prerequisites.push(warmingOne)
       }
     }
-    return pending
+    if (pending.size > 0) {
+      const batch = (async () => {
+        if (prerequisites.length) await Promise.allSettled(prerequisites)
+        if (
+          this._renderer !== renderer ||
+          this._fontLoadGeneration !== generation
+        )
+          return new Set<string>()
+        const result = await renderer.loadFonts([...pending.values()], {
+          scope: coverage
+        })
+        const loaded = new Set<string>()
+        if (
+          this._renderer !== renderer ||
+          this._fontLoadGeneration !== generation
+        )
+          return loaded
+        for (const name of result.loaded) {
+          const key = normalizeRendererFontKey(name)
+          if (!pending.has(key)) continue
+          loaded.add(key)
+          if (this._rendererLoadedFonts.get(key) !== 'all')
+            this._rendererLoadedFonts.set(key, coverage)
+        }
+        return loaded
+      })()
+      for (const key of pending.keys()) {
+        const id = `${coverage}:${key}`
+        const load = batch
+          .then(loaded => loaded.has(key))
+          .finally(() => {
+            if (this._fontLoads.get(id) === load) this._fontLoads.delete(id)
+          })
+        this._fontLoads.set(id, load)
+        waiting.set(key, load)
+      }
+    }
+    const loaded = await Promise.all(
+      [...waiting].map(async ([key, load]) =>
+        (await load) ? requested.get(key)! : undefined
+      )
+    )
+    return loaded.filter((name): name is string => name !== undefined)
   }
 
   /**
-   * Warms fallback fonts in this drawing's rendering pipeline, once per scope.
+   * Warms fallback fonts once in the shared application pipeline.
    * Worker mode avoids parsing faces on the main thread. The existing open-time
    * 30s deadline still permits fallback output if font loading stalls or fails.
-   * Disposal ends the wait; callers must check their scene/context lifetime.
+   * A drawing may stop waiting without cancelling font I/O needed by others.
+   * Warmup settles on timeout, failure or source disposal; render requests use
+   * their own abort-aware wait and never treat this promise as permission to draw.
    */
   ensureDefaultFontsReady(): Promise<void> {
-    this.inheritConfiguration()
+    this.assertActive()
+    if (this._owner) {
+      const ready = this._owner.ensureDefaultFontsReady()
+      const signal = this.requestOptions().signal!
+      return waitForFonts(ready, signal).catch(error => {
+        if (!signal.aborted) throw error
+      })
+    }
     if (this._defaultFontsReady) return this._defaultFontsReady
     const fonts = [...FontManager.instance.getFontsToLoad()]
     if (fonts.length === 0) {
@@ -308,14 +369,19 @@ export class AcTrMTextRenderer {
    * Useful for OPENPERF / diagnostics.
    */
   getRendererLoadedFontCount(): number {
-    return this._rendererLoadedFonts.size
+    this.assertActive()
+    return (
+      this._owner?.getRendererLoadedFontCount() ??
+      this._rendererLoadedFonts.size
+    )
   }
 
   /**
-   * Replaces session-scoped missed-font bookkeeping on the main thread and workers.
+   * Replaces the application's shared missed-font diagnostics. The native font
+   * manager reports availability globally; this is not per-source attribution.
    */
   async replaceMissedFonts(fonts: Record<string, number>): Promise<void> {
-    this.assertActive()
+    this.assertOwner()
     if (this._renderer) {
       await this._renderer.replaceMissedFonts(fonts)
       return
@@ -323,7 +389,7 @@ export class AcTrMTextRenderer {
     FontManager.instance.replaceMissedFonts(fonts)
   }
 
-  /** Clears session-scoped missed-font bookkeeping on the main thread and workers. */
+  /** Clears shared diagnostics without unloading fonts or cancelling source work. */
   async clearMissedFonts(): Promise<void> {
     await this.replaceMissedFonts({})
   }
@@ -336,8 +402,14 @@ export class AcTrMTextRenderer {
     textStyle: TextStyle,
     colorSettings: ColorSettings = createDefaultColorSettings()
   ): Promise<MTextObject> {
-    const renderer = await this.readyRenderer()
-    return renderer.asyncRenderMText(mtextContent, textStyle, colorSettings)
+    const { renderer, options } = await this.readyRenderer()
+    return renderer.asyncRenderMText(
+      mtextContent,
+      textStyle,
+      colorSettings,
+      undefined,
+      options
+    )
   }
 
   /**
@@ -348,14 +420,12 @@ export class AcTrMTextRenderer {
     textStyle: TextStyle,
     colorSettings: ColorSettings = createDefaultColorSettings()
   ): MTextObject {
-    this.ensureRendererCreated()
-    if (!this._renderer) {
-      throw new Error('AcTrMTextRenderer not initialized!')
-    }
-    const mtext = this._renderer.syncRenderMText(
+    const renderer = this.getRenderer()
+    const mtext = renderer.syncRenderMText(
       mtextContent,
       textStyle,
-      colorSettings
+      colorSettings,
+      this.requestOptions()
     )
     return mtext
   }
@@ -365,8 +435,14 @@ export class AcTrMTextRenderer {
     textStyle: TextStyle,
     colorSettings: ColorSettings = createDefaultColorSettings()
   ): Promise<MTextObject> {
-    const renderer = await this.readyRenderer()
-    return renderer.asyncRenderShape(shapeContent, textStyle, colorSettings)
+    const { renderer, options } = await this.readyRenderer()
+    return renderer.asyncRenderShape(
+      shapeContent,
+      textStyle,
+      colorSettings,
+      undefined,
+      options
+    )
   }
 
   syncRenderShape(
@@ -374,14 +450,12 @@ export class AcTrMTextRenderer {
     textStyle: TextStyle,
     colorSettings: ColorSettings = createDefaultColorSettings()
   ): MTextObject {
-    this.ensureRendererCreated()
-    if (!this._renderer) {
-      throw new Error('AcTrMTextRenderer not initialized!')
-    }
-    return this._renderer.syncRenderShape(
+    const renderer = this.getRenderer()
+    return renderer.syncRenderShape(
       shapeContent,
       textStyle,
-      colorSettings
+      colorSettings,
+      this.requestOptions()
     )
   }
 
@@ -395,8 +469,15 @@ export class AcTrMTextRenderer {
    * @param workerUrl - URL to the worker script used when render mode is `worker`
    */
   initialize(workerUrl?: string | URL): void {
-    this.inheritConfiguration()
-    this.resetDefaultFontsReady()
+    this.assertOwner()
+    if (this._renderer || this._requests.signal.aborted) {
+      this._requests.abort(
+        new DOMException('Text rendering pipeline was replaced', 'AbortError')
+      )
+      this._requests = new AbortController()
+      this.resetDefaultFontsReady()
+      this.resetFontLoads()
+    }
     if (workerUrl !== undefined) {
       this._workerUrl = workerUrl
     }
@@ -405,8 +486,6 @@ export class AcTrMTextRenderer {
       this._renderer.destroy()
       this._renderer = undefined
     }
-    this._rendererLoadedFonts.clear()
-
     const mode = this._renderMode ?? 'worker'
     const workerConfig = this._workerUrl ? { workerUrl: this._workerUrl } : {}
 
@@ -429,10 +508,6 @@ export class AcTrMTextRenderer {
     this.observeConfiguration(this.applyDefaultFonts())
     this.observeConfiguration(this.applyLazyFontLoading())
     this.observeConfiguration(this.applyAwaitFontsBeforeDraw())
-    if (this._styleManager) {
-      const styleManager = new AcTrMTextStyleManager(this._styleManager)
-      this._renderer.setStyleManager(styleManager)
-    }
   }
 
   /**
@@ -443,6 +518,8 @@ export class AcTrMTextRenderer {
    */
   async estimateMemoryUsage(): Promise<MemoryUsageReport> {
     this.assertActive()
+    // All drawing scopes report this same shared owner; do not sum the reports.
+    if (this._owner) return this._owner.estimateMemoryUsage()
     if (this._renderer) {
       return this._renderer.estimateMemoryUsage()
     }
@@ -462,23 +539,33 @@ export class AcTrMTextRenderer {
   }
 
   /**
-   * Dispose of the renderer and reset cached configuration.
+   * A drawing releases only its material facade and outstanding requests.
+   * Disposing the application owner closes all scopes and its worker pipeline.
    */
   dispose(): void {
-    if (this._isScope) this._disposed = true
+    if (this._disposed) return
+    this._requests.abort(
+      new DOMException('Text rendering scope has been disposed', 'AbortError')
+    )
+    this._materialAdapter = undefined
+    if (this._owner) {
+      this._disposed = true
+      this._owner._scopes.delete(this)
+      return
+    }
+    for (const scope of this._scopes) scope.dispose()
+    this._scopes.clear()
     this.resetDefaultFontsReady()
     if (this._renderer) {
       this._renderer.destroy()
       this._renderer = undefined
     }
-    this._rendererLoadedFonts.clear()
+    this.resetFontLoads()
     this._workerUrl = undefined
     this._renderMode = undefined
     this._defaultFonts = undefined
     this._lazyFontLoading = undefined
     this._awaitFontsBeforeDraw = undefined
-    this._configurationSource = undefined
-    this._styleManager = undefined
     this._fontUrl = undefined
   }
 
@@ -491,38 +578,53 @@ export class AcTrMTextRenderer {
   }
 
   private ensureRendererCreated() {
-    this.assertActive()
-    if (!this._renderer) this.inheritConfiguration()
+    this.assertOwner()
     if (!this._renderer && (this._workerUrl || this._renderMode === 'main')) {
       this.initialize(this._workerUrl)
     }
   }
 
-  private async readyRenderer(): Promise<UnifiedRenderer> {
-    this.ensureRendererCreated()
-    const renderer = this._renderer
-    if (!renderer) throw new Error('AcTrMTextRenderer not initialized!')
-    await this.ensureDefaultFontsReady()
+  private getRenderer(): UnifiedRenderer {
     this.assertActive()
-    if (this._renderer !== renderer) {
-      throw new Error('Text rendering pipeline was replaced')
-    }
+    const owner = this._owner ?? this
+    owner.ensureRendererCreated()
+    const renderer = owner._renderer
+    if (!renderer) throw new Error('AcTrMTextRenderer not initialized!')
     return renderer
   }
 
-  /** Configuration is resolved lazily after application/worker setup completes. */
-  private inheritConfiguration(): void {
+  private async readyRenderer(): Promise<{
+    renderer: UnifiedRenderer
+    options: TextRenderOptions
+  }> {
+    const renderer = this.getRenderer()
+    const options = this.requestOptions()
+    const owner = this._owner ?? this
+    await waitForFonts(owner.ensureDefaultFontsReady(), options.signal!)
     this.assertActive()
-    const source = this._configurationSource
-    if (!source) return
-    source.inheritConfiguration()
-    this._workerUrl = source._workerUrl
-    this._fontUrl = source._fontUrl
-    this._renderMode = source._renderMode
-    this._defaultFonts = source._defaultFonts
-    this._lazyFontLoading = source._lazyFontLoading
-    this._awaitFontsBeforeDraw = source._awaitFontsBeforeDraw
-    this._configurationSource = undefined
+    options.signal!.throwIfAborted()
+    if (owner._renderer !== renderer) {
+      throw new Error('Text rendering pipeline was replaced')
+    }
+    return { renderer, options }
+  }
+
+  private requestOptions(): TextRenderOptions {
+    this.assertActive()
+    return {
+      styleManager: this._materialAdapter,
+      signal: this._owner
+        ? AbortSignal.any([this._requests.signal, this._owner._requests.signal])
+        : this._requests.signal
+    }
+  }
+
+  private assertOwner(): void {
+    this.assertActive()
+    if (this._owner)
+      throw new Error(
+        'Text computation must be configured through the application owner'
+      )
   }
 
   private assertActive(): void {
@@ -534,6 +636,12 @@ export class AcTrMTextRenderer {
     this._finishDefaultFontsReady?.()
     this._finishDefaultFontsReady = undefined
     this._defaultFontsReady = undefined
+  }
+
+  private resetFontLoads(): void {
+    this._fontLoadGeneration++
+    this._rendererLoadedFonts.clear()
+    this._fontLoads.clear()
   }
 
   /** Worker shutdown rejects pending configuration as well as render requests. */
@@ -568,6 +676,31 @@ export class AcTrMTextRenderer {
       await this._renderer.setAwaitFontsBeforeDraw(this._awaitFontsBeforeDraw)
     }
   }
+}
+
+/** A drawing can cancel its wait without cancelling shared font loading. */
+function waitForFonts(
+  ready: Promise<void>,
+  signal: AbortSignal
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const abort = () => reject(signal.reason)
+    if (signal.aborted) {
+      abort()
+      return
+    }
+    signal.addEventListener('abort', abort, { once: true })
+    ready.then(
+      () => {
+        signal.removeEventListener('abort', abort)
+        resolve()
+      },
+      error => {
+        signal.removeEventListener('abort', abort)
+        reject(error)
+      }
+    )
+  })
 }
 
 function normalizeRendererFontKey(fontName: string): string {

@@ -1106,7 +1106,7 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Gets information about missing data during rendering (fonts, images, xrefs).
+   * Gets missing fonts for the shared runtime, plus this view's images/xrefs.
    *
    * @returns Object containing maps of missing fonts/images and unresolved xrefs
    */
@@ -2563,7 +2563,6 @@ export class AcTrView2d extends AcEdBaseView {
       externallyFramedLayouts: this._externallyFramedLayouts,
       loadingLayouts: this._loadingLayouts,
       missedImages: this._missedImages,
-      missedFonts: this._renderer.snapshotMissedFonts(),
       selectionIds: this.selectionSet.ids
     }
   }
@@ -2590,7 +2589,6 @@ export class AcTrView2d extends AcEdBaseView {
     this._externallyFramedLayouts = state.externallyFramedLayouts
     this._loadingLayouts = state.loadingLayouts
     this._missedImages = state.missedImages
-    this._renderer.replaceMissedFonts(state.missedFonts ?? {})
     this.rebindLayerAppearance()
     this._layoutViewManager.resize(this.width, this.height)
     this.selectionSet.clear()
@@ -2624,7 +2622,6 @@ export class AcTrView2d extends AcEdBaseView {
     this._externallyFramedLayouts = new Set()
     this._loadingLayouts = new Set()
     this._missedImages = new Map()
-    this._renderer.clearMissedFonts()
     this.rebindLayerAppearance()
     this.selectionSet.clear()
     this._isDirty = true
@@ -2655,7 +2652,6 @@ export class AcTrView2d extends AcEdBaseView {
     state.externallyFramedLayouts.clear()
     state.loadingLayouts.clear()
     state.missedImages.clear()
-    state.missedFonts = {}
     state.selectionIds = []
   }
 

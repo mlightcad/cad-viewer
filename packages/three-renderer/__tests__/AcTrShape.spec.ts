@@ -1,13 +1,6 @@
 import type { MTextObject } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
-jest.mock('../src/renderer/AcTrMTextRenderer', () => ({
-  AcTrMTextRenderer: {
-    getInstance: jest.fn()
-  }
-}))
-
-import { AcTrMTextRenderer } from '../src/renderer/AcTrMTextRenderer'
 import { expectWcsBboxCloseTo } from './helpers/expectWcsBbox'
 import { AcTrShape } from '../src/object/AcTrShape'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
@@ -38,20 +31,24 @@ describe('AcTrShape wcsBbox', () => {
   it('builds wcsBbox from syncRenderShape output', () => {
     const placementRoot = createPlacementRoot({ x: 5, y: 15, z: 0 })
     const rendered = createShapeObject(new THREE.Box3(), placementRoot)
-    jest.mocked(AcTrMTextRenderer.getInstance).mockReturnValue({
-      syncRenderShape: () => rendered
-    } as never)
+    const context = new AcTrRenderContext(new AcTrStyleManager())
+    jest
+      .spyOn(context.mtextRenderer, 'syncRenderShape')
+      .mockReturnValue(rendered)
 
     const shape = new AcTrShape(
       { name: 'TEST', position: { x: 5, y: 15, z: 0 } } as never,
       { layer: '0', color: 7 } as never,
       {} as never,
-      new AcTrRenderContext(new AcTrStyleManager())
+      context
     )
     // Constructors no longer auto-draw; geometry is finalized via syncDraw/asyncDraw.
     shape.syncDraw()
 
     expectWcsBboxCloseTo(shape.wcsBbox, [5, 15, 0], [9, 17, 0])
+    shape.dispose()
+    context.dispose()
+    context.styleManager.dispose()
   })
 })
 

@@ -2,7 +2,6 @@ import type { MTextObject } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import { AcTrMText } from '../src/object/AcTrMText'
-import { AcTrMTextRenderer } from '../src/renderer/AcTrMTextRenderer'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
 import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../src/util/AcTrEntityTraitsUtil'
@@ -15,11 +14,11 @@ describe('deferred glyph ownership', () => {
       const result = new Promise<MTextObject>(resolve => {
         finish = resolve
       })
-      const renderer = {
-        asyncRenderMText: jest.fn(() => result)
-      } as unknown as AcTrMTextRenderer
       const styles = new AcTrStyleManager()
-      const context = new AcTrRenderContext(styles, undefined, renderer)
+      const context = new AcTrRenderContext(styles)
+      jest
+        .spyOn(context.mtextRenderer, 'asyncRenderMText')
+        .mockReturnValue(result)
       const glyph = new AcTrMText(
         {
           text: 'Reference',
@@ -47,6 +46,7 @@ describe('deferred glyph ownership', () => {
       expect(glyph.children).toHaveLength(0)
       expect(geometryDisposed).toHaveBeenCalledTimes(1)
       expect(materialDisposed).not.toHaveBeenCalled()
+      context.dispose()
       styles.dispose()
       expect(materialDisposed).toHaveBeenCalledTimes(1)
     }
