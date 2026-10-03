@@ -3,7 +3,8 @@ import {
   AcDbBlockReference,
   AcDbBlockTableRecord,
   acdbPreviewIconToDataUrl,
-  AcDbRenderingCache} from '@mlightcad/data-model'
+  AcDbRenderingCache
+} from '@mlightcad/data-model'
 import { AcTrEntity, type AcTrRenderer } from '@mlightcad/three-renderer'
 
 import { AcApDocManager } from '../../app'
@@ -117,13 +118,10 @@ export class AcApBlockPreviewConvertor {
         // Empty block — try rendering BTR contents directly.
         const color = new AcCmColor()
         color.setForeground()
-        const group = AcDbRenderingCache.instance.draw(
-          renderer,
-          btr,
-          color,
-          [],
-          false
-        ) as AcTrEntity | null
+        const group = AcDbRenderingCache.forContext(
+          renderer.context,
+          btr.database
+        ).draw(renderer, btr, color, [], false) as AcTrEntity | null
         root = group
       } else {
         root = drawn

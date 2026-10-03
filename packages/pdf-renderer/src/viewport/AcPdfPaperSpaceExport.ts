@@ -85,7 +85,7 @@ export async function collectBlockRoots(
 ): Promise<AcPdfEntity[]> {
   let roots: AcPdfEntity[] = []
   for (let pass = 0; pass < 4; pass++) {
-    AcDbRenderingCache.instance.clear()
+    AcDbRenderingCache.forContext(renderer.context, block.database).invalidate()
     renderer.resetCollected()
     renderer.beginCollectPass()
     roots = walkBlockDrawables(block, renderer)

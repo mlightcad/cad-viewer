@@ -17,23 +17,25 @@ export class AcApSvgConvertor {
    * Converts the current CAD drawing to SVG format and initiates download.
    */
   async convert(context: AcApContext) {
-    AcSvgRenderer.prepareExport()
-
     const entities =
       context.doc.database.tables.blockTable.modelSpace.newIterator()
     const renderer = new AcSvgRenderer()
-    this.configureRenderer(renderer, context)
+    try {
+      this.configureRenderer(renderer, context)
 
-    for (const entity of entities) {
-      entity.worldDraw(renderer)
+      for (const entity of entities) {
+        entity.worldDraw(renderer)
+      }
+
+      const svgContent = await renderer.exportAsync()
+      const downloadName = resolveExportDownloadName(
+        context.doc.fileName || context.doc.docTitle,
+        'svg'
+      )
+      this.createFileAndDownloadIt(svgContent, downloadName)
+    } finally {
+      renderer.dispose()
     }
-
-    const svgContent = await renderer.exportAsync()
-    const downloadName = resolveExportDownloadName(
-      context.doc.fileName || context.doc.docTitle,
-      'svg'
-    )
-    this.createFileAndDownloadIt(svgContent, downloadName)
   }
 
   /**
@@ -41,6 +43,7 @@ export class AcApSvgConvertor {
    */
   configureRenderer(renderer: AcSvgRenderer, context: AcApContext) {
     const db = context.doc.database
+    renderer.context.database = db
     renderer.ltscale = db.ltscale
     renderer.celtscale = db.celtscale
     renderer.showLineWeight = !!db.lwdisplay

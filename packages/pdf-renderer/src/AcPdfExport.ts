@@ -2,7 +2,6 @@ import {
   accmYieldForPaint,
   type AcDbBlockTableRecord,
   AcDbDatabase,
-  AcDbRenderingCache,
   AcDbViewport,
   acgiIsLightBackground
 } from '@mlightcad/data-model'
@@ -36,7 +35,6 @@ export async function exportDatabaseToPdf(
       ? collectExportLayouts(db)
       : undefined
 
-  AcPdfRenderer.prepareExport()
   const renderer = createConfiguredRenderer(db, options)
   try {
     if (layouts) {
@@ -52,7 +50,7 @@ export async function exportDatabaseToPdf(
     const bytes = await renderer.exportAsync(roots)
     return bytes
   } finally {
-    AcDbRenderingCache.instance.clear()
+    renderer.dispose()
   }
 }
 
@@ -105,7 +103,9 @@ function createConfiguredRenderer(
       ? 0xffffff
       : options.background
   renderer.currentBackgroundColor = background
-  renderer.changeForeground(acgiIsLightBackground(background) ? 0x000000 : 0xffffff)
+  renderer.changeForeground(
+    acgiIsLightBackground(background) ? 0x000000 : 0xffffff
+  )
   renderer.context.database = db
   return renderer
 }

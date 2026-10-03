@@ -76,15 +76,9 @@ const DEFAULT_POINT_RADIUS = 0.5
  * AcGi backend that records vector drawables for PDF serialization.
  */
 export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
-  /**
-   * Clears the shared block rendering cache before PDF export.
-   *
-   * The cache stores drawable objects from the last renderer that populated it
-   * (typically Three.js). Reusing those entries during export causes failures
-   * when block references are resolved from cache.
-   */
-  static prepareExport(): void {
-    AcDbRenderingCache.instance.clear()
+  /** Release this export renderer's templates without affecting other views. */
+  dispose(): void {
+    AcDbRenderingCache.releaseContext(this._context)
   }
 
   private _entities: AcPdfEntity[] = []

@@ -82,10 +82,13 @@ await AcApDocManager.instance.pluginManager.loadPlugin(new AcApSvgPlugin())
 ```typescript
 import { AcSvgRenderer } from '@mlightcad/cad-svg-plugin'
 
-AcSvgRenderer.prepareExport()
 const renderer = new AcSvgRenderer()
-// ... configure and draw entities ...
-const svg = await renderer.exportAsync()
+try {
+  // ... configure and draw entities ...
+  const svg = await renderer.exportAsync()
+} finally {
+  renderer.dispose()
+}
 ```
 
 ## Public API
