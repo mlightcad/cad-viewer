@@ -36,6 +36,8 @@
     "vue": "^3.4.21"
   },
   "devDependencies": {
+    "@mlightcad/libredwg-web": "0.7.14",
+    "@types/three": "0.172.0",
     "@vitejs/plugin-vue": "^6.0.8"
   }
 }
