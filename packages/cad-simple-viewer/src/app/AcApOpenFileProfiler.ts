@@ -57,6 +57,20 @@ export interface AcApOpenFileProfileSnapshot {
     paintCount: number
     yieldCount: number
   }
+  convertPhase?: {
+    finishGeometryMs: number
+    handleGroupMs: number
+    addEntityMs: number
+    awaitFontsMs: number
+    fontPreload?: {
+      critical: string[]
+      workerWarm?: string[]
+      background: string[]
+      preset?: string[]
+      workerSkipped: number
+      parseSite?: 'main' | 'worker'
+    }
+  }
 }
 
 /**
@@ -249,6 +263,19 @@ export class AcApOpenFileProfiler {
     const tl = cache.topLevel
     const progressiveStats = view.progressiveOpenStats
     const progressiveEnabled = view.progressiveRendering
+    const convertPhaseRaw =
+      typeof view.takeConvertPhaseTimings === 'function'
+        ? view.takeConvertPhaseTimings()
+        : null
+    const convertPhase = convertPhaseRaw
+      ? {
+          finishGeometryMs: convertPhaseRaw.finishGeometry,
+          handleGroupMs: convertPhaseRaw.handleGroup,
+          addEntityMs: convertPhaseRaw.addEntity,
+          awaitFontsMs: convertPhaseRaw.awaitFonts,
+          fontPreload: convertPhaseRaw.fontPreload
+        }
+      : undefined
 
     const slowBlocks = [...cache.blockMisses]
       .sort((a, b) => b.buildMs + b.compactMs - (a.buildMs + a.compactMs))
@@ -289,7 +316,8 @@ export class AcApOpenFileProfiler {
         enabled: progressiveEnabled,
         paintCount: progressiveStats.paintCount,
         yieldCount: progressiveStats.yieldCount
-      }
+      },
+      convertPhase
     }
     AcApOpenFileProfiler._lastSnapshot = snapshot
 
@@ -312,6 +340,26 @@ export class AcApOpenFileProfiler {
       `    ENTITY flush:     ${entityMs.toFixed(0)} ms  (${pct(entityMs, readMs)} of read)`,
       `  scene convert:      ${convertMs.toFixed(0)} ms  (${pct(convertMs, totalMs)})`
     ]
+
+    if (convertPhase) {
+      lines.push(
+        `    finishGeometry:   ${convertPhase.finishGeometryMs.toFixed(0)} ms (cumulative)`,
+        `    handleGroup:      ${convertPhase.handleGroupMs.toFixed(0)} ms (cumulative)`,
+        `    addEntity:        ${convertPhase.addEntityMs.toFixed(0)} ms`,
+        // Wall time of preset + STYLE font preload awaited before glyph draw.
+        `    awaitFonts:       ${convertPhase.awaitFontsMs.toFixed(0)} ms (preset+style preload wall)`
+      )
+      const fp = convertPhase.fontPreload
+      if (fp) {
+        lines.push(
+          `    fontPreload parseSite:  ${fp.parseSite ?? 'main'}`,
+          `    fontPreload critical:   [${fp.critical.join(', ')}]`,
+          `    fontPreload preset:     [${(fp.preset ?? fp.workerWarm ?? []).join(', ')}]`,
+          `    fontPreload background: [${fp.background.join(', ')}]`,
+          `    fontPreload workerSkipped: ${fp.workerSkipped} (already in pool)`
+        )
+      }
+    }
 
     const fontLoad = getLastFontLoadStats()
     if (fontLoad) {

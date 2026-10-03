@@ -487,6 +487,13 @@ export class AcApDocManager {
   private _workersReadyCheckPromise?: Promise<boolean>
   /** Monotonically increasing counter used to generate overlay ids */
   private _nextOverlayId = 1
+  /**
+   * In-flight / completed preset (default+symbol) font load started at open.
+   * Reused across opens so IndexedDB/mesh parse is not repeated.
+   */
+  private _presetFontsForOpenPromise: Promise<void> | null = null
+  /** Names last requested by {@link ensurePresetFontsForOpen} (OPENPROF). */
+  private _lastPresetFontsForOpen: string[] = []
 
   /** Events fired during document lifecycle */
   public readonly events = {
@@ -1227,6 +1234,76 @@ export class AcApDocManager {
   }
 
   /**
+   * Starts loading the active default/symbol preset chain
+   * ({@link FontManager.getFontsToLoad}) so it overlaps DWG/DXF parse.
+   *
+   * Preset faces are drawing-independent. Callers must not await this from
+   * the open hot path — linework convert continues; glyph finalize awaits
+   * {@link awaitPresetFontsReady} instead.
+   *
+   * - Worker mode: {@link AcTrMTextRenderer.loadFonts} with `scope: 'all'` so
+   *   every isolate has fallbacks before glyph bake (no main-thread dual parse).
+   * - Main mode: {@link FontManager.requestFonts} (full await, including mesh).
+   *
+   * The promise is reused for the process lifetime. A 30s deadline matches
+   * {@link installFontFileLoadTimeout} so a stalled CDN cannot pin the open
+   * overlay; on timeout glyph draw still falls back to `'?'`.
+   */
+  ensurePresetFontsForOpen(): Promise<void> {
+    if (this._presetFontsForOpenPromise) {
+      return this._presetFontsForOpenPromise
+    }
+    const names = [...FontManager.instance.getFontsToLoad()]
+    this._lastPresetFontsForOpen = names
+    if (names.length === 0) {
+      this._presetFontsForOpenPromise = Promise.resolve()
+      return this._presetFontsForOpenPromise
+    }
+    const mtextRenderer = AcTrMTextRenderer.getInstance()
+    const parseSite =
+      mtextRenderer.getRenderMode() === 'worker' ? 'worker' : 'main'
+    // Keep in sync with installFontFileLoadTimeout / text-style preload race.
+    const timeoutMs = 30_000
+    const load =
+      parseSite === 'worker'
+        ? mtextRenderer.loadFonts(names, { scope: 'all' }).then(() => undefined)
+        : FontManager.instance.requestFonts(names).then(() => undefined)
+    this._presetFontsForOpenPromise = new Promise<void>(resolve => {
+      const timer = setTimeout(() => {
+        // Glyph draw still falls back via FontManager defaults / '?'.
+        resolve()
+      }, timeoutMs)
+      load.then(
+        () => {
+          clearTimeout(timer)
+          resolve()
+        },
+        () => {
+          clearTimeout(timer)
+          resolve()
+        }
+      )
+    })
+    return this._presetFontsForOpenPromise
+  }
+
+  /**
+   * Waits until {@link ensurePresetFontsForOpen} has finished (starting it if
+   * open never kicked it off). Used by deferred glyph finalize.
+   */
+  async awaitPresetFontsReady(): Promise<void> {
+    await this.ensurePresetFontsForOpen()
+  }
+
+  /**
+   * Preset face names from the last {@link ensurePresetFontsForOpen} call.
+   * Empty until the first open starts preset preload.
+   */
+  get lastPresetFontsForOpen(): readonly string[] {
+    return this._lastPresetFontsForOpen
+  }
+
+  /**
    * Opens a CAD document from a URL.
    *
    * This method loads a document from the specified URL. When the current
@@ -1635,7 +1712,7 @@ export class AcApDocManager {
    * including when MTEXT geometry itself is drawn in workers. A stalled CDN
    * therefore keeps `_pendingGeometryJobs` nonzero and the open overlay up.
    *
-   * Worker isolates also load fonts, but {@link AcTrView2d.startTextStyleFontPreload}
+   * Worker isolates also load fonts, but {@link AcApDocManager.ensurePresetFontsForOpen}
    * races that path with the same deadline; in-worker render requests still
    * fall back to WebWorkerRenderer's request timeout.
    */
@@ -2170,6 +2247,10 @@ export class AcApDocManager {
     this._openFileProgress.setSeeThroughOverlay(
       options?.progressiveRendering ?? false
     )
+    // Preset fonts are drawing-independent — start immediately so download /
+    // mesh parse overlaps db.read. Glyph finalize awaits the promise; linework
+    // convert does not.
+    void this.ensurePresetFontsForOpen()
     // OPENPROF: start stage timings before db.read / entity flush.
     this._openFileProfiler.begin(this.context.doc.database)
   }

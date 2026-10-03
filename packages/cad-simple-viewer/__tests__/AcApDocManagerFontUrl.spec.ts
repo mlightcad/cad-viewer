@@ -22,10 +22,12 @@ class MockAcApFontLoader {
 
 const mockInitialize = jest.fn()
 const mockSetRenderMode = jest.fn()
+const mockGetRenderMode = jest.fn(() => 'worker')
 const mockSetDefaultFonts = jest.fn(() => Promise.resolve())
 const mockSetLazyFontLoading = jest.fn(() => Promise.resolve())
 const mockSetAwaitFontsBeforeDraw = jest.fn(() => Promise.resolve())
 const mockSetFontUrl = jest.fn()
+const mockLoadFonts = jest.fn(() => Promise.resolve([]))
 
 jest.mock('../src/app/AcApFontLoader', () => ({
   AcApFontLoader: MockAcApFontLoader
@@ -36,10 +38,12 @@ jest.mock('@mlightcad/three-renderer', () => ({
     getInstance: jest.fn(() => ({
       initialize: mockInitialize,
       setRenderMode: mockSetRenderMode,
+      getRenderMode: mockGetRenderMode,
       setDefaultFonts: mockSetDefaultFonts,
       setLazyFontLoading: mockSetLazyFontLoading,
       setAwaitFontsBeforeDraw: mockSetAwaitFontsBeforeDraw,
-      setFontUrl: mockSetFontUrl
+      setFontUrl: mockSetFontUrl,
+      loadFonts: mockLoadFonts
     })),
     resetInstance: jest.fn()
   }
@@ -328,10 +332,14 @@ describe('AcApDocManager font URL configuration', () => {
     mockFontLoaderInstances.length = 0
     mockInitialize.mockClear()
     mockSetRenderMode.mockClear()
+    mockGetRenderMode.mockClear()
+    mockGetRenderMode.mockReturnValue('worker')
     mockSetDefaultFonts.mockClear()
     mockSetLazyFontLoading.mockClear()
     mockSetAwaitFontsBeforeDraw.mockClear()
     mockSetFontUrl.mockClear()
+    mockLoadFonts.mockClear()
+    mockLoadFonts.mockResolvedValue([])
   })
 
   it('configures the font loader to download fonts from the custom base URL', async () => {
@@ -365,6 +373,102 @@ describe('AcApDocManager font URL configuration', () => {
     expect(mockSetRenderMode.mock.invocationCallOrder[0]).toBeLessThan(
       mockInitialize.mock.invocationCallOrder[0]
     )
+  })
+})
+
+describe('AcApDocManager preset fonts for open', () => {
+  beforeEach(() => {
+    ;(AcApDocManager as unknown as { _instance: unknown })._instance = undefined
+    acapDisposeNotificationService()
+    mockGetRenderMode.mockReset()
+    mockGetRenderMode.mockReturnValue('worker')
+    mockLoadFonts.mockReset()
+    mockLoadFonts.mockResolvedValue([])
+  })
+
+  it('loads the full preset into all workers and reuses the promise', async () => {
+    const manager = AcApDocManager.createInstance({})
+    mockLoadFonts.mockClear()
+
+    const first = manager!.ensurePresetFontsForOpen()
+    const second = manager!.ensurePresetFontsForOpen()
+    expect(first).toBe(second)
+
+    await first
+
+    expect(mockLoadFonts).toHaveBeenCalledTimes(1)
+    const call = mockLoadFonts.mock.calls[0] as unknown as [
+      string[],
+      { scope?: string } | undefined
+    ]
+    const names = call[0]
+    const options = call[1]
+    expect(names.length).toBeGreaterThan(0)
+    expect(names).toEqual(
+      expect.arrayContaining(['simsun', 'hztxt', 'amgdt'])
+    )
+    expect(options).toEqual({ scope: 'all' })
+    expect(manager!.lastPresetFontsForOpen).toEqual(names)
+  })
+
+  it('loads preset via FontManager.requestFonts in main-thread mode', async () => {
+    const { FontManager } = await import('@mlightcad/mtext-renderer')
+    const requestFonts = jest
+      .spyOn(FontManager.instance, 'requestFonts')
+      .mockResolvedValue([])
+    mockGetRenderMode.mockReturnValue('main')
+
+    const manager = AcApDocManager.createInstance({
+      useMainThreadDraw: true
+    })
+    mockLoadFonts.mockClear()
+    requestFonts.mockClear()
+
+    await manager!.ensurePresetFontsForOpen()
+
+    expect(mockLoadFonts).not.toHaveBeenCalled()
+    expect(requestFonts).toHaveBeenCalledTimes(1)
+    const requested = requestFonts.mock.calls[0][0] as readonly string[]
+    expect(requested.length).toBeGreaterThan(0)
+    requestFonts.mockRestore()
+  })
+
+  it('kicks ensurePresetFontsForOpen from onBeforeOpenDocument without awaiting it', () => {
+    const manager = AcApDocManager.createInstance({})
+    let ensureCalled = false
+    let ensureSettled = false
+    let settleTimer: ReturnType<typeof setTimeout> | undefined
+    ;(manager as unknown as { ensurePresetFontsForOpen: () => Promise<void> }).ensurePresetFontsForOpen =
+      () => {
+        ensureCalled = true
+        return new Promise<void>(resolve => {
+          settleTimer = setTimeout(() => {
+            ensureSettled = true
+            resolve()
+          }, 50)
+        })
+      }
+    ;(
+      manager as unknown as {
+        _openFileProgress: { setSeeThroughOverlay: (v: boolean) => void }
+      }
+    )._openFileProgress.setSeeThroughOverlay = jest.fn()
+    ;(
+      manager as unknown as {
+        _openFileProfiler: { begin: (db: unknown) => void }
+      }
+    )._openFileProfiler.begin = jest.fn()
+
+    ;(
+      manager as unknown as {
+        onBeforeOpenDocument: (options?: unknown, replace?: boolean) => void
+      }
+    ).onBeforeOpenDocument({}, false)
+
+    expect(ensureCalled).toBe(true)
+    // Open continues while preset load is still in flight.
+    expect(ensureSettled).toBe(false)
+    if (settleTimer) clearTimeout(settleTimer)
   })
 })
 
