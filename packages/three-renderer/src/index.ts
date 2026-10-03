@@ -53,3 +53,4 @@ export {
 } from './util/AcTrObjectUserData'
 export { isObjectHierarchyVisible } from './util/AcTrVisibility'
 export { effectiveLayer } from './util/AcTrEffectiveLayer'
+export { acTrResolveAncestorLayerNames } from './util/AcTrAncestorLayers'

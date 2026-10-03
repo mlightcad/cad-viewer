@@ -12,6 +12,7 @@ import {
   effectiveLayer,
   isObjectHierarchyVisible
 } from '../util'
+import { acTrResolveAncestorLayerNames } from '../util/AcTrAncestorLayers'
 import {
   type AcTrEntityUserData,
   getObjectUserData,
@@ -197,6 +198,11 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
         // attachEntityInfo) before the outer group flattens them.
         const objectData = getObjectUserData(object)
         const childData = getObjectUserData(child)
+        childData.ancestorLayerNames = acTrResolveAncestorLayerNames(
+          childData.ancestorLayerNames,
+          objectData.layerName,
+          objectData.ancestorLayerNames
+        )
         if (objectData.layerName) {
           if (!childData.layerName) {
             childData.layerName = objectData.layerName

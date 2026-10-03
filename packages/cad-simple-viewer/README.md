@@ -173,10 +173,37 @@ Existing intersection source/pair/time/primitive limits remain; they do not boun
 the cost of native primitive collection. Acquired marker repaint remains tied to
 normal input refresh, although stale points are rejected by the next query.
 
-Top-level source layer OFF/FROZEN registration and resource cleanup are covered by
-offline tests. Full nested-layer freeze/thaw rendering and regeneration still need
-qualification before product adoption. These checks do not establish browser/GPU
-behavior, arbitrary reprojection, real DWG fidelity, or supported package releases.
+### Reference layer visibility
+
+`manager.setOverlayLayerVisibility(referenceId, layerName, { isOff, isFrozen })`
+changes the addressed placement's display state. Both flags are optional; an
+unknown reference or layer returns `false`. It does not edit the source database
+or host undo history. Two references sharing one parsed database can therefore
+have different layer settings. `getOverlayLayout(id)?.getLayer(name)?.info`
+returns the current layer state.
+
+Host layer commands still update the host database through the native layer
+service. Both paths apply visibility through the same layout and native batch
+slots. Frozen ancestor layers hide all nested descendants; OFF only hides geometry
+on the effective leaf layer, including inherited layer 0. Canonical ancestor names
+survive flattening, template cloning, compaction and deferred glyph generation.
+Compaction combines only geometry with matching visibility dependencies. Layer
+toggles for registered geometry change existing slot masks without regenerating
+geometry or rebuilding fonts. Host geometry skipped at initial load still uses
+its existing conversion-on-thaw path. Explicit entity hide/show remains
+independent, so thaw cannot unhide an
+explicitly hidden object.
+
+Picking, snapping, live bounds and newly extracted previews follow the same layout
+state. Detached command preview copies remain snapshots; managed compare overlays
+refresh on mask changes. Replacement copies the latest explicit layer choices at
+commit for names still present, while new layers retain source defaults. Parking
+retains those choices with the owning layout. Persistence is the caller's concern.
+
+Nested OFF/FROZEN ownership, pending layer-0 inheritance, deferred glyph ancestry,
+independent placements, cleanup and replacement are covered by focused offline
+fixtures. These checks do not establish browser/GPU behavior, arbitrary
+reprojection, dynamic-block or real DWG fidelity, or supported package releases.
 
 ## Available Exports
 

@@ -68,7 +68,9 @@ export function resolveLineTypeScale(
   context: AcTrRenderContext
 ): number {
   const options = context.styleManager.options
-  return (options.ltscale || 1) * (options.celtscale || 1) * traits.lineTypeScale
+  return (
+    (options.ltscale || 1) * (options.celtscale || 1) * traits.lineTypeScale
+  )
 }
 
 /**
@@ -160,10 +162,7 @@ function createPlacementGlyph(
   lineTypeScale: number
 ): AcTrGlyphEntity | null {
   const flag = placement.element.elementTypeFlag
-  const size = Math.max(
-    (placement.element.scale ?? 0.1) * lineTypeScale,
-    1e-6
-  )
+  const size = Math.max((placement.element.scale ?? 0.1) * lineTypeScale, 1e-6)
   const style = resolveTextStyleForElement(placement, context)
 
   if (isComplexTextElement(flag)) {
@@ -206,10 +205,7 @@ function createPlacementGlyph(
   }
 
   // Non-text/shape flag residue with an explicit shape identity.
-  if (
-    placement.element.shapeNumber != null ||
-    placement.element.shapeName
-  ) {
+  if (placement.element.shapeNumber != null || placement.element.shapeName) {
     const shape: AcGiShapeData = {
       name: placement.element.shapeName,
       shapeNumber: placement.element.shapeNumber,
@@ -558,7 +554,10 @@ function collectPendingComplexGlyphs(entity: AcTrEntity): {
   const others: AcTrGlyphEntity[] = []
   for (const glyph of pending) {
     if (glyph instanceof AcTrMText) {
-      const key = glyph.linetypeGlyphShareKey
+      const key = JSON.stringify([
+        glyph.linetypeGlyphShareKey,
+        glyph.userData.ancestorLayerNames ?? []
+      ])
       let group = textGroups.get(key)
       if (!group) {
         group = []

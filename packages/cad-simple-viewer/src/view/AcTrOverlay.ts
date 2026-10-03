@@ -10,7 +10,8 @@ import { AcTrLayout } from './AcTrLayout'
 import {
   acTrCheckOverlaySignal,
   AcTrOverlayOptions,
-  acTrSnapshotOverlayTransform} from './AcTrOverlayOptions'
+  acTrSnapshotOverlayTransform
+} from './AcTrOverlayOptions'
 import { acTrRegisterGroup } from './AcTrRegisterGroup'
 
 /**
@@ -98,9 +99,6 @@ export async function acTrPrepareOverlay(
           acTrRegisterGroup(group, mapper, {
             addEntity: entity => {
               layout.addEntity(entity)
-            },
-            setEntityVisible: (id, visible) => {
-              layout.setEntityVisible(id, visible)
             }
           })
         } else {

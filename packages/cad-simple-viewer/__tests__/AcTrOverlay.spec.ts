@@ -123,7 +123,8 @@ describe('detached native overlay preparation', () => {
         expect(detail.hasEntity(insert.objectId)).toBe(true)
         expect(inherited.visible).toBe(!state.isOff && !state.isFrozen)
         expect(detail.visible).toBe(true)
-        expect(detail.getEntityVisible(insert.objectId)).toBe(!state.isFrozen)
+        expect(detail.getEntityVisible(insert.objectId)).toBe(true)
+        expect(detail.box.isEmpty()).toBe(state.isFrozen)
         const hit = layout.search(
           new AcGeBox2d().setFromPoints([
             { x: -1, y: -1 },
@@ -135,17 +136,9 @@ describe('detached native overlay preparation', () => {
         ).toEqual(edges.map(edge => edge.objectId).sort())
         // Freeze does not discard geometry; native thaw restores named fragments.
         if (state.isFrozen) {
-          const base = database.tables.layerTable.getAt('BASE')!
-          base.isFrozen = false
-          expect(base.isFrozen).toBe(false)
-          layout.updateLayer({
-            name: base.name,
-            isOff: base.isOff,
-            isFrozen: base.isFrozen,
-            color: base.color
-          })
-          layout.applyInsertLayerFreeze('BASE', false)
-          expect(inherited.visible).toBe(true)
+          layout.setLayerVisibility('BASE', { isFrozen: false })
+          expect(database.tables.layerTable.getAt('BASE')!.isFrozen).toBe(true)
+          expect(detail.box.isEmpty()).toBe(false)
           expect(detail.getEntityVisible(insert.objectId)).toBe(true)
         }
       } finally {

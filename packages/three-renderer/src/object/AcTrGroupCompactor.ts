@@ -40,6 +40,8 @@ interface CompactBucket {
    * Preserved so INSERT material remapping still treats the leaf as layer 0.
    */
   authoredLayerName: string | undefined
+  /** Native freeze gates; geometry with different ancestry cannot share a slot. */
+  ancestorLayerNames: readonly string[] | undefined
   /** Whether raycasts should use the leaf bounding box. */
   bboxIntersectionCheck: boolean
   /** Style-manager material id for later layer remaps. */
@@ -131,6 +133,7 @@ export class AcTrGroupCompactor {
       const objectData = getObjectUserData(child)
       const layerName = objectData.layerName ?? ''
       const authoredLayerName = objectData.authoredLayerName
+      const ancestorLayerNames = objectData.ancestorLayerNames
       const bboxIntersectionCheck = !!drawable.bboxIntersectionCheck
       const styleMaterialId = drawable.styleMaterialId
       const hasIndex = this.hasIndex(child)
@@ -145,7 +148,8 @@ export class AcTrGroupCompactor {
         layerName,
         authoredLayerName,
         bboxIntersectionCheck,
-        styleMaterialId
+        styleMaterialId,
+        ancestorLayerNames
       )
       let keyed = bucketsByKey.get(key)
       if (!keyed) {
@@ -173,6 +177,7 @@ export class AcTrGroupCompactor {
           attrSignature,
           layerName,
           authoredLayerName,
+          ancestorLayerNames,
           bboxIntersectionCheck,
           styleMaterialId,
           origin: _worldOffset.clone(),
@@ -299,9 +304,10 @@ export class AcTrGroupCompactor {
     layerName: string,
     authoredLayerName: string | undefined,
     bboxIntersectionCheck: boolean,
-    styleMaterialId: number | undefined
+    styleMaterialId: number | undefined,
+    ancestorLayerNames: readonly string[] | undefined
   ): string {
-    return `${family}|${materialId}|${hasIndex ? 1 : 0}|${attrSignature}|${layerName}|${authoredLayerName ?? ''}|${bboxIntersectionCheck ? 1 : 0}|${styleMaterialId ?? ''}`
+    return `${family}|${materialId}|${hasIndex ? 1 : 0}|${attrSignature}|${layerName}|${authoredLayerName ?? ''}|${bboxIntersectionCheck ? 1 : 0}|${styleMaterialId ?? ''}|${JSON.stringify(ancestorLayerNames ?? [])}`
   }
 
   /**
@@ -535,9 +541,7 @@ export class AcTrGroupCompactor {
       _v1
         .fromBufferAttribute(instanceStart, i)
         .applyMatrix4(_matrixNoTranslation)
-      _v2
-        .fromBufferAttribute(instanceEnd, i)
-        .applyMatrix4(_matrixNoTranslation)
+      _v2.fromBufferAttribute(instanceEnd, i).applyMatrix4(_matrixNoTranslation)
       _v1.add(_translation).sub(origin)
       _v2.add(_translation).sub(origin)
       if (
@@ -628,6 +632,7 @@ export class AcTrGroupCompactor {
 
     const objectData = getObjectUserData(object)
     objectData.layerName = bucket.layerName
+    objectData.ancestorLayerNames = bucket.ancestorLayerNames
     if (bucket.authoredLayerName != null) {
       objectData.authoredLayerName = bucket.authoredLayerName
     }

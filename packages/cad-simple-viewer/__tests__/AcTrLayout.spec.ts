@@ -92,6 +92,7 @@ jest.mock('@mlightcad/three-renderer', () => {
       group.hasEntity = jest.fn()
       group.setEntityVisible = jest.fn().mockReturnValue(true)
       group.getEntityVisible = jest.fn()
+      group.setFrozenLayers = jest.fn()
       group.clear = jest.fn()
       group.computeBoundingBox = mockComputeBoundingBox
       group.appendLineGeometry = mockAppendLineGeometry
@@ -491,9 +492,7 @@ describe('AcTrLayout spatial index', () => {
       min: { x: 101.5, y: 198.5 },
       max: { x: 102.5, y: 201.5 }
     } as unknown as import('@mlightcad/data-model').AcGeBox2d
-    expect(layout.search(farPick).some(hit => hit.id === 'point-1')).toBe(
-      false
-    )
+    expect(layout.search(farPick).some(hit => hit.id === 'point-1')).toBe(false)
 
     mockCollectPointObjectWorldBoxes.mockImplementation(
       (out: Map<string, THREE.Box3> = new Map()) => {
@@ -598,102 +597,38 @@ describe('AcTrLayout insert layer freeze', () => {
     mockRemoveEntity.mockReturnValue(false)
   })
 
-  it('hides other-layer INSERT fragments when the INSERT layer is frozen', () => {
+  it('propagates source-local freeze state without overwriting requested visibility', () => {
     const layout = new AcTrLayout()
     layout.addLayer(createLayerInfo('Wall'))
-    layout.addLayer(createLayerInfo('DIM'))
-
-    const onWall = createEntity('insert-a', 'Wall')
-    onWall.userData.insertLayerName = 'Wall'
-    const onDim = createEntity('insert-a', 'DIM')
-    onDim.userData.insertLayerName = 'Wall'
-    layout.addEntity(onWall)
-    layout.addEntity(onDim)
-
-    const wall = layout.getLayer('Wall')!
-    const dim = layout.getLayer('DIM')!
-    jest.spyOn(wall, 'hasEntity').mockReturnValue(true)
-    jest.spyOn(dim, 'hasEntity').mockReturnValue(true)
-    const dimSetVisible = jest
-      .spyOn(dim, 'setEntityVisible')
-      .mockReturnValue(true)
-    const wallSetVisible = jest
-      .spyOn(wall, 'setEntityVisible')
-      .mockReturnValue(true)
-
-    expect(layout.applyInsertLayerFreeze('Wall', true)).toEqual(['insert-a'])
-    expect(dimSetVisible).toHaveBeenCalledWith('insert-a', false)
-    expect(wallSetVisible).not.toHaveBeenCalled()
-
-    dimSetVisible.mockClear()
-    expect(layout.applyInsertLayerFreeze('Wall', false)).toEqual(['insert-a'])
-    expect(dimSetVisible).toHaveBeenCalledWith('insert-a', true)
+    const detail = layout.addLayer(createLayerInfo('DETAIL'))
+    const frozen = jest.spyOn(detail, 'setFrozenLayers')
+    const visibility = jest.spyOn(detail, 'setEntityVisible')
+    layout.setLayerVisibility('Wall', { isFrozen: true })
+    expect(frozen).toHaveBeenLastCalledWith(new Set(['Wall']))
+    layout.setLayerVisibility('Wall', { isFrozen: false, isOff: true })
+    expect(frozen).toHaveBeenLastCalledWith(new Set())
+    expect(visibility).not.toHaveBeenCalled()
+    expect(layout.getLayer('Wall')!.visible).toBe(false)
+    expect(detail.visible).toBe(true)
   })
 
-  it('does not hide fragments when freezing a content layer that is not the INSERT layer', () => {
-    const layout = new AcTrLayout()
-    layout.addLayer(createLayerInfo('Wall'))
-    layout.addLayer(createLayerInfo('DIM'))
-
-    const onWall = createEntity('insert-a', 'Wall')
-    onWall.userData.insertLayerName = 'Wall'
-    const onDim = createEntity('insert-a', 'DIM')
-    onDim.userData.insertLayerName = 'Wall'
-    layout.addEntity(onWall)
-    layout.addEntity(onDim)
-
-    const wall = layout.getLayer('Wall')!
-    const dim = layout.getLayer('DIM')!
-    jest.spyOn(wall, 'hasEntity').mockReturnValue(true)
-    jest.spyOn(dim, 'hasEntity').mockReturnValue(true)
-    const wallSetVisible = jest
-      .spyOn(wall, 'setEntityVisible')
-      .mockReturnValue(true)
-
-    expect(layout.applyInsertLayerFreeze('DIM', true)).toEqual([])
-    expect(wallSetVisible).not.toHaveBeenCalled()
-  })
-
-  it('hides a sole other-layer INSERT fragment when the INSERT layer is frozen', () => {
-    // INSERT on Wall with nested content only on DIM (no Wall bucket).
-    const layout = new AcTrLayout()
-    layout.addLayer(createLayerInfo('Wall'))
-    layout.addLayer(createLayerInfo('DIM'))
-
-    const onDim = createEntity('insert-a', 'DIM')
-    onDim.userData.insertLayerName = 'Wall'
-    layout.addEntity(onDim)
-
-    const dim = layout.getLayer('DIM')!
-    jest.spyOn(dim, 'hasEntity').mockReturnValue(true)
-    const dimSetVisible = jest
-      .spyOn(dim, 'setEntityVisible')
-      .mockReturnValue(true)
-
-    expect(layout.applyInsertLayerFreeze('Wall', true)).toEqual(['insert-a'])
-    expect(dimSetVisible).toHaveBeenCalledWith('insert-a', false)
-
-    dimSetVisible.mockClear()
-    expect(layout.applyInsertLayerFreeze('Wall', false)).toEqual(['insert-a'])
-    expect(dimSetVisible).toHaveBeenCalledWith('insert-a', true)
-  })
-
-  it('no-ops when the INSERT only has a fragment on its own layer', () => {
-    const layout = new AcTrLayout()
-    layout.addLayer(createLayerInfo('Wall'))
-
-    const onWall = createEntity('insert-a', 'Wall')
-    onWall.userData.insertLayerName = 'Wall'
-    layout.addEntity(onWall)
-
-    const wall = layout.getLayer('Wall')!
-    jest.spyOn(wall, 'hasEntity').mockReturnValue(true)
-    const wallSetVisible = jest
-      .spyOn(wall, 'setEntityVisible')
-      .mockReturnValue(true)
-
-    expect(layout.applyInsertLayerFreeze('Wall', true)).toEqual([])
-    expect(wallSetVisible).not.toHaveBeenCalled()
+  it('retains explicit reference overrides without replacing new source defaults', () => {
+    const old = new AcTrLayout()
+    old.addLayer({ ...createLayerInfo('Wall'), isOff: true })
+    old.addLayer(createLayerInfo('DETAIL'))
+    old.addLayer(createLayerInfo('REMOVED'))
+    old.setLayerVisibility('DETAIL', { isFrozen: true })
+    old.setLayerVisibility('REMOVED', { isOff: true })
+    const next = new AcTrLayout()
+    next.addLayer(createLayerInfo('Wall'))
+    next.addLayer(createLayerInfo('DETAIL'))
+    next.addLayer({ ...createLayerInfo('NEW'), isOff: true })
+    next.copyLayerVisibilityFrom(old)
+    expect(next.getLayer('DETAIL')!.info.isFrozen).toBe(true)
+    expect(next.getLayer('Wall')!.info.isOff).toBe(false)
+    expect(next.getLayer('NEW')!.info.isOff).toBe(true)
+    expect(next.getLayer('REMOVED')).toBeUndefined()
+    expect(next.setLayerVisibility('UNKNOWN', { isOff: true })).toBe(false)
   })
 
   it('replays compare-display options onto layers created after setCompareDisplay', () => {

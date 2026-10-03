@@ -1,5 +1,8 @@
-import type { AcDbObjectId } from '@mlightcad/data-model'
-import { AcTrEntity, AcTrGroup } from '@mlightcad/three-renderer'
+import {
+  AcTrEntity,
+  AcTrGroup,
+  acTrResolveAncestorLayerNames
+} from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 
 import type { AcEdSpatialQueryResultItem } from '../editor/view/AcEdSpatialQueryResult'
@@ -12,7 +15,6 @@ import type { AcTrInheritedLayerMaterialMapper } from './AcTrInheritedLayerMater
 /** Host scene and detached reference layouts share the native registration path. */
 export interface AcTrGroupRegistrationSink {
   addEntity(entity: AcTrEntity): void
-  setEntityVisible(objectId: AcDbObjectId, visible: boolean): void
 }
 
 /**
@@ -46,6 +48,11 @@ export function acTrRegisterGroup(
         hidden.push(child)
         continue
       }
+      child.userData.ancestorLayerNames = acTrResolveAncestorLayerNames(
+        child.userData.ancestorLayerNames,
+        group.layerName,
+        group.userData.ancestorLayerNames
+      )
       const layerName: string = child.userData.layerName ?? '0'
       const bucket = pending.get(layerName)
       if (bucket) bucket.push(child)
@@ -73,7 +80,10 @@ export function acTrRegisterGroup(
       fragment.objectId = group.objectId
       fragment.ownerId = group.ownerId
       fragment.layerName = effectiveLayerName
-      fragment.userData.insertLayerName = group.layerName
+      fragment.userData.ancestorLayerNames = acTrResolveAncestorLayerNames(
+        group.userData.ancestorLayerNames,
+        group.layerName
+      )
       fragment.wcsBbox = bounds
       if (!registeredChildIndex && childBoxes.length > 0) {
         ;(
@@ -92,14 +102,6 @@ export function acTrRegisterGroup(
       } finally {
         fragment.dispose()
       }
-    }
-    if (
-      group.renderContext.database?.tables.layerTable.getAt(group.layerName)
-        ?.isFrozen
-    ) {
-      // Register first so thaw can restore existing geometry. Layer OFF instead
-      // affects the inherited bucket alone through normal layer visibility.
-      sink.setEntityVisible(group.objectId, false)
     }
   } finally {
     for (const objects of pending.values()) {

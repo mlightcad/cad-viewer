@@ -72,10 +72,11 @@ export interface AcTrEntityIdentityUserData {
    */
   authoredLayerName?: string
   /**
-   * Layer of the outermost (or owning) INSERT that produced this drawable.
-   * Used to hide all INSERT fragments when that INSERT layer is frozen.
+   * Sorted unique effective ancestor layers that must remain thawed for this
+   * drawable. An unbound block template may retain '0' until the next INSERT
+   * resolves its inherited layer. Snapshots are immutable and source-scoped.
    */
-  insertLayerName?: string
+  ancestorLayerNames?: readonly string[]
 }
 
 /**

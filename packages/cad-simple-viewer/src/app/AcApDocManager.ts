@@ -84,6 +84,7 @@ import {
   AcEdCalculateSizeCallback,
   AcEdCommand,
   AcEdCommandStack,
+  AcEdLayerInfo,
   AcEdOpenMode,
   eventBus
 } from '../editor'
@@ -96,7 +97,8 @@ import type { AcTrLayout } from '../view/AcTrLayout'
 import {
   acTrCheckOverlaySignal,
   AcTrOverlayOptions,
-  acTrSnapshotOverlayTransform} from '../view/AcTrOverlayOptions'
+  acTrSnapshotOverlayTransform
+} from '../view/AcTrOverlayOptions'
 import { AcApBusyIndicator } from './AcApBusyIndicator'
 import { acapBindCommandServices } from './AcApCommandServices'
 import { AcApContext } from './AcApContext'
@@ -1571,8 +1573,11 @@ export class AcApDocManager {
               )
             }
             const id = `overlay-${this._nextOverlayId++}`
-            if (replacement)
-              layout.visible = session.overlays.get(replacement)!.layout.visible
+            if (replacement) {
+              const previous = session.overlays.get(replacement)!.layout
+              layout.visible = previous.visible
+              layout.copyLayerVisibilityFrom(previous)
+            }
             // Native publication and the caller's metadata update share one
             // synchronous turn. The previous layout survives until this point.
             scene.internalScene.add(layout.internalObject)
@@ -1634,6 +1639,27 @@ export class AcApDocManager {
       if (!overlay) continue
       overlay.layout.visible = visible
       ;(session.context.view as AcTrView2d).isDirty = true
+      return true
+    }
+    return false
+  }
+
+  /**
+   * Changes one reference's display layers without editing its source database,
+   * another placement of the same source, or the host's layer/history state.
+   */
+  setOverlayLayerVisibility(
+    overlayId: string,
+    layerName: string,
+    changes: Partial<Pick<AcEdLayerInfo, 'isOff' | 'isFrozen'>>
+  ): boolean {
+    for (const session of this._sessions) {
+      const overlay = session.overlays.get(overlayId)
+      if (!overlay) continue
+      if (!overlay.layout.setLayerVisibility(layerName, changes)) return false
+      if (!session.viewState) {
+        ;(session.context.view as AcTrView2d).isDirty = true
+      }
       return true
     }
     return false

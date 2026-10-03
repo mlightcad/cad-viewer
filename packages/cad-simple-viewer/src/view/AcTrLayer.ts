@@ -85,7 +85,7 @@ export class AcTrLayer {
   /**
    * Layer name
    */
-  private _name: string
+  private _info: AcEdLayerInfo
   /**
    * This group contains all entities in this layer
    */
@@ -103,7 +103,7 @@ export class AcTrLayer {
    */
   constructor(layer: AcEdLayerInfo) {
     this._group = new AcTrBatchedGroup()
-    this._name = layer.name
+    this._info = { ...layer }
     this._cachedBox = new THREE.Box3()
     this._boxDirty = true
     this._group.visible = AcTrLayer.isLayerVisible(layer)
@@ -113,10 +113,22 @@ export class AcTrLayer {
    * Layer name
    */
   get name() {
-    return this._name
+    return this._info.name
   }
   set name(value: string) {
-    this._name = value
+    this._info.name = value
+  }
+
+  get isOff() {
+    return this._info.isOff
+  }
+  get isFrozen() {
+    return this._info.isFrozen
+  }
+
+  /** Snapshot of this layout's layer state; references do not edit source records. */
+  get info(): AcEdLayerInfo {
+    return { ...this._info }
   }
 
   /**
@@ -169,7 +181,7 @@ export class AcTrLayer {
   get stats() {
     const batchedGroupStats = this._group.stats
     return {
-      name: this._name,
+      name: this._info.name,
       ...batchedGroupStats
     } as AcTrLayerStats
   }
@@ -187,7 +199,7 @@ export class AcTrLayer {
    */
   update(value: AcEdLayerInfo) {
     const wasVisible = this.visible
-    this._name = value.name
+    this._info = { ...value }
     this._group.visible = AcTrLayer.isLayerVisible(value)
     if (wasVisible !== this.visible) {
       this._boxDirty = true
@@ -333,8 +345,14 @@ export class AcTrLayer {
     return this._group.setEntityVisible(objectId, visible)
   }
 
+  /** Applies source-local ancestor freeze masks without rebuilding geometry. */
+  setFrozenLayers(layers: ReadonlySet<string>) {
+    this._group.setFrozenLayers(layers)
+    this._boxDirty = true
+  }
+
   /**
-   * Returns the current scene visibility for one entity.
+   * Returns requested entity visibility, independently of layer masks.
    */
   getEntityVisible(objectId: AcDbObjectId) {
     return this._group.getEntityVisible(objectId)

@@ -2129,9 +2129,7 @@ export class AcTrView2d extends AcEdBaseView {
     layer: AcDbLayerTableRecord,
     changes: Partial<AcDbLayerTableRecordAttrs>
   ) {
-    const { touchedObjectIds } = this._scene.updateLayer(
-      this.toLayerInfo(layer)
-    )
+    this._scene.updateLayer(this.toLayerInfo(layer))
 
     if (this._layerAppearance.layerStyleMayHaveChanged(changes)) {
       this._layerAppearance.syncFromLiveRecord(layer)
@@ -2145,12 +2143,6 @@ export class AcTrView2d extends AcEdBaseView {
       if (AcTrLayer.isLayerVisible(layerInfo) || !layerInfo.isFrozen) {
         void this.convertMissingEntitiesOnLayer(layer.name)
       }
-    }
-
-    // Thawing an INSERT layer may restore cross-layer fragments that were
-    // session-hidden; reapply that state.
-    for (const objectId of touchedObjectIds) {
-      this.applySessionHiddenObjectState(objectId)
     }
 
     this._isDirty = true
@@ -3784,16 +3776,6 @@ export class AcTrView2d extends AcEdBaseView {
           threeEntity.ownerId = entity.ownerId
           threeEntity.layerName = entity.layer
           threeEntity.visible = entity.visibility !== false
-          if (
-            threeEntity instanceof AcTrGroup &&
-            (threeEntity as AcTrGroup).isOnTheSameLayer
-          ) {
-            // Layer-0 inheritance must run AFTER finishEntityGeometry so TEXT/
-            // MTEXT glyph materials exist. Remapping earlier (before asyncDraw)
-            // leaves GM/GB-style labels as ACI-7 white while the block frame
-            // remaps correctly (GAS-Meter / GAS-Box, A517B / A517E).
-            threeEntity.userData.insertLayerName = threeEntity.layerName
-          }
           const isMultiLayerGroup =
             threeEntity instanceof AcTrGroup &&
             !(threeEntity as AcTrGroup).isOnTheSameLayer
@@ -3977,9 +3959,6 @@ export class AcTrView2d extends AcEdBaseView {
           this._scene.addEntity(entity, true)
           this._convertPhaseMs.addEntity += performance.now() - tAdd
           this.applySessionHiddenObjectState(entity.objectId)
-        },
-        setEntityVisible: (id, visible) => {
-          this._scene.setEntityVisible(id, visible)
         }
       })
 

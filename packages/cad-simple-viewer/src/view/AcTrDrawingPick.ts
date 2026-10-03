@@ -219,7 +219,7 @@ function occurrenceVisible(
   for (const [index, entity] of ancestors.entries()) {
     if (entity.visibility === false) return false
     const name = entity.layer === '0' ? inheritedLayer : entity.layer
-    const layer = entity.database.tables.layerTable.getAt(name)
+    const layer = layout.getLayer(name)
     // A frozen INSERT hides its subtree. An off INSERT layer only hides
     // inherited layer-0 geometry; explicit child layers keep their own state.
     if (layer?.isFrozen) return false

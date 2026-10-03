@@ -34,8 +34,7 @@ describe('native group registration ownership', () => {
         acTrRegisterGroup(group, mapper, {
           addEntity: () => {
             throw new Error('sink failed')
-          },
-          setEntityVisible: jest.fn()
+          }
         })
       ).toThrow('sink failed')
       expect(group.children).toHaveLength(0)

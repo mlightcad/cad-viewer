@@ -373,7 +373,10 @@ export class AcTrGroup extends AcTrEntity {
     if (child.objectId || !(child instanceof AcTrGlyphEntity)) {
       return false
     }
-    const key = child.glyphStyleShareKey
+    const key = JSON.stringify([
+      child.glyphStyleShareKey,
+      child.userData.ancestorLayerNames ?? []
+    ])
     const bucket = shared.get(key)
     if (bucket) {
       bucket.push(child)

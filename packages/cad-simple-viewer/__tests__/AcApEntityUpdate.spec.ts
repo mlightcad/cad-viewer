@@ -1,4 +1,9 @@
 import type { AcDbEntity } from '@mlightcad/data-model'
+import {
+  AcTrBatchedGroup,
+  AcTrEntity,
+  AcTrRenderContext
+} from '@mlightcad/three-renderer'
 
 import {
   canApplyVisibilityOnlySceneUpdate,
@@ -64,6 +69,31 @@ describe('AcApEntityUpdate', () => {
         () => undefined
       )
     ).toBe(false)
+  })
+
+  it('regenerates a registered native root whose geometry has not been produced', () => {
+    const context = new AcTrRenderContext()
+    const group = new AcTrBatchedGroup()
+    const drawable = new AcTrEntity(context)
+    drawable.objectId = 'PENDING'
+    try {
+      group.addEntity(drawable)
+      expect(group.hasEntity('PENDING')).toBe(true)
+      expect(
+        canApplyVisibilityOnlySceneUpdate(
+          {
+            entity: createEntity('PENDING', true),
+            changes: { visibility: true }
+          },
+          id => group.hasEntity(id),
+          id => group.getEntityVisible(id)
+        )
+      ).toBe(false)
+    } finally {
+      drawable.dispose()
+      group.clear()
+      context.dispose()
+    }
   })
 
   it('allows visibility-only show when batched geometry already exists', () => {

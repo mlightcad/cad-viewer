@@ -182,11 +182,11 @@ describe('AcTrBatchedGroup entity slot records', () => {
 
     expect(group.getEntityVisible('two-slots')).toBe(true)
 
-    // Hiding only the second slot must be observed: an implementation that
-    // looked at the first slot only would still report `true` here.
+    // Slot masks do not change the logical root state: one hidden occurrence
+    // must not make visible siblings unpickable as a whole INSERT.
     const batchedLine = findBatchedLine(group)!
     batchedLine.setVisibleAt(1, false)
-    expect(group.getEntityVisible('two-slots')).toBe(false)
+    expect(group.getEntityVisible('two-slots')).toBe(true)
     batchedLine.setVisibleAt(1, true)
     expect(group.getEntityVisible('two-slots')).toBe(true)
 
@@ -247,7 +247,7 @@ describe('AcTrBatchedGroup entity slot records', () => {
     const batchedLine = findBatchedLine(group)!
     expect(group.getEntityVisible('multi-pass')).toBe(true)
     batchedLine.setVisibleAt(0, false)
-    expect(group.getEntityVisible('multi-pass')).toBe(false)
+    expect(group.getEntityVisible('multi-pass')).toBe(true)
 
     expect(group.removeEntity('multi-pass')).toBe(true)
     expect(group.hasEntity('multi-pass')).toBe(false)

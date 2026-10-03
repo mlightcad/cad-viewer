@@ -204,6 +204,71 @@ describe('native source-qualified drawing picks', () => {
     expect(hit.isCurrent()).toBe(false)
   })
 
+  it('keeps nested display and picks source-local across freeze, off, thaw and explicit hiding', async () => {
+    const d = drawing()
+    acdbWithDatabase(d.database, () => {
+      for (const name of ['ROOT', 'LEFT', 'RIGHT']) {
+        d.database.tables.layerTable.add(new AcDbLayerTableRecord({ name }))
+      }
+      const inherited = new AcDbLine(
+        { x: 0, y: 2, z: 0 },
+        { x: 10, y: 2, z: 0 }
+      )
+      d.database.tables.blockTable.getAt('WALL')!.appendEntity(inherited)
+      const outer = new AcDbBlockTableRecord({ name: 'PAIR' })
+      d.database.tables.blockTable.add(outer)
+      for (const [name, x] of [
+        ['LEFT', 0],
+        ['RIGHT', 30]
+      ] as const) {
+        const child = new AcDbBlockReference('WALL')
+        child.layer = name
+        child.position = { x, y: 0, z: 0 }
+        outer.appendEntity(child)
+      }
+      d.insert.blockName = 'PAIR'
+      d.insert.layer = 'ROOT'
+    })
+    const a = await prepare(d.database, 'A')
+    const b = await prepare(d.database, 'B')
+    const revision = d.database.renderingRevision
+    a.layout.setLayerVisibility('0', { isFrozen: true })
+    // Nested layer 0 inherits LEFT/RIGHT; global layer 0 must not hide it.
+    expect(pick(a, 96, 210)).toHaveLength(1)
+    const retained = pick(a, 100, 210)[0]
+    expect(retained?.entity).toBe(d.edge)
+    const geometryCount = a.layout.stats.summary.entityCount
+    const beforeBounds = a.layout.box.clone()
+    a.layout.setLayerVisibility('LEFT', { isFrozen: true })
+    expect(retained.isCurrent()).toBe(false)
+    expect(pick(a, 100, 210)).toEqual([])
+    expect(pick(a, 100, 270)[0]?.entity).toBe(d.edge)
+    expect(pick(b, 100, 210)[0]?.entity).toBe(d.edge)
+    expect(a.layout.box.min.x).toBeGreaterThan(beforeBounds.min.x)
+    expect(a.layout.getEntityVisible(d.insert.objectId)).toBe(true)
+    expect(a.layout.stats.summary.entityCount).toBe(geometryCount)
+    expect(d.database.tables.layerTable.getAt('LEFT')!.isFrozen).toBe(false)
+    expect(d.database.renderingRevision).toBe(revision)
+
+    // OFF on an INSERT preserves its independently named SURVEY contents.
+    a.layout.setLayerVisibility('LEFT', { isFrozen: false, isOff: true })
+    expect(pick(a, 100, 210)[0]?.entity).toBe(d.edge)
+    expect(pick(a, 96, 210)).toEqual([])
+    expect(pick(b, 96, 210)).toHaveLength(1)
+    a.layout.setLayerVisibility('SURVEY', { isOff: true })
+    expect(pick(a, 100, 210)).toEqual([])
+    expect(pick(a, 100, 270)).toEqual([])
+    a.layout.setLayerVisibility('SURVEY', { isOff: false })
+    a.layout.setLayerVisibility('ROOT', { isFrozen: true })
+    expect(a.layout.box.isEmpty()).toBe(true)
+    a.layout.setEntityVisible(d.insert.objectId, false)
+    a.layout.setLayerVisibility('ROOT', { isFrozen: false })
+    expect(a.layout.box.isEmpty()).toBe(true)
+    expect(pick(a, 100, 270)).toEqual([])
+    a.layout.setEntityVisible(d.insert.objectId, true)
+    expect(pick(a, 100, 270)[0]?.entity).toBe(d.edge)
+  })
+
   it('resolves actual nested INSERT and MINSERT occurrences without aliasing leaf handles', async () => {
     const d = drawing()
     acdbWithDatabase(d.database, () => {

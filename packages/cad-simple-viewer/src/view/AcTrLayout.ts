@@ -110,11 +110,13 @@ export class AcTrLayout {
   private _extentExcludedObjectIds: Set<AcDbObjectId>
   /** Map of layers indexed by layer name */
   private _layers: Map<string, AcTrLayer>
-  /**
-   * INSERT object id → INSERT's own layer name. Used when freezing an INSERT
-   * layer to hide fragments that were bucketed onto other layers.
-   */
-  private _insertLayerByObjectId: Map<AcDbObjectId, string>
+  /** Source-local layer state used by every nested INSERT batch in this layout. */
+  private _frozenLayers = new Set<string>()
+  /** Explicit reference display choices, separate from the source defaults. */
+  private _layerVisibilityOverrides = new Map<
+    string,
+    Partial<Pick<AcEdLayerInfo, 'isOff' | 'isFrozen'>>
+  >()
   /** The flag indicating whether the layout is loaded/activated */
   private _isLoaded: boolean
   /**
@@ -144,7 +146,6 @@ export class AcTrLayout {
     this._boxDirty = true
     this._extentExcludedObjectIds = new Set()
     this._layers = new Map()
-    this._insertLayerByObjectId = new Map()
     this._isLoaded = false
   }
 
@@ -328,7 +329,8 @@ export class AcTrLayout {
     this.clearSmartExtentsCache()
     this._boxDirty = true
     this._extentExcludedObjectIds.clear()
-    this._insertLayerByObjectId.clear()
+    this._frozenLayers.clear()
+    this._layerVisibilityOverrides.clear()
     this._spatialIndex.clear()
     const release = this.releaseResources
     this.releaseResources = undefined
@@ -446,11 +448,6 @@ export class AcTrLayout {
 
     layer.addEntity(entity)
 
-    const insertLayerName = entity.userData.insertLayerName
-    if (insertLayerName) {
-      this._insertLayerByObjectId.set(entity.objectId, insertLayerName)
-    }
-
     if (!extendBbox) {
       this._extentExcludedObjectIds.add(entity.objectId)
     } else {
@@ -515,7 +512,6 @@ export class AcTrLayout {
     if (result) {
       this._spatialIndex.removeById(objectId)
       this._extentExcludedObjectIds.delete(objectId)
-      this._insertLayerByObjectId.delete(objectId)
       this.invalidateBox()
     }
     return result
@@ -530,10 +526,6 @@ export class AcTrLayout {
   updateEntity(entity: AcTrEntity) {
     for (const [_, layer] of this._layers) {
       if (layer.updateEntity(entity)) {
-        const insertLayerName = entity.userData.insertLayerName
-        if (insertLayerName) {
-          this._insertLayerByObjectId.set(entity.objectId, insertLayerName)
-        }
         this._spatialIndex.removeById(entity.objectId)
         this.registerEntitySpatialIndex(entity)
         this.invalidateBox()
@@ -778,6 +770,14 @@ export class AcTrLayout {
       layer = new AcTrLayer(info)
       this._layers.set(name, layer)
       this._group.add(layer.internalObject)
+      // A layer may be introduced after geometry on other layers. Its freeze
+      // state must reach those nested descendants as well as future batches.
+      if (info.isFrozen) {
+        this._frozenLayers.add(name)
+        this.syncFrozenLayers()
+      } else {
+        layer.setFrozenLayers(this._frozenLayers)
+      }
       if (this._compareDisplayOptions) {
         layer.setCompareDisplay(this._compareDisplayOptions)
       }
@@ -796,6 +796,11 @@ export class AcTrLayout {
       // TODO: Handle layer name changes
       const wasVisible = layer.visible
       layer.update(info)
+      if (this._frozenLayers.has(info.name) !== info.isFrozen) {
+        if (info.isFrozen) this._frozenLayers.add(info.name)
+        else this._frozenLayers.delete(info.name)
+        this.syncFrozenLayers()
+      }
       if (wasVisible !== layer.visible) {
         this.invalidateBox()
       }
@@ -803,46 +808,39 @@ export class AcTrLayout {
     return layer
   }
 
-  /**
-   * Applies AutoCAD INSERT-layer freeze semantics across decomposed fragments.
-   *
-   * Freezing the INSERT's own layer hides every scene bucket that shares that
-   * INSERT object id, including geometry bucketed onto other layers — even when
-   * the INSERT has no fragment on its own layer (only other-layer buckets).
-   * Thawing restores those other-layer buckets (the INSERT layer group
-   * visibility is handled separately by {@link updateLayer}).
-   *
-   * @param insertLayerName - Layer being frozen or thawed.
-   * @param frozen - True when the layer is now frozen.
-   * @returns Object ids whose cross-layer visibility was changed.
-   */
-  applyInsertLayerFreeze(
-    insertLayerName: string,
-    frozen: boolean
-  ): AcDbObjectId[] {
-    const touched: AcDbObjectId[] = []
-    for (const [objectId, layerName] of this._insertLayerByObjectId) {
-      if (layerName !== insertLayerName) {
-        continue
-      }
-      let changed = false
-      for (const layer of this.getLayersByObjectId(objectId)) {
-        // INSERT-layer bucket visibility comes from the layer group itself.
-        if (layer.name === insertLayerName) {
-          continue
-        }
-        if (layer.setEntityVisible(objectId, !frozen)) {
-          changed = true
-        }
-      }
-      if (changed) {
-        touched.push(objectId)
-      }
+  /** Changes view-owned source-layer state without mutating its native database. */
+  setLayerVisibility(
+    name: string,
+    changes: Partial<Pick<AcEdLayerInfo, 'isOff' | 'isFrozen'>>
+  ): boolean {
+    const layer = this._layers.get(name)
+    if (!layer) return false
+    const override = { ...this._layerVisibilityOverrides.get(name) }
+    if (changes.isOff !== undefined) override.isOff = changes.isOff
+    if (changes.isFrozen !== undefined) override.isFrozen = changes.isFrozen
+    this._layerVisibilityOverrides.set(name, override)
+    const info = layer.info
+    this.updateLayer({
+      ...info,
+      isOff: changes.isOff ?? info.isOff,
+      isFrozen: changes.isFrozen ?? info.isFrozen
+    })
+    return true
+  }
+
+  /** Replays only explicit choices for layers still present after replacement. */
+  copyLayerVisibilityFrom(source: AcTrLayout) {
+    for (const [name, changes] of source._layerVisibilityOverrides) {
+      this.setLayerVisibility(name, changes)
     }
-    if (touched.length > 0) {
-      this.invalidateBox()
+  }
+
+  /** Freeze masks never overwrite requested entity/session visibility. */
+  private syncFrozenLayers() {
+    for (const layer of this._layers.values()) {
+      layer.setFrozenLayers(this._frozenLayers)
     }
-    return touched
+    this.invalidateBox()
   }
 
   /**

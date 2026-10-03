@@ -608,6 +608,8 @@ describe('AcApDocManager overlay attachment transactions', () => {
     return {
       internalObject: { removeFromParent: jest.fn() },
       clear: jest.fn(),
+      setLayerVisibility: jest.fn().mockReturnValue(true),
+      copyLayerVisibilityFrom: jest.fn(),
       visible: true
     } as unknown as AcTrLayout
   }
@@ -680,6 +682,37 @@ describe('AcApDocManager overlay attachment transactions', () => {
     state._sessions = []
     expect(current.isCurrent()).toBe(false)
     manager.removeOverlay(nextId)
+  })
+
+  it('updates only the addressed reference layers and carries current choices on replacement', async () => {
+    const { manager, view, prepare } = setup()
+    const a = layout()
+    const b = layout()
+    const replacement = layout()
+    const db = {} as AcDbDatabase
+    prepare.mockResolvedValueOnce(a).mockResolvedValueOnce(b)
+    const first = (await manager.prepareOverlayDatabase(db)).commit()
+    const second = (await manager.prepareOverlayDatabase(db)).commit()
+    prepare.mockResolvedValueOnce(replacement)
+    const pending = await manager.prepareOverlayDatabase(db, {
+      replaceOverlayId: first
+    })
+    view.isDirty = false
+    expect(
+      manager.setOverlayLayerVisibility(first, 'DETAIL', { isFrozen: true })
+    ).toBe(true)
+    expect(a.setLayerVisibility).toHaveBeenCalledWith('DETAIL', {
+      isFrozen: true
+    })
+    expect(b.setLayerVisibility).not.toHaveBeenCalled()
+    expect(view.isDirty).toBe(true)
+    const next = pending.commit()
+    expect(replacement.copyLayerVisibilityFrom).toHaveBeenCalledWith(a)
+    expect(
+      manager.setOverlayLayerVisibility(first, 'DETAIL', { isFrozen: false })
+    ).toBe(false)
+    manager.removeOverlay(next)
+    manager.removeOverlay(second)
   })
 
   it('publishes late parsing into its captured parked document, not the new active scene', async () => {

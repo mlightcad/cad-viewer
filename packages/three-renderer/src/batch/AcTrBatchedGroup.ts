@@ -26,6 +26,7 @@ import {
   AcTrMTextColorUtil,
   AcTrSubEntityTraitsUtil
 } from '../util'
+import { acTrResolveAncestorLayerNames } from '../util/AcTrAncestorLayers'
 import {
   HIGHLIGHT_HOVER_COLOR,
   HIGHLIGHT_SELECT_COLOR
@@ -169,6 +170,8 @@ export interface AcTrEntityInBatchedObject {
    * deletion, raycast filtering, and highlight cloning.
    */
   batchId: number
+  /** Effective native ancestor layers whose freeze state gates this occurrence. */
+  ancestorLayerNames?: readonly string[]
 }
 
 /**
@@ -195,6 +198,8 @@ export interface AcTrDirectAppendOptions {
   objectId: string
   /** Initial slot visibility; defaults to `true`. */
   visible?: boolean
+  /** Effective native ancestor layers, when appending an already-resolved occurrence. */
+  ancestorLayerNames?: readonly string[]
   /** Point entities: world position for bbox intersection. */
   position?: AcGePoint3dLike
 }
@@ -394,6 +399,10 @@ export class AcTrBatchedGroup extends THREE.Group {
    * - The value is the entity's position information in the batched objects
    */
   private _entitiesMap: Map<string, AcTrEntitySlotRecord>
+  /** Explicit root visibility is independent of per-occurrence frozen ancestors. */
+  private _hiddenEntityIds = new Set<string>()
+  /** Source-layer configuration survives geometry clear/repopulation. */
+  private _frozenLayers: ReadonlySet<string> = new Set()
 
   /**
    * Creates an empty batched group with highlight and unbatched child containers.
@@ -663,6 +672,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     this._unbatchedSelectedIds.clear()
     this._unbatchedHoveredIds.clear()
     this._entitiesMap.clear()
+    this._hiddenEntityIds.clear()
     return this
   }
 
@@ -1155,66 +1165,57 @@ export class AcTrBatchedGroup extends THREE.Group {
    * @returns `true` when the entity exists in this group.
    */
   setEntityVisible(objectId: string, visible: boolean) {
-    const unbatchedObjects = this._unbatchedEntities.get(objectId)
-    const hasBatched = this._entitiesMap.has(objectId)
-    if (!hasBatched && !unbatchedObjects) {
-      return false
-    }
-
-    this.forEachEntitySlot(objectId, item => {
-      const batchedObject = this.getOriginBatch(item.batchedObjectId)
-      batchedObject?.setVisibleAt(item.batchId, visible)
-    })
-
-    unbatchedObjects?.forEach(object => {
-      object.visible = visible
-    })
-
+    if (!this.hasEntity(objectId)) return false
+    if (visible) this._hiddenEntityIds.delete(objectId)
+    else this._hiddenEntityIds.add(objectId)
+    this.refreshEntityVisibility(objectId)
     if (!visible) {
       this.unselect(objectId)
       this.unhover(objectId)
     }
-
+    this.syncCompareOverlayForEntity(objectId)
     return true
   }
 
-  /**
-   * Returns the current scene visibility for one entity, or `undefined` when
-   * the entity is not present in this group.
-   */
+  /** Logical root visibility; undefined means no drawable geometry is available.
+   * A frozen sibling does not hide its entire INSERT, but an empty registration
+   * must retain the sentinel that tells native entity updates to regenerate. */
   getEntityVisible(objectId: string): boolean | undefined {
-    const unbatchedObjects = this._unbatchedEntities.get(objectId)
-    const hasBatched = this._entitiesMap.has(objectId)
-    if (!hasBatched && !unbatchedObjects) {
+    if (
+      this._entitiesMap.get(objectId) == null &&
+      !this._unbatchedEntities.get(objectId)?.length
+    )
       return undefined
+    return !this._hiddenEntityIds.has(objectId)
+  }
+
+  /** Applies source-layer freeze gates without changing explicit root visibility. */
+  setFrozenLayers(frozenLayers: ReadonlySet<string>): void {
+    if (
+      frozenLayers.size === this._frozenLayers.size &&
+      [...frozenLayers].every(name => this._frozenLayers.has(name))
+    )
+      return
+    this._frozenLayers = new Set(frozenLayers)
+    for (const objectId of this._entitiesMap.keys())
+      this.refreshEntityVisibility(objectId)
+    this.refreshCompareOverlay()
+  }
+
+  private ancestorsVisible(names?: readonly string[]): boolean {
+    return !names?.some(name => this._frozenLayers.has(name))
+  }
+
+  private refreshEntityVisibility(objectId: string): void {
+    const visible = !this._hiddenEntityIds.has(objectId)
+    this.forEachEntitySlot(objectId, item =>
+      this.applyBatchSlotVisibility(item, visible)
+    )
+    for (const object of this._unbatchedEntities.get(objectId) ?? []) {
+      object.visible =
+        visible &&
+        this.ancestorsVisible(getObjectUserData(object).ancestorLayerNames)
     }
-
-    let visible: boolean | undefined
-    let slotCount = 0
-
-    if (hasBatched) {
-      let allSlotsVisible = true
-      this.forEachEntitySlot(objectId, item => {
-        slotCount++
-        if (!this.getBatchItemVisible(item)) {
-          allSlotsVisible = false
-          // Stop at the first hidden slot, mirroring the old `every()`.
-          return true
-        }
-        return false
-      })
-      if (slotCount > 0) {
-        visible = allSlotsVisible
-      }
-    }
-
-    if (unbatchedObjects && unbatchedObjects.length > 0) {
-      const unbatchedVisible = unbatchedObjects.some(object => object.visible)
-      visible =
-        visible === undefined ? unbatchedVisible : visible && unbatchedVisible
-    }
-
-    return visible
   }
 
   /**
@@ -1228,7 +1229,8 @@ export class AcTrBatchedGroup extends THREE.Group {
     }
 
     const objectId = String(entity.objectId ?? '')
-    const entityVisible = entity.visible
+    const entityVisible = entity.visible && !this._hiddenEntityIds.has(objectId)
+    const rootLayerName = entity.layerName
     // One logical entity (same objectId) can be appended in multiple passes
     // (e.g. INSERT decomposition by source layer and inherited layer-0 bucket).
     // Keep accumulating geometry mappings instead of overwriting previous ones.
@@ -1245,18 +1247,30 @@ export class AcTrBatchedGroup extends THREE.Group {
     const styleManager = entity.styleManager
 
     entity.updateMatrixWorld(true)
-    const visitDrawable = (object: THREE.Object3D) => {
+    const visitDrawable = (
+      object: THREE.Object3D,
+      parentNames?: readonly string[]
+    ) => {
       // traverse() visits descendants even when an intermediate AcTrEntity is invisible.
       if (!isObjectHierarchyVisible(object)) {
         return
       }
 
       const drawableUserData = getSceneDrawableUserData(object)
+      const ancestorLayerNames = acTrResolveAncestorLayerNames(
+        getObjectUserData(object).ancestorLayerNames,
+        rootLayerName,
+        parentNames
+      )
       const bboxIntersectionCheck = !!drawableUserData.bboxIntersectionCheck
 
       if (drawableUserData.noBatch) {
         const cloned = this.cloneUnbatchedObject(object)
-        cloned.visible = entityVisible && object.visible
+        getObjectUserData(cloned).ancestorLayerNames = ancestorLayerNames
+        cloned.visible =
+          entityVisible &&
+          object.visible &&
+          this.ancestorsVisible(ancestorLayerNames)
         // Elevate later unbatched linework so wipeouts can occlude it.
         // Hatch-tier unbatched meshes keep Z=0 (under linework via renderOrder).
         const material = (cloned as THREE.Mesh).material as
@@ -1288,6 +1302,7 @@ export class AcTrBatchedGroup extends THREE.Group {
           bboxIntersectionCheck: bboxIntersectionCheck
         })
         if (item) {
+          item.ancestorLayerNames = ancestorLayerNames
           appendedSlots.push(item)
           this.applyBatchSlotVisibility(item, entityVisible && object.visible)
         }
@@ -1301,6 +1316,7 @@ export class AcTrBatchedGroup extends THREE.Group {
           bboxIntersectionCheck: bboxIntersectionCheck
         })
         if (item) {
+          item.ancestorLayerNames = ancestorLayerNames
           appendedSlots.push(item)
           this.applyBatchSlotVisibility(item, entityVisible && object.visible)
         }
@@ -1314,6 +1330,7 @@ export class AcTrBatchedGroup extends THREE.Group {
           styleManager
         )
         if (item) {
+          item.ancestorLayerNames = ancestorLayerNames
           appendedSlots.push(item)
           this.applyBatchSlotVisibility(item, entityVisible && object.visible)
         }
@@ -1323,13 +1340,14 @@ export class AcTrBatchedGroup extends THREE.Group {
           bboxIntersectionCheck: bboxIntersectionCheck
         })
         if (item) {
+          item.ancestorLayerNames = ancestorLayerNames
           appendedSlots.push(item)
           this.applyBatchSlotVisibility(item, entityVisible && object.visible)
         }
       }
 
       for (const child of object.children) {
-        visitDrawable(child)
+        visitDrawable(child, ancestorLayerNames)
       }
     }
     visitDrawable(entity)
@@ -1416,7 +1434,12 @@ export class AcTrBatchedGroup extends THREE.Group {
       batchId: geometryId
     }
     // Visible was already gated above; remaining cases are visible.
-    this.registerDirectAppend(options.objectId, item, true)
+    this.registerDirectAppend(
+      options.objectId,
+      item,
+      true,
+      options.ancestorLayerNames
+    )
     return true
   }
 
@@ -1460,7 +1483,12 @@ export class AcTrBatchedGroup extends THREE.Group {
       batchId: geometryId
     }
     // Visible was already gated above; remaining cases are visible.
-    this.registerDirectAppend(options.objectId, item, true)
+    this.registerDirectAppend(
+      options.objectId,
+      item,
+      true,
+      options.ancestorLayerNames
+    )
     return true
   }
 
@@ -1505,7 +1533,12 @@ export class AcTrBatchedGroup extends THREE.Group {
       batchedObjectId: batchedPoint.id,
       batchId: geometryId
     }
-    this.registerDirectAppend(options.objectId, item, true)
+    this.registerDirectAppend(
+      options.objectId,
+      item,
+      true,
+      options.ancestorLayerNames
+    )
     return true
   }
 
@@ -1554,7 +1587,12 @@ export class AcTrBatchedGroup extends THREE.Group {
       batchedObjectId: batchedMesh.id,
       batchId: geometryId
     }
-    this.registerDirectAppend(options.objectId, item, true)
+    this.registerDirectAppend(
+      options.objectId,
+      item,
+      true,
+      options.ancestorLayerNames
+    )
     return true
   }
 
@@ -1564,11 +1602,18 @@ export class AcTrBatchedGroup extends THREE.Group {
   private registerDirectAppend(
     objectId: string,
     item: AcTrEntityInBatchedObject,
-    visible: boolean
+    visible: boolean,
+    ancestorLayerNames?: readonly string[]
   ) {
     objectId = String(objectId)
+    item.ancestorLayerNames = ancestorLayerNames
+      ? [...ancestorLayerNames]
+      : undefined
     this.appendEntitySlot(objectId, item)
-    this.applyBatchSlotVisibility(item, visible)
+    this.applyBatchSlotVisibility(
+      item,
+      visible && !this._hiddenEntityIds.has(objectId)
+    )
     this.syncCompareRoleForEntity(objectId)
   }
 
@@ -1576,6 +1621,7 @@ export class AcTrBatchedGroup extends THREE.Group {
    * Removes one entity from batch/unbatched containers.
    */
   removeEntity(objectId: string) {
+    this._hiddenEntityIds.delete(objectId)
     let result = false
     let compactedBatches = false
     if (this._entitiesMap.has(objectId)) {
@@ -1627,7 +1673,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     let hit = false
     this.forEachEntitySlot(objectId, item => {
       const batchedObject = this.getOriginBatch(item.batchedObjectId)
-      if (batchedObject) {
+      if (batchedObject && this.getBatchItemVisible(item)) {
         batchedObject.updateWorldMatrix(true, false)
         batchedObject.intersectWith(item.batchId, raycaster, intersects)
         if (intersects.length > 0) {
@@ -2277,7 +2323,11 @@ export class AcTrBatchedGroup extends THREE.Group {
           return true
         }
         const batchedObject = this.getOriginBatch(item.batchedObjectId)
-        if (!batchedObject || !this.hasBatchObjectAt(batchedObject)) {
+        if (
+          !batchedObject ||
+          !this.hasBatchObjectAt(batchedObject) ||
+          !this.getBatchItemVisible(item)
+        ) {
           return false
         }
 
@@ -2300,9 +2350,13 @@ export class AcTrBatchedGroup extends THREE.Group {
 
     const unbatchedObjects = this._unbatchedEntities.get(objectId)
     if (unbatchedObjects && added < options.maxSlots) {
-      const limit = Math.min(unbatchedObjects.length, options.maxSlots - added)
-      for (let index = 0; index < limit; index++) {
+      for (
+        let index = 0;
+        index < unbatchedObjects.length && added < options.maxSlots;
+        index++
+      ) {
         const obj = unbatchedObjects[index]
+        if (!obj.visible) continue
         const overlayObj = obj.clone()
         this.copyHighlightMetadata(obj, overlayObj)
         applyOverlayStyle(overlayObj)
@@ -2523,7 +2577,10 @@ export class AcTrBatchedGroup extends THREE.Group {
     visible: boolean
   ) {
     const batchedObject = this.getOriginBatch(item.batchedObjectId)
-    batchedObject?.setVisibleAt(item.batchId, visible)
+    batchedObject?.setVisibleAt(
+      item.batchId,
+      visible && this.ancestorsVisible(item.ancestorLayerNames)
+    )
   }
 
   /**
@@ -2531,7 +2588,7 @@ export class AcTrBatchedGroup extends THREE.Group {
    */
   private getBatchItemVisible(item: AcTrEntityInBatchedObject): boolean {
     const batchedObject = this.getOriginBatch(item.batchedObjectId)
-    return batchedObject?.getVisibleAt(item.batchId) ?? false
+    return !!batchedObject?.visible && batchedObject.getVisibleAt(item.batchId)
   }
 
   /**
