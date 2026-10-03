@@ -1,5 +1,13 @@
 # @mlightcad/cad-diff-viewer
 
+## 1.7.4
+
+### Patch Changes
+
+- feat: adds a radius measure tool and async smart extents with cache and busy overlay, and maps PDF optional content groups to CAD layers. Fixes cover wipeout paint order, drawable scene extents, stalled font open overlays, PDF MText colours and INSERT labels, inline ACI-7 MText, selection glow scaling, Fit-to-screen measure badges, multi-attribute edit, and a font CDN notice
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.7.4
+
 ## 1.7.3
 
 ### Patch Changes
