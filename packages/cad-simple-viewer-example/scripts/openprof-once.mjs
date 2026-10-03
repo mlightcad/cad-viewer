@@ -13,7 +13,9 @@ import { fileURLToPath } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '../../..')
 const EXAMPLE = join(ROOT, 'packages/cad-simple-viewer-example')
-const require = createRequire(join(ROOT, 'packages/cad-viewer-example/package.json'))
+// This package has no @playwright/test; share the e2e example's install.
+const PLAYWRIGHT_EXAMPLE = join(ROOT, 'packages/cad-viewer-example')
+const require = createRequire(join(PLAYWRIGHT_EXAMPLE, 'package.json'))
 const { chromium } = require('@playwright/test')
 
 const PORT = Number(process.env.AB_PORT || 5177)
