@@ -164,8 +164,12 @@ removing the old reference then releases its charge. Dispose unused prepared
 handles. Hiding a drawing frees no capacity. Removal, session closure and manager
 cleanup release ownership; a noncooperative public preparation remains charged
 until its promise settles, even after cancellation. There is no eviction or queue.
-Source revision changes during preparation or before commit are rejected; source
-databases must remain immutable while attached.
+Notified native source edits during preparation or before commit are rejected,
+including model/paper-space appends that preserve the block-template revision.
+Unfinished native event batches or transactions also prevent preparation or
+publication. The temporary append listener ends on commit/disposal. This is not
+a general mutation lock: direct field/block edits without native notifications
+are not detected, and source databases must remain immutable while referenced.
 
 These are admission and retained-layout policies, **not an exact memory ceiling**.
 Input buffers are already supplied by callers, so this API does not control their

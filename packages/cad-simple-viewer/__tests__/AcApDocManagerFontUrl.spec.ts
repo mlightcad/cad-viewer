@@ -312,9 +312,18 @@ jest.mock('../src/command', () => {
 
 jest.mock('@mlightcad/data-model', () => ({
   acdbEstimateDatabaseMemory: mockEstimateOverlayDatabase,
-  AcDbDatabase: jest
-    .fn()
-    .mockImplementation(() => ({ read: mockReadOverlayDatabase })),
+  AcDbDatabase: jest.fn().mockImplementation(() => ({
+    read: mockReadOverlayDatabase,
+    renderingRevision: 1,
+    isEventBatched: () => false,
+    transactionManager: { isRecording: () => false },
+    events: {
+      entityAppended: {
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }
+    }
+  })),
   AcCmColor: jest.fn(),
   AcCmEventManager: jest.fn().mockImplementation(() => ({
     addEventListener: jest.fn(),
@@ -351,7 +360,7 @@ import {
 } from '../src/app/AcApDocManager'
 import { AcApDocSession } from '../src/app/AcApDocSession'
 import type { AcApContext } from '../src/app/AcApContext'
-import type { AcDbDatabase } from '@mlightcad/data-model'
+import { AcDbDatabase } from '@mlightcad/data-model'
 import type { AcTrLayout } from '../src/view/AcTrLayout'
 import type { AcTrView2d } from '../src/view/AcTrView2d'
 import { acapDisposeNotificationService } from '../src/app/notification'
@@ -772,10 +781,9 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const geometry = deferred<AcTrLayout>()
     prepare.mockReturnValueOnce(geometry.promise)
     const abort = new AbortController()
-    const pending = manager.prepareOverlayDatabase(
-      { renderingRevision: 1 } as AcDbDatabase,
-      { signal: abort.signal }
-    )
+    const pending = manager.prepareOverlayDatabase(new AcDbDatabase(), {
+      signal: abort.signal
+    })
     const rejected = expect(pending).rejects.toMatchObject({
       name: 'AbortError'
     })
@@ -823,7 +831,7 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const { manager, prepare, originalScene } = setup({ overlayLimits })
     const prepared = layout()
     prepare.mockResolvedValue(prepared)
-    const db = { renderingRevision: 1 } as AcDbDatabase
+    const db = new AcDbDatabase()
     const ready = await manager.prepareOverlayDatabase(db)
     Object.assign(db, { renderingRevision: 2 })
     expect(() => ready.commit()).toThrow('changed during preparation')
@@ -835,6 +843,153 @@ describe('AcApDocManager overlay attachment transactions', () => {
     ).toBe(true)
   })
 
+  it.each(['during preparation', 'before commit'])(
+    'rejects a native model-space append %s even when the rendering revision is unchanged',
+    async timing => {
+      const native = jest.requireActual<typeof import('@mlightcad/data-model')>(
+        '@mlightcad/data-model'
+      )
+      const db = new native.AcDbDatabase()
+      const append = () =>
+        native.acdbWithDatabase(db, () => {
+          db.tables.blockTable.modelSpace.appendEntity(
+            new native.AcDbLine({ x: 0, y: 0, z: 0 }, { x: 10, y: 20, z: 0 })
+          )
+        })
+      native.acdbWithDatabase(db, () => db.createDefaultData())
+      append()
+      const revision = db.renderingRevision
+      const listeners = db.events.entityAppended.listenerCount
+      const { manager, prepare, originalScene } = setup({
+        overlayLimits: {
+          ...overlayLimits,
+          databaseBytes: Number.MAX_SAFE_INTEGER
+        }
+      })
+      const old = layout()
+      prepare.mockResolvedValueOnce(old)
+      const oldId = await manager.registerOverlayDatabase(new AcDbDatabase())
+      const activeUsage = manager.overlayUsage
+      originalScene.internalScene.add.mockClear()
+      prepare.mockClear()
+      mockEstimateOverlayDatabase.mockImplementation(() =>
+        native.acdbEstimateDatabaseMemory(db)
+      )
+      const geometry = deferred<AcTrLayout>()
+      const prepared = layout()
+      prepare.mockReturnValueOnce(geometry.promise)
+      const pending = manager.prepareOverlayDatabase(db, {
+        replaceOverlayId: oldId
+      })
+      await Promise.resolve()
+      expect(prepare).toHaveBeenCalledTimes(1)
+      if (timing === 'during preparation') {
+        const rejected = expect(pending).rejects.toThrow(
+          'changed during preparation'
+        )
+        append()
+        geometry.resolve(prepared)
+        await rejected
+      } else {
+        geometry.resolve(prepared)
+        const ready = await pending
+        append()
+        expect(() => ready.commit()).toThrow('changed during preparation')
+        ready.dispose()
+      }
+      expect(db.renderingRevision).toBe(revision)
+      expect(prepared.clear).toHaveBeenCalledTimes(1)
+      expect(originalScene.internalScene.add).not.toHaveBeenCalled()
+      expect(db.events.entityAppended.listenerCount).toBe(listeners)
+      expect(manager.getOverlayLayout(oldId)).toBe(old)
+      expect(old.clear).not.toHaveBeenCalled()
+      expect(manager.overlayUsage).toEqual(activeUsage)
+      manager.removeOverlay(oldId)
+      expect(
+        Object.values(manager.overlayUsage!).every(value => value === 0)
+      ).toBe(true)
+    }
+  )
+
+  it.each(['batch', 'transaction'])(
+    'rejects an unfinished native %s before preparation or publication',
+    async kind => {
+      const native = jest.requireActual<typeof import('@mlightcad/data-model')>(
+        '@mlightcad/data-model'
+      )
+      const db = new native.AcDbDatabase()
+      native.acdbWithDatabase(db, () => db.createDefaultData())
+      const begin = () =>
+        kind === 'batch'
+          ? db.beginEventBatch()
+          : db.transactionManager.startTransaction()
+      const end = () =>
+        kind === 'batch'
+          ? db.endEventBatch()
+          : db.transactionManager.abortTransaction()
+      const listeners = db.events.entityAppended.listenerCount
+      const { manager, prepare, originalScene } = setup({ overlayLimits })
+      begin()
+      try {
+        await expect(manager.prepareOverlayDatabase(db)).rejects.toThrow(
+          'unfinished edits'
+        )
+        expect(prepare).not.toHaveBeenCalled()
+        expect(db.events.entityAppended.listenerCount).toBe(listeners)
+        expect(manager.overlayUsage?.references).toBe(0)
+      } finally {
+        end()
+      }
+      const prepared = layout()
+      prepare.mockResolvedValueOnce(prepared)
+      const ready = await manager.prepareOverlayDatabase(db)
+      begin()
+      try {
+        expect(() => ready.commit()).toThrow('unfinished edits')
+        ready.dispose()
+        expect(prepared.clear).toHaveBeenCalledTimes(1)
+        expect(originalScene.internalScene.add).not.toHaveBeenCalled()
+        expect(db.events.entityAppended.listenerCount).toBe(listeners)
+        expect(
+          Object.values(manager.overlayUsage!).every(value => value === 0)
+        ).toBe(true)
+      } finally {
+        ready.dispose()
+        end()
+      }
+    }
+  )
+
+  it('releases native source listeners on commit, unused disposal and cancellation', async () => {
+    const native = jest.requireActual<typeof import('@mlightcad/data-model')>(
+      '@mlightcad/data-model'
+    )
+    const db = new native.AcDbDatabase()
+    native.acdbWithDatabase(db, () => db.createDefaultData())
+    const listeners = db.events.entityAppended.listenerCount
+    const { manager, prepare } = setup({ overlayLimits })
+    for (const action of ['commit', 'dispose', 'abort']) {
+      prepare.mockResolvedValueOnce(layout())
+      const abort = new AbortController()
+      const ready = await manager.prepareOverlayDatabase(db, {
+        signal: abort.signal
+      })
+      expect(db.events.entityAppended.listenerCount).toBe(listeners + 1)
+      if (action === 'commit') {
+        const id = ready.commit()
+        expect(db.events.entityAppended.listenerCount).toBe(listeners)
+        manager.removeOverlay(id)
+      } else if (action === 'abort') {
+        abort.abort()
+      }
+      ready.dispose()
+      expect(db.events.entityAppended.listenerCount).toBe(listeners)
+      expect(
+        Object.values(manager.overlayUsage!).every(value => value === 0)
+      ).toBe(true)
+    }
+  })
+
   it('queries only committed sources in the live session and retires retained source handles', async () => {
     const { manager, view, state, originalScene, prepare, owner } = setup()
     const nativeScene = new THREE.Scene()
@@ -842,7 +997,7 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const first = layout()
     Object.assign(first, { internalObject: new THREE.Group() })
     prepare.mockResolvedValue(first)
-    const db = {} as AcDbDatabase
+    const db = new AcDbDatabase()
     const ready = await manager.prepareOverlayDatabase(db)
     expect(manager.getDrawingPickSources(view)).toEqual([])
     const id = ready.commit()
@@ -881,7 +1036,7 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const a = layout()
     const b = layout()
     const replacement = layout()
-    const db = {} as AcDbDatabase
+    const db = new AcDbDatabase()
     prepare.mockResolvedValueOnce(a).mockResolvedValueOnce(b)
     const first = (await manager.prepareOverlayDatabase(db)).commit()
     const second = (await manager.prepareOverlayDatabase(db)).commit()
@@ -959,10 +1114,10 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const { manager, prepare, originalScene, owner } = setup()
     const old = layout()
     prepare.mockResolvedValueOnce(old)
-    const oldId = await manager.registerOverlayDatabase({} as AcDbDatabase)
+    const oldId = await manager.registerOverlayDatabase(new AcDbDatabase())
     prepare.mockRejectedValueOnce(new Error('conversion failed'))
     await expect(
-      manager.registerOverlayDatabase({} as AcDbDatabase, {
+      manager.registerOverlayDatabase(new AcDbDatabase(), {
         replaceOverlayId: oldId
       })
     ).rejects.toThrow('conversion failed')
@@ -975,10 +1130,10 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const { manager, prepare, originalScene, owner } = setup()
     const old = layout()
     prepare.mockResolvedValueOnce(old)
-    const oldId = await manager.registerOverlayDatabase({} as AcDbDatabase)
+    const oldId = await manager.registerOverlayDatabase(new AcDbDatabase())
     const work = deferred<AcTrLayout>()
     prepare.mockReturnValueOnce(work.promise)
-    const pending = manager.registerOverlayDatabase({} as AcDbDatabase, {
+    const pending = manager.registerOverlayDatabase(new AcDbDatabase(), {
       replaceOverlayId: oldId
     })
     await Promise.resolve()
@@ -999,7 +1154,7 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const { manager, prepare, state, originalScene } = setup()
     const work = deferred<AcTrLayout>()
     prepare.mockReturnValueOnce(work.promise)
-    const pending = manager.registerOverlayDatabase({} as AcDbDatabase)
+    const pending = manager.registerOverlayDatabase(new AcDbDatabase())
     await Promise.resolve()
     state._sessions = []
     const ready = layout()
@@ -1013,17 +1168,17 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const { manager, prepare, owner } = setup()
     const old = layout()
     prepare.mockResolvedValueOnce(old)
-    const oldId = await manager.registerOverlayDatabase({} as AcDbDatabase)
+    const oldId = await manager.registerOverlayDatabase(new AcDbDatabase())
     const first = deferred<AcTrLayout>()
     const second = deferred<AcTrLayout>()
     prepare
       .mockReturnValueOnce(first.promise)
       .mockReturnValueOnce(second.promise)
-    const a = manager.registerOverlayDatabase({} as AcDbDatabase, {
+    const a = manager.registerOverlayDatabase(new AcDbDatabase(), {
       replaceOverlayId: oldId
     })
     await Promise.resolve()
-    const b = manager.registerOverlayDatabase({} as AcDbDatabase, {
+    const b = manager.registerOverlayDatabase(new AcDbDatabase(), {
       replaceOverlayId: oldId
     })
     await Promise.resolve()
@@ -1126,10 +1281,10 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const { manager, prepare, originalScene } = setup()
     const old = layout()
     prepare.mockResolvedValueOnce(old)
-    const oldId = await manager.registerOverlayDatabase({} as AcDbDatabase)
+    const oldId = await manager.registerOverlayDatabase(new AcDbDatabase())
     const ready = layout()
     prepare.mockResolvedValueOnce(ready)
-    const pending = await manager.prepareOverlayDatabase({} as AcDbDatabase, {
+    const pending = await manager.prepareOverlayDatabase(new AcDbDatabase(), {
       replaceOverlayId: oldId
     })
     expect(originalScene.internalScene.add).toHaveBeenCalledTimes(1)
@@ -1147,13 +1302,13 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const cleared = layout()
     prepare.mockResolvedValueOnce(aborted).mockResolvedValueOnce(cleared)
     const controller = new AbortController()
-    const first = await manager.prepareOverlayDatabase({} as AcDbDatabase, {
+    const first = await manager.prepareOverlayDatabase(new AcDbDatabase(), {
       signal: controller.signal
     })
     controller.abort()
     expect(aborted.clear).toHaveBeenCalledTimes(1)
     expect(() => first.commit()).toThrow('cancelled')
-    const second = await manager.prepareOverlayDatabase({} as AcDbDatabase)
+    const second = await manager.prepareOverlayDatabase(new AcDbDatabase())
     manager.clearOverlays()
     expect(cleared.clear).toHaveBeenCalledTimes(1)
     expect(() => second.commit()).toThrow('cancelled')
@@ -1164,7 +1319,7 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const { manager, prepare } = setup()
     const ready = layout()
     prepare.mockResolvedValueOnce(ready)
-    const handle = await manager.prepareOverlayDatabase({} as AcDbDatabase)
+    const handle = await manager.prepareOverlayDatabase(new AcDbDatabase())
     const id = handle.commit()
     expect(manager.getOverlayLayout(id)).toBe(ready)
     handle.dispose()
@@ -1179,14 +1334,14 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const { manager, prepare, view, originalScene } = setup()
     const ready = layout()
     prepare.mockResolvedValueOnce(ready)
-    const handle = await manager.prepareOverlayDatabase({} as AcDbDatabase)
+    const handle = await manager.prepareOverlayDatabase(new AcDbDatabase())
     Object.assign(view, { isDisposed: true })
     expect(() => handle.commit()).toThrow('session changed')
     handle.dispose()
     expect(ready.clear).toHaveBeenCalledTimes(1)
     expect(originalScene.internalScene.add).not.toHaveBeenCalled()
     await expect(
-      manager.prepareOverlayDatabase({} as AcDbDatabase)
+      manager.prepareOverlayDatabase(new AcDbDatabase())
     ).rejects.toMatchObject({ name: 'AbortError' })
   })
 
@@ -1201,7 +1356,7 @@ describe('AcApDocManager overlay attachment transactions', () => {
       blockName: 'survey',
       fileName: 'survey.dxf',
       sourcePath: 'survey.dxf',
-      sourceDb: {} as AcDbDatabase
+      sourceDb: new AcDbDatabase()
     }
     const old = layout()
     prepare.mockResolvedValueOnce(old)
@@ -1245,7 +1400,7 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const { manager, view, state, owner, prepare } = setup()
     const active = layout()
     prepare.mockResolvedValueOnce(active)
-    const activeId = await manager.registerOverlayDatabase({} as AcDbDatabase)
+    const activeId = await manager.registerOverlayDatabase(new AcDbDatabase())
     const parked = new AcApDocSession('parked', {
       ...owner.context,
       doc: { ...owner.doc }
@@ -1255,7 +1410,7 @@ describe('AcApDocManager overlay attachment transactions', () => {
       AcApDocSession['viewState']
     >
     parked.overlays.set('retained', {
-      db: {} as AcDbDatabase,
+      db: new AcDbDatabase(),
       layout: retained
     })
     state._sessions.unshift(parked)
@@ -1287,7 +1442,7 @@ describe('AcApDocManager overlay attachment transactions', () => {
     const { manager, state, owner, prepare } = setup()
     const active = layout()
     prepare.mockResolvedValueOnce(active)
-    const activeId = await manager.registerOverlayDatabase({} as AcDbDatabase)
+    const activeId = await manager.registerOverlayDatabase(new AcDbDatabase())
     const parked = new AcApDocSession('parked', {
       ...owner.context,
       doc: { ...owner.doc }
@@ -1297,7 +1452,7 @@ describe('AcApDocManager overlay attachment transactions', () => {
     parked.viewState = { scene: scene() } as unknown as NonNullable<
       AcApDocSession['viewState']
     >
-    parked.overlays.set('removed', { db: {} as AcDbDatabase, layout: removed })
+    parked.overlays.set('removed', { db: new AcDbDatabase(), layout: removed })
     parked.overlayAttachments.set(pending, 'removed')
     state._sessions.push(parked)
     const xrefs = jest.requireMock('../src/app/AcApXrefManager').AcApXrefManager

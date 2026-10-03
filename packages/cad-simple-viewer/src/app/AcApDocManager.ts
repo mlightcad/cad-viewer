@@ -1531,7 +1531,10 @@ export class AcApDocManager {
     const abort = () => controller.abort()
     let layout: AcTrLayout | undefined
     let state: 'preparing' | 'ready' | 'committed' | 'disposed' = 'preparing'
+    let releaseSourceGuard: (() => void) | undefined
     const cleanup = () => {
+      releaseSourceGuard?.()
+      releaseSourceGuard = undefined
       session.overlayAttachments.delete(controller)
       options.signal?.removeEventListener('abort', abort)
       controller.signal.removeEventListener('abort', dispose)
@@ -1570,6 +1573,24 @@ export class AcApDocManager {
       const db = await readDatabase(controller.signal)
       check()
       const revision = db.renderingRevision
+      let appended = false
+      const onAppend = () => {
+        appended = true
+      }
+      const checkRevision = () => {
+        if (db.isEventBatched() || db.transactionManager.isRecording()) {
+          throw new Error('Reference database has unfinished edits')
+        }
+        if (appended || db.renderingRevision !== revision) {
+          throw new Error('Reference database changed during preparation')
+        }
+      }
+      checkRevision()
+      // Model/paper-space appends intentionally preserve native block-template
+      // revisions. Observe their native notification until this handle ends.
+      db.events.entityAppended.addEventListener(onAppend)
+      releaseSourceGuard = () =>
+        db.events.entityAppended.removeEventListener(onAppend)
       if (reservation) {
         const estimate = acdbEstimateDatabaseMemory(db)
         reservation.database(estimate.entityCount, estimate.totalBytes)
@@ -1586,11 +1607,6 @@ export class AcApDocManager {
       }
       layout = prepared
       check()
-      const checkRevision = () => {
-        if (db.renderingRevision !== revision) {
-          throw new Error('Reference database changed during preparation')
-        }
-      }
       checkRevision()
       if (reservation) {
         // Rendering can populate native model caches without editing geometry.
