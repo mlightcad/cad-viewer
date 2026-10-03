@@ -24,6 +24,25 @@ function createViewport(twist: number): AcGiViewport {
 }
 
 describe('AcTrViewportView twist', () => {
+  it('maps native model snap points back to displayed paper coordinates', () => {
+    const parent = new AcTrBaseView(createMockRenderer(), 800, 600)
+    const view = new AcTrViewportView(
+      parent,
+      createViewport(Math.PI / 2),
+      createMockRenderer()
+    )
+    const displayed = new AcGePoint3d(150, 400, 0).applyMatrix4(
+      view.modelToPaperTransform
+    )
+    expect(displayed.x).toBeCloseTo(10)
+    expect(displayed.y).toBeCloseTo(5)
+    const center = new AcGePoint3d(150, 300, 0).applyMatrix4(
+      view.modelToPaperTransform
+    )
+    expect(center.x).toBeCloseTo(5)
+    expect(center.y).toBeCloseTo(5)
+  })
+
   it('maps paper points through viewTwistAngle and orients the camera', () => {
     const parent = new AcTrBaseView(createMockRenderer(), 800, 600)
     const view = new AcTrViewportView(

@@ -1,5 +1,6 @@
 import {
   AcGeBox2d,
+  AcGeMatrix3d,
   AcGePoint2d,
   AcGePoint2dLike,
   AcGiViewport
@@ -236,6 +237,33 @@ export class AcTrViewportView extends AcTrBaseView {
       centerX + localX * cos - localY * sin,
       centerY + localX * sin + localY * cos
     )
+  }
+
+  /** Inverse of the native paper mapping, for source-qualified displayed hits. */
+  get modelToPaperTransform(): AcGeMatrix3d {
+    // Sample the existing affine mapping so picking shares its twist/center
+    // convention rather than maintaining another viewport projection formula.
+    const origin = this.paperPointToModel({ x: 0, y: 0 })
+    const x = this.paperPointToModel({ x: 1, y: 0 })
+    const y = this.paperPointToModel({ x: 0, y: 1 })
+    return new AcGeMatrix3d(
+      x.x - origin.x,
+      y.x - origin.x,
+      0,
+      origin.x,
+      x.y - origin.y,
+      y.y - origin.y,
+      0,
+      origin.y,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1
+    ).invert()
   }
 
   /**

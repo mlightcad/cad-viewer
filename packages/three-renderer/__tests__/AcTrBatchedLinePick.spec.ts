@@ -45,8 +45,8 @@ function createRectangleLineSegments(): THREE.LineSegments {
 function createRectangleLineSegments2(): LineSegments2 {
   const geometry = new LineSegmentsGeometry()
   geometry.setPositions([
-    0, 0, 0, 100, 0, 0, 100, 0, 0, 100, 80, 0, 100, 80, 0, 0, 80, 0, 0, 80, 0, 0,
-    0, 0
+    0, 0, 0, 100, 0, 0, 100, 0, 0, 100, 80, 0, 100, 80, 0, 0, 80, 0, 0, 80, 0,
+    0, 0, 0
   ])
   const material = new LineMaterial({
     color: 0xffffff,
@@ -72,6 +72,40 @@ function createOrthoRaycaster(
 }
 
 describe('AcTrBatchedLine / AcTrBatchedLine2 pick', () => {
+  it.each([
+    ['thin', createRectangleLineSegments],
+    ['wide', createRectangleLineSegments2]
+  ] as const)(
+    'picks %s lines at the placed reference, not their old position',
+    (_name, create) => {
+      const group = new AcTrBatchedGroup()
+      group.addEntity(createEntity('placed', create()))
+      const reference = new THREE.Group()
+      reference.position.set(1000, 2000, 0)
+      reference.rotation.z = Math.PI / 2
+      reference.scale.setScalar(2)
+      reference.add(group)
+      reference.updateMatrixWorld(true)
+
+      expect(
+        group.isIntersectWith('placed', createOrthoRaycaster(1000, 2100))
+      ).toBe(true)
+      expect(group.isIntersectWith('placed', createOrthoRaycaster(50, 0))).toBe(
+        false
+      )
+      expect(
+        group.isIntersectWith('placed', createOrthoRaycaster(920, 2100))
+      ).toBe(false)
+      // Pick aperture is expressed in displayed world units, independent of scale.
+      expect(
+        group.isIntersectWith('placed', createOrthoRaycaster(1001, 2100, 2))
+      ).toBe(true)
+      expect(
+        group.isIntersectWith('placed', createOrthoRaycaster(1003, 2100, 2))
+      ).toBe(false)
+    }
+  )
+
   it('does not select a hollow LineSegments rectangle via its bounding-box interior', () => {
     const group = new AcTrBatchedGroup()
     group.addEntity(createEntity('rect-1', createRectangleLineSegments()))

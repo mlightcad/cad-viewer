@@ -977,9 +977,7 @@ export function createAcTrBatchedMixin<
      * @returns `target`, or `null` when no aggregate could be computed.
      * @internal
      */
-    computeAggregateBoundingSphere(
-      target: THREE.Sphere
-    ): THREE.Sphere | null {
+    computeAggregateBoundingSphere(target: THREE.Sphere): THREE.Sphere | null {
       return computeBoundingSphere(
         target,
         this._geometryInfo,
@@ -1399,6 +1397,15 @@ export function createAcTrBatchedMixin<
           geometryId,
           start,
           count
+        )
+        // The detached raycast object has no parents. Include reference/root
+        // placement; copying only the batch's local TRS picks the old position.
+        const world = (this as unknown as THREE.Object3D).matrixWorld
+        this._raycastObject.matrixWorld.copy(world)
+        world.decompose(
+          this._raycastObject.position,
+          this._raycastObject.quaternion,
+          this._raycastObject.scale
         )
         this._raycastObject.raycast(raycaster, this._batchIntersects)
 

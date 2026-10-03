@@ -62,7 +62,7 @@ describe('AcTrGroup wcsBbox', () => {
 
     const group = new AcTrGroup([lineA, lineB], context)
 
-    expect(group.wcsChildBoxes).toEqual([
+    expect(group.wcsChildBoxes).toMatchObject([
       { minX: 0, minY: 0, maxX: 10, maxY: 0, id: 'line-a' },
       { minX: 2, minY: 5, maxX: 8, maxY: 15, id: 'line-b' }
     ])
@@ -133,7 +133,7 @@ describe('AcTrGroup wcsBbox', () => {
     group.applyMatrix(new AcGeMatrix3d().makeTranslation(100, 200, 0))
 
     expectWcsBboxCloseTo(group.wcsBbox, [100, 200, 0], [115, 210, 0])
-    expect(group.wcsChildBoxes).toEqual([
+    expect(group.wcsChildBoxes).toMatchObject([
       { minX: 100, minY: 200, maxX: 110, maxY: 200, id: 'line-0' },
       { minX: 105, minY: 205, maxX: 115, maxY: 210, id: 'line-l2' }
     ])
@@ -350,9 +350,9 @@ describe('AcTrGroup wcsBbox', () => {
     insertA.layerName = 'Wall'
 
     expect(insertA.isOnTheSameLayer).toBe(false)
-    expect(
-      insertA.children.map(child => child.userData.layerName)
-    ).toEqual(['DIM'])
+    expect(insertA.children.map(child => child.userData.layerName)).toEqual([
+      'DIM'
+    ])
     expect(
       insertA.children.map(child => child.userData.authoredLayerName)
     ).toEqual(['0'])
@@ -595,17 +595,21 @@ describe('AcTrGroup dispose', () => {
     cloned.addChild(attribute)
     cloned.applyMatrix(new AcGeMatrix3d().makeTranslation(100, 0, 0))
 
-    expect(cloned.wcsChildBoxes.find(box => box.id === 'line-a')).toMatchObject({
-      minX: 100,
-      minY: 0,
-      maxX: 110,
-      maxY: 0
-    })
-    expect(cloned.wcsChildBoxes.find(box => box.id === 'attr-1')).toMatchObject({
-      minX: 101,
-      minY: 1,
-      maxX: 105,
-      maxY: 1
-    })
+    expect(cloned.wcsChildBoxes.find(box => box.id === 'line-a')).toMatchObject(
+      {
+        minX: 100,
+        minY: 0,
+        maxX: 110,
+        maxY: 0
+      }
+    )
+    expect(cloned.wcsChildBoxes.find(box => box.id === 'attr-1')).toMatchObject(
+      {
+        minX: 101,
+        minY: 1,
+        maxX: 105,
+        maxY: 1
+      }
+    )
   })
 })

@@ -19,6 +19,9 @@ import {
 } from '../util/AcTrObjectUserData'
 import { AcTrObject } from './AcTrObject'
 
+/** Shared immutable identity; native placements allocate only when applied. */
+const identitySourceTransform = new THREE.Matrix4()
+
 /**
  * Represent the display object of one drawing entity.
  */
@@ -26,6 +29,22 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   declare userData: AcTrEntityUserData
   protected _wcsBbox: THREE.Box3
   protected _basePoint?: AcGePoint3d
+  private _sourceEntityTransform?: THREE.Matrix4
+
+  /**
+   * Explicit native placement, independent of geometry rebasing and glyph
+   * placement matrices. Read-only to callers; updated by {@link applyMatrix}.
+   */
+  get sourceEntityTransform(): THREE.Matrix4 {
+    return this._sourceEntityTransform ?? identitySourceTransform
+  }
+
+  /** Keeps previously captured native-placement snapshots immutable. */
+  protected applySourceEntityTransform(matrix: THREE.Matrix4) {
+    this._sourceEntityTransform = matrix
+      .clone()
+      .multiply(this.sourceEntityTransform)
+  }
 
   constructor(context: AcTrRenderContext) {
     super(context)
@@ -404,6 +423,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
    */
   applyMatrix(matrix: AcGeMatrix3d) {
     const threeMatrix = AcTrMatrixUtil.createMatrix4(matrix)
+    this.applySourceEntityTransform(threeMatrix)
     this.applyFullMatrix4(threeMatrix)
     if (!this._wcsBbox.isEmpty()) {
       this._wcsBbox.applyMatrix4(threeMatrix)
@@ -479,6 +499,7 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
    * @inheritdoc
    */
   copy(object: AcTrEntity, recursive?: boolean) {
+    this._sourceEntityTransform = object._sourceEntityTransform
     this.objectId = object.objectId
     this.ownerId = object.ownerId
     this.layerName = object.layerName
@@ -498,7 +519,8 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   protected copyGeometry(
     source: AcTrEntity,
     target: AcTrEntity,
-    shareGeometry: boolean = false
+    shareGeometry: boolean = false,
+    clonedEntities?: ReadonlyMap<AcTrEntity, AcTrEntity>
   ) {
     for (let i = 0; i < source.children.length; i++) {
       const child = source.children[i]
@@ -506,7 +528,9 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
       if (child instanceof AcTrEntity) {
         // Propagate shareGeometry so nested MTEXT/SHAPE/group leaves also
         // alias template buffers instead of deep-cloning mid-tree.
-        target.add(child.fastDeepClone(shareGeometry))
+        target.add(
+          clonedEntities?.get(child) ?? child.fastDeepClone(shareGeometry)
+        )
         continue
       }
 

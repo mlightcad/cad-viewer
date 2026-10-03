@@ -9,6 +9,7 @@ import {
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrMatrixUtil, effectiveLayer } from '../util'
 import { AcTrEntity } from './AcTrEntity'
+import { AcTrEntityOccurrence } from './AcTrEntityOccurrence'
 import { AcTrGlyphEntity } from './AcTrGlyphEntity'
 import { AcTrGroupCompactor } from './AcTrGroupCompactor'
 
@@ -18,6 +19,15 @@ export interface AcTrEntityBox {
   maxX: number
   maxY: number
   id: AcDbObjectId
+  occurrence?: AcTrEntityOccurrence
+}
+
+/** Native placement and bounds placement differ for WCS-authored attributes. */
+interface SourceOccurrence {
+  readonly insertPath: readonly AcDbObjectId[]
+  readonly instancePath: readonly number[]
+  readonly entityToGroup: THREE.Matrix4
+  readonly boundsToGroup: THREE.Matrix4
 }
 
 /**
@@ -43,8 +53,9 @@ export class AcTrGroup extends AcTrEntity {
    * leaves and released the need to deep-clone {@link _sourceEntities}.
    */
   private _compacted = false
-  /** Per-source-entity INSERT chain from nested block references to this group's block. */
-  private _sourceEntitySpatialMatrices = new Map<AcDbObjectId, THREE.Matrix4>()
+  /** Keyed by the actual source wrapper: repeated native handles are distinct. */
+  private _sourceOccurrences = new Map<AcTrEntity, SourceOccurrence>()
+  private _nextOccurrenceSlot = 0
 
   /**
    * Leaf {@link AcTrEntity} instances that contributed geometry to this group
@@ -87,8 +98,8 @@ export class AcTrGroup extends AcTrEntity {
         this.add(subGroup)
       } else {
         this.add(entity)
-        this.registerSourceEntities(entity)
-        this.storeBoxes(entity, true)
+        const slot = this.registerSourceEntities(entity)
+        this.storeBoxes(entity, true, slot)
         return
       }
       this.storeBoxes(entity)
@@ -236,16 +247,6 @@ export class AcTrGroup extends AcTrEntity {
   }
 
   /**
-   * Returns the accumulated nested-INSERT transform for one tracked source
-   * entity, used when rebuilding {@link wcsChildBoxes}.
-   */
-  getSourceEntitySpatialMatrix(
-    entityId: AcDbObjectId
-  ): THREE.Matrix4 | undefined {
-    return this._sourceEntitySpatialMatrices.get(entityId)
-  }
-
-  /**
    * Rebuilds {@link wcsChildBoxes} and the aggregate {@link wcsBbox} from
    * current entity geometry.
    *
@@ -309,10 +310,13 @@ export class AcTrGroup extends AcTrEntity {
   private reconcileDeferredChildBoxes() {
     this.updateMatrixWorld(true)
     const scratch = new THREE.Box3()
-    const boxById = new Map(this._wcsChildBoxes.map(box => [box.id, box]))
+    const boxById = new Map(
+      this._wcsChildBoxes.map(box => [this.occurrenceKey(box), box])
+    )
 
     for (const entity of this._sourceEntities) {
-      const existing = boxById.get(entity.objectId)
+      const key = this.sourceOccurrenceKey(entity)
+      const existing = boxById.get(key)
       if (existing && AcTrGroup.isFiniteEntityBox(existing)) {
         continue
       }
@@ -324,7 +328,7 @@ export class AcTrGroup extends AcTrEntity {
         Object.assign(existing, computed)
       } else {
         this._wcsChildBoxes.push(computed)
-        boxById.set(entity.objectId, computed)
+        boxById.set(key, computed)
       }
     }
 
@@ -336,7 +340,7 @@ export class AcTrGroup extends AcTrEntity {
       if (sourceEntities.has(child)) {
         return
       }
-      const existing = boxById.get(child.objectId)
+      const existing = boxById.get(this.sourceOccurrenceKey(child))
       if (existing && AcTrGroup.isFiniteEntityBox(existing)) {
         return
       }
@@ -481,7 +485,10 @@ export class AcTrGroup extends AcTrEntity {
         pending.push(tasks[j]())
       }
       await Promise.all(pending)
-      if (end < tasks.length && performance.now() - budgetStart >= yieldBudgetMs) {
+      if (
+        end < tasks.length &&
+        performance.now() - budgetStart >= yieldBudgetMs
+      ) {
         await new Promise<void>(resolve => setTimeout(resolve, 0))
         budgetStart = performance.now()
       }
@@ -541,8 +548,8 @@ export class AcTrGroup extends AcTrEntity {
     }
     // Materialize before storeBoxes so appended attribute boxes are not lost.
     this.materializeWcsChildBoxes()
-    this.registerSourceEntities(entity)
-    this.storeBoxes(entity, true)
+    const slot = this.registerSourceEntities(entity)
+    this.storeBoxes(entity, true, slot)
     this.syncWcsBboxFromChildBoxes()
   }
 
@@ -557,6 +564,7 @@ export class AcTrGroup extends AcTrEntity {
    */
   applyMatrix(matrix: AcGeMatrix3d) {
     const threeMatrix = AcTrMatrixUtil.createMatrix4(matrix)
+    this.applySourceEntityTransform(threeMatrix)
     if (this._wcsChildBoxesTemplate) {
       if (!this._wcsChildBoxesPendingMatrix) {
         this._wcsChildBoxesPendingMatrix = threeMatrix.clone()
@@ -597,6 +605,7 @@ export class AcTrGroup extends AcTrEntity {
   copy(object: AcTrGroup, recursive?: boolean) {
     this._isOnTheSameLayer = object._isOnTheSameLayer
     this._compacted = object._compacted
+    this._nextOccurrenceSlot = object._nextOccurrenceSlot
 
     // Snapshot child boxes into an immutable template. applyMatrix accumulates
     // a pending matrix and materializeWcsChildBoxes performs copy+transform in
@@ -621,17 +630,16 @@ export class AcTrGroup extends AcTrEntity {
     }
     this._wcsChildBoxesPendingMatrix = null
 
+    this._sourceOccurrences = new Map()
     if (object._compacted) {
-      this._sourceEntitySpatialMatrices = new Map()
       this._sourceEntities = []
     } else {
-      this._sourceEntitySpatialMatrices = new Map()
-      object._sourceEntitySpatialMatrices.forEach((matrix, entityId) => {
-        this._sourceEntitySpatialMatrices.set(entityId, matrix.clone())
+      this._sourceEntities = object._sourceEntities.map(entity => {
+        const cloned = entity.fastDeepClone() as AcTrEntity
+        const occurrence = object._sourceOccurrences.get(entity)
+        if (occurrence) this._sourceOccurrences.set(cloned, occurrence)
+        return cloned
       })
-      this._sourceEntities = object._sourceEntities.map(
-        entity => entity.fastDeepClone() as AcTrEntity
-      )
     }
     return super.copy(object, recursive)
   }
@@ -660,17 +668,33 @@ export class AcTrGroup extends AcTrEntity {
     // MIN_CHILDREN_TO_COMPACT=8, so every cache hit deep-cloned buffers and
     // OOMed. Compact the template before the first clone when there are enough
     // leaves — no prior INSERT has shared aliases yet.
-    if (
-      !this._compacted &&
-      shareGeometry === false &&
-      this.childCount >= 2
-    ) {
+    if (!this._compacted && shareGeometry === false && this.childCount >= 2) {
       this.compactForInstancing()
       shareGeometry = true
     }
     const cloned = new AcTrGroup([], this.renderContext)
     cloned.copy(this, false)
-    this.copyGeometry(this, cloned, shareGeometry)
+    const sourceClones = new Map<AcTrEntity, AcTrEntity>()
+    this._sourceEntities.forEach((entity, index) => {
+      const sourceClone = cloned._sourceEntities[index]
+      if (sourceClone) sourceClones.set(entity, sourceClone)
+    })
+    // A live deferred wrapper is both a source and a geometry child. Reuse its
+    // source clone instead of allocating a second wrapper and losing one owner.
+    this.copyGeometry(this, cloned, shareGeometry, sourceClones)
+    // Deferred glyph wrappers survive compaction and are cloned with geometry.
+    // Preserve their occurrence without retaining detached template wrappers.
+    this.children.forEach((child, index) => {
+      const cloneChild = cloned.children[index]
+      if (
+        !(child instanceof AcTrEntity) ||
+        !(cloneChild instanceof AcTrEntity)
+      ) {
+        return
+      }
+      const occurrence = this._sourceOccurrences.get(child)
+      if (occurrence) cloned._sourceOccurrences.set(cloneChild, occurrence)
+    })
     return cloned
   }
 
@@ -754,7 +778,9 @@ export class AcTrGroup extends AcTrEntity {
       entity.children = []
     }
     this._sourceEntities.length = 0
-    this._sourceEntitySpatialMatrices.clear()
+    for (const entity of this._sourceOccurrences.keys()) {
+      if (!liveChildren.has(entity)) this._sourceOccurrences.delete(entity)
+    }
   }
 
   /**
@@ -779,6 +805,7 @@ export class AcTrGroup extends AcTrEntity {
       }
     }
     this._sourceEntities.length = 0
+    this._sourceOccurrences.clear()
     super.dispose()
   }
 
@@ -786,25 +813,17 @@ export class AcTrGroup extends AcTrEntity {
    * Appends spatial boxes for block lines that were merged into shared
    * geometries and therefore have no per-entity scene-graph node.
    */
-  addExternalChildBoxes(
-    boxes: readonly {
-      minX: number
-      minY: number
-      maxX: number
-      maxY: number
-      id: string
-    }[]
-  ) {
+  addExternalChildBoxes(boxes: readonly AcTrEntityBox[]) {
     for (let i = 0; i < boxes.length; i++) {
       const box = boxes[i]
       if (AcTrGroup.isFiniteEntityBox(box)) {
-        this._wcsChildBoxes.push({
-          minX: box.minX,
-          minY: box.minY,
-          maxX: box.maxX,
-          maxY: box.maxY,
-          id: box.id
-        })
+        const occurrence: AcTrEntityOccurrence = {
+          entityId: box.id,
+          insertPath: [],
+          instancePath: [this._nextOccurrenceSlot++],
+          entityToSource: this.sourceEntityTransform.clone()
+        }
+        this._wcsChildBoxes.push({ ...box, occurrence })
       }
     }
     this.syncWcsBboxFromChildBoxes()
@@ -887,12 +906,24 @@ export class AcTrGroup extends AcTrEntity {
    * @param object - Block-definition entity or nested group whose bounds
    *   should be recorded for spatial indexing.
    */
-  private storeBoxes(object: THREE.Object3D, knownSource = false) {
+  private storeBoxes(object: THREE.Object3D, knownSource = false, slot = 0) {
     if (object instanceof AcTrGroup) {
       // Use the public getter so a still-lazy nested group materializes first.
       object.wcsChildBoxes.forEach(box => {
         if (AcTrGroup.isFiniteEntityBox(box)) {
-          this._wcsChildBoxes.push({ ...box })
+          const occurrence = box.occurrence
+          this._wcsChildBoxes.push({
+            ...box,
+            occurrence: occurrence
+              ? {
+                  ...occurrence,
+                  insertPath: object.objectId
+                    ? [object.objectId, ...occurrence.insertPath]
+                    : occurrence.insertPath,
+                  instancePath: [slot, ...occurrence.instancePath]
+                }
+              : undefined
+          })
         }
       })
       return
@@ -927,6 +958,7 @@ export class AcTrGroup extends AcTrEntity {
    * @param object - Block-definition entity or nested group being registered.
    */
   private registerSourceEntities(object: THREE.Object3D) {
+    const slot = this._nextOccurrenceSlot++
     if (object instanceof AcTrGroup) {
       // Nested INSERT layer is attached before this outer group is built
       // (AcDbRenderingCache.attachEntityInfo). Resolve layer-0 on tracked
@@ -946,20 +978,58 @@ export class AcTrGroup extends AcTrEntity {
         }
       }
 
-      const innerMatrix = object.matrix.clone()
-      const identity = new THREE.Matrix4()
-      object.getSourceEntities().forEach(entity => {
-        const parentNested =
-          object.getSourceEntitySpatialMatrix(entity.objectId) ??
-          this._sourceEntitySpatialMatrices.get(entity.objectId)
-        const composed = innerMatrix.clone().multiply(parentNested ?? identity)
-        this._sourceEntitySpatialMatrices.set(entity.objectId, composed)
+      object._sourceOccurrences.forEach((occurrence, entity) => {
+        this._sourceOccurrences.set(entity, {
+          insertPath: object.objectId
+            ? [object.objectId, ...occurrence.insertPath]
+            : occurrence.insertPath,
+          instancePath: [slot, ...occurrence.instancePath],
+          entityToGroup: object.sourceEntityTransform
+            .clone()
+            .multiply(occurrence.entityToGroup),
+          boundsToGroup: object.matrix
+            .clone()
+            .multiply(occurrence.boundsToGroup)
+        })
         this._sourceEntities.push(entity)
       })
-      return
+      return slot
     }
     if (object instanceof AcTrEntity) {
       this._sourceEntities.push(object)
+      this._sourceOccurrences.set(object, {
+        insertPath: [],
+        instancePath: [slot],
+        entityToGroup: object.sourceEntityTransform,
+        boundsToGroup: new THREE.Matrix4()
+      })
+    }
+    return slot
+  }
+
+  private occurrenceKey(box: AcTrEntityBox): string {
+    return box.occurrence ? JSON.stringify(box.occurrence.instancePath) : box.id
+  }
+
+  private sourceOccurrenceKey(entity: AcTrEntity): string {
+    const occurrence = this._sourceOccurrences.get(entity)
+    return occurrence
+      ? JSON.stringify(occurrence.instancePath)
+      : entity.objectId
+  }
+
+  private sourceOccurrence(
+    entity: AcTrEntity
+  ): AcTrEntityOccurrence | undefined {
+    const occurrence = this._sourceOccurrences.get(entity)
+    if (!occurrence || !entity.objectId) return undefined
+    return {
+      entityId: entity.objectId,
+      insertPath: occurrence.insertPath,
+      instancePath: occurrence.instancePath,
+      entityToSource: this.sourceEntityTransform
+        .clone()
+        .multiply(occurrence.entityToGroup)
     }
   }
 
@@ -1007,15 +1077,18 @@ export class AcTrGroup extends AcTrEntity {
     scratch.copy(entity.wcsBbox)
     entity.updateMatrixWorld(true)
 
-    const nestedInsertMatrix = this._sourceEntitySpatialMatrices.get(
-      entity.objectId
-    )
+    const nestedInsertMatrix =
+      this._sourceOccurrences.get(entity)?.boundsToGroup
+    const hasParentLocalGlyphBounds =
+      entity instanceof AcTrGlyphEntity && entity.parent === this
     if (
+      !hasParentLocalGlyphBounds &&
       nestedInsertMatrix &&
       !AcTrGroup.isWorldMatrixIdentity(nestedInsertMatrix)
     ) {
       scratch.applyMatrix4(nestedInsertMatrix)
     } else if (
+      !hasParentLocalGlyphBounds &&
       AcTrGroup.isWorldMatrixIdentity(this.matrixWorld) &&
       !AcTrGroup.isWorldMatrixIdentity(entity.matrix)
     ) {
@@ -1034,7 +1107,8 @@ export class AcTrGroup extends AcTrEntity {
       minY: scratch.min.y,
       maxX: scratch.max.x,
       maxY: scratch.max.y,
-      id: entity.objectId
+      id: entity.objectId,
+      occurrence: this.sourceOccurrence(entity)
     }
   }
 
@@ -1071,7 +1145,13 @@ export class AcTrGroup extends AcTrEntity {
 
     entity.updateMatrixWorld(true)
     scratch.copy(entity.wcsBbox)
-    scratch.applyMatrix4(entity.matrixWorld)
+    // Glyphs compute their bounds in parent-local space after deferred draw.
+    // Their own flattened INSERT matrix is already included in those bounds.
+    scratch.applyMatrix4(
+      entity instanceof AcTrGlyphEntity && entity.parent === this
+        ? this.matrixWorld
+        : entity.matrixWorld
+    )
     if (!Number.isFinite(scratch.min.x) || !Number.isFinite(scratch.max.x)) {
       return undefined
     }
@@ -1081,7 +1161,8 @@ export class AcTrGroup extends AcTrEntity {
       minY: scratch.min.y,
       maxX: scratch.max.x,
       maxY: scratch.max.y,
-      id: entity.objectId
+      id: entity.objectId,
+      occurrence: this.sourceOccurrence(entity)
     }
   }
 
@@ -1154,6 +1235,13 @@ export class AcTrGroup extends AcTrEntity {
    *   derived from {@link AcGeMatrix3d} via {@link AcTrMatrixUtil.createMatrix4}.
    */
   private applyMatrixToEntityBox(box: AcTrEntityBox, matrix: THREE.Matrix4) {
+    if (box.occurrence) {
+      // Replace the snapshot; lazy clones may share the previous occurrence.
+      box.occurrence = {
+        ...box.occurrence,
+        entityToSource: matrix.clone().multiply(box.occurrence.entityToSource)
+      }
+    }
     const points = [
       new THREE.Vector3(box.minX, box.minY, 0),
       new THREE.Vector3(box.maxX, box.minY, 0),

@@ -55,8 +55,101 @@ jest.mock('rbush', () => {
 
 import { isEffectiveSpatialQueryHit } from '../src/editor/view/AcEdSpatialQueryResult'
 import { AcTrHierarchicalSpatialIndex } from '../src/spatialIndex/AcTrHierarchicalSpatialIndex'
+import { AcTrLinearSpatialIndex } from '../src/spatialIndex/AcTrLinearSpatialIndex'
+import { AcTrRBushSpatialIndex } from '../src/spatialIndex/AcTrRBushSpatialIndex'
+import * as THREE from 'three'
 
 describe('AcTrHierarchicalSpatialIndex', () => {
+  test.each([0, 100])(
+    'retains native occurrence ids and snapshots at threshold %i',
+    threshold => {
+      const originalThreshold = AcTrHierarchicalSpatialIndex.THRESHOLD
+      AcTrHierarchicalSpatialIndex.THRESHOLD = threshold
+      try {
+        const spatialIndex = new AcTrHierarchicalSpatialIndex()
+        const items = [10, 30].map((x, index) => ({
+          id: 'SAME-LEAF',
+          minX: x,
+          minY: 0,
+          maxX: x + 5,
+          maxY: 5,
+          occurrence: {
+            entityId: 'SAME-LEAF',
+            insertPath: ['NESTED'],
+            instancePath: [index, 0],
+            entityToSource: new THREE.Matrix4().makeTranslation(x, 0, 0)
+          }
+        }))
+        spatialIndex.ensureChildIndex('ROOT', items)
+        items[0].occurrence.entityToSource.makeTranslation(900, 0, 0)
+        items[0].occurrence.instancePath[0] = 9
+        const hits = spatialIndex.search({
+          minX: 0,
+          minY: -1,
+          maxX: 50,
+          maxY: 10
+        })
+        expect(hits[0].children?.map(item => item.id)).toEqual([
+          'SAME-LEAF',
+          'SAME-LEAF'
+        ])
+        expect(
+          hits[0].children?.map(item => item.occurrence?.instancePath)
+        ).toEqual([
+          [0, 0],
+          [1, 0]
+        ])
+        expect(
+          hits[0].children?.map(
+            item => item.occurrence?.entityToSource.elements[12]
+          )
+        ).toEqual([10, 30])
+      } finally {
+        AcTrHierarchicalSpatialIndex.THRESHOLD = originalThreshold
+      }
+    }
+  )
+
+  test.each([AcTrLinearSpatialIndex, AcTrRBushSpatialIndex])(
+    '%p removes and updates one occurrence independently',
+    Index => {
+      const index = new Index()
+      const items = [0, 1].map(slot => ({
+        id: 'SAME',
+        minX: 0,
+        minY: 0,
+        maxX: 5,
+        maxY: 5,
+        occurrence: {
+          entityId: 'SAME',
+          insertPath: [],
+          instancePath: [slot],
+          entityToSource: new THREE.Matrix4().makeTranslation(slot, 0, 0)
+        }
+      }))
+      index.load(items)
+      expect(index.all()).toHaveLength(2)
+      const updated = {
+        ...items[0],
+        occurrence: {
+          ...items[0].occurrence,
+          entityToSource: new THREE.Matrix4().makeTranslation(99, 0, 0)
+        }
+      }
+      index.insert(updated)
+      expect(index.all()).toHaveLength(2)
+      expect(
+        index.all().find(item => item.occurrence?.instancePath[0] === 0)
+          ?.occurrence?.entityToSource.elements[12]
+      ).toBe(99)
+      index.remove(updated)
+      expect(index.all()).toEqual([items[1]])
+      index.insert(updated)
+      index.removeById('SAME')
+      expect(index.all()).toHaveLength(0)
+    }
+  )
+
   test('does not pollute child index with root item when objectId is reused', () => {
     const spatialIndex = new AcTrHierarchicalSpatialIndex()
     const insertId = 'INSERT_ID'
@@ -373,8 +466,6 @@ describe('AcTrHierarchicalSpatialIndex', () => {
     expect(stats.childIndexCount).toBe(1)
     expect(stats.childItemCount).toBe(2)
     expect(stats.estimatedBytes).toBeGreaterThan(0)
-    expect(
-      (stats.rbushChildCount ?? 0) + (stats.linearChildCount ?? 0)
-    ).toBe(1)
+    expect((stats.rbushChildCount ?? 0) + (stats.linearChildCount ?? 0)).toBe(1)
   })
 })

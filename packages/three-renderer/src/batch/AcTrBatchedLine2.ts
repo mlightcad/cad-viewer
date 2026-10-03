@@ -447,10 +447,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
    * @param target - Reusable {@link THREE.Box3} that receives the result.
    * @returns `target` when the id is valid, otherwise `null`.
    */
-  override computeBoundingBoxAt(
-    geometryId: number,
-    target: THREE.Box3
-  ) {
+  override computeBoundingBoxAt(geometryId: number, target: THREE.Box3) {
     if (geometryId >= this._geometryCount) {
       return null
     }
@@ -771,6 +768,8 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     _raycastObject.scale.copy(this.scale)
     _raycastObject.updateMatrix()
     _raycastObject.updateMatrixWorld(true)
+    // Raycasting uses a detached object: retain the batch's ancestor placement.
+    _raycastObject.matrixWorld.copy(this.matrixWorld)
     _raycastObject.raycast(raycaster, _batchIntersects)
 
     // LineSegments2.raycast() uses pixel LineMaterial.linewidth (plus optional
@@ -850,9 +849,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
       _segmentStart
         .fromBufferAttribute(instanceStart, i)
         .applyMatrix4(matrixWorld)
-      _segmentEnd
-        .fromBufferAttribute(instanceEnd, i)
-        .applyMatrix4(matrixWorld)
+      _segmentEnd.fromBufferAttribute(instanceEnd, i).applyMatrix4(matrixWorld)
 
       const distSq = raycaster.ray.distanceSqToSegment(
         _segmentStart,

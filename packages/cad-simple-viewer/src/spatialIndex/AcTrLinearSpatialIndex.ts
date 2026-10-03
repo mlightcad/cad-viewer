@@ -1,6 +1,9 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 
-import { AcEdSpatialQueryResultItem } from '../editor/view'
+import {
+  AcEdSpatialQueryResultItem,
+  spatialItemStorageKey
+} from '../editor/view/AcEdSpatialQueryResult'
 import {
   AcTrSpatialIndex,
   AcTrSpatialIndexBBox,
@@ -43,17 +46,10 @@ export class AcTrLinearSpatialIndex implements AcTrSpatialIndex {
   private anonKeySeq = 0
 
   private storageKey(item: AcEdSpatialQueryResultItem): string {
-    if (typeof item.id === 'string' && item.id.length > 0) {
-      return item.id
-    }
-    return `__anon_${this.anonKeySeq++}`
+    return spatialItemStorageKey(item) ?? `__anon_${this.anonKeySeq++}`
   }
 
   insert(item: AcEdSpatialQueryResultItem): void {
-    if (typeof item.id === 'string' && item.id.length > 0) {
-      this.items.set(item.id, item)
-      return
-    }
     this.items.set(this.storageKey(item), item)
   }
 
@@ -64,8 +60,9 @@ export class AcTrLinearSpatialIndex implements AcTrSpatialIndex {
   }
 
   remove(item: AcEdSpatialQueryResultItem): void {
-    if (typeof item.id === 'string' && item.id.length > 0) {
-      this.items.delete(item.id)
+    const key = spatialItemStorageKey(item)
+    if (key !== undefined) {
+      this.items.delete(key)
       return
     }
     for (const [key, value] of this.items) {
@@ -85,7 +82,10 @@ export class AcTrLinearSpatialIndex implements AcTrSpatialIndex {
 
   removeById(id: AcDbObjectId): void {
     if (typeof id === 'string' && id.length > 0) {
-      this.items.delete(id)
+      if (this.items.delete(id)) return
+      for (const [key, item] of this.items) {
+        if (item.id === id) this.items.delete(key)
+      }
     }
   }
 

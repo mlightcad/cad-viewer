@@ -150,7 +150,17 @@ export function estimateSpatialQueryItemBytes(
   item: AcEdSpatialQueryResultItem
 ): number {
   // 4× float64 fields + shallow object overhead + id string.
-  return 4 * 8 + 48 + (item.id?.length ?? 0) * 2
+  const occurrence = item.occurrence
+  const occurrenceBytes = occurrence
+    ? 16 * 8 +
+      96 +
+      occurrence.instancePath.length * 8 +
+      occurrence.insertPath.reduce(
+        (bytes, handle) => bytes + handle.length * 2 + 8,
+        0
+      )
+    : 0
+  return 4 * 8 + 48 + (item.id?.length ?? 0) * 2 + occurrenceBytes
 }
 
 /**

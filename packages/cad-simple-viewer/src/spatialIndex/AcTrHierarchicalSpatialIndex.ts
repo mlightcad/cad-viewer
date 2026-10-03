@@ -393,7 +393,17 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
     // references; the previous insert({ ...item }) path copied for the same reason.
     const finiteItems = uniquifySpatialItemIds(
       items.filter(isFiniteSpatialBBox)
-    ).map(item => ({ ...item }))
+    ).map(item => ({
+      ...item,
+      ...(item.occurrence && {
+        occurrence: {
+          ...item.occurrence,
+          insertPath: [...item.occurrence.insertPath],
+          instancePath: [...item.occurrence.instancePath],
+          entityToSource: item.occurrence.entityToSource.clone()
+        }
+      })
+    }))
     if (finiteItems.length === 0) {
       return undefined
     }

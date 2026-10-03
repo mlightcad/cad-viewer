@@ -1,7 +1,10 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 import RBush from 'rbush'
 
-import { AcEdSpatialQueryResultItem } from '../editor/view'
+import {
+  AcEdSpatialQueryResultItem,
+  spatialItemStorageKey
+} from '../editor/view/AcEdSpatialQueryResult'
 import { isFiniteSpatialBBox } from '../view/AcTrGroupWcsBboxAssert'
 import {
   AcTrSpatialIndex,
@@ -32,27 +35,27 @@ export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
     if (!isFiniteSpatialBBox(item)) {
       return
     }
-    const hasId = typeof item.id === 'string' && item.id.length > 0
+    const key = spatialItemStorageKey(item)
     // Empty ids (hatch fill islands) must not share one Map slot — otherwise
     // later inserts overwrite earlier islands and only the last stays pickable.
-    if (hasId) {
-      const existing = this.idMap.get(item.id)
+    if (key !== undefined) {
+      const existing = this.idMap.get(key)
       if (existing) {
         if (
           existing.minX === item.minX &&
           existing.minY === item.minY &&
           existing.maxX === item.maxX &&
-          existing.maxY === item.maxY
+          existing.maxY === item.maxY &&
+          existing.occurrence === item.occurrence
         ) {
           return
         }
-        this.remove(existing, (a, b) => a.id === b.id)
-        this.idMap.delete(item.id)
+        this.remove(existing)
       }
     }
     this.tree.insert(item)
-    if (hasId) {
-      this.idMap.set(item.id, item)
+    if (key !== undefined) {
+      this.idMap.set(key, item)
     }
   }
 
@@ -60,8 +63,9 @@ export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
     const finiteItems = items.filter(isFiniteSpatialBBox)
     this.tree.load(finiteItems)
     for (const item of finiteItems) {
-      if (typeof item.id === 'string' && item.id.length > 0) {
-        this.idMap.set(item.id, item)
+      const key = spatialItemStorageKey(item)
+      if (key !== undefined) {
+        this.idMap.set(key, item)
       }
     }
   }
@@ -78,14 +82,15 @@ export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
       equals ??
         ((a, b) =>
           a === b ||
-          (a.id === b.id &&
+          (spatialItemStorageKey(a) === spatialItemStorageKey(b) &&
             a.minX === b.minX &&
             a.minY === b.minY &&
             a.maxX === b.maxX &&
             a.maxY === b.maxY))
     )
-    if (typeof item.id === 'string' && item.id.length > 0) {
-      this.idMap.delete(item.id)
+    const key = spatialItemStorageKey(item)
+    if (key !== undefined) {
+      this.idMap.delete(key)
     }
   }
 
@@ -93,18 +98,14 @@ export class AcTrRBushSpatialIndex implements AcTrSpatialIndex {
     if (!(typeof id === 'string' && id.length > 0)) {
       return
     }
-    // Set minX, minY, maxX, and maxY to 0 in order to pass build
-    this.tree.remove(
-      {
-        minX: 0,
-        minY: 0,
-        maxX: 0,
-        maxY: 0,
-        id: id
-      },
-      (a, b) => a.id === b.id
-    )
-    this.idMap.delete(id)
+    const rootItem = this.idMap.get(id)
+    if (rootItem) {
+      this.remove(rootItem)
+      return
+    }
+    for (const item of this.idMap.values()) {
+      if (item.id === id) this.remove(item)
+    }
   }
 
   /**

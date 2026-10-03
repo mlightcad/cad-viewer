@@ -1,4 +1,5 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
+import type { AcTrEntityOccurrence } from '@mlightcad/three-renderer'
 
 import { isFiniteSpatialBBox } from '../../view/AcTrGroupWcsBboxAssert'
 
@@ -11,6 +12,8 @@ export interface AcEdSpatialQueryResultItem {
   maxX: number
   maxY: number
   id: AcDbObjectId
+  /** Native occurrence, independent of the child index's unique storage id. */
+  occurrence?: AcTrEntityOccurrence
 }
 
 /**
@@ -91,6 +94,9 @@ export function uniquifySpatialItemIds(
 ): AcEdSpatialQueryResultItem[] {
   const seen = new Map<string, number>()
   return items.map(item => {
+    // Native occurrences already have deterministic internal storage keys.
+    // Their database handle must remain intact for native consumers.
+    if (item.occurrence) return item
     const raw = item.id
     if (typeof raw !== 'string' || raw.length === 0) {
       return item
@@ -102,4 +108,17 @@ export function uniquifySpatialItemIds(
     }
     return { ...item, id: `${raw}#${count}` }
   })
+}
+
+/** Internal index identity, separate from the native handle returned to callers. */
+export function spatialItemStorageKey(
+  item: AcEdSpatialQueryResultItem
+): string | undefined {
+  if (item.occurrence) {
+    return JSON.stringify([
+      item.occurrence.entityId,
+      item.occurrence.instancePath
+    ])
+  }
+  return typeof item.id === 'string' && item.id.length > 0 ? item.id : undefined
 }

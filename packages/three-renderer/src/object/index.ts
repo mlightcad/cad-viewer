@@ -1,4 +1,5 @@
 export * from './AcTrEntity'
+export * from './AcTrEntityOccurrence'
 export * from './AcTrGlyphEntity'
 export * from './AcTrGroup'
 export * from './AcTrGroupCompactor'

@@ -1,4 +1,9 @@
 import type { Config } from 'jest'
+import { createRequire } from 'node:module'
+
+const rendererRequire = createRequire(
+  new URL('./packages/three-renderer/package.json', import.meta.url)
+)
 
 const config: Config = {
   verbose: true,
@@ -23,11 +28,11 @@ const config: Config = {
   transformIgnorePatterns: [
     '/node_modules/(?!.*(mtext-parser|rbush|quickselect))'
   ],
-  testPathIgnorePatterns: [
-    '/e2e/',
-    '/__tests__/helpers/'
-  ],
+  testPathIgnorePatterns: ['/e2e/', '/__tests__/helpers/'],
   moduleNameMapper: {
+    // Shared mocks live outside a package; resolve the renderer's actual Three
+    // dependency instead of relying on accidental workspace-root hoisting.
+    '^three$': rendererRequire.resolve('three'),
     '^lodash-es$': 'lodash',
     '^@mlightcad/cad-simple-viewer/icons$':
       '<rootDir>/packages/cad-simple-viewer/src/ui/icons.ts',

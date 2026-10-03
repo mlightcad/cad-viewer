@@ -553,9 +553,7 @@ export class AcTrBatchedGroup extends THREE.Group {
   ): Map<string, THREE.Box3> {
     const scratch = new THREE.Box3()
 
-    const absorbBatch = (
-      batch: AcTrBatchedLine | AcTrBatchedPoint
-    ) => {
+    const absorbBatch = (batch: AcTrBatchedLine | AcTrBatchedPoint) => {
       batch.updateMatrixWorld(true)
       for (let i = 0; i < batch.geometryCount; i++) {
         let info: { objectId?: string; vertexCount: number }
@@ -704,10 +702,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       if (!('material' in object)) return
       const drawableUserData = getSceneDrawableUserData(object)
       if (drawableUserData.styleMaterialId === oldId) {
-        const drawable = object as
-          | THREE.Mesh
-          | THREE.Line
-          | THREE.LineSegments
+        const drawable = object as THREE.Mesh | THREE.Line | THREE.LineSegments
         drawable.material = material
         drawableUserData.styleMaterialId = material.id
         // Same arming as the batched path above: a cache-push rebind may swap
@@ -1633,6 +1628,7 @@ export class AcTrBatchedGroup extends THREE.Group {
     this.forEachEntitySlot(objectId, item => {
       const batchedObject = this.getOriginBatch(item.batchedObjectId)
       if (batchedObject) {
+        batchedObject.updateWorldMatrix(true, false)
         batchedObject.intersectWith(item.batchId, raycaster, intersects)
         if (intersects.length > 0) {
           hit = true
@@ -3362,6 +3358,8 @@ export class AcTrBatchedGroup extends THREE.Group {
     object: THREE.Object3D,
     raycaster: THREE.Raycaster
   ) {
+    if (!object.visible) return false
+    object.updateWorldMatrix(true, true)
     if (getSceneDrawableUserData(object).bboxIntersectionCheck) {
       return this.isUnbatchedBboxIntersecting(object, raycaster)
     }
