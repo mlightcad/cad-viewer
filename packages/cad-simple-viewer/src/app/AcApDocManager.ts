@@ -2252,8 +2252,10 @@ export class AcApDocManager {
     this.openProgressView.convertInvisibleLayers =
       options?.convertInvisibleLayers === true
     this.openProgressView.cooperativeYield = options?.cooperativeYield !== false
-    this.openProgressView.cadScene.skipSpatialIndex =
-      options?.skipSpatialIndex === true
+    const openCadScene = this.openProgressView.cadScene
+    if (openCadScene) {
+      openCadScene.skipSpatialIndex = options?.skipSpatialIndex === true
+    }
     // Preset fonts are drawing-independent — start immediately so download /
     // mesh parse overlaps db.read. Glyph finalize awaits the promise; linework
     // convert does not.

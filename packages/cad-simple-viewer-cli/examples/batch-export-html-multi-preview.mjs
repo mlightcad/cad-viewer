@@ -23,6 +23,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import {
   copyFile,
+  cp,
   mkdir,
   mkdtemp,
   readdir,
@@ -91,6 +92,88 @@ function drawingFolderName(inputDir, drawingPath, used) {
   return name
 }
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+const REPLACE_DIR_RETRY = new Set([
+  'EPERM',
+  'EACCES',
+  'EBUSY',
+  'ENOTEMPTY',
+  'EMFILE',
+  'ENFILE'
+])
+
+/**
+ * Move `src` onto `dest`. Windows often returns EPERM from rename while
+ * Defender or a file watcher still has a file inside a freshly unpacked
+ * directory open (sharing without delete). Retry, then copy into place.
+ */
+async function replaceDir(src, dest) {
+  const waits = [0, 50, 100, 200, 400, 800, 1600]
+  let lastError
+  for (const wait of waits) {
+    if (wait) await delay(wait)
+    try {
+      await rm(dest, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 100
+      })
+      await rename(src, dest)
+      return
+    } catch (error) {
+      lastError = error
+      const code = error && error.code
+      if (code === 'EXDEV') break
+      if (!REPLACE_DIR_RETRY.has(code)) throw error
+    }
+  }
+
+  let copyError
+  for (const wait of [0, 200, 500, 1000, 2000]) {
+    if (wait) await delay(wait)
+    try {
+      await rm(dest, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 100
+      })
+      await cp(src, dest, { recursive: true })
+      copyError = undefined
+      break
+    } catch (error) {
+      copyError = error
+      const code = error && error.code
+      if (code !== 'EXDEV' && !REPLACE_DIR_RETRY.has(code)) break
+    }
+  }
+  if (copyError) {
+    await rm(dest, { recursive: true, force: true }).catch(() => {})
+    const renameMsg =
+      lastError instanceof Error ? lastError.message : String(lastError)
+    const copyMsg =
+      copyError instanceof Error ? copyError.message : String(copyError)
+    throw new Error(
+      `Failed to move ${src} to ${dest} (${renameMsg}); copy fallback failed: ${copyMsg}`
+    )
+  }
+  try {
+    await rm(src, {
+      recursive: true,
+      force: true,
+      maxRetries: 8,
+      retryDelay: 200
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`Could not remove temporary directory ${src}: ${message}`)
+  }
+}
+
 function unzipWithTar(zipPath, destDir) {
   const result = spawnSync(
     'tar',
@@ -134,10 +217,14 @@ async function packageDrawing(workDir, targetDir, sourceDrawing) {
     const destName = ext === '.dxf' ? 'drawing.dxf' : 'drawing.dwg'
     await copyFile(sourceDrawing, path.join(stageDir, destName))
 
-    await rm(targetDir, { recursive: true, force: true })
-    await rename(stageDir, targetDir)
+    await replaceDir(stageDir, targetDir)
   } catch (error) {
-    await rm(stageDir, { recursive: true, force: true })
+    await rm(stageDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 100
+    }).catch(() => {})
     throw error
   }
 }
