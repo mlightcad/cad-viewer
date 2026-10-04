@@ -273,6 +273,16 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private _progressiveRendering = false
   /**
+   * When true, open-time convert includes off/frozen-layer entities so HTML
+   * export does not need a second convert pass for those entities.
+   */
+  private _convertInvisibleLayers = false
+  /**
+   * When false, {@link batchConvert} skips cooperative setTimeout yields.
+   * Headless CLI sets this false; interactive viewers leave it true.
+   */
+  private _cooperativeYield = true
+  /**
    * Serial convert queue for progressive opens. Chunks from `entityAppended`
    * enqueue here and a single drain loop runs {@link batchConvert}, so scene
    * convert overlaps ENTITY flush instead of waiting for a post-open
@@ -1040,6 +1050,26 @@ export class AcTrView2d extends AcEdBaseView {
   set progressiveRendering(value: boolean) {
     this._progressiveRendering = value
     this.resetProgressiveOpenStats()
+  }
+
+  /**
+   * When true, open-time convert includes off/frozen-layer entities.
+   */
+  get convertInvisibleLayers() {
+    return this._convertInvisibleLayers
+  }
+  set convertInvisibleLayers(value: boolean) {
+    this._convertInvisibleLayers = value
+  }
+
+  /**
+   * When false, entity convert skips cooperative yields (headless export).
+   */
+  get cooperativeYield() {
+    return this._cooperativeYield
+  }
+  set cooperativeYield(value: boolean) {
+    this._cooperativeYield = value
   }
 
   /**
@@ -3624,9 +3654,13 @@ export class AcTrView2d extends AcEdBaseView {
     // treat the tab as hung ("Page Unresponsive" / kill) at the
     // "Rendering drawing ..." stage. Mid-open WebGL paints remain gated by
     // `progressive` / markProgressiveDirty below.
-    const yieldGate = options.forExport
-      ? undefined
-      : new AcCmUiYieldGate(AcTrView2d.OPEN_CONVERT_YIELD_BUDGET_MS)
+    //
+    // Headless export sets cooperativeYield=false (or forExport) so convert
+    // does not pay for setTimeout yields the CLI never needs.
+    const yieldGate =
+      options.forExport || !this._cooperativeYield
+        ? undefined
+        : new AcCmUiYieldGate(AcTrView2d.OPEN_CONVERT_YIELD_BUDGET_MS)
     const yieldToEventLoop = () =>
       new Promise<void>(resolve => setTimeout(resolve, 0))
     for (let i = 0; i < entities.length; ++i) {
@@ -3654,9 +3688,10 @@ export class AcTrView2d extends AcEdBaseView {
           continue
         }
 
-        const shouldConvert = options.forExport
-          ? this._entityDisplay.shouldConvertForExport(entity)
-          : this._entityDisplay.shouldConvert(entity)
+        const shouldConvert =
+          options.forExport || this._convertInvisibleLayers
+            ? this._entityDisplay.shouldConvertForExport(entity)
+            : this._entityDisplay.shouldConvert(entity)
         if (!shouldConvert) {
           continue
         }

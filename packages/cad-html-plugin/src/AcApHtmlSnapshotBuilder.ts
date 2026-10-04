@@ -419,15 +419,23 @@ function collectLayoutSnapshot(
     isModelSpace,
     options.canvasAspectRatio
   )
+  let osnap: ReturnType<typeof buildOsnapCatalog> | undefined
+  if (shouldExportOsnap(options)) {
+    const osnapT0 = performance.now()
+    osnap = buildOsnapCatalog(database, btrId, { includeLayer })
+    console.log(
+      `[chtml] osnap catalog ${layoutNames.get(btrId) ?? btrId}: ${(
+        performance.now() - osnapT0
+      ).toFixed(0)} ms (${osnap?.primitives.length ?? 0} primitives)`
+    )
+  }
   return {
     btrId,
     name: layoutNames.get(btrId) ?? resolveBlockName(database, btrId),
     isModelSpace,
     lineBatches,
     meshBatches,
-    osnap: shouldExportOsnap(options)
-      ? buildOsnapCatalog(database, btrId, { includeLayer })
-      : undefined,
+    osnap,
     viewports: collectLayoutViewports(database, btrId, isModelSpace),
     ...(savedView ? { savedView } : {})
   }

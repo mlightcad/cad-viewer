@@ -5,6 +5,7 @@ import {
   AcApI18n,
   type AcApLocale,
   type AcApOpenDatabaseOptions,
+  AcApOpenFileProfiler,
   AcApOpenViewMode,
   AcEdOpenMode,
   AcTrView2d,
@@ -46,7 +47,6 @@ export type CadViewerCliOpenViewMode = 'extents' | 'saved'
 
 export interface CadViewerCliCapturedFile {
   fileName: string
-  base64: string
 }
 
 export interface CadViewerCliRunResult {
@@ -70,13 +70,18 @@ export interface CadViewerCliRunOptions {
    * Fonts load from `${baseUrl}fonts/`. When omitted, the default CDN is used.
    */
   baseUrl?: string
+  /**
+   * Base URL for POSTing export downloads as raw bodies
+   * (`${saveBaseUrl}${fileName}`). Avoids base64 over CDP.
+   */
+  saveBaseUrl?: string
 }
 
 declare global {
   interface Window {
     runCadScript: (
       fileName: string | null,
-      bytes: Uint8Array | null,
+      drawingUrl: string | null,
       script: string,
       options?: CadViewerCliRunOptions
     ) => Promise<CadViewerCliRunResult>
@@ -86,29 +91,7 @@ declare global {
 let ready = false
 const capturedFiles: CadViewerCliCapturedFile[] = []
 const pendingCaptures: Promise<void>[] = []
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = ''
-  const chunk = 0x8000
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
-  }
-  return btoa(binary)
-}
-
-function captureDataUrl(fileName: string, href: string) {
-  const comma = href.indexOf(',')
-  if (comma < 0) {
-    throw new Error('Invalid data URL')
-  }
-  const meta = href.slice(5, comma)
-  const data = href.slice(comma + 1)
-  const isBase64 = /;base64/i.test(meta)
-  const base64 = isBase64
-    ? data
-    : btoa(unescape(encodeURIComponent(decodeURIComponent(data))))
-  capturedFiles.push({ fileName, base64 })
-}
+let saveBaseUrl: string | undefined
 
 /**
  * Blobs registered by `URL.createObjectURL`, so downloads can be read back
@@ -150,36 +133,42 @@ function installDownloadCapture() {
       event.preventDefault()
       event.stopImmediatePropagation()
 
-      if (href.startsWith('data:')) {
-        try {
-          captureDataUrl(fileName, href)
-        } catch (error) {
-          console.error(
-            '[cad-simple-viewer-cli] Failed to capture data URL download',
-            error
+      const task = (async () => {
+        let blob: Blob | undefined = blobByUrl.get(href)
+        if (!blob && href.startsWith('data:')) {
+          const response = await fetch(href)
+          blob = await response.blob()
+        }
+        if (!blob) {
+          const response = await fetch(href)
+          if (!response.ok) {
+            throw new Error(`Failed to fetch download "${fileName}"`)
+          }
+          blob = await response.blob()
+        }
+
+        if (!saveBaseUrl) {
+          throw new Error('CLI save endpoint not configured')
+        }
+        const t0 = performance.now()
+        const response = await fetch(
+          `${saveBaseUrl}${encodeURIComponent(fileName)}`,
+          {
+            method: 'POST',
+            body: blob
+          }
+        )
+        if (!response.ok) {
+          throw new Error(
+            `Failed to save download "${fileName}" (${response.status})`
           )
         }
-        return
-      }
-
-      const task = (async () => {
-        const blob = blobByUrl.get(href)
-        if (blob) {
-          capturedFiles.push({
-            fileName,
-            base64: bytesToBase64(new Uint8Array(await blob.arrayBuffer()))
-          })
-          return
-        }
-        const response = await fetch(href)
-        if (!response.ok) {
-          throw new Error(`Failed to fetch download "${fileName}"`)
-        }
-        const buffer = await response.arrayBuffer()
-        capturedFiles.push({
-          fileName,
-          base64: bytesToBase64(new Uint8Array(buffer))
-        })
+        console.log(
+          `[cad-simple-viewer-cli] saved ${fileName}: ${(
+            performance.now() - t0
+          ).toFixed(0)} ms (${blob.size} bytes)`
+        )
+        capturedFiles.push({ fileName })
       })().catch(error => {
         console.error(
           '[cad-simple-viewer-cli] Failed to capture download',
@@ -214,13 +203,20 @@ function resolveOpenViewMode(
  *
  * Progressive rendering is always forced off so drawings open as quickly as
  * possible — headless scripts do not need mid-open paints.
+ *
+ * Export-oriented flags convert off layers / all layouts once, skip the pick
+ * spatial index, and disable cooperative convert yields.
  */
 function buildOpenOptions(
   options: CadViewerCliRunOptions
 ): AcApOpenDatabaseOptions {
   const openOptions: AcApOpenDatabaseOptions = {
     mode: resolveOpenMode(options.mode),
-    progressiveRendering: false
+    progressiveRendering: false,
+    convertInvisibleLayers: true,
+    convertAllLayouts: true,
+    skipSpatialIndex: true,
+    cooperativeYield: false
   }
   const openViewMode = resolveOpenViewMode(options.openViewMode)
   if (openViewMode != null) {
@@ -249,6 +245,38 @@ function resolveLocale(locale?: string): AcApLocale | undefined {
     return normalized
   }
   return undefined
+}
+
+function logOpenProfile() {
+  const snapshot = AcApOpenFileProfiler.getLastSnapshot()
+  if (!snapshot) {
+    return
+  }
+  const lines = [
+    `[cad-simple-viewer-cli] OPENPROF total=${snapshot.totalMs.toFixed(0)}ms` +
+      ` read=${snapshot.readMs.toFixed(0)}ms` +
+      ` convert=${snapshot.convertMs.toFixed(0)}ms` +
+      ` parse=${snapshot.parseMs.toFixed(0)}ms` +
+      ` entity=${snapshot.entityMs.toFixed(0)}ms`,
+    `[cad-simple-viewer-cli] OPENPROF cache hits=${snapshot.cache.topLevel.hits}` +
+      ` misses=${snapshot.cache.topLevel.misses}` +
+      ` clone=${snapshot.cache.topLevel.cloneMs.toFixed(0)}ms` +
+      ` build=${snapshot.cache.topLevel.missBuildMs.toFixed(0)}ms` +
+      ` compact=${snapshot.cache.topLevel.missCompactMs.toFixed(0)}ms`
+  ]
+  if (snapshot.convertPhase) {
+    const p = snapshot.convertPhase
+    lines.push(
+      '[cad-simple-viewer-cli] OPENPROF convertPhase' +
+        ` finishGeometry=${p.finishGeometryMs.toFixed(0)}ms` +
+        ` handleGroup=${p.handleGroupMs.toFixed(0)}ms` +
+        ` addEntity=${p.addEntityMs.toFixed(0)}ms` +
+        ` awaitFonts=${p.awaitFontsMs.toFixed(0)}ms`
+    )
+  }
+  for (const line of lines) {
+    console.log(line)
+  }
 }
 
 async function ensureViewer(options: CadViewerCliRunOptions = {}): Promise<void> {
@@ -290,10 +318,11 @@ async function ensureViewer(options: CadViewerCliRunOptions = {}): Promise<void>
   ready = true
 }
 
-window.runCadScript = async (fileName, bytes, script, options = {}) => {
+window.runCadScript = async (fileName, drawingUrl, script, options = {}) => {
   await ensureViewer(options)
   capturedFiles.length = 0
   pendingCaptures.length = 0
+  saveBaseUrl = options.saveBaseUrl
 
   const locale = resolveLocale(options.locale)
   if (locale) {
@@ -301,13 +330,24 @@ window.runCadScript = async (fileName, bytes, script, options = {}) => {
   }
 
   const docManager = AcApDocManager.instance
-  const hasDrawing = !!(bytes && bytes.byteLength > 0 && fileName)
+  const hasDrawing = !!(drawingUrl && fileName)
   const openOptions = buildOpenOptions(options)
 
+  const openT0 = performance.now()
+  const openWallClock = Date.now()
   if (hasDrawing) {
-    const buffer = bytes!.buffer.slice(
-      bytes!.byteOffset,
-      bytes!.byteOffset + bytes!.byteLength
+    const fetchT0 = performance.now()
+    const response = await fetch(drawingUrl!)
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch drawing "${fileName}" (${response.status}).`
+      )
+    }
+    const buffer = await response.arrayBuffer()
+    console.log(
+      `[cad-simple-viewer-cli] fetch drawing: ${(
+        performance.now() - fetchT0
+      ).toFixed(0)} ms (${buffer.byteLength} bytes)`
     )
     const opened = await docManager.openDocument(fileName!, buffer, openOptions)
     if (!opened) {
@@ -325,9 +365,30 @@ window.runCadScript = async (fileName, bytes, script, options = {}) => {
   }
 
   await waitForSceneIdle()
+  console.log(
+    `[cad-simple-viewer-cli] open+idle: ${(performance.now() - openT0).toFixed(
+      0
+    )} ms`
+  )
+  // OPENPROF publishes on the same idle edge; wait briefly for the snapshot.
+  for (let i = 0; i < 60; i++) {
+    const snap = AcApOpenFileProfiler.getLastSnapshot()
+    if (snap && snap.collectedAt >= openWallClock) {
+      break
+    }
+    await new Promise<void>(resolve => setTimeout(resolve, 16))
+  }
+  logOpenProfile()
+
+  const scriptT0 = performance.now()
   await docManager.runScript(script)
   await Promise.all(pendingCaptures)
   await accmYieldForPaint()
+  console.log(
+    `[cad-simple-viewer-cli] script: ${(performance.now() - scriptT0).toFixed(
+      0
+    )} ms`
+  )
 
   return {
     ok: true,

@@ -118,6 +118,11 @@ export class AcTrLayout {
   /** The flag indicating whether the layout is loaded/activated */
   private _isLoaded: boolean
   /**
+   * When true, {@link addEntity} / {@link addDirectEntity} skip spatial-index
+   * registration. Used by headless HTML/JPEG export where pick queries are unused.
+   */
+  skipSpatialIndex = false
+  /**
    * True when this layout renders a read-only reference/overlay drawing.
    * Reference layouts are not registered in {@link AcTrScene}'s layout map
    * and must not participate in selection, grips, or host edits.
@@ -1078,6 +1083,9 @@ export class AcTrLayout {
    *                 membership is updated.
    */
   private registerEntitySpatialIndex(entity: AcTrEntity) {
+    if (this.skipSpatialIndex) {
+      return
+    }
     const spatialIndexChildBoxes = this.getSpatialIndexChildBoxes(entity)
 
     let rootBox: {
@@ -1161,6 +1169,9 @@ export class AcTrLayout {
    * Registers a simple axis-aligned WCS box in the spatial index by object id.
    */
   private registerSpatialIndexBox(objectId: AcDbObjectId, wcsBbox: THREE.Box3) {
+    if (this.skipSpatialIndex) {
+      return
+    }
     const box = {
       minX: wcsBbox.min.x,
       minY: wcsBbox.min.y,

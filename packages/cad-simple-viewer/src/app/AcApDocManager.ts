@@ -2247,6 +2247,15 @@ export class AcApDocManager {
     this._openFileProgress.setSeeThroughOverlay(
       options?.progressiveRendering ?? false
     )
+    // Headless HTML export: convert off layers once, skip pick indexes, and
+    // optionally skip cooperative yields that only matter for an interactive UI.
+    this.openProgressView.convertInvisibleLayers =
+      options?.convertInvisibleLayers === true
+    this.openProgressView.cooperativeYield = options?.cooperativeYield !== false
+    const openCadScene = this.openProgressView.cadScene
+    if (openCadScene) {
+      openCadScene.skipSpatialIndex = options?.skipSpatialIndex === true
+    }
     // Preset fonts are drawing-independent — start immediately so download /
     // mesh parse overlaps db.read. Glyph finalize awaits the promise; linework
     // convert does not.
@@ -2381,6 +2390,23 @@ export class AcApDocManager {
       // its completion callback instead of here (pre-fit camera is wrong).
       if (framedSynchronously) {
         AcApZoomCmd.rememberOriginalView(view, db.currentSpaceId)
+      }
+      // Headless multi-layout export: convert unvisited paper tabs before the
+      // open-idle wait so `-chtml` does not pay a second full layout pass.
+      // Fire-and-forget: onAfterOpenDocument is sync; waitUntilIdle / CLI
+      // waitForSceneIdle drain the convert queue this kicks off.
+      if (options?.convertAllLayouts) {
+        void view
+          .ensureEntitiesConvertedForExport({
+            includeInvisibleLayers: options.convertInvisibleLayers !== false,
+            includeLayouts: true
+          })
+          .catch(error => {
+            log.error(
+              '[AcApDocManager] convertAllLayouts export convert failed',
+              error
+            )
+          })
       }
       // OPENPROF: db.read is done; wait for batchConvert to drain, then print.
       this._openFileProfiler.markReadCompleteAndScheduleReport(view)

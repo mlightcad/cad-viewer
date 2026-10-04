@@ -13,6 +13,9 @@ export function copyFloat32Range(
   if (count <= 0) {
     return new Float32Array(0)
   }
+  if (array instanceof Float32Array) {
+    return array.subarray(start, start + count).slice()
+  }
   const result = new Float32Array(count)
   for (let i = 0; i < count; i++) {
     result[i] = array[start + i]!

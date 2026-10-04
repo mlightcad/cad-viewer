@@ -127,4 +127,35 @@ export interface AcApOpenDatabaseOptions extends Omit<
    * `PAPERBKCOLOR` accept {@link AcCmColor}; see {@link AcApOpenSysVars}.
    */
   sysVars?: AcApOpenSysVars
+
+  /**
+   * When `true`, convert entities on off/frozen layers during open so offline
+   * HTML/PDF export does not need a second convert pass for those entities.
+   * Interactive viewing leaves this `false` (default) and converts them later
+   * when a layer is turned on or {@link AcTrView2d.ensureEntitiesConvertedForExport}
+   * runs.
+   */
+  convertInvisibleLayers?: boolean
+
+  /**
+   * When `true`, register and convert every paper-space layout during /
+   * immediately after open so export does not wait for the user to visit each
+   * tab. Default `false`.
+   */
+  convertAllLayouts?: boolean
+
+  /**
+   * When `true`, skip building the hierarchical spatial index while converting
+   * entities. Headless HTML/JPEG export only needs scene batch geometry and
+   * layout boxes; the spatial index is for interactive pick / smart extents.
+   * Default `false`.
+   */
+  skipSpatialIndex?: boolean
+
+  /**
+   * When `false`, disable cooperative `setTimeout` yields during entity
+   * convert. Headless Chromium scripts do not need a responsive UI and yields
+   * can inflate open wall time. Default `true` for interactive viewers.
+   */
+  cooperativeYield?: boolean
 }
