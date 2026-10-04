@@ -36,6 +36,7 @@ export default {
     fetchingDrawingFile: 'Načítám soubor…',
     exportingDxf: 'Exportuji DXF…',
     exportingPdf: 'Exportuji PDF…',
+    exportingSvg: 'Exportuji SVG…',
     calculatingSmartExtents: 'Počítám chytrý rozsah…',
     importingPdf: 'Importuji PDF…',
     exportingEntityPreview: 'Exportuji obrázek…',
