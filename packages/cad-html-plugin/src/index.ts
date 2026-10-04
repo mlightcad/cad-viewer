@@ -137,7 +137,9 @@ export {
 } from './AcExChunkBinaryCodec'
 export {
   buildAcExPackage,
+  buildAcExPackageAsync,
   buildAcExPackageData,
+  buildAcExPackageDataAsync,
   splitLayoutIntoSlices,
   type AcExBuildPackageOptions,
   type AcExBuildPackageDataOptions

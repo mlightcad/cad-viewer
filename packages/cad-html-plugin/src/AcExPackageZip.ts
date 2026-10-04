@@ -17,18 +17,37 @@ function isSafeZipPath(path: string): boolean {
 }
 
 /**
+ * True when the entry is already gzip-compressed (geometry / OSNAP chunks).
+ * Re-deflating these in the outer zip wastes CPU for almost no size win.
+ */
+function isPrecompressedPackagePath(path: string): boolean {
+  return path.endsWith('.gz')
+}
+
+/**
  * Zips multi-file package contents for a single browser download.
  * Paths inside the archive match the hosted directory layout.
+ *
+ * Pre-gzipped chunk payloads (`.acex.gz` / `.osnap.gz`) are stored
+ * (deflate level 0). Small text entries such as `viewer.html` and the
+ * manifest keep a modest compression level.
  */
 export function zipAcExPackageFiles(pkg: AcExPackageFiles): Uint8Array {
-  const entries: Record<string, Uint8Array> = {}
+  const entries: Record<
+    string,
+    Uint8Array | [Uint8Array, { level: 0 | 6 }]
+  > = {}
   for (const file of pkg.files) {
     if (!isSafeZipPath(file.path)) {
       throw new Error(`Unsafe package path: ${file.path}`)
     }
-    entries[file.path] = file.bytes
+    if (isPrecompressedPackagePath(file.path)) {
+      entries[file.path] = [file.bytes, { level: 0 }]
+    } else {
+      entries[file.path] = [file.bytes, { level: 6 }]
+    }
   }
-  return zipSync(entries, { level: 6 })
+  return zipSync(entries)
 }
 
 /**
