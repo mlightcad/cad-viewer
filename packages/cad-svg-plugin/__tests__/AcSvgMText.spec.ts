@@ -486,6 +486,28 @@ describe('buildSvgMText', () => {
     expect(localSvg).toContain('font-style="italic"')
   })
 
+  it('turns bold and italic off when the font face drops b1/i1', () => {
+    const { localSvg } = buildSvgMText(
+      {
+        text: '{\\fArial|b1|i1;On}{\\fArial|b0|i0;Off}',
+        height: 10,
+        position: { x: 0, y: 0, z: 0 }
+      } as never,
+      { font: 'Arial' } as never,
+      createTraits(),
+      ctx
+    )
+
+    expect(localSvg).toContain('>On<')
+    expect(localSvg).toContain('>Off<')
+    expect(localSvg).toMatch(
+      /font-weight="700"[^>]*>On<[\s\S]*<text(?![^>]*font-weight)[^>]*>Off</
+    )
+    expect(localSvg).toMatch(
+      /font-style="italic"[^>]*>On<[\s\S]*<text(?![^>]*font-style)[^>]*>Off</
+    )
+  })
+
   it('applies top line alignment for mixed heights', () => {
     const { localSvg } = buildSvgMText(
       {

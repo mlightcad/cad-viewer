@@ -541,16 +541,7 @@ class MTextSvgLayout {
     if (
       JSON.stringify(ctx.fontFace) !== JSON.stringify(this.prevCtx.fontFace)
     ) {
-      const family = normalizeCadFontName(ctx.fontFace.family || '')
-      this.fontFamily = resolveSvgFontFamily(
-        family || undefined,
-        this.defaultFont
-      )
-      this.bold = ctx.bold
-      this.italic = ctx.italic
-    } else {
-      this.bold = ctx.bold
-      this.italic = ctx.italic
+      this.applyFontFaceChange(ctx.fontFace)
     }
 
     if (
@@ -607,12 +598,25 @@ class MTextSvgLayout {
   }
 
   private applyFontFaceChange(fontFace: Properties['fontFace']) {
-    if (!fontFace?.family) {
+    if (!fontFace) {
       return
     }
-    const family = normalizeCadFontName(fontFace.family)
-    this.fontFamily = resolveSvgFontFamily(family, this.defaultFont)
-    this.bold = fontFace.weight >= 700
+    if (fontFace.family) {
+      const family = normalizeCadFontName(fontFace.family)
+      this.fontFamily = resolveSvgFontFamily(family, this.defaultFont)
+    }
+    this.applyFontFaceWeightAndStyle(fontFace)
+  }
+
+  /**
+   * Bold/italic follow the font face the same way {@link MTextContext.bold}
+   * and {@link MTextContext.italic} do (`weight >= 700`, `style === 'Italic'`).
+   */
+  private applyFontFaceWeightAndStyle(fontFace: Properties['fontFace']) {
+    if (!fontFace) {
+      return
+    }
+    this.bold = (fontFace.weight ?? 400) >= 700
     this.italic = fontFace.style === 'Italic'
   }
 
