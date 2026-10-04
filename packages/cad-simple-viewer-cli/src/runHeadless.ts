@@ -1,10 +1,14 @@
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { createServer } from 'node:http'
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse
+} from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { chromium } from 'playwright'
+import { type Browser, chromium, type Page } from 'playwright'
 
 /**
  * Document open mode passed into the headless runner page.
@@ -46,7 +50,7 @@ export interface CadViewerCliOpenOptions {
 }
 
 /**
- * Options for {@link runHeadless}.
+ * Options for {@link runHeadless} / {@link HeadlessCadSession.run}.
  */
 export interface RunHeadlessOptions extends CadViewerCliOpenOptions {
   /** Path to the `.scr` command script (required). */
@@ -79,18 +83,8 @@ export interface RunHeadlessResult {
   outputDir: string
   /** Absolute paths of files captured from browser downloads. */
   savedFiles: string[]
-}
-
-/**
- * One file captured from a browser `<a download>` click inside the runner page.
- *
- * @internal
- */
-interface CapturedFile {
-  /** Suggested download file name (from the `download` attribute). */
-  fileName: string
-  /** File contents encoded as base64. */
-  base64: string
+  /** Wall-clock timings in milliseconds for this run. */
+  timings?: Record<string, number>
 }
 
 declare global {
@@ -98,16 +92,10 @@ declare global {
     /**
      * Injected by the CLI runner page (`dist-runner`). Opens an optional drawing
      * and executes a multi-command `.scr` script, returning captured downloads.
-     *
-     * @param fileName - Drawing file name used for format detection, or `null` for blank
-     * @param bytes - Drawing bytes, or `null` when starting blank
-     * @param script - Full `.scr` script text
-     * @param options - Locale, open mode, and whether to create a blank document
-     * @returns Captured download files from export commands
      */
     runCadScript: (
       fileName: string | null,
-      bytes: Uint8Array | null,
+      drawingUrl: string | null,
       script: string,
       options?: {
         locale?: string
@@ -117,8 +105,9 @@ declare global {
         drawNoPlotLayers?: boolean
         circleSides?: number
         baseUrl?: string
+        saveBaseUrl?: string
       }
-    ) => Promise<{ ok: true; files: CapturedFile[] }>
+    ) => Promise<{ ok: true; files: Array<{ fileName: string }> }>
   }
 }
 
@@ -205,71 +194,102 @@ function drawingNameFromUrl(urlString: string): string {
   return 'drawing.dwg'
 }
 
-/**
- * Loads drawing bytes from a local path or remote URL.
- */
-async function loadDrawingInput(inputPath: string): Promise<{
-  label: string
-  fileName: string
-  base64: string
-}> {
-  if (isHttpUrl(inputPath)) {
-    const fileName = drawingNameFromUrl(inputPath)
-    const ext = path.extname(fileName).toLowerCase()
-    if (ext !== '.dxf' && ext !== '.dwg') {
-      throw new Error(
-        `Unsupported remote drawing "${fileName}". URL path must end with .dxf or .dwg.`
-      )
-    }
-    const response = await fetch(inputPath)
-    if (!response.ok) {
-      throw new Error(
-        `Failed to download drawing (${response.status} ${response.statusText}): ${inputPath}`
-      )
-    }
-    const bytes = Buffer.from(await response.arrayBuffer())
-    return {
-      label: inputPath,
-      fileName,
-      base64: bytes.toString('base64')
-    }
+function contentTypeFor(filePath: string): string {
+  const ext = path.extname(filePath).toLowerCase()
+  const types: Record<string, string> = {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'text/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json',
+    '.wasm': 'application/wasm',
+    '.dwg': 'application/octet-stream',
+    '.dxf': 'application/octet-stream'
   }
+  return types[ext] ?? 'application/octet-stream'
+}
 
-  const absoluteInput = path.resolve(inputPath)
-  const ext = path.extname(absoluteInput).toLowerCase()
-  if (ext !== '.dxf' && ext !== '.dwg') {
-    throw new Error(
-      `Unsupported file type "${ext}". Only .dxf and .dwg are supported.`
-    )
+async function readRequestBody(req: IncomingMessage): Promise<Buffer> {
+  const chunks: Buffer[] = []
+  for await (const chunk of req) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
   }
-  if (!existsSync(absoluteInput)) {
-    throw new Error(`Input drawing not found: ${absoluteInput}`)
-  }
-  const fileBytes = await readFile(absoluteInput)
-  return {
-    label: absoluteInput,
-    fileName: path.basename(absoluteInput),
-    base64: fileBytes.toString('base64')
-  }
+  return Buffer.concat(chunks)
+}
+
+interface CliStaticServer {
+  url: string
+  close: () => Promise<void>
+  /**
+   * Registers a local drawing file under `/__cli_input__/<token>/<fileName>`
+   * and returns the absolute URL the page can fetch.
+   */
+  mountInput: (absolutePath: string, fileName: string) => string
+  /**
+   * Sets the directory that `/__cli_save__/<fileName>` POST bodies write into.
+   */
+  setSaveDir: (dir: string) => void
+  /**
+   * Absolute paths written via `/__cli_save__` since the last
+   * {@link resetSavedFiles} call.
+   */
+  takeSavedFiles: () => string[]
+  resetSavedFiles: () => void
 }
 
 /**
- * Starts a loopback HTTP server that serves static files from `root`.
- *
- * Used to load the Vite-built runner page into Playwright without packing
- * assets into a `file://` URL.
- *
- * @param root - Absolute directory to serve (typically {@link runnerDistDir})
- * @returns Server base URL and a `close` function that shuts the listener down
+ * Starts a loopback HTTP server for the CLI runner, drawing inputs, and
+ * binary download saves (avoids base64 over CDP).
  */
-function startStaticServer(root: string): Promise<{
-  url: string
-  close: () => Promise<void>
-}> {
+function startCliStaticServer(root: string): Promise<CliStaticServer> {
   return new Promise((resolve, reject) => {
+    const mountedInputs = new Map<string, string>()
+    let saveDir: string | null = null
+    let savedFiles: string[] = []
+    let mountSeq = 0
+
     const server = createServer((req, res) => {
+      void handleRequest(req, res)
+    })
+
+    async function handleRequest(req: IncomingMessage, res: ServerResponse) {
       try {
-        const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0])
+        const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0] ?? '/')
+        if (req.method === 'POST' && urlPath.startsWith('/__cli_save__/')) {
+          if (!saveDir) {
+            res.writeHead(500)
+            res.end('Save directory not configured')
+            return
+          }
+          const fileName = path.basename(urlPath.slice('/__cli_save__/'.length))
+          if (!fileName) {
+            res.writeHead(400)
+            res.end('Missing file name')
+            return
+          }
+          const body = await readRequestBody(req)
+          const dest = uniqueOutputPath(saveDir, fileName)
+          await writeFile(dest, body)
+          savedFiles.push(dest)
+          res.writeHead(204)
+          res.end()
+          return
+        }
+
+        if (urlPath.startsWith('/__cli_input__/')) {
+          const absolute = mountedInputs.get(urlPath)
+          if (!absolute || !existsSync(absolute)) {
+            res.writeHead(404)
+            res.end()
+            return
+          }
+          const body = await readFile(absolute)
+          res.setHeader('Content-Type', contentTypeFor(absolute))
+          res.setHeader('Content-Length', String(body.byteLength))
+          res.writeHead(200)
+          res.end(body)
+          return
+        }
+
         const relative =
           urlPath === '/' ? 'index.html' : urlPath.replace(/^\//, '')
         const filePath = path.join(root, relative)
@@ -286,24 +306,15 @@ function startStaticServer(root: string): Promise<{
           return
         }
 
-        const ext = path.extname(filePath).toLowerCase()
-        const types: Record<string, string> = {
-          '.html': 'text/html; charset=utf-8',
-          '.js': 'text/javascript; charset=utf-8',
-          '.css': 'text/css; charset=utf-8',
-          '.json': 'application/json',
-          '.wasm': 'application/wasm'
-        }
-        res.setHeader('Content-Type', types[ext] ?? 'application/octet-stream')
-        void readFile(filePath).then(body => {
-          res.writeHead(200)
-          res.end(body)
-        })
+        res.setHeader('Content-Type', contentTypeFor(filePath))
+        const body = await readFile(filePath)
+        res.writeHead(200)
+        res.end(body)
       } catch (error) {
         res.writeHead(500)
         res.end(String(error))
       }
-    })
+    }
 
     server.listen(0, '127.0.0.1', () => {
       const address = server.address()
@@ -311,8 +322,26 @@ function startStaticServer(root: string): Promise<{
         reject(new Error('Failed to start static server for CLI runner.'))
         return
       }
+      const baseUrl = `http://127.0.0.1:${address.port}`
       resolve({
-        url: `http://127.0.0.1:${address.port}`,
+        url: baseUrl,
+        mountInput: (absolutePath, _fileName) => {
+          const token = String(++mountSeq)
+          const urlPath = `/__cli_input__/${token}`
+          mountedInputs.set(urlPath, absolutePath)
+          return `${baseUrl}${urlPath}`
+        },
+        setSaveDir: dir => {
+          saveDir = dir
+        },
+        takeSavedFiles: () => {
+          const files = savedFiles
+          savedFiles = []
+          return files
+        },
+        resetSavedFiles: () => {
+          savedFiles = []
+        },
         close: () =>
           new Promise((closeResolve, closeReject) => {
             server.close(err => (err ? closeReject(err) : closeResolve()))
@@ -323,91 +352,139 @@ function startStaticServer(root: string): Promise<{
 }
 
 /**
- * Runs a `.scr` command script in headless Chromium and writes captured
- * export downloads into `outputDir`.
- *
- * When `inputPath` is omitted, the runner starts from a blank ISO template
- * (write mode) so scripts can create geometry from scratch. The page waits for
- * entity convert / deferred font geometry before executing the script so
- * exports such as `pngout` include rendered text.
- *
- * @param options - Script path, optional input drawing, output dir, locale,
- *   open mode / view / tessellation options, resource base URL, logfile
- * @returns Absolute output directory and list of saved file paths
- * @throws If the script or input file is missing, the file type is unsupported,
- *   the runner build is missing, or the in-page script fails
+ * Long-lived headless Chromium session that can run many drawings without
+ * relaunching the browser or reloading WASM/fonts for each file.
  */
-export async function runHeadless(
-  options: RunHeadlessOptions
-): Promise<RunHeadlessResult> {
-  const absoluteScript = path.resolve(options.scriptPath)
-  if (!existsSync(absoluteScript)) {
-    throw new Error(`Script not found: ${absoluteScript}`)
-  }
+export class HeadlessCadSession {
+  private constructor(
+    private readonly browser: Browser,
+    private readonly page: Page,
+    private readonly server: CliStaticServer,
+    private readonly launchMs: number
+  ) {}
 
-  let absoluteInput: string | undefined
-  let fileName: string | null = null
-  let base64: string | null = null
+  static async create(): Promise<HeadlessCadSession> {
+    const runnerDir = runnerDistDir()
+    if (!existsSync(path.join(runnerDir, 'index.html'))) {
+      throw new Error(
+        'CLI runner is not built. Run "pnpm --filter @mlightcad/cad-simple-viewer-cli build".'
+      )
+    }
 
-  if (options.inputPath) {
-    const drawing = await loadDrawingInput(options.inputPath)
-    absoluteInput = drawing.label
-    fileName = drawing.fileName
-    base64 = drawing.base64
-  }
-
-  const outputDir = path.resolve(
-    options.outputDir ??
-      (absoluteInput && !isHttpUrl(absoluteInput)
-        ? path.dirname(absoluteInput)
-        : process.cwd())
-  )
-  await mkdir(outputDir, { recursive: true })
-
-  const runnerDir = runnerDistDir()
-  if (!existsSync(path.join(runnerDir, 'index.html'))) {
-    throw new Error(
-      'CLI runner is not built. Run "pnpm --filter @mlightcad/cad-simple-viewer-cli build".'
-    )
-  }
-
-  const scriptText = await readFile(absoluteScript, 'utf8')
-  const mode =
-    options.mode ?? (absoluteInput ? ('read' as const) : ('write' as const))
-
-  const logfile = options.logfile ? path.resolve(options.logfile) : undefined
-  await appendLog(
-    logfile,
-    `[cad-simple-viewer-cli] input=${absoluteInput ?? '(blank)'} script=${absoluteScript} output=${outputDir}`
-  )
-
-  const server = await startStaticServer(runnerDir)
-  const channel = process.env.PLAYWRIGHT_BROWSER_CHANNEL
-  const browser = await chromium.launch({
-    headless: true,
-    ...(channel ? { channel } : {})
-  })
-
-  const savedFiles: string[] = []
-
-  try {
+    const t0 = performance.now()
+    const server = await startCliStaticServer(runnerDir)
+    const channel = process.env.PLAYWRIGHT_BROWSER_CHANNEL
+    const browser = await chromium.launch({
+      headless: true,
+      ...(channel ? { channel } : {})
+    })
     const context = await browser.newContext({ acceptDownloads: true })
     const page = await context.newPage()
+    page.on('console', msg => {
+      const text = msg.text()
+      if (text.includes('GL Driver Message')) {
+        return
+      }
+      if (
+        text.startsWith('[cad-simple-viewer-cli]') ||
+        text.startsWith('[chtml]') ||
+        msg.type() === 'error' ||
+        msg.type() === 'warning'
+      ) {
+        console.log(text)
+      }
+    })
+    page.on('pageerror', error => {
+      console.error('[cad-simple-viewer-cli] page error:', error.message)
+    })
     await page.goto(`${server.url}/index.html`, { waitUntil: 'networkidle' })
+    const launchMs = performance.now() - t0
+    console.log(`[cad-simple-viewer-cli] browser ready: ${launchMs.toFixed(0)} ms`)
+    return new HeadlessCadSession(browser, page, server, launchMs)
+  }
+
+  get browserLaunchMs() {
+    return this.launchMs
+  }
+
+  async run(options: RunHeadlessOptions): Promise<RunHeadlessResult> {
+    const absoluteScript = path.resolve(options.scriptPath)
+    if (!existsSync(absoluteScript)) {
+      throw new Error(`Script not found: ${absoluteScript}`)
+    }
+
+    const timings: Record<string, number> = {
+      browserLaunch: this.launchMs
+    }
+    const runT0 = performance.now()
+
+    let absoluteInput: string | undefined
+    let fileName: string | null = null
+    let drawingUrl: string | null = null
+
+    if (options.inputPath) {
+      const tLoad = performance.now()
+      if (isHttpUrl(options.inputPath)) {
+        absoluteInput = options.inputPath
+        fileName = drawingNameFromUrl(options.inputPath)
+        const ext = path.extname(fileName).toLowerCase()
+        if (ext !== '.dxf' && ext !== '.dwg') {
+          throw new Error(
+            `Unsupported remote drawing "${fileName}". URL path must end with .dxf or .dwg.`
+          )
+        }
+        drawingUrl = options.inputPath
+      } else {
+        absoluteInput = path.resolve(options.inputPath)
+        const ext = path.extname(absoluteInput).toLowerCase()
+        if (ext !== '.dxf' && ext !== '.dwg') {
+          throw new Error(
+            `Unsupported file type "${ext}". Only .dxf and .dwg are supported.`
+          )
+        }
+        if (!existsSync(absoluteInput)) {
+          throw new Error(`Input drawing not found: ${absoluteInput}`)
+        }
+        fileName = path.basename(absoluteInput)
+        drawingUrl = this.server.mountInput(absoluteInput, fileName)
+      }
+      timings.mountInput = performance.now() - tLoad
+    }
+
+    const outputDir = path.resolve(
+      options.outputDir ??
+        (absoluteInput && !isHttpUrl(absoluteInput)
+          ? path.dirname(absoluteInput)
+          : process.cwd())
+    )
+    await mkdir(outputDir, { recursive: true })
+    this.server.setSaveDir(outputDir)
+    this.server.resetSavedFiles()
+
+    const scriptText = await readFile(absoluteScript, 'utf8')
+    const mode =
+      options.mode ?? (absoluteInput ? ('read' as const) : ('write' as const))
+
+    const logfile = options.logfile ? path.resolve(options.logfile) : undefined
+    await appendLog(
+      logfile,
+      `[cad-simple-viewer-cli] input=${absoluteInput ?? '(blank)'} script=${absoluteScript} output=${outputDir}`
+    )
 
     const openExtras = {
       openViewMode: options.openViewMode,
       drawNoPlotLayers: options.drawNoPlotLayers,
       circleSides: options.circleSides,
-      baseUrl: options.baseUrl
+      baseUrl: options.baseUrl,
+      saveBaseUrl: `${this.server.url}/__cli_save__/`
     }
 
-    let result: { ok: true; files: CapturedFile[] }
+    const tScript = performance.now()
     try {
-      result = await page.evaluate(
+      await this.page.evaluate(
         async ({
           name,
-          data,
+          drawingUrl: url,
           script,
           locale,
           mode: openMode,
@@ -415,35 +492,23 @@ export async function runHeadless(
           openViewMode,
           drawNoPlotLayers,
           circleSides,
-          baseUrl
+          baseUrl,
+          saveBaseUrl
         }) => {
-          const runOptions = {
+          return window.runCadScript(name, url, script, {
             locale,
             mode: openMode,
+            startBlank,
             openViewMode,
             drawNoPlotLayers,
             circleSides,
-            baseUrl
-          }
-          if (data == null || name == null) {
-            return window.runCadScript(null, null, script, {
-              ...runOptions,
-              startBlank
-            })
-          }
-          const binary = atob(data)
-          const bytes = new Uint8Array(binary.length)
-          for (let i = 0; i < binary.length; i++) {
-            bytes[i] = binary.charCodeAt(i)
-          }
-          return window.runCadScript(name, bytes, script, {
-            ...runOptions,
-            startBlank: false
+            baseUrl,
+            saveBaseUrl
           })
         },
         {
           name: fileName,
-          data: base64,
+          drawingUrl,
           script: scriptText,
           locale: options.locale,
           mode,
@@ -459,22 +524,69 @@ export async function runHeadless(
       )
       throw error
     }
+    timings.scriptAndExport = performance.now() - tScript
 
-    for (const file of result.files) {
-      const dest = uniqueOutputPath(outputDir, file.fileName)
-      await writeFile(dest, Buffer.from(file.base64, 'base64'))
-      savedFiles.push(dest)
+    const savedFiles = this.server.takeSavedFiles()
+    for (const dest of savedFiles) {
       await appendLog(logfile, `[cad-simple-viewer-cli] saved ${dest}`)
     }
 
+    timings.total = performance.now() - runT0
     await appendLog(
       logfile,
-      `[cad-simple-viewer-cli] done saved=${savedFiles.length}`
+      `[cad-simple-viewer-cli] done saved=${savedFiles.length} totalMs=${timings.total.toFixed(0)}`
+    )
+    console.log(
+      '[cad-simple-viewer-cli] timings: ' +
+        Object.entries(timings)
+          .map(([k, v]) => `${k}=${v.toFixed(0)}ms`)
+          .join(' ')
     )
 
-    return { outputDir, savedFiles }
+    return { outputDir, savedFiles, timings }
+  }
+
+  async close(): Promise<void> {
+    await this.browser.close()
+    await this.server.close()
+  }
+}
+
+/**
+ * Runs a `.scr` command script in headless Chromium and writes captured
+ * export downloads into `outputDir`.
+ *
+ * Prefer {@link HeadlessCadSession} when exporting many drawings so the
+ * browser and WASM parser stay warm across files.
+ */
+export async function runHeadless(
+  options: RunHeadlessOptions
+): Promise<RunHeadlessResult> {
+  const session = await HeadlessCadSession.create()
+  try {
+    return await session.run(options)
   } finally {
-    await browser.close()
-    await server.close()
+    await session.close()
+  }
+}
+
+/**
+ * Runs the same script against many drawings in one Chromium session.
+ */
+export async function runHeadlessBatch(
+  jobs: RunHeadlessOptions[]
+): Promise<RunHeadlessResult[]> {
+  if (jobs.length === 0) {
+    return []
+  }
+  const session = await HeadlessCadSession.create()
+  const results: RunHeadlessResult[] = []
+  try {
+    for (const job of jobs) {
+      results.push(await session.run(job))
+    }
+    return results
+  } finally {
+    await session.close()
   }
 }

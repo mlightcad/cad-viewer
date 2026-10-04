@@ -14,13 +14,16 @@
  * extension, with path separators turned into underscores. Same-stem
  * `.dwg`/`.dxf` pairs get a `_dwg` / `_dxf` suffix so they do not collide.
  *
+ * Reuses one Chromium session across all drawings (WASM / fonts stay warm).
+ *
  * Usage (from packages/cad-simple-viewer-cli after build):
  *   node examples/batch-export-html-multi-preview.mjs <inputDir> <outputDir>
  */
-import { spawn, spawnSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import {
   copyFile,
+  cp,
   mkdir,
   mkdtemp,
   readdir,
@@ -29,11 +32,11 @@ import {
 } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const packageRoot = path.resolve(__dirname, '..')
-const cliJs = path.join(packageRoot, 'dist', 'cli.js')
+const runHeadlessJs = path.join(packageRoot, 'dist', 'runHeadless.js')
 const scriptPath = path.join(__dirname, 'export-html-multi-preview.scr')
 
 const DRAWING_EXT = new Set(['.dwg', '.dxf'])
@@ -89,34 +92,86 @@ function drawingFolderName(inputDir, drawingPath, used) {
   return name
 }
 
-function runCli(input, outputDir) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(
-      process.execPath,
-      [
-        cliJs,
-        '-i',
-        input,
-        '-s',
-        scriptPath,
-        '-o',
-        outputDir,
-        '--mode',
-        'read'
-      ],
-      { stdio: 'inherit' }
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+const REPLACE_DIR_RETRY = new Set([
+  'EPERM',
+  'EACCES',
+  'EBUSY',
+  'ENOTEMPTY',
+  'EMFILE',
+  'ENFILE'
+])
+
+/**
+ * Move `src` onto `dest`. Windows often returns EPERM from rename while
+ * Defender or a file watcher still has a file inside a freshly unpacked
+ * directory open (sharing without delete). Retry, then copy into place.
+ */
+async function replaceDir(src, dest) {
+  const waits = [0, 50, 100, 200, 400, 800, 1600]
+  let lastError
+  for (const wait of waits) {
+    if (wait) await delay(wait)
+    try {
+      await rm(dest, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 100
+      })
+      await rename(src, dest)
+      return
+    } catch (error) {
+      lastError = error
+      const code = error && error.code
+      if (code === 'EXDEV') break
+      if (!REPLACE_DIR_RETRY.has(code)) throw error
+    }
+  }
+
+  let copyError
+  for (const wait of [0, 200, 500, 1000, 2000]) {
+    if (wait) await delay(wait)
+    try {
+      await rm(dest, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 100
+      })
+      await cp(src, dest, { recursive: true })
+      copyError = undefined
+      break
+    } catch (error) {
+      copyError = error
+      const code = error && error.code
+      if (code !== 'EXDEV' && !REPLACE_DIR_RETRY.has(code)) break
+    }
+  }
+  if (copyError) {
+    await rm(dest, { recursive: true, force: true }).catch(() => {})
+    const renameMsg =
+      lastError instanceof Error ? lastError.message : String(lastError)
+    const copyMsg =
+      copyError instanceof Error ? copyError.message : String(copyError)
+    throw new Error(
+      `Failed to move ${src} to ${dest} (${renameMsg}); copy fallback failed: ${copyMsg}`
     )
-    child.on('error', reject)
-    child.on('exit', code => {
-      if (code === 0) resolve()
-      else
-        reject(
-          new Error(
-            `cad-simple-viewer-cli exited with code ${code} for ${input}`
-          )
-        )
+  }
+  try {
+    await rm(src, {
+      recursive: true,
+      force: true,
+      maxRetries: 8,
+      retryDelay: 200
     })
-  })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`Could not remove temporary directory ${src}: ${message}`)
+  }
 }
 
 function unzipWithTar(zipPath, destDir) {
@@ -162,10 +217,14 @@ async function packageDrawing(workDir, targetDir, sourceDrawing) {
     const destName = ext === '.dxf' ? 'drawing.dxf' : 'drawing.dwg'
     await copyFile(sourceDrawing, path.join(stageDir, destName))
 
-    await rm(targetDir, { recursive: true, force: true })
-    await rename(stageDir, targetDir)
+    await replaceDir(stageDir, targetDir)
   } catch (error) {
-    await rm(stageDir, { recursive: true, force: true })
+    await rm(stageDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 100
+    }).catch(() => {})
     throw error
   }
 }
@@ -181,7 +240,7 @@ async function main() {
     process.exitCode = 1
     return
   }
-  if (!existsSync(cliJs)) {
+  if (!existsSync(runHeadlessJs)) {
     console.error(
       'CLI not built. Run: pnpm --filter @mlightcad/cad-simple-viewer-cli build'
     )
@@ -208,25 +267,36 @@ async function main() {
     `Found ${drawings.length} drawing(s). Output (demo-drawings layout): ${outputDir}`
   )
 
+  const { HeadlessCadSession } = await import(pathToFileURL(runHeadlessJs).href)
+  const session = await HeadlessCadSession.create()
   const usedFolders = new Set()
   let failed = 0
 
-  for (const drawing of drawings) {
-    const folder = drawingFolderName(inputDir, drawing, usedFolders)
-    const targetDir = path.join(outputDir, folder)
-    console.log(`\n=== ${drawing} → ${folder}/ ===`)
+  try {
+    for (const drawing of drawings) {
+      const folder = drawingFolderName(inputDir, drawing, usedFolders)
+      const targetDir = path.join(outputDir, folder)
+      console.log(`\n=== ${drawing} → ${folder}/ ===`)
 
-    const workDir = await mkdtemp(path.join(os.tmpdir(), 'cad-cli-demo-'))
-    try {
-      await runCli(drawing, workDir)
-      await packageDrawing(workDir, targetDir, drawing)
-      console.log(`Packaged ${targetDir}`)
-    } catch (error) {
-      failed++
-      console.error(error instanceof Error ? error.message : String(error))
-    } finally {
-      await rm(workDir, { recursive: true, force: true })
+      const workDir = await mkdtemp(path.join(os.tmpdir(), 'cad-cli-demo-'))
+      try {
+        await session.run({
+          inputPath: drawing,
+          scriptPath,
+          outputDir: workDir,
+          mode: 'read'
+        })
+        await packageDrawing(workDir, targetDir, drawing)
+        console.log(`Packaged ${targetDir}`)
+      } catch (error) {
+        failed++
+        console.error(error instanceof Error ? error.message : String(error))
+      } finally {
+        await rm(workDir, { recursive: true, force: true })
+      }
     }
+  } finally {
+    await session.close()
   }
 
   console.log(`\nDone. success=${drawings.length - failed} failed=${failed}`)

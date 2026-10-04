@@ -214,8 +214,9 @@ export function exportActiveBatchedSlice(
       positionAttr.count * itemSize
     )
     const indexArray = indexAttr.array
-    const activeIndices: number[] = []
 
+    let totalIndices = 0
+    const ranges: Array<{ start: number; count: number }> = []
     for (let geometryId = 0; geometryId < count; geometryId++) {
       let info: AcTrPackedGeometryInfo
       try {
@@ -228,19 +229,27 @@ export function exportActiveBatchedSlice(
       if (!shouldExportBatchedSlot(info) || indexCount <= 0) {
         continue
       }
-      for (let i = 0; i < indexCount; i++) {
-        activeIndices.push(indexArray[indexStart + i]!)
-      }
+      ranges.push({ start: indexStart, count: indexCount })
+      totalIndices += indexCount
     }
 
-    if (activeIndices.length === 0) {
+    if (totalIndices === 0) {
       return { positions: new Float32Array(0) }
     }
 
-    return compactIndexedSlice(positions, new Uint32Array(activeIndices))
+    const activeIndices = new Uint32Array(totalIndices)
+    let offset = 0
+    for (const range of ranges) {
+      for (let i = 0; i < range.count; i++) {
+        activeIndices[offset++] = indexArray[range.start + i]!
+      }
+    }
+
+    return compactIndexedSlice(positions, activeIndices)
   }
 
-  const activeFloats: number[] = []
+  let totalFloats = 0
+  const ranges: Array<{ start: number; floatCount: number }> = []
   for (let geometryId = 0; geometryId < count; geometryId++) {
     let info: AcTrPackedGeometryInfo
     try {
@@ -251,14 +260,37 @@ export function exportActiveBatchedSlice(
     if (!shouldExportBatchedSlot(info) || info.vertexCount <= 0) {
       continue
     }
-    const start = info.vertexStart * itemSize
     const floatCount = info.vertexCount * itemSize
-    for (let i = 0; i < floatCount; i++) {
-      activeFloats.push(positionArray[start + i]!)
+    ranges.push({
+      start: info.vertexStart * itemSize,
+      floatCount
+    })
+    totalFloats += floatCount
+  }
+
+  if (totalFloats === 0) {
+    return { positions: new Float32Array(0) }
+  }
+
+  const positions = new Float32Array(totalFloats)
+  let offset = 0
+  if (positionArray instanceof Float32Array) {
+    for (const range of ranges) {
+      positions.set(
+        positionArray.subarray(range.start, range.start + range.floatCount),
+        offset
+      )
+      offset += range.floatCount
+    }
+  } else {
+    for (const range of ranges) {
+      for (let i = 0; i < range.floatCount; i++) {
+        positions[offset++] = positionArray[range.start + i]!
+      }
     }
   }
 
-  return { positions: new Float32Array(activeFloats) }
+  return { positions }
 }
 
 function appendSegmentFromAttribute(

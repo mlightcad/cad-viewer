@@ -5,6 +5,7 @@ import type {
 } from './AcExOsnapPrimitiveTypes'
 import {
   compressSnapshotBinary,
+  compressSnapshotBinaryAsync,
   decompressSnapshotBinary
 } from './AcExSnapshotCompression'
 
@@ -193,6 +194,18 @@ export function encodeOsnapCatalogGzip(catalog: AcExOsnapCatalog): {
 } {
   const uncompressed = encodeOsnapCatalogBinary(catalog)
   const compressed = compressSnapshotBinary(uncompressed).bytes
+  return { uncompressed, compressed }
+}
+
+/** Async variant of {@link encodeOsnapCatalogGzip} for parallel package builds. */
+export async function encodeOsnapCatalogGzipAsync(
+  catalog: AcExOsnapCatalog
+): Promise<{
+  uncompressed: Uint8Array
+  compressed: Uint8Array
+}> {
+  const uncompressed = encodeOsnapCatalogBinary(catalog)
+  const compressed = (await compressSnapshotBinaryAsync(uncompressed)).bytes
   return { uncompressed, compressed }
 }
 

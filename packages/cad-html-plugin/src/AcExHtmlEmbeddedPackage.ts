@@ -29,7 +29,7 @@ import { ACEX_HTML_SHELL_CSS, buildAcExHtmlShellBody } from './AcExHtmlShell'
 import { estimateOsnapPrimitiveBytes } from './AcExOsnapCatalogCodec'
 import {
   type AcExBuildPackageDataOptions,
-  buildAcExPackageData
+  buildAcExPackageDataAsync
 } from './AcExPackageBuilder'
 import { parseAcExPackageManifest } from './AcExPackageLoader'
 import {
@@ -138,7 +138,7 @@ export async function packHtmlEmbeddedPackage(
     maxOsnapChunkBytes:
       options.maxOsnapChunkBytes ?? ACEX_EMBEDDED_OSNAP_CHUNK_MAX_BYTES
   }
-  const pkg = buildAcExPackageData(snapshot, dataOptions)
+  const pkg = await buildAcExPackageDataAsync(snapshot, dataOptions)
 
   let accessManifest: AcExHtmlAccessManifest | undefined
   let packageConfig: AcExEmbeddedPackageConfig

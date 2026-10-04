@@ -39,6 +39,33 @@ export function compressSnapshotBinary(
   }
 }
 
+/**
+ * Async gzip using the browser {@link CompressionStream} when available so
+ * multiple chunk encodes can overlap. Falls back to sync {@link gzipSync}.
+ */
+export async function compressSnapshotBinaryAsync(
+  data: Uint8Array
+): Promise<AcExCompressedSnapshotBinary> {
+  if (typeof CompressionStream === 'undefined') {
+    return compressSnapshotBinary(data)
+  }
+  try {
+    // Copy into a standalone ArrayBuffer — Blob rejects SharedArrayBuffer views.
+    const copy = new Uint8Array(data.byteLength)
+    copy.set(data)
+    const stream = new Blob([copy])
+      .stream()
+      .pipeThrough(new CompressionStream('gzip'))
+    const bytes = new Uint8Array(await new Response(stream).arrayBuffer())
+    return {
+      bytes,
+      compression: ACEX_SNAPSHOT_COMPRESSION
+    }
+  } catch {
+    return compressSnapshotBinary(data)
+  }
+}
+
 /** Decompresses a gzip snapshot binary payload from an exported HTML file. */
 export function decompressSnapshotBinary(data: Uint8Array): Uint8Array {
   if (data.byteLength > ACEX_MAX_COMPRESSED_BYTES) {

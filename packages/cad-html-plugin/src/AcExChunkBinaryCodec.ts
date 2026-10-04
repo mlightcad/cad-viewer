@@ -5,7 +5,11 @@ import {
   writeMeshBatch
 } from './AcExBatchBinaryCodec'
 import { AcExBinaryReader, AcExBinaryWriter } from './AcExBinaryIO'
-import { compressSnapshotBinary, decompressSnapshotBinary } from './AcExSnapshotCompression'
+import {
+  compressSnapshotBinary,
+  compressSnapshotBinaryAsync,
+  decompressSnapshotBinary
+} from './AcExSnapshotCompression'
 import {
   ACEX_SNAPSHOT_VERSION,
   type AcExLineBatch,
@@ -112,6 +116,16 @@ export function encodeChunkGzip(chunk: AcExGeometryChunk): {
 } {
   const uncompressed = encodeChunkBinary(chunk)
   const compressed = compressSnapshotBinary(uncompressed).bytes
+  return { uncompressed, compressed }
+}
+
+/** Async variant of {@link encodeChunkGzip} for parallel package builds. */
+export async function encodeChunkGzipAsync(chunk: AcExGeometryChunk): Promise<{
+  uncompressed: Uint8Array
+  compressed: Uint8Array
+}> {
+  const uncompressed = encodeChunkBinary(chunk)
+  const compressed = (await compressSnapshotBinaryAsync(uncompressed)).bytes
   return { uncompressed, compressed }
 }
 
