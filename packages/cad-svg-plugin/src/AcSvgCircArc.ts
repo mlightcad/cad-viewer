@@ -30,8 +30,10 @@ export class AcSvgCircArc extends AcSvgEntity {
       this.svg = AcSvgStyleUtil.tag('path', attrs)
     }
 
-    const box = arc.box
-    this._box.min.copy(box.min)
-    this._box.max.copy(box.max)
+    // Bound emitted tessellation, not the theoretical arc AABB (infinite
+    // curves can report absurd boxes while path points stay finite).
+    for (const point of points) {
+      this._box.expandByPoint(point)
+    }
   }
 }

@@ -11,6 +11,7 @@ import {
   ChangedProperties,
   MTextColor,
   MTextContext,
+  MTextLineAlignment,
   MTextParagraphAlignment,
   MTextParser,
   MTextToken,
@@ -18,6 +19,7 @@ import {
   TokenType
 } from '@mlightcad/mtext-parser'
 
+import { AcSvgExportUtil } from './AcSvgExportUtil'
 import {
   normalizeCadFontName,
   resolveSvgFontFamily,
@@ -48,12 +50,34 @@ function isWideCharacter(char: string): boolean {
   )
 }
 
+/**
+ * Resolved MTEXT style after applying absolute/relative factor semantics
+ * (matches PDF {@code parseMText} / mtext-renderer {@code penAdvance}).
+ */
+interface ResolvedRunStyle {
+  size: number
+  hScale: number
+  tracking: number
+  oblique: number
+  fontFamily: string
+  bold: boolean
+  italic: boolean
+  fill: string
+  underline: boolean
+  overline: boolean
+  strikeThrough: boolean
+  align: MTextLineAlignment
+}
+
 interface LayoutSpan {
   text: string
   x: number
   y: number
-  fontSize: number
-  tokenCtx: MTextContext
+  advance: number
+  style: ResolvedRunStyle
+  /** Paragraph margins from the token context at emit time. */
+  paragraphLeft: number
+  paragraphRight: number
 }
 
 interface DecorationLine {
@@ -101,7 +125,8 @@ function resolveLineAdvance(baseHeight: number, mtext: AcGiMTextData): number {
     typeof mtext.lineSpaceFactor === 'number'
       ? mtext.lineSpaceFactor
       : DEFAULT_LINE_SPACE_FACTOR
-  const factorSpacing = baseHeight * Math.max(factor, 0) * LINE_SPACING_SCALE_FACTOR
+  const factorSpacing =
+    baseHeight * Math.max(factor, 0) * LINE_SPACING_SCALE_FACTOR
   // DXF group 73: 2 = Exact; omitted/0/1 = At Least (taller chars override to single spacing).
   if (mtext.lineSpaceStyle === 2) {
     return factorSpacing
@@ -219,7 +244,10 @@ function computeAttachmentOffset(
 }
 
 /**
- * Builds SVG {@code <text>/<tspan>} output from raw MTEXT using {@link MTextParser}.
+ * Builds SVG text output from raw MTEXT using {@link MTextParser}.
+ *
+ * Each styled run is an independent {@code <g>/<text>} so width-factor and
+ * oblique transforms do not disturb the pen for subsequent runs.
  */
 export function buildSvgMText(
   mtext: AcGiMTextData,
@@ -270,9 +298,11 @@ export function buildSvgMText(
     wrapWidth,
     flowMode,
     defaultFont,
+    entityWidthFactor,
     style,
     traits,
-    ctx
+    ctx,
+    initialCtx
   )
 
   for (const token of parser.parse()) {
@@ -292,16 +322,7 @@ export function buildSvgMText(
   transformParts.push(`translate(${attachment.x},${attachment.y})`)
   transformParts.push('scale(1,-1)')
 
-  const textAttrs = {
-    'font-size': String(baseHeight),
-    'font-family': defaultFont,
-    ...AcSvgStyleUtil.textAttributes(traits, ctx)
-  }
-
-  const innerMarkup = [
-    AcSvgStyleUtil.tag('text', textAttrs, layout.tspanMarkup),
-    layout.decorationMarkup
-  ].join('')
+  const innerMarkup = [layout.runMarkup, layout.decorationMarkup].join('')
 
   const localSvg = AcSvgStyleUtil.tag(
     'g',
@@ -344,6 +365,9 @@ class MTextSvgLayout {
   private firstLineOfParagraph = true
   private currentLine: LayoutLine | null = null
   private readonly lines: LayoutLine[] = []
+  /** Fraction / stack bars emitted during layout (kept across finish). */
+  private readonly stackBars: DecorationLine[] = []
+  /** Underline / overline / strike geometry built in finish(). */
   private readonly decorationLines: DecorationLine[] = []
   private activeLineIndex = 0
   private minX = 0
@@ -353,60 +377,58 @@ class MTextSvgLayout {
   private firstBaselineY = 0
   private hasContent = false
 
+  /** Previous parser context for absolute/relative factor differencing. */
+  private prevCtx: MTextContext
+  private heightBase: number | undefined
+  private heightScale = 1
+  private hScale: number
+  private tracking = 1
+  private oblique = 0
+  private fontFamily: string
+  private bold = false
+  private italic = false
+  private fill: string
+  private underline = false
+  private overline = false
+  private strikeThrough = false
+  private lineAlign: MTextLineAlignment = MTextLineAlignment.BOTTOM
+
   constructor(
     private readonly baseHeight: number,
     private readonly lineAdvance: number,
     private readonly wrapWidth: number | null,
     private readonly flowMode: FlowMode,
     private readonly defaultFont: string,
-    private readonly style: AcGiTextStyle,
+    entityWidthFactor: number,
+    style: AcGiTextStyle,
     private readonly traits: AcGiSubEntityTraits,
-    private readonly ctx: AcSvgStyleContext
+    private readonly ctx: AcSvgStyleContext,
+    initialCtx: MTextContext
   ) {
-    this.resetParagraphPosition(new MTextContext())
+    this.prevCtx = initialCtx
+    this.hScale = entityWidthFactor
+    this.oblique =
+      typeof style.obliqueAngle === 'number' ? style.obliqueAngle : 0
+    this.fontFamily = resolveSvgFontFamily(
+      initialCtx.fontFace.family,
+      defaultFont
+    )
+    this.fill = resolveMTextFill(initialCtx.color, traits, ctx)
+    this.resetParagraphPosition(initialCtx)
   }
 
-  get tspanMarkup(): string {
+  get runMarkup(): string {
     let markup = ''
-    let isFirstLine = true
-
     for (const line of this.lines) {
-      let lineStartX: number | undefined
-      let expectedX: number | undefined
-
       for (const span of line.spans) {
-        const attrs = this.tspanAttributes(span.tokenCtx, span.fontSize)
-        const isLineStart = lineStartX === undefined
-
-        if (this.isVertical()) {
-          attrs.x = String(span.x)
-          attrs.y = String(span.y)
-        } else if (isLineStart) {
-          lineStartX = span.x
-          attrs.x = String(span.x)
-          attrs.dy = isFirstLine ? '0' : String(this.lineAdvance)
-          isFirstLine = false
-          expectedX =
-            span.x + this.measureText(span.text, span.fontSize, span.tokenCtx)
-        } else if (expectedX != null && Math.abs(span.x - expectedX) > 1e-6) {
-          attrs.x = String(span.x)
-          expectedX =
-            span.x + this.measureText(span.text, span.fontSize, span.tokenCtx)
-        } else {
-          expectedX =
-            (expectedX ?? span.x) +
-            this.measureText(span.text, span.fontSize, span.tokenCtx)
-        }
-
-        markup += AcSvgStyleUtil.tag('tspan', attrs, escapeXml(span.text))
+        markup += this.emitRunGroup(span)
       }
     }
-
     return markup
   }
 
   get decorationMarkup(): string {
-    return this.decorationLines
+    return [...this.stackBars, ...this.decorationLines]
       .map(line =>
         AcSvgStyleUtil.tag('line', {
           x1: String(line.x1),
@@ -432,6 +454,8 @@ class MTextSvgLayout {
   }
 
   consume(token: MTextToken) {
+    this.applyCtx(token.ctx)
+
     switch (token.type) {
       case TokenType.WORD:
         this.emitText(String(token.data ?? ''), token.ctx)
@@ -455,7 +479,7 @@ class MTextSvgLayout {
         this.wrapLine(token.ctx)
         break
       case TokenType.PROPERTIES_CHANGED:
-        this.applyPropertyChange(token.data as ChangedProperties, token.ctx)
+        this.applyPropertyChange(token.data as ChangedProperties)
         break
       case TokenType.STACK:
         if (Array.isArray(token.data) && token.data.length === 3) {
@@ -469,17 +493,98 @@ class MTextSvgLayout {
 
   finish() {
     this.finalizeCurrentLine()
+    this.applyVerticalLineAlignment()
     this.applyLineAlignment()
     this.recomputeBoundsFromLines()
+    this.emitDecorationLines()
   }
 
-  private applyPropertyChange(item: ChangedProperties, tokenCtx: MTextContext) {
+  /**
+   * Diff consecutive parser contexts and resolve absolute/relative factors
+   * the same way PDF {@code parseMText.applyCtx} does.
+   */
+  private applyCtx(ctx: MTextContext) {
+    const cap = ctx.capHeight
+    if (
+      cap.value !== this.prevCtx.capHeight.value ||
+      cap.isRelative !== this.prevCtx.capHeight.isRelative
+    ) {
+      if (cap.isRelative) {
+        this.heightScale *= cap.value
+      } else {
+        this.heightBase = cap.value
+      }
+    }
+
+    const width = ctx.widthFactor
+    if (
+      width.value !== this.prevCtx.widthFactor.value ||
+      width.isRelative !== this.prevCtx.widthFactor.isRelative
+    ) {
+      this.hScale = width.isRelative ? this.hScale * width.value : width.value
+    }
+
+    const charTracking = ctx.charTrackingFactor
+    if (
+      charTracking.value !== this.prevCtx.charTrackingFactor.value ||
+      charTracking.isRelative !== this.prevCtx.charTrackingFactor.isRelative
+    ) {
+      this.tracking = charTracking.isRelative
+        ? charTracking.value + 1
+        : charTracking.value
+    }
+
+    if (ctx.oblique !== this.prevCtx.oblique) {
+      this.oblique = ctx.oblique
+    }
+
+    if (
+      JSON.stringify(ctx.fontFace) !== JSON.stringify(this.prevCtx.fontFace)
+    ) {
+      this.applyFontFaceChange(ctx.fontFace)
+    }
+
+    if (
+      ctx.color.aci !== this.prevCtx.color.aci ||
+      ctx.color.rgbValue !== this.prevCtx.color.rgbValue ||
+      ctx.color.isRgb !== this.prevCtx.color.isRgb
+    ) {
+      this.fill = resolveMTextFill(ctx.color, this.traits, this.ctx)
+    }
+
+    this.underline = ctx.underline
+    this.overline = ctx.overline
+    this.strikeThrough = ctx.strikeThrough
+    this.lineAlign = ctx.align
+    this.prevCtx = ctx
+  }
+
+  private currentStyle(): ResolvedRunStyle {
+    const cadFont = this.prevCtx.fontFace.family || this.defaultFont
+    const rawSize = (this.heightBase ?? this.baseHeight) * this.heightScale
+    return {
+      size: rawSize * resolveSvgFontSizeScale(cadFont),
+      hScale: this.hScale,
+      tracking: this.tracking,
+      oblique: this.oblique,
+      fontFamily: this.fontFamily,
+      bold: this.bold,
+      italic: this.italic,
+      fill: this.fill,
+      underline: this.underline,
+      overline: this.overline,
+      strikeThrough: this.strikeThrough,
+      align: this.lineAlign
+    }
+  }
+
+  private applyPropertyChange(item: ChangedProperties) {
     if (item.changes.paragraph?.align != null && this.currentLine) {
       this.currentLine.paragraphAlign = item.changes.paragraph.align
     }
 
     if (item.command === 'f' || item.command === 'F') {
-      this.applyFontFaceChange(item.changes.fontFace, tokenCtx)
+      this.applyFontFaceChange(item.changes.fontFace)
     } else if (item.command === 'p') {
       if (item.changes.paragraph?.indent != null && this.firstLineOfParagraph) {
         const indent = item.changes.paragraph.indent * this.baseHeight
@@ -492,17 +597,62 @@ class MTextSvgLayout {
     }
   }
 
-  private applyFontFaceChange(
-    fontFace: Properties['fontFace'],
-    tokenCtx: MTextContext
-  ) {
-    if (!fontFace?.family) {
+  private applyFontFaceChange(fontFace: Properties['fontFace']) {
+    if (!fontFace) {
       return
     }
-    const family = normalizeCadFontName(fontFace.family)
-    tokenCtx.fontFace = { ...fontFace, family }
-    if (fontFace.style === 'Italic') {
-      tokenCtx.oblique = (this.style.obliqueAngle ?? 0) || 15
+    if (fontFace.family) {
+      const family = normalizeCadFontName(fontFace.family)
+      this.fontFamily = resolveSvgFontFamily(family, this.defaultFont)
+    }
+    this.applyFontFaceWeightAndStyle(fontFace)
+  }
+
+  /**
+   * Bold/italic follow the font face the same way {@link MTextContext.bold}
+   * and {@link MTextContext.italic} do (`weight >= 700`, `style === 'Italic'`).
+   */
+  private applyFontFaceWeightAndStyle(fontFace: Properties['fontFace']) {
+    if (!fontFace) {
+      return
+    }
+    this.bold = (fontFace.weight ?? 400) >= 700
+    this.italic = fontFace.style === 'Italic'
+  }
+
+  /**
+   * Applies {@code \A} vertical line alignment using the line's tallest run
+   * as the reference. Layout Y grows downward before the outer {@code scale(1,-1)}.
+   */
+  private applyVerticalLineAlignment() {
+    for (const line of this.lines) {
+      if (line.spans.length === 0) {
+        continue
+      }
+      let maxSize = 0
+      for (const span of line.spans) {
+        maxSize = Math.max(maxSize, span.style.size)
+      }
+      if (maxSize <= 0) {
+        continue
+      }
+      for (const span of line.spans) {
+        const size = span.style.size
+        let shift = 0
+        switch (span.style.align) {
+          case MTextLineAlignment.TOP:
+            shift = size - maxSize
+            break
+          case MTextLineAlignment.MIDDLE:
+            shift = (size - maxSize) / 2
+            break
+          case MTextLineAlignment.BOTTOM:
+          default:
+            shift = 0
+            break
+        }
+        span.y += shift
+      }
     }
   }
 
@@ -516,11 +666,9 @@ class MTextSvgLayout {
       if (lineWidth <= 0) {
         continue
       }
-      const tokenCtx = line.spans[0]?.tokenCtx ?? new MTextContext()
-      const contentWidth =
-        this.wrapWidth -
-        this.paragraphLeft(tokenCtx) -
-        this.rightMargin(tokenCtx)
+      const left = line.spans[0]?.paragraphLeft ?? 0
+      const right = line.spans[0]?.paragraphRight ?? 0
+      const contentWidth = this.wrapWidth - left - right
       let shift = 0
       switch (line.paragraphAlign) {
         case MTextParagraphAlignment.CENTER:
@@ -546,10 +694,10 @@ class MTextSvgLayout {
       }
       line.minX += shift
       line.maxX += shift
-      for (const decoration of this.decorationLines) {
-        if (decoration.lineIndex === lineIndex) {
-          decoration.x1 += shift
-          decoration.x2 += shift
+      for (const bar of this.stackBars) {
+        if (bar.lineIndex === lineIndex) {
+          bar.x1 += shift
+          bar.x2 += shift
         }
       }
     }
@@ -568,8 +716,89 @@ class MTextSvgLayout {
     }
   }
 
+  private emitDecorationLines() {
+    this.decorationLines.length = 0
+    for (let lineIndex = 0; lineIndex < this.lines.length; lineIndex++) {
+      const line = this.lines[lineIndex]
+      for (const span of line.spans) {
+        this.pushRunDecorations(span, lineIndex)
+      }
+    }
+  }
+
+  private pushRunDecorations(span: LayoutSpan, lineIndex: number) {
+    const { style, advance } = span
+    if (advance <= 0) {
+      return
+    }
+    const left = this.isHorizontalRtl() ? span.x - advance : span.x
+    const right = left + advance
+    const stroke = style.fill
+    const size = style.size
+
+    if (style.underline) {
+      this.decorationLines.push({
+        x1: left,
+        y1: span.y + size * 0.12,
+        x2: right,
+        y2: span.y + size * 0.12,
+        stroke,
+        lineIndex
+      })
+    }
+    if (style.overline) {
+      this.decorationLines.push({
+        x1: left,
+        y1: span.y - size * 0.95,
+        x2: right,
+        y2: span.y - size * 0.95,
+        stroke,
+        lineIndex
+      })
+    }
+    if (style.strikeThrough) {
+      this.decorationLines.push({
+        x1: left,
+        y1: span.y - size * 0.4,
+        x2: right,
+        y2: span.y - size * 0.4,
+        stroke,
+        lineIndex
+      })
+    }
+  }
+
+  private emitRunGroup(span: LayoutSpan): string {
+    const { style } = span
+    const left = this.isHorizontalRtl() ? span.x - span.advance : span.x
+    const transforms: string[] = [`translate(${left},${span.y})`]
+    if (style.hScale !== 1) {
+      transforms.push(`scale(${style.hScale},1)`)
+    }
+    if (style.oblique !== 0) {
+      transforms.push(`skewX(${-style.oblique})`)
+    }
+
+    const textAttrs: Record<string, string> = {
+      'font-size': String(style.size),
+      'font-family': style.fontFamily,
+      fill: style.fill
+    }
+    if (style.bold) {
+      textAttrs['font-weight'] = '700'
+    }
+    if (style.italic) {
+      textAttrs['font-style'] = 'italic'
+    }
+
+    // Local origin is the baseline; SVG default baseline is at y=0 of the text.
+    const text = AcSvgStyleUtil.tag('text', textAttrs, escapeXml(span.text))
+    return AcSvgStyleUtil.tag('g', { transform: transforms.join(' ') }, text)
+  }
+
   private emitSpace(tokenCtx: MTextContext) {
-    const width = this.spaceWidth(tokenCtx)
+    const style = this.currentStyle()
+    const width = this.runAdvance(' ', style)
     if (this.isLineStart) {
       return
     }
@@ -579,46 +808,86 @@ class MTextSvgLayout {
         return
       }
     }
-    this.advancePosition(width, this.resolveCapHeight(tokenCtx))
+    this.advancePosition(width, style.size)
   }
 
-  private emitText(value: string, tokenCtx: MTextContext) {
+  private emitText(
+    value: string,
+    tokenCtx: MTextContext,
+    styleOverride?: ResolvedRunStyle
+  ) {
     if (!value) {
       return
     }
+
+    const style = styleOverride ?? this.currentStyle()
+
     if (this.isVertical()) {
       for (const char of value) {
-        this.emitTextRun(char, tokenCtx)
+        this.emitTextRun(char, tokenCtx, style)
       }
       return
     }
-    if (this.wrapWidth == null) {
-      this.emitTextRun(value, tokenCtx)
+
+    // Soft-wrap before emitting so a spaced word stays together when possible.
+    if (this.wrapWidth != null) {
+      const wordWidth = this.runAdvance(value, style)
+      if (
+        !this.isLineStart &&
+        wordWidth > 0 &&
+        this.penOffset(tokenCtx) + wordWidth > this.maxLineWidth(tokenCtx)
+      ) {
+        this.wrapLine(tokenCtx)
+      }
+    }
+
+    // Tracking must be applied between glyphs, so emit one character per run.
+    if (style.tracking !== 1) {
+      for (const char of value) {
+        this.emitTextRun(char, tokenCtx, style)
+      }
       return
     }
 
-    const fontSize = this.resolveCapHeight(tokenCtx)
-    const wordWidth = this.measureText(value, fontSize, tokenCtx)
-    if (
-      !this.isLineStart &&
-      wordWidth > 0 &&
-      this.penOffset(tokenCtx) + wordWidth > this.maxLineWidth(tokenCtx)
-    ) {
-      this.wrapLine(tokenCtx)
+    // No wrap width: emit the whole string as one styled run.
+    if (this.wrapWidth == null) {
+      this.emitTextRun(value, tokenCtx, style)
+      return
     }
 
+    // Soft-wrap continuous strings that exceed the remaining line width,
+    // while still coalescing same-style characters on one line into one run.
+    let chunk = ''
     for (const char of value) {
-      this.emitTextRun(char, tokenCtx)
+      if (chunk.length > 0) {
+        const nextWidth = this.runAdvance(chunk + char, style)
+        if (
+          this.penOffset(tokenCtx) + nextWidth >
+          this.maxLineWidth(tokenCtx)
+        ) {
+          this.emitTextRun(chunk, tokenCtx, style)
+          chunk = ''
+          this.wrapLine(tokenCtx)
+        }
+      }
+      chunk += char
+    }
+    if (chunk) {
+      this.emitTextRun(chunk, tokenCtx, style)
     }
   }
 
-  private emitTextRun(value: string, tokenCtx: MTextContext) {
+  private emitTextRun(
+    value: string,
+    tokenCtx: MTextContext,
+    styleOverride?: ResolvedRunStyle
+  ) {
     if (!value) {
       return
     }
-    const fontSize = this.resolveCapHeight(tokenCtx)
-    const width = this.measureText(value, fontSize, tokenCtx)
-    const advance = this.isVertical() ? fontSize : width
+    const style = styleOverride ?? this.currentStyle()
+    const width = this.runAdvance(value, style)
+    const advance = this.isVertical() ? style.size : width
     this.ensureFits(advance, tokenCtx)
 
     const pos = this.currentPosition()
@@ -626,12 +895,14 @@ class MTextSvgLayout {
       text: value,
       x: pos.x,
       y: pos.y,
-      fontSize,
-      tokenCtx: tokenCtx.copy()
+      advance: width,
+      style: { ...style },
+      paragraphLeft: this.paragraphLeft(tokenCtx),
+      paragraphRight: this.rightMargin(tokenCtx)
     }
     this.currentLine?.spans.push(span)
     this.includeSpanBounds(span)
-    this.advancePosition(width, fontSize)
+    this.advancePosition(width, style.size)
     this.firstLineOfParagraph = false
   }
 
@@ -639,72 +910,81 @@ class MTextSvgLayout {
     const [numerator, denominator, divider] = data
     const start = this.currentPosition()
     const wasLineStart = this.isLineStart
-    const baseFontSize = this.resolveCapHeight(tokenCtx)
+    const style = this.currentStyle()
+    const baseFontSize = style.size
+    const scriptStyle: ResolvedRunStyle = {
+      ...style,
+      size: baseFontSize * STACK_SCRIPT_SCALE
+    }
 
     if (divider === '^') {
-      const scriptCtx = tokenCtx.copy()
-      scriptCtx.capHeight = {
-        value: STACK_SCRIPT_SCALE,
-        isRelative: true
-      }
       if (numerator && !denominator) {
         this.setPosition(start.x, start.y - baseFontSize * 0.35)
         this.isLineStart = true
-        this.emitText(numerator, scriptCtx)
+        this.emitText(numerator, tokenCtx, scriptStyle)
         const width = this.measureHorizontalSpan(start, this.currentPosition())
         this.setPosition(start.x + width, start.y)
       } else if (!numerator && denominator) {
         this.setPosition(start.x, start.y + baseFontSize * 0.2)
         this.isLineStart = true
-        this.emitText(denominator, scriptCtx)
+        this.emitText(denominator, tokenCtx, scriptStyle)
         const width = this.measureHorizontalSpan(start, this.currentPosition())
         this.setPosition(start.x + width, start.y)
       } else if (numerator && denominator) {
-        this.setPosition(start.x, start.y - baseFontSize * 0.2)
+        // Tolerance with both sides: stack vertically without a bar.
+        const numWidth = this.runAdvance(numerator, scriptStyle)
+        const denWidth = this.runAdvance(denominator, scriptStyle)
+        const stackWidth = Math.max(numWidth, denWidth)
+        this.setPosition(
+          start.x + (stackWidth - numWidth) / 2,
+          start.y - baseFontSize * 0.35
+        )
         this.isLineStart = true
-        this.emitText(numerator, scriptCtx)
-        const width = this.measureHorizontalSpan(start, this.currentPosition())
-        this.setPosition(start.x + width, start.y)
+        this.emitText(numerator, tokenCtx, scriptStyle)
+        this.setPosition(
+          start.x + (stackWidth - denWidth) / 2,
+          start.y + baseFontSize * 0.2
+        )
+        this.isLineStart = true
+        this.emitText(denominator, tokenCtx, scriptStyle)
+        const nextX = this.isHorizontalRtl()
+          ? start.x - stackWidth
+          : start.x + stackWidth
+        this.setPosition(nextX, start.y)
       }
 
       this.isLineStart = wasLineStart
       return
     }
 
-    if (divider === '/') {
-      this.emitText(`${numerator}/${denominator}`, tokenCtx)
-      return
-    }
-
-    const numWidth = this.measureText(numerator, baseFontSize, tokenCtx)
-    const denWidth = this.measureText(denominator, baseFontSize, tokenCtx)
+    // `/` and `#`: stacked fraction with a divider line.
+    const numWidth = this.runAdvance(numerator, scriptStyle)
+    const denWidth = this.runAdvance(denominator, scriptStyle)
     const fractionWidth = Math.max(numWidth, denWidth)
     const numOffset = (fractionWidth - numWidth) / 2
     const denOffset = (fractionWidth - denWidth) / 2
-    const stroke = resolveMTextFill(tokenCtx.color, this.traits, this.ctx)
+    const stroke = style.fill
 
     this.setPosition(start.x + numOffset, start.y - baseFontSize * 0.35)
     this.isLineStart = true
-    this.emitText(numerator, tokenCtx)
+    this.emitText(numerator, tokenCtx, scriptStyle)
 
     this.setPosition(start.x + denOffset, start.y + baseFontSize * 0.2)
     this.isLineStart = true
-    this.emitText(denominator, tokenCtx)
+    this.emitText(denominator, tokenCtx, scriptStyle)
 
-    if (divider === '/' || divider === '#') {
-      const lineY =
-        start.y -
-        baseFontSize * 0.05 +
-        this.baseHeight * STACK_VERTICAL_SHIFT_FACTOR
-      this.decorationLines.push({
-        x1: start.x,
-        y1: lineY,
-        x2: start.x + fractionWidth,
-        y2: lineY,
-        stroke,
-        lineIndex: this.activeLineIndex
-      })
-    }
+    const lineY =
+      start.y -
+      baseFontSize * 0.05 +
+      this.baseHeight * STACK_VERTICAL_SHIFT_FACTOR
+    this.stackBars.push({
+      x1: start.x,
+      y1: lineY,
+      x2: start.x + fractionWidth,
+      y2: lineY,
+      stroke,
+      lineIndex: this.activeLineIndex
+    })
 
     const nextX = this.isHorizontalRtl()
       ? start.x - fractionWidth
@@ -864,12 +1144,13 @@ class MTextSvgLayout {
   private advanceToTab(tokenCtx: MTextContext) {
     const tabWidth = this.baseHeight * DEFAULT_TAB_WIDTH_FACTOR
     const tabs = tokenCtx.paragraph.tabs
+    const style = this.currentStyle()
     if (tabs.length === 0) {
       const target = this.isHorizontalRtl()
         ? Math.floor(this.x / tabWidth) * tabWidth
         : Math.ceil((this.x + 1) / tabWidth) * tabWidth
       const delta = this.isHorizontalRtl() ? this.x - target : target - this.x
-      this.advancePosition(Math.max(0, delta), this.resolveCapHeight(tokenCtx))
+      this.advancePosition(Math.max(0, delta), style.size)
       return
     }
     for (const stop of tabs) {
@@ -880,15 +1161,15 @@ class MTextSvgLayout {
           : parseFloat(String(stop)) * this.baseHeight)
       if (this.isHorizontalRtl()) {
         if (!Number.isNaN(pos) && pos < this.x) {
-          this.advancePosition(this.x - pos, this.resolveCapHeight(tokenCtx))
+          this.advancePosition(this.x - pos, style.size)
           return
         }
       } else if (!Number.isNaN(pos) && pos > this.x) {
-        this.advancePosition(pos - this.x, this.resolveCapHeight(tokenCtx))
+        this.advancePosition(pos - this.x, style.size)
         return
       }
     }
-    this.advancePosition(tabWidth, this.resolveCapHeight(tokenCtx))
+    this.advancePosition(tabWidth, style.size)
   }
 
   private lineLimits(tokenCtx: MTextContext): { left: number; right: number } {
@@ -934,10 +1215,10 @@ class MTextSvgLayout {
   }
 
   private includeSpanBounds(span: LayoutSpan) {
-    const width = this.measureText(span.text, span.fontSize, span.tokenCtx)
+    const width = span.advance
     const spanMinX = this.isHorizontalRtl() ? span.x - width : span.x
     const spanMaxX = this.isHorizontalRtl() ? span.x : span.x + width
-    const spanMinY = span.y - span.fontSize
+    const spanMinY = span.y - span.style.size
     const spanMaxY = span.y
 
     if (!this.hasContent) {
@@ -969,34 +1250,25 @@ class MTextSvgLayout {
     return Math.abs(end.x - start.x)
   }
 
-  private spaceWidth(tokenCtx: MTextContext): number {
-    const fontSize = this.resolveCapHeight(tokenCtx)
-    return this.measureText(' ', fontSize, tokenCtx)
-  }
-
-  private measureCharWidth(
-    char: string,
-    fontSize: number,
-    tokenCtx: MTextContext
-  ): number {
-    const widthFactor = this.resolveWidthFactor(tokenCtx)
-    const tracking = this.resolveTracking(tokenCtx)
-    const baseFactor = isWideCharacter(char)
-      ? WIDE_CHAR_WIDTH_FACTOR
-      : LATIN_CHAR_WIDTH_FACTOR
-    return fontSize * baseFactor * widthFactor * tracking
-  }
-
-  private measureText(
-    value: string,
-    fontSize: number,
-    tokenCtx: MTextContext
-  ): number {
-    let width = 0
+  /**
+   * Pen advance matching PDF {@code runAdvance} / mtext-renderer {@code penAdvance}:
+   * scale glyph width by hScale, then add {@code (tracking-1)*size*hScale} per character.
+   */
+  private runAdvance(value: string, style: ResolvedRunStyle): number {
+    let raw = 0
+    let count = 0
     for (const char of value) {
-      width += this.measureCharWidth(char, fontSize, tokenCtx)
+      const baseFactor = isWideCharacter(char)
+        ? WIDE_CHAR_WIDTH_FACTOR
+        : LATIN_CHAR_WIDTH_FACTOR
+      raw += style.size * baseFactor
+      count += 1
     }
-    return width
+    const base = raw * style.hScale
+    if (style.tracking === 1 || count === 0) {
+      return base
+    }
+    return base + count * (style.tracking - 1) * style.size * style.hScale
   }
 
   private paragraphLeft(tokenCtx: MTextContext): number {
@@ -1009,30 +1281,6 @@ class MTextSvgLayout {
 
   private rightMargin(tokenCtx?: MTextContext): number {
     return (tokenCtx?.paragraph.right ?? 0) * this.baseHeight
-  }
-
-  private resolveCapHeight(tokenCtx: MTextContext): number {
-    const cap = tokenCtx.capHeight
-    const size = cap.isRelative ? this.baseHeight * cap.value : cap.value
-    const cadFont = tokenCtx.fontFace.family || this.defaultFont
-    return size * resolveSvgFontSizeScale(cadFont)
-  }
-
-  private resolveWidthFactor(tokenCtx: MTextContext): number {
-    const wf = tokenCtx.widthFactor
-    if (wf.isRelative) {
-      const ref = this.wrapWidth ?? this.baseHeight * 4
-      return wf.value * ref
-    }
-    return wf.value * 0.85
-  }
-
-  private resolveTracking(tokenCtx: MTextContext): number {
-    const tf = tokenCtx.charTrackingFactor
-    if (tf.isRelative) {
-      return tf.value + 1
-    }
-    return tf.value
   }
 
   private isHorizontal(): boolean {
@@ -1059,63 +1307,6 @@ class MTextSvgLayout {
 
   private isVerticalBtt(): boolean {
     return this.flowMode === FlowMode.VerticalBtt
-  }
-
-  private tspanAttributes(
-    tokenCtx: MTextContext,
-    fontSize: number
-  ): Record<string, string> {
-    const attrs: Record<string, string> = {}
-
-    if (Math.abs(fontSize - this.baseHeight) > 1e-9) {
-      attrs['font-size'] = String(fontSize)
-    }
-
-    const cadFont = tokenCtx.fontFace.family
-    attrs['font-family'] = resolveSvgFontFamily(cadFont, this.defaultFont)
-
-    if (tokenCtx.bold) {
-      attrs['font-weight'] = '700'
-    }
-    if (tokenCtx.italic) {
-      attrs['font-style'] = 'italic'
-    }
-
-    const widthFactor = this.resolveWidthFactor(tokenCtx)
-    const tracking = this.resolveTracking(tokenCtx)
-    if (tracking !== 1) {
-      attrs['letter-spacing'] =
-        `${((tracking - 1) * fontSize * 0.25).toFixed(3)}`
-    }
-
-    const oblique = tokenCtx.oblique
-    if (oblique !== 0) {
-      const transforms: string[] = [`skewX(${-oblique})`]
-      if (widthFactor !== 1) {
-        transforms.unshift(`scale(${widthFactor},1)`)
-      }
-      attrs.transform = transforms.join(' ')
-    } else if (widthFactor !== 1) {
-      attrs.transform = `scale(${widthFactor},1)`
-    }
-
-    attrs.fill = resolveMTextFill(tokenCtx.color, this.traits, this.ctx)
-
-    const decorations: string[] = []
-    if (tokenCtx.underline) {
-      decorations.push('underline')
-    }
-    if (tokenCtx.overline) {
-      decorations.push('overline')
-    }
-    if (tokenCtx.strikeThrough) {
-      decorations.push('line-through')
-    }
-    if (decorations.length > 0) {
-      attrs['text-decoration'] = decorations.join(' ')
-    }
-
-    return attrs
   }
 }
 
@@ -1150,11 +1341,7 @@ function resolveMTextFill(
 }
 
 function escapeXml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+  return AcSvgExportUtil.escapeXml(s)
 }
 
 export {

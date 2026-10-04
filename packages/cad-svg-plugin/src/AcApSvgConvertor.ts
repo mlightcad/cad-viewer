@@ -1,39 +1,65 @@
 import type { AcApContext } from '@mlightcad/cad-simple-viewer'
 import {
+  AcApDocManager,
+  AcApI18n,
   AcApSettingManager,
   resolveExportDownloadName
 } from '@mlightcad/cad-simple-viewer'
+import { AcCmUiYieldGate, accmYieldForPaint } from '@mlightcad/data-model'
 
+import { AcSvgEntity } from './AcSvgEntity'
 import { AcSvgRenderer } from './AcSvgRenderer'
+
+/** Time budget between UI yields while drawing entities for SVG export. */
+const SVG_EXPORT_YIELD_BUDGET_MS = 200
 
 /**
  * Utility class for converting CAD drawings to SVG format.
  *
  * Renders model-space entities with {@link AcSvgRenderer} and triggers a
- * browser download of the resulting SVG file.
+ * browser download of the resulting SVG file. A busy indicator is shown and
+ * the UI thread is yielded periodically so the spinner can keep animating.
  */
 export class AcApSvgConvertor {
   /**
    * Converts the current CAD drawing to SVG format and initiates download.
    */
   async convert(context: AcApContext) {
-    AcSvgRenderer.prepareExport()
+    await AcApDocManager.instance.withBusyIndicator(async () => {
+      await accmYieldForPaint()
+      AcSvgRenderer.prepareExport()
 
-    const entities =
-      context.doc.database.tables.blockTable.modelSpace.newIterator()
-    const renderer = new AcSvgRenderer()
-    this.configureRenderer(renderer, context)
+      const entities =
+        context.doc.database.tables.blockTable.modelSpace.newIterator()
+      const renderer = new AcSvgRenderer()
+      this.configureRenderer(renderer, context)
 
-    for (const entity of entities) {
-      entity.worldDraw(renderer)
-    }
+      const yieldGate = new AcCmUiYieldGate(SVG_EXPORT_YIELD_BUDGET_MS)
+      const yieldToEventLoop = () =>
+        new Promise<void>(resolve => setTimeout(resolve, 0))
 
-    const svgContent = await renderer.exportAsync()
-    const downloadName = resolveExportDownloadName(
-      context.doc.fileName || context.doc.docTitle,
-      'svg'
-    )
-    this.createFileAndDownloadIt(svgContent, downloadName)
+      // Collect worldDraw roots (not renderer._entities). AcDbRenderingCache
+      // leaves untransformed INSERT templates in _entities while returning
+      // applyMatrix'd clones that are never pushed there.
+      const roots: AcSvgEntity[] = []
+      for (const entity of entities) {
+        const drawable = entity.worldDraw(renderer)
+        if (drawable instanceof AcSvgEntity) {
+          roots.push(drawable)
+        }
+        await yieldGate.maybeYield(yieldToEventLoop)
+      }
+
+      await accmYieldForPaint()
+      const svgContent = await renderer.exportAsync(roots)
+      await accmYieldForPaint()
+
+      const downloadName = resolveExportDownloadName(
+        context.doc.fileName || context.doc.docTitle,
+        'svg'
+      )
+      this.createFileAndDownloadIt(svgContent, downloadName)
+    }, AcApI18n.t('main.message.exportingSvg'))
   }
 
   /**

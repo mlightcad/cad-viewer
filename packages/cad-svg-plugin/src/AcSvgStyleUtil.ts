@@ -166,12 +166,33 @@ export class AcSvgStyleUtil {
     return Math.max(0.01, lineWeight / 100)
   }
 
+  /**
+   * Maps {@link AcCmTransparency} to SVG opacity in `[0, 1]`.
+   *
+   * `AcCmTransparency.alpha` is 0–255 and only meaningful when the method is
+   * `ByAlpha`. ByLayer / ByBlock leave opacity unset (fully opaque).
+   *
+   * Fully clear (`alpha === 0`) is also left unset: the Three.js viewer does
+   * not apply entity transparency to line materials yet, and some DWGs mark
+   * visible dimension linework / arrows as `0x02000000` (ByAlpha clear).
+   * Honoring that literally made dimension lines and SOLID arrows vanish from
+   * SVG while still visible on canvas.
+   */
   private static resolveOpacity(traits: AcGiSubEntityTraits): number | null {
-    const alpha = traits.transparency?.alpha
-    if (alpha == null || Number.isNaN(alpha)) {
+    const transparency = traits.transparency as
+      | {
+          alpha?: number
+          isByAlpha?: boolean
+        }
+      | undefined
+    if (!transparency?.isByAlpha) {
       return null
     }
-    return Math.min(1, Math.max(0, alpha))
+    const alpha = transparency.alpha
+    if (alpha == null || Number.isNaN(alpha) || alpha <= 0) {
+      return null
+    }
+    return Math.min(1, Math.max(0, alpha / 255))
   }
 
   private static strokeDasharray(

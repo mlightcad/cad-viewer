@@ -5,6 +5,7 @@ import {
   AcGiEntity
 } from '@mlightcad/data-model'
 
+import { isUsableSvgBox } from './AcSvgExtents'
 import { AcSvgMatrixUtil } from './AcSvgMatrixUtil'
 
 /**
@@ -20,6 +21,8 @@ export class AcSvgEntity implements AcGiEntity {
   protected _localSvg: string
   private _matrix?: AcGeMatrix3d
   protected _basePoint?: AcGePoint3d
+  /** Live children (INSERT ATTRIBs, group members). Kept for clone/addChild. */
+  private _children: AcSvgEntity[]
 
   constructor() {
     this._objectId = ''
@@ -29,6 +32,7 @@ export class AcSvgEntity implements AcGiEntity {
     this._userData = {}
     this._box = new AcGeBox2d()
     this._localSvg = ''
+    this._children = []
   }
 
   /**
@@ -72,17 +76,37 @@ export class AcSvgEntity implements AcGiEntity {
   }
 
   /**
-   * Final SVG fragment with accumulated transforms applied.
+   * Number of live child drawables (group members / ATTRIBs).
+   *
+   * Used by {@link AcDbRenderingCache} compaction heuristics.
+   */
+  get childCount() {
+    return this._children.length
+  }
+
+  /**
+   * Final SVG fragment with accumulated transforms and children applied.
    */
   renderSvg(): string {
-    if (!this._localSvg) {
+    const parts: string[] = []
+    if (this._localSvg) {
+      parts.push(this._localSvg)
+    }
+    for (const child of this._children) {
+      const svg = child.renderSvg()
+      if (svg) {
+        parts.push(svg)
+      }
+    }
+    const inner = parts.join('\n')
+    if (!inner) {
       return ''
     }
     if (!this._matrix) {
-      return this._localSvg
+      return inner
     }
     const transform = AcSvgMatrixUtil.toSvgTransform(this._matrix)
-    return `<g transform="${transform}">\n${this._localSvg}\n</g>`
+    return `<g transform="${transform}">\n${inner}\n</g>`
   }
 
   get objectId() {
@@ -129,7 +153,14 @@ export class AcSvgEntity implements AcGiEntity {
     } else {
       this._matrix = matrix.clone().multiply(this._matrix)
     }
+    this.transformBoxesRecursive(matrix)
+  }
+
+  private transformBoxesRecursive(matrix: AcGeMatrix3d) {
     AcSvgMatrixUtil.transformBox(this._box, matrix)
+    for (const child of this._children) {
+      child.transformBoxesRecursive(matrix)
+    }
   }
 
   recomputeBoundingBox() {
@@ -144,11 +175,43 @@ export class AcSvgEntity implements AcGiEntity {
     // Do nothing
   }
 
-  fastDeepClone() {
-    return this
+  /**
+   * Clones this node for {@link AcDbRenderingCache} INSERT instancing.
+   *
+   * Must return a distinct object: the cache stores the template by reference,
+   * then clones before `applyMatrix`. Returning `this` mutates the template and
+   * accumulates transforms across INSERT instances.
+   *
+   * Local SVG markup strings are shared (immutable). Children are deep-cloned
+   * so per-instance ATTRIBs / nested transforms stay independent.
+   */
+  fastDeepClone(): AcSvgEntity {
+    const cloned = new AcSvgEntity()
+    cloned._objectId = this._objectId
+    cloned._ownerId = this._ownerId
+    cloned._layerName = this._layerName
+    cloned._visible = this._visible
+    cloned._userData = this._userData
+    cloned._localSvg = this._localSvg
+    cloned._box.copy(this._box)
+    if (this._matrix) {
+      cloned._matrix = this._matrix.clone()
+    }
+    if (this._basePoint) {
+      cloned._basePoint = this._basePoint.clone()
+    }
+    for (const child of this._children) {
+      cloned._children.push(child.fastDeepClone())
+    }
+    return cloned
   }
 
-  addChild(_entity: AcGiEntity) {
-    // Do nothing for now
+  addChild(entity: AcGiEntity) {
+    if (entity instanceof AcSvgEntity) {
+      this._children.push(entity)
+      if (isUsableSvgBox(entity.box)) {
+        this._box.union(entity.box)
+      }
+    }
   }
 }

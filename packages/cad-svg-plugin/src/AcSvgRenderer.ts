@@ -1,6 +1,7 @@
 import {
   AcCmColor,
   AcCmTransparency,
+  AcCmUiYieldGate,
   acdbDrawTessellateOptions,
   AcDbRenderingCache,
   AcGeArea2d,
@@ -31,6 +32,7 @@ import { AcSvgCircArc } from './AcSvgCircArc'
 import { AcTrEllipticalArc } from './AcSvgEllipticalArc'
 import { AcSvgEntity } from './AcSvgEntity'
 import { AcSvgExportUtil } from './AcSvgExportUtil'
+import { computeSvgViewBox } from './AcSvgExtents'
 import { AcSvgGroup } from './AcSvgGroup'
 import { AcSvgImage } from './AcSvgImage'
 import { AcSvgLine } from './AcSvgLine'
@@ -39,6 +41,9 @@ import { AcSvgMText } from './AcSvgMText'
 import { AcSvgPoint } from './AcSvgPoint'
 import { AcSvgShape } from './AcSvgShape'
 import { AcSvgStyleContext, AcSvgStyleUtil } from './AcSvgStyleUtil'
+
+/** Time budget between UI yields while serializing SVG markup. */
+const SVG_SERIALIZE_YIELD_BUDGET_MS = 200
 
 export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   /**
@@ -344,29 +349,100 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
   }
 
   /**
-   * Exports accumulated SVG markup. Awaits any pending raster images first.
+   * Exports SVG markup. Awaits pending raster images and yields periodically
+   * so a host busy indicator can keep animating.
+   *
+   * Prefer explicit {@link roots} from top-level `worldDraw` return values.
+   * The internal `_entities` list is polluted by {@link AcDbRenderingCache}:
+   * it leaves untransformed block templates in place while returning
+   * `applyMatrix`'d clones that are never pushed here.
    */
-  async exportAsync(): Promise<string> {
+  async exportAsync(roots?: AcSvgEntity[]): Promise<string> {
     await Promise.all(this._pendingImages)
-    return this.export()
+    return this.exportMarkup(true, roots)
   }
 
   /**
    * Synchronous export. Raster images added via {@link image} may be missing
    * unless {@link exportAsync} is used.
+   *
+   * @param roots - Optional top-level drawables; see {@link exportAsync}.
    */
-  export() {
+  export(roots?: AcSvgEntity[]) {
+    return this.exportMarkup(false, roots)
+  }
+
+  /**
+   * Drops drawables accumulated in the internal entity list.
+   */
+  resetCollected(): void {
+    this._entities.length = 0
+  }
+
+  private exportMarkup(cooperative: false, roots?: AcSvgEntity[]): string
+  private exportMarkup(
+    cooperative: true,
+    roots?: AcSvgEntity[]
+  ): Promise<string>
+  private exportMarkup(
+    cooperative: boolean,
+    roots?: AcSvgEntity[]
+  ): string | Promise<string> {
+    if (cooperative) {
+      return this.exportMarkupCooperative(roots)
+    }
+    return this.assembleMarkup(this.collectEntityParts(roots))
+  }
+
+  private collectEntityParts(roots?: AcSvgEntity[]): {
+    parts: string[]
+    boxes: AcGeBox2d[]
+  } {
+    const entities = roots ?? this._entities
     const parts: string[] = []
-    const bbox = new AcGeBox2d()
-    for (const entity of this._entities) {
+    const boxes: AcGeBox2d[] = []
+    for (const entity of entities) {
       const svg = entity.renderSvg()
       if (svg) {
         parts.push(svg)
-        bbox.union(entity.box)
+        boxes.push(entity.box)
       }
     }
-    this._bbox = bbox
-    const elements = parts.join('\n')
+    return { parts, boxes }
+  }
+
+  private async exportMarkupCooperative(
+    roots?: AcSvgEntity[]
+  ): Promise<string> {
+    const entities = roots ?? this._entities
+    const parts: string[] = []
+    const boxes: AcGeBox2d[] = []
+    const yieldGate = new AcCmUiYieldGate(SVG_SERIALIZE_YIELD_BUDGET_MS)
+    const yieldToEventLoop = () =>
+      new Promise<void>(resolve => setTimeout(resolve, 0))
+
+    for (const entity of entities) {
+      const svg = entity.renderSvg()
+      if (svg) {
+        parts.push(svg)
+        boxes.push(entity.box)
+      }
+      await yieldGate.maybeYield(yieldToEventLoop)
+    }
+
+    // Let the busy spinner paint before the final join / sanitize pass.
+    await yieldToEventLoop()
+    return this.assembleMarkup({ parts, boxes })
+  }
+
+  private assembleMarkup(collected: {
+    parts: string[]
+    boxes: AcGeBox2d[]
+  }): string {
+    // Skip non-finite / outlier-scale entity boxes so one corrupt AABB cannot
+    // inflate viewBox to ~1e149 while path coordinates stay finite (#690).
+    this._bbox = computeSvgViewBox(collected.boxes)
+    const elements = collected.parts.join('\n')
     const padding = this._bbox.isEmpty()
       ? 0
       : Math.max(
@@ -386,22 +462,31 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
           width: this._bbox.max.x - this._bbox.min.x + padding * 2,
           height: this._bbox.max.y - this._bbox.min.y + padding * 2
         }
-    const width = Math.max(viewBox.width, 1)
-    const height = Math.max(viewBox.height, 1)
-    const backgroundRect = this.buildBackgroundRect(viewBox)
+    // Use percentage size (not CAD drawing units) so browsers scale the SVG to
+    // the viewport / container via viewBox, instead of treating large drawings
+    // as hundreds of thousands of CSS pixels.
+    const vbWidth = Math.max(viewBox.width, 1)
+    const vbHeight = Math.max(viewBox.height, 1)
+    const backgroundRect = this.buildBackgroundRect({
+      ...viewBox,
+      width: vbWidth,
+      height: vbHeight
+    })
     const svgMarkup = AcSvgExportUtil.sanitizeExternalReferences(
       `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
   preserveAspectRatio="xMinYMin meet"
-  viewBox="${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}"
-  width="${width}" height="${height}">
+  viewBox="${viewBox.x} ${viewBox.y} ${vbWidth} ${vbHeight}"
+  width="100%" height="100%">
 ${backgroundRect}
   <g transform="matrix(1,0,0,-1,0,0)">
 ${elements}
   </g>
 </svg>`
     )
-    return svgMarkup
+    // Final pass: strip illegal XML chars that may appear outside escaped
+    // text (e.g. leftover control bytes in attributes from CAD metadata).
+    return AcSvgExportUtil.stripInvalidXmlChars(svgMarkup)
   }
 
   private buildBackgroundRect(viewBox: {

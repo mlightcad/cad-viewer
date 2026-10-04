@@ -48,8 +48,31 @@ function createTraits(): AcGiSubEntityTraits {
   }
 }
 
+/** Inner run-group baseline Y values (excludes the outer attachment group). */
+function runBaselines(svg: string): number[] {
+  return [
+    ...svg.matchAll(
+      /<g transform="translate\(([^,]+),([^)]+)\)(?: scale\([^)]+\)| skewX\([^)]+\))*"><text/g
+    )
+  ]
+    .map(match => Number(match[2]))
+    .filter(y => Number.isFinite(y))
+}
+
+/** Inner run-group pen X values on the first baseline (y ≈ 0). */
+function runXsOnBaseline(svg: string): number[] {
+  return [
+    ...svg.matchAll(
+      /<g transform="translate\(([^,]+),([^)]+)\)(?: scale\([^)]+\)| skewX\([^)]+\))*"><text/g
+    )
+  ]
+    .filter(match => Math.abs(Number(match[2])) < 1e-9)
+    .map(match => Number(match[1]))
+    .filter(x => Number.isFinite(x))
+}
+
 describe('buildSvgMText', () => {
-  it('splits paragraphs into tspans', () => {
+  it('splits paragraphs into separate text runs', () => {
     const { localSvg } = buildSvgMText(
       {
         text: 'Line1\\PLine2\\PLine3',
@@ -62,11 +85,13 @@ describe('buildSvgMText', () => {
       ctx
     )
 
-    expect(localSvg).toContain('<tspan')
+    expect(localSvg).toContain('<text')
     expect(localSvg).toContain('Line1')
     expect(localSvg).toContain('Line2')
     expect(localSvg).toContain('Line3')
     expect(localSvg).toContain('translate(10,20)')
+    const baselines = runBaselines(localSvg)
+    expect(baselines.filter(y => y > 0).length).toBeGreaterThan(0)
   })
 
   it('renders special characters from the parser', () => {
@@ -129,13 +154,8 @@ describe('buildSvgMText', () => {
       ctx
     )
 
-    const dyValues = [...localSvg.matchAll(/\sdy="([^"]+)"/g)].map(match =>
-      Number(match[1])
-    )
-    expect(dyValues.filter(value => value > 0).length).toBeGreaterThan(0)
-    expect(localSvg).toMatch(/<tspan[^>]*x="0"[^>]*dy="0"/)
     // Default line advance is height * (5/3) with lineSpaceFactor 1.0.
-    expect(localSvg).toMatch(/<tspan[^>]*x="0"[^>]*dy="16\.6/)
+    expect(localSvg).toMatch(/translate\(0,16\.6/)
   })
 
   it('wraps continuous latin text without spaces', () => {
@@ -151,10 +171,7 @@ describe('buildSvgMText', () => {
       ctx
     )
 
-    const dyValues = [...localSvg.matchAll(/\sdy="([^"]+)"/g)].map(match =>
-      Number(match[1])
-    )
-    expect(dyValues.filter(value => value > 0).length).toBeGreaterThan(0)
+    expect(localSvg).toMatch(/translate\(0,16\.6/)
   })
 
   it('wraps cjk text inside the mtext width', () => {
@@ -170,10 +187,7 @@ describe('buildSvgMText', () => {
       ctx
     )
 
-    const dyValues = [...localSvg.matchAll(/\sdy="([^"]+)"/g)].map(match =>
-      Number(match[1])
-    )
-    expect(dyValues.filter(value => value > 0).length).toBeGreaterThan(0)
+    expect(localSvg).toMatch(/translate\(0,16\.6/)
   })
 
   it('anchors top-left attachment at the insertion point', () => {
@@ -261,11 +275,9 @@ describe('buildSvgMText', () => {
       ctx
     )
 
-    const yValues = [...localSvg.matchAll(/\sy="([^"]+)"/g)].map(match =>
-      Number(match[1])
-    )
-    expect(yValues.length).toBeGreaterThan(1)
-    expect(yValues[0]).toBeGreaterThan(yValues[yValues.length - 1])
+    const baselines = runBaselines(localSvg)
+    expect(baselines.length).toBeGreaterThan(1)
+    expect(baselines[0]).toBeGreaterThan(baselines[baselines.length - 1])
   })
 
   it('applies inline color formatting', () => {
@@ -315,7 +327,7 @@ describe('buildSvgMText', () => {
     setSvgFontMapping({})
   })
 
-  it('applies underline, overline, and strikethrough formatting', () => {
+  it('draws underline, overline, and strikethrough as geometry', () => {
     const { localSvg } = buildSvgMText(
       {
         text: '\\LUnder\\OOver\\KStrike',
@@ -327,9 +339,8 @@ describe('buildSvgMText', () => {
       ctx
     )
 
-    expect(localSvg).toContain('text-decoration="underline"')
-    expect(localSvg).toContain('overline')
-    expect(localSvg).toContain('line-through')
+    expect(localSvg).not.toContain('text-decoration')
+    expect((localSvg.match(/<line/g) ?? []).length).toBeGreaterThanOrEqual(3)
   })
 
   it('renders fraction stacks with a divider line', () => {
@@ -349,6 +360,23 @@ describe('buildSvgMText', () => {
     expect(localSvg).toContain('2')
   })
 
+  it('renders slash stacks as stacked fractions with a divider', () => {
+    const { localSvg } = buildSvgMText(
+      {
+        text: '\\S1/2;',
+        height: 10,
+        position: { x: 0, y: 0, z: 0 }
+      } as never,
+      { font: 'Arial' } as never,
+      createTraits(),
+      ctx
+    )
+
+    expect(localSvg).toContain('<line')
+    expect(localSvg).not.toContain('>1/2<')
+    expect(localSvg).toContain('font-size="7"')
+  })
+
   it('renders superscript stacks with smaller text', () => {
     const { localSvg } = buildSvgMText(
       {
@@ -362,5 +390,138 @@ describe('buildSvgMText', () => {
     )
 
     expect(localSvg).toContain('font-size="7"')
+  })
+
+  it('does not apply the legacy 0.85 width-factor fudge', () => {
+    const { localSvg } = buildSvgMText(
+      {
+        text: 'Hello',
+        height: 10,
+        position: { x: 0, y: 0, z: 0 },
+        widthFactor: 1
+      } as never,
+      { font: 'Arial', widthFactor: 1 } as never,
+      createTraits(),
+      ctx
+    )
+
+    expect(localSvg).not.toContain('scale(0.85')
+  })
+
+  it('applies absolute and relative width factors', () => {
+    const absolute = buildSvgMText(
+      {
+        text: '\\W2;Wide',
+        height: 10,
+        position: { x: 0, y: 0, z: 0 }
+      } as never,
+      { font: 'Arial' } as never,
+      createTraits(),
+      ctx
+    )
+    expect(absolute.localSvg).toContain('scale(2,1)')
+
+    const relative = buildSvgMText(
+      {
+        text: '\\W0.5x;Narrow',
+        height: 10,
+        width: 100,
+        position: { x: 0, y: 0, z: 0 }
+      } as never,
+      { font: 'Arial', widthFactor: 1 } as never,
+      createTraits(),
+      ctx
+    )
+    expect(relative.localSvg).toContain('scale(0.5,1)')
+    expect(relative.localSvg).not.toContain('scale(50')
+  })
+
+  it('applies oblique formatting with skewX', () => {
+    const { localSvg } = buildSvgMText(
+      {
+        text: '\\Q15;Slant',
+        height: 10,
+        position: { x: 0, y: 0, z: 0 }
+      } as never,
+      { font: 'Arial' } as never,
+      createTraits(),
+      ctx
+    )
+
+    expect(localSvg).toContain('skewX(-15)')
+  })
+
+  it('applies tracking as pen advance without letter-spacing', () => {
+    const tracked = buildSvgMText(
+      {
+        text: '\\T1.5;AB',
+        height: 10,
+        position: { x: 0, y: 0, z: 0 }
+      } as never,
+      { font: 'Arial' } as never,
+      createTraits(),
+      ctx
+    )
+
+    expect(tracked.localSvg).not.toContain('letter-spacing')
+    const trackedXs = runXsOnBaseline(tracked.localSvg)
+    expect(trackedXs.length).toBe(2)
+    // glyph 6 + (1.5-1)*10*hScale = 11
+    expect(trackedXs[1] - trackedXs[0]).toBeCloseTo(11)
+  })
+
+  it('applies bold and italic from font face commands', () => {
+    const { localSvg } = buildSvgMText(
+      {
+        text: '\\fArial|b1|i1;Styled',
+        height: 10,
+        position: { x: 0, y: 0, z: 0 }
+      } as never,
+      { font: 'Arial' } as never,
+      createTraits(),
+      ctx
+    )
+
+    expect(localSvg).toContain('font-weight="700"')
+    expect(localSvg).toContain('font-style="italic"')
+  })
+
+  it('turns bold and italic off when the font face drops b1/i1', () => {
+    const { localSvg } = buildSvgMText(
+      {
+        text: '{\\fArial|b1|i1;On}{\\fArial|b0|i0;Off}',
+        height: 10,
+        position: { x: 0, y: 0, z: 0 }
+      } as never,
+      { font: 'Arial' } as never,
+      createTraits(),
+      ctx
+    )
+
+    expect(localSvg).toContain('>On<')
+    expect(localSvg).toContain('>Off<')
+    expect(localSvg).toMatch(
+      /font-weight="700"[^>]*>On<[\s\S]*<text(?![^>]*font-weight)[^>]*>Off</
+    )
+    expect(localSvg).toMatch(
+      /font-style="italic"[^>]*>On<[\s\S]*<text(?![^>]*font-style)[^>]*>Off</
+    )
+  })
+
+  it('applies top line alignment for mixed heights', () => {
+    const { localSvg } = buildSvgMText(
+      {
+        text: 'A{\\H5;\\A2;B}',
+        height: 10,
+        position: { x: 0, y: 0, z: 0 }
+      } as never,
+      { font: 'Arial' } as never,
+      createTraits(),
+      ctx
+    )
+
+    // \A2 (TOP): A stays at size 10, B (size 5) shifts by 5-10 = -5.
+    expect(localSvg).toMatch(/translate\([^,]+,-5\)/)
+    expect(localSvg).toContain('font-size="5"')
   })
 })

@@ -27,4 +27,17 @@ describe('AcSvgExportUtil', () => {
     expect(output).not.toContain('icons.svg')
     expect(output).toContain('#local-id')
   })
+
+  it('strips illegal XML 1.0 control characters from text', () => {
+    const input = `ok${String.fromCharCode(2)}text${String.fromCharCode(0)}end`
+    expect(AcSvgExportUtil.stripInvalidXmlChars(input)).toBe('oktextend')
+    expect(AcSvgExportUtil.stripInvalidXmlChars('a\tb\nc\rd')).toBe(
+      'a\tb\nc\rd'
+    )
+  })
+
+  it('escapes XML specials after stripping invalid chars', () => {
+    const input = `<a&b${String.fromCharCode(2)}>`
+    expect(AcSvgExportUtil.escapeXml(input)).toBe('&lt;a&amp;b&gt;')
+  })
 })
