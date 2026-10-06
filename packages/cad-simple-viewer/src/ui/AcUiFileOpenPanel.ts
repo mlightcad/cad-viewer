@@ -137,7 +137,10 @@ export class AcUiFileOpenPanel {
   private onDocPointerDown: ((event: PointerEvent) => void) | null = null
 
   constructor(options: AcUiFileOpenPanelOptions) {
-    this.options = { ...options, cardSize: { ...options.cardSize } }
+    this.options = {
+      ...options,
+      cardSize: { ...(options.cardSize ?? {}) }
+    }
     AcUiFileOpenPanel.ensureStyles()
 
     this.root = document.createElement('div')
