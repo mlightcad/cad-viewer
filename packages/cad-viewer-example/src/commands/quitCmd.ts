@@ -8,6 +8,8 @@ import { store } from '../store'
 export class AcApQuitCmd extends AcEdCommand {
   async execute() {
     store.selectedFile = null
+    store.selectedUrl = null
     store.isNewDrawing = false
+    store.pendingDataSourceAction = null
   }
 }

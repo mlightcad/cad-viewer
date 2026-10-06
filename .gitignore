@@ -48,3 +48,7 @@ Thumbs.db
 
 .nx/cache
 .nx/workspace-data
+
+# Local secrets / machine-specific env (keep .env.example)
+.env.local
+.env.*.local

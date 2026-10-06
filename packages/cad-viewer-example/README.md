@@ -6,6 +6,7 @@ A Vue 3 demo that embeds [`@mlightcad/cad-viewer`](https://github.com/mlightcad/
 
 - **Full CAD UI** — `MlCadViewer` with toolbars, layer manager, command line, dialogs, and status bar
 - **Local files** — Drag-and-drop or file picker for `.dxf` / `.dwg` before entering the viewer
+- **OneDrive** — Optional `@mlightcad/cad-onedrive-plugin` when `VITE_MSAL_CLIENT_ID` is set (landing **Sign in to OneDrive**, then File → Open → **Open from OneDrive**)
 - **Open modes** — Read, Review, or Write access when opening a drawing
 - **Internationalization** — Built-in English/Chinese UI via `vue-i18n`; host app can merge custom messages
 - **Custom commands** — Example `quit` / `exit` commands return to the upload screen
@@ -54,6 +55,15 @@ pnpm dev
 
 Vite prints the local URL (default `http://localhost:5173`). In dev mode, Vite aliases `@mlightcad/cad-viewer`, `@mlightcad/cad-simple-viewer`, and renderer packages to their **source** for faster iteration.
 
+### OneDrive (optional)
+
+1. Copy [`.env.example`](./.env.example) to `.env.local` (a workspace `.env.local` may already be present).
+2. Set `VITE_MSAL_CLIENT_ID` to your Azure SPA application id.
+3. In Azure Entra ID, add an SPA redirect URI matching `VITE_MSAL_REDIRECT_URI` (default `http://localhost:5173/`).
+4. Restart the Vite dev server so env vars reload.
+
+On the upload screen, choose **Sign in to OneDrive**. After the viewer opens, use **File → Open → Open from OneDrive** (a second click is required so the File Picker popup is not blocked).
+
 ### Production
 
 ```bash
@@ -66,7 +76,7 @@ The build runs `vue-tsc`, then copies parser workers and `viewer-runtime.iife.js
 ## Usage
 
 1. Start the dev server and open the URL shown in the terminal.
-2. On the upload screen, choose **Read**, **Review**, or **Write**, then drop or select a `.dxf` or `.dwg` file.
+2. On the upload screen, choose **Read**, **Review**, or **Write**, then drop or select a `.dxf` or `.dwg` file — or **Sign in to OneDrive** / **From URL** when configured.
 3. The full `MlCadViewer` UI loads with your file. Use menus, ribbons, and the command line as in a desktop CAD host.
 4. Run `quit` or `exit` in the command line to close the drawing and return to the upload screen.
 

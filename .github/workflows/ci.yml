@@ -52,6 +52,12 @@ jobs:
         run: |
           export NODE_OPTIONS="--max-old-space-size=4096"
           pnpm run build
+        env:
+          # Public Azure SPA client id (not a secret). Set repository variable
+          # VITE_MSAL_CLIENT_ID so GitHub Pages demos register OneDrive.
+          # Leave VITE_MSAL_REDIRECT_URI unset; the plugin uses the page origin.
+          VITE_MSAL_CLIENT_ID: ${{ vars.VITE_MSAL_CLIENT_ID }}
+          VITE_MSAL_TENANT_ID: ${{ vars.VITE_MSAL_TENANT_ID }}
 
       - name: Run tests
         run: pnpm test

@@ -7,14 +7,18 @@ import {
 import { acuiRegisterSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
 import {
   acapAppendLinkedText,
+  type AcApDataSourceMenuItem,
   AcApDocManager,
   acapFormatOpenFileErrorToastMessage,
+  AcApI18n,
   AcApOpenDatabaseOptions,
+  acapRunDataSourceMenuAction,
   AcApSettingManager,
   acedApplyUiTheme,
   acedIsCompactUiLayout,
   AcEdOpenMode,
   ACGI_PAPER_SPACE_BACKGROUND,
+  AcUiFileOpenPanel,
   eventBus,
   layoutBackgroundColorFromRgb,
   LIBREDWG_PARSER_WORKER_FILE,
@@ -36,6 +40,7 @@ import {
   getCurrentDemoToolbarLayoutId
 } from './demoToolbarPresets'
 import { setupFileSidebarResize } from './fileSidebarResize'
+import { getOneDriveEnvConfig } from './onedriveEnv'
 import { registerLazyPlugins } from './register'
 import { registerLibreDwgConverter } from './registerLibreDwg'
 
@@ -98,7 +103,8 @@ function installOpenProfConsoleCapture(): void {
 class CadViewerApp {
   private container: HTMLDivElement
   private fileInput: HTMLInputElement
-  private centerOpenButton: HTMLButtonElement
+  private fileOpenPanelHost: HTMLElement
+  private fileOpenPanel: AcUiFileOpenPanel | null = null
   private viewerPane: HTMLElement
   private emptyState: HTMLDivElement
   private predefinedButtons: NodeListOf<HTMLButtonElement>
@@ -141,9 +147,9 @@ class CadViewerApp {
     this.fileInput = document.getElementById(
       'fileInputElement'
     ) as HTMLInputElement
-    this.centerOpenButton = document.getElementById(
-      'centerOpenButton'
-    ) as HTMLButtonElement
+    this.fileOpenPanelHost = document.getElementById(
+      'fileOpenPanelHost'
+    ) as HTMLElement
     this.viewerPane = document.getElementById('viewerPane') as HTMLElement
     this.emptyState = document.getElementById('emptyState') as HTMLDivElement
     this.predefinedButtons = document.querySelectorAll(
@@ -220,6 +226,12 @@ class CadViewerApp {
     ) as HTMLButtonElement
 
     this.setupFileHandling()
+    this.setupFileOpenPanel()
+    if (getOneDriveEnvConfig()) {
+      void this.initialize().then(() => {
+        this.fileOpenPanel?.refreshSourceButtons()
+      })
+    }
     this.setupPredefinedFileActions()
     this.setupMobileSidebar()
     const fileSidebarResizeHandle = document.getElementById(
@@ -876,7 +888,8 @@ class CadViewerApp {
         console.log(`[openprof] mode=${w.__OPEN_MODE__}`)
       }
 
-      registerLazyPlugins()
+      await registerLazyPlugins()
+      this.fileOpenPanel?.refreshSourceButtons()
 
       await acuiRegisterSimpleUiPlugin(AcApDocManager.instance.pluginManager, {
         host: this.viewerPane,
@@ -935,10 +948,79 @@ class CadViewerApp {
       }
       this.fileInput.value = ''
     })
+  }
 
-    this.centerOpenButton.addEventListener('click', () => {
-      this.fileInput.click()
+  private buildLandingCloudMenuItems(): AcApDataSourceMenuItem[] {
+    if (!getOneDriveEnvConfig()) return []
+    const name = AcApI18n.t('main.dataSource.onedrive')
+    const signInTemplate = AcApI18n.t('main.dataSource.signInTo')
+    return [
+      {
+        id: 'onedrive:sign-in',
+        sourceId: 'onedrive',
+        action: 'sign-in',
+        labelKey: 'main.dataSource.signInTo',
+        labelParams: { name },
+        label: signInTemplate.includes('{name}')
+          ? signInTemplate.split('{name}').join(name)
+          : `Sign in to ${name}`
+      }
+    ]
+  }
+
+  private setupFileOpenPanel() {
+    if (!this.fileOpenPanelHost) return
+    this.fileOpenPanel = new AcUiFileOpenPanel({
+      host: this.fileOpenPanelHost,
+      theme: 'dark',
+      extraMenuItems: () => this.buildLandingCloudMenuItems(),
+      onLocalFile: file => {
+        this.setLoadingState(true)
+        void this.loadLocalFile(file)
+      },
+      onUrl: url => {
+        this.setLoadingState(true)
+        void this.loadRemoteUrl(url)
+      },
+      onDataSourceAction: item => {
+        // Keep the landing panel visible while the File Picker is open.
+        // Download/open show DocManager busy + open-file progress overlays.
+        void this.handleDataSourceMenuAction(item)
+      }
     })
+  }
+
+  private handleDataSourceMenuAction(item: AcApDataSourceMenuItem) {
+    const run = () =>
+      acapRunDataSourceMenuAction(item, this.buildOpenOptions()).finally(() =>
+        this.finishLoadingState()
+      )
+
+    // `await initialize()` is a microtask even when already done, which
+    // drops the user gesture and blocks the OneDrive File Picker popup.
+    if (this.isInitialized) {
+      void run()
+      return
+    }
+
+    if (item.action === 'pick') {
+      this.showMessage(
+        'The viewer is still starting. Sign in first, then open the file.',
+        'info'
+      )
+      this.finishLoadingState()
+      void this.initialize().then(() => {
+        this.fileOpenPanel?.refreshSourceButtons()
+      })
+      return
+    }
+
+    void this.initialize()
+      .then(() => {
+        this.fileOpenPanel?.refreshSourceButtons()
+        return acapRunDataSourceMenuAction(item, this.buildOpenOptions())
+      })
+      .finally(() => this.finishLoadingState())
   }
 
   private setupPredefinedFileActions() {
@@ -1141,6 +1223,28 @@ class CadViewerApp {
       this.showMessage(`Error loading file: ${error}`, 'error')
     } finally {
       fileContent = null
+      this.finishLoadingState()
+    }
+  }
+
+  private async loadRemoteUrl(url: string) {
+    await this.initialize()
+    this.clearMessages()
+
+    try {
+      const success = await AcApDocManager.instance.openUrl(
+        url,
+        this.buildOpenOptions()
+      )
+      if (success) {
+        this.onFileOpened()
+        const fileName = this.getFileNameFromUrl(url)
+        this.showMessage(`Successfully loaded: ${fileName}`, 'success')
+      }
+    } catch (error) {
+      log.error('Error loading remote file:', error)
+      this.showMessage(`Error loading file: ${error}`, 'error')
+    } finally {
       this.finishLoadingState()
     }
   }
