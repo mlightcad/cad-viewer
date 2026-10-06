@@ -6,6 +6,12 @@
         "^build"
       ],
       "cache": true,
+      "inputs": [
+        "default",
+        { "env": "VITE_MSAL_CLIENT_ID" },
+        { "env": "VITE_MSAL_TENANT_ID" },
+        { "env": "VITE_MSAL_REDIRECT_URI" }
+      ],
       "outputs": [
         "{projectRoot}/dist",
         "{projectRoot}/lib"

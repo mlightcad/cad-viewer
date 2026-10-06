@@ -1,5 +1,46 @@
 export type AcEdUiTheme = 'light' | 'dark'
 
+/** Options for {@link acedApplyUiTheme}. */
+export interface AcEdApplyUiThemeOptions {
+  /**
+   * Use a self-contained palette (hex / rgba) instead of `--el-*` variables.
+   * Nested chrome can then keep `light` or `dark` even when the host app theme
+   * is the opposite.
+   */
+  isolated?: boolean
+}
+
+const ISOLATED_THEME_TOKENS: Record<AcEdUiTheme, Record<string, string>> = {
+  light: {
+    '--ml-ui-text': '#303133',
+    '--ml-ui-text-muted': '#606266',
+    '--ml-ui-bg': '#ffffff',
+    '--ml-ui-border': '#dcdfe6',
+    '--ml-ui-shadow': '0 2px 6px rgba(0, 0, 0, 0.12)',
+    '--ml-ui-overlay': 'rgba(0, 0, 0, 0.18)',
+    '--ml-ui-accent': '#409eff',
+    '--ml-ui-accent-alt': '#909399',
+    '--ml-ui-danger': '#f56c6c',
+    '--ml-ui-canvas-line': '#409eff',
+    '--ml-ui-canvas-fill': 'rgba(64, 158, 255, 0.2)',
+    '--ml-ui-canvas-fill-mix': 'color-mix(in srgb, #409eff 20%, transparent)'
+  },
+  dark: {
+    '--ml-ui-text': '#e5eaf3',
+    '--ml-ui-text-muted': '#cfd3dc',
+    '--ml-ui-bg': '#1d1e1f',
+    '--ml-ui-border': '#4c4d4f',
+    '--ml-ui-shadow': '0 6px 18px rgba(0, 0, 0, 0.35)',
+    '--ml-ui-overlay': 'rgba(0, 0, 0, 0.5)',
+    '--ml-ui-accent': '#409eff',
+    '--ml-ui-accent-alt': '#909399',
+    '--ml-ui-danger': '#f56c6c',
+    '--ml-ui-canvas-line': '#409eff',
+    '--ml-ui-canvas-fill': 'rgba(64, 158, 255, 0.2)',
+    '--ml-ui-canvas-fill-mix': 'color-mix(in srgb, #409eff 20%, transparent)'
+  }
+}
+
 const THEME_TOKENS: Record<AcEdUiTheme, Record<string, string>> = {
   light: {
     '--ml-ui-text': 'var(--el-text-color-primary, #303133)',
@@ -60,13 +101,17 @@ export function acedSubscribeUiTheme(
 
 export function acedApplyUiTheme(
   theme: AcEdUiTheme,
-  target: HTMLElement = document.documentElement
+  target: HTMLElement = document.documentElement,
+  options?: AcEdApplyUiThemeOptions
 ) {
-  const tokens = THEME_TOKENS[theme]
+  const tokens = options?.isolated
+    ? ISOLATED_THEME_TOKENS[theme]
+    : THEME_TOKENS[theme]
   Object.keys(tokens).forEach(key => {
     target.style.setProperty(key, tokens[key])
   })
   target.setAttribute('data-ml-ui-theme', theme)
+  target.style.colorScheme = theme
 
   // Only broadcast when the document (or marked) root theme changes so nested
   // chrome can refresh without re-entrancy from their own apply calls.

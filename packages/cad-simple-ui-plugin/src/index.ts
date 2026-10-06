@@ -10,7 +10,10 @@ export {
   acuiCreateSimpleUiPlugin
 } from './createSimpleUiPlugin'
 export type { AcUiDockPanelTab } from './ui/AcUiDockPanel'
-export { acuiRegisterSimpleUiPlugin } from './register'
+export {
+  acuiRegisterSimpleUiPlugin,
+  registerSimpleUiPlugin
+} from './register'
 export {
   acuiCreateToolbarLayoutSwitcher,
   acuiPrependToolbarLayoutSwitcher

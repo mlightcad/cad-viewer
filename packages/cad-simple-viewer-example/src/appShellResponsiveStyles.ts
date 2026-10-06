@@ -40,7 +40,7 @@ export function injectAppShellResponsiveStyles() {
         padding: 0;
         overflow: hidden;
         border-right: none;
-        border-bottom: 1px solid #1f2937;
+        border-bottom: 1px solid var(--ml-ui-border, #4c4d4f);
       }
 
       .sidebar-title-desktop {
@@ -55,14 +55,14 @@ export function injectAppShellResponsiveStyles() {
         gap: 0.75rem;
         padding: 0.65rem 0.85rem;
         border: none;
-        background: #0f172a;
+        background: var(--ml-ui-bg-page, #141414);
         color: inherit;
         cursor: pointer;
         text-align: left;
       }
 
       .file-sidebar-toggle:hover {
-        background: #111827;
+        background: var(--ml-ui-bg, #1d1e1f);
       }
 
       .file-sidebar-toggle-label {
@@ -75,7 +75,7 @@ export function injectAppShellResponsiveStyles() {
       .file-sidebar-toggle-subtitle {
         font-size: 0.75rem;
         font-weight: 400;
-        color: #9ca3af;
+        color: var(--ml-ui-text-muted, #cfd3dc);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -84,7 +84,7 @@ export function injectAppShellResponsiveStyles() {
       .file-sidebar-chevron {
         flex: 0 0 auto;
         font-size: 0.7rem;
-        color: #9ca3af;
+        color: var(--ml-ui-text-muted, #cfd3dc);
         transition: transform 0.2s ease;
       }
 
@@ -106,10 +106,10 @@ export function injectAppShellResponsiveStyles() {
         right: 8px;
         padding: 0.75rem 0.85rem;
         overflow: auto;
-        background: #0f172a;
-        border: 1px solid #374151;
+        background: var(--ml-ui-bg-page, #141414);
+        border: 1px solid var(--ml-ui-border, #4c4d4f);
         border-radius: 8px;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+        box-shadow: var(--ml-ui-shadow, 0 6px 18px rgba(0, 0, 0, 0.35));
       }
 
       .viewer-pane {

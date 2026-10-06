@@ -19,6 +19,25 @@ const SUPPORTED_EXTENSIONS = ['.dxf', '.dwg'] as const
 const VIEW_LOCAL = 'local'
 const VIEW_URL = 'url'
 
+/** Width / height of the {@link AcUiFileOpenPanel} source card. */
+export interface AcUiFileOpenPanelCardSize {
+  /** Card width. Number values are pixels. Defaults to `100%`. */
+  width?: number | string
+  /** Card height. Number values are pixels. Defaults to `150`. */
+  height?: number | string
+}
+
+const DEFAULT_CARD_WIDTH = '100%'
+const DEFAULT_CARD_HEIGHT = '150px'
+
+function toCssSize(
+  value: number | string | undefined,
+  fallback: string
+): string {
+  if (value == null) return fallback
+  return typeof value === 'number' ? `${value}px` : value
+}
+
 /** Result kinds emitted by {@link AcUiFileOpenPanel}. */
 export type AcUiFileOpenPanelResult =
   | { kind: 'local'; file: File }
@@ -39,10 +58,15 @@ export interface AcUiFileOpenPanelOptions {
   /** Optional subtitle under the title. */
   subtitle?: string
   /**
-   * UI theme tokens applied to the panel root.
-   * When omitted, resolved from the host / document via {@link resolveUiTheme}.
+   * Isolated card palette (`light` / `dark`), independent of the host app theme.
+   * When omitted, the panel follows {@link resolveUiTheme} from the host / document.
    */
   theme?: AcEdUiTheme
+  /**
+   * Card box size. Numbers are treated as CSS pixels.
+   * Defaults to width `100%` and height `150`.
+   */
+  cardSize?: AcUiFileOpenPanelCardSize
   /** When true, URL is available in the source menu. Defaults to true. */
   showUrl?: boolean
   /** When true, shows a New Drawing button. Defaults to false. */
@@ -85,11 +109,12 @@ type SourceOption = {
 /**
  * Framework-free landing panel for opening CAD files.
  *
- * Fixed-height card: upper body swaps by source; bottom chevron opens a
- * source menu. Theme tokens match {@link acedApplyUiTheme}.
+ * Card body swaps by source; bottom chevron opens a source menu.
+ * Pass {@link AcUiFileOpenPanelOptions.theme} for an isolated light/dark
+ * palette, and {@link AcUiFileOpenPanelOptions.cardSize} for width/height.
  */
 export class AcUiFileOpenPanel {
-  public static readonly styleId = 'ml-ui-file-open-panel-styles-v2'
+  public static readonly styleId = 'ml-ui-file-open-panel-styles-v3'
 
   private readonly options: AcUiFileOpenPanelOptions
   private readonly root: HTMLDivElement
@@ -112,7 +137,10 @@ export class AcUiFileOpenPanel {
   private onDocPointerDown: ((event: PointerEvent) => void) | null = null
 
   constructor(options: AcUiFileOpenPanelOptions) {
-    this.options = options
+    this.options = {
+      ...options,
+      cardSize: { ...(options.cardSize ?? {}) }
+    }
     AcUiFileOpenPanel.ensureStyles()
 
     this.root = document.createElement('div')
@@ -150,6 +178,7 @@ export class AcUiFileOpenPanel {
 
     this.card = document.createElement('div')
     this.card.className = 'ml-ui-file-open-card'
+    this.applyCardSize()
     this.root.appendChild(this.card)
 
     this.fileInput = document.createElement('input')
@@ -294,8 +323,34 @@ export class AcUiFileOpenPanel {
     if (this.disposed) return
     this.bindManagerEvents()
     this.applyTheme()
+    this.applyCardSize()
     this.syncSourceChrome()
     this.renderActiveView()
+  }
+
+  /**
+   * Sets an isolated card theme, or `undefined` to follow the host app theme.
+   *
+   * @param theme - `light`, `dark`, or `undefined` to track {@link resolveUiTheme}
+   */
+  setTheme(theme: AcEdUiTheme | undefined): void {
+    if (this.disposed) return
+    this.options.theme = theme
+    this.applyTheme()
+  }
+
+  /**
+   * Updates the source card width and/or height.
+   *
+   * @param size - Partial size; omitted sides keep their current option value
+   */
+  setCardSize(size: AcUiFileOpenPanelCardSize): void {
+    if (this.disposed) return
+    this.options.cardSize = {
+      ...this.options.cardSize,
+      ...size
+    }
+    this.applyCardSize()
   }
 
   /** Removes the panel from the host and unsubscribes. */
@@ -314,9 +369,15 @@ export class AcUiFileOpenPanel {
   }
 
   private applyTheme(): void {
-    const theme =
-      this.options.theme ?? resolveUiTheme(this.options.host)
-    acedApplyUiTheme(theme, this.root)
+    const isolated = this.options.theme != null
+    const theme = this.options.theme ?? resolveUiTheme(this.options.host)
+    acedApplyUiTheme(theme, this.root, { isolated })
+  }
+
+  private applyCardSize(): void {
+    const size = this.options.cardSize
+    this.card.style.width = toCssSize(size?.width, DEFAULT_CARD_WIDTH)
+    this.card.style.height = toCssSize(size?.height, DEFAULT_CARD_HEIGHT)
   }
 
   private syncSourceChrome(): void {
@@ -758,6 +819,7 @@ export class AcUiFileOpenPanel {
   flex-direction: column;
   width: 100%;
   height: 150px;
+  max-width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--ml-ui-border, #dcdfe6);
   border-radius: 12px;
