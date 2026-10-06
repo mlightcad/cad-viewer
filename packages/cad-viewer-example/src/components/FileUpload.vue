@@ -302,12 +302,11 @@
 <script setup lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue'
 import {
-  AcApOpenViewMode,
-  AcUiFileOpenPanel,
   type AcApDataSource,
   type AcApDataSourceMenuItem,
-  AcEdOpenMode
-} from '@mlightcad/cad-simple-viewer'
+  AcApOpenViewMode,
+  AcEdOpenMode,
+  AcUiFileOpenPanel} from '@mlightcad/cad-simple-viewer'
 import {
   ACDB_DRAW_CIRCLE_SIDES_DRAFT,
   ACDB_DRAW_CIRCLE_SIDES_HIGH,

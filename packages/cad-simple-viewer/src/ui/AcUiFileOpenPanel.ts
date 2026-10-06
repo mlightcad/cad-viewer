@@ -1,18 +1,17 @@
-import type { AcApDataSource } from '../app/dataSource/AcApDataSource'
-import type { AcApDataSourceAccountProfile } from '../app/dataSource/AcApDataSource'
+import { AcApDocManager } from '../app/AcApDocManager'
 import {
   acapBuildDataSourceMenu,
   type AcApDataSourceMenuItem
 } from '../app/dataSource/acapBuildDataSourceMenu'
+import type { AcApDataSource } from '../app/dataSource/AcApDataSource'
+import type { AcApDataSourceAccountProfile } from '../app/dataSource/AcApDataSource'
 import { ACAP_LOCAL_DATA_SOURCE_ID } from '../app/dataSource/AcApLocalDataSource'
 import { ACAP_URL_DATA_SOURCE_ID } from '../app/dataSource/AcApUrlDataSource'
-import { AcApDocManager } from '../app/AcApDocManager'
 import {
   acedApplyUiTheme,
   acedSubscribeUiTheme,
-  resolveUiTheme,
-  type AcEdUiTheme
-} from '../editor/global/AcEdUiTheme'
+  type AcEdUiTheme,
+  resolveUiTheme} from '../editor/global/AcEdUiTheme'
 import { AcApI18n } from '../i18n/AcApI18n'
 
 const SUPPORTED_EXTENSIONS = ['.dxf', '.dwg'] as const

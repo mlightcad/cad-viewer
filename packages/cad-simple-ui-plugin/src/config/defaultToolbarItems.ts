@@ -1,10 +1,10 @@
 import {
-  AcApDocManager,
-  type AcApLocale,
-  AcApSettingManager,
   acapBuildDataSourceMenu,
+  AcApDocManager,
   acapIsSingleLocalOpen,
+  type AcApLocale,
   acapRunDataSourceMenuAction,
+  AcApSettingManager,
   AcEdOpenMode,
   type AcEdUiTheme,
   acuiCopyDynamicToolbarChildren,

@@ -1,7 +1,7 @@
 import { AcApDocManager } from '../AcApDocManager'
 import type { AcApOpenDatabaseOptions } from '../AcApOpenDatabaseOptions'
-import type { AcApDataSourceManager } from './AcApDataSourceManager'
 import type { AcApDataSourceMenuItem } from './acapBuildDataSourceMenu'
+import type { AcApDataSourceManager } from './AcApDataSourceManager'
 import { acapInvokeDataSourceMenuAction } from './acapInvokeDataSourceMenuAction'
 import { acapOpenDataSourceResult } from './acapOpenDataSourceResult'
 

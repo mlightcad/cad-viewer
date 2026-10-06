@@ -1,10 +1,9 @@
 import {
-  AcApDocManager,
   acapBuildDataSourceMenu,
-  acapIsSingleLocalOpen,
-  type AcApDataSourceMenuItem
-} from '@mlightcad/cad-simple-viewer'
-import { onMounted, onUnmounted, ref, type Ref } from 'vue'
+  type AcApDataSourceMenuItem,
+  AcApDocManager,
+  acapIsSingleLocalOpen} from '@mlightcad/cad-simple-viewer'
+import { onMounted, onUnmounted, type Ref,ref } from 'vue'
 
 /**
  * Reactive list of Open-menu items from {@link AcApDocManager.dataSourceManager}.

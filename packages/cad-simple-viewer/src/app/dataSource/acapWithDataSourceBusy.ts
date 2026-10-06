@@ -1,6 +1,6 @@
+import { AcApI18n } from '../../i18n/AcApI18n'
 import { AcApDocManager } from '../AcApDocManager'
 import { AcApProgress } from '../AcApProgress'
-import { AcApI18n } from '../../i18n/AcApI18n'
 
 /**
  * Runs cloud download / post-picker work under a busy overlay.

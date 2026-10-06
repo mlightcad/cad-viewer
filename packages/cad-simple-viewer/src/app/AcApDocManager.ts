@@ -110,11 +110,6 @@ import {
   AcApOpenViewMode
 } from './AcApOpenDatabaseOptions'
 import {
-  AcApDataSourceManager,
-  AcApLocalDataSource,
-  AcApUrlDataSource
-} from './dataSource'
-import {
   acapInstallOpenFileDialog,
   type AcApOpenDocumentDefaultsResolver,
   acapUninstallOpenFileDialog,
@@ -128,6 +123,11 @@ import {
   resetWebworkerReadinessCache
 } from './AcApWebworkerReadiness'
 import { AcApXrefManager } from './AcApXrefManager'
+import {
+  AcApDataSourceManager,
+  AcApLocalDataSource,
+  AcApUrlDataSource
+} from './dataSource'
 import {
   acapDisposeNotificationService,
   acapInstallNotificationService,
