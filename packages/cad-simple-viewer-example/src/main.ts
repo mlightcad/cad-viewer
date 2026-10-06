@@ -225,6 +225,8 @@ class CadViewerApp {
       'devNewButton'
     ) as HTMLButtonElement
 
+    acedApplyUiTheme('dark', document.documentElement)
+
     this.setupFileHandling()
     this.setupFileOpenPanel()
     if (getOneDriveEnvConfig()) {
@@ -859,6 +861,7 @@ class CadViewerApp {
     if (this.isInitialized) return
 
     try {
+      acedApplyUiTheme('dark', document.documentElement)
       acedApplyUiTheme('dark', this.viewerPane)
 
       const openProf = isOpenProfMode()

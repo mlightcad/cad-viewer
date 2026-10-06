@@ -49,15 +49,22 @@ jobs:
         run: pnpm lint
 
       - name: Build projects
-        run: |
-          export NODE_OPTIONS="--max-old-space-size=4096"
-          pnpm run build
         env:
-          # Public Azure SPA client id (not a secret). Set repository variable
-          # VITE_MSAL_CLIENT_ID so GitHub Pages demos register OneDrive.
-          # Leave VITE_MSAL_REDIRECT_URI unset; the plugin uses the page origin.
-          VITE_MSAL_CLIENT_ID: ${{ vars.VITE_MSAL_CLIENT_ID }}
-          VITE_MSAL_TENANT_ID: ${{ vars.VITE_MSAL_TENANT_ID }}
+          NODE_OPTIONS: --max-old-space-size=4096
+          # SPA client id is public; this repo stores it as an Actions secret.
+          # `vars.*` and `secrets.*` are different stores — using the wrong one
+          # injects an empty string, which Vite will not override from .env files.
+          # Do not export empty VITE_MSAL_* for the same reason.
+          MSAL_CLIENT_ID: ${{ secrets.VITE_MSAL_CLIENT_ID || vars.VITE_MSAL_CLIENT_ID }}
+          MSAL_TENANT_ID: ${{ secrets.VITE_MSAL_TENANT_ID || vars.VITE_MSAL_TENANT_ID }}
+        run: |
+          if [ -n "${MSAL_CLIENT_ID:-}" ]; then
+            export VITE_MSAL_CLIENT_ID="$MSAL_CLIENT_ID"
+          fi
+          if [ -n "${MSAL_TENANT_ID:-}" ]; then
+            export VITE_MSAL_TENANT_ID="$MSAL_TENANT_ID"
+          fi
+          pnpm run build
 
       - name: Run tests
         run: pnpm test

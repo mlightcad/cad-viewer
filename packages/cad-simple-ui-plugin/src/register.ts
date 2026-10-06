@@ -19,3 +19,12 @@ export async function acuiRegisterSimpleUiPlugin(
     await import('@mlightcad/cad-simple-ui-plugin')
   await pluginManager.loadPlugin(acuiCreateSimpleUiPlugin(options))
 }
+
+/**
+ * Compatibility alias of {@link acuiRegisterSimpleUiPlugin}.
+ *
+ * Existing imports of `registerSimpleUiPlugin` from
+ * `@mlightcad/cad-simple-ui-plugin` and
+ * `@mlightcad/cad-simple-ui-plugin/register` keep working.
+ */
+export const registerSimpleUiPlugin = acuiRegisterSimpleUiPlugin

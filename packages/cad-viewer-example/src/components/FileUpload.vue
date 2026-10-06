@@ -18,13 +18,13 @@
           </div>
         </section>
 
-        <p class="font-cdn-notice">
-          {{ t('example.fileUpload.fontCdnNotice') }}
-        </p>
-
         <div class="upload-actions">
           <div ref="fileOpenHost" class="file-open-host"></div>
         </div>
+
+        <p class="font-cdn-notice">
+          {{ t('example.fileUpload.fontCdnNotice') }}
+        </p>
       </div>
 
       <section
@@ -609,7 +609,7 @@ const isValidFile = (file: File): boolean => {
 }
 
 .font-cdn-notice {
-  margin: 0 0 12px;
+  margin: 12px 0 0;
   padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid #fde68a;
