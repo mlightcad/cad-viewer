@@ -198,7 +198,8 @@ export class AcTrBufferGeometryUtil {
   static hasPatternLineShader(material: THREE.Material): boolean {
     return (
       material instanceof THREE.ShaderMaterial &&
-      material.vertexShader.includes('lineDistance')
+      // Match the pattern-shader attribute, not LineMaterial's `vLineDistance`.
+      material.vertexShader.includes('attribute float lineDistance')
     )
   }
 

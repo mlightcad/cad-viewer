@@ -62,6 +62,12 @@ interface CompactBucket {
    */
   line2Positions?: number[]
   /**
+   * Segment count contributed by each baked {@link LineSegments2}.
+   * Dash distances restart at the start of every run so merged entities
+   * do not continue one linetype phase.
+   */
+  line2SegmentRuns?: number[]
+  /**
    * Original leaves that contributed successful bakes.
    * Disposed only after the merged leaf is created successfully.
    */
@@ -179,6 +185,7 @@ export class AcTrGroupCompactor {
           candidates: [],
           geometries: [],
           line2Positions: family === 'line2' ? [] : undefined,
+          line2SegmentRuns: family === 'line2' ? [] : undefined,
           sources: []
         }
         keyed.push(bucket)
@@ -207,6 +214,7 @@ export class AcTrGroupCompactor {
           )
           if (baked && baked.length >= 6) {
             this.appendNumbers(bucket.line2Positions!, baked)
+            bucket.line2SegmentRuns!.push(baked.length / 6)
             bakedOk = true
           }
         } else {
@@ -249,6 +257,7 @@ export class AcTrGroupCompactor {
       if (bucket.sources.length < 2) {
         this.disposeBucketGeometries(bucket)
         bucket.line2Positions = undefined
+        bucket.line2SegmentRuns = undefined
         for (const source of bucket.sources) {
           group.add(source)
         }
@@ -269,6 +278,7 @@ export class AcTrGroupCompactor {
       // Fail-soft: drop baked temps and put originals back.
       this.disposeBucketGeometries(bucket)
       bucket.line2Positions = undefined
+      bucket.line2SegmentRuns = undefined
       for (const source of bucket.sources) {
         group.add(source)
       }
@@ -556,6 +566,46 @@ export class AcTrGroupCompactor {
   }
 
   /**
+   * Writes `instanceDistanceStart`/`instanceDistanceEnd` so each baked entity
+   * starts its dash at 0, while segments inside one entity stay continuous.
+   */
+  private static applyRestartingDashDistances(
+    geometry: LineSegmentsGeometry,
+    segmentRuns: readonly number[]
+  ) {
+    const instanceStart = geometry.getAttribute('instanceStart')
+    const instanceEnd = geometry.getAttribute('instanceEnd')
+    if (!instanceStart || !instanceEnd || instanceStart.count === 0) {
+      return
+    }
+    const lineDistances = new Float32Array(instanceStart.count * 2)
+    let segmentIndex = 0
+    for (const count of segmentRuns) {
+      let cumulative = 0
+      for (
+        let i = 0;
+        i < count && segmentIndex < instanceStart.count;
+        i++, segmentIndex++
+      ) {
+        _v1.fromBufferAttribute(instanceStart, segmentIndex)
+        _v2.fromBufferAttribute(instanceEnd, segmentIndex)
+        lineDistances[segmentIndex * 2] = cumulative
+        cumulative += _v1.distanceTo(_v2)
+        lineDistances[segmentIndex * 2 + 1] = cumulative
+      }
+    }
+    const buffer = new THREE.InstancedInterleavedBuffer(lineDistances, 2, 1)
+    geometry.setAttribute(
+      'instanceDistanceStart',
+      new THREE.InterleavedBufferAttribute(buffer, 1, 0)
+    )
+    geometry.setAttribute(
+      'instanceDistanceEnd',
+      new THREE.InterleavedBufferAttribute(buffer, 1, 1)
+    )
+  }
+
+  /**
    * Builds one merged leaf drawable from a filled bucket.
    *
    * @param bucket - Filled compact bucket.
@@ -573,6 +623,12 @@ export class AcTrGroupCompactor {
       AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
       AcTrBufferGeometryUtil.safeComputeBoundingSphere(geometry)
       const line = new LineSegments2(geometry, bucket.material as never)
+      if ((bucket.material as { dashed?: boolean }).dashed === true) {
+        this.applyRestartingDashDistances(
+          geometry,
+          bucket.line2SegmentRuns ?? []
+        )
+      }
       this.applyMergedLeafMetadata(line, bucket)
       return line
     }

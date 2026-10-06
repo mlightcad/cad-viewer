@@ -35,6 +35,7 @@ import {
   AcTrShape
 } from '../object'
 import { buildOffsetRingDirectGeometry } from '../object/AcTrLineGeometryBuilder'
+import { AcTrLinePatternShaderProbe } from '../style/AcTrLinePatternShaderProbe'
 import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
 import { AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport/AcTrCamera'
@@ -216,6 +217,8 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     this._context = new AcTrRenderContext()
     const size = renderer.getSize(new THREE.Vector2())
     this._context.styleManager.updateLineResolution(size.x, size.y)
+    this._context.styleManager.options.linePatternShaderBroken =
+      !AcTrLinePatternShaderProbe.test(renderer)
     AcTrMTextRenderer.getInstance().overrideStyleManager(
       this._context.styleManager
     )

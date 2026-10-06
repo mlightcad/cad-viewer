@@ -688,6 +688,8 @@ export class AcTrBatchedGroup extends THREE.Group {
           // packed geometry skipped the lineDistance attribute; arm it before
           // the next draw so dashed linetypes render correctly.
           batch.ensureLineDistanceAttribute()
+        } else if (batch instanceof AcTrBatchedLine2) {
+          batch.ensureDashDistances()
         }
       }
       if (material.id !== oldId) {
@@ -941,6 +943,18 @@ export class AcTrBatchedGroup extends THREE.Group {
     // Duck-type across duplicate three.js copies (mtext-renderer vs app).
     if (isThreeLineSegments(drawable)) {
       AcTrBufferGeometryUtil.ensureLineDistance(drawable.geometry, material)
+      return
+    }
+    if (!isThreeLineSegments2(drawable)) {
+      return
+    }
+    const primary = Array.isArray(material) ? material[0] : material
+    if (
+      primary &&
+      (primary as { dashed?: boolean }).dashed === true &&
+      !drawable.geometry.getAttribute('instanceDistanceStart')
+    ) {
+      drawable.computeLineDistances()
     }
   }
 
@@ -3291,6 +3305,10 @@ export class AcTrBatchedGroup extends THREE.Group {
         source.getAttribute('instanceColorEnd').clone()
       )
     }
+    // Note: dash distance attributes are not cloned here. The wide-line
+    // batch (AcTrBatchedLine2) owns distance maintenance and restarts the
+    // dash phase at each packed entity, which also covers geometries
+    // entering via appendLine2Geometry.
     AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
     AcTrBufferGeometryUtil.safeComputeBoundingSphere(geometry)
     return geometry
