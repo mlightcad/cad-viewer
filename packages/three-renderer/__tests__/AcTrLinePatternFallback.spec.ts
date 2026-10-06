@@ -4,6 +4,7 @@ import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import { AcTrBatchedLine2 } from '../src/batch/AcTrBatchedLine2'
+import { AcTrGroupCompactor } from '../src/object/AcTrGroupCompactor'
 import { AcTrLine } from '../src/object/AcTrLine'
 import { AcTrLineSegments } from '../src/object/AcTrLineSegments'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
@@ -87,15 +88,34 @@ describe('dashed fallback material (broken linetype shader)', () => {
     expect(material.gapSize).toBe(25)
   })
 
-  it('folds complex-element lengths into the dash sum', () => {
+  it('skips embedded text and keeps stray LibreDWG flags as gaps', () => {
     const styleManager = new AcTrStyleManager()
     styleManager.options.linePatternShaderBroken = true
-    const material = styleManager.getLineMaterial(
-      makePatternTraits([[-30, 1], [10], [-5]])
-    ) as LineMaterial
 
-    expect(material.dashSize).toBe(40)
-    expect(material.gapSize).toBe(5)
+    const textTraits = makePatternTraits([[10], [-5]])
+    textTraits.lineType.name = 'GAS'
+    textTraits.lineType.pattern = [
+      { elementLength: -30, elementTypeFlag: 2, text: 'GAS' },
+      { elementLength: 10, elementTypeFlag: 0 },
+      { elementLength: -5, elementTypeFlag: 0 }
+    ]
+    const textMaterial = styleManager.getLineMaterial(textTraits) as LineMaterial
+    expect(textMaterial.dashSize).toBe(10)
+    expect(textMaterial.gapSize).toBe(5)
+
+    const borderTraits = makePatternTraits([[1]])
+    borderTraits.lineType.name = 'BORDER2'
+    borderTraits.lineType.pattern = [
+      { elementLength: 0.25, elementTypeFlag: 10, shapeNumber: 0, text: '' },
+      { elementLength: -0.125, elementTypeFlag: 10, shapeNumber: 1, text: '' },
+      { elementLength: 0, elementTypeFlag: 10, shapeNumber: 4, text: '' },
+      { elementLength: -0.125, elementTypeFlag: 10, shapeNumber: 5, text: '' }
+    ]
+    const borderMaterial = styleManager.getLineMaterial(
+      borderTraits
+    ) as LineMaterial
+    expect(borderMaterial.dashSize).toBeCloseTo(0.75)
+    expect(borderMaterial.gapSize).toBeCloseTo(0.25)
   })
 
   it('keeps the custom shader material on healthy GPUs', () => {
@@ -189,10 +209,12 @@ describe('AcTrBatchedLine2 dash distances', () => {
     )
   }
 
-  it('chains cumulative distances across appended geometries', () => {
+  it('restarts the dash phase on each appended entity', () => {
     const batch = dashedBatch(8)
-    batch.addGeometry(segmentGeometry(0, 0, 10, 0))
-    batch.addGeometry(segmentGeometry(0, 0, 0, 5))
+    const polyline = new LineSegmentsGeometry()
+    polyline.setPositions([0, 0, 0, 10, 0, 0, 10, 0, 0, 10, 5, 0])
+    batch.addGeometry(polyline)
+    batch.addGeometry(segmentGeometry(0, 0, 0, 4))
 
     const { values } = getDistances(
       batch.geometry as THREE.BufferGeometry,
@@ -200,11 +222,12 @@ describe('AcTrBatchedLine2 dash distances', () => {
     )
     expect(values).toEqual([
       [0, 10],
-      [10, 15]
+      [10, 15],
+      [0, 4]
     ])
   })
 
-  it('preserves the distance chain across capacity growth', () => {
+  it('preserves per-entity phases across capacity growth', () => {
     const batch = dashedBatch(2)
     batch.addGeometry(segmentGeometry(0, 0, 10, 0))
     batch.addGeometry(segmentGeometry(0, 0, 0, 5))
@@ -216,12 +239,12 @@ describe('AcTrBatchedLine2 dash distances', () => {
     )
     expect(values).toEqual([
       [0, 10],
-      [10, 15],
-      [15, 16]
+      [0, 5],
+      [0, 1]
     ])
   })
 
-  it('re-chains downstream distances after rewriting a packed geometry', () => {
+  it('does not shift later entities when one packed geometry is rewritten', () => {
     const batch = dashedBatch(8)
     batch.addGeometry(segmentGeometry(0, 0, 10, 0))
     batch.addGeometry(segmentGeometry(0, 0, 0, 5))
@@ -235,8 +258,32 @@ describe('AcTrBatchedLine2 dash distances', () => {
     )
     expect(values).toEqual([
       [0, 10],
-      [10, 12],
-      [12, 13]
+      [0, 2],
+      [0, 1]
+    ])
+  })
+
+  it('restarts the dash phase for each compacted LineSegments2', () => {
+    const material = new LineMaterial({
+      color: 0xffffff,
+      dashed: true,
+      dashSize: 5,
+      gapSize: 5
+    })
+    const group = new THREE.Group()
+    group.add(new LineSegments2(segmentGeometry(0, 0, 10, 0), material))
+    group.add(new LineSegments2(segmentGeometry(0, 0, 0, 4), material))
+
+    AcTrGroupCompactor.compact(group)
+
+    const line = group.children.find(child => child instanceof LineSegments2) as
+      | LineSegments2
+      | undefined
+    expect(line).toBeDefined()
+    const { values } = getDistances(line!.geometry as THREE.BufferGeometry, 2)
+    expect(values).toEqual([
+      [0, 10],
+      [0, 4]
     ])
   })
 

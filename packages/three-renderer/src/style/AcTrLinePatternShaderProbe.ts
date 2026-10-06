@@ -33,6 +33,10 @@ export class AcTrLinePatternShaderProbe {
     let shaderGeometry: THREE.BufferGeometry | null = null
     let controlMaterial: THREE.LineBasicMaterial | null = null
     let shaderMaterial: THREE.Material | null = null
+    let previousTarget: THREE.WebGLRenderTarget | null = null
+    let previousClear: THREE.Color | null = null
+    let previousAlpha = 1
+    let rendererStateCaptured = false
 
     try {
       target = new THREE.WebGLRenderTarget(W, H)
@@ -70,10 +74,11 @@ export class AcTrLinePatternShaderProbe {
       )
       scene.add(new THREE.LineSegments(shaderGeometry, shaderMaterial))
 
-      const previousTarget = renderer.getRenderTarget()
-      const previousClear = new THREE.Color()
+      previousTarget = renderer.getRenderTarget()
+      previousClear = new THREE.Color()
       renderer.getClearColor(previousClear)
-      const previousAlpha = renderer.getClearAlpha()
+      previousAlpha = renderer.getClearAlpha()
+      rendererStateCaptured = true
 
       renderer.setRenderTarget(target)
       renderer.setClearColor(0x000000, 1)
@@ -82,9 +87,6 @@ export class AcTrLinePatternShaderProbe {
 
       const pixels = new Uint8Array(W * H * 4)
       renderer.readRenderTargetPixels(target, 0, 0, W, H, pixels)
-
-      renderer.setRenderTarget(previousTarget)
-      renderer.setClearColor(previousClear, previousAlpha)
 
       let hasRed = false
       let hasGreen = false
@@ -102,6 +104,10 @@ export class AcTrLinePatternShaderProbe {
     } catch {
       return true
     } finally {
+      if (rendererStateCaptured && previousClear) {
+        renderer.setRenderTarget(previousTarget)
+        renderer.setClearColor(previousClear, previousAlpha)
+      }
       target?.dispose()
       controlGeometry?.dispose()
       shaderGeometry?.dispose()

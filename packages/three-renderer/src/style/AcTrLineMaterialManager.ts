@@ -2,6 +2,10 @@ import { AcGiLineWeight, AcGiSubEntityTraits } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
+import {
+  isComplexPatternElement,
+  normalizeComplexPatternElement
+} from '../linetype/AcTrLineTypeWalker'
 import { AcTrLinePatternShaders } from './AcTrLinePatternShaders'
 import { AcTrMaterialManager } from './AcTrMaterialManager'
 
@@ -137,6 +141,11 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
    * {@link AcTrStyleManagerOptions.linePatternShaderBroken}). The CAD pattern
    * is approximated as one dash (sum of pen-down segments) and one gap (sum of
    * pen-up segments), scaled by the active linetype scale.
+   *
+   * Element classification matches {@link AcTrLinePatternShaders}: real
+   * TEXT/SHAPE elements are skipped, and a non-zero `elementTypeFlag` on an
+   * ordinary dash or gap (LibreDWG stray flags on BORDER2 / DASHEDX2) does
+   * not flip the sign.
    */
   private createDashedFatLineMaterial(
     traits: AcGiSubEntityTraits,
@@ -146,16 +155,15 @@ export class AcTrLineMaterialManager extends AcTrMaterialManager<AcTrLineMateria
     let dashSize = 0
     let gapSize = 0
     for (const el of traits.lineType.pattern!) {
-      let len = el.elementLength
-      if (len < 0 && el.elementTypeFlag !== 0) len = Math.abs(len)
-      len *= scale
-      if (len >= 0) dashSize += len
+      if (isComplexPatternElement(normalizeComplexPatternElement(el))) {
+        continue
+      }
+      let len = el.elementLength * scale
+      // Same stand-in the shader uses: a dot is a fixed 0.5 dash.
+      if (len === 0) len = 0.5
+      if (len > 0) dashSize += len
       else gapSize += Math.abs(len)
     }
-    // Note: zero-length elements (dots) are folded into the dash sum and only
-    // collapse to a fixed 0.5 dash when the pattern has no pen-down length at
-    // all (pure dot linetypes). The shader path instead renders each dot as a
-    // fixed 0.5 dash — an acceptable approximation for this degraded path.
     if (dashSize === 0) dashSize = 0.5
     const dashedLineMaterial = new LineMaterial({
       color: rgb,

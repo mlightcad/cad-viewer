@@ -117,7 +117,7 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
         key === 'instanceEnd' ||
         key === 'slotId' ||
         // Dash distance storage is batch-sized and managed separately
-        // (see _ensureDistanceAttributes / _chainInstanceDistances).
+        // (see _ensureDistanceAttributes / _writeSlotDistances).
         key === 'instanceDistanceStart' ||
         key === 'instanceDistanceEnd'
       ) {
@@ -155,14 +155,43 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
   }
 
   /**
-   * Recomputes cumulative dash distances for packed segments in
-   * `[fromSegment, toSegment)`, chaining from the last distance written
-   * before `fromSegment` so the dash phase continues across segments
-   * (mirrors `LineSegments2.computeLineDistances()` over the packed buffer).
+   * Allocates dash-distance storage when this batch's material is dashed,
+   * then rebuilds every active slot from zero.
+   *
+   * Used after a layer rebind swaps a dashed {@link LineMaterial} onto a
+   * wide-line batch that was packed as solid lines.
    */
-  private _chainInstanceDistances(
-    fromSegment: number,
-    toSegment: number = this._nextSegmentStart
+  ensureDashDistances() {
+    if (!this._isDashedMaterial() || !this._geometryInitialized) {
+      return
+    }
+    this._ensureDistanceAttributes()
+    for (let i = 0; i < this._geometryCount; i++) {
+      const info = this._geometryInfo[i]
+      if (!info || !isBatchGeometryActive(info.flags) || info.vertexCount < 1) {
+        continue
+      }
+      this._writeSlotDistances(
+        info.vertexStart,
+        info.vertexCount,
+        info.reservedVertexCount
+      )
+    }
+  }
+
+  /**
+   * Writes entity-local dash distances for one packed slot.
+   *
+   * Segments inside the slot chain, so one polyline keeps a continuous
+   * pattern. The slot itself always starts at 0: continuing from the
+   * previous entity pushes later lines into linetype gaps (the same rule
+   * as {@link AcTrBatchedLine.ensureLineDistanceAttribute}).
+   * Reserved padding past `segmentCount` is cleared.
+   */
+  private _writeSlotDistances(
+    segmentStart: number,
+    segmentCount: number,
+    reservedCount: number
   ) {
     const distanceStart = this.geometry.getAttribute(
       'instanceDistanceStart'
@@ -175,13 +204,19 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     }
     const instanceStart = this.geometry.getAttribute('instanceStart')
     const instanceEnd = this.geometry.getAttribute('instanceEnd')
-    let cumulative = fromSegment > 0 ? distanceEnd.getX(fromSegment - 1) : 0
-    for (let i = fromSegment; i < toSegment; i++) {
-      _segmentStart.fromBufferAttribute(instanceStart, i)
-      _segmentEnd.fromBufferAttribute(instanceEnd, i)
-      distanceStart.setX(i, cumulative)
+    let cumulative = 0
+    for (let i = 0; i < segmentCount; i++) {
+      const index = segmentStart + i
+      _segmentStart.fromBufferAttribute(instanceStart, index)
+      _segmentEnd.fromBufferAttribute(instanceEnd, index)
+      distanceStart.setX(index, cumulative)
       cumulative += _segmentStart.distanceTo(_segmentEnd)
-      distanceEnd.setX(i, cumulative)
+      distanceEnd.setX(index, cumulative)
+    }
+    for (let i = segmentCount; i < reservedCount; i++) {
+      const index = segmentStart + i
+      distanceStart.setX(index, 0)
+      distanceEnd.setX(index, 0)
     }
     distanceStart.data.needsUpdate = true
     distanceEnd.data.needsUpdate = true
@@ -396,15 +431,12 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
       geometryId
     )
 
-    // Refresh dash distances for this reserved range and any packed segments
-    // after it (rewrites mid-chain shift the cumulative dash phase).
+    // This slot's dash phase starts at 0. Neighboring entities keep theirs.
     if (this._isDashedMaterial()) {
-      this._chainInstanceDistances(
+      this._writeSlotDistances(
         segmentStart,
-        Math.max(
-          this._nextSegmentStart,
-          segmentStart + geometryInfo.reservedVertexCount
-        )
+        segmentCount,
+        geometryInfo.reservedVertexCount
       )
     }
 
@@ -462,9 +494,15 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
     instanceStart.needsUpdate = true
     instanceEnd.needsUpdate = true
 
-    // Compaction moves segments, invalidating the cumulative dash chain.
+    // Compaction moves slots. Each entity still restarts its own dash phase.
     if (this._isDashedMaterial()) {
-      this._chainInstanceDistances(0)
+      for (const { info } of entries) {
+        this._writeSlotDistances(
+          info.vertexStart,
+          info.vertexCount,
+          info.reservedVertexCount
+        )
+      }
     }
 
     syncBatchDrawVisibilityAfterOptimize(this.geometry, this._geometryInfo)
@@ -762,6 +800,11 @@ export class AcTrBatchedLine2 extends AcTrBatchedLine2Base {
       true
     )
     const object = new LineSegments2(geometry, this.material as LineMaterial)
+    // Sub-geometry is one entity. Recompute its own phase; the batch buffer's
+    // distance attributes are capacity-sized and are not sliced here.
+    if (this._isDashedMaterial()) {
+      object.computeLineDistances()
+    }
     object.position.copy(this.position)
     object.updateMatrix()
     object.updateMatrixWorld(true)
