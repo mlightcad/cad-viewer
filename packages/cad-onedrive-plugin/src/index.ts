@@ -21,6 +21,7 @@ export {
   isAllowedMicrosoftResourceUrl,
   isAllowedPickerMessageOrigin,
   OneDriveClient,
+  resolveDefaultRedirectUri,
   resolveOneDrivePickerScopes
 } from './oneDriveClient'
 export { ONEDRIVE_PLUGIN_NAME } from './register'

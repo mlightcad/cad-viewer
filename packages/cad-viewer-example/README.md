@@ -59,7 +59,7 @@ Vite prints the local URL (default `http://localhost:5173`). In dev mode, Vite a
 
 1. Copy [`.env.example`](./.env.example) to `.env.local` (a workspace `.env.local` may already be present).
 2. Set `VITE_MSAL_CLIENT_ID` to your Azure SPA application id.
-3. In Azure Entra ID, add an SPA redirect URI matching `VITE_MSAL_REDIRECT_URI` (default `http://localhost:5173/`).
+3. In Azure Entra ID, add an SPA redirect URI matching `VITE_MSAL_REDIRECT_URI` (local default `http://localhost:5173/`). If that env var is omitted, the plugin uses the current page URL, so GitHub Pages must register `https://mlightcad.com/cad-viewer/cad-viewer/`.
 4. Restart the Vite dev server so env vars reload.
 
 On the upload screen, choose **Sign in to OneDrive**. After the viewer opens, use **File → Open → Open from OneDrive** (a second click is required so the File Picker popup is not blocked).
