@@ -1,11 +1,9 @@
 import { log } from '@mlightcad/data-model'
 
 import { eventBus } from '../editor/global/eventBus'
-import { AcEdOpenMode } from '../editor/view/AcEdOpenMode'
 import type { AcApOpenDatabaseOptions } from './AcApOpenDatabaseOptions'
-
-/** File extensions accepted by the built-in OPEN file dialog. */
-const SUPPORTED_EXTENSIONS = ['.dxf', '.dwg'] as const
+import { acapPickLocalCadFile } from './dataSource/AcApLocalDataSource'
+import { acapOpenDataSourceResult } from './dataSource/acapOpenDataSourceResult'
 
 /**
  * Resolver for default options used by the built-in OPEN file dialog.
@@ -29,38 +27,10 @@ export interface AcApOpenFileDialogOptions {
     | Promise<AcApOpenDatabaseOptions>
 }
 
-/** Hidden `<input type="file">` element reused across OPEN requests. */
-let fileInput: HTMLInputElement | undefined
 /** Whether {@link acapInstallOpenFileDialog} has registered the `open-file` listener. */
 let installed = false
 /** Active dialog options merged from install and update calls. */
 let currentOptions: AcApOpenFileDialogOptions = {}
-
-/**
- * Returns whether the given file name has a supported CAD extension.
- *
- * @param fileName - Local file name including extension.
- * @returns `true` when the name ends with `.dxf` or `.dwg` (case-insensitive).
- */
-const isSupportedCadFile = (fileName: string) => {
-  const lowerName = fileName.toLowerCase()
-  return SUPPORTED_EXTENSIONS.some(ext => lowerName.endsWith(ext))
-}
-
-/**
- * Reads a browser {@link File} into memory as raw bytes.
- *
- * @param file - File selected from the hidden file input.
- * @returns Resolves with the file contents as an {@link ArrayBuffer}.
- */
-const readFileAsArrayBuffer = (file: File): Promise<ArrayBuffer> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as ArrayBuffer)
-    reader.onerror = () =>
-      reject(reader.error ?? new Error('Failed to read file'))
-    reader.readAsArrayBuffer(file)
-  })
 
 /**
  * Resolves database open options for a user-selected file.
@@ -80,57 +50,20 @@ const resolveOpenDocumentDefaults = async (
 }
 
 /**
- * Opens the hidden file picker in response to an `open-file` event.
+ * Opens the local CAD file picker in response to an `open-file` event.
  *
- * Creates and appends the input element on first use, then triggers `click()`.
+ * Delegates to the shared local data-source picker, then opens the document.
  */
-const onOpenFile = () => {
-  if (!fileInput) {
-    fileInput = document.createElement('input')
-    fileInput.type = 'file'
-    fileInput.accept = SUPPORTED_EXTENSIONS.join(',')
-    fileInput.style.display = 'none'
-    fileInput.addEventListener('change', onFileChange)
-    document.body.appendChild(fileInput)
-  }
-  fileInput.click()
-}
-
-/**
- * Handles file selection from the hidden input.
- *
- * Validates the extension, reads the file, and delegates opening to
- * {@link AcApDocManager.openDocument}. Clears the input value so the same file
- * can be chosen again.
- *
- * @param event - `change` event from the hidden file input.
- */
-const onFileChange = async (event: Event) => {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  target.value = ''
-  if (!file) return
-
-  if (!isSupportedCadFile(file.name)) {
-    log.warn(`Unsupported file type: ${file.name}`)
-    return
-  }
-
-  let content: ArrayBuffer | null = null
+const onOpenFile = async () => {
   try {
-    content = await readFileAsArrayBuffer(file)
-    const { AcApDocManager } = await import('./AcApDocManager')
+    const file = await acapPickLocalCadFile()
+    if (!file?.content) return
     const options = await resolveOpenDocumentDefaults(
       currentOptions.getOpenDocumentDefaults
     )
-    eventBus.emit('open-local-file-started', {
-      mode: options.mode ?? AcEdOpenMode.Read
-    })
-    await AcApDocManager.instance.openDocument(file.name, content, options)
+    await acapOpenDataSourceResult(file, options)
   } catch (error) {
     log.error('Failed to open selected file:', error)
-  } finally {
-    content = null
   }
 }
 
@@ -165,14 +98,11 @@ export function acapUpdateOpenFileDialogOptions(
   currentOptions = options
 }
 
-/** Removes the built-in OPEN file dialog and its hidden input element. */
+/** Removes the built-in OPEN file dialog listener. */
 export function acapUninstallOpenFileDialog() {
   if (!installed) return
 
   eventBus.off('open-file', onOpenFile)
-  fileInput?.removeEventListener('change', onFileChange)
-  fileInput?.remove()
-  fileInput = undefined
   installed = false
   currentOptions = {}
 }

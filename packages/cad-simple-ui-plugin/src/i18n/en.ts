@@ -6,6 +6,7 @@
  */
 export const en: Record<string, string> = {
   'toolbar.select': 'Select',
+  'toolbar.open': 'Open',
   'toolbar.pan': 'Pan',
   'toolbar.zoom': 'Zoom',
   'toolbar.zoomExtent': 'Extents',

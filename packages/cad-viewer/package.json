@@ -45,6 +45,7 @@
   "devDependencies": {
     "@mlightcad/cad-agent-plugin": "workspace:*",
     "@mlightcad/cad-html-plugin": "workspace:*",
+    "@mlightcad/cad-onedrive-plugin": "workspace:*",
     "@mlightcad/cad-pdf-plugin": "workspace:*",
     "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
@@ -72,6 +73,7 @@
   "peerDependencies": {
     "@mlightcad/cad-agent-plugin": "workspace:*",
     "@mlightcad/cad-html-plugin": "workspace:*",
+    "@mlightcad/cad-onedrive-plugin": "workspace:*",
     "@mlightcad/cad-pdf-plugin": "workspace:*",
     "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
@@ -90,6 +92,9 @@
       "optional": true
     },
     "@mlightcad/cad-html-plugin": {
+      "optional": true
+    },
+    "@mlightcad/cad-onedrive-plugin": {
       "optional": true
     },
     "@mlightcad/cad-pdf-plugin": {

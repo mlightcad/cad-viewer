@@ -1,0 +1,56 @@
+{
+  "name": "@mlightcad/cad-onedrive-plugin",
+  "version": "1.7.4",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "files": [
+    "dist",
+    "lib",
+    "README.md",
+    "package.json"
+  ],
+  "main": "./dist/cad-onedrive-plugin.umd.cjs",
+  "module": "./dist/cad-onedrive-plugin.js",
+  "sideEffects": false,
+  "types": "./lib/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "register": [
+        "lib/register.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./dist/cad-onedrive-plugin.js",
+      "require": "./dist/cad-onedrive-plugin.umd.cjs"
+    },
+    "./register": {
+      "types": "./lib/register.d.ts",
+      "import": "./dist/cad-onedrive-plugin-register.js",
+      "require": "./dist/cad-onedrive-plugin-register.umd.cjs"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build": "tsc && vite build",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "dependencies": {
+    "@azure/msal-browser": "^4.12.0"
+  },
+  "devDependencies": {
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.15.1"
+  },
+  "peerDependencies": {
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.15.1"
+  }
+}

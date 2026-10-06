@@ -6,6 +6,7 @@
  */
 export const cs: Record<string, string> = {
   'toolbar.select': 'Výběr',
+  'toolbar.open': 'Otevřít',
   'toolbar.pan': 'Posun',
   'toolbar.zoom': 'Zoom',
   'toolbar.zoomExtent': 'Rozsah',

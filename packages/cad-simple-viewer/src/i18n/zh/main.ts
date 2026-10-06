@@ -172,5 +172,29 @@ export default {
     snoozeToday: '今日不再提醒',
     hideForever: '不再提醒',
     ok: '我知道了'
+  },
+  dataSource: {
+    open: '打开',
+    local: '本地文件',
+    url: '从 URL 打开',
+    openFrom: '从 {name} 打开',
+    signInTo: '登录 {name}',
+    signOutOf: '退出 {name}',
+    signOutOfAccount: '退出 {name}（{account}）',
+    urlDialogTitle: '从 URL 打开',
+    urlDialogHint: '请输入 .dwg 或 .dxf 文件的网址。',
+    urlPlaceholder: 'https://example.com/drawing.dwg',
+    cancel: '取消',
+    onedrive: 'OneDrive',
+    or: '或',
+    dropFile: '将文件拖放到此处，或',
+    browse: '浏览',
+    dropOrBrowse: '将 DWG 或 DXF 文件拖放到此处，或浏览选择',
+    newDrawing: '新建图纸',
+    source: '数据源',
+    unavailable: '该数据源暂不可用。',
+    selectFile: '选择文件',
+    signInRequired: '请先登录后再选择文件。',
+    downloading: '正在下载文件 ...'
   }
 }

@@ -23,39 +23,7 @@
         </p>
 
         <div class="upload-actions">
-          <button
-            type="button"
-            class="new-drawing-button"
-            @click="handleNewDrawing"
-          >
-            {{ t('example.fileUpload.newDrawing') }}
-          </button>
-
-          <p class="upload-divider" aria-hidden="true">
-            <span>{{ t('example.fileUpload.or') }}</span>
-          </p>
-
-          <el-upload
-            class="upload-dropzone"
-            drag
-            :auto-upload="false"
-            accept=".dwg,.dxf"
-            :on-change="handleFileChange"
-            :before-upload="beforeUpload"
-          >
-            <div class="dropzone-content">
-              <p class="dropzone-title">
-                {{ t('example.fileUpload.dropFile') }}
-                <span class="dropzone-link">
-                  {{ t('example.fileUpload.browse') }}
-                </span>
-              </p>
-              <div class="format-tags">
-                <span class="format-tag">DWG</span>
-                <span class="format-tag">DXF</span>
-              </div>
-            </div>
-          </el-upload>
+          <div ref="fileOpenHost" class="file-open-host"></div>
         </div>
       </div>
 
@@ -333,18 +301,21 @@
 
 <script setup lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue'
-import { AcApOpenViewMode, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
+import {
+  type AcApDataSource,
+  type AcApDataSourceMenuItem,
+  AcApOpenViewMode,
+  AcEdOpenMode,
+  AcUiFileOpenPanel} from '@mlightcad/cad-simple-viewer'
 import {
   ACDB_DRAW_CIRCLE_SIDES_DRAFT,
   ACDB_DRAW_CIRCLE_SIDES_HIGH,
   ACDB_DRAW_CIRCLE_SIDES_STANDARD,
   ACGI_MODEL_SPACE_BACKGROUND,
-  ACGI_PAPER_SPACE_BACKGROUND,
-  log
+  ACGI_PAPER_SPACE_BACKGROUND
 } from '@mlightcad/data-model'
-import type { UploadFile, UploadProps } from 'element-plus'
-import { ElIcon, ElUpload } from 'element-plus'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { ElIcon } from 'element-plus'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 interface Props {
@@ -369,10 +340,84 @@ interface Props {
     paperSpaceBackground: number,
     disableExport: boolean
   ) => void
+  onUrlSelect?: (
+    url: string,
+    mode: AcEdOpenMode,
+    useMainThreadDraw: boolean,
+    drawNoPlotLayers: boolean,
+    progressiveRendering: boolean,
+    openViewMode: AcApOpenViewMode | undefined,
+    circleSides: number,
+    paperSpaceBackground: number,
+    disableExport: boolean
+  ) => void
+  onDataSourceAction?: (
+    item: AcApDataSourceMenuItem,
+    mode: AcEdOpenMode,
+    useMainThreadDraw: boolean,
+    drawNoPlotLayers: boolean,
+    progressiveRendering: boolean,
+    openViewMode: AcApOpenViewMode | undefined,
+    circleSides: number,
+    paperSpaceBackground: number,
+    disableExport: boolean
+  ) => void
+  /**
+   * Cloud {@link AcApDataSource} instances for the landing open panel
+   * (before DocManager exists). Provider-agnostic.
+   */
+  getCloudSources?: () => AcApDataSource[]
+  /** Bump when landing cloud source auth/registry changes. */
+  cloudSourcesEpoch?: number
 }
 
 const props = defineProps<Props>()
 const { t } = useI18n({ useScope: 'global' })
+
+const fileOpenHost = ref<HTMLElement | null>(null)
+let fileOpenPanel: AcUiFileOpenPanel | null = null
+
+const emitOpenOptions = () =>
+  [
+    selectedMode.value,
+    useMainThreadDraw.value,
+    drawNoPlotLayers.value,
+    progressiveRendering.value,
+    resolveOpenViewMode(),
+    selectedCircleSides.value,
+    paperSpaceBackground.value,
+    disableExport.value
+  ] as const
+
+const mountFileOpenPanel = () => {
+  if (!fileOpenHost.value || fileOpenPanel) return
+  fileOpenPanel = new AcUiFileOpenPanel({
+    host: fileOpenHost.value,
+    theme: 'light',
+    showNewDrawing: true,
+    getSources: () => props.getCloudSources?.() ?? [],
+    onLocalFile: file => {
+      if (!isValidFile(file)) return
+      props.onFileSelect(file, ...emitOpenOptions())
+    },
+    onUrl: url => {
+      props.onUrlSelect?.(url, ...emitOpenOptions())
+    },
+    onDataSourceAction: item => {
+      props.onDataSourceAction?.(item, ...emitOpenOptions())
+    },
+    onNewDrawing: () => {
+      props.onNewDrawing?.(...emitOpenOptions())
+    }
+  })
+}
+
+watch(
+  () => props.cloudSourcesEpoch,
+  () => {
+    fileOpenPanel?.refreshSourceButtons()
+  }
+)
 
 type OpenViewModeChoice = 'auto' | AcApOpenViewMode
 
@@ -419,11 +464,14 @@ onMounted(() => {
   mobileMediaQuery = window.matchMedia(MOBILE_MAX_WIDTH)
   syncMobileLayout()
   mobileMediaQuery.addEventListener('change', syncMobileLayout)
+  mountFileOpenPanel()
 })
 
 onUnmounted(() => {
   mobileMediaQuery?.removeEventListener('change', syncMobileLayout)
   mobileMediaQuery = null
+  fileOpenPanel?.dispose()
+  fileOpenPanel = null
 })
 
 const openViewModes = computed(() => [
@@ -482,45 +530,6 @@ const accessModes = computed(() => [
     description: t('example.fileUpload.writeHint')
   }
 ] as const)
-
-const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
-  if (uploadFile.raw) {
-    if (isValidFile(uploadFile.raw)) {
-      props.onFileSelect(
-        uploadFile.raw,
-        selectedMode.value,
-        useMainThreadDraw.value,
-        drawNoPlotLayers.value,
-        progressiveRendering.value,
-        resolveOpenViewMode(),
-        selectedCircleSides.value,
-        paperSpaceBackground.value,
-        disableExport.value
-      )
-    }
-  }
-}
-
-const handleNewDrawing = () => {
-  props.onNewDrawing?.(
-    selectedMode.value,
-    useMainThreadDraw.value,
-    drawNoPlotLayers.value,
-    progressiveRendering.value,
-    resolveOpenViewMode(),
-    selectedCircleSides.value,
-    paperSpaceBackground.value,
-    disableExport.value
-  )
-}
-
-const beforeUpload: UploadProps['beforeUpload'] = (rawFile: File) => {
-  if (!isValidFile(rawFile)) {
-    log.warn(t('example.fileUpload.invalidFileType'))
-    return false
-  }
-  return true
-}
 
 const isValidFile = (file: File): boolean => {
   const validExtensions = ['.dwg', '.dxf']
@@ -618,127 +627,10 @@ const isValidFile = (file: File): boolean => {
   gap: 0;
 }
 
-.new-drawing-button {
-  display: block;
+.file-open-host {
   width: 100%;
-  padding: 10px 14px;
-  border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #5b6fd6 100%);
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  box-shadow: 0 6px 14px rgba(102, 126, 234, 0.26);
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.2s ease,
-    filter 0.2s ease;
-}
-
-.new-drawing-button:hover {
-  filter: brightness(1.03);
-  box-shadow: 0 8px 18px rgba(102, 126, 234, 0.32);
-}
-
-.new-drawing-button:active {
-  transform: translateY(1px);
-}
-
-.upload-divider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 10px 0;
-  font-size: 11px;
-  font-weight: 600;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.upload-divider::before,
-.upload-divider::after {
-  content: '';
   flex: 1;
-  height: 1px;
-  background: #e2e8f0;
-}
-
-.upload-dropzone {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  width: 100%;
-  min-height: 120px;
-  box-sizing: border-box;
-}
-
-.upload-dropzone :deep(.el-upload) {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-}
-
-.upload-dropzone :deep(.el-upload-dragger) {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  box-sizing: border-box;
-  padding: 14px 12px;
-  border: 1.5px dashed #c7d2fe;
-  border-radius: 10px;
-  background: #f8faff;
-  transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.upload-dropzone :deep(.el-upload-dragger:hover) {
-  border-color: #667eea;
-  background: #f1f5ff;
-  box-shadow: inset 0 0 0 1px rgba(102, 126, 234, 0.08);
-}
-
-.dropzone-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.dropzone-title {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.dropzone-link {
-  color: #667eea;
-  font-weight: 600;
-}
-
-.format-tags {
-  display: flex;
-  gap: 6px;
-}
-
-.format-tag {
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: #e8edff;
-  color: #4f5fd0;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  min-height: 0;
 }
 
 .settings-section {

@@ -3,8 +3,12 @@
     <!-- Upload screen when no drawing is open -->
     <div v-if="!showViewer" class="upload-screen">
       <FileUpload
+        :get-cloud-sources="getLandingCloudSources"
+        :cloud-sources-epoch="landingSourcesEpoch"
         @file-select="handleFileSelect"
         @new-drawing="handleNewDrawing"
+        @url-select="handleUrlSelect"
+        @data-source-action="handleDataSourceAction"
       />
     </div>
 
@@ -12,6 +16,7 @@
     <div v-else>
       <MlCadViewer
         locale="default"
+        :url="store.selectedUrl ?? undefined"
         :local-file="store.selectedFile ?? undefined"
         :mode="selectedMode"
         :use-main-thread-draw="useMainThreadDraw"
@@ -30,20 +35,33 @@
 
 <script setup lang="ts">
 import {
+  type AcApDataSource,
+  AcApDataSourceManager,
+  type AcApDataSourceMenuItem,
   AcApDocManager,
+  acapInvokeDataSourceMenuAction,
   AcApOpenViewMode,
+  acapRunDataSourceMenuAction,
   AcApSettingManager,
   AcEdCommandStack,
   AcEdOpenMode,
   layoutBackgroundColorFromRgb
 } from '@mlightcad/cad-simple-viewer'
 import { MlCadViewer } from '@mlightcad/cad-viewer'
-import { ACDB_DRAW_CIRCLE_SIDES_DRAFT, ACGI_PAPER_SPACE_BACKGROUND, log } from '@mlightcad/data-model'
+import {
+  ACDB_DRAW_CIRCLE_SIDES_DRAFT,
+  ACGI_PAPER_SPACE_BACKGROUND,
+  log
+} from '@mlightcad/data-model'
 import { computed, nextTick, ref } from 'vue'
 
 import { AcApQuitCmd } from './commands'
 import FileUpload from './components/FileUpload.vue'
 import { initializeLocale } from './locale'
+import {
+  getOneDriveEnvConfig,
+  registerOneDriveFromEnv
+} from './onedriveEnv'
 import { store } from './store'
 
 // Isolate this example's prefs from cad-simple-viewer-example on localhost.
@@ -52,6 +70,60 @@ AcApSettingManager.configure({
 })
 
 initializeLocale()
+
+const oneDriveEnv = getOneDriveEnvConfig()
+
+/**
+ * Landing-page registry used before DocManager exists.
+ * Cloud plugins register the same {@link AcApDataSource} types here so the
+ * open panel needs no provider-specific UI (OneDrive today, Google Drive later).
+ */
+const landingDataSources = new AcApDataSourceManager()
+const landingSourcesEpoch = ref(0)
+const bumpLandingSources = () => {
+  landingSourcesEpoch.value += 1
+}
+
+landingDataSources.on('changed', bumpLandingSources)
+landingDataSources.on('auth-changed', bumpLandingSources)
+
+const getLandingCloudSources = (): AcApDataSource[] =>
+  landingDataSources.list()
+
+const setupLandingCloudSources = async () => {
+  if (!oneDriveEnv) return
+  try {
+    const { AcApOneDriveDataSource } = await import(
+      '@mlightcad/cad-onedrive-plugin'
+    )
+    if (!landingDataSources.get('onedrive')) {
+      const source = new AcApOneDriveDataSource(oneDriveEnv, landingDataSources)
+      landingDataSources.register(source)
+      await source.restoreSession()
+    }
+  } catch (error) {
+    log.warn('Landing OneDrive data source unavailable:', error)
+  }
+}
+
+void setupLandingCloudSources()
+
+let oneDriveRegistered = false
+
+const registerOneDriveIfConfigured = async () => {
+  if (oneDriveRegistered || !oneDriveEnv) return
+  try {
+    const registered = await registerOneDriveFromEnv(
+      AcApDocManager.instance.pluginManager
+    )
+    oneDriveRegistered = registered
+    if (registered) {
+      log.info('[example] OneDrive data source registered')
+    }
+  } catch (error) {
+    log.warn('OneDrive plugin not available:', error)
+  }
+}
 
 const initialize = () => {
   if (import.meta.env.DEV) {
@@ -74,21 +146,13 @@ const initialize = () => {
   )
 }
 
-// Host layout overrides (session only — does not write localStorage):
-// AcApSettingManager.instance.apply(
-//   {
-//     isShowCommandLine: false,
-//     isShowToolbar: false,
-//     isShowStats: false,
-//     isShowCoordinate: false
-//   },
-//   { persist: false }
-// )
-
 const BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
 
 const showViewer = computed(
-  () => store.selectedFile != null || store.isNewDrawing
+  () =>
+    store.selectedFile != null ||
+    store.selectedUrl != null ||
+    store.isNewDrawing
 )
 
 const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
@@ -118,9 +182,23 @@ const createNewDrawing = async () => {
 
 const onViewerCreate = async () => {
   initialize()
+  const landingOneDrive = landingDataSources.get('onedrive')
+  if (landingOneDrive) {
+    // Reuse the landing MSAL client. A second PublicClientApplication for the
+    // same client id splits the cache and can block interactive login.
+    AcApDocManager.instance.dataSourceManager.register(landingOneDrive)
+    oneDriveRegistered = true
+  }
+  await registerOneDriveIfConfigured()
   if (store.isNewDrawing) {
     await nextTick()
     await createNewDrawing()
+  }
+  const pending = store.pendingDataSourceAction
+  if (pending) {
+    store.pendingDataSourceAction = null
+    await nextTick()
+    void acapRunDataSourceMenuAction(pending)
   }
 }
 
@@ -144,7 +222,6 @@ const applyOpenOptions = (
   disableExport.value = exportDisabled
 }
 
-// Handle file selection from upload component
 const handleFileSelect = (
   file: File,
   mode: AcEdOpenMode,
@@ -157,7 +234,101 @@ const handleFileSelect = (
   exportDisabled: boolean
 ) => {
   store.isNewDrawing = false
+  store.selectedUrl = null
   store.selectedFile = file
+  applyOpenOptions(
+    mode,
+    mainThreadDraw,
+    showNoPlotLayers,
+    enableProgressiveRendering,
+    viewMode,
+    sides,
+    paperBg,
+    exportDisabled
+  )
+}
+
+const handleUrlSelect = (
+  url: string,
+  mode: AcEdOpenMode,
+  mainThreadDraw: boolean,
+  showNoPlotLayers: boolean,
+  enableProgressiveRendering: boolean,
+  viewMode: AcApOpenViewMode | undefined,
+  sides: number,
+  paperBg: number,
+  exportDisabled: boolean
+) => {
+  store.isNewDrawing = false
+  store.selectedFile = null
+  store.selectedUrl = url
+  applyOpenOptions(
+    mode,
+    mainThreadDraw,
+    showNoPlotLayers,
+    enableProgressiveRendering,
+    viewMode,
+    sides,
+    paperBg,
+    exportDisabled
+  )
+}
+
+const handleDataSourceAction = (
+  item: AcApDataSourceMenuItem,
+  mode: AcEdOpenMode,
+  mainThreadDraw: boolean,
+  showNoPlotLayers: boolean,
+  enableProgressiveRendering: boolean,
+  viewMode: AcApOpenViewMode | undefined,
+  sides: number,
+  paperBg: number,
+  exportDisabled: boolean
+) => {
+  // Landing page: invoke the AcApDataSource protocol (any cloud plugin).
+  const landingSource = landingDataSources.get(item.sourceId)
+  if (landingSource) {
+    void acapInvokeDataSourceMenuAction(landingSource, item)
+      .then(file => {
+        if (item.action !== 'pick' || !file) return
+        if (file.content) {
+          handleFileSelect(
+            new File([file.content], file.name),
+            mode,
+            mainThreadDraw,
+            showNoPlotLayers,
+            enableProgressiveRendering,
+            viewMode,
+            sides,
+            paperBg,
+            exportDisabled
+          )
+          return
+        }
+        if (file.url) {
+          handleUrlSelect(
+            file.url,
+            mode,
+            mainThreadDraw,
+            showNoPlotLayers,
+            enableProgressiveRendering,
+            viewMode,
+            sides,
+            paperBg,
+            exportDisabled
+          )
+        }
+      })
+      .catch(error => {
+        log.warn('Landing data-source action failed:', error)
+      })
+    return
+  }
+
+  store.pendingDataSourceAction = item
+  store.selectedFile = null
+  store.selectedUrl = null
+  store.isNewDrawing = true
   applyOpenOptions(
     mode,
     mainThreadDraw,
@@ -181,6 +352,7 @@ const handleNewDrawing = (
   exportDisabled: boolean
 ) => {
   store.selectedFile = null
+  store.selectedUrl = null
   store.isNewDrawing = true
   applyOpenOptions(
     mode,

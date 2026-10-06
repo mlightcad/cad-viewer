@@ -202,6 +202,10 @@ export const ICON_MEASUREMENT_PANEL = ICON_MARKUP_PANEL
 export const ICON_MARKUP_IMPORT =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" d="M4.5 2h6.4L15.5 6.6V16.5A1.5 1.5 0 0 1 14 18H4.5A1.5 1.5 0 0 1 3 16.5V3.5A1.5 1.5 0 0 1 4.5 2z"/><path stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" d="M10.9 2v4.6h4.6"/><path stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M10 5.8v6M7.2 9.6 10 12.5l2.8-2.9"/></svg>'
 
+/** Open drawing file toolbar icon (folder + arrow). */
+export const ICON_OPEN =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" d="M2.5 5.5V15a1.5 1.5 0 0 0 1.5 1.5h12A1.5 1.5 0 0 0 17.5 15V7.5A1.5 1.5 0 0 0 16 6H9.2L7.5 4H4A1.5 1.5 0 0 0 2.5 5.5z"/><path stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M10 9.2v4.8M7.6 11.6 10 14l2.4-2.4"/></svg>'
+
 /**
  * Export icon (mirrored document + up arrow).
  * Inspired by Noun Project “export file” 8131193 (Web Buttons by Elin Erkani).

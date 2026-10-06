@@ -124,6 +124,11 @@ import {
 } from './AcApWebworkerReadiness'
 import { AcApXrefManager } from './AcApXrefManager'
 import {
+  AcApDataSourceManager,
+  AcApLocalDataSource,
+  AcApUrlDataSource
+} from './dataSource'
+import {
   acapDisposeNotificationService,
   acapInstallNotificationService,
   type AcUiNotificationBellPlacement
@@ -462,6 +467,8 @@ export class AcApDocManager {
   private _commandManager: AcEdCommandStack
   /** Plugin manager */
   private _pluginManager: AcApPluginManager
+  /** Data source manager (local, URL, cloud plugins) */
+  private _dataSourceManager: AcApDataSourceManager
   /**
    * Alias overrides provided by caller options.
    *
@@ -601,6 +608,9 @@ export class AcApDocManager {
       this.context,
       this._commandManager
     )
+    this._dataSourceManager = new AcApDataSourceManager()
+    this._dataSourceManager.register(new AcApLocalDataSource())
+    this._dataSourceManager.register(new AcApUrlDataSource())
     const busyHost = options.busyIndicatorHost ?? view.container
     this._busyIndicatorHost = busyHost
     this._openFileProgress = new AcApOpenFileProgressController(busyHost)
@@ -1077,6 +1087,15 @@ export class AcApDocManager {
    */
   get pluginManager() {
     return this._pluginManager
+  }
+
+  /**
+   * Gets data source manager for opening drawings from local, URL, or cloud.
+   *
+   * @returns The data source manager
+   */
+  get dataSourceManager() {
+    return this._dataSourceManager
   }
 
   /**

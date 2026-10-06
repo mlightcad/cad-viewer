@@ -3,6 +3,7 @@
  */
 export const ar: Record<string, string> = {
   'toolbar.select': 'تحديد',
+  'toolbar.open': 'فتح',
   'toolbar.pan': 'تحريك العرض',
   'toolbar.zoom': 'تكبير',
   'toolbar.zoomExtent': 'ملاءمة',

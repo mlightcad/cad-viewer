@@ -1,9 +1,13 @@
 import {
+  acapBuildDataSourceMenu,
   AcApDocManager,
+  acapIsSingleLocalOpen,
   type AcApLocale,
+  acapRunDataSourceMenuAction,
   AcApSettingManager,
   AcEdOpenMode,
   type AcEdUiTheme,
+  acuiCopyDynamicToolbarChildren,
   isMarkupVisible,
   isMeasurementVisible
 } from '@mlightcad/cad-simple-viewer'
@@ -35,6 +39,7 @@ import {
   ICON_MEASURE_DISTANCE,
   ICON_MEASURE_POINT,
   ICON_MEASUREMENT_PANEL,
+  ICON_OPEN,
   ICON_PAN,
   ICON_PLACEMENT_BOTTOM,
   ICON_PLACEMENT_LEFT,
@@ -519,6 +524,54 @@ export function acuiCreateSettingsToolbarItem(
 }
 
 /**
+ * Builds an Open toolbar item whose children mirror registered data sources.
+ *
+ * When only the local source is registered, clicking Open runs the local
+ * picker directly. Otherwise a submenu lists Local / URL / cloud sources
+ * (Sign in vs Open vs Sign out for auth sources).
+ */
+function acuiCreateOpenToolbarItem(): AcUiToolbarItem {
+  const item: AcUiToolbarItem = {
+    id: 'open',
+    label: 'toolbar.open',
+    icon: ICON_OPEN,
+    requiresDocument: false,
+    childrenUi: 'menu',
+    action: () => {
+      try {
+        const sources = AcApDocManager.instance.dataSourceManager.list()
+        if (acapIsSingleLocalOpen(sources)) {
+          const menu = acapBuildDataSourceMenu(sources)
+          const local = menu[0]
+          if (local) void acapRunDataSourceMenuAction(local)
+        }
+      } catch {
+        // DocManager not ready
+      }
+    }
+  }
+
+  return acuiCopyDynamicToolbarChildren(item, () => {
+    try {
+      const sources = AcApDocManager.instance.dataSourceManager.list()
+      if (acapIsSingleLocalOpen(sources)) {
+        return []
+      }
+      return acapBuildDataSourceMenu(sources).map(menuItem => ({
+        id: `ds-${menuItem.id}`,
+        label: menuItem.label,
+        requiresDocument: false,
+        action: () => {
+          void acapRunDataSourceMenuAction(menuItem)
+        }
+      }))
+    } catch {
+      return []
+    }
+  })
+}
+
+/**
  * Builds the built-in desktop/pad toolbar item list.
  *
  * @param context - Optional callbacks for theme, locale, and placement items.
@@ -528,6 +581,7 @@ export function acuiCreateDefaultToolbarItems(
   context?: AcUiDefaultToolbarContext
 ): AcUiToolbarItem[] {
   const items: AcUiToolbarItem[] = [
+    acuiCreateOpenToolbarItem(),
     {
       id: 'select',
       label: 'toolbar.select',

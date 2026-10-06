@@ -175,5 +175,29 @@ export default {
     snoozeToday: 'لا تذكرني اليوم',
     hideForever: 'لا تذكرني مرة أخرى',
     ok: 'فهمت'
+  },
+  dataSource: {
+    open: 'فتح',
+    local: 'ملف محلي',
+    url: 'من عنوان URL',
+    openFrom: 'فتح من {name}',
+    signInTo: 'تسجيل الدخول إلى {name}',
+    signOutOf: 'تسجيل الخروج من {name}',
+    signOutOfAccount: 'تسجيل الخروج من {name} ({account})',
+    urlDialogTitle: 'فتح من عنوان URL',
+    urlDialogHint: 'أدخل عنوان URL لملف .dwg أو .dxf.',
+    urlPlaceholder: 'https://example.com/drawing.dwg',
+    cancel: 'إلغاء',
+    onedrive: 'OneDrive',
+    or: 'أو',
+    dropFile: 'أسقط ملفًا هنا أو',
+    browse: 'تصفح',
+    dropOrBrowse: 'أسقط ملف DWG أو DXF هنا، أو تصفح',
+    newDrawing: 'رسم جديد',
+    source: 'المصدر',
+    unavailable: 'هذا المصدر غير متاح حاليًا.',
+    selectFile: 'اختيار ملف',
+    signInRequired: 'سجّل الدخول أولاً لاختيار ملف.',
+    downloading: 'جارٍ تنزيل الملف ...'
   }
 }

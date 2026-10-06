@@ -214,6 +214,19 @@ importers:
         specifier: ^0.172.0
         version: 0.172.0
 
+  packages/cad-onedrive-plugin:
+    dependencies:
+      '@azure/msal-browser':
+        specifier: ^4.12.0
+        version: 4.12.0
+    devDependencies:
+      '@mlightcad/cad-simple-viewer':
+        specifier: workspace:*
+        version: link:../cad-simple-viewer
+      '@mlightcad/data-model':
+        specifier: ^1.15.1
+        version: 1.15.1
+
   packages/cad-pdf-plugin:
     devDependencies:
       '@mlightcad/cad-simple-viewer':
@@ -343,6 +356,9 @@ importers:
       '@mlightcad/cad-html-plugin':
         specifier: workspace:*
         version: link:../cad-html-plugin
+      '@mlightcad/cad-onedrive-plugin':
+        specifier: workspace:*
+        version: link:../cad-onedrive-plugin
       '@mlightcad/cad-pdf-plugin':
         specifier: workspace:*
         version: link:../cad-pdf-plugin
@@ -413,6 +429,9 @@ importers:
       '@mlightcad/cad-html-plugin':
         specifier: workspace:*
         version: link:../cad-html-plugin
+      '@mlightcad/cad-onedrive-plugin':
+        specifier: workspace:*
+        version: link:../cad-onedrive-plugin
       '@mlightcad/cad-pdf-plugin':
         specifier: workspace:*
         version: link:../cad-pdf-plugin
@@ -491,6 +510,9 @@ importers:
       '@mlightcad/cad-html-plugin':
         specifier: workspace:*
         version: link:../cad-html-plugin
+      '@mlightcad/cad-onedrive-plugin':
+        specifier: workspace:*
+        version: link:../cad-onedrive-plugin
       '@mlightcad/cad-pdf-plugin':
         specifier: workspace:*
         version: link:../cad-pdf-plugin
@@ -806,6 +828,14 @@ packages:
   '@ast-grep/napi@0.36.3':
     resolution: {integrity: sha512-ExypohE8L7FvKBHxu7UpwcV9XVfyS+AqNZKyKIfxYwJyD9l7Gw6pmMYd7J2uopJsPEIUf44/emEFds6nFUx/dw==}
     engines: {node: '>= 10'}
+
+  '@azure/msal-browser@4.12.0':
+    resolution: {integrity: sha512-WD1lmVWchg7wn1mI7Tr4v7QPyTwK+8Nuyje3jRpOFENLRLEBsdK8VVdTw3C+TypZmYn4cOAdj3zREnuFXgvfIA==}
+    engines: {node: '>=0.8.0'}
+
+  '@azure/msal-common@15.6.0':
+    resolution: {integrity: sha512-EotmBz42apYGjqiIV9rDUdptaMptpTn4TdGf3JfjLvFvinSe9BJ6ywU92K9ky+t/b0ghbeTSe9RfqlgLh8f2jA==}
+    engines: {node: '>=0.8.0'}
 
   '@babel/code-frame@7.29.0':
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
@@ -6405,6 +6435,12 @@ snapshots:
       '@ast-grep/napi-win32-arm64-msvc': 0.36.3
       '@ast-grep/napi-win32-ia32-msvc': 0.36.3
       '@ast-grep/napi-win32-x64-msvc': 0.36.3
+
+  '@azure/msal-browser@4.12.0':
+    dependencies:
+      '@azure/msal-common': 15.6.0
+
+  '@azure/msal-common@15.6.0': {}
 
   '@babel/code-frame@7.29.0':
     dependencies:

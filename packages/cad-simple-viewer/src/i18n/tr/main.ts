@@ -176,5 +176,29 @@ export default {
     snoozeToday: 'Bugün tekrar hatırlatma',
     hideForever: 'Bir daha hatırlatma',
     ok: 'Anladım'
+  },
+  dataSource: {
+    open: 'Aç',
+    local: 'Yerel dosya',
+    url: 'URL\'den',
+    openFrom: '{name} konumundan aç',
+    signInTo: '{name} oturumu aç',
+    signOutOf: '{name} oturumunu kapat',
+    signOutOfAccount: '{name} oturumunu kapat ({account})',
+    urlDialogTitle: 'URL\'den aç',
+    urlDialogHint: '.dwg veya .dxf dosyasının URL\'sini girin.',
+    urlPlaceholder: 'https://example.com/drawing.dwg',
+    cancel: 'İptal',
+    onedrive: 'OneDrive',
+    or: 'veya',
+    dropFile: 'Dosyayı buraya bırakın veya',
+    browse: 'göz atın',
+    dropOrBrowse: 'DWG veya DXF dosyasını buraya bırakın veya göz atın',
+    newDrawing: 'Yeni çizim',
+    source: 'Kaynak',
+    unavailable: 'Bu kaynak henüz kullanılamıyor.',
+    selectFile: 'Dosya seç',
+    signInRequired: 'Dosya seçmek için önce oturum açın.',
+    downloading: 'Dosya indiriliyor ...'
   }
 }
