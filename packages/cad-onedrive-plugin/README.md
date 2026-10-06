@@ -26,7 +26,7 @@ Peer dependencies: `@mlightcad/cad-simple-viewer`, `@mlightcad/data-model`.
 ## Azure app setup
 
 1. Register a **Single-page application** in Microsoft Entra ID.
-2. Add a redirect URI matching your app origin (e.g. `http://localhost:5173/`).
+2. Add a redirect URI matching the page that hosts the viewer (e.g. `http://localhost:5173/` locally, or `https://mlightcad.com/cad-viewer/cad-viewer/` on GitHub Pages). Do not use only the site origin when the app is served from a subpath.
 3. Grant delegated Graph permissions: `User.Read`, `Files.Read.All`.
 4. For personal OneDrive picker tokens, consent also covers `OneDrive.ReadOnly`.
 

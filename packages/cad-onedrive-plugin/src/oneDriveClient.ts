@@ -66,7 +66,11 @@ export interface OneDriveClientOptions {
   clientId: string
   /** Tenant id or `common` / `organizations` / `consumers`. Defaults to `common`. */
   tenantId?: string
-  /** MSAL redirect URI. Defaults to the current page origin. */
+  /**
+   * MSAL redirect URI. Defaults to the current page URL (origin + path, no
+   * query/hash) so GitHub Pages subpaths such as `/cad-viewer/cad-viewer/`
+   * match the Azure SPA registration.
+   */
   redirectUri?: string
 }
 
@@ -75,9 +79,28 @@ const isPlaceholder = (value: string) =>
   value.includes('your_client_id_here') ||
   value.includes('your_msal_client_id_here')
 
+/**
+ * Builds the default MSAL redirect URI from a page href.
+ * Query and hash are stripped. `index.html` is normalized to the directory URL.
+ */
+export function resolveDefaultRedirectUri(href: string): string {
+  const url = new URL(href)
+  url.search = ''
+  url.hash = ''
+  if (url.pathname.endsWith('/index.html')) {
+    url.pathname = url.pathname.slice(0, -'index.html'.length)
+  } else if (!url.pathname.endsWith('/')) {
+    const last = url.pathname.split('/').pop() ?? ''
+    if (!last.includes('.')) {
+      url.pathname = `${url.pathname}/`
+    }
+  }
+  return url.href
+}
+
 function defaultRedirectUri(): string {
   if (typeof window === 'undefined') return ''
-  return new URL('/', window.location.origin).href
+  return resolveDefaultRedirectUri(window.location.href)
 }
 
 function isCadFileName(name: string): boolean {

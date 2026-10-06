@@ -1,8 +1,40 @@
 import {
   isAllowedMicrosoftResourceUrl,
   isAllowedPickerMessageOrigin,
+  resolveDefaultRedirectUri,
   resolveOneDrivePickerScopes
 } from '../src/oneDriveClient'
+
+describe('resolveDefaultRedirectUri', () => {
+  it('keeps origin plus path for GitHub Pages subpath deployments', () => {
+    expect(
+      resolveDefaultRedirectUri('https://mlightcad.com/cad-viewer/cad-viewer/')
+    ).toBe('https://mlightcad.com/cad-viewer/cad-viewer/')
+  })
+
+  it('adds a trailing slash for directory-like paths', () => {
+    expect(
+      resolveDefaultRedirectUri('https://mlightcad.com/cad-viewer/cad-viewer')
+    ).toBe('https://mlightcad.com/cad-viewer/cad-viewer/')
+  })
+
+  it('strips query, hash, and index.html', () => {
+    expect(
+      resolveDefaultRedirectUri(
+        'https://mlightcad.com/cad-viewer/cad-viewer/index.html?foo=1#bar'
+      )
+    ).toBe('https://mlightcad.com/cad-viewer/cad-viewer/')
+  })
+
+  it('uses origin with slash for the site root', () => {
+    expect(resolveDefaultRedirectUri('https://mlightcad.com/')).toBe(
+      'https://mlightcad.com/'
+    )
+    expect(resolveDefaultRedirectUri('http://localhost:5173/')).toBe(
+      'http://localhost:5173/'
+    )
+  })
+})
 
 describe('resolveOneDrivePickerScopes', () => {
   it('uses Graph scopes for work-account Graph authenticate commands', () => {
