@@ -50,6 +50,7 @@ export class AcTrHtmlCanvasOverlay {
 
     const el = document.createElement('canvas')
     el.className = AC_TR_HTML_CANVAS_CLASS
+    // Below CSS2D capsules (viewer sets CSS2D to ML_UI_Z_CANVAS_HTML_OVERLAY).
     el.style.cssText = 'position:absolute;pointer-events:none;z-index:1;'
     options.container.appendChild(el)
     this.canvas = el

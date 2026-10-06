@@ -6,7 +6,6 @@ import {
   acdbHostApplicationServices,
   AcDbOpenDatabaseOptions,
   AcDbSysVarManager,
-  AcGeBox2d,
   log
 } from '@mlightcad/data-model'
 import { FontManager } from '@mlightcad/mtext-renderer'
@@ -18,10 +17,10 @@ import {
   acapBindMarkupSession,
   AcApCacheFontCmd,
   AcApCircleCmd,
-  AcApClearMarkupsCmd,
-  AcApClearMeasurementsCmd,
   AcApCloseCmd,
+  AcApConvertToBmpCmd,
   AcApConvertToDxfCmd,
+  AcApConvertToJpgCmd,
   AcApConvertToPngCmd,
   AcApCopyCmd,
   AcApDimLinearCmd,
@@ -48,26 +47,6 @@ import {
   AcApLayoffCmd,
   AcApLineCmd,
   AcApLogCmd,
-  AcApMarkupArrowCmd,
-  AcApMarkupCalloutCmd,
-  AcApMarkupCircleCmd,
-  AcApMarkupCloudCmd,
-  AcApMarkupExportCmd,
-  AcApMarkupHighlightCmd,
-  AcApMarkupImportCmd,
-  AcApMarkupLineCmd,
-  AcApMarkupRectCmd,
-  AcApMarkupStampCmd,
-  AcApMarkupTextCmd,
-  AcApMarkupVisibilityCmd,
-  AcApMeasureAngleCmd,
-  AcApMeasureArcCmd,
-  AcApMeasureAreaCmd,
-  AcApMeasureDistanceCmd,
-  AcApMeasurementExportCmd,
-  AcApMeasurementImportCmd,
-  AcApMeasurementVisibilityCmd,
-  AcApMeasurePointCmd,
   AcApMLineCmd,
   AcApMoveCmd,
   AcApMTextCmd,
@@ -79,6 +58,7 @@ import {
   AcApPolylineCmd,
   AcApQNewCmd,
   AcApRayCmd,
+  AcApReadingModeCmd,
   AcApRectCmd,
   AcApRedoCmd,
   AcApRegenCmd,
@@ -98,13 +78,18 @@ import {
   resetMeasurementSession
 } from '../command'
 import {
+  acapGetDrawStyleSessionAccessory
+} from '../command/AcApDrawStyleSession'
+import { registerMarkupCommands } from '../command/markup/AcApRegisterMarkupCommands'
+import { registerMeasureCommands } from '../command/measure/AcApRegisterMeasureCommands'
+import {
   AcEdCalculateSizeCallback,
   AcEdCommand,
   AcEdCommandStack,
-  AcEdOpenMode
+  AcEdOpenMode,
+  eventBus
 } from '../editor'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
-import { AcApDrawStyleToolbar } from '../ui/AcApDrawStyleToolbar'
 import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser'
 import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
 import { AcTrView2d } from '../view'
@@ -114,8 +99,16 @@ import { AcApBusyIndicator } from './AcApBusyIndicator'
 import { acapBindCommandServices } from './AcApCommandServices'
 import { AcApContext } from './AcApContext'
 import { AcApDocSession } from './AcApDocSession'
+import {
+  ACAP_DEFAULT_DOCS_BASE_URL,
+  acapSetDocsBaseUrl
+} from './AcApDocsUrl'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
+import {
+  AcApOpenDatabaseOptions,
+  AcApOpenViewMode
+} from './AcApOpenDatabaseOptions'
 import {
   acapInstallOpenFileDialog,
   type AcApOpenDocumentDefaultsResolver,
@@ -131,9 +124,15 @@ import {
 } from './AcApWebworkerReadiness'
 import { AcApXrefManager } from './AcApXrefManager'
 import {
-  AcApOpenDatabaseOptions,
-  AcApOpenViewMode
-} from './AcDbOpenDatabaseOptions'
+  AcApDataSourceManager,
+  AcApLocalDataSource,
+  AcApUrlDataSource
+} from './dataSource'
+import {
+  acapDisposeNotificationService,
+  acapInstallNotificationService,
+  type AcUiNotificationBellPlacement
+} from './notification'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
 /** Default ISO drawing template loaded by {@link AcApDocManager.newDocument}. */
@@ -186,7 +185,8 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   XLINE: ['XL'],
   ZOOM: ['Z'],
   UNDO: ['U'],
-  REDO: ['REDO']
+  REDO: ['REDO'],
+  READINGMODE: ['RM']
 }
 
 /**
@@ -340,6 +340,20 @@ export interface AcApDocManagerOptions {
   }
 
   /**
+   * Absolute root URL for localized user-guide pages (trailing slash optional).
+   * Used by {@link acapDocsUrl} for in-app help links (e.g. mobile magnifier).
+   * Defaults to {@link ACAP_DEFAULT_DOCS_BASE_URL} when omitted.
+   *
+   * @example
+   * ```typescript
+   * AcApDocManager.createInstance({
+   *   docsBaseUrl: 'https://example.com/my-product/docs/'
+   * })
+   * ```
+   */
+  docsBaseUrl?: string
+
+  /**
    * Optional command alias overrides.
    *
    * Key is command global name, value is one alias or alias list.
@@ -362,11 +376,51 @@ export interface AcApDocManagerOptions {
   builtinOpenFileDialog?: boolean
 
   /**
+   * When true, drawing export commands are not registered (`cdxf`, `pngout`,
+   * `jpgout`, `bmpout`, and host UI / lazy plugins for HTML, PDF, SVG export).
+   * Defaults to false (export remains enabled).
+   *
+   * Useful for deployments that must hide export entry points. This is a
+   * product/UX gate, not a DRM boundary: drawing data still exists in memory.
+   */
+  disableExport?: boolean
+
+  /**
    * Default options for files opened through the built-in OPEN command dialog.
    *
    * Can be updated later via {@link AcApDocManager.setOpenDocumentDefaults}.
    */
   openDocumentDefaults?: AcApOpenDocumentDefaultsResolver
+
+  /**
+   * Built-in notification center (font missing, unsupported entities, etc.).
+   *
+   * Notifications are scoped per document session (MDI). The default DOM UI is
+   * positioned relative to the canvas host, not the browser window.
+   *
+   * - omitted / `true`: install event bridge + default DOM bell UI
+   * - `false`: do not install bridge or UI (host handles events itself)
+   * - `{ showDefaultUi: false }`: bridge only — host should call
+   *   {@link acapSetNotificationCenter} to supply UI (as cad-viewer does)
+   */
+  notificationCenter?:
+    | boolean
+    | {
+        /**
+         * Host for the default bell/panel. Defaults to the active view canvas
+         * container (`curView.container`).
+         */
+        host?: HTMLElement
+        /** When false, skip the built-in DOM UI. Default true. */
+        showDefaultUi?: boolean
+        /**
+         * Corner for the built-in notification bell.
+         *
+         * When omitted: phone `top-right`, pad / desktop `bottom-right`.
+         * Change later with {@link acapSetNotificationUiPlacement}.
+         */
+        placement?: AcUiNotificationBellPlacement
+      }
 }
 
 /**
@@ -413,8 +467,8 @@ export class AcApDocManager {
   private _commandManager: AcEdCommandStack
   /** Plugin manager */
   private _pluginManager: AcApPluginManager
-  /** Overlay for measurement / markup draw color, lineweight, and font size */
-  private readonly _drawStyleToolbar: AcApDrawStyleToolbar
+  /** Data source manager (local, URL, cloud plugins) */
+  private _dataSourceManager: AcApDataSourceManager
   /**
    * Alias overrides provided by caller options.
    *
@@ -428,6 +482,8 @@ export class AcApDocManager {
   private _commandAliasOverrides: Map<string, string[]>
   /** Default options for the built-in OPEN file dialog */
   private _openDocumentDefaults?: AcApOpenDocumentDefaultsResolver
+  /** Whether drawing export commands and related UI entry points are disabled */
+  private _disableExport: boolean
   /** Singleton instance */
   private static _instance?: AcApDocManager
   /** Worker URLs configured at initialization */
@@ -438,6 +494,13 @@ export class AcApDocManager {
   private _workersReadyCheckPromise?: Promise<boolean>
   /** Monotonically increasing counter used to generate overlay ids */
   private _nextOverlayId = 1
+  /**
+   * In-flight / completed preset (default+symbol) font load started at open.
+   * Reused across opens so IndexedDB/mesh parse is not repeated.
+   */
+  private _presetFontsForOpenPromise: Promise<void> | null = null
+  /** Names last requested by {@link ensurePresetFontsForOpen} (OPENPROF). */
+  private _lastPresetFontsForOpen: string[] = []
 
   /** Events fired during document lifecycle */
   public readonly events = {
@@ -468,10 +531,12 @@ export class AcApDocManager {
    */
   private constructor(options: AcApDocManagerOptions = {}) {
     this._baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
+    acapSetDocsBaseUrl(options.docsBaseUrl ?? ACAP_DEFAULT_DOCS_BASE_URL)
     this._commandAliasOverrides = this.normalizeCommandAliasConfig(
       options.commandAliases
     )
     this._openDocumentDefaults = options.openDocumentDefaults
+    this._disableExport = options.disableExport === true
     if (options.useMainThreadDraw) {
       AcTrMTextRenderer.getInstance().setRenderMode('main')
     } else {
@@ -523,13 +588,18 @@ export class AcApDocManager {
     )
     this._sessions = [this._activeSession]
     acapBindMarkupSession(this._activeSession.id)
-    this._drawStyleToolbar = new AcApDrawStyleToolbar(view)
 
     this._fontLoader = new AcApFontLoader()
+    // Share one DefaultFontLoader cache between UI catalog and on-demand draws.
+    FontManager.instance.setFontLoader(this._fontLoader.fontLoader)
     const fontsUrl = this.resolveFontsBaseUrl()
     this._fontLoader.baseUrl = fontsUrl
-    // On-demand loads go through FontManager's loader, not AcApFontLoader.
     FontManager.instance.baseUrl = fontsUrl
+    // Always push the URL into AcTrMTextRenderer (workers). DefaultFontLoader
+    // skips onFontUrlChanged when the value equals its built-in default, which
+    // would leave workers on an unset/stale font base URL.
+    AcTrMTextRenderer.getInstance().setFontUrl(fontsUrl)
+    this.installFontFileLoadTimeout()
     acdbHostApplicationServices().workingDatabase = doc.database
 
     this._commandManager = new AcEdCommandStack()
@@ -538,12 +608,21 @@ export class AcApDocManager {
       this.context,
       this._commandManager
     )
+    this._dataSourceManager = new AcApDataSourceManager()
+    this._dataSourceManager.register(new AcApLocalDataSource())
+    this._dataSourceManager.register(new AcApUrlDataSource())
     const busyHost = options.busyIndicatorHost ?? view.container
     this._busyIndicatorHost = busyHost
     this._openFileProgress = new AcApOpenFileProgressController(busyHost)
-    this._openFileProgress.setSceneBusyGate(
-      () => this.openProgressView.isProcessingEntities
-    )
+    this._openFileProgress.setSceneBusyGate(() => {
+      const view = this.openProgressView
+      // Progressive open hides when entity convert finishes so pan/zoom work
+      // while glyphs catch up. Default open keeps "Rendering drawing ..."
+      // until deferred glyph jobs finish as well.
+      return view.progressiveRendering
+        ? view.isConvertingEntities
+        : view.isProcessingEntities
+    })
     this._openFileProgress.setOnHidden(() => this.onOpenProgressHidden())
     this._busyIndicator = new AcApBusyIndicator(busyHost)
     acapBindCommandServices({
@@ -581,6 +660,19 @@ export class AcApDocManager {
       enabled: options.builtinOpenFileDialog !== false,
       getOpenDocumentDefaults: () => this.resolveOpenDocumentDefaults()
     })
+
+    if (options.notificationCenter !== false) {
+      const ncOptions =
+        typeof options.notificationCenter === 'object'
+          ? options.notificationCenter
+          : {}
+      acapInstallNotificationService(this, {
+        host: ncOptions.host,
+        showDefaultUi: ncOptions.showDefaultUi !== false,
+        placement: ncOptions.placement,
+        enableBridge: true
+      })
+    }
   }
 
   /**
@@ -623,12 +715,18 @@ export class AcApDocManager {
   }
 
   /**
+   * Returns the singleton when {@link createInstance} has finished, otherwise
+   * `undefined`. Safe to call while the constructor is still running.
+   */
+  static tryGetInstance(): AcApDocManager | undefined {
+    return AcApDocManager._instance
+  }
+
+  /**
    * Destroy the view and unload all plugins
    */
   async destroy() {
     await this._pluginManager.unloadAllPlugins()
-    this._splitView?.stopAnimationLoop()
-    this._splitView = undefined
     for (const session of [...this._sessions]) {
       session.context.dispose()
       session.doc.destroy()
@@ -637,7 +735,11 @@ export class AcApDocManager {
       }
     }
     this._sessions = []
+    this._splitView?.dispose()
+    this._splitView = undefined
+    this._mainView.dispose()
     acapUninstallOpenFileDialog()
+    acapDisposeNotificationService()
     AcTrMTextRenderer.resetInstance()
     resetWebworkerReadinessCache()
     AcApDocManager._instance = undefined
@@ -988,11 +1090,19 @@ export class AcApDocManager {
   }
 
   /**
-   * Overlay shown in the filename slot while a measurement or markup
-   * drawing command is active.
+   * Gets data source manager for opening drawings from local, URL, or cloud.
+   *
+   * @returns The data source manager
    */
-  get drawStyleToolbar() {
-    return this._drawStyleToolbar
+  get dataSourceManager() {
+    return this._dataSourceManager
+  }
+
+  /**
+   * Color / font-size session accessory for measurement and markup drawing.
+   */
+  get drawStyleSessionAccessory() {
+    return acapGetDrawStyleSessionAccessory(this._mainView)
   }
 
   /**
@@ -1000,6 +1110,14 @@ export class AcApDocManager {
    */
   get baseUrl() {
     return this._baseUrl
+  }
+
+  /**
+   * Whether drawing export commands (and host export UI) are disabled.
+   * Set via {@link AcApDocManagerOptions.disableExport}; defaults to false.
+   */
+  get disableExport() {
+    return this._disableExport
   }
 
   /**
@@ -1056,11 +1174,29 @@ export class AcApDocManager {
    * Gets the list of available fonts that can be loaded.
    *
    * Note: These fonts are available for loading but may not be loaded yet.
+   * Prefer {@link getAvaiableFonts} when the catalog may not have been fetched yet
+   * (lazy font loading no longer preloads metadata at viewer init).
    *
    * @returns Array of available font names
    */
   get avaiableFonts() {
     return this._fontLoader.avaiableFonts
+  }
+
+  /**
+   * Fetches font repository metadata (`fonts.json`) if not already cached.
+   * Emits `failed-to-get-avaiable-fonts` and returns `[]` when the catalog cannot
+   * be retrieved.
+   */
+  async getAvaiableFonts() {
+    try {
+      return await this._fontLoader.getAvaiableFonts()
+    } catch {
+      eventBus.emit('failed-to-get-avaiable-fonts', {
+        url: this._fontLoader.baseUrl
+      })
+      return []
+    }
   }
 
   /**
@@ -1083,7 +1219,7 @@ export class AcApDocManager {
    *
    * This method loads either the specified fonts or the configured default font
    * fallback chains ({@link DEFAULT_FONTS_PRESET}, currently `modern`: text
-   * `hztxt` 鈫?`simsun`, symbol `amgdt`) if no fonts are provided. The loaded
+   * `simsun` → `hztxt`, symbol `amgdt`) if no fonts are provided. The loaded
    * fonts are used for rendering CAD text entities like MText and Text in the viewer.
    *
    * It is better to load default fonts when viewer is initialized so that the viewer can
@@ -1114,6 +1250,76 @@ export class AcApDocManager {
     } else {
       await this._fontLoader.load(fonts)
     }
+  }
+
+  /**
+   * Starts loading the active default/symbol preset chain
+   * ({@link FontManager.getFontsToLoad}) so it overlaps DWG/DXF parse.
+   *
+   * Preset faces are drawing-independent. Callers must not await this from
+   * the open hot path — linework convert continues; glyph finalize awaits
+   * {@link awaitPresetFontsReady} instead.
+   *
+   * - Worker mode: {@link AcTrMTextRenderer.loadFonts} with `scope: 'all'` so
+   *   every isolate has fallbacks before glyph bake (no main-thread dual parse).
+   * - Main mode: {@link FontManager.requestFonts} (full await, including mesh).
+   *
+   * The promise is reused for the process lifetime. A 30s deadline matches
+   * {@link installFontFileLoadTimeout} so a stalled CDN cannot pin the open
+   * overlay; on timeout glyph draw still falls back to `'?'`.
+   */
+  ensurePresetFontsForOpen(): Promise<void> {
+    if (this._presetFontsForOpenPromise) {
+      return this._presetFontsForOpenPromise
+    }
+    const names = [...FontManager.instance.getFontsToLoad()]
+    this._lastPresetFontsForOpen = names
+    if (names.length === 0) {
+      this._presetFontsForOpenPromise = Promise.resolve()
+      return this._presetFontsForOpenPromise
+    }
+    const mtextRenderer = AcTrMTextRenderer.getInstance()
+    const parseSite =
+      mtextRenderer.getRenderMode() === 'worker' ? 'worker' : 'main'
+    // Keep in sync with installFontFileLoadTimeout / text-style preload race.
+    const timeoutMs = 30_000
+    const load =
+      parseSite === 'worker'
+        ? mtextRenderer.loadFonts(names, { scope: 'all' }).then(() => undefined)
+        : FontManager.instance.requestFonts(names).then(() => undefined)
+    this._presetFontsForOpenPromise = new Promise<void>(resolve => {
+      const timer = setTimeout(() => {
+        // Glyph draw still falls back via FontManager defaults / '?'.
+        resolve()
+      }, timeoutMs)
+      load.then(
+        () => {
+          clearTimeout(timer)
+          resolve()
+        },
+        () => {
+          clearTimeout(timer)
+          resolve()
+        }
+      )
+    })
+    return this._presetFontsForOpenPromise
+  }
+
+  /**
+   * Waits until {@link ensurePresetFontsForOpen} has finished (starting it if
+   * open never kicked it off). Used by deferred glyph finalize.
+   */
+  async awaitPresetFontsReady(): Promise<void> {
+    await this.ensurePresetFontsForOpen()
+  }
+
+  /**
+   * Preset face names from the last {@link ensurePresetFontsForOpen} call.
+   * Empty until the first open starts preset preload.
+   */
+  get lastPresetFontsForOpen(): readonly string[] {
+    return this._lastPresetFontsForOpen
   }
 
   /**
@@ -1367,6 +1573,42 @@ export class AcApDocManager {
   }
 
   /**
+   * Whether transient reading mode is active on a view (default: current view).
+   *
+   * @param view - Target canvas; defaults to {@link curView}.
+   */
+  isReadingModeEnabled(view?: AcTrView2d): boolean {
+    const target = view ?? (this.curView as AcTrView2d)
+    return target.readingModeEnabled
+  }
+
+  /**
+   * Enables or disables transient reading mode on a view (default: current view).
+   *
+   * Reading mode forces black linework on a white canvas without modifying the
+   * drawing database. It shares the compare-display colour path, so it is
+   * mutually exclusive with active compare display on that view.
+   *
+   * @param enabled - When true, enables reading mode; when false, restores the
+   *   previous canvas background and entity colours.
+   * @param view - Target canvas; defaults to {@link curView}.
+   */
+  setReadingMode(enabled: boolean, view?: AcTrView2d): void {
+    const target = view ?? (this.curView as AcTrView2d)
+    target.setReadingMode(enabled)
+  }
+
+  /**
+   * Toggles transient reading mode on a view (default: current view).
+   *
+   * @param view - Target canvas; defaults to {@link curView}.
+   */
+  toggleReadingMode(view?: AcTrView2d): void {
+    const target = view ?? (this.curView as AcTrView2d)
+    target.toggleReadingMode()
+  }
+
+  /**
    * Applies compare-display coloring to one overlay layout.
    *
    * @param overlayId - Id returned by {@link loadOverlay} / {@link registerOverlayDatabase}.
@@ -1481,6 +1723,52 @@ export class AcApDocManager {
   }
 
   /**
+   * Rejects a font-file download that never completes.
+   *
+   * {@link FontManager} awaits `FileLoader.loadAsync` with no deadline. Open
+   * always awaits main-thread {@link FontManager.requestFonts} from
+   * {@link AcTrView2d.awaitTextStyleFontsReady} before deferred glyph jobs,
+   * including when MTEXT geometry itself is drawn in workers. A stalled CDN
+   * therefore keeps `_pendingGeometryJobs` nonzero and the open overlay up.
+   *
+   * Worker isolates also load fonts, but {@link AcApDocManager.ensurePresetFontsForOpen}
+   * races that path with the same deadline; in-worker render requests still
+   * fall back to WebWorkerRenderer's request timeout.
+   */
+  private installFontFileLoadTimeout() {
+    const manager = FontManager.instance as unknown as {
+      loader?: {
+        loadAsync: (url: string) => Promise<unknown>
+        __cadFontLoadTimeout?: boolean
+      }
+    }
+    const loader = manager.loader
+    if (!loader || loader.__cadFontLoadTimeout) {
+      return
+    }
+    const original = loader.loadAsync.bind(loader)
+    // Keep in sync with AcTrView2d text-style font preload race.
+    const timeoutMs = 30_000
+    loader.loadAsync = (url: string) =>
+      new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          reject(new Error(`Font load timed out after ${timeoutMs}ms`))
+        }, timeoutMs)
+        original(url).then(
+          value => {
+            clearTimeout(timer)
+            resolve(value)
+          },
+          error => {
+            clearTimeout(timer)
+            reject(error)
+          }
+        )
+      })
+    loader.__cadFontLoadTimeout = true
+  }
+
+  /**
    * Resolves the font repository URL from {@link baseUrl}.
    */
   private resolveFontsBaseUrl(): string {
@@ -1553,8 +1841,9 @@ export class AcApDocManager {
    * Registers all default commands available in the CAD viewer.
    *
    * This method sets up the command system by registering built-in commands including:
-   * - cdxf: Convert to DXF
-   * - pngout: Export to PNG
+   * - cdxf: Convert to DXF (when {@link AcApDocManagerOptions.disableExport} is false)
+   * - pngout / jpgout / bmpout: Export raster images (when
+   *   {@link AcApDocManagerOptions.disableExport} is false)
    * - log: Output debug information in console
    * - open: Open document
    * - qnew: Quick new document
@@ -1599,42 +1888,21 @@ export class AcApDocManager {
     addSystemCommand('cachefont', 'cachefont', new AcApCacheFontCmd())
     addSystemCommand('circle', 'circle', new AcApCircleCmd())
     addSystemCommand('close', 'close', new AcApCloseCmd())
-    addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
-    addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
+    if (!this._disableExport) {
+      addSystemCommand('bmpout', 'bmpout', new AcApConvertToBmpCmd())
+      addSystemCommand('cdxf', 'cdxf', new AcApConvertToDxfCmd())
+      addSystemCommand('jpgout', 'jpgout', new AcApConvertToJpgCmd())
+      addSystemCommand('pngout', 'pngout', new AcApConvertToPngCmd())
+    }
     addSystemCommand('entout', 'entout', new AcApEntityPreviewCmd())
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
     addSystemCommand('hideobjects', 'hideobjects', new AcApHideObjectsCmd())
     addSystemCommand('dimlinear', 'dimlinear', new AcApDimLinearCmd())
-    addSystemCommand(
-      'measuredistance',
-      'measuredistance',
-      new AcApMeasureDistanceCmd()
-    )
-    addSystemCommand('measurearea', 'measurearea', new AcApMeasureAreaCmd())
-    addSystemCommand('measureangle', 'measureangle', new AcApMeasureAngleCmd())
-    addSystemCommand('measurearc', 'measurearc', new AcApMeasureArcCmd())
-    addSystemCommand('measurepoint', 'measurepoint', new AcApMeasurePointCmd())
-    addSystemCommand(
-      'clearmeasurements',
-      'clearmeasurements',
-      new AcApClearMeasurementsCmd()
-    )
-    addSystemCommand(
-      'measurementvis',
-      'measurementvis',
-      new AcApMeasurementVisibilityCmd()
-    )
-    addSystemCommand(
-      'measurementexport',
-      'measurementexport',
-      new AcApMeasurementExportCmd()
-    )
-    addSystemCommand(
-      'measurementimport',
-      'measurementimport',
-      new AcApMeasurementImportCmd()
-    )
+    registerMeasureCommands(addSystemCommand, {
+      view: this._mainView,
+      commandManager: this._commandManager
+    })
     addSystemCommand('-hatch', '-hatch', new AcApHatchCmd())
     addSystemCommand('imageattach', 'imageattach', new AcApImageAttachCmd())
     addSystemCommand('-insert', '-insert', new AcApInsertCmd())
@@ -1670,31 +1938,15 @@ export class AcApDocManager {
     addSystemCommand('rectang', 'rectang', new AcApRectCmd())
     addSystemCommand('regen', 'regen', new AcApRegenCmd())
     addSystemCommand('revcloud', 'revcloud', new AcApRevCloudCmd())
-    addSystemCommand('markuptext', 'markuptext', new AcApMarkupTextCmd())
-    addSystemCommand('markupline', 'markupline', new AcApMarkupLineCmd())
-    addSystemCommand('markuparrow', 'markuparrow', new AcApMarkupArrowCmd())
-    addSystemCommand('markupcloud', 'markupcloud', new AcApMarkupCloudCmd())
-    addSystemCommand('markuprect', 'markuprect', new AcApMarkupRectCmd())
-    addSystemCommand('markupcircle', 'markupcircle', new AcApMarkupCircleCmd())
-    addSystemCommand(
-      'markuphighlight',
-      'markuphighlight',
-      new AcApMarkupHighlightCmd()
-    )
-    addSystemCommand(
-      'markupcallout',
-      'markupcallout',
-      new AcApMarkupCalloutCmd()
-    )
-    addSystemCommand('markupstamp', 'markupstamp', new AcApMarkupStampCmd())
-    addSystemCommand('markupvis', 'markupvis', new AcApMarkupVisibilityCmd())
-    addSystemCommand('clearmarkups', 'clearmarkups', new AcApClearMarkupsCmd())
-    addSystemCommand('markupexport', 'markupexport', new AcApMarkupExportCmd())
-    addSystemCommand('markupimport', 'markupimport', new AcApMarkupImportCmd())
+    registerMarkupCommands(addSystemCommand, {
+      view: this._mainView,
+      commandManager: this._commandManager
+    })
     addSystemCommand('select', 'select', new AcApSelectCmd())
     addSystemCommand('sketch', 'sketch', new AcApSketchCmd())
     addSystemCommand('spline', 'spline', new AcApSplineCmd())
     addSystemCommand('switchbg', 'switchbg', new AcApSwitchBgCmd())
+    addSystemCommand('readingmode', 'readingmode', new AcApReadingModeCmd())
     addSystemCommand(
       'unisolateobjects',
       'unisolateobjects',
@@ -1914,15 +2166,18 @@ export class AcApDocManager {
     // so its `commandEnded` lifecycle finishes before the new one begins.
     await this._commandManager.cancelActive()
 
-    const promise = cmd.trigger(this.context).finally(() => {
-      if (!options.preserveScriptInputs) {
-        this.editor.clearScriptInputs()
+    // markActive must run before trigger(): the first getPoint prompt is
+    // opened synchronously until the first await, and the mobile session
+    // accessory reads commandManager.activeCommand.
+    await this._commandManager.runActive(cmd, this.curView, async () => {
+      try {
+        await cmd.trigger(this.context)
+      } finally {
+        if (!options.preserveScriptInputs) {
+          this.editor.clearScriptInputs()
+        }
       }
-      this._commandManager.clearActive(cmd)
     })
-    this._commandManager.markActive(cmd, this.curView, promise)
-
-    await promise
   }
 
   /**
@@ -1998,17 +2253,32 @@ export class AcApDocManager {
       // Drop overlay / markup history before view.clear() disposes HTML.
       resetMeasurementSession()
       resetMarkupSession()
+      AcApZoomCmd.clearOriginalViews()
       this.openProgressView.clear()
     }
     this.openProgressView.bindDrawDatabase(this.context.doc.database)
-    // Progressive convert/paint is gated by this flag (time-sliced yields in
-    // batchConvert). Camera auto-fit is started separately in onAfter when the
-    // open view mode uses zoom-to-fit — not for restored VPORT/saved views.
+    // `progressiveRendering` gates both stages: time-sliced mid-open paints
+    // in batchConvert, and whether the open overlay waits for deferred text.
+    // Camera auto-fit is started separately in onAfter when the open view
+    // mode uses zoom-to-fit — not for restored VPORT/saved views.
     this.openProgressView.progressiveRendering =
       options?.progressiveRendering ?? false
     this._openFileProgress.setSeeThroughOverlay(
       options?.progressiveRendering ?? false
     )
+    // Headless HTML export: convert off layers once, skip pick indexes, and
+    // optionally skip cooperative yields that only matter for an interactive UI.
+    this.openProgressView.convertInvisibleLayers =
+      options?.convertInvisibleLayers === true
+    this.openProgressView.cooperativeYield = options?.cooperativeYield !== false
+    const openCadScene = this.openProgressView.cadScene
+    if (openCadScene) {
+      openCadScene.skipSpatialIndex = options?.skipSpatialIndex === true
+    }
+    // Preset fonts are drawing-independent — start immediately so download /
+    // mesh parse overlaps db.read. Glyph finalize awaits the promise; linework
+    // convert does not.
+    void this.ensurePresetFontsForOpen()
     // OPENPROF: start stage timings before db.read / entity flush.
     this._openFileProfiler.begin(this.context.doc.database)
   }
@@ -2063,7 +2333,10 @@ export class AcApDocManager {
       //    and frame batch-derived geometry bounds once entities land.
       //
       // 3. **Saved** (Write default) in model space: restore VPORT
-      //    `*ACTIVE`, then frame EXTMIN/EXTMAX when no saved view exists.
+      //    `*ACTIVE` via `getActiveVportBox(aspect)` (structural / max-span
+      //    checks only — not vs header EXTMIN/EXTMAX, which often span
+      //    outliers and reject a valid tight saved view). When missing or
+      //    implausible, poll `zoomToFitDrawing`.
       //
       // 4. **Fallback** (paper without limits, or model with empty
       //    extents 鈥?typically DXF): poll `zoomToFitDrawing` and frame
@@ -2083,36 +2356,46 @@ export class AcApDocManager {
       const openViewMode = this.resolveOpenViewMode(options)
 
       const progressiveRendering = options?.progressiveRendering ?? false
+      let framedSynchronously = false
       if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
         view.zoomTo(layoutLimits)
+        framedSynchronously = true
       } else if (openViewMode === AcApOpenViewMode.Extents) {
         if (progressiveRendering) {
           view.beginProgressiveOpenFit()
         }
         view.zoomToFitDrawing()
+        view.requestOpenLineworkFrame()
       } else if (!isPaperSpaceActive) {
         const canvasAspect = view.width / Math.max(view.height, 1)
-        const vport = db.tables.viewportTable.getActiveVport()
-        // Restore AutoCAD's saved *ACTIVE view without EXTMIN/EXTMAX heuristics.
-        // Many real drawings store a valid saved view far from $EXTMIN/$EXTMAX
-        // (e.g. title-block extents vs. model content at large coordinates).
-        const activeModelViewBox = vport?.modelViewBox(canvasAspect)
+        // Restore *ACTIVE without comparing to header EXTMIN/EXTMAX.
+        // Extents-relative heuristics reject valid saved views that sit in a
+        // dense island while $EXTMAX still spans a mirrored/outlier wing
+        // (center offset fails). Raw `modelViewBox` alone still accepts
+        // stale zoomed-out saves; `getActiveVportBox` without extents keeps
+        // structural checks + a max-span guard for those.
+        const activeModelViewBox =
+          db.tables.viewportTable.getActiveVportBox(canvasAspect)
 
         if (activeModelViewBox) {
           view.zoomTo(activeModelViewBox)
-        } else if (this.hasUsableDrawingExtents(db)) {
-          view.zoomTo(new AcGeBox2d(db.extmin, db.extmax))
+          framedSynchronously = true
         } else {
+          // No plausible saved view (missing VPORT or zoomed absurdly far).
+          // Frame converted scene bounds — do not trust header extents alone
+          // (often a title-block island while model content sits far away).
           if (progressiveRendering) {
             view.beginProgressiveOpenFit()
           }
           view.zoomToFitDrawing()
+          view.requestOpenLineworkFrame()
         }
       } else {
         if (progressiveRendering) {
           view.beginProgressiveOpenFit()
         }
         view.zoomToFitDrawing()
+        view.requestOpenLineworkFrame()
       }
 
       // Tell the view we've already framed the startup layout, so that
@@ -2122,6 +2405,28 @@ export class AcApDocManager {
       // above relies on `curView` being an `AcTrView2d`, and the
       // markLayoutAsInitialized method is part of that contract.
       view.markLayoutAsInitialized(db.currentSpaceId)
+      // `zoomToFitDrawing` frames asynchronously; capture original view in
+      // its completion callback instead of here (pre-fit camera is wrong).
+      if (framedSynchronously) {
+        AcApZoomCmd.rememberOriginalView(view, db.currentSpaceId)
+      }
+      // Headless multi-layout export: convert unvisited paper tabs before the
+      // open-idle wait so `-chtml` does not pay a second full layout pass.
+      // Fire-and-forget: onAfterOpenDocument is sync; waitUntilIdle / CLI
+      // waitForSceneIdle drain the convert queue this kicks off.
+      if (options?.convertAllLayouts) {
+        void view
+          .ensureEntitiesConvertedForExport({
+            includeInvisibleLayers: options.convertInvisibleLayers !== false,
+            includeLayouts: true
+          })
+          .catch(error => {
+            log.error(
+              '[AcApDocManager] convertAllLayouts export convert failed',
+              error
+            )
+          })
+      }
       // OPENPROF: db.read is done; wait for batchConvert to drain, then print.
       this._openFileProfiler.markReadCompleteAndScheduleReport(view)
     } else {
@@ -2129,36 +2434,6 @@ export class AcApDocManager {
       this.openProgressView.endProgressiveOpenFit()
       this.regen()
     }
-  }
-
-  /**
-   * Checks whether EXTMIN/EXTMAX describe a real drawing area usable for
-   * view framing.
-   *
-   * AutoCAD marks unsaved/invalid extents with ±1e20 sentinel values (and
-   * some writers emit other degenerate near-zero/huge pairs). Framing such
-   * a box zooms the camera out to effectively infinity and the drawing
-   * renders as a black canvas, so those sentinels must fall through to
-   * `zoomToFitDrawing()` instead.
-   *
-   * @param db - Input database whose header extents are checked.
-   * @returns True when EXTMIN/EXTMAX are finite, sane and span a real area.
-   * @private
-   */
-  private hasUsableDrawingExtents(db: AcDbDatabase): boolean {
-    if (db.extents.isEmpty()) return false
-
-    // Anything at or beyond this magnitude is a "no saved extents"
-    // sentinel, not a coordinate a real drawing occupies.
-    const SENTINEL_LIMIT = 1e15
-    const values = [db.extmin.x, db.extmin.y, db.extmax.x, db.extmax.y]
-    if (
-      values.some(value => !Number.isFinite(value)) ||
-      values.some(value => Math.abs(value) >= SENTINEL_LIMIT)
-    ) {
-      return false
-    }
-    return db.extmax.x > db.extmin.x && db.extmax.y > db.extmin.y
   }
 
   /**
@@ -2199,6 +2474,7 @@ export class AcApDocManager {
       }
     } else {
       this.stripObsoleteFontOpenOptions(options)
+      this.stripDeprecatedWaitForTextGeometry(options)
       if (options.drawNoPlotLayers == null) {
         options.drawNoPlotLayers = false
       }
@@ -2207,6 +2483,25 @@ export class AcApDocManager {
       }
     }
     return options
+  }
+
+  /**
+   * Drops deprecated {@link AcApOpenDatabaseOptions.waitForTextGeometry}.
+   *
+   * Both stages of progressive rendering — mid-open paints, and whether the
+   * open overlay waits for deferred text — are controlled by
+   * `progressiveRendering`. The old flag is stripped so it cannot be forwarded
+   * into `db.read`.
+   */
+  private stripDeprecatedWaitForTextGeometry(options: AcApOpenDatabaseOptions) {
+    if (options.waitForTextGeometry == null) {
+      return
+    }
+    delete options.waitForTextGeometry
+    console.warn(
+      '[AcApDocManager] Ignoring deprecated open option waitForTextGeometry; ' +
+        'both stages of progressive rendering are controlled by progressiveRendering.'
+    )
   }
 
   /**
@@ -2376,7 +2671,9 @@ export class AcApDocManager {
     mtextRenderer.initialize(
       webworkerFileUrls?.mtextRender ?? DEFAULT_WEBWORKER_FILE_URLS.mtextRender
     )
-    void mtextRenderer.setDefaultFonts(DEFAULT_FONTS_PRESET)
+    void mtextRenderer.setDefaultFonts([
+      ...FontManager.instance.defaultFonts
+    ])
   }
 
   /**
@@ -2460,6 +2757,18 @@ export class AcApDocManager {
         subStageStatus: args.subStageStatus,
         data: args.data
       })
+
+      // Text styles are in the table when STYLE ends — start font download
+      // immediately so it overlaps LAYER / BLOCK / ENTITY parse and linework.
+      if (args.subStage === 'STYLE' && args.subStageStatus === 'END') {
+        const session = this._sessions.find(item => item.doc === doc)
+        const view = (session?.context.view as AcTrView2d) ?? this.curView
+        // Prefer the opening doc's session view so split-canvas opens do not
+        // kick preload on the wrong renderer.
+        if (view) {
+          view.startTextStyleFontPreload(doc.database)
+        }
+      }
 
       if (args.subStage !== 'HEADER') {
         return

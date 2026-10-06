@@ -74,6 +74,28 @@ describe('AcTrPoint wcsBbox', () => {
     expect(point.wcsBbox.min.y).toBeLessThanOrEqual(200)
     expect(point.wcsBbox.max.y).toBeGreaterThanOrEqual(200)
   })
+  it('scales marker geometry by displaySize (PDSIZE)', () => {
+    const point = new AcTrPoint(
+      { x: 0, y: 0, z: 0 },
+      defaultTraits,
+      { displayMode: 35, displaySize: 2 },
+      new AcTrRenderContext()
+    )
+
+    const symbol = point.children.find(
+      child => child instanceof THREE.LineSegments
+    ) as THREE.LineSegments | undefined
+
+    expect(symbol).toBeDefined()
+    expect(getMaxAbsPositionComponent(symbol!.geometry)).toBeCloseTo(
+      Math.SQRT2,
+      5
+    )
+    expect(point.wcsBbox.max.x - point.wcsBbox.min.x).toBeCloseTo(
+      2 * Math.SQRT2,
+      5
+    )
+  })
 })
 
 describe('AcTrPoint large coordinates', () => {

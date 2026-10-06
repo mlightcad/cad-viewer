@@ -1,19 +1,29 @@
 /** Unit tests for toolbar item resolution and open-mode visibility filtering. */
-jest.mock('@mlightcad/cad-simple-viewer', () => ({
-  AcApDocManager: {
-    instance: {
-      curDocument: undefined
-    }
-  },
-  /** Minimal mock used by {@link acuiCreateDefaultToolbarItems} markup visibility toggle. */
-  isMarkupVisible: () => true,
-  isMeasurementVisible: () => true,
-  AcEdOpenMode: {
-    Read: 0,
-    Review: 4,
-    Write: 8
-  }
-}))
+jest.mock('@mlightcad/cad-simple-viewer', () => {
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
+  const openMode = jest.requireActual(
+    '../../cad-simple-viewer/src/editor/view/AcEdOpenMode'
+  ) as typeof import('../../cad-simple-viewer/src/editor/view/AcEdOpenMode')
+
+  return createCadSimpleViewerMock({
+    AcApDocManager: {
+      instance: {
+        curDocument: undefined,
+        isReadingModeEnabled: () => false
+      }
+    },
+    AcApSettingManager: {
+      instance: {
+        get: () => true,
+        toggle: jest.fn()
+      }
+    },
+    /** Minimal mock used by {@link acuiCreateDefaultToolbarItems} markup visibility toggle. */
+    isMarkupVisible: () => true,
+    isMeasurementVisible: () => true,
+    AcEdOpenMode: openMode.AcEdOpenMode
+  })
+})
 
 jest.mock('@mlightcad/data-model', () => ({
   acdbHostApplicationServices: () => ({
@@ -26,7 +36,9 @@ jest.mock('@mlightcad/data-model', () => ({
 import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 
 import { acuiCreateDefaultToolbarItems } from '../src/config/defaultToolbarItems'
+import { acuiMergeToolbarOptionsForLayout } from '../src/config/mergeToolbarOptionsForLayout'
 import {
+  acuiCreateDefaultToolbarPresetMap,
   acuiFilterVisibleToolbarItems,
   acuiIsToolbarItemVisible,
   acuiResolveEffectiveToolbarItem,
@@ -43,7 +55,56 @@ describe('acuiResolveToolbarItems', () => {
   it('returns default items when items is default', () => {
     const items = acuiResolveToolbarItems({ items: 'default' })
     expect(items.length).toBeGreaterThan(0)
-    expect(items[0].id).toBe('select')
+    expect(items[0].id).toBe('open')
+    expect(items[1].id).toBe('select')
+  })
+
+  it('returns phone default items when layout is phone', () => {
+    const items = acuiResolveToolbarItems({ items: 'default' }, undefined, 'phone')
+    expect(items.map(item => item.id)).toEqual([
+      'zoom',
+      'measure',
+      'annotation',
+      'layer',
+      'layout',
+      'settings'
+    ])
+    expect(items[0].children?.some(child => child.id === 'zoom-saved')).toBe(
+      true
+    )
+    expect(
+      items[0].children?.some(child => child.id === 'zoom-smart-extents')
+    ).toBe(true)
+  })
+
+  it('omits excluded root item ids', () => {
+    const items = acuiResolveToolbarItems({
+      items: 'default',
+      excludeItems: ['select', 'pan']
+    })
+    expect(items.some(item => item.id === 'select')).toBe(false)
+    expect(items.some(item => item.id === 'pan')).toBe(false)
+    expect(items[0].id).toBe('open')
+    expect(items[1].id).toBe('zoom')
+  })
+
+  it('keeps excluded ids when excludeItems is empty', () => {
+    const items = acuiResolveToolbarItems({
+      items: 'default',
+      excludeItems: []
+    })
+    expect(items[0].id).toBe('open')
+    expect(items[1].id).toBe('select')
+    expect(items[2].id).toBe('pan')
+  })
+
+  it('applies pad built-in excludeItems after resolving defaults', () => {
+    const merged = acuiMergeToolbarOptionsForLayout('pad', undefined, undefined)
+    const items = acuiResolveToolbarItems(merged, undefined, 'pad')
+    expect(items.some(item => item.id === 'select')).toBe(false)
+    expect(items.some(item => item.id === 'pan')).toBe(false)
+    expect(items[0].id).toBe('open')
+    expect(items[1].id).toBe('zoom')
   })
 
   it('appends custom items after defaults', () => {
@@ -112,7 +173,7 @@ describe('toolbar visibility', () => {
     const defaults = acuiCreateDefaultToolbarItems()
     const visible = acuiFilterVisibleToolbarItems(defaults, AcEdOpenMode.Read)
     expect(visible.some(item => item.id === 'annotation')).toBe(false)
-    expect(visible.some(item => item.id === 'switch-bg')).toBe(true)
+    expect(visible.some(item => item.id === 'settings')).toBe(true)
     expect(visible.some(item => item.id === 'layout')).toBe(true)
     expect(visible.some(item => item.id === 'select')).toBe(true)
   })
@@ -121,7 +182,7 @@ describe('toolbar visibility', () => {
     const defaults = acuiCreateDefaultToolbarItems()
     const visible = acuiFilterVisibleToolbarItems(defaults, AcEdOpenMode.Review)
     expect(visible.some(item => item.id === 'annotation')).toBe(true)
-    expect(visible.some(item => item.id === 'switch-bg')).toBe(true)
+    expect(visible.some(item => item.id === 'settings')).toBe(true)
   })
 
   it('respects minOpenMode on individual items', () => {
@@ -174,7 +235,7 @@ describe('acuiResolveEffectiveToolbarItem', () => {
 })
 
 describe('default toolbar items', () => {
-  it('includes export submenu, theme toggle and locale picker', () => {
+  it('includes export submenu and a settings strip with theme, locale, placement', () => {
     const items = acuiCreateDefaultToolbarItems()
     const exportItem = items.find(item => item.id === 'export')
     expect(exportItem?.children?.map(child => child.command)).toEqual([
@@ -182,33 +243,56 @@ describe('default toolbar items', () => {
       'cpdf',
       'csvg'
     ])
-    expect(items.some(item => item.id === 'theme')).toBe(true)
-    expect(items.some(item => item.id === 'locale')).toBe(true)
-    expect(items.some(item => item.id === 'toolbar-placement')).toBe(true)
+    const settings = items.find(item => item.id === 'settings')
+    expect(settings?.childrenUi).toBe('toolbar')
+    const childIds = settings?.children?.map(child => child.id) ?? []
+    expect(childIds).toContain('simulated-mouse')
+    expect(childIds).toContain('theme')
+    expect(childIds).toContain('locale')
+    expect(childIds).toContain('toolbar-placement')
   })
 
-  it('places toolbar placement button before theme', () => {
+  it('exposes reading mode as a toggle and disables switch-bg while reading mode is on', () => {
     const items = acuiCreateDefaultToolbarItems()
-    const themeIndex = items.findIndex(item => item.id === 'theme')
-    expect(items[themeIndex - 1]?.id).toBe('toolbar-placement')
+    const settings = items.find(item => item.id === 'settings')
+    const readingMode = settings?.children?.find(
+      child => child.id === 'reading-mode'
+    )
+    const switchBg = settings?.children?.find(child => child.id === 'switch-bg')
+
+    expect(readingMode?.toggle?.getValue).toEqual(expect.any(Function))
+    expect(readingMode?.toggle?.on.command).toBe('readingmode')
+    expect(readingMode?.toggle?.off.command).toBe('readingmode')
+    expect(readingMode?.toggle?.getValue()).toBe(false)
+
+    expect(switchBg?.disabled).toEqual(expect.any(Function))
+    expect(typeof switchBg?.disabled === 'function' && switchBg.disabled()).toBe(
+      false
+    )
   })
 
-  it('places the layout switcher between the layer manager and switch background', () => {
+  it('places toolbar placement before theme inside settings', () => {
+    const items = acuiCreateDefaultToolbarItems()
+    const settings = items.find(item => item.id === 'settings')
+    const childIds = settings?.children?.map(child => child.id) ?? []
+    const themeIndex = childIds.indexOf('theme')
+    expect(childIds[themeIndex - 1]).toBe('toolbar-placement')
+  })
+
+  it('places the layout switcher after the layer manager', () => {
     const items = acuiCreateDefaultToolbarItems()
     const layerIndex = items.findIndex(item => item.id === 'layer')
     expect(items[layerIndex + 1]?.id).toBe('layout')
     expect(items[layerIndex + 1]?.childrenUi).toBe('menu')
     expect(items[layerIndex + 1]?.icon).toContain('rect x="2" y="2" width="8.2"')
-    expect(items[layerIndex + 2]?.id).toBe('switch-bg')
+    expect(items[layerIndex + 2]?.id).toBe('measure')
   })
 
-  it('includes a separator before settings buttons', () => {
+  it('includes a separator before the settings button', () => {
     const items = acuiCreateDefaultToolbarItems()
-    const placementIndex = items.findIndex(
-      item => item.id === 'toolbar-placement'
-    )
-    expect(placementIndex).toBeGreaterThan(0)
-    expect(items[placementIndex - 1]).toEqual({
+    const settingsIndex = items.findIndex(item => item.id === 'settings')
+    expect(settingsIndex).toBeGreaterThan(0)
+    expect(items[settingsIndex - 1]).toEqual({
       type: 'separator',
       id: 'sep-settings'
     })
@@ -216,14 +300,18 @@ describe('default toolbar items', () => {
 
   it('uses selected child icon for toolbar placement and locale', () => {
     const items = acuiCreateDefaultToolbarItems()
+    const settings = items.find(item => item.id === 'settings')
     expect(items.find(item => item.id === 'export')?.childIcon).toBeUndefined()
     expect(
       items.find(item => item.id === 'annotation')?.childIcon
     ).toBeUndefined()
-    expect(items.find(item => item.id === 'toolbar-placement')?.childIcon).toBe(
-      'selected'
-    )
-    expect(items.find(item => item.id === 'locale')?.childIcon).toBe('selected')
+    expect(
+      settings?.children?.find(child => child.id === 'toolbar-placement')
+        ?.childIcon
+    ).toBe('selected')
+    expect(
+      settings?.children?.find(child => child.id === 'locale')?.childIcon
+    ).toBe('selected')
     expect(items.find(item => item.id === 'measure')?.childIcon).toBeUndefined()
   })
 
@@ -269,10 +357,12 @@ describe('default toolbar items', () => {
       )
     ).toEqual([
       'measuredistance',
+      'measurecontinuous',
       'measureangle',
       'measurearea',
       'measurearc',
       'measurepoint',
+      'measurementpanel',
       'measurementvis',
       'clearmeasurements',
       'separator',
@@ -291,20 +381,23 @@ describe('default toolbar items', () => {
     expect(items[measureIndex + 2]?.id).toBe('export')
   })
 
-  it('uses sticky sub-toolbars for measure and review, dismissible for export and placement', () => {
+  it('uses dismissible sub-toolbars for measure, review, export, and settings', () => {
     const items = acuiCreateDefaultToolbarItems()
-    expect(items.find(item => item.id === 'measure')?.childrenUi).toBe(
-      'sticky-toolbar'
-    )
+    const settings = items.find(item => item.id === 'settings')
+    expect(items.find(item => item.id === 'measure')?.childrenUi).toBe('toolbar')
     expect(items.find(item => item.id === 'annotation')?.childrenUi).toBe(
-      'sticky-toolbar'
+      'toolbar'
     )
     expect(items.find(item => item.id === 'export')?.childrenUi).toBe('toolbar')
     expect(items.find(item => item.id === 'layout')?.childrenUi).toBe('menu')
-    expect(items.find(item => item.id === 'toolbar-placement')?.childrenUi).toBe(
-      'toolbar'
-    )
-    expect(items.find(item => item.id === 'locale')?.childrenUi).toBe('toolbar')
+    expect(settings?.childrenUi).toBe('toolbar')
+    expect(
+      settings?.children?.find(child => child.id === 'toolbar-placement')
+        ?.childrenUi
+    ).toBe('toolbar')
+    expect(
+      settings?.children?.find(child => child.id === 'locale')?.childrenUi
+    ).toBe('toolbar')
   })
 
   it('uses the same export parent icon as cad-viewer toolbar and ribbon', () => {
@@ -323,16 +416,21 @@ describe('default toolbar items', () => {
     const iconOf = (id: string) =>
       annotation?.children?.find(child => child.id === id)?.icon
 
-    expect(iconOf('markup-cloud')).toContain('viewBox="0 0 40 40"')
-    expect(iconOf('markup-callout')).toContain('273.536 736')
-    expect(iconOf('markup-text')).toContain('M10 2.2 17.2 17.6')
-    expect(iconOf('markup-rect')).toContain('1.666717529296875,15.833333')
-    expect(iconOf('markup-circle')).toContain(
-      '17.366041494140624,8.13321261171875'
+    expect(iconOf('markup-cloud')).toContain('M6.4 12.2c-1.85 0-3.3-1.25')
+    expect(iconOf('markup-callout')).toContain('M4.4 12.6 10.2 7')
+    expect(iconOf('markup-callout')).toContain(
+      'x="10.2" y="1.2" width="7.8" height="5.8"'
     )
-    expect(iconOf('markup-arrow')).toContain('M754.752 480H160')
+    expect(iconOf('markup-text')).toContain('M10 2.2 15.3 13.1h-2.2')
+    expect(iconOf('markup-rect')).toContain('x="5" y="2.8" width="8.2"')
+    expect(iconOf('markup-rect')).toContain('--el-color-primary')
+    expect(iconOf('markup-circle')).toContain('cx="9" cy="6.6" rx="4"')
+    expect(iconOf('markup-circle')).toContain('--el-color-primary')
+    expect(iconOf('markup-arrow')).toContain('rotate(-40 10 7.6)')
     expect(iconOf('markup-stamp')).toContain('M624 475.968V640h144')
     expect(iconOf('markup-panel')).toContain('M6.5 9.5h7M6.5 12h7')
+    expect(iconOf('markup-panel')).toContain('cx="14.5" cy="14.7" r="4.2"')
+    expect(iconOf('markup-panel')).toContain('--el-color-primary')
     expect(iconOf('markup-import')).toContain('M4.5 2h6.4L15.5 6.6')
     expect(iconOf('markup-export')).toContain('M15.5 2H9.1L4.5 6.6')
     expect(iconOf('clear-markups')).toContain('viewBox="0 0 512 512"')
@@ -349,11 +447,22 @@ describe('default toolbar items', () => {
     const iconOf = (id: string) =>
       measure?.children?.find(child => child.id === id)?.icon
 
-    expect(iconOf('measure-distance')).toContain('M3.75 9.25h12.5v1.5H3.75')
-    expect(iconOf('measure-angle')).toContain('5.74 7.13 7 9.5 4.15 7.72')
-    expect(iconOf('measure-area')).toContain('M4 4h12v12H4V4Zm1.5 1.5v9h9v-9h-9Z')
-    expect(iconOf('measure-arc')).toContain('M2 16A10 10 0 0 0 18 16')
-    expect(iconOf('measure-point')).toContain('M9.25 2h1.5v5.25H16v1.5h-5.25V16')
+    expect(iconOf('measure-distance')).toContain('M4.4 6.9 7.2 5.05v3.7Z')
+    expect(iconOf('measure-distance')).toContain('--el-color-primary')
+    expect(iconOf('measure-continuous')).toContain('M4.4 6.9 7.2 5.05v3.7Z')
+    expect(iconOf('measure-continuous')).toContain('>n</text>')
+    expect(iconOf('measure-continuous')).toContain('--el-color-primary')
+    expect(iconOf('measure-angle')).toContain('M16.9 12.25H4.9L11.6 3.03')
+    expect(iconOf('measure-angle')).toContain('--el-color-primary')
+    expect(iconOf('measure-area')).toContain('M5 12V4.2A7.8 7.8 0 0 1 12.8 12Z')
+    expect(iconOf('measure-area')).toContain('--el-color-primary')
+    expect(iconOf('measure-arc')).toContain('M4.9 11.6A8.3 8.3 0 0 1 13.2 3.3')
+    expect(iconOf('measure-arc')).toContain('--el-color-primary')
+    expect(iconOf('measure-point')).toContain('M4 4.8v7.4h7.6')
+    expect(iconOf('measure-point')).toContain('--el-color-primary')
+    expect(iconOf('measurement-panel')).toContain('M3.5 6.5h13')
+    expect(iconOf('measurement-panel')).toContain('cx="14.5" cy="14.7" r="4.2"')
+    expect(iconOf('measurement-panel')).toContain('--el-color-primary')
     expect(iconOf('clear-measurements')).toContain('viewBox="0 0 512 512"')
     expect(iconOf('clear-measurements')).toContain('M 459.5 0')
     expect(iconOf('measurement-import')).toContain('M4.5 2h6.4L15.5 6.6')
@@ -373,7 +482,8 @@ describe('default toolbar items', () => {
       getPlacement: () => 'right',
       setPlacement: () => undefined
     })
-    const locale = items.find(item => item.id === 'locale')
+    const settings = items.find(item => item.id === 'settings')
+    const locale = settings?.children?.find(child => child.id === 'locale')
     expect(locale?.toggle).toBeUndefined()
     expect(locale?.childrenUi).toBe('toolbar')
     expect(locale?.selectedChildId).toBe('locale-cs')
@@ -384,6 +494,8 @@ describe('default toolbar items', () => {
       'locale-tr',
       'locale-ar'
     ])
+    expect(locale?.children?.[0]?.icon).toContain('ml-ex-ui-locale-badge')
+    expect(locale?.children?.[0]?.icon).toContain('EN')
   })
 })
 
@@ -447,6 +559,43 @@ describe('toolbar presets and separators', () => {
       items.map(item => ('preset' in item ? item.preset : item.id))
     ).toEqual(['select', 'pan', 'sep-tools', 'measure'])
     expect(items[3].children?.length).toBeGreaterThan(0)
+  })
+
+  it('keeps desktop labels for shared presets and still resolves phone-only ids', () => {
+    const items = acuiResolveToolbarItems({
+      items: [
+        { preset: 'layer' },
+        { preset: 'annotation' },
+        { preset: 'zoom' },
+        { preset: 'settings' }
+      ]
+    })
+    expect(items[0].label).toBe('toolbar.layer')
+    expect(items[1].label).toBe('toolbar.annotation')
+    expect(items[2].id).toBe('zoom')
+    expect(items[3].id).toBe('settings')
+  })
+
+  it('uses phone labels for shared presets when layout is phone', () => {
+    const items = acuiResolveToolbarItems(
+      { items: [{ preset: 'layer' }, { preset: 'annotation' }] },
+      undefined,
+      'phone'
+    )
+    expect(items[0].label).toBe('toolbar.layerShort')
+    expect(items[1].label).toBe('toolbar.annotationShort')
+  })
+
+  it('does not let phone variants overwrite desktop shared presets', () => {
+    const desktop = acuiCreateDefaultToolbarPresetMap(undefined, 'desktop')
+    expect(desktop.get('layer')?.label).toBe('toolbar.layer')
+    expect(desktop.get('annotation')?.label).toBe('toolbar.annotation')
+    expect(desktop.get('zoom')?.id).toBe('zoom')
+    expect(desktop.get('settings')?.id).toBe('settings')
+
+    const phone = acuiCreateDefaultToolbarPresetMap(undefined, 'phone')
+    expect(phone.get('layer')?.label).toBe('toolbar.layerShort')
+    expect(phone.get('annotation')?.label).toBe('toolbar.annotationShort')
   })
 
   it('preserves live layout children when expanding the layout preset', () => {

@@ -496,6 +496,13 @@ export class AcTrBatchedMesh extends AcTrBatchedMeshBase {
    * Computes bounds lazily from packed buffer data on first access and caches
    * the result on the geometry-info record.
    *
+   * This class does not override the mixin's `computeBoundingBoxAt` /
+   * `computeAggregateBoundingSphere` hooks the way {@link AcTrBatchedLine}
+   * does. A mesh slot is typically one tessellated entity with many vertices,
+   * and slot counts stay modest, so a cached `Box3` is cheaper than rescanning
+   * the packed buffer on every aggregate query. Revisit only if profiling shows
+   * mesh slot counts in the same range as line batches.
+   *
    * @param geometryId - Slot index to query.
    * @param target - Reusable {@link THREE.Box3} that receives the result.
    * @returns `target` when the id is valid, otherwise `null`.

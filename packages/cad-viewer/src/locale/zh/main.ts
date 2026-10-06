@@ -394,6 +394,10 @@ export default {
       text: '距离',
       description: '测量两点之间的距离'
     },
+    measureContinuous: {
+      text: '连续测',
+      description: '连续拾取多个点测量各段距离，直到按 Enter 或取消'
+    },
     measureAngle: {
       text: '角度',
       description: '测量共享一个顶点的两条线之间的角度'
@@ -409,6 +413,10 @@ export default {
     measurePoint: {
       text: '坐标',
       description: '测量拾取点的 X/Y 坐标'
+    },
+    measurementPanel: {
+      text: '测量面板',
+      description: '打开测量面板'
     },
     clearMeasurements: {
       text: '清除',
@@ -482,25 +490,21 @@ export default {
       text: '颜色',
       description: '设置新建批注的颜色'
     },
-    markupLineWeight: {
-      text: '线宽',
-      description: '设置新建批注的线宽'
-    },
     markupFontSize: {
-      text: '字号',
-      description: '设置文字与标注文本框的字号'
+      text: '字高',
+      description: '打开字高设置（适应屏幕或世界坐标高度）',
+      fit: '适应',
+      wcs: 'WCS'
     },
     measurementColor: {
       text: '颜色',
       description: '有选中测量标注时修改其颜色；未选中时用于后续添加的测量标注'
     },
-    measurementLineWeight: {
-      text: '线宽',
-      description: '有选中测量标注时修改其线宽；未选中时用于后续添加的测量标注'
-    },
     measurementFontSize: {
-      text: '字号',
-      description: '有选中测量标注时修改其字号；未选中时用于后续添加的测量标注'
+      text: '字高',
+      description: '有选中测量标注时修改其字高；未选中时用于后续添加的测量标注',
+      fit: '适应',
+      wcs: 'WCS'
     },
     showMarkup: {
       text: '显示批注',
@@ -528,14 +532,31 @@ export default {
     },
     switchBg: {
       text: '切换背景色',
-      description: '在白色与黑色之间切换绘图背景色'
+      description: '在白色与黑色之间切换绘图背景色',
+      disabledInReadingMode: '阅读模式下不可用（白底固定）'
+    },
+    readingMode: {
+      text: '阅读模式',
+      description: '切换阅读模式（白底黑线，便于审阅）'
+    },
+    zoom: {
+      text: '缩放',
+      description: '缩放工具：保存的视图、范围、智能范围、窗口'
+    },
+    zoomSaved: {
+      text: '保存的视图',
+      description: '恢复 AutoCAD 保存的视图（VPORT / 布局界限），或打开时的初始视口'
     },
     zoomToExtent: {
-      text: '范围缩放',
+      text: '范围',
       description: '缩放以显示所有对象'
     },
+    zoomSmartExtents: {
+      text: '智能',
+      description: '缩放到主要几何簇，忽略远处异常图元'
+    },
     zoomToBox: {
-      text: '矩形缩放',
+      text: '窗口',
       description: '缩放以显示矩形窗口内的对象'
     }
   },
@@ -545,7 +566,6 @@ export default {
       commandLine: '命令行',
       coordinate: '坐标',
       entityInfo: '图元信息',
-      fileName: '文件名',
       languageSelector: '语言菜单',
       ribbon: '功能区',
       toolbar: '工具栏',
@@ -707,6 +727,23 @@ export default {
         question: '疑问',
         answered: '已答复',
         closed: '已关闭'
+      }
+    },
+    measurements: {
+      tab: '测量',
+      title: '测量',
+      empty: '暂无测量',
+      type: '类型',
+      value: '数值',
+      filterAll: '全部',
+      delete: '删除',
+      clear: '全部清除',
+      typeValues: {
+        distance: '距离',
+        angle: '角度',
+        area: '面积',
+        arc: '弧长',
+        point: '坐标'
       }
     },
     missingResources: {
@@ -935,20 +972,37 @@ export default {
     fontCacheFailed: '缓存字体 "{fileName}" 失败。',
     failedToGetAvaiableFonts: '无法从"{url}"获取可用的字体信息！',
     failedToOpenFile: '无法打开文件"{fileName}"！',
+    failedToOpenFileToast: '无法打开"{fileName}"。详情请查看通知中心。',
     failedToOpenFileWorkerOom:
-      '无法打开"{fileName}"。图纸过大，超出当前可用内存。',
+      '无法打开"{fileName}"。使用 LibreDWG 解析器时内存不足，导致打开失败。可点击{dwgParserLink}购买商用 DWG Parser，以支持更大图纸并避免此问题。',
+    failedToOpenFileWorkerOomLink: '此页面',
     failedToOpenFileWorkerTimeout: '无法打开"{fileName}"。解析图纸时操作超时。',
     failedToOpenFileFontLoadFailed:
       '无法打开"{fileName}"。无法加载图纸所需的字体。',
+    failedToOpenFileLicenseExpired:
+      '无法打开"{fileName}"。DWG 转换器许可证已过期。',
+    failedToOpenFileLicenseInvalid:
+      '无法打开"{fileName}"。DWG 转换器许可证缺失或无效。',
     fetchingDrawingFile: '正在加载图纸文件...',
     unknownEntities:
-      '这张图纸中包含了{count}个未知或不支持的实体，这些实体将无法显示！'
+      '这张图纸中包含了{count}个未知或不支持的实体，这些实体将无法显示！',
+    tianzhengEntities:
+      '检测到天正（或同类第三方）自定义图元（约 {count} 个）。当前环境无法完整解析这些图元，部分内容可能无法显示。',
+    emptyProxyEntities:
+      '这张图纸中包含了{count}个缺少代理图形的自定义实体，这些实体将无法显示！'
   },
   notification: {
     center: {
       title: '通知',
       clearAll: '清除全部',
       noNotifications: '暂无通知'
+    },
+    group: {
+      fontMissed: '字体缺失',
+      fontMissedSummary: '共 {count} 条字体相关消息，点击展开查看详情',
+      unsupportedEntities: '不支持的图元',
+      unsupportedEntitiesSummary: '共 {count} 条解析相关消息，点击展开查看详情',
+      genericSummary: '共 {count} 条消息，点击展开查看详情'
     },
     time: {
       justNow: '刚刚',
@@ -958,12 +1012,18 @@ export default {
     },
     title: {
       failedToOpenFile: '无法打开文件',
-      failedToOpenFileWorkerOom: '图纸过大',
+      failedToOpenFileWorkerOom: '内存不足',
       failedToOpenFileWorkerTimeout: '打开超时',
       failedToOpenFileFontLoadFailed: '字体加载失败',
+      failedToOpenFileLicenseExpired: '许可证已过期',
+      failedToOpenFileLicenseInvalid: '许可证无效',
       fontNotFound: '找不到字体',
       fontNotLoaded: '无法加载字体',
-      parsingWarning: '解析图纸问题'
+      parsingWarning: '解析图纸问题',
+      systemMessage: '系统消息',
+      systemWarning: '系统警告',
+      systemError: '系统错误',
+      systemInfo: '系统信息'
     }
   }
 }

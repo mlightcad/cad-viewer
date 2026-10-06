@@ -20,10 +20,12 @@
         >
           <ml-layer-list :editor="props.editor" />
         </div>
-        <ml-entity-properties
+        <div
           v-else-if="store.dialogs.activePaletteTab === 'entityProperties'"
-          :entity-props-list="properties"
-        />
+          class="ml-entity-properties-wrapper"
+        >
+          <ml-entity-properties :entity-props-list="properties" />
+        </div>
         <div
           v-else-if="store.dialogs.activePaletteTab === 'countList'"
           class="ml-count-list-wrapper"
@@ -35,6 +37,12 @@
           class="ml-design-review-wrapper"
         >
           <ml-design-review-palette />
+        </div>
+        <div
+          v-else-if="store.dialogs.activePaletteTab === 'measurements'"
+          class="ml-measurement-palette-wrapper"
+        >
+          <ml-measurement-palette />
         </div>
         <div
           v-else-if="store.dialogs.activePaletteTab === 'missingResources'"
@@ -93,6 +101,7 @@ import MlCountList from './MlCountList.vue'
 import MlDesignReviewPalette from './MlDesignReviewPalette.vue'
 import MlEntityProperties from './MlEntityProperties.vue'
 import MlLayerList from './MlLayerList.vue'
+import MlMeasurementPalette from './MlMeasurementPalette.vue'
 import MlMemoryProfile from './MlMemoryProfile.vue'
 import MlMissingResources from './MlMissingResources.vue'
 import MlOpenFileProfile from './MlOpenFileProfile.vue'
@@ -204,6 +213,7 @@ const baseTabNames = [
   'entityProperties',
   'countList',
   'designReview',
+  'measurements',
   'blocks',
   'missingResources',
   'memoryProfile'
@@ -284,6 +294,16 @@ const properties = computed(() => {
   flex-direction: column;
 }
 
+.ml-entity-properties-wrapper {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .ml-count-list-wrapper {
   overflow: hidden;
   width: 100%;
@@ -294,6 +314,15 @@ const properties = computed(() => {
 }
 
 .ml-design-review-wrapper {
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ml-measurement-palette-wrapper {
   overflow: hidden;
   width: 100%;
   height: 100%;

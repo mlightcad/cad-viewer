@@ -10,8 +10,12 @@ import type {
   AcExMarkupRecord,
   AcExMarkupSidecarFile,
   AcExMarkupStatus,
+  AcExMarkupStyle,
   AcExMarkupType
 } from './AcExMarkupTypes'
+
+/** Overlay line weight: hairline (1 CSS px, not zoom-scaled). */
+const ACEX_MARKUP_LINE_WEIGHT = 0
 
 const MARKUP_STATUSES: readonly AcExMarkupStatus[] = [
   'open',
@@ -70,6 +74,12 @@ function isType(value: unknown): value is AcExMarkupType {
     typeof value === 'string' &&
     (MARKUP_TYPES as readonly string[]).includes(value)
   )
+}
+
+function parsePositiveNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && value > 0 && Number.isFinite(value)
+    ? value
+    : undefined
 }
 
 function parseRecord(raw: unknown): AcExMarkupRecord | undefined {
@@ -147,14 +157,19 @@ function parseRecord(raw: unknown): AcExMarkupRecord | undefined {
     layoutId: typeof raw.layoutId === 'string' ? raw.layoutId : undefined,
     style: {
       color: raw.style.color,
-      lineWeight:
-        typeof raw.style.lineWeight === 'number'
-          ? raw.style.lineWeight
-          : undefined,
+      // Accept legacy lineWeight / strokeWidthWcs without failing, but always hairline.
+      lineWeight: ACEX_MARKUP_LINE_WEIGHT,
       fontSize:
         typeof raw.style.fontSize === 'number' && raw.style.fontSize > 0
           ? raw.style.fontSize
-          : undefined
+          : undefined,
+      textHeightMode:
+        raw.style.textHeightMode === 'custom' ||
+        raw.style.textHeightMode === 'adaptive'
+          ? raw.style.textHeightMode
+          : undefined,
+      textHeightWcs: parsePositiveNumber(raw.style.textHeightWcs),
+      arrowSizeWcs: parsePositiveNumber(raw.style.arrowSizeWcs)
     },
     text: typeof raw.text === 'string' ? raw.text : undefined,
     comment: typeof raw.comment === 'string' ? raw.comment : '',
@@ -202,18 +217,33 @@ export function parseAcExMarkupSidecar(text: string): AcExMarkupSidecarFile {
   }
 }
 
+function normalizeStyleForWrite(style: AcExMarkupStyle): AcExMarkupStyle {
+  const { strokeWidthWcs: _ignored, ...rest } = style
+  return {
+    ...rest,
+    lineWeight: ACEX_MARKUP_LINE_WEIGHT
+  }
+}
+
 /** Serialize a sidecar file to pretty-printed JSON. */
 export function stringifyAcExMarkupSidecar(
   file: AcExMarkupSidecarFile
 ): string {
-  return `${JSON.stringify(file, null, 2)}\n`
+  const normalized: AcExMarkupSidecarFile = {
+    ...file,
+    markups: file.markups.map(m => ({
+      ...m,
+      style: normalizeStyleForWrite(m.style)
+    }))
+  }
+  return `${JSON.stringify(normalized, null, 2)}\n`
 }
 
 /**
  * Suggested sidecar file name for a drawing.
- * @example acExMarkupSidecarFileName('plan.dwg') → 'plan.markup.json'
+ * @example acexMarkupSidecarFileName('plan.dwg') → 'plan.markup.json'
  */
-export function acExMarkupSidecarFileName(drawingName?: string): string {
+export function acexMarkupSidecarFileName(drawingName?: string): string {
   if (!drawingName) return 'drawing.markup.json'
   const base = drawingName.replace(/\.(dwg|dxf|html)$/i, '')
   return `${base}.markup.json`

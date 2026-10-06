@@ -25,8 +25,10 @@ export interface AcTrHtmlElementOptions {
   layoutId?: string
   /**
    * When `true`, the DOM element scales with orthographic camera zoom
-   * (relative to first paint). When `false` (default), screen size stays
-   * constant.
+   * (relative to first paint). When `false`, screen size stays constant.
+   * {@link AcTrHtmlBadge}, {@link AcTrHtmlCallout}, {@link AcTrHtmlDot},
+   * {@link AcTrHtmlGrip}, and {@link AcTrHtmlStamp} default to `true`; other
+   * overlay types default to `false`.
    */
   scaleWithView?: boolean
   /**
@@ -102,6 +104,10 @@ export class AcTrHtmlElement {
 
   /**
    * Update the world-space anchor position.
+   *
+   * Preserves {@link baseZoom} so WCS-sized overlays (live draw previews and
+   * committed capsules) keep their world height while moving. Callers that
+   * intentionally re-anchor view scale should clear {@link baseZoom} themselves.
    */
   setPosition(worldPosition: { x: number; y: number; z?: number }): void {
     this.object.position.set(
@@ -112,8 +118,6 @@ export class AcTrHtmlElement {
     this.object.matrixAutoUpdate = true
     this.object.updateMatrix()
     this.object.updateMatrixWorld(true)
-    // Re-anchor view scale so the next zoom is relative to this placement.
-    this.baseZoom = undefined
   }
 
   /**

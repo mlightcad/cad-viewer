@@ -60,6 +60,12 @@ export default {
         'تحديد دقة عرض الزوايا بالتكامل مع AUNITS'
     },
 
+    bmpout: {
+      ...enCommand.ACAD.bmpout,
+      description:
+        'تصدير الرسم إلى BMP'
+    },
+
     cdxf: {
       ...enCommand.ACAD.cdxf,
       description:
@@ -70,6 +76,12 @@ export default {
       ...enCommand.ACAD.cpdf,
       description:
         'تصدير الرسم الحالي إلى PDF'
+    },
+
+    '-cpdf': {
+      ...enCommand.ACAD['-cpdf'],
+      description:
+        'تصدير الرسم الحالي إلى PDF باستخدام خيارات سطر الأوامر'
     },
 
     cecolor: {
@@ -380,6 +392,12 @@ export default {
         'تحديد وحدات الرسم المستخدمة في التحجيم التلقائي للكتل والصور والمراجع الخارجية عند الإدراج'
     },
 
+    jpgout: {
+      ...enCommand.ACAD.jpgout,
+      description:
+        'تصدير الرسم إلى JPEG'
+    },
+
     laycur: {
       ...enCommand.ACAD.laycur,
       description:
@@ -512,6 +530,12 @@ export default {
         'إظهار أو إخفاء القياسات في المخطط الحالي'
     },
 
+    measurementpanel: {
+      ...enCommand.ACAD.measurementpanel,
+      description:
+        'فتح لوحة القياس'
+    },
+
     measurementexport: {
       ...enCommand.ACAD.measurementexport,
       description:
@@ -546,6 +570,12 @@ export default {
       ...enCommand.ACAD.measuredistance,
       description:
         'قياس المسافة وفروق الإحداثيات بين نقطتين'
+    },
+
+    measurecontinuous: {
+      ...enCommand.ACAD.measurecontinuous,
+      description:
+        'قياس مسافات متسلسلة باختيار نقاط متتالية حتى Enter أو إلغاء'
     },
 
     measurepoint: {

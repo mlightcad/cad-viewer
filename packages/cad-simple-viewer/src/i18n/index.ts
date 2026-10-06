@@ -1,5 +1,5 @@
 import { AcEdCommandStack } from '../editor'
-import { AcApI18n, AcApLocale } from './AcApI18n'
+import { AcApI18n, type AcApLocale, type AcApLocaleChangedEventArgs } from './AcApI18n'
 import arCommand from './ar/command'
 import arJig from './ar/jig'
 import arMain from './ar/main'
@@ -56,4 +56,4 @@ export const userCmdDescription = (name: string) => {
   return cmdDescription(AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME, name)
 }
 
-export { AcApI18n, type AcApLocale }
+export { AcApI18n, type AcApLocale, type AcApLocaleChangedEventArgs }

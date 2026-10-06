@@ -14,6 +14,8 @@ export default {
     fileUpload: {
       title: 'Vyberte soubor CAD k zobrazení',
       subtitle: 'Importujte výkresy DWG nebo DXF do prohlížeče',
+      fontCdnNotice:
+        'If you are in a country or region with network access restrictions, please turn on a VPN. Default font files are hosted on GitHub; when access is limited they load very slowly, which can make opening drawings slow or cause text not to display correctly.',
       newDrawing: 'Nový výkres',
       or: 'nebo',
       dropFile: 'Přetáhněte soubor nebo',
@@ -46,9 +48,10 @@ export default {
       progressive: 'Průběžné',
       progressiveRendering: 'Průběžné vykreslování',
       on: 'Zapnuto',
-      progressiveOnHint: 'Zobrazit geometrii během načítání',
+      progressiveOnHint:
+        'Zobrazit geometrii během načítání; progress se skryje po převodu entit',
       off: 'Vypnuto',
-      progressiveOffHint: 'Čekat na dokončení převodu',
+      progressiveOffHint: 'Čekat na dokončení převodu entit i textu',
 
       nonPlottable: 'Netisknutelné',
       nonPlottableLayers: 'Netisknutelné hladiny',
@@ -64,6 +67,18 @@ export default {
       curveStandardHint: 'Vyvážené (100 stran na kružnici)',
       curveHigh: 'Kvalita',
       curveHighHint: 'Hladší křivky, více paměti',
+
+      paperSpaceBackground: 'Pozadí papíru',
+      paperSpaceWhite: 'Bílé',
+      paperSpaceWhiteHint: 'Desktop CAD / náhled tisku',
+      paperSpaceBlack: 'Černé',
+      paperSpaceBlackHint: 'Preferované pro webový prohlížeč',
+
+      export: 'Export',
+      exportEnable: 'Povolit',
+      exportEnableHint: 'Povolit export DXF/HTML/PDF/SVG/PNG',
+      exportDisable: 'Zakázat',
+      exportDisableHint: 'Skrýt příkazy exportu a položky nabídky File',
 
       invalidFileType:
         'Neplatný typ souboru. Nahrajte soubory DWG nebo DXF.'

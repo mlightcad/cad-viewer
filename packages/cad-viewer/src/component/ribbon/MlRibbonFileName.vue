@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="displayName && overlayStyle && !drawStyleToolbarVisible"
+    v-if="displayName && overlayStyle"
     class="ml-ribbon-file-name"
     :style="overlayStyle"
   >
@@ -11,7 +11,7 @@
 <script setup lang="ts">
 import { type CSSProperties, onUnmounted, ref, watchEffect } from 'vue'
 
-import { useDocument, useDrawStyleToolbarVisible } from '../../composable'
+import { useDocument } from '../../composable'
 
 interface Props {
   containerEl?: HTMLElement | null
@@ -20,7 +20,6 @@ interface Props {
 const props = defineProps<Props>()
 
 const { displayName } = useDocument()
-const drawStyleToolbarVisible = useDrawStyleToolbarVisible()
 
 const overlayStyle = ref<CSSProperties>()
 

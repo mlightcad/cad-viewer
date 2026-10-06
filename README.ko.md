@@ -12,7 +12,7 @@ DWG/DXF 파싱, 지오메트리 처리, 렌더링을 브라우저에서 직접 �
 
 - [**🌐 홈페이지**](https://mlightcad.com/)
 - **🌐 라이브 데모**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 API 문서**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (버전별) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (최신/dev) · [MCP 서버](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 API 문서**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (버전별) · [MCP 서버](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -41,6 +41,14 @@ DWG/DXF 파싱, 지오메트리 처리, 렌더링을 브라우저에서 직접 �
 - [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — 시스템 Electron을 사용하는 Arch Linux 소스 패키지(약 5.4 MB)
 - [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — 완전 오프라인 도면 열기를 위한 번들 폰트/템플릿이 포함된 Arch Linux 바이너리 패키지
 
+### 데모 앱 (Demo Apps)
+
+cad-viewer를 자체 제품에 통합하는 방법을 보여주는 공식 샘플 앱입니다:
+
+- [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer)용 최소 vanilla TypeScript 호스트. 로컬 또는 CDN DXF/DWG를 열고, 작은 툴바로 명령을 실행하며, 전체 Vue UI 없이 HTML/PDF/SVG 내보내기 플러그인을 지연 로드합니다.
+- [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) 기반의 전체 기능 Vue 3 앱. 메뉴, 리본, 대화상자, 명령줄, 상태 표시줄 포함([라이브 데모](https://mlightcad.github.io/cad-viewer-example/)).
+- [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js “CAD 드라이브” 데모. DWG/DXF 청크 이어받기 업로드, SQLite 파일 목록과 미리보기, **브라우저 라이브 파싱**(`cad-simple-viewer`) 또는 **서버측 ACEX 프리렌더**(더 빠른 로딩, 낮은 메모리)로 도면 열기를 지원합니다.
+
 ![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
 ## 기능
@@ -50,6 +58,7 @@ DWG/DXF 파싱, 지오메트리 처리, 렌더링을 브라우저에서 직접 �
 - **향상된 데이터 보안** — 파일이 기기를 떠나지 않아 완전한 프라이버시 보장
 - **쉬운 통합** — 서버 설정이나 백엔드 인프라 불필요
 - 서드파티 통합을 위한 모듈형 아키텍처
+- **모바일 레이아웃 및 터치** — `@mlightcad/cad-simple-viewer`에 반응형 폰/태블릿 UI와 터치 제스처(핀치 줌, 한 손가락 팬, 탭 선택)가 내장되어 별도 모바일 앱 없이 모바일 브라우저에서 사용 가능
 - **오프라인 HTML로 내보내기** — 현재 도면을 내장 뷰어(팬/줌, 범위 줌, 레이어, 거리 측정, EN/ZH UI)가 포함된 단일 자체 포함 `.html` 파일로 내보내기. 모든 브라우저에서 오프라인으로 열림. cad-viewer 인스턴스나 백엔드 불필요.
 - 오프라인 및 온라인 편집 워크플로
 - 고급 최적화 기법을 적용한 THREE.js 3D 렌더링 엔진
@@ -111,6 +120,8 @@ pnpm preview:simple
 ```
 
 ## 사용 방법
+
+CAD Viewer를 처음 사용하시나요? **[사용자 가이드](https://mlightcad.com/cad-viewer/docs/)**에서 뷰어 인터페이스, 데스크톱 및 터치 조작, 마크업, 측정 도구에 대한 단계별 안내를 확인하세요.
 
 ### 데스크톱 브라우저 조작
 - **선택**: 엔티티를 왼쪽 클릭
@@ -422,7 +433,7 @@ CAD-Viewer는 **탁월한 성능**을 위해 설계되었으며, 높은 프레�
 
 * [ ] ⏳ Google Drive 통합
 * [ ] WeChat 미니 프로그램 뷰어
-* [ ] 모바일 브라우저 지원(읽기 전용)
+* [x] 모바일 브라우저 지원(반응형 레이아웃 및 터치)
 
 ### 문서 및 커뮤니티
 

@@ -14,6 +14,7 @@ export type AcExMeasurementType =
   | 'angle'
   | 'area'
   | 'arc'
+  | 'radius'
   | 'point'
 
 /** 2D world point stored in a measurement sidecar. */
@@ -22,11 +23,24 @@ export interface AcExMeasurementPoint2d {
   y: number
 }
 
-/** Drawing style stored in the sidecar (CSS-friendly). */
+/** Drawing style stored in the sidecar (CSS-friendly + world-space sizes). */
 export interface AcExMeasurementSidecarStyle {
   color: string
+  /** Always hairline (`0`) on write; legacy non-zero values are ignored on parse. */
   lineWeight: number
+  /** Authoring badge font size in CSS pixels (legacy / UI). */
   fontSize: number
+  /** Authoring mode; omitted means adaptive (legacy). */
+  textHeightMode?: 'adaptive' | 'custom'
+  /** Badge text height in world units (preferred when restoring overlays). */
+  textHeightWcs?: number
+  /**
+   * Distance-measurement arrow-head length in world units (preferred when
+   * restoring overlays).
+   */
+  arrowSizeWcs?: number
+  /** Legacy canvas stroke width in world units. Ignored on parse; never written. */
+  strokeWidthWcs?: number
 }
 
 export interface AcExMeasurementDistanceGeometry {
@@ -61,6 +75,14 @@ export interface AcExMeasurementArcGeometry {
   through?: AcExMeasurementPoint2d
 }
 
+/** Radial dimension from circle/arc center to a circumference point. */
+export interface AcExMeasurementRadiusGeometry {
+  type: 'radius'
+  center: AcExMeasurementPoint2d
+  /** Point on the circumference that defines the dimension direction. */
+  point: AcExMeasurementPoint2d
+}
+
 export interface AcExMeasurementPointGeometry {
   type: 'point'
   position: AcExMeasurementPoint2d
@@ -71,6 +93,7 @@ export type AcExMeasurementGeometry =
   | AcExMeasurementAngleGeometry
   | AcExMeasurementAreaGeometry
   | AcExMeasurementArcGeometry
+  | AcExMeasurementRadiusGeometry
   | AcExMeasurementPointGeometry
 
 /** One committed measurement in a sidecar file. */

@@ -6,7 +6,7 @@ import {
 import type { AcApMarkupSidecarFile } from '../src/command/markup/AcApMarkupTypes'
 
 describe('AcApMarkupSidecar', () => {
-  it('round-trips a text markup', () => {
+  it('round-trips a text markup as hairline', () => {
     const file: AcApMarkupSidecarFile = {
       version: 1,
       drawingName: 'demo.dwg',
@@ -14,7 +14,13 @@ describe('AcApMarkupSidecar', () => {
         {
           id: 'markup-1',
           type: 'text',
-          style: { color: '#ff0000' },
+          style: {
+            color: '#ff0000',
+            lineWeight: 70,
+            fontSize: 12,
+            textHeightWcs: 1.5,
+            strokeWidthWcs: 0.2
+          },
           text: 'Hello',
           comment: 'note',
           status: 'open',
@@ -26,15 +32,51 @@ describe('AcApMarkupSidecar', () => {
       ]
     }
     const text = stringifyMarkupSidecar(file)
+    expect(text).not.toMatch(/"strokeWidthWcs"\s*:/)
+    expect(text).toMatch(/"lineWeight"\s*:\s*0/)
     const parsed = parseMarkupSidecar(text)
     expect(parsed.version).toBe(1)
     expect(parsed.drawingName).toBe('demo.dwg')
     expect(parsed.markups).toHaveLength(1)
     expect(parsed.markups[0].type).toBe('text')
+    expect(parsed.markups[0].style.lineWeight).toBe(0)
+    expect(parsed.markups[0].style.textHeightWcs).toBe(1.5)
+    expect(parsed.markups[0].style.strokeWidthWcs).toBeUndefined()
     expect(parsed.markups[0].geometry).toEqual({
       type: 'text',
       position: { x: 1, y: 2 }
     })
+  })
+
+  it('round-trips arrowSizeWcs on arrow markups', () => {
+    const file: AcApMarkupSidecarFile = {
+      version: 1,
+      markups: [
+        {
+          id: 'markup-arrow',
+          type: 'arrow',
+          style: {
+            color: '#00ff00',
+            lineWeight: 0,
+            arrowSizeWcs: 0.8
+          },
+          comment: '',
+          status: 'open',
+          author: 'alice',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+          geometry: {
+            type: 'arrow',
+            start: { x: 0, y: 0 },
+            end: { x: 5, y: 0 }
+          }
+        }
+      ]
+    }
+    const text = stringifyMarkupSidecar(file)
+    expect(text).toMatch(/"arrowSizeWcs"\s*:\s*0\.8/)
+    const parsed = parseMarkupSidecar(text)
+    expect(parsed.markups[0]?.style.arrowSizeWcs).toBe(0.8)
   })
 
   it('suggests sidecar file names', () => {
@@ -47,5 +89,34 @@ describe('AcApMarkupSidecar', () => {
     expect(() => parseMarkupSidecar('{"version":2,"markups":[]}')).toThrow(
       /version 1/
     )
+  })
+
+  it('ignores legacy strokeWidthWcs and non-finite textHeightWcs', () => {
+    const parsed = parseMarkupSidecar(
+      JSON.stringify({
+        version: 1,
+        markups: [
+          {
+            id: 'markup-1',
+            type: 'text',
+            style: {
+              color: '#ff0000',
+              fontSize: 12,
+              textHeightWcs: Number.POSITIVE_INFINITY,
+              strokeWidthWcs: 0.5
+            },
+            comment: '',
+            status: 'open',
+            author: '',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            updatedAt: '2026-01-01T00:00:00.000Z',
+            geometry: { type: 'text', position: { x: 1, y: 2 } }
+          }
+        ]
+      })
+    )
+    expect(parsed.markups[0]?.style.lineWeight).toBe(0)
+    expect(parsed.markups[0]?.style.textHeightWcs).toBeUndefined()
+    expect(parsed.markups[0]?.style.strokeWidthWcs).toBeUndefined()
   })
 })

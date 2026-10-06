@@ -1,12 +1,8 @@
-import {
-  AcCmColor,
-  AcGePoint2dLike
-} from '@mlightcad/data-model'
+import { AcCmColor, AcGePoint2dLike } from '@mlightcad/data-model'
 
 import { AcApContext } from '../../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
@@ -18,11 +14,8 @@ import {
   AcApHtmlLivePreview,
   acapStrokeLivePolyline
 } from '../overlay/AcApHtmlLivePreview'
-import {
-  configureMarkupCommand,
-  createMarkupMeta,
-  withMarkupInput
-} from './AcApMarkupCmdUtil'
+import { createMarkupMeta } from './AcApMarkupCmdUtil'
+import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
 import { commitMarkup } from './AcApMarkupPresenter'
 import {
   markupCloudVertices,
@@ -36,7 +29,7 @@ import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupLineWeight,
+  MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth
 } from './AcApMarkupUtil'
 
@@ -77,7 +70,7 @@ class AcApMarkupCloudJig extends AcEdPreviewJig<AcGePoint2dLike> {
   update(second: AcGePoint2dLike) {
     this._second = second
     this._color = defaultMarkupColor()
-    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const lineWidth = markupCanvasLineWidth(MARKUP_LINE_WEIGHT)
     const points = cloudLivePoints(this._first, this._second, this._view)
     this._preview.acapSetDraw((ctx, view) => {
       acapStrokeLivePolyline(ctx, view, points, this._color, lineWidth, {
@@ -96,14 +89,9 @@ class AcApMarkupCloudJig extends AcEdPreviewJig<AcGePoint2dLike> {
  * Create a rectangular revision-cloud markup, optionally with an attached
  * callout (leader + text, no arrow).
  */
-export class AcApMarkupCloudCmd extends AcEdCommand {
-  constructor() {
-    super()
-    configureMarkupCommand(this)
-  }
-
+export class AcApMarkupCloudCmd extends AcApMarkupDrawCmd {
   async execute(context: AcApContext) {
-    await withMarkupInput(context, async () => {
+    await this.withMarkupInput(context, async () => {
       const color = defaultMarkupColor()
       const p1 = await promptShapeFirstCorner(
         context,

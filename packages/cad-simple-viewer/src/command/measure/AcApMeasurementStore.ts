@@ -7,15 +7,28 @@ import {
 } from '../../util/AcApMeasurementUnits'
 import {
   acapCloneMeasurementStyle,
+  acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
   MEASUREMENT_FONT_SIZE,
   MEASUREMENT_LINE_WEIGHT
 } from '../../util/AcApMeasurementUtil'
 import type { AcTrView2d } from '../../view'
-import { hitTestMeasurementGeometry } from './AcApMeasurementGeometry'
+import {
+  ACAP_OVERLAY_ARROW_SIZE_PX,
+  acapScaleWcsWithFont,
+  acapScreenPxToWcs,
+  acapSeedOverlaySizesFromWcs
+} from '../overlay/AcApOverlayDrawUtil'
+import {
+  hitTestMeasurementGeometry,
+  measurementFocusBox
+} from './AcApMeasurementGeometry'
 import { runMeasurementEdit } from './AcApMeasurementHistory'
 import { serializeMeasurementStyle } from './AcApMeasurementSidecar'
-import type { AcApMeasurementRecord } from './AcApMeasurementTypes'
+import type {
+  AcApMeasurementRecord,
+  AcApMeasurementSidecarStyle
+} from './AcApMeasurementTypes'
 
 /** HTML transient layer for committed measurement overlays. */
 export const MEASUREMENT_LAYER = 'measurement'
@@ -87,10 +100,18 @@ export interface AcApMeasurementGroupExtras {
 }
 
 type MeasurementSelectionListener = () => void
+type MeasurementListListener = () => void
 
 const extrasById = new Map<string, AcApMeasurementGroupExtras>()
+/**
+ * Per-group extras retained across {@link AcTrHtmlTransientManager.detach} so
+ * undo/redo can restore geometry snapshots when groups with the same id are
+ * swapped during grip edits.
+ */
+const extrasByGroup = new WeakMap<AcTrHtmlGroup, AcApMeasurementGroupExtras>()
 const stylesById = new Map<string, AcApMeasurementStyle>()
 const selectionListeners = new Set<MeasurementSelectionListener>()
+const listListeners = new Set<MeasurementListListener>()
 let selectedMeasurementId: string | undefined
 
 /** Style currently stored for a committed measurement group. */
@@ -127,6 +148,118 @@ function notifyMeasurementSelection(): void {
   for (const listener of selectionListeners) listener()
 }
 
+/** Notify when committed measurements are added, removed, restored, or filtered by layout. */
+export function subscribeMeasurements(
+  listener: MeasurementListListener
+): () => void {
+  listListeners.add(listener)
+  return () => {
+    listListeners.delete(listener)
+  }
+}
+
+function notifyMeasurementsChanged(): void {
+  for (const listener of listListeners) listener()
+}
+
+/**
+ * Notify list subscribers that the active layout changed, so layout-filtered
+ * views (the measurement palette) can re-query {@link listLayoutMeasurements}.
+ */
+export function notifyMeasurementLayoutChanged(): void {
+  notifyMeasurementsChanged()
+}
+
+/**
+ * Committed measurements on the active layout (records without `layoutId`
+ * are treated as present on every layout).
+ */
+export function listLayoutMeasurements(
+  view: AcTrView2d
+): AcApMeasurementRecord[] {
+  const layoutId = view.activeLayoutBtrId
+  return collectMeasurementRecords(view).filter(
+    record => record.layoutId == null || record.layoutId === layoutId
+  )
+}
+
+/**
+ * Formatted badge text for a committed measurement, or an empty string when
+ * the value or drawing database is unavailable.
+ */
+export function getMeasurementValueText(
+  id: string,
+  db?: AcDbDatabase | null
+): string {
+  const extras = extrasById.get(id)
+  if (!extras?.value || !db) return ''
+  return formatMeasurementValue(db, extras.value)
+}
+
+/**
+ * Select a measurement and zoom the view to its geometry plus HTML overlays.
+ *
+ * Coordinate measurements include the badge (capsule) so the camera frames
+ * the label instead of zooming onto the point. Zooming to a 1-unit pad around
+ * the point would scale the WCS-sized capsule over the canvas and steal
+ * pointer events.
+ */
+export function focusMeasurement(
+  view: AcTrView2d,
+  record: AcApMeasurementRecord
+): void {
+  const box = measurementFocusBox(
+    record.geometry,
+    collectMeasurementOverlayRects(view, record.id),
+    (clientX, clientY) => {
+      const canvas = view.viewportToCanvas({ x: clientX, y: clientY })
+      return view.screenToWorld(canvas)
+    }
+  )
+  if (!box) return
+  view.zoomTo(box, 1.5)
+  view.htmlTransientManager.selectGroup(record.id)
+}
+
+/** Badge / callout client rects; skip endpoint grips that sit on geometry. */
+function collectMeasurementOverlayRects(
+  view: AcTrView2d,
+  id: string
+): Array<{ left: number; top: number; right: number; bottom: number }> {
+  const group = view.htmlTransientManager.getGroup(id)
+  if (!group) return []
+  const rects: Array<{
+    left: number
+    top: number
+    right: number
+    bottom: number
+  }> = []
+  for (const child of group.children) {
+    const el = child.element
+    if (
+      el.classList.contains('ml-html-dot') ||
+      el.classList.contains('ml-html-grip')
+    ) {
+      continue
+    }
+    const rect = el.getBoundingClientRect()
+    if (rect.width <= 0 && rect.height <= 0) continue
+    rects.push(rect)
+  }
+  return rects
+}
+
+/**
+ * Detach one committed measurement (undoable).
+ */
+export function removeMeasurement(view: AcTrView2d, id: string): void {
+  if (!view.htmlTransientManager.getGroup(id)) return
+  runMeasurementEdit(view, 'Delete Measurement', () => {
+    view.htmlTransientManager.detach(id)
+  })
+  view.isHtmlDirty = true
+}
+
 function rememberStyle(id: string, style: AcApMeasurementStyle): void {
   stylesById.set(id, acapCloneMeasurementStyle(style))
 }
@@ -134,32 +267,115 @@ function rememberStyle(id: string, style: AcApMeasurementStyle): void {
 /**
  * Apply a style patch to one measurement group (HTML badges/dots and canvases).
  * Does not record undo; wrap with {@link runMeasurementEdit} from UI.
+ *
+ * Color and font size are independent: changing one does not rewrite the
+ * other's world-space size from the current camera zoom. Overlay strokes stay
+ * hairline ({@link MEASUREMENT_LINE_WEIGHT}); strokeWidthWcs is never written.
  */
 export function applyMeasurementStyle(
   view: AcTrView2d,
   group: AcTrHtmlGroup,
-  patch: Partial<AcApMeasurementStyle>
+  patch: Partial<
+    Pick<AcApMeasurementStyle, 'color' | 'fontSize' | 'textHeightMode' | 'textHeightWcs'>
+  >
 ): void {
   const prev = stylesById.get(group.id)
   const color = patch.color?.clone() ?? prev?.color.clone()
   if (!color) return
   const next: AcApMeasurementStyle = {
     color,
-    lineWeight: patch.lineWeight ?? prev?.lineWeight ?? MEASUREMENT_LINE_WEIGHT,
-    fontSize: patch.fontSize ?? prev?.fontSize ?? MEASUREMENT_FONT_SIZE
+    lineWeight: MEASUREMENT_LINE_WEIGHT,
+    fontSize: patch.fontSize ?? prev?.fontSize ?? MEASUREMENT_FONT_SIZE,
+    textHeightMode: patch.textHeightMode ?? prev?.textHeightMode ?? 'adaptive',
+    textHeightWcs:
+      patch.textHeightWcs ??
+      (patch.textHeightMode === 'custom' ? undefined : prev?.textHeightWcs)
   }
+  if (next.textHeightMode === 'custom' && patch.textHeightWcs != null) {
+    next.textHeightWcs = patch.textHeightWcs
+  }
+  const fontSizeChanged =
+    (patch.fontSize != null &&
+      (prev == null || patch.fontSize !== prev.fontSize)) ||
+    (patch.textHeightWcs != null &&
+      (prev == null || patch.textHeightWcs !== prev.textHeightWcs)) ||
+    (patch.textHeightMode != null &&
+      (prev == null || patch.textHeightMode !== prev.textHeightMode))
+
   rememberStyle(group.id, next)
   const extras = extrasById.get(group.id)
   if (extras) {
     extras.style = acapCloneMeasurementStyle(next)
     if (extras.snapshot) {
+      const prevSnap = extras.snapshot.style
+      const base = serializeMeasurementStyle(next)
+      const textHeightWcs =
+        next.textHeightMode === 'custom' &&
+        next.textHeightWcs != null &&
+        next.textHeightWcs > 0
+          ? next.textHeightWcs
+          : resolveUpdatedTextHeightWcs(
+              view,
+              next.fontSize,
+              prev?.fontSize,
+              prevSnap.textHeightWcs,
+              fontSizeChanged
+            )
+      const prevFont = prev?.fontSize ?? MEASUREMENT_FONT_SIZE
+      const arrowSizeWcs = acapScaleWcsWithFont(
+        prevSnap.arrowSizeWcs,
+        prevFont,
+        next.fontSize
+      )
       extras.snapshot = {
         ...extras.snapshot,
-        style: serializeMeasurementStyle(next)
+        style: {
+          ...base,
+          textHeightWcs,
+          ...(arrowSizeWcs != null && arrowSizeWcs > 0 ? { arrowSizeWcs } : {})
+        }
       }
     }
   }
+
+  if (fontSizeChanged) {
+    const snap = extrasById.get(group.id)?.snapshot?.style
+    acapSeedOverlaySizesFromWcs(view, {
+      textHeightWcs: snap?.textHeightWcs,
+      arrowSizeWcs: snap?.arrowSizeWcs,
+      fontSizePx: next.fontSize,
+      strokeScreenPx: acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT),
+      elements: [...(group.children ?? [])],
+      canvases: (group.canvases ?? []).map(c => c.canvas)
+    })
+  }
+
   paintMeasurementGroup(view, group, next)
+}
+
+/**
+ * Scale or recompute text height WCS when font size changes; otherwise keep.
+ */
+function resolveUpdatedTextHeightWcs(
+  view: AcTrView2d,
+  nextFontSize: number,
+  prevFontSize: number | undefined,
+  prevTextHeightWcs: number | undefined,
+  fontSizeChanged: boolean
+): number {
+  if (
+    fontSizeChanged &&
+    prevTextHeightWcs != null &&
+    prevTextHeightWcs > 0 &&
+    prevFontSize != null &&
+    prevFontSize > 0
+  ) {
+    return prevTextHeightWcs * (nextFontSize / prevFontSize)
+  }
+  if (fontSizeChanged || prevTextHeightWcs == null || !(prevTextHeightWcs > 0)) {
+    return acapScreenPxToWcs(nextFontSize, view)
+  }
+  return prevTextHeightWcs
 }
 
 /**
@@ -167,7 +383,9 @@ export function applyMeasurementStyle(
  */
 export function applyMeasurementStyleToSelection(
   view: AcTrView2d,
-  patch: Partial<AcApMeasurementStyle>
+  patch: Partial<
+    Pick<AcApMeasurementStyle, 'color' | 'fontSize' | 'textHeightMode' | 'textHeightWcs'>
+  >
 ): void {
   const groups = view.htmlTransientManager
     .getSelectedGroups()
@@ -193,6 +411,11 @@ function paintMeasurementGroup(
     colorful.setColor?.(style.color)
     colorful.setFontSize?.(style.fontSize)
   }
+  if (style.fontSize > 0) {
+    for (const overlay of group.canvases ?? []) {
+      overlay.canvas.style.fontSize = `${style.fontSize}px`
+    }
+  }
 
   const extras = extrasById.get(group.id)
   extras?.redraw?.(style)
@@ -201,6 +424,7 @@ function paintMeasurementGroup(
 
 /**
  * Reformat committed measurement badges using the effective measurement units.
+ * Notifies list subscribers so palettes refresh their cached value text.
  */
 export function refreshMeasurementValueLabels(
   view: AcTrView2d,
@@ -216,6 +440,7 @@ export function refreshMeasurementValueLabels(
     }
   }
   view.isHtmlDirty = true
+  notifyMeasurementsChanged()
 }
 
 /** Serializable snapshots of committed measurements currently on the view. */
@@ -226,14 +451,36 @@ export function collectMeasurementRecords(
   for (const group of view.htmlTransientManager.groupsOnLayer(MEASUREMENT_LAYER)) {
     const extras = extrasById.get(group.id)
     if (!extras?.snapshot) continue
-    const style = extras.style ?? stylesById.get(group.id)
+    const live = extras.style ?? stylesById.get(group.id)
+    const snapStyle = extras.snapshot.style
+    let style: AcApMeasurementSidecarStyle
+    if (live) {
+      // Keep live color / fontSize, force hairline lineWeight, preserve
+      // creation-time textHeightWcs / arrowSizeWcs from the snapshot. Never
+      // export strokeWidthWcs.
+      const base = serializeMeasurementStyle(live)
+      const arrowSizeWcs =
+        snapStyle.arrowSizeWcs != null && snapStyle.arrowSizeWcs > 0
+          ? snapStyle.arrowSizeWcs
+          : extras.snapshot.type === 'distance'
+            ? acapScreenPxToWcs(ACAP_OVERLAY_ARROW_SIZE_PX, view)
+            : undefined
+      style = {
+        ...base,
+        lineWeight: MEASUREMENT_LINE_WEIGHT,
+        textHeightWcs:
+          snapStyle.textHeightWcs ?? acapScreenPxToWcs(base.fontSize, view),
+        ...(arrowSizeWcs != null && arrowSizeWcs > 0 ? { arrowSizeWcs } : {})
+      }
+    } else {
+      const { strokeWidthWcs: _omit, ...rest } = snapStyle
+      style = { ...rest, lineWeight: MEASUREMENT_LINE_WEIGHT }
+    }
     records.push({
       ...extras.snapshot,
       id: group.id,
       layoutId: group.layoutId,
-      style: style
-        ? serializeMeasurementStyle(style)
-        : extras.snapshot.style
+      style
     })
   }
   return records
@@ -245,6 +492,21 @@ export function resetMeasurementStyleState(): void {
   stylesById.clear()
   selectedMeasurementId = undefined
   notifyMeasurementSelection()
+  notifyMeasurementsChanged()
+}
+
+/**
+ * Re-bind extras for a group reattached by measurement undo/redo.
+ * Call after {@link AcTrHtmlTransientManager.reattach}.
+ */
+export function restoreMeasurementGroupExtras(group: AcTrHtmlGroup): void {
+  const extras = extrasByGroup.get(group)
+  if (!extras) return
+  extrasById.set(group.id, extras)
+  if (extras.style) {
+    rememberStyle(group.id, extras.style)
+  }
+  notifyMeasurementsChanged()
 }
 
 /**
@@ -260,7 +522,9 @@ export function commitMeasurementGroup(
   extras?: AcApMeasurementGroupExtras
 ): void {
   const entityIds = extras?.entityIds ?? []
-  extrasById.set(group.id, extras ?? {})
+  const payload = extras ?? {}
+  extrasById.set(group.id, payload)
+  extrasByGroup.set(group, payload)
   if (extras?.style) {
     rememberStyle(group.id, extras.style)
   }
@@ -306,6 +570,7 @@ export function commitMeasurementGroup(
     } catch {
       // Ignore dispose errors from domain cleanups.
     }
+    notifyMeasurementsChanged()
   }
 
   runMeasurementEdit(view, 'Create Measurement', () => {
@@ -318,6 +583,7 @@ export function commitMeasurementGroup(
     group.setVisible(false)
   }
   view.isHtmlDirty = true
+  notifyMeasurementsChanged()
 }
 
 /** Snapshot geometry for a committed measurement group, if available. */
@@ -325,6 +591,14 @@ export function getMeasurementGeometry(
   id: string
 ): AcApMeasurementRecord['geometry'] | undefined {
   return extrasById.get(id)?.snapshot?.geometry
+}
+
+/** Full sidecar snapshot for a committed measurement, if available. */
+export function getMeasurementSnapshot(
+  id: string
+): AcApMeasurementRecord | undefined {
+  const snap = extrasById.get(id)?.snapshot
+  return snap ? { ...snap, geometry: snap.geometry } : undefined
 }
 
 /**

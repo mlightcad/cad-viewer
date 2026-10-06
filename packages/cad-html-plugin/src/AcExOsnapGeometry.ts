@@ -12,6 +12,10 @@
 import { AcGeCircArc2d, type AcGePoint2dLike } from '@mlightcad/data-model'
 
 import {
+  expandOsnapPath,
+  pathEdgeNearAperture
+} from './AcExOsnapPath'
+import {
   type AcExOsnapAcGeCurve,
   ellipsePointAtNormalized,
   primitiveToAcGeCurve
@@ -109,6 +113,14 @@ export function collectPrimitiveDiscreteSnapCandidates(
   modes: Set<AcExOsnapMode>,
   geo?: AcExOsnapAcGeCurve
 ): AcExOsnapCandidate[] {
+  if (prim.kind === 'path') {
+    const out: AcExOsnapCandidate[] = []
+    for (const edge of expandOsnapPath(prim)) {
+      out.push(...collectPrimitiveDiscreteSnapCandidates(edge, modes))
+    }
+    return out
+  }
+
   const out: AcExOsnapCandidate[] = []
   const resolved = geo ?? primitiveToAcGeCurve(prim)
 
@@ -210,6 +222,23 @@ export function collectPrimitiveNearestSnapCandidate(
   py: number,
   geo?: AcExOsnapAcGeCurve
 ): AcExOsnapCandidate | undefined {
+  if (prim.kind === 'path') {
+    let best: AcExOsnapCandidate | undefined
+    let bestDist = Infinity
+    const threshold = Number.POSITIVE_INFINITY
+    for (const edge of expandOsnapPath(prim)) {
+      if (!pathEdgeNearAperture(edge, px, py, threshold)) continue
+      const candidate = collectPrimitiveNearestSnapCandidate(edge, px, py)
+      if (!candidate) continue
+      const d = distSq(px, py, candidate.x, candidate.y)
+      if (d < bestDist) {
+        bestDist = d
+        best = candidate
+      }
+    }
+    return best
+  }
+
   const pick = { x: px, y: py, z: 0 }
   const resolved = geo ?? primitiveToAcGeCurve(prim)
 

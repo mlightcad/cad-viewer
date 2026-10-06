@@ -14,6 +14,8 @@ export default {
     fileUpload: {
       title: 'Select CAD File to View',
       subtitle: 'Import DWG or DXF drawings into the viewer',
+      fontCdnNotice:
+        'If you are in a country or region with network access restrictions, please turn on a VPN. Default font files are hosted on GitHub; when access is limited they load very slowly, which can make opening drawings slow or cause text not to display correctly.',
       newDrawing: 'New Drawing',
       or: 'or',
       dropFile: 'Drop file or',
@@ -46,9 +48,10 @@ export default {
       progressive: 'Progressive',
       progressiveRendering: 'Progressive rendering',
       on: 'On',
-      progressiveOnHint: 'Show geometry while loading',
+      progressiveOnHint:
+        'Show geometry while loading; progress hides when entities finish',
       off: 'Off',
-      progressiveOffHint: 'Wait until fully converted',
+      progressiveOffHint: 'Wait until entities and text are fully converted',
 
       nonPlottable: 'Non-plottable',
       nonPlottableLayers: 'Non-plottable layers',
@@ -64,6 +67,18 @@ export default {
       curveStandardHint: 'Balanced (100 sides per circle)',
       curveHigh: 'Quality',
       curveHighHint: 'Smoother curves, more memory',
+
+      paperSpaceBackground: 'Paper background',
+      paperSpaceWhite: 'White',
+      paperSpaceWhiteHint: 'Desktop CAD / print preview',
+      paperSpaceBlack: 'Black',
+      paperSpaceBlackHint: 'Web viewer preference',
+
+      export: 'Export',
+      exportEnable: 'Enable',
+      exportEnableHint: 'Allow DXF/HTML/PDF/SVG/PNG export',
+      exportDisable: 'Disable',
+      exportDisableHint: 'Hide export commands and File menu items',
 
       invalidFileType:
         'Invalid file type. Please upload DWG or DXF files.'

@@ -15,7 +15,7 @@ The plugin is designed for **lazy loading** so the SVG renderer bundle is only d
 
 - **Vector SVG export** — renders model-space entities to SVG via `AcSvgRenderer`
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazySvgPlugin`
-- **Reusable renderer** — `AcSvgRenderer` is also used by `@mlightcad/cad-pdf-plugin` for PDF export
+- **Reusable renderer** — `AcSvgRenderer` powers the `csvg` command
 - **Framework-agnostic** — no Vue/React dependency; works anywhere `cad-simple-viewer` runs
 
 ## Installation
@@ -113,4 +113,4 @@ const svg = await renderer.exportAsync()
 
 ## Role in MLightCAD
 
-This package extends `cad-simple-viewer` with optional SVG export. It keeps the SVG renderer out of the core viewer bundle through lazy loading, while still exposing `AcSvgRenderer` for other packages such as `cad-pdf-plugin`.
+This package extends `cad-simple-viewer` with optional SVG export. It keeps the SVG renderer out of the core viewer bundle through lazy loading.

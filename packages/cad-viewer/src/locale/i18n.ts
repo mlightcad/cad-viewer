@@ -1,4 +1,4 @@
-import { AcApI18n } from '@mlightcad/cad-simple-viewer'
+import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
 import { AcDbEntity } from '@mlightcad/data-model'
 import { createI18n } from 'vue-i18n'
 
@@ -23,8 +23,11 @@ import zhDialog from './zh/dialog'
 import zhEnity from './zh/entity'
 import zhMain from './zh/main'
 
-// Get language of browser - use same logic as useLocale
-const getInitialLocale = (): string => {
+/**
+ * Resolves the startup locale from localStorage or the browser language.
+ * Matches {@link useLocale} persistence (`preferred_lang`).
+ */
+const getInitialLocale = (): AcApLocale => {
   const stored = localStorage.getItem('preferred_lang')
   if (
     stored === 'en' ||
@@ -32,8 +35,9 @@ const getInitialLocale = (): string => {
     stored === 'tr' ||
     stored === 'cs' ||
     stored === 'ar'
-  )
+  ) {
     return stored
+  }
 
   const browserLang = navigator.language.toLowerCase()
   const browserLocale = browserLang.substring(0, 2)
@@ -83,14 +87,28 @@ AcApI18n.mergeLocaleMessage('tr', messages.tr)
 AcApI18n.mergeLocaleMessage('cs', messages.cs)
 AcApI18n.mergeLocaleMessage('ar', messages.ar)
 
+const initialLocale = getInitialLocale()
+
 export const i18n = createI18n({
   legacy: false,
   messages: AcApI18n.messages,
-  locale: getInitialLocale(),
+  locale: initialLocale,
   fallbackLocale: 'en',
   allowComposition: true,
   globalInjection: true
 })
+
+/**
+ * vue-i18n follows {@link AcApI18n} — never the other way around.
+ * All locale changes must go through {@link AcApI18n.setCurrentLocale}.
+ */
+AcApI18n.events.localeChanged.addEventListener(args => {
+  i18n.global.locale.value = args.new
+})
+
+// Align the engine with the UI startup locale (no-ops when already equal).
+AcApI18n.setCurrentLocale(initialLocale)
+
 export const entityName = (entity: AcDbEntity) => {
   const t = i18n.global.t
   const key = 'entity.entityName.' + entity.type

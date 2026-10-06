@@ -49,8 +49,21 @@ jobs:
         run: pnpm lint
 
       - name: Build projects
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+          # SPA client id is public; this repo stores it as an Actions secret.
+          # `vars.*` and `secrets.*` are different stores — using the wrong one
+          # injects an empty string, which Vite will not override from .env files.
+          # Do not export empty VITE_MSAL_* for the same reason.
+          MSAL_CLIENT_ID: ${{ secrets.VITE_MSAL_CLIENT_ID || vars.VITE_MSAL_CLIENT_ID }}
+          MSAL_TENANT_ID: ${{ secrets.VITE_MSAL_TENANT_ID || vars.VITE_MSAL_TENANT_ID }}
         run: |
-          export NODE_OPTIONS="--max-old-space-size=4096"
+          if [ -n "${MSAL_CLIENT_ID:-}" ]; then
+            export VITE_MSAL_CLIENT_ID="$MSAL_CLIENT_ID"
+          fi
+          if [ -n "${MSAL_TENANT_ID:-}" ]; then
+            export VITE_MSAL_TENANT_ID="$MSAL_TENANT_ID"
+          fi
           pnpm run build
 
       - name: Run tests
@@ -76,17 +89,29 @@ jobs:
             packages/cad-viewer-example/test-results/
           if-no-files-found: ignore
 
-      - name: Build docs
-        run: pnpm docs:build
+      # GitHub Pages hosts the VitePress user guide only. The TypeDoc API
+      # reference is built and served by Read the Docs (see .readthedocs.yaml).
+      - name: Build user guide
+        run: DOCS_BASE=/cad-viewer/docs/ pnpm docs:build
 
       - name: Pre-serve
         run: pnpm pre-serve
 
-      - name: Export self-contained HTML demo
+      # Builds canteen.html (single-file) and canteen.zip (multi-file ACEX),
+      # then extracts the zip to self-contained-html/canteen-progressive/ so
+      # GitHub Pages can serve progressive chunk loading without a zip download.
+      - name: Export self-contained HTML demos
         if: github.ref == 'refs/heads/main'
         run: node packages/examples/exportDemoHtml.js
         env:
           PLAYWRIGHT_BROWSER_CHANNEL: chrome
+
+      - name: Verify progressive package extracted for Pages
+        if: github.ref == 'refs/heads/main'
+        run: |
+          test -f packages/examples/public/self-contained-html/canteen.html
+          test -f packages/examples/public/self-contained-html/canteen.zip
+          test -f packages/examples/public/self-contained-html/canteen-progressive/viewer.html
 
       # Keep release/pages-only actions out of this job so PR builds do not
       # download softprops/action-gh-release or upload-pages-artifact (GitHub

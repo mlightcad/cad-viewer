@@ -13,6 +13,8 @@ export default {
     lengthSection: 'Length',
     lengthType: 'Type:',
     lengthPrecision: 'Precision:',
+    lengthUnit: 'Unit:',
+    lengthUnitFollowDrawing: 'Follow drawing',
     angleSection: 'Angle',
     angleType: 'Type:',
     anglePrecision: 'Precision:',
@@ -69,8 +71,17 @@ export default {
   },
   exportHtmlDlg: {
     title: 'Export to HTML',
-    tabExport: 'Export',
+    tabData: 'Data',
+    tabDisplay: 'Display',
     tabSecurity: 'Security',
+    exportFormat: 'Export format',
+    exportFormatSingle: 'Self-contained HTML',
+    exportFormatSingleHint: 'Single .html file that opens offline',
+    exportFormatMulti: 'Multi-file package (ZIP)',
+    exportFormatMultiHint:
+      'Download a zip; unzip and host for progressive loading. Password and expiry apply only to self-contained HTML',
+    securitySingleOnlyHint:
+      'Password and expiry are available only for self-contained HTML export.',
     layersSection: 'Layers',
     exportInvisibleLayers: 'Export invisible layers',
     exportInvisibleLayersHint:
@@ -109,6 +120,28 @@ export default {
     copyPassword: 'Copy',
     copyPasswordSuccess: 'Password copied to the clipboard.',
     copyPasswordFailed: 'Unable to copy the password to the clipboard.'
+  },
+  exportPdfDlg: {
+    title: 'Export to PDF',
+    modelSpaceSection: 'Model space',
+    modelSpaceDisplay: 'Display',
+    modelSpaceDisplayHint: 'Export what is currently shown in the viewport',
+    modelSpaceExtents: 'Extents',
+    modelSpaceExtentsHint:
+      'Export the extents of all objects in the current space',
+    paperSpaceSection: 'Paper space',
+    exportLayouts: 'Export layouts',
+    exportLayoutsHint: 'Include paper-space layouts as additional PDF pages',
+    textModeSection: 'Text',
+    textMode: 'Text rendering',
+    textModeText: 'Text objects',
+    textModeTextHint:
+      'Keep text selectable/searchable and shrink the file (SHX text stays vector)',
+    textModeVector: 'Vector outlines',
+    textModeVectorHint:
+      'Convert text to lines and fills, matching the screen, but the file is larger',
+    yes: 'Yes',
+    no: 'No'
   },
   quickSelectDlg: {
     title: 'Quick Select',

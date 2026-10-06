@@ -12,7 +12,7 @@ It also offers something you will rarely find in other CAD viewers—**one-click
 
 - [**🌐 Home Page**](https://mlightcad.com/)
 - **🌐 Live Demo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 API Docs**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versioned) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (latest/dev) · [MCP Server](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 API Docs**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versioned) · [MCP Server](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -41,6 +41,14 @@ Community Linux desktop packages:
 - [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — Arch Linux source package using system Electron (~5.4 MB)
 - [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — Arch Linux binary package with bundled fonts/templates for fully offline drawing open
 
+### Demo Apps
+
+Official sample apps that show how to integrate cad-viewer into your own product:
+
+- [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — Minimal vanilla TypeScript host for [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer): open local or CDN DXF/DWG, drive commands from a small toolbar, and lazy-load HTML/PDF/SVG export plugins without the full Vue UI.
+- [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — Full-featured Vue 3 app built on [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) with menus, ribbons, dialogs, command line, and status bar ([live demo](https://mlightcad.github.io/cad-viewer-example/)).
+- [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js “CAD drive” demo: chunked resumable DWG/DXF upload, SQLite-backed file list with preview thumbnails, and open drawings either with **live browser parse** (`cad-simple-viewer`) or **server-side ACEX prerender** (faster load, lower memory).
+
 ![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
 ## Features
@@ -50,6 +58,7 @@ Community Linux desktop packages:
 - **Enhanced data security** - Files never leave your device, ensuring complete privacy
 - **Easy integration** - No server setup or backend infrastructure needed
 - Modular architecture for seamless third-party integration
+- **Mobile layout & touch** — Responsive phone/tablet UI and touch gestures (pinch-to-zoom, single-finger pan, tap to select) built into `@mlightcad/cad-simple-viewer`, so mobile browsers work without a separate app
 - **Export to offline HTML** — Export the current drawing as one self-contained `.html` file with an embedded viewer (pan/zoom, zoom extents, layers, distance measure, EN/ZH UI). Opens offline in any browser; no cad-viewer instance or backend required.
 - Offline and online editing workflows
 - THREE.js 3D rendering engines with advanced optimization techniques
@@ -112,6 +121,8 @@ pnpm preview:simple
 
 ## How to Use
 
+New to CAD Viewer? The **[User Guide](https://mlightcad.com/cad-viewer/docs/)** provides step-by-step instructions for the viewer interface, desktop and touch operations, markup, and measurement tools.
+
 ### Desktop Browser Operations
 - **Select**: Left-click on entities
 - **Zoom in/out**: Scroll mouse wheel up/down
@@ -140,6 +151,7 @@ The monorepo ships several first-party plugins. Each focuses on one concern; com
 | [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | Export drawings to **self-contained offline HTML** | `chtml` (dialog in `cad-viewer`), `-chtml` (command-line) |
 | [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **PDF export and import** (vector pipeline) | `cpdf`, `ipdf` |
 | [`@mlightcad/cad-svg-plugin`](packages/cad-svg-plugin) | **SVG export** and shared vector renderer (also used by PDF export) | `csvg` |
+| [`@mlightcad/cad-onedrive-plugin`](packages/cad-onedrive-plugin) | **OneDrive data source** — open DWG/DXF from OneDrive / SharePoint | Registers `AcApDataSource` (`onedrive`); two-step Sign in → Open (popup-safe) |
 
 ### `@mlightcad/cad-simple-ui-plugin` — UI chrome for the simple viewer
 
@@ -422,7 +434,7 @@ Legend:
 
 * [ ] ⏳ Google Drive Integration
 * [ ] WeChat Mini Program viewer
-* [ ] Mobile browser support (read-only)
+* [x] Mobile browser support (responsive layout & touch)
 
 ### Documentation & Community
 

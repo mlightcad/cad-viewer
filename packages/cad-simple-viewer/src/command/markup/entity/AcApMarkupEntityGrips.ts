@@ -5,8 +5,8 @@
 import {
   AcTrHtmlCallout,
   AcTrHtmlCanvasOverlay,
-  AcTrHtmlDot,
   type AcTrHtmlElement,
+  AcTrHtmlGrip,
   type AcTrHtmlGroup
 } from '@mlightcad/three-renderer'
 
@@ -16,7 +16,8 @@ import {
   acapBindOverlayPointerDrag,
   acapDrawOverlayLeader,
   acapFitOverlayCanvas,
-  acapPlaceOverlayHtml
+  acapPlaceOverlayHtml,
+  acapSeedOverlaySizesFromWcs
 } from '../../overlay'
 import {
   markupGeometryCenter,
@@ -35,8 +36,9 @@ import type {
   AcApMarkupRecord
 } from '../AcApMarkupTypes'
 import {
-  MARKUP_LINE_WEIGHT,
-  markupCanvasLineWidth
+  MARKUP_FONT_SIZE,
+  markupCanvasLineWidth,
+  resolveMarkupLineWeight
 } from '../AcApMarkupUtil'
 import type { AcApMarkupDrawStyle } from './AcApMarkupEntity'
 
@@ -48,8 +50,8 @@ export interface AcApMarkupAttachedCalloutVisual {
   live: { tip: AcApMarkupPoint2d; anchor: AcApMarkupPoint2d }
   /** Redraw the leader canvas from {@link live}. */
   redraw: () => void
-  /** Tip grip HTML dot. */
-  tipDot: AcTrHtmlDot
+  /** Tip grip HTML circle. */
+  tipDot: AcTrHtmlGrip
   /** Text bubble HTML callout. */
   bubble: AcTrHtmlCallout
   /**
@@ -131,10 +133,10 @@ export function publishAttachedCallout(
       record.style.color,
       false,
       markupCanvasLineWidth(
-        record.style.lineWeight != null && record.style.lineWeight > 0
-          ? record.style.lineWeight
-          : MARKUP_LINE_WEIGHT
-      )
+        resolveMarkupLineWeight(record.style.lineWeight)
+      ),
+      view2d,
+      record.style.strokeWidthWcs
     )
   }
   redraw()
@@ -150,7 +152,7 @@ export function publishAttachedCallout(
     layer,
     layoutId
   })
-  const tipDot = new AcTrHtmlDot({
+  const tipDot = new AcTrHtmlGrip({
     id: `${record.id}-shape-tip`,
     color,
     worldPosition: live.tip,
@@ -158,6 +160,17 @@ export function publishAttachedCallout(
     layoutId
   })
   group.add(bubble, tipDot)
+
+  acapSeedOverlaySizesFromWcs(view2d, {
+    textHeightWcs: record.style.textHeightWcs,
+    strokeWidthWcs: record.style.strokeWidthWcs,
+    fontSizePx: record.style.fontSize ?? MARKUP_FONT_SIZE,
+    strokeScreenPx: markupCanvasLineWidth(
+      resolveMarkupLineWeight(record.style.lineWeight)
+    ),
+    elements: [bubble, tipDot],
+    canvases: [overlay.canvas]
+  })
 
   cleanups.push(
     bindMarkupInlineTextEdit({
@@ -230,6 +243,11 @@ export interface AcApMarkupCenterMoveOptions {
   onLiveOffset?: (dx: number, dy: number) => void
   /** Optional attached callout to keep in sync while moving. */
   attached?: AcApMarkupAttachedCalloutVisual
+  /**
+   * When true, the center grip snaps to CAD geometry (rect / circle / cloud).
+   * Default false for text, stamp, and callout whole-object moves.
+   */
+  useOsnap?: boolean
 }
 
 /**
@@ -259,6 +277,7 @@ export function bindMarkupCenterMove(
     view,
     el: centerEl.element,
     cursor: 'move',
+    useOsnap: options.useOsnap === true,
     onDragStart: () => {
       selectMarkupGroup(view, recordId)
       const stored = getMarkupStore().get(recordId)

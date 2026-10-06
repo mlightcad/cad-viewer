@@ -122,7 +122,8 @@ export interface AcEdFloatingInputOptions<T> {
 
   /**
    * Whether the prompt label is allowed to be shown at all.
-   * Actual visibility is still controlled by DYNMODE/DYNPROMPT.
+   * Actual visibility is still controlled by DYNMODE/DYNPROMPT, and is always
+   * off on phone and pad UIs.
    */
   allowPrompt?: boolean
 
@@ -208,4 +209,11 @@ export interface AcEdFloatingInputOptions<T> {
    * Mirrors AutoCAD's `PromptPointOptions.AllowNone`.
    */
   allowNone?: boolean
+
+  /**
+   * When false, canvas click / touch pick does not commit a value.
+   * Used by string prompts that collect text from the session panel or
+   * floating input boxes only. Default: true.
+   */
+  allowPickCommit?: boolean
 }

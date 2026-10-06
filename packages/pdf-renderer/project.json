@@ -1,0 +1,43 @@
+{
+  "name": "@mlightcad/pdf-renderer",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/pdf-renderer/src",
+  "projectType": "library",
+  "tags": [
+    "npm:private"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc && vite build",
+        "cwd": "packages/pdf-renderer"
+      },
+      "dependsOn": [
+        "^build"
+      ],
+      "cache": true
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "rimraf dist lib tsconfig.tsbuildinfo",
+        "cwd": "packages/pdf-renderer"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint src/",
+        "cwd": "packages/pdf-renderer"
+      }
+    },
+    "lint:fix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint --fix --quiet src/",
+        "cwd": "packages/pdf-renderer"
+      }
+    }
+  }
+}

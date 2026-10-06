@@ -30,8 +30,9 @@ export class AcTrEllipticalArc extends AcSvgEntity {
       this.svg = AcSvgStyleUtil.tag('path', attrs)
     }
 
-    const box = ellipseArc.box
-    this._box.min.copy(box.min)
-    this._box.max.copy(box.max)
+    // Match viewBox to emitted path points rather than the theoretical ellipse AABB.
+    for (const point of points) {
+      this._box.expandByPoint(point)
+    }
   }
 }

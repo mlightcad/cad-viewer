@@ -48,6 +48,24 @@
       "runnable": true
     },
     {
+      "id": "export-html-multi",
+      "title": "Export HTML (multi-file)",
+      "description": "Export a multi-file ACEX package zip for progressive loading (-chtml Multi).",
+      "script": "export-html-multi.scr",
+      "mode": "read",
+      "inputKind": "file",
+      "runnable": true
+    },
+    {
+      "id": "export-html-multi-preview",
+      "title": "Export HTML multi + preview",
+      "description": "Zoom extents, export multi-file ACEX zip (-chtml Multi), then JPEG preview.",
+      "script": "export-html-multi-preview.scr",
+      "mode": "read",
+      "inputKind": "file",
+      "runnable": true
+    },
+    {
       "id": "export-dxf",
       "title": "Export DXF",
       "description": "Convert the open drawing to DXF (cdxf).",
@@ -79,6 +97,15 @@
       "title": "Batch export HTML",
       "description": "Scan a folder and export each drawing to HTML.",
       "script": "batch-export-html.mjs",
+      "kind": "batch",
+      "inputKind": "directory",
+      "runnable": true
+    },
+    {
+      "id": "batch-export-html-multi-preview",
+      "title": "Batch export HTML multi + preview",
+      "description": "Scan a folder, export multi ACEX zip + extents preview, package like demo-drawings.",
+      "script": "batch-export-html-multi-preview.mjs",
       "kind": "batch",
       "inputKind": "directory",
       "runnable": true

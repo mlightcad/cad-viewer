@@ -430,6 +430,11 @@ export default {
       text: 'Distance',
       description: 'Measures the distance between two points'
     },
+    measureContinuous: {
+      text: 'Continuous',
+      description:
+        'Measures chained distances by picking successive points until Enter or Cancel'
+    },
     measureAngle: {
       text: 'Angle',
       description:
@@ -446,6 +451,10 @@ export default {
     measurePoint: {
       text: 'Point',
       description: 'Measures the X/Y coordinates of a picked point'
+    },
+    measurementPanel: {
+      text: 'Panel',
+      description: 'Open the measurement palette'
     },
     clearMeasurements: {
       text: 'Clear',
@@ -473,7 +482,7 @@ export default {
         'Shifts the view without changing the viewing direction or magnification'
     },
     markupPanel: {
-      text: 'Review',
+      text: 'Panel',
       description: 'Open the markup palette'
     },
     markupText: {
@@ -520,28 +529,24 @@ export default {
       text: 'Color',
       description: 'Set the color for new markup drawings'
     },
-    markupLineWeight: {
-      text: 'Lineweight',
-      description: 'Set the lineweight for new markup drawings'
-    },
     markupFontSize: {
-      text: 'Font size',
-      description: 'Set the font size for text and callout markups'
+      text: 'Text height',
+      description:
+        'Open text height settings for markups (Fit to screen or world height)',
+      fit: 'Fit',
+      wcs: 'WCS'
     },
     measurementColor: {
       text: 'Color',
       description:
         'Set the color for the selected measurement, or for measurements you add next'
     },
-    measurementLineWeight: {
-      text: 'Lineweight',
-      description:
-        'Set the lineweight for the selected measurement, or for measurements you add next'
-    },
     measurementFontSize: {
-      text: 'Font size',
+      text: 'Text height',
       description:
-        'Set the font size for the selected measurement, or for measurements you add next'
+        'Open text height settings for the selected measurement, or for measurements you add next',
+      fit: 'Fit',
+      wcs: 'WCS'
     },
     showMarkup: {
       text: 'Show',
@@ -569,14 +574,35 @@ export default {
     },
     switchBg: {
       text: 'Switch',
-      description: 'Switches the drawing background between white and black'
+      description: 'Switches the drawing background between white and black',
+      disabledInReadingMode:
+        'Unavailable while reading mode is on (white canvas is fixed)'
+    },
+    readingMode: {
+      text: 'Reading',
+      description:
+        'Toggles reading mode: black linework on a white canvas for easier review'
+    },
+    zoom: {
+      text: 'Zoom',
+      description: 'Zoom tools: saved view, extents, smart extents, and window'
+    },
+    zoomSaved: {
+      text: 'Saved',
+      description:
+        'Restores AutoCAD saved view (VPORT / layout limits), or the open-time view'
     },
     zoomToExtent: {
-      text: 'Zoom Extents',
+      text: 'Extents',
       description: 'Zooms to display the maximum extents of all entities'
     },
+    zoomSmartExtents: {
+      text: 'Smart',
+      description:
+        'Zooms to the dominant geometry cluster, ignoring far outlier entities'
+    },
     zoomToBox: {
-      text: 'Zoom Window',
+      text: 'Window',
       description: 'Zooms to display an area specified by a rectangular window'
     }
   },
@@ -586,7 +612,6 @@ export default {
       commandLine: 'Command Line',
       coordinate: 'Coordinate',
       entityInfo: 'Entity Info',
-      fileName: 'File Name',
       languageSelector: 'Language Selector',
       ribbon: 'Ribbon',
       toolbar: 'Toolbar',
@@ -748,6 +773,23 @@ export default {
         question: 'Question',
         answered: 'Answered',
         closed: 'Closed'
+      }
+    },
+    measurements: {
+      tab: 'Measure',
+      title: 'Measurements',
+      empty: 'No measurements yet',
+      type: 'Type',
+      value: 'Value',
+      filterAll: 'All',
+      delete: 'Delete',
+      clear: 'Clear all',
+      typeValues: {
+        distance: 'Distance',
+        angle: 'Angle',
+        area: 'Area',
+        arc: 'Arc',
+        point: 'XY'
       }
     },
     missingResources: {
@@ -977,21 +1019,41 @@ export default {
     fontCacheFailed: 'Failed to cache font "{fileName}".',
     failedToGetAvaiableFonts: 'Failed to get avaiable fonts from "{url}"!',
     failedToOpenFile: 'Failed to open file "{fileName}"!',
+    failedToOpenFileToast:
+      'Failed to open "{fileName}". Check the notification center for details.',
     failedToOpenFileWorkerOom:
-      'Failed to open "{fileName}". The drawing is too large for available memory.',
+      'Failed to open "{fileName}". Parsing failed because available memory was insufficient (LibreDWG parser). You can click {dwgParserLink} to purchase the commercial DWG parser and open large drawings without this crash.',
+    failedToOpenFileWorkerOomLink: 'this page',
     failedToOpenFileWorkerTimeout:
       'Failed to open "{fileName}". The operation timed out while parsing the drawing.',
     failedToOpenFileFontLoadFailed:
       'Failed to open "{fileName}". Required fonts could not be loaded.',
+    failedToOpenFileLicenseExpired:
+      'Failed to open "{fileName}". The DWG converter license has expired.',
+    failedToOpenFileLicenseInvalid:
+      'Failed to open "{fileName}". The DWG converter license is missing or invalid.',
     fetchingDrawingFile: 'Fetching file ...',
     unknownEntities:
-      'This drawing contains {count} unknown or unsupported entities! Those entities will not be shown.'
+      'This drawing contains {count} unknown or unsupported entities! Those entities will not be shown.',
+    tianzhengEntities:
+      'This drawing contains TArch / Tianzheng (or similar third-party) custom entities (about {count}). They cannot be fully parsed in this environment, so some content may not display.',
+    emptyProxyEntities:
+      'This drawing contains {count} custom entities without proxy graphics! Those entities will not be shown.'
   },
   notification: {
     center: {
       title: 'Notifications',
       clearAll: 'Clear All',
       noNotifications: 'No notifications'
+    },
+    group: {
+      fontMissed: 'Missing Fonts',
+      fontMissedSummary:
+        '{count} font-related messages. Click to expand details.',
+      unsupportedEntities: 'Unsupported Entities',
+      unsupportedEntitiesSummary:
+        '{count} parsing-related messages. Click to expand details.',
+      genericSummary: '{count} messages. Click to expand details.'
     },
     time: {
       justNow: 'Just now',
@@ -1001,12 +1063,18 @@ export default {
     },
     title: {
       failedToOpenFile: 'Failed to Open File',
-      failedToOpenFileWorkerOom: 'Drawing Too Large',
+      failedToOpenFileWorkerOom: 'Insufficient Memory',
       failedToOpenFileWorkerTimeout: 'Open Timed Out',
       failedToOpenFileFontLoadFailed: 'Font Load Failed',
+      failedToOpenFileLicenseExpired: 'License Expired',
+      failedToOpenFileLicenseInvalid: 'Invalid License',
       fontNotFound: 'Font Not Found',
       fontNotLoaded: 'Font Not Loaded',
-      parsingWarning: 'Issues on Parsing Drawing'
+      parsingWarning: 'Issues on Parsing Drawing',
+      systemMessage: 'System Message',
+      systemWarning: 'System Warning',
+      systemError: 'System Error',
+      systemInfo: 'System Info'
     }
   }
 }

@@ -14,6 +14,8 @@ export default {
     fileUpload: {
       title: 'اختر ملف CAD لعرضه',
       subtitle: 'استورد رسومات DWG أو DXF إلى العارض',
+      fontCdnNotice:
+        'If you are in a country or region with network access restrictions, please turn on a VPN. Default font files are hosted on GitHub; when access is limited they load very slowly, which can make opening drawings slow or cause text not to display correctly.',
       newDrawing: 'رسم جديد',
       or: 'أو',
       dropFile: 'أسقط الملف هنا أو',
@@ -46,9 +48,10 @@ export default {
       progressive: 'العرض التدريجي',
       progressiveRendering: 'العرض التدريجي',
       on: 'تشغيل',
-      progressiveOnHint: 'إظهار عناصر الرسم أثناء التحميل',
+      progressiveOnHint:
+        'إظهار عناصر الرسم أثناء التحميل؛ يُخفى التقدم عند انتهاء تحويل الكيانات',
       off: 'إيقاف',
-      progressiveOffHint: 'الانتظار حتى اكتمال التحويل',
+      progressiveOffHint: 'الانتظار حتى اكتمال تحويل الكيانات والنص',
 
       nonPlottable: 'غير قابل للطباعة',
       nonPlottableLayers: 'الطبقات غير القابلة للطباعة',
@@ -64,6 +67,18 @@ export default {
       curveStandardHint: 'متوازن (100 ضلع لكل دائرة)',
       curveHigh: 'جودة',
       curveHighHint: 'منحنيات أنعم وذاكرة أكبر',
+
+      paperSpaceBackground: 'خلفية الورق',
+      paperSpaceWhite: 'أبيض',
+      paperSpaceWhiteHint: 'سطح المكتب CAD / معاينة الطباعة',
+      paperSpaceBlack: 'أسود',
+      paperSpaceBlackHint: 'تفضيل عارض الويب',
+
+      export: 'تصدير',
+      exportEnable: 'تمكين',
+      exportEnableHint: 'السماح بتصدير DXF/HTML/PDF/SVG/PNG',
+      exportDisable: 'تعطيل',
+      exportDisableHint: 'إخفاء أوامر التصدير وعناصر قائمة File',
 
       invalidFileType:
         'نوع الملف غير صالح. يرجى اختيار ملف DWG أو DXF.'

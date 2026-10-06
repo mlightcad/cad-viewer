@@ -2,7 +2,7 @@ import { AcGePoint3d, type AcGeVector3dLike } from '@mlightcad/data-model'
 import {
   AcTrHtmlCallout,
   AcTrHtmlCanvasOverlay,
-  AcTrHtmlDot
+  AcTrHtmlGrip
 } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
@@ -129,6 +129,36 @@ export class AcApMarkupCalloutEntity extends AcApMarkupEntity {
       tip: { ...geom.tip },
       anchor: { ...geom.anchor }
     }
+
+    const bubble = new AcTrHtmlCallout({
+      id: `${this.record.id}-bubble`,
+      color,
+      text: this.record.text || this.record.comment || 'Callout',
+      fontSize: this.record.style.fontSize,
+      worldPosition: live.anchor,
+      layer,
+      layoutId
+    })
+    const tipDot = new AcTrHtmlGrip({
+      id: `${this.record.id}-tip`,
+      color,
+      worldPosition: live.tip,
+      layer,
+      layoutId
+    })
+    const centerDot = new AcTrHtmlGrip({
+      id: `${this.record.id}-center`,
+      color,
+      worldPosition: {
+        x: (live.tip.x + live.anchor.x) / 2,
+        y: (live.tip.y + live.anchor.y) / 2
+      },
+      layer,
+      layoutId
+    })
+    group.add(bubble, tipDot, centerDot)
+    this.seedOverlaySizes(view, [bubble, tipDot, centerDot], [overlay.canvas])
+
     /**
      * Redraw the leader (with arrow) from {@link live}.
      */
@@ -141,40 +171,15 @@ export class AcApMarkupCalloutEntity extends AcApMarkupEntity {
         view.worldToScreen(live.anchor),
         this.record.style.color,
         true,
-        canvasLineWidth
+        canvasLineWidth,
+        view,
+        this.record.style.strokeWidthWcs,
+        this.record.style.arrowSizeWcs
       )
     }
     redraw()
     view.events.viewChanged.addEventListener(redraw)
     cleanups.push(() => view.events.viewChanged.removeEventListener(redraw))
-
-    const bubble = new AcTrHtmlCallout({
-      id: `${this.record.id}-bubble`,
-      color,
-      text: this.record.text || this.record.comment || 'Callout',
-      fontSize: this.record.style.fontSize,
-      worldPosition: live.anchor,
-      layer,
-      layoutId
-    })
-    const tipDot = new AcTrHtmlDot({
-      id: `${this.record.id}-tip`,
-      color,
-      worldPosition: live.tip,
-      layer,
-      layoutId
-    })
-    const centerDot = new AcTrHtmlDot({
-      id: `${this.record.id}-center`,
-      color,
-      worldPosition: {
-        x: (live.tip.x + live.anchor.x) / 2,
-        y: (live.tip.y + live.anchor.y) / 2
-      },
-      layer,
-      layoutId
-    })
-    group.add(bubble, tipDot, centerDot)
 
     cleanups.push(
       bindMarkupInlineTextEdit({

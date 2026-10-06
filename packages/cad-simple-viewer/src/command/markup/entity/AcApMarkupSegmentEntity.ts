@@ -4,7 +4,7 @@ import {
 } from '@mlightcad/data-model'
 import {
   AcTrHtmlCanvasOverlay,
-  AcTrHtmlDot
+  AcTrHtmlGrip
 } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
@@ -13,7 +13,9 @@ import {
   acapDrawOverlayArrowHead,
   acapFitOverlayCanvas,
   type AcApOverlayWorldDrawResult,
-  acapPlaceOverlayHtml
+  acapPlaceOverlayHtml,
+  acapScaledOverlayArrowSize,
+  acapScaledOverlayLineWidth
 } from '../../overlay'
 import { runMarkupEdit } from '../AcApMarkupHistory'
 import { republishMarkup } from '../AcApMarkupRepublish'
@@ -107,14 +109,14 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
       end: { ...geom.end }
     }
 
-    const startDot = new AcTrHtmlDot({
+    const startDot = new AcTrHtmlGrip({
       id: `${this.record.id}-dot1`,
       color,
       worldPosition: live.start,
       layer,
       layoutId
     })
-    const endDot = new AcTrHtmlDot({
+    const endDot = new AcTrHtmlGrip({
       id: `${this.record.id}-dot2`,
       color,
       worldPosition: live.end,
@@ -131,6 +133,7 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
       layoutId
     })
     group.addCanvas(overlay)
+    this.seedOverlaySizes(view, [startDot, endDot], [overlay.canvas])
     /** Endpoints captured when an endpoint drag starts (for zero-delta). */
     let dragStart = {
       start: { ...live.start },
@@ -147,13 +150,29 @@ export class AcApMarkupSegmentEntity extends AcApMarkupEntity {
       const a = view.worldToScreen(live.start)
       const b = view.worldToScreen(live.end)
       ctx.strokeStyle = this.record.style.color
-      ctx.lineWidth = canvasLineWidth
+      const strokeWidth = acapScaledOverlayLineWidth(
+        canvasLineWidth,
+        overlay.canvas,
+        view,
+        this.record.style.strokeWidthWcs
+      )
+      ctx.lineWidth = strokeWidth
       ctx.beginPath()
       ctx.moveTo(a.x, a.y)
       ctx.lineTo(b.x, b.y)
       ctx.stroke()
       if (isArrow) {
-        acapDrawOverlayArrowHead(ctx, a, b, this.record.style.color)
+        acapDrawOverlayArrowHead(
+          ctx,
+          a,
+          b,
+          this.record.style.color,
+          acapScaledOverlayArrowSize(
+            overlay.canvas,
+            view,
+            this.record.style.arrowSizeWcs
+          )
+        )
       }
     }
     redrawStroke()

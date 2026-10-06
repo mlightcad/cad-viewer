@@ -31,10 +31,26 @@ export interface AcApMarkupPoint2d {
 export interface AcApMarkupStyle {
   /** CSS color string, e.g. `#ff0000` or `rgb(255,0,0)`. */
   color: string
-  /** Optional AutoCAD-style line weight enum value. */
+  /** Always hairline (`0`) on write; legacy non-zero values are ignored on parse. */
   lineWeight?: number
-  /** Screen-space font size in CSS pixels for text / callout bubbles. */
+  /** Authoring font size in CSS pixels for text / callout bubbles (legacy / UI). */
   fontSize?: number
+  /**
+   * Text / callout height in world units. Prefer this over {@link fontSize}
+   * when restoring overlays so size is independent of camera zoom.
+   */
+  textHeightWcs?: number
+  /** Authoring mode; omitted means adaptive (legacy). */
+  textHeightMode?: 'adaptive' | 'custom'
+  /**
+   * Arrow-head length in world units (arrow / callout markups). Prefer this
+   * when restoring overlays so arrow size is independent of camera zoom.
+   */
+  arrowSizeWcs?: number
+  /**
+   * Legacy canvas stroke width in world units. Ignored on parse; never written.
+   */
+  strokeWidthWcs?: number
 }
 
 /** Shared metadata on every markup record. */

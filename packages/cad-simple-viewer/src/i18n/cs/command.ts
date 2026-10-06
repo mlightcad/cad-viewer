@@ -31,11 +31,17 @@ export default {
       description:
         'Nastaví přesnost zobrazení úhlů, používá se společně s AUNITS'
     },
+    bmpout: {
+      description: 'Exportuje do BMP'
+    },
     cdxf: {
       description: 'Exportuje aktuální výkres do DXF'
     },
     cpdf: {
       description: 'Exportuje aktuální výkres do PDF'
+    },
+    '-cpdf': {
+      description: 'Exportuje aktuální výkres do PDF pomocí příkazového řádku'
     },
     cecolor: {
       description: 'Nastaví aktuální výchozí barvu pro nově vytvářené objekty'
@@ -214,6 +220,9 @@ export default {
       description:
         'Určuje jednotky výkresu pro automatické měřítko vkládaných bloků, obrázků nebo externích referencí'
     },
+    jpgout: {
+      description: 'Exportuje do JPEG'
+    },
     laycur: {
       description: 'Změní hladinu vybraných objektů na aktuální hladinu',
       prompt: 'Vyberte objekty pro změnu na aktuální hladinu'
@@ -282,6 +291,9 @@ export default {
     measurementvis: {
       description: 'Zobrazí nebo skryje měření na aktuálním rozvržení'
     },
+    measurementpanel: {
+      description: 'Otevře paletu měření'
+    },
     measurementexport: {
       description: 'Exportuje měření do sidecar JSON souboru'
     },
@@ -299,6 +311,10 @@ export default {
     },
     measuredistance: {
       description: 'Změří vzdálenost a přírůstky mezi dvěma body'
+    },
+    measurecontinuous: {
+      description:
+        'Měří řetězené vzdálenosti postupným zadáváním bodů, dokud nestisknete Enter nebo Zrušit'
     },
     measurepoint: {
       description: 'Změří souřadnice X/Y vybraného bodu'

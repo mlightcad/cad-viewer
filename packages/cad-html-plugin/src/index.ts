@@ -37,13 +37,44 @@ export {
   splineToAcGe,
   type AcExOsnapAcGeCurve
 } from './AcExOsnapPrimitiveToAcGe'
-export { packHtml, type AcExPackHtmlOptions } from './AcExHtmlPackager'
+export {
+  packHtml,
+  packHtmlPackage,
+  type AcExPackHtmlOptions,
+  type AcExPackHtmlPackageOptions
+} from './AcExHtmlPackager'
+export {
+  ACEX_DEFAULT_MANIFEST_FILE,
+  ACEX_DEFAULT_MANIFEST_HREF,
+  ACEX_MANIFEST_QUERY_KEYS,
+  ACEX_PACKAGE_DIRECTORY_ORIGIN,
+  acexGlobalFetch,
+  buildPackageDirectoryFileMap,
+  canOpenLocalPackageFolder,
+  chooseInitialManifestHref,
+  createPackageDirectoryFetch,
+  detectLocalFolderOpenSupport,
+  detectSharedDirectoryRoot,
+  findDefaultManifestInDirectory,
+  isAbsoluteHttpUrl,
+  normalizePackageDirectoryPath,
+  probePackageManifest,
+  readManifestUrlFromSearchParams,
+  resolveViewerManifestUrl,
+  type AcExLocalFolderOpenSupport,
+  type AcExManifestProbeResult
+} from './AcExHtmlPackageBootstrap'
 export {
   type AcApHtmlExpiryDays,
   type AcExHtmlAccessManifest,
   ACEX_HTML_EXPIRY_COUNTDOWN_MS,
+  acExHtmlBase64ToBytes,
+  acExHtmlBytesToBase64,
   buildAcExHtmlAccessManifest,
+  createAcExHtmlAccessKey,
+  decryptAcExHtmlBytes,
   decryptAcExHtmlSnapshotPayload,
+  encryptAcExHtmlBytes,
   encryptAcExHtmlSnapshotPayload,
   formatAcExHtmlCountdown,
   formatAcExHtmlExpiresAt,
@@ -55,6 +86,23 @@ export {
   resolveAcApHtmlExpiresAt
 } from './AcExHtmlAccess'
 export {
+  ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME,
+  ACEX_EMBEDDED_CHUNK_HREF_ATTR,
+  ACEX_EMBEDDED_CHUNK_MIME,
+  collectAcExEmbeddedChunkBytes,
+  consumeAcExEmbeddedChunkFromDom,
+  createAcExDomEmbeddedPackageFetch,
+  createAcExEmbeddedPackageFetch,
+  decryptAcExEmbeddedManifest,
+  estimateAcExSnapshotGeometryBytes,
+  packHtmlEmbeddedPackage,
+  parseAcExEmbeddedPackageConfig,
+  readAcExEmbeddedChunkFromDom,
+  shouldEmbedAcExChunks,
+  type AcExEmbeddedPackageConfig,
+  type AcExPackHtmlEmbeddedOptions
+} from './AcExHtmlEmbeddedPackage'
+export {
   AcExHtmlI18n,
   type AcExHtmlLocale,
   type AcExHtmlMessageKey,
@@ -62,6 +110,67 @@ export {
   detectBrowserAcExHtmlLocale,
   resolveAcExHtmlLocale
 } from './AcExHtmlI18n'
+
+export {
+  ACEX_PACKAGE_VERSION,
+  ACEX_DEFAULT_CHUNK_MAX_BYTES,
+  ACEX_MAX_GEOMETRY_BATCH_BYTES,
+  ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES,
+  ACEX_EMBEDDED_CHUNK_THRESHOLD_BYTES,
+  ACEX_EMBEDDED_CHUNK_MAX_BYTES,
+  ACEX_EMBEDDED_OSNAP_CHUNK_MAX_BYTES,
+  type AcExPackageVersion,
+  type AcExPackageChunkRef,
+  type AcExPackageOsnapChunkRef,
+  type AcExPackageLayoutRef,
+  type AcExPackageManifest,
+  type AcExPackageFile,
+  type AcExPackageFiles
+} from './AcExPackageTypes'
+export {
+  encodeChunkBinary,
+  decodeChunkBinary,
+  encodeChunkGzip,
+  decodeChunkGzip,
+  ACEC_CHUNK_MAGIC,
+  type AcExGeometryChunk
+} from './AcExChunkBinaryCodec'
+export {
+  buildAcExPackage,
+  buildAcExPackageAsync,
+  buildAcExPackageData,
+  buildAcExPackageDataAsync,
+  splitLayoutIntoSlices,
+  type AcExBuildPackageOptions,
+  type AcExBuildPackageDataOptions
+} from './AcExPackageBuilder'
+export {
+  ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY,
+  createAcExOrderedBytePrefetcher,
+  parseAcExPackageManifest,
+  snapshotSkeletonFromManifest,
+  resolveChunkUrl,
+  resolvePackageManifestUrl,
+  isSafePackageHref,
+  loadAcExPackage,
+  loadAcExPackageLayout,
+  loadAcExPackageLayoutOsnap,
+  type AcExOrderedBytePrefetcher,
+  type AcExOrderedPrefetchedItem,
+  type AcExPackageLoadProgress,
+  type AcExPackageLoaderOptions
+} from './AcExPackageLoader'
+export {
+  encodeOsnapCatalogBinary,
+  decodeOsnapCatalogBinary,
+  encodeOsnapCatalogGzip,
+  decodeOsnapCatalogGzip,
+  splitOsnapPrimitives,
+  estimateOsnapPrimitiveBytes,
+  ACEO_OSNAP_MAGIC,
+  ACEO_OSNAP_VERSION
+} from './AcExOsnapCatalogCodec'
+export { zipAcExPackageFiles, unzipAcExPackageFiles } from './AcExPackageZip'
 
 /**
  * Default filename of the offline HTML viewer IIFE bundle
@@ -72,6 +181,7 @@ export const HTML_VIEWER_RUNTIME_FILE = 'viewer-runtime.iife.js'
 export { AcApExportHtmlCmd } from './AcApExportHtmlCmd'
 export { AcApHtmlConvertor } from './AcApHtmlConvertor'
 export {
+  type AcApHtmlExportFormat,
   type AcApHtmlExportOptions,
   captureAcApHtmlViewState,
   resolveAcApHtmlExportOptions

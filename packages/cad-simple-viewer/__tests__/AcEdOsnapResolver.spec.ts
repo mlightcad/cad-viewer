@@ -57,7 +57,20 @@ function withWorkingDatabase(run: (db: AcDbDatabase) => void) {
 }
 
 function createMockView(
-  pickResults: Array<{ id: string; children?: Array<{ id: string }> }>
+  pickResults: Array<{
+    id: string
+    minX?: number
+    minY?: number
+    maxX?: number
+    maxY?: number
+    children?: Array<{
+      id: string
+      minX?: number
+      minY?: number
+      maxX?: number
+      maxY?: number
+    }>
+  }>
 ): AcEdBaseView {
   return {
     pick: jest.fn().mockReturnValue(pickResults),
@@ -138,6 +151,200 @@ describe('AcEdOsnapResolver', () => {
 
       expect(snap?.type).not.toBe(AcDbOsnapMode.Intersection)
       expect(snap?.type).toBe(AcDbOsnapMode.Nearest)
+    })
+  })
+
+  it('skips intersectWith for entity pairs whose extents do not overlap', () => {
+    withWorkingDatabase(db => {
+      const left = new AcDbLine(
+        new AcGePoint3d(0, 0, 0),
+        new AcGePoint3d(10, 0, 0)
+      )
+      const right = new AcDbLine(
+        new AcGePoint3d(100, 0, 0),
+        new AcGePoint3d(110, 0, 0)
+      )
+      db.tables.blockTable.modelSpace.appendEntity(left)
+      db.tables.blockTable.modelSpace.appendEntity(right)
+
+      AcApSettingManager.instance.osnapModes = acdbOsnapModesToMask([
+        AcDbOsnapMode.Intersection,
+        AcDbOsnapMode.EndPoint
+      ])
+
+      const intersectSpy = jest.spyOn(left, 'intersectWith')
+      const view = createMockView([
+        { id: left.objectId },
+        { id: right.objectId }
+      ])
+      const resolver = new AcEdOsnapResolver(view)
+      resolver.resolve({
+        cursorWcs: { x: 5, y: 0 },
+        hitRadiusPx: 20
+      })
+
+      expect(intersectSpy).not.toHaveBeenCalled()
+      intersectSpy.mockRestore()
+    })
+  })
+
+  it('snaps to intersection using only hit INSERT children, not the whole block', () => {
+    withWorkingDatabase(db => {
+      const block = new AcDbBlockTableRecord()
+      block.name = 'INT_BLK'
+      db.tables.blockTable.add(block)
+
+      // Dense block contents that must not all participate in INT.
+      for (let i = 0; i < 40; i++) {
+        block.appendEntity(
+          new AcDbLine(new AcGePoint3d(i, -50, 0), new AcGePoint3d(i, 50, 0))
+        )
+      }
+      const diagonal = new AcDbLine(
+        new AcGePoint3d(0, 0, 0),
+        new AcGePoint3d(10, 10, 0)
+      )
+      block.appendEntity(diagonal)
+
+      const insert = new AcDbBlockReference('INT_BLK')
+      insert.position = new AcGePoint3d(0, 0, 0)
+      db.tables.blockTable.modelSpace.appendEntity(insert)
+
+      const crossing = new AcDbLine(
+        new AcGePoint3d(0, 10, 0),
+        new AcGePoint3d(10, 0, 0)
+      )
+      db.tables.blockTable.modelSpace.appendEntity(crossing)
+
+      AcApSettingManager.instance.osnapModes = acdbOsnapModesToMask([
+        AcDbOsnapMode.Intersection
+      ])
+
+      const blockCurvesSpy = jest.spyOn(insert, 'subGetIntersectCurves')
+      const view = createMockView([
+        {
+          id: insert.objectId,
+          minX: 0,
+          minY: 0,
+          maxX: 10,
+          maxY: 10,
+          children: [
+            {
+              id: diagonal.objectId,
+              minX: 0,
+              minY: 0,
+              maxX: 10,
+              maxY: 10
+            }
+          ]
+        },
+        {
+          id: crossing.objectId,
+          minX: 0,
+          minY: 0,
+          maxX: 10,
+          maxY: 10
+        }
+      ])
+      const resolver = new AcEdOsnapResolver(view)
+      const snap = resolver.resolve({
+        cursorWcs: { x: 5.1, y: 4.9 },
+        hitRadiusPx: 20
+      })
+
+      expect(blockCurvesSpy).not.toHaveBeenCalled()
+      expect(snap).toEqual({
+        x: 5,
+        y: 5,
+        z: 0,
+        type: AcDbOsnapMode.Intersection
+      })
+      blockCurvesSpy.mockRestore()
+    })
+  })
+
+  it('snaps block-line × model polyline INT regardless of pick order', () => {
+    withWorkingDatabase(db => {
+      const block = new AcDbBlockTableRecord()
+      block.name = 'XFRAME_BLK'
+      db.tables.blockTable.add(block)
+
+      const diagonal = new AcDbLine(
+        new AcGePoint3d(0, 0, 0),
+        new AcGePoint3d(10, 10, 0)
+      )
+      block.appendEntity(diagonal)
+
+      const insert = new AcDbBlockReference('XFRAME_BLK')
+      insert.position = new AcGePoint3d(0, 0, 0)
+      db.tables.blockTable.modelSpace.appendEntity(insert)
+
+      const crossing = new AcDbPolyline()
+      crossing.addVertexAt(0, new AcGePoint2d(0, 10))
+      crossing.addVertexAt(1, new AcGePoint2d(10, 0))
+      db.tables.blockTable.modelSpace.appendEntity(crossing)
+
+      AcApSettingManager.instance.osnapModes = acdbOsnapModesToMask([
+        AcDbOsnapMode.Intersection
+      ])
+
+      const expectInt = (
+        pickResults: Array<{
+          id: string
+          minX?: number
+          minY?: number
+          maxX?: number
+          maxY?: number
+          children?: Array<{
+            id: string
+            minX?: number
+            minY?: number
+            maxX?: number
+            maxY?: number
+          }>
+        }>
+      ) => {
+        const resolver = new AcEdOsnapResolver(createMockView(pickResults))
+        expect(
+          resolver.resolve({
+            cursorWcs: { x: 5.1, y: 4.9 },
+            hitRadiusPx: 20
+          })
+        ).toEqual({
+          x: 5,
+          y: 5,
+          z: 0,
+          type: AcDbOsnapMode.Intersection
+        })
+      }
+
+      const insertHit = {
+        id: insert.objectId,
+        minX: 0,
+        minY: 0,
+        maxX: 10,
+        maxY: 10,
+        children: [
+          {
+            id: diagonal.objectId,
+            minX: 0,
+            minY: 0,
+            maxX: 10,
+            maxY: 10
+          }
+        ]
+      }
+      const polyHit = {
+        id: crossing.objectId,
+        minX: 0,
+        minY: 0,
+        maxX: 10,
+        maxY: 10
+      }
+
+      // Polyline listed first forces A=polyline, B=block-line (needs A→B fallback).
+      expectInt([polyHit, insertHit])
+      expectInt([insertHit, polyHit])
     })
   })
 

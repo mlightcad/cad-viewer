@@ -43,6 +43,11 @@ describe('setupAcExHtmlNavTools', () => {
         .querySelector('[data-action="pan"]')
         ?.classList.contains('active')
     ).toBe(true)
+    expect(
+      document
+        .querySelector('[data-action="pan"]')
+        ?.classList.contains('is-toggled')
+    ).toBe(true)
 
     nav.setMode('select')
     expect(exitDrawingTools).toHaveBeenCalledTimes(1)
@@ -55,8 +60,18 @@ describe('setupAcExHtmlNavTools', () => {
     ).toBe(true)
     expect(
       document
+        .querySelector('[data-action="select"]')
+        ?.classList.contains('is-toggled')
+    ).toBe(true)
+    expect(
+      document
         .querySelector('[data-action="pan"]')
         ?.classList.contains('active')
+    ).toBe(false)
+    expect(
+      document
+        .querySelector('[data-action="pan"]')
+        ?.classList.contains('is-toggled')
     ).toBe(false)
 
     nav.setMode('zoom-window')

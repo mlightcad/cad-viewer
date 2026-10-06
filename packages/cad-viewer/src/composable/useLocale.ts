@@ -1,15 +1,16 @@
-import { AcApI18n, AcApLocale } from '@mlightcad/cad-simple-viewer'
+import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
 import ar from 'element-plus/es/locale/lang/ar'
 import cs from 'element-plus/es/locale/lang/cs'
 import en from 'element-plus/es/locale/lang/en'
 import tr from 'element-plus/es/locale/lang/tr'
 import zh from 'element-plus/es/locale/lang/zh-cn'
 import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
-import { i18n, LocaleProp } from '../locale'
+import type { LocaleProp } from '../locale/types'
 
+/** Must stay in sync with {@link ../locale/i18n.ts} startup persistence. */
 const STORAGE_KEY = 'preferred_lang'
+
 export const LOCALE_OPTIONS = [
   { locale: 'en' as const, label: 'English' },
   { locale: 'zh' as const, label: '简体中文' },
@@ -28,65 +29,59 @@ export const isSupportedLocale = (value: string): value is AcApLocale => {
   )
 }
 
-const normalizeLocale = (value: string | null | undefined): AcApLocale => {
-  if (value === 'zh') return 'zh'
-  if (value === 'tr') return 'tr'
-  if (value === 'cs') return 'cs'
-  if (value === 'ar') return 'ar'
-  return 'en'
+/**
+ * Shared reactive mirror of {@link AcApI18n.currentLocale}.
+ * Updated only from {@link AcApI18n.events.localeChanged}.
+ */
+const currentLocale = ref<AcApLocale>(AcApI18n.currentLocale)
+
+let localeStateListenerInstalled = false
+
+const ensureLocaleStateListener = () => {
+  if (localeStateListenerInstalled) return
+  localeStateListenerInstalled = true
+  AcApI18n.events.localeChanged.addEventListener(args => {
+    currentLocale.value = args.new
+  })
 }
 
+/**
+ * Locale composable for cad-viewer.
+ *
+ * {@link AcApI18n.setCurrentLocale} is the only write path. vue-i18n is synced
+ * from {@link AcApI18n.events.localeChanged} in `locale/i18n.ts`.
+ */
 export function useLocale(propLocale?: LocaleProp) {
-  const { locale: i18nLocale } = useI18n()
+  ensureLocaleStateListener()
+  // Re-read in case AcApI18n was aligned after this module first evaluated.
+  currentLocale.value = AcApI18n.currentLocale
 
-  // Get initial locale from localStorage or browser preference
-  const getInitialLocale = (): AcApLocale => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored && isSupportedLocale(stored)) return stored
+  const effectiveLocale = computed<LocaleProp>(() => currentLocale.value)
 
-    const browserLang = navigator.language.toLowerCase()
-    const browserLocale = normalizeLocale(browserLang.substring(0, 2))
-    AcApI18n.setCurrentLocale(browserLocale)
-    return browserLocale
-  }
+  const isControlled = computed(
+    () => !!(propLocale && propLocale !== 'default')
+  )
 
-  // Current effective locale
-  const currentLocale = ref<AcApLocale>(getInitialLocale())
-
-  // Effective locale - always return the current active locale
-  const effectiveLocale = computed<LocaleProp>(() => {
-    return currentLocale.value
-  })
-
-  // Set locale and update all related systems
+  /**
+   * Changes the app locale via {@link AcApI18n.setCurrentLocale}.
+   * Persists to localStorage unless a parent `locale` prop controls the value.
+   */
   const setLocale = (newLocale: AcApLocale) => {
-    // Update i18n locale
-    i18n.global.locale.value = newLocale
-
-    // Update local state
-    currentLocale.value = newLocale
-
-    // Update localStorage (only if not controlled by prop)
-    if (!propLocale || propLocale === 'default') {
+    if (!isControlled.value) {
       localStorage.setItem(STORAGE_KEY, newLocale)
     }
-
-    // Update locale stored in AcApI18n so that it is aligned with i18n
     AcApI18n.setCurrentLocale(newLocale)
   }
 
-  // Clear localStorage preference (used when prop takes precedence)
   const clearStoragePreference = () => {
     localStorage.removeItem(STORAGE_KEY)
   }
 
-  // Watch for prop changes
   if (propLocale) {
     watch(
       () => propLocale,
       newPropLocale => {
         if (newPropLocale && newPropLocale !== 'default') {
-          // Initialize with prop value
           setLocale(newPropLocale)
         }
       },
@@ -94,19 +89,6 @@ export function useLocale(propLocale?: LocaleProp) {
     )
   }
 
-  // Watch for i18n locale changes (from other components)
-  watch(
-    () => i18nLocale.value,
-    newI18nLocale => {
-      // Only update if not controlled by prop
-      if (!propLocale || propLocale === 'default') {
-        const validLocale = normalizeLocale(newI18nLocale)
-        setLocale(validLocale)
-      }
-    }
-  )
-
-  // Element Plus locale computed
   const elementPlusLocale = computed(() => {
     if (effectiveLocale.value === 'zh') return zh
     if (effectiveLocale.value === 'tr') return tr
@@ -121,6 +103,6 @@ export function useLocale(propLocale?: LocaleProp) {
     elementPlusLocale,
     setLocale,
     clearStoragePreference,
-    isControlled: computed(() => !!(propLocale && propLocale !== 'default'))
+    isControlled
   }
 }

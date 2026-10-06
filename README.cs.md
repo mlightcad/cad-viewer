@@ -12,7 +12,7 @@ Nabízí také něco, co u jiných CAD prohlížečů jen zřídka najdete — *
 
 - [**🌐 Domovská stránka**](https://mlightcad.com/)
 - **🌐 Živé demo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 Dokumentace API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (verzovaná) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (nejnovější/dev) · [MCP server](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 Dokumentace API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (verzovaná) · [MCP server](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -41,6 +41,14 @@ Komunitní desktopové balíčky pro Linux:
 - [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — zdrojový balíček pro Arch Linux využívající systémový Electron (~5,4 MB)
 - [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — binární balíček pro Arch Linux se součástí fontů/šablon pro plně offline otevírání výkresů
 
+### Demo aplikace (Demo Apps)
+
+Oficiální ukázkové aplikace, které ukazují, jak integrovat cad-viewer do vlastního produktu:
+
+- [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — Minimální vanilla TypeScript host pro [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer): otevření lokálních nebo CDN DXF/DWG, ovládání příkazů malým toolbarem a líné načítání pluginů pro export HTML/PDF/SVG bez plného Vue UI.
+- [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — Plnohodnotná Vue 3 aplikace na [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) s nabídkami, ribbonem, dialogy, příkazovým řádkem a stavovým řádkem ([živé demo](https://mlightcad.github.io/cad-viewer-example/)).
+- [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js demo „CAD disk“: obnovitelné chunkované nahrávání DWG/DXF, seznam souborů v SQLite s náhledy a otevření výkresů buď **živým parsováním v prohlížeči** (`cad-simple-viewer`), nebo **serverovým ACEX prerenderem** (rychlejší otevření, méně paměti).
+
 ![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
 ## Funkce
@@ -50,6 +58,7 @@ Komunitní desktopové balíčky pro Linux:
 - **Vyšší bezpečnost dat** — soubory nikdy neopustí vaše zařízení, zajištění úplného soukromí
 - **Snadná integrace** — není potřeba nastavení serveru ani backendové infrastruktury
 - Modulární architektura pro bezproblémovou integraci třetích stran
+- **Mobilní rozložení a dotykové ovládání** — responzivní UI pro telefon/tablet a dotyková gesta (štípnutí pro zoom, posun jedním prstem, klepnutí pro výběr) vestavěná v `@mlightcad/cad-simple-viewer`, bez nutnosti samostatné mobilní aplikace
 - **Export do offline HTML** — export aktuálního výkresu jako jediného samostatného souboru `.html` s vloženým prohlížečem (posun/přiblížení, přizpůsobení zobrazení, vrstvy, měření vzdálenosti, UI EN/ZH). Otevírá se offline v jakémkoli prohlížeči; není vyžadována instance cad-viewer ani backend.
 - Offline i online editační pracovní postupy
 - 3D vykreslovací engine THREE.js s pokročilými optimalizačními technikami
@@ -111,6 +120,8 @@ pnpm preview:simple
 ```
 
 ## Jak používat
+
+Jste v CAD Viewer noví? **[Uživatelská příručka](https://mlightcad.com/cad-viewer/docs/)** nabízí podrobné návody k rozhraní prohlížeče, ovládání na počítači i dotykových zařízeních a k nástrojům pro poznámky a měření.
 
 ### Ovládání v desktopovém prohlížeči
 - **Výběr**: levé tlačítko myši na entitách
@@ -422,7 +433,7 @@ Legenda:
 
 * [ ] ⏳ Integrace Google Drive
 * [ ] Prohlížeč pro WeChat Mini Program
-* [ ] Podpora mobilního prohlížeče (pouze pro čtení)
+* [x] Podpora mobilního prohlížeče (responzivní rozložení a dotykové ovládání)
 
 ### Dokumentace a komunita
 

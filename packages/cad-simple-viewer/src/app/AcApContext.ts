@@ -134,13 +134,19 @@ export class AcApContext {
       this._view.updateLayer(args.layer, args.changes)
     })
 
-    // Set point display mode. Sysvars are global; ignore other documents.
+    // Set point display mode / size. Sysvars are global; ignore other documents.
     bind(AcDbSysVarManager.instance().events.sysVarChanged, args => {
       if (!this._active || args.database !== this._doc.database) {
         return
       }
-      if (args.name == AcDbSystemVariables.PDMODE.toLowerCase()) {
-        ;(this._view as AcTrView2d).rerenderPoints(args.database.pdmode)
+      if (
+        args.name == AcDbSystemVariables.PDMODE.toLowerCase() ||
+        args.name == AcDbSystemVariables.PDSIZE.toLowerCase()
+      ) {
+        ;(this._view as AcTrView2d).rerenderPoints(
+          args.database.pdmode,
+          args.database.pdsize
+        )
       } else if (args.name == AcDbSystemVariables.LWDISPLAY.toLowerCase()) {
         const currentView = this._view as AcTrView2d
         const showLineWeight = !!args.database.lwdisplay

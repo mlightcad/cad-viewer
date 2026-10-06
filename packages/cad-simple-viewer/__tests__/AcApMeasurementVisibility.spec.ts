@@ -4,8 +4,10 @@ import {
   isMeasurementVisible,
   MEASUREMENT_LAYER,
   MEASUREMENT_LIVE_LAYER,
+  notifyMeasurementLayoutChanged,
   resetMeasurementVisibility,
-  setMeasurementVisible
+  setMeasurementVisible,
+  subscribeMeasurements
 } from '../src/command/measure/AcApMeasurementStore'
 import type { AcTrView2d } from '../src/view'
 
@@ -76,5 +78,17 @@ describe('AcApMeasurementVisibility', () => {
     expect(isMeasurementVisible()).toBe(true)
     expect(current.setVisible).toHaveBeenLastCalledWith(true)
     expect(other.setVisible).not.toHaveBeenCalled()
+  })
+
+  it('notifies measurement list subscribers when the active layout changes', () => {
+    const listener = jest.fn()
+    const unsubscribe = subscribeMeasurements(listener)
+
+    notifyMeasurementLayoutChanged()
+
+    expect(listener).toHaveBeenCalledTimes(1)
+    unsubscribe()
+    notifyMeasurementLayoutChanged()
+    expect(listener).toHaveBeenCalledTimes(1)
   })
 })

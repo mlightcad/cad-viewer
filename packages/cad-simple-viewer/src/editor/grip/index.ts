@@ -1,3 +1,4 @@
+export * from './AcEdGripAppearance'
 export * from './AcEdGripEditSession'
 export * from './AcEdGripHandle'
 export * from './AcEdGripManager'

@@ -392,13 +392,15 @@ export class AcEdCommandStack {
   /**
    * Records the command that is about to begin executing.
    *
-   * Called by the dispatcher immediately after invoking `cmd.trigger(context)`.
+   * The dispatcher must call this **before** `cmd.trigger(context)`: `trigger()`
+   * runs the first prompt synchronously until its first `await`, and that prompt
+   * reads {@link activeCommand} (for example the session-panel accessory).
    * The supplied view is used to reach the editor's input manager when an
    * outside caller requests cancellation via {@link cancelActive}.
    *
-   * @param command - Command that just started executing
+   * @param command - Command that is about to start executing
    * @param view - View bound to the command's execution context
-   * @param promise - Promise returned by the command's `trigger()` call
+   * @param promise - Promise that settles when the command finishes
    */
   markActive(
     command: AcEdCommand,
@@ -408,6 +410,32 @@ export class AcEdCommandStack {
     this._activeCommand = command
     this._activeView = view
     this._activePromise = promise
+  }
+
+  /**
+   * Marks `command` active, then runs `work`. {@link activeCommand} is set
+   * before `work` is invoked so the first input prompt can read it.
+   *
+   * @param command - Command that is about to start executing
+   * @param view - View bound to the command's execution context
+   * @param work - Typically `() => cmd.trigger(context)`
+   */
+  async runActive(
+    command: AcEdCommand,
+    view: AcEdBaseView,
+    work: () => Promise<void>
+  ): Promise<void> {
+    let release!: () => void
+    const tracked = new Promise<void>(resolve => {
+      release = resolve
+    })
+    this.markActive(command, view, tracked)
+    try {
+      await work()
+    } finally {
+      this.clearActive(command)
+      release()
+    }
   }
 
   /**

@@ -12,7 +12,7 @@ CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后�
 
 - [**🌐 主页**](https://mlightcad.com/)
 - **🌐 在线演示**：[Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 API 文档**：[Read the Docs](https://cad-viewer.readthedocs.io/en/latest/)（支持版本切换）· [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/)（最新 /dev）· [MCP 服务器](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 API 文档**：[Read the Docs](https://cad-viewer.readthedocs.io/en/latest/)（支持版本切换）· [MCP 服务器](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 项目 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -41,6 +41,14 @@ CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后�
 - [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — Arch Linux 源码包，使用系统 Electron（约 5.4 MB）
 - [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — Arch Linux 二进制包，内置字体/模板，支持完全离线打开图纸
 
+### 示例应用（Demo Apps）
+
+官方示例应用，展示如何把 cad-viewer 集成到你自己的产品中：
+
+- [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — 基于 [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer) 的极简 vanilla TypeScript 宿主：打开本地或 CDN 的 DXF/DWG，用小型工具栏驱动命令，并懒加载 HTML/PDF/SVG 导出插件（不含完整 Vue UI）。
+- [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — 基于 [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) 的完整 Vue 3 应用，含菜单、功能区、对话框、命令行与状态栏（[在线演示](https://mlightcad.github.io/cad-viewer-example/)）。
+- [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js「CAD 网盘」演示：分片断点续传上传 DWG/DXF、SQLite 文件列表与预览缩略图，并支持以**浏览器实时解析**（`cad-simple-viewer`）或**服务端 ACEX 预渲染**（打开更快、内存更少）两种方式查看图纸。
+
 ![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
 ## 功能特性
@@ -50,6 +58,7 @@ CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后�
 - **数据更安全**：文件不离开本地设备，保护隐私
 - **易于集成**：无需服务器或后端基础设施
 - 模块化架构，便于第三方系统集成
+- **移动端布局与触控**：`@mlightcad/cad-simple-viewer` 内置响应式手机/平板布局与触控手势（双指缩放、单指平移、点选），无需单独的移动端应用即可在移动浏览器中使用
 - **导出为离线 HTML**：将当前图纸导出为单个自包含 `.html` 文件，内嵌查看器（平移缩放、范围缩放、图层、距离测量、中英文界面），可在任意浏览器中离线打开，无需 CAD-Viewer 实例或后端。
 - 支持离线与在线编辑流程
 - 基于 THREE.js 的 3D 渲染引擎，包含多项性能优化
@@ -111,6 +120,8 @@ pnpm preview:simple
 ```
 
 ## 使用说明
+
+初次使用 CAD Viewer？**[用户指南](https://mlightcad.com/cad-viewer/docs/)** 提供了分步说明，涵盖查看器界面、桌面端与触屏操作、批注和测量工具。
 
 ### 桌面浏览器操作
 - **选择**：鼠标左键单击实体
@@ -422,7 +433,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 -   [ ] ⏳ Google Drive 集成
 -   [ ] 微信小程序查看器
--   [ ] 移动端浏览器支持（只读）
+-   [x] 移动端浏览器支持（响应式布局与触控）
 
 ### 文档与社区
 

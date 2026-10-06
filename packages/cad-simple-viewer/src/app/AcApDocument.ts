@@ -24,7 +24,7 @@ import type {
 } from '../service/types'
 import { LAYER_LOCKED_FLAG } from '../service/types'
 import type { AcApLayerPreviousSnapshot } from './AcApLayerSessionState'
-import { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
+import { AcApOpenDatabaseOptions } from './AcApOpenDatabaseOptions'
 
 /** Sentinel stored in {@link AcApDocument.docTitle} for unsaved documents. */
 export const ACAP_UNTITLED_DOC_TITLE = 'Untitled'
@@ -94,16 +94,20 @@ export class AcApDocument {
     const openErrorBefore = this._database.lastOpenError
     let isSuccess = true
     try {
-      // Convert to base options for database method
-      const baseOptions: AcDbOpenDatabaseOptions = {
+      // Convert to base options for database method. Viewer-only fields
+      // (`mode`, `progressiveRendering`, `openViewMode`, deprecated
+      // `waitForTextGeometry`) are ignored by `AcDbDatabase`; `sysVars` may
+      // include `AcCmColor` values that the published data-model type omits
+      // but `setVar` accepts at runtime.
+      const baseOptions = {
         ...options,
         readOnly: this._openMode === AcEdOpenMode.Read
-      }
+      } as AcDbOpenDatabaseOptions
       await this._database.openUri(uri, baseOptions)
       this.docTitle = this._fileName
-    } catch {
+    } catch (error) {
       isSuccess = false
-      this.emitOpenFileFailed(uri, openErrorBefore)
+      this.emitOpenFileFailed(uri, openErrorBefore, error)
     }
     return isSuccess
   }
@@ -135,20 +139,24 @@ export class AcApDocument {
     const openErrorBefore = this._database.lastOpenError
     try {
       const fileExtension = fileName.split('.').pop()?.toLocaleLowerCase()
-      // Convert to base options for database method
-      const baseOptions: AcDbOpenDatabaseOptions = {
+      // Convert to base options for database method. Viewer-only fields
+      // (`mode`, `progressiveRendering`, `openViewMode`, deprecated
+      // `waitForTextGeometry`) are ignored by `AcDbDatabase`; `sysVars` may
+      // include `AcCmColor` values that the published data-model type omits
+      // but `setVar` accepts at runtime.
+      const baseOptions = {
         ...options,
         readOnly: this._openMode === AcEdOpenMode.Read
-      }
+      } as AcDbOpenDatabaseOptions
       await this._database.read(
         content,
         baseOptions,
         fileExtension == 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
       )
       this.docTitle = this._fileName
-    } catch {
+    } catch (error) {
       isSuccess = false
-      this.emitOpenFileFailed(fileName, openErrorBefore)
+      this.emitOpenFileFailed(fileName, openErrorBefore, error)
     }
     return isSuccess
   }
@@ -415,19 +423,27 @@ export class AcApDocument {
 
   /**
    * Emits `failed-to-open-file` with structured error details from the database.
+   *
+   * Falls back to normalizing {@link caughtError} when `lastOpenError` is missing
+   * or stale (for example when the failure was re-wrapped across package copies).
    */
   private emitOpenFileFailed(
     fileName: string,
-    openErrorBefore: AcDbOpenDatabaseError | null = null
+    openErrorBefore: AcDbOpenDatabaseError | null = null,
+    caughtError?: unknown
   ): void {
-    const openError = this._database.lastOpenError
+    let openError = this._database.lastOpenError
     const isFreshOpenError = openError != null && openError !== openErrorBefore
+    if (!isFreshOpenError && caughtError != null) {
+      openError = AcDbOpenDatabaseError.from(caughtError)
+    }
     eventBus.emit('failed-to-open-file', {
       fileName,
-      ...(isFreshOpenError && {
-        errorCode: openError.code,
-        errorMessage: openError.message
-      })
+      ...(openError != null &&
+        (isFreshOpenError || caughtError != null) && {
+          errorCode: openError.code,
+          errorMessage: openError.message
+        })
     })
   }
 

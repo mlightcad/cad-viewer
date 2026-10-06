@@ -2,12 +2,17 @@ import {
   AcTrLinePatternShaders,
   type AcTrPatternLine,
   createGradientHatchShaderMaterialFromUniforms,
-  createHatchPatternShaderMaterial
+  createHatchPatternShaderMaterial,
+  wrapPatternBaseToLocalFrame
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
 import { copyFloat32Range } from './AcExBatchBuffers'
+import {
+  createTextureFromExportedBytes,
+  releaseExportedTextureBytes
+} from './AcExMeshTextureExport'
 import type {
   AcExGradientFill,
   AcExHatchPattern,
@@ -18,7 +23,7 @@ import type {
 } from './AcExSnapshotTypes'
 
 /** Shared camera zoom uniform updated by the offline HTML viewer. */
-export const acexCameraZoomUniform = { value: 1.0 }
+export const AcExCameraZoomUniform = { value: 1.0 }
 
 function asShaderMaterial(
   material: THREE.Material
@@ -278,7 +283,7 @@ export function createViewerLineMaterial(
       batch.linePattern.patternLength,
       batch.color,
       batch.linePattern.viewportScale,
-      acexCameraZoomUniform
+      AcExCameraZoomUniform
     )
   }
   return new THREE.LineBasicMaterial({ color: batch.color })
@@ -328,9 +333,66 @@ export function transformHatchPatternToWorldSpace(
 }
 
 /**
+ * Moves a world-space hatch pattern into the same local frame as rebased mesh
+ * vertices (`batch.offset`), then period-wraps each line base so the offline
+ * hatch shader keeps float32 precision at large survey coordinates.
+ *
+ * {@link AcExHatchPatternLine.offset} is already in the hatch-shader uniform
+ * frame (rotated by `-line.angle` when the live material was built, then
+ * optionally transformed by {@link transformHatchPatternToWorldSpace}). Do
+ * **not** rotate it again before {@link wrapPatternBaseToLocalFrame} — that
+ * helper expects the pre-rotated offset, matching
+ * `AcTrFillMaterialManager.createHatchShaderMaterial`.
+ */
+export function rebaseHatchPatternToLocalOffset(
+  pattern: AcExHatchPattern,
+  offset: [number, number, number]
+): AcExHatchPattern {
+  return {
+    patternAngle: pattern.patternAngle,
+    patternLines: pattern.patternLines.map(line => {
+      const base = new THREE.Vector2(
+        line.base[0] - offset[0],
+        line.base[1] - offset[1]
+      )
+      // Shader-frame offset from extractHatchPattern / world transform — already
+      // rotated by -line.angle; pass through to wrapPatternBaseToLocalFrame.
+      const patternOffset = new THREE.Vector2(line.offset[0], line.offset[1])
+      wrapPatternBaseToLocalFrame(
+        base,
+        patternOffset,
+        line.angle,
+        pattern.patternAngle,
+        line.patternLength
+      )
+      return {
+        angle: line.angle,
+        base: [base.x, base.y] as [number, number],
+        offset: [line.offset[0], line.offset[1]] as [number, number],
+        dashLengths: [...line.dashLengths],
+        patternLength: line.patternLength
+      }
+    })
+  }
+}
+
+/** Optional hooks when building viewer materials from exported mesh batches. */
+export interface AcExViewerMeshMaterialOptions {
+  /**
+   * Called after an async IMAGE/OLE texture becomes ready. Offline viewers should
+   * pass their `render()` so the mesh is not stuck at opacity 0 until the next
+   * pan/zoom.
+   */
+  onTextureLoad?: () => void
+}
+
+/**
  * Creates a viewer material for one exported mesh batch.
  */
-export function createViewerMeshMaterial(batch: AcExMeshBatch): THREE.Material {
+export function createViewerMeshMaterial(
+  batch: AcExMeshBatch,
+  options: AcExViewerMeshMaterialOptions = {}
+): THREE.Material {
   if (batch.hatchPattern && batch.hatchPattern.patternLines.length > 0) {
     try {
       const patternLines = batch.hatchPattern.patternLines.map(
@@ -339,7 +401,7 @@ export function createViewerMeshMaterial(batch: AcExMeshBatch): THREE.Material {
       return createHatchPatternShaderMaterial(
         patternLines,
         batch.hatchPattern.patternAngle,
-        acexCameraZoomUniform,
+        AcExCameraZoomUniform,
         new THREE.Color(batch.color),
         0,
         (batch.side ?? THREE.FrontSide) as THREE.Side
@@ -361,6 +423,28 @@ export function createViewerMeshMaterial(batch: AcExMeshBatch): THREE.Material {
     } catch {
       // Fall back to a solid fill if gradient shader creation fails.
     }
+  }
+  if (batch.texture && batch.uvs && batch.uvs.length >= 2) {
+    // Stay invisible until the blob texture decodes — otherwise MeshBasicMaterial
+    // shows a solid white fill (same class of bug as live AcTrImage placeholders).
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false
+    })
+    material.map = createTextureFromExportedBytes(batch.texture, {
+      onLoad: () => {
+        // PNG/JPEG bytes are no longer needed once the GPU texture exists.
+        releaseExportedTextureBytes(batch.texture)
+        material.opacity = 1
+        material.depthWrite = true
+        material.needsUpdate = true
+        options.onTextureLoad?.()
+      }
+    })
+    return material
   }
   return new THREE.MeshBasicMaterial({
     color: batch.color,

@@ -1,4 +1,9 @@
 import {
+  ML_UI_MOBILE_MAX_WIDTH,
+  ML_UI_SESSION_PANEL_MAX_WIDTH,
+  ML_UI_SESSION_PANEL_WIDTH
+} from '../editor/global/AcEdUiLayout'
+import {
   acedApplyUiTheme,
   type AcEdUiTheme,
   resolveUiTheme
@@ -10,7 +15,9 @@ import {
 export interface AcUiDialogOptions {
   /**
    * Host element that receives the backdrop.
-   * @defaultValue `document.body`
+   *
+   * Prefer the canvas / view container so vertical centering uses the drawing
+   * area height (excluding ribbon and status bar). Defaults to `document.body`.
    */
   host?: HTMLElement
 
@@ -35,10 +42,33 @@ export interface AcUiDialogOptions {
   dialogClassName?: string
 
   /**
+   * Layout-aware panel width.
+   *
+   * When `true` (default): pad and desktop match the bottom session panel
+   * ({@link ML_UI_SESSION_PANEL_WIDTH}); phone uses the full viewport.
+   * Set `false` for the compact `min(360px, calc(100vw - 32px))` width.
+   *
+   * @defaultValue `true`
+   */
+  layoutWidth?: boolean
+
+  /**
    * Whether clicking the backdrop closes the dialog.
    * @defaultValue `true`
    */
   closeOnBackdrop?: boolean
+
+  /**
+   * Whether the header close (×) button is shown.
+   * @defaultValue `true`
+   */
+  showCloseButton?: boolean
+
+  /**
+   * Horizontal alignment of the title in the header.
+   * @defaultValue `"start"`
+   */
+  titleAlign?: 'start' | 'center'
 
   /**
    * Whether pressing Escape closes the dialog.
@@ -56,13 +86,19 @@ export interface AcUiDialogOptions {
 /**
  * Framework-free modal dialog base built with pure HTML and CSS.
  *
+ * The backdrop fills {@link AcUiDialogOptions.host} (typically the canvas
+ * container) and centers the panel in that box so ribbon / status chrome
+ * outside the host are not used for vertical centering.
+ *
  * Subclasses fill {@link bodyEl} / {@link footerEl} and call {@link show}.
  */
 export class AcUiDialog {
   /** ID of the shared base style element. */
   public static readonly styleId = 'ml-ui-dialog-styles'
 
-  private static stylesInjected = false
+  /** Class applied when {@link AcUiDialogOptions.layoutWidth} is `false`. */
+  public static readonly compactClass = 'ml-ui-dialog--compact'
+
   private static nextTitleId = 0
 
   /** Full-screen backdrop containing the dialog panel. */
@@ -80,6 +116,9 @@ export class AcUiDialog {
   /** Title text element in the header. */
   protected readonly titleEl: HTMLDivElement
 
+  private readonly host: HTMLElement
+  /** Previous inline `position` on {@link host}, restored on close when we set it. */
+  private readonly hostPositionRestore: string | null
   private readonly onKeyDown: (event: KeyboardEvent) => void
   private readonly closeOnEscape: boolean
   private readonly previouslyFocused: HTMLElement | null
@@ -96,6 +135,9 @@ export class AcUiDialog {
     AcUiDialog.ensureStyles()
 
     const host = options.host ?? document.body
+    this.host = host
+    this.hostPositionRestore = AcUiDialog.ensureHostContainingBlock(host)
+
     const titleId =
       options.titleId ?? `ml-ui-dialog-title-${AcUiDialog.nextTitleId++}`
     this.closeOnEscape = options.closeOnEscape ?? true
@@ -114,7 +156,11 @@ export class AcUiDialog {
     }
 
     this.dialog = document.createElement('div')
-    this.dialog.className = ['ml-ui-dialog', options.dialogClassName]
+    this.dialog.className = [
+      'ml-ui-dialog',
+      options.layoutWidth === false ? AcUiDialog.compactClass : '',
+      options.dialogClassName
+    ]
       .filter(Boolean)
       .join(' ')
     this.dialog.setAttribute('role', 'dialog')
@@ -125,21 +171,26 @@ export class AcUiDialog {
 
     const header = document.createElement('div')
     header.className = 'ml-ui-dialog-header'
+    if (options.titleAlign === 'center') {
+      header.classList.add('ml-ui-dialog-header--center')
+    }
 
     this.titleEl = document.createElement('div')
     this.titleEl.id = titleId
     this.titleEl.className = 'ml-ui-dialog-title'
     this.titleEl.textContent = options.title
 
-    const closeBtn = document.createElement('button')
-    closeBtn.type = 'button'
-    closeBtn.className = 'ml-ui-dialog-close'
-    closeBtn.setAttribute('aria-label', options.closeLabel ?? 'Close')
-    closeBtn.textContent = '×'
-    closeBtn.addEventListener('click', () => this.close())
-
     header.appendChild(this.titleEl)
-    header.appendChild(closeBtn)
+
+    if (options.showCloseButton !== false) {
+      const closeBtn = document.createElement('button')
+      closeBtn.type = 'button'
+      closeBtn.className = 'ml-ui-dialog-close'
+      closeBtn.setAttribute('aria-label', options.closeLabel ?? 'Close')
+      closeBtn.textContent = '×'
+      closeBtn.addEventListener('click', () => this.close())
+      header.appendChild(closeBtn)
+    }
 
     this.bodyEl = document.createElement('div')
     this.bodyEl.className = 'ml-ui-dialog-body'
@@ -191,6 +242,9 @@ export class AcUiDialog {
     window.removeEventListener('keydown', this.onKeyDown)
     if (this.backdrop.parentNode) {
       this.backdrop.parentNode.removeChild(this.backdrop)
+    }
+    if (this.hostPositionRestore !== null) {
+      this.host.style.position = this.hostPositionRestore
     }
     this.previouslyFocused?.focus()
     this.resolve?.()
@@ -255,20 +309,30 @@ export class AcUiDialog {
   }
 
   /**
+   * Ensures {@link host} is a positioned containing block for the absolute
+   * backdrop. Returns the previous inline `position` when it was changed, or
+   * `null` when the host already established a containing block.
+   */
+  private static ensureHostContainingBlock(host: HTMLElement): string | null {
+    // Browsers report `static`; some test environments leave this empty.
+    const position = getComputedStyle(host).position || 'static'
+    if (position !== 'static') return null
+    const previous = host.style.position
+    host.style.position = 'relative'
+    return previous
+  }
+
+  /**
    * Injects shared dialog chrome CSS once per document.
    */
   static ensureStyles(): void {
-    if (AcUiDialog.stylesInjected) return
-    if (document.getElementById(AcUiDialog.styleId)) {
-      AcUiDialog.stylesInjected = true
-      return
-    }
+    if (document.getElementById(AcUiDialog.styleId)) return
 
     const style = document.createElement('style')
     style.id = AcUiDialog.styleId
     style.textContent = `
 .ml-ui-dialog-backdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 10050;
   display: flex;
@@ -279,7 +343,10 @@ export class AcUiDialog {
 }
 
 .ml-ui-dialog {
-  width: min(360px, calc(100vw - 32px));
+  width: ${ML_UI_SESSION_PANEL_WIDTH}px;
+  max-width: ${ML_UI_SESSION_PANEL_MAX_WIDTH};
+  max-height: 100%;
+  overflow: auto;
   box-sizing: border-box;
   padding: 16px 18px 14px;
   border-radius: 10px;
@@ -289,11 +356,34 @@ export class AcUiDialog {
   box-shadow: var(--ml-ui-shadow, 0 8px 28px rgba(0, 0, 0, 0.28));
 }
 
+.ml-ui-dialog.${AcUiDialog.compactClass} {
+  width: min(360px, calc(100vw - 32px));
+  max-width: none;
+}
+
+@media (max-width: ${ML_UI_MOBILE_MAX_WIDTH}px) {
+  .ml-ui-dialog:not(.${AcUiDialog.compactClass}) {
+    width: 100%;
+    max-width: none;
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+  }
+}
+
 .ml-ui-dialog-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 14px;
+}
+
+.ml-ui-dialog-header--center {
+  justify-content: center;
+}
+
+.ml-ui-dialog-header--center .ml-ui-dialog-title {
+  flex: 1;
+  text-align: center;
 }
 
 .ml-ui-dialog-title {
@@ -340,8 +430,18 @@ export class AcUiDialog {
 .ml-ui-dialog-btn:hover {
   filter: brightness(1.05);
 }
+
+.ml-ui-dialog-btn-secondary {
+  border: 1px solid var(--ml-ui-border, #dcdfe6);
+  background: var(--ml-ui-bg, #ffffff);
+  color: var(--ml-ui-text, #303133);
+}
+
+.ml-ui-dialog-btn-secondary:hover {
+  filter: none;
+  background: var(--ml-ui-border, #dcdfe6);
+}
 `.trim()
     document.head.appendChild(style)
-    AcUiDialog.stylesInjected = true
   }
 }

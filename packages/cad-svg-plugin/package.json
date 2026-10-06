@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-svg-plugin",
-  "version": "1.6.3",
+  "version": "1.7.4",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -44,14 +44,14 @@
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.14.3",
-    "@mlightcad/mtext-parser": "^1.4.1",
-    "@mlightcad/mtext-renderer": "^0.12.4"
+    "@mlightcad/data-model": "^1.15.1",
+    "@mlightcad/mtext-parser": "^1.5.3",
+    "@mlightcad/mtext-renderer": "^0.13.3"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.14.3",
-    "@mlightcad/mtext-parser": "^1.4.1",
-    "@mlightcad/mtext-renderer": "^0.12.4"
+    "@mlightcad/data-model": "^1.15.1",
+    "@mlightcad/mtext-parser": "^1.5.3",
+    "@mlightcad/mtext-renderer": "^0.13.3"
   }
 }

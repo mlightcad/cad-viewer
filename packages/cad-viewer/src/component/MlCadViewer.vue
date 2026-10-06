@@ -74,6 +74,12 @@
  *   :base-url="'https://my-cdn.com/cad-data/'"
  * />
  *
+ * // Usage with a self-hosted user-guide root
+ * <MlCadViewer
+ *   :locale="'zh'"
+ *   :docs-base-url="'https://example.com/my-product/docs/'"
+ * />
+ *
  * // Import statement
  * import { MlCadViewer } from '@mlightcad/cad-viewer'
  * ```
@@ -83,20 +89,24 @@
  */
 import {
   AcApDocManager,
-  AcApFontUtil,
   AcApOpenDatabaseOptions,
   AcApOpenViewMode,
   AcEdMTextEditor,
   AcEdOpenMode,
-  eventBus
+  eventBus,
+  layoutBackgroundColorFromRgb
 } from '@mlightcad/cad-simple-viewer'
-import { ACDB_DRAW_CIRCLE_SIDES_DRAFT, log } from '@mlightcad/data-model'
+import { ACDB_DRAW_CIRCLE_SIDES_DRAFT, ACGI_PAPER_SPACE_BACKGROUND, log } from '@mlightcad/data-model'
 import { provideLocale } from '@mlightcad/ui-components'
 import { ElConfigProvider, ElMessage } from 'element-plus'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { initializeCadViewer, store } from '../app'
+import {
+  initializeCadViewer,
+  store,
+  unregisterCadViewerNotificationCenter
+} from '../app'
 import {
   ensureColorThemeSync,
   isDark,
@@ -104,16 +114,11 @@ import {
   setColorTheme,
   toggleDark,
   useDocument,
-  useDrawStyleToolbarVisible,
   useLocale,
-  useNotificationCenter,
   useSettings
 } from '../composable'
 import { LocaleProp } from '../locale'
-import {
-  resolveOpenFileErrorMessage,
-  resolveOpenFileErrorTitle
-} from '../util/openFileErrorMessage'
+import { resolveOpenFileErrorToastMessage } from '../util/openFileErrorMessage'
 import { MlDialogManager, MlFontFileReader } from './common'
 import { MlEntityInfo, MlToolBars } from './layout'
 import { MlNotificationCenter } from './notification'
@@ -146,6 +151,18 @@ interface Props {
   /** Base URL for loading fonts, templates, and example files (e.g., 'https://example.com/cad-data/') */
   baseUrl?: string
   /**
+   * Absolute root URL for localized user-guide pages (trailing slash optional).
+   * Forwarded to {@link AcApDocManagerOptions.docsBaseUrl} for in-app help links
+   * (e.g. mobile magnifier). Defaults to the public mlightcad docs site.
+   */
+  docsBaseUrl?: string
+  /**
+   * When true, drawing export commands are not registered and the File menu
+   * Export submenu is hidden. Forwarded to {@link AcApDocManagerOptions.disableExport}.
+   * Defaults to false (export remains enabled).
+   */
+  disableExport?: boolean
+  /**
    * URL of the offline HTML viewer runtime (`viewer-runtime.iife.js`).
    * Used only for File menu “Export to HTML”. Copy the file from
    * `@mlightcad/cad-html-plugin` into your app assets when you need HTML export.
@@ -173,10 +190,20 @@ interface Props {
    */
   drawNoPlotLayers?: boolean
   /**
-   * Whether to render entities incrementally while a drawing is opening.
-   * When omitted, {@link AcApDocManager} defaults to `false`.
+   * Whether opening a drawing is progressive.
+   *
+   * Controls both stages: mid-open paints during entity convert, and whether
+   * the open overlay waits for deferred text geometry. When `false` (default),
+   * the canvas waits until entities and deferred text geometry are idle.
+   * When `true`, geometry paints as it converts and the overlay hides when
+   * entity convert finishes. Deprecated `waitForTextGeometry` is ignored.
    */
   progressiveRendering?: boolean
+  /**
+   * @deprecated Ignored. Both stages of progressive rendering are controlled
+   * by {@link progressiveRendering}. Kept so existing templates still compile.
+   */
+  waitForTextGeometry?: boolean
   /**
    * How to frame the view when the document finishes opening.
    * When omitted, Read and Review use {@link AcApOpenViewMode.Extents};
@@ -190,6 +217,12 @@ interface Props {
    * matching the data-model default for {@link AcApOpenDatabaseOptions.circleSides}.
    */
   circleSides?: number
+  /**
+   * Paper-space (layout) canvas background as packed 24-bit RGB
+   * (e.g. `0xffffff` white, `0x000000` black). Defaults to white.
+   * Mapped to open options as `sysVars.paperbkcolor`.
+   */
+  paperSpaceBackground?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -198,13 +231,16 @@ const props = withDefaults(defineProps<Props>(), {
   localFile: undefined,
   background: undefined,
   baseUrl: undefined,
+  docsBaseUrl: undefined,
+  disableExport: false,
   htmlViewerRuntimeUrl: './assets/viewer-runtime.iife.js',
   useMainThreadDraw: true,
   theme: 'dark',
   mode: AcEdOpenMode.Write,
   progressiveRendering: false,
   openViewMode: undefined,
-  circleSides: ACDB_DRAW_CIRCLE_SIDES_DRAFT
+  circleSides: ACDB_DRAW_CIRCLE_SIDES_DRAFT,
+  paperSpaceBackground: ACGI_PAPER_SPACE_BACKGROUND
 })
 
 const buildOpenOptions = (): AcApOpenDatabaseOptions => ({
@@ -213,6 +249,9 @@ const buildOpenOptions = (): AcApOpenDatabaseOptions => ({
   drawNoPlotLayers: props.drawNoPlotLayers,
   progressiveRendering: props.progressiveRendering,
   circleSides: props.circleSides,
+  sysVars: {
+    paperbkcolor: layoutBackgroundColorFromRgb(props.paperSpaceBackground)
+  },
   ...(props.openViewMode != null ? { openViewMode: props.openViewMode } : {})
 })
 
@@ -221,36 +260,6 @@ const { currentLocale, effectiveLocale, elementPlusLocale } = useLocale(
   props.locale
 )
 provideLocale(currentLocale)
-const {
-  info,
-  warning,
-  error,
-  success,
-  removeWhere,
-  removeResolvedFontMissedNotifications
-} = useNotificationCenter()
-
-const fontMissedNotificationOptions = (fontNames: string[]) => ({
-  source: 'font-missed' as const,
-  fontNames
-})
-
-const formatFontWithReplacement = (fontName: string) =>
-  t('main.message.fontMissedReplacement', {
-    font: fontName,
-    replacement: AcApFontUtil.getReplacementFontName(fontName)
-  })
-
-const formatFontsWithReplacement = (fontNames: string[]) =>
-  fontNames.map(formatFontWithReplacement).join(', ')
-
-const syncFontMissedNotifications = () => {
-  const missedFonts = Object.keys(
-    AcApDocManager.instance.curView.missedData.fonts
-  )
-  removeResolvedFontMissedNotifications(missedFonts)
-}
-
 // Canvas element reference
 const containerRef = ref<HTMLDivElement>()
 const layoutRef = ref<HTMLDivElement>()
@@ -271,13 +280,11 @@ const viewerThemeClass = computed(() =>
 )
 
 const features = useSettings()
-const drawStyleToolbarVisible = useDrawStyleToolbarVisible()
 const {
   beginDocumentOpening,
   endDocumentOpening,
   isDocumentOpening,
-  openMode: docOpenMode,
-  displayName
+  openMode: docOpenMode
 } = useDocument()
 const pendingOpenMode = ref<AcEdOpenMode>()
 const effectiveOpenMode = computed(
@@ -348,7 +355,7 @@ const openFileFromUrl = async (url: string) => {
   } catch (error) {
     log.error('Failed to open file from URL:', error)
     ElMessage({
-      message: resolveOpenFileErrorMessage(t, { fileName: url }),
+      message: resolveOpenFileErrorToastMessage(t, { fileName: url }),
       grouping: true,
       type: 'error',
       showClose: true
@@ -398,7 +405,7 @@ const openLocalFile = async (file: File) => {
     }
   } catch {
     ElMessage({
-      message: resolveOpenFileErrorMessage(t, { fileName: file.name }),
+      message: resolveOpenFileErrorToastMessage(t, { fileName: file.name }),
       grouping: true,
       type: 'error',
       showClose: true
@@ -448,7 +455,8 @@ watch(
     props.drawNoPlotLayers,
     props.progressiveRendering,
     props.openViewMode,
-    props.circleSides
+    props.circleSides,
+    props.paperSpaceBackground
   ],
   () => {
     if (editorRef.value) {
@@ -479,6 +487,8 @@ onMounted(async () => {
       container: containerRef.value,
       busyIndicatorHost: layoutRef.value,
       baseUrl: props.baseUrl,
+      docsBaseUrl: props.docsBaseUrl,
+      disableExport: props.disableExport,
       htmlViewerRuntimeUrl: props.htmlViewerRuntimeUrl,
       autoResize: true,
       useMainThreadDraw: props.useMainThreadDraw,
@@ -522,6 +532,7 @@ onUnmounted(() => {
 
   AcEdMTextEditor.setDefaultToolbarEnabled(true)
   headerResizeObserver?.disconnect()
+  unregisterCadViewerNotificationCenter()
   AcApDocManager.instance.destroy()
 })
 
@@ -539,85 +550,17 @@ watch(
   { immediate: true }
 )
 
-// Set up global event listeners for various CAD operations and notifications
-// These events are emitted by the underlying CAD engine and other components
-
-// Handle general messages from the CAD system (info, warnings, errors)
+// Toast-only listeners. Notification center entries are written by the shared
+// AcApNotificationEventBridge in cad-simple-viewer.
 eventBus.on('message', params => {
-  // Show both ElMessage and notification center
   ElMessage({
     message: params.message,
     grouping: true,
     type: params.type,
     showClose: true
   })
-
-  // Also add to notification center
-  switch (params.type) {
-    case 'success':
-      success('System Message', params.message)
-      break
-    case 'warning':
-      warning('System Warning', params.message)
-      break
-    case 'error':
-      error('System Error', params.message)
-      break
-    default:
-      info('System Info', params.message)
-      break
-  }
 })
 
-// Handle failure that fonts can't be loaded from remote font repository
-eventBus.on('fonts-not-loaded', params => {
-  const fontNames = params.fonts.map(font => font.fontName)
-  const message = t('main.message.fontsNotLoaded', {
-    fonts: formatFontsWithReplacement(fontNames)
-  })
-  error(t('main.notification.title.fontNotFound'), message, {
-    ...fontMissedNotificationOptions(fontNames),
-    persistent: true
-  })
-})
-
-// Handle failure that fonts can't be found in remote font repository
-eventBus.on('fonts-not-found', params => {
-  const message = t('main.message.fontsNotFound', {
-    fonts: formatFontsWithReplacement(params.fonts)
-  })
-  warning(t('main.notification.title.fontNotFound'), message, {
-    ...fontMissedNotificationOptions(params.fonts)
-  })
-})
-
-// Handle fonts required by the drawing that are not available during rendering
-eventBus.on('font-not-found', params => {
-  const fontName = params.fontName.trim()
-  if (!fontName) return
-
-  removeWhere(
-    notification =>
-      notification.source === 'font-missed' &&
-      notification.fontNames?.includes(fontName) === true
-  )
-
-  warning(
-    t('main.notification.title.fontNotFound'),
-    t('main.message.fontMissedInDrawing', {
-      font: fontName,
-      count: params.count,
-      replacementFont: AcApFontUtil.getReplacementFontName(fontName)
-    }),
-    fontMissedNotificationOptions([fontName])
-  )
-})
-
-eventBus.on('missed-data-changed', () => {
-  syncFontMissedNotifications()
-})
-
-// Handle failures when trying to get available fonts from the system
 eventBus.on('failed-to-get-avaiable-fonts', params => {
   ElMessage({
     message: t('main.message.failedToGetAvaiableFonts', { url: params.url }),
@@ -635,14 +578,13 @@ eventBus.on('open-local-file-started', ({ mode }) => {
 // Handle file opening failures with user-friendly error messages
 eventBus.on('failed-to-open-file', params => {
   endPendingOpen()
-  const message = resolveOpenFileErrorMessage(t, params)
   ElMessage({
-    message,
+    message: resolveOpenFileErrorToastMessage(t, params),
     grouping: true,
     type: 'error',
-    showClose: true
+    showClose: true,
+    duration: 8000
   })
-  error(resolveOpenFileErrorTitle(t, params.errorCode), message)
 })
 
 // Mirror AutoCAD's LAYERCLOSE behavior: only close when the layer tab is open.
@@ -690,19 +632,6 @@ const closeNotificationCenter = () => {
             class="ml-cad-container"
           ></div>
 
-          <!-- Display current filename at the top center -->
-          <div
-            v-if="
-              editorRef &&
-              !features.isShowRibbon &&
-              features.isShowFileName &&
-              !drawStyleToolbarVisible
-            "
-            class="ml-file-name"
-          >
-            {{ displayName }}
-          </div>
-
           <!-- Toolbar with common CAD operations (zoom, pan, select, etc.) -->
           <ml-tool-bars v-if="editorRef" />
 
@@ -711,6 +640,12 @@ const closeNotificationCenter = () => {
 
           <!-- Dialog manager for modal dialogs and settings -->
           <ml-dialog-manager v-if="editorRef" />
+
+          <!-- Notification center (anchored to the canvas / main area) -->
+          <ml-notification-center
+            v-if="editorRef && showNotificationCenter"
+            @close="closeNotificationCenter"
+          />
         </main>
 
         <!-- Footer section with command line and status information -->
@@ -729,12 +664,6 @@ const closeNotificationCenter = () => {
 
       <!-- Entity info panel for displaying object properties -->
       <ml-entity-info v-if="editorRef" />
-
-      <!-- Notification center -->
-      <ml-notification-center
-        v-if="editorRef && showNotificationCenter"
-        @close="closeNotificationCenter"
-      />
     </el-config-provider>
   </div>
 </template>
@@ -796,15 +725,11 @@ const closeNotificationCenter = () => {
   z-index: 6;
 }
 
-/* Position the filename display at the top center of the viewer */
-.ml-file-name {
-  position: fixed;
-  top: 20px;
-  left: 50%;
-  color: var(--el-text-color-regular);
-  transform: translateX(-50%);
-  text-align: center;
-  pointer-events: none; /* Allow mouse events to pass through to container */
-  z-index: 3; /* Ensure it's above canvas but doesn't block events */
+/* Mobile command chrome is position:fixed over the canvas; hide the
+   status-bar footer so ✓ / × receive taps instead of the footer. */
+.ml-cad-layout:has(.ml-mobile-cmd-active) .ml-cad-footer {
+  visibility: hidden;
+  pointer-events: none;
 }
+
 </style>

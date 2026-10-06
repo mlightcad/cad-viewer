@@ -113,6 +113,117 @@ describe('AcExOsnapIndex', () => {
     expect(index.findSnap(5, 0.1, 1)?.mode).toBe('nearest')
   })
 
+  it('ignores NaN primitive bounds so one bad entry cannot poison snap search', () => {
+    const index = new AcExOsnapIndex(['endpoint'])
+    index.rebuild({
+      ...layout,
+      lineBatches: [],
+      osnap: {
+        primitives: [
+          {
+            kind: 'line',
+            layer: '0',
+            x0: NaN,
+            y0: NaN,
+            x1: NaN,
+            y1: NaN
+          },
+          {
+            kind: 'line',
+            layer: '0',
+            x0: 0,
+            y0: 0,
+            x1: 10,
+            y1: 0
+          }
+        ]
+      }
+    })
+    expect(index.findSnap(0.2, 0.1, 1)).toEqual({
+      x: 0,
+      y: 0,
+      mode: 'endpoint'
+    })
+  })
+
+  it('ignores NaN line-batch vertices so tessellated geometry cannot poison snap', () => {
+    const index = new AcExOsnapIndex(['endpoint', 'nearest'])
+    index.rebuild({
+      ...layout,
+      lineBatches: [
+        {
+          layer: '0',
+          color: 0xffffff,
+          offset: [0, 0, 0],
+          positions: Float32Array.from([
+            NaN,
+            NaN,
+            0,
+            NaN,
+            NaN,
+            0,
+            0,
+            0,
+            0,
+            10,
+            0,
+            0
+          ]),
+          indices: Uint32Array.from([0, 1, 2, 3])
+        }
+      ],
+      meshBatches: [
+        {
+          layer: '0',
+          color: 0xff0000,
+          offset: [0, 0, 0],
+          // Huge hatch-like mesh must not be indexed for osnap.
+          positions: Float32Array.from([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+          indices: Uint32Array.from([0, 1, 2])
+        }
+      ],
+      osnap: { primitives: [] }
+    })
+    expect(index.findSnap(0.2, 0.1, 1)).toEqual({
+      x: 0,
+      y: 0,
+      mode: 'endpoint'
+    })
+    // Mesh triangle edges are not indexed — a pick on the fill must miss.
+    expect(index.findSnap(0.2, 0.2, 0.05)).toBeUndefined()
+  })
+
+  it('skips text/point glyph line batches marked excludeFromOsnap', () => {
+    const index = new AcExOsnapIndex(['endpoint', 'nearest'])
+    index.rebuild({
+      ...layout,
+      lineBatches: [
+        {
+          layer: '0',
+          color: 0xffffff,
+          offset: [0, 0, 0],
+          excludeFromOsnap: true,
+          positions: Float32Array.from([0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0]),
+          indices: Uint32Array.from([0, 1, 1, 2, 2, 3, 3, 0])
+        },
+        {
+          layer: '0',
+          color: 0xff0000,
+          offset: [0, 0, 0],
+          positions: Float32Array.from([10, 0, 0, 20, 0, 0]),
+          indices: Uint32Array.from([0, 1])
+        }
+      ],
+      osnap: { primitives: [] }
+    })
+    expect(index.findSnap(0.5, 0.5, 1)).toBeUndefined()
+    expect(index.findSnap(10.2, 0.1, 1)).toEqual({
+      x: 10,
+      y: 0,
+      mode: 'endpoint'
+    })
+  })
+
   it('snaps to intersection from catalog primitives', () => {
     const index = new AcExOsnapIndex(['intersection', 'endpoint'])
     index.rebuild({
@@ -226,7 +337,7 @@ describe('AcExOsnapIndex', () => {
     expect(snap?.mode).toBe('center')
   })
 
-  it('merges patterned line batch segments before endpoint snap', () => {
+  it('walks patterned line batch edges so intermediate vertices stay snappable', () => {
     const batch = {
       layer: '0',
       color: 0xffffff,
@@ -240,7 +351,8 @@ describe('AcExOsnapIndex', () => {
       }
     }
     expect(extractLineBatchSnapSegments(batch)).toEqual([
-      { x0: 0, y0: 0, x1: 10, y1: 0 }
+      { x0: 0, y0: 0, x1: 5, y1: 0 },
+      { x0: 5, y0: 0, x1: 10, y1: 0 }
     ])
 
     const patternedLayout = {
@@ -249,11 +361,16 @@ describe('AcExOsnapIndex', () => {
     }
     const index = new AcExOsnapIndex(['endpoint'])
     index.rebuild(patternedLayout)
+    expect(index.findSnap(5.1, 0.1, 1)).toEqual({
+      x: 5,
+      y: 0,
+      mode: 'endpoint'
+    })
     const snap = index.findSnap(9.8, 0.1, 1)
     expect(snap).toEqual({ x: 10, y: 0, mode: 'endpoint' })
   })
 
-  it('prefers analytic line endpoints over patterned render segments', () => {
+  it('snaps patterned intermediate vertices even when an ACEO line shares the chain', () => {
     const hybridLayout = {
       ...layout,
       lineBatches: [
@@ -285,8 +402,16 @@ describe('AcExOsnapIndex', () => {
     }
     const index = new AcExOsnapIndex(['endpoint'])
     index.rebuild(hybridLayout)
-    const snap = index.findSnap(1.5, 0.2, 2)
-    expect(snap).toEqual({ x: 0, y: 0, mode: 'endpoint' })
+    expect(index.findSnap(1.5, 0.2, 2)).toEqual({
+      x: 2,
+      y: 0,
+      mode: 'endpoint'
+    })
+    expect(index.findSnap(0.2, 0.1, 1)).toEqual({
+      x: 0,
+      y: 0,
+      mode: 'endpoint'
+    })
   })
 
   it('snaps to T-junction where stem ends on crossbar interior', () => {
@@ -597,6 +722,94 @@ describe('AcExOsnapIndex', () => {
     expect(snap).toEqual({ x: 5, y: 5, mode: 'intersection' })
   })
 
+  it('snaps to circle×line intersection when lines come from batches', () => {
+    const hybridLayout = {
+      btrId: 'model',
+      name: 'Model',
+      isModelSpace: true,
+      lineBatches: [
+        {
+          layer: '0',
+          color: 0xffffff,
+          offset: [0, 0, 0] as [number, number, number],
+          // Horizontal chord through circle center (radius 10 at origin).
+          positions: f32([-20, 0, 0, 20, 0, 0])
+        }
+      ],
+      meshBatches: [],
+      osnap: {
+        primitives: [
+          {
+            kind: 'circle' as const,
+            layer: '0',
+            cx: 0,
+            cy: 0,
+            r: 10,
+            normalSign: 1 as const
+          }
+        ]
+      }
+    }
+    const index = new AcExOsnapIndex(['intersection'])
+    index.rebuild(hybridLayout)
+    const snap = index.findSnap(10.1, 0.1, 1)
+    expect(snap).toEqual({ x: 10, y: 0, mode: 'intersection' })
+  })
+
+  it('snaps to path-edge × lineBatch intersection', () => {
+    const hybridLayout = {
+      btrId: 'model',
+      name: 'Model',
+      isModelSpace: true,
+      lineBatches: [
+        {
+          layer: '0',
+          color: 0xffffff,
+          offset: [0, 0, 0] as [number, number, number],
+          positions: f32([5, -5, 0, 5, 15, 0])
+        }
+      ],
+      meshBatches: [],
+      osnap: {
+        primitives: [
+          {
+            kind: 'path' as const,
+            layer: '0',
+            closed: true,
+            vertices: [0, 0, 0, 10, 0, 0, 10, 10, 0, 0, 10, 0]
+          }
+        ]
+      }
+    }
+    const index = new AcExOsnapIndex(['intersection'])
+    index.rebuild(hybridLayout)
+    const snap = index.findSnap(5.1, 0.1, 1)
+    expect(snap).toEqual({ x: 5, y: 0, mode: 'intersection' })
+  })
+
+  it('snaps to fill-path endpoints', () => {
+    const index = new AcExOsnapIndex(['endpoint'])
+    index.rebuild({
+      btrId: 'model',
+      name: 'Model',
+      isModelSpace: true,
+      lineBatches: [],
+      meshBatches: [],
+      osnap: {
+        primitives: [
+          {
+            kind: 'path',
+            layer: '0',
+            closed: true,
+            vertices: [0, 0, 0, 20, 0, 0, 20, 10, 0, 0, 10, 0]
+          }
+        ]
+      }
+    })
+    const snap = index.findSnap(0.2, 0.1, 1)
+    expect(snap).toEqual({ x: 0, y: 0, mode: 'endpoint' })
+  })
+
   it('rebuilds large tessellated layouts without blowing the call stack', () => {
     const positions = new Float32Array(200_000 * 6)
     for (let i = 0; i < 200_000; i++) {
@@ -664,13 +877,19 @@ describe('AcExOsnapIndex', () => {
       x: 10,
       y: 0
     })
-    expect(index.findCircleOrArcNear(50.2, 0, 1)).toEqual({
+    const arcHit = index.findCircleOrArcNear(50.2, 0, 1)
+    expect(arcHit).toMatchObject({
       cx: 40,
       cy: 0,
       r: 10,
       x: 50,
       y: 0
     })
+    expect(arcHit?.arc).toBeDefined()
+    expect(arcHit!.arc!.start.x).toBeCloseTo(50, 5)
+    expect(arcHit!.arc!.start.y).toBeCloseTo(0, 5)
+    expect(arcHit!.arc!.end.x).toBeCloseTo(40, 5)
+    expect(arcHit!.arc!.end.y).toBeCloseTo(10, 5)
     expect(index.findCircleOrArcNear(30, 0, 1)).toBeUndefined()
   })
 

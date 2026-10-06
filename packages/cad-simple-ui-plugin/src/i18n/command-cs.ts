@@ -8,6 +8,9 @@ export const commandCs = {
     },
     markuppanel: {
       description: 'Otevře dokovací panel kontroly'
+    },
+    measurementpanel: {
+      description: 'Otevře dokovací panel seznamu měření'
     }
   }
 }

@@ -16,12 +16,12 @@ beforeAll(() => {
 })
 
 jest.mock('@mlightcad/cad-simple-viewer', () => {
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
   const layout = jest.requireActual(
     '../../cad-simple-viewer/src/editor/global/AcEdUiLayout'
   ) as typeof import('../../cad-simple-viewer/src/editor/global/AcEdUiLayout')
 
-  return {
-    ...layout,
+  return createCadSimpleViewerMock({
     acedIsMobileUiLayout: () =>
       window.matchMedia?.(layout.ML_UI_MOBILE_MEDIA_QUERY).matches ?? false,
     acedIsCompactUiLayout: () =>
@@ -37,7 +37,7 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
       },
       currentLocale: 'en'
     }
-  }
+  })
 })
 
 function createPanel(
@@ -406,7 +406,19 @@ describe('AcUiDockPanel', () => {
     expect(host.querySelector('.ml-ex-ui-dock-main')).toBeNull()
   })
 
-  it('uses full host width as max size for horizontal docks on mobile', () => {
+  it('invokes onOpen when the panel is opened', () => {
+    const onOpen = jest.fn()
+    const { panel } = createPanel({ onOpen })
+    panel.addTab({
+      id: 'layers',
+      label: 'Layers',
+      content: createTabContent()
+    })
+    panel.open('layers')
+    expect(onOpen).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows phone-sheet chrome and resizes by height on mobile', () => {
     const matchMediaDescriptor = Object.getOwnPropertyDescriptor(
       window,
       'matchMedia'
@@ -414,6 +426,10 @@ describe('AcUiDockPanel', () => {
     const clientWidthDescriptor = Object.getOwnPropertyDescriptor(
       HTMLElement.prototype,
       'clientWidth'
+    )
+    const clientHeightDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'clientHeight'
     )
 
     Object.defineProperty(window, 'matchMedia', {
@@ -434,8 +450,17 @@ describe('AcUiDockPanel', () => {
         return 0
       }
     })
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+      configurable: true,
+      get() {
+        if (this.classList?.contains('ml-ex-ui-host-dock')) {
+          return 700
+        }
+        return 0
+      }
+    })
 
-    const { panel } = createPanel({ defaultSide: 'left' })
+    const { host, panel } = createPanel({ defaultSide: 'left' })
     panel.addTab({
       id: 'layers',
       label: 'Layers',
@@ -443,8 +468,29 @@ describe('AcUiDockPanel', () => {
     })
     panel.open('layers')
 
-    panel.setPanelSize(500)
-    expect(panel.getSize()).toBe(390)
+    const root = host.querySelector('.ml-ex-ui-dock-panel')
+    expect(root?.getAttribute('data-phone-sheet')).toBe('true')
+    expect(host.classList.contains('ml-ex-ui-host-dock-sheet')).toBe(true)
+    expect(host.querySelector('.ml-ex-ui-dock-sheet-grabber')).toBeTruthy()
+    expect(host.querySelector('.ml-ex-ui-dock-sheet-close')).toBeTruthy()
+    expect(document.getElementById('ml-ex-ui-styles')?.textContent).toContain(
+      ".ml-ex-ui-dock-panel[data-phone-sheet='true'] .ml-ex-ui-dock-header"
+    )
+    expect(document.getElementById('ml-ex-ui-styles')?.textContent).toContain(
+      '.ml-ex-ui-host-dock-sheet {'
+    )
+    expect(document.getElementById('ml-ex-ui-styles')?.textContent).toContain(
+      '.ml-ex-ui-dock-sheet-grabber::before'
+    )
+    expect(document.getElementById('ml-ex-ui-styles')?.textContent).toContain(
+      'transform: translate(-50%, -50%);'
+    )
+
+    panel.setPanelSize(800)
+    expect(panel.getSize()).toBe(525)
+
+    host.querySelector<HTMLButtonElement>('.ml-ex-ui-dock-sheet-close')?.click()
+    expect(panel.isOpen).toBe(false)
 
     if (matchMediaDescriptor) {
       Object.defineProperty(window, 'matchMedia', matchMediaDescriptor)
@@ -454,6 +500,13 @@ describe('AcUiDockPanel', () => {
         HTMLElement.prototype,
         'clientWidth',
         clientWidthDescriptor
+      )
+    }
+    if (clientHeightDescriptor) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        'clientHeight',
+        clientHeightDescriptor
       )
     }
   })

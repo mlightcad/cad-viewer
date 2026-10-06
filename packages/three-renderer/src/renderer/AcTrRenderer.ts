@@ -4,8 +4,10 @@ import {
   AcGeArea2d,
   AcGeCircArc3d,
   AcGeEllipseArc3d,
+  AcGePoint2d,
   AcGePoint3d,
   AcGePoint3dLike,
+  AcGePolyline2d,
   AcGiFontMapping,
   AcGiImageStyle,
   AcGiMTextData,
@@ -19,6 +21,7 @@ import { FontManager } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import type { AcTrBatchDrawPolicy } from '../draw/AcTrBatchDrawPolicy'
+import { isComplexLineType } from '../linetype'
 import {
   AcTrEntity,
   AcTrGroup,
@@ -31,10 +34,19 @@ import {
   AcTrPolygon,
   AcTrShape
 } from '../object'
+import { buildOffsetRingDirectGeometry } from '../object/AcTrLineGeometryBuilder'
 import { AcTrLinePatternShaderProbe } from '../style/AcTrLinePatternShaderProbe'
 import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
 import { AcTrSubEntityTraitsUtil } from '../util'
 import { AcTrCamera } from '../viewport/AcTrCamera'
+import {
+  AcTrLineVertexBuilder,
+  captureCoalescedLine,
+  installBlockLineCoalescePatch,
+  isAcTrCoalescedLineRef,
+  isFatLineMaterial,
+  mergeCoalescedBlockLines
+} from './AcTrBlockLineCoalesce'
 import {
   AcTrEntityPreview,
   type AcTrEntityPreviewOptions,
@@ -64,6 +76,38 @@ export interface AcTrFontNotFoundEventArgs {
  * @see {@link AcTrRenderer.takeDirectCapture}
  */
 export type AcTrDirectCaptureState = 'off' | 'capturing' | 'captured' | 'missed'
+
+/**
+ * Shared stand-in entity returned by draw calls while a direct-batch capture
+ * session is active.
+ *
+ * A capture runs `entity.worldDraw(renderer)` purely for its side effects: the
+ * first matching draw call is recorded into a payload and the returned drawable
+ * is discarded right afterwards. Each capture previously constructed a fresh
+ * `AcTrEntity` just to be discarded, which cost one allocation + `dispose` per
+ * captured entity (~2s for 434k entities). The shared
+ * placeholder is created once per renderer instead. It is intentionally empty:
+ * the capture path attaches geometry to the payload, never to the drawable, so
+ * the same instance survives every capture session it is handed out for.
+ * `dispose()` is intentionally a no-op so callers releasing the capture result
+ * cannot tear the shared instance down. It is never created without an owning
+ * render context, and it never receives geometry children.
+ */
+class AcTrDirectCapturePlaceholder extends AcTrEntity {
+  /**
+   * Keeps the shared placeholder usable after callers release the capture
+   * result, which is when a real entity would release geometry/materials.
+   */
+  override dispose() {}
+
+  /**
+   * Keeps the shared placeholder detached without letting three.js allocate a
+   * disposal event for it.
+   */
+  override removeFromParent(): this {
+    return this
+  }
+}
 
 /**
  * Primitive payload captured from a single `worldDraw` draw call for the
@@ -98,6 +142,15 @@ export type AcTrDirectCapturePayload =
       area: AcGeArea2d
     }
   | {
+      /**
+       * Closed wide polyline captured from {@link AcTrRenderer.offsetRing}.
+       * `outer[i]` and `inner[i]` are the two offsets of one centerline sample.
+       */
+      kind: 'offsetRing'
+      outer: AcGePoint3dLike[]
+      inner: AcGePoint3dLike[]
+    }
+  | {
       /** Indexed line segments captured from {@link AcTrRenderer.lineSegments}. */
       kind: 'lineSegments'
       /** Interleaved position (or other) attribute data. */
@@ -109,6 +162,13 @@ export type AcTrDirectCapturePayload =
     }
 
 export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
+  /**
+   * Z step between successive entities. Keeps the stack within typical
+   * orthographic near/far ranges for drawings with hundreds of thousands
+   * of entities while remaining above float32 depth precision.
+   */
+  private static readonly DRAW_ORDER_Z_STEP = 1e-4
+
   private _context: AcTrRenderContext
   private _renderer: THREE.WebGLRenderer
   private _subEntityTraits: AcGiSubEntityTraits
@@ -120,11 +180,29 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * marks the capture `'missed'`.
    */
   private _directCapture: AcTrDirectCaptureState = 'off'
+  /** Depth of {@link AcDbRenderingCache.draw} block-template builds. */
+  private _blockLineCoalesceDepth = 0
+  /** One vertex buffer per nested block-template draw. */
+  private _lineVertexBuilders: AcTrLineVertexBuilder[] = []
   /**
    * Payload stored while `_directCapture` is `'captured'`; cleared on miss,
    * cancel, or {@link takeDirectCapture}.
    */
   private _capturedDirectPayload: AcTrDirectCapturePayload | null = null
+  /**
+   * Lazily created placeholder returned by draw calls during a direct-batch
+   * capture session. One instance is reused for every captured entity so the
+   * fast path never allocates a throw-away `AcTrEntity`.
+   *
+   * @see {@link createDirectCapturePlaceholder}
+   */
+  private _directCapturePlaceholder: AcTrEntity | null = null
+  /**
+   * Monotonic Z used so later entities occlude earlier ones on the shared
+   * CAD plane (needed for wipeouts to mask prior linework). Reset when the
+   * view clears / starts a new convert.
+   */
+  private _drawOrderZ = 0
 
   public readonly events: {
     fontNotFound: AcCmEventManager<AcTrFontNotFoundEventArgs>
@@ -301,6 +379,27 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     this._renderer.setViewport(x, y, width, height)
   }
 
+  /**
+   * Sets the WebGL scissor rectangle in CSS pixels (origin bottom-left).
+   *
+   * @param x - Left edge in CSS pixels.
+   * @param y - Bottom edge in CSS pixels.
+   * @param width - Width in CSS pixels.
+   * @param height - Height in CSS pixels.
+   */
+  setScissor(x: number, y: number, width: number, height: number) {
+    this._renderer.setScissor(x, y, width, height)
+  }
+
+  /**
+   * Enables or disables scissor clipping for subsequent draws.
+   *
+   * @param enabled - When true, drawing is clipped to the last {@link setScissor}.
+   */
+  setScissorTest(enabled: boolean) {
+    this._renderer.setScissorTest(enabled)
+  }
+
   clear() {
     this._renderer.clear()
   }
@@ -317,10 +416,8 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
-   * Repaints materials explicitly registered as background-follow fills.
-   *
-   * The current fill manager keeps solid hatches on the foreground path, so
-   * this is mostly an extension point for future fill styles.
+   * Repaints materials explicitly registered as background-follow fills
+   * (currently wipeouts via {@link AcGiSubEntityTraits.isBackgroundFill}).
    *
    * @param color - New background color (typically the canvas bg).
    */
@@ -341,6 +438,23 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
   set currentBackgroundColor(value: number) {
     this._context.styleManager.currentBackgroundColor = value
+  }
+
+  /**
+   * Next Z offset for entity draw-order occlusion on the shared CAD plane.
+   *
+   * Later entities receive a larger Z so depth testing lets them cover
+   * earlier linework / fills (AutoCAD creation-order / SORTENTS behaviour).
+   */
+  allocateDrawOrderZ(): number {
+    const z = this._drawOrderZ
+    this._drawOrderZ += AcTrRenderer.DRAW_ORDER_Z_STEP
+    return z
+  }
+
+  /** Resets the draw-order Z counter (call when clearing / regenerating). */
+  resetDrawOrderZ(): void {
+    this._drawOrderZ = 0
   }
 
   /** Shared style/material cache used by entity conversion and layer updates. */
@@ -419,6 +533,29 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
+   * Snapshot of session-scoped missed fonts for park/restore.
+   */
+  snapshotMissedFonts(): Record<string, number> {
+    return { ...FontManager.instance.missedFonts }
+  }
+
+  /**
+   * Restores or clears session-scoped missed fonts (main + MText workers).
+   * Fire-and-forget worker sync so document switches stay synchronous.
+   */
+  replaceMissedFonts(fonts: Record<string, number>): void {
+    FontManager.instance.replaceMissedFonts(fonts)
+    void AcTrMTextRenderer.getInstance().replaceMissedFonts(
+      FontManager.instance.missedFonts
+    )
+  }
+
+  /** Clears session-scoped missed fonts for the active document. */
+  clearMissedFonts(): void {
+    this.replaceMissedFonts({})
+  }
+
+  /**
    * Gets whether entity lineweights are displayed.
    */
   get showLineWeight() {
@@ -485,14 +622,57 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
+   * Returns the shared placeholder for the active direct-batch capture session.
+   *
+   * The placeholder is created on first use and reused for every captured
+   * entity, so the capture fast path allocates no throw-away drawables. It is
+   * dispose-immune (see {@link AcTrDirectCapturePlaceholder}) and stays empty
+   * and detached for its whole lifetime.
+   */
+  createDirectCapturePlaceholder() {
+    if (!this._directCapturePlaceholder) {
+      this._directCapturePlaceholder = new AcTrDirectCapturePlaceholder(
+        this._context
+      )
+    }
+    return this._directCapturePlaceholder
+  }
+
+  /**
    * @inheritdoc
    */
   group(entities: AcTrEntity[]) {
     if (this._directCapture !== 'off') {
       this.missDirectCapture()
-      return this.createEntity() as AcTrGroup
+      return this.createDirectCapturePlaceholder() as AcTrGroup
     }
-    return new AcTrGroup(entities, this._context)
+    const drawable: AcTrEntity[] = []
+    const coalesced = []
+    for (let i = 0; i < entities.length; i++) {
+      const entity = entities[i]
+      if (isAcTrCoalescedLineRef(entity)) {
+        coalesced.push(entity)
+      } else {
+        drawable.push(entity as AcTrEntity)
+      }
+    }
+    if (coalesced.length === 0) {
+      return new AcTrGroup(drawable, this._context)
+    }
+    const merged = mergeCoalescedBlockLines(coalesced, this._context)
+    const group = new AcTrGroup(drawable.concat(merged.entities), this._context)
+    group.addExternalChildBoxes(merged.boxes)
+    // Sealing a group that still has thousands of text, hatch, and nested
+    // symbol leaves marks it compacted and skips AcTrGroupCompactor. Cache
+    // clones then duplicate every leaf. Compact those groups here. A block
+    // that coalesced down to a handful of meshes still seals so a single
+    // mesh is shared instead of deep-copied.
+    if (group.childCount >= 8) {
+      group.compactForInstancing()
+    } else if (coalesced.length >= 2) {
+      group.sealForSharedClone()
+    }
+    return group
   }
 
   /**
@@ -501,9 +681,9 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   point(point: AcGePoint3d, style: AcGiPointStyle) {
     if (this._directCapture !== 'off') {
       if (this.tryCaptureDirectPayload({ kind: 'point', point, style })) {
-        return this.createEntity() as AcTrPoint
+        return this.createDirectCapturePlaceholder() as AcTrPoint
       }
-      return this.createEntity() as AcTrPoint
+      return this.createDirectCapturePlaceholder() as AcTrPoint
     }
     return new AcTrPoint(point, this._subEntityTraits, style, this._context)
   }
@@ -536,6 +716,10 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    */
   lineSegments(array: Float32Array, itemSize: number, indices: Uint16Array) {
     if (this._directCapture !== 'off') {
+      if (isComplexLineType(this._subEntityTraits.lineType.pattern)) {
+        this.missDirectCapture()
+        return this.createDirectCapturePlaceholder() as AcTrLineSegments
+      }
       if (
         this.tryCaptureDirectPayload({
           kind: 'lineSegments',
@@ -544,9 +728,9 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
           indices
         })
       ) {
-        return this.createEntity() as AcTrLineSegments
+        return this.createDirectCapturePlaceholder() as AcTrLineSegments
       }
-      return this.createEntity() as AcTrLineSegments
+      return this.createDirectCapturePlaceholder() as AcTrLineSegments
     }
     return new AcTrLineSegments(
       array,
@@ -563,11 +747,52 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   area(area: AcGeArea2d) {
     if (this._directCapture !== 'off') {
       if (this.tryCaptureDirectPayload({ kind: 'area', area })) {
-        return this.createEntity() as AcTrPolygon
+        return this.createDirectCapturePlaceholder() as AcTrPolygon
       }
-      return this.createEntity() as AcTrPolygon
+      return this.createDirectCapturePlaceholder() as AcTrPolygon
     }
     return new AcTrPolygon(area, this._subEntityTraits, this._context)
+  }
+
+  /**
+   * @inheritdoc
+   */
+  offsetRing(outer: AcGePoint3dLike[], inner: AcGePoint3dLike[]) {
+    if (this._directCapture !== 'off') {
+      if (this.tryCaptureDirectPayload({ kind: 'offsetRing', outer, inner })) {
+        return this.createDirectCapturePlaceholder()
+      }
+      return this.createDirectCapturePlaceholder()
+    }
+    const built = buildOffsetRingDirectGeometry(
+      outer,
+      inner,
+      this._subEntityTraits,
+      this._context
+    )
+    if (!built) {
+      // Strip triangulation rejects collapsed or non-aligned loops. Rebuild
+      // the same two boundaries as an area so the fill is not dropped.
+      return this.area(this.offsetRingArea(outer, inner))
+    }
+    const entity = new AcTrEntity(this._context)
+    const mesh = new THREE.Mesh(built.geometry, built.material)
+    mesh.position.copy(built.worldOffset)
+    entity.add(mesh)
+    entity.wcsBbox = built.wcsBbox
+    return entity
+  }
+
+  private offsetRingArea(outer: AcGePoint3dLike[], inner: AcGePoint3dLike[]) {
+    const area = new AcGeArea2d()
+    const toLoop = (points: AcGePoint3dLike[]) =>
+      new AcGePolyline2d(
+        points.map(point => new AcGePoint2d(point.x, point.y)),
+        true
+      )
+    area.add(toLoop(outer))
+    area.add(toLoop(inner))
+    return area
   }
 
   /**
@@ -576,7 +801,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   mtext(mtext: AcGiMTextData, style: AcGiTextStyle, delay?: boolean) {
     if (this._directCapture !== 'off') {
       this.missDirectCapture()
-      return this.createEntity() as AcTrMText
+      return this.createDirectCapturePlaceholder() as AcTrMText
     }
     return new AcTrMText(
       mtext,
@@ -593,7 +818,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   shape(shape: AcGiShapeData, style?: AcGiTextStyle, delay?: boolean) {
     if (this._directCapture !== 'off') {
       this.missDirectCapture()
-      return this.createEntity() as AcTrShape
+      return this.createDirectCapturePlaceholder() as AcTrShape
     }
     return new AcTrShape(
       shape,
@@ -610,7 +835,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   image(blob: Blob, style: AcGiImageStyle) {
     if (this._directCapture !== 'off') {
       this.missDirectCapture()
-      return this.createEntity() as AcTrImage
+      return this.createDirectCapturePlaceholder() as AcTrImage
     }
     return new AcTrImage(blob, style, this._context)
   }
@@ -648,26 +873,68 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    */
   dispose() {
     this._context.styleManager.dispose()
-    FontManager.instance.missedFonts = {}
+    this.clearMissedFonts()
   }
 
   private linePoints(points: AcGePoint3dLike[]) {
     if (this._directCapture !== 'off') {
       if (points.length < 2) {
         this.missDirectCapture()
-        return this.createEntity()
+        return this.createDirectCapturePlaceholder()
+      }
+      if (isComplexLineType(this._subEntityTraits.lineType.pattern)) {
+        this.missDirectCapture()
+        return this.createDirectCapturePlaceholder()
       }
       if (this.tryCaptureDirectPayload({ kind: 'lineStrip', points })) {
         // Placeholder so worldDraw can attach objectId / layer metadata.
-        return this.createEntity()
+        return this.createDirectCapturePlaceholder()
       }
-      return this.createEntity()
+      return this.createDirectCapturePlaceholder()
     }
 
     if (points.length < 2) {
       return this.createEntity()
     }
+    if (
+      this._blockLineCoalesceDepth > 0 &&
+      !isComplexLineType(this._subEntityTraits.lineType.pattern)
+    ) {
+      const material = this.styleManager.getLineMaterial(
+        this._subEntityTraits,
+        false
+      )
+      if (!isFatLineMaterial(material)) {
+        const builder =
+          this._lineVertexBuilders[this._lineVertexBuilders.length - 1]
+        if (builder) {
+          return captureCoalescedLine(
+            points,
+            material,
+            this._subEntityTraits.layer,
+            builder
+          ) as unknown as AcTrEntity
+        }
+      }
+    }
     return new AcTrLine(points, this._subEntityTraits, this._context, false)
+  }
+
+  /**
+   * Enables simple-line merging for the current block-template draw.
+   * Nested block draws increment the same counter.
+   */
+  beginBlockLineCoalesce() {
+    this._blockLineCoalesceDepth++
+    this._lineVertexBuilders.push(new AcTrLineVertexBuilder())
+  }
+
+  /** Ends one block-template draw started by {@link beginBlockLineCoalesce}. */
+  endBlockLineCoalesce() {
+    if (this._blockLineCoalesceDepth > 0) {
+      this._blockLineCoalesceDepth--
+    }
+    this._lineVertexBuilders.pop()
   }
 
   /**
@@ -678,3 +945,5 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     AcTrMaterialManager.CameraZoomUniform.value = zoom
   }
 }
+
+installBlockLineCoalescePatch()

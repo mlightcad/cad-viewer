@@ -27,11 +27,17 @@ export default {
     auprec: {
       description: '设置角度显示精度（小数位数），与 AUNITS 配合使用'
     },
+    bmpout: {
+      description: '导出为 BMP 图片'
+    },
     cdxf: {
       description: '导出当前图纸为DXF格式'
     },
     cpdf: {
       description: '导出当前图纸为PDF格式'
+    },
+    '-cpdf': {
+      description: '使用命令行选项将当前图纸导出为PDF'
     },
     cecolor: {
       description: '设置新创建对象的当前默认颜色'
@@ -187,6 +193,9 @@ export default {
     insunits: {
       description: '指定插入块、图像或外部参照时用于自动缩放的图形单位'
     },
+    jpgout: {
+      description: '导出为 JPEG 图片'
+    },
     laycur: {
       description: '将所选对象的图层属性更改为当前图层',
       prompt: '选择要更改到当前图层的对象'
@@ -253,6 +262,9 @@ export default {
     measurementvis: {
       description: '显示或隐藏当前布局上的测量标注'
     },
+    measurementpanel: {
+      description: '打开测量面板'
+    },
     measurementexport: {
       description: '将测量标注导出为 sidecar JSON 文件'
     },
@@ -270,6 +282,9 @@ export default {
     },
     measuredistance: {
       description: '测量两点之间的距离及坐标增量'
+    },
+    measurecontinuous: {
+      description: '连续拾取多个点测量各段距离，直到按 Enter 或取消'
     },
     measurepoint: {
       description: '测量拾取点的 X/Y 坐标'
@@ -431,6 +446,9 @@ export default {
     },
     switchbg: {
       description: '切换绘图区域背景颜色，在白色和黑色背景之间切换'
+    },
+    readingmode: {
+      description: '切换阅读模式：白底黑线，便于阅读复杂图纸'
     },
     unisolateobjects: {
       description: '重新显示 HIDEOBJECTS 隐藏的所有对象'

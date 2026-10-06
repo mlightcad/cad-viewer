@@ -54,23 +54,26 @@ const mockPresenter = {
   })
 }
 
-jest.mock('@mlightcad/cad-simple-viewer', () => ({
-  AcApDocManager: {
-    instance: {
-      curView: mockView
-    }
-  },
-  AcApI18n: {
-    t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
-    mergeLocaleMessage: jest.fn()
-  },
-  getMarkupStore: () => mockStore,
-  getMarkupPresenter: () => mockPresenter,
-  runMarkupEdit: (_view: unknown, _label: string, mutate: () => void) => {
-    mutate()
-  },
-  MARKUP_STATUSES: ['open', 'question', 'answered', 'closed']
-}))
+jest.mock('@mlightcad/cad-simple-viewer', () => {
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
+  return createCadSimpleViewerMock({
+    AcApDocManager: {
+      instance: {
+        curView: mockView
+      }
+    },
+    AcApI18n: {
+      t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
+      mergeLocaleMessage: jest.fn()
+    },
+    getMarkupStore: () => mockStore,
+    getMarkupPresenter: () => mockPresenter,
+    runMarkupEdit: (_view: unknown, _label: string, mutate: () => void) => {
+      mutate()
+    },
+    MARKUP_STATUSES: ['open', 'question', 'answered', 'closed']
+  })
+})
 
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 

@@ -16,6 +16,35 @@ import { ref } from 'vue'
 const targetObjectId = ref<AcDbObjectId | null>(null)
 
 /**
+ * Returns whether the entity is an attribute (ATTRIB), including duck-typed
+ * instances when `instanceof` fails across duplicate `data-model` copies.
+ *
+ * Real {@link AcDbAttribute.typeName} is `'Attrib'` (DXF type ATTRIB).
+ */
+export function isAttributeEntity(
+  entity: unknown
+): entity is AcDbAttribute {
+  if (!entity || typeof entity !== 'object') return false
+  if (entity instanceof AcDbAttribute) return true
+  const maybe = entity as AcDbAttribute
+  return maybe.type === 'Attrib' || maybe.type === 'Attribute'
+}
+
+/**
+ * Returns whether the entity is an attribute definition (ATTDEF).
+ *
+ * Real {@link AcDbAttributeDefinition.typeName} is `'AttDef'`.
+ */
+export function isAttributeDefinitionEntity(
+  entity: unknown
+): entity is AcDbAttributeDefinition {
+  if (!entity || typeof entity !== 'object') return false
+  if (entity instanceof AcDbAttributeDefinition) return true
+  const maybe = entity as AcDbAttributeDefinition
+  return maybe.type === 'AttDef' || maybe.type === 'AttributeDefinition'
+}
+
+/**
  * Returns whether the entity is a block reference with at least one attribute.
  */
 export function isAttributedBlockReference(
@@ -47,7 +76,7 @@ export function resolveAttributedBlockReference(
     return entity
   }
 
-  if (entity instanceof AcDbAttribute || entity.type === 'Attribute') {
+  if (isAttributeEntity(entity)) {
     const db = entity.database ?? AcApDocManager.instance?.curDocument?.database
     if (!db) return undefined
     const owner = db.tables.blockTable.getEntityById(entity.ownerId)
@@ -71,15 +100,11 @@ export function findAttributePrompt(
 
   const normalized = tag.trim().toUpperCase()
   for (const entity of record.newIterator()) {
-    if (
-      !(entity instanceof AcDbAttributeDefinition) &&
-      entity.type !== 'AttributeDefinition'
-    ) {
+    if (!isAttributeDefinitionEntity(entity)) {
       continue
     }
-    const attDef = entity as AcDbAttributeDefinition
-    if ((attDef.tag || '').trim().toUpperCase() === normalized) {
-      return attDef.prompt || ''
+    if ((entity.tag || '').trim().toUpperCase() === normalized) {
+      return entity.prompt || ''
     }
   }
   return ''

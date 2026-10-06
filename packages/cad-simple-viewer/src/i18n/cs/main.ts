@@ -14,6 +14,20 @@ export default {
     invalidInput: 'Neplatný vstup.',
     close: 'Zavřít příkazový řádek'
   },
+  mobileCommand: {
+    length: 'Délka',
+    angle: 'Úhel',
+    dx: 'ΔX',
+    dy: 'ΔY',
+    x: 'X',
+    y: 'Y',
+    confirm: 'Potvrdit',
+    cancel: 'Zrušit',
+    help: 'Nápověda',
+    back: 'Zpět',
+    collapse: 'Sbalit',
+    expand: 'Rozbalit'
+  },
   inputManager: {
     firstCorner: 'Zadejte první roh nebo',
     secondCorner: 'Zadejte druhý roh nebo'
@@ -21,10 +35,71 @@ export default {
   message: {
     fetchingDrawingFile: 'Načítám soubor…',
     exportingDxf: 'Exportuji DXF…',
+    exportingPdf: 'Exportuji PDF…',
+    exportingSvg: 'Exportuji SVG…',
+    calculatingSmartExtents: 'Počítám chytrý rozsah…',
+    importingPdf: 'Importuji PDF…',
     exportingEntityPreview: 'Exportuji obrázek…',
     collectingMemoryProfile: 'Analyzuji paměť…',
     fontCached: 'Font úspěšně uložen do mezipaměti',
-    fontCacheFailed: 'Uložení fontu do mezipaměti selhalo'
+    fontCacheFailed: 'Uložení fontu do mezipaměti selhalo',
+    fontsNotFound: 'Fonty nenalezené v úložišti: {fonts}.',
+    fontsNotLoaded: 'Nepodařilo se načíst fonty: {fonts}.',
+    fontMissedInDrawing:
+      'Font „{font}“ vyžaduje {count} textových objektů, ale není k dispozici. Zobrazuje se jako „{replacementFont}“.',
+    fontMissedReplacement: '„{font}“ (zobrazeno fontem „{replacement}“)',
+    failedToGetAvaiableFonts: 'Nepodařilo se získat fonty z „{url}“!',
+    failedToOpenFile: 'Nepodařilo se otevřít soubor „{fileName}“!',
+    failedToOpenFileToast:
+      'Nepodařilo se otevřít „{fileName}“. Podrobnosti najdete v centru oznámení.',
+    failedToOpenFileWorkerOom:
+      'Nepodařilo se otevřít „{fileName}“. Analýza selhala kvůli nedostatku dostupné paměti (LibreDWG parser). Kliknutím na {dwgParserLink} můžete zakoupit komerční DWG parser a otevírat velké výkresy bez tohoto pádu.',
+    failedToOpenFileWorkerOomLink: 'tuto stránku',
+    failedToOpenFileWorkerTimeout:
+      'Nepodařilo se otevřít „{fileName}“. Při načítání výkresu vypršel časový limit.',
+    failedToOpenFileFontLoadFailed:
+      'Nepodařilo se otevřít „{fileName}“. Potřebné fonty se nepodařilo načíst.',
+    failedToOpenFileLicenseExpired:
+      'Nepodařilo se otevřít „{fileName}“. Licence převodníku DWG vypršela.',
+    failedToOpenFileLicenseInvalid:
+      'Nepodařilo se otevřít „{fileName}“. Licence převodníku DWG chybí nebo je neplatná.',
+    unknownEntities:
+      'Tento výkres obsahuje {count} neznámých nebo nepodporovaných objektů! Tyto objekty nebudou zobrazeny.',
+    tianzhengEntities:
+      'Tento výkres obsahuje vlastní objekty TArch / Tianzheng (nebo podobné třetí strany) (asi {count}). V tomto prostředí je nelze plně zpracovat, takže se část obsahu nemusí zobrazit.',
+    emptyProxyEntities:
+      'Tento výkres obsahuje {count} vlastních objektů bez proxy grafiky! Tyto objekty nebudou zobrazeny.'
+  },
+  notification: {
+    center: {
+      title: 'Oznámení',
+      clearAll: 'Vymazat vše',
+      noNotifications: 'Žádná oznámení'
+    },
+    group: {
+      fontMissed: 'Chybějící fonty',
+      fontMissedSummary:
+        '{count} zpráv o fontech. Kliknutím zobrazíte podrobnosti.',
+      unsupportedEntities: 'Nepodporované objekty',
+      unsupportedEntitiesSummary:
+        '{count} zpráv o načítání. Kliknutím zobrazíte podrobnosti.',
+      genericSummary: '{count} zpráv. Kliknutím zobrazíte podrobnosti.'
+    },
+    title: {
+      failedToOpenFile: 'Nepodařilo se otevřít soubor',
+      failedToOpenFileWorkerOom: 'Nedostatek paměti',
+      failedToOpenFileWorkerTimeout: 'Vypršel časový limit otevření',
+      failedToOpenFileFontLoadFailed: 'Načtení fontu selhalo',
+      failedToOpenFileLicenseExpired: 'Licence vypršela',
+      failedToOpenFileLicenseInvalid: 'Neplatná licence',
+      fontNotFound: 'Font nenalezen',
+      fontNotLoaded: 'Font nenačten',
+      parsingWarning: 'Problémy při načítání výkresu',
+      systemMessage: 'Systémová zpráva',
+      systemWarning: 'Systémové varování',
+      systemError: 'Systémová chyba',
+      systemInfo: 'Systémové informace'
+    }
   },
   progress: {
     start: 'Zahajuji načítání souboru…',
@@ -56,7 +131,74 @@ export default {
   },
   drawStyle: {
     color: 'Barva',
-    lineWeight: 'Tloušťka čáry',
     fontSize: 'Výška textu'
+  },
+  shortCutToolbar: {
+    more: 'Více',
+    undo: 'Zpět',
+    redo: 'Znovu',
+    erase: 'Smazat',
+    collapse: 'Sbalit panel nástrojů',
+    expand: 'Rozbalit panel nástrojů'
+  },
+  textHeight: {
+    title: 'Výška textu',
+    close: 'Zavřít',
+    ok: 'OK',
+    cancel: 'Zrušit',
+    adaptive: 'Přizpůsobit obrazovce',
+    custom: 'Vlastní výška textu',
+    customPlaceholder: 'Světová výška',
+    fromScreen: 'Ze velikosti na obrazovce',
+    fromScreenHint:
+      'Zadejte, jak velký má text vypadat na obrazovce při aktuálním zoomu. Přepočítá se na pevnou světovou výšku, která se při pozdějším zoomování nemění.',
+    screenPxPlaceholder: 'Velikost písma',
+    screenUnit: 'px',
+    convert: 'Přepočítat'
+  },
+  entityPick: {
+    cancel: 'Zrušit výběr'
+  },
+  colorPicker: {
+    title: 'Vybrat barvu',
+    close: 'Zavřít',
+    ok: 'OK',
+    cancel: 'Zrušit',
+    index: 'Index barvy: ',
+    rgb: 'RGB: ',
+    input: 'Barva',
+    inputPlaceholder: '1-255 nebo #RRGGBB'
+  },
+  touchPointTutorial: {
+    title: 'Jak přesně vybrat bod?',
+    description:
+      'Podržte prst na obrazovce asi 0,5 sekundy. Nad prstem se objeví kříž, který při pohybu sleduje prst a přichytává se k geometrii pro přesnější výběr.',
+    snoozeToday: 'Dnes už nepřipomínat',
+    hideForever: 'Už nepřipomínat',
+    ok: 'Rozumím'
+  },
+  dataSource: {
+    open: 'Otevřít',
+    local: 'Místní soubor',
+    url: 'Z URL',
+    openFrom: 'Otevřít z {name}',
+    signInTo: 'Přihlásit se k {name}',
+    signOutOf: 'Odhlásit se z {name}',
+    signOutOfAccount: 'Odhlásit se z {name} ({account})',
+    urlDialogTitle: 'Otevřít z URL',
+    urlDialogHint: 'Zadejte URL souboru .dwg nebo .dxf.',
+    urlPlaceholder: 'https://example.com/drawing.dwg',
+    cancel: 'Zrušit',
+    onedrive: 'OneDrive',
+    or: 'nebo',
+    dropFile: 'Přetáhněte soubor sem nebo',
+    browse: 'procházet',
+    dropOrBrowse: 'Přetáhněte soubor DWG nebo DXF sem, nebo procházejte',
+    newDrawing: 'Nový výkres',
+    source: 'Zdroj',
+    unavailable: 'Tento zdroj zatím není k dispozici.',
+    selectFile: 'Vybrat soubor',
+    signInRequired: 'Nejprve se přihlaste a pak vyberte soubor.',
+    downloading: 'Stahuji soubor ...'
   }
 }

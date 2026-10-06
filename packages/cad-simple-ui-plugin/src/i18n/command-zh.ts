@@ -8,6 +8,9 @@ export const commandZh = {
     },
     markuppanel: {
       description: '打开批注面板停靠页'
+    },
+    measurementpanel: {
+      description: '打开测量列表面板'
     }
   }
 }

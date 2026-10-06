@@ -19,50 +19,36 @@
         </section>
 
         <div class="upload-actions">
-          <button
-            type="button"
-            class="new-drawing-button"
-            @click="handleNewDrawing"
-          >
-            {{ t('example.fileUpload.newDrawing') }}
-          </button>
-
-          <p class="upload-divider" aria-hidden="true">
-            <span>{{ t('example.fileUpload.or') }}</span>
-          </p>
-
-          <el-upload
-            class="upload-dropzone"
-            drag
-            :auto-upload="false"
-            accept=".dwg,.dxf"
-            :on-change="handleFileChange"
-            :before-upload="beforeUpload"
-          >
-            <div class="dropzone-content">
-              <p class="dropzone-title">
-                {{ t('example.fileUpload.dropFile') }}
-                <span class="dropzone-link">
-                  {{ t('example.fileUpload.browse') }}
-                </span>
-              </p>
-              <div class="format-tags">
-                <span class="format-tag">DWG</span>
-                <span class="format-tag">DXF</span>
-              </div>
-            </div>
-          </el-upload>
+          <div ref="fileOpenHost" class="file-open-host"></div>
         </div>
+
+        <p class="font-cdn-notice">
+          {{ t('example.fileUpload.fontCdnNotice') }}
+        </p>
       </div>
 
-      <section class="settings-section">
-        <header class="settings-header">
+      <section
+        class="settings-section"
+        :class="{ 'is-expanded': isSettingsExpanded }"
+      >
+        <button
+          type="button"
+          class="settings-header"
+          :aria-expanded="isSettingsExpanded"
+          aria-controls="open-options-panel"
+          @click="toggleSettings"
+        >
           <h2 class="settings-title">
             {{ t('example.fileUpload.openOptions') }}
           </h2>
-        </header>
+          <span class="settings-chevron" aria-hidden="true">&#x25BC;</span>
+        </button>
 
-        <div class="settings-grid">
+        <div
+          id="open-options-panel"
+          class="settings-grid"
+          :hidden="!isSettingsExpanded"
+        >
           <div class="setting-block setting-block--full">
             <h3 class="setting-label">
               {{ t('example.fileUpload.initialView') }}
@@ -239,6 +225,74 @@
               </button>
             </div>
           </div>
+
+          <div class="setting-block setting-block--half">
+            <h3 class="setting-label">
+              {{ t('example.fileUpload.export') }}
+            </h3>
+            <div
+              class="pill-segment"
+              role="radiogroup"
+              :aria-label="t('example.fileUpload.export')"
+            >
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': !disableExport }"
+                role="radio"
+                :aria-checked="!disableExport"
+                :title="t('example.fileUpload.exportEnableHint')"
+                @click="disableExport = false"
+              >
+                {{ t('example.fileUpload.exportEnable') }}
+              </button>
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': disableExport }"
+                role="radio"
+                :aria-checked="disableExport"
+                :title="t('example.fileUpload.exportDisableHint')"
+                @click="disableExport = true"
+              >
+                {{ t('example.fileUpload.exportDisable') }}
+              </button>
+            </div>
+          </div>
+
+          <div class="setting-block setting-block--half">
+            <h3 class="setting-label">
+              {{ t('example.fileUpload.paperSpaceBackground') }}
+            </h3>
+            <div
+              class="pill-segment"
+              role="radiogroup"
+              :aria-label="t('example.fileUpload.paperSpaceBackground')"
+            >
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': paperSpaceBackground === ACGI_PAPER_SPACE_BACKGROUND }"
+                role="radio"
+                :aria-checked="paperSpaceBackground === ACGI_PAPER_SPACE_BACKGROUND"
+                :title="t('example.fileUpload.paperSpaceWhiteHint')"
+                @click="paperSpaceBackground = ACGI_PAPER_SPACE_BACKGROUND"
+              >
+                {{ t('example.fileUpload.paperSpaceWhite') }}
+              </button>
+              <button
+                type="button"
+                class="pill-option"
+                :class="{ 'is-active': paperSpaceBackground === ACGI_MODEL_SPACE_BACKGROUND }"
+                role="radio"
+                :aria-checked="paperSpaceBackground === ACGI_MODEL_SPACE_BACKGROUND"
+                :title="t('example.fileUpload.paperSpaceBlackHint')"
+                @click="paperSpaceBackground = ACGI_MODEL_SPACE_BACKGROUND"
+              >
+                {{ t('example.fileUpload.paperSpaceBlack') }}
+              </button>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -247,16 +301,21 @@
 
 <script setup lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue'
-import { AcApOpenViewMode, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
+import {
+  type AcApDataSource,
+  type AcApDataSourceMenuItem,
+  AcApOpenViewMode,
+  AcEdOpenMode,
+  AcUiFileOpenPanel} from '@mlightcad/cad-simple-viewer'
 import {
   ACDB_DRAW_CIRCLE_SIDES_DRAFT,
   ACDB_DRAW_CIRCLE_SIDES_HIGH,
   ACDB_DRAW_CIRCLE_SIDES_STANDARD,
-  log
+  ACGI_MODEL_SPACE_BACKGROUND,
+  ACGI_PAPER_SPACE_BACKGROUND
 } from '@mlightcad/data-model'
-import type { UploadFile, UploadProps } from 'element-plus'
-import { ElIcon, ElUpload } from 'element-plus'
-import { computed, ref } from 'vue'
+import { ElIcon } from 'element-plus'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 interface Props {
@@ -267,7 +326,9 @@ interface Props {
     drawNoPlotLayers: boolean,
     progressiveRendering: boolean,
     openViewMode: AcApOpenViewMode | undefined,
-    circleSides: number
+    circleSides: number,
+    paperSpaceBackground: number,
+    disableExport: boolean
   ) => void
   onNewDrawing?: (
     mode: AcEdOpenMode,
@@ -275,21 +336,143 @@ interface Props {
     drawNoPlotLayers: boolean,
     progressiveRendering: boolean,
     openViewMode: AcApOpenViewMode | undefined,
-    circleSides: number
+    circleSides: number,
+    paperSpaceBackground: number,
+    disableExport: boolean
   ) => void
+  onUrlSelect?: (
+    url: string,
+    mode: AcEdOpenMode,
+    useMainThreadDraw: boolean,
+    drawNoPlotLayers: boolean,
+    progressiveRendering: boolean,
+    openViewMode: AcApOpenViewMode | undefined,
+    circleSides: number,
+    paperSpaceBackground: number,
+    disableExport: boolean
+  ) => void
+  onDataSourceAction?: (
+    item: AcApDataSourceMenuItem,
+    mode: AcEdOpenMode,
+    useMainThreadDraw: boolean,
+    drawNoPlotLayers: boolean,
+    progressiveRendering: boolean,
+    openViewMode: AcApOpenViewMode | undefined,
+    circleSides: number,
+    paperSpaceBackground: number,
+    disableExport: boolean
+  ) => void
+  /**
+   * Cloud {@link AcApDataSource} instances for the landing open panel
+   * (before DocManager exists). Provider-agnostic.
+   */
+  getCloudSources?: () => AcApDataSource[]
+  /** Bump when landing cloud source auth/registry changes. */
+  cloudSourcesEpoch?: number
 }
 
 const props = defineProps<Props>()
 const { t } = useI18n({ useScope: 'global' })
 
+const fileOpenHost = ref<HTMLElement | null>(null)
+let fileOpenPanel: AcUiFileOpenPanel | null = null
+
+const emitOpenOptions = () =>
+  [
+    selectedMode.value,
+    useMainThreadDraw.value,
+    drawNoPlotLayers.value,
+    progressiveRendering.value,
+    resolveOpenViewMode(),
+    selectedCircleSides.value,
+    paperSpaceBackground.value,
+    disableExport.value
+  ] as const
+
+const mountFileOpenPanel = () => {
+  if (!fileOpenHost.value || fileOpenPanel) return
+  fileOpenPanel = new AcUiFileOpenPanel({
+    host: fileOpenHost.value,
+    theme: 'light',
+    showNewDrawing: true,
+    getSources: () => props.getCloudSources?.() ?? [],
+    onLocalFile: file => {
+      if (!isValidFile(file)) return
+      props.onFileSelect(file, ...emitOpenOptions())
+    },
+    onUrl: url => {
+      props.onUrlSelect?.(url, ...emitOpenOptions())
+    },
+    onDataSourceAction: item => {
+      props.onDataSourceAction?.(item, ...emitOpenOptions())
+    },
+    onNewDrawing: () => {
+      props.onNewDrawing?.(...emitOpenOptions())
+    }
+  })
+}
+
+watch(
+  () => props.cloudSourcesEpoch,
+  () => {
+    fileOpenPanel?.refreshSourceButtons()
+  }
+)
+
 type OpenViewModeChoice = 'auto' | AcApOpenViewMode
+
+const MOBILE_MAX_WIDTH = '(max-width: 768px)'
+
+const getIsMobileLayout = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia(MOBILE_MAX_WIDTH).matches
+
+const isMobileLayout = ref(getIsMobileLayout())
+const settingsExpanded = ref(!getIsMobileLayout())
+const isSettingsExpanded = computed(
+  () => !isMobileLayout.value || settingsExpanded.value
+)
 
 const selectedMode = ref<AcEdOpenMode>(AcEdOpenMode.Write)
 const selectedOpenViewMode = ref<OpenViewModeChoice>('auto')
 const selectedCircleSides = ref(ACDB_DRAW_CIRCLE_SIDES_DRAFT)
-const useMainThreadDraw = ref(false)
+const useMainThreadDraw = ref(true)
 const drawNoPlotLayers = ref(false)
 const progressiveRendering = ref(false)
+const paperSpaceBackground = ref(ACGI_PAPER_SPACE_BACKGROUND)
+const disableExport = ref(false)
+
+let mobileMediaQuery: MediaQueryList | null = null
+
+const syncMobileLayout = () => {
+  const matches = mobileMediaQuery?.matches ?? false
+  const wasMobile = isMobileLayout.value
+  isMobileLayout.value = matches
+  if (matches && !wasMobile) {
+    settingsExpanded.value = false
+  } else if (!matches) {
+    settingsExpanded.value = true
+  }
+}
+
+const toggleSettings = () => {
+  if (!isMobileLayout.value) return
+  settingsExpanded.value = !settingsExpanded.value
+}
+
+onMounted(() => {
+  mobileMediaQuery = window.matchMedia(MOBILE_MAX_WIDTH)
+  syncMobileLayout()
+  mobileMediaQuery.addEventListener('change', syncMobileLayout)
+  mountFileOpenPanel()
+})
+
+onUnmounted(() => {
+  mobileMediaQuery?.removeEventListener('change', syncMobileLayout)
+  mobileMediaQuery = null
+  fileOpenPanel?.dispose()
+  fileOpenPanel = null
+})
 
 const openViewModes = computed(() => [
   {
@@ -348,41 +531,6 @@ const accessModes = computed(() => [
   }
 ] as const)
 
-const handleFileChange: UploadProps['onChange'] = (uploadFile: UploadFile) => {
-  if (uploadFile.raw) {
-    if (isValidFile(uploadFile.raw)) {
-      props.onFileSelect(
-        uploadFile.raw,
-        selectedMode.value,
-        useMainThreadDraw.value,
-        drawNoPlotLayers.value,
-        progressiveRendering.value,
-        resolveOpenViewMode(),
-        selectedCircleSides.value
-      )
-    }
-  }
-}
-
-const handleNewDrawing = () => {
-  props.onNewDrawing?.(
-    selectedMode.value,
-    useMainThreadDraw.value,
-    drawNoPlotLayers.value,
-    progressiveRendering.value,
-    resolveOpenViewMode(),
-    selectedCircleSides.value
-  )
-}
-
-const beforeUpload: UploadProps['beforeUpload'] = (rawFile: File) => {
-  if (!isValidFile(rawFile)) {
-    log.warn(t('example.fileUpload.invalidFileType'))
-    return false
-  }
-  return true
-}
-
 const isValidFile = (file: File): boolean => {
   const validExtensions = ['.dwg', '.dxf']
   const fileName = file.name.toLowerCase()
@@ -416,7 +564,7 @@ const isValidFile = (file: File): boolean => {
 .upload-main {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  min-height: 0;
   padding: 18px 20px;
 }
 
@@ -460,124 +608,29 @@ const isValidFile = (file: File): boolean => {
   line-height: 1.35;
 }
 
+.font-cdn-notice {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #fde68a;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .upload-actions {
   display: flex;
+  flex: 1;
   flex-direction: column;
+  min-height: 0;
   gap: 0;
 }
 
-.new-drawing-button {
-  display: block;
+.file-open-host {
   width: 100%;
-  padding: 10px 14px;
-  border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #5b6fd6 100%);
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  cursor: pointer;
-  box-shadow: 0 6px 14px rgba(102, 126, 234, 0.26);
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.2s ease,
-    filter 0.2s ease;
-}
-
-.new-drawing-button:hover {
-  filter: brightness(1.03);
-  box-shadow: 0 8px 18px rgba(102, 126, 234, 0.32);
-}
-
-.new-drawing-button:active {
-  transform: translateY(1px);
-}
-
-.upload-divider {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin: 10px 0;
-  font-size: 11px;
-  font-weight: 600;
-  color: #94a3b8;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.upload-divider::before,
-.upload-divider::after {
-  content: '';
   flex: 1;
-  height: 1px;
-  background: #e2e8f0;
-}
-
-.upload-dropzone {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.upload-dropzone :deep(.el-upload) {
-  display: block;
-  width: 100%;
-}
-
-.upload-dropzone :deep(.el-upload-dragger) {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 14px 12px;
-  border: 1.5px dashed #c7d2fe;
-  border-radius: 10px;
-  background: #f8faff;
-  transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.upload-dropzone :deep(.el-upload-dragger:hover) {
-  border-color: #667eea;
-  background: #f1f5ff;
-  box-shadow: inset 0 0 0 1px rgba(102, 126, 234, 0.08);
-}
-
-.dropzone-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.dropzone-title {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.dropzone-link {
-  color: #667eea;
-  font-weight: 600;
-}
-
-.format-tags {
-  display: flex;
-  gap: 6px;
-}
-
-.format-tag {
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: #e8edff;
-  color: #4f5fd0;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  min-height: 0;
 }
 
 .settings-section {
@@ -590,7 +643,17 @@ const isValidFile = (file: File): boolean => {
 }
 
 .settings-header {
-  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: default;
 }
 
 .settings-title {
@@ -600,20 +663,43 @@ const isValidFile = (file: File): boolean => {
   color: #334155;
 }
 
+.settings-chevron {
+  display: none;
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  color: #94a3b8;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.settings-section.is-expanded .settings-chevron {
+  transform: rotate(180deg);
+}
+
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Six tracks so a row of three options is thirds and a row of two is halves. */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px 12px;
+}
+
+.settings-grid[hidden] {
+  display: none;
 }
 
 .setting-block {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  grid-column: span 2;
 }
 
 .setting-block--full {
   grid-column: 1 / -1;
+}
+
+.setting-block--half {
+  grid-column: span 3;
 }
 
 .setting-label {
@@ -679,10 +765,30 @@ const isValidFile = (file: File): boolean => {
   .settings-section {
     border-left: none;
     border-top: 1px solid #e8edf5;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+
+  .settings-header {
+    margin-bottom: 0;
+    cursor: pointer;
+  }
+
+  .settings-section.is-expanded .settings-header {
+    margin-bottom: 10px;
+  }
+
+  .settings-chevron {
+    display: inline-block;
   }
 
   .settings-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .setting-block,
+  .setting-block--half {
+    grid-column: auto;
   }
 
   .setting-block--full {
@@ -701,6 +807,8 @@ const isValidFile = (file: File): boolean => {
     grid-template-columns: 1fr;
   }
 
+  .setting-block,
+  .setting-block--half,
   .setting-block--full {
     grid-column: auto;
   }

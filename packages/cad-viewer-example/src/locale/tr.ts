@@ -14,6 +14,8 @@ export default {
     fileUpload: {
       title: 'Görüntülenecek CAD Dosyasını Seçin',
       subtitle: 'DWG veya DXF çizimlerini görüntüleyiciye aktarın',
+      fontCdnNotice:
+        'If you are in a country or region with network access restrictions, please turn on a VPN. Default font files are hosted on GitHub; when access is limited they load very slowly, which can make opening drawings slow or cause text not to display correctly.',
       newDrawing: 'Yeni Çizim',
       or: 'veya',
       dropFile: 'Dosyayı bırakın veya',
@@ -46,9 +48,10 @@ export default {
       progressive: 'Aşamalı',
       progressiveRendering: 'Aşamalı oluşturma',
       on: 'Açık',
-      progressiveOnHint: 'Yükleme sırasında geometriyi göster',
+      progressiveOnHint:
+        'Yükleme sırasında geometriyi göster; varlık dönüşümü bitince ilerleme gizlenir',
       off: 'Kapalı',
-      progressiveOffHint: 'Dönüşüm tamamlanana kadar bekle',
+      progressiveOffHint: 'Varlık ve metin geometrisi dönüşene kadar bekle',
 
       nonPlottable: 'Yazdırılamayan',
       nonPlottableLayers: 'Yazdırılamayan katmanlar',
@@ -64,6 +67,18 @@ export default {
       curveStandardHint: 'Dengeli (daire başına 100 kenar)',
       curveHigh: 'Kalite',
       curveHighHint: 'Daha pürüzsüz eğriler, daha fazla bellek',
+
+      paperSpaceBackground: 'Kağıt arka planı',
+      paperSpaceWhite: 'Beyaz',
+      paperSpaceWhiteHint: 'Masaüstü CAD / yazdırma önizlemesi',
+      paperSpaceBlack: 'Siyah',
+      paperSpaceBlackHint: 'Web görüntüleyici tercihi',
+
+      export: 'Dışa aktarma',
+      exportEnable: 'Etkin',
+      exportEnableHint: 'DXF/HTML/PDF/SVG/PNG dışa aktarmaya izin ver',
+      exportDisable: 'Devre dışı',
+      exportDisableHint: 'Dışa aktarma komutlarını ve File menü öğelerini gizle',
 
       invalidFileType:
         'Geçersiz dosya türü. Lütfen DWG veya DXF dosyaları yükleyin.'

@@ -31,11 +31,17 @@ export default {
       description:
         'Sets the display precision for angles, used together with AUNITS'
     },
+    bmpout: {
+      description: 'Exports to BMP'
+    },
     cdxf: {
       description: 'Exports current drawing to DXF'
     },
     cpdf: {
       description: 'Exports current drawing to PDF'
+    },
+    '-cpdf': {
+      description: 'Exports current drawing to PDF using command-line options'
     },
     cecolor: {
       description: 'Sets the current default color for newly created objects'
@@ -211,6 +217,9 @@ export default {
       description:
         'Specifies drawing units for automatic scaling of inserted blocks, images, or xrefs'
     },
+    jpgout: {
+      description: 'Exports to JPEG'
+    },
     laycur: {
       description:
         'Changes the layer property of selected objects to the current layer',
@@ -280,6 +289,9 @@ export default {
     measurementvis: {
       description: 'Shows or hides measurements on the current layout'
     },
+    measurementpanel: {
+      description: 'Opens the measurement palette'
+    },
     measurementexport: {
       description: 'Exports measurements to a sidecar JSON file'
     },
@@ -298,6 +310,10 @@ export default {
     },
     measuredistance: {
       description: 'Measures the distance and delta values between two points'
+    },
+    measurecontinuous: {
+      description:
+        'Measures chained distances by picking successive points until Enter or Cancel'
     },
     measurepoint: {
       description: 'Measures the X/Y coordinates of a picked point'
@@ -473,6 +489,10 @@ export default {
     },
     switchbg: {
       description: 'Toggles the drawing area background between white and black'
+    },
+    readingmode: {
+      description:
+        'Toggles reading mode: black linework on a white canvas for easier review'
     },
     unisolateobjects: {
       description: 'Redisplay all objects hidden by HIDEOBJECTS'

@@ -88,4 +88,28 @@ describe('AcTrBufferGeometryUtil finite coordinate helpers', () => {
     expect(geometry.getAttribute('position').count).toBe(2)
     expect(geometry.getAttribute('lineDistance').count).toBe(2)
   })
+
+  it('preserves per-segment dash phase when recomputing merged LineSegments', () => {
+    // Simulates GroupCompactor merge of three independent 0.5-length entities
+    // (each with entity-local phase 0), then addLine's post-transform recompute.
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(
+        [0, 0, 0, 0.5, 0, 0, 1, 0, 0, 1.5, 0, 0, 2, 0, 0, 2.5, 0, 0],
+        3
+      )
+    )
+    geometry.setAttribute(
+      'lineDistance',
+      new THREE.Float32BufferAttribute([0, 0.5, 0, 0.5, 0, 0.5], 1)
+    )
+
+    AcTrBufferGeometryUtil.recomputeLineDistanceForLineSegments(geometry)
+
+    const ld = geometry.getAttribute('lineDistance')
+    expect(Array.from(ld.array as Float32Array)).toEqual([
+      0, 0.5, 0, 0.5, 0, 0.5
+    ])
+  })
 })

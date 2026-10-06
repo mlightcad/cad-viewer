@@ -14,11 +14,27 @@ export interface AcApMeasurementPoint2d {
   y: number
 }
 
-/** Drawing style stored in the sidecar (CSS-friendly). */
+/** Drawing style stored in the sidecar (CSS-friendly + world-space sizes). */
 export interface AcApMeasurementSidecarStyle {
   color: string
+  /** Always hairline (`0`) on write; legacy non-zero values are ignored on parse. */
   lineWeight: AcGiLineWeight
+  /** Authoring badge font size in CSS pixels (legacy / UI). */
   fontSize: number
+  /**
+   * Badge text height in world units. Prefer this over {@link fontSize} when
+   * restoring overlays so size is independent of camera zoom.
+   */
+  textHeightWcs?: number
+  /**
+   * Distance-measurement arrow-head length in world units. Prefer this when
+   * restoring overlays so arrow size is independent of camera zoom.
+   */
+  arrowSizeWcs?: number
+  /**
+   * Legacy canvas stroke width in world units. Ignored on parse; never written.
+   */
+  strokeWidthWcs?: number
 }
 
 export interface AcApMeasurementDistanceGeometry {

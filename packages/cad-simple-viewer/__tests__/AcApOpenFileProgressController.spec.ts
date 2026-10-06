@@ -207,4 +207,64 @@ describe('AcApOpenFileProgressController', () => {
     expect(progress.setMessage).toHaveBeenNthCalledWith(2, 'main.progress.style')
     expect(progress.show).toHaveBeenCalledTimes(1)
   })
+
+  it('holds Rendering drawing ... until the busy gate is idle for two polls', () => {
+    jest.useFakeTimers()
+    let busy = true
+    controller.setSceneBusyGate(() => busy)
+
+    controller.handle({
+      database: {},
+      percentage: 100,
+      stage: 'CONVERSION',
+      subStage: 'END',
+      subStageStatus: 'END'
+    })
+
+    expect(progress.hide).not.toHaveBeenCalled()
+    expect(progress.setMessage).toHaveBeenCalledWith('main.progress.rendering')
+
+    jest.advanceTimersByTime(50)
+    expect(progress.hide).not.toHaveBeenCalled()
+
+    busy = false
+    jest.advanceTimersByTime(50)
+    expect(progress.hide).not.toHaveBeenCalled()
+
+    jest.advanceTimersByTime(50)
+    expect(progress.hide).toHaveBeenCalledTimes(1)
+
+    jest.useRealTimers()
+  })
+
+  it('resets the idle streak if the busy gate becomes busy again', () => {
+    jest.useFakeTimers()
+    let busy = true
+    controller.setSceneBusyGate(() => busy)
+
+    controller.handle({
+      database: {},
+      percentage: 100,
+      stage: 'CONVERSION',
+      subStage: 'END',
+      subStageStatus: 'END'
+    })
+
+    busy = false
+    jest.advanceTimersByTime(50)
+    expect(progress.hide).not.toHaveBeenCalled()
+
+    busy = true
+    jest.advanceTimersByTime(50)
+    expect(progress.hide).not.toHaveBeenCalled()
+
+    busy = false
+    jest.advanceTimersByTime(50)
+    expect(progress.hide).not.toHaveBeenCalled()
+
+    jest.advanceTimersByTime(50)
+    expect(progress.hide).toHaveBeenCalledTimes(1)
+
+    jest.useRealTimers()
+  })
 })

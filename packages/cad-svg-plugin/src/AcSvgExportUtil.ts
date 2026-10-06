@@ -23,6 +23,35 @@ export class AcSvgExportUtil {
   }
 
   /**
+   * Drops characters that are illegal in XML 1.0 (and therefore in SVG text /
+   * attribute content). CAD text sometimes embeds C0 controls such as STX
+   * (U+0002); browsers reject the whole file with
+   * "PCDATA invalid Char value …".
+   *
+   * Removes C0 controls other than TAB/LF/CR, plus U+FFFE / U+FFFF.
+   * Uses a regex (not a per-code-point loop) so large exports stay responsive.
+   */
+  static stripInvalidXmlChars(text: string): string {
+    return text.replace(
+      // eslint-disable-next-line no-control-regex -- intentional C0 / noncharacter filter
+      /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g,
+      ''
+    )
+  }
+
+  /**
+   * Escapes XML special characters and strips illegal control characters so
+   * text content is safe inside SVG PCDATA / attributes.
+   */
+  static escapeXml(text: string): string {
+    return AcSvgExportUtil.stripInvalidXmlChars(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+  }
+
+  /**
    * Rasterizes an SVG data URL to PNG so nested SVG cannot reference external files.
    */
   static async rasterizeSvgDataUrl(dataUrl: string): Promise<string> {

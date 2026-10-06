@@ -49,4 +49,25 @@ describe('AcTrProgressiveOpenFitController', () => {
     )
     expect(zooms.length).toBe(afterFirst)
   })
+
+  it('keeps the final fit after a programmatic linework frame', () => {
+    const zooms: AcGeBox2d[] = []
+    const controller = new AcTrProgressiveOpenFitController(box => {
+      zooms.push(box.clone())
+      // Host views emit viewChanged from zoomTo. That must not cancel open fit.
+      controller.onLayoutViewChanged()
+    })
+
+    controller.begin(1000)
+    controller.frameProgrammatically(
+      new AcGeBox2d({ x: 0, y: 0 }, { x: 10, y: 10 })
+    )
+    expect(controller.isActive).toBe(true)
+    expect(zooms).toHaveLength(1)
+
+    controller.applyFinalFit(
+      () => new AcGeBox2d({ x: 0, y: 0 }, { x: 20, y: 20 })
+    )
+    expect(zooms).toHaveLength(2)
+  })
 })

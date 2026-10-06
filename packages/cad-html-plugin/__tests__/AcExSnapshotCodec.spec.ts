@@ -1,8 +1,66 @@
-import { decodeSnapshot, encodeSnapshot } from '../src/AcExSnapshotCodec'
+import {
+  decodeSnapshot,
+  decodeSnapshotFromCompressedBytes,
+  encodeSnapshot,
+  snapshotPayloadToCompressedBytes
+} from '../src/AcExSnapshotCodec'
+import {
+  decodeSnapshotBinary,
+  encodeSnapshotBinary
+} from '../src/AcExSnapshotBinaryCodec'
+import { AcExBinaryWriter } from '../src/AcExBinaryIO'
+import { ACEO_OSNAP_MAGIC } from '../src/AcExOsnapCatalogCodec'
 import { ACEX_SNAPSHOT_VERSION } from '../src/AcExSnapshotTypes'
 
 function f32(values: number[]): Float32Array {
   return Float32Array.from(values)
+}
+
+function indexOfBytes(haystack: Uint8Array, needle: Uint8Array): number {
+  outer: for (let i = 0; i <= haystack.length - needle.length; i++) {
+    for (let j = 0; j < needle.length; j++) {
+      if (haystack[i + j] !== needle[j]) continue outer
+    }
+    return i
+  }
+  return -1
+}
+
+/** Builds ACEX bytes with the pre-ACEO JSON osnap field for decode compat. */
+function encodeLegacyJsonOsnapSnapshot(osnap: unknown): Uint8Array {
+  const writer = new AcExBinaryWriter()
+  writer.writeU32(0x58454341) // ACEX
+  writer.writeU8(ACEX_SNAPSHOT_VERSION)
+  writer.writeU8(0)
+  writer.writeU8(0)
+  writer.writeU8(0)
+  writer.writeJson({
+    createdAt: '2026-01-01T00:00:00.000Z',
+    extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+    units: {
+      insunits: 4,
+      lunits: 2,
+      luprec: 4,
+      aunits: 0,
+      auprec: 0,
+      measurement: 1,
+      ltscale: 1,
+      angbase: 0,
+      angdir: 0
+    },
+    background: 0
+  })
+  writer.writeJson([{ name: '0', color: 0xffffff, visible: true }])
+  writer.writeString('ms')
+  writer.writeU32(1)
+  writer.writeString('ms')
+  writer.writeString('*Model_Space')
+  writer.writeU8(1)
+  writer.writeJson(osnap)
+  writer.writeJson(null)
+  writer.writeU32(0)
+  writer.writeU32(0)
+  return writer.toUint8Array()
 }
 
 describe('AcExSnapshotCodec', () => {
@@ -42,6 +100,10 @@ describe('AcExSnapshotCodec', () => {
     const decoded = decodeSnapshot(encoded.payload)
     expect(decoded.meta.extents.maxX).toBe(10)
     expect(decoded.layers[0]?.name).toBe('0')
+
+    const compressed = snapshotPayloadToCompressedBytes(encoded.payload)
+    const fromBytes = decodeSnapshotFromCompressedBytes(compressed)
+    expect(fromBytes.meta.extents.maxX).toBe(10)
   })
 
   it('round-trips binary geometry buffers', () => {
@@ -264,6 +326,245 @@ describe('AcExSnapshotCodec', () => {
       maxY: 500
     })
     expect(decoded.layouts[0]!.viewports?.[0]?.twist).toBeCloseTo(Math.PI / 4)
+  })
+
+  it('round-trips layout savedView via meta.savedViews without changing viewport wire shape', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: 'Model',
+          isModelSpace: true,
+          lineBatches: [],
+          meshBatches: [],
+          savedView: { minX: 100, minY: 200, maxX: 300, maxY: 400 }
+        },
+        {
+          btrId: 'ps',
+          name: 'Layout1',
+          isModelSpace: false,
+          lineBatches: [],
+          meshBatches: [],
+          viewports: [
+            {
+              paper: { minX: 0, minY: 0, maxX: 12, maxY: 9 },
+              model: { minX: 100, minY: 200, maxX: 400, maxY: 500 },
+              twist: 0
+            }
+          ],
+          savedView: { minX: 0, minY: 0, maxX: 12, maxY: 9 }
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const binary = encodeSnapshotBinary(snapshot)
+    const asText = new TextDecoder().decode(binary)
+    // savedView travels in meta; layout viewport slot stays a bare array value.
+    expect(asText).toContain('"savedViews"')
+    expect(asText).not.toContain('"savedView"')
+    const decoded = decodeSnapshotBinary(binary)
+    expect(decoded.meta.savedViews?.ms).toEqual({
+      minX: 100,
+      minY: 200,
+      maxX: 300,
+      maxY: 400
+    })
+    expect(decoded.layouts[0]!.savedView).toEqual({
+      minX: 100,
+      minY: 200,
+      maxX: 300,
+      maxY: 400
+    })
+    expect(decoded.layouts[1]!.savedView).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 12,
+      maxY: 9
+    })
+    expect(decoded.layouts[1]!.viewports?.[0]?.paper).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 12,
+      maxY: 9
+    })
+  })
+
+  it('self-contained HTML payloads shrink when osnap omits duplicated line primitives', () => {
+    const meta = {
+      createdAt: '2026-01-01T00:00:00.000Z',
+      extents: { minX: 0, minY: 0, maxX: 100, maxY: 100 },
+      units: {
+        insunits: 4,
+        lunits: 2,
+        luprec: 4,
+        aunits: 0,
+        auprec: 0,
+        measurement: 1,
+        ltscale: 1,
+        angbase: 0,
+        angdir: 0
+      },
+      background: 0
+    }
+    const lineBatch = {
+      layer: '0',
+      color: 0xff0000,
+      offset: [0, 0, 0] as [number, number, number],
+      positions: f32([0, 0, 0, 10, 0, 0, 10, 10, 0, 0, 10, 0]),
+      indices: Uint32Array.from([0, 1, 1, 2, 2, 3, 3, 0])
+    }
+    const linePrimitives = Array.from({ length: 2000 }, (_, i) => ({
+      kind: 'line' as const,
+      layer: '0',
+      x0: i,
+      y0: 0,
+      x1: i + 1,
+      y1: 1
+    }))
+    const withDuplicatedLines = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta,
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [lineBatch],
+          meshBatches: [],
+          osnap: { primitives: linePrimitives }
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+    const curvesOnly = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta,
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [lineBatch],
+          meshBatches: [],
+          osnap: {
+            primitives: [
+              {
+                kind: 'circle' as const,
+                layer: '0',
+                cx: 5,
+                cy: 5,
+                r: 2,
+                normalSign: 1 as const
+              }
+            ]
+          }
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const legacyPayload = encodeSnapshot(withDuplicatedLines).payload
+    const compactPayload = encodeSnapshot(curvesOnly).payload
+    expect(compactPayload.length).toBeLessThan(legacyPayload.length * 0.25)
+
+    const decoded = decodeSnapshot(compactPayload)
+    expect(decoded.layouts[0]!.osnap?.primitives.every(p => p.kind !== 'line')).toBe(
+      true
+    )
+    expect(decoded.layouts[0]!.lineBatches[0]!.positions.length).toBeGreaterThan(0)
+  })
+
+  it('stores layout osnap as ACEO in monolithic ACEX binary', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [],
+          meshBatches: [],
+          osnap: {
+            primitives: [
+              {
+                kind: 'circle' as const,
+                layer: '0',
+                cx: 1,
+                cy: 2,
+                r: 3,
+                normalSign: 1 as const
+              }
+            ]
+          }
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const binary = encodeSnapshotBinary(snapshot)
+    const magicBytes = new Uint8Array(4)
+    new DataView(magicBytes.buffer).setUint32(0, ACEO_OSNAP_MAGIC, true)
+    const aceoIndex = indexOfBytes(binary, magicBytes)
+    expect(aceoIndex).toBeGreaterThanOrEqual(0)
+
+    const decoded = decodeSnapshotBinary(binary)
+    expect(decoded.layouts[0]!.osnap?.primitives).toEqual(
+      snapshot.layouts[0]!.osnap!.primitives
+    )
+  })
+
+  it('still decodes legacy JSON layout osnap payloads', () => {
+    const osnap = {
+      primitives: [
+        {
+          kind: 'point' as const,
+          layer: '0',
+          x: 4,
+          y: 5
+        }
+      ]
+    }
+    const binary = encodeLegacyJsonOsnapSnapshot(osnap)
+    const decoded = decodeSnapshotBinary(binary)
+    expect(decoded.layouts[0]!.osnap).toEqual(osnap)
   })
 
   it('round-trips signed renderOrder so hatch fills stay below linework', () => {

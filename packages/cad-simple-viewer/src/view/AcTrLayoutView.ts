@@ -1,8 +1,12 @@
 import { AcGeBox2d } from '@mlightcad/data-model'
 import {
   AcTrBaseView,
+  acTrCssRectToWcsBox,
+  acTrIntersectCssRects,
+  AcTrOverlayViewport,
   AcTrRenderer,
-  AcTrViewportView
+  AcTrViewportView,
+  acTrWcsBoxToCssRect
 } from '@mlightcad/three-renderer'
 import { AxesGizmo, ObjectPosition } from '@mlightcad/three-viewcube'
 import * as THREE from 'three'
@@ -50,6 +54,8 @@ export class AcTrLayoutView extends AcTrBaseView {
   private _mode: AcEdViewMode
   /** Map of viewport views indexed by viewport ID */
   private _viewportViews: Map<string, AcTrViewportView>
+  /** Screen-fixed overlay viewport (snap loupe, etc.). */
+  private readonly _overlayViewport: AcTrOverlayViewport
 
   /**
    * Construct one instance of this class.
@@ -70,6 +76,7 @@ export class AcTrLayoutView extends AcTrBaseView {
     this._mode = AcEdViewMode.SELECTION
     this._axesGizmo = this.createAxesGizmo()
     this._viewportViews = new Map()
+    this._overlayViewport = new AcTrOverlayViewport(renderer)
   }
 
   /**
@@ -123,6 +130,15 @@ export class AcTrLayoutView extends AcTrBaseView {
    */
   get viewportViews(): Iterable<AcTrViewportView> {
     return this._viewportViews.values()
+  }
+
+  /**
+   * Screen-fixed overlay viewport drawn after the layout and paper viewports.
+   *
+   * @returns The overlay used for the snap loupe and similar HUD viewports.
+   */
+  get overlayViewport(): AcTrOverlayViewport {
+    return this._overlayViewport
   }
 
   /**
@@ -197,6 +213,7 @@ export class AcTrLayoutView extends AcTrBaseView {
     if (modelSpaceLayout) {
       this.drawViewports(modelSpaceLayout.internalObject)
     }
+    this.drawOverlay(scene)
     this._axesGizmo?.update()
     return needsRedraw
   }
@@ -254,5 +271,71 @@ export class AcTrLayoutView extends AcTrBaseView {
       // Restore autoClear flag vlaue
       this._renderer.autoClear = autoClear
     }
+  }
+
+  /**
+   * Draws the screen-fixed overlay viewport (magnified snap loupe) on top of
+   * the main layout. Nested paper-space viewports that intersect the overlay
+   * are scissor-clipped so model content stays visible inside the loupe.
+   *
+   * @param scene - Scene containing the active layout and model-space layout.
+   */
+  private drawOverlay(scene: AcTrScene) {
+    const overlay = this._overlayViewport
+    if (!overlay.visible) return
+    overlay.render(scene.internalScene, this._height)
+    const modelSpaceLayout = scene.modelSpaceLayout
+    if (!modelSpaceLayout || this._viewportViews.size === 0) return
+    this.drawOverlayViewports(modelSpaceLayout.internalObject, overlay)
+  }
+
+  /**
+   * For each paper-space viewport that intersects the overlay, draws the
+   * corresponding model-space content into the overlap with a nested scissor.
+   *
+   * @param modelScene - Model-space scene graph to draw inside nested viewports.
+   * @param overlay - Overlay whose screen rect and view box define the loupe.
+   */
+  private drawOverlayViewports(
+    modelScene: THREE.Object3D,
+    overlay: AcTrOverlayViewport
+  ) {
+    const loupe = overlay.screenRect
+    const viewBox = overlay.viewBox
+    const visibility = modelScene.visible
+    modelScene.visible = true
+    this._viewportViews.forEach(viewportView => {
+      const magRect = acTrWcsBoxToCssRect(
+        viewportView.viewport.box,
+        viewBox,
+        loupe
+      )
+      const hit = acTrIntersectCssRects(magRect, loupe)
+      if (!hit) return
+      const paperHit = acTrCssRectToWcsBox(hit, viewBox, loupe)
+      const modelBox = new AcGeBox2d()
+      modelBox.expandByPoint(
+        viewportView.paperPointToModel({ x: paperHit.minX, y: paperHit.minY })
+      )
+      modelBox.expandByPoint(
+        viewportView.paperPointToModel({ x: paperHit.maxX, y: paperHit.minY })
+      )
+      modelBox.expandByPoint(
+        viewportView.paperPointToModel({ x: paperHit.maxX, y: paperHit.maxY })
+      )
+      modelBox.expandByPoint(
+        viewportView.paperPointToModel({ x: paperHit.minX, y: paperHit.maxY })
+      )
+      if (modelBox.isEmpty()) return
+      overlay.renderNested(
+        modelScene,
+        modelBox,
+        hit,
+        hit,
+        this._height,
+        viewportView.viewport.viewTwistAngle
+      )
+    })
+    modelScene.visible = visibility
   }
 }

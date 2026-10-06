@@ -30,11 +30,18 @@ export default {
       description:
         'AUNITS ile birlikte kullanılan, açılar için görüntüleme hassasiyetini ayarlar'
     },
+    bmpout: {
+      description: 'BMP olarak dışa aktarır'
+    },
     cdxf: {
       description: 'Geçerli çizimi DXF olarak dışa aktarır'
     },
     cpdf: {
       description: 'Geçerli çizimi PDF olarak dışa aktarır'
+    },
+    '-cpdf': {
+      description:
+        'Geçerli çizimi komut satırı seçenekleriyle PDF olarak dışa aktarır'
     },
     cecolor: {
       description:
@@ -220,6 +227,9 @@ export default {
       description:
         'Eklenen blokların, görüntülerin veya dış referansların otomatik ölçeklendirilmesi için çizim birimlerini belirtir'
     },
+    jpgout: {
+      description: 'JPEG olarak dışa aktarır'
+    },
     laycur: {
       description:
         'Seçili nesnelerin katman özelliğini geçerli katman olarak değiştirir',
@@ -291,6 +301,9 @@ export default {
     measurementvis: {
       description: 'Geçerli yerleşimdeki ölçümleri gösterir veya gizler'
     },
+    measurementpanel: {
+      description: 'Ölçüm paletini açar'
+    },
     measurementexport: {
       description: 'Ölçümleri sidecar JSON dosyasına dışa aktarır'
     },
@@ -309,6 +322,10 @@ export default {
     },
     measuredistance: {
       description: 'İki nokta arasındaki mesafeyi ve delta değerlerini ölçer'
+    },
+    measurecontinuous: {
+      description:
+        'Enter veya İptal edilene kadar ardışık noktalar seçerek zincirleme mesafeleri ölçer'
     },
     measurepoint: {
       description: 'Seçilen noktanın X/Y koordinatlarını ölçer'

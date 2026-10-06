@@ -33,11 +33,15 @@ export type AcExHtmlMessageKey =
   | 'toolbar.pan'
   | 'toolbar.zoom'
   | 'toolbar.zoomExtents'
+  | 'toolbar.zoomSmartExtents'
   | 'toolbar.zoomWindow'
+  | 'toolbar.zoomSaved'
   | 'toolbar.zoomOriginal'
   | 'toolbar.measureDistance'
+  | 'toolbar.measureContinuous'
   | 'toolbar.measureAngle'
   | 'toolbar.measureArc'
+  | 'toolbar.measureRadius'
   | 'toolbar.measureArea'
   | 'toolbar.measureCoordinate'
   | 'toolbar.clearMeasurements'
@@ -45,6 +49,7 @@ export type AcExHtmlMessageKey =
   | 'toolbar.measureShow'
   | 'toolbar.measureImport'
   | 'toolbar.measureExport'
+  | 'toolbar.measurementPanel'
   | 'toolbar.measure'
   | 'toolbar.annotation'
   | 'toolbar.markupCloud'
@@ -63,6 +68,12 @@ export type AcExHtmlMessageKey =
   | 'toolbar.snap'
   | 'toolbar.layers'
   | 'toolbar.layout'
+  | 'toolbar.settings'
+  | 'toolbar.simulatedMouseOn'
+  | 'toolbar.simulatedMouseOff'
+  | 'toolbar.themeLight'
+  | 'toolbar.themeDark'
+  | 'toolbar.switchBg'
   | 'toolbar.language'
   | 'toolbar.localeEn'
   | 'toolbar.localeZh'
@@ -71,12 +82,39 @@ export type AcExHtmlMessageKey =
   | 'toolbar.localeAr'
   | 'toolbar.collapse'
   | 'toolbar.expand'
+  | 'toolbar.moreOverflow'
   | 'settings.ortho'
   | 'settings.polar'
   | 'settings.polarAngles'
   | 'drawStyle.color'
-  | 'drawStyle.lineWeight'
   | 'drawStyle.fontSize'
+  | 'drawStyle.pickerTitle'
+  | 'drawStyle.close'
+  | 'drawStyle.ok'
+  | 'drawStyle.cancel'
+  | 'drawStyle.index'
+  | 'drawStyle.rgb'
+  | 'drawStyle.input'
+  | 'drawStyle.inputPlaceholder'
+  | 'shortCutToolbar.more'
+  | 'shortCutToolbar.undo'
+  | 'shortCutToolbar.redo'
+  | 'shortCutToolbar.erase'
+  | 'shortCutToolbar.collapse'
+  | 'shortCutToolbar.expand'
+  | 'textHeight.title'
+  | 'textHeight.close'
+  | 'textHeight.ok'
+  | 'textHeight.cancel'
+  | 'textHeight.adaptive'
+  | 'textHeight.custom'
+  | 'textHeight.customPlaceholder'
+  | 'textHeight.fromScreen'
+  | 'textHeight.fromScreenHint'
+  | 'textHeight.screenPxPlaceholder'
+  | 'textHeight.screenUnit'
+  | 'textHeight.convert'
+  | 'entityPick.cancel'
   | 'layers.title'
   | 'layers.close'
   | 'layers.showAll'
@@ -101,11 +139,44 @@ export type AcExHtmlMessageKey =
   | 'review.statusValues.question'
   | 'review.statusValues.answered'
   | 'review.statusValues.closed'
+  | 'measurePanel.title'
+  | 'measurePanel.close'
+  | 'measurePanel.filterGroup'
+  | 'measurePanel.filterDistance'
+  | 'measurePanel.filterArc'
+  | 'measurePanel.filterRadius'
+  | 'measurePanel.filterAngle'
+  | 'measurePanel.filterArea'
+  | 'measurePanel.empty'
+  | 'measurePanel.type'
+  | 'measurePanel.value'
+  | 'measurePanel.delete'
+  | 'measurePanel.clear'
+  | 'session.length'
+  | 'session.angle'
+  | 'session.dx'
+  | 'session.dy'
+  | 'session.x'
+  | 'session.y'
+  | 'session.confirm'
+  | 'session.cancel'
+  | 'session.help'
+  | 'session.back'
+  | 'session.collapse'
+  | 'session.expand'
+  | 'session.undo'
+  | 'touchPointTutorial.title'
+  | 'touchPointTutorial.description'
+  | 'touchPointTutorial.snoozeToday'
+  | 'touchPointTutorial.hideForever'
+  | 'touchPointTutorial.ok'
   | 'status.ready'
   | 'status.zoomWindowHint'
   | 'status.measureDistanceHint'
+  | 'status.measureContinuousHint'
   | 'status.measureAngleHint'
   | 'status.measureArcHint'
+  | 'status.measureRadiusHint'
   | 'status.measureAreaHint'
   | 'status.measureCoordinateHint'
   | 'status.measureExported'
@@ -137,12 +208,29 @@ export type AcExHtmlMessageKey =
   | 'status.coordinates'
   | 'status.angle'
   | 'status.arcLength'
+  | 'status.radius'
+  | 'status.continuousTotal'
   | 'status.area'
   | 'status.lengthTotal'
   | 'status.areaTotal'
   | 'status.zoomLayer'
   | 'status.loadFailed'
   | 'status.noLayout'
+  | 'status.loadingChunks'
+  | 'status.loadingOsnap'
+  | 'status.buildingOsnap'
+  | 'package.title'
+  | 'package.hint'
+  | 'package.hintUrlOnly'
+  | 'package.chooseFolder'
+  | 'package.urlPlaceholder'
+  | 'package.openUrl'
+  | 'package.urlRequired'
+  | 'package.manifestNotFound'
+  | 'package.invalidManifest'
+  | 'package.folderMissingManifest'
+  | 'package.folderUnsupported'
+  | 'package.loadFailed'
   | 'access.title'
   | 'access.passwordPrompt'
   | 'access.passwordPlaceholder'
@@ -172,37 +260,48 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       select: 'Select',
       pan: 'Pan',
       zoom: 'Zoom',
-      zoomExtents: 'Zoom extents',
-      zoomWindow: 'Zoom window',
-      zoomOriginal: 'Original view',
-      measureDistance: 'Measure distance',
-      measureAngle: 'Measure angle',
-      measureArc: 'Measure arc length',
-      measureArea: 'Measure area',
-      measureCoordinate: 'Measure coordinates',
-      clearMeasurements: 'Clear measurements',
-      measureHide: 'Hide measurements',
-      measureShow: 'Show measurements',
-      measureImport: 'Import measurements',
-      measureExport: 'Export measurements',
-      measure: 'Measurement',
+      zoomExtents: 'Extents',
+      zoomSmartExtents: 'Smart',
+      zoomWindow: 'Window',
+      zoomSaved: 'Saved',
+      zoomOriginal: 'Saved',
+      measureDistance: 'Distance',
+      measureContinuous: 'Continuous',
+      measureAngle: 'Angle',
+      measureArc: 'Arc',
+      measureRadius: 'Radius',
+      measureArea: 'Area',
+      measureCoordinate: 'XY',
+      clearMeasurements: 'Clear',
+      measureHide: 'Hide',
+      measureShow: 'Show',
+      measureImport: 'Import',
+      measureExport: 'Export',
+      measurementPanel: 'Results',
+      measure: 'Measure',
       annotation: 'Review',
       markupCloud: 'Cloud',
       markupCallout: 'Callout',
       markupText: 'Text',
-      markupRect: 'Rectangle',
+      markupRect: 'Rect',
       markupCircle: 'Circle',
       markupArrow: 'Arrow',
       markupStamp: 'Stamp',
-      markupPanel: 'Review',
-      markupHide: 'Hide markups',
-      markupShow: 'Show markups',
-      clearMarkups: 'Clear markups',
-      markupImport: 'Import markups',
-      markupExport: 'Export markups',
-      snap: 'Object snap',
+      markupPanel: 'Results',
+      markupHide: 'Hide',
+      markupShow: 'Show',
+      clearMarkups: 'Clear',
+      markupImport: 'Import',
+      markupExport: 'Export',
+      snap: 'Snap',
       layers: 'Layers',
       layout: 'Layout',
+      settings: 'Settings',
+      simulatedMouseOn: 'Mouse',
+      simulatedMouseOff: 'Loupe',
+      themeLight: 'Light',
+      themeDark: 'Dark',
+      switchBg: 'Background',
       language: 'Language',
       localeEn: 'English',
       localeZh: '中文',
@@ -210,7 +309,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeTr: 'Türkçe',
       localeAr: 'العربية',
       collapse: 'Collapse toolbar',
-      expand: 'Expand toolbar'
+      expand: 'Expand toolbar',
+      moreOverflow: 'More tools'
     },
     settings: {
       ortho: 'Toggle orthogonal mode',
@@ -219,8 +319,41 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     },
     drawStyle: {
       color: 'Color',
-      lineWeight: 'Lineweight',
-      fontSize: 'Text height'
+      fontSize: 'Text height',
+      pickerTitle: 'Select Color',
+      close: 'Close',
+      ok: 'OK',
+      cancel: 'Cancel',
+      index: 'Color Index: ',
+      rgb: 'RGB: ',
+      input: 'Color',
+      inputPlaceholder: '1-255 or #RRGGBB'
+    },
+    shortCutToolbar: {
+      more: 'More',
+      undo: 'Undo',
+      redo: 'Redo',
+      erase: 'Delete',
+      collapse: 'Collapse toolbar',
+      expand: 'Expand toolbar'
+    },
+    textHeight: {
+      title: 'Text Height',
+      close: 'Close',
+      ok: 'OK',
+      cancel: 'Cancel',
+      adaptive: 'Fit to screen',
+      custom: 'Custom text height',
+      customPlaceholder: 'World height',
+      fromScreen: 'From screen size',
+      fromScreenHint:
+        'Enter how large the text should look on screen at the current zoom. It is converted to a fixed world-space height that stays constant when you zoom later.',
+      screenPxPlaceholder: 'Font size',
+      screenUnit: 'px',
+      convert: 'Convert'
+    },
+    entityPick: {
+      cancel: 'Cancel selection'
     },
     layers: {
       title: 'Layers',
@@ -252,17 +385,59 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
         closed: 'Closed'
       }
     },
+    measurePanel: {
+      title: 'Measurements',
+      close: 'Close measurements',
+      filterGroup: 'Filter by type',
+      filterDistance: 'Distance',
+      filterArc: 'Arc',
+      filterRadius: 'Radius',
+      filterAngle: 'Angle',
+      filterArea: 'Area',
+      empty: 'No measurements yet',
+      type: 'Type',
+      value: 'Value',
+      delete: 'Delete',
+      clear: 'Clear all'
+    },
+    session: {
+      length: 'Length',
+      angle: 'Angle',
+      dx: 'ΔX',
+      dy: 'ΔY',
+      x: 'X',
+      y: 'Y',
+      confirm: 'Confirm',
+      cancel: 'Cancel',
+      help: 'Help',
+      back: 'Back',
+      collapse: 'Collapse',
+      expand: 'Expand',
+      undo: 'Undo'
+    },
+    touchPointTutorial: {
+      title: 'How to pick points precisely?',
+      description:
+        'Long-press on the screen for about 0.5 seconds. A cross appears above your finger and follows as you move, snapping to geometry for more accurate picks.',
+      snoozeToday: 'Don\'t remind me today',
+      hideForever: 'Don\'t remind me again',
+      ok: 'Got it'
+    },
     status: {
       ready: 'Ready',
       zoomWindowHint: 'Click two corners to zoom to a window.',
       measureDistanceHint:
         'Click two points to measure distance (object snap enabled).',
+      measureContinuousHint:
+        'Tap successive points to measure each segment; tap ✓ to finish. Long-press for precise snap.',
+      measureAreaHint:
+        'Tap polygon vertices; tap ✓ to finish when at least three points are set. Long-press for precise snap.',
       measureAngleHint:
         'Click vertex, then two points on each arm (object snap enabled).',
       measureArcHint:
         'Click a circle or arc to measure along it, or click start, a point on the arc, then end (object snap enabled). Ctrl (⌘ on Mac) switches major/minor arc.',
-      measureAreaHint:
-        'Click polygon vertices; click near the first point or press Enter to finish.',
+      measureRadiusHint:
+        'Click a circle or arc to measure its radius (object snap enabled).',
       measureCoordinateHint:
         'Click a point to read its X/Y coordinates (object snap enabled).',
       measureExported: 'Exported {count} measurement(s).',
@@ -295,15 +470,39 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupImported: 'Imported {count} markup(s).',
       markupImportFailed: 'Failed to import markups: {error}',
       distance: 'Distance: {value}',
-      coordinates: 'X: {x}  Y: {y}',
+      coordinates: 'X: {x} | Y: {y}',
       angle: 'Angle: {value}',
-      arcLength: 'Arc length: {value}',
+      arcLength:
+        'Arc length: {length} | Radius: {radius} | Angle: {angle} | Chord: {chord}',
+      radius: 'Radius: {value}',
+      continuousTotal: 'Total length: {value}',
       area: 'Area: {value}',
       lengthTotal: 'Length total: {value}',
       areaTotal: 'Area total: {value}',
       zoomLayer: 'Zoom: {name}',
       loadFailed: 'Failed to load drawing: {error}',
-      noLayout: 'No layout data in snapshot.'
+      noLayout: 'No layout data in snapshot.',
+      loadingChunks: 'Loading geometry… {loaded}/{total}',
+      loadingOsnap: 'Loading object snap… {loaded}/{total}',
+      buildingOsnap: 'Building object snap index…'
+    },
+    package: {
+      title: 'Open drawing package',
+      hint: 'No drawing.acex.json was found next to this page. Choose a local package folder or enter the manifest URL.',
+      hintUrlOnly:
+        'No drawing.acex.json was found next to this page. Enter the manifest URL to open the package.',
+      chooseFolder: 'Choose local folder',
+      urlPlaceholder: 'https://example.com/drawing.acex.json',
+      openUrl: 'Open URL',
+      urlRequired: 'Please enter a manifest URL.',
+      manifestNotFound: 'drawing.acex.json was not found next to this page.',
+      invalidManifest:
+        'The package manifest is invalid or uses an unsupported version: {error}',
+      folderMissingManifest:
+        'The selected folder must contain drawing.acex.json.',
+      folderUnsupported:
+        'This browser cannot open a local package folder. Paste a manifest URL instead.',
+      loadFailed: 'Failed to open package: {error}'
     },
     access: {
       title: 'Protected drawing',
@@ -329,19 +528,24 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       select: '选择',
       pan: '平移',
       zoom: '缩放',
-      zoomExtents: '范围缩放',
-      zoomWindow: '窗口缩放',
-      zoomOriginal: '原始视口',
-      measureDistance: '测量距离',
-      measureAngle: '测量角度',
-      measureArc: '测量弧长',
-      measureArea: '测量面积',
-      measureCoordinate: '测量坐标',
-      clearMeasurements: '清除测量',
-      measureHide: '隐藏测量',
-      measureShow: '显示测量',
-      measureImport: '导入测量',
-      measureExport: '导出测量',
+      zoomExtents: '范围',
+      zoomSmartExtents: '智能',
+      zoomWindow: '窗口',
+      zoomSaved: '保存的视图',
+      zoomOriginal: '保存的视图',
+      measureDistance: '测距离',
+      measureContinuous: '连续测',
+      measureAngle: '测角度',
+      measureArc: '测弧长',
+      measureRadius: '测半径',
+      measureArea: '测面积',
+      measureCoordinate: '测坐标',
+      clearMeasurements: '清除',
+      measureHide: '隐藏',
+      measureShow: '显示',
+      measureImport: '导入',
+      measureExport: '导出',
+      measurementPanel: '看结果',
       measure: '测量',
       annotation: '审阅',
       markupCloud: '云线',
@@ -351,22 +555,29 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupCircle: '圆',
       markupArrow: '箭头',
       markupStamp: '图章',
-      markupPanel: '批注面板',
-      markupHide: '隐藏批注',
-      markupShow: '显示批注',
-      clearMarkups: '清除批注',
-      markupImport: '导入批注',
-      markupExport: '导出批注',
-      snap: '对象捕捉',
+      markupPanel: '看结果',
+      markupHide: '隐藏',
+      markupShow: '显示',
+      clearMarkups: '清除',
+      markupImport: '导入',
+      markupExport: '导出',
+      snap: '捕捉',
       layers: '图层',
       layout: '布局',
+      settings: '设置',
+      simulatedMouseOn: '鼠标',
+      simulatedMouseOff: '放大',
+      themeLight: '浅色',
+      themeDark: '深色',
+      switchBg: '背景',
       language: '语言',
       localeEn: 'English',
       localeZh: '中文',
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
       collapse: '收起工具栏',
-      expand: '展开工具栏'
+      expand: '展开工具栏',
+      moreOverflow: '更多工具'
     },
     settings: {
       ortho: '切换正交模式',
@@ -375,8 +586,41 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     },
     drawStyle: {
       color: '颜色',
-      lineWeight: '线宽',
-      fontSize: '字高'
+      fontSize: '字高',
+      pickerTitle: '选择颜色',
+      close: '关闭',
+      ok: '确定',
+      cancel: '取消',
+      index: '颜色索引：',
+      rgb: 'RGB：',
+      input: '颜色',
+      inputPlaceholder: '1-255 或 #RRGGBB'
+    },
+    shortCutToolbar: {
+      more: '更多',
+      undo: '撤销',
+      redo: '重做',
+      erase: '删除',
+      collapse: '收起工具栏',
+      expand: '展开工具栏'
+    },
+    textHeight: {
+      title: '字高设置',
+      close: '关闭',
+      ok: '确定',
+      cancel: '取消',
+      adaptive: '自适应屏幕',
+      custom: '自定义字高',
+      customPlaceholder: '世界坐标字高',
+      fromScreen: '按屏幕字号换算',
+      fromScreenHint:
+        '按当前视图缩放，输入希望看到的屏幕字号（像素），换算为固定的世界坐标字高；之后缩放时字的世界高度不变。',
+      screenPxPlaceholder: '屏幕字号',
+      screenUnit: 'px',
+      convert: '换算'
+    },
+    entityPick: {
+      cancel: '取消选择'
     },
     layers: {
       title: '图层',
@@ -408,14 +652,55 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
         closed: '已关闭'
       }
     },
+    measurePanel: {
+      title: '测量',
+      close: '关闭测量面板',
+      filterGroup: '按类型筛选',
+      filterDistance: '距离',
+      filterArc: '弧长',
+      filterRadius: '半径',
+      filterAngle: '角度',
+      filterArea: '面积',
+      empty: '暂无测量',
+      type: '类型',
+      value: '数值',
+      delete: '删除',
+      clear: '全部清除'
+    },
+    session: {
+      length: '长度',
+      angle: '角度',
+      dx: 'ΔX',
+      dy: 'ΔY',
+      x: 'X',
+      y: 'Y',
+      confirm: '确定',
+      cancel: '取消',
+      help: '帮助',
+      back: '返回',
+      collapse: '收起',
+      expand: '展开',
+      undo: '撤销'
+    },
+    touchPointTutorial: {
+      title: '怎样可以精确取点？',
+      description:
+        '手指在屏幕上长按0.5s左右，上方出现十字，手指移动时十字跟随移动并自动捕捉。取点更精准。',
+      snoozeToday: '今日不再提醒',
+      hideForever: '不再提醒',
+      ok: '我知道了'
+    },
     status: {
       ready: '就绪',
       zoomWindowHint: '点击两个角点以窗口缩放。',
       measureDistanceHint: '点击两点以测量距离（已启用对象捕捉）。',
+      measureContinuousHint:
+        '依次点击多个点测量各段距离，点 ✓ 完成。长按可精确捕捉。',
+      measureAreaHint: '依次点击多边形顶点；至少三点后点 ✓ 完成。长按可精确捕捉。',
       measureAngleHint: '依次点击顶点与两条边上的点（已启用对象捕捉）。',
       measureArcHint:
         '点击圆或圆弧可沿其测量；否则依次点击弧起点、弧上一点与弧端点（已启用对象捕捉）。锁定后按 Ctrl（Mac 为 Control 或 ⌘）可在大弧与小弧之间切换。',
-      measureAreaHint: '依次点击多边形顶点；靠近首点或按 Enter 完成。',
+      measureRadiusHint: '点击圆或圆弧以测量半径（已启用对象捕捉）。',
       measureCoordinateHint: '点击一点以读取其 X/Y 坐标（已启用对象捕捉）。',
       measureExported: '已导出 {count} 条测量。',
       measureImported: '已导入 {count} 条测量。',
@@ -445,15 +730,37 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupImported: '已导入 {count} 条批注。',
       markupImportFailed: '导入批注失败：{error}',
       distance: '距离：{value}',
-      coordinates: 'X：{x}  Y：{y}',
+      coordinates: 'X：{x} | Y：{y}',
       angle: '角度：{value}',
-      arcLength: '弧长：{value}',
+      arcLength:
+        '弧长：{length} | 半径：{radius} | 总角度：{angle} | 弦长：{chord}',
+      radius: '半径：{value}',
+      continuousTotal: '总长度：{value}',
       area: '面积：{value}',
       lengthTotal: '长度合计：{value}',
       areaTotal: '面积合计：{value}',
       zoomLayer: '缩放：{name}',
       loadFailed: '无法加载图纸：{error}',
-      noLayout: '快照中没有布局数据。'
+      noLayout: '快照中没有布局数据。',
+      loadingChunks: '正在加载几何… {loaded}/{total}',
+      loadingOsnap: '正在加载对象捕捉… {loaded}/{total}',
+      buildingOsnap: '正在构建对象捕捉索引…'
+    },
+    package: {
+      title: '打开图纸包',
+      hint: '当前页面同级目录未找到 drawing.acex.json。请选择本地包文件夹，或输入清单 URL。',
+      hintUrlOnly:
+        '当前页面同级目录未找到 drawing.acex.json。请输入清单 URL 以打开图纸包。',
+      chooseFolder: '选择本地文件夹',
+      urlPlaceholder: 'https://example.com/drawing.acex.json',
+      openUrl: '打开 URL',
+      urlRequired: '请输入清单 URL。',
+      manifestNotFound: '当前页面同级目录未找到 drawing.acex.json。',
+      invalidManifest: '包清单无效或版本不受支持：{error}',
+      folderMissingManifest: '所选文件夹必须包含 drawing.acex.json。',
+      folderUnsupported:
+        '当前浏览器无法选择本地包文件夹，请改为输入清单 URL。',
+      loadFailed: '无法打开图纸包：{error}'
     },
     access: {
       title: '受保护的图纸',
@@ -477,19 +784,24 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       select: 'Výběr',
       pan: 'Posun',
       zoom: 'Přiblížení',
-      zoomExtents: 'Zoom na rozsah',
-      zoomWindow: 'Přiblížit oknem',
-      zoomOriginal: 'Původní pohled',
-      measureDistance: 'Změřit vzdálenost',
-      measureAngle: 'Změřit úhel',
-      measureArc: 'Změřit délku oblouku',
-      measureArea: 'Změřit plochu',
-      measureCoordinate: 'Změřit souřadnice',
-      clearMeasurements: 'Vymazat měření',
-      measureHide: 'Skrýt měření',
-      measureShow: 'Zobrazit měření',
-      measureImport: 'Importovat měření',
-      measureExport: 'Exportovat měření',
+      zoomExtents: 'Rozsah',
+      zoomSmartExtents: 'Chytrý',
+      zoomWindow: 'Okno',
+      zoomSaved: 'Uložený',
+      zoomOriginal: 'Uložený',
+      measureDistance: 'Vzdálenost',
+      measureContinuous: 'Spojité',
+      measureAngle: 'Úhel',
+      measureArc: 'Oblouk',
+      measureRadius: 'Poloměr',
+      measureArea: 'Plocha',
+      measureCoordinate: 'Souřadnice',
+      clearMeasurements: 'Vymazat',
+      measureHide: 'Skrýt',
+      measureShow: 'Zobrazit',
+      measureImport: 'Import',
+      measureExport: 'Export',
+      measurementPanel: 'Výsledky',
       measure: 'Měření',
       annotation: 'Kontrola',
       markupCloud: 'Obláček',
@@ -499,22 +811,29 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupCircle: 'Kružnice',
       markupArrow: 'Šipka',
       markupStamp: 'Razítko',
-      markupPanel: 'Kontrola',
-      markupHide: 'Skrýt poznámky',
-      markupShow: 'Zobrazit poznámky',
-      clearMarkups: 'Vymazat poznámky',
-      markupImport: 'Importovat poznámky',
-      markupExport: 'Exportovat poznámky',
-      snap: 'Uchopení objektů',
+      markupPanel: 'Výsledky',
+      markupHide: 'Skrýt',
+      markupShow: 'Zobrazit',
+      clearMarkups: 'Vymazat',
+      markupImport: 'Import',
+      markupExport: 'Export',
+      snap: 'Uchopit',
       layers: 'Hladiny',
       layout: 'Rozvržení',
+      settings: 'Nastavení',
+      simulatedMouseOn: 'Myš',
+      simulatedMouseOff: 'Lupa',
+      themeLight: 'Světlý',
+      themeDark: 'Tmavý',
+      switchBg: 'Pozadí',
       language: 'Jazyk',
       localeEn: 'English',
       localeZh: '中文',
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
       collapse: 'Sbalit panel nástrojů',
-      expand: 'Rozbalit panel nástrojů'
+      expand: 'Rozbalit panel nástrojů',
+      moreOverflow: 'Další nástroje'
     },
     settings: {
       ortho: 'Přepnout ortogonální režim',
@@ -523,8 +842,41 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     },
     drawStyle: {
       color: 'Barva',
-      lineWeight: 'Tloušťka čáry',
-      fontSize: 'Výška textu'
+      fontSize: 'Výška textu',
+      pickerTitle: 'Vybrat barvu',
+      close: 'Zavřít',
+      ok: 'OK',
+      cancel: 'Zrušit',
+      index: 'Index barvy: ',
+      rgb: 'RGB: ',
+      input: 'Barva',
+      inputPlaceholder: '1-255 nebo #RRGGBB'
+    },
+    shortCutToolbar: {
+      more: 'Více',
+      undo: 'Zpět',
+      redo: 'Znovu',
+      erase: 'Smazat',
+      collapse: 'Sbalit panel nástrojů',
+      expand: 'Rozbalit panel nástrojů'
+    },
+    textHeight: {
+      title: 'Výška textu',
+      close: 'Zavřít',
+      ok: 'OK',
+      cancel: 'Zrušit',
+      adaptive: 'Přizpůsobit obrazovce',
+      custom: 'Vlastní výška textu',
+      customPlaceholder: 'Světová výška',
+      fromScreen: 'Ze velikosti na obrazovce',
+      fromScreenHint:
+        'Zadejte, jak velký má text vypadat na obrazovce při aktuálním zoomu. Přepočítá se na pevnou světovou výšku, která se při pozdějším zoomování nemění.',
+      screenPxPlaceholder: 'Velikost písma',
+      screenUnit: 'px',
+      convert: 'Přepočítat'
+    },
+    entityPick: {
+      cancel: 'Zrušit výběr'
     },
     layers: {
       title: 'Hladiny',
@@ -556,17 +908,59 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
         closed: 'Uzavřeno'
       }
     },
+    measurePanel: {
+      title: 'Měření',
+      close: 'Zavřít měření',
+      filterGroup: 'Filtrovat podle typu',
+      filterDistance: 'Vzdálenost',
+      filterArc: 'Oblouk',
+      filterRadius: 'Poloměr',
+      filterAngle: 'Úhel',
+      filterArea: 'Plocha',
+      empty: 'Zatím žádná měření',
+      type: 'Typ',
+      value: 'Hodnota',
+      delete: 'Odstranit',
+      clear: 'Vymazat vše'
+    },
+    session: {
+      length: 'Délka',
+      angle: 'Úhel',
+      dx: 'ΔX',
+      dy: 'ΔY',
+      x: 'X',
+      y: 'Y',
+      confirm: 'Potvrdit',
+      cancel: 'Zrušit',
+      help: 'Nápověda',
+      back: 'Zpět',
+      collapse: 'Sbalit',
+      expand: 'Rozbalit',
+      undo: 'Zpět'
+    },
+    touchPointTutorial: {
+      title: 'Jak přesně vybrat bod?',
+      description:
+        'Podržte prst na obrazovce asi 0,5 sekundy. Nad prstem se objeví kříž, který při pohybu sleduje prst a přichytává se k geometrii pro přesnější výběr.',
+      snoozeToday: 'Dnes už nepřipomínat',
+      hideForever: 'Už nepřipomínat',
+      ok: 'Rozumím'
+    },
     status: {
       ready: 'Připraveno',
       zoomWindowHint: 'Klikněte na dva rohy pro přiblížení oknem.',
       measureDistanceHint:
         'Klikněte na dva body pro změření vzdálenosti (uchopení objektů zapnuto).',
+      measureContinuousHint:
+        'Klepejte na další body pro měření každého úseku; dokončete klepnutím na ✓. Dlouhé stisknutí pro přesné uchopení.',
       measureAngleHint:
         'Klikněte na vrchol, poté na dva body na každém rameni (uchopení objektů zapnuto).',
       measureArcHint:
         'Klikněte na kružnici nebo oblouk pro měření podél něj, nebo klikněte na začátek, bod na oblouku a konec (uchopení objektů zapnuto). Ctrl (⌘ na Macu) přepíná velký/malý oblouk.',
+      measureRadiusHint:
+        'Klikněte na kružnici nebo oblouk pro změření poloměru (uchopení objektů zapnuto).',
       measureAreaHint:
-        'Klikejte na vrcholy mnohoúhelníku; dokončete kliknutím poblíž prvního bodu nebo stiskem Enter.',
+        'Klepejte na vrcholy mnohoúhelníku; dokončete klepnutím na ✓ po alespoň třech bodech.',
       measureCoordinateHint:
         'Klikněte na bod pro zobrazení jeho souřadnic X/Y (uchopení objektů zapnuto).',
       measureExported: 'Exportováno {count} měření.',
@@ -599,15 +993,39 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupImported: 'Importováno {count} poznámek.',
       markupImportFailed: 'Import poznámek selhal: {error}',
       distance: 'Vzdálenost: {value}',
-      coordinates: 'X: {x}  Y: {y}',
+      coordinates: 'X: {x} | Y: {y}',
       angle: 'Úhel: {value}',
-      arcLength: 'Délka oblouku: {value}',
+      arcLength:
+        'Délka oblouku: {length} | Poloměr: {radius} | Úhel: {angle} | Tětiva: {chord}',
+      radius: 'Poloměr: {value}',
+      continuousTotal: 'Celková délka: {value}',
       area: 'Plocha: {value}',
       lengthTotal: 'Celková délka: {value}',
       areaTotal: 'Celková plocha: {value}',
       zoomLayer: 'Zoom: {name}',
       loadFailed: 'Nepodařilo se načíst výkres: {error}',
-      noLayout: 'Snímek neobsahuje data rozvržení.'
+      noLayout: 'Snímek neobsahuje data rozvržení.',
+      loadingChunks: 'Načítání geometrie… {loaded}/{total}',
+      loadingOsnap: 'Načítání uchopování… {loaded}/{total}',
+      buildingOsnap: 'Sestavování indexu uchopování…'
+    },
+    package: {
+      title: 'Otevřít balíček výkresu',
+      hint: 'Vedle této stránky nebyl nalezen drawing.acex.json. Vyberte místní složku balíčku nebo zadejte URL manifestu.',
+      hintUrlOnly:
+        'Vedle této stránky nebyl nalezen drawing.acex.json. Zadejte URL manifestu pro otevření balíčku.',
+      chooseFolder: 'Vybrat místní složku',
+      urlPlaceholder: 'https://example.com/drawing.acex.json',
+      openUrl: 'Otevřít URL',
+      urlRequired: 'Zadejte URL manifestu.',
+      manifestNotFound: 'drawing.acex.json nebyl vedle této stránky nalezen.',
+      invalidManifest:
+        'Manifest balíčku je neplatný nebo používá nepodporovanou verzi: {error}',
+      folderMissingManifest:
+        'Vybraná složka musí obsahovat drawing.acex.json.',
+      folderUnsupported:
+        'Tento prohlížeč neumí otevřít místní složku balíčku. Zadejte místo toho URL manifestu.',
+      loadFailed: 'Nepodařilo se otevřít balíček: {error}'
     },
     access: {
       title: 'Chráněný výkres',
@@ -633,44 +1051,56 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       select: 'Seç',
       pan: 'Kaydır',
       zoom: 'Yakınlaştır',
-      zoomExtents: 'Sınırlara yakınlaştır',
-      zoomWindow: 'Pencere Yakınlaştır',
-      zoomOriginal: 'Orijinal görünüm',
-      measureDistance: 'Mesafe ölç',
-      measureAngle: 'Açı ölç',
-      measureArc: 'Yay uzunluğu ölç',
-      measureArea: 'Alan ölç',
-      measureCoordinate: 'Koordinat ölç',
-      clearMeasurements: 'Ölçümleri temizle',
-      measureHide: 'Ölçümleri gizle',
-      measureShow: 'Ölçümleri göster',
-      measureImport: 'Ölçümleri içe aktar',
-      measureExport: 'Ölçümleri dışa aktar',
+      zoomExtents: 'Sınırlar',
+      zoomSmartExtents: 'Akıllı',
+      zoomWindow: 'Pencere',
+      zoomSaved: 'Kayıtlı',
+      zoomOriginal: 'Kayıtlı',
+      measureDistance: 'Mesafe',
+      measureContinuous: 'Sürekli',
+      measureAngle: 'Açı',
+      measureArc: 'Yay',
+      measureRadius: 'Yarıçap',
+      measureArea: 'Alan',
+      measureCoordinate: 'XY',
+      clearMeasurements: 'Temizle',
+      measureHide: 'Gizle',
+      measureShow: 'Göster',
+      measureImport: 'İçe aktar',
+      measureExport: 'Dışa aktar',
+      measurementPanel: 'Sonuç',
       measure: 'Ölçüm',
       annotation: 'İnceleme',
       markupCloud: 'Bulut',
       markupCallout: 'Çağrı',
       markupText: 'Metin',
-      markupRect: 'Dikdörtgen',
+      markupRect: 'Dörtgen',
       markupCircle: 'Daire',
       markupArrow: 'Ok',
       markupStamp: 'Damga',
-      markupPanel: 'İnceleme',
-      markupHide: 'İşaretlemeleri gizle',
-      markupShow: 'İşaretlemeleri göster',
-      clearMarkups: 'İşaretlemeleri temizle',
-      markupImport: 'İşaretlemeleri içe aktar',
-      markupExport: 'İşaretlemeleri dışa aktar',
-      snap: 'Nesne Yakalama',
-      layers: 'Katmanlar',
+      markupPanel: 'Sonuç',
+      markupHide: 'Gizle',
+      markupShow: 'Göster',
+      clearMarkups: 'Temizle',
+      markupImport: 'İçe aktar',
+      markupExport: 'Dışa aktar',
+      snap: 'Yakalama',
+      layers: 'Katman',
       layout: 'Düzen',
+      settings: 'Ayarlar',
+      simulatedMouseOn: 'Fare',
+      simulatedMouseOff: 'Büyüteç',
+      themeLight: 'Açık',
+      themeDark: 'Koyu',
+      switchBg: 'Arka plan',
       language: 'Dil',
       localeEn: 'English',
       localeZh: '中文',
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
       collapse: 'Araç çubuğunu daralt',
-      expand: 'Araç çubuğunu genişlet'
+      expand: 'Araç çubuğunu genişlet',
+      moreOverflow: 'Diğer araçlar'
     },
     settings: {
       ortho: 'Dik modu aç/kapat',
@@ -679,8 +1109,41 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
     },
     drawStyle: {
       color: 'Renk',
-      lineWeight: 'Çizgi kalınlığı',
-      fontSize: 'Yazı yüksekliği'
+      fontSize: 'Yazı yüksekliği',
+      pickerTitle: 'Renk Seç',
+      close: 'Kapat',
+      ok: 'Tamam',
+      cancel: 'İptal',
+      index: 'Renk İndeksi: ',
+      rgb: 'RGB: ',
+      input: 'Renk',
+      inputPlaceholder: '1-255 veya #RRGGBB'
+    },
+    shortCutToolbar: {
+      more: 'Daha fazla',
+      undo: 'Geri al',
+      redo: 'Yinele',
+      erase: 'Sil',
+      collapse: 'Araç çubuğunu daralt',
+      expand: 'Araç çubuğunu genişlet'
+    },
+    textHeight: {
+      title: 'Yazı Yüksekliği',
+      close: 'Kapat',
+      ok: 'Tamam',
+      cancel: 'İptal',
+      adaptive: 'Ekrana uyarla',
+      custom: 'Özel yazı yüksekliği',
+      customPlaceholder: 'Dünya yüksekliği',
+      fromScreen: 'Ekran boyutundan',
+      fromScreenHint:
+        'Geçerli yakınlaştırmada ekranda istediğiniz yazı boyutunu girin. Sabit bir dünya yüksekliğine dönüştürülür; sonra yakınlaştırınca bu yükseklik değişmez.',
+      screenPxPlaceholder: 'Yazı boyutu',
+      screenUnit: 'px',
+      convert: 'Dönüştür'
+    },
+    entityPick: {
+      cancel: 'Seçimi iptal et'
     },
     layers: {
       title: 'Katmanlar',
@@ -712,17 +1175,59 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
         closed: 'Kapalı'
       }
     },
+    measurePanel: {
+      title: 'Ölçümler',
+      close: 'Ölçümleri kapat',
+      filterGroup: 'Türe göre filtrele',
+      filterDistance: 'Mesafe',
+      filterArc: 'Yay',
+      filterRadius: 'Yarıçap',
+      filterAngle: 'Açı',
+      filterArea: 'Alan',
+      empty: 'Henüz ölçüm yok',
+      type: 'Tür',
+      value: 'Değer',
+      delete: 'Sil',
+      clear: 'Tümünü temizle'
+    },
+    session: {
+      length: 'Uzunluk',
+      angle: 'Açı',
+      dx: 'ΔX',
+      dy: 'ΔY',
+      x: 'X',
+      y: 'Y',
+      confirm: 'Onayla',
+      cancel: 'İptal',
+      help: 'Yardım',
+      back: 'Geri',
+      collapse: 'Daralt',
+      expand: 'Genişlet',
+      undo: 'Geri al'
+    },
+    touchPointTutorial: {
+      title: 'Noktalar nasıl hassas seçilir?',
+      description:
+        'Ekranda yaklaşık 0,5 saniye basılı tutun. Parmağınızın üstünde bir artı belirir ve hareket ederken geometriye yapışarak daha doğru seçim yapmanızı sağlar.',
+      snoozeToday: 'Bugün tekrar hatırlatma',
+      hideForever: 'Bir daha hatırlatma',
+      ok: 'Anladım'
+    },
     status: {
       ready: 'Hazır',
       zoomWindowHint: 'Pencere yakınlaştırmak için iki köşeyi tıklayın.',
       measureDistanceHint:
         'Mesafe ölçmek için iki nokta tıklayın (nesne yakalama etkin).',
+      measureContinuousHint:
+        'Her segmenti ölçmek için ardışık noktalar dokunun; bitirmek için ✓. Hassas yakalama için basılı tutun.',
       measureAngleHint:
         'Önce köşe noktasını, sonra her koldan birer nokta tıklayın (nesne yakalama etkin).',
       measureArcHint:
         'Ölçmek için bir çember veya yaya tıklayın; ya da yay başlangıcı, yay üzerindeki bir nokta ve yay sonunu tıklayın (nesne yakalama etkin). Ctrl (Mac’te ⌘) büyük/küçük yay arasında geçiş yapar.',
+      measureRadiusHint:
+        'Yarıçap ölçmek için bir çember veya yaya tıklayın (nesne yakalama etkin).',
       measureAreaHint:
-        'Çokgen köşelerini tıklayın; bitirmek için ilk noktanın yakınına tıklayın veya Enter’a basın.',
+        'Çokgen köşelerini dokunun; en az üç noktadan sonra bitirmek için ✓.',
       measureCoordinateHint:
         'X/Y koordinatlarını okumak için bir nokta tıklayın (nesne yakalama etkin).',
       measureExported: '{count} ölçüm dışa aktarıldı.',
@@ -756,15 +1261,39 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       markupImported: '{count} işaretleme içe aktarıldı.',
       markupImportFailed: 'İşaretleme içe aktarılamadı: {error}',
       distance: 'Mesafe: {value}',
-      coordinates: 'X: {x}  Y: {y}',
+      coordinates: 'X: {x} | Y: {y}',
       angle: 'Açı: {value}',
-      arcLength: 'Yay uzunluğu: {value}',
+      arcLength:
+        'Yay uzunluğu: {length} | Yarıçap: {radius} | Açı: {angle} | Kiriş: {chord}',
+      radius: 'Yarıçap: {value}',
+      continuousTotal: 'Toplam uzunluk: {value}',
       area: 'Alan: {value}',
       lengthTotal: 'Toplam uzunluk: {value}',
       areaTotal: 'Toplam alan: {value}',
       zoomLayer: 'Yakınlaştır: {name}',
       loadFailed: 'Çizim yüklenemedi: {error}',
-      noLayout: 'Anlık görüntüde yerleşim verisi yok.'
+      noLayout: 'Anlık görüntüde yerleşim verisi yok.',
+      loadingChunks: 'Geometri yükleniyor… {loaded}/{total}',
+      loadingOsnap: 'Nesne yakalama yükleniyor… {loaded}/{total}',
+      buildingOsnap: 'Nesne yakalama dizini oluşturuluyor…'
+    },
+    package: {
+      title: 'Çizim paketini aç',
+      hint: 'Bu sayfanın yanında drawing.acex.json bulunamadı. Yerel bir paket klasörü seçin veya manifesto URL’sini girin.',
+      hintUrlOnly:
+        'Bu sayfanın yanında drawing.acex.json bulunamadı. Paketi açmak için manifesto URL’sini girin.',
+      chooseFolder: 'Yerel klasör seç',
+      urlPlaceholder: 'https://example.com/drawing.acex.json',
+      openUrl: 'URL aç',
+      urlRequired: 'Lütfen bir manifesto URL’si girin.',
+      manifestNotFound: 'Bu sayfanın yanında drawing.acex.json bulunamadı.',
+      invalidManifest:
+        'Paket manifestosu geçersiz veya desteklenmeyen bir sürüm kullanıyor: {error}',
+      folderMissingManifest:
+        'Seçilen klasör drawing.acex.json içermelidir.',
+      folderUnsupported:
+        'Bu tarayıcı yerel paket klasörü açamıyor. Bunun yerine manifesto URL’si yapıştırın.',
+      loadFailed: 'Paket açılamadı: {error}'
     },
     access: {
       title: 'Korumalı çizim',
@@ -792,37 +1321,48 @@ const AR_MESSAGES: AcExMessageTree = {
     'select': 'تحديد',
     'pan': 'تحريك',
     'zoom': 'تكبير/تصغير',
-    'zoomExtents': 'ملاءمة الرسم',
-    'zoomWindow': 'تكبير نافذة',
-    'zoomOriginal': 'العرض الأصلي',
-    'measureDistance': 'قياس المسافة',
-    'measureAngle': 'قياس الزاوية',
-    'measureArc': 'قياس طول القوس',
-    'measureArea': 'قياس المساحة',
-    'measureCoordinate': 'قياس الإحداثيات',
-    'clearMeasurements': 'مسح القياسات',
-    'measureHide': 'إخفاء القياسات',
-    'measureShow': 'إظهار القياسات',
-    'measureImport': 'استيراد القياسات',
-    'measureExport': 'تصدير القياسات',
-    'measure': 'القياس',
+    'zoomExtents': 'ملاءمة',
+    'zoomSmartExtents': 'ذكية',
+    'zoomWindow': 'نافذة',
+    'zoomSaved': 'محفوظ',
+    'zoomOriginal': 'محفوظ',
+    'measureDistance': 'مسافة',
+    'measureContinuous': 'مستمر',
+    'measureAngle': 'زاوية',
+    'measureArc': 'قوس',
+    'measureRadius': 'نصف القطر',
+    'measureArea': 'مساحة',
+    'measureCoordinate': 'إحداثيات',
+    'clearMeasurements': 'مسح',
+    'measureHide': 'إخفاء',
+    'measureShow': 'إظهار',
+    'measureImport': 'استيراد',
+    'measureExport': 'تصدير',
+    'measurementPanel': 'نتائج',
+    'measure': 'قياس',
     'annotation': 'مراجعة',
-    'markupCloud': 'سحابة مراجعة',
-    'markupCallout': 'تعليق توضيحي',
+    'markupCloud': 'سحابة',
+    'markupCallout': 'تعليق',
     'markupText': 'نص',
     'markupRect': 'مستطيل',
     'markupCircle': 'دائرة',
     'markupArrow': 'سهم',
     'markupStamp': 'ختم',
-    'markupPanel': 'مراجعة',
-    'markupHide': 'إخفاء الملاحظات',
-    'markupShow': 'إظهار الملاحظات',
-    'clearMarkups': 'مسح الملاحظات',
-    'markupImport': 'استيراد الملاحظات',
-    'markupExport': 'تصدير الملاحظات',
-    'snap': 'التقاط الكائنات',
-    'layers': 'الطبقات',
-    'layout': 'التخطيط',
+    'markupPanel': 'نتائج',
+    'markupHide': 'إخفاء',
+    'markupShow': 'إظهار',
+    'clearMarkups': 'مسح',
+    'markupImport': 'استيراد',
+    'markupExport': 'تصدير',
+    'snap': 'التقاط',
+    'layers': 'طبقات',
+    'layout': 'تخطيط',
+    'settings': 'إعدادات',
+    'simulatedMouseOn': 'ماوس',
+    'simulatedMouseOff': 'عدسة',
+    'themeLight': 'فاتح',
+    'themeDark': 'داكن',
+    'switchBg': 'خلفية',
     'language': 'اللغة',
     'localeEn': 'English',
     'localeZh': '中文',
@@ -830,7 +1370,8 @@ const AR_MESSAGES: AcExMessageTree = {
     'localeTr': 'Türkçe',
     'localeAr': 'العربية',
     'collapse': 'طي شريط الأدوات',
-    'expand': 'توسيع شريط الأدوات'
+    'expand': 'توسيع شريط الأدوات',
+    'moreOverflow': 'المزيد من الأدوات'
   },
   'settings': {
     'ortho': 'تبديل الوضع المتعامد',
@@ -839,8 +1380,30 @@ const AR_MESSAGES: AcExMessageTree = {
   },
   'drawStyle': {
     'color': 'اللون',
-    'lineWeight': 'سُمك الخط',
-    'fontSize': 'ارتفاع النص'
+    'fontSize': 'ارتفاع النص',
+    'pickerTitle': 'تحديد اللون',
+    'close': 'إغلاق',
+    'ok': 'موافق',
+    'cancel': 'إلغاء',
+    'index': 'فهرس اللون: ',
+    'rgb': 'RGB: ',
+    'input': 'اللون',
+    'inputPlaceholder': '1-255 أو #RRGGBB'
+  },
+  'textHeight': {
+    'title': 'ارتفاع النص',
+    'close': 'إغلاق',
+    'ok': 'موافق',
+    'cancel': 'إلغاء',
+    'adaptive': 'ملاءمة الشاشة',
+    'custom': 'ارتفاع نص مخصص',
+    'customPlaceholder': 'ارتفاع العالم',
+    'fromScreen': 'من حجم الشاشة',
+    'fromScreenHint':
+      'أدخل حجم النص المطلوب على الشاشة عند التكبير الحالي. يُحوَّل إلى ارتفاع ثابت في إحداثيات الرسم ويبقى كما هو عند تغيير التكبير لاحقًا.',
+    'screenPxPlaceholder': 'حجم الخط',
+    'screenUnit': 'px',
+    'convert': 'تحويل'
   },
   'layers': {
     'title': 'الطبقات',
@@ -872,13 +1435,53 @@ const AR_MESSAGES: AcExMessageTree = {
       'closed': 'مغلق'
     }
   },
+  'measurePanel': {
+    'title': 'القياسات',
+    'close': 'إغلاق القياسات',
+    'filterGroup': 'التصفية حسب النوع',
+    'filterDistance': 'مسافة',
+    'filterArc': 'قوس',
+    'filterRadius': 'نصف القطر',
+    'filterAngle': 'زاوية',
+    'filterArea': 'مساحة',
+    'empty': 'لا توجد قياسات حتى الآن',
+    'type': 'النوع',
+    'value': 'القيمة',
+    'delete': 'حذف',
+    'clear': 'مسح الكل'
+  },
+  'session': {
+    'length': 'الطول',
+    'angle': 'الزاوية',
+    'dx': 'ΔX',
+    'dy': 'ΔY',
+    'x': 'X',
+    'y': 'Y',
+    'confirm': 'تأكيد',
+    'cancel': 'إلغاء',
+    'help': 'مساعدة',
+    'back': 'رجوع',
+    'collapse': 'طي',
+    'expand': 'توسيع',
+    'undo': 'تراجع'
+  },
+  'touchPointTutorial': {
+    'title': 'كيف أختار النقاط بدقة؟',
+    'description':
+      'اضغط مطولاً على الشاشة لمدة نصف ثانية تقريباً. يظهر صليب فوق إصبعك ويتبعه أثناء الحركة ويلتقط إلى الهندسة لاختيار أدق.',
+    'snoozeToday': 'لا تذكرني اليوم',
+    'hideForever': 'لا تذكرني مرة أخرى',
+    'ok': 'فهمت'
+  },
   'status': {
     'ready': 'جاهز',
     'zoomWindowHint': 'انقر على ركنين لتحديد نافذة التكبير.',
     'measureDistanceHint': 'انقر على نقطتين لقياس المسافة (التقاط الكائنات مفعّل).',
+    'measureContinuousHint': 'انقر على نقاط متتالية لقياس كل قطعة؛ انقر ✓ للإنهاء. اضغط مطولاً للالتقاط الدقيق.',
     'measureAngleHint': 'انقر على رأس الزاوية، ثم نقطة على كل ضلع (التقاط الكائنات مفعّل).',
     'measureArcHint': 'انقر على دائرة أو قوس للقياس عليه، أو انقر على نقطة البداية ثم نقطة على القوس ثم نقطة النهاية (التقاط الكائنات مفعّل). استخدم Ctrl (⌘ على Mac) للتبديل بين القوس الأكبر والأصغر.',
-    'measureAreaHint': 'انقر على رؤوس المضلع؛ انقر بالقرب من النقطة الأولى أو اضغط Enter للإنهاء.',
+    'measureRadiusHint': 'انقر على دائرة أو قوس لقياس نصف القطر (التقاط الكائنات مفعّل).',
+    'measureAreaHint': 'انقر على رؤوس المضلع؛ انقر ✓ للإنهاء بعد ثلاث نقاط على الأقل.',
     'measureCoordinateHint': 'انقر على نقطة لقراءة إحداثيات X/Y الخاصة بها (التقاط الكائنات مفعّل).',
     'measureExported': 'تم تصدير {count} من القياسات.',
     'measureImported': 'تم استيراد {count} من القياسات.',
@@ -907,15 +1510,39 @@ const AR_MESSAGES: AcExMessageTree = {
     'markupImported': 'تم استيراد {count} من الملاحظات.',
     'markupImportFailed': 'فشل استيراد الملاحظات: {error}',
     'distance': 'المسافة: {value}',
-    'coordinates': 'X: {x}  Y: {y}',
+    'coordinates': 'X: {x} | Y: {y}',
     'angle': 'الزاوية: {value}',
-    'arcLength': 'طول القوس: {value}',
+    'arcLength':
+      'طول القوس: {length} | نصف القطر: {radius} | الزاوية: {angle} | الوتر: {chord}',
+    'radius': 'نصف القطر: {value}',
+    'continuousTotal': 'إجمالي الطول: {value}',
     'area': 'المساحة: {value}',
     'lengthTotal': 'إجمالي الطول: {value}',
     'areaTotal': 'إجمالي المساحة: {value}',
     'zoomLayer': 'تكبير: {name}',
     'loadFailed': 'فشل تحميل الرسم: {error}',
-    'noLayout': 'لا توجد بيانات تخطيط في اللقطة.'
+    'noLayout': 'لا توجد بيانات تخطيط في اللقطة.',
+    'loadingChunks': 'جاري تحميل الهندسة… {loaded}/{total}',
+    'loadingOsnap': 'جاري تحميل الالتقاط… {loaded}/{total}',
+    'buildingOsnap': 'جاري بناء فهرس الالتقاط…'
+  },
+  package: {
+    title: 'فتح حزمة الرسم',
+    hint: 'لم يتم العثور على drawing.acex.json بجانب هذه الصفحة. اختر مجلد الحزمة المحلي أو أدخل عنوان URL للقائمة.',
+    hintUrlOnly:
+      'لم يتم العثور على drawing.acex.json بجانب هذه الصفحة. أدخل عنوان URL للقائمة لفتح الحزمة.',
+    chooseFolder: 'اختيار مجلد محلي',
+    urlPlaceholder: 'https://example.com/drawing.acex.json',
+    openUrl: 'فتح الرابط',
+    urlRequired: 'يرجى إدخال عنوان URL للقائمة.',
+    manifestNotFound: 'لم يتم العثور على drawing.acex.json بجانب هذه الصفحة.',
+    invalidManifest:
+      'قائمة الحزمة غير صالحة أو تستخدم إصداراً غير مدعوم: {error}',
+    folderMissingManifest:
+      'يجب أن يحتوي المجلد المحدد على drawing.acex.json.',
+    folderUnsupported:
+      'لا يمكن لهذا المتصفح فتح مجلد حزمة محلي. الصق عنوان URL للقائمة بدلاً من ذلك.',
+    loadFailed: 'تعذر فتح الحزمة: {error}'
   },
   access: {
     title: 'رسم محمي',
@@ -1154,11 +1781,5 @@ export class AcExHtmlI18n {
 
     const badge = document.getElementById('mlcad-lang-badge')
     if (badge) badge.textContent = this.localeBadge
-
-    const langBtn = document.getElementById('mlcad-lang-btn')
-    if (langBtn) {
-      langBtn.setAttribute('title', this.t('toolbar.language'))
-      langBtn.setAttribute('aria-label', this.t('toolbar.language'))
-    }
   }
 }

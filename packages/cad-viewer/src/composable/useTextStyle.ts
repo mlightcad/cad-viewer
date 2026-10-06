@@ -533,9 +533,9 @@ export function useTextStyle(editor: AcApDocManager = AcApDocManager.instance) {
    * Refreshes the font catalog, style list, and selects the drawing's current
    * TEXTSTYLE (or the first available style).
    */
-  function openDialog() {
+  async function openDialog() {
     const db = getDatabase()
-    fontInfos.value = editor.avaiableFonts ?? []
+    fontInfos.value = (await editor.getAvaiableFonts()) ?? []
     refreshStyleList(db)
     const initial = db?.textstyle || styleNames.value[0] || ''
     selectStyle(initial)

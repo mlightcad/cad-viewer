@@ -13,6 +13,7 @@ import {
   COMPARE_ROLE_ADDED,
   COMPARE_ROLE_DELETED
 } from '../src/batch/highlight'
+import { RTE_REBASE_THRESHOLD } from '../src/draw/AcTrBatchDrawPolicy'
 import { buildLineGeometry } from '../src/object/AcTrLineGeometryBuilder'
 import { AcTrEntity } from '../src/object/AcTrEntity'
 import { AcTrLine } from '../src/object/AcTrLine'
@@ -22,7 +23,10 @@ import {
   HIGHLIGHT_HOVER_COLOR,
   HIGHLIGHT_SELECT_COLOR
 } from '../src/util/AcTrMaterialUtil'
-import { getObjectUserData } from '../src/util/AcTrObjectUserData'
+import {
+  getMaterialRuntimeUserData,
+  getObjectUserData
+} from '../src/util/AcTrObjectUserData'
 
 const defaultTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
 
@@ -127,6 +131,36 @@ describe('AcTrBatchedGroup slot-mask highlight', () => {
 
     const batchedLine = findBatchedLine(group)!
     expect(batchedLine._highlightState.selectedMask[0]).toBe(0)
+  })
+
+  it('gives each batch a private material clone so highlight masks cannot leak', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff })
+    const group = new AcTrBatchedGroup()
+    // Far-apart origins force two batch containers from the same style material.
+    appendIndexedLine(group, material, 'selected-line', 0)
+    appendIndexedLine(group, material, 'other-line', RTE_REBASE_THRESHOLD + 10)
+
+    group.select('selected-line')
+
+    const batches: AcTrBatchedLine[] = []
+    group.traverse(child => {
+      if (child instanceof AcTrBatchedLine) {
+        batches.push(child)
+      }
+    })
+    expect(batches.length).toBeGreaterThanOrEqual(2)
+
+    const selected = batches.find(b =>
+      b._highlightState.selectedMask.some(flag => flag === 1)
+    )
+    const other = batches.find(b => b !== selected)
+    expect(selected).toBeDefined()
+    expect(other).toBeDefined()
+    // Private clones: highlight uniforms live on the material, so siblings must
+    // not share one THREE.Material instance.
+    expect(selected!.material).not.toBe(other!.material)
+    expect(selected!.material).not.toBe(material)
+    expect(other!._highlightState.hasAnyHighlight()).toBe(false)
   })
 
   it('uploads large highlight masks as a 2D texture within GPU limits', () => {
@@ -256,6 +290,22 @@ describe('AcTrBatchedGroup slot-mask highlight', () => {
     group.unselect('unbatched-1')
     expect(clonedLine.material).toBe(material)
     expect(getObjectUserData(clonedLine).originalMaterial).toBeUndefined()
+  })
+
+  it('clears u_compareEnabled uniform when compare display is disabled', () => {
+    const group = new AcTrBatchedGroup()
+    group.addEntity(createBatchedLineEntity('line-1'))
+
+    group.setCompareDisplay({ enabled: true, baseColor: 0x000000 })
+    const batchedLine = findBatchedLine(group)!
+    const material = batchedLine.material as THREE.Material
+    const uniforms = getMaterialRuntimeUserData(material).batchHighlightUniforms!
+    expect(uniforms.u_compareEnabled.value).toBe(1)
+
+    group.setCompareDisplay({ enabled: false, overrides: [] })
+
+    expect(batchedLine._highlightState.compareEnabled).toBe(false)
+    expect(uniforms.u_compareEnabled.value).toBe(0)
   })
 
   it('replaces compare roles so leftover deleted masks do not linger', () => {

@@ -1,24 +1,51 @@
-import type { AcApContext } from '@mlightcad/cad-simple-viewer'
 import {
+  type AcApContext,
+  AcApDocManager,
+  AcApI18n,
+  AcEdCorsorType
+} from '@mlightcad/cad-simple-viewer'
+import {
+  AcCmColor,
+  type AcDbEntity,
   AcDbLine,
   AcDbPolyline,
+  AcDbText,
   AcGePoint2d,
   AcGePoint3d,
   log
 } from '@mlightcad/data-model'
 import * as pdfjsLib from 'pdfjs-dist'
-import type { PDFOperatorList } from 'pdfjs-dist/types/src/display/api'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+import {
+  allocatePdfFallbackLayerName,
+  collectPdfOcgLayers,
+  normalizeCadLayerKey,
+  pdfOperatorListHasOptionalContent,
+  type PdfOptionalContentConfigLike
+} from './pdfOptionalContent'
+import {
+  extractPdfImportSubpaths,
+  type PdfImportedText,
+  type PdfImportOps,
+  type PdfImportPoint
+} from './pdfVectorImport'
 
-/** 1 PDF point in mm (1 pt = 1/72 inch = 25.4/72 mm) */
-const PT_TO_MM = 25.4 / 72
+/**
+ * PDF.js worker shipped beside this module.
+ *
+ * Vite rewrites `new URL(..., import.meta.url)` and emits `pdf.worker.mjs`.
+ * App builds that rebundle this package pick that file up from the package
+ * `dist` and emit it into their own assets. PDF.js 5 rejects an empty
+ * `workerSrc`, and a `?url` import would keep the URL from the library build
+ * instead of the app chunk that actually loads it.
+ */
+const PDF_WORKER_URL = new URL(
+  '../node_modules/pdfjs-dist/build/pdf.worker.mjs',
+  import.meta.url
+)
+pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL.href
 
-/** Bezier approximation resolution (line segments per curve) */
-const BEZIER_STEPS = 8
-
-/** 2D point in PDF user space before conversion to model-space mm. */
-type Point2 = { x: number; y: number }
+type PdfVectorEntity = AcDbPolyline | AcDbLine | AcDbText
 
 /**
  * Converts a PDF file into CAD entities appended to the current document's
@@ -28,189 +55,208 @@ export class AcApPdfImportConvertor {
   /**
    * Prompts the user to pick a PDF file and imports vector geometry.
    *
+   * Returns without database edits when the picker is dismissed. The command
+   * undo mark then has no committed changes, so nothing is pushed onto the
+   * undo stack.
+   *
    * @param context - Application context for the target document
    */
-  importFromFilePicker(context: AcApContext) {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = '.pdf'
-    input.style.display = 'none'
-    document.body.appendChild(input)
-
-    input.addEventListener('change', async () => {
-      const file = input.files?.[0]
-      document.body.removeChild(input)
+  async importFromFilePicker(context: AcApContext): Promise<void> {
+    try {
+      const file = await this.pickPdfFile()
       if (!file) return
+
       const buffer = await file.arrayBuffer()
       await this.convert(context, buffer)
-    })
-
-    input.click()
+    } finally {
+      // Chrome drops an SVG data-URI cursor after the native file dialog.
+      restoreViewCursor(context)
+    }
   }
 
   /**
-   * Converts the first page of a PDF ArrayBuffer into CAD entities.
-   * @param context - Application context for the target document
-   * @param data - Raw PDF bytes
-   * @param pageNumber - 1-based page number (default: 1)
+   * Opens the browser file picker.
+   *
+   * Resolves `undefined` when the user cancels the picker. `cancel` does not
+   * fire for every dismiss path, so closing the dialog (window focus with no
+   * selected file) also settles the promise. Otherwise `ipdf` would stay
+   * inside its write transaction.
    */
+  private pickPdfFile(): Promise<File | undefined> {
+    return new Promise(resolve => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = '.pdf,application/pdf'
+      input.style.display = 'none'
+      document.body.appendChild(input)
+
+      let settled = false
+      let focusFallbackTimer: number | undefined
+
+      const finish = (file?: File) => {
+        if (settled) return
+        settled = true
+        window.removeEventListener('focus', onWindowFocus)
+        if (focusFallbackTimer !== undefined) {
+          clearTimeout(focusFallbackTimer)
+        }
+        input.remove()
+        resolve(file)
+      }
+
+      const onWindowFocus = () => {
+        // `change` can arrive just after focus. Wait before treating an empty
+        // selection as a cancel.
+        focusFallbackTimer = window.setTimeout(() => {
+          finish(input.files?.[0])
+        }, 500)
+      }
+
+      input.addEventListener('change', () => finish(input.files?.[0]), {
+        once: true
+      })
+      input.addEventListener('cancel', () => finish(), { once: true })
+      input.click()
+
+      // Attach after click so the focus event from opening the dialog is not
+      // treated as a dismiss.
+      window.setTimeout(() => {
+        if (!settled) {
+          window.addEventListener('focus', onWindowFocus)
+        }
+      }, 0)
+    })
+  }
+
   async convert(context: AcApContext, data: ArrayBuffer, pageNumber = 1) {
+    await AcApDocManager.instance.withBusyIndicator(
+      () => this.importPage(context, data, pageNumber),
+      AcApI18n.t('main.message.importingPdf')
+    )
+  }
+
+  private async importPage(
+    context: AcApContext,
+    data: ArrayBuffer,
+    pageNumber: number
+  ) {
     try {
       const pdf = await pdfjsLib.getDocument({ data }).promise
       const page = await pdf.getPage(pageNumber)
       const viewport = page.getViewport({ scale: 1 })
-      const pageHeight = viewport.height
 
       const operatorList = await page.getOperatorList()
-      const entities = this.extractEntities(operatorList, pageHeight)
+      const optionalContentConfig = (await pdf.getOptionalContentConfig({
+        intent: 'display'
+      })) as PdfOptionalContentConfigLike
+
+      const reservedLayerNames = databaseLayerNames(context)
+      const ocgLayers = collectPdfOcgLayers(
+        operatorList,
+        pdfjsLib.OPS.beginMarkedContentProps,
+        optionalContentConfig,
+        reservedLayerNames
+      )
+
+      // Preserve the pre-OCG flat-import behavior for PDFs without optional
+      // content. OCMD-only pages still count: their geometry uses the fallback
+      // layer instead of the current drawing layer.
+      const fallbackLayerName = pdfOperatorListHasOptionalContent(
+        operatorList,
+        pdfjsLib.OPS.beginMarkedContentProps
+      )
+        ? allocatePdfFallbackLayerName(
+            reservedLayerNames,
+            [...ocgLayers.values()].map(layer => layer.layerName)
+          )
+        : undefined
+
+      const { subpaths, texts } = extractPdfImportSubpaths(
+        operatorList,
+        pdfjsLib.OPS as unknown as PdfImportOps,
+        viewport,
+        ocgLayers,
+        fallbackLayerName
+      )
+      const entities: PdfVectorEntity[] = []
+      const usedLayerNames = new Set<string>()
+      for (const subpath of subpaths) {
+        if (subpath.layerName) {
+          usedLayerNames.add(subpath.layerName)
+        }
+        const entity = this.subpathToEntity(
+          subpath.points,
+          subpath.layerName,
+          subpath.color
+        )
+        if (entity) entities.push(entity)
+      }
+      for (const textRun of texts) {
+        if (textRun.layerName) {
+          usedLayerNames.add(textRun.layerName)
+        }
+        const entity = this.textToEntity(textRun)
+        if (entity) entities.push(entity)
+      }
 
       if (entities.length === 0) {
-        log.warn('[PdfImport] No vector paths found in PDF page.')
+        log.warn('[PdfImport] No vector geometry found in PDF page.')
         return
       }
 
-      const modelSpace = context.doc.database.tables.blockTable.modelSpace
+      const layerService = context.doc.layerService
+      const existed =
+        usedLayerNames.size > 0
+          ? layerService.createLayers([...usedLayerNames]).existed
+          : []
+      const existedKeys = new Set(existed.map(normalizeCadLayerKey))
 
+      for (const layerInfo of ocgLayers.values()) {
+        if (!usedLayerNames.has(layerInfo.layerName)) continue
+        if (existedKeys.has(normalizeCadLayerKey(layerInfo.layerName))) continue
+        if (layerInfo.visible) continue
+        layerService.setLayerOn(layerInfo.layerName, false)
+      }
+
+      const modelSpace = context.doc.database.tables.blockTable.modelSpace
       for (const entity of entities) {
         modelSpace.appendEntity(entity)
       }
 
-      log.info(`[PdfImport] Imported ${entities.length} entities from PDF.`)
+      log.info(
+        `[PdfImport] Imported ${entities.length} entities across ${usedLayerNames.size} CAD layer(s).`
+      )
     } catch (err) {
       log.error('[PdfImport] Failed to import PDF:', err)
+      throw err
     }
   }
 
-  private extractEntities(
-    opList: PDFOperatorList,
-    pageHeight: number
-  ): (AcDbPolyline | AcDbLine)[] {
-    const { OPS } = pdfjsLib
-    const { fnArray, argsArray } = opList
-    const result: (AcDbPolyline | AcDbLine)[] = []
-
-    let subpaths: Point2[][] = []
-    let current: Point2[] = []
-    let curX = 0
-    let curY = 0
-
-    const flush = () => {
-      if (current.length > 1) subpaths.push(current)
-      current = []
-    }
-
-    const commit = () => {
-      flush()
-      for (const sp of subpaths) {
-        const entity = this.subpathToEntity(sp)
-        if (entity) result.push(entity)
-      }
-      subpaths = []
-    }
-
-    const tx = (x: number, _y: number) => x * PT_TO_MM
-    const ty = (_x: number, y: number) => (pageHeight - y) * PT_TO_MM
-
-    for (let i = 0; i < fnArray.length; i++) {
-      const fn = fnArray[i]
-      const args = argsArray[i] as number[]
-
-      switch (fn) {
-        case OPS.moveTo: {
-          flush()
-          curX = args[0]
-          curY = args[1]
-          current = [{ x: tx(curX, curY), y: ty(curX, curY) }]
-          break
-        }
-        case OPS.lineTo: {
-          curX = args[0]
-          curY = args[1]
-          current.push({ x: tx(curX, curY), y: ty(curX, curY) })
-          break
-        }
-        case OPS.curveTo: {
-          const [x1, y1, x2, y2, x3, y3] = args
-          const pts = cubicBezier(
-            { x: curX, y: curY },
-            { x: x1, y: y1 },
-            { x: x2, y: y2 },
-            { x: x3, y: y3 },
-            BEZIER_STEPS
-          )
-          for (const p of pts) {
-            current.push({ x: tx(p.x, p.y), y: ty(p.x, p.y) })
-          }
-          curX = x3
-          curY = y3
-          break
-        }
-        case OPS.curveTo2: {
-          const [x2, y2, x3, y3] = args
-          const pts = cubicBezier(
-            { x: curX, y: curY },
-            { x: curX, y: curY },
-            { x: x2, y: y2 },
-            { x: x3, y: y3 },
-            BEZIER_STEPS
-          )
-          for (const p of pts) {
-            current.push({ x: tx(p.x, p.y), y: ty(p.x, p.y) })
-          }
-          curX = x3
-          curY = y3
-          break
-        }
-        case OPS.curveTo3: {
-          const [x1, y1, x3, y3] = args
-          const pts = cubicBezier(
-            { x: curX, y: curY },
-            { x: x1, y: y1 },
-            { x: x3, y: y3 },
-            { x: x3, y: y3 },
-            BEZIER_STEPS
-          )
-          for (const p of pts) {
-            current.push({ x: tx(p.x, p.y), y: ty(p.x, p.y) })
-          }
-          curX = x3
-          curY = y3
-          break
-        }
-        case OPS.closePath: {
-          if (current.length > 0 && subpaths.length === 0) {
-            current.push({ ...current[0] })
-          }
-          flush()
-          break
-        }
-        case OPS.stroke:
-        case OPS.fill:
-        case OPS.eoFill:
-        case OPS.fillStroke:
-        case OPS.eoFillStroke:
-        case OPS.endPath: {
-          commit()
-          break
-        }
-      }
-    }
-
-    commit()
-    return result
-  }
-
-  private subpathToEntity(pts: Point2[]): AcDbPolyline | AcDbLine | null {
+  private subpathToEntity(
+    pts: PdfImportPoint[],
+    layerName?: string,
+    color?: string
+  ): PdfVectorEntity | null {
     if (pts.length < 2) return null
 
     if (pts.length === 2) {
-      return new AcDbLine(
+      const line = new AcDbLine(
         new AcGePoint3d(pts[0].x, pts[0].y, 0),
         new AcGePoint3d(pts[1].x, pts[1].y, 0)
       )
+      if (layerName) {
+        line.layer = layerName
+      }
+      applyPdfColor(line, color)
+      return line
     }
 
     const poly = new AcDbPolyline()
+    if (layerName) {
+      poly.layer = layerName
+    }
+    applyPdfColor(poly, color)
+
     for (let i = 0; i < pts.length; i++) {
       poly.addVertexAt(i, new AcGePoint2d(pts[i].x, pts[i].y))
     }
@@ -219,46 +265,60 @@ export class AcApPdfImportConvertor {
     const last = pts[pts.length - 1]
     const dx = first.x - last.x
     const dy = first.y - last.y
+
     if (Math.sqrt(dx * dx + dy * dy) < 1e-6) {
       poly.closed = true
     }
 
     return poly
   }
+
+  private textToEntity(run: PdfImportedText): AcDbText | null {
+    if (!run.text || run.height <= 0) return null
+
+    const text = new AcDbText()
+    text.textString = run.text
+    text.position = new AcGePoint3d(run.position.x, run.position.y, 0)
+    text.height = run.height
+    text.rotation = run.rotation
+    if (Number.isFinite(run.widthFactor) && run.widthFactor > 0) {
+      text.widthFactor = run.widthFactor
+    }
+    if (run.layerName) {
+      text.layer = run.layerName
+    }
+    applyPdfColor(text, run.color)
+    return text
+  }
 }
 
-/**
- * Approximates a cubic Bézier curve as a polyline.
- *
- * @param p0 - Start point
- * @param p1 - First control point
- * @param p2 - Second control point
- * @param p3 - End point
- * @param steps - Number of line segments to generate
- * @returns Sampled points along the curve (excluding `p0`)
- */
-function cubicBezier(
-  p0: Point2,
-  p1: Point2,
-  p2: Point2,
-  p3: Point2,
-  steps: number
-): Point2[] {
-  const pts: Point2[] = []
-  for (let i = 1; i <= steps; i++) {
-    const t = i / steps
-    const mt = 1 - t
-    const x =
-      mt * mt * mt * p0.x +
-      3 * mt * mt * t * p1.x +
-      3 * mt * t * t * p2.x +
-      t * t * t * p3.x
-    const y =
-      mt * mt * mt * p0.y +
-      3 * mt * mt * t * p1.y +
-      3 * mt * t * t * p2.y +
-      t * t * t * p3.y
-    pts.push({ x, y })
+function applyPdfColor(entity: AcDbEntity, color?: string) {
+  if (!color) return
+  const match = /^#([0-9a-fA-F]{6})$/.exec(color)
+  if (!match) return
+  const value = Number.parseInt(match[1], 16)
+  entity.color = new AcCmColor().setRGB(
+    (value >> 16) & 255,
+    (value >> 8) & 255,
+    value & 255
+  )
+}
+
+function restoreViewCursor(context: AcApContext) {
+  const view = context.view
+  if (!view) return
+  const cursor = view.editor.currentCursor ?? AcEdCorsorType.Crosshair
+  const canvas = view.canvas
+  const apply = () => {
+    canvas.style.cursor = 'default'
+    view.editor.setCursor(cursor)
   }
-  return pts
+  apply()
+  window.requestAnimationFrame(apply)
+}
+
+function databaseLayerNames(context: AcApContext): string[] {
+  return [...context.doc.database.tables.layerTable.newIterator()].map(
+    layer => layer.name
+  )
 }

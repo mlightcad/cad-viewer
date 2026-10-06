@@ -6,6 +6,7 @@ import {
 } from '@mlightcad/data-model'
 
 import { AcEdBaseView } from '../../view'
+import { acedIsDynamicInputEnabled } from '../AcEdDynamicInput'
 
 /**
  * AcEdFloatingMessage
@@ -314,8 +315,7 @@ export class AcEdFloatingMessage {
   }
 
   protected isDynamicInputEnabled() {
-    const mode = this.getSysVarValue(AcDbSystemVariables.DYNMODE) as number
-    return mode !== 0
+    return acedIsDynamicInputEnabled()
   }
 
   protected isDynamicPromptEnabled() {

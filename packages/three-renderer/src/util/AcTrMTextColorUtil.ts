@@ -5,7 +5,8 @@ import {
   acgiForegroundColorForBackground,
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
-import { ColorSettings, MTextColor } from '@mlightcad/mtext-renderer'
+import { MTextColor } from '@mlightcad/mtext-parser'
+import { ColorSettings } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import { getMaterialMetadata } from '../style/AcTrMaterialMetadata'
@@ -27,16 +28,26 @@ export class AcTrMTextColorUtil {
    */
   static buildColorSettingsFromTraits(
     traits: AcGiSubEntityTraits,
-    backgroundColor: number = ACGI_PAPER_SPACE_BACKGROUND
+    backgroundColor: number = ACGI_PAPER_SPACE_BACKGROUND,
+    layerColor?: AcCmColor | null
   ): ColorSettings {
     const context = AcGiContext.fromBackgroundColor(backgroundColor)
     const color = this.normalizeEntityColor(traits.color)
     const resolvedRgb = context.resolveSubEntityTraitsRgb({ ...traits, color })
+    const layerRgb = layerColor
+      ? context.resolveSubEntityTraitsRgb({
+          ...traits,
+          color: this.normalizeEntityColor(layerColor)
+        })
+      : resolvedRgb
+    // Inline `\C0` is ByBlock. An entity with its own ACI is not that colour;
+    // model-space ByBlock displays as white unless the entity itself is ByBlock.
+    const byBlockColor = color.isByBlock ? resolvedRgb : 0xffffff
     return {
       layer: traits.layer,
       color: this.toMTextColor(color),
-      byLayerColor: resolvedRgb,
-      byBlockColor: resolvedRgb
+      byLayerColor: layerRgb,
+      byBlockColor
     }
   }
 
@@ -200,11 +211,16 @@ export class AcTrMTextColorUtil {
       // Reconstruct stashes per-glyph ACI. Preserve true inline `\C` overrides
       // (e.g. 90/255) while recovering baked entity ACI 7.
       const glyphAci = glyphColor?.aci
+      // Inline `\C256` is ByLayer (layer colour), not the entity ACI 7 colour.
+      // Rematerializing it with the entity foreground material turns green
+      // layer text white (e.g. FJP-898E-G on a green layer).
+      if (glyphAci === 256) {
+        return false
+      }
       if (
         typeof glyphAci === 'number' &&
         glyphAci !== 7 &&
-        glyphAci !== 0 &&
-        glyphAci !== 256
+        glyphAci !== 0
       ) {
         return false
       }
@@ -219,14 +235,16 @@ export class AcTrMTextColorUtil {
       }
 
       // Rematerialize ByLayer-bound materials that should follow entity ACI 7.
+      // Inline `\C256` (glyphAci === 256) returns early above and must keep
+      // the layer colour — do not paint it with the entity foreground.
       if (metadata.isByLayerColor === true) {
         return true
       }
-      // Glyph explicitly carries entity ACI 7 / ByLayer / ByBlock — recover it.
+      // Glyph explicitly carries entity ACI 7 / ByBlock — recover it.
+      // Do not treat ACI 256 as entity colour (that is layer colour).
       if (
         glyphAci === 7 ||
         glyphAci === 0 ||
-        glyphAci === 256 ||
         (glyphColor?.isRgb &&
           glyphColor.rgbValue ===
             acgiForegroundColorForBackground(

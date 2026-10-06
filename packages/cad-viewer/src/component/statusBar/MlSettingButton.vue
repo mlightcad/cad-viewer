@@ -11,16 +11,11 @@
             {{ t('main.statusBar.setting.stats') }}
           </el-dropdown-item>
           <el-dropdown-item
+            v-if="!isSmallViewport"
             :icon="features.isShowCommandLine ? Check : ''"
             command="isShowCommandLine"
           >
             {{ t('main.statusBar.setting.commandLine') }}
-          </el-dropdown-item>
-          <el-dropdown-item
-            :icon="features.isShowFileName ? Check : ''"
-            command="isShowFileName"
-          >
-            {{ t('main.statusBar.setting.fileName') }}
           </el-dropdown-item>
           <el-dropdown-item
             :icon="features.isShowEntityInfo ? Check : ''"
@@ -70,10 +65,11 @@ import {
 } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
-import { useSettings } from '../../composable'
+import { useIsMobile, useSettings } from '../../composable'
 
 const { t } = useI18n()
 const features = useSettings()
+const { isSmallViewport } = useIsMobile()
 
 const handleCommand = (command: keyof AcApSettings) => {
   if (command == 'isShowCoordinate') {
@@ -85,9 +81,6 @@ const handleCommand = (command: keyof AcApSettings) => {
   } else if (command == 'isShowEntityInfo') {
     features.isShowEntityInfo = !features.isShowEntityInfo
     AcApSettingManager.instance.isShowEntityInfo = features.isShowEntityInfo
-  } else if (command == 'isShowFileName') {
-    features.isShowFileName = !features.isShowFileName
-    AcApSettingManager.instance.isShowFileName = features.isShowFileName
   } else if (command == 'isShowRibbon') {
     features.isShowRibbon = !features.isShowRibbon
     AcApSettingManager.instance.isShowRibbon = features.isShowRibbon

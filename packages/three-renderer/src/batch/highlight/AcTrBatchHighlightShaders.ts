@@ -437,13 +437,26 @@ export function installBatchHighlightRenderer(
     material,
     group
   ) => {
-    previousOnBeforeRender?.(renderer, scene, camera, geometry, material, group)
-    if (
-      (!state.hasAnyHighlight() && !state.needsCompareUniforms()) ||
-      !material
-    ) {
+    // Preserve `this` binding: `object.onBeforeRender` may be inherited from
+    // the prototype (e.g. `LineSegments2`), so a bare call would lose the
+    // receiver and `this.material` inside the previous handler would be
+    // undefined.
+    previousOnBeforeRender?.call(
+      object,
+      renderer,
+      scene,
+      camera,
+      geometry,
+      material,
+      group
+    )
+    if (!material) {
       return
     }
+    // Always rebind this batch's mask. Style-manager materials are shared
+    // across batch containers; skipping when this batch has no highlight
+    // leaves the previous draw's mask in the shared uniforms so slot 0 of
+    // every later batch incorrectly draws as selected.
     bindBatchHighlightUniforms(material, state)
   }
 }

@@ -2,22 +2,44 @@ import type {
   AcDbDatabase,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
-import { AcTrHtmlGroup } from '@mlightcad/three-renderer'
+import {
+  type AcTrHtmlElement,
+  AcTrHtmlGroup} from '@mlightcad/three-renderer'
 
-import type { AcApMeasurementStyle } from '../../../util'
+import {
+  acapCloneMeasurementStyle,
+  acapMeasurementCanvasLineWidth,
+  type AcApMeasurementStyle
+} from '../../../util'
 import type { AcTrView2d } from '../../../view'
 import {
   AcApOverlayEntity,
   type AcApOverlaySerializable,
-  type AcApOverlayWorldDrawResult
+  type AcApOverlayWorldDrawResult,
+  acapSeedOverlaySizesFromWcs
 } from '../../overlay'
 import { hitTestMeasurementGeometry } from '../AcApMeasurementGeometry'
+import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import {
   type AcApMeasurementGroupExtras,
   commitMeasurementGroup,
   MEASUREMENT_LAYER
 } from '../AcApMeasurementStore'
-import type { AcApMeasurementRecord } from '../AcApMeasurementTypes'
+import type {
+  AcApMeasurementRecord,
+  AcApMeasurementSidecarStyle
+} from '../AcApMeasurementTypes'
+
+/**
+ * Unique overlay id for a measurement group.
+ *
+ * `Date.now()` alone collides when several distances are committed in the
+ * same millisecond (continuous measure). The HTML manager replaces groups
+ * with the same id, which drops earlier segments.
+ */
+export function newMeasureOverlayId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
 
 /**
  * Options shared by measurement entity constructors.
@@ -33,6 +55,12 @@ export interface AcApMeasureEntityOptions {
   layoutId?: string
   /** Visual style (color, line weight, font size) for CAD and HTML overlays. */
   style: AcApMeasurementStyle
+  /** World-space badge height from sidecar import (optional). */
+  textHeightWcs?: number
+  /** World-space stroke width from sidecar import (optional). */
+  strokeWidthWcs?: number
+  /** World-space arrow-head length from sidecar import (optional). */
+  arrowSizeWcs?: number
 }
 
 /**
@@ -71,6 +99,12 @@ export abstract class AcApMeasureEntity
   protected readonly entityId: string
   /** Optional layout override from construction options. */
   protected readonly layoutIdOption: string | undefined
+  /** Imported world-space badge height (sidecar). */
+  protected readonly textHeightWcs?: number
+  /** Imported world-space stroke width (sidecar). */
+  protected readonly strokeWidthWcs?: number
+  /** Imported world-space arrow-head length (sidecar). */
+  protected readonly arrowSizeWcs?: number
 
   /**
    * Creates a measure entity with the given id, layout, and style.
@@ -78,16 +112,25 @@ export abstract class AcApMeasureEntity
    * @param id - Stable measurement identifier
    * @param layoutId - Layout BTR id, or `undefined` to resolve from the view
    * @param style - Measurement visual style
+   * @param textHeightWcs - Optional imported world-space text height
+   * @param strokeWidthWcs - Optional imported world-space stroke width
+   * @param arrowSizeWcs - Optional imported world-space arrow-head length
    */
   constructor(
     id: string,
     layoutId: string | undefined,
-    style: AcApMeasurementStyle
+    style: AcApMeasurementStyle,
+    textHeightWcs?: number,
+    strokeWidthWcs?: number,
+    arrowSizeWcs?: number
   ) {
     super()
     this.entityId = id
     this.layoutIdOption = layoutId
     this.style = style
+    this.textHeightWcs = textHeightWcs
+    this.strokeWidthWcs = strokeWidthWcs
+    this.arrowSizeWcs = arrowSizeWcs
   }
 
   /**
@@ -103,12 +146,17 @@ export abstract class AcApMeasureEntity
    * Builds a serializable snapshot of this measurement.
    *
    * Geometry is taken from construction-time fields; `layoutId` may override
-   * the layout stored on the record.
+   * the layout stored on the record. When `view` is provided, style includes
+   * world-space text / stroke sizes for camera-independent import.
    *
    * @param layoutId - Optional layout BTR id written onto the record
+   * @param view - Optional view used to convert screen style to WCS
    * @returns Sidecar-ready measurement record
    */
-  abstract toRecord(layoutId?: string): AcApMeasurementRecord
+  abstract toRecord(
+    layoutId?: string,
+    view?: AcTrView2d
+  ): AcApMeasurementRecord
 
   /**
    * Hit-tests this measurement's geometry against a canvas point.
@@ -153,6 +201,8 @@ export abstract class AcApMeasureEntity
       ...drawn.extras,
       dispose: drawn.dispose
     })
+    // Bind after manager.add so pointer capture targets a published DOM node.
+    drawn.bindGrips?.()
   }
 
   /**
@@ -209,6 +259,54 @@ export abstract class AcApMeasureEntity
    */
   protected resolveLayoutId(view: AcTrView2d): string | undefined {
     return this.layoutIdOption ?? view.activeLayoutBtrId
+  }
+
+  /** Sidecar style including world-space sizes at the current view. */
+  protected serializeStyle(view?: AcTrView2d): AcApMeasurementSidecarStyle {
+    return serializeMeasurementStyle(this.style, view)
+  }
+
+  /**
+   * Live store style for a just-drawn measurement.
+   *
+   * Fit-to-screen may clamp the badge font below the session preference; the
+   * committed live style must match what was painted so later color-only
+   * paints do not restore the unclamped size.
+   */
+  protected committedLiveStyle(
+    badgeFontSize: number,
+    textHeightWcs?: number
+  ): AcApMeasurementStyle {
+    const style = acapCloneMeasurementStyle(this.style)
+    style.fontSize = badgeFontSize
+    if (textHeightWcs != null && textHeightWcs > 0) {
+      style.textHeightWcs = textHeightWcs
+    }
+    return style
+  }
+
+  /**
+   * Seeds world-space sizes onto HTML overlays and canvases before first paint.
+   *
+   * Prefers an explicit import {@link textHeightWcs}. Otherwise resolves from
+   * the live style: custom keeps the authored WCS height; Fit-to-screen bakes
+   * the current screen font size into WCS at commit time.
+   */
+  protected seedOverlaySizes(
+    view: AcTrView2d,
+    elements: readonly AcTrHtmlElement[],
+    canvases: readonly HTMLElement[] = []
+  ): void {
+    const sidecar = this.serializeStyle(view)
+    acapSeedOverlaySizesFromWcs(view, {
+      textHeightWcs: this.textHeightWcs ?? sidecar.textHeightWcs,
+      strokeWidthWcs: this.strokeWidthWcs,
+      arrowSizeWcs: this.arrowSizeWcs ?? sidecar.arrowSizeWcs,
+      fontSizePx: this.style.fontSize,
+      strokeScreenPx: acapMeasurementCanvasLineWidth(this.style.lineWeight),
+      elements,
+      canvases
+    })
   }
 }
 

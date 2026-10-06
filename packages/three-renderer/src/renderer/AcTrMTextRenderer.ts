@@ -1,3 +1,4 @@
+import { AcCmColor } from '@mlightcad/data-model'
 import {
   ColorSettings,
   createDefaultColorSettings,
@@ -30,10 +31,16 @@ class AcTrMTextStyleManager implements StyleManager {
       traits,
       this._styleManager.currentBackgroundColor
     )
+    const { layerColor, layerColorRgb } = this.resolveLayerSwatch(traits)
     // Route MText glyph fills through the dedicated helper so their
     // linework-tier `drawOrder` semantics stay explicit even though
     // they are rasterized as meshes.
-    return this._styleManager.getMTextFillMaterial(entityTraits)
+    return this._styleManager.getMTextFillMaterial(
+      entityTraits,
+      undefined,
+      layerColor,
+      layerColorRgb
+    )
   }
 
   getLineBasicMaterial(traits: ColorSettings): THREE.Material {
@@ -41,7 +48,37 @@ class AcTrMTextStyleManager implements StyleManager {
       traits,
       this._styleManager.currentBackgroundColor
     )
-    return this._styleManager.getLineMaterial(entityTraits, true)
+    const { layerColor, layerColorRgb } = this.resolveLayerSwatch(traits)
+    return this._styleManager.getLineMaterial(
+      entityTraits,
+      true,
+      undefined,
+      layerColor,
+      layerColorRgb
+    )
+  }
+
+  /**
+   * Inline `\C256` / entity ByLayer carry the resolved layer swatch on
+   * {@link ColorSettings.byLayerColor}. Pass it into material *creation*
+   * so ByLayer glyphs are not born white — never mutate a shared cached
+   * material after the fact (that recolours unrelated glyphs).
+   */
+  private resolveLayerSwatch(traits: ColorSettings): {
+    layerColor?: AcCmColor
+    layerColorRgb?: number
+  } {
+    if (traits.color.aci !== 256) {
+      return {}
+    }
+    const rgb = traits.byLayerColor
+    if (typeof rgb !== 'number') {
+      return {}
+    }
+    return {
+      layerColor: new AcCmColor().setRGBValue(rgb),
+      layerColorRgb: rgb
+    }
   }
 }
 
@@ -58,6 +95,11 @@ export class AcTrMTextRenderer {
   private _defaultFonts?: DefaultFontsPreset | string | readonly string[]
   private _lazyFontLoading?: boolean
   private _awaitFontsBeforeDraw?: boolean
+  /**
+   * Fonts successfully pushed into the active worker pool (or main renderer)
+   * via {@link loadFonts}. Cleared when the unified renderer is destroyed.
+   */
+  private _rendererLoadedFonts = new Set<string>()
 
   private constructor() {
     // Do nothing for now
@@ -95,7 +137,7 @@ export class AcTrMTextRenderer {
    */
   setFontUrl(value: string) {
     this._fontUrl = value
-    this.applyFontUrl()
+    void this.applyFontUrl()
   }
 
   /**
@@ -108,6 +150,13 @@ export class AcTrMTextRenderer {
       this._renderer.setDefaultMode(mode)
       this.applyFontUrl()
     }
+  }
+
+  /**
+   * Current MText render mode (`worker` by default until {@link setRenderMode}).
+   */
+  getRenderMode(): RenderMode {
+    return this._renderMode ?? 'worker'
   }
 
   /**
@@ -140,6 +189,69 @@ export class AcTrMTextRenderer {
     this._awaitFontsBeforeDraw = enabled
     FontManager.instance.awaitFontsBeforeDraw = enabled
     await this.applyAwaitFontsBeforeDraw()
+  }
+
+  /**
+   * Loads fonts into the active renderer (main thread and/or worker pool).
+   *
+   * Skips faces already synced into this renderer session so open-time
+   * preload (and later background fallback loads) do not re-parse large mesh
+   * fonts into every worker.
+   *
+   * Use for style faces and for fallback faces that
+   * {@link FontManager.awaitFontsBeforeDraw} only requests in the background —
+   * e.g. {@link FontManager.getFontsToLoad} — so glyph draw does not bake
+   * permanent '?' placeholders.
+   *
+   * @returns Names that were actually sent to the renderer this call.
+   */
+  async loadFonts(
+    fonts: readonly string[],
+    options?: { scope?: 'one' | 'all' }
+  ): Promise<string[]> {
+    this.ensureRendererCreated()
+    if (!this._renderer || fonts.length === 0) {
+      return []
+    }
+    const pending = fonts.filter(name => {
+      const key = normalizeRendererFontKey(name)
+      return !!key && !this._rendererLoadedFonts.has(key)
+    })
+    if (pending.length === 0) {
+      return []
+    }
+    await this._renderer.loadFonts(pending, options)
+    for (const name of pending) {
+      const key = normalizeRendererFontKey(name)
+      if (key) {
+        this._rendererLoadedFonts.add(key)
+      }
+    }
+    return pending
+  }
+
+  /**
+   * Fonts already synced into the active renderer via {@link loadFonts}.
+   * Useful for OPENPERF / diagnostics.
+   */
+  getRendererLoadedFontCount(): number {
+    return this._rendererLoadedFonts.size
+  }
+
+  /**
+   * Replaces session-scoped missed-font bookkeeping on the main thread and workers.
+   */
+  async replaceMissedFonts(fonts: Record<string, number>): Promise<void> {
+    if (this._renderer) {
+      await this._renderer.replaceMissedFonts(fonts)
+      return
+    }
+    FontManager.instance.replaceMissedFonts(fonts)
+  }
+
+  /** Clears session-scoped missed-font bookkeeping on the main thread and workers. */
+  async clearMissedFonts(): Promise<void> {
+    await this.replaceMissedFonts({})
   }
 
   /**
@@ -230,6 +342,7 @@ export class AcTrMTextRenderer {
       this._renderer.destroy()
       this._renderer = undefined
     }
+    this._rendererLoadedFonts.clear()
 
     const mode = this._renderMode ?? 'worker'
     const workerConfig = this._workerUrl ? { workerUrl: this._workerUrl } : {}
@@ -249,7 +362,7 @@ export class AcTrMTextRenderer {
       this._renderer.setDefaultMode(this._renderMode)
     }
 
-    this.applyFontUrl()
+    void this.applyFontUrl()
     void this.applyDefaultFonts()
     void this.applyLazyFontLoading()
     void this.applyAwaitFontsBeforeDraw()
@@ -292,6 +405,7 @@ export class AcTrMTextRenderer {
       this._renderer.destroy()
       this._renderer = undefined
     }
+    this._rendererLoadedFonts.clear()
     this._workerUrl = undefined
     this._renderMode = undefined
     this._defaultFonts = undefined
@@ -313,9 +427,9 @@ export class AcTrMTextRenderer {
     }
   }
 
-  private applyFontUrl() {
+  private async applyFontUrl() {
     if (this._renderer && this._fontUrl) {
-      this._renderer.setFontUrl(this._fontUrl)
+      await this._renderer.setFontUrl(this._fontUrl)
     }
   }
 
@@ -336,4 +450,18 @@ export class AcTrMTextRenderer {
       await this._renderer.setAwaitFontsBeforeDraw(this._awaitFontsBeforeDraw)
     }
   }
+}
+
+function normalizeRendererFontKey(fontName: string): string {
+  if (fontName == null) return ''
+  let name = String(fontName).trim()
+  if (!name) return ''
+  const dotIndex = name.lastIndexOf('.')
+  if (
+    dotIndex > 0 &&
+    (dotIndex === name.length - 4 || dotIndex === name.length - 5)
+  ) {
+    name = name.substring(0, dotIndex)
+  }
+  return name.toLowerCase()
 }

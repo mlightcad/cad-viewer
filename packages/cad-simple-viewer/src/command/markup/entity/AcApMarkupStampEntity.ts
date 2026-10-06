@@ -49,6 +49,7 @@ export class AcApMarkupStampEntity extends AcApMarkupEntity {
       layoutId
     })
     group.add(stamp)
+    this.seedOverlaySizes(view, [stamp], [])
 
     pendingGrips.push(() => {
       cleanups.push(

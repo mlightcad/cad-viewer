@@ -24,6 +24,7 @@ import type {
   AcApMarkupAttachedCallout,
   AcApMarkupRecord
 } from './AcApMarkupTypes'
+import { patchMarkupStyleWcs, withMarkupStyleWcs } from './AcApMarkupUtil'
 import { createMarkupEntityFromRecord } from './entity'
 
 // Re-export shape builders for commands / jigs that imported them from here.
@@ -260,7 +261,12 @@ export function markupFocusExtents(
     const rects = []
     for (const child of group.children) {
       const el = child.element
-      if (el.classList.contains('ml-html-dot')) continue
+      if (
+        el.classList.contains('ml-html-dot') ||
+        el.classList.contains('ml-html-grip')
+      ) {
+        continue
+      }
       const rect = el.getBoundingClientRect()
       if (rect.width <= 0 && rect.height <= 0) continue
       rects.push(rect)
@@ -303,8 +309,12 @@ export function commitMarkup(
   record: AcApMarkupRecord
 ): void {
   runMarkupEdit(view, 'Create Markup', () => {
-    getMarkupStore().upsert(record)
-    getMarkupPresenter().publish(view, record)
+    const enriched = {
+      ...record,
+      style: withMarkupStyleWcs(record.style, asView2d(view))
+    }
+    getMarkupStore().upsert(enriched)
+    getMarkupPresenter().publish(view, enriched)
   })
 }
 
@@ -341,13 +351,31 @@ export function attachCalloutToMarkup(
  */
 export function applyMarkupStyleToSelection(
   view: AcEdBaseView,
-  patch: Partial<AcApMarkupRecord['style']>
+  patch: Partial<
+    Pick<
+      AcApMarkupRecord['style'],
+      'color' | 'fontSize' | 'textHeightMode' | 'textHeightWcs'
+    >
+  >
 ): void {
   const store = getMarkupStore()
   const id = store.selectedId
   if (!id) return
   runMarkupEdit(view, 'Markup Style', () => {
+    const previous = store.get(id)
+    if (!previous) return
     const updated = store.updateStyle(id, patch)
-    if (updated) getMarkupPresenter().publish(view, updated)
+    if (!updated) return
+    const enriched = {
+      ...updated,
+      style: patchMarkupStyleWcs(
+        previous.style,
+        updated.style,
+        asView2d(view),
+        patch
+      )
+    }
+    store.upsert(enriched)
+    getMarkupPresenter().publish(view, enriched)
   })
 }

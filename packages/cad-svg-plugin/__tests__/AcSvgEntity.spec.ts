@@ -107,4 +107,84 @@ describe('AcSvgEntity transforms', () => {
       exported.indexOf('<g transform')
     )
   })
+
+  it('fastDeepClone keeps INSERT templates independent across applyMatrix', () => {
+    const child = new AcSvgLine(
+      [
+        { x: 0, y: 0, z: 0 },
+        { x: 5, y: 0, z: 0 }
+      ],
+      defaultTraits(),
+      ctx
+    )
+    const template = new AcSvgGroup([child])
+    const a = template.fastDeepClone()
+    const b = template.fastDeepClone()
+
+    a.applyMatrix(new AcGeMatrix3d().makeTranslation(100, 0, 0))
+    b.applyMatrix(new AcGeMatrix3d().makeTranslation(0, 200, 0))
+
+    expect(a).not.toBe(template)
+    expect(b).not.toBe(template)
+    expect(a).not.toBe(b)
+    expect(template.renderSvg()).not.toContain('matrix(')
+    expect(a.renderSvg()).toContain('100')
+    expect(a.renderSvg()).not.toContain('200')
+    expect(b.renderSvg()).toContain('200')
+    expect(b.renderSvg()).not.toContain('100')
+    expect(template.box.min.x).toBeCloseTo(0)
+    expect(a.box.min.x).toBeCloseTo(100)
+    expect(b.box.min.y).toBeCloseTo(200)
+  })
+
+  it('addChild keeps ATTRIBs under the INSERT group after inverse', () => {
+    const blockGeom = new AcSvgLine(
+      [
+        { x: 0, y: 0, z: 0 },
+        { x: 10, y: 0, z: 0 }
+      ],
+      defaultTraits(),
+      ctx
+    )
+    const group = new AcSvgGroup([blockGeom])
+    const attrib = new AcSvgLine(
+      [
+        { x: 50, y: 0, z: 0 },
+        { x: 60, y: 0, z: 0 }
+      ],
+      defaultTraits(),
+      ctx
+    )
+    // Cache path: ATTRIB is drawn in WCS, then inverse of INSERT is applied
+    // before addChild so it lives in block-local space.
+    attrib.applyMatrix(new AcGeMatrix3d().makeTranslation(-40, 0, 0))
+    group.addChild(attrib)
+    group.applyMatrix(new AcGeMatrix3d().makeTranslation(100, 0, 0))
+
+    expect(group.childCount).toBe(2)
+    const svg = group.renderSvg()
+    expect(svg).toContain('matrix(')
+    expect(svg).toContain('100')
+    // Nested child transform should still be present inside the group.
+    expect(svg).toContain('-40')
+    expect(group.box.min.x).toBeCloseTo(100)
+    expect(group.box.max.x).toBeCloseTo(120)
+  })
+
+  it('export prefers explicit roots over polluted internal entity list', () => {
+    const renderer = new AcSvgRenderer()
+    const template = renderer.lines([
+      { x: 0, y: 0, z: 0 },
+      { x: 1, y: 0, z: 0 }
+    ])
+    const placed = template.fastDeepClone()
+    placed.applyMatrix(new AcGeMatrix3d().makeTranslation(25, 0, 0))
+
+    const fromEntities = renderer.export()
+    expect(fromEntities).not.toContain('25')
+
+    const fromRoots = renderer.export([placed])
+    expect(fromRoots).toContain('25')
+    expect(fromRoots).toContain('matrix(')
+  })
 })

@@ -102,6 +102,11 @@ export class AcTrScene {
   private _htmlTransientManager: AcTrHtmlTransientManager
   /** Batched preview overlay manager */
   private _previewOverlayManager: AcTrPreviewOverlayManager
+  /**
+   * When true, layouts skip spatial-index registration during convert.
+   * Headless HTML/JPEG export sets this so pick indexes are not built.
+   */
+  private _skipSpatialIndex = false
 
   /**
    * Creates a new CAD scene instance.
@@ -117,6 +122,17 @@ export class AcTrScene {
     this._layouts = new Map()
     this._activeLayoutBtrId = ''
     this._modelSpaceBtrId = ''
+  }
+
+  get skipSpatialIndex() {
+    return this._skipSpatialIndex
+  }
+
+  set skipSpatialIndex(value: boolean) {
+    this._skipSpatialIndex = value
+    for (const layout of this._layouts.values()) {
+      layout.skipSpatialIndex = value
+    }
   }
 
   /**
@@ -278,6 +294,7 @@ export class AcTrScene {
     if (existing) return existing
 
     const layout = new AcTrLayout()
+    layout.skipSpatialIndex = this._skipSpatialIndex
     this._layouts.set(ownerId, layout)
     this._scene.add(layout.internalObject)
     layout.visible = ownerId == this._activeLayoutBtrId
@@ -439,6 +456,20 @@ export class AcTrScene {
         fn(sceneLayer, layout)
       }
     })
+  }
+
+  /**
+   * Applies ACI-7 / foreground colour to owned batch material clones across layouts.
+   */
+  repaintForegroundMaterials(color: number) {
+    this._layouts.forEach(layout => layout.repaintForegroundMaterials(color))
+  }
+
+  /**
+   * Updates wipeout / background-fill materials after a canvas theme flip.
+   */
+  repaintBackgroundMaterials(color: number) {
+    this._layouts.forEach(layout => layout.repaintBackgroundMaterials(color))
   }
 
   /**

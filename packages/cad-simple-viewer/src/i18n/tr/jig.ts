@@ -674,6 +674,10 @@ export default {
     firstPoint: 'İlk noktayı belirtin',
     secondPoint: 'İkinci noktayı belirtin'
   },
+  measureContinuous: {
+    firstPoint: 'İlk noktayı belirtin',
+    nextPoint: 'Sonraki noktayı belirtin (bitirmek için Enter\'a basın)'
+  },
   measurePoint: {
     point: 'Noktayı belirtin'
   },
@@ -766,6 +770,16 @@ export default {
   },
   mtext: {
     point: 'Çok satırlı metin ekleme noktasını belirtin'
+  },
+  bmpout: {
+    boundsFirstCorner: 'Sınırların ilk köşesini belirtin',
+    boundsSecondCorner: 'Karşı köşeyi belirtin',
+    longSidePrompt: 'Uzun kenar boyutunu piksel olarak girin'
+  },
+  jpgout: {
+    boundsFirstCorner: 'Sınırların ilk köşesini belirtin',
+    boundsSecondCorner: 'Karşı köşeyi belirtin',
+    longSidePrompt: 'Uzun kenar boyutunu piksel olarak girin'
   },
   pngout: {
     boundsFirstCorner: 'Sınırların ilk köşesini belirtin',
@@ -1194,6 +1208,21 @@ export default {
         local: 'Önceki',
         global: 'Previous'
       },
+      original: {
+        display: 'Orijinal(O)',
+        local: 'Orijinal',
+        global: 'Original'
+      },
+      saved: {
+        display: 'Kayıtlı(V)',
+        local: 'Kayıtlı',
+        global: 'Saved'
+      },
+      smart: {
+        display: 'Akıllı(I)',
+        local: 'Akıllı',
+        global: 'Smart'
+      },
       scale: {
         display: 'Ölçek(Ö)',
         local: 'Ölçek',
@@ -1207,11 +1236,22 @@ export default {
     }
   },
   chtml: {
+    exportFormat: 'Dışa aktarma biçimi',
     exportInvisibleLayers: 'Görünmez katmanları dışa aktar',
     exportLayouts: 'Yerleşimleri dışa aktar',
     initialView: 'HTML açılırken başlangıç görünümü',
     viewerMode: 'Çevrimdışı görüntüleyici modu',
     keywords: {
+      single: {
+        display: 'Tek dosya(S)',
+        local: 'Tek dosya',
+        global: 'Single'
+      },
+      multi: {
+        display: 'Çok dosyalı paket(M)',
+        local: 'Çok dosyalı paket',
+        global: 'Multi'
+      },
       yes: {
         display: 'Evet(E)',
         local: 'Evet',
@@ -1241,6 +1281,43 @@ export default {
         display: 'Ölçüm ve İnceleme(Ö)',
         local: 'Ölçüm ve İnceleme',
         global: 'Measure'
+      }
+    }
+  },
+  cpdf: {
+    modelSpaceFit: 'Model alanı çerçevesi',
+    exportLayouts: 'Yerleşimleri dışa aktar',
+    textMode: 'Metin işleme',
+    keywords: {
+      extents: {
+        display: 'Kapsam(K)',
+        local: 'Kapsam',
+        global: 'Extents'
+      },
+      display: {
+        display: 'Görüntü(G)',
+        local: 'Görüntü',
+        global: 'Display'
+      },
+      text: {
+        display: 'Metin(M)',
+        local: 'Metin',
+        global: 'Text'
+      },
+      vector: {
+        display: 'Vektör(V)',
+        local: 'Vektör',
+        global: 'Vector'
+      },
+      yes: {
+        display: 'Evet(E)',
+        local: 'Evet',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Hayır(H)',
+        local: 'Hayır',
+        global: 'No'
       }
     }
   }

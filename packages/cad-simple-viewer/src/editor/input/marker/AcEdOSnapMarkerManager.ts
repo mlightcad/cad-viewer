@@ -53,6 +53,10 @@ export class AcEdMarkerManager {
    * Replaces acquired-center plus marks. These stay visible independently of
    * the snap-marker stack so hovering a circle can show its center tick while
    * the cursor still snaps to nearest/quadrant on the circumference.
+   *
+   * Existing DOM nodes are reused when the set is unchanged or only grows or
+   * shrinks, so a pointer-move over many acquired centers does not thrash
+   * layout by destroying and recreating every tick.
    */
   public setHintMarkers(
     positions: readonly AcGePoint2dLike[],
@@ -60,11 +64,47 @@ export class AcEdMarkerManager {
     size?: number,
     color?: string
   ) {
-    this.clearHintMarkers()
-    this.hintPositions = positions.map(pos => ({ x: pos.x, y: pos.y }))
-    for (const pos of this.hintPositions) {
-      this.hintMarkers.push(this.createMarker(pos, type, size, color))
+    if (this.hintPositionsMatch(positions)) return
+
+    const next = positions.map(pos => ({ x: pos.x, y: pos.y }))
+    const reuse = Math.min(this.hintMarkers.length, next.length)
+    for (let i = 0; i < reuse; i++) {
+      this.hintMarkers[i]!.setPosition(this.toContainerPos(next[i]!))
     }
+    if (next.length < this.hintMarkers.length) {
+      for (let i = next.length; i < this.hintMarkers.length; i++) {
+        this.hintMarkers[i]!.destroy()
+      }
+      this.hintMarkers.length = next.length
+    } else {
+      for (let i = reuse; i < next.length; i++) {
+        this.hintMarkers.push(this.createMarker(next[i]!, type, size, color))
+      }
+    }
+    this.hintPositions = next
+  }
+
+  /**
+   * Shows a snap marker, or moves/retargets the existing top marker.
+   *
+   * Pointer-move osnap updates call this instead of hide+show so the DOM
+   * node is not rebuilt 60 times a second.
+   */
+  public showOrRepositionMarker(
+    pos: AcGePoint2dLike,
+    type?: AcEdMarkerType,
+    size?: number,
+    color?: string
+  ) {
+    const marker = this.top()
+    if (marker) {
+      if (type != null && marker.type !== type) {
+        marker.type = type
+      }
+      this.repositionTop(pos)
+      return marker
+    }
+    return this.showMarker(pos, type, size, color)
   }
 
   /**
@@ -136,6 +176,16 @@ export class AcEdMarkerManager {
   private toContainerPos(pos: AcGePoint2dLike) {
     const canvasPos = this.view.worldToScreen(pos)
     return this.view.canvasToContainer(canvasPos)
+  }
+
+  private hintPositionsMatch(positions: readonly AcGePoint2dLike[]): boolean {
+    if (positions.length !== this.hintPositions.length) return false
+    for (let i = 0; i < positions.length; i++) {
+      const next = positions[i]!
+      const prev = this.hintPositions[i]!
+      if (next.x !== prev.x || next.y !== prev.y) return false
+    }
+    return true
   }
 
   private clearHintMarkers() {

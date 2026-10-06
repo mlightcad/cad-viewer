@@ -11,6 +11,11 @@ export const commandAr = {
     markuppanel: {
       description:
         'فتح لوحة المراجعة'
+    },
+
+    measurementpanel: {
+      description:
+        'فتح لوحة قائمة القياسات'
     }
   }
 }

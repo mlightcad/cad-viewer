@@ -24,6 +24,8 @@ export default {
     lengthSection: 'الطول',
     lengthType: 'النوع:',
     lengthPrecision: 'الدقة:',
+    lengthUnit: 'الوحدة:',
+    lengthUnitFollowDrawing: 'اتبع الرسم',
 
     angleSection: 'الزاوية',
     angleType: 'النوع:',
@@ -93,8 +95,18 @@ export default {
   exportHtmlDlg: {
     ...enDialog.exportHtmlDlg,
     title: 'تصدير إلى HTML',
-    tabExport: 'تصدير',
+    tabData: 'البيانات',
+    tabDisplay: 'العرض',
     tabSecurity: 'الأمان',
+
+    exportFormat: 'تنسيق التصدير',
+    exportFormatSingle: 'HTML مستقل',
+    exportFormatSingleHint: 'ملف .html واحد يمكن فتحه دون اتصال',
+    exportFormatMulti: 'حزمة متعددة الملفات (ZIP)',
+    exportFormatMultiHint:
+      'يُنزّل zip؛ بعد فك الضغط والاستضافة يمكن التحميل التدريجي. كلمة المرور والصلاحية لـ HTML المستقل فقط',
+    securitySingleOnlyHint:
+      'كلمة المرور والصلاحية متاحتان فقط لتصدير HTML المستقل.',
 
     layersSection: 'الطبقات',
     exportInvisibleLayers: 'تصدير الطبقات غير المرئية',
@@ -146,6 +158,27 @@ export default {
     copyPassword: 'نسخ',
     copyPasswordSuccess: 'تم نسخ كلمة المرور إلى الحافظة.',
     copyPasswordFailed: 'تعذر نسخ كلمة المرور إلى الحافظة.'
+  },
+
+  exportPdfDlg: {
+    ...enDialog.exportPdfDlg,
+    title: 'تصدير إلى PDF',
+    modelSpaceSection: 'مساحة النموذج',
+    modelSpaceDisplay: 'العرض',
+    modelSpaceDisplayHint: 'تصدير المحتوى المعروض حاليًا في نافذة العرض',
+    modelSpaceExtents: 'الامتدادات',
+    modelSpaceExtentsHint: 'تصدير امتدادات جميع الكائنات في المساحة الحالية',
+    paperSpaceSection: 'مساحة الورق',
+    exportLayouts: 'تصدير المخططات',
+    exportLayoutsHint: 'تضمين مخططات مساحة الورق كصفحات PDF إضافية',
+    textModeSection: 'النص',
+    textMode: 'عرض النص',
+    textModeText: 'كائنات نصية',
+    textModeTextHint: 'يبقي النص قابلاً للتحديد/البحث ويصغر الملف (نص SHX يبقى متجهًا)',
+    textModeVector: 'مخططات متجهة',
+    textModeVectorHint: 'يحوّل النص إلى خطوط وتعبئة مطابقة للشاشة، لكن الملف أكبر',
+    yes: 'نعم',
+    no: 'لا'
   },
 
   quickSelectDlg: {

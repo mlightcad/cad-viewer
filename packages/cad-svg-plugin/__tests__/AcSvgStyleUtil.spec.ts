@@ -1,6 +1,7 @@
 import {
   AcCmColor,
   AcCmTransparency,
+  AcCmTransparencyMethod,
   AcGiLineWeight,
   AcGiSubEntityTraits
 } from '@mlightcad/data-model'
@@ -95,6 +96,46 @@ describe('AcSvgStyleUtil', () => {
     })
     expect(attrs['stroke-width']).toBe('0.13')
     expect(attrs['vector-effect']).toBeUndefined()
+  })
+
+  it('ignores ByLayer transparency alpha so dimension linework stays visible', () => {
+    const transparency = new AcCmTransparency()
+    ;(transparency as unknown as { _alpha: number })._alpha = 0
+    const attrs = AcSvgStyleUtil.strokeAttributes(
+      createTraits({ transparency }),
+      ctx
+    )
+    expect(transparency.isByAlpha).toBe(false)
+    expect(attrs['stroke-opacity']).toBeUndefined()
+  })
+
+  it('ignores ByAlpha clear (alpha 0) so dimension lines and arrows stay visible', () => {
+    const transparency = new AcCmTransparency()
+    transparency.method = AcCmTransparencyMethod.ByAlpha
+    transparency.alpha = 0
+    const stroke = AcSvgStyleUtil.strokeAttributes(
+      createTraits({ transparency }),
+      ctx
+    )
+    const fill = AcSvgStyleUtil.fillAttributes(
+      createTraits({ transparency }),
+      ctx
+    )
+    expect(transparency.isByAlpha).toBe(true)
+    expect(stroke['stroke-opacity']).toBeUndefined()
+    expect(fill['fill-opacity']).toBeUndefined()
+  })
+
+  it('maps ByAlpha transparency alpha 0-255 to SVG opacity 0-1', () => {
+    const transparency = new AcCmTransparency()
+    transparency.method = AcCmTransparencyMethod.ByAlpha
+    transparency.alpha = 128
+    const attrs = AcSvgStyleUtil.fillAttributes(
+      createTraits({ transparency }),
+      ctx
+    )
+    expect(transparency.isByAlpha).toBe(true)
+    expect(Number(attrs['fill-opacity'])).toBeCloseTo(128 / 255, 5)
   })
 
   it('builds stroke-dasharray from linetype pattern', () => {

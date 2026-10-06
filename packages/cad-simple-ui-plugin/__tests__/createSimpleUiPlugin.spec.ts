@@ -25,12 +25,12 @@ function createEventStub() {
 }
 
 jest.mock('@mlightcad/cad-simple-viewer', () => {
+  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
   const layout = jest.requireActual(
     '../../cad-simple-viewer/src/editor/global/AcEdUiLayout'
   ) as typeof import('../../cad-simple-viewer/src/editor/global/AcEdUiLayout')
 
-  return {
-    ...layout,
+  return createCadSimpleViewerMock({
     acedIsMobileUiLayout: () =>
       window.matchMedia?.(layout.ML_UI_MOBILE_MEDIA_QUERY).matches ?? false,
     acedIsCompactUiLayout: () =>
@@ -73,7 +73,12 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
       setCurrentLocale: jest.fn()
     },
     AcApPlugin: class {},
-    acapSetDrawStyleHostHasRibbon: jest.fn(),
+    AcApSettingManager: {
+      instance: {
+        set: jest.fn(),
+        clearSessionOverride: jest.fn()
+      }
+    },
     isMarkupVisible: () => true,
     isMeasurementVisible: () => true,
     AcEdCommand: class {},
@@ -95,6 +100,14 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
       Read: 0,
       Review: 4,
       Write: 8
+    },
+    acapBindToolbarDocState: (tb: { setDocState: (s: object) => void }) => {
+      tb.setDocState({
+        hasDocument: true,
+        isOpening: false,
+        openMode: 8
+      })
+      return () => undefined
     },
     AcEdUiTheme: {},
     acedApplyUiTheme: jest.fn(),
@@ -119,8 +132,16 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
     runMarkupEdit: (_view: unknown, _label: string, mutate: () => void) => {
       mutate()
     },
-    MARKUP_STATUSES: ['open', 'question', 'answered', 'closed']
-  }
+    MARKUP_STATUSES: ['open', 'question', 'answered', 'closed'],
+    listLayoutMeasurements: () => [],
+    getMeasurementValueText: () => '',
+    getSelectedMeasurementId: () => undefined,
+    subscribeMeasurements: () => () => undefined,
+    subscribeMeasurementSelection: () => () => undefined,
+    focusMeasurement: jest.fn(),
+    removeMeasurement: jest.fn(),
+    clearLayoutMeasurements: jest.fn()
+  })
 })
 
 jest.mock('@mlightcad/data-model', () => ({
@@ -573,6 +594,199 @@ describe('AcApSimpleUiPlugin', () => {
     expect(host.querySelector('.ml-ex-ui-dock-panel')).toBeNull()
   })
 
+  it('loads measurement UI in the dock panel and opens it from measurementpanel', async () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: [acuiToolbarPreset('measure')]
+      }
+    })
+
+    expect(mockCommands.has('SYSTEM:measurementpanel')).toBe(true)
+    expect(host.querySelector('.ml-ex-ui-dock-panel')).not.toBeNull()
+    expect(host.querySelector('.ml-ex-ui-measure-palette')).not.toBeNull()
+
+    const getActiveTabId = () =>
+      (
+        plugin as unknown as {
+          dockPanel?: { activeTab?: string }
+        }
+      ).dockPanel?.activeTab
+
+    expect(plugin.isDockPanelOpen()).toBe(false)
+
+    const cmd = mockCommands.get('SYSTEM:measurementpanel') as {
+      execute: (context: unknown) => Promise<void>
+    }
+    await cmd.execute({})
+
+    expect(plugin.isDockPanelOpen()).toBe(true)
+    expect(getActiveTabId()).toBe('measurements')
+    expect(host.querySelector('.ml-ex-ui-measure-palette')).not.toBeNull()
+  })
+
+  it('setToolbarItems dynamically adds the measurementpanel command', () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: [acuiToolbarPreset('select')]
+      }
+    })
+
+    expect(mockCommands.has('SYSTEM:measurementpanel')).toBe(false)
+
+    plugin.setToolbarItems([
+      acuiToolbarPreset('select'),
+      acuiToolbarPreset('measure')
+    ])
+    expect(mockCommands.has('SYSTEM:measurementpanel')).toBe(true)
+    expect(host.querySelector('.ml-ex-ui-dock-panel')).not.toBeNull()
+
+    plugin.setToolbarItems([acuiToolbarPreset('select')])
+    expect(mockCommands.has('SYSTEM:measurementpanel')).toBe(false)
+    expect(host.querySelector('.ml-ex-ui-dock-panel')).toBeNull()
+  })
+
+  it('closes open sub-toolbars when replaceOnNested is true and a dock panel opens', async () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: 'default',
+        subToolbar: { replaceOnNested: true }
+      }
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).not.toBeNull()
+
+    const cmd = mockCommands.get('SYSTEM:measurementpanel') as {
+      execute: (context: unknown) => Promise<void>
+    }
+    await cmd.execute({})
+
+    expect(plugin.isDockPanelOpen()).toBe(true)
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).toBeNull()
+  })
+
+  it('keeps open sub-toolbars when replaceOnNested is false and a dock panel opens', async () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: 'default',
+        subToolbar: { replaceOnNested: false }
+      }
+    })
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).not.toBeNull()
+
+    const cmd = mockCommands.get('SYSTEM:measurementpanel') as {
+      execute: (context: unknown) => Promise<void>
+    }
+    await cmd.execute({})
+
+    expect(plugin.isDockPanelOpen()).toBe(true)
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).not.toBeNull()
+  })
+
+  it('closes the dock panel when replaceOnNested is true and a sub-toolbar opens', async () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: 'default',
+        subToolbar: { replaceOnNested: true }
+      }
+    })
+
+    const cmd = mockCommands.get('SYSTEM:measurementpanel') as {
+      execute: (context: unknown) => Promise<void>
+    }
+    await cmd.execute({})
+    expect(plugin.isDockPanelOpen()).toBe(true)
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+    expect(plugin.isDockPanelOpen()).toBe(false)
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).not.toBeNull()
+  })
+
+  it('keeps the dock panel open when replaceOnNested is false and a sub-toolbar opens', async () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: 'default',
+        subToolbar: { replaceOnNested: false }
+      }
+    })
+
+    const cmd = mockCommands.get('SYSTEM:measurementpanel') as {
+      execute: (context: unknown) => Promise<void>
+    }
+    await cmd.execute({})
+    expect(plugin.isDockPanelOpen()).toBe(true)
+
+    host
+      .querySelector<HTMLButtonElement>('[data-toolbar-item-id="measure"]')
+      ?.click()
+    expect(plugin.isDockPanelOpen()).toBe(true)
+    expect(host.querySelector('.ml-ex-ui-subtoolbar')).not.toBeNull()
+  })
+
+  it('switches to phone default items when layout is phone and items were not overridden', () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: 'default',
+        appendItems: [{ id: 'agent', command: 'agent' }],
+        appendItemsAfter: 'layout'
+      }
+    })
+
+    expect(host.querySelector('[data-toolbar-item-id="select"]')).not.toBeNull()
+    expect(plugin.setLayout('phone')).toBe(true)
+    expect(plugin.getLayout()).toBe('phone')
+    expect(plugin.getToolbarPlacement()).toBe('bottom')
+    expect(host.querySelector('[data-toolbar-item-id="zoom"]')).not.toBeNull()
+    expect(host.querySelector('[data-toolbar-item-id="select"]')).toBeNull()
+    expect(host.querySelector('[data-toolbar-item-id="agent"]')).toBeNull()
+  })
+
+  it('keeps setToolbarItems across layout switches while still applying phone chrome', () => {
+    const { host } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: 'default'
+      }
+    })
+
+    plugin.setToolbarItems([
+      { id: 'custom', label: 'Custom', command: 'custom' }
+    ])
+    expect(host.querySelector('[data-toolbar-item-id="custom"]')).not.toBeNull()
+
+    expect(plugin.setLayout('phone')).toBe(true)
+    expect(plugin.getLayout()).toBe('phone')
+    expect(plugin.getToolbarPlacement()).toBe('bottom')
+    expect(plugin.getToolbarItems()).toEqual([
+      { id: 'custom', label: 'Custom', command: 'custom' }
+    ])
+    expect(host.querySelector('[data-toolbar-item-id="custom"]')).not.toBeNull()
+    expect(host.querySelector('[data-toolbar-item-id="zoom"]')).toBeNull()
+  })
+
   it('upgrades dock mount target from host fallback when the canvas parent becomes available', () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
@@ -603,5 +817,148 @@ describe('AcApSimpleUiPlugin', () => {
     expect(plugin.setDockPanelOpen(true)).toBe(true)
     expect(canvasParent.querySelector('.ml-ex-ui-dock-panel')).not.toBeNull()
     expect(host.querySelector(':scope > .ml-ex-ui-dock-panel')).toBeNull()
+  })
+
+  it('upgrades toolbar mount from host fallback to canvas parent when the view appears', () => {
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+
+    mockCurView.container = undefined
+    const { plugin } = loadPlugin({
+      host,
+      toolbar: {
+        items: [acuiToolbarPreset('select')]
+      }
+    })
+
+    expect(host.querySelector(':scope > .ml-ex-ui-toolbar')).not.toBeNull()
+    expect(plugin.isToolbarVisible()).toBe(true)
+
+    const canvasParent = document.createElement('div')
+    const canvas = document.createElement('div')
+    canvasParent.appendChild(canvas)
+    host.appendChild(canvasParent)
+    mockCurView.container = canvas
+
+    mockDocumentActivatedListeners.forEach(listener => {
+      listener({ doc: { database: new AcDbDatabase() } } as never)
+    })
+
+    expect(canvasParent.querySelector('.ml-ex-ui-toolbar')).not.toBeNull()
+    expect(host.querySelector(':scope > .ml-ex-ui-toolbar')).toBeNull()
+  })
+
+  it('places an in-canvas-parent toolbar as a sibling of the canvas slot', () => {
+    const { host, canvasParent, canvas } = createHostTree()
+    loadPlugin({
+      host,
+      layout: 'phone',
+      toolbar: {
+        inCanvasParent: true
+      },
+      layouts: {
+        phone: {
+          toolbar: {
+            items: [acuiToolbarPreset('select')],
+            inCanvasParent: true
+          }
+        }
+      }
+    })
+
+    const toolbar = canvasParent.querySelector('.ml-ex-ui-toolbar')
+    const main = canvasParent.querySelector('.ml-ex-ui-toolbar-main')
+    expect(toolbar).not.toBeNull()
+    expect(main).not.toBeNull()
+    expect(main?.contains(canvas)).toBe(true)
+    expect(toolbar?.classList.contains('is-in-parent')).toBe(true)
+    expect(toolbar?.classList.contains('is-bottom')).toBe(true)
+    expect(canvasParent.classList.contains('ml-ex-ui-toolbar-in-parent-bottom')).toBe(
+      true
+    )
+  })
+
+  it('keeps an in-canvas-parent toolbar inside dock-main on the canvas parent', () => {
+    const { host, canvasParent, canvas } = createHostTree()
+    loadPlugin({
+      host,
+      layout: 'phone',
+      toolbar: {
+        items: [acuiToolbarPreset('layer')],
+        inCanvasParent: true
+      }
+    })
+
+    const dockMain = canvasParent.querySelector('.ml-ex-ui-dock-main')
+    expect(dockMain).not.toBeNull()
+    expect(dockMain?.querySelector('.ml-ex-ui-toolbar-main')?.contains(canvas)).toBe(
+      true
+    )
+    expect(dockMain?.querySelector('.ml-ex-ui-toolbar')).not.toBeNull()
+    expect(canvasParent.querySelector(':scope > .ml-ex-ui-toolbar')).toBeNull()
+    expect(canvasParent.querySelector(':scope > .ml-ex-ui-dock-panel')).not.toBeNull()
+  })
+
+  it('restores overlay chrome when leaving phone in-canvas-parent layout', () => {
+    const { host, canvasParent, canvas } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      layout: 'phone',
+      layouts: {
+        phone: {
+          toolbar: {
+            items: [acuiToolbarPreset('select')],
+            inCanvasParent: true
+          }
+        }
+      }
+    })
+
+    expect(
+      canvasParent.querySelector('.ml-ex-ui-toolbar-main')?.contains(canvas)
+    ).toBe(true)
+
+    expect(plugin.setLayout('desktop')).toBe(true)
+
+    const toolbar = canvasParent.querySelector('.ml-ex-ui-toolbar')
+    expect(toolbar).not.toBeNull()
+    expect(toolbar?.isConnected).toBe(true)
+    expect(toolbar?.classList.contains('is-in-parent')).toBe(false)
+    expect(toolbar?.classList.contains('is-right')).toBe(true)
+    expect(canvasParent.querySelector('.ml-ex-ui-toolbar-main')).toBeNull()
+    expect(canvasParent.contains(canvas)).toBe(true)
+  })
+
+  it('restores overlay chrome inside dock-main after leaving in-canvas-parent', () => {
+    const { host, canvasParent, canvas } = createHostTree()
+    const { plugin } = loadPlugin({
+      host,
+      layout: 'phone',
+      toolbar: {
+        items: [acuiToolbarPreset('layer')]
+      },
+      layouts: {
+        phone: {
+          toolbar: {
+            inCanvasParent: true
+          }
+        }
+      }
+    })
+
+    expect(
+      canvasParent.querySelector('.ml-ex-ui-dock-main .ml-ex-ui-toolbar-main')
+        ?.contains(canvas)
+    ).toBe(true)
+
+    expect(plugin.setLayout('desktop')).toBe(true)
+
+    const dockMain = canvasParent.querySelector('.ml-ex-ui-dock-main')
+    const toolbar = dockMain?.querySelector('.ml-ex-ui-toolbar')
+    expect(toolbar).not.toBeNull()
+    expect(toolbar?.classList.contains('is-in-parent')).toBe(false)
+    expect(dockMain?.querySelector('.ml-ex-ui-toolbar-main')).toBeNull()
+    expect(dockMain?.contains(canvas)).toBe(true)
+    expect(canvasParent.querySelector(':scope > .ml-ex-ui-dock-panel')).not.toBeNull()
   })
 })

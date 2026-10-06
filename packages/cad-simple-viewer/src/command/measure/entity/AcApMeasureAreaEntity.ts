@@ -2,16 +2,27 @@ import type { AcDbDatabase, AcGePoint3dLike } from '@mlightcad/data-model'
 import {
   AcTrHtmlBadge,
   AcTrHtmlCanvasOverlay,
-  AcTrHtmlDot
+  AcTrHtmlGrip
 } from '@mlightcad/three-renderer'
 
 import {
+  acapAdaptiveMeasureBadgeFontSize,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
-  formatMeasurementLength} from '../../../util'
+  acapScreenAreaBadgeRefLengthPx,
+  formatMeasurementArea
+} from '../../../util'
 import type { AcTrView2d } from '../../../view'
-import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import {
+  acapBindOverlayPointerDrag,
+  acapPlaceOverlayHtml,
+  acapScreenPxToWcs,
+  acapSeedOverlaySizesFromWcs
+} from '../../overlay'
+import { runMeasurementEdit } from '../AcApMeasurementHistory'
+import { republishMeasurement } from '../AcApMeasurementRepublish'
+import {
+  getMeasurementSnapshot,
   getMeasurementStyle,
   MEASUREMENT_LAYER
 } from '../AcApMeasurementStore'
@@ -26,13 +37,16 @@ import {
   type AcApMeasureEntityOptions,
   type AcApMeasureWorldDrawResult
 } from './AcApMeasureEntity'
+import { selectMeasurementGroup } from './AcApMeasureEntityGrips'
+
+type Point2 = { x: number; y: number }
 
 /**
  * Area measurement overlay entity.
  *
  * Renders a filled canvas polygon, HTML dots at each vertex, and an area
- * badge at the vertex centroid. Requires at least three points for a full
- * draw; fewer points yield an empty group with empty extras.
+ * badge at the vertex centroid. Vertex grips update the measured value live
+ * and republish on commit.
  */
 export class AcApMeasureAreaEntity extends AcApMeasureEntity {
   /** Polygon vertices in world coordinates (closed implicitly when drawn). */
@@ -48,7 +62,9 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
     super(
       options.id ?? `area-${Date.now()}`,
       options.layoutId,
-      options.style
+      options.style,
+      options.textHeightWcs,
+      options.strokeWidthWcs
     )
     this.points = points
   }
@@ -88,14 +104,15 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
    * Serializes this area measurement to a store/sidecar record.
    *
    * @param layoutId - Optional layout BTR id written onto the record
+   * @param view - Optional view used to convert screen style to WCS
    * @returns Record with `type: 'area'` and polygon point geometry
    */
-  toRecord(layoutId?: string): AcApMeasurementRecord {
+  toRecord(layoutId?: string, view?: AcTrView2d): AcApMeasurementRecord {
     return {
       id: this.entityId,
       type: 'area',
       layoutId,
-      style: serializeMeasurementStyle(this.style),
+      style: this.serializeStyle(view),
       geometry: {
         type: 'area',
         points: this.points.map(p => ({ x: p.x, y: p.y }))
@@ -126,10 +143,10 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
         extras: {}
       }
     }
+    const live: Point2[] = this.points.map(p => ({ x: p.x, y: p.y }))
+    let area = measureShoelaceArea(live)
     const color = this.style.color
-    const area = measureShoelaceArea(this.points)
     const layoutId = this.resolveLayoutId(view)
-    const mid = measureCentroid(this.points)
 
     const persistOverlay = new AcTrHtmlCanvasOverlay({
       id: `area-canvas-${this.entityId}`,
@@ -137,11 +154,61 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
       layer: MEASUREMENT_LAYER,
       layoutId
     })
+    const label = formatMeasurementArea(db, area)
+    const importedTextHeight =
+      this.textHeightWcs != null && this.textHeightWcs > 0
+        ? this.textHeightWcs
+        : undefined
+    let badgeFontSize = this.style.fontSize
+    let textHeightWcs = importedTextHeight
+    if (importedTextHeight == null) {
+      if (
+        this.style.textHeightMode === 'custom' &&
+        this.style.textHeightWcs != null &&
+        this.style.textHeightWcs > 0
+      ) {
+        textHeightWcs = this.style.textHeightWcs
+      } else {
+        badgeFontSize = acapAdaptiveMeasureBadgeFontSize(
+          label,
+          this.style,
+          acapScreenAreaBadgeRefLengthPx(p => view.worldToScreen(p), live)
+        )
+        textHeightWcs = acapScreenPxToWcs(badgeFontSize, view)
+      }
+    }
+    const badge = new AcTrHtmlBadge({
+      id: `${this.entityId}-badge`,
+      color,
+      text: label,
+      worldPosition: measureCentroid(live),
+      layer: MEASUREMENT_LAYER,
+      fontSize: badgeFontSize
+    })
+    const dots = live.map(
+      (p, i) =>
+        new AcTrHtmlGrip({
+          id: `${this.entityId}-dot${i}`,
+          color,
+          worldPosition: p,
+          layer: MEASUREMENT_LAYER
+        })
+    )
+    const sidecar = this.serializeStyle(view)
+    acapSeedOverlaySizesFromWcs(view, {
+      textHeightWcs: textHeightWcs ?? sidecar.textHeightWcs,
+      strokeWidthWcs: this.strokeWidthWcs,
+      arrowSizeWcs: this.arrowSizeWcs ?? sidecar.arrowSizeWcs,
+      fontSizePx: badgeFontSize,
+      strokeScreenPx: acapMeasurementCanvasLineWidth(this.style.lineWeight),
+      elements: [badge, ...dots],
+      canvases: [persistOverlay.canvas]
+    })
     const paintArea = (paintStyle = this.style) =>
       drawMeasureAreaOnCanvas(
         persistOverlay.canvas,
         view,
-        this.points,
+        live,
         paintStyle.color,
         acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
       )
@@ -151,37 +218,109 @@ export class AcApMeasureAreaEntity extends AcApMeasureEntity {
     view.events.viewChanged.addEventListener(redrawPersist)
 
     const group = this.createGroup(view)
-      .add(
-        new AcTrHtmlBadge({
-          id: `${this.entityId}-badge`,
-          color,
-          text: `${formatMeasurementLength(db, area)}²`,
-          worldPosition: mid,
-          layer: MEASUREMENT_LAYER,
-          fontSize: this.style.fontSize
-        }),
-        ...this.points.map(
-          (p, i) =>
-            new AcTrHtmlDot({
-              id: `${this.entityId}-dot${i}`,
-              color,
-              worldPosition: p,
-              layer: MEASUREMENT_LAYER
-            })
-        )
-      )
+      .add(badge, ...dots)
       .addCanvas(persistOverlay)
+
+    const cleanups: Array<() => void> = [
+      () => view.events.viewChanged.removeEventListener(redrawPersist)
+    ]
+    const pendingGrips: Array<() => void> = []
+    let dragStart = live.map(p => ({ ...p }))
+
+    const refreshLive = () => {
+      area = measureShoelaceArea(live)
+      badge.setText(formatMeasurementArea(db, area))
+      acapPlaceOverlayHtml(view, badge, measureCentroid(live))
+      paintArea(getMeasurementStyle(this.entityId) ?? this.style)
+      view.isHtmlDirty = true
+    }
+
+    const beginEndpointDrag = () => {
+      selectMeasurementGroup(view, this.entityId)
+      dragStart = live.map(p => ({ ...p }))
+    }
+
+    const commitEndpoints = () => {
+      let delta = 0
+      for (let i = 0; i < live.length; i++) {
+        delta += Math.hypot(
+          live[i].x - dragStart[i].x,
+          live[i].y - dragStart[i].y
+        )
+      }
+      if (delta < 1e-9) {
+        refreshLive()
+        return
+      }
+      const snap = getMeasurementSnapshot(this.entityId)
+      const geometry: AcApMeasurementRecord['geometry'] = {
+        type: 'area',
+        points: live.map(p => ({ x: p.x, y: p.y }))
+      }
+      const record: AcApMeasurementRecord = snap
+        ? { ...snap, geometry }
+        : {
+            id: this.entityId,
+            type: 'area',
+            layoutId,
+            style: this.serializeStyle(view),
+            geometry
+          }
+      runMeasurementEdit(view, 'Move Area', () => {
+        republishMeasurement(view, db, record)
+      })
+    }
+
+    pendingGrips.push(() => {
+      for (let i = 0; i < dots.length; i++) {
+        const index = i
+        const dot = dots[index]
+        cleanups.push(
+          acapBindOverlayPointerDrag({
+            view,
+            el: dot.element,
+            onDragStart: beginEndpointDrag,
+            onMove: point => {
+              live[index] = point
+              acapPlaceOverlayHtml(view, dot, point)
+              refreshLive()
+            },
+            onCommit: commitEndpoints
+          })
+        )
+      }
+    })
 
     return {
       group,
       entityIds: [],
       dispose: () => {
-        view.events.viewChanged.removeEventListener(redrawPersist)
+        for (const fn of cleanups) {
+          try {
+            fn()
+          } catch {
+            // ignore
+          }
+        }
+      },
+      bindGrips: () => {
+        for (const bind of pendingGrips) bind()
       },
       extras: {
-        style: this.style,
+        style: this.committedLiveStyle(badgeFontSize, textHeightWcs),
         value: { kind: 'area', value: area },
-        snapshot: this.toRecord(layoutId),
+        snapshot: (() => {
+          const snapshot = this.toRecord(layoutId, view)
+          if (
+            importedTextHeight == null &&
+            textHeightWcs != null &&
+            textHeightWcs > 0
+          ) {
+            snapshot.style.fontSize = badgeFontSize
+            snapshot.style.textHeightWcs = textHeightWcs
+          }
+          return snapshot
+        })(),
         redraw: paintArea
       }
     }

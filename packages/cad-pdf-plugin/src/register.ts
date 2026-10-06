@@ -6,10 +6,12 @@ export const PDF_PLUGIN_NAME = 'PdfPlugin'
 /**
  * Trigger commands handled by {@link PDF_PLUGIN_NAME}.
  *
- * - `cpdf` — export drawing to PDF
+ * - `-cpdf` — export drawing to PDF via command-line prompts
+ * - `cpdf` — same as `-cpdf` when no UI dialog is registered; in cad-viewer,
+ *   `cpdf` opens the export dialog and loads this plugin on confirm via `-cpdf`
  * - `ipdf` — import vector geometry from PDF
  */
-export const PDF_PLUGIN_TRIGGERS = ['cpdf', 'ipdf'] as const
+export const PDF_PLUGIN_TRIGGERS = ['-cpdf', 'cpdf', 'ipdf'] as const
 
 /**
  * Registers the PDF plugin for lazy loading.
@@ -19,13 +21,21 @@ export const PDF_PLUGIN_TRIGGERS = ['cpdf', 'ipdf'] as const
  *
  * @param pluginManager - Plugin manager that receives the lazy registration
  */
-export function registerLazyPdfPlugin(pluginManager: AcApPluginManager): void {
+export function registerLazyPdfPlugin(
+  pluginManager: AcApPluginManager,
+  options: { disableExport?: boolean } = {}
+): void {
+  const disableExport = options.disableExport === true
+  const triggers = disableExport
+    ? (['ipdf'] as const)
+    : [...PDF_PLUGIN_TRIGGERS]
+
   pluginManager.registerLazyPlugin({
     name: PDF_PLUGIN_NAME,
-    triggers: [...PDF_PLUGIN_TRIGGERS],
+    triggers: [...triggers],
     loader: async () => {
       const { createPdfPlugin } = await import('@mlightcad/cad-pdf-plugin')
-      return createPdfPlugin()
+      return createPdfPlugin({ disableExport })
     }
   })
 }

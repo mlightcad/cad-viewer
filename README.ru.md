@@ -12,7 +12,7 @@ cad-viewer — `первый в мире веб-просмотрщик и ред
 
 - [**🌐 Домашняя страница**](https://mlightcad.com/)
 - **🌐 Живая демонстрация**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 Документация API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (с версиями) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (последняя/dev) · [MCP-сервер](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 Документация API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (с версиями) · [MCP-сервер](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -41,6 +41,14 @@ cad-viewer — `первый в мире веб-просмотрщик и ред
 - [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — исходный пакет Arch Linux с системным Electron (~5.4 MB)
 - [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — бинарный пакет Arch Linux со встроенными шрифтами/шаблонами для полностью офлайн открытия чертежей
 
+### Демо-приложения (Demo Apps)
+
+Официальные примеры, показывающие, как встроить cad-viewer в собственный продукт:
+
+- [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — Минимальный vanilla TypeScript-хост для [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer): открытие локальных или CDN DXF/DWG, команды через компактную панель инструментов и ленивая загрузка плагинов экспорта HTML/PDF/SVG без полного Vue UI.
+- [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — Полнофункциональное Vue 3-приложение на [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) с меню, лентами, диалогами, командной строкой и строкой состояния ([живая демонстрация](https://mlightcad.github.io/cad-viewer-example/)).
+- [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js-демо «CAD-диск»: возобновляемая chunk-загрузка DWG/DXF, список файлов в SQLite с превью и открытие чертежей через **живой разбор в браузере** (`cad-simple-viewer`) или **серверный ACEX-пререндер** (быстрее открытие, меньше памяти).
+
 ![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
 
 ## Возможности
@@ -50,6 +58,7 @@ cad-viewer — `первый в мире веб-просмотрщик и ред
 - **Повышенная безопасность данных** — файлы никогда не покидают ваше устройство, обеспечивая полную конфиденциальность
 - **Простая интеграция** — не требуется настройка сервера или серверной инфраструктуры
 - Модульная архитектура для бесшовной интеграции со сторонними системами
+- **Мобильная вёрстка и сенсорное управление** — адаптивный UI для телефона/планшета и жесты (щипок для масштаба, панорамирование одним пальцем, касание для выбора) встроены в `@mlightcad/cad-simple-viewer`, отдельное мобильное приложение не требуется
 - **Экспорт в офлайн HTML** — экспорт текущего чертежа в один самодостаточный `.html`-файл со встроенным просмотрщиком (панорамирование/масштаб, масштаб по границам, слои, измерение расстояний, интерфейс EN/ZH). Открывается офлайн в любом браузере; экземпляр cad-viewer или бэкенд не требуются.
 - Рабочие процессы офлайн- и онлайн-редактирования
 - Движки 3D-рендеринга THREE.js с продвинутыми техниками оптимизации
@@ -111,6 +120,8 @@ pnpm preview:simple
 ```
 
 ## Как пользоваться
+
+Впервые пользуетесь CAD Viewer? В **[руководстве пользователя](https://mlightcad.com/cad-viewer/docs/)** вы найдёте пошаговые инструкции по интерфейсу просмотрщика, операциям на компьютере и сенсорном экране, а также по инструментам пометок и измерений.
 
 ### Операции в настольном браузере
 - **Выделение**: левый клик по объектам
@@ -422,7 +433,7 @@ CAD-Viewer спроектирован для **исключительной пр
 
 * [ ] ⏳ Интеграция с Google Drive
 * [ ] Просмотрщик для WeChat Mini Program
-* [ ] Поддержка мобильного браузера (только чтение)
+* [x] Поддержка мобильного браузера (адаптивная вёрстка и сенсорное управление)
 
 ### Документация и сообщество
 

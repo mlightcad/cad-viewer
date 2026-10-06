@@ -183,7 +183,10 @@ function ensureInitialized(): void {
   AcApDocManager.instance.events.documentActivated.addEventListener(() => {
     xrefOverlays.clear()
     imageData.clear()
+    fontMapping.clear()
     syncFromCurrentView()
+    // Refresh notification center (font-missed) for the newly active document.
+    eventBus.emit('missed-data-changed', {})
   })
 
   eventBus.on('font-not-found', () => {

@@ -4,7 +4,7 @@ import {
   type AcExHtmlI18n,
   type AcExHtmlLocale
 } from './AcExHtmlI18n'
-import { acExHtmlIcons, acExToolbarButton } from './AcExHtmlIcons'
+import { AcExHtmlIcons, acexToolbarButton } from './AcExHtmlIcons'
 import type { AcExMeasureController } from './AcExMeasurement'
 import type { AcExTrackingOptions } from './AcExMeasureTracking'
 
@@ -144,14 +144,6 @@ function savePersistedSettings(state: AcExMeasureSettingsState): void {
   }
 }
 
-/**
- * First-level language picker. The parent icon is the selected locale badge,
- * matching cad-simple-ui-plugin `childIcon: 'selected'`.
- */
-export function buildAcExLanguageToolbarButton(): string {
-  return '<button type="button" class="mlcad-tool-btn has-children" id="mlcad-lang-btn" aria-haspopup="true" aria-expanded="false" data-children-ui="toolbar" data-i18n-key="toolbar.language" data-i18n-attr="title aria-label" title="Language" aria-label="Language"><span class="mlcad-locale-option-badge" id="mlcad-lang-badge">EN</span></button>'
-}
-
 const LOCALE_LABEL_KEYS: Record<
   AcExHtmlLocale,
   'toolbar.localeEn' | 'toolbar.localeZh' | 'toolbar.localeCs' | 'toolbar.localeTr' | 'toolbar.localeAr'
@@ -179,7 +171,7 @@ export function buildAcExHtmlLocaleStrip(): string {
     const label = LOCALE_FALLBACK_LABELS[locale]
     const key = LOCALE_LABEL_KEYS[locale]
     const badge = ACEX_HTML_LOCALE_BADGES[locale]
-    return `<button type="button" class="mlcad-tool-btn mlcad-locale-option" data-locale="${locale}" data-i18n-key="${key}" data-i18n-attr="title aria-label" title="${label}" aria-label="${label}"><span class="mlcad-locale-option-badge">${badge}</span></button>`
+    return `<button type="button" class="mlcad-tool-btn mlcad-locale-option" data-locale="${locale}" data-i18n-key="${key}" data-i18n-attr="title aria-label" title="${label}" aria-label="${label}"><span class="mlcad-tool-btn-icon" aria-hidden="true"><span class="mlcad-locale-option-badge">${badge}</span></span><span class="mlcad-tool-btn-label" data-i18n-key="${key}" data-i18n-text>${label}</span></button>`
   }).join('')
 
   return `<div id="mlcad-locale-strip-wrap" hidden>
@@ -190,33 +182,41 @@ export function buildAcExHtmlLocaleStrip(): string {
 }
 
 /**
- * Builds the object-snap strip (ortho + polar) inserted beside the toolbar.
+ * Builds the polar-angle panel used by measure settings (opened from the snap
+ * sticky sub-toolbar).
  */
-export function buildAcExHtmlSnapStrip(): string {
+export function buildAcExHtmlPolarAnglesPanel(): string {
   const polarAngleButtons = ACEX_POLAR_ANGLE_INCREMENTS.map(
     angle =>
       `<button type="button" class="mlcad-tool-btn mlcad-settings-option-btn mlcad-polar-angle-btn" data-polar-ang="${angle}" title="${angle}°" aria-label="${angle}°"><span class="mlcad-settings-option-indicator" aria-hidden="true"></span><span class="mlcad-settings-option-text">${angle}°</span></button>`
   ).join('')
 
-  return `
-      <div id="mlcad-snap-strip-wrap" hidden>
+  return `<div id="mlcad-polar-angles" role="group" data-i18n-attr="aria-label" data-i18n-key="settings.polarAngles" aria-label="Polar tracking angles" hidden>
+          ${polarAngleButtons}
+        </div>`
+}
+
+/**
+ * @deprecated Snap tools now live under AcUiToolbar settings. Prefer
+ * {@link buildAcExHtmlPolarAnglesPanel}.
+ */
+export function buildAcExHtmlSnapStrip(): string {
+  return `<div id="mlcad-snap-strip-wrap" hidden>
         <div id="mlcad-snap-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.snap" aria-label="Object snap">
-          ${acExToolbarButton(acExHtmlIcons.orthoMode, 'Orthogonal mode', {
+          ${acexToolbarButton(AcExHtmlIcons.orthoMode, 'Orthogonal mode', {
             id: 'mlcad-ortho-btn',
             'data-toggle': 'ortho',
             'data-i18n-key': 'settings.ortho',
             'data-i18n-attr': 'title aria-label'
           })}
-          ${acExToolbarButton(acExHtmlIcons.polarTracking, 'Polar tracking', {
+          ${acexToolbarButton(AcExHtmlIcons.polarTracking, 'Polar tracking', {
             id: 'mlcad-polar-btn',
             'data-toggle': 'polar',
             'data-i18n-key': 'settings.polar',
             'data-i18n-attr': 'title aria-label'
           })}
         </div>
-        <div id="mlcad-polar-angles" role="group" data-i18n-attr="aria-label" data-i18n-key="settings.polarAngles" aria-label="Polar tracking angles" hidden>
-          ${polarAngleButtons}
-        </div>
+        ${buildAcExHtmlPolarAnglesPanel()}
       </div>`
 }
 
@@ -228,14 +228,25 @@ export interface AcExHtmlMeasureSettingsController {
   getTrackingOptions(): AcExTrackingOptions
   /** Reapplies i18n labels after locale change. */
   refreshLabels: () => void
-  /** Closes the polar-angle panel (the snap strip is owned by the flyout). */
+  /** Closes the polar-angle panel. */
   close: () => void
+  /** Toggles orthogonal mode (closes the polar panel). */
+  toggleOrtho: () => void
+  /** Whether orthogonal mode is enabled. */
+  isOrtho: () => boolean
+  /**
+   * Toggles the polar-angle panel. Returns whether the panel is open afterwards.
+   */
+  togglePolarPanel: () => boolean
+  /** Whether the polar-angle panel is currently open. */
+  isPolarPanelOpen: () => boolean
 }
 
 /**
- * Wires ortho and polar tracking controls in the object-snap strip.
- * Strip open/close is owned by {@link setupAcExHtmlToolbarFlyouts}.
- * Drawing color / line weight / font size live on the canvas draw-style toolbar.
+ * Wires ortho / polar tracking state and the polar-angle panel.
+ *
+ * Ortho / polar toggles are driven by {@link AcUiToolbar} (or legacy strip
+ * buttons when present). Drawing color / font size live on the session panel.
  */
 export function setupAcExHtmlMeasureSettings(
   ctx: AcExHtmlMeasureSettingsContext
@@ -267,6 +278,17 @@ export function setupAcExHtmlMeasureSettings(
       'active',
       polarPanelOpen || (state.polar && !state.ortho)
     )
+    document
+      .querySelectorAll<HTMLElement>('[data-toolbar-item-id="ortho"]')
+      .forEach(btn => btn.classList.toggle('is-toggled', state.ortho))
+    document
+      .querySelectorAll<HTMLElement>('[data-toolbar-item-id="polar"]')
+      .forEach(btn =>
+        btn.classList.toggle(
+          'is-toggled',
+          polarPanelOpen || (state.polar && !state.ortho)
+        )
+      )
   }
 
   const isPolarAngleSelected = (angle: number): boolean => {
@@ -332,23 +354,33 @@ export function setupAcExHtmlMeasureSettings(
     persist()
   }
 
-  syncMeasureColor()
-  syncTrackingButtons()
-  syncPolarAngleButtons()
-
-  orthoBtn?.addEventListener('click', event => {
-    event.stopPropagation()
+  const toggleOrtho = () => {
     setPolarPanelOpen(false)
     if (state.ortho) {
       disableOrtho()
     } else {
       enableOrtho()
     }
+  }
+
+  const togglePolarPanel = (): boolean => {
+    const nextOpen = polarPanel?.hidden !== false
+    setPolarPanelOpen(nextOpen)
+    return nextOpen
+  }
+
+  syncMeasureColor()
+  syncTrackingButtons()
+  syncPolarAngleButtons()
+
+  orthoBtn?.addEventListener('click', event => {
+    event.stopPropagation()
+    toggleOrtho()
   })
 
   polarBtn?.addEventListener('click', event => {
     event.stopPropagation()
-    setPolarPanelOpen(polarPanel?.hidden !== false)
+    togglePolarPanel()
   })
 
   document
@@ -389,6 +421,10 @@ export function setupAcExHtmlMeasureSettings(
       }
     },
     refreshLabels,
-    close: () => setPolarPanelOpen(false)
+    close: () => setPolarPanelOpen(false),
+    toggleOrtho,
+    isOrtho: () => state.ortho,
+    togglePolarPanel,
+    isPolarPanelOpen: () => (polarPanel ? !polarPanel.hidden : false)
   }
 }

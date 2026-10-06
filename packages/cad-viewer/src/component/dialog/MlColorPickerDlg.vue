@@ -2,7 +2,7 @@
   <ml-base-dialog
     v-model:modelValue="visible"
     :title="title"
-    :width="500"
+    :width="360"
     @ok="handleOk"
     @cancel="handleCancel"
   >

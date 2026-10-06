@@ -13,6 +13,8 @@ export default {
     lengthSection: 'Uzunluk',
     lengthType: 'Tür:',
     lengthPrecision: 'Hassasiyet:',
+    lengthUnit: 'Birim:',
+    lengthUnitFollowDrawing: 'Çizimi takip et',
     angleSection: 'Açı',
     angleType: 'Tür:',
     anglePrecision: 'Hassasiyet:',
@@ -69,8 +71,17 @@ export default {
   },
   exportHtmlDlg: {
     title: 'HTML Olarak Dışa Aktar',
-    tabExport: 'Dışa Aktar',
+    tabData: 'Veri',
+    tabDisplay: 'Görünüm',
     tabSecurity: 'Güvenlik',
+    exportFormat: 'Dışa aktarma biçimi',
+    exportFormatSingle: 'Tek dosyalı HTML',
+    exportFormatSingleHint: 'Çevrimdışı açılabilen tek .html dosyası',
+    exportFormatMulti: 'Çok dosyalı paket (ZIP)',
+    exportFormatMultiHint:
+      'Bir zip indirir; açıp barındırınca aşamalı yükleme yapılır. Parola ve süre yalnızca tek dosyalı HTML için geçerlidir',
+    securitySingleOnlyHint:
+      'Parola ve geçerlilik yalnızca tek dosyalı HTML dışa aktarımında kullanılabilir.',
     layersSection: 'Katmanlar',
     exportInvisibleLayers: 'Görünmez katmanları dışa aktar',
     exportInvisibleLayersHint:
@@ -112,6 +123,29 @@ export default {
     copyPassword: 'Kopyala',
     copyPasswordSuccess: 'Parola panoya kopyalandı.',
     copyPasswordFailed: 'Parola panoya kopyalanamadı.'
+  },
+  exportPdfDlg: {
+    title: 'PDF\'e Dışa Aktar',
+    modelSpaceSection: 'Model alanı',
+    modelSpaceDisplay: 'Görüntü',
+    modelSpaceDisplayHint: 'Görünüm alanında şu an gösterilen içeriği dışa aktar',
+    modelSpaceExtents: 'Kapsam',
+    modelSpaceExtentsHint:
+      'Geçerli alandaki tüm nesnelerin kapsamını dışa aktar',
+    paperSpaceSection: 'Kağıt alanı',
+    exportLayouts: 'Yerleşimleri dışa aktar',
+    exportLayoutsHint:
+      'Kağıt alanı yerleşimlerini ek PDF sayfaları olarak dahil et',
+    textModeSection: 'Metin',
+    textMode: 'Metin işleme',
+    textModeText: 'Metin nesneleri',
+    textModeTextHint:
+      'Metni seçilebilir/aranabilir tutar ve dosyayı küçültür (SHX metin vektör kalır)',
+    textModeVector: 'Vektör konturlar',
+    textModeVectorHint:
+      'Metni çizgi ve dolguya dönüştürür, ekrana uygun, ancak dosya daha büyük',
+    yes: 'Evet',
+    no: 'Hayır'
   },
   quickSelectDlg: {
     title: 'Hızlı Seçim',

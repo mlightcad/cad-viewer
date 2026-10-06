@@ -487,10 +487,26 @@ function onPropertyChange(row: MlDisplayPropertyRow, newValue: unknown) {
 
 .ml-entity-properties {
   padding: 5px;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .ml-entity-properties-table {
   width: 100%;
+  max-width: 100%;
+}
+
+.ml-entity-properties-table ::v-deep(.el-scrollbar__wrap) {
+  overflow-x: hidden;
+}
+
+.ml-entity-properties-table ::v-deep(.el-scrollbar__bar.is-horizontal) {
+  display: none;
 }
 
 .ml-cell-container {

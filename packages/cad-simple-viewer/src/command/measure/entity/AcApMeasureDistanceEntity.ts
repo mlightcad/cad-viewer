@@ -2,16 +2,28 @@ import {
   type AcDbDatabase,
   type AcGePoint3dLike
 } from '@mlightcad/data-model'
-import { AcTrHtmlBadge, AcTrHtmlCanvasOverlay, AcTrHtmlDot } from '@mlightcad/three-renderer'
+import { AcTrHtmlBadge, AcTrHtmlCanvasOverlay, AcTrHtmlGrip } from '@mlightcad/three-renderer'
 
 import {
+  acapAdaptiveMeasureBadgeFontSize,
   acapMeasurementCanvasLineWidth,
   type AcApMeasurementStyle,
+  acapScaleMeasureOverlayPx,
+  acapScreenSegmentLengthPx,
   formatMeasurementLength
 } from '../../../util'
 import type { AcTrView2d } from '../../../view'
-import { serializeMeasurementStyle } from '../AcApMeasurementSidecar'
 import {
+  ACAP_OVERLAY_ARROW_SIZE_PX,
+  acapBindOverlayPointerDrag,
+  acapPlaceOverlayHtml,
+  acapScreenPxToWcs,
+  acapSeedOverlaySizesFromWcs
+} from '../../overlay'
+import { runMeasurementEdit } from '../AcApMeasurementHistory'
+import { republishMeasurement } from '../AcApMeasurementRepublish'
+import {
+  getMeasurementSnapshot,
   getMeasurementStyle,
   MEASUREMENT_LAYER
 } from '../AcApMeasurementStore'
@@ -20,8 +32,9 @@ import { drawMeasureSegmentOnCanvas } from './AcApMeasureDrawUtil'
 import {
   AcApMeasureEntity,
   type AcApMeasureEntityOptions,
-  type AcApMeasureWorldDrawResult
-} from './AcApMeasureEntity'
+  type AcApMeasureWorldDrawResult,
+  newMeasureOverlayId} from './AcApMeasureEntity'
+import { selectMeasurementGroup } from './AcApMeasureEntityGrips'
 
 /**
  * Euclidean distance between two points in the XY plane (Z ignored).
@@ -30,7 +43,7 @@ import {
  * @param p2 - Second endpoint
  * @returns Distance `√((Δx)² + (Δy)²)`
  */
-function calcDist(p1: AcGePoint3dLike, p2: AcGePoint3dLike): number {
+function calcDist(p1: { x: number; y: number }, p2: { x: number; y: number }): number {
   const dx = p2.x - p1.x
   const dy = p2.y - p1.y
   return Math.sqrt(dx * dx + dy * dy)
@@ -39,8 +52,9 @@ function calcDist(p1: AcGePoint3dLike, p2: AcGePoint3dLike): number {
 /**
  * Distance measurement overlay entity.
  *
- * Renders an HTML canvas segment between two endpoints, HTML dots at each end,
- * and a length badge at the midpoint. No CAD transient entities.
+ * Renders an HTML canvas segment with arrows at both endpoints, HTML dots at
+ * each end, and a length badge at the midpoint. Endpoint grips update the
+ * measured value live and republish on commit.
  */
 export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
   /** First endpoint of the measured segment in world coordinates. */
@@ -61,9 +75,12 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
     options: AcApMeasureEntityOptions
   ) {
     super(
-      options.id ?? `dist-${Date.now()}`,
+      options.id ?? newMeasureOverlayId('dist'),
       options.layoutId,
-      options.style
+      options.style,
+      options.textHeightWcs,
+      options.strokeWidthWcs,
+      options.arrowSizeWcs
     )
     this.p1 = p1
     this.p2 = p2
@@ -108,14 +125,22 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
    * Serializes this distance measurement to a store/sidecar record.
    *
    * @param layoutId - Optional layout BTR id written onto the record
+   * @param view - Optional view used to convert screen style to WCS
    * @returns Record with `type: 'distance'` and start/end geometry
    */
-  toRecord(layoutId?: string): AcApMeasurementRecord {
+  toRecord(layoutId?: string, view?: AcTrView2d): AcApMeasurementRecord {
+    const style = this.serializeStyle(view)
+    const arrowSizeWcs =
+      this.arrowSizeWcs ??
+      (view ? acapScreenPxToWcs(ACAP_OVERLAY_ARROW_SIZE_PX, view) : undefined)
+    if (arrowSizeWcs != null && arrowSizeWcs > 0) {
+      style.arrowSizeWcs = arrowSizeWcs
+    }
     return {
       id: this.entityId,
       type: 'distance',
       layoutId,
-      style: serializeMeasurementStyle(this.style),
+      style,
       geometry: {
         type: 'distance',
         start: { x: this.p1.x, y: this.p1.y },
@@ -135,10 +160,17 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
     view: AcTrView2d,
     db: AcDbDatabase
   ): AcApMeasureWorldDrawResult {
-    const dist = calcDist(this.p1, this.p2)
+    const live = {
+      start: { x: this.p1.x, y: this.p1.y },
+      end: { x: this.p2.x, y: this.p2.y }
+    }
+    let dist = calcDist(live.start, live.end)
     const color = this.style.color
     const layoutId = this.resolveLayoutId(view)
-    const mid = this.primaryPoint()!
+    const midOf = (a: { x: number; y: number }, b: { x: number; y: number }) => ({
+      x: (a.x + b.x) / 2,
+      y: (a.y + b.y) / 2
+    })
 
     const persistOverlay = new AcTrHtmlCanvasOverlay({
       id: `dist-canvas-${this.entityId}`,
@@ -146,55 +178,224 @@ export class AcApMeasureDistanceEntity extends AcApMeasureEntity {
       layer: MEASUREMENT_LAYER,
       layoutId
     })
-    const paintSegment = (paintStyle = this.style) =>
+    const dot1 = new AcTrHtmlGrip({
+      id: `${this.entityId}-dot1`,
+      color,
+      worldPosition: live.start,
+      layer: MEASUREMENT_LAYER
+    })
+    const dot2 = new AcTrHtmlGrip({
+      id: `${this.entityId}-dot2`,
+      color,
+      worldPosition: live.end,
+      layer: MEASUREMENT_LAYER
+    })
+    const label = formatMeasurementLength(db, dist)
+    // Fit-to-screen: shrink the capsule when it would cover more than half the
+    // segment so both side lines stay visible. Sidecar / custom WCS is kept.
+    const importedTextHeight =
+      this.textHeightWcs != null && this.textHeightWcs > 0
+        ? this.textHeightWcs
+        : undefined
+    let badgeFontSize = this.style.fontSize
+    let textHeightWcs = importedTextHeight
+    if (importedTextHeight == null) {
+      if (
+        this.style.textHeightMode === 'custom' &&
+        this.style.textHeightWcs != null &&
+        this.style.textHeightWcs > 0
+      ) {
+        textHeightWcs = this.style.textHeightWcs
+      } else {
+        badgeFontSize = acapAdaptiveMeasureBadgeFontSize(
+          label,
+          this.style,
+          acapScreenSegmentLengthPx(
+            p => view.worldToScreen(p),
+            live.start,
+            live.end
+          )
+        )
+        textHeightWcs = acapScreenPxToWcs(badgeFontSize, view)
+      }
+    }
+    // Keep endpoint arrows in proportion when Fit-to-screen font is clamped.
+    let arrowSizeWcs =
+      this.arrowSizeWcs != null && this.arrowSizeWcs > 0
+        ? this.arrowSizeWcs
+        : undefined
+    if (arrowSizeWcs == null) {
+      const arrowPx = acapScaleMeasureOverlayPx(
+        ACAP_OVERLAY_ARROW_SIZE_PX,
+        this.style.fontSize,
+        badgeFontSize
+      )
+      arrowSizeWcs = acapScreenPxToWcs(arrowPx, view)
+    }
+    const badge = new AcTrHtmlBadge({
+      id: `${this.entityId}-badge`,
+      color,
+      text: label,
+      worldPosition: midOf(live.start, live.end),
+      layer: MEASUREMENT_LAYER,
+      fontSize: badgeFontSize
+    })
+    const sidecar = this.serializeStyle(view)
+    acapSeedOverlaySizesFromWcs(view, {
+      textHeightWcs: textHeightWcs ?? sidecar.textHeightWcs,
+      strokeWidthWcs: this.strokeWidthWcs,
+      arrowSizeWcs,
+      fontSizePx: badgeFontSize,
+      strokeScreenPx: acapMeasurementCanvasLineWidth(this.style.lineWeight),
+      elements: [dot1, dot2, badge],
+      canvases: [persistOverlay.canvas]
+    })
+    const paintSegment = (paintStyle = this.style) => {
+      const liveArrow =
+        getMeasurementSnapshot(this.entityId)?.style.arrowSizeWcs ?? arrowSizeWcs
       drawMeasureSegmentOnCanvas(
         persistOverlay.canvas,
         view,
-        this.p1,
-        this.p2,
+        live.start,
+        live.end,
         paintStyle.color,
-        acapMeasurementCanvasLineWidth(paintStyle.lineWeight)
+        acapMeasurementCanvasLineWidth(paintStyle.lineWeight),
+        this.strokeWidthWcs,
+        liveArrow
       )
+    }
     paintSegment()
     const redrawPersist = () =>
       paintSegment(getMeasurementStyle(this.entityId) ?? this.style)
     view.events.viewChanged.addEventListener(redrawPersist)
 
     const group = this.createGroup(view)
-      .add(
-        new AcTrHtmlDot({
-          id: `${this.entityId}-dot1`,
-          color,
-          worldPosition: this.p1,
-          layer: MEASUREMENT_LAYER
+      .add(dot1, dot2, badge)
+      .addCanvas(persistOverlay)
+
+    const cleanups: Array<() => void> = [
+      () => view.events.viewChanged.removeEventListener(redrawPersist)
+    ]
+    const pendingGrips: Array<() => void> = []
+    let dragStart = {
+      start: { ...live.start },
+      end: { ...live.end }
+    }
+
+    const refreshLive = () => {
+      dist = calcDist(live.start, live.end)
+      badge.setText(formatMeasurementLength(db, dist))
+      acapPlaceOverlayHtml(view, badge, midOf(live.start, live.end))
+      paintSegment(getMeasurementStyle(this.entityId) ?? this.style)
+      view.isHtmlDirty = true
+    }
+
+    const beginEndpointDrag = () => {
+      selectMeasurementGroup(view, this.entityId)
+      dragStart = {
+        start: { ...live.start },
+        end: { ...live.end }
+      }
+    }
+
+    const commitEndpoints = () => {
+      const startDelta = Math.hypot(
+        live.start.x - dragStart.start.x,
+        live.start.y - dragStart.start.y
+      )
+      const endDelta = Math.hypot(
+        live.end.x - dragStart.end.x,
+        live.end.y - dragStart.end.y
+      )
+      if (startDelta < 1e-9 && endDelta < 1e-9) {
+        refreshLive()
+        return
+      }
+      const snap = getMeasurementSnapshot(this.entityId)
+      const record: AcApMeasurementRecord = snap
+        ? {
+            ...snap,
+            geometry: {
+              type: 'distance',
+              start: { ...live.start },
+              end: { ...live.end }
+            }
+          }
+        : {
+            id: this.entityId,
+            type: 'distance',
+            layoutId,
+            style: this.serializeStyle(view),
+            geometry: {
+              type: 'distance',
+              start: { ...live.start },
+              end: { ...live.end }
+            }
+          }
+      runMeasurementEdit(view, 'Move Distance', () => {
+        republishMeasurement(view, db, record)
+      })
+    }
+
+    pendingGrips.push(() => {
+      cleanups.push(
+        acapBindOverlayPointerDrag({
+          view,
+          el: dot1.element,
+          onDragStart: beginEndpointDrag,
+          onMove: point => {
+            live.start = point
+            acapPlaceOverlayHtml(view, dot1, point)
+            refreshLive()
+          },
+          onCommit: commitEndpoints
         }),
-        new AcTrHtmlDot({
-          id: `${this.entityId}-dot2`,
-          color,
-          worldPosition: this.p2,
-          layer: MEASUREMENT_LAYER
-        }),
-        new AcTrHtmlBadge({
-          id: `${this.entityId}-badge`,
-          color,
-          text: formatMeasurementLength(db, dist),
-          worldPosition: mid,
-          layer: MEASUREMENT_LAYER,
-          fontSize: this.style.fontSize
+        acapBindOverlayPointerDrag({
+          view,
+          el: dot2.element,
+          onDragStart: beginEndpointDrag,
+          onMove: point => {
+            live.end = point
+            acapPlaceOverlayHtml(view, dot2, point)
+            refreshLive()
+          },
+          onCommit: commitEndpoints
         })
       )
-      .addCanvas(persistOverlay)
+    })
+
+    const snapshot = this.toRecord(layoutId, view)
+    if (
+      importedTextHeight == null &&
+      textHeightWcs != null &&
+      textHeightWcs > 0
+    ) {
+      snapshot.style.fontSize = badgeFontSize
+      snapshot.style.textHeightWcs = textHeightWcs
+    }
+    if (arrowSizeWcs != null && arrowSizeWcs > 0) {
+      snapshot.style.arrowSizeWcs = arrowSizeWcs
+    }
 
     return {
       group,
       entityIds: [],
       dispose: () => {
-        view.events.viewChanged.removeEventListener(redrawPersist)
+        for (const fn of cleanups) {
+          try {
+            fn()
+          } catch {
+            // ignore
+          }
+        }
+      },
+      bindGrips: () => {
+        for (const bind of pendingGrips) bind()
       },
       extras: {
-        style: this.style,
+        style: this.committedLiveStyle(badgeFontSize, textHeightWcs),
         value: { kind: 'length', value: dist },
-        snapshot: this.toRecord(layoutId),
+        snapshot,
         redraw: paintSegment
       }
     }

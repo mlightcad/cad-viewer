@@ -3,7 +3,6 @@ import { AcCmColor, AcGePoint2dLike } from '@mlightcad/data-model'
 import { AcApContext } from '../../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
@@ -15,11 +14,8 @@ import {
   acapLiveRectCorners,
   acapStrokeLivePolyline
 } from '../overlay/AcApHtmlLivePreview'
-import {
-  configureMarkupCommand,
-  createMarkupMeta,
-  withMarkupInput
-} from './AcApMarkupCmdUtil'
+import { createMarkupMeta } from './AcApMarkupCmdUtil'
+import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
 import { commitMarkup } from './AcApMarkupPresenter'
 import {
   promptAttachedCallout,
@@ -29,7 +25,7 @@ import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupLineWeight,
+  MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth
 } from './AcApMarkupUtil'
 
@@ -61,7 +57,7 @@ class AcApMarkupRectJig extends AcEdPreviewJig<AcGePoint2dLike> {
   update(second: AcGePoint2dLike) {
     this._second = second
     this._color = defaultMarkupColor()
-    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const lineWidth = markupCanvasLineWidth(MARKUP_LINE_WEIGHT)
     const corners = acapLiveRectCorners(this._first, this._second)
     this._preview.acapSetDraw((ctx, view) => {
       acapStrokeLivePolyline(ctx, view, corners, this._color, lineWidth, {
@@ -79,14 +75,9 @@ class AcApMarkupRectJig extends AcEdPreviewJig<AcGePoint2dLike> {
 /**
  * Create a rectangular markup, optionally with an attached callout (no arrow).
  */
-export class AcApMarkupRectCmd extends AcEdCommand {
-  constructor() {
-    super()
-    configureMarkupCommand(this)
-  }
-
+export class AcApMarkupRectCmd extends AcApMarkupDrawCmd {
   async execute(context: AcApContext) {
-    await withMarkupInput(context, async () => {
+    await this.withMarkupInput(context, async () => {
       const color = defaultMarkupColor()
       const p1 = await promptShapeFirstCorner(
         context,
@@ -108,9 +99,14 @@ export class AcApMarkupRectCmd extends AcEdCommand {
         corner1: { x: p1.x, y: p1.y },
         corner2: { x: p2.x, y: p2.y }
       })
-      const meta = createMarkupMeta('rect', context.view as AcTrView2d, context, {
-        text: callout?.text
-      })
+      const meta = createMarkupMeta(
+        'rect',
+        context.view as AcTrView2d,
+        context,
+        {
+          text: callout?.text
+        }
+      )
       const record: AcApMarkupRecord = {
         ...meta,
         type: 'rect',

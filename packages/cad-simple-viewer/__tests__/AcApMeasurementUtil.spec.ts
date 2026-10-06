@@ -10,13 +10,11 @@ import {
   acapCssToMeasurementColor,
   acapGetCurrentMeasurementStyle,
   acapGetMeasurementFontSize,
-  acapGetMeasurementLineWeight,
   acapMeasurementCanvasLineWidth,
   acapGetMeasurementColor,
   acapResetMeasurementDrawStyle,
   acapSetMeasurementDrawColor,
   acapSetMeasurementDrawFontSize,
-  acapSetMeasurementDrawLineWeight,
   MEASUREMENT_FONT_SIZE,
   MEASUREMENT_LINE_WEIGHT
 } from '../src/util/AcApMeasurementUtil'
@@ -30,28 +28,27 @@ describe('AcApMeasurementUtil', () => {
     acapResetMeasurementDrawStyle()
   })
 
-  it('keeps factory line weight and font size until they are changed', () => {
-    expect(acapGetMeasurementLineWeight()).toBe(MEASUREMENT_LINE_WEIGHT)
+  it('defaults to hairline line weight and factory font size', () => {
+    expect(MEASUREMENT_LINE_WEIGHT).toBe(0)
     expect(acapGetMeasurementFontSize()).toBe(MEASUREMENT_FONT_SIZE)
+    expect(acapGetCurrentMeasurementStyle(mockDb()).lineWeight).toBe(0)
   })
 
-  it('stores session draw color, line weight, and font size for later measurements', () => {
+  it('stores session draw color and font size for later measurements', () => {
     const color = new AcCmColor()
     color.setRGB(10, 20, 30)
     acapSetMeasurementDrawColor(color)
-    acapSetMeasurementDrawLineWeight(AcGiLineWeight.LineWeight013)
     acapSetMeasurementDrawFontSize(18)
 
     const drawn = acapGetMeasurementColor(mockDb())
     expect(drawn.red).toBe(10)
     expect(drawn.green).toBe(20)
     expect(drawn.blue).toBe(30)
-    expect(acapGetMeasurementLineWeight()).toBe(AcGiLineWeight.LineWeight013)
     expect(acapGetMeasurementFontSize()).toBe(18)
 
     const style = acapGetCurrentMeasurementStyle(mockDb())
     expect(style.fontSize).toBe(18)
-    expect(style.lineWeight).toBe(AcGiLineWeight.LineWeight013)
+    expect(style.lineWeight).toBe(MEASUREMENT_LINE_WEIGHT)
     expect(style.color.red).toBe(10)
   })
 
@@ -63,14 +60,13 @@ describe('AcApMeasurementUtil', () => {
   })
 
   it('maps CAD line weight 070 to a 2.5px canvas stroke', () => {
-    expect(acapMeasurementCanvasLineWidth(MEASUREMENT_LINE_WEIGHT)).toBeCloseTo(2.5)
+    expect(
+      acapMeasurementCanvasLineWidth(AcGiLineWeight.LineWeight070)
+    ).toBeCloseTo(2.5)
   })
 
-  it('ignores non-positive line weights', () => {
-    acapSetMeasurementDrawLineWeight(AcGiLineWeight.LineWeight211)
-    acapSetMeasurementDrawLineWeight(AcGiLineWeight.ByLayer)
-    acapSetMeasurementDrawLineWeight(AcGiLineWeight.ByBlock)
-    expect(acapGetMeasurementLineWeight()).toBe(AcGiLineWeight.LineWeight211)
+  it('maps hairline to a 0 canvas width sentinel', () => {
+    expect(acapMeasurementCanvasLineWidth(0 as AcGiLineWeight)).toBe(0)
   })
 })
 
@@ -98,5 +94,22 @@ describe('acapCssToMeasurementColor', () => {
     expect(custom.red).toBe(12)
     expect(custom.green).toBe(34)
     expect(custom.blue).toBe(56)
+  })
+
+  it('parses rgb() without spaces (sidecar export form)', () => {
+    const color = acapCssToMeasurementColor('rgb(96,165,250)')
+    expect(color.red).toBe(96)
+    expect(color.green).toBe(165)
+    expect(color.blue).toBe(250)
+  })
+
+  it('parses CSS hex without logging Unknown color name', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation()
+    const color = acapCssToMeasurementColor('#d51572')
+    expect(color.red).toBe(0xd5)
+    expect(color.green).toBe(0x15)
+    expect(color.blue).toBe(0x72)
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
   })
 })

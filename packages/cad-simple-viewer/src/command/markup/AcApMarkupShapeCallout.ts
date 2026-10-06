@@ -27,6 +27,7 @@ import {
   AcEdPromptPointOptions,
   AcEdPromptStatus
 } from '../../editor'
+import { acedIsMobileOrPadUi } from '../../editor/global/AcEdUiLayout'
 import { AcApI18n } from '../../i18n'
 import type { AcTrView2d } from '../../view'
 import {
@@ -37,6 +38,7 @@ import {
   acapStrokeLivePolyline,
   acapStrokeLiveSegment
 } from '../overlay/AcApHtmlLivePreview'
+import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
 import { promptMarkupCapsuleText } from './AcApMarkupCmdUtil'
 import {
   markupCloudVertices,
@@ -49,8 +51,9 @@ import type {
 } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
+  defaultMarkupStyle,
   getMarkupFontSize,
-  getMarkupLineWeight,
+  MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth,
   subscribeMarkupDrawStyle
 } from './AcApMarkupUtil'
@@ -218,6 +221,9 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private _tip: AcApMarkupPoint2d
   private _anchor: AcApMarkupPoint2d
   private _color: AcCmColor
+  private _capsuleRevealed = false
+  /** Desktop: wait for a real pointer move before showing the capsule preview. */
+  private _desktopMoveArm?: (e: PointerEvent) => void
   private _unsubDrawStyle?: () => void
 
   constructor(
@@ -264,6 +270,10 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
       layoutId
     })
     this._ht.add(this._bubble)
+    // `add()` applies layout visibility. Keep the empty capsule off until a
+    // live preview starts (desktop mouse move / mobile long-press capture).
+    this._bubble.object.visible = false
+    acapSyncLiveOverlayTextHeight(this._view, [this._bubble], defaultMarkupStyle())
 
     this._preview = new AcApHtmlLivePreview(
       this._view,
@@ -273,6 +283,7 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._unsubDrawStyle = subscribeMarkupDrawStyle(() =>
       this.applyCurrentStyle()
     )
+    this.armDesktopCapsulePreview()
     this.paintPreview()
     this._view.isHtmlDirty = true
   }
@@ -289,6 +300,12 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
     this._tipDot.setPosition(this._tip)
     this._bubble.setPosition(toward)
+    this.syncCapsulePreviewVisibility()
+    const style = defaultMarkupStyle()
+    const fontSize = style.fontSize ?? getMarkupFontSize()
+    this._bubble.setFontSize(fontSize)
+    this._tipDot.setFontSize(fontSize)
+    acapSyncLiveOverlayTextHeight(this._view, [this._bubble, this._tipDot], style)
     this.paintPreview()
     this._view.isHtmlDirty = true
   }
@@ -296,6 +313,43 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
   /** Capsule used for in-place text entry after the bubble is placed. */
   get capsule(): AcTrHtmlCallout {
     return this._bubble
+  }
+
+  /** Show the capsule for text entry (or if the user confirmed without a drag). */
+  revealCapsule(): void {
+    this.disarmDesktopCapsulePreview()
+    this._capsuleRevealed = true
+    this._bubble.object.visible = true
+    this._view.isHtmlDirty = true
+  }
+
+  /**
+   * Desktop: show after the user moves the mouse (ignore leftover cursor from
+   * `showAt`). Mobile: show as soon as long-press capture starts jig updates.
+   */
+  private syncCapsulePreviewVisibility(): void {
+    if (!this._capsuleRevealed && acedIsMobileOrPadUi()) {
+      this._capsuleRevealed = true
+    }
+    this._bubble.object.visible = this._capsuleRevealed
+  }
+
+  private armDesktopCapsulePreview(): void {
+    if (acedIsMobileOrPadUi()) return
+    const canvas = this._view.canvas
+    this._desktopMoveArm = (e: PointerEvent) => {
+      if (e.pointerType === 'touch') return
+      // Only arm; `update()` applies visibility at the live cursor position.
+      this._capsuleRevealed = true
+      this.disarmDesktopCapsulePreview()
+    }
+    canvas.addEventListener('pointermove', this._desktopMoveArm)
+  }
+
+  private disarmDesktopCapsulePreview(): void {
+    if (!this._desktopMoveArm) return
+    this._view.canvas.removeEventListener('pointermove', this._desktopMoveArm)
+    this._desktopMoveArm = undefined
   }
 
   /**
@@ -308,6 +362,7 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   /** Remove frozen preview graphics after text entry (or cancel). */
   disposePreview() {
+    this.disarmDesktopCapsulePreview()
     this._unsubDrawStyle?.()
     this._unsubDrawStyle = undefined
     this._preview.acapDispose()
@@ -321,7 +376,11 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
     this._color = defaultMarkupColor()
     this._tipDot.setColor(this._color)
     this._bubble.setColor(this._color)
-    this._bubble.setFontSize(getMarkupFontSize())
+    const style = defaultMarkupStyle()
+    const fontSize = style.fontSize ?? getMarkupFontSize()
+    this._bubble.setFontSize(fontSize)
+    this._tipDot.setFontSize(fontSize)
+    acapSyncLiveOverlayTextHeight(this._view, [this._bubble, this._tipDot], style)
     this.paintPreview()
     this._view.isHtmlDirty = true
   }
@@ -329,7 +388,7 @@ class AcApMarkupShapeCalloutJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private paintPreview(): void {
     const outline = this._outline
     const color = this._color
-    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const lineWidth = markupCanvasLineWidth(MARKUP_LINE_WEIGHT)
     const tip = this._tip
     const anchor = this._anchor
     const viewForCloud = this._view
@@ -409,7 +468,10 @@ export async function promptAttachedCallout(
       y: anchor.y
     })
 
-    const text = await promptMarkupCapsuleText(jig.capsule)
+    jig.revealCapsule()
+    const text = await promptMarkupCapsuleText(jig.capsule, {
+      messageKey: 'jig.markup.callout.content'
+    })
 
     return {
       tip,

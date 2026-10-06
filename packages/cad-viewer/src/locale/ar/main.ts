@@ -606,6 +606,12 @@ export default {
       description: 'قياس المسافة بين نقطتين'
     },
 
+    measureContinuous: {
+      ...enMain.verticalToolbar.measureContinuous,
+      text: 'مستمر',
+      description: 'قياس مسافات متسلسلة باختيار نقاط متتالية حتى Enter أو إلغاء'
+    },
+
     measureAngle: {
       ...enMain.verticalToolbar.measureAngle,
       text: 'الزاوية',
@@ -628,6 +634,12 @@ export default {
       ...enMain.verticalToolbar.measurePoint,
       text: 'نقطة',
       description: 'قراءة إحداثيات X وY لنقطة محددة'
+    },
+
+    measurementPanel: {
+      ...enMain.verticalToolbar.measurementPanel,
+      text: 'لوحة القياس',
+      description: 'فتح لوحة القياس'
     },
 
     clearMeasurements: {
@@ -668,7 +680,7 @@ export default {
 
     markupPanel: {
       ...enMain.verticalToolbar.markupPanel,
-      text: 'مراجعة',
+      text: 'لوحة المراجعة',
       description: 'فتح لوحة المراجعة'
     },
 
@@ -738,16 +750,10 @@ export default {
       description: 'تحديد لون علامات المراجعة الجديدة'
     },
 
-    markupLineWeight: {
-      ...enMain.verticalToolbar.markupLineWeight,
-      text: 'سُمك الخط',
-      description: 'تحديد سُمك خط علامات المراجعة الجديدة'
-    },
-
     markupFontSize: {
       ...enMain.verticalToolbar.markupFontSize,
-      text: 'حجم الخط',
-      description: 'تحديد حجم خط النصوص ووسائل الشرح'
+      text: 'ارتفاع النص',
+      description: 'فتح إعدادات ارتفاع النص لعلامات المراجعة'
     },
 
     measurementColor: {
@@ -756,16 +762,10 @@ export default {
       description: 'تحديد لون القياس المحدد أو القياسات الجديدة'
     },
 
-    measurementLineWeight: {
-      ...enMain.verticalToolbar.measurementLineWeight,
-      text: 'سُمك الخط',
-      description: 'تحديد سُمك خط القياس المحدد أو القياسات الجديدة'
-    },
-
     measurementFontSize: {
       ...enMain.verticalToolbar.measurementFontSize,
-      text: 'حجم الخط',
-      description: 'تحديد حجم خط القياس المحدد أو القياسات الجديدة'
+      text: 'ارتفاع النص',
+      description: 'فتح إعدادات ارتفاع النص للقياس المحدد أو القياسات الجديدة'
     },
 
     showMarkup: {
@@ -807,18 +807,38 @@ export default {
     switchBg: {
       ...enMain.verticalToolbar.switchBg,
       text: 'تبديل',
-      description: 'التبديل بين خلفية الرسم السوداء والبيضاء'
+      description: 'التبديل بين خلفية الرسم السوداء والبيضاء',
+      disabledInReadingMode: 'غير متاح أثناء وضع القراءة (اللوحة البيضاء ثابتة)'
+    },
+
+    zoom: {
+      ...enMain.verticalToolbar.zoom,
+      text: 'تكبير',
+      description: 'أدوات التكبير: محفوظ، ملاءمة، ملاءمة ذكية، ونافذة'
+    },
+
+    zoomSaved: {
+      ...enMain.verticalToolbar.zoomSaved,
+      text: 'محفوظ',
+      description:
+        'استعادة العرض المحفوظ في AutoCAD (VPORT / حدود التخطيط) أو عرض وقت الفتح'
     },
 
     zoomToExtent: {
       ...enMain.verticalToolbar.zoomToExtent,
-      text: 'ملاءمة الرسم',
+      text: 'ملاءمة',
       description: 'إظهار كامل حدود جميع عناصر الرسم'
+    },
+
+    zoomSmartExtents: {
+      ...enMain.verticalToolbar.zoomSmartExtents,
+      text: 'ملاءمة ذكية',
+      description: 'التكبير إلى مجموعة الهندسة الرئيسية مع تجاهل العناصر البعيدة الشاذة'
     },
 
     zoomToBox: {
       ...enMain.verticalToolbar.zoomToBox,
-      text: 'تكبير نافذة',
+      text: 'نافذة',
       description: 'تكبير منطقة محددة بواسطة نافذة مستطيلة'
     }
   },
@@ -832,7 +852,6 @@ export default {
       commandLine: 'سطر الأوامر',
       coordinate: 'الإحداثيات',
       entityInfo: 'معلومات العنصر',
-      fileName: 'اسم الملف',
       languageSelector: 'اختيار اللغة',
       ribbon: 'الشريط',
       toolbar: 'شريط الأدوات',
@@ -1078,6 +1097,29 @@ export default {
         question: 'سؤال',
         answered: 'تمت الإجابة',
         closed: 'مغلق'
+      }
+    },
+
+    measurements: {
+      ...enMain.toolPalette.measurements,
+
+      tab: 'القياس',
+      title: 'القياسات',
+
+      empty: 'لا توجد قياسات حتى الآن',
+      type: 'النوع',
+      value: 'القيمة',
+      filterAll: 'الكل',
+      delete: 'حذف',
+      clear: 'مسح الكل',
+
+      typeValues: {
+        ...enMain.toolPalette.measurements.typeValues,
+        distance: 'مسافة',
+        angle: 'زاوية',
+        area: 'مساحة',
+        arc: 'قوس',
+        point: 'XY'
       }
     },
 
@@ -1453,8 +1495,13 @@ export default {
     failedToOpenFile:
       'فشل فتح الملف "{fileName}"!',
 
+    failedToOpenFileToast:
+      'فشل فتح "{fileName}". راجع مركز الإشعارات للتفاصيل.',
+
     failedToOpenFileWorkerOom:
-      'فشل فتح "{fileName}". الرسم كبير جدًا بالنسبة للذاكرة المتاحة.',
+      'فشل فتح "{fileName}". فشل التحليل بسبب نفاد الذاكرة المتاحة (محلل LibreDWG). يمكنك النقر على {dwgParserLink} لشراء محلل DWG التجاري وفتح الرسومات الكبيرة دون حدوث هذا الانهيار.',
+
+    failedToOpenFileWorkerOomLink: 'هذه الصفحة',
 
     failedToOpenFileWorkerTimeout:
       'فشل فتح "{fileName}". انتهت مهلة العملية أثناء تحليل الرسم.',
@@ -1462,11 +1509,23 @@ export default {
     failedToOpenFileFontLoadFailed:
       'فشل فتح "{fileName}". تعذر تحميل الخطوط المطلوبة.',
 
+    failedToOpenFileLicenseExpired:
+      'فشل فتح "{fileName}". انتهت صلاحية ترخيص محول DWG.',
+
+    failedToOpenFileLicenseInvalid:
+      'فشل فتح "{fileName}". ترخيص محول DWG مفقود أو غير صالح.',
+
     fetchingDrawingFile:
       'جارٍ جلب ملف الرسم ...',
 
     unknownEntities:
-      'يحتوي هذا الرسم على {count} عنصر غير معروف أو غير مدعوم. لن يتم عرض هذه العناصر.'
+      'يحتوي هذا الرسم على {count} عنصر غير معروف أو غير مدعوم. لن يتم عرض هذه العناصر.',
+
+    tianzhengEntities:
+      'يحتوي هذا الرسم على كيانات مخصصة من TArch / Tianzheng (أو جهات خارجية مشابهة) (حوالي {count}). لا يمكن تحليلها بالكامل في هذه البيئة، لذلك قد لا يُعرض بعض المحتوى.',
+
+    emptyProxyEntities:
+      'يحتوي هذا الرسم على {count} كيان مخصص بدون رسومات وكيلة. لن يتم عرض هذه العناصر.'
   },
 
   notification: {
@@ -1493,14 +1552,20 @@ export default {
       ...enMain.notification.title,
 
       failedToOpenFile: 'فشل فتح الملف',
-      failedToOpenFileWorkerOom: 'الرسم كبير جدًا',
+      failedToOpenFileWorkerOom: 'نفاد الذاكرة',
       failedToOpenFileWorkerTimeout: 'انتهت مهلة فتح الرسم',
       failedToOpenFileFontLoadFailed: 'فشل تحميل الخطوط',
+      failedToOpenFileLicenseExpired: 'انتهت صلاحية الترخيص',
+      failedToOpenFileLicenseInvalid: 'ترخيص غير صالح',
 
       fontNotFound: 'الخط غير موجود',
       fontNotLoaded: 'لم يتم تحميل الخط',
 
-      parsingWarning: 'مشكلات أثناء تحليل الرسم'
+      parsingWarning: 'مشكلات أثناء تحليل الرسم',
+      systemMessage: 'رسالة النظام',
+      systemWarning: 'تحذير النظام',
+      systemError: 'خطأ النظام',
+      systemInfo: 'معلومات النظام'
     }
   }
 

@@ -154,4 +154,67 @@ export class AcApFontUtil {
   ): Promise<FontLoadStatus> {
     return FontManager.instance.cacheFont(data, fileName, aliases, encoding)
   }
+
+  /**
+   * Returns a mesh font program from IndexedDB when previously cached for
+   * rendering (or after a prior PDF persist).
+   *
+   * Tries the requested name, catalog file / aliases, then the FontManager
+   * replacement chain. Does not keep a separate in-memory program map —
+   * callers that miss should `fetch` the catalog URL.
+   *
+   * @returns A view over the cached buffer, or `undefined` when not in IDB.
+   */
+  static async getCachedMeshFontProgram(
+    fontName: string
+  ): Promise<Uint8Array | undefined> {
+    const candidates: string[] = [fontName]
+    const info = AcApFontUtil.findFontInfoByName(fontName)
+    if (info?.file) {
+      candidates.push(info.file)
+    }
+    for (const name of info?.name ?? []) {
+      candidates.push(name)
+    }
+    const replacement = AcApFontUtil.getReplacementFontName(fontName)
+    if (replacement && replacement !== fontName) {
+      candidates.push(replacement)
+      const replacementInfo = AcApFontUtil.findFontInfoByName(replacement)
+      if (replacementInfo?.file) {
+        candidates.push(replacementInfo.file)
+      }
+      for (const name of replacementInfo?.name ?? []) {
+        candidates.push(name)
+      }
+    }
+
+    const tried = new Set<string>()
+    for (const candidate of candidates) {
+      const key = candidate.trim().toLowerCase()
+      if (!key || tried.has(key)) {
+        continue
+      }
+      tried.add(key)
+      const buffer =
+        await FontManager.instance.getCachedMeshFontProgram(candidate)
+      if (buffer && buffer.byteLength > 0) {
+        return new Uint8Array(buffer)
+      }
+    }
+    return undefined
+  }
+
+  /**
+   * Writes a mesh font program into IndexedDB for later PDF / render reuse.
+   *
+   * Does not register the face for on-screen rendering. No-op when font
+   * caching is disabled.
+   */
+  static async persistMeshFontProgram(
+    data: ArrayBuffer,
+    fileName: string,
+    aliases?: readonly string[]
+  ): Promise<void> {
+    await FontManager.instance.persistMeshFontProgram(data, fileName, aliases)
+  }
 }

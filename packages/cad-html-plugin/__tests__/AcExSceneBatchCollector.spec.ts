@@ -13,6 +13,7 @@ jest.mock('@mlightcad/three-renderer', () => {
   )
   const {
     getMaterialMetadata,
+    getSceneDrawableUserData,
     isBatchGeometryActive,
     isBatchGeometryVisible,
     isHighlightCloneDrawable,
@@ -26,6 +27,7 @@ jest.mock('@mlightcad/three-renderer', () => {
     AcTrBatchedMesh,
     AcTrBatchedPoint,
     getMaterialMetadata,
+    getSceneDrawableUserData,
     isBatchGeometryActive,
     isBatchGeometryVisible,
     isHighlightCloneDrawable,

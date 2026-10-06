@@ -477,8 +477,12 @@ const applyImageReplacement = (item: ImageMappingData, file: File) => {
       if (!image) return
       image.image = file
       // Persist replacement file name on the image definition when present.
+      // Prefer getIdAt; fall back to getAt when the dictionary key is the DWG
+      // handle but objectId was reminted on collision.
       if (image.imageDefId) {
-        const imageDef = db.objects.imageDefinition.getIdAt(image.imageDefId)
+        const dict = db.objects.imageDefinition
+        const imageDef =
+          dict.getIdAt(image.imageDefId) ?? dict.getAt(image.imageDefId)
         if (imageDef) {
           imageDef.sourceFileName = fileName
         }

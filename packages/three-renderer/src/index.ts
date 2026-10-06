@@ -8,6 +8,7 @@ export { AcTrBatchedLine } from './batch/AcTrBatchedLine'
 export { AcTrBatchedLine2 } from './batch/AcTrBatchedLine2'
 export { AcTrBatchedMesh } from './batch/AcTrBatchedMesh'
 export { AcTrBatchedPoint } from './batch/AcTrBatchedPoint'
+export * from './linetype'
 export * from './object/AcTrObject'
 export * from './object/AcTrEntity'
 export * from './object/AcTrGlyphEntity'
@@ -33,6 +34,7 @@ export {
   createHatchPatternShaderMaterial,
   type AcTrPatternLine
 } from './style/AcTrHatchPatternShaders'
+export { wrapPatternBaseToLocalFrame } from './style/AcTrFillMaterialManager'
 export * from './util/AcTrMTextColorUtil'
 export { AcTrMatrixUtil } from './util/AcTrMatrixUtil'
 export {

@@ -34,7 +34,7 @@ interface RibbonPropertyLineWeightSelectProps {
   disabled?: boolean
   /** Placeholder shown when no line weight can be resolved. */
   placeholder?: string
-  /** When true, hide ByLayer / ByBlock / Default (overlay style pickers). */
+  /** When true, hide ByLayer / ByBlock / Default. */
   numericOnly?: boolean
   /** Optional fixed width for the embedded control; defaults narrower when `numericOnly`. */
   controlWidth?: string

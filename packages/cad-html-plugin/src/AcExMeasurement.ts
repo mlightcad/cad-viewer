@@ -1,27 +1,56 @@
 /**
- * Measurement tools for the offline HTML viewer (distance, angle, arc, area, coordinate).
+ * Measurement tools for the offline HTML viewer (distance, continuous, angle, arc, radius, area, coordinate).
  *
- * @module AcExMeasurement
+ * @module acexMeasurement
  * @packageDocumentation
  */
 
 import { AcGeCircArc2d, AcGeMathUtil } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
+import type { AcExCommandSessionUiState } from './AcExCommandSessionPanel'
+import { AcExConfirmedPointMarks } from './AcExConfirmedPointMarks'
 import type { AcExHtmlI18n } from './AcExHtmlI18n'
-import { acExHtmlIcons } from './AcExHtmlIcons'
+import { AcExHtmlIcons } from './AcExHtmlIcons'
+import {
+  ACEX_OVERLAY_ARROW_SIZE_PX,
+  acexPixelsPerWorldUnit,
+  acexPositionWcsOverlay,
+  acexScaledCanvasLineWidth,
+  acexScaledOverlayArrowSize,
+  acexScaleWcsWithFont,
+  acexScreenPxToWcs,
+  acexSeedOverlaySizesFromWcs,
+  acexSyncLiveOverlayTextHeight
+} from './AcExHtmlOverlayDom'
+import {
+  acexDrawMarkupArrowHead,
+  acexExpandExtentsByClientRects,
+  acexOverlayArrowSize
+} from './AcExMarkupGeometry'
+import { acexBindMarkupPointerDrag } from './AcExMarkupGripDrag'
+import {
+  acexAdaptiveMeasureBadgeFontSize,
+  acexScaleMeasureOverlayPx,
+  acexScreenAngleBadgeRefLengthPx,
+  acexScreenArcLengthPx,
+  acexScreenAreaBadgeRefLengthPx,
+  acexScreenSegmentLengthPx
+} from './AcExMeasureBadgeFont'
 import {
   ACEX_MEASUREMENT_FONT_SIZE,
   ACEX_MEASUREMENT_LINE_WEIGHT,
-  acExMeasureCanvasLineWidth,
-  acExMeasurementSidecarFileName,
+  acexMeasureCanvasLineWidth,
+  acexMeasurementSidecarFileName,
   parseAcExMeasurementSidecar,
   stringifyAcExMeasurementSidecar
 } from './AcExMeasurementSidecar'
 import type {
+  AcExMeasurementGeometry,
   AcExMeasurementRecord,
   AcExMeasurementSidecarFile,
-  AcExMeasurementSidecarStyle
+  AcExMeasurementSidecarStyle,
+  AcExMeasurementType
 } from './AcExMeasurementTypes'
 import {
   type AcExMeasureQuantity,
@@ -32,7 +61,11 @@ import {
   type AcExTrackingOptions,
   constrainToAcExTracking
 } from './AcExMeasureTracking'
-import type { AcExOsnapPoint } from './AcExOsnap'
+import type { AcExCircleOrArcNearHit, AcExOsnapPoint } from './AcExOsnap'
+import { acexIsOverlayGrip, acexOverlayGripClassName } from './AcExOverlayGrip'
+import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
+import type { AcExSessionHistory } from './AcExSessionHistory'
+import type { AcExExtents } from './AcExSnapshotTypes'
 
 /**
  * THREE/WebGL color for measurement overlays (lines, preview rubber-band).
@@ -63,15 +96,19 @@ const MEASURE_HIT_THRESHOLD_PX = 10
  * Active measurement tool selected from the toolbar.
  *
  * - `distance` — two-point linear distance.
+ * - `continuous` — chained linear distances (successive vertices until Enter/Esc).
  * - `angle` — three-point angle (vertex + two arm endpoints).
  * - `arc` — three-point arc length (start, point on arc, end).
+ * - `radius` — circle/arc radius (click a circle or arc).
  * - `area` — multi-point polygon area.
  * - `coordinate` — single-point X/Y readout in drawing units.
  */
 export type AcExMeasureMode =
   | 'distance'
+  | 'continuous'
   | 'angle'
   | 'arc'
+  | 'radius'
   | 'area'
   | 'coordinate'
 
@@ -100,7 +137,7 @@ interface AcExResolvedPoint {
 }
 
 /**
- * View/camera callbacks supplied by {@link AcExHtmlViewerRuntime} so measurement
+ * View/camera callbacks supplied by {@link acexHtmlViewerRuntime} so measurement
  * logic stays decoupled from orthographic pan/zoom implementation details.
  */
 export interface AcExMeasureViewApi {
@@ -125,6 +162,9 @@ export interface AcExMeasureViewApi {
    */
   getSnapCacheKey: () => number
 
+  /** Current orthographic camera zoom (used to scale DOM overlays). */
+  getCameraZoom: () => number
+
   /**
    * Resolves a pointer pick with object snap applied.
    * @param clientX - Pointer X in viewport pixels.
@@ -134,14 +174,12 @@ export interface AcExMeasureViewApi {
 
   /**
    * Circle or circular-arc under `(x, y)` in WCS, used to lock arc-length
-   * picks onto that circumference. `x`/`y` on the result are the nearest
-   * point on the drawn stroke (not a radial projection onto the full circle).
-   * Omit when the snapshot has no osnap catalog.
+   * picks onto that circumference and to hover-highlight the entity before
+   * pick. `x`/`y` on the result are the nearest point on the drawn stroke
+   * (not a radial projection onto the full circle). Omit when the snapshot
+   * has no osnap catalog.
    */
-  findCircleOrArcNear?: (
-    x: number,
-    y: number
-  ) => { cx: number; cy: number; r: number; x: number; y: number } | null
+  findCircleOrArcNear?: (x: number, y: number) => AcExCircleOrArcNearHit | null
 
   /**
    * Formats a linear value using snapshot unit precision (e.g. `LUPREC`).
@@ -154,6 +192,9 @@ export interface AcExMeasureViewApi {
    * @param valueDeg - Angle in degrees.
    */
   formatAngle: (valueDeg: number) => string
+
+  /** Frames the camera on a world-space AABB. */
+  zoomToExtents: (extents: AcExExtents) => void
 }
 
 /**
@@ -188,10 +229,20 @@ export interface AcExMeasureControllerOptions {
    * (for example to toggle left-button pan on OrbitControls).
    */
   onActiveChange?: (active: boolean) => void
-  /** Called when selection or session draw style changes (draw-style toolbar). */
+  /** Called when selection or session draw style changes (session accessory). */
   onStyleChange?: () => void
   /** Active layout BTR id; used to stamp and filter measurement overlays. */
   getActiveLayoutId?: () => string
+  /**
+   * Updates the mobile/touch session panel (confirm, cancel, live metrics).
+   * Pass `null` when no measurement tool is active.
+   */
+  onSessionUi?: (state: AcExCommandSessionUiState | null) => void
+  /**
+   * Optional session undo/redo coordinator (markup + measure).
+   * When set, create/delete/style/import edits are recorded.
+   */
+  sessionHistory?: AcExSessionHistory
 }
 
 /** Teardown callback registered when a measurement overlay is created. @internal */
@@ -222,6 +273,97 @@ function isRecordOnLayout(
 ): boolean {
   if (activeLayoutId == null) return true
   return recordLayoutId == null || recordLayoutId === activeLayoutId
+}
+
+/** World AABB of a measurement's control geometry (no overlay padding). */
+function measurementGeometryExtents(
+  geometry: AcExMeasurementGeometry
+): AcExExtents | null {
+  const xs: number[] = []
+  const ys: number[] = []
+  const add = (point: { x: number; y: number }) => {
+    xs.push(point.x)
+    ys.push(point.y)
+  }
+  switch (geometry.type) {
+    case 'distance':
+      add(geometry.start)
+      add(geometry.end)
+      break
+    case 'angle':
+      add(geometry.vertex)
+      add(geometry.arm1)
+      add(geometry.arm2)
+      break
+    case 'area':
+      for (const point of geometry.points) add(point)
+      break
+    case 'arc':
+      add({
+        x: geometry.center.x - geometry.radius,
+        y: geometry.center.y - geometry.radius
+      })
+      add({
+        x: geometry.center.x + geometry.radius,
+        y: geometry.center.y + geometry.radius
+      })
+      break
+    case 'radius':
+      add(geometry.center)
+      add(geometry.point)
+      break
+    case 'point':
+      add(geometry.position)
+      break
+    default:
+      return null
+  }
+  if (xs.length === 0) return null
+  return {
+    minX: Math.min(...xs),
+    minY: Math.min(...ys),
+    maxX: Math.max(...xs),
+    maxY: Math.max(...ys)
+  }
+}
+
+function padDegenerateExtents(extents: AcExExtents): AcExExtents {
+  if (
+    extents.maxX - extents.minX > 1e-8 ||
+    extents.maxY - extents.minY > 1e-8
+  ) {
+    return extents
+  }
+  return {
+    minX: extents.minX - 1,
+    minY: extents.minY - 1,
+    maxX: extents.maxX + 1,
+    maxY: extents.maxY + 1
+  }
+}
+
+/**
+ * Combined zoom-to extents: control geometry plus HTML overlay rectangles.
+ *
+ * Coordinate measurements are a degenerate AABB on their own. Union the
+ * badge (capsule) so the camera frames the label instead of the point.
+ */
+function measurementFocusExtents(
+  geometry: AcExMeasurementGeometry,
+  overlayRects: ReadonlyArray<{
+    left: number
+    top: number
+    right: number
+    bottom: number
+  }>,
+  clientToWorld: (clientX: number, clientY: number) => { x: number; y: number }
+): AcExExtents | null {
+  const extents = acexExpandExtentsByClientRects(
+    measurementGeometryExtents(geometry),
+    overlayRects,
+    clientToWorld
+  )
+  return extents ? padDegenerateExtents(extents) : null
 }
 
 /**
@@ -334,14 +476,39 @@ function distPointToArcPx(
 }
 
 /**
- * Screen-space interior angle arc (viewport pixels), matching {@link AcExMeasureController._drawAngleArc}.
+ * Fraction of the shorter world-space arm used as the dimension arc radius
+ * (arm midpoints when both arms are equal length).
+ */
+const ANGLE_ARC_RADIUS_WCS_FRACTION = 0.5
+/** Bisector offset for the value capsule, slightly outside the dimension arc. */
+const ANGLE_BADGE_OFFSET_FRACTION = 0.55
+
+/**
+ * World-space radius of the interior angle dimension arc.
+ * @internal
+ */
+function angleArcRadiusWcs(
+  vertex: THREE.Vector2,
+  arm1: THREE.Vector2,
+  arm2: THREE.Vector2
+): number {
+  const len1 = Math.hypot(arm1.x - vertex.x, arm1.y - vertex.y)
+  const len2 = Math.hypot(arm2.x - vertex.x, arm2.y - vertex.y)
+  return Math.min(len1, len2) * ANGLE_ARC_RADIUS_WCS_FRACTION
+}
+
+/**
+ * Interior angle arc in overlay pixels. Radius is
+ * {@link ANGLE_ARC_RADIUS_WCS_FRACTION} of the shorter world-space arm,
+ * then converted with `wcsToScreen`, so the arc stays between the arms when
+ * the camera zooms. Matches {@link AcExMeasureController._drawAngleArc}.
  * @internal
  */
 function interiorAngleArcScreenMetrics(
   vertex: THREE.Vector2,
   arm1: THREE.Vector2,
   arm2: THREE.Vector2,
-  wcsToScreen: (wcs: THREE.Vector2) => { x: number; y: number }
+  wcsToScreen: (wcs: { x: number; y: number }) => { x: number; y: number }
 ): {
   cx: number
   cy: number
@@ -355,9 +522,8 @@ function interiorAngleArcScreenMetrics(
   const sa2 = wcsToScreen(arm2)
   const cx = sv.x
   const cy = sv.y
-  const len1 = Math.hypot(sa1.x - cx, sa1.y - cy)
-  const len2 = Math.hypot(sa2.x - cx, sa2.y - cy)
-  const r = Math.max(Math.min(len1, len2) * 0.3, 15)
+  const rWcs = angleArcRadiusWcs(vertex, arm1, arm2)
+  const r = rWcs * acexPixelsPerWorldUnit(wcsToScreen)
   const startAngle = Math.atan2(sa1.y - cy, sa1.x - cx)
   const endAngle = Math.atan2(sa2.y - cy, sa2.x - cx)
   const antiClockwise = normaliseAngle(endAngle - startAngle) > Math.PI
@@ -376,6 +542,12 @@ function hitTestMeasureDom(
   paddingPx = 2
 ): boolean {
   for (const el of parts.dom) {
+    if (
+      el.classList.contains('mlcad-measure-dot') &&
+      !el.classList.contains('mlcad-measure-selected')
+    ) {
+      continue
+    }
     const rect = el.getBoundingClientRect()
     if (
       clientX >= rect.left - paddingPx &&
@@ -408,7 +580,9 @@ function hitTestAngleMeasure(
     return true
   }
 
-  const arc = interiorAngleArcScreenMetrics(vertex, arm1, arm2, wcsToScreen)
+  const arc = interiorAngleArcScreenMetrics(vertex, arm1, arm2, p =>
+    wcsToScreen(new THREE.Vector2(p.x, p.y))
+  )
   if (
     distPointToArcPx(
       clientX,
@@ -459,6 +633,39 @@ function calcAngleDeg(
   const dot = dx1 * dx2 + dy1 * dy2
   const cross = dx1 * dy2 - dy1 * dx2
   return (Math.atan2(Math.abs(cross), dot) * 180) / Math.PI
+}
+
+/** World-space badge anchor along the angle bisector. @internal */
+function angleBadgeWorld(
+  vertex: THREE.Vector2,
+  arm1: THREE.Vector2,
+  arm2: THREE.Vector2
+): THREE.Vector2 {
+  const dx1 = arm1.x - vertex.x
+  const dy1 = arm1.y - vertex.y
+  const dx2 = arm2.x - vertex.x
+  const dy2 = arm2.y - vertex.y
+  const wLen1 = Math.hypot(dx1, dy1)
+  const wLen2 = Math.hypot(dx2, dy2)
+  const u1x = wLen1 > 0 ? dx1 / wLen1 : 1
+  const u1y = wLen1 > 0 ? dy1 / wLen1 : 0
+  const u2x = wLen2 > 0 ? dx2 / wLen2 : 1
+  const u2y = wLen2 > 0 ? dy2 / wLen2 : 0
+  let bx = u1x + u2x
+  let by = u1y + u2y
+  const bLen = Math.hypot(bx, by)
+  if (bLen > 0) {
+    bx /= bLen
+    by /= bLen
+  } else {
+    bx = -u1y
+    by = u1x
+  }
+  const offset = Math.max(
+    Math.min(wLen1, wLen2) * ANGLE_BADGE_OFFSET_FRACTION,
+    Math.max(wLen1, wLen2) * 0.15
+  )
+  return new THREE.Vector2(vertex.x + bx * offset, vertex.y + by * offset)
 }
 
 /**
@@ -625,7 +832,7 @@ function lockedSweep(
   }
 }
 
-/** Sync document CSS accent vars used by measure badges / live label. @internal */
+/** Sync document CSS accent vars used by measure badges. @internal */
 function applyMeasureAccentCss(hex: number): void {
   const css = measureColorToCss(hex)
   const r = (hex >> 16) & 0xff
@@ -751,7 +958,7 @@ function segmentsIntersect(
  */
 function makeDotEl(): HTMLDivElement {
   const dot = document.createElement('div')
-  dot.className = 'mlcad-measure-dot'
+  dot.className = acexOverlayGripClassName('measure')
   return dot
 }
 
@@ -813,22 +1020,27 @@ export class AcExMeasureController {
     | null
   /** Notifies the viewer when measure-tool activity starts or stops. */
   private readonly _onActiveChange: ((active: boolean) => void) | null
+  /** Updates the touch session panel (confirm / metrics / chips). */
+  private readonly _onSessionUi:
+    | ((state: AcExCommandSessionUiState | null) => void)
+    | null
   /** Notifies when selection / session draw style changes. */
   private readonly _onStyleChange: (() => void) | null
   /** Active layout BTR id for stamping / filtering overlays. */
   private readonly _getActiveLayoutId: (() => string) | null
+  private readonly _sessionHistory: AcExSessionHistory | null
+  /** True while {@link restoreRecords} rebuilds visuals (skip nested history). */
+  private _restoring = false
   /** Accent color for lines, labels, and canvas overlays. */
   private _measureColor = ACEX_MEASURE_COLOR
-  /** Session line weight for new measurements. */
-  private _drawLineWeight = ACEX_MEASUREMENT_LINE_WEIGHT
   /** Session badge font size for new measurements. */
   private _drawFontSize = ACEX_MEASUREMENT_FONT_SIZE
+  private _drawTextHeightMode: 'adaptive' | 'custom' = 'adaptive'
+  private _drawCustomTextHeightWcs: number | undefined
   /** Style of the measurement currently being committed (import or interactive). */
   private _commitStyle: AcExMeasurementSidecarStyle | null = null
-  /** Host for canvas overlays, dots, badges, and the live label. */
+  /** Host for canvas overlays, dots, and badges. */
   private readonly _overlayLayer: HTMLDivElement
-  /** Cursor-following value shown during interactive preview. */
-  private readonly _liveLabel: HTMLDivElement
   /** Hidden file input for sidecar import. */
   private readonly _fileInput: HTMLInputElement
   /** Canvas redraw callbacks invoked from {@link syncOverlays}. */
@@ -843,9 +1055,13 @@ export class AcExMeasureController {
   private _commitCounter = 0
   /** Selected committed measurement ids. */
   private readonly _selectedIds = new Set<string>()
+  /** Listeners notified when the committed measurement list changes. */
+  private readonly _recordListeners = new Set<() => void>()
 
   /** Active toolbar mode, or `null` when idle. */
   private _mode: AcExMeasureMode | null = null
+  /** True while a peer create tool (e.g. markup) is armed. */
+  private _peerToolActive = false
   /** Vertices collected for the current in-progress measurement. */
   private _points: THREE.Vector2[] = []
   /**
@@ -869,6 +1085,12 @@ export class AcExMeasureController {
   private _areaCloseThresholdPx = 14
   /** Last pointer position during an active measure tool (for overlay sync on pan/zoom). */
   private _lastPointer: { x: number; y: number } | null = null
+  /**
+   * True while a live cursor sample should drive rubber-band preview (mouse
+   * hover, or touch loupe / precise capture). After lift, canvas preview stays
+   * hidden until the next live sample — not drawn at the last committed vertex.
+   */
+  private _livePointer = false
   /** Guards against re-entrant `render()` while {@link syncOverlays} refreshes preview. */
   private _inOverlaySync = false
   /** Cached `#mlcad-root` rect for one {@link syncOverlays} pass. @internal */
@@ -883,6 +1105,8 @@ export class AcExMeasureController {
     point: THREE.Vector2
     snap: AcExOsnapPoint | null
   } | null = null
+  /** Phone/pad plus marks at confirmed in-progress pick points. */
+  private readonly _confirmedPointMarks: AcExConfirmedPointMarks
 
   /**
    * Creates HTML overlay layers in `root` for measurement graphics.
@@ -898,16 +1122,14 @@ export class AcExMeasureController {
     this._onOsnapMarker = options.onOsnapMarker
     this._getTrackingOptions = options.getTrackingOptions ?? null
     this._onActiveChange = options.onActiveChange ?? null
+    this._onSessionUi = options.onSessionUi ?? null
     this._onStyleChange = options.onStyleChange ?? null
     this._getActiveLayoutId = options.getActiveLayoutId ?? null
+    this._sessionHistory = options.sessionHistory ?? null
 
     this._overlayLayer = document.createElement('div')
     this._overlayLayer.id = 'mlcad-measure-overlays'
     this._root.appendChild(this._overlayLayer)
-
-    this._liveLabel = document.createElement('div')
-    this._liveLabel.className = 'mlcad-measure-live-label'
-    this._overlayLayer.appendChild(this._liveLabel)
 
     this._fileInput = document.createElement('input')
     this._fileInput.type = 'file'
@@ -918,7 +1140,57 @@ export class AcExMeasureController {
     })
     this._root.appendChild(this._fileInput)
 
+    this._confirmedPointMarks = new AcExConfirmedPointMarks(this._root, pos =>
+      this._confirmedPointMarkScreen(pos)
+    )
+
     this._updateVisibilityToolbar()
+
+    this._sessionHistory?.attachMeasure({
+      snapshot: () => this.snapshotRecords(),
+      restore: records => this.restoreRecords(records)
+    })
+  }
+
+  /**
+   * Deep-cloned committed measurement records (all layouts) for undo snapshots.
+   */
+  snapshotRecords(): AcExMeasurementRecord[] {
+    return structuredClone(this._committed.map(item => item.record))
+  }
+
+  /**
+   * Replace all committed measurements from a history snapshot.
+   * Does not itself push a history entry.
+   *
+   * @param records - Measurement sidecar records to restore.
+   */
+  restoreRecords(records: AcExMeasurementRecord[]): void {
+    this._restoring = true
+    try {
+      this.cancelMode()
+      this._deselect(false)
+      for (const measure of [...this._committed]) {
+        this._removeCommitted(measure.id, false)
+      }
+      for (const record of records) {
+        this._publishRecord(structuredClone(record))
+      }
+      this._updateIdleStatus()
+      this._view.render()
+      this._onStyleChange?.()
+    } finally {
+      this._restoring = false
+    }
+  }
+
+  /** Record an undoable measurement mutation when session history is bound. */
+  private _edit(label: string, mutate: () => void): void {
+    if (this._restoring || !this._sessionHistory) {
+      mutate()
+      return
+    }
+    this._sessionHistory.runMeasure(label, mutate)
   }
 
   /**
@@ -936,6 +1208,16 @@ export class AcExMeasureController {
   /** Clears the current measurement selection (if any). */
   clearSelection(): void {
     this._deselect(true)
+  }
+
+  /**
+   * Suspends measurement endpoint pointer hit-testing while a peer create
+   * tool (e.g. markup) is armed, so overlay DOM cannot steal OSNAP clicks.
+   */
+  setPeerToolActive(active: boolean): void {
+    if (this._peerToolActive === active) return
+    this._peerToolActive = active
+    this._syncGripPointerEvents()
   }
 
   /**
@@ -964,23 +1246,42 @@ export class AcExMeasureController {
     color: string
     lineWeight: number
     fontSize: number
+    textHeightMode: 'adaptive' | 'custom'
+    textHeightWcs?: number
   } {
     const selectedId =
       this._selectedIds.size === 1 ? [...this._selectedIds][0] : undefined
     if (selectedId) {
       const measure = this._committed.find(m => m.id === selectedId)
       if (measure) {
+        const fontSize = measure.record.style.fontSize || this._drawFontSize
+        const wcsToScreen = (p: { x: number; y: number }) =>
+          this._wcsToScreenPoint(p)
+        const textHeightWcs =
+          measure.record.style.textHeightWcs != null &&
+          measure.record.style.textHeightWcs > 0
+            ? measure.record.style.textHeightWcs
+            : acexScreenPxToWcs(fontSize, wcsToScreen)
         return {
           color: measure.record.style.color || this._measureCss(),
-          lineWeight: measure.record.style.lineWeight || this._drawLineWeight,
-          fontSize: measure.record.style.fontSize || this._drawFontSize
+          lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
+          fontSize,
+          // Editing a committed overlay always presents Custom + world height.
+          textHeightMode: 'custom',
+          textHeightWcs
         }
       }
     }
     return {
       color: this._measureCss(),
-      lineWeight: this._drawLineWeight,
-      fontSize: this._drawFontSize
+      lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
+      fontSize: this._drawFontSize,
+      textHeightMode: this._drawTextHeightMode,
+      ...(this._drawTextHeightMode === 'custom' &&
+      this._drawCustomTextHeightWcs != null &&
+      this._drawCustomTextHeightWcs > 0
+        ? { textHeightWcs: this._drawCustomTextHeightWcs }
+        : {})
     }
   }
 
@@ -992,61 +1293,88 @@ export class AcExMeasureController {
     colorHex?: number
     lineWeight?: number
     fontSize?: number
+    textHeightMode?: 'adaptive' | 'custom'
+    textHeightWcs?: number
   }): void {
-    let colorChanged = false
-    if (patch.colorHex != null && Number.isFinite(patch.colorHex)) {
-      this._measureColor = patch.colorHex
-      colorChanged = true
-    } else if (patch.color) {
-      const next = cssColorToHex(patch.color, this._measureColor)
-      if (next !== this._measureColor || patch.color !== this._measureCss()) {
-        this._measureColor = next
+    this._edit('Edit Measurement Style', () => {
+      let colorChanged = false
+      if (patch.colorHex != null && Number.isFinite(patch.colorHex)) {
+        this._measureColor = patch.colorHex
         colorChanged = true
+      } else if (patch.color) {
+        const next = cssColorToHex(patch.color, this._measureColor)
+        if (next !== this._measureColor || patch.color !== this._measureCss()) {
+          this._measureColor = next
+          colorChanged = true
+        }
       }
-    }
-    if (patch.lineWeight != null && patch.lineWeight > 0) {
-      this._drawLineWeight = patch.lineWeight
-    }
-    if (patch.fontSize != null && patch.fontSize > 0) {
-      this._drawFontSize = patch.fontSize
-    }
-
-    if (colorChanged) {
-      applyMeasureAccentCss(this._measureColor)
-      this._liveLabel.style.color = this._measureCss()
-    }
-    this._liveLabel.style.fontSize = `${this._drawFontSize}px`
-
-    const selectionPatch: {
-      color?: string
-      lineWeight?: number
-      fontSize?: number
-    } = {}
-    if (colorChanged || patch.colorHex != null || patch.color) {
-      selectionPatch.color = this._measureCss()
-    }
-    if (patch.lineWeight != null && patch.lineWeight > 0) {
-      selectionPatch.lineWeight = patch.lineWeight
-    }
-    if (patch.fontSize != null && patch.fontSize > 0) {
-      selectionPatch.fontSize = patch.fontSize
-    }
-    this._applyStyleToSelection(selectionPatch)
-
-    // Mid-draw: keep in-progress commit style in sync with the session.
-    if (this._commitStyle) {
-      if (selectionPatch.color) this._commitStyle.color = selectionPatch.color
-      if (selectionPatch.lineWeight != null) {
-        this._commitStyle.lineWeight = selectionPatch.lineWeight
+      if (patch.fontSize != null && patch.fontSize > 0) {
+        this._drawFontSize = patch.fontSize
       }
-      if (selectionPatch.fontSize != null) {
-        this._commitStyle.fontSize = selectionPatch.fontSize
+      if (patch.textHeightMode === 'adaptive') {
+        this._drawTextHeightMode = 'adaptive'
+        this._drawCustomTextHeightWcs = undefined
+      } else if (
+        patch.textHeightMode === 'custom' ||
+        (patch.textHeightWcs != null && patch.textHeightWcs > 0)
+      ) {
+        this._drawTextHeightMode = 'custom'
+        if (patch.textHeightWcs != null && patch.textHeightWcs > 0) {
+          this._drawCustomTextHeightWcs = patch.textHeightWcs
+        }
       }
-    }
 
-    this._refreshActivePreview()
-    this._onStyleChange?.()
-    this._view.render()
+      if (colorChanged) {
+        applyMeasureAccentCss(this._measureColor)
+      }
+
+      const selectionPatch: {
+        color?: string
+        fontSize?: number
+        textHeightMode?: 'adaptive' | 'custom'
+        textHeightWcs?: number
+      } = {}
+      if (colorChanged || patch.colorHex != null || patch.color) {
+        selectionPatch.color = this._measureCss()
+      }
+      if (patch.fontSize != null && patch.fontSize > 0) {
+        selectionPatch.fontSize = patch.fontSize
+      }
+      if (patch.textHeightMode != null) {
+        selectionPatch.textHeightMode = patch.textHeightMode
+      }
+      if (patch.textHeightWcs != null && patch.textHeightWcs > 0) {
+        selectionPatch.textHeightWcs = patch.textHeightWcs
+      }
+      this._applyStyleToSelection(selectionPatch)
+
+      // Mid-draw: keep in-progress commit style in sync with the session.
+      if (this._commitStyle) {
+        if (selectionPatch.color) this._commitStyle.color = selectionPatch.color
+        this._commitStyle.lineWeight = ACEX_MEASUREMENT_LINE_WEIGHT
+        if (selectionPatch.fontSize != null) {
+          this._commitStyle.fontSize = selectionPatch.fontSize
+        }
+        if (selectionPatch.textHeightMode != null) {
+          this._commitStyle.textHeightMode = selectionPatch.textHeightMode
+        }
+        if (
+          selectionPatch.textHeightMode === 'custom' &&
+          selectionPatch.textHeightWcs != null
+        ) {
+          this._commitStyle.textHeightWcs = selectionPatch.textHeightWcs
+        } else if (selectionPatch.textHeightMode === 'adaptive') {
+          this._commitStyle.textHeightWcs = acexScreenPxToWcs(
+            this._commitStyle.fontSize,
+            p => this._wcsToScreenPoint(p)
+          )
+        }
+      }
+
+      this._refreshActivePreview()
+      this._onStyleChange?.()
+      this._view.render()
+    })
   }
 
   /** CSS stroke/fill color for canvas overlays. @internal */
@@ -1063,25 +1391,29 @@ export class AcExMeasureController {
    * Activates a measure mode from the toolbar.
    *
    * When `toggleOff` is true (default) and `mode` equals the active mode,
-   * the tool is turned off via {@link cancelMode}. Switching modes clears
-   * in-progress picks and updates toolbar `active` styling.
+   * an in-progress continuous chain with at least one segment is committed;
+   * otherwise the tool is turned off via {@link cancelMode}. Switching away
+   * from continuous behaves the same way, then enters the new mode.
    *
    * @param mode - Tool to enable, or `null` to only reset state.
    * @param toggleOff - If true, clicking the same tool again deactivates it.
    */
   setMode(mode: AcExMeasureMode | null, toggleOff = true): void {
     if (mode === this._mode && toggleOff) {
-      this.cancelMode()
+      if (!this._finishContinuousIfPossible()) this.cancelMode()
       return
     }
-    this.cancelMode()
+    if (!this._finishContinuousIfPossible()) this.cancelMode()
     this._deselect(false)
     if (mode === null) return
     this._mode = mode
     this._points = []
+    this._livePointer = false
     this._updateToolbarActive()
+    this._syncGripPointerEvents()
     this._statusEl.textContent = this._hintForMode(mode)
     this._onActiveChange?.(true)
+    this._syncSessionUi()
   }
 
   /**
@@ -1095,13 +1427,133 @@ export class AcExMeasureController {
     this._arcLock = null
     this._resetArcLockDirection()
     this._lastPointer = null
+    this._livePointer = false
     this._osnapCache = null
     this._hidePreview()
     this._onOsnapMarker(null, null)
+    this._confirmedPointMarks.clear()
     this._updateToolbarActive()
+    this._syncGripPointerEvents()
     this._updateIdleStatus()
     this._view.render()
     if (wasActive) this._onActiveChange?.(false)
+    this._syncSessionUi()
+  }
+
+  /**
+   * Drops the last in-progress vertex. Returns whether a point was removed.
+   */
+  undoLastVertex(): boolean {
+    if (!this._mode || this._points.length === 0) return false
+    this._points.pop()
+    if (this._points.length === 0) {
+      this._arcLock = null
+      this._resetArcLockDirection()
+      this._hidePreview()
+    }
+    this._refreshActivePreview()
+    this._syncSessionUi()
+    this._syncConfirmedPointMarks()
+    this._requestRender()
+    return true
+  }
+
+  /** Whether {@link undoLastVertex} would remove an in-progress pick. */
+  canUndoLastVertex(): boolean {
+    return this._mode != null && this._points.length > 0
+  }
+
+  /**
+   * Empty-Enter equivalent: finish continuous (≥1 segment) or area (≥3 verts).
+   */
+  confirmSession(): boolean {
+    return this.handleKeyDown('Enter')
+  }
+
+  /**
+   * Session panel × — discard the in-progress measurement without committing.
+   *
+   * Keyboard Escape still finishes a continuous chain with at least one
+   * segment ({@link handleKeyDown}); the on-screen Cancel control must not.
+   */
+  cancelSession(): boolean {
+    if (!this._mode) return false
+    this.cancelMode()
+    return true
+  }
+
+  private _syncSessionUi(): void {
+    if (!this._onSessionUi) return
+    if (!this._mode) {
+      this._onSessionUi(null)
+      return
+    }
+    // Metrics only — never pass showMarker (that revived the OSNAP glyph after
+    // a successful pick, undoing the hide in handlePointerDown).
+    const cursor = this._lastPointer
+      ? this._resolvePointerWithOsnap(
+          this._lastPointer.x,
+          this._lastPointer.y,
+          false
+        )
+      : this._points[this._points.length - 1]
+    const lastCommitted = this._points[this._points.length - 1] ?? null
+    const prevCommitted =
+      this._points.length >= 2 ? this._points[this._points.length - 2]! : null
+    // Finger down: rubber-band from the last pick. Finger up: keep the
+    // completed segment (or absolute X/Y of the only pick) until next press.
+    const base = this._livePointer ? lastCommitted : prevCommitted
+    const useRelative =
+      this._mode !== 'coordinate' && base != null && cursor != null
+    const dx = useRelative && base && cursor ? cursor.x - base.x : 0
+    const dy = useRelative && base && cursor ? cursor.y - base.y : 0
+    const length = Math.hypot(dx, dy)
+    let angleDeg = (Math.atan2(dy, dx) * 180) / Math.PI
+    if (angleDeg < 0) angleDeg += 360
+    if (this._livePointer && useRelative && length === 0) return
+    const confirmEnabled =
+      (this._mode === 'continuous' && this._points.length >= 2) ||
+      (this._mode === 'area' && this._points.length >= 3)
+    this._onSessionUi({
+      prompt: this._hintForMode(this._mode),
+      confirmEnabled,
+      metrics: {
+        hasBasePoint: useRelative,
+        lengthText: this._view.formatLength(length),
+        angleText: this._view.formatAngle(angleDeg),
+        dxText: this._view.formatLength(dx),
+        dyText: this._view.formatLength(dy),
+        xText: this._view.formatLength(cursor?.x ?? 0),
+        yText: this._view.formatLength(cursor?.y ?? 0)
+      },
+      chips: []
+    })
+  }
+
+  /**
+   * Commits an in-progress continuous measurement when at least one segment
+   * exists, then exits create mode. Used by Enter, Esc, and tool switching.
+   */
+  private _finishContinuousIfPossible(): boolean {
+    if (this._mode !== 'continuous' || this._points.length < 2) return false
+    this._commitContinuous(this._points.map(p => p.clone()))
+    this._points = []
+    this._hidePreview()
+    this._exitCreateModeKeepStatus()
+    return true
+  }
+
+  /**
+   * Ends create mode after a successful interactive commit, keeping the
+   * just-written status message (result readout) instead of replacing it
+   * with idle totals / empty ready text.
+   */
+  private _exitCreateModeKeepStatus(): void {
+    const msg = this._statusEl.textContent
+    this.cancelMode()
+    if (msg?.trim()) {
+      this._statusEl.textContent = msg
+    }
   }
 
   /**
@@ -1112,17 +1564,119 @@ export class AcExMeasureController {
   }
 
   /**
+   * Committed measurements on the active layout, with formatted badge text.
+   */
+  list(): Array<{
+    id: string
+    type: AcExMeasurementType
+    valueText: string
+    record: AcExMeasurementRecord
+  }> {
+    const activeId = this._getActiveLayoutId?.()
+    return this._committed
+      .filter(measure => isRecordOnLayout(measure.record.layoutId, activeId))
+      .map(measure => ({
+        id: measure.id,
+        type: measure.record.type,
+        valueText: this._valueText(measure),
+        record: measure.record
+      }))
+  }
+
+  /** Currently selected measurement id when exactly one is selected. */
+  get selectedId(): string | undefined {
+    if (this._selectedIds.size !== 1) return undefined
+    return [...this._selectedIds][0]
+  }
+
+  /** Subscribe to list/selection changes. */
+  subscribe(listener: () => void): () => void {
+    this._recordListeners.add(listener)
+    return () => {
+      this._recordListeners.delete(listener)
+    }
+  }
+
+  /** Select a measurement from the list panel. */
+  selectFromPanel(id: string): void {
+    this._deselect(false)
+    this._select(id)
+    this._notifyRecordsChanged()
+  }
+
+  /**
+   * Zoom to a measurement (geometry plus HTML badge) and select it.
+   *
+   * @returns `true` when extents were applied.
+   */
+  focus(id: string): boolean {
+    const measure = this._committed.find(item => item.id === id)
+    if (!measure) return false
+    const rects = measure.parts.dom
+      .filter(el => !acexIsOverlayGrip(el) && !el.hidden)
+      .map(el => el.getBoundingClientRect())
+      .filter(rect => rect.width > 0 || rect.height > 0)
+    const extents = measurementFocusExtents(
+      measure.record.geometry,
+      rects,
+      (clientX, clientY) => {
+        const p = this._view.screenToWcs(clientX, clientY)
+        return { x: p.x, y: p.y }
+      }
+    )
+    if (!extents) return false
+    this._view.zoomToExtents(extents)
+    this.selectFromPanel(id)
+    return true
+  }
+
+  /** Remove one committed measurement. */
+  removeMeasurement(id: string): void {
+    this._edit('Delete Measurement', () => {
+      this._removeCommitted(id, true)
+    })
+  }
+
+  private _notifyRecordsChanged(): void {
+    for (const listener of this._recordListeners) listener()
+  }
+
+  private _valueText(measure: AcExCommittedMeasure): string {
+    const badge = measure.parts.dom.find(el =>
+      el.classList.contains('mlcad-measure-badge')
+    )
+    const text = badge?.textContent?.trim()
+    if (text) return text
+    switch (measure.record.type) {
+      case 'area':
+        return `${this._view.formatLength(measure.value)}²`
+      case 'angle':
+        return this._view.formatAngle(measure.value)
+      case 'point':
+        if (measure.record.geometry.type === 'point') {
+          const p = measure.record.geometry.position
+          return `X ${this._view.formatLength(p.x)}  Y ${this._view.formatLength(p.y)}`
+        }
+        return ''
+      default:
+        return this._view.formatLength(measure.value)
+    }
+  }
+
+  /**
    * Removes all persistent measurement graphics (lines, canvas, badges, dots),
    * disposes THREE resources, and returns the viewer to idle status.
    */
   clearAll(): void {
-    this.cancelMode()
-    this._deselect(false)
-    for (const measure of [...this._committed]) {
-      this._removeCommitted(measure.id, false)
-    }
-    this._updateIdleStatus()
-    this._view.render()
+    this._edit('Clear Measurements', () => {
+      this.cancelMode()
+      this._deselect(false)
+      for (const measure of [...this._committed]) {
+        this._removeCommitted(measure.id, false)
+      }
+      this._updateIdleStatus()
+      this._view.render()
+    })
   }
 
   /**
@@ -1161,6 +1715,7 @@ export class AcExMeasureController {
     if (selectionChanged) {
       this._onStyleChange?.()
     }
+    this._notifyRecordsChanged()
   }
 
   /** Download current measurements as a `*.measurement.json` sidecar. */
@@ -1175,7 +1730,7 @@ export class AcExMeasureController {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = acExMeasurementSidecarFileName(this._drawingName)
+    a.download = acexMeasurementSidecarFileName(this._drawingName)
     a.click()
     URL.revokeObjectURL(url)
     this._statusEl.textContent = this._i18n.t('status.measureExported', {
@@ -1191,12 +1746,18 @@ export class AcExMeasureController {
 
   /** Replace all measurements from a parsed sidecar (used by tests / import). */
   loadSidecar(file: AcExMeasurementSidecarFile): void {
-    this.clearAll()
-    for (const record of file.measurements) {
-      this._publishRecord(record)
-    }
-    this._updateIdleStatus()
-    this._view.render()
+    this._edit('Import Measurements', () => {
+      this.cancelMode()
+      this._deselect(false)
+      for (const measure of [...this._committed]) {
+        this._removeCommitted(measure.id, false)
+      }
+      for (const record of file.measurements) {
+        this._publishRecord(record)
+      }
+      this._updateIdleStatus()
+      this._view.render()
+    })
   }
 
   private async _handleImportFile(): Promise<void> {
@@ -1233,6 +1794,7 @@ export class AcExMeasureController {
         this._lastOverlaySyncKey = overlayKey
       }
       this._refreshActivePreview()
+      this._syncConfirmedPointMarks()
     } finally {
       this._inOverlaySync = false
       this._overlayRootRect = null
@@ -1251,23 +1813,43 @@ export class AcExMeasureController {
     // endpoint dots coincide with CAD grips/OSNAP and would steal placement clicks.
     // Idle selection uses {@link handleSelectionPointerDown} instead.
     if (!this._mode) return false
+    // End live preview before resolving so a nested render cannot revive the
+    // OSNAP glyph; confirmed picks show the plus mark only.
+    this._livePointer = false
     this._lastPointer = { x: clientX, y: clientY }
-    const point = this._resolvePointerWithOsnap(clientX, clientY)
+    const point = this._resolvePointerWithOsnap(clientX, clientY, false)
 
+    let handled = true
     switch (this._mode) {
       case 'distance':
-        return this._pointerDistance(point, clientX, clientY)
+        handled = this._pointerDistance(point, clientX, clientY)
+        break
+      case 'continuous':
+        handled = this._pointerContinuous(point, clientX, clientY)
+        break
       case 'angle':
-        return this._pointerAngle(point, clientX, clientY)
+        handled = this._pointerAngle(point, clientX, clientY)
+        break
       case 'arc':
-        return this._pointerArc(point, clientX, clientY)
+        handled = this._pointerArc(point, clientX, clientY)
+        break
+      case 'radius':
+        handled = this._pointerRadius(point, clientX, clientY)
+        break
       case 'area':
-        return this._pointerArea(point, clientX, clientY)
+        handled = this._pointerArea(point, clientX, clientY)
+        break
       case 'coordinate':
-        return this._pointerCoordinate(point, clientX, clientY)
+        handled = this._pointerCoordinate(point, clientX, clientY)
+        break
       default:
-        return true
+        handled = true
+        break
     }
+    this._onOsnapMarker(null, null)
+    this._syncSessionUi()
+    this._syncConfirmedPointMarks()
+    return handled
   }
 
   /**
@@ -1277,6 +1859,7 @@ export class AcExMeasureController {
    */
   handlePointerMove(clientX: number, clientY: number): void {
     if (!this._mode) return
+    this._livePointer = true
     this._lastPointer = { x: clientX, y: clientY }
   }
 
@@ -1304,6 +1887,7 @@ export class AcExMeasureController {
       return true
     }
     if (key === 'Escape') {
+      if (this._finishContinuousIfPossible()) return true
       if (this._mode) {
         this.cancelMode()
         return true
@@ -1318,9 +1902,10 @@ export class AcExMeasureController {
       this._commitArea([...this._points])
       this._points = []
       this._hidePreview()
-      this._statusEl.textContent = this._hintForMode('area')
+      this._exitCreateModeKeepStatus()
       return true
     }
+    if (key === 'Enter' && this._finishContinuousIfPossible()) return true
     return false
   }
 
@@ -1331,6 +1916,29 @@ export class AcExMeasureController {
   handleSelectionPointerDown(clientX: number, clientY: number): boolean {
     if (this._mode || this._committed.length === 0) return false
     return this._trySelectCommittedAt(clientX, clientY)
+  }
+
+  /**
+   * Replaces measurement selection with items whose geometry AABB matches `box`.
+   *
+   * @returns True when selection state changed.
+   */
+  handleSelectionBox(box: AcExExtents, mode: AcExSelectionMode): boolean {
+    if (this._mode || !this._visible) return false
+    const next = new Set<string>()
+    for (const measure of this._committed) {
+      if (
+        !isRecordOnLayout(measure.record.layoutId, this._getActiveLayoutId?.())
+      ) {
+        continue
+      }
+      const bounds = measurementGeometryExtents(measure.record.geometry)
+      if (!bounds) continue
+      if (acexExtentsMatchBox(bounds, box, mode)) {
+        next.add(measure.id)
+      }
+    }
+    return this._replaceSelection(next)
   }
 
   /**
@@ -1355,13 +1963,15 @@ export class AcExMeasureController {
     }
 
     event?.preventDefault()
-    for (const id of [...this._selectedIds]) {
-      this._removeCommitted(id, false)
-    }
-    this._selectedIds.clear()
-    this._onStyleChange?.()
-    this._updateIdleStatus()
-    this._view.render()
+    this._edit('Delete Measurement', () => {
+      for (const id of [...this._selectedIds]) {
+        this._removeCommitted(id, false)
+      }
+      this._selectedIds.clear()
+      this._onStyleChange?.()
+      this._updateIdleStatus()
+      this._view.render()
+    })
     return true
   }
 
@@ -1414,10 +2024,14 @@ export class AcExMeasureController {
     switch (mode) {
       case 'distance':
         return this._i18n.t('status.measureDistanceHint')
+      case 'continuous':
+        return this._i18n.t('status.measureContinuousHint')
       case 'angle':
         return this._i18n.t('status.measureAngleHint')
       case 'arc':
         return this._i18n.t('status.measureArcHint')
+      case 'radius':
+        return this._i18n.t('status.measureRadiusHint')
       case 'area':
         return this._i18n.t('status.measureAreaHint')
       case 'coordinate':
@@ -1448,8 +2062,8 @@ export class AcExMeasureController {
       ? 'toolbar.measureHide'
       : 'toolbar.measureShow'
     const icon = this._visible
-      ? acExHtmlIcons.markupShow
-      : acExHtmlIcons.markupHide
+      ? AcExHtmlIcons.markupShow
+      : AcExHtmlIcons.markupHide
     const label = this._i18n.t(titleKey)
     buttons.forEach(btn => {
       btn.classList.toggle('active', this._visible)
@@ -1457,21 +2071,29 @@ export class AcExMeasureController {
       btn.setAttribute('data-i18n-key', titleKey)
       btn.setAttribute('title', label)
       btn.setAttribute('aria-label', label)
-      const iconHost = btn.querySelector('.mlcad-dropdown-icon')
+      const labelEl =
+        btn.querySelector('.mlcad-tool-btn-label') ??
+        btn.querySelector('.mlcad-dropdown-label')
+      if (labelEl) {
+        labelEl.setAttribute('data-i18n-key', titleKey)
+        labelEl.textContent = label
+      }
+      const iconHost =
+        btn.querySelector('.mlcad-tool-btn-icon') ??
+        btn.querySelector('.mlcad-dropdown-icon')
       if (iconHost) {
         iconHost.innerHTML = icon
-      } else {
+      } else if (!labelEl) {
         btn.innerHTML = icon
       }
     })
   }
 
-  /** Removes transient preview lines, label, and preview canvases. @internal */
+  /** Removes transient preview lines, capsules, and preview canvases. @internal */
   private _hidePreview(): void {
-    this._liveLabel.style.display = 'none'
     this._overlayLayer
       .querySelectorAll(
-        '.mlcad-measure-canvas--preview, .mlcad-measure-canvas--preview-line'
+        '.mlcad-measure-canvas--preview, .mlcad-measure-canvas--preview-line, .mlcad-measure-canvas--hover-entity, .mlcad-measure-badge--preview'
       )
       .forEach(el => el.remove())
   }
@@ -1485,12 +2107,17 @@ export class AcExMeasureController {
   }
 
   /**
-   * Resolves the WCS pick (with object snap) and refreshes the on-screen snap marker.
+   * Resolves the WCS pick (with object snap) and optionally refreshes the
+   * on-screen snap marker.
+   *
+   * @param showMarker - When false, resolve silently (confirmed picks keep
+   *   the plus mark only and must not leave a snap glyph behind).
    * @internal
    */
   private _resolvePointerWithOsnap(
     clientX: number,
-    clientY: number
+    clientY: number,
+    showMarker: boolean = true
   ): THREE.Vector2 {
     const cacheKey = this._view.getSnapCacheKey()
     const cached = this._osnapCache
@@ -1500,10 +2127,12 @@ export class AcExMeasureController {
       cached.clientY === clientY &&
       cached.cacheKey === cacheKey
     ) {
-      this._onOsnapMarker(
-        cached.snap,
-        cached.snap ? this._view.wcsToScreen(cached.point) : null
-      )
+      if (showMarker) {
+        this._onOsnapMarker(
+          cached.snap,
+          cached.snap ? this._view.wcsToScreen(cached.point) : null
+        )
+      }
       return cached.point
     }
 
@@ -1522,7 +2151,9 @@ export class AcExMeasureController {
       point: point.clone(),
       snap
     }
-    this._onOsnapMarker(snap, snap ? this._view.wcsToScreen(point) : null)
+    if (showMarker) {
+      this._onOsnapMarker(snap, snap ? this._view.wcsToScreen(point) : null)
+    }
     return point
   }
 
@@ -1535,51 +2166,140 @@ export class AcExMeasureController {
   }
 
   /**
-   * Redraws in-progress preview and object-snap marker after pan/zoom using the last pointer sample.
+   * Redraws in-progress preview after pan/zoom.
+   *
+   * Live cursor (mouse hover / touch loupe) drives the rubber-band to the
+   * next pick. Without a live sample, multi-vertex tools still show geometry
+   * already confirmed in this session (continuous segments, area edges, …).
    * @internal
    */
   private _refreshActivePreview(): void {
-    if (!this._mode || !this._lastPointer) return
-    const { x, y } = this._lastPointer
-    const point = this._resolvePointerWithOsnap(x, y)
+    if (!this._mode) return
 
+    if (this._livePointer && this._lastPointer) {
+      const { x, y } = this._lastPointer
+      const point = this._resolvePointerWithOsnap(x, y)
+      switch (this._mode) {
+        case 'distance':
+          this._clearCircleArcHoverHighlight()
+          if (this._points.length === 1) {
+            this._previewDistance(point)
+          }
+          break
+        case 'continuous':
+          this._clearCircleArcHoverHighlight()
+          if (this._points.length >= 1) {
+            this._previewContinuous(point)
+          }
+          break
+        case 'angle':
+          this._clearCircleArcHoverHighlight()
+          if (this._points.length >= 1) {
+            this._previewAngle(point)
+          }
+          break
+        case 'arc':
+          if (this._points.length === 0) {
+            this._syncCircleArcHoverHighlight(x, y, point)
+          } else {
+            this._clearCircleArcHoverHighlight()
+            this._previewArc(point, x, y)
+          }
+          break
+        case 'radius':
+          this._syncCircleArcHoverHighlight(x, y, point)
+          break
+        case 'area':
+          this._clearCircleArcHoverHighlight()
+          if (this._points.length >= 1) {
+            this._previewArea(point)
+          }
+          break
+        case 'coordinate':
+          this._clearCircleArcHoverHighlight()
+          this._previewCoordinate(point)
+          break
+      }
+      this._syncSessionUi()
+      return
+    }
+
+    // Finger/button up: keep confirmed segments, never leave a snap glyph.
+    this._onOsnapMarker(null, null)
+    this._clearCircleArcHoverHighlight()
     switch (this._mode) {
-      case 'distance':
-        if (this._points.length === 1) {
-          this._previewDistance(point, x, y)
-        }
-        break
-      case 'angle':
-        if (this._points.length >= 1) {
-          this._previewAngle(point, x, y)
-        }
-        break
-      case 'arc':
-        if (this._points.length >= 1) {
-          this._previewArc(point, x, y)
-        }
+      case 'continuous':
+        this._previewContinuous(null)
         break
       case 'area':
-        if (this._points.length >= 1) {
-          this._previewArea(point, x, y)
-        }
+        this._previewArea(null)
         break
-      case 'coordinate':
-        this._previewCoordinate(point, x, y)
+      case 'angle':
+        this._previewAngleCommitted()
+        break
+      case 'arc':
+        this._previewArcCommitted()
+        break
+      default:
         break
     }
+    this._syncSessionUi()
   }
 
   /**
-   * Positions the cursor-following preview label in root-local coordinates.
+   * Positions live value capsules (same badge chrome as committed measurements).
+   * Used by continuous segments and distance / angle / arc / coordinate previews.
    * @internal
    */
-  private _showLiveLabel(text: string, clientX: number, clientY: number): void {
-    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
-    this._liveLabel.textContent = text
-    this._liveLabel.style.display = 'block'
-    this._liveLabel.style.left = `${clientX - rootRect.left}px`
-    this._liveLabel.style.top = `${clientY - rootRect.top}px`
+  private _syncPreviewBadges(
+    items: Array<{
+      wcs: THREE.Vector2
+      text: string
+      /** Offset capsule like a committed coordinate readout. */
+      coordinate?: boolean
+      /**
+       * Screen length of the labeled segment. When set under Fit-to-screen,
+       * font size is capped so the capsule is at most half this length.
+       */
+      segmentScreenLengthPx?: number
+    }>
+  ): void {
+    const existing = Array.from(
+      this._overlayLayer.querySelectorAll<HTMLDivElement>(
+        '.mlcad-measure-badge--preview'
+      )
+    )
+    while (existing.length > items.length) existing.pop()?.remove()
+    while (existing.length < items.length) {
+      const el = makeBadgeEl('')
+      el.classList.add('mlcad-measure-badge--preview')
+      this._overlayLayer.appendChild(el)
+      existing.push(el)
+    }
+    const css = this._measureCss()
+    for (let i = 0; i < items.length; i++) {
+      const el = existing[i]!
+      const item = items[i]!
+      el.textContent = item.text
+      el.style.color = css
+      el.style.borderColor = css
+      const fontSize =
+        item.segmentScreenLengthPx != null
+          ? acexAdaptiveMeasureBadgeFontSize(
+              item.text,
+              {
+                fontSize: this._drawFontSize,
+                textHeightMode: this._drawTextHeightMode
+              },
+              item.segmentScreenLengthPx
+            )
+          : this._drawFontSize
+      el.style.fontSize = `${fontSize}px`
+      el.style.display = 'block'
+      el.classList.toggle('mlcad-measure-badge--coordinate', !!item.coordinate)
+      this._syncLiveDomTextHeight(el)
+      this._placeDomAt(el, item.wcs)
+    }
   }
 
   /**
@@ -1587,7 +2307,15 @@ export class AcExMeasureController {
    * Uses the current draw-style color and line weight.
    * @internal
    */
-  private _setPreviewLine(points: THREE.Vector2[]): void {
+  private _setPreviewLine(
+    points: THREE.Vector2[],
+    options?: {
+      bothArrows?: boolean
+      segmentArrows?: boolean
+      arrowSizePx?: number
+      segmentArrowSizesPx?: readonly number[]
+    }
+  ): void {
     let canvas = this._overlayLayer.querySelector<HTMLCanvasElement>(
       '.mlcad-measure-canvas--preview-line'
     )
@@ -1603,7 +2331,14 @@ export class AcExMeasureController {
       canvas,
       points,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(this._drawLineWeight)
+      acexMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT),
+      undefined,
+      options?.bothArrows,
+      false,
+      undefined,
+      options?.segmentArrows,
+      options?.arrowSizePx,
+      options?.segmentArrowSizesPx
     )
   }
 
@@ -1618,28 +2353,25 @@ export class AcExMeasureController {
    */
   private _pointerCoordinate(
     point: THREE.Vector2,
-    clientX: number,
-    clientY: number
+    _clientX: number,
+    _clientY: number
   ): boolean {
     this._commitCoordinate(point)
     this._hidePreview()
-    this._statusEl.textContent = this._hintForMode('coordinate')
-    this._previewCoordinate(point, clientX, clientY)
+    this._exitCreateModeKeepStatus()
     return true
   }
 
-  /** Coordinate tool live preview at the cursor. @internal */
-  private _previewCoordinate(
-    point: THREE.Vector2,
-    clientX: number,
-    clientY: number
-  ): void {
+  /** Coordinate tool live preview capsule at the pick (matches simple-viewer). @internal */
+  private _previewCoordinate(point: THREE.Vector2): void {
     this._hidePreview()
-    this._showLiveLabel(
-      this._formatCoordinateLabel(point.x, point.y),
-      clientX,
-      clientY
-    )
+    this._syncPreviewBadges([
+      {
+        wcs: point,
+        text: this._formatCoordinateLabel(point.x, point.y),
+        coordinate: true
+      }
+    ])
     this._requestRender()
   }
 
@@ -1651,30 +2383,74 @@ export class AcExMeasureController {
     point: THREE.Vector2,
     existing?: AcExMeasurementRecord
   ): void {
-    const label = this._formatCoordinateLabel(point.x, point.y)
+    const pos = point.clone()
+    const label = this._formatCoordinateLabel(pos.x, pos.y)
     const id = this._startCommit(existing?.id)
-    this._addDot(point)
-    const badge = this._addBadge(point, label)
+    const dot = this._addDot(pos)
+    const badge = this._addBadge(pos, label)
     badge.classList.add('mlcad-measure-badge--coordinate')
     const record =
       existing ??
       this._makeRecord(id, 'point', {
         type: 'point',
-        position: { x: point.x, y: point.y }
+        position: { x: pos.x, y: pos.y }
       })
     this._finishCommit(
       (clientX, clientY, threshold) => {
-        const s = this._view.wcsToScreen(point)
+        const s = this._view.wcsToScreen(pos)
         return Math.hypot(clientX - s.x, clientY - s.y) <= threshold
       },
       null,
       0,
       record
     )
+    this._bindPointGrips(id, record, pos, dot, badge)
     this._statusEl.textContent = this._i18n.t('status.coordinates', {
-      x: this._view.formatLength(point.x),
-      y: this._view.formatLength(point.y)
+      x: this._view.formatLength(pos.x),
+      y: this._view.formatLength(pos.y)
     })
+  }
+
+  /** Endpoint grip for a coordinate measurement. @internal */
+  private _bindPointGrips(
+    id: string,
+    record: AcExMeasurementRecord,
+    pos: THREE.Vector2,
+    dot: HTMLElement,
+    badge: HTMLElement
+  ): void {
+    const parts = this._committed.find(m => m.id === id)?.parts
+    if (!parts) return
+    const g = record.geometry
+    if (g.type !== 'point') return
+
+    const refresh = () => {
+      g.position.x = pos.x
+      g.position.y = pos.y
+      badge.textContent = this._formatCoordinateLabel(pos.x, pos.y)
+      this._placeDomAt(badge, pos)
+      this._view.render()
+    }
+
+    parts.cleanups.push(
+      acexBindMarkupPointerDrag({
+        el: dot,
+        clientToWorld: (x, y) => this._clientToWorld(x, y),
+        isEnabled: () => this._gripsEnabled(),
+        onPointerDown: () => this._selectOnly(id),
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
+        onMove: world => {
+          pos.set(world.x, world.y)
+          this._placeDomAt(dot, world)
+          refresh()
+        },
+        onCommit: () => {
+          refresh()
+          this._touchMeasureGeometry(id, null, 0)
+        }
+      })
+    )
+    this._syncGripPointerEvents()
   }
 
   /**
@@ -1683,41 +2459,74 @@ export class AcExMeasureController {
    */
   private _pointerDistance(
     point: THREE.Vector2,
-    clientX: number,
-    clientY: number
+    _clientX: number,
+    _clientY: number
   ): boolean {
     this._points.push(point.clone())
     if (this._points.length < 2) {
-      this._previewDistance(point, clientX, clientY)
+      // Wait for a live cursor (mouse move / touch loupe) before rubber-band.
+      this._hidePreview()
       return true
     }
     const [a, b] = this._points
     this._commitDistance(a!, b!)
     this._points = []
     this._hidePreview()
-    this._statusEl.textContent = this._hintForMode('distance')
+    this._exitCreateModeKeepStatus()
     return true
   }
 
   /** Distance tool live preview after the first anchor is set. @internal */
-  private _previewDistance(
-    point: THREE.Vector2,
-    clientX: number,
-    clientY: number
-  ): void {
+  private _previewDistance(point: THREE.Vector2): void {
     if (this._points.length !== 1) {
       this._hidePreview()
       return
     }
     const anchor = this._points[0]!
-    this._setPreviewLine([anchor, point])
     const dist = dist2(anchor, point)
-    this._showLiveLabel(this._view.formatLength(dist), clientX, clientY)
+    const linePx = acexScreenSegmentLengthPx(
+      p => this._wcsToScreenPoint(p),
+      anchor,
+      point
+    )
+    let arrowSizePx = ACEX_OVERLAY_ARROW_SIZE_PX
+    if (dist >= 1e-4) {
+      const label = this._view.formatLength(dist)
+      const fontSize = acexAdaptiveMeasureBadgeFontSize(
+        label,
+        {
+          fontSize: this._drawFontSize,
+          textHeightMode: this._drawTextHeightMode
+        },
+        linePx
+      )
+      arrowSizePx = acexScaleMeasureOverlayPx(
+        ACEX_OVERLAY_ARROW_SIZE_PX,
+        this._drawFontSize,
+        fontSize
+      )
+    }
+    this._setPreviewLine([anchor, point], { bothArrows: true, arrowSizePx })
+    if (dist < 1e-4) {
+      this._syncPreviewBadges([])
+    } else {
+      this._syncPreviewBadges([
+        {
+          wcs: new THREE.Vector2(
+            (anchor.x + point.x) / 2,
+            (anchor.y + point.y) / 2
+          ),
+          text: this._view.formatLength(dist),
+          segmentScreenLengthPx: linePx
+        }
+      ])
+    }
     this._requestRender()
   }
 
   /**
-   * Persists a distance measurement: line, endpoint dots, and midpoint badge.
+   * Persists a distance measurement: line with endpoint arrows, endpoint dots,
+   * and midpoint badge.
    * @internal
    */
   private _commitDistance(
@@ -1725,24 +2534,33 @@ export class AcExMeasureController {
     b: THREE.Vector2,
     existing?: AcExMeasurementRecord
   ): void {
-    const dist = dist2(a, b)
+    const start = a.clone()
+    const end = b.clone()
+    const dist = dist2(start, end)
     const id = this._startCommit(existing?.id)
-    this._addPersistentLine([a, b])
-    this._addDot(a)
-    this._addDot(b)
-    const mid = new THREE.Vector2((a.x + b.x) / 2, (a.y + b.y) / 2)
-    this._addBadge(mid, this._view.formatLength(dist))
+    const label = this._view.formatLength(dist)
+    this._clampCommitBadgeForRef(
+      label,
+      acexScreenSegmentLengthPx(p => this._wcsToScreenPoint(p), start, end),
+      existing,
+      { scaleArrows: true }
+    )
+    this._addPersistentLine([start, end], { bothArrows: true })
+    const dot1 = this._addDot(start)
+    const dot2 = this._addDot(end)
+    const mid = new THREE.Vector2((start.x + end.x) / 2, (start.y + end.y) / 2)
+    const badge = this._addBadge(mid, label)
     const record =
       existing ??
       this._makeRecord(id, 'distance', {
         type: 'distance',
-        start: { x: a.x, y: a.y },
-        end: { x: b.x, y: b.y }
+        start: { x: start.x, y: start.y },
+        end: { x: end.x, y: end.y }
       })
     this._finishCommit(
       (clientX, clientY, threshold) => {
-        const sa = this._view.wcsToScreen(a)
-        const sb = this._view.wcsToScreen(b)
+        const sa = this._view.wcsToScreen(start)
+        const sb = this._view.wcsToScreen(end)
         return (
           distPointToSegmentPx(clientX, clientY, sa.x, sa.y, sb.x, sb.y) <=
           threshold
@@ -1752,8 +2570,427 @@ export class AcExMeasureController {
       dist,
       record
     )
+    this._bindDistanceGrips(id, record, start, end, mid, dot1, dot2, badge)
     this._statusEl.textContent = this._i18n.t('status.distance', {
-      value: this._view.formatLength(dist)
+      value: label
+    })
+  }
+
+  /** Endpoint grips for a distance measurement. @internal */
+  private _bindDistanceGrips(
+    id: string,
+    record: AcExMeasurementRecord,
+    start: THREE.Vector2,
+    end: THREE.Vector2,
+    mid: THREE.Vector2,
+    startDot: HTMLElement,
+    endDot: HTMLElement,
+    badge: HTMLElement
+  ): void {
+    const parts = this._committed.find(m => m.id === id)?.parts
+    if (!parts) return
+    const g = record.geometry
+    if (g.type !== 'distance') return
+    // Keep record geometry as the same object fields we mutate.
+    g.start.x = start.x
+    g.start.y = start.y
+    g.end.x = end.x
+    g.end.y = end.y
+
+    const refresh = () => {
+      mid.set((start.x + end.x) / 2, (start.y + end.y) / 2)
+      const dist = dist2(start, end)
+      badge.textContent = this._view.formatLength(dist)
+      this._placeDomAt(badge, mid)
+      g.start.x = start.x
+      g.start.y = start.y
+      g.end.x = end.x
+      g.end.y = end.y
+      for (const fn of this._redrawListeners) fn()
+      this._view.render()
+      return dist
+    }
+
+    const isEnabled = () => this._gripsEnabled()
+    const onSelect = () => this._selectOnly(id)
+    const onCommit = () => {
+      const dist = refresh()
+      this._touchMeasureGeometry(id, 'length', dist)
+    }
+    parts.cleanups.push(
+      acexBindMarkupPointerDrag({
+        el: startDot,
+        clientToWorld: (x, y) => this._clientToWorld(x, y),
+        isEnabled,
+        onPointerDown: onSelect,
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
+        onMove: world => {
+          start.set(world.x, world.y)
+          this._placeDomAt(startDot, world)
+          refresh()
+        },
+        onCommit
+      }),
+      acexBindMarkupPointerDrag({
+        el: endDot,
+        clientToWorld: (x, y) => this._clientToWorld(x, y),
+        isEnabled,
+        onPointerDown: onSelect,
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
+        onMove: world => {
+          end.set(world.x, world.y)
+          this._placeDomAt(endDot, world)
+          refresh()
+        },
+        onCommit
+      })
+    )
+    this._syncGripPointerEvents()
+  }
+
+  /**
+   * Radius tool: click a circle or arc to commit immediately.
+   * Clicks that miss circular geometry are ignored.
+   * @internal
+   */
+  private _pointerRadius(
+    point: THREE.Vector2,
+    clientX: number,
+    clientY: number
+  ): boolean {
+    const raw = this._view.screenToWcs(clientX, clientY)
+    const lock =
+      this._view.findCircleOrArcNear?.(raw.x, raw.y) ??
+      this._view.findCircleOrArcNear?.(point.x, point.y)
+    if (!lock || !(lock.r > 0)) return true
+    const center = new THREE.Vector2(lock.cx, lock.cy)
+    const onCircle = pointLiesOnCircle(point, lock)
+      ? point.clone()
+      : new THREE.Vector2(lock.x, lock.y)
+    const rim = snapPointToCircle(onCircle, lock)
+    this._commitRadius(center, rim)
+    this._hidePreview()
+    this._exitCreateModeKeepStatus()
+    return true
+  }
+
+  /** Formats a radius badge / status value with the CAD `R` prefix. @internal */
+  private _formatRadiusLabel(radius: number): string {
+    return `R ${this._view.formatLength(radius)}`
+  }
+
+  /**
+   * Hover-highlight the circle/arc under the cursor while radius (or the first
+   * pick of arc) is active, so the user can see which entity will be measured.
+   * @internal
+   */
+  private _syncCircleArcHoverHighlight(
+    clientX: number,
+    clientY: number,
+    point: THREE.Vector2
+  ): void {
+    const raw = this._view.screenToWcs(clientX, clientY)
+    const hit =
+      this._view.findCircleOrArcNear?.(raw.x, raw.y) ??
+      this._view.findCircleOrArcNear?.(point.x, point.y)
+    if (!hit || !(hit.r > 0)) {
+      this._clearCircleArcHoverHighlight()
+      return
+    }
+    this._drawCircleArcHoverHighlight(hit)
+    this._requestRender()
+  }
+
+  /** Removes the circle/arc hover-highlight overlay. @internal */
+  private _clearCircleArcHoverHighlight(): void {
+    this._overlayLayer
+      .querySelectorAll('.mlcad-measure-canvas--hover-entity')
+      .forEach(el => el.remove())
+  }
+
+  /**
+   * Strokes the hovered circle (full) or arc (open sweep) in measure accent.
+   * @internal
+   */
+  private _drawCircleArcHoverHighlight(hit: AcExCircleOrArcNearHit): void {
+    let canvas = this._overlayLayer.querySelector<HTMLCanvasElement>(
+      '.mlcad-measure-canvas--hover-entity'
+    )
+    if (!canvas) {
+      canvas = makeOverlayCanvas(this._overlayLayer)
+      canvas.classList.add('mlcad-measure-canvas--hover-entity')
+    }
+    const synced = this._syncCanvas(canvas)
+    if (!synced) return
+    const { ctx, dpr } = synced
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.save()
+    ctx.scale(dpr, dpr)
+
+    const rootRect = this._overlayRootOffset()
+    const sc = this._view.wcsToScreen(new THREE.Vector2(hit.cx, hit.cy))
+    const cx = sc.x - rootRect.left
+    const cy = sc.y - rootRect.top
+    const onCurve = this._view.wcsToScreen(new THREE.Vector2(hit.x, hit.y))
+    const screenR = Math.hypot(onCurve.x - sc.x, onCurve.y - sc.y)
+    if (!(screenR > 0.5)) {
+      ctx.restore()
+      return
+    }
+
+    ctx.beginPath()
+    if (hit.arc) {
+      const ss = this._view.wcsToScreen(
+        new THREE.Vector2(hit.arc.start.x, hit.arc.start.y)
+      )
+      const se = this._view.wcsToScreen(
+        new THREE.Vector2(hit.arc.end.x, hit.arc.end.y)
+      )
+      const st = this._view.wcsToScreen(
+        new THREE.Vector2(hit.arc.through.x, hit.arc.through.y)
+      )
+      const sa = Math.atan2(ss.y - sc.y, ss.x - sc.x)
+      const ea = Math.atan2(se.y - sc.y, se.x - sc.x)
+      const midA = Math.atan2(st.y - sc.y, st.x - sc.x)
+      const antiClockwise = !isAngleOnSweep(sa, midA, ea)
+      ctx.arc(cx, cy, screenR, sa, ea, antiClockwise)
+    } else {
+      ctx.arc(cx, cy, screenR, 0, Math.PI * 2)
+    }
+    ctx.strokeStyle = this._measureCss()
+    ctx.lineWidth = this._scaledCanvasLineWidth(4, canvas)
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  /**
+   * Persists a radius measurement: radial line with arrows, endpoint dots,
+   * and midpoint badge.
+   * @internal
+   */
+  private _commitRadius(
+    centerIn: THREE.Vector2,
+    pointIn: THREE.Vector2,
+    existing?: AcExMeasurementRecord
+  ): void {
+    const center = centerIn.clone()
+    const point = pointIn.clone()
+    const radius = dist2(center, point)
+    const id = this._startCommit(existing?.id)
+    const label = this._formatRadiusLabel(radius)
+    this._clampCommitBadgeForRef(
+      label,
+      acexScreenSegmentLengthPx(p => this._wcsToScreenPoint(p), center, point),
+      existing,
+      { scaleArrows: true }
+    )
+    this._addPersistentLine([center, point], { bothArrows: true })
+    const dot1 = this._addDot(center)
+    const dot2 = this._addDot(point)
+    const mid = new THREE.Vector2(
+      (center.x + point.x) / 2,
+      (center.y + point.y) / 2
+    )
+    const badge = this._addBadge(mid, label)
+    const record =
+      existing ??
+      this._makeRecord(id, 'radius', {
+        type: 'radius',
+        center: { x: center.x, y: center.y },
+        point: { x: point.x, y: point.y }
+      })
+    this._finishCommit(
+      (clientX, clientY, threshold) => {
+        const sa = this._view.wcsToScreen(center)
+        const sb = this._view.wcsToScreen(point)
+        return (
+          distPointToSegmentPx(clientX, clientY, sa.x, sa.y, sb.x, sb.y) <=
+          threshold
+        )
+      },
+      null,
+      radius,
+      record
+    )
+    this._bindRadiusGrips(id, record, center, point, mid, dot1, dot2, badge)
+    this._statusEl.textContent = this._i18n.t('status.radius', {
+      value: this._view.formatLength(radius)
+    })
+  }
+
+  /** Endpoint grips for a radius measurement. @internal */
+  private _bindRadiusGrips(
+    id: string,
+    record: AcExMeasurementRecord,
+    center: THREE.Vector2,
+    point: THREE.Vector2,
+    mid: THREE.Vector2,
+    centerDot: HTMLElement,
+    pointDot: HTMLElement,
+    badge: HTMLElement
+  ): void {
+    const parts = this._committed.find(m => m.id === id)?.parts
+    if (!parts) return
+    const g = record.geometry
+    if (g.type !== 'radius') return
+    g.center.x = center.x
+    g.center.y = center.y
+    g.point.x = point.x
+    g.point.y = point.y
+
+    const refresh = () => {
+      mid.set((center.x + point.x) / 2, (center.y + point.y) / 2)
+      const radius = dist2(center, point)
+      badge.textContent = this._formatRadiusLabel(radius)
+      this._placeDomAt(badge, mid)
+      g.center.x = center.x
+      g.center.y = center.y
+      g.point.x = point.x
+      g.point.y = point.y
+      for (const fn of this._redrawListeners) fn()
+      this._view.render()
+      return radius
+    }
+
+    const isEnabled = () => this._gripsEnabled()
+    const onSelect = () => this._selectOnly(id)
+    const onCommit = () => {
+      const radius = refresh()
+      this._touchMeasureGeometry(id, null, radius)
+    }
+    parts.cleanups.push(
+      acexBindMarkupPointerDrag({
+        el: centerDot,
+        clientToWorld: (x, y) => this._clientToWorld(x, y),
+        isEnabled,
+        onPointerDown: onSelect,
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
+        onMove: world => {
+          center.set(world.x, world.y)
+          this._placeDomAt(centerDot, world)
+          refresh()
+        },
+        onCommit
+      }),
+      acexBindMarkupPointerDrag({
+        el: pointDot,
+        clientToWorld: (x, y) => this._clientToWorld(x, y),
+        isEnabled,
+        onPointerDown: onSelect,
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
+        onMove: world => {
+          point.set(world.x, world.y)
+          this._placeDomAt(pointDot, world)
+          refresh()
+        },
+        onCommit
+      })
+    )
+    this._syncGripPointerEvents()
+  }
+
+  /**
+   * Continuous tool: successive vertices until Enter/Esc.
+   * @internal
+   */
+  private _pointerContinuous(
+    point: THREE.Vector2,
+    _clientX: number,
+    _clientY: number
+  ): boolean {
+    if (this._points.length >= 1) {
+      const last = this._points[this._points.length - 1]!
+      if (dist2(last, point) < 1e-9) return true
+    }
+    this._points.push(point.clone())
+    // Confirmed segments stay visible; rubber-band waits for the next live pick.
+    this._previewContinuous(null)
+    return true
+  }
+
+  /**
+   * Continuous tool preview: confirmed vertices, plus optional rubber-band to
+   * a live cursor sample.
+   *
+   * @param point - Live cursor in WCS, or `null` to show only confirmed segments.
+   * @internal
+   */
+  private _previewContinuous(point: THREE.Vector2 | null): void {
+    if (this._points.length === 0) {
+      this._hidePreview()
+      return
+    }
+    const pts = point != null ? [...this._points, point] : [...this._points]
+    if (pts.length < 2) {
+      this._hidePreview()
+      return
+    }
+    const items: Array<{
+      wcs: THREE.Vector2
+      text: string
+      segmentScreenLengthPx: number
+    }> = []
+    const segmentArrowSizesPx: number[] = []
+    for (let i = 0; i < pts.length - 1; i++) {
+      const a = pts[i]!
+      const b = pts[i + 1]!
+      const dist = dist2(a, b)
+      const linePx = acexScreenSegmentLengthPx(
+        p => this._wcsToScreenPoint(p),
+        a,
+        b
+      )
+      if (dist < 1e-4) {
+        segmentArrowSizesPx.push(ACEX_OVERLAY_ARROW_SIZE_PX)
+        continue
+      }
+      const text = this._view.formatLength(dist)
+      const fontSize = acexAdaptiveMeasureBadgeFontSize(
+        text,
+        {
+          fontSize: this._drawFontSize,
+          textHeightMode: this._drawTextHeightMode
+        },
+        linePx
+      )
+      segmentArrowSizesPx.push(
+        acexScaleMeasureOverlayPx(
+          ACEX_OVERLAY_ARROW_SIZE_PX,
+          this._drawFontSize,
+          fontSize
+        )
+      )
+      items.push({
+        wcs: new THREE.Vector2((a.x + b.x) / 2, (a.y + b.y) / 2),
+        text,
+        segmentScreenLengthPx: linePx
+      })
+    }
+    this._setPreviewLine(pts, { segmentArrows: true, segmentArrowSizesPx })
+    this._syncPreviewBadges(items)
+    this._requestRender()
+  }
+
+  /**
+   * Persists each consecutive pair as a normal distance measurement, then
+   * reports the polyline total length in the status bar.
+   * @internal
+   */
+  private _commitContinuous(pointsIn: THREE.Vector2[]): void {
+    if (pointsIn.length < 2) return
+    let total = 0
+    for (let i = 0; i < pointsIn.length - 1; i++) {
+      const a = pointsIn[i]!
+      const b = pointsIn[i + 1]!
+      const segment = dist2(a, b)
+      if (segment < 1e-4) continue
+      total += segment
+      this._commitDistance(a, b)
+    }
+    this._statusEl.textContent = this._i18n.t('status.continuousTotal', {
+      value: this._view.formatLength(total)
     })
   }
 
@@ -1763,12 +3000,12 @@ export class AcExMeasureController {
    */
   private _pointerAngle(
     point: THREE.Vector2,
-    clientX: number,
-    clientY: number
+    _clientX: number,
+    _clientY: number
   ): boolean {
     this._points.push(point.clone())
     if (this._points.length < 3) {
-      this._previewAngle(point, clientX, clientY)
+      this._previewAngleCommitted()
       return true
     }
     const vertex = this._points[0]!
@@ -1777,16 +3014,12 @@ export class AcExMeasureController {
     this._commitAngle(vertex, arm1, arm2)
     this._points = []
     this._hidePreview()
-    this._statusEl.textContent = this._hintForMode('angle')
+    this._exitCreateModeKeepStatus()
     return true
   }
 
-  /** Angle tool live preview (arms + arc canvas + label). @internal */
-  private _previewAngle(
-    point: THREE.Vector2,
-    clientX: number,
-    clientY: number
-  ): void {
+  /** Angle tool live preview (arms + arc canvas + bisector capsule). @internal */
+  private _previewAngle(point: THREE.Vector2): void {
     if (this._points.length === 0) {
       this._hidePreview()
       return
@@ -1794,13 +3027,43 @@ export class AcExMeasureController {
     const vertex = this._points[0]!
     if (this._points.length === 1) {
       this._setPreviewLine([vertex, point])
+      this._syncPreviewBadges([])
+      this._requestRender()
       return
     }
     const arm1 = this._points[1]!
     this._setPreviewLine([vertex, arm1, vertex, point])
     const deg = calcAngleDeg(vertex, arm1, point)
-    this._showLiveLabel(this._view.formatAngle(deg), clientX, clientY)
+    const text = this._view.formatAngle(deg)
+    this._syncPreviewBadges([
+      {
+        wcs: angleBadgeWorld(vertex, arm1, point),
+        text,
+        segmentScreenLengthPx: acexScreenAngleBadgeRefLengthPx(
+          p => this._wcsToScreenPoint(p),
+          vertex,
+          arm1,
+          point
+        )
+      }
+    ])
     this._drawPreviewAngleArc(vertex, arm1, point)
+    this._requestRender()
+  }
+
+  /** Confirmed angle arms only (no rubber-band to the next pick). @internal */
+  private _previewAngleCommitted(): void {
+    if (this._points.length < 2) {
+      this._hidePreview()
+      return
+    }
+    const vertex = this._points[0]!
+    const arm1 = this._points[1]!
+    this._setPreviewLine([vertex, arm1])
+    this._syncPreviewBadges([])
+    this._overlayLayer
+      .querySelectorAll('.mlcad-measure-canvas--preview')
+      .forEach(el => el.remove())
     this._requestRender()
   }
 
@@ -1809,13 +3072,27 @@ export class AcExMeasureController {
    * @internal
    */
   private _commitAngle(
-    vertex: THREE.Vector2,
-    arm1: THREE.Vector2,
-    arm2: THREE.Vector2,
+    vertexIn: THREE.Vector2,
+    arm1In: THREE.Vector2,
+    arm2In: THREE.Vector2,
     existing?: AcExMeasurementRecord
   ): void {
+    const vertex = vertexIn.clone()
+    const arm1 = arm1In.clone()
+    const arm2 = arm2In.clone()
     const deg = calcAngleDeg(vertex, arm1, arm2)
     const id = this._startCommit(existing?.id)
+    const label = this._view.formatAngle(deg)
+    this._clampCommitBadgeForRef(
+      label,
+      acexScreenAngleBadgeRefLengthPx(
+        p => this._wcsToScreenPoint(p),
+        vertex,
+        arm1,
+        arm2
+      ),
+      existing
+    )
     this._addPersistentLine([vertex, arm1])
     this._addPersistentLine([vertex, arm2])
     const canvas = makeOverlayCanvas(this._overlayLayer)
@@ -1829,45 +3106,19 @@ export class AcExMeasureController {
         arm1,
         arm2,
         style.color,
-        acExMeasureCanvasLineWidth(style.lineWeight)
+        acexMeasureCanvasLineWidth(style.lineWeight),
+        style.strokeWidthWcs
       )
     }
     redraw()
     this._registerRedraw(redraw, () => canvas.remove())
 
-    this._addDot(vertex)
-    this._addDot(arm1)
-    this._addDot(arm2)
+    const dotV = this._addDot(vertex)
+    const dot1 = this._addDot(arm1)
+    const dot2 = this._addDot(arm2)
 
-    const dx1 = arm1.x - vertex.x
-    const dy1 = arm1.y - vertex.y
-    const dx2 = arm2.x - vertex.x
-    const dy2 = arm2.y - vertex.y
-    const wLen1 = Math.hypot(dx1, dy1)
-    const wLen2 = Math.hypot(dx2, dy2)
-    const u1x = wLen1 > 0 ? dx1 / wLen1 : 1
-    const u1y = wLen1 > 0 ? dy1 / wLen1 : 0
-    const u2x = wLen2 > 0 ? dx2 / wLen2 : 1
-    const u2y = wLen2 > 0 ? dy2 / wLen2 : 0
-    let bx = u1x + u2x
-    let by = u1y + u2y
-    const bLen = Math.hypot(bx, by)
-    if (bLen > 0) {
-      bx /= bLen
-      by /= bLen
-    } else {
-      bx = -u1y
-      by = u1x
-    }
-    const offset = Math.max(
-      Math.min(wLen1, wLen2) * 0.4,
-      Math.max(wLen1, wLen2) * 0.15
-    )
-    const badgePos = new THREE.Vector2(
-      vertex.x + bx * offset,
-      vertex.y + by * offset
-    )
-    this._addBadge(badgePos, this._view.formatAngle(deg))
+    const badgePos = angleBadgeWorld(vertex, arm1, arm2)
+    const badge = this._addBadge(badgePos, label)
     const record =
       existing ??
       this._makeRecord(id, 'angle', {
@@ -1892,9 +3143,85 @@ export class AcExMeasureController {
       0,
       record
     )
+    this._bindAngleGrips(
+      id,
+      record,
+      vertex,
+      arm1,
+      arm2,
+      badgePos,
+      dotV,
+      dot1,
+      dot2,
+      badge
+    )
     this._statusEl.textContent = this._i18n.t('status.angle', {
       value: this._view.formatAngle(deg)
     })
+  }
+
+  /** Endpoint grips for an angle measurement. @internal */
+  private _bindAngleGrips(
+    id: string,
+    record: AcExMeasurementRecord,
+    vertex: THREE.Vector2,
+    arm1: THREE.Vector2,
+    arm2: THREE.Vector2,
+    badgePos: THREE.Vector2,
+    dotV: HTMLElement,
+    dot1: HTMLElement,
+    dot2: HTMLElement,
+    badge: HTMLElement
+  ): void {
+    const parts = this._committed.find(m => m.id === id)?.parts
+    if (!parts) return
+    const g = record.geometry
+    if (g.type !== 'angle') return
+
+    const syncRecord = () => {
+      g.vertex.x = vertex.x
+      g.vertex.y = vertex.y
+      g.arm1.x = arm1.x
+      g.arm1.y = arm1.y
+      g.arm2.x = arm2.x
+      g.arm2.y = arm2.y
+    }
+
+    const refresh = () => {
+      const next = angleBadgeWorld(vertex, arm1, arm2)
+      badgePos.set(next.x, next.y)
+      const deg = calcAngleDeg(vertex, arm1, arm2)
+      badge.textContent = this._view.formatAngle(deg)
+      this._placeDomAt(badge, badgePos)
+      syncRecord()
+      for (const fn of this._redrawListeners) fn()
+      this._view.render()
+      return deg
+    }
+
+    const isEnabled = () => this._gripsEnabled()
+    const onSelect = () => this._selectOnly(id)
+    const onCommit = () => {
+      refresh()
+      this._touchMeasureGeometry(id, null, 0)
+    }
+    const bind = (el: HTMLElement, target: THREE.Vector2) =>
+      acexBindMarkupPointerDrag({
+        el,
+        clientToWorld: (x, y) => this._clientToWorld(x, y),
+        isEnabled,
+        onPointerDown: onSelect,
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
+        onMove: world => {
+          target.set(world.x, world.y)
+          this._placeDomAt(el, world)
+          refresh()
+        },
+        onCommit
+      })
+
+    parts.cleanups.push(bind(dotV, vertex), bind(dot1, arm1), bind(dot2, arm2))
+    this._syncGripPointerEvents()
   }
 
   /** Clears locked-arc direction state (Ctrl flip and mouse-follow). @internal */
@@ -1976,13 +3303,13 @@ export class AcExMeasureController {
           start.x - lock.cx
         )
         this._points.push(start)
-        this._previewArc(this._points[0]!, clientX, clientY)
+        this._previewArcCommitted()
         return true
       }
       this._arcLock = null
       this._resetArcLockDirection()
       this._points.push(point.clone())
-      this._previewArc(point, clientX, clientY)
+      this._previewArcCommitted()
       return true
     }
 
@@ -2014,13 +3341,13 @@ export class AcExMeasureController {
       this._arcLock = null
       this._resetArcLockDirection()
       this._hidePreview()
-      this._statusEl.textContent = this._hintForMode('arc')
+      this._exitCreateModeKeepStatus()
       return true
     }
 
     this._points.push(point.clone())
     if (this._points.length < 3) {
-      this._previewArc(point, clientX, clientY)
+      this._previewArcCommitted()
       return true
     }
     const start = this._points[0]!
@@ -2036,11 +3363,11 @@ export class AcExMeasureController {
     this._commitArc(geom, start, through, end)
     this._points = []
     this._hidePreview()
-    this._statusEl.textContent = this._hintForMode('arc')
+    this._exitCreateModeKeepStatus()
     return true
   }
 
-  /** Arc tool live preview (chord lines or arc stroke + label). @internal */
+  /** Arc tool live preview (chord lines or arc stroke + length capsule). @internal */
   private _previewArc(
     point: THREE.Vector2,
     clientX: number,
@@ -2052,6 +3379,7 @@ export class AcExMeasureController {
     }
     const start = this._points[0]!
     if (this._arcLock && this._points.length === 1) {
+      // Raw cursor (not OSNAP) so nearby bulge rebinding follows the finger/mouse.
       const raw = this._view.screenToWcs(clientX, clientY)
       this._rebindArcLock(raw)
       const geom = this._arcLock
@@ -2066,24 +3394,32 @@ export class AcExMeasureController {
         .querySelectorAll('.mlcad-measure-canvas--preview-line')
         .forEach(el => el.remove())
       if (!sweep) {
-        this._liveLabel.style.display = 'none'
+        this._syncPreviewBadges([])
         this._overlayLayer
           .querySelectorAll('.mlcad-measure-canvas--preview')
           .forEach(el => el.remove())
         this._requestRender()
         return
       }
-      this._showLiveLabel(
-        this._view.formatLength(sweep.length),
-        clientX,
-        clientY
-      )
+      this._syncPreviewBadges([
+        {
+          wcs: sweep.through,
+          text: this._view.formatLength(sweep.length),
+          segmentScreenLengthPx: acexScreenArcLengthPx(
+            p => this._wcsToScreenPoint(p),
+            { x: geom.cx, y: geom.cy },
+            geom.r,
+            sweep.length
+          )
+        }
+      ])
       this._drawPreviewArc(geom, start, sweep.through, end)
       this._requestRender()
       return
     }
     if (this._points.length === 1) {
       this._setPreviewLine([start, point])
+      this._syncPreviewBadges([])
       this._requestRender()
       return
     }
@@ -2091,7 +3427,7 @@ export class AcExMeasureController {
     const geom = circleFromThreePoints(start, through, point)
     if (!geom) {
       this._setPreviewLine([start, through, point])
-      this._liveLabel.style.display = 'none'
+      this._syncPreviewBadges([])
       this._overlayLayer
         .querySelectorAll('.mlcad-measure-canvas--preview')
         .forEach(el => el.remove())
@@ -2099,8 +3435,36 @@ export class AcExMeasureController {
       return
     }
     const len = arcLengthThroughMiddle(start, through, point, geom)
-    this._showLiveLabel(this._view.formatLength(len), clientX, clientY)
+    const mid = arcMidThroughMiddle(start, through, point, geom)
+    this._syncPreviewBadges([
+      {
+        wcs: mid,
+        text: this._view.formatLength(len),
+        segmentScreenLengthPx: acexScreenArcLengthPx(
+          p => this._wcsToScreenPoint(p),
+          { x: geom.cx, y: geom.cy },
+          geom.r,
+          len
+        )
+      }
+    ])
     this._drawPreviewArc(geom, start, through, point)
+    this._requestRender()
+  }
+
+  /** Confirmed arc chords only (no rubber-band to the next pick). @internal */
+  private _previewArcCommitted(): void {
+    if (this._points.length < 2) {
+      this._hidePreview()
+      return
+    }
+    const start = this._points[0]!
+    const through = this._points[1]!
+    this._setPreviewLine([start, through])
+    this._syncPreviewBadges([])
+    this._overlayLayer
+      .querySelectorAll('.mlcad-measure-canvas--preview')
+      .forEach(el => el.remove())
     this._requestRender()
   }
 
@@ -2109,15 +3473,30 @@ export class AcExMeasureController {
    * @internal
    */
   private _commitArc(
-    geom: AcExCircleGeom,
-    start: THREE.Vector2,
-    through: THREE.Vector2,
-    end: THREE.Vector2,
+    geomIn: AcExCircleGeom,
+    startIn: THREE.Vector2,
+    throughIn: THREE.Vector2,
+    endIn: THREE.Vector2,
     existing?: AcExMeasurementRecord
   ): void {
+    const geom = { ...geomIn }
+    const start = startIn.clone()
+    const through = throughIn.clone()
+    const end = endIn.clone()
     const len = arcLengthThroughMiddle(start, through, end, geom)
     const mid = arcMidThroughMiddle(start, through, end, geom)
     const id = this._startCommit(existing?.id)
+    const label = this._view.formatLength(len)
+    this._clampCommitBadgeForRef(
+      label,
+      acexScreenArcLengthPx(
+        p => this._wcsToScreenPoint(p),
+        { x: geom.cx, y: geom.cy },
+        geom.r,
+        len
+      ),
+      existing
+    )
     const canvas = makeOverlayCanvas(this._overlayLayer)
     this._trackCanvas(canvas)
     const redraw = () => {
@@ -2129,16 +3508,17 @@ export class AcExMeasureController {
         through,
         end,
         style.color,
-        acExMeasureCanvasLineWidth(style.lineWeight)
+        acexMeasureCanvasLineWidth(style.lineWeight),
+        style.strokeWidthWcs
       )
     }
     redraw()
     this._registerRedraw(redraw, () => canvas.remove())
 
-    this._addDot(start)
-    this._addDot(through)
-    this._addDot(end)
-    this._addBadge(mid, this._view.formatLength(len))
+    const dot1 = this._addDot(start)
+    const dotThrough = this._addDot(through)
+    const dot2 = this._addDot(end)
+    const badge = this._addBadge(mid, label)
     const record =
       existing ??
       this._makeRecord(id, 'arc', {
@@ -2160,8 +3540,8 @@ export class AcExMeasureController {
         const screenR = Math.hypot(ss.x - cx, ss.y - cy)
         const sa = Math.atan2(ss.y - cy, ss.x - cx)
         const ea = Math.atan2(se.y - cy, se.x - cx)
-        const mid = Math.atan2(st.y - cy, st.x - cx)
-        const antiClockwise = !isAngleOnSweep(sa, mid, ea)
+        const midA = Math.atan2(st.y - cy, st.x - cx)
+        const antiClockwise = !isAngleOnSweep(sa, midA, ea)
         return (
           distPointToArcPx(
             clientX,
@@ -2179,9 +3559,149 @@ export class AcExMeasureController {
       len,
       record
     )
+    this._bindArcGrips(
+      id,
+      record,
+      geom,
+      start,
+      through,
+      end,
+      mid,
+      dot1,
+      dotThrough,
+      dot2,
+      badge
+    )
+    const sweep = arcSweepThroughMiddle(start, through, end, geom)
+    const angleDeg = (Math.abs(sweep.span) * 180) / Math.PI
+    const chord = dist2(start, end)
     this._statusEl.textContent = this._i18n.t('status.arcLength', {
-      value: this._view.formatLength(len)
+      length: this._view.formatLength(len),
+      radius: this._view.formatLength(geom.r),
+      angle: this._view.formatAngle(angleDeg),
+      chord: this._view.formatLength(chord)
     })
+  }
+
+  /** Endpoint grips for a three-point arc measurement. @internal */
+  private _bindArcGrips(
+    id: string,
+    record: AcExMeasurementRecord,
+    geom: AcExCircleGeom,
+    start: THREE.Vector2,
+    through: THREE.Vector2,
+    end: THREE.Vector2,
+    mid: THREE.Vector2,
+    startDot: HTMLElement,
+    throughDot: HTMLElement,
+    endDot: HTMLElement,
+    badge: HTMLElement
+  ): void {
+    const parts = this._committed.find(m => m.id === id)?.parts
+    if (!parts) return
+    const g = record.geometry
+    if (g.type !== 'arc') return
+
+    const syncGeom = () => {
+      const next = circleFromThreePoints(start, through, end)
+      if (!next) return false
+      geom.cx = next.cx
+      geom.cy = next.cy
+      geom.r = next.r
+      return true
+    }
+
+    let dragStart = {
+      start: start.clone(),
+      through: through.clone(),
+      end: end.clone(),
+      geom: { ...geom }
+    }
+
+    const refresh = () => {
+      if (!syncGeom()) {
+        // Dots already moved; drop the stale circumcircle and length until
+        // the three points define a circle again (or the drag is reverted).
+        badge.textContent = this._view.formatLength(0)
+        this._placeDomAt(badge, start)
+        for (const fn of this._redrawListeners) fn()
+        this._view.render()
+        return 0
+      }
+      const len = arcLengthThroughMiddle(start, through, end, geom)
+      const nextMid = arcMidThroughMiddle(start, through, end, geom)
+      mid.copy(nextMid)
+      badge.textContent = this._view.formatLength(len)
+      this._placeDomAt(badge, mid)
+      g.center.x = geom.cx
+      g.center.y = geom.cy
+      g.radius = geom.r
+      g.start.x = start.x
+      g.start.y = start.y
+      g.end.x = end.x
+      g.end.y = end.y
+      if (g.through) {
+        g.through.x = through.x
+        g.through.y = through.y
+      }
+      for (const fn of this._redrawListeners) fn()
+      this._view.render()
+      return len
+    }
+
+    const restoreDragStart = () => {
+      start.copy(dragStart.start)
+      through.copy(dragStart.through)
+      end.copy(dragStart.end)
+      geom.cx = dragStart.geom.cx
+      geom.cy = dragStart.geom.cy
+      geom.r = dragStart.geom.r
+      this._placeDomAt(startDot, start)
+      this._placeDomAt(throughDot, through)
+      this._placeDomAt(endDot, end)
+      refresh()
+    }
+
+    const isEnabled = () => this._gripsEnabled()
+    const onSelect = () => this._selectOnly(id)
+    const onCommit = () => {
+      if (!syncGeom()) {
+        restoreDragStart()
+        this._hideOsnapMarker()
+        return
+      }
+      const len = refresh()
+      this._touchMeasureGeometry(id, 'length', len)
+    }
+    const bind = (el: HTMLElement, target: THREE.Vector2) =>
+      acexBindMarkupPointerDrag({
+        el,
+        clientToWorld: (x, y) => this._clientToWorld(x, y),
+        isEnabled,
+        onPointerDown: onSelect,
+        onDragStart: () => {
+          this._sessionHistory?.beginMeasureCapture()
+          dragStart = {
+            start: start.clone(),
+            through: through.clone(),
+            end: end.clone(),
+            geom: { ...geom }
+          }
+        },
+        onMove: world => {
+          target.set(world.x, world.y)
+          this._placeDomAt(el, world)
+          refresh()
+        },
+        onCommit
+      })
+
+    parts.cleanups.push(
+      bind(startDot, start),
+      bind(throughDot, through),
+      bind(endDot, end)
+    )
+    this._syncGripPointerEvents()
   }
 
   /**
@@ -2200,7 +3720,6 @@ export class AcExMeasureController {
     const end = new THREE.Vector2(g.end.x, g.end.y)
     const len = shortArcLength(start, end, geom)
     const mid = shortArcMid(start, end, geom)
-    const counterClockwise = shortArcCounterClockwise(start, end, geom)
     this._startCommit(record.id)
     const canvas = makeOverlayCanvas(this._overlayLayer)
     this._trackCanvas(canvas)
@@ -2213,14 +3732,26 @@ export class AcExMeasureController {
         start,
         end,
         style.color,
-        acExMeasureCanvasLineWidth(style.lineWeight)
+        acexMeasureCanvasLineWidth(style.lineWeight),
+        style.strokeWidthWcs
       )
     }
     redraw()
     this._registerRedraw(redraw, () => canvas.remove())
-    this._addDot(start)
-    this._addDot(end)
-    this._addBadge(mid, this._view.formatLength(len))
+    const label = this._view.formatLength(len)
+    this._clampCommitBadgeForRef(
+      label,
+      acexScreenArcLengthPx(
+        p => this._wcsToScreenPoint(p),
+        { x: geom.cx, y: geom.cy },
+        geom.r,
+        len
+      ),
+      record
+    )
+    const dot1 = this._addDot(start)
+    const dot2 = this._addDot(end)
+    const badge = this._addBadge(mid, label)
     this._finishCommit(
       (clientX, clientY, threshold) => {
         const sc = this._view.wcsToScreen(new THREE.Vector2(geom.cx, geom.cy))
@@ -2231,23 +3762,95 @@ export class AcExMeasureController {
         const screenR = Math.hypot(ss.x - cx, ss.y - cy)
         const sa = Math.atan2(ss.y - cy, ss.x - cx)
         const ea = Math.atan2(se.y - cy, se.x - cx)
+        const ccw = shortArcCounterClockwise(start, end, geom)
         return (
-          distPointToArcPx(
-            clientX,
-            clientY,
-            cx,
-            cy,
-            screenR,
-            sa,
-            ea,
-            counterClockwise
-          ) <= threshold
+          distPointToArcPx(clientX, clientY, cx, cy, screenR, sa, ea, ccw) <=
+          threshold
         )
       },
       'length',
       len,
       record
     )
+    this._bindShortArcGrips(
+      record.id,
+      record,
+      geom,
+      start,
+      end,
+      mid,
+      dot1,
+      dot2,
+      badge
+    )
+  }
+
+  /** Endpoint grips for a legacy short arc (constrained to the circle). @internal */
+  private _bindShortArcGrips(
+    id: string,
+    record: AcExMeasurementRecord,
+    geom: AcExCircleGeom,
+    start: THREE.Vector2,
+    end: THREE.Vector2,
+    mid: THREE.Vector2,
+    startDot: HTMLElement,
+    endDot: HTMLElement,
+    badge: HTMLElement
+  ): void {
+    const parts = this._committed.find(m => m.id === id)?.parts
+    if (!parts) return
+    const g = record.geometry
+    if (g.type !== 'arc') return
+
+    const project = (point: { x: number; y: number }): THREE.Vector2 => {
+      const dx = point.x - geom.cx
+      const dy = point.y - geom.cy
+      const len = Math.hypot(dx, dy)
+      if (!(len > 1e-12)) {
+        return new THREE.Vector2(geom.cx + geom.r, geom.cy)
+      }
+      const s = geom.r / len
+      return new THREE.Vector2(geom.cx + dx * s, geom.cy + dy * s)
+    }
+
+    const refresh = () => {
+      const len = shortArcLength(start, end, geom)
+      mid.copy(shortArcMid(start, end, geom))
+      badge.textContent = this._view.formatLength(len)
+      this._placeDomAt(badge, mid)
+      g.start.x = start.x
+      g.start.y = start.y
+      g.end.x = end.x
+      g.end.y = end.y
+      for (const fn of this._redrawListeners) fn()
+      this._view.render()
+      return len
+    }
+
+    const isEnabled = () => this._gripsEnabled()
+    const onSelect = () => this._selectOnly(id)
+    const onCommit = () => {
+      const len = refresh()
+      this._touchMeasureGeometry(id, 'length', len)
+    }
+    const bind = (el: HTMLElement, target: THREE.Vector2) =>
+      acexBindMarkupPointerDrag({
+        el,
+        clientToWorld: (x, y) => this._clientToWorld(x, y),
+        isEnabled,
+        onPointerDown: onSelect,
+        onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
+        onMove: world => {
+          const projected = project(world)
+          target.copy(projected)
+          this._placeDomAt(el, projected)
+          refresh()
+        },
+        onCommit
+      })
+
+    parts.cleanups.push(bind(startDot, start), bind(endDot, end))
+    this._syncGripPointerEvents()
   }
 
   /**
@@ -2268,7 +3871,7 @@ export class AcExMeasureController {
         this._commitArea([...this._points])
         this._points = []
         this._hidePreview()
-        this._statusEl.textContent = this._hintForMode('area')
+        this._exitCreateModeKeepStatus()
         return true
       }
     }
@@ -2290,7 +3893,7 @@ export class AcExMeasureController {
             this._commitArea([...this._points])
             this._points = []
             this._hidePreview()
-            this._statusEl.textContent = this._hintForMode('area')
+            this._exitCreateModeKeepStatus()
             return true
           }
         }
@@ -2298,26 +3901,51 @@ export class AcExMeasureController {
     }
 
     this._points.push(point.clone())
-    this._previewArea(point, clientX, clientY)
+    this._previewArea(null)
     return true
   }
 
-  /** Area tool live preview (outline + fill canvas + label). @internal */
-  private _previewArea(
-    point: THREE.Vector2,
-    clientX: number,
-    clientY: number
-  ): void {
+  /**
+   * Area tool preview: confirmed vertices, plus optional rubber-band / fill to
+   * a live cursor sample. Value capsule sits at the polygon centroid.
+   *
+   * @param point - Live cursor in WCS, or `null` for confirmed outline only.
+   * @internal
+   */
+  private _previewArea(point: THREE.Vector2 | null): void {
     if (this._points.length === 0) {
       this._hidePreview()
       return
     }
-    const pts = [...this._points, point]
+    const pts = point != null ? [...this._points, point] : [...this._points]
+    if (pts.length < 2) {
+      this._hidePreview()
+      return
+    }
     this._setPreviewLine(pts)
     if (pts.length >= 3) {
       const area = shoelaceArea(pts)
-      this._showLiveLabel(`${this._view.formatLength(area)}²`, clientX, clientY)
+      if (point != null) {
+        const text = `${this._view.formatLength(area)}²`
+        this._syncPreviewBadges([
+          {
+            wcs: centroid(pts),
+            text,
+            segmentScreenLengthPx: acexScreenAreaBadgeRefLengthPx(
+              p => this._wcsToScreenPoint(p),
+              pts
+            )
+          }
+        ])
+      } else {
+        this._syncPreviewBadges([])
+      }
       this._drawPreviewArea(pts)
+    } else {
+      this._syncPreviewBadges([])
+      this._overlayLayer
+        .querySelectorAll('.mlcad-measure-canvas--preview')
+        .forEach(el => el.remove())
     }
     this._requestRender()
   }
@@ -2327,12 +3955,19 @@ export class AcExMeasureController {
    * @internal
    */
   private _commitArea(
-    points: THREE.Vector2[],
+    pointsIn: THREE.Vector2[],
     existing?: AcExMeasurementRecord
   ): void {
-    if (points.length < 3) return
+    if (pointsIn.length < 3) return
+    const points = pointsIn.map(p => p.clone())
     const area = shoelaceArea(points)
     const id = this._startCommit(existing?.id)
+    const label = `${this._view.formatLength(area)}²`
+    this._clampCommitBadgeForRef(
+      label,
+      acexScreenAreaBadgeRefLengthPx(p => this._wcsToScreenPoint(p), points),
+      existing
+    )
     // Outline stroke comes from the area canvas (fill + stroke).
     const canvas = makeOverlayCanvas(this._overlayLayer)
     this._trackCanvas(canvas)
@@ -2342,14 +3977,16 @@ export class AcExMeasureController {
         canvas,
         points,
         style.color,
-        acExMeasureCanvasLineWidth(style.lineWeight)
+        acexMeasureCanvasLineWidth(style.lineWeight),
+        style.strokeWidthWcs
       )
     }
     redraw()
     this._registerRedraw(redraw, () => canvas.remove())
 
-    for (const p of points) this._addDot(p)
-    this._addBadge(centroid(points), `${this._view.formatLength(area)}²`)
+    const dots = points.map(p => this._addDot(p))
+    const mid = centroid(points)
+    const badge = this._addBadge(mid, label)
     const record =
       existing ??
       this._makeRecord(id, 'area', {
@@ -2367,34 +4004,198 @@ export class AcExMeasureController {
       area,
       record
     )
+    this._bindAreaGrips(id, record, points, mid, dots, badge)
     this._statusEl.textContent = this._i18n.t('status.area', {
       value: `${this._view.formatLength(area)}²`
     })
+  }
+
+  /** Vertex grips for an area measurement. @internal */
+  private _bindAreaGrips(
+    id: string,
+    record: AcExMeasurementRecord,
+    points: THREE.Vector2[],
+    mid: THREE.Vector2,
+    dots: HTMLElement[],
+    badge: HTMLElement
+  ): void {
+    const parts = this._committed.find(m => m.id === id)?.parts
+    if (!parts) return
+    const g = record.geometry
+    if (g.type !== 'area') return
+
+    const refresh = () => {
+      const area = shoelaceArea(points)
+      mid.copy(centroid(points))
+      badge.textContent = `${this._view.formatLength(area)}²`
+      this._placeDomAt(badge, mid)
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i]!
+        const gp = g.points[i]
+        if (gp) {
+          gp.x = p.x
+          gp.y = p.y
+        }
+      }
+      for (const fn of this._redrawListeners) fn()
+      this._view.render()
+      return area
+    }
+
+    const isEnabled = () => this._gripsEnabled()
+    const onSelect = () => this._selectOnly(id)
+    const onCommit = () => {
+      const area = refresh()
+      this._touchMeasureGeometry(id, 'area', area)
+    }
+
+    for (let i = 0; i < dots.length; i++) {
+      const index = i
+      const dot = dots[index]!
+      const target = points[index]!
+      parts.cleanups.push(
+        acexBindMarkupPointerDrag({
+          el: dot,
+          clientToWorld: (x, y) => this._clientToWorld(x, y),
+          isEnabled,
+          onPointerDown: onSelect,
+          onDragStart: () => this._sessionHistory?.beginMeasureCapture(),
+          onMove: world => {
+            target.set(world.x, world.y)
+            this._placeDomAt(dot, world)
+            refresh()
+          },
+          onCommit
+        })
+      )
+    }
+    this._syncGripPointerEvents()
   }
 
   /**
    * Adds a committed polyline as a style-aware canvas overlay (color + line weight).
    * @internal
    */
-  private _addPersistentLine(points: THREE.Vector2[]): void {
+  private _addPersistentLine(
+    points: THREE.Vector2[],
+    options?: { bothArrows?: boolean }
+  ): void {
     if (points.length < 2) return
     const parts = this._commitParts
     if (!parts) return
     const canvas = makeOverlayCanvas(this._overlayLayer)
     this._trackCanvas(canvas)
     const commitId = parts.id
-    const pts = points.map(p => p.clone())
+    // Keep the caller's Vector2 refs so grip edits can mutate them in place.
+    const pts = points
+    const bothArrows = options?.bothArrows === true
     const redraw = () => {
       const style = this._styleForCommit(commitId)
       this._drawPolyline(
         canvas,
         pts,
         style.color || this._measureCss(),
-        acExMeasureCanvasLineWidth(style.lineWeight)
+        acexMeasureCanvasLineWidth(style.lineWeight),
+        style.strokeWidthWcs,
+        bothArrows,
+        bothArrows,
+        style.arrowSizeWcs
       )
     }
     redraw()
     this._registerRedraw(redraw, () => canvas.remove())
+  }
+
+  /** Place a measure DOM overlay at a world XY point. @internal */
+  private _placeDomAt(el: HTMLElement, wcs: { x: number; y: number }): void {
+    el.dataset.wcsX = String(wcs.x)
+    el.dataset.wcsY = String(wcs.y)
+    if (el.classList.contains('mlcad-measure-badge--preview')) {
+      this._syncLiveDomTextHeight(el)
+    }
+    const screen = this._view.wcsToScreen(new THREE.Vector2(wcs.x, wcs.y))
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
+    acexPositionWcsOverlay(el, screen, rootRect, this._view.getCameraZoom())
+  }
+
+  /** Apply session text-height mode to a live preview badge. @internal */
+  private _syncLiveDomTextHeight(el: HTMLElement): void {
+    acexSyncLiveOverlayTextHeight(
+      this._view.getCameraZoom(),
+      p => this._wcsToScreenPoint(p),
+      el,
+      {
+        fontSize: this._drawFontSize,
+        textHeightMode: this._drawTextHeightMode,
+        textHeightWcs: this._drawCustomTextHeightWcs
+      }
+    )
+  }
+
+  /** Replace selection with a single measurement (grip edit). @internal */
+  private _selectOnly(id: string): void {
+    if (!(this._selectedIds.size === 1 && this._selectedIds.has(id))) {
+      this._deselect(false)
+    }
+    this._selectedIds.add(id)
+    const measure = this._committed.find(m => m.id === id)
+    if (measure) this._applyMeasureSelection(measure, true)
+    this._onStyleChange?.()
+    this._notifyRecordsChanged()
+  }
+
+  /** Client → world converter for grip hosts (object snap applied). @internal */
+  private _clientToWorld(
+    clientX: number,
+    clientY: number
+  ): { x: number; y: number } {
+    const p = this._resolvePointerWithOsnap(clientX, clientY)
+    return { x: p.x, y: p.y }
+  }
+
+  private _hideOsnapMarker(): void {
+    this._osnapCache = null
+    this._onOsnapMarker(null, null)
+  }
+
+  /** True when committed endpoint grips may receive pointer events. @internal */
+  private _gripsEnabled(): boolean {
+    return !this._peerToolActive && this._mode === null
+  }
+
+  /**
+   * Enables or disables pointer hits on measurement endpoint dots.
+   * Inline `pointer-events` from grip binding otherwise steal OSNAP clicks.
+   * @internal
+   */
+  private _syncGripPointerEvents(): void {
+    const enable = this._gripsEnabled()
+    for (const measure of this._committed) {
+      const selected = this._selectedIds.has(measure.id)
+      for (const el of measure.parts.dom) {
+        if (!el.classList.contains('mlcad-measure-dot')) continue
+        el.style.pointerEvents = enable && selected ? 'auto' : 'none'
+      }
+    }
+  }
+
+  /**
+   * Sync sidecar geometry + quantity after a grip edit.
+   * @internal
+   */
+  private _touchMeasureGeometry(
+    id: string,
+    quantity: AcExMeasureQuantity | null,
+    value: number
+  ): void {
+    this._hideOsnapMarker()
+    const measure = this._committed.find(m => m.id === id)
+    if (!measure) return
+    measure.quantity = quantity
+    measure.value = value
+    this._onStyleChange?.()
+    this._updateIdleStatus()
+    this._sessionHistory?.commitMeasureCapture('Edit Measurement')
   }
 
   /** Draws a WCS polyline on a synced overlay canvas. @internal */
@@ -2402,29 +4203,70 @@ export class AcExMeasureController {
     canvas: HTMLCanvasElement,
     points: THREE.Vector2[],
     strokeCss: string,
-    lineWidth: number
+    lineWidth: number,
+    strokeWidthWcs?: number,
+    bothArrows = false,
+    scaleArrowsWithView = false,
+    arrowSizeWcs?: number,
+    segmentArrows = false,
+    arrowSizePx?: number,
+    segmentArrowSizesPx?: readonly number[]
   ): void {
     if (points.length < 2) return
     const synced = this._syncCanvas(canvas)
     if (!synced) return
     const { ctx, dpr } = synced
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.save()
     ctx.scale(dpr, dpr)
     const rootRect = this._overlayRootOffset()
+    const screen: { x: number; y: number }[] = []
     ctx.beginPath()
     for (let i = 0; i < points.length; i++) {
       const s = this._view.wcsToScreen(points[i]!)
       const x = s.x - rootRect.left
       const y = s.y - rootRect.top
+      screen.push({ x, y })
       if (i === 0) ctx.moveTo(x, y)
       else ctx.lineTo(x, y)
     }
     ctx.strokeStyle = strokeCss
-    ctx.lineWidth = lineWidth
+    const scaled = this._scaledCanvasLineWidth(
+      lineWidth,
+      canvas,
+      strokeWidthWcs
+    )
+    ctx.lineWidth = scaled
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
     ctx.stroke()
+    const drawArrows = segmentArrows
+      ? screen.length >= 2
+      : bothArrows && screen.length === 2
+    if (drawArrows) {
+      const fallback =
+        arrowSizePx != null && arrowSizePx > 0
+          ? arrowSizePx
+          : scaleArrowsWithView
+            ? acexScaledOverlayArrowSize(
+                canvas,
+                p => this._wcsToScreenPoint(p),
+                arrowSizeWcs
+              )
+            : acexOverlayArrowSize(scaled, lineWidth)
+      const last = segmentArrows ? screen.length - 1 : 1
+      for (let i = 0; i < last; i++) {
+        const a = screen[i]!
+        const b = screen[i + 1]!
+        const sized = segmentArrowSizesPx?.[i]
+        const arrowSize = sized != null && sized > 0 ? sized : fallback
+        if (Math.hypot(b.x - a.x, b.y - a.y) >= arrowSize) {
+          acexDrawMarkupArrowHead(ctx, b, a, strokeCss, arrowSize)
+          acexDrawMarkupArrowHead(ctx, a, b, strokeCss, arrowSize)
+        }
+      }
+    }
     ctx.restore()
   }
 
@@ -2435,6 +4277,7 @@ export class AcExMeasureController {
     dot.dataset.wcsY = String(wcs.y)
     const css = this._commitCss()
     if (css) dot.style.background = css
+    dot.style.fontSize = `${this._commitFontSize()}px`
     this._overlayLayer.appendChild(dot)
     this._positionDomOverlays()
     this._trackDom(dot)
@@ -2502,26 +4345,163 @@ export class AcExMeasureController {
       this._commitStyle = null
       return
     }
-    this._committed.push({
-      id: parts.id,
-      record: { ...record, id: parts.id },
-      parts,
-      hitTest,
-      quantity,
-      value
+    this._edit('Add Measurement', () => {
+      const style = this._ensureStyleWcs(
+        record.style,
+        record.type === 'distance' || record.type === 'radius'
+      )
+      const committedRecord = { ...record, id: parts.id, style }
+      this._committed.push({
+        id: parts.id,
+        record: committedRecord,
+        parts,
+        hitTest,
+        quantity,
+        value
+      })
+      acexSeedOverlaySizesFromWcs(
+        this._view.getCameraZoom(),
+        p => this._wcsToScreenPoint(p),
+        {
+          textHeightWcs: style.textHeightWcs,
+          arrowSizeWcs: style.arrowSizeWcs,
+          fontSizePx: style.fontSize,
+          strokeScreenPx: acexMeasureCanvasLineWidth(
+            ACEX_MEASUREMENT_LINE_WEIGHT
+          ),
+          elements: parts.dom,
+          canvases: parts.canvases
+        }
+      )
+      this._positionDomOverlays()
+      this._commitParts = null
+      this._commitStyle = null
+      this.syncLayoutVisibility()
+      this._notifyRecordsChanged()
     })
-    this._commitParts = null
-    this._commitStyle = null
-    this.syncLayoutVisibility()
   }
 
   /** Default sidecar style from the current session draw style. @internal */
   private _defaultStyle(): AcExMeasurementSidecarStyle {
-    return {
+    return this._styleWithWcs({
       color: this._measureCss(),
-      lineWeight: this._drawLineWeight,
-      fontSize: this._drawFontSize
+      lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
+      fontSize: this._drawFontSize,
+      textHeightMode: this._drawTextHeightMode,
+      ...(this._drawTextHeightMode === 'custom' &&
+      this._drawCustomTextHeightWcs != null &&
+      this._drawCustomTextHeightWcs > 0
+        ? { textHeightWcs: this._drawCustomTextHeightWcs }
+        : {})
+    })
+  }
+
+  /**
+   * Fill any missing world-space sizes without overwriting sidecar values.
+   * Never writes strokeWidthWcs (overlay strokes stay hairline).
+   * @internal
+   */
+  private _ensureStyleWcs(
+    style: AcExMeasurementSidecarStyle,
+    includeArrow = false
+  ): AcExMeasurementSidecarStyle {
+    const wcsToScreen = (p: { x: number; y: number }) =>
+      this._wcsToScreenPoint(p)
+    const { strokeWidthWcs: _omit, ...rest } = style
+    const arrowSizeWcs =
+      style.arrowSizeWcs != null && style.arrowSizeWcs > 0
+        ? style.arrowSizeWcs
+        : includeArrow
+          ? acexScreenPxToWcs(ACEX_OVERLAY_ARROW_SIZE_PX, wcsToScreen)
+          : undefined
+    return {
+      ...rest,
+      lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
+      textHeightWcs:
+        style.textHeightWcs != null && style.textHeightWcs > 0
+          ? style.textHeightWcs
+          : acexScreenPxToWcs(style.fontSize, wcsToScreen),
+      ...(arrowSizeWcs != null && arrowSizeWcs > 0 ? { arrowSizeWcs } : {})
     }
+  }
+
+  /** Attach world-space text height from the current view. @internal */
+  private _styleWithWcs(
+    style: AcExMeasurementSidecarStyle
+  ): AcExMeasurementSidecarStyle {
+    const wcsToScreen = (p: { x: number; y: number }) =>
+      this._wcsToScreenPoint(p)
+    const { strokeWidthWcs: _omit, ...rest } = style
+    let textHeightWcs: number
+    if (
+      style.textHeightMode === 'custom' &&
+      style.textHeightWcs != null &&
+      style.textHeightWcs > 0
+    ) {
+      textHeightWcs = style.textHeightWcs
+    } else if (style.textHeightMode === 'adaptive') {
+      textHeightWcs = acexScreenPxToWcs(style.fontSize, wcsToScreen)
+    } else if (style.textHeightWcs != null && style.textHeightWcs > 0) {
+      textHeightWcs = style.textHeightWcs
+    } else {
+      textHeightWcs = acexScreenPxToWcs(style.fontSize, wcsToScreen)
+    }
+    return {
+      ...rest,
+      lineWeight: ACEX_MEASUREMENT_LINE_WEIGHT,
+      textHeightWcs
+    }
+  }
+
+  /** Maps WCS to screen coordinates for overlay helpers. @internal */
+  private _wcsToScreenPoint(p: { x: number; y: number }): {
+    x: number
+    y: number
+  } {
+    const s = this._view.wcsToScreen(new THREE.Vector2(p.x, p.y))
+    return { x: s.x, y: s.y }
+  }
+
+  /**
+   * Host-relative CSS pixels for a confirmed-point plus mark.
+   * @internal
+   */
+  private _confirmedPointMarkScreen(p: { x: number; y: number }): {
+    x: number
+    y: number
+  } {
+    const screen = this._wcsToScreenPoint(p)
+    const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
+    return { x: screen.x - rootRect.left, y: screen.y - rootRect.top }
+  }
+
+  /**
+   * Shows or clears phone/pad plus marks for in-progress `_points`.
+   * @internal
+   */
+  private _syncConfirmedPointMarks(): void {
+    if (!this._mode || this._points.length === 0) {
+      this._confirmedPointMarks.clear()
+      return
+    }
+    this._confirmedPointMarks.setWorldPoints(this._points)
+  }
+
+  /** View-synced canvas stroke width for the current camera. @internal */
+  private _scaledCanvasLineWidth(
+    baseLineWidth: number,
+    canvas: HTMLCanvasElement,
+    strokeWidthWcs?: number
+  ): number {
+    return acexScaledCanvasLineWidth(
+      baseLineWidth,
+      canvas,
+      this._view.getCameraZoom(),
+      {
+        strokeWidthWcs,
+        wcsToScreen: p => this._wcsToScreenPoint(p)
+      }
+    )
   }
 
   /** Build a new sidecar record for an interactive commit. @internal */
@@ -2534,7 +4514,8 @@ export class AcExMeasureController {
       id,
       type,
       layoutId: this._getActiveLayoutId?.(),
-      style: this._defaultStyle(),
+      // Prefer the in-progress commit style (may include Fit-to-screen clamps).
+      style: { ...(this._commitStyle ?? this._defaultStyle()) },
       geometry
     }
   }
@@ -2547,6 +4528,46 @@ export class AcExMeasureController {
   /** Badge font size for the measurement currently being committed. @internal */
   private _commitFontSize(): number {
     return this._commitStyle?.fontSize ?? this._drawFontSize
+  }
+
+  /**
+   * Fit-to-screen: clamp commit badge font (and optionally endpoint arrows) so
+   * the capsule stays within half of `refLengthScreenPx`. Skipped when importing
+   * an existing record or when using custom WCS text height.
+   * @internal
+   */
+  private _clampCommitBadgeForRef(
+    label: string,
+    refLengthScreenPx: number,
+    existing?: AcExMeasurementRecord,
+    options?: { scaleArrows?: boolean }
+  ): void {
+    if (!this._commitStyle) {
+      this._commitStyle = this._defaultStyle()
+    }
+    if (existing || this._commitStyle.textHeightMode === 'custom') return
+    const preferredFont = this._commitStyle.fontSize
+    const clamped = acexAdaptiveMeasureBadgeFontSize(
+      label,
+      this._commitStyle,
+      refLengthScreenPx
+    )
+    const wcsToScreen = (p: { x: number; y: number }) =>
+      this._wcsToScreenPoint(p)
+    const next: AcExMeasurementSidecarStyle = {
+      ...this._commitStyle,
+      fontSize: clamped,
+      textHeightWcs: acexScreenPxToWcs(clamped, wcsToScreen)
+    }
+    if (options?.scaleArrows) {
+      const arrowPx = acexScaleMeasureOverlayPx(
+        ACEX_OVERLAY_ARROW_SIZE_PX,
+        preferredFont,
+        clamped
+      )
+      next.arrowSizeWcs = acexScreenPxToWcs(arrowPx, wcsToScreen)
+    }
+    this._commitStyle = next
   }
 
   /** Resolve live style for a committed (or in-progress) measurement id. @internal */
@@ -2595,6 +4616,13 @@ export class AcExMeasureController {
           } else {
             this._commitShortArc(record)
           }
+          break
+        case 'radius':
+          this._commitRadius(
+            new THREE.Vector2(g.center.x, g.center.y),
+            new THREE.Vector2(g.point.x, g.point.y),
+            record
+          )
           break
         case 'point':
           this._commitCoordinate(
@@ -2690,6 +4718,7 @@ export class AcExMeasureController {
     this._onStyleChange?.()
     if (!this._mode) this._updateIdleStatus()
     this._view.render()
+    this._notifyRecordsChanged()
   }
 
   /** @internal */
@@ -2703,6 +4732,38 @@ export class AcExMeasureController {
     this._onStyleChange?.()
     if (updateStatus && !this._mode) this._updateIdleStatus()
     this._view.render()
+    this._notifyRecordsChanged()
+  }
+
+  /**
+   * Replaces the current measurement selection with `next`.
+   *
+   * @returns True when the selected id set changed.
+   */
+  private _replaceSelection(next: Set<string>): boolean {
+    if (
+      next.size === this._selectedIds.size &&
+      [...next].every(id => this._selectedIds.has(id))
+    ) {
+      return false
+    }
+    for (const id of this._selectedIds) {
+      if (next.has(id)) continue
+      const measure = this._committed.find(m => m.id === id)
+      if (measure) this._applyMeasureSelection(measure, false)
+    }
+    for (const id of next) {
+      if (this._selectedIds.has(id)) continue
+      const measure = this._committed.find(m => m.id === id)
+      if (measure) this._applyMeasureSelection(measure, true)
+    }
+    this._selectedIds.clear()
+    for (const id of next) this._selectedIds.add(id)
+    this._onStyleChange?.()
+    if (!this._mode) this._updateIdleStatus()
+    this._view.render()
+    this._notifyRecordsChanged()
+    return true
   }
 
   /** @internal */
@@ -2725,38 +4786,118 @@ export class AcExMeasureController {
         }
       } else if (el.classList.contains('mlcad-measure-dot')) {
         el.style.background = baseCss
+        if (measure.record.style.fontSize) {
+          el.style.fontSize = `${measure.record.style.fontSize}px`
+        }
       }
     }
     for (const canvas of measure.parts.canvases) {
       canvas.classList.toggle('mlcad-measure-selected', selected)
+      if (measure.record.style.fontSize) {
+        canvas.style.fontSize = `${measure.record.style.fontSize}px`
+      }
     }
+    this._syncGripPointerEvents()
   }
 
   /** Apply style patch to currently selected measurements. @internal */
   private _applyStyleToSelection(patch: {
     color?: string
-    lineWeight?: number
     fontSize?: number
+    textHeightMode?: 'adaptive' | 'custom'
+    textHeightWcs?: number
   }): void {
     if (this._selectedIds.size === 0) return
+    const wcsToScreen = (p: { x: number; y: number }) =>
+      this._wcsToScreenPoint(p)
     for (const id of this._selectedIds) {
       const measure = this._committed.find(m => m.id === id)
       if (!measure) continue
       const style = measure.record.style
       if (patch.color) style.color = patch.color
-      if (patch.lineWeight != null && patch.lineWeight > 0) {
-        style.lineWeight = patch.lineWeight
-      }
-      if (patch.fontSize != null && patch.fontSize > 0) {
+      style.lineWeight = ACEX_MEASUREMENT_LINE_WEIGHT
+      style.strokeWidthWcs = undefined
+
+      const mode =
+        patch.textHeightMode ?? style.textHeightMode ?? 'adaptive'
+      const prevFont = style.fontSize
+      let fontSizeChanged = false
+
+      if (
+        mode === 'custom' &&
+        patch.textHeightWcs != null &&
+        patch.textHeightWcs > 0
+      ) {
+        style.textHeightMode = 'custom'
+        style.textHeightWcs = patch.textHeightWcs
+        if (patch.fontSize != null && patch.fontSize > 0) {
+          style.fontSize = patch.fontSize
+        } else {
+          const perPx = acexScreenPxToWcs(1, wcsToScreen)
+          if (perPx > 0) {
+            style.fontSize = Math.max(
+              1,
+              Math.round(patch.textHeightWcs / perPx)
+            )
+          }
+        }
+        fontSizeChanged = true
+      } else if (mode === 'adaptive' && patch.textHeightMode === 'adaptive') {
+        style.textHeightMode = 'adaptive'
+        if (patch.fontSize != null && patch.fontSize > 0) {
+          style.fontSize = patch.fontSize
+        }
+        style.textHeightWcs = acexScreenPxToWcs(style.fontSize, wcsToScreen)
+        fontSizeChanged = true
+      } else if (patch.fontSize != null && patch.fontSize > 0) {
+        if (
+          style.textHeightWcs != null &&
+          style.textHeightWcs > 0 &&
+          prevFont > 0
+        ) {
+          style.textHeightWcs =
+            style.textHeightWcs * (patch.fontSize / prevFont)
+        } else {
+          style.textHeightWcs = acexScreenPxToWcs(patch.fontSize, wcsToScreen)
+        }
         style.fontSize = patch.fontSize
+        fontSizeChanged = true
       }
-      // Keep selection highlight on DOM; canvas redraws pick up color/weight.
+
+      if (fontSizeChanged) {
+        style.arrowSizeWcs = acexScaleWcsWithFont(
+          style.arrowSizeWcs,
+          prevFont,
+          style.fontSize
+        )
+        acexSeedOverlaySizesFromWcs(this._view.getCameraZoom(), wcsToScreen, {
+          textHeightWcs: style.textHeightWcs,
+          arrowSizeWcs: style.arrowSizeWcs,
+          fontSizePx: style.fontSize,
+          strokeScreenPx: acexMeasureCanvasLineWidth(
+            ACEX_MEASUREMENT_LINE_WEIGHT
+          ),
+          elements: measure.parts.dom,
+          canvases: measure.parts.canvases
+        })
+      }
+      // Keep selection highlight on DOM; canvas redraws pick up color.
       for (const el of measure.parts.dom) {
-        if (el.classList.contains('mlcad-measure-badge') && style.fontSize) {
-          el.style.fontSize = `${style.fontSize}px`
+        if (el.classList.contains('mlcad-measure-badge')) {
+          if (style.color) {
+            el.style.color = style.color
+            el.style.borderColor = style.color
+          }
+          if (style.fontSize) {
+            el.style.fontSize = `${style.fontSize}px`
+          }
+        } else if (el.classList.contains('mlcad-measure-dot')) {
+          if (style.color) el.style.background = style.color
+          if (style.fontSize) el.style.fontSize = `${style.fontSize}px`
         }
       }
     }
+    this._positionDomOverlays()
     for (const fn of this._redrawListeners) fn()
   }
 
@@ -2769,11 +4910,13 @@ export class AcExMeasureController {
     for (const fn of measure.parts.cleanups) fn()
     if (render && !this._mode) this._updateIdleStatus()
     if (render) this._view.render()
+    this._notifyRecordsChanged()
   }
 
   /** Projects `data-wcs-*` DOM overlays to root-local screen coordinates. @internal */
   private _positionDomOverlays(): void {
     const rootRect = this._overlayRootRect ?? this._root.getBoundingClientRect()
+    const zoom = this._view.getCameraZoom()
     this._overlayLayer
       .querySelectorAll<HTMLElement>('.mlcad-measure-dot, .mlcad-measure-badge')
       .forEach(el => {
@@ -2781,8 +4924,7 @@ export class AcExMeasureController {
         const y = Number(el.dataset.wcsY)
         if (!Number.isFinite(x) || !Number.isFinite(y)) return
         const screen = this._view.wcsToScreen(new THREE.Vector2(x, y))
-        el.style.left = `${screen.x - rootRect.left}px`
-        el.style.top = `${screen.y - rootRect.top}px`
+        acexPositionWcsOverlay(el, screen, rootRect, zoom)
       })
   }
 
@@ -2827,7 +4969,8 @@ export class AcExMeasureController {
     arm1: THREE.Vector2,
     arm2: THREE.Vector2,
     strokeCss?: string,
-    lineWidth = 2
+    lineWidth = 2,
+    strokeWidthWcs?: number
   ): void {
     const synced = this._syncCanvas(canvas)
     if (!synced) return
@@ -2836,18 +4979,24 @@ export class AcExMeasureController {
     ctx.save()
     ctx.scale(dpr, dpr)
 
-    const arc = interiorAngleArcScreenMetrics(vertex, arm1, arm2, wcs =>
-      this._view.wcsToScreen(wcs)
+    const arc = interiorAngleArcScreenMetrics(vertex, arm1, arm2, p =>
+      this._wcsToScreenPoint(p)
     )
     const rootRect = this._overlayRootOffset()
     const vx = arc.cx - rootRect.left
     const vy = arc.cy - rootRect.top
 
-    ctx.beginPath()
-    ctx.arc(vx, vy, arc.r, arc.startAngle, arc.endAngle, arc.antiClockwise)
-    ctx.strokeStyle = strokeCss ?? this._measureCss()
-    ctx.lineWidth = lineWidth
-    ctx.stroke()
+    if (arc.r > 0) {
+      ctx.beginPath()
+      ctx.arc(vx, vy, arc.r, arc.startAngle, arc.endAngle, arc.antiClockwise)
+      ctx.strokeStyle = strokeCss ?? this._measureCss()
+      ctx.lineWidth = this._scaledCanvasLineWidth(
+        lineWidth,
+        canvas,
+        strokeWidthWcs
+      )
+      ctx.stroke()
+    }
     ctx.restore()
   }
 
@@ -2870,7 +5019,7 @@ export class AcExMeasureController {
       arm1,
       arm2,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(this._drawLineWeight)
+      acexMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT)
     )
   }
 
@@ -2882,7 +5031,8 @@ export class AcExMeasureController {
     through: THREE.Vector2,
     end: THREE.Vector2,
     strokeCss?: string,
-    lineWidth = 3
+    lineWidth = 3,
+    strokeWidthWcs?: number
   ): void {
     const synced = this._syncCanvas(canvas)
     if (!synced) return
@@ -2890,6 +5040,13 @@ export class AcExMeasureController {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.save()
     ctx.scale(dpr, dpr)
+
+    // Collinear start/through/end cannot define a circle; leave the canvas
+    // cleared instead of stroking the previous circumcircle.
+    if (!AcGeCircArc2d.tryCreateByThreePoints(start, through, end)) {
+      ctx.restore()
+      return
+    }
 
     const rootRect = this._overlayRootOffset()
     const sc = this._view.wcsToScreen(new THREE.Vector2(g.cx, g.cy))
@@ -2909,7 +5066,11 @@ export class AcExMeasureController {
     ctx.beginPath()
     ctx.arc(cx, cy, screenR, sa, ea, counterClockwise)
     ctx.strokeStyle = strokeCss ?? this._measureCss()
-    ctx.lineWidth = lineWidth
+    ctx.lineWidth = this._scaledCanvasLineWidth(
+      lineWidth,
+      canvas,
+      strokeWidthWcs
+    )
     ctx.stroke()
     ctx.restore()
   }
@@ -2921,7 +5082,8 @@ export class AcExMeasureController {
     start: THREE.Vector2,
     end: THREE.Vector2,
     strokeCss?: string,
-    lineWidth = 3
+    lineWidth = 3,
+    strokeWidthWcs?: number
   ): void {
     const synced = this._syncCanvas(canvas)
     if (!synced) return
@@ -2948,7 +5110,11 @@ export class AcExMeasureController {
     ctx.beginPath()
     ctx.arc(cx, cy, screenR, sa, ea, counterClockwise)
     ctx.strokeStyle = strokeCss ?? this._measureCss()
-    ctx.lineWidth = lineWidth
+    ctx.lineWidth = this._scaledCanvasLineWidth(
+      lineWidth,
+      canvas,
+      strokeWidthWcs
+    )
     ctx.stroke()
     ctx.restore()
   }
@@ -2974,7 +5140,7 @@ export class AcExMeasureController {
       through,
       end,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(this._drawLineWeight)
+      acexMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT)
     )
   }
 
@@ -2983,7 +5149,8 @@ export class AcExMeasureController {
     canvas: HTMLCanvasElement,
     points: THREE.Vector2[],
     strokeCss?: string,
-    lineWidth = 2
+    lineWidth = 2,
+    strokeWidthWcs?: number
   ): void {
     if (points.length < 3) return
     const synced = this._syncCanvas(canvas)
@@ -3013,7 +5180,11 @@ export class AcExMeasureController {
     ctx.fillStyle = fill
     ctx.fill()
     ctx.strokeStyle = stroke
-    ctx.lineWidth = lineWidth
+    ctx.lineWidth = this._scaledCanvasLineWidth(
+      lineWidth,
+      canvas,
+      strokeWidthWcs
+    )
     ctx.stroke()
     ctx.restore()
   }
@@ -3032,7 +5203,7 @@ export class AcExMeasureController {
       canvas,
       points,
       this._measureCss(),
-      acExMeasureCanvasLineWidth(this._drawLineWeight)
+      acexMeasureCanvasLineWidth(ACEX_MEASUREMENT_LINE_WEIGHT)
     )
   }
 }

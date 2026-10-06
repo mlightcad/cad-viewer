@@ -5,6 +5,7 @@ import {
   AcTrHtmlCanvasOverlay
 } from './AcTrHtmlCanvasOverlay'
 import { AC_TR_HTML_SELECTED_CLASS, AcTrHtmlElement } from './AcTrHtmlElement'
+import { acTrIsHtmlGrip } from './AcTrHtmlGrip'
 import { AcTrHtmlGroup } from './AcTrHtmlGroup'
 
 /** Scratch vector reused when decomposing CSS2D object matrices. */
@@ -31,28 +32,32 @@ function ensureSelectionStyles(): void {
   const style = document.createElement('style')
   style.dataset.mlHtmlSelection = '1'
   style.textContent = `
-.ml-html-dot.${AC_TR_HTML_SELECTED_CLASS} {
-  box-shadow:
-    0 0 0 2px rgba(255, 213, 79, 0.75),
-    0 0 10px rgba(255, 213, 79, 0.95),
-    0 0 18px rgba(255, 213, 79, 0.55);
-}
 .ml-html-badge.${AC_TR_HTML_SELECTED_CLASS},
 .ml-html-callout.${AC_TR_HTML_SELECTED_CLASS},
 .ml-html-stamp.${AC_TR_HTML_SELECTED_CLASS} .ml-html-stamp-badge,
 .ml-html-stamp.${AC_TR_HTML_SELECTED_CLASS} img {
-  outline: 2px solid rgba(255, 213, 79, 0.85);
-  outline-offset: 1px;
+  /* Hard ring at half the original em thickness + soft glow */
+  outline: 0.075em solid rgba(255, 213, 79, 0.85);
+  outline-offset: 0.04em;
   box-shadow:
-    0 0 0 2px rgba(255, 213, 79, 0.4),
-    0 0 12px rgba(255, 213, 79, 0.75),
+    0 0 0 0.075em rgba(255, 213, 79, 0.4),
+    0 0 0.45em rgba(255, 213, 79, 0.85),
+    0 0 0.9em rgba(255, 213, 79, 0.55),
     var(--ml-ui-shadow, 0 1px 4px rgba(0, 0, 0, 0.2));
 }
+.ml-html-dot.${AC_TR_HTML_SELECTED_CLASS},
+.ml-html-grip.${AC_TR_HTML_SELECTED_CLASS} {
+  box-shadow:
+    0 0 0 0.06em rgba(255, 213, 79, 0.75),
+    0 0 0.35em rgba(255, 213, 79, 0.9),
+    0 0 0.7em rgba(255, 213, 79, 0.5);
+}
 .${AC_TR_HTML_CANVAS_CLASS}.${AC_TR_HTML_SELECTED_CLASS} {
+  /* font-size is seeded from the paired badge so em tracks text size */
   filter:
-    drop-shadow(0 0 1.5px #ffd54f)
-    drop-shadow(0 0 4px rgba(255, 213, 79, 0.95))
-    drop-shadow(0 0 8px rgba(255, 213, 79, 0.55));
+    drop-shadow(0 0 0.12em #ffd54f)
+    drop-shadow(0 0 0.3em rgba(255, 213, 79, 0.95))
+    drop-shadow(0 0 0.6em rgba(255, 213, 79, 0.55));
 }
 `
   document.head.appendChild(style)
@@ -91,6 +96,11 @@ export class AcTrHtmlTransientManager {
   private readonly selectedGroupIds = new Set<string>()
   /** Active layout BTR id used to filter layout-scoped overlays. */
   private _activeLayoutId?: string
+  /**
+   * When false, overlay HTML children do not receive pointer hits so CAD
+   * command / OSNAP clicks pass through to the canvas.
+   */
+  private _hitTestEnabled = true
   /** World matrix captured when each leaf transient was published. */
   private readonly _baselineMatrices = new Map<string, THREE.Matrix4>()
   /** Scratch matrix used to compose world transforms in {@link applyTransforms}. */
@@ -440,6 +450,41 @@ export class AcTrHtmlTransientManager {
   }
 
   /**
+   * Enable or disable pointer hit-testing on published HTML overlays.
+   *
+   * Disabled while a CAD command is acquiring points so measurement / markup
+   * endpoint DOM cannot swallow OSNAP clicks meant for the canvas.
+   *
+   * @param enabled - `true` to allow overlay grips/badges to receive pointers
+   */
+  setHitTestEnabled(enabled: boolean): void {
+    this._hitTestEnabled = enabled
+    this.syncHitTest()
+  }
+
+  /**
+   * Re-apply {@link setHitTestEnabled} to every published CSS2D child.
+   * Call after grip binding, which may set `pointer-events: auto`.
+   */
+  syncHitTest(): void {
+    const pe = this._hitTestEnabled ? 'auto' : 'none'
+    for (const group of this.groups.values()) {
+      for (const child of group.children) {
+        if (acTrIsHtmlGrip(child.element)) {
+          // CSS shows grips only when selected; command lock uses inline none.
+          child.element.style.pointerEvents = this._hitTestEnabled ? '' : 'none'
+          continue
+        }
+        child.element.style.pointerEvents = pe
+      }
+    }
+    for (const entry of this.entries.values()) {
+      if (this.groupChildIds.has(entry.id)) continue
+      entry.element.style.pointerEvents = pe
+    }
+  }
+
+  /**
    * Select a group by id.
    *
    * @param id - Group id
@@ -548,6 +593,7 @@ export class AcTrHtmlTransientManager {
       this.selectGroup(g.id)
     })
     this.applyItemLayoutVisibility(group)
+    this.syncHitTest()
   }
 
   /**

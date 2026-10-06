@@ -8,8 +8,9 @@ import * as THREE from 'three'
 import { setMaterialMetadata, getMaterialMetadata } from '../src/style/AcTrMaterialMetadata'
 import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../src/util/AcTrEntityTraitsUtil'
+import { AcTrMaterialUtil } from '../src/util/AcTrMaterialUtil'
 import { AcTrMTextColorUtil } from '../src/util/AcTrMTextColorUtil'
-import { MTextColor } from '@mlightcad/mtext-renderer'
+import { MTextColor } from '@mlightcad/mtext-parser'
 
 describe('AcTrMTextColorUtil', () => {
   it('uses resolved traits rgb for ByLayer instead of hard-coded white', () => {
@@ -62,6 +63,47 @@ describe('AcTrMTextColorUtil', () => {
         ACGI_PAPER_SPACE_BACKGROUND
       )
     ).toBe(0xffffff)
+  })
+
+  it('does not rematerialize inline C256 ByLayer glyphs when entity is ACI 7', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0x000000
+
+    const color = new AcCmColor()
+    color.setForeground()
+    const traits = AcTrMTextColorUtil.snapshotEntityTraits({
+      ...AcTrSubEntityTraitsUtil.createDefaultTraits(),
+      color,
+      layer: 'DIM'
+    })
+
+    const byLayerTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    byLayerTraits.color.setByLayer()
+    byLayerTraits.layer = 'DIM'
+    const byLayerMaterial = styleManager.getMTextFillMaterial(byLayerTraits)
+    // Simulate ColorSettings.byLayerColor green applied after material create.
+    AcTrMaterialUtil.setMaterialColor(byLayerMaterial, new THREE.Color(0x00ff00))
+    setMaterialMetadata(byLayerMaterial, {
+      ...getMaterialMetadata(byLayerMaterial),
+      isByLayerColor: true,
+      isForeground: false
+    })
+
+    const root = new THREE.Group()
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), byLayerMaterial)
+    mesh.userData.mtextColor = (() => {
+      const c = new MTextColor()
+      c.aci = 256
+      return c
+    })()
+    root.add(mesh)
+
+    AcTrMTextColorUtil.rematerializeTextHierarchy(root, traits, styleManager)
+
+    expect(mesh.material).toBe(byLayerMaterial)
+    const material = mesh.material as THREE.MeshBasicMaterial
+    expect(material.color.getHex()).toBe(0x00ff00)
+    expect(getMaterialMetadata(material).isForeground).toBe(false)
   })
 
   it('rematerializes text meshes from entity traits with ACI 7 foreground', () => {
@@ -471,6 +513,27 @@ describe('AcTrMTextColorUtil', () => {
     const material = mesh.material as THREE.MeshBasicMaterial
     expect(material).not.toBe(staleMaterial)
     expect(material.color.getHex()).toBe(0xffff00)
+  })
+
+  it('resolves inline ByLayer from the layer colour when the entity colour is explicit', () => {
+    const entity = new AcCmColor()
+    entity.colorIndex = 4
+    const layer = new AcCmColor()
+    layer.colorIndex = 7
+
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.color = entity
+    traits.layer = 'TEXT'
+
+    const settings = AcTrMTextColorUtil.buildColorSettingsFromTraits(
+      traits,
+      0x000000,
+      layer
+    )
+
+    expect(settings.color.aci).toBe(4)
+    expect(settings.byLayerColor).toBe(0xffffff)
+    expect(settings.byBlockColor).toBe(0xffffff)
   })
 
   it('normalizes numeric trait colours when snapshotting entity traits', () => {

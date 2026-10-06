@@ -1,5 +1,4 @@
-import { AcGiLineWeight } from '@mlightcad/data-model'
-
+import type { AcEdBaseView } from '../../editor'
 import {
   acapCssColor,
   acapCssToMeasurementColor,
@@ -7,6 +6,7 @@ import {
   MEASUREMENT_FONT_SIZE,
   MEASUREMENT_LINE_WEIGHT
 } from '../../util/AcApMeasurementUtil'
+import { acapScreenPxToWcs } from '../overlay/AcApOverlayDrawUtil'
 import type {
   AcApMeasurementGeometry,
   AcApMeasurementPoint2d,
@@ -45,17 +45,26 @@ function isType(value: unknown): value is AcApMeasurementType {
   )
 }
 
+function parsePositiveNumber(value: unknown): number | undefined {
+  return typeof value === 'number' && value > 0 && Number.isFinite(value)
+    ? value
+    : undefined
+}
+
 function parseStyle(raw: unknown): AcApMeasurementSidecarStyle | undefined {
   if (!isPlainObject(raw) || typeof raw.color !== 'string') return undefined
-  const lineWeight =
-    typeof raw.lineWeight === 'number' && raw.lineWeight > 0
-      ? (raw.lineWeight as AcGiLineWeight)
-      : MEASUREMENT_LINE_WEIGHT
+  // Accept legacy lineWeight / strokeWidthWcs without failing, but always hairline.
   const fontSize =
     typeof raw.fontSize === 'number' && raw.fontSize > 0
       ? raw.fontSize
       : MEASUREMENT_FONT_SIZE
-  return { color: raw.color, lineWeight, fontSize }
+  return {
+    color: raw.color,
+    lineWeight: MEASUREMENT_LINE_WEIGHT,
+    fontSize,
+    textHeightWcs: parsePositiveNumber(raw.textHeightWcs),
+    arrowSizeWcs: parsePositiveNumber(raw.arrowSizeWcs)
+  }
 }
 
 function parseGeometry(
@@ -117,13 +126,31 @@ function parseRecord(raw: unknown): AcApMeasurementRecord | undefined {
 
 /** Serialize a live measurement style for the sidecar. */
 export function serializeMeasurementStyle(
-  style: AcApMeasurementStyle
+  style: AcApMeasurementStyle,
+  view?: AcEdBaseView
 ): AcApMeasurementSidecarStyle {
-  return {
+  const result: AcApMeasurementSidecarStyle = {
     color: acapCssColor(style.color),
-    lineWeight: style.lineWeight,
+    lineWeight: MEASUREMENT_LINE_WEIGHT,
     fontSize: style.fontSize
   }
+  if (
+    style.textHeightMode === 'custom' &&
+    style.textHeightWcs != null &&
+    style.textHeightWcs > 0
+  ) {
+    // Custom: keep the authored world height — never re-derive from fontSize.
+    result.textHeightWcs = style.textHeightWcs
+  } else if (style.textHeightMode === 'adaptive' && view) {
+    // Fit-to-screen: bake the current screen font size into WCS at commit.
+    result.textHeightWcs = acapScreenPxToWcs(style.fontSize, view)
+  } else if (style.textHeightWcs != null && style.textHeightWcs > 0) {
+    // Legacy / import: prefer an existing world height over reconversion.
+    result.textHeightWcs = style.textHeightWcs
+  } else if (view) {
+    result.textHeightWcs = acapScreenPxToWcs(style.fontSize, view)
+  }
+  return result
 }
 
 /** Restore a live measurement style from sidecar CSS / numeric fields. */
@@ -132,9 +159,9 @@ export function deserializeMeasurementStyle(
 ): AcApMeasurementStyle {
   return {
     color: acapCssToMeasurementColor(style.color),
-    lineWeight:
-      style.lineWeight > 0 ? style.lineWeight : MEASUREMENT_LINE_WEIGHT,
-    fontSize: style.fontSize > 0 ? style.fontSize : MEASUREMENT_FONT_SIZE
+    lineWeight: MEASUREMENT_LINE_WEIGHT,
+    fontSize: style.fontSize > 0 ? style.fontSize : MEASUREMENT_FONT_SIZE,
+    textHeightWcs: style.textHeightWcs
   }
 }
 
@@ -170,11 +197,28 @@ export function parseMeasurementSidecar(
   }
 }
 
+function normalizeStyleForWrite(
+  style: AcApMeasurementSidecarStyle
+): AcApMeasurementSidecarStyle {
+  const { strokeWidthWcs: _ignored, ...rest } = style
+  return {
+    ...rest,
+    lineWeight: MEASUREMENT_LINE_WEIGHT
+  }
+}
+
 /** Serialize a sidecar file to pretty-printed JSON. */
 export function stringifyMeasurementSidecar(
   file: AcApMeasurementSidecarFile
 ): string {
-  return `${JSON.stringify(file, null, 2)}\n`
+  const normalized: AcApMeasurementSidecarFile = {
+    ...file,
+    measurements: file.measurements.map(m => ({
+      ...m,
+      style: normalizeStyleForWrite(m.style)
+    }))
+  }
+  return `${JSON.stringify(normalized, null, 2)}\n`
 }
 
 /**

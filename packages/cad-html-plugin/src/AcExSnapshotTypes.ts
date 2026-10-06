@@ -11,8 +11,18 @@ import type { AcExOsnapCatalog } from './AcExOsnapPrimitiveTypes'
  * is a backward-compatible flag on v3 batches: hatch fills use `-1` so they
  * sit below linework on the shared Z plane, matching the live viewer's
  * `AcGiSubEntityTraits.drawOrder` / `Object3D.renderOrder` tiers.
+ *
+ * v4 adds optional textured mesh payloads ({@link AcExMeshBatch.uvs} +
+ * {@link AcExMeshBatch.texture}) for raster images and OLE frames.
+ * Monolithic ACEX layout OSNAP is stored as ACEO bytes (legacy JSON still
+ * decodes); package ACEC chunk schema is unchanged.
+ *
+ * Optional {@link AcExLayoutSnapshot.savedView} (AutoCAD VPORT / layout limits)
+ * is a layout field used by the offline “Saved” zoom action. In ACEX binary it
+ * is stored under {@link AcExSnapshot.meta.savedViews} so the viewport JSON
+ * slot stays a bare array compatible with older runtimes.
  */
-export const ACEX_SNAPSHOT_VERSION = 3 as const
+export const ACEX_SNAPSHOT_VERSION = 4 as const
 
 /**
  * Literal type of the supported snapshot schema version.
@@ -43,6 +53,19 @@ export interface AcExViewerUnits {
   angbase: number
   /** AutoCAD `ANGDIR` — 0 = counter-clockwise positive, 1 = clockwise. */
   angdir: number
+}
+
+/**
+ * CAD entity square-grip appearance from `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT`.
+ * Overlay measure/markup endpoint circles keep their own colored-dot styling.
+ */
+export interface AcExViewerGripAppearance {
+  /** Grip square edge length in CSS pixels (`GRIPSIZE`). */
+  size: number
+  /** CSS color for idle grips (`GRIPCOLOR`). */
+  colorCss: string
+  /** CSS color for hover / hot grips (`GRIPHOT`). */
+  hotColorCss: string
 }
 
 /**
@@ -87,13 +110,20 @@ export interface AcExLinePattern {
 
 /**
  * One hatch pattern definition line serialized for offline playback.
+ *
+ * {@link AcExHatchPatternLine.offset} is stored in the same frame as the live
+ * hatch shader uniform (already rotated by `-angle` in
+ * {@link AcTrFillMaterialManager}), not as a raw DXF/PAT definition offset.
  */
 export interface AcExHatchPatternLine {
   /** Pattern line angle in radians. */
   angle: number
   /** Pattern origin in hatch object space. */
   base: [number, number]
-  /** Spacing offset between repeated pattern lines. */
+  /**
+   * Spacing offset between repeated pattern lines, in the hatch shader's
+   * line-local frame (pre-rotated by `-angle`).
+   */
   offset: [number, number]
   /** Dash and gap lengths for this pattern line. */
   dashLengths: number[]
@@ -149,6 +179,13 @@ export interface AcExLineBatch {
    * Omitted when `0` (the default linework tier).
    */
   renderOrder?: number
+  /**
+   * When `true`, hybrid OSNAP must not index this batch's vertices.
+   * Set for text/point glyph stroke batches (`bboxIntersectionCheck` drawables)
+   * whose outlines flood snap without matching AutoCAD text snap behavior.
+   * Insertion/node snap for TEXT/MTEXT still comes from analytic ACEO points.
+   */
+  excludeFromOsnap?: boolean
 }
 
 /**
@@ -168,11 +205,21 @@ export interface AcExGradientFill {
 }
 
 /**
+ * Embedded raster texture for an image / OLE mesh batch (PNG bytes).
+ */
+export interface AcExMeshTexture {
+  /** MIME type, typically `image/png`. */
+  mimeType: string
+  /** Encoded image bytes. */
+  bytes: Uint8Array
+}
+
+/**
  * One packed mesh or point batch (filled regions, MText quads, point glyphs, etc.)
  * rendered in the offline viewer.
  */
 export interface AcExMeshBatch {
-  /** Layer name used for grouping and visibility in the viewer. */
+  /** Layer name used for grouping and visibility in the offline viewer. */
   layer: string
   /** Fill color as 24-bit RGB hex. */
   color: number
@@ -202,6 +249,15 @@ export interface AcExMeshBatch {
    * Required when {@link AcExMeshBatch.gradientFill} is set.
    */
   gradientPositions?: Float32Array
+  /**
+   * Per-vertex UVs `[u0, v0, u1, v1, …]` paired with {@link AcExMeshBatch.texture}.
+   * Vertex count must match {@link AcExMeshBatch.positions}.
+   */
+  uvs?: Float32Array
+  /**
+   * Raster texture for IMAGE / OLE frames. Requires {@link AcExMeshBatch.uvs}.
+   */
+  texture?: AcExMeshTexture
   /** Material side when a custom fill shader is used (`0` = front, `1` = back). */
   side?: number
   /**
@@ -249,16 +305,20 @@ export interface AcExLayoutSnapshot {
   /**
    * Analytic geometry for object snap (OSNAP) in the offline viewer.
    *
-   * Populated at export time by {@link buildOsnapCatalog} from the drawing database
-   * (not from tessellated THREE batches). Includes lines, arcs, circles, ellipses,
-   * splines, and points in WCS, including entities inside block references.
+   * Populated at export time by {@link buildOsnapCatalog} from the drawing database.
+   * Contains **curve/point/path** primitives (circle, arc, ellipse, spline, point,
+   * polyline bulge arcs, fill/frame `path` records, and wide LWPOLYLINE
+   * centerline `path` records). Straight drawing-line
+   * edges are omitted because they duplicate {@link AcExLineBatch} display
+   * geometry; the offline viewer rebuilds line snap from those batches
+   * (self-contained HTML and multi-file packages). Hatch / TRACE / SOLID / IMAGE
+   * clip / OLE boundaries are stored as compact `path` primitives, not exploded
+   * ACEO lines.
    *
-   * Coordinates are stored as IEEE-754 `number` (double) in JSON for measurement-grade
-   * precision; they are not converted to {@link Float32Array}.
+   * Coordinates are IEEE-754 `number` (double) for measurement-grade precision.
    *
-   * When {@link AcExOsnapCatalog.primitives} is non-empty, {@link AcExOsnapIndex}
-   * uses these definitions exclusively and does **not** snap to discretized
-   * {@link AcExLineBatch} / {@link AcExMeshBatch} vertices.
+   * {@link AcExOsnapIndex} indexes ACEO curves/paths together with tessellated line
+   * segments extracted from resident {@link AcExLineBatch} / mesh edges.
    */
   osnap?: AcExOsnapCatalog
   /**
@@ -268,6 +328,12 @@ export interface AcExLayoutSnapshot {
    * these descriptors to scissor-render model-space batches inside each frame.
    */
   viewports?: AcExViewportSnapshot[]
+  /**
+   * AutoCAD saved view for this layout (model: VPORT `*ACTIVE`; paper: layout
+   * limits). Used by the offline toolbar “Saved” zoom action. Omitted when the
+   * drawing has no usable saved view.
+   */
+  savedView?: AcExExtents
 }
 
 /** Camera state for restoring the export-time view in the offline HTML viewer. */
@@ -317,6 +383,13 @@ export interface AcExSnapshot {
     viewExtents?: AcExExtents
     /** Unit and formatting sysvars for measurement display. */
     units: AcExViewerUnits
+    /**
+     * CAD entity square-grip appearance from `GRIPSIZE` / `GRIPCOLOR` /
+     * `GRIPHOT`. Overlay endpoint circles ignore these values. Omitted on
+     * snapshots produced before this field existed; the viewer then uses
+     * AutoCAD-like defaults (8px, `#0080ff` / `#ff0000`).
+     */
+    grip?: AcExViewerGripAppearance
     /** Canvas background color as 24-bit RGB hex. */
     background: number
     /** Export-time UI locale from the CAD app (informational; runtime uses browser language). */
@@ -337,12 +410,24 @@ export interface AcExSnapshot {
      */
     viewerMode?: AcExViewerMode
     /**
+     * Absolute root URL for localized user-guide pages. When omitted, the
+     * offline viewer uses the default mlightcad docs site.
+     */
+    docsBaseUrl?: string
+    /**
      * When `false`, paper-space layouts were not exported. The offline viewer
      * hides the layout switcher and may release CPU geometry after the first
      * draw. Defaults to `true` when omitted for snapshots produced before this
      * option existed.
      */
     exportLayouts?: boolean
+    /**
+     * AutoCAD saved views keyed by layout BTR id. Written by the ACEX binary
+     * codec so the layout viewport JSON slot remains a bare array; the decoder
+     * copies entries onto {@link AcExLayoutSnapshot.savedView}. Omitted when
+     * no layout has a usable saved view.
+     */
+    savedViews?: Record<string, AcExExtents>
   }
   /** Layer table used by the layer drawer (visibility toggles, swatches). */
   layers: AcExLayerSnapshot[]

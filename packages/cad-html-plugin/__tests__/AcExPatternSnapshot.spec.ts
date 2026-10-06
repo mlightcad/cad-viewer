@@ -9,6 +9,7 @@ import {
   extractGradientFill,
   extractHatchPattern,
   extractLinePattern,
+  rebaseHatchPatternToLocalOffset,
   transformHatchPatternToWorldSpace
 } from '../src/AcExPatternSnapshot'
 import {
@@ -200,5 +201,84 @@ describe('AcExPatternSnapshot', () => {
         }
       ]
     })
+  })
+
+  it('rebases world hatch pattern bases into a local float32-safe frame', () => {
+    // AcEx offsets match live shader uniforms: already rotated by -lineAngle.
+    const lineAngle = Math.PI / 4
+    const dxfOffset = new THREE.Vector2(0, 5)
+    const shaderOffset = dxfOffset
+      .clone()
+      .rotateAround(new THREE.Vector2(), -lineAngle)
+    const pattern = {
+      patternAngle: 0,
+      patternLines: [
+        {
+          angle: lineAngle,
+          base: [10_650_010, 3_200_020] as [number, number],
+          offset: [shaderOffset.x, shaderOffset.y] as [number, number],
+          dashLengths: [] as number[],
+          patternLength: 0
+        }
+      ]
+    }
+    const meshOffset: [number, number, number] = [10_650_000, 3_200_000, 0]
+    const local = rebaseHatchPatternToLocalOffset(pattern, meshOffset)
+    const base = local.patternLines[0]!.base
+    expect(Math.hypot(base[0], base[1])).toBeLessThan(
+      Math.abs(shaderOffset.y) + 1e-9
+    )
+
+    // Phase must match wrapping with the same pre-rotated offset used by
+    // AcTrFillMaterialManager (re-rotating here would shift the pattern).
+    const sampleY = (bx: number, by: number) => {
+      const dx = 10 - bx
+      const dy = 20 - by
+      const c = Math.cos(-lineAngle)
+      const s = Math.sin(-lineAngle)
+      return c * dy + s * dx
+    }
+    const spacing = Math.abs(shaderOffset.y)
+    const phase = (y: number) => {
+      const n = y / spacing
+      return n - Math.floor(n)
+    }
+    const unwrappedBase = new THREE.Vector2(
+      pattern.patternLines[0]!.base[0] - meshOffset[0],
+      pattern.patternLines[0]!.base[1] - meshOffset[1]
+    )
+    expect(phase(sampleY(base[0], base[1]))).toBeCloseTo(
+      phase(sampleY(unwrappedBase.x, unwrappedBase.y)),
+      8
+    )
+  })
+
+  it('does not re-rotate AcEx shader-frame offsets when wrapping', () => {
+    const lineAngle = Math.PI / 4
+    const shaderOffset = new THREE.Vector2(0, 5).rotateAround(
+      new THREE.Vector2(),
+      -lineAngle
+    )
+    const pattern = {
+      patternAngle: 0,
+      patternLines: [
+        {
+          angle: lineAngle,
+          base: [10_650_010, 3_200_020] as [number, number],
+          offset: [shaderOffset.x, shaderOffset.y] as [number, number],
+          dashLengths: [] as number[],
+          patternLength: 0
+        }
+      ]
+    }
+    const local = rebaseHatchPatternToLocalOffset(pattern, [
+      10_650_000,
+      3_200_000,
+      0
+    ])
+    // Exported offset must stay in shader frame for createViewerMeshMaterial
+    // (which feeds createHatchPatternShaderMaterial without another rotate).
+    expect(local.patternLines[0]!.offset[0]).toBeCloseTo(shaderOffset.x, 10)
+    expect(local.patternLines[0]!.offset[1]).toBeCloseTo(shaderOffset.y, 10)
   })
 })

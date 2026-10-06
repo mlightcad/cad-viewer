@@ -1,5 +1,6 @@
 import {
   hitTestMeasurementGeometry,
+  measurementFocusBox,
   measurementGeometryBounds
 } from '../src/command/measure/AcApMeasurementGeometry'
 import type { AcApMeasurementGeometry } from '../src/command/measure/AcApMeasurementTypes'
@@ -43,6 +44,46 @@ describe('hitTestMeasurementGeometry', () => {
         geometry,
         { x: 30, y: 30 },
         identity,
+        threshold
+      )
+    ).toBe(false)
+  })
+
+  it('hits the angle arc at the world-space radius, not a 15px screen floor', () => {
+    const geometry: AcApMeasurementGeometry = {
+      type: 'angle',
+      vertex: { x: 0, y: 0 },
+      arm1: { x: 20, y: 0 },
+      arm2: { x: 0, y: 20 }
+    }
+    const onArc = 20 * 0.5 * Math.SQRT1_2
+    expect(
+      hitTestMeasurementGeometry(
+        geometry,
+        { x: onArc, y: onArc },
+        identity,
+        threshold
+      )
+    ).toBe(true)
+    // Former screen-space floor of 15px along the bisector (inside the mid-arm arc).
+    expect(
+      hitTestMeasurementGeometry(
+        geometry,
+        { x: 15 * Math.SQRT1_2, y: 15 * Math.SQRT1_2 },
+        identity,
+        threshold
+      )
+    ).toBe(false)
+
+    const zoomOut = (point: { x: number; y: number }) => ({
+      x: point.x * 0.25,
+      y: point.y * 0.25
+    })
+    expect(
+      hitTestMeasurementGeometry(
+        geometry,
+        { x: 15 * Math.SQRT1_2, y: 15 * Math.SQRT1_2 },
+        zoomOut,
         threshold
       )
     ).toBe(false)
@@ -129,5 +170,38 @@ describe('measurementGeometryBounds', () => {
     expect(box!.min.y).toBe(-25)
     expect(box!.max.x).toBe(25)
     expect(box!.max.y).toBe(25)
+  })
+})
+
+describe('measurementFocusBox', () => {
+  const clientToWorld = (clientX: number, clientY: number) => ({
+    x: clientX / 10,
+    y: -clientY / 10
+  })
+
+  it('pads a coordinate point when no overlay rect is available', () => {
+    const box = measurementFocusBox(
+      { type: 'point', position: { x: 5, y: 7 } },
+      [],
+      clientToWorld
+    )
+    expect(box).toBeDefined()
+    expect(box!.min.x).toBe(4)
+    expect(box!.min.y).toBe(6)
+    expect(box!.max.x).toBe(6)
+    expect(box!.max.y).toBe(8)
+  })
+
+  it('unions the coordinate capsule so zoom frames the badge, not the point', () => {
+    const box = measurementFocusBox(
+      { type: 'point', position: { x: 5, y: 7 } },
+      [{ left: 40, top: 20, right: 120, bottom: 50 }],
+      clientToWorld
+    )
+    expect(box).toBeDefined()
+    expect(box!.min.x).toBe(4)
+    expect(box!.min.y).toBe(-5)
+    expect(box!.max.x).toBe(12)
+    expect(box!.max.y).toBe(7)
   })
 })

@@ -99,9 +99,13 @@ A single-file HTML export of the sample **canteen.dwg** drawing, produced by `ca
 
 View mode uses about **83% less memory than AutoCAD 2020** and **77% less than GstarCAD Viewer**.
 
-**How it is built:**
-- CI on `main` downloads `canteen.dwg` from cad-data and runs `exportDemoHtml.js`
-- Locally: `pnpm export:demo-html` from this package after `pnpm build`
+#### Progressive multi-file package (`/self-contained-html/canteen-progressive/viewer.html`)
+
+The same sample as a multi-file ACEX package: shell HTML + manifest + per-chunk geometry. Chunks load and paint progressively so first content appears sooner than a single monolithic payload.
+
+**How both demos are built:**
+- CI on `main` downloads `canteen.dwg` from cad-data, runs `exportDemoHtml.js` (single HTML + multi zip), then extracts the zip to `canteen-progressive/` for GitHub Pages
+- Locally: `pnpm export:demo-html` from this package after `pnpm build` (also writes `canteen.zip` and extracts it)
 
 ## Getting Started
 
@@ -138,12 +142,13 @@ The examples will be available at:
 - CDN bootstrap (zero-build): `http://localhost:3000/cdn-bootstrap/cad-viewer.html`
 - HTML converter (upload DWG/DXF in the browser): `http://localhost:3000/cad-simple-viewer/html-converter.html`
 - Self-contained HTML demo: `http://localhost:3000/self-contained-html/canteen.html` (generate first with `pnpm export:demo-html`)
+- Progressive multi-file demo: `http://localhost:3000/self-contained-html/canteen-progressive/viewer.html` (same export step)
 
 ### Self-Contained HTML Demo
 
 The landing page includes an **in-browser converter** at `/cad-simple-viewer/html-converter.html` (copied from `@mlightcad/cad-simple-viewer-example` by `pnpm pre-serve`). Upload a DWG/DXF, adjust options, and download HTML without a backend.
 
-The **canteen sample** offline HTML file is built from [`canteen.dwg`](https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg) using [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli). GitHub Actions on the `main` branch runs this step automatically before deploying to GitHub Pages.
+The **canteen sample** offline HTML file is built from [`canteen.dwg`](https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg) using [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli). The same script also exports a multi-file progressive package (`canteen.zip`) and extracts it to `canteen-progressive/` for static hosting. GitHub Actions on the `main` branch runs this step automatically before deploying to GitHub Pages.
 
 To generate the file locally (requires a built workspace and Playwright Chromium or system Chrome via `PLAYWRIGHT_BROWSER_CHANNEL=chrome`):
 
@@ -188,9 +193,9 @@ packages/examples/
 │   ├── cad-simple-viewer/      # Simple CAD viewer demo + in-browser HTML converter
 │   ├── cad-diff-viewer/        # Side-by-side diff viewer demo
 │   ├── cdn-bootstrap/          # Zero-build CDN single-HTML bootstrap
-│   └── self-contained-html/    # Offline HTML export demo (CI / export:demo-html)
+│   └── self-contained-html/    # Offline HTML demos (CI / export:demo-html)
 ├── copyDist.js                 # Script to copy built examples
-├── exportDemoHtml.js           # Build offline HTML demo via cad-simple-viewer-cli
+├── exportDemoHtml.js           # Build single HTML + multi-file progressive package demos
 ├── package.json                # Package configuration
 └── README.md                   # This file
 ```

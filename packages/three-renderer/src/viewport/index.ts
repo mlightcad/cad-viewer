@@ -1,3 +1,5 @@
 export * from './AcTrBaseView'
 export * from './AcTrCamera'
+export * from './AcTrCssRect'
+export * from './AcTrOverlayViewport'
 export * from './AcTrViewportView'

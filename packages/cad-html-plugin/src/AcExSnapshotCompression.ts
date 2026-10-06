@@ -3,6 +3,19 @@ import { gunzipSync, gzipSync } from 'fflate'
 /** Snapshot payload compression stored on the HTML script `type` attribute. */
 export const ACEX_SNAPSHOT_COMPRESSION = 'gzip' as const
 
+/**
+ * Hard cap on gunzip output for ACEX payloads (single-file snapshot or package
+ * chunk). Rejects zip bombs after inflate; compressed input is also capped.
+ *
+ * Single-file HTML can exceed 64 MiB once geometry + analytic OSNAP are decoded
+ * (large site plans). Package ACEC/ACEO chunks stay far below this; the cap is
+ * sized for legitimate self-contained exports, not unbounded inflate.
+ */
+export const ACEX_MAX_DECOMPRESSED_BYTES = 512 * 1024 * 1024
+
+/** Hard cap on compressed gzip bytes accepted before inflate. */
+export const ACEX_MAX_COMPRESSED_BYTES = 256 * 1024 * 1024
+
 export type AcExSnapshotCompression = typeof ACEX_SNAPSHOT_COMPRESSION
 
 export interface AcExCompressedSnapshotBinary {
@@ -26,7 +39,41 @@ export function compressSnapshotBinary(
   }
 }
 
+/**
+ * Async gzip using the browser {@link CompressionStream} when available so
+ * multiple chunk encodes can overlap. Falls back to sync {@link gzipSync}.
+ */
+export async function compressSnapshotBinaryAsync(
+  data: Uint8Array
+): Promise<AcExCompressedSnapshotBinary> {
+  if (typeof CompressionStream === 'undefined') {
+    return compressSnapshotBinary(data)
+  }
+  try {
+    // Copy into a standalone ArrayBuffer — Blob rejects SharedArrayBuffer views.
+    const copy = new Uint8Array(data.byteLength)
+    copy.set(data)
+    const stream = new Blob([copy])
+      .stream()
+      .pipeThrough(new CompressionStream('gzip'))
+    const bytes = new Uint8Array(await new Response(stream).arrayBuffer())
+    return {
+      bytes,
+      compression: ACEX_SNAPSHOT_COMPRESSION
+    }
+  } catch {
+    return compressSnapshotBinary(data)
+  }
+}
+
 /** Decompresses a gzip snapshot binary payload from an exported HTML file. */
 export function decompressSnapshotBinary(data: Uint8Array): Uint8Array {
-  return gunzipSync(data)
+  if (data.byteLength > ACEX_MAX_COMPRESSED_BYTES) {
+    throw new Error('Compressed payload exceeds size limit')
+  }
+  const result = gunzipSync(data)
+  if (result.byteLength > ACEX_MAX_DECOMPRESSED_BYTES) {
+    throw new Error('Decompressed payload exceeds size limit')
+  }
+  return result
 }

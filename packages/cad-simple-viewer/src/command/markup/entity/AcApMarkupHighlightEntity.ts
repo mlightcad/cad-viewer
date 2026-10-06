@@ -1,9 +1,11 @@
-import { AcTrHtmlCanvasOverlay, AcTrHtmlDot } from '@mlightcad/three-renderer'
+import { AcTrHtmlCanvasOverlay, AcTrHtmlGrip } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
 import {
   acapDrawOverlayHighlight,
-  acapFitOverlayCanvas,  type AcApOverlayWorldDrawResult} from '../../overlay'
+  acapFitOverlayCanvas,
+  type AcApOverlayWorldDrawResult
+} from '../../overlay'
 import type { AcApMarkupRecord } from '../AcApMarkupTypes'
 import { AcApMarkupEntity } from './AcApMarkupEntity'
 
@@ -51,6 +53,20 @@ export class AcApMarkupHighlightEntity extends AcApMarkupEntity {
       layoutId
     })
     group.addCanvas(overlay)
+
+    const centerDot = new AcTrHtmlGrip({
+      id: `${this.record.id}-dot`,
+      color,
+      worldPosition: {
+        x: (geom.corner1.x + geom.corner2.x) / 2,
+        y: (geom.corner1.y + geom.corner2.y) / 2
+      },
+      layer,
+      layoutId
+    })
+    group.add(centerDot)
+    this.seedOverlaySizes(view, [centerDot], [overlay.canvas])
+
     /**
      * Redraw the highlight rectangle in screen space.
      */
@@ -62,25 +78,14 @@ export class AcApMarkupHighlightEntity extends AcApMarkupEntity {
         view.worldToScreen(geom.corner1),
         view.worldToScreen(geom.corner2),
         this.record.style.color,
-        canvasLineWidth
+        canvasLineWidth,
+        view,
+        this.record.style.strokeWidthWcs
       )
     }
     redraw()
     view.events.viewChanged.addEventListener(redraw)
     cleanups.push(() => view.events.viewChanged.removeEventListener(redraw))
-
-    group.add(
-      new AcTrHtmlDot({
-        id: `${this.record.id}-dot`,
-        color,
-        worldPosition: {
-          x: (geom.corner1.x + geom.corner2.x) / 2,
-          y: (geom.corner1.y + geom.corner2.y) / 2
-        },
-        layer,
-        layoutId
-      })
-    )
 
     return {
       group,

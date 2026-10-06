@@ -9,7 +9,8 @@ import {
   type MTextToolbarColorPickerFactory,
   type MTextToolbarTheme
 } from '@mlightcad/mtext-input-box'
-import { MTextAttachmentPoint, MTextColor } from '@mlightcad/mtext-renderer'
+import { MTextColor } from '@mlightcad/mtext-parser'
+import { MTextAttachmentPoint } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import { AcApDocManager } from '../../../app'

@@ -19,7 +19,8 @@ import {
   commitMeasurementGroup,
   getMeasurementStyle,
   MEASUREMENT_LAYER,
-  refreshMeasurementValueLabels
+  refreshMeasurementValueLabels,
+  subscribeMeasurements
 } from '../src/command/measure/AcApMeasurementStore'
 import {
   MEASUREMENT_FONT_SIZE,
@@ -89,6 +90,7 @@ function makeGroup(id: string): AcTrHtmlGroup {
     id,
     layer: MEASUREMENT_LAYER,
     children: [],
+    canvases: [],
     dispose: jest.fn()
   } as unknown as AcTrHtmlGroup
 }
@@ -206,7 +208,11 @@ describe('AcApMeasurementHistory', () => {
       }
     }
 
+    const listener = jest.fn()
+    const unsubscribe = subscribeMeasurements(listener)
     refreshMeasurementValueLabels(view, db as unknown as AcDbDatabase)
+    unsubscribe()
     expect(setText).toHaveBeenCalledWith('12.3')
+    expect(listener).toHaveBeenCalled()
   })
 })

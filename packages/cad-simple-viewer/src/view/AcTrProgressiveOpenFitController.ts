@@ -92,6 +92,20 @@ export class AcTrProgressiveOpenFitController {
   }
 
   /**
+   * Frames linework bounds before deferred glyphs finish.
+   *
+   * The zoom runs as a programmatic camera change, so the host view's
+   * `viewChanged` listener does not mark the open fit as user-adjusted and
+   * cancel {@link applyFinalFit}.
+   */
+  frameProgrammatically(box: AcGeBox2d) {
+    if (this.userAdjusted) {
+      return
+    }
+    this.applyZoom(box)
+  }
+
+  /**
    * Notifies the controller that the active layout camera changed. User-driven
    * changes cancel further auto framing.
    */

@@ -5,13 +5,17 @@ import {
   type AcGeVector3dLike,
   type AcGiLineWeight
 } from '@mlightcad/data-model'
-import { AcTrHtmlGroup } from '@mlightcad/three-renderer'
+import {
+  type AcTrHtmlElement,
+  AcTrHtmlGroup
+} from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../../../view'
 import {
   AcApOverlayEntity,
   type AcApOverlaySerializable,
-  type AcApOverlayWorldDrawResult
+  type AcApOverlayWorldDrawResult,
+  acapSeedOverlaySizesFromWcs
 } from '../../overlay'
 import {
   hitTestMarkupGeometry,
@@ -22,8 +26,9 @@ import { MARKUP_LAYER } from '../AcApMarkupStore'
 import type { AcApMarkupRecord } from '../AcApMarkupTypes'
 import {
   cssToMarkupColor,
-  MARKUP_LINE_WEIGHT,
-  markupCanvasLineWidth
+  MARKUP_FONT_SIZE,
+  markupCanvasLineWidth,
+  resolveMarkupLineWeight
 } from '../AcApMarkupUtil'
 
 /**
@@ -51,10 +56,7 @@ export interface AcApMarkupDrawStyle {
 export function markupDrawStyleFromRecord(
   record: AcApMarkupRecord
 ): AcApMarkupDrawStyle {
-  const lineWeight =
-    record.style.lineWeight != null && record.style.lineWeight > 0
-      ? (record.style.lineWeight as AcGiLineWeight)
-      : MARKUP_LINE_WEIGHT
+  const lineWeight = resolveMarkupLineWeight(record.style.lineWeight)
   return {
     color: cssToMarkupColor(record.style.color),
     lineWeight,
@@ -225,6 +227,27 @@ export abstract class AcApMarkupEntity
       layer,
       layoutId,
       selectable: true
+    })
+  }
+
+  /**
+   * Seeds imported WCS sizes onto HTML overlays and canvases before first paint.
+   */
+  protected seedOverlaySizes(
+    view: AcTrView2d,
+    elements: readonly AcTrHtmlElement[],
+    canvases: readonly HTMLElement[] = []
+  ): void {
+    acapSeedOverlaySizesFromWcs(view, {
+      textHeightWcs: this.record.style.textHeightWcs,
+      strokeWidthWcs: this.record.style.strokeWidthWcs,
+      arrowSizeWcs: this.record.style.arrowSizeWcs,
+      fontSizePx: this.record.style.fontSize ?? MARKUP_FONT_SIZE,
+      strokeScreenPx: markupCanvasLineWidth(
+        resolveMarkupLineWeight(this.record.style.lineWeight)
+      ),
+      elements,
+      canvases
     })
   }
 

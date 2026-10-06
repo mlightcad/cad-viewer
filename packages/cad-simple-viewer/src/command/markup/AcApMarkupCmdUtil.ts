@@ -1,12 +1,16 @@
 import type { AcApContext } from '../../app'
+import { AcApDocManager } from '../../app'
 import {
+  type AcEdCommand,
   AcEdCorsorType,
   AcEdOpenMode,
   AcEdPromptStatus,
   AcEdPromptStringOptions,
   AcEdViewMode
 } from '../../editor'
+import { acedInteractionStrategy } from '../../editor/input/ui/AcEdInteractionStrategy'
 import { AcApI18n } from '../../i18n'
+import { acuiBindDrawStyleSessionAccessory } from '../../ui/AcUiDrawStyle'
 import type { AcTrView2d } from '../../view'
 import { editMarkupHtmlText } from './AcApMarkupTextEdit'
 import type {
@@ -34,6 +38,16 @@ export function configureMarkupCommand(command: {
 }): void {
   command.mode = MARKUP_OPEN_MODE
   command.recordsUndoStack = false
+}
+
+/**
+ * Markup drawing commands: Review mode plus color / font-size in the
+ * phone/pad session panel. Prefer {@link AcApMarkupDrawCmd} for new tools;
+ * this helper remains for one-off configuration.
+ */
+export function configureMarkupDrawCommand(command: AcEdCommand): void {
+  configureMarkupCommand(command)
+  acuiBindDrawStyleSessionAccessory(command)
 }
 
 /** Create shared metadata fields for a new markup record. */
@@ -89,12 +103,33 @@ export interface AcApMarkupCapsuleHost {
 /**
  * Type markup text directly in a capsule, matching double-click edit.
  *
+ * On phone/pad, uses the session-panel string field via {@link promptMarkupText}
+ * instead of in-place contenteditable (soft keyboard + session chrome).
+ *
  * Escape cancels and returns an empty string (geometry is still committed).
  */
 export async function promptMarkupCapsuleText(
   host: AcApMarkupCapsuleHost,
-  options?: { multiline?: boolean; initialText?: string }
+  options?: {
+    multiline?: boolean
+    initialText?: string
+    /** i18n key for the mobile session prompt (defaults to text content). */
+    messageKey?: string
+  }
 ): Promise<string> {
+  if (acedInteractionStrategy().point.usesSessionChrome) {
+    const prompt = new AcEdPromptStringOptions(
+      AcApI18n.t(options?.messageKey ?? 'jig.markup.text.content')
+    )
+    prompt.allowEmpty = true
+    prompt.allowSpaces = true
+    prompt.defaultValue = options?.initialText ?? ''
+    prompt.useDefaultValue = true
+    const result = await AcApDocManager.instance.editor.getString(prompt)
+    if (result.status !== AcEdPromptStatus.OK) return ''
+    return (result.stringResult ?? options?.initialText ?? '').trim()
+  }
+
   const text = await editMarkupHtmlText({
     el: host.textElement,
     listenOn: host.element,

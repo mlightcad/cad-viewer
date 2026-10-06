@@ -12,7 +12,7 @@ Ele também oferece algo que você raramente encontra em outros visualizadores C
 
 - [**🌐 Página inicial**](https://mlightcad.com/)
 - **🌐 Demo ao vivo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 Documentação da API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versionada) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (latest/dev) · [Servidor MCP](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 Documentação da API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versionada) · [Servidor MCP](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -41,6 +41,14 @@ Pacotes desktop Linux da comunidade:
 - [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — Pacote fonte Arch Linux usando Electron do sistema (~5,4 MB)
 - [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — Pacote binário Arch Linux com fontes/templates incluídos para abertura totalmente offline de desenhos
 
+### Apps de demonstração (Demo Apps)
+
+Apps de exemplo oficiais que mostram como integrar o cad-viewer no seu próprio produto:
+
+- [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — Host mínimo em TypeScript vanilla para [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer): abra DXF/DWG locais ou de CDN, execute comandos por uma barra de ferramentas compacta e carregue sob demanda plugins de exportação HTML/PDF/SVG sem a UI Vue completa.
+- [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — App Vue 3 completa baseada em [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) com menus, ribbons, diálogos, linha de comando e barra de status ([demo ao vivo](https://mlightcad.github.io/cad-viewer-example/)).
+- [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Demo de “unidade CAD” em Next.js: upload retomável em chunks de DWG/DXF, lista de arquivos com SQLite e miniaturas de pré-visualização, e abertura com **parse ao vivo no navegador** (`cad-simple-viewer`) ou **pré-renderização ACEX no servidor** (abertura mais rápida, menos memória).
+
 ![Demonstração rápida do CAD-Viewer](./assets/cad-viewer.gif)
 
 ## Recursos
@@ -50,6 +58,7 @@ Pacotes desktop Linux da comunidade:
 - **Segurança de dados aprimorada** — Os arquivos nunca saem do seu dispositivo, garantindo privacidade total
 - **Integração fácil** — Sem configuração de servidor ou infraestrutura de backend
 - Arquitetura modular para integração fluida com terceiros
+- **Layout móvel e toque** — UI responsiva para telefone/tablet e gestos de toque (pinça para zoom, pan com um dedo, toque para selecionar) integrados em `@mlightcad/cad-simple-viewer`, sem necessidade de um app móvel separado
 - **Exportação para HTML offline** — Exporte o desenho atual como um único arquivo `.html` autossuficiente com visualizador incorporado (pan/zoom, zoom extents, camadas, medição de distância, UI EN/ZH). Abre offline em qualquer navegador; não requer instância do cad-viewer ou backend.
 - Fluxos de trabalho de edição offline e online
 - Motores de renderização 3D THREE.js com técnicas avançadas de otimização
@@ -111,6 +120,8 @@ pnpm preview:simple
 ```
 
 ## Como usar
+
+Novo no CAD Viewer? O **[guia do usuário](https://mlightcad.com/cad-viewer/docs/)** traz instruções passo a passo sobre a interface do visualizador, operações em desktop e toque, marcações e ferramentas de medição.
 
 ### Operações no navegador desktop
 - **Selecionar**: Clique com o botão esquerdo nas entidades
@@ -422,7 +433,7 @@ Legenda:
 
 * [ ] ⏳ Integração com Google Drive
 * [ ] Visualizador WeChat Mini Program
-* [ ] Suporte a navegador mobile (somente leitura)
+* [x] Suporte a navegador mobile (layout responsivo e gestos de toque)
 
 ### Documentação e comunidade
 

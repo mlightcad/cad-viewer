@@ -13,9 +13,23 @@ export type { AcApHtmlExpiryDays } from './AcExHtmlAccess'
 const HTML_VIEWER_CAMERA_FRUSTUM = 400
 
 /**
+ * HTML export packaging mode.
+ *
+ * - `single` — one self-contained `.html` (default). Small drawings embed a
+ *   monolithic ACEX snapshot; large drawings embed progressive ACEC chunks.
+ * - `multi` — multi-file ACEX package zipped as one `.zip` download; unzip before hosting.
+ */
+export type AcApHtmlExportFormat = 'single' | 'multi'
+
+/**
  * User-configurable options for HTML export (`-chtml`, dialog, and CLI).
  */
 export interface AcApHtmlExportOptions {
+  /**
+   * Packaging mode. Defaults to `'single'`.
+   * Password and expiry apply only to `'single'`.
+   */
+  exportFormat?: AcApHtmlExportFormat
   /**
    * When `true`, off/frozen layers are converted and written into the snapshot.
    * Defaults to `true` for backward compatibility with pre-option HTML export.
@@ -40,16 +54,19 @@ export interface AcApHtmlExportOptions {
   /**
    * How long the exported HTML remains valid. Defaults to `'never'`.
    * Use `'custom'` with {@link AcApHtmlExportOptions.expiresAt} for an absolute time.
+   * Ignored when {@link AcApHtmlExportOptions.exportFormat} is `'multi'`.
    */
   expiryDays?: AcApHtmlExpiryDays
   /**
    * Absolute expiry timestamp (Unix ms). Used when {@link AcApHtmlExportOptions.expiryDays}
    * is `'custom'`. Ignored for relative periods and `'never'`.
+   * Ignored when {@link AcApHtmlExportOptions.exportFormat} is `'multi'`.
    */
   expiresAt?: number | null
   /**
    * Optional password required to open the exported HTML. When set, the snapshot
-   * payload is encrypted in the file.
+   * or each embedded progressive chunk is AES-GCM encrypted.
+   * Ignored when {@link AcApHtmlExportOptions.exportFormat} is `'multi'`.
    */
   password?: string
 }
@@ -66,14 +83,17 @@ export function resolveAcApHtmlExportOptions(
   expiresAt: number | null
   password: string
 } {
+  const exportFormat: AcApHtmlExportFormat =
+    options.exportFormat === 'multi' ? 'multi' : 'single'
   return {
+    exportFormat,
     exportInvisibleLayers: options.exportInvisibleLayers !== false,
     exportLayouts: options.exportLayouts !== false,
     initialView: options.initialView ?? 'fit',
     viewerMode: options.viewerMode ?? 'measure',
-    expiryDays: options.expiryDays ?? 'never',
-    expiresAt: options.expiresAt ?? null,
-    password: options.password?.trim() ?? ''
+    expiryDays: exportFormat === 'multi' ? 'never' : (options.expiryDays ?? 'never'),
+    expiresAt: exportFormat === 'multi' ? null : (options.expiresAt ?? null),
+    password: exportFormat === 'multi' ? '' : (options.password?.trim() ?? '')
   }
 }
 /**

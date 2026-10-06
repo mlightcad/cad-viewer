@@ -33,8 +33,23 @@ describe('acuiNormalizePluginOptions', () => {
     expect(resolved.dockPanel.defaultWidth).toBe(320)
   })
 
-  it('defaults toolbar edge offset', () => {
+  it('defaults toolbar edge offset and button border', () => {
     const resolved = acuiNormalizePluginOptions({})
     expect(resolved.toolbar.edgeOffset).toBe(8)
+    expect(resolved.toolbar.inCanvasParent).toBe(false)
+    expect(resolved.toolbar.showButtonBorder).toBe(false)
+  })
+
+  it('defaults layout mode to auto', () => {
+    const resolved = acuiNormalizePluginOptions({})
+    expect(resolved.layout).toBe('auto')
+    expect(resolved.layouts).toEqual({})
+  })
+
+  it('passes through toolbar excludeItems', () => {
+    const resolved = acuiNormalizePluginOptions({
+      toolbar: { excludeItems: ['select', 'pan'] }
+    })
+    expect(resolved.toolbar.excludeItems).toEqual(['select', 'pan'])
   })
 })

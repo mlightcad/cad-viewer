@@ -675,6 +675,10 @@ export default {
     firstPoint: 'Specify first point',
     secondPoint: 'Specify second point'
   },
+  measureContinuous: {
+    firstPoint: 'Specify first point',
+    nextPoint: 'Specify next point (or press Enter to finish)'
+  },
   measurePoint: {
     point: 'Specify point'
   },
@@ -767,6 +771,16 @@ export default {
   },
   mtext: {
     point: 'Specify mtext insertion point'
+  },
+  bmpout: {
+    boundsFirstCorner: 'Specify first corner of bounds',
+    boundsSecondCorner: 'Specify opposite corner',
+    longSidePrompt: 'Enter long side size in pixels'
+  },
+  jpgout: {
+    boundsFirstCorner: 'Specify first corner of bounds',
+    boundsSecondCorner: 'Specify opposite corner',
+    longSidePrompt: 'Enter long side size in pixels'
   },
   pngout: {
     boundsFirstCorner: 'Specify first corner of bounds',
@@ -1194,6 +1208,21 @@ export default {
         local: 'Previous',
         global: 'Previous'
       },
+      original: {
+        display: 'Original(O)',
+        local: 'Original',
+        global: 'Original'
+      },
+      saved: {
+        display: 'Saved(V)',
+        local: 'Saved',
+        global: 'Saved'
+      },
+      smart: {
+        display: 'Smart(I)',
+        local: 'Smart',
+        global: 'Smart'
+      },
       scale: {
         display: 'Scale(S)',
         local: 'Scale',
@@ -1207,11 +1236,22 @@ export default {
     }
   },
   chtml: {
+    exportFormat: 'Export format',
     exportInvisibleLayers: 'Export invisible layers',
     exportLayouts: 'Export layouts',
     initialView: 'Initial view when opening HTML',
     viewerMode: 'Offline viewer mode',
     keywords: {
+      single: {
+        display: 'Single(S)',
+        local: 'Single',
+        global: 'Single'
+      },
+      multi: {
+        display: 'Multi-file package(M)',
+        local: 'Multi-file package',
+        global: 'Multi'
+      },
       yes: {
         display: 'Yes(Y)',
         local: 'Yes',
@@ -1241,6 +1281,43 @@ export default {
         display: 'Measure & Review(M)',
         local: 'Measure & Review',
         global: 'Measure'
+      }
+    }
+  },
+  cpdf: {
+    modelSpaceFit: 'Model space frame',
+    exportLayouts: 'Export layouts',
+    textMode: 'Text rendering',
+    keywords: {
+      extents: {
+        display: 'Extents(E)',
+        local: 'Extents',
+        global: 'Extents'
+      },
+      display: {
+        display: 'Display(D)',
+        local: 'Display',
+        global: 'Display'
+      },
+      text: {
+        display: 'Text(T)',
+        local: 'Text',
+        global: 'Text'
+      },
+      vector: {
+        display: 'Vector(V)',
+        local: 'Vector',
+        global: 'Vector'
+      },
+      yes: {
+        display: 'Yes(Y)',
+        local: 'Yes',
+        global: 'Yes'
+      },
+      no: {
+        display: 'No(N)',
+        local: 'No',
+        global: 'No'
       }
     }
   }

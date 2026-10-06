@@ -26,9 +26,12 @@ import {
   ICON_MEASURE_ANGLE,
   ICON_MEASURE_ARC,
   ICON_MEASURE_AREA,
+  ICON_MEASURE_CONTINUOUS,
   ICON_MEASURE_DISTANCE,
   ICON_MEASURE_POINT,
+  ICON_MEASUREMENT_PANEL,
   ICON_PAN,
+  ICON_READING_MODE,
   ICON_SELECT,
   ICON_SWITCH_BG,
   ICON_ZOOM_EXTENT,
@@ -43,10 +46,15 @@ export const zoomToExtent = acapSvgIcon(ICON_ZOOM_EXTENT, 'IconZoomToExtent')
 export const zoomToBox = acapSvgIcon(ICON_ZOOM_WINDOW, 'IconZoomToBox')
 export const layer = acapSvgIcon(ICON_LAYER, 'IconLayer')
 export const switchBg = acapSvgIcon(ICON_SWITCH_BG, 'IconSwitchBg')
+export const readingMode = acapSvgIcon(ICON_READING_MODE, 'IconReadingMode')
 export const measure = acapSvgIcon(ICON_MEASURE, 'IconMeasure')
 export const measureDistance = acapSvgIcon(
   ICON_MEASURE_DISTANCE,
   'IconMeasureDistance'
+)
+export const measureContinuous = acapSvgIcon(
+  ICON_MEASURE_CONTINUOUS,
+  'IconMeasureContinuous'
 )
 export const measureAngle = acapSvgIcon(ICON_MEASURE_ANGLE, 'IconMeasureAngle')
 export const measureArea = acapSvgIcon(ICON_MEASURE_AREA, 'IconMeasureArea')
@@ -68,6 +76,10 @@ export const markupArrow = acapSvgIcon(ICON_MARKUP_ARROW, 'IconMarkupArrow')
 export const markupLine = acapSvgIcon(ICON_MARKUP_LINE, 'IconMarkupLine')
 export const markupStamp = acapSvgIcon(ICON_MARKUP_STAMP, 'IconMarkupStamp')
 export const markupPanel = acapSvgIcon(ICON_MARKUP_PANEL, 'IconMarkupPanel')
+export const measurementPanel = acapSvgIcon(
+  ICON_MEASUREMENT_PANEL,
+  'IconMeasurementPanel'
+)
 export const markupShow = acapSvgIcon(ICON_ANNOTATION_SHOW, 'IconMarkupShow')
 export const markupHide = acapSvgIcon(ICON_ANNOTATION_HIDE, 'IconMarkupHide')
 export const clearMarkups = acapSvgIcon(ICON_CLEAR_MARKUPS, 'IconClearMarkups')

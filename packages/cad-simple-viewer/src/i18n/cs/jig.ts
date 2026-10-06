@@ -673,6 +673,10 @@ export default {
     firstPoint: 'Zadejte první bod',
     secondPoint: 'Zadejte druhý bod'
   },
+  measureContinuous: {
+    firstPoint: 'Zadejte první bod',
+    nextPoint: 'Zadejte další bod (nebo stiskněte Enter pro dokončení)'
+  },
   measurePoint: {
     point: 'Zadejte bod'
   },
@@ -765,6 +769,16 @@ export default {
   },
   mtext: {
     point: 'Zadejte bod vložení víceřádkového textu'
+  },
+  bmpout: {
+    boundsFirstCorner: 'Zadejte první roh rozsahu',
+    boundsSecondCorner: 'Zadejte protilehlý roh',
+    longSidePrompt: 'Zadejte velikost delší strany v pixelech'
+  },
+  jpgout: {
+    boundsFirstCorner: 'Zadejte první roh rozsahu',
+    boundsSecondCorner: 'Zadejte protilehlý roh',
+    longSidePrompt: 'Zadejte velikost delší strany v pixelech'
   },
   pngout: {
     boundsFirstCorner: 'Zadejte první roh rozsahu',
@@ -1191,6 +1205,21 @@ export default {
         local: 'Předchozí',
         global: 'Previous'
       },
+      original: {
+        display: 'Původní(O)',
+        local: 'Původní',
+        global: 'Original'
+      },
+      saved: {
+        display: 'Uložený(V)',
+        local: 'Uložený',
+        global: 'Saved'
+      },
+      smart: {
+        display: 'Chytrý(I)',
+        local: 'Chytrý',
+        global: 'Smart'
+      },
       scale: {
         display: 'Měřítko(S)',
         local: 'Měřítko',
@@ -1204,11 +1233,22 @@ export default {
     }
   },
   chtml: {
+    exportFormat: 'Formát exportu',
     exportInvisibleLayers: 'Exportovat neviditelné hladiny',
     exportLayouts: 'Exportovat rozvržení',
     initialView: 'Počáteční pohled při otevření HTML',
     viewerMode: 'Režim offline prohlížeče',
     keywords: {
+      single: {
+        display: 'Jeden soubor(S)',
+        local: 'Jeden soubor',
+        global: 'Single'
+      },
+      multi: {
+        display: 'Vícesouborový balíček(M)',
+        local: 'Vícesouborový balíček',
+        global: 'Multi'
+      },
       yes: {
         display: 'Ano(Y)',
         local: 'Ano',
@@ -1238,6 +1278,43 @@ export default {
         display: 'Měření a kontrola(M)',
         local: 'Měření a kontrola',
         global: 'Measure'
+      }
+    }
+  },
+  cpdf: {
+    modelSpaceFit: 'Rám modelového prostoru',
+    exportLayouts: 'Exportovat rozvržení',
+    textMode: 'Vykreslení textu',
+    keywords: {
+      extents: {
+        display: 'Rozsah(E)',
+        local: 'Rozsah',
+        global: 'Extents'
+      },
+      display: {
+        display: 'Zobrazení(D)',
+        local: 'Zobrazení',
+        global: 'Display'
+      },
+      text: {
+        display: 'Text(T)',
+        local: 'Text',
+        global: 'Text'
+      },
+      vector: {
+        display: 'Vektor(V)',
+        local: 'Vektor',
+        global: 'Vector'
+      },
+      yes: {
+        display: 'Ano(Y)',
+        local: 'Ano',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Ne(N)',
+        local: 'Ne',
+        global: 'No'
       }
     }
   }

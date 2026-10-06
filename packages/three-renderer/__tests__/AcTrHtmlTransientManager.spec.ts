@@ -96,6 +96,33 @@ describe('AcTrHtmlTransientManager', () => {
     manager.dispose()
   })
 
+  it('preserves authored baseZoom when the overlay is moved', () => {
+    const scene = new THREE.Scene()
+    const manager = new AcTrHtmlTransientManager(scene)
+    const element = document.createElement('div')
+    element.style.transform = 'translate(-50%, -50%)'
+
+    manager.add(
+      new AcTrHtmlElement(element, {
+        id: 'wcs-label',
+        worldPosition: { x: 0, y: 0 },
+        scaleWithView: true
+      })
+    )
+
+    const entry = getEntry(manager, 'wcs-label')
+    entry.baseZoom = 1
+    entry.setPosition({ x: 10, y: 20 })
+    expect(entry.baseZoom).toBe(1)
+
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000)
+    camera.zoom = 2
+    entry.object.onAfterRender(null!, null!, camera)
+    expect(element.style.transform).toContain('scale(2, 2)')
+
+    manager.dispose()
+  })
+
   it('adds a selectable group and selects it on child click', () => {
     const scene = new THREE.Scene()
     const manager = new AcTrHtmlTransientManager(scene)
@@ -397,12 +424,38 @@ describe('AcTrHtmlTransientManager', () => {
       'style[data-ml-html-selection]'
     ) as HTMLStyleElement | null
     const css = style?.textContent ?? ''
-    expect(css).toContain('drop-shadow(0 0 1.5px #ffd54f)')
-    expect(css).toContain('drop-shadow(0 0 4px rgba(255, 213, 79, 0.95))')
-    expect(css).toContain('drop-shadow(0 0 8px rgba(255, 213, 79, 0.55))')
-    expect(css).toContain('outline: 2px solid rgba(255, 213, 79, 0.85)')
+    expect(css).toContain('drop-shadow(0 0 0.12em #ffd54f)')
+    expect(css).toContain('drop-shadow(0 0 0.3em rgba(255, 213, 79, 0.95))')
+    expect(css).toContain('drop-shadow(0 0 0.6em rgba(255, 213, 79, 0.55))')
+    expect(css).toContain('outline: 0.075em solid rgba(255, 213, 79, 0.85)')
     expect(css).not.toContain('color: #ffd54f')
 
+    manager.dispose()
+  })
+
+  it('disables overlay pointer hits so clicks can pass through to the canvas', () => {
+    const scene = new THREE.Scene()
+    const manager = new AcTrHtmlTransientManager(scene)
+    const child = new AcTrHtmlElement(document.createElement('div'), {
+      id: 'hit-child',
+      worldPosition: { x: 0, y: 0 }
+    })
+    const group = new AcTrHtmlGroup({
+      id: 'hit-group',
+      selectable: true
+    }).add(child)
+    manager.add(group)
+    expect(child.element.style.pointerEvents).toBe('auto')
+
+    manager.setHitTestEnabled(false)
+    expect(child.element.style.pointerEvents).toBe('none')
+
+    child.element.style.pointerEvents = 'auto'
+    manager.syncHitTest()
+    expect(child.element.style.pointerEvents).toBe('none')
+
+    manager.setHitTestEnabled(true)
+    expect(child.element.style.pointerEvents).toBe('auto')
     manager.dispose()
   })
 })

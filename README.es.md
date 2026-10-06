@@ -12,7 +12,7 @@ También ofrece algo que rara vez encontrará en otros visores CAD: **exportaci�
 
 - [**🌐 Página de inicio**](https://mlightcad.com/)
 - **🌐 Demo en vivo**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
-- **🌐 Documentación de la API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versionada) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/docs/) (última/dev) · [Servidor MCP](https://gitmcp.io/mlightcad/cad-viewer)
+- **🌐 Documentación de la API**: [Read the Docs](https://cad-viewer.readthedocs.io/en/latest/) (versionada) · [Servidor MCP](https://gitmcp.io/mlightcad/cad-viewer)
 - [**🌐 Wiki**](https://github.com/mlightcad/cad-viewer/wiki)
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
@@ -41,6 +41,14 @@ Paquetes de escritorio Linux de la comunidad:
 - [cad-viewer (AUR)](https://aur.archlinux.org/packages/cad-viewer) — Paquete fuente de Arch Linux que utiliza Electron del sistema (~5,4 MB)
 - [cad-viewer-bin (AUR)](https://aur.archlinux.org/packages/cad-viewer-bin) — Paquete binario de Arch Linux con fuentes/plantillas incluidas para abrir dibujos completamente sin conexión
 
+### Aplicaciones de demostración (Demo Apps)
+
+Aplicaciones de ejemplo oficiales que muestran cómo integrar cad-viewer en su propio producto:
+
+- [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — Host mínimo en TypeScript vanilla para [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer): abra DXF/DWG locales o desde CDN, ejecute comandos desde una barra de herramientas compacta y cargue de forma diferida plugins de exportación HTML/PDF/SVG sin la UI Vue completa.
+- [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — Aplicación Vue 3 completa basada en [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) con menús, cintas, diálogos, línea de comandos y barra de estado ([demo en vivo](https://mlightcad.github.io/cad-viewer-example/)).
+- [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Demo tipo «unidad CAD» en Next.js: carga reanudable por fragmentos de DWG/DXF, lista de archivos con SQLite y miniaturas de vista previa, y apertura con **análisis en vivo en el navegador** (`cad-simple-viewer`) o **prerenderizado ACEX en el servidor** (carga más rápida, menos memoria).
+
 ![Demostración rápida de CAD-Viewer](./assets/cad-viewer.gif)
 
 ## Características
@@ -50,6 +58,7 @@ Paquetes de escritorio Linux de la comunidad:
 - **Mayor seguridad de los datos** — Los archivos nunca abandonan su dispositivo, garantizando privacidad total
 - **Integración sencilla** — No se necesita configuración de servidor ni infraestructura backend
 - Arquitectura modular para una integración fluida con terceros
+- **Diseño móvil y gestos táctiles** — Interfaz responsive para teléfono/tableta y gestos táctiles (pellizcar para zoom, arrastrar con un dedo, tocar para seleccionar) integrados en `@mlightcad/cad-simple-viewer`, sin necesidad de una app móvil aparte
 - **Exportación a HTML sin conexión** — Exporte el dibujo actual como un único archivo `.html` autocontenido con un visor integrado (desplazamiento/zoom, zoom a extensión, capas, medición de distancias, interfaz EN/ZH). Se abre sin conexión en cualquier navegador; no requiere instancia de cad-viewer ni backend.
 - Flujos de trabajo de edición sin conexión y en línea
 - Motores de renderizado 3D THREE.js con técnicas avanzadas de optimización
@@ -111,6 +120,8 @@ pnpm preview:simple
 ```
 
 ## Cómo usar
+
+¿Es nuevo en CAD Viewer? La **[guía de usuario](https://mlightcad.com/cad-viewer/docs/)** ofrece instrucciones paso a paso sobre la interfaz del visor, las operaciones en escritorio y táctiles, y las herramientas de marcas y medición.
 
 ### Operaciones en navegador de escritorio
 - **Seleccionar**: Clic izquierdo en las entidades
@@ -422,7 +433,7 @@ Leyenda:
 
 * [ ] ⏳ Integración con Google Drive
 * [ ] Visor de Mini Program de WeChat
-* [ ] Soporte de navegador móvil (solo lectura)
+* [x] Soporte de navegador móvil (diseño responsive y gestos táctiles)
 
 ### Documentación y comunidad
 

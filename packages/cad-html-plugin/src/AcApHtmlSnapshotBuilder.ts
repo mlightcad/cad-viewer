@@ -1,9 +1,11 @@
-import { AcApI18n, type AcTrScene } from '@mlightcad/cad-simple-viewer'
+import { acapGetDocsBaseUrl, AcApI18n, type AcTrScene } from '@mlightcad/cad-simple-viewer'
 import { accmYieldForPaint, type AcDbDatabase } from '@mlightcad/data-model'
 
+import { acexGetDocsBaseUrl, acexSetDocsBaseUrl } from './AcExDocsUrl'
 import { computeLayoutViewExtents } from './AcExLayerExtents'
 import { buildOsnapCatalog } from './AcExOsnapPrimitiveBuilder'
 import { collectLayoutViewports } from './AcExPaperViewportCollector'
+import { captureAcExSavedViewExtents } from './AcExSavedView'
 import { collectBatchesFromObject3D } from './AcExSceneBatchCollector'
 import {
   ACEX_SNAPSHOT_VERSION,
@@ -60,6 +62,11 @@ export interface AcApHtmlSnapshotBuilderOptions {
    * Offline viewer capability profile. When `'view'`, OSNAP catalogs are omitted.
    */
   viewerMode?: AcExViewerMode
+  /**
+   * Canvas width/height used when resolving model-space VPORT `*ACTIVE` into
+   * {@link AcExLayoutSnapshot.savedView}. Defaults to 16:9 when omitted.
+   */
+  canvasAspectRatio?: number
 }
 
 /**
@@ -265,13 +272,28 @@ function buildSnapshotMeta(
     extents: meta.extents,
     viewExtents: viewExtents ?? undefined,
     units: meta.units,
+    grip: meta.grip,
     background: meta.background,
     locale: options.locale ?? AcApI18n.currentLocale,
     initialView,
     viewState: initialView === 'current' ? options.viewState : undefined,
     viewerMode: options.viewerMode ?? 'measure',
-    exportLayouts: options.exportLayouts !== false
+    exportLayouts: options.exportLayouts !== false,
+    docsBaseUrl: resolveDocsBaseUrlForExport()
   }
+}
+
+/**
+ * Prefer the live viewer's configured docs root when exporting HTML.
+ * Falls back to the offline-viewer default when unavailable.
+ */
+function resolveDocsBaseUrlForExport(): string {
+  try {
+    acexSetDocsBaseUrl(acapGetDocsBaseUrl())
+  } catch {
+    // Live viewer docs helper unavailable — keep Acex default.
+  }
+  return acexGetDocsBaseUrl()
 }
 
 function shouldExportOsnap(options: AcApHtmlSnapshotBuilderOptions): boolean {
@@ -391,16 +413,31 @@ function collectLayoutSnapshot(
     }
   }
   const isModelSpace = btrId === scene.modelSpaceBtrId
+  const savedView = captureAcExSavedViewExtents(
+    database,
+    btrId,
+    isModelSpace,
+    options.canvasAspectRatio
+  )
+  let osnap: ReturnType<typeof buildOsnapCatalog> | undefined
+  if (shouldExportOsnap(options)) {
+    const osnapT0 = performance.now()
+    osnap = buildOsnapCatalog(database, btrId, { includeLayer })
+    console.log(
+      `[chtml] osnap catalog ${layoutNames.get(btrId) ?? btrId}: ${(
+        performance.now() - osnapT0
+      ).toFixed(0)} ms (${osnap?.primitives.length ?? 0} primitives)`
+    )
+  }
   return {
     btrId,
     name: layoutNames.get(btrId) ?? resolveBlockName(database, btrId),
     isModelSpace,
     lineBatches,
     meshBatches,
-    osnap: shouldExportOsnap(options)
-      ? buildOsnapCatalog(database, btrId, { includeLayer })
-      : undefined,
-    viewports: collectLayoutViewports(database, btrId, isModelSpace)
+    osnap,
+    viewports: collectLayoutViewports(database, btrId, isModelSpace),
+    ...(savedView ? { savedView } : {})
   }
 }
 

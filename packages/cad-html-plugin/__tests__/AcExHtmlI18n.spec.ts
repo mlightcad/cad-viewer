@@ -86,6 +86,23 @@ describe('AcExHtmlI18n', () => {
   it('translates messages with parameters', () => {
     const i18n = new AcExHtmlI18n('zh')
     expect(i18n.t('status.distance', { value: '12.5' })).toBe('距离：12.5')
+    expect(
+      i18n.t('status.arcLength', {
+        length: '10',
+        radius: '5',
+        angle: '180°',
+        chord: '10'
+      })
+    ).toBe('弧长：10 | 半径：5 | 总角度：180° | 弦长：10')
+    expect(i18n.t('status.continuousTotal', { value: '30' })).toBe('总长度：30')
+    expect(i18n.t('toolbar.measurementPanel')).toBe('看结果')
+    expect(i18n.t('measurePanel.empty')).toBe('暂无测量')
+    expect(i18n.t('measurePanel.filterArc')).toBe('弧长')
+    expect(i18n.t('toolbar.measureRadius')).toBe('测半径')
+    expect(i18n.t('measurePanel.filterRadius')).toBe('半径')
+    expect(i18n.t('status.radius', { value: '5' })).toBe('半径：5')
+    expect(i18n.t('session.confirm')).toBe('确定')
+    expect(i18n.t('session.undo')).toBe('撤销')
     expect(formatAcExHtmlMessage('Zoom: {name}', { name: '0' })).toBe('Zoom: 0')
   })
 
@@ -122,5 +139,7 @@ describe('AcExHtmlI18n', () => {
     )
     expect(i18n.t('review.zoomTo')).toBe('Yakınlaştır')
     expect(i18n.t('review.closeDetails')).toBe('Ayrıntıları kapat')
+    expect(i18n.t('toolbar.measurementPanel')).toBe('Sonuç')
+    expect(i18n.t('measurePanel.title')).toBe('Ölçümler')
   })
 })

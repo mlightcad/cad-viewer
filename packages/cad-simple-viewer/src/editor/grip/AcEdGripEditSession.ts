@@ -101,7 +101,6 @@ export class AcEdGripEditSession {
     const wcs = this._view.screenToWorld(canvasPos)
     const cursorWcs = { x: wcs.x, y: wcs.y, z: 0 }
 
-    this._osnapMarkerManager.hideMarker()
     const snapPoint = this._view.osnapResolver.resolve({
       cursorWcs,
       lastPoint: this._target.gripBaseWcs
@@ -114,13 +113,14 @@ export class AcEdGripEditSession {
     )
 
     if (snapPoint) {
-      this._osnapMarkerManager.showMarker(
+      this._osnapMarkerManager.showOrRepositionMarker(
         snapPoint,
         AcEdOsnapResolver.osnapModeToMarkerType(snapPoint.type)
       )
       return { x: snapPoint.x, y: snapPoint.y, z: snapPoint.z ?? 0 }
     }
 
+    this._osnapMarkerManager.hideMarker()
     return cursorWcs
   }
 }

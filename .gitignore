@@ -1,7 +1,8 @@
 # See http://help.github.com/ignore-files/ for more about ignoring files.
 
 # compiled output
-docs
+docs/.vitepress/dist/
+docs/.vitepress/cache/
 dist
 dist-runner
 lib
@@ -23,6 +24,7 @@ auto-imports.d.ts
 *.launch
 .settings/
 *.sublime-workspace
+.trae
 
 # IDE - VSCode
 .vscode/*
@@ -46,3 +48,7 @@ Thumbs.db
 
 .nx/cache
 .nx/workspace-data
+
+# Local secrets / machine-specific env (keep .env.example)
+.env.local
+.env.*.local

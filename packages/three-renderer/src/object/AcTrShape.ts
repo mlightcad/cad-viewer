@@ -59,10 +59,60 @@ export class AcTrShape extends AcTrGlyphEntity {
   }
 
   /**
+   * Key for sharing mesh buffers across identical complex-linetype SHAPE symbols.
+   * Placement is applied via this object's transform, not baked into the key.
+   */
+  get linetypeGlyphShareKey(): string {
+    return [
+      this._shape.name ?? '',
+      this._shape.shapeNumber ?? '',
+      this._shape.size,
+      this._style.font ?? '',
+      this._style.extendedFont ?? '',
+      this._style.widthFactor ?? 1,
+      this._shape.widthFactor ?? 1
+    ].join('\0')
+  }
+
+  /** @inheritdoc */
+  protected override contentShareKey(): string {
+    return this.linetypeGlyphShareKey
+  }
+
+  /**
+   * Moves baked SHAPE placement onto this object's transform and rebuilds the
+   * glyph at the local origin so identical symbols can share one mesh.
+   */
+  hoistBakedPlacement(): void {
+    const position = this._shape.position
+    this.position.set(position?.x ?? 0, position?.y ?? 0, position?.z ?? 0)
+    this.rotation.z = this._shape.rotation ?? 0
+    this._shape = {
+      ...this._shape,
+      position: { x: 0, y: 0, z: 0 },
+      rotation: 0
+    }
+  }
+
+  /**
    * @inheritdoc
    */
   protected override getDrawPosition() {
-    return this._shape.position
+    const position = this._shape.position
+    if (
+      position &&
+      position.x === 0 &&
+      position.y === 0 &&
+      position.z === 0 &&
+      (this.position.x !== 0 || this.position.y !== 0 || this.position.z !== 0)
+    ) {
+      return {
+        x: this.position.x,
+        y: this.position.y,
+        z: this.position.z
+      }
+    }
+    return position
   }
 
   /**

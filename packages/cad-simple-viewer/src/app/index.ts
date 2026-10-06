@@ -1,4 +1,5 @@
 export * from './AcApBrand'
+export * from './AcApDocsUrl'
 export * from './AcApContext'
 export * from './AcApDocSession'
 export * from './AcApFontLoader'
@@ -13,8 +14,12 @@ export * from './AcApProgress'
 export * from './openFileProgress'
 export * from './AcApSettingManager'
 export * from './AcApLayerSessionState'
-export type { AcApOpenDatabaseOptions } from './AcDbOpenDatabaseOptions'
-export { AcApOpenViewMode } from './AcDbOpenDatabaseOptions'
+export * from './dataSource'
+export type {
+  AcApOpenDatabaseOptions,
+  AcApOpenSysVars
+} from './AcApOpenDatabaseOptions'
+export { AcApOpenViewMode } from './AcApOpenDatabaseOptions'
 export type {
   AcApOpenDocumentDefaultsResolver,
   AcApOpenFileDialogOptions
@@ -24,3 +29,4 @@ export {
   acapUninstallOpenFileDialog,
   acapUpdateOpenFileDialogOptions
 } from './AcApOpenFileDialog'
+export * from './notification'

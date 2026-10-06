@@ -664,6 +664,10 @@ export default {
     firstPoint: '指定第一个点',
     secondPoint: '指定第二个点'
   },
+  measureContinuous: {
+    firstPoint: '指定第一个点',
+    nextPoint: '指定下一个点（或按 Enter 完成）'
+  },
   measurePoint: {
     point: '指定点'
   },
@@ -756,6 +760,16 @@ export default {
   },
   mtext: {
     point: '指定多行文本插入点'
+  },
+  bmpout: {
+    boundsFirstCorner: '指定边界的第一个角点',
+    boundsSecondCorner: '指定对角点',
+    longSidePrompt: '输入长边像素大小'
+  },
+  jpgout: {
+    boundsFirstCorner: '指定边界的第一个角点',
+    boundsSecondCorner: '指定对角点',
+    longSidePrompt: '输入长边像素大小'
   },
   pngout: {
     boundsFirstCorner: '指定边界的第一个角点',
@@ -1182,6 +1196,21 @@ export default {
         local: '上一个',
         global: 'Previous'
       },
+      original: {
+        display: '原始视口(O)',
+        local: '原始视口',
+        global: 'Original'
+      },
+      saved: {
+        display: '保存的视图(V)',
+        local: '保存的视图',
+        global: 'Saved'
+      },
+      smart: {
+        display: '智能范围(I)',
+        local: '智能范围',
+        global: 'Smart'
+      },
       scale: {
         display: '比例(S)',
         local: '比例',
@@ -1195,11 +1224,22 @@ export default {
     }
   },
   chtml: {
+    exportFormat: '导出格式',
     exportInvisibleLayers: '是否导出不可见图层',
     exportLayouts: '是否导出布局',
     initialView: '打开 HTML 时的初始视图',
     viewerMode: '离线查看器模式',
     keywords: {
+      single: {
+        display: '单文件(S)',
+        local: '单文件',
+        global: 'Single'
+      },
+      multi: {
+        display: '多文件包(M)',
+        local: '多文件包',
+        global: 'Multi'
+      },
       yes: {
         display: '是(Y)',
         local: '是',
@@ -1229,6 +1269,43 @@ export default {
         display: '测量与批注(M)',
         local: '测量与批注',
         global: 'Measure'
+      }
+    }
+  },
+  cpdf: {
+    modelSpaceFit: '模型空间范围',
+    exportLayouts: '是否导出布局',
+    textMode: '文字渲染方式',
+    keywords: {
+      extents: {
+        display: '范围(E)',
+        local: '范围',
+        global: 'Extents'
+      },
+      display: {
+        display: '显示(D)',
+        local: '显示',
+        global: 'Display'
+      },
+      text: {
+        display: '文字(T)',
+        local: '文字',
+        global: 'Text'
+      },
+      vector: {
+        display: '矢量(V)',
+        local: '矢量',
+        global: 'Vector'
+      },
+      yes: {
+        display: '是(Y)',
+        local: '是',
+        global: 'Yes'
+      },
+      no: {
+        display: '否(N)',
+        local: '否',
+        global: 'No'
       }
     }
   }

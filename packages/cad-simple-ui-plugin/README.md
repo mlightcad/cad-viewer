@@ -9,7 +9,8 @@ This plugin provides ready-to-use CAD viewer chrome without Vue, React, or Eleme
 - Configurable toolbar with predefined CAD commands, separators, and preset references
 - Nested sub-toolbars (sticky or dismissible) and optional popover menus, with flyout arrows
 - Toolbar placement: `top`, `bottom`, `left`, `right`
-- Default toolbar includes view, measure, review, then export, plus toolbar placement, theme toggle, and a language picker
+- Optional in-canvas-parent layout: sit against the canvas edge instead of floating over it
+- Default toolbar differs by layout: compact phone bar, pad without Select/Pan, full desktop icon strip
 - UI theme follows `COLORTHEME` sysvar and `--ml-ui-*` tokens on `host` automatically
 - Locale follows `AcApI18n.currentLocale` automatically
 - Layer list in a dock panel tab (name, visibility, color), opened from the toolbar layer button
@@ -196,13 +197,104 @@ toolbar: {
 }
 ```
 
+### In-canvas-parent toolbar
+
+By default the toolbar floats over the drawing (`position: absolute`). Set `toolbar.inCanvasParent: true` to place it as a flex sibling of the canvas inside the **same parent the dock panel uses** (the viewer canvas parent when it lies inside `host`). The toolbar then sits against the canvas edge instead of covering it. `placement` still picks the edge; `edgeOffset` and `sideOffset` still apply as the gap from the canvas and the orthogonal insets.
+
+```typescript
+toolbar: {
+  placement: 'bottom',
+  inCanvasParent: true,
+  edgeOffset: 0
+}
+```
+
+Phone layouts can enable this without affecting desktop overlay chrome:
+
+```typescript
+layouts: {
+  phone: {
+    toolbar: {
+      placement: 'bottom',
+      inCanvasParent: true
+    }
+  }
+}
+```
+
+### Responsive layouts (phone / pad / desktop)
+
+By default the plugin uses `layout: 'auto'` and follows viewport width via `acedGetUiLayout()` from `@mlightcad/cad-simple-viewer`:
+
+| Kind | Viewport | Chrome | Default buttons (`items: 'default'`) |
+| --- | --- | --- | --- |
+| **phone** | ≤600px | Bottom bar, full width (`size: 'stretch'`), labels, `edgeOffset: 0`, not collapsible, no flyout arrows. Nested strips use `replaceOnNested: true`. | `zoom` (saved / extents / smart extents / window), `measure`, `annotation`, `layer`, `layout`, `settings` (simulated mouse, placement, theme, background, reading mode, language) |
+| **pad** | 601–960px | Same floating chrome as desktop (right, icons only, `edgeOffset: 8`). | Desktop set **without** `select` and `pan` (`excludeItems: ['select', 'pan']`). Touch drag pans; a long-press starts window/crossing box select. |
+| **desktop** | >960px | Right-side floating icon toolbar. | `select`, `pan`, `zoom` (saved / extents / smart extents / window), `layer`, `layout`, `measure`, `annotation`, `export`, then `settings` (simulated mouse, placement, theme, background, reading mode, language) |
+
+Phone does **not** inherit top-level `toolbar.items`, `appendItems`, or chrome (placement, labels, size). It only inherits `enabled`, `mountTarget`, and `inCanvasParent`. Pad and desktop inherit the full top-level `toolbar` baseline on top of the built-ins above.
+
+To show Select / Pan on pad again:
+
+```typescript
+layouts: {
+  pad: {
+    toolbar: {
+      excludeItems: []
+    }
+  }
+}
+```
+
+```typescript
+acuiCreateSimpleUiPlugin({
+  host,
+  layout: 'auto', // default; or force 'phone' | 'pad' | 'desktop'
+  toolbar: {
+    placement: 'right',
+    items: 'default',
+    collapsible: true,
+    appendItems: [{ id: 'agent', command: 'agent' }],
+    appendItemsAfter: 'layout'
+  },
+  layouts: {
+    phone: {
+      toolbar: {
+        // optional overrides; phone inherits enabled/mountTarget/inCanvasParent
+        // subToolbar.position: 'front' (default) | 'end' | 'center' | 'auto'
+      }
+    }
+  }
+})
+```
+
+`toolbar.subToolbar` can override chrome (`showLabels`, `size`, …) and **`position`**:
+
+| Value | Behavior |
+| --- | --- |
+| `front` (default) | First sub-toolbar button aligns with the first toolbar button |
+| `end` | Last sub-toolbar button aligns with the last toolbar button |
+| `center` | Center the sub-toolbar on the parent toolbar |
+| `auto` | Align to the parent button |
+
+`position` is ignored when the sub-toolbar `size` is `'stretch'`.
+
+Runtime controls:
+
+```typescript
+plugin.getLayout() // 'phone' | 'pad' | 'desktop'
+plugin.setLayout('auto') // or force a specific kind
+```
+
+Toolbar configuration is typed as `AcUiToolbarOptions`. Use `excludeItems` to omit root button ids after `items` / `appendItems` are resolved (pad built-ins already exclude `select` and `pan`).
+
 ## Custom toolbar
 
-Toolbar buttons are configured through `toolbar.items`. You can start from the built-in set, extend it, or replace it entirely.
+Toolbar buttons are configured through `toolbar.items`. You can start from the built-in set, extend it, or replace it entirely. Pad still applies `excludeItems: ['select', 'pan']` unless you override it with `layouts.pad.toolbar`.
 
 ### Replace the full toolbar at runtime
 
-Use `appendItems` only when you want to keep the built-in default and add a few buttons. To **replace the entire toolbar**, call `setToolbarItems` on the loaded plugin:
+Use `appendItems` only when you want to keep the built-in default and add a few buttons. To **replace the entire toolbar**, call `setToolbarItems` on the loaded plugin. Auto or forced layout switches then keep that item list and only update chrome (placement, size, labels):
 
 ```typescript
 import {
@@ -254,7 +346,7 @@ See `cad-simple-viewer-example` (`demoToolbarPresets.ts`) for a working layout s
 | `requiresDocument` | When `false`, button stays enabled before a drawing is opened |
 | `minOpenMode` | Hide below Review/Write (`AcEdOpenMode.Review`) |
 | `children` | Nested items shown as a sub-toolbar or popover when the parent is clicked |
-| `childrenUi` | `'menu'` (popover, default), `'toolbar'` (closes on canvas click), or `'sticky-toolbar'` (stays until the parent is clicked again) |
+| `childrenUi` | `'menu'` (popover, default), `'toolbar'` (closes on child or canvas click), or `'sticky-toolbar'` (stays until the parent is clicked again) |
 | `childIcon` | `'fixed'` (default): parent keeps its own icon; `'selected'`: parent icon follows the active child item |
 | `selectedChildId` | Initial submenu selection when `childIcon` is `'selected'` |
 | `toggle` | Two-state button with `getValue`, `on`, and `off` branches |
@@ -262,7 +354,7 @@ See `cad-simple-viewer-example` (`demoToolbarPresets.ts`) for a working layout s
 | `preset` | Reference a built-in button by id (custom layouts only; use `{ preset: 'pan' }`) |
 | `disabled` | `boolean` or `() => boolean` |
 
-Built-in preset ids include: `select`, `pan`, `zoom-extent`, `layer`, `measure`, `export`, `toolbar-placement`, `switch-bg`, `theme`, `locale`, and nested ids such as `placement-top`, `measure-distance`, `export-html`, `locale-en`, `locale-zh`, `locale-cs`, `locale-tr`, etc.
+Built-in preset ids include: `select`, `pan`, `zoom` (saved / extents / smart extents / window), `layer`, `measure`, `export`, `toolbar-placement`, `switch-bg`, `theme`, `locale`, and nested ids such as `placement-top`, `measure-distance`, `export-html`, `locale-en`, `locale-zh`, `locale-cs`, `locale-tr`, etc.
 
 ### 1. Default toolbar + extra buttons
 
@@ -305,7 +397,7 @@ acuiCreateSimpleUiPlugin({
     items: [
       acuiToolbarPreset('select'),
       acuiToolbarPreset('pan'),
-      acuiToolbarPreset('zoom-extent'),
+      acuiToolbarPreset('zoom'),
       acuiCreateToolbarSeparator('sep-tools'),
       acuiToolbarPreset('layer'),
       acuiToolbarPreset('measure'),
@@ -402,14 +494,14 @@ Popover menu (default when `childrenUi` is omitted):
 }
 ```
 
-Icon sub-toolbar beside the parent (same model as the HTML export viewer). Measure and Review use `'sticky-toolbar'` so canvas clicks do not dismiss the strip; Export, Toolbar Position, and Language use `'toolbar'` so an outside click closes it:
+Icon sub-toolbar beside the parent (same model as the HTML export viewer). Measure, Review, Export, Toolbar Position, and Language use `'toolbar'` so clicking a child button or the canvas closes the strip:
 
 ```typescript
 {
   id: 'measure',
   label: 'Measure',
   icon: measureIconSvg,
-  childrenUi: 'sticky-toolbar',
+  childrenUi: 'toolbar',
   children: [
     { id: 'measure-distance', label: 'Distance', command: 'measuredistance' },
     { id: 'measure-area', label: 'Area', command: 'measurearea' }
@@ -435,7 +527,7 @@ When the parent icon should reflect the active submenu item:
 
 Built-in buttons using `childIcon: 'selected'`: `toolbar-placement` and `locale`. `export`, `annotation`, and `measure` use fixed parent icons.
 
-Built-in `childrenUi`: `measure` and `annotation` are `'sticky-toolbar'`; `export`, `toolbar-placement`, and `locale` are `'toolbar'`. Custom items default to `'menu'`.
+Built-in `childrenUi`: `measure`, `annotation`, `export`, `toolbar-placement`, and `locale` are `'toolbar'`. Custom items default to `'menu'`. Use `'sticky-toolbar'` to keep a strip open until the parent is clicked again.
 
 Submenu flyout direction follows toolbar placement (e.g. arrow points left when the toolbar is on the right).
 

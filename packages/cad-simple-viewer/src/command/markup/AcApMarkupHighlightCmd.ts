@@ -3,7 +3,6 @@ import { AcCmColor, AcGePoint3dLike } from '@mlightcad/data-model'
 import { AcApContext } from '../../app'
 import {
   AcEdBaseView,
-  AcEdCommand,
   AcEdPreviewJig,
   AcEdPromptPointOptions,
   AcEdPromptStatus
@@ -14,17 +13,14 @@ import {
   acapFillLiveHighlight,
   AcApHtmlLivePreview
 } from '../overlay/AcApHtmlLivePreview'
-import {
-  configureMarkupCommand,
-  createMarkupMeta,
-  withMarkupInput
-} from './AcApMarkupCmdUtil'
+import { createMarkupMeta } from './AcApMarkupCmdUtil'
+import { AcApMarkupDrawCmd } from './AcApMarkupDrawCmd'
 import { commitMarkup } from './AcApMarkupPresenter'
 import { MARKUP_LIVE_LAYER } from './AcApMarkupStore'
 import type { AcApMarkupRecord } from './AcApMarkupTypes'
 import {
   defaultMarkupColor,
-  getMarkupLineWeight,
+  MARKUP_LINE_WEIGHT,
   markupCanvasLineWidth,
   markupColorToCss
 } from './AcApMarkupUtil'
@@ -57,7 +53,7 @@ class AcApMarkupHighlightJig extends AcEdPreviewJig<AcGePoint3dLike> {
   update(second: AcGePoint3dLike) {
     this._second = second
     this._colorCss = markupColorToCss(defaultMarkupColor())
-    const lineWidth = markupCanvasLineWidth(getMarkupLineWeight())
+    const lineWidth = markupCanvasLineWidth(MARKUP_LINE_WEIGHT)
     this._preview.acapSetDraw((ctx, view) => {
       acapFillLiveHighlight(
         ctx,
@@ -79,14 +75,9 @@ class AcApMarkupHighlightJig extends AcEdPreviewJig<AcGePoint3dLike> {
 /**
  * Create a semi-transparent rectangular highlight markup.
  */
-export class AcApMarkupHighlightCmd extends AcEdCommand {
-  constructor() {
-    super()
-    configureMarkupCommand(this)
-  }
-
+export class AcApMarkupHighlightCmd extends AcApMarkupDrawCmd {
   async execute(context: AcApContext) {
-    await withMarkupInput(context, async () => {
+    await this.withMarkupInput(context, async () => {
       const color = defaultMarkupColor()
       const colorCss = markupColorToCss(color)
       const p1Prompt = new AcEdPromptPointOptions(
@@ -115,7 +106,7 @@ export class AcApMarkupHighlightCmd extends AcEdCommand {
         type: 'highlight',
         style: {
           color: colorCss,
-          lineWeight: getMarkupLineWeight()
+          lineWeight: MARKUP_LINE_WEIGHT
         },
         geometry: {
           type: 'highlight',

@@ -34,6 +34,16 @@ export class AcSvgMatrixUtil {
     }
     const min = box.min
     const max = box.max
+    if (
+      !Number.isFinite(min.x) ||
+      !Number.isFinite(min.y) ||
+      !Number.isFinite(max.x) ||
+      !Number.isFinite(max.y)
+    ) {
+      // Keep non-finite boxes empty so they cannot poison later viewBox unions.
+      box.makeEmpty()
+      return
+    }
     const corners: AcGePoint3dLike[] = [
       { x: min.x, y: min.y, z: 0 },
       { x: max.x, y: min.y, z: 0 },
@@ -46,6 +56,10 @@ export class AcSvgMatrixUtil {
     let maxY = -Infinity
     for (const corner of corners) {
       const p = this.transformPoint(matrix, corner)
+      if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) {
+        box.makeEmpty()
+        return
+      }
       minX = Math.min(minX, p.x)
       minY = Math.min(minY, p.y)
       maxX = Math.max(maxX, p.x)
