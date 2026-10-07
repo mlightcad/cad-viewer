@@ -455,6 +455,8 @@
         gap: 1rem;
         z-index: 20;
         pointer-events: none;
+        /* Opaque so blank viewer chrome never shows through the landing panel. */
+        background: var(--ml-ui-bg);
       }
 
       .empty-state.hidden {

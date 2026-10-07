@@ -17,6 +17,7 @@ CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后�
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
 - Medium: [@mlightcad](https://medium.com/@mlightcad)
+- DEV.to: [@mlightcad](https://dev.to/mlightcad)
 - 稀土掘金: [@mlightcad](https://juejin.cn/column/7501992214283501579)
 
 ### 基于 cad-viewer 构建的应用（Apps Built with cad-viewer）
