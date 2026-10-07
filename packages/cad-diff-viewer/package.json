@@ -40,10 +40,10 @@
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.15.1"
+    "@mlightcad/data-model": "^1.15.2"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.15.1"
+    "@mlightcad/data-model": "^1.15.2"
   }
 }

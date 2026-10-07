@@ -45,12 +45,12 @@
     "pdf-lib": "^1.17.1"
   },
   "devDependencies": {
-    "@mlightcad/data-model": "^1.15.1",
+    "@mlightcad/data-model": "^1.15.2",
     "@mlightcad/mtext-parser": "^1.5.3",
     "@types/pako": "^1.0.7"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "^1.15.1",
+    "@mlightcad/data-model": "^1.15.2",
     "@mlightcad/mtext-parser": "^1.5.3"
   }
 }
