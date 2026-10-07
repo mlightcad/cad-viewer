@@ -514,7 +514,8 @@ export class AcEdCommandLine {
         opacity: 0;
       }
 
-      .hidden {
+      /* Scoped name avoids clashing with Tailwind's .hidden utility. */
+      .ml-cli-hidden {
         display: none !important;
       }
 
@@ -603,11 +604,11 @@ export class AcEdCommandLine {
 
     /* ---------- popups ---------- */
     this.cmdPopup = document.createElement('div')
-    this.cmdPopup.className = 'ml-cli-cmd-popup hidden'
+    this.cmdPopup.className = 'ml-cli-cmd-popup ml-cli-hidden'
     this.wrapper.appendChild(this.cmdPopup)
 
     this.msgPanel = document.createElement('div')
-    this.msgPanel.className = 'ml-cli-msg-panel hidden'
+    this.msgPanel.className = 'ml-cli-msg-panel ml-cli-hidden'
     this.wrapper.appendChild(this.msgPanel)
 
     this.container.appendChild(this.cliContainer)
@@ -897,8 +898,8 @@ export class AcEdCommandLine {
   private updatePopups({ showCmd = false, showMsg = false } = {}) {
     this.isCmdPopupOpen = showCmd
     this.isMsgPanelOpen = showMsg
-    this.cmdPopup.classList.toggle('hidden', !showCmd)
-    this.msgPanel.classList.toggle('hidden', !showMsg)
+    this.cmdPopup.classList.toggle('ml-cli-hidden', !showCmd)
+    this.msgPanel.classList.toggle('ml-cli-hidden', !showMsg)
     this.recentPanel.classList.toggle('ml-cli-recent-covered', showMsg)
     if (showCmd) this.positionCmdPopup()
     if (showMsg) this.positionMsgPanel()
@@ -1049,12 +1050,12 @@ export class AcEdCommandLine {
 
   /** Show recent message area. */
   private showRecentPanel() {
-    this.recentPanel.classList.remove('hidden')
+    this.recentPanel.classList.remove('ml-cli-hidden')
   }
 
   /** Hide recent message area. */
   private hideRecentPanel() {
-    this.recentPanel.classList.add('hidden')
+    this.recentPanel.classList.add('ml-cli-hidden')
   }
 
   private useViewportPositioning() {

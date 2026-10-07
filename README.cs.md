@@ -17,6 +17,7 @@ Nabízí také něco, co u jiných CAD prohlížečů jen zřídka najdete — *
 - X (Twitter): [@mlightcad](https://x.com/mlightcad)
 - YouTube: [@mlightcad](https://www.youtube.com/@mlightcad)
 - Medium: [@mlightcad](https://medium.com/@mlightcad)
+- DEV.to: [@mlightcad](https://dev.to/mlightcad)
 - Juejin(稀土掘金): [@mlightcad](https://juejin.cn/column/7501992214283501579)
 
 ### Aplikace postavené na cad-viewer
