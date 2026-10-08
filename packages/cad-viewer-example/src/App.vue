@@ -57,11 +57,11 @@ import { computed, nextTick, ref } from 'vue'
 
 import { AcApQuitCmd } from './commands'
 import FileUpload from './components/FileUpload.vue'
-import { initializeLocale } from './locale'
 import {
   getGoogleDriveEnvConfig,
   registerGoogleDriveFromEnv
 } from './googleDriveEnv'
+import { initializeLocale } from './locale'
 import {
   getOneDriveEnvConfig,
   registerOneDriveFromEnv
