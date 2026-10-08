@@ -10,7 +10,10 @@
         "default",
         { "env": "VITE_MSAL_CLIENT_ID" },
         { "env": "VITE_MSAL_TENANT_ID" },
-        { "env": "VITE_MSAL_REDIRECT_URI" }
+        { "env": "VITE_MSAL_REDIRECT_URI" },
+        { "env": "VITE_GOOGLE_CLIENT_ID" },
+        { "env": "VITE_GOOGLE_API_KEY" },
+        { "env": "VITE_GOOGLE_APP_ID" }
       ],
       "outputs": [
         "{projectRoot}/dist",

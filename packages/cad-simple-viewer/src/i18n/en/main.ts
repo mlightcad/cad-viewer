@@ -191,6 +191,7 @@ export default {
     urlPlaceholder: 'https://example.com/drawing.dwg',
     cancel: 'Cancel',
     onedrive: 'OneDrive',
+    googledrive: 'Google Drive',
     or: 'or',
     dropFile: 'Drop a file here or',
     browse: 'browse',

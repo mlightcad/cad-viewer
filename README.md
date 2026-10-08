@@ -153,6 +153,7 @@ The monorepo ships several first-party plugins. Each focuses on one concern; com
 | [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **PDF export and import** (vector pipeline) | `cpdf`, `ipdf` |
 | [`@mlightcad/cad-svg-plugin`](packages/cad-svg-plugin) | **SVG export** and shared vector renderer (also used by PDF export) | `csvg` |
 | [`@mlightcad/cad-onedrive-plugin`](packages/cad-onedrive-plugin) | **OneDrive data source** — open DWG/DXF from OneDrive / SharePoint | Registers `AcApDataSource` (`onedrive`); two-step Sign in → Open (popup-safe) |
+| [`@mlightcad/cad-google-drive-plugin`](packages/cad-google-drive-plugin) | **Google Drive data source** — open DWG/DXF from Google Drive | Registers `AcApDataSource` (`googledrive`); two-step Sign in → Open (popup-safe) |
 
 ### `@mlightcad/cad-simple-ui-plugin` — UI chrome for the simple viewer
 
@@ -433,7 +434,7 @@ Legend:
 
 ### Platform Targets
 
-* [ ] ⏳ Google Drive Integration
+* [x] Google Drive Integration (Picker data source; Drive “Open with” optional follow-up)
 * [ ] WeChat Mini Program viewer
 * [x] Mobile browser support (responsive layout & touch)
 

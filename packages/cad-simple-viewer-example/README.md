@@ -6,6 +6,7 @@ A vanilla TypeScript demo that shows how to embed [`@mlightcad/cad-simple-viewer
 
 - **Local files** — Open `.dxf` / `.dwg` via file picker (toolbar **Open** or center **Open File**)
 - **OneDrive** — Optional `@mlightcad/cad-onedrive-plugin` when `VITE_MSAL_CLIENT_ID` is set (Open menu: Sign in, then Open from OneDrive)
+- **Google Drive** — Optional `@mlightcad/cad-google-drive-plugin` when `VITE_GOOGLE_CLIENT_ID` / `VITE_GOOGLE_API_KEY` / `VITE_GOOGLE_APP_ID` are set
 - **Sample drawings** — Sidebar loads predefined files from the [cad-data](https://github.com/mlightcad/cad-data) CDN
 - **Viewer toolbar** — Zoom fit, zoom window, background toggle, pickbox size, line-weight display, export HTML/PDF
 - **Lazy plugins** — registered from `@mlightcad/cad-*-plugin/register` in `src/register.ts`; `-chtml` / `cpdf` / `csvg` load plugin chunks on demand (`chtml` runs the same command-line export when no dialog command is registered)
@@ -69,6 +70,15 @@ Vite prints the local URL (default `http://localhost:5173`). With `dev:simple`, 
 
 Use the toolbar **Open** menu or the center **Open File** menu: **Sign in to OneDrive**, then **Open from OneDrive** (two separate clicks).
 
+### Google Drive (optional)
+
+1. Copy [`.env.example`](./.env.example) to `.env.local`.
+2. Set `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY`, and `VITE_GOOGLE_APP_ID` (numeric Cloud project number).
+3. In Google Cloud Console, enable Drive API + Picker API, and add Authorized JavaScript origins for `http://localhost:5173`.
+4. Restart the Vite dev server so env vars reload.
+
+Use **Sign in to Google Drive**, then **Open from Google Drive** (two separate clicks).
+
 ### Production
 
 ```bash
@@ -83,7 +93,7 @@ The build copies parser workers and `viewer-runtime.iife.js` into `dist/` (see `
 
 1. Start the dev server and open the URL shown in the terminal.
 2. **Predefined files** — Click a name in the left sidebar to load a sample from the CDN.
-3. **Your own file** — Open the **Open** toolbar menu or center **Open File** menu, then choose **Local file**, **From URL**, or (when configured) **Sign in to OneDrive** / **Open from OneDrive**.
+3. **Your own file** — Open the **Open** toolbar menu or center **Open File** menu, then choose **Local file**, **From URL**, or (when configured) OneDrive / Google Drive sign-in and open.
 4. After a drawing loads, use the toolbar:
    - **Zoom Fit** / **Zoom to Window** — `ZOOM` commands
    - **Switch BG** — Toggle drawing background

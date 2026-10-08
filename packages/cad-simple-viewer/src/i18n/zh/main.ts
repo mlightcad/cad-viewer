@@ -186,6 +186,7 @@ export default {
     urlPlaceholder: 'https://example.com/drawing.dwg',
     cancel: '取消',
     onedrive: 'OneDrive',
+    googledrive: 'Google Drive',
     or: '或',
     dropFile: '将文件拖放到此处，或',
     browse: '浏览',

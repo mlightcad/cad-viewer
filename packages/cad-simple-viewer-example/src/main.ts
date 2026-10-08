@@ -40,6 +40,7 @@ import {
   getCurrentDemoToolbarLayoutId
 } from './demoToolbarPresets'
 import { setupFileSidebarResize } from './fileSidebarResize'
+import { getGoogleDriveEnvConfig } from './googleDriveEnv'
 import { getOneDriveEnvConfig } from './onedriveEnv'
 import { registerLazyPlugins } from './register'
 import { registerLibreDwgConverter } from './registerLibreDwg'
@@ -993,11 +994,11 @@ class CadViewerApp {
   }
 
   private buildLandingCloudMenuItems(): AcApDataSourceMenuItem[] {
-    if (!getOneDriveEnvConfig()) return []
-    const name = AcApI18n.t('main.dataSource.onedrive')
     const signInTemplate = AcApI18n.t('main.dataSource.signInTo')
-    return [
-      {
+    const items: AcApDataSourceMenuItem[] = []
+    if (getOneDriveEnvConfig()) {
+      const name = AcApI18n.t('main.dataSource.onedrive')
+      items.push({
         id: 'onedrive:sign-in',
         sourceId: 'onedrive',
         action: 'sign-in',
@@ -1006,8 +1007,22 @@ class CadViewerApp {
         label: signInTemplate.includes('{name}')
           ? signInTemplate.split('{name}').join(name)
           : `Sign in to ${name}`
-      }
-    ]
+      })
+    }
+    if (getGoogleDriveEnvConfig()) {
+      const name = AcApI18n.t('main.dataSource.googledrive')
+      items.push({
+        id: 'googledrive:sign-in',
+        sourceId: 'googledrive',
+        action: 'sign-in',
+        labelKey: 'main.dataSource.signInTo',
+        labelParams: { name },
+        label: signInTemplate.includes('{name}')
+          ? signInTemplate.split('{name}').join(name)
+          : `Sign in to ${name}`
+      })
+    }
+    return items
   }
 
   private setupFileOpenPanel() {

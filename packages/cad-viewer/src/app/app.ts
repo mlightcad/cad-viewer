@@ -33,12 +33,23 @@ export type InitializeCadViewerOptions = AcApDocManagerOptions & {
     tenantId?: string
     redirectUri?: string
   }
+  /**
+   * When set, loads `@mlightcad/cad-google-drive-plugin` if installed and
+   * registers the Google Drive data source for Open menus.
+   */
+  googledrive?: {
+    clientId: string
+    apiKey: string
+    /** Numeric Google Cloud project number (Picker `setAppId`). */
+    appId: string
+  }
 }
 
 export const initializeCadViewer = (
   options: InitializeCadViewerOptions = {}
 ) => {
-  const { htmlViewerRuntimeUrl, onedrive, ...docOptions } = options
+  const { htmlViewerRuntimeUrl, onedrive, googledrive, ...docOptions } =
+    options
   AcApDocManager.createInstance({
     ...docOptions,
     // Keep the shared event bridge; Vue panel replaces the built-in DOM UI.
@@ -67,6 +78,19 @@ export const initializeCadViewer = (
       )
       .catch(() => {
         // Optional peer `@mlightcad/cad-onedrive-plugin` is not installed.
+      })
+  }
+
+  if (googledrive?.clientId && googledrive.apiKey && googledrive.appId) {
+    void import('@mlightcad/cad-google-drive-plugin/register')
+      .then(({ registerGoogleDrivePlugin }) =>
+        registerGoogleDrivePlugin(
+          AcApDocManager.instance.pluginManager,
+          googledrive
+        )
+      )
+      .catch(() => {
+        // Optional peer `@mlightcad/cad-google-drive-plugin` is not installed.
       })
   }
 }
