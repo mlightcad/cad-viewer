@@ -190,6 +190,7 @@ export default {
     urlPlaceholder: 'https://example.com/drawing.dwg',
     cancel: 'İptal',
     onedrive: 'OneDrive',
+    googledrive: 'Google Drive',
     or: 'veya',
     dropFile: 'Dosyayı buraya bırakın veya',
     browse: 'göz atın',

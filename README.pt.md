@@ -432,7 +432,7 @@ Legenda:
 
 ### Plataformas-alvo
 
-* [ ] ⏳ Integração com Google Drive
+* [x] Integração com Google Drive (fonte de dados Picker; Drive “Open with” como acompanhamento opcional)
 * [ ] Visualizador WeChat Mini Program
 * [x] Suporte a navegador mobile (layout responsivo e gestos de toque)
 

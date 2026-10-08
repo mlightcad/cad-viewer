@@ -7,6 +7,7 @@ A Vue 3 demo that embeds [`@mlightcad/cad-viewer`](https://github.com/mlightcad/
 - **Full CAD UI** — `MlCadViewer` with toolbars, layer manager, command line, dialogs, and status bar
 - **Local files** — Drag-and-drop or file picker for `.dxf` / `.dwg` before entering the viewer
 - **OneDrive** — Optional `@mlightcad/cad-onedrive-plugin` when `VITE_MSAL_CLIENT_ID` is set (landing **Sign in to OneDrive**, then File → Open → **Open from OneDrive**)
+- **Google Drive** — Optional `@mlightcad/cad-google-drive-plugin` when `VITE_GOOGLE_*` env vars are set
 - **Open modes** — Read, Review, or Write access when opening a drawing
 - **Internationalization** — Built-in English/Chinese UI via `vue-i18n`; host app can merge custom messages
 - **Custom commands** — Example `quit` / `exit` commands return to the upload screen
@@ -64,6 +65,15 @@ Vite prints the local URL (default `http://localhost:5173`). In dev mode, Vite a
 
 On the upload screen, choose **Sign in to OneDrive**. After the viewer opens, use **File → Open → Open from OneDrive** (a second click is required so the File Picker popup is not blocked).
 
+### Google Drive (optional)
+
+1. Copy [`.env.example`](./.env.example) to `.env.local`.
+2. Set `VITE_GOOGLE_CLIENT_ID`, `VITE_GOOGLE_API_KEY`, and `VITE_GOOGLE_APP_ID` (numeric Cloud project number).
+3. Enable Drive API + Picker API; add Authorized JavaScript origins for this app (e.g. `http://localhost:5173`).
+4. Restart the Vite dev server so env vars reload.
+
+On the upload screen, choose **Sign in to Google Drive**, then **Open from Google Drive** (two separate clicks).
+
 ### Production
 
 ```bash
@@ -76,7 +86,7 @@ The build runs `vue-tsc`, then copies parser workers and `viewer-runtime.iife.js
 ## Usage
 
 1. Start the dev server and open the URL shown in the terminal.
-2. On the upload screen, choose **Read**, **Review**, or **Write**, then drop or select a `.dxf` or `.dwg` file — or **Sign in to OneDrive** / **From URL** when configured.
+2. On the upload screen, choose **Read**, **Review**, or **Write**, then drop or select a `.dxf` or `.dwg` file — or OneDrive / Google Drive / **From URL** when configured.
 3. The full `MlCadViewer` UI loads with your file. Use menus, ribbons, and the command line as in a desktop CAD host.
 4. Run `quit` or `exit` in the command line to close the drawing and return to the upload screen.
 

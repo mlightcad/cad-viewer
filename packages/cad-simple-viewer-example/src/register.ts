@@ -5,12 +5,13 @@ import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin/register'
 import { log } from '@mlightcad/data-model'
 
+import { registerGoogleDriveFromEnv } from './googleDriveEnv'
 import { registerOneDriveFromEnv } from './onedriveEnv'
 
 let isLazyPluginRegistered = false
 
 /**
- * Registers export plugins and optional OneDrive data source used by this example.
+ * Registers export plugins and optional cloud data sources used by this example.
  *
  * Import from each plugin's `/register` subpath so only the registration stub is in the
  * initial bundle; plugin code loads when a trigger command runs.
@@ -37,5 +38,14 @@ export const registerLazyPlugins = async () => {
     }
   } catch (error) {
     log.warn('OneDrive plugin not available:', error)
+  }
+
+  try {
+    const registered = await registerGoogleDriveFromEnv(pluginManager)
+    if (registered) {
+      log.info('[example] Google Drive data source registered')
+    }
+  } catch (error) {
+    log.warn('Google Drive plugin not available:', error)
   }
 }

@@ -190,6 +190,7 @@ export default {
     urlPlaceholder: 'https://example.com/drawing.dwg',
     cancel: 'Zrušit',
     onedrive: 'OneDrive',
+    googledrive: 'Google Drive',
     or: 'nebo',
     dropFile: 'Přetáhněte soubor sem nebo',
     browse: 'procházet',

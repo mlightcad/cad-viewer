@@ -5,7 +5,9 @@
   "fixed": [
     [
       "@mlightcad/cad-agent-plugin",
+      "@mlightcad/cad-google-drive-plugin",
       "@mlightcad/cad-html-plugin",
+      "@mlightcad/cad-onedrive-plugin",
       "@mlightcad/cad-pdf-plugin",
       "@mlightcad/cad-simple-ui-plugin",
       "@mlightcad/cad-simple-viewer",

@@ -50,7 +50,7 @@ For the plain-DOM toolbar engine (`AcUiToolbar`, shortcut bar, and host customiz
 ### Plugins and data sources
 
 - **`pluginManager`** — load command plugins (`AcApPlugin`) via `loadPlugin` / `registerLazyPlugin`.
-- **`dataSourceManager`** — registry of drawing origins (built-in **local** and **URL**, plus optional cloud plugins such as `@mlightcad/cad-onedrive-plugin`). Open menus in hosts rebuild from `acapBuildDataSourceMenu(dataSourceManager.list())`. Cloud sources that use a popup File Picker must keep **Sign in** and **Open** as separate clicks so browsers do not block the picker.
+- **`dataSourceManager`** — registry of drawing origins (built-in **local** and **URL**, plus optional cloud plugins such as `@mlightcad/cad-onedrive-plugin` and `@mlightcad/cad-google-drive-plugin`). Open menus in hosts rebuild from `acapBuildDataSourceMenu(dataSourceManager.list())`. Cloud sources that use a popup File Picker must keep **Sign in** and **Open** as separate clicks so browsers do not block the picker.
 
 While `cad-simple-viewer` doesn't support saving drawings to DWG/DXF files, it provides comprehensive support for **modifying drawings in real-time**. You can add, edit, and delete entities within the drawing, and the viewer will automatically update to reflect these changes.
 
