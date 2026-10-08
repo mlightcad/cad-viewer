@@ -432,7 +432,7 @@ CAD-Viewer は **卓越したパフォーマンス** 向けに設計されてお
 
 ### プラットフォーム目標
 
-* [ ] ⏳ Google Drive 連携
+* [x] Google Drive 連携（Picker データソース；Drive “Open with” は任意のフォローアップ）
 * [ ] WeChat Mini Program ビューア
 * [x] モバイルブラウザサポート（レスポンシブレイアウトとタッチ操作）
 

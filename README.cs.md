@@ -432,7 +432,7 @@ Legenda:
 
 ### Cílové platformy
 
-* [ ] ⏳ Integrace Google Drive
+* [x] Integrace Google Drive (datový zdroj Picker; Drive „Open with“ jako volitelné pokračování)
 * [ ] Prohlížeč pro WeChat Mini Program
 * [x] Podpora mobilního prohlížeče (responzivní rozložení a dotykové ovládání)
 

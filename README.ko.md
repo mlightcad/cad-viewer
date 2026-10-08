@@ -432,7 +432,7 @@ CAD-Viewer는 **탁월한 성능**을 위해 설계되었으며, 높은 프레�
 
 ### 플랫폼 목표
 
-* [ ] ⏳ Google Drive 통합
+* [x] Google Drive 통합 (Picker 데이터 소스; Drive “Open with”는 선택적 후속 작업)
 * [ ] WeChat 미니 프로그램 뷰어
 * [x] 모바일 브라우저 지원(반응형 레이아웃 및 터치)
 

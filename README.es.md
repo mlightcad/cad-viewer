@@ -432,7 +432,7 @@ Leyenda:
 
 ### Plataformas objetivo
 
-* [ ] ⏳ Integración con Google Drive
+* [x] Integración con Google Drive (origen de datos Picker; Drive “Open with” como seguimiento opcional)
 * [ ] Visor de Mini Program de WeChat
 * [x] Soporte de navegador móvil (diseño responsive y gestos táctiles)
 
