@@ -1779,6 +1779,24 @@ async function startViewer(): Promise<void> {
     AcExCameraZoomUniform.value = fitted.zoom
   }
 
+  /**
+   * Temporarily hides model-space layer groups listed in a viewport's
+   * VPLAYER freeze list. Returns prior visibility for restoration.
+   */
+  const hideViewportFrozenLayers = (
+    frozenLayers: readonly string[] | undefined
+  ): Array<[THREE.Object3D, boolean]> => {
+    if (!frozenLayers?.length) return []
+    const frozenNames = new Set(frozenLayers)
+    const restored: Array<[THREE.Object3D, boolean]> = []
+    for (const child of modelRoot.children) {
+      if (!frozenNames.has(child.name) || !child.visible) continue
+      restored.push([child, child.visible])
+      child.visible = false
+    }
+    return restored
+  }
+
   const renderPaperViewports = () => {
     const viewports = layout.viewports
     if (
@@ -1837,8 +1855,15 @@ async function startViewer(): Promise<void> {
         pass.hit.height,
         viewport.twist ?? 0
       )
-      renderer.render(modelScene, viewportCamera)
-      renderer.setScissorTest(false)
+      const restored = hideViewportFrozenLayers(viewport.frozenLayers)
+      try {
+        renderer.render(modelScene, viewportCamera)
+      } finally {
+        for (const [object, visible] of restored) {
+          object.visible = visible
+        }
+        renderer.setScissorTest(false)
+      }
     }
 
     renderer.setViewport(
@@ -1926,7 +1951,14 @@ async function startViewer(): Promise<void> {
           pass.hit.height,
           viewport.twist ?? 0
         )
-        renderer.render(modelScene, loupeCamera)
+        const restored = hideViewportFrozenLayers(viewport.frozenLayers)
+        try {
+          renderer.render(modelScene, loupeCamera)
+        } finally {
+          for (const [object, visible] of restored) {
+            object.visible = visible
+          }
+        }
       }
     }
 

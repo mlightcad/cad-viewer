@@ -23,6 +23,7 @@ import {
   AcGePoint2d,
   AcGePoint2dLike,
   acgiForegroundColorForBackground,
+  AcGiViewport,
   log
 } from '@mlightcad/data-model'
 import { AcDbSystemVariables } from '@mlightcad/data-model'
@@ -3615,11 +3616,40 @@ export class AcTrView2d extends AcEdBaseView {
       if (AcTrViewportView.isDefaultPaperSpaceViewport(entity)) continue
       const viewportView = new AcTrViewportView(
         layoutView,
-        entity.toGiViewport(),
+        this.toGiViewportWithFrozenLayers(entity),
         this._renderer
       )
       layoutView.addViewport(viewportView)
     }
+  }
+
+  /**
+   * Builds an {@link AcGiViewport} and ensures VPLAYER frozen layers are
+   * present as resolved names. Older data-model builds read group 331 into
+   * {@link AcDbViewport.frozenLayerIds} but omit them from `toGiViewport()`.
+   */
+  private toGiViewportWithFrozenLayers(entity: AcDbViewport): AcGiViewport {
+    const gi = entity.toGiViewport() as AcGiViewport & {
+      frozenLayers?: string[]
+      frozenLayerIds?: string[]
+    }
+    if (gi.frozenLayers && gi.frozenLayers.length > 0) {
+      return gi
+    }
+    const ids = entity.frozenLayerIds
+    if (!ids?.length) return gi
+
+    const names: string[] = []
+    const layerTable = entity.database?.tables.layerTable
+    if (layerTable) {
+      for (const id of ids) {
+        const layer = layerTable.getIdAt(id)
+        if (layer) names.push(layer.name)
+      }
+    }
+    gi.frozenLayerIds = [...ids]
+    gi.frozenLayers = names
+    return gi
   }
 
   /**
@@ -3867,7 +3897,7 @@ export class AcTrView2d extends AcEdBaseView {
             if (layoutView) {
               const viewportView = new AcTrViewportView(
                 layoutView,
-                entity.toGiViewport(),
+                this.toGiViewportWithFrozenLayers(entity),
                 this._renderer
               )
               layoutView.addViewport(viewportView)

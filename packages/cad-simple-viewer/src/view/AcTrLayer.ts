@@ -104,6 +104,9 @@ export class AcTrLayer {
   constructor(layer: AcEdLayerInfo) {
     this._group = new AcTrBatchedGroup()
     this._name = layer.name
+    // Name the THREE group so paper-space viewports can hide VPLAYER-frozen
+    // layers by matching {@link AcGiViewport.frozenLayers} during render.
+    this._group.name = layer.name
     this._cachedBox = new THREE.Box3()
     this._boxDirty = true
     this._group.visible = AcTrLayer.isLayerVisible(layer)
@@ -117,6 +120,7 @@ export class AcTrLayer {
   }
   set name(value: string) {
     this._name = value
+    this._group.name = value
   }
 
   /**
@@ -187,7 +191,7 @@ export class AcTrLayer {
    */
   update(value: AcEdLayerInfo) {
     const wasVisible = this.visible
-    this._name = value.name
+    this.name = value.name
     this._group.visible = AcTrLayer.isLayerVisible(value)
     if (wasVisible !== this.visible) {
       this._boxDirty = true

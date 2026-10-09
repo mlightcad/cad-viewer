@@ -1,13 +1,21 @@
 import { AcGePoint3d, AcGiViewport } from '@mlightcad/data-model'
+import * as THREE from 'three'
 
 import { AcTrRenderer } from '../src/renderer'
 import { AcTrBaseView } from '../src/viewport/AcTrBaseView'
 import { AcTrViewportView } from '../src/viewport/AcTrViewportView'
 
-function createMockRenderer(): AcTrRenderer {
+function createMockRenderer(
+  onRender?: (scene: THREE.Object3D) => void
+): AcTrRenderer {
   return {
     domElement: {} as HTMLCanvasElement,
-    render: jest.fn()
+    setViewport: jest.fn(),
+    setScissor: jest.fn(),
+    setScissorTest: jest.fn(),
+    render: jest.fn((scene: THREE.Object3D) => {
+      onRender?.(scene)
+    })
   } as unknown as AcTrRenderer
 }
 
@@ -111,6 +119,92 @@ describe('AcTrViewportView.computeOnscreenPass', () => {
       createMockRenderer()
     )
     expect(view.computeOnscreenPass()).toBeNull()
+  })
+})
+
+describe('AcTrViewportView.render frozen layers', () => {
+  it('hides named layer groups listed in frozenLayers for the render pass only', () => {
+    const parent = new AcTrBaseView(createMockRenderer(), 800, 600)
+    let duringRender: {
+      frozenA: boolean
+      frozenB: boolean
+      kept: boolean
+    } | null = null
+
+    const scene = new THREE.Group()
+    const frozenA = new THREE.Group()
+    frozenA.name = 'FrozenA'
+    const frozenB = new THREE.Group()
+    frozenB.name = 'FrozenB'
+    frozenB.visible = false
+    const kept = new THREE.Group()
+    kept.name = 'Keep'
+    scene.add(frozenA, frozenB, kept)
+
+    const renderer = createMockRenderer(() => {
+      duringRender = {
+        frozenA: frozenA.visible,
+        frozenB: frozenB.visible,
+        kept: kept.visible
+      }
+    })
+    const source = createViewport(0)
+    source.frozenLayers = ['FrozenA', 'FrozenB']
+    const view = new AcTrViewportView(parent, source, renderer)
+    expect(view.viewport).not.toBe(source)
+    expect(view.viewport.frozenLayers).toEqual(['FrozenA', 'FrozenB'])
+
+    view.render(scene)
+
+    expect(renderer.render).toHaveBeenCalledTimes(1)
+    expect(duringRender).toEqual({
+      frozenA: false,
+      frozenB: false,
+      kept: true
+    })
+    expect(frozenA.visible).toBe(true)
+    expect(frozenB.visible).toBe(false)
+    expect(kept.visible).toBe(true)
+  })
+
+  it('does not change layer visibility when frozenLayers is empty', () => {
+    const parent = new AcTrBaseView(createMockRenderer(), 800, 600)
+    const scene = new THREE.Group()
+    const layer = new THREE.Group()
+    layer.name = '0'
+    scene.add(layer)
+
+    let duringRenderVisible = false
+    const renderer = createMockRenderer(() => {
+      duringRenderVisible = layer.visible
+    })
+    const view = new AcTrViewportView(parent, createViewport(0), renderer)
+
+    view.render(scene)
+
+    expect(duringRenderVisible).toBe(true)
+    expect(layer.visible).toBe(true)
+    expect(renderer.render).toHaveBeenCalledTimes(1)
+  })
+
+  it('restores layer visibility when the draw callback throws', () => {
+    const parent = new AcTrBaseView(createMockRenderer(), 800, 600)
+    const scene = new THREE.Group()
+    const frozen = new THREE.Group()
+    frozen.name = 'FrozenA'
+    scene.add(frozen)
+
+    const source = createViewport(0)
+    source.frozenLayers = ['FrozenA']
+    const view = new AcTrViewportView(parent, source, createMockRenderer())
+
+    expect(() =>
+      view.withFrozenLayersHidden(scene, () => {
+        expect(frozen.visible).toBe(false)
+        throw new Error('render failed')
+      })
+    ).toThrow('render failed')
+    expect(frozen.visible).toBe(true)
   })
 })
 
