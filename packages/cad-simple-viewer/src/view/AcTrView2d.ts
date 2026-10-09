@@ -69,7 +69,6 @@ import {
   eventBus,
   resolvePointerSelectionAction
 } from '../editor'
-import type { AcTrLazySpatialChildren } from '../spatialIndex'
 import {
   ACGI_MODEL_SPACE_BACKGROUND,
   isModelSpaceDatabase,
@@ -81,6 +80,7 @@ import {
   acedNeedsCrossingGeometryRefine
 } from '../editor/view/AcEdSelectionBoxIntersect'
 import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult'
+import type { AcTrLazySpatialChildren } from '../spatialIndex'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
