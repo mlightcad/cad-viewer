@@ -1336,14 +1336,16 @@ export class AcTrBatchedGroup extends THREE.Group {
       )
       if (sharedSlot) {
         appendedSlots.push(sharedSlot)
-        this.applyBatchSlotVisibility(sharedSlot, entityVisible && object.visible)
-        return
-      }
-
-      // Duck-type across duplicate three.js copies (mtext-renderer vs app).
-      // `instanceof` silently drops glyph LineSegments/Meshes — see
-      // AcTrThreeObjectGuards.
-      if (isThreeLineSegments2(object)) {
+        this.applyBatchSlotVisibility(
+          sharedSlot,
+          entityVisible && object.visible
+        )
+        // The leaf itself is instanced, but complex linetypes and nested
+        // block geometry hang off it as children and still need their own slots.
+      } else if (isThreeLineSegments2(object)) {
+        // Duck-type across duplicate three.js copies (mtext-renderer vs app).
+        // `instanceof` silently drops glyph LineSegments/Meshes — see
+        // AcTrThreeObjectGuards.
         const item = this.addLine2(object, {
           objectId,
           bboxIntersectionCheck: bboxIntersectionCheck
@@ -1353,9 +1355,7 @@ export class AcTrBatchedGroup extends THREE.Group {
           this.applyBatchSlotVisibility(item, entityVisible && object.visible)
         }
         return
-      }
-
-      if (isThreeLineSegments(object)) {
+      } else if (isThreeLineSegments(object)) {
         const item = this.addLine(object, {
           position: drawableUserData.position,
           objectId,

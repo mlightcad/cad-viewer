@@ -13,7 +13,8 @@ import type { AcPdfRenderer } from '../renderer/AcPdfRenderer'
 import {
   buildModelToPaperMatrix,
   isDefaultPaperSpaceViewport,
-  resolveViewportBoxes
+  resolveViewportBoxes,
+  resolveViewportFrozenLayers
 } from './AcPdfPaperViewport'
 import { AcPdfViewportContent } from './AcPdfViewportContent'
 
@@ -133,7 +134,8 @@ export function buildViewportModelContent(
   const content = new AcPdfViewportContent(
     resolveModelRoots(),
     matrix,
-    boxes.paper
+    boxes.paper,
+    resolveViewportFrozenLayers(viewport)
   )
   content.objectId = viewport.objectId
 

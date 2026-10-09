@@ -20,6 +20,7 @@ import {
   copyFloat32Range,
   copyUint32Range,
   exportPlainDrawableSlice,
+  omitNonFinitePrimitives,
   readBatchWorldOffset,
   rebasePlainDrawableSliceAroundCentroid
 } from './AcExBatchBuffers'
@@ -391,8 +392,23 @@ function exportLineSegments2Slice(
 
   const activeFloats: number[] = []
   for (let segment = 0; segment < segmentCount; segment++) {
-    appendSegmentFromAttribute(activeFloats, startAttr, segment)
-    appendSegmentFromAttribute(activeFloats, endAttr, segment)
+    const start = [
+      startAttr.getX(segment),
+      startAttr.getY(segment),
+      startAttr.getZ(segment)
+    ]
+    const end = [
+      endAttr.getX(segment),
+      endAttr.getY(segment),
+      endAttr.getZ(segment)
+    ]
+    if (
+      !start.every(Number.isFinite) ||
+      !end.every(Number.isFinite)
+    ) {
+      continue
+    }
+    activeFloats.push(start[0]!, start[1]!, start[2]!, end[0]!, end[1]!, end[2]!)
   }
   return { positions: new Float32Array(activeFloats) }
 }
@@ -534,13 +550,34 @@ function exportSceneDrawableSlice(
   }
 }
 
+function withTriangleIndices(
+  slice: AcExBufferGeometrySlice
+): AcExBufferGeometrySlice {
+  if (slice.indices && slice.indices.length >= 3) {
+    return slice
+  }
+  const vertexCount = (slice.positions.length / 3) | 0
+  if (vertexCount < 3 || vertexCount % 3 !== 0) {
+    return slice
+  }
+  const indices = new Uint32Array(vertexCount)
+  for (let i = 0; i < vertexCount; i++) {
+    indices[i] = i
+  }
+  return { ...slice, indices }
+}
+
 function buildMeshBatch(
   geometry: THREE.BufferGeometry,
   material: THREE.Material,
   object: THREE.Object3D,
   slice: AcExBufferGeometrySlice,
-  offset: [number, number, number]
+  offset: [number, number, number],
+  triangleList = false
 ): AcExMeshBatch | undefined {
+  if (triangleList) {
+    slice = withTriangleIndices(slice)
+  }
   const style = readMaterialStyle(material)
   const worldHatchPattern = resolveExportedHatchPattern(
     object,
@@ -642,7 +679,8 @@ function exportBatchedMesh(batch: AcTrBatchedMesh): AcExMeshBatch | undefined {
     batch.material as THREE.Material,
     batch,
     slice,
-    readWorldOffset(batch)
+    readWorldOffset(batch),
+    true
   )
 }
 
@@ -710,25 +748,34 @@ function isSharedTemplateHighlight(object: THREE.Object3D): boolean {
 }
 
 /** Hidden and deleted slots are stored as a zero scale matrix. */
-function isDegenerateInstanceMatrix(matrix: THREE.Matrix4): boolean {
+function isUsableInstanceMatrix(matrix: THREE.Matrix4): boolean {
   const e = matrix.elements
+  for (let i = 0; i < 16; i++) {
+    if (!Number.isFinite(e[i]!)) return false
+  }
   const sx = Math.hypot(e[0]!, e[1]!, e[2]!)
   const sy = Math.hypot(e[4]!, e[5]!, e[6]!)
   const sz = Math.hypot(e[8]!, e[9]!, e[10]!)
-  return sx + sy + sz < 1e-8
+  return sx + sy + sz >= 1e-8
 }
 
 /**
  * Bakes every visible INSERT of one shared template into a single world-space
  * slice, then rebases around the centroid.
  */
-function expandInstancedGeometry(object: InstancedExportDrawable):
+function expandInstancedGeometry(
+  object: InstancedExportDrawable,
+  primitiveVertexCount: 1 | 2 | 3
+):
   | {
       slice: AcExBufferGeometrySlice
       offset: [number, number, number]
     }
   | undefined {
-  const template = exportBufferGeometrySlice(object.geometry)
+  const template = omitNonFinitePrimitives(
+    exportBufferGeometrySlice(object.geometry),
+    primitiveVertexCount
+  )
   const floatsPerInstance = template.positions.length
   if (floatsPerInstance === 0) return undefined
 
@@ -738,7 +785,7 @@ function expandInstancedGeometry(object: InstancedExportDrawable):
   let visible = 0
   for (let i = 0; i < object.count; i++) {
     _instanceMatrix.fromArray(array, i * 16)
-    if (!isDegenerateInstanceMatrix(_instanceMatrix)) visible++
+    if (isUsableInstanceMatrix(_instanceMatrix)) visible++
   }
   if (visible === 0) return undefined
 
@@ -749,7 +796,7 @@ function expandInstancedGeometry(object: InstancedExportDrawable):
   let slot = 0
   for (let i = 0; i < object.count; i++) {
     _instanceMatrix.fromArray(array, i * 16)
-    if (isDegenerateInstanceMatrix(_instanceMatrix)) continue
+    if (!isUsableInstanceMatrix(_instanceMatrix)) continue
     _instanceWorld.multiplyMatrices(object.matrixWorld, _instanceMatrix)
     const baked = bakePlainDrawableSlice(template, _instanceWorld)
     positions.set(baked.positions, slot * floatsPerInstance)
@@ -762,10 +809,13 @@ function expandInstancedGeometry(object: InstancedExportDrawable):
     slot++
   }
 
-  const rebased = rebasePlainDrawableSliceAroundCentroid({
-    positions,
-    indices
-  })
+  const rebased = rebasePlainDrawableSliceAroundCentroid(
+    omitNonFinitePrimitives(
+      { positions, indices },
+      primitiveVertexCount
+    )
+  )
+  if (rebased.slice.positions.length === 0) return undefined
   return { slice: rebased.slice, offset: rebased.offset }
 }
 
@@ -783,7 +833,7 @@ function forEachVisibleInstanceMatrix(
   const array = object.instanceMatrix.array as Float32Array
   for (let i = 0; i < object.count; i++) {
     _instanceMatrix.fromArray(array, i * 16)
-    if (isDegenerateInstanceMatrix(_instanceMatrix)) continue
+    if (!isUsableInstanceMatrix(_instanceMatrix)) continue
     _instanceWorld.multiplyMatrices(object.matrixWorld, _instanceMatrix)
     visit(_instanceWorld)
   }
@@ -793,7 +843,7 @@ function pushInstancedLine(
   object: InstancedExportDrawable,
   lineBatches: AcExLineBatch[]
 ): void {
-  const expanded = expandInstancedGeometry(object)
+  const expanded = expandInstancedGeometry(object, 2)
   if (!expanded) return
   const material = readExportMaterial(object)
   const { color, layer, linePattern } = readMaterialStyle(material)
@@ -824,10 +874,17 @@ function pushInstancedMesh(
   if (!asPoints && isTransparentImagePlaceholder(material)) return
 
   if (!asPoints && meshNeedsPerInstanceExport(material)) {
-    const template = exportBufferGeometrySlice(object.geometry)
+    const template = omitNonFinitePrimitives(
+      exportBufferGeometrySlice(object.geometry),
+      3
+    )
     if (template.positions.length === 0) return
     forEachVisibleInstanceMatrix(object, matrixWorld => {
-      const baked = bakePlainDrawableSlice(template, matrixWorld)
+      const baked = omitNonFinitePrimitives(
+        bakePlainDrawableSlice(template, matrixWorld),
+        3
+      )
+      if (baked.positions.length === 0) return
       const rebased = rebasePlainDrawableSliceAroundCentroid(baked)
       _instancePose.matrix.copy(matrixWorld)
       _instancePose.matrixWorld.copy(matrixWorld)
@@ -837,24 +894,59 @@ function pushInstancedMesh(
         material,
         _instancePose,
         rebased.slice,
-        rebased.offset
+        rebased.offset,
+        true
       )
       if (mesh) meshBatches.push(mesh)
     })
     return
   }
 
-  const expanded = expandInstancedGeometry(object)
+  const expanded = expandInstancedGeometry(object, asPoints ? 1 : 3)
   if (!expanded) return
   const mesh = buildMeshBatch(
     object.geometry,
     material,
     object,
     expanded.slice,
-    expanded.offset
+    expanded.offset,
+    !asPoints
   )
   if (!mesh) return
   meshBatches.push(asPoints ? { ...mesh, points: true } : mesh)
+}
+
+function isExportLineSegments2(object: THREE.Object3D): object is LineSegments2 {
+  const candidate = object as THREE.Object3D & { isLineSegments2?: boolean }
+  return (
+    object instanceof LineSegments2 ||
+    candidate.isLineSegments2 === true ||
+    object.type === 'LineSegments2'
+  )
+}
+
+function isExportLineSegments(
+  object: THREE.Object3D
+): object is THREE.LineSegments {
+  const candidate = object as THREE.Object3D & { isLineSegments?: boolean }
+  return (
+    object instanceof THREE.LineSegments ||
+    candidate.isLineSegments === true ||
+    object.type === 'LineSegments'
+  )
+}
+
+function isExportMesh(object: THREE.Object3D): object is THREE.Mesh {
+  const candidate = object as THREE.Object3D & {
+    isMesh?: boolean
+    isInstancedMesh?: boolean
+  }
+  return (
+    object instanceof THREE.Mesh ||
+    candidate.isMesh === true ||
+    candidate.isInstancedMesh === true ||
+    object.type === 'Mesh'
+  )
 }
 
 /**
@@ -885,9 +977,9 @@ export function collectBatchesFromObject3D(
       if (!shouldExportPlainDrawable(child)) return
       if ((child as unknown as THREE.Points).isPoints === true) {
         pushInstancedMesh(child, meshBatches, true)
-      } else if (child instanceof THREE.LineSegments) {
+      } else if (isExportLineSegments(child) && !isExportLineSegments2(child)) {
         pushInstancedLine(child, lineBatches)
-      } else if (child instanceof THREE.Mesh) {
+      } else if (isExportMesh(child) && !isExportLineSegments2(child)) {
         pushInstancedMesh(child, meshBatches, false)
       }
       return
@@ -912,7 +1004,7 @@ export function collectBatchesFromObject3D(
       if (batch) meshBatches.push(batch)
       return
     }
-    if (child instanceof LineSegments2) {
+    if (isExportLineSegments2(child)) {
       if (!shouldExportPlainDrawable(child)) return
       const rawSlice = exportLineSegments2Slice(child.geometry)
       if (rawSlice.positions.length === 0) return
@@ -931,12 +1023,12 @@ export function collectBatchesFromObject3D(
       }
       assignRenderOrder(exported, child, material)
       lineBatches.push(exported)
-    } else if (
-      child instanceof THREE.LineSegments &&
-      !(child instanceof AcTrBatchedLine)
-    ) {
+    } else if (isExportLineSegments(child) && !(child instanceof AcTrBatchedLine)) {
       if (!shouldExportPlainDrawable(child)) return
-      const rawSlice = exportBufferGeometrySlice(child.geometry)
+      const rawSlice = omitNonFinitePrimitives(
+        exportBufferGeometrySlice(child.geometry),
+        2
+      )
       if (rawSlice.positions.length === 0) return
       const material = readExportMaterial(child)
       const { color, layer, linePattern } = readMaterialStyle(material)
@@ -958,13 +1050,17 @@ export function collectBatchesFromObject3D(
       assignRenderOrder(exported, child, material)
       lineBatches.push(exported)
     } else if (
-      child instanceof THREE.Mesh &&
+      isExportMesh(child) &&
+      !isExportLineSegments2(child) &&
       !(child instanceof AcTrBatchedMesh)
     ) {
       if (!shouldExportPlainDrawable(child)) return
       const material = readExportMaterial(child)
       if (isTransparentImagePlaceholder(material)) return
-      const rawSlice = exportBufferGeometrySlice(child.geometry)
+      const rawSlice = omitNonFinitePrimitives(
+        exportBufferGeometrySlice(child.geometry),
+        3
+      )
       if (rawSlice.positions.length === 0) return
       // Pattern fills rebase like other meshes; hatch bases are shifted to the
       // same local offset in buildMeshBatch (world-baked verts caused blocky
@@ -975,7 +1071,8 @@ export function collectBatchesFromObject3D(
         material,
         child,
         slice,
-        offset
+        offset,
+        true
       )
       if (mesh) meshBatches.push(mesh)
     }

@@ -1,12 +1,14 @@
 import {
   AcDbBlockTableRecord,
   AcDbDatabase,
+  acdbHostApplicationServices,
+  AcDbLayerTableRecord,
   AcDbLayout,
   AcDbLine,
   AcDbMText,
   AcDbViewport,
-  acdbHostApplicationServices,
   AcGeBox2d,
+  AcGeMatrix3d,
   AcGePoint3d
 } from '@mlightcad/data-model'
 import pako from 'pako'
@@ -14,11 +16,14 @@ import { PDFDocument, PDFRawStream } from 'pdf-lib'
 
 import { exportDatabaseToPdf } from '../src/AcPdfExport'
 import { pdfEntityText } from '../src/pdf/AcPdfMarkedContent'
+import { AcPdfEntity } from '../src/renderer/AcPdfEntity'
 import { AcPdfMatrixUtil } from '../src/renderer/AcPdfMatrixUtil'
 import {
   buildModelToPaperMatrix,
-  isDefaultPaperSpaceViewport
+  isDefaultPaperSpaceViewport,
+  resolveViewportFrozenLayers
 } from '../src/viewport/AcPdfPaperViewport'
+import { AcPdfViewportContent } from '../src/viewport/AcPdfViewportContent'
 
 function createDb() {
   const db = new AcDbDatabase()
@@ -55,6 +60,74 @@ describe('AcPdfPaperViewport', () => {
         viewTarget: { x: 50, y: 40 }
       })
     ).toBe(false)
+  })
+
+  it('resolves VPLAYER frozen layer names from frozenLayerIds', () => {
+    const db = createDb()
+    const layer = new AcDbLayerTableRecord({ name: 'VpFrozen' })
+    db.tables.layerTable.add(layer)
+
+    const viewport = new AcDbViewport()
+    viewport.frozenLayerIds = [layer.objectId, 'missing']
+    db.tables.blockTable.modelSpace.appendEntity(viewport)
+
+    expect(resolveViewportFrozenLayers(viewport)).toEqual(['VpFrozen'])
+  })
+
+  it('skips shared model roots on VPLAYER-frozen layers without mutating them', () => {
+    const stroke = {
+      kind: 'stroke' as const,
+      points: [
+        { x: 0, y: 0 },
+        { x: 10, y: 0 }
+      ],
+      style: { rgb: { r: 0, g: 0, b: 0 }, opacity: 1, lineWidth: 0 }
+    }
+    const kept = new AcPdfEntity()
+    kept.layerName = 'Keep'
+    kept.addOp(stroke)
+    const frozen = new AcPdfEntity()
+    frozen.layerName = 'Frozen'
+    frozen.addOp(stroke)
+    const insertOnFrozen = new AcPdfEntity()
+    insertOnFrozen.layerName = 'Frozen'
+    insertOnFrozen.entityType = 'INSERT'
+    insertOnFrozen.insertName = 'BLK'
+    const insertChild = new AcPdfEntity()
+    insertChild.layerName = 'Other'
+    insertChild.addOp(stroke)
+    insertOnFrozen.addChild(insertChild)
+
+    const paper = new AcGeBox2d()
+    paper.min.set(0, 0)
+    paper.max.set(100, 100)
+    const content = new AcPdfViewportContent(
+      [kept, frozen, insertOnFrozen],
+      new AcGeMatrix3d(),
+      paper,
+      ['Frozen']
+    )
+
+    const writer = {
+      beginOcg: jest.fn(),
+      endMarked: jest.fn(),
+      beginEntity: jest.fn(),
+      beginActualText: jest.fn(),
+      save: jest.fn(),
+      restore: jest.fn(),
+      clipRect: jest.fn(),
+      drawOps: jest.fn()
+    }
+    const childPaint = jest.spyOn(insertChild, 'paint')
+
+    content.paint({ writer: writer as never })
+
+    // Only the unfrozen root draws; frozen entity and INSERT (plus children) skip.
+    expect(writer.drawOps).toHaveBeenCalledTimes(1)
+    expect(childPaint).not.toHaveBeenCalled()
+    expect(frozen.visible).toBe(true)
+    expect(insertOnFrozen.visible).toBe(true)
+    expect(insertChild.visible).toBe(true)
   })
 
   it('maps model view center to paper viewport center', () => {

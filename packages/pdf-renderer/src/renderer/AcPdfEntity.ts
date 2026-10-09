@@ -35,6 +35,12 @@ export interface AcPdfPaintContext {
    * they use this matrix alone — not the entity's own transform.
    */
   drawingRebase?: AcGeMatrix3d
+  /**
+   * Layer names frozen in the current paper-space viewport (VPLAYER). When
+   * set, nodes whose effective layer is in this set are skipped for this
+   * paint pass only — shared model-space trees are not mutated.
+   */
+  frozenLayers?: ReadonlySet<string>
 }
 
 /**
@@ -199,6 +205,12 @@ export class AcPdfEntity implements AcGiEntity {
     }
     const isInsert = !!this._insertName || this._entityType === 'INSERT'
     const layer = effectivePdfLayer(this._layerName, ctx.insertLayer)
+    // VPLAYER: skip this node (and INSERT children) when its effective layer
+    // is frozen in the active paper viewport. Checking at the INSERT node
+    // also hides cross-layer block fragments, matching AutoCAD.
+    if (ctx.frozenLayers?.has(layer)) {
+      return
+    }
     const ocgName = ctx.ocg?.ensure(layer).resourceName
     if (ocgName) {
       writer.beginOcg(ocgName)
