@@ -53,6 +53,8 @@ jest.mock('rbush', () => {
   }
 })
 
+import * as THREE from 'three'
+
 import { isEffectiveSpatialQueryHit } from '../src/editor/view/AcEdSpatialQueryResult'
 import { AcTrHierarchicalSpatialIndex } from '../src/spatialIndex/AcTrHierarchicalSpatialIndex'
 
@@ -376,5 +378,68 @@ describe('AcTrHierarchicalSpatialIndex', () => {
     expect(
       (stats.rbushChildCount ?? 0) + (stats.linearChildCount ?? 0)
     ).toBe(1)
+  })
+
+  it('expands shared block child boxes on search, not at registration', () => {
+    const spatialIndex = new AcTrHierarchicalSpatialIndex()
+    const boxes = [{ minX: 0, minY: 0, maxX: 10, maxY: 10, id: 'part' }]
+    spatialIndex.insert({
+      minX: 100,
+      minY: 0,
+      maxX: 200,
+      maxY: 100,
+      id: 'insert-1'
+    })
+    spatialIndex.setLazyChildSource('insert-1', {
+      boxes,
+      matrix: new THREE.Matrix4().makeTranslation(100, 0, 0)
+    })
+
+    expect(spatialIndex.hasChildIndex('insert-1')).toBe(true)
+    expect(spatialIndex.all().map(item => item.id)).toEqual(['insert-1'])
+
+    expect(
+      spatialIndex.collides({
+        minX: 150,
+        minY: 50,
+        maxX: 151,
+        maxY: 51
+      })
+    ).toBe(false)
+    expect(
+      spatialIndex.collides({
+        minX: 101,
+        minY: 1,
+        maxX: 102,
+        maxY: 2
+      })
+    ).toBe(true)
+
+    const gap = spatialIndex.search({
+      minX: 150,
+      minY: 50,
+      maxX: 151,
+      maxY: 51
+    })
+    expect(gap).toHaveLength(1)
+    expect(gap[0]?.children).toEqual([])
+    expect(isEffectiveSpatialQueryHit(gap[0]!)).toBe(false)
+
+    const hit = spatialIndex.search({
+      minX: 101,
+      minY: 1,
+      maxX: 102,
+      maxY: 2
+    })
+    expect(hit).toHaveLength(1)
+    expect(hit[0]?.children).toHaveLength(1)
+    expect(hit[0]?.children?.[0]).toMatchObject({
+      id: 'part',
+      minX: 100,
+      minY: 0,
+      maxX: 110,
+      maxY: 10
+    })
+    expect(boxes).toEqual([{ minX: 0, minY: 0, maxX: 10, maxY: 10, id: 'part' }])
   })
 })

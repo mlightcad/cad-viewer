@@ -523,6 +523,27 @@ describe('AcTrGroup dispose', () => {
     expect(group.children.length).toBe(beforeChildren)
   })
 
+  it('fastDeepClone shares geometry and child boxes for a single-child template', () => {
+    const context = new AcTrRenderContext()
+    const line = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const group = new AcTrGroup([line], context)
+    const sourceGeometry = (group.children[0] as THREE.Mesh).geometry
+    const sourceBoxes = group.wcsChildBoxes
+
+    const first = group.fastDeepClone() as AcTrGroup
+    const second = group.fastDeepClone() as AcTrGroup
+
+    expect(group.isCompacted).toBe(true)
+    expect((first.children[0] as THREE.Mesh).geometry).toBe(sourceGeometry)
+    expect((second.children[0] as THREE.Mesh).geometry).toBe(sourceGeometry)
+    expect(getSceneDrawableUserData(first.children[0]).sharesTemplateGeometry).toBe(
+      true
+    )
+    expect(first.peekLazyChildBoxes()?.boxes).toBe(sourceBoxes)
+    expect(second.peekLazyChildBoxes()?.boxes).toBe(sourceBoxes)
+    expect(first.childBoxCount).toBe(sourceBoxes.length)
+  })
+
   it('fastDeepClone auto-compacts templates with 2+ children so clones share geometry', () => {
     const context = new AcTrRenderContext()
     const lineA = createLine('line-a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
