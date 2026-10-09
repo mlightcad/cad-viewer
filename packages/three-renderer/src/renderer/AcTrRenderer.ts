@@ -542,12 +542,14 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   /**
    * Restores or clears session-scoped missed fonts (main + MText workers).
    * Fire-and-forget worker sync so document switches stay synchronous.
+   * Swallow worker rejections (e.g. "Renderer terminated" when destroy()
+   * runs before the sync settles) so they do not become unhandled.
    */
   replaceMissedFonts(fonts: Record<string, number>): void {
     FontManager.instance.replaceMissedFonts(fonts)
-    void AcTrMTextRenderer.getInstance().replaceMissedFonts(
-      FontManager.instance.missedFonts
-    )
+    void AcTrMTextRenderer.getInstance()
+      .replaceMissedFonts(FontManager.instance.missedFonts)
+      .catch(() => {})
   }
 
   /** Clears session-scoped missed fonts for the active document. */
