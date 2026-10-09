@@ -736,3 +736,147 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     expect(lineBatches[0]!.renderOrder).toBeUndefined()
   })
 })
+
+function worldPositions(
+  positions: Float32Array,
+  offset: [number, number, number]
+): number[] {
+  const world: number[] = []
+  for (let i = 0; i < positions.length; i += 3) {
+    world.push(
+      toWcsCoord(positions[i]!, offset[0]),
+      toWcsCoord(positions[i + 1]!, offset[1]),
+      toWcsCoord(positions[i + 2]!, offset[2])
+    )
+  }
+  return world
+}
+
+function sharedEntity(objectId: string, drawable: THREE.Object3D) {
+  const entity = new AcTrEntity(new AcTrRenderContext())
+  entity.objectId = objectId
+  entity.visible = true
+  entity.add(drawable)
+  return entity
+}
+
+describe('collectBatchesFromObject3D shared block instances', () => {
+  it('bakes every visible INSERT of a shared line', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff })
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+    const first = new THREE.LineSegments(geometry, material)
+    first.updateMatrixWorld(true)
+    getSceneDrawableUserData(first).sharesTemplateGeometry = true
+    getSceneDrawableUserData(first).bboxIntersectionCheck = true
+
+    const second = new THREE.LineSegments(geometry, material)
+    second.position.set(0, 100, 0)
+    second.updateMatrixWorld(true)
+    getSceneDrawableUserData(second).sharesTemplateGeometry = true
+
+    const group = new AcTrBatchedGroup()
+    group.addEntity(sharedEntity('insert-a', first))
+    group.addEntity(sharedEntity('insert-b', second))
+
+    const { lineBatches } = collectBatchesFromObject3D(group)
+    expect(lineBatches).toHaveLength(1)
+    const exported = lineBatches[0]!
+    expect(exported.excludeFromOsnap).toBe(true)
+    expect(exported.positions.length).toBe(12)
+    const world = worldPositions(exported.positions, exported.offset)
+    expect(world[0]).toBeCloseTo(0)
+    expect(world[1]).toBeCloseTo(0)
+    expect(world[3]).toBeCloseTo(10)
+    expect(world[4]).toBeCloseTo(0)
+    expect(world[6]).toBeCloseTo(0)
+    expect(world[7]).toBeCloseTo(100)
+    expect(world[9]).toBeCloseTo(10)
+    expect(world[10]).toBeCloseTo(100)
+
+    group.setEntityVisible('insert-a', false)
+    const hidden = collectBatchesFromObject3D(group).lineBatches
+    expect(hidden).toHaveLength(1)
+    const hiddenWorld = worldPositions(hidden[0]!.positions, hidden[0]!.offset)
+    expect(hiddenWorld).toHaveLength(6)
+    expect(hiddenWorld[1]).toBeCloseTo(100)
+    expect(hiddenWorld[4]).toBeCloseTo(100)
+  })
+
+  it('bakes a rotated shared line into world space', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff })
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+    const line = new THREE.LineSegments(geometry, material)
+    line.rotation.z = Math.PI / 2
+    line.position.set(100, 0, 0)
+    line.updateMatrixWorld(true)
+    getSceneDrawableUserData(line).sharesTemplateGeometry = true
+
+    const group = new AcTrBatchedGroup()
+    group.addEntity(sharedEntity('insert-a', line))
+
+    const { lineBatches } = collectBatchesFromObject3D(group)
+    expect(lineBatches).toHaveLength(1)
+    const world = worldPositions(
+      lineBatches[0]!.positions,
+      lineBatches[0]!.offset
+    )
+    expect(world[0]).toBeCloseTo(100)
+    expect(world[1]).toBeCloseTo(0)
+    expect(world[3]).toBeCloseTo(100)
+    expect(world[4]).toBeCloseTo(10)
+  })
+
+  it('bakes shared meshes and points', () => {
+    const triangle = new THREE.BufferGeometry()
+    triangle.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3)
+    )
+    triangle.setIndex([0, 1, 2])
+    const mesh = new THREE.Mesh(
+      triangle,
+      new THREE.MeshBasicMaterial({ color: 0x00ff00 })
+    )
+    mesh.position.set(50, 0, 0)
+    mesh.updateMatrixWorld(true)
+    getSceneDrawableUserData(mesh).sharesTemplateGeometry = true
+
+    const pointGeometry = new THREE.BufferGeometry()
+    pointGeometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0], 3)
+    )
+    const point = new THREE.Points(
+      pointGeometry,
+      new THREE.PointsMaterial({ color: 0xffffff })
+    )
+    point.position.set(5, 6, 0)
+    point.updateMatrixWorld(true)
+    getSceneDrawableUserData(point).sharesTemplateGeometry = true
+
+    const group = new AcTrBatchedGroup()
+    group.addEntity(sharedEntity('mesh-a', mesh))
+    group.addEntity(sharedEntity('point-a', point))
+
+    const { meshBatches } = collectBatchesFromObject3D(group)
+    const fill = meshBatches.find(batch => !batch.points)
+    const points = meshBatches.find(batch => batch.points)
+    expect(fill).toBeDefined()
+    expect(points).toBeDefined()
+    const fillWorld = worldPositions(fill!.positions, fill!.offset)
+    expect(fillWorld[0]).toBeCloseTo(50)
+    expect(fillWorld[3]).toBeCloseTo(51)
+    expect(fillWorld[7]).toBeCloseTo(1)
+    const pointWorld = worldPositions(points!.positions, points!.offset)
+    expect(pointWorld[0]).toBeCloseTo(5)
+    expect(pointWorld[1]).toBeCloseTo(6)
+  })
+})

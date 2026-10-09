@@ -173,6 +173,12 @@ export class AcTrSharedGeometryBatch extends THREE.Object3D {
     } else if (this._drawable) {
       this._drawable.count = this._count
     }
+    if (bboxOnly) {
+      const target = this._line2Objects[index] ?? this._drawable
+      if (target) {
+        getSceneDrawableUserData(target).bboxIntersectionCheck = true
+      }
+    }
     return index
   }
 

@@ -15,11 +15,13 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 
 import {
+  bakePlainDrawableSlice,
   compactIndexedSlice,
   copyFloat32Range,
   copyUint32Range,
   exportPlainDrawableSlice,
-  readBatchWorldOffset
+  readBatchWorldOffset,
+  rebasePlainDrawableSliceAroundCentroid
 } from './AcExBatchBuffers'
 import {
   encodeTextureForExport,
@@ -668,10 +670,199 @@ function exportBatchedPoint(
 }
 
 /**
+ * GPU-instanced block leaf produced by {@link AcTrSharedGeometryBatch}.
+ * Geometry stays in template space; each INSERT is one column of `instanceMatrix`.
+ */
+type InstancedExportDrawable = THREE.Object3D & {
+  isInstancedMesh: true
+  instanceMatrix: THREE.InstancedBufferAttribute
+  count: number
+  geometry: THREE.BufferGeometry
+}
+
+const _instanceMatrix = /*@__PURE__*/ new THREE.Matrix4()
+const _instanceWorld = /*@__PURE__*/ new THREE.Matrix4()
+const _instancePose = /*@__PURE__*/ new THREE.Object3D()
+_instancePose.matrixAutoUpdate = false
+
+function isInstancedExportDrawable(
+  object: THREE.Object3D
+): object is InstancedExportDrawable {
+  const candidate = object as Partial<InstancedExportDrawable>
+  return (
+    candidate.isInstancedMesh === true &&
+    candidate.instanceMatrix != null &&
+    typeof candidate.count === 'number' &&
+    candidate.geometry != null
+  )
+}
+
+/**
+ * Selection overlays for shared block geometry sit in the batch, not in the
+ * highlight group, so the usual overlay filters do not see them.
+ */
+function isSharedTemplateHighlight(object: THREE.Object3D): boolean {
+  if (object.renderOrder < 10000) return false
+  if ((object as { isInstancedMesh?: boolean }).isInstancedMesh === true) {
+    return false
+  }
+  return getSceneDrawableUserData(object).sharesTemplateGeometry === true
+}
+
+/** Hidden and deleted slots are stored as a zero scale matrix. */
+function isDegenerateInstanceMatrix(matrix: THREE.Matrix4): boolean {
+  const e = matrix.elements
+  const sx = Math.hypot(e[0]!, e[1]!, e[2]!)
+  const sy = Math.hypot(e[4]!, e[5]!, e[6]!)
+  const sz = Math.hypot(e[8]!, e[9]!, e[10]!)
+  return sx + sy + sz < 1e-8
+}
+
+/**
+ * Bakes every visible INSERT of one shared template into a single world-space
+ * slice, then rebases around the centroid.
+ */
+function expandInstancedGeometry(object: InstancedExportDrawable):
+  | {
+      slice: AcExBufferGeometrySlice
+      offset: [number, number, number]
+    }
+  | undefined {
+  const template = exportBufferGeometrySlice(object.geometry)
+  const floatsPerInstance = template.positions.length
+  if (floatsPerInstance === 0) return undefined
+
+  object.updateMatrixWorld(true)
+  const array = object.instanceMatrix.array as Float32Array
+  const indexCount = template.indices?.length ?? 0
+  let visible = 0
+  for (let i = 0; i < object.count; i++) {
+    _instanceMatrix.fromArray(array, i * 16)
+    if (!isDegenerateInstanceMatrix(_instanceMatrix)) visible++
+  }
+  if (visible === 0) return undefined
+
+  const positions = new Float32Array(visible * floatsPerInstance)
+  const indices =
+    template.indices != null ? new Uint32Array(visible * indexCount) : undefined
+  const vertexCount = floatsPerInstance / 3
+  let slot = 0
+  for (let i = 0; i < object.count; i++) {
+    _instanceMatrix.fromArray(array, i * 16)
+    if (isDegenerateInstanceMatrix(_instanceMatrix)) continue
+    _instanceWorld.multiplyMatrices(object.matrixWorld, _instanceMatrix)
+    const baked = bakePlainDrawableSlice(template, _instanceWorld)
+    positions.set(baked.positions, slot * floatsPerInstance)
+    if (indices && baked.indices) {
+      const base = slot * vertexCount
+      for (let k = 0; k < baked.indices.length; k++) {
+        indices[slot * indexCount + k] = baked.indices[k]! + base
+      }
+    }
+    slot++
+  }
+
+  const rebased = rebasePlainDrawableSliceAroundCentroid({
+    positions,
+    indices
+  })
+  return { slice: rebased.slice, offset: rebased.offset }
+}
+
+function meshNeedsPerInstanceExport(material: THREE.Material): boolean {
+  const style = readMaterialStyle(material)
+  const mapped = material as THREE.MeshBasicMaterial
+  return !!(style.hatchPattern || style.gradientFill || mapped.map)
+}
+
+function forEachVisibleInstanceMatrix(
+  object: InstancedExportDrawable,
+  visit: (matrixWorld: THREE.Matrix4) => void
+): void {
+  object.updateMatrixWorld(true)
+  const array = object.instanceMatrix.array as Float32Array
+  for (let i = 0; i < object.count; i++) {
+    _instanceMatrix.fromArray(array, i * 16)
+    if (isDegenerateInstanceMatrix(_instanceMatrix)) continue
+    _instanceWorld.multiplyMatrices(object.matrixWorld, _instanceMatrix)
+    visit(_instanceWorld)
+  }
+}
+
+function pushInstancedLine(
+  object: InstancedExportDrawable,
+  lineBatches: AcExLineBatch[]
+): void {
+  const expanded = expandInstancedGeometry(object)
+  if (!expanded) return
+  const material = readExportMaterial(object)
+  const { color, layer, linePattern } = readMaterialStyle(material)
+  const lineDistances = linePattern
+    ? computeLineDistancesForSegments(expanded.slice.positions)
+    : undefined
+  const exported: AcExLineBatch = {
+    layer,
+    color,
+    offset: expanded.offset,
+    linePattern,
+    lineDistances,
+    ...expanded.slice
+  }
+  if (drawableExcludesFromOsnap(object)) {
+    exported.excludeFromOsnap = true
+  }
+  assignRenderOrder(exported, object, material)
+  lineBatches.push(exported)
+}
+
+function pushInstancedMesh(
+  object: InstancedExportDrawable,
+  meshBatches: AcExMeshBatch[],
+  asPoints: boolean
+): void {
+  const material = readExportMaterial(object)
+  if (!asPoints && isTransparentImagePlaceholder(material)) return
+
+  if (!asPoints && meshNeedsPerInstanceExport(material)) {
+    const template = exportBufferGeometrySlice(object.geometry)
+    if (template.positions.length === 0) return
+    forEachVisibleInstanceMatrix(object, matrixWorld => {
+      const baked = bakePlainDrawableSlice(template, matrixWorld)
+      const rebased = rebasePlainDrawableSliceAroundCentroid(baked)
+      _instancePose.matrix.copy(matrixWorld)
+      _instancePose.matrixWorld.copy(matrixWorld)
+      _instancePose.matrixWorldNeedsUpdate = false
+      const mesh = buildMeshBatch(
+        object.geometry,
+        material,
+        _instancePose,
+        rebased.slice,
+        rebased.offset
+      )
+      if (mesh) meshBatches.push(mesh)
+    })
+    return
+  }
+
+  const expanded = expandInstancedGeometry(object)
+  if (!expanded) return
+  const mesh = buildMeshBatch(
+    object.geometry,
+    material,
+    object,
+    expanded.slice,
+    expanded.offset
+  )
+  if (!mesh) return
+  meshBatches.push(asPoints ? { ...mesh, points: true } : mesh)
+}
+
+/**
  * Walks a THREE object subtree and collects line/mesh batches for HTML export.
  * Recognizes `AcTrBatchedLine`, `AcTrBatchedLine2`, `AcTrBatchedMesh`,
- * `AcTrBatchedPoint`, and plain `THREE.LineSegments` / `LineSegments2` /
- * `THREE.Mesh` nodes.
+ * `AcTrBatchedPoint`, plain `THREE.LineSegments` / `LineSegments2` / `THREE.Mesh`
+ * nodes, and GPU-instanced block leaves (`instanceMatrix` on lines, meshes,
+ * and points).
  *
  * @param root - Layout or scene root to traverse.
  * @returns Batches grouped by geometry kind, ready to attach to {@link AcExLayoutSnapshot}.
@@ -685,8 +876,20 @@ export function collectBatchesFromObject3D(
   root.traverse(child => {
     if (
       isHighlightOverlayDescendant(child) ||
-      isHighlightCloneDrawable(child)
+      isHighlightCloneDrawable(child) ||
+      isSharedTemplateHighlight(child)
     ) {
+      return
+    }
+    if (isInstancedExportDrawable(child)) {
+      if (!shouldExportPlainDrawable(child)) return
+      if ((child as unknown as THREE.Points).isPoints === true) {
+        pushInstancedMesh(child, meshBatches, true)
+      } else if (child instanceof THREE.LineSegments) {
+        pushInstancedLine(child, lineBatches)
+      } else if (child instanceof THREE.Mesh) {
+        pushInstancedMesh(child, meshBatches, false)
+      }
       return
     }
     if (child instanceof AcTrBatchedLine) {
