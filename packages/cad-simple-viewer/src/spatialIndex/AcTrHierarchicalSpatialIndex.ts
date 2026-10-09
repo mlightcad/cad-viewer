@@ -1,5 +1,6 @@
 import { AcDbObjectId } from '@mlightcad/data-model'
 import { AcTrGroup } from '@mlightcad/three-renderer'
+import * as THREE from 'three'
 
 import {
   AcEdSpatialQueryResultItem,
@@ -48,10 +49,22 @@ import {
  * where entities are grouped hierarchically but still require fast
  * spatial queries such as selection, picking, and hit-testing.
  */
+/**
+ * Block-local child boxes plus the INSERT matrix that maps them into WCS.
+ *
+ * Stored once per block reference until a spatial query needs the expanded
+ * child index. The box array is shared across instances of one template.
+ */
+export interface AcTrLazySpatialChildren {
+  boxes: readonly AcEdSpatialQueryResultItem[]
+  matrix: THREE.Matrix4
+}
+
 export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
   static THRESHOLD = 100
   private readonly rootIndex: AcTrSpatialIndex<AcEdSpatialQueryResultItem>
   private readonly childIndexes = new Map<string, AcTrSpatialIndex>()
+  private readonly lazyChildren = new Map<string, AcTrLazySpatialChildren>()
 
   /**
    * Creates a hierarchical spatial index instance.
@@ -130,6 +143,7 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
   ): void {
     this.rootIndex.remove(item, equals)
     this.childIndexes.delete(item.id)
+    this.lazyChildren.delete(item.id)
   }
 
   /**
@@ -140,6 +154,7 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
   removeById(id: AcDbObjectId): void {
     this.rootIndex.removeById(id)
     this.childIndexes.delete(id)
+    this.lazyChildren.delete(id)
   }
 
   /**
@@ -152,6 +167,7 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
     this.rootIndex.clear()
     this.childIndexes.forEach(i => i.clear())
     this.childIndexes.clear()
+    this.lazyChildren.clear()
   }
 
   /**
@@ -182,6 +198,7 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
     const result: AcEdSpatialQueryResultItemEx[] = []
 
     for (const hit of level1) {
+      this.materializeLazyChildren(hit.id)
       const child = this.childIndexes.get(hit.id)
       if (!child) {
         if (
@@ -237,6 +254,7 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
    *
    * A fast root-level rejection is performed first. If root-level candidates
    * exist, each candidate is checked as follows:
+   * - deferred INSERT children are expanded first, same as {@link search};
    * - without child index: treated as colliding immediately;
    * - with child index: delegated to child-level `collides`.
    *
@@ -248,6 +266,7 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
 
     const level1 = this.rootIndex.search(bbox)
     return level1.some(hit => {
+      this.materializeLazyChildren(hit.id)
       const child = this.childIndexes.get(hit.id)
       return child ? child.collides(bbox) : true
     })
@@ -320,7 +339,21 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
    * @returns `true` if a child index is registered for `id`.
    */
   hasChildIndex(id: AcDbObjectId) {
-    return this.childIndexes.has(id)
+    return this.childIndexes.has(id) || this.lazyChildren.has(id)
+  }
+
+  /**
+   * Remembers block-local child boxes for one INSERT without copying them.
+   *
+   * {@link search} expands the boxes into a child index the first time a query
+   * hits this id. Extents queries that only read {@link all} stay on the root
+   * box.
+   *
+   * @param id - INSERT object id.
+   * @param source - Shared template boxes and this instance's matrix.
+   */
+  setLazyChildSource(id: AcDbObjectId, source: AcTrLazySpatialChildren) {
+    this.lazyChildren.set(id, source)
   }
 
   /**
@@ -432,16 +465,32 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
   }
 
   /**
-   * Chooses a child index implementation by item count.
+   * Expands a deferred INSERT into a child index.
    *
-   * Selection strategy:
-   * - `size > THRESHOLD`: use R-tree index for better large-set query performance;
-   * - `0 < size <= THRESHOLD`: use linear index to minimize setup overhead;
-   * - `size <= 0`: return `undefined` (no index required).
+   * No-op when the id was already expanded or has no lazy source. Does not
+   * insert another root box; the caller registered the aggregate bbox.
    *
-   * @param size Number of child items.
-   * @returns A child index instance or `undefined` for empty datasets.
+   * @param id - INSERT object id whose query hit needs child boxes.
    */
+  private materializeLazyChildren(id: string) {
+    if (this.childIndexes.has(id)) return
+    const source = this.lazyChildren.get(id)
+    if (!source) return
+    this.lazyChildren.delete(id)
+    const items: AcEdSpatialQueryResultItem[] = []
+    for (let i = 0; i < source.boxes.length; i++) {
+      const box = source.boxes[i]
+      if (!box || !isFiniteSpatialBBox(box)) continue
+      items.push(transformSpatialBox(box, source.matrix))
+    }
+    const finiteItems = uniquifySpatialItemIds(items)
+    if (finiteItems.length === 0) return
+    const spatialIndex = this.createIndexBySize(finiteItems.length)
+    if (!spatialIndex) return
+    spatialIndex.load(finiteItems)
+    this.setChildIndex(id, spatialIndex)
+  }
+
   private createIndexBySize(size: number) {
     if (size > AcTrHierarchicalSpatialIndex.THRESHOLD) {
       return new AcTrRBushSpatialIndex()
@@ -451,4 +500,37 @@ export class AcTrHierarchicalSpatialIndex implements AcTrSpatialIndex {
     }
     return undefined
   }
+}
+
+/**
+ * Maps one block-local AABB through an INSERT matrix into a WCS AABB.
+ *
+ * @param box - Axis-aligned box in block space.
+ * @param matrix - INSERT transform.
+ * @returns The transformed axis-aligned box, with the same id.
+ */
+function transformSpatialBox(
+  box: AcEdSpatialQueryResultItem,
+  matrix: THREE.Matrix4
+): AcEdSpatialQueryResultItem {
+  const e = matrix.elements
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  const xs = [box.minX, box.maxX]
+  const ys = [box.minY, box.maxY]
+  for (let i = 0; i < 2; i++) {
+    for (let j = 0; j < 2; j++) {
+      const x = xs[i]
+      const y = ys[j]
+      const wx = e[0] * x + e[4] * y + e[12]
+      const wy = e[1] * x + e[5] * y + e[13]
+      minX = Math.min(minX, wx)
+      minY = Math.min(minY, wy)
+      maxX = Math.max(maxX, wx)
+      maxY = Math.max(maxY, wy)
+    }
+  }
+  return { minX, minY, maxX, maxY, id: box.id }
 }

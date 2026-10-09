@@ -80,6 +80,7 @@ import {
   acedNeedsCrossingGeometryRefine
 } from '../editor/view/AcEdSelectionBoxIntersect'
 import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult'
+import type { AcTrLazySpatialChildren } from '../spatialIndex'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
@@ -3945,6 +3946,14 @@ export class AcTrView2d extends AcEdBaseView {
    * with their union before spatial-index registration.
    */
   private syncGroupSpatialBoundsForIndexing(group: AcTrGroup) {
+    const lazy = group.peekLazyChildBoxes()
+    if (lazy && lazy.boxes.length > 0) {
+      const userData = group.userData as {
+        lazySpatialChildren?: AcTrLazySpatialChildren
+      }
+      userData.lazySpatialChildren = lazy
+      return
+    }
     group.refreshWcsChildBoxesFromChildren()
     if (group.wcsChildBoxes.length === 0) {
       return
@@ -4023,20 +4032,25 @@ export class AcTrView2d extends AcEdBaseView {
       // AcDbRenderingCache.draw (and similar paths such as AcDbTable) already call
       // applyMatrix on the group, which updates wcsBbbox and wcsChildBoxes to WCS.
       // Do not multiply group.matrix here — that would double-transform spatial bounds.
-      if (process.env.NODE_ENV !== 'production') {
+      const lazyChildren = (
+        group.userData as { lazySpatialChildren?: AcTrLazySpatialChildren }
+      ).lazySpatialChildren
+      if (process.env.NODE_ENV !== 'production' && !lazyChildren) {
         assertAcTrGroupWcsBboxesConsistent(group)
       }
 
-      const groupChildBoxes: AcEdSpatialQueryResultItem[] =
-        group.wcsChildBoxes.map(box => ({
-          minX: box.minX,
-          minY: box.minY,
-          maxX: box.maxX,
-          maxY: box.maxY,
-          id: box.id
-        }))
-      const aggregateSpatialBbox =
-        groupChildBoxes.length > 0
+      const groupChildBoxes: AcEdSpatialQueryResultItem[] = lazyChildren
+        ? []
+        : group.wcsChildBoxes.map(box => ({
+            minX: box.minX,
+            minY: box.minY,
+            maxX: box.maxX,
+            maxY: box.maxY,
+            id: box.id
+          }))
+      const aggregateSpatialBbox = lazyChildren
+        ? group.wcsBbox.clone()
+        : groupChildBoxes.length > 0
           ? unionGroupWcsChildBoxes(group)
           : group.wcsBbox.clone()
       if (groupChildBoxes.length > 0) {
@@ -4094,7 +4108,12 @@ export class AcTrView2d extends AcEdBaseView {
         const entityUserData = entity.userData as {
           spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
         }
-        if (!registeredChildIndex && groupChildBoxes.length > 0) {
+        if (!registeredChildIndex && lazyChildren) {
+          ;(
+            entity.userData as { lazySpatialChildren?: AcTrLazySpatialChildren }
+          ).lazySpatialChildren = lazyChildren
+          registeredChildIndex = true
+        } else if (!registeredChildIndex && groupChildBoxes.length > 0) {
           entityUserData.spatialIndexChildBoxes = groupChildBoxes
           registeredChildIndex = true
         }

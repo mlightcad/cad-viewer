@@ -3996,15 +3996,21 @@ function createPointObject(batch: AcExMeshBatch): THREE.Points | null {
 }
 
 function createMeshObject(batch: AcExMeshBatch): THREE.Mesh | null {
-  if (!batch.indices || batch.indices.length < 3) {
-    return null
+  const vertexCount = (batch.positions.length / 3) | 0
+  let indices = batch.indices
+  if (!indices || indices.length < 3) {
+    // Shared block fills are often triangle lists without an index. The live
+    // viewer draws them directly; playback needs an index buffer.
+    if (vertexCount < 3 || vertexCount % 3 !== 0) return null
+    indices = new Uint32Array(vertexCount)
+    for (let i = 0; i < vertexCount; i++) indices[i] = i
   }
   const geometry = new THREE.BufferGeometry()
   geometry.setAttribute(
     'position',
     new THREE.BufferAttribute(batch.positions, 3)
   )
-  geometry.setIndex(new THREE.BufferAttribute(batch.indices, 1))
+  geometry.setIndex(new THREE.BufferAttribute(indices, 1))
   if (
     batch.gradientFill &&
     batch.gradientPositions &&

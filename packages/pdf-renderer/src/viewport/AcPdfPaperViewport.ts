@@ -106,3 +106,29 @@ export function resolveViewportBoxes(
   const twist = Number.isFinite(gi.viewTwistAngle) ? gi.viewTwistAngle : 0
   return { paper, model, twist }
 }
+
+/**
+ * Resolves VPLAYER frozen layer names for a paper-space viewport.
+ *
+ * Prefers {@link AcGiViewport.frozenLayers} from `toGiViewport()`; falls back
+ * to resolving soft-pointer ids on older data-model builds that omit that
+ * field.
+ */
+export function resolveViewportFrozenLayers(viewport: AcDbViewport): string[] {
+  const gi = viewport.toGiViewport() as AcGiViewport & {
+    frozenLayers?: readonly string[]
+  }
+  if (gi.frozenLayers && gi.frozenLayers.length > 0) {
+    return [...gi.frozenLayers]
+  }
+  const ids = viewport.frozenLayerIds
+  if (!ids?.length) return []
+  const layerTable = viewport.database?.tables.layerTable
+  if (!layerTable) return []
+  const names: string[] = []
+  for (const id of ids) {
+    const layer = layerTable.getIdAt(id)
+    if (layer) names.push(layer.name)
+  }
+  return names
+}

@@ -202,6 +202,7 @@
         <el-tab-pane
           :label="t('dialog.exportHtmlDlg.tabSecurity')"
           name="security"
+          lazy
           :disabled="form.exportFormat === 'multi'"
         >
           <div class="ml-export-html-dlg__tab-body">
@@ -259,13 +260,23 @@
               class="ml-export-html-dlg__section"
             >
               <div class="ml-export-html-dlg__password-row">
+                <!--
+                  Optional field: block password-manager autofill/auto-generate.
+                  Lazy security tab keeps the input out of the DOM until opened;
+                  readonly-until-focus stops fill on mount; new-password matches
+                  the HTML converter example.
+                -->
                 <el-input
                   v-model="form.password"
                   type="password"
+                  autocomplete="new-password"
+                  name="mlcad-html-export-password"
                   show-password
                   clearable
+                  :readonly="passwordFieldLocked"
                   :placeholder="t('dialog.exportHtmlDlg.passwordPlaceholder')"
                   class="ml-export-html-dlg__password-input"
+                  @focus="unlockPasswordField"
                 />
                 <div class="ml-export-html-dlg__password-actions">
                   <el-button @click="generatePassword">
@@ -316,7 +327,7 @@ import {
   ElTabPane,
   ElTabs
 } from 'element-plus'
-import { computed, reactive, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MlBaseDialog from '../common/MlBaseDialog.vue'
@@ -390,6 +401,12 @@ const { t } = useI18n()
 
 const activeTab = ref<'data' | 'display' | 'security'>('data')
 
+/**
+ * When `true`, the password input is read-only so managers cannot autofill or
+ * auto-generate into the empty optional field before the user focuses it.
+ */
+const passwordFieldLocked = ref(true)
+
 /** Bridges `v-model` on the base dialog to `modelValue` / `update:modelValue`. */
 const visible = computed({
   get: () => props.modelValue,
@@ -423,7 +440,13 @@ function resetForm() {
   form.expiryDays = 'never'
   form.customExpiresAt = defaultCustomExpiresAt()
   form.password = ''
+  passwordFieldLocked.value = true
   activeTab.value = 'data'
+}
+
+/** Allows typing or Generate after the user intentionally focuses the field. */
+function unlockPasswordField() {
+  passwordFieldLocked.value = false
 }
 
 /**
@@ -458,6 +481,7 @@ function isPastExpiryDate(date: Date): boolean {
  * Fills {@link form.password} with a random alphanumeric string.
  */
 function generatePassword() {
+  unlockPasswordField()
   const bytes = new Uint8Array(12)
   crypto.getRandomValues(bytes)
   form.password = Array.from(
@@ -492,9 +516,14 @@ async function copyPassword() {
 
 /**
  * Invoked when the dialog opens; resets the form so each export starts from defaults.
+ * Clears the password again after mount in case a manager fills asynchronously.
  */
 function handleOpen() {
   resetForm()
+  void nextTick(() => {
+    form.password = ''
+    passwordFieldLocked.value = true
+  })
 }
 
 /**
