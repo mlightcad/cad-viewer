@@ -327,7 +327,57 @@ export class AcTrViewportView extends AcTrBaseView {
     this._renderer.setViewport(gl.x, gl.y, gl.width, gl.height)
     this._renderer.setScissor(gl.x, gl.y, gl.width, gl.height)
     this._renderer.setScissorTest(true)
-    this._renderer.render(scene, this._camera)
-    this._renderer.setScissorTest(false)
+
+    try {
+      this.withFrozenLayersHidden(scene, () => {
+        this._renderer.render(scene, this._camera)
+      })
+    } finally {
+      this._renderer.setScissorTest(false)
+    }
+  }
+
+  /**
+   * Runs `draw` while model-space layers frozen in this viewport (VPLAYER /
+   * DXF group 331) stay hidden, then restores their previous visibility.
+   *
+   * The snap loupe uses this around its nested model pass so frozen layers
+   * stay hidden there as well. Restoration runs even when `draw` throws.
+   *
+   * @param scene - Model-space scene whose direct children are layer groups.
+   * @param draw - Render callback that must observe the frozen-layer state.
+   */
+  withFrozenLayersHidden(scene: THREE.Object3D, draw: () => void): void {
+    const restored = this.hideFrozenLayers(scene)
+    try {
+      draw()
+    } finally {
+      for (const [object, visible] of restored) {
+        object.visible = visible
+      }
+    }
+  }
+
+  /**
+   * Temporarily hides model-space layer groups listed in
+   * {@link AcGiViewport.frozenLayers}. Layer groups are expected to use the
+   * AutoCAD layer name as {@link THREE.Object3D.name}.
+   *
+   * @returns Entries whose `visible` flag was changed, for restoration.
+   */
+  private hideFrozenLayers(
+    scene: THREE.Object3D
+  ): Array<[THREE.Object3D, boolean]> {
+    const frozen = this._viewport.frozenLayers
+    if (!frozen || frozen.length === 0) return []
+
+    const frozenNames = new Set(frozen)
+    const restored: Array<[THREE.Object3D, boolean]> = []
+    for (const child of scene.children) {
+      if (!frozenNames.has(child.name) || !child.visible) continue
+      restored.push([child, child.visible])
+      child.visible = false
+    }
+    return restored
   }
 }

@@ -1,6 +1,7 @@
 import {
   AcDbBlockTableRecord,
   AcDbDatabase,
+  AcDbLayerTableRecord,
   AcDbViewport,
   AcGePoint3d
 } from '@mlightcad/data-model'
@@ -49,5 +50,29 @@ describe('collectLayoutViewports', () => {
     expect(viewports![0]!.twist).toBeCloseTo(Math.PI / 6)
     expect(viewports![0]!.model.minX).toBeLessThan(viewports![0]!.model.maxX)
     expect(viewports![0]!.model.minY).toBeLessThan(viewports![0]!.model.maxY)
+  })
+
+  it('includes resolved VPLAYER frozen layer names on the snapshot', () => {
+    const db = new AcDbDatabase()
+    const layer = new AcDbLayerTableRecord({ name: 'VpFrozen' })
+    db.tables.layerTable.add(layer)
+
+    const paper = new AcDbBlockTableRecord()
+    paper.name = '*Paper_Space'
+    db.tables.blockTable.add(paper)
+
+    const userVp = new AcDbViewport()
+    userVp.centerPoint = new AcGePoint3d(100, 80, 0)
+    userVp.width = 200
+    userVp.height = 160
+    userVp.viewCenter = new AcGePoint3d(0, 0, 0)
+    userVp.viewHeight = 800
+    userVp.viewTarget = new AcGePoint3d(50, 40, 0)
+    userVp.frozenLayerIds = [layer.objectId]
+    paper.appendEntity(userVp)
+
+    const viewports = collectLayoutViewports(db, paper.objectId, false)
+    expect(viewports).toHaveLength(1)
+    expect(viewports![0]!.frozenLayers).toEqual(['VpFrozen'])
   })
 })
