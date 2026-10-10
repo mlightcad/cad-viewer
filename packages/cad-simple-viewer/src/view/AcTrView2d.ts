@@ -99,6 +99,10 @@ import {
 } from './AcEdReviewOverlayPick'
 import { AcEdViewKeyHandler } from './AcEdViewKeyHandler'
 import {
+  absorbConvertQueue,
+  createConvertPending
+} from './AcTrConvertQueue'
+import {
   shouldExtendBboxForDirectEntity,
   tryBuildDirectEntityMeta
 } from './AcTrDirectBatch'
@@ -291,6 +295,13 @@ export class AcTrView2d extends AcEdBaseView {
    * `setTimeout` storm after the loading overlay hides.
    */
   private _convertQueue: AcDbEntity[] = []
+  /**
+   * Paper-space block table record ids whose viewport entities were converted
+   * before an {@link AcTrLayoutView} existed, so {@link batchConvert} could
+   * not create the {@link AcTrViewportView}. Repaired when that layout view
+   * is created.
+   */
+  private readonly _viewportRepairOwnerIds = new Set<string>()
   /** In-flight progressive convert drain; shared so awaiters wait for the queue. */
   private _convertDrainPromise: Promise<void> | null = null
   /**
@@ -469,6 +480,20 @@ export class AcTrView2d extends AcEdBaseView {
    * open while retaining reasonable text throughput after convert finishes.
    */
   private static readonly DEFERRED_GEOMETRY_CONCURRENCY = 8
+  /**
+   * Target wall time of one interactive convert slice (ms).
+   *
+   * A slice returns to the drain so a layout activated meanwhile — or the
+   * active layout chosen when the file finishes reading — is converted before
+   * the rest of a model-space batch. Kept near one frame; the 300ms yield
+   * inside {@link batchConvert} still applies within a slice.
+   */
+  private static readonly CONVERT_SLICE_FRAME_MS = 16
+  /**
+   * Upper bound on entities per slice. Heavy block references stay at 1
+   * because a slice that overruns the frame budget is halved.
+   */
+  private static readonly CONVERT_SLICE_MAX = 512
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -2581,6 +2606,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._convertEpoch++
     this.clearFontLoadedRedrawTimer()
     this._convertQueue.length = 0
+    this._viewportRepairOwnerIds.clear()
     this._numOfEntitiesToProcess = 0
     this._claimedConvertObjectIds.clear()
     this._entityConvertGeneration.clear()
@@ -2628,6 +2654,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.clearFontLoadedRedrawTimer()
     this.cancelOpenLineworkFrame()
     this._convertQueue.length = 0
+    this._viewportRepairOwnerIds.clear()
     this._numOfEntitiesToProcess = 0
     this._claimedConvertObjectIds.clear()
     this._entityConvertGeneration.clear()
@@ -2661,6 +2688,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.clearFontLoadedRedrawTimer()
     this.cancelOpenLineworkFrame()
     this._convertQueue.length = 0
+    this._viewportRepairOwnerIds.clear()
     this._numOfEntitiesToProcess = 0
     this._claimedConvertObjectIds.clear()
     this._entityConvertGeneration.clear()
@@ -2735,16 +2763,124 @@ export class AcTrView2d extends AcEdBaseView {
       return
     }
 
-    this._convertDrainPromise = (async () => {
-      while (this._convertQueue.length > 0) {
-        const batch = this._convertQueue.splice(0, this._convertQueue.length)
-        await this.batchConvert(batch)
-      }
-    })().finally(() => {
+    this._convertDrainPromise = this.runConvertDrain().finally(() => {
       this._convertDrainPromise = null
     })
 
     await this._convertDrainPromise
+  }
+
+  /**
+   * Converts the queued entities in slices, active layout first.
+   *
+   * `drainConvertQueue` used to hand the whole queue to one
+   * {@link batchConvert}. Model-space block references queued ahead of the
+   * sheet then blocked the sheet's frame and viewports for the entire batch,
+   * and a layout activated during that batch stayed starved until it
+   * finished. Slices return here so a newly active layout is ordered ahead
+   * of the remainder. Headless opens (`cooperativeYield === false`) still
+   * convert in one batch after that reorder.
+   */
+  private async runConvertDrain(): Promise<void> {
+    const epoch = this._convertEpoch
+    const interactive = this._cooperativeYield
+    let slice = interactive ? 1 : Number.POSITIVE_INFINITY
+    let lastYieldAt = performance.now()
+    let state = createConvertPending(
+      this._convertQueue.splice(0, this._convertQueue.length),
+      this.activeLayoutBtrId
+    )
+    this.repairViewportViewsFor(state.activeOwnerId)
+
+    while (
+      state.cursor < state.pending.length ||
+      this._convertQueue.length > 0
+    ) {
+      if (this._convertEpoch !== epoch) return
+
+      const queued = this._convertQueue.splice(0, this._convertQueue.length)
+      const activeNow = this.activeLayoutBtrId
+      const activeChanged = activeNow !== state.activeOwnerId
+      state = absorbConvertQueue(state, queued, activeNow)
+      if (activeChanged) {
+        this.repairViewportViewsFor(activeNow)
+      }
+      this.flushViewportViewRepairs()
+
+      if (state.cursor >= state.pending.length) break
+
+      const end = Math.min(state.pending.length, state.cursor + slice)
+      const startedAt = performance.now()
+      await this.batchConvert(state.pending.slice(state.cursor, end))
+      state.cursor = end
+      if (this._convertEpoch !== epoch) return
+
+      if (!interactive) continue
+
+      const took = performance.now() - startedAt
+      const frame = AcTrView2d.CONVERT_SLICE_FRAME_MS
+      if (took < frame / 2) {
+        slice = Math.min(slice * 2, AcTrView2d.CONVERT_SLICE_MAX)
+      } else if (took > frame * 2) {
+        slice = Math.max(1, slice >> 1)
+      }
+      if (performance.now() - lastYieldAt >= frame) {
+        await new Promise<void>(resolve => setTimeout(resolve, 0))
+        lastYieldAt = performance.now()
+        if (this._convertEpoch !== epoch) return
+      }
+    }
+
+    this.repairViewportViewsFor(this.activeLayoutBtrId)
+    this.flushViewportViewRepairs()
+  }
+
+  /**
+   * Creates missing {@link AcTrViewportView}s for one paper layout.
+   *
+   * Safe to call before the layout's entities have been committed to the
+   * scene: the database block table record already holds the viewports.
+   * Model space is skipped so a large model is not walked on every slice.
+   *
+   * @param layoutBtrId - Block table record id of the layout to repair.
+   */
+  private repairViewportViewsFor(layoutBtrId: string) {
+    if (!layoutBtrId || layoutBtrId === this.modelSpaceBtrId) return
+    const layoutView = this._layoutViewManager.getAt(layoutBtrId)
+    if (!layoutView || layoutView.viewportCount > 0) {
+      if (layoutView && layoutView.viewportCount > 0) {
+        this._viewportRepairOwnerIds.delete(layoutBtrId)
+      }
+      return
+    }
+    try {
+      const db = AcApDocManager.instance.curDocument?.database
+      const blockTableRecord = db?.tables.blockTable.getIdAt(layoutBtrId)
+      if (!blockTableRecord) return
+      const before = layoutView.viewportCount
+      this.ensureViewportViews(blockTableRecord, layoutView)
+      if (layoutView.viewportCount > before) {
+        this._isDirty = true
+      }
+      // The block table record was readable. Drop the id even when every
+      // viewport was the default paper-space one, so a model-sized record
+      // is not walked again on the next slice.
+      this._viewportRepairOwnerIds.delete(layoutBtrId)
+    } catch (error) {
+      log.error('[AcTrView2d] Error repairing viewport views:', error)
+    }
+  }
+
+  /**
+   * Retries viewport-view creation for owners recorded while their layout
+   * view did not exist yet.
+   */
+  private flushViewportViewRepairs() {
+    if (this._viewportRepairOwnerIds.size === 0) return
+    const ownerIds = Array.from(this._viewportRepairOwnerIds)
+    for (let i = 0; i < ownerIds.length; i++) {
+      this.repairViewportViewsFor(ownerIds[i])
+    }
   }
 
   /**
@@ -2942,6 +3078,9 @@ export class AcTrView2d extends AcEdBaseView {
       })
       this._layoutViewManager.add(layoutView)
     }
+    // Viewport entities may already have been converted while this view was
+    // missing. Creating it is the moment those AcTrViewportViews can exist.
+    this.flushViewportViewRepairs()
     return layoutView
   }
 
@@ -2977,46 +3116,21 @@ export class AcTrView2d extends AcEdBaseView {
       const existingLayout = this._scene.layouts.get(layoutBtrId)
       if (existingLayout && existingLayout.isLoaded) {
         // Streamed layouts flip `isLoaded` from `addEntity` before scene
-        // commits finish. Still repair the viewport-view race when entities
-        // are already in the scene but AcTrViewportView creation was skipped.
-        const layoutView = this._layoutViewManager.getAt(layoutBtrId)
-        if (
-          existingLayout.entityCount > 0 &&
-          layoutView &&
-          layoutView.viewportCount === 0
-        ) {
-          this.ensureViewportViews(blockTableRecord, layoutView)
-        }
+        // commits finish (`entityCount` still 0). Viewport views are read
+        // from the block table record, so repair them even while the sheet's
+        // own entities are still queued behind model space.
+        this.repairViewportViewsFor(layoutBtrId)
         return
       }
       if (this._loadingLayouts.has(layoutBtrId)) {
         return
       }
 
-      // Ensure `AcTrViewportView`s exist for every real `AcDbViewport`
-      // in this layout when the layout's entities were already streamed
-      // in by the document parser. There is a race in the parser-driven
-      // load path: `addLayout(layout)` creates the `AcTrLayoutView`,
-      // but the parser may dispatch the AcDbViewport entities before
-      // that happens. When that races, `batchConvert`'s viewport
-      // handler does `_layoutViewManager.getAt(entity.ownerId)`, gets
-      // `undefined`, and **silently skips creating the
-      // AcTrViewportView**. The reload path below used to mask this by
-      // re-running batchConvert after the layoutView existed, but the
-      // entityCount-skip optimization that follows removes that
-      // side-effect, so we do the viewport-view-only pass explicitly
-      // here. Skipped when the layout is empty — in that case the
-      // batchConvert path below will create the viewport views directly
-      // as it processes each entity.
-      const layoutView = this._layoutViewManager.getAt(layoutBtrId)
-      if (
-        existingLayout &&
-        existingLayout.entityCount > 0 &&
-        layoutView &&
-        layoutView.viewportCount === 0
-      ) {
-        this.ensureViewportViews(blockTableRecord, layoutView)
-      }
+      // Same repair as the isLoaded path: the layout view can exist before
+      // any of its entities have been committed to the scene. Viewport
+      // entities converted before `addLayout` created that view are recorded
+      // in `_viewportRepairOwnerIds` and attached here.
+      this.repairViewportViewsFor(layoutBtrId)
 
       // Model space (and any other layout pre-populated by the document
       // parser at open time) lands here without `isLoaded` ever having
@@ -3590,6 +3704,36 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Adds an {@link AcTrViewportView} for a real paper-space viewport.
+   *
+   * When the layout view does not exist yet, the owner id is remembered and
+   * {@link flushViewportViewRepairs} creates the view once the layout view
+   * does. Adding twice for the same viewport id replaces the previous view.
+   *
+   * @param entity - Viewport entity, already past the default-viewport filter
+   *   at the caller's discretion. Checked again here.
+   */
+  private attachViewportView(entity: AcDbViewport) {
+    if (AcTrViewportView.isDefaultPaperSpaceViewport(entity)) return
+    const ownerId = entity.ownerId
+    const layoutView = ownerId
+      ? this._layoutViewManager.getAt(ownerId)
+      : undefined
+    if (!layoutView) {
+      if (ownerId) this._viewportRepairOwnerIds.add(ownerId)
+      return
+    }
+    layoutView.addViewport(
+      new AcTrViewportView(
+        layoutView,
+        this.toGiViewportWithFrozenLayers(entity),
+        this._renderer
+      )
+    )
+    this._isDirty = true
+  }
+
+  /**
    * Walks the given block table record once and creates one
    * `AcTrViewportView` for every real `AcDbViewport` entity it finds
    * (skipping the default paper-space viewport that is filtered
@@ -3739,6 +3883,12 @@ export class AcTrView2d extends AcEdBaseView {
             (this.hasEntity(objectId) ||
               this._claimedConvertObjectIds.has(objectId))
           ) {
+            // The border may already be in the scene from a pass that ran
+            // before the layout view existed. Still attach the viewport
+            // view; a second border is not drawn because we continue below.
+            if (entity instanceof AcDbViewport) {
+              this.attachViewportView(entity)
+            }
             continue
           }
           if (objectId) {
@@ -3893,17 +4043,7 @@ export class AcTrView2d extends AcEdBaseView {
           // user-created viewport. The redundant check below is kept as
           // a defensive guard in case a future refactor reorders the
           // early-skip — it costs ~nothing and prevents a regression.
-          if (!AcTrViewportView.isDefaultPaperSpaceViewport(entity)) {
-            const layoutView = this._layoutViewManager.getAt(entity.ownerId)
-            if (layoutView) {
-              const viewportView = new AcTrViewportView(
-                layoutView,
-                this.toGiViewportWithFrozenLayers(entity),
-                this._renderer
-              )
-              layoutView.addViewport(viewportView)
-            }
-          }
+          this.attachViewportView(entity)
         } else if (entity instanceof AcDbRasterImage) {
           // Only track images whose pixel data is still unresolved.
           const fileName = entity.imageFileName
