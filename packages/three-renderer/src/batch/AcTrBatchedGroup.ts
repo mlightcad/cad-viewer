@@ -1318,8 +1318,15 @@ export class AcTrBatchedGroup extends THREE.Group {
           firstMaterial &&
           (getMaterialMetadata(firstMaterial).drawOrder ?? 0) >= 0
         ) {
-          cloned.position.z += activeDrawOrderZAllocator()
-          cloned.updateMatrix()
+          // cloneUnbatchedObject stores the source matrixWorld directly.
+          // updateMatrix() recomposes from TRS and drops that transform, so
+          // OLE/raster images inside a scaled INSERT draw at block-local
+          // coordinates (a wide smear beside the drawing).
+          const drawOrderZ = activeDrawOrderZAllocator()
+          if (drawOrderZ !== 0) {
+            cloned.matrix.elements[14] += drawOrderZ
+            cloned.matrixWorld.elements[14] += drawOrderZ
+          }
         }
         getSceneDrawableUserData(cloned).bboxIntersectionCheck =
           bboxIntersectionCheck
