@@ -4,6 +4,7 @@ import { PDF_MAX_PAGE_SIZE } from '../src/AcPdfUnits'
 import {
   computePageLayout,
   mapDrawingToPage,
+  pdfCoordinateDecimals,
   pdfRebaseOrigin,
   PDF_REBASE_THRESHOLD
 } from '../src/pdf/AcPdfPageLayout'
@@ -81,5 +82,22 @@ describe('pdfRebaseOrigin', () => {
   it('uses the framing-box center once coordinates exceed the threshold', () => {
     const origin = pdfRebaseOrigin(box(50_000_000, 3_000_000, 50_000_010, 3_000_000.25))
     expect(origin).toEqual({ x: 50_000_005, y: 3_000_000.125 })
+  })
+})
+
+describe('pdfCoordinateDecimals', () => {
+  it('rounds to integers when one drawing unit is already under 0.01 pt', () => {
+    expect(pdfCoordinateDecimals(0.005)).toBe(0)
+    expect(pdfCoordinateDecimals(0.01)).toBe(0)
+  })
+
+  it('keeps extra digits only while they still move the page', () => {
+    // 1 unit = 2.83 pt (millimetres). 0.001 unit is 0.0028 pt, under the budget.
+    expect(pdfCoordinateDecimals(72 / 25.4)).toBe(3)
+    expect(pdfCoordinateDecimals(1)).toBe(2)
+  })
+
+  it('caps the digit count on extreme upscales', () => {
+    expect(pdfCoordinateDecimals(1e12)).toBe(8)
   })
 })

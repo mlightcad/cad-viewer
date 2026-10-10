@@ -45,6 +45,12 @@ export interface AcPdfContentWriterOptions {
   formRegistry?: AcPdfFormRegistry
   /** Embedded-font registry for `text` draw ops. */
   fonts?: AcPdfFontManager
+  /**
+   * Decimal places for path coordinates. `0` rounds to integers.
+   * Omit to keep full {@link pdfNum} precision (tests and callers that
+   * have no page scale yet).
+   */
+  coordinateDecimals?: number
 }
 
 /**
@@ -120,6 +126,32 @@ function pdfNum(n: number): string {
 }
 
 /**
+ * Rounds a drawing-space coordinate to `places` decimal digits and emits the
+ * shortest plain decimal. `places <= 0` rounds to the nearest integer.
+ */
+function pdfCoord(n: number, places: number): string {
+  if (!Number.isFinite(n)) {
+    return '0'
+  }
+  if (places <= 0) {
+    const rounded = Math.round(n)
+    return Number.isFinite(rounded) ? String(rounded) : '0'
+  }
+  const digits = Math.min(8, Math.max(0, places))
+  let t = n.toFixed(digits)
+  if (t.indexOf('e') >= 0 || t.indexOf('E') >= 0) {
+    return pdfNum(n)
+  }
+  if (t.indexOf('.') >= 0) {
+    t = t.replace(/0+$/, '').replace(/\.$/, '')
+  }
+  if (t === '' || t === '-' || t === '-0') {
+    return '0'
+  }
+  return t
+}
+
+/**
  * Formats a glyph-space coordinate. Float32 buffers carry binary artifacts
  * (`0.1` reads back as `0.10000000149011612`), so values are rounded to 4
  * decimals — far below visual tolerance for text geometry — keeping both the
@@ -190,6 +222,8 @@ export class AcPdfContentWriter {
   private readonly _forms: AcPdfFormRegistry
   /** Embedded-font registry for `text` draw ops. */
   private readonly _fonts?: AcPdfFontManager
+  /** Path-coordinate decimal places; `null` keeps full precision. */
+  private readonly _coordDecimals: number | null
   private readonly _chunks: string[] = []
   private readonly _segments: Uint8Array[] = []
   private _segmentLength = 0
@@ -206,6 +240,11 @@ export class AcPdfContentWriter {
     this._images = options.imageCache ?? new Map<Uint8Array, PDFImage>()
     this._forms = options.formRegistry ?? createPdfFormRegistry()
     this._fonts = options.fonts
+    const places = options.coordinateDecimals
+    this._coordDecimals =
+      places == null || !Number.isFinite(places)
+        ? null
+        : Math.min(8, Math.max(0, Math.trunc(places)))
   }
 
   createNestedWriter(): AcPdfContentWriter {
@@ -213,7 +252,10 @@ export class AcPdfContentWriter {
       minUserLineWidth: this._minUserLineWidth,
       imageCache: this._images,
       formRegistry: this._forms,
-      fonts: this._fonts
+      fonts: this._fonts,
+      ...(this._coordDecimals != null
+        ? { coordinateDecimals: this._coordDecimals }
+        : {})
     })
   }
 
@@ -319,11 +361,12 @@ export class AcPdfContentWriter {
    * Caller must {@link save} first and {@link restore} after clipped draws.
    */
   clipRect(box: { min: { x: number; y: number }; max: { x: number; y: number } }) {
+    const n = (v: number) => this.formatCoord(v)
     this.push(
-      `${pdfNum(box.min.x)} ${pdfNum(box.min.y)} m ` +
-        `${pdfNum(box.max.x)} ${pdfNum(box.min.y)} l ` +
-        `${pdfNum(box.max.x)} ${pdfNum(box.max.y)} l ` +
-        `${pdfNum(box.min.x)} ${pdfNum(box.max.y)} l h W* n\n`
+      `${n(box.min.x)} ${n(box.min.y)} m ` +
+        `${n(box.max.x)} ${n(box.min.y)} l ` +
+        `${n(box.max.x)} ${n(box.max.y)} l ` +
+        `${n(box.min.x)} ${n(box.max.y)} l h W* n\n`
     )
   }
 
@@ -981,10 +1024,16 @@ export class AcPdfContentWriter {
     this.push(chunk)
   }
 
+  /** Path coordinate. Page scale sets the decimal budget; otherwise full precision. */
+  private formatCoord(n: number): string {
+    return this._coordDecimals == null ? pdfNum(n) : pdfCoord(n, this._coordDecimals)
+  }
+
   private polylineChunk(points: AcPdfPoint[], closed: boolean): string {
-    let chunk = `${pdfNum(points[0].x)} ${pdfNum(points[0].y)} m`
+    const n = (v: number) => this.formatCoord(v)
+    let chunk = `${n(points[0].x)} ${n(points[0].y)} m`
     for (let i = 1; i < points.length; i++) {
-      chunk += ` ${pdfNum(points[i].x)} ${pdfNum(points[i].y)} l`
+      chunk += ` ${n(points[i].x)} ${n(points[i].y)} l`
     }
     if (closed) {
       chunk += ' h'
