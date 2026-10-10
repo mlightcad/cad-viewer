@@ -28,12 +28,16 @@ export function acuiListDocumentLayouts(): DocumentLayoutInfo[] {
   if (!database || !layoutTable?.newIterator) return []
 
   const layouts: DocumentLayoutInfo[] = []
+  const seenBtrIds = new Set<string>()
   for (const layout of database.objects.layout.newIterator()) {
+    const btrId = layout.blockTableRecordId
+    if (!btrId || seenBtrIds.has(btrId)) continue
+    seenBtrIds.add(btrId)
     layouts.push({
       name: layout.layoutName,
       tabOrder: layout.tabOrder,
-      blockTableRecordId: layout.blockTableRecordId,
-      isActive: layout.blockTableRecordId === database.currentSpaceId
+      blockTableRecordId: btrId,
+      isActive: btrId === database.currentSpaceId
     })
   }
   layouts.sort((a, b) => a.tabOrder - b.tabOrder)

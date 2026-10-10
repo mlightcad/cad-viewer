@@ -10,6 +10,7 @@ import {
   type AcPdfPageLayoutInput,
   computePageLayout,
   PDF_MIN_STROKE_PT,
+  pdfCoordinateDecimals,
   pdfRebaseOrigin
 } from './AcPdfPageLayout'
 
@@ -117,7 +118,10 @@ export class AcPdfDocumentWriter {
         PDF_MIN_STROKE_PT / Math.max(Math.abs(layout.scale), 1e-12),
       imageCache: options.imageCache,
       fonts: options.fonts,
-      formRegistry: options.formRegistry
+      formRegistry: options.formRegistry,
+      // Drop float64 noise from path operands. The page CTM stays full
+      // precision so framing does not drift.
+      coordinateDecimals: pdfCoordinateDecimals(layout.scale)
     })
     const ocg = options.ocg ?? new AcPdfOcgManager(doc)
     for (const entity of entities) {
