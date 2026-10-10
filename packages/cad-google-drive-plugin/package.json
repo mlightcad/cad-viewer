@@ -44,13 +44,13 @@
   },
   "devDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.15.4",
+    "@mlightcad/data-model": "^1.15.5",
     "@types/gapi": "^0.0.47",
     "@types/gapi.client.drive-v3": "^0.0.5",
     "@types/google.accounts": "^0.0.18"
   },
   "peerDependencies": {
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "^1.15.4"
+    "@mlightcad/data-model": "^1.15.5"
   }
 }
