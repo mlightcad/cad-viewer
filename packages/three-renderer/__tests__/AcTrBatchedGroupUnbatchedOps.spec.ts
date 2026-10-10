@@ -182,6 +182,25 @@ describe('AcTrBatchedGroup unbatched operations', () => {
     expect(group.isIntersectWith('mtext-1', raycaster)).toBe(true)
   })
 
+  it('keeps a scaled INSERT matrix on an unbatched image mesh', () => {
+    const group = new AcTrBatchedGroup()
+    const mesh = createGlyphMesh(2728, 14861, 1630)
+    getSceneDrawableUserData(mesh).noBatch = true
+
+    const entity = createEntity('ole-1', mesh)
+    entity.position.set(-98710.99, 11790.12, 0)
+    entity.scale.set(0.01, 0.01, 0.01)
+    entity.updateMatrixWorld(true)
+
+    group.addEntity(entity)
+
+    const box = group.computeBoundingBox(new THREE.Box3())
+    expect(box.min.x).toBeCloseTo(-98710.99 + 2728 * 0.01, 1)
+    expect(box.max.x).toBeCloseTo(-98710.99 + (2728 + 14861) * 0.01, 1)
+    expect(box.min.x).toBeLessThan(0)
+    expect(box.max.x).toBeLessThan(0)
+  })
+
   it('unions bounds from unbatched placement-root children in computeBoundingBox', () => {
     const group = new AcTrBatchedGroup()
     const insertion = {
