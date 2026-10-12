@@ -315,20 +315,49 @@ export function transformHatchPatternToWorldSpace(
     matrixElements[0]! * x + matrixElements[4]! * y + matrixElements[12]!,
     matrixElements[1]! * x + matrixElements[5]! * y + matrixElements[13]!
   ]
-  const transformVector = (x: number, y: number): [number, number] => [
-    matrixElements[0]! * x + matrixElements[4]! * y,
-    matrixElements[1]! * x + matrixElements[5]! * y
-  ]
 
   return {
-    patternAngle: pattern.patternAngle + rotation,
-    patternLines: pattern.patternLines.map(line => ({
-      angle: line.angle + rotation,
-      base: transformPoint(line.base[0], line.base[1]),
-      offset: transformVector(line.offset[0], line.offset[1]),
-      dashLengths: [...line.dashLengths],
-      patternLength: line.patternLength
-    }))
+    // Every line below already takes `+ rotation`, and the offline shader builds
+    // the line frame from `line.angle + patternAngle` — so adding `rotation` here
+    // as well rotated the whole pattern twice.
+    patternAngle: pattern.patternAngle,
+    patternLines: pattern.patternLines.map(line => {
+      const cosL = Math.cos(line.angle)
+      const sinL = Math.sin(line.angle)
+
+      // Along-line stretch of the block matrix. The dash runs must follow it,
+      // otherwise a scaled block keeps its pre-scale dash period while the
+      // spacing shrinks, and every line is painted solid end to end.
+      const stretch = Math.hypot(
+        matrixElements[0]! * cosL + matrixElements[4]! * sinL,
+        matrixElements[1]! * cosL + matrixElements[5]! * sinL
+      )
+      const scale = stretch > 1e-12 && Number.isFinite(stretch) ? stretch : 1
+
+      // `offset` lives in the line-local frame (the material builder pre-rotates
+      // it by `-angle`), and `angle` already carries the block rotation after
+      // this transform — so it must be scaled, not rotated a second time:
+      // R(-(angle + rotation)) · M · R(angle). Degenerates to the previous
+      // behaviour for a pure scale or a pure rotation.
+      const localX = cosL * line.offset[0] - sinL * line.offset[1]
+      const localY = sinL * line.offset[0] + cosL * line.offset[1]
+      const scaledX = matrixElements[0]! * localX + matrixElements[4]! * localY
+      const scaledY = matrixElements[1]! * localX + matrixElements[5]! * localY
+      const worldAngle = line.angle + rotation
+      const cosW = Math.cos(worldAngle)
+      const sinW = Math.sin(worldAngle)
+
+      return {
+        angle: worldAngle,
+        base: transformPoint(line.base[0], line.base[1]),
+        offset: [
+          cosW * scaledX + sinW * scaledY,
+          -sinW * scaledX + cosW * scaledY
+        ] as [number, number],
+        dashLengths: line.dashLengths.map(value => value * scale),
+        patternLength: line.patternLength * scale
+      }
+    })
   }
 }
 
