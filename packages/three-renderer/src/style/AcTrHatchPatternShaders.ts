@@ -139,7 +139,13 @@ export function createHatchPatternShaderMaterial(
         base = rotate(base, u_patternAngle);
         vec2 samplePos = rotate(v_pos.xy - base, -(patternLine.angle + u_patternAngle));
 
-        return drawSpaceLine(samplePos, distanceBetweenLines, thick);
+        // When the line spacing drops far below one pixel, `fract(dist / spacing)`
+        // loses its fractional bits in float32 and the opacity becomes effectively
+        // random; `total < 0.001` then discards the whole fill. Below that
+        // threshold, draw the region solid instead of dropping it.
+        return abs(samplePos.y) / max(distanceBetweenLines, EPSILON) > 4000.0
+            ? 1.0
+            : drawSpaceLine(samplePos, distanceBetweenLines, thick);
     }
 
     int getPatternIndex(PatternLine patternLine, float linePosition, out float distance) {
