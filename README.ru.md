@@ -5,6 +5,8 @@
 [![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-simple-viewer.svg?label=cad-simple-viewer)](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer)
 [![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-viewer.svg?label=cad-viewer)](https://www.npmjs.com/package/@mlightcad/cad-viewer)
 
+<a href="https://trendshift.io/repositories/16129?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-16129" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/16129/daily?language=TypeScript" alt="mlightcad%2Fcad-viewer | Trendshift" width="250" height="55"/></a>
+
 cad-viewer — `первый в мире веб-просмотрщик и редактор DXF/DWG, который полностью работает в браузере без каких-либо серверных сервисов`.
 Благодаря разбору DWG/DXF, обработке геометрии и рендерингу непосредственно в браузере cad-viewer обеспечивает по-настоящему serverless просмотр и редактирование CAD — идеально для облачных приложений, офлайн-работы и сценариев с повышенными требованиями к конфиденциальности.
 
