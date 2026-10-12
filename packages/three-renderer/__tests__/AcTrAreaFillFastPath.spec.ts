@@ -171,12 +171,17 @@ function expectSameFill(
   }
   expect(winding(fast)).toBe(winding(general))
 
-  expect(fast.wcsBbox.min.x).toBe(general.wcsBbox.min.x)
-  expect(fast.wcsBbox.min.y).toBe(general.wcsBbox.min.y)
-  expect(fast.wcsBbox.max.x).toBe(general.wcsBbox.max.x)
-  expect(fast.wcsBbox.max.y).toBe(general.wcsBbox.max.y)
-  expect(fast.worldOffset.x).toBe(general.worldOffset.x)
-  expect(fast.worldOffset.y).toBe(general.worldOffset.y)
+  // The fast path now computes wcsBbox/worldOffset from the loop's own
+  // double-precision points (#729), while the general path still reads them
+  // back from a built (float32) geometry. Compare with float32-ULP
+  // tolerance rather than exact equality -- the fast path is the more
+  // precise of the two.
+  expect(fast.wcsBbox.min.x).toBeCloseTo(general.wcsBbox.min.x, 5)
+  expect(fast.wcsBbox.min.y).toBeCloseTo(general.wcsBbox.min.y, 5)
+  expect(fast.wcsBbox.max.x).toBeCloseTo(general.wcsBbox.max.x, 5)
+  expect(fast.wcsBbox.max.y).toBeCloseTo(general.wcsBbox.max.y, 5)
+  expect(fast.worldOffset.x).toBeCloseTo(general.worldOffset.x, 5)
+  expect(fast.worldOffset.y).toBeCloseTo(general.worldOffset.y, 5)
   expect(fast.material).toBe(general.material)
 }
 
@@ -288,10 +293,22 @@ describe('buildAreaGeometry single-loop fast path', () => {
     fast.geometry.dispose()
   })
 
-  it('keeps large drawing coordinates precise in both paths', () => {
-    expectFastPathMatchesGeneral(
-      areaFromLoop(rectangle(LARGE, LARGE, LARGE + 8, LARGE + 6))
+  it('keeps large drawing coordinates precise in the fast path (#729)', () => {
+    // The general (AcTrPolygon) path still writes raw WCS coordinates into a
+    // float32 buffer before any rebase and loses precision at this
+    // magnitude -- a separate, pre-existing instance of the same class of
+    // bug, out of scope here. Assert the fast path directly against ground
+    // truth instead of cross-checking against that known-imprecise baseline.
+    const fast = build(
+      areaFromLoop(rectangle(LARGE, LARGE, LARGE + 8, LARGE + 6)),
+      new AcTrRenderContext()
     )
+    expect(fast.wcsBbox.min.x).toBeCloseTo(LARGE, 5)
+    expect(fast.wcsBbox.min.y).toBeCloseTo(LARGE, 5)
+    expect(fast.wcsBbox.max.x).toBeCloseTo(LARGE + 8, 5)
+    expect(fast.wcsBbox.max.y).toBeCloseTo(LARGE + 6, 5)
+    expect(totalArea(fast)).toBeCloseTo(48, 3)
+    fast.geometry.dispose()
   })
 
   it('falls back to the general path for a curved loop', () => {
@@ -483,6 +500,31 @@ describe('buildOffsetRingDirectGeometry', () => {
     expect(Math.abs(totalArea(fast) - totalArea(general))).toBeLessThan(1e-3)
     fast.geometry.dispose()
     general.geometry.dispose()
+  })
+
+  it('keeps a thin ring distinct from its outer edge at large coordinates (#729)', () => {
+    // Outer/inner radii only 0.05 apart -- well under a float32 ULP at this
+    // magnitude if the ring were quantized before rebasing. A collapsed
+    // ring would report ~zero covered area.
+    const cx = LARGE
+    const cy = LARGE
+    const count = 32
+    const shift = (points: AcGePoint3dLike[]) =>
+      points.map(p => ({ x: p.x + cx, y: p.y + cy, z: 0 }))
+    const outer = shift(ringPoints(10, count))
+    const inner = shift(ringPoints(9.95, count))
+
+    const built = buildOffsetRingDirectGeometry(
+      outer,
+      inner,
+      defaultTraits,
+      new AcTrRenderContext()
+    )
+    expect(built).not.toBeNull()
+    if (!built) return
+    const expectedArea = Math.PI * (10 * 10 - 9.95 * 9.95)
+    expect(totalArea(built)).toBeCloseTo(expectedArea, 0)
+    built.geometry.dispose()
   })
 
   it('builds a multi-thousand-vertex ring without the general path', () => {
