@@ -12,6 +12,8 @@ export default {
 
   example: {
     fileUpload: {
+      brand: 'Aitra CadViewer',
+      credit: 'Založeno na open-source projektu mlightcad/cad-viewer',
       title: 'Vyberte soubor CAD k zobrazení',
       subtitle: 'Importujte výkresy DWG nebo DXF do prohlížeče',
       fontCdnNotice:
