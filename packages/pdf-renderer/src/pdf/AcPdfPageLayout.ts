@@ -24,6 +24,41 @@ export const PDF_PAGE_PADDING_FRACTION = 0.02
 export const PDF_REBASE_THRESHOLD = 1e6
 
 /**
+ * On-page error budget when rounding path coordinates, in PDF points.
+ *
+ * 0.01 pt is 1/7200 inch — below a device pixel at ordinary zoom, and still
+ * sub-pixel at several thousand percent. Tighter rounding only adds digits
+ * that Flate cannot share across endpoints.
+ */
+export const PDF_COORD_TOLERANCE_PT = 0.01
+
+/**
+ * Decimal places for drawing-space path coordinates at `scale`
+ * (drawing units → PDF points).
+ *
+ * `String(number)` keeps binary float noise, often 10–12 fractional digits.
+ * Viewers apply the page CTM in float32, so those tails never reach the
+ * screen, and each unique tail defeats Flate. Rounding to the returned
+ * number of places stays within {@link PDF_COORD_TOLERANCE_PT}. Zero means
+ * round to the nearest drawing unit (the page scale is already ≤ the
+ * tolerance). Capped at 8 so a huge upscale cannot reintroduce long tails;
+ * the leftover error only shows up for sub-micron geometry stretched to
+ * the page cap.
+ */
+export function pdfCoordinateDecimals(scale: number): number {
+  const safe = Math.abs(scale)
+  if (!(safe > 0) || !Number.isFinite(safe)) {
+    return 4
+  }
+  const quantum = PDF_COORD_TOLERANCE_PT / safe
+  if (quantum >= 1) {
+    return 0
+  }
+  const places = Math.ceil(-Math.log10(quantum) - 1e-12)
+  return Math.min(8, Math.max(0, places))
+}
+
+/**
  * Minimum stroke width in PDF points after the drawing→page CTM.
  *
  * CAD lineweights are millimetres in drawing space. On kilometre-scale

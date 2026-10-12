@@ -43,14 +43,46 @@ export function collectLayoutViewports(
     const twist = Number.isFinite(gi.viewTwistAngle)
       ? gi.viewTwistAngle
       : entity.viewTwistAngle
-    viewports.push(
-      Number.isFinite(twist) && Math.abs(twist) > 1e-12
-        ? { paper, model, twist }
-        : { paper, model }
+    const frozenLayers = resolveFrozenLayers(
+      gi as { frozenLayers?: readonly string[] },
+      entity
     )
+    const snapshot: AcExViewportSnapshot = { paper, model }
+    if (Number.isFinite(twist) && Math.abs(twist) > 1e-12) {
+      snapshot.twist = twist
+    }
+    if (frozenLayers.length > 0) {
+      snapshot.frozenLayers = frozenLayers
+    }
+    viewports.push(snapshot)
   }
 
   return viewports.length > 0 ? viewports : undefined
+}
+
+/**
+ * Resolves per-viewport frozen layer names from the GI viewport, falling back
+ * to resolving soft-pointer ids on the database entity when an older
+ * data-model build omits {@link AcGiViewport.frozenLayers}.
+ */
+function resolveFrozenLayers(
+  gi: { frozenLayers?: readonly string[] },
+  entity: AcDbViewport
+): string[] {
+  const fromGi = gi.frozenLayers
+  if (fromGi && fromGi.length > 0) {
+    return [...fromGi]
+  }
+  const ids = entity.frozenLayerIds
+  if (!ids?.length) return []
+  const layerTable = entity.database?.tables.layerTable
+  if (!layerTable) return []
+  const names: string[] = []
+  for (const id of ids) {
+    const layer = layerTable.getIdAt(id)
+    if (layer) names.push(layer.name)
+  }
+  return names
 }
 
 function extentsFromBox2d(box: {

@@ -10,7 +10,10 @@ import * as THREE from 'three'
 
 import { AcEdLayerInfo, AcEdSpatialQueryResultItem } from '../editor'
 import { unionSpatialQueryItems } from '../editor/view/AcEdSpatialQueryResult'
-import { AcTrHierarchicalSpatialIndex } from '../spatialIndex'
+import {
+  AcTrHierarchicalSpatialIndex,
+  type AcTrLazySpatialChildren
+} from '../spatialIndex'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { isFiniteSpatialBBox } from './AcTrGroupWcsBboxAssert'
 import { AcTrLayer, AcTrLayerStats } from './AcTrLayer'
@@ -1084,6 +1087,23 @@ export class AcTrLayout {
    */
   private registerEntitySpatialIndex(entity: AcTrEntity) {
     if (this.skipSpatialIndex) {
+      return
+    }
+    const lazyChildren = (
+      entity.userData as { lazySpatialChildren?: AcTrLazySpatialChildren }
+    ).lazySpatialChildren
+    if (lazyChildren && lazyChildren.boxes.length > 0) {
+      const rootBox = {
+        minX: entity.wcsBbox.min.x,
+        minY: entity.wcsBbox.min.y,
+        maxX: entity.wcsBbox.max.x,
+        maxY: entity.wcsBbox.max.y,
+        id: entity.objectId
+      }
+      if (isFiniteSpatialBBox(rootBox)) {
+        this._spatialIndex.insert(rootBox)
+      }
+      this._spatialIndex.setLazyChildSource(entity.objectId, lazyChildren)
       return
     }
     const spatialIndexChildBoxes = this.getSpatialIndexChildBoxes(entity)

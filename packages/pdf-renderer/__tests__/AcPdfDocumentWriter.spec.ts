@@ -2,7 +2,11 @@ import { PDFDocument, PDFRawStream } from 'pdf-lib'
 import pako from 'pako'
 
 import { AcPdfDocumentWriter } from '../src/pdf/AcPdfDocumentWriter'
-import { computePageLayout, mapDrawingToPage } from '../src/pdf/AcPdfPageLayout'
+import {
+  computePageLayout,
+  mapDrawingToPage,
+  pdfCoordinateDecimals
+} from '../src/pdf/AcPdfPageLayout'
 import { AcPdfEntity } from '../src/renderer/AcPdfEntity'
 
 function entityWithBox(
@@ -124,6 +128,29 @@ describe('AcPdfDocumentWriter extents', () => {
     const expected = mapDrawingToPage(layout, x0, y0)
     expect(x1 * scale + tx).toBeCloseTo(expected.x, 3)
     expect(y1 * scale + ty).toBeCloseTo(expected.y, 3)
+  })
+
+  it('drops binary float tails from path coordinates on a fitted large drawing', async () => {
+    // Stays under the rebase threshold so the fractional tails would otherwise
+    // be written verbatim, but wide enough that the page scale makes 1 unit
+    // smaller than the 0.01 pt error budget.
+    const minX = -900000.828049568
+    const minY = -400000.62462289585
+    const maxX = 900000.123456789
+    const maxY = 400000.987654321
+    const entity = entityWithBox(minX, minY, maxX, maxY)
+    const layout = computePageLayout(entity.box, { insunits: 4 })
+    expect(pdfCoordinateDecimals(layout.scale)).toBe(0)
+
+    const bytes = await AcPdfDocumentWriter.write([entity], {
+      insunits: 4,
+      background: 'none'
+    })
+    const text = await contentText(bytes)
+    expect(text).not.toContain('828049568')
+    expect(text).not.toContain('62462289585')
+    expect(text).toContain(`${Math.round(minX)} ${Math.round(minY)} m`)
+    expect(text).toContain(`${Math.round(maxX)} ${Math.round(maxY)} l`)
   })
 })
 

@@ -327,14 +327,16 @@ export class AcTrLayoutView extends AcTrBaseView {
         viewportView.paperPointToModel({ x: paperHit.minX, y: paperHit.maxY })
       )
       if (modelBox.isEmpty()) return
-      overlay.renderNested(
-        modelScene,
-        modelBox,
-        hit,
-        hit,
-        this._height,
-        viewportView.viewport.viewTwistAngle
-      )
+      viewportView.withFrozenLayersHidden(modelScene, () => {
+        overlay.renderNested(
+          modelScene,
+          modelBox,
+          hit,
+          hit,
+          this._height,
+          viewportView.viewport.viewTwistAngle
+        )
+      })
     })
     modelScene.visible = visibility
   }

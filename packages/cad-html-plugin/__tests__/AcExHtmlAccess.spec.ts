@@ -107,4 +107,20 @@ describe('AcExHtmlAccess', () => {
     expect(protectedExport.manifest?.salt).toBeTruthy()
     expect(protectedExport.encoded.payload).not.toBe(encoded.payload)
   })
+
+  it('does not encrypt when password is omitted, empty, or whitespace', async () => {
+    // Regression: optional HTML open password must stay off unless the user
+    // sets one. Empty/autofilled whitespace must never produce encrypted:true.
+    const encoded = { payload: 'plaintext-payload', compression: 'gzip' as const }
+
+    for (const password of [undefined, '', '   ', '\t\n'] as const) {
+      const result = await protectAcExHtmlEncodedSnapshot(encoded, {
+        expiresAt: null,
+        password
+      })
+      expect(result.manifest).toBeUndefined()
+      expect(result.encoded).toEqual(encoded)
+      expect(result.encoded.payload).toBe(encoded.payload)
+    }
+  })
 })

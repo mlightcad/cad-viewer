@@ -146,9 +146,126 @@ export function bakePlainDrawableSlice(
   }
 }
 
+function vertexIsFinite(positions: Float32Array, vertex: number): boolean {
+  const offset = vertex * 3
+  return (
+    Number.isFinite(positions[offset]!) &&
+    Number.isFinite(positions[offset + 1]!) &&
+    Number.isFinite(positions[offset + 2]!)
+  )
+}
+
+/**
+ * Drops primitives that reference a NaN or infinite vertex.
+ *
+ * One corrupt CAD vertex must not survive into a shared-block batch: the HTML
+ * viewer's bounding sphere becomes non-finite and frustum culling hides every
+ * INSERT that shares that template.
+ *
+ * @param primitiveVertexCount - 1 for points, 2 for line segments, 3 for triangles.
+ */
+export function omitNonFinitePrimitives(
+  slice: AcExPlainDrawableSlice,
+  primitiveVertexCount: 1 | 2 | 3
+): AcExPlainDrawableSlice {
+  const positions = slice.positions
+  const vertexCount = (positions.length / 3) | 0
+  if (vertexCount === 0 || primitiveVertexCount <= 0) {
+    return slice
+  }
+
+  let anyNonFinite = false
+  for (let i = 0; i < positions.length; i++) {
+    if (!Number.isFinite(positions[i]!)) {
+      anyNonFinite = true
+      break
+    }
+  }
+  if (!anyNonFinite) {
+    return slice
+  }
+
+  const indices = slice.indices
+  if (indices && indices.length > 0) {
+    const kept: number[] = []
+    for (
+      let i = 0;
+      i + primitiveVertexCount <= indices.length;
+      i += primitiveVertexCount
+    ) {
+      let valid = true
+      for (let k = 0; k < primitiveVertexCount; k++) {
+        const vertex = indices[i + k]!
+        if (
+          vertex < 0 ||
+          vertex >= vertexCount ||
+          !vertexIsFinite(positions, vertex)
+        ) {
+          valid = false
+          break
+        }
+      }
+      if (!valid) continue
+      for (let k = 0; k < primitiveVertexCount; k++) {
+        kept.push(indices[i + k]!)
+      }
+    }
+    if (kept.length === 0) {
+      return { positions: new Float32Array(0) }
+    }
+    const remap = new Int32Array(vertexCount)
+    remap.fill(-1)
+    const packed: number[] = []
+    const remapped = new Uint32Array(kept.length)
+    for (let i = 0; i < kept.length; i++) {
+      const previous = kept[i]!
+      let next = remap[previous]!
+      if (next < 0) {
+        next = packed.length / 3
+        remap[previous] = next
+        const base = previous * 3
+        packed.push(
+          positions[base]!,
+          positions[base + 1]!,
+          positions[base + 2]!
+        )
+      }
+      remapped[i] = next
+    }
+    return { positions: Float32Array.from(packed), indices: remapped }
+  }
+
+  const packed: number[] = []
+  for (
+    let vertex = 0;
+    vertex + primitiveVertexCount <= vertexCount;
+    vertex += primitiveVertexCount
+  ) {
+    let valid = true
+    for (let k = 0; k < primitiveVertexCount; k++) {
+      if (!vertexIsFinite(positions, vertex + k)) {
+        valid = false
+        break
+      }
+    }
+    if (!valid) continue
+    for (let k = 0; k < primitiveVertexCount; k++) {
+      const base = (vertex + k) * 3
+      packed.push(positions[base]!, positions[base + 1]!, positions[base + 2]!)
+    }
+  }
+  if (packed.length === 0) {
+    return { positions: new Float32Array(0) }
+  }
+  return { positions: Float32Array.from(packed) }
+}
+
 /**
  * Rebases a world-space slice around its axis-aligned center so HTML playback can
  * keep float32-friendly local vertices with a separate float64 origin.
+ *
+ * Non-finite coordinates are ignored while placing the origin and written as the
+ * local origin so one corrupt vertex cannot make the whole batch's bounds NaN.
  */
 export function rebasePlainDrawableSliceAroundCentroid(
   slice: AcExPlainDrawableSlice
@@ -164,17 +281,29 @@ export function rebasePlainDrawableSliceAroundCentroid(
   let maxX = -Infinity
   let maxY = -Infinity
   let maxZ = -Infinity
+  let finiteVertices = 0
 
   for (let i = 0; i < source.length; i += 3) {
     const x = source[i]!
     const y = source[i + 1]!
     const z = source[i + 2]!
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+      continue
+    }
+    finiteVertices++
     minX = Math.min(minX, x)
     minY = Math.min(minY, y)
     minZ = Math.min(minZ, z)
     maxX = Math.max(maxX, x)
     maxY = Math.max(maxY, y)
     maxZ = Math.max(maxZ, z)
+  }
+
+  if (finiteVertices === 0) {
+    return {
+      slice: { positions: new Float32Array(0) },
+      offset: [0, 0, 0]
+    }
   }
 
   const offset: [number, number, number] = [
@@ -184,9 +313,18 @@ export function rebasePlainDrawableSliceAroundCentroid(
   ]
   const rebased = new Float32Array(source.length)
   for (let i = 0; i < source.length; i += 3) {
-    rebased[i] = source[i]! - offset[0]
-    rebased[i + 1] = source[i + 1]! - offset[1]
-    rebased[i + 2] = source[i + 2]! - offset[2]
+    const x = source[i]!
+    const y = source[i + 1]!
+    const z = source[i + 2]!
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+      rebased[i] = 0
+      rebased[i + 1] = 0
+      rebased[i + 2] = 0
+      continue
+    }
+    rebased[i] = x - offset[0]
+    rebased[i + 1] = y - offset[1]
+    rebased[i + 2] = z - offset[2]
   }
 
   return {

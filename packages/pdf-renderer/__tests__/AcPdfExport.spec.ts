@@ -342,4 +342,35 @@ describe('exportDatabaseToPdf', () => {
     // near-empty PDF.
     expect(doc.getPageCount()).toBe(2)
   })
+
+  it('paints a block once when several layouts share its record', async () => {
+    const db = createDb()
+    ensureModelLayout(db)
+    db.tables.blockTable.modelSpace.appendEntity(
+      new AcDbLine(new AcGePoint3d(0, 0, 0), new AcGePoint3d(100, 0, 0))
+    )
+
+    const alias = new AcDbLayout()
+    alias.layoutName = 'ModelCopy'
+    alias.tabOrder = 1
+    alias.blockTableRecordId = db.tables.blockTable.modelSpace.objectId
+    db.objects.layout.setAt(alias.layoutName, alias)
+
+    const paperBtr = new AcDbBlockTableRecord()
+    paperBtr.name = '*Paper_Space0'
+    db.tables.blockTable.add(paperBtr)
+    const paperLayout = new AcDbLayout()
+    paperLayout.layoutName = 'Layout1'
+    paperLayout.tabOrder = 2
+    paperLayout.blockTableRecordId = paperBtr.objectId
+    db.objects.layout.setAt(paperLayout.layoutName, paperLayout)
+
+    const bytes = await exportDatabaseToPdf(db, {
+      title: 'deduped-layouts',
+      layouts: 'all'
+    })
+    const doc = await PDFDocument.load(bytes)
+    // Model + the alias share one block; the empty paper layout stays.
+    expect(doc.getPageCount()).toBe(2)
+  })
 })

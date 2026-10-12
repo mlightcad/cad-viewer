@@ -26,15 +26,20 @@ import type { AcPdfOp } from '../renderer/AcPdfStyle'
 export class AcPdfViewportContent extends AcPdfEntity {
   private readonly _sharedRoots: AcPdfEntity[]
   private readonly _modelToPaper: AcGeMatrix3d
+  /** VPLAYER frozen layer names for this viewport; undefined when none. */
+  private readonly _frozenLayers?: ReadonlySet<string>
 
   constructor(
     sharedRoots: AcPdfEntity[],
     modelToPaper: AcGeMatrix3d,
-    paperBox: AcGeBox2d
+    paperBox: AcGeBox2d,
+    frozenLayers: readonly string[] = []
   ) {
     super()
     this._sharedRoots = sharedRoots
     this._modelToPaper = modelToPaper.clone()
+    this._frozenLayers =
+      frozenLayers.length > 0 ? new Set(frozenLayers) : undefined
     this.entityType = 'VIEWPORT_CONTENT'
     // Page framing and clipping both use the paper-space frame.
     this.setClipBox(paperBox)
@@ -100,8 +105,15 @@ export class AcPdfViewportContent extends AcPdfEntity {
     const localToDrawing = ctx.localToDrawing
       ? ctx.localToDrawing.clone().multiply(this._modelToPaper)
       : this._modelToPaper.clone()
+    // Apply this viewport's VPLAYER freeze without mutating the shared model
+    // tree — each viewport pass gets its own frozenLayers set on the context.
+    const childCtx: AcPdfPaintContext = {
+      ...ctx,
+      localToDrawing,
+      frozenLayers: this._frozenLayers
+    }
     for (const root of this._sharedRoots) {
-      root.paint({ ...ctx, localToDrawing })
+      root.paint(childCtx)
     }
     if (clipBox) {
       writer.restore()

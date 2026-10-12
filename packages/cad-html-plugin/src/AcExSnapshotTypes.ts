@@ -285,6 +285,12 @@ export interface AcExViewportSnapshot {
    * this angle around the model view center.
    */
   twist?: number
+  /**
+   * Layer names frozen in this viewport (VPLAYER / DXF group 331), resolved
+   * from {@link AcGiViewport.frozenLayers}. Omitted when empty. The offline
+   * viewer hides matching model-space layer groups while drawing the pass.
+   */
+  frozenLayers?: string[]
 }
 
 /**

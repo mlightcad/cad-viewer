@@ -23,6 +23,7 @@ import {
   AcGePoint2d,
   AcGePoint2dLike,
   acgiForegroundColorForBackground,
+  AcGiViewport,
   log
 } from '@mlightcad/data-model'
 import { AcDbSystemVariables } from '@mlightcad/data-model'
@@ -79,6 +80,7 @@ import {
   acedNeedsCrossingGeometryRefine
 } from '../editor/view/AcEdSelectionBoxIntersect'
 import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult'
+import type { AcTrLazySpatialChildren } from '../spatialIndex'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
@@ -3627,11 +3629,40 @@ export class AcTrView2d extends AcEdBaseView {
       if (AcTrViewportView.isDefaultPaperSpaceViewport(entity)) continue
       const viewportView = new AcTrViewportView(
         layoutView,
-        entity.toGiViewport(),
+        this.toGiViewportWithFrozenLayers(entity),
         this._renderer
       )
       layoutView.addViewport(viewportView)
     }
+  }
+
+  /**
+   * Builds an {@link AcGiViewport} and ensures VPLAYER frozen layers are
+   * present as resolved names. Older data-model builds read group 331 into
+   * {@link AcDbViewport.frozenLayerIds} but omit them from `toGiViewport()`.
+   */
+  private toGiViewportWithFrozenLayers(entity: AcDbViewport): AcGiViewport {
+    const gi = entity.toGiViewport() as AcGiViewport & {
+      frozenLayers?: string[]
+      frozenLayerIds?: string[]
+    }
+    if (gi.frozenLayers && gi.frozenLayers.length > 0) {
+      return gi
+    }
+    const ids = entity.frozenLayerIds
+    if (!ids?.length) return gi
+
+    const names: string[] = []
+    const layerTable = entity.database?.tables.layerTable
+    if (layerTable) {
+      for (const id of ids) {
+        const layer = layerTable.getIdAt(id)
+        if (layer) names.push(layer.name)
+      }
+    }
+    gi.frozenLayerIds = [...ids]
+    gi.frozenLayers = names
+    return gi
   }
 
   /**
@@ -3879,7 +3910,7 @@ export class AcTrView2d extends AcEdBaseView {
             if (layoutView) {
               const viewportView = new AcTrViewportView(
                 layoutView,
-                entity.toGiViewport(),
+                this.toGiViewportWithFrozenLayers(entity),
                 this._renderer
               )
               layoutView.addViewport(viewportView)
@@ -3927,6 +3958,14 @@ export class AcTrView2d extends AcEdBaseView {
    * with their union before spatial-index registration.
    */
   private syncGroupSpatialBoundsForIndexing(group: AcTrGroup) {
+    const lazy = group.peekLazyChildBoxes()
+    if (lazy && lazy.boxes.length > 0) {
+      const userData = group.userData as {
+        lazySpatialChildren?: AcTrLazySpatialChildren
+      }
+      userData.lazySpatialChildren = lazy
+      return
+    }
     group.refreshWcsChildBoxesFromChildren()
     if (group.wcsChildBoxes.length === 0) {
       return
@@ -4005,20 +4044,25 @@ export class AcTrView2d extends AcEdBaseView {
       // AcDbRenderingCache.draw (and similar paths such as AcDbTable) already call
       // applyMatrix on the group, which updates wcsBbbox and wcsChildBoxes to WCS.
       // Do not multiply group.matrix here — that would double-transform spatial bounds.
-      if (process.env.NODE_ENV !== 'production') {
+      const lazyChildren = (
+        group.userData as { lazySpatialChildren?: AcTrLazySpatialChildren }
+      ).lazySpatialChildren
+      if (process.env.NODE_ENV !== 'production' && !lazyChildren) {
         assertAcTrGroupWcsBboxesConsistent(group)
       }
 
-      const groupChildBoxes: AcEdSpatialQueryResultItem[] =
-        group.wcsChildBoxes.map(box => ({
-          minX: box.minX,
-          minY: box.minY,
-          maxX: box.maxX,
-          maxY: box.maxY,
-          id: box.id
-        }))
-      const aggregateSpatialBbox =
-        groupChildBoxes.length > 0
+      const groupChildBoxes: AcEdSpatialQueryResultItem[] = lazyChildren
+        ? []
+        : group.wcsChildBoxes.map(box => ({
+            minX: box.minX,
+            minY: box.minY,
+            maxX: box.maxX,
+            maxY: box.maxY,
+            id: box.id
+          }))
+      const aggregateSpatialBbox = lazyChildren
+        ? group.wcsBbox.clone()
+        : groupChildBoxes.length > 0
           ? unionGroupWcsChildBoxes(group)
           : group.wcsBbox.clone()
       if (groupChildBoxes.length > 0) {
@@ -4076,7 +4120,12 @@ export class AcTrView2d extends AcEdBaseView {
         const entityUserData = entity.userData as {
           spatialIndexChildBoxes?: AcEdSpatialQueryResultItem[]
         }
-        if (!registeredChildIndex && groupChildBoxes.length > 0) {
+        if (!registeredChildIndex && lazyChildren) {
+          ;(
+            entity.userData as { lazySpatialChildren?: AcTrLazySpatialChildren }
+          ).lazySpatialChildren = lazyChildren
+          registeredChildIndex = true
+        } else if (!registeredChildIndex && groupChildBoxes.length > 0) {
           entityUserData.spatialIndexChildBoxes = groupChildBoxes
           registeredChildIndex = true
         }

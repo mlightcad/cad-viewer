@@ -83,7 +83,19 @@ function collectExportLayouts(db: AcDbDatabase): ExportLayoutEntry[] | null {
   const layouts = entries
     .filter(layout => !!layout.blockTableRecordId)
     .sort((a, b) => (a.tabOrder ?? 0) - (b.tabOrder ?? 0))
-  return layouts.length > 1 ? layouts : null
+  // Several layout records can share one block (a second "Model" tab, or a
+  // paper record whose handle resolves to model space). Painting each one
+  // writes the same content stream again and doubles the file.
+  const seen = new Set<string>()
+  const unique: ExportLayoutEntry[] = []
+  for (const layout of layouts) {
+    if (seen.has(layout.blockTableRecordId)) {
+      continue
+    }
+    seen.add(layout.blockTableRecordId)
+    unique.push(layout)
+  }
+  return unique.length > 1 ? unique : null
 }
 
 function createConfiguredRenderer(
@@ -239,12 +251,17 @@ async function exportLayoutsToPdf(
   const formRegistry = createPdfFormRegistry()
   const modelCache: ModelRootCache = {}
   const modelSpaceId = db.tables.blockTable.modelSpace.objectId
+  // `resolveLayoutBlock` can map distinct layout handles onto one block
+  // (model space, when the paper handle is missing from the registry).
+  // Paint that block once.
+  const seenBlocks = new Set<string>()
 
   for (const layout of layouts) {
     const block = resolveLayoutBlock(db, layout)
-    if (!block) {
+    if (!block || seenBlocks.has(block.objectId)) {
       continue
     }
+    seenBlocks.add(block.objectId)
     const isModel = layout.blockTableRecordId === modelSpaceId
     const roots = await collectLayoutRoots(db, renderer, block, modelCache)
     await renderer.renderToDocument(doc, roots, {

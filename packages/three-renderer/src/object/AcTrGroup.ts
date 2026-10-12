@@ -190,6 +190,29 @@ export class AcTrGroup extends AcTrEntity {
   }
 
   /**
+   * Block-local child boxes shared by every INSERT of this template, plus the
+   * matrix that maps them into WCS.
+   *
+   * Does not copy the box list. Returns null once boxes have been materialized
+   * for this instance (for example after an attribute was appended).
+   *
+   * @returns Shared boxes and a cloned INSERT matrix, or null when this
+   *   instance already owns a private box list.
+   */
+  peekLazyChildBoxes(): {
+    boxes: readonly AcTrEntityBox[]
+    matrix: THREE.Matrix4
+  } | null {
+    if (!this._wcsChildBoxesTemplate || this._wcsChildBoxes.length > 0) {
+      return null
+    }
+    const matrix = this._wcsChildBoxesPendingMatrix
+      ? this._wcsChildBoxesPendingMatrix.clone()
+      : new THREE.Matrix4()
+    return { boxes: this._wcsChildBoxesTemplate, matrix }
+  }
+
+  /**
    * Merges same-material drawable leaves so block-template clones copy far
    * fewer geometries.
    *
@@ -641,10 +664,9 @@ export class AcTrGroup extends AcTrEntity {
    *
    * When the source {@link isCompacted}, leaf {@link THREE.BufferGeometry}
    * buffers are shared by default so INSERT cache hits avoid deep copies.
-   * Uncompacted templates with 2+ drawable children are compacted on the
-   * first {@link fastDeepClone} so dense symbol blocks share buffers instead
-   * of deep-cloning (which OOMed large drawings). Single-child templates
-   * still deep-clone until an explicit {@link compactForInstancing}.
+   * Uncompacted templates are sealed or compacted on the first
+   * {@link fastDeepClone} so every later INSERT aliases those buffers instead
+   * of deep-cloning them (which OOMed drawings with many block references).
    *
    * Materials are reused. When compacted, detached source-entity shells are
    * not cloned. Callers must treat compacted templates as immutable: batching
@@ -656,16 +678,15 @@ export class AcTrGroup extends AcTrEntity {
    * @returns Independent group instance suitable for one INSERT.
    */
   fastDeepClone(shareGeometry: boolean = this._compacted) {
-    // Dense drawings (many small reused symbols) never reached data-model's
-    // MIN_CHILDREN_TO_COMPACT=8, so every cache hit deep-cloned buffers and
-    // OOMed. Compact the template before the first clone when there are enough
-    // leaves — no prior INSERT has shared aliases yet.
-    if (
-      !this._compacted &&
-      shareGeometry === false &&
-      this.childCount >= 2
-    ) {
-      this.compactForInstancing()
+    // Data-model only compacts templates with 8+ direct children, and a
+    // coalesced symbol often has a single mesh. Seal or compact before the
+    // first clone so every INSERT shares the template buffers.
+    if (!this._compacted && this.childCount >= 1) {
+      if (this.childCount >= 2) {
+        this.compactForInstancing()
+      } else {
+        this.sealForSharedClone()
+      }
       shareGeometry = true
     }
     const cloned = new AcTrGroup([], this.renderContext)
