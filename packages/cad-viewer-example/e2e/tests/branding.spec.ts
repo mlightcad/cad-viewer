@@ -86,11 +86,17 @@ test.describe('production subpath', () => {
   }) => {
     // The dev server only serves the app at "/". Map the production subpath
     // onto it so the page is loaded from the same URL shape as production.
-    await page.route(`**${PRODUCTION_SUBPATH}**`, async route => {
-      const url = new URL(route.request().url())
-      url.pathname = url.pathname.replace(PRODUCTION_SUBPATH, '/')
-      await route.fulfill({ response: await route.fetch({ url: url.href }) })
-    })
+    // Match only paths that START with the subpath: Vite's "/@fs/<checkout>/..."
+    // URLs contain "/cad-viewer/cad-viewer/" too when the checkout lives there
+    // (as on GitHub runners) and must be served untouched.
+    await page.route(
+      url => url.pathname.startsWith(PRODUCTION_SUBPATH),
+      async route => {
+        const url = new URL(route.request().url())
+        url.pathname = `/${url.pathname.slice(PRODUCTION_SUBPATH.length)}`
+        await route.fulfill({ response: await route.fetch({ url: url.href }) })
+      }
+    )
     const missing = trackMissing(page)
     await page.goto(`${baseURL}${PRODUCTION_SUBPATH}`)
     expect(new URL(page.url()).pathname).toBe(PRODUCTION_SUBPATH)
