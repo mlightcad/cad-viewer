@@ -49,7 +49,7 @@ export default {
       progressiveRendering: 'Aşamalı oluşturma',
       on: 'Açık',
       progressiveOnHint:
-        'Yükleme sırasında geometriyi göster; varlık dönüşümü bitince ilerleme gizlenir',
+        'Ayrıştırma/dönüşüm bitene kadar arayüzü kilitle; sonra sahne yüklenirken pan/zoom',
       off: 'Kapalı',
       progressiveOffHint: 'Varlık ve metin geometrisi dönüşene kadar bekle',
 

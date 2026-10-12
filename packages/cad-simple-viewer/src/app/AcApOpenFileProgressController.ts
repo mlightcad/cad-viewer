@@ -19,13 +19,14 @@ import { isOpenFileProgressComplete } from './openFileProgress'
  * `setMessage` only when the localized stage text changes. Progress events
  * still emit on every callback so listeners see fine-grained percentages.
  *
- * When scene convert is still draining after CONVERSION `END`, the overlay
- * stays up (see-through during progressive open) with "Rendering drawing ..."
- * until {@link setSceneBusyGate} reports idle. The gate is driven by
- * {@link AcApOpenDatabaseOptions.progressiveRendering}: when progressive
- * rendering is on it tracks entity convert only; when off it also waits for
- * deferred glyph jobs so pan/zoom stay blocked while text catches up.
- * Deprecated `waitForTextGeometry` is ignored.
+ * Progressive open (`setSeeThroughOverlay(true)`): shows a pointer-blocking
+ * overlay through FETCH_FILE and the full CONVERSION pipeline (parse, header,
+ * symbol tables, blocks, entities). Hides at CONVERSION `END` so pan/zoom can
+ * run while scene geometry finishes — no "Rendering drawing ..." hold.
+ *
+ * Default open keeps "Rendering drawing ..." until {@link setSceneBusyGate}
+ * reports idle after CONVERSION `END`. Deprecated `waitForTextGeometry` is
+ * ignored.
  */
 export class AcApOpenFileProgressController {
   private readonly _progress: AcApProgress
@@ -34,6 +35,11 @@ export class AcApOpenFileProgressController {
   private _overlayVisible = false
   private _lastMessage = ''
   private _seeThrough = false
+  /**
+   * True after CONVERSION/`END` for this open. Distinguishes the leading
+   * FETCH_FILE END (download done) from the trailing one after openUri.
+   */
+  private _conversionEnded = false
   private _sceneBusyGate?: () => boolean
   /** Callback invoked after the overlay is hidden. */
   private _onHidden?: () => void
@@ -68,16 +74,17 @@ export class AcApOpenFileProgressController {
   }
 
   /**
-   * When true, uses a lighter overlay so progressive geometry is visible
-   * under the spinner during open.
+   * Enables progressive open overlay policy: block UI until CONVERSION ends,
+   * then hide so pan/zoom work while scene convert continues. Progress still
+   * emits on the event bus for the status bar.
    */
   setSeeThroughOverlay(enabled: boolean): void {
     this._seeThrough = enabled
     this._progress.setOverlayColor(
-      enabled
-        ? AcApOpenFileProgressController.OVERLAY_SEE_THROUGH
-        : AcApOpenFileProgressController.OVERLAY_DEFAULT
+      AcApOpenFileProgressController.OVERLAY_DEFAULT
     )
+    // Capture pointers while visible so ribbon/canvas cannot be used mid-open.
+    this._progress.setPointerEventsBlocked(true)
   }
 
   /**
@@ -106,6 +113,7 @@ export class AcApOpenFileProgressController {
     this._stage = undefined
     this._overlayVisible = false
     this._lastMessage = ''
+    this._conversionEnded = false
     this._holdIdleStreak = 0
   }
 
@@ -130,6 +138,13 @@ export class AcApOpenFileProgressController {
    * @returns Normalized progress payload (monotonic percentage)
    */
   handle(data: AcDbProgressdEventArgs): AcDbProgressdEventArgs {
+    if (
+      data.stage === 'CONVERSION' &&
+      data.subStage === 'END' &&
+      data.subStageStatus === 'END'
+    ) {
+      this._conversionEnded = true
+    }
     const progress = this.normalize(data)
     eventBus.emit('open-file-progress', progress)
     this.updateOverlay(progress)
@@ -171,25 +186,26 @@ export class AcApOpenFileProgressController {
   }
 
   private updateOverlay(data: AcDbProgressdEventArgs): void {
-    if (isOpenFileProgressComplete(data)) {
-      if (this._sceneBusyGate?.()) {
-        this.holdUntilSceneIdle()
+    if (isOpenFileProgressComplete(data, this._conversionEnded)) {
+      // Progressive: unlock as soon as parse/conversion finishes — do not wait
+      // for scene convert ("Rendering drawing ...").
+      if (this._seeThrough || !this._sceneBusyGate?.()) {
+        this.hideAndReset()
         return
       }
-      this.hideAndReset()
+      this.holdUntilSceneIdle()
       return
     }
 
     this.clearHoldPoll()
+    this._progress.setPointerEventsBlocked(true)
+    this.showOverlayWithMessage(data)
+  }
 
+  private showOverlayWithMessage(data: AcDbProgressdEventArgs): void {
     if (!this._overlayVisible) {
       this._progress.show()
       this._overlayVisible = true
-      if (this._seeThrough) {
-        this._progress.setOverlayColor(
-          AcApOpenFileProgressController.OVERLAY_SEE_THROUGH
-        )
-      }
     }
 
     const message = this.resolveMessage(data)
@@ -250,7 +266,12 @@ export class AcApOpenFileProgressController {
   private hideAndReset(): void {
     this.clearHoldPoll()
     this._progress.hide()
-    this.reset()
+    this._overlayVisible = false
+    this._lastMessage = ''
+    this._holdIdleStreak = 0
+    // Keep `_conversionEnded` / `_peak` / `_stage` for this open so a trailing
+    // FETCH_FILE END after openUri still counts as complete and does not
+    // re-show the spinner. Full {@link reset} runs on the next document open.
     this._onHidden?.()
   }
 

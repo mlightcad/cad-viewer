@@ -24,7 +24,8 @@ export type AcTrProgressiveOpenFitZoomFn = (
 export class AcTrProgressiveOpenFitController {
   private static readonly SMALL_ENTITY_THRESHOLD = 500
   private static readonly BBOX_GROWTH_RATIO = 1.5
-  private static readonly FIT_INTERVAL_MS = 500
+  /** Match mid-open paint cadence so fit-driven dirty does not outpace paints. */
+  private static readonly FIT_INTERVAL_MS = 2500
 
   private active = false
   private userAdjusted = false

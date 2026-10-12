@@ -59,17 +59,32 @@ export function unionGroupWcsChildBoxes(
 }
 
 /**
+ * Max child boxes checked on the open hot path. Whole-floor INSERTs can have
+ * 100k+ children; unioning them in dev-only asserts freezes the main thread
+ * after progressive overlay hides (preview/production skips the assert).
+ */
+export const AC_TR_GROUP_WCS_BBOX_ASSERT_MAX_CHILDREN = 2048
+
+/**
  * Verifies that a block group's aggregate {@link AcTrGroup.wcsBbox} matches the
  * union of its per-child {@link AcTrGroup.wcsChildBoxes}.
  *
  * Called from {@link AcTrView2d.handleGroup} in non-production builds. After
  * {@link AcDbRenderingCache.draw} applies the INSERT transform via
  * `applyMatrix`, both fields must stay in sync for spatial indexing.
+ *
+ * Oversized groups are skipped — unit tests still cover the consistency rule
+ * with small fixtures.
  */
 export function assertGroupWcsBboxesConsistent(
   group: AcTrGroupWcsBboxLike
 ): void {
   if (group.wcsChildBoxes.length === 0) {
+    return
+  }
+  if (
+    group.wcsChildBoxes.length > AC_TR_GROUP_WCS_BBOX_ASSERT_MAX_CHILDREN
+  ) {
     return
   }
 

@@ -99,6 +99,12 @@ import {
 } from './AcEdReviewOverlayPick'
 import { AcEdViewKeyHandler } from './AcEdViewKeyHandler'
 import {
+  absorbConvertQueue,
+  adaptConvertSliceSize,
+  createConvertPending,
+  hasPendingActiveOwner
+} from './AcTrConvertQueue'
+import {
   shouldExtendBboxForDirectEntity,
   tryBuildDirectEntityMeta
 } from './AcTrDirectBatch'
@@ -291,6 +297,13 @@ export class AcTrView2d extends AcEdBaseView {
    * `setTimeout` storm after the loading overlay hides.
    */
   private _convertQueue: AcDbEntity[] = []
+  /**
+   * Paper-space block table record ids whose viewport entities were converted
+   * before an {@link AcTrLayoutView} existed, so {@link batchConvert} could
+   * not create the {@link AcTrViewportView}. Repaired when that layout view
+   * is created.
+   */
+  private readonly _viewportRepairOwnerIds = new Set<string>()
   /** In-flight progressive convert drain; shared so awaiters wait for the queue. */
   private _convertDrainPromise: Promise<void> | null = null
   /**
@@ -299,12 +312,21 @@ export class AcTrView2d extends AcEdBaseView {
    * document open.
    */
   private _convertEpoch = 0
-  /** Last time progressive open marked the canvas dirty for paint. */
+  /** Last time progressive open actually painted mid-convert. */
   private _lastProgressivePaintAt = 0
+  /**
+   * When true, the next progressive mid-open paint must not be throttled
+   * (camera moved — user pan/zoom or incremental auto-fit).
+   */
+  private _progressivePaintUrgent = false
+  /** Pause convert until this `performance.now()` after user input. */
+  private _progressiveInputPauseUntil = 0
   /** Mid-open WebGL paints while progressive convert was still running. */
   private _progressivePaintCount = 0
   /** Cooperative yields taken inside progressive {@link batchConvert}. */
   private _progressiveYieldCount = 0
+  /** Removes progressive open input listeners registered in the constructor. */
+  private _disposeProgressiveInputWatch?: () => void
   /**
    * Saved view was not applied at open. Frame batch bounds once linework
    * convert drains, so the canvas is not blank until deferred glyphs finish.
@@ -448,27 +470,48 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Wall-time between cooperative yields during scene convert (ms).
-   * Used for both progressive and non-progressive opens so large drawings
-   * (e.g. multi-sheet architectural DWGs) cannot freeze the main thread long
-   * enough for Chromium to show "Page Unresponsive" while the overlay still
-   * reads "Rendering drawing ...". Kept relatively large so convert
-   * throughput stays high; smaller budgets made open 2–3× slower.
+   * Wall-time between cooperative yields during scene convert (ms) when
+   * progressive rendering is off. Overlay still blocks input, so a larger
+   * budget keeps throughput high while avoiding Chromium "Page Unresponsive".
    */
   private static readonly OPEN_CONVERT_YIELD_BUDGET_MS = 300
   /**
-   * Minimum interval between progressive mid-open paints (ms).
-   * Full-scene WebGL paints dominate open wall time on large drawings;
-   * paint much less often than we yield. Independent of convert yields —
-   * non-progressive opens still yield without mid-open WebGL paints.
+   * Yield cadence during progressive open (ms). Overlay stays hidden; keep
+   * slices near one frame so pan/zoom handlers can run. Discrete
+   * `navigator.scheduling.isInputPending` yields once so handlers run;
+   * pointerdown/wheel set a short pause so OrbitControls can catch up.
    */
-  private static readonly PROGRESSIVE_OPEN_PAINT_INTERVAL_MS = 1000
+  private static readonly PROGRESSIVE_OPEN_YIELD_BUDGET_MS = 32
+  /** Extra idle window after canvas pointerdown/wheel so gestures stay fluid. */
+  private static readonly PROGRESSIVE_INPUT_PAUSE_MS = 120
+  /**
+   * Minimum interval between progressive mid-open paints driven by convert
+   * (ms). Full-scene WebGL paints dominate open wall time; user camera
+   * changes bypass this throttle via {@link _progressivePaintUrgent}.
+   */
+  private static readonly PROGRESSIVE_OPEN_PAINT_INTERVAL_MS = 2500
   /**
    * Max concurrent deferred glyph/INSERT geometry finalizers. Large drawings
    * enqueue thousands of jobs; keep this modest to limit peak JS heap during
    * open while retaining reasonable text throughput after convert finishes.
    */
   private static readonly DEFERRED_GEOMETRY_CONCURRENCY = 8
+  /**
+   * Target wall time of one interactive convert slice (ms) while a paper
+   * layout is active.
+   *
+   * Slices return to the drain so a layout activated mid-open can jump ahead
+   * of a long model-space batch. Kept well above one frame (≈50–100 ms) so
+   * the fixed cost of each slice — yield, paint, queue absorb — does not
+   * dominate total load time. The 300ms yield inside {@link batchConvert}
+   * still applies within a slice.
+   */
+  private static readonly CONVERT_SLICE_BUDGET_MS = 64
+  /**
+   * Upper bound on entities per slice. Heavy block references stay at 1
+   * because a slice that overruns the time budget is halved.
+   */
+  private static readonly CONVERT_SLICE_MAX = 512
 
   /**
    * Creates a new 2D CAD viewer instance.
@@ -505,6 +548,24 @@ export class AcTrView2d extends AcEdBaseView {
 
     super(renderer.domElement, container)
     this._disposeCanvasTouchCallout = disposeCanvasTouchCallout
+    const onProgressiveInput = () => this.noteProgressiveUserInput()
+    renderer.domElement.addEventListener('pointerdown', onProgressiveInput, {
+      capture: true
+    })
+    renderer.domElement.addEventListener('wheel', onProgressiveInput, {
+      capture: true,
+      passive: true
+    })
+    this._disposeProgressiveInputWatch = () => {
+      renderer.domElement.removeEventListener(
+        'pointerdown',
+        onProgressiveInput,
+        { capture: true }
+      )
+      renderer.domElement.removeEventListener('wheel', onProgressiveInput, {
+        capture: true
+      })
+    }
     this._gripManager = new AcEdGripManager(this)
     this._keyHandler = new AcEdViewKeyHandler(this)
     if (options.calculateSizeCallback) {
@@ -995,10 +1056,9 @@ export class AcTrView2d extends AcEdBaseView {
    * The open-file progress overlay uses this when
    * {@link AcApOpenDatabaseOptions.progressiveRendering} is off, so
    * "Rendering drawing ..." stays up until deferred glyph jobs finish.
-   * When progressive rendering is on, the overlay uses
-   * {@link isConvertingEntities} and may hide while text geometry continues
-   * in the deferred pool (pan/zoom enabled). Deprecated `waitForTextGeometry`
-   * no longer selects this gate.
+   * When progressive rendering is on, the overlay hides at CONVERSION `END`
+   * and does not wait on this flag (pan/zoom enabled while convert continues).
+   * Deprecated `waitForTextGeometry` no longer selects this gate.
    */
   get isProcessingEntities() {
     return this._numOfEntitiesToProcess > 0 || this._pendingGeometryJobs > 0
@@ -1090,6 +1150,77 @@ export class AcTrView2d extends AcEdBaseView {
     this._progressivePaintCount = 0
     this._progressiveYieldCount = 0
     this._lastProgressivePaintAt = 0
+    this._progressivePaintUrgent = false
+    this._progressiveInputPauseUntil = 0
+  }
+
+  /**
+   * True while a recent canvas pointerdown/wheel asked convert to pause.
+   * Does not treat hover mousemove as a pause (that starved convert).
+   */
+  private isProgressiveGesturePauseActive(): boolean {
+    return performance.now() < this._progressiveInputPauseUntil
+  }
+
+  /**
+   * True when the browser reports pending discrete input (clicks, keys).
+   * Continuous events (mousemove) are excluded so hover does not throttle
+   * progressive convert.
+   */
+  private isProgressiveDiscreteInputPending(): boolean {
+    const scheduling = (
+      navigator as Navigator & {
+        scheduling?: {
+          isInputPending?: (opts?: { includeContinuous?: boolean }) => boolean
+        }
+      }
+    ).scheduling
+    return scheduling?.isInputPending?.() === true
+  }
+
+  /**
+   * Notes user interaction during progressive convert so paints stay urgent
+   * and the drain loop pauses briefly for OrbitControls.
+   */
+  private noteProgressiveUserInput() {
+    if (!this._progressiveRendering || this._numOfEntitiesToProcess <= 0) {
+      return
+    }
+    this._progressivePaintUrgent = true
+    this._isDirty = true
+    this._progressiveInputPauseUntil =
+      performance.now() + AcTrView2d.PROGRESSIVE_INPUT_PAUSE_MS
+  }
+
+  /**
+   * Yields during progressive convert: honor the time budget; after
+   * pointerdown/wheel pause briefly for OrbitControls; on discrete pending
+   * input yield once so handlers run without extending the pause window.
+   */
+  private async progressiveYieldForInput(
+    yieldGate: AcCmUiYieldGate | undefined,
+    yieldToEventLoop: () => Promise<void>
+  ): Promise<void> {
+    if (this.isProgressiveGesturePauseActive()) {
+      await yieldToEventLoop()
+      while (performance.now() < this._progressiveInputPauseUntil) {
+        await new Promise<void>(resolve => setTimeout(resolve, 16))
+      }
+      this._progressiveYieldCount++
+      return
+    }
+    if (this.isProgressiveDiscreteInputPending()) {
+      await yieldToEventLoop()
+      this._progressiveYieldCount++
+      return
+    }
+    if (!yieldGate) {
+      return
+    }
+    const didYield = await yieldGate.maybeYield(yieldToEventLoop)
+    if (didYield) {
+      this._progressiveYieldCount++
+    }
   }
 
   /**
@@ -2581,6 +2712,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._convertEpoch++
     this.clearFontLoadedRedrawTimer()
     this._convertQueue.length = 0
+    this._viewportRepairOwnerIds.clear()
     this._numOfEntitiesToProcess = 0
     this._claimedConvertObjectIds.clear()
     this._entityConvertGeneration.clear()
@@ -2628,6 +2760,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.clearFontLoadedRedrawTimer()
     this.cancelOpenLineworkFrame()
     this._convertQueue.length = 0
+    this._viewportRepairOwnerIds.clear()
     this._numOfEntitiesToProcess = 0
     this._claimedConvertObjectIds.clear()
     this._entityConvertGeneration.clear()
@@ -2661,6 +2794,7 @@ export class AcTrView2d extends AcEdBaseView {
     this.clearFontLoadedRedrawTimer()
     this.cancelOpenLineworkFrame()
     this._convertQueue.length = 0
+    this._viewportRepairOwnerIds.clear()
     this._numOfEntitiesToProcess = 0
     this._claimedConvertObjectIds.clear()
     this._entityConvertGeneration.clear()
@@ -2735,12 +2869,7 @@ export class AcTrView2d extends AcEdBaseView {
       return
     }
 
-    this._convertDrainPromise = (async () => {
-      while (this._convertQueue.length > 0) {
-        const batch = this._convertQueue.splice(0, this._convertQueue.length)
-        await this.batchConvert(batch)
-      }
-    })().finally(() => {
+    this._convertDrainPromise = this.runConvertDrain().finally(() => {
       this._convertDrainPromise = null
     })
 
@@ -2748,8 +2877,170 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Converts the queued entities in slices, active layout first.
+   *
+   * `drainConvertQueue` used to hand the whole queue to one
+   * {@link batchConvert}. Model-space block references queued ahead of the
+   * sheet then blocked the sheet's frame and viewports for the entire batch,
+   * and a layout activated during that batch stayed starved until it
+   * finished. Slices return here so a newly active layout is ordered ahead
+   * of the remainder. Paper-active opens use a modest slice budget so the
+   * sheet can paint soon; model-active opens match the inner
+   * {@link batchConvert} yield cadence and grow slices for throughput so
+   * Model-first drawings are not slowed by fine outer slicing. Headless
+   * opens (`cooperativeYield === false`) still convert in one batch after
+   * that reorder.
+   */
+  private async runConvertDrain(): Promise<void> {
+    const epoch = this._convertEpoch
+    const interactive = this._cooperativeYield
+    // Model-first opens start at max slice so throughput matches a single
+    // batchConvert; paper-first stays at 1 so the sheet can paint in small
+    // bites. Layout switches reset slice below.
+    let slice = !interactive
+      ? Number.POSITIVE_INFINITY
+      : this.activeLayoutBtrId === this.modelSpaceBtrId
+        ? AcTrView2d.CONVERT_SLICE_MAX
+        : 1
+    let lastYieldAt = performance.now()
+    let state = createConvertPending(
+      this._convertQueue.splice(0, this._convertQueue.length),
+      this.activeLayoutBtrId
+    )
+    this.repairViewportViewsFor(state.activeOwnerId)
+
+    while (
+      state.cursor < state.pending.length ||
+      this._convertQueue.length > 0
+    ) {
+      if (this._convertEpoch !== epoch) return
+
+      const queued = this._convertQueue.splice(0, this._convertQueue.length)
+      const activeNow = this.activeLayoutBtrId
+      const activeChanged = activeNow !== state.activeOwnerId
+      state = absorbConvertQueue(state, queued, activeNow)
+      if (activeChanged) {
+        this.repairViewportViewsFor(activeNow)
+        // Drop back to a small slice so the newly active layout's own
+        // entities are not buried inside a leftover large model-space bite.
+        if (interactive) slice = 1
+      }
+      this.flushViewportViewRepairs()
+
+      if (state.cursor >= state.pending.length) break
+
+      const end = Math.min(state.pending.length, state.cursor + slice)
+      const startedAt = performance.now()
+      await this.batchConvert(state.pending.slice(state.cursor, end))
+      state.cursor = end
+      if (this._convertEpoch !== epoch) return
+
+      if (!interactive) continue
+
+      const took = performance.now() - startedAt
+      const modelActive = state.activeOwnerId === this.modelSpaceBtrId
+      // Model-first opens only need occasional slice boundaries so a sheet
+      // activated mid-load can jump the queue. Progressive uses a tighter
+      // budget so input stays responsive after the overlay hides.
+      const modelYieldBudget = this._progressiveRendering
+        ? AcTrView2d.PROGRESSIVE_OPEN_YIELD_BUDGET_MS
+        : AcTrView2d.OPEN_CONVERT_YIELD_BUDGET_MS
+      const budget = modelActive
+        ? modelYieldBudget
+        : AcTrView2d.CONVERT_SLICE_BUDGET_MS
+      slice = adaptConvertSliceSize({
+        slice,
+        tookMs: took,
+        budgetMs: budget,
+        maxSlice: AcTrView2d.CONVERT_SLICE_MAX,
+        // Fine 2× growth only while a paper sheet still needs converting.
+        // Model-active (or paper already drained) prefers 4× throughput.
+        activeLayoutPending: !modelActive && hasPendingActiveOwner(state)
+      })
+      if (
+        this._progressiveRendering &&
+        this.isProgressiveGesturePauseActive()
+      ) {
+        await new Promise<void>(resolve => setTimeout(resolve, 0))
+        while (performance.now() < this._progressiveInputPauseUntil) {
+          await new Promise<void>(resolve => setTimeout(resolve, 16))
+        }
+        lastYieldAt = performance.now()
+        if (this._convertEpoch !== epoch) return
+      } else if (
+        this._progressiveRendering &&
+        this.isProgressiveDiscreteInputPending()
+      ) {
+        await new Promise<void>(resolve => setTimeout(resolve, 0))
+        lastYieldAt = performance.now()
+        if (this._convertEpoch !== epoch) return
+      } else if (performance.now() - lastYieldAt >= budget) {
+        await new Promise<void>(resolve => setTimeout(resolve, 0))
+        lastYieldAt = performance.now()
+        if (this._convertEpoch !== epoch) return
+      }
+    }
+
+    this.repairViewportViewsFor(this.activeLayoutBtrId)
+    this.flushViewportViewRepairs()
+  }
+
+  /**
+   * Creates missing {@link AcTrViewportView}s for one paper layout.
+   *
+   * Safe to call before the layout's entities have been committed to the
+   * scene: the database block table record already holds the viewports.
+   * Model space is skipped so a large model is not walked on every slice.
+   *
+   * @param layoutBtrId - Block table record id of the layout to repair.
+   */
+  private repairViewportViewsFor(layoutBtrId: string) {
+    if (!layoutBtrId || layoutBtrId === this.modelSpaceBtrId) return
+    const layoutView = this._layoutViewManager.getAt(layoutBtrId)
+    if (!layoutView || layoutView.viewportCount > 0) {
+      if (layoutView && layoutView.viewportCount > 0) {
+        this._viewportRepairOwnerIds.delete(layoutBtrId)
+      }
+      return
+    }
+    try {
+      const db = AcApDocManager.instance.curDocument?.database
+      const blockTableRecord = db?.tables.blockTable.getIdAt(layoutBtrId)
+      if (!blockTableRecord) return
+      const before = layoutView.viewportCount
+      this.ensureViewportViews(blockTableRecord, layoutView)
+      if (layoutView.viewportCount > before) {
+        this._isDirty = true
+      }
+      // The block table record was readable. Drop the id even when every
+      // viewport was the default paper-space one, so a model-sized record
+      // is not walked again on the next slice.
+      this._viewportRepairOwnerIds.delete(layoutBtrId)
+    } catch (error) {
+      log.error('[AcTrView2d] Error repairing viewport views:', error)
+    }
+  }
+
+  /**
+   * Retries viewport-view creation for owners recorded while their layout
+   * view did not exist yet.
+   */
+  private flushViewportViewRepairs() {
+    if (this._viewportRepairOwnerIds.size === 0) return
+    const ownerIds = Array.from(this._viewportRepairOwnerIds)
+    for (let i = 0; i < ownerIds.length; i++) {
+      this.repairViewportViewsFor(ownerIds[i])
+    }
+  }
+
+  /**
    * Marks the canvas dirty for progressive open, throttled to avoid painting
    * on every entity (which dominated total open time).
+   *
+   * Does not stamp {@link _lastProgressivePaintAt} — that updates only when
+   * {@link animate} actually paints. Does not set
+   * {@link _progressivePaintUrgent}; camera moves do that so pan/zoom stay
+   * immediate while convert-driven paints remain rare.
    */
   private markProgressiveDirty(force = false) {
     const now = performance.now()
@@ -2759,7 +3050,6 @@ export class AcTrView2d extends AcEdBaseView {
         AcTrView2d.PROGRESSIVE_OPEN_PAINT_INTERVAL_MS
     ) {
       this._isDirty = true
-      this._lastProgressivePaintAt = now
     }
   }
 
@@ -2824,6 +3114,8 @@ export class AcTrView2d extends AcEdBaseView {
   dispose() {
     this._disposeCanvasTouchCallout?.()
     this._disposeCanvasTouchCallout = undefined
+    this._disposeProgressiveInputWatch?.()
+    this._disposeProgressiveInputWatch = undefined
     this.clearFontLoadedRedrawTimer()
     this.cancelOpenLineworkFrame()
     this.stopAnimationLoop()
@@ -2894,10 +3186,30 @@ export class AcTrView2d extends AcEdBaseView {
     if (deferRenderWhileLoading) return
     if (!this._isDirty && !this._htmlDirty) return
 
+    // Progressive mid-open: throttle convert-driven paints only. Camera
+    // changes set `_progressivePaintUrgent` so pan/zoom still redraw now —
+    // throttling those made the canvas feel frozen after the overlay hid.
+    if (
+      this._progressiveRendering &&
+      stillLoading &&
+      this._isDirty &&
+      !this._progressivePaintUrgent
+    ) {
+      const now = performance.now()
+      if (
+        now - this._lastProgressivePaintAt <
+        AcTrView2d.PROGRESSIVE_OPEN_PAINT_INTERVAL_MS
+      ) {
+        return
+      }
+    }
+
     let needsRedraw = false
     if (this._isDirty) {
       if (this._progressiveRendering && stillLoading) {
         this._progressivePaintCount++
+        this._lastProgressivePaintAt = performance.now()
+        this._progressivePaintUrgent = false
       }
       needsRedraw = this._layoutViewManager.render(this._scene)
     }
@@ -2937,11 +3249,19 @@ export class AcTrView2d extends AcEdBaseView {
       layoutView.events.viewChanged.addEventListener(() => {
         this._progressiveOpenFit.onLayoutViewChanged()
         this._isDirty = true
+        // Bypass mid-open paint throttle so pan/zoom (and incremental fit)
+        // remain visible while convert continues.
+        if (this._progressiveRendering && this._numOfEntitiesToProcess > 0) {
+          this._progressivePaintUrgent = true
+        }
         this.events.viewChanged.dispatch()
         this.clearHover()
       })
       this._layoutViewManager.add(layoutView)
     }
+    // Viewport entities may already have been converted while this view was
+    // missing. Creating it is the moment those AcTrViewportViews can exist.
+    this.flushViewportViewRepairs()
     return layoutView
   }
 
@@ -2977,46 +3297,21 @@ export class AcTrView2d extends AcEdBaseView {
       const existingLayout = this._scene.layouts.get(layoutBtrId)
       if (existingLayout && existingLayout.isLoaded) {
         // Streamed layouts flip `isLoaded` from `addEntity` before scene
-        // commits finish. Still repair the viewport-view race when entities
-        // are already in the scene but AcTrViewportView creation was skipped.
-        const layoutView = this._layoutViewManager.getAt(layoutBtrId)
-        if (
-          existingLayout.entityCount > 0 &&
-          layoutView &&
-          layoutView.viewportCount === 0
-        ) {
-          this.ensureViewportViews(blockTableRecord, layoutView)
-        }
+        // commits finish (`entityCount` still 0). Viewport views are read
+        // from the block table record, so repair them even while the sheet's
+        // own entities are still queued behind model space.
+        this.repairViewportViewsFor(layoutBtrId)
         return
       }
       if (this._loadingLayouts.has(layoutBtrId)) {
         return
       }
 
-      // Ensure `AcTrViewportView`s exist for every real `AcDbViewport`
-      // in this layout when the layout's entities were already streamed
-      // in by the document parser. There is a race in the parser-driven
-      // load path: `addLayout(layout)` creates the `AcTrLayoutView`,
-      // but the parser may dispatch the AcDbViewport entities before
-      // that happens. When that races, `batchConvert`'s viewport
-      // handler does `_layoutViewManager.getAt(entity.ownerId)`, gets
-      // `undefined`, and **silently skips creating the
-      // AcTrViewportView**. The reload path below used to mask this by
-      // re-running batchConvert after the layoutView existed, but the
-      // entityCount-skip optimization that follows removes that
-      // side-effect, so we do the viewport-view-only pass explicitly
-      // here. Skipped when the layout is empty — in that case the
-      // batchConvert path below will create the viewport views directly
-      // as it processes each entity.
-      const layoutView = this._layoutViewManager.getAt(layoutBtrId)
-      if (
-        existingLayout &&
-        existingLayout.entityCount > 0 &&
-        layoutView &&
-        layoutView.viewportCount === 0
-      ) {
-        this.ensureViewportViews(blockTableRecord, layoutView)
-      }
+      // Same repair as the isLoaded path: the layout view can exist before
+      // any of its entities have been committed to the scene. Viewport
+      // entities converted before `addLayout` created that view are recorded
+      // in `_viewportRepairOwnerIds` and attached here.
+      this.repairViewportViewsFor(layoutBtrId)
 
       // Model space (and any other layout pre-populated by the document
       // parser at open time) lands here without `isLoaded` ever having
@@ -3590,6 +3885,36 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Adds an {@link AcTrViewportView} for a real paper-space viewport.
+   *
+   * When the layout view does not exist yet, the owner id is remembered and
+   * {@link flushViewportViewRepairs} creates the view once the layout view
+   * does. Adding twice for the same viewport id replaces the previous view.
+   *
+   * @param entity - Viewport entity, already past the default-viewport filter
+   *   at the caller's discretion. Checked again here.
+   */
+  private attachViewportView(entity: AcDbViewport) {
+    if (AcTrViewportView.isDefaultPaperSpaceViewport(entity)) return
+    const ownerId = entity.ownerId
+    const layoutView = ownerId
+      ? this._layoutViewManager.getAt(ownerId)
+      : undefined
+    if (!layoutView) {
+      if (ownerId) this._viewportRepairOwnerIds.add(ownerId)
+      return
+    }
+    layoutView.addViewport(
+      new AcTrViewportView(
+        layoutView,
+        this.toGiViewportWithFrozenLayers(entity),
+        this._renderer
+      )
+    )
+    this._isDirty = true
+  }
+
+  /**
    * Walks the given block table record once and creates one
    * `AcTrViewportView` for every real `AcDbViewport` entity it finds
    * (skipping the default paper-space viewport that is filtered
@@ -3688,10 +4013,13 @@ export class AcTrView2d extends AcEdBaseView {
     //
     // Headless export sets cooperativeYield=false (or forExport) so convert
     // does not pay for setTimeout yields the CLI never needs.
+    const yieldBudgetMs = progressive
+      ? AcTrView2d.PROGRESSIVE_OPEN_YIELD_BUDGET_MS
+      : AcTrView2d.OPEN_CONVERT_YIELD_BUDGET_MS
     const yieldGate =
       options.forExport || !this._cooperativeYield
         ? undefined
-        : new AcCmUiYieldGate(AcTrView2d.OPEN_CONVERT_YIELD_BUDGET_MS)
+        : new AcCmUiYieldGate(yieldBudgetMs)
     const yieldToEventLoop = () =>
       new Promise<void>(resolve => setTimeout(resolve, 0))
     for (let i = 0; i < entities.length; ++i) {
@@ -3739,6 +4067,12 @@ export class AcTrView2d extends AcEdBaseView {
             (this.hasEntity(objectId) ||
               this._claimedConvertObjectIds.has(objectId))
           ) {
+            // The border may already be in the scene from a pass that ran
+            // before the layout view existed. Still attach the viewport
+            // view; a second border is not drawn because we continue below.
+            if (entity instanceof AcDbViewport) {
+              this.attachViewportView(entity)
+            }
             continue
           }
           if (objectId) {
@@ -3893,17 +4227,7 @@ export class AcTrView2d extends AcEdBaseView {
           // user-created viewport. The redundant check below is kept as
           // a defensive guard in case a future refactor reorders the
           // early-skip — it costs ~nothing and prevents a regression.
-          if (!AcTrViewportView.isDefaultPaperSpaceViewport(entity)) {
-            const layoutView = this._layoutViewManager.getAt(entity.ownerId)
-            if (layoutView) {
-              const viewportView = new AcTrViewportView(
-                layoutView,
-                this.toGiViewportWithFrozenLayers(entity),
-                this._renderer
-              )
-              layoutView.addViewport(viewportView)
-            }
-          }
+          this.attachViewportView(entity)
         } else if (entity instanceof AcDbRasterImage) {
           // Only track images whose pixel data is still unresolved.
           const fileName = entity.imageFileName
@@ -3930,9 +4254,11 @@ export class AcTrView2d extends AcEdBaseView {
         continue
       }
 
-      if (yieldGate) {
-        // Yield for input/overlay, but do not force a full-scene paint here —
-        // paints are throttled separately via markProgressiveDirty().
+      if (progressive) {
+        // Prefer input-aware yields so pan/zoom are not starved after the
+        // overlay is gone; paint throttling stays in markProgressiveDirty.
+        await this.progressiveYieldForInput(yieldGate, yieldToEventLoop)
+      } else if (yieldGate) {
         const didYield = await yieldGate.maybeYield(yieldToEventLoop)
         if (didYield) {
           this._progressiveYieldCount++
@@ -4062,7 +4388,10 @@ export class AcTrView2d extends AcEdBaseView {
       // whole-floor block (00-1~4F: 181515 children, 81 layers) spent ~74s
       // there while "Rendering drawing ..." stayed up.
       let registeredChildIndex = false
-      objectsGroupByLayer.forEach((objects, layerName) => {
+      const yieldToEventLoop = () =>
+        new Promise<void>(resolve => setTimeout(resolve, 0))
+      let lastGroupYieldAt = progressive ? performance.now() : 0
+      for (const [layerName, objects] of objectsGroupByLayer) {
         // Nested layer-0 may already be resolved to an inner INSERT layer during
         // flatten. Remaining "0" buckets inherit this (outermost) INSERT layer.
         const effectiveLayerName = layerName === '0' ? groupLayerName : layerName
@@ -4131,7 +4460,20 @@ export class AcTrView2d extends AcEdBaseView {
         this._convertPhaseMs.addEntity += performance.now() - tAdd
         this.applySessionHiddenObjectState(groupObjectId)
         entity.dispose()
-      })
+
+        // Progressive open hides the overlay at CONVERSION END while deferred
+        // INSERT finalize may still split many layers — time-budgeted yields
+        // so pan/zoom handlers can run between layer commits.
+        if (
+          progressive &&
+          epoch === this._convertEpoch &&
+          performance.now() - lastGroupYieldAt >=
+            AcTrView2d.PROGRESSIVE_OPEN_YIELD_BUDGET_MS
+        ) {
+          await yieldToEventLoop()
+          lastGroupYieldAt = performance.now()
+        }
+      }
       group.dispose()
 
       if (progressive) {

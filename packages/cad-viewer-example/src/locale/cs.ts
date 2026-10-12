@@ -49,7 +49,7 @@ export default {
       progressiveRendering: 'Průběžné vykreslování',
       on: 'Zapnuto',
       progressiveOnHint:
-        'Zobrazit geometrii během načítání; progress se skryje po převodu entit',
+        'Zamknout UI do dokončení parse/převodu; poté pan/zoom při načítání scény',
       off: 'Vypnuto',
       progressiveOffHint: 'Čekat na dokončení převodu entit i textu',
 
