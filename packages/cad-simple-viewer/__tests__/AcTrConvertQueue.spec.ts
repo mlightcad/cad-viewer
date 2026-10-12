@@ -1,6 +1,8 @@
 import {
   absorbConvertQueue,
+  adaptConvertSliceSize,
   createConvertPending,
+  hasPendingActiveOwner,
   orderActiveLayoutFirst
 } from '../src/view/AcTrConvertQueue'
 
@@ -97,5 +99,90 @@ describe('absorbConvertQueue', () => {
     expect(next.pending).toBe(pending)
     expect(next.cursor).toBe(1)
     expect(ids(next.pending)).toEqual(['frame', 'm0', 'm1'])
+  })
+})
+
+describe('hasPendingActiveOwner', () => {
+  const paper = 'paper'
+  const model = 'model'
+
+  test('is true while the active layout still has unconverted entities', () => {
+    const state = createConvertPending(
+      [
+        { id: 'frame', ownerId: paper },
+        { id: 'm0', ownerId: model }
+      ],
+      paper
+    )
+    expect(hasPendingActiveOwner(state)).toBe(true)
+    state.cursor = 1
+    expect(hasPendingActiveOwner(state)).toBe(false)
+  })
+})
+
+describe('adaptConvertSliceSize', () => {
+  const budgetMs = 64
+  const maxSlice = 512
+
+  test('grows by 2× while the active layout is still pending', () => {
+    expect(
+      adaptConvertSliceSize({
+        slice: 8,
+        tookMs: 10,
+        budgetMs,
+        maxSlice,
+        activeLayoutPending: true
+      })
+    ).toBe(16)
+  })
+
+  test('grows by 4× once only non-active entities remain', () => {
+    expect(
+      adaptConvertSliceSize({
+        slice: 8,
+        tookMs: 10,
+        budgetMs,
+        maxSlice,
+        activeLayoutPending: false
+      })
+    ).toBe(32)
+  })
+
+  test('grows by 4× for model-active throughput (caller clears pending flag)', () => {
+    // runConvertDrain passes activeLayoutPending=false when the active
+    // layout is model space so Model-first opens are not slowed by 2× ramps.
+    expect(
+      adaptConvertSliceSize({
+        slice: 8,
+        tookMs: 10,
+        budgetMs: 300,
+        maxSlice,
+        activeLayoutPending: false
+      })
+    ).toBe(32)
+  })
+
+  test('shrinks when a slice overruns the budget', () => {
+    expect(
+      adaptConvertSliceSize({
+        slice: 16,
+        tookMs: 200,
+        budgetMs,
+        maxSlice,
+        activeLayoutPending: false
+      })
+    ).toBe(8)
+  })
+
+  test('caps growth at maxSlice', () => {
+    expect(
+      adaptConvertSliceSize({
+        slice: 256,
+        tookMs: 10,
+        budgetMs,
+        maxSlice,
+        activeLayoutPending: false
+      })
+    ).toBe(512)
   })
 })

@@ -100,7 +100,9 @@ import {
 import { AcEdViewKeyHandler } from './AcEdViewKeyHandler'
 import {
   absorbConvertQueue,
-  createConvertPending
+  adaptConvertSliceSize,
+  createConvertPending,
+  hasPendingActiveOwner
 } from './AcTrConvertQueue'
 import {
   shouldExtendBboxForDirectEntity,
@@ -481,17 +483,19 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private static readonly DEFERRED_GEOMETRY_CONCURRENCY = 8
   /**
-   * Target wall time of one interactive convert slice (ms).
+   * Target wall time of one interactive convert slice (ms) while a paper
+   * layout is active.
    *
-   * A slice returns to the drain so a layout activated meanwhile — or the
-   * active layout chosen when the file finishes reading — is converted before
-   * the rest of a model-space batch. Kept near one frame; the 300ms yield
-   * inside {@link batchConvert} still applies within a slice.
+   * Slices return to the drain so a layout activated mid-open can jump ahead
+   * of a long model-space batch. Kept well above one frame (≈50–100 ms) so
+   * the fixed cost of each slice — yield, paint, queue absorb — does not
+   * dominate total load time. The 300ms yield inside {@link batchConvert}
+   * still applies within a slice.
    */
-  private static readonly CONVERT_SLICE_FRAME_MS = 16
+  private static readonly CONVERT_SLICE_BUDGET_MS = 64
   /**
    * Upper bound on entities per slice. Heavy block references stay at 1
-   * because a slice that overruns the frame budget is halved.
+   * because a slice that overruns the time budget is halved.
    */
   private static readonly CONVERT_SLICE_MAX = 512
 
@@ -2778,13 +2782,24 @@ export class AcTrView2d extends AcEdBaseView {
    * sheet then blocked the sheet's frame and viewports for the entire batch,
    * and a layout activated during that batch stayed starved until it
    * finished. Slices return here so a newly active layout is ordered ahead
-   * of the remainder. Headless opens (`cooperativeYield === false`) still
-   * convert in one batch after that reorder.
+   * of the remainder. Paper-active opens use a modest slice budget so the
+   * sheet can paint soon; model-active opens match the inner
+   * {@link batchConvert} yield cadence and grow slices for throughput so
+   * Model-first drawings are not slowed by fine outer slicing. Headless
+   * opens (`cooperativeYield === false`) still convert in one batch after
+   * that reorder.
    */
   private async runConvertDrain(): Promise<void> {
     const epoch = this._convertEpoch
     const interactive = this._cooperativeYield
-    let slice = interactive ? 1 : Number.POSITIVE_INFINITY
+    // Model-first opens start at max slice so throughput matches a single
+    // batchConvert; paper-first stays at 1 so the sheet can paint in small
+    // bites. Layout switches reset slice below.
+    let slice = !interactive
+      ? Number.POSITIVE_INFINITY
+      : this.activeLayoutBtrId === this.modelSpaceBtrId
+        ? AcTrView2d.CONVERT_SLICE_MAX
+        : 1
     let lastYieldAt = performance.now()
     let state = createConvertPending(
       this._convertQueue.splice(0, this._convertQueue.length),
@@ -2804,6 +2819,9 @@ export class AcTrView2d extends AcEdBaseView {
       state = absorbConvertQueue(state, queued, activeNow)
       if (activeChanged) {
         this.repairViewportViewsFor(activeNow)
+        // Drop back to a small slice so the newly active layout's own
+        // entities are not buried inside a leftover large model-space bite.
+        if (interactive) slice = 1
       }
       this.flushViewportViewRepairs()
 
@@ -2818,13 +2836,23 @@ export class AcTrView2d extends AcEdBaseView {
       if (!interactive) continue
 
       const took = performance.now() - startedAt
-      const frame = AcTrView2d.CONVERT_SLICE_FRAME_MS
-      if (took < frame / 2) {
-        slice = Math.min(slice * 2, AcTrView2d.CONVERT_SLICE_MAX)
-      } else if (took > frame * 2) {
-        slice = Math.max(1, slice >> 1)
-      }
-      if (performance.now() - lastYieldAt >= frame) {
+      const modelActive = state.activeOwnerId === this.modelSpaceBtrId
+      // Model-first opens only need occasional slice boundaries so a sheet
+      // activated mid-load can jump the queue; match the 300ms inner yield
+      // so outer slicing does not add a second, finer cost layer.
+      const budget = modelActive
+        ? AcTrView2d.OPEN_CONVERT_YIELD_BUDGET_MS
+        : AcTrView2d.CONVERT_SLICE_BUDGET_MS
+      slice = adaptConvertSliceSize({
+        slice,
+        tookMs: took,
+        budgetMs: budget,
+        maxSlice: AcTrView2d.CONVERT_SLICE_MAX,
+        // Fine 2× growth only while a paper sheet still needs converting.
+        // Model-active (or paper already drained) prefers 4× throughput.
+        activeLayoutPending: !modelActive && hasPendingActiveOwner(state)
+      })
+      if (performance.now() - lastYieldAt >= budget) {
         await new Promise<void>(resolve => setTimeout(resolve, 0))
         lastYieldAt = performance.now()
         if (this._convertEpoch !== epoch) return

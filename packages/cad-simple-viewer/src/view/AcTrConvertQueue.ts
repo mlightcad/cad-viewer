@@ -132,3 +132,53 @@ export function absorbConvertQueue<T extends AcTrConvertQueueEntity>(
   for (let i = 0; i < back.length; i++) state.pending.push(back[i])
   return state
 }
+
+/**
+ * Whether the not-yet-converted remainder still holds entities owned by the
+ * active layout. Used to grow slices more aggressively once only model-space
+ * (or other layouts) remain.
+ */
+export function hasPendingActiveOwner<T extends AcTrConvertQueueEntity>(
+  state: AcTrConvertPendingState<T>
+): boolean {
+  const { pending, cursor, activeOwnerId } = state
+  if (!activeOwnerId) return false
+  for (let i = cursor; i < pending.length; i++) {
+    if (pending[i].ownerId === activeOwnerId) return true
+  }
+  return false
+}
+
+/**
+ * Grows or shrinks the next convert slice from the previous slice's wall time.
+ *
+ * When a paper layout still has pending entities, grow by 2× so the sheet can
+ * interleave soon. Once only other owners remain — or the active layout is
+ * already model space, where fine interleaving does not help first paint —
+ * grow by 4× so a long model-space tail does not pay per-slice overhead.
+ *
+ * @param slice - Entities converted in the previous slice (≥ 1).
+ * @param tookMs - Wall time of that slice.
+ * @param budgetMs - Target wall time per slice.
+ * @param maxSlice - Upper bound on entities per slice.
+ * @param activeLayoutPending - True to prefer responsive 2× growth (paper
+ *   sheet still converting); false for 4× throughput.
+ */
+export function adaptConvertSliceSize(options: {
+  slice: number
+  tookMs: number
+  budgetMs: number
+  maxSlice: number
+  activeLayoutPending: boolean
+}): number {
+  const { tookMs, budgetMs, maxSlice, activeLayoutPending } = options
+  const slice = Math.max(1, options.slice)
+  const growBy = activeLayoutPending ? 2 : 4
+  if (tookMs < budgetMs / 2) {
+    return Math.min(slice * growBy, maxSlice)
+  }
+  if (tookMs > budgetMs * 2) {
+    return Math.max(1, slice >> 1)
+  }
+  return slice
+}
