@@ -202,6 +202,40 @@ describe('AcExPatternSnapshot', () => {
       ]
     })
   })
+  it('applies the block rotation exactly once and scales the dash runs', () => {
+    // Rotation 90 degrees with a uniform scale of 2. Before the fix this
+    // rotated the pattern twice (angle + patternAngle) and copied the dash
+    // runs verbatim, so a scaled block kept its pre-scale dash period.
+    const matrix = new THREE.Matrix4()
+      .makeRotationZ(Math.PI / 2)
+      .scale(new THREE.Vector3(2, 2, 1))
+      .toArray()
+    const pattern = {
+      patternAngle: 0.25,
+      patternLines: [
+        {
+          angle: 0,
+          base: [0, 0] as [number, number],
+          offset: [0, 1] as [number, number],
+          dashLengths: [1, -1],
+          patternLength: 2
+        }
+      ]
+    }
+
+    const result = transformHatchPatternToWorldSpace(pattern, matrix)
+    const line = result.patternLines[0]!
+
+    // The shader combines line.angle + patternAngle, so the block rotation
+    // belongs to angle alone.
+    expect(result.patternAngle).toBeCloseTo(0.25)
+    expect(line.angle).toBeCloseTo(Math.PI / 2)
+    // The dash runs follow the block along-line stretch (2x).
+    expect(line.dashLengths).toEqual([2, -2])
+    expect(line.patternLength).toBeCloseTo(4)
+    // The offset keeps its scaled magnitude without a second rotation.
+    expect(Math.hypot(line.offset[0], line.offset[1])).toBeCloseTo(2)
+  })
 
   it('rebases world hatch pattern bases into a local float32-safe frame', () => {
     // AcEx offsets match live shader uniforms: already rotated by -lineAngle.
