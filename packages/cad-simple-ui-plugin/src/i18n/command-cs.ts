@@ -11,6 +11,9 @@ export const commandCs = {
     },
     measurementpanel: {
       description: 'Otevře dokovací panel seznamu měření'
+    },
+    find: {
+      description: 'Otevře dokovací panel hledání textu'
     }
   }
 }

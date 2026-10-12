@@ -11,6 +11,9 @@ export const commandTr = {
     },
     measurementpanel: {
       description: 'Ölçüm listesi yerleştirme panelini açar'
+    },
+    find: {
+      description: 'Metin arama yerleştirme panelini açar'
     }
   }
 }

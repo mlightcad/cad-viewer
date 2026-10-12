@@ -95,6 +95,7 @@ export default {
       undo: 'تراجع',
       redo: 'إعادة',
       properties: 'الخصائص',
+      find: 'بحث',
       countList: 'العد',
       insert: 'إدراج',
 
@@ -443,6 +444,7 @@ export default {
       quickSelect:
         'افتح التحديد السريع لتصفية العناصر وتحديدها وفق شروط.',
 
+      find: 'افتح لوحة البحث للبحث عن النص في الرسم بالكامل أو في التخطيط الحالي.',
       countList:
         'افتح لوحة العد لعرض أعداد الكتل وإدارتها.',
 
@@ -1038,6 +1040,32 @@ export default {
       }
     },
 
+    find: {
+      tab: 'بحث',
+      title: 'بحث',
+      placeholder: 'ابحث عن نص',
+      input: 'نص البحث',
+      find: 'بحث',
+      matchCase: 'مطابقة حالة الأحرف',
+      currentLayoutOnly: 'التخطيط الحالي فقط',
+      hint: 'اضغط Enter للبحث عن النصوص والنصوص متعددة الأسطر وسمات الكتل في الرسم بالكامل (كل التخطيطات).',
+      hintLayout: 'اضغط Enter للبحث عن النصوص والنصوص متعددة الأسطر وسمات الكتل في التخطيط الحالي.',
+      noResults: 'لم يتم العثور على نص',
+      count: 'تم العثور على {count}',
+      countLayouts: 'تم العثور على {count} في {layouts} تخطيطات',
+      countTruncated: 'تم عرض أول {count} نتيجة — قم بتضييق البحث',
+      noDocument: 'افتح رسمًا للبحث',
+      layoutUnavailable: 'تعذر فتح التخطيط "{layout}"',
+      kind: {
+        text: 'نص',
+        mtext: 'نص متعدد الأسطر',
+        attribute: 'سمة',
+        block: 'نص كتلة',
+        dimension: 'بُعد',
+        leader: 'خط إشارة',
+        table: 'جدول'
+      }
+    },
     countList: {
       ...enMain.toolPalette.countList,
 

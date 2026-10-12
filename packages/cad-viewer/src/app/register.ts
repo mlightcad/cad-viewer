@@ -19,6 +19,7 @@ import {
   AcApDrawingUnitsCmd,
   AcApExportHtmlDlgCmd,
   AcApExportPdfDlgCmd,
+  AcApFindCmd,
   AcApInsertPaletteCmd,
   AcApLayerStateCmd,
   AcApMarkupPanelCmd,
@@ -121,6 +122,12 @@ export const registerCmds = () => {
       'insert',
       new AcApInsertPaletteCmd(),
       'blockspalette'
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'find',
+      'find',
+      new AcApFindCmd()
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,

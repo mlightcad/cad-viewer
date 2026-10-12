@@ -11,6 +11,9 @@ export const commandZh = {
     },
     measurementpanel: {
       description: '打开测量列表面板'
+    },
+    find: {
+      description: '打开文字查找面板'
     }
   }
 }

@@ -15,6 +15,7 @@ export const en: Record<string, string> = {
   'toolbar.zoomSaved': 'Saved',
   'toolbar.zoomOriginal': 'Saved',
   'toolbar.layer': 'Layer Manager',
+  'toolbar.find': 'Find',
   'toolbar.layerShort': 'Layers',
   'toolbar.layout': 'Layout',
   'toolbar.settings': 'Settings',
@@ -95,6 +96,7 @@ export const en: Record<string, string> = {
   'dockPanel.moreTabs': 'More tabs',
   'dockPanel.tab.layers': 'Layers',
   'dockPanel.tab.review': 'Review',
+  'dockPanel.tab.find': 'Find',
   'dockPanel.tab.measurements': 'Measurements',
   'dockPanel.resize': 'Resize panel',
   'reviewPalette.searchPlaceholder': 'Search markups',
@@ -134,5 +136,24 @@ export const en: Record<string, string> = {
   'measurePalette.typeValues.angle': 'Angle',
   'measurePalette.typeValues.area': 'Area',
   'measurePalette.typeValues.arc': 'Arc',
-  'measurePalette.typeValues.point': 'XY'
+  'measurePalette.typeValues.point': 'XY',
+  'findPalette.placeholder': 'Find text',
+  'findPalette.input': 'Search text',
+  'findPalette.find': 'Find',
+  'findPalette.matchCase': 'Match case',
+  'findPalette.currentLayoutOnly': 'Current layout only',
+  'findPalette.hint':
+    'Press Enter to search text, multiline text and block attributes in the whole drawing (all layouts).',
+  'findPalette.hintLayout':
+    'Press Enter to search text, multiline text and block attributes in the current layout.',
+  'findPalette.noResults': 'No text found',
+  'findPalette.count': '{count} found',
+  'findPalette.countLayouts': '{count} found in {layouts} layouts',
+  'findPalette.countTruncated':
+    'First {count} results shown — refine the search',
+  'findPalette.noDocument': 'Open a drawing to search',
+  'findPalette.layoutUnavailable': 'Could not open layout "{layout}"',
+  'findPalette.kind.text': 'Text',
+  'findPalette.kind.mtext': 'MText',
+  'findPalette.kind.attribute': 'Attribute'
 }

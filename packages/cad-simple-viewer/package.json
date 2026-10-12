@@ -22,7 +22,9 @@
     "dist",
     "lib",
     "icons.ts",
+    "find.ts",
     "src/ui/icons.ts",
+    "src/find",
     "README.md",
     "package.json"
   ],
@@ -39,6 +41,11 @@
       "types": "./src/ui/icons.ts",
       "import": "./src/ui/icons.ts",
       "default": "./lib/ui/icons.js"
+    },
+    "./find": {
+      "types": "./src/find/index.ts",
+      "import": "./src/find/index.ts",
+      "default": "./lib/find/index.js"
     }
   },
   "scripts": {

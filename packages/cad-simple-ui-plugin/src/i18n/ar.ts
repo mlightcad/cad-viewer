@@ -12,6 +12,7 @@ export const ar: Record<string, string> = {
   'toolbar.zoomSaved': 'محفوظ',
   'toolbar.zoomOriginal': 'محفوظ',
   'toolbar.layer': 'مدير الطبقات',
+  'toolbar.find': 'بحث',
   'toolbar.layerShort': 'الطبقات',
   'toolbar.layout': 'المخطط',
   'toolbar.settings': 'الإعدادات',
@@ -115,6 +116,7 @@ export const ar: Record<string, string> = {
 
   'dockPanel.tab.layers': 'الطبقات',
   'dockPanel.tab.review': 'المراجعة',
+  'dockPanel.tab.find': 'بحث',
   'dockPanel.tab.measurements': 'القياسات',
   'dockPanel.resize': 'تغيير ارتفاع اللوحة',
 
@@ -162,5 +164,21 @@ export const ar: Record<string, string> = {
   'measurePalette.typeValues.angle': 'زاوية',
   'measurePalette.typeValues.area': 'مساحة',
   'measurePalette.typeValues.arc': 'قوس',
-  'measurePalette.typeValues.point': 'XY'
+  'measurePalette.typeValues.point': 'XY',
+  'findPalette.placeholder': 'ابحث عن نص',
+  'findPalette.input': 'نص البحث',
+  'findPalette.find': 'بحث',
+  'findPalette.matchCase': 'مطابقة حالة الأحرف',
+  'findPalette.currentLayoutOnly': 'التخطيط الحالي فقط',
+  'findPalette.hint': 'اضغط Enter للبحث عن النصوص والنصوص متعددة الأسطر وسمات الكتل في الرسم بالكامل (كل التخطيطات).',
+  'findPalette.hintLayout': 'اضغط Enter للبحث عن النصوص والنصوص متعددة الأسطر وسمات الكتل في التخطيط الحالي.',
+  'findPalette.noResults': 'لم يتم العثور على نص',
+  'findPalette.count': 'تم العثور على {count}',
+  'findPalette.countLayouts': 'تم العثور على {count} في {layouts} تخطيطات',
+  'findPalette.countTruncated': 'تم عرض أول {count} نتيجة — قم بتضييق البحث',
+  'findPalette.noDocument': 'افتح رسمًا للبحث',
+  'findPalette.layoutUnavailable': 'تعذر فتح التخطيط "{layout}"',
+  'findPalette.kind.text': 'نص',
+  'findPalette.kind.mtext': 'نص متعدد الأسطر',
+  'findPalette.kind.attribute': 'سمة'
 }

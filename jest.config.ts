@@ -23,14 +23,15 @@ const config: Config = {
   transformIgnorePatterns: [
     '/node_modules/(?!.*(mtext-parser|rbush|quickselect))'
   ],
-  testPathIgnorePatterns: [
-    '/e2e/',
-    '/__tests__/helpers/'
-  ],
+  testPathIgnorePatterns: ['/e2e/', '/__tests__/helpers/'],
   moduleNameMapper: {
     '^lodash-es$': 'lodash',
+    '^@mlightcad/cad-simple-viewer$':
+      '<rootDir>/packages/cad-simple-viewer/src/index.ts',
     '^@mlightcad/cad-simple-viewer/icons$':
       '<rootDir>/packages/cad-simple-viewer/src/ui/icons.ts',
+    '^@mlightcad/cad-simple-viewer/find$':
+      '<rootDir>/packages/cad-simple-viewer/src/find/index.ts',
     '^three/examples/jsm/lines/LineMaterial\\.js$':
       '<rootDir>/test/mocks/three/LineMaterial.js',
     '^three/examples/jsm/lines/LineSegments2\\.js$':

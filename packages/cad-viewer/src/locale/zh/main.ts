@@ -291,6 +291,7 @@ export default {
       redo: '重做上一次撤销的操作。',
       properties: '打开当前所选对象的属性面板。',
       quickSelect: '打开快速选择对话框，按条件筛选并选择图元。',
+      find: '打开查找面板，在整个图纸或当前布局中搜索文字。',
       countList: '打开计数面板以查看并管理块计数。',
       missingResources: '打开缺失/外部资源面板以处理字体、图片和外部参照。',
       drawingUnits: '打开图形单位对话框，设置坐标格式、精度与插入缩放单位。',
@@ -375,6 +376,7 @@ export default {
       redo: '重做',
       properties: '属性',
       quickSelect: '快速选择',
+      find: '查找',
       countList: '计数',
       drawingUnits: '图形单位',
       attachDwg: '附着\nDWG',
@@ -689,6 +691,32 @@ export default {
         newLayerPlaceholder: '图层名称',
         zoomToLayer: '已缩放到所点击的图层"{layer}"',
         lineWeightDefault: '默认'
+      }
+    },
+    find: {
+      tab: '查找',
+      title: '查找',
+      placeholder: '查找文字',
+      input: '搜索文字',
+      find: '查找',
+      matchCase: '区分大小写',
+      currentLayoutOnly: '仅当前布局',
+      hint: '按回车键在整个图纸（所有布局）中搜索文字、多行文字和块属性。',
+      hintLayout: '按回车键在当前布局中搜索文字、多行文字和块属性。',
+      noResults: '未找到文字',
+      count: '找到 {count} 项',
+      countLayouts: '在 {layouts} 个布局中找到 {count} 项',
+      countTruncated: '仅显示前 {count} 项结果，请缩小搜索范围',
+      noDocument: '请先打开图纸再搜索',
+      layoutUnavailable: '无法打开布局“{layout}”',
+      kind: {
+        text: '文字',
+        mtext: '多行文字',
+        attribute: '属性',
+        block: '块文字',
+        dimension: '标注',
+        leader: '引线',
+        table: '表格'
       }
     },
     countList: {

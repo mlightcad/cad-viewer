@@ -15,6 +15,7 @@ This plugin provides ready-to-use CAD viewer chrome without Vue, React, or Eleme
 - Locale follows `AcApI18n.currentLocale` automatically
 - Layer list in a dock panel tab (name, visibility, color), opened from the toolbar layer button
 - Review palette in a dock panel tab (markup list, status, comments), opened from the Review toolbar button (`markuppanel`)
+- Text search (**Find**) in a dock panel tab: TEXT, MTEXT and block attributes of the active layout, click-to-zoom with selection, opened from the Find toolbar button (`find`)
 - Chrome DevTools-style **dock panel** with tabs, open/close, dock side (bottom/left/right), and resize handle
 - ACI color picker for layer colors
 - Layer UI opens from the toolbar button or the `layer` command (opens dock when closed, switches to layers tab when open)
@@ -183,6 +184,47 @@ Review palette behavior:
 - Open or focus the palette via `AcApDocManager.sendStringToExecute('markuppanel')`
 - Row click selects the markup overlay and opens the details pane
 - Status, label, and comment edits go through `runMarkupEdit` so they stay on the undo stack
+
+### Find text (dock panel)
+
+The Find tab is enabled automatically when the resolved toolbar includes the Find button (`id: 'find'`, in the default desktop/pad toolbar after Zoom and in the phone toolbar). Remove it with `excludeItems: ['find']`. It is a plain DOM view (no Vue) that searches the **whole drawing** (model space and every paper-space layout) by default - or only the active layout when **Current layout only** is checked - when the user submits a query. The same search is available in the full Vue `@mlightcad/cad-viewer` UI, which shares the implementation (`@mlightcad/cad-simple-viewer/find`).
+
+```typescript
+acuiCreateSimpleUiPlugin({ host }) // Find button included by default
+// or: toolbar: { items: [acuiToolbarPreset('find')] }
+```
+
+Searched fields:
+
+| Entity | Field | Notes |
+| --- | --- | --- |
+| `TEXT` | `textString` | `%%c` `%%d` `%%p` decoded |
+| `MTEXT` | `contents` | formatting codes (`\f…;`, `\H…;`, `\C…;`, `\L`, braces…) removed, `\P` → space, `\U+XXXX` and stacks decoded |
+| `ATTRIB` | attribute value of every `INSERT` | block name and tag are shown in the result label (not searched); invisible attributes are skipped |
+
+Matching:
+
+- Partial (substring) match; the query is trimmed and runs of whitespace collapse to one space
+- Default: case-, accent- and width-insensitive (`instalacao` finds `Instalação`, NFKC + diacritics removed)
+- **Match case** checkbox: exact case and accents
+- **Scope**: whole drawing by default (layouts are searched in tab order); the **Current layout only** checkbox limits the search to the layout that is currently shown and re-runs the last search when toggled
+- Blank query → no search; at most 500 results (shared across all searched layouts) (a "first N results" notice is shown when truncated)
+- Entities that are hidden or on an off/frozen layer are skipped, so every result is something you can see
+
+Usage:
+
+- Search runs only on **Enter** / the Find button (never while typing, never in the background). The scan is a single synchronous pass over the active layout's top-level entities; nothing is cached or stored globally
+- Each result shows its **layout name**, the matched text, type (Text / MText / Attribute + block / tag), layer and `(x, y)`
+- Click a result (or press Enter / Shift+Enter in the field to step through them) to zoom to the text and select its entity (attributes select their `INSERT`). Selection uses the normal selection set/highlight, so Escape or clicking elsewhere clears it. Pan, wheel/pinch zoom, layers and touch handling are untouched
+- A hit in another layout switches to that layout first (`layoutManager.setCurrentLayoutBtrId`), waits for its entities to be converted, then zooms and selects. The layout's first-visit auto zoom is suppressed so it cannot override the zoom to the hit. If the layout cannot be opened a notice is shown instead
+- With **Current layout only**, if the active layout changed since the search, clicking a result re-runs the search for the new layout instead of navigating (drawing-wide results stay valid)
+- Open with the toolbar button, the `find` command (`AcApDocManager.sendStringToExecute('find')`) or `plugin.toggleDockPanelTab('find')`
+
+Limitations: text inside block definitions (other than attributes), dimension text, leaders, tables, fields and xref content is not searched; only entities present in the loaded database are searched (what the DXF/DWG parser attaches to each layout - a layout never opened is searched from the database, not from the rendered scene); the whole-drawing pass is synchronous and can briefly block the UI on very large drawings; selecting a hit in a layout that has never been visited waits for its entities to be converted (up to 15 s) before zooming; no regex / whole-word / replace; selection highlight requires entity selection to be enabled on the view (it is by default); on phone the dock panel covers part of the canvas.
+
+Client-side only: there is no backend, index or upload - the search is a pass over the drawing already loaded in the browser, so the static-hosting / client-side deployment recommendation is unchanged.
+
+Demo / verification: `__tests__/fixtures/find-text.dxf` is a fictitious single-layout drawing (Portuguese labels, an MTEXT with formatting, an attribute, an off layer) and `../cad-viewer-example/e2e/fixtures/find-layouts.dxf` a fictitious three-layout drawing (Model, Planta, Alçados). `__tests__/e2e/find-text.e2e.mjs` and `__tests__/e2e/find-layouts.e2e.mjs` drive `cad-simple-viewer-example` with them in Chromium (see the file headers for usage); `packages/cad-viewer-example/e2e/tests/find-layouts.spec.ts` covers the Vue UI.
 
 ### Collapsible toolbar
 

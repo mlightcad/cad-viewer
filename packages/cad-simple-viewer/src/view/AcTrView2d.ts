@@ -2470,6 +2470,18 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Whether the layout has already been visited (or framed by the
+   * application layer), i.e. a switch to it will not run the first-visit
+   * auto zoom. Lets callers that frame a layout themselves (FIND) call
+   * {@link markLayoutAsInitialized} only when it is still needed.
+   *
+   * @param layoutBtrId Input the block table record id of the layout
+   */
+  isLayoutInitialized(layoutBtrId: AcDbObjectId) {
+    return this._initializedLayouts.has(layoutBtrId)
+  }
+
+  /**
    * Returns the 2D box of drawable geometry in the active layout.
    *
    * Uses {@link AcTrScene.box}, which is derived from batch geometry — not
