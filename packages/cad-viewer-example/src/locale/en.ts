@@ -49,7 +49,7 @@ export default {
       progressiveRendering: 'Progressive rendering',
       on: 'On',
       progressiveOnHint:
-        'Show geometry while loading; progress hides when entities finish',
+        'Lock UI until parse/convert finish; then pan/zoom while scene loads',
       off: 'Off',
       progressiveOffHint: 'Wait until entities and text are fully converted',
 

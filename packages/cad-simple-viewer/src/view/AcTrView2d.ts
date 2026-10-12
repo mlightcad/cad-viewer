@@ -312,12 +312,21 @@ export class AcTrView2d extends AcEdBaseView {
    * document open.
    */
   private _convertEpoch = 0
-  /** Last time progressive open marked the canvas dirty for paint. */
+  /** Last time progressive open actually painted mid-convert. */
   private _lastProgressivePaintAt = 0
+  /**
+   * When true, the next progressive mid-open paint must not be throttled
+   * (camera moved — user pan/zoom or incremental auto-fit).
+   */
+  private _progressivePaintUrgent = false
+  /** Pause convert until this `performance.now()` after user input. */
+  private _progressiveInputPauseUntil = 0
   /** Mid-open WebGL paints while progressive convert was still running. */
   private _progressivePaintCount = 0
   /** Cooperative yields taken inside progressive {@link batchConvert}. */
   private _progressiveYieldCount = 0
+  /** Removes progressive open input listeners registered in the constructor. */
+  private _disposeProgressiveInputWatch?: () => void
   /**
    * Saved view was not applied at open. Frame batch bounds once linework
    * convert drains, so the canvas is not blank until deferred glyphs finish.
@@ -461,21 +470,26 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Wall-time between cooperative yields during scene convert (ms).
-   * Used for both progressive and non-progressive opens so large drawings
-   * (e.g. multi-sheet architectural DWGs) cannot freeze the main thread long
-   * enough for Chromium to show "Page Unresponsive" while the overlay still
-   * reads "Rendering drawing ...". Kept relatively large so convert
-   * throughput stays high; smaller budgets made open 2–3× slower.
+   * Wall-time between cooperative yields during scene convert (ms) when
+   * progressive rendering is off. Overlay still blocks input, so a larger
+   * budget keeps throughput high while avoiding Chromium "Page Unresponsive".
    */
   private static readonly OPEN_CONVERT_YIELD_BUDGET_MS = 300
   /**
-   * Minimum interval between progressive mid-open paints (ms).
-   * Full-scene WebGL paints dominate open wall time on large drawings;
-   * paint much less often than we yield. Independent of convert yields —
-   * non-progressive opens still yield without mid-open WebGL paints.
+   * Yield cadence during progressive open (ms). Overlay stays hidden; keep
+   * slices near one frame so pan/zoom handlers can run. Discrete
+   * `navigator.scheduling.isInputPending` yields once so handlers run;
+   * pointerdown/wheel set a short pause so OrbitControls can catch up.
    */
-  private static readonly PROGRESSIVE_OPEN_PAINT_INTERVAL_MS = 1000
+  private static readonly PROGRESSIVE_OPEN_YIELD_BUDGET_MS = 32
+  /** Extra idle window after canvas pointerdown/wheel so gestures stay fluid. */
+  private static readonly PROGRESSIVE_INPUT_PAUSE_MS = 120
+  /**
+   * Minimum interval between progressive mid-open paints driven by convert
+   * (ms). Full-scene WebGL paints dominate open wall time; user camera
+   * changes bypass this throttle via {@link _progressivePaintUrgent}.
+   */
+  private static readonly PROGRESSIVE_OPEN_PAINT_INTERVAL_MS = 2500
   /**
    * Max concurrent deferred glyph/INSERT geometry finalizers. Large drawings
    * enqueue thousands of jobs; keep this modest to limit peak JS heap during
@@ -534,6 +548,24 @@ export class AcTrView2d extends AcEdBaseView {
 
     super(renderer.domElement, container)
     this._disposeCanvasTouchCallout = disposeCanvasTouchCallout
+    const onProgressiveInput = () => this.noteProgressiveUserInput()
+    renderer.domElement.addEventListener('pointerdown', onProgressiveInput, {
+      capture: true
+    })
+    renderer.domElement.addEventListener('wheel', onProgressiveInput, {
+      capture: true,
+      passive: true
+    })
+    this._disposeProgressiveInputWatch = () => {
+      renderer.domElement.removeEventListener(
+        'pointerdown',
+        onProgressiveInput,
+        { capture: true }
+      )
+      renderer.domElement.removeEventListener('wheel', onProgressiveInput, {
+        capture: true
+      })
+    }
     this._gripManager = new AcEdGripManager(this)
     this._keyHandler = new AcEdViewKeyHandler(this)
     if (options.calculateSizeCallback) {
@@ -1024,10 +1056,9 @@ export class AcTrView2d extends AcEdBaseView {
    * The open-file progress overlay uses this when
    * {@link AcApOpenDatabaseOptions.progressiveRendering} is off, so
    * "Rendering drawing ..." stays up until deferred glyph jobs finish.
-   * When progressive rendering is on, the overlay uses
-   * {@link isConvertingEntities} and may hide while text geometry continues
-   * in the deferred pool (pan/zoom enabled). Deprecated `waitForTextGeometry`
-   * no longer selects this gate.
+   * When progressive rendering is on, the overlay hides at CONVERSION `END`
+   * and does not wait on this flag (pan/zoom enabled while convert continues).
+   * Deprecated `waitForTextGeometry` no longer selects this gate.
    */
   get isProcessingEntities() {
     return this._numOfEntitiesToProcess > 0 || this._pendingGeometryJobs > 0
@@ -1119,6 +1150,77 @@ export class AcTrView2d extends AcEdBaseView {
     this._progressivePaintCount = 0
     this._progressiveYieldCount = 0
     this._lastProgressivePaintAt = 0
+    this._progressivePaintUrgent = false
+    this._progressiveInputPauseUntil = 0
+  }
+
+  /**
+   * True while a recent canvas pointerdown/wheel asked convert to pause.
+   * Does not treat hover mousemove as a pause (that starved convert).
+   */
+  private isProgressiveGesturePauseActive(): boolean {
+    return performance.now() < this._progressiveInputPauseUntil
+  }
+
+  /**
+   * True when the browser reports pending discrete input (clicks, keys).
+   * Continuous events (mousemove) are excluded so hover does not throttle
+   * progressive convert.
+   */
+  private isProgressiveDiscreteInputPending(): boolean {
+    const scheduling = (
+      navigator as Navigator & {
+        scheduling?: {
+          isInputPending?: (opts?: { includeContinuous?: boolean }) => boolean
+        }
+      }
+    ).scheduling
+    return scheduling?.isInputPending?.() === true
+  }
+
+  /**
+   * Notes user interaction during progressive convert so paints stay urgent
+   * and the drain loop pauses briefly for OrbitControls.
+   */
+  private noteProgressiveUserInput() {
+    if (!this._progressiveRendering || this._numOfEntitiesToProcess <= 0) {
+      return
+    }
+    this._progressivePaintUrgent = true
+    this._isDirty = true
+    this._progressiveInputPauseUntil =
+      performance.now() + AcTrView2d.PROGRESSIVE_INPUT_PAUSE_MS
+  }
+
+  /**
+   * Yields during progressive convert: honor the time budget; after
+   * pointerdown/wheel pause briefly for OrbitControls; on discrete pending
+   * input yield once so handlers run without extending the pause window.
+   */
+  private async progressiveYieldForInput(
+    yieldGate: AcCmUiYieldGate | undefined,
+    yieldToEventLoop: () => Promise<void>
+  ): Promise<void> {
+    if (this.isProgressiveGesturePauseActive()) {
+      await yieldToEventLoop()
+      while (performance.now() < this._progressiveInputPauseUntil) {
+        await new Promise<void>(resolve => setTimeout(resolve, 16))
+      }
+      this._progressiveYieldCount++
+      return
+    }
+    if (this.isProgressiveDiscreteInputPending()) {
+      await yieldToEventLoop()
+      this._progressiveYieldCount++
+      return
+    }
+    if (!yieldGate) {
+      return
+    }
+    const didYield = await yieldGate.maybeYield(yieldToEventLoop)
+    if (didYield) {
+      this._progressiveYieldCount++
+    }
   }
 
   /**
@@ -2838,10 +2940,13 @@ export class AcTrView2d extends AcEdBaseView {
       const took = performance.now() - startedAt
       const modelActive = state.activeOwnerId === this.modelSpaceBtrId
       // Model-first opens only need occasional slice boundaries so a sheet
-      // activated mid-load can jump the queue; match the 300ms inner yield
-      // so outer slicing does not add a second, finer cost layer.
+      // activated mid-load can jump the queue. Progressive uses a tighter
+      // budget so input stays responsive after the overlay hides.
+      const modelYieldBudget = this._progressiveRendering
+        ? AcTrView2d.PROGRESSIVE_OPEN_YIELD_BUDGET_MS
+        : AcTrView2d.OPEN_CONVERT_YIELD_BUDGET_MS
       const budget = modelActive
-        ? AcTrView2d.OPEN_CONVERT_YIELD_BUDGET_MS
+        ? modelYieldBudget
         : AcTrView2d.CONVERT_SLICE_BUDGET_MS
       slice = adaptConvertSliceSize({
         slice,
@@ -2852,7 +2957,24 @@ export class AcTrView2d extends AcEdBaseView {
         // Model-active (or paper already drained) prefers 4× throughput.
         activeLayoutPending: !modelActive && hasPendingActiveOwner(state)
       })
-      if (performance.now() - lastYieldAt >= budget) {
+      if (
+        this._progressiveRendering &&
+        this.isProgressiveGesturePauseActive()
+      ) {
+        await new Promise<void>(resolve => setTimeout(resolve, 0))
+        while (performance.now() < this._progressiveInputPauseUntil) {
+          await new Promise<void>(resolve => setTimeout(resolve, 16))
+        }
+        lastYieldAt = performance.now()
+        if (this._convertEpoch !== epoch) return
+      } else if (
+        this._progressiveRendering &&
+        this.isProgressiveDiscreteInputPending()
+      ) {
+        await new Promise<void>(resolve => setTimeout(resolve, 0))
+        lastYieldAt = performance.now()
+        if (this._convertEpoch !== epoch) return
+      } else if (performance.now() - lastYieldAt >= budget) {
         await new Promise<void>(resolve => setTimeout(resolve, 0))
         lastYieldAt = performance.now()
         if (this._convertEpoch !== epoch) return
@@ -2914,6 +3036,11 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * Marks the canvas dirty for progressive open, throttled to avoid painting
    * on every entity (which dominated total open time).
+   *
+   * Does not stamp {@link _lastProgressivePaintAt} — that updates only when
+   * {@link animate} actually paints. Does not set
+   * {@link _progressivePaintUrgent}; camera moves do that so pan/zoom stay
+   * immediate while convert-driven paints remain rare.
    */
   private markProgressiveDirty(force = false) {
     const now = performance.now()
@@ -2923,7 +3050,6 @@ export class AcTrView2d extends AcEdBaseView {
         AcTrView2d.PROGRESSIVE_OPEN_PAINT_INTERVAL_MS
     ) {
       this._isDirty = true
-      this._lastProgressivePaintAt = now
     }
   }
 
@@ -2988,6 +3114,8 @@ export class AcTrView2d extends AcEdBaseView {
   dispose() {
     this._disposeCanvasTouchCallout?.()
     this._disposeCanvasTouchCallout = undefined
+    this._disposeProgressiveInputWatch?.()
+    this._disposeProgressiveInputWatch = undefined
     this.clearFontLoadedRedrawTimer()
     this.cancelOpenLineworkFrame()
     this.stopAnimationLoop()
@@ -3058,10 +3186,30 @@ export class AcTrView2d extends AcEdBaseView {
     if (deferRenderWhileLoading) return
     if (!this._isDirty && !this._htmlDirty) return
 
+    // Progressive mid-open: throttle convert-driven paints only. Camera
+    // changes set `_progressivePaintUrgent` so pan/zoom still redraw now —
+    // throttling those made the canvas feel frozen after the overlay hid.
+    if (
+      this._progressiveRendering &&
+      stillLoading &&
+      this._isDirty &&
+      !this._progressivePaintUrgent
+    ) {
+      const now = performance.now()
+      if (
+        now - this._lastProgressivePaintAt <
+        AcTrView2d.PROGRESSIVE_OPEN_PAINT_INTERVAL_MS
+      ) {
+        return
+      }
+    }
+
     let needsRedraw = false
     if (this._isDirty) {
       if (this._progressiveRendering && stillLoading) {
         this._progressivePaintCount++
+        this._lastProgressivePaintAt = performance.now()
+        this._progressivePaintUrgent = false
       }
       needsRedraw = this._layoutViewManager.render(this._scene)
     }
@@ -3101,6 +3249,11 @@ export class AcTrView2d extends AcEdBaseView {
       layoutView.events.viewChanged.addEventListener(() => {
         this._progressiveOpenFit.onLayoutViewChanged()
         this._isDirty = true
+        // Bypass mid-open paint throttle so pan/zoom (and incremental fit)
+        // remain visible while convert continues.
+        if (this._progressiveRendering && this._numOfEntitiesToProcess > 0) {
+          this._progressivePaintUrgent = true
+        }
         this.events.viewChanged.dispatch()
         this.clearHover()
       })
@@ -3860,10 +4013,13 @@ export class AcTrView2d extends AcEdBaseView {
     //
     // Headless export sets cooperativeYield=false (or forExport) so convert
     // does not pay for setTimeout yields the CLI never needs.
+    const yieldBudgetMs = progressive
+      ? AcTrView2d.PROGRESSIVE_OPEN_YIELD_BUDGET_MS
+      : AcTrView2d.OPEN_CONVERT_YIELD_BUDGET_MS
     const yieldGate =
       options.forExport || !this._cooperativeYield
         ? undefined
-        : new AcCmUiYieldGate(AcTrView2d.OPEN_CONVERT_YIELD_BUDGET_MS)
+        : new AcCmUiYieldGate(yieldBudgetMs)
     const yieldToEventLoop = () =>
       new Promise<void>(resolve => setTimeout(resolve, 0))
     for (let i = 0; i < entities.length; ++i) {
@@ -4098,9 +4254,11 @@ export class AcTrView2d extends AcEdBaseView {
         continue
       }
 
-      if (yieldGate) {
-        // Yield for input/overlay, but do not force a full-scene paint here —
-        // paints are throttled separately via markProgressiveDirty().
+      if (progressive) {
+        // Prefer input-aware yields so pan/zoom are not starved after the
+        // overlay is gone; paint throttling stays in markProgressiveDirty.
+        await this.progressiveYieldForInput(yieldGate, yieldToEventLoop)
+      } else if (yieldGate) {
         const didYield = await yieldGate.maybeYield(yieldToEventLoop)
         if (didYield) {
           this._progressiveYieldCount++
@@ -4230,7 +4388,10 @@ export class AcTrView2d extends AcEdBaseView {
       // whole-floor block (00-1~4F: 181515 children, 81 layers) spent ~74s
       // there while "Rendering drawing ..." stayed up.
       let registeredChildIndex = false
-      objectsGroupByLayer.forEach((objects, layerName) => {
+      const yieldToEventLoop = () =>
+        new Promise<void>(resolve => setTimeout(resolve, 0))
+      let lastGroupYieldAt = progressive ? performance.now() : 0
+      for (const [layerName, objects] of objectsGroupByLayer) {
         // Nested layer-0 may already be resolved to an inner INSERT layer during
         // flatten. Remaining "0" buckets inherit this (outermost) INSERT layer.
         const effectiveLayerName = layerName === '0' ? groupLayerName : layerName
@@ -4299,7 +4460,20 @@ export class AcTrView2d extends AcEdBaseView {
         this._convertPhaseMs.addEntity += performance.now() - tAdd
         this.applySessionHiddenObjectState(groupObjectId)
         entity.dispose()
-      })
+
+        // Progressive open hides the overlay at CONVERSION END while deferred
+        // INSERT finalize may still split many layers — time-budgeted yields
+        // so pan/zoom handlers can run between layer commits.
+        if (
+          progressive &&
+          epoch === this._convertEpoch &&
+          performance.now() - lastGroupYieldAt >=
+            AcTrView2d.PROGRESSIVE_OPEN_YIELD_BUDGET_MS
+        ) {
+          await yieldToEventLoop()
+          lastGroupYieldAt = performance.now()
+        }
+      }
       group.dispose()
 
       if (progressive) {

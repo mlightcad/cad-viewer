@@ -192,11 +192,12 @@ interface Props {
   /**
    * Whether opening a drawing is progressive.
    *
-   * Controls both stages: mid-open paints during entity convert, and whether
-   * the open overlay waits for deferred text geometry. When `false` (default),
-   * the canvas waits until entities and deferred text geometry are idle.
-   * When `true`, geometry paints as it converts and the overlay hides when
-   * entity convert finishes. Deprecated `waitForTextGeometry` is ignored.
+   * Controls both stages: mid-open paints during entity convert, and overlay
+   * policy. When `false` (default), the overlay stays until entities and
+   * deferred text geometry are idle. When `true`, the overlay locks the UI
+   * until parse/conversion finish, then hides so pan/zoom work while scene
+   * convert continues (status bar clears at CONVERSION end). Deprecated
+   * `waitForTextGeometry` is ignored.
    */
   progressiveRendering?: boolean
   /**

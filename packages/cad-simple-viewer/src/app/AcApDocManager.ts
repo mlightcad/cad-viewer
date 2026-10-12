@@ -617,12 +617,10 @@ export class AcApDocManager {
     this._openFileProgress = new AcApOpenFileProgressController(busyHost)
     this._openFileProgress.setSceneBusyGate(() => {
       const view = this.openProgressView
-      // Progressive open hides when entity convert finishes so pan/zoom work
-      // while glyphs catch up. Default open keeps "Rendering drawing ..."
-      // until deferred glyph jobs finish as well.
-      return view.progressiveRendering
-        ? view.isConvertingEntities
-        : view.isProcessingEntities
+      // Progressive open hides at CONVERSION END (see-through path) and does
+      // not use this gate. Default open keeps "Rendering drawing ..." until
+      // entity convert and deferred glyph jobs both finish.
+      return view.isProcessingEntities
     })
     this._openFileProgress.setOnHidden(() => this.onOpenProgressHidden())
     this._busyIndicator = new AcApBusyIndicator(busyHost)

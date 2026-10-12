@@ -151,6 +151,25 @@ describe('AcTrGroupWcsBboxAssert', () => {
       /does not match wcsChildBoxes union/
     )
   })
+
+  it('skips oversized groups on the open hot path', () => {
+    const wcsChildBoxes = Array.from({ length: 3000 }, (_, i) => ({
+      minX: i,
+      minY: 0,
+      maxX: i + 1,
+      maxY: 1,
+      id: `child-${i}`
+    }))
+    const group = {
+      wcsBbox: new THREE.Box3(
+        new THREE.Vector3(999, 999, 0),
+        new THREE.Vector3(1000, 1000, 0)
+      ),
+      wcsChildBoxes
+    }
+
+    expect(() => assertGroupWcsBboxesConsistent(group)).not.toThrow()
+  })
 })
 
 describe('handleGroup WCS spatial index registration', () => {
