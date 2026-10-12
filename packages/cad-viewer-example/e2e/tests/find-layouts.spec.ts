@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { expect, type Page,test } from '@playwright/test'
+import { expect, type Page, test } from '@playwright/test'
 
 import { uploadFixture } from '../helpers/fileUpload'
 
@@ -279,9 +279,12 @@ test.describe('Find palette (full Vue UI)', () => {
   }) => {
     await loadFixture(page)
     await expect(page.getByTestId('find-palette')).toBeHidden()
-    await page.locator('.ml-cad-container canvas').first().click({
-      position: { x: 900, y: 300 }
-    })
+    await page
+      .locator('.ml-cad-container canvas')
+      .first()
+      .click({
+        position: { x: 900, y: 300 }
+      })
     await page.keyboard.press('Control+f')
     await expect(page.getByTestId('find-palette')).toBeVisible()
     await expect(input(page)).toBeFocused()

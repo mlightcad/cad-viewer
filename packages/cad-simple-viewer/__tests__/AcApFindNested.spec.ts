@@ -289,10 +289,9 @@ describe('acapFindText inside blocks, dimensions, leaders and tables', () => {
   })
 
   it('still caps the number of results with nested text', () => {
-    const db = createDb(
-      [insert('i1', 'B', 0, 0), insert('i2', 'B', 0, 0)],
-      { B: [text('a', 'x'), text('b', 'x')] }
-    )
+    const db = createDb([insert('i1', 'B', 0, 0), insert('i2', 'B', 0, 0)], {
+      B: [text('a', 'x'), text('b', 'x')]
+    })
     const result = acapFindText(db, 'x', {
       currentLayoutId: 'btr-model',
       maxResults: 3

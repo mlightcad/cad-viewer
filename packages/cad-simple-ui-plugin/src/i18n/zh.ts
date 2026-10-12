@@ -142,7 +142,8 @@ export const zh: Record<string, string> = {
   'findPalette.find': '查找',
   'findPalette.matchCase': '区分大小写',
   'findPalette.currentLayoutOnly': '仅当前布局',
-  'findPalette.hint': '按回车键在整个图纸（所有布局）中搜索文字、多行文字和块属性。',
+  'findPalette.hint':
+    '按回车键在整个图纸（所有布局）中搜索文字、多行文字和块属性。',
   'findPalette.hintLayout': '按回车键在当前布局中搜索文字、多行文字和块属性。',
   'findPalette.noResults': '未找到文字',
   'findPalette.count': '找到 {count} 项',

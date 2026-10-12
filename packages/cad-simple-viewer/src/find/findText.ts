@@ -191,8 +191,7 @@ function isLayerSearchable(
 }
 
 function pointOf(entity: EntityLike): { x: number; y: number } {
-  const p =
-    entity.position ??
+  const p = entity.position ??
     entity.location ??
     entity.textLocation ??
     entity.textPosition ?? { x: 0, y: 0 }
@@ -397,7 +396,14 @@ export function acapFindTextInLayout(
         const def = db.tables.blockTable.getAt?.(name)
         if (!def) continue
         stack.add(name)
-        visitBlock(def.newIterator(), owner, nested, nestedPath, depth + 1, stack)
+        visitBlock(
+          def.newIterator(),
+          owner,
+          nested,
+          nestedPath,
+          depth + 1,
+          stack
+        )
         stack.delete(name)
         continue
       }
@@ -415,7 +421,8 @@ export function acapFindTextInLayout(
     try {
       // ACAD_TABLE resolves its anonymous block itself.
       const table = entity.blockTableRecord
-      if (table?.newIterator) return table as { newIterator(): Iterable<EntityLike> }
+      if (table?.newIterator)
+        return table as { newIterator(): Iterable<EntityLike> }
       const id = entity.dimBlockId
       const byId = id ? db.tables.blockTable.getIdAt(id) : undefined
       if (byId) return byId
@@ -537,7 +544,8 @@ export function acapFindTextInLayout(
     push({
       entityId: entity.objectId,
       textEntityId: entity.objectId,
-      kind: type === 'MTEXT' ? 'mtext' : type === 'MULTILEADER' ? 'leader' : 'text',
+      kind:
+        type === 'MTEXT' ? 'mtext' : type === 'MULTILEADER' ? 'leader' : 'text',
       text,
       layer: entity.layer,
       position: pointOf(entity)

@@ -142,12 +142,15 @@ export const en: Record<string, string> = {
   'findPalette.find': 'Find',
   'findPalette.matchCase': 'Match case',
   'findPalette.currentLayoutOnly': 'Current layout only',
-  'findPalette.hint': 'Press Enter to search text, multiline text and block attributes in the whole drawing (all layouts).',
-  'findPalette.hintLayout': 'Press Enter to search text, multiline text and block attributes in the current layout.',
+  'findPalette.hint':
+    'Press Enter to search text, multiline text and block attributes in the whole drawing (all layouts).',
+  'findPalette.hintLayout':
+    'Press Enter to search text, multiline text and block attributes in the current layout.',
   'findPalette.noResults': 'No text found',
   'findPalette.count': '{count} found',
   'findPalette.countLayouts': '{count} found in {layouts} layouts',
-  'findPalette.countTruncated': 'First {count} results shown — refine the search',
+  'findPalette.countTruncated':
+    'First {count} results shown — refine the search',
   'findPalette.noDocument': 'Open a drawing to search',
   'findPalette.layoutUnavailable': 'Could not open layout "{layout}"',
   'findPalette.kind.text': 'Text',

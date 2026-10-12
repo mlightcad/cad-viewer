@@ -157,7 +157,10 @@ assert.equal(s.layout, 'Planta', 'layout activated')
 assert.deepEqual(s.selected, ['C11'], 'hit entity selected')
 // "Legenda: Sala Técnica 01" starts at (40, 500) in paper space.
 assert.ok(
-  s.center[0] > 40 && s.center[0] < 400 && s.center[1] > 495 && s.center[1] < 515,
+  s.center[0] > 40 &&
+    s.center[0] < 400 &&
+    s.center[1] > 495 &&
+    s.center[1] < 515,
   `view centred on the paper-space text: ${s.center}`
 )
 await shot('find-layouts-3-planta')

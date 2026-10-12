@@ -142,12 +142,15 @@ export const tr: Record<string, string> = {
   'findPalette.find': 'Bul',
   'findPalette.matchCase': 'Büyük/küçük harf duyarlı',
   'findPalette.currentLayoutOnly': 'Yalnızca geçerli yerleşim',
-  'findPalette.hint': 'Tüm çizimde (tüm yerleşimler) metin, çok satırlı metin ve blok özniteliklerini aramak için Enter tuşuna basın.',
-  'findPalette.hintLayout': 'Geçerli yerleşimde metin, çok satırlı metin ve blok özniteliklerini aramak için Enter tuşuna basın.',
+  'findPalette.hint':
+    'Tüm çizimde (tüm yerleşimler) metin, çok satırlı metin ve blok özniteliklerini aramak için Enter tuşuna basın.',
+  'findPalette.hintLayout':
+    'Geçerli yerleşimde metin, çok satırlı metin ve blok özniteliklerini aramak için Enter tuşuna basın.',
   'findPalette.noResults': 'Metin bulunamadı',
   'findPalette.count': '{count} sonuç',
   'findPalette.countLayouts': '{layouts} yerleşimde {count} sonuç',
-  'findPalette.countTruncated': 'İlk {count} sonuç gösteriliyor — aramayı daraltın',
+  'findPalette.countTruncated':
+    'İlk {count} sonuç gösteriliyor — aramayı daraltın',
   'findPalette.noDocument': 'Aramak için bir çizim açın',
   'findPalette.layoutUnavailable': '"{layout}" yerleşimi açılamadı',
   'findPalette.kind.text': 'Metin',
