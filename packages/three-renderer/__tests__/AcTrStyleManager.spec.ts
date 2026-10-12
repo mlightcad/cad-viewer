@@ -378,6 +378,38 @@ describe('AcTrStyleManager', () => {
     expect(metadata.isForeground).toBe(true)
   })
 
+  it('passes a dash length of 0 (dot) straight through instead of substituting a dash (#728)', () => {
+    const styleManager = new AcTrStyleManager()
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.fillType = {
+      solidFill: false,
+      patternAngle: 0,
+      definitionLines: [
+        {
+          angle: 0,
+          base: { x: 0, y: 0 },
+          offset: { x: 0, y: 0.25 },
+          // AutoCAD "DOT" convention: a 0-length dot, then a 0.25 gap.
+          dashLengths: [0, -0.25]
+        }
+      ]
+    }
+
+    const material = styleManager.getFillMaterial(
+      traits
+    ) as THREE.ShaderMaterial
+    const patternLine = material.uniforms.u_patternLines.value[0] as {
+      dashLengths: number[]
+      patternLength: number
+    }
+
+    expect(patternLine.dashLengths[0]).toBe(0)
+    expect(patternLine.dashLengths[1]).toBe(-0.25)
+    // Total period is just the real (non-dot) length -- a dot consumes no
+    // along-line distance, so it must not inflate patternLength either.
+    expect(patternLine.patternLength).toBeCloseTo(0.25)
+  })
+
   it('solid hatch with explicit truecolor stays at literal RGB across themes', () => {
     // A DWG author who picked an explicit RGB via the truecolor picker
     // (e.g. 255,255,255 from the colour palette) gets a literal hatch.
