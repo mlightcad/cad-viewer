@@ -121,7 +121,7 @@ export default {
   about: {
     title: 'O aplikaci',
     close: 'Zavřít',
-    product: 'Aitra CadViewer',
+    product: 'CAD Viewer',
     tagline: 'Vysokovýkonný webový CAD prohlížeč pro výkresy DWG a DXF.',
     website: 'Web',
     docs: 'Dokumentace',

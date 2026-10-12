@@ -121,7 +121,7 @@ export default {
   about: {
     title: 'Hakkında',
     close: 'Kapat',
-    product: 'Aitra CadViewer',
+    product: 'CAD Viewer',
     tagline: 'DWG ve DXF çizimleri için yüksek performanslı web CAD görüntüleyici.',
     website: 'Web sitesi',
     docs: 'Belgeler',

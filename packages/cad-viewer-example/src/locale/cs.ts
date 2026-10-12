@@ -14,8 +14,6 @@ export default {
     fileUpload: {
       title: 'Vyberte soubor CAD k zobrazení',
       subtitle: 'Importujte výkresy DWG nebo DXF do prohlížeče',
-      brand: 'Aitra CadViewer',
-      credit: 'Založeno na open-source projektu mlightcad cad-viewer.',
       fontCdnNotice:
         'If you are in a country or region with network access restrictions, please turn on a VPN. Default font files are hosted on GitHub; when access is limited they load very slowly, which can make opening drawings slow or cause text not to display correctly.',
       newDrawing: 'Nový výkres',

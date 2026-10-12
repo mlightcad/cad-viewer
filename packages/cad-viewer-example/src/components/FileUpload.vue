@@ -9,9 +9,6 @@
             </el-icon>
           </div>
           <div class="upload-hero-text">
-            <p class="upload-brand">
-              {{ t('example.fileUpload.brand') }}
-            </p>
             <h1 class="upload-title">
             {{ t('example.fileUpload.title') }}
           </h1>
@@ -27,15 +24,6 @@
 
         <p class="font-cdn-notice">
           {{ t('example.fileUpload.fontCdnNotice') }}
-        </p>
-
-        <p class="upload-credit">
-          <a
-            href="https://github.com/mlightcad/cad-viewer"
-            target="_blank"
-            rel="noopener noreferrer"
-            >{{ t('example.fileUpload.credit') }}</a
-          >
         </p>
       </div>
 
@@ -602,26 +590,6 @@ const isValidFile = (file: File): boolean => {
 
 .upload-hero-text {
   min-width: 0;
-}
-
-.upload-brand {
-  margin: 0 0 2px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #5b6fd6;
-}
-
-.upload-credit {
-  margin: 8px 0 0;
-  font-size: 11px;
-  line-height: 1.4;
-}
-
-.upload-credit a {
-  color: #64748b;
-  text-decoration: underline;
 }
 
 .upload-title {
