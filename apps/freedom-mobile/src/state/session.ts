@@ -16,16 +16,16 @@ import {
   initialDocumentState
 } from './document.ts'
 import {
-  initialSelectionState,
-  selectionReducer,
-  type SelectionState
-} from './selection.ts'
-import {
   findReducer,
   type FindState,
   type FindUiAction,
   initialFindState
 } from './find.ts'
+import {
+  initialSelectionState,
+  selectionReducer,
+  type SelectionState
+} from './selection.ts'
 
 export interface ZoomState {
   lastOp: ZoomOp | null
