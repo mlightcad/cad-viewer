@@ -5,8 +5,13 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { BridgeClient, type BridgeEvent } from '../bridge/BridgeClient.ts'
+import {
+  BridgeClient,
+  type BridgeEvent,
+  type Timers
+} from '../bridge/BridgeClient.ts'
 import { type AppMessage } from '../contracts/protocol.ts'
+import { READY_TIMEOUT_MS } from '../shell/shellState.ts'
 import {
   initialSessionState,
   type SessionAction,
@@ -14,7 +19,7 @@ import {
   type SessionState
 } from './session.ts'
 
-function harness() {
+function harness(timers?: Timers) {
   let state: SessionState = initialSessionState
   const sent: AppMessage[] = []
   const dispatch = (a: SessionAction) => {
@@ -31,7 +36,7 @@ function harness() {
     },
     // Timers inertes: os timeouts têm testes próprios em BridgeClient.node-test.ts
     // e timers reais manteriam o processo de teste vivo.
-    timers: { set: () => 0, clear: () => {} }
+    timers: timers ?? { set: () => 0, clear: () => {} }
   })
   const viewer = (type: string, payload: unknown, replyTo?: string) =>
     client.receive(
@@ -400,6 +405,61 @@ describe('session — failures are never silent', () => {
     state = sessionReducer(state, { kind: 'ready-timeout' })
     assert.equal(state.shell.viewer, 'failed')
     assert.equal(state.shell.error, 'ready-timeout')
+  })
+
+  it('late ready after ready-timeout: dropped queued open is not left loading, nothing is resent', () => {
+    let fire: (() => void) | null = null
+    const h = harness({
+      set: (fn, ms) => {
+        if (ms === READY_TIMEOUT_MS) fire = fn
+        return 0
+      },
+      clear: () => {}
+    })
+    const r = h.client.open({
+      name: 'a.dxf',
+      size: 1,
+      source: { kind: 'url', url: 'http://x' }
+    })
+    assert.ok(r.ok && r.queued)
+    assert.equal(h.state.document.opening?.id, r.ok ? r.id : '')
+    ;(fire as unknown as () => void)()
+    assert.equal(h.state.shell.viewer, 'failed')
+    assert.equal(h.state.shell.error, 'ready-timeout')
+    assert.equal(h.state.document.opening, null)
+    assert.equal(h.state.document.error?.code, 'viewer-unavailable')
+
+    h.viewer('ready', READY)
+    assert.equal(h.state.shell.viewer, 'ready')
+    assert.equal(h.state.shell.error, null)
+    assert.equal(h.state.shell.generation, 0)
+    assert.equal(h.sent.length, 0)
+    assert.equal(h.state.document.opening, null)
+    assert.equal(h.state.document.current, null)
+
+    // Resposta ao `open` descartado é stale e não ressuscita o carregamento.
+    h.viewer(
+      'opened',
+      { name: 'a.dxf', format: 'dxf', layouts: [], activeLayoutId: '' },
+      r.ok ? r.id : ''
+    )
+    assert.equal(h.state.document.current, null)
+    assert.equal(h.state.document.opening, null)
+  })
+
+  it('late ready after process-gone restores the shell but not document, FIND or zoom', () => {
+    const h = openedHarness()
+    h.client.zoom({ op: 'in' })
+    h.client.processGone()
+    h.viewer('ready', READY)
+    assert.equal(h.state.shell.viewer, 'ready')
+    assert.equal(h.state.shell.error, null)
+    assert.equal(h.state.document.current, null)
+    assert.equal(h.state.document.opening, null)
+    assert.equal(h.state.find.status, 'idle')
+    assert.equal(h.state.zoom.lastOp, null)
+    // O cliente aceita comandos de novo.
+    assert.equal(h.client.zoom({ op: 'out' }).ok, true)
   })
 
   it('reload resets everything and bumps the surface generation', () => {

@@ -7,7 +7,11 @@ import {
   type AppPayloads,
   MAX_DOCUMENT_BYTES
 } from '../contracts/protocol.ts'
-import { READY_TIMEOUT_MS } from '../shell/shellState.ts'
+import {
+  initialShellState,
+  READY_TIMEOUT_MS,
+  shellReducer
+} from '../shell/shellState.ts'
 import {
   BridgeClient,
   type BridgeEvent,
@@ -555,5 +559,168 @@ describe('BridgeClient — protocol failures are explicit', () => {
     s.client.processGone()
     s.client.zoom({ op: 'in' })
     assert.equal(s.events.length, n)
+  })
+})
+
+describe('BridgeClient — late ready recovery (decisão de shellState.ts)', () => {
+  const OPENED = (name: string) => ({
+    name,
+    format: 'dxf',
+    layouts: [],
+    activeLayoutId: ''
+  })
+  const FIND = { query: 'a', matchCase: false, scope: 'drawing' } as const
+
+  it('after ready-timeout: queued open is dropped, never resent, and the late ready re-arms nothing', () => {
+    const { client, events, injected, timers } = setup()
+    const queued = client.open(OPEN)
+    assert.ok(queued.ok && queued.queued)
+    timers.advance(READY_TIMEOUT_MS)
+    assert.equal(client.phase, 'failed')
+    assert.equal(timers.active(), 0)
+
+    client.receive(wire('ready', READY))
+    assert.equal(client.phase, 'ready')
+    assert.equal(injected.length, 0)
+    assert.equal(kinds(events).filter(k => k === 'command-sent').length, 0)
+    assert.equal(timers.active(), 0)
+
+    // O `open` descartado não deixou rasto: uma resposta com o seu id é stale.
+    client.receive(
+      wire('openFailed', { code: 'parse', message: 'x' }, queued.id)
+    )
+    assert.equal(last(events, 'stale-reply').replyTo, queued.id)
+    // Novo `open` envia-se de imediato (já não há fila).
+    const next = client.open(OPEN)
+    assert.ok(next.ok && !next.queued)
+    assert.equal(injected.length, 1)
+  })
+
+  it('after process-gone: in-flight open and find are dropped; their late replies are stale', () => {
+    const { client, events, injected, timers } = setup()
+    client.receive(wire('ready', READY))
+    const o = client.open(OPEN)
+    const f = client.find(FIND)
+    assert.ok(o.ok && f.ok)
+    client.processGone()
+    assert.equal(client.phase, 'failed')
+    assert.equal(timers.active(), 0)
+
+    client.receive(wire('ready', READY))
+    assert.equal(client.phase, 'ready')
+    assert.equal(last(events, 'ready').payload.viewerVersion, '0.0.1')
+    // Nada é reenviado (só os 2 envios originais).
+    assert.equal(injected.length, 2)
+
+    client.receive(wire('opened', OPENED('Planta.dxf'), o.id))
+    assert.equal(last(events, 'stale-reply').type, 'opened')
+    client.receive(wire('findResult', findResult(1, 1), f.id))
+    assert.equal(last(events, 'stale-reply').type, 'findResult')
+    // Resposta stale a `find` não dispara `goto` automático.
+    assert.equal(injected.length, 2)
+    assert.equal(kinds(events).includes('opened'), false)
+    assert.equal(kinds(events).includes('find-result'), false)
+  })
+
+  it('after process-gone the open timer stays dead: no open-failed(timeout) fires post-recovery', () => {
+    const { client, events, timers } = setup()
+    client.receive(wire('ready', READY))
+    client.open(OPEN)
+    client.processGone()
+    client.receive(wire('ready', READY))
+    timers.advance(OPEN_TIMEOUT_MS * 2)
+    assert.equal(kinds(events).includes('open-failed'), false)
+  })
+
+  it('recovered client works end to end: new open resolves, ids do not collide with dropped ones', () => {
+    const { client, events, injected } = setup()
+    client.receive(wire('ready', READY))
+    const old = client.open(OPEN)
+    client.processGone()
+    client.receive(wire('ready', READY))
+    const fresh = client.open({ ...OPEN, name: 'B.dxf' })
+    assert.ok(old.ok && fresh.ok && !fresh.queued)
+    assert.notEqual(old.id, fresh.id)
+    client.receive(wire('opened', OPENED('B.dxf'), fresh.id))
+    assert.equal(last(events, 'opened').payload.name, 'B.dxf')
+    assert.equal(injected.length, 2)
+  })
+
+  it('a second ready after recovery is a duplicate-ready protocol error and changes nothing', () => {
+    const { client, events } = setup()
+    client.processGone()
+    client.receive(wire('ready', READY))
+    const readyEvents = kinds(events).filter(k => k === 'ready').length
+    client.receive(wire('ready', READY))
+    assert.equal(last(events, 'protocol-error').code, 'duplicate-ready')
+    assert.equal(kinds(events).filter(k => k === 'ready').length, readyEvents)
+    assert.equal(client.phase, 'ready')
+  })
+
+  it('invalid late ready after process-gone keeps failed, rejects commands, and a valid one still recovers', () => {
+    const { client, events, injected } = setup()
+    client.processGone()
+    client.receive(wire('ready', { ...READY, protocol: 2 }))
+    assert.equal(client.phase, 'failed')
+    assert.equal(last(events, 'protocol-error').code, 'invalid-payload')
+    assert.equal(client.zoom({ op: 'in' }).ok, false)
+    assert.equal(injected.length, 0)
+    client.receive(wire('ready', READY))
+    assert.equal(client.phase, 'ready')
+    assert.equal(client.zoom({ op: 'in' }).ok, true)
+  })
+
+  it('after dispose a late ready is ignored', () => {
+    const { client, events, timers } = setup()
+    timers.advance(READY_TIMEOUT_MS)
+    client.dispose()
+    const n = events.length
+    client.receive(wire('ready', READY))
+    assert.equal(events.length, n)
+    assert.equal(client.phase, 'failed')
+  })
+
+  it('stays consistent with shellReducer when the same events drive both (timeout and process-gone)', () => {
+    for (const trigger of ['timeout', 'process-gone'] as const) {
+      const { client, events, timers } = setup()
+      let shell = initialShellState
+      let seen = 0
+      const drain = () => {
+        for (const e of events.slice(seen)) {
+          if (e.kind === 'ready')
+            shell = shellReducer(shell, {
+              type: 'viewer-ready',
+              payload: e.payload
+            })
+          if (e.kind === 'ready-timeout')
+            shell = shellReducer(shell, { type: 'ready-timeout' })
+          if (e.kind === 'process-gone')
+            shell = shellReducer(shell, { type: 'process-gone' })
+        }
+        seen = events.length
+      }
+      if (trigger === 'timeout') timers.advance(READY_TIMEOUT_MS)
+      else client.processGone()
+      drain()
+      assert.equal(shell.viewer, 'failed')
+      assert.equal(client.phase, 'failed')
+      assert.equal(
+        shell.error,
+        trigger === 'timeout' ? 'ready-timeout' : 'process-gone'
+      )
+
+      client.receive(wire('ready', { ...READY, dwg: 'maybe' }))
+      drain()
+      assert.equal(shell.viewer, 'failed')
+      assert.equal(client.phase, 'failed')
+
+      client.receive(wire('ready', READY))
+      drain()
+      assert.equal(shell.viewer, 'ready')
+      assert.equal(client.phase, 'ready')
+      assert.equal(shell.error, null)
+      assert.equal(shell.dwg, 'ok')
+      assert.equal(shell.generation, 0)
+    }
   })
 })

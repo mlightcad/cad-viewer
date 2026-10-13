@@ -95,6 +95,20 @@ export function documentReducer(
           origin: 'viewer'
         }
       }
+    case 'ready-timeout':
+      // O `open` em fila antes de `ready` é descartado ao falhar e não é
+      // reenviado num `ready` tardio: sem isto ficaria em loading para sempre.
+      // O documento anterior (se houver) mantém-se.
+      if (!state.opening) return state
+      return {
+        ...state,
+        opening: null,
+        error: {
+          code: 'viewer-unavailable',
+          message: 'o viewer não arrancou a tempo; a abertura foi cancelada',
+          origin: 'local'
+        }
+      }
     case 'process-gone':
       return { current: null, opening: null, error: null }
     default:

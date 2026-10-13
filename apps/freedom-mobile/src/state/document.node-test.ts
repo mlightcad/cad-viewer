@@ -168,4 +168,20 @@ describe('documentReducer', () => {
     const s = run([sentOpen('a-1', 'A.dxf'), { kind: 'process-gone' }])
     assert.deepEqual(s, initialDocumentState)
   })
+
+  it('ready-timeout cancels a queued open (loading) and keeps a previous document', () => {
+    const open = run([
+      sentOpen('a-1', 'A.dxf'),
+      { kind: 'opened', replyTo: 'a-1', payload: doc('A.dxf') }
+    ])
+    const s = run([sentOpen('a-2', 'B.dxf'), { kind: 'ready-timeout' }], open)
+    assert.equal(s.opening, null)
+    assert.equal(s.current?.name, 'A.dxf')
+    assert.equal(s.error?.code, 'viewer-unavailable')
+    assert.equal(s.error?.origin, 'local')
+  })
+
+  it('ready-timeout without an open in progress changes nothing', () => {
+    assert.deepEqual(run([{ kind: 'ready-timeout' }]), initialDocumentState)
+  })
 })
