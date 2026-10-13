@@ -68,9 +68,12 @@ npx cad-simple-viewer-cli -i ./drawing.dwg -s ./export-png.scr -o ./out
 | `--circle-sides <n>` | Max segments for circle tessellation (default: `50` draft) |
 | `--locale <code>` | Prompt/keyword locale (`en`, `zh`, …) |
 | `--base-url <url>` | Resource base URL for fonts and templates (`http(s)`). Fonts load from `<url>/fonts/`. Default: CDN `cad-data` |
+| `--disable-gpu` | Force software WebGL (SwiftShader). Without this flag, hardware GPU is preferred and the CLI falls back to software automatically when no usable GPU is present |
 | `--logfile <path>` | Append start / finish / download log lines |
 
 Progressive rendering is always off in CLI mode so drawings open as quickly as possible (headless scripts do not need mid-open paints).
+
+Headless Chromium prefers a real GPU for WebGL by default. If the machine has no usable GPU (or the driver is blocked), the CLI automatically falls back to software rendering — you do not need `--disable-gpu` for that case.
 
 ## AcCoreConsole mapping
 
@@ -146,6 +149,7 @@ const { outputDir, savedFiles } = await runHeadless({
   circleSides: 50,              // optional
   baseUrl: 'https://cdn.example.com/cad-data/', // optional
   locale: 'en',                 // optional
+  useGpu: true,                 // optional; default true (pass false for --disable-gpu)
   logfile: './cli.log'          // optional
 })
 
@@ -155,5 +159,5 @@ console.log(outputDir, savedFiles)
 ## How it works
 
 1. The published package includes a prebuilt Playwright runner (`dist-runner/`).
-2. The CLI starts headless Chromium, opens the drawing (or a blank template) with progressive rendering forced off, waits for entity convert / deferred text geometry, then runs `AcApDocManager.runScript()`.
+2. The CLI starts headless Chromium (GPU WebGL by default, SwiftShader fallback), opens the drawing (or a blank template) with progressive rendering forced off, waits for entity convert / deferred text geometry, then runs `AcApDocManager.runScript()`.
 3. Export commands trigger downloads; the CLI writes captured files under `-o`.

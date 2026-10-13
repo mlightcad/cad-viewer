@@ -104,6 +104,10 @@ program
     'Resource base URL for fonts and templates (default: CDN cad-data). Fonts load from <url>/fonts/',
     parseBaseUrl
   )
+  .option(
+    '--disable-gpu',
+    'Force software WebGL (SwiftShader); omit to prefer hardware GPU with automatic fallback'
+  )
   .option('--logfile <path>', 'Append runtime log lines to this file')
   .action(async opts => {
     try {
@@ -129,6 +133,7 @@ program
         circleSides: opts.circleSides,
         baseUrl: opts.baseUrl,
         locale: opts.locale,
+        useGpu: opts.disableGpu ? false : undefined,
         logfile: opts.logfile ? path.resolve(opts.logfile) : undefined
       })
 

@@ -1626,6 +1626,17 @@ export class AcTrView2d extends AcEdBaseView {
     const db = AcApDocManager.instance.curDocument.database
     const pending: AcDbEntity[] = []
 
+    // Open streams entities through `drainConvertQueue` and claims each id
+    // before the scene commit (deferred glyphs / INSERT text). Headless
+    // export used to scan here as soon as parse returned, while that drain
+    // was still running. Claimed ids are not in the scene yet, so they
+    // looked missing and `batchConvert({ forExport: true })` expanded them
+    // again — serially, because export convert does not defer glyph work.
+    // On a text-heavy drawing that second pass dominates wall time and
+    // leaves duplicate geometry in the snapshot. Wait until the open drain
+    // has claimed or committed every streamed entity, then skip those ids.
+    await this.drainConvertQueue()
+
     // Paper-space tabs the user never visited exist in the layout table but
     // may be missing from the scene until first switch. HTML export needs
     // every layout's geometry, so register those BTRs before collecting.
@@ -1650,7 +1661,7 @@ export class AcTrView2d extends AcEdBaseView {
       pending.push(
         ...this._entityDisplay.collectMissingEntitiesForExport(
           blockTableRecord,
-          objectId => this.hasEntity(objectId),
+          objectId => this.isEntityConvertScheduled(objectId),
           includeInvisibleLayers
         )
       )
@@ -1663,7 +1674,8 @@ export class AcTrView2d extends AcEdBaseView {
 
     // Open-time deferred glyph jobs may still be draining even when every
     // entity id is already present (or when nothing was missing for export).
-    const idle = await this.waitUntilIdle()
+    // Large drawings exceed the 60s default; match the CLI open-idle budget.
+    const idle = await this.waitUntilIdle(120_000)
     if (!idle) {
       log.warn(
         '[AcTrView2d] Timed out waiting for deferred geometry before export'
@@ -2449,6 +2461,17 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * True when an entity is already in the scene or claimed by an in-flight
+   * convert (including deferred glyph commits that have not called
+   * `addEntity` yet).
+   */
+  private isEntityConvertScheduled(objectId: AcDbObjectId): boolean {
+    const id = String(objectId ?? '')
+    if (!id) return false
+    return this.hasEntity(objectId) || this._claimedConvertObjectIds.has(id)
+  }
+
+  /**
    * @inheritdoc
    */
   getEntityVisible(objectId: AcDbObjectId) {
@@ -3193,8 +3216,23 @@ export class AcTrView2d extends AcEdBaseView {
     })
 
     const stillLoading = this._numOfEntitiesToProcess > 0
-    const deferRenderWhileLoading = stillLoading && !this._progressiveRendering
-    if (!this._isDirty && !this._htmlDirty && !stillLoading) return
+    // The convert counter hits 0 before deferred glyph / INSERT jobs finish.
+    // Non-progressive opens keep an opaque overlay up until idle, and HTML
+    // export reads scene batches rather than the framebuffer. Redrawing the
+    // full drawing on every glyph completion is invisible — headless
+    // Chromium does that with software WebGL and an uncapped rAF, so export
+    // spends most of its time rasterizing instead of converting.
+    const deferRenderWhileLoading =
+      !this._progressiveRendering &&
+      (stillLoading || this._pendingGeometryJobs > 0)
+    if (
+      !this._isDirty &&
+      !this._htmlDirty &&
+      !stillLoading &&
+      this._pendingGeometryJobs === 0
+    ) {
+      return
+    }
     if (deferRenderWhileLoading) return
     if (!this._isDirty && !this._htmlDirty) return
 
@@ -3843,9 +3881,11 @@ export class AcTrView2d extends AcEdBaseView {
       void job
         .run()
         .then(() => {
-          // Convert counter often hits 0 before fonts finish; without this,
-          // text added later never paints until the user pans/zooms.
-          if (job.epoch === this._convertEpoch) {
+          // Progressive opens paint glyphs as they land. Non-progressive
+          // opens (CLI / headless export) only need the one frame queued
+          // when the pool drains — a per-glyph dirty flag redraws the
+          // whole scene after the convert counter hits 0.
+          if (job.epoch === this._convertEpoch && this._progressiveRendering) {
             this._isDirty = true
           }
         })
@@ -4067,30 +4107,30 @@ export class AcTrView2d extends AcEdBaseView {
           continue
         }
 
-        // Interactive open can enqueue the same objectId twice (layout/chunk
-        // re-queue) while deferred glyph commit has not yet called addEntity.
-        // Re-expanding then appends a second batched slot → doubled TEXT labels.
-        // Claim the id as soon as convert starts so later passes skip it.
+        // Open and export can both observe the same id: the open drain claims
+        // it before deferred glyph commit calls addEntity, and export convert
+        // used to ignore that claim (`forExport`) and expand the block again.
+        // Claim as soon as convert starts so a later pass skips it. Skipping
+        // a claimed id is safe for export — off/frozen entities are not
+        // claimed when open skipped them, so they still convert here.
         const objectId = String(entity.objectId ?? '')
         let convertGen = 0
-        if (!options.forExport) {
-          if (
-            objectId &&
-            (this.hasEntity(objectId) ||
-              this._claimedConvertObjectIds.has(objectId))
-          ) {
-            // The border may already be in the scene from a pass that ran
-            // before the layout view existed. Still attach the viewport
-            // view; a second border is not drawn because we continue below.
-            if (entity instanceof AcDbViewport) {
-              this.attachViewportView(entity)
-            }
-            continue
+        if (
+          objectId &&
+          (this.hasEntity(objectId) ||
+            this._claimedConvertObjectIds.has(objectId))
+        ) {
+          // The border may already be in the scene from a pass that ran
+          // before the layout view existed. Still attach the viewport
+          // view; a second border is not drawn because we continue below.
+          if (entity instanceof AcDbViewport) {
+            this.attachViewportView(entity)
           }
-          if (objectId) {
-            this._claimedConvertObjectIds.add(objectId)
-            convertGen = this._entityConvertGeneration.get(objectId) ?? 0
-          }
+          continue
+        }
+        if (objectId) {
+          this._claimedConvertObjectIds.add(objectId)
+          convertGen = this._entityConvertGeneration.get(objectId) ?? 0
         }
 
         // Fast path: entities that declare a single batchable primitive append
@@ -4136,7 +4176,14 @@ export class AcTrView2d extends AcEdBaseView {
         const threeEntity: AcTrEntity | null = this.drawEntity(entity, false)
         // Viewports may produce no border geometry (e.g. on a no-plot layer) while
         // still needing an AcTrViewportView for model content below.
-        if (!threeEntity && !(entity instanceof AcDbViewport)) continue
+        if (!threeEntity && !(entity instanceof AcDbViewport)) {
+          // Release the claim so a later export pass can retry; otherwise
+          // `forExport` claim checks would skip this id forever.
+          if (objectId) {
+            this._claimedConvertObjectIds.delete(objectId)
+          }
+          continue
+        }
 
         if (threeEntity) {
           threeEntity.objectId = entity.objectId
@@ -4250,6 +4297,10 @@ export class AcTrView2d extends AcEdBaseView {
           }
         }
       } catch (error) {
+        const failedId = String(entity.objectId ?? '')
+        if (failedId) {
+          this._claimedConvertObjectIds.delete(failedId)
+        }
         log.error(
           `[AcTrView2d] Failed to convert entity ${entity.objectId} (${entity.type}):`,
           error
