@@ -9,6 +9,7 @@
 // responde em `drain()` — nada acontece sozinho nem com relógio real.
 
 import {
+  APP_TO_VIEWER_TYPES,
   type AppMessage,
   detectDocumentFormat,
   type DocumentFormat,
@@ -122,6 +123,23 @@ export class SyntheticViewer {
   handle(script: string): void {
     const msg = decodeInjection(script)
     this.received.push(msg)
+    // §5.1: fora do contrato → `error` correlacionado; nunca lança nem actua.
+    const raw = msg as { v?: unknown; id?: unknown; type?: unknown }
+    const replyTo = typeof raw.id === 'string' ? raw.id : undefined
+    if (raw.v !== 1) {
+      return this.emit(
+        'error',
+        { code: 'unsupported-version', message: `v=${String(raw.v)}`, replyTo },
+        replyTo
+      )
+    }
+    if (!(APP_TO_VIEWER_TYPES as readonly unknown[]).includes(raw.type)) {
+      return this.emit(
+        'error',
+        { code: 'unknown-type', message: `type=${String(raw.type)}`, replyTo },
+        replyTo
+      )
+    }
     const injected = this.failures.get(msg.type)
     if (injected) {
       this.failures.delete(msg.type)
