@@ -61,6 +61,25 @@ describe('shellState', () => {
     assert.equal(s.viewer, 'booting')
   })
 
+  it('ignores a ready with unknown caps, wrong protocol or missing version', () => {
+    const base = { viewerVersion: '1', protocol: 1, caps: ['dxf'], dwg: 'ok' }
+    for (const bad of [
+      { ...base, caps: ['dxf', 'edit'] },
+      { ...base, caps: 'dxf' },
+      { ...base, protocol: 2 },
+      { ...base, viewerVersion: undefined }
+    ]) {
+      const raw = JSON.stringify({
+        v: 1,
+        id: 'w-1',
+        type: 'ready',
+        payload: bad
+      })
+      const s = shellReducer(initialShellState, { type: 'viewer-message', raw })
+      assert.deepEqual(s, initialShellState)
+    }
+  })
+
   it('ignores invalid messages without throwing and without changing state', () => {
     for (const raw of [
       '{nope',

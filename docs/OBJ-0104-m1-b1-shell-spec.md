@@ -66,7 +66,7 @@ Parser DWG/DXF; bridge/`BridgeClient`/fila; servidor de ficheiros local; picker;
 
 | Gate                                                          | Resultado                                                                                                     |
 | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Unit (`npm test`, `node:test`)                                | 27 testes, 27 verdes (`protocol` 16 + `shellState` 11)                                                        |
+| Unit (`npm test`, `node:test`)                                | 28 testes, 28 verdes (`protocol` 16 + `shellState` 12)                                                        |
 | Typecheck (`npm run typecheck`, TS 7.0.2, `strict`)           | rc=0                                                                                                          |
 | Bundle Metro Android (`expo export --platform android`)       | OK, 598 módulos, `index.ts` → `.hbc` 1,5 MB (prova que as importações `./x.ts` e a WebView resolvem no Metro) |
 | Lint (`pnpm exec eslint apps/freedom-mobile`, config da raiz) | rc=0, 12 ficheiros, 0 erros                                                                                   |
@@ -83,3 +83,6 @@ Versões fixadas (P-3): `expo ^57.0.28`, `react 19.2.3`, `react-native 0.86.3`, 
 - `package-lock.json` local do app (npm) é novo (previsto em §3.1); `pnpm-lock.yaml` e `jest.config.ts` não foram tocados. `/apps/` continua por ignorar no jest da raiz apenas porque os testes usam o sufixo `.node-test.ts`; o ajuste formal de `jest.config.ts` (B1/R-7) fica pendente de autorização.
 - `app.json`: `pt.aitra.freedomviewer` é [H] (P-6), só config local.
 - `ready` tem timeout de 15 s [H]; a WebView carrega `about:blank`, logo em B1 o estado cai sempre em "não arrancou" ao fim de 15 s (comportamento esperado até S1/I2 ligarem o bundle).
+
+### contract_precedence (caminhos)
+O texto de Boundaries do card cita `apps/viewer/**` e `packages/viewer/**` "já existentes"; `git ls-files` não tem nenhum deles. A fonte vinculativa fixa outro caminho: `docs/OBJ-0104-architecture.md:34` (D-9: "O app Expo vive em `apps/freedom-mobile/`… bundle do viewer… `packages/cad-mobile-viewer/`"), `:116` (App Expo → `apps/freedom-mobile/`, novo em B1, npm com `package-lock.json` local) e `:353` (P-2 aplicado: `apps/freedom-mobile/` neste repo). Prevalece a arquitectura; o `package-lock.json` local é o previsto em `:116` (só `registry.npmjs.org`, sem caminhos locais, `npm ci --dry-run` ok).
