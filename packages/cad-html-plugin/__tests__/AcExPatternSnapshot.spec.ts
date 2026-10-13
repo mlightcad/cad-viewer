@@ -203,6 +203,87 @@ describe('AcExPatternSnapshot', () => {
     })
   })
 
+  it('keeps the pattern offset and dash period when a block rotates with no scale (#726)', () => {
+    // A rigid rotation should reorient the line but, expressed in the
+    // line's own rotated frame, leave the spacing between parallel lines
+    // and the dash period untouched.
+    const pattern = {
+      patternAngle: 0,
+      patternLines: [
+        {
+          angle: 0,
+          base: [1, 0] as [number, number],
+          offset: [0, 1] as [number, number],
+          dashLengths: [1, -1],
+          patternLength: 2
+        }
+      ]
+    }
+    const rotation = Math.PI / 6
+    const matrix = new THREE.Matrix4().makeRotationZ(rotation).toArray()
+    const result = transformHatchPatternToWorldSpace(pattern, matrix)
+
+    expect(result.patternAngle).toBe(0)
+    expect(result.patternLines[0]!.angle).toBeCloseTo(rotation)
+    expect(result.patternLines[0]!.offset[0]).toBeCloseTo(0)
+    expect(result.patternLines[0]!.offset[1]).toBeCloseTo(1)
+    expect(result.patternLines[0]!.dashLengths).toEqual([1, -1])
+    expect(result.patternLines[0]!.patternLength).toBeCloseTo(2)
+    expect(result.patternLines[0]!.base[0]).toBeCloseTo(Math.cos(rotation))
+    expect(result.patternLines[0]!.base[1]).toBeCloseTo(Math.sin(rotation))
+  })
+
+  it('scales dash lengths and offset spacing when a block scales with no rotation (#726)', () => {
+    const pattern = {
+      patternAngle: 0,
+      patternLines: [
+        {
+          angle: 0,
+          base: [1, 0] as [number, number],
+          offset: [0, 1] as [number, number],
+          dashLengths: [1, -1],
+          patternLength: 2
+        }
+      ]
+    }
+    const matrix = new THREE.Matrix4().makeScale(2, 2, 1).toArray()
+    const result = transformHatchPatternToWorldSpace(pattern, matrix)
+
+    expect(result.patternLines[0]!.angle).toBeCloseTo(0)
+    expect(result.patternLines[0]!.offset[1]).toBeCloseTo(2)
+    expect(result.patternLines[0]!.dashLengths[0]).toBeCloseTo(2)
+    expect(result.patternLines[0]!.dashLengths[1]).toBeCloseTo(-2)
+    expect(result.patternLines[0]!.patternLength).toBeCloseTo(4)
+  })
+
+  it('does not double the block rotation across patternAngle and line.angle (#726)', () => {
+    // Regression for the reported bug: the old code added `rotation` to
+    // both patternAngle and line.angle, and the shader sums them -- so the
+    // pattern direction ended up rotated by 2x the block's own rotation.
+    const lineAngle = Math.PI / 6
+    const pattern = {
+      patternAngle: 0,
+      patternLines: [
+        {
+          angle: lineAngle,
+          base: [1, 0] as [number, number],
+          offset: [0, 1] as [number, number],
+          dashLengths: [] as number[],
+          patternLength: 0
+        }
+      ]
+    }
+    const rotation = Math.PI / 6
+    const matrix = new THREE.Matrix4().makeRotationZ(rotation).toArray()
+    const result = transformHatchPatternToWorldSpace(pattern, matrix)
+
+    const totalAngle = result.patternLines[0]!.angle + result.patternAngle
+    expect(totalAngle).toBeCloseTo(lineAngle + rotation)
+    // A pure rigid rotation still leaves the line-relative offset invariant.
+    expect(result.patternLines[0]!.offset[0]).toBeCloseTo(0)
+    expect(result.patternLines[0]!.offset[1]).toBeCloseTo(1)
+  })
+
   it('rebases world hatch pattern bases into a local float32-safe frame', () => {
     // AcEx offsets match live shader uniforms: already rotated by -lineAngle.
     const lineAngle = Math.PI / 4

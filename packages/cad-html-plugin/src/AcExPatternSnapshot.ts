@@ -305,30 +305,82 @@ export function createViewerPointsMaterial(
 /**
  * Re-aligns hatch pattern coordinates after hatch meshes were world-baked
  * during batch-group cloning (pattern fills stay on the unbatched draw path).
+ *
+ * The hatch shader always samples a line using `patternLine.angle +
+ * u_patternAngle` as the line's total direction (see
+ * `AcTrHatchPatternShaders`'s `rotate(v_pos - base, -(patternLine.angle +
+ * u_patternAngle))`, and `wrapPatternBaseToLocalFrame`'s `totalAngle =
+ * lineAngle + patternAngle`), and `offset`/dash lengths are defined relative
+ * to that same total-angle frame. Three things follow from that:
+ *
+ * 1. The block rotation must be added to the angle sum exactly once -- here
+ *    it is folded into `line.angle` only, leaving `patternAngle` untouched,
+ *    rather than added to both (which double-counted it).
+ * 2. `offset` lives in the frame rotated by `-(line.angle + patternAngle)`
+ *    from object space. It must be rotated back to object space, passed
+ *    through the matrix's linear part, then rotated into the *new*
+ *    total-angle frame -- not transformed with the matrix directly, which
+ *    applies the rotation component a second time.
+ * 3. Dash lengths are measured along that same physical direction, so they
+ *    must scale by the matrix's stretch factor along it (a block scaled 2x
+ *    keeps the original dash period otherwise).
  */
 export function transformHatchPatternToWorldSpace(
   pattern: AcExHatchPattern,
   matrixElements: number[]
 ): AcExHatchPattern {
-  const rotation = Math.atan2(matrixElements[1]!, matrixElements[0]!)
+  const m00 = matrixElements[0]!
+  const m10 = matrixElements[1]!
+  const m01 = matrixElements[4]!
+  const m11 = matrixElements[5]!
+  const tx = matrixElements[12]!
+  const ty = matrixElements[13]!
+
+  const rotation = Math.atan2(m10, m00)
+
   const transformPoint = (x: number, y: number): [number, number] => [
-    matrixElements[0]! * x + matrixElements[4]! * y + matrixElements[12]!,
-    matrixElements[1]! * x + matrixElements[5]! * y + matrixElements[13]!
+    m00 * x + m01 * y + tx,
+    m10 * x + m11 * y + ty
   ]
-  const transformVector = (x: number, y: number): [number, number] => [
-    matrixElements[0]! * x + matrixElements[4]! * y,
-    matrixElements[1]! * x + matrixElements[5]! * y
+  const applyLinear = (x: number, y: number): [number, number] => [
+    m00 * x + m01 * y,
+    m10 * x + m11 * y
   ]
+  const rotate = (x: number, y: number, angle: number): [number, number] => {
+    const c = Math.cos(angle)
+    const s = Math.sin(angle)
+    return [c * x - s * y, s * x + c * y]
+  }
 
   return {
-    patternAngle: pattern.patternAngle + rotation,
-    patternLines: pattern.patternLines.map(line => ({
-      angle: line.angle + rotation,
-      base: transformPoint(line.base[0], line.base[1]),
-      offset: transformVector(line.offset[0], line.offset[1]),
-      dashLengths: [...line.dashLengths],
-      patternLength: line.patternLength
-    }))
+    patternAngle: pattern.patternAngle,
+    patternLines: pattern.patternLines.map(line => {
+      const oldTotalAngle = line.angle + pattern.patternAngle
+      const newAngle = line.angle + rotation
+      const newTotalAngle = newAngle + pattern.patternAngle
+
+      const [dirX, dirY] = applyLinear(
+        Math.cos(oldTotalAngle),
+        Math.sin(oldTotalAngle)
+      )
+      const scale = Math.hypot(dirX, dirY)
+
+      const [offsetObjX, offsetObjY] = rotate(
+        line.offset[0],
+        line.offset[1],
+        oldTotalAngle
+      )
+      const [offsetWorldX, offsetWorldY] = applyLinear(offsetObjX, offsetObjY)
+      const offset = rotate(offsetWorldX, offsetWorldY, -newTotalAngle)
+
+      return {
+        angle: newAngle,
+        base: transformPoint(line.base[0], line.base[1]),
+        offset,
+        dashLengths: line.dashLengths.map(d => d * scale),
+        patternLength: line.patternLength * scale
+      }
+    })
   }
 }
 

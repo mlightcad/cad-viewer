@@ -134,7 +134,12 @@ export function createHatchPatternShaderMaterial(
     float drawSolidLine(PatternLine patternLine, float thick) {
         vec2 base = patternLine.base;
         vec2 offset = patternLine.offset;
-        float distanceBetweenLines = length(offset);
+        // Below ~1px of spacing, dist / distanceBetweenLines (in drawSpaceLine)
+        // grows past float32's fractional precision and fract() returns noise,
+        // discarding the fill entirely instead of thinning it. Floor the spacing
+        // at the line's own stroke thickness so lines that would visually merge
+        // degrade into a solid tone, matching how this prints/renders in AutoCAD.
+        float distanceBetweenLines = max(length(offset), thick);
 
         base = rotate(base, u_patternAngle);
         vec2 samplePos = rotate(v_pos.xy - base, -(patternLine.angle + u_patternAngle));
@@ -142,7 +147,7 @@ export function createHatchPatternShaderMaterial(
         return drawSpaceLine(samplePos, distanceBetweenLines, thick);
     }
 
-    int getPatternIndex(PatternLine patternLine, float linePosition, out float distance) {
+    int getPatternIndex(PatternLine patternLine, float linePosition, float thick, out float distance) {
         if (patternLine.dashLengths.length() < 1 || patternLine.patternLength <= 0.0) {
             return -1;
         }
@@ -156,7 +161,15 @@ export function createHatchPatternShaderMaterial(
         #pragma unroll_loop_start
         for (int i = 0; i < patternLine.dashLengths.length(); i++) {
             float segmentLength = abs(patternLine.dashLengths[i]);
-            if (linePosition <= sum + segmentLength + EPSILON) {
+            // A dash length of 0 is AutoCAD's "dot" marker: a zero-length
+            // element that consumes no along-line distance (sum still
+            // advances by the real, zero, segmentLength -- the pattern's
+            // period is unaffected), but a zero-width hit-test window can
+            // never actually be sampled. Give only dots a hittable window
+            // sized to the stroke thickness (same floor as #727's sub-pixel
+            // spacing fix); real dashes keep their exact length.
+            float hitWindow = segmentLength == 0.0 ? thick : segmentLength;
+            if (linePosition <= sum + hitWindow + EPSILON) {
                 distance = linePosition - sum;
                 // Clamp distance to avoid negative values due to precision
                 distance = max(0.0, distance);
@@ -173,7 +186,9 @@ export function createHatchPatternShaderMaterial(
         float opacity = 0.0; // 0.0 = don't draw, 1.0 = draw
         vec2 base = patternLine.base;
         vec2 offset = patternLine.offset;
-        float distanceBetweenLines = abs(offset.y);
+        // See drawSolidLine: floor sub-pixel spacing at the stroke thickness
+        // so the fill degrades to a solid tone instead of vanishing.
+        float distanceBetweenLines = max(abs(offset.y), thick);
 
         base = rotate(base, u_patternAngle);
         vec2 samplePos = rotate(v_pos.xy - base, -(patternLine.angle + u_patternAngle));
@@ -184,7 +199,7 @@ export function createHatchPatternShaderMaterial(
         }
         float linePosition = samplePos.x - offsetX;
         float distance = 0.0;
-        int index = getPatternIndex(patternLine, linePosition, distance);
+        int index = getPatternIndex(patternLine, linePosition, thick, distance);
         if (index < 0 || index >= patternLine.dashLengths.length()) {
             return opacity;
         }
