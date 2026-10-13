@@ -8,7 +8,20 @@ const mockSwitchLayout = jest.fn((id: string) => {
   mockView.activeLayoutBtrId = id
 })
 const mockMarkInitialized = jest.fn()
-const mockView = {
+const mockView: {
+  activeLayoutBtrId: string
+  zoomTo: (...args: unknown[]) => unknown
+  selectionSet: typeof mockSelection
+  isLayoutInitialized: () => boolean
+  markLayoutAsInitialized: (id: string) => void
+  waitUntilIdle: () => Promise<boolean>
+  canvas?: HTMLElement
+  width?: number
+  height?: number
+  center?: { x: number; y: number }
+  worldToScreen?: (p: { x: number; y: number }) => { x: number; y: number }
+  screenToWorld?: (p: { x: number; y: number }) => { x: number; y: number }
+} = {
   activeLayoutBtrId: 'layout-a',
   zoomTo: (...args: unknown[]) => mockZoomTo(...args),
   selectionSet: mockSelection,
@@ -210,6 +223,88 @@ describe('AcUiFindPaletteView', () => {
     press(true) // previous wraps backwards
     expect(mockSelection.add).toHaveBeenLastCalledWith('t2')
     view.destroy()
+  })
+
+  it('Find button searches and jumps to the first hit', () => {
+    const view = createView()
+    const input = view.element.querySelector(
+      'input[type="search"]'
+    ) as HTMLInputElement
+    const button = view.element.querySelector(
+      'button.ml-ex-ui-find-btn'
+    ) as HTMLButtonElement
+    input.value = 'beta'
+    button.click()
+    expect(rows(view)).toHaveLength(2)
+    expect(mockSelection.add).toHaveBeenLastCalledWith('t1')
+    expect(rows(view)[0].classList.contains('is-selected')).toBe(true)
+    view.destroy()
+  })
+
+  it('passes dock insets when navigating so the hit is framed beside the panel', async () => {
+    const canvas = document.createElement('canvas')
+    Object.defineProperty(canvas, 'getBoundingClientRect', {
+      value: () => ({
+        left: 0,
+        top: 0,
+        right: 1000,
+        bottom: 800,
+        width: 1000,
+        height: 800,
+        x: 0,
+        y: 0,
+        toJSON: () => ({})
+      })
+    })
+    mockView.canvas = canvas
+    mockView.width = 1000
+    mockView.height = 800
+    mockView.center = { x: 0, y: 0 }
+    mockView.worldToScreen = (p: { x: number; y: number }) => ({
+      x: p.x,
+      y: p.y
+    })
+    mockView.screenToWorld = (p: { x: number; y: number }) => ({
+      x: p.x,
+      y: p.y
+    })
+
+    const dock = document.createElement('div')
+    dock.className = 'ml-ex-ui-dock-panel'
+    dock.dataset.side = 'left'
+    dock.dataset.open = 'true'
+    Object.defineProperty(dock, 'getBoundingClientRect', {
+      value: () => ({
+        left: 0,
+        top: 0,
+        right: 280,
+        bottom: 800,
+        width: 280,
+        height: 800,
+        x: 0,
+        y: 0,
+        toJSON: () => ({})
+      })
+    })
+    document.body.appendChild(dock)
+
+    const view = createView()
+    dock.appendChild(view.element)
+    view.search('gamma')
+    // Programmatic search does not navigate; click the row to exercise insets.
+    rows(view)[0].click()
+    await Promise.resolve()
+
+    expect(mockZoomTo).toHaveBeenCalled()
+    // With a left inset the framed box is wider than the raw hit extents (~4).
+    const [box] = mockZoomTo.mock.calls[0] as [
+      { min: { x: number }; max: { x: number } }
+    ]
+    expect(box.max.x - box.min.x).toBeGreaterThan(4)
+    view.destroy()
+    mockView.canvas = undefined
+    mockView.worldToScreen = undefined
+    mockView.screenToWorld = undefined
   })
 
   it('re-runs the search instead of navigating when the layout changed (current layout only)', () => {

@@ -274,6 +274,16 @@ test.describe('Find palette (full Vue UI)', () => {
       .poll(async () => (await viewerState(page)).layout)
       .toBe('Planta')
   })
+
+  test('Find button searches and jumps to the first hit', async ({ page }) => {
+    await openFind(page)
+    await search(page, 'sala')
+    await expect
+      .poll(async () => (await viewerState(page)).selected)
+      .toEqual(['B1'])
+    await expect(rows(page).first()).toHaveClass(/is-selected/)
+  })
+
   test('Ctrl+F opens the palette instead of the browser page search', async ({
     page
   }) => {

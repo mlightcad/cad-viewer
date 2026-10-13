@@ -218,4 +218,14 @@ describe('useFind', () => {
     await find.submit(true) // backwards wraps
     expect(selection.add).toHaveBeenLastCalledWith('p1')
   })
+
+  it('search + navigateTo(0) matches the Find-button / first-Enter path', async () => {
+    const find = create()
+    find.query.value = 'sala'
+    find.search()
+    expect(find.hits.value).toHaveLength(2)
+    expect(selection.add).not.toHaveBeenCalled()
+    await find.navigateTo(0)
+    expect(selection.add).toHaveBeenLastCalledWith('m1')
+  })
 })

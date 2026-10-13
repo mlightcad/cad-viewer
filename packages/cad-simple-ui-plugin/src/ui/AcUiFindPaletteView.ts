@@ -1,5 +1,6 @@
 import {
   type AcApDocManager,
+  type AcApFindViewInsets,
   acapNavigateToFindHit
 } from '@mlightcad/cad-simple-viewer'
 
@@ -25,11 +26,11 @@ export interface AcUiFindPaletteViewOptions {
  *
  * Searches TEXT, MTEXT and block attribute values of the **whole drawing**
  * (every layout) by default, or only the active layout when "Current layout
- * only" is checked. The search runs when the user submits a query (Enter or the
- * Find button) — never while typing and never in the background. Each result
- * names its layout; clicking a result (or Enter / Shift+Enter in the input to
- * step through them) activates that layout if needed, zooms to the text and
- * selects its entity.
+ * only" is checked. Enter and the Find button both search and jump to the first
+ * hit; further Enter / Shift+Enter (or clicking a result) steps through the
+ * list. The search never runs while typing. Each result names its layout;
+ * navigation activates that layout if needed, zooms to the text (framed beside
+ * the dock via insets) and selects its entity.
  */
 export class AcUiFindPaletteView {
   /** Root element mounted in the dock panel find tab. */
@@ -94,7 +95,9 @@ export class AcUiFindPaletteView {
   }
 
   /**
-   * Runs a search programmatically (used by tests and integrations).
+   * Runs a search programmatically (used by tests and integrations). Lists
+   * results only — does not navigate. The Find button and Enter both search
+   * and jump to the first hit.
    *
    * @param scope - `drawing` (default: all layouts) or `layout` (active layout
    * only); defaults to the state of the "Current layout only" checkbox.
@@ -145,7 +148,11 @@ export class AcUiFindPaletteView {
     this.findButton = document.createElement('button')
     this.findButton.type = 'button'
     this.findButton.className = 'ml-ex-ui-measure-btn ml-ex-ui-find-btn'
-    this.findButton.addEventListener('click', () => this.runSearch())
+    this.findButton.addEventListener('click', () => {
+      // Same as the first Enter: list results and jump to the first hit.
+      this.runSearch()
+      if (this.result.hits.length > 0) this.navigateTo(0)
+    })
 
     form.append(this.inputEl, this.findButton)
 
@@ -319,6 +326,49 @@ export class AcUiFindPaletteView {
   }
 
   /**
+   * Canvas pixels covered by the dock panel, so a hit is framed in the part of
+   * the drawing that stays visible next to (or above) it — same idea as the
+   * Vue Find palette's `paletteInsets`.
+   */
+  private dockInsets(): AcApFindViewInsets | undefined {
+    const canvas = this.editor.curView?.canvas as HTMLElement | undefined
+    const dock = this.element.closest(
+      '.ml-ex-ui-dock-panel'
+    ) as HTMLElement | null
+    if (!canvas || !dock || dock.dataset.open === 'false') return undefined
+    const c = canvas.getBoundingClientRect()
+    const p = dock.getBoundingClientRect()
+    const overlapsX = p.right > c.left && p.left < c.right
+    const overlapsY = p.bottom > c.top && p.top < c.bottom
+    if (!overlapsX || !overlapsY || p.width === 0 || p.height === 0) {
+      return undefined
+    }
+    switch (dock.dataset.side) {
+      case 'left':
+        return { left: Math.min(c.width, Math.max(0, p.right - c.left)) }
+      case 'right':
+        return { right: Math.min(c.width, Math.max(0, c.right - p.left)) }
+      case 'top':
+        return { top: Math.min(c.height, Math.max(0, p.bottom - c.top)) }
+      case 'bottom':
+        return { bottom: Math.min(c.height, Math.max(0, c.bottom - p.top)) }
+      default:
+        break
+    }
+    // Unknown side: pick the edge the dock overlaps most.
+    const left = Math.max(0, Math.min(c.width, p.right - c.left))
+    const right = Math.max(0, Math.min(c.width, c.right - p.left))
+    const top = Math.max(0, Math.min(c.height, p.bottom - c.top))
+    const bottom = Math.max(0, Math.min(c.height, c.bottom - p.top))
+    const max = Math.max(left, right, top, bottom)
+    if (max <= 0) return undefined
+    if (max === left) return { left }
+    if (max === right) return { right }
+    if (max === top) return { top }
+    return { bottom }
+  }
+
+  /**
    * Activates the hit's layout when needed, zooms to the hit and selects its
    * entity (see {@link acapNavigateToFindHit}).
    */
@@ -348,7 +398,9 @@ export class AcUiFindPaletteView {
         if (active) row.scrollIntoView?.({ block: 'nearest' })
       })
 
-    void acapNavigateToFindHit(this.editor, hit).then(outcome => {
+    void acapNavigateToFindHit(this.editor, hit, {
+      insets: this.dockInsets()
+    }).then(outcome => {
       if (
         outcome !== 'layout-missing' &&
         outcome !== 'layout-switch-failed' &&
