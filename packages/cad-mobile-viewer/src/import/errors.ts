@@ -27,7 +27,7 @@ export const IMPORT_MESSAGES: Record<ImportErrorCode, string> = {
 const MAX_DETAIL = 200
 
 /**
- * Remove URLs, URIs e caminhos absolutos (POSIX/Windows/`/mnt/…`) e limita o
+ * Remove URLs, URIs e caminhos absolutos (POSIX, Windows, montagens WSL) e limita o
  * tamanho. O resultado serve só para diagnóstico (`log`).
  */
 export function redactDetail(text: string): string {

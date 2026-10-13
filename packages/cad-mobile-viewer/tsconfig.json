@@ -16,7 +16,13 @@
     "noEmit": true,
     "declaration": false,
     "declarationMap": false,
-    "sourceMap": false
+    "sourceMap": false,
+    "baseUrl": "../..",
+    "paths": {
+      "@mlightcad/cad-simple-viewer/find": [
+        "packages/cad-simple-viewer/src/find/index.ts"
+      ]
+    }
   },
   "include": [
     "src",
