@@ -194,3 +194,15 @@ export function detectDocumentFormat(name: string): DocumentFormat | null {
   if (!m || m.index === 0) return null
   return m[1].toLowerCase() as DocumentFormat
 }
+
+/** Guarda do payload de `ready`: o viewer é código externo à app, nada se assume. */
+export function isReadyPayload(p: unknown): p is ReadyPayload {
+  return (
+    isRecord(p) &&
+    typeof p.viewerVersion === 'string' &&
+    p.protocol === PROTOCOL_VERSION &&
+    Array.isArray(p.caps) &&
+    p.caps.every((c) => c === 'find' || c === 'dwg' || c === 'dxf') &&
+    (p.dwg === 'ok' || p.dwg === 'unavailable')
+  )
+}
