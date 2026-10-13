@@ -184,4 +184,46 @@ describe('documentReducer', () => {
   it('ready-timeout without an open in progress changes nothing', () => {
     assert.deepEqual(run([{ kind: 'ready-timeout' }]), initialDocumentState)
   })
+
+  it('a rejected open never ends the in-flight one nor drops the previous document', () => {
+    const open = run([
+      sentOpen('a-1', 'A.dxf'),
+      { kind: 'opened', replyTo: 'a-1', payload: doc('A.dxf') }
+    ])
+    const rejected = run(
+      [
+        {
+          kind: 'command-rejected',
+          command: 'open',
+          error: { code: 'send-failed', message: 'x' }
+        }
+      ],
+      open
+    )
+    assert.equal(rejected.opening, null)
+    assert.equal(rejected.current?.name, 'A.dxf')
+    assert.equal(rejected.error?.code, 'send-failed')
+
+    // Com um `open` ainda em curso, a rejeição de outro não o cancela:
+    // a resposta do primeiro continua a aplicar-se.
+    const loading = run(
+      [
+        sentOpen('a-2', 'B.dxf'),
+        {
+          kind: 'command-rejected',
+          command: 'open',
+          error: { code: 'too-large', message: 'x' }
+        }
+      ],
+      open
+    )
+    assert.equal(loading.opening?.id, 'a-2')
+    assert.equal(loading.current?.name, 'A.dxf')
+    const done = run(
+      [{ kind: 'opened', replyTo: 'a-2', payload: doc('B.dxf') }],
+      loading
+    )
+    assert.equal(done.opening, null)
+    assert.equal(done.current?.name, 'B.dxf')
+  })
 })

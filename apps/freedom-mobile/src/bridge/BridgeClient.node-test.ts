@@ -867,3 +867,69 @@ describe('BridgeClient — correlated not-ready rejection (OBJ-0104 M2)', () => 
     assert.equal(injected.length, 0)
   })
 })
+
+describe('BridgeClient — consumed find ids never correlate a stale goto (OBJ-0104 follow-up)', () => {
+  const FIND = { query: 'A', matchCase: false, scope: 'drawing' } as const
+  const forceBooting = (client: BridgeClient) => {
+    ;(client as unknown as { phaseValue: string }).phaseValue = 'booting'
+  }
+
+  it('a duplicate findResult after consumption is stale: no second goto, no find-navigation-failed', () => {
+    const { client, events, injected } = setup()
+    client.receive(wire('ready', READY))
+    const f = client.find(FIND)
+    assert.ok(f.ok)
+    client.receive(wire('findResult', findResult(7, 2), f.id))
+    assert.deepEqual(
+      injected.map(m => m.type),
+      ['find', 'goto']
+    )
+    // Mesmo com o envio de `goto` agora a falhar, a repetição não o tenta.
+    forceBooting(client)
+    client.receive(wire('findResult', findResult(7, 2), f.id))
+    assert.equal(last(events, 'stale-reply').replyTo, f.id)
+    assert.equal(kinds(events).includes('find-navigation-failed'), false)
+    assert.equal(injected.length, 2)
+  })
+
+  it('after process-gone a late findResult is stale and never emits find-navigation-failed', () => {
+    const { client, events, injected } = setup()
+    client.receive(wire('ready', READY))
+    const f = client.find(FIND)
+    assert.ok(f.ok)
+    client.processGone()
+    client.receive(wire('findResult', findResult(7, 2), f.id))
+    assert.equal(last(events, 'stale-reply').type, 'findResult')
+    assert.equal(kinds(events).includes('find-navigation-failed'), false)
+    assert.equal(injected.length, 1)
+  })
+
+  it('after dispose a late findResult emits nothing', () => {
+    const { client, events } = setup()
+    client.receive(wire('ready', READY))
+    const f = client.find(FIND)
+    assert.ok(f.ok)
+    client.dispose()
+    const before = events.length
+    client.receive(wire('findResult', findResult(7, 2), f.id))
+    assert.equal(events.length, before)
+  })
+
+  it('a rejected automatic goto is correlated only with the search that produced it', () => {
+    const { client, events } = setup()
+    client.receive(wire('ready', READY))
+    const f1 = client.find(FIND)
+    const f2 = client.find(FIND)
+    assert.ok(f1.ok && f2.ok)
+    forceBooting(client)
+    client.receive(wire('findResult', findResult(1, 2), f1.id))
+    assert.equal(kinds(events).includes('find-navigation-failed'), false)
+    client.receive(wire('findResult', findResult(2, 2), f2.id))
+    const failed = events.filter(e => e.kind === 'find-navigation-failed')
+    assert.equal(failed.length, 1)
+    assert.equal(
+      failed[0].kind === 'find-navigation-failed' && failed[0].replyTo,
+      f2.id
+    )
+  })
+})
