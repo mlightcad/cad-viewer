@@ -4,6 +4,7 @@
 // texto próprio: nunca se mostra "sem resultados" quando na verdade houve erro.
 
 import type { DocumentState } from './document.ts'
+import type { FilesState } from './files.ts'
 import type { FindState } from './find.ts'
 import type { SelectionState } from './selection.ts'
 import type { SessionIssue, ZoomState } from './session.ts'
@@ -38,6 +39,19 @@ export function describeDocument(doc: DocumentState): string | null {
       n === 1 ? 'layout' : 'layouts'
     })`
   }
+  return null
+}
+
+/**
+ * Escolha/cópia do ficheiro e falhas locais. A abertura em si (`A abrir…`,
+ * `opened`, `openFailed`) é de `describeDocument`.
+ */
+export function describeFiles(files: FilesState): string | null {
+  if (files.phase === 'picking') return 'A escolher o ficheiro…'
+  if (files.phase === 'staging') {
+    return files.name ? `A preparar ${files.name}…` : 'A preparar o ficheiro…'
+  }
+  if (files.error) return files.error.message
   return null
 }
 

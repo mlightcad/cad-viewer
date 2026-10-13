@@ -5,6 +5,7 @@
 
 import type { BridgeEvent } from '../bridge/BridgeClient.ts'
 import type { ZoomOp } from '../contracts/protocol.ts'
+import type { FileFlowEvent } from '../files/fileFlow.ts'
 import {
   initialShellState,
   shellReducer,
@@ -15,6 +16,12 @@ import {
   type DocumentState,
   initialDocumentState
 } from './document.ts'
+import {
+  filesReducer,
+  type FilesState,
+  initialFilesState,
+  isFileFlowEvent
+} from './files.ts'
 import {
   findReducer,
   type FindState,
@@ -44,6 +51,7 @@ export interface SessionIssue {
 export interface SessionState {
   shell: ShellState
   document: DocumentState
+  files: FilesState
   find: FindState
   selection: SelectionState
   zoom: ZoomState
@@ -53,6 +61,7 @@ export interface SessionState {
 export const initialSessionState: SessionState = {
   shell: initialShellState,
   document: initialDocumentState,
+  files: initialFilesState,
   find: initialFindState,
   selection: initialSelectionState,
   zoom: initialZoomState,
@@ -61,6 +70,7 @@ export const initialSessionState: SessionState = {
 
 export type SessionAction =
   | BridgeEvent
+  | FileFlowEvent
   | FindUiAction
   | { kind: 'issue-dismissed' }
   | { kind: 'reload' }
@@ -141,6 +151,9 @@ export function sessionReducer(
     }
   }
   if (action.kind === 'issue-dismissed') return { ...state, issue: null }
+  if (isFileFlowEvent(action)) {
+    return { ...state, files: filesReducer(state.files, action) }
+  }
   if (action.kind === 'find-cleared') {
     const find = findReducer(state.find, action)
     return {
@@ -170,6 +183,7 @@ export function sessionReducer(
   return {
     shell,
     document: documentReducer(state.document, event),
+    files: filesReducer(state.files, event),
     find,
     selection: selectionReducer(state.selection, event, find),
     zoom: zoomReducer(state.zoom, event),

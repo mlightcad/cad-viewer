@@ -58,6 +58,8 @@ export class FakeTimers implements Timers {
 }
 
 export interface HarnessOptions extends Partial<SyntheticViewerOptions> {
+  /** Chamado em cada evento da ponte (como o `onEvent` do ecrã real). */
+  onEvent?: (event: BridgeEvent) => void
   /** `true` faz `inject` lançar (WebView sem ref) para `predicate`. */
   failInject?: (type: string) => boolean
 }
@@ -96,6 +98,7 @@ export function createHarness(options: HarnessOptions = {}): Harness {
     onEvent: e => {
       events.push(e)
       dispatch(e)
+      options.onEvent?.(e)
     },
     inject: script => {
       const probe = JSON.parse(
