@@ -12,8 +12,6 @@ export default {
 
   example: {
     fileUpload: {
-      brand: 'Aitra CadViewer',
-      credit: '基于开源项目 mlightcad/cad-viewer',
       title: '选择要查看的 CAD 文件',
       subtitle: '将 DWG 或 DXF 图纸导入查看器',
       fontCdnNotice:
