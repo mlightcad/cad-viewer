@@ -349,8 +349,8 @@ function segmentsProperlyIntersect(
  *
  * Vertices are written already relative to `worldOffset` (subtracted before
  * the float32 store, not after) so large WCS coordinates do not quantize to
- * a shared value before the rebase gets a chance to run -- see #729. A
- * polyline's width is a geometric offset (centre ± width/2); at large
+ * a shared value before the rebase gets a chance to run -- see #729 / #724.
+ * A polyline's width is a geometric offset (centre ± width/2); at large
  * coordinates a float32's ULP can exceed that offset, collapsing both edges
  * onto the same stored value and making the fill a wedge or disappear.
  */
@@ -741,6 +741,8 @@ export function buildAreaGeometry(
   let prebasedWorldOffset: THREE.Vector3 | undefined
   let prebasedWcsBbox: THREE.Box3 | undefined
 
+  let capturedWorldOffset: THREE.Vector3 | undefined
+
   if (smallLoop) {
     _areaBuildStats.smallLoopFastPath++
     prebasedWcsBbox = computeWcsBboxFromPoints(
@@ -759,6 +761,14 @@ export function buildAreaGeometry(
         meshGeometries.push(object.geometry.clone())
         if (!resolvedMaterial && object.material instanceof THREE.Material) {
           resolvedMaterial = object.material
+        }
+        if (
+          !capturedWorldOffset &&
+          (object.position.x !== 0 ||
+            object.position.y !== 0 ||
+            object.position.z !== 0)
+        ) {
+          capturedWorldOffset = object.position.clone()
         }
       }
     })
@@ -807,9 +817,16 @@ export function buildAreaGeometry(
       geometry.dispose()
       return null
     }
-    wcsBbox = boundingBox.clone()
-    worldOffset = wcsBbox.getCenter(new THREE.Vector3())
-    rebaseGeometryPositions(geometry, worldOffset)
+    // AcTrPolygon origin-shifts solid fills before float32 upload (#724);
+    // reuse that mesh.position so local verts are not rebased again.
+    worldOffset =
+      capturedWorldOffset ?? boundingBox.getCenter(new THREE.Vector3())
+    wcsBbox = capturedWorldOffset
+      ? boundingBox.clone().translate(capturedWorldOffset)
+      : boundingBox.clone()
+    if (!capturedWorldOffset) {
+      rebaseGeometryPositions(geometry, worldOffset)
+    }
   }
 
   const gradientBounds = {

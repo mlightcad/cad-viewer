@@ -545,4 +545,45 @@ describe('buildOffsetRingDirectGeometry', () => {
     expect(built!.geometry.getIndex()!.count).toBe(count * 6)
     built!.geometry.dispose()
   })
+
+  it('keeps half-width at survey coordinates (float32 rebase before upload, #724)', () => {
+    const cx = 38_500_000
+    const cy = 12_000_000
+    const halfWidth = 1.05
+    const outer: AcGePoint3dLike[] = [
+      { x: cx - 10 - halfWidth, y: cy - 4 - halfWidth, z: 0 },
+      { x: cx + 10 + halfWidth, y: cy - 4 - halfWidth, z: 0 },
+      { x: cx + 10 + halfWidth, y: cy + 4 + halfWidth, z: 0 },
+      { x: cx - 10 - halfWidth, y: cy + 4 + halfWidth, z: 0 }
+    ]
+    const inner: AcGePoint3dLike[] = [
+      { x: cx - 10 + halfWidth, y: cy - 4 + halfWidth, z: 0 },
+      { x: cx + 10 - halfWidth, y: cy - 4 + halfWidth, z: 0 },
+      { x: cx + 10 - halfWidth, y: cy + 4 - halfWidth, z: 0 },
+      { x: cx - 10 + halfWidth, y: cy + 4 - halfWidth, z: 0 }
+    ]
+
+    const built = buildOffsetRingDirectGeometry(
+      outer,
+      inner,
+      defaultTraits,
+      new AcTrRenderContext()
+    )
+    expect(built).not.toBeNull()
+    if (!built) return
+
+    expect(built.worldOffset.x).toBeCloseTo(cx, 5)
+    expect(built.worldOffset.y).toBeCloseTo(cy, 5)
+
+    const position = built.geometry.getAttribute('position')
+    const outer0 = new THREE.Vector3().fromBufferAttribute(position, 0)
+    const inner0 = new THREE.Vector3().fromBufferAttribute(position, 4)
+    expect(outer0.distanceTo(inner0)).toBeGreaterThan(1.5)
+
+    for (let i = 0; i < position.count; i++) {
+      expect(Math.abs(position.getX(i))).toBeLessThan(20)
+      expect(Math.abs(position.getY(i))).toBeLessThan(20)
+    }
+    built.geometry.dispose()
+  })
 })
