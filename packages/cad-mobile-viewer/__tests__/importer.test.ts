@@ -5,14 +5,17 @@
 // não corre em jest/node). Fixtures sintéticas: __tests__/PROVENANCE.md.
 
 import {
+  acdbAssignWorkingDatabase,
   AcDbDatabase,
   AcDbDatabaseConverterManager,
   AcDbFileType,
+  acdbGetWorkingDatabase,
   AcDbOpenDatabaseError
 } from '@mlightcad/data-model'
 
 import { IMPORT_MESSAGES } from '../src/import/errors'
 import {
+  defaultLoader,
   type DocumentLoader,
   importDocument,
   listLayouts,
@@ -336,6 +339,197 @@ describe('falhas do conversor, timeout e inspecção', () => {
       expect(out.failure.message).toBe(IMPORT_MESSAGES.parse)
       expect(JSON.stringify(out.failure)).not.toMatch(/kevin|127\.0\.0\.1/)
     }
+  })
+})
+
+describe('loader por omissão e base de trabalho global', () => {
+  const dxfReq = () => ({
+    name: 'x.dxf',
+    bytes: toBuffer(buildDxf({ texts: TEXTS }))
+  })
+  const working = (): AcDbDatabase | null => {
+    try {
+      return acdbGetWorkingDatabase()
+    } catch {
+      return null
+    }
+  }
+  const setWorking = (db: AcDbDatabase | null) =>
+    acdbAssignWorkingDatabase(db as AcDbDatabase)
+  const flush = () => new Promise<void>(resolve => setTimeout(resolve, 0))
+  const deferred = () => {
+    let resolve!: () => void
+    let reject!: (e: unknown) => void
+    const promise = new Promise<void>((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+    return { promise, resolve, reject }
+  }
+  let previous: AcDbDatabase
+
+  beforeEach(() => {
+    previous = new AcDbDatabase()
+    setWorking(previous)
+  })
+  afterEach(() => {
+    jest.restoreAllMocks()
+    setWorking(null)
+  })
+
+  test('construir a base de dados não muda a base de trabalho', () => {
+    new AcDbDatabase()
+    expect(working()).toBe(previous)
+  })
+
+  test('sucesso: o resultado válido fica como base de trabalho', async () => {
+    const out = await importDocument(dxfReq(), { dwg: 'ok' })
+    expect(out.ok).toBe(true)
+    if (!out.ok) return
+    expect(out.document.database).not.toBe(previous)
+    expect(working()).toBe(out.document.database)
+    expect(modelSpaceCount(out.document.database)).toBe(TEXTS.length)
+  })
+
+  test('rejeição do read: restaura a base anterior e mapeia o erro', async () => {
+    jest
+      .spyOn(AcDbDatabase.prototype, 'read')
+      .mockImplementation(async function (this: AcDbDatabase) {
+        setWorking(this)
+        throw new AcDbOpenDatabaseError('corrompido', 'parse_failed')
+      })
+    const out = await importDocument(dxfReq(), { dwg: 'ok' })
+    expect(out).toMatchObject({ ok: false, failure: { code: 'parse' } })
+    expect(working()).toBe(previous)
+  })
+
+  test('rejeição sem base anterior: volta a «nenhuma»', async () => {
+    setWorking(null)
+    jest
+      .spyOn(AcDbDatabase.prototype, 'read')
+      .mockImplementation(async function (this: AcDbDatabase) {
+        setWorking(this)
+        throw new Error('falhou')
+      })
+    const out = await importDocument(dxfReq(), { dwg: 'ok' })
+    expect(out.ok).toBe(false)
+    expect(working()).toBeNull()
+  })
+
+  test('DXF real inválido (conversor real rejeita): base anterior preservada', async () => {
+    const out = await importDocument(
+      {
+        name: 'x.dxf',
+        // cabeçalho aceite pelo sniff, corpo que o parser rejeita
+        bytes: toBuffer('0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1015\n')
+      },
+      { dwg: 'ok' }
+    )
+    if (!out.ok) expect(working()).toBe(previous)
+    else expect(working()).toBe(out.document.database)
+  })
+
+  test('timeout: sinaliza o loader, restaura a base e passa o timeout ao worker', async () => {
+    const gate = deferred()
+    const read = jest
+      .spyOn(AcDbDatabase.prototype, 'read')
+      .mockImplementation(async function (this: AcDbDatabase) {
+        setWorking(this)
+        await gate.promise
+      })
+    const seen: { signal?: AbortSignal; timeoutMs?: number }[] = []
+    const out = await importDocument(dxfReq(), {
+      dwg: 'ok',
+      timeoutMs: 20,
+      load: input => {
+        seen.push({ signal: input.signal, timeoutMs: input.timeoutMs })
+        return defaultLoader(input)
+      }
+    })
+    expect(out).toMatchObject({ ok: false, failure: { code: 'timeout' } })
+    expect(seen[0].signal?.aborted).toBe(true)
+    expect(seen[0].timeoutMs).toBe(20)
+    expect(read.mock.calls[0][1]).toMatchObject({ timeout: 20 })
+    expect(working()).toBe(previous)
+    gate.resolve()
+    await flush()
+    expect(working()).toBe(previous)
+  })
+
+  test('conclusão tardia: nada é instalado nem emitido', async () => {
+    const gate = deferred()
+    jest
+      .spyOn(AcDbDatabase.prototype, 'read')
+      .mockImplementation(async function (this: AcDbDatabase) {
+        setWorking(this)
+        await gate.promise
+        setWorking(this)
+      })
+    const out = await importDocument(dxfReq(), { dwg: 'ok', timeoutMs: 20 })
+    expect(out).toMatchObject({ ok: false, failure: { code: 'timeout' } })
+    expect(working()).toBe(previous)
+    gate.resolve()
+    await flush()
+    // o `read` tardio tentou reinstalar-se: o loader repõe a anterior
+    expect(working()).toBe(previous)
+    expect(out.ok).toBe(false)
+  })
+
+  test('conclusão tardia não pisa uma importação posterior', async () => {
+    const gate = deferred()
+    jest
+      .spyOn(AcDbDatabase.prototype, 'read')
+      .mockImplementation(async function (this: AcDbDatabase) {
+        setWorking(this)
+        await gate.promise
+      })
+    await importDocument(dxfReq(), { dwg: 'ok', timeoutMs: 20 })
+    const later = new AcDbDatabase()
+    setWorking(later)
+    gate.resolve()
+    await flush()
+    expect(working()).toBe(later)
+  })
+
+  test('rejeição tardia (depois do timeout): sem rejeição não tratada e base anterior', async () => {
+    const gate = deferred()
+    jest
+      .spyOn(AcDbDatabase.prototype, 'read')
+      .mockImplementation(async function (this: AcDbDatabase) {
+        setWorking(this)
+        await gate.promise
+      })
+    const unhandled = jest.fn()
+    process.on('unhandledRejection', unhandled)
+    try {
+      const out = await importDocument(dxfReq(), { dwg: 'ok', timeoutMs: 20 })
+      expect(out).toMatchObject({ ok: false, failure: { code: 'timeout' } })
+      gate.reject(new Error('tardio'))
+      await flush()
+      await flush()
+      expect(unhandled).not.toHaveBeenCalled()
+      expect(working()).toBe(previous)
+    } finally {
+      process.off('unhandledRejection', unhandled)
+    }
+  })
+
+  test('loader personalizado que conclui depois do timeout não gera resultado', async () => {
+    const gate = deferred()
+    const load: DocumentLoader = async () => {
+      await gate.promise
+      return new AcDbDatabase()
+    }
+    const out = await importDocument(dxfReq(), {
+      dwg: 'ok',
+      load,
+      timeoutMs: 20
+    })
+    expect(out).toMatchObject({ ok: false, failure: { code: 'timeout' } })
+    gate.resolve()
+    await flush()
+    expect(out.ok).toBe(false)
+    expect(working()).toBe(previous)
   })
 })
 

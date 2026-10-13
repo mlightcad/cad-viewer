@@ -5,7 +5,12 @@
 // intermédio consumido pelo viewer. Nunca lança para falhas esperadas
 // (docs/OBJ-0104-m2-i2-libredwg-import-spec.md §3).
 
-import { AcDbDatabase, AcDbFileType } from '@mlightcad/data-model'
+import {
+  acdbAssignWorkingDatabase,
+  AcDbDatabase,
+  AcDbFileType,
+  acdbGetWorkingDatabase
+} from '@mlightcad/data-model'
 
 import { makeFailure, mapOpenError } from './errors'
 import { detectImportFormat, sniffFormat } from './format'
@@ -24,23 +29,79 @@ export interface LoadInput {
   name: string
   format: ImportFormat
   bytes: ArrayBuffer
+  /** Abortado pelo importador ao expirar o tempo; o loader deve libertar recursos. */
+  signal?: AbortSignal
+  /** Tempo máximo da conversão (também usado pelo timeout do worker). */
+  timeoutMs?: number
 }
 
 /** Converte `bytes` numa base de dados; lança em caso de falha. */
 export type DocumentLoader = (input: LoadInput) => Promise<AcDbDatabase>
 
-/** Loader por omissão: `AcDbDatabase.read` com os conversores registados. */
+/** Base de dados de trabalho global, ou `null` se ainda não existe nenhuma. */
+function currentWorkingDatabase(): AcDbDatabase | null {
+  try {
+    return acdbGetWorkingDatabase()
+  } catch {
+    return null
+  }
+}
+
+/** `AcDbDatabase.read` instala-se como base de trabalho global (estado partilhado). */
+function setWorkingDatabase(database: AcDbDatabase | null): void {
+  acdbAssignWorkingDatabase(database as AcDbDatabase)
+}
+
+function abortError(): Error {
+  const error = new Error('importação cancelada')
+  error.name = 'AbortError'
+  return error
+}
+
+/**
+ * Loader por omissão: `AcDbDatabase.read` com os conversores registados.
+ *
+ * O `read` substitui a base de dados de trabalho global ANTES de converter (os
+ * objectos sem dono resolvem-se contra ela). Para que uma falha, um timeout ou
+ * uma conclusão tardia não deixem esse estado apontado a uma base de dados
+ * descartada, a anterior é restaurada nesses casos — só se a global ainda for a
+ * nossa (nunca se sobrepõe a uma importação posterior). Em sucesso a nova base
+ * mantém-se como a de trabalho.
+ */
 export const defaultLoader: DocumentLoader = async ({
   name,
   format,
-  bytes
+  bytes,
+  signal,
+  timeoutMs
 }) => {
+  const previous = currentWorkingDatabase()
   const db = new AcDbDatabase()
-  await db.read(
-    bytes,
-    { readOnly: true, fileName: name },
-    format === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
-  )
+  const restore = () => {
+    if (currentWorkingDatabase() === db) setWorkingDatabase(previous)
+  }
+  signal?.addEventListener('abort', restore, { once: true })
+  try {
+    await db.read(
+      bytes,
+      {
+        readOnly: true,
+        fileName: name,
+        ...(timeoutMs !== undefined ? { timeout: timeoutMs } : {})
+      },
+      format === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
+    )
+  } catch (error) {
+    restore()
+    throw error
+  } finally {
+    signal?.removeEventListener('abort', restore)
+  }
+  if (signal?.aborted) {
+    // conclusão tardia: ninguém vai usar este resultado (a referência morre aqui)
+    restore()
+    throw abortError()
+  }
   return db
 }
 
@@ -144,11 +205,21 @@ export async function importDocument(
 
     const load = deps.load ?? defaultLoader
     const timeoutMs = deps.timeoutMs ?? DEFAULT_IMPORT_TIMEOUT_MS
+    const controller = new AbortController()
     let timer: ReturnType<typeof setTimeout> | undefined
     let database: AcDbDatabase | typeof TIMED_OUT
     try {
+      const loading = load({
+        name,
+        format,
+        bytes,
+        signal: controller.signal,
+        timeoutMs
+      })
+      // se o tempo expirar, um resultado ou erro tardio é descartado sem ruído
+      loading.catch(() => undefined)
       database = await Promise.race([
-        load({ name, format, bytes }),
+        loading,
         new Promise<typeof TIMED_OUT>(resolve => {
           timer = setTimeout(() => resolve(TIMED_OUT), timeoutMs)
         })
@@ -159,6 +230,8 @@ export async function importDocument(
       if (timer !== undefined) clearTimeout(timer)
     }
     if (database === TIMED_OUT) {
+      // sinaliza o loader (restaura a base de trabalho e liberta recursos)
+      controller.abort()
       return fail(makeFailure('timeout', 'convert', `> ${timeoutMs} ms`))
     }
 
