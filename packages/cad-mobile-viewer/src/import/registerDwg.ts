@@ -5,6 +5,8 @@
 // de §6.2/§6.4: worker local, `Worker` obrigatório, falha → `unavailable` (DXF
 // continua) e nunca outro parser: só os pacotes LibreDWG declarados em
 // package.json; nenhum conversor proprietário (a guarda está em guards.test.ts).
+// M2-I3: o conversor por omissão é `DwgCoverageConverter` (subclasse do
+// `AcDbLibreDwgConverter` que conta os tipos descartados; ver model/dwgCoverage.ts).
 
 import type {
   AcDbDatabaseConverter,
@@ -14,8 +16,8 @@ import {
   AcDbDatabaseConverterManager,
   AcDbFileType
 } from '@mlightcad/data-model'
-import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 
+import { DwgCoverageConverter } from '../model/dwgCoverage'
 import { hasEdgeSpaceOrControl } from './source'
 import type { DwgStatus } from './types'
 
@@ -77,7 +79,7 @@ export function registerDwg(
     deps.manager ?? AcDbDatabaseConverterManager.instance
   const create =
     deps.createConverter ??
-    ((config: AcDbDatabaseConverterConfig) => new AcDbLibreDwgConverter(config))
+    ((config: AcDbDatabaseConverterConfig) => new DwgCoverageConverter(config))
   try {
     manager.register(
       AcDbFileType.DWG,

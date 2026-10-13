@@ -12,6 +12,15 @@ export interface SyntheticDxfOptions {
   /** Comentários `999` antes da secção, como fazem algumas ferramentas. */
   comment?: string
   bom?: boolean
+  /** Entidades em bruto (cada item = linhas código/valor de UMA entidade) na secção ENTITIES. */
+  rawEntities?: string[][]
+  /** Blocos: nome + entidades em bruto; geram a secção BLOCKS. */
+  blocks?: { name: string; entities: string[][] }[]
+}
+
+/** Linhas de uma entidade a partir de pares `[código, valor]`. */
+export function rawEntity(type: string, ...pairs: [number, string | number][]) {
+  return ['0', type, ...pairs.flatMap(([c, v]) => [String(c), String(v)])]
 }
 
 export function buildDxf(opts: SyntheticDxfOptions = {}): string {
@@ -20,12 +29,23 @@ export function buildDxf(opts: SyntheticDxfOptions = {}): string {
   lines.push('0', 'SECTION', '2', 'HEADER')
   lines.push('9', '$ACADVER', '1', opts.version ?? 'AC1015')
   lines.push('0', 'ENDSEC')
+  if (opts.blocks?.length) {
+    lines.push('0', 'SECTION', '2', 'BLOCKS')
+    for (const b of opts.blocks) {
+      lines.push('0', 'BLOCK', '8', '0', '2', b.name, '70', '0')
+      lines.push('10', '0.0', '20', '0.0', '30', '0.0', '3', b.name)
+      for (const e of b.entities) lines.push(...e)
+      lines.push('0', 'ENDBLK', '8', '0')
+    }
+    lines.push('0', 'ENDSEC')
+  }
   lines.push('0', 'SECTION', '2', 'ENTITIES')
   ;(opts.texts ?? []).forEach((t, i) => {
     lines.push('0', 'TEXT', '8', t.layer ?? '0')
     lines.push('10', String(i), '20', String(i * 2), '30', '0.0')
     lines.push('40', '2.5', '1', t.text)
   })
+  for (const e of opts.rawEntities ?? []) lines.push(...e)
   lines.push('0', 'ENDSEC', '0', 'EOF')
   const body =
     lines.join(opts.crlf ? '\r\n' : '\n') + (opts.crlf ? '\r\n' : '\n')
