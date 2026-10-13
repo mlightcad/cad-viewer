@@ -8,7 +8,9 @@ import { describeViewerStatus } from '../shell/shellState'
 import {
   describeDocument,
   describeFind,
-  describeIssue
+  describeIssue,
+  describeSelection,
+  describeZoom
 } from '../state/describe'
 import { initialSessionState, sessionReducer } from '../state/session'
 import { type InjectFn, ViewerSurface } from '../viewer/ViewerSurface'
@@ -53,6 +55,8 @@ export function ViewerScreen(): ReactElement {
   const { shell } = session
   const documentText = describeDocument(session.document)
   const findText = describeFind(session.find)
+  const selectionText = describeSelection(session.selection)
+  const zoomText = describeZoom(session.zoom)
   const issueText = describeIssue(session.issue)
 
   return (
@@ -70,6 +74,16 @@ export function ViewerScreen(): ReactElement {
         {findText ? (
           <Text style={styles.status} accessibilityLiveRegion="polite">
             {findText}
+          </Text>
+        ) : null}
+        {selectionText ? (
+          <Text style={styles.status} accessibilityLiveRegion="polite">
+            {selectionText}
+          </Text>
+        ) : null}
+        {zoomText ? (
+          <Text style={styles.issue} accessibilityLiveRegion="polite">
+            {zoomText}
           </Text>
         ) : null}
         {issueText ? (

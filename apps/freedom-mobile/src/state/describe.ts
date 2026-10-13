@@ -5,7 +5,8 @@
 
 import type { DocumentState } from './document.ts'
 import type { FindState } from './find.ts'
-import type { SessionIssue } from './session.ts'
+import type { SelectionState } from './selection.ts'
+import type { SessionIssue, ZoomState } from './session.ts'
 
 const DOC_ERRORS: Record<string, string> = {
   'unsupported-ext': 'Só são aceites ficheiros .dwg e .dxf.',
@@ -73,4 +74,23 @@ export function describeIssue(issue: SessionIssue | null): string | null {
   return issue.source === 'protocol'
     ? `Mensagem inválida do viewer (${issue.code}).`
     : `Erro do viewer: ${issue.message}`
+}
+
+export function describeSelection(sel: SelectionState): string | null {
+  switch (sel.status) {
+    case 'none':
+      return null
+    case 'pending':
+      return 'A ir para o resultado…'
+    case 'selected':
+      return sel.hit
+        ? `Selecionado: “${sel.hit.text}” (${sel.hit.layoutName})`
+        : null
+    case 'unavailable':
+      return `Seleção indisponível: ${sel.error?.message ?? 'desconhecido'}`
+  }
+}
+
+export function describeZoom(zoom: ZoomState): string | null {
+  return zoom.error ? `Erro no zoom: ${zoom.error.message}` : null
 }

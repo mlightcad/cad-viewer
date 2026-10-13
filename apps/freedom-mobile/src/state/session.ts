@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Estado de sessão da app: shell + documento + FIND + zoom + último problema.
+// Estado de sessão da app: shell + documento + FIND + seleção + zoom + último problema.
 // Alimentado só por eventos do `BridgeClient` e por acções de UI; puro.
 
 import type { BridgeEvent } from '../bridge/BridgeClient.ts'
@@ -15,6 +15,11 @@ import {
   type DocumentState,
   initialDocumentState
 } from './document.ts'
+import {
+  initialSelectionState,
+  selectionReducer,
+  type SelectionState
+} from './selection.ts'
 import {
   findReducer,
   type FindState,
@@ -40,6 +45,7 @@ export interface SessionState {
   shell: ShellState
   document: DocumentState
   find: FindState
+  selection: SelectionState
   zoom: ZoomState
   issue: SessionIssue | null
 }
@@ -48,6 +54,7 @@ export const initialSessionState: SessionState = {
   shell: initialShellState,
   document: initialDocumentState,
   find: initialFindState,
+  selection: initialSelectionState,
   zoom: initialZoomState,
   issue: null
 }
@@ -81,7 +88,9 @@ function zoomReducer(state: ZoomState, event: BridgeEvent): ZoomState {
             }
           }
         : state
+    case 'opened':
     case 'process-gone':
+      // Documento novo = vista de extensão: o `lastOp`/erro do anterior já não valem.
       return initialZoomState
     default:
       return state
@@ -133,7 +142,12 @@ export function sessionReducer(
   }
   if (action.kind === 'issue-dismissed') return { ...state, issue: null }
   if (action.kind === 'find-cleared') {
-    return { ...state, find: findReducer(state.find, action) }
+    const find = findReducer(state.find, action)
+    return {
+      ...state,
+      find,
+      selection: selectionReducer(state.selection, action, find)
+    }
   }
 
   const event = action
@@ -152,10 +166,12 @@ export function sessionReducer(
       shell = shellReducer(shell, { type: 'process-gone' })
       break
   }
+  const find = findReducer(state.find, event)
   return {
     shell,
     document: documentReducer(state.document, event),
-    find: findReducer(state.find, event),
+    find,
+    selection: selectionReducer(state.selection, event, find),
     zoom: zoomReducer(state.zoom, event),
     issue: issueReducer(state.issue, event)
   }
