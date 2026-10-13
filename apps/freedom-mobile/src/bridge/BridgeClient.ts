@@ -237,6 +237,7 @@ export class BridgeClient {
     this.pending.clear()
     this.queuedOpen = null
     this.inFlightOpenId = null
+    this.latestFindId = null
     this.latestNavId = null
   }
 
@@ -551,6 +552,7 @@ export class BridgeClient {
     this.pending.clear()
     this.queuedOpen = null
     this.inFlightOpenId = null
+    this.latestFindId = null
     this.latestNavId = null
   }
 
