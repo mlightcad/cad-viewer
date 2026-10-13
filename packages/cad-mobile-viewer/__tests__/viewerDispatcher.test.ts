@@ -290,7 +290,8 @@ describe('createDocManagerViewPort (vista real estrutural)', () => {
       await port.navigate({
         hit: {} as never,
         entry: {} as never,
-        box: { min: { x: 0, y: 0 }, max: { x: 1, y: 1 } }
+        box: { min: { x: 0, y: 0 }, max: { x: 1, y: 1 } },
+        signal: new AbortController().signal
       })
     ).toBe('no-document')
   })
@@ -305,10 +306,14 @@ describe('createDocManagerViewPort (vista real estrutural)', () => {
       hit,
       entry: {} as never,
       box: { min: { x: 0, y: 0 }, max: { x: 1, y: 1 } },
-      insets
+      insets,
+      signal: new AbortController().signal
     })
     expect(out).toBe('layout-missing')
-    expect(navigateToHit).toHaveBeenCalledWith(manager, hit, { insets })
+    // o gestor entregue é o «guardado» (vista com zoom vetado e escritas condicionadas)
+    expect(navigateToHit).toHaveBeenCalledWith(expect.anything(), hit, {
+      insets
+    })
     const passed = (navigateToHit.mock.calls[0] as unknown[])[2] as {
       insets: object
     }

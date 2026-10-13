@@ -38,8 +38,7 @@ import type {
 import {
   describeCoverage,
   type DocumentMap,
-  mapDocument,
-  type MappingOutcome
+  mapDocument
 } from '../model/documentMap'
 import { dwgCoverageSource } from '../model/dwgCoverage'
 import {
@@ -74,9 +73,18 @@ export interface NavigateTarget {
   /** Hit original de `acapFindText` (o que `acapNavigateToFindHit` recebe). */
   hit: AcApFindLayoutHit
   entry: FindIndexEntry
-  /** Caixa de zoom validada (finita, não degenerada). */
+  /**
+   * Caixa de zoom (`acapFindHitBox`) já validada pela sessão (finita, não
+   * degenerada). É a ÚNICA caixa com que a vista pode enquadrar o hit.
+   */
   box: ViewBox
   insets?: Insets
+  /**
+   * Abortado quando a navegação deixa de ser a actual (`clearHighlight`, `find`,
+   * `open`, outra navegação). Depois do abort a vista NÃO pode alterar o
+   * realce, a selecção nem o zoom; o resultado é descartado como `stale`.
+   */
+  signal: AbortSignal
 }
 
 /**
@@ -90,7 +98,10 @@ export interface ViewPort {
   visibleBox(): ViewBox | null
   zoomTo(box: ViewBox, margin: number): void
   clearSelection(): void
-  /** Activa o layout do hit, enquadra e selecciona (`acapNavigateToFindHit`). */
+  /**
+   * Activa o layout do hit, enquadra `target.box` e selecciona a entidade.
+   * Honra `target.signal`; lança se não conseguir enquadrar `target.box`.
+   */
   navigate(target: NavigateTarget): Promise<FindOutcome> | FindOutcome
 }
 
@@ -185,7 +196,8 @@ export class ViewerSession {
   private current: OpenDocument | null = null
   private find: ActiveFind | null = null
   private findCounter = 0
-  private navToken = 0
+  /** Navegação em curso (a única que pode mexer na vista); `null` = nenhuma. */
+  private nav: AbortController | null = null
   private opening = 0
   private openTail: Promise<unknown> = Promise.resolve()
   private insets: Insets | undefined
@@ -240,6 +252,8 @@ export class ViewerSession {
   // -- open -----------------------------------------------------------------
 
   private open(p: OpenPayload): Promise<ViewerOutput[]> {
+    // a navegação em curso é do documento que está prestes a ser trocado
+    this.cancelNavigation()
     this.opening++
     const run = this.openTail.then(() => this.doOpen(p))
     this.openTail = run.catch(() => undefined)
@@ -287,55 +301,68 @@ export class ViewerSession {
       return this.openFailed(failure)
     }
 
-    let dropped: TypeCounts | undefined
-    let coverageError: string | undefined
+    // Tudo o que pode falhar acontece ANTES do compromisso e dentro deste
+    // `try`: qualquer falha (mapa, validação, vista, defeito interno) descarta o
+    // documento importado e deixa o anterior intacto. Depois do compromisso só
+    // há atribuições (nada que possa lançar).
     try {
-      dropped = (deps.coverage ?? defaultCoverage)(doc, source.bytes)
-    } catch (error) {
-      coverageError = messageOf(error)
-    }
-
-    let mapped: MappingOutcome
-    try {
-      mapped = mapDocument(doc, dropped ? { dropped } : {})
-    } catch (error) {
-      return reject(makeFailure('parse', 'inspect', messageOf(error)))
-    }
-    if (!mapped.ok) return reject(mapped.failure)
-
-    const opened = toOpenedPayload(doc)
-    if (!isValidOpenedPayload(opened)) {
-      return reject(
-        makeFailure('parse', 'inspect', 'layouts fora do contrato (tabOrder)')
-      )
-    }
-
-    // compromisso: só aqui o documento novo substitui o anterior (§6.4)
-    this.current = { doc, map: mapped.map }
-    this.find = null
-    this.navToken++
-    const out: ViewerOutput[] = [{ type: 'opened', payload: opened }]
-    const coverage = mapped.map.coverage
-    out.push({
-      type: 'log',
-      payload: {
-        level: hasRealLosses(coverage) ? 'warn' : 'info',
-        message: describeCoverage(coverage)
+      let dropped: TypeCounts | undefined
+      let coverageError: string | undefined
+      try {
+        dropped = (deps.coverage ?? defaultCoverage)(doc, source.bytes)
+      } catch (error) {
+        coverageError = messageOf(error)
       }
-    })
-    if (dropped === undefined) {
+
+      const mapped = mapDocument(doc, dropped ? { dropped } : {})
+      if (!mapped.ok) return reject(mapped.failure)
+
+      const opened = toOpenedPayload(doc)
+      if (!isValidOpenedPayload(opened)) {
+        return reject(
+          makeFailure('parse', 'inspect', 'layouts fora do contrato (tabOrder)')
+        )
+      }
+
+      const out: ViewerOutput[] = [{ type: 'opened', payload: opened }]
+      const coverage = mapped.map.coverage
       out.push({
         type: 'log',
         payload: {
-          level: 'warn',
-          message: `cobertura do conversor desconhecida (${doc.format})${
-            coverageError ? `: ${redactDetail(coverageError)}` : ''
-          }`
+          level: hasRealLosses(coverage) ? 'warn' : 'info',
+          message: describeCoverage(coverage)
         }
       })
+      if (dropped === undefined) {
+        out.push({
+          type: 'log',
+          payload: {
+            level: 'warn',
+            message: `cobertura do conversor desconhecida (${doc.format})${
+              coverageError ? `: ${redactDetail(coverageError)}` : ''
+            }`
+          }
+        })
+      }
+
+      // vista inutilizável (não consegue largar o realce anterior) = documento
+      // recusado: nunca se abre sobre uma vista que não obedece
+      try {
+        this.deps.view.clearSelection()
+      } catch (error) {
+        return reject(
+          makeFailure('parse', 'inspect', `vista: ${messageOf(error)}`)
+        )
+      }
+
+      // compromisso (§6.4): o documento novo substitui o anterior
+      this.cancelNavigation()
+      this.current = { doc, map: mapped.map }
+      this.find = null
+      return out
+    } catch (error) {
+      return reject(makeFailure('parse', 'inspect', messageOf(error)))
     }
-    this.clearSelectionLogged(out, 'documento novo')
-    return out
   }
 
   // -- find -----------------------------------------------------------------
@@ -344,11 +371,16 @@ export class ViewerSession {
     const guard = this.documentGuard()
     if (guard) return [guard]
     const cur = this.current as OpenDocument
-    // uma pesquisa nova anula a anterior antes de qualquer falha possível:
-    // nunca se reapresenta uma lista antiga como actual
+    // uma pesquisa nova anula a anterior (e a navegação em curso) antes de
+    // qualquer falha possível: nunca se reapresenta uma lista antiga como actual
     const findId = ++this.findCounter
     this.find = null
-    this.navToken++
+    this.cancelNavigation()
+    // e larga o realce da pesquisa anterior em TODOS os desfechos (sem match,
+    // erro, sucesso); se a vista não o largar, o erro é explícito e a pesquisa
+    // não corre
+    const notCleared = this.clearViewSelection('pesquisa nova')
+    if (notCleared) return [notCleared]
 
     const viewLayout = this.safeActiveLayoutId()
     const known =
@@ -402,7 +434,6 @@ export class ViewerSession {
         }
       })
     }
-    this.clearSelectionLogged(out, 'pesquisa nova')
     return out
   }
 
@@ -453,17 +484,31 @@ export class ViewerSession {
         this.error('hit-not-zoomable', `hit ${i}: sem caixa de zoom válida`)
       ]
     }
-    const token = ++this.navToken
-    const target: NavigateTarget = { hit, entry, box }
+    // só uma navegação de cada vez pode mexer na vista: a anterior é abortada
+    // (o seu resultado tardio fica `stale` e a vista não lhe obedece)
+    this.cancelNavigation()
+    const controller = new AbortController()
+    this.nav = controller
+    const target: NavigateTarget = {
+      hit,
+      entry,
+      box,
+      signal: controller.signal
+    }
     const insets = p.insets ?? this.insets
     if (insets) target.insets = { ...insets }
     let outcome: unknown
     try {
       outcome = await this.deps.view.navigate(target)
     } catch (error) {
+      if (controller.signal.aborted) {
+        return [this.active(find.findId, -1, 'stale')]
+      }
       return [this.error('navigate-failed', redactDetail(messageOf(error)))]
+    } finally {
+      if (this.nav === controller) this.nav = null
     }
-    if (token !== this.navToken || this.find !== find) {
+    if (controller.signal.aborted || this.find !== find) {
       return [this.active(find.findId, -1, 'stale')]
     }
     if (!isFindOutcome(outcome)) {
@@ -521,7 +566,7 @@ export class ViewerSession {
 
   private clearHighlight(): ViewerOutput[] {
     // uma navegação em curso não pode voltar a realçar depois disto
-    this.navToken++
+    this.cancelNavigation()
     if (!this.current) return []
     try {
       this.deps.view.clearSelection()
@@ -549,17 +594,23 @@ export class ViewerSession {
     }
   }
 
-  private clearSelectionLogged(out: ViewerOutput[], why: string): void {
+  /** Aborta a navegação em curso (se houver); idempotente. */
+  private cancelNavigation(): void {
+    const nav = this.nav
+    this.nav = null
+    nav?.abort()
+  }
+
+  /** Larga o realce; `view-failed` explícito se a vista não o largar. */
+  private clearViewSelection(why: string): ViewerOutput | null {
     try {
       this.deps.view.clearSelection()
+      return null
     } catch (error) {
-      out.push({
-        type: 'log',
-        payload: {
-          level: 'warn',
-          message: `realce não limpo (${why}): ${redactDetail(messageOf(error))}`
-        }
-      })
+      return this.error(
+        'view-failed',
+        `realce anterior não limpo (${why}): ${redactDetail(messageOf(error))}`
+      )
     }
   }
 

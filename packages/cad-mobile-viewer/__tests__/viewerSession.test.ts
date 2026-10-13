@@ -231,19 +231,92 @@ describe('open: dados reais e falhas determinísticas', () => {
     )
   })
 
-  test('limpar o realce falha → abre na mesma, com log{warn}', async () => {
+  test('vista que não larga o realce (viewport) → openFailed{parse}, documento importado descartado, anterior intacto', async () => {
+    const discarded: Array<[string, string | undefined]> = []
     const view = new FakeView()
+    const h = harness({
+      view,
+      discard: (failed, previous) =>
+        discarded.push([failed.name, previous?.name])
+    })
+    only(await h.open('find-layouts.dxf', LAYOUTS), 'opened')
+    const r = only(await h.send('find', find('Sala')), 'findResult').payload
     view.fail.clearSelection = new Error('vista ocupada')
-    const h = harness({ view })
-    const out = await h.open('find-layouts.dxf', LAYOUTS)
-    only(out, 'opened')
+    const out = await h.open('find-blocks.dxf', BLOCKS)
+    expect(only(out, 'openFailed').payload.code).toBe('parse')
+    expect(only(out, 'log').payload.message).toMatch(/vista: vista ocupada/)
+    expect(discarded).toEqual([['find-blocks.dxf', 'find-layouts.dxf']])
+    // nada foi comprometido: documento e pesquisa anteriores continuam válidos
+    expect(h.session.document?.name).toBe('find-layouts.dxf')
+    expect(h.session.activeFindId).toBe(r.findId)
+    delete view.fail.clearSelection
     expect(
-      out.some(
-        m =>
-          m.type === 'log' &&
-          /realce não limpo.*vista ocupada/.test(m.payload.message)
+      only(await h.send('goto', { findId: r.findId, index: 0 }), 'findActive')
+        .payload.outcome
+    ).toBe('navigated')
+  })
+
+  test('defeito depois da importação (mapa que lança) → openFailed{parse}, nunca error{internal}; descartado; sem compromisso', async () => {
+    const discarded: string[] = []
+    const h = harness({
+      coverage: () =>
+        new Proxy(
+          {},
+          {
+            ownKeys() {
+              throw new Error('sonda hostil')
+            }
+          }
+        ),
+      discard: failed => discarded.push(failed.name)
+    })
+    const out = await h.open('find-layouts.dxf', LAYOUTS)
+    expect(out.map(m => m.type)).toEqual(['openFailed', 'log'])
+    expect(only(out, 'openFailed').payload.code).toBe('parse')
+    expect(only(out, 'log').payload.message).toMatch(/sonda hostil/)
+    expect(discarded).toEqual(['find-layouts.dxf'])
+    expect(h.session.document).toBeNull()
+    expect(h.session.documentMap).toBeNull()
+    expect(h.view.clears).toBe(0)
+  })
+
+  test('falha pós-importação (discard por omissão): a base de trabalho global deixa de ser a do documento recusado e volta à do anterior', async () => {
+    const working = () => {
+      try {
+        return acdbGetWorkingDatabase()
+      } catch {
+        return null
+      }
+    }
+    const hostile = () =>
+      new Proxy(
+        {},
+        {
+          ownKeys() {
+            throw new Error('sonda hostil')
+          }
+        }
       )
-    ).toBe(true)
+    // sem documento anterior: fica sem base de trabalho
+    const failedDoc = await openE2e('find-layouts.dxf')
+    expect(working()).toBe(failedDoc.database)
+    const first = harness({
+      load: async () => failedDoc.database,
+      coverage: hostile
+    })
+    only(await first.open('find-layouts.dxf', LAYOUTS), 'openFailed')
+    expect(working()).toBeNull()
+
+    // com documento anterior (mesma sessão): volta à base do anterior
+    let hostileNext = false
+    const h = harness({ coverage: () => (hostileNext ? hostile() : {}) })
+    only(await h.open('find-layouts.dxf', LAYOUTS), 'opened')
+    const previous = h.session.document!.database
+    expect(working()).toBe(previous)
+    hostileNext = true
+    only(await h.open('find-blocks.dxf', BLOCKS), 'openFailed')
+    expect(working()).toBe(previous)
+    expect(h.session.document?.name).toBe('find-layouts.dxf')
   })
 })
 
@@ -730,5 +803,185 @@ describe('zoom e realce', () => {
       only(await h.send('findNext', { findId: r.findId }), 'findActive').payload
         .index
     ).toBe(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Rework do M3-I4
+// ---------------------------------------------------------------------------
+
+describe('FIND: sem match ou erro nunca deixa o realce anterior (D-4)', () => {
+  async function highlighted() {
+    const h = await openedHarness()
+    const r = await search(h, 'Sala')
+    await h.send('goto', { findId: r.findId, index: 0 })
+    h.view.clears = 0
+    return h
+  }
+
+  test('sem match: o realce da pesquisa anterior é largado (1 limpeza)', async () => {
+    const h = await highlighted()
+    const r = await search(h, 'zzz-nada')
+    expect(r.total).toBe(0)
+    expect(h.view.clears).toBe(1)
+  })
+
+  test('FIND que lança: realce largado E error{find-failed}', async () => {
+    let boom = false
+    const findText: FindTextFn = (db, q, o) => {
+      if (boom) throw new Error('falha no FIND')
+      return acapFindText(db as never, q, o)
+    }
+    const h = await openedHarness(LAYOUTS, 'find-layouts.dxf', { findText })
+    const r = await search(h, 'Sala')
+    await h.send('goto', { findId: r.findId, index: 0 })
+    h.view.clears = 0
+    boom = true
+    expect(
+      only(await h.send('find', find('Quadro')), 'error').payload.code
+    ).toBe('find-failed')
+    expect(h.view.clears).toBe(1)
+  })
+
+  test('scope layout com layout desconhecido: realce largado E error{layout-missing}', async () => {
+    const h = await highlighted()
+    h.view.layout = 'NAO-EXISTE'
+    expect(
+      only(await h.send('find', find('Sala', { scope: 'layout' })), 'error')
+        .payload.code
+    ).toBe('layout-missing')
+    expect(h.view.clears).toBe(1)
+  })
+
+  test('vista que não larga o realce: error{view-failed} explícito, SEM findResult e o FIND nem corre', async () => {
+    let calls = 0
+    const findText: FindTextFn = (db, q, o) => {
+      calls++
+      return acapFindText(db as never, q, o)
+    }
+    const h = await openedHarness(LAYOUTS, 'find-layouts.dxf', { findText })
+    const before = (await search(h, 'Sala')).findId
+    calls = 0
+    h.view.fail.clearSelection = new Error('vista ocupada')
+    const out = await h.send('find', find('Quadro'))
+    expect(out.map(m => m.type)).toEqual(['error'])
+    expect(only(out, 'error').payload).toMatchObject({ code: 'view-failed' })
+    expect(only(out, 'error').payload.message).toMatch(/vista ocupada/)
+    expect(calls).toBe(0)
+    // a pesquisa anterior fica anulada: nada de lista antiga apresentada como actual
+    expect(h.session.activeFindId).toBeNull()
+    expect(
+      only(await h.send('goto', { findId: before, index: 0 }), 'error').payload
+        .code
+    ).toBe('stale-find')
+  })
+
+  test('sucesso: uma única limpeza por pesquisa (não duplica)', async () => {
+    const h = await highlighted()
+    await search(h, 'Quadro')
+    expect(h.view.clears).toBe(1)
+  })
+})
+
+describe('cancelamento da navegação (signal)', () => {
+  /** Arranca um goto pendente e devolve o signal que a vista recebeu. */
+  async function pendingGoto() {
+    const h = await openedHarness()
+    const r = await search(h, 'Sala')
+    const gate = deferred<'navigated'>()
+    h.view.outcome = () => gate.promise
+    const pending = h.send('goto', { findId: r.findId, index: 0 })
+    await new Promise(res => setImmediate(res))
+    expect(h.view.navs).toHaveLength(1)
+    const { signal } = h.view.navs[0]
+    expect(signal.aborted).toBe(false)
+    return { h, r, gate, pending, signal }
+  }
+
+  test.each([
+    [
+      'clearHighlight',
+      async (h: ReturnType<typeof harness>) => h.send('clearHighlight', {})
+    ],
+    [
+      'find novo',
+      async (h: ReturnType<typeof harness>) => h.send('find', find('Quadro'))
+    ],
+    [
+      'open novo',
+      async (h: ReturnType<typeof harness>) => h.open('find-blocks.dxf', BLOCKS)
+    ],
+    [
+      'open que falha',
+      async (h: ReturnType<typeof harness>) =>
+        h.open(
+          'x.dxf',
+          toBuffer(buildDxf({ rawEntities: [rawEntity('REGION', [8, '0'])] }))
+        )
+    ]
+  ])('%s aborta o signal da navegação pendente', async (_l, interrupt) => {
+    const { h, r, gate, pending, signal } = await pendingGoto()
+    await interrupt(h)
+    expect(signal.aborted).toBe(true)
+    gate.resolve('navigated')
+    expect(only(await pending, 'findActive').payload).toEqual({
+      findId: r.findId,
+      index: -1,
+      outcome: 'stale'
+    })
+  })
+
+  test('segundo goto aborta o signal do primeiro; só o segundo fica activo', async () => {
+    const { h, r, gate, pending, signal } = await pendingGoto()
+    const gate2 = deferred<'navigated'>()
+    h.view.outcome = () => gate2.promise
+    const second = h.send('goto', { findId: r.findId, index: 1 })
+    await new Promise(res => setImmediate(res))
+    expect(signal.aborted).toBe(true)
+    expect(h.view.navs[1].signal.aborted).toBe(false)
+    gate2.resolve('navigated')
+    gate.resolve('navigated')
+    expect(only(await second, 'findActive').payload).toEqual({
+      findId: r.findId,
+      index: 1,
+      outcome: 'navigated'
+    })
+    expect(only(await pending, 'findActive').payload.outcome).toBe('stale')
+    // o `activeIndex` é o do segundo: findNext segue dali
+    h.view.outcome = 'navigated'
+    expect(
+      only(await h.send('findNext', { findId: r.findId }), 'findActive').payload
+        .index
+    ).toBe(2 % r.total)
+  })
+
+  test('navegação concluída não é abortada por um clearHighlight posterior', async () => {
+    const h = await openedHarness()
+    const r = await search(h, 'Sala')
+    await h.send('goto', { findId: r.findId, index: 0 })
+    const { signal } = h.view.navs[0]
+    await h.send('clearHighlight', {})
+    expect(signal.aborted).toBe(false)
+  })
+
+  test('zoom durante a navegação não a cancela (só realce/pesquisa/documento o fazem)', async () => {
+    const { h, r, gate, pending, signal } = await pendingGoto()
+    await h.send('zoom', { op: 'in' })
+    expect(signal.aborted).toBe(false)
+    gate.resolve('navigated')
+    expect(only(await pending, 'findActive').payload).toEqual({
+      findId: r.findId,
+      index: 0,
+      outcome: 'navigated'
+    })
+  })
+
+  test('target.box é a caixa validada do índice (finita) e vai com o signal', async () => {
+    const h = await openedHarness()
+    const r = await search(h, 'Sala')
+    await h.send('goto', { findId: r.findId, index: 0 })
+    const t = h.view.navs[0]
+    expect(t.box).toEqual(t.entry.box)
+    expect(t.signal).toBeInstanceOf(AbortSignal)
   })
 })
