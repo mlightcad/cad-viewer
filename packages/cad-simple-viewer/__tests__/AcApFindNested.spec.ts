@@ -153,6 +153,43 @@ describe('acapFindText inside blocks, dimensions, leaders and tables', () => {
     ])
   })
 
+  it('finds constant ATTDEF values in a block, but not attribute templates', () => {
+    const attdef = (id: string, tag: string, value: string, extra: Ent = {}) =>
+      text(id, value, {
+        dxfTypeName: 'ATTDEF',
+        tag,
+        isConst: false,
+        isInvisible: false,
+        ...extra
+      })
+    const db = createDb([insert('i1', 'CARIMBO', 100, 200)], {
+      CARIMBO: [
+        attdef('c', 'OBRA', 'Escola Modelo', { isConst: true }),
+        attdef('cm', 'NOTA', 'ignorado', {
+          isConstMTextAttribute: true,
+          mtext: { contents: '{\\fArial;Nota:\\PEscola Norte}' }
+        }),
+        // Not drawn in a block: the INSERT's ATTRIB supplies the value.
+        attdef('t', 'NOME', 'Escola Template'),
+        attdef('inv', 'OCULTO', 'Escola Oculta', {
+          isConst: true,
+          isInvisible: true
+        })
+      ]
+    })
+    expect(
+      find(db, 'escola').map(h => [h.entityId, h.textEntityId, h.kind, h.tag])
+    ).toEqual([
+      ['i1', 'i1/c', 'block', 'OBRA'],
+      ['i1', 'i1/cm', 'block', 'NOTA']
+    ])
+    expect(find(db, 'norte')[0].text).toBe('Nota: Escola Norte')
+    expect(find(db, 'modelo')[0]).toMatchObject({
+      position: { x: 101, y: 202 },
+      extents: { min: { x: 101, y: 202 }, max: { x: 105, y: 203 } }
+    })
+  })
+
   it('finds the displayed text of a dimension from its block', () => {
     const db = createDb(
       [
@@ -205,6 +242,56 @@ describe('acapFindText inside blocks, dimensions, leaders and tables', () => {
     expect(find(db, 'detalhe').map(h => [h.kind, h.text])).toEqual([
       ['dimension', 'VER DETALHE']
     ])
+  })
+
+  it('falls back to the dimension override when its block has no matching text', () => {
+    const dimension = (override: string) => [
+      {
+        objectId: 'd1',
+        dxfTypeName: 'DIMENSION',
+        layer: 'COTAS',
+        dimBlockId: 'blk-d1',
+        dimensionText: override,
+        textPosition: { x: 50, y: 5 }
+      }
+    ]
+    const db = createDb(
+      dimension('ROOM A'),
+      {},
+      {
+        'blk-d1': [
+          {
+            objectId: 'dm',
+            dxfTypeName: 'MTEXT',
+            contents: '3,25 m',
+            layer: '0',
+            location: { x: 50, y: 5 }
+          }
+        ]
+      }
+    )
+    // Override is searched although the block exists...
+    expect(find(db, 'room').map(h => [h.entityId, h.kind, h.text])).toEqual([
+      ['d1', 'dimension', 'ROOM A']
+    ])
+    // ...and the block text is still found, once (no duplicate from override).
+    expect(find(db, '3,25').map(h => h.textEntityId)).toEqual(['d1/dm'])
+    const sameText = createDb(
+      dimension('3,25 m'),
+      {},
+      {
+        'blk-d1': [
+          {
+            objectId: 'dm',
+            dxfTypeName: 'MTEXT',
+            contents: '3,25 m',
+            layer: '0',
+            location: { x: 50, y: 5 }
+          }
+        ]
+      }
+    )
+    expect(find(sameText, '3,25')).toHaveLength(1)
   })
 
   it('finds multileader contents', () => {

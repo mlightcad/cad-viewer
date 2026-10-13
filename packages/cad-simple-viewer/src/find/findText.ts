@@ -13,8 +13,10 @@
  * - `TEXT` / `MTEXT` / `ATTRIB` inside the block definition of every `INSERT`
  *   (nested blocks included, anonymous/dynamic blocks too): title blocks,
  *   legends and labels are usually drawn this way
- * - `DIMENSION` — the displayed text (from the dimension block when present,
- *   otherwise the override text)
+ * - constant `ATTDEF` values inside block definitions (the only ATTDEFs that
+ *   are drawn inside a block; templates get their value from an `ATTRIB`)
+ * - `DIMENSION` — the text of its dimension block when that block has a
+ *   match, otherwise the override text (`dimensionText`)
  * - `MULTILEADER` — its MTEXT contents
  * - `ACAD_TABLE` — the cell text (from the table block when present,
  *   otherwise the cell strings)
@@ -361,11 +363,21 @@ export function acapFindTextInLayout(
         type !== 'TEXT' &&
         type !== 'MTEXT' &&
         type !== 'INSERT' &&
-        type !== 'ATTRIB'
+        type !== 'ATTRIB' &&
+        type !== 'ATTDEF'
       ) {
         continue
       }
       if (entity.visibility === false) continue
+      // Only constant ATTDEFs are drawn inside a block (their default value
+      // is geometry); the others get their value from an ATTRIB of the INSERT.
+      if (
+        type === 'ATTDEF' &&
+        (entity.isInvisible ||
+          !(entity.isConst || entity.isConstMTextAttribute))
+      ) {
+        continue
+      }
       // Layer 0 inside a block inherits the owner's layer (already checked).
       if (
         entity.layer &&
@@ -407,12 +419,24 @@ export function acapFindTextInLayout(
         stack.delete(name)
         continue
       }
-      const text =
-        type === 'MTEXT'
-          ? acapMTextToPlainText(String(entity.contents ?? ''))
-          : plainText(entity.textString)
+      const isMText =
+        type === 'MTEXT' ||
+        (type === 'ATTDEF' && entity.isConstMTextAttribute && entity.mtext)
+      const text = isMText
+        ? acapMTextToPlainText(
+            String((type === 'MTEXT' ? entity : entity.mtext).contents ?? '')
+          )
+        : plainText(entity.textString)
       if (!matches(text)) continue
-      pushNested(owner, path, entity, owner.kind, text, m)
+      pushNested(
+        owner,
+        path,
+        entity,
+        owner.kind,
+        text,
+        m,
+        type === 'ATTDEF' ? { tag: entity.tag } : {}
+      )
     }
   }
 
@@ -498,8 +522,8 @@ export function acapFindTextInLayout(
         )
       }
       if (block && result.hits.length > before) continue
-      if (block && type === 'DIMENSION') continue
-      // No block (or a table block without text): use the stored strings.
+      // No block, or a block without a matching text: use the stored strings
+      // (a dimension override can differ from what the block text shows).
       const texts: string[] = []
       if (type === 'DIMENSION') {
         const override = String(entity.dimensionText ?? '')
