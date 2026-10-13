@@ -140,8 +140,9 @@ export function parseMText(
   // (mtext-parser defaults the root colour to ByLayer 256).
   root.color.aci = 7
   const tokenizer = new MTextTokenizer(raw, root, {
-    // `\P` starts a fresh paragraph: AutoCAD resets paragraph properties.
-    resetParagraphParameters: true
+    // AutoCAD keeps `\pxq*` until the next `\p` command. `\P` only breaks
+    // the paragraph; resetting here dropped left-justified TopCenter notes.
+    resetParagraphParameters: false
   })
 
   const paragraphs: AcPdfMTextParagraph[] = []

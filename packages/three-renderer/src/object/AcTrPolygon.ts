@@ -94,20 +94,16 @@ export class AcTrPolygon extends AcTrEntity {
       loop => loop.length >= 3
     )
 
-    // Patterned hatches sample object-space `position` in the fragment shader.
-    // Keep vertices near the origin (and shift pattern `base` by the same
-    // offset) so float32 `fract`/`floor` still resolve fine line spacing at
-    // large WCS coordinates. Solid/gradient fills do not need this here —
-    // gradient uses normalized attrs; solid rebases in buildAreaGeometry.
-    const isPatterned = this.isPatternedHatch(traits)
-    let localOrigin: THREE.Vector3 | undefined
-    let boundariesForGeometry = pointBoundaries
-    if (isPatterned) {
-      localOrigin = computeLocalOriginFromLoops(pointBoundaries)
-      if (localOrigin) {
-        boundariesForGeometry = offsetLoops(pointBoundaries, localOrigin)
-      }
-    }
+    // Offset tessellated loops in float64 *before* THREE.ShapeGeometry writes
+    // Float32Array positions. At |x| ≈ 3.85e7 the float32 ULP is ~4 drawing
+    // units, so a wide-polyline half-width of 1.05 collapses if WCS is stored
+    // first and rebased afterwards (cad-viewer#724). Patterned hatches also
+    // sample object-space `position` in the fragment shader, so the same
+    // origin-shift keeps `fract`/`floor` precise.
+    const localOrigin = computeLocalOriginFromLoops(pointBoundaries)
+    const boundariesForGeometry = localOrigin
+      ? offsetLoops(pointBoundaries, localOrigin)
+      : pointBoundaries
 
     const geometries: THREE.BufferGeometry[] = []
     this.buildHatchGeometry(boundariesForGeometry, hierarchy, geometries)

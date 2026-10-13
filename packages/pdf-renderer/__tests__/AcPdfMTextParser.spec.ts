@@ -59,11 +59,11 @@ describe('parseMText', () => {
     expect(paragraphs[1].segments[0].text).toBe('（2:1）')
   })
 
-  it('resets paragraph justification after \\P', () => {
+  it('keeps paragraph justification after \\P until the next \\p command', () => {
     const paragraphs = parseMText('\\pxqc;a\\Pb', { size: 4, hScale: 1 })
     expect(paragraphs).toHaveLength(2)
     expect(paragraphs[0].justify).toBe('center')
-    expect(paragraphs[1].justify).toBeUndefined()
+    expect(paragraphs[1].justify).toBe('center')
   })
 
   it('restores every style property at the closing brace', () => {
@@ -281,6 +281,21 @@ describe('layoutMText', () => {
     // left-aligns the line inside the frame, so it starts at the frame
     // origin -50 rather than the anchor.
     expect(layout.lines[0].dx).toBeCloseTo(-50)
+  })
+
+  it('keeps \\pxql across \\P inside a TopCenter attachment frame', () => {
+    const layout = layoutMText({
+      data: makeData({
+        text: '\\pxql;ab\\Pcd',
+        height: 4,
+        width: 100,
+        attachmentPoint: 2
+      }),
+      measure
+    })
+    expect(layout.lines).toHaveLength(2)
+    expect(layout.lines[0].dx).toBeCloseTo(-50)
+    expect(layout.lines[1].dx).toBeCloseTo(-50)
   })
 
   it('draws decoration rules with run text and width', () => {
