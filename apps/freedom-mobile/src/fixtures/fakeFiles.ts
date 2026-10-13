@@ -165,4 +165,14 @@ export class FakeUrls implements AssetUrlPort {
     if (this.override) return this.override(assetId)
     return `http://127.0.0.1:43123/f/${assetId}.${format}`
   }
+
+  /** Revogações pedidas pelo `FileFlow` (M3-I5), por ordem. */
+  readonly released: string[] = []
+  /** `release` lança (a limpeza do ficheiro tem de continuar na mesma). */
+  failRelease = false
+
+  release(assetId: string): void {
+    this.released.push(assetId)
+    if (this.failRelease) throw new Error('release falhou')
+  }
 }

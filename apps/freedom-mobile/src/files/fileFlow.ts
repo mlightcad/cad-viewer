@@ -457,8 +457,18 @@ export class FileFlow {
     if (!asset) return
     this.assets.delete(assetId)
     if (asset.openId !== null) this.byOpenId.delete(asset.openId)
+    this.revokeUrl(assetId)
     this.emit({ kind: 'file-asset-released', assetId, reason })
     void this.removeAsset(assetId)
+  }
+
+  /** Revoga o URL loopback antes de apagar o ficheiro; nunca bloqueia a limpeza. */
+  private revokeUrl(assetId: string): void {
+    try {
+      this.deps.urls.release?.(assetId)
+    } catch {
+      // o ficheiro é apagado na mesma; sem servidor o URL já não serve
+    }
   }
 
   private removeAsset(assetId: string): Promise<void> {

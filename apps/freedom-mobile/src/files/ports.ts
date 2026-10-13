@@ -58,6 +58,12 @@ export interface AssetUrlPort {
   available(): boolean
   /** URL `http://127.0.0.1:<porta>/…` do asset, ou `null` se não existir. */
   urlFor(assetId: string, format: DocumentFormat): string | null
+  /**
+   * Revoga o URL do asset. O `FileFlow` chama-o em **toda** a libertação, antes
+   * de apagar o ficheiro (M3-I5, spec §4.3): um URL antigo deixa de servir
+   * assim que o asset é libertado. Opcional (`NO_LOCAL_SERVER` não tem estado).
+   */
+  release?(assetId: string): void
 }
 
 /** O ponto de entrada do viewer: o que o `BridgeClient` expõe. */
