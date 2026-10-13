@@ -94,10 +94,21 @@ const WORKER_UNAVAILABLE_PATTERN =
 
 const NOT_REGISTERED_PATTERN = /converter for file type .* isn't registered/i
 
+/** Propriedade lida sem nunca lançar (getters hostis em objectos duck-typed). */
+function safeProp(error: unknown, key: 'message' | 'code' | 'name'): unknown {
+  if (typeof error !== 'object' || error === null) return undefined
+  try {
+    return (error as Record<string, unknown>)[key]
+  } catch {
+    return undefined
+  }
+}
+
+/** Só expõe uma `message` que seja string; qualquer outro tipo → ''. */
 function messageOf(error: unknown): string {
-  if (error instanceof Error) return error.message
   if (typeof error === 'string') return error
-  return ''
+  const message = safeProp(error, 'message')
+  return typeof message === 'string' ? message : ''
 }
 
 /**
@@ -111,7 +122,7 @@ export function mapOpenError(
 ): ImportFailure {
   const stage = ctx.stage ?? 'convert'
   const message = messageOf(error)
-  const rawCode = (error as { code?: unknown } | null)?.code
+  const rawCode = safeProp(error, 'code')
 
   if (isOpenErrorCode(rawCode)) {
     switch (rawCode) {
@@ -139,7 +150,7 @@ export function mapOpenError(
     }
   }
 
-  const name = (error as { name?: unknown } | null)?.name
+  const name = safeProp(error, 'name')
   if (name === 'AbortError' || name === 'TimeoutError') {
     return makeFailure('timeout', stage, message)
   }

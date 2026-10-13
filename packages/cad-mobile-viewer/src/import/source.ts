@@ -24,11 +24,27 @@ export type SourceResult =
 const SEGMENT = /^[A-Za-z0-9._~-]+$/
 
 /**
+ * Espaço nas pontas ou carácter de controlo (C0/DEL) em qualquer posição:
+ * `new URL` apara os primeiros e remove tab/CR/LF, pelo que o texto original
+ * tem de ser validado antes de ser interpretado.
+ */
+export function hasEdgeSpaceOrControl(text: string): boolean {
+  if (/^\s|\s$/.test(text)) return true
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i)
+    if (c <= 0x1f || c === 0x7f) return true
+  }
+  return false
+}
+
+/**
  * Só HTTP loopback (127.0.0.1, localhost ou ::1) com porta e segmentos de
  * caminho seguros; sem
  * `userinfo`, query, fragmento ou `..`.
  */
 export function isLocalAssetUrl(url: string): boolean {
+  // `new URL` apara espaços e remove tab/CR/LF: o texto original tem de ser limpo
+  if (typeof url !== 'string' || hasEdgeSpaceOrControl(url)) return false
   let parsed: URL
   try {
     parsed = new URL(url)
@@ -49,15 +65,52 @@ export function isLocalAssetUrl(url: string): boolean {
   return segments.length > 0 && segments.every(s => SEGMENT.test(s))
 }
 
-const BASE64 =
-  /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
+/** Código de carácter (Base64 padrão) → valor de 6 bits; -1 se inválido. */
+function base64Value(c: number): number {
+  if (c >= 65 && c <= 90) return c - 65 // A-Z
+  if (c >= 97 && c <= 122) return c - 71 // a-z
+  if (c >= 48 && c <= 57) return c + 4 // 0-9
+  if (c === 43) return 62 // +
+  if (c === 47) return 63 // /
+  return -1
+}
 
-/** Decodificação estrita (sem espaços, sem URL-safe, padding obrigatório). */
+/** Chars Base64 por troço de `atob` (múltiplo de 4; evita uma string binária de MBs). */
+const DECODE_CHUNK = 64 * 1024
+
+/**
+ * Validação estrita em tempo linear e memória O(1) (sem regex: a forma
+ * `(?:[…]{4})*` rebenta a pilha do motor em entradas de vários MB).
+ * Devolve o número de bytes decodificados ou -1 se inválido.
+ */
+function strictBase64Size(data: string): number {
+  const length = data.length
+  if (length === 0 || length % 4 !== 0) return -1
+  let padding = 0
+  if (data.charCodeAt(length - 1) === 61) {
+    padding = data.charCodeAt(length - 2) === 61 ? 2 : 1
+  }
+  const end = length - padding
+  for (let i = 0; i < end; i++) {
+    if (base64Value(data.charCodeAt(i)) < 0) return -1
+  }
+  return (length / 4) * 3 - padding
+}
+
+/**
+ * Decodificação estrita (sem espaços, sem URL-safe, padding obrigatório).
+ * Valida antes de alocar e decodifica por troços.
+ */
 export function decodeBase64(data: string): ArrayBuffer | null {
-  if (!BASE64.test(data)) return null
-  const binary = atob(data)
-  const out = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i)
+  if (typeof data !== 'string') return null
+  const size = strictBase64Size(data)
+  if (size < 0) return null
+  const out = new Uint8Array(size)
+  let offset = 0
+  for (let i = 0; i < data.length; i += DECODE_CHUNK) {
+    const binary = atob(data.slice(i, i + DECODE_CHUNK))
+    for (let j = 0; j < binary.length; j++) out[offset++] = binary.charCodeAt(j)
+  }
   return out.buffer as ArrayBuffer
 }
 

@@ -27,6 +27,21 @@ describe('isLocalWorkerUrl', () => {
     'file:///w.js',
     ''
   ])('rejeita %s', u => expect(isLocalWorkerUrl(u)).toBe(false))
+
+  test.each([
+    ['UNC \\\\host\\share', '\\\\host\\share\\w.js'],
+    ['/\\host', '/\\host/w.js'],
+    ['\\/host', '\\/host/w.js'],
+    ['\\host', '\\host\\w.js'],
+    ['barra invertida a meio', 'assets\\w.js'],
+    ['espaço à frente', ' ./assets/w.js'],
+    ['espaço atrás', './assets/w.js '],
+    ['newline atrás', './assets/w.js\n'],
+    ['tab à frente', '\t./assets/w.js'],
+    ['esquema partido por tab', 'ht\ttps://evil.example/w.js'],
+    ['esquema partido por newline', 'ht\ntp://evil.example/w.js'],
+    ['só espaços', '   ']
+  ])('rejeita %s', (_n, u) => expect(isLocalWorkerUrl(u)).toBe(false))
 })
 
 describe('registerDwg com o conversor LibreDWG REAL', () => {

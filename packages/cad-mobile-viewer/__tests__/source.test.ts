@@ -26,6 +26,10 @@ describe('isLocalAssetUrl', () => {
     'http://127.0.0.1:80/a/./b',
     'http://127.0.0.1:80/a b',
     'http://127.0.0.1:80/',
+    ' http://127.0.0.1:8080/f1',
+    'http://127.0.0.1:8080/f1 ',
+    'http://127.0.0.1:8080/f1\n',
+    'http://127.0.0.1:80\t80/x',
     'file:///x.dwg',
     'content://x/y',
     'not a url',
@@ -47,6 +51,73 @@ describe('decodeBase64 (estrito)', () => {
     'rejeita %j',
     s => expect(decodeBase64(s)).toBeNull()
   )
+})
+
+describe('base64 grande (regressão: RangeError da regex em ~8 MiB)', () => {
+  const full = Buffer.alloc(MAX_BASE64_BYTES, 7)
+
+  test('decodeBase64 aceita exactamente o limite sem RangeError', () => {
+    const out = decodeBase64(full.toString('base64'))
+    expect(out).not.toBeNull()
+    const view = new Uint8Array(out as ArrayBuffer)
+    expect(view.byteLength).toBe(MAX_BASE64_BYTES)
+    expect(view[0]).toBe(7)
+    expect(view[view.length - 1]).toBe(7)
+  })
+
+  test.each([MAX_BASE64_BYTES, MAX_BASE64_BYTES - 1, MAX_BASE64_BYTES - 2])(
+    'readOpenSource aceita %d bytes (limite e padding 0/1/2)',
+    async size => {
+      const raw = Buffer.from(
+        Array.from({ length: 5 }, (_, i) => i + 1)
+          .join('')
+          .repeat(Math.ceil(size / 5))
+      ).subarray(0, size)
+      const r = await readOpenSource({
+        kind: 'base64',
+        data: raw.toString('base64')
+      })
+      expect(r.ok).toBe(true)
+      if (r.ok) {
+        expect(r.bytes.byteLength).toBe(size)
+        expect(Buffer.from(r.bytes).equals(raw)).toBe(true)
+      }
+    }
+  )
+
+  test('um byte acima do limite → too-large sem decodificar', async () => {
+    const spy = jest.spyOn(globalThis, 'atob')
+    const r = await readOpenSource({
+      kind: 'base64',
+      data: Buffer.alloc(MAX_BASE64_BYTES + 1, 7).toString('base64')
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.failure.code).toBe('too-large')
+    expect(spy).not.toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
+  test('inválido grande (carácter ilegal no fim) → read-failed sem decodificar', async () => {
+    // múltiplo de 3 bytes (sem padding) para ficar dentro do limite
+    const size = Math.floor(MAX_BASE64_BYTES / 3) * 3
+    const data = Buffer.alloc(size, 7).toString('base64').slice(0, -4) + 'AA!A'
+    const spy = jest.spyOn(globalThis, 'atob')
+    const r = await readOpenSource({ kind: 'base64', data })
+    expect(r.ok).toBe(false)
+    if (!r.ok) {
+      expect(r.failure.code).toBe('read-failed')
+      expect(r.failure.detail).toMatch(/inválido/)
+    }
+    expect(spy).not.toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
+  test('padding no meio / comprimento não múltiplo de 4 → rejeitado', () => {
+    expect(decodeBase64('YW=j')).toBeNull()
+    expect(decodeBase64('YQ==YQ==')).toBeNull()
+    expect(decodeBase64('YWJ')).toBeNull()
+    expect(decodeBase64('A'.repeat(MAX_BASE64_BYTES) + '=')).toBeNull()
+  })
 })
 
 describe('readOpenSource', () => {

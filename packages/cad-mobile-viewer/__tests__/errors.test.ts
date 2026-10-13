@@ -147,6 +147,64 @@ describe('mapOpenError — outras excepções', () => {
   })
 })
 
+describe('mapOpenError — mensagem de objectos duck-typed', () => {
+  test('usa só uma `message` string de um objecto simples', () => {
+    const f = mapOpenError({ message: 'falha do worker' }, { format: 'dxf' })
+    expect(f).toMatchObject({ code: 'parse', detail: 'falha do worker' })
+  })
+
+  test('`message` string classifica OOM também em objectos simples', () => {
+    expect(
+      mapOpenError(
+        { message: 'Array buffer allocation failed' },
+        { format: 'dxf' }
+      ).code
+    ).toBe('oom')
+  })
+
+  test.each([
+    ['número', { message: 42 }],
+    ['objecto', { message: { secret: '/home/kevin/obra.dwg' } }],
+    ['array', { message: ['/home/kevin/obra.dwg'] }],
+    ['função', { message: () => '/home/kevin/obra.dwg' }],
+    ['null', { message: null }],
+    [
+      'Error com message não string',
+      Object.assign(new Error('x'), { message: { a: 1 } })
+    ]
+  ])('message %s nunca é exposta', (_n, error) => {
+    const f = mapOpenError(error, { format: 'dxf' })
+    expect(f.code).toBe('parse')
+    expect(f.detail).toBe('erro desconhecido')
+    expect(JSON.stringify(f)).not.toMatch(/kevin|secret/)
+  })
+
+  test('getters que lançam não escapam (message/code/name)', () => {
+    const hostile = {
+      get message(): string {
+        throw new Error('message getter')
+      },
+      get code(): string {
+        throw new Error('code getter')
+      },
+      get name(): string {
+        throw new Error('name getter')
+      }
+    }
+    expect(() => mapOpenError(hostile, { format: 'dxf' })).not.toThrow()
+    expect(mapOpenError(hostile, { format: 'dxf' }).code).toBe('parse')
+  })
+
+  test('primitivos: só a string é usada', () => {
+    expect(mapOpenError('texto', { format: 'dxf' }).detail).toBe('texto')
+    for (const v of [42, true, null, undefined, Symbol('s')]) {
+      expect(mapOpenError(v, { format: 'dxf' }).detail).toBe(
+        'erro desconhecido'
+      )
+    }
+  })
+})
+
 describe('mensagens e higiene', () => {
   test('há uma mensagem PT-PT não vazia por cada código do protocolo', () => {
     for (const code of IMPORT_ERROR_CODES) {

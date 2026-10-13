@@ -16,6 +16,7 @@ import {
 } from '@mlightcad/data-model'
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
 
+import { hasEdgeSpaceOrControl } from './source'
 import type { DwgStatus } from './types'
 
 export interface DwgRegistration {
@@ -38,9 +39,15 @@ export interface RegisterDwgDeps {
   workerSupported?: boolean
 }
 
-/** Relativo, absoluto no mesmo host (`/…`) ou loopback; nunca `http(s)` externo. */
+/**
+ * Relativo, absoluto no mesmo host (`/…`) ou loopback; nunca `http(s)` externo,
+ * UNC-like (`//host`, `/\host`) nem texto com espaços nas pontas.
+ */
 export function isLocalWorkerUrl(url: string): boolean {
   if (typeof url !== 'string' || url.length === 0) return false
+  // espaços nas pontas e controlos (tab/CR/LF são removidos por `new URL`, e um
+  // esquema partido por eles passaria por relativo) e `\` (UNC / `/\host`)
+  if (hasEdgeSpaceOrControl(url) || url.includes('\\')) return false
   if (/^[a-z][a-z0-9+.-]*:/i.test(url) || url.startsWith('//')) {
     try {
       const parsed = new URL(url)
