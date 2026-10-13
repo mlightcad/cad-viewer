@@ -55,6 +55,13 @@ export function shellReducer(
       if (!parsed.ok || parsed.message.type !== 'ready') return state
       const payload = parsed.message.payload
       if (!isReadyPayload(payload)) return state
+      // Decisão (recuperação tardia, intencional): um `ready` válido restaura
+      // `ready` a partir de QUALQUER fase, incluindo `failed` por `ready-timeout`
+      // ou `process-gone`. O viewer pode ficar disponível depois de uma falha
+      // transitória (arranque lento, processo reposto pelo SO); nesse caso o
+      // `ready` tardio limpa `error` e repõe `dwg`/`viewerVersion`, sem alterar
+      // `generation` nem `screen` (só `reload` recria a superfície). `ready`
+      // inválido continua ignorado e deixa o estado `failed` intacto.
       return {
         ...state,
         viewer: 'ready',

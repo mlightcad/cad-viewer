@@ -125,6 +125,73 @@ describe('shellState', () => {
     assert.equal(s.dwg, 'unknown')
   })
 
+  // Decisão documentada em shellState.ts: `ready` válido tardio recupera.
+  it('recovers to ready on a late valid ready after ready-timeout', () => {
+    const failed = shellReducer(initialShellState, { type: 'ready-timeout' })
+    assert.equal(failed.viewer, 'failed')
+    assert.equal(failed.error, 'ready-timeout')
+
+    const s = shellReducer(failed, {
+      type: 'viewer-message',
+      raw: ready('unavailable')
+    })
+    assert.deepEqual(s, {
+      screen: 'viewer',
+      viewer: 'ready',
+      dwg: 'unavailable',
+      viewerVersion: '1.2.3',
+      error: null,
+      generation: 0
+    })
+    assert.match(describeViewerStatus(s), /Viewer pronto/)
+    assert.equal(failed.viewer, 'failed') // estado anterior não mutado
+  })
+
+  it('recovers to ready on a late valid ready after process-gone', () => {
+    const ok = shellReducer(initialShellState, {
+      type: 'viewer-message',
+      raw: ready('ok')
+    })
+    const reloaded = shellReducer(ok, { type: 'reload' })
+    const gone = shellReducer(reloaded, { type: 'process-gone' })
+    assert.equal(gone.viewer, 'failed')
+    assert.equal(gone.error, 'process-gone')
+    assert.equal(gone.dwg, 'unknown')
+    assert.equal(gone.viewerVersion, null)
+
+    const s = shellReducer(gone, { type: 'viewer-message', raw: ready('ok') })
+    assert.deepEqual(s, {
+      screen: 'viewer',
+      viewer: 'ready',
+      dwg: 'ok',
+      viewerVersion: '1.2.3',
+      error: null,
+      generation: 1 // recuperação tardia não recria a superfície
+    })
+  })
+
+  it('keeps a failed state when the late ready is invalid or non-lifecycle', () => {
+    const timedOut = shellReducer(initialShellState, { type: 'ready-timeout' })
+    const gone = shellReducer(timedOut, { type: 'process-gone' })
+    for (const failed of [timedOut, gone]) {
+      for (const raw of [
+        '{nope',
+        JSON.stringify({
+          v: 1,
+          id: 'w-1',
+          type: 'ready',
+          payload: { viewerVersion: '1', protocol: 2, caps: ['dxf'], dwg: 'ok' }
+        }),
+        JSON.stringify({ v: 1, id: 'w-2', type: 'findResult', payload: {} })
+      ]) {
+        assert.equal(
+          shellReducer(failed, { type: 'viewer-message', raw }),
+          failed
+        )
+      }
+    }
+  })
+
   it('reload returns to booting and bumps generation (recreates the surface)', () => {
     const failed = shellReducer(initialShellState, { type: 'ready-timeout' })
     const s = shellReducer(failed, { type: 'reload' })
