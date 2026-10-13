@@ -6,7 +6,8 @@
 import {
   type DwgStatus,
   isReadyPayload,
-  parseViewerMessage
+  parseViewerMessage,
+  type ReadyPayload
 } from '../contracts/protocol.ts'
 
 /** Tempo máximo à espera de `ready` ([H] §5.1; recalibrado em S1). */
@@ -30,6 +31,8 @@ export interface ShellState {
 
 export type ShellAction =
   | { type: 'viewer-message'; raw: unknown }
+  /** `ready` já validado pelo `BridgeClient` (mesma semântica de `viewer-message`). */
+  | { type: 'viewer-ready'; payload: ReadyPayload }
   | { type: 'ready-timeout' }
   | { type: 'process-gone' }
   | { type: 'reload' }
@@ -43,6 +46,25 @@ export const initialShellState: ShellState = {
   generation: 0
 }
 
+/**
+ * Decisão (recuperação tardia, intencional): um `ready` válido restaura
+ * `ready` a partir de QUALQUER fase, incluindo `failed` por `ready-timeout`
+ * ou `process-gone`. O viewer pode ficar disponível depois de uma falha
+ * transitória (arranque lento, processo reposto pelo SO); nesse caso o
+ * `ready` tardio limpa `error` e repõe `dwg`/`viewerVersion`, sem alterar
+ * `generation` nem `screen` (só `reload` recria a superfície). `ready`
+ * inválido continua ignorado e deixa o estado `failed` intacto.
+ */
+function applyReady(state: ShellState, payload: ReadyPayload): ShellState {
+  return {
+    ...state,
+    viewer: 'ready',
+    dwg: payload.dwg,
+    viewerVersion: payload.viewerVersion,
+    error: null
+  }
+}
+
 export function shellReducer(
   state: ShellState,
   action: ShellAction
@@ -50,26 +72,16 @@ export function shellReducer(
   switch (action.type) {
     case 'viewer-message': {
       const parsed = parseViewerMessage(action.raw)
-      // B1: só o ciclo de vida (`ready`). Mensagens inválidas ou reservadas
-      // (FIND, abertura, …) são ignoradas, nunca lançam.
+      // Só o ciclo de vida (`ready`) interessa a este reducer; o resto da ponte
+      // passa pelo `BridgeClient` + `sessionReducer`. Mensagens inválidas ou
+      // doutros tipos são ignoradas aqui, nunca lançam.
       if (!parsed.ok || parsed.message.type !== 'ready') return state
       const payload = parsed.message.payload
       if (!isReadyPayload(payload)) return state
-      // Decisão (recuperação tardia, intencional): um `ready` válido restaura
-      // `ready` a partir de QUALQUER fase, incluindo `failed` por `ready-timeout`
-      // ou `process-gone`. O viewer pode ficar disponível depois de uma falha
-      // transitória (arranque lento, processo reposto pelo SO); nesse caso o
-      // `ready` tardio limpa `error` e repõe `dwg`/`viewerVersion`, sem alterar
-      // `generation` nem `screen` (só `reload` recria a superfície). `ready`
-      // inválido continua ignorado e deixa o estado `failed` intacto.
-      return {
-        ...state,
-        viewer: 'ready',
-        dwg: payload.dwg,
-        viewerVersion: payload.viewerVersion,
-        error: null
-      }
+      return applyReady(state, payload)
     }
+    case 'viewer-ready':
+      return applyReady(state, action.payload)
     case 'ready-timeout':
       if (state.viewer !== 'booting') return state
       return { ...state, viewer: 'failed', error: 'ready-timeout' }

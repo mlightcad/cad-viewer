@@ -26,9 +26,8 @@ import {
   type ViewerMessage,
   type ViewerToAppType
 } from '../contracts/protocol.ts'
+import { READY_TIMEOUT_MS } from '../shell/shellState.ts'
 
-/** `ready` tem de chegar a tempo ([H] §5.1, recalibrado em S1). */
-export const READY_TIMEOUT_MS = 15_000
 /** Tempo máximo entre `open` e `opened`/`openFailed` ([H] §5.3). */
 export const OPEN_TIMEOUT_MS = 120_000
 /** Máximo de ids sem resposta esperada (zoom, insets, …) retidos para atribuir `error`. */
@@ -291,7 +290,7 @@ export class BridgeClient {
       // Um novo `open` torna obsoleta a resposta do anterior.
       if (this.inFlightOpenId) this.pending.delete(this.inFlightOpenId)
       this.inFlightOpenId = message.id
-      if (this.openTimer) this.timers.clear(this.openTimer)
+      if (this.openTimer !== null) this.timers.clear(this.openTimer)
       this.openTimer = this.timers.set(
         () => this.onOpenTimeout(message.id),
         this.openTimeoutMs
@@ -380,9 +379,11 @@ export class BridgeClient {
       })
       return
     }
-    if (this.phaseValue === 'failed') return
+    // Recuperação tardia (decisão de shellState.ts): um `ready` válido restaura
+    // `ready` mesmo depois de `ready-timeout`/`process-gone`; o que estava
+    // pendente foi descartado ao falhar e não regressa.
     this.phaseValue = 'ready'
-    if (this.readyTimer) this.timers.clear(this.readyTimer)
+    if (this.readyTimer !== null) this.timers.clear(this.readyTimer)
     this.readyTimer = null
     this.emit({ kind: 'ready', payload })
     const queued = this.queuedOpen
@@ -436,7 +437,7 @@ export class BridgeClient {
   }
 
   private finishOpen(): void {
-    if (this.openTimer) this.timers.clear(this.openTimer)
+    if (this.openTimer !== null) this.timers.clear(this.openTimer)
     this.openTimer = null
     this.inFlightOpenId = null
   }
@@ -471,8 +472,8 @@ export class BridgeClient {
   }
 
   private clearTimers(): void {
-    if (this.readyTimer) this.timers.clear(this.readyTimer)
-    if (this.openTimer) this.timers.clear(this.openTimer)
+    if (this.readyTimer !== null) this.timers.clear(this.readyTimer)
+    if (this.openTimer !== null) this.timers.clear(this.openTimer)
     this.readyTimer = null
     this.openTimer = null
   }

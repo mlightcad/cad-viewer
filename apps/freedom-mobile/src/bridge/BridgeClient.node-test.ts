@@ -7,11 +7,11 @@ import {
   type AppPayloads,
   MAX_DOCUMENT_BYTES
 } from '../contracts/protocol.ts'
+import { READY_TIMEOUT_MS } from '../shell/shellState.ts'
 import {
   BridgeClient,
   type BridgeEvent,
   OPEN_TIMEOUT_MS,
-  READY_TIMEOUT_MS,
   type Timers
 } from './BridgeClient.ts'
 
@@ -136,9 +136,30 @@ describe('BridgeClient — ready handshake', () => {
       'viewer-unavailable'
     )
     assert.equal(injected.length, 0)
-    // um ready tardio não ressuscita um viewer já dado como falhado
+    // `ready` válido tardio recupera (decisão de shellState.ts, 531f82ef)…
     client.receive(wire('ready', READY))
+    assert.equal(client.phase, 'ready')
+    assert.equal(last(events, 'ready').payload.viewerVersion, '0.0.1')
+    // …e volta a aceitar comandos; o que estava pendente não regressou.
+    assert.equal(client.zoom({ op: 'extents' }).ok, true)
+    assert.equal(injected.length, 1)
+  })
+
+  it('does not resend an open queued before a failure when a late ready recovers', () => {
+    const { client, injected, timers } = setup()
+    client.open(OPEN)
+    timers.advance(READY_TIMEOUT_MS)
+    client.receive(wire('ready', READY))
+    assert.equal(client.phase, 'ready')
+    assert.equal(injected.length, 0)
+  })
+
+  it('keeps failed on an invalid late ready', () => {
+    const { client, events, timers } = setup()
+    timers.advance(READY_TIMEOUT_MS)
+    client.receive(wire('ready', { ...READY, dwg: 'maybe' }))
     assert.equal(client.phase, 'failed')
+    assert.equal(last(events, 'protocol-error').code, 'invalid-payload')
   })
 
   it('reports a duplicate ready instead of ignoring it', () => {
