@@ -196,16 +196,16 @@ acuiCreateSimpleUiPlugin({ host }) // Find button included by default
 
 Searched fields:
 
-| Entity | Field | Notes |
-| --- | --- | --- |
-| `TEXT` | `textString` | `%%c` `%%d` `%%p` decoded |
-| `MTEXT` | `contents` | formatting codes (`\f…;`, `\H…;`, `\C…;`, `\L`, braces…) removed, `\P` → space, `\U+XXXX` and stacks decoded |
-| `ATTRIB` | attribute value of every `INSERT` | block name and tag are shown in the result label (not searched); invisible attributes are skipped |
-| `TEXT` / `MTEXT` / `ATTRIB` in block definitions | text inside the block of every `INSERT` | nested (up to 8 levels), anonymous and dynamic blocks included; the hit selects the `INSERT` and zooms to the text; a block inserted several times is listed once per insertion |
-| `ATTDEF` (constant) | default value inside a block definition | only constant attribute definitions are drawn inside a block, so only those are searched; non-constant templates and invisible ones are skipped |
-| `DIMENSION` | text of its dimension block when that block has a match, otherwise the override text (`dimensionText`) | `<>` is the measured value and is not searched |
-| `MULTILEADER` | `contents` | formatting codes removed |
-| `ACAD_TABLE` | cell text | from the table block, otherwise the cell strings |
+| Entity                                           | Field                                                                                                  | Notes                                                                                                                                                                           |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TEXT`                                           | `textString`                                                                                           | `%%c` `%%d` `%%p` decoded                                                                                                                                                       |
+| `MTEXT`                                          | `contents`                                                                                             | formatting codes (`\f…;`, `\H…;`, `\C…;`, `\L`, braces…) removed, `\P` → space, `\U+XXXX` and stacks decoded                                                                    |
+| `ATTRIB`                                         | attribute value of every `INSERT`                                                                      | block name and tag are shown in the result label (not searched); invisible attributes are skipped                                                                               |
+| `TEXT` / `MTEXT` / `ATTRIB` in block definitions | text inside the block of every `INSERT`                                                                | nested (up to 8 levels), anonymous and dynamic blocks included; the hit selects the `INSERT` and zooms to the text; a block inserted several times is listed once per insertion |
+| `ATTDEF` (constant)                              | default value inside a block definition                                                                | only constant attribute definitions are drawn inside a block, so only those are searched; non-constant templates and invisible ones are skipped                                 |
+| `DIMENSION`                                      | text of its dimension block when that block has a match, otherwise the override text (`dimensionText`) | `<>` is the measured value and is not searched                                                                                                                                  |
+| `MULTILEADER`                                    | `contents`                                                                                             | formatting codes removed                                                                                                                                                        |
+| `ACAD_TABLE`                                     | cell text                                                                                              | from the table block, otherwise the cell strings                                                                                                                                |
 
 Matching:
 
