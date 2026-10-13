@@ -8,7 +8,9 @@ import {
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { type Browser, chromium, type Page } from 'playwright'
+import { type Browser, type Page } from 'playwright'
+
+import { launchHeadlessChromium } from './headlessGpu.js'
 
 /**
  * Document open mode passed into the headless runner page.
@@ -50,6 +52,18 @@ export interface CadViewerCliOpenOptions {
 }
 
 /**
+ * Options for creating a {@link HeadlessCadSession} (browser / WebGL launch).
+ */
+export interface HeadlessCadSessionCreateOptions {
+  /**
+   * Prefer hardware GPU WebGL when available. Default `true`.
+   * Falls back to software (SwiftShader) if no usable GPU is present.
+   * Set `false` to force software rendering.
+   */
+  useGpu?: boolean
+}
+
+/**
  * Options for {@link runHeadless} / {@link HeadlessCadSession.run}.
  */
 export interface RunHeadlessOptions extends CadViewerCliOpenOptions {
@@ -73,6 +87,12 @@ export interface RunHeadlessOptions extends CadViewerCliOpenOptions {
   mode?: CadViewerCliOpenMode
   /** Optional log file path (append). */
   logfile?: string
+  /**
+   * Prefer hardware GPU WebGL when available. Default `true`.
+   * Used when {@link runHeadless} / {@link runHeadlessBatch} create the session.
+   * Ignored by {@link HeadlessCadSession.run} once the browser is already open.
+   */
+  useGpu?: boolean
 }
 
 /**
@@ -363,7 +383,9 @@ export class HeadlessCadSession {
     private readonly launchMs: number
   ) {}
 
-  static async create(): Promise<HeadlessCadSession> {
+  static async create(
+    options: HeadlessCadSessionCreateOptions = {}
+  ): Promise<HeadlessCadSession> {
     const runnerDir = runnerDistDir()
     if (!existsSync(path.join(runnerDir, 'index.html'))) {
       throw new Error(
@@ -374,10 +396,14 @@ export class HeadlessCadSession {
     const t0 = performance.now()
     const server = await startCliStaticServer(runnerDir)
     const channel = process.env.PLAYWRIGHT_BROWSER_CHANNEL
-    const browser = await chromium.launch({
-      headless: true,
-      ...(channel ? { channel } : {})
+    const gpu = await launchHeadlessChromium({
+      channel,
+      useGpu: options.useGpu
     })
+    const browser = gpu.browser
+    console.log(
+      `[cad-simple-viewer-cli] webgl: ${gpu.renderer} (${gpu.backend})`
+    )
     const context = await browser.newContext({ acceptDownloads: true })
     const page = await context.newPage()
     page.on('console', msg => {
@@ -396,6 +422,12 @@ export class HeadlessCadSession {
     })
     page.on('pageerror', error => {
       console.error('[cad-simple-viewer-cli] page error:', error.message)
+    })
+    page.on('response', response => {
+      if (response.status() < 400) return
+      console.warn(
+        `[cad-simple-viewer-cli] HTTP ${response.status()} ${response.url()}`
+      )
     })
     await page.goto(`${server.url}/index.html`, { waitUntil: 'networkidle' })
     const launchMs = performance.now() - t0
@@ -562,7 +594,7 @@ export class HeadlessCadSession {
 export async function runHeadless(
   options: RunHeadlessOptions
 ): Promise<RunHeadlessResult> {
-  const session = await HeadlessCadSession.create()
+  const session = await HeadlessCadSession.create({ useGpu: options.useGpu })
   try {
     return await session.run(options)
   } finally {
@@ -572,6 +604,9 @@ export async function runHeadless(
 
 /**
  * Runs the same script against many drawings in one Chromium session.
+ *
+ * GPU preference is taken from the first job's {@link RunHeadlessOptions.useGpu}
+ * (default: hardware when available).
  */
 export async function runHeadlessBatch(
   jobs: RunHeadlessOptions[]
@@ -579,7 +614,7 @@ export async function runHeadlessBatch(
   if (jobs.length === 0) {
     return []
   }
-  const session = await HeadlessCadSession.create()
+  const session = await HeadlessCadSession.create({ useGpu: jobs[0].useGpu })
   const results: RunHeadlessResult[] = []
   try {
     for (const job of jobs) {
