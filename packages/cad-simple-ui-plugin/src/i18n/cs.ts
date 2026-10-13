@@ -15,6 +15,7 @@ export const cs: Record<string, string> = {
   'toolbar.zoomSaved': 'Uložený',
   'toolbar.zoomOriginal': 'Uložený',
   'toolbar.layer': 'Správce hladin',
+  'toolbar.find': 'Hledat',
   'toolbar.layerShort': 'Hladiny',
   'toolbar.layout': 'Rozvržení',
   'toolbar.settings': 'Nastavení',
@@ -95,6 +96,7 @@ export const cs: Record<string, string> = {
   'dockPanel.moreTabs': 'Další karty',
   'dockPanel.tab.layers': 'Hladiny',
   'dockPanel.tab.review': 'Kontrola',
+  'dockPanel.tab.find': 'Hledat',
   'dockPanel.tab.measurements': 'Měření',
   'dockPanel.resize': 'Změnit velikost panelu',
   'reviewPalette.searchPlaceholder': 'Hledat poznámky',
@@ -134,5 +136,24 @@ export const cs: Record<string, string> = {
   'measurePalette.typeValues.angle': 'Úhel',
   'measurePalette.typeValues.area': 'Plocha',
   'measurePalette.typeValues.arc': 'Oblouk',
-  'measurePalette.typeValues.point': 'XY'
+  'measurePalette.typeValues.point': 'XY',
+  'findPalette.placeholder': 'Hledat text',
+  'findPalette.input': 'Hledaný text',
+  'findPalette.find': 'Hledat',
+  'findPalette.matchCase': 'Rozlišovat velikost písmen',
+  'findPalette.currentLayoutOnly': 'Pouze aktuální layout',
+  'findPalette.hint':
+    'Stiskněte Enter pro hledání textu, víceřádkového textu a atributů bloků v celém výkresu (všechny layouty).',
+  'findPalette.hintLayout':
+    'Stiskněte Enter pro hledání textu, víceřádkového textu a atributů bloků v aktuálním layoutu.',
+  'findPalette.noResults': 'Nebyl nalezen žádný text',
+  'findPalette.count': 'Nalezeno: {count}',
+  'findPalette.countLayouts': 'Nalezeno: {count} (layouty: {layouts})',
+  'findPalette.countTruncated':
+    'Zobrazeno prvních {count} výsledků – upřesněte hledání',
+  'findPalette.noDocument': 'Pro hledání otevřete výkres',
+  'findPalette.layoutUnavailable': 'Layout „{layout}“ se nepodařilo otevřít',
+  'findPalette.kind.text': 'Text',
+  'findPalette.kind.mtext': 'Mtext',
+  'findPalette.kind.attribute': 'Atribut'
 }

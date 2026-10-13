@@ -598,6 +598,99 @@ export function acuiEnsureUiStyles() {
       font-size: 11px;
     }
 
+    .ml-ex-ui-find-palette {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 0;
+      gap: 8px;
+      padding: 8px;
+      box-sizing: border-box;
+      color: var(--ml-ui-text, #303133);
+      font-size: 12px;
+    }
+
+    .ml-ex-ui-find-form {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex: 0 0 auto;
+    }
+
+    .ml-ex-ui-find-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      box-sizing: border-box;
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      border-radius: 4px;
+      background: var(--ml-ui-bg, #ffffff);
+      color: var(--ml-ui-text, #303133);
+      font: inherit;
+      /* 16px avoids iOS focus zoom on touch screens. */
+      font-size: 16px;
+      padding: 4px 8px;
+    }
+
+    .ml-ex-ui-find-option {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex: 0 0 auto;
+      cursor: pointer;
+    }
+
+    .ml-ex-ui-find-status {
+      flex: 0 0 auto;
+      color: var(--ml-ui-text-muted, #606266);
+    }
+
+    .ml-ex-ui-find-list {
+      flex: 1 1 auto;
+      min-height: 0;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      overflow: auto;
+      touch-action: pan-y;
+    }
+
+    .ml-ex-ui-find-row {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--ml-ui-border, #dcdfe6);
+      cursor: pointer;
+    }
+
+    .ml-ex-ui-find-row:hover {
+      background: var(--ml-ui-border, rgba(0, 0, 0, 0.04));
+    }
+
+    .ml-ex-ui-find-row.is-selected {
+      background: var(--ml-ui-accent-soft, rgba(64, 158, 255, 0.12));
+    }
+
+    .ml-ex-ui-find-layout {
+      color: var(--ml-ui-text-muted, #606266);
+      font-size: 11px;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ml-ex-ui-find-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .ml-ex-ui-find-meta {
+      color: var(--ml-ui-text-muted, #606266);
+      font-size: 11px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     .ml-ex-ui-layer-list .ml-ex-ui-layer-table-wrap {
       flex: 1;
       min-height: 0;
@@ -914,6 +1007,7 @@ export function acuiEnsureUiStyles() {
 
     .ml-ex-ui-dock-tab-panel:has(> .ml-ex-ui-review-palette),
     .ml-ex-ui-dock-tab-panel:has(> .ml-ex-ui-measure-palette),
+    .ml-ex-ui-dock-tab-panel:has(> .ml-ex-ui-find-palette),
     .ml-ex-ui-dock-tab-panel:has(> .ml-ex-ui-layer-list) {
       overflow: hidden;
     }
@@ -1036,7 +1130,7 @@ export function acuiRemoveUiStylesIfUnused() {
   acuiRemoveToolbarStylesIfUnused()
   if (
     document.querySelector(
-      '.ml-ex-ui-layer-manager, .ml-ex-ui-dock-panel, .ml-ex-ui-review-palette, .ml-ex-ui-measure-palette'
+      '.ml-ex-ui-layer-manager, .ml-ex-ui-dock-panel, .ml-ex-ui-review-palette, .ml-ex-ui-measure-palette, .ml-ex-ui-find-palette'
     )
   )
     return

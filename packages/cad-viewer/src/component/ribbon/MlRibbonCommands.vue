@@ -117,6 +117,7 @@ import {
   editAttribute,
   ellipseArc,
   ellipseCenter,
+  find,
   hatch,
   layerCurrent,
   layerFreeze,
@@ -1194,6 +1195,7 @@ const buildBaseTabs = (
     properties: t('main.ribbon.tooltip.properties'),
     quickSelect: t('main.ribbon.tooltip.quickSelect'),
     countList: t('main.ribbon.tooltip.countList'),
+    find: t('main.ribbon.tooltip.find'),
     drawingUnits: t('main.ribbon.tooltip.drawingUnits'),
     attachDwg: t('main.ribbon.tooltip.attachDwg'),
     attachImage: t('main.ribbon.tooltip.attachImage'),
@@ -2345,6 +2347,18 @@ const buildBaseTabs = (
                   }
                 },
                 {
+                  id: 'cmd-find',
+                  type: 'button',
+                  label: t('main.ribbon.command.find'),
+                  tooltip: ribbonTooltips.find,
+                  size: 'large',
+                  props: {
+                    icon: find,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
+                },
+                {
                   id: 'cmd-countlist',
                   type: 'button',
                   label: t('main.ribbon.command.countList'),
@@ -2574,6 +2588,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-layer', 'layer')
   commandByItemId.set('cmd-properties', 'properties')
   commandByItemId.set('cmd-qselect', 'qselect')
+  commandByItemId.set('cmd-find', 'find')
   commandByItemId.set('cmd-countlist', 'countlist')
   commandByItemId.set('cmd-drawing-units', 'units')
   commandByItemId.set('cmd-xattach', 'xattach')

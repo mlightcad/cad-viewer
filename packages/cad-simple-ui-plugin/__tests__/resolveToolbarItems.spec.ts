@@ -63,6 +63,7 @@ describe('acuiResolveToolbarItems', () => {
     const items = acuiResolveToolbarItems({ items: 'default' }, undefined, 'phone')
     expect(items.map(item => item.id)).toEqual([
       'zoom',
+      'find',
       'measure',
       'annotation',
       'layer',
@@ -75,6 +76,21 @@ describe('acuiResolveToolbarItems', () => {
     expect(
       items[0].children?.some(child => child.id === 'zoom-smart-extents')
     ).toBe(true)
+  })
+
+  it('binds the find button to the find command on desktop and phone', () => {
+    const desktop = acuiCreateDefaultToolbarItems().find(
+      item => item.id === 'find'
+    )
+    expect(desktop?.command).toBe('find')
+    expect(desktop?.label).toBe('toolbar.find')
+    expect(desktop?.icon).toContain('<svg')
+    const phone = acuiResolveToolbarItems(
+      { items: 'default' },
+      undefined,
+      'phone'
+    ).find(item => item.id === 'find')
+    expect(phone?.command).toBe('find')
   })
 
   it('omits excluded root item ids', () => {

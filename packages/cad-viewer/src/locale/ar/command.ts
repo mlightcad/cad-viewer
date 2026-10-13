@@ -36,6 +36,11 @@ export default {
         'فتح لوحة خصائص العناصر'
     },
 
+    find: {
+      description:
+        'فتح لوحة البحث للبحث عن النصوص والنصوص متعددة الأسطر وسمات الكتل عبر التخطيطات'
+    },
+
     countlist: {
       ...enCommand.ACAD.countlist,
       description:

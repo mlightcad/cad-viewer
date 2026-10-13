@@ -107,6 +107,7 @@ import {
   store,
   unregisterCadViewerNotificationCenter
 } from '../app'
+import { isFindShortcut, openFindPalette } from '../command/AcApFindCmd'
 import {
   ensureColorThemeSync,
   isDark,
@@ -474,8 +475,29 @@ watch(
   }
 )
 
+/**
+ * Ctrl/Cmd+F opens the Find palette. The browser's own page search cannot
+ * find text drawn on the canvas, so it is only left alone while the user is
+ * typing in a field outside the viewer or editing MText.
+ */
+const onFindShortcut = (e: KeyboardEvent) => {
+  if (!isFindShortcut(e) || e.defaultPrevented) return
+  if (AcEdMTextEditor.getActiveInputBox()) return
+  const target = e.target as Node | null
+  const inViewer =
+    !target ||
+    target === document.body ||
+    target === document.documentElement ||
+    !!layoutRef.value?.contains(target)
+  if (!inViewer) return
+  e.preventDefault()
+  e.stopPropagation()
+  openFindPalette()
+}
+
 // Component lifecycle: Initialize and load initial file if URL or localFile is provided
 onMounted(async () => {
+  window.addEventListener('keydown', onFindShortcut, true)
   beginPendingOpen(props.mode)
 
   if (props.url || props.localFile) {
@@ -530,6 +552,8 @@ onMounted(async () => {
 onUnmounted(() => {
   // Notify consumers first
   emit('destroy')
+
+  window.removeEventListener('keydown', onFindShortcut, true)
 
   AcEdMTextEditor.setDefaultToolbarEnabled(true)
   headerResizeObserver?.disconnect()

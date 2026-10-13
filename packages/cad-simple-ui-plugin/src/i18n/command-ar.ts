@@ -16,6 +16,9 @@ export const commandAr = {
     measurementpanel: {
       description:
         'فتح لوحة قائمة القياسات'
+    },
+    find: {
+      description: 'فتح لوحة البحث عن النص'
     }
   }
 }

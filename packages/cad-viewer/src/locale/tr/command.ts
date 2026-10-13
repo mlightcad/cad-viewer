@@ -18,6 +18,10 @@ export default {
     properties: {
       description: 'Varlık özellikleri paleti'
     },
+    find: {
+      description:
+        'Yerleşimler arasında metin, çok satırlı metin ve blok özniteliklerini aramak için Bul paletini açar'
+    },
     countlist: {
       description:
         'Sayılan blokları görüntülemek ve yönetmek için Sayım paletini açar'

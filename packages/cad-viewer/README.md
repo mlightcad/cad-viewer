@@ -308,6 +308,7 @@ The `MlCadViewer` component includes:
 - **Ribbon** - File operations (including local file opening), CAD commands, and settings
 - **Toolbars** - Drawing tools, zoom controls, and selection tools
 - **Layer Manager** - Layer visibility and property management
+- **Find** - Text search across all layouts of the drawing (see [Find (text search)](#find-text-search))
 - **Command Line** - AutoCAD-style command input
 - **Status Bar** - Current position, zoom level, and system status
 - **Dialog Manager** - Modal dialogs for various operations
@@ -315,6 +316,21 @@ The `MlCadViewer` component includes:
 - **Entity Info** - Detailed information about selected entities
 - **Language Selector** - UI language switching
 - **Theme Support** - Dark/light mode driven by the `COLORTHEME` system variable
+
+### Find (text search)
+
+Open the **Find** palette from the ribbon (Home → Utilities → Find; it moves under the "…" overflow on narrow windows) or with the `find` command. It is a tab of the same palette as Layers / Properties.
+
+- **Scope - whole drawing by default.** A search covers model space **and every paper-space layout** of the open drawing, in layout-tab order. Check **Current layout only** to restrict it to the layout that is currently shown (the scope is also applied when you toggle it after a search).
+- **What is searched:** `TEXT`, `MTEXT` (formatting codes removed), the attribute values (`ATTRIB`) of every `INSERT`, and text found _inside_ drawn content: `TEXT` / `MTEXT` / `ATTRIB` and **constant** `ATTDEF` values in the block definition of every `INSERT` (nested, anonymous and dynamic blocks included, up to 8 levels deep), `DIMENSION` text (the text of its dimension block when that block has a match, otherwise its override text), `MULTILEADER` contents and `ACAD_TABLE` cells (from the table block, otherwise the cell strings). A hit inside a block, dimension or table selects the top-level entity (the `INSERT`, `DIMENSION` or table) and zooms to the matched text; a block inserted several times is listed once per insertion. Case-, accent- and width-insensitive by default (`instalacao` finds `Instalação`); **Match case** makes it exact. Hidden entities, invisible attributes and entities on off/frozen layers are skipped; at most 500 results are listed (a notice says when the list was truncated).
+- **Results** show the layout name, the matched text, the type (Text / MText / Attribute + block / tag), the layer and `(x, y)`.
+- **Navigation:** click a result - or press Enter / Shift+Enter in the field to step through them - to switch to its layout when it is not the active one, zoom to the text and select its entity (attributes select their `INSERT`). The search runs only on Enter / the Find button, never while typing.
+- **Same engine as `@mlightcad/cad-simple-ui-plugin`:** both UIs use `@mlightcad/cad-simple-viewer/find` (`acapFindText`) and `acapNavigateToFindHit`, so results and navigation are identical.
+- **Client-side only:** the search is a synchronous pass over the drawing already loaded in the browser. There is no backend, index or upload, so the static-hosting deployment described in [Browser-Only Architecture](#browser-only-architecture) is unchanged.
+
+Limitations: text produced by fields (only the stored text is searched) and xref content are not searched; non-constant `ATTDEF` templates (never drawn inside a block) and `ATTDEF`s loose in a layout are not searched; a `DIMENSION` whose block has no matching text can still match its stored override text even if the block does not display it; only entities present in the loaded database are searched (what the DXF/DWG parser attaches to each layout); no regex / whole-word / replace; selecting a paper-space hit does not populate the Properties palette (it only inspects model-space entities).
+
+Known follow-ups: the search is one synchronous pass over the whole drawing and runs on the UI thread (it has not been benchmarked on large drawings; moving it to chunks or a worker is a possible follow-up); the real-drawing end-to-end check (`e2e/tests/find-b11l1.spec.ts`) is opt-in via `B11L1_DWG` and is skipped in the default CI run, which exercises the committed fixtures only.
 
 ### Event Handling
 
@@ -341,6 +357,7 @@ Please refer to [readme of cad-simple-viewer](../cad-simple-viewer/README.md) to
 
 ### Commands
 
+- `AcApFindCmd` - Opens the Find palette
 - `AcApLayerStateCmd` - Layer state command
 - `AcApLogCmd` - Log command
 - `AcApMissedDataCmd` - Missed data command
@@ -358,6 +375,7 @@ Please refer to [readme of cad-simple-viewer](../cad-simple-viewer/README.md) to
 - `useDark` - Reactive dark-mode state backed by the `COLORTHEME` system variable
 - `useDialogManager` - Dialog management
 - `useFileTypes` - File type utilities
+- `useFind` - State and actions of the Find palette (whole-drawing / current-layout search, navigation)
 - `useLayers` - Layer management
 - `useLayouts` - Layout management
 - `useMissedData` - Missed data handling
