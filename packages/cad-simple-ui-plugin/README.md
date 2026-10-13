@@ -219,7 +219,7 @@ Matching:
 Usage:
 
 - Search runs only on **Enter** / the Find button (never while typing, never in the background). Both start a search and jump to the first hit; further Enter / Shift+Enter steps through the list. The scan is a single synchronous pass over the entities of the searched layouts (including the block definitions they insert); nothing is cached or stored globally
-- Each result shows its **layout name**, the matched text, type (Text / MText / Attribute + block / tag), layer and `(x, y)`
+- Each result shows its **layout name** (a layout with an empty name is shown as a localized "(unnamed layout)" placeholder), the matched text, type (Text / MText / Attribute / Block text / Dimension / Leader / Table; attributes also show block / tag), layer and `(x, y)`. Labels are translated in en, zh, cs, tr and ar; a message missing from the active locale falls back to English instead of showing its key
 - Click a result (or press Enter / Shift+Enter in the field to step through them) to zoom to the text and select its entity (attributes select their `INSERT`). Selection uses the normal selection set/highlight, so Escape or clicking elsewhere clears it. Pan, wheel/pinch zoom, layers and touch handling are untouched
 - A hit in another layout switches to that layout first (`layoutManager.setCurrentLayoutBtrId`), waits for its entities to be converted, then zooms and selects. The layout's first-visit auto zoom is suppressed so it cannot override the zoom to the hit. If the layout cannot be opened a notice is shown instead
 - With **Current layout only**, if the active layout changed since the search, clicking a result re-runs the search for the new layout instead of navigating (drawing-wide results stay valid)

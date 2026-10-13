@@ -84,11 +84,13 @@ export class AcUiI18n {
    *
    * @param key - Message key without the `simpleUi.` prefix (for example `toolbar.select`).
    * @param params - Optional `{name}` placeholder replacements.
-   * @returns Translated string, or the key when no translation exists.
+   * @returns Translated string; the English message when the active locale has
+   * none; the key itself only when no locale has the message.
    */
   t(key: string, params?: Record<string, string>): string {
     const fullKey = `${MESSAGE_PREFIX}.${key}`
-    const template = AcApI18n.t(fullKey, { fallback: key })
+    let template = AcApI18n.t(fullKey, { fallback: key })
+    if (template === key) template = en[key] ?? key
     if (!params) return template
     return Object.keys(params).reduce(
       (result, name) => result.replace(`{${name}}`, params[name]),

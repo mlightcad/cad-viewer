@@ -8,15 +8,28 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import { computed, ref, shallowRef } from 'vue'
 
+/**
+ * Layout name for display. A layout can have an empty (or blank) name; the
+ * caller's localized `unnamedLabel` is shown instead so no result row or
+ * status note renders an empty string. Hit data keeps the real name.
+ */
+export function findLayoutDisplayName(
+  name: string,
+  unnamedLabel: string
+): string {
+  return name.trim() ? name : unnamedLabel
+}
+
 /** Search state shown by the Find palette. */
 export type MlFindState = 'idle' | 'done' | 'no-document'
 
 /**
  * State and actions of the Find palette (FIND).
  *
- * Searches TEXT, MTEXT and block attribute values of the whole drawing (all
- * layouts) by default, or of the active layout only when `currentLayoutOnly`
- * is set. The search is shared with cad-simple-ui-plugin
+ * Searches TEXT, MTEXT, attribute values and the text inside blocks,
+ * dimensions, multileaders and tables of the whole drawing (all layouts) by
+ * default, or of the active layout only when `currentLayoutOnly` is set. The
+ * search is shared with cad-simple-ui-plugin
  * (`@mlightcad/cad-simple-viewer/find`) so both UIs behave identically. It runs
  * only when {@link MlFindApi.search} is called (Enter / Find button), never
  * while typing. {@link MlFindApi.navigateTo} activates the hit's layout when
@@ -41,6 +54,11 @@ export function useFind(
   const activeIndex = ref(-1)
   /** Set when the last navigation could not open the hit's layout. */
   const unavailableLayout = ref('')
+  /**
+   * True while {@link unavailableLayout} applies. Separate from the name
+   * because a layout can have an empty name (that must still show the note).
+   */
+  const layoutUnavailable = ref(false)
   /** Query, options and active layout used for the last search. */
   let searched:
     | {
@@ -65,6 +83,7 @@ export function useFind(
     activeIndex.value = -1
     unavailableLayout.value = ''
     searched = undefined
+    layoutUnavailable.value = false
     state.value = next
   }
 
@@ -90,6 +109,7 @@ export function useFind(
     truncated.value = result.truncated
     activeIndex.value = -1
     unavailableLayout.value = ''
+    layoutUnavailable.value = false
     searched = {
       query: query.value,
       matchCase: matchCase.value,
@@ -122,6 +142,7 @@ export function useFind(
     }
     activeIndex.value = index
     unavailableLayout.value = ''
+    layoutUnavailable.value = false
     const outcome = await acapNavigateToFindHit(editor, hit, {
       insets: options.getInsets?.()
     })
@@ -131,6 +152,7 @@ export function useFind(
       outcome === 'layout-mismatch'
     ) {
       unavailableLayout.value = hit.layoutName
+      layoutUnavailable.value = true
     }
   }
 
@@ -168,6 +190,7 @@ export function useFind(
     activeIndex,
     layoutCount,
     unavailableLayout,
+    layoutUnavailable,
     search,
     refresh,
     submit,

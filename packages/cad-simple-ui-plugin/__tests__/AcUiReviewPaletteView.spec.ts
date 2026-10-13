@@ -119,7 +119,7 @@ describe('AcUiReviewPaletteView', () => {
   it('shows an empty state when there are no markups', () => {
     const view = createView()
     expect(view.element.querySelector('.ml-ex-ui-review-empty-row')?.textContent)
-      .toBe('reviewPalette.empty')
+      .toBe('No markups yet')
     expect(
       (view.element.querySelector('.ml-ex-ui-review-toolbar button') as HTMLButtonElement)
         .disabled

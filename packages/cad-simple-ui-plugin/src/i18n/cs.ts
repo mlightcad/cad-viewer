@@ -143,9 +143,9 @@ export const cs: Record<string, string> = {
   'findPalette.matchCase': 'Rozlišovat velikost písmen',
   'findPalette.currentLayoutOnly': 'Pouze aktuální layout',
   'findPalette.hint':
-    'Stiskněte Enter pro hledání textu, víceřádkového textu a atributů bloků v celém výkresu (všechny layouty).',
+    'Stiskněte Enter pro hledání textu, víceřádkového textu, atributů a textu v blocích, kótách, odkazech a tabulkách v celém výkresu (všechny layouty).',
   'findPalette.hintLayout':
-    'Stiskněte Enter pro hledání textu, víceřádkového textu a atributů bloků v aktuálním layoutu.',
+    'Stiskněte Enter pro hledání textu, víceřádkového textu, atributů a textu v blocích, kótách, odkazech a tabulkách v aktuálním layoutu.',
   'findPalette.noResults': 'Nebyl nalezen žádný text',
   'findPalette.count': 'Nalezeno: {count}',
   'findPalette.countLayouts': 'Nalezeno: {count} (layouty: {layouts})',
@@ -155,5 +155,10 @@ export const cs: Record<string, string> = {
   'findPalette.layoutUnavailable': 'Layout „{layout}“ se nepodařilo otevřít',
   'findPalette.kind.text': 'Text',
   'findPalette.kind.mtext': 'Mtext',
-  'findPalette.kind.attribute': 'Atribut'
+  'findPalette.kind.attribute': 'Atribut',
+  'findPalette.kind.block': 'Text bloku',
+  'findPalette.kind.dimension': 'Kóta',
+  'findPalette.kind.leader': 'Odkaz',
+  'findPalette.kind.table': 'Tabulka',
+  'findPalette.unnamedLayout': '(nepojmenovaný layout)'
 }

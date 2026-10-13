@@ -19,7 +19,7 @@ export default {
     },
     find: {
       description:
-        'Opens the Find palette to search text, multiline text and block attributes across layouts'
+        'Opens the Find palette to search text, multiline text, attributes and text in blocks, dimensions, leaders and tables across layouts'
     },
     countlist: {
       description:

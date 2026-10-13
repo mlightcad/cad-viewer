@@ -14,6 +14,7 @@ import enCommand from './en/command'
 import enDialog from './en/dialog'
 import enEntity from './en/entity'
 import enMain from './en/main'
+import { pluralRules } from './pluralRules'
 import trCommand from './tr/command'
 import trDialog from './tr/dialog'
 import trEntity from './tr/entity'
@@ -94,6 +95,7 @@ export const i18n = createI18n({
   messages: AcApI18n.messages,
   locale: initialLocale,
   fallbackLocale: 'en',
+  pluralRules,
   allowComposition: true,
   globalInjection: true
 })

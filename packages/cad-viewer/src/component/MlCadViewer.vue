@@ -107,7 +107,11 @@ import {
   store,
   unregisterCadViewerNotificationCenter
 } from '../app'
-import { isFindShortcut, openFindPalette } from '../command/AcApFindCmd'
+import {
+  isFindShortcut,
+  isFindShortcutInViewer,
+  openFindPalette
+} from '../command/AcApFindCmd'
 import {
   ensureColorThemeSync,
   isDark,
@@ -483,13 +487,7 @@ watch(
 const onFindShortcut = (e: KeyboardEvent) => {
   if (!isFindShortcut(e) || e.defaultPrevented) return
   if (AcEdMTextEditor.getActiveInputBox()) return
-  const target = e.target as Node | null
-  const inViewer =
-    !target ||
-    target === document.body ||
-    target === document.documentElement ||
-    !!layoutRef.value?.contains(target)
-  if (!inViewer) return
+  if (!isFindShortcutInViewer(e.target, layoutRef.value)) return
   e.preventDefault()
   e.stopPropagation()
   openFindPalette()

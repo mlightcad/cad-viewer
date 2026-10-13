@@ -16,7 +16,8 @@ export default {
       description: '图元属性面板'
     },
     find: {
-      description: '打开查找面板，在各布局中搜索文字、多行文字和块属性'
+      description:
+        '打开查找面板，在各布局中搜索文字、多行文字、属性，以及块、标注、引线和表格中的文字'
     },
     countlist: {
       description: '打开计数面板以显示并管理块计数'

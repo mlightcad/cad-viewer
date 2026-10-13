@@ -20,7 +20,7 @@ export default {
     },
     find: {
       description:
-        'Yerleşimler arasında metin, çok satırlı metin ve blok özniteliklerini aramak için Bul paletini açar'
+        'Yerleşimler arasında metin, çok satırlı metin, öznitelikler ile blok, ölçü, kılavuz ve tablolardaki metni aramak için Bul paletini açar'
     },
     countlist: {
       description:

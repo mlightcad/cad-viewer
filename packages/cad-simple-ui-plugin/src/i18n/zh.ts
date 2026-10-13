@@ -143,8 +143,9 @@ export const zh: Record<string, string> = {
   'findPalette.matchCase': '区分大小写',
   'findPalette.currentLayoutOnly': '仅当前布局',
   'findPalette.hint':
-    '按回车键在整个图纸（所有布局）中搜索文字、多行文字和块属性。',
-  'findPalette.hintLayout': '按回车键在当前布局中搜索文字、多行文字和块属性。',
+    '按回车键在整个图纸（所有布局）中搜索文字、多行文字、属性，以及块、标注、引线和表格中的文字。',
+  'findPalette.hintLayout':
+    '按回车键在当前布局中搜索文字、多行文字、属性，以及块、标注、引线和表格中的文字。',
   'findPalette.noResults': '未找到文字',
   'findPalette.count': '找到 {count} 项',
   'findPalette.countLayouts': '在 {layouts} 个布局中找到 {count} 项',
@@ -153,5 +154,10 @@ export const zh: Record<string, string> = {
   'findPalette.layoutUnavailable': '无法打开布局“{layout}”',
   'findPalette.kind.text': '文字',
   'findPalette.kind.mtext': '多行文字',
-  'findPalette.kind.attribute': '属性'
+  'findPalette.kind.attribute': '属性',
+  'findPalette.kind.block': '块文字',
+  'findPalette.kind.dimension': '标注',
+  'findPalette.kind.leader': '引线',
+  'findPalette.kind.table': '表格',
+  'findPalette.unnamedLayout': '（未命名布局）'
 }

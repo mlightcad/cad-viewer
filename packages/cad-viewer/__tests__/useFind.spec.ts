@@ -26,7 +26,7 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
   ...jest.requireActual('../../cad-simple-viewer/src/find/AcApFindNavigator')
 }))
 
-import { useFind } from '../src/composable/useFind'
+import { findLayoutDisplayName, useFind } from '../src/composable/useFind'
 
 type Ent = Record<string, unknown>
 
@@ -192,6 +192,32 @@ describe('useFind', () => {
     await find.navigateTo(1)
     expect(find.unavailableLayout.value).toBe('Planta')
     expect(selection.add).not.toHaveBeenCalled()
+  })
+
+  it('flags an unopenable layout even when its name is empty', async () => {
+    const original = layouts[1].layoutName
+    layouts[1].layoutName = ''
+    try {
+      const find = create()
+      find.query.value = 'sala'
+      find.search()
+      expect(find.hits.value[1].layoutName).toBe('')
+      mockSetCurrentLayout.mockImplementation(() => false)
+      await find.navigateTo(1)
+      // The name is empty, so a separate flag drives the "could not open" note.
+      expect(find.unavailableLayout.value).toBe('')
+      expect(find.layoutUnavailable.value).toBe(true)
+      await find.navigateTo(0)
+      expect(find.layoutUnavailable.value).toBe(false)
+    } finally {
+      layouts[1].layoutName = original
+    }
+  })
+
+  it('shows a placeholder only for blank layout names', () => {
+    expect(findLayoutDisplayName('Planta', '(unnamed)')).toBe('Planta')
+    expect(findLayoutDisplayName('', '(unnamed)')).toBe('(unnamed)')
+    expect(findLayoutDisplayName('   ', '(unnamed)')).toBe('(unnamed)')
   })
 
   it('re-runs a current-layout search instead of navigating after a layout change', async () => {

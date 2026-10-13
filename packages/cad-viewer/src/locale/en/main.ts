@@ -747,15 +747,16 @@ export default {
       find: 'Find',
       matchCase: 'Match case',
       currentLayoutOnly: 'Current layout only',
-      hint: 'Press Enter to search text, multiline text and block attributes in the whole drawing (all layouts).',
+      hint: 'Press Enter to search text, multiline text, attributes and the text in blocks, dimensions, leaders and tables in the whole drawing (all layouts).',
       hintLayout:
-        'Press Enter to search text, multiline text and block attributes in the current layout.',
+        'Press Enter to search text, multiline text, attributes and the text in blocks, dimensions, leaders and tables in the current layout.',
       noResults: 'No text found',
       count: '{count} found',
       countLayouts: '{count} found in {layouts} layouts',
       countTruncated: 'First {count} results shown — refine the search',
       noDocument: 'Open a drawing to search',
       layoutUnavailable: 'Could not open layout "{layout}"',
+      unnamedLayout: '(unnamed layout)',
       kind: {
         text: 'Text',
         mtext: 'MText',

@@ -19,7 +19,7 @@ export default {
     },
     find: {
       description:
-        'Otevře paletu Hledat pro hledání textu, víceřádkového textu a atributů bloků napříč layouty'
+        'Otevře paletu Hledat pro hledání textu, víceřádkového textu, atributů a textu v blocích, kótách, odkazech a tabulkách napříč layouty'
     },
     countlist: {
       description: 'Otevře paletu Počet pro zobrazení a správu počítaných bloků'
