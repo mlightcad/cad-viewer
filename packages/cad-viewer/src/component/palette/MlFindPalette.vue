@@ -17,7 +17,7 @@
         size="small"
         type="primary"
         data-testid="find-button"
-        @click="find.search()"
+        @click="onFindClick"
       >
         {{ t('main.toolPalette.find.find') }}
       </el-button>
@@ -182,6 +182,12 @@ const statusText = computed(() => {
 
 const onEnter = (event: KeyboardEvent) => {
   void find.submit(event.shiftKey)
+}
+
+/** Find button: search and jump to the first hit (same as the first Enter). */
+const onFindClick = async () => {
+  find.search()
+  if (find.hits.value.length > 0) await find.navigateTo(0)
 }
 
 const focusInput = async () => {

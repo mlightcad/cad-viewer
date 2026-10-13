@@ -3,11 +3,12 @@ import { expect, test } from '@playwright/test'
 import { uploadFixture } from '../helpers/fileUpload'
 
 /**
- * Real-drawing FIND check. The DWG is NOT committed: point B11L1_DWG at it
- * (e.g. /home/kevin/work/fixtures/cad-viewer/B11L1.dwg); the spec is skipped
- * when the variable is unset. Default CI therefore only runs the committed
- * fixtures; a reduced committed fixture or a manual/scheduled workflow that
- * sets B11L1_DWG is a possible follow-up.
+ * Optional real-drawing FIND check. The DWG is NOT committed (size / license):
+ * point `B11L1_DWG` at a local path (e.g. `/path/to/B11L1.dwg`); the spec is
+ * skipped when unset. Default CI covers FIND via the committed
+ * `find-layouts.dxf` / `find-blocks.dxf` e2e fixtures instead — run this file
+ * locally when validating against a production DWG (`B11L1_QUERY` defaults to
+ * `PORW`).
  */
 const dwg = process.env.B11L1_DWG
 const query = process.env.B11L1_QUERY ?? 'PORW'
