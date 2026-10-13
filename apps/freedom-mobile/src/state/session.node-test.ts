@@ -592,6 +592,12 @@ describe('session — rework M1-B2 (t_ffb4eb41): bridge failures end explicitly'
     const f = h.client.find({ query: 'A', matchCase: false, scope: 'drawing' })
     for (let i = 0; i < 600; i++) h.client.zoom({ op: 'in' })
     h.viewer(
+      'findResult',
+      { findId: 1, total: 0, truncated: false, layoutCount: 1, hits: [] },
+      f.ok ? f.id : ''
+    )
+    assert.equal(h.state.find.status, 'empty')
+    h.viewer(
       'opened',
       { name: 'b.dxf', format: 'dxf', layouts: [], activeLayoutId: '' },
       o.ok ? o.id : ''
