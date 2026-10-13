@@ -35,6 +35,9 @@ const MAX_TRACKED = 256
 
 export type BridgePhase = 'booting' | 'ready' | 'failed'
 
+/** Causa de passagem a `failed` (recuperável por um `ready` válido tardio). */
+export type FailCause = 'ready-timeout' | 'process-gone'
+
 /** Rejeições locais do cliente, além das de validação do contrato. */
 export type CommandRejectCode =
   | OutgoingError['code']
@@ -66,6 +69,12 @@ export type BridgeEvent =
     }
   /** `open` em fila substituído por um mais recente (§5.1); sem falha. */
   | { kind: 'open-superseded'; id: string }
+  /**
+   * `open` em fila ou em curso descartado por `ready-timeout`/`process-gone`
+   * (emitido logo a seguir a esse evento). Não é reenviado por um `ready`
+   * tardio: a resposta tardia ao seu id chega como `stale-reply`.
+   */
+  | { kind: 'open-dropped'; id: string; cause: FailCause }
   | { kind: 'opened'; replyTo: string; payload: OpenedPayload }
   | {
       kind: 'open-failed'
@@ -201,8 +210,7 @@ export class BridgeClient {
   /** `onContentProcessDidTerminate` / `onRenderProcessGone`. */
   processGone(): void {
     if (this.disposed) return
-    this.fail()
-    this.emit({ kind: 'process-gone' })
+    this.fail('process-gone')
   }
 
   dispose(): void {
@@ -381,7 +389,8 @@ export class BridgeClient {
     }
     // Recuperação tardia (decisão de shellState.ts): um `ready` válido restaura
     // `ready` mesmo depois de `ready-timeout`/`process-gone`; o que estava
-    // pendente foi descartado ao falhar e não regressa.
+    // pendente foi descartado ao falhar (o `open`, com `open-dropped`) e não
+    // regressa.
     this.phaseValue = 'ready'
     if (this.readyTimer !== null) this.timers.clear(this.readyTimer)
     this.readyTimer = null
@@ -445,8 +454,7 @@ export class BridgeClient {
   private onReadyTimeout(): void {
     this.readyTimer = null
     if (this.phaseValue !== 'booting') return
-    this.fail()
-    this.emit({ kind: 'ready-timeout' })
+    this.fail('ready-timeout')
   }
 
   private onOpenTimeout(id: string): void {
@@ -463,12 +471,21 @@ export class BridgeClient {
     })
   }
 
-  private fail(): void {
+  /**
+   * Descarta todo o trabalho pendente. Um `open` em fila ou em curso não se
+   * perde em silêncio: sai como `open-dropped` depois do evento da causa.
+   */
+  private fail(cause: FailCause): void {
+    const droppedOpenId = this.queuedOpen?.id ?? this.inFlightOpenId
     this.phaseValue = 'failed'
     this.clearTimers()
     this.pending.clear()
     this.queuedOpen = null
     this.inFlightOpenId = null
+    this.emit({ kind: cause })
+    if (droppedOpenId !== null) {
+      this.emit({ kind: 'open-dropped', id: droppedOpenId, cause })
+    }
   }
 
   private clearTimers(): void {

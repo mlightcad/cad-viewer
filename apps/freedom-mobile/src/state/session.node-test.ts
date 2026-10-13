@@ -12,6 +12,7 @@ import {
 } from '../bridge/BridgeClient.ts'
 import { type AppMessage } from '../contracts/protocol.ts'
 import { READY_TIMEOUT_MS } from '../shell/shellState.ts'
+import { describeDocument } from './describe.ts'
 import {
   initialSessionState,
   type SessionAction,
@@ -460,6 +461,48 @@ describe('session — failures are never silent', () => {
     assert.equal(h.state.zoom.lastOp, null)
     // O cliente aceita comandos de novo.
     assert.equal(h.client.zoom({ op: 'out' }).ok, true)
+  })
+
+  it('late ready after process-gone with an open in progress: explicit error, not silently discarded', () => {
+    for (const booted of [true, false]) {
+      const h = harness()
+      if (booted) h.viewer('ready', READY)
+      const r = h.client.open({
+        name: 'b.dxf',
+        size: 1,
+        source: { kind: 'url', url: 'http://x' }
+      })
+      assert.ok(r.ok && r.queued === !booted)
+      assert.equal(h.state.document.opening?.id, r.id)
+
+      h.client.processGone()
+      assert.equal(h.state.shell.error, 'process-gone')
+      assert.equal(h.state.document.opening, null)
+      assert.equal(h.state.document.error?.code, 'viewer-unavailable')
+      assert.equal(h.state.document.error?.origin, 'local')
+
+      h.viewer('ready', READY)
+      assert.equal(h.state.shell.viewer, 'ready')
+      assert.equal(h.state.shell.error, null)
+      // O erro sobrevive à recuperação: o utilizador sabe que tem de reabrir.
+      assert.equal(h.state.document.opening, null)
+      assert.equal(h.state.document.current, null)
+      assert.equal(h.state.document.error?.code, 'viewer-unavailable')
+      assert.equal(
+        describeDocument(h.state.document),
+        'O viewer não está disponível; recarregue.'
+      )
+      assert.equal(h.sent.length, booted ? 1 : 0)
+
+      // A resposta tardia ao `open` descartado é stale e não o ressuscita.
+      h.viewer(
+        'opened',
+        { name: 'b.dxf', format: 'dxf', layouts: [], activeLayoutId: '' },
+        r.id
+      )
+      assert.equal(h.state.document.current, null)
+      assert.equal(h.state.document.error?.code, 'viewer-unavailable')
+    }
   })
 
   it('reload resets everything and bumps the surface generation', () => {

@@ -622,6 +622,61 @@ describe('BridgeClient — late ready recovery (decisão de shellState.ts)', () 
     assert.equal(kinds(events).includes('find-result'), false)
   })
 
+  it('does not drop a queued or in-flight open silently: open-dropped follows the failure event', () => {
+    // Em fila (antes de `ready`) e em curso (depois de `ready`), para as 2 causas.
+    const cases = [
+      { cause: 'process-gone', booted: false },
+      { cause: 'process-gone', booted: true },
+      { cause: 'ready-timeout', booted: false }
+    ] as const
+    for (const { cause, booted } of cases) {
+      const { client, events, injected, timers } = setup()
+      if (booted) client.receive(wire('ready', READY))
+      const o = client.open(OPEN)
+      assert.ok(o.ok && o.queued === !booted)
+      const before = events.length
+      if (cause === 'process-gone') client.processGone()
+      else timers.advance(READY_TIMEOUT_MS)
+      assert.deepEqual(events.slice(before), [
+        { kind: cause },
+        { kind: 'open-dropped', id: o.id, cause }
+      ])
+
+      // `ready` tardio recupera, mas o `open` descartado não é reenviado.
+      client.receive(wire('ready', READY))
+      assert.equal(client.phase, 'ready')
+      assert.equal(injected.length, booted ? 1 : 0)
+      assert.equal(kinds(events).filter(k => k === 'open-dropped').length, 1)
+    }
+  })
+
+  it('reports only the open actually dropped: latest queued one, none without an open in progress', () => {
+    const a = setup()
+    a.client.open(OPEN)
+    const latest = a.client.open({ ...OPEN, name: 'B.dxf' })
+    assert.ok(latest.ok)
+    a.client.processGone()
+    assert.deepEqual(
+      a.events.filter(e => e.kind === 'open-dropped'),
+      [{ kind: 'open-dropped', id: latest.id, cause: 'process-gone' }]
+    )
+
+    const b = setup()
+    b.client.receive(wire('ready', READY))
+    b.client.find(FIND)
+    b.client.processGone()
+    assert.equal(kinds(b.events).includes('open-dropped'), false)
+
+    // Um `open` já resolvido não é dado como descartado.
+    const c = setup()
+    c.client.receive(wire('ready', READY))
+    const done = c.client.open(OPEN)
+    assert.ok(done.ok)
+    c.client.receive(wire('opened', OPENED('Planta.dxf'), done.id))
+    c.client.processGone()
+    assert.equal(kinds(c.events).includes('open-dropped'), false)
+  })
+
   it('after process-gone the open timer stays dead: no open-failed(timeout) fires post-recovery', () => {
     const { client, events, timers } = setup()
     client.receive(wire('ready', READY))
