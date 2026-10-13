@@ -71,3 +71,15 @@ Desvios que **esta spec não ratifica** (decisão do CTO/Kevin):
 2. **Boundaries do card `t_c3ae146f`** («Somente `apps/viewer/**` e `packages/viewer/**`»): caminhos inexistentes; a arquitectura fixa `apps/freedom-mobile/` (D-9, §3.1). Ver §1.
 
 Consequência para a revisão do follow-up: rever `db9f45ab`, `531f82ef` e `fde7b3e8` (base `d1568b73`), não `origin/main..HEAD` inteiro; os restantes commits M1-B2 são revistos no card `t_c3ae146f`.
+
+**Rótulos de commit.** O assunto de `fde7b3e8` termina em «(M1-B2)», mas o commit pertence ao follow-up `t_254a5902` (tabela acima), não ao M1-B2 (`t_c3ae146f`). O histórico já publicado não é reescrito (sem force-push); vale a atribuição desta tabela. Commits de follow-up identificam o card de follow-up e não usam o rótulo «M1-B2».
+
+## 7. Follow-up `t_fc841e51` (MINORs da revisão; não é M1-B2)
+
+Fora do âmbito do M1-B2 (`t_c3ae146f`) e do follow-up `t_254a5902`: corrige um caso que o `fde7b3e8` deixou silencioso. Mantém a recuperação por `ready` válido tardio (decisão `531f82ef`) e não reenvia o que foi descartado.
+
+- **Problema**: com um `open` em fila (antes de `ready`) ou em curso, `process-gone` descartava-o em `BridgeClient.fail()` sem evento próprio, e `documentReducer` limpava `opening` e `error`; depois de um `ready` tardio a app ficava sem documento, sem loading e sem erro — a abertura desaparecia em silêncio.
+- **Cliente** (`src/bridge/BridgeClient.ts`): `fail(cause)` emite, logo a seguir a `ready-timeout`/`process-gone`, `{ kind: 'open-dropped', id, cause }` com o id do `open` descartado (o mais recente, se havia substituição em fila). Sem `open` pendente, nada é emitido. A resposta tardia a esse id continua `stale-reply`.
+- **Documento** (`src/state/document.ts`): `process-gone` com abertura em curso termina o loading com erro local `viewer-unavailable` («o viewer terminou inesperadamente; a abertura foi cancelada»), que sobrevive ao `ready` tardio; sem abertura em curso o comportamento é o anterior (estado vazio). `ready-timeout` não muda.
+- **Testes** (`node:test`, timers falsos, deterministas): `BridgeClient.node-test` (fila/em curso × `process-gone`/`ready-timeout`; só o `open` realmente descartado), `document.node-test` (erro explícito em `process-gone`), `session.node-test` (ponta-a-ponta: `process-gone` → `ready` tardio → erro visível, nada reenviado, resposta tardia stale). Os 4 testes novos falham sem a correcção e passam com ela; `npm test` 153/153.
+- **Limitação**: o texto mostrado (`describeDocument`) é o genérico de `viewer-unavailable` («O viewer não está disponível; recarregue.»), igual ao caminho `ready-timeout`; um texto próprio para «reabra o ficheiro» após recuperação fica para decisão de UI (I3).
