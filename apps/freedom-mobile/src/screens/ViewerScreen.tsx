@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 import { BridgeClient } from '../bridge/BridgeClient'
 import { describeViewerStatus } from '../shell/shellState'
+import { MIN_TOUCH_TARGET } from '../shell/touchTarget'
 import {
   describeDocument,
   describeFind,
@@ -91,6 +92,7 @@ export function ViewerScreen(): ReactElement {
             accessibilityRole="button"
             accessibilityLabel="Dispensar aviso"
             onPress={() => dispatch({ kind: 'issue-dismissed' })}
+            style={styles.noticeTarget}
           >
             <Text style={styles.issue}>{issueText}</Text>
           </Pressable>
@@ -121,9 +123,15 @@ const styles = StyleSheet.create({
   title: { fontSize: 18, fontWeight: '600' },
   status: { fontSize: 14, color: '#444444' },
   issue: { fontSize: 14, color: '#b42318' },
+  // O aviso é todo o controlo de dispensa: caixa visual (não só o texto) >= 44 dp.
+  noticeTarget: {
+    minHeight: MIN_TOUCH_TARGET,
+    minWidth: MIN_TOUCH_TARGET,
+    justifyContent: 'center'
+  },
   button: {
     alignSelf: 'flex-start',
-    minHeight: 44,
+    minHeight: MIN_TOUCH_TARGET,
     justifyContent: 'center',
     paddingHorizontal: 16,
     borderRadius: 8,
