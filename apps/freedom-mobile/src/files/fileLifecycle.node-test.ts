@@ -30,9 +30,8 @@ function setup(options: HarnessOptions = {}) {
   const urls = new FakeUrls()
   const picker = new FakePicker()
   const events: FileFlowEvent[] = []
-  let flow!: FileFlow
   const h = createHarness({ ...options, onEvent: e => flow.handle(e) })
-  flow = new FileFlow({
+  const flow = new FileFlow({
     picker,
     store,
     urls,

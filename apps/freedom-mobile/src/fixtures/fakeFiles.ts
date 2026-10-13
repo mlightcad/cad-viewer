@@ -4,6 +4,7 @@
 // servidor loopback em memória, com injecção de falhas e rasto de chamadas.
 // Determinísticas: sem relógio, sem rede, sem sistema de ficheiros real.
 
+import type { DocumentFormat } from '../contracts/protocol.ts'
 import type {
   AssetStorePort,
   AssetUrlPort,
@@ -11,7 +12,6 @@ import type {
   PickedFile,
   PickOutcome
 } from '../files/ports.ts'
-import type { DocumentFormat } from '../contracts/protocol.ts'
 
 /** Caminhos "internos" sentinela: nunca podem aparecer em eventos/mensagens. */
 export const SECRET_CACHE_DIR =

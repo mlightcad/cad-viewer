@@ -8,9 +8,10 @@ import { detectDocumentFormat } from '../contracts/protocol.ts'
 export const MAX_NAME_LENGTH = 120
 
 // Controlos C0/C1, separadores de linha e marcas bidi/zero-width (spoofing de nomes).
-// eslint-disable-next-line no-control-regex
+/* eslint-disable no-control-regex */
 const CONTROL_CHARS =
   /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028-\u202e\u2066-\u2069\ufeff]/g
+/* eslint-enable no-control-regex */
 const INVALID_NAME_CHARS = /[<>:"|?*]/g
 
 /**
@@ -56,7 +57,7 @@ export function redactPaths(
     .replace(/\b[a-z][a-z0-9+.-]*:\/\/\S*/gi, REDACTED)
     .replace(/\b[A-Za-z]:[\\/]\S*/g, REDACTED)
     .replace(/\\\\\S+/g, REDACTED)
-    .replace(/(^|[\s"'(=\[])~?\/[^\s"')\]]+/g, `$1${REDACTED}`)
+    .replace(/(^|[\s"'(=[])~?\/[^\s"')\]]+/g, `$1${REDACTED}`)
 }
 
 function safeDecode(s: string): string {

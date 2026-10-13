@@ -4,9 +4,16 @@ import { type ReactElement, useEffect, useReducer, useRef } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 import { BridgeClient } from '../bridge/BridgeClient'
+import {
+  createExpoAssetStore,
+  createExpoPicker
+} from '../files/expoFileAdapters'
+import { FileFlow } from '../files/fileFlow'
+import { NO_LOCAL_SERVER } from '../files/ports'
 import { describeViewerStatus } from '../shell/shellState'
 import {
   describeDocument,
+  describeFiles,
   describeFind,
   describeIssue,
   describeSelection,
@@ -19,23 +26,41 @@ export function ViewerScreen(): ReactElement {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState)
   const injectRef = useRef<InjectFn | null>(null)
   const clientRef = useRef<BridgeClient | null>(null)
+  const flowRef = useRef<FileFlow | null>(null)
   const { generation } = session.shell
 
   // Um cliente por superfície: recarregar (generation) recria-o e rearma o
   // timeout de `ready`, que passa a viver no cliente.
   useEffect(() => {
+    // O fluxo de ficheiros vive e morre com a ponte: os assets copiados
+    // pertencem a esta superfície e são apagados quando ela é recriada.
+    let flow: FileFlow | null = null
     const client = new BridgeClient({
       inject: script => {
         const inject = injectRef.current
         if (!inject) throw new Error('superfície do viewer indisponível')
         inject(script)
       },
+      onEvent: event => {
+        dispatch(event)
+        flow?.handle(event)
+      }
+    })
+    flow = new FileFlow({
+      picker: createExpoPicker(),
+      store: createExpoAssetStore(),
+      urls: NO_LOCAL_SERVER,
+      bridge: client,
       onEvent: dispatch
     })
     clientRef.current = client
+    flowRef.current = flow
+    void flow.startup()
     return () => {
       client.dispose()
+      void flow?.dispose()
       clientRef.current = null
+      flowRef.current = null
     }
   }, [generation])
 
@@ -53,7 +78,10 @@ export function ViewerScreen(): ReactElement {
   }
 
   const { shell } = session
+  const filesText = describeFiles(session.files)
   const documentText = describeDocument(session.document)
+  const choosing =
+    session.files.phase === 'picking' || session.files.phase === 'staging'
   const findText = describeFind(session.find)
   const selectionText = describeSelection(session.selection)
   const zoomText = describeZoom(session.zoom)
@@ -66,6 +94,26 @@ export function ViewerScreen(): ReactElement {
         <Text style={styles.status} accessibilityLiveRegion="polite">
           {describeViewerStatus(shell)}
         </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Abrir ficheiro DWG ou DXF"
+          disabled={choosing || shell.viewer === 'failed'}
+          onPress={() => void flowRef.current?.pickAndOpen()}
+          style={[
+            styles.button,
+            (choosing || shell.viewer === 'failed') && styles.buttonDisabled
+          ]}
+        >
+          <Text style={styles.buttonText}>Abrir</Text>
+        </Pressable>
+        {filesText ? (
+          <Text
+            style={session.files.error ? styles.issue : styles.status}
+            accessibilityLiveRegion="polite"
+          >
+            {filesText}
+          </Text>
+        ) : null}
         {documentText ? (
           <Text style={styles.status} accessibilityLiveRegion="polite">
             {documentText}
@@ -129,5 +177,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#1a56db'
   },
+  buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#ffffff', fontSize: 16 }
 })

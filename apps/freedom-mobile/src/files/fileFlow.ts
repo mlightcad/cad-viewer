@@ -11,8 +11,8 @@
 
 import type { BridgeEvent } from '../bridge/BridgeClient.ts'
 import {
-  type DocumentFormat,
   detectDocumentFormat,
+  type DocumentFormat,
   MAX_BASE64_BYTES,
   MAX_DOCUMENT_BYTES,
   type OpenPayload

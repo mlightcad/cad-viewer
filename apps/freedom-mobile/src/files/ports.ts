@@ -65,3 +65,9 @@ export interface BridgeOpenPort {
   readonly phase: 'booting' | 'ready' | 'failed'
   open(payload: OpenPayload): SendOutcome
 }
+
+/** Sem servidor loopback (antes de I5): a entrega cai no fallback base64. */
+export const NO_LOCAL_SERVER: AssetUrlPort = {
+  available: () => false,
+  urlFor: () => null
+}
