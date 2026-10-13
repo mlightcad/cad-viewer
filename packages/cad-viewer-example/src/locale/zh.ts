@@ -50,7 +50,8 @@ export default {
       progressive: '渐进显示',
       progressiveRendering: '渐进渲染',
       on: '开',
-      progressiveOnHint: '加载过程中显示图形；实体转换结束即关闭进度',
+      progressiveOnHint:
+        '解析与转换完成前锁定界面；之后可平移缩放，场景继续加载',
       off: '关',
       progressiveOffHint: '实体和文字都转换完成后再显示',
 

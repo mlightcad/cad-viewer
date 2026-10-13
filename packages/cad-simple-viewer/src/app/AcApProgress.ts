@@ -189,6 +189,17 @@ export class AcApProgress {
   }
 
   /**
+   * When true, the overlay captures pointer events (default). When false,
+   * events pass through to the canvas underneath.
+   */
+  public setPointerEventsBlocked(blocked: boolean): this {
+    if (this.root) {
+      this.root.style.pointerEvents = blocked ? 'auto' : 'none'
+    }
+    return this
+  }
+
+  /**
    * Moves the overlay onto another host (e.g. the focused split pane).
    *
    * @param host - New parent element for the overlay.

@@ -133,6 +133,7 @@ import {
   acapInstallNotificationService,
   type AcUiNotificationBellPlacement
 } from './notification'
+import { syncCurrentSpaceFromTileMode } from './syncCurrentSpaceFromTileMode'
 
 const DEFAULT_BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data'
 /** Default ISO drawing template loaded by {@link AcApDocManager.newDocument}. */
@@ -616,12 +617,10 @@ export class AcApDocManager {
     this._openFileProgress = new AcApOpenFileProgressController(busyHost)
     this._openFileProgress.setSceneBusyGate(() => {
       const view = this.openProgressView
-      // Progressive open hides when entity convert finishes so pan/zoom work
-      // while glyphs catch up. Default open keeps "Rendering drawing ..."
-      // until deferred glyph jobs finish as well.
-      return view.progressiveRendering
-        ? view.isConvertingEntities
-        : view.isProcessingEntities
+      // Progressive open hides at CONVERSION END (see-through path) and does
+      // not use this gate. Default open keeps "Rendering drawing ..." until
+      // entity convert and deferred glyph jobs both finish.
+      return view.isProcessingEntities
     })
     this._openFileProgress.setOnHidden(() => this.onOpenProgressHidden())
     this._busyIndicator = new AcApBusyIndicator(busyHost)
@@ -905,12 +904,14 @@ export class AcApDocManager {
     acdbHostApplicationServices().workingDatabase = doc.database
     this._pluginManager.setContext(session.context)
     this.curView.bindDrawDatabase(doc.database)
+    // Bind the view to the session's currentSpaceId before documentActivated
+    // so layout tabs snapshot the correct active layout.
+    this.setActiveLayout()
+    this.curView.syncDisplaySysVars(doc.database)
     this.events.documentActivated.dispatch({
       doc,
       mode: doc.openMode
     })
-    this.setActiveLayout()
-    this.curView.syncDisplaySysVars(doc.database)
     if (!this._openingSession) {
       this.syncProgressOverlayHost()
     }
@@ -2222,6 +2223,11 @@ export class AcApDocManager {
    *
    * Sets up the active layout block table record ID and model space block table
    * record ID based on the current document's space configuration.
+   *
+   * Does **not** re-apply `$TILEMODE`: layout tab switches update
+   * `currentSpaceId` without flipping `tilemode`, so syncing here would yank
+   * the user back to paper when reactivating a session left on Model.
+   * Open-time sync lives in {@link onAfterOpenDocument}.
    */
   setActiveLayout(view?: AcTrView2d, database?: AcDbDatabase) {
     const currentView = view ?? (this.curView as AcTrView2d)
@@ -2311,13 +2317,18 @@ export class AcApDocManager {
       const view = session.context.view as AcTrView2d
       session.doc.destroy()
       const doc = session.doc
+      const db = doc.database
+      // Header parsing stores `$TILEMODE` but leaves currentSpaceId on model.
+      // Sync once at open (not in setActiveLayout) so later Model-tab visits
+      // survive session reactivation. Do this before documentActivated so
+      // layout tabs snapshot the correct active layout.
+      syncCurrentSpaceFromTileMode(db)
+      this.setActiveLayout(view, db)
+      view.syncDisplaySysVars(db)
       this.events.documentActivated.dispatch({
         doc,
         mode: this.getDocumentEventMode(options)
       })
-      this.setActiveLayout(view, doc.database)
-      view.syncDisplaySysVars(doc.database)
-      const db = doc.database
 
       // View framing at document open time (see `openViewMode`):
       //

@@ -46,13 +46,12 @@ export function useLayouts(editor: AcApDocManager) {
 
   acdbHostApplicationServices().layoutManager.events.layoutSwitched.addEventListener(
     args => {
-      const newLayout = args.layout
+      // Prefer BTR id over layout name: open-time `$TILEMODE` sync can leave
+      // Model and a sheet both briefly looking "selected" if only names are
+      // compared after a dictionary alias rename.
+      const activeBtrId = args.layout.blockTableRecordId
       reactiveLayouts.forEach(layout => {
-        if (layout.name == newLayout.layoutName) {
-          layout.isActive = true
-        } else {
-          layout.isActive = false
-        }
+        layout.isActive = layout.blockTableRecordId === activeBtrId
       })
     }
   )

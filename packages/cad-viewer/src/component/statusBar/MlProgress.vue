@@ -21,15 +21,25 @@ import { onMounted, onUnmounted, ref } from 'vue'
 
 const percentage = ref(0)
 const visible = ref(false)
+/** Matches {@link AcApOpenFileProgressController}: trailing vs leading FETCH_FILE. */
+const conversionEnded = ref(false)
 
 const resetProgress = () => {
   percentage.value = 0
   visible.value = false
+  conversionEnded.value = false
 }
 
 const updateProgress = (data: AcDbProgressdEventArgs) => {
+  if (
+    data.stage === 'CONVERSION' &&
+    data.subStage === 'END' &&
+    data.subStageStatus === 'END'
+  ) {
+    conversionEnded.value = true
+  }
   percentage.value = data.percentage
-  visible.value = !isOpenFileProgressComplete(data)
+  visible.value = !isOpenFileProgressComplete(data, conversionEnded.value)
 }
 
 const format = (percentage: number) => {
