@@ -299,16 +299,25 @@ describe('falhas do conversor, timeout e inspecção', () => {
     }
   )
 
-  test('loader que nunca resolve → timeout (timer limpo)', async () => {
-    const load: DocumentLoader = () => new Promise(() => undefined)
-    const out = await importDocument(dxfReq(), {
-      dwg: 'ok',
-      load,
-      timeoutMs: 25
-    })
-    expect(out).toMatchObject({
-      ok: false,
-      failure: { code: 'timeout', stage: 'convert' }
+  test('loader que nunca termina → timeout; a seguinte também expira (nunca pendura) sem chamar o loader', async () => {
+    // módulo isolado: um loader que nunca termina retém a posse da base de
+    // trabalho (contrato §3.1) e bloquearia as importações dos outros testes
+    await jest.isolateModulesAsync(async () => {
+      const isolated = await import('../src/import/importer')
+      const never: DocumentLoader = () => new Promise(() => undefined)
+      const next = jest.fn<ReturnType<DocumentLoader>, []>()
+      for (const load of [never, next as unknown as DocumentLoader]) {
+        const out = await isolated.importDocument(dxfReq(), {
+          dwg: 'ok',
+          load,
+          timeoutMs: 25
+        })
+        expect(out).toMatchObject({
+          ok: false,
+          failure: { code: 'timeout', stage: 'convert' }
+        })
+      }
+      expect(next).not.toHaveBeenCalled()
     })
   })
 
@@ -429,14 +438,35 @@ describe('loader por omissão e base de trabalho global', () => {
     else expect(working()).toBe(out.document.database)
   })
 
-  test('timeout: sinaliza o loader, restaura a base e passa o timeout ao worker', async () => {
-    const gate = deferred()
+  /** `read` falso: instala-se como o real e espera por um portão por chamada. */
+  const gatedRead = (
+    after?: (db: AcDbDatabase) => void | Promise<void>
+  ): {
+    read: jest.SpyInstance
+    gates: ReturnType<typeof deferred>[]
+    owners: AcDbDatabase[]
+  } => {
+    const gates: ReturnType<typeof deferred>[] = []
+    const owners: AcDbDatabase[] = []
     const read = jest
       .spyOn(AcDbDatabase.prototype, 'read')
       .mockImplementation(async function (this: AcDbDatabase) {
+        const gate = deferred()
+        gates.push(gate)
+        owners.push(this)
         setWorking(this)
         await gate.promise
+        await after?.(this)
       })
+    return { read, gates, owners }
+  }
+
+  test('timeout com o read ainda activo: a base em curso mantém a posse até terminar e a conversão nunca vê o documento anterior', async () => {
+    const seenByConversion: (AcDbDatabase | null)[] = []
+    const { read, gates, owners } = gatedRead(() => {
+      // objectos sem dono resolvem-se contra a base de trabalho
+      seenByConversion.push(working())
+    })
     const seen: { signal?: AbortSignal; timeoutMs?: number }[] = []
     const out = await importDocument(dxfReq(), {
       dwg: 'ok',
@@ -450,45 +480,124 @@ describe('loader por omissão e base de trabalho global', () => {
     expect(seen[0].signal?.aborted).toBe(true)
     expect(seen[0].timeoutMs).toBe(20)
     expect(read.mock.calls[0][1]).toMatchObject({ timeout: 20 })
-    expect(working()).toBe(previous)
-    gate.resolve()
+    // a conversão ainda corre: a global é a dela, não a anterior
+    expect(working()).toBe(owners[0])
+    gates[0].resolve()
     await flush()
+    expect(seenByConversion).toEqual([owners[0]])
     expect(working()).toBe(previous)
   })
 
-  test('conclusão tardia: nada é instalado nem emitido', async () => {
-    const gate = deferred()
-    jest
-      .spyOn(AcDbDatabase.prototype, 'read')
-      .mockImplementation(async function (this: AcDbDatabase) {
-        setWorking(this)
-        await gate.promise
-        setWorking(this)
-      })
-    const out = await importDocument(dxfReq(), { dwg: 'ok', timeoutMs: 20 })
-    expect(out).toMatchObject({ ok: false, failure: { code: 'timeout' } })
-    expect(working()).toBe(previous)
-    gate.resolve()
+  test('conclusão tardia que se reinstala não fica instalada nem pisa a importação seguinte', async () => {
+    const { read, gates, owners } = gatedRead(db => setWorking(db))
+    const first = await importDocument(dxfReq(), { dwg: 'ok', timeoutMs: 20 })
+    expect(first).toMatchObject({ ok: false, failure: { code: 'timeout' } })
+    // B começa enquanto o read de A ainda corre
+    const second = importDocument(dxfReq(), { dwg: 'ok', timeoutMs: 5_000 })
     await flush()
-    // o `read` tardio tentou reinstalar-se: o loader repõe a anterior
+    expect(read).toHaveBeenCalledTimes(1)
+    gates[0].resolve()
+    await flush()
+    expect(read).toHaveBeenCalledTimes(2)
+    // a conclusão tardia de A foi revertida antes de B capturar a «anterior»
+    // e não pisa B, que é agora o dono
+    expect(working()).toBe(owners[1])
+    gates[1].resolve()
+    // B (read falso, sem layouts) falha na inspecção e repõe a que capturou
+    expect(await second).toMatchObject({
+      ok: false,
+      failure: { stage: 'inspect' }
+    })
     expect(working()).toBe(previous)
-    expect(out.ok).toBe(false)
   })
 
-  test('conclusão tardia não pisa uma importação posterior', async () => {
-    const gate = deferred()
-    jest
-      .spyOn(AcDbDatabase.prototype, 'read')
-      .mockImplementation(async function (this: AcDbDatabase) {
-        setWorking(this)
-        await gate.promise
-      })
+  test('conclusão tardia não pisa uma base instalada por outro dono', async () => {
+    const { gates } = gatedRead()
     await importDocument(dxfReq(), { dwg: 'ok', timeoutMs: 20 })
     const later = new AcDbDatabase()
     setWorking(later)
-    gate.resolve()
+    gates[0].resolve()
     await flush()
     expect(working()).toBe(later)
+  })
+
+  test('duas importações sobrepostas que falham (A depois B): a base anterior fica, nunca a de A', async () => {
+    const { read, gates } = gatedRead(() => {
+      throw new AcDbOpenDatabaseError('corrompido', 'parse_failed')
+    })
+    const a = importDocument(dxfReq(), { dwg: 'ok', timeoutMs: 5_000 })
+    const b = importDocument(dxfReq(), { dwg: 'ok', timeoutMs: 5_000 })
+    await flush()
+    gates[0]?.resolve()
+    await flush()
+    gates[1]?.resolve()
+    const outs = await Promise.all([a, b])
+    expect(outs.map(o => o.ok)).toEqual([false, false])
+    expect(read).toHaveBeenCalledTimes(2)
+    expect(working()).toBe(previous)
+  })
+
+  test('B espera que A largue a base: B captura a base anterior certa', async () => {
+    const { read, gates, owners } = gatedRead()
+    const a = importDocument(dxfReq(), { dwg: 'ok', timeoutMs: 5_000 })
+    const b = importDocument(dxfReq(), { dwg: 'ok', timeoutMs: 5_000 })
+    await flush()
+    expect(read).toHaveBeenCalledTimes(1)
+    gates[0].resolve()
+    const outA = await a
+    // A sem layouts (read falso): falha na inspecção e repõe a anterior
+    expect(outA).toMatchObject({ ok: false, failure: { stage: 'inspect' } })
+    await flush()
+    expect(read).toHaveBeenCalledTimes(2)
+    expect(owners[1]).not.toBe(owners[0])
+    gates[1].resolve()
+    await b
+    expect(working()).toBe(previous)
+  })
+
+  test.each([
+    ['sem layouts', 'parse', (): never[] => []],
+    [
+      'getter que lança',
+      'parse',
+      (): never => {
+        throw new Error('tabela de layouts corrompida')
+      }
+    ]
+  ] as const)(
+    'loader com sucesso mas inspecção falha (%s): repõe a base anterior',
+    async (_n, code, iterator) => {
+      const out = await importDocument(dxfReq(), {
+        dwg: 'ok',
+        load: async input => {
+          const db = await defaultLoader(input)
+          expect(working()).toBe(db)
+          jest
+            .spyOn(db.objects.layout, 'newIterator')
+            .mockImplementation(iterator as never)
+          return db
+        }
+      })
+      expect(out).toMatchObject({
+        ok: false,
+        failure: { code, stage: 'inspect' }
+      })
+      expect(working()).toBe(previous)
+    }
+  )
+
+  test('inspecção falha com base que o loader não instalou: a global não muda', async () => {
+    const other = new AcDbDatabase()
+    setWorking(other)
+    const empty = {
+      objects: { layout: { newIterator: () => [] } }
+    } as unknown as AcDbDatabase
+    const out = await importDocument(dxfReq(), {
+      dwg: 'ok',
+      load: async () => empty
+    })
+    expect(out).toMatchObject({ ok: false, failure: { stage: 'inspect' } })
+    expect(working()).toBe(other)
   })
 
   test('rejeição tardia (depois do timeout): sem rejeição não tratada e base anterior', async () => {

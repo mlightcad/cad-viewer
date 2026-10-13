@@ -29,13 +29,23 @@ export interface LoadInput {
   name: string
   format: ImportFormat
   bytes: ArrayBuffer
-  /** Abortado pelo importador ao expirar o tempo; o loader deve libertar recursos. */
+  /**
+   * Abortado pelo importador quando o tempo expira. O loader deve parar o que
+   * puder e TERMINAR (resolver ou rejeitar): a importação seguinte só começa
+   * depois disso.
+   */
   signal?: AbortSignal
   /** Tempo máximo da conversão (também usado pelo timeout do worker). */
   timeoutMs?: number
 }
 
-/** Converte `bytes` numa base de dados; lança em caso de falha. */
+/**
+ * Converte `bytes` numa base de dados; lança em caso de falha.
+ *
+ * Obrigações de um loader (spec §3.1): terminar sempre; se mudar a base de
+ * trabalho global e falhar, repô-la (o importador só repõe a que o loader
+ * devolveu); nunca a mudar depois de terminar.
+ */
 export type DocumentLoader = (input: LoadInput) => Promise<AcDbDatabase>
 
 /** Base de dados de trabalho global, ou `null` se ainda não existe nenhuma. */
@@ -52,6 +62,32 @@ function setWorkingDatabase(database: AcDbDatabase | null): void {
   acdbAssignWorkingDatabase(database as AcDbDatabase)
 }
 
+/** Repõe `previous` só se a global ainda for `database` (nunca pisa outro dono). */
+function rollbackWorkingDatabase(
+  database: unknown,
+  previous: AcDbDatabase | null
+): void {
+  if (currentWorkingDatabase() === database) setWorkingDatabase(previous)
+}
+
+/**
+ * Posse da base de trabalho global: uma importação de cada vez, desde a captura
+ * da base anterior até à inspecção ou, depois de um timeout, até o loader
+ * terminar de facto (`AcDbDatabase.read` não aceita AbortSignal). Assim duas
+ * aberturas sobrepostas nunca capturam uma base em curso como «anterior».
+ */
+let workingDatabaseTail: Promise<void> = Promise.resolve()
+
+function claimWorkingDatabase(): { ready: Promise<void>; release(): void } {
+  let release!: () => void
+  const held = new Promise<void>(resolve => {
+    release = resolve
+  })
+  const ready = workingDatabaseTail
+  workingDatabaseTail = ready.then(() => held)
+  return { ready, release }
+}
+
 function abortError(): Error {
   const error = new Error('importação cancelada')
   error.name = 'AbortError'
@@ -62,11 +98,12 @@ function abortError(): Error {
  * Loader por omissão: `AcDbDatabase.read` com os conversores registados.
  *
  * O `read` substitui a base de dados de trabalho global ANTES de converter (os
- * objectos sem dono resolvem-se contra ela). Para que uma falha, um timeout ou
- * uma conclusão tardia não deixem esse estado apontado a uma base de dados
- * descartada, a anterior é restaurada nesses casos — só se a global ainda for a
- * nossa (nunca se sobrepõe a uma importação posterior). Em sucesso a nova base
- * mantém-se como a de trabalho.
+ * objectos sem dono resolvem-se contra ela) e não aceita AbortSignal. Por isso,
+ * mesmo abortada, a nova base continua a ser a de trabalho enquanto o `read`
+ * corre (a conversão nunca se resolve contra o documento anterior); quando o
+ * `read` falha ou termina depois do abort, a anterior é reposta — só se a global
+ * ainda for a nossa. Em sucesso a nova base mantém-se como a de trabalho.
+ * Só é seguro através de `importDocument`, que serializa as importações.
  */
 export const defaultLoader: DocumentLoader = async ({
   name,
@@ -75,12 +112,9 @@ export const defaultLoader: DocumentLoader = async ({
   signal,
   timeoutMs
 }) => {
+  if (signal?.aborted) throw abortError()
   const previous = currentWorkingDatabase()
   const db = new AcDbDatabase()
-  const restore = () => {
-    if (currentWorkingDatabase() === db) setWorkingDatabase(previous)
-  }
-  signal?.addEventListener('abort', restore, { once: true })
   try {
     await db.read(
       bytes,
@@ -92,14 +126,12 @@ export const defaultLoader: DocumentLoader = async ({
       format === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
     )
   } catch (error) {
-    restore()
+    rollbackWorkingDatabase(db, previous)
     throw error
-  } finally {
-    signal?.removeEventListener('abort', restore)
   }
   if (signal?.aborted) {
     // conclusão tardia: ninguém vai usar este resultado (a referência morre aqui)
-    restore()
+    rollbackWorkingDatabase(db, previous)
     throw abortError()
   }
   return db
@@ -206,50 +238,76 @@ export async function importDocument(
     const load = deps.load ?? defaultLoader
     const timeoutMs = deps.timeoutMs ?? DEFAULT_IMPORT_TIMEOUT_MS
     const controller = new AbortController()
-    let timer: ReturnType<typeof setTimeout> | undefined
-    let database: AcDbDatabase | typeof TIMED_OUT
+    // o tempo conta desde aqui, incluindo a espera por uma importação anterior
+    const claim = claimWorkingDatabase()
+    let releaseWhenSettled = false
     try {
-      const loading = load({
-        name,
-        format,
-        bytes,
-        signal: controller.signal,
-        timeoutMs
+      let previous: AcDbDatabase | null = null
+      const loading = claim.ready.then(() => {
+        // expirou ainda na fila: o loader nunca chega a ser chamado
+        if (controller.signal.aborted) throw abortError()
+        previous = currentWorkingDatabase()
+        return load({
+          name,
+          format,
+          bytes,
+          signal: controller.signal,
+          timeoutMs
+        })
       })
       // se o tempo expirar, um resultado ou erro tardio é descartado sem ruído
       loading.catch(() => undefined)
-      database = await Promise.race([
-        loading,
-        new Promise<typeof TIMED_OUT>(resolve => {
-          timer = setTimeout(() => resolve(TIMED_OUT), timeoutMs)
-        })
-      ])
-    } catch (error) {
-      return fail(mapOpenError(error, { format, stage: 'convert' }))
-    } finally {
-      if (timer !== undefined) clearTimeout(timer)
-    }
-    if (database === TIMED_OUT) {
-      // sinaliza o loader (restaura a base de trabalho e liberta recursos)
-      controller.abort()
-      return fail(makeFailure('timeout', 'convert', `> ${timeoutMs} ms`))
-    }
+      let timer: ReturnType<typeof setTimeout> | undefined
+      let database: AcDbDatabase | typeof TIMED_OUT
+      try {
+        database = await Promise.race([
+          loading,
+          new Promise<typeof TIMED_OUT>(resolve => {
+            timer = setTimeout(() => resolve(TIMED_OUT), timeoutMs)
+          })
+        ])
+      } catch (error) {
+        return fail(mapOpenError(error, { format, stage: 'convert' }))
+      } finally {
+        if (timer !== undefined) clearTimeout(timer)
+      }
+      if (database === TIMED_OUT) {
+        // sinaliza o loader; a posse só é largada quando ele terminar de facto,
+        // e um resultado tardio nunca fica como base de trabalho
+        controller.abort()
+        releaseWhenSettled = true
+        void loading
+          .then(late => rollbackWorkingDatabase(late, previous))
+          .catch(() => undefined)
+          .then(claim.release)
+        return fail(makeFailure('timeout', 'convert', `> ${timeoutMs} ms`))
+      }
 
-    const layouts = listLayouts(database)
-    const active = pickActiveLayout(layouts)
-    if (!active) {
-      return fail(makeFailure('parse', 'inspect', 'documento sem layouts'))
+      let committed = false
+      try {
+        const layouts = listLayouts(database)
+        const active = pickActiveLayout(layouts)
+        if (!active) {
+          return fail(makeFailure('parse', 'inspect', 'documento sem layouts'))
+        }
+        const document: ImportedDocument = {
+          name,
+          format,
+          byteLength,
+          layouts,
+          activeLayoutId: active.btrId,
+          database
+        }
+        if (sniff.dwgVersion) document.dwgVersion = sniff.dwgVersion
+        committed = true
+        return { ok: true, document }
+      } finally {
+        // inspecção falhou (sem layouts ou excepção): repõe a base anterior
+        if (!committed) rollbackWorkingDatabase(database, previous)
+      }
+    } finally {
+      if (!releaseWhenSettled) claim.release()
     }
-    const document: ImportedDocument = {
-      name,
-      format,
-      byteLength,
-      layouts,
-      activeLayoutId: active.btrId,
-      database
-    }
-    if (sniff.dwgVersion) document.dwgVersion = sniff.dwgVersion
-    return { ok: true, document }
   } catch (error) {
     // salvaguarda: um defeito interno nunca escapa como excepção
     return fail(
