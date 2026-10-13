@@ -232,6 +232,15 @@ importers:
         specifier: ^0.172.0
         version: 0.172.0
 
+  packages/cad-mobile-viewer:
+    dependencies:
+      '@mlightcad/data-model':
+        specifier: ^1.15.7
+        version: 1.15.7
+      '@mlightcad/libredwg-converter':
+        specifier: ^3.15.7
+        version: 3.15.7(@mlightcad/data-model@1.15.7)
+
   packages/cad-onedrive-plugin:
     dependencies:
       '@azure/msal-browser':
