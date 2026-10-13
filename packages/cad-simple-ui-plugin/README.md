@@ -15,7 +15,7 @@ This plugin provides ready-to-use CAD viewer chrome without Vue, React, or Eleme
 - Locale follows `AcApI18n.currentLocale` automatically
 - Layer list in a dock panel tab (name, visibility, color), opened from the toolbar layer button
 - Review palette in a dock panel tab (markup list, status, comments), opened from the Review toolbar button (`markuppanel`)
-- Text search (**Find**) in a dock panel tab: TEXT, MTEXT and block attributes of the active layout, click-to-zoom with selection, opened from the Find toolbar button (`find`)
+- Text search (**Find**) in a dock panel tab: TEXT, MTEXT, block attributes and block-definition text, dimension, multileader and table text of the whole drawing (or the current layout), click-to-zoom with selection, opened from the Find toolbar button (`find`)
 - Chrome DevTools-style **dock panel** with tabs, open/close, dock side (bottom/left/right), and resize handle
 - ACI color picker for layer colors
 - Layer UI opens from the toolbar button or the `layer` command (opens dock when closed, switches to layers tab when open)
