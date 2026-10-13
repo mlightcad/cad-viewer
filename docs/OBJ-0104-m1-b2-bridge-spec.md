@@ -26,16 +26,16 @@ Fonte vinculativa: `docs/OBJ-0104-architecture.md` §§2, 5–7, 11 e D-4. Sem p
 
 ## 4. Gates (em `apps/freedom-mobile`)
 
-| Gate                                                        | Resultado                                                                                                                         |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `npm test` (`node:test`)                                    | 137/137 verdes (protocolo 37, BridgeClient 34, shell 15, state 51)                                                                |
-| `npm run typecheck` (TS 6.0.3, `strict`)                    | rc=0                                                                                                                              |
-| `pnpm exec eslint apps/freedom-mobile/src App.tsx index.ts` | rc=0                                                                                                                              |
-| `pnpm exec prettier --check apps/freedom-mobile/src`        | verde                                                                                                                             |
-| `git diff --check`                                          | rc=0                                                                                                                              |
-| `expo export --platform android` (Metro)                    | OK, `.hbc` 1,5 MB                                                                                                                 |
-| `jest --listTests` (raiz) em `/apps/`                       | 0                                                                                                                                 |
-| Base `d1568b73` vs HEAD                                     | os 28 testes do B1 + 3 de recuperação tardia mantêm-se verdes; sem ficheiros fora de `apps/freedom-mobile/**` e `docs/OBJ-0104-*` |
+| Gate                                                        | Resultado                                                                                                                                                                                            |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm test` (`node:test`)                                    | 149/149 verdes (protocolo 37, BridgeClient 42, shell 15, state 55)                                                                                                                                   |
+| `npm run typecheck` (TS 6.0.3, `strict`)                    | rc=0                                                                                                                                                                                                 |
+| `pnpm exec eslint apps/freedom-mobile/src App.tsx index.ts` | rc=0                                                                                                                                                                                                 |
+| `pnpm exec prettier --check apps/freedom-mobile/src`        | verde                                                                                                                                                                                                |
+| `git diff --check`                                          | rc=0                                                                                                                                                                                                 |
+| `expo export --platform android` (Metro)                    | OK, `.hbc` 1,5 MB                                                                                                                                                                                    |
+| `jest --listTests` (raiz) em `/apps/`                       | 0                                                                                                                                                                                                    |
+| Base `d1568b73` vs HEAD                                     | os 28 testes do B1 + 3 de recuperação tardia (shell) + 12 de recuperação tardia (BridgeClient/session/document) mantêm-se verdes; sem ficheiros fora de `apps/freedom-mobile/**` e `docs/OBJ-0104-*` |
 
 ## 5. Limitações / pendentes
 
@@ -44,3 +44,30 @@ Fonte vinculativa: `docs/OBJ-0104-architecture.md` §§2, 5–7, 11 e D-4. Sem p
 - UI de FIND (lista, contador, prev/next, insets) é I3; o estado/protocolo já existem. `ViewerScreen` não envia comandos ainda (sem botões): a ligação está feita mas só é exercitada por testes de integração com viewer simulado.
 - `jest.config.ts` não tocado (testes `*.node-test.ts`).
 - O commit `db9f45ab` (TypeScript ~6.0.3, `package.json`/lock) é de outra sessão (engineer-glm), anterior a este card.
+
+## 6. Âmbito face ao follow-up `t_254a5902` (reconciliação)
+
+Fontes vinculativas (`docs/OBJ-0104-architecture.md`):
+
+- §3.2 «Permitido»: «`apps/freedom-mobile/**`, `packages/cad-mobile-viewer/**`, `docs/OBJ-0104-*.md`, `jest.config.ts` (só `testPathIgnorePatterns`/`moduleNameMapper` para o novo pacote), …». Todos os 28 ficheiros de `origin/main..HEAD` caem em `apps/freedom-mobile/**` ou `docs/OBJ-0104-*.md`; `jest.config.ts`, `packages/**` e `pnpm-lock.yaml` não são tocados.
+- §11, linha **I2**: «Toca: … `apps/freedom-mobile/src/bridge/BridgeClient.ts`, …»; linha **I3**: «Toca: `apps/freedom-mobile/src/screens/Find*.tsx`, `src/state/find.ts`. Não toca viewer.». `BridgeClient.ts` e `state/find.ts` são, portanto, caminhos previstos; `contracts/protocol.ts` (tipos §5.2), `state/{document,session,describe}.ts` e `ViewerScreen`/`ViewerSurface` ficam sob o «Permitido» de §3.2 e implementam §5–§6.4 e D-4.
+- Card `t_c3ae146f` (M1 B2), fonte «`docs/OBJ-0104-architecture.md` §2, §5–§7, §11, D-4»: é o card de implementação vivo desta branch partilhada e autoriza o contrato, o cliente e o estado.
+
+Classificação do delta `origin/main..HEAD`:
+
+| Grupo                                                                                                                | Commits                                                    | Pertence a                                 |
+| -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------ |
+| Docs/arquitectura, shell B1, specs B1                                                                                | `e60893ce` … `d1568b73`                                    | stream do objectivo (M0/M1-B1), já revisto |
+| Follow-up TypeScript `~6.0.3` (`package.json`, lock)                                                                 | `db9f45ab`                                                 | `t_c2d1877c`                               |
+| Follow-up `ready` tardio, camada shell (`shellState.ts` + teste)                                                     | `531f82ef`                                                 | `t_37f549f1`                               |
+| Rework: recuperação coerente BridgeClient/shell/documento + testes (`BridgeClient.node-test`, `document`, `session`) | `fde7b3e8`                                                 | `t_254a5902` (finding 2)                   |
+| Contrato, `BridgeClient`, estado, ecrã, esta spec                                                                    | `bafa36d9`, `53b4013c`, `ece6717a`, `36a7ecee`, `80a72923` | `t_c3ae146f` (M1-B2), **não** do follow-up |
+
+O follow-up original é independente do M1-B2: `db9f45ab` + `531f82ef` aplicados sobre `d1568b73` (sem nenhum commit M1-B2) alteram só `package.json`, `package-lock.json`, `shellState.ts` e `shellState.node-test.ts`, e passam `npm test` (31/31), `npm run typecheck`, `expo install --check` e `git diff --check`. Só o `fde7b3e8` toca ficheiros M1-B2, porque a recuperação tardia exigida pelo rework atravessa o `BridgeClient` e o estado do documento, que só existem no M1-B2.
+
+Desvios que **esta spec não ratifica** (decisão do CTO/Kevin):
+
+1. **Ordem**: §11 sequencia «B0 → B1 → B2 → S1 → I1/T1 → I2 → I3», i.e. `BridgeClient`/`find.ts` (I2/I3) depois de S1/I1; o card M1-B2 antecipou o lado app. Os caminhos são os do §11/§3.2; a antecipação não está prevista.
+2. **Boundaries do card `t_c3ae146f`** («Somente `apps/viewer/**` e `packages/viewer/**`»): caminhos inexistentes; a arquitectura fixa `apps/freedom-mobile/` (D-9, §3.1). Ver §1.
+
+Consequência para a revisão do follow-up: rever `db9f45ab`, `531f82ef` e `fde7b3e8` (base `d1568b73`), não `origin/main..HEAD` inteiro; os restantes commits M1-B2 são revistos no card `t_c3ae146f`.
