@@ -226,6 +226,23 @@ describe('buildSvgMText', () => {
     expect(localSvg).toContain('translate(0,0)')
   })
 
+  it('keeps \\pxql across paragraphs in a TopCenter wrap frame', () => {
+    const { localSvg } = buildSvgMText(
+      {
+        text: '\\pxql;AA\\PBB',
+        height: 10,
+        width: 100,
+        position: { x: 0, y: 0, z: 0 },
+        attachmentPoint: AcGiMTextAttachmentPoint.TopCenter
+      } as never,
+      { font: 'Arial' } as never,
+      createTraits(),
+      ctx
+    )
+
+    expect(localSvg).toContain('translate(-50,')
+  })
+
   it('applies attachment point offset for middle-center anchoring', () => {
     const { localSvg } = buildSvgMText(
       {

@@ -152,7 +152,7 @@ describe('AcTrPolygon patterned hatch origin-shift', () => {
     )
   })
 
-  it('leaves solid fills in WCS without mesh translation', () => {
+  it('origin-shifts solid fills so float32 vertices stay local (#724)', () => {
     const polygon = new AcTrPolygon(
       createRectangularArea(5, 10, 25, 30),
       defaultTraits,
@@ -160,17 +160,13 @@ describe('AcTrPolygon patterned hatch origin-shift', () => {
     )
 
     const mesh = getFirstMesh(polygon)
-    expect(mesh.position.x).toBe(0)
-    expect(mesh.position.y).toBe(0)
+    expect(mesh.position.x).toBeCloseTo(15, 5)
+    expect(mesh.position.y).toBeCloseTo(20, 5)
 
     const position = mesh.geometry.getAttribute('position')
-    let sawWorldX = false
     for (let i = 0; i < position.count; i++) {
-      if (position.getX(i) >= 5) {
-        sawWorldX = true
-        break
-      }
+      expect(Math.abs(position.getX(i))).toBeLessThan(20)
+      expect(Math.abs(position.getY(i))).toBeLessThan(20)
     }
-    expect(sawWorldX).toBe(true)
   })
 })

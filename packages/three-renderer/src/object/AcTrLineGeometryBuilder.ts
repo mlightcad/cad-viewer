@@ -345,23 +345,21 @@ function segmentsProperlyIntersect(
 }
 
 /**
- * Builds WCS-coordinate triangle geometry from a small fill loop.
- *
- * Vertices keep their WCS coordinates so the subsequent
- * `worldOffset`-driven rebase is identical to the general
- * {@link AcTrPolygon} path.
+ * Builds triangle geometry from a small fill loop, already translated by
+ * `worldOffset` so the Float32Array never stores large WCS coordinates.
  */
 function buildSmallFillLoopMesh(
-  loop: AcTrSmallFillLoopGeometry
+  loop: AcTrSmallFillLoopGeometry,
+  worldOffset: THREE.Vector3
 ): THREE.BufferGeometry {
   const vertexCount = loop.points.length
   const positions = new Float32Array(vertexCount * 3)
   let offset = 0
   for (let i = 0; i < vertexCount; i++) {
     const point = loop.points[i]
-    positions[offset++] = point.x
-    positions[offset++] = point.y
-    positions[offset++] = 0
+    positions[offset++] = point.x - worldOffset.x
+    positions[offset++] = point.y - worldOffset.y
+    positions[offset++] = 0 - worldOffset.z
   }
 
   const geometry = new THREE.BufferGeometry()
@@ -530,7 +528,8 @@ export function buildPointGeometry(
  */
 function buildOffsetRingMesh(
   outer: AcGePoint3dLike[],
-  inner: AcGePoint3dLike[]
+  inner: AcGePoint3dLike[],
+  worldOffset: THREE.Vector3
 ): THREE.BufferGeometry | null {
   const outerCount = openLoopCount(outer)
   const innerCount = openLoopCount(inner)
@@ -561,13 +560,13 @@ function buildOffsetRingMesh(
     ) {
       return null
     }
-    positions[i * 3] = outerPoint.x
-    positions[i * 3 + 1] = outerPoint.y
-    positions[i * 3 + 2] = outerPoint.z ?? 0
+    positions[i * 3] = outerPoint.x - worldOffset.x
+    positions[i * 3 + 1] = outerPoint.y - worldOffset.y
+    positions[i * 3 + 2] = (outerPoint.z ?? 0) - worldOffset.z
     const innerOffset = (outerCount + i) * 3
-    positions[innerOffset] = innerPoint.x
-    positions[innerOffset + 1] = innerPoint.y
-    positions[innerOffset + 2] = innerPoint.z ?? 0
+    positions[innerOffset] = innerPoint.x - worldOffset.x
+    positions[innerOffset + 1] = innerPoint.y - worldOffset.y
+    positions[innerOffset + 2] = (innerPoint.z ?? 0) - worldOffset.z
   }
 
   const indices = new Uint32Array(outerCount * 6)
@@ -612,7 +611,12 @@ export function buildOffsetRingDirectGeometry(
   traits: AcGiSubEntityTraits,
   context: AcTrRenderContext
 ): AcTrBuiltDirectGeometry | null {
-  const geometry = buildOffsetRingMesh(outer, inner)
+  const wcsBbox = computeWcsBboxFromPoints([...outer, ...inner])
+  if (wcsBbox.isEmpty()) {
+    return null
+  }
+  const worldOffset = wcsBbox.getCenter(new THREE.Vector3())
+  const geometry = buildOffsetRingMesh(outer, inner, worldOffset)
   if (!geometry) return null
   const boundingBox = AcTrBufferGeometryUtil.safeComputeBoundingBox(geometry)
   if (!boundingBox || boundingBox.isEmpty()) {
@@ -620,9 +624,6 @@ export function buildOffsetRingDirectGeometry(
     return null
   }
   _areaBuildStats.offsetRingFastPath++
-  const wcsBbox = boundingBox.clone()
-  const worldOffset = wcsBbox.getCenter(new THREE.Vector3())
-  rebaseGeometryPositions(geometry, worldOffset)
   return {
     kind: 'mesh',
     geometry,
@@ -724,9 +725,17 @@ export function buildAreaGeometry(
   let geometry: THREE.BufferGeometry
   let resolvedMaterial: THREE.Material | undefined
 
+  let capturedWorldOffset: THREE.Vector3 | undefined
+
   if (smallLoop) {
     _areaBuildStats.smallLoopFastPath++
-    geometry = buildSmallFillLoopMesh(smallLoop)
+    const wcsPoints = smallLoop.points.map(point => ({
+      x: point.x,
+      y: point.y,
+      z: 0
+    }))
+    capturedWorldOffset = computeLocalOrigin(wcsPoints)
+    geometry = buildSmallFillLoopMesh(smallLoop, capturedWorldOffset)
     resolvedMaterial = context.styleManager.getFillMaterial(traits)
   } else {
     _areaBuildStats.generalPath++
@@ -738,6 +747,14 @@ export function buildAreaGeometry(
         meshGeometries.push(object.geometry.clone())
         if (!resolvedMaterial && object.material instanceof THREE.Material) {
           resolvedMaterial = object.material
+        }
+        if (
+          !capturedWorldOffset &&
+          (object.position.x !== 0 ||
+            object.position.y !== 0 ||
+            object.position.z !== 0)
+        ) {
+          capturedWorldOffset = object.position.clone()
         }
       }
     })
@@ -773,9 +790,14 @@ export function buildAreaGeometry(
     return null
   }
 
-  const wcsBbox = boundingBox.clone()
-  const worldOffset = wcsBbox.getCenter(new THREE.Vector3())
-  rebaseGeometryPositions(geometry, worldOffset)
+  const worldOffset =
+    capturedWorldOffset ?? boundingBox.getCenter(new THREE.Vector3())
+  const wcsBbox = capturedWorldOffset
+    ? boundingBox.clone().translate(capturedWorldOffset)
+    : boundingBox.clone()
+  if (!capturedWorldOffset) {
+    rebaseGeometryPositions(geometry, worldOffset)
+  }
 
   const gradientBounds = {
     minX: wcsBbox.min.x,

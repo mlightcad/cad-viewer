@@ -289,7 +289,7 @@ export function buildSvgMText(
   )
 
   const parser = new MTextParser(text, initialCtx, {
-    resetParagraphParameters: true,
+    resetParagraphParameters: false,
     yieldPropertyCommands: true
   })
   const layout = new MTextSvgLayout(
@@ -311,7 +311,17 @@ export function buildSvgMText(
   layout.finish()
 
   const bounds = layout.bounds
-  const attachment = computeAttachmentOffset(mtext.attachmentPoint, bounds)
+  // AutoCAD pins attachment to the defined wrap rectangle, not the glyph
+  // AABB. Otherwise TopCenter+`\pxql` notes collapse onto the insertion
+  // point after the content is left-aligned inside a wide frame.
+  const attachmentBounds: LayoutBounds =
+    wrapWidth != null
+      ? { ...bounds, minX: 0, maxX: wrapWidth }
+      : bounds
+  const attachment = computeAttachmentOffset(
+    mtext.attachmentPoint,
+    attachmentBounds
+  )
   const { x, y } = position
   const rotDeg = (resolveRotation(mtext) * 180) / Math.PI
 
@@ -579,7 +589,11 @@ class MTextSvgLayout {
   }
 
   private applyPropertyChange(item: ChangedProperties) {
-    if (item.changes.paragraph?.align != null && this.currentLine) {
+    if (
+      item.changes.paragraph?.align != null &&
+      item.changes.paragraph.align !== MTextParagraphAlignment.DEFAULT &&
+      this.currentLine
+    ) {
       this.currentLine.paragraphAlign = item.changes.paragraph.align
     }
 
