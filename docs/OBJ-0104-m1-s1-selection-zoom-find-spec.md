@@ -55,7 +55,7 @@ Prova nomeada: `describe('FIND priority (D-4)')` em `src/state/findPriority.node
 1. Esta spec (docs-only).
 2. `src/fixtures/{syntheticDocuments,syntheticViewer,harness}.ts` + `syntheticViewer.node-test.ts`: viewer e harness determinísticos (respostas só entregues em `flush()`, relógio falso).
 3. `state/selection.ts` (+ teste), integração em `session.ts`/`describe.ts`, reposição do zoom, texto no `ViewerScreen`.
-4. `state/findFlow.node-test.ts` (seleção/zoom/FIND, loading/erro) e `state/findPriority.node-test.ts` (D-4).
+4. `state/selection.node-test.ts` (reducer), `state/findFlow.node-test.ts` (seleção/zoom/FIND, loading/erro) e `state/findPriority.node-test.ts` (D-4: testes `FIND priority (D-4) P1…P5`, mais `P3b`).
 5. Reconciliação desta spec com os números finais + gates.
 
 ## 6. Gates e limitações
@@ -63,3 +63,22 @@ Prova nomeada: `describe('FIND priority (D-4)')` em `src/state/findPriority.node
 Gates (em `apps/freedom-mobile` e raiz): `npm test` (`node:test`), `npm run typecheck`, `pnpm exec eslint` do app, `prettier --check` exacto no delta, `git diff --check origin/main...HEAD`, `detect_changes` (codebase-memory). Resultados na secção «Evidência» no fim deste ficheiro, preenchida no último commit.
 
 Limitações conhecidas: sem viewer real nem DXF/DWG (fixtures sintéticas); sem G-man (sem emulador/JDK; iOS sem Xcode); `layoutCount`, «`find` limpa o realce» e `zoom out`+`factor` são [H] a fechar em I1; `ViewerScreen` não envia comandos (I3/I4).
+
+Notas de implementação face ao §3.1: `unavailable` mantém o último hit quando o viewer não mudou (layout em falta, `stale-find`, rejeição local) e fica **sem hit** quando o estado do viewer é desconhecido (`invalid-index`). `clearHighlight` limpa só o realce: a posição na lista (`find.activeIndex`) mantém-se e «Seguinte» continua dali. `findActive{no-document}` limpa a seleção; o `error{no-document}` do viewer sintético marca a navegação `unavailable` com a causa.
+
+## 7. Evidência
+
+Ponto de verificação dos gates: commit de código `e125ad1b` (os commits seguintes só tocam este ficheiro). Resultados em `apps/freedom-mobile`, worktree limpa:
+
+| Gate                                                                            | Resultado                                                                                                                                |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm test` (`node:test`)                                                        | **224/224** (162 pré-existentes + 62 novos: viewer sintético 24, seleção 11, fluxos 21, `FIND priority (D-4)` 6); 0 falhas               |
+| `npm run typecheck` (strict)                                                    | rc=0                                                                                                                                     |
+| `pnpm exec eslint apps/freedom-mobile/src App.tsx index.ts` (raiz, via `heavy`) | rc=0 (após `--fix` de `simple-import-sort`)                                                                                              |
+| `prettier --check` no delta `f848e0e9..HEAD`                                    | verde                                                                                                                                    |
+| `git diff --check origin/main...HEAD`                                           | rc=0                                                                                                                                     |
+| `expo export --platform android` (Metro, via `heavy`)                           | OK                                                                                                                                       |
+| `jest --listTests` (raiz) em `/apps/`                                           | 0                                                                                                                                        |
+| Mutação (sanidade dos testes)                                                   | desactivar a protecção de evicção do `BridgeClient` faz falhar `P1`; fazer o zoom limpar a seleção faz falhar 2 testes; ambos revertidos |
+
+Fora das fronteiras: nenhum ficheiro tocado em `packages/**`, `jest.config.ts`, `pnpm-lock.yaml` nem em e2e/web/API. Não executado: G-man / revisão visual em emulador ou desktop e alvos ≥44px (este card não acrescenta controlos; só linhas de texto em `ViewerScreen`).
