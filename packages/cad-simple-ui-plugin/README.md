@@ -207,6 +207,8 @@ Searched fields:
 | `MULTILEADER`                                    | `contents`                                                                                             | formatting codes removed                                                                                                                                                        |
 | `ACAD_TABLE`                                     | cell text                                                                                              | from the table block, otherwise the cell strings                                                                                                                                |
 
+`DIMENSION`, `MULTILEADER` and `ACAD_TABLE` are searched as top-level entities only (in model space or a layout); they are not visited inside block definitions, so such an entity nested in a block is not found. Top-level `INSERT` attributes and the `TEXT` / `MTEXT` / `ATTRIB` / constant `ATTDEF` text inside block definitions are searched as described above.
+
 Matching:
 
 - Partial (substring) match; the query is trimmed and runs of whitespace collapse to one space
