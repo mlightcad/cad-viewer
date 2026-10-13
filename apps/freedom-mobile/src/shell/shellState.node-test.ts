@@ -62,14 +62,23 @@ describe('shellState', () => {
   })
 
   it('ignores invalid messages without throwing and without changing state', () => {
-    for (const raw of ['{nope', '{}', '{"v":9,"id":"x","type":"ready","payload":{}}']) {
+    for (const raw of [
+      '{nope',
+      '{}',
+      '{"v":9,"id":"x","type":"ready","payload":{}}'
+    ]) {
       const s = shellReducer(initialShellState, { type: 'viewer-message', raw })
       assert.deepEqual(s, initialShellState)
     }
   })
 
   it('ignores non-lifecycle messages (reserved FIND/…) in B1', () => {
-    const raw = JSON.stringify({ v: 1, id: 'w-2', type: 'findResult', payload: {} })
+    const raw = JSON.stringify({
+      v: 1,
+      id: 'w-2',
+      type: 'findResult',
+      payload: {}
+    })
     const s = shellReducer(initialShellState, { type: 'viewer-message', raw })
     assert.deepEqual(s, initialShellState)
   })
@@ -122,7 +131,9 @@ describe('describeViewerStatus (PT-PT)', () => {
     })
     assert.match(describeViewerStatus(ready_), /DWG indispon[ií]vel/)
     assert.match(
-      describeViewerStatus(shellReducer(initialShellState, { type: 'ready-timeout' })),
+      describeViewerStatus(
+        shellReducer(initialShellState, { type: 'ready-timeout' })
+      ),
       /não arrancou/
     )
     const gone = shellReducer(ready_, { type: 'process-gone' })

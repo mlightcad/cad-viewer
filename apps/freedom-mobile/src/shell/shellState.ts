@@ -43,7 +43,10 @@ export const initialShellState: ShellState = {
   generation: 0
 }
 
-export function shellReducer(state: ShellState, action: ShellAction): ShellState {
+export function shellReducer(
+  state: ShellState,
+  action: ShellAction
+): ShellState {
   switch (action.type) {
     case 'viewer-message': {
       const parsed = parseViewerMessage(action.raw)

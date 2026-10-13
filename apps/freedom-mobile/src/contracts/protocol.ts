@@ -44,7 +44,10 @@ export const VIEWER_TO_APP_TYPES = [
 ] as const
 export type ViewerToAppType = (typeof VIEWER_TO_APP_TYPES)[number]
 
-export interface Envelope<T extends string = string, P = Record<string, unknown>> {
+export interface Envelope<
+  T extends string = string,
+  P = Record<string, unknown>
+> {
   v: typeof PROTOCOL_VERSION
   id: string
   type: T
@@ -202,7 +205,7 @@ export function isReadyPayload(p: unknown): p is ReadyPayload {
     typeof p.viewerVersion === 'string' &&
     p.protocol === PROTOCOL_VERSION &&
     Array.isArray(p.caps) &&
-    p.caps.every((c) => c === 'find' || c === 'dwg' || c === 'dxf') &&
+    p.caps.every(c => c === 'find' || c === 'dwg' || c === 'dxf') &&
     (p.dwg === 'ok' || p.dwg === 'unavailable')
   )
 }

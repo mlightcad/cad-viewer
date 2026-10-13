@@ -1,0 +1,26 @@
+{
+  "name": "freedom-mobile",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Freedom DWG/CAD Viewer — shell Expo (OBJ-0104)",
+  "license": "GPL-3.0-or-later",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test \"src/**/*.node-test.ts\""
+  },
+  "dependencies": {
+    "expo": "^57.0.28",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-webview": "13.16.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "~19.2.0",
+    "typescript": "^7.0.2"
+  }
+}
