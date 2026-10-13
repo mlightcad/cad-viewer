@@ -113,12 +113,15 @@ export function findReducer(
       const p = event.payload
       if (state.status !== 'results' || p.findId !== state.findId) return state
       if (p.outcome === 'navigated') {
-        // Um índice fora dos hits recebidos não é navegação válida: não se marca
-        // item nenhum e a navegação fica explicitamente indisponível.
+        // Um índice fora dos hits recebidos não é navegação válida: fail-closed,
+        // a selecção anterior também cai (-1 = nenhum hit activo) para que
+        // `describeFind` não mostre uma posição ao lado de "indisponível".
         if (p.index < 0 || p.index >= state.hits.length) {
           return {
             ...state,
+            activeIndex: -1,
             navigation: 'unavailable',
+            lastOutcome: null,
             error: {
               code: 'invalid-index',
               message: `o viewer indicou o resultado ${p.index}, fora dos ${state.hits.length} resultados`

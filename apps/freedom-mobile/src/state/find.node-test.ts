@@ -8,6 +8,7 @@ import type {
   FindActivePayload,
   FindResultPayload
 } from '../contracts/protocol.ts'
+import { describeFind } from './describe.ts'
 import { findReducer, type FindState, initialFindState } from './find.ts'
 
 const sentFind = (id = 'a-2', query = 'CARIMBO'): BridgeEvent => ({
@@ -123,14 +124,36 @@ describe('findReducer', () => {
     assert.equal(s.activeIndex, -1)
   })
 
-  it('a navigated index outside the hits is unavailable, never an active hit', () => {
+  it('a navigated index outside the hits fails closed: no active hit, not even the previous one', () => {
     const base = run([sentFind(), result('a-2', 3), active({ index: 1 })])
-    for (const index of [3, 99, -1]) {
+    assert.equal(base.activeIndex, 1)
+    for (const index of [3, 99, -1, -2]) {
       const s = run([sentNav('goto'), active({ index })], base)
-      assert.equal(s.activeIndex, 1, `index ${index}`)
-      assert.equal(s.navigation, 'unavailable')
-      assert.equal(s.error?.code, 'invalid-index')
+      assert.equal(s.activeIndex, -1, `index ${index}`)
+      assert.equal(s.navigation, 'unavailable', `index ${index}`)
+      assert.equal(s.error?.code, 'invalid-index', `index ${index}`)
+      assert.equal(s.lastOutcome, null, `index ${index}`)
+      // A lista mantém-se; só a posição activa cai.
+      assert.equal(s.status, 'results')
+      assert.equal(s.hits.length, 3)
+      // O texto não mostra posição ao lado de "indisponível".
+      const text = describeFind(s) ?? ''
+      assert.match(text, /^3 resultados — navegação indisponível: /, text)
+      assert.doesNotMatch(text, /\d+ \/ /, text)
     }
+  })
+
+  it('an invalid index with no previous selection stays at -1 and a later valid navigation recovers', () => {
+    const base = run([sentFind(), result('a-2', 3)])
+    const bad = run([sentNav('goto'), active({ index: 7 })], base)
+    assert.equal(bad.activeIndex, -1)
+    assert.equal(bad.navigation, 'unavailable')
+    const ok = run([sentNav('findNext'), active({ index: 2 })], bad)
+    assert.equal(ok.activeIndex, 2)
+    assert.equal(ok.navigation, 'ok')
+    assert.equal(ok.lastOutcome, 'navigated')
+    assert.equal(ok.error, null)
+    assert.match(describeFind(ok) ?? '', /^3 \/ 3 resultados$/)
   })
 
   it('a rejected automatic goto flags navigation unavailable and keeps the list', () => {

@@ -810,3 +810,60 @@ describe('BridgeClient — rework M1-B2 (t_ffb4eb41)', () => {
     assert.equal(kinds(events).includes('command-rejected'), false)
   })
 })
+
+describe('BridgeClient — correlated not-ready rejection (OBJ-0104 M2)', () => {
+  /**
+   * A ponte não regride sozinha de `ready` para `booting`; força-se o estado
+   * para exercitar o ramo `not-ready` de `send` com o `onReject` do chamador.
+   */
+  const forceBooting = (client: BridgeClient) => {
+    ;(client as unknown as { phaseValue: string }).phaseValue = 'booting'
+  }
+
+  it('an automatic goto rejected as not-ready emits find-navigation-failed for that search', () => {
+    const { client, events, injected } = setup()
+    client.receive(wire('ready', READY))
+    const f = client.find({ query: 'A', matchCase: false, scope: 'drawing' })
+    assert.ok(f.ok)
+    forceBooting(client)
+    client.receive(wire('findResult', findResult(7, 2), f.id))
+
+    assert.equal(last(events, 'find-result').replyTo, f.id)
+    const e = last(events, 'find-navigation-failed')
+    assert.equal(e.replyTo, f.id)
+    assert.equal(e.findId, 7)
+    assert.deepEqual(e.error, {
+      code: 'not-ready',
+      message: 'o viewer ainda não está pronto (goto)'
+    })
+    // Uma só vez, sem `command-rejected` anónimo e sem `goto` entregue ao viewer.
+    assert.equal(
+      kinds(events).filter(k => k === 'find-navigation-failed').length,
+      1
+    )
+    assert.equal(kinds(events).includes('command-rejected'), false)
+    assert.deepEqual(
+      injected.map(m => m.type),
+      ['find']
+    )
+  })
+
+  it('public commands before ready keep the default command-rejected with a SendOutcome', () => {
+    const { client, events, injected } = setup()
+    const r = client.find({ query: 'a', matchCase: false, scope: 'drawing' })
+    assert.deepEqual(r, {
+      ok: false,
+      error: {
+        code: 'not-ready',
+        message: 'o viewer ainda não está pronto (find)'
+      }
+    })
+    const rejected = events.filter(e => e.kind === 'command-rejected')
+    assert.equal(rejected.length, 1)
+    const e = last(events, 'command-rejected')
+    assert.equal(e.command, 'find')
+    assert.equal(e.error.code, 'not-ready')
+    assert.equal(kinds(events).includes('find-navigation-failed'), false)
+    assert.equal(injected.length, 0)
+  })
+})

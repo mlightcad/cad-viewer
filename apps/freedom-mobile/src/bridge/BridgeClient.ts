@@ -277,7 +277,7 @@ export class BridgeClient {
     if (this.phaseValue === 'booting') {
       // §5.1: antes de `ready` só um `open` pendente; o mais recente substitui.
       if (type !== 'open') {
-        return this.reject(type, {
+        return onReject(type, {
           code: 'not-ready',
           message: `o viewer ainda não está pronto (${type})`
         })
