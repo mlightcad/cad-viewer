@@ -85,4 +85,5 @@ Versões fixadas (P-3): `expo ^57.0.28`, `react 19.2.3`, `react-native 0.86.3`, 
 - `ready` tem timeout de 15 s [H]; a WebView carrega `about:blank`, logo em B1 o estado cai sempre em "não arrancou" ao fim de 15 s (comportamento esperado até S1/I2 ligarem o bundle).
 
 ### contract_precedence (caminhos)
+
 O texto de Boundaries do card cita `apps/viewer/**` e `packages/viewer/**` "já existentes"; `git ls-files` não tem nenhum deles. A fonte vinculativa fixa outro caminho: `docs/OBJ-0104-architecture.md:34` (D-9: "O app Expo vive em `apps/freedom-mobile/`… bundle do viewer… `packages/cad-mobile-viewer/`"), `:116` (App Expo → `apps/freedom-mobile/`, novo em B1, npm com `package-lock.json` local) e `:353` (P-2 aplicado: `apps/freedom-mobile/` neste repo). Prevalece a arquitectura; o `package-lock.json` local é o previsto em `:116` (só `registry.npmjs.org`, sem caminhos locais, `npm ci --dry-run` ok).
