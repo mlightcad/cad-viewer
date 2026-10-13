@@ -332,3 +332,31 @@ Notas de sequência:
 | 4. Licença não-gate; GPL-3.0-or-later; ecrã Acerca/Licenças; sem promessa de publicação | D-1, D-6, D-7, §8 |
 | 5. Higiene pública; externas separadas | §9, §10 |
 | 6. Checkout limpo, `git diff --check`, SHA/base | relatório final do card (fora deste ficheiro) |
+
+## Anexo — Base fixada (B0)
+
+Anexo exigido pelo card B0 (§11). Apenas documentação; nada em §§0–13 foi alterado, nenhum código de produto, configuração, lockfile ou e2e foi tocado, e não houve contacto nem alteração ao upstream `mlightcad`.
+
+### A.1 SHAs e refs verificados
+| Item | Valor |
+|---|---|
+| Branch do card | `cad-viewer/t_69c32932-obj-0104-scoping-expo-mobile-freedom-dwg` |
+| HEAD arquitectural (pai do commit deste anexo) | `5f37ccb884945bf116e679c2142f3e7dceccc4af` |
+| Base documental | `e60893ce7b8bd611686242c85c71a69a82f7d0ef` (scoping); `5f37ccb8` acrescenta apenas este documento |
+| Base de código do viewer | `442a919553969ab5d747c7e2df0bbfd517ef4ae0` = `origin/main` (confirmado também com `git ls-remote origin refs/heads/main`), FIND #725/#734 incluído, ancestral de `5f37ccb8` |
+| `main` local | `a39bab9b16892fa9d49101035579a022a03a8fc6` — **desactualizado** (não contém FIND); não serve de base |
+| `b5ca1246` (offline/self-host citado no scoping §0) | **não** é ancestral do HEAD; `IS_OFFLINE_BUILD` com 0 ocorrências em `packages/` e `tools/` — o offline continua a ser construído em B2 |
+| Higiene à entrada | `git status --porcelain` vazio; `git diff --check` rc=0 |
+
+### A.2 Decisões locais aplicadas (§10.3)
+- **P-1**: aplicado o default "`main` actualizado no momento de B0" = `origin/main` `442a9195` (não o `main` local, nem `b5ca1246`).
+- **P-2**: aplicado o default `apps/freedom-mobile/` **neste repo**, fora do workspace pnpm.
+- Ambos são defaults, não respostas do Kevin; podem ser substituídos sem alterar a arquitectura (§3.1: a alternativa "repo separado" só muda caminho e script de sincronização do bundle).
+- `pnpm-workspace.yaml` continua `packages: ['packages/*']`; `apps/` e `packages/cad-mobile-viewer/` ainda não existem.
+
+### A.3 Sequência e princípios (remissão para §1 e §11)
+- Sequência: **B0 → B1 → B2 → S1 → I1/T1 → I2 → I3 → I4 → I5 → S2 → I6 → T2 → L1 → L2 → L3**.
+- **Licença não é gate de desenvolvimento** (D-1): nenhum I*/T* depende de L*. Publicação e licença externas (EXT-1..EXT-3, parecer jurídico, loja/TestFlight/Play) ficam **depois** de T2 verde e L3 completo (D-7, D-8); sem promessa de publicação antes dos testes.
+- **DWG + DXF em v1** (D-3), DWG via `@mlightcad/libredwg-converter` + `@mlightcad/libredwg-web` (D-2); sem parser proprietário nem `tools/use-dwg-converter.mjs`.
+- **FIND é prioridade** (D-4): I1/T1/I3 antecedem I4–I6 e qualquer extra.
+- **Sem contacto nem alteração ao upstream `mlightcad`** (D-5, §3.3).
