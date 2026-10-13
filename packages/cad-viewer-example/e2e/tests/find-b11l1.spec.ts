@@ -5,7 +5,9 @@ import { uploadFixture } from '../helpers/fileUpload'
 /**
  * Real-drawing FIND check. The DWG is NOT committed: point B11L1_DWG at it
  * (e.g. /home/kevin/work/fixtures/cad-viewer/B11L1.dwg); the spec is skipped
- * when the variable is unset.
+ * when the variable is unset. Default CI therefore only runs the committed
+ * fixtures; a reduced committed fixture or a manual/scheduled workflow that
+ * sets B11L1_DWG is a possible follow-up.
  */
 const dwg = process.env.B11L1_DWG
 const query = process.env.B11L1_QUERY ?? 'PORW'

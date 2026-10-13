@@ -201,6 +201,11 @@ Searched fields:
 | `TEXT` | `textString` | `%%c` `%%d` `%%p` decoded |
 | `MTEXT` | `contents` | formatting codes (`\f…;`, `\H…;`, `\C…;`, `\L`, braces…) removed, `\P` → space, `\U+XXXX` and stacks decoded |
 | `ATTRIB` | attribute value of every `INSERT` | block name and tag are shown in the result label (not searched); invisible attributes are skipped |
+| `TEXT` / `MTEXT` / `ATTRIB` in block definitions | text inside the block of every `INSERT` | nested (up to 8 levels), anonymous and dynamic blocks included; the hit selects the `INSERT` and zooms to the text; a block inserted several times is listed once per insertion |
+| `ATTDEF` (constant) | default value inside a block definition | only constant attribute definitions are drawn inside a block, so only those are searched; non-constant templates and invisible ones are skipped |
+| `DIMENSION` | text of its dimension block when that block has a match, otherwise the override text (`dimensionText`) | `<>` is the measured value and is not searched |
+| `MULTILEADER` | `contents` | formatting codes removed |
+| `ACAD_TABLE` | cell text | from the table block, otherwise the cell strings |
 
 Matching:
 
@@ -213,14 +218,16 @@ Matching:
 
 Usage:
 
-- Search runs only on **Enter** / the Find button (never while typing, never in the background). The scan is a single synchronous pass over the active layout's top-level entities; nothing is cached or stored globally
+- Search runs only on **Enter** / the Find button (never while typing, never in the background). The scan is a single synchronous pass over the entities of the searched layouts (including the block definitions they insert); nothing is cached or stored globally
 - Each result shows its **layout name**, the matched text, type (Text / MText / Attribute + block / tag), layer and `(x, y)`
 - Click a result (or press Enter / Shift+Enter in the field to step through them) to zoom to the text and select its entity (attributes select their `INSERT`). Selection uses the normal selection set/highlight, so Escape or clicking elsewhere clears it. Pan, wheel/pinch zoom, layers and touch handling are untouched
 - A hit in another layout switches to that layout first (`layoutManager.setCurrentLayoutBtrId`), waits for its entities to be converted, then zooms and selects. The layout's first-visit auto zoom is suppressed so it cannot override the zoom to the hit. If the layout cannot be opened a notice is shown instead
 - With **Current layout only**, if the active layout changed since the search, clicking a result re-runs the search for the new layout instead of navigating (drawing-wide results stay valid)
 - Open with the toolbar button, the `find` command (`AcApDocManager.sendStringToExecute('find')`) or `plugin.toggleDockPanelTab('find')`
 
-Limitations: text inside block definitions (other than attributes), dimension text, leaders, tables, fields and xref content is not searched; only entities present in the loaded database are searched (what the DXF/DWG parser attaches to each layout - a layout never opened is searched from the database, not from the rendered scene); the whole-drawing pass is synchronous and can briefly block the UI on very large drawings; selecting a hit in a layout that has never been visited waits for its entities to be converted (up to 15 s) before zooming; no regex / whole-word / replace; selection highlight requires entity selection to be enabled on the view (it is by default); on phone the dock panel covers part of the canvas.
+Limitations: text produced by fields (only the stored text is searched) and xref content are not searched; non-constant `ATTDEF` templates and `ATTDEF`s loose in a layout are not searched; a `DIMENSION` whose block has no matching text can still match its stored override text even if the block does not display it; only entities present in the loaded database are searched (what the DXF/DWG parser attaches to each layout - a layout never opened is searched from the database, not from the rendered scene); selecting a hit in a layout that has never been visited waits for its entities to be converted (up to 15 s) before zooming; no regex / whole-word / replace; selection highlight requires entity selection to be enabled on the view (it is by default); on phone the dock panel covers part of the canvas and the hit is not yet framed outside the docked panel (the Vue UI does this with `insets`).
+
+Known follow-ups: the whole-drawing pass is synchronous and runs on the UI thread (it has not been benchmarked on large drawings; chunking or a worker is a possible follow-up); the real-drawing end-to-end check in `cad-viewer-example` (`find-b11l1.spec.ts`) is opt-in via `B11L1_DWG` and skipped in the default CI run, which exercises the committed fixtures only.
 
 Client-side only: there is no backend, index or upload - the search is a pass over the drawing already loaded in the browser, so the static-hosting / client-side deployment recommendation is unchanged.
 
