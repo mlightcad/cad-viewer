@@ -5,9 +5,11 @@
  * plugin and the full Vue `cad-viewer` UI share one implementation and behave
  * identically. This module keeps the plugin's public `acui*` names.
  *
- * Searched fields: `TEXT`, `MTEXT` (formatting codes removed) and block
- * attribute values of top-level `INSERT`s; text inside block definitions,
- * dimension text, leaders, tables and xrefs is not searched.
+ * Searched fields: `TEXT`, `MTEXT` (formatting codes removed), attribute
+ * values of `INSERT`s, `TEXT` / `MTEXT` / `ATTRIB` and constant `ATTDEF`
+ * values inside block definitions, and the text of dimensions, multileaders
+ * and tables. Non-constant `ATTDEF` templates, `ATTDEF`s loose in a layout
+ * and xrefs are not searched. See `@mlightcad/cad-simple-viewer/find`.
  */
 export {
   ACAP_FIND_MAX_RESULTS as ACUI_FIND_MAX_RESULTS,
