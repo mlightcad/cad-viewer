@@ -381,6 +381,23 @@ describe('corridas com revogação e paragem (nunca serve depois)', () => {
     assert.equal(t.assets.readCalls, 0)
   })
 
+  it('stop durante o sizeOf → 503 sem chegar a ler o ficheiro', async () => {
+    const t = await running()
+    t.assets.add(ID, 'conteudo-secreto')
+    const p = pathOf(t.server.urlFor(ID, 'dxf'))
+    const gate = deferred()
+    t.assets.sizeGate = gate.promise
+    const pending = t.listener.request(req(p))
+    await new Promise(r => setImmediate(r))
+    const stopping = t.server.stop()
+    gate.resolve()
+    const res = await pending
+    assert.equal(res.status, 503)
+    assert.doesNotMatch(bodyText(res), /conteudo/)
+    await stopping
+    assert.equal(t.assets.readCalls, 0)
+  })
+
   it('stop durante a leitura → 503 e os bytes não saem; depois de reiniciar, o URL antigo é 404', async () => {
     const t = await running()
     t.assets.add(ID, 'conteudo-secreto')

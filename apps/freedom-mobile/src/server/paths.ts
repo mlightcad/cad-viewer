@@ -30,17 +30,15 @@ export type TargetResult =
   | { ok: false; status: 400 | 414 }
 
 /**
- * Alvo → segmentos. Sem query, fragmento, `%`, `\`, `//`, `.`/`..` nem formas
- * absolutas (com esquema) nem `*`. `/` dá zero segmentos.
+ * Alvo → segmentos. O charset dos segmentos exclui `?`, `#`, `%`, `\`, espaços e
+ * controlos (query, fragmento e escapes são 400 sem regras à parte); `//…`, `.`/`..`,
+ * formas absolutas e `*` também. `/` dá zero segmentos.
  */
 export function parseTarget(target: unknown): TargetResult {
   if (typeof target !== 'string') return { ok: false, status: 400 }
   if (target.length > MAX_TARGET_LENGTH) return { ok: false, status: 414 }
   // `//…` é forma sem esquema (autoridade), nunca um caminho
   if (!target.startsWith('/') || target.startsWith('//')) {
-    return { ok: false, status: 400 }
-  }
-  if (target.includes('?') || target.includes('#')) {
     return { ok: false, status: 400 }
   }
   const trailingSlash = target.endsWith('/')

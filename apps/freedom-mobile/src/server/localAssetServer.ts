@@ -496,20 +496,19 @@ export class LocalAssetServer implements AssetUrlPort {
       if (!trailingSlash) return rejected(404)
       return {
         route: 'bundle',
-        response: await this.serveBundle(s, INDEX_FILE, head)
+        response: await this.serveBundle(INDEX_FILE, head)
       }
     }
     if (trailingSlash) return rejected(404)
     return {
       route: 'bundle',
-      response: await this.serveBundle(s, rest.join('/'), head)
+      response: await this.serveBundle(rest.join('/'), head)
     }
   }
 
   // -- bundle -------------------------------------------------------------------
 
   private async serveBundle(
-    s: Session,
     path: string,
     head: boolean
   ): Promise<ServerResponse> {
@@ -529,7 +528,6 @@ export class LocalAssetServer implements AssetUrlPort {
     if (head) return this.ok(null, entry.size, contentTypeFor(path), extra)
     try {
       const bytes = await this.race(entry.read())
-      if (this.session !== s) return this.error(503)
       if (bytes.byteLength !== entry.size) return this.error(500)
       return this.ok(bytes, bytes.byteLength, contentTypeFor(path), extra)
     } catch (error) {
@@ -554,14 +552,16 @@ export class LocalAssetServer implements AssetUrlPort {
     // só é libertado quando o trabalho de facto termina (memória limitada).
     const work = (async (): Promise<ServerResponse> => {
       const size = await this.deps.assets.sizeOf(assetId)
-      if (this.session !== s) return this.error(503)
+      // `stop()` e `release()` apagam a concessão: sem ela não se lê nada
+      // (`handle` responde 503 se foi o servidor que parou)
       if (size === null || !s.grants.has(assetId)) return this.error(404)
       if (!Number.isInteger(size) || size <= 0) return this.error(500)
       if (size > MAX_DOCUMENT_BYTES[format]) return this.error(413)
       const extra = { 'Content-Disposition': 'attachment' }
       if (head) return this.ok(null, size, 'application/octet-stream', extra)
       const bytes = await this.deps.assets.read(assetId)
-      if (this.session !== s) return this.error(503)
+      // `handle` converte em 503 se o servidor parou entretanto; a concessão
+      // revogada durante a leitura é decidida aqui (404, nunca os bytes)
       if (!s.grants.has(assetId)) return this.error(404)
       if (bytes.byteLength !== size) return this.error(500)
       return this.ok(bytes, size, 'application/octet-stream', extra)

@@ -86,6 +86,28 @@ describe('bundle: o que se serve e com que cabeçalhos', () => {
     assert.equal(reads, 1, 'só o GET lê')
   })
 
+  it('HEAD nunca leva corpo, também nos erros (404, 403, 405, 400), com o mesmo estado e cabeçalhos do GET', async () => {
+    const t = await running()
+    const cases = [
+      { target: t.path('nao-existe.js') },
+      { target: t.path('index.html'), host: 'evil.example' },
+      { target: `/s/${t.token()}/../x` },
+      { target: t.path('index.html'), headers: { 'content-length': '3' } }
+    ]
+    for (const c of cases) {
+      const base = { host: c.host, headers: c.headers }
+      const get = await t.listener.request(req(c.target, base))
+      const head = await t.listener.request(
+        req(c.target, { ...base, method: 'HEAD' })
+      )
+      assert.ok(get.status >= 400, String(get.status))
+      assert.equal(head.status, get.status)
+      assert.equal(head.body, null)
+      assert.deepEqual(head.headers, get.headers)
+      assert.ok(get.body && get.body.byteLength > 0)
+    }
+  })
+
   it('CSP configurável: null desliga-a; texto próprio substitui a omissão', async () => {
     const off = await running({ contentSecurityPolicy: null })
     const a = await off.listener.request(req(`/s/${off.token()}/`))
