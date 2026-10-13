@@ -12,6 +12,7 @@ import {
 } from '../bridge/BridgeClient.ts'
 import { type AppMessage } from '../contracts/protocol.ts'
 import { READY_TIMEOUT_MS } from '../shell/shellState.ts'
+import { describeDocument, describeFind } from './describe.ts'
 import {
   initialSessionState,
   type SessionAction,
@@ -19,7 +20,10 @@ import {
   type SessionState
 } from './session.ts'
 
-function harness(timers?: Timers) {
+function harness(
+  timers?: Timers,
+  failInject: (m: AppMessage) => boolean = () => false
+) {
   let state: SessionState = initialSessionState
   const sent: AppMessage[] = []
   const dispatch = (a: SessionAction) => {
@@ -32,7 +36,11 @@ function harness(timers?: Timers) {
         'window.__cadBridge.receive('.length,
         -');true;'.length
       )
-      sent.push(JSON.parse(new Function(`return ${literal}`)() as string))
+      const m = JSON.parse(
+        new Function(`return ${literal}`)() as string
+      ) as AppMessage
+      if (failInject(m)) throw new Error('webview ref em falta')
+      sent.push(m)
     },
     // Timers inertes: os timeouts têm testes próprios em BridgeClient.node-test.ts
     // e timers reais manteriam o processo de teste vivo.
@@ -469,6 +477,127 @@ describe('session — failures are never silent', () => {
     assert.equal(h.state.shell.viewer, 'booting')
     assert.equal(h.state.shell.generation, 1)
     assert.equal(h.state.document.current, null)
+    assert.equal(h.state.issue, null)
+  })
+})
+
+describe('session — rework M1-B2 (t_ffb4eb41): bridge failures end explicitly', () => {
+  const OPEN = {
+    name: 'b.dxf',
+    size: 1,
+    source: { kind: 'url' as const, url: 'http://x' }
+  }
+  const PREVIOUS = {
+    name: 'anterior.dxf',
+    format: 'dxf' as const,
+    layouts: [{ name: 'Model', btrId: 'B0', tabOrder: 0 }],
+    activeLayoutId: 'B0'
+  }
+
+  it('queued open + inject throw after ready: no "A abrir…", error shown, previous document kept', () => {
+    let broken = false
+    const h = harness(undefined, () => broken)
+    // Documento anterior já no estado (o reducer tem de o preservar).
+    h.dispatch({
+      kind: 'command-sent',
+      id: 'x-1',
+      message: { v: 1, id: 'x-1', type: 'open', payload: OPEN }
+    })
+    h.dispatch({ kind: 'opened', replyTo: 'x-1', payload: PREVIOUS })
+    assert.equal(h.state.document.current?.name, 'anterior.dxf')
+
+    const r = h.client.open(OPEN)
+    assert.ok(r.ok && r.queued)
+    assert.equal(describeDocument(h.state.document), 'A abrir b.dxf…')
+    broken = true
+    h.viewer('ready', READY)
+
+    assert.equal(h.state.document.opening, null)
+    assert.equal(h.state.document.error?.code, 'send-failed')
+    assert.equal(h.state.document.error?.origin, 'local')
+    assert.equal(h.state.document.current?.name, 'anterior.dxf')
+    const text = describeDocument(h.state.document) ?? ''
+    assert.doesNotMatch(text, /A abrir/)
+    assert.equal(text, 'Falha a comunicar com o viewer.')
+    assert.equal(h.sent.length, 0)
+    assert.equal(h.state.shell.viewer, 'ready')
+  })
+
+  it('a rejected automatic goto after findResult shows FIND results with navigation unavailable', () => {
+    let broken = false
+    const h = harness(undefined, m => broken && m.type === 'goto')
+    h.viewer('ready', READY)
+    const f = h.client.find({
+      query: 'CARIMBO',
+      matchCase: false,
+      scope: 'drawing'
+    })
+    broken = true
+    h.viewer(
+      'findResult',
+      {
+        findId: 1,
+        total: 2,
+        truncated: false,
+        layoutCount: 2,
+        hits: [hit(0), hit(1)]
+      },
+      f.ok ? f.id : ''
+    )
+    assert.equal(h.state.find.status, 'results')
+    assert.equal(h.state.find.activeIndex, -1)
+    assert.equal(h.state.find.navigation, 'unavailable')
+    assert.equal(h.state.find.error?.code, 'send-failed')
+    const text = describeFind(h.state.find) ?? ''
+    assert.match(
+      text,
+      /2 resultados — navegação indisponível: .*webview ref em falta/
+    )
+  })
+
+  it('findActive navigated outside the hit range is not an active hit', () => {
+    const h = openedHarness()
+    const f = h.client.find({
+      query: 'CARIMBO',
+      matchCase: false,
+      scope: 'drawing'
+    })
+    h.viewer(
+      'findResult',
+      {
+        findId: 1,
+        total: 2,
+        truncated: false,
+        layoutCount: 2,
+        hits: [hit(0), hit(1)]
+      },
+      f.ok ? f.id : ''
+    )
+    const goto = h.sent[h.sent.length - 1]
+    h.viewer(
+      'findActive',
+      { findId: 1, index: 2, outcome: 'navigated' },
+      goto.id
+    )
+    assert.equal(h.state.find.activeIndex, -1)
+    assert.equal(h.state.find.navigation, 'unavailable')
+    assert.equal(h.state.find.error?.code, 'invalid-index')
+    assert.doesNotMatch(describeFind(h.state.find) ?? '', /^3 \//)
+  })
+
+  it('a flood of zoom commands does not make the in-flight open or find reply stale', () => {
+    const h = harness()
+    h.viewer('ready', READY)
+    const o = h.client.open(OPEN)
+    const f = h.client.find({ query: 'A', matchCase: false, scope: 'drawing' })
+    for (let i = 0; i < 600; i++) h.client.zoom({ op: 'in' })
+    h.viewer(
+      'opened',
+      { name: 'b.dxf', format: 'dxf', layouts: [], activeLayoutId: '' },
+      o.ok ? o.id : ''
+    )
+    assert.equal(h.state.document.current?.name, 'b.dxf')
+    assert.equal(h.state.document.opening, null)
     assert.equal(h.state.issue, null)
   })
 })

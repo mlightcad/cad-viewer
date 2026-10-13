@@ -15,6 +15,7 @@ import {
 import {
   BridgeClient,
   type BridgeEvent,
+  MAX_TRACKED,
   OPEN_TIMEOUT_MS,
   type Timers
 } from './BridgeClient.ts'
@@ -722,5 +723,90 @@ describe('BridgeClient — late ready recovery (decisão de shellState.ts)', () 
       assert.equal(shell.dwg, 'ok')
       assert.equal(shell.generation, 0)
     }
+  })
+})
+
+describe('BridgeClient — rework M1-B2 (t_ffb4eb41)', () => {
+  /** Inject que lança enquanto `failing(msg)` for verdadeiro. */
+  function setupFlaky(failing: (m: AppMessage) => boolean) {
+    const injected: AppMessage[] = []
+    return setup({
+      inject: s => {
+        const m = decode(s)
+        if (failing(m)) throw new Error('webview ref em falta')
+        injected.push(m)
+      }
+    })
+  }
+
+  it('a queued open whose inject throws on ready ends as open-failed(send-failed) for that id', () => {
+    let broken = false
+    const { client, events } = setupFlaky(() => broken)
+    const r = client.open(OPEN)
+    assert.ok(r.ok && r.queued)
+    broken = true
+    client.receive(wire('ready', READY))
+    const f = last(events, 'open-failed')
+    assert.equal(f.replyTo, r.id)
+    assert.equal(f.code, 'send-failed')
+    assert.equal(f.origin, 'local')
+    assert.match(f.message, /webview ref em falta/)
+    assert.equal(kinds(events).includes('command-sent'), false)
+    // Sem `command-rejected` anónimo: a falha está correlacionada pelo id.
+    assert.equal(kinds(events).includes('command-rejected'), false)
+    // O cliente continua utilizável quando a ponte volta.
+    assert.equal(client.phase, 'ready')
+    broken = false
+    const again = client.open(OPEN)
+    assert.ok(again.ok && !again.queued)
+  })
+
+  it('never evicts the in-flight open, find or latest navigation past MAX_TRACKED', () => {
+    const { client, events } = setup()
+    client.receive(wire('ready', READY))
+    const o = client.open(OPEN)
+    const f = client.find({ query: 'A', matchCase: false, scope: 'drawing' })
+    const z0 = client.zoom({ op: 'in' })
+    assert.ok(o.ok && f.ok && z0.ok)
+    for (let i = 0; i < MAX_TRACKED + 10; i++) client.zoom({ op: 'out' })
+    const g = client.goto({ findId: 1, index: 0 })
+    assert.ok(g.ok)
+    for (let i = 0; i < MAX_TRACKED + 10; i++) client.zoom({ op: 'out' })
+
+    client.receive(
+      wire(
+        'opened',
+        { name: 'Planta.dxf', format: 'dxf', layouts: [], activeLayoutId: '' },
+        o.id
+      )
+    )
+    assert.equal(last(events, 'opened').replyTo, o.id)
+    client.receive(wire('findResult', findResult(1, 0), f.id))
+    assert.equal(last(events, 'find-result').replyTo, f.id)
+    client.receive(
+      wire('findActive', { findId: 1, index: 0, outcome: 'navigated' }, g.id)
+    )
+    assert.equal(last(events, 'find-active').replyTo, g.id)
+    assert.equal(kinds(events).includes('stale-reply'), false)
+
+    // Só os sem estado activo saem: o erro tardio do zoom mais antigo é
+    // visível como não atribuído, nunca atribuído a outro comando.
+    client.receive(
+      wire('error', { code: 'x', message: 'tarde', replyTo: z0.id })
+    )
+    assert.equal(last(events, 'viewer-error').command, null)
+  })
+
+  it('a rejected automatic goto after findResult emits find-navigation-failed for that search', () => {
+    const { client, events } = setupFlaky(m => m.type === 'goto')
+    client.receive(wire('ready', READY))
+    const f = client.find({ query: 'A', matchCase: false, scope: 'drawing' })
+    assert.ok(f.ok)
+    client.receive(wire('findResult', findResult(7, 2), f.id))
+    const e = last(events, 'find-navigation-failed')
+    assert.equal(e.replyTo, f.id)
+    assert.equal(e.findId, 7)
+    assert.equal(e.error.code, 'send-failed')
+    assert.equal(kinds(events).includes('command-rejected'), false)
   })
 })

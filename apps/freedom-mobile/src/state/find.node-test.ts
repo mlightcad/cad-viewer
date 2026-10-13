@@ -123,6 +123,49 @@ describe('findReducer', () => {
     assert.equal(s.activeIndex, -1)
   })
 
+  it('a navigated index outside the hits is unavailable, never an active hit', () => {
+    const base = run([sentFind(), result('a-2', 3), active({ index: 1 })])
+    for (const index of [3, 99, -1]) {
+      const s = run([sentNav('goto'), active({ index })], base)
+      assert.equal(s.activeIndex, 1, `index ${index}`)
+      assert.equal(s.navigation, 'unavailable')
+      assert.equal(s.error?.code, 'invalid-index')
+    }
+  })
+
+  it('a rejected automatic goto flags navigation unavailable and keeps the list', () => {
+    const base = run([sentFind(), result('a-2', 3)])
+    const s = run(
+      [
+        {
+          kind: 'find-navigation-failed',
+          replyTo: 'a-2',
+          findId: 4,
+          error: { code: 'send-failed', message: 'ref em falta' }
+        }
+      ],
+      base
+    )
+    assert.equal(s.status, 'results')
+    assert.equal(s.hits.length, 3)
+    assert.equal(s.activeIndex, -1)
+    assert.equal(s.navigation, 'unavailable')
+    assert.equal(s.error?.code, 'send-failed')
+    // De outra pesquisa: ignorado.
+    const other = run(
+      [
+        {
+          kind: 'find-navigation-failed',
+          replyTo: 'a-1',
+          findId: 3,
+          error: { code: 'send-failed', message: 'x' }
+        }
+      ],
+      base
+    )
+    assert.equal(other, base)
+  })
+
   it('stale outcome keeps the previous selection and is reported', () => {
     const base = run([sentFind(), result('a-2', 3), active({ index: 2 })])
     const s = run([active({ index: 0, outcome: 'stale' })], base)

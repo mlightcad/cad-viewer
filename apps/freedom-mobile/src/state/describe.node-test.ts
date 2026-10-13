@@ -88,6 +88,18 @@ describe('describeFind', () => {
     assert.match(t ?? '', /limitados a 500/)
     assert.match(t ?? '', /layout indisponível/)
   })
+
+  it('a navigation failure with an error shows that error, not "layout indisponível"', () => {
+    const t = describeFind({
+      ...initialFindState,
+      status: 'results',
+      total: 2,
+      navigation: 'unavailable',
+      error: { code: 'send-failed', message: 'ref em falta' }
+    })
+    assert.match(t ?? '', /navegação indisponível: ref em falta/)
+    assert.doesNotMatch(t ?? '', /layout indisponível/)
+  })
 })
 
 describe('describeIssue', () => {

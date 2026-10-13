@@ -113,6 +113,18 @@ export function findReducer(
       const p = event.payload
       if (state.status !== 'results' || p.findId !== state.findId) return state
       if (p.outcome === 'navigated') {
+        // Um índice fora dos hits recebidos não é navegação válida: não se marca
+        // item nenhum e a navegação fica explicitamente indisponível.
+        if (p.index < 0 || p.index >= state.hits.length) {
+          return {
+            ...state,
+            navigation: 'unavailable',
+            error: {
+              code: 'invalid-index',
+              message: `o viewer indicou o resultado ${p.index}, fora dos ${state.hits.length} resultados`
+            }
+          }
+        }
         return {
           ...state,
           activeIndex: p.index,
@@ -134,6 +146,17 @@ export function findReducer(
         lastOutcome: p.outcome
       }
     }
+
+    case 'find-navigation-failed':
+      // `goto{index:0}` automático rejeitado: a lista mantém-se, sem hit activo.
+      if (state.status !== 'results' || event.findId !== state.findId) {
+        return state
+      }
+      return {
+        ...state,
+        navigation: 'unavailable',
+        error: { code: event.error.code, message: event.error.message }
+      }
 
     case 'viewer-error': {
       const err = { code: event.payload.code, message: event.payload.message }

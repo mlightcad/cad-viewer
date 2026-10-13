@@ -55,8 +55,14 @@ export function describeFind(find: FindState): string | null {
       const limited = find.truncated
         ? ` (resultados limitados a ${find.total})`
         : ''
+      // Só um `findActive` de layout é "layout indisponível"; falhas da ponte
+      // ou do viewer mostram a sua própria mensagem.
       const nav =
-        find.navigation === 'unavailable' ? ' — layout indisponível' : ''
+        find.navigation !== 'unavailable'
+          ? ''
+          : find.error
+            ? ` — navegação indisponível: ${find.error.message}`
+            : ' — layout indisponível'
       return `${pos}${find.total} resultados${limited}${nav}`
     }
   }

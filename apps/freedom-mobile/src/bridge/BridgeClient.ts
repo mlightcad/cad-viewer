@@ -30,8 +30,13 @@ import { READY_TIMEOUT_MS } from '../shell/shellState.ts'
 
 /** Tempo máximo entre `open` e `opened`/`openFailed` ([H] §5.3). */
 export const OPEN_TIMEOUT_MS = 120_000
-/** Máximo de ids sem resposta esperada (zoom, insets, …) retidos para atribuir `error`. */
-const MAX_TRACKED = 256
+/**
+ * Máximo de ids pendentes retidos para correlacionar respostas/`error`. Ao
+ * exceder, sai o mais antigo que **não** seja operação activa (`open` em curso,
+ * `find` actual, última navegação): estas nunca são despejadas, para que a sua
+ * resposta válida não vire `stale-reply`.
+ */
+export const MAX_TRACKED = 256
 
 export type BridgePhase = 'booting' | 'ready' | 'failed'
 
@@ -67,14 +72,29 @@ export type BridgeEvent =
   /** `open` em fila substituído por um mais recente (§5.1); sem falha. */
   | { kind: 'open-superseded'; id: string }
   | { kind: 'opened'; replyTo: string; payload: OpenedPayload }
+  /**
+   * Abertura terminada sem documento. `send-failed`: o `open` em fila não pôde
+   * ser entregue no `ready` (inject lançou) — sem `SendOutcome` a quem o pediu,
+   * a falha só existe como este evento.
+   */
   | {
       kind: 'open-failed'
       replyTo: string | null
-      code: OpenFailedCode
+      code: OpenFailedCode | 'send-failed'
       message: string
       origin: 'viewer' | 'local'
     }
   | { kind: 'find-result'; replyTo: string; payload: FindResultPayload }
+  /**
+   * O `goto{index:0}` automático após `findResult` (§5.4) foi rejeitado
+   * localmente; `findId`/`replyTo` = pesquisa a que pertencia.
+   */
+  | {
+      kind: 'find-navigation-failed'
+      replyTo: string
+      findId: number
+      error: CommandRejection
+    }
   | { kind: 'find-active'; replyTo: string; payload: FindActivePayload }
   /** `error` do viewer; `command` = comando original, se conhecido. */
   | {
@@ -111,6 +131,11 @@ export type SendOutcome =
   | { ok: true; id: string; queued: boolean }
   | { ok: false; error: CommandRejection }
 
+type Rejector = (
+  command: AppToViewerType,
+  error: CommandRejection
+) => SendOutcome
+
 const REPLY_TYPES: Partial<
   Record<ViewerToAppType, readonly AppToViewerType[]>
 > = {
@@ -129,6 +154,7 @@ export class BridgeClient {
   private queuedOpen: AppMessage | null = null
   private inFlightOpenId: string | null = null
   private latestFindId: string | null = null
+  private latestNavId: string | null = null
   private readyTimer: unknown = null
   private openTimer: unknown = null
   private disposed = false
@@ -211,6 +237,7 @@ export class BridgeClient {
     this.pending.clear()
     this.queuedOpen = null
     this.inFlightOpenId = null
+    this.latestNavId = null
   }
 
   // -- internos -------------------------------------------------------------
@@ -227,18 +254,24 @@ export class BridgeClient {
     return { ok: false, error }
   }
 
+  /**
+   * `onReject` decide o evento da rejeição: por omissão `command-rejected`
+   * (quem chamou recebe o `SendOutcome`); envios automáticos sem chamador
+   * (`open` em fila, `goto` após `findResult`) emitem um evento correlacionado.
+   */
   private send<T extends AppToViewerType>(
     type: T,
-    payload: AppPayloads[T]
+    payload: AppPayloads[T],
+    onReject: Rejector = (t, e) => this.reject(t, e)
   ): SendOutcome {
     if (this.disposed || this.phaseValue === 'failed') {
-      return this.reject(type, {
+      return onReject(type, {
         code: 'viewer-unavailable',
         message: 'o viewer não está disponível; recarregue'
       })
     }
     const built = buildAppMessage(this.nextId(), type, payload)
-    if (!built.ok) return this.reject(type, built.error)
+    if (!built.ok) return onReject(type, built.error)
     const message = built.message
 
     if (this.phaseValue === 'booting') {
@@ -256,14 +289,17 @@ export class BridgeClient {
       this.emit({ kind: 'command-queued', id: message.id, message })
       return { ok: true, id: message.id, queued: true }
     }
-    return this.dispatch(message)
+    return this.dispatch(message, onReject)
   }
 
-  private dispatch(message: AppMessage): SendOutcome {
+  private dispatch(
+    message: AppMessage,
+    onReject: Rejector = (t, e) => this.reject(t, e)
+  ): SendOutcome {
     try {
       this.deps.inject(encodeInjection(message))
     } catch (e) {
-      return this.reject(message.type, {
+      return onReject(message.type, {
         code: 'send-failed',
         message: `falha a entregar ${message.type} ao viewer: ${
           e instanceof Error ? e.message : String(e)
@@ -277,10 +313,6 @@ export class BridgeClient {
 
   private track(message: AppMessage): void {
     this.pending.set(message.id, message.type)
-    if (this.pending.size > MAX_TRACKED) {
-      const oldest = this.pending.keys().next().value
-      if (oldest !== undefined) this.pending.delete(oldest)
-    }
     if (message.type === 'find') {
       // Pesquisa nova invalida a anterior (§5.4): a resposta tardia fica `stale-reply`.
       if (this.latestFindId) this.pending.delete(this.latestFindId)
@@ -295,6 +327,32 @@ export class BridgeClient {
         () => this.onOpenTimeout(message.id),
         this.openTimeoutMs
       )
+    }
+    if (
+      message.type === 'goto' ||
+      message.type === 'findNext' ||
+      message.type === 'findPrev'
+    ) {
+      this.latestNavId = message.id
+    }
+    if (this.pending.size > MAX_TRACKED) this.evictOldestInactive()
+  }
+
+  /**
+   * Despeja o pendente mais antigo que não seja operação activa. Há no máximo
+   * três activas (`open`, `find`, navegação) e `MAX_TRACKED` > 3, logo existe
+   * sempre um candidato; a resposta tardia do despejado sai `stale-reply`.
+   */
+  private evictOldestInactive(): void {
+    for (const id of this.pending.keys()) {
+      if (
+        id !== this.inFlightOpenId &&
+        id !== this.latestFindId &&
+        id !== this.latestNavId
+      ) {
+        this.pending.delete(id)
+        return
+      }
     }
   }
 
@@ -329,8 +387,19 @@ export class BridgeClient {
         const replyTo = msg.replyTo as string
         this.emit({ kind: 'find-result', replyTo, payload: msg.payload })
         // §5.4: pesquisa nova → `goto{index:0}` se houver hits (como `useFind.submit`).
+        // Ninguém recebe este `SendOutcome`: uma rejeição sai como
+        // `find-navigation-failed`, correlacionada com a pesquisa (fail-closed).
         if (replyTo === this.latestFindId && msg.payload.total > 0) {
-          this.goto({ findId: msg.payload.findId, index: 0 })
+          const findId = msg.payload.findId
+          this.send('goto', { findId, index: 0 }, (_type, error) => {
+            this.emit({
+              kind: 'find-navigation-failed',
+              replyTo,
+              findId,
+              error
+            })
+            return { ok: false, error }
+          })
         }
         return
       }
@@ -388,7 +457,20 @@ export class BridgeClient {
     this.emit({ kind: 'ready', payload })
     const queued = this.queuedOpen
     this.queuedOpen = null
-    if (queued) this.dispatch(queued)
+    if (!queued) return
+    // O `SendOutcome` deste envio não tem destinatário (o `open()` já devolveu
+    // `queued:true`): a falha tem de sair como `open-failed` do mesmo id, para
+    // o estado do documento terminar o loading.
+    this.dispatch(queued, (_type, error) => {
+      this.emit({
+        kind: 'open-failed',
+        replyTo: queued.id,
+        code: 'send-failed',
+        message: error.message,
+        origin: 'local'
+      })
+      return { ok: false, error }
+    })
   }
 
   private onViewerError(
@@ -469,6 +551,7 @@ export class BridgeClient {
     this.pending.clear()
     this.queuedOpen = null
     this.inFlightOpenId = null
+    this.latestNavId = null
   }
 
   private clearTimers(): void {
