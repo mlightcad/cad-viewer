@@ -423,6 +423,51 @@ describe('dispose', () => {
   })
 })
 
+describe('configuração dos limites (fail-closed)', () => {
+  const build = (limits: Record<string, unknown>) =>
+    new LocalAssetServer({
+      listener: makeRig().listener,
+      bundle: createMemoryBundle(BUNDLE_FILES),
+      assets: makeRig().assets,
+      limits: limits as never
+    })
+
+  for (const key of [
+    'maxInFlight',
+    'maxAssetReads',
+    'maxGrants',
+    'requestTimeoutMs',
+    'drainTimeoutMs',
+    'maxBundleFileBytes'
+  ]) {
+    for (const bad of [0, -1, 1.5, Number.NaN, Infinity, '16', null, {}]) {
+      it(`${key} = ${String(bad)} (${typeof bad}) é recusado à construção`, () => {
+        assert.throws(
+          () => build({ [key]: bad }),
+          (e: unknown) =>
+            e instanceof LocalServerError &&
+            e.code === 'invalid-config' &&
+            String(e.detail).includes(key) &&
+            !String(e.detail).includes(String(bad))
+        )
+      })
+    }
+  }
+
+  it('undefined usa a omissão e valores válidos são aceites', async () => {
+    const t = makeRig({
+      limits: { maxInFlight: undefined, maxGrants: 1 } as never
+    })
+    await t.start()
+    t.assets.add('f1-aaaaaaaa', 'x')
+    t.assets.add('f2-bbbbbbbb', 'y')
+    const first = new URL(t.server.urlFor('f1-aaaaaaaa', 'dxf')!).pathname
+    t.server.urlFor('f2-bbbbbbbb', 'dxf')
+    assert.equal(t.server.stats.grants, 1)
+    assert.equal((await t.listener.request(req(first))).status, 404)
+  })
+})
+
 describe('observadores', () => {
   it('um onEvent que lança nunca derruba o servidor', async () => {
     const t = makeRig({

@@ -73,6 +73,26 @@ export const DEFAULT_LIMITS: Readonly<ServerLimits> = {
   maxBundleFileBytes: MAX_BUNDLE_FILE_BYTES
 }
 
+/**
+ * Limites = omissão + sobreposições. Cada um tem de ser um inteiro ≥ 1: um
+ * `NaN`/`0`/negativo tornaria `x >= limite` sempre falso (limite desligado em
+ * silêncio) ou revogaria o que acabou de ser concedido. `undefined` = omissão.
+ */
+function resolveLimits(
+  partial: Partial<ServerLimits> | undefined
+): ServerLimits {
+  const limits: ServerLimits = { ...DEFAULT_LIMITS }
+  for (const key of Object.keys(DEFAULT_LIMITS) as (keyof ServerLimits)[]) {
+    const value = partial?.[key]
+    if (value === undefined) continue
+    if (!Number.isInteger(value) || value < 1) {
+      throw new LocalServerError('invalid-config', `limite inválido: ${key}`)
+    }
+    limits[key] = value
+  }
+  return limits
+}
+
 export interface ServerTimers {
   set(fn: () => void, ms: number): unknown
   clear(handle: unknown): void
@@ -158,7 +178,7 @@ export class LocalAssetServer implements AssetUrlPort {
 
   constructor(deps: LocalAssetServerDeps) {
     this.deps = deps
-    this.limits = { ...DEFAULT_LIMITS, ...deps.limits }
+    this.limits = resolveLimits(deps.limits)
     this.timers = deps.timers ?? defaultTimers
     this.now = deps.now ?? Date.now
     this.random = deps.randomBytes ?? defaultRandomBytes
