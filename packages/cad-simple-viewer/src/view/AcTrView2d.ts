@@ -491,6 +491,15 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private static readonly PROGRESSIVE_OPEN_PAINT_INTERVAL_MS = 2500
   /**
+   * Minimum interval between interactive non-progressive mid-open paints (ms)
+   * while convert / deferred glyphs run under "Rendering drawing ...".
+   * Longer than {@link PROGRESSIVE_OPEN_PAINT_INTERVAL_MS}: the overlay is
+   * semi-transparent (`rgba(0,0,0,0.45)`), but each paint still redraws the
+   * full scene and used to fire on every glyph completion. Headless
+   * (`cooperativeYield` false) skips these paints entirely.
+   */
+  private static readonly NON_PROGRESSIVE_OPEN_PAINT_INTERVAL_MS = 4000
+  /**
    * Max concurrent deferred glyph/INSERT geometry finalizers. Large drawings
    * enqueue thousands of jobs; keep this modest to limit peak JS heap during
    * open while retaining reasonable text throughput after convert finishes.
@@ -1125,7 +1134,9 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * When false, entity convert skips cooperative yields (headless export).
+   * When false, entity convert skips cooperative yields and non-progressive
+   * mid-open WebGL paints (headless export). Interactive viewers keep this
+   * `true` so "Rendering drawing ..." can still refresh the canvas.
    */
   get cooperativeYield() {
     return this._cooperativeYield
@@ -1136,8 +1147,8 @@ export class AcTrView2d extends AcEdBaseView {
 
   /**
    * Open-convert counters for OPENPROF / palette (cooperative yields during
-   * convert, and mid-open paints when progressive rendering is enabled).
-   * Reset when progressive mode is enabled for an open.
+   * convert, and throttled mid-open paints). Reset when progressive mode is
+   * enabled for an open.
    */
   get progressiveOpenStats() {
     return {
@@ -3089,6 +3100,33 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Interactive non-progressive open: dirty the canvas so {@link animate} can
+   * refresh under "Rendering drawing ...". Headless (`cooperativeYield`
+   * false) leaves this unset; the pool-drain / convert-end dirty is enough.
+   * {@link animate} applies {@link NON_PROGRESSIVE_OPEN_PAINT_INTERVAL_MS}.
+   */
+  private markInteractiveOpenDirty() {
+    if (this._progressiveRendering || !this._cooperativeYield) {
+      return
+    }
+    this._isDirty = true
+  }
+
+  /**
+   * True when this frame's WebGL paint should count toward OPENPROF mid-open
+   * paints and use the open-time throttle (unless the camera marked urgent).
+   */
+  private shouldCountMidOpenPaint(
+    stillLoading: boolean,
+    sceneBusy: boolean
+  ): boolean {
+    return (
+      (this._progressiveRendering && stillLoading) ||
+      (!this._progressiveRendering && this._cooperativeYield && sceneBusy)
+    )
+  }
+
+  /**
    * @inheritdoc
    */
   highlight(ids: AcDbObjectId[]) {
@@ -3216,47 +3254,41 @@ export class AcTrView2d extends AcEdBaseView {
     })
 
     const stillLoading = this._numOfEntitiesToProcess > 0
-    // The convert counter hits 0 before deferred glyph / INSERT jobs finish.
-    // Non-progressive opens keep an opaque overlay up until idle, and HTML
-    // export reads scene batches rather than the framebuffer. Redrawing the
-    // full drawing on every glyph completion is invisible — headless
-    // Chromium does that with software WebGL and an uncapped rAF, so export
-    // spends most of its time rasterizing instead of converting.
+    const sceneBusy = stillLoading || this._pendingGeometryJobs > 0
+    // Headless non-progressive (`cooperativeYield` false): skip WebGL until
+    // idle. Export reads scene batches, not the framebuffer, and software
+    // WebGL + uncapped rAF spent most of open time rasterizing. Interactive
+    // non-progressive still paints under "Rendering drawing ..." — throttled
+    // below so each glyph completion does not redraw the full scene.
     const deferRenderWhileLoading =
-      !this._progressiveRendering &&
-      (stillLoading || this._pendingGeometryJobs > 0)
-    if (
-      !this._isDirty &&
-      !this._htmlDirty &&
-      !stillLoading &&
-      this._pendingGeometryJobs === 0
-    ) {
+      !this._progressiveRendering && !this._cooperativeYield && sceneBusy
+    if (!this._isDirty && !this._htmlDirty && !sceneBusy) {
       return
     }
     if (deferRenderWhileLoading) return
     if (!this._isDirty && !this._htmlDirty) return
 
-    // Progressive mid-open: throttle convert-driven paints only. Camera
-    // changes set `_progressivePaintUrgent` so pan/zoom still redraw now —
-    // throttling those made the canvas feel frozen after the overlay hid.
-    if (
-      this._progressiveRendering &&
-      stillLoading &&
-      this._isDirty &&
-      !this._progressivePaintUrgent
-    ) {
-      const now = performance.now()
-      if (
-        now - this._lastProgressivePaintAt <
-        AcTrView2d.PROGRESSIVE_OPEN_PAINT_INTERVAL_MS
-      ) {
+    // Mid-open throttle: progressive convert paints, and interactive
+    // non-progressive paints while the scene is still busy. Camera changes
+    // set `_progressivePaintUrgent` so pan/zoom still redraw now.
+    const countMidOpenPaint = this.shouldCountMidOpenPaint(
+      stillLoading,
+      sceneBusy
+    )
+    const throttleOpenPaint =
+      this._isDirty && !this._progressivePaintUrgent && countMidOpenPaint
+    if (throttleOpenPaint) {
+      const intervalMs = this._progressiveRendering
+        ? AcTrView2d.PROGRESSIVE_OPEN_PAINT_INTERVAL_MS
+        : AcTrView2d.NON_PROGRESSIVE_OPEN_PAINT_INTERVAL_MS
+      if (performance.now() - this._lastProgressivePaintAt < intervalMs) {
         return
       }
     }
 
     let needsRedraw = false
     if (this._isDirty) {
-      if (this._progressiveRendering && stillLoading) {
+      if (countMidOpenPaint) {
         this._progressivePaintCount++
         this._lastProgressivePaintAt = performance.now()
         this._progressivePaintUrgent = false
@@ -3881,11 +3913,15 @@ export class AcTrView2d extends AcEdBaseView {
       void job
         .run()
         .then(() => {
-          // Progressive opens paint glyphs as they land. Non-progressive
-          // opens (CLI / headless export) only need the one frame queued
-          // when the pool drains — a per-glyph dirty flag redraws the
-          // whole scene after the convert counter hits 0.
-          if (job.epoch === this._convertEpoch && this._progressiveRendering) {
+          // Progressive: dirty every glyph (animate throttles paints).
+          // Interactive non-progressive: same, under a longer open-paint
+          // interval so "Rendering drawing ..." still shows progress.
+          // Headless non-progressive: skip — the pool-drain dirty below
+          // queues the single frame export/scripts need.
+          if (
+            job.epoch === this._convertEpoch &&
+            (this._progressiveRendering || this._cooperativeYield)
+          ) {
             this._isDirty = true
           }
         })
@@ -4060,8 +4096,9 @@ export class AcTrView2d extends AcEdBaseView {
     // is on. Otherwise a long sync convert blocks the main thread, the
     // progress overlay cannot poll `isProcessingEntities`, and Chromium may
     // treat the tab as hung ("Page Unresponsive" / kill) at the
-    // "Rendering drawing ..." stage. Mid-open WebGL paints remain gated by
-    // `progressive` / markProgressiveDirty below.
+    // "Rendering drawing ..." stage. Mid-open WebGL paints are gated by
+    // `progressive` / markProgressiveDirty, or markInteractiveOpenDirty
+    // when cooperative yields are on.
     //
     // Headless export sets cooperativeYield=false (or forExport) so convert
     // does not pay for setTimeout yields the CLI never needs.
@@ -4158,6 +4195,8 @@ export class AcTrView2d extends AcEdBaseView {
                     () => this.getDrawingExtents(),
                     i
                   )
+                } else {
+                  this.markInteractiveOpenDirty()
                 }
               }
             }
@@ -4266,6 +4305,8 @@ export class AcTrView2d extends AcEdBaseView {
                   () => this.getDrawingExtents(),
                   i
                 )
+              } else {
+                this.markInteractiveOpenDirty()
               }
             }
             if (deferGeometry) {
@@ -4544,6 +4585,8 @@ export class AcTrView2d extends AcEdBaseView {
         this._progressiveOpenFit.afterGeometryBatch(() =>
           this.getDrawingExtents()
         )
+      } else {
+        this.markInteractiveOpenDirty()
       }
     } finally {
       this._convertPhaseMs.handleGroup += performance.now() - t0

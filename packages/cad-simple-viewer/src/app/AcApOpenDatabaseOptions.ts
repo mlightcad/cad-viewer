@@ -154,8 +154,10 @@ export interface AcApOpenDatabaseOptions extends Omit<
 
   /**
    * When `false`, disable cooperative `setTimeout` yields during entity
-   * convert. Headless Chromium scripts do not need a responsive UI and yields
-   * can inflate open wall time. Default `true` for interactive viewers.
+   * convert and skip non-progressive mid-open WebGL paints. Headless
+   * Chromium scripts do not need a responsive UI; yields and full-scene
+   * paints inflate open wall time. Default `true` for interactive viewers
+   * so "Rendering drawing ..." can still refresh the canvas (throttled).
    */
   cooperativeYield?: boolean
 }
