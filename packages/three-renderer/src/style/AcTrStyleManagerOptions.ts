@@ -17,8 +17,9 @@ export interface AcTrStyleManagerOptions {
   viewportScaleUniform: number
 
   /**
-   * WebGL has a limited capability for FragmentUniforms. Thus, cannot have as many
-   * clippingPlanes as expected.
+   * Legacy fragment-uniform budget. Hatch patterns no longer consume this
+   * (pattern lines are sampled from a DataTexture; see #743). Retained so
+   * existing callers that set the option keep compiling.
    */
   maxFragmentUniforms: number
 

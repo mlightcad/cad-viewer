@@ -22,6 +22,127 @@ export interface AcTrPatternLine {
   patternLength: number
 }
 
+/** Header floats packed before dash lengths: angle, base.xy, offset.xy, patternLength. */
+const PATTERN_LINE_HEADER_FLOATS = 6
+
+/** Refcount key on the shared hatch pattern DataTexture. */
+const PATTERN_TEXTURE_REF_COUNT = 'acTrPatternTextureRefCount'
+
+/**
+ * Retains a hatch pattern DataTexture shared by style-cache materials and their
+ * batch/highlight clones. The texture is disposed only when the last retainer
+ * releases it.
+ */
+export function retainHatchPatternTexture(texture: THREE.Texture): void {
+  const userData = texture.userData as Record<string, number>
+  userData[PATTERN_TEXTURE_REF_COUNT] =
+    (userData[PATTERN_TEXTURE_REF_COUNT] ?? 0) + 1
+}
+
+/**
+ * Releases one retain on a hatch pattern DataTexture and disposes it when the
+ * refcount reaches zero.
+ */
+export function releaseHatchPatternTexture(texture: THREE.Texture): void {
+  const userData = texture.userData as Record<string, number>
+  const next = (userData[PATTERN_TEXTURE_REF_COUNT] ?? 1) - 1
+  userData[PATTERN_TEXTURE_REF_COUNT] = next
+  if (next <= 0) {
+    texture.dispose()
+  }
+}
+
+/**
+ * Wires retain/release for `u_patternData` onto a material and every clone.
+ *
+ * Batch/highlight paths clone hatch ShaderMaterials and share the texture by
+ * reference, but Three.js does not copy dispose listeners. Overriding `clone`
+ * keeps the refcount honest across those call sites (#743).
+ */
+function wireHatchPatternTextureLifetime(
+  material: THREE.ShaderMaterial,
+  texture: THREE.DataTexture
+): void {
+  retainHatchPatternTexture(texture)
+  material.addEventListener('dispose', () => {
+    releaseHatchPatternTexture(texture)
+  })
+
+  material.clone = function cloneHatchPatternMaterial(
+    this: THREE.ShaderMaterial
+  ) {
+    const cloned = THREE.ShaderMaterial.prototype.clone.call(
+      this
+    ) as THREE.ShaderMaterial
+    // UniformsUtils.clone() clones textures; keep one shared DataTexture so
+    // retain/release stays accurate across batch/highlight clones.
+    cloned.uniforms.u_patternData.value = texture
+    wireHatchPatternTextureLifetime(cloned, texture)
+    return cloned
+  }
+}
+
+/**
+ * Packs hatch pattern lines into a float RGBA DataTexture.
+ *
+ * Layout per row (one pattern line):
+ *   float 0: angle
+ *   float 1–2: base.xy
+ *   float 3–4: offset.xy
+ *   float 5: patternLength
+ *   float 6…: dashLengths (padded to MAX_PATTERN_SEGMENT_COUNT)
+ *
+ * Pattern data used to live in a uniform struct array, which hit a hard
+ * fragment-uniform budget (~85 lines with 4 dash entries against the old
+ * scalar count of 1024). A texture removes that limit so user patterns with
+ * hundreds of line families can draw completely (#743).
+ */
+export function packHatchPatternDataTexture(
+  patternLines: AcTrPatternLine[],
+  maxPatternSegmentCount: number
+): {
+  texture: THREE.DataTexture
+  texelsPerLine: number
+} {
+  const floatsPerLine = PATTERN_LINE_HEADER_FLOATS + maxPatternSegmentCount
+  const texelsPerLine = Math.max(1, Math.ceil(floatsPerLine / 4))
+  const lineCount = Math.max(1, patternLines.length)
+  const data = new Float32Array(texelsPerLine * lineCount * 4)
+
+  for (let lineIndex = 0; lineIndex < patternLines.length; lineIndex++) {
+    const line = patternLines[lineIndex]
+    const row = lineIndex * texelsPerLine * 4
+    data[row] = line.angle
+    data[row + 1] = line.base.x
+    data[row + 2] = line.base.y
+    data[row + 3] = line.offset.x
+    data[row + 4] = line.offset.y
+    data[row + 5] = line.patternLength
+    for (let i = 0; i < maxPatternSegmentCount; i++) {
+      data[row + PATTERN_LINE_HEADER_FLOATS + i] = line.dashLengths[i] ?? 0
+    }
+  }
+
+  const texture = new THREE.DataTexture(
+    data,
+    texelsPerLine,
+    lineCount,
+    THREE.RGBAFormat,
+    THREE.FloatType
+  )
+  texture.magFilter = THREE.NearestFilter
+  texture.minFilter = THREE.NearestFilter
+  texture.wrapS = THREE.ClampToEdgeWrapping
+  texture.wrapT = THREE.ClampToEdgeWrapping
+  texture.generateMipmaps = false
+  texture.needsUpdate = true
+  if ('colorSpace' in texture) {
+    ;(texture as THREE.DataTexture & { colorSpace: string }).colorSpace =
+      THREE.NoColorSpace
+  }
+  return { texture, texelsPerLine }
+}
+
 /**
  *
  * @param patternLines Line patterns. Angles are in radians.
@@ -43,9 +164,20 @@ export function createHatchPatternShaderMaterial(
     2,
     ...patternLines.map(line => line.dashLengths.length)
   )
+  const { texture, texelsPerLine } = packHatchPatternDataTexture(
+    patternLines,
+    maxPatternSegmentCount
+  )
+  const patternLineCount = Math.max(1, patternLines.length)
+
   const uniforms = {
     u_cameraZoom: cameraZoomUniform,
+    // Kept for export / tests (AcExPatternSnapshot.extractHatchPattern).
+    // Not declared in the shader — pattern data is sampled from u_patternData.
     u_patternLines: { value: patternLines },
+    u_patternData: { value: texture },
+    u_patternLineCount: { value: patternLineCount },
+    u_texelsPerLine: { value: texelsPerLine },
     u_patternAngle: { value: patternAngle },
     u_color: { value: color }
   }
@@ -81,7 +213,9 @@ export function createHatchPatternShaderMaterial(
         float patternLength;
     };
 
-    uniform PatternLine u_patternLines[${patternLines.length}];
+    uniform sampler2D u_patternData;
+    uniform float u_patternLineCount;
+    uniform float u_texelsPerLine;
     uniform float u_patternAngle;
 
     #include <clipping_planes_pars_fragment>
@@ -110,6 +244,40 @@ export function createHatchPatternShaderMaterial(
 
     vec2 scale(vec2 samplePosition, float scale) {
         return samplePosition / scale;
+    }
+
+    vec4 fetchPatternTexel(float lineIndex, float texelIndex) {
+        vec2 uv = vec2(
+            (texelIndex + 0.5) / u_texelsPerLine,
+            (lineIndex + 0.5) / u_patternLineCount
+        );
+        return texture2D(u_patternData, uv);
+    }
+
+    PatternLine loadPatternLine(float lineIndex) {
+        PatternLine pl;
+        vec4 t0 = fetchPatternTexel(lineIndex, 0.0);
+        vec4 t1 = fetchPatternTexel(lineIndex, 1.0);
+        pl.angle = t0.r;
+        pl.base = t0.gb;
+        pl.offset = vec2(t0.a, t1.r);
+        pl.patternLength = t1.g;
+
+        // Dash lengths start at float index 6 (t1.ba, then subsequent texels).
+        // Loop bound is baked in so three.js unroll_loop can expand it.
+        #pragma unroll_loop_start
+        for (int i = 0; i < ${maxPatternSegmentCount}; i++) {
+            float floatIndex = float(i) + 6.0;
+            float texelIndex = floor(floatIndex / 4.0);
+            float comp = mod(floatIndex, 4.0);
+            vec4 t = fetchPatternTexel(lineIndex, texelIndex);
+            if (comp < 0.5) pl.dashLengths[i] = t.r;
+            else if (comp < 1.5) pl.dashLengths[i] = t.g;
+            else if (comp < 2.5) pl.dashLengths[i] = t.b;
+            else pl.dashLengths[i] = t.a;
+        }
+        #pragma unroll_loop_end
+        return pl;
     }
 
     // signed distance from point samplePos to infinite line (a->b)
@@ -148,7 +316,7 @@ export function createHatchPatternShaderMaterial(
     }
 
     int getPatternIndex(PatternLine patternLine, float linePosition, float thick, out float distance) {
-        if (patternLine.dashLengths.length() < 1 || patternLine.patternLength <= 0.0) {
+        if (patternLine.patternLength <= 0.0) {
             return -1;
         }
 
@@ -159,7 +327,7 @@ export function createHatchPatternShaderMaterial(
         // Use cumulative sum approach for better precision
         float sum = 0.0;
         #pragma unroll_loop_start
-        for (int i = 0; i < patternLine.dashLengths.length(); i++) {
+        for (int i = 0; i < ${maxPatternSegmentCount}; i++) {
             float segmentLength = abs(patternLine.dashLengths[i]);
             // A dash length of 0 is AutoCAD's "dot" marker: a zero-length
             // element that consumes no along-line distance (sum still
@@ -176,6 +344,11 @@ export function createHatchPatternShaderMaterial(
                 return i;
             }
             sum += segmentLength;
+            // Trailing pads are zeros beyond the real dash list; once the
+            // cumulative length covers the pattern period we are done.
+            if (sum >= patternLine.patternLength - EPSILON) {
+                return -1;
+            }
         }
         #pragma unroll_loop_end
 
@@ -200,7 +373,7 @@ export function createHatchPatternShaderMaterial(
         float linePosition = samplePos.x - offsetX;
         float distance = 0.0;
         int index = getPatternIndex(patternLine, linePosition, thick, distance);
-        if (index < 0 || index >= patternLine.dashLengths.length()) {
+        if (index < 0 || index >= ${maxPatternSegmentCount}) {
             return opacity;
         }
 
@@ -255,15 +428,14 @@ export function createHatchPatternShaderMaterial(
         float total = 0.0;
 
 #if ${patternLines.length} > 1
-        #pragma unroll_loop_start
-        for (int i = 0; i < u_patternLines.length(); i++) {
-            PatternLine pl = u_patternLines[i];
+        // Do not unroll: user patterns can have hundreds of line families (#743).
+        for (int i = 0; i < ${patternLines.length}; i++) {
+            PatternLine pl = loadPatternLine(float(i));
             float opacity = drawLine(pl, thick);
             total += opacity;
         }
-        #pragma unroll_loop_end
 #else
-        float opacity = drawLine(u_patternLines[0], thick);
+        float opacity = drawLine(loadPatternLine(0.0), thick);
         total += opacity;
 #endif
 
@@ -277,7 +449,7 @@ export function createHatchPatternShaderMaterial(
     }
     `
 
-  return new THREE.ShaderMaterial({
+  const material = new THREE.ShaderMaterial({
     uniforms,
     vertexShader,
     fragmentShader,
@@ -287,4 +459,10 @@ export function createHatchPatternShaderMaterial(
       MAX_PATTERN_SEGMENT_COUNT: maxPatternSegmentCount
     }
   })
+
+  // ShaderMaterial.dispose() does not free textures. Retain/release across
+  // clones so batch/highlight copies can outlive a cache rematerialize.
+  wireHatchPatternTextureLifetime(material, texture)
+
+  return material
 }
