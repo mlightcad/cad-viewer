@@ -225,6 +225,7 @@ Ordem de preferência a validar em S1, decisão registada com evidência:
 3. **Cobertura obrigatória em T1**: sem match; 1 match; multi-layout (`find-layouts.dxf`: Model, Planta, Alçados); texto em bloco (`find-blocks.dxf`, CARIMBO); `truncated` (`maxResults:1`); wrap next/prev nos dois sentidos; `stale-find`; `layout-missing`; versão/type desconhecidos; extensão inválida.
 4. **E2E browser**: página de teste do bundle com `window.ReactNativeWebView` simulado (array de mensagens) em Playwright, reutilizando o padrão de `packages/cad-viewer-example/e2e/` — opcional em T1, obrigatório em T2 se o emulador falhar.
 5. **DWG no FIND**: o mesmo caminho (a DB convertida é a mesma interface); validado em T2 **só** com o fixture [EXT] (§10). Sem fixture, T2 regista "DWG: não verificado (fixture em falta)" — nunca "passou".
+6. **Prova de superfície real (decisão t_d2446cfc, opção A)**: a prova de superfície/píxel real em desktop e a 390px está **diferida de S2** e é propriedade de T2/I6 (§11). Em S2 apenas se provam modelo/layout/comandos; asserções sobre `FakeView`/modelo são explicitamente **não-renderização** e nunca contam como prova de superfície ou píxel.
 
 ## 8. Licenciamento (não-gate) e ecrã nativo "Acerca/Licenças"
 
@@ -305,6 +306,7 @@ Ordem: **B0 → B1 → B2 → S1 → I1/T1 → I2 → I3 → I4 → I5 → S2 �
 Notas de sequência:
 - FIND primeiro: I1/T1/I3 antecedem I4–I6 (D-4).
 - Nenhum I*/T* depende de L* (D-1); L1–L2 podem correr em paralelo depois de T2 se houver capacidade, mas a ordem nominal mantém-se.
+- Ownership da prova de superfície (decisão t_d2446cfc, opção A; §7 item 6): S2 prova só modelo/layout/comandos (`FakeView`/modelo = não-renderização); a prova real de superfície/píxel em desktop e 390px pertence a T2/I6 e não é reivindicada por S2.
 - Publicação (repo/loja) **não** é um card deste plano: só após T2 verde + L3 completo + EXT-1/EXT-2 resolvidos (D-7).
 
 ## 12. Riscos
