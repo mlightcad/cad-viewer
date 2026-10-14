@@ -181,6 +181,16 @@ export class AcEditor {
   }
 
   /**
+   * Tears down the input manager (command line, mobile chrome, accessories).
+   *
+   * Safe to call more than once.
+   */
+  dispose() {
+    this.cancelActiveInput()
+    this._inputManager.dispose()
+  }
+
+  /**
    * Queues scripted command-line inputs for subsequent getXXX prompts.
    * One entry equals one Enter-confirmed input.
    */
