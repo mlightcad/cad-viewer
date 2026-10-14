@@ -262,61 +262,76 @@ export class AcTrPolygon extends AcTrEntity {
         continue
       }
       const shape = new THREE.Shape(toVector2(outerPoints))
-      // merge holes
-      let mergedHoles: {
-        regions: number[][][]
-        inverted: boolean
-      } = {
-        regions: [],
-        inverted: false
-      }
+      // Merge overlapping holes into connected components so ShapeGeometry
+      // (earcut) never receives overlapping hole paths (#744).
       const needMergeHolesArr = this.findIntersectHole(pointBoundaries, pair[1])
       needMergeHolesArr.forEach(mergeArr => {
-        let seg1: Segments = {
-          segments: [],
-          inverted: false
-        }
+        const validHoles = mergeArr.filter(
+          index => pointBoundaries[index].length >= 3
+        )
         let epsilon = 1e-6
+        let mergedOk = false
         try {
-          // maybe mulit holes intersect
-          mergeArr.forEach((index, ix) => {
-            epsilon = Math.min(pointBoundaries[index][0].relativeEps(), 1e-6)
+          if (validHoles.length === 0) {
+            // nothing to merge
+          } else if (validHoles.length === 1) {
+            shape.holes.push(
+              new THREE.Path(toVector2(pointBoundaries[validHoles[0]]))
+            )
+            mergedOk = true
+          } else {
+            // One epsilon / PolyBool for the whole component — mixing
+            // GeometryEpsilon across segment build and combine is unreliable.
+            epsilon = Math.min(
+              ...validHoles.map(index =>
+                pointBoundaries[index][0].relativeEps()
+              ),
+              1e-6
+            )
             const polybool = new PolyBool(new GeometryEpsilon(epsilon))
-
-            if (ix === 0) {
-              seg1 = polybool.segments({
-                regions: [vec2Array(pointBoundaries[index])],
+            let acc = polybool.segments({
+              regions: [vec2Array(pointBoundaries[validHoles[0]])],
+              inverted: false
+            })
+            for (let i = 1; i < validHoles.length; i++) {
+              const next = polybool.segments({
+                regions: [vec2Array(pointBoundaries[validHoles[i]])],
                 inverted: false
               })
-            } else {
-              const seg2 = polybool.segments({
-                regions: [vec2Array(pointBoundaries[index])],
-                inverted: false
-              })
-              const comb = polybool.combine(seg1, seg2)
-              mergedHoles = polybool.polygon(polybool.selectUnion(comb))
-
-              if (mergedHoles.regions.length > 0) {
-                mergedHoles.regions.forEach((ps: number[][]) => {
-                  if (ps.length === 0) {
-                    return
-                  }
-                  const vec2s = ps.map(
-                    (p: number[]) => new THREE.Vector2(p[0], p[1])
-                  )
-                  shape.holes.push(new THREE.Path(vec2s))
-                })
-              } else {
-                log.warn('mergedHoles.regions is empty!')
-              }
+              // Fold into the running union, not only against the first loop.
+              acc = polybool.selectUnion(polybool.combine(acc, next))
             }
-          })
+            const mergedHoles = polybool.polygon(acc)
+            if (mergedHoles.regions.length > 0) {
+              mergedHoles.regions.forEach((ps: number[][]) => {
+                if (ps.length === 0) {
+                  return
+                }
+                const vec2s = ps.map(
+                  (p: number[]) => new THREE.Vector2(p[0], p[1])
+                )
+                shape.holes.push(new THREE.Path(vec2s))
+              })
+              mergedOk = true
+            } else {
+              log.warn('mergedHoles.regions is empty!')
+            }
+          }
         } catch (error) {
           log.warn(`Polybool error: ${error}, epsilon is ${epsilon}`)
         }
+        // Failed or empty union: keep openings open with the original loops
+        // instead of dropping the whole component.
+        if (!mergedOk) {
+          for (const index of validHoles) {
+            shape.holes.push(
+              new THREE.Path(toVector2(pointBoundaries[index]))
+            )
+          }
+        }
       })
-      const ignoreHoleIndexArr = needMergeHolesArr.flat(2)
-      // needn't be merged hole
+      const ignoreHoleIndexArr = needMergeHolesArr.flat()
+      // Non-overlapping holes stay as-is.
       for (let i = 0; i < pair[1].length; i++) {
         const idx = pair[1][i]
         if (!ignoreHoleIndexArr.includes(idx)) {
@@ -337,32 +352,63 @@ export class AcTrPolygon extends AcTrEntity {
     })
   }
 
+  /**
+   * Group hole indices into connected components under pairwise intersection.
+   * Only components with two or more holes are returned (those need a boolean
+   * union before triangulation).
+   */
   private findIntersectHole(
     pointBoundaries: AcGePoint2dLike[][],
     indexArr: number[]
-  ) {
+  ): number[][] {
     const len = indexArr.length
-    const holeIndexArr = []
-    for (let i = 0; i < len; i++) {
-      const points1 = pointBoundaries[indexArr[i]]
-      let needMerge = false
-      const mergeHoleIndexArr = []
-      for (let j = i + 1; j < len; j++) {
-        const points2 = pointBoundaries[indexArr[j]]
-        const isPolygonIntersect = AcGeGeometryUtil.isPolygonIntersect(
-          points1,
-          points2
-        )
-        if (isPolygonIntersect) {
-          needMerge = true
-          mergeHoleIndexArr.push(indexArr[j])
-        }
+    if (len < 2) {
+      return []
+    }
+
+    const parent = Array.from({ length: len }, (_, i) => i)
+    const find = (i: number): number => {
+      let root = i
+      while (parent[root] !== root) {
+        root = parent[root]
       }
-      if (needMerge) {
-        mergeHoleIndexArr.push(indexArr[i])
-        holeIndexArr.push(mergeHoleIndexArr)
+      let cur = i
+      while (parent[cur] !== root) {
+        const next = parent[cur]
+        parent[cur] = root
+        cur = next
+      }
+      return root
+    }
+    const unite = (a: number, b: number) => {
+      const ra = find(a)
+      const rb = find(b)
+      if (ra !== rb) {
+        parent[rb] = ra
       }
     }
-    return holeIndexArr
+
+    for (let i = 0; i < len; i++) {
+      const points1 = pointBoundaries[indexArr[i]]
+      for (let j = i + 1; j < len; j++) {
+        const points2 = pointBoundaries[indexArr[j]]
+        if (AcGeGeometryUtil.isPolygonIntersect(points1, points2)) {
+          unite(i, j)
+        }
+      }
+    }
+
+    const components = new Map<number, number[]>()
+    for (let i = 0; i < len; i++) {
+      const root = find(i)
+      let group = components.get(root)
+      if (!group) {
+        group = []
+        components.set(root, group)
+      }
+      group.push(indexArr[i])
+    }
+
+    return Array.from(components.values()).filter(group => group.length > 1)
   }
 }

@@ -1,4 +1,8 @@
-import { AcGeArea2d, AcGePoint2d } from '@mlightcad/data-model'
+import {
+  AcGeArea2d,
+  AcGePoint2d,
+  AcGePolyline2d
+} from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { expectWcsBboxCloseTo } from './helpers/expectWcsBbox'
@@ -31,6 +35,57 @@ function createRectangularArea(
       children: [{ index: 0, children: [] }]
     })
   } as unknown as AcGeArea2d
+}
+
+function rectPolyline(
+  x: number,
+  y: number,
+  w: number,
+  h: number
+): AcGePolyline2d {
+  return new AcGePolyline2d(
+    [
+      new AcGePoint2d(x, y),
+      new AcGePoint2d(x + w, y),
+      new AcGePoint2d(x + w, y + h),
+      new AcGePoint2d(x, y + h)
+    ],
+    true
+  )
+}
+
+/** True if any triangle of the polygon mesh covers (x, y) in world space. */
+function isFilledAt(polygon: AcTrPolygon, x: number, y: number): boolean {
+  const target = new THREE.Vector3(x, y, 0)
+  let hit = false
+  polygon.traverse(object => {
+    if (hit || !(object instanceof THREE.Mesh)) {
+      return
+    }
+    const position = object.geometry.getAttribute('position')
+    const index = object.geometry.getIndex()
+    if (!position || !index) {
+      return
+    }
+    for (let i = 0; i < index.count; i += 3) {
+      const corners = [0, 1, 2].map(k =>
+        new THREE.Vector3(
+          position.getX(index.getX(i + k)),
+          position.getY(index.getX(i + k)),
+          0
+        ).applyMatrix4(object.matrixWorld)
+      )
+      if (
+        new THREE.Triangle(corners[0], corners[1], corners[2]).containsPoint(
+          target
+        )
+      ) {
+        hit = true
+        return
+      }
+    }
+  })
+  return hit
 }
 
 function createPatternedTraits() {
@@ -168,5 +223,40 @@ describe('AcTrPolygon patterned hatch origin-shift', () => {
       expect(Math.abs(position.getX(i))).toBeLessThan(20)
       expect(Math.abs(position.getY(i))).toBeLessThan(20)
     }
+  })
+})
+
+describe('AcTrPolygon overlapping hole merge (#744)', () => {
+  it('keeps openings open when three hole loops overlap in a chain', () => {
+    // Outer 100x100; hole A and C apart; hole B overlaps both (A–B–C chain).
+    const area = new AcGeArea2d()
+    area.add(rectPolyline(0, 0, 100, 100))
+    area.add(rectPolyline(10, 10, 20, 20)) // A
+    area.add(rectPolyline(50, 10, 20, 20)) // C
+    area.add(rectPolyline(20, 10, 40, 20)) // B
+
+    const polygon = new AcTrPolygon(area, defaultTraits, new AcTrRenderContext())
+    polygon.updateMatrixWorld(true)
+
+    // Centers of A, the A∪B∪C merge, and C must all stay unfilled.
+    expect(isFilledAt(polygon, 15, 20)).toBe(false)
+    expect(isFilledAt(polygon, 40, 20)).toBe(false)
+    expect(isFilledAt(polygon, 65, 20)).toBe(false)
+    // Solid fill outside the holes must still be present.
+    expect(isFilledAt(polygon, 5, 5)).toBe(true)
+  })
+
+  it('keeps two pairwise-overlapping holes open', () => {
+    const area = new AcGeArea2d()
+    area.add(rectPolyline(0, 0, 100, 100))
+    area.add(rectPolyline(10, 10, 30, 20))
+    area.add(rectPolyline(30, 10, 30, 20))
+
+    const polygon = new AcTrPolygon(area, defaultTraits, new AcTrRenderContext())
+    polygon.updateMatrixWorld(true)
+
+    expect(isFilledAt(polygon, 20, 20)).toBe(false)
+    expect(isFilledAt(polygon, 45, 20)).toBe(false)
+    expect(isFilledAt(polygon, 5, 5)).toBe(true)
   })
 })
