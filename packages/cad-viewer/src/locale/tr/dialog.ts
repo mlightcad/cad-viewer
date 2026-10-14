@@ -85,7 +85,7 @@ export default {
     packageSection: 'Paket parçaları',
     chunkSizeMiB: 'Parça boyutu (MiB)',
     chunkSizeMiBHint:
-      'Her geometri parçasının sıkıştırılmamış üst boyutu. Küçük parçalar daha erken boyanır; büyük parçalar daha az indirme demektir',
+      'Her geometri veya OSNAP parçasının sıkıştırılmamış üst boyutu. Küçük parçalar daha erken boyanır; büyük parçalar daha az indirme demektir',
     compressChunks: 'Parçaları sıkıştır',
     compressChunksHint:
       'Zip öncesi her parçayı gzip ile sıkıştır. Kapatırsanız ham ACEC/ACEO yazılır',

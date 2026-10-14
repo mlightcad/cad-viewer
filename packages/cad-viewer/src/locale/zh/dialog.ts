@@ -84,7 +84,7 @@ export default {
     packageSection: '分包设置',
     chunkSizeMiB: '每个分片大小 (MiB)',
     chunkSizeMiBHint:
-      '每个几何分片未压缩体积上限。分片越小越早出图，越大则下载次数越少',
+      '每个几何或 OSNAP 分片未压缩体积上限。分片越小越早出图，越大则下载次数越少',
     compressChunks: '压缩分片',
     compressChunksHint:
       '打包前对每个分片做 gzip。关闭后写入原始 ACEC/ACEO，可由外层 zip 再压缩',

@@ -1,10 +1,7 @@
 import type { AcTrView2d } from '@mlightcad/cad-simple-viewer'
 
 import type { AcApHtmlExpiryDays } from './AcExHtmlAccess'
-import {
-  ACEX_DEFAULT_CHUNK_MAX_BYTES,
-  ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES
-} from './AcExPackageTypes'
+import { ACEX_DEFAULT_CHUNK_MAX_BYTES } from './AcExPackageTypes'
 import type {
   AcExInitialViewMode,
   AcExViewerMode,
@@ -85,8 +82,8 @@ export interface AcApHtmlExportOptions {
    */
   password?: string
   /**
-   * Max uncompressed ACEC bytes per geometry chunk for multi-file packages.
-   * Defaults to {@link ACEX_DEFAULT_CHUNK_MAX_BYTES} (~2 MiB).
+   * Max uncompressed bytes per geometry (ACEC) or OSNAP (ACEO) chunk for
+   * multi-file packages. Defaults to {@link ACEX_DEFAULT_CHUNK_MAX_BYTES} (~2 MiB).
    * Ignored when {@link AcApHtmlExportOptions.exportFormat} is `'single'`.
    */
   maxChunkBytes?: number
@@ -180,19 +177,13 @@ export function resolveAcApHtmlPackageBuildOptions(
 } {
   const maxChunkBytes = options.maxChunkBytes ?? ACEX_DEFAULT_CHUNK_MAX_BYTES
   const compressChunks = options.compressChunks !== false
-  const maxOsnapChunkBytes = Math.max(
-    64 * 1024,
-    Math.floor(
-      (maxChunkBytes * ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES) /
-        ACEX_DEFAULT_CHUNK_MAX_BYTES
-    )
-  )
   return {
     maxChunkBytes,
-    // Keep batch pieces in sync with the chunk budget so oversized layers split
-    // at the same threshold users configure for package chunks.
+    // Keep batch pieces and OSNAP catalogs in sync with the chunk budget so
+    // oversized layers / measure catalogs split at the same threshold users
+    // configure for package chunks.
     maxBatchBytes: maxChunkBytes,
-    maxOsnapChunkBytes,
+    maxOsnapChunkBytes: maxChunkBytes,
     compressChunks
   }
 }

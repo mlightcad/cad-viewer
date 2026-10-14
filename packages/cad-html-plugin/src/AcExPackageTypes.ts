@@ -147,8 +147,9 @@ export const ACEX_DEFAULT_CHUNK_MAX_BYTES = 2 * 1024 * 1024
 export const ACEX_MAX_GEOMETRY_BATCH_BYTES = 2 * 1024 * 1024
 
 /**
- * Default max estimated uncompressed ACEO size per OSNAP chunk (~512 KiB).
- * Large measure catalogs are split so hosts can fetch snap data in parallel.
+ * Legacy default max estimated uncompressed ACEO size per OSNAP chunk (~512 KiB).
+ * Multi-file package builds now default OSNAP chunk size to the geometry
+ * {@link ACEX_DEFAULT_CHUNK_MAX_BYTES} budget unless overridden explicitly.
  */
 export const ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES = 512 * 1024
 

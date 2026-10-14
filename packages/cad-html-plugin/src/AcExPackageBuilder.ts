@@ -21,7 +21,6 @@ import {
 } from './AcExOsnapCatalogCodec'
 import {
   ACEX_DEFAULT_CHUNK_MAX_BYTES,
-  ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES,
   ACEX_MAX_GEOMETRY_BATCH_BYTES,
   ACEX_PACKAGE_VERSION,
   ACEX_SNAPSHOT_VERSION,
@@ -54,7 +53,11 @@ export interface AcExBuildPackageOptions {
    * Defaults to {@link ACEX_MAX_GEOMETRY_BATCH_BYTES}.
    */
   maxBatchBytes?: number
-  /** Max estimated uncompressed ACEO bytes per OSNAP chunk. */
+  /**
+   * Max estimated uncompressed ACEO bytes per OSNAP chunk.
+   * Defaults to {@link AcExBuildPackageOptions.maxChunkBytes} so geometry and
+   * OSNAP files share the same size budget.
+   */
   maxOsnapChunkBytes?: number
   /**
    * When `true` (default), geometry/OSNAP chunks are gzip-compressed
@@ -199,8 +202,7 @@ function collectPackageJobs(
 
   const maxChunkBytes = options.maxChunkBytes ?? ACEX_DEFAULT_CHUNK_MAX_BYTES
   const maxBatchBytes = options.maxBatchBytes ?? ACEX_MAX_GEOMETRY_BATCH_BYTES
-  const maxOsnapChunkBytes =
-    options.maxOsnapChunkBytes ?? ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES
+  const maxOsnapChunkBytes = options.maxOsnapChunkBytes ?? maxChunkBytes
   const compressChunks = options.compressChunks !== false
   const geometryExt = compressChunks ? 'acex.gz' : 'acex'
   const osnapExt = compressChunks ? 'osnap.gz' : 'osnap'
