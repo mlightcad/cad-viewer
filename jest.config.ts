@@ -8,7 +8,10 @@ const config: Config = {
     '^.+\\.(ts|tsx)$': [
       'ts-jest',
       {
-        tsconfig: '<rootDir>/tsconfig.jest.json'
+        tsconfig: '<rootDir>/tsconfig.jest.json',
+        // TS5097: os módulos de `apps/freedom-mobile` (node --test) importam com
+        // extensão `.ts`; o jest resolve-os em runtime, só o diagnóstico recusa.
+        diagnostics: { ignoreCodes: [5097] }
       }
     ],
     '^.+\\.js$': [

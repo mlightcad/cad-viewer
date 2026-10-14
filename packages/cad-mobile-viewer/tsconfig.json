@@ -14,6 +14,7 @@
       "node"
     ],
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "declaration": false,
     "declarationMap": false,
     "sourceMap": false,
