@@ -6,6 +6,7 @@
 
 import { makeFailure } from './errors'
 import { MAX_BASE64_BYTES } from './limits'
+import { LoopbackFetchError } from './loopbackFetch'
 import type { ImportFailure } from './types'
 
 export type OpenSource =
@@ -177,10 +178,17 @@ export async function readOpenSource(
       failure: makeFailure('read-failed', 'source', 'fonte desconhecida')
     }
   } catch (error) {
+    // O descarregamento do servidor local distingue ficheiro grande de mais e
+    // tempo esgotado; o resto (rede, estado HTTP, URL de outra sessão) é leitura
+    const code =
+      error instanceof LoopbackFetchError &&
+      (error.code === 'too-large' || error.code === 'timeout')
+        ? error.code
+        : 'read-failed'
     return {
       ok: false,
       failure: makeFailure(
-        'read-failed',
+        code,
         'source',
         error instanceof Error ? error.message : String(error)
       )

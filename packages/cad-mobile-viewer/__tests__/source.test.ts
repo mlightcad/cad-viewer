@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import { MAX_BASE64_BYTES } from '../src/import/limits'
 import {
+  LoopbackFetchError,
+  type LoopbackFetchErrorCode
+} from '../src/import/loopbackFetch'
+import {
   decodeBase64,
   isLocalAssetUrl,
   readOpenSource
@@ -194,6 +198,45 @@ describe('readOpenSource', () => {
       expect(r.failure.code).toBe('read-failed')
       expect(r.failure.detail).not.toMatch(/127\.0\.0\.1|\/data/)
     }
+  })
+
+  test.each<[LoopbackFetchErrorCode, string]>([
+    ['too-large', 'too-large'],
+    ['timeout', 'timeout'],
+    ['http-status', 'read-failed'],
+    ['network', 'read-failed'],
+    ['wrong-origin', 'read-failed'],
+    ['wrong-session', 'read-failed'],
+    ['invalid-url', 'read-failed'],
+    ['no-page', 'read-failed']
+  ])(
+    'erro do descarregamento local %s → %s (mapeamento explícito)',
+    async (loopback, expected) => {
+      const fetchBytes = async () => {
+        throw new LoopbackFetchError(loopback)
+      }
+      const r = await readOpenSource(
+        { kind: 'url', url: 'http://127.0.0.1:8080/f123' },
+        { fetchBytes }
+      )
+      expect(r.ok).toBe(false)
+      if (!r.ok) {
+        expect(r.failure.code).toBe(expected)
+        expect(r.failure.stage).toBe('source')
+      }
+    }
+  )
+
+  test('um Error comum com code «too-large» NÃO é promovido (só o erro do loopback)', async () => {
+    const fetchBytes = async () => {
+      throw Object.assign(new Error('x'), { code: 'too-large' })
+    }
+    const r = await readOpenSource(
+      { kind: 'url', url: 'http://127.0.0.1:8080/f123' },
+      { fetchBytes }
+    )
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.failure.code).toBe('read-failed')
   })
 
   test('fonte desconhecida → read-failed (nunca lança)', async () => {
