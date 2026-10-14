@@ -14,7 +14,11 @@ import {
 
 import { makeFailure, mapOpenError } from './errors'
 import { detectImportFormat, sniffFormat } from './format'
-import { DEFAULT_IMPORT_TIMEOUT_MS, MAX_DOCUMENT_BYTES } from './limits'
+import {
+  DEFAULT_IMPORT_TIMEOUT_MS,
+  MAX_DOCUMENT_BYTES,
+  MAX_IMPORT_TIMEOUT_MS
+} from './limits'
 import type {
   DwgStatus,
   ImportedDocument,
@@ -236,7 +240,18 @@ export async function importDocument(
     }
 
     const load = deps.load ?? defaultLoader
-    const timeoutMs = deps.timeoutMs ?? DEFAULT_IMPORT_TIMEOUT_MS
+    const timeoutMs =
+      deps.timeoutMs === undefined ? DEFAULT_IMPORT_TIMEOUT_MS : deps.timeoutMs
+    // `NaN`/`0`/negativo/`Infinity`/> 2^31-1: `setTimeout` dispararia já (ou o
+    // worker nunca expiraria). Fail-closed antes de tocar na base de trabalho.
+    if (
+      typeof timeoutMs !== 'number' ||
+      !Number.isInteger(timeoutMs) ||
+      timeoutMs < 1 ||
+      timeoutMs > MAX_IMPORT_TIMEOUT_MS
+    ) {
+      return fail(makeFailure('read-failed', 'validate', 'timeoutMs inválido'))
+    }
     const controller = new AbortController()
     // o tempo conta desde aqui, incluindo a espera por uma importação anterior
     const claim = claimWorkingDatabase()

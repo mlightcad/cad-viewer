@@ -64,6 +64,12 @@ export interface ServerLimits {
   maxBundleFileBytes: number
 }
 
+/**
+ * Tecto seguro de qualquer limite: 2^31-1. Os `*Ms` vão para `setTimeout`, que
+ * acima disto dispara quase já; os contadores não precisam de mais.
+ */
+export const MAX_LIMIT_VALUE = 2 ** 31 - 1
+
 export const DEFAULT_LIMITS: Readonly<ServerLimits> = {
   maxInFlight: 16,
   maxAssetReads: 2,
@@ -74,7 +80,7 @@ export const DEFAULT_LIMITS: Readonly<ServerLimits> = {
 }
 
 /**
- * Limites = omissão + sobreposições. Cada um tem de ser um inteiro ≥ 1: um
+ * Limites = omissão + sobreposições. Cada um tem de ser um inteiro em [1, 2^31-1]: um
  * `NaN`/`0`/negativo tornaria `x >= limite` sempre falso (limite desligado em
  * silêncio) ou revogaria o que acabou de ser concedido. `undefined` = omissão.
  */
@@ -85,7 +91,7 @@ function resolveLimits(
   for (const key of Object.keys(DEFAULT_LIMITS) as (keyof ServerLimits)[]) {
     const value = partial?.[key]
     if (value === undefined) continue
-    if (!Number.isInteger(value) || value < 1) {
+    if (!Number.isInteger(value) || value < 1 || value > MAX_LIMIT_VALUE) {
       throw new LocalServerError('invalid-config', `limite inválido: ${key}`)
     }
     limits[key] = value

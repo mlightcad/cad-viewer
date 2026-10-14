@@ -19,7 +19,9 @@ import {
   LOOPBACK_ASSET_ROUTE,
   LOOPBACK_DEFAULT_MAX_BYTES,
   LOOPBACK_FETCH_MESSAGES,
+  LOOPBACK_MAX_TIMEOUT_MS,
   LOOPBACK_ROUTE_PREFIX,
+  LoopbackConfigError,
   LoopbackFetchError,
   type LoopbackFetchErrorCode,
   type LoopbackFetchImpl,
@@ -379,6 +381,79 @@ describe('respostas do servidor', () => {
     } finally {
       g.fetch = saved
     }
+  })
+})
+
+describe('opções maxBytes/timeoutMs (fail-closed)', () => {
+  const BAD: unknown[] = [
+    0,
+    -1,
+    1.5,
+    Number.NaN,
+    Infinity,
+    -Infinity,
+    '10',
+    null,
+    {},
+    true
+  ]
+  for (const key of ['maxBytes', 'timeoutMs'] as const) {
+    test.each(BAD)(`${key} = %p é recusado à construção`, bad => {
+      expect(() =>
+        createLoopbackFetch({ page: PAGE, [key]: bad } as never)
+      ).toThrow(LoopbackConfigError)
+    })
+    test(`${key}: undefined usa a omissão; 1 é aceite`, () => {
+      expect(() =>
+        createLoopbackFetch({ page: PAGE, [key]: undefined })
+      ).not.toThrow()
+      expect(() => createLoopbackFetch({ page: PAGE, [key]: 1 })).not.toThrow()
+    })
+  }
+  test('timeoutMs: 2^31-1 aceite, 2^31 recusado', () => {
+    expect(() =>
+      createLoopbackFetch({ timeoutMs: LOOPBACK_MAX_TIMEOUT_MS })
+    ).not.toThrow()
+    expect(() =>
+      createLoopbackFetch({ timeoutMs: LOOPBACK_MAX_TIMEOUT_MS + 1 })
+    ).toThrow(LoopbackConfigError)
+  })
+  test('maxBytes: tecto seguro aceite, acima recusado', () => {
+    expect(() =>
+      createLoopbackFetch({ maxBytes: Number.MAX_SAFE_INTEGER })
+    ).not.toThrow()
+    expect(() =>
+      createLoopbackFetch({ maxBytes: Number.MAX_SAFE_INTEGER + 2 })
+    ).toThrow(LoopbackConfigError)
+  })
+  test('a mensagem do erro não ecoa o valor', () => {
+    try {
+      createLoopbackFetch({ maxBytes: Number.NaN })
+    } catch (e) {
+      expect((e as Error).message).toBe('opção inválida: maxBytes')
+    }
+  })
+  test('maxBytes = 1: 1 byte passa, 2 bytes → too-large', async () => {
+    const one = response([new Uint8Array([1])], { length: null })
+    expect(
+      (
+        await createLoopbackFetch({
+          page: PAGE,
+          fetchImpl: async () => one,
+          maxBytes: 1
+        })(URL_OK)
+      ).byteLength
+    ).toBe(1)
+    const two = response([new Uint8Array([1, 2])], { length: null })
+    expect(
+      await code(
+        createLoopbackFetch({
+          page: PAGE,
+          fetchImpl: async () => two,
+          maxBytes: 1
+        })(URL_OK)
+      )
+    ).toBe('too-large')
   })
 })
 

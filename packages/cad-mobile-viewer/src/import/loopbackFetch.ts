@@ -21,6 +21,11 @@ export const LOOPBACK_DEFAULT_MAX_BYTES = 20 * 1024 * 1024
 /** Tempo máximo do descarregamento ([H] até S2). */
 export const LOOPBACK_DEFAULT_TIMEOUT_MS = 60_000
 
+/** Maior atraso que `setTimeout` respeita (acima disto dispara quase já). */
+export const LOOPBACK_MAX_TIMEOUT_MS = 2 ** 31 - 1
+/** Maior tecto de bytes aceite (inteiro seguro; `Infinity`/`NaN` desligariam o tecto). */
+export const LOOPBACK_MAX_BYTES_LIMIT = Number.MAX_SAFE_INTEGER
+
 const MAX_URL_LENGTH = 512
 const TOKEN = /^[A-Za-z0-9_-]{16,128}$/
 const ASSET_ID = /^[a-z0-9-]{8,64}$/
@@ -90,6 +95,39 @@ export type LoopbackFetchImpl = (
 export interface LoopbackPage {
   origin: string
   pathname: string
+}
+
+/** Opção inválida: lançada à construção, nunca em silêncio na primeira leitura. */
+export class LoopbackConfigError extends RangeError {
+  constructor(option: 'maxBytes' | 'timeoutMs') {
+    super(`opção inválida: ${option}`)
+    this.name = 'LoopbackConfigError'
+  }
+}
+
+/**
+ * `undefined` = omissão. Caso contrário tem de ser um **inteiro** `number` com
+ * `1 ≤ v ≤ max`; `NaN`, `±Infinity`, `0`, negativos, fraccionários, `null` e
+ * não-números são recusados (fail-closed): com `NaN` o tecto nunca disparava e
+ * o temporizador disparava logo. Semântica de `maxBytes`: aceita-se
+ * `total === maxBytes`, recusa-se `total > maxBytes`.
+ */
+function resolveOption(
+  value: unknown,
+  fallback: number,
+  max: number,
+  option: 'maxBytes' | 'timeoutMs'
+): number {
+  if (value === undefined) return fallback
+  if (
+    typeof value !== 'number' ||
+    !Number.isInteger(value) ||
+    value < 1 ||
+    value > max
+  ) {
+    throw new LoopbackConfigError(option)
+  }
+  return value
 }
 
 export interface LoopbackFetchOptions {
@@ -173,8 +211,18 @@ function concat(chunks: Uint8Array[], total: number): ArrayBuffer {
 export function createLoopbackFetch(
   options: LoopbackFetchOptions = {}
 ): (url: string) => Promise<ArrayBuffer> {
-  const maxBytes = options.maxBytes ?? LOOPBACK_DEFAULT_MAX_BYTES
-  const timeoutMs = options.timeoutMs ?? LOOPBACK_DEFAULT_TIMEOUT_MS
+  const maxBytes = resolveOption(
+    options.maxBytes,
+    LOOPBACK_DEFAULT_MAX_BYTES,
+    LOOPBACK_MAX_BYTES_LIMIT,
+    'maxBytes'
+  )
+  const timeoutMs = resolveOption(
+    options.timeoutMs,
+    LOOPBACK_DEFAULT_TIMEOUT_MS,
+    LOOPBACK_MAX_TIMEOUT_MS,
+    'timeoutMs'
+  )
 
   return async function fetchBytes(url: string): Promise<ArrayBuffer> {
     const page =

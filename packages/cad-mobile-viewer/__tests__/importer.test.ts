@@ -299,6 +299,23 @@ describe('falhas do conversor, timeout e inspecção', () => {
     }
   )
 
+  test.each([0, -1, 1.5, Number.NaN, Infinity, 2 ** 31, '5', null])(
+    'timeoutMs inválido (%p) falha fechado sem chamar o loader',
+    async bad => {
+      const load = jest.fn<ReturnType<DocumentLoader>, []>()
+      const out = await importDocument(dxfReq(), {
+        dwg: 'ok',
+        load: load as unknown as DocumentLoader,
+        timeoutMs: bad as never
+      })
+      expect(out).toMatchObject({
+        ok: false,
+        failure: { code: 'read-failed', stage: 'validate' }
+      })
+      expect(load).not.toHaveBeenCalled()
+    }
+  )
+
   test('loader que nunca termina → timeout; a seguinte também expira (nunca pendura) sem chamar o loader', async () => {
     // módulo isolado: um loader que nunca termina retém a posse da base de
     // trabalho (contrato §3.1) e bloquearia as importações dos outros testes

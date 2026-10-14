@@ -454,6 +454,24 @@ describe('configuração dos limites (fail-closed)', () => {
     }
   }
 
+  for (const key of [
+    'maxInFlight',
+    'maxAssetReads',
+    'maxGrants',
+    'requestTimeoutMs',
+    'drainTimeoutMs',
+    'maxBundleFileBytes'
+  ]) {
+    it(`${key}: 2^31-1 é aceite e 2^31 é recusado (tecto de setTimeout)`, () => {
+      assert.doesNotThrow(() => build({ [key]: 2 ** 31 - 1 }))
+      assert.throws(
+        () => build({ [key]: 2 ** 31 }),
+        (e: unknown) =>
+          e instanceof LocalServerError && e.code === 'invalid-config'
+      )
+    })
+  }
+
   it('undefined usa a omissão e valores válidos são aceites', async () => {
     const t = makeRig({
       limits: { maxInFlight: undefined, maxGrants: 1 } as never
