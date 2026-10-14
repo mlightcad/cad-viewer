@@ -335,6 +335,34 @@ export function createTcpHttpListener(
     })
   }
 
+  function closeServer(): Promise<void> {
+    if (closing) return closing
+    const s = server
+    server = null
+    for (const socket of [...sockets]) kill(socket)
+    if (!s) {
+      closing = Promise.resolve()
+      return closing
+    }
+    closing = new Promise<void>(resolve => {
+      let done = false
+      const finish = (): void => {
+        if (done) return
+        done = true
+        timers.clear(timer)
+        resolve()
+      }
+      // o socket RN pode não emitir `close` se não estava a escutar
+      const timer = timers.set(finish, o.closeTimeoutMs)
+      try {
+        s.close(() => finish())
+      } catch {
+        finish()
+      }
+    })
+    return closing
+  }
+
   return {
     openConnections: () => sockets.size,
 
@@ -347,71 +375,52 @@ export function createTcpHttpListener(
       const s = net.createServer(socket => accept(socket, handler))
       server = s
       let listening = false
-      const address = await new Promise<ListenAddress>((resolve, reject) => {
-        s.on('error', error => {
-          if (!listening) {
-            server = null
-            reject(error)
-            return
-          }
-          // o SO fechou o socket de escuta: corta tudo e avisa o núcleo
-          if (!closing && server === s) {
-            server = null
-            for (const socket of [...sockets]) kill(socket)
-            try {
-              s.close()
-            } catch {
-              // já fechado
+      let address: ListenAddress
+      try {
+        address = await new Promise<ListenAddress>((resolve, reject) => {
+          s.on('error', error => {
+            if (!listening) {
+              reject(error)
+              return
             }
-            onClosed()
-          }
+            // o SO fechou o socket de escuta: corta tudo e avisa o núcleo
+            if (!closing && server === s) {
+              server = null
+              for (const socket of [...sockets]) kill(socket)
+              try {
+                s.close()
+              } catch {
+                // já fechado
+              }
+              onClosed()
+            }
+          })
+          s.on('close', () => {
+            if (listening && !closing && server === s) {
+              server = null
+              for (const socket of [...sockets]) kill(socket)
+              onClosed()
+            }
+          })
+          s.listen({ port: 0, host: o.bindHost }, () => {
+            listening = true
+            const a = s.address()
+            if (!a || typeof a === 'string') {
+              reject(new Error('endereço do listener desconhecido'))
+              return
+            }
+            resolve({ host: a.address, port: a.port })
+          })
         })
-        s.on('close', () => {
-          if (listening && !closing && server === s) {
-            server = null
-            for (const socket of [...sockets]) kill(socket)
-            onClosed()
-          }
-        })
-        s.listen({ port: 0, host: o.bindHost }, () => {
-          listening = true
-          const a = s.address()
-          if (!a || typeof a === 'string') {
-            reject(new Error('endereço do listener desconhecido'))
-            return
-          }
-          resolve({ host: a.address, port: a.port })
-        })
-      })
+      } catch (error) {
+        // qualquer rejeição: fecha o socket criado antes de rejeitar e limpa o estado
+        if (server === s) await closeServer()
+        else await closing
+        throw error
+      }
       return address
     },
 
-    close(): Promise<void> {
-      if (closing) return closing
-      const s = server
-      server = null
-      for (const socket of [...sockets]) kill(socket)
-      if (!s) {
-        closing = Promise.resolve()
-        return closing
-      }
-      closing = new Promise<void>(resolve => {
-        let done = false
-        const finish = (): void => {
-          if (done) return
-          done = true
-          timers.clear(timer)
-          resolve()
-        }
-        // o socket RN pode não emitir `close` se não estava a escutar
-        const timer = timers.set(finish, o.closeTimeoutMs)
-        try {
-          s.close(() => finish())
-        } catch {
-          finish()
-        }
-      })
-      return closing
-    }
+    close: closeServer
   }
 }

@@ -620,7 +620,9 @@ class FakeServer extends EventEmitter implements TcpServerLike {
   address() {
     return { address: '127.0.0.1', port: 4321 }
   }
+  closeCalls = 0
   close(cb?: () => void) {
+    this.closeCalls++
     if (!this.owner.silentClose) queueMicrotask(() => cb?.())
   }
 }
@@ -643,3 +645,76 @@ class FakeNet implements TcpModuleLike {
     return s
   }
 }
+
+describe('listener TCP: falha de listen fecha o socket criado e limpa o estado', () => {
+  const noop = (): void => {}
+  const handler = async (): Promise<never> => {
+    throw new Error('não usado')
+  }
+
+  it('erro de listen: close() chamado ANTES de rejeitar, estado limpo, novo listen funciona', async () => {
+    const fake = new FakeNet({ failListen: true })
+    const listener = createTcpHttpListener(fake)
+    let rejected = false
+    let closesAtReject = -1
+    await listener.listen(handler, noop).catch(() => {
+      rejected = true
+      closesAtReject = fake.server!.closeCalls
+    })
+    assert.ok(rejected)
+    assert.equal(closesAtReject, 1)
+    const first = fake.server!
+    await listener.close() // idempotente após falha
+    assert.equal(first.closeCalls, 1)
+    fake.failListen = false
+    const a = await listener.listen(handler, noop)
+    assert.equal(a.port, 4321)
+    assert.notEqual(fake.server, first)
+    await listener.close()
+  })
+
+  it('socket real: falha de bind rejeita com o socket fechado, sem porta presa e com retry', async () => {
+    const created: net.Server[] = []
+    const spy = {
+      createServer(cb: (s: TcpSocketLike) => void) {
+        const s = net.createServer(cb as never)
+        created.push(s)
+        return s
+      },
+      connect: net.connect
+    } as unknown as TcpModuleLike
+    const bad = createTcpHttpListener(spy, { bindHost: '203.0.113.77' })
+    let listeningAtReject: boolean | null = null
+    await assert.rejects(bad.listen(handler, noop), () => {
+      listeningAtReject = created[0].listening
+      return true
+    })
+    assert.equal(listeningAtReject, false)
+    assert.equal(created[0].listening, false)
+    await bad.close()
+    assert.equal(bad.openConnections(), 0)
+    await assert.rejects(bad.listen(handler, noop)) // não fica "já activo"
+    assert.equal(created.length, 2)
+
+    const ok = createTcpHttpListener(net)
+    const a = await ok.listen(handler, noop)
+    assert.ok(a.port > 0)
+    await ok.close()
+  })
+
+  it('endereço desconhecido após listen: socket fechado antes de rejeitar', async () => {
+    const fake = new FakeNet()
+    const listener = createTcpHttpListener(fake)
+    const orig = FakeServer.prototype.address
+    FakeServer.prototype.address = (() => null) as never
+    try {
+      await assert.rejects(listener.listen(handler, noop))
+      assert.equal(fake.server!.closeCalls, 1)
+    } finally {
+      FakeServer.prototype.address = orig
+    }
+    const a = await listener.listen(handler, noop)
+    assert.equal(a.port, 4321)
+    await listener.close()
+  })
+})

@@ -92,9 +92,24 @@ describe('falhas de arranque (códigos fixos, sem fugas)', () => {
     })
     assert.equal(t.server.state, 'stopped')
     assert.equal(t.server.available(), false)
+    assert.equal(t.listener.closeCalls, 1) // closeListener antes de relançar
+    await t.server.dispose() // seguro após start falhado
+    await t.server.dispose() // idempotente
+    assert.equal(t.server.state, 'disposed')
+    t.listener.failListen = null
+  })
+
+  it('listen falha → start seguinte (sem dispose) liga e não deixa porta presa', async () => {
+    const t = makeRig()
+    t.listener.failListen = new Error('EADDRINUSE')
+    await assert.rejects(t.start(), isErr('listen-failed'))
+    assert.equal(t.listener.closeCalls, 1)
     t.listener.failListen = null
     await t.start()
     assert.equal(t.server.state, 'running')
+    await t.server.stop()
+    assert.equal(t.server.state, 'stopped')
+    assert.equal(t.listener.closeCalls, 2)
   })
 
   for (const address of [

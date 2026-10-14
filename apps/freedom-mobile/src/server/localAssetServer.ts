@@ -310,6 +310,7 @@ export class LocalAssetServer implements AssetUrlPort {
         () => this.onListenerClosed(epoch)
       )
     } catch (error) {
+      await this.closeListener()
       this.setState('stopped')
       throw new LocalServerError('listen-failed', error)
     }
