@@ -31,6 +31,13 @@ export const DEFAULT_MAX_ENTITIES = 2_000_000
 export const NO_RENDERABLE_MESSAGE =
   'O desenho não contém entidades que esta aplicação consiga desenhar.'
 
+/** Mensagem (PT-PT, fixa) quando o limite de entidades deixou só o que não se desenha. */
+export const NO_RENDERABLE_TRUNCATED_MESSAGE =
+  'O desenho excede o limite de entidades e as que foram lidas não se conseguem desenhar.'
+
+/** Nº máximo de `id`s duplicados listados por layout (a contagem total é exacta). */
+export const MAX_REPORTED_DUPLICATE_IDS = 50
+
 /** Forma mínima da base de dados usada pelo mapa (estrutural, como o FIND). */
 export interface MapDatabaseLike {
   tables: {
@@ -110,7 +117,8 @@ export function mapDocument(
     unsupported: 0,
     unsupportedByType: {} as TypeCounts,
     partialByType: {} as TypeCounts,
-    truncated: 0
+    truncated: 0,
+    duplicateIds: 0
   }
   let mapped = 0
   const layouts: LayoutMap[] = []
@@ -119,6 +127,8 @@ export function mapDocument(
   for (const info of source.layouts) {
     const entities: MappedEntity[] = []
     const byId = new Map<string, MappedEntity>()
+    const duplicates = new Set<string>()
+    let layoutTruncated = 0
     let records: Iterable<EntityLike> = []
     try {
       records =
@@ -131,6 +141,7 @@ export function mapDocument(
       for (const raw of records) {
         if (mapped >= max) {
           counts.truncated++
+          layoutTruncated++
           continue
         }
         const entity = normalizeEntity(raw, {
@@ -140,7 +151,14 @@ export function mapDocument(
         })
         mapped++
         entities.push(entity)
-        if (entity.id) byId.set(entity.id, entity)
+        if (entity.id) {
+          // política determinística: a PRIMEIRA ocorrência fica indexada; as
+          // repetidas continuam em `entities` e ficam reportadas
+          if (byId.has(entity.id)) {
+            counts.duplicateIds++
+            duplicates.add(entity.id)
+          } else byId.set(entity.id, entity)
+        }
         if (entity.support === 'rendered') counts.rendered++
         else if (entity.support === 'partial') {
           counts.partial++
@@ -171,7 +189,15 @@ export function mapDocument(
       entities,
       extents,
       viewBox: extents ? viewBoxOf(extents, options.margin) : DEFAULT_VIEW_BOX,
-      viewBoxReason: extents ? 'extents' : 'empty-layout'
+      viewBoxReason: extents
+        ? 'extents'
+        : entities.length > 0
+          ? 'no-renderable-extents'
+          : layoutTruncated > 0
+            ? 'truncated-layout'
+            : 'empty-layout',
+      truncated: layoutTruncated,
+      duplicateIds: [...duplicates].sort().slice(0, MAX_REPORTED_DUPLICATE_IDS)
     })
     index.set(info.btrId, byId)
   }
@@ -186,7 +212,10 @@ export function mapDocument(
 
   if (coverage.status === 'nothing-renderable') {
     const failure = makeFailure('parse', 'inspect', describeCoverage(coverage))
-    failure.message = NO_RENDERABLE_MESSAGE
+    failure.message =
+      coverage.truncated > 0
+        ? NO_RENDERABLE_TRUNCATED_MESSAGE
+        : NO_RENDERABLE_MESSAGE
     return { ok: false, failure, coverage }
   }
 
@@ -230,5 +259,6 @@ export function describeCoverage(c: CoverageReport): string {
     )
   }
   if (c.truncated) parts.push(`não mapeadas (limite) ${c.truncated}`)
+  if (c.duplicateIds) parts.push(`ids duplicados ${c.duplicateIds}`)
   return parts.join('; ')
 }

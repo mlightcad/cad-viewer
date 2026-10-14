@@ -25,11 +25,11 @@ const DXF_STRUCTURAL = new Set([
   'EOF'
 ])
 
-function bump(counts: TypeCounts, rawType: string): void {
+function bump(counts: TypeCounts, rawType: string, n = 1): void {
   const type = rawType.slice(0, MAX_TYPE_LENGTH)
-  if (type in counts) counts[type]++
-  else if (Object.keys(counts).length < MAX_DISTINCT_TYPES) counts[type] = 1
-  else counts.OTHER = (counts.OTHER ?? 0) + 1
+  if (type in counts) counts[type] += n
+  else if (Object.keys(counts).length < MAX_DISTINCT_TYPES) counts[type] = n
+  else counts.OTHER = (counts.OTHER ?? 0) + n
 }
 
 /** Soma `TypeCounts` (para totais). */
@@ -88,6 +88,13 @@ export function scanDxfEntityTypes(
 
 interface DwgEntityLike {
   type?: unknown
+  subclassMarker?: unknown
+  name?: unknown
+  definitionPoint?: unknown
+  arcPoint?: unknown
+  subDefinitionPoint1?: unknown
+  subDefinitionPoint2?: unknown
+  centerPoint?: unknown
 }
 interface DwgBlockRecordLike {
   entities?: DwgEntityLike[]
@@ -98,23 +105,100 @@ export interface DwgModelLike {
 }
 
 /**
- * Conta, num `DwgDatabase` já interpretado, os tipos de entidade que
- * `AcDbEntityConverter.createEntity` NÃO converte (todos os block records).
+ * `subclassMarker` de `DIMENSION` que `convertDimension` converte
+ * (AcDbEntitiyConverter.js ≈ l.1000-1068, testado contra o texto instalado).
+ * Qualquer outro marcador devolve `null` para um tipo CONHECIDO.
  */
-export function tallyDwgModelTypes(
+export const DWG_DIMENSION_SUBCLASSES: readonly string[] = [
+  'AcDbAlignedDimension',
+  'AcDbRotatedDimension',
+  'AcDb3PointAngularDimension',
+  'AcDb2LineAngularDimension',
+  'AcDbOrdinateDimension',
+  'AcDbRadialDimension',
+  'AcDbDiametricDimension'
+]
+const DWG_DIMENSION_KNOWN = new Set(DWG_DIMENSION_SUBCLASSES)
+
+/** Resultado da sonda DWG com as duas classes de perda separadas. */
+export interface DwgProbeResult {
+  /** Entidades inspeccionadas (todos os block records). */
+  inspected: number
+  /**
+   * Tipos que `createEntity` não trata (ramo final `return null`), por
+   * `type` em maiúsculas. A comparação com `DWG_CONVERTED_TYPES` é EXACTA (o
+   * conversor usa `==`): `line` minúsculo é descartado, não «conhecido».
+   */
+  unknownTypes: TypeCounts
+  /**
+   * Instâncias de tipo conhecido que o conversor também devolve `null`
+   * (hoje só `DIMENSION` com `subclassMarker` não tratado, ou
+   * `AcDb2LineAngularDimension` sem ponto de arco/nome). Chave
+   * `TIPO[subclasse]`.
+   */
+  knownNull: TypeCounts
+}
+
+function dimensionConvertsToNull(entity: DwgEntityLike): string | null {
+  const marker =
+    typeof entity.subclassMarker === 'string' ? entity.subclassMarker : ''
+  if (!DWG_DIMENSION_KNOWN.has(marker)) return marker || '?'
+  if (marker === 'AcDb2LineAngularDimension') {
+    const arc =
+      entity.definitionPoint ??
+      entity.arcPoint ??
+      entity.subDefinitionPoint2 ??
+      null
+    if (!arc || !entity.name) return marker
+  }
+  return null
+}
+
+/**
+ * Sonda do `DwgDatabase` já interpretado: separa os tipos que o conversor não
+ * conhece (`unknownTypes`) das instâncias de tipos conhecidos que ele também
+ * descarta com `null` (`knownNull`). Nunca lança.
+ */
+export function probeDwgModel(
   model: DwgModelLike | null | undefined
-): TypeCounts {
-  const counts: TypeCounts = {}
+): DwgProbeResult {
+  const result: DwgProbeResult = {
+    inspected: 0,
+    unknownTypes: {},
+    knownNull: {}
+  }
   const records = model?.tables?.BLOCK_RECORD?.entries
-  if (!Array.isArray(records)) return counts
+  if (!Array.isArray(records)) return result
   for (const record of records) {
     const entities = record?.entities
     if (!Array.isArray(entities)) continue
     for (const entity of entities) {
-      const type =
-        typeof entity?.type === 'string' ? entity.type.toUpperCase() : '?'
-      if (!DWG_KNOWN.has(type)) bump(counts, type)
+      result.inspected++
+      const raw = typeof entity?.type === 'string' ? entity.type : null
+      if (raw === null) {
+        bump(result.unknownTypes, '?')
+      } else if (!DWG_KNOWN.has(raw)) {
+        bump(result.unknownTypes, raw.toUpperCase())
+      } else if (raw === 'DIMENSION') {
+        const sub = dimensionConvertsToNull(entity)
+        if (sub !== null) bump(result.knownNull, `DIMENSION[${sub}]`)
+      }
     }
   }
+  return result
+}
+
+/**
+ * Perdas do conversor DWG numa só tabela (`droppedByType`): tipos
+ * desconhecidos (`REGION`) e instâncias conhecidas descartadas
+ * (`DIMENSION[subclasse]`) — ambos NUNCA chegam à base de dados.
+ */
+export function tallyDwgModelTypes(
+  model: DwgModelLike | null | undefined
+): TypeCounts {
+  const { unknownTypes, knownNull } = probeDwgModel(model)
+  const counts: TypeCounts = {}
+  for (const k of Object.keys(unknownTypes)) bump(counts, k, unknownTypes[k])
+  for (const k of Object.keys(knownNull)) bump(counts, k, knownNull[k])
   return counts
 }

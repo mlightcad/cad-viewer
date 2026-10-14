@@ -3,8 +3,13 @@
 // Sondas de cobertura DXF/DWG (spec M2-I3 §3.3): perdas silenciosas do parser
 // e do conversor tornadas explícitas.
 
+import { readFileSync } from 'fs'
+import { resolve } from 'path'
+
 import {
+  DWG_DIMENSION_SUBCLASSES,
   MAX_DISTINCT_TYPES,
+  probeDwgModel,
   scanDxfEntityTypes,
   tallyDwgModelTypes,
   totalOf
@@ -154,5 +159,106 @@ describe('tallyDwgModelTypes', () => {
         model(undefined as never, [null, { type: 7 }, {}]) as never
       )
     ).toEqual({ '?': 3 })
+  })
+})
+
+describe('probeDwgModel — tipos conhecidos com instâncias null vs desconhecidos', () => {
+  const model = (...entityLists: unknown[][]) => ({
+    tables: {
+      BLOCK_RECORD: {
+        entries: entityLists.map(entities => ({ entities }))
+      }
+    }
+  })
+  const dim = (
+    subclassMarker?: unknown,
+    over: Record<string, unknown> = {}
+  ) => ({
+    type: 'DIMENSION',
+    subclassMarker,
+    ...over
+  })
+
+  it('separa desconhecidos (excluídos) de instâncias conhecidas que o conversor devolve null', () => {
+    const r = probeDwgModel(
+      model(
+        [
+          { type: 'LINE' },
+          dim('AcDbAlignedDimension'),
+          dim('AcDbRadialDimension'),
+          dim('AcDbEdgeDimensionInexistente'),
+          dim('AcDbEdgeDimensionInexistente'),
+          dim(undefined),
+          { type: 'REGION' }
+        ],
+        [{ type: 'region' }]
+      ) as never
+    )
+    expect(r.inspected).toBe(8)
+    expect(r.unknownTypes).toEqual({ REGION: 2 })
+    expect(r.knownNull).toEqual({
+      'DIMENSION[AcDbEdgeDimensionInexistente]': 2,
+      'DIMENSION[?]': 1
+    })
+  })
+
+  it('AcDb2LineAngularDimension: null só sem ponto de arco ou sem nome', () => {
+    const marker = 'AcDb2LineAngularDimension'
+    const pt = { x: 0, y: 0 }
+    const r = probeDwgModel(
+      model([
+        dim(marker, { definitionPoint: pt, name: '*D1' }), // converte
+        dim(marker, { subDefinitionPoint2: pt, name: '*D2' }), // converte
+        dim(marker, { name: '*D3' }), // sem arco → null
+        dim(marker, { definitionPoint: pt }) // sem nome → null
+      ]) as never
+    )
+    expect(r.unknownTypes).toEqual({})
+    expect(r.knownNull).toEqual({ [`DIMENSION[${marker}]`]: 2 })
+  })
+
+  it('a comparação é exacta: `line` minúsculo é descartado pelo conversor (==), não «conhecido»', () => {
+    const r = probeDwgModel(
+      model([{ type: 'line' }, { type: 'LINE' }]) as never
+    )
+    expect(r.unknownTypes).toEqual({ LINE: 1 })
+    expect(r.knownNull).toEqual({})
+  })
+
+  it('tallyDwgModelTypes (droppedByType) soma as duas classes sem mascarar nenhuma', () => {
+    const counts = tallyDwgModelTypes(
+      model([{ type: 'REGION' }, dim('AcDbXxx'), dim('AcDbXxx')]) as never
+    )
+    expect(counts).toEqual({ REGION: 1, 'DIMENSION[AcDbXxx]': 2 })
+    expect(totalOf(counts)).toBe(3)
+  })
+
+  it('formas inválidas: contagem zero, sem lançar', () => {
+    expect(probeDwgModel(null)).toEqual({
+      inspected: 0,
+      unknownTypes: {},
+      knownNull: {}
+    })
+    expect(
+      probeDwgModel(model(undefined as never, [null, { type: 7 }]) as never)
+    ).toEqual({ inspected: 2, unknownTypes: { '?': 2 }, knownNull: {} })
+  })
+
+  it('deriva: DWG_DIMENSION_SUBCLASSES == subclassMarker tratados por convertDimension instalado', () => {
+    const src = readFileSync(
+      resolve(
+        __dirname,
+        '../node_modules/@mlightcad/libredwg-converter/lib/AcDbEntitiyConverter.js'
+      ),
+      'utf8'
+    )
+    const body = src.slice(src.indexOf('prototype.convertDimension = '))
+    const end = body.indexOf('prototype.processImage')
+    const found = new Set(
+      [
+        ...body.slice(0, end).matchAll(/subclassMarker == '([A-Za-z0-9]+)'/g)
+      ].map(m => m[1])
+    )
+    expect([...found].sort()).toEqual([...DWG_DIMENSION_SUBCLASSES].sort())
   })
 })

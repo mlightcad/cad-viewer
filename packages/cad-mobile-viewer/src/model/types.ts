@@ -56,7 +56,19 @@ export interface MappedEntity {
   searchable: boolean
 }
 
-export type ViewBoxReason = 'extents' | 'empty-layout'
+/**
+ * `extents` = vista calculada das entidades; `empty-layout` = o layout não tem
+ * entidade nenhuma (nem truncada); `truncated-layout` = todas as entidades do
+ * layout ficaram por mapear (`maxEntities`); `no-renderable-extents` = o layout
+ * tem entidades mapeadas mas nenhuma com caixa válida e visível (invisíveis,
+ * `unbounded`/`none`). Em todos os casos fora de `extents` a vista é o
+ * `DEFAULT_VIEW_BOX` — uma vista por omissão, nunca geometria inventada.
+ */
+export type ViewBoxReason =
+  | 'extents'
+  | 'empty-layout'
+  | 'truncated-layout'
+  | 'no-renderable-extents'
 
 export interface LayoutMap {
   layoutId: string
@@ -68,6 +80,15 @@ export interface LayoutMap {
   /** Caixa para `zoomToFit` do layout (extensão com margem ou fallback). */
   viewBox: ViewBox
   viewBoxReason: ViewBoxReason
+  /** Entidades deste layout não mapeadas por causa de `maxEntities`. */
+  truncated: number
+  /**
+   * `id`s que aparecem mais de uma vez neste layout (ordenados, sem
+   * repetição, no máx. `MAX_REPORTED_DUPLICATE_IDS`). Política: todas as
+   * entidades ficam em `entities`; `DocumentMap.entity()` resolve a PRIMEIRA
+   * ocorrência na ordem do iterador.
+   */
+  duplicateIds: string[]
 }
 
 export type CoverageStatus =
@@ -92,4 +113,6 @@ export interface CoverageReport {
   dropped: number
   /** Total de entidades a mais que `maxEntities` (não mapeadas). */
   truncated: number
+  /** Ocorrências repetidas de um `id` dentro do mesmo layout (todos os layouts). */
+  duplicateIds: number
 }

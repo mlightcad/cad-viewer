@@ -10,7 +10,8 @@ import {
   describeCoverage,
   type MapDatabaseLike,
   mapDocument,
-  NO_RENDERABLE_MESSAGE
+  NO_RENDERABLE_MESSAGE,
+  NO_RENDERABLE_TRUNCATED_MESSAGE
 } from '../src/model/documentMap'
 import { DEFAULT_VIEW_BOX } from '../src/model/normalize'
 import { containsPoint } from '../src/model/normalize'
@@ -314,4 +315,133 @@ describe('mapDocument — robustez', () => {
     expect(a.map.layouts).toEqual(b.map.layouts)
     expect(a.map.coverage).toEqual(b.map.coverage)
   })
+})
+
+describe('mapDocument — duplicados, truncação e vista (follow-up I3)', () => {
+  it('ids duplicados: primeira ocorrência indexada, todas em entities, reportado por layout e no total', () => {
+    const a = ent('X', 'LINE', { geometricExtents: ext(0, 0, 1, 1) })
+    const b = ent('X', 'CIRCLE', { geometricExtents: ext(5, 5, 6, 6) })
+    const c = ent('X', 'ARC')
+    const out = mapDocument({
+      layouts: [L('A'), L('B')],
+      database: fakeDb({
+        A: [a, ent('Y', 'LINE'), b, c],
+        B: [ent('X', 'LINE')]
+      })
+    })
+    if (!out.ok) throw new Error('esperava ok')
+    expect(out.map.entity('A', 'X')?.type).toBe('LINE')
+    expect(out.map.layouts[0].entities.map(e => e.type)).toEqual([
+      'LINE',
+      'LINE',
+      'CIRCLE',
+      'ARC'
+    ])
+    expect(out.map.layouts[0].duplicateIds).toEqual(['X'])
+    expect(out.map.layouts[1].duplicateIds).toEqual([])
+    expect(out.map.coverage.duplicateIds).toBe(2)
+    expect(describeCoverage(out.map.coverage)).toContain('ids duplicados 2')
+  })
+
+  it('duplicados: determinístico e lista limitada com contagem exacta', () => {
+    const many = Array.from({ length: 120 }, (_v, i) => [
+      ent(`d${String(i).padStart(3, '0')}`, 'LINE'),
+      ent(`d${String(i).padStart(3, '0')}`, 'LINE')
+    ]).flat()
+    const run = () =>
+      mapDocument({ layouts: [L('A')], database: fakeDb({ A: many }) })
+    const x = run()
+    const y = run()
+    if (!x.ok || !y.ok) throw new Error('esperava ok')
+    expect(x.map.coverage.duplicateIds).toBe(120)
+    expect(x.map.layouts[0].duplicateIds).toHaveLength(50)
+    expect(x.map.layouts[0].duplicateIds[0]).toBe('d000')
+    expect(x.map.layouts).toEqual(y.map.layouts)
+  })
+
+  it('sem duplicados: nada reportado e estado complete', () => {
+    const out = mapDocument({
+      layouts: [L('A')],
+      database: fakeDb({ A: [ent('1', 'LINE'), ent('2', 'LINE')] })
+    })
+    if (!out.ok) throw new Error('esperava ok')
+    expect(out.map.coverage.duplicateIds).toBe(0)
+    expect(out.map.layouts[0].duplicateIds).toEqual([])
+    expect(out.map.coverage.status).toBe('complete')
+  })
+
+  it('maxEntities: truncated por layout; layout totalmente truncado → truncated-layout (vista por omissão, sem geometria)', () => {
+    const out = mapDocument(
+      {
+        layouts: [L('A'), L('B')],
+        database: fakeDb({
+          A: [ent('a1', 'LINE'), ent('a2', 'LINE')],
+          B: [ent('b1', 'LINE'), ent('b2', 'LINE'), ent('b3', 'LINE')]
+        })
+      },
+      { maxEntities: 2 }
+    )
+    if (!out.ok) throw new Error('esperava ok')
+    const [a, b] = out.map.layouts
+    expect([a.truncated, b.truncated]).toEqual([0, 3])
+    expect(b.entities).toEqual([])
+    expect(b.extents).toBeNull()
+    expect(b.viewBoxReason).toBe('truncated-layout')
+    expect(b.viewBox).toEqual(DEFAULT_VIEW_BOX)
+    expect(a.viewBoxReason).toBe('extents')
+    expect(out.map.coverage.truncated).toBe(3)
+  })
+
+  it('truncação deixa só entidades não desenháveis → falha com mensagem própria que cita o limite', () => {
+    const out = mapDocument(
+      {
+        layouts: [L('A')],
+        database: fakeDb({
+          A: [ent('u1', 'REGION'), ent('r1', 'LINE'), ent('r2', 'LINE')]
+        })
+      },
+      { maxEntities: 1 }
+    )
+    expect(out.ok).toBe(false)
+    if (out.ok) return
+    expect(out.failure.message).toBe(NO_RENDERABLE_TRUNCATED_MESSAGE)
+    expect(out.failure.message).not.toBe(NO_RENDERABLE_MESSAGE)
+    expect(out.failure.detail).toContain('não mapeadas (limite) 2')
+    expect(out.coverage.truncated).toBe(2)
+  })
+
+  it('viewBoxReason: empty-layout só para layout realmente vazio', () => {
+    const out = mapDocument({
+      layouts: [L('E'), L('R')],
+      database: fakeDb({ E: [], R: [ent('r', 'LINE')] })
+    })
+    if (!out.ok) throw new Error('esperava ok')
+    expect(out.map.layouts[0].viewBoxReason).toBe('empty-layout')
+    expect(out.map.layouts[1].viewBoxReason).toBe('extents')
+  })
+
+  it.each([
+    ['entidade invisível', { visibility: false }],
+    ['caixa inválida (NaN)', { geometricExtents: ext(NaN, 0, 1, 1) }],
+    ['sem extensão', { geometricExtents: undefined }],
+    ['ilimitada (XLINE)', { geometricExtents: ext(-1e15, -1e15, 1e15, 1e15) }]
+  ])(
+    'layout não vazio mas sem bounds utilizáveis (%s) → no-renderable-extents, não empty-layout',
+    (_n, over) => {
+      const out = mapDocument({
+        layouts: [L('A'), L('R')],
+        database: fakeDb({
+          A: [ent('x', 'LINE', over)],
+          R: [ent('ok', 'LINE')]
+        })
+      })
+      if (!out.ok) throw new Error('esperava ok')
+      const a = out.map.layouts[0]
+      expect(a.entities).toHaveLength(1)
+      expect(a.extents).toBeNull()
+      expect(a.viewBoxReason).toBe('no-renderable-extents')
+      expect(a.viewBox).toEqual(DEFAULT_VIEW_BOX)
+      expect(a.truncated).toBe(0)
+    }
+  )
 })
