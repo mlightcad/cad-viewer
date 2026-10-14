@@ -82,6 +82,13 @@ export default {
       'Stáhne zip; po rozbalení a nasazení lze načítat postupně. Heslo a platnost platí jen pro samostatné HTML',
     securitySingleOnlyHint:
       'Heslo a platnost jsou dostupné pouze pro export samostatného HTML.',
+    packageSection: 'Části balíčku',
+    chunkSizeMiB: 'Velikost části (MiB)',
+    chunkSizeMiBHint:
+      'Maximální nekomprimovaná velikost geometrické nebo OSNAP části. Menší části se vykreslí dříve; větší znamenají méně stahování',
+    compressChunks: 'Komprimovat části',
+    compressChunksHint:
+      'Před zabalením komprimovat každou část gzipem. Vypnutím se zapíší surová ACEC/ACEO data',
     layersSection: 'Hladiny',
     exportInvisibleLayers: 'Exportovat neviditelné hladiny',
     exportInvisibleLayersHint:

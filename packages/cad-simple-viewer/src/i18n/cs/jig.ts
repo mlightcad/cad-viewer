@@ -1238,6 +1238,8 @@ export default {
     exportLayouts: 'Exportovat rozvržení',
     initialView: 'Počáteční pohled při otevření HTML',
     viewerMode: 'Režim offline prohlížeče',
+    chunkSizeMiB: 'Velikost části v MiB (vícesouborový balíček)',
+    compressChunks: 'Komprimovat části (vícesouborový balíček)',
     keywords: {
       single: {
         display: 'Jeden soubor(S)',

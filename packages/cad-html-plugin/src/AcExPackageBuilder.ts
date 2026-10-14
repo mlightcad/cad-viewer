@@ -6,6 +6,7 @@ import {
 } from './AcExBatchBinaryCodec'
 import {
   type AcExGeometryChunk,
+  encodeChunkBinary,
   encodeChunkGzip,
   encodeChunkGzipAsync
 } from './AcExChunkBinaryCodec'
@@ -13,13 +14,13 @@ import { splitLineBatch, splitMeshBatch } from './AcExGeometryBatchSplit'
 import { ACEX_DEFAULT_MANIFEST_FILE } from './AcExHtmlPackageBootstrap'
 import { packHtmlPackage } from './AcExHtmlPackager'
 import {
+  encodeOsnapCatalogBinary,
   encodeOsnapCatalogGzip,
   encodeOsnapCatalogGzipAsync,
   splitOsnapPrimitives
 } from './AcExOsnapCatalogCodec'
 import {
   ACEX_DEFAULT_CHUNK_MAX_BYTES,
-  ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES,
   ACEX_MAX_GEOMETRY_BATCH_BYTES,
   ACEX_PACKAGE_VERSION,
   ACEX_SNAPSHOT_VERSION,
@@ -52,8 +53,18 @@ export interface AcExBuildPackageOptions {
    * Defaults to {@link ACEX_MAX_GEOMETRY_BATCH_BYTES}.
    */
   maxBatchBytes?: number
-  /** Max estimated uncompressed ACEO bytes per OSNAP chunk. */
+  /**
+   * Max estimated uncompressed ACEO bytes per OSNAP chunk.
+   * Defaults to {@link AcExBuildPackageOptions.maxChunkBytes} so geometry and
+   * OSNAP files share the same size budget.
+   */
   maxOsnapChunkBytes?: number
+  /**
+   * When `true` (default), geometry/OSNAP chunks are gzip-compressed
+   * (`.acex.gz` / `.osnap.gz`). When `false`, raw ACEC/ACEO bytes are written
+   * (`.acex` / `.osnap`) and the outer zip may still deflate them.
+   */
+  compressChunks?: boolean
   /**
    * Optional relative or absolute manifest URL embedded in the shell HTML.
    * When omitted, the shell stays generic and probes
@@ -183,6 +194,7 @@ function collectPackageJobs(
   layoutRefs: AcExPackageLayoutRef[]
   layoutIndexByBtrId: Map<string, number>
   manifestFileName: string
+  compressChunks: boolean
 } {
   if (snapshot.version !== ACEX_SNAPSHOT_VERSION) {
     throw new Error(`Unsupported snapshot version: ${snapshot.version}`)
@@ -190,8 +202,10 @@ function collectPackageJobs(
 
   const maxChunkBytes = options.maxChunkBytes ?? ACEX_DEFAULT_CHUNK_MAX_BYTES
   const maxBatchBytes = options.maxBatchBytes ?? ACEX_MAX_GEOMETRY_BATCH_BYTES
-  const maxOsnapChunkBytes =
-    options.maxOsnapChunkBytes ?? ACEX_DEFAULT_OSNAP_CHUNK_MAX_BYTES
+  const maxOsnapChunkBytes = options.maxOsnapChunkBytes ?? maxChunkBytes
+  const compressChunks = options.compressChunks !== false
+  const geometryExt = compressChunks ? 'acex.gz' : 'acex'
+  const osnapExt = compressChunks ? 'osnap.gz' : 'osnap'
   const manifestFileName = ACEX_DEFAULT_MANIFEST_FILE
 
   const orderedLayouts = orderLayoutsForExport(
@@ -210,7 +224,7 @@ function collectPackageJobs(
 
     slices.forEach((slice, sliceIndex) => {
       const id = `L${layoutIndex}-${String(sliceIndex).padStart(3, '0')}`
-      const href = `chunks/${id}.acex.gz`
+      const href = `chunks/${id}.${geometryExt}`
       chunkIds.push(id)
       jobs.push({
         kind: 'geometry',
@@ -246,7 +260,7 @@ function collectPackageJobs(
       const osnapChunkIds: string[] = []
       osnapSlices.forEach((primitives, sliceIndex) => {
         const id = `L${layoutIndex}-osnap-${String(sliceIndex).padStart(3, '0')}`
-        const href = `chunks/${id}.osnap.gz`
+        const href = `chunks/${id}.${osnapExt}`
         osnapChunkIds.push(id)
         jobs.push({
           kind: 'osnap',
@@ -263,7 +277,7 @@ function collectPackageJobs(
     layoutRefs.push(layoutRef)
   })
 
-  return { jobs, layoutRefs, layoutIndexByBtrId, manifestFileName }
+  return { jobs, layoutRefs, layoutIndexByBtrId, manifestFileName, compressChunks }
 }
 
 function assemblePackageData(
@@ -360,22 +374,74 @@ function assemblePackageData(
  * Builds package manifest + chunk files (no HTML shell).
  * Used by multi-file zip export and self-contained embedded progressive HTML.
  */
+function encodePackageJob(
+  job: GzipJob,
+  compressChunks: boolean
+): {
+  job: GzipJob
+  uncompressed: Uint8Array
+  compressed: Uint8Array
+} {
+  if (job.kind === 'geometry') {
+    if (!compressChunks) {
+      const uncompressed = encodeChunkBinary(job.chunk)
+      return { job, uncompressed, compressed: uncompressed }
+    }
+    const { uncompressed, compressed } = encodeChunkGzip(job.chunk)
+    return { job, uncompressed, compressed }
+  }
+  if (!compressChunks) {
+    const uncompressed = encodeOsnapCatalogBinary({
+      primitives: job.primitives
+    })
+    return { job, uncompressed, compressed: uncompressed }
+  }
+  const { uncompressed, compressed } = encodeOsnapCatalogGzip({
+    primitives: job.primitives
+  })
+  return { job, uncompressed, compressed }
+}
+
+async function encodePackageJobAsync(
+  job: GzipJob,
+  compressChunks: boolean
+): Promise<{
+  job: GzipJob
+  uncompressed: Uint8Array
+  compressed: Uint8Array
+}> {
+  if (job.kind === 'geometry') {
+    if (!compressChunks) {
+      const uncompressed = encodeChunkBinary(job.chunk)
+      return { job, uncompressed, compressed: uncompressed }
+    }
+    const { uncompressed, compressed } = await encodeChunkGzipAsync(job.chunk)
+    return { job, uncompressed, compressed }
+  }
+  if (!compressChunks) {
+    const uncompressed = encodeOsnapCatalogBinary({
+      primitives: job.primitives
+    })
+    return { job, uncompressed, compressed: uncompressed }
+  }
+  const { uncompressed, compressed } = await encodeOsnapCatalogGzipAsync({
+    primitives: job.primitives
+  })
+  return { job, uncompressed, compressed }
+}
+
 export function buildAcExPackageData(
   snapshot: AcExSnapshot,
   options: AcExBuildPackageDataOptions = {}
 ): Omit<AcExPackageFiles, 'html'> {
-  const { jobs, layoutRefs, layoutIndexByBtrId, manifestFileName } =
-    collectPackageJobs(snapshot, options)
-  const encoded = jobs.map(job => {
-    if (job.kind === 'geometry') {
-      const { uncompressed, compressed } = encodeChunkGzip(job.chunk)
-      return { job, uncompressed, compressed }
-    }
-    const { uncompressed, compressed } = encodeOsnapCatalogGzip({
-      primitives: job.primitives
-    })
-    return { job, uncompressed, compressed }
-  })
+  const {
+    jobs,
+    layoutRefs,
+    layoutIndexByBtrId,
+    manifestFileName,
+    compressChunks
+  } = collectPackageJobs(snapshot, options)
+  const encoded = jobs.map(job => encodePackageJob(job, compressChunks))
   return assemblePackageData(
     snapshot,
     layoutRefs,
@@ -386,27 +452,22 @@ export function buildAcExPackageData(
 }
 
 /**
- * Async package data build that gzip-encodes chunks in parallel.
+ * Async package data build that gzip-encodes chunks in parallel when compression
+ * is enabled.
  */
 export async function buildAcExPackageDataAsync(
   snapshot: AcExSnapshot,
   options: AcExBuildPackageDataOptions = {}
 ): Promise<Omit<AcExPackageFiles, 'html'>> {
-  const { jobs, layoutRefs, layoutIndexByBtrId, manifestFileName } =
-    collectPackageJobs(snapshot, options)
+  const {
+    jobs,
+    layoutRefs,
+    layoutIndexByBtrId,
+    manifestFileName,
+    compressChunks
+  } = collectPackageJobs(snapshot, options)
   const encoded = await Promise.all(
-    jobs.map(async job => {
-      if (job.kind === 'geometry') {
-        const { uncompressed, compressed } = await encodeChunkGzipAsync(
-          job.chunk
-        )
-        return { job, uncompressed, compressed }
-      }
-      const { uncompressed, compressed } = await encodeOsnapCatalogGzipAsync({
-        primitives: job.primitives
-      })
-      return { job, uncompressed, compressed }
-    })
+    jobs.map(job => encodePackageJobAsync(job, compressChunks))
   )
   return assemblePackageData(
     snapshot,

@@ -1229,6 +1229,8 @@ export default {
     exportLayouts: '是否导出布局',
     initialView: '打开 HTML 时的初始视图',
     viewerMode: '离线查看器模式',
+    chunkSizeMiB: '每个分片大小（MiB，多文件包）',
+    compressChunks: '是否压缩分片（多文件包）',
     keywords: {
       single: {
         display: '单文件(S)',

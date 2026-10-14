@@ -6,7 +6,8 @@ import type {
 import {
   compressSnapshotBinary,
   compressSnapshotBinaryAsync,
-  decompressSnapshotBinary
+  decompressSnapshotBinary,
+  isGzipPayload
 } from './AcExSnapshotCompression'
 
 /** Magic for ACEO osnap catalog payloads (`ACEO` little-endian). */
@@ -214,6 +215,19 @@ export function decodeOsnapCatalogGzip(
   compressed: Uint8Array
 ): AcExOsnapCatalog {
   return decodeOsnapCatalogBinary(decompressSnapshotBinary(compressed))
+}
+
+/**
+ * Decodes an OSNAP catalog payload that may be gzip (`.osnap.gz`) or raw ACEO
+ * (`.osnap`). Detection uses the gzip magic header.
+ */
+export function decodeOsnapCatalogPayload(
+  bytes: Uint8Array
+): AcExOsnapCatalog {
+  if (isGzipPayload(bytes)) {
+    return decodeOsnapCatalogGzip(bytes)
+  }
+  return decodeOsnapCatalogBinary(bytes)
 }
 
 function writeNormalSign(writer: AcExBinaryWriter, sign: 1 | -1): void {

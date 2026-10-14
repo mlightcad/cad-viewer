@@ -17,13 +17,28 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
     constructor(readonly message: string) {}
   }
 
+  class AcEdPromptIntegerOptions {
+    allowNone = false
+    allowZero = true
+    allowNegative = false
+    useDefaultValue = false
+    defaultValue = 0
+
+    constructor(
+      readonly message: string,
+      readonly lowerLimit?: number,
+      readonly upperLimit?: number
+    ) {}
+  }
+
   return {
     AcApContext: {},
 
     AcApDocManager: {
       instance: {
         editor: {
-          getKeywords: jest.fn()
+          getKeywords: jest.fn(),
+          getInteger: jest.fn()
         }
       }
     },
@@ -49,6 +64,8 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
 
     AcEdPromptKeywordOptions,
 
+    AcEdPromptIntegerOptions,
+
     AcEdPromptStatus: {
       Cancel: -5002,
       None: 0x1388,
@@ -69,8 +86,10 @@ import { AcEdPromptStatus } from '@mlightcad/cad-simple-viewer'
 
 import { AcApExportHtmlCmd } from '../src/AcApExportHtmlCmd'
 import { AcApHtmlConvertor } from '../src/AcApHtmlConvertor'
+import { ACEX_DEFAULT_CHUNK_MAX_BYTES } from '../src/AcExPackageTypes'
 
 const getKeywords = AcApDocManager.instance.editor.getKeywords as jest.Mock
+const getInteger = AcApDocManager.instance.editor.getInteger as jest.Mock
 
 const convert = () =>
   (AcApHtmlConvertor as jest.MockedClass<typeof AcApHtmlConvertor>).mock
@@ -88,7 +107,14 @@ const defaultExportOptions = {
   viewerMode: 'measure',
   expiryDays: 'never',
   expiresAt: null,
-  password: ''
+  password: '',
+  maxChunkBytes: ACEX_DEFAULT_CHUNK_MAX_BYTES,
+  compressChunks: true
+}
+
+const defaultMultiExportOptions = {
+  ...defaultExportOptions,
+  exportFormat: 'multi' as const
 }
 
 describe('AcApExportHtmlCmd prompt defaults', () => {
@@ -114,6 +140,7 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
     await cmd.execute(context)
 
     expect(getKeywords).toHaveBeenCalledTimes(5)
+    expect(getInteger).not.toHaveBeenCalled()
     expect(getKeywords.mock.calls[0][0].allowNone).toBe(true)
     expect(getKeywords.mock.calls[1][0].allowNone).toBe(true)
     expect(getKeywords.mock.calls[2][0].allowNone).toBe(true)
@@ -169,12 +196,48 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+    getInteger.mockResolvedValueOnce(none())
+
+    await cmd.execute(context)
+
+    expect(getInteger).toHaveBeenCalledTimes(1)
+    expect(getKeywords).toHaveBeenCalledTimes(6)
+    expect(convert()).toHaveBeenCalledWith(
+      'drawing.dwg',
+      defaultMultiExportOptions,
+      context.view
+    )
+  })
+
+  test('exports multi-file package with custom chunk size and no compression', async () => {
+    getKeywords
+      .mockResolvedValueOnce({
+        status: AcEdPromptStatus.OK,
+        stringResult: 'Multi'
+      })
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce({
+        status: AcEdPromptStatus.OK,
+        stringResult: 'No'
+      })
+    getInteger.mockResolvedValueOnce({
+      status: AcEdPromptStatus.OK,
+      value: 4
+    })
 
     await cmd.execute(context)
 
     expect(convert()).toHaveBeenCalledWith(
       'drawing.dwg',
-      { ...defaultExportOptions, exportFormat: 'multi' },
+      {
+        ...defaultMultiExportOptions,
+        maxChunkBytes: 4 * 1024 * 1024,
+        compressChunks: false
+      },
       context.view
     )
   })
@@ -251,6 +314,24 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
     await cmd.execute(context)
 
     expect(getKeywords).toHaveBeenCalledTimes(5)
+    expect(AcApHtmlConvertor).not.toHaveBeenCalled()
+  })
+
+  test('cancels multi export when the chunk size prompt is cancelled', async () => {
+    getKeywords
+      .mockResolvedValueOnce({
+        status: AcEdPromptStatus.OK,
+        stringResult: 'Multi'
+      })
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+    getInteger.mockResolvedValueOnce({ status: AcEdPromptStatus.Cancel })
+
+    await cmd.execute(context)
+
+    expect(getInteger).toHaveBeenCalledTimes(1)
     expect(AcApHtmlConvertor).not.toHaveBeenCalled()
   })
 

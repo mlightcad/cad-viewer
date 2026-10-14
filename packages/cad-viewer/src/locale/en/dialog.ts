@@ -82,6 +82,13 @@ export default {
       'Download a zip; unzip and host for progressive loading. Password and expiry apply only to self-contained HTML',
     securitySingleOnlyHint:
       'Password and expiry are available only for self-contained HTML export.',
+    packageSection: 'Package chunks',
+    chunkSizeMiB: 'Chunk size (MiB)',
+    chunkSizeMiBHint:
+      'Max uncompressed size of each geometry or OSNAP chunk. Smaller chunks paint sooner; larger chunks mean fewer downloads',
+    compressChunks: 'Compress chunks',
+    compressChunksHint:
+      'Gzip each chunk before zipping. Turn off to skip gzip and let the zip store raw ACEC/ACEO bytes',
     layersSection: 'Layers',
     exportInvisibleLayers: 'Export invisible layers',
     exportInvisibleLayersHint:

@@ -132,6 +132,7 @@ export {
   decodeChunkBinary,
   encodeChunkGzip,
   decodeChunkGzip,
+  decodeChunkPayload,
   ACEC_CHUNK_MAGIC,
   type AcExGeometryChunk
 } from './AcExChunkBinaryCodec'
@@ -165,6 +166,7 @@ export {
   decodeOsnapCatalogBinary,
   encodeOsnapCatalogGzip,
   decodeOsnapCatalogGzip,
+  decodeOsnapCatalogPayload,
   splitOsnapPrimitives,
   estimateOsnapPrimitiveBytes,
   ACEO_OSNAP_MAGIC,
@@ -183,8 +185,15 @@ export { AcApHtmlConvertor } from './AcApHtmlConvertor'
 export {
   type AcApHtmlExportFormat,
   type AcApHtmlExportOptions,
+  ACEX_DEFAULT_CHUNK_SIZE_MIB,
+  ACEX_MIN_CHUNK_SIZE_MIB,
+  ACEX_MAX_CHUNK_SIZE_MIB,
+  acexChunkSizeBytesToMiB,
+  acexChunkSizeMiBToBytes,
   captureAcApHtmlViewState,
-  resolveAcApHtmlExportOptions
+  clampAcApHtmlChunkSizeMiB,
+  resolveAcApHtmlExportOptions,
+  resolveAcApHtmlPackageBuildOptions
 } from './AcApHtmlExportOptions'
 export {
   type AcApHtmlPluginOptions,

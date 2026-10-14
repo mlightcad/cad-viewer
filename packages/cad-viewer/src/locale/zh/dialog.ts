@@ -81,6 +81,13 @@ export default {
     exportFormatMultiHint:
       '下载 zip；解压后托管可边下载边渲染。密码与有效期仅支持自包含 HTML',
     securitySingleOnlyHint: '密码与有效期仅适用于自包含 HTML 导出。',
+    packageSection: '分包设置',
+    chunkSizeMiB: '每个分片大小 (MiB)',
+    chunkSizeMiBHint:
+      '每个几何或 OSNAP 分片未压缩体积上限。分片越小越早出图，越大则下载次数越少',
+    compressChunks: '压缩分片',
+    compressChunksHint:
+      '打包前对每个分片做 gzip。关闭后写入原始 ACEC/ACEO，可由外层 zip 再压缩',
     layersSection: '图层',
     exportInvisibleLayers: '导出不可见图层',
     exportInvisibleLayersHint: '将关闭或冻结图层上的几何图形包含在导出文件中',

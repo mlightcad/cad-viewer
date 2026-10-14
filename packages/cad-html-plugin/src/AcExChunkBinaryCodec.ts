@@ -8,7 +8,8 @@ import { AcExBinaryReader, AcExBinaryWriter } from './AcExBinaryIO'
 import {
   compressSnapshotBinary,
   compressSnapshotBinaryAsync,
-  decompressSnapshotBinary
+  decompressSnapshotBinary,
+  isGzipPayload
 } from './AcExSnapshotCompression'
 import {
   ACEX_SNAPSHOT_VERSION,
@@ -132,4 +133,15 @@ export async function encodeChunkGzipAsync(chunk: AcExGeometryChunk): Promise<{
 /** Gunzips and decodes a `.acex.gz` geometry chunk payload. */
 export function decodeChunkGzip(compressed: Uint8Array): AcExGeometryChunk {
   return decodeChunkBinary(decompressSnapshotBinary(compressed))
+}
+
+/**
+ * Decodes a geometry chunk payload that may be gzip (`.acex.gz`) or raw ACEC
+ * (`.acex`). Detection uses the gzip magic header so loaders stay extension-agnostic.
+ */
+export function decodeChunkPayload(bytes: Uint8Array): AcExGeometryChunk {
+  if (isGzipPayload(bytes)) {
+    return decodeChunkGzip(bytes)
+  }
+  return decodeChunkBinary(bytes)
 }

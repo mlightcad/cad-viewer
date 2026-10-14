@@ -2020,7 +2020,13 @@ export default {
       'العرض الأولي عند فتح HTML',
 
     viewerMode:
-      'وضع العارض دون اتصال'
+      'وضع العارض دون اتصال',
+
+    chunkSizeMiB:
+      'حجم الجزء بالميبيبايت (حزمة متعددة الملفات)',
+
+    compressChunks:
+      'ضغط الأجزاء (حزمة متعددة الملفات)'
   ,
     keywords: {
       ...enJig.chtml.keywords,

@@ -3,6 +3,7 @@ import {
   AcApDocManager,
   AcApI18n,
   AcEdCommand,
+  AcEdPromptIntegerOptions,
   AcEdPromptKeywordOptions,
   AcEdPromptStatus
 } from '@mlightcad/cad-simple-viewer'
@@ -10,6 +11,11 @@ import {
 import { AcApHtmlConvertor } from './AcApHtmlConvertor'
 import {
   type AcApHtmlExportOptions,
+  ACEX_MAX_CHUNK_SIZE_MIB,
+  ACEX_MIN_CHUNK_SIZE_MIB,
+  acexChunkSizeBytesToMiB,
+  acexChunkSizeMiBToBytes,
+  clampAcApHtmlChunkSizeMiB,
   resolveAcApHtmlExportOptions
 } from './AcApHtmlExportOptions'
 import type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions'
@@ -85,12 +91,32 @@ export class AcApExportHtmlCmd extends AcEdCommand {
       return undefined
     }
 
+    let maxChunkBytes: number | undefined
+    let compressChunks: boolean | undefined
+    if (exportFormat === 'multi') {
+      maxChunkBytes = await this.promptChunkSizeMiB()
+      if (maxChunkBytes === undefined) {
+        return undefined
+      }
+
+      compressChunks = await this.promptYesNo(
+        'jig.chtml.compressChunks',
+        defaults.compressChunks
+      )
+      if (compressChunks === undefined) {
+        return undefined
+      }
+    }
+
     return resolveAcApHtmlExportOptions({
       exportFormat,
       exportInvisibleLayers,
       exportLayouts,
       initialView,
-      viewerMode
+      viewerMode,
+      ...(exportFormat === 'multi'
+        ? { maxChunkBytes, compressChunks }
+        : {})
     })
   }
 
@@ -167,6 +193,34 @@ export class AcApExportHtmlCmd extends AcEdCommand {
         return defaultYes
       }
       return result.stringResult === 'Yes'
+    }
+    return undefined
+  }
+
+  private async promptChunkSizeMiB(): Promise<number | undefined> {
+    const defaults = resolveAcApHtmlExportOptions({ exportFormat: 'multi' })
+    const defaultMiB = acexChunkSizeBytesToMiB(defaults.maxChunkBytes)
+    const prompt = new AcEdPromptIntegerOptions(
+      AcApI18n.t('jig.chtml.chunkSizeMiB'),
+      ACEX_MIN_CHUNK_SIZE_MIB,
+      ACEX_MAX_CHUNK_SIZE_MIB
+    )
+    prompt.allowNone = true
+    prompt.allowZero = false
+    prompt.allowNegative = false
+    prompt.useDefaultValue = true
+    prompt.defaultValue = defaultMiB
+
+    const result = await AcApDocManager.instance.editor.getInteger(prompt)
+    if (result.status === AcEdPromptStatus.Cancel) {
+      return undefined
+    }
+    if (result.status === AcEdPromptStatus.None) {
+      return acexChunkSizeMiBToBytes(defaultMiB)
+    }
+    if (result.status === AcEdPromptStatus.OK) {
+      const miB = clampAcApHtmlChunkSizeMiB(result.value ?? defaultMiB)
+      return acexChunkSizeMiBToBytes(miB)
     }
     return undefined
   }

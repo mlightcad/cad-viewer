@@ -66,6 +66,11 @@ export async function compressSnapshotBinaryAsync(
   }
 }
 
+/** True when `bytes` start with the gzip magic header (`1f 8b`). */
+export function isGzipPayload(bytes: Uint8Array): boolean {
+  return bytes.byteLength >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b
+}
+
 /** Decompresses a gzip snapshot binary payload from an exported HTML file. */
 export function decompressSnapshotBinary(data: Uint8Array): Uint8Array {
   if (data.byteLength > ACEX_MAX_COMPRESSED_BYTES) {

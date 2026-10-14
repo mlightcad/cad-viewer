@@ -141,6 +141,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.8(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))(vue@3.5.31(typescript@5.9.3))
+      vite:
+        specifier: ^6.4.3
+        version: 6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3)
       vue:
         specifier: ^3.4.21
         version: 3.5.31(typescript@5.9.3)
@@ -423,6 +426,12 @@ importers:
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.8(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))(vue@3.5.31(typescript@5.9.3))
+      vite:
+        specifier: ^6.4.3
+        version: 6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3)
+      vite-plugin-static-copy:
+        specifier: ^4.1.1
+        version: 4.1.1(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))
 
   packages/cad-svg-plugin:
     devDependencies:
@@ -486,6 +495,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.8(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))(vue@3.5.31(typescript@5.9.3))
+      '@vue/language-core':
+        specifier: ^3.1.5
+        version: 3.3.13
       '@vueuse/core':
         specifier: ^11.1.0
         version: 11.3.0(vue@3.5.31(typescript@5.9.3))
@@ -501,9 +513,12 @@ importers:
       three:
         specifier: ^0.172.0
         version: 0.172.0
+      vite:
+        specifier: ^6.4.3
+        version: 6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3)
       vite-plugin-dts:
         specifier: ^5.0.3
-        version: 5.0.3(@microsoft/api-extractor@7.58.0(@types/node@24.12.4))(esbuild@0.25.12)(rollup@4.60.1)(typescript@5.9.3)(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))
+        version: 5.0.3(@microsoft/api-extractor@7.58.0(@types/node@24.12.4))(@vue/language-core@3.3.13)(esbuild@0.25.12)(rollup@4.60.1)(typescript@5.9.3)(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))
       vite-plugin-lib-inject-css:
         specifier: ^2.2.2
         version: 2.2.2(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))
@@ -3180,6 +3195,9 @@ packages:
       typescript:
         optional: true
 
+  '@vue/language-core@3.3.13':
+    resolution: {integrity: sha512-axA0Xemn5LuUKuKWob0/kVq7xQ2mJJM6VqA9Exvt35nM9yRC31goWVve/G/Zb2ZCLsXC8FHYjjfXlnshknSCew==}
+
   '@vue/reactivity@3.5.31':
     resolution: {integrity: sha512-DtKXxk9E/KuVvt8VxWu+6Luc9I9ETNcqR1T1oW1gf02nXaZ1kuAx58oVu7uX9XxJR0iJCro6fqBLw9oSBELo5g==}
 
@@ -3338,6 +3356,9 @@ packages:
 
   alien-signals@1.0.13:
     resolution: {integrity: sha512-OGj9yyTnJEttvzhTUWuscOvtqxq5vrhF7vL9oS0xJ2mK0ItPYP1/y+vCFebfxoEyAz0++1AIwJ5CMr+Fk3nDmg==}
+
+  alien-signals@3.2.1:
+    resolution: {integrity: sha512-I8FjmltrfnDFoZedi5CG8DghVYNhzb/Ijluz7tCSJH0xpd0484Kowhbb1XDYOxfJpU1p5wnM2X54dA+IfGyD1g==}
 
   ansi-align@3.0.1:
     resolution: {integrity: sha512-IOfwwBF5iczOjp/WeY4YxyjqAFMQoZufdQWDd19SEExbVLNXqvpzSJ/M7Za4/sCPmQ0+GRquoA7bGcINcxew6w==}
@@ -9050,6 +9071,16 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
+  '@vue/language-core@3.3.13':
+    dependencies:
+      '@volar/language-core': 2.4.28
+      '@vue/compiler-dom': 3.5.31
+      '@vue/shared': 3.5.31
+      alien-signals: 3.2.1
+      muggle-string: 0.4.1
+      path-browserify: 1.0.1
+      picomatch: 4.0.4
+
   '@vue/reactivity@3.5.31':
     dependencies:
       '@vue/shared': 3.5.31
@@ -9218,6 +9249,8 @@ snapshots:
       '@algolia/requester-node-http': 5.57.0
 
   alien-signals@1.0.13: {}
+
+  alien-signals@3.2.1: {}
 
   ansi-align@3.0.1:
     dependencies:
@@ -12052,7 +12085,7 @@ snapshots:
 
   universalify@2.0.1: {}
 
-  unplugin-dts@1.0.3(@microsoft/api-extractor@7.58.0(@types/node@24.12.4))(esbuild@0.25.12)(rollup@4.60.1)(typescript@5.9.3)(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3)):
+  unplugin-dts@1.0.3(@microsoft/api-extractor@7.58.0(@types/node@24.12.4))(@vue/language-core@3.3.13)(esbuild@0.25.12)(rollup@4.60.1)(typescript@5.9.3)(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3)):
     dependencies:
       '@rollup/pluginutils': 5.3.0(rollup@4.60.1)
       '@volar/typescript': 2.4.28
@@ -12065,6 +12098,7 @@ snapshots:
       unplugin: 2.3.11
     optionalDependencies:
       '@microsoft/api-extractor': 7.58.0(@types/node@24.12.4)
+      '@vue/language-core': 3.3.13
       esbuild: 0.25.12
       rollup: 4.60.1
       vite: 6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3)
@@ -12144,9 +12178,9 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite-plugin-dts@5.0.3(@microsoft/api-extractor@7.58.0(@types/node@24.12.4))(esbuild@0.25.12)(rollup@4.60.1)(typescript@5.9.3)(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3)):
+  vite-plugin-dts@5.0.3(@microsoft/api-extractor@7.58.0(@types/node@24.12.4))(@vue/language-core@3.3.13)(esbuild@0.25.12)(rollup@4.60.1)(typescript@5.9.3)(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3)):
     dependencies:
-      unplugin-dts: 1.0.3(@microsoft/api-extractor@7.58.0(@types/node@24.12.4))(esbuild@0.25.12)(rollup@4.60.1)(typescript@5.9.3)(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))
+      unplugin-dts: 1.0.3(@microsoft/api-extractor@7.58.0(@types/node@24.12.4))(@vue/language-core@3.3.13)(esbuild@0.25.12)(rollup@4.60.1)(typescript@5.9.3)(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))
     optionalDependencies:
       '@microsoft/api-extractor': 7.58.0(@types/node@24.12.4)
       rollup: 4.60.1

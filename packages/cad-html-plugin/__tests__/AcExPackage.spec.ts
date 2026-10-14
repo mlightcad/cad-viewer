@@ -1,5 +1,6 @@
 import { strFromU8, zipSync } from 'fflate'
 
+import { resolveAcApHtmlPackageBuildOptions } from '../src/AcApHtmlExportOptions'
 import { decodeChunkGzip, encodeChunkGzip } from '../src/AcExChunkBinaryCodec'
 import {
   buildAcExPackage,
@@ -207,6 +208,58 @@ describe('AcEx package format', () => {
     }
   })
 
+  it('builds uncompressed chunks and restores geometry via progressive fetch', async () => {
+    const snapshot = makeSnapshot()
+    const pkg = buildAcExPackage(snapshot, {
+      viewerRuntime: '/* runtime */',
+      baseName: 'demo',
+      maxChunkBytes: 400,
+      compressChunks: false
+    })
+
+    expect(pkg.manifest.chunks.every(c => c.href.endsWith('.acex'))).toBe(true)
+    expect(pkg.manifest.chunks.every(c => !c.href.endsWith('.gz'))).toBe(true)
+    expect(
+      pkg.manifest.chunks.every(
+        c => c.compressedByteLength === c.byteLength
+      )
+    ).toBe(true)
+
+    const fileMap = new Map(pkg.files.map(f => [f.path, f.bytes]))
+    const fetchImpl: typeof fetch = async (input: RequestInfo | URL) => {
+      const url = String(input)
+      const path =
+        [...fileMap.keys()].find(
+          key => url === key || url.endsWith(`/${key}`) || url.endsWith(key)
+        ) ?? null
+      const bytes = path ? fileMap.get(path) : undefined
+      if (!bytes || !path) {
+        return new Response(null, { status: 404 })
+      }
+      if (path.endsWith('.json')) {
+        return new Response(strFromU8(bytes), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+      const copy = new Uint8Array(bytes.byteLength)
+      copy.set(bytes)
+      return new Response(copy, { status: 200 })
+    }
+
+    const loaded = await loadAcExPackage({
+      manifestUrl: 'https://cdn.example/drawing.acex.json',
+      fetchImpl
+    })
+
+    expect(loaded.layouts[0]?.lineBatches.length).toBe(
+      snapshot.layouts[0]!.lineBatches.length
+    )
+    expect(loaded.layouts[0]?.meshBatches.length).toBe(
+      snapshot.layouts[0]!.meshBatches.length
+    )
+  })
+
   it('parses manifest and builds an empty skeleton', () => {
     const pkg = buildAcExPackage(makeSnapshot(), {
       viewerRuntime: '/* runtime */',
@@ -287,6 +340,44 @@ describe('AcEx package format', () => {
       '../escape.txt': new Uint8Array([4, 5, 6])
     })
     expect(() => unzipAcExPackageFiles(evil)).toThrow(/Unsafe path/)
+  })
+
+  it('mirrors maxChunkBytes onto OSNAP package build options', () => {
+    const build = resolveAcApHtmlPackageBuildOptions({
+      maxChunkBytes: 4 * 1024 * 1024,
+      compressChunks: false
+    })
+    expect(build.maxChunkBytes).toBe(4 * 1024 * 1024)
+    expect(build.maxBatchBytes).toBe(4 * 1024 * 1024)
+    expect(build.maxOsnapChunkBytes).toBe(4 * 1024 * 1024)
+    expect(build.compressChunks).toBe(false)
+  })
+
+  it('splits OSNAP with maxChunkBytes when maxOsnapChunkBytes is omitted', () => {
+    const snapshot = makeSnapshot()
+    snapshot.meta.viewerMode = 'measure'
+    snapshot.layouts[0]!.osnap = {
+      primitives: Array.from({ length: 80 }, (_, i) => ({
+        kind: 'circle' as const,
+        layer: i % 2 === 0 ? '0' : 'A',
+        cx: i,
+        cy: 0,
+        r: 1,
+        normalSign: 1 as const
+      }))
+    }
+
+    const maxChunkBytes = 400
+    const pkg = buildAcExPackage(snapshot, {
+      viewerRuntime: '/* runtime */',
+      baseName: 'demo',
+      maxChunkBytes
+    })
+
+    expect(pkg.manifest.osnapChunks!.length).toBeGreaterThan(1)
+    for (const chunk of pkg.manifest.osnapChunks!) {
+      expect(chunk.byteLength).toBeLessThanOrEqual(maxChunkBytes)
+    }
   })
 
   it('stores OSNAP as multiple gzip ACEO chunks loaded after geometry', async () => {

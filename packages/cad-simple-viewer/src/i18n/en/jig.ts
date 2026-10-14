@@ -1241,6 +1241,8 @@ export default {
     exportLayouts: 'Export layouts',
     initialView: 'Initial view when opening HTML',
     viewerMode: 'Offline viewer mode',
+    chunkSizeMiB: 'Chunk size in MiB (multi-file package)',
+    compressChunks: 'Compress chunks (multi-file package)',
     keywords: {
       single: {
         display: 'Single(S)',
