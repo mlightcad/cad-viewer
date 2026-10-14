@@ -1,0 +1,17 @@
+node_modules/
+.expo/
+dist/
+web-build/
+android/
+ios/
+# Bundle gerado do viewer (B2/I2): não versionado
+assets/viewer-bundle/
+# Segredos e credenciais de assinatura (architecture §9)
+.env*
+*.keystore
+*.jks
+*.p8
+*.p12
+credentials.json
+google-services.json
+*.log
