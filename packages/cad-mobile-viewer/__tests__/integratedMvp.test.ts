@@ -8,11 +8,19 @@
 //     → FIND REAL → ViewerSession/dispatcher (viewer) → BridgeClient (app)
 //     → sessionReducer (app)
 //
-// O que NÃO é real (e portanto NÃO é validado aqui): a vista WebGL
-// (`FakeView` regista zoom/realce/navegação, não desenha), o listener nativo
-// (um `node:http` de teste faz de `HttpListenerPort`), WebView/CSP/Sec-Fetch e
-// qualquer dispositivo. Estas lacunas pertencem ao M4-I6 (spec M3-I5 §8) e
-// estão registadas em `docs/OBJ-0104-m4-s2-integrated-validation.md`.
+// O QUE ESTE FICHEIRO PROVA: modelo (documento/layouts/DocumentMap), protocolo,
+// comandos (open/find/next/prev/zoom/clearHighlight), erros e offline.
+// O QUE NÃO PROVA — RENDERIZAÇÃO: a vista é o `FakeView` (um `ViewPort` de
+// teste que só regista `zoomTo`/`clearSelection`/`navigate`; não desenha, não
+// há canvas, WebGL, pixels nem layout CSS). Nenhuma asserção abaixo é
+// evidência de renderização, nem em desktop nem a 390 px. Descoping
+// vinculativo: a evidência de superfície real (pixels desktop + 390 px) fica
+// a cargo do T2 (arquitectura §11 linha T2 e §7 item 4), com pré-requisito no
+// `ViewerSurface` do M4-I6 (spec M3-I5 §8, itens 3 e 6); ausência de WebGL ou
+// de dispositivo aqui NÃO conta como «passou». Ver
+// `docs/OBJ-0104-m4-s2-integrated-validation.md` §3.
+// Também não são reais: o listener nativo (um `node:http` de teste faz de
+// `HttpListenerPort`), WebView/CSP/Sec-Fetch e qualquer dispositivo (M4-I6).
 // Fixtures: só as DXF de `cad-viewer-example/e2e/fixtures`, lidas in-place
 // (proveniência em `__tests__/PROVENANCE.md`). DWG: sem fixture autorizada
 // (EXT-3) → «não verificado», nunca «passou».
@@ -52,6 +60,7 @@ import { createViewerDispatcher } from '../src/viewer/dispatcher'
 import { ViewerSession } from '../src/viewer/session'
 import { e2eBytes } from './helpers/openFixture'
 import { buildDxf, fakeDwgHeader, rawEntity } from './helpers/syntheticDxf'
+// `FakeView` é um duplo do `ViewPort`: regista chamadas, NÃO renderiza.
 import { decodeInjection, FakeView } from './helpers/viewerHarness'
 
 type Bytes = Uint8Array
@@ -300,54 +309,65 @@ const spy = networkSpy()
 beforeAll(() => spy.install())
 afterAll(() => spy.restore())
 
-/** Cenários de abertura, por URL loopback (caminho de produção) e por base64. */
+/**
+ * Cenários de abertura, por URL loopback (caminho de produção) e por base64.
+ * Provam modelo + protocolo (`opened`, layouts, estado da sessão); NÃO provam
+ * renderização (a vista é o `FakeView`).
+ */
 describe.each([
   ['URL loopback (servidor real + fetch do viewer)', true],
   ['base64 (fallback do FileFlow)', false]
-] as const)('abrir e renderizar: %s', (_label, useServer) => {
-  let r: Rig
-  beforeEach(async () => {
-    r = await rig({ useServer })
-  })
-  afterEach(async () => {
-    await r.dispose()
-  })
+] as const)(
+  'abrir (modelo + protocolo, sem pixels): %s',
+  (_label, useServer) => {
+    let r: Rig
+    beforeEach(async () => {
+      r = await rig({ useServer })
+    })
+    afterEach(async () => {
+      await r.dispose()
+    })
 
-  test.each([
-    ['minimal-line.dxf', 1],
-    ['find-layouts.dxf', 3],
-    ['find-blocks.dxf', 1],
-    ['block-color.dxf', 1]
-  ])('%s abre como DXF com %i layout(s) e a vista é limpa', async (name, n) => {
-    const res = await r.open(name, bytesOf(name))
-    expect(res.status).toBe('handed-off')
-    const doc = r.state.document.current
-    expect(doc).toMatchObject({ name, format: 'dxf' })
-    expect(doc?.layouts.length).toBeGreaterThanOrEqual(n)
-    expect(r.state.document.error).toBeNull()
-    expect(r.state.document.opening).toBeNull()
-    expect(r.view.clears).toBeGreaterThan(0)
-    // o caminho percorrido é o esperado
-    const open = r.sent
-      .map(s => JSON.parse(decodeInjection(s)))
-      .find(m => m.type === 'open')
-    expect(open.payload.source.kind).toBe(useServer ? 'url' : 'base64')
-  })
-
-  test('sheet_0.dxf (≈1,9 MB) abre; tempo de abertura registado (medição P-5)', async () => {
-    const bytes = bytesOf('sheet_0.dxf')
-    const t0 = performance.now()
-    const res = await r.open('sheet_0.dxf', bytes)
-    const ms = Math.round(performance.now() - t0)
-    expect(res.status).toBe('handed-off')
-    expect(r.state.document.current?.name).toBe('sheet_0.dxf')
-    console.log(
-      `[M4-S2 medição] ${useServer ? 'url' : 'base64'} sheet_0.dxf ${bytes.byteLength} B → opened em ${ms} ms (Node/jest; NÃO é medida de dispositivo)`
+    test.each([
+      ['minimal-line.dxf', 1],
+      ['find-layouts.dxf', 3],
+      ['find-blocks.dxf', 1],
+      ['block-color.dxf', 1]
+    ])(
+      '%s abre como DXF com %i layout(s) e o ViewPort de teste recebe clearSelection',
+      async (name, n) => {
+        const res = await r.open(name, bytesOf(name))
+        expect(res.status).toBe('handed-off')
+        const doc = r.state.document.current
+        expect(doc).toMatchObject({ name, format: 'dxf' })
+        expect(doc?.layouts.length).toBeGreaterThanOrEqual(n)
+        expect(r.state.document.error).toBeNull()
+        expect(r.state.document.opening).toBeNull()
+        // chamada registada pelo FakeView — não é evidência de render
+        expect(r.view.clears).toBeGreaterThan(0)
+        // o caminho percorrido é o esperado
+        const open = r.sent
+          .map(s => JSON.parse(decodeInjection(s)))
+          .find(m => m.type === 'open')
+        expect(open.payload.source.kind).toBe(useServer ? 'url' : 'base64')
+      }
     )
-  })
-})
 
-describe('FIND + zoom sobre DXF reais (circuito completo)', () => {
+    test('sheet_0.dxf (≈1,9 MB) abre; tempo de abertura registado (medição P-5)', async () => {
+      const bytes = bytesOf('sheet_0.dxf')
+      const t0 = performance.now()
+      const res = await r.open('sheet_0.dxf', bytes)
+      const ms = Math.round(performance.now() - t0)
+      expect(res.status).toBe('handed-off')
+      expect(r.state.document.current?.name).toBe('sheet_0.dxf')
+      console.log(
+        `[M4-S2 medição] ${useServer ? 'url' : 'base64'} sheet_0.dxf ${bytes.byteLength} B → opened em ${ms} ms (Node/jest; NÃO é medida de dispositivo)`
+      )
+    })
+  }
+)
+
+describe('FIND + comandos de zoom sobre DXF reais (circuito completo; vista = FakeView)', () => {
   let r: Rig
   beforeEach(async () => {
     r = await rig()
@@ -369,7 +389,8 @@ describe('FIND + zoom sobre DXF reais (circuito completo)', () => {
     expect(f.activeIndex).toBe(0)
     expect(r.state.selection.status).toBe('selected')
     expect(r.view.navs).toHaveLength(1)
-    // a navegação usou o hit REAL e uma caixa de zoom finita
+    // a navegação pedida ao ViewPort usou o hit REAL e uma caixa de zoom finita
+    // (o FakeView regista o pedido; o enquadramento visual não é verificado)
     const box = r.view.navs[0].box
     expect(Number.isFinite(box.min.x + box.max.y)).toBe(true)
   })
@@ -405,7 +426,7 @@ describe('FIND + zoom sobre DXF reais (circuito completo)', () => {
     expect(r.state.find.status).toBe('empty')
   })
 
-  test('zoom in/out/extents chegam à vista; clearHighlight limpa o realce', async () => {
+  test('zoom in/out/extents chegam ao ViewPort (FakeView); clearHighlight pede a limpeza do realce', async () => {
     await search('Sala')
     r.view.box = { min: { x: 0, y: 0 }, max: { x: 100, y: 50 } }
     const before = r.view.zooms.length
@@ -542,4 +563,25 @@ describe('offline: zero rede externa em todo o circuito', () => {
     ).toEqual([])
     await r.dispose()
   })
+})
+
+/**
+ * Lacunas conhecidas, deliberadamente NÃO cobertas por S2. `test.todo` aparece
+ * no relatório do jest como «todo» (nunca como «passed»), para que a ausência
+ * de evidência real não seja confundida com sucesso.
+ * Fonte: arquitectura §7 item 4 e §11 (S2/I6/T2); spec M3-I5 §8.
+ */
+describe('NÃO coberto por S2 — diferido (não é sucesso)', () => {
+  test.todo(
+    'T2 (pré-req. I6 ViewerSurface): renderização real do DXF em superfície real — pixels em desktop e a 390 px, com métricas'
+  )
+  test.todo(
+    'T2/I6: WebGL, pinch/pan, modo avião e medições em dispositivo (memória de pico, TTFB)'
+  )
+  test.todo(
+    'I6: listener nativo, cleartext só 127.0.0.1, ViewerSurface, CSP/Origin/Sec-Fetch em WebView real'
+  )
+  test.todo(
+    'EXT-3: parse DWG positivo e FIND em DWG (sem fixture com proveniência → «não verificado»)'
+  )
 })
