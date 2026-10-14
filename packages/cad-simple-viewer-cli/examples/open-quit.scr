@@ -1,0 +1,2 @@
+; Open-only timing: wait for idle in the runner, then exit.
+quit
