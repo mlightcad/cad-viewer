@@ -53,6 +53,12 @@ export class AcEdCommandLine {
   private readonly recentMessages: string[] = []
   private recentHideTimer?: ReturnType<typeof setTimeout>
   private isCommandLifecycleBound: boolean = false
+  /** Aborts document/window listeners registered in the constructor. */
+  private readonly _domAbortController = new AbortController()
+  private readonly _onLocaleChanged = () => this.refreshLocale()
+  private _onCommandWillStart?: () => void
+  private _onCommandEnded?: () => void
+  private _disposed = false
 
   constructor(container: HTMLElement = document.body) {
     this.container = container
@@ -70,10 +76,43 @@ export class AcEdCommandLine {
     this.bindEvents()
     this.bindCommandLifecycleEvents()
     this.resizeHandler()
-    window.addEventListener('resize', () => this.resizeHandler())
+    const domSignal = this._domAbortController.signal
+    window.addEventListener('resize', () => this.resizeHandler(), {
+      signal: domSignal
+    })
     this.resizeObserver = new ResizeObserver(() => this.resizeHandler())
     this.resizeObserver.observe(this.container)
-    AcApI18n.events.localeChanged.addEventListener(() => this.refreshLocale())
+    AcApI18n.events.localeChanged.addEventListener(this._onLocaleChanged)
+  }
+
+  /**
+   * Removes the command-line DOM and global listeners.
+   *
+   * Safe to call more than once.
+   */
+  dispose() {
+    if (this._disposed) return
+    this._disposed = true
+    this.cancelActiveSession()
+    this.cancelRecentAutoHide()
+    this._domAbortController.abort()
+    this.resizeObserver?.disconnect()
+    this.resizeObserver = undefined
+    AcApI18n.events.localeChanged.removeEventListener(this._onLocaleChanged)
+    try {
+      const editorEvents = AcApDocManager.instance.editor.events
+      if (this._onCommandWillStart) {
+        editorEvents.commandWillStart.removeEventListener(
+          this._onCommandWillStart
+        )
+      }
+      if (this._onCommandEnded) {
+        editorEvents.commandEnded.removeEventListener(this._onCommandEnded)
+      }
+    } catch {
+      // Manager already destroyed; editor listeners are gone with it.
+    }
+    this.cliContainer.remove()
   }
 
   /** Visibility of the command line */
@@ -616,47 +655,78 @@ export class AcEdCommandLine {
 
   /** Bind event listeners */
   private bindEvents() {
+    const domSignal = this._domAbortController.signal
     // Close command line when clicking the button
-    this.closeBtn.addEventListener('click', e => {
-      e.stopPropagation()
-      this.visible = false
-      AcApSettingManager.instance.isShowCommandLine = false
-    })
-
-    this.downBtn.addEventListener('click', e => {
-      e.stopPropagation()
-      this.isCmdPopupOpen = !this.isCmdPopupOpen
-      this.updatePopups({ showCmd: this.isCmdPopupOpen, showMsg: false })
-      if (this.isCmdPopupOpen) this.showCommandHistoryPopup()
-    })
-
-    this.upBtn.addEventListener('click', e => {
-      e.stopPropagation()
-      this.isMsgPanelOpen = !this.isMsgPanelOpen
-      this.updatePopups({ showCmd: false, showMsg: this.isMsgPanelOpen })
-      if (this.isMsgPanelOpen) this.showMessagePanel()
-    })
-
-    document.addEventListener('click', e => {
-      if (!this.cliContainer.contains(e.target as Node)) {
-        this.updatePopups({ showCmd: false, showMsg: false })
-      }
-    })
-
-    this.textInput.addEventListener('keydown', e => this.handleKeyDown(e))
-    this.textInput.addEventListener('input', () => this.handleInputChange())
-    this.centerEl.addEventListener('focus', () =>
-      this.updatePopups({ showCmd: false, showMsg: false })
+    this.closeBtn.addEventListener(
+      'click',
+      e => {
+        e.stopPropagation()
+        this.visible = false
+        AcApSettingManager.instance.isShowCommandLine = false
+      },
+      { signal: domSignal }
     )
 
-    this.cmdPopup.addEventListener('click', e => {
-      const item = (e.target as HTMLElement).closest('.item') as HTMLElement
-      if (item) {
-        this.setInputText(item.dataset.value || '')
-        this.centerEl.focus()
-        this.updatePopups({ showCmd: false, showMsg: false })
-      }
-    })
+    this.downBtn.addEventListener(
+      'click',
+      e => {
+        e.stopPropagation()
+        this.isCmdPopupOpen = !this.isCmdPopupOpen
+        this.updatePopups({ showCmd: this.isCmdPopupOpen, showMsg: false })
+        if (this.isCmdPopupOpen) this.showCommandHistoryPopup()
+      },
+      { signal: domSignal }
+    )
+
+    this.upBtn.addEventListener(
+      'click',
+      e => {
+        e.stopPropagation()
+        this.isMsgPanelOpen = !this.isMsgPanelOpen
+        this.updatePopups({ showCmd: false, showMsg: this.isMsgPanelOpen })
+        if (this.isMsgPanelOpen) this.showMessagePanel()
+      },
+      { signal: domSignal }
+    )
+
+    document.addEventListener(
+      'click',
+      e => {
+        if (!this.cliContainer.contains(e.target as Node)) {
+          this.updatePopups({ showCmd: false, showMsg: false })
+        }
+      },
+      { signal: domSignal }
+    )
+
+    this.textInput.addEventListener(
+      'keydown',
+      e => this.handleKeyDown(e),
+      { signal: domSignal }
+    )
+    this.textInput.addEventListener(
+      'input',
+      () => this.handleInputChange(),
+      { signal: domSignal }
+    )
+    this.centerEl.addEventListener(
+      'focus',
+      () => this.updatePopups({ showCmd: false, showMsg: false }),
+      { signal: domSignal }
+    )
+
+    this.cmdPopup.addEventListener(
+      'click',
+      e => {
+        const item = (e.target as HTMLElement).closest('.item') as HTMLElement
+        if (item) {
+          this.setInputText(item.dataset.value || '')
+          this.centerEl.focus()
+          this.updatePopups({ showCmd: false, showMsg: false })
+        }
+      },
+      { signal: domSignal }
+    )
   }
 
   /** Handle Enter/Escape keys */
@@ -876,13 +946,15 @@ export class AcEdCommandLine {
       return
     }
 
-    editorEvents.commandWillStart.addEventListener(() => {
+    this._onCommandWillStart = () => {
       this.cancelRecentAutoHide()
       this.showRecentPanel()
-    })
-    editorEvents.commandEnded.addEventListener(() => {
+    }
+    this._onCommandEnded = () => {
       this.scheduleRecentAutoHide()
-    })
+    }
+    editorEvents.commandWillStart.addEventListener(this._onCommandWillStart)
+    editorEvents.commandEnded.addEventListener(this._onCommandEnded)
     this.isCommandLifecycleBound = true
   }
 

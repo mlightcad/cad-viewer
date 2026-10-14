@@ -378,6 +378,27 @@ export class AcTrView2d extends AcEdBaseView {
   private _keyHandler: AcEdViewKeyHandler
   /** Removes iOS canvas long-press callout listeners registered in the constructor. */
   private _disposeCanvasTouchCallout: (() => void) | undefined
+  /** Removes mobile long-press box-selection gesture listeners. */
+  private _disposeMobileBoxGesture: (() => void) | undefined
+  /**
+   * Aborts canvas / document DOM listeners registered on this view.
+   * Custom singleton listeners are removed explicitly in {@link dispose}.
+   */
+  private readonly _viewDomAbort = new AbortController()
+  private _viewDisposed = false
+  /** Named listeners so dispose can detach from shared singletons. */
+  private _onFontNotFound?: (args: { fontName: string; count?: number }) => void
+  private _onFontLoaded?: (args?: { fontName?: string }) => void
+  private _onSysVarChanged?: (args: {
+    name: string
+    database?: AcDbDatabase
+  }) => void
+  private _onSettingsModified?: (args: { key: string; value: unknown }) => void
+  private _onLayoutSwitched?: (args: {
+    layout: AcDbLayout & { database?: object }
+  }) => void
+  private _onCommandWillStartHitTest?: () => void
+  private _onCommandEndedHitTest?: () => void
   /** Transient reading mode forces black linework on a white canvas. */
   private readonly _readingMode = new AcApReadingModeState({
     getCurrentBackgroundColor: () => this._renderer.currentBackgroundColor,
@@ -539,6 +560,11 @@ export class AcTrView2d extends AcEdBaseView {
     const container = mergedOptions.container ?? document.createElement('div')
     mergedOptions.container = container
     container.style.overflow = 'hidden'
+    // Allow focusing the container after canvas clicks so document-level
+    // shortcuts stay scoped to this viewer without stealing host-page focus.
+    if (!container.hasAttribute('tabindex')) {
+      container.tabIndex = -1
+    }
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -558,20 +584,31 @@ export class AcTrView2d extends AcEdBaseView {
     super(renderer.domElement, container)
     this._disposeCanvasTouchCallout = disposeCanvasTouchCallout
     const onProgressiveInput = () => this.noteProgressiveUserInput()
-    renderer.domElement.addEventListener('pointerdown', onProgressiveInput, {
+    // Pointer and wheel both claim shortcut focus so undo/erase still work
+    // after zooming without a prior click, without stealing focus from host
+    // inputs/textareas/contenteditable fields.
+    const onCanvasPointerDown = () => {
+      onProgressiveInput()
+      this.focusViewerForShortcuts()
+    }
+    const onCanvasWheel = () => {
+      onProgressiveInput()
+      this.focusViewerForShortcuts()
+    }
+    renderer.domElement.addEventListener('pointerdown', onCanvasPointerDown, {
       capture: true
     })
-    renderer.domElement.addEventListener('wheel', onProgressiveInput, {
+    renderer.domElement.addEventListener('wheel', onCanvasWheel, {
       capture: true,
       passive: true
     })
     this._disposeProgressiveInputWatch = () => {
       renderer.domElement.removeEventListener(
         'pointerdown',
-        onProgressiveInput,
+        onCanvasPointerDown,
         { capture: true }
       )
-      renderer.domElement.removeEventListener('wheel', onProgressiveInput, {
+      renderer.domElement.removeEventListener('wheel', onCanvasWheel, {
         capture: true
       })
     }
@@ -590,19 +627,21 @@ export class AcTrView2d extends AcEdBaseView {
     setAcTrDrawOrderZAllocator(() => this._renderer.allocateDrawOrderZ())
     const fontMapping = AcApSettingManager.instance.fontMapping
     this._renderer.setFontMapping(fontMapping)
-    this._renderer.events.fontNotFound.addEventListener(args => {
+    this._onFontNotFound = args => {
       eventBus.emit('font-not-found', {
         fontName: args.fontName,
         count: args.count ?? 0
       })
-    })
-    this._renderer.events.fontLoaded.addEventListener(args => {
+    }
+    this._onFontLoaded = args => {
       // Lazy load success clears FontManager.missedFonts; refresh status-bar state.
       eventBus.emit('missed-data-changed', {})
       // On-demand faces (e.g. style `malgun`) may finish after the first glyph
       // bake. Rebuild text so Hangul is not left as permanent '?'.
       this.scheduleGlyphRedrawAfterFontLoad(args?.fontName)
-    })
+    }
+    this._renderer.events.fontNotFound.addEventListener(this._onFontNotFound)
+    this._renderer.events.fontLoaded.addEventListener(this._onFontLoaded)
 
     this._scene = this.createScene()
     this._layerAppearance = new AcTrLayerAppearanceController(
@@ -616,8 +655,11 @@ export class AcTrView2d extends AcEdBaseView {
     // Initialize background color through setter to keep renderer/cursor in sync.
     this.backgroundColor =
       mergedOptions.background ?? ACGI_MODEL_SPACE_BACKGROUND
+    // During main-view construction the manager singleton is not published yet,
+    // so treat a missing manager as "this is the primary canvas".
     this._stats = this.createStats(
-      AcApSettingManager.instance.isShowStats && this.isActiveManagedView()
+      AcApSettingManager.instance.isShowStats &&
+        (AcApDocManager.tryGetInstance() == null || this.isActiveManagedView())
     )
 
     // Layout background sysvars drive the canvas clear colour and ACI-7
@@ -627,10 +669,12 @@ export class AcTrView2d extends AcEdBaseView {
     const sysVarManager = AcDbSysVarManager.instance()
     const modelBkVar = AcDbSystemVariables.MODELBKCOLOR.toLowerCase()
     const paperBkVar = AcDbSystemVariables.PAPERBKCOLOR.toLowerCase()
-    sysVarManager.events.sysVarChanged.addEventListener(args => {
+    this._onSysVarChanged = args => {
       const nameLower = args.name.toLowerCase()
       if (nameLower === modelBkVar || nameLower === paperBkVar) {
-        const isModelSpace = this.isModelSpaceLayout(args.database)
+        const database = args.database
+        if (!database) return
+        const isModelSpace = this.isModelSpaceLayout(database)
         const applies =
           (nameLower === modelBkVar && isModelSpace) ||
           (nameLower === paperBkVar && !isModelSpace)
@@ -638,16 +682,20 @@ export class AcTrView2d extends AcEdBaseView {
           return
         }
         this.applyCanvasBackground(
-          readLayoutBackgroundColor(args.database, isModelSpace)
+          readLayoutBackgroundColor(database, isModelSpace)
         )
       }
-    })
+    }
+    sysVarManager.events.sysVarChanged.addEventListener(this._onSysVarChanged)
 
-    AcApSettingManager.instance.events.modified.addEventListener(args => {
+    this._onSettingsModified = args => {
       if (args.key == 'isShowStats') {
         this.toggleStatsVisibility(this._stats, args.value as boolean)
       }
-    })
+    }
+    AcApSettingManager.instance.events.modified.addEventListener(
+      this._onSettingsModified
+    )
 
     let selectionStartWcs: AcGePoint2dLike | null = null
     let selectionStartCanvas: AcGePoint2dLike | null = null
@@ -778,55 +826,69 @@ export class AcTrView2d extends AcEdBaseView {
       selectionStartCanvas = null
     }
 
-    this.canvas.addEventListener('mousedown', e => {
-      if (e.button !== 0) return
-      if (!canHandleSelectionGesture()) return
-      if (acedIsTouchDerivedMouseEvent(e) || acedShouldIgnoreCompatMouse()) {
-        return
-      }
+    const viewDomSignal = this._viewDomAbort.signal
 
-      beginSelectionPreview(e.clientX, e.clientY)
-    })
+    this.canvas.addEventListener(
+      'mousedown',
+      e => {
+        if (e.button !== 0) return
+        if (!canHandleSelectionGesture()) return
+        if (acedIsTouchDerivedMouseEvent(e) || acedShouldIgnoreCompatMouse()) {
+          return
+        }
 
-    this.canvas.addEventListener('mousemove', e => {
-      if (!selectionStartWcs || !selectionPreviewEl || !selectionStartCanvas) {
-        return
-      }
-      if (acedIsTouchDerivedMouseEvent(e) || acedShouldIgnoreCompatMouse()) {
-        return
-      }
+        beginSelectionPreview(e.clientX, e.clientY)
+      },
+      { signal: viewDomSignal }
+    )
 
-      updateSelectionPreview(
-        e.clientX,
-        e.clientY,
-        this.getPointerSelectionAction(e)
-      )
-    })
+    this.canvas.addEventListener(
+      'mousemove',
+      e => {
+        if (!selectionStartWcs || !selectionPreviewEl || !selectionStartCanvas) {
+          return
+        }
+        if (acedIsTouchDerivedMouseEvent(e) || acedShouldIgnoreCompatMouse()) {
+          return
+        }
 
-    this.canvas.addEventListener('mouseup', e => {
-      if (this._gripManager.isDragging) {
-        resetSelectionDrag()
-        return
-      }
-      if (!selectionStartWcs || !selectionStartCanvas) return
-      if (acedIsTouchDerivedMouseEvent(e) || acedShouldIgnoreCompatMouse()) {
-        return
-      }
+        updateSelectionPreview(
+          e.clientX,
+          e.clientY,
+          this.getPointerSelectionAction(e)
+        )
+      },
+      { signal: viewDomSignal }
+    )
 
-      const endCanvas = this.viewportToCanvas({
-        x: e.clientX,
-        y: e.clientY
-      })
-      const action = this.getPointerSelectionAction(e)
-      finishSelection(
-        e.clientX,
-        e.clientY,
-        action,
-        this.isSelectionClick(selectionStartCanvas, endCanvas)
-      )
-    })
+    this.canvas.addEventListener(
+      'mouseup',
+      e => {
+        if (this._gripManager.isDragging) {
+          resetSelectionDrag()
+          return
+        }
+        if (!selectionStartWcs || !selectionStartCanvas) return
+        if (acedIsTouchDerivedMouseEvent(e) || acedShouldIgnoreCompatMouse()) {
+          return
+        }
 
-    acedAttachMobileBoxGesture({
+        const endCanvas = this.viewportToCanvas({
+          x: e.clientX,
+          y: e.clientY
+        })
+        const action = this.getPointerSelectionAction(e)
+        finishSelection(
+          e.clientX,
+          e.clientY,
+          action,
+          this.isSelectionClick(selectionStartCanvas, endCanvas)
+        )
+      },
+      { signal: viewDomSignal }
+    )
+
+    this._disposeMobileBoxGesture = acedAttachMobileBoxGesture({
       element: this.canvas,
       shouldStart: () => canHandleMobileBoxGesture(),
       setNavigationEnabled: enabled => {
@@ -855,68 +917,81 @@ export class AcTrView2d extends AcEdBaseView {
       }
     })
 
-    this.canvas.addEventListener('dblclick', e => {
-      if (e.button !== 0) return
-      if (!canHandleSelectionGesture()) return
-      if (!this.entitySelectionEnabled) return
-      if (AcApDocManager.instance.curDocument.openMode !== AcEdOpenMode.Write) {
-        return
-      }
-      void this.openPickedEntityEditor(e)
-    })
-    // When using OrbitControls in THREE.js, it attaches its own event listeners to the DOM elements,
-    // such as the canvas or the entire document. This can interfere with other event listeners you
-    // add, including the keydown event.
-    document.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (!this.isActiveManagedView()) return
-      this._keyHandler.handleKeyDown(e)
-    })
-    acdbHostApplicationServices().layoutManager.events.layoutSwitched.addEventListener(
-      args => {
-        if (!this.isActiveManagedView()) return
-        const layoutDb = (args.layout as { database?: { objectId?: string } })
-          .database
-        const currentDb = (
-          AcApDocManager as unknown as {
-            _instance?: { curDocument?: { database?: object } }
-          }
-        )._instance?.curDocument?.database
-        if (layoutDb && currentDb && layoutDb !== currentDb) {
+    this.canvas.addEventListener(
+      'dblclick',
+      e => {
+        if (e.button !== 0) return
+        if (!canHandleSelectionGesture()) return
+        if (!this.entitySelectionEnabled) return
+        if (
+          AcApDocManager.instance.curDocument.openMode !== AcEdOpenMode.Write
+        ) {
           return
         }
-        const btrId = args.layout.blockTableRecordId
-        // "First visit" is tracked separately from view existence because
-        // `addLayout` pre-creates an `AcTrLayoutView` for every layout in
-        // the DWG at load time — `_layoutViewManager.has(btrId)` is
-        // therefore `true` even for layouts the user has never focused
-        // on, and "first visit" computed from it would always be false.
-        // We use a dedicated set instead, marked here on first switch and
-        // also from `markLayoutAsInitialized` when the document opens
-        // straight into a layout (AcApDocManager has already framed it).
-        // Each AcTrLayoutView owns its own camera, so on subsequent
-        // visits the previous camera state is naturally restored and we
-        // must NOT zoom-to-fit again — that would be jarring and
-        // diverges from how AutoCAD preserves per-tab view state.
-        const isFirstVisit = !this._initializedLayouts.has(btrId)
-        this._initializedLayouts.add(btrId)
-
-        // Measurement HTML overlays are layout-scoped via `layoutId`.
-        // Switching layouts only updates visibility (see
-        // {@link AcTrHtmlTransientManager.setActiveLayoutId} from the
-        // `activeLayoutBtrId` setter below) — overlays are not deleted, so
-        // returning to a layout restores its measurements. Entity selection
-        // is intentionally **not** cleared here: it is entity-id-based and
-        // the same entity stays selected wherever it is rendered.
-        this.activeLayoutBtrId = btrId
-        this.createLayoutViewIfNeeded(btrId)
-        this.loadLayoutEntitiesIfNeeded(btrId)
-        this.refreshCanvasBackgroundForActiveLayout()
-        this._isDirty = true
-
-        if (isFirstVisit) {
-          this.applyInitialZoom(btrId, args.layout)
+        void this.openPickedEntityEditor(e)
+      },
+      { signal: viewDomSignal }
+    )
+    // When using OrbitControls in THREE.js, it attaches its own event listeners to the DOM elements,
+    // such as the canvas or the entire document. This can interfere with other event listeners you
+    // add, including the keydown event. Scope to this view's container so host-page shortcuts
+    // (and post-destroy key presses) are not captured.
+    document.addEventListener(
+      'keydown',
+      (e: KeyboardEvent) => {
+        if (!this.isActiveManagedView()) return
+        if (!this.isShortcutEventInsideViewer(e)) return
+        this._keyHandler.handleKeyDown(e)
+      },
+      { signal: viewDomSignal }
+    )
+    this._onLayoutSwitched = args => {
+      if (!this.isActiveManagedView()) return
+      const layoutDb = (args.layout as { database?: { objectId?: string } })
+        .database
+      const currentDb = (
+        AcApDocManager as unknown as {
+          _instance?: { curDocument?: { database?: object } }
         }
+      )._instance?.curDocument?.database
+      if (layoutDb && currentDb && layoutDb !== currentDb) {
+        return
       }
+      const btrId = args.layout.blockTableRecordId
+      // "First visit" is tracked separately from view existence because
+      // `addLayout` pre-creates an `AcTrLayoutView` for every layout in
+      // the DWG at load time — `_layoutViewManager.has(btrId)` is
+      // therefore `true` even for layouts the user has never focused
+      // on, and "first visit" computed from it would always be false.
+      // We use a dedicated set instead, marked here on first switch and
+      // also from `markLayoutAsInitialized` when the document opens
+      // straight into a layout (AcApDocManager has already framed it).
+      // Each AcTrLayoutView owns its own camera, so on subsequent
+      // visits the previous camera state is naturally restored and we
+      // must NOT zoom-to-fit again — that would be jarring and
+      // diverges from how AutoCAD preserves per-tab view state.
+      const isFirstVisit = !this._initializedLayouts.has(btrId)
+      this._initializedLayouts.add(btrId)
+
+      // Measurement HTML overlays are layout-scoped via `layoutId`.
+      // Switching layouts only updates visibility (see
+      // {@link AcTrHtmlTransientManager.setActiveLayoutId} from the
+      // `activeLayoutBtrId` setter below) — overlays are not deleted, so
+      // returning to a layout restores its measurements. Entity selection
+      // is intentionally **not** cleared here: it is entity-id-based and
+      // the same entity stays selected wherever it is rendered.
+      this.activeLayoutBtrId = btrId
+      this.createLayoutViewIfNeeded(btrId)
+      this.loadLayoutEntitiesIfNeeded(btrId)
+      this.refreshCanvasBackgroundForActiveLayout()
+      this._isDirty = true
+
+      if (isFirstVisit) {
+        this.applyInitialZoom(btrId, args.layout)
+      }
+    }
+    acdbHostApplicationServices().layoutManager.events.layoutSwitched.addEventListener(
+      this._onLayoutSwitched
     )
 
     this._css2dRenderer = new CSS2DRenderer()
@@ -969,12 +1044,18 @@ export class AcTrView2d extends AcEdBaseView {
     // This method is called after camera and render are created.
     // Children class can override this method to add its own logic
     this.setCursor(AcEdCorsorType.Crosshair)
-    this.editor.events.commandWillStart.addEventListener(() => {
+    this._onCommandWillStartHitTest = () => {
       this.htmlTransientManager.setHitTestEnabled(false)
-    })
-    this.editor.events.commandEnded.addEventListener(() => {
+    }
+    this._onCommandEndedHitTest = () => {
       this.htmlTransientManager.setHitTestEnabled(true)
-    })
+    }
+    this.editor.events.commandWillStart.addEventListener(
+      this._onCommandWillStartHitTest
+    )
+    this.editor.events.commandEnded.addEventListener(
+      this._onCommandEndedHitTest
+    )
   }
 
   /**
@@ -2750,9 +2831,13 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * @inheritdoc
+   * Invalidates in-flight progressive convert and empties convert / deferred
+   * queues without tearing down the renderer or DOM.
+   *
+   * Call before {@link AcApDocManager.destroy} tears down documents so
+   * in-flight commits do not keep reading the manager singleton.
    */
-  clear() {
+  abortConversion() {
     // Invalidate any in-flight progressive convert so it neither paints into
     // the cleared scene nor double-decrements the processing counter.
     this._convertEpoch++
@@ -2765,6 +2850,13 @@ export class AcTrView2d extends AcEdBaseView {
     this.cancelOpenLineworkFrame()
     this.resetDeferredGeometryQueue()
     this._entityProcessingIdleAt = 0
+  }
+
+  /**
+   * @inheritdoc
+   */
+  clear() {
+    this.abortConversion()
     this._scene.clear()
     this._renderer.resetDrawOrderZ()
     this._isDirty = true
@@ -2889,13 +2981,49 @@ export class AcTrView2d extends AcEdBaseView {
   /**
    * True when this view is the document manager's live canvas.
    * Satellite/preview views must ignore global shortcuts and layout switches.
+   * Returns false when no manager exists so post-destroy key handlers do not
+   * reach {@link AcApDocManager.instance}.
    */
   private isActiveManagedView(): boolean {
     const singleton = AcApDocManager as unknown as {
       _instance?: { curView?: AcTrView2d }
     }
     const current = singleton._instance?.curView
-    return current == null || current === this
+    return current != null && current === this
+  }
+
+  /**
+   * Moves keyboard focus into the viewer container after canvas interaction so
+   * document-level shortcuts stay scoped to this view.
+   *
+   * Skips host editable fields so wheel-over-canvas does not interrupt typing.
+   */
+  private focusViewerForShortcuts() {
+    const active = document.activeElement
+    if (active instanceof Node && this.container.contains(active)) {
+      return
+    }
+    if (
+      active instanceof HTMLElement &&
+      (active.tagName === 'INPUT' ||
+        active.tagName === 'TEXTAREA' ||
+        active.isContentEditable)
+    ) {
+      return
+    }
+    this.container.focus({ preventScroll: true })
+  }
+
+  /**
+   * True when the key event originated from (or is focused within) this view.
+   */
+  private isShortcutEventInsideViewer(e: KeyboardEvent): boolean {
+    const target = e.target
+    if (target instanceof Node && this.container.contains(target)) {
+      return true
+    }
+    const active = document.activeElement
+    return active instanceof Node && this.container.contains(active)
   }
 
   /**
@@ -3179,19 +3307,81 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Releases canvas DOM listeners and stops the animation loop.
+   * Releases canvas DOM, WebGL context, convert work, and listeners.
    *
    * Call when this view will no longer be used (manager destroy / split
    * view teardown). Safe to call more than once.
    */
   dispose() {
+    if (this._viewDisposed) return
+    this._viewDisposed = true
+
+    // Stop convert before tearing down documents/singletons that commit paths read.
+    this.abortConversion()
+
     this._disposeCanvasTouchCallout?.()
     this._disposeCanvasTouchCallout = undefined
     this._disposeProgressiveInputWatch?.()
     this._disposeProgressiveInputWatch = undefined
+    this._disposeMobileBoxGesture?.()
+    this._disposeMobileBoxGesture = undefined
+    this._viewDomAbort.abort()
+
+    if (this._onFontNotFound) {
+      this._renderer.events.fontNotFound.removeEventListener(
+        this._onFontNotFound
+      )
+    }
+    if (this._onFontLoaded) {
+      this._renderer.events.fontLoaded.removeEventListener(this._onFontLoaded)
+    }
+    if (this._onSysVarChanged) {
+      AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
+        this._onSysVarChanged
+      )
+    }
+    if (this._onSettingsModified) {
+      AcApSettingManager.instance.events.modified.removeEventListener(
+        this._onSettingsModified
+      )
+    }
+    if (this._onLayoutSwitched) {
+      acdbHostApplicationServices().layoutManager.events.layoutSwitched.removeEventListener(
+        this._onLayoutSwitched
+      )
+    }
+    if (this._onCommandWillStartHitTest) {
+      this.editor.events.commandWillStart.removeEventListener(
+        this._onCommandWillStartHitTest
+      )
+    }
+    if (this._onCommandEndedHitTest) {
+      this.editor.events.commandEnded.removeEventListener(
+        this._onCommandEndedHitTest
+      )
+    }
+
+    this._gripManager.dispose()
     this.clearFontLoadedRedrawTimer()
     this.cancelOpenLineworkFrame()
     this.stopAnimationLoop()
+
+    this.selectionSet.clear()
+    this.htmlTransientManager.dispose()
+    this._scene.clear()
+    this._renderer.dispose()
+    AcDbRenderingCache.instance.clear()
+
+    const webgl = this._renderer.internalRenderer
+    webgl.dispose()
+    webgl.forceContextLoss()
+
+    this.canvas.remove()
+    this._css2dRenderer.domElement.remove()
+    this._stats.dom.remove()
+
+    // Editor / command line / ResizeObserver (after canvas/CSS2D removed).
+    super.dispose()
   }
 
   /**

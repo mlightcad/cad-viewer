@@ -725,6 +725,11 @@ export class AcApDocManager {
    * Destroy the view and unload all plugins
    */
   async destroy() {
+    // Abort progressive convert before plugins/documents go away so in-flight
+    // entity commits do not read a torn-down singleton.
+    this._mainView.abortConversion()
+    this._splitView?.abortConversion()
+
     await this._pluginManager.unloadAllPlugins()
     for (const session of [...this._sessions]) {
       session.context.dispose()
