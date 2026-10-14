@@ -239,6 +239,41 @@ export class AcTrViewportView extends AcTrBaseView {
   }
 
   /**
+   * Transforms a point from the model-space WCS visible through this
+   * viewport back into paper-space WCS. Inverse of {@link paperPointToModel}.
+   */
+  modelPointToPaper(modelPt: AcGePoint2dLike): AcGePoint2d {
+    const paperBox = this._viewport.box
+    const modelBox = this._viewport.viewBox
+    const paperW = paperBox.max.x - paperBox.min.x
+    const paperH = paperBox.max.y - paperBox.min.y
+    const modelW = modelBox.max.x - modelBox.min.x
+    const modelH = modelBox.max.y - modelBox.min.y
+    const paperCenterX = (paperBox.min.x + paperBox.max.x) / 2
+    const paperCenterY = (paperBox.min.y + paperBox.max.y) / 2
+    if (modelW <= 0 || modelH <= 0) {
+      return new AcGePoint2d(paperCenterX, paperCenterY)
+    }
+    const centerX = (modelBox.min.x + modelBox.max.x) / 2
+    const centerY = (modelBox.min.y + modelBox.max.y) / 2
+    let localX = modelPt.x - centerX
+    let localY = modelPt.y - centerY
+    const twist = this._viewport.viewTwistAngle
+    if (Number.isFinite(twist) && twist !== 0) {
+      const cos = Math.cos(-twist)
+      const sin = Math.sin(-twist)
+      const rotatedX = localX * cos - localY * sin
+      const rotatedY = localX * sin + localY * cos
+      localX = rotatedX
+      localY = rotatedY
+    }
+    return new AcGePoint2d(
+      paperCenterX + (localX / modelW) * paperW,
+      paperCenterY + (localY / modelH) * paperH
+    )
+  }
+
+  /**
    * Rotates this viewport's camera by {@link AcGiViewport.viewTwistAngle}
    * after {@link zoomTo}, which otherwise resets rotation to identity.
    */

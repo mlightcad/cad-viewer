@@ -25,6 +25,13 @@ export interface AcEdSpatialQueryResultItem {
  */
 export interface AcEdSpatialQueryResultItemEx extends AcEdSpatialQueryResultItem {
   children?: AcEdSpatialQueryResultItem[]
+  /**
+   * Set only on hits drilled through a paper-space viewport into model
+   * space ({@link AcTrView2d.pickThroughViewports}): the `AcDbViewport`'s own
+   * id. `minX`/`minY`/`maxX`/`maxY`/`id`/`children` are then in model-space
+   * WCS, not the active layout's paper-space WCS — see #746.
+   */
+  viewportId?: AcDbObjectId
 }
 
 /**

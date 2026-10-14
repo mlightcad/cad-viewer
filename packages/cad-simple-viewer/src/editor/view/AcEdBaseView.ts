@@ -195,6 +195,13 @@ export type AcEdCalculateSizeCallback = () => { width: number; height: number }
  * });
  * ```
  */
+export interface AcEdViewportCoordinateMapper {
+  paperToModel(point: AcGePoint2dLike): AcGePoint2d
+  modelToPaper(point: AcGePoint2dLike): AcGePoint2d
+  /** Returns true when `paperPt` lies within the viewport's paper rectangle. */
+  containsPaperPoint(point: AcGePoint2dLike): boolean
+}
+
 export abstract class AcEdBaseView {
   /** Current viewport width in pixels */
   private _width: number
@@ -666,6 +673,21 @@ export abstract class AcEdBaseView {
     hitRadius?: number,
     pickOneOnly?: boolean
   ): AcEdSpatialQueryResultItemEx[]
+
+  /**
+   * Returns paper-space ↔ model-space WCS conversion for the paper-space
+   * viewport identified by `viewportId`, or `undefined` when no such
+   * viewport is visible in the active layout.
+   *
+   * {@link AcEdOsnapResolver} uses this to query osnap points against a
+   * viewport drill-through hit (whose geometry/pick point is in model-space
+   * WCS, see {@link AcEdSpatialQueryResultItemEx.viewportId}) using the
+   * cursor's paper-space WCS, then map the resulting points back to paper
+   * space (#746).
+   */
+  abstract getViewportCoordinateMapper(
+    viewportId: AcDbObjectId
+  ): AcEdViewportCoordinateMapper | undefined
 
   /**
    * Select entities intersected with the specified bounding box in the world

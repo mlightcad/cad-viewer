@@ -5,11 +5,11 @@ import {
   AcDbCircle,
   AcDbDatabase,
   AcDbEllipse,
+  acdbHostApplicationServices,
   AcDbLine,
   AcDbOsnapMode,
-  AcDbPolyline,
-  acdbHostApplicationServices,
   acdbOsnapModesToMask,
+  AcDbPolyline,
   AcGeCircArc2d,
   AcGePoint2d,
   AcGePoint3d,
@@ -63,6 +63,7 @@ function createMockView(
     minY?: number
     maxX?: number
     maxY?: number
+    viewportId?: string
     children?: Array<{
       id: string
       minX?: number
@@ -70,7 +71,21 @@ function createMockView(
       maxX?: number
       maxY?: number
     }>
-  }>
+  }>,
+  viewportMappers?: Record<
+    string,
+    {
+      paperToModel: (point: { x: number; y: number }) => {
+        x: number
+        y: number
+      }
+      modelToPaper: (point: { x: number; y: number }) => {
+        x: number
+        y: number
+      }
+      containsPaperPoint?: (point: { x: number; y: number }) => boolean
+    }
+  >
 ): AcEdBaseView {
   return {
     pick: jest.fn().mockReturnValue(pickResults),
@@ -79,7 +94,16 @@ function createMockView(
       x,
       y,
       z: 0
-    }))
+    })),
+    getViewportCoordinateMapper: jest.fn((viewportId: string) => {
+      const mapper = viewportMappers?.[viewportId]
+      if (!mapper) return undefined
+      return {
+        paperToModel: mapper.paperToModel,
+        modelToPaper: mapper.modelToPaper,
+        containsPaperPoint: mapper.containsPaperPoint ?? (() => true)
+      }
+    })
   } as unknown as AcEdBaseView
 }
 
@@ -757,6 +781,87 @@ describe('AcEdOsnapResolver', () => {
       expect(resolver.acquiredCenterMarks[0]?.x).toBeCloseTo(expected.x, 5)
       expect(resolver.acquiredCenterMarks[0]?.y).toBeCloseTo(expected.y, 5)
       expect(resolver.acquiredCenterMarks[0]?.x).not.toBeCloseTo(10, 5)
+    })
+  })
+
+  it('snaps to an entity owned by a non-model-space block table record (#746)', () => {
+    withWorkingDatabase(db => {
+      // Stand-in for a layout's own paper-space block table record: an
+      // entity here is never reachable via `modelSpace.getIdAt` (owner
+      // mismatch), which is exactly why the sheet's own frame/title-block
+      // entities used to offer no snap at all.
+      const sheet = new AcDbBlockTableRecord()
+      sheet.name = 'SHEET_BTR_746'
+      db.tables.blockTable.add(sheet)
+      const line = new AcDbLine(
+        new AcGePoint3d(0, 0, 0),
+        new AcGePoint3d(10, 0, 0)
+      )
+      sheet.appendEntity(line)
+
+      AcApSettingManager.instance.osnapModes = acdbOsnapModesToMask([
+        AcDbOsnapMode.EndPoint
+      ])
+
+      const view = createMockView([{ id: line.objectId }])
+      const resolver = new AcEdOsnapResolver(view)
+      const snap = resolver.resolve({
+        cursorWcs: { x: 0.2, y: 0.1 },
+        hitRadiusPx: 20
+      })
+
+      expect(snap).toEqual({
+        x: 0,
+        y: 0,
+        z: 0,
+        type: AcDbOsnapMode.EndPoint
+      })
+    })
+  })
+
+  it('maps a viewport drill-through hit from model space back to paper space (#746)', () => {
+    withWorkingDatabase(db => {
+      const line = new AcDbLine(
+        new AcGePoint3d(100, 100, 0),
+        new AcGePoint3d(110, 100, 0)
+      )
+      db.tables.blockTable.modelSpace.appendEntity(line)
+
+      AcApSettingManager.instance.osnapModes = acdbOsnapModesToMask([
+        AcDbOsnapMode.EndPoint
+      ])
+
+      // Viewport maps paper (0,0..20,20) onto model (100,100..120,120):
+      // a 2x paper-to-model scale, offset by (100,100).
+      const viewportId = 'VP_746'
+      const paperToModel = (p: { x: number; y: number }) => ({
+        x: p.x * 2 + 100,
+        y: p.y * 2 + 100
+      })
+      const modelToPaper = (p: { x: number; y: number }) => ({
+        x: (p.x - 100) / 2,
+        y: (p.y - 100) / 2
+      })
+
+      const view = createMockView(
+        [{ id: line.objectId, viewportId }],
+        { [viewportId]: { paperToModel, modelToPaper } }
+      )
+      const resolver = new AcEdOsnapResolver(view)
+
+      // Paper-space cursor near the line's first endpoint once mapped
+      // through the viewport (model (100,100) -> paper (0,0)).
+      const snap = resolver.resolve({
+        cursorWcs: { x: 0.3, y: 0.2 },
+        hitRadiusPx: 20
+      })
+
+      expect(snap).toEqual({
+        x: 0,
+        y: 0,
+        z: 0,
+        type: AcDbOsnapMode.EndPoint
+      })
     })
   })
 })
