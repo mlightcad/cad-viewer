@@ -24,9 +24,6 @@ export const LOOPBACK_DEFAULT_TIMEOUT_MS = 60_000
 const MAX_URL_LENGTH = 512
 const TOKEN = /^[A-Za-z0-9_-]{16,128}$/
 const ASSET_ID = /^[a-z0-9-]{8,64}$/
-// espaço, controlos C0 e DEL: `new URL` aparava-os e a comparação falhava
-// eslint-disable-next-line no-control-regex
-const UNSAFE_CHARS = /[\u0000- \u007f]/
 
 export type LoopbackFetchErrorCode =
   | 'no-page'
@@ -130,9 +127,7 @@ function validate(url: unknown, session: Session): string {
   if (typeof url !== 'string' || url.length === 0) {
     throw new LoopbackFetchError('invalid-url')
   }
-  if (url.length > MAX_URL_LENGTH || UNSAFE_CHARS.test(url)) {
-    throw new LoopbackFetchError('invalid-url')
-  }
+  if (url.length > MAX_URL_LENGTH) throw new LoopbackFetchError('invalid-url')
   let parsed: URL
   try {
     parsed = new URL(url)
@@ -143,7 +138,9 @@ function validate(url: unknown, session: Session): string {
   if (parsed.username || parsed.password || parsed.search || parsed.hash) {
     throw new LoopbackFetchError('invalid-url')
   }
-  // sem normalização escondida (`..`, porta por omissão, maiúsculas, `%`)
+  // Sem normalização escondida: `new URL` apara espaços, remove tab/CR/LF, resolve
+  // `..`/`%2e`, tira a porta por omissão e põe o host em minúsculas. Qualquer
+  // diferença face ao texto recebido (incluindo espaços e controlos) é recusada.
   if (url !== `${parsed.origin}${parsed.pathname}`) {
     throw new LoopbackFetchError('invalid-url')
   }
