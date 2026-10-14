@@ -718,3 +718,296 @@ describe('listener TCP: falha de listen fecha o socket criado e limpa o estado',
     await listener.close()
   })
 })
+
+// -- limites de tempo e escritas com contrapressão (OBJ-0104 t_824fb4ae) --------
+
+/** Relógio manual: `advance` dispara, por ordem, os temporizadores devidos. */
+class ManualTimers {
+  now = 0
+  private seq = 0
+  private readonly pending = new Map<number, { at: number; fn: () => void }>()
+  set = (fn: () => void, ms: number): number => {
+    const id = ++this.seq
+    this.pending.set(id, { at: this.now + ms, fn })
+    return id
+  }
+  clear = (handle: unknown): void => {
+    this.pending.delete(handle as number)
+  }
+  get active(): number {
+    return this.pending.size
+  }
+  advance(ms: number): void {
+    const target = this.now + ms
+    for (;;) {
+      let next: [number, { at: number; fn: () => void }] | null = null
+      for (const entry of this.pending) {
+        if (entry[1].at <= target && (!next || entry[1].at < next[1].at)) {
+          next = entry
+        }
+      }
+      if (!next) break
+      this.pending.delete(next[0])
+      this.now = next[1].at
+      next[1].fn()
+    }
+    this.now = target
+  }
+}
+
+/** Socket cujas confirmações de escrita são libertadas à mão (como um buffer cheio). */
+class StallSocket extends FakeSocket {
+  readonly callbacks: ((e?: Error | null) => void)[] = []
+  throwOnWrite = -1
+  override write(
+    data: Uint8Array,
+    _e?: undefined,
+    cb?: (e?: Error | null) => void
+  ) {
+    if (this.written.length === this.throwOnWrite) throw new Error('EBADF')
+    this.written.push(Buffer.from(data))
+    if (cb) this.callbacks.push(cb)
+    return false // buffer interno cheio
+  }
+  flush(error?: Error): void {
+    for (const cb of this.callbacks.splice(0)) cb(error)
+  }
+}
+
+describe('listener TCP: limites de tempo exactos (relógio manual)', () => {
+  const GET = Buffer.from('GET / HTTP/1.1\r\nHost: x\r\n\r\n')
+  const handlerNever = (): Promise<never> => new Promise(() => undefined)
+
+  async function connected(
+    timers: ManualTimers,
+    options: TcpHttpListenerOptions,
+    handler: () => Promise<{
+      status: number
+      headers: Record<string, string>
+      body: Uint8Array | null
+    }>
+  ) {
+    const fake = new FakeNet()
+    const listener = createTcpHttpListener(fake, { ...options, timers })
+    await listener.listen(handler, () => undefined)
+    return { fake, listener }
+  }
+
+  it('pedido sem resposta: sobrevive a 29 999 ms e é cortado aos 30 000 ms (requestTimeoutMs)', async () => {
+    const timers = new ManualTimers()
+    const { fake, listener } = await connected(
+      timers,
+      { requestTimeoutMs: 30_000 },
+      handlerNever
+    )
+    const conn = fake.connect()
+    conn.emit('data', GET)
+    await tick(1)
+    timers.advance(29_999)
+    assert.equal(conn.destroyed, false, 'a 29 999 ms ainda vive')
+    assert.equal(listener.openConnections(), 1)
+    timers.advance(1)
+    assert.equal(conn.destroyed, true, 'aos 30 000 ms é cortada')
+    await tick(1)
+    assert.equal(listener.openConnections(), 0)
+    await listener.close()
+  })
+
+  it('cabeçalhos incompletos: vive a 4 999 ms, cortada aos 5 000 ms (omissão)', async () => {
+    const timers = new ManualTimers()
+    const { fake, listener } = await connected(timers, {}, handlerNever)
+    const conn = fake.connect()
+    conn.emit('data', Buffer.from('GET /s/'))
+    timers.advance(4_999)
+    assert.equal(conn.destroyed, false)
+    timers.advance(1)
+    assert.equal(conn.destroyed, true)
+    await listener.close()
+  })
+
+  it('cabeçalhos completos param o relógio de cabeçalhos mas não o do pedido', async () => {
+    const timers = new ManualTimers()
+    const { fake, listener } = await connected(timers, {}, handlerNever)
+    const conn = fake.connect()
+    conn.emit('data', GET)
+    await tick(1)
+    timers.advance(5_000)
+    assert.equal(conn.destroyed, false, 'cabeçalhos já completos')
+    timers.advance(4_999)
+    assert.equal(conn.destroyed, false, 'pedido ainda dentro de 10 s')
+    timers.advance(1)
+    assert.equal(conn.destroyed, true, 'pedido cortado aos 10 000 ms')
+    await listener.close()
+  })
+
+  it('resposta a tempo: não fica nenhum temporizador a cortar a ligação depois', async () => {
+    const timers = new ManualTimers()
+    const { fake, listener } = await connected(timers, {}, async () => ({
+      status: 200,
+      headers: {},
+      body: new Uint8Array(10)
+    }))
+    const conn = fake.connect()
+    conn.emit('data', GET)
+    await tick(5)
+    assert.equal(conn.ended, true)
+    await tick(5)
+    assert.equal(timers.active, 0, 'cabeçalhos, pedido e escrita todos limpos')
+    timers.advance(60_000)
+    assert.equal(conn.destroyed, false)
+    await listener.close()
+  })
+})
+
+describe('listener TCP: escritas com contrapressão', () => {
+  const GET = Buffer.from('GET / HTTP/1.1\r\nHost: x\r\n\r\n')
+  const body = (n: number): Uint8Array => new Uint8Array(n).fill(7)
+
+  async function stalled(options: TcpHttpListenerOptions, size: number) {
+    const timers = new ManualTimers()
+    const fake = new FakeNet()
+    const listener = createTcpHttpListener(fake, {
+      writeChunkBytes: 10,
+      ...options,
+      timers
+    })
+    await listener.listen(
+      async () => ({ status: 200, headers: {}, body: body(size) }),
+      () => undefined
+    )
+    const conn = new StallSocket()
+    fake.server!.onConnection(conn)
+    conn.emit('data', GET)
+    await tick(1)
+    return { timers, listener, conn }
+  }
+
+  it('write() a devolver false não perde troços: todos escritos por ordem; FIN só depois da última confirmação', async () => {
+    const { listener, conn } = await stalled({}, 35)
+    assert.match(
+      Buffer.concat(conn.written).toString('latin1'),
+      /^HTTP\/1\.1 200 /
+    )
+    assert.equal(conn.written.length, 5, 'cabeçalhos + 4 troços de ≤ 10 B')
+    assert.equal(
+      Buffer.concat(conn.written.slice(1)).length,
+      35,
+      'o corpo todo, sem troços perdidos'
+    )
+    assert.equal(conn.ended, false, 'sem confirmações não há FIN')
+    conn.flush()
+    assert.equal(conn.ended, true)
+    assert.equal(conn.destroyed, false)
+    await listener.close()
+  })
+
+  it('erro de confirmação num troço do meio destrói a ligação e nunca envia FIN', async () => {
+    const { listener, conn } = await stalled({}, 35)
+    conn.callbacks[2](new Error('EPIPE')) // um troço intermédio
+    assert.equal(conn.destroyed, true)
+    conn.flush() // as confirmações tardias não ressuscitam a ligação
+    assert.equal(conn.ended, false)
+    await listener.close()
+  })
+
+  it('excepção síncrona de write() a meio da resposta destrói a ligação', async () => {
+    const timers = new ManualTimers()
+    const fake = new FakeNet()
+    const listener = createTcpHttpListener(fake, {
+      writeChunkBytes: 10,
+      timers
+    })
+    await listener.listen(
+      async () => ({ status: 200, headers: {}, body: body(35) }),
+      () => undefined
+    )
+    const conn = new StallSocket()
+    conn.throwOnWrite = 3
+    fake.server!.onConnection(conn)
+    conn.emit('data', GET)
+    await tick(1)
+    assert.equal(conn.destroyed, true)
+    assert.equal(conn.ended, false)
+    assert.equal(timers.active, 0, 'nenhum temporizador pendurado')
+    await listener.close()
+  })
+
+  it('cliente que não lê: cortado entre 9 999 ms e 10 000 ms de writeTimeoutMs e liberta o lugar', async () => {
+    const { timers, listener, conn } = await stalled({ maxConnections: 1 }, 35)
+    assert.equal(listener.openConnections(), 1)
+    timers.advance(9_999)
+    assert.equal(conn.destroyed, false)
+    timers.advance(1)
+    assert.equal(conn.destroyed, true)
+    await tick(1)
+    assert.equal(listener.openConnections(), 0, 'o lugar volta ao tecto')
+    await listener.close()
+  })
+
+  it('escrita concluída a tempo cancela o corte: nada é destruído depois', async () => {
+    const { timers, listener, conn } = await stalled({}, 35)
+    timers.advance(9_000)
+    conn.flush()
+    assert.equal(conn.ended, true)
+    assert.equal(timers.active, 0)
+    timers.advance(60_000)
+    assert.equal(conn.destroyed, false)
+    await listener.close()
+  })
+})
+
+describe('listener TCP: contrapressão em sockets reais', () => {
+  const big = randomBytes(8 * 1024 * 1024)
+  const sha = createHash('sha256').update(big).digest('hex')
+
+  async function bigRig(t: TestContext, options: TcpHttpListenerOptions) {
+    const r = await rig(t, options)
+    r.assets.add(ID, big)
+    const assetPath = new URL(r.server.urlFor(ID, 'dwg')!).pathname
+    return { ...r, assetPath }
+  }
+
+  it('leitor lento: o corpo de 8 MB chega íntegro depois de uma pausa de leitura', async t => {
+    const r = await bigRig(t, { writeTimeoutMs: 5_000 })
+    const chunks: Buffer[] = []
+    await new Promise<void>(resolve => {
+      const s = net.connect({ host: '127.0.0.1', port: r.port }, () => {
+        s.write(
+          `GET ${r.assetPath} HTTP/1.1\r\nHost: 127.0.0.1:${r.port}\r\n\r\n`
+        )
+        s.pause()
+        setTimeout(() => s.resume(), 300)
+      })
+      s.on('data', d => chunks.push(d as Buffer))
+      s.on('close', () => resolve())
+      s.on('error', () => resolve())
+    })
+    const all = Buffer.concat(chunks)
+    const at = all.indexOf('\r\n\r\n')
+    assert.match(all.subarray(0, at).toString('latin1'), /^HTTP\/1\.1 200 /)
+    const payload = all.subarray(at + 4)
+    assert.equal(payload.length, big.length)
+    assert.equal(createHash('sha256').update(payload).digest('hex'), sha)
+  })
+
+  it('leitor parado: a ligação é cortada ao fim de writeTimeoutMs e o lugar volta ao tecto', async t => {
+    const r = await bigRig(t, { writeTimeoutMs: 250, maxConnections: 2 })
+    const s = net.connect({ host: '127.0.0.1', port: r.port }, () => {
+      s.write(
+        `GET ${r.assetPath} HTTP/1.1\r\nHost: 127.0.0.1:${r.port}\r\n\r\n`
+      )
+      s.pause() // nunca lê: os buffers do kernel enchem
+    })
+    s.on('error', () => undefined)
+    t.after(() => s.destroy())
+    for (let i = 0; i < 20 && r.listener.openConnections() === 0; i++) {
+      await tick(25)
+    }
+    assert.equal(r.listener.openConnections(), 1, 'ligação presa')
+    for (let i = 0; i < 40 && r.listener.openConnections() > 0; i++) {
+      await tick(50)
+    }
+    assert.equal(r.listener.openConnections(), 0, 'cortada pelo writeTimeoutMs')
+    assert.equal((await req(r, r.path(''))).status, 200, 'o servidor continua')
+  })
+})

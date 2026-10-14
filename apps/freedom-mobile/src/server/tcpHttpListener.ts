@@ -60,6 +60,11 @@ export interface TcpHttpListenerOptions {
   /** Da aceitação ao início da resposta. */
   requestTimeoutMs?: number
   maxConnections?: number
+  /**
+   * Do início da escrita da resposta ao último `write` confirmado: um cliente
+   * que não lê (buffer cheio) não prende a ligação nem o lugar no tecto.
+   */
+  writeTimeoutMs?: number
   /** Espera máxima pelo `close` do servidor em `close()`. */
   closeTimeoutMs?: number
   /** Tamanho de cada `write` (limita cópias base64 na ponte RN). */
@@ -72,6 +77,7 @@ export const TCP_LISTENER_DEFAULTS = {
   maxHeaderBytes: 8 * 1024,
   headersTimeoutMs: 5_000,
   requestTimeoutMs: 10_000,
+  writeTimeoutMs: 10_000,
   maxConnections: 32,
   closeTimeoutMs: 1_000,
   writeChunkBytes: 256 * 1024
@@ -228,7 +234,11 @@ export function createTcpHttpListener(
     }
   }
 
-  /** Escreve em troços e fecha (FIN) só depois do último. */
+  /**
+   * Escreve em troços e fecha (FIN) só depois do último. Um `write` que falha
+   * (excepção ou callback com erro, em qualquer troço) destrói a ligação; um
+   * cliente que não lê é cortado ao fim de `writeTimeoutMs`.
+   */
   const send = (
     socket: TcpSocketLike,
     head: Uint8Array,
@@ -240,23 +250,42 @@ export function createTcpHttpListener(
         parts.push(body.subarray(i, i + o.writeChunkBytes))
       }
     }
+    let settled = false
+    // ligação já destruída: confirmações tardias não lhe enviam FIN
+    let dead = false
+    const writeTimer = timers.set(() => {
+      if (settled) return
+      dead = true
+      kill(socket)
+    }, o.writeTimeoutMs)
+    const settle = (): void => {
+      settled = true
+      timers.clear(writeTimer)
+    }
+    const failed = (): void => {
+      dead = true
+      settle()
+      kill(socket)
+    }
+    socket.on('close', settle)
     try {
       parts.forEach((part, i) => {
-        if (i < parts.length - 1) socket.write(part)
-        else
-          socket.write(part, undefined, error => {
-            if (error) kill(socket)
-            else {
-              try {
-                socket.end()
-              } catch {
-                kill(socket)
-              }
+        socket.write(part, undefined, error => {
+          if (dead) return
+          if (error) {
+            failed()
+          } else if (i === parts.length - 1) {
+            settle()
+            try {
+              socket.end()
+            } catch {
+              kill(socket)
             }
-          })
+          }
+        })
       })
     } catch {
-      kill(socket)
+      failed()
     }
   }
 
