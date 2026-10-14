@@ -50,7 +50,7 @@ Fluxo real accionado por `adb`/`uiautomator` (picker do SO → `FileFlow` → li
 
 | Passo                                      | drawnPixels (WebView)    | Texto visível na app                                                     |
 | ------------------------------------------ | ------------------------ | ------------------------------------------------------------------------ |
-| `0-ready`: viewer carregado, sem documento | 0 (superfície branca)    | «Viewer pronto.»                                                         |
+| `0-ready`: viewer carregado, sem documento | 0 desenhados (ver nota)  | «Viewer pronto.»                                                         |
 | `1-opened`: `block-color.dxf`              | 11 240 (1 420 cores)     | «block-color.dxf (DXF, 3 layouts)»                                       |
 | `2-zoom-in` (botão «+»)                    | 11 426                   | —                                                                        |
 | `3-zoom-extents` (botão «Ajustar»)         | 11 274                   | —                                                                        |
@@ -59,6 +59,10 @@ Fluxo real accionado por `adb`/`uiautomator` (picker do SO → `FileFlow` → li
 | `6-open-failed`: DXF inválido (35 B)       | 11 516 (desenho mantido) | «Não foi possível abrir o desenho (ficheiro inválido ou não suportado).» |
 
 Os botões da barra têm 121 px = **44 dp** (≥44).
+
+**Nota de reconciliação — «0» (tabela) vs `drawnPixels: 1875960` (`metrics.json`) no passo `0-ready`.** São a mesma captura, medida com duas bases diferentes. O `metrics.json` conta píxeis **≠ preto** (`method`: «fundo preto») na área da WebView; sem documento a superfície é **toda branca**, logo conta a área inteira: 1080 × (2154 − 417) = 1080 × 1737 = **1 875 960** píxeis, `distinctColors: 1`, hash `9ec0057c`. Confirmado sobre `android/0-ready.png` (recorte 0,417–1080,2154): uma única cor, `(255,255,255)`, 1 875 960 px. O «0» da tabela quer dizer _nenhum píxel de desenho_ (superfície em branco, uma só cor) e **não** é comparável com o `drawnPixels` do ficheiro; nos passos seguintes o fundo do desenho é preto e as duas bases coincidem (p. ex. `1-opened`: 11 240 ≠ preto; fundo `(0,0,0)` = 1 473 760 px). Leitura segura: `drawnPixels` só é comparável **entre passos com documento**; o `0-ready` prova «viewer montado e em branco» (1 cor), não «0 píxeis ≠ preto». As contagens do Chromium (secção «Resultados») usam outra base (cor mais frequente) e outro viewport; não se somam com estas.
+
+**APK testado (hash do artefacto).** `app-release.apk` (34 058 344 B, 1105 entradas, compilado às 09:59 de 2026-10-14 em `~/.cache/aitra-android/build`) — `sha256 = 60a2ae1bdddb65a1a6060a251177fb81dfc9cdd8115f440f504ca07c3be8b018`, registado em `android/apk.sha256`. É o hash do binário **efectivamente instalado** nas capturas acima (as capturas e as sondas são posteriores: 10:05–10:18). **Não** é uma afirmação de build reprodutível bit a bit: o build é feito fora do repo, a partir de uma cópia do worktree, e **não** foi verificado que reconstruir dê o mesmo hash (Gradle/assinatura/carimbos de data não foram fixados). Serve para identificar o binário testado, não para o recompilar.
 
 Sondas ao listener nativo a partir de outro uid (`shell`, uid 2000 = «outra app»), `android/probes.txt`: token errado e `/` → 404; `Host` falso → 403; `Sec-Fetch-Site: cross-site` → 403; HTTP/1.0 → 505; LF solto e traversal → 400; POST → 405; cabeçalhos > 8 KiB → 431; slowloris cortado entre 4 e 6 s (limite 5 s); `10.0.2.15`, `10.0.2.16` e `::1` → **ligação recusada** (só 127.0.0.1). `am force-stop` fecha o listener (nenhum socket em LISTEN) e a relançada escuta noutra porta com token novo; a porta antiga recusa. APK de release: `network_security_config` só com `127.0.0.1` em claro, sem `usesCleartextTraffic`.
 
@@ -70,6 +74,6 @@ Observações (não escondidas):
 ## Limitações (não reivindicadas)
 
 - **Dispositivo físico e iOS**: a prova nativa é um emulador Android x86_64 (SwiftShader), não hardware; iOS (WKWebView, `NSAllowsLocalNetworking`, suspensão de sockets em segundo plano) **não** foi exercitado (sem Xcode).
-- **Fontes CAD**: o bundle não traz `assets/cad-data/fonts` (404 em `fonts.json`, item [H] B2/L1 de licença). O texto **não é desenhado**: o FIND encontra e navega (a selecção move a vista), mas o hit de texto não se vê. A geometria é desenhada.
+- **Fontes CAD**: o bundle não traz `assets/cad-data/fonts` (404 em `fonts.json`, item [H] B2/L1 de licença). O `baseUrl: './assets/cad-data/'` em `packages/cad-mobile-viewer/src/web/main.ts` aponta **de propósito** para esse caminho local (nunca para o `cdn.jsdelivr.net/gh/mlightcad/cad-data`, que seria rede); a pasta existir ou não é só uma questão de licença/conteúdo, não de configuração. O texto **não é desenhado**: o FIND encontra e navega (a selecção move a vista), mas o hit de texto não se vê. A geometria é desenhada.
 - Memória de pico/TTFB de 20 MB (§8 item 6 da spec I5) não medidos em dispositivo.
 - A prova Chromium (acima) usa `net` do Node e uma WebView simulada; a do dispositivo é a que cobre o `react-native-tcp-socket`.

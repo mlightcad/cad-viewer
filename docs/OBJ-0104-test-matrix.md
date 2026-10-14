@@ -4,13 +4,13 @@ Card `t_c13af675`. Âmbito: **só validação** (consolida a suite aplicável e 
 
 **Separação explícita (critério 2):** os gates de licenciamento (L1–L3) e a publicação (§11, D-7) são cards posteriores e **não** entram nesta matriz; um gate técnico vermelho nunca se resolve com um artefacto de licença. Publicação só depois de T2 verde + L3 + EXT-1/EXT-2.
 
-Medido em `HEAD` `9a232325` (base `origin/main` `d7e3e121`, 88 commits à frente).
+Medido em `HEAD` `9a232325` (G1 e G7 reexecutados no follow-up `t_824fb4ae`) (base `origin/main` `d7e3e121`, 88 commits à frente).
 
 ## 1. Gates (comandos exactos, a partir da raiz do worktree)
 
 | ID                        | Comando                                                                                                                                                                                | Resultado observado                                                                                           |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| G1 unit/integração app    | `cd apps/freedom-mobile && npm test`                                                                                                                                                   | **706/706** em 125 suites, 0 fail/skip                                                                        |
+| G1 unit/integração app    | `cd apps/freedom-mobile && npm test`                                                                                                                                                   | **726/726** em 130 suites, 0 fail/skip                                                                        |
 | G2 tsc app                | `cd apps/freedom-mobile && npx tsc --noEmit`                                                                                                                                           | rc=0                                                                                                          |
 | G3 unit/integração viewer | `heavy pnpm exec jest packages/cad-mobile-viewer --maxWorkers=2 --detectOpenHandles`                                                                                                   | 22 suites passed; **704 passed + 2 todo** (706)                                                               |
 | G4 tsc viewer             | `heavy pnpm --filter @mlightcad/cad-mobile-viewer exec tsc --noEmit -p tsconfig.json`                                                                                                  | rc=0                                                                                                          |
@@ -53,5 +53,5 @@ Legenda: **U** unit, **I** integração (circuito real em Node), **E** e2e (Chro
 ## 4. Limitações e falhas determinísticas
 
 - **L-1 (determinística, ambiente):** `eslint packages/cad-mobile-viewer` (pasta inteira) termina com SIGKILL (também via `heavy`; entra em `dist/`/`node_modules` locais). Contorno reproduzível: G6 com `src`, `__tests__`, `vite.config.ts` explícitos (rc=0). Não é falha de código; o `eslint apps/freedom-mobile/src` (G5) é limpo.
-- G7 reescreve `docs/evidence/OBJ-0104-m4-i6/chromium/metrics.json` (tempos); reverter com `git checkout` para não sujar o delta.
+- G7 escreve os artefactos (PNG + `metrics.json`) numa pasta temporária (caminho impresso como `# surfaceProof: artefactos em …`), por isso não suja o repo; `FREEDOM_SURFACE_PROOF_OUT=<dir>` escolhe a pasta e `FREEDOM_SURFACE_PROOF_EVIDENCE=1` regrava `docs/evidence/OBJ-0104-m4-i6/chromium/` (só quando se quer actualizar a evidência versionada).
 - G3 sob carga pode exceder o timeout de 5 s do jest (ver `OBJ-0104-m4-s2-integrated-validation.md` §6); repetir com `heavy`.

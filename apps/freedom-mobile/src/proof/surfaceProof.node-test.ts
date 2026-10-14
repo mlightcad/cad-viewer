@@ -63,8 +63,8 @@ import {
   sessionReducer,
   type SessionState
 } from '../state/session.ts'
-import { proofOutDir } from './outDir.ts'
 import { isAllowedNavigation, isViewerUrl } from '../viewer/navigation.ts'
+import { proofOutDir } from './outDir.ts'
 
 const ENABLED = process.env.FREEDOM_SURFACE_PROOF === '1'
 const REPO = fileURLToPath(new URL('../../../../', import.meta.url))
