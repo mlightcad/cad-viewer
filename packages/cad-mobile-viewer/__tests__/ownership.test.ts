@@ -87,7 +87,7 @@ describe('ownership de @mlightcad/cad-simple-viewer/find', () => {
 
     it('apps/freedom-mobile está fora do workspace pnpm e não declara nem importa cad-simple-viewer (o bundle real do viewer ainda não existe: I4/T2)', () => {
       const ws = readFileSync(resolve(ROOT, 'pnpm-workspace.yaml'), 'utf8')
-      expect(ws).toContain("'packages/*'")
+      expect(ws).toMatch(/^\s*-\s*['"]?packages\/\*['"]?\s*$/m)
       expect(ws).not.toMatch(/apps/)
       const app = resolve(ROOT, 'apps/freedom-mobile')
       const manifest = readFileSync(resolve(app, 'package.json'), 'utf8')
