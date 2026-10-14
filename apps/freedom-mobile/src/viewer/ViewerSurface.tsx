@@ -2,7 +2,10 @@
 //
 // Superfície do viewer: a única parte da app que hospeda código web. A app não
 // interpreta desenhos; só encaminha mensagens (strings JSON) e sinais de crash.
-// B1 carrega `about:blank`; o bundle `packages/cad-mobile-viewer` entra em S1/I2.
+// Com sessão do `LocalAssetServer` carrega a página do bundle
+// (`packages/cad-mobile-viewer`) em `http://127.0.0.1:<porta>/s/<token>/`; sem
+// ela fica em `about:blank` (o app mostra o erro de `ready`). Qualquer outra
+// navegação é bloqueada (`navigation.ts`). O `viewerUrl` nunca é registado.
 
 import {
   type MutableRefObject,
@@ -13,14 +16,20 @@ import {
 import { StyleSheet } from 'react-native'
 import { WebView } from 'react-native-webview'
 
+import {
+  isAllowedNavigation,
+  SURFACE_ORIGIN_WHITELIST,
+  surfaceUri
+} from './navigation'
+
 export const VIEWER_SURFACE_TEST_ID = 'viewer-surface'
-/** Origem inicial da superfície em B1 (sem rede, sem bundle). */
-export const VIEWER_INITIAL_URI = 'about:blank'
 
 /** `webview.injectJavaScript`, exposto à ponte; lança se a WebView não existir. */
 export type InjectFn = (script: string) => void
 
 export interface ViewerSurfaceProps {
+  /** Página do viewer da sessão (contém o token); `null` = sem servidor. */
+  viewerUrl: string | null
   onMessage: (raw: string) => void
   onProcessGone: () => void
   /** Preenchido com a função de injecção enquanto a superfície estiver montada. */
@@ -28,6 +37,7 @@ export interface ViewerSurfaceProps {
 }
 
 export function ViewerSurface({
+  viewerUrl,
   onMessage,
   onProcessGone,
   injectRef
@@ -50,9 +60,16 @@ export function ViewerSurface({
       ref={webViewRef}
       testID={VIEWER_SURFACE_TEST_ID}
       style={styles.surface}
-      source={{ uri: VIEWER_INITIAL_URI }}
-      originWhitelist={['about:*']}
+      source={{ uri: surfaceUri(viewerUrl) }}
+      originWhitelist={[...SURFACE_ORIGIN_WHITELIST]}
+      onShouldStartLoadWithRequest={req =>
+        isAllowedNavigation(req.url, viewerUrl)
+      }
       javaScriptEnabled
+      allowFileAccess={false}
+      allowsLinkPreview={false}
+      setSupportMultipleWindows={false}
+      incognito
       onMessage={e => onMessage(e.nativeEvent.data)}
       onContentProcessDidTerminate={onProcessGone}
       onRenderProcessGone={onProcessGone}

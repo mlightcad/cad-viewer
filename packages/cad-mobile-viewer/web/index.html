@@ -1,0 +1,32 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<html lang="pt-PT">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>Freedom viewer</title>
+    <style>
+      html,
+      body,
+      #viewer {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        touch-action: none;
+        background: #ffffff;
+      }
+      /* avisos são enviados ao app pelo protocolo; a UI é nativa */
+      .ml-ui-notification-center {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="viewer"></div>
+    <script type="module" src="../src/web/main.ts"></script>
+  </body>
+</html>

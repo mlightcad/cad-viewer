@@ -241,13 +241,24 @@ describe('fronteira offline do app (D-2…D-5, arquitectura §4 «Rede»)', () =
     }
   })
 
-  it('a superfície WebView só aceita about:* e o manifesto não pede permissões', () => {
+  it('a superfície WebView só aceita loopback 127.0.0.1/about: com bloqueio de navegação, e o manifesto não pede permissões', () => {
     const surface = readFileSync(
       join(root, 'src/viewer/ViewerSurface.tsx'),
       'utf8'
     )
-    assert.match(surface, /originWhitelist=\{\['about:\*'\]\}/)
-    assert.doesNotMatch(surface, /allowFileAccess|allowUniversalAccess/)
+    assert.match(
+      surface,
+      /originWhitelist=\{\[\.\.\.SURFACE_ORIGIN_WHITELIST\]\}/
+    )
+    assert.match(surface, /onShouldStartLoadWithRequest=\{/)
+    assert.match(surface, /source=\{\{ uri: surfaceUri\(viewerUrl\) \}\}/)
+    assert.match(surface, /allowFileAccess=\{false\}/)
+    assert.doesNotMatch(
+      surface,
+      /allowUniversalAccess|allowFileAccessFromFileURLs/
+    )
+    // o URL com token nunca é registado
+    assert.doesNotMatch(surface, /console\./)
     const manifest = JSON.parse(
       readFileSync(join(root, 'app.json'), 'utf8')
     ) as { expo: { android?: object; ios?: object } }

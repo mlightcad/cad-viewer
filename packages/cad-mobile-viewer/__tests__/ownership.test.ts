@@ -114,7 +114,7 @@ describe('ownership de @mlightcad/cad-simple-viewer/find', () => {
       ).not.toContain('cad-simple-viewer')
     })
 
-    it('o alias /find só é mapeado em três ficheiros (tsconfig do pacote + jest.config.ts + tsconfig.jest.json do jest): nenhuma outra config o duplica', () => {
+    it('o alias /find só é mapeado em quatro ficheiros (tsconfig do pacote + jest.config.ts + tsconfig.jest.json do jest + vite.config.ts do bundle real, M4-I6): nenhuma outra config o duplica', () => {
       const CONFIG =
         /(^|\/)(tsconfig[^/]*\.json|jest\.config\.[cm]?[jt]s|vite\.config\.[cm]?[jt]s|metro\.config\.[cm]?js|babel\.config\.[cm]?js)$/
       const hits = [
@@ -129,6 +129,7 @@ describe('ownership de @mlightcad/cad-simple-viewer/find', () => {
       expect(hits).toEqual([
         'jest.config.ts',
         'packages/cad-mobile-viewer/tsconfig.json',
+        'packages/cad-mobile-viewer/vite.config.ts',
         'tsconfig.jest.json'
       ])
     })

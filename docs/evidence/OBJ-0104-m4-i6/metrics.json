@@ -1,0 +1,250 @@
+{
+  "desktop": {
+    "viewport": {
+      "width": 1280,
+      "height": 800,
+      "deviceScaleFactor": 1
+    },
+    "openMs": 242,
+    "layouts": [
+      "Model",
+      "布局1",
+      "布局2"
+    ],
+    "findTotal": 3,
+    "openFailedCode": "read-failed",
+    "revokedStatus": 404,
+    "externalRequests": 0,
+    "cspViolationsOwn": 0,
+    "cspBlockedExternal": 1,
+    "pageErrors": [],
+    "pixels": {
+      "blank": {
+        "width": 1280,
+        "height": 800,
+        "background": "#ffffff",
+        "drawnPixels": 0,
+        "drawnFraction": 0,
+        "distinctColors": 1,
+        "bbox": null,
+        "hash": "d5680007"
+      },
+      "drawn": {
+        "width": 1280,
+        "height": 800,
+        "background": "#000000",
+        "drawnPixels": 13247,
+        "drawnFraction": 0.0129365234375,
+        "distinctColors": 144,
+        "bbox": {
+          "minX": 21,
+          "minY": 278,
+          "maxX": 1222,
+          "maxY": 780
+        },
+        "hash": "28cc266c"
+      },
+      "zoomed": {
+        "width": 1280,
+        "height": 800,
+        "background": "#000000",
+        "drawnPixels": 12989,
+        "drawnFraction": 0.0126845703125,
+        "distinctColors": 137,
+        "bbox": {
+          "minX": 21,
+          "minY": 163,
+          "maxX": 1194,
+          "maxY": 780
+        },
+        "hash": "37d3d212"
+      },
+      "extents": {
+        "width": 1280,
+        "height": 800,
+        "background": "#000000",
+        "drawnPixels": 13088,
+        "drawnFraction": 0.01278125,
+        "distinctColors": 144,
+        "bbox": {
+          "minX": 21,
+          "minY": 236,
+          "maxX": 1222,
+          "maxY": 780
+        },
+        "hash": "f2ffbb46"
+      },
+      "hit": {
+        "width": 1280,
+        "height": 800,
+        "background": "#000000",
+        "drawnPixels": 9380,
+        "drawnFraction": 0.00916015625,
+        "distinctColors": 140,
+        "bbox": {
+          "minX": 0,
+          "minY": 0,
+          "maxX": 1279,
+          "maxY": 780
+        },
+        "hash": "dec6b1f5"
+      },
+      "afterFail": {
+        "width": 1280,
+        "height": 800,
+        "background": "#000000",
+        "drawnPixels": 9380,
+        "drawnFraction": 0.00916015625,
+        "distinctColors": 140,
+        "bbox": {
+          "minX": 0,
+          "minY": 0,
+          "maxX": 1279,
+          "maxY": 780
+        },
+        "hash": "dec6b1f5"
+      }
+    }
+  },
+  "mobile-390": {
+    "viewport": {
+      "width": 390,
+      "height": 844,
+      "deviceScaleFactor": 3
+    },
+    "openMs": 129,
+    "layouts": [
+      "Model",
+      "布局1",
+      "布局2"
+    ],
+    "findTotal": 3,
+    "openFailedCode": "read-failed",
+    "revokedStatus": 404,
+    "externalRequests": 0,
+    "cspViolationsOwn": 0,
+    "cspBlockedExternal": 1,
+    "pageErrors": [],
+    "pixels": {
+      "blank": {
+        "width": 1170,
+        "height": 2532,
+        "background": "#ffffff",
+        "drawnPixels": 0,
+        "drawnFraction": 0,
+        "distinctColors": 1,
+        "bbox": null,
+        "hash": "830ce207"
+      },
+      "drawn": {
+        "width": 1170,
+        "height": 2532,
+        "background": "#000000",
+        "drawnPixels": 31923,
+        "drawnFraction": 0.01077591444890023,
+        "distinctColors": 1124,
+        "bbox": {
+          "minX": 52,
+          "minY": 1153,
+          "maxX": 1117,
+          "maxY": 2475
+        },
+        "hash": "62f32c0a"
+      },
+      "zoomed": {
+        "width": 1170,
+        "height": 2532,
+        "background": "#000000",
+        "drawnPixels": 32447,
+        "drawnFraction": 0.010952795668435478,
+        "distinctColors": 974,
+        "bbox": {
+          "minX": 62,
+          "minY": 1048,
+          "maxX": 1092,
+          "maxY": 2475
+        },
+        "hash": "8dc37551"
+      },
+      "extents": {
+        "width": 1170,
+        "height": 2532,
+        "background": "#000000",
+        "drawnPixels": 32014,
+        "drawnFraction": 0.010806632370613413,
+        "distinctColors": 1126,
+        "bbox": {
+          "minX": 52,
+          "minY": 1115,
+          "maxX": 1117,
+          "maxY": 2475
+        },
+        "hash": "9e6d0268"
+      },
+      "hit": {
+        "width": 1170,
+        "height": 2532,
+        "background": "#000000",
+        "drawnPixels": 34589,
+        "drawnFraction": 0.011675848287222694,
+        "distinctColors": 999,
+        "bbox": {
+          "minX": 0,
+          "minY": 761,
+          "maxX": 1169,
+          "maxY": 2475
+        },
+        "hash": "230fe7b8"
+      },
+      "afterFail": {
+        "width": 1170,
+        "height": 2532,
+        "background": "#000000",
+        "drawnPixels": 34589,
+        "drawnFraction": 0.011675848287222694,
+        "distinctColors": 999,
+        "bbox": {
+          "minX": 0,
+          "minY": 761,
+          "maxX": 1169,
+          "maxY": 2475
+        },
+        "hash": "230fe7b8"
+      }
+    }
+  },
+  "crossOrigin": {
+    "outcome": [
+      "cors-erro",
+      "erro"
+    ],
+    "serverSaw": [
+      {
+        "route": "asset",
+        "status": 403,
+        "secFetchSite": "same-site",
+        "secFetchMode": "cors",
+        "secFetchDest": "empty",
+        "origin": "other"
+      },
+      {
+        "route": "asset",
+        "status": 403,
+        "secFetchSite": "same-site",
+        "secFetchMode": "no-cors",
+        "secFetchDest": "empty",
+        "origin": "none"
+      }
+    ]
+  },
+  "serverRequests": {
+    "page 200 site=none mode=navigate dest=document origin=none": 2,
+    "bundle 200 site=same-origin mode=cors dest=script origin=self": 2,
+    "bundle 404 site=same-origin mode=cors dest=empty origin=none": 8,
+    "other 404 site=same-origin mode=no-cors dest=image origin=none": 1,
+    "asset 200 site=same-origin mode=same-origin dest=empty origin=none": 4,
+    "asset 404 site=same-origin mode=cors dest=empty origin=none": 2,
+    "asset 403 site=same-site mode=cors dest=empty origin=other": 1,
+    "asset 403 site=same-site mode=no-cors dest=empty origin=none": 1
+  }
+}

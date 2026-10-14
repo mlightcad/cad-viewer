@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-import { type ReactElement, useEffect, useReducer, useRef } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import {
+  type ReactElement,
+  useEffect,
+  useReducer,
+  useRef,
+  useState
+} from 'react'
+import { AppState, Pressable, StyleSheet, Text, View } from 'react-native'
 
 import { BridgeClient } from '../bridge/BridgeClient'
 import {
@@ -10,6 +16,8 @@ import {
 } from '../files/expoFileAdapters'
 import { FileFlow } from '../files/fileFlow'
 import { NO_LOCAL_SERVER } from '../files/ports'
+import type { LocalAssetServer } from '../server/localAssetServer'
+import type { ServerEvent } from '../server/types'
 import { describeViewerStatus } from '../shell/shellState'
 import {
   describeDocument,
@@ -22,8 +30,31 @@ import {
 import { initialSessionState, sessionReducer } from '../state/session'
 import { type InjectFn, ViewerSurface } from '../viewer/ViewerSurface'
 
-export function ViewerScreen(): ReactElement {
+/**
+ * Fábrica do servidor loopback da sessão (spec M3-I5 §8 itens 1 e 4). Recebe o
+ * observador de eventos do servidor. `null` = este build não tem listener
+ * nativo: a superfície fica em `about:blank` e o erro é VISÍVEL (sem queda
+ * silenciosa para outra origem).
+ */
+export type ServerFactory = (
+  onEvent: (event: ServerEvent) => void
+) => LocalAssetServer | null
+
+/** Build actual: nenhum listener nativo ligado (bloqueio documentado no I6). */
+export const NO_NATIVE_LISTENER: ServerFactory = () => null
+
+export const SERVER_UNAVAILABLE_TEXT =
+  'Servidor local indisponível neste build: o viewer não pode arrancar.'
+export const SERVER_FAILED_TEXT =
+  'Falha ao arrancar o servidor local do viewer. Tente recarregar.'
+
+export function ViewerScreen({
+  createServer = NO_NATIVE_LISTENER
+}: { createServer?: ServerFactory } = {}): ReactElement {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState)
+  /** Página da sessão (token): só em memória, nunca registada. */
+  const [viewerUrl, setViewerUrl] = useState<string | null>(null)
+  const [serverIssue, setServerIssue] = useState<string | null>(null)
   const injectRef = useRef<InjectFn | null>(null)
   const clientRef = useRef<BridgeClient | null>(null)
   const flowRef = useRef<FileFlow | null>(null)
@@ -35,6 +66,27 @@ export function ViewerScreen(): ReactElement {
     // O fluxo de ficheiros vive e morre com a ponte: os assets copiados
     // pertencem a esta superfície e são apagados quando ela é recriada.
     let flow: FileFlow | null = null
+    let disposed = false
+    // Servidor por geração: recarregar (ou perder o listener) gera token novo
+    // e recria a WebView com o URL novo; o anterior morre já (revogação).
+    const server = createServer(event => {
+      if (event.kind === 'listener-lost' && !disposed) {
+        setViewerUrl(null)
+        dispatch({ kind: 'reload' })
+      }
+    })
+    setViewerUrl(null)
+    setServerIssue(server ? null : SERVER_UNAVAILABLE_TEXT)
+    if (server) {
+      server.start().then(
+        info => {
+          if (!disposed) setViewerUrl(info.viewerUrl)
+        },
+        () => {
+          if (!disposed) setServerIssue(SERVER_FAILED_TEXT)
+        }
+      )
+    }
     const client = new BridgeClient({
       inject: script => {
         const inject = injectRef.current
@@ -49,20 +101,30 @@ export function ViewerScreen(): ReactElement {
     flow = new FileFlow({
       picker: createExpoPicker(),
       store: createExpoAssetStore(),
-      urls: NO_LOCAL_SERVER,
+      urls: server ?? NO_LOCAL_SERVER,
       bridge: client,
       onEvent: dispatch
     })
     clientRef.current = client
     flowRef.current = flow
     void flow.startup()
+    // Ao voltar a primeiro plano com o listener morto (iOS suspende sockets),
+    // recarrega: novo servidor, novo token, nova WebView.
+    const appState = AppState.addEventListener('change', state => {
+      if (state === 'active' && server && server.state === 'stopped') {
+        dispatch({ kind: 'reload' })
+      }
+    })
     return () => {
+      disposed = true
+      appState.remove()
       client.dispose()
       void flow?.dispose()
+      void server?.dispose()
       clientRef.current = null
       flowRef.current = null
     }
-  }, [generation])
+  }, [generation, createServer])
 
   const onMessage = (raw: string) => {
     const client = clientRef.current
@@ -134,11 +196,17 @@ export function ViewerScreen(): ReactElement {
             {zoomText}
           </Text>
         ) : null}
+        {serverIssue ? (
+          <Text style={styles.issue} accessibilityLiveRegion="polite">
+            {serverIssue}
+          </Text>
+        ) : null}
         {issueText ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Dispensar aviso"
             onPress={() => dispatch({ kind: 'issue-dismissed' })}
+            style={styles.target}
           >
             <Text style={styles.issue}>{issueText}</Text>
           </Pressable>
@@ -155,6 +223,7 @@ export function ViewerScreen(): ReactElement {
       </View>
       <ViewerSurface
         key={generation}
+        viewerUrl={viewerUrl}
         injectRef={injectRef}
         onMessage={onMessage}
         onProcessGone={() => clientRef.current?.processGone()}
@@ -177,6 +246,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#1a56db'
   },
+  target: { minHeight: 44, justifyContent: 'center' },
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#ffffff', fontSize: 16 }
 })
