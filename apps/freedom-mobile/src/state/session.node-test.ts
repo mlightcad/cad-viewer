@@ -470,6 +470,26 @@ describe('session — failures are never silent', () => {
     assert.equal(h.client.zoom({ op: 'out' }).ok, true)
   })
 
+  it('late ready after process-gone with an open in progress: explicit error, not silently discarded', () => {
+    const h = openedHarness()
+    const r = h.client.open({
+      name: 'b.dxf',
+      size: 1,
+      source: { kind: 'url', url: 'http://x' }
+    })
+    assert.ok(r.ok)
+    assert.equal(h.state.document.opening?.id, r.id)
+    h.client.processGone()
+    assert.equal(h.state.document.opening, null)
+    assert.equal(h.state.document.error?.code, 'viewer-unavailable')
+    h.viewer('ready', READY)
+    assert.equal(h.state.shell.viewer, 'ready')
+    // O erro sobrevive à recuperação: o utilizador sabe que tem de reabrir.
+    assert.equal(h.state.document.opening, null)
+    assert.equal(h.state.document.current, null)
+    assert.equal(h.state.document.error?.code, 'viewer-unavailable')
+  })
+
   it('reload resets everything and bumps the surface generation', () => {
     const h = openedHarness()
     h.client.processGone()

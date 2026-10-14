@@ -41,6 +41,7 @@
     "preview:diff": "nx run @mlightcad/cad-diff-viewer-example:preview",
     "pre-serve": "nx run @mlightcad/cad-viewer-examples:pre-serve",
     "publish:viewer": "pnpm -r publish --access public --no-git-checks",
+    "publish:viewer:preview": "pnpm -r publish --access public --no-git-checks --tag preview",
     "release": "node tools/release.mjs",
     "sync:versions": "node tools/sync-versions.mjs",
     "sync:versions:check": "node tools/sync-versions.mjs --check",

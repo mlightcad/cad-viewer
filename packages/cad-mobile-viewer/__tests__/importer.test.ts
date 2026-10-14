@@ -299,7 +299,7 @@ describe('falhas do conversor, timeout e inspecção', () => {
     }
   )
 
-  test.each([0, -1, 1.5, Number.NaN, Infinity, 2 ** 31, '5', null])(
+  test.each([0, -1, 1.5, Number.NaN, Infinity, -Infinity, 2 ** 31, '5', null])(
     'timeoutMs inválido (%p) falha fechado sem chamar o loader',
     async bad => {
       const load = jest.fn<ReturnType<DocumentLoader>, []>()

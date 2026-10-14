@@ -1,0 +1,26 @@
+{
+  "mode": "pre",
+  "tag": "preview",
+  "initialVersions": {
+    "@mlightcad/cad-agent-plugin": "1.7.5",
+    "@mlightcad/cad-diff-viewer": "1.7.5",
+    "@mlightcad/cad-diff-viewer-example": "1.7.5",
+    "@mlightcad/cad-google-drive-plugin": "1.7.5",
+    "@mlightcad/cad-html-plugin": "1.7.5",
+    "@mlightcad/cad-onedrive-plugin": "1.7.5",
+    "@mlightcad/cad-pdf-plugin": "1.7.5",
+    "@mlightcad/cad-simple-ui-plugin": "1.7.5",
+    "@mlightcad/cad-simple-viewer": "1.7.5",
+    "@mlightcad/cad-simple-viewer-cli": "1.7.5",
+    "@mlightcad/cad-simple-viewer-example": "1.7.5",
+    "@mlightcad/cad-svg-plugin": "1.7.5",
+    "@mlightcad/cad-viewer": "1.7.5",
+    "@mlightcad/cad-viewer-example": "1.7.5",
+    "@mlightcad/cad-viewer-examples": "1.7.5",
+    "@mlightcad/pdf-renderer": "1.7.5",
+    "@mlightcad/three-renderer": "1.7.5"
+  },
+  "changesets": [
+    "preview-1-7-6"
+  ]
+}

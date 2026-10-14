@@ -3,15 +3,19 @@ name: create-release
 description: >-
   Create a concise English release message from commits since the last vX.Y.Z
   tag, then bump every workspace package to the same version with pnpm changeset
-  and pnpm changeset version. Use when the user asks to release, cut a release,
-  bump versions, write a release message, or run changesets for this monorepo.
+  and pnpm changeset version. Supports stable releases and npm preview
+  prereleases (X.Y.Z-preview.N, dist-tag preview). Use when the user asks to
+  release, cut a release, publish a preview, bump versions, write a release
+  message, or run changesets for this monorepo.
 ---
 
 # Create Release
 
 Keep all `packages/*` versions identical. Never bump only the packages touched by recent commits.
 
-## Workflow
+Ask the user (if unclear) whether this is a **stable** release or a **preview** prerelease for npm trial installs.
+
+## Workflow (stable)
 
 Copy and track:
 
@@ -25,11 +29,49 @@ Release progress:
 - [ ] 6. Run pnpm changeset version
 - [ ] 7. Verify every package version matches
 - [ ] 8. Commit version bump (only if user asked to commit)
+- [ ] 9. Tag / publish only if user asked: pnpm release [X.Y.Z]
 ```
+
+## Workflow (preview)
+
+Preview versions use Changesets pre mode and npm dist-tag `preview` (never `latest`).
+
+```
+Preview release progress:
+- [ ] 1. Find last stable vX.Y.Z tag (baseline)
+- [ ] 2. Collect commits since that tag
+- [ ] 3. Draft release message (same rules as stable)
+- [ ] 4. Choose bump type for the eventual stable line (major | minor | patch)
+- [ ] 5. Enter pre mode (if not already): pnpm changeset pre enter preview
+- [ ] 6. Create changeset covering ALL workspace packages
+- [ ] 7. Run pnpm changeset version → X.Y.Z-preview.N
+- [ ] 8. Verify every package version matches (preview semver)
+- [ ] 9. Commit version bump (only if user asked to commit)
+- [ ] 10. Tag / publish only if user asked: pnpm release --preview
+       (or pnpm release X.Y.Z-preview.N)
+```
+
+After the last preview before a stable ship:
+
+```bash
+pnpm changeset pre exit
+# then continue with the stable workflow (changeset + version → X.Y.Z → pnpm release)
+```
+
+Do **not** leave the repo in pre mode when cutting a normal stable release.
+
+### Preview version / install
+
+| Item | Value |
+| --- | --- |
+| Version shape | `X.Y.Z-preview.N` (e.g. `1.8.0-preview.0`) |
+| Git tag | `vX.Y.Z-preview.N` |
+| npm dist-tag | `preview` (CI: `pnpm publish:viewer:preview`) |
+| User install | `pnpm add @mlightcad/cad-viewer@preview` |
 
 ### 1. Find last release tag
 
-Use the latest semver `vX.Y.Z` tag (not by create date alone):
+Use the latest **stable** semver `vX.Y.Z` tag (not by create date alone; ignore `v*-preview.*` for the baseline):
 
 ```bash
 git tag --list "v*.*.*"
@@ -82,6 +124,8 @@ Infer from commits since the last tag (ask if unclear):
 
 Apply the **same** bump type to every package.
 
+For preview: the bump type is what Changesets will apply to the next version line; pre mode then suffixes `-preview.N`.
+
 ### 5. Create changeset for ALL packages
 
 Discover packages:
@@ -123,6 +167,18 @@ Refresh the package list from disk each release; do not hard-code a stale set if
 
 If an interactive terminal is available, `pnpm changeset` is fine **only when every package is selected**. Skipping packages is a failure.
 
+### 5b. Preview: enter Changesets pre mode
+
+Only for preview releases, and only if `.changeset/pre.json` is not already present:
+
+```bash
+pnpm changeset pre enter preview
+```
+
+Then create the changeset (step 5) if it does not exist yet, and continue to version.
+
+If already in pre mode (`pre.json` exists with `"tag": "preview"`), do not enter again — just add a new changeset and version for the next `preview.N`.
+
 ### 6. Version
 
 ```bash
@@ -130,6 +186,9 @@ pnpm changeset version
 ```
 
 This consumes the changeset, bumps versions, and updates CHANGELOGs.
+
+- Stable: `X.Y.Z`
+- Preview (in pre mode): `X.Y.Z-preview.N`
 
 ### 7. Verify lockstep versions
 
@@ -143,8 +202,27 @@ pnpm sync:versions:check
 
 ### 8. Commit / tag
 
-- Commit **only** when the user asks. Suggested message: `release: release X.Y.Z` (match prior commits).
-- Creating/pushing the git tag is separate: `pnpm release` (or `pnpm release X.Y.Z`). Do not run tag push unless the user asks.
+- Commit **only** when the user asks.
+  - Stable: `release: release X.Y.Z`
+  - Preview: `release: release X.Y.Z-preview.N`
+- Creating/pushing the git tag is separate — do not run tag push unless the user asks:
+
+| Mode | Command |
+| --- | --- |
+| Stable | `pnpm release` or `pnpm release X.Y.Z` |
+| Preview | `pnpm release --preview` or `pnpm release X.Y.Z-preview.N` |
+
+`tools/release.mjs` requires:
+
+- Clean working tree on `main`
+- All `packages/*` versions lockstep and **equal** to the tag version
+- Stable auto-bump (no args) only increments the latest stable `vX.Y.Z` patch
+- `--preview` with no version reads the lockstep package version (must already be `X.Y.Z-preview.N`)
+
+CI on tag push:
+
+- `vX.Y.Z` → `pnpm publish:viewer` → npm `latest`
+- `vX.Y.Z-preview.N` → `pnpm publish:viewer:preview` → npm `preview` + GitHub prerelease
 
 ## Anti-patterns
 
@@ -153,3 +231,7 @@ pnpm sync:versions:check
 - Missing conventional prefix on the release message
 - Running `pnpm changeset version` with an incomplete changeset
 - Changing root `package.json` version (root stays private/`1.0.0`; only `packages/*` release together)
+- Publishing a preview without Changesets pre mode / without `-preview.N` version
+- Tagging a preview in a way that publishes to npm `latest` (always use `publish:viewer:preview` / CI preview branch)
+- Cutting a stable release while still in `changeset pre` mode (run `pnpm changeset pre exit` first)
+- Using `pnpm release` with no args when packages are already on a preview version (pass `--preview` or the explicit preview version)

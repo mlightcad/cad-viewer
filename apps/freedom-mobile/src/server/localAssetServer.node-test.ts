@@ -440,7 +440,17 @@ describe('configuração dos limites (fail-closed)', () => {
     'drainTimeoutMs',
     'maxBundleFileBytes'
   ]) {
-    for (const bad of [0, -1, 1.5, Number.NaN, Infinity, '16', null, {}]) {
+    for (const bad of [
+      0,
+      -1,
+      1.5,
+      Number.NaN,
+      Infinity,
+      -Infinity,
+      '16',
+      null,
+      {}
+    ]) {
       it(`${key} = ${String(bad)} (${typeof bad}) é recusado à construção`, () => {
         assert.throws(
           () => build({ [key]: bad }),

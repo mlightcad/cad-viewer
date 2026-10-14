@@ -110,7 +110,21 @@ export function documentReducer(
         }
       }
     case 'process-gone':
-      return { current: null, opening: null, error: null }
+      // O viewer perdeu o documento. Um `open` em fila/em curso também se perde
+      // e um `ready` tardio não o reenvia: termina o loading com erro explícito
+      // em vez de o apagar em silêncio.
+      return {
+        current: null,
+        opening: null,
+        error: state.opening
+          ? {
+              code: 'viewer-unavailable',
+              message:
+                'o viewer terminou inesperadamente; a abertura foi cancelada',
+              origin: 'local'
+            }
+          : null
+      }
     default:
       return state
   }

@@ -84,3 +84,12 @@ Desvios que **esta spec não ratifica** (decisão do CTO/Kevin):
 Os commits `15049280`, `ecf4cd34` e `c09dafa4` são rework M1-B2 posterior (só `apps/freedom-mobile/src/**`), não pertencem ao follow-up `t_254a5902`; o gate vigente é **162/162 em `c09dafa411fe383fc709af384e032cc34cc7dc55`** (159/159 em `ecf4cd34` e 149/149 na base `80a72923` são valores históricos).
 
 Consequência para a revisão do follow-up: rever `db9f45ab`, `531f82ef` e `fde7b3e8` (base `d1568b73`), não `origin/main..HEAD` inteiro; os restantes commits M1-B2 são revistos no card `t_c3ae146f`.
+
+## 7. Follow-up `t_fc841e51` (integrado do `origin/main` na reconciliação `t_84c9845f`; não é M1-B2)
+
+O squash `9c7fd2c5` (#735) em `origin/main` traz, além de um estado anterior de M1-B2, um único comportamento que esta branch não tinha: um `open` em fila ou em curso apanhado por `process-gone` não pode desaparecer em silêncio.
+
+- **Problema**: `documentReducer` limpava `opening` em `process-gone` sem erro; um `ready` tardio não reenvia o `open`, logo o utilizador ficava sem documento e sem explicação.
+- **Integração (preservando as duas linhas)**: a branch mantém o `BridgeClient` evoluído (`send-failed`, `find-navigation-failed`, despejo de pendentes inactivos) e **não** adopta o evento `open-dropped` do `origin/main`, redundante aqui: o `document.ts` decide só pelo estado (`state.opening`). `process-gone` com `opening` termina o loading com erro local `viewer-unavailable` («o viewer terminou inesperadamente; a abertura foi cancelada»); sem `opening` mantém `error: null`. O erro sobrevive a um `ready` tardio.
+- **Testes** (`node:test`): `document.node-test` (em fila/em curso × `process-gone`; sem abertura = estado inicial) e `session.node-test` (`ready` tardio depois de `process-gone` com `open` em curso: erro mantido, sem documento nem `opening`).
+- **Divergência registada**: não existem `open-dropped` nem `FailCause`; qualquer consumidor futuro dessa API do `origin/main` tem de partir do estado do documento.

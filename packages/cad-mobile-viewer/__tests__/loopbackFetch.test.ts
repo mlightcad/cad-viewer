@@ -427,6 +427,7 @@ describe('opções maxBytes/timeoutMs (fail-closed)', () => {
     ).toThrow(LoopbackConfigError)
   })
   test('a mensagem do erro não ecoa o valor', () => {
+    expect.assertions(1)
     try {
       createLoopbackFetch({ maxBytes: Number.NaN })
     } catch (e) {

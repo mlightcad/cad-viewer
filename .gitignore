@@ -52,3 +52,7 @@ Thumbs.db
 # Local secrets / machine-specific env (keep .env.example)
 .env.local
 .env.*.local
+
+# Local open-time paint benches
+*.ts.bench-bak
+.bench-out/

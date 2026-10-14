@@ -164,9 +164,35 @@ describe('documentReducer', () => {
     assert.equal(s.error?.code, 'no-document')
   })
 
-  it('process-gone drops document and loading', () => {
-    const s = run([sentOpen('a-1', 'A.dxf'), { kind: 'process-gone' }])
-    assert.deepEqual(s, initialDocumentState)
+  it('process-gone drops the document; an open in progress ends with an explicit error', () => {
+    const open = run([
+      sentOpen('a-1', 'A.dxf'),
+      { kind: 'opened', replyTo: 'a-1', payload: doc('A.dxf') }
+    ])
+    for (const kind of ['command-sent', 'command-queued'] as const) {
+      const s = run(
+        [sentOpen('a-2', 'B.dxf', kind), { kind: 'process-gone' }],
+        open
+      )
+      assert.equal(s.current, null)
+      assert.equal(s.opening, null)
+      assert.deepEqual(s.error, {
+        code: 'viewer-unavailable',
+        message: 'o viewer terminou inesperadamente; a abertura foi cancelada',
+        origin: 'local'
+      })
+    }
+  })
+
+  it('process-gone without an open in progress drops the document and sets no error', () => {
+    const open = run([
+      sentOpen('a-1', 'A.dxf'),
+      { kind: 'opened', replyTo: 'a-1', payload: doc('A.dxf') }
+    ])
+    assert.deepEqual(
+      run([{ kind: 'process-gone' }], open),
+      initialDocumentState
+    )
   })
 
   it('ready-timeout cancels a queued open (loading) and keeps a previous document', () => {
