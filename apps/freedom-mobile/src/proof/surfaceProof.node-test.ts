@@ -15,7 +15,10 @@
 //
 // Opt-in (`FREEDOM_SURFACE_PROOF=1`): precisa do bundle construído e do
 // Chromium do Playwright. Sem eles o teste FALHA (não salta em silêncio).
-// Escreve artefactos em `docs/evidence/OBJ-0104-m4-i6/chromium/`.
+// Artefactos (PNG + `metrics.json`): por omissão numa pasta temporária (a
+// execução do gate G7 NÃO suja o repo); `FREEDOM_SURFACE_PROOF_OUT=<dir>` escolhe
+// a pasta e `FREEDOM_SURFACE_PROOF_EVIDENCE=1` regrava a evidência versionada
+// em `docs/evidence/OBJ-0104-m4-i6/chromium/`.
 import assert from 'node:assert/strict'
 import {
   copyFileSync,
@@ -60,13 +63,19 @@ import {
   sessionReducer,
   type SessionState
 } from '../state/session.ts'
+import { proofOutDir } from './outDir.ts'
 import { isAllowedNavigation, isViewerUrl } from '../viewer/navigation.ts'
 
 const ENABLED = process.env.FREEDOM_SURFACE_PROOF === '1'
 const REPO = fileURLToPath(new URL('../../../../', import.meta.url))
 const DIST = join(REPO, 'packages/cad-mobile-viewer/dist')
 const FIXTURES = join(REPO, 'packages/cad-viewer-example/e2e/fixtures')
-const EVIDENCE = join(REPO, 'docs/evidence/OBJ-0104-m4-i6/chromium')
+const EVIDENCE_DIR = join(REPO, 'docs/evidence/OBJ-0104-m4-i6/chromium')
+const EVIDENCE = ENABLED
+  ? proofOutDir(process.env, EVIDENCE_DIR, () =>
+      mkdtempSync(join(tmpdir(), 'surface-proof-out-'))
+    )
+  : EVIDENCE_DIR
 /** Geometria colorida (círculos/linhas, 0,6 MB) e texto para o FIND. */
 const FIXTURE = 'block-color.dxf'
 
@@ -242,6 +251,7 @@ describe(
     after(async () => {
       await browser?.close()
       rmSync(work, { recursive: true, force: true })
+      console.log(`# surfaceProof: artefactos em ${EVIDENCE}`)
       writeFileSync(
         join(EVIDENCE, 'metrics.json'),
         JSON.stringify(
