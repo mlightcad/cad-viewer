@@ -17,11 +17,30 @@ import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import { AcTrEntity } from './AcTrEntity'
+import { resolveSelfIntersectingHatchLoop } from './AcTrHatchLoopRepair'
 
 function toVector2(points: AcGePoint2dLike[]): THREE.Vector2[] {
   return points
     .filter(point => Number.isFinite(point.x) && Number.isFinite(point.y))
     .map(point => new THREE.Vector2(point.x, point.y))
+}
+
+/**
+ * True when a hole's first finite vertex lies inside (or on) the outer ring.
+ * Used after self-intersect repair splits an outer into several simple regions
+ * so each region only receives its own holes.
+ */
+function isHoleInsideOuter(
+  hole: AcGePoint2dLike[],
+  outer: AcGePoint2dLike[]
+): boolean {
+  for (const point of hole) {
+    if (!Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+      continue
+    }
+    return AcGeGeometryUtil.isPointInPolygon(point, outer, true)
+  }
+  return false
 }
 
 function hasFillVertices(geometry: THREE.BufferGeometry | undefined): boolean {
@@ -249,100 +268,44 @@ export class AcTrPolygon extends AcTrEntity {
       if (points.length < 3) {
         return
       }
-      const shape = new THREE.Shape(toVector2(points))
-      createGeometry(shape)
+      // DWG hatch edge paths may self-intersect (T-junctions without a shared
+      // vertex). Earcut then fills the concave exterior — repair first.
+      for (const region of resolveSelfIntersectingHatchLoop(points)) {
+        if (region.length < 3) {
+          continue
+        }
+        createGeometry(new THREE.Shape(toVector2(region)))
+      }
     })
-
-    const vec2Array = (vecs: AcGePoint2d[]) =>
-      vecs.map(p => p.toArray() as [number, number])
 
     for (const pair of holes) {
       const outerPoints = pointBoundaries[pair[0]]
       if (outerPoints.length < 3) {
         continue
       }
-      const shape = new THREE.Shape(toVector2(outerPoints))
-      // Merge overlapping holes into connected components so ShapeGeometry
-      // (earcut) never receives overlapping hole paths (#744).
-      const needMergeHolesArr = this.findIntersectHole(pointBoundaries, pair[1])
-      needMergeHolesArr.forEach(mergeArr => {
-        const validHoles = mergeArr.filter(
-          index => pointBoundaries[index].length >= 3
-        )
-        let epsilon = 1e-6
-        let mergedOk = false
-        try {
-          if (validHoles.length === 0) {
-            // nothing to merge
-          } else if (validHoles.length === 1) {
-            shape.holes.push(
-              new THREE.Path(toVector2(pointBoundaries[validHoles[0]]))
-            )
-            mergedOk = true
-          } else {
-            // One epsilon / PolyBool for the whole component — mixing
-            // GeometryEpsilon across segment build and combine is unreliable.
-            epsilon = Math.min(
-              ...validHoles.map(index =>
-                pointBoundaries[index][0].relativeEps()
-              ),
-              1e-6
-            )
-            const polybool = new PolyBool(new GeometryEpsilon(epsilon))
-            let acc = polybool.segments({
-              regions: [vec2Array(pointBoundaries[validHoles[0]])],
-              inverted: false
-            })
-            for (let i = 1; i < validHoles.length; i++) {
-              const next = polybool.segments({
-                regions: [vec2Array(pointBoundaries[validHoles[i]])],
-                inverted: false
-              })
-              // Fold into the running union, not only against the first loop.
-              acc = polybool.selectUnion(polybool.combine(acc, next))
-            }
-            const mergedHoles = polybool.polygon(acc)
-            if (mergedHoles.regions.length > 0) {
-              mergedHoles.regions.forEach((ps: number[][]) => {
-                if (ps.length === 0) {
-                  return
-                }
-                const vec2s = ps.map(
-                  (p: number[]) => new THREE.Vector2(p[0], p[1])
-                )
-                shape.holes.push(new THREE.Path(vec2s))
-              })
-              mergedOk = true
-            } else {
-              log.warn('mergedHoles.regions is empty!')
-            }
-          }
-        } catch (error) {
-          log.warn(`Polybool error: ${error}, epsilon is ${epsilon}`)
+      // Merge overlapping holes once (shared by every repaired outer region).
+      // ShapeGeometry/earcut must not receive overlapping hole paths (#744).
+      const holePaths = this.buildMergedHolePaths(pointBoundaries, pair[1])
+      // Same self-intersection repair as the no-hole path. If the outer splits
+      // into several simple regions, only attach holes that lie inside each
+      // region — foreign holes corrupt earcut triangulation.
+      const outerRegions = resolveSelfIntersectingHatchLoop(outerPoints)
+      for (const outerRegion of outerRegions) {
+        if (outerRegion.length < 3) {
+          continue
         }
-        // Failed or empty union: keep openings open with the original loops
-        // instead of dropping the whole component.
-        if (!mergedOk) {
-          for (const index of validHoles) {
-            shape.holes.push(
-              new THREE.Path(toVector2(pointBoundaries[index]))
-            )
-          }
-        }
-      })
-      const ignoreHoleIndexArr = needMergeHolesArr.flat()
-      // Non-overlapping holes stay as-is.
-      for (let i = 0; i < pair[1].length; i++) {
-        const idx = pair[1][i]
-        if (!ignoreHoleIndexArr.includes(idx)) {
-          const holePoints = pointBoundaries[idx]
-          if (holePoints.length < 3) {
+        const shape = new THREE.Shape(toVector2(outerRegion))
+        for (const hole of holePaths) {
+          if (hole.length < 3) {
             continue
           }
-          shape.holes.push(new THREE.Path(toVector2(holePoints)))
+          if (!isHoleInsideOuter(hole, outerRegion)) {
+            continue
+          }
+          shape.holes.push(new THREE.Path(toVector2(hole)))
         }
+        createGeometry(shape)
       }
-      createGeometry(shape)
     }
 
     node.children.forEach(child => {
@@ -350,6 +313,93 @@ export class AcTrPolygon extends AcTrEntity {
         this.buildHatchGeometry(pointBoundaries, grandchild, geometries)
       })
     })
+  }
+
+  /**
+   * Build hole rings for an outer, unioning overlapping hole components (#744).
+   */
+  private buildMergedHolePaths(
+    pointBoundaries: AcGePoint2d[][],
+    holeIndices: number[]
+  ): AcGePoint2dLike[][] {
+    const paths: AcGePoint2dLike[][] = []
+    const vec2Array = (vecs: AcGePoint2d[]) =>
+      vecs.map(p => p.toArray() as [number, number])
+    const needMergeHolesArr = this.findIntersectHole(
+      pointBoundaries,
+      holeIndices
+    )
+    needMergeHolesArr.forEach(mergeArr => {
+      const validHoles = mergeArr.filter(
+        index => pointBoundaries[index].length >= 3
+      )
+      let epsilon = 1e-6
+      let mergedOk = false
+      try {
+        if (validHoles.length === 0) {
+          // nothing to merge
+        } else if (validHoles.length === 1) {
+          paths.push(pointBoundaries[validHoles[0]])
+          mergedOk = true
+        } else {
+          // One epsilon / PolyBool for the whole component — mixing
+          // GeometryEpsilon across segment build and combine is unreliable.
+          epsilon = Math.min(
+            ...validHoles.map(index =>
+              pointBoundaries[index][0].relativeEps()
+            ),
+            1e-6
+          )
+          const polybool = new PolyBool(new GeometryEpsilon(epsilon))
+          let acc = polybool.segments({
+            regions: [vec2Array(pointBoundaries[validHoles[0]])],
+            inverted: false
+          })
+          for (let i = 1; i < validHoles.length; i++) {
+            const next = polybool.segments({
+              regions: [vec2Array(pointBoundaries[validHoles[i]])],
+              inverted: false
+            })
+            // Fold into the running union, not only against the first loop.
+            acc = polybool.selectUnion(polybool.combine(acc, next))
+          }
+          const mergedHoles = polybool.polygon(acc)
+          if (mergedHoles.regions.length > 0) {
+            mergedHoles.regions.forEach((ps: number[][]) => {
+              if (ps.length === 0) {
+                return
+              }
+              paths.push(ps.map(p => new AcGePoint2d(p[0], p[1])))
+            })
+            mergedOk = true
+          } else {
+            log.warn('mergedHoles.regions is empty!')
+          }
+        }
+      } catch (error) {
+        log.warn(`Polybool error: ${error}, epsilon is ${epsilon}`)
+      }
+      // Failed or empty union: keep openings open with the original loops
+      // instead of dropping the whole component.
+      if (!mergedOk) {
+        for (const index of validHoles) {
+          paths.push(pointBoundaries[index])
+        }
+      }
+    })
+    const ignoreHoleIndexArr = needMergeHolesArr.flat()
+    // Non-overlapping holes stay as-is.
+    for (let i = 0; i < holeIndices.length; i++) {
+      const idx = holeIndices[i]
+      if (!ignoreHoleIndexArr.includes(idx)) {
+        const holePoints = pointBoundaries[idx]
+        if (holePoints.length < 3) {
+          continue
+        }
+        paths.push(holePoints)
+      }
+    }
+    return paths
   }
 
   /**
