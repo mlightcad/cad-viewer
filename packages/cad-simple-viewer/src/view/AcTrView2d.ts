@@ -66,6 +66,7 @@ import {
   AcEdSpatialQueryResultItem,
   AcEdSpatialQueryResultItemEx,
   AcEdViewMode,
+  AcEdViewportCoordinateMapper,
   eventBus,
   resolvePointerSelectionAction
 } from '../editor'
@@ -2228,6 +2229,27 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * @inheritdoc
+   */
+  getViewportCoordinateMapper(
+    viewportId: AcDbObjectId
+  ): AcEdViewportCoordinateMapper | undefined {
+    let vpView: AcTrViewportView | undefined
+    for (const candidate of this.activeLayoutView?.viewportViews ?? []) {
+      if (candidate.viewport.id === viewportId) {
+        vpView = candidate
+        break
+      }
+    }
+    if (!vpView) return undefined
+    return {
+      paperToModel: point => vpView.paperPointToModel(point),
+      modelToPaper: point => vpView.modelPointToPaper(point),
+      containsPaperPoint: point => vpView.containsPaperPoint(point)
+    }
+  }
+
+  /**
    * Resolves hits against the model-space layout for each viewport the
    * click drills through. Appends the matches into `results` (caller
    * sorts/dedups). Kept private and separate from `pick` so the main
@@ -2274,7 +2296,7 @@ export class AcTrView2d extends AcEdBaseView {
       modelHits.forEach(item => {
         if (!isEffectiveSpatialQueryHit(item)) return
         if (modelLayout.isIntersectWith(item.id, vpRaycaster)) {
-          results.push(item)
+          results.push({ ...item, viewportId: vpView.viewport.id })
         }
       })
     }
