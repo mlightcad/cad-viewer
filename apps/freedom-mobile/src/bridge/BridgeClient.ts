@@ -316,12 +316,20 @@ export class BridgeClient {
     this.pending.set(message.id, message.type)
     if (message.type === 'find') {
       // Pesquisa nova invalida a anterior (§5.4): a resposta tardia fica `stale-reply`.
-      if (this.latestFindId) this.pending.delete(this.latestFindId)
+      // A navegação em curso refere-se ao `findId` anterior, logo também cai: um
+      // `findActive`/erro tardio dela nunca chega a aparecer contra a pesquisa nova.
+      this.cancelFind()
+      this.cancelNav()
       this.latestFindId = message.id
     }
     if (message.type === 'open') {
       // Um novo `open` torna obsoleta a resposta do anterior.
       if (this.inFlightOpenId) this.pending.delete(this.inFlightOpenId)
+      // Documento novo: a pesquisa e a navegação do documento anterior morrem
+      // aqui (invariante: depois de um `open` enviado, nenhuma resposta a um
+      // `find`/`goto`/`findNext`/`findPrev` anterior é consumida; sai `stale-reply`).
+      this.cancelFind()
+      this.cancelNav()
       this.inFlightOpenId = message.id
       if (this.openTimer !== null) this.timers.clear(this.openTimer)
       this.openTimer = this.timers.set(
@@ -334,9 +342,30 @@ export class BridgeClient {
       message.type === 'findNext' ||
       message.type === 'findPrev'
     ) {
+      // A navegação nova substitui a anterior como a activa, mas a resposta da
+      // anterior continua a ser da mesma pesquisa e é entregue (o reducer filtra).
       this.latestNavId = message.id
     }
     if (this.pending.size > MAX_TRACKED) this.evictOldestInactive()
+  }
+
+  /** Descarta a correlação da pesquisa activa (a resposta tardia fica `stale-reply`). */
+  private cancelFind(): void {
+    if (this.latestFindId) this.pending.delete(this.latestFindId)
+    this.latestFindId = null
+  }
+
+  /**
+   * Descarta a correlação de TODAS as navegações pendentes (não só a última:
+   * um `goto` anterior ainda sem resposta é da mesma pesquisa/documento).
+   */
+  private cancelNav(): void {
+    for (const [id, type] of this.pending) {
+      if (type === 'goto' || type === 'findNext' || type === 'findPrev') {
+        this.pending.delete(id)
+      }
+    }
+    this.latestNavId = null
   }
 
   /**

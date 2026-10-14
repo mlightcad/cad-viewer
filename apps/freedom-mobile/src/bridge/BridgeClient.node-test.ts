@@ -933,3 +933,103 @@ describe('BridgeClient — consumed find ids never correlate a stale goto (OBJ-0
     )
   })
 })
+
+describe('BridgeClient — stale find/navigation cancellation (OBJ-0104 t_824fb4ae)', () => {
+  const FIND = { query: 'A', matchCase: false, scope: 'drawing' } as const
+  const readyClient = () => {
+    const s = setup()
+    s.client.receive(wire('ready', READY))
+    return s
+  }
+
+  it('a new open cancels the pending find: its late findResult is stale, no goto reaches the new document', () => {
+    const s = readyClient()
+    const f = s.client.find(FIND)
+    assert.ok(f.ok)
+    const o = s.client.open(OPEN)
+    assert.ok(o.ok)
+    s.client.receive(wire('findResult', findResult(7, 2), f.id))
+    assert.equal(last(s.events, 'stale-reply').replyTo, f.id)
+    assert.equal(kinds(s.events).includes('find-result'), false)
+    assert.deepEqual(
+      s.injected.map(m => m.type),
+      ['find', 'open'],
+      'nenhum goto automático para o documento novo'
+    )
+  })
+
+  it('a new open cancels every pending navigation: findActive and errors for them are stale', () => {
+    const s = readyClient()
+    const g = s.client.goto({ findId: 1, index: 0 })
+    const n = s.client.findNext({ findId: 1 })
+    assert.ok(g.ok && n.ok)
+    s.client.open(OPEN)
+    s.client.receive(
+      wire('findActive', { findId: 1, index: 0, outcome: 'navigated' }, g.id)
+    )
+    s.client.receive(
+      wire('findActive', { findId: 1, index: 1, outcome: 'navigated' }, n.id)
+    )
+    s.client.receive(
+      wire('error', { code: 'stale-find', message: 'x', replyTo: n.id })
+    )
+    assert.equal(kinds(s.events).includes('find-active'), false)
+    assert.equal(
+      s.events.filter(e => e.kind === 'stale-reply').length,
+      2,
+      'duas respostas tardias de navegação'
+    )
+    const err = last(s.events, 'viewer-error')
+    assert.equal(err.command, null, 'o erro tardio já não é de uma navegação')
+  })
+
+  it('a find sent after the open is not affected by the cancellation', () => {
+    const s = readyClient()
+    s.client.find(FIND)
+    const o = s.client.open(OPEN)
+    const f2 = s.client.find(FIND)
+    assert.ok(o.ok && f2.ok)
+    s.client.receive(wire('findResult', findResult(9, 1), f2.id))
+    assert.equal(last(s.events, 'find-result').payload.findId, 9)
+    assert.equal(s.injected.at(-1)?.type, 'goto')
+  })
+
+  it('a new find cancels pending navigations of the previous search', () => {
+    const s = readyClient()
+    const g = s.client.goto({ findId: 1, index: 0 })
+    assert.ok(g.ok)
+    const f = s.client.find(FIND)
+    assert.ok(f.ok)
+    s.client.receive(
+      wire('error', { code: 'stale-find', message: 'x', replyTo: g.id })
+    )
+    assert.equal(last(s.events, 'viewer-error').command, null)
+    s.client.receive(
+      wire('findActive', { findId: 1, index: 0, outcome: 'navigated' }, g.id)
+    )
+    assert.equal(last(s.events, 'stale-reply').replyTo, g.id)
+    // a navegação da pesquisa nova (goto automático) continua correlacionada
+    s.client.receive(wire('findResult', findResult(2, 1), f.id))
+    const auto = s.injected.at(-1)
+    assert.equal(auto?.type, 'goto')
+    s.client.receive(
+      wire(
+        'findActive',
+        { findId: 2, index: 0, outcome: 'navigated' },
+        auto?.id
+      )
+    )
+    assert.equal(last(s.events, 'find-active').payload.findId, 2)
+  })
+
+  it('navigations on the same search are not cancelled by each other', () => {
+    const s = readyClient()
+    const g = s.client.goto({ findId: 1, index: 0 })
+    const n = s.client.findNext({ findId: 1 })
+    assert.ok(g.ok && n.ok)
+    s.client.receive(
+      wire('findActive', { findId: 1, index: 0, outcome: 'navigated' }, g.id)
+    )
+    assert.equal(last(s.events, 'find-active').replyTo, g.id)
+  })
+})

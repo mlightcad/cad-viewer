@@ -252,6 +252,29 @@ describe('findReducer', () => {
     assert.equal(s.error?.code, 'stale-find')
   })
 
+  it('a viewer error for a navigation never lands on a search still running or in error (findId guard)', () => {
+    const navError: BridgeEvent = {
+      kind: 'viewer-error',
+      command: 'goto',
+      replyTo: 'a-9',
+      payload: { code: 'stale-find', message: 'findId obsoleto' }
+    }
+    const running = run([sentFind()])
+    assert.equal(running.status, 'searching')
+    assert.equal(run([navError], running), running, 'pesquisa nova em curso')
+    const failed = run([
+      sentFind(),
+      {
+        kind: 'viewer-error',
+        command: 'find',
+        replyTo: 'a-2',
+        payload: { code: 'no-document', message: 'sem documento' }
+      }
+    ])
+    assert.equal(run([navError], failed), failed, 'pesquisa em erro')
+    assert.equal(run([navError]), initialFindState, 'sem pesquisa')
+  })
+
   it('a locally rejected find (e.g. not-ready) is an error, never an empty result', () => {
     const s = run([
       {

@@ -166,7 +166,11 @@ export function findReducer(
       if (event.command === 'find' && event.replyTo === state.pendingId) {
         return { ...state, status: 'error', pendingId: null, error: err }
       }
-      if (isNav(event.command)) {
+      // Erro de navegação: só diz respeito à pesquisa com resultados em curso.
+      // O `BridgeClient` já descarta as navegações de pesquisas/documentos
+      // anteriores (`command` fica `null`); isto fecha o resto: um erro de
+      // navegação nunca pousa numa pesquisa ainda a decorrer, vazia ou em erro.
+      if (isNav(event.command) && state.status === 'results') {
         return { ...state, navigation: 'unavailable', error: err }
       }
       return state
