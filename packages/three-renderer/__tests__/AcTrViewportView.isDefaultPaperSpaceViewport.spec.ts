@@ -63,6 +63,36 @@ describe('AcTrViewportView twist', () => {
     expect(corner.y).toBeCloseTo(200)
     expect(view.internalCamera.rotation.z).toBeCloseTo(0)
   })
+
+  it('round-trips paper ↔ model when twist is zero', () => {
+    const parent = new AcTrBaseView(createMockRenderer(), 800, 600)
+    const view = new AcTrViewportView(
+      parent,
+      createViewport(0),
+      createMockRenderer()
+    )
+    const paper = { x: 2, y: 8 }
+    const model = view.paperPointToModel(paper)
+    const back = view.modelPointToPaper(model)
+    expect(back.x).toBeCloseTo(paper.x)
+    expect(back.y).toBeCloseTo(paper.y)
+  })
+
+  it('round-trips paper ↔ model through viewTwistAngle', () => {
+    const parent = new AcTrBaseView(createMockRenderer(), 800, 600)
+    const view = new AcTrViewportView(
+      parent,
+      createViewport(Math.PI / 2),
+      createMockRenderer()
+    )
+    const paper = { x: 10, y: 5 }
+    const model = view.paperPointToModel(paper)
+    expect(model.x).toBeCloseTo(150)
+    expect(model.y).toBeCloseTo(400)
+    const back = view.modelPointToPaper(model)
+    expect(back.x).toBeCloseTo(paper.x)
+    expect(back.y).toBeCloseTo(paper.y)
+  })
 })
 
 describe('AcTrViewportView.computeOnscreenPass', () => {

@@ -405,6 +405,14 @@ export class AcEdOsnapResolver {
       const entity = AcEdOsnapResolver.getEntityById(db, item.id)
       if (!entity) continue
       const viewportId = item.viewportId
+      // Drill-through hits without a live mapper must not be treated as
+      // paper-space geometry — their boxes are still in model WCS.
+      if (
+        viewportId != null &&
+        !this._view.getViewportCoordinateMapper(viewportId)
+      ) {
+        continue
+      }
 
       if (item.children && item.children.length > 0) {
         // INSERT (and other hierarchical hits): only the aperture-hit children.
@@ -470,6 +478,9 @@ export class AcEdOsnapResolver {
           viewportId != null
             ? this._view.getViewportCoordinateMapper(viewportId)
             : undefined
+        // Sources with a viewportId were only added when a mapper existed;
+        // if it disappeared mid-resolve, skip rather than emit model WCS.
+        if (viewportId != null && !mapper) continue
         const points = intersectSources(sources[i], sources[j])
         for (const point of points) {
           const paperPoint = mapper ? mapper.modelToPaper(point) : point
@@ -527,6 +538,9 @@ export class AcEdOsnapResolver {
         item.viewportId != null
           ? this._view.getViewportCoordinateMapper(item.viewportId)
           : undefined
+      // Never fall back to treating a tagged drill-through hit as paper
+      // space — that reintroduces the wrong-space snap from #746.
+      if (item.viewportId != null && !mapper) return
 
       const queryPickPoint = mapper
         ? AcGeGeometryUtil.point2dToPoint3d(mapper.paperToModel(cursorWcs))
@@ -615,6 +629,8 @@ export class AcEdOsnapResolver {
         item.viewportId != null
           ? this._view.getViewportCoordinateMapper(item.viewportId)
           : undefined
+      if (item.viewportId != null && !mapper) return
+
       const queryPickPoint = mapper
         ? AcGeGeometryUtil.point2dToPoint3d(mapper.paperToModel(pickPoint))
         : pickPoint

@@ -864,4 +864,29 @@ describe('AcEdOsnapResolver', () => {
       })
     })
   })
+
+  it('skips a viewport drill-through hit when no coordinate mapper is available', () => {
+    withWorkingDatabase(db => {
+      const line = new AcDbLine(
+        new AcGePoint3d(100, 100, 0),
+        new AcGePoint3d(110, 100, 0)
+      )
+      db.tables.blockTable.modelSpace.appendEntity(line)
+
+      AcApSettingManager.instance.osnapModes = acdbOsnapModesToMask([
+        AcDbOsnapMode.EndPoint
+      ])
+
+      // Tagged as a drill-through hit, but the view has no mapper for that
+      // viewport id — must not fall back to treating model WCS as paper.
+      const view = createMockView([{ id: line.objectId, viewportId: 'VP_GONE' }])
+      const resolver = new AcEdOsnapResolver(view)
+      const snap = resolver.resolve({
+        cursorWcs: { x: 100.2, y: 100.1 },
+        hitRadiusPx: 20
+      })
+
+      expect(snap).toBeUndefined()
+    })
+  })
 })
