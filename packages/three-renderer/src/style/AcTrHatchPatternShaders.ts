@@ -264,8 +264,9 @@ export function createHatchPatternShaderMaterial(
         pl.patternLength = t1.g;
 
         // Dash lengths start at float index 6 (t1.ba, then subsequent texels).
-        // Loop bound is baked in so three.js unroll_loop can expand it.
-        #pragma unroll_loop_start
+        // Do not use three.js unroll_loop here: it only rewrites [i] /
+        // UNROLLED_LOOP_INDEX, so float(i) would become an undeclared
+        // identifier and the fragment shader would fail to compile.
         for (int i = 0; i < ${maxPatternSegmentCount}; i++) {
             float floatIndex = float(i) + 6.0;
             float texelIndex = floor(floatIndex / 4.0);
@@ -276,7 +277,6 @@ export function createHatchPatternShaderMaterial(
             else if (comp < 2.5) pl.dashLengths[i] = t.b;
             else pl.dashLengths[i] = t.a;
         }
-        #pragma unroll_loop_end
         return pl;
     }
 
@@ -324,9 +324,10 @@ export function createHatchPatternShaderMaterial(
         float patternRepeat = floor(linePosition / patternLine.patternLength);
         linePosition -= patternLine.patternLength * patternRepeat;
 
-        // Use cumulative sum approach for better precision
+        // Use cumulative sum approach for better precision.
+        // Plain loop (not three.js unroll_loop): return i must stay a real
+        // loop index — unroll only rewrites [i] / UNROLLED_LOOP_INDEX.
         float sum = 0.0;
-        #pragma unroll_loop_start
         for (int i = 0; i < ${maxPatternSegmentCount}; i++) {
             float segmentLength = abs(patternLine.dashLengths[i]);
             // A dash length of 0 is AutoCAD's "dot" marker: a zero-length
@@ -350,7 +351,6 @@ export function createHatchPatternShaderMaterial(
                 return -1;
             }
         }
-        #pragma unroll_loop_end
 
         return -1;
     }

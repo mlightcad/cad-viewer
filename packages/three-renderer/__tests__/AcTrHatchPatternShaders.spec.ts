@@ -55,6 +55,34 @@ describe('AcTrHatchPatternShaders sub-pixel spacing (#727)', () => {
  * now packed into a float DataTexture so large user patterns keep every line.
  */
 describe('AcTrHatchPatternShaders pattern DataTexture (#743)', () => {
+  it('avoids three.js unroll_loop around bare loop-index uses that would break GLSL', () => {
+    // three.js only rewrites `[ i ]` and UNROLLED_LOOP_INDEX when expanding
+    // `#pragma unroll_loop`. Using `float(i)` / `return i` inside an unrolled
+    // loop leaves an undeclared `i` and the hatch shader fails to compile —
+    // patterned hatches then disappear entirely.
+    const material = createHatchPatternShaderMaterial(
+      [
+        {
+          angle: 0,
+          base: new THREE.Vector2(0, 0),
+          offset: new THREE.Vector2(0, 1),
+          dashLengths: [1, -1],
+          patternLength: 2
+        }
+      ],
+      0,
+      { value: 1 },
+      new THREE.Color(0xffffff)
+    ) as THREE.ShaderMaterial
+
+    expect(material.fragmentShader).not.toMatch(
+      /#pragma unroll_loop_start[\s\S]*?float\s*\(\s*i\s*\)/
+    )
+    expect(material.fragmentShader).not.toMatch(
+      /#pragma unroll_loop_start[\s\S]*?return\s+i\s*;/
+    )
+  })
+
   it('packs every pattern line into u_patternData and keeps u_patternLines for export', () => {
     const patternLines = Array.from({ length: 150 }, (_, i) => ({
       angle: (i * Math.PI) / 150,
