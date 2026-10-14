@@ -130,3 +130,7 @@ Higiene deste documento: sem segredos, tokens, e-mails ou caminhos absolutos de 
 - O emulador `Pixel_3a_API_34` existe mas não foi arrancado; a aceleração (`/dev/kvm` no WSL; HAXM/WHPX no Windows) não foi testada.
 - Versões Expo/WebView do registo (§1.3) são informativas; a fixação é P-3/B1.
 - iOS: não verificável neste ambiente (R-8).
+
+## Excepção documentada: `prettier --check` em docs herdados (t_84c9845f)
+
+`docs/OBJ-0104-architecture.md`, `docs/OBJ-0104-scoping.md` e este ficheiro **já falham** `prettier --check` em `origin/main` (d7e3e121; 297/192/110 linhas de diferença, só alinhamento de tabelas) e não são reformatados aqui para não gerar um diff estranho ao card. O gate objectivo é o delta: as linhas de prosa acrescentadas são estáveis no prettier; a linha I6 da §11 da arquitectura é uma linha de tabela cujo alinhamento depende da tabela herdada, e fica como está. Todos os restantes `docs/OBJ-0104-m*.md`, `apps/freedom-mobile/src` e `packages/cad-mobile-viewer` passam `prettier --check`.
