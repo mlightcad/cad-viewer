@@ -47,7 +47,12 @@ import {
   type FindIndexEntry
 } from '../model/findIndex'
 import { scanDxfEntityTypes } from '../model/scan'
-import type { CoverageReport, TypeCounts, ViewBox } from '../model/types'
+import type {
+  CoverageReport,
+  TypeCounts,
+  ViewBox,
+  ViewBoxReason
+} from '../model/types'
 import {
   type AppMessage,
   type ErrorPayload,
@@ -110,6 +115,37 @@ export type FindTextFn = (
   query: string,
   options: AcApFindDrawingOptions
 ) => AcApFindDrawingResult
+
+/**
+ * Log explícito quando o `extents` cai na vista por omissão (`viewBoxReason`
+ * ≠ `'extents'`): o utilizador nunca vê uma vista «inventada» sem explicação.
+ * `empty-layout` é informativo; os outros motivos (entidades que existem mas
+ * não são desenháveis/mapeadas) são avisos.
+ */
+export function defaultViewNotice(
+  layoutName: string,
+  reason: ViewBoxReason
+): { level: 'info' | 'warn'; message: string } | null {
+  switch (reason) {
+    case 'extents':
+      return null
+    case 'empty-layout':
+      return {
+        level: 'info',
+        message: `layout «${layoutName}» sem entidades visíveis: vista por omissão`
+      }
+    case 'no-renderable-extents':
+      return {
+        level: 'warn',
+        message: `layout «${layoutName}» com entidades sem limites desenháveis (invisíveis, inválidas ou ilimitadas): vista por omissão`
+      }
+    case 'truncated-layout':
+      return {
+        level: 'warn',
+        message: `layout «${layoutName}» não mapeado (limite de entidades excedido): vista por omissão`
+      }
+  }
+}
 
 export interface ViewerSessionDeps {
   view: ViewPort
@@ -536,15 +572,8 @@ export class ViewerSession {
         return [this.error('layout-missing', 'layout activo desconhecido')]
       box = usableViewBox(layout.viewBox)
       if (!box) return [this.error('zoom-limit', 'extensão do layout inválida')]
-      if (layout.viewBoxReason === 'empty-layout') {
-        out.push({
-          type: 'log',
-          payload: {
-            level: 'info',
-            message: `layout «${layout.name}» sem entidades visíveis: vista por omissão`
-          }
-        })
-      }
+      const notice = defaultViewNotice(layout.name, layout.viewBoxReason)
+      if (notice) out.push({ type: 'log', payload: notice })
     } else {
       let visible: ViewBox | null
       try {

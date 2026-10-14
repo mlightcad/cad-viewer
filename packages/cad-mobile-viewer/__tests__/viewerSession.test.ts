@@ -9,7 +9,7 @@ import { acdbGetWorkingDatabase } from '@mlightcad/data-model'
 
 import { NO_RENDERABLE_MESSAGE } from '../src/model/documentMap'
 import { DEFAULT_VIEW_BOX } from '../src/model/normalize'
-import type { FindTextFn } from '../src/viewer/session'
+import { defaultViewNotice, type FindTextFn } from '../src/viewer/session'
 import { MIN_VIEW_SIZE } from '../src/viewer/zoom'
 import { e2eBytes, openE2e } from './helpers/openFixture'
 import {
@@ -79,6 +79,48 @@ describe('open: dados reais e falhas determinísticas', () => {
     expect(h.view.zooms).toEqual([{ box: DEFAULT_VIEW_BOX, margin: 1 }])
     expect(only(out, 'log').payload).toMatchObject({ level: 'info' })
     expect(only(out, 'log').payload.message).toMatch(/vista por omissão/)
+  })
+
+  test('layout com entidade sem limites desenháveis (LINE além de MAX_ABS_COORD) → vista por omissão com log warn próprio, não «sem entidades»', async () => {
+    const dxf = toBuffer(
+      buildDxf({
+        rawEntities: [
+          rawEntity(
+            'LINE',
+            [8, '0'],
+            [10, 1e13],
+            [20, 0],
+            [30, 0],
+            [11, 2e13],
+            [21, 0],
+            [31, 0]
+          )
+        ]
+      })
+    )
+    const h = await openedHarness(dxf, 'fora-de-limites.dxf')
+    const out = await h.send('zoom', { op: 'extents' })
+    expect(h.view.zooms).toEqual([{ box: DEFAULT_VIEW_BOX, margin: 1 }])
+    const log = only(out, 'log').payload
+    expect(log.level).toBe('warn')
+    expect(log.message).toMatch(/sem limites desenháveis/)
+    expect(log.message).not.toMatch(/sem entidades visíveis/)
+  })
+
+  test('defaultViewNotice: um aviso distinto por viewBoxReason; extents → nenhum', () => {
+    expect(defaultViewNotice('M', 'extents')).toBeNull()
+    expect(defaultViewNotice('M', 'empty-layout')).toEqual({
+      level: 'info',
+      message: expect.stringMatching(/sem entidades visíveis/)
+    })
+    expect(defaultViewNotice('M', 'truncated-layout')).toEqual({
+      level: 'warn',
+      message: expect.stringMatching(/limite de entidades/)
+    })
+    expect(defaultViewNotice('M', 'no-renderable-extents')).toEqual({
+      level: 'warn',
+      message: expect.stringMatching(/sem limites desenháveis/)
+    })
   })
 
   test('nada desenhável → openFailed{parse} fixo; documento, pesquisa e base de trabalho anteriores mantêm-se', async () => {
