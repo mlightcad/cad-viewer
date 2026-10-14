@@ -5,11 +5,11 @@ import {
   AcDbCircle,
   AcDbDatabase,
   AcDbEllipse,
+  acdbHostApplicationServices,
   AcDbLine,
   AcDbOsnapMode,
-  AcDbPolyline,
-  acdbHostApplicationServices,
   acdbOsnapModesToMask,
+  AcDbPolyline,
   AcGeCircArc2d,
   AcGePoint2d,
   AcGePoint3d,
@@ -757,6 +757,59 @@ describe('AcEdOsnapResolver', () => {
       expect(resolver.acquiredCenterMarks[0]?.x).toBeCloseTo(expected.x, 5)
       expect(resolver.acquiredCenterMarks[0]?.y).toBeCloseTo(expected.y, 5)
       expect(resolver.acquiredCenterMarks[0]?.x).not.toBeCloseTo(10, 5)
+    })
+  })
+
+  it('resolves the occurrence-suffixed gsMark to the hovered sibling instance, not the first (#745)', () => {
+    withWorkingDatabase(db => {
+      // Two sibling INSERTs of the same CELL block definition share the
+      // same circle objectId inside it -- only the `#n` suffix tells them
+      // apart.
+      const cell = new AcDbBlockTableRecord()
+      cell.name = 'CELL_745'
+      db.tables.blockTable.add(cell)
+      const circle = new AcDbCircle(new AcGePoint3d(0, 0, 0), 5)
+      cell.appendEntity(circle)
+
+      const row = new AcDbBlockTableRecord()
+      row.name = 'ROW_745'
+      db.tables.blockTable.add(row)
+      const firstCell = new AcDbBlockReference('CELL_745')
+      firstCell.position = new AcGePoint3d(0, 0, 0)
+      row.appendEntity(firstCell)
+      const secondCell = new AcDbBlockReference('CELL_745')
+      secondCell.position = new AcGePoint3d(100, 0, 0)
+      row.appendEntity(secondCell)
+
+      const rowRef = new AcDbBlockReference('ROW_745')
+      db.tables.blockTable.modelSpace.appendEntity(rowRef)
+
+      AcApSettingManager.instance.osnapModes = acdbOsnapModesToMask([
+        AcDbOsnapMode.Center
+      ])
+
+      // No occurrence suffix: the first instance's circle, as before.
+      const firstView = createMockView([
+        { id: rowRef.objectId, children: [{ id: circle.objectId }] }
+      ])
+      const firstResolver = new AcEdOsnapResolver(firstView)
+      firstResolver.resolve({ cursorWcs: { x: 5, y: 0 }, hitRadiusPx: 20 })
+      expect(firstResolver.acquiredCenterMarks).toHaveLength(1)
+      expect(firstResolver.acquiredCenterMarks[0]?.x).toBeCloseTo(0, 5)
+
+      // `#1` (zero-based occurrence 1): the second instance's circle --
+      // without this, hovering the second CELL still acquired the first
+      // CELL's center, as the issue reports.
+      const secondView = createMockView([
+        {
+          id: rowRef.objectId,
+          children: [{ id: `${circle.objectId}#1` }]
+        }
+      ])
+      const secondResolver = new AcEdOsnapResolver(secondView)
+      secondResolver.resolve({ cursorWcs: { x: 105, y: 0 }, hitRadiusPx: 20 })
+      expect(secondResolver.acquiredCenterMarks).toHaveLength(1)
+      expect(secondResolver.acquiredCenterMarks[0]?.x).toBeCloseTo(100, 5)
     })
   })
 })

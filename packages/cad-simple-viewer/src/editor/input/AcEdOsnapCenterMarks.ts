@@ -194,6 +194,26 @@ function fullInsertionTransform(blockRef: AcDbBlockReference): AcGeMatrix3d {
 }
 
 /**
+ * Splits a `gsMark` produced by `uniquifySpatialItemIds` into the plain
+ * object id and the zero-based occurrence index encoded by its `#n` suffix
+ * (no suffix means occurrence 0, the first).
+ *
+ * The same leaf entity id appears once per instance when a block contains
+ * the same nested block more than once; without the occurrence index,
+ * matching drops the instance and always resolves to the first one in
+ * iteration order (#745).
+ */
+function parseGsMarkOccurrence(gsMark: AcDbObjectId): {
+  canonicalId: AcDbObjectId
+  occurrence: number
+} {
+  if (typeof gsMark !== 'string') return { canonicalId: gsMark, occurrence: 0 }
+  const match = /^(.*)#(\d+)$/.exec(gsMark)
+  if (!match) return { canonicalId: gsMark, occurrence: 0 }
+  return { canonicalId: match[1], occurrence: Number(match[2]) }
+}
+
+/**
  * Resolves a block-reference sub-entity identified by a spatial-index gsMark.
  *
  * Returns the leaf entity and the cumulative transform that maps its local
@@ -204,6 +224,25 @@ export function resolveBlockSubEntity(
   gsMark: AcDbObjectId,
   parentMat: AcGeMatrix3d = new AcGeMatrix3d()
 ): { entity: AcDbEntity; transform: AcGeMatrix3d } | undefined {
+  const { canonicalId, occurrence } = parseGsMarkOccurrence(gsMark)
+  return resolveBlockSubEntityAt(blockRef, canonicalId, occurrence, parentMat, {
+    count: 0
+  })
+}
+
+/**
+ * Walks `blockRef` depth-first (same order `newIterator()` is expected to
+ * flatten in), counting matches of `canonicalId` as it goes. Only the match
+ * at `targetOccurrence` is returned; earlier matches are skipped so the walk
+ * continues into the right instance (#745).
+ */
+function resolveBlockSubEntityAt(
+  blockRef: AcDbBlockReference,
+  canonicalId: AcDbObjectId,
+  targetOccurrence: number,
+  parentMat: AcGeMatrix3d,
+  occurrenceCounter: { count: number }
+): { entity: AcDbEntity; transform: AcGeMatrix3d } | undefined {
   const blockTableRecord = blockRef.blockTableRecord
   if (!blockTableRecord) return undefined
 
@@ -211,14 +250,22 @@ export function resolveBlockSubEntity(
     parentMat,
     fullInsertionTransform(blockRef)
   )
-  const targetId = canonicalGsMark(gsMark)
 
   for (const entity of blockTableRecord.newIterator()) {
-    if (entity.objectId === gsMark || entity.objectId === targetId) {
-      return { entity, transform: thisMat }
+    if (entity.objectId === canonicalId) {
+      if (occurrenceCounter.count === targetOccurrence) {
+        return { entity, transform: thisMat }
+      }
+      occurrenceCounter.count++
     }
     if (entity instanceof AcDbBlockReference) {
-      const nested = resolveBlockSubEntity(entity, gsMark, thisMat)
+      const nested = resolveBlockSubEntityAt(
+        entity,
+        canonicalId,
+        targetOccurrence,
+        thisMat,
+        occurrenceCounter
+      )
       if (nested) return nested
     }
   }

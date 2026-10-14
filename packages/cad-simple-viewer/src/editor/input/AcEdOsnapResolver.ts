@@ -404,7 +404,10 @@ export class AcEdOsnapResolver {
           const gsMark = canonicalGsMark(child.id)
           const key = `${item.id}:${gsMark}`
           if (entity instanceof AcDbBlockReference) {
-            const found = resolveBlockSubEntity(entity, gsMark)
+            // Raw id (with its `#n` occurrence suffix, if any): resolving by
+            // the canonical id alone always picks the first instance of a
+            // block nested more than once (#745).
+            const found = resolveBlockSubEntity(entity, child.id)
             if (!found) continue
             tryAdd({
               key,
@@ -485,13 +488,16 @@ export class AcEdOsnapResolver {
       if (!entity) return
 
       if (item.children && item.children.length > 0) {
+        // Raw id (with its `#n` occurrence suffix, if any): subGetOsnapPoints
+        // resolves the matching occurrence itself (#745); canonicalizing here
+        // always picked the first instance of a block nested more than once.
         item.children.forEach(child =>
           this.collectOsnapPointsInAvailableModes(
             entity,
             osnapPoints,
             pickPoint,
             last,
-            canonicalGsMark(child.id)
+            child.id
           )
         )
       } else {
@@ -547,14 +553,11 @@ export class AcEdOsnapResolver {
       const entity = modelSpace.getIdAt(item.id)
       if (!entity) return
       if (item.children && item.children.length > 0) {
+        // Raw id: resolveBlockSubEntity resolves the matching occurrence
+        // itself (#745); canonicalizing here always picked the first
+        // instance of a block nested more than once.
         item.children.forEach(child => {
-          hovered.push(
-            ...collectCenterMarksFromEntity(
-              entity,
-              pickPoint,
-              canonicalGsMark(child.id)
-            )
-          )
+          hovered.push(...collectCenterMarksFromEntity(entity, pickPoint, child.id))
         })
       } else {
         hovered.push(...collectCenterMarksFromEntity(entity, pickPoint))
