@@ -8,7 +8,7 @@ import {
   AcGiSubEntityTraits,
   log
 } from '@mlightcad/data-model'
-import { GeometryEpsilon, PolyBool, Segments } from '@velipso/polybool'
+import { GeometryEpsilon, PolyBool } from '@velipso/polybool'
 import * as THREE from 'three'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 
