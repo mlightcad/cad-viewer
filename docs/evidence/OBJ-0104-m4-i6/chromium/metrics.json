@@ -1,20 +1,29 @@
 {
+  "method": "startViewerSession + LocalAssetServer + createTcpHttpListener(node:net, 127.0.0.1) + bundle real (dist) + Chromium headless (ANGLE/SwiftShader); píxeis de page.screenshot()",
   "desktop": {
     "viewport": {
       "width": 1280,
       "height": 800,
       "deviceScaleFactor": 1
     },
-    "openMs": 242,
+    "bootMs": 1528,
+    "openMs": 651,
     "layouts": [
       "Model",
       "布局1",
       "布局2"
     ],
     "findTotal": 3,
-    "openFailedCode": "read-failed",
-    "revokedStatus": 404,
+    "findOutcome": "navigated",
+    "openFailedCode": "parse",
+    "afterDisposeFetch": "recusado",
     "externalRequests": 0,
+    "navigations": [
+      {
+        "url": "http://127.0.0.1:38979/s/<token>/",
+        "allowed": true
+      }
+    ],
     "cspViolationsOwn": 0,
     "cspBlockedExternal": 1,
     "pageErrors": [],
@@ -112,16 +121,24 @@
       "height": 844,
       "deviceScaleFactor": 3
     },
-    "openMs": 129,
+    "bootMs": 1031,
+    "openMs": 498,
     "layouts": [
       "Model",
       "布局1",
       "布局2"
     ],
     "findTotal": 3,
-    "openFailedCode": "read-failed",
-    "revokedStatus": 404,
+    "findOutcome": "navigated",
+    "openFailedCode": "parse",
+    "afterDisposeFetch": "recusado",
     "externalRequests": 0,
+    "navigations": [
+      {
+        "url": "http://127.0.0.1:34959/s/<token>/",
+        "allowed": true
+      }
+    ],
     "cspViolationsOwn": 0,
     "cspBlockedExternal": 1,
     "pageErrors": [],
@@ -214,6 +231,7 @@
     }
   },
   "crossOrigin": {
+    "sameOriginStatus": 200,
     "outcome": [
       "cors-erro",
       "erro"
@@ -238,12 +256,12 @@
     ]
   },
   "serverRequests": {
-    "page 200 site=none mode=navigate dest=document origin=none": 2,
-    "bundle 200 site=same-origin mode=cors dest=script origin=self": 2,
-    "bundle 404 site=same-origin mode=cors dest=empty origin=none": 8,
-    "other 404 site=same-origin mode=no-cors dest=image origin=none": 1,
+    "page 200 site=none mode=navigate dest=document origin=none": 3,
+    "bundle 200 site=same-origin mode=cors dest=script origin=self": 3,
+    "bundle 404 site=same-origin mode=cors dest=empty origin=none": 9,
+    "other 404 site=same-origin mode=no-cors dest=image origin=none": 3,
     "asset 200 site=same-origin mode=same-origin dest=empty origin=none": 4,
-    "asset 404 site=same-origin mode=cors dest=empty origin=none": 2,
+    "asset 200 site=same-origin mode=cors dest=empty origin=none": 1,
     "asset 403 site=same-site mode=cors dest=empty origin=other": 1,
     "asset 403 site=same-site mode=no-cors dest=empty origin=none": 1
   }

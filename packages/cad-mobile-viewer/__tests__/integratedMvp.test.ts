@@ -14,13 +14,14 @@
 // teste que só regista `zoomTo`/`clearSelection`/`navigate`; não desenha, não
 // há canvas, WebGL, pixels nem layout CSS). Nenhuma asserção abaixo é
 // evidência de renderização, nem em desktop nem a 390 px. Descoping
-// vinculativo: a evidência de superfície real (pixels desktop + 390 px) fica
-// a cargo do T2 (arquitectura §11 linha T2 e §7 item 4), com pré-requisito no
-// `ViewerSurface` do M4-I6 (spec M3-I5 §8, itens 3 e 6); ausência de WebGL ou
-// de dispositivo aqui NÃO conta como «passou». Ver
+// vinculativo: a evidência de superfície real (pixels desktop + 390 px) NÃO é
+// deste ficheiro: o M4-I6 entregou-a em `docs/evidence/OBJ-0104-m4-i6/`
+// (Chromium 1280×800 e 390×844 pelo caminho da app: `chromium/`; Android 14
+// real com listener nativo e WebView: `android/`). Aqui, a ausência de WebGL
+// ou de dispositivo NÃO conta como «passou». Ver
 // `docs/OBJ-0104-m4-s2-integrated-validation.md` §3.
-// Também não são reais: o listener nativo (um `node:http` de teste faz de
-// `HttpListenerPort`), WebView/CSP/Sec-Fetch e qualquer dispositivo (M4-I6).
+// Também não são reais aqui: o listener nativo (um `node:http` de teste faz de
+// `HttpListenerPort`), WebView/CSP/Sec-Fetch e qualquer dispositivo.
 // Fixtures: só as DXF de `cad-viewer-example/e2e/fixtures`, lidas in-place
 // (proveniência em `__tests__/PROVENANCE.md`). DWG: sem fixture autorizada
 // (EXT-3) → «não verificado», nunca «passou».
@@ -572,14 +573,11 @@ describe('offline: zero rede externa em todo o circuito', () => {
  * Fonte: arquitectura §7 item 4 e §11 (S2/I6/T2); spec M3-I5 §8.
  */
 describe('NÃO coberto por S2 — diferido (não é sucesso)', () => {
+  // Fechado pelo M4-I6 (evidência real em `docs/evidence/OBJ-0104-m4-i6/`):
+  // píxeis desktop + 390 px, listener nativo, cleartext só 127.0.0.1,
+  // ViewerSurface, CSP/Origin/Sec-Fetch.
   test.todo(
-    'T2 (pré-req. I6 ViewerSurface): renderização real do DXF em superfície real — pixels em desktop e a 390 px, com métricas'
-  )
-  test.todo(
-    'T2/I6: WebGL, pinch/pan, modo avião e medições em dispositivo (memória de pico, TTFB)'
-  )
-  test.todo(
-    'I6: listener nativo, cleartext só 127.0.0.1, ViewerSurface, CSP/Origin/Sec-Fetch em WebView real'
+    'T2: pinch/pan, modo avião e medições em dispositivo (memória de pico de 20 MB, TTFB), hardware físico e iOS'
   )
   test.todo(
     'EXT-3: parse DWG positivo e FIND em DWG (sem fixture com proveniência → «não verificado»)'

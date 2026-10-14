@@ -9,6 +9,10 @@ import { isBundlePath } from './paths.ts'
 import type { BundleEntry, BundleSourcePort } from './types.ts'
 
 export const MAX_BUNDLE_FILES = 2000
+/** Pasta dos recursos nativos com o bundle (plugin `withLoopbackViewer`). */
+export const VIEWER_BUNDLE_DIR = 'viewer-bundle'
+/** Manifesto gerado no prebuild; nunca é servido (não se lista a si próprio). */
+export const MANIFEST_FILE = 'MANIFEST.json'
 /** Tecto por ficheiro (o wasm do LibreDWG é o maior). */
 export const MAX_BUNDLE_FILE_BYTES = 32 * 1024 * 1024
 
@@ -56,6 +60,37 @@ export function createMemoryBundle(
 
 export interface BundleManifest {
   files: readonly { path: string; bytes: number }[]
+}
+
+/**
+ * `MANIFEST.json` do bundle empacotado no app (texto não confiável: pode estar
+ * truncado ou trocado). Só `{ files: [{ path, bytes }] }`; caminhos e
+ * tamanhos são validados depois por `createManifestBundle`. Lança
+ * `invalid-config` sem ecoar o conteúdo.
+ */
+export function parseBundleManifest(text: string): BundleManifest {
+  let data: unknown
+  try {
+    data = JSON.parse(text)
+  } catch {
+    throw new LocalServerError('invalid-config', 'manifesto ilegível')
+  }
+  const files = (data as { files?: unknown } | null)?.files
+  if (!Array.isArray(files) || files.length === 0) {
+    throw new LocalServerError('invalid-config', 'manifesto sem ficheiros')
+  }
+  return {
+    files: files.map(f => {
+      const { path, bytes } = (f ?? {}) as { path?: unknown; bytes?: unknown }
+      if (typeof path !== 'string' || typeof bytes !== 'number') {
+        throw new LocalServerError(
+          'invalid-config',
+          'entrada de manifesto inválida'
+        )
+      }
+      return { path, bytes }
+    })
+  }
 }
 
 /**

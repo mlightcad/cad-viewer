@@ -1,51 +1,72 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Prova de superfície real (card M4-I6/T2; decisão t_d2446cfc, arquitectura §7
-// item 6): o bundle REAL do viewer (`packages/cad-mobile-viewer/dist`, vite)
-// é servido pelo `LocalAssetServer` REAL em sockets de 127.0.0.1 e aberto num
-// Chromium headless REAL (WebGL por software) a 1280×800 e a 390×844. As
-// mensagens são construídas pelo protocolo REAL do app (`buildAppMessage` +
-// `encodeInjection`, a mesma string que a `ViewerSurface` injecta) e as
-// respostas validadas pelo parser REAL do app. A prova são PÍXEIS do ecrã
-// (screenshot do compositor), nunca o modelo nem o `FakeView`.
+// Prova de superfície real (card M4-I6 rework; decisão t_d2446cfc, arquitectura
+// §7 item 6), pelo CAMINHO DA APP: `startViewerSession` (o mesmo ciclo de vida
+// do `ViewerScreen`) cria o `LocalAssetServer` sobre o listener HTTP do app
+// (`createTcpHttpListener`, aqui com o `net` do Node em 127.0.0.1; no
+// dispositivo com `react-native-tcp-socket`), serve o bundle REAL do viewer
+// (`packages/cad-mobile-viewer/dist`), e um Chromium headless REAL (WebGL por
+// software) carrega o `viewerUrl` a 1280×800 e a 390×844. O ficheiro é
+// escolhido pelo `FileFlow` (picker → cópia → concessão → URL), as ordens
+// FIND/zoom saem do `BridgeClient` (`encodeInjection`, a mesma string que a
+// `ViewerSurface` injecta) e as respostas voltam por `session.receive` ao
+// `sessionReducer` real. A prova são PÍXEIS do compositor, nunca o modelo nem
+// o `FakeView`.
 //
 // Opt-in (`FREEDOM_SURFACE_PROOF=1`): precisa do bundle construído e do
 // Chromium do Playwright. Sem eles o teste FALHA (não salta em silêncio).
-// Escreve artefactos em `docs/evidence/OBJ-0104-m4-i6/`.
+// Escreve artefactos em `docs/evidence/OBJ-0104-m4-i6/chromium/`.
 import assert from 'node:assert/strict'
 import {
+  copyFileSync,
   mkdirSync,
+  mkdtempSync,
   readdirSync,
   readFileSync,
   realpathSync,
+  rmSync,
   statSync,
+  unlinkSync,
   writeFileSync
 } from 'node:fs'
 import http from 'node:http'
 import { createRequire } from 'node:module'
-import type { AddressInfo } from 'node:net'
+import net, { type AddressInfo } from 'node:net'
+import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { after, before, describe, it } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
+import type {
+  AssetStorePort,
+  DocumentPickerPort,
+  PickedFile
+} from '../files/ports.ts'
 import {
-  type AppPayloads,
-  type AppToViewerType,
-  buildAppMessage,
-  encodeInjection,
-  parseViewerMessage,
-  type ViewerMessage
-} from '../contracts/protocol.ts'
+  startViewerSession,
+  type ViewerSession
+} from '../screens/viewerSession.ts'
 import { createManifestBundle } from '../server/bundle.ts'
 import { LocalAssetServer } from '../server/localAssetServer.ts'
-import { createNodeListener } from '../server/nodeListener.node-test.ts'
-import type { HeaderValue, RequestHandler } from '../server/types.ts'
+import { createTcpHttpListener } from '../server/tcpHttpListener.ts'
+import type {
+  AssetBytesPort,
+  HeaderValue,
+  RequestHandler,
+  ServerEvent
+} from '../server/types.ts'
+import {
+  initialSessionState,
+  sessionReducer,
+  type SessionState
+} from '../state/session.ts'
+import { isAllowedNavigation, isViewerUrl } from '../viewer/navigation.ts'
 
 const ENABLED = process.env.FREEDOM_SURFACE_PROOF === '1'
 const REPO = fileURLToPath(new URL('../../../../', import.meta.url))
 const DIST = join(REPO, 'packages/cad-mobile-viewer/dist')
 const FIXTURES = join(REPO, 'packages/cad-viewer-example/e2e/fixtures')
-const EVIDENCE = join(REPO, 'docs/evidence/OBJ-0104-m4-i6')
+const EVIDENCE = join(REPO, 'docs/evidence/OBJ-0104-m4-i6/chromium')
 /** Geometria colorida (círculos/linhas, 0,6 MB) e texto para o FIND. */
 const FIXTURE = 'block-color.dxf'
 
@@ -96,6 +117,43 @@ function manifestOf(dir: string) {
   }
   walk(dir)
   return { files }
+}
+
+/** Pasta controlada da app, em disco (o equivalente Node de `expoFileAdapters`). */
+function diskStore(dir: string): AssetStorePort & AssetBytesPort {
+  const at = (id: string) => join(dir, id)
+  return {
+    sizeOf: async (uriOrId: string) =>
+      uriOrId.startsWith('file://')
+        ? statSync(fileURLToPath(uriOrId)).size
+        : (statSync(at(uriOrId), { throwIfNoEntry: false })?.size ?? null),
+    stage: async (source, assetId) => {
+      copyFileSync(fileURLToPath(source.uri), at(assetId))
+      return { size: statSync(at(assetId)).size }
+    },
+    readBase64: async id => readFileSync(at(id)).toString('base64'),
+    read: async id => new Uint8Array(readFileSync(at(id))),
+    remove: async id => {
+      rmSync(at(id), { force: true })
+    },
+    discardSource: async () => undefined,
+    sweep: async () => {
+      const all = readdirSync(dir)
+      for (const f of all) unlinkSync(at(f))
+      return all.length
+    }
+  } as AssetStorePort & AssetBytesPort
+}
+
+class QueuePicker implements DocumentPickerPort {
+  next: PickedFile | null = null
+  async pick() {
+    const file = this.next
+    this.next = null
+    return file
+      ? { status: 'picked' as const, file }
+      : { status: 'cancelled' as const }
+  }
 }
 
 /** Píxeis desenhados (≠ fundo) de um PNG, descodificado no próprio Chromium. */
@@ -151,7 +209,7 @@ async function pixelStats(decoder: Page, png: Buffer) {
 }
 
 describe(
-  'prova de superfície real: bundle + LocalAssetServer + Chromium',
+  'prova de superfície real pelo caminho da app: startViewerSession + listener TCP + bundle real + Chromium',
   {
     skip:
       !ENABLED &&
@@ -159,10 +217,9 @@ describe(
   },
   () => {
     let browser: Browser
-    let server: LocalAssetServer
-    const assets = new Map<string, Uint8Array>()
     const seen: SeenRequest[] = []
     const metrics: Record<string, unknown> = {}
+    const work = mkdtempSync(join(tmpdir(), 'surface-proof-'))
 
     before(async () => {
       assert.ok(
@@ -170,54 +227,6 @@ describe(
         'bundle em falta: correr `vite build -c packages/cad-mobile-viewer/vite.config.ts`'
       )
       mkdirSync(EVIDENCE, { recursive: true })
-      const base = createNodeListener()
-      // regista só a classe de rota e os cabeçalhos de origem (nunca o URL/token)
-      const listener = {
-        listen: (handler: RequestHandler, onClosed: () => void) =>
-          base.listen(async req => {
-            const res = await handler(req)
-            const path = req.target.split('/')
-            const route: SeenRequest['route'] =
-              path[1] !== 's'
-                ? 'other'
-                : path[3] === 'a'
-                  ? 'asset'
-                  : path.length <= 4 && (path[3] ?? '') === ''
-                    ? 'page'
-                    : 'bundle'
-            const origin = header(req.headers, 'origin')
-            seen.push({
-              route,
-              status: res.status,
-              secFetchSite: header(req.headers, 'sec-fetch-site'),
-              secFetchMode: header(req.headers, 'sec-fetch-mode'),
-              secFetchDest: header(req.headers, 'sec-fetch-dest'),
-              origin:
-                origin === undefined
-                  ? 'none'
-                  : origin === server.info?.origin
-                    ? 'self'
-                    : 'other'
-            })
-            return res
-          }, onClosed),
-        close: () => base.close()
-      }
-      server = new LocalAssetServer({
-        listener,
-        bundle: createManifestBundle(manifestOf(DIST), async p =>
-          readFileSync(join(DIST, p))
-        ),
-        assets: {
-          sizeOf: async id => assets.get(id)?.byteLength ?? null,
-          read: async id => {
-            const b = assets.get(id)
-            if (!b) throw new Error('asset em falta')
-            return b
-          }
-        }
-      })
-      await server.start()
       const { chromium } = requireFromExample('playwright') as Playwright
       // `channel: 'chromium'` = Chromium completo (novo headless), não o headless-shell
       browser = await chromium.launch({
@@ -232,290 +241,466 @@ describe(
 
     after(async () => {
       await browser?.close()
-      await server?.dispose()
+      rmSync(work, { recursive: true, force: true })
       writeFileSync(
         join(EVIDENCE, 'metrics.json'),
         JSON.stringify(
-          { ...metrics, serverRequests: summarize(seen) },
+          {
+            method:
+              'startViewerSession + LocalAssetServer + createTcpHttpListener(node:net, 127.0.0.1) + bundle real (dist) + Chromium headless (ANGLE/SwiftShader); píxeis de page.screenshot()',
+            ...metrics,
+            serverRequests: summarize(seen)
+          },
           null,
           2
         ) + '\n'
       )
     })
 
-    for (const vp of VIEWPORTS) {
-      it(`${vp.name} (${vp.width}px): abre, desenha píxeis, FIND/zoom/falhas visíveis, zero rede externa, CSP sem violações`, async () => {
-        const ctx = await browser.newContext({
-          viewport: { width: vp.width, height: vp.height },
-          deviceScaleFactor: vp.mobile ? 3 : 1,
-          isMobile: vp.mobile,
-          hasTouch: vp.mobile
-        })
-        const external: string[] = []
-        ctx.on('request', (r: { url(): string }) => {
-          const u = r.url()
-          if (
-            !u.startsWith(server.info!.origin) &&
-            !u.startsWith('data:') &&
-            !u.startsWith('blob:')
-          ) {
-            external.push(new URL(u).origin)
-          }
-        })
-        await ctx.addInitScript(() => {
-          const w = window as unknown as Record<string, unknown>
-          w.__out = [] as string[]
-          w.__csp = [] as string[]
-          w.ReactNativeWebView = {
-            postMessage: (m: string) => (w.__out as string[]).push(m)
-          }
-          document.addEventListener('securitypolicyviolation', e =>
-            (w.__csp as string[]).push(`${e.violatedDirective} ${e.blockedURI}`)
-          )
-        })
-        const page = await ctx.newPage()
-        const consoleErrors: string[] = []
-        page.on('pageerror', (e: Error) =>
-          consoleErrors.push(String(e.message).slice(0, 200))
-        )
-        const decoder = await browser.newPage()
-
-        let n = 0
-        let read = 0
-        const drain = async (): Promise<ViewerMessage[]> => {
-          const out = (await page.evaluate(() =>
-            (window as unknown as { __out: string[] }).__out.slice()
-          )) as string[]
-          const fresh = out.slice(read)
-          read = out.length
-          return fresh.map(raw => {
-            const p = parseViewerMessage(raw)
-            assert.ok(p.ok, `app rejeitou ${raw}`)
-            return p.message
-          })
-        }
-        const waitFor = async <T extends ViewerMessage['type']>(
-          type: T,
-          ms = 60_000
-        ) => {
-          const end = Date.now() + ms
-          const got: ViewerMessage[] = []
-          while (Date.now() < end) {
-            got.push(...(await drain()))
-            const m = got.find(x => x.type === type)
-            if (m)
-              return { msg: m as Extract<ViewerMessage, { type: T }>, all: got }
-            await page.waitForTimeout(100)
-          }
-          throw new Error(
-            `sem «${type}»; recebido: ${got.map(m => m.type).join(',')}`
-          )
-        }
-        const send = async <T extends AppToViewerType>(
-          type: T,
-          payload: AppPayloads[T]
-        ) => {
-          const built = buildAppMessage(`a-${++n}`, type, payload)
-          assert.ok(built.ok)
-          await page.evaluate((s: string) => {
-            // a mesma string que `ViewerSurface.injectJavaScript` executa
-            ;(0, eval)(s)
-          }, encodeInjection(built.message))
-        }
-        const settle = () => page.waitForTimeout(1500)
-        const shot = async (label: string) => {
-          const png = await page.screenshot()
-          writeFileSync(join(EVIDENCE, `${vp.name}-${label}.png`), png)
-          return pixelStats(decoder, png)
-        }
-
-        // 1. página do viewer (URL com token só em memória)
-        await page.goto(server.info!.viewerUrl)
-        const ready = await waitFor('ready')
-        assert.equal(ready.msg.payload.protocol, 1)
-        const blank = await shot('0-ready')
-
-        // 2. ficheiro entregue por URL do servidor (concessão + createLoopbackFetch)
-        const bytes = readFileSync(join(FIXTURES, FIXTURE))
-        assets.set('fixture-block-color', bytes)
-        const url = server.urlFor('fixture-block-color', 'dxf')
-        assert.ok(url)
-        const t0 = Date.now()
-        await send('open', {
-          name: FIXTURE,
-          size: bytes.byteLength,
-          source: { kind: 'url', url }
-        })
-        const opened = await waitFor('opened', 90_000)
-        const openMs = Date.now() - t0
-        assert.ok(opened.msg.payload.layouts.length >= 1)
-        await settle()
-        const drawn = await shot('1-opened')
-        assert.ok(
-          drawn.drawnPixels > 200,
-          `desenho não apareceu: ${JSON.stringify(drawn)}`
-        )
-        assert.ok(drawn.drawnPixels > blank.drawnPixels * 2 + 100)
-
-        // 3. zoom in muda os píxeis; extents repõe-nos
-        await send('zoom', { op: 'in' })
-        await settle()
-        const zoomed = await shot('2-zoom-in')
-        assert.notEqual(zoomed.hash, drawn.hash, 'zoom in não mudou o ecrã')
-        await send('zoom', { op: 'extents' })
-        await settle()
-        const extents = await shot('3-zoom-extents')
-
-        // 4. FIND real + navegação para o hit (vista muda)
-        await send('find', { query: 'A', matchCase: false, scope: 'drawing' })
-        const found = await waitFor('findResult')
-        assert.ok(found.msg.payload.total > 0, 'FIND sem resultados')
-        await send('goto', { findId: found.msg.payload.findId, index: 0 })
-        const active = await waitFor('findActive')
-        assert.equal(active.msg.payload.outcome, 'navigated')
-        await settle()
-        const hit = await shot('4-find-goto')
-        assert.notEqual(
-          hit.hash,
-          extents.hash,
-          'navegação FIND não mudou o ecrã'
-        )
-
-        // 5. falha visível e documento anterior preservado
-        assets.set(
-          'broken-file-0001',
-          new TextEncoder().encode('0\nSECTION\nlixo')
-        )
-        const bad = server.urlFor('broken-file-0001', 'dxf')!
-        await send('open', {
-          name: 'broken.dxf',
-          size: 13,
-          source: { kind: 'url', url: bad }
-        })
-        const failed = await waitFor('openFailed', 60_000)
-        await settle()
-        const afterFail = await shot('5-open-failed')
-        assert.ok(
-          afterFail.drawnPixels > 200,
-          'falha apagou o documento anterior'
-        )
-
-        // 6. revogação: o URL morre (fetch real → 404 uniforme)
-        server.release('fixture-block-color')
-        const revoked = await page.evaluate(
-          async (u: string) => (await fetch(u)).status,
-          url
-        )
-        assert.equal(revoked, 404)
-
-        // 7. CSP fail-closed: pedido externo bloqueado ANTES da rede
-        const blocked = await page.evaluate(async () => {
-          try {
-            await fetch('https://cdn.jsdelivr.net/npm/x')
-            return 'passou'
-          } catch {
-            return 'bloqueado'
-          }
-        })
-        assert.equal(blocked, 'bloqueado')
-        await page.waitForTimeout(200)
-        const csp = (await page.evaluate(
-          () => (window as unknown as { __csp: string[] }).__csp
-        )) as string[]
-        const unexpected = csp.filter(v => !v.includes('cdn.jsdelivr.net'))
-        assert.deepEqual(unexpected, [], 'violações de CSP do próprio viewer')
-        assert.ok(
-          csp.some(v => v.startsWith('connect-src')),
-          'CSP não registou o bloqueio'
-        )
-        assert.deepEqual(external, [], 'pedidos de rede externos')
-
-        metrics[vp.name] = {
-          viewport: {
-            width: vp.width,
-            height: vp.height,
-            deviceScaleFactor: vp.mobile ? 3 : 1
+    /** Servidor do app com registo só de classe de rota/cabeçalhos de origem. */
+    const createServer =
+      (assets: AssetBytesPort, originOf: () => string | undefined) =>
+      (onEvent: (e: ServerEvent) => void) => {
+        const base = createTcpHttpListener(net)
+        return new LocalAssetServer({
+          listener: {
+            listen: (handler: RequestHandler, onClosed: () => void) =>
+              base.listen(async req => {
+                const res = await handler(req)
+                const path = req.target.split('/')
+                const route: SeenRequest['route'] =
+                  path[1] !== 's'
+                    ? 'other'
+                    : path[3] === 'a'
+                      ? 'asset'
+                      : path.length <= 4 && (path[3] ?? '') === ''
+                        ? 'page'
+                        : 'bundle'
+                const origin = header(req.headers, 'origin')
+                seen.push({
+                  route,
+                  status: res.status,
+                  secFetchSite: header(req.headers, 'sec-fetch-site'),
+                  secFetchMode: header(req.headers, 'sec-fetch-mode'),
+                  secFetchDest: header(req.headers, 'sec-fetch-dest'),
+                  origin:
+                    origin === undefined
+                      ? 'none'
+                      : origin === originOf()
+                        ? 'self'
+                        : 'other'
+                })
+                return res
+              }, onClosed),
+            close: () => base.close()
           },
-          openMs,
-          layouts: opened.msg.payload.layouts.map(l => l.name),
-          findTotal: found.msg.payload.total,
-          openFailedCode: failed.msg.payload.code,
-          revokedStatus: revoked,
-          externalRequests: external.length,
-          cspViolationsOwn: unexpected.length,
-          cspBlockedExternal: csp.length,
-          pageErrors: consoleErrors,
-          pixels: { blank, drawn, zoomed, extents, hit, afterFail }
+          bundle: createManifestBundle(manifestOf(DIST), async p =>
+            readFileSync(join(DIST, p))
+          ),
+          assets,
+          onEvent
+        })
+      }
+
+    for (const vp of VIEWPORTS) {
+      it(`${vp.name} (${vp.width}px): app abre o viewer, entrega o ficheiro, desenha píxeis, FIND/zoom, erro visível, limpeza; zero rede externa, CSP sem violações`, async () => {
+        const dir = join(work, vp.name)
+        mkdirSync(dir)
+        const store = diskStore(dir)
+        const picker = new QueuePicker()
+        let state: SessionState = initialSessionState
+        let viewerUrl: string | null = null
+        let page: Page = null
+        let injected = Promise.resolve()
+        const injectErrors: string[] = []
+        const session: ViewerSession = startViewerSession({
+          createServer: createServer(store, () =>
+            viewerUrl ? new URL(viewerUrl).origin : undefined
+          ),
+          // `webview.injectJavaScript`: síncrono para a ponte, por ordem
+          inject: script => {
+            if (!page) throw new Error('superfície do viewer indisponível')
+            const p = page
+            injected = injected.then(() =>
+              p
+                .evaluate((s: string) => {
+                  ;(0, eval)(s)
+                }, script)
+                .catch((e: Error) => {
+                  injectErrors.push(String(e.message).slice(0, 120))
+                })
+            )
+          },
+          picker,
+          store,
+          appState: { addEventListener: () => ({ remove: () => undefined }) },
+          dispatch: a => {
+            state = sessionReducer(state, a)
+          },
+          onViewerUrl: u => {
+            viewerUrl = u
+          },
+          onServerIssue: issue => assert.equal(issue, null, String(issue))
+        })
+
+        try {
+          const ctx = await browser.newContext({
+            viewport: { width: vp.width, height: vp.height },
+            deviceScaleFactor: vp.mobile ? 3 : 1,
+            isMobile: vp.mobile,
+            hasTouch: vp.mobile
+          })
+          const external: string[] = []
+          const navigations: { url: string; allowed: boolean }[] = []
+          ctx.on(
+            'request',
+            (r: { url(): string; isNavigationRequest(): boolean }) => {
+              const u = r.url()
+              if (r.isNavigationRequest()) {
+                navigations.push({
+                  url: u.replace(/\/s\/[^/]+\//, '/s/<token>/'),
+                  allowed: isAllowedNavigation(u, viewerUrl)
+                })
+              }
+              if (
+                !(viewerUrl && u.startsWith(new URL(viewerUrl).origin)) &&
+                !u.startsWith('data:') &&
+                !u.startsWith('blob:')
+              ) {
+                external.push(new URL(u).origin)
+              }
+            }
+          )
+          await ctx.addInitScript(() => {
+            const w = window as unknown as Record<string, unknown>
+            w.__out = [] as string[]
+            w.__csp = [] as string[]
+            w.ReactNativeWebView = {
+              postMessage: (m: string) => (w.__out as string[]).push(m)
+            }
+            document.addEventListener('securitypolicyviolation', e =>
+              (w.__csp as string[]).push(
+                `${e.violatedDirective} ${e.blockedURI}`
+              )
+            )
+          })
+          page = await ctx.newPage()
+          const consoleErrors: string[] = []
+          page.on('pageerror', (e: Error) =>
+            consoleErrors.push(String(e.message).slice(0, 200))
+          )
+          const decoder = await browser.newPage()
+
+          // viewer → app: `onMessage` da WebView → `session.receive`
+          let read = 0
+          const pump = async () => {
+            await injected
+            const out = (await page.evaluate(() =>
+              (window as unknown as { __out: string[] }).__out.slice()
+            )) as string[]
+            for (const raw of out.slice(read)) session.receive(raw)
+            read = out.length
+          }
+          const until = async (
+            what: string,
+            cond: () => boolean,
+            ms = 60_000
+          ) => {
+            const end = Date.now() + ms
+            while (!cond()) {
+              if (Date.now() > end) {
+                throw new Error(
+                  `sem «${what}»: ${JSON.stringify({ shell: state.shell, document: state.document, find: state.find, issue: state.issue })}`
+                )
+              }
+              await pump()
+              await page.waitForTimeout(100)
+            }
+          }
+          const settle = async () => {
+            await pump()
+            await page.waitForTimeout(1500)
+          }
+          const shot = async (label: string) => {
+            const png = await page.screenshot()
+            writeFileSync(join(EVIDENCE, `${vp.name}-${label}.png`), png)
+            return pixelStats(decoder, png)
+          }
+          const pick = (path: string) => {
+            picker.next = {
+              name: path.split('/').pop()!,
+              uri: `file://${path}`,
+              size: statSync(path).size,
+              owned: false
+            }
+            return session.flow!.pickAndOpen()
+          }
+
+          // 1. o servidor da sessão arranca e dá a página real (token só em memória)
+          const tStart = Date.now()
+          while (!viewerUrl && Date.now() - tStart < 5000) {
+            await new Promise(r => setTimeout(r, 10))
+          }
+          assert.ok(isViewerUrl(viewerUrl), 'viewerUrl fora do contrato')
+          await page.goto(viewerUrl!)
+          await until('ready', () => state.shell.viewer === 'ready')
+          const bootMs = Date.now() - tStart
+          const blank = await shot('0-ready')
+
+          // 2. FileFlow: picker → cópia → concessão → open{url} → opened
+          const t0 = Date.now()
+          const handed = await pick(join(FIXTURES, FIXTURE))
+          assert.equal(handed.status, 'handed-off')
+          await until('opened', () => state.document.current !== null, 90_000)
+          const openMs = Date.now() - t0
+          assert.ok(state.document.current!.layouts.length >= 1)
+          await settle()
+          const drawn = await shot('1-opened')
+          assert.ok(
+            drawn.drawnPixels > 200,
+            `desenho não apareceu: ${JSON.stringify(drawn)}`
+          )
+          assert.ok(drawn.drawnPixels > blank.drawnPixels * 2 + 100)
+
+          // 3. zoom in muda os píxeis; extents repõe-nos (pela ponte da app)
+          assert.equal(session.client!.zoom({ op: 'in' }).ok, true)
+          await settle()
+          const zoomed = await shot('2-zoom-in')
+          assert.notEqual(zoomed.hash, drawn.hash, 'zoom in não mudou o ecrã')
+          assert.equal(session.client!.zoom({ op: 'extents' }).ok, true)
+          await settle()
+          const extents = await shot('3-zoom-extents')
+          assert.equal(state.zoom.error, null)
+
+          // 4. FIND real + navegação para o hit (vista muda)
+          session.client!.find({
+            query: 'A',
+            matchCase: false,
+            scope: 'drawing'
+          })
+          await until('findResult', () => state.find.status === 'results')
+          assert.ok(state.find.total > 0, 'FIND sem resultados')
+          session.client!.goto({ findId: state.find.findId!, index: 0 })
+          await until('findActive', () => state.find.activeIndex === 0)
+          assert.equal(state.find.lastOutcome, 'navigated')
+          await settle()
+          const hit = await shot('4-find-goto')
+          assert.notEqual(
+            hit.hash,
+            extents.hash,
+            'navegação FIND não mudou o ecrã'
+          )
+
+          // 5. falha visível e documento anterior preservado
+          // «.dxf» que não é DXF (bytes binários): o importador recusa-o no sniff
+          const broken = join(work, `${vp.name}-broken.dxf`)
+          writeFileSync(
+            broken,
+            Buffer.from(Array.from({ length: 4096 }, (_, i) => (i * 37) & 0xff))
+          )
+          const grantUrl = (() => {
+            const ids = readdirSync(dir)
+            return ids.length === 1
+              ? session.server!.urlFor(ids[0], 'dxf')
+              : null
+          })()
+          await pick(broken)
+          await until('openFailed', () => state.document.error !== null, 60_000)
+          assert.match(state.document.error!.code, /^[a-z-]+$/)
+          assert.ok(state.document.current, 'falha apagou o documento anterior')
+          await settle()
+          const afterFail = await shot('5-open-failed')
+          assert.ok(
+            afterFail.drawnPixels > 200,
+            'falha apagou o desenho anterior'
+          )
+
+          // 6. CSP fail-closed: pedido externo bloqueado ANTES da rede
+          const blocked = await page.evaluate(async () => {
+            try {
+              await fetch('https://cdn.jsdelivr.net/npm/x')
+              return 'passou'
+            } catch {
+              return 'bloqueado'
+            }
+          })
+          assert.equal(blocked, 'bloqueado')
+          // navegação para fora da sessão: a política da ViewerSurface recusa-a
+          assert.equal(
+            isAllowedNavigation('https://example.org/', viewerUrl),
+            false
+          )
+          await page.waitForTimeout(200)
+          const csp = (await page.evaluate(
+            () => (window as unknown as { __csp: string[] }).__csp
+          )) as string[]
+          const unexpected = csp.filter(v => !v.includes('cdn.jsdelivr.net'))
+          assert.deepEqual(unexpected, [], 'violações de CSP do próprio viewer')
+          assert.ok(
+            csp.some(v => v.startsWith('connect-src')),
+            'CSP não registou o bloqueio'
+          )
+          assert.deepEqual(external, [], 'pedidos de rede externos')
+          assert.ok(
+            navigations.every(n => n.allowed),
+            JSON.stringify(navigations)
+          )
+          assert.deepEqual(injectErrors, [])
+
+          // 7. limpeza determinística: assets apagados, servidor fechado
+          const origin = new URL(viewerUrl!).origin
+          await session.dispose()
+          assert.deepEqual(readdirSync(dir), [], 'assets por apagar')
+          assert.equal(session.server!.state, 'disposed')
+          const afterDispose = await page.evaluate(
+            async (u: string) => {
+              try {
+                return String((await fetch(u)).status)
+              } catch {
+                return 'recusado'
+              }
+            },
+            grantUrl ?? `${origin}/`
+          )
+          assert.equal(afterDispose, 'recusado')
+
+          metrics[vp.name] = {
+            viewport: {
+              width: vp.width,
+              height: vp.height,
+              deviceScaleFactor: vp.mobile ? 3 : 1
+            },
+            bootMs,
+            openMs,
+            layouts: state.document.current!.layouts.map(l => l.name),
+            findTotal: state.find.total,
+            findOutcome: state.find.lastOutcome,
+            openFailedCode: state.document.error!.code,
+            afterDisposeFetch: afterDispose,
+            externalRequests: external.length,
+            navigations,
+            cspViolationsOwn: unexpected.length,
+            cspBlockedExternal: csp.length,
+            pageErrors: consoleErrors,
+            pixels: { blank, drawn, zoomed, extents, hit, afterFail }
+          }
+          await ctx.close()
+          await decoder.close()
+        } finally {
+          await session.dispose()
         }
-        await ctx.close()
-        await decoder.close()
       })
     }
 
     it('Sec-Fetch/Origin reais do Chromium: página e assets same-origin aceites; outra origem → 403', async () => {
-      assets.set('cross-site-0001', new TextEncoder().encode('0\nEOF\n'))
-      const url = server.urlFor('cross-site-0001', 'dxf')!
-      // outra origem real em loopback (outra porta ⇒ «same-site», não «same-origin»)
-      const other = http.createServer((_req, res) => {
-        res.setHeader('Content-Type', 'text/html')
-        res.end('<p>outra app</p>')
-      })
-      await new Promise<void>(r => other.listen(0, '127.0.0.1', r))
-      const otherOrigin = `http://127.0.0.1:${(other.address() as AddressInfo).port}`
-      const ctx = await browser.newContext()
-      const page = await ctx.newPage()
-      await page.goto(otherOrigin)
-      const before = seen.length
-      const outcome = await page.evaluate(async (u: string) => {
-        const r: string[] = []
-        try {
-          r.push((await fetch(u)).status.toString())
-        } catch {
-          r.push('cors-erro')
-        }
-        try {
-          r.push((await fetch(u, { mode: 'no-cors' })).type)
-        } catch {
-          r.push('erro')
-        }
-        return r
-      }, url)
-      await ctx.close()
-      await new Promise(r => other.close(r))
-      const cross = seen.slice(before).filter(s => s.route === 'asset')
-      metrics.crossOrigin = { outcome, serverSaw: cross }
-      assert.ok(
-        cross.length > 0,
-        `pedido de outra origem não chegou (${outcome})`
-      )
-      assert.ok(
-        cross.every(s => s.status === 403 && s.secFetchSite !== 'same-origin'),
-        `outra origem aceite: ${JSON.stringify(cross)}`
-      )
-      // tudo o que foi servido (200) veio da própria origem ou de navegação directa
-      const accepted = seen.filter(s => s.status === 200)
-      assert.ok(
-        accepted.every(
-          s => s.secFetchSite === 'same-origin' || s.secFetchSite === 'none'
+      const dir = join(work, 'cross')
+      mkdirSync(dir)
+      const store = diskStore(dir)
+      const picker = new QueuePicker()
+      let viewerUrl: string | null = null
+      const session = startViewerSession({
+        createServer: createServer(store, () =>
+          viewerUrl ? new URL(viewerUrl).origin : undefined
         ),
-        JSON.stringify(summarize(accepted))
-      )
-      assert.ok(
-        seen.some(
-          s =>
-            s.route === 'page' &&
-            s.secFetchSite === 'none' &&
-            s.secFetchDest === 'document'
+        inject: () => undefined,
+        picker,
+        store,
+        appState: { addEventListener: () => ({ remove: () => undefined }) },
+        dispatch: () => undefined,
+        onViewerUrl: u => {
+          viewerUrl = u
+        },
+        onServerIssue: () => undefined
+      })
+      try {
+        while (!viewerUrl) await new Promise(r => setTimeout(r, 10))
+        const doc = join(work, 'cross.dxf')
+        writeFileSync(doc, '0\nEOF\n')
+        // concessão real do FileFlow (o viewer não está de pé: a entrega fica
+        // em fila, mas o URL do asset já existe no servidor)
+        await store.stage(
+          { uri: `file://${doc}`, consume: false },
+          'f1-cross0001',
+          'dxf'
         )
-      )
-      assert.ok(
-        seen.some(
-          s =>
-            s.route === 'asset' &&
-            s.status === 200 &&
-            s.secFetchSite === 'same-origin'
+        const url = session.server!.urlFor('f1-cross0001', 'dxf')!
+        // outra origem real em loopback (outra porta ⇒ «same-site», não «same-origin»)
+        const other = http.createServer((_req, res) => {
+          res.setHeader('Content-Type', 'text/html')
+          res.end('<p>outra app</p>')
+        })
+        await new Promise<void>(r => other.listen(0, '127.0.0.1', r))
+        const otherOrigin = `http://127.0.0.1:${(other.address() as AddressInfo).port}`
+        const ctx = await browser.newContext()
+        const page = await ctx.newPage()
+        // a página real do viewer (navegação de topo, `none`) e o asset same-origin
+        await page.goto(viewerUrl)
+        const same = await page.evaluate(
+          async (u: string) => (await fetch(u)).status,
+          url
         )
-      )
+        await page.goto(otherOrigin)
+        const before = seen.length
+        const outcome = await page.evaluate(async (u: string) => {
+          const r: string[] = []
+          try {
+            r.push((await fetch(u)).status.toString())
+          } catch {
+            r.push('cors-erro')
+          }
+          try {
+            r.push((await fetch(u, { mode: 'no-cors' })).type)
+          } catch {
+            r.push('erro')
+          }
+          return r
+        }, url)
+        await ctx.close()
+        await new Promise(r => other.close(r))
+        const cross = seen.slice(before).filter(s => s.route === 'asset')
+        metrics.crossOrigin = {
+          sameOriginStatus: same,
+          outcome,
+          serverSaw: cross
+        }
+        assert.equal(same, 200)
+        assert.ok(
+          cross.length > 0,
+          `pedido de outra origem não chegou (${outcome})`
+        )
+        assert.ok(
+          cross.every(
+            s => s.status === 403 && s.secFetchSite !== 'same-origin'
+          ),
+          `outra origem aceite: ${JSON.stringify(cross)}`
+        )
+        // tudo o que foi servido (200) veio da própria origem ou de navegação directa
+        const accepted = seen.filter(s => s.status === 200)
+        assert.ok(
+          accepted.every(
+            s => s.secFetchSite === 'same-origin' || s.secFetchSite === 'none'
+          ),
+          JSON.stringify(summarize(accepted))
+        )
+        assert.ok(
+          seen.some(
+            s =>
+              s.route === 'page' &&
+              s.secFetchSite === 'none' &&
+              s.secFetchDest === 'document'
+          )
+        )
+        assert.ok(
+          seen.some(
+            s =>
+              s.route === 'asset' &&
+              s.status === 200 &&
+              s.secFetchSite === 'same-origin'
+          )
+        )
+      } finally {
+        await session.dispose()
+      }
     })
   }
 )

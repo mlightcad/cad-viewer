@@ -7,8 +7,10 @@ import { describe, it } from 'node:test'
 import {
   createManifestBundle,
   createMemoryBundle,
+  MANIFEST_FILE,
   MAX_BUNDLE_FILE_BYTES,
-  MAX_BUNDLE_FILES
+  MAX_BUNDLE_FILES,
+  parseBundleManifest
 } from './bundle.ts'
 import { LocalServerError } from './errors.ts'
 
@@ -190,5 +192,57 @@ describe('createManifestBundle', () => {
     assert.equal(b.lookup('x1.js/')?.read, undefined)
     await b.lookup('x1.js')!.read()
     assert.deepEqual(seen, ['x1.js'])
+  })
+})
+
+describe('parseBundleManifest (MANIFEST.json empacotado no app)', () => {
+  it('aceita { files: [{ path, bytes }] } e o resultado monta o bundle', async () => {
+    const m = parseBundleManifest(
+      JSON.stringify({
+        files: [
+          { path: 'index.html', bytes: 3 },
+          { path: 'assets/a.js', bytes: 1 }
+        ]
+      })
+    )
+    const b = createManifestBundle(m, async p =>
+      new TextEncoder().encode(p === 'index.html' ? 'abc' : 'x')
+    )
+    assert.equal(b.lookup('index.html')?.size, 3)
+    assert.equal(b.lookup(MANIFEST_FILE), null, 'o manifesto nunca é servido')
+  })
+
+  it('JSON inválido, sem ficheiros ou com entradas mal formadas → invalid-config sem ecoar o conteúdo', () => {
+    for (const text of [
+      '',
+      '{',
+      'null',
+      '[]',
+      '{"files":[]}',
+      '{"files":{}}',
+      '{"files":[null]}',
+      '{"files":[{"path":1,"bytes":1}]}',
+      '{"files":[{"path":"/data/user/x","bytes":"1"}]}'
+    ]) {
+      assert.throws(
+        () => parseBundleManifest(text),
+        (e: unknown) =>
+          invalidConfig(e) && !(e as Error).message.includes('/data/'),
+        text
+      )
+    }
+  })
+
+  it('caminhos perigosos no manifesto são recusados ao montar o bundle', () => {
+    for (const path of ['../x', '/abs', 'a//b', 'a\\b', '']) {
+      const m = parseBundleManifest(
+        JSON.stringify({ files: [{ path, bytes: 1 }] })
+      )
+      assert.throws(
+        () => createManifestBundle(m, async () => new Uint8Array(1)),
+        invalidConfig,
+        path
+      )
+    }
   })
 })

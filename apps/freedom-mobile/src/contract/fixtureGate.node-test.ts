@@ -216,7 +216,7 @@ describe('fronteira offline do app (D-2…D-5, arquitectura §4 «Rede»)', () =
     }
   })
 
-  it('todo o URL literal é loopback ou about:blank', () => {
+  it('todo o URL literal é loopback', () => {
     for (const f of sources) {
       const text = readFileSync(f, 'utf8')
       for (const m of text.matchAll(/\bhttps?:\/\/[^\s'"`)>]+/gi)) {
@@ -241,7 +241,7 @@ describe('fronteira offline do app (D-2…D-5, arquitectura §4 «Rede»)', () =
     }
   })
 
-  it('a superfície WebView só aceita loopback 127.0.0.1/about: com bloqueio de navegação, e o manifesto não pede permissões', () => {
+  it('a superfície WebView carrega só a página loopback da sessão (sem about:), bloqueia a navegação e o manifesto não pede permissões', () => {
     const surface = readFileSync(
       join(root, 'src/viewer/ViewerSurface.tsx'),
       'utf8'
@@ -250,18 +250,62 @@ describe('fronteira offline do app (D-2…D-5, arquitectura §4 «Rede»)', () =
       surface,
       /originWhitelist=\{\[\.\.\.SURFACE_ORIGIN_WHITELIST\]\}/
     )
-    assert.match(surface, /onShouldStartLoadWithRequest=\{/)
-    assert.match(surface, /source=\{\{ uri: surfaceUri\(viewerUrl\) \}\}/)
+    assert.match(
+      surface,
+      /onShouldStartLoadWithRequest=\{req => isAllowedNavigation\(req\.url, page\)\}/
+    )
+    assert.match(surface, /source=\{\{ uri: page \}\}/)
+    // sem página válida não há WebView (nem about:blank)
+    assert.match(
+      surface,
+      /const page = isViewerUrl\(viewerUrl\) \? viewerUrl : null/
+    )
     assert.match(surface, /allowFileAccess=\{false\}/)
     assert.doesNotMatch(
       surface,
-      /allowUniversalAccess|allowFileAccessFromFileURLs/
+      /allowUniversalAccess|allowFileAccessFromFileURLs|mixedContentMode/
     )
+    for (const f of sources) {
+      assert.doesNotMatch(
+        readFileSync(f, 'utf8'),
+        /about:(blank|\*)/,
+        `${relative(root, f)} usa about:`
+      )
+    }
     // o URL com token nunca é registado
     assert.doesNotMatch(surface, /console\./)
     const manifest = JSON.parse(
       readFileSync(join(root, 'app.json'), 'utf8')
-    ) as { expo: { android?: object; ios?: object } }
-    assert.doesNotMatch(JSON.stringify(manifest), /permissions/i)
+    ) as { expo: { plugins?: unknown; android?: object; ios?: object } }
+    assert.doesNotMatch(
+      JSON.stringify(manifest),
+      /permissions|usesCleartextTraffic|NSAllowsArbitraryLoads/i
+    )
+    assert.deepEqual(manifest.expo.plugins, ['./plugins/withLoopbackViewer'])
+  })
+
+  it('o ecrã liga o listener nativo por omissão, sem NO_LOCAL_SERVER nem fábrica nula', () => {
+    const screen = readFileSync(
+      join(root, 'src/screens/ViewerScreen.tsx'),
+      'utf8'
+    )
+    assert.match(screen, /createServer = createNativeServer/)
+    assert.doesNotMatch(screen, /NO_LOCAL_SERVER|NO_NATIVE_LISTENER/)
+    const native = readFileSync(
+      join(root, 'src/server/nativeListener.ts'),
+      'utf8'
+    )
+    assert.match(native, /createTcpHttpListener\(/)
+    // o bind é fixado pelo adaptador (127.0.0.1), nunca 0.0.0.0
+    assert.doesNotMatch(native, /bindHost|0\.0\.0\.0'/)
+    const pkg = JSON.parse(
+      readFileSync(join(root, 'package.json'), 'utf8')
+    ) as {
+      dependencies: Record<string, string>
+    }
+    assert.match(
+      pkg.dependencies['react-native-tcp-socket'] ?? '',
+      /^\d+\.\d+\.\d+$/
+    )
   })
 })

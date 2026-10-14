@@ -1,0 +1,19 @@
+# Sondas do listener nativo (react-native-tcp-socket) no emulador Android — 2026-10-14T10:05:09+01:00
+# sdk_gphone64_x86_64 / Android 14 (API 34); pacote pt.aitra.freedomviewer; sockets: 0000000000000000FFFF00000100007F:80EF 0A;0000000000000000FFFF00000100007F:80EF 06;
+uid: 2000 (shell, nao e a app: simula 'outra app' no mesmo dispositivo)
+1 loopback, token errado: HTTP/1.1 404 Not Found
+2 raiz /: HTTP/1.1 404 Not Found
+3 Host falso (rebinding): HTTP/1.1 403 Forbidden
+4 Sec-Fetch-Site cross-site: HTTP/1.1 403 Forbidden
+5 HTTP/1.0: HTTP/1.1 505 HTTP Version Not Supported
+6 LF solto: HTTP/1.1 400 Bad Request
+7 traversal: HTTP/1.1 400 Bad Request
+8 POST: HTTP/1.1 405 Method Not Allowed
+9 interface eth0 10.0.2.15: nc: connect: Connection refused
+10 interface wlan0 10.0.2.16: nc: connect: Connection refused
+11 ::1: nc: connect: Connection refused
+12 slowloris (ligacao com 'GET /s/' e sem terminar): ESTABLISHED t=1s:2 t=3s:2 t=4s:2 t=6s:0 t=8s:0 -> cortada pelo servidor entre 4 e 6 s (limite de cabecalhos 5 s)
+13 cabecalhos > 8 KiB: HTTP/1.1 431 Request Header Fields Too Large
+
+# Ciclo de vida (adb): app a escutar em 127.0.0.1:33007 -> `am force-stop pt.aitra.freedomviewer` -> nenhum socket em LISTEN no loopback -> relancada: novo servidor em 127.0.0.1:38591 (porta e token novos).
+# Porta antiga 33007 depois de parar/relancar: nc: connect: Connection refused

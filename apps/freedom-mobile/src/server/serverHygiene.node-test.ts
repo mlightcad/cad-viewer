@@ -258,9 +258,12 @@ describe('código-fonte do módulo (varrimento)', () => {
   it('sem consola, aleatoriedade fraca, eval/Function, require, rede ou caminhos de máquina', () => {
     for (const [file, text] of sources) {
       // os comentários não contam: a regra é sobre código executável
-      const code = text
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .replace(/\/\/.*$/gm, '')
+      let code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+      // única excepção: o módulo nativo do listener é carregado só depois de
+      // confirmar que existe (no iOS a biblioteca lança à importação sem ele)
+      if (file === 'nativeListener.ts') {
+        code = code.replace(/require\('react-native-tcp-socket'\)/, '')
+      }
       assert.doesNotMatch(code, /\bconsole\./, `${file}: consola`)
       assert.doesNotMatch(code, /Math\.random/, `${file}: Math.random`)
       assert.doesNotMatch(

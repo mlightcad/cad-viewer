@@ -1,0 +1,263 @@
+{
+  "method": "adb exec-out screencap -p do compositor do emulador (Pixel 3a API 34 x86_64, 1080x2220 @440dpi = 393 dp ≈ 390px CSS, Android System WebView); fluxo real da app (picker do sistema → FileFlow → listener nativo react-native-tcp-socket → WebView); botões accionados por uiautomator/adb input; métricas sobre a área da WebView (nó viewer-surface); fundo preto; drawnPixels = píxeis ≠ preto; hash = sha256 da região",
+  "shots": {
+    "0-ready": {
+      "surfaceBounds": [
+        0,
+        417,
+        1080,
+        2154
+      ],
+      "drawnPixels": 1875960,
+      "distinctColors": 1,
+      "bbox": [
+        0,
+        417,
+        1079,
+        2153
+      ],
+      "hash": "9ec0057c",
+      "screen": [
+        "Freedom DWG/CAD Viewer",
+        "Viewer pronto.",
+        "Abrir ficheiro DWG ou DXF",
+        "Abrir",
+        "Freedom viewer"
+      ]
+    },
+    "1-opened": {
+      "surfaceBounds": [
+        0,
+        779,
+        1080,
+        2154
+      ],
+      "drawnPixels": 11240,
+      "distinctColors": 1420,
+      "bbox": [
+        47,
+        1385,
+        1033,
+        2101
+      ],
+      "hash": "fcdd17f3",
+      "screen": [
+        "Freedom DWG/CAD Viewer",
+        "Viewer pronto.",
+        "Abrir ficheiro DWG ou DXF",
+        "Abrir",
+        "Procurar texto",
+        "Procurar",
+        "Procurar",
+        "Resultado anterior",
+        "‹",
+        "Resultado seguinte",
+        "›",
+        "Aproximar",
+        "+",
+        "Afastar",
+        "−",
+        "Ajustar ao desenho",
+        "Ajustar",
+        "block-color.dxf (DXF, 3 layouts)",
+        "Freedom viewer"
+      ]
+    },
+    "2-zoom-in": {
+      "surfaceBounds": [
+        0,
+        779,
+        1080,
+        2154
+      ],
+      "drawnPixels": 11426,
+      "distinctColors": 1326,
+      "bbox": [
+        57,
+        1315,
+        1009,
+        2101
+      ],
+      "hash": "4b0391c1",
+      "screen": [
+        "Freedom DWG/CAD Viewer",
+        "Viewer pronto.",
+        "Abrir ficheiro DWG ou DXF",
+        "Abrir",
+        "Procurar texto",
+        "Procurar",
+        "Procurar",
+        "Resultado anterior",
+        "‹",
+        "Resultado seguinte",
+        "›",
+        "Aproximar",
+        "+",
+        "Afastar",
+        "−",
+        "Ajustar ao desenho",
+        "Ajustar",
+        "block-color.dxf (DXF, 3 layouts)",
+        "Freedom viewer"
+      ]
+    },
+    "3-zoom-extents": {
+      "surfaceBounds": [
+        0,
+        779,
+        1080,
+        2154
+      ],
+      "drawnPixels": 11274,
+      "distinctColors": 1429,
+      "bbox": [
+        47,
+        1349,
+        1033,
+        2101
+      ],
+      "hash": "152f59eb",
+      "screen": [
+        "Freedom DWG/CAD Viewer",
+        "Viewer pronto.",
+        "Abrir ficheiro DWG ou DXF",
+        "Abrir",
+        "Procurar texto",
+        "Procurar",
+        "Procurar",
+        "Resultado anterior",
+        "‹",
+        "Resultado seguinte",
+        "›",
+        "Aproximar",
+        "+",
+        "Afastar",
+        "−",
+        "Ajustar ao desenho",
+        "Ajustar",
+        "block-color.dxf (DXF, 3 layouts)",
+        "Freedom viewer"
+      ]
+    },
+    "4-find": {
+      "surfaceBounds": [
+        0,
+        934,
+        1080,
+        2154
+      ],
+      "drawnPixels": 11360,
+      "distinctColors": 1371,
+      "bbox": [
+        53,
+        1133,
+        1079,
+        2102
+      ],
+      "hash": "80b79854",
+      "screen": [
+        "Freedom DWG/CAD Viewer",
+        "Viewer pronto.",
+        "Abrir ficheiro DWG ou DXF",
+        "Abrir",
+        "A",
+        "Procurar",
+        "Procurar",
+        "Resultado anterior",
+        "‹",
+        "Resultado seguinte",
+        "›",
+        "Aproximar",
+        "+",
+        "Afastar",
+        "−",
+        "Ajustar ao desenho",
+        "Ajustar",
+        "block-color.dxf (DXF, 3 layouts)",
+        "1 / 3 resultados",
+        "Selecionado: “图层：TestLayer1 颜色：黄色” (Model)",
+        "Freedom viewer"
+      ]
+    },
+    "5-find-next": {
+      "surfaceBounds": [
+        0,
+        934,
+        1080,
+        2154
+      ],
+      "drawnPixels": 11575,
+      "distinctColors": 1457,
+      "bbox": [
+        0,
+        1127,
+        1024,
+        2102
+      ],
+      "hash": "ee12bbed",
+      "screen": [
+        "Freedom DWG/CAD Viewer",
+        "Viewer pronto.",
+        "Abrir ficheiro DWG ou DXF",
+        "Abrir",
+        "A",
+        "Procurar",
+        "Procurar",
+        "Resultado anterior",
+        "‹",
+        "Resultado seguinte",
+        "›",
+        "Aproximar",
+        "+",
+        "Afastar",
+        "−",
+        "Ajustar ao desenho",
+        "Ajustar",
+        "block-color.dxf (DXF, 3 layouts)",
+        "2 / 3 resultados",
+        "Selecionado: “图层：TestLayer2 颜色：蓝色” (Model)",
+        "Freedom viewer"
+      ]
+    },
+    "6-open-failed": {
+      "surfaceBounds": [
+        0,
+        980,
+        1080,
+        2154
+      ],
+      "drawnPixels": 11516,
+      "distinctColors": 1428,
+      "bbox": [
+        0,
+        1150,
+        1024,
+        2101
+      ],
+      "hash": "434fd06a",
+      "screen": [
+        "Freedom DWG/CAD Viewer",
+        "Viewer pronto.",
+        "Abrir ficheiro DWG ou DXF",
+        "Abrir",
+        "A",
+        "Procurar",
+        "Procurar",
+        "Resultado anterior",
+        "‹",
+        "Resultado seguinte",
+        "›",
+        "Aproximar",
+        "+",
+        "Afastar",
+        "−",
+        "Ajustar ao desenho",
+        "Ajustar",
+        "Não foi possível abrir o desenho (ficheiro inválido ou não suportado).",
+        "2 / 3 resultados",
+        "Selecionado: “图层：TestLayer2 颜色：蓝色” (Model)",
+        "Freedom viewer"
+      ]
+    }
+  }
+}

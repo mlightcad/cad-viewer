@@ -11,6 +11,9 @@
     },
     "ios": {
       "bundleIdentifier": "pt.aitra.freedomviewer"
-    }
+    },
+    "plugins": [
+      "./plugins/withLoopbackViewer"
+    ]
   }
 }

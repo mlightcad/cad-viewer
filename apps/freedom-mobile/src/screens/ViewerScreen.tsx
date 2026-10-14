@@ -7,17 +7,20 @@ import {
   useRef,
   useState
 } from 'react'
-import { AppState, Pressable, StyleSheet, Text, View } from 'react-native'
+import {
+  AppState,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from 'react-native'
 
-import { BridgeClient } from '../bridge/BridgeClient'
 import {
   createExpoAssetStore,
   createExpoPicker
 } from '../files/expoFileAdapters'
-import { FileFlow } from '../files/fileFlow'
-import { NO_LOCAL_SERVER } from '../files/ports'
-import type { LocalAssetServer } from '../server/localAssetServer'
-import type { ServerEvent } from '../server/types'
+import { createNativeServer } from '../server/nativeServer'
 import { describeViewerStatus } from '../shell/shellState'
 import {
   describeDocument,
@@ -29,114 +32,57 @@ import {
 } from '../state/describe'
 import { initialSessionState, sessionReducer } from '../state/session'
 import { type InjectFn, ViewerSurface } from '../viewer/ViewerSurface'
+import {
+  type ServerFactory,
+  startViewerSession,
+  type ViewerSession
+} from './viewerSession'
 
-/**
- * Fábrica do servidor loopback da sessão (spec M3-I5 §8 itens 1 e 4). Recebe o
- * observador de eventos do servidor. `null` = este build não tem listener
- * nativo: a superfície fica em `about:blank` e o erro é VISÍVEL (sem queda
- * silenciosa para outra origem).
- */
-export type ServerFactory = (
-  onEvent: (event: ServerEvent) => void
-) => LocalAssetServer | null
-
-/** Build actual: nenhum listener nativo ligado (bloqueio documentado no I6). */
-export const NO_NATIVE_LISTENER: ServerFactory = () => null
-
-export const SERVER_UNAVAILABLE_TEXT =
-  'Servidor local indisponível neste build: o viewer não pode arrancar.'
-export const SERVER_FAILED_TEXT =
-  'Falha ao arrancar o servidor local do viewer. Tente recarregar.'
+export {
+  SERVER_FAILED_TEXT,
+  SERVER_UNAVAILABLE_TEXT,
+  type ServerFactory
+} from './viewerSession'
 
 export function ViewerScreen({
-  createServer = NO_NATIVE_LISTENER
+  createServer = createNativeServer
 }: { createServer?: ServerFactory } = {}): ReactElement {
   const [session, dispatch] = useReducer(sessionReducer, initialSessionState)
   /** Página da sessão (token): só em memória, nunca registada. */
   const [viewerUrl, setViewerUrl] = useState<string | null>(null)
   const [serverIssue, setServerIssue] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
   const injectRef = useRef<InjectFn | null>(null)
-  const clientRef = useRef<BridgeClient | null>(null)
-  const flowRef = useRef<FileFlow | null>(null)
+  const sessionRef = useRef<ViewerSession | null>(null)
   const { generation } = session.shell
 
-  // Um cliente por superfície: recarregar (generation) recria-o e rearma o
-  // timeout de `ready`, que passa a viver no cliente.
+  // Uma sessão por geração: recarregar (ou perder o listener) gera servidor e
+  // token novos e recria a WebView; a anterior é desmontada por ordem fixa
+  // (ponte → assets → servidor) — `viewerSession.ts`.
   useEffect(() => {
-    // O fluxo de ficheiros vive e morre com a ponte: os assets copiados
-    // pertencem a esta superfície e são apagados quando ela é recriada.
-    let flow: FileFlow | null = null
-    let disposed = false
-    // Servidor por geração: recarregar (ou perder o listener) gera token novo
-    // e recria a WebView com o URL novo; o anterior morre já (revogação).
-    const server = createServer(event => {
-      if (event.kind === 'listener-lost' && !disposed) {
-        setViewerUrl(null)
-        dispatch({ kind: 'reload' })
-      }
-    })
-    setViewerUrl(null)
-    setServerIssue(server ? null : SERVER_UNAVAILABLE_TEXT)
-    if (server) {
-      server.start().then(
-        info => {
-          if (!disposed) setViewerUrl(info.viewerUrl)
-        },
-        () => {
-          if (!disposed) setServerIssue(SERVER_FAILED_TEXT)
-        }
-      )
-    }
-    const client = new BridgeClient({
+    const live = startViewerSession({
+      createServer,
       inject: script => {
         const inject = injectRef.current
         if (!inject) throw new Error('superfície do viewer indisponível')
         inject(script)
       },
-      onEvent: event => {
-        dispatch(event)
-        flow?.handle(event)
-      }
-    })
-    flow = new FileFlow({
       picker: createExpoPicker(),
       store: createExpoAssetStore(),
-      urls: server ?? NO_LOCAL_SERVER,
-      bridge: client,
-      onEvent: dispatch
+      appState: AppState,
+      dispatch,
+      onViewerUrl: setViewerUrl,
+      onServerIssue: setServerIssue
     })
-    clientRef.current = client
-    flowRef.current = flow
-    void flow.startup()
-    // Ao voltar a primeiro plano com o listener morto (iOS suspende sockets),
-    // recarrega: novo servidor, novo token, nova WebView.
-    const appState = AppState.addEventListener('change', state => {
-      if (state === 'active' && server && server.state === 'stopped') {
-        dispatch({ kind: 'reload' })
-      }
-    })
+    sessionRef.current = live
     return () => {
-      disposed = true
-      appState.remove()
-      client.dispose()
-      void flow?.dispose()
-      void server?.dispose()
-      clientRef.current = null
-      flowRef.current = null
+      sessionRef.current = null
+      void live.dispose()
     }
   }, [generation, createServer])
 
   const onMessage = (raw: string) => {
-    const client = clientRef.current
-    if (client) client.receive(raw)
-    // Sem cliente a mensagem não pode ser tratada: dizê-lo, nunca engolir.
-    else {
-      dispatch({
-        kind: 'protocol-error',
-        code: 'invalid-envelope',
-        message: 'mensagem do viewer recebida sem ponte activa'
-      })
-    }
+    sessionRef.current?.receive(raw)
   }
 
   const { shell } = session
@@ -148,26 +94,82 @@ export function ViewerScreen({
   const selectionText = describeSelection(session.selection)
   const zoomText = describeZoom(session.zoom)
   const issueText = describeIssue(session.issue)
+  const client = sessionRef.current?.client ?? null
+  const canOpen = !choosing && shell.viewer !== 'failed' && !serverIssue
+  const hasDocument = shell.viewer === 'ready' && !!session.document.current
+  const { findId, activeIndex } = session.find
+  // FIND/zoom vão pela ponte; o resultado (ou o erro) volta pelo reducer e é
+  // mostrado acima — nada é decidido aqui.
+  const find = () => {
+    const q = query.trim()
+    if (q) client?.find({ query: q, matchCase: false, scope: 'drawing' })
+  }
+  const step = (dir: 1 | -1) => {
+    if (findId === null) return
+    if (activeIndex < 0) client?.goto({ findId, index: 0 })
+    else if (dir > 0) client?.findNext({ findId })
+    else client?.findPrev({ findId })
+  }
 
   return (
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>Freedom DWG/CAD Viewer</Text>
         <Text style={styles.status} accessibilityLiveRegion="polite">
-          {describeViewerStatus(shell)}
+          {serverIssue ?? describeViewerStatus(shell)}
         </Text>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Abrir ficheiro DWG ou DXF"
-          disabled={choosing || shell.viewer === 'failed'}
-          onPress={() => void flowRef.current?.pickAndOpen()}
-          style={[
-            styles.button,
-            (choosing || shell.viewer === 'failed') && styles.buttonDisabled
-          ]}
+          disabled={!canOpen}
+          onPress={() => void sessionRef.current?.flow?.pickAndOpen()}
+          style={[styles.button, !canOpen && styles.buttonDisabled]}
         >
           <Text style={styles.buttonText}>Abrir</Text>
         </Pressable>
+        {hasDocument ? (
+          <View style={styles.toolbar}>
+            <TextInput
+              accessibilityLabel="Texto a procurar"
+              value={query}
+              onChangeText={setQuery}
+              onSubmitEditing={find}
+              returnKeyType="search"
+              autoCorrect={false}
+              autoCapitalize="none"
+              placeholder="Procurar texto"
+              style={styles.input}
+            />
+            <ToolButton label="Procurar" onPress={find} />
+            <ToolButton
+              label="Resultado anterior"
+              text="‹"
+              disabled={findId === null}
+              onPress={() => step(-1)}
+            />
+            <ToolButton
+              label="Resultado seguinte"
+              text="›"
+              disabled={findId === null}
+              onPress={() => step(1)}
+            />
+            <ToolButton
+              label="Aproximar"
+              text="+"
+              onPress={() => client?.zoom({ op: 'in' })}
+            />
+            <ToolButton
+              label="Afastar"
+              text="−"
+              onPress={() => client?.zoom({ op: 'out' })}
+            />
+            <ToolButton
+              label="Ajustar ao desenho"
+              text="Ajustar"
+              onPress={() => client?.zoom({ op: 'extents' })}
+            />
+          </View>
+        ) : null}
         {filesText ? (
           <Text
             style={session.files.error ? styles.issue : styles.status}
@@ -196,11 +198,6 @@ export function ViewerScreen({
             {zoomText}
           </Text>
         ) : null}
-        {serverIssue ? (
-          <Text style={styles.issue} accessibilityLiveRegion="polite">
-            {serverIssue}
-          </Text>
-        ) : null}
         {issueText ? (
           <Pressable
             accessibilityRole="button"
@@ -226,9 +223,33 @@ export function ViewerScreen({
         viewerUrl={viewerUrl}
         injectRef={injectRef}
         onMessage={onMessage}
-        onProcessGone={() => clientRef.current?.processGone()}
+        onProcessGone={() => sessionRef.current?.processGone()}
       />
     </View>
+  )
+}
+
+function ToolButton({
+  label,
+  text = label,
+  disabled = false,
+  onPress
+}: {
+  label: string
+  text?: string
+  disabled?: boolean
+  onPress: () => void
+}): ReactElement {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      disabled={disabled}
+      onPress={onPress}
+      style={[styles.tool, disabled && styles.buttonDisabled]}
+    >
+      <Text style={styles.buttonText}>{text}</Text>
+    </Pressable>
   )
 }
 
@@ -247,6 +268,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#1a56db'
   },
   target: { minHeight: 44, justifyContent: 'center' },
+  toolbar: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  input: {
+    flexGrow: 1,
+    minWidth: 140,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#888888',
+    borderRadius: 8,
+    fontSize: 16
+  },
+  tool: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#1a56db'
+  },
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#ffffff', fontSize: 16 }
 })
