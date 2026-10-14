@@ -185,7 +185,12 @@ jobs:
           if [ -f "$HOME/.npmrc" ]; then
             sed -i '/_authToken/d' "$HOME/.npmrc"
           fi
-          pnpm publish:viewer
+          # Preview tags (vX.Y.Z-preview.N) must not become npm "latest"
+          if [[ "${{ github.ref_name }}" == *-preview.* ]]; then
+            pnpm publish:viewer:preview
+          else
+            pnpm publish:viewer
+          fi
 
       - name: Create github release
         uses: softprops/action-gh-release@v3
@@ -193,6 +198,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-preview.') }}
 
   upload-pages:
     needs: build
