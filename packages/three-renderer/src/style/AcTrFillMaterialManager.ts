@@ -279,8 +279,9 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
       )
     })
 
-    let currentUniformCount = 0
-
+    // Pattern lines are uploaded via a float DataTexture (see
+    // createHatchPatternShaderMaterial), so there is no fragment-uniform
+    // budget truncating large user patterns (#743).
     const patternLines: AcTrPatternLine[] = []
     const tempCenter = new THREE.Vector2()
     for (const hatchPatternLine of style.definitionLines) {
@@ -330,25 +331,13 @@ export class AcTrFillMaterialManager extends AcTrMaterialManager<AcTrFillMateria
         patternLength
       )
 
-      const angle = hatchPatternLine.angle
-      const patternLine = {
-        angle,
+      patternLines.push({
+        angle: hatchPatternLine.angle,
         base,
         offset,
         dashLengths,
         patternLength
-      }
-
-      currentUniformCount += 4 // angle, base, offset, patternLength
-      currentUniformCount += maxPatternSegmentCount // dashLengths, consistent with HatchPatternShader
-      currentUniformCount += 4 // patternLength
-      if (currentUniformCount > this.options.maxFragmentUniforms) {
-        log.warn(
-          'There will be warning in fragment shader when number of uniforms exceeds 1024, so extra hatch line patterns are ignored here!'
-        )
-        break
-      }
-      patternLines.push(patternLine)
+      })
     }
 
     const material = createHatchPatternShaderMaterial(

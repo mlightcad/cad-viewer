@@ -410,6 +410,31 @@ describe('AcTrStyleManager', () => {
     expect(patternLine.patternLength).toBeCloseTo(0.25)
   })
 
+  it('keeps all line families for large hatch patterns instead of truncating at 1024 uniforms (#743)', () => {
+    const styleManager = new AcTrStyleManager()
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.fillType = {
+      solidFill: false,
+      patternAngle: 0,
+      definitionLines: Array.from({ length: 150 }, (_, i) => ({
+        angle: (i * Math.PI) / 150,
+        base: { x: 0, y: 0 },
+        offset: { x: 0, y: 10 },
+        dashLengths: [5, -2, 0, -2]
+      }))
+    }
+
+    const material = styleManager.getFillMaterial(
+      traits,
+      new THREE.Vector2(0, 0)
+    ) as THREE.ShaderMaterial
+
+    expect(material.uniforms.u_patternLines.value).toHaveLength(150)
+    expect(material.uniforms.u_patternData.value).toBeInstanceOf(
+      THREE.DataTexture
+    )
+  })
+
   it('solid hatch with explicit truecolor stays at literal RGB across themes', () => {
     // A DWG author who picked an explicit RGB via the truecolor picker
     // (e.g. 255,255,255 from the colour palette) gets a literal hatch.
