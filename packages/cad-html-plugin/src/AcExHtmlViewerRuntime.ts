@@ -5,7 +5,7 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
-import { decodeChunkGzip } from './AcExChunkBinaryCodec'
+import { decodeChunkPayload } from './AcExChunkBinaryCodec'
 import {
   AcExCommandSessionPanel,
   type AcExCommandSessionUiState
@@ -1050,7 +1050,7 @@ async function startViewer(): Promise<void> {
         loaded: String(loadedChunks),
         total: String(chunks.length)
       })
-      const decoded = decodeChunkGzip(entry.bytes)
+      const decoded = decodeChunkPayload(entry.bytes)
       const lineStart = target.lineBatches.length
       const meshStart = target.meshBatches.length
       target.lineBatches.push(...decoded.lineBatches)

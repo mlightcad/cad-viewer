@@ -15,7 +15,7 @@ export type AcExPackageVersion = typeof ACEX_PACKAGE_VERSION
 /** Snapshot schema version embedded in package manifests (matches ACEX batches). */
 export type AcExPackageSnapshotVersion = AcExSnapshotVersion
 
-/** One gzip-compressed geometry chunk listed in the package manifest. */
+/** One geometry chunk listed in the package manifest (gzip or raw ACEC). */
 export interface AcExPackageChunkRef {
   /** Stable chunk id (also used in the default file name). */
   id: string
@@ -25,7 +25,7 @@ export interface AcExPackageChunkRef {
   layoutBtrId: string
   /** Uncompressed ACEC byte length. */
   byteLength: number
-  /** Gzip-compressed byte length. */
+  /** Stored payload byte length (gzip when compressed, else same as byteLength). */
   compressedByteLength: number
   /** Number of line batches in this chunk. */
   lineBatchCount: number
@@ -36,7 +36,7 @@ export interface AcExPackageChunkRef {
 }
 
 /**
- * One gzip-compressed ACEO OSNAP chunk (measure mode).
+ * One ACEO OSNAP chunk (measure mode), gzip or raw.
  * Loaded after geometry so viewing does not wait on snap catalogs.
  */
 export interface AcExPackageOsnapChunkRef {
@@ -48,7 +48,7 @@ export interface AcExPackageOsnapChunkRef {
   layoutBtrId: string
   /** Uncompressed ACEO byte length. */
   byteLength: number
-  /** Gzip-compressed byte length. */
+  /** Stored payload byte length (gzip when compressed, else same as byteLength). */
   compressedByteLength: number
   /** Number of analytic primitives in this chunk. */
   primitiveCount: number
@@ -123,7 +123,7 @@ export interface AcExPackageFiles {
   manifest: AcExPackageManifest
   /** Manifest file name at package root (always `drawing.acex.json`). */
   manifestFileName: string
-  /** All package files including HTML, manifest, and chunk `.acex.gz` files. */
+  /** All package files including HTML, manifest, and chunk `.acex` / `.acex.gz` files. */
   files: AcExPackageFile[]
 }
 

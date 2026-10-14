@@ -834,6 +834,40 @@
                   </div>
                 </fieldset>
               </div>
+
+              <fieldset id="packageOptions" hidden>
+                <legend>Package chunks</legend>
+                <div class="toggle-row">
+                  <div class="toggle-copy">
+                    <span class="toggle-label">Chunk size (MiB)</span>
+                    <span class="hint"
+                      >Max uncompressed size of each geometry chunk</span
+                    >
+                  </div>
+                  <input
+                    id="chunkSizeMiB"
+                    type="number"
+                    min="1"
+                    max="64"
+                    step="1"
+                    value="2"
+                    style="width: 5rem"
+                  />
+                </div>
+                <div class="toggle-row" style="margin-top: 10px">
+                  <div class="toggle-copy">
+                    <span class="toggle-label">Compress chunks</span>
+                    <span class="hint"
+                      >Gzip each chunk before zipping. Turn off to write raw
+                      ACEC/ACEO bytes</span
+                    >
+                  </div>
+                  <label class="switch">
+                    <input id="compressChunks" type="checkbox" checked />
+                    <span></span>
+                  </label>
+                </div>
+              </fieldset>
             </div>
           </div>
 

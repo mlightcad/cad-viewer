@@ -58,6 +58,7 @@
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.15.7",
     "@vitejs/plugin-vue": "^6.0.8",
+    "vite": "^6.4.3",
     "vue": "^3.4.21",
     "vue-tsc": "^2.1.6"
   },

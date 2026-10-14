@@ -1241,6 +1241,8 @@ export default {
     exportLayouts: 'Yerleşimleri dışa aktar',
     initialView: 'HTML açılırken başlangıç görünümü',
     viewerMode: 'Çevrimdışı görüntüleyici modu',
+    chunkSizeMiB: 'Parça boyutu (MiB, çok dosyalı paket)',
+    compressChunks: 'Parçaları sıkıştır (çok dosyalı paket)',
     keywords: {
       single: {
         display: 'Tek dosya(S)',

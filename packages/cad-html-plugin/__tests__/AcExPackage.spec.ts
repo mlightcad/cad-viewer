@@ -207,6 +207,58 @@ describe('AcEx package format', () => {
     }
   })
 
+  it('builds uncompressed chunks and restores geometry via progressive fetch', async () => {
+    const snapshot = makeSnapshot()
+    const pkg = buildAcExPackage(snapshot, {
+      viewerRuntime: '/* runtime */',
+      baseName: 'demo',
+      maxChunkBytes: 400,
+      compressChunks: false
+    })
+
+    expect(pkg.manifest.chunks.every(c => c.href.endsWith('.acex'))).toBe(true)
+    expect(pkg.manifest.chunks.every(c => !c.href.endsWith('.gz'))).toBe(true)
+    expect(
+      pkg.manifest.chunks.every(
+        c => c.compressedByteLength === c.byteLength
+      )
+    ).toBe(true)
+
+    const fileMap = new Map(pkg.files.map(f => [f.path, f.bytes]))
+    const fetchImpl: typeof fetch = async (input: RequestInfo | URL) => {
+      const url = String(input)
+      const path =
+        [...fileMap.keys()].find(
+          key => url === key || url.endsWith(`/${key}`) || url.endsWith(key)
+        ) ?? null
+      const bytes = path ? fileMap.get(path) : undefined
+      if (!bytes || !path) {
+        return new Response(null, { status: 404 })
+      }
+      if (path.endsWith('.json')) {
+        return new Response(strFromU8(bytes), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+      const copy = new Uint8Array(bytes.byteLength)
+      copy.set(bytes)
+      return new Response(copy, { status: 200 })
+    }
+
+    const loaded = await loadAcExPackage({
+      manifestUrl: 'https://cdn.example/drawing.acex.json',
+      fetchImpl
+    })
+
+    expect(loaded.layouts[0]?.lineBatches.length).toBe(
+      snapshot.layouts[0]!.lineBatches.length
+    )
+    expect(loaded.layouts[0]?.meshBatches.length).toBe(
+      snapshot.layouts[0]!.meshBatches.length
+    )
+  })
+
   it('parses manifest and builds an empty skeleton', () => {
     const pkg = buildAcExPackage(makeSnapshot(), {
       viewerRuntime: '/* runtime */',

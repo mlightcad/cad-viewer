@@ -108,6 +108,14 @@ export default {
     securitySingleOnlyHint:
       'كلمة المرور والصلاحية متاحتان فقط لتصدير HTML المستقل.',
 
+    packageSection: 'أجزاء الحزمة',
+    chunkSizeMiB: 'حجم الجزء (ميبيبايت)',
+    chunkSizeMiBHint:
+      'الحد الأقصى للحجم غير المضغوط لكل جزء هندسي. الأجزاء الأصغر تظهر أسرع؛ الأكبر تقلل عدد التنزيلات',
+    compressChunks: 'ضغط الأجزاء',
+    compressChunksHint:
+      'ضغط gzip لكل جزء قبل الأرشفة. أوقف الخيار لكتابة ACEC/ACEO خام',
+
     layersSection: 'الطبقات',
     exportInvisibleLayers: 'تصدير الطبقات غير المرئية',
     exportInvisibleLayersHint:

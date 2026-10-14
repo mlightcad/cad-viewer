@@ -10,7 +10,8 @@ import { accmYieldForPaint } from '@mlightcad/data-model'
 import {
   type AcApHtmlExportOptions,
   captureAcApHtmlViewState,
-  resolveAcApHtmlExportOptions
+  resolveAcApHtmlExportOptions,
+  resolveAcApHtmlPackageBuildOptions
 } from './AcApHtmlExportOptions'
 import {
   type AcApHtmlPluginOptions,
@@ -159,11 +160,18 @@ export class AcApHtmlConvertor {
 
       if (resolved.exportFormat === 'multi') {
         t0 = performance.now()
+        const packageBuild = resolveAcApHtmlPackageBuildOptions(resolved)
         const pkg = await buildAcExPackageAsync(snapshot, {
           viewerRuntime,
-          baseName
+          baseName,
+          ...packageBuild
         })
-        logExportTiming('package + gzip chunks', performance.now() - t0)
+        logExportTiming(
+          packageBuild.compressChunks
+            ? 'package + gzip chunks'
+            : 'package chunks',
+          performance.now() - t0
+        )
         t0 = performance.now()
         const zipBytes = zipAcExPackageFiles(pkg)
         logExportTiming('zip package', performance.now() - t0)

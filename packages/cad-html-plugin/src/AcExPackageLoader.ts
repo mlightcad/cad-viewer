@@ -1,6 +1,6 @@
-import { decodeChunkGzip } from './AcExChunkBinaryCodec'
+import { decodeChunkPayload } from './AcExChunkBinaryCodec'
 import { acexGlobalFetch } from './AcExHtmlPackageBootstrap'
-import { decodeOsnapCatalogGzip } from './AcExOsnapCatalogCodec'
+import { decodeOsnapCatalogPayload } from './AcExOsnapCatalogCodec'
 import type { AcExOsnapPrimitive } from './AcExOsnapPrimitiveTypes'
 import {
   ACEX_PACKAGE_VERSION,
@@ -396,7 +396,7 @@ export async function loadAcExPackage(
       throw new Error('Unknown layout for package chunk')
     }
 
-    const decoded = decodeChunkGzip(entry.bytes)
+    const decoded = decodeChunkPayload(entry.bytes)
     if (decoded.layoutBtrId !== chunkRef.layoutBtrId) {
       throw new Error('Chunk layout mismatch')
     }
@@ -478,7 +478,7 @@ export async function loadAcExPackageLayout(
       break
     }
     const chunkRef = entry.item
-    const decoded = decodeChunkGzip(entry.bytes)
+    const decoded = decodeChunkPayload(entry.bytes)
     appendBatches(layout, decoded.lineBatches, decoded.meshBatches)
     loadedChunks += 1
     await options.onChunk?.(layout, chunkRef, {
@@ -561,7 +561,7 @@ export async function loadAcExPackageLayoutOsnap(
     }
     const chunkRef = entry.item
 
-    const decoded = decodeOsnapCatalogGzip(entry.bytes)
+    const decoded = decodeOsnapCatalogPayload(entry.bytes)
     const slice = decoded.primitives
     if (totalPrimitives > 0) {
       for (let p = 0; p < slice.length; p++) {
