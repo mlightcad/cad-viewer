@@ -37,16 +37,14 @@ const unhoverEvent = new MockEventManager<{
   y: number
 }>()
 const canvasToViewport = jest.fn()
-const getIdAt = jest.fn()
+const getEntityById = jest.fn()
 
 const mockDocManager = {
   curDocument: {
     database: {
       tables: {
         blockTable: {
-          modelSpace: {
-            getIdAt
-          }
+          getEntityById
         }
       }
     }
@@ -74,19 +72,19 @@ describe('useHover', () => {
       unmountCallbacks.pop()?.()
     }
     canvasToViewport.mockReset()
-    getIdAt.mockReset()
+    getEntityById.mockReset()
   })
 
   it('tracks hovered entity and converts canvas-local mouse coordinates to viewport coordinates', () => {
     const entity = { objectId: 'entity-1', type: 'LINE' }
-    getIdAt.mockReturnValue(entity)
+    getEntityById.mockReturnValue(entity)
     canvasToViewport.mockReturnValue({ x: 120, y: 80 })
 
     const hover = useHover()
 
     hoverEvent.dispatch({ id: 'entity-1', x: 20, y: 30 })
 
-    expect(getIdAt).toHaveBeenCalledWith('entity-1')
+    expect(getEntityById).toHaveBeenCalledWith('entity-1')
     expect(canvasToViewport).toHaveBeenCalledWith({ x: 20, y: 30 })
     expect(hover.hovered.value).toBe(true)
     expect(hover.entity.value).toEqual(entity)
@@ -95,7 +93,7 @@ describe('useHover', () => {
   })
 
   it('clears hover state on unhover', () => {
-    getIdAt.mockReturnValue({ objectId: 'entity-1', type: 'LINE' })
+    getEntityById.mockReturnValue({ objectId: 'entity-1', type: 'LINE' })
     canvasToViewport.mockReturnValue({ x: 120, y: 80 })
 
     const hover = useHover()
