@@ -28,18 +28,29 @@ export class AcPdfViewportContent extends AcPdfEntity {
   private readonly _modelToPaper: AcGeMatrix3d
   /** VPLAYER frozen layer names for this viewport; undefined when none. */
   private readonly _frozenLayers?: ReadonlySet<string>
+  /** Annotation scale factor for this viewport; undefined when unset. */
+  private readonly _annotationScaleFactor?: number
+  /** Mirrors AutoCAD ANNOALLVISIBLE for unsupported annotative objects. */
+  private readonly _annoAllVisible: boolean
 
   constructor(
     sharedRoots: AcPdfEntity[],
     modelToPaper: AcGeMatrix3d,
     paperBox: AcGeBox2d,
-    frozenLayers: readonly string[] = []
+    frozenLayers: readonly string[] = [],
+    annotationScaleFactor?: number,
+    annoAllVisible: boolean = true
   ) {
     super()
     this._sharedRoots = sharedRoots
     this._modelToPaper = modelToPaper.clone()
     this._frozenLayers =
       frozenLayers.length > 0 ? new Set(frozenLayers) : undefined
+    this._annotationScaleFactor =
+      annotationScaleFactor != null && annotationScaleFactor > 0
+        ? annotationScaleFactor
+        : undefined
+    this._annoAllVisible = annoAllVisible
     this.entityType = 'VIEWPORT_CONTENT'
     // Page framing and clipping both use the paper-space frame.
     this.setClipBox(paperBox)
@@ -110,7 +121,9 @@ export class AcPdfViewportContent extends AcPdfEntity {
     const childCtx: AcPdfPaintContext = {
       ...ctx,
       localToDrawing,
-      frozenLayers: this._frozenLayers
+      frozenLayers: this._frozenLayers,
+      annotationScaleFactor: this._annotationScaleFactor,
+      annoAllVisible: this._annoAllVisible
     }
     for (const root of this._sharedRoots) {
       root.paint(childCtx)

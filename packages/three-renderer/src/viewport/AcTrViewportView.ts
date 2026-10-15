@@ -7,6 +7,7 @@ import {
 import * as THREE from 'three'
 
 import { AcTrRenderer } from '../renderer/AcTrRenderer'
+import { applyAnnotationScalePass } from './AcTrAnnotationScale'
 import { AcTrBaseView } from './AcTrBaseView'
 import {
   type AcTrCssRect,
@@ -437,10 +438,35 @@ export class AcTrViewportView extends AcTrBaseView {
 
     try {
       this.withFrozenLayersHidden(scene, () => {
-        this._renderer.render(scene, this._camera)
+        this.withAnnotationScaleApplied(scene, () => {
+          this._renderer.render(scene, this._camera)
+        })
       })
     } finally {
       this._renderer.setScissorTest(false)
+    }
+  }
+
+  /**
+   * Runs `draw` while annotative model-space drawables are rescaled (or hidden)
+   * for this viewport's annotation scale, then restores prior transforms.
+   */
+  withAnnotationScaleApplied(scene: THREE.Object3D, draw: () => void): void {
+    const factor = this._viewport.annotationScaleFactor
+    if (!(factor > 0)) {
+      draw()
+      return
+    }
+    const restore = applyAnnotationScalePass(scene, {
+      annotationScaleFactor: factor,
+      // AutoCAD ANNOALLVISIBLE initial value is 1 (show unsupported).
+      annoAllVisible:
+        this._renderer.context?.database?.annoallvisible !== false
+    })
+    try {
+      draw()
+    } finally {
+      restore()
     }
   }
 
