@@ -1,4 +1,10 @@
 import {
+  type AcExHtmlBinaryEncoding,
+  acExHtmlBytesToText,
+  acExHtmlTextToBytes,
+  parseAcExHtmlBinaryEncoding
+} from './AcExHtmlBinaryText'
+import {
   decodeSnapshotBinary,
   encodeSnapshotBinary
 } from './AcExSnapshotBinaryCodec'
@@ -15,11 +21,11 @@ const SNAPSHOT_MIME = 'application/vnd.mlightcad.acex-snapshot+binary'
 export type { AcExEncodedSnapshot, AcExSnapshotCompression }
 
 /**
- * Serializes a snapshot to a gzip-compressed base64 string for HTML embedding.
+ * Serializes a snapshot to a gzip-compressed base85 string for HTML embedding.
  *
  * @param snapshot - Snapshot to encode; {@link AcExSnapshot.version} must match
  *   {@link ACEX_SNAPSHOT_VERSION}.
- * @returns Base64 payload and the compression format written into the HTML.
+ * @returns Base85 payload and the compression format written into the HTML.
  * @throws When the snapshot version is unsupported.
  */
 export function encodeSnapshot(snapshot: AcExSnapshot): AcExEncodedSnapshot {
@@ -29,24 +35,32 @@ export function encodeSnapshot(snapshot: AcExSnapshot): AcExEncodedSnapshot {
   const binary = encodeSnapshotBinary(snapshot)
   const compressed = compressSnapshotBinary(binary)
   return {
-    payload: uint8ToBase64(compressed.bytes),
+    payload: acExHtmlBytesToText(compressed.bytes, 'base85'),
     compression: compressed.compression
   }
 }
 
 /**
- * Parses a gzip-compressed base64 snapshot payload from an exported HTML file.
+ * Parses a gzip-compressed snapshot payload from an exported HTML file.
  *
- * @param payload - Base64 text from the snapshot `<script>` element body.
+ * @param payload - Text from the snapshot `<script>` element body.
+ * @param encoding - Text encoding; defaults to `base85` (current export).
+ *   Pass `base64` (or use {@link snapshotPayloadToCompressedBytes} with the
+ *   script MIME) for legacy HTML.
  * @returns Parsed {@link AcExSnapshot} object.
  * @throws When decompression, parsing, or version validation fails.
  */
-export function decodeSnapshot(payload: string): AcExSnapshot {
-  return decodeSnapshotFromCompressedBytes(snapshotPayloadToCompressedBytes(payload))
+export function decodeSnapshot(
+  payload: string,
+  encoding: AcExHtmlBinaryEncoding = 'base85'
+): AcExSnapshot {
+  return decodeSnapshotFromCompressedBytes(
+    snapshotPayloadToCompressedBytes(payload, encoding)
+  )
 }
 
 /**
- * Decodes a gzip-compressed ACEX binary (no base64).
+ * Decodes a gzip-compressed ACEX binary (no text encoding).
  * Prefer this when the runtime already retains compressed bytes for later
  * per-layout rehydration after CPU release.
  */
@@ -59,32 +73,25 @@ export function decodeSnapshotFromCompressedBytes(
 
 /**
  * Converts a monolithic snapshot `<script>` body to gzip bytes.
+ *
+ * @param payload - Script text body.
+ * @param encodingOrMime - Explicit encoding, or a script `type` MIME string.
  */
-export function snapshotPayloadToCompressedBytes(payload: string): Uint8Array {
-  return base64ToUint8(payload.trim())
+export function snapshotPayloadToCompressedBytes(
+  payload: string,
+  encodingOrMime: AcExHtmlBinaryEncoding | string = 'base85'
+): Uint8Array {
+  const encoding: AcExHtmlBinaryEncoding =
+    encodingOrMime === 'base64' || encodingOrMime === 'base85'
+      ? encodingOrMime
+      : parseAcExHtmlBinaryEncoding(encodingOrMime)
+  return acExHtmlTextToBytes(payload, encoding)
 }
 
 /**
  * MIME type stored on the snapshot `<script type="…">` attribute
- * (before the `+gzip;base64` suffix added by {@link packHtml}).
+ * (before the `+gzip;base85` suffix added by {@link packHtml}).
  */
 export function snapshotMimeType(): string {
   return SNAPSHOT_MIME
-}
-
-function uint8ToBase64(bytes: Uint8Array): string {
-  let binary = ''
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]!)
-  }
-  return btoa(binary)
-}
-
-function base64ToUint8(base64: string): Uint8Array {
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  return bytes
 }

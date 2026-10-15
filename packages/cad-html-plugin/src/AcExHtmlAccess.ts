@@ -1,3 +1,8 @@
+import {
+  type AcExHtmlBinaryEncoding,
+  acExHtmlBytesToText,
+  acExHtmlTextToBytes
+} from './AcExHtmlBinaryText'
 import type { AcExEncodedSnapshot } from './AcExSnapshotCodec'
 
 /** Access-control manifest schema version embedded in exported HTML. */
@@ -222,16 +227,20 @@ export async function decryptAcExHtmlBytes(
 
 /**
  * Encrypts a gzip-compressed snapshot payload for password-protected HTML export.
+ *
+ * @param encoding - Text encoding of {@link payload} and the returned ciphertext
+ *   (defaults to `base85`, matching {@link encodeSnapshot}).
  */
 export async function encryptAcExHtmlSnapshotPayload(
   password: string,
-  payload: string
+  payload: string,
+  encoding: AcExHtmlBinaryEncoding = 'base85'
 ): Promise<{ encryptedPayload: string; salt: string }> {
   const { key, salt } = await createAcExHtmlAccessKey(password)
-  const plainBytes = new Uint8Array(base64ToUint8(payload))
+  const plainBytes = acExHtmlTextToBytes(payload, encoding)
   const combined = await encryptAcExHtmlBytes(key, plainBytes)
   return {
-    encryptedPayload: uint8ToBase64(combined),
+    encryptedPayload: acExHtmlBytesToText(combined, encoding),
     salt
   }
 }
@@ -239,19 +248,21 @@ export async function encryptAcExHtmlSnapshotPayload(
 /**
  * Decrypts a password-protected snapshot payload from an exported HTML file.
  *
+ * @param encoding - Text encoding of the ciphertext and the returned gzip payload.
  * @throws When the password is wrong or the ciphertext is invalid.
  */
 export async function decryptAcExHtmlSnapshotPayload(
   password: string,
   encryptedPayload: string,
-  saltBase64: string
+  saltBase64: string,
+  encoding: AcExHtmlBinaryEncoding = 'base85'
 ): Promise<string> {
   const { key } = await createAcExHtmlAccessKey(password, saltBase64)
   const plainBytes = await decryptAcExHtmlBytes(
     key,
-    base64ToUint8(encryptedPayload)
+    acExHtmlTextToBytes(encryptedPayload, encoding)
   )
-  return uint8ToBase64(plainBytes)
+  return acExHtmlBytesToText(plainBytes, encoding)
 }
 
 /** Encodes bytes as standard base64 (for HTML embedding). */

@@ -1,3 +1,4 @@
+import { acExHtmlBytesToText } from '../src/AcExHtmlBinaryText'
 import {
   decodeSnapshot,
   decodeSnapshotFromCompressedBytes,
@@ -104,6 +105,55 @@ describe('AcExSnapshotCodec', () => {
     const compressed = snapshotPayloadToCompressedBytes(encoded.payload)
     const fromBytes = decodeSnapshotFromCompressedBytes(compressed)
     expect(fromBytes.meta.extents.maxX).toBe(10)
+  })
+
+  it('decodes legacy base64 payloads and MIME-tagged script bodies', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0x000000,
+        layerCount: 0,
+        entityCount: 0
+      },
+      layers: [],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: '*Model_Space',
+          isModelSpace: true,
+          lineBatches: [],
+          meshBatches: []
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+    const encoded = encodeSnapshot(snapshot)
+    const gzipBytes = snapshotPayloadToCompressedBytes(encoded.payload, 'base85')
+    const legacyPayload = acExHtmlBytesToText(gzipBytes, 'base64')
+
+    const fromExplicit = decodeSnapshot(legacyPayload, 'base64')
+    expect(fromExplicit.meta.extents.maxX).toBe(10)
+
+    const fromMime = snapshotPayloadToCompressedBytes(
+      legacyPayload,
+      'application/vnd.mlightcad.acex-snapshot+binary+gzip;base64'
+    )
+    expect(
+      decodeSnapshotFromCompressedBytes(fromMime).meta.extents.maxX
+    ).toBe(10)
   })
 
   it('round-trips binary geometry buffers', () => {

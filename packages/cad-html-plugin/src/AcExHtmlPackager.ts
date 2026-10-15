@@ -75,8 +75,8 @@ export function packHtml(
       )}</script>\n`
     : ''
   const snapshotType = encrypted
-    ? `${mime}+aes-gcm;base64`
-    : `${mime}+${compression};base64`
+    ? `${mime}+aes-gcm;base85`
+    : `${mime}+${compression};base85`
 
   return `<!DOCTYPE html>
 <html lang="${htmlLang}">

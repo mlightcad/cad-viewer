@@ -20,6 +20,12 @@ import {
   decryptAcExHtmlBytes,
   encryptAcExHtmlBytes
 } from './AcExHtmlAccess'
+import {
+  type AcExHtmlBinaryEncoding,
+  acExHtmlBytesToText,
+  acExHtmlTextToBytes,
+  parseAcExHtmlBinaryEncoding
+} from './AcExHtmlBinaryText'
 import { resolveAcExHtmlLocale } from './AcExHtmlI18n'
 import {
   ACEX_DEFAULT_MANIFEST_FILE,
@@ -41,12 +47,20 @@ import {
 } from './AcExPackageTypes'
 import type { AcExSnapshot } from './AcExSnapshotTypes'
 
-/** MIME type for embedded chunk `<script>` bodies (base64 gzip ACEC/ACEO). */
+/** MIME type for embedded chunk `<script>` bodies (base85 gzip ACEC/ACEO). */
 export const ACEX_EMBEDDED_CHUNK_MIME =
+  'application/vnd.mlightcad.acex-chunk;base85'
+
+/** Legacy MIME type kept for reading older self-contained HTML exports. */
+export const ACEX_EMBEDDED_CHUNK_MIME_BASE64 =
   'application/vnd.mlightcad.acex-chunk;base64'
 
-/** MIME type when each chunk body is AES-GCM wrapped (`iv||ciphertext` base64). */
+/** MIME type when each chunk body is AES-GCM wrapped (`iv||ciphertext` base85). */
 export const ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME =
+  'application/vnd.mlightcad.acex-chunk+aes-gcm;base85'
+
+/** Legacy encrypted MIME type (base64 body). */
+export const ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME_BASE64 =
   'application/vnd.mlightcad.acex-chunk+aes-gcm;base64'
 
 /** Attribute that maps an embedded script to a package-relative chunk href. */
@@ -202,7 +216,7 @@ function buildPlainChunkScripts(files: AcExPackageFile[]): string {
     parts.push(
       `  <script type="${ACEX_EMBEDDED_CHUNK_MIME}" ${ACEX_EMBEDDED_CHUNK_HREF_ATTR}="${escapeHtmlAttr(
         file.path
-      )}">${acExHtmlBytesToBase64(file.bytes)}</script>\n`
+      )}">${acExHtmlBytesToText(file.bytes, 'base85')}</script>\n`
     )
   }
   return parts.join('')
@@ -219,10 +233,24 @@ async function buildEncryptedChunkScripts(
     parts.push(
       `  <script type="${ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME}" ${ACEX_EMBEDDED_CHUNK_HREF_ATTR}="${escapeHtmlAttr(
         file.path
-      )}">${acExHtmlBytesToBase64(encrypted)}</script>\n`
+      )}">${acExHtmlBytesToText(encrypted, 'base85')}</script>\n`
     )
   }
   return parts.join('')
+}
+
+function decodeEmbeddedChunkScript(script: Element): Uint8Array | undefined {
+  const raw = script.textContent ?? ''
+  if (raw.length === 0) return undefined
+  const payload =
+    raw.charCodeAt(0) <= 32 || raw.charCodeAt(raw.length - 1) <= 32
+      ? raw.trim()
+      : raw
+  if (payload.length === 0) return undefined
+  const encoding: AcExHtmlBinaryEncoding = parseAcExHtmlBinaryEncoding(
+    script.getAttribute('type')
+  )
+  return acExHtmlTextToBytes(payload, encoding)
 }
 
 /**
@@ -274,14 +302,9 @@ export function collectAcExEmbeddedChunkBytes(
   scripts.forEach(script => {
     const href = script.getAttribute(ACEX_EMBEDDED_CHUNK_HREF_ATTR)?.trim()
     if (!href) return
-    const raw = script.textContent ?? ''
-    if (raw.length === 0) return
-    const payload =
-      raw.charCodeAt(0) <= 32 || raw.charCodeAt(raw.length - 1) <= 32
-        ? raw.trim()
-        : raw
-    if (payload.length === 0) return
-    out.set(href, acExHtmlBase64ToBytes(payload))
+    const bytes = decodeEmbeddedChunkScript(script)
+    if (!bytes) return
+    out.set(href, bytes)
   })
   return out
 }
@@ -301,22 +324,14 @@ export function readAcExEmbeddedChunkFromDom(
     const script = scripts[i]!
     const scriptHref = script.getAttribute(ACEX_EMBEDDED_CHUNK_HREF_ATTR)?.trim()
     if (scriptHref !== href) continue
-    const raw = script.textContent ?? ''
-    if (raw.length === 0) return undefined
-    // Avoid String#trim on multi-megabyte payloads when packer wrote no padding.
-    const payload =
-      raw.charCodeAt(0) <= 32 || raw.charCodeAt(raw.length - 1) <= 32
-        ? raw.trim()
-        : raw
-    if (payload.length === 0) return undefined
-    return acExHtmlBase64ToBytes(payload)
+    return decodeEmbeddedChunkScript(script)
   }
   return undefined
 }
 
 /**
  * Decodes one embedded chunk from `<script data-acex-href>` and removes the
- * script node from the DOM so its multi-megabyte base64 text can be GC'd.
+ * script node from the DOM so its multi-megabyte text payload can be GC'd.
  *
  * The decoded bytes are returned for the caller to cache. Re-reading the same
  * href afterwards returns `undefined` because the node is gone — callers must
@@ -333,15 +348,8 @@ export function consumeAcExEmbeddedChunkFromDom(
     const script = scripts[i]!
     const scriptHref = script.getAttribute(ACEX_EMBEDDED_CHUNK_HREF_ATTR)?.trim()
     if (scriptHref !== href) continue
-    const raw = script.textContent ?? ''
-    if (raw.length === 0) return undefined
-    // Avoid String#trim on multi-megabyte payloads when packer wrote no padding.
-    const payload =
-      raw.charCodeAt(0) <= 32 || raw.charCodeAt(raw.length - 1) <= 32
-        ? raw.trim()
-        : raw
-    if (payload.length === 0) return undefined
-    const bytes = acExHtmlBase64ToBytes(payload)
+    const bytes = decodeEmbeddedChunkScript(script)
+    if (!bytes) return undefined
     // Detach the script node after decoding so a decode failure leaves the
     // node in the DOM for inspection or retry.
     script.remove()
@@ -353,7 +361,7 @@ export function consumeAcExEmbeddedChunkFromDom(
 /**
  * Creates a fetch for an embedded package that reads each chunk from the HTML
  * document once, decodes it, caches the bytes, and removes the `<script>` node
- * so the multi-megabyte base64 text can be garbage collected.
+ * so the multi-megabyte text payload can be garbage collected.
  *
  * Subsequent reads (layout switches, OSNAP rebuilds) are served from the
  * in-memory byte cache, so progressive rendering and re-fetch on layout
