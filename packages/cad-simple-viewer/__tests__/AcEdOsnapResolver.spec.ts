@@ -737,6 +737,59 @@ describe('AcEdOsnapResolver', () => {
     })
   })
 
+  it('snaps to the hovered nested INSERT instance, not the first DFS match (#745)', () => {
+    withWorkingDatabase(db => {
+      const cell = new AcDbBlockTableRecord()
+      cell.name = 'CELL_OSNAP_745'
+      db.tables.blockTable.add(cell)
+      const line = new AcDbLine(
+        new AcGePoint3d(0, 0, 0),
+        new AcGePoint3d(1, 0, 0)
+      )
+      cell.appendEntity(line)
+
+      const row = new AcDbBlockTableRecord()
+      row.name = 'ROW_OSNAP_745'
+      db.tables.blockTable.add(row)
+      for (const x of [0, 100]) {
+        const nested = new AcDbBlockReference('CELL_OSNAP_745')
+        nested.position = new AcGePoint3d(x, 0, 0)
+        row.appendEntity(nested)
+      }
+
+      const insert = new AcDbBlockReference('ROW_OSNAP_745')
+      db.tables.blockTable.modelSpace.appendEntity(insert)
+
+      AcApSettingManager.instance.osnapModes = acdbOsnapModesToMask([
+        AcDbOsnapMode.EndPoint
+      ])
+
+      const view = createMockView([
+        {
+          id: insert.objectId,
+          children: [
+            {
+              id: `${line.objectId}#1`,
+              minX: 100,
+              minY: -0.1,
+              maxX: 101,
+              maxY: 0.1
+            }
+          ]
+        }
+      ])
+      const resolver = new AcEdOsnapResolver(view)
+      const snap = resolver.resolve({
+        cursorWcs: { x: 100.9, y: 0 },
+        hitRadiusPx: 20
+      })
+
+      expect(snap?.type).toBe(AcDbOsnapMode.EndPoint)
+      expect(snap?.x).toBeCloseTo(101, 5)
+      expect(snap?.y).toBeCloseTo(0, 5)
+    })
+  })
+
   it('transforms nested insert centers through the parent block transform', () => {
     withWorkingDatabase(db => {
       const inner = new AcDbBlockTableRecord()

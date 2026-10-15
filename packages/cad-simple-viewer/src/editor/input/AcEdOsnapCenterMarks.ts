@@ -87,11 +87,23 @@ function transformMark(
 
 /**
  * Child spatial-index ids may get a `#n` suffix when the same object appears
- * more than once in a block. Strip that before matching database object ids.
+ * more than once in a block (see {@link uniquifySpatialItemIds}). Strip that
+ * before matching database object ids.
  */
 export function canonicalGsMark(id: AcDbObjectId): AcDbObjectId {
   if (typeof id !== 'string') return id
   return id.replace(/#\d+$/, '')
+}
+
+/**
+ * 0-based occurrence index encoded in a spatial-index child id (`id` → 0,
+ * `id#1` → 1, …). Matches depth-first leaf order used when flattening nested
+ * INSERT child boxes.
+ */
+export function gsMarkOccurrence(id: AcDbObjectId): number {
+  if (typeof id !== 'string') return 0
+  const match = /#(\d+)$/.exec(id)
+  return match ? Number(match[1]) : 0
 }
 
 function polylineVertices(entity: AcDbPolyline | AcDb2dPolyline): Array<{
@@ -198,31 +210,101 @@ function fullInsertionTransform(blockRef: AcDbBlockReference): AcGeMatrix3d {
  *
  * Returns the leaf entity and the cumulative transform that maps its local
  * geometry into the caller space (typically WCS).
+ *
+ * When `gsMark` carries a `#n` suffix, the n-th depth-first match of the
+ * canonical object id is returned so duplicate nested INSERT instances are
+ * disambiguated (#745). When no suffix is present and `hintPoint` is given,
+ * nested INSERTs whose extents do not contain the hint are skipped so the
+ * instance under the cursor is preferred over the first DFS match.
  */
 export function resolveBlockSubEntity(
   blockRef: AcDbBlockReference,
   gsMark: AcDbObjectId,
-  parentMat: AcGeMatrix3d = new AcGeMatrix3d()
+  parentMat: AcGeMatrix3d = new AcGeMatrix3d(),
+  hintPoint?: AcGePoint3dLike
 ): { entity: AcDbEntity; transform: AcGeMatrix3d } | undefined {
+  const occurrence = gsMarkOccurrence(gsMark)
+  const result = resolveBlockSubEntityOccurrence(
+    blockRef,
+    canonicalGsMark(gsMark),
+    occurrence,
+    parentMat,
+    hintPoint,
+    /* allowHintPrune */ occurrence === 0 && hintPoint != null
+  )
+  return result.found
+}
+
+/** XY containment with padding — spatial child boxes have no Z (#745). */
+function extentsContainXY(
+  extents: { min: AcGePoint3dLike; max: AcGePoint3dLike },
+  point: AcGePoint3dLike,
+  pad = 1e-4
+): boolean {
+  return (
+    point.x >= extents.min.x - pad &&
+    point.x <= extents.max.x + pad &&
+    point.y >= extents.min.y - pad &&
+    point.y <= extents.max.y + pad
+  )
+}
+
+function resolveBlockSubEntityOccurrence(
+  blockRef: AcDbBlockReference,
+  targetId: AcDbObjectId,
+  remaining: number,
+  parentMat: AcGeMatrix3d,
+  hintPoint: AcGePoint3dLike | undefined,
+  allowHintPrune: boolean
+):
+  | { found: { entity: AcDbEntity; transform: AcGeMatrix3d }; remaining: number }
+  | { found: undefined; remaining: number } {
   const blockTableRecord = blockRef.blockTableRecord
-  if (!blockTableRecord) return undefined
+  if (!blockTableRecord) {
+    return { found: undefined, remaining }
+  }
 
   const thisMat = new AcGeMatrix3d().multiplyMatrices(
     parentMat,
     fullInsertionTransform(blockRef)
   )
-  const targetId = canonicalGsMark(gsMark)
+
+  let localHint: AcGePoint3d | undefined
+  if (allowHintPrune && hintPoint != null && remaining === 0) {
+    localHint = new AcGePoint3d(hintPoint).applyMatrix4(thisMat.clone().invert())
+  }
 
   for (const entity of blockTableRecord.newIterator()) {
-    if (entity.objectId === gsMark || entity.objectId === targetId) {
-      return { entity, transform: thisMat }
+    if (entity.objectId === targetId) {
+      if (remaining > 0) {
+        remaining -= 1
+        continue
+      }
+      return { found: { entity, transform: thisMat }, remaining: 0 }
     }
     if (entity instanceof AcDbBlockReference) {
-      const nested = resolveBlockSubEntity(entity, gsMark, thisMat)
-      if (nested) return nested
+      if (allowHintPrune && remaining === 0 && localHint) {
+        const extents = entity.geometricExtents
+        // Spatial hints are XY-only (childBoxHint uses z: 0). A full 3D
+        // containsPoint would drop elevated nested INSERTs whose Z range
+        // does not include 0 after the parent invert.
+        if (!extents.isEmpty() && !extentsContainXY(extents, localHint)) {
+          continue
+        }
+      }
+      const nested = resolveBlockSubEntityOccurrence(
+        entity,
+        targetId,
+        remaining,
+        thisMat,
+        hintPoint,
+        allowHintPrune
+      )
+      if (nested.found) return nested
+      remaining = nested.remaining
     }
   }
-  return undefined
+  return { found: undefined, remaining }
 }
 
 function collectBlockCenterMarks(
@@ -234,9 +316,14 @@ function collectBlockCenterMarks(
     return collectFromOsnapCenter(blockRef, pickPoint)
   }
 
-  const found = resolveBlockSubEntity(blockRef, gsMark)
+  const found = resolveBlockSubEntity(
+    blockRef,
+    gsMark,
+    new AcGeMatrix3d(),
+    pickPoint
+  )
   if (!found) {
-    return collectFromOsnapCenter(blockRef, pickPoint, canonicalGsMark(gsMark))
+    return collectFromOsnapCenter(blockRef, pickPoint, gsMark)
   }
 
   const inverse = found.transform.clone().invert()
