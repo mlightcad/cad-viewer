@@ -643,6 +643,43 @@ export function buildOffsetRingDirectGeometry(
   }
 }
 
+/**
+ * Midpoint loop between index-aligned outer/inner offset rings.
+ *
+ * Wide polylines are filled in world units. At fit-zoom a small
+ * `constantWidth` under a large INSERT scale often projects to ≪ 1 device
+ * pixel and disappears. Stroking this centerline (hairline / lineweight)
+ * keeps the frame visible while the fill still shows true width when zoomed
+ * in — typical for title-block frames.
+ *
+ * @returns Closed centerline (≥ 3 points), or `null` when the rings are not
+ *   aligned.
+ */
+export function buildOffsetRingCenterline(
+  outer: AcGePoint3dLike[],
+  inner: AcGePoint3dLike[]
+): AcGePoint3dLike[] | null {
+  const outerCount = openLoopCount(outer)
+  const innerCount = openLoopCount(inner)
+  if (outerCount !== innerCount || outerCount < 2) {
+    return null
+  }
+
+  const centerline: AcGePoint3dLike[] = new Array(outerCount + 1)
+  for (let i = 0; i < outerCount; i++) {
+    const outerPoint = outer[i]
+    const innerPoint = inner[i]
+    centerline[i] = {
+      x: (outerPoint.x + innerPoint.x) * 0.5,
+      y: (outerPoint.y + innerPoint.y) * 0.5,
+      z: ((outerPoint.z ?? 0) + (innerPoint.z ?? 0)) * 0.5
+    }
+  }
+  const first = centerline[0]
+  centerline[outerCount] = { x: first.x, y: first.y, z: first.z }
+  return centerline
+}
+
 /** Drops a repeated closing vertex so a closed loop can be stitched by index. */
 function openLoopCount(points: Array<{ x: number; y: number }>): number {
   const count = points.length

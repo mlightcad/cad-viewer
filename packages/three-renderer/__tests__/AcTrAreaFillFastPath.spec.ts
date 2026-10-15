@@ -13,6 +13,7 @@ import * as THREE from 'three'
 import {
   type AcTrBuiltDirectGeometry,
   buildAreaGeometry,
+  buildOffsetRingCenterline,
   buildOffsetRingDirectGeometry,
   getAreaBuildStats,
   resetAreaBuildStats,
@@ -442,6 +443,47 @@ describe('AcDbSolid / AcDbTrace fill capacity', () => {
     }
 
     expectFastPathMatchesGeneral(areaFromVertices(trace.subGetGripPoints()))
+  })
+})
+
+describe('buildOffsetRingCenterline', () => {
+  it('returns a closed midpoint loop for aligned outer/inner rings', () => {
+    const outer: AcGePoint3dLike[] = [
+      { x: 0, y: 0, z: 0 },
+      { x: 10, y: 0, z: 0 },
+      { x: 10, y: 10, z: 0 },
+      { x: 0, y: 10, z: 0 }
+    ]
+    const inner: AcGePoint3dLike[] = [
+      { x: 1, y: 1, z: 0 },
+      { x: 9, y: 1, z: 0 },
+      { x: 9, y: 9, z: 0 },
+      { x: 1, y: 9, z: 0 }
+    ]
+    const centerline = buildOffsetRingCenterline(outer, inner)
+    expect(centerline).not.toBeNull()
+    if (!centerline) return
+    // 4 corners + closing vertex
+    expect(centerline).toHaveLength(5)
+    expect(centerline[0]).toEqual({ x: 0.5, y: 0.5, z: 0 })
+    expect(centerline[1]).toEqual({ x: 9.5, y: 0.5, z: 0 })
+    expect(centerline[4]).toEqual(centerline[0])
+  })
+
+  it('returns null when outer/inner vertex counts disagree', () => {
+    expect(
+      buildOffsetRingCenterline(
+        [
+          { x: 0, y: 0, z: 0 },
+          { x: 1, y: 0, z: 0 },
+          { x: 1, y: 1, z: 0 }
+        ],
+        [
+          { x: 0.1, y: 0.1, z: 0 },
+          { x: 0.9, y: 0.1, z: 0 }
+        ]
+      )
+    ).toBeNull()
   })
 })
 

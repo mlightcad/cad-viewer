@@ -34,7 +34,10 @@ import {
   AcTrPolygon,
   AcTrShape
 } from '../object'
-import { buildOffsetRingDirectGeometry } from '../object/AcTrLineGeometryBuilder'
+import {
+  buildOffsetRingCenterline,
+  buildOffsetRingDirectGeometry
+} from '../object/AcTrLineGeometryBuilder'
 import { AcTrLinePatternShaderProbe } from '../style/AcTrLinePatternShaderProbe'
 import { AcTrMaterialManager } from '../style/AcTrMaterialManager'
 import { AcTrSubEntityTraitsUtil } from '../util'
@@ -143,8 +146,10 @@ export type AcTrDirectCapturePayload =
     }
   | {
       /**
-       * Closed wide polyline captured from {@link AcTrRenderer.offsetRing}.
-       * `outer[i]` and `inner[i]` are the two offsets of one centerline sample.
+       * Closed wide polyline payload shape retained for direct-batch rebuild.
+       * {@link AcTrRenderer.offsetRing} no longer captures this kind — fill +
+       * centerline stroke cannot share one payload — but batch rebuild still
+       * accepts it. `outer[i]` / `inner[i]` are the two offsets of one sample.
        */
       kind: 'offsetRing'
       outer: AcGePoint3dLike[]
@@ -758,12 +763,17 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
 
   /**
    * @inheritdoc
+   *
+   * Draws the filled offset ring and a centerline stroke. The fill carries
+   * true world-space width; the stroke stays ≥ ~1 device pixel so title-block
+   * frames (small `constantWidth` × large INSERT scale) do not vanish at
+   * fit-zoom.
    */
   offsetRing(outer: AcGePoint3dLike[], inner: AcGePoint3dLike[]) {
     if (this._directCapture !== 'off') {
-      if (this.tryCaptureDirectPayload({ kind: 'offsetRing', outer, inner })) {
-        return this.createDirectCapturePlaceholder()
-      }
+      // Fill + centerline cannot share one direct payload; fall back so the
+      // hairline visibility stroke is not dropped.
+      this.missDirectCapture()
       return this.createDirectCapturePlaceholder()
     }
     const built = buildOffsetRingDirectGeometry(
@@ -772,11 +782,21 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
       this._subEntityTraits,
       this._context
     )
-    if (!built) {
-      // Strip triangulation rejects collapsed or non-aligned loops. Rebuild
-      // the same two boundaries as an area so the fill is not dropped.
-      return this.area(this.offsetRingArea(outer, inner))
+    const fill = built
+      ? this.createOffsetRingFillEntity(built)
+      : // Strip triangulation rejects collapsed or non-aligned loops. Rebuild
+        // the same two boundaries as an area so the fill is not dropped.
+        this.area(this.offsetRingArea(outer, inner))
+    const centerline = buildOffsetRingCenterline(outer, inner)
+    if (!centerline) {
+      return fill
     }
+    return this.group([fill, this.linePoints(centerline)])
+  }
+
+  private createOffsetRingFillEntity(
+    built: NonNullable<ReturnType<typeof buildOffsetRingDirectGeometry>>
+  ): AcTrEntity {
     const entity = new AcTrEntity(this._context)
     const mesh = new THREE.Mesh(built.geometry, built.material)
     mesh.position.copy(built.worldOffset)

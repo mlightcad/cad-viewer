@@ -282,7 +282,8 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
    * @inheritdoc
    *
    * SVG has no separate ring primitive. Rebuild the two loops as an area so
-   * the fill matches the previous closed wide-polyline output.
+   * the fill matches the previous closed wide-polyline output, and stroke the
+   * centerline so sub-pixel world widths stay visible (same as WebGL).
    */
   offsetRing(outer: AcGePoint3dLike[], inner: AcGePoint3dLike[]) {
     const area = new AcGeArea2d()
@@ -298,7 +299,12 @@ export class AcSvgRenderer implements AcGiRenderer<AcSvgEntity> {
         true
       )
     )
-    return this.area(area)
+    const fill = this.area(area)
+    const centerline = offsetRingCenterline(outer, inner)
+    if (!centerline) {
+      return fill
+    }
+    return this.group([fill, this.lines(centerline)])
   }
 
   /**
@@ -503,3 +509,45 @@ ${elements}
 }
 
 const _tempEntity = /*@__PURE__*/ new AcSvgEntity()
+
+/**
+ * Midpoint loop for wide-polyline offset rings (sub-pixel visibility stroke).
+ * Same rules as three-renderer's `buildOffsetRingCenterline`: equal open-loop
+ * counts after dropping a repeated closing vertex.
+ */
+function offsetRingCenterline(
+  outer: AcGePoint3dLike[],
+  inner: AcGePoint3dLike[]
+): AcGePoint3dLike[] | null {
+  const outerCount = openLoopCount(outer)
+  const innerCount = openLoopCount(inner)
+  if (outerCount !== innerCount || outerCount < 2) {
+    return null
+  }
+  const centerline: AcGePoint3dLike[] = new Array(outerCount + 1)
+  for (let i = 0; i < outerCount; i++) {
+    const outerPoint = outer[i]
+    const innerPoint = inner[i]
+    centerline[i] = {
+      x: (outerPoint.x + innerPoint.x) * 0.5,
+      y: (outerPoint.y + innerPoint.y) * 0.5,
+      z: ((outerPoint.z ?? 0) + (innerPoint.z ?? 0)) * 0.5
+    }
+  }
+  const first = centerline[0]
+  centerline[outerCount] = { x: first.x, y: first.y, z: first.z }
+  return centerline
+}
+
+/** Drops a repeated closing vertex so a closed loop can be stitched by index. */
+function openLoopCount(points: Array<{ x: number; y: number }>): number {
+  const count = points.length
+  if (
+    count > 1 &&
+    points[0].x === points[count - 1].x &&
+    points[0].y === points[count - 1].y
+  ) {
+    return count - 1
+  }
+  return count
+}
