@@ -144,22 +144,51 @@ export function acapNormalizeFindText(
  * space, decodes `\~`, `\U+XXXX`, stacked fractions and `%%c %%d %%p`.
  */
 export function acapMTextToPlainText(contents: string): string {
-  const text = contents.replace(
-    /\\(U\+[0-9a-fA-F]{4}|[PX~]|S[^;]*;|[fFHWTQCcAaRrp][^;]*;|[LlOoKk]|[\\{}])|[{}]/g,
-    (_match, code: string | undefined) => {
-      if (!code) return '' // bare group brace
-      if (code.startsWith('U+'))
-        return String.fromCharCode(parseInt(code.slice(2), 16))
-      if (code === 'P' || code === 'X' || code === '~') return ' '
-      if (code === '\\' || code === '{' || code === '}') return code
-      if (code[0] === 'S') {
-        const stack = /^S([^;^#/]*)[\^#/]?([^;]*);$/.exec(code)
-        return stack ? (stack[2] ? `${stack[1]}/${stack[2]}` : stack[1]) : ''
+  // Match only fixed-length introducers. Searching for a missing semicolon
+  // inside a global regex would rescan the suffix at every formatting code.
+  const codes = /\\(U\+[0-9a-fA-F]{4}|[PX~SfFHWTQCcAaRrpLlOoKk\\{}])|[{}]/g
+  const parts: string[] = []
+  let lastIndex = 0
+  let noSemicolon = false
+  let match: RegExpExecArray | null
+  while ((match = codes.exec(contents))) {
+    parts.push(contents.slice(lastIndex, match.index))
+    const code = match[1]
+    let replacement = ''
+    if (code?.startsWith('U+')) {
+      replacement = String.fromCharCode(parseInt(code.slice(2), 16))
+    } else if (code === 'P' || code === 'X' || code === '~') {
+      replacement = ' '
+    } else if (code === '\\' || code === '{' || code === '}') {
+      replacement = code
+    } else if (code && /[SfFHWTQCcAaRrp]/.test(code)) {
+      const end = noSemicolon ? -1 : contents.indexOf(';', codes.lastIndex)
+      if (end === -1) {
+        // All later positions also lack a terminator. Keep incomplete codes
+        // literal, without searching the same suffix again.
+        noSemicolon = true
+        replacement = match[0]
+      } else {
+        if (code === 'S') {
+          const stack = contents.slice(codes.lastIndex, end)
+          const separator = stack.search(/[\^#/]/)
+          if (separator === -1) {
+            replacement = stack
+          } else {
+            const denominator = stack.slice(separator + 1)
+            replacement =
+              stack.slice(0, separator) + (denominator ? `/${denominator}` : '')
+          }
+        }
+        // Consume the complete formatting code, including any nested escapes.
+        codes.lastIndex = end + 1
       }
-      return '' // font, height, colour, underline… codes
     }
-  )
-  return decodeControlCodes(text).replace(WHITESPACE, ' ').trim()
+    parts.push(replacement)
+    lastIndex = codes.lastIndex
+  }
+  parts.push(contents.slice(lastIndex))
+  return decodeControlCodes(parts.join('')).replace(WHITESPACE, ' ').trim()
 }
 
 /** Decodes `%%c`, `%%d`, `%%p` special-character codes. */
