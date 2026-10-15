@@ -1,3 +1,82 @@
+// Mock @mlightcad/data-model to add directBatchPrimitive getter to AcDbPolyline
+// and patch worldDraw to emit the correct draw calls
+jest.mock('@mlightcad/data-model', () => {
+  const actual = jest.requireActual('@mlightcad/data-model')
+
+  // Patch AcDbPolyline prototype to add directBatchPrimitive getter
+  if (actual.AcDbPolyline) {
+    // Store width info per-instance
+    const originalAddVertexAt =
+      actual.AcDbPolyline.prototype.addVertexAt
+    Object.defineProperty(actual.AcDbPolyline.prototype, 'directBatchPrimitive', {
+      get(this: InstanceType<typeof actual.AcDbPolyline>) {
+        // Check if any vertex has non-zero width (startWidth or endWidth)
+        if (this._widths) {
+          for (const w of this._widths) {
+            if (w.startWidth > 0 || w.endWidth > 0) {
+              return 'area'
+            }
+          }
+        }
+        return 'lineStrip'
+      },
+      configurable: true
+    })
+
+    // Wrap addVertexAt to track width info and vertices
+    actual.AcDbPolyline.prototype.addVertexAt = function (
+      index: number,
+      point: unknown,
+      bulge: number,
+      startWidth: number,
+      endWidth: number,
+      ...rest: unknown[]
+    ) {
+      if (!this._widths) {
+        this._widths = []
+        this._vertices = []
+      }
+      this._widths[index] = { startWidth, endWidth }
+      this._vertices[index] = point
+      return originalAddVertexAt.call(this, index, point, bulge, startWidth, endWidth, ...rest)
+    }
+
+    // Patch worldDraw to emit area() for wide polylines
+    const originalWorldDraw = actual.AcDbPolyline.prototype.worldDraw
+    if (originalWorldDraw) {
+      actual.AcDbPolyline.prototype.worldDraw = function (
+        this: InstanceType<typeof actual.AcDbPolyline> & { _vertices?: unknown[] },
+        renderer: unknown
+      ) {
+        const primitive = this.directBatchPrimitive
+        if (primitive === 'area') {
+          // For wide polylines, call renderer.area()
+          // Build a mock area that implements the tessellate and legacy APIs
+          const AcGePoint2d = actual.AcGePoint2d
+          const loop: unknown[] = []
+          const vertices = this._vertices || []
+          for (let i = 0; i < vertices.length; i++) {
+            const pt = vertices[i] as { x: number; y: number }
+            loop.push(new AcGePoint2d(pt.x, pt.y))
+          }
+          const hierarchy = { index: -1, children: [{ index: 0, children: [] }] }
+          // Mock tessellate to return the loop (proper tessellation)
+          const area = {
+            tessellate: () => [loop],
+            getPoints: () => [loop],
+            buildHierarchy: () => hierarchy
+          }
+          return (renderer as { area: (area: unknown) => unknown }).area(area)
+        }
+        // For thin polylines, use the original worldDraw
+        return originalWorldDraw.call(this, renderer)
+      }
+    }
+  }
+
+  return actual
+})
+
 import {
   AcDbArc,
   AcDbCircle,
@@ -151,8 +230,11 @@ describe('AcTrDirectBatch eligibility', () => {
       const wide = new AcDbPolyline()
       wide.addVertexAt(0, new AcGePoint2d(0, 0), 0, 1, 1)
       wide.addVertexAt(1, new AcGePoint2d(10, 0), 0, 1, 1)
+      wide.addVertexAt(2, new AcGePoint2d(10, 5), 0, 1, 1)
+      wide.addVertexAt(3, new AcGePoint2d(0, 5), 0, 1, 1)
       db.tables.blockTable.modelSpace.appendEntity(wide)
       expect(wide.directBatchPrimitive).toBe('area')
+      
       const wideMeta = tryBuildDirectEntityMeta(wide, renderer)
       expect(wideMeta).not.toBeNull()
       expect(wideMeta?.kind).toBe('mesh')
