@@ -166,6 +166,8 @@ export default {
     value: 'Değer',
     howToApply: 'Uygulama şekli',
     propObjectType: 'Nesne türü',
+    propHandle: 'Handle',
+    handleValuePlaceholder: 'Varlık handle değerini girin',
     propLayer: 'Katman',
     propColor: 'Renk',
     propLineType: 'Çizgi tipi',

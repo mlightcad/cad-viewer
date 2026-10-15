@@ -163,6 +163,8 @@ export default {
     value: 'Hodnota',
     howToApply: 'Způsob použití',
     propObjectType: 'Typ objektu',
+    propHandle: 'Handle',
+    handleValuePlaceholder: 'Zadejte handle entity',
     propLayer: 'Hladina',
     propColor: 'Barva',
     propLineType: 'Typ čáry',

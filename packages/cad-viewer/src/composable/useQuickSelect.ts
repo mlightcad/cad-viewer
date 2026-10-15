@@ -19,9 +19,11 @@ export type MlQuickSelectApplyTo = 'entireDrawing' | 'currentSelection'
 /**
  * Properties supported by Quick Select filtering.
  * All values are read directly from AcDbEntity fields.
+ * `handle` maps to `entity.objectId` (DXF group code 5).
  */
 export type MlQuickSelectProperty =
   | 'objectType'
+  | 'handle'
   | 'layer'
   | 'color'
   | 'lineType'
@@ -29,7 +31,7 @@ export type MlQuickSelectProperty =
 
 /**
  * Operators supported by Quick Select.
- * - String properties: equals / notEquals
+ * - String properties (including handle): equals / notEquals
  * - Numeric properties (currently lineWeight): full comparison operators
  */
 export type MlQuickSelectOperator =
@@ -102,6 +104,8 @@ function getEntityPropertyValue(
   switch (property) {
     case 'objectType':
       return entity.type ?? ''
+    case 'handle':
+      return entity.objectId ?? ''
     case 'layer':
       return entity.layer ?? ''
     case 'color':
@@ -123,6 +127,8 @@ function getDxfCodeByProperty(property: MlQuickSelectProperty): AcDbDxfCode {
   switch (property) {
     case 'objectType':
       return AcDbDxfCode.Start
+    case 'handle':
+      return AcDbDxfCode.Handle
     case 'layer':
       return AcDbDxfCode.LayerName
     case 'color':

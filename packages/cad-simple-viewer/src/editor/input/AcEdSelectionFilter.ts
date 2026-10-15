@@ -16,6 +16,7 @@ type AcEdComparisonOperator =
  *
  * Supported typed values:
  * - `AcDbDxfCode.Start`          => entity type (DXF type or runtime type)
+ * - `AcDbDxfCode.Handle`         => entity handle (`entity.objectId`)
  * - `AcDbDxfCode.LayerName`      => layer name
  * - `AcDbDxfCode.ColorName`      => `entity.color.toString()`
  * - `AcDbDxfCode.LinetypeName`   => line type name
@@ -115,6 +116,11 @@ export class AcEdSelectionFilter {
     if (actual === undefined || actual === null) {
       return false
     }
+    // Handles are hex identifier strings (e.g. "0100" vs "100"). Never take the
+    // numeric compare path — digit-only / scientific-looking values would collide.
+    if (tv.code === AcDbDxfCode.Handle) {
+      return this.compareStrings(String(actual), String(tv.value ?? ''), op)
+    }
     return this.compare(actual, tv.value, op)
   }
 
@@ -132,6 +138,9 @@ export class AcEdSelectionFilter {
     switch (code) {
       case AcDbDxfCode.Start:
         return entity.dxfTypeName || entity.type
+      case AcDbDxfCode.Handle:
+        // AutoCAD handles are 64-bit hex values stored as strings (AcDbObjectId).
+        return entity.objectId
       case AcDbDxfCode.LayerName:
         return entity.layer
       case AcDbDxfCode.ColorName:
@@ -187,8 +196,20 @@ export class AcEdSelectionFilter {
       }
     }
 
-    const left = String(actual).toLowerCase()
-    const right = String(expected).toLowerCase()
+    return this.compareStrings(String(actual), String(expected), op)
+  }
+
+  /**
+   * Case-insensitive string comparison used for non-numeric clauses
+   * (and always for handle / objectId).
+   */
+  private compareStrings(
+    actual: string,
+    expected: string,
+    op: AcEdComparisonOperator
+  ): boolean {
+    const left = actual.toLowerCase()
+    const right = expected.toLowerCase()
     switch (op) {
       case 'equals':
         return left === right

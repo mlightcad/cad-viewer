@@ -206,6 +206,8 @@ export default {
     howToApply: 'طريقة التطبيق',
 
     propObjectType: 'نوع العنصر',
+    propHandle: 'المعرف (Handle)',
+    handleValuePlaceholder: 'أدخل معرف العنصر (Handle)',
     propLayer: 'الطبقة',
     propColor: 'اللون',
     propLineType: 'نوع الخط',
