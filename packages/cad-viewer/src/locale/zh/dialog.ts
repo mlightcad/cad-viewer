@@ -155,6 +155,8 @@ export default {
     value: '值',
     howToApply: '应用方式',
     propObjectType: '对象类型',
+    propHandle: '句柄',
+    handleValuePlaceholder: '请输入实体句柄',
     propLayer: '图层',
     propColor: '颜色',
     propLineType: '线型',

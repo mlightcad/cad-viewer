@@ -57,7 +57,15 @@
       </el-form-item>
 
       <el-form-item :label="t('dialog.quickSelectDlg.value')">
+        <el-input
+          v-if="isHandleProperty"
+          v-model="form.value"
+          clearable
+          :placeholder="t('dialog.quickSelectDlg.handleValuePlaceholder')"
+          style="width: 100%"
+        />
         <el-select
+          v-else
           v-model="form.value"
           filterable
           allow-create
@@ -98,7 +106,14 @@
 
 <script setup lang="ts">
 import { AcDbEntity } from '@mlightcad/data-model'
-import { ElForm, ElFormItem, ElMessage, ElOption, ElSelect } from 'element-plus'
+import {
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElMessage,
+  ElOption,
+  ElSelect
+} from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -167,6 +182,7 @@ const applyToOptions = computed(() => [
 
 const propertyOptions = computed(() => [
   { value: 'objectType', label: t('dialog.quickSelectDlg.propObjectType') },
+  { value: 'handle', label: t('dialog.quickSelectDlg.propHandle') },
   { value: 'layer', label: t('dialog.quickSelectDlg.propLayer') },
   { value: 'color', label: t('dialog.quickSelectDlg.propColor') },
   { value: 'lineType', label: t('dialog.quickSelectDlg.propLineType') },
@@ -212,17 +228,27 @@ const objectTypeOptions = computed(() =>
   getQuickSelectObjectTypes(form.applyTo)
 )
 
+const isHandleProperty = computed(() => form.property === 'handle')
+
 const operatorOptions = computed(() =>
   form.property === 'lineWeight' ? numberOperators.value : stringOperators.value
 )
 
-const valueOptions = computed(() =>
-  getQuickSelectPropertyValues(
+/**
+ * Candidate values for the Value dropdown.
+ * Handle uses a free-text input instead, so skip enumerating every objectId
+ * (that list can be huge on large drawings).
+ */
+const valueOptions = computed(() => {
+  if (isHandleProperty.value) {
+    return []
+  }
+  return getQuickSelectPropertyValues(
     form.applyTo,
     form.property,
     form.objectType === '*' ? undefined : form.objectType
   )
-)
+})
 
 /**
  * Total candidate object count (optionally affected by objectType filter).
@@ -257,13 +283,22 @@ const matchedCount = computed(() => {
  * Normalize current operator when property changes.
  * Example: when switching from numeric to string property,
  * drop invalid operators such as > and <.
+ * Also clears value when entering or leaving handle (free-text input),
+ * so a typed handle is not reused as another property's filter value.
  */
 watch(
   () => form.property,
-  () => {
+  (property, previousProperty) => {
     const allowed = new Set(operatorOptions.value.map(item => item.value))
     if (!allowed.has(form.operator)) {
       form.operator = operatorOptions.value[0].value as MlQuickSelectOperator
+    }
+    if (
+      previousProperty != null &&
+      property !== previousProperty &&
+      (property === 'handle' || previousProperty === 'handle')
+    ) {
+      form.value = ''
     }
   },
   { immediate: true }
@@ -273,10 +308,15 @@ watch(
  * Keep form.value valid when candidate value list changes:
  * - clear when no candidates
  * - fallback to first option when current value is not available
+ *
+ * Skipped for handle: value is typed freely in an input box.
  */
 watch(
   valueOptions,
   options => {
+    if (isHandleProperty.value) {
+      return
+    }
     if (options.length === 0) {
       form.value = ''
       return

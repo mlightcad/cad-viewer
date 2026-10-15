@@ -162,6 +162,8 @@ export default {
     value: 'Value',
     howToApply: 'How to apply',
     propObjectType: 'Object type',
+    propHandle: 'Handle',
+    handleValuePlaceholder: 'Enter entity handle',
     propLayer: 'Layer',
     propColor: 'Color',
     propLineType: 'Linetype',
