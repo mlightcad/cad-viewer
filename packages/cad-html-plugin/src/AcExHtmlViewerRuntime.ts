@@ -24,6 +24,7 @@ import {
   promptAcExHtmlAccessPassword,
   showAcExHtmlAccessExpired
 } from './AcExHtmlAccessGate'
+import { parseAcExHtmlBinaryEncoding } from './AcExHtmlBinaryText'
 import {
   acexHtmlIsPhoneLayout,
   setupAcExHtmlDrawerSheets
@@ -570,11 +571,15 @@ async function resolveSnapshotPayload(
       })
       pendingError = undefined
       try {
+        const encoding = parseAcExHtmlBinaryEncoding(
+          snapshotEl.getAttribute('type')
+        )
         return {
           payload: await decryptAcExHtmlSnapshotPayload(
             password,
             payload,
-            manifest.salt
+            manifest.salt,
+            encoding
           ),
           expiresAt
         }
@@ -677,7 +682,10 @@ async function startViewer(): Promise<void> {
       }
       expiresAt = resolved.expiresAt
       // Retain gzip so layouts can be rehydrated after CPU release on switch.
-      monolithicCompressed = snapshotPayloadToCompressedBytes(resolved.payload)
+      monolithicCompressed = snapshotPayloadToCompressedBytes(
+        resolved.payload,
+        snapshotEl.getAttribute('type') ?? undefined
+      )
       snapshot = decodeSnapshotFromCompressedBytes(monolithicCompressed)
       removeSnapshotElement(snapshotEl)
     } else {

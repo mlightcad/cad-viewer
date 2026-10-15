@@ -228,8 +228,10 @@ Kind codes: `1` line (legacy / unused on export), `2` circle, `3` arc, `4` ellip
 
 ## Relationship to single-file HTML
 
-Self-contained HTML embeds one gzip+base64 **ACEX** snapshot
-(`magic 0x58454341`). The **same** snapshot builder is used as for multi-file
+Self-contained HTML embeds one gzip+**base85** **ACEX** snapshot
+(`magic 0x58454341`; MIME ends with `;base85`). Large drawings embed progressive
+ACEC/ACEO chunks the same way, also as base85 script bodies (legacy `;base64`
+exports still decode). The **same** snapshot builder is used as for multi-file
 packages: measure-mode OSNAP catalogs omit straight `line` primitives and keep
 only analytic curves/points/paths. The offline runtime rebuilds line snap from the
 embedded `lineBatches` before releasing CPU buffers, so single-file HTML is

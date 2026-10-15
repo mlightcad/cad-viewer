@@ -8,8 +8,10 @@
 export * from './AcExSnapshotTypes'
 /** Gzip encode and decode for embedded snapshot payloads. */
 export * from './AcExSnapshotCompression'
-/** Compressed/base64 encode and decode for embedded snapshot payloads. */
+/** Compressed/base85 encode and decode for embedded snapshot payloads. */
 export * from './AcExSnapshotCodec'
+/** HTML-safe binary text encodings (base85 / legacy base64). */
+export * from './AcExHtmlBinaryText'
 /** Binary snapshot serialization used by {@link encodeSnapshot}. */
 export {
   decodeSnapshotBinary,
@@ -87,8 +89,10 @@ export {
 } from './AcExHtmlAccess'
 export {
   ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME,
+  ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME_BASE64,
   ACEX_EMBEDDED_CHUNK_HREF_ATTR,
   ACEX_EMBEDDED_CHUNK_MIME,
+  ACEX_EMBEDDED_CHUNK_MIME_BASE64,
   collectAcExEmbeddedChunkBytes,
   consumeAcExEmbeddedChunkFromDom,
   createAcExDomEmbeddedPackageFetch,

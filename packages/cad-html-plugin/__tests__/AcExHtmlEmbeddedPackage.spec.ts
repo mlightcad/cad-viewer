@@ -6,6 +6,10 @@ import {
   decryptAcExHtmlBytes
 } from '../src/AcExHtmlAccess'
 import {
+  acExHtmlTextToBytes,
+  parseAcExHtmlBinaryEncoding
+} from '../src/AcExHtmlBinaryText'
+import {
   ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME,
   ACEX_EMBEDDED_CHUNK_HREF_ATTR,
   ACEX_EMBEDDED_CHUNK_MIME,
@@ -51,14 +55,15 @@ function extractAccessSalt(html: string): string {
 function extractEmbeddedChunkBytes(html: string): Map<string, Uint8Array> {
   const out = new Map<string, Uint8Array>()
   const re = new RegExp(
-    `<script type="[^"]+" ${ACEX_EMBEDDED_CHUNK_HREF_ATTR}="([^"]+)">([A-Za-z0-9+/=\\s]+)<\\/script>`,
+    `<script type="([^"]+)" ${ACEX_EMBEDDED_CHUNK_HREF_ATTR}="([^"]+)">([\\s\\S]*?)<\\/script>`,
     'g'
   )
   for (const match of html.matchAll(re)) {
-    const href = match[1]!
-    const payload = match[2]!.replace(/\s+/g, '')
-    const binary = Buffer.from(payload, 'base64')
-    out.set(href, new Uint8Array(binary))
+    const mime = match[1]!
+    const href = match[2]!
+    const payload = match[3]!.replace(/\s+/g, '')
+    const encoding = parseAcExHtmlBinaryEncoding(mime)
+    out.set(href, acExHtmlTextToBytes(payload, encoding))
   }
   return out
 }
@@ -202,15 +207,19 @@ describe('AcExHtmlEmbeddedPackage', () => {
         _detached: boolean
       }> = []
       const re = new RegExp(
-        `<script type="[^"]+" ${ACEX_EMBEDDED_CHUNK_HREF_ATTR}="([^"]+)">([A-Za-z0-9+/=\\s]+)<\\/script>`,
+        `<script type="([^"]+)" ${ACEX_EMBEDDED_CHUNK_HREF_ATTR}="([^"]+)">([\\s\\S]*?)<\\/script>`,
         'g'
       )
       for (const match of html.matchAll(re)) {
-        const href = match[1]!
-        const payload = match[2]!
+        const mime = match[1]!
+        const href = match[2]!
+        const payload = match[3]!
         nodes.push({
-          getAttribute: name =>
-            name === ACEX_EMBEDDED_CHUNK_HREF_ATTR ? href : null,
+          getAttribute: name => {
+            if (name === ACEX_EMBEDDED_CHUNK_HREF_ATTR) return href
+            if (name === 'type') return mime
+            return null
+          },
           textContent: payload,
           _detached: false,
           remove() {
@@ -244,7 +253,7 @@ describe('AcExHtmlEmbeddedPackage', () => {
     expect(readNodes.every(n => !n._detached)).toBe(true)
 
     // `consumeAcExEmbeddedChunkFromDom` returns the same bytes but detaches
-    // the script node so its base64 text can be GC'd.
+    // the script node so its text payload can be GC'd.
     const consumeNodes = buildScriptNodes()
     const consumeRoot = buildRoot(consumeNodes)
     const beforeCount = consumeNodes.filter(n => !n._detached).length
