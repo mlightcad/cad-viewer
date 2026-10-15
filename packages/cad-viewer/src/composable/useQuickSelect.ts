@@ -189,7 +189,7 @@ function buildSelectionFilter(
  * Collects source items for current Quick Select run.
  *
  * Behavior:
- * 1. currentSelection: iterate selected IDs and resolve entities from model space
+ * 1. currentSelection: iterate selected IDs and resolve entities from any layout
  * 2. entireDrawing: iterate all entities in model space
  * 3. Return normalized { id, entity } items for reuse in filter/statistics
  */
@@ -197,13 +197,15 @@ function collectSourceItems(
   applyTo: MlQuickSelectApplyTo
 ): MlQuickSelectSourceItem[] {
   const doc = AcApDocManager.instance.curDocument
-  const modelSpace = doc.database.tables.blockTable.modelSpace
+  const db = doc.database
+  const blockTable = db.tables.blockTable
   const result: MlQuickSelectSourceItem[] = []
 
   if (applyTo === 'currentSelection') {
     const ids = AcApDocManager.instance.curView.selectionSet.ids
     for (const id of ids) {
-      const entity = modelSpace.getIdAt(id)
+      // Use getEntityById which works for entities in any layout (model space or paper space)
+      const entity = blockTable.getEntityById(id)
       if (entity) {
         result.push({ id, entity })
       }
@@ -211,6 +213,8 @@ function collectSourceItems(
     return result
   }
 
+  // For 'entireDrawing' mode, iterate through model space only
+  const modelSpace = db.tables.blockTable.modelSpace
   const iterator = modelSpace.newIterator()
   for (const entity of iterator) {
     result.push({

@@ -274,10 +274,12 @@ const { selectionSet } = useSelectionSet()
 const properties = computed(() => {
   const list: AcDbEntityProperties[] = []
   const db = AcApDocManager.instance.curDocument.database
-  selectionSet.value.forEach(id => {
-    const entity = db.tables.blockTable.modelSpace.getIdAt(id)
+  const blockTable = db.tables.blockTable
+  for (const id of selectionSet.value) {
+    // Use getEntityById which works for entities in any layout (model space or paper space)
+    const entity = blockTable.getEntityById(id)
     if (entity) list.push(entity.properties)
-  })
+  }
   return list
 })
 </script>
