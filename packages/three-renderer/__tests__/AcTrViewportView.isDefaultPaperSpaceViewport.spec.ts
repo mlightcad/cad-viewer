@@ -301,4 +301,53 @@ describe('AcTrViewportView.isDefaultPaperSpaceViewport', () => {
       })
     ).toBe(false)
   })
+
+  it('detects a panned/zoomed paper default (WJL-540 A3)', () => {
+    // Layout A3 default VP: user panned/zoomed paper space so centerPoint
+    // ≠ viewCenter and viewHeight ≠ height. Must still be filtered —
+    // otherwise model entities near paper WCS (e.g. MTEXT "TP阀水咀")
+    // render oversized on the sheet.
+    expect(
+      AcTrViewportView.isDefaultPaperSpaceViewport({
+        number: 1,
+        centerPoint: { x: 212.94625000000005, y: 150.46771666666663 },
+        viewCenter: { x: 196.9315564634066, y: 173.4165135464331 },
+        width: 831.7100360642607,
+        height: 413.0260723312315,
+        viewHeight: 268.5587661106557,
+        viewTarget: { x: 0, y: 0 }
+      })
+    ).toBe(true)
+  })
+
+  it('does not flag the real A3 content viewport next to a panned default', () => {
+    expect(
+      AcTrViewportView.isDefaultPaperSpaceViewport({
+        number: 2,
+        centerPoint: { x: 217.86285003986046, y: 150.35178346297505 },
+        viewCenter: { x: 1976.105445626634, y: 1438.3653768818137 },
+        width: 389.99999998199996,
+        height: 276.9999999713,
+        viewHeight: 2769.999999713,
+        viewTarget: { x: 0, y: 0 }
+      })
+    ).toBe(false)
+  })
+
+  it('does not flag a near-paper 1:1 model viewport with a non-zero viewTarget', () => {
+    // Sheet-sized model geometry can place viewCenter near the paper
+    // rectangle at ~1:1 scale; a non-zero viewTarget marks a real model
+    // camera and must not be swept into the panned-default fingerprint.
+    expect(
+      AcTrViewportView.isDefaultPaperSpaceViewport({
+        number: 3,
+        centerPoint: { x: 210, y: 148.5 },
+        viewCenter: { x: 200, y: 140 },
+        width: 100,
+        height: 80,
+        viewHeight: 80,
+        viewTarget: { x: 50, y: 40 }
+      })
+    ).toBe(false)
+  })
 })

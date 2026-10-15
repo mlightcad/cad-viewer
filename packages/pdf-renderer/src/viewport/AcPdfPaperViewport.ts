@@ -13,11 +13,13 @@ const EPS = 1e-6
  *
  * Matches {@link AcTrViewportView.isDefaultPaperSpaceViewport}: `number` alone
  * is unreliable after LibreDWG reassignment, so structural fingerprints are
- * used instead.
+ * used instead (looks-at-itself, panned/zoomed paper default, broken
+ * LibreDWG origin-centered 1:1 default).
  */
 export function isDefaultPaperSpaceViewport(viewport: {
   centerPoint: { x: number; y: number }
   viewCenter: { x: number; y: number }
+  width?: number
   height?: number
   viewHeight?: number
   viewTarget?: { x: number; y: number }
@@ -26,6 +28,8 @@ export function isDefaultPaperSpaceViewport(viewport: {
     Math.abs(viewport.centerPoint.x - viewport.viewCenter.x) < EPS &&
     Math.abs(viewport.centerPoint.y - viewport.viewCenter.y) < EPS
   if (looksAtItself) return true
+
+  if (isPannedPaperSpaceDefault(viewport)) return true
 
   const centerAtOrigin =
     Math.abs(viewport.centerPoint.x) < EPS &&
@@ -47,6 +51,55 @@ export function isDefaultPaperSpaceViewport(viewport: {
   const target = viewport.viewTarget
   if (!target) return true
   return Math.abs(target.x) < EPS && Math.abs(target.y) < EPS
+}
+
+/**
+ * Detects a paper-space default whose view was panned or zoomed so
+ * `centerPoint` no longer equals `viewCenter`, while the view still looks
+ * at paper (centers close relative to the paper rectangle, paper-like scale).
+ */
+function isPannedPaperSpaceDefault(viewport: {
+  centerPoint: { x: number; y: number }
+  viewCenter: { x: number; y: number }
+  width?: number
+  height?: number
+  viewHeight?: number
+  viewTarget?: { x: number; y: number }
+}): boolean {
+  const width = viewport.width
+  const height = viewport.height
+  const viewHeight = viewport.viewHeight
+  if (
+    width == null ||
+    height == null ||
+    viewHeight == null ||
+    !Number.isFinite(width) ||
+    !Number.isFinite(height) ||
+    !Number.isFinite(viewHeight) ||
+    width <= EPS ||
+    height <= EPS ||
+    viewHeight <= EPS
+  ) {
+    return false
+  }
+
+  // Paper defaults keep a zero (or omitted) viewTarget; non-zero targets
+  // usually mark real model viewports that merely pan near paper WCS.
+  const target = viewport.viewTarget
+  if (
+    target &&
+    (Math.abs(target.x) >= EPS || Math.abs(target.y) >= EPS)
+  ) {
+    return false
+  }
+
+  const dx = Math.abs(viewport.centerPoint.x - viewport.viewCenter.x)
+  const dy = Math.abs(viewport.centerPoint.y - viewport.viewCenter.y)
+  const rel = 0.25
+  if (dx >= width * rel || dy >= height * rel) return false
+
+  const scale = viewHeight / height
+  return scale >= 0.1 && scale <= 5
 }
 
 /**

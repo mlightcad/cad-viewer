@@ -66,7 +66,14 @@ export class AcTrViewportView extends AcTrBaseView {
    *    `centerPoint` (paper WCS) coincides with its `viewCenter` (model DCS).
    *    The genuine template default is the `(0,0)-(12,9)` viewport with
    *    `centerPoint == viewCenter == (6,4.5)`.
-   * 2. Some LibreDWG parses leave the default's paper `centerPoint` at the
+   * 2. The user panned/zoomed paper space, so `centerPoint` and `viewCenter`
+   *    diverge and `viewHeight` may differ from paper `height`, but the view
+   *    still looks at paper coordinates (centers remain close relative to the
+   *    paper rectangle) at a paper-like scale with a zero `viewTarget`.
+   *    Without this check, the default is treated as a model viewport and
+   *    model-space annotations whose WCS happens to overlap the sheet render
+   *    huge on top of the layout (e.g. WJL-540-300-035.1.1 layout A3).
+   * 3. Some LibreDWG parses leave the default's paper `centerPoint` at the
    *    origin `(0,0)` while still storing a sheet-local `viewCenter` and a
    *    1:1 `viewHeight == height` with a zero `viewTarget`. That broken
    *    default must also be filtered: otherwise it draws a large empty
@@ -75,7 +82,7 @@ export class AcTrViewportView extends AcTrBaseView {
    *
    * Real user viewports pan/zoom the model (`viewCenter`/`viewTarget` away
    * from the paper rectangle, `viewHeight` unrelated to paper `height`), so
-   * they do not match either fingerprint.
+   * they do not match these fingerprints.
    *
    * @param viewport the viewport read from `AcDbViewport.toGiViewport()`
    *                 (or the database entity, which exposes the same
@@ -85,6 +92,7 @@ export class AcTrViewportView extends AcTrBaseView {
     number: number
     centerPoint: { x: number; y: number }
     viewCenter: { x: number; y: number }
+    width?: number
     height?: number
     viewHeight?: number
     viewTarget?: { x: number; y: number }
@@ -98,6 +106,11 @@ export class AcTrViewportView extends AcTrBaseView {
       Math.abs(viewport.centerPoint.x - viewport.viewCenter.x) < eps &&
       Math.abs(viewport.centerPoint.y - viewport.viewCenter.y) < eps
     if (looksAtItself) return true
+
+    // Panned/zoomed paper default (see fingerprint #2 above).
+    if (AcTrViewportView.isPannedPaperSpaceDefault(viewport, eps)) {
+      return true
+    }
 
     // Broken LibreDWG default: paper center collapsed to origin, but the
     // viewport still "looks at paper" (1:1 height, zero view target).
@@ -124,6 +137,65 @@ export class AcTrViewportView extends AcTrBaseView {
     const target = viewport.viewTarget
     if (!target) return true
     return Math.abs(target.x) < eps && Math.abs(target.y) < eps
+  }
+
+  /**
+   * Detects a paper-space default viewport whose view was panned or zoomed
+   * so `centerPoint` no longer equals `viewCenter` (and `viewHeight` may
+   * differ from paper `height`), while the view still looks at paper.
+   */
+  private static isPannedPaperSpaceDefault(
+    viewport: {
+      centerPoint: { x: number; y: number }
+      viewCenter: { x: number; y: number }
+      width?: number
+      height?: number
+      viewHeight?: number
+      viewTarget?: { x: number; y: number }
+    },
+    eps: number
+  ): boolean {
+    const width = viewport.width
+    const height = viewport.height
+    const viewHeight = viewport.viewHeight
+    if (
+      width == null ||
+      height == null ||
+      viewHeight == null ||
+      !Number.isFinite(width) ||
+      !Number.isFinite(height) ||
+      !Number.isFinite(viewHeight) ||
+      width <= eps ||
+      height <= eps ||
+      viewHeight <= eps
+    ) {
+      return false
+    }
+
+    // Paper defaults keep a zero (or omitted) viewTarget. A real model
+    // viewport that happens to pan near paper WCS usually aims via a
+    // non-zero target; requiring target≈0 avoids sweeping those in.
+    const target = viewport.viewTarget
+    if (
+      target &&
+      (Math.abs(target.x) >= eps || Math.abs(target.y) >= eps)
+    ) {
+      return false
+    }
+
+    const dx = Math.abs(viewport.centerPoint.x - viewport.viewCenter.x)
+    const dy = Math.abs(viewport.centerPoint.y - viewport.viewCenter.y)
+    // Centers still near the paper rectangle. Tighter than "anywhere inside
+    // the box" so a model viewport whose viewCenter merely lands on the
+    // sheet is not swept in; looser than 1e-6 so a mildly panned paper view
+    // still matches.
+    const rel = 0.25
+    if (dx >= width * rel || dy >= height * rel) return false
+
+    // Paper zoom stays near 1:1. Model viewports that fit large models into
+    // small paper boxes have viewHeight/height ≫ 1 (often 10–100+).
+    const scale = viewHeight / height
+    return scale >= 0.1 && scale <= 5
   }
 
   /**
