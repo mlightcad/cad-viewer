@@ -131,11 +131,15 @@ export function buildViewportModelContent(
   }
 
   const matrix = buildModelToPaperMatrix(boxes.paper, boxes.model, boxes.twist)
+  const annotationScaleFactor = viewport.toGiViewport().annotationScaleFactor
   const content = new AcPdfViewportContent(
     resolveModelRoots(),
     matrix,
     boxes.paper,
-    resolveViewportFrozenLayers(viewport)
+    resolveViewportFrozenLayers(viewport),
+    annotationScaleFactor > 0 ? annotationScaleFactor : undefined,
+    // AutoCAD ANNOALLVISIBLE initial value is 1 (show unsupported).
+    viewport.database?.annoallvisible !== false
   )
   content.objectId = viewport.objectId
 

@@ -3,10 +3,11 @@ import {
   AcGiSubEntityTraits,
   AcGiTextStyle
 } from '@mlightcad/data-model'
-import { MTextData } from '@mlightcad/mtext-renderer'
+import { MTextData, MTextObject } from '@mlightcad/mtext-renderer'
 
 import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
+import { resolveMTextRenderRoot } from '../util/AcTrObjectUserData'
 import { AcTrGlyphEntity } from './AcTrGlyphEntity'
 
 /**
@@ -104,6 +105,17 @@ export class AcTrMText extends AcTrGlyphEntity {
   }
 
   /**
+   * Annotative MTEXT must stay unbatched so paper-space viewports can rescale
+   * individual drawables for the active annotation scale.
+   */
+  override resolveDrawMode() {
+    if ((this.userData as { annotationScale?: unknown }).annotationScale) {
+      return 'unbatch'
+    }
+    return super.resolveDrawMode()
+  }
+
+  /**
    * @inheritdoc
    */
   protected override renderSync(renderer: AcTrMTextRenderer) {
@@ -124,6 +136,21 @@ export class AcTrMText extends AcTrGlyphEntity {
       this._colorSettings
     )
     return rendered
+  }
+
+  /**
+   * Copies annotation-scale metadata onto the rendered glyph root so it
+   * survives unbatched cloning into the scene graph.
+   */
+  protected override attachRendered(rendered: MTextObject) {
+    super.attachRendered(rendered)
+    const annotationScale = (
+      this.userData as { annotationScale?: unknown }
+    ).annotationScale
+    if (!annotationScale) return
+    const root = resolveMTextRenderRoot(rendered)
+    ;(root.userData as { annotationScale?: unknown }).annotationScale =
+      annotationScale
   }
 
   /**
