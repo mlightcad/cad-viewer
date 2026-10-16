@@ -702,7 +702,8 @@ export default {
       matchCase: '区分大小写',
       currentLayoutOnly: '仅当前布局',
       hint: '按回车键在整个图纸（所有布局）中搜索文字、多行文字、属性，以及块、标注、引线和表格中的文字。',
-      hintLayout: '按回车键在当前布局中搜索文字、多行文字、属性，以及块、标注、引线和表格中的文字。',
+      hintLayout:
+        '按回车键在当前布局中搜索文字、多行文字、属性，以及块、标注、引线和表格中的文字。',
       noResults: '未找到文字',
       count: '找到 {count} 项',
       countLayouts: '在 {layouts} 个布局中找到 {count} 项',

@@ -748,7 +748,8 @@ export default {
       matchCase: 'Büyük/küçük harf duyarlı',
       currentLayoutOnly: 'Yalnızca geçerli yerleşim',
       hint: 'Tüm çizimde (tüm yerleşimler) metin, çok satırlı metin, öznitelikler ile blok, ölçü, kılavuz ve tablolardaki metni aramak için Enter tuşuna basın.',
-      hintLayout: 'Geçerli yerleşimde metin, çok satırlı metin, öznitelikler ile blok, ölçü, kılavuz ve tablolardaki metni aramak için Enter tuşuna basın.',
+      hintLayout:
+        'Geçerli yerleşimde metin, çok satırlı metin, öznitelikler ile blok, ölçü, kılavuz ve tablolardaki metni aramak için Enter tuşuna basın.',
       noResults: 'Metin bulunamadı',
       count: '{count} sonuç',
       countLayouts: '{layouts} yerleşimde {count} sonuç',

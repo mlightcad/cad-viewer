@@ -735,7 +735,8 @@ export default {
       matchCase: 'Rozlišovat velikost písmen',
       currentLayoutOnly: 'Pouze aktuální layout',
       hint: 'Stiskněte Enter pro hledání textu, víceřádkového textu, atributů a textu v blocích, kótách, odkazech a tabulkách v celém výkresu (všechny layouty).',
-      hintLayout: 'Stiskněte Enter pro hledání textu, víceřádkového textu, atributů a textu v blocích, kótách, odkazech a tabulkách v aktuálním layoutu.',
+      hintLayout:
+        'Stiskněte Enter pro hledání textu, víceřádkového textu, atributů a textu v blocích, kótách, odkazech a tabulkách v aktuálním layoutu.',
       noResults: 'Nebyl nalezen žádný text',
       count: 'Nalezeno: {count}',
       countLayouts: 'Nalezeno: {count} (layouty: {layouts})',
