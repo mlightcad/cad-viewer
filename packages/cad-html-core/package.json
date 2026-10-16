@@ -34,13 +34,13 @@
     "fflate": "^0.8.2"
   },
   "devDependencies": {
-    "@mlightcad/data-model": "^1.15.9",
+    "@mlightcad/data-model": "^1.15.10",
     "@mlightcad/three-renderer": "workspace:*",
     "@types/three": "^0.172.0",
     "three": "^0.172.0"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "^1.15.9",
+    "@mlightcad/data-model": "^1.15.10",
     "@mlightcad/three-renderer": "workspace:*",
     "three": "^0.172.0"
   }

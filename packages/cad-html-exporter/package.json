@@ -34,8 +34,8 @@
   },
   "dependencies": {
     "@mlightcad/cad-html-core": "workspace:*",
-    "@mlightcad/data-model": "^1.15.9",
-    "@mlightcad/libredwg-converter": "^1.15.9",
+    "@mlightcad/data-model": "^1.15.10",
+    "@mlightcad/libredwg-converter": "^3.15.10",
     "@mlightcad/libredwg-web": "0.8.0",
     "@mlightcad/mtext-renderer": "^0.13.4",
     "@mlightcad/three-renderer": "workspace:*",
