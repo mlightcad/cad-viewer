@@ -4,7 +4,7 @@ import {
   acexHtmlComputeWrapPackSlot,
   acexHtmlSyncStripWrapPack
 } from '../src/AcExHtmlStripWrapPack'
-import { ML_UI_MOBILE_MAX_WIDTH } from '../src/AcExHtmlShell'
+import { ML_UI_MOBILE_MAX_WIDTH } from '@mlightcad/cad-html-core'
 
 describe('AcExHtmlComputeWrapPackSlot', () => {
   it('stretches a single incomplete row across the full strip', () => {

@@ -1,9 +1,10 @@
+import type { AcExExtents, AcExViewportSnapshot } from '@mlightcad/cad-html-core'
+
 import {
   type AcExCssRect,
   acexCssRectToWcsBox,
   acexIntersectCssRects
 } from './AcExCssRect'
-import type { AcExExtents, AcExViewportSnapshot } from './AcExSnapshotTypes'
 
 const EPS = 1e-12
 

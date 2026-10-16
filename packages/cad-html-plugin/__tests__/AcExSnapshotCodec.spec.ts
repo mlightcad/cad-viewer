@@ -1,17 +1,17 @@
-import { acExHtmlBytesToText } from '../src/AcExHtmlBinaryText'
+import { acExHtmlBytesToText } from '@mlightcad/cad-html-core'
 import {
   decodeSnapshot,
   decodeSnapshotFromCompressedBytes,
   encodeSnapshot,
   snapshotPayloadToCompressedBytes
-} from '../src/AcExSnapshotCodec'
+} from '@mlightcad/cad-html-core'
 import {
   decodeSnapshotBinary,
   encodeSnapshotBinary
-} from '../src/AcExSnapshotBinaryCodec'
-import { AcExBinaryWriter } from '../src/AcExBinaryIO'
-import { ACEO_OSNAP_MAGIC } from '../src/AcExOsnapCatalogCodec'
-import { ACEX_SNAPSHOT_VERSION } from '../src/AcExSnapshotTypes'
+} from '@mlightcad/cad-html-core'
+import { AcExBinaryWriter } from '@mlightcad/cad-html-core'
+import { ACEO_OSNAP_MAGIC } from '@mlightcad/cad-html-core'
+import { ACEX_SNAPSHOT_VERSION } from '@mlightcad/cad-html-core'
 
 function f32(values: number[]): Float32Array {
   return Float32Array.from(values)

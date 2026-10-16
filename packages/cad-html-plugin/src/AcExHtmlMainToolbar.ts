@@ -9,17 +9,19 @@
  * @packageDocumentation
  */
 
-import {
-  acexHtmlIsMobileNavUi,
-  acexHtmlIsPhoneLayout
-} from './AcExHtmlDrawerSheet'
+import type { AcExLayoutSnapshot, AcExViewerMode } from '@mlightcad/cad-html-core'
 import {
   ACEX_HTML_LOCALE_BADGES,
   ACEX_HTML_LOCALES,
   type AcExHtmlI18n,
   type AcExHtmlLocale
-} from './AcExHtmlI18n'
-import { AcExHtmlIcons } from './AcExHtmlIcons'
+} from '@mlightcad/cad-html-core'
+import { AcExHtmlIcons } from '@mlightcad/cad-html-core'
+
+import {
+  acexHtmlIsMobileNavUi,
+  acexHtmlIsPhoneLayout
+} from './AcExHtmlDrawerSheet'
 import {
   AcEdOpenMode,
   acuiCopyDynamicToolbarChildren,
@@ -31,7 +33,6 @@ import {
 } from './AcExHtmlSimpleViewerUi'
 import type { AcExMarkupMode } from './AcExMarkup'
 import type { AcExMeasureMode } from './AcExMeasurement'
-import type { AcExLayoutSnapshot, AcExViewerMode } from './AcExSnapshotTypes'
 import {
   acexIsSimulatedMouseEnabled,
   acexToggleSimulatedMouse

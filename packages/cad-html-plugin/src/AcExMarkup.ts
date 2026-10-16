@@ -8,12 +8,13 @@
  * @packageDocumentation
  */
 
+import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
+import type { AcExExtents } from '@mlightcad/cad-html-core'
+import { AcExHtmlIcons } from '@mlightcad/cad-html-core'
 import * as THREE from 'three'
 
 import type { AcExCommandSessionUiState } from './AcExCommandSessionPanel'
 import { AcExConfirmedPointMarks } from './AcExConfirmedPointMarks'
-import type { AcExHtmlI18n } from './AcExHtmlI18n'
-import { AcExHtmlIcons } from './AcExHtmlIcons'
 import {
   ACEX_OVERLAY_ARROW_SIZE_PX,
   acexPositionWcsOverlay,
@@ -70,7 +71,6 @@ import type { AcExOsnapPoint } from './AcExOsnap'
 import { acexOverlayGripClassName } from './AcExOverlayGrip'
 import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
 import type { AcExSessionHistory } from './AcExSessionHistory'
-import type { AcExExtents } from './AcExSnapshotTypes'
 
 export type { AcExMarkupMode } from './AcExMarkupTypes'
 

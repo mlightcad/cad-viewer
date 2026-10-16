@@ -1,6 +1,5 @@
+import type { AcExLayoutSnapshot, AcExSnapshot } from '@mlightcad/cad-html-core'
 import * as THREE from 'three'
-
-import type { AcExLayoutSnapshot, AcExSnapshot } from './AcExSnapshotTypes'
 
 /**
  * True when a layout still holds tessellated CPU batches.

@@ -1,7 +1,7 @@
 import {
   splitDominantCluster,
   unionDominantCluster
-} from '../src/AcExExtentCluster'
+} from '@mlightcad/cad-html-core'
 
 function box(
   minX: number,

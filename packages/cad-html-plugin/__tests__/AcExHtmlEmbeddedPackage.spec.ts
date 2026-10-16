@@ -1,14 +1,14 @@
 import { TextDecoder, TextEncoder } from 'node:util'
 
-import { decodeChunkGzip } from '../src/AcExChunkBinaryCodec'
+import { decodeChunkGzip } from '@mlightcad/cad-html-core'
 import {
   createAcExHtmlAccessKey,
   decryptAcExHtmlBytes
-} from '../src/AcExHtmlAccess'
+} from '@mlightcad/cad-html-core'
 import {
   acExHtmlTextToBytes,
   parseAcExHtmlBinaryEncoding
-} from '../src/AcExHtmlBinaryText'
+} from '@mlightcad/cad-html-core'
 import {
   ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME,
   ACEX_EMBEDDED_CHUNK_HREF_ATTR,
@@ -19,13 +19,13 @@ import {
   packHtmlEmbeddedPackage,
   parseAcExEmbeddedPackageConfig,
   shouldEmbedAcExChunks
-} from '../src/AcExHtmlEmbeddedPackage'
-import { loadAcExPackage } from '../src/AcExPackageLoader'
+} from '@mlightcad/cad-html-core'
+import { loadAcExPackage } from '@mlightcad/cad-html-core'
 import {
   ACEX_EMBEDDED_CHUNK_THRESHOLD_BYTES,
   ACEX_SNAPSHOT_VERSION
-} from '../src/AcExPackageTypes'
-import type { AcExSnapshot } from '../src/AcExSnapshotTypes'
+} from '@mlightcad/cad-html-core'
+import type { AcExSnapshot } from '@mlightcad/cad-html-core'
 
 // Node/Jest may omit Web Text* globals depending on the environment.
 Object.assign(globalThis, { TextEncoder, TextDecoder })

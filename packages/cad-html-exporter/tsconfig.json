@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "rootDir": "./src",
+    "outDir": "./lib",
+    "types": ["node"],
+    "paths": {
+      "@mlightcad/cad-html-exporter": [
+        "./src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "src"
+  ]
+}

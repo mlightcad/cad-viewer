@@ -5,8 +5,8 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@mlightcad/data-model': ^1.15.10
-  '@mlightcad/libredwg-converter': ^3.15.10
+  '@mlightcad/data-model': ../../../realdwg-web/packages/data-model
+  '@mlightcad/libredwg-converter': ../../../realdwg-web/packages/libredwg-converter
   '@mlightcad/mtext-input-box': ^0.3.4
   '@mlightcad/mtext-parser': ^1.5.5
   '@mlightcad/mtext-renderer': ^0.13.4
@@ -125,6 +125,9 @@ importers:
       '@ai-sdk/vue':
         specifier: ^2.0.0
         version: 2.0.208(vue@3.5.31(typescript@5.9.3))(zod@3.25.76)
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
       ai:
         specifier: ^5.0.0
         version: 5.0.208(zod@3.25.76)
@@ -135,9 +138,6 @@ importers:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
-      '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
       '@vitejs/plugin-vue':
         specifier: ^6.0.8
         version: 6.0.8(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))(vue@3.5.31(typescript@5.9.3))
@@ -152,13 +152,14 @@ importers:
         version: 2.2.12(typescript@5.9.3)
 
   packages/cad-diff-viewer:
+    dependencies:
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
     devDependencies:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
-      '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
 
   packages/cad-diff-viewer-example:
     dependencies:
@@ -169,11 +170,11 @@ importers:
         specifier: workspace:*
         version: link:../cad-simple-viewer
       '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
       '@mlightcad/libredwg-converter':
-        specifier: ^3.15.10
-        version: 3.15.10(@mlightcad/data-model@1.15.10)
+        specifier: ../../../realdwg-web/packages/libredwg-converter
+        version: link:../../../realdwg-web/packages/libredwg-converter
       '@mlightcad/mtext-parser':
         specifier: ^1.5.5
         version: 1.5.5
@@ -188,13 +189,14 @@ importers:
         version: 0.172.0
 
   packages/cad-google-drive-plugin:
+    dependencies:
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
     devDependencies:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
-      '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
       '@types/gapi':
         specifier: ^0.0.47
         version: 0.0.47
@@ -205,14 +207,71 @@ importers:
         specifier: ^0.0.18
         version: 0.0.18
 
-  packages/cad-html-plugin:
+  packages/cad-html-core:
+    dependencies:
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
+      fflate:
+        specifier: ^0.8.2
+        version: 0.8.2
     devDependencies:
+      '@mlightcad/three-renderer':
+        specifier: workspace:*
+        version: link:../three-renderer
+      '@types/three':
+        specifier: ^0.172.0
+        version: 0.172.0
+      three:
+        specifier: ^0.172.0
+        version: 0.172.0
+
+  packages/cad-html-exporter:
+    dependencies:
+      '@mlightcad/cad-html-core':
+        specifier: workspace:*
+        version: link:../cad-html-core
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
+      '@mlightcad/libredwg-converter':
+        specifier: ../../../realdwg-web/packages/libredwg-converter
+        version: link:../../../realdwg-web/packages/libredwg-converter
+      '@mlightcad/libredwg-web':
+        specifier: 0.8.0
+        version: 0.8.0
+      '@mlightcad/mtext-renderer':
+        specifier: ^0.13.4
+        version: 0.13.4(@mlightcad/mtext-parser@1.5.5)(three@0.172.0)
+      '@mlightcad/three-renderer':
+        specifier: workspace:*
+        version: link:../three-renderer
+      three:
+        specifier: ^0.172.0
+        version: 0.172.0
+      web-worker:
+        specifier: 1.5.0
+        version: 1.5.0
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.12.4
+      '@types/three':
+        specifier: ^0.172.0
+        version: 0.172.0
+
+  packages/cad-html-plugin:
+    dependencies:
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
+    devDependencies:
+      '@mlightcad/cad-html-core':
+        specifier: workspace:*
+        version: link:../cad-html-core
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
-      '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
       '@mlightcad/three-renderer':
         specifier: workspace:*
         version: link:../three-renderer
@@ -240,22 +299,23 @@ importers:
       '@azure/msal-browser':
         specifier: ^4.12.0
         version: 4.12.0
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
     devDependencies:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
-      '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
 
   packages/cad-pdf-plugin:
+    dependencies:
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
     devDependencies:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
-      '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
       '@mlightcad/mtext-parser':
         specifier: ^1.5.5
         version: 1.5.5
@@ -270,19 +330,21 @@ importers:
         version: 5.7.284
 
   packages/cad-simple-ui-plugin:
+    dependencies:
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
     devDependencies:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
-      '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
 
   packages/cad-simple-viewer:
-    devDependencies:
+    dependencies:
       '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
+    devDependencies:
       '@mlightcad/mtext-input-box':
         specifier: ^0.3.4
         version: 0.3.4(@mlightcad/mtext-parser@1.5.5)(@mlightcad/mtext-renderer@0.13.4(@mlightcad/mtext-parser@1.5.5)(three@0.172.0))(three@0.172.0)
@@ -335,11 +397,11 @@ importers:
         specifier: workspace:*
         version: link:../cad-svg-plugin
       '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
       '@mlightcad/libredwg-converter':
-        specifier: ^3.15.10
-        version: 3.15.10(@mlightcad/data-model@1.15.10)
+        specifier: ../../../realdwg-web/packages/libredwg-converter
+        version: link:../../../realdwg-web/packages/libredwg-converter
       '@mlightcad/mtext-parser':
         specifier: ^1.5.5
         version: 1.5.5
@@ -396,11 +458,11 @@ importers:
         specifier: workspace:*
         version: link:../cad-svg-plugin
       '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
       '@mlightcad/libredwg-converter':
-        specifier: ^3.15.10
-        version: 3.15.10(@mlightcad/data-model@1.15.10)
+        specifier: ../../../realdwg-web/packages/libredwg-converter
+        version: link:../../../realdwg-web/packages/libredwg-converter
       '@mlightcad/mtext-parser':
         specifier: ^1.5.5
         version: 1.5.5
@@ -434,13 +496,14 @@ importers:
         version: 4.1.1(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))
 
   packages/cad-svg-plugin:
+    dependencies:
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
     devDependencies:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
-      '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
       '@mlightcad/mtext-parser':
         specifier: ^1.5.5
         version: 1.5.5
@@ -449,6 +512,10 @@ importers:
         version: 0.13.4(@mlightcad/mtext-parser@1.5.5)(three@0.172.0)
 
   packages/cad-viewer:
+    dependencies:
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
     devDependencies:
       '@element-plus/icons-vue':
         specifier: ^2.3.1
@@ -474,9 +541,6 @@ importers:
       '@mlightcad/cad-svg-plugin':
         specifier: workspace:*
         version: link:../cad-svg-plugin
-      '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
       '@mlightcad/pdf-renderer':
         specifier: workspace:*
         version: link:../pdf-renderer
@@ -565,11 +629,11 @@ importers:
         specifier: workspace:*
         version: link:../cad-viewer
       '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
       '@mlightcad/libredwg-converter':
-        specifier: ^3.15.10
-        version: 3.15.10(@mlightcad/data-model@1.15.10)
+        specifier: ../../../realdwg-web/packages/libredwg-converter
+        version: link:../../../realdwg-web/packages/libredwg-converter
       '@mlightcad/mtext-parser':
         specifier: ^1.5.5
         version: 1.5.5
@@ -646,6 +710,9 @@ importers:
 
   packages/pdf-renderer:
     dependencies:
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
       '@pdf-lib/fontkit':
         specifier: ^1.1.1
         version: 1.1.1
@@ -656,9 +723,6 @@ importers:
         specifier: ^1.17.1
         version: 1.17.1
     devDependencies:
-      '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
       '@mlightcad/mtext-parser':
         specifier: ^1.5.5
         version: 1.5.5
@@ -668,13 +732,13 @@ importers:
 
   packages/three-renderer:
     dependencies:
+      '@mlightcad/data-model':
+        specifier: ../../../realdwg-web/packages/data-model
+        version: link:../../../realdwg-web/packages/data-model
       '@velipso/polybool':
         specifier: ^1.1.1
         version: 1.1.1
     devDependencies:
-      '@mlightcad/data-model':
-        specifier: ^1.15.10
-        version: 1.15.10
       '@mlightcad/mtext-parser':
         specifier: ^1.5.5
         version: 1.5.5
@@ -2160,10 +2224,6 @@ packages:
   '@jridgewell/trace-mapping@0.3.9':
     resolution: {integrity: sha512-3Belt6tdc8bPgAtbcmdtNJlirVoTmEb5e2gC94PnkwEW9jI6CAHUeoG85tjWP5WquqfavoMtMwiG4P926ZKKuQ==}
 
-  '@lukeed/csprng@1.1.0':
-    resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
-    engines: {node: '>=8'}
-
   '@manypkg/find-root@1.1.0':
     resolution: {integrity: sha512-mki5uBvhHzO8kYYix/WRy2WX8S3B5wdVSc9D6KcU5lQNglP2yt58/VfLuAK49glRXChosY8ap2oJ1qgma3GUVA==}
 
@@ -2188,31 +2248,6 @@ packages:
 
   '@microsoft/tsdoc@0.16.0':
     resolution: {integrity: sha512-xgAyonlVVS+q7Vc7qLW0UrJU7rSFcETRWsqdXZtjzRU8dF+6CkozTK4V4y1LwOX7j8r/vHphjDeMeGI4tNGeGA==}
-
-  '@mlightcad/common@1.15.10':
-    resolution: {integrity: sha512-xGg5yxvlkR9jBSOb1RPrgdIjslU4x9sl16Zudy5uKYEohCDj7CamCCWcgTKXfVjEuB4fXdMJY85Vvy8NaUPpRQ==}
-
-  '@mlightcad/data-model@1.15.10':
-    resolution: {integrity: sha512-CNvxPClSaYlRlsHJvTmQ8nkNVQeIqu98Q4sq0e6DrdmsfK9UFUZ/PzuMs7fRRtFmbqJvTyNNd1z2JldBqO/Emg==}
-
-  '@mlightcad/emf-converter@1.15.10':
-    resolution: {integrity: sha512-fKdhbXvyzXTNsnLlyyQ7ga5jpKNRJOgH2av9OPgMvEYofTxXFwg8w4qyfm5cwx5QeE65aHl8E/ajLyb63qZY6w==}
-
-  '@mlightcad/geometry-engine@3.15.10':
-    resolution: {integrity: sha512-W+uKwnWQPLB7ym8DeQWIrRQEW74yYdUoBhxGp4sOWAnuYUrnr2mkKsiuvUHuqjcdPxQjWIw7yQDqYPVC2+GNUg==}
-    peerDependencies:
-      '@mlightcad/common': 1.15.10
-
-  '@mlightcad/graphic-interface@3.15.10':
-    resolution: {integrity: sha512-hU+uSp3XU0uf8TqSpUHUBc1ugd+aX3NvRhdZcrYX7Fnm5vUx9D+4xgwl6v7ORYZmrIkcBkGUM251KXPVdhrmTg==}
-    peerDependencies:
-      '@mlightcad/common': 1.15.10
-      '@mlightcad/geometry-engine': 3.15.10
-
-  '@mlightcad/libredwg-converter@3.15.10':
-    resolution: {integrity: sha512-ECU4p72v2vRlSYBzJ42+j6pgiq2EeqiJ5YL1SVg8sOK0iSsVdssIk+g385mocVz4YPSSBOqy0poCsrSQ5L40AQ==}
-    peerDependencies:
-      '@mlightcad/data-model': ^1.15.10
 
   '@mlightcad/libredwg-web@0.8.0':
     resolution: {integrity: sha512-P2E+cCRLUWASQEcUaPK5W2WH2QwEliwim3NT323AXp9lJy9eYEugVEnmyG2hXNphRc7Kor09tf2TUtfLLzDeag==}
@@ -4880,10 +4915,6 @@ packages:
     resolution: {integrity: sha512-9ie8ItPR6tjY5uYJh8K/Zrv/RMZ5VOlOWvtZdEHYSTFKZfIBPQa9tOAEeAWhd+AnIneLJ22w5fjOYtoutpWq5w==}
     engines: {node: '>=18'}
 
-  loglevel@1.9.2:
-    resolution: {integrity: sha512-HgMmCqIJSAKqo68l0rS2AanEWfkxaZ5wNiEFb5ggm08lDs9Xl2KxBlX3PTcaD2chBM1gXAYf491/M2Rv8Jwayg==}
-    engines: {node: '>= 0.6.0'}
-
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
 
@@ -5888,10 +5919,6 @@ packages:
     engines: {node: '>=0.8.0'}
     hasBin: true
 
-  uid@2.0.2:
-    resolution: {integrity: sha512-u3xV3X7uzvi5b1MncmZo3i2Aw222Zk1keqLA1YkHldREkAhAqi65wuPfe7lHx8H/Wzy+8CE7S7uS3jekIM5s8g==}
-    engines: {node: '>=8'}
-
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
@@ -6181,6 +6208,9 @@ packages:
 
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
+
+  web-worker@1.5.0:
+    resolution: {integrity: sha512-RiMReJrTAiA+mBjGONMnjVDP2u3p9R1vkcGz6gDIrOMT3oGuYwX2WRMYI9ipkphSuE5XKEhydbhNEJh4NY9mlw==}
 
   webidl-conversions@7.0.0:
     resolution: {integrity: sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==}
@@ -8037,8 +8067,6 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@lukeed/csprng@1.1.0': {}
-
   '@manypkg/find-root@1.1.0':
     dependencies:
       '@babel/runtime': 7.29.2
@@ -8104,34 +8132,6 @@ snapshots:
 
   '@microsoft/tsdoc@0.16.0':
     optional: true
-
-  '@mlightcad/common@1.15.10':
-    dependencies:
-      loglevel: 1.9.2
-
-  '@mlightcad/data-model@1.15.10':
-    dependencies:
-      '@mlightcad/common': 1.15.10
-      '@mlightcad/emf-converter': 1.15.10
-      '@mlightcad/geometry-engine': 3.15.10(@mlightcad/common@1.15.10)
-      '@mlightcad/graphic-interface': 3.15.10(@mlightcad/common@1.15.10)(@mlightcad/geometry-engine@3.15.10(@mlightcad/common@1.15.10))
-      uid: 2.0.2
-
-  '@mlightcad/emf-converter@1.15.10': {}
-
-  '@mlightcad/geometry-engine@3.15.10(@mlightcad/common@1.15.10)':
-    dependencies:
-      '@mlightcad/common': 1.15.10
-
-  '@mlightcad/graphic-interface@3.15.10(@mlightcad/common@1.15.10)(@mlightcad/geometry-engine@3.15.10(@mlightcad/common@1.15.10))':
-    dependencies:
-      '@mlightcad/common': 1.15.10
-      '@mlightcad/geometry-engine': 3.15.10(@mlightcad/common@1.15.10)
-
-  '@mlightcad/libredwg-converter@3.15.10(@mlightcad/data-model@1.15.10)':
-    dependencies:
-      '@mlightcad/data-model': 1.15.10
-      '@mlightcad/libredwg-web': 0.8.0
 
   '@mlightcad/libredwg-web@0.8.0': {}
 
@@ -11034,8 +11034,6 @@ snapshots:
       strip-ansi: 7.2.0
       wrap-ansi: 9.0.2
 
-  loglevel@1.9.2: {}
-
   lru-cache@10.4.3: {}
 
   lru-cache@11.2.7: {}
@@ -12039,10 +12037,6 @@ snapshots:
   uglify-js@3.19.3:
     optional: true
 
-  uid@2.0.2:
-    dependencies:
-      '@lukeed/csprng': 1.1.0
-
   undici-types@6.21.0: {}
 
   undici-types@7.16.0: {}
@@ -12373,6 +12367,8 @@ snapshots:
   wcwidth@1.0.1:
     dependencies:
       defaults: 1.0.4
+
+  web-worker@1.5.0: {}
 
   webidl-conversions@7.0.0: {}
 

@@ -6,7 +6,7 @@ import {
   AcGePoint3d
 } from '@mlightcad/data-model'
 
-import { collectLayoutViewports } from '../src/AcExPaperViewportCollector'
+import { collectLayoutViewports } from '@mlightcad/cad-html-core'
 
 describe('collectLayoutViewports', () => {
   it('skips model space and the default paper-space viewport', () => {

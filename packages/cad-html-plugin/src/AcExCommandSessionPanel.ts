@@ -1,10 +1,11 @@
+import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import {
   ACEX_DOCS_PATH_MAGNIFIER,
   acexDocsUrl
-} from './AcExDocsUrl'
+} from '@mlightcad/cad-html-core'
+import { ML_UI_MOBILE_MAX_WIDTH } from '@mlightcad/cad-html-core'
+
 import { acexHtmlIsPhoneLayout } from './AcExHtmlDrawerSheet'
-import type { AcExHtmlI18n } from './AcExHtmlI18n'
-import { ML_UI_MOBILE_MAX_WIDTH } from './AcExHtmlShell'
 import {
   AcUiMobileSessionPanel,
   type AcUiMobileSessionPanelLabels

@@ -4,7 +4,7 @@ import {
   acExHtmlBytesToText,
   acExHtmlTextToBytes,
   parseAcExHtmlBinaryEncoding
-} from '../src/AcExHtmlBinaryText'
+} from '@mlightcad/cad-html-core'
 
 describe('AcExHtmlBinaryText', () => {
   it('round-trips base85 for empty, short, and longer payloads', () => {

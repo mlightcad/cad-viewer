@@ -86,7 +86,7 @@ import { AcEdPromptStatus } from '@mlightcad/cad-simple-viewer'
 
 import { AcApExportHtmlCmd } from '../src/AcApExportHtmlCmd'
 import { AcApHtmlConvertor } from '../src/AcApHtmlConvertor'
-import { ACEX_DEFAULT_CHUNK_MAX_BYTES } from '../src/AcExPackageTypes'
+import { ACEX_DEFAULT_CHUNK_MAX_BYTES } from '@mlightcad/cad-html-core'
 
 const getKeywords = AcApDocManager.instance.editor.getKeywords as jest.Mock
 const getInteger = AcApDocManager.instance.editor.getInteger as jest.Mock

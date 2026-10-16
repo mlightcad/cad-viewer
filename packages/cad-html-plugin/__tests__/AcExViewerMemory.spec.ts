@@ -12,7 +12,7 @@ import {
   releaseSnapshotBatchBuffers,
   releaseSnapshotOsnapCatalogs
 } from '../src/AcExViewerMemory'
-import { ACEX_SNAPSHOT_VERSION } from '../src/AcExSnapshotTypes'
+import { ACEX_SNAPSHOT_VERSION } from '@mlightcad/cad-html-core'
 
 function f32(values: number[]): Float32Array {
   return Float32Array.from(values)

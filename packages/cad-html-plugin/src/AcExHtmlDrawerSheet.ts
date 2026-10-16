@@ -11,7 +11,7 @@
 import {
   ML_UI_COMPACT_MAX_WIDTH,
   ML_UI_MOBILE_MAX_WIDTH
-} from './AcExHtmlShell'
+} from '@mlightcad/cad-html-core'
 
 const MIN_HEIGHT = 160
 const DEFAULT_HEIGHT_VH = 0.42

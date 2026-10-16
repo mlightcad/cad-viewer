@@ -6,7 +6,7 @@ import {
   promptAcExHtmlAccessPassword,
   showAcExHtmlAccessExpired
 } from '../src/AcExHtmlAccessGate'
-import { AcExHtmlI18n } from '../src/AcExHtmlI18n'
+import { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 
 describe('AcExHtmlAccessGate', () => {
   beforeEach(() => {

@@ -58,13 +58,13 @@ import {
   compactIndexedSlice,
   readBatchWorldOffset,
   toWcsCoord
-} from '../src/AcExBatchBuffers'
+} from '@mlightcad/cad-html-core'
 import {
   collectBatchesFromObject3D,
   exportActiveBatchedLine2Slice,
   exportActiveBatchedSlice,
   exportBufferGeometrySlice
-} from '../src/AcExSceneBatchCollector'
+} from '@mlightcad/cad-html-core'
 
 const BATCH_SLOT_ACTIVE = 0b11
 const BATCH_SLOT_HIDDEN = 0b01

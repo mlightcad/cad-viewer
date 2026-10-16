@@ -2,10 +2,6 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
   AcApI18n: { currentLocale: 'en' }
 }))
 
-jest.mock('../src/AcExOsnapPrimitiveBuilder', () => ({
-  buildOsnapCatalog: jest.fn(() => undefined)
-}))
-
 import type { AcTrScene } from '@mlightcad/cad-simple-viewer'
 import type { AcDbDatabase } from '@mlightcad/data-model'
 

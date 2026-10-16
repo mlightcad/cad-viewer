@@ -1,14 +1,13 @@
-import type { AcTrView2d } from '@mlightcad/cad-simple-viewer'
-
-import type { AcApHtmlExpiryDays } from './AcExHtmlAccess'
-import { ACEX_DEFAULT_CHUNK_MAX_BYTES } from './AcExPackageTypes'
+import type { AcApHtmlExpiryDays } from '@mlightcad/cad-html-core'
 import type {
   AcExInitialViewMode,
   AcExViewerMode,
   AcExViewState
-} from './AcExSnapshotTypes'
+} from '@mlightcad/cad-html-core'
+import { ACEX_DEFAULT_CHUNK_MAX_BYTES } from '@mlightcad/cad-html-core'
+import type { AcTrView2d } from '@mlightcad/cad-simple-viewer'
 
-export type { AcApHtmlExpiryDays } from './AcExHtmlAccess'
+export type { AcApHtmlExpiryDays } from '@mlightcad/cad-html-core'
 
 /** Matches the offline HTML viewer orthographic half-height in world units. */
 const HTML_VIEWER_CAMERA_FRUSTUM = 400

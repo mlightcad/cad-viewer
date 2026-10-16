@@ -5,6 +5,8 @@
  * @packageDocumentation
  */
 
+import type { AcExExtents } from '@mlightcad/cad-html-core'
+
 import {
   ACEX_OVERLAY_ARROW_SIZE_PX,
   ACEX_OVERLAY_CLOUD_DIAMETER_PX,
@@ -16,7 +18,6 @@ import type {
   AcExMarkupPoint2d,
   AcExMarkupRecord
 } from './AcExMarkupTypes'
-import type { AcExExtents } from './AcExSnapshotTypes'
 
 export {
   ACEX_OVERLAY_ARROW_SIZE_PX,

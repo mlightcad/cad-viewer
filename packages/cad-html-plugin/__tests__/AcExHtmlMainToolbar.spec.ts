@@ -32,7 +32,7 @@ jest.mock('../src/AcExHtmlSimpleViewerUi', () => {
   }
 })
 
-import type { AcExHtmlI18n } from '../src/AcExHtmlI18n'
+import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import {
   acexHtmlCreateMainToolbarItems,
   setupAcExHtmlMainToolbar,

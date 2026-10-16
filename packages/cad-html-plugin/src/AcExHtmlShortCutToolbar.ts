@@ -5,7 +5,8 @@
  * @packageDocumentation
  */
 
-import type { AcExHtmlI18n } from './AcExHtmlI18n'
+import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
+
 import {
   AcUiShortCutToolbar,
   type AcUiShortCutToolbarActionState,

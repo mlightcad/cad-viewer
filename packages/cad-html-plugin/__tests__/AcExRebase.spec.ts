@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import { readBatchWorldOffset, toWcsCoord } from '../src/AcExBatchBuffers'
+import { readBatchWorldOffset, toWcsCoord } from '@mlightcad/cad-html-core'
 import { AcExOsnapIndex } from '../src/AcExOsnap'
 
 describe('rebase and measurement precision', () => {

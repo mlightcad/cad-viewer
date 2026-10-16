@@ -1,5 +1,5 @@
 import { AcExHtmlIcons } from './AcExHtmlIcons'
-import { buildAcExHtmlPolarAnglesPanel } from './AcExHtmlMeasureSettings'
+import { buildAcExHtmlPolarAnglesPanel } from './AcExHtmlShellFragments'
 import type { AcExViewerMode } from './AcExSnapshotTypes'
 
 /**

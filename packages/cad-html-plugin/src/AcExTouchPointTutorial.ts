@@ -1,4 +1,5 @@
-import type { AcExHtmlI18n } from './AcExHtmlI18n'
+import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
+
 import {
   ACED_TOUCH_POINT_LONG_PRESS_MS,
   acedIsMobileOrPadUi,

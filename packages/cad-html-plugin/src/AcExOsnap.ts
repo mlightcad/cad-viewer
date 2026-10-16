@@ -1,7 +1,22 @@
+import type {
+  AcExOsnapMode,
+  AcExOsnapPoint,
+  AcExOsnapPrimitive
+} from '@mlightcad/cad-html-core'
+import type {
+  AcExLayoutSnapshot,
+  AcExLineBatch
+} from '@mlightcad/cad-html-core'
+import { toWcsCoord } from '@mlightcad/cad-html-core'
+import {
+  arcWcsPoint,
+  normalizeArcDelta,
+  primitiveToAcGeCurve
+} from '@mlightcad/cad-html-core'
+import { ACEX_DEFAULT_OSNAP_MODES } from '@mlightcad/cad-html-core'
 import { FLOAT_TOL } from '@mlightcad/data-model'
 import RBush from 'rbush'
 
-import { toWcsCoord } from './AcExBatchBuffers'
 import {
   collectPrimitiveDiscreteSnapCandidates,
   collectPrimitiveNearestSnapCandidate,
@@ -23,24 +38,9 @@ import {
   pathEdgeNearAperture,
   pathPrimitiveBounds
 } from './AcExOsnapPath'
-import {
-  arcWcsPoint,
-  normalizeArcDelta,
-  primitiveToAcGeCurve
-} from './AcExOsnapPrimitiveToAcGe'
-import type {
-  AcExOsnapMode,
-  AcExOsnapPoint,
-  AcExOsnapPrimitive
-} from './AcExOsnapPrimitiveTypes'
-import { ACEX_DEFAULT_OSNAP_MODES } from './AcExOsnapPrimitiveTypes'
-import type {
-  AcExLayoutSnapshot,
-  AcExLineBatch
-} from './AcExSnapshotTypes'
 
-export type { AcExOsnapMode, AcExOsnapPoint } from './AcExOsnapPrimitiveTypes'
-export { ACEX_DEFAULT_OSNAP_MODES } from './AcExOsnapPrimitiveTypes'
+export type { AcExOsnapMode, AcExOsnapPoint } from '@mlightcad/cad-html-core'
+export { ACEX_DEFAULT_OSNAP_MODES } from '@mlightcad/cad-html-core'
 
 /**
  * Circle or circular-arc under the cursor for measure lock / hover highlight.

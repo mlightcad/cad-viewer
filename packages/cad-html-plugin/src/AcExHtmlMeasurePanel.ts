@@ -8,7 +8,8 @@
  * @packageDocumentation
  */
 
-import type { AcExHtmlI18n, AcExHtmlMessageKey } from './AcExHtmlI18n'
+import type { AcExHtmlI18n, AcExHtmlMessageKey } from '@mlightcad/cad-html-core'
+
 import type { AcExMeasureController } from './AcExMeasurement'
 import type { AcExMeasurementType } from './AcExMeasurementTypes'
 

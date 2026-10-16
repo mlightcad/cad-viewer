@@ -8,15 +8,14 @@
  * @packageDocumentation
  */
 
-import { FLOAT_TOL, TAU } from '@mlightcad/data-model'
-
-import { normalizeArcDelta } from './AcExOsnapPrimitiveToAcGe'
 import type {
   AcExOsnapArcPrimitive,
   AcExOsnapCirclePrimitive,
   AcExOsnapLinePrimitive,
   AcExOsnapPrimitive
-} from './AcExOsnapPrimitiveTypes'
+} from '@mlightcad/cad-html-core'
+import { normalizeArcDelta } from '@mlightcad/cad-html-core'
+import { FLOAT_TOL, TAU } from '@mlightcad/data-model'
 
 /** Tessellated segment for intersection fallback. */
 export interface AcExOsnapSegmentLike {

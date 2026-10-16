@@ -7,7 +7,7 @@ import {
   needsAcExHtmlAccessControl,
   protectAcExHtmlEncodedSnapshot,
   resolveAcApHtmlExpiresAt
-} from '../src/AcExHtmlAccess'
+} from '@mlightcad/cad-html-core'
 
 describe('AcExHtmlAccess', () => {
   it('resolves expiry timestamps from validity periods', () => {

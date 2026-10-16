@@ -47,6 +47,7 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
+    "@mlightcad/cad-html-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.15.10",
     "@mlightcad/three-renderer": "workspace:*",
@@ -58,6 +59,7 @@
     "three": "^0.172.0"
   },
   "peerDependencies": {
+    "@mlightcad/cad-html-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.15.10",
     "@mlightcad/three-renderer": "workspace:*",

@@ -6,15 +6,15 @@ Object.assign(globalThis, { TextDecoder, TextEncoder })
 
 import * as THREE from 'three'
 
-import { readMeshBatch, writeMeshBatch } from '../src/AcExBatchBinaryCodec'
-import { AcExBinaryReader, AcExBinaryWriter } from '../src/AcExBinaryIO'
+import { readMeshBatch, writeMeshBatch } from '@mlightcad/cad-html-core'
+import { AcExBinaryReader, AcExBinaryWriter } from '@mlightcad/cad-html-core'
 import {
   exportUvsForPositionSlice,
   isTransparentImagePlaceholder,
   releaseExportedTextureBytes
-} from '../src/AcExMeshTextureExport'
-import { decodeSnapshot, encodeSnapshot } from '../src/AcExSnapshotCodec'
-import { ACEX_SNAPSHOT_VERSION } from '../src/AcExSnapshotTypes'
+} from '@mlightcad/cad-html-core'
+import { decodeSnapshot, encodeSnapshot } from '@mlightcad/cad-html-core'
+import { ACEX_SNAPSHOT_VERSION } from '@mlightcad/cad-html-core'
 
 describe('AcEx mesh texture export', () => {
   it('round-trips uvs + png texture through the binary mesh codec', () => {

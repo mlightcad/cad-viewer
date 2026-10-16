@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-import type { AcExHtmlI18n } from '../src/AcExHtmlI18n'
+import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import { setupAcExHtmlNavTools } from '../src/AcExHtmlNavTools'
 
 function mountToolbar() {

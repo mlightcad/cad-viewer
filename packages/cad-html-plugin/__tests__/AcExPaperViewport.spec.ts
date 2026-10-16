@@ -1,4 +1,4 @@
-import type { AcExViewportSnapshot } from '../src/AcExSnapshotTypes'
+import type { AcExViewportSnapshot } from '@mlightcad/cad-html-core'
 import {
   computeOnscreenPaperViewportPass,
   computeViewportCamera,

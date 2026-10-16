@@ -7,6 +7,10 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: '@mlightcad/cad-html-core',
+        replacement: resolve(__dirname, '../cad-html-core/src/index.ts')
+      },
+      {
         // Exact package name only — do not swallow `/icons` subpath imports.
         find: /^@mlightcad\/cad-simple-viewer$/,
         replacement: resolve(simpleViewerSrc, 'ui-html-entry.ts')

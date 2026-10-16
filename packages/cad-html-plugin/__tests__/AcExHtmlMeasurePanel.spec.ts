@@ -1,8 +1,8 @@
 /** @jest-environment jsdom */
 
-import { AcExHtmlI18n } from '../src/AcExHtmlI18n'
+import { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import { setupAcExHtmlMeasurePanel } from '../src/AcExHtmlMeasurePanel'
-import { buildAcExHtmlShellBody } from '../src/AcExHtmlShell'
+import { buildAcExHtmlShellBody } from '@mlightcad/cad-html-core'
 import type { AcExMeasureController } from '../src/AcExMeasurement'
 import type { AcExMeasurementType } from '../src/AcExMeasurementTypes'
 
