@@ -1902,6 +1902,12 @@ export class AcTrBatchedGroup extends THREE.Group {
         })
       })
     }
+
+    // Shared INSERT instances live outside packed origin maps and have no
+    // slot uniforms; they still need the reading-mode / compare base tint.
+    this._sharedGeometryBatches.forEach(batches => {
+      batches.forEach(batch => batch.setCompareDisplayColors(colorOptions))
+    })
   }
 
   /**
@@ -2729,6 +2735,15 @@ export class AcTrBatchedGroup extends THREE.Group {
       kind,
       geometry.uuid
     )
+    if (this._compareEnabled) {
+      batch.setCompareDisplayColors({
+        enabled: true,
+        baseColor: this._compareBaseColor,
+        deletedColor: this._compareDeletedColor,
+        addedColor: this._compareAddedColor,
+        modifiedColor: this._compareModifiedColor
+      })
+    }
     list.push(batch)
     this._sharedBatchById.set(batch.id, batch)
     this.add(batch)
