@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 import { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import { setupAcExHtmlMeasurePanel } from '../src/AcExHtmlMeasurePanel'
 import { buildAcExHtmlShellBody } from '@mlightcad/cad-html-core'

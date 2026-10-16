@@ -240,7 +240,7 @@ describe('AcExHtmlEmbeddedPackage', () => {
       createAcExDomEmbeddedPackageFetch,
       consumeAcExEmbeddedChunkFromDom,
       readAcExEmbeddedChunkFromDom
-    } = await import('../src/AcExHtmlEmbeddedPackage')
+    } = await import('@mlightcad/cad-html-core')
 
     // `readAcExEmbeddedChunkFromDom` keeps the node in the DOM.
     const readNodes = buildScriptNodes()

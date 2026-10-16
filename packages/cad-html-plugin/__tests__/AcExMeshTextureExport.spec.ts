@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 // Value import after the polyfill: `@mlightcad/data-model` needs TextDecoder in jsdom.
 import { TextDecoder, TextEncoder } from 'util'
 Object.assign(globalThis, { TextDecoder, TextEncoder })

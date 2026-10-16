@@ -1,5 +1,6 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
 import { TextDecoder, TextEncoder } from 'util'
 
 import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'

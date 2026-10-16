@@ -2,6 +2,8 @@
  * @jest-environment jsdom
  */
 
+import './helpers/installTextCodecs'
+
 const isMobileNavUi = jest.fn(() => true)
 
 jest.mock('../src/AcExHtmlDrawerSheet', () => ({

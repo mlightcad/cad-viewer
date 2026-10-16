@@ -1,5 +1,6 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
 import { TextDecoder, TextEncoder } from 'util'
 import * as THREE from 'three'
 

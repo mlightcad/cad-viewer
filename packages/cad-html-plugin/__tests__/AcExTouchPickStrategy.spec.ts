@@ -1,6 +1,8 @@
 /**
  * @jest-environment jsdom
  */
+
+import './helpers/installTextCodecs'
 import {
   ACEX_SIMULATED_MOUSE_OFFSET_Y_PX,
   ACEX_SIMULATED_MOUSE_STORAGE_KEY,

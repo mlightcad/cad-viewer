@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 jest.mock('../../cad-simple-viewer/src/ui/AcUiHelpPanel', () => ({
   AcUiHelpPanel: jest.fn().mockImplementation(() => ({
     showDocs: jest.fn(),

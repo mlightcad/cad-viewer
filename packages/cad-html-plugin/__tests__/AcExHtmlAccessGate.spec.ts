@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 import {
   ACEX_HTML_MAX_PASSWORD_ATTEMPTS,
   lockAcExHtmlAccessGate,

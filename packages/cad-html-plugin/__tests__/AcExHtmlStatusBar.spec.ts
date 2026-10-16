@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 describe('status bar visibility', () => {
   it('hides when empty and shows when text is set', () => {
     document.body.innerHTML =

@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import { setupAcExHtmlNavTools } from '../src/AcExHtmlNavTools'
 

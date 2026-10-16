@@ -65,7 +65,7 @@ describe('AcExHtmlAccess', () => {
   })
 
   it('encrypts and decrypts snapshot payloads with a password', async () => {
-    const { acExHtmlBytesToBase85 } = await import('../src/AcExHtmlBinaryText')
+    const { acExHtmlBytesToBase85 } = await import('@mlightcad/cad-html-core')
     const payload = acExHtmlBytesToBase85(
       new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
     )
@@ -89,7 +89,7 @@ describe('AcExHtmlAccess', () => {
   })
 
   it('builds manifests for expiry-only and password-protected exports', async () => {
-    const { acExHtmlBytesToBase85 } = await import('../src/AcExHtmlBinaryText')
+    const { acExHtmlBytesToBase85 } = await import('@mlightcad/cad-html-core')
     const encoded = {
       payload: acExHtmlBytesToBase85(new Uint8Array([9, 8, 7])),
       compression: 'gzip' as const
@@ -118,7 +118,7 @@ describe('AcExHtmlAccess', () => {
   it('does not encrypt when password is omitted, empty, or whitespace', async () => {
     // Regression: optional HTML open password must stay off unless the user
     // sets one. Empty/autofilled whitespace must never produce encrypted:true.
-    const { acExHtmlBytesToBase85 } = await import('../src/AcExHtmlBinaryText')
+    const { acExHtmlBytesToBase85 } = await import('@mlightcad/cad-html-core')
     const encoded = {
       payload: acExHtmlBytesToBase85(new TextEncoder().encode('plaintext')),
       compression: 'gzip' as const

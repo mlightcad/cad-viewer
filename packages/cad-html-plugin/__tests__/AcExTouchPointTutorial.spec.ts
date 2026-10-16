@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 import { ACEX_TOUCH_POINT_TUTORIAL_PREFS_KEY } from '../src/AcExTouchPointTutorial'
 
 const isMobileOrPad = jest.fn(() => true)
