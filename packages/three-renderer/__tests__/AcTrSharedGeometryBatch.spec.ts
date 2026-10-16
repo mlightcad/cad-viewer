@@ -183,4 +183,87 @@ describe('AcTrBatchedGroup shared block geometry', () => {
 
     expect(findSharedBatch(group)).toBeUndefined()
   })
+
+  it('tints shared INSERT instances for reading-mode / compare base color', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0xff0000 })
+    const firstLine = createSharedLine(0, material)
+    const secondLine = new THREE.LineSegments(firstLine.geometry, material)
+    secondLine.position.set(0, 100, 0)
+    secondLine.updateMatrixWorld(true)
+    getSceneDrawableUserData(secondLine).sharesTemplateGeometry = true
+
+    const group = new AcTrBatchedGroup()
+    group.addEntity(createEntity('insert-a', firstLine))
+    group.addEntity(createEntity('insert-b', secondLine))
+
+    const batch = findSharedBatch(group)!
+    expect(batch).toBeDefined()
+
+    group.setCompareDisplay({ enabled: true, baseColor: 0x000000 })
+
+    const drawable = batch.children.find(
+      child => (child as THREE.LineSegments).isLineSegments
+    ) as THREE.LineSegments
+    expect(drawable).toBeDefined()
+    const tinted = drawable.material as THREE.LineBasicMaterial
+    expect(tinted).not.toBe(material)
+    expect(tinted.color.getHex()).toBe(0x000000)
+    // Style-cache material must stay untouched so other layer uses remain valid.
+    expect(material.color.getHex()).toBe(0xff0000)
+    expect(batch.material).toBe(material)
+
+    group.setCompareDisplay({ enabled: false, overrides: [] })
+    expect(drawable.material).toBe(material)
+    expect(material.color.getHex()).toBe(0xff0000)
+  })
+
+  it('applies compare base tint to shared batches created after setCompareDisplay', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0x00ff00 })
+    const group = new AcTrBatchedGroup()
+    group.setCompareDisplay({ enabled: true, baseColor: 0x000000 })
+
+    group.addEntity(createEntity('late-insert', createSharedLine(0, material)))
+
+    const batch = findSharedBatch(group)!
+    expect(batch).toBeDefined()
+    const drawable = batch.children.find(
+      child => (child as THREE.LineSegments).isLineSegments
+    ) as THREE.LineSegments
+    expect((drawable.material as THREE.LineBasicMaterial).color.getHex()).toBe(
+      0x000000
+    )
+  })
+
+  it('shares LineMaterial resolution so compare tint tracks viewport resize', () => {
+    const geometry = new LineSegmentsGeometry()
+    geometry.setPositions([0, 0, 0, 10, 0, 0])
+    const material = new LineMaterial({
+      color: 0xff0000,
+      linewidth: 2,
+      resolution: new THREE.Vector2(800, 600)
+    })
+    // LineSegmentsGeometry has no `position` attribute, so BatchedGroup will
+    // not instance it; exercise the batch API directly.
+    const batch = new AcTrSharedGeometryBatch(
+      geometry,
+      material,
+      new THREE.Vector3(),
+      'line2',
+      geometry.uuid
+    )
+    batch.addInstance(new THREE.Matrix4(), 'fat-insert', false)
+    batch.setCompareDisplayColors({ enabled: true, baseColor: 0x000000 })
+
+    const fatLine = batch.children.find(
+      child => child instanceof LineSegments2
+    ) as LineSegments2
+    const tinted = fatLine.material as LineMaterial
+    expect(tinted).not.toBe(material)
+    expect(tinted.color.getHex()).toBe(0x000000)
+    expect(tinted.resolution).toBe(material.resolution)
+
+    material.resolution.copy({ x: 1920, y: 1080 })
+    expect(tinted.resolution.x).toBe(1920)
+    expect(tinted.resolution.y).toBe(1080)
+  })
 })
