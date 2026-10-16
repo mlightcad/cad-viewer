@@ -1,5 +1,11 @@
 # @mlightcad/three-renderer
 
+## 1.7.6
+
+### Patch Changes
+
+- feat: ships whole-drawing FIND with one-click navigation, Quick Select by entity handle, and paper-space fixes for osnap, properties, VPLAYER-frozen layers, and annotative MTEXT viewport scales. INSERT rendering shares block geometry, hatch islands and pattern lines stay correct, and HTML export adds base85 snapshots plus optional gzip chunks. Also fixes shared-geometry reading-mode tint, viewer teardown, and linear-time MTEXT parsing
+
 ## 1.7.6-preview.0
 
 ### Patch Changes

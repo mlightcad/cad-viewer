@@ -1,5 +1,21 @@
 # @mlightcad/cad-viewer
 
+## 1.7.6
+
+### Patch Changes
+
+- feat: ships whole-drawing FIND with one-click navigation, Quick Select by entity handle, and paper-space fixes for osnap, properties, VPLAYER-frozen layers, and annotative MTEXT viewport scales. INSERT rendering shares block geometry, hatch islands and pattern lines stay correct, and HTML export adds base85 snapshots plus optional gzip chunks. Also fixes shared-geometry reading-mode tint, viewer teardown, and linear-time MTEXT parsing
+- Updated dependencies
+  - @mlightcad/cad-agent-plugin@1.7.6
+  - @mlightcad/cad-google-drive-plugin@1.7.6
+  - @mlightcad/cad-html-plugin@1.7.6
+  - @mlightcad/cad-onedrive-plugin@1.7.6
+  - @mlightcad/cad-pdf-plugin@1.7.6
+  - @mlightcad/cad-simple-viewer@1.7.6
+  - @mlightcad/cad-svg-plugin@1.7.6
+  - @mlightcad/pdf-renderer@1.7.6
+  - @mlightcad/three-renderer@1.7.6
+
 ## 1.7.6-preview.0
 
 ### Patch Changes
