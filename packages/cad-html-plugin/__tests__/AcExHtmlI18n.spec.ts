@@ -5,7 +5,7 @@ import {
   detectBrowserAcExHtmlLocale,
   formatAcExHtmlMessage,
   resolveAcExHtmlLocale
-} from '../src/AcExHtmlI18n'
+} from '@mlightcad/cad-html-core'
 
 describe('AcExHtmlI18n', () => {
   const originalNavigator = globalThis.navigator

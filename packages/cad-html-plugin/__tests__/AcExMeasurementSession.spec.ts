@@ -1,9 +1,10 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
 import { TextDecoder, TextEncoder } from 'util'
 import * as THREE from 'three'
 
-import { AcExHtmlI18n } from '../src/AcExHtmlI18n'
+import { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import type { AcExMeasureViewApi } from '../src/AcExMeasurement'
 
 Object.assign(globalThis, { TextDecoder, TextEncoder })

@@ -16,9 +16,9 @@ import {
   probePackageManifest,
   readManifestUrlFromSearchParams,
   resolveViewerManifestUrl
-} from '../src/AcExHtmlPackageBootstrap'
-import { ACEX_PACKAGE_VERSION } from '../src/AcExPackageTypes'
-import { ACEX_SNAPSHOT_VERSION } from '../src/AcExSnapshotTypes'
+} from '@mlightcad/cad-html-core'
+import { ACEX_PACKAGE_VERSION } from '@mlightcad/cad-html-core'
+import { ACEX_SNAPSHOT_VERSION } from '@mlightcad/cad-html-core'
 
 function validManifestJson(overrides?: Record<string, unknown>): string {
   return JSON.stringify({

@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 import {
   ACEX_OVERLAY_ARROW_WCS,
   ACEX_OVERLAY_BASE_ZOOM,

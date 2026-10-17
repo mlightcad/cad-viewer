@@ -1,6 +1,8 @@
 /**
  * @jest-environment jsdom
  */
+
+import './helpers/installTextCodecs'
 jest.mock('../src/AcExHtmlSimpleViewerUi', () => ({
   ACED_TOUCH_POINT_LONG_PRESS_MS: 500,
   ACED_TOUCH_POINT_MOVE_CANCEL_PX: 10

@@ -76,7 +76,8 @@ export const VIEWER_PACKAGE_IDS = [
   'cad-simple-viewer',
   'cad-diff-viewer',
   'cad-viewer',
-  'three-renderer'
+  'three-renderer',
+  'cad-html-core'
 ] as const
 
 /**
@@ -146,6 +147,11 @@ export const exampleManualChunks: ManualChunksOption = (id: string) => {
     /(?:^|\/)pdf-lib(?:\/|$)/.test(id.replace(/\\/g, '/'))
   ) {
     return 'cad-pdf-plugin'
+  }
+
+  // Shared ACEX codecs / packagers ship with the HTML plugin chunk.
+  if (matchMonorepoPackage(id, 'cad-html-core')) {
+    return 'cad-html-plugin'
   }
 
   for (const pluginId of PLUGIN_PACKAGE_IDS) {

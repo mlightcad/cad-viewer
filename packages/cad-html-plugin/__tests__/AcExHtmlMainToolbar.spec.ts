@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 import { TextDecoder, TextEncoder } from 'util'
 
 Object.assign(globalThis, { TextDecoder, TextEncoder })
@@ -32,7 +34,7 @@ jest.mock('../src/AcExHtmlSimpleViewerUi', () => {
   }
 })
 
-import type { AcExHtmlI18n } from '../src/AcExHtmlI18n'
+import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import {
   acexHtmlCreateMainToolbarItems,
   setupAcExHtmlMainToolbar,

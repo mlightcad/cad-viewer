@@ -5,13 +5,14 @@
  * @packageDocumentation
  */
 
+import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
+import type { AcExExtents } from '@mlightcad/cad-html-core'
+import { AcExHtmlIcons } from '@mlightcad/cad-html-core'
 import { AcGeCircArc2d, AcGeMathUtil } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import type { AcExCommandSessionUiState } from './AcExCommandSessionPanel'
 import { AcExConfirmedPointMarks } from './AcExConfirmedPointMarks'
-import type { AcExHtmlI18n } from './AcExHtmlI18n'
-import { AcExHtmlIcons } from './AcExHtmlIcons'
 import {
   ACEX_OVERLAY_ARROW_SIZE_PX,
   acexPixelsPerWorldUnit,
@@ -65,7 +66,6 @@ import type { AcExCircleOrArcNearHit, AcExOsnapPoint } from './AcExOsnap'
 import { acexIsOverlayGrip, acexOverlayGripClassName } from './AcExOverlayGrip'
 import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
 import type { AcExSessionHistory } from './AcExSessionHistory'
-import type { AcExExtents } from './AcExSnapshotTypes'
 
 /**
  * THREE/WebGL color for measurement overlays (lines, preview rubber-band).

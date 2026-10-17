@@ -6,14 +6,14 @@
  * @packageDocumentation
  */
 
-import type { AcExHtmlI18n, AcExHtmlMessageKey } from './AcExHtmlI18n'
+import type { AcExHtmlI18n, AcExHtmlMessageKey } from '@mlightcad/cad-html-core'
 import {
   ACEX_DEFAULT_MANIFEST_FILE,
   type AcExLocalFolderOpenSupport,
   buildPackageDirectoryFileMap,
   canOpenLocalPackageFolder,
   createPackageDirectoryFetch,
-  detectLocalFolderOpenSupport} from './AcExHtmlPackageBootstrap'
+  detectLocalFolderOpenSupport} from '@mlightcad/cad-html-core'
 
 export type AcExHtmlPackageSourceChoice =
   | { kind: 'url'; href: string }

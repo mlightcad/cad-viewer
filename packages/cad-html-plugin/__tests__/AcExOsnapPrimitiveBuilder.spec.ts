@@ -32,7 +32,7 @@ import {
   acdbHostApplicationServices
 } from '@mlightcad/data-model'
 
-import { buildOsnapCatalog } from '../src/AcExOsnapPrimitiveBuilder'
+import { buildOsnapCatalog } from '@mlightcad/cad-html-core'
 import { AcExOsnapIndex } from '../src/AcExOsnap'
 
 describe('buildOsnapCatalog', () => {

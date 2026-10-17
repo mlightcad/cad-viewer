@@ -1,14 +1,14 @@
-import { estimateLineBatchBytes, estimateMeshBatchBytes } from '../src/AcExBatchBinaryCodec'
+import { estimateLineBatchBytes, estimateMeshBatchBytes } from '@mlightcad/cad-html-core'
 import {
   splitLineBatch,
   splitMeshBatch
-} from '../src/AcExGeometryBatchSplit'
-import { splitLayoutIntoSlices } from '../src/AcExPackageBuilder'
+} from '@mlightcad/cad-html-core'
+import { splitLayoutIntoSlices } from '@mlightcad/cad-html-core'
 import {
   ACEX_DEFAULT_CHUNK_MAX_BYTES,
   ACEX_MAX_GEOMETRY_BATCH_BYTES
-} from '../src/AcExPackageTypes'
-import type { AcExLayoutSnapshot, AcExLineBatch, AcExMeshBatch } from '../src/AcExSnapshotTypes'
+} from '@mlightcad/cad-html-core'
+import type { AcExLayoutSnapshot, AcExLineBatch, AcExMeshBatch } from '@mlightcad/cad-html-core'
 
 function sequentialLinePositions(segmentCount: number): Float32Array {
   const positions = new Float32Array(segmentCount * 6)

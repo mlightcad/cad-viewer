@@ -1,11 +1,11 @@
 import { strFromU8, zipSync } from 'fflate'
 
 import { resolveAcApHtmlPackageBuildOptions } from '../src/AcApHtmlExportOptions'
-import { decodeChunkGzip, encodeChunkGzip } from '../src/AcExChunkBinaryCodec'
+import { decodeChunkGzip, encodeChunkGzip } from '@mlightcad/cad-html-core'
 import {
   buildAcExPackage,
   splitLayoutIntoSlices
-} from '../src/AcExPackageBuilder'
+} from '@mlightcad/cad-html-core'
 import {
   ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY,
   createAcExOrderedBytePrefetcher,
@@ -15,13 +15,13 @@ import {
   resolveChunkUrl,
   resolvePackageManifestUrl,
   snapshotSkeletonFromManifest
-} from '../src/AcExPackageLoader'
+} from '@mlightcad/cad-html-core'
 import {
   unzipAcExPackageFiles,
   zipAcExPackageFiles
-} from '../src/AcExPackageZip'
-import type { AcExSnapshot } from '../src/AcExSnapshotTypes'
-import { ACEX_SNAPSHOT_VERSION } from '../src/AcExSnapshotTypes'
+} from '@mlightcad/cad-html-core'
+import type { AcExSnapshot } from '@mlightcad/cad-html-core'
+import { ACEX_SNAPSHOT_VERSION } from '@mlightcad/cad-html-core'
 
 function f32(values: number[]): Float32Array {
   return Float32Array.from(values)

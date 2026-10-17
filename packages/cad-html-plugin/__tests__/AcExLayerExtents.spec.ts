@@ -3,7 +3,7 @@ import {
   computeLayoutExtents,
   computeLayoutViewExtents,
   resolveLayoutViewExtents
-} from '../src/AcExLayerExtents'
+} from '@mlightcad/cad-html-core'
 
 function f32(values: number[]): Float32Array {
   return Float32Array.from(values)

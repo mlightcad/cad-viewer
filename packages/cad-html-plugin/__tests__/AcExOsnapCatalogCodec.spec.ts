@@ -3,8 +3,8 @@ import {
   encodeOsnapCatalogBinary,
   encodeOsnapCatalogGzip,
   splitOsnapPrimitives
-} from '../src/AcExOsnapCatalogCodec'
-import type { AcExOsnapCatalog } from '../src/AcExOsnapPrimitiveTypes'
+} from '@mlightcad/cad-html-core'
+import type { AcExOsnapCatalog } from '@mlightcad/cad-html-core'
 
 describe('AcExOsnapCatalogCodec', () => {
   it('round-trips mixed primitive kinds through ACEO gzip', () => {

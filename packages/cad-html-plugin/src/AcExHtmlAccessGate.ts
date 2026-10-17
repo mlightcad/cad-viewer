@@ -1,9 +1,9 @@
+import type { AcExHtmlI18n, AcExHtmlMessageKey } from '@mlightcad/cad-html-core'
 import {
   ACEX_HTML_EXPIRY_COUNTDOWN_MS,
   formatAcExHtmlCountdown,
   formatAcExHtmlExpiresAt
-} from './AcExHtmlAccess'
-import type { AcExHtmlI18n, AcExHtmlMessageKey } from './AcExHtmlI18n'
+} from '@mlightcad/cad-html-core'
 
 /** Maximum wrong-password attempts before the access gate is locked. */
 export const ACEX_HTML_MAX_PASSWORD_ATTEMPTS = 3

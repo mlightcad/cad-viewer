@@ -1,6 +1,8 @@
 /**
  * @jest-environment jsdom
  */
+
+import './helpers/installTextCodecs'
 import type { AcExHtmlNavMode } from '../src/AcExHtmlNavTools'
 import {
   AcExDesktopIdlePointerStrategy,

@@ -5,15 +5,14 @@
  * @packageDocumentation
  */
 
-import { AcGeCircArc2d, AcGeTol } from '@mlightcad/data-model'
-
-import { wcsPointToOcsArcAngle } from './AcExOsnapPrimitiveToAcGe'
 import type {
   AcExOsnapArcPrimitive,
   AcExOsnapLinePrimitive,
   AcExOsnapPathPrimitive,
   AcExOsnapPrimitive
-} from './AcExOsnapPrimitiveTypes'
+} from '@mlightcad/cad-html-core'
+import { wcsPointToOcsArcAngle } from '@mlightcad/cad-html-core'
+import { AcGeCircArc2d, AcGeTol } from '@mlightcad/data-model'
 
 /** Line or bulge-arc edge produced by {@link expandOsnapPath}. */
 export type AcExOsnapPathEdge = AcExOsnapLinePrimitive | AcExOsnapArcPrimitive

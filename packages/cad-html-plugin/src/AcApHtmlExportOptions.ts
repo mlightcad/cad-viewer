@@ -1,21 +1,19 @@
-import type { AcTrView2d } from '@mlightcad/cad-simple-viewer'
-
-import type { AcApHtmlExpiryDays } from './AcExHtmlAccess'
-import { ACEX_DEFAULT_CHUNK_MAX_BYTES } from './AcExPackageTypes'
+import type { AcApHtmlExpiryDays } from '@mlightcad/cad-html-core'
 import type {
   AcExInitialViewMode,
   AcExViewerMode,
   AcExViewState
-} from './AcExSnapshotTypes'
+} from '@mlightcad/cad-html-core'
+import { ACEX_DEFAULT_CHUNK_MAX_BYTES } from '@mlightcad/cad-html-core'
+import type { AcTrView2d } from '@mlightcad/cad-simple-viewer'
 
-export type { AcApHtmlExpiryDays } from './AcExHtmlAccess'
+export type { AcApHtmlExpiryDays } from '@mlightcad/cad-html-core'
 
 /** Matches the offline HTML viewer orthographic half-height in world units. */
 const HTML_VIEWER_CAMERA_FRUSTUM = 400
 
-/** Default max geometry chunk size expressed in mebibytes (2 MiB). */
-export const ACEX_DEFAULT_CHUNK_SIZE_MIB =
-  ACEX_DEFAULT_CHUNK_MAX_BYTES / (1024 * 1024)
+/** Default max geometry chunk size for multi-file packages (10 MiB). */
+export const ACEX_DEFAULT_CHUNK_SIZE_MIB = 10
 
 /** Minimum allowed geometry chunk size in mebibytes for multi-file export. */
 export const ACEX_MIN_CHUNK_SIZE_MIB = 1
@@ -83,7 +81,7 @@ export interface AcApHtmlExportOptions {
   password?: string
   /**
    * Max uncompressed bytes per geometry (ACEC) or OSNAP (ACEO) chunk for
-   * multi-file packages. Defaults to {@link ACEX_DEFAULT_CHUNK_MAX_BYTES} (~2 MiB).
+   * multi-file packages. Defaults to {@link ACEX_DEFAULT_CHUNK_SIZE_MIB} (10 MiB).
    * Ignored when {@link AcApHtmlExportOptions.exportFormat} is `'single'`.
    */
   maxChunkBytes?: number
@@ -175,7 +173,8 @@ export function resolveAcApHtmlPackageBuildOptions(
   maxOsnapChunkBytes: number
   compressChunks: boolean
 } {
-  const maxChunkBytes = options.maxChunkBytes ?? ACEX_DEFAULT_CHUNK_MAX_BYTES
+  const maxChunkBytes =
+    options.maxChunkBytes ?? acexChunkSizeMiBToBytes(ACEX_DEFAULT_CHUNK_SIZE_MIB)
   const compressChunks = options.compressChunks !== false
   return {
     maxChunkBytes,

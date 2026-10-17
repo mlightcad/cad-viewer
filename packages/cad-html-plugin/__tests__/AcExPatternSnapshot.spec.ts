@@ -11,7 +11,7 @@ import {
   extractLinePattern,
   rebaseHatchPatternToLocalOffset,
   transformHatchPatternToWorldSpace
-} from '../src/AcExPatternSnapshot'
+} from '@mlightcad/cad-html-core'
 import {
   createGradientHatchShaderMaterial,
   createHatchPatternShaderMaterial

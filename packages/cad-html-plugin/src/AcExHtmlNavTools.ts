@@ -1,5 +1,5 @@
-import type { AcExHtmlI18n } from './AcExHtmlI18n'
-import type { AcExExtents } from './AcExSnapshotTypes'
+import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
+import type { AcExExtents } from '@mlightcad/cad-html-core'
 
 /** Idle navigation tools on the first-level HTML toolbar. */
 export type AcExHtmlNavMode = 'select' | 'pan' | 'zoom-window'

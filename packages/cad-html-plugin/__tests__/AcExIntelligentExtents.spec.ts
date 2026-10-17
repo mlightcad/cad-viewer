@@ -1,8 +1,8 @@
 import {
   collectLayoutBatchExtentEntries,
   computeIntelligentExtentsFromBatchEntries
-} from '../src/AcExLayerExtents'
-import type { AcExLineBatch } from '../src/AcExSnapshotTypes'
+} from '@mlightcad/cad-html-core'
+import type { AcExLineBatch } from '@mlightcad/cad-html-core'
 
 function makeLineBatch(
   layer: string,

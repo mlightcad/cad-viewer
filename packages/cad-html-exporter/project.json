@@ -1,0 +1,44 @@
+{
+  "name": "@mlightcad/cad-html-exporter",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/cad-html-exporter/src",
+  "projectType": "library",
+  "tags": [
+    "npm:private"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc && vite build && node scripts/copy-viewer-runtime.mjs",
+        "cwd": "packages/cad-html-exporter"
+      },
+      "dependsOn": [
+        "^build",
+        "@mlightcad/cad-html-plugin:build"
+      ],
+      "cache": true
+    },
+    "clean": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "rimraf dist lib tsconfig.tsbuildinfo runtime",
+        "cwd": "packages/cad-html-exporter"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint src/",
+        "cwd": "packages/cad-html-exporter"
+      }
+    },
+    "lint:fix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint --fix --quiet src/",
+        "cwd": "packages/cad-html-exporter"
+      }
+    }
+  }
+}

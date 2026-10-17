@@ -2,7 +2,7 @@ import {
   ACEX_HTML_SHELL_CSS,
   buildAcExHtmlShellBody,
   ML_UI_COMPACT_MAX_WIDTH
-} from '../src/AcExHtmlShell'
+} from '@mlightcad/cad-html-core'
 
 describe('ACEX_HTML_SHELL_CSS', () => {
   it('hides drawer title rows on the phone breakpoint', () => {

@@ -1,8 +1,9 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
 import { TextDecoder, TextEncoder } from 'util'
 
-import type { AcExHtmlI18n } from '../src/AcExHtmlI18n'
+import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 
 Object.assign(globalThis, { TextDecoder, TextEncoder })
 

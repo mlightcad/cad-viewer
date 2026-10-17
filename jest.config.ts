@@ -26,6 +26,8 @@ const config: Config = {
   testPathIgnorePatterns: ['/e2e/', '/__tests__/helpers/'],
   moduleNameMapper: {
     '^lodash-es$': 'lodash',
+    '^@mlightcad/cad-html-core$':
+      '<rootDir>/packages/cad-html-core/src/index.ts',
     '^@mlightcad/cad-simple-viewer$':
       '<rootDir>/packages/cad-simple-viewer/src/index.ts',
     '^@mlightcad/cad-simple-viewer/icons$':

@@ -1,0 +1,47 @@
+{
+  "name": "@mlightcad/cad-html-core",
+  "version": "1.7.6-preview.0",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "files": [
+    "dist",
+    "lib",
+    "README.md",
+    "package.json"
+  ],
+  "main": "./dist/cad-html-core.umd.cjs",
+  "module": "./dist/cad-html-core.js",
+  "types": "./lib/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./dist/cad-html-core.js",
+      "require": "./dist/cad-html-core.umd.cjs"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build": "tsc && vite build",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "dependencies": {
+    "fflate": "^0.8.2"
+  },
+  "devDependencies": {
+    "@mlightcad/data-model": "^1.15.11",
+    "@mlightcad/three-renderer": "workspace:*",
+    "@types/three": "^0.172.0",
+    "three": "^0.172.0"
+  },
+  "peerDependencies": {
+    "@mlightcad/data-model": "^1.15.11",
+    "@mlightcad/three-renderer": "workspace:*",
+    "three": "^0.172.0"
+  }
+}

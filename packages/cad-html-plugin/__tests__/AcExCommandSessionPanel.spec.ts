@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 jest.mock('../../cad-simple-viewer/src/ui/AcUiHelpPanel', () => ({
   AcUiHelpPanel: jest.fn().mockImplementation(() => ({
     showDocs: jest.fn(),
@@ -25,8 +27,8 @@ jest.mock('../src/AcExHtmlSimpleViewerUi', () => {
 })
 
 import { AcExCommandSessionPanel } from '../src/AcExCommandSessionPanel'
-import { AcExHtmlI18n } from '../src/AcExHtmlI18n'
-import { ML_UI_MOBILE_MAX_WIDTH } from '../src/AcExHtmlShell'
+import { AcExHtmlI18n } from '@mlightcad/cad-html-core'
+import { ML_UI_MOBILE_MAX_WIDTH } from '@mlightcad/cad-html-core'
 
 function mountRoot(): HTMLElement {
   document.body.innerHTML = `<div id="mlcad-root"><div id="mlcad-canvas-host"></div><footer id="mlcad-status-bar"></footer></div>`

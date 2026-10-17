@@ -9,21 +9,21 @@
  * @packageDocumentation
  */
 
+import type {
+  AcExOsnapMode,
+  AcExOsnapPrimitive
+} from '@mlightcad/cad-html-core'
+import {
+  type AcExOsnapAcGeCurve,
+  ellipsePointAtNormalized,
+  primitiveToAcGeCurve
+} from '@mlightcad/cad-html-core'
 import { AcGeCircArc2d, type AcGePoint2dLike } from '@mlightcad/data-model'
 
 import {
   expandOsnapPath,
   pathEdgeNearAperture
 } from './AcExOsnapPath'
-import {
-  type AcExOsnapAcGeCurve,
-  ellipsePointAtNormalized,
-  primitiveToAcGeCurve
-} from './AcExOsnapPrimitiveToAcGe'
-import type {
-  AcExOsnapMode,
-  AcExOsnapPrimitive
-} from './AcExOsnapPrimitiveTypes'
 
 /**
  * Squared Euclidean distance between two XY points.

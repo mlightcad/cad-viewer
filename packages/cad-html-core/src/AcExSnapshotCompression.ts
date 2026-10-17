@@ -29,23 +29,55 @@ export interface AcExEncodedSnapshot {
   compression: AcExSnapshotCompression
 }
 
+/**
+ * Gzip implementation used by snapshot and chunk encoding.
+ * Browsers keep fflate / {@link CompressionStream}. Node hosts (the headless
+ * exporter) install `zlib` so chunk gzip runs on the libuv thread pool.
+ */
+export interface AcExSnapshotCompressor {
+  gzipSync: (data: Uint8Array) => Uint8Array
+  gzip: (data: Uint8Array) => Promise<Uint8Array>
+}
+
+let snapshotCompressor: AcExSnapshotCompressor | null = null
+
+/**
+ * Overrides gzip for snapshot and package-chunk encoding.
+ * Pass `null` to restore the default fflate / {@link CompressionStream} path.
+ */
+export function setAcExSnapshotCompressor(
+  compressor: AcExSnapshotCompressor | null
+): void {
+  snapshotCompressor = compressor
+}
+
 /** Compresses a snapshot binary payload with gzip for HTML export. */
 export function compressSnapshotBinary(
   data: Uint8Array
 ): AcExCompressedSnapshotBinary {
+  const bytes = snapshotCompressor
+    ? snapshotCompressor.gzipSync(data)
+    : gzipSync(data)
   return {
-    bytes: gzipSync(data),
+    bytes,
     compression: ACEX_SNAPSHOT_COMPRESSION
   }
 }
 
 /**
- * Async gzip using the browser {@link CompressionStream} when available so
- * multiple chunk encodes can overlap. Falls back to sync {@link gzipSync}.
+ * Async gzip so multiple chunk encodes can overlap.
+ * Uses an installed compressor when present (Node `zlib`), otherwise the
+ * browser {@link CompressionStream}, then sync {@link gzipSync}.
  */
 export async function compressSnapshotBinaryAsync(
   data: Uint8Array
 ): Promise<AcExCompressedSnapshotBinary> {
+  if (snapshotCompressor) {
+    return {
+      bytes: await snapshotCompressor.gzip(data),
+      compression: ACEX_SNAPSHOT_COMPRESSION
+    }
+  }
   if (typeof CompressionStream === 'undefined') {
     return compressSnapshotBinary(data)
   }

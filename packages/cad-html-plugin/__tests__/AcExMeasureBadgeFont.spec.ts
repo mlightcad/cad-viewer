@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 import {
   acexClampMeasureBadgeFontSize,
   acexEstimateMeasureBadgeWidthPx,

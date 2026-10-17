@@ -1,4 +1,4 @@
-import type { AcExExtents } from './AcExSnapshotTypes'
+import type { AcExExtents } from '@mlightcad/cad-html-core'
 
 /** AutoCAD-style box selection semantics. */
 export type AcExSelectionMode = 'window' | 'crossing'

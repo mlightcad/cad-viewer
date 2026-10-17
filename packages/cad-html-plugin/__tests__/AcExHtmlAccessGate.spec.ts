@@ -1,12 +1,14 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 import {
   ACEX_HTML_MAX_PASSWORD_ATTEMPTS,
   lockAcExHtmlAccessGate,
   promptAcExHtmlAccessPassword,
   showAcExHtmlAccessExpired
 } from '../src/AcExHtmlAccessGate'
-import { AcExHtmlI18n } from '../src/AcExHtmlI18n'
+import { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 
 describe('AcExHtmlAccessGate', () => {
   beforeEach(() => {

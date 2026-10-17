@@ -5,10 +5,10 @@
  * @packageDocumentation
  */
 
+import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import { AcCmColor, AcCmColorUtil } from '@mlightcad/data-model'
 
 import type { AcExSessionAccessory } from './AcExCommandSessionPanel'
-import type { AcExHtmlI18n } from './AcExHtmlI18n'
 import { acexScreenPxToWcs } from './AcExHtmlOverlayDom'
 import {
   AcUiAciColorDialog,

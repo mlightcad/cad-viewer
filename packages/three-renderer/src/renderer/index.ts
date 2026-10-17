@@ -1,3 +1,4 @@
+export * from './AcTrDirectBatch'
 export * from './AcTrEntityPreview'
 export * from './AcTrFontLoader'
 export * from './AcTrMTextRenderer'

@@ -1,10 +1,11 @@
+import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import {
   ACEX_HTML_EXPIRY_COUNTDOWN_MS,
   formatAcExHtmlCountdown,
   formatAcExHtmlExpiresAt
-} from './AcExHtmlAccess'
+} from '@mlightcad/cad-html-core'
+
 import { showAcExHtmlAccessExpired } from './AcExHtmlAccessGate'
-import type { AcExHtmlI18n } from './AcExHtmlI18n'
 
 /**
  * Options for {@link setupAcExHtmlExpiryMonitor}.

@@ -6,10 +6,10 @@ import * as THREE from 'three'
 import {
   createViewerMeshMaterial,
   extractHatchPattern
-} from '../src/AcExPatternSnapshot'
-import { collectBatchesFromObject3D } from '../src/AcExSceneBatchCollector'
-import { decodeSnapshot, encodeSnapshot } from '../src/AcExSnapshotCodec'
-import { ACEX_SNAPSHOT_VERSION } from '../src/AcExSnapshotTypes'
+} from '@mlightcad/cad-html-core'
+import { collectBatchesFromObject3D } from '@mlightcad/cad-html-core'
+import { decodeSnapshot, encodeSnapshot } from '@mlightcad/cad-html-core'
+import { ACEX_SNAPSHOT_VERSION } from '@mlightcad/cad-html-core'
 
 function createPatternedHatchMaterial(
   styleManager: AcTrStyleManager,

@@ -1,3 +1,59 @@
+import type { AcExPackageManifest } from '@mlightcad/cad-html-core'
+import type {
+  AcExExtents,
+  AcExLayoutSnapshot,
+  AcExLineBatch,
+  AcExMeshBatch,
+  AcExSnapshot,
+  AcExViewerMode
+} from '@mlightcad/cad-html-core'
+import { decodeChunkPayload } from '@mlightcad/cad-html-core'
+import { acexSetDocsBaseUrl } from '@mlightcad/cad-html-core'
+import {
+  createAcExHtmlAccessKey,
+  decryptAcExHtmlSnapshotPayload,
+  isAcExHtmlAccessExpired,
+  parseAcExHtmlAccessManifest
+} from '@mlightcad/cad-html-core'
+import { parseAcExHtmlBinaryEncoding } from '@mlightcad/cad-html-core'
+import {
+  createAcExDomEmbeddedPackageFetch,
+  decryptAcExEmbeddedManifest,
+  parseAcExEmbeddedPackageConfig
+} from '@mlightcad/cad-html-core'
+import { AcExHtmlI18n, detectAcExHtmlLocale } from '@mlightcad/cad-html-core'
+import { AcExHtmlIcons } from '@mlightcad/cad-html-core'
+import {
+  ACEX_PACKAGE_DIRECTORY_ORIGIN,
+  acexGlobalFetch,
+  chooseInitialManifestHref,
+  probePackageManifest,
+  resolveViewerManifestUrl
+} from '@mlightcad/cad-html-core'
+import {
+  type AcExBatchExtentEntry,
+  collectLayoutBatchExtentEntries,
+  computeIntelligentExtentsFromBatchEntries,
+  computeLayerExtentsMap,
+  resolveLayoutViewExtents} from '@mlightcad/cad-html-core'
+import {
+  ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY,
+  createAcExOrderedBytePrefetcher,
+  loadAcExPackageLayoutOsnap,
+  resolveChunkUrl,
+  snapshotSkeletonFromManifest
+} from '@mlightcad/cad-html-core'
+import {
+  AcExCameraZoomUniform,
+  createViewerLineMaterial,
+  createViewerMeshMaterial,
+  createViewerPointsMaterial
+} from '@mlightcad/cad-html-core'
+import {
+  decodeSnapshotFromCompressedBytes,
+  snapshotPayloadToCompressedBytes
+} from '@mlightcad/cad-html-core'
+import { ACEX_MAX_COMPRESSED_BYTES } from '@mlightcad/cad-html-core'
 import { accmYieldForPaint, FLOAT_TOL } from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
@@ -5,38 +61,22 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
-import { decodeChunkPayload } from './AcExChunkBinaryCodec'
 import {
   AcExCommandSessionPanel,
   type AcExCommandSessionUiState
 } from './AcExCommandSessionPanel'
 import { acexCssTopLeftRectToGl, acexWcsBoxToCssRect } from './AcExCssRect'
-import { acexSetDocsBaseUrl } from './AcExDocsUrl'
-import {
-  createAcExHtmlAccessKey,
-  decryptAcExHtmlSnapshotPayload,
-  isAcExHtmlAccessExpired,
-  parseAcExHtmlAccessManifest
-} from './AcExHtmlAccess'
 import {
   ACEX_HTML_MAX_PASSWORD_ATTEMPTS,
   lockAcExHtmlAccessGate,
   promptAcExHtmlAccessPassword,
   showAcExHtmlAccessExpired
 } from './AcExHtmlAccessGate'
-import { parseAcExHtmlBinaryEncoding } from './AcExHtmlBinaryText'
 import {
   acexHtmlIsPhoneLayout,
   setupAcExHtmlDrawerSheets
 } from './AcExHtmlDrawerSheet'
-import {
-  createAcExDomEmbeddedPackageFetch,
-  decryptAcExEmbeddedManifest,
-  parseAcExEmbeddedPackageConfig
-} from './AcExHtmlEmbeddedPackage'
 import { setupAcExHtmlExpiryMonitor } from './AcExHtmlExpiryUi'
-import { AcExHtmlI18n, detectAcExHtmlLocale } from './AcExHtmlI18n'
-import { AcExHtmlIcons } from './AcExHtmlIcons'
 import {
   type AcExHtmlMainToolbarController,
   setupAcExHtmlMainToolbar
@@ -44,13 +84,6 @@ import {
 import { setupAcExHtmlMeasurePanel } from './AcExHtmlMeasurePanel'
 import { setupAcExHtmlMeasureSettings } from './AcExHtmlMeasureSettings'
 import { setupAcExHtmlNavTools } from './AcExHtmlNavTools'
-import {
-  ACEX_PACKAGE_DIRECTORY_ORIGIN,
-  acexGlobalFetch,
-  chooseInitialManifestHref,
-  probePackageManifest,
-  resolveViewerManifestUrl
-} from './AcExHtmlPackageBootstrap'
 import { promptAcExHtmlPackageSource } from './AcExHtmlPackageSourceGate'
 import { setupAcExHtmlReviewPanel } from './AcExHtmlReviewPanel'
 import { acexSyncHtmlShortCutSelection } from './AcExHtmlShortCutSelection'
@@ -63,12 +96,6 @@ import {
   type AcExIdlePointerHost,
   acexIdlePointerStrategy
 } from './AcExIdlePointerStrategy'
-import {
-  type AcExBatchExtentEntry,
-  collectLayoutBatchExtentEntries,
-  computeIntelligentExtentsFromBatchEntries,
-  computeLayerExtentsMap,
-  resolveLayoutViewExtents} from './AcExLayerExtents'
 import { AcExMarkupController } from './AcExMarkup'
 import { AcExMeasureController } from './AcExMeasurement'
 import {
@@ -84,14 +111,6 @@ import {
 } from './AcExOsnap'
 import { AcExOsnapMarker } from './AcExOsnapMarker'
 import {
-  ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY,
-  createAcExOrderedBytePrefetcher,
-  loadAcExPackageLayoutOsnap,
-  resolveChunkUrl,
-  snapshotSkeletonFromManifest
-} from './AcExPackageLoader'
-import type { AcExPackageManifest } from './AcExPackageTypes'
-import {
   computeOnscreenPaperViewportPass,
   computeViewportCamera,
   findDrillThroughViewport,
@@ -100,12 +119,6 @@ import {
   snapshotHasPaperViewports,
   viewportPaperToModelScale
 } from './AcExPaperViewport'
-import {
-  AcExCameraZoomUniform,
-  createViewerLineMaterial,
-  createViewerMeshMaterial,
-  createViewerPointsMaterial
-} from './AcExPatternSnapshot'
 import { acexSelectionModeFromDrag } from './AcExSelectionBox'
 import { setupAcExSessionDrawStyle } from './AcExSessionDrawStyle'
 import { createAcExSessionHistory } from './AcExSessionHistory'
@@ -119,19 +132,6 @@ import {
   ACEX_SNAP_LOUPE_ZOOM,
   AcExSnapLoupe
 } from './AcExSnapLoupe'
-import {
-  decodeSnapshotFromCompressedBytes,
-  snapshotPayloadToCompressedBytes
-} from './AcExSnapshotCodec'
-import { ACEX_MAX_COMPRESSED_BYTES } from './AcExSnapshotCompression'
-import type {
-  AcExExtents,
-  AcExLayoutSnapshot,
-  AcExLineBatch,
-  AcExMeshBatch,
-  AcExSnapshot,
-  AcExViewerMode
-} from './AcExSnapshotTypes'
 import {
   acexIsSimulatedMouseEnabled,
   type AcExTouchPickHudHost,

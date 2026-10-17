@@ -1,7 +1,8 @@
 /**
  * Toolbar icon lookup and HTML button helpers for the offline HTML shell.
  *
- * SVG glyphs live in `@mlightcad/cad-simple-viewer/icons`.
+ * SVG glyphs are vendored in {@link ./AcExHtmlIconSvgs} so this package does
+ * not depend on `@mlightcad/cad-simple-viewer`.
  */
 
 import {
@@ -52,7 +53,7 @@ import {
   ICON_ZOOM_ORIGINAL,
   ICON_ZOOM_SMART,
   ICON_ZOOM_WINDOW
-} from '@mlightcad/cad-simple-viewer/icons'
+} from './AcExHtmlIconSvgs'
 
 /**
  * Inline SVG markup keyed by toolbar / layer UI usage.

@@ -1,5 +1,7 @@
 /** @jest-environment jsdom */
 
+import './helpers/installTextCodecs'
+
 import {
   acexHtmlIsCompactLayout,
   acexHtmlIsMobileNavUi,
@@ -9,7 +11,7 @@ import {
 import {
   ML_UI_COMPACT_MAX_WIDTH,
   ML_UI_MOBILE_MAX_WIDTH
-} from '../src/AcExHtmlShell'
+} from '@mlightcad/cad-html-core'
 
 describe('setupAcExHtmlDrawerSheets', () => {
   const originalMatchMedia = window.matchMedia
