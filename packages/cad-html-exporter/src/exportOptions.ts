@@ -37,6 +37,11 @@ export interface AcExHtmlExporterOptions {
   exportInvisibleLayers?: boolean
   exportLayouts?: boolean
   initialView?: AcExInitialViewMode
+  /**
+   * Toolbar written into the HTML. Defaults to `'measure'`: distance, area,
+   * and the other measure tools, plus review markup. `'view'` is pan, zoom,
+   * and layers only — no object-snap index and no measure or markup tools.
+   */
   viewerMode?: AcExViewerMode
   /**
    * How long a single-file HTML remains valid. Defaults to `'never'`.

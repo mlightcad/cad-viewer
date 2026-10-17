@@ -82,6 +82,9 @@ async function convertOpenDatabaseToSnapshot(
 
   const renderer = AcTrRenderer.createForExport({ width, height })
   renderer.context.database = database
+  // Browser glyph draws yield every 32ms so the UI can paint. That timer
+  // delay only slows a headless export.
+  renderer.context.yieldDuringAsyncDraw = false
 
   const modelSpace = database.tables.blockTable.modelSpace
   const modelSpaceBtrId = modelSpace.objectId
@@ -190,7 +193,7 @@ async function convertOpenDatabaseToSnapshot(
     exportInvisibleLayers,
     exportLayouts,
     initialView: options.initialView,
-    viewerMode: options.viewerMode,
+    viewerMode: options.viewerMode ?? 'measure',
     canvasAspectRatio: width / height
   })
   const snapshotMs = performance.now() - tSnapshot

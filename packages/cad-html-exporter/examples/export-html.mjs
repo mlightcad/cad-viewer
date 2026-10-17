@@ -30,7 +30,7 @@ Options:
   --no-zip                  Multi-file: write package files into <output>
   --fonts-dir <path>        Local font library (folder, fonts.json, or cad-data root)
   --fonts-url <url>         Remote font library base URL (ignored when --fonts-dir is set)
-  --viewer-mode view|measure
+  --viewer-mode view|measure   Default: measure (view omits snap and measure)
   --max-chunk-mib <n>       Multi-file chunk budget, 1–64 (default 2)
   --no-compress-chunks      Write raw chunk bytes instead of .acex.gz
 `
@@ -41,7 +41,7 @@ function parseArgs(argv) {
   const options = {
     format: 'single',
     zipPackage: true,
-    viewerMode: 'view',
+    viewerMode: 'measure',
     compressChunks: true
   }
   for (let i = 0; i < argv.length; i++) {
