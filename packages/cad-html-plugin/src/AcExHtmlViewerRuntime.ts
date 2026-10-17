@@ -3013,6 +3013,9 @@ async function startViewer(): Promise<void> {
       for (const target of firstPaintLayouts) {
         await loadPackageLayoutGeometry(target)
       }
+      // Leave the last "n/n" up only while chunks are in flight. View-only
+      // packages never replace it with an OSNAP status, so clear it now.
+      clearStatusBar()
       layoutExtents = resolveLayoutViewExtents(
         layout,
         snapshot.meta.viewExtents ?? snapshot.meta.extents
