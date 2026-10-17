@@ -193,7 +193,7 @@ async function convertOpenDatabaseToSnapshot(
     exportInvisibleLayers,
     exportLayouts,
     initialView: options.initialView,
-    viewerMode: options.viewerMode,
+    viewerMode: options.viewerMode ?? 'measure',
     canvasAspectRatio: width / height
   })
   const snapshotMs = performance.now() - tSnapshot

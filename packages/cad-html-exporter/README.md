@@ -16,6 +16,8 @@ depend on `@mlightcad/cad-simple-viewer` or a browser.
   Set `zipPackage: false` and pass an output folder to write those files
   directly. Set `maxChunkBytes` (1–64 MiB, default 10 MiB) and `compressChunks`
   (default `true`; gzip of chunk payloads, independent of the outer zip).
+- `viewerMode` defaults to `measure` for both formats: measure tools and
+  review markup. Pass `view` for pan, zoom, and layers only.
 
 ## Example
 
