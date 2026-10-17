@@ -19,7 +19,7 @@ fetch serially because their bytes are already local.
 > When estimated geometry exceeds ~8 MiB, `single` HTML export embeds the same
 > ACEC/ACEO chunks inline (`#mlcad-package` with `mode: "embedded"`) and paints
 > progressively after each inflate. Chunk size defaults to ~12 MiB (larger than
-> the hosted-package 2 MiB default). Password protection encrypts the manifest
+> the hosted-package 10 MiB default). Password protection encrypts the manifest
 > and **each chunk** independently (shared PBKDF2 salt). Smaller drawings still
 > use a monolithic `#mlcad-snapshot` ACEX payload.
 
@@ -159,13 +159,13 @@ Batch records reuse the ACEX feature-flag scheme (`F_LINE_*`, `F_MESH_*`):
 
 1. Split primarily **by layout**.
 2. If a layout’s estimated uncompressed size exceeds
-   `ACEX_DEFAULT_CHUNK_MAX_BYTES` (~2 MiB), split further by batch groups into
-   `L{layoutIndex}-{slice:000}`. Gzip typically compresses a 2 MiB slice to well
-   under 200 KiB; smaller slices add inflate round-trips and slow first open.
+   the multi-file chunk budget (default 10 MiB), split further by batch groups into
+   `L{layoutIndex}-{slice:000}`. Gzip typically compresses a slice to a fraction
+   of its uncompressed size; smaller slices add inflate round-trips and slow first open.
 3. Scene collection packs geometry **by layer** (and material). A single busy
    layer can therefore be tens of megabytes in one line/mesh batch. Before
-   grouping into chunks, any batch larger than `ACEX_MAX_GEOMETRY_BATCH_BYTES`
-   (~2 MiB, same default as the chunk budget) is split into smaller batches of
+   grouping into chunks, any batch larger than the chunk budget (default 10 MiB;
+   `ACEX_MAX_GEOMETRY_BATCH_BYTES` when a caller does not override it) is split into smaller batches of
    the same layer and style. Hosts can then fetch, inflate, and paint those
    pieces independently instead of waiting on the whole layer.
 4. Textured IMAGE/OLE mesh batches are **not** split (the bitmap cannot be

@@ -1,11 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { basename, extname } from 'node:path'
 
-import {
-  AcDbDatabase,
-  AcDbFileType,
-  acdbHostApplicationServices
-} from '@mlightcad/data-model'
+import { AcDbDatabase, AcDbFileType } from '@mlightcad/data-model'
 
 import { exportDatabaseToHtml } from './exportDatabase'
 import type {
@@ -13,6 +9,7 @@ import type {
   AcExHtmlExportResult
 } from './exportOptions'
 import { ensureLibreDwgRegistered } from './registerDwg'
+import { withWorkingDatabase } from './withWorkingDatabase'
 import { writePackageDirectory } from './writePackageDirectory'
 
 /**
@@ -45,10 +42,7 @@ export async function exportFileToHtml(
   const database = new AcDbDatabase()
   // Hatch / entity conversion falls back to the host working database before
   // entities are bound — set it explicitly for Node (no viewer DocManager).
-  const host = acdbHostApplicationServices()
-  const previousDatabase = host.workingDatabase
-  host.workingDatabase = database
-  try {
+  return withWorkingDatabase(database, async () => {
     await database.read(buffer, { fileName: basename(inputPath) }, fileType)
     const readMs = performance.now() - tRead
 
@@ -75,7 +69,5 @@ export async function exportFileToHtml(
     )
 
     return result
-  } finally {
-    host.workingDatabase = previousDatabase
-  }
+  })
 }

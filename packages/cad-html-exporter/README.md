@@ -14,7 +14,7 @@ depend on `@mlightcad/cad-simple-viewer` or a browser.
 - `multi` — the ACEX package (`viewer.html`, `drawing.acex.json`, and
   geometry / OSNAP chunks). By default this is one `.zip` (`zipPackage: true`).
   Set `zipPackage: false` and pass an output folder to write those files
-  directly. Set `maxChunkBytes` (1–64 MiB, default 2 MiB) and `compressChunks`
+  directly. Set `maxChunkBytes` (1–64 MiB, default 10 MiB) and `compressChunks`
   (default `true`; gzip of chunk payloads, independent of the outer zip).
 
 ## Example

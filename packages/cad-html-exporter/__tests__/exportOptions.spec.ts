@@ -1,9 +1,9 @@
 import { resolveAcExHtmlPackageBuildOptions } from '../src/exportOptions'
 
 describe('resolveAcExHtmlPackageBuildOptions', () => {
-  it('defaults chunks to 2 MiB and gzip', () => {
+  it('defaults chunks to 10 MiB and gzip', () => {
     const build = resolveAcExHtmlPackageBuildOptions()
-    expect(build.maxChunkBytes).toBe(2 * 1024 * 1024)
+    expect(build.maxChunkBytes).toBe(10 * 1024 * 1024)
     expect(build.maxBatchBytes).toBe(build.maxChunkBytes)
     expect(build.maxOsnapChunkBytes).toBe(build.maxChunkBytes)
     expect(build.compressChunks).toBe(true)

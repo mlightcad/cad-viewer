@@ -10,7 +10,6 @@ import {
 import {
   type AcDbDatabase,
   type AcDbEntity,
-  acdbHostApplicationServices,
   AcDbViewport
 } from '@mlightcad/data-model'
 import {
@@ -26,6 +25,7 @@ import type { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegments
 
 import type { AcExHtmlExporterOptions } from './exportOptions'
 import { preloadDrawingFonts, setupExportTextRendering } from './nodeFontLoader'
+import { withWorkingDatabase } from './withWorkingDatabase'
 
 interface LayerBucket {
   group: AcTrBatchedGroup
@@ -56,14 +56,9 @@ export async function convertDatabaseToSnapshot(
   database: AcDbDatabase,
   options: AcExHtmlExporterOptions = {}
 ): Promise<AcExSnapshot> {
-  const host = acdbHostApplicationServices()
-  const previousDatabase = host.workingDatabase
-  host.workingDatabase = database
-  try {
-    return await convertOpenDatabaseToSnapshot(database, options)
-  } finally {
-    host.workingDatabase = previousDatabase
-  }
+  return withWorkingDatabase(database, () =>
+    convertOpenDatabaseToSnapshot(database, options)
+  )
 }
 
 async function convertOpenDatabaseToSnapshot(

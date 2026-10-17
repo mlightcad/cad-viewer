@@ -1,6 +1,5 @@
 import {
   type AcApHtmlExpiryDays,
-  ACEX_DEFAULT_CHUNK_MAX_BYTES,
   type AcExInitialViewMode,
   type AcExViewerMode
 } from '@mlightcad/cad-html-core'
@@ -15,6 +14,9 @@ const ACEX_MIN_CHUNK_SIZE_MIB = 1
 const ACEX_MAX_CHUNK_SIZE_MIB = 64
 
 const CHUNK_SIZE_MIB = 1024 * 1024
+
+/** Default uncompressed chunk budget for multi-file packages (10 MiB). */
+const ACEX_DEFAULT_MULTI_CHUNK_SIZE_MIB = 10
 
 /**
  * Options shared by {@link exportDatabaseToHtml} and {@link exportFileToHtml}.
@@ -52,7 +54,7 @@ export interface AcExHtmlExporterOptions {
   password?: string
   /**
    * Max uncompressed bytes per geometry (ACEC) or OSNAP (ACEO) chunk for
-   * multi-file packages. Clamped to 1–64 MiB. Defaults to ~2 MiB.
+   * multi-file packages. Clamped to 1–64 MiB. Defaults to 10 MiB.
    * Ignored when {@link AcExHtmlExporterOptions.exportFormat} is `'single'`.
    */
   maxChunkBytes?: number
@@ -149,7 +151,7 @@ export function resolveAcExHtmlPackageBuildOptions(
 
 function clampChunkBytes(bytes: number | undefined): number {
   if (bytes == null || !Number.isFinite(bytes)) {
-    return ACEX_DEFAULT_CHUNK_MAX_BYTES
+    return ACEX_DEFAULT_MULTI_CHUNK_SIZE_MIB * CHUNK_SIZE_MIB
   }
   const miB = Math.max(
     ACEX_MIN_CHUNK_SIZE_MIB,

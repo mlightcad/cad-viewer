@@ -81,12 +81,16 @@ jest.mock('../src/AcApHtmlConvertor', () => ({
   }))
 }))
 
+import { ACEX_DEFAULT_CHUNK_MAX_BYTES } from '@mlightcad/cad-html-core'
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { AcEdPromptStatus } from '@mlightcad/cad-simple-viewer'
 
 import { AcApExportHtmlCmd } from '../src/AcApExportHtmlCmd'
 import { AcApHtmlConvertor } from '../src/AcApHtmlConvertor'
-import { ACEX_DEFAULT_CHUNK_MAX_BYTES } from '@mlightcad/cad-html-core'
+import {
+  ACEX_DEFAULT_CHUNK_SIZE_MIB,
+  acexChunkSizeMiBToBytes
+} from '../src/AcApHtmlExportOptions'
 
 const getKeywords = AcApDocManager.instance.editor.getKeywords as jest.Mock
 const getInteger = AcApDocManager.instance.editor.getInteger as jest.Mock
@@ -114,7 +118,8 @@ const defaultExportOptions = {
 
 const defaultMultiExportOptions = {
   ...defaultExportOptions,
-  exportFormat: 'multi' as const
+  exportFormat: 'multi' as const,
+  maxChunkBytes: acexChunkSizeMiBToBytes(ACEX_DEFAULT_CHUNK_SIZE_MIB)
 }
 
 describe('AcApExportHtmlCmd prompt defaults', () => {
