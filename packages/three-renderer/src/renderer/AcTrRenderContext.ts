@@ -36,6 +36,13 @@ export class AcTrRenderContext extends AcGiContext {
    */
   database: AcDbDatabase | undefined = undefined
 
+  /**
+   * When `true` (default), {@link AcTrGroup} glyph `asyncDraw` returns to the
+   * event loop every few dozen milliseconds so a browser can paint.
+   * Headless export sets this to `false` so that yield does not add timer delay.
+   */
+  yieldDuringAsyncDraw = true
+
   constructor(
     styleManager: AcTrStyleManager = new AcTrStyleManager(),
     batchDrawPolicy: AcTrBatchDrawPolicy = alwaysBatchDrawPolicy

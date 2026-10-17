@@ -456,13 +456,17 @@ export class AcTrGroup extends AcTrEntity {
    * Draws empty glyph shells on this group.
    *
    * @param options.chunkSize - Glyphs started per micro-batch (default 24).
-   * @param options.yieldBudgetMs - Wall time between cooperative yields (default 32).
+   * @param options.yieldBudgetMs - Wall time between cooperative yields.
+   *   Defaults to 32 when {@link AcTrRenderContext.yieldDuringAsyncDraw} is
+   *   set, and to no yield for headless export.
    */
   private async asyncDrawPendingGlyphs(
     options: { chunkSize?: number; yieldBudgetMs?: number } = {}
   ): Promise<void> {
     const chunkSize = options.chunkSize ?? 24
-    const yieldBudgetMs = options.yieldBudgetMs ?? 32
+    const yieldBudgetMs =
+      options.yieldBudgetMs ??
+      (this.renderContext.yieldDuringAsyncDraw ? 32 : Number.POSITIVE_INFINITY)
     const sourceEntities = this.getSourceEntities()
     const tasks: Array<() => Promise<void>> = []
     const shared = new Map<string, AcTrGlyphEntity[]>()

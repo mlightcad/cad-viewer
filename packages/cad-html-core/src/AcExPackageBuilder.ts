@@ -287,7 +287,7 @@ function assemblePackageData(
   manifestFileName: string,
   encoded: Array<{
     job: GzipJob
-    uncompressed: Uint8Array
+    uncompressedByteLength: number
     compressed: Uint8Array
   }>
 ): Omit<AcExPackageFiles, 'html'> {
@@ -296,14 +296,14 @@ function assemblePackageData(
   const files: AcExPackageFiles['files'] = []
 
   for (const entry of encoded) {
-    const { job, uncompressed, compressed } = entry
+    const { job, uncompressedByteLength, compressed } = entry
     files.push({ path: job.href, bytes: compressed })
     if (job.kind === 'geometry') {
       chunkRefs.push({
         id: job.id,
         href: job.href,
         layoutBtrId: job.layoutBtrId,
-        byteLength: uncompressed.byteLength,
+        byteLength: uncompressedByteLength,
         compressedByteLength: compressed.byteLength,
         lineBatchCount: job.lineBatchCount,
         meshBatchCount: job.meshBatchCount
@@ -313,7 +313,7 @@ function assemblePackageData(
         id: job.id,
         href: job.href,
         layoutBtrId: job.layoutBtrId,
-        byteLength: uncompressed.byteLength,
+        byteLength: uncompressedByteLength,
         compressedByteLength: compressed.byteLength,
         primitiveCount: job.primitiveCount
       })
@@ -371,35 +371,52 @@ function assemblePackageData(
 }
 
 /**
- * Builds package manifest + chunk files (no HTML shell).
- * Used by multi-file zip export and self-contained embedded progressive HTML.
+ * Encodes one chunk and keeps only its uncompressed length for the manifest.
+ * The uncompressed bytes are dropped so concurrent exports do not retain both
+ * copies.
  */
 function encodePackageJob(
   job: GzipJob,
   compressChunks: boolean
 ): {
   job: GzipJob
-  uncompressed: Uint8Array
+  uncompressedByteLength: number
   compressed: Uint8Array
 } {
   if (job.kind === 'geometry') {
     if (!compressChunks) {
       const uncompressed = encodeChunkBinary(job.chunk)
-      return { job, uncompressed, compressed: uncompressed }
+      return {
+        job,
+        uncompressedByteLength: uncompressed.byteLength,
+        compressed: uncompressed
+      }
     }
     const { uncompressed, compressed } = encodeChunkGzip(job.chunk)
-    return { job, uncompressed, compressed }
+    return {
+      job,
+      uncompressedByteLength: uncompressed.byteLength,
+      compressed
+    }
   }
   if (!compressChunks) {
     const uncompressed = encodeOsnapCatalogBinary({
       primitives: job.primitives
     })
-    return { job, uncompressed, compressed: uncompressed }
+    return {
+      job,
+      uncompressedByteLength: uncompressed.byteLength,
+      compressed: uncompressed
+    }
   }
   const { uncompressed, compressed } = encodeOsnapCatalogGzip({
     primitives: job.primitives
   })
-  return { job, uncompressed, compressed }
+  return {
+    job,
+    uncompressedByteLength: uncompressed.byteLength,
+    compressed
+  }
 }
 
 async function encodePackageJobAsync(
@@ -407,27 +424,43 @@ async function encodePackageJobAsync(
   compressChunks: boolean
 ): Promise<{
   job: GzipJob
-  uncompressed: Uint8Array
+  uncompressedByteLength: number
   compressed: Uint8Array
 }> {
   if (job.kind === 'geometry') {
     if (!compressChunks) {
       const uncompressed = encodeChunkBinary(job.chunk)
-      return { job, uncompressed, compressed: uncompressed }
+      return {
+        job,
+        uncompressedByteLength: uncompressed.byteLength,
+        compressed: uncompressed
+      }
     }
     const { uncompressed, compressed } = await encodeChunkGzipAsync(job.chunk)
-    return { job, uncompressed, compressed }
+    return {
+      job,
+      uncompressedByteLength: uncompressed.byteLength,
+      compressed
+    }
   }
   if (!compressChunks) {
     const uncompressed = encodeOsnapCatalogBinary({
       primitives: job.primitives
     })
-    return { job, uncompressed, compressed: uncompressed }
+    return {
+      job,
+      uncompressedByteLength: uncompressed.byteLength,
+      compressed: uncompressed
+    }
   }
   const { uncompressed, compressed } = await encodeOsnapCatalogGzipAsync({
     primitives: job.primitives
   })
-  return { job, uncompressed, compressed }
+  return {
+    job,
+    uncompressedByteLength: uncompressed.byteLength,
+    compressed
+  }
 }
 
 export function buildAcExPackageData(

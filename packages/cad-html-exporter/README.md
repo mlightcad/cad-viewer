@@ -57,16 +57,151 @@ await exportFileToHtml('drawing.dwg', 'drawing-package', {
 })
 ```
 
+## Performance
+
+Export time is two stages: convert the drawing into an ACEX snapshot, then pack
+that snapshot (binary encode, gzip, and the outer zip). Convert timings cover
+font setup, `worldDraw`, deferred `asyncDraw`, and snapshot capture. LibreDWG
+itself stays on the caller. The techniques below are the Node exporter; the
+browser plugin keeps its own codec and thread model.
+
+A server should run **one drawing per process** (or a process pool capped by
+the machine's cores). `worldDraw`, glyph `asyncDraw`, and `encodeChunkBinary`
+are JavaScript on that process's main thread. A second `exportFileToHtml` in
+the same process shares the thread, so it does not shorten the busy export.
+Separate processes are how multiple drawings overlap.
+
+### Native zlib
+
+`@mlightcad/cad-html-core` compresses ACEX payloads through a pluggable gzip
+codec. Importing this package installs Node `zlib` in place of the pure-JS
+`fflate` codec:
+
+- Async `gzip` runs on the libuv thread pool, so several chunk compressions
+  overlap in native code.
+- The monolithic single-file snapshot uses `gzipSync` on the same codec.
+- Each result is copied out of the Node buffer pool before it is stored.
+  `zlib` may hand back a pooled view, and a later compression would otherwise
+  overwrite an earlier payload.
+- After gzip, only the uncompressed byte length is kept for the manifest. The
+  uncompressed buffer is discarded so several in-flight exports do not each
+  hold both copies.
+
+On a 32 MiB synthetic set, `zlib.gzipSync` was about 3× faster than
+`fflate.gzipSync`. `fflate` stays the browser codec. Node is the host that can
+call `zlib`.
+
+Chunk gzip (`compressChunks`, default `true`) is separate from the outer
+`.zip`. Geometry chunks are `.acex.gz` and OSNAP chunks are `.osnap.gz`. The
+zip writer then:
+
+- stores those `.gz` entries (ZIP method 0) so they are not deflated again;
+- deflates text entries such as `viewer.html` and `drawing.acex.json` with
+  `zlib.deflateRaw` on the libuv pool (`Z_DEFAULT_COMPRESSION`).
+
+Node sizes that pool from `UV_THREADPOOL_SIZE` in the environment **before
+the process starts** (default 4). Each process has its own pool. Leave the
+default alone when several exporter processes share a machine; raising it per
+process multiplies threads by the number of processes. See
+[Approaches that do not pay off](#approaches-that-do-not-pay-off).
+
+### Local font library
+
+TEXT, MTEXT, and glyph linetypes need an initialized MText renderer and a font
+loader before `worldDraw` / `asyncDraw`. Node has no THREE.FileLoader / XHR
+and no IndexedDB, so the exporter:
+
+- runs `AcTrMTextRenderer` in `main` mode (no worker URL);
+- turns off `FontManager` IndexedDB caching;
+- replaces the CDN loader with disk reads or `fetch`.
+
+`fontsDir` reads faces from disk. It accepts a folder of face files, that
+folder plus `fonts.json`, or a cad-data checkout (faces resolved from its
+`fonts/` directory). It takes precedence over `fontsUrl`.
+
+Without `fontsDir`, faces come from `fontsUrl` (default
+`https://cdn.jsdelivr.net/gh/mlightcad/cad-data/fonts/`). Those downloads honor
+`HTTPS_PROXY` / `HTTP_PROXY`, and on Windows the current user's Internet
+Settings proxy when those variables are unset.
+
+Fonts are loaded once, before entities are drawn:
+
+1. Default and symbol faces from the `modern` preset.
+2. Every face named by the drawing text-style table (`font`, `bigFont`,
+   `extendedFont`, and the table font-file list).
+
+`awaitFontsBeforeDraw` is on, so glyph `asyncDraw` does not wait on a
+per-entity download. A missing face is logged and that mesh text is omitted.
+The rest of the drawing still exports. A local library removes the CDN
+round-trip from this preload, which is the usual way to keep text-heavy
+exports off the network.
+
+### Headless geometry conversion
+
+`AcTrRenderer.createForExport` builds a renderer on a stub WebGL backend.
+Geometry construction never calls `render` or a real GPU. The line-pattern
+shader probe is skipped and treated as healthy, so exported pattern metadata
+matches a browser GPU that passed the probe.
+
+An entity that advertises a single batchable primitive goes through
+`tryBuildDirectEntityMeta` and is appended straight into its layer
+`AcTrBatchedGroup`. It never becomes a full entity that later has to be
+flattened.
+
+Everything else is `worldDraw`'d into a pending list. Glyph and INSERT
+finalize (`asyncDraw`) then runs with
+`max(8, min(32, availableParallelism()))` tasks in flight. A serial `await`
+on that list was the main reason text-heavy drawings were slower here than on
+the viewer path. Those tasks are still one process's JavaScript; the cap
+bounds in-flight work, it does not add OS threads.
+
+The browser yields during glyph draws every 32 ms so the UI can paint. The
+export renderer sets `yieldDuringAsyncDraw` to false, which turns that yield
+off. On a multi-building DWG this removed about 5 s of timer delay from a
+~31 s `asyncDraw` (about 19,000 deferred entities). Other processes are
+unaffected. Another export in the **same** process still waits on this
+thread; yielding would only interleave them and add the timer delay back.
+
+Raster textures are skipped when no DOM canvas is available. LibreDWG parsing
+stays on the Node main thread: Node has neither a browser `Worker` nor a
+reliable ESM-worker WASM path for that converter.
+
+### Approaches that do not pay off
+
+Measured on Node 24, 8 logical CPUs, one multi-building DWG (about 3.3 MiB).
+Multi-file export was about 52 s end to end: ~7 s reading the DWG, ~33 s
+convert (~26 s of that in `asyncDraw`), ~11 s pack, then writing a ~222 MiB
+zip. Pack was 78 geometry chunks, ~571 MiB of geometry buffers, and no OSNAP
+chunks. Do not reintroduce the following for this exporter.
+
+**`worker_threads` pool for chunk encode + gzip.**
+`buildAcExPackageDataAsync` already overlaps chunk gzip on the libuv pool.
+Moving `encodeChunkBinary` / `encodeOsnapCatalogBinary` plus gzip onto up to
+`min(8, availableParallelism())` workers did not move pack time (10.7 s with
+the pool, 11.3 s on the main thread). Binary encode of every chunk summed to
+~340 ms. Structured-clone of the chunk graph onto the workers cost ~410 ms.
+Gzip was the pack CPU (~42 s of CPU, ~6 s wall) and was already native zlib.
+Each export would also pay worker startup, and N concurrent processes would
+launch N times that many workers on top of N libuv pools.
+
+**Setting `UV_THREADPOOL_SIZE` from inside the process.**
+libuv reads the variable when the process starts. Assigning
+`process.env.UV_THREADPOOL_SIZE` during import does not resize the pool (Node
+24: an in-process value of 16 matched the default pool of 4 on an 8×16 MiB
+gzip). Setting it in the environment before startup does work, and 16 threads
+beat 4 by about 1.4× on that synthetic gzip, not 4×. On the drawing above,
+pack stayed ~11.4 s with the default pool of 4. A larger pool on every
+concurrent exporter process oversubscribes the machine for that small gain.
+
+**Parallelizing `encodeChunkBinary` on its own.**
+It was ~340 ms of an ~11 s pack. The bytes are already walked once to build
+the ACEC buffer; a second thread would need those typed arrays copied or
+transferred first.
+
 ## Notes
 
 - Requires Node 20+ (`crypto.subtle` for optional password protection).
-- Chunk gzip and the outer zip deflate use Node `zlib` (libuv thread pool),
-  which is faster than pure-JS gzip for large drawings.
 - Embeds `viewer-runtime.iife.js` from `@mlightcad/cad-html-plugin` (copied at
   build time into `runtime/`).
-- Raster textures are skipped when no DOM canvas is available.
-- Text rendering runs on the main-thread MText renderer. Pass `fontsDir` for a
-  local library, or `fontsUrl` to override the default CDN (`fonts.json` plus
-  face files). THREE.FileLoader / XHR is not available in Node. CDN downloads
-  honor `HTTPS_PROXY` / `HTTP_PROXY`, and on Windows the current user's
-  Internet Settings proxy when those variables are unset.
+- See [Performance](#performance) for zlib, local fonts, headless conversion,
+  and approaches that were measured and rejected.
