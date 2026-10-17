@@ -143,9 +143,9 @@ export const en: Record<string, string> = {
   'findPalette.matchCase': 'Match case',
   'findPalette.currentLayoutOnly': 'Current layout only',
   'findPalette.hint':
-    'Press Enter to search text, multiline text and block attributes in the whole drawing (all layouts).',
+    'Press Enter to search text, multiline text, attributes and the text in blocks, dimensions, leaders and tables in the whole drawing (all layouts).',
   'findPalette.hintLayout':
-    'Press Enter to search text, multiline text and block attributes in the current layout.',
+    'Press Enter to search text, multiline text, attributes and the text in blocks, dimensions, leaders and tables in the current layout.',
   'findPalette.noResults': 'No text found',
   'findPalette.count': '{count} found',
   'findPalette.countLayouts': '{count} found in {layouts} layouts',
@@ -155,5 +155,10 @@ export const en: Record<string, string> = {
   'findPalette.layoutUnavailable': 'Could not open layout "{layout}"',
   'findPalette.kind.text': 'Text',
   'findPalette.kind.mtext': 'MText',
-  'findPalette.kind.attribute': 'Attribute'
+  'findPalette.kind.attribute': 'Attribute',
+  'findPalette.kind.block': 'Block text',
+  'findPalette.kind.dimension': 'Dimension',
+  'findPalette.kind.leader': 'Leader',
+  'findPalette.kind.table': 'Table',
+  'findPalette.unnamedLayout': '(unnamed layout)'
 }

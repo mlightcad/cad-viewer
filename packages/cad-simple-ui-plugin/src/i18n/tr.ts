@@ -143,9 +143,9 @@ export const tr: Record<string, string> = {
   'findPalette.matchCase': 'Büyük/küçük harf duyarlı',
   'findPalette.currentLayoutOnly': 'Yalnızca geçerli yerleşim',
   'findPalette.hint':
-    'Tüm çizimde (tüm yerleşimler) metin, çok satırlı metin ve blok özniteliklerini aramak için Enter tuşuna basın.',
+    'Tüm çizimde (tüm yerleşimler) metin, çok satırlı metin, öznitelikler ile blok, ölçü, kılavuz ve tablolardaki metni aramak için Enter tuşuna basın.',
   'findPalette.hintLayout':
-    'Geçerli yerleşimde metin, çok satırlı metin ve blok özniteliklerini aramak için Enter tuşuna basın.',
+    'Geçerli yerleşimde metin, çok satırlı metin, öznitelikler ile blok, ölçü, kılavuz ve tablolardaki metni aramak için Enter tuşuna basın.',
   'findPalette.noResults': 'Metin bulunamadı',
   'findPalette.count': '{count} sonuç',
   'findPalette.countLayouts': '{layouts} yerleşimde {count} sonuç',
@@ -155,5 +155,10 @@ export const tr: Record<string, string> = {
   'findPalette.layoutUnavailable': '"{layout}" yerleşimi açılamadı',
   'findPalette.kind.text': 'Metin',
   'findPalette.kind.mtext': 'Çok satırlı metin',
-  'findPalette.kind.attribute': 'Öznitelik'
+  'findPalette.kind.attribute': 'Öznitelik',
+  'findPalette.kind.block': 'Blok metni',
+  'findPalette.kind.dimension': 'Ölçü',
+  'findPalette.kind.leader': 'Kılavuz',
+  'findPalette.kind.table': 'Tablo',
+  'findPalette.unnamedLayout': '(adsız yerleşim)'
 }

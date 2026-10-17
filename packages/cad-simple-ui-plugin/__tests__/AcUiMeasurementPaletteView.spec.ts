@@ -112,7 +112,7 @@ describe('AcUiMeasurementPaletteView', () => {
     const view = createView()
     expect(
       view.element.querySelector('.ml-ex-ui-measure-empty-row')?.textContent
-    ).toBe('measurePalette.empty')
+    ).toBe('No measurements yet')
     expect(
       (view.element.querySelector('.ml-ex-ui-measure-btn') as HTMLButtonElement)
         .disabled

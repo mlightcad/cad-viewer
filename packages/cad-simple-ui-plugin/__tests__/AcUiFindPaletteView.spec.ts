@@ -49,6 +49,8 @@ const mockDoc = {
     tables: {
       layerTable: { getAt: () => undefined },
       blockTable: {
+        getAt: (name: string) =>
+          blocks[name] ? { newIterator: () => blocks[name] } : undefined,
         getIdAt: (id: string) => {
           const list = layoutEntities[id] ?? entities
           return {
@@ -61,6 +63,8 @@ const mockDoc = {
     }
   }
 }
+/** Block definitions by name (for text found inside an INSERT). */
+let blocks: Record<string, Ent[]> = {}
 let hasDocument = true
 
 jest.mock('@mlightcad/cad-simple-viewer', () => {
@@ -80,10 +84,35 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
         }
       }
     },
-    AcApI18n: {
-      t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
-      mergeLocaleMessage: jest.fn()
-    }
+    // Message registry like the real AcApI18n: current locale only, no
+    // fallback to English (that is AcUiI18n's job).
+    AcApI18n: (() => {
+      type Tree = { [key: string]: string | Tree }
+      const messages: Record<string, Tree> = {}
+      const merge = (target: Tree, source: Tree) => {
+        for (const key of Object.keys(source)) {
+          const src = source[key]
+          const tgt = target[key]
+          if (typeof src === 'object' && typeof tgt === 'object') {
+            merge(tgt, src)
+          } else target[key] = src
+        }
+      }
+      return {
+        currentLocale: 'en',
+        t(key: string, opts?: { fallback?: string }) {
+          let cur: string | Tree | undefined = messages[this.currentLocale]
+          for (const part of key.split('.')) {
+            if (!cur || typeof cur !== 'object') break
+            cur = cur[part]
+          }
+          return typeof cur === 'string' ? cur : (opts?.fallback ?? key)
+        },
+        mergeLocaleMessage(locale: string, tree: Tree) {
+          merge((messages[locale] ??= {}), tree)
+        }
+      }
+    })()
   })
 })
 
@@ -108,9 +137,10 @@ jest.mock('@mlightcad/data-model', () => ({
   }
 }))
 
-import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager, AcApI18n } from '@mlightcad/cad-simple-viewer'
 
 import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../src/i18n'
+import { en } from '../src/i18n/en'
 import { AcUiFindPaletteView } from '../src/ui/AcUiFindPaletteView'
 
 function text(id: string, textString: string, x: number): Ent {
@@ -143,8 +173,10 @@ describe('AcUiFindPaletteView', () => {
   beforeEach(() => {
     entities = [text('t1', 'Alpha beta', 10), text('t2', 'beta GAMMA', 20)]
     layoutEntities = {}
+    blocks = {}
     layouts = []
     hasDocument = true
+    ;(AcApI18n as unknown as { currentLocale: string }).currentLocale = 'en'
     mockView.activeLayoutBtrId = 'layout-a'
     jest.clearAllMocks()
   })
@@ -156,7 +188,7 @@ describe('AcUiFindPaletteView', () => {
 
   it('shows a hint before any search and does not scan on construction', () => {
     const view = createView()
-    expect(status(view)).toBe('findPalette.hint')
+    expect(status(view)).toBe(en['findPalette.hint'])
     expect(rows(view)).toHaveLength(0)
     view.destroy()
   })
@@ -167,8 +199,8 @@ describe('AcUiFindPaletteView', () => {
     expect(rows(view)).toHaveLength(2)
     expect(
       rows(view)[0].querySelector('.ml-ex-ui-find-meta')?.textContent
-    ).toBe('findPalette.kind.text · NOTES · (10, 0)')
-    expect(status(view)).toBe('findPalette.count')
+    ).toBe('Text · NOTES · (10, 0)')
+    expect(status(view)).toBe('2 found')
     view.destroy()
   })
 
@@ -176,7 +208,7 @@ describe('AcUiFindPaletteView', () => {
     const view = createView()
     view.search('zzz')
     expect(rows(view)).toHaveLength(0)
-    expect(status(view)).toBe('findPalette.noResults')
+    expect(status(view)).toBe('No text found')
     view.destroy()
   })
 
@@ -184,7 +216,7 @@ describe('AcUiFindPaletteView', () => {
     hasDocument = false
     const view = createView()
     view.search('x')
-    expect(status(view)).toBe('findPalette.noDocument')
+    expect(status(view)).toBe('Open a drawing to search')
     view.destroy()
   })
 
@@ -323,7 +355,7 @@ describe('AcUiFindPaletteView', () => {
   it('does not touch the view for blank queries', () => {
     const view = createView()
     view.search('   ')
-    expect(status(view)).toBe('findPalette.hint')
+    expect(status(view)).toBe(en['findPalette.hint'])
     expect(mockSelection.clear).not.toHaveBeenCalled()
     view.destroy()
   })
@@ -362,7 +394,7 @@ describe('AcUiFindPaletteView', () => {
         view.element.querySelectorAll('.ml-ex-ui-find-layout')
       ).map(el => el.textContent)
       expect(badges).toEqual(['Model', 'Planta', 'Alçados'])
-      expect(status(view)).toBe('findPalette.countLayouts')
+      expect(status(view)).toBe('3 found in 3 layouts')
       view.destroy()
     })
 
@@ -397,11 +429,11 @@ describe('AcUiFindPaletteView', () => {
 
     it('shows a scope-specific hint before the first search', () => {
       const view = createView()
-      expect(status(view)).toBe('findPalette.hint')
+      expect(status(view)).toBe(en['findPalette.hint'])
       const toggle = layoutOnly(view)
       toggle.checked = true
       toggle.dispatchEvent(new Event('change'))
-      expect(status(view)).toBe('findPalette.hintLayout')
+      expect(status(view)).toBe(en['findPalette.hintLayout'])
       view.destroy()
     })
 
@@ -464,6 +496,103 @@ describe('AcUiFindPaletteView', () => {
       await flush()
       expect(mockView.activeLayoutBtrId).toBe('layout-b')
       expect(mockSelection.add).toHaveBeenLastCalledWith('b1')
+      view.destroy()
+    })
+  })
+
+  describe('localization', () => {
+    const setLocale = (locale: string) => {
+      ;(AcApI18n as unknown as { currentLocale: string }).currentLocale = locale
+    }
+    const meta = (view: AcUiFindPaletteView, index: number) =>
+      rows(view)[index].querySelector('.ml-ex-ui-find-meta')?.textContent
+
+    const leader: Ent = {
+      objectId: 'ml1',
+      dxfTypeName: 'MULTILEADER',
+      contents: 'Nota do projeto',
+      layer: 'NOTES',
+      position: { x: 5, y: 6 },
+      geometricExtents: { min: { x: 5, y: 6 }, max: { x: 9, y: 7 } }
+    }
+    const insert: Ent = {
+      objectId: 'i1',
+      dxfTypeName: 'INSERT',
+      blockName: 'CARIMBO',
+      layer: 'BLOCKS',
+      blockTransform: {
+        elements: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+      },
+      attributeIterator: () => [][Symbol.iterator]()
+    }
+
+    it('labels leader and block hits with their localized type, never a raw key', () => {
+      entities = [leader, insert]
+      blocks = { CARIMBO: [text('bt', 'Nota no carimbo', 1)] }
+      const view = createView()
+      view.search('nota')
+      expect(rows(view)).toHaveLength(2)
+      expect(meta(view, 0)).toBe('Leader · NOTES · (5, 6)')
+      expect(meta(view, 1)).toBe('Block text · BLOCKS · (1, 0)')
+      view.destroy()
+    })
+
+    it('translates the new hit types in the active locale', () => {
+      entities = [leader, insert]
+      blocks = { CARIMBO: [text('bt', 'Nota no carimbo', 1)] }
+      setLocale('ar')
+      const view = createView()
+      view.search('nota')
+      expect(meta(view, 0)).toBe('خط إشارة · NOTES · (5, 6)')
+      expect(meta(view, 1)).toBe('نص كتلة · BLOCKS · (1, 0)')
+      view.destroy()
+    })
+
+    it('falls back to English for messages the active locale does not have', () => {
+      entities = [leader]
+      setLocale('xx') // a locale with no messages at all
+      const view = createView()
+      expect(status(view)).toBe(en['findPalette.hint'])
+      view.search('nota')
+      expect(meta(view, 0)).toBe('Leader · NOTES · (5, 6)')
+      expect(status(view)).not.toContain('findPalette.')
+      view.destroy()
+    })
+
+    it('keeps the key only when no locale has the message', () => {
+      setLocale('xx')
+      expect(new AcUiI18n().t('findPalette.doesNotExist')).toBe(
+        'findPalette.doesNotExist'
+      )
+    })
+
+    it('shows a placeholder for a layout with an empty name', () => {
+      layouts = [
+        { layoutName: '', tabOrder: 0, id: 'layout-a' },
+        { layoutName: '   ', tabOrder: 1, id: 'layout-b' }
+      ]
+      layoutEntities = {
+        'layout-a': [text('a1', 'sala A', 10)],
+        'layout-b': [text('b1', 'sala B', 20)]
+      }
+      const view = createView()
+      view.search('sala')
+      const badges = Array.from(
+        view.element.querySelectorAll<HTMLElement>('.ml-ex-ui-find-layout')
+      )
+      expect(badges.map(el => el.textContent)).toEqual([
+        '(unnamed layout)',
+        '(unnamed layout)'
+      ])
+      expect(badges.map(el => el.title)).toEqual([
+        '(unnamed layout)',
+        '(unnamed layout)'
+      ])
+      // Hits keep the real layout id and name; only the display changes.
+      expect(view.hits.map(h => [h.layoutId, h.layoutName])).toEqual([
+        ['layout-a', ''],
+        ['layout-b', '   ']
+      ])
       view.destroy()
     })
   })

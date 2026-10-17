@@ -67,9 +67,9 @@
         <div
           class="ml-find-layout"
           data-testid="find-row-layout"
-          :title="hit.layoutName"
+          :title="layoutLabel(hit.layoutName)"
         >
-          {{ hit.layoutName }}
+          {{ layoutLabel(hit.layoutName) }}
         </div>
         <div class="ml-find-text" :title="hit.text">
           {{
@@ -93,7 +93,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { store } from '../../app'
-import { useFind } from '../../composable/useFind'
+import { findLayoutDisplayName, useFind } from '../../composable/useFind'
 
 const { t } = useI18n()
 const rootRef = ref<HTMLElement | null>(null)
@@ -124,6 +124,10 @@ const paletteInsets = () => {
 
 const find = useFind(AcApDocManager.instance, { getInsets: paletteInsets })
 const inputRef = ref<InstanceType<typeof ElInput> | null>(null)
+
+/** Layout name for display; layouts can have an empty name. */
+const layoutLabel = (name: string) =>
+  findLayoutDisplayName(name, t('main.toolPalette.find.unnamedLayout'))
 
 const round = (value: number) => String(Math.round(value * 100) / 100)
 
@@ -167,15 +171,16 @@ const statusText = computed(() => {
   }
   const count = find.hits.value.length
   if (count === 0) return t('main.toolPalette.find.noResults')
+  // `count` is also the plural selector (Arabic has six plural forms).
   const params = { count, layouts: find.layoutCount.value }
   const text = find.truncated.value
-    ? t('main.toolPalette.find.countTruncated', params)
+    ? t('main.toolPalette.find.countTruncated', params, count)
     : find.layoutCount.value > 1
-      ? t('main.toolPalette.find.countLayouts', params)
-      : t('main.toolPalette.find.count', params)
-  return find.unavailableLayout.value
+      ? t('main.toolPalette.find.countLayouts', params, count)
+      : t('main.toolPalette.find.count', params, count)
+  return find.layoutUnavailable.value
     ? `${text} — ${t('main.toolPalette.find.layoutUnavailable', {
-        layout: find.unavailableLayout.value
+        layout: layoutLabel(find.unavailableLayout.value)
       })}`
     : text
 })

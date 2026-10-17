@@ -170,15 +170,23 @@ export const ar: Record<string, string> = {
   'findPalette.find': 'بحث',
   'findPalette.matchCase': 'مطابقة حالة الأحرف',
   'findPalette.currentLayoutOnly': 'التخطيط الحالي فقط',
-  'findPalette.hint': 'اضغط Enter للبحث عن النصوص والنصوص متعددة الأسطر وسمات الكتل في الرسم بالكامل (كل التخطيطات).',
-  'findPalette.hintLayout': 'اضغط Enter للبحث عن النصوص والنصوص متعددة الأسطر وسمات الكتل في التخطيط الحالي.',
+  'findPalette.hint':
+    'اضغط Enter للبحث عن النصوص والنصوص متعددة الأسطر والسمات والنص داخل الكتل والأبعاد وخطوط الإشارة والجداول في الرسم بالكامل (كل التخطيطات).',
+  'findPalette.hintLayout':
+    'اضغط Enter للبحث عن النصوص والنصوص متعددة الأسطر والسمات والنص داخل الكتل والأبعاد وخطوط الإشارة والجداول في التخطيط الحالي.',
   'findPalette.noResults': 'لم يتم العثور على نص',
-  'findPalette.count': 'تم العثور على {count}',
-  'findPalette.countLayouts': 'تم العثور على {count} في {layouts} تخطيطات',
-  'findPalette.countTruncated': 'تم عرض أول {count} نتيجة — قم بتضييق البحث',
+  'findPalette.count': 'عدد النتائج: {count}',
+  'findPalette.countLayouts': 'عدد النتائج: {count} (عدد التخطيطات: {layouts})',
+  'findPalette.countTruncated':
+    'تم عرض النتائج الأولى فقط (الحد الأقصى: {count}) — قم بتضييق البحث',
   'findPalette.noDocument': 'افتح رسمًا للبحث',
   'findPalette.layoutUnavailable': 'تعذر فتح التخطيط "{layout}"',
   'findPalette.kind.text': 'نص',
   'findPalette.kind.mtext': 'نص متعدد الأسطر',
-  'findPalette.kind.attribute': 'سمة'
+  'findPalette.kind.attribute': 'سمة',
+  'findPalette.kind.block': 'نص كتلة',
+  'findPalette.kind.dimension': 'بُعد',
+  'findPalette.kind.leader': 'خط إشارة',
+  'findPalette.kind.table': 'جدول',
+  'findPalette.unnamedLayout': '(تخطيط بلا اسم)'
 }
