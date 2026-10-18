@@ -6,6 +6,39 @@ title: API البرنامج النصي
 
 يتفاعل البرنامج النصي مع الرسم من خلال الكائن `cad`. يمكن الوصول فقط إلى الأعضاء المُعلن عنهم في `CAD_SCRIPT_API_TREE`، وأي خاصية أخرى ستُطلق خطأ `unknown_api`.
 
+## بيئة التنفيذ وواجهات المتصفح
+
+يعمل البرنامج النصي داخل صندوق حماية (sandbox) في المتصفح وفي الوضع الصارم (strict mode)، ولا يمكنه الوصول إلا إلى الكائن `cad` والكائنات المدمجة القياسية في ECMAScript، ولا يستطيع التعامل مع DOM الخاص بالصفحة أو إرسال طلبات شبكة.
+
+### الكائنات المدمجة المتاحة
+
+جميع الكائنات المدمجة القياسية في ECMAScript متاحة للاستخدام:
+
+- الرياضيات والأرقام: `Math` و`Number` و`BigInt` و`parseFloat` و`parseInt` و`isNaN` و`isFinite`
+- هياكل البيانات: `Object` و`Array` و`Map` و`Set` و`WeakMap` و`WeakSet` و`Symbol`
+- النصوص والتنسيق: `String` و`JSON` و`RegExp` و`Intl` و`encodeURIComponent` و`decodeURIComponent`
+- الوقت: `Date` (يمكن استخدام `Date.now()` لقياس زمن تنفيذ البرنامج النصي نفسه)
+- غير ذلك: `Boolean` و`Promise` و`Error` وفئاتها الفرعية
+
+استخدم `cad.log()` لإخراج المعلومات، ولا تعتمد على `console.log` — فلوحة النتائج لا تعرض إلا محتوى `cad.log`.
+
+### واجهات المتصفح المحظورة
+
+يتم رفض العناصر التالية مباشرةً في مرحلة التحقق من البرنامج النصي، مما يُطلق أخطاء `forbidden_identifier` / `forbidden_syntax` / `forbidden_member`:
+
+- الصفحة وDOM: `window` و`document` و`globalThis`
+- الشبكة والاتصالات: `fetch` و`XMLHttpRequest` و`WebSocket` و`importScripts`
+- الأجهزة والبيئة: `navigator` و`location` و`parent` و`top` و`self` و`frames` (تُحجب إلى `undefined` في وقت التشغيل)
+- التخزين: `localStorage` و`sessionStorage`
+- التنفيذ الديناميكي: `eval` و`Function`
+- بيئات تشغيل أخرى: `process` و`require` و`module` و`exports` و`Deno` و`Bun`
+- الصيغ: عبارات `import` / `export`، و`import()` الديناميكية، و`this`، و`with`، و`import.meta`، و`super`
+- قنوات التهرب: `constructor` و`prototype` و`__proto__` و`__defineGetter__` و`__defineSetter__` و`__lookupGetter__` و`__lookupSetter__`
+
+::: warning
+إلى جانب الكائنات المحظورة أعلاه، قد لا يتم اعتراض متغيرات المتصفح العامة الأخرى (مثل `alert` و`setTimeout` و`performance` و`console`) تقنيًا بشكل كامل، لكنها لا تُعد من واجهات API المدعومة. يجب أن يعتمد البرنامج النصي فقط على الكائن `cad` والكائنات المدمجة القياسية في ECMAScript، وقد يخضع أي وصول آخر إلى قيود إضافية في الإصدارات اللاحقة.
+:::
+
 ## cad.drawing
 
 تُعيد المعلومات الثابتة للرسم الحالي.

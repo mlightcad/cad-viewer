@@ -6,6 +6,39 @@ title: Script API
 
 Scripts interact with the drawing through the `cad` object. Only members declared in `CAD_SCRIPT_API_TREE` can be accessed; all other properties will trigger an `unknown_api` error.
 
+## Execution Environment and Browser APIs
+
+Scripts run in a strict-mode sandbox in the browser and can only access the `cad` object and ECMAScript standard built-in objects. They cannot manipulate the page DOM or make network requests.
+
+### Available built-in objects
+
+All ECMAScript standard built-in objects are available:
+
+- Math and numbers: `Math`, `Number`, `BigInt`, `parseFloat`, `parseInt`, `isNaN`, `isFinite`
+- Data structures: `Object`, `Array`, `Map`, `Set`, `WeakMap`, `WeakSet`, `Symbol`
+- Text and formatting: `String`, `JSON`, `RegExp`, `Intl`, `encodeURIComponent`, `decodeURIComponent`
+- Time: `Date` (`Date.now()` can be used to measure the script's own execution time)
+- Others: `Boolean`, `Promise`, `Error` and its subclasses
+
+Use `cad.log()` to output information instead of relying on `console.log` — the result panel only displays the content of `cad.log`.
+
+### Blocked browser APIs
+
+The following are rejected outright during script validation, triggering `forbidden_identifier` / `forbidden_syntax` / `forbidden_member` errors:
+
+- Page and DOM: `window`, `document`, `globalThis`
+- Network and communication: `fetch`, `XMLHttpRequest`, `WebSocket`, `importScripts`
+- Device and environment: `navigator`, `location`, `parent`, `top`, `self`, `frames` (shadowed as `undefined` at runtime)
+- Storage: `localStorage`, `sessionStorage`
+- Dynamic execution: `eval`, `Function`
+- Other runtimes: `process`, `require`, `module`, `exports`, `Deno`, `Bun`
+- Syntax: `import` / `export` statements, dynamic `import()`, `this`, `with`, `import.meta`, `super`
+- Escape hatches: `constructor`, `prototype`, `__proto__`, `__defineGetter__`, `__defineSetter__`, `__lookupGetter__`, `__lookupSetter__`
+
+::: warning
+Besides the banned objects above, other browser globals (such as `alert`, `setTimeout`, `performance`, and `console`) may not be fully intercepted technically, but they are not part of the supported API. Scripts should rely only on the `cad` object and ECMAScript standard built-in objects; other accesses may be further restricted in future versions.
+:::
+
 ## cad.drawing
 
 Returns static information about the current drawing.

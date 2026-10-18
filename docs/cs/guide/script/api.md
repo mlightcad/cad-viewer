@@ -6,6 +6,39 @@ title: API skriptů
 
 Ve skriptu komunikujete s výkresem prostřednictvím objektu `cad`. Přístupné jsou pouze členy deklarované v `CAD_SCRIPT_API_TREE`, ostatní vlastnosti vyvolají chybu `unknown_api`.
 
+## Prostředí spouštění a API prohlížeče
+
+Skript běží v sandboxu prohlížeče v přísném režimu a má přístup pouze k objektu `cad` a standardním vestavěným objektům ECMAScript — nemůže manipulovat s DOM stránky ani odesílat síťové požadavky.
+
+### Dostupné vestavěné objekty
+
+K dispozici jsou všechny standardní vestavěné objekty ECMAScript:
+
+- Matematika a čísla: `Math`, `Number`, `BigInt`, `parseFloat`, `parseInt`, `isNaN`, `isFinite`
+- Datové struktury: `Object`, `Array`, `Map`, `Set`, `WeakMap`, `WeakSet`, `Symbol`
+- Text a formátování: `String`, `JSON`, `RegExp`, `Intl`, `encodeURIComponent`, `decodeURIComponent`
+- Čas: `Date` (`Date.now()` lze použít pro měření doby běhu samotného skriptu)
+- Ostatní: `Boolean`, `Promise`, `Error` a jejich podtřídy
+
+Pro výpis informací použijte `cad.log()` a nespoléhejte na `console.log` — panel výsledků zobrazuje pouze obsah vypsaný přes `cad.log`.
+
+### Zakázaná API prohlížeče
+
+Následující prvky jsou přímo odmítnuty již při validaci skriptu a vyvolají chybu `forbidden_identifier` / `forbidden_syntax` / `forbidden_member`:
+
+- Stránka a DOM: `window`, `document`, `globalThis`
+- Síť a komunikace: `fetch`, `XMLHttpRequest`, `WebSocket`, `importScripts`
+- Zařízení a prostředí: `navigator`, `location`, `parent`, `top`, `self`, `frames` (za běhu zastíněny hodnotou `undefined`)
+- Úložiště: `localStorage`, `sessionStorage`
+- Dynamické vykonávání: `eval`, `Function`
+- Ostatní běhová prostředí: `process`, `require`, `module`, `exports`, `Deno`, `Bun`
+- Syntaxe: příkazy `import` / `export`, dynamické `import()`, `this`, `with`, `import.meta`, `super`
+- Únikové cesty: `constructor`, `prototype`, `__proto__`, `__defineGetter__`, `__defineSetter__`, `__lookupGetter__`, `__lookupSetter__`
+
+::: warning
+Kromě výše uvedených zakázaných objektů mohou být další globální proměnné prohlížeče (jako `alert`, `setTimeout`, `performance`, `console`) technicky stále dostupné, ale nepatří mezi podporovaná API. Skripty by se měly spoléhat pouze na objekt `cad` a standardní vestavěné objekty ECMAScript; ostatní přístupy mohou být v budoucích verzích dále omezeny.
+:::
+
 ## cad.drawing
 
 Vrací statické informace o aktuálním výkresu.

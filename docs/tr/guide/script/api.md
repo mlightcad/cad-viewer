@@ -6,6 +6,39 @@ title: Betik API
 
 Betik içinde `cad` nesnesi aracılığıyla teknik resimle etkileşim kurulur. Yalnızca `CAD_SCRIPT_API_TREE` içinde bildirilen üyelere erişilebilir; diğer özelliklere erişim `unknown_api` hatası tetikler.
 
+## Yürütme Ortamı ve Tarayıcı API'leri
+
+Betik, tarayıcıda katı mod (strict mode) sandbox ortamında çalışır; yalnızca `cad` nesnesine ve ECMAScript standart yerleşik nesnelerine erişebilir, sayfa DOM'unu yönetemez veya ağ isteği başlatamaz.
+
+### Kullanılabilir Yerleşik Nesneler
+
+Tüm ECMAScript standart yerleşik nesneleri kullanılabilir:
+
+- Matematik ve sayılar: `Math`, `Number`, `BigInt`, `parseFloat`, `parseInt`, `isNaN`, `isFinite`
+- Veri yapıları: `Object`, `Array`, `Map`, `Set`, `WeakMap`, `WeakSet`, `Symbol`
+- Metin ve biçimlendirme: `String`, `JSON`, `RegExp`, `Intl`, `encodeURIComponent`, `decodeURIComponent`
+- Zaman: `Date` (`Date.now()` betiğin kendi çalışma süresini ölçmek için kullanılabilir)
+- Diğer: `Boolean`, `Promise`, `Error` ve alt sınıfları
+
+Çıktı için `cad.log()` kullanın, `console.log`'a güvenmeyin — sonuç paneli yalnızca `cad.log` içeriğini gösterir.
+
+### Yasaklanan Tarayıcı API'leri
+
+Aşağıdaki içerikler betik doğrulama aşamasında doğrudan reddedilir ve `forbidden_identifier` / `forbidden_syntax` / `forbidden_member` hatalarını tetikler:
+
+- Sayfa ve DOM: `window`, `document`, `globalThis`
+- Ağ ve iletişim: `fetch`, `XMLHttpRequest`, `WebSocket`, `importScripts`
+- Cihaz ve ortam: `navigator`, `location`, `parent`, `top`, `self`, `frames` (çalışma zamanında `undefined` olarak gölgelenir)
+- Depolama: `localStorage`, `sessionStorage`
+- Dinamik yürütme: `eval`, `Function`
+- Diğer çalışma zamanları: `process`, `require`, `module`, `exports`, `Deno`, `Bun`
+- Sözdizimi: `import` / `export` ifadeleri, dinamik `import()`, `this`, `with`, `import.meta`, `super`
+- Kaçış yolları: `constructor`, `prototype`, `__proto__`, `__defineGetter__`, `__defineSetter__`, `__lookupGetter__`, `__lookupSetter__`
+
+::: warning
+Yukarıda yasaklananlar dışındaki tarayıcı global değişkenleri (örn. `alert`, `setTimeout`, `performance`, `console`) teknik olarak tamamen engellenmemiş olabilir, ancak bunlar desteklenen API'lere ait değildir. Betikler yalnızca `cad` nesnesine ve ECMAScript standart yerleşik nesnelerine dayanmalıdır; diğer erişimler sonraki sürümlerde daha fazla kısıtlanabilir.
+:::
+
 ## cad.drawing
 
 Mevcut teknik resmin statik bilgilerini döndürür.

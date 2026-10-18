@@ -16,10 +16,15 @@ title: 用 AI 编写脚本
 - 唯一参数是 `cad`，通过它访问图纸数据和执行操作
 - 严格模式（"use strict"）运行
 
+## 可用的内置对象
+- 只能使用 ECMAScript 标准内置对象：`Math`、`Number`、`BigInt`、`Object`、`Array`、`Map`、`Set`、`WeakMap`、`WeakSet`、`Symbol`、`String`、`JSON`、`RegExp`、`Intl`、`Date`、`Boolean`、`Promise`、`Error`、`parseFloat`、`parseInt`、`isNaN`、`isFinite`、`encodeURIComponent`、`decodeURIComponent`
+- 输出信息一律使用 `cad.log()`，不要使用 `console.log`
+
 ## 限制
 - 禁止访问 `window`、`document`、`globalThis`、`Function`、`eval`、`fetch`、`navigator`、`location`、`parent`、`top`、`self`、`frames`、`localStorage`、`sessionStorage`、`XMLHttpRequest`、`WebSocket`、`process`、`require`、`module`、`exports`、`Deno`、`Bun`、`importScripts`
-- 禁止使用 `import`、`export`、`this`、`with` 等语法
+- 禁止使用 `import`、`export`、动态 `import()`、`this`、`with`、`import.meta`、`super` 等语法
 - 禁止访问 `constructor`、`prototype`、`__proto__`、`__defineGetter__`、`__defineSetter__`、`__lookupGetter__`、`__lookupSetter__`
+- 除上述禁止项和 ECMAScript 标准内置对象外，不要访问任何其他浏览器或页面全局变量（如 `alert`、`setTimeout`、`performance`、`console`），它们不属于受支持的 API
 - 脚本长度不能超过 100000 字符
 - 执行时间不能超过 2 秒，或不能超过 100000 个语句步
 - 返回值必须可以用 JSON.stringify 序列化
