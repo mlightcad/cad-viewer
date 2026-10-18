@@ -1,16 +1,21 @@
-import { AcApDocManager, AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
+import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
 
-import type { ToolResult } from './CadActionExecutor'
+import type { ToolResult } from '../tools/types'
+import type { CadSession } from './CadSession'
 
 /**
- * Verifies that an active drawing is available for agent tools.
+ * Verifies that the session has an active drawing.
  *
+ * @param session - Document and view access for this call.
  * @param requireWrite - When true, rejects read-only documents.
  * @returns A failed {@link ToolResult} when access is unavailable; otherwise `undefined`.
  */
-export function requireDocument(requireWrite = false): ToolResult | undefined {
+export function requireDocument(
+  session: CadSession,
+  requireWrite = false
+): ToolResult | undefined {
   try {
-    const doc = AcApDocManager.instance?.curDocument
+    const doc = session.getDocument()
     if (!doc?.database) {
       return {
         success: false,
@@ -38,18 +43,19 @@ export function requireDocument(requireWrite = false): ToolResult | undefined {
 }
 
 /**
- * Verifies that the active drawing view is available for zoom operations.
+ * Verifies that the active drawing view is available.
  *
+ * @param session - Document and view access for this call.
  * @returns A failed {@link ToolResult} when the view is unavailable; otherwise `undefined`.
  */
-export function requireView(): ToolResult | undefined {
-  const documentError = requireDocument(false)
+export function requireView(session: CadSession): ToolResult | undefined {
+  const documentError = requireDocument(session, false)
   if (documentError) {
     return documentError
   }
 
   try {
-    if (!AcApDocManager.instance.context?.view) {
+    if (!session.getView()) {
       return {
         success: false,
         message: 'Drawing view is not available.',

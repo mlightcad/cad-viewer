@@ -235,6 +235,14 @@
   margin-top: 4px;
 }
 
+.cad-agent-tool-detail {
+  display: block;
+  margin-top: 2px;
+  color: #cccccc;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .cad-agent-panel-empty {
   color: #888;
   text-align: center;
@@ -533,4 +541,124 @@
   font-size: 11px;
   color: #c9a227;
   line-height: 1.4;
+}
+
+.cad-agent-panel-btn--primary {
+  background: #0e639c;
+  border-color: #1177bb;
+}
+
+.cad-agent-panel-btn--primary:hover:not(:disabled) {
+  background: #1177bb;
+}
+
+.cad-agent-panel-btn.is-active {
+  background: #094771;
+  border-color: #007acc;
+}
+
+.cad-script-panel {
+  min-height: 0;
+}
+
+.cad-script-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid #3a3a3a;
+  background: #252526;
+  flex-shrink: 0;
+}
+
+.cad-script-hint {
+  flex: 1;
+  min-width: 8em;
+  color: #888;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.cad-script-editor {
+  flex: 1 1 50%;
+  min-height: 96px;
+  margin: 0;
+  padding: 10px 12px;
+  border: none;
+  resize: none;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  tab-size: 2;
+}
+
+.cad-script-editor:focus {
+  outline: none;
+}
+
+.cad-script-api {
+  flex: 0 1 36%;
+  margin: 0;
+  padding: 8px 12px;
+  overflow: auto;
+  border-bottom: 1px solid #3a3a3a;
+  background: #252526;
+  color: #cccccc;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.cad-script-result {
+  flex: 0 1 34%;
+  min-height: 72px;
+  overflow: auto;
+  padding: 8px 12px 12px;
+  border-top: 1px solid #3a3a3a;
+  background: #181818;
+}
+
+.cad-script-result.is-error {
+  background: #2a1d1d;
+}
+
+.cad-script-status {
+  margin: 0 0 6px;
+  font-weight: 600;
+}
+
+.cad-script-result.is-success .cad-script-status {
+  color: #89d185;
+}
+
+.cad-script-result.is-error .cad-script-status,
+.cad-script-error {
+  margin: 0 0 8px;
+  color: #f48771;
+}
+
+.cad-script-result h3 {
+  margin: 8px 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9cdcfe;
+}
+
+.cad-script-result pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cad-script-result-empty,
+.cad-script-muted {
+  margin: 0;
+  color: #888;
 }

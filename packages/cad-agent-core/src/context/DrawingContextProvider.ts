@@ -1,11 +1,9 @@
-import {
-  AcApDocManager,
-  type AcTrView2d,
-  resolveDrawingExtents
-} from '@mlightcad/cad-simple-viewer'
+import { resolveDrawingExtents } from '@mlightcad/cad-simple-viewer'
+
+import type { CadSession } from '../session/CadSession'
 
 /**
- * Snapshot of the active drawing passed to the LLM via `get_drawing_context`.
+ * Snapshot of the active drawing passed to the model via `get_drawing_context`.
  */
 export interface DrawingContextSnapshot {
   /** Name of the current layer (CLAYER). */
@@ -28,17 +26,20 @@ export interface DrawingContextSnapshot {
 }
 
 /**
- * Collects layer, unit, and extent metadata from the active document.
+ * Collects layer, unit, and extent metadata from the active session.
  *
+ * @param session - Document and view access for this call.
  * @returns A JSON-serializable context object for agent tool calls.
  */
-export function getDrawingContext(): DrawingContextSnapshot {
-  const doc = AcApDocManager.instance.curDocument
+export function getDrawingContext(session: CadSession): DrawingContextSnapshot {
+  const doc = session.getDocument()
+  if (!doc) {
+    throw new Error('No drawing is available.')
+  }
   const db = doc.database
-  const view = AcApDocManager.instance.curView as AcTrView2d
-
+  const view = session.getView()
+  const extents = view ? resolveDrawingExtents(view, db) : undefined
   const layers = doc.layerStore.getLayers().map(layer => layer.name)
-  const extents = resolveDrawingExtents(view, db)
 
   return {
     currentLayer: doc.layerStore.getCurrentLayerName(),

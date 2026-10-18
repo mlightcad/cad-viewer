@@ -11,7 +11,7 @@ import type {
 export declare const AGENT_PLUGIN_NAME: 'AgentPlugin'
 
 /** Trigger commands handled by {@link AGENT_PLUGIN_NAME}. */
-export declare const AGENT_PLUGIN_TRIGGERS: readonly ['agent']
+export declare const AGENT_PLUGIN_TRIGGERS: readonly ['agent', 'cadscript']
 
 /**
  * Registers the CAD Agent plugin for lazy loading.
@@ -40,3 +40,15 @@ export declare function setAgentPaletteOpener(
 ): void
 
 export declare function openAgentPalette(): boolean
+
+/** Translates one agent or script-console label. */
+export declare function agentT(key: string): string
+
+/** Callback that opens or focuses the script console in the host UI. */
+export type CadScriptPaletteOpener = () => void
+
+export declare function setCadScriptPaletteOpener(
+  opener: CadScriptPaletteOpener | undefined
+): void
+
+export declare function openCadScriptPalette(): boolean

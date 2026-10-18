@@ -351,15 +351,45 @@ function imageParts(message: UIMessage): FilePart[] {
   )
 }
 
-/** Returns tool names invoked in an assistant message (without the `tool-` prefix). */
-function toolParts(message: UIMessage): string[] {
+interface ToolCallSummary {
+  name: string
+  detail?: string
+}
+
+/** Returns tool names and, for scripts, a short result preview. */
+function toolParts(message: UIMessage): ToolCallSummary[] {
   if (!message.parts?.length) return []
-  return message.parts
-    .filter(
-      (part): part is { type: string } =>
-        typeof part?.type === 'string' && part.type.startsWith('tool-')
-    )
-    .map(part => part.type.replace(/^tool-/, ''))
+  return message.parts.flatMap(part => {
+    if (typeof part?.type !== 'string' || !part.type.startsWith('tool-')) {
+      return []
+    }
+    const name = part.type.replace(/^tool-/, '')
+    if (name !== 'execute_cad_script') return [{ name }]
+    const output = (part as { output?: unknown }).output
+    return [{ name, detail: scriptToolDetail(output) }]
+  })
+}
+
+function scriptToolDetail(output: unknown): string | undefined {
+  if (!output || typeof output !== 'object') return undefined
+  const record = output as {
+    message?: unknown
+    error?: unknown
+    data?: unknown
+  }
+  const bits: string[] = []
+  if (typeof record.message === 'string' && record.message) bits.push(record.message)
+  if (typeof record.error === 'string' && record.error) bits.push(record.error)
+  if (record.data !== undefined) {
+    try {
+      let preview = JSON.stringify(record.data)
+      if (preview.length > 240) preview = `${preview.slice(0, 240)}…`
+      bits.push(preview)
+    } catch {
+      // Non-serializable tool output is omitted from the panel preview.
+    }
+  }
+  return bits.length ? bits.join(' — ') : undefined
 }
 
 /** True when the message contains a high-inference verification review block. */
@@ -553,11 +583,14 @@ function isVerificationMessage(message: UIMessage): boolean {
           </figure>
         </div>
         <div
-          v-for="toolName in toolParts(message)"
-          :key="toolName"
+          v-for="(toolCall, toolIndex) in toolParts(message)"
+          :key="`${message.id}-tool-${toolIndex}`"
           class="cad-agent-tool"
         >
-          {{ labels.toolPrefix }}: {{ toolName }}
+          {{ `${labels.toolPrefix}: ${toolCall.name}` }}
+          <span v-if="toolCall.detail" class="cad-agent-tool-detail">
+            {{ toolCall.detail }}
+          </span>
         </div>
       </div>
       <div v-if="error" class="cad-agent-msg error">
