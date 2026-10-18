@@ -268,6 +268,19 @@ const registerAgentIntegration = async (pluginManager: AcApPluginManager) => {
       store.dialogs.layerManager = true
     })
 
+    agentRegister.setCadScriptPaletteOpener(() => {
+      if (
+        store.dialogs.layerManager &&
+        store.dialogs.activePaletteTab === 'cadScript'
+      ) {
+        store.dialogs.layerManager = false
+        return
+      }
+
+      store.dialogs.activePaletteTab = 'cadScript'
+      store.dialogs.layerManager = true
+    })
+
     agentRegister.mergeAgentI18nIntoVueI18n((locale, messages) => {
       i18n.global.mergeLocaleMessage(locale, messages)
     })
@@ -292,7 +305,7 @@ export interface RegisterLazyPluginsOptions {
  *
  * Currently registers the PDF plugin (`-cpdf`, `ipdf`), the HTML export
  * plugin (`-chtml`), the SVG export plugin (`csvg`), and optionally the CAD
- * Agent plugin (`agent`) when `@mlightcad/cad-agent-plugin` is installed.
+ * Agent plugin (`agent`, `cadscript`) when `@mlightcad/cad-agent-plugin` is installed.
  * When {@link AcApDocManager.disableExport} is true, HTML/SVG export plugins
  * are skipped and the PDF plugin only exposes `ipdf`. Host UI commands
  * `chtml` / `cpdf` open export dialogs and load the plugins on confirm.

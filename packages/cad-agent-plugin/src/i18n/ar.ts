@@ -138,5 +138,86 @@ export const agentAr = {
     'احفظ الإعدادات قبل إرسال الرسائل.',
 
   missingApiKey:
-    'اضبط مفتاح API في الإعدادات قبل إرسال الرسائل.'
+    'اضبط مفتاح API في الإعدادات قبل إرسال الرسائل.',
+
+  scriptTab:
+    'سكريبت',
+
+  scriptTitle:
+    'سكريبت CAD',
+
+  scriptRun:
+    'تشغيل',
+
+  scriptRunning:
+    'جارٍ التشغيل…',
+
+  scriptApi:
+    'API',
+
+  scriptPlaceholder:
+    'اكتب نص الدالة. المعامل الوحيد هو cad.',
+
+  scriptHint:
+    'Ctrl+Enter للتشغيل. المعامل الوحيد هو cad.',
+
+  scriptSuccess:
+    'نجح',
+
+  scriptFailed:
+    'فشل',
+
+  scriptReturnValue:
+    'القيمة المُرجعة',
+
+  scriptNoReturn:
+    'لم يُرجع السكريبت قيمة.',
+
+  scriptLog:
+    'السجل',
+
+  scriptHighlighted:
+    'عناصر محددة',
+
+  scriptCreated:
+    'كيانات جديدة',
+
+  scriptEmptyResult:
+    'شغّل السكريبت لعرض القيمة المُرجعة والسجل والأخطاء.',
+
+  scriptNoDocument:
+    'افتح رسمًا أو أنشئ رسمًا أولاً.',
+
+  scriptReadOnly:
+    'الرسم مفتوح للقراءة فقط.',
+
+  scriptNoView:
+    'عرض الرسم غير متاح.',
+
+  scriptTimeout:
+    'تجاوز السكريبت حد الوقت أو الخطوات وتم إيقافه.',
+
+  scriptNotJson:
+    'القيمة المُرجعة ليست JSON.',
+
+  scriptEmptyCode:
+    'السكريبت فارغ.',
+
+  scriptTooLarge:
+    'السكريبت طويل جدًا.',
+
+  scriptDynamicAccess:
+    'الوصول المحسوب إلى cad غير مسموح.',
+
+  scriptForbiddenSyntax:
+    'صيغة غير مسموح بها',
+
+  scriptForbiddenIdentifier:
+    'معرّف غير مسموح به',
+
+  scriptForbiddenMember:
+    'عضو غير مسموح به',
+
+  scriptUnknownApi:
+    'واجهة cad غير معروفة'
 } as const

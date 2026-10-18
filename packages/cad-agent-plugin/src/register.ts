@@ -6,7 +6,7 @@ import { registerAgentI18n } from './i18n'
 export const AGENT_PLUGIN_NAME = 'AgentPlugin'
 
 /** Trigger commands handled by {@link AGENT_PLUGIN_NAME}. */
-export const AGENT_PLUGIN_TRIGGERS = ['agent'] as const
+export const AGENT_PLUGIN_TRIGGERS = ['agent', 'cadscript'] as const
 
 /**
  * Registers the CAD Agent plugin for lazy loading.
@@ -29,9 +29,14 @@ export function registerLazyAgentPlugin(
   })
 }
 
-export { mergeAgentI18nIntoVueI18n, registerAgentI18n } from './i18n'
+export { agentT, mergeAgentI18nIntoVueI18n, registerAgentI18n } from './i18n'
 export {
   openAgentPalette,
   setAgentPaletteOpener
 } from './palette/agentPaletteIntegration'
 export type { AgentPaletteOpener } from './palette/agentPaletteIntegration'
+export {
+  openCadScriptPalette,
+  setCadScriptPaletteOpener
+} from './palette/scriptPaletteIntegration'
+export type { CadScriptPaletteOpener } from './palette/scriptPaletteIntegration'

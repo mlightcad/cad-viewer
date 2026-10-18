@@ -19,6 +19,7 @@
     "preview:html-converter": "vite preview --open /html-converter.html"
   },
   "dependencies": {
+    "@mlightcad/cad-agent-core": "workspace:*",
     "@mlightcad/cad-agent-plugin": "workspace:*",
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-onedrive-plugin": "workspace:*",

@@ -71,6 +71,7 @@ export function mergeAgentI18nIntoVueI18n(
   mergeLocaleMessage('zh', buildVueMessages('zh'))
   mergeLocaleMessage('tr', buildVueMessages('tr'))
   mergeLocaleMessage('cs', buildVueMessages('cs'))
+  mergeLocaleMessage('ar', buildVueMessages('ar'))
 }
 
 /**
@@ -86,7 +87,7 @@ export function agentT(key: AgentChatLabelKey): string {
 /**
  * Builds a reactive-friendly map of all agent labels for the current locale.
  *
- * All label keys are derived from {@link agentEn} — add new strings in en.ts/zh.ts only.
+ * All label keys are derived from {@link agentEn}. Add each new string to every locale file.
  *
  * @returns Every {@link AgentChatLabelKey} mapped to its translation.
  */

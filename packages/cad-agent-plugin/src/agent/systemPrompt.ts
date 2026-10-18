@@ -1,3 +1,5 @@
+import { CAD_SCRIPT_API_SUMMARY } from '@mlightcad/cad-agent-core'
+
 /**
  * System prompt instructing the CAD agent how to use drawing tools and context.
  *
@@ -236,6 +238,17 @@ Only call create_layer when a genuinely new layer is required.
 Do not invent arbitrary layer names.
 
 Always use numeric coordinates.
+
+For statistics, conditional queries, batch edits, and selection highlighting,
+call execute_cad_script instead of chaining many draw_* tools.
+
+Single entities still use the draw_* tools.
+
+==================================================
+CAD SCRIPT
+==================================================
+
+${CAD_SCRIPT_API_SUMMARY}
 
 ==================================================
 IMAGE INTERPRETATION
