@@ -73,7 +73,7 @@ highlights those ids.
 | Member | Behavior |
 | --- | --- |
 | `cad.drawing` | Title, current layer, units, layer flags, extents |
-| `cad.entities.where(predicate)` | Model-space snapshots matching the predicate |
+| `cad.entities.where(predicate)` | Tests each model-space entity, then snapshots only the matches |
 | `cad.entities.byId(id)` | One snapshot, or `undefined` |
 | `cad.entities.inBox(min, max)` | Snapshots whose scene bounds meet a WCS box |
 | `cad.selection` | `ids`, `replace`, `add`, `remove`, `clear` |

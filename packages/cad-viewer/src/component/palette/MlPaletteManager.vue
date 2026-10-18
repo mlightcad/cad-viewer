@@ -90,7 +90,7 @@
           "
           class="ml-agent-palette-wrapper"
         >
-          <cad-script-panel />
+          <ml-cad-script-panel />
         </div>
       </ml-overflow-tabs>
     </ml-tool-palette>
@@ -113,6 +113,7 @@ import { store } from '../../app'
 import { useSelectionSet, useViewerRect } from '../../composable'
 import { toolPaletteTabName, toolPaletteTitle } from '../../locale'
 import MlBlocksPalette from './MlBlocksPalette.vue'
+import MlCadScriptPanel from './MlCadScriptPanel.vue'
 import MlCountList from './MlCountList.vue'
 import MlDesignReviewPalette from './MlDesignReviewPalette.vue'
 import MlEntityProperties from './MlEntityProperties.vue'
@@ -129,18 +130,8 @@ const loadAgentPlugin = () =>
     import('@mlightcad/cad-agent-plugin')
   ]).then(([, module]) => module)
 
-const loadScriptPlugin = () =>
-  Promise.all([
-    import('@mlightcad/cad-script-plugin/style.css'),
-    import('@mlightcad/cad-script-plugin')
-  ]).then(([, module]) => module)
-
 const AgentChatPanel = defineAsyncComponent(() =>
   loadAgentPlugin().then(module => module.AgentChatPanel)
-)
-
-const CadScriptPanel = defineAsyncComponent(() =>
-  loadScriptPlugin().then(module => module.CadScriptPanel)
 )
 
 /**

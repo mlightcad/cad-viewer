@@ -345,6 +345,10 @@ importers:
         version: 5.7.284
 
   packages/cad-script-plugin:
+    dependencies:
+      json-formatter-js:
+        specifier: ^2.5.23
+        version: 2.5.23
     devDependencies:
       '@mlightcad/cad-agent-core':
         specifier: workspace:*
@@ -355,15 +359,9 @@ importers:
       '@mlightcad/data-model':
         specifier: ^1.15.11
         version: 1.15.11
-      '@vitejs/plugin-vue':
-        specifier: ^6.0.8
-        version: 6.0.8(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))(vue@3.5.31(typescript@5.9.3))
       vite:
         specifier: ^6.4.3
         version: 6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3)
-      vue:
-        specifier: ^3.4.21
-        version: 3.5.31(typescript@5.9.3)
 
   packages/cad-simple-ui-plugin:
     devDependencies:
@@ -4875,6 +4873,9 @@ packages:
 
   json-buffer@3.0.1:
     resolution: {integrity: sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==}
+
+  json-formatter-js@2.5.23:
+    resolution: {integrity: sha512-Cbm8wHXjo/C56aCePP1VuKvjxoMEmL7g7Ckss1oWFFlCsvOEEbye1kTeaNNaqba1Cl6YpIOYAnK65pUQ8mDIUQ==}
 
   json-parse-even-better-errors@2.3.1:
     resolution: {integrity: sha512-xyFwyhro/JEof6Ghe2iz2NcXoj2sloNsWr/XsERDK/oiPCfaNhl5ONfp+jQdAZRQQ0IJWNzH9zIZF7li91kh2w==}
@@ -11024,6 +11025,8 @@ snapshots:
   jsesc@3.1.0: {}
 
   json-buffer@3.0.1: {}
+
+  json-formatter-js@2.5.23: {}
 
   json-parse-even-better-errors@2.3.1: {}
 

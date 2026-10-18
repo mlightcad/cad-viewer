@@ -23,7 +23,8 @@ export function setupAgentIntegration(plugin: AcApSimpleUiPlugin): void {
   const ensureScriptMount = createLazyMount(async mountEl => {
     await import('@mlightcad/cad-script-plugin/style.css')
     const { CadScriptPanel } = await import('@mlightcad/cad-script-plugin')
-    createApp(CadScriptPanel).mount(mountEl)
+    const panel = new CadScriptPanel()
+    mountEl.append(panel.element)
   })
 
   setAgentPaletteOpener(() => {
@@ -41,11 +42,11 @@ export function setupAgentIntegration(plugin: AcApSimpleUiPlugin): void {
 /**
  * Creates the dock mount element the first time the opener runs.
  *
- * @param mountApp - Mounts a Vue app into the new element.
+ * @param mountContent - Fills the new element with panel content.
  * @returns A function that resolves to the mounted element.
  */
 function createLazyMount(
-  mountApp: (mountEl: HTMLElement) => Promise<void>
+  mountContent: (mountEl: HTMLElement) => Promise<void>
 ): () => Promise<HTMLElement> {
   let mountEl: HTMLElement | null = null
   let mountPromise: Promise<HTMLElement> | null = null
@@ -60,7 +61,7 @@ function createLazyMount(
         el.style.minHeight = '0'
         el.style.display = 'flex'
         el.style.flexDirection = 'column'
-        await mountApp(el)
+        await mountContent(el)
         mountEl = el
         return el
       })()
