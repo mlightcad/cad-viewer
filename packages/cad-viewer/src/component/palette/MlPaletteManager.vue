@@ -83,6 +83,15 @@
         >
           <agent-chat-panel embedded />
         </div>
+        <div
+          v-else-if="
+            store.features.scriptPlugin &&
+            store.dialogs.activePaletteTab === 'cadScript'
+          "
+          class="ml-agent-palette-wrapper"
+        >
+          <cad-script-panel />
+        </div>
       </ml-overflow-tabs>
     </ml-tool-palette>
   </el-config-provider>
@@ -98,6 +107,7 @@ import {
 } from '@mlightcad/ui-components'
 import { ElConfigProvider } from 'element-plus'
 import { computed, defineAsyncComponent, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { store } from '../../app'
 import { useSelectionSet, useViewerRect } from '../../composable'
@@ -113,11 +123,24 @@ import MlMemoryProfile from './MlMemoryProfile.vue'
 import MlMissingResources from './MlMissingResources.vue'
 import MlOpenFileProfile from './MlOpenFileProfile.vue'
 
-const AgentChatPanel = defineAsyncComponent(() =>
+const loadAgentPlugin = () =>
   Promise.all([
     import('@mlightcad/cad-agent-plugin/style.css'),
     import('@mlightcad/cad-agent-plugin')
-  ]).then(([, module]) => module.AgentChatPanel)
+  ]).then(([, module]) => module)
+
+const loadScriptPlugin = () =>
+  Promise.all([
+    import('@mlightcad/cad-script-plugin/style.css'),
+    import('@mlightcad/cad-script-plugin')
+  ]).then(([, module]) => module)
+
+const AgentChatPanel = defineAsyncComponent(() =>
+  loadAgentPlugin().then(module => module.AgentChatPanel)
+)
+
+const CadScriptPanel = defineAsyncComponent(() =>
+  loadScriptPlugin().then(module => module.CadScriptPanel)
 )
 
 /**
@@ -131,6 +154,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { t } = useI18n()
 const containerRect = useViewerRect()
 
 const DEFAULT_WIDTH = 520
@@ -235,6 +259,9 @@ const tabNames = computed((): readonly string[] => {
   if (store.features.agentPlugin) {
     names.push('agent')
   }
+  if (store.features.scriptPlugin) {
+    names.push('cadScript')
+  }
   return names
 })
 
@@ -242,12 +269,18 @@ const tabs = computed<MlOverflowTab[]>(() => {
   return tabNames.value.map(name => {
     return {
       name,
-      label: toolPaletteTabName(name)
+      label:
+        name === 'cadScript'
+          ? t('main.toolPalette.script.scriptTab')
+          : toolPaletteTabName(name)
     }
   })
 })
 
 const activeTabTitle = computed(() => {
+  if (store.dialogs.activePaletteTab === 'cadScript') {
+    return t('main.toolPalette.script.scriptTitle')
+  }
   return toolPaletteTitle(store.dialogs.activePaletteTab)
 })
 

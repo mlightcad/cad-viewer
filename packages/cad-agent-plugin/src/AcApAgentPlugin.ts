@@ -10,7 +10,7 @@ import { AcApAgentCmd } from './command/AcApAgentCmd'
 /**
  * CAD Agent plugin: natural-language drawing via LLM tool calling.
  *
- * Registers the `agent` command, which opens the agent chat panel in the tool palette.
+ * Registers the `agent` chat command.
  */
 export class AcApAgentPlugin implements AcApPlugin {
   /** Plugin identifier used by {@link AcApPluginManager}. Must match `AGENT_PLUGIN_NAME`. */
@@ -24,7 +24,7 @@ export class AcApAgentPlugin implements AcApPlugin {
   private registeredCommands: Array<{ group: string; name: string }> = []
 
   /**
-   * Registers the `agent` system command that opens the agent palette tab.
+   * Registers the `agent` system command.
    *
    * @param _context - Application context (unused).
    * @param commandManager - Command stack used to register {@link AcApAgentCmd}.

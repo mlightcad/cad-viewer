@@ -1,0 +1,45 @@
+{
+  "name": "@mlightcad/cad-agent-core",
+  "version": "1.7.6",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "files": [
+    "dist",
+    "lib",
+    "README.md",
+    "package.json"
+  ],
+  "main": "./dist/cad-agent-core.umd.cjs",
+  "module": "./dist/cad-agent-core.js",
+  "types": "./lib/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./dist/cad-agent-core.js",
+      "require": "./dist/cad-agent-core.umd.cjs"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build": "tsc && vite build",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "dependencies": {
+    "acorn": "^8.15.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.15.11"
+  },
+  "peerDependencies": {
+    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/data-model": "^1.15.11"
+  }
+}

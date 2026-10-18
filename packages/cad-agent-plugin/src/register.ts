@@ -29,7 +29,7 @@ export function registerLazyAgentPlugin(
   })
 }
 
-export { mergeAgentI18nIntoVueI18n, registerAgentI18n } from './i18n'
+export { agentT, mergeAgentI18nIntoVueI18n, registerAgentI18n } from './i18n'
 export {
   openAgentPalette,
   setAgentPaletteOpener

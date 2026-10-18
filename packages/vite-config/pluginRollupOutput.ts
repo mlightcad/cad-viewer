@@ -67,6 +67,7 @@ export const PLUGIN_PACKAGE_IDS = [
   'cad-svg-plugin',
   'cad-simple-ui-plugin',
   'cad-agent-plugin',
+  'cad-script-plugin',
   'cad-onedrive-plugin',
   'cad-google-drive-plugin'
 ] as const
@@ -77,7 +78,8 @@ export const VIEWER_PACKAGE_IDS = [
   'cad-diff-viewer',
   'cad-viewer',
   'three-renderer',
-  'cad-html-core'
+  'cad-html-core',
+  'cad-agent-core'
 ] as const
 
 /**

@@ -235,6 +235,14 @@
   margin-top: 4px;
 }
 
+.cad-agent-tool-detail {
+  display: block;
+  margin-top: 2px;
+  color: #cccccc;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .cad-agent-panel-empty {
   color: #888;
   text-align: center;
@@ -533,4 +541,18 @@
   font-size: 11px;
   color: #c9a227;
   line-height: 1.4;
+}
+
+.cad-agent-panel-btn--primary {
+  background: #0e639c;
+  border-color: #1177bb;
+}
+
+.cad-agent-panel-btn--primary:hover:not(:disabled) {
+  background: #1177bb;
+}
+
+.cad-agent-panel-btn.is-active {
+  background: #094771;
+  border-color: #007acc;
 }

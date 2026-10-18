@@ -249,6 +249,7 @@ export const registerMTextColorPicker = () => {
 
 let isLazyPluginRegistered = false
 let isAgentIntegrationStarted = false
+let isScriptIntegrationStarted = false
 
 const registerAgentIntegration = async (pluginManager: AcApPluginManager) => {
   try {
@@ -279,6 +280,37 @@ const registerAgentIntegration = async (pluginManager: AcApPluginManager) => {
   }
 }
 
+const registerCadScriptIntegration = async (
+  pluginManager: AcApPluginManager
+) => {
+  try {
+    await import('@mlightcad/cad-script-plugin/style.css')
+    const scriptRegister = await import('@mlightcad/cad-script-plugin/register')
+
+    scriptRegister.setCadScriptPaletteOpener(() => {
+      if (
+        store.dialogs.layerManager &&
+        store.dialogs.activePaletteTab === 'cadScript'
+      ) {
+        store.dialogs.layerManager = false
+        return
+      }
+
+      store.dialogs.activePaletteTab = 'cadScript'
+      store.dialogs.layerManager = true
+    })
+
+    scriptRegister.mergeScriptI18nIntoVueI18n((locale, messages) => {
+      i18n.global.mergeLocaleMessage(locale, messages)
+    })
+
+    scriptRegister.registerLazyCadScriptPlugin(pluginManager)
+    store.features.scriptPlugin = true
+  } catch {
+    // Optional peer `@mlightcad/cad-script-plugin` is not installed.
+  }
+}
+
 /**
  * Options for {@link registerLazyPlugins}.
  */
@@ -292,7 +324,8 @@ export interface RegisterLazyPluginsOptions {
  *
  * Currently registers the PDF plugin (`-cpdf`, `ipdf`), the HTML export
  * plugin (`-chtml`), the SVG export plugin (`csvg`), and optionally the CAD
- * Agent plugin (`agent`) when `@mlightcad/cad-agent-plugin` is installed.
+ * Agent plugin (`agent`) when `@mlightcad/cad-agent-plugin` is installed, and the
+ * script console (`cadscript`) when `@mlightcad/cad-script-plugin` is installed.
  * When {@link AcApDocManager.disableExport} is true, HTML/SVG export plugins
  * are skipped and the PDF plugin only exposes `ipdf`. Host UI commands
  * `chtml` / `cpdf` open export dialogs and load the plugins on confirm.
@@ -318,6 +351,10 @@ export const registerLazyPlugins = (
   if (!isAgentIntegrationStarted) {
     isAgentIntegrationStarted = true
     void registerAgentIntegration(pluginManager)
+  }
+  if (!isScriptIntegrationStarted) {
+    isScriptIntegrationStarted = true
+    void registerCadScriptIntegration(pluginManager)
   }
 
   isLazyPluginRegistered = true

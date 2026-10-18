@@ -40,3 +40,6 @@ export declare function setAgentPaletteOpener(
 ): void
 
 export declare function openAgentPalette(): boolean
+
+/** Translates one agent label. */
+export declare function agentT(key: string): string

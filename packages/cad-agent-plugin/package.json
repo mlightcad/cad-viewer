@@ -55,6 +55,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@mlightcad/cad-agent-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.15.11",
     "@vitejs/plugin-vue": "^6.0.8",
@@ -63,6 +64,7 @@
     "vue-tsc": "^2.1.6"
   },
   "peerDependencies": {
+    "@mlightcad/cad-agent-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.15.11",
     "vue": "^3.4.21"

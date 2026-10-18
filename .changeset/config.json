@@ -4,7 +4,9 @@
   "commit": false,
   "fixed": [
     [
+      "@mlightcad/cad-agent-core",
       "@mlightcad/cad-agent-plugin",
+      "@mlightcad/cad-script-plugin",
       "@mlightcad/cad-google-drive-plugin",
       "@mlightcad/cad-html-plugin",
       "@mlightcad/cad-onedrive-plugin",

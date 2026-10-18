@@ -1,7 +1,4 @@
-import {
-  AcApDocManager,
-  acapRunDatabaseEdit
-} from '@mlightcad/cad-simple-viewer'
+import { acapRunDatabaseEdit } from '@mlightcad/cad-simple-viewer'
 import {
   AcDbArc,
   AcDbCircle,
@@ -26,31 +23,15 @@ import {
   HATCH_PATTERN_SOLID
 } from '@mlightcad/data-model'
 
-import { requireDocument, requireView } from './documentAccess'
-import type { DrawingContextSnapshot } from './DrawingContextProvider'
-import { getDrawingContext } from './DrawingContextProvider'
+import type { DrawingContextSnapshot } from '../context/DrawingContextProvider'
+import { getDrawingContext } from '../context/DrawingContextProvider'
+import type { CadSession } from '../session/CadSession'
+import { createDocManagerSession } from '../session/createDocManagerSession'
+import { requireDocument, requireView } from '../session/documentAccess'
+import { getScriptEditDepth } from '../session/editDepth'
+import type { Point2dInput, ToolResult } from './types'
 
-/** 2D point in WCS used by agent tool inputs. */
-export interface Point2dInput {
-  x: number
-  y: number
-}
-
-/**
- * Outcome of a CAD agent tool invocation.
- *
- * Serialized back to the LLM as JSON from each tool's `execute` handler.
- */
-export interface ToolResult {
-  /** Whether the operation completed without error. */
-  success: boolean
-  /** Short human-readable summary for the model. */
-  message: string
-  /** Object ids of entities created, when applicable. */
-  entityIds?: string[]
-  /** Machine-readable error code or message when `success` is false. */
-  error?: string
-}
+export type { Point2dInput, ToolResult } from './types'
 
 /**
  * Converts a 2D tool input to a 3D point with the given Z elevation.
@@ -121,12 +102,16 @@ function createClosedBoundaryLoop(points: Point2dInput[]): AcGeLoop2d {
  * @param layer - Optional layer name from tool input.
  * @returns A failed {@link ToolResult} when the layer is missing; otherwise `undefined`.
  */
-function validateLayer(layer?: string): ToolResult | undefined {
+function validateLayer(
+  session: CadSession,
+  layer?: string
+): ToolResult | undefined {
   if (!layer) {
     return undefined
   }
-  const layerNames = AcApDocManager.instance.curDocument.layerStore
-    .getLayers()
+  const layerNames = session
+    .getDocument()!
+    .layerStore.getLayers()
     .map(entry => entry.name)
   if (!layerNames.includes(layer)) {
     return {
@@ -145,8 +130,11 @@ function validateLayer(layer?: string): ToolResult | undefined {
  * @param fn - Callback that performs the edit and returns a result.
  * @returns The value returned by `fn`.
  */
-function runEdit<T>(label: string, fn: () => T): T {
-  const db = AcApDocManager.instance.curDocument.database
+function runEdit<T>(session: CadSession, label: string, fn: () => T): T {
+  if (getScriptEditDepth() > 0) {
+    return fn()
+  }
+  const db = session.getDocument()!.database
   let result!: T
   acapRunDatabaseEdit(db, label, () => {
     result = fn()
@@ -161,17 +149,24 @@ function runEdit<T>(label: string, fn: () => T): T {
  */
 export class CadActionExecutor {
   /**
+   * @param session - Drawing access. Defaults to the live {@link AcApDocManager} session.
+   */
+  constructor(
+    private readonly session: CadSession = createDocManagerSession()
+  ) {}
+
+  /**
    * Returns a snapshot of the active drawing for the `get_drawing_context` tool.
    *
    * @returns Layer list, units, and extents.
    */
   getDrawingContext(): DrawingContextSnapshot | ToolResult {
-    const accessError = requireDocument(false)
+    const accessError = requireDocument(this.session, false)
     if (accessError) {
       return accessError
     }
     try {
-      return getDrawingContext()
+      return getDrawingContext(this.session)
     } catch (error) {
       return {
         success: false,
@@ -192,18 +187,18 @@ export class CadActionExecutor {
     end: Point2dInput
     layer?: string
   }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
-    const layerError = validateLayer(input.layer)
+    const layerError = validateLayer(this.session, input.layer)
     if (layerError) {
       return layerError
     }
     try {
       const entityIds: string[] = []
-      runEdit('Agent: draw_line', () => {
-        const db = AcApDocManager.instance.curDocument.database
+      runEdit(this.session, 'Agent: draw_line', () => {
+        const db = this.session.getDocument()!.database
         const line = new AcDbLine(toPoint3d(input.start), toPoint3d(input.end))
         applyLayer(line, input.layer)
         db.tables.blockTable.modelSpace.appendEntity(line)
@@ -234,18 +229,18 @@ export class CadActionExecutor {
     radius: number
     layer?: string
   }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
-    const layerError = validateLayer(input.layer)
+    const layerError = validateLayer(this.session, input.layer)
     if (layerError) {
       return layerError
     }
     try {
       const entityIds: string[] = []
-      runEdit('Agent: draw_circle', () => {
-        const db = AcApDocManager.instance.curDocument.database
+      runEdit(this.session, 'Agent: draw_circle', () => {
+        const db = this.session.getDocument()!.database
         const circle = new AcDbCircle(toPoint3d(input.center), input.radius)
         applyLayer(circle, input.layer)
         db.tables.blockTable.modelSpace.appendEntity(circle)
@@ -278,18 +273,18 @@ export class CadActionExecutor {
     endAngleDeg: number
     layer?: string
   }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
-    const layerError = validateLayer(input.layer)
+    const layerError = validateLayer(this.session, input.layer)
     if (layerError) {
       return layerError
     }
     try {
       const entityIds: string[] = []
-      runEdit('Agent: draw_arc', () => {
-        const db = AcApDocManager.instance.curDocument.database
+      runEdit(this.session, 'Agent: draw_arc', () => {
+        const db = this.session.getDocument()!.database
         const arc = new AcDbArc(
           toPoint3d(input.center),
           input.radius,
@@ -325,18 +320,18 @@ export class CadActionExecutor {
     corner2: Point2dInput
     layer?: string
   }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
-    const layerError = validateLayer(input.layer)
+    const layerError = validateLayer(this.session, input.layer)
     if (layerError) {
       return layerError
     }
     try {
       const entityIds: string[] = []
-      runEdit('Agent: draw_rectangle', () => {
-        const db = AcApDocManager.instance.curDocument.database
+      runEdit(this.session, 'Agent: draw_rectangle', () => {
+        const db = this.session.getDocument()!.database
         const x1 = input.corner1.x
         const y1 = input.corner1.y
         const x2 = input.corner2.x
@@ -381,7 +376,7 @@ export class CadActionExecutor {
     closed?: boolean
     layer?: string
   }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
@@ -392,14 +387,14 @@ export class CadActionExecutor {
         error: 'invalid_points'
       }
     }
-    const layerError = validateLayer(input.layer)
+    const layerError = validateLayer(this.session, input.layer)
     if (layerError) {
       return layerError
     }
     try {
       const entityIds: string[] = []
-      runEdit('Agent: draw_polyline', () => {
-        const db = AcApDocManager.instance.curDocument.database
+      runEdit(this.session, 'Agent: draw_polyline', () => {
+        const db = this.session.getDocument()!.database
         const polyline = new AcDbPolyline()
         input.points.forEach((point, index) => {
           polyline.addVertexAt(index, new AcGePoint2d(point.x, point.y))
@@ -437,22 +432,23 @@ export class CadActionExecutor {
     height?: number
     layer?: string
   }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
-    const layerError = validateLayer(input.layer)
+    const layerError = validateLayer(this.session, input.layer)
     if (layerError) {
       return layerError
     }
     try {
       const entityIds: string[] = []
-      runEdit('Agent: draw_text', () => {
-        const db = AcApDocManager.instance.curDocument.database
+      runEdit(this.session, 'Agent: draw_text', () => {
+        const db = this.session.getDocument()!.database
         const mtext = new AcDbMText()
         mtext.location = toPoint3d(input.position)
         mtext.contents = input.text
-        mtext.textHeight = input.height ?? 2.5
+        ;(mtext as AcDbMText & { textHeight: number }).textHeight =
+          input.height ?? 2.5
         applyLayer(mtext, input.layer)
         db.tables.blockTable.modelSpace.appendEntity(mtext)
         entityIds.push(mtext.objectId)
@@ -486,7 +482,7 @@ export class CadActionExecutor {
     endAngleDeg?: number
     layer?: string
   }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
@@ -502,14 +498,14 @@ export class CadActionExecutor {
         error: 'invalid_radii'
       }
     }
-    const layerError = validateLayer(input.layer)
+    const layerError = validateLayer(this.session, input.layer)
     if (layerError) {
       return layerError
     }
     try {
       const entityIds: string[] = []
-      runEdit('Agent: draw_ellipse', () => {
-        const db = AcApDocManager.instance.curDocument.database
+      runEdit(this.session, 'Agent: draw_ellipse', () => {
+        const db = this.session.getDocument()!.database
         const rotationRad = degToRad(input.rotationDeg ?? 0)
         const majorAxis = {
           x: Math.cos(rotationRad),
@@ -562,7 +558,7 @@ export class CadActionExecutor {
     patternAngleDeg?: number
     layer?: string
   }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
@@ -573,14 +569,14 @@ export class CadActionExecutor {
         error: 'invalid_boundary'
       }
     }
-    const layerError = validateLayer(input.layer)
+    const layerError = validateLayer(this.session, input.layer)
     if (layerError) {
       return layerError
     }
     try {
       const entityIds: string[] = []
-      runEdit('Agent: draw_hatch', () => {
-        const db = AcApDocManager.instance.curDocument.database
+      runEdit(this.session, 'Agent: draw_hatch', () => {
+        const db = this.session.getDocument()!.database
         const hatch = new AcDbHatch()
         if (db instanceof AcDbDatabase) {
           hatch.database = db
@@ -619,18 +615,18 @@ export class CadActionExecutor {
    * @returns {@link ToolResult} with created entity ids on success.
    */
   drawPoint(input: { position: Point2dInput; layer?: string }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
-    const layerError = validateLayer(input.layer)
+    const layerError = validateLayer(this.session, input.layer)
     if (layerError) {
       return layerError
     }
     try {
       const entityIds: string[] = []
-      runEdit('Agent: draw_point', () => {
-        const db = AcApDocManager.instance.curDocument.database
+      runEdit(this.session, 'Agent: draw_point', () => {
+        const db = this.session.getDocument()!.database
         const point = new AcDbPoint()
         point.position = toPoint3d(input.position)
         applyLayer(point, input.layer)
@@ -662,7 +658,7 @@ export class CadActionExecutor {
     through: Point2dInput
     layer?: string
   }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
@@ -674,14 +670,14 @@ export class CadActionExecutor {
         error: 'invalid_direction'
       }
     }
-    const layerError = validateLayer(input.layer)
+    const layerError = validateLayer(this.session, input.layer)
     if (layerError) {
       return layerError
     }
     try {
       const entityIds: string[] = []
-      runEdit('Agent: draw_ray', () => {
-        const db = AcApDocManager.instance.curDocument.database
+      runEdit(this.session, 'Agent: draw_ray', () => {
+        const db = this.session.getDocument()!.database
         const ray = new AcDbRay()
         ray.basePoint = toPoint3d(input.start)
         ray.unitDir = unitDir
@@ -714,7 +710,7 @@ export class CadActionExecutor {
     through: Point2dInput
     layer?: string
   }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
@@ -726,14 +722,14 @@ export class CadActionExecutor {
         error: 'invalid_direction'
       }
     }
-    const layerError = validateLayer(input.layer)
+    const layerError = validateLayer(this.session, input.layer)
     if (layerError) {
       return layerError
     }
     try {
       const entityIds: string[] = []
-      runEdit('Agent: draw_xline', () => {
-        const db = AcApDocManager.instance.curDocument.database
+      runEdit(this.session, 'Agent: draw_xline', () => {
+        const db = this.session.getDocument()!.database
         const xline = new AcDbXline()
         xline.basePoint = toPoint3d(input.start)
         xline.unitDir = unitDir
@@ -766,7 +762,7 @@ export class CadActionExecutor {
     closed?: boolean
     layer?: string
   }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
@@ -777,14 +773,14 @@ export class CadActionExecutor {
         error: 'invalid_points'
       }
     }
-    const layerError = validateLayer(input.layer)
+    const layerError = validateLayer(this.session, input.layer)
     if (layerError) {
       return layerError
     }
     try {
       const entityIds: string[] = []
-      runEdit('Agent: draw_spline', () => {
-        const db = AcApDocManager.instance.curDocument.database
+      runEdit(this.session, 'Agent: draw_spline', () => {
+        const db = this.session.getDocument()!.database
         const points3d = input.points.map(point => toPoint3d(point))
         const degree = Math.min(3, Math.max(1, points3d.length - 1))
         const isClosed = Boolean(input.closed && points3d.length >= 3)
@@ -814,13 +810,13 @@ export class CadActionExecutor {
    * @returns Success when the layer exists; otherwise `layer_not_found`.
    */
   setCurrentLayer(layerName: string): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
     try {
-      const changed = runEdit('Agent: set_current_layer', () => {
-        return AcApDocManager.instance.curDocument.layerService.setCurrentLayer(
+      const changed = runEdit(this.session, 'Agent: set_current_layer', () => {
+        return this.session.getDocument()!.layerService.setCurrentLayer(
           layerName
         )
       })
@@ -847,13 +843,13 @@ export class CadActionExecutor {
    * @returns Success when created or already present.
    */
   createLayer(layerName: string): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
     try {
-      const result = runEdit('Agent: create_layer', () => {
-        return AcApDocManager.instance.curDocument.layerService.createLayers([
+      const result = runEdit(this.session, 'Agent: create_layer', () => {
+        return this.session.getDocument()!.layerService.createLayers([
           layerName
         ])
       })
@@ -887,7 +883,7 @@ export class CadActionExecutor {
    * @returns {@link ToolResult} with the number of deleted entities on success.
    */
   deleteEntities(input: { entityIds: string[] }): ToolResult {
-    const accessError = requireDocument(true)
+    const accessError = requireDocument(this.session, true)
     if (accessError) {
       return accessError
     }
@@ -901,9 +897,9 @@ export class CadActionExecutor {
     try {
       const requestedIds = [...new Set(input.entityIds)]
       let erasedCount = 0
-      runEdit('Agent: delete_entities', () => {
+      runEdit(this.session, 'Agent: delete_entities', () => {
         erasedCount =
-          AcApDocManager.instance.curDocument.entityService.eraseEntities(
+          this.session.getDocument()!.entityService.eraseEntities(
             requestedIds
           )
       })
@@ -938,12 +934,12 @@ export class CadActionExecutor {
    * @returns Success when the view zoom completes.
    */
   zoomExtents(): ToolResult {
-    const accessError = requireView()
+    const accessError = requireView(this.session)
     if (accessError) {
       return accessError
     }
     try {
-      AcApDocManager.instance.context.view.zoomToFitDrawing()
+      this.session.getView()!.zoomToFitDrawing()
       return { success: true, message: 'Zoomed to drawing extents' }
     } catch (error) {
       return {

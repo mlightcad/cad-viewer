@@ -9,3 +9,8 @@ declare module '@mlightcad/cad-agent-plugin/style.css' {
   const css: string
   export default css
 }
+
+declare module '@mlightcad/cad-script-plugin/style.css' {
+  const css: string
+  export default css
+}

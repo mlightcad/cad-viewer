@@ -78,7 +78,10 @@ export default defineConfig(({ mode }: ConfigEnv) => {
           '@mlightcad/cad-svg-plugin',
           '@mlightcad/cad-agent-plugin',
           '@mlightcad/cad-agent-plugin/register',
-          '@mlightcad/cad-agent-plugin/style.css'
+          '@mlightcad/cad-agent-plugin/style.css',
+          '@mlightcad/cad-script-plugin',
+          '@mlightcad/cad-script-plugin/register',
+          '@mlightcad/cad-script-plugin/style.css'
         ],
         output: {
           chunkFileNames: `${packageId}-[name]-[hash].js`,
