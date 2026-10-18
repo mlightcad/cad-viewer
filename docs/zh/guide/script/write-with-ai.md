@@ -41,28 +41,42 @@ title: 用 AI 编写脚本
 - extents: 模型空间范围 { min: {x,y,z}, max: {x,y,z} }
 
 ### cad.entities
-查询实体：
+查询数据库中的全部实体：模型空间、图纸空间、块定义，以及块参照上的属性。
 - cad.entities.where(predicate) -> 返回满足条件的实体快照数组
 - cad.entities.byId(id) -> 返回指定 ID 的实体快照，找不到返回 undefined
-- cad.entities.inBox(min, max) -> 返回位于 WCS 矩形框 {min:{x,y}, max:{x,y}} 内的实体快照数组
+- cad.entities.inBox(min, max) -> 返回世界坐标范围与矩形 {min:{x,y}, max:{x,y}} 相交的实体快照
 
 实体快照（EntitySnapshot）字段：
 - id: 实体 ID
-- type: 实体类型（不含 AcDb 前缀），如 Circle、Line、Arc、Polyline、Text、MText、Insert 等
+- ownerId: 所属块表记录 ID；属性实体则为所属块参照 ID
+- type: 实体类型（不含 AcDb 前缀），如 Circle、Line、Arc、Polyline、Text、MText、Hatch、BlockReference，以及各类标注
 - layer: 所在图层名
 - extents: 实体范围 { min: {x,y,z}, max: {x,y,z} }
-- geometry: 类型相关的几何数据
+- geometry: 与具体实体类型对应的几何数据
 
 各类型 geometry 字段：
 - Circle: { center: {x,y,z}, radius }
 - Line: { start: {x,y,z}, end: {x,y,z} }
 - Arc: { center: {x,y,z}, radius, startAngle, endAngle, startAngleDeg, endAngleDeg }
-- Ellipse: { center: {x,y,z}, majorRadius, minorRadius }
-- Polyline: { points: [{x,y,z}...], closed }
+- Ellipse: { center, majorAxis, majorRadius, minorRadius, startAngle, endAngle }
+- Polyline: { points: [{x,y,z}...], closed, elevation }
 - Text / MText: { position: {x,y,z}, text, height }
 - Point: { position: {x,y,z} }
 - Ray / Xline: { basePoint: {x,y,z}, unitDir: {x,y,z} }
 - Insert（BlockReference）: { name, position: {x,y,z}, rotation, scale: {x,y,z} }
+- Hatch: { patternName, patternScale, boundary }
+- Dimension: { text, measurement, textPosition, styleName }，以及定义点
+
+### cad.tables
+只读符号表，对应 AcDbDatabase.tables。每张表为 { id, records: [{ id, name, ... }] }。
+- appIdTable、blockTable、dimStyleTable、linetypeTable、textStyleTable、ucsTable、viewTable、layerTable、viewportTable
+- layerTable 记录包含 color、linetype、lineWeight、isOff、isFrozen、isLocked、isPlottable
+- blockTable 只有块定义。块内实体使用 cad.blocks
+
+### cad.blocks
+全部块定义，对应 DXF 的 BLOCKS 段，包含 *Model_Space 和 *Paper_Space。
+- 字段：id、name、origin、isModelSpace、isPaperSpace、flags、pathName、isXref、layoutId、entities
+- entities 与 cad.entities 使用同一套快照
 
 ### cad.selection
 控制选择集：

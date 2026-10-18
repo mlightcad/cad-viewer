@@ -63,6 +63,19 @@ title: AI でスクリプトを作成
 - Point: { position: {x,y,z} }
 - Ray / Xline: { basePoint: {x,y,z}, unitDir: {x,y,z} }
 - Insert（BlockReference）: { name, position: {x,y,z}, rotation, scale: {x,y,z} }
+- Hatch: { patternName, patternScale, boundary }
+- Dimension: { text, measurement, textPosition, styleName }
+
+スナップショットには `ownerId` があります。モデル空間、ペーパー空間、ブロック定義、ブロック参照の属性が対象です。
+
+### cad.tables
+`AcDbDatabase.tables` と同じシンボルテーブルです。各テーブルは { id, records: [{ id, name, ... }] }。
+appIdTable、blockTable、dimStyleTable、linetypeTable、textStyleTable、ucsTable、viewTable、layerTable、viewportTable。
+layerTable には color、linetype、lineWeight、isOff、isFrozen、isLocked、isPlottable があります。ブロック内の図形は cad.blocks を使います。
+
+### cad.blocks
+DXF の BLOCKS セクションに相当します。*Model_Space と *Paper_Space を含みます。
+フィールド: id、name、origin、isModelSpace、isPaperSpace、flags、pathName、isXref、layoutId、entities。
 
 ### cad.selection
 選択セットの制御：

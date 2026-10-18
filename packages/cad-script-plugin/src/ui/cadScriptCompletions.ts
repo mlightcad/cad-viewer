@@ -44,6 +44,12 @@ type TypeName =
   | 'cad'
   | 'drawing'
   | 'entities'
+  | 'tables'
+  | 'symbolTable'
+  | 'symbolRecord'
+  | 'symbolRecordArray'
+  | 'blocks'
+  | 'block'
   | 'selection'
   | 'view'
   | 'edit'
@@ -83,6 +89,12 @@ const TYPE_LABEL: Record<TypeName, string> = {
   cad: 'cad',
   drawing: 'Drawing',
   entities: 'Entities',
+  tables: 'Tables',
+  symbolTable: 'SymbolTable',
+  symbolRecord: 'SymbolRecord',
+  symbolRecordArray: 'SymbolRecord[]',
+  blocks: 'Block[]',
+  block: 'Block',
   selection: 'Selection',
   view: 'View',
   edit: 'Edit',
@@ -133,7 +145,7 @@ function identifierCompletions(
       label: 'cad',
       type: 'namespace',
       detail: 'script host',
-      info: 'The only argument. Drawing, entities, selection, view, edit, and log.',
+      info: 'The only argument. Drawing, entities, tables, blocks, selection, view, edit, and log.',
       boost: 2
     })
   }
@@ -271,6 +283,14 @@ function membersOf(type: TypeName): MemberSpec[] {
       return DRAWING_MEMBERS
     case 'entities':
       return ENTITY_QUERY_MEMBERS
+    case 'tables':
+      return TABLE_MEMBERS
+    case 'symbolTable':
+      return SYMBOL_TABLE_MEMBERS
+    case 'symbolRecord':
+      return SYMBOL_RECORD_MEMBERS
+    case 'block':
+      return BLOCK_MEMBERS
     case 'selection':
       return SELECTION_MEMBERS
     case 'view':
@@ -297,6 +317,8 @@ function membersOf(type: TypeName): MemberSpec[] {
     case 'layerArray':
     case 'pointArray':
     case 'stringArray':
+    case 'symbolRecordArray':
+    case 'blocks':
     case 'array':
       return arrayMembers(type)
     default:
@@ -314,6 +336,10 @@ function elementOf(type: TypeName | null): TypeName | null {
       return 'point'
     case 'stringArray':
       return 'string'
+    case 'symbolRecordArray':
+      return 'symbolRecord'
+    case 'blocks':
+      return 'block'
     case 'array':
       return 'unknown'
     default:
@@ -893,9 +919,22 @@ const CAD_MEMBERS: MemberSpec[] = [
   prop(
     'entities',
     'Entities',
-    'Query model-space entities as snapshots.',
+    'Query every entity in the database as a snapshot.',
     'entities',
     'namespace'
+  ),
+  prop(
+    'tables',
+    'Tables',
+    'Symbol tables: layers, linetypes, text styles, blocks, and the rest.',
+    'tables',
+    'namespace'
+  ),
+  prop(
+    'blocks',
+    'Block[]',
+    'Every block definition, including model space, with its entities.',
+    'blocks'
   ),
   prop(
     'selection',
@@ -939,11 +978,95 @@ const DRAWING_MEMBERS: MemberSpec[] = [
   )
 ]
 
+const TABLE_MEMBERS: MemberSpec[] = [
+  prop(
+    'appIdTable',
+    'SymbolTable',
+    'Registered application names.',
+    'symbolTable'
+  ),
+  prop(
+    'blockTable',
+    'SymbolTable',
+    'Block definitions. Entity lists are on cad.blocks.',
+    'symbolTable'
+  ),
+  prop('dimStyleTable', 'SymbolTable', 'Dimension styles.', 'symbolTable'),
+  prop('linetypeTable', 'SymbolTable', 'Linetype definitions.', 'symbolTable'),
+  prop('textStyleTable', 'SymbolTable', 'Text styles.', 'symbolTable'),
+  prop(
+    'ucsTable',
+    'SymbolTable',
+    'Named user coordinate systems.',
+    'symbolTable'
+  ),
+  prop('viewTable', 'SymbolTable', 'Named views.', 'symbolTable'),
+  prop(
+    'layerTable',
+    'SymbolTable',
+    'Layers, including color, linetype, and on/off state.',
+    'symbolTable'
+  ),
+  prop(
+    'viewportTable',
+    'SymbolTable',
+    'Model-space viewport records (*Active and named VPORTs).',
+    'symbolTable'
+  )
+]
+
+const SYMBOL_TABLE_MEMBERS: MemberSpec[] = [
+  prop('id', 'string', 'Symbol table object id.', 'string'),
+  prop(
+    'records',
+    'SymbolRecord[]',
+    'Records in this table.',
+    'symbolRecordArray'
+  )
+]
+
+const SYMBOL_RECORD_MEMBERS: MemberSpec[] = [
+  prop('id', 'string', 'Record object id.', 'string'),
+  prop('name', 'string', 'Record name.', 'string'),
+  prop('isOff', 'boolean', 'Layer is off.', 'boolean'),
+  prop('isFrozen', 'boolean', 'Layer is frozen.', 'boolean'),
+  prop('isLocked', 'boolean', 'Layer is locked.', 'boolean'),
+  prop('isPlottable', 'boolean', 'Layer is plottable.', 'boolean'),
+  prop('color', 'value', 'Layer or style color.', 'unknown'),
+  prop('linetype', 'string', 'Layer linetype name.', 'string'),
+  prop('lineWeight', 'number', 'Layer lineweight code.', 'number'),
+  prop('isModelSpace', 'boolean', 'True for *Model_Space.', 'boolean'),
+  prop('isPaperSpace', 'boolean', 'True for a paper-space block.', 'boolean'),
+  prop('origin', 'Point', 'Block or UCS origin.', 'point'),
+  prop('fileName', 'string', 'Text style font file.', 'string'),
+  prop('textSize', 'number', 'Text style height.', 'number'),
+  prop('flags', 'number', 'Block flags.', 'number'),
+  prop('pathName', 'string', 'Xref path.', 'string')
+]
+
+const BLOCK_MEMBERS: MemberSpec[] = [
+  prop('id', 'string', 'Block table record id.', 'string'),
+  prop('name', 'string', 'Block name.', 'string'),
+  prop('origin', 'Point', 'Block base point.', 'point'),
+  prop('isModelSpace', 'boolean', 'True for model space.', 'boolean'),
+  prop(
+    'isPaperSpace',
+    'boolean',
+    'True for a paper-space layout block.',
+    'boolean'
+  ),
+  prop('flags', 'number', 'DXF group 70 flags.', 'number'),
+  prop('pathName', 'string', 'Xref path. Empty for a local block.', 'string'),
+  prop('isXref', 'boolean', 'True when the block is an xref.', 'boolean'),
+  prop('layoutId', 'string', 'Layout id for a paper-space block.', 'string'),
+  prop('entities', 'Entity[]', 'Entities stored in this block.', 'entityArray')
+]
+
 const ENTITY_QUERY_MEMBERS: MemberSpec[] = [
   method(
     'where',
     '(predicate) => Entity[]',
-    'Snapshots for which the predicate returns true. The argument has id, type, layer, extents, and geometry.',
+    'Snapshots for which the predicate returns true. The argument has id, ownerId, type, layer, extents, and geometry.',
     'entityArray',
     'where(${entity} => ${})'
   ),
@@ -957,7 +1080,7 @@ const ENTITY_QUERY_MEMBERS: MemberSpec[] = [
   method(
     'inBox',
     '(min, max) => Entity[]',
-    'Snapshots inside a world-coordinate box. min and max are { x, y }.',
+    'Snapshots whose world extents hit the box. min and max are { x, y }.',
     'entityArray',
     'inBox(${min}, ${max})'
   )
@@ -1017,6 +1140,12 @@ const EDIT_MEMBERS: MemberSpec[] = [
 
 const ENTITY_MEMBERS: MemberSpec[] = [
   prop('id', 'string', 'Entity object id.', 'string'),
+  prop(
+    'ownerId',
+    'string',
+    'Id of the owning block, or of the insert when this is an attribute.',
+    'string'
+  ),
   prop(
     'type',
     'string',
@@ -1084,9 +1213,22 @@ const GEOMETRY_MEMBERS: MemberSpec[] = [
   prop('height', 'number', 'Text height.', 'number'),
   prop('basePoint', 'Point', 'Ray or xline base point.', 'point'),
   prop('unitDir', 'Point', 'Ray or xline direction.', 'point'),
-  prop('name', 'string', 'Insert block name.', 'string'),
-  prop('rotation', 'number', 'Insert rotation in radians.', 'number'),
-  prop('scale', 'Point', 'Insert scale factors.', 'point')
+  prop('name', 'string', 'Insert or shape name.', 'string'),
+  prop('rotation', 'number', 'Rotation in radians.', 'number'),
+  prop('scale', 'Point', 'Insert scale factors.', 'point'),
+  prop('tag', 'string', 'Attribute tag.', 'string'),
+  prop('patternName', 'string', 'Hatch pattern name.', 'string'),
+  prop('patternScale', 'number', 'Hatch pattern scale.', 'number'),
+  prop('boundary', 'Point[]', 'Hatch boundary points.', 'pointArray'),
+  prop('vertices', 'Point[]', 'Leader or mline vertices.', 'pointArray'),
+  prop('measurement', 'number', 'Dimension measurement.', 'number'),
+  prop(
+    'styleName',
+    'string',
+    'Text, mtext, or dimension style name.',
+    'string'
+  ),
+  prop('textPosition', 'Point', 'Dimension text position.', 'point')
 ]
 
 const STRING_MEMBERS: MemberSpec[] = [

@@ -1,34 +1,26 @@
 import {
-  AcDbArc,
   AcDbBlockReference,
-  AcDbCircle,
-  AcDbEllipse,
-  AcDbEntity,
-  AcDbLine,
-  AcDbMText,
-  AcDbPoint,
-  AcDbPolyline,
-  AcDbRay,
-  AcDbText,
-  AcDbXline
+  AcDbDatabase,
+  AcDbEntity
 } from '@mlightcad/data-model'
 
-/** JSON point copied from an entity so scripts cannot hold live geometry objects. */
-export interface SnapshotPoint {
-  x: number
-  y: number
-  z: number
-}
+import { readEntityGeometry } from './entityGeometry'
+import { type SnapshotPoint, toSnapshotPoint } from './snapshotValue'
+
+export type { SnapshotPoint } from './snapshotValue'
 
 /**
- * Plain description of one model-space entity.
+ * Plain description of one database entity.
  *
- * `geometry` is present for common curve, text, and insert types. Other types
- * still include `id`, `type`, `layer`, and `extents`.
+ * `geometry` is filled for every concrete entity type in data-model.
+ * `ownerId` is the block table record that contains the entity, or the
+ * block reference that owns an attribute.
  */
 export interface EntitySnapshot {
   /** Entity object id. */
   id: string
+  /** Object id of the block table record or block reference that owns this entity. */
+  ownerId: string
   /** Runtime type without the `AcDb` prefix, for example `Circle`. */
   type: string
   /** Layer name. */
@@ -48,6 +40,7 @@ export interface EntitySnapshot {
 export function toEntitySnapshot(entity: AcDbEntity): EntitySnapshot {
   const snapshot: EntitySnapshot = {
     id: entity.objectId,
+    ownerId: entity.ownerId,
     type: entity.type,
     layer: entity.layer
   }
@@ -59,9 +52,43 @@ export function toEntitySnapshot(entity: AcDbEntity): EntitySnapshot {
 }
 
 /**
+ * Lists every entity stored in the database.
+ *
+ * The list covers model space, every paper space, and every block definition.
+ * Attributes attached to a block reference are included after that reference.
+ * Their `ownerId` is the reference. Other entities use the owning block id.
+ *
+ * @param database - Open drawing database.
+ * @returns Entities in block-table order.
+ */
+export function iterateDatabaseEntities(database: AcDbDatabase): AcDbEntity[] {
+  const entities: AcDbEntity[] = []
+  const seen = new Set<string>()
+  const push = (entity: AcDbEntity) => {
+    const id = entity.objectId
+    if (!id || seen.has(id)) return
+    seen.add(id)
+    entities.push(entity)
+  }
+
+  for (const block of database.tables.blockTable.newIterator(true)) {
+    for (const entity of block.newIterator()) {
+      push(entity)
+      if (!(entity instanceof AcDbBlockReference)) continue
+      try {
+        for (const attribute of entity.attributeIterator()) push(attribute)
+      } catch {
+        // A reference without attributes throws nothing; ignore a broken iterator.
+      }
+    }
+  }
+  return entities
+}
+
+/**
  * View passed into a `where` predicate.
  *
- * `id`, `type`, and `layer` are copied immediately. `extents` and `geometry`
+ * `id`, `ownerId`, `type`, and `layer` are copied immediately. `extents` and `geometry`
  * are read from the live entity on first access. {@link EntityFilterView.release}
  * drops that entity so the predicate cannot keep it.
  */
@@ -96,11 +123,13 @@ export function openEntityFilterView(entity: AcDbEntity): EntityFilterView {
   }
 
   const id = entity.objectId
+  const ownerId = entity.ownerId
   const type = entity.type
   const layer = entity.layer
   const value = Object.create(null) as EntitySnapshot
   Object.defineProperties(value, {
     id: { enumerable: true, value: id },
+    ownerId: { enumerable: true, value: ownerId },
     type: { enumerable: true, value: type },
     layer: { enumerable: true, value: layer },
     extents: {
@@ -140,8 +169,8 @@ function readSnapshotExtents(
     const extents = entity.geometricExtents
     if (extents && !extents.isEmpty()) {
       return {
-        min: toPoint(extents.min),
-        max: toPoint(extents.max)
+        min: toSnapshotPoint(extents.min),
+        max: toSnapshotPoint(extents.max)
       }
     }
   } catch {
@@ -152,81 +181,8 @@ function readSnapshotExtents(
 
 function readGeometry(entity: AcDbEntity): Record<string, unknown> | undefined {
   try {
-    if (entity instanceof AcDbCircle) {
-      return {
-        center: toPoint(entity.center),
-        radius: entity.radius
-      }
-    }
-    if (entity instanceof AcDbLine) {
-      return {
-        start: toPoint(entity.startPoint),
-        end: toPoint(entity.endPoint)
-      }
-    }
-    if (entity instanceof AcDbArc) {
-      return {
-        center: toPoint(entity.center),
-        radius: entity.radius,
-        startAngle: entity.startAngle,
-        endAngle: entity.endAngle,
-        startAngleDeg: (entity.startAngle * 180) / Math.PI,
-        endAngleDeg: (entity.endAngle * 180) / Math.PI
-      }
-    }
-    if (entity instanceof AcDbEllipse) {
-      return {
-        center: toPoint(entity.center),
-        majorRadius: entity.majorAxisRadius,
-        minorRadius: entity.minorAxisRadius
-      }
-    }
-    if (entity instanceof AcDbPolyline) {
-      const points = []
-      for (let index = 0; index < entity.numberOfVertices; index++) {
-        const point = entity.getPoint2dAt(index)
-        points.push({ x: point.x, y: point.y, z: 0 })
-      }
-      return { points, closed: entity.closed }
-    }
-    if (entity instanceof AcDbMText) {
-      const height = (entity as AcDbMText & { textHeight?: number }).textHeight
-      return {
-        position: toPoint(entity.location),
-        text: entity.contents,
-        height: height || entity.height
-      }
-    }
-    if (entity instanceof AcDbText) {
-      return {
-        position: toPoint(entity.position),
-        text: entity.textString,
-        height: entity.height
-      }
-    }
-    if (entity instanceof AcDbPoint) {
-      return { position: toPoint(entity.position) }
-    }
-    if (entity instanceof AcDbRay || entity instanceof AcDbXline) {
-      return {
-        basePoint: toPoint(entity.basePoint),
-        unitDir: toPoint(entity.unitDir)
-      }
-    }
-    if (entity instanceof AcDbBlockReference) {
-      return {
-        name: entity.blockName,
-        position: toPoint(entity.position),
-        rotation: entity.rotation,
-        scale: toPoint(entity.scaleFactors)
-      }
-    }
+    return readEntityGeometry(entity)
   } catch {
     return undefined
   }
-  return undefined
-}
-
-function toPoint(point: { x: number; y: number; z?: number }): SnapshotPoint {
-  return { x: point.x, y: point.y, z: point.z ?? 0 }
 }

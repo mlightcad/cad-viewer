@@ -41,28 +41,42 @@ Returns the current drawing information object:
 - extents: Model space extents { min: {x,y,z}, max: {x,y,z} }
 
 ### cad.entities
-Query entities:
+Queries every entity in the database: model space, paper space, block definitions, and attributes on inserts.
 - cad.entities.where(predicate) -> Returns an array of entity snapshots matching the condition
 - cad.entities.byId(id) -> Returns the entity snapshot for the specified ID, or undefined if not found
-- cad.entities.inBox(min, max) -> Returns an array of entity snapshots within the WCS bounding box {min:{x,y}, max:{x,y}}
+- cad.entities.inBox(min, max) -> Returns snapshots whose world extents intersect the WCS box {min:{x,y}, max:{x,y}}
 
 Entity Snapshot (EntitySnapshot) fields:
 - id: Entity ID
-- type: Entity type (without AcDb prefix), e.g. Circle, Line, Arc, Polyline, Text, MText, Insert
+- ownerId: Owning block table record ID, or the insert ID for an attribute
+- type: Entity type (without AcDb prefix), for example Circle, Line, Arc, Polyline, Text, MText, Hatch, BlockReference, or a dimension type
 - layer: Layer name the entity resides on
 - extents: Entity extents { min: {x,y,z}, max: {x,y,z} }
-- geometry: Type-specific geometry data
+- geometry: Type-specific geometry data for every concrete entity type
 
 Geometry fields by type:
 - Circle: { center: {x,y,z}, radius }
 - Line: { start: {x,y,z}, end: {x,y,z} }
 - Arc: { center: {x,y,z}, radius, startAngle, endAngle, startAngleDeg, endAngleDeg }
-- Ellipse: { center: {x,y,z}, majorRadius, minorRadius }
-- Polyline: { points: [{x,y,z}...], closed }
+- Ellipse: { center, majorAxis, majorRadius, minorRadius, startAngle, endAngle }
+- Polyline: { points: [{x,y,z}...], closed, elevation }
 - Text / MText: { position: {x,y,z}, text, height }
 - Point: { position: {x,y,z} }
 - Ray / Xline: { basePoint: {x,y,z}, unitDir: {x,y,z} }
 - Insert (BlockReference): { name, position: {x,y,z}, rotation, scale: {x,y,z} }
+- Hatch: { patternName, patternScale, boundary }
+- Dimension: { text, measurement, textPosition, styleName } plus definition points
+
+### cad.tables
+Read-only symbol tables, matching AcDbDatabase.tables. Each table is { id, records: [{ id, name, ... }] }.
+- appIdTable, blockTable, dimStyleTable, linetypeTable, textStyleTable, ucsTable, viewTable, layerTable, viewportTable
+- layerTable records include color, linetype, lineWeight, isOff, isFrozen, isLocked, isPlottable
+- blockTable records are definitions only. Use cad.blocks for the entities inside a block
+
+### cad.blocks
+Every block definition, like a DXF BLOCKS section, including *Model_Space and *Paper_Space.
+- Fields: id, name, origin, isModelSpace, isPaperSpace, flags, pathName, isXref, layoutId, entities
+- entities is an array of the same snapshots as cad.entities
 
 ### cad.selection
 Control the selection set:

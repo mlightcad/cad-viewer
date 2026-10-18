@@ -59,7 +59,7 @@ cad.log('图层总数:', info.layers.length)
 
 ## cad.entities
 
-用于查询模型空间中的实体。
+查询数据库中的全部实体。范围与 DXF 的 ENTITIES 段同一类数据，但不仅限于模型空间：模型空间、每个图纸空间，以及每个块定义里的实体都会返回。块参照上的属性跟在该参照之后，`ownerId` 指向块参照；其余实体的 `ownerId` 指向所属块表记录。
 
 ### `cad.entities.where(predicate)`
 
@@ -71,18 +71,18 @@ const circles = cad.entities.where(e => e.type === 'Circle')
 
 ### `cad.entities.byId(id)`
 
-根据实体 ID 获取单个快照，找不到时返回 `undefined`。
+根据实体 ID 获取单个快照，找不到时返回 `undefined`。模型空间以外的实体也可以用这个方法读取。
 
 ```javascript
 const entity = cad.entities.byId('A1B2')
 if (entity) {
-  cad.log('类型:', entity.type)
+  cad.log('类型:', entity.type, '所属:', entity.ownerId)
 }
 ```
 
 ### `cad.entities.inBox(min, max)`
 
-返回位于 WCS 矩形框内的所有实体快照。
+返回世界坐标范围与指定矩形相交的实体快照。比较的是实体的 `extents`，因此块定义和图纸空间里的实体也会命中。
 
 ```javascript
 const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
@@ -93,27 +93,99 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `id` | `string` | 实体对象 ID |
+| `ownerId` | `string` | 所属块表记录的 ID。属性实体则为所属块参照的 ID |
 | `type` | `string` | 实体类型，不含 `AcDb` 前缀，如 `Circle`、`Line` |
 | `layer` | `string` | 所在图层名 |
 | `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | 世界坐标系范围 |
 | `geometry` | `object \| undefined` | 类型相关的几何数据 |
 
-支持的 `geometry` 类型：
+`geometry` 覆盖 `@mlightcad/data-model` 中的全部具体实体类型。常用字段如下：
 
 | 实体类型 | `geometry` 字段 |
 |----------|----------------|
-| `Circle` | `{ center: {x,y,z}, radius }` |
-| `Line` | `{ start: {x,y,z}, end: {x,y,z} }` |
-| `Arc` | `{ center: {x,y,z}, radius, startAngle, endAngle, startAngleDeg, endAngleDeg }` |
-| `Ellipse` | `{ center: {x,y,z}, majorRadius, minorRadius }` |
-| `Polyline` | `{ points: Array<{x,y,z}>, closed }` |
-| `Text` | `{ position: {x,y,z}, text, height }` |
-| `MText` | `{ position: {x,y,z}, text, height }` |
-| `Point` | `{ position: {x,y,z} }` |
-| `Ray` / `Xline` | `{ basePoint: {x,y,z}, unitDir: {x,y,z} }` |
-| `BlockReference`（Insert） | `{ name, position: {x,y,z}, rotation, scale: {x,y,z} }` |
+| `Circle` | `{ center, radius }` |
+| `Line` | `{ start, end }` |
+| `Arc` | `{ center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg }` |
+| `Ellipse` | `{ center, majorAxis, majorRadius, minorRadius, startAngle, endAngle, startAngleDeg, endAngleDeg }` |
+| `Polyline` | `{ points, closed, elevation }` |
+| `2dPolyline` / `3dPolyline` | `{ points, closed, polyType }` |
+| `Spline` | `{ points, closed, fitTolerance, knotTolerance, normal }` |
+| `Point` / `2dVertex` / `3dVertex` | `{ position }` |
+| `Ray` / `Xline` | `{ basePoint, unitDir }` |
+| `Text` | `{ position, text, height, rotation, styleName }` |
+| `MText` | `{ position, text, height, width, rotation, styleName, attachmentPoint }` |
+| `Attribute` | 文字字段，另加 `{ tag, invisible }` |
+| `AttributeDefinition` | 文字字段，另加 `{ tag, prompt, invisible }` |
+| `ArcAlignedText` | `{ text, height, center, radius, startAngle, endAngle, styleName, arcId }` |
+| `BlockReference` | `{ name, position, rotation, scale }` |
+| `Table` | 块参照字段，另加 `{ rows, columns }` |
+| `Hatch` | `{ patternName, patternType, patternAngle, patternScale, isSolidFill, isGradient, elevation, associative, boundary }` |
+| `Leader` | `{ vertices, dimensionStyle, hasArrowHead }` |
+| `MLeader` | `{ contents, textLocation, textHeight, textRotation, landingPoint, contentType, numberOfLeaders }` |
+| `MLine` | `{ styleName, scale, justification, closed, startPosition, vertices }` |
+| `Solid` / `Trace` / `Face` | `{ points }` |
+| `PolyFaceMesh` | `{ vertices, faces }` |
+| `PolygonMesh` | `{ mCount, nCount, closedM, closedN, vertices }` |
+| `RasterImage` / `Wipeout` | `{ position, rotation, width, height, imageFileName, imageDisplayName, isClipped }` |
+| `Ole2Frame` | `{ upperLeft, lowerRight, userType, oleObjectType }` |
+| `Viewport` | `{ number, center, width, height, viewCenter, viewTarget, viewHeight, viewTwistAngle }` |
+| `Shape` | `{ name, position, size, rotation, styleName }` |
+| `Fcf` | `{ position, text, dimensionStyle }` |
+| `3dSolid` | `{ version, guid, hasRenderableGeometry }`。不包含 ACIS 体数据 |
+| `ProxyEntity` | `{ originalDxfName, originalClassName, applicationName }`。不包含代理图形二进制 |
+| 各类 `Dimension` | `{ text, measurement, textPosition, styleName, rotation }`，并带定义点，如 `xLine1Point`、`chordPoint`、`definingPoint` |
 
-角度字段 `startAngle` / `endAngle` 使用弧度，`startAngleDeg` / `endAngleDeg` 使用度数。
+点均为 `{ x, y, z }`。角度字段 `startAngle` / `endAngle` 使用弧度，`startAngleDeg` / `endAngleDeg` 使用度数。
+
+## cad.tables
+
+只读访问数据库中的全部符号表，对应 `AcDbDatabase.tables`。每张表都是 `{ id, records }`。`records` 中的每一项至少包含 `id` 和 `name`，并带有该表特有的字段。
+
+| 属性 | 内容 |
+|------|------|
+| `appIdTable` | 已注册的应用程序名 |
+| `blockTable` | 块表记录。这里只有定义信息，块内实体在 `cad.blocks` |
+| `dimStyleTable` | 标注样式，包含 `dimtxt`、`dimscale` 等标注变量 |
+| `linetypeTable` | 线型，包含 `numDashes`、`patternLength`、`comments` |
+| `textStyleTable` | 文字样式，包含 `fileName`、`textSize`、`xScale` |
+| `ucsTable` | 命名用户坐标系，包含 `origin`、`xAxis`、`yAxis` |
+| `viewTable` | 命名视图 |
+| `layerTable` | 图层，包含 `color`、`linetype`、`lineWeight`、`isOff`、`isFrozen`、`isLocked`、`isPlottable` |
+| `viewportTable` | 模型空间视口表记录（`*Active` 等 VPORT），不是图纸空间里的 `Viewport` 实体 |
+
+```javascript
+const layers = cad.tables.layerTable.records
+  .filter(record => !record.isOff)
+  .map(record => record.name)
+return layers
+```
+
+图层颜色是 `{ red, green, blue, colorIndex, isByACI, isByLayer, isByBlock }`。
+
+## cad.blocks
+
+返回数据库中的全部块定义，对应 DXF 的 BLOCKS 段。模型空间 `*Model_Space` 和各个图纸空间 `*Paper_Space` 也在其中。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `id` | `string` | 块表记录 ID，也是块内实体的 `ownerId` |
+| `name` | `string` | 块名 |
+| `origin` | `{ x, y, z }` | 基点 |
+| `isModelSpace` | `boolean` | 是否为模型空间 |
+| `isPaperSpace` | `boolean` | 是否为图纸空间 |
+| `flags` | `number` | BLOCK 组码 70 |
+| `pathName` | `string` | 外部参照路径，本地块为空字符串 |
+| `isXref` | `boolean` | 是否为外部参照 |
+| `layoutId` | `string \| undefined` | 关联的布局 ID |
+| `entities` | `EntitySnapshot[]` | 直接存放在该块中的实体 |
+
+```javascript
+const widget = cad.blocks.find(block => block.name === 'Widget')
+return {
+  count: widget ? widget.entities.length : 0,
+  types: widget ? widget.entities.map(entity => entity.type) : []
+}
+```
 
 ## cad.selection
 
@@ -129,7 +201,7 @@ const ids = cad.selection.ids
 
 ### `cad.selection.entities`
 
-选择集中每个实体的快照。已经不存在的 ID 会被略过。快照字段与 `cad.entities.byId` 相同。
+选择集中每个实体的快照。已经不存在的 ID 会被略过。快照字段与 `cad.entities.byId` 相同，包含 `ownerId`。
 
 ```javascript
 const circles = cad.selection.entities.filter(e => e.type === 'Circle')

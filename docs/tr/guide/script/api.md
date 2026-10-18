@@ -59,7 +59,7 @@ cad.log('Toplam katman sayısı:', info.layers.length)
 
 ## cad.entities
 
-Model alanındaki varlıkları sorgulamak için kullanılır.
+Veritabanındaki tüm varlıkları döndürür: model alanı, her kağıt alanı, her blok tanımı ve blok referanslarındaki öznitelikler. Bir özniteliğin `ownerId` değeri blok referansıdır; diğer varlıkların `ownerId` değeri ait oldukları blok tablosu kaydıdır.
 
 ### `cad.entities.where(predicate)`
 
@@ -93,6 +93,7 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 | Alan | Tür | Açıklama |
 |------|------|------|
 | `id` | `string` | Varlık nesne ID'si |
+| `ownerId` | `string` | Ait olunan blok tablosu kaydının ID'si; öznitelikte blok referansının ID'si |
 | `type` | `string` | Varlık türü, `AcDb` öneki olmadan, örn. `Circle`, `Line` |
 | `layer` | `string` | Bulunduğu katman adı |
 | `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | Dünya koordinat sistemi sınırları |
@@ -114,6 +115,38 @@ Desteklenen `geometry` türleri:
 | `BlockReference` (Insert) | `{ name, position: {x,y,z}, rotation, scale: {x,y,z} }` |
 
 Açı alanları `startAngle` / `endAngle` radyan cinsindendir, `startAngleDeg` / `endAngleDeg` derece cinsindendir.
+
+data-model içindeki her somut varlık türünün `geometry` alanı vardır: `Hatch`, `Spline`, `Leader`, `MLeader`, `MLine`, ölçü türleri, `RasterImage`, `Viewport`, `3dSolid`, `ProxyEntity`. ACIS, OLE ve proxy grafik ikili verisi kopyalanmaz.
+
+## cad.tables
+
+`AcDbDatabase.tables` ile aynı şekilde tüm sembol tablolarını salt okunur verir. Her tablo `{ id, records }` biçimindedir. Kayıtta en az `id` ve `name` vardır.
+
+| Özellik | İçerik |
+|------|------|
+| `appIdTable` | Kayıtlı uygulama adları |
+| `blockTable` | Blok tanımları. Varlıklar `cad.blocks` üzerindedir |
+| `dimStyleTable` | Ölçü stilleri |
+| `linetypeTable` | Çizgi tipleri |
+| `textStyleTable` | Yazı stilleri |
+| `ucsTable` | Adlandırılmış UCS kayıtları |
+| `viewTable` | Adlandırılmış görünümler |
+| `layerTable` | Katmanlar: `color`, `linetype`, `lineWeight`, `isOff`, `isFrozen`, `isLocked`, `isPlottable` |
+| `viewportTable` | Model alanı VPORT kayıtları; kağıt alanındaki `Viewport` varlıkları değildir |
+
+## cad.blocks
+
+DXF BLOCKS bölümüne karşılık gelen tüm blok tanımları. `*Model_Space` ve `*Paper_Space` dahildir.
+
+| Alan | Açıklama |
+|------|------|
+| `id` | Blok tablosu kaydı ID'si ve bloktaki varlıkların `ownerId` değeri |
+| `name` | Blok adı |
+| `origin` | Taban nokta `{ x, y, z }` |
+| `isModelSpace` / `isPaperSpace` | Model alanı / kağıt alanı |
+| `flags` | BLOCK grup kodu 70 |
+| `pathName` / `isXref` | Dış referans yolu ve bayrağı |
+| `entities` | Blokta doğrudan duran varlık anlık görüntüleri |
 
 ## cad.selection
 

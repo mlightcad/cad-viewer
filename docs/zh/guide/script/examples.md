@@ -145,3 +145,55 @@ cad.selection.replace(ids)
 cad.view.zoomExtents()
 return { inBoxCount: inside.length }
 ```
+
+## 按块统计实体
+
+列出每个块定义中的实体数量。模型空间和图纸空间也是块。
+
+```javascript
+return cad.blocks.map(block => ({
+  name: block.name,
+  isModelSpace: block.isModelSpace,
+  isPaperSpace: block.isPaperSpace,
+  count: block.entities.length
+}))
+```
+
+## 找出不在模型空间中的圆
+
+用 `ownerId` 对照块表，筛出用户块和图纸空间里的圆。
+
+```javascript
+const model = cad.blocks.find(block => block.isModelSpace)
+const circles = cad.entities
+  .where(entity => entity.type === 'Circle' && entity.ownerId !== model.id)
+  .map(entity => ({
+    id: entity.id,
+    ownerId: entity.ownerId,
+    layer: entity.layer,
+    radius: entity.geometry.radius
+  }))
+return circles
+```
+
+## 读取图层表
+
+从符号表读取关闭、冻结的图层，字段比 `cad.drawing.layers` 更完整。
+
+```javascript
+const layers = cad.tables.layerTable.records.map(record => ({
+  name: record.name,
+  isOff: record.isOff,
+  isFrozen: record.isFrozen,
+  isLocked: record.isLocked,
+  isPlottable: record.isPlottable,
+  linetype: record.linetype,
+  color: record.color
+}))
+const styles = cad.tables.textStyleTable.records.map(record => ({
+  name: record.name,
+  fileName: record.fileName,
+  textSize: record.textSize
+}))
+return { layers, styles }
+```

@@ -59,7 +59,7 @@ cad.log('Celkový počet hladin:', info.layers.length)
 
 ## cad.entities
 
-Slouží k dotazování na entity v modelovém prostoru.
+Vrací všechny entity v databázi: modelový prostor, každý výkresový prostor, každou definici bloku a atributy na referencích bloků. `ownerId` atributu je reference bloku, u ostatních entit je to záznam tabulky bloků.
 
 ### `cad.entities.where(predicate)`
 
@@ -93,6 +93,7 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 | Pole | Typ | Popis |
 |------|------|------|
 | `id` | `string` | ID objektu entity |
+| `ownerId` | `string` | ID záznamu tabulky bloků, u atributu ID reference bloku |
 | `type` | `string` | Typ entity bez předpony `AcDb`, např. `Circle`, `Line` |
 | `layer` | `string` | Název hladiny, ve které se nachází |
 | `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | Rozsah ve světovém souřadnicovém systému |
@@ -114,6 +115,38 @@ Podporované typy `geometry`:
 | `BlockReference`（Insert） | `{ name, position: {x,y,z}, rotation, scale: {x,y,z} }` |
 
 Pole úhlů `startAngle` / `endAngle` používají radiány, `startAngleDeg` / `endAngleDeg` používají stupně.
+
+`geometry` je vyplněna pro každý konkrétní typ entity v data-model, včetně `Hatch`, `Spline`, `Leader`, `MLeader`, `MLine`, kót, `RasterImage`, `Viewport`, `3dSolid` a `ProxyEntity`. Binární data ACIS, OLE a proxy grafiky se nekopírují.
+
+## cad.tables
+
+Jen pro čtení, všechny tabulky symbolů jako `AcDbDatabase.tables`. Každá tabulka je `{ id, records }`. Záznam má alespoň `id` a `name`.
+
+| Vlastnost | Obsah |
+|------|------|
+| `appIdTable` | Registrované názvy aplikací |
+| `blockTable` | Definice bloků. Entity jsou v `cad.blocks` |
+| `dimStyleTable` | Kótovací styly |
+| `linetypeTable` | Typy čar |
+| `textStyleTable` | Styly textu |
+| `ucsTable` | Pojmenované USS |
+| `viewTable` | Pojmenované pohledy |
+| `layerTable` | Hladiny: `color`, `linetype`, `lineWeight`, `isOff`, `isFrozen`, `isLocked`, `isPlottable` |
+| `viewportTable` | Záznamy VPORT modelového prostoru, ne entity `Viewport` ve výkresovém prostoru |
+
+## cad.blocks
+
+Všechny definice bloků, obdobně jako sekce BLOCKS v DXF, včetně `*Model_Space` a `*Paper_Space`.
+
+| Pole | Popis |
+|------|------|
+| `id` | ID záznamu tabulky bloků a `ownerId` entit v bloku |
+| `name` | Název bloku |
+| `origin` | Vztažný bod `{ x, y, z }` |
+| `isModelSpace` / `isPaperSpace` | Modelový / výkresový prostor |
+| `flags` | Skupinový kód 70 objektu BLOCK |
+| `pathName` / `isXref` | Cesta a příznak externí reference |
+| `entities` | Snímky entit uložených přímo v bloku |
 
 ## cad.selection
 

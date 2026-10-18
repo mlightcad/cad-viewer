@@ -145,3 +145,55 @@ cad.selection.replace(ids)
 cad.view.zoomExtents()
 return { inBoxCount: inside.length }
 ```
+
+## Count entities per block
+
+Model space and paper space are blocks too.
+
+```javascript
+return cad.blocks.map(block => ({
+  name: block.name,
+  isModelSpace: block.isModelSpace,
+  isPaperSpace: block.isPaperSpace,
+  count: block.entities.length
+}))
+```
+
+## Find circles outside model space
+
+`ownerId` is the block that contains the entity.
+
+```javascript
+const model = cad.blocks.find(block => block.isModelSpace)
+const circles = cad.entities
+  .where(entity => entity.type === 'Circle' && entity.ownerId !== model.id)
+  .map(entity => ({
+    id: entity.id,
+    ownerId: entity.ownerId,
+    layer: entity.layer,
+    radius: entity.geometry.radius
+  }))
+return circles
+```
+
+## Read the layer table
+
+Symbol-table records include color, linetype, and plot state. `cad.drawing.layers` is the shorter on/frozen/locked list.
+
+```javascript
+const layers = cad.tables.layerTable.records.map(record => ({
+  name: record.name,
+  isOff: record.isOff,
+  isFrozen: record.isFrozen,
+  isLocked: record.isLocked,
+  isPlottable: record.isPlottable,
+  linetype: record.linetype,
+  color: record.color
+}))
+const styles = cad.tables.textStyleTable.records.map(record => ({
+  name: record.name,
+  fileName: record.fileName,
+  textSize: record.textSize
+}))
+return { layers, styles }
+```

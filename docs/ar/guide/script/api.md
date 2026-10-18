@@ -59,7 +59,7 @@ cad.log('图层总数:', info.layers.length)
 
 ## cad.entities
 
-تُستخدم للاستعلام عن الكيانات في مساحة النموذج.
+تُعيد كل الكيانات في قاعدة البيانات: مساحة النموذج، وكل مساحات الورق، وكل تعريفات الكتل، وسمات مراجع الكتل. `ownerId` للسمة هو مرجع الكتلة، ولغير ذلك هو سجل جدول الكتل المالك.
 
 ### `cad.entities.where(predicate)`
 
@@ -93,6 +93,7 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 | الحقل | النوع | الوصف |
 |------|------|------|
 | `id` | `string` | معرّف كائن الكيان |
+| `ownerId` | `string` | معرّف سجل جدول الكتل المالك، أو مرجع الكتلة للسمة |
 | `type` | `string` | نوع الكيان بدون البادئة `AcDb`، مثل `Circle` و`Line` |
 | `layer` | `string` | اسم الطبقة الموجود بها |
 | `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | النطاق في نظام الإحداثيات العالمي |
@@ -114,6 +115,38 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 | `BlockReference` (إدراج) | `{ name, position: {x,y,z}, rotation, scale: {x,y,z} }` |
 
 يستخدم حقل الزاوية `startAngle` / `endAngle` الراديان، بينما يستخدم `startAngleDeg` / `endAngleDeg` الدرجات.
+
+لدى كل أنواع الكيانات الملموسة في data-model حقل `geometry`، ومنها `Hatch` و`Spline` و`Leader` و`MLeader` و`MLine` وأنواع `Dimension` و`RasterImage` و`Viewport` و`3dSolid` و`ProxyEntity`. لا تُنسخ بيانات ACIS أو OLE أو رسوم الوكيل الثنائية.
+
+## cad.tables
+
+قراءة كل جداول الرموز، كما في `AcDbDatabase.tables`. كل جدول هو `{ id, records }`، وكل سجل يحتوي على الأقل على `id` و`name`.
+
+| الخاصية | المحتوى |
+|------|------|
+| `appIdTable` | أسماء التطبيقات المسجلة |
+| `blockTable` | تعريفات الكتل. الكيانات في `cad.blocks` |
+| `dimStyleTable` | أنماط الأبعاد |
+| `linetypeTable` | أنواع الخطوط |
+| `textStyleTable` | أنماط النص |
+| `ucsTable` | أنظمة الإحداثيات المسماة |
+| `viewTable` | العروض المسماة |
+| `layerTable` | الطبقات: `color` و`linetype` و`lineWeight` و`isOff` و`isFrozen` و`isLocked` و`isPlottable` |
+| `viewportTable` | سجلات VPORT في مساحة النموذج، وليست كيانات `Viewport` في مساحة الورق |
+
+## cad.blocks
+
+كل تعريفات الكتل، بما يقابل قسم BLOCKS في DXF، بما في ذلك `*Model_Space` و`*Paper_Space`.
+
+| الحقل | الوصف |
+|------|------|
+| `id` | معرّف سجل جدول الكتل، وهو `ownerId` لكيانات الكتلة |
+| `name` | اسم الكتلة |
+| `origin` | نقطة الأساس `{ x, y, z }` |
+| `isModelSpace` / `isPaperSpace` | مساحة النموذج / مساحة الورق |
+| `flags` | مجموعة BLOCK رقم 70 |
+| `pathName` / `isXref` | مسار المرجع الخارجي وعلامته |
+| `entities` | لقطات الكيانات المخزنة مباشرة في الكتلة |
 
 ## cad.selection
 

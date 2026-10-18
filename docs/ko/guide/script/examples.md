@@ -145,3 +145,55 @@ cad.selection.replace(ids)
 cad.view.zoomExtents()
 return { inBoxCount: inside.length }
 ```
+
+## 블록별 엔티티 수
+
+모형 공간과 도면 공간도 블록입니다.
+
+```javascript
+return cad.blocks.map(block => ({
+  name: block.name,
+  isModelSpace: block.isModelSpace,
+  isPaperSpace: block.isPaperSpace,
+  count: block.entities.length
+}))
+```
+
+## 모형 공간 밖의 원
+
+`ownerId`는 엔티티가 속한 블록입니다.
+
+```javascript
+const model = cad.blocks.find(block => block.isModelSpace)
+const circles = cad.entities
+  .where(entity => entity.type === 'Circle' && entity.ownerId !== model.id)
+  .map(entity => ({
+    id: entity.id,
+    ownerId: entity.ownerId,
+    layer: entity.layer,
+    radius: entity.geometry.radius
+  }))
+return circles
+```
+
+## 레이어 테이블 읽기
+
+심볼 테이블에는 색, 선 종류, 플롯 가능 여부가 있습니다.
+
+```javascript
+const layers = cad.tables.layerTable.records.map(record => ({
+  name: record.name,
+  isOff: record.isOff,
+  isFrozen: record.isFrozen,
+  isLocked: record.isLocked,
+  isPlottable: record.isPlottable,
+  linetype: record.linetype,
+  color: record.color
+}))
+const styles = cad.tables.textStyleTable.records.map(record => ({
+  name: record.name,
+  fileName: record.fileName,
+  textSize: record.textSize
+}))
+return { layers, styles }
+```
