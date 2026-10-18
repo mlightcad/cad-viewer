@@ -9,7 +9,7 @@ export const scriptTr = {
   scriptHelp: 'Betik yardımı',
   scriptResize: 'Sonuç panelini yeniden boyutlandır',
   scriptPlaceholder: 'İşlev gövdesini yazın. Tek argüman cad.',
-  scriptHint: 'Çalıştırmak için Ctrl+Enter. Tek argüman cad.',
+  scriptHint: 'Ctrl+Enter çalıştırır. "." veya Ctrl+Space cad üyelerini tamamlar.',
   scriptSuccess: 'Başarılı',
   scriptFailed: 'Başarısız',
   scriptReturnValue: 'Dönüş değeri',

@@ -96,20 +96,58 @@ describe('executeCadScript', () => {
     expect(extents).not.toHaveBeenCalled()
   })
 
+  test('serializes the host without failing on toJSON', () => {
+    const { session } = createFixture()
+    const result = executeCadScript(
+      { code: 'return cad', intent: 'inspect host' },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual(
+      expect.objectContaining({
+        log: 'function log',
+        selection: expect.objectContaining({
+          ids: [],
+          entities: [],
+          replace: 'function replace'
+        })
+      })
+    )
+    expect(result.data).not.toHaveProperty('__tick')
+  })
+
+  test('returns selection methods instead of an empty object', () => {
+    const { session } = createFixture()
+    const result = executeCadScript(
+      { code: 'return cad.selection', intent: 'inspect selection' },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({
+      ids: [],
+      entities: [],
+      replace: 'function replace',
+      add: 'function add',
+      remove: 'function remove',
+      clear: 'function clear'
+    })
+  })
+
   test('resolves selection ids without scanning model space', () => {
     const { session, db, selection } = createFixture()
     const id = [...db.tables.blockTable.modelSpace.newIterator()][0].objectId
     selection.add(id)
-    const iterator = jest.spyOn(
-      db.tables.blockTable.modelSpace,
-      'newIterator'
-    )
+    const iterator = jest.spyOn(db.tables.blockTable.modelSpace, 'newIterator')
 
     const result = executeCadScript(
       {
         code: `
-          const ids = cad.selection.ids()
-          return ids.map(id => cad.entities.byId(id))
+          return {
+            ids: cad.selection.ids,
+            entities: cad.selection.entities
+          }
         `,
         intent: 'lookup selection'
       },
@@ -117,9 +155,10 @@ describe('executeCadScript', () => {
     )
 
     expect(result.success).toBe(true)
-    expect(result.data).toEqual([
-      expect.objectContaining({ id, type: 'Circle' })
-    ])
+    expect(result.data).toEqual({
+      ids: [id],
+      entities: [expect.objectContaining({ id, type: 'Circle' })]
+    })
     expect(iterator).not.toHaveBeenCalled()
   })
 

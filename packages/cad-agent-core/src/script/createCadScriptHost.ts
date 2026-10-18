@@ -98,8 +98,16 @@ export function createCadScriptHost(
   }
 
   const selection = {
-    ids(): string[] {
+    get ids(): string[] {
       return [...requireView(session).selectionSet.ids]
+    },
+    get entities(): EntitySnapshot[] {
+      const snapshots: EntitySnapshot[] = []
+      for (const id of this.ids) {
+        const snapshot = snapshotById(session, id)
+        if (snapshot) snapshots.push(snapshot)
+      }
+      return snapshots
     },
     replace(ids: string[]): void {
       const view = requireView(session)
@@ -140,7 +148,12 @@ export function createCadScriptHost(
       const db = session.getDocument()!.database
       runInsideScriptEdit(() => {
         acapRunDatabaseEdit(db, label || 'Agent script', () => {
-          fn(seal(createTransaction(session, executor, effects), CAD_EDIT_TX_METHODS))
+          fn(
+            seal(
+              createTransaction(session, executor, effects),
+              CAD_EDIT_TX_METHODS
+            )
+          )
         })
       })
     }
@@ -173,7 +186,10 @@ export function createCadScriptHost(
     },
     __tick(): void {
       ticks++
-      if (ticks > limits.maxTicks || Date.now() - startedAt > limits.maxMilliseconds) {
+      if (
+        ticks > limits.maxTicks ||
+        Date.now() - startedAt > limits.maxMilliseconds
+      ) {
         throw new Error('script_timeout')
       }
     }
@@ -184,8 +200,16 @@ export function createCadScriptHost(
 
 /** Transaction methods exposed inside `cad.edit.transaction`. */
 export interface CadEditTransaction {
-  drawLine(input: { start: Point2dInput; end: Point2dInput; layer?: string }): string
-  drawCircle(input: { center: Point2dInput; radius: number; layer?: string }): string
+  drawLine(input: {
+    start: Point2dInput
+    end: Point2dInput
+    layer?: string
+  }): string
+  drawCircle(input: {
+    center: Point2dInput
+    radius: number
+    layer?: string
+  }): string
   drawArc(input: {
     center: Point2dInput
     radius: number
@@ -242,7 +266,9 @@ function createTransaction(
     },
     setLayer(ids, layer) {
       const doc = session.getDocument()!
-      const known = doc.layerStore.getLayers().some(entry => entry.name === layer)
+      const known = doc.layerStore
+        .getLayers()
+        .some(entry => entry.name === layer)
       if (!known) throw new Error('layer_not_found')
       const db = doc.database
       for (const id of ids) {
@@ -312,10 +338,29 @@ function requireView(session: CadSession) {
 function formatLogValue(value: unknown): string {
   if (typeof value === 'string') return value
   try {
-    return JSON.stringify(value) ?? String(value)
+    return stringifyScriptValue(value) ?? String(value)
   } catch {
     return String(value)
   }
+}
+
+/**
+ * JSON text for a script value.
+ *
+ * `JSON.stringify` omits functions, so an API object such as `cad.selection`
+ * becomes `{}` and the result pane shows an object with no properties.
+ * Function members are kept as `function name` strings.
+ *
+ * @param value - Return value or log argument.
+ * @returns JSON text, or `undefined` when the value cannot be represented.
+ */
+export function stringifyScriptValue(value: unknown): string | undefined {
+  return JSON.stringify(value, (key, current: unknown) => {
+    if (key === '__tick') return undefined
+    if (typeof current !== 'function') return current
+    const name = current.name.replace(/^bound /, '')
+    return name ? `function ${name}` : 'function'
+  })
 }
 
 function seal<T extends object>(target: T, allowed: readonly string[]): T {
@@ -324,6 +369,9 @@ function seal<T extends object>(target: T, allowed: readonly string[]): T {
     get(obj, prop, receiver) {
       if (typeof prop !== 'string') return undefined
       if (!keys.has(prop)) {
+        // JSON.stringify reads toJSON before enumerating. The script validator
+        // still rejects a written `cad.toJSON` access.
+        if (prop === 'toJSON') return undefined
         throw new Error(`unknown_api:${prop}`)
       }
       const value = Reflect.get(obj, prop, receiver)

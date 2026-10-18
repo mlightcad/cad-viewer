@@ -119,12 +119,20 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 تُستخدم لتمييز الكيانات وتحديدها.
 
-### `cad.selection.ids()`
+### `cad.selection.ids`
 
-تُعيد مصفوفة معرّفات الكيانات المحددة حاليًا.
+مصفوفة معرّفات الكيانات المحددة حاليًا. هذه خاصية وليست دالة.
 
 ```javascript
-const ids = cad.selection.ids()
+const ids = cad.selection.ids
+```
+
+### `cad.selection.entities`
+
+لقطات لكل كيان في مجموعة التحديد. تُحذف المعرّفات التي لم تعد موجودة. حقول كل لقطة مطابقة لـ `cad.entities.byId`.
+
+```javascript
+const circles = cad.selection.entities.filter(e => e.type === 'Circle')
 ```
 
 ### `cad.selection.replace(ids)`

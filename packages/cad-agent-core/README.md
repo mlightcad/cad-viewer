@@ -76,7 +76,7 @@ highlights those ids.
 | `cad.entities.where(predicate)` | Tests each model-space entity, then snapshots only the matches |
 | `cad.entities.byId(id)` | One snapshot, or `undefined` |
 | `cad.entities.inBox(min, max)` | Snapshots whose scene bounds meet a WCS box |
-| `cad.selection` | `ids`, `replace`, `add`, `remove`, `clear` |
+| `cad.selection` | `ids`, `entities`, `replace`, `add`, `remove`, `clear` |
 | `cad.view.zoomExtents()` | Fit the view to the drawing |
 | `cad.log(...)` | Lines returned on the tool result |
 | `cad.edit.transaction(label, tx => {})` | One undo group |

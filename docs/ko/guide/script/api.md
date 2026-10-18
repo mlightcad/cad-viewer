@@ -119,12 +119,20 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 엔티티를 강조 표시하고 선택하는 데 사용됩니다.
 
-### `cad.selection.ids()`
+### `cad.selection.ids`
 
-현재 선택된 엔티티 ID 배열을 반환합니다.
+현재 선택된 엔티티 ID 배열입니다. 메서드가 아니라 속성입니다.
 
 ```javascript
-const ids = cad.selection.ids()
+const ids = cad.selection.ids
+```
+
+### `cad.selection.entities`
+
+선택 집합에 있는 각 엔티티의 스냅샷입니다. 더 이상 존재하지 않는 ID는 생략됩니다. 스냅샷 필드는 `cad.entities.byId`와 같습니다.
+
+```javascript
+const circles = cad.selection.entities.filter(e => e.type === 'Circle')
 ```
 
 ### `cad.selection.replace(ids)`

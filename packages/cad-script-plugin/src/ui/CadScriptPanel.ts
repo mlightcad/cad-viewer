@@ -8,6 +8,7 @@ import JSONFormatter from 'json-formatter-js'
 
 import type { ScriptLabels } from '../i18n'
 import { buildScriptLabels } from '../i18n'
+import { createScriptEditor, type ScriptEditor } from './createScriptEditor'
 
 /** Draft key so a refresh keeps the last script the user typed. */
 const SCRIPT_DRAFT_KEY = 'mlightcad.cad-script.draft'
@@ -44,7 +45,8 @@ return {
 /**
  * Manual CAD script console.
  *
- * Built with DOM only. Append {@link element} to a dock or palette tab, and
+ * The editor is CodeMirror, so `cad` members complete while typing.
+ * Append {@link element} to a dock or palette tab, and
  * call {@link destroy} when that tab is removed.
  */
 export class CadScriptPanel {
@@ -54,7 +56,7 @@ export class CadScriptPanel {
   private readonly runButton: HTMLButtonElement
   private readonly hintEl: HTMLSpanElement
   private readonly helpLink: HTMLAnchorElement
-  private readonly editor: HTMLTextAreaElement
+  private readonly editor: ScriptEditor
   private readonly splitter: HTMLDivElement
   private readonly resultEl: HTMLDivElement
 
@@ -106,19 +108,20 @@ export class CadScriptPanel {
 
     const editorWrap = document.createElement('div')
     editorWrap.className = 'cad-script-editor-wrap'
-    this.editor = document.createElement('textarea')
-    this.editor.className = 'cad-script-editor'
-    this.editor.spellcheck = false
-    this.editor.autocomplete = 'off'
-    this.editor.value = readDraft()
-    this.editor.addEventListener('input', () => {
-      this.scheduleDraftSave()
-      this.syncRunButton()
-    })
-    this.editor.addEventListener('keydown', event => {
-      this.onEditorKeydown(event)
-    })
-    editorWrap.append(this.editor)
+    const editorHost = document.createElement('div')
+    editorHost.className = 'cad-script-editor'
+    this.editor = createScriptEditor(
+      editorHost,
+      readDraft(),
+      () => {
+        this.scheduleDraftSave()
+        this.syncRunButton()
+      },
+      () => {
+        void this.runScript()
+      }
+    )
+    editorWrap.append(editorHost)
 
     this.splitter = document.createElement('div')
     this.splitter.className = 'cad-script-splitter'
@@ -153,6 +156,7 @@ export class CadScriptPanel {
    */
   destroy(): void {
     this.flushDraft()
+    this.editor.destroy()
     this.resizeObserver?.disconnect()
     this.stopSplitDrag()
     AcApI18n.events.localeChanged.removeEventListener(this.onLocaleChanged)
@@ -164,8 +168,8 @@ export class CadScriptPanel {
     this.helpLink.title = this.labels.scriptHelp
     this.helpLink.setAttribute('aria-label', this.labels.scriptHelp)
     this.hintEl.textContent = this.labels.scriptHint
-    this.editor.placeholder = this.labels.scriptPlaceholder
-    this.editor.setAttribute('aria-label', this.labels.scriptTitle)
+    this.editor.setPlaceholder(this.labels.scriptPlaceholder)
+    this.editor.setAriaLabel(this.labels.scriptTitle)
     this.splitter.setAttribute('aria-label', this.labels.scriptResize)
     this.syncRunButton()
   }
@@ -204,32 +208,6 @@ export class CadScriptPanel {
       this.syncRunButton()
       this.renderResult()
     }
-  }
-
-  /**
-   * Inserts spaces on Tab and runs on Ctrl/Cmd+Enter.
-   *
-   * @param event - Key event from the script editor.
-   */
-  private onEditorKeydown(event: KeyboardEvent) {
-    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
-      event.preventDefault()
-      void this.runScript()
-      return
-    }
-    if (event.key !== 'Tab' || event.ctrlKey || event.metaKey || event.altKey) {
-      return
-    }
-    event.preventDefault()
-    const start = this.editor.selectionStart
-    const end = this.editor.selectionEnd
-    const indent = '  '
-    const value = this.editor.value
-    this.editor.value = value.slice(0, start) + indent + value.slice(end)
-    this.editor.selectionStart = start + indent.length
-    this.editor.selectionEnd = start + indent.length
-    this.scheduleDraftSave()
-    this.syncRunButton()
   }
 
   private scheduleDraftSave() {

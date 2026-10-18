@@ -119,12 +119,20 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 用于高亮和选择实体。
 
-### `cad.selection.ids()`
+### `cad.selection.ids`
 
-返回当前已选中实体 ID 数组。
+当前已选中实体的 ID 数组。这是属性，不是方法。
 
 ```javascript
-const ids = cad.selection.ids()
+const ids = cad.selection.ids
+```
+
+### `cad.selection.entities`
+
+选择集中每个实体的快照。已经不存在的 ID 会被略过。快照字段与 `cad.entities.byId` 相同。
+
+```javascript
+const circles = cad.selection.entities.filter(e => e.type === 'Circle')
 ```
 
 ### `cad.selection.replace(ids)`

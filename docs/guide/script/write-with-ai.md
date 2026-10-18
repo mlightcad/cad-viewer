@@ -66,7 +66,8 @@ Geometry fields by type:
 
 ### cad.selection
 Control the selection set:
-- cad.selection.ids() -> Array of currently selected entity IDs
+- cad.selection.ids -> Array of currently selected entity IDs
+- cad.selection.entities -> Snapshots of every entity in the selection set
 - cad.selection.replace(ids) -> Clear and set to the specified ID list
 - cad.selection.add(ids) -> Add to the selection set
 - cad.selection.remove(ids) -> Remove from the selection set

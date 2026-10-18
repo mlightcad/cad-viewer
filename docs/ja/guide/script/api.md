@@ -119,12 +119,20 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 エンティティのハイライトと選択に使用します。
 
-### `cad.selection.ids()`
+### `cad.selection.ids`
 
-現在選択されているエンティティ ID の配列を返します。
+現在選択されているエンティティ ID の配列です。メソッドではなくプロパティです。
 
 ```javascript
-const ids = cad.selection.ids()
+const ids = cad.selection.ids
+```
+
+### `cad.selection.entities`
+
+選択セット内の各エンティティのスナップショットです。存在しない ID は除きます。各スナップショットのフィールドは `cad.entities.byId` と同じです。
+
+```javascript
+const circles = cad.selection.entities.filter(e => e.type === 'Circle')
 ```
 
 ### `cad.selection.replace(ids)`

@@ -9,7 +9,7 @@ export const scriptCs = {
   scriptHelp: 'Nápověda ke skriptu',
   scriptResize: 'Změnit výšku panelu výsledků',
   scriptPlaceholder: 'Napište tělo funkce. Jediný argument je cad.',
-  scriptHint: 'Ctrl+Enter spustí skript. Jediný argument je cad.',
+  scriptHint: 'Ctrl+Enter spustí skript. "." nebo Ctrl+Space doplní cad.',
   scriptSuccess: 'Úspěch',
   scriptFailed: 'Selhalo',
   scriptReturnValue: 'Návratová hodnota',
