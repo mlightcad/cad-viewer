@@ -55,8 +55,9 @@ describe('acuiResolveToolbarItems', () => {
   it('returns default items when items is default', () => {
     const items = acuiResolveToolbarItems({ items: 'default' })
     expect(items.length).toBeGreaterThan(0)
-    expect(items[0].id).toBe('open')
-    expect(items[1].id).toBe('select')
+    expect(items[0].id).toBe('select')
+    expect(items[1].id).toBe('pan')
+    expect(items.some(item => item.id === 'open')).toBe(false)
   })
 
   it('returns phone default items when layout is phone', () => {
@@ -100,8 +101,7 @@ describe('acuiResolveToolbarItems', () => {
     })
     expect(items.some(item => item.id === 'select')).toBe(false)
     expect(items.some(item => item.id === 'pan')).toBe(false)
-    expect(items[0].id).toBe('open')
-    expect(items[1].id).toBe('zoom')
+    expect(items[0].id).toBe('zoom')
   })
 
   it('keeps excluded ids when excludeItems is empty', () => {
@@ -109,9 +109,8 @@ describe('acuiResolveToolbarItems', () => {
       items: 'default',
       excludeItems: []
     })
-    expect(items[0].id).toBe('open')
-    expect(items[1].id).toBe('select')
-    expect(items[2].id).toBe('pan')
+    expect(items[0].id).toBe('select')
+    expect(items[1].id).toBe('pan')
   })
 
   it('applies pad built-in excludeItems after resolving defaults', () => {
@@ -119,8 +118,16 @@ describe('acuiResolveToolbarItems', () => {
     const items = acuiResolveToolbarItems(merged, undefined, 'pad')
     expect(items.some(item => item.id === 'select')).toBe(false)
     expect(items.some(item => item.id === 'pan')).toBe(false)
-    expect(items[0].id).toBe('open')
-    expect(items[1].id).toBe('zoom')
+    expect(items[0].id).toBe('zoom')
+  })
+
+  it('resolves the open preset without placing it on the default toolbar', () => {
+    const items = acuiResolveToolbarItems({
+      items: [{ preset: 'open' }, { preset: 'select' }]
+    })
+    expect(items.map(item => item.id)).toEqual(['open', 'select'])
+    expect(items[0].requiresDocument).toBe(false)
+    expect(String(items[0].icon)).toContain('viewBox="0 0 24 24"')
   })
 
   it('appends custom items after defaults', () => {
