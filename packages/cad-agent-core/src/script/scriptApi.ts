@@ -20,6 +20,7 @@ export const CAD_SCRIPT_API_TREE = {
   },
   selection: {
     ids: true,
+    entities: true,
     replace: true,
     add: true,
     remove: true,
@@ -67,7 +68,9 @@ cad.drawing -> { title, currentLayer, units, layers: [{ name, isOn, isFrozen, is
 cad.entities.where(predicate) -> snapshots { id, type, layer, extents, geometry }
 cad.entities.byId(id) -> snapshot or undefined
 cad.entities.inBox(min, max) -> snapshots inside a WCS box
-cad.selection.ids() / replace(ids) / add(ids) / remove(ids) / clear()
+cad.selection.ids -> selected entity ids
+cad.selection.entities -> snapshots of the current selection
+cad.selection.replace(ids) / add(ids) / remove(ids) / clear()
 cad.view.zoomExtents()
 cad.log(...values)
 cad.edit.transaction(label, tx => { ... }) performs one undo group.

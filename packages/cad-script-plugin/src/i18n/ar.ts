@@ -9,7 +9,7 @@ export const scriptAr = {
   scriptHelp: 'مساعدة السكريبت',
   scriptResize: 'تغيير ارتفاع لوحة النتائج',
   scriptPlaceholder: 'اكتب نص الدالة. المعامل الوحيد هو cad.',
-  scriptHint: 'Ctrl+Enter للتشغيل. المعامل الوحيد هو cad.',
+  scriptHint: 'Ctrl+Enter للتشغيل. "." أو Ctrl+Space يكمل أعضاء cad.',
   scriptSuccess: 'نجح',
   scriptFailed: 'فشل',
   scriptReturnValue: 'القيمة المُرجعة',

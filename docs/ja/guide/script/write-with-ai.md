@@ -66,7 +66,8 @@ title: AI でスクリプトを作成
 
 ### cad.selection
 選択セットの制御：
-- cad.selection.ids() -> 現在選択されているエンティティ ID の配列
+- cad.selection.ids -> 現在選択されているエンティティ ID の配列
+- cad.selection.entities -> 選択セット内の各エンティティのスナップショット
 - cad.selection.replace(ids) -> クリアして指定した ID リストに設定
 - cad.selection.add(ids) -> 選択セットに追加
 - cad.selection.remove(ids) -> 選択セットから削除

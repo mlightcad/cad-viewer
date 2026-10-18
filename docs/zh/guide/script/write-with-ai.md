@@ -66,7 +66,8 @@ title: 用 AI 编写脚本
 
 ### cad.selection
 控制选择集：
-- cad.selection.ids() -> 当前选中的实体 ID 数组
+- cad.selection.ids -> 当前选中的实体 ID 数组
+- cad.selection.entities -> 选择集中每个实体的快照
 - cad.selection.replace(ids) -> 清空并设置为指定 ID 列表
 - cad.selection.add(ids) -> 添加到选择集
 - cad.selection.remove(ids) -> 从选择集移除

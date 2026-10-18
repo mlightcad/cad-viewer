@@ -119,12 +119,20 @@ Açı alanları `startAngle` / `endAngle` radyan cinsindendir, `startAngleDeg` /
 
 Varlıkları vurgulamak ve seçmek için kullanılır.
 
-### `cad.selection.ids()`
+### `cad.selection.ids`
 
-Şu anda seçili olan varlık ID'lerini dizisi olarak döndürür.
+Şu anda seçili varlık ID'lerinin dizisi. Bu bir metot değil, özelliktir.
 
 ```javascript
-const ids = cad.selection.ids()
+const ids = cad.selection.ids
+```
+
+### `cad.selection.entities`
+
+Seçim kümesindeki her varlığın anlık görüntüsü. Artık var olmayan ID'ler atlanır. Anlık görüntü alanları `cad.entities.byId` ile aynıdır.
+
+```javascript
+const circles = cad.selection.entities.filter(e => e.type === 'Circle')
 ```
 
 ### `cad.selection.replace(ids)`

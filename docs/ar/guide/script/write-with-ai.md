@@ -66,7 +66,8 @@ title: كتابة البرامج النصية باستخدام الذكاء ال
 
 ### cad.selection
 التحكم في مجموعة التحديد:
-- cad.selection.ids() -> مصفوفة معرّفات الكيانات المحددة حاليًا
+- cad.selection.ids -> مصفوفة معرّفات الكيانات المحددة حاليًا
+- cad.selection.entities -> لقطات لكل كيان في مجموعة التحديد
 - cad.selection.replace(ids) -> تمسح وتعيّن إلى قائمة المعرّفات المحددة
 - cad.selection.add(ids) -> تضيف إلى مجموعة التحديد
 - cad.selection.remove(ids) -> تزيل من مجموعة التحديد

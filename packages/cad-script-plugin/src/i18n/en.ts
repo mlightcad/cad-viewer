@@ -11,7 +11,7 @@ export const scriptEn = {
   scriptHelp: 'Script help',
   scriptResize: 'Resize result panel',
   scriptPlaceholder: 'Write a function body. The only argument is cad.',
-  scriptHint: 'Ctrl+Enter runs the script. The only argument is cad.',
+  scriptHint: 'Ctrl+Enter runs. "." or Ctrl+Space completes cad.',
   scriptSuccess: 'Succeeded',
   scriptFailed: 'Failed',
   scriptReturnValue: 'Return value',

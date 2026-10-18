@@ -119,12 +119,20 @@ Angle fields `startAngle` / `endAngle` are in radians; `startAngleDeg` / `endAng
 
 Used to highlight and select entities.
 
-### `cad.selection.ids()`
+### `cad.selection.ids`
 
-Returns an array of currently selected entity IDs.
+The currently selected entity IDs. This is a property, not a method.
 
 ```javascript
-const ids = cad.selection.ids()
+const ids = cad.selection.ids
+```
+
+### `cad.selection.entities`
+
+Snapshots of every entity in the selection set. Ids that no longer exist are omitted. Each snapshot has the same fields as `cad.entities.byId`.
+
+```javascript
+const circles = cad.selection.entities.filter(e => e.type === 'Circle')
 ```
 
 ### `cad.selection.replace(ids)`

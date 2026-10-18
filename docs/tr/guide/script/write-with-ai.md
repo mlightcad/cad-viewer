@@ -66,7 +66,8 @@ Türlerine göre geometry alanları:
 
 ### cad.selection
 Seçim kümesini kontrol etme:
-- cad.selection.ids() -> Şu anda seçili varlık ID'leri dizisi
+- cad.selection.ids -> Şu anda seçili varlık ID'leri dizisi
+- cad.selection.entities -> Seçim kümesindeki her varlığın anlık görüntüsü
 - cad.selection.replace(ids) -> Seçim kümesini temizler ve belirtilen ID listesiyle değiştirir
 - cad.selection.add(ids) -> Seçim kümesine ekler
 - cad.selection.remove(ids) -> Seçim kümesinden çıkarır

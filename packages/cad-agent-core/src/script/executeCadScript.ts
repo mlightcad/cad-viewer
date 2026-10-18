@@ -4,7 +4,8 @@ import type { ToolResult } from '../tools/types'
 import {
   type CadScriptEffects,
   type CadScriptLimits,
-  createCadScriptHost
+  createCadScriptHost,
+  stringifyScriptValue
 } from './createCadScriptHost'
 import { instrumentCadScript } from './instrumentCadScript'
 import { validateCadScript } from './validateCadScript'
@@ -111,7 +112,7 @@ export function executeCadScript(
 
 function serializeResult(value: unknown, maxChars: number): unknown {
   if (value === undefined) return undefined
-  const json = JSON.stringify(value)
+  const json = stringifyScriptValue(value)
   if (json === undefined) {
     throw new Error('script_result_not_serializable')
   }

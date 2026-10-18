@@ -66,7 +66,8 @@ Pole geometry jednotlivých typů:
 
 ### cad.selection
 Ovládání výběru:
-- cad.selection.ids() -> pole ID aktuálně vybraných entit
+- cad.selection.ids -> pole ID aktuálně vybraných entit
+- cad.selection.entities -> snímky každé entity ve výběru
 - cad.selection.replace(ids) -> vymaže a nastaví na zadaný seznam ID
 - cad.selection.add(ids) -> přidá do výběru
 - cad.selection.remove(ids) -> odebere z výběru

@@ -97,21 +97,21 @@
 .cad-script-editor {
   flex: 1 1 auto;
   width: 100%;
+  min-width: 0;
   min-height: 0;
-  margin: 0;
-  padding: 10px 12px;
-  border: none;
-  resize: none;
-  background: #1e1e1e;
-  color: #d4d4d4;
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  tab-size: 2;
+  overflow: hidden;
 }
 
-.cad-script-editor:focus {
-  outline: none;
+.cad-script-editor .cm-editor {
+  height: 100%;
+}
+
+.cad-script-editor .cm-scroller {
+  overflow: auto;
+}
+
+.cm-tooltip {
+  z-index: 4000;
 }
 
 .cad-script-splitter {

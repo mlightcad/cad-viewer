@@ -119,12 +119,20 @@ Pole úhlů `startAngle` / `endAngle` používají radiány, `startAngleDeg` / `
 
 Slouží k zvýraznění a výběru entit.
 
-### `cad.selection.ids()`
+### `cad.selection.ids`
 
-Vrací pole ID aktuálně vybraných entit.
+Pole ID aktuálně vybraných entit. Je to vlastnost, ne metoda.
 
 ```javascript
-const ids = cad.selection.ids()
+const ids = cad.selection.ids
+```
+
+### `cad.selection.entities`
+
+Snímky každé entity ve výběru. ID, která už neexistují, se vynechají. Pole snímku jsou stejná jako u `cad.entities.byId`.
+
+```javascript
+const circles = cad.selection.entities.filter(e => e.type === 'Circle')
 ```
 
 ### `cad.selection.replace(ids)`

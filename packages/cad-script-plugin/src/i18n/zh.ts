@@ -9,7 +9,7 @@ export const scriptZh = {
   scriptHelp: '脚本帮助',
   scriptResize: '调整结果面板高度',
   scriptPlaceholder: '编写函数体。唯一参数是 cad。',
-  scriptHint: 'Ctrl+Enter 运行。唯一参数是 cad。',
+  scriptHint: 'Ctrl+Enter 运行。输入 “.” 或按 Ctrl+Space 补全 cad。',
   scriptSuccess: '成功',
   scriptFailed: '失败',
   scriptReturnValue: '返回值',

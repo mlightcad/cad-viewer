@@ -66,7 +66,8 @@ title: AI로 스크립트 작성하기
 
 ### cad.selection
 선택 집합 제어:
-- cad.selection.ids() -> 현재 선택된 엔티티 ID 배열
+- cad.selection.ids -> 현재 선택된 엔티티 ID 배열
+- cad.selection.entities -> 선택 집합에 있는 각 엔티티의 스냅샷
 - cad.selection.replace(ids) -> 지우고 지정된 ID 목록으로 설정
 - cad.selection.add(ids) -> 선택 집합에 추가
 - cad.selection.remove(ids) -> 선택 집합에서 제거
