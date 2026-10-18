@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import '../ui/agent-panel.css'
+import '../ui/script-panel.css'
 
 import type { ToolResult } from '@mlightcad/cad-agent-core'
 import {
@@ -9,8 +9,8 @@ import {
 } from '@mlightcad/cad-agent-core'
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
-import type { AgentChatLabelKey } from '../i18n'
-import { useAgentI18n } from '../i18n/useAgentI18n'
+import type { ScriptLabelKey } from '../i18n'
+import { useScriptI18n } from '../i18n/useScriptI18n'
 
 /** Draft key so a refresh keeps the last script the user typed. */
 const SCRIPT_DRAFT_KEY = 'mlightcad.cad-script.draft'
@@ -29,7 +29,7 @@ return {
   counts
 }`
 
-const { labels } = useAgentI18n()
+const { labels } = useScriptI18n()
 const session = createDocManagerSession()
 const code = ref(readDraft())
 const result = ref<ToolResult | null>(null)
@@ -153,10 +153,7 @@ function readDraft(): string {
  * @param text - Localized panel labels.
  * @returns Text to show under the status line.
  */
-function explainError(
-  error: string,
-  text: Record<AgentChatLabelKey, string>
-): string {
+function explainError(error: string, text: Record<ScriptLabelKey, string>): string {
   const named = (prefix: string, label: string) => {
     if (!error.startsWith(prefix)) return undefined
     const detail = error.slice(prefix.length)
@@ -212,13 +209,11 @@ function formatIds(ids: string[] | undefined): string {
 </script>
 
 <template>
-  <div
-    class="cad-agent-panel-root cad-agent-panel-root--embedded cad-script-panel"
-  >
+  <div class="cad-script-root">
     <div class="cad-script-toolbar">
       <button
         type="button"
-        class="cad-agent-panel-btn cad-agent-panel-btn--primary"
+        class="cad-script-btn cad-script-btn--primary"
         :disabled="running || !code.trim()"
         @click="runScript"
       >
@@ -227,7 +222,7 @@ function formatIds(ids: string[] | undefined): string {
       <span class="cad-script-hint">{{ labels.scriptHint }}</span>
       <button
         type="button"
-        class="cad-agent-panel-btn"
+        class="cad-script-btn"
         :class="{ 'is-active': showApi }"
         @click="showApi = !showApi"
       >

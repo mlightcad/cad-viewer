@@ -18,17 +18,8 @@ registerLazyAgentPlugin(AcApDocManager.instance.pluginManager)
 ```
 
 Run `agent` from the ribbon or command line to open the chat panel.
-Run `cadscript` to open the manual script console.
 
-## Script console
-
-`CadScriptPanel` calls `executeCadScript` on the active drawing. It does not
-need an API key. The same checks and limits as the agent tool apply: the body
-is a function with one argument, `cad`, and it cannot touch the page.
-
-`cad-simple-viewer-example` adds a toolbar button and a dock tab for this panel.
-`cad-viewer` adds a tool-palette tab. Both hosts register an opener so the
-`cadscript` command can show the panel.
+The manual script console lives in [`@mlightcad/cad-script-plugin`](../cad-script-plugin/README.md). This package does not register `cadscript`.
 
 ## CAD tools
 

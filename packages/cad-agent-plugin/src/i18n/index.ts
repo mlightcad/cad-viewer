@@ -1,6 +1,7 @@
 import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
 
 import { agentAr } from './ar'
+import { agentCommandDescriptions } from './command'
 import { agentCs } from './cs'
 import { agentEn } from './en'
 import { agentTr } from './tr'
@@ -34,7 +35,13 @@ let isRegistered = false
  * @returns Messages shaped for `mergeLocaleMessage`.
  */
 function buildVueMessages(locale: AcApLocale) {
+  const descriptions = agentCommandDescriptions[locale]
   return {
+    command: {
+      ACAD: {
+        agent: { description: descriptions.agent }
+      }
+    },
     main: {
       toolPalette: {
         agent: agentMessagesByLocale[locale]

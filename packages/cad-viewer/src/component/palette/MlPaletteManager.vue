@@ -85,7 +85,7 @@
         </div>
         <div
           v-else-if="
-            store.features.agentPlugin &&
+            store.features.scriptPlugin &&
             store.dialogs.activePaletteTab === 'cadScript'
           "
           class="ml-agent-palette-wrapper"
@@ -129,12 +129,18 @@ const loadAgentPlugin = () =>
     import('@mlightcad/cad-agent-plugin')
   ]).then(([, module]) => module)
 
+const loadScriptPlugin = () =>
+  Promise.all([
+    import('@mlightcad/cad-script-plugin/style.css'),
+    import('@mlightcad/cad-script-plugin')
+  ]).then(([, module]) => module)
+
 const AgentChatPanel = defineAsyncComponent(() =>
   loadAgentPlugin().then(module => module.AgentChatPanel)
 )
 
 const CadScriptPanel = defineAsyncComponent(() =>
-  loadAgentPlugin().then(module => module.CadScriptPanel)
+  loadScriptPlugin().then(module => module.CadScriptPanel)
 )
 
 /**
@@ -251,7 +257,10 @@ const tabNames = computed((): readonly string[] => {
     names.push('openFileProfile')
   }
   if (store.features.agentPlugin) {
-    names.push('agent', 'cadScript')
+    names.push('agent')
+  }
+  if (store.features.scriptPlugin) {
+    names.push('cadScript')
   }
   return names
 })
@@ -262,7 +271,7 @@ const tabs = computed<MlOverflowTab[]>(() => {
       name,
       label:
         name === 'cadScript'
-          ? t('main.toolPalette.agent.scriptTab')
+          ? t('main.toolPalette.script.scriptTab')
           : toolPaletteTabName(name)
     }
   })
@@ -270,7 +279,7 @@ const tabs = computed<MlOverflowTab[]>(() => {
 
 const activeTabTitle = computed(() => {
   if (store.dialogs.activePaletteTab === 'cadScript') {
-    return t('main.toolPalette.agent.scriptTitle')
+    return t('main.toolPalette.script.scriptTitle')
   }
   return toolPaletteTitle(store.dialogs.activePaletteTab)
 })

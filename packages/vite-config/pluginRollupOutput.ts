@@ -67,6 +67,7 @@ export const PLUGIN_PACKAGE_IDS = [
   'cad-svg-plugin',
   'cad-simple-ui-plugin',
   'cad-agent-plugin',
+  'cad-script-plugin',
   'cad-onedrive-plugin',
   'cad-google-drive-plugin'
 ] as const

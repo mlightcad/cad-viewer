@@ -21,6 +21,7 @@
   "dependencies": {
     "@mlightcad/cad-agent-core": "workspace:*",
     "@mlightcad/cad-agent-plugin": "workspace:*",
+    "@mlightcad/cad-script-plugin": "workspace:*",
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-onedrive-plugin": "workspace:*",
     "@mlightcad/cad-google-drive-plugin": "workspace:*",

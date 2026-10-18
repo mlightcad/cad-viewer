@@ -1,8 +1,8 @@
+import { setAgentPaletteOpener } from '@mlightcad/cad-agent-plugin/register'
 import {
-  agentT,
-  setAgentPaletteOpener,
+  scriptT,
   setCadScriptPaletteOpener
-} from '@mlightcad/cad-agent-plugin/register'
+} from '@mlightcad/cad-script-plugin/register'
 import type { AcApSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin'
 import { createApp } from 'vue'
 
@@ -11,6 +11,8 @@ export const SCRIPT_DOCK_TAB_ID = 'cad-script'
 
 /**
  * Wires the agent chat and the manual script console to dock tabs.
+ *
+ * Each panel comes from its own plugin. The script console does not load the agent.
  */
 export function setupAgentIntegration(plugin: AcApSimpleUiPlugin): void {
   const ensureAgentMount = createLazyMount(async mountEl => {
@@ -19,8 +21,8 @@ export function setupAgentIntegration(plugin: AcApSimpleUiPlugin): void {
     createApp(AgentChatPanel, { embedded: true }).mount(mountEl)
   })
   const ensureScriptMount = createLazyMount(async mountEl => {
-    await import('@mlightcad/cad-agent-plugin/style.css')
-    const { CadScriptPanel } = await import('@mlightcad/cad-agent-plugin')
+    await import('@mlightcad/cad-script-plugin/style.css')
+    const { CadScriptPanel } = await import('@mlightcad/cad-script-plugin')
     createApp(CadScriptPanel).mount(mountEl)
   })
 
@@ -31,7 +33,7 @@ export function setupAgentIntegration(plugin: AcApSimpleUiPlugin): void {
   })
   setCadScriptPaletteOpener(() => {
     void ensureScriptMount().then(mountEl =>
-      toggleDockTab(plugin, SCRIPT_DOCK_TAB_ID, agentT('scriptTab'), mountEl)
+      toggleDockTab(plugin, SCRIPT_DOCK_TAB_ID, scriptT('scriptTab'), mountEl)
     )
   })
 }

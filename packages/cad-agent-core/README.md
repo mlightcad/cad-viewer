@@ -48,7 +48,7 @@ They delegate to `CadActionExecutor`.
 script must not import modules or touch the page. Entities passed to the script
 are plain snapshots, not live `AcDbEntity` objects.
 
-`CadScriptPanel` in `@mlightcad/cad-agent-plugin` is the same runner with an
+`CadScriptPanel` in `@mlightcad/cad-script-plugin` is the same runner with an
 editor, so a person can execute a script without a model. It uses
 `createDocManagerSession()` and therefore needs a viewer host.
 

@@ -8,4 +8,3 @@ import './ui/agent-panel.css'
 
 export { createAgentPlugin } from './createAgentPlugin'
 export { default as AgentChatPanel } from './ui/AgentChatPanel.vue'
-export { default as CadScriptPanel } from './ui/CadScriptPanel.vue'

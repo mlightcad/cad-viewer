@@ -6,12 +6,11 @@ import {
 
 import packageJson from '../package.json'
 import { AcApAgentCmd } from './command/AcApAgentCmd'
-import { AcApCadScriptCmd } from './command/AcApCadScriptCmd'
 
 /**
  * CAD Agent plugin: natural-language drawing via LLM tool calling.
  *
- * Registers `agent` (chat) and `cadscript` (manual script console).
+ * Registers the `agent` chat command.
  */
 export class AcApAgentPlugin implements AcApPlugin {
   /** Plugin identifier used by {@link AcApPluginManager}. Must match `AGENT_PLUGIN_NAME`. */
@@ -19,13 +18,13 @@ export class AcApAgentPlugin implements AcApPlugin {
   /** Semantic version from `package.json`. */
   version = packageJson.version
   /** Short human-readable description shown in plugin listings. */
-  description = 'Natural-language CAD drawing agent and script console'
+  description = 'Natural-language CAD drawing agent'
 
   /** Commands registered in {@link onLoad} for removal in {@link onUnload}. */
   private registeredCommands: Array<{ group: string; name: string }> = []
 
   /**
-   * Registers the `agent` and `cadscript` system commands.
+   * Registers the `agent` system command.
    *
    * @param _context - Application context (unused).
    * @param commandManager - Command stack used to register {@link AcApAgentCmd}.
@@ -33,16 +32,7 @@ export class AcApAgentPlugin implements AcApPlugin {
   onLoad(_context: AcApContext, commandManager: AcEdCommandStack): void {
     const group = AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME
     commandManager.addCommand(group, 'agent', 'agent', new AcApAgentCmd())
-    commandManager.addCommand(
-      group,
-      'cadscript',
-      'cadscript',
-      new AcApCadScriptCmd()
-    )
-    this.registeredCommands.push(
-      { group, name: 'agent' },
-      { group, name: 'cadscript' }
-    )
+    this.registeredCommands.push({ group, name: 'agent' })
   }
 
   /**
