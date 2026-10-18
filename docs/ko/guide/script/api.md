@@ -59,7 +59,7 @@ cad.log('레이어 총수:', info.layers.length)
 
 ## cad.entities
 
-모형 공간의 엔티티를 조회하는 데 사용됩니다.
+데이터베이스의 모든 엔티티를 반환합니다. 모형 공간, 모든 도면 공간, 모든 블록 정의, 그리고 블록 참조의 속성이 포함됩니다. 속성의 `ownerId`는 블록 참조이고, 그 외 엔티티의 `ownerId`는 소속 블록 테이블 레코드입니다.
 
 ### `cad.entities.where(predicate)`
 
@@ -93,6 +93,7 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | `id` | `string` | 엔티티 객체 ID |
+| `ownerId` | `string` | 소속 블록 테이블 레코드 ID. 속성은 블록 참조 ID |
 | `type` | `string` | 엔티티 타입(`AcDb` 접두사 제외), 예: `Circle`, `Line` |
 | `layer` | `string` | 소속 레이어 이름 |
 | `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | 월드 좌표계 범위 |
@@ -114,6 +115,38 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 | `BlockReference`(Insert) | `{ name, position: {x,y,z}, rotation, scale: {x,y,z} }` |
 
 각도 필드 `startAngle` / `endAngle`은 라디안을 사용하고, `startAngleDeg` / `endAngleDeg`는 도(degree)를 사용합니다.
+
+`Hatch`, `Spline`, `Leader`, `MLeader`, `MLine`, 각종 `Dimension`, `RasterImage`, `Viewport`, `3dSolid`, `ProxyEntity`를 포함한 data-model의 모든 구체 엔티티에 `geometry`가 있습니다. ACIS, OLE, 프록시 그래픽 바이너리는 포함하지 않습니다.
+
+## cad.tables
+
+`AcDbDatabase.tables`와 같이 모든 심볼 테이블을 읽습니다. 각 테이블은 `{ id, records }`이며, 레코드에는 최소한 `id`와 `name`이 있습니다.
+
+| 속성 | 내용 |
+|------|------|
+| `appIdTable` | 등록된 응용 프로그램 이름 |
+| `blockTable` | 블록 정의. 엔티티는 `cad.blocks` |
+| `dimStyleTable` | 치수 스타일 (`dimtxt`, `dimscale` 등) |
+| `linetypeTable` | 선 종류 |
+| `textStyleTable` | 문자 스타일 |
+| `ucsTable` | 명명된 UCS |
+| `viewTable` | 명명된 뷰 |
+| `layerTable` | 레이어. `color`, `linetype`, `lineWeight`, `isOff`, `isFrozen`, `isLocked`, `isPlottable` |
+| `viewportTable` | 모형 공간 VPORT 레코드. 도면 공간 `Viewport` 엔티티가 아닙니다 |
+
+## cad.blocks
+
+DXF BLOCKS 섹션에 해당하는 모든 블록 정의입니다. `*Model_Space`와 `*Paper_Space`도 포함됩니다.
+
+| 필드 | 설명 |
+|------|------|
+| `id` | 블록 테이블 레코드 ID. 블록 안 엔티티의 `ownerId` |
+| `name` | 블록 이름 |
+| `origin` | 기준점 `{ x, y, z }` |
+| `isModelSpace` / `isPaperSpace` | 모형 공간 / 도면 공간 |
+| `flags` | BLOCK 그룹 코드 70 |
+| `pathName` / `isXref` | 외부 참조 경로와 여부 |
+| `entities` | 그 블록에 직접 들어 있는 엔티티 스냅샷 |
 
 ## cad.selection
 

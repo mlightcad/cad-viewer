@@ -18,6 +18,18 @@ export const CAD_SCRIPT_API_TREE = {
     byId: true,
     inBox: true
   },
+  tables: {
+    appIdTable: true,
+    blockTable: true,
+    dimStyleTable: true,
+    linetypeTable: true,
+    textStyleTable: true,
+    ucsTable: true,
+    viewTable: true,
+    layerTable: true,
+    viewportTable: true
+  },
+  blocks: true,
   selection: {
     ids: true,
     entities: true,
@@ -65,9 +77,14 @@ Use draw_* tools for a single straightforward entity.
 The body may return JSON. Do not import modules or touch the page.
 
 cad.drawing -> { title, currentLayer, units, layers: [{ name, isOn, isFrozen, isLocked }], extents }
-cad.entities.where(predicate) -> snapshots { id, type, layer, extents, geometry }
+cad.entities lists every entity in the database (model space, paper space, and block definitions, plus attributes on inserts).
+cad.entities.where(predicate) -> snapshots { id, ownerId, type, layer, extents, geometry }
 cad.entities.byId(id) -> snapshot or undefined
-cad.entities.inBox(min, max) -> snapshots inside a WCS box
+cad.entities.inBox(min, max) -> snapshots whose extents hit a WCS box
+cad.tables mirrors AcDbDatabase.tables: appIdTable, blockTable, dimStyleTable, linetypeTable, textStyleTable, ucsTable, viewTable, layerTable, viewportTable.
+Each table is { id, records: [{ id, name, ...fields }] }.
+cad.blocks -> block definitions like a DXF BLOCKS section: { id, name, origin, isModelSpace, isPaperSpace, flags, pathName, isXref, entities }.
+ownerId on an entity snapshot is the owning block id, or the insert id for an attribute.
 cad.selection.ids -> selected entity ids
 cad.selection.entities -> snapshots of the current selection
 cad.selection.replace(ids) / add(ids) / remove(ids) / clear()
@@ -78,8 +95,12 @@ tx methods: drawLine, drawCircle, drawArc, drawRectangle, drawPolyline, drawText
 erase(ids), setLayer(ids, layer), move(ids, dx, dy), rotate(ids, center, angleDeg),
 createLayer(name), setCurrentLayer(name).
 Draw inputs match the draw_* tools. tx draw methods return the new entity id.
-Snapshots: Circle { center, radius }, Line { start, end }, Arc { center, radius, startAngle, endAngle } in radians,
-Polyline { points, closed }, Text { position, text, height }, Insert { name, position, rotation, scale }.
+Snapshots cover every data-model entity type. Common geometry:
+Circle { center, radius }, Line { start, end }, Arc { center, radius, startAngle, endAngle } in radians,
+Ellipse { center, majorRadius, minorRadius }, Polyline / 2dPolyline / 3dPolyline { points, closed },
+Spline { points, closed }, Text / MText / Attribute { position, text, height },
+Insert { name, position, rotation, scale }, Hatch { patternName, patternScale, boundary },
+Dimension { text, measurement, textPosition, styleName } plus definition points.
 
 Example: count circles per layer and highlight every entity on the busiest layer.
 const counts = {}

@@ -30,4 +30,13 @@ describe('validateCadScript', () => {
     expect(result.ok).toBe(true)
     expect(result.usesEdit).toBe(true)
   })
+
+  test('accepts symbol tables and block definitions', () => {
+    const result = validateCadScript(`
+      const layers = cad.tables.layerTable.records.map(record => record.name)
+      const blocks = cad.blocks.filter(block => !block.isModelSpace)
+      return { layers, blocks: blocks.map(block => block.name) }
+    `)
+    expect(result).toEqual({ ok: true, usesEdit: false })
+  })
 })

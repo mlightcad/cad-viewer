@@ -63,6 +63,19 @@ Pole geometry jednotlivých typů:
 - Point: { position: {x,y,z} }
 - Ray / Xline: { basePoint: {x,y,z}, unitDir: {x,y,z} }
 - Insert（BlockReference）: { name, position: {x,y,z}, rotation, scale: {x,y,z} }
+- Hatch: { patternName, patternScale, boundary }
+- Dimension: { text, measurement, textPosition, styleName }
+
+Snímek obsahuje `ownerId`. Zahrnuje modelový prostor, výkresový prostor, definice bloků a atributy referencí bloků.
+
+### cad.tables
+Tabulky symbolů jako `AcDbDatabase.tables`. Každá tabulka je { id, records: [{ id, name, ... }] }.
+appIdTable, blockTable, dimStyleTable, linetypeTable, textStyleTable, ucsTable, viewTable, layerTable, viewportTable.
+layerTable obsahuje color, linetype, lineWeight, isOff, isFrozen, isLocked, isPlottable. Entity v bloku jsou v cad.blocks.
+
+### cad.blocks
+Odpovídá sekci BLOCKS v DXF, včetně *Model_Space a *Paper_Space.
+Pole: id, name, origin, isModelSpace, isPaperSpace, flags, pathName, isXref, layoutId, entities.
 
 ### cad.selection
 Ovládání výběru:

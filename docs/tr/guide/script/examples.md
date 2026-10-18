@@ -145,3 +145,55 @@ cad.selection.replace(ids)
 cad.view.zoomExtents()
 return { inBoxCount: inside.length }
 ```
+
+## Blok başına varlık sayısı
+
+Model alanı ve kağıt alanı da bloktur.
+
+```javascript
+return cad.blocks.map(block => ({
+  name: block.name,
+  isModelSpace: block.isModelSpace,
+  isPaperSpace: block.isPaperSpace,
+  count: block.entities.length
+}))
+```
+
+## Model alanı dışındaki daireler
+
+`ownerId`, varlığın ait olduğu bloktur.
+
+```javascript
+const model = cad.blocks.find(block => block.isModelSpace)
+const circles = cad.entities
+  .where(entity => entity.type === 'Circle' && entity.ownerId !== model.id)
+  .map(entity => ({
+    id: entity.id,
+    ownerId: entity.ownerId,
+    layer: entity.layer,
+    radius: entity.geometry.radius
+  }))
+return circles
+```
+
+## Katman tablosunu okuma
+
+Sembol tablosu kayıtlarında renk, çizgi tipi ve çizdirilebilirlik vardır.
+
+```javascript
+const layers = cad.tables.layerTable.records.map(record => ({
+  name: record.name,
+  isOff: record.isOff,
+  isFrozen: record.isFrozen,
+  isLocked: record.isLocked,
+  isPlottable: record.isPlottable,
+  linetype: record.linetype,
+  color: record.color
+}))
+const styles = cad.tables.textStyleTable.records.map(record => ({
+  name: record.name,
+  fileName: record.fileName,
+  textSize: record.textSize
+}))
+return { layers, styles }
+```

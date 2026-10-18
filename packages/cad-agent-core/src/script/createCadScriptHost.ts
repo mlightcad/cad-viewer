@@ -1,5 +1,5 @@
 import { acapRunDatabaseEdit } from '@mlightcad/cad-simple-viewer'
-import { AcGeBox2d, AcGePoint2d, AcGePoint3d } from '@mlightcad/data-model'
+import { AcDbEntity, AcGePoint3d } from '@mlightcad/data-model'
 
 import { getDrawingContext } from '../context/DrawingContextProvider'
 import type { CadSession } from '../session/CadSession'
@@ -9,10 +9,12 @@ import { CadActionExecutor } from '../tools/CadActionExecutor'
 import type { Point2dInput, ToolResult } from '../tools/types'
 import {
   type EntitySnapshot,
+  iterateDatabaseEntities,
   openEntityFilterView,
   toEntitySnapshot
 } from './entitySnapshot'
 import { CAD_EDIT_TX_METHODS, CAD_SCRIPT_API_TREE } from './scriptApi'
+import { toBlockSnapshots, toDatabaseTables } from './tableSnapshot'
 
 /** Side effects collected while a script runs. */
 export interface CadScriptEffects {
@@ -64,7 +66,7 @@ export function createCadScriptHost(
       }
       const doc = requireDocumentRecord(session)
       const matches: EntitySnapshot[] = []
-      for (const entity of doc.database.tables.blockTable.modelSpace.newIterator()) {
+      for (const entity of iterateDatabaseEntities(doc.database)) {
         const view = openEntityFilterView(entity)
         let matched = false
         try {
@@ -80,18 +82,23 @@ export function createCadScriptHost(
       return snapshotById(session, id)
     },
     inBox(min: Point2dInput, max: Point2dInput): EntitySnapshot[] {
-      const view = requireView(session)
-      const box = new AcGeBox2d(
-        new AcGePoint2d(min.x, min.y),
-        new AcGePoint2d(max.x, max.y)
-      )
+      const doc = requireDocumentRecord(session)
+      const minX = Math.min(min.x, max.x)
+      const maxX = Math.max(min.x, max.x)
+      const minY = Math.min(min.y, max.y)
+      const maxY = Math.max(min.y, max.y)
       const snapshots: EntitySnapshot[] = []
-      const seen = new Set<string>()
-      for (const hit of view.search(box)) {
-        if (seen.has(hit.id)) continue
-        seen.add(hit.id)
-        const snapshot = snapshotById(session, hit.id)
-        if (snapshot) snapshots.push(snapshot)
+      for (const entity of iterateDatabaseEntities(doc.database)) {
+        const view = openEntityFilterView(entity)
+        const extents = view.value.extents
+        view.release()
+        if (!extents) continue
+        const hits =
+          extents.max.x >= minX &&
+          extents.min.x <= maxX &&
+          extents.max.y >= minY &&
+          extents.min.y <= maxY
+        if (hits) snapshots.push(toEntitySnapshot(entity))
       }
       return snapshots
     }
@@ -178,6 +185,12 @@ export function createCadScriptHost(
       }
     },
     entities,
+    get tables() {
+      return toDatabaseTables(requireDocumentRecord(session).database)
+    },
+    get blocks() {
+      return toBlockSnapshots(requireDocumentRecord(session).database)
+    },
     selection,
     view,
     edit,
@@ -306,8 +319,7 @@ function createTransaction(
 /**
  * Reads one entity through the database id map.
  *
- * Scanning model space here made `ids.map(id => cad.entities.byId(id))`
- * rebuild every snapshot once per selected id.
+ * Opening the object by id avoids scanning every block once per selected id.
  *
  * @param session - Drawing access.
  * @param id - Entity object id.
@@ -318,7 +330,11 @@ function snapshotById(
   id: string
 ): EntitySnapshot | undefined {
   const doc = requireDocumentRecord(session)
-  const entity = doc.database.tables.blockTable.getEntityById(id)
+  const opened = doc.database.openObjectForRead(id)
+  const entity =
+    opened instanceof AcDbEntity
+      ? opened
+      : doc.database.tables.blockTable.getEntityById(id)
   if (!entity) return undefined
   return toEntitySnapshot(entity)
 }

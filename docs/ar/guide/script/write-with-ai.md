@@ -63,6 +63,19 @@ title: كتابة البرامج النصية باستخدام الذكاء ال
 - Point: { position: {x,y,z} }
 - Ray / Xline: { basePoint: {x,y,z}, unitDir: {x,y,z} }
 - Insert (BlockReference): { name, position: {x,y,z}, rotation, scale: {x,y,z} }
+- Hatch: { patternName, patternScale, boundary }
+- Dimension: { text, measurement, textPosition, styleName }
+
+تتضمن اللقطة `ownerId`. النطاق هو مساحة النموذج ومساحة الورق وتعريفات الكتل وسمات مراجع الكتل.
+
+### cad.tables
+جداول الرموز كما في `AcDbDatabase.tables`. كل جدول هو { id, records: [{ id, name, ... }] }.
+appIdTable وblockTable وdimStyleTable وlinetypeTable وtextStyleTable وucsTable وviewTable وlayerTable وviewportTable.
+layerTable يتضمن color وlinetype وlineWeight وisOff وisFrozen وisLocked وisPlottable. كيانات الكتلة عبر cad.blocks.
+
+### cad.blocks
+يقابل قسم BLOCKS في DXF، ويشمل *Model_Space و*Paper_Space.
+الحقول: id وname وorigin وisModelSpace وisPaperSpace وflags وpathName وisXref وlayoutId وentities.
 
 ### cad.selection
 التحكم في مجموعة التحديد:

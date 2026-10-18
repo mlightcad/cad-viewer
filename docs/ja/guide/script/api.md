@@ -59,7 +59,7 @@ cad.log('图层总数:', info.layers.length)
 
 ## cad.entities
 
-モデル空間内のエンティティをクエリするために使用します。
+データベース内のすべてのエンティティを返します。モデル空間、各ペーパー空間、各ブロック定義、およびブロック参照に付く属性が含まれます。属性の `ownerId` はブロック参照、それ以外の `ownerId` は所属するブロック表レコードです。
 
 ### `cad.entities.where(predicate)`
 
@@ -93,6 +93,7 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 | フィールド | 型 | 説明 |
 |------|------|------|
 | `id` | `string` | エンティティオブジェクト ID |
+| `ownerId` | `string` | 所属ブロック表レコードの ID。属性の場合はブロック参照の ID |
 | `type` | `string` | エンティティタイプ。`AcDb` プレフィックスを含まない。例：`Circle`、`Line` |
 | `layer` | `string` | 所属するレイヤー名 |
 | `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | ワールド座標系での範囲 |
@@ -114,6 +115,38 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 | `BlockReference`（Insert） | `{ name, position: {x,y,z}, rotation, scale: {x,y,z} }` |
 
 角度フィールド `startAngle` / `endAngle` はラジアン、`startAngleDeg` / `endAngleDeg` は度を使用します。
+
+`Hatch`、`Spline`、`Leader`、`MLeader`、`MLine`、各種 `Dimension`、`RasterImage`、`Viewport`、`3dSolid`、`ProxyEntity` など、data-model の具体エンティティにも `geometry` があります。ACIS、OLE、プロキシ図形のバイナリは含まれません。
+
+## cad.tables
+
+`AcDbDatabase.tables` と同じく、すべてのシンボルテーブルを読み取ります。各テーブルは `{ id, records }` です。レコードには少なくとも `id` と `name` があります。
+
+| プロパティ | 内容 |
+|----------|------|
+| `appIdTable` | 登録アプリケーション名 |
+| `blockTable` | ブロック定義。図形は `cad.blocks` |
+| `dimStyleTable` | 寸法スタイル（`dimtxt`、`dimscale` など） |
+| `linetypeTable` | 線種 |
+| `textStyleTable` | 文字スタイル |
+| `ucsTable` | 名前付き UCS |
+| `viewTable` | 名前付きビュー |
+| `layerTable` | 画層。`color`、`linetype`、`lineWeight`、`isOff`、`isFrozen`、`isLocked`、`isPlottable` |
+| `viewportTable` | モデル空間の VPORT レコード。ペーパー空間の `Viewport` 図形ではありません |
+
+## cad.blocks
+
+DXF の BLOCKS セクションに相当する、すべてのブロック定義です。`*Model_Space` と `*Paper_Space` も含みます。
+
+| フィールド | 説明 |
+|------|------|
+| `id` | ブロック表レコード ID。ブロック内図形の `ownerId` |
+| `name` | ブロック名 |
+| `origin` | 基点 `{ x, y, z }` |
+| `isModelSpace` / `isPaperSpace` | モデル空間 / ペーパー空間 |
+| `flags` | BLOCK グループコード 70 |
+| `pathName` / `isXref` | 外部参照のパスとフラグ |
+| `entities` | そのブロックに直接入っている図形のスナップショット |
 
 ## cad.selection
 
