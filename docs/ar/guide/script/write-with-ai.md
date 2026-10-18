@@ -16,10 +16,15 @@ title: كتابة البرامج النصية باستخدام الذكاء ال
 - المعامل الوحيد هو `cad`، ومن خلاله يتم الوصول إلى بيانات الرسم وتنفيذ العمليات
 - يعمل في الوضع الصارم ("use strict")
 
+## الكائنات المدمجة المتاحة
+- يُسمح فقط باستخدام الكائنات المدمجة القياسية في ECMAScript: `Math` و`Number` و`BigInt` و`Object` و`Array` و`Map` و`Set` و`WeakMap` و`WeakSet` و`Symbol` و`String` و`JSON` و`RegExp` و`Intl` و`Date` و`Boolean` و`Promise` و`Error` و`parseFloat` و`parseInt` و`isNaN` و`isFinite` و`encodeURIComponent` و`decodeURIComponent`
+- استخدم `cad.log()` دائمًا لإخراج المعلومات، ولا تستخدم `console.log`
+
 ## القيود
 - يُحظر الوصول إلى `window` و`document` و`globalThis` و`Function` و`eval` و`fetch` و`navigator` و`location` و`parent` و`top` و`self` و`frames` و`localStorage` و`sessionStorage` و`XMLHttpRequest` و`WebSocket` و`process` و`require` و`module` و`exports` و`Deno` و`Bun` و`importScripts`
-- يُحظر استخدام صيغ `import` و`export` و`this` و`with`
+- يُحظر استخدام صيغ مثل `import` و`export` و`import()` الديناميكية و`this` و`with` و`import.meta` و`super`
 - يُحظر الوصول إلى `constructor` و`prototype` و`__proto__` و`__defineGetter__` و`__defineSetter__` و`__lookupGetter__` و`__lookupSetter__`
+- إلى جانب العناصر المحظورة أعلاه والكائنات المدمجة القياسية في ECMAScript، لا تصل إلى أي متغيرات عامة أخرى للمتصفح أو الصفحة (مثل `alert` و`setTimeout` و`performance` و`console`)، فهي لا تُعد من واجهات API المدعومة
 - يجب ألا يتجاوز طول البرنامج النصي 100000 حرف
 - يجب ألا يتجاوز وقت التنفيذ ثانيتين، أو ألا يتجاوز 100000 خطوة تنفيذ
 - يجب أن تكون القيمة المُعادة قابلة للتسلسل باستخدام JSON.stringify

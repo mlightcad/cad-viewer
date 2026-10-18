@@ -6,6 +6,39 @@ title: スクリプト API
 
 スクリプトでは `cad` オブジェクトを通じて図面と対話します。`CAD_SCRIPT_API_TREE` で宣言されたメンバーのみアクセス可能で、それ以外のプロパティにアクセスすると `unknown_api` エラーが発生します。
 
+## 実行環境とブラウザー API
+
+スクリプトはブラウザーの strict モードのサンドボックス内で実行され、`cad` オブジェクトと ECMAScript 標準組み込みオブジェクトのみにアクセスできます。ページの DOM を操作したり、ネットワークリクエストを送信したりすることはできません。
+
+### 利用可能な組み込みオブジェクト
+
+すべての ECMAScript 標準組み込みオブジェクトが使用できます：
+
+- 数学と数値：`Math`、`Number`、`BigInt`、`parseFloat`、`parseInt`、`isNaN`、`isFinite`
+- データ構造：`Object`、`Array`、`Map`、`Set`、`WeakMap`、`WeakSet`、`Symbol`
+- テキストとフォーマット：`String`、`JSON`、`RegExp`、`Intl`、`encodeURIComponent`、`decodeURIComponent`
+- 時間：`Date`（`Date.now()` はスクリプト自体の処理時間の計測に使用できます）
+- その他：`Boolean`、`Promise`、`Error` とそのサブクラス
+
+情報の出力には `cad.log()` を使用してください。`console.log` に頼らないでください——結果パネルには `cad.log` の内容のみが表示されます。
+
+### 禁止されているブラウザー API
+
+以下の内容はスクリプトの検証段階で直接拒否され、`forbidden_identifier` / `forbidden_syntax` / `forbidden_member` エラーが発生します：
+
+- ページと DOM：`window`、`document`、`globalThis`
+- ネットワークと通信：`fetch`、`XMLHttpRequest`、`WebSocket`、`importScripts`
+- デバイスと環境：`navigator`、`location`、`parent`、`top`、`self`、`frames`（実行時は `undefined` にマスクされます）
+- ストレージ：`localStorage`、`sessionStorage`
+- 動的実行：`eval`、`Function`
+- その他のランタイム：`process`、`require`、`module`、`exports`、`Deno`、`Bun`
+- 構文：`import` / `export` ステートメント、動的 `import()`、`this`、`with`、`import.meta`、`super`
+- エスケープ経路：`constructor`、`prototype`、`__proto__`、`__defineGetter__`、`__defineSetter__`、`__lookupGetter__`、`__lookupSetter__`
+
+::: warning
+上記の禁止オブジェクト以外にも、その他のブラウザーグローバル変数（`alert`、`setTimeout`、`performance`、`console` など）は技術的には完全にはブロックされていない可能性がありますが、これらはサポート対象の API ではありません。スクリプトは `cad` オブジェクトと ECMAScript 標準組み込みオブジェクトのみに依存する必要があり、それ以外のアクセスは今後のバージョンでさらに制限される可能性があります。
+:::
+
 ## cad.drawing
 
 現在の図面の静的情報を返します。

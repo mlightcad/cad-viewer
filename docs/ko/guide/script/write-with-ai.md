@@ -16,10 +16,15 @@ title: AI로 스크립트 작성하기
 - 유일한 매개변수는 `cad`이며, 이를 통해 도면 데이터에 접근하고 작업을 수행합니다
 - 엄격 모드("use strict")에서 실행됩니다
 
+## 사용 가능한 내장 객체
+- ECMAScript 표준 내장 객체만 사용할 수 있습니다: `Math`, `Number`, `BigInt`, `Object`, `Array`, `Map`, `Set`, `WeakMap`, `WeakSet`, `Symbol`, `String`, `JSON`, `RegExp`, `Intl`, `Date`, `Boolean`, `Promise`, `Error`, `parseFloat`, `parseInt`, `isNaN`, `isFinite`, `encodeURIComponent`, `decodeURIComponent`
+- 정보 출력은 반드시 `cad.log()`를 사용하고, `console.log`는 사용하지 마세요
+
 ## 제한 사항
 - `window`, `document`, `globalThis`, `Function`, `eval`, `fetch`, `navigator`, `location`, `parent`, `top`, `self`, `frames`, `localStorage`, `sessionStorage`, `XMLHttpRequest`, `WebSocket`, `process`, `require`, `module`, `exports`, `Deno`, `Bun`, `importScripts` 접근 금지
-- `import`, `export`, `this`, `with` 등의 구문 사용 금지
+- `import`, `export`, 동적 `import()`, `this`, `with`, `import.meta`, `super` 등의 구문 사용 금지
 - `constructor`, `prototype`, `__proto__`, `__defineGetter__`, `__defineSetter__`, `__lookupGetter__`, `__lookupSetter__` 접근 금지
+- 위 금지 항목과 ECMAScript 표준 내장 객체 외에 다른 브라우저나 페이지 전역 변수(예: `alert`, `setTimeout`, `performance`, `console`)에 접근하지 마세요. 이는 지원되는 API가 아닙니다
 - 스크립트 길이는 100000자를 초과할 수 없습니다
 - 실행 시간은 2초를 초과하거나 100000개의 명령문 단계를 초과할 수 없습니다
 - 반환 값은 JSON.stringify로 직렬화 가능해야 합니다

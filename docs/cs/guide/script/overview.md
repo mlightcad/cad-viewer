@@ -16,8 +16,8 @@ Funkce skriptů je poskytována pluginem `@mlightcad/cad-script-plugin`. Panel s
 Panel skriptů obsahuje:
 - **Editor skriptů**: psaní těla JavaScriptové funkce
 - **Tlačítko Spustit**: spuštění skriptu (klávesová zkratka `Ctrl+Enter`)
-- **Tlačítko API**: zobrazení/skrytí reference API
-- **Oblast výsledků**: zobrazuje návratovou hodnotu, logy, chybová hlášení a změny entit
+- **Nápověda**: otevře tento popis v aktuálním jazyce
+- **Oblast výsledků**: zobrazuje návratovou hodnotu jako sbalitelný JSON strom, dále logy, chyby a změny entit. Výšku upravíte tažením oddělovače mezi editorem a touto oblastí.
 
 ## Způsob spuštění skriptu
 

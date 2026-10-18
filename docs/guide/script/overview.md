@@ -16,8 +16,8 @@ The script feature is provided by the `@mlightcad/cad-script-plugin` plugin. The
 The script panel includes:
 - **Script Editor**: Write JavaScript function bodies
 - **Run Button**: Execute the script (shortcut `Ctrl+Enter`)
-- **API Button**: Show/hide the API reference
-- **Result Area**: Displays return values, logs, error messages, and entity changes
+- **Help**: Opens this guide in the current language
+- **Result Area**: Shows the return value as a collapsible JSON tree, plus logs, errors, and entity changes. Drag the divider between the editor and this area to resize them.
 
 ## How Scripts Execute
 

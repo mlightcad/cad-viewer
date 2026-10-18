@@ -6,6 +6,39 @@ title: 脚本 API
 
 脚本中通过 `cad` 对象与图纸交互。只有 `CAD_SCRIPT_API_TREE` 中声明的成员可以被访问，其余属性会触发 `unknown_api` 错误。
 
+## 执行环境与浏览器 API
+
+脚本在浏览器的严格模式沙箱中运行，只能访问 `cad` 对象和 ECMAScript 标准内置对象，无法操作页面 DOM 或发起网络请求。
+
+### 可用的内置对象
+
+所有 ECMAScript 标准内置对象均可使用：
+
+- 数学与数值：`Math`、`Number`、`BigInt`、`parseFloat`、`parseInt`、`isNaN`、`isFinite`
+- 数据结构：`Object`、`Array`、`Map`、`Set`、`WeakMap`、`WeakSet`、`Symbol`
+- 文本与格式：`String`、`JSON`、`RegExp`、`Intl`、`encodeURIComponent`、`decodeURIComponent`
+- 时间：`Date`（`Date.now()` 可用于统计脚本自身耗时）
+- 其他：`Boolean`、`Promise`、`Error` 及其子类
+
+输出信息请使用 `cad.log()`，不要依赖 `console.log`——结果面板只显示 `cad.log` 的内容。
+
+### 被禁止的浏览器 API
+
+以下内容会在脚本校验阶段被直接拒绝，触发 `forbidden_identifier` / `forbidden_syntax` / `forbidden_member` 错误：
+
+- 页面与 DOM：`window`、`document`、`globalThis`
+- 网络与通信：`fetch`、`XMLHttpRequest`、`WebSocket`、`importScripts`
+- 设备与环境：`navigator`、`location`、`parent`、`top`、`self`、`frames`（运行时被遮蔽为 `undefined`）
+- 存储：`localStorage`、`sessionStorage`
+- 动态执行：`eval`、`Function`
+- 其他运行时：`process`、`require`、`module`、`exports`、`Deno`、`Bun`
+- 语法：`import` / `export` 语句、动态 `import()`、`this`、`with`、`import.meta`、`super`
+- 逃逸通道：`constructor`、`prototype`、`__proto__`、`__defineGetter__`、`__defineSetter__`、`__lookupGetter__`、`__lookupSetter__`
+
+::: warning
+除上述被禁止的对象外，其他浏览器全局变量（如 `alert`、`setTimeout`、`performance`、`console`）在技术上可能未被完全拦截，但它们不属于受支持的 API。脚本应只依赖 `cad` 对象和 ECMAScript 标准内置对象，其余访问可能在后续版本中被进一步限制。
+:::
+
 ## cad.drawing
 
 返回当前图纸的静态信息。

@@ -16,10 +16,15 @@ title: AI でスクリプトを作成
 - 唯一の引数は `cad` で、これを通じて図面データへのアクセスや操作を実行する
 - strict モード（"use strict"）で実行される
 
+## 利用可能な組み込みオブジェクト
+- ECMAScript 標準組み込みオブジェクトのみ使用可能：`Math`、`Number`、`BigInt`、`Object`、`Array`、`Map`、`Set`、`WeakMap`、`WeakSet`、`Symbol`、`String`、`JSON`、`RegExp`、`Intl`、`Date`、`Boolean`、`Promise`、`Error`、`parseFloat`、`parseInt`、`isNaN`、`isFinite`、`encodeURIComponent`、`decodeURIComponent`
+- 出力には必ず `cad.log()` を使用し、`console.log` は使用しない
+
 ## 制限
 - `window`、`document`、`globalThis`、`Function`、`eval`、`fetch`、`navigator`、`location`、`parent`、`top`、`self`、`frames`、`localStorage`、`sessionStorage`、`XMLHttpRequest`、`WebSocket`、`process`、`require`、`module`、`exports`、`Deno`、`Bun`、`importScripts` へのアクセスは禁止
-- `import`、`export`、`this`、`with` などの構文の使用は禁止
+- `import`、`export`、動的 `import()`、`this`、`with`、`import.meta`、`super` などの構文の使用は禁止
 - `constructor`、`prototype`、`__proto__`、`__defineGetter__`、`__defineSetter__`、`__lookupGetter__`、`__lookupSetter__` へのアクセスは禁止
+- 上記の禁止項目と ECMAScript 標準組み込みオブジェクト以外に、その他のブラウザーやページのグローバル変数（`alert`、`setTimeout`、`performance`、`console` など）にはアクセスしない。これらはサポート対象の API ではない
 - スクリプトの長さは 100000 文字を超えてはならない
 - 実行時間は 2 秒を超えてはならず、ステップ数は 100000 を超えてはならない
 - 戻り値は JSON.stringify でシリアライズ可能である必要がある
