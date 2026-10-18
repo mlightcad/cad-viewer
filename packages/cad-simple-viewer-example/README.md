@@ -93,7 +93,7 @@ The build copies parser workers and `viewer-runtime.iife.js` into `dist/` (see `
 
 1. Start the dev server and open the URL shown in the terminal.
 2. **Predefined files** — Click a name in the left sidebar to load a sample from the CDN.
-3. **Your own file** — Open the **Open** toolbar menu or center **Open File** menu, then choose **Local file**, **From URL**, or (when configured) OneDrive / Google Drive sign-in and open.
+3. **Your own file** — Use the center **Open File** panel, then choose **Local file**, **From URL**, or (when configured) OneDrive / Google Drive sign-in and open. The viewer toolbar does not include Open; hosts that want it can add `{ preset: 'open' }`.
 4. After a drawing loads, use the toolbar:
    - **Zoom Fit** / **Zoom to Window** — `ZOOM` commands
    - **Switch BG** — Toggle drawing background

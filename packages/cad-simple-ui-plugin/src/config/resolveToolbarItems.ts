@@ -17,6 +17,7 @@ import {
 
 import {
   acuiCreateDefaultToolbarItems,
+  acuiCreateOpenToolbarItem,
   acuiCreatePhoneToolbarItems
 } from './defaultToolbarItems'
 import type { AcUiDefaultToolbarContext } from './types'
@@ -68,6 +69,8 @@ export function acuiCreateDefaultToolbarPresetMap(
 ): Map<string, AcUiToolbarItem> {
   const map = new Map<string, AcUiToolbarItem>()
   acuiIndexToolbarItems(acuiCreateDefaultToolbarItems(context), map)
+  // Open is opt-in: kept as a preset so hosts can place it, not shown by default.
+  acuiIndexMissingToolbarItems([acuiCreateOpenToolbarItem()], map)
   const phoneItems = acuiCreatePhoneToolbarItems(context)
   if (layout === 'phone') {
     acuiIndexToolbarItems(phoneItems, map)

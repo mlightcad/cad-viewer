@@ -537,11 +537,13 @@ export function acuiCreateSettingsToolbarItem(
 /**
  * Builds an Open toolbar item whose children mirror registered data sources.
  *
- * When only the local source is registered, clicking Open runs the local
- * picker directly. Otherwise a submenu lists Local / URL / cloud sources
- * (Sign in vs Open vs Sign out for auth sources).
+ * Not included in the default toolbar. Add it with `{ preset: 'open' }` or
+ * `acuiToolbarPreset('open')`, or append this item. When only the local source
+ * is registered, clicking Open runs the local picker directly. Otherwise a
+ * submenu lists Local / URL / cloud sources (Sign in vs Open vs Sign out for
+ * auth sources).
  */
-function acuiCreateOpenToolbarItem(): AcUiToolbarItem {
+export function acuiCreateOpenToolbarItem(): AcUiToolbarItem {
   const item: AcUiToolbarItem = {
     id: 'open',
     label: 'toolbar.open',
@@ -592,7 +594,6 @@ export function acuiCreateDefaultToolbarItems(
   context?: AcUiDefaultToolbarContext
 ): AcUiToolbarItem[] {
   const items: AcUiToolbarItem[] = [
-    acuiCreateOpenToolbarItem(),
     {
       id: 'select',
       label: 'toolbar.select',
