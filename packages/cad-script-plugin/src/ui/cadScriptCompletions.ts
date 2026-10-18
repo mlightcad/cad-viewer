@@ -484,7 +484,7 @@ function readExpression(source: string, start: number): string {
   let depth = 0
   while (index < source.length) {
     const ch = source[index]
-    if (ch === '"' || ch === "'" || ch === '`') {
+    if (ch === '"' || ch === '\'' || ch === '`') {
       const end = skipString(source, index)
       if (end < 0) break
       index = end + 1
@@ -562,7 +562,7 @@ function readCallbackName(
 function walkCode(source: string, visit: (index: number) => void): void {
   for (let index = 0; index < source.length; index++) {
     const ch = source[index]
-    if (ch === '"' || ch === "'" || ch === '`') {
+    if (ch === '"' || ch === '\'' || ch === '`') {
       const end = skipString(source, index)
       if (end < 0) return
       index = end
@@ -594,7 +594,7 @@ function maskNonCode(source: string): string {
   let out = ''
   for (let index = 0; index < source.length; index++) {
     const ch = source[index]
-    if (ch === '"' || ch === "'" || ch === '`') {
+    if (ch === '"' || ch === '\'' || ch === '`') {
       const end = skipString(source, index)
       if (end < 0) {
         out += ' '.repeat(source.length - index)
@@ -628,7 +628,7 @@ function skipArgument(source: string, start: number): number {
   let depth = 0
   while (index < source.length) {
     const ch = source[index]
-    if (ch === '"' || ch === "'" || ch === '`') {
+    if (ch === '"' || ch === '\'' || ch === '`') {
       const end = skipString(source, index)
       if (end < 0) return source.length
       index = end + 1
@@ -652,7 +652,7 @@ function skipBalanced(source: string, openIndex: number): number | null {
   let depth = 0
   for (let index = openIndex; index < source.length; index++) {
     const ch = source[index]
-    if (ch === '"' || ch === "'" || ch === '`') {
+    if (ch === '"' || ch === '\'' || ch === '`') {
       const end = skipString(source, index)
       if (end < 0) return null
       index = end
@@ -673,7 +673,7 @@ function skipBackwardBalanced(source: string, end: number): number | null {
   let depth = 0
   for (let index = end - 1; index >= 0; index--) {
     const ch = source[index]
-    if (ch === '"' || ch === "'" || ch === '`') {
+    if (ch === '"' || ch === '\'' || ch === '`') {
       const start = findStringStart(source, index)
       if (start == null) return null
       index = start
