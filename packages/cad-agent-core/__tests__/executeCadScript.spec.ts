@@ -72,6 +72,57 @@ describe('executeCadScript', () => {
     expect([...(result.highlightedIds ?? [])].sort()).toEqual(walls)
   })
 
+  test('copies snapshots only for entities the predicate accepts', () => {
+    const { session, db } = createFixture()
+    const line = [...db.tables.blockTable.modelSpace.newIterator()].find(
+      entity => entity.type === 'Line'
+    )
+    if (!line) throw new Error('fixture line missing')
+    const extents = jest.spyOn(line, 'geometricExtents', 'get')
+
+    const result = executeCadScript(
+      {
+        code: `
+          return cad.entities.where(e => e.type === 'Circle' && e.geometry.radius > 1)
+            .map(e => e.geometry.radius)
+        `,
+        intent: 'large circles'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual([2])
+    expect(extents).not.toHaveBeenCalled()
+  })
+
+  test('resolves selection ids without scanning model space', () => {
+    const { session, db, selection } = createFixture()
+    const id = [...db.tables.blockTable.modelSpace.newIterator()][0].objectId
+    selection.add(id)
+    const iterator = jest.spyOn(
+      db.tables.blockTable.modelSpace,
+      'newIterator'
+    )
+
+    const result = executeCadScript(
+      {
+        code: `
+          const ids = cad.selection.ids()
+          return ids.map(id => cad.entities.byId(id))
+        `,
+        intent: 'lookup selection'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual([
+      expect.objectContaining({ id, type: 'Circle' })
+    ])
+    expect(iterator).not.toHaveBeenCalled()
+  })
+
   test('rejects a write script on a read-only drawing', () => {
     const { session, db } = createFixture(AcEdOpenMode.Read)
     const spy = jest.spyOn(db, 'runDatabaseEdit')

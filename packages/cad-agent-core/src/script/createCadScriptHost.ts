@@ -7,7 +7,11 @@ import { requireDocument } from '../session/documentAccess'
 import { runInsideScriptEdit } from '../session/editDepth'
 import { CadActionExecutor } from '../tools/CadActionExecutor'
 import type { Point2dInput, ToolResult } from '../tools/types'
-import { type EntitySnapshot, toEntitySnapshot } from './entitySnapshot'
+import {
+  type EntitySnapshot,
+  openEntityFilterView,
+  toEntitySnapshot
+} from './entitySnapshot'
 import { CAD_EDIT_TX_METHODS, CAD_SCRIPT_API_TREE } from './scriptApi'
 
 /** Side effects collected while a script runs. */
@@ -58,10 +62,22 @@ export function createCadScriptHost(
       if (typeof predicate !== 'function') {
         throw new Error('cad.entities.where expects a function')
       }
-      return listSnapshots(session).filter(entity => predicate(entity))
+      const doc = requireDocumentRecord(session)
+      const matches: EntitySnapshot[] = []
+      for (const entity of doc.database.tables.blockTable.modelSpace.newIterator()) {
+        const view = openEntityFilterView(entity)
+        let matched = false
+        try {
+          matched = Boolean(predicate(view.value))
+        } finally {
+          view.release()
+        }
+        if (matched) matches.push(toEntitySnapshot(entity))
+      }
+      return matches
     },
     byId(id: string): EntitySnapshot | undefined {
-      return listSnapshots(session).find(entity => entity.id === id)
+      return snapshotById(session, id)
     },
     inBox(min: Point2dInput, max: Point2dInput): EntitySnapshot[] {
       const view = requireView(session)
@@ -69,8 +85,15 @@ export function createCadScriptHost(
         new AcGePoint2d(min.x, min.y),
         new AcGePoint2d(max.x, max.y)
       )
-      const ids = new Set(view.search(box).map(hit => hit.id))
-      return listSnapshots(session).filter(entity => ids.has(entity.id))
+      const snapshots: EntitySnapshot[] = []
+      const seen = new Set<string>()
+      for (const hit of view.search(box)) {
+        if (seen.has(hit.id)) continue
+        seen.add(hit.id)
+        const snapshot = snapshotById(session, hit.id)
+        if (snapshot) snapshots.push(snapshot)
+      }
+      return snapshots
     }
   }
 
@@ -254,14 +277,30 @@ function createTransaction(
   }
 }
 
-function listSnapshots(session: CadSession): EntitySnapshot[] {
+/**
+ * Reads one entity through the database id map.
+ *
+ * Scanning model space here made `ids.map(id => cad.entities.byId(id))`
+ * rebuild every snapshot once per selected id.
+ *
+ * @param session - Drawing access.
+ * @param id - Entity object id.
+ * @returns Snapshot, or `undefined` when the id is missing or not an entity.
+ */
+function snapshotById(
+  session: CadSession,
+  id: string
+): EntitySnapshot | undefined {
+  const doc = requireDocumentRecord(session)
+  const entity = doc.database.tables.blockTable.getEntityById(id)
+  if (!entity) return undefined
+  return toEntitySnapshot(entity)
+}
+
+function requireDocumentRecord(session: CadSession) {
   const doc = session.getDocument()
   if (!doc) throw new Error('no_document')
-  const snapshots: EntitySnapshot[] = []
-  for (const entity of doc.database.tables.blockTable.modelSpace.newIterator()) {
-    snapshots.push(toEntitySnapshot(entity))
-  }
-  return snapshots
+  return doc
 }
 
 function requireView(session: CadSession) {

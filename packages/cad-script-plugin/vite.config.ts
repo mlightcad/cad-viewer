@@ -1,4 +1,3 @@
-import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 import peerDepsExternal from 'rollup-plugin-peer-deps-external'
 import { defineConfig, PluginOption } from 'vite'
@@ -34,5 +33,5 @@ export default defineConfig({
       }
     }
   },
-  plugins: [vue(), peerDepsExternal() as PluginOption]
+  plugins: [peerDepsExternal() as PluginOption]
 })

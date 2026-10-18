@@ -7,4 +7,4 @@
 import './ui/script-panel.css'
 
 export { createCadScriptPlugin } from './createCadScriptPlugin'
-export { default as CadScriptPanel } from './ui/CadScriptPanel.vue'
+export { CadScriptPanel } from './ui/CadScriptPanel'

@@ -51,10 +51,95 @@ export function toEntitySnapshot(entity: AcDbEntity): EntitySnapshot {
     type: entity.type,
     layer: entity.layer
   }
+  const extents = readSnapshotExtents(entity)
+  if (extents) snapshot.extents = extents
+  const geometry = readGeometry(entity)
+  if (geometry) snapshot.geometry = geometry
+  return snapshot
+}
+
+/**
+ * View passed into a `where` predicate.
+ *
+ * `id`, `type`, and `layer` are copied immediately. `extents` and `geometry`
+ * are read from the live entity on first access. {@link EntityFilterView.release}
+ * drops that entity so the predicate cannot keep it.
+ */
+export interface EntityFilterView {
+  /** Snapshot-shaped object the predicate reads. */
+  readonly value: EntitySnapshot
+  /** Drops the live entity. Cached plain fields stay readable. */
+  release(): void
+}
+
+/**
+ * Opens a filter view for one entity.
+ *
+ * Call {@link EntityFilterView.release} after the predicate returns, then
+ * {@link toEntitySnapshot} only when the entity matched.
+ *
+ * @param entity - Live database entity. The view does not retain it after release.
+ * @returns A view whose geometry stays unread until the predicate asks for it.
+ */
+export function openEntityFilterView(entity: AcDbEntity): EntityFilterView {
+  let source: AcDbEntity | undefined = entity
+  let extents: EntitySnapshot['extents']
+  let extentsRead = false
+  let geometry: Record<string, unknown> | undefined
+  let geometryRead = false
+
+  const readSource = (): AcDbEntity => {
+    if (!source) {
+      throw new Error('entity filter view expired')
+    }
+    return source
+  }
+
+  const id = entity.objectId
+  const type = entity.type
+  const layer = entity.layer
+  const value = Object.create(null) as EntitySnapshot
+  Object.defineProperties(value, {
+    id: { enumerable: true, value: id },
+    type: { enumerable: true, value: type },
+    layer: { enumerable: true, value: layer },
+    extents: {
+      enumerable: true,
+      get() {
+        if (!extentsRead) {
+          extentsRead = true
+          extents = readSnapshotExtents(readSource())
+        }
+        return extents
+      }
+    },
+    geometry: {
+      enumerable: true,
+      get() {
+        if (!geometryRead) {
+          geometryRead = true
+          geometry = readGeometry(readSource())
+        }
+        return geometry
+      }
+    }
+  })
+
+  return {
+    value,
+    release() {
+      source = undefined
+    }
+  }
+}
+
+function readSnapshotExtents(
+  entity: AcDbEntity
+): EntitySnapshot['extents'] | undefined {
   try {
     const extents = entity.geometricExtents
     if (extents && !extents.isEmpty()) {
-      snapshot.extents = {
+      return {
         min: toPoint(extents.min),
         max: toPoint(extents.max)
       }
@@ -62,9 +147,7 @@ export function toEntitySnapshot(entity: AcDbEntity): EntitySnapshot {
   } catch {
     // Some entities cannot report extents until they are fully drawn.
   }
-  const geometry = readGeometry(entity)
-  if (geometry) snapshot.geometry = geometry
-  return snapshot
+  return undefined
 }
 
 function readGeometry(entity: AcDbEntity): Record<string, unknown> | undefined {
