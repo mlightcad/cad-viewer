@@ -37,7 +37,7 @@ function omitLockedSelection(
   ids: AcDbObjectId[],
   selectionSet?: { delete: (ids: AcDbObjectId[]) => void }
 ): AcDbObjectId[] {
-  const db = AcApDocManager.tryGetInstance()?.curDocument?.database
+  const db = AcApDocManager.tryGetInstance?.()?.curDocument?.database
   const filtered = excludeLockedLayerIds(db, ids)
   if (filtered.lockedCount > 0) {
     const kept = new Set(filtered.ids)
@@ -50,7 +50,7 @@ function omitLockedSelection(
 
 function reportLockedLayerExclusion(lockedCount: number): void {
   if (lockedCount <= 0) return
-  const editor = AcApDocManager.tryGetInstance()?.editor
+  const editor = AcApDocManager.tryGetInstance?.()?.editor
   if (!editor) return
   editor.showMessage(
     `${lockedCount} ${AcApI18n.t('main.message.onLockedLayer')}`,

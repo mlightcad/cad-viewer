@@ -991,10 +991,10 @@ export abstract class AcEdBaseView {
     action: AcEdSelectionAction
   ): AcDbObjectId[] {
     if (action === 'remove' || this._allowSelectOnLockedLayer) return ids
-    const db = AcApDocManager.tryGetInstance()?.curDocument?.database
+    const db = AcApDocManager.tryGetInstance?.()?.curDocument?.database
     const filtered = excludeLockedLayerIds(db, ids)
     if (filtered.lockedCount > 0) {
-      AcApDocManager.tryGetInstance()?.editor.showMessage(
+      AcApDocManager.tryGetInstance?.()?.editor.showMessage(
         `${filtered.lockedCount} ${AcApI18n.t('main.message.onLockedLayer')}`,
         'warning'
       )
