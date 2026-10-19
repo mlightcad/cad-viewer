@@ -132,6 +132,50 @@ describe('applyAnnotationScalePass', () => {
     restore()
   })
 
+  it('does not rescale a nested annotative child on top of its parent', () => {
+    const scene = new THREE.Group()
+    const parent = new THREE.Object3D()
+    parent.matrixAutoUpdate = false
+    parent.matrix.set(1, 0, 0, 10, 0, 1, 0, 20, 0, 0, 1, 0, 0, 0, 0, 1)
+    parent.matrixWorld.copy(parent.matrix)
+    parent.userData.annotationScale = {
+      drawnScaleFactor: 50,
+      supportedScaleFactors: [50, 100],
+      supportedScaleNames: ['1:50', '1:100']
+    }
+    const child = new THREE.Object3D()
+    child.matrixAutoUpdate = false
+    child.matrix.identity()
+    child.matrixWorld.copy(parent.matrixWorld)
+    child.userData.annotationScale = {
+      drawnScaleFactor: 50,
+      supportedScaleFactors: [50, 100],
+      supportedScaleNames: ['1:50', '1:100']
+    }
+    parent.add(child)
+    scene.add(parent)
+
+    const parentBefore = parent.matrix.clone()
+    const childBefore = child.matrixWorld.clone()
+
+    const restore = applyAnnotationScalePass(scene, {
+      annotationScaleFactor: 100
+    })
+    expect(parent.matrix.elements[0]).toBeCloseTo(2)
+    expect(child.matrix.elements[0]).toBeCloseTo(1)
+
+    restore()
+    expect(parent.matrix.elements).toEqual(parentBefore.elements)
+    expect(child.matrixWorld.elements).toEqual(childBefore.elements)
+
+    const again = applyAnnotationScalePass(scene, {
+      annotationScaleFactor: 100
+    })
+    again()
+    expect(parent.matrix.elements).toEqual(parentBefore.elements)
+    expect(child.matrixWorld.elements).toEqual(childBefore.elements)
+  })
+
   it('detects annotation-scale userData in a hierarchy', () => {
     const root = new THREE.Group()
     const child = new THREE.Object3D()

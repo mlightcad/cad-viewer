@@ -94,7 +94,15 @@ export class AcTrBaseView {
     )
   }
   set center(value: AcGePoint2d) {
-    this._camera.position.set(value.x, value.y, this._camera.position.z)
+    const position = this._camera.position
+    const dx = value.x - position.x
+    const dy = value.y - position.y
+    position.set(value.x, value.y, position.z)
+    // Keep the orbit target on the same vertical as the camera. A later
+    // controls.update() otherwise lookAt()s the old target and tilts this
+    // orthographic camera, clipping elevated geometry out of the view.
+    this._cameraControls.target.x += dx
+    this._cameraControls.target.y += dy
     this._camera.updateProjectionMatrix()
   }
 

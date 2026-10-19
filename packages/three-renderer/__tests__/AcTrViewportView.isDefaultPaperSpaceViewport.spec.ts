@@ -1,4 +1,4 @@
-import { AcGePoint3d, AcGiViewport } from '@mlightcad/data-model'
+import { AcGeBox2d, AcGePoint2d, AcGePoint3d, AcGiViewport } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
 import { AcTrRenderer } from '../src/renderer'
@@ -349,5 +349,32 @@ describe('AcTrViewportView.isDefaultPaperSpaceViewport', () => {
         viewTarget: { x: 50, y: 40 }
       })
     ).toBe(false)
+  })
+})
+
+describe('AcTrBaseView center', () => {
+  it('keeps the orbit target under the camera so a later update stays top-down', () => {
+    const view = new AcTrBaseView(createMockRenderer(), 800, 600)
+    view.zoomTo(
+      new AcGeBox2d(new AcGePoint2d(0, 0), new AcGePoint2d(100, 50)),
+      1
+    )
+    const before = view.internalCamera.quaternion.clone()
+    view.center = new AcGePoint2d(view.center.x + 40, view.center.y - 15)
+    const controls = (
+      view as unknown as {
+        _cameraControls: {
+          update: () => void
+          target: { x: number; y: number }
+        }
+      }
+    )._cameraControls
+    controls.update()
+    expect(controls.target.x).toBeCloseTo(view.internalCamera.position.x)
+    expect(controls.target.y).toBeCloseTo(view.internalCamera.position.y)
+    expect(view.internalCamera.quaternion.x).toBeCloseTo(before.x)
+    expect(view.internalCamera.quaternion.y).toBeCloseTo(before.y)
+    expect(view.internalCamera.quaternion.z).toBeCloseTo(before.z)
+    expect(view.internalCamera.quaternion.w).toBeCloseTo(before.w)
   })
 })
