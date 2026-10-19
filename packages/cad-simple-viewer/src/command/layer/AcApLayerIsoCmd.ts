@@ -148,6 +148,7 @@ export class AcApLayerIsoCmd extends AcApLayerMutationCmd {
     const prompt = new AcEdPromptSelectionOptions(
       AcApI18n.t('jig.layiso.prompt')
     )
+    prompt.allowObjectOnLockedLayer = true
 
     this.addKeyword(prompt, 'settings')
 

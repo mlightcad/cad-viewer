@@ -33,6 +33,7 @@ export default {
     secondCorner: 'حدد الركن الثاني أو'
   },
   message: {
+    onLockedLayer: 'على طبقة مقفلة.',
     fetchingDrawingFile: 'جارٍ جلب ملف الرسم ...',
     exportingDxf: 'جارٍ تصدير DXF ...',
     exportingPdf: 'جارٍ تصدير PDF ...',

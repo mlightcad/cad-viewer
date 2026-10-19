@@ -33,6 +33,7 @@ export default {
     secondCorner: 'Specify the second corner or'
   },
   message: {
+    onLockedLayer: 'on a locked layer.',
     fetchingDrawingFile: 'Fetching file ...',
     exportingDxf: 'Exporting DXF ...',
     exportingPdf: 'Exporting PDF ...',

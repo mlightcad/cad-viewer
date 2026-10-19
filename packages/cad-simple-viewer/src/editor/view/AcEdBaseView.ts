@@ -13,6 +13,9 @@ import {
 } from '@mlightcad/data-model'
 import { debounce } from 'lodash-es'
 
+import { AcApDocManager } from '../../app'
+import { AcApI18n } from '../../i18n'
+import { excludeLockedLayerIds } from '../../service/AcApLockedLayer'
 import type { AcTrSpatialSearchOptions } from '../../spatialIndex/AcTrSpatialIndex'
 import type {
   AcEdSessionAccessory,
@@ -233,6 +236,13 @@ export abstract class AcEdBaseView {
    * highlight CAD entities. Markup overlays can still be picked.
    */
   private _entitySelectionEnabled = true
+
+  /**
+   * When true, pick and window selection may include entities on locked layers.
+   * Selection prompts set this from `allowObjectOnLockedLayer` for commands that
+   * only read entities, such as layer isolate and hatch boundaries.
+   */
+  private _allowSelectOnLockedLayer = false
   /** Input manager for handling user interactions */
   private _editor: AcEditor
   /** Size of selection box in pixels for entity picking */
@@ -953,6 +963,7 @@ export abstract class AcEdBaseView {
    */
   applySelection(ids: AcDbObjectId[], action: AcEdSelectionAction) {
     if (!this.entitySelectionEnabled) return
+    ids = this.selectableIds(ids, action)
     if (action === 'replace') {
       this.selectionSet.clear()
       const unique = ids.filter(id => !this.selectionSet.has(id))
@@ -969,6 +980,26 @@ export abstract class AcEdBaseView {
       const existing = ids.filter(id => this.selectionSet.has(id))
       if (existing.length > 0) this.selectionSet.delete(existing)
     }
+  }
+
+  /**
+   * Drops entities on locked layers unless {@link allowSelectOnLockedLayer} is set.
+   * Removal is unchanged so a locked entity can still be deselected.
+   */
+  protected selectableIds(
+    ids: AcDbObjectId[],
+    action: AcEdSelectionAction
+  ): AcDbObjectId[] {
+    if (action === 'remove' || this._allowSelectOnLockedLayer) return ids
+    const db = AcApDocManager.tryGetInstance()?.curDocument?.database
+    const filtered = excludeLockedLayerIds(db, ids)
+    if (filtered.lockedCount > 0) {
+      AcApDocManager.tryGetInstance()?.editor.showMessage(
+        `${filtered.lockedCount} ${AcApI18n.t('main.message.onLockedLayer')}`,
+        'warning'
+      )
+    }
+    return filtered.ids
   }
 
   /**
@@ -1170,6 +1201,16 @@ export abstract class AcEdBaseView {
       this.clearHover()
       this.selectionSet.clear()
     }
+  }
+
+  /**
+   * Whether pick and window selection include entities on locked layers.
+   */
+  get allowSelectOnLockedLayer() {
+    return this._allowSelectOnLockedLayer
+  }
+  set allowSelectOnLockedLayer(value: boolean) {
+    this._allowSelectOnLockedLayer = value
   }
 
   /**

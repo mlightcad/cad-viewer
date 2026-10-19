@@ -7,6 +7,7 @@ import {
 } from '@mlightcad/data-model'
 
 import { createRotationMatrix } from '../util/AcApGeTransform'
+import { isEntityOnLockedLayer } from './AcApLockedLayer'
 import { acapRunServiceEdit, ENTITY_EDIT_LABEL } from './AcApServiceEdit'
 
 /**
@@ -71,6 +72,7 @@ export class AcApEntityService {
   transformEntities(entities: AcDbEntity[], matrix: AcGeMatrix3d): number {
     let count = 0
     entities.forEach(entity => {
+      if (isEntityOnLockedLayer(this.db, entity)) return
       const opened = this.db.openEntityForWrite(entity)
       if (!opened) return
       opened.transformBy(matrix)
@@ -152,8 +154,11 @@ export class AcApEntityService {
     return this.runEntityEdit(() => {
       let count = 0
       objectIds.forEach(objectId => {
+        const existing = this.db.tables?.blockTable?.getEntityById(objectId)
+        if (existing && isEntityOnLockedLayer(this.db, existing)) return
         const entity = this.db.openEntityForWrite(objectId)
         if (!entity) return
+        if (isEntityOnLockedLayer(this.db, entity)) return
         entity.erase()
         count++
       })
@@ -194,6 +199,8 @@ export class AcApEntityService {
         missing++
         return
       }
+
+      if (isEntityOnLockedLayer(this.db, entity)) return
 
       if (entity.layer === currentLayer.name) {
         alreadyCurrent++

@@ -17,6 +17,7 @@ import {
   AcApConvertToDxfCmd,
   acapCssColor,
   AcApDocManager,
+  AcApLayerService,
   acapDrawStyleKindForCommand,
   acapGetMeasurementColor,
   acapGetMeasurementCustomTextHeightWcs,
@@ -574,8 +575,12 @@ const applyToSelectedEntities = (mutator: (entity: AcDbEntity) => void) => {
   if (!db || !ids?.length) return
 
   ids.forEach(id => {
+    const existing = db.tables.blockTable.getEntityById(id)
+    if (existing && AcApLayerService.isEntityOnLockedLayer(db, existing)) {
+      return
+    }
     const entity = db.openEntityForWrite(id)
-    if (!entity) return
+    if (!entity || AcApLayerService.isEntityOnLockedLayer(db, entity)) return
     mutator(entity)
   })
 }

@@ -8,6 +8,9 @@ export class AcEdPromptSelectionOptions extends AcEdPromptOptions<string> {
   /** Whether to force single object selection only */
   private _singleOnly = false
 
+  /** Whether entities on locked layers are selectable */
+  private _allowObjectOnLockedLayer = false
+
   constructor(message: string, globalKeywords?: string) {
     super(message, globalKeywords)
   }
@@ -21,5 +24,17 @@ export class AcEdPromptSelectionOptions extends AcEdPromptOptions<string> {
 
   set singleOnly(value: boolean) {
     this._singleOnly = value
+  }
+
+  /**
+   * Gets or sets whether entities on locked layers can be selected.
+   * Modify commands leave this false.
+   */
+  get allowObjectOnLockedLayer(): boolean {
+    return this._allowObjectOnLockedLayer
+  }
+
+  set allowObjectOnLockedLayer(value: boolean) {
+    this._allowObjectOnLockedLayer = value
   }
 }

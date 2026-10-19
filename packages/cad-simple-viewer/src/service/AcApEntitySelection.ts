@@ -3,6 +3,7 @@ import { AcDbEntity, AcDbObjectId } from '@mlightcad/data-model'
 import { AcApContext, AcApDocManager } from '../app'
 import { AcEdPromptSelectionOptions, AcEdPromptStatus } from '../editor'
 import { AcApI18n } from '../i18n'
+import { excludeLockedLayerIds } from './AcApLockedLayer'
 
 /**
  * Prompts for a selection and returns entity ids when the user confirms.
@@ -23,7 +24,38 @@ async function promptForSelectionIds(
   ) {
     return undefined
   }
-  return selectionResult.value.ids
+  return omitLockedSelection(selectionResult.value.ids)
+}
+
+/**
+ * Removes locked-layer entities from a selection and reports the exclusion.
+ *
+ * @param ids - Candidate entity ids.
+ * @param selectionSet - Optional set to drop the excluded ids from.
+ */
+function omitLockedSelection(
+  ids: AcDbObjectId[],
+  selectionSet?: { delete: (ids: AcDbObjectId[]) => void }
+): AcDbObjectId[] {
+  const db = AcApDocManager.tryGetInstance()?.curDocument?.database
+  const filtered = excludeLockedLayerIds(db, ids)
+  if (filtered.lockedCount > 0) {
+    const kept = new Set(filtered.ids)
+    const dropped = ids.filter(id => !kept.has(id))
+    if (dropped.length > 0) selectionSet?.delete(dropped)
+    reportLockedLayerExclusion(filtered.lockedCount)
+  }
+  return filtered.ids
+}
+
+function reportLockedLayerExclusion(lockedCount: number): void {
+  if (lockedCount <= 0) return
+  const editor = AcApDocManager.tryGetInstance()?.editor
+  if (!editor) return
+  editor.showMessage(
+    `${lockedCount} ${AcApI18n.t('main.message.onLockedLayer')}`,
+    'warning'
+  )
 }
 
 /**
@@ -63,7 +95,7 @@ export async function resolveSelectedEntities(
 
   let selectionIds: AcDbObjectId[] | undefined
   if (selectionSet.count > 0) {
-    selectionIds = selectionSet.ids
+    selectionIds = omitLockedSelection(selectionSet.ids, selectionSet)
   } else if (options.promptKey) {
     selectionIds = await promptForSelectionIds(options.promptKey)
   }
@@ -104,7 +136,8 @@ export async function resolveSelectedIds(
   const selectionSet = context.view.selectionSet
 
   if (selectionSet.count > 0) {
-    return selectionSet.ids
+    const ids = omitLockedSelection(selectionSet.ids, selectionSet)
+    return ids.length > 0 ? ids : undefined
   }
 
   const selectionIds = await promptForSelectionIds(promptKey)

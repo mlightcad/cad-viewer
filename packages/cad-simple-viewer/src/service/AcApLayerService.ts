@@ -17,6 +17,7 @@ import {
   getLayerIsoState,
   isSameLayerIsoState
 } from './AcApLayerIsoState'
+import { isEntityOnLockedLayer as entityLayerIsLocked } from './AcApLockedLayer'
 import { acapRunServiceEdit, LAYER_EDIT_LABEL } from './AcApServiceEdit'
 import {
   AcApDeleteLayerResult,
@@ -338,6 +339,19 @@ export class AcApLayerService {
    */
   static isLayerLocked(layer: AcDbLayerTableRecord): boolean {
     return ((layer.standardFlags ?? 0) & LAYER_LOCKED_FLAG) !== 0
+  }
+
+  /**
+   * Returns whether an entity cannot be edited because its layer is locked.
+   *
+   * @param db - Database that owns the layer table.
+   * @param entity - Entity to test.
+   */
+  static isEntityOnLockedLayer(
+    db: AcDbDatabase,
+    entity: AcDbEntity | undefined | null
+  ): boolean {
+    return entityLayerIsLocked(db, entity)
   }
 
   /**

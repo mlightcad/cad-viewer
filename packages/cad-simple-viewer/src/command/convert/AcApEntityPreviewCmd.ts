@@ -34,6 +34,7 @@ export class AcApEntityPreviewCmd extends AcEdCommand {
       const options = new AcEdPromptSelectionOptions(
         AcApI18n.sysCmdPrompt('entout')
       )
+      options.allowObjectOnLockedLayer = true
       const selectionResult =
         await AcApDocManager.instance.editor.getSelection(options)
       if (
