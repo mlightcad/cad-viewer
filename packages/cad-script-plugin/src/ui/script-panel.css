@@ -207,3 +207,157 @@
 .cad-script-json {
   font-size: 12px;
 }
+
+.cad-script-btn.is-active {
+  background: #094771;
+  border-color: #1177bb;
+}
+
+.cad-script-examples {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+}
+
+.cad-script-examples[hidden],
+.cad-script-editor-wrap[hidden],
+.cad-script-splitter[hidden],
+.cad-script-result[hidden] {
+  display: none;
+}
+
+.cad-script-examples-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid #3a3a3a;
+  background: #252526;
+  flex-shrink: 0;
+}
+
+.cad-script-examples-search {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid #4a4a4a;
+  background: #1e1e1e;
+  color: #e8e8e8;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.cad-script-examples-search:focus-visible {
+  outline: 1px solid #1177bb;
+  outline-offset: 1px;
+}
+
+.cad-script-examples-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cad-script-examples-list {
+  flex: 0 1 42%;
+  min-height: 72px;
+  overflow: auto;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.cad-script-examples-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid #2a2a2a;
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+  font: inherit;
+}
+
+.cad-script-examples-item:hover,
+.cad-script-examples-item.is-active {
+  background: #094771;
+}
+
+.cad-script-examples-item-title {
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.cad-script-examples-item-desc {
+  color: #b0b0b0;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.cad-script-examples-item.is-active .cad-script-examples-item-desc {
+  color: #d6e8f5;
+}
+
+.cad-script-examples-empty {
+  margin: 0;
+  padding: 12px;
+  color: #888;
+}
+
+.cad-script-examples-detail {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px 12px;
+  overflow: hidden;
+}
+
+.cad-script-examples-detail-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: auto;
+}
+
+.cad-script-examples-detail h2 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cad-script-examples-detail p {
+  margin: 0;
+  color: #c8c8c8;
+  line-height: 1.4;
+}
+
+.cad-script-examples-detail pre {
+  flex: 1 1 auto;
+  margin: 0;
+  min-height: 72px;
+  overflow: auto;
+  padding: 8px;
+  border-radius: 4px;
+  background: #181818;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.cad-script-examples-detail .cad-script-btn {
+  align-self: flex-start;
+}

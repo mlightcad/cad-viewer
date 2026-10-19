@@ -31,5 +31,10 @@ export const scriptEn = {
   scriptForbiddenSyntax: 'Forbidden syntax',
   scriptForbiddenIdentifier: 'Forbidden identifier',
   scriptForbiddenMember: 'Forbidden member',
-  scriptUnknownApi: 'Unknown cad API'
+  scriptUnknownApi: 'Unknown cad API',
+  scriptExamples: 'Examples',
+  scriptExamplesSearch: 'Search examples',
+  scriptExamplesEmpty: 'No examples match this search.',
+  scriptExamplesUse: 'Use this script',
+  scriptExamplesClose: 'Close examples'
 } as const

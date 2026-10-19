@@ -29,5 +29,10 @@ export const scriptZh = {
   scriptForbiddenSyntax: '不允许的语法',
   scriptForbiddenIdentifier: '不允许的标识符',
   scriptForbiddenMember: '不允许的成员',
-  scriptUnknownApi: '未知的 cad API'
+  scriptUnknownApi: '未知的 cad API',
+  scriptExamples: '示例',
+  scriptExamplesSearch: '搜索示例',
+  scriptExamplesEmpty: '没有符合搜索的示例。',
+  scriptExamplesUse: '使用此脚本',
+  scriptExamplesClose: '关闭示例'
 } as const

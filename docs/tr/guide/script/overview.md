@@ -14,9 +14,11 @@ Betik özelliği, `@mlightcad/cad-script-plugin` eklentisi tarafından sağlanı
 - veya araç panelindeki "Betik" sekmesine tıklayın
 
 Betik paneli şunları içerir:
+
 - **Betik Düzenleyici**: JavaScript işlev gövdesi yazma alanı
 - **Çalıştır Düğmesi**: Betiği çalıştırır (kısayol `Ctrl+Enter`)
 - **Yardım**: Bu açıklamayı geçerli dilde açar
+- **Örnekler**: Yerleşik betikleri açıklamalarına göre arar ve düzenleyiciye yükler
 - **Sonuç Alanı**: Dönüş değerini katlanabilir bir JSON ağacı olarak gösterir; günlükleri, hataları ve varlık değişikliklerini de listeler. Yüksekliği ayarlamak için düzenleyici ile bu alan arasındaki ayırıcıyı sürükleyin.
 
 ## Betik Çalıştırma Modu

@@ -6,9 +6,11 @@ import {
 import { acapDocsUrl, AcApI18n } from '@mlightcad/cad-simple-viewer'
 import JSONFormatter from 'json-formatter-js'
 
+import { SCRIPT_EXAMPLES } from '../examples/scriptExamples'
 import type { ScriptLabels } from '../i18n'
-import { buildScriptLabels } from '../i18n'
+import { buildScriptLabels, registerScriptI18n } from '../i18n'
 import { createScriptEditor, type ScriptEditor } from './createScriptEditor'
+import { ScriptExamplesBrowser } from './ScriptExamplesBrowser'
 
 /** Draft key so a refresh keeps the last script the user typed. */
 const SCRIPT_DRAFT_KEY = 'mlightcad.cad-script.draft'
@@ -31,21 +33,14 @@ const EDITOR_MIN = 96
 /** Splitter thickness used when measuring the drag. Matches the CSS height. */
 const SPLITTER_SIZE = 8
 
-const DEFAULT_CAD_SCRIPT = `const counts = {}
-for (const entity of cad.entities.where(() => true)) {
-  counts[entity.type] = (counts[entity.type] || 0) + 1
-}
-cad.log('entity count by type', counts)
-return {
-  title: cad.drawing.title,
-  layer: cad.drawing.currentLayer,
-  counts
-}`
+/** First catalog script, used when the editor has no saved draft. */
+const DEFAULT_CAD_SCRIPT = SCRIPT_EXAMPLES[0].code
 
 /**
  * Manual CAD script console.
  *
  * The editor is CodeMirror, so `cad` members complete while typing.
+ * The Examples button opens a searchable catalog and can replace the editor text.
  * Append {@link element} to a dock or palette tab, and
  * call {@link destroy} when that tab is removed.
  */
@@ -54,8 +49,11 @@ export class CadScriptPanel {
   readonly element: HTMLDivElement
 
   private readonly runButton: HTMLButtonElement
+  private readonly examplesButton: HTMLButtonElement
   private readonly hintEl: HTMLSpanElement
   private readonly helpLink: HTMLAnchorElement
+  private readonly examplesBrowser: ScriptExamplesBrowser
+  private readonly editorWrap: HTMLDivElement
   private readonly editor: ScriptEditor
   private readonly splitter: HTMLDivElement
   private readonly resultEl: HTMLDivElement
@@ -82,6 +80,7 @@ export class CadScriptPanel {
   }
 
   constructor() {
+    registerScriptI18n()
     this.element = document.createElement('div')
     this.element.className = 'cad-script-root'
 
@@ -95,6 +94,14 @@ export class CadScriptPanel {
       void this.runScript()
     })
 
+    this.examplesButton = document.createElement('button')
+    this.examplesButton.type = 'button'
+    this.examplesButton.className = 'cad-script-btn'
+    this.examplesButton.setAttribute('aria-pressed', 'false')
+    this.examplesButton.addEventListener('click', () => {
+      this.setExamplesOpen(this.examplesBrowser.element.hidden)
+    })
+
     this.hintEl = document.createElement('span')
     this.hintEl.className = 'cad-script-hint'
 
@@ -104,10 +111,26 @@ export class CadScriptPanel {
     this.helpLink.rel = 'noopener noreferrer'
     this.helpLink.append(createHelpIcon())
 
-    toolbar.append(this.runButton, this.hintEl, this.helpLink)
+    toolbar.append(
+      this.runButton,
+      this.examplesButton,
+      this.hintEl,
+      this.helpLink
+    )
 
-    const editorWrap = document.createElement('div')
-    editorWrap.className = 'cad-script-editor-wrap'
+    this.examplesBrowser = new ScriptExamplesBrowser(
+      code => {
+        this.editor.setValue(code)
+        this.setExamplesOpen(false)
+        this.editor.focus()
+      },
+      () => {
+        this.setExamplesOpen(false)
+      }
+    )
+
+    this.editorWrap = document.createElement('div')
+    this.editorWrap.className = 'cad-script-editor-wrap'
     const editorHost = document.createElement('div')
     editorHost.className = 'cad-script-editor'
     this.editor = createScriptEditor(
@@ -121,7 +144,7 @@ export class CadScriptPanel {
         void this.runScript()
       }
     )
-    editorWrap.append(editorHost)
+    this.editorWrap.append(editorHost)
 
     this.splitter = document.createElement('div')
     this.splitter.className = 'cad-script-splitter'
@@ -139,7 +162,13 @@ export class CadScriptPanel {
     this.resultEl = document.createElement('div')
     this.resultEl.className = 'cad-script-result'
 
-    this.element.append(toolbar, editorWrap, this.splitter, this.resultEl)
+    this.element.append(
+      toolbar,
+      this.examplesBrowser.element,
+      this.editorWrap,
+      this.splitter,
+      this.resultEl
+    )
 
     this.applyLabels()
     this.syncRunButton()
@@ -157,6 +186,7 @@ export class CadScriptPanel {
   destroy(): void {
     this.flushDraft()
     this.editor.destroy()
+    this.examplesBrowser.element.remove()
     this.resizeObserver?.disconnect()
     this.stopSplitDrag()
     AcApI18n.events.localeChanged.removeEventListener(this.onLocaleChanged)
@@ -167,11 +197,29 @@ export class CadScriptPanel {
     this.helpLink.href = acapDocsUrl(SCRIPT_DOCS_PATH, AcApI18n.currentLocale)
     this.helpLink.title = this.labels.scriptHelp
     this.helpLink.setAttribute('aria-label', this.labels.scriptHelp)
+    this.examplesButton.textContent = this.labels.scriptExamples
+    this.examplesBrowser.setLabels(this.labels)
     this.hintEl.textContent = this.labels.scriptHint
     this.editor.setPlaceholder(this.labels.scriptPlaceholder)
     this.editor.setAriaLabel(this.labels.scriptTitle)
     this.splitter.setAttribute('aria-label', this.labels.scriptResize)
     this.syncRunButton()
+  }
+
+  /**
+   * Shows the example catalog or returns to the editor.
+   *
+   * @param open - `true` to show examples.
+   */
+  private setExamplesOpen(open: boolean) {
+    this.examplesBrowser.element.hidden = !open
+    this.editorWrap.hidden = open
+    this.splitter.hidden = open
+    this.resultEl.hidden = open
+    this.examplesButton.setAttribute('aria-pressed', open ? 'true' : 'false')
+    this.examplesButton.classList.toggle('is-active', open)
+    if (open) this.examplesBrowser.focusSearch()
+    else this.layoutSplit()
   }
 
   private syncRunButton() {
@@ -241,10 +289,7 @@ export class CadScriptPanel {
    */
   private layoutSplit() {
     if (this.splitPointerId != null) return
-    if (
-      this.element.clientHeight <
-      EDITOR_MIN + RESULT_MIN + SPLITTER_SIZE
-    ) {
+    if (this.element.clientHeight < EDITOR_MIN + RESULT_MIN + SPLITTER_SIZE) {
       return
     }
     const preferred = this.userSplit
@@ -289,7 +334,10 @@ export class CadScriptPanel {
 
   private applyResultHeight() {
     this.resultEl.style.height = `${this.resultHeight}px`
-    this.splitter.setAttribute('aria-valuenow', String(Math.round(this.resultHeight)))
+    this.splitter.setAttribute(
+      'aria-valuenow',
+      String(Math.round(this.resultHeight))
+    )
     this.splitter.setAttribute(
       'aria-valuemax',
       String(Math.round(this.maxResultHeight()))
@@ -595,7 +643,10 @@ function createHelpIcon(): SVGSVGElement {
   svg.setAttribute('height', '16')
   svg.setAttribute('aria-hidden', 'true')
 
-  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+  const circle = document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'circle'
+  )
   circle.setAttribute('cx', '8')
   circle.setAttribute('cy', '8')
   circle.setAttribute('r', '6.25')

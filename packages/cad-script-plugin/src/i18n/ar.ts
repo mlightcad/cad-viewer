@@ -29,5 +29,10 @@ export const scriptAr = {
   scriptForbiddenSyntax: 'صيغة غير مسموح بها',
   scriptForbiddenIdentifier: 'معرّف غير مسموح به',
   scriptForbiddenMember: 'عضو غير مسموح به',
-  scriptUnknownApi: 'واجهة cad غير معروفة'
+  scriptUnknownApi: 'واجهة cad غير معروفة',
+  scriptExamples: 'أمثلة',
+  scriptExamplesSearch: 'البحث في الأمثلة',
+  scriptExamplesEmpty: 'لا توجد أمثلة تطابق البحث.',
+  scriptExamplesUse: 'استخدام هذا السكريبت',
+  scriptExamplesClose: 'إغلاق الأمثلة'
 } as const
