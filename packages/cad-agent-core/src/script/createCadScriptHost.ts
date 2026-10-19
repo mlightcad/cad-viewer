@@ -1,6 +1,6 @@
 import {
-  acapRunDatabaseEdit,
-  AcApLayerService
+  AcApLayerService,
+  acapRunDatabaseEdit
 } from '@mlightcad/cad-simple-viewer'
 import { AcDbEntity, AcGePoint3d } from '@mlightcad/data-model'
 
