@@ -33,6 +33,7 @@ export default {
     secondCorner: 'Zadejte druhý roh nebo'
   },
   message: {
+    onLockedLayer: 'na uzamčené hladině.',
     fetchingDrawingFile: 'Načítám soubor…',
     exportingDxf: 'Exportuji DXF…',
     exportingPdf: 'Exportuji PDF…',

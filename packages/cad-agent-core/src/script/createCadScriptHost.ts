@@ -1,4 +1,7 @@
-import { acapRunDatabaseEdit } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApLayerService,
+  acapRunDatabaseEdit
+} from '@mlightcad/cad-simple-viewer'
 import { AcDbEntity, AcGePoint3d } from '@mlightcad/data-model'
 
 import { getDrawingContext } from '../context/DrawingContextProvider'
@@ -285,8 +288,15 @@ function createTransaction(
       if (!known) throw new Error('layer_not_found')
       const db = doc.database
       for (const id of ids) {
+        const existing = db.tables.blockTable.getEntityById(id)
+        if (existing && AcApLayerService.isEntityOnLockedLayer(db, existing)) {
+          continue
+        }
         const entity = db.openEntityForWrite(id)
-        if (entity) entity.layer = layer
+        if (!entity || AcApLayerService.isEntityOnLockedLayer(db, entity)) {
+          continue
+        }
+        entity.layer = layer
       }
     },
     move(ids, dx, dy) {

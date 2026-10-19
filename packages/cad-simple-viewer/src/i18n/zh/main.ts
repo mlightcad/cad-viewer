@@ -33,6 +33,7 @@ export default {
     secondCorner: '指定第二个角点或'
   },
   message: {
+    onLockedLayer: '个对象位于锁定的图层上。',
     fetchingDrawingFile: '正在加载图纸文件...',
     exportingDxf: '正在导出 DXF ...',
     exportingPdf: '正在导出 PDF ...',

@@ -33,6 +33,7 @@ export default {
     secondCorner: 'İkinci köşeyi belirtin veya'
   },
   message: {
+    onLockedLayer: 'kilitli katmandaydı.',
     fetchingDrawingFile: 'Dosya alınıyor ...',
     exportingDxf: 'DXF dışa aktarılıyor ...',
     exportingPdf: 'PDF dışa aktarılıyor ...',

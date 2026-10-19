@@ -61,7 +61,10 @@
           <div class="ml-cell-value" v-if="!row.isGroup">
             <!-- ===== Readonly ===== -->
             <template
-              v-if="!row.__isArrayIndex && (!editable || !row.editable)"
+              v-if="
+                editsLocked ||
+                (!row.__isArrayIndex && (!editable || !row.editable))
+              "
             >
               <ml-color-dropdown
                 v-if="row.type === 'color'"
@@ -126,7 +129,7 @@
                 @change="
                   (v: number) => {
                     if (row.__isArrayIndex) {
-                      row.accessor.set?.(v)
+                      if (!editsLocked) row.accessor.set?.(v)
                     } else {
                       onPropertyChange(row, v)
                     }
@@ -195,6 +198,12 @@ const { t } = useI18n()
 const props = defineProps<{
   entityPropsList?: AcDbEntityProperties[] | null
   editable?: boolean
+  /**
+   * Lock state aligned with `entityPropsList`.
+   * The common row is read-only when any entry is locked. A single entity row
+   * follows that entity.
+   */
+  entityLocked?: boolean[]
 }>()
 
 const emit = defineEmits<{
@@ -217,6 +226,15 @@ const arrayIndexMap = ref<Record<string, number>>({})
  * 🔑 Forces rebuild of array property rows
  */
 const arrayRebuildVersion = ref(0)
+
+const editsLocked = computed(() => {
+  const flags = props.entityLocked
+  if (!flags?.length) return false
+  const count = props.entityPropsList?.length ?? 0
+  if (count <= 1) return !!flags[0]
+  if (selectedIndex.value >= 0) return !!flags[selectedIndex.value]
+  return flags.some(Boolean)
+})
 
 const activeEntityProperties = computed<AcDbEntityProperties | null>(() => {
   const list = props.entityPropsList
@@ -462,7 +480,7 @@ const spanMethod = ({
  * Handle property change (direct call to accessor.set)
  */
 function onPropertyChange(row: MlDisplayPropertyRow, newValue: unknown) {
-  if (row.__isArrayIndex) return
+  if (editsLocked.value || row.__isArrayIndex) return
 
   emit('update-property', {
     groupName: row.__groupName ?? '',

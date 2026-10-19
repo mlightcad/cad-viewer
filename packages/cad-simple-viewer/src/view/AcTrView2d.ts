@@ -2316,7 +2316,8 @@ export class AcTrView2d extends AcEdBaseView {
     const idsAdded: Array<AcDbObjectId> = []
     const results = this.pick(point)
     results.forEach(item => idsAdded.push(item.id))
-    if (idsAdded.length > 0) this.selectionSet.add(idsAdded)
+    const selectable = this.selectableIds(idsAdded, 'add')
+    if (selectable.length > 0) this.selectionSet.add(selectable)
   }
 
   /**

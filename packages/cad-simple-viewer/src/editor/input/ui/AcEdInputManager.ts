@@ -10,6 +10,7 @@ import {
 
 import { AcApDocManager, AcApSettingManager } from '../../../app'
 import { AcApI18n } from '../../../i18n'
+import { isEntityOnLockedLayer as entityIsOnLockedLayer } from '../../../service/AcApLockedLayer'
 import { AcUiTouchPointTutorialDialog } from '../../../ui/AcUiTouchPointTutorialDialog'
 import type {
   AcEdSessionAccessory,
@@ -741,14 +742,10 @@ export class AcEdInputManager {
    * @returns `true` if the entity's layer exists and is locked; otherwise `false`
    */
   private isEntityOnLockedLayer(entity: AcDbEntity): boolean {
-    const layerName = entity.layer
-    if (!layerName) {
-      return false
-    }
-
-    return !!AcApDocManager.instance.curDocument.database.tables.layerTable.getAt(
-      layerName
-    )?.isLocked
+    return entityIsOnLockedLayer(
+      AcApDocManager.tryGetInstance()?.curDocument?.database,
+      entity
+    )
   }
 
   /**
@@ -1471,6 +1468,8 @@ export class AcEdInputManager {
         new Promise<string[]>((resolve, reject) => {
           this.active = true
           this.entitySelectionActive = true
+          const previousAllowLocked = this.view.allowSelectOnLockedLayer
+          this.view.allowSelectOnLockedLayer = options.allowObjectOnLockedLayer
           const keywordSession = this.startKeywordSession(options, true)
           if (!keywordSession) {
             this._commandLine.setPrompt(options.message)
@@ -1552,6 +1551,7 @@ export class AcEdInputManager {
             disposeGesture?.()
             disposeGesture = null
             this.view.setNavigationEnabled(true)
+            this.view.allowSelectOnLockedLayer = previousAllowLocked
 
             document.removeEventListener('keydown', keyHandler)
             this.view.canvas.removeEventListener('mousedown', mouseDown)
