@@ -53,16 +53,16 @@
     "@mlightcad/three-renderer": "workspace:*",
     "@types/jest": "^29.5.12",
     "@types/rbush": "^3.0.4",
-    "@types/three": "^0.172.0",
+    "@types/three": "^0.186.0",
     "fflate": "^0.8.2",
     "rbush": "^4.0.1",
-    "three": "^0.172.0"
+    "three": "^0.186.1"
   },
   "peerDependencies": {
     "@mlightcad/cad-html-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "^1.15.11",
     "@mlightcad/three-renderer": "workspace:*",
-    "three": "^0.172.0"
+    "three": "^0.186.1"
   }
 }

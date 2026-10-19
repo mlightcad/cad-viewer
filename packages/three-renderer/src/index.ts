@@ -1,3 +1,5 @@
+import './types/three-material'
+
 export * from './batch/AcTrBatchedGroup'
 export {
   isBatchGeometryActive,

@@ -1,5 +1,16 @@
 {
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "sharedGlobals"],
+    "sharedGlobals": [
+      "{workspaceRoot}/tsconfig.json",
+      "{workspaceRoot}/tsconfig.base.json",
+      "{workspaceRoot}/pnpm-lock.yaml",
+      "{workspaceRoot}/pnpm-workspace.yaml",
+      "{workspaceRoot}/packages/vite-config/**/*",
+      "{workspaceRoot}/tools/**/*"
+    ]
+  },
   "targetDefaults": {
     "build": {
       "dependsOn": [
@@ -8,6 +19,7 @@
       "cache": true,
       "inputs": [
         "default",
+        "^default",
         { "env": "VITE_MSAL_CLIENT_ID" },
         { "env": "VITE_MSAL_TENANT_ID" },
         { "env": "VITE_MSAL_REDIRECT_URI" },
@@ -27,6 +39,10 @@
           "dependencies": true
         }
       ]
+    },
+    "preview": {
+      "dependsOn": ["build"],
+      "cache": false
     }
   }
 }

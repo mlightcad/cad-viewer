@@ -3349,7 +3349,9 @@ export class AcTrBatchedGroup extends THREE.Group {
       clonedDrawable.sharesTemplateGeometry = ownsTexturedMaterial
         ? false
         : sourceDrawable.sharesTemplateGeometry
-      clonedDrawable.bakedWorldMatrix = source.matrixWorld.toArray()
+      clonedDrawable.bakedWorldMatrix = source.matrixWorld.toArray(
+        new Array<number>(16)
+      )
       if (sourceDrawable.textEntityTraits) {
         clonedDrawable.textEntityTraits = AcTrMTextColorUtil.cloneEntityTraits(
           sourceDrawable.textEntityTraits
@@ -3450,7 +3452,9 @@ export class AcTrBatchedGroup extends THREE.Group {
     const sourceDrawable = getSceneDrawableUserData(source)
     const clonedDrawable = getSceneDrawableUserData(cloned)
     clonedDrawable.bboxIntersectionCheck = sourceDrawable.bboxIntersectionCheck
-    clonedDrawable.bakedWorldMatrix = source.matrixWorld.toArray()
+    clonedDrawable.bakedWorldMatrix = source.matrixWorld.toArray(
+      new Array<number>(16)
+    )
     if (sourceDrawable.textEntityTraits) {
       clonedDrawable.textEntityTraits = AcTrMTextColorUtil.cloneEntityTraits(
         sourceDrawable.textEntityTraits

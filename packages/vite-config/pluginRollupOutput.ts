@@ -19,6 +19,14 @@ function resolvePackageEntry(
         return esm
       }
     }
+    // three 0.186's require export is build/three.cjs. That file calls
+    // process.emitWarning when loaded, which throws in the browser.
+    if (resolved.endsWith('.cjs')) {
+      const esm = resolved.slice(0, -'.cjs'.length) + '.module.js'
+      if (existsSync(esm)) {
+        return esm
+      }
+    }
     return resolved
   } catch {
     return undefined
