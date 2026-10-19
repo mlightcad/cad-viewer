@@ -3,7 +3,10 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
-import { AcTrBatchedGroup } from '../src/batch/AcTrBatchedGroup'
+import {
+  AcTrBatchedGroup,
+  disposePreviewSubset
+} from '../src/batch/AcTrBatchedGroup'
 import { AcTrSharedGeometryBatch } from '../src/batch/AcTrSharedGeometryBatch'
 import { AcTrEntity } from '../src/object/AcTrEntity'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
@@ -95,6 +98,106 @@ describe('AcTrBatchedGroup shared block geometry', () => {
     group.setEntityVisible('insert-a', false)
     expect(group.getEntityVisible('insert-a')).toBe(false)
     expect(group.isIntersectWith('insert-a', rayAt(0))).toBe(false)
+  })
+
+  it('highlights one shared INSERT without aliasing the instanced geometry', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff })
+    const firstLine = createSharedLine(0, material)
+    const secondLine = new THREE.LineSegments(firstLine.geometry, material)
+    secondLine.position.set(0, 100, 0)
+    secondLine.updateMatrixWorld(true)
+    getSceneDrawableUserData(secondLine).sharesTemplateGeometry = true
+
+    const group = new AcTrBatchedGroup()
+    group.addEntity(createEntity('insert-a', firstLine))
+    group.addEntity(createEntity('insert-b', secondLine))
+
+    const batch = findSharedBatch(group)
+    const instanced = batch?.children.find(
+      child => (child as { isInstancedMesh?: boolean }).isInstancedMesh
+    ) as THREE.LineSegments & { count?: number }
+    const sharedGeometry = instanced.geometry
+    const position = sharedGeometry.getAttribute('position').clone()
+    const matrix = (
+      instanced as THREE.LineSegments & {
+        instanceMatrix: THREE.InstancedBufferAttribute
+      }
+    ).instanceMatrix.clone()
+
+    group.select('insert-a')
+
+    const overlays = batch?.children.filter(
+      child => child !== instanced && (child as THREE.LineSegments).isLineSegments
+    ) as THREE.LineSegments[]
+    expect(overlays).toHaveLength(1)
+    expect(overlays[0].geometry).not.toBe(sharedGeometry)
+    expect(overlays[0].material).not.toBe(instanced.material)
+    expect(sharedGeometry.getAttribute('position').array).toEqual(position.array)
+    expect(
+      (
+        instanced as THREE.LineSegments & {
+          instanceMatrix: THREE.InstancedBufferAttribute
+        }
+      ).instanceMatrix.array
+    ).toEqual(matrix.array)
+    expect(instanced.count).toBe(2)
+
+    group.unselect('insert-a')
+    expect(
+      batch?.children.filter(child => child !== instanced)
+    ).toHaveLength(0)
+    expect(sharedGeometry.getAttribute('position').array).toEqual(position.array)
+
+    group.select('insert-b')
+    const nextOverlays = batch?.children.filter(
+      child => child !== instanced
+    ) as THREE.LineSegments[]
+    expect(nextOverlays).toHaveLength(1)
+    expect(nextOverlays[0].geometry).not.toBe(sharedGeometry)
+    expect(instanced.count).toBe(2)
+    expect(sharedGeometry.getAttribute('position').array).toEqual(position.array)
+  })
+
+  it('previews one shared INSERT without aliasing the instanced geometry', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff })
+    const firstLine = createSharedLine(0, material)
+    const secondLine = new THREE.LineSegments(firstLine.geometry, material)
+    secondLine.position.set(0, 100, 0)
+    secondLine.updateMatrixWorld(true)
+    getSceneDrawableUserData(secondLine).sharesTemplateGeometry = true
+
+    const group = new AcTrBatchedGroup()
+    group.addEntity(createEntity('insert-a', firstLine))
+    group.addEntity(createEntity('insert-b', secondLine))
+
+    const batch = findSharedBatch(group)
+    const instanced = batch?.children.find(
+      child => (child as { isInstancedMesh?: boolean }).isInstancedMesh
+    ) as THREE.LineSegments
+    const sharedGeometry = instanced.geometry
+
+    const preview = group.createPreviewSubset(['insert-a'])
+    expect(preview).not.toBeNull()
+    const overlay = preview?.children[0] as THREE.LineSegments
+    expect(overlay.geometry).not.toBe(sharedGeometry)
+
+    group.setCompareDisplay({
+      enabled: true,
+      overrides: [{ objectId: 'insert-a', role: 'modified' }]
+    })
+    const compareOverlay = group.children.find(
+      child => child.name === 'CompareOverlay'
+    )
+    const compareLine = compareOverlay?.children.find(
+      child => (child as THREE.LineSegments).isLineSegments
+    ) as THREE.LineSegments | undefined
+    expect(compareLine?.geometry).toBeDefined()
+    expect(compareLine?.geometry).not.toBe(sharedGeometry)
+
+    disposePreviewSubset(preview!)
+    group.setCompareDisplay({ enabled: false, overrides: [] })
+    expect(sharedGeometry.getAttribute('position').array.length).toBeGreaterThan(0)
+    expect(() => sharedGeometry.getAttribute('position').getX(0)).not.toThrow()
   })
 
   it('keeps the world pick threshold when an INSERT is scaled', () => {

@@ -257,8 +257,11 @@ export class AcTrSharedGeometryBatch extends THREE.Object3D {
   optimize() {}
 
   /**
-   * Tints one INSERT by adding a small overlay that references the shared
-   * geometry. The template buffer is not copied.
+   * Tints one INSERT by adding a small overlay.
+   *
+   * The overlay gets its own geometry clone. A non-instanced mesh that shares
+   * the live instanced buffer makes later draws of every other INSERT of that
+   * template drop out, and each newly selected block loses another template.
    *
    * @returns `true` when the highlight state changed.
    */
@@ -368,21 +371,23 @@ export class AcTrSharedGeometryBatch extends THREE.Object3D {
   }
 
   /**
-   * Builds a standalone view of one slot for highlight and preview overlays.
+   * Builds a standalone view of one slot for preview and compare overlays.
    *
-   * The returned object aliases {@link _geometry}. Callers must not dispose it.
+   * The returned object owns a geometry clone. Sharing the live instanced
+   * buffer with a non-instanced overlay makes later draws of every other
+   * INSERT of that template drop out. Callers must dispose the clone.
    *
    * @param batchId - Slot index.
    * @returns A drawable placed at the INSERT transform, relative to this batch.
    */
   getObjectAt(batchId: number) {
     this.composeLocalMatrix(batchId, _full)
-    const object = this.createDrawable(this._geometry, this._material)
+    const object = this.createDrawable(this._geometry.clone(), this._material)
     object.matrix.copy(_full)
     object.matrixAutoUpdate = false
     object.matrixWorld.copy(_full)
     object.matrixWorldNeedsUpdate = false
-    getSceneDrawableUserData(object).sharesTemplateGeometry = true
+    object.frustumCulled = false
     return object
   }
 
@@ -644,20 +649,24 @@ export class AcTrSharedGeometryBatch extends THREE.Object3D {
     const hovered = this._hovered.has(index)
     if (!selected && !hovered) return
     this.composeLocalMatrix(index, _full)
-    const overlay = this.createDrawable(this._geometry, this._material)
+    // Clone before the overlay joins the scene. Sharing `_geometry` with the
+    // instanced drawable lets a non-instanced draw retire that buffer.
+    const overlay = this.createDrawable(this._geometry.clone(), this._material)
     overlay.matrix.copy(_full)
     overlay.matrixAutoUpdate = false
+    overlay.frustumCulled = false
     overlay.renderOrder = 10000
     overlay.raycast = () => {}
     const material = overlay.material
     if (material && !Array.isArray(material)) {
-      overlay.material = material.clone()
+      overlay.material = AcTrMaterialUtil.cloneMaterial(
+        material
+      ) as THREE.Material
       AcTrMaterialUtil.setMaterialColor(
         overlay.material,
         selected ? HIGHLIGHT_SELECT_COLOR : HIGHLIGHT_HOVER_COLOR
       )
     }
-    getSceneDrawableUserData(overlay).sharesTemplateGeometry = true
     this.add(overlay)
     this._highlights.set(index, overlay)
   }
@@ -674,7 +683,12 @@ export class AcTrSharedGeometryBatch extends THREE.Object3D {
       overlay.material.dispose()
     }
     if ('geometry' in overlay) {
-      ;(overlay as THREE.Mesh).geometry = null as unknown as THREE.BufferGeometry
+      const mesh = overlay as THREE.Mesh
+      // Only the overlay clone is owned here. The instanced template stays.
+      if (mesh.geometry && mesh.geometry !== this._geometry) {
+        mesh.geometry.dispose()
+      }
+      mesh.geometry = null as unknown as THREE.BufferGeometry
     }
     overlay.removeFromParent()
   }

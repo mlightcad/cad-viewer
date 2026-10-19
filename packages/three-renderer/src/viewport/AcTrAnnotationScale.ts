@@ -140,6 +140,14 @@ export function applyAnnotationScalePass(
   scene.traverse(object => {
     const info = readAnnotationScale(object)
     if (!info) return
+    // A parent annotative drawable already scales this subtree. Capturing the
+    // child after that scale, then restoring the parent first, writes the
+    // scaled matrix back and the next viewport pass scales it again.
+    let ancestor = object.parent
+    while (ancestor) {
+      if (readAnnotationScale(ancestor)) return
+      ancestor = ancestor.parent
+    }
 
     restored.push(captureRestoreState(object))
 
