@@ -21,7 +21,8 @@ const config: Config = {
     ]
   },
   transformIgnorePatterns: [
-    '/node_modules/(?!.*(mtext-parser|rbush|quickselect))'
+    // three@0.186's CJS entry re-exports ESM (`three.module.js` / `three.core.js`).
+    '/node_modules/(?!.*(mtext-parser|rbush|quickselect|three/build/three))'
   ],
   testPathIgnorePatterns: ['/e2e/', '/__tests__/helpers/'],
   moduleNameMapper: {
