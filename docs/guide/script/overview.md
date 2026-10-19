@@ -14,9 +14,11 @@ The script feature is provided by the `@mlightcad/cad-script-plugin` plugin. The
 - Or click the "Script" tab in the tools panel
 
 The script panel includes:
+
 - **Script Editor**: Write JavaScript function bodies
 - **Run Button**: Execute the script (shortcut `Ctrl+Enter`)
 - **Help**: Opens this guide in the current language
+- **Examples**: Search built-in scripts by their description and load one into the editor
 - **Result Area**: Shows the return value as a collapsible JSON tree, plus logs, errors, and entity changes. Drag the divider between the editor and this area to resize them.
 
 ## How Scripts Execute

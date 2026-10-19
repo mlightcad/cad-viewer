@@ -1,9 +1,11 @@
 import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
 
+import type { ScriptExampleId } from '../examples/scriptExamples'
 import { scriptAr } from './ar'
 import { scriptCommandDescriptions } from './command'
 import { scriptCs } from './cs'
 import { scriptEn } from './en'
+import { scriptExampleCopyByLocale } from './exampleCopy'
 import { scriptTr } from './tr'
 import { scriptZh } from './zh'
 
@@ -44,7 +46,10 @@ function buildVueMessages(locale: AcApLocale) {
     },
     main: {
       toolPalette: {
-        script: scriptMessagesByLocale[locale]
+        script: {
+          ...scriptMessagesByLocale[locale],
+          examples: scriptExampleCopyByLocale[locale]
+        }
       }
     }
   }
@@ -89,6 +94,23 @@ export function mergeScriptI18nIntoVueI18n(
  */
 export function scriptT(key: ScriptLabelKey): string {
   return AcApI18n.t(`${SCRIPT_I18N_PREFIX}.${key}`, { fallback: key })
+}
+
+/**
+ * Reads the localized title and description of one built-in script.
+ *
+ * @param id - Example id from the catalog.
+ * @returns Strings for the current locale.
+ */
+export function scriptExampleText(id: ScriptExampleId): {
+  title: string
+  description: string
+} {
+  const prefix = `${SCRIPT_I18N_PREFIX}.examples.${id}`
+  return {
+    title: AcApI18n.t(`${prefix}.title`, { fallback: id }),
+    description: AcApI18n.t(`${prefix}.description`, { fallback: id })
+  }
 }
 
 /**

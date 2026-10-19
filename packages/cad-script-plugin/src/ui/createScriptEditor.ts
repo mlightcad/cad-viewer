@@ -43,6 +43,14 @@ export interface ScriptEditor {
    * @param text - Label announced for the editor.
    */
   setAriaLabel(text: string): void
+  /**
+   * Replaces the whole script.
+   *
+   * @param text - New function body.
+   */
+  setValue(text: string): void
+  /** Moves focus into the editor. */
+  focus(): void
   /** Removes the editor from the page. */
   destroy(): void
 }
@@ -141,6 +149,15 @@ export function createScriptEditor(
           })
         )
       })
+    },
+    setValue(text: string) {
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: text },
+        selection: { anchor: 0 }
+      })
+    },
+    focus() {
+      view.focus()
     },
     destroy() {
       view.destroy()

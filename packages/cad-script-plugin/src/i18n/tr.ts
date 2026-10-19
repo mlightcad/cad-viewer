@@ -9,7 +9,8 @@ export const scriptTr = {
   scriptHelp: 'Betik yardımı',
   scriptResize: 'Sonuç panelini yeniden boyutlandır',
   scriptPlaceholder: 'İşlev gövdesini yazın. Tek argüman cad.',
-  scriptHint: 'Ctrl+Enter çalıştırır. "." veya Ctrl+Space cad üyelerini tamamlar.',
+  scriptHint:
+    'Ctrl+Enter çalıştırır. "." veya Ctrl+Space cad üyelerini tamamlar.',
   scriptSuccess: 'Başarılı',
   scriptFailed: 'Başarısız',
   scriptReturnValue: 'Dönüş değeri',
@@ -30,5 +31,10 @@ export const scriptTr = {
   scriptForbiddenSyntax: 'Yasak sözdizimi',
   scriptForbiddenIdentifier: 'Yasak tanımlayıcı',
   scriptForbiddenMember: 'Yasak üye',
-  scriptUnknownApi: 'Bilinmeyen cad API'
+  scriptUnknownApi: 'Bilinmeyen cad API',
+  scriptExamples: 'Örnekler',
+  scriptExamplesSearch: 'Örnek ara',
+  scriptExamplesEmpty: 'Bu aramayla eşleşen örnek yok.',
+  scriptExamplesUse: 'Bu betiği kullan',
+  scriptExamplesClose: 'Örnekleri kapat'
 } as const

@@ -30,5 +30,10 @@ export const scriptCs = {
   scriptForbiddenSyntax: 'Zakázaná syntaxe',
   scriptForbiddenIdentifier: 'Zakázaný identifikátor',
   scriptForbiddenMember: 'Zakázaný člen',
-  scriptUnknownApi: 'Neznámé cad API'
+  scriptUnknownApi: 'Neznámé cad API',
+  scriptExamples: 'Příklady',
+  scriptExamplesSearch: 'Hledat příklady',
+  scriptExamplesEmpty: 'Tomuto hledání neodpovídá žádný příklad.',
+  scriptExamplesUse: 'Použít tento skript',
+  scriptExamplesClose: 'Zavřít příklady'
 } as const
