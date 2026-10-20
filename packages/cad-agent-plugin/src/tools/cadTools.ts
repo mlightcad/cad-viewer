@@ -13,6 +13,21 @@ function toolResultWithoutImages(result: ToolResult): Omit<ToolResult, 'images'>
 }
 
 /**
+ * AI SDK `ModelMessage` JSON tool outputs reject `undefined` fields. Tool
+ * results often omit optionals as `undefined` (e.g. `entityIds`, `images`);
+ * round-tripping through JSON drops those keys so the next chat turn can
+ * pass `convertToModelMessages` / prompt validation.
+ */
+function toJsonToolValue(value: unknown): unknown {
+  if (value === undefined) return null
+  try {
+    return JSON.parse(JSON.stringify(value))
+  } catch {
+    return String(value)
+  }
+}
+
+/**
  * Converts a CAD tool result into AI SDK multimodal tool-result output.
  *
  * Screenshots from `cad.view.capturePreview` are sent as `media` parts so the
@@ -21,11 +36,14 @@ function toolResultWithoutImages(result: ToolResult): Omit<ToolResult, 'images'>
 function toCadToolModelOutput(output: unknown) {
   const result = output as ToolResult
   if (!result || typeof result !== 'object') {
-    return { type: 'json' as const, value: output as never }
+    return { type: 'json' as const, value: toJsonToolValue(output) as never }
   }
 
   if (!result.images?.length) {
-    return { type: 'json' as const, value: result as never }
+    return {
+      type: 'json' as const,
+      value: toJsonToolValue(toolResultWithoutImages(result)) as never
+    }
   }
 
   const summary = toolResultWithoutImages(result)

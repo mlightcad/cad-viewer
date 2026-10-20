@@ -62,6 +62,12 @@ export const agentAr = {
   toolPrefix:
     'أداة',
 
+  copyTool:
+    'نسخ استدعاء الأداة (الإدخال والإخراج)',
+
+  toolCopied:
+    'تم النسخ',
+
   inputPlaceholder:
     'صف طلبك…',
 

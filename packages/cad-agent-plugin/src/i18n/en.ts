@@ -33,6 +33,8 @@ export const agentEn = {
   emptyHint:
     'Describe what to draw, or attach a reference image (sketch, screenshot, floor plan).',
   toolPrefix: 'tool',
+  copyTool: 'Copy tool call (input & output)',
+  toolCopied: 'Copied',
   inputPlaceholder: 'Describe your request…',
   attachImage: 'Attach image',
   removeAttachment: 'Remove',

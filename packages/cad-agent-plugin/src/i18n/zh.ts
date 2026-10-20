@@ -32,6 +32,8 @@ export const agentZh = {
   saveSettings: '保存设置',
   emptyHint: '描述要绘制的内容，或附加参考图片（草图、截图、平面图等）。',
   toolPrefix: '工具',
+  copyTool: '复制工具调用（输入与输出）',
+  toolCopied: '已复制',
   inputPlaceholder: '描述你的需求…',
   attachImage: '添加图片',
   removeAttachment: '移除',

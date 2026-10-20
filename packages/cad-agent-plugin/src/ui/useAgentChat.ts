@@ -42,6 +42,11 @@ export function useAgentChatRef(getConfig: () => AgentChatSessionConfig) {
 
   /** Discards the current session and builds a new agent from latest settings. */
   const resetChat = () => {
+    try {
+      chat.value.stop()
+    } catch {
+      // ignore stop errors when tearing down
+    }
     chat.value = createAgentChat(getConfig)
   }
 

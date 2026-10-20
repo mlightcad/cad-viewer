@@ -24,12 +24,28 @@ export function createCadToolCatalog(
       name: 'execute_cad_script',
       description: CAD_SCRIPT_API_SUMMARY,
       access: 'write',
+      // `code` must be first: providers may finalize tool args when the buffer
+      // is valid JSON. Emitting a complete `{intent}` object before `code`
+      // causes premature finalize and leaves the call stuck without execution.
       inputSchema: z.object({
-        code: z.string().min(1),
-        intent: z.string().min(1)
+        code: z
+          .string()
+          .min(1)
+          .describe(
+            'JavaScript function body using cad.* (required). Prefer short scripts; for complex drawings use multiple calls.'
+          ),
+        intent: z
+          .string()
+          .max(200)
+          .optional()
+          .describe(
+            'Optional short label for the tool result. Never send intent alone — code is required. Prefer emitting code before intent.'
+          )
       }),
-      execute: (input: unknown) =>
-        executeCadScript(input as { code: string; intent: string }, session)
+      execute: (input: unknown) => {
+        const args = input as { code: string; intent?: string }
+        return executeCadScript(args, session)
+      }
     }
   ]
   return tools as CadToolDefinition[]

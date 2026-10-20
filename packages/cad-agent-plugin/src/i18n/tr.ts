@@ -33,6 +33,8 @@ export const agentTr = {
   emptyHint:
     'Çizilecek şeyi tanımlayın veya bir referans görsel ekleyin (kroki, ekran görüntüsü, kat planı).',
   toolPrefix: 'araç',
+  copyTool: 'Araç çağrısını kopyala (girdi ve çıktı)',
+  toolCopied: 'Kopyalandı',
   inputPlaceholder: 'İsteğinizi yazın…',
   attachImage: 'Görsel ekle',
   removeAttachment: 'Kaldır',
