@@ -114,7 +114,8 @@ cad.view.zoomExtents()
 cad.view.capturePreview({ longSide? }) queues a PNG of drawing extents after the script
 finishes. Returns { queued: true, index }. Images are attached to the tool result for the
 model (not returned as JSON). Capture frames model space (temporarily switches away from
-paper space if needed). Use for visual self-check; skip for simple edits.
+paper space if needed). Only for High inference / when screenshots are enabled — prefer
+cad.measure for self-check; do not use capturePreview in Simple mode.
 cad.measure — prefer for numeric self-check (saves tokens vs hand-rolled Math):
   distance(a, b) -> number
   angleDeg(a, b) -> bearing a→b deg (-180,180]; angleDeg(a, b, c) -> interior angle at b [0,180]
@@ -145,13 +146,15 @@ Spline { points, closed }, Text / MText / Attribute { position, text, height },
 Insert { name, position, rotation, scale }, Hatch { patternName, patternScale, boundary },
 Dimension { text, measurement, textPosition, styleName } plus definition points.
 
-Example: draw a circle, zoom, then request a screenshot for visual check.
+Example: draw a circle, zoom, and verify with measure (preferred in Simple mode).
+let circleId
 cad.edit.transaction('draw circle', tx => {
-  tx.drawCircle({ center: { x: 0, y: 0 }, radius: 100 })
+  circleId = tx.drawCircle({ center: { x: 0, y: 0 }, radius: 100 })
 })
 cad.view.zoomExtents()
-cad.view.capturePreview()
-return { ok: true }
+return cad.measure.report([
+  cad.measure.check('r', 100, cad.measure.radius(circleId))
+])
 
 Example: count circles per layer and highlight every entity on the busiest layer.
 const counts = {}

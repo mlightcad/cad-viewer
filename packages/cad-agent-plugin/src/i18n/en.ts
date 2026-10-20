@@ -39,6 +39,9 @@ export const agentEn = {
   attachImage: 'Attach image',
   removeAttachment: 'Remove',
   imageAlt: 'Attached image',
+  imageOnlyRequest:
+    'Please analyze the attached reference image(s) and help me draw this in CAD.',
+  prepareImageFailed: 'Failed to prepare the attached image. Try a smaller PNG or JPEG.',
   errorTitle: 'Something went wrong',
   dismissError: 'Dismiss',
   send: 'Send',
@@ -48,9 +51,9 @@ export const agentEn = {
   agentModeSimple: 'Simple',
   agentModeHighInference: 'High inference',
   agentModeSimpleHint:
-    'Default. Fast — no screenshot verification after drawing.',
+    'Default. Fast — measure-API self-check only; no screenshots or vision verification.',
   agentModeHighInferenceHint:
-    'Opt-in for complex tasks. Verifies with screenshot + vision model (up to 5 rounds). Requires a vision model.',
+    'Opt-in for complex tasks. Allows screenshots and verifies with screenshot + vision model (up to 5 rounds). Requires a vision model.',
   highInferenceRequiresVision:
     'High inference mode requires a vision-capable model.',
   verificationTitle: 'Drawing verification',

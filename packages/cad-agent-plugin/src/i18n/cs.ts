@@ -39,6 +39,10 @@ export const agentCs = {
   attachImage: 'Přiložit obrázek',
   removeAttachment: 'Odebrat',
   imageAlt: 'Přiložený obrázek',
+  imageOnlyRequest:
+    'Prosím analyzujte přiložený referenční obrázek (nebo obrázky) a pomozte mi jej nakreslit v CADu.',
+  prepareImageFailed:
+    'Přípravu přiloženého obrázku se nepodařilo dokončit. Zkuste menší PNG nebo JPEG.',
   errorTitle: 'Něco se pokazilo',
   dismissError: 'Zavřít',
   send: 'Odeslat',
@@ -48,9 +52,9 @@ export const agentCs = {
   agentModeSimple: 'Jednoduchý',
   agentModeHighInference: 'Vysoká inference',
   agentModeSimpleHint:
-    'Výchozí. Rychlý — bez ověření snímkem obrazovky po nakreslení.',
+    'Výchozí. Rychlý — pouze sebekontrola přes měřicí API; bez snímků a vizuálního ověření.',
   agentModeHighInferenceHint:
-    'Volitelné pro složité úlohy. Ověří výkres snímkem + vizuálním modelem (až 5 kol). Vyžaduje vizuální model.',
+    'Volitelné pro složité úlohy. Povolí snímky a ověří výkres snímkem + vizuálním modelem (až 5 kol). Vyžaduje vizuální model.',
   highInferenceRequiresVision:
     'Režim vysoké inference vyžaduje model s podporou obrazu.',
   verificationTitle: 'Ověření výkresu',

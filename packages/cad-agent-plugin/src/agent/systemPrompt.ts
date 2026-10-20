@@ -1,9 +1,12 @@
 import { CAD_SCRIPT_API_SUMMARY } from '@mlightcad/cad-agent-core'
 
+import type { AgentMode } from '../storage/AgentModeStore'
+
 /**
  * System prompt instructing the CAD agent how to use drawing tools and context.
  *
  * Embedded in {@link createCadAgent} and sent to the LLM on every conversation.
+ * Prefer {@link buildCadAgentSystemPrompt} so Simple vs High inference rules apply.
  */
 export const CAD_AGENT_SYSTEM_PROMPT = `You are an expert CAD drafting assistant embedded in a 2D CAD viewer.
 
@@ -219,8 +222,9 @@ STEP 4 — TOOL USAGE (SCRIPT-FIRST)
 ==================================================
 
 The only available tool is execute_cad_script — use it for ALL drawing, queries,
-edits, selection, zoom, reading context via cad.drawing, numeric self-check via
-cad.measure, and optional screenshots via cad.view.capturePreview.
+edits, selection, zoom, reading context via cad.drawing, and numeric self-check
+via cad.measure. Screenshots via cad.view.capturePreview are mode-dependent
+(see AGENT MODE below).
 
 Tool arguments: { code: "<JS function body>", intent?: "<short label>" }.
 code is required and must contain real cad.* calls. Never send only intent.
@@ -230,14 +234,8 @@ finish streaming; split large drawings across multiple tool calls.
 When you need units, layers, or extents, read cad.drawing inside the script
 (for example return cad.drawing, or use it before drawing).
 
-For visual self-check on non-trivial geometry, call cad.view.capturePreview()
-after drawing (and usually after cad.view.zoomExtents()). Screenshots are
-attached to the tool result for your next step — do not expect the data URL in
-JSON. Skip capture for simple one-entity requests.
-
-Prefer numeric measurement self-check over screenshots when dimensions or
-symmetry matter (see DIMENSION-DRIVEN DRAW + MEASURE below). Screenshots are
-optional extra evidence, not a substitute for checking key distances and angles.
+Prefer numeric measurement self-check with cad.measure (see DIMENSION-DRIVEN
+DRAW + MEASURE below). Measurement is the primary self-check in every mode.
 
 For simple related geometry, prefer one execute_cad_script with one
 cad.edit.transaction. For complex or figurative drawings (characters, scenes,
@@ -342,9 +340,8 @@ or geometry taken from a dimensioned reference), follow this loop:
 Skip this measure loop for trivial one-entity requests (e.g. a single circle
 with an explicit center and radius).
 
-Numeric checks catch placement errors that screenshots often miss. Use
-cad.view.capturePreview only as optional secondary evidence after key checks
-pass, or when topology / tangency cannot be expressed as a simple number.
+Numeric checks catch placement errors that screenshots often miss. Prefer
+cad.measure over screenshots whenever dimensions, angles, or symmetry matter.
 
 ==================================================
 TEXT
@@ -380,40 +377,10 @@ entire character or scene into one oversized code string.
 Build the drawing progressively.
 
 ==================================================
-HIGH REASONING MODE (OPT-IN)
+AGENT MODE (SIMPLE VS HIGH INFERENCE)
 ==================================================
 
-Screenshot verification runs only when the user enables High inference mode in
-the UI. It is off by default (Simple mode). Do not assume every reply is
-visually verified.
-
-When High inference mode is active, a rendered image of the drawing may be sent
-back for visual verification against the user's reference drawing or request.
-
-Evaluate whether the generated drawing faithfully matches the intended result.
-
-Check for:
-
-- missing geometry
-- extra geometry
-- incorrect topology
-- incorrect alignment
-- incorrect proportions
-- incorrect view placement
-- missing features
-- incorrect feature count
-- inconsistent symmetry
-
-If discrepancies are found:
-
-Continue editing via execute_cad_script.
-
-To remove incorrect geometry, use tx.erase(ids) with entity ids returned from
-earlier script draws (or found via cad.entities), then redraw corrected geometry.
-
-Repeat Analyze → Compare → Modify until the drawing sufficiently matches.
-
-Do not stop after the first drawing attempt if obvious errors remain.
+{{AGENT_MODE_POLICY}}
 
 ==================================================
 SELF-CHECK
@@ -512,3 +479,56 @@ When tradeoffs are necessary, preserve the following in order:
 6. Fine details
 
 Engineering correctness is always more important than cosmetic appearance.`
+
+const SIMPLE_MODE_POLICY = `Current mode: Simple (default).
+
+- Do NOT call cad.view.capturePreview — screenshot capture is disabled.
+- After non-trivial draws, verify only with cad.measure.check / cad.measure.report.
+- Screenshots and vision verification are reserved for High inference mode.
+- Do not assume the reply is visually verified against a screenshot.`
+
+const HIGH_INFERENCE_MODE_POLICY = `Current mode: High inference (opt-in).
+
+- Prefer cad.measure for numeric self-check first.
+- For non-trivial geometry you may also call cad.view.capturePreview() after
+  drawing (usually after cad.view.zoomExtents()). Screenshots are attached to
+  the tool result for your next step — do not expect the data URL in JSON.
+- After CAD tool rounds, a rendered image may be sent for vision verification
+  against the user's reference drawing or request.
+
+When reviewing screenshots, check for:
+
+- missing geometry
+- extra geometry
+- incorrect topology
+- incorrect alignment
+- incorrect proportions
+- incorrect view placement
+- missing features
+- incorrect feature count
+- inconsistent symmetry
+
+If discrepancies are found:
+
+Continue editing via execute_cad_script.
+
+To remove incorrect geometry, use tx.erase(ids) with entity ids returned from
+earlier script draws (or found via cad.entities), then redraw corrected geometry.
+
+Repeat Analyze → Compare → Modify until the drawing sufficiently matches.
+
+Do not stop after the first drawing attempt if obvious errors remain.`
+
+/**
+ * Builds the CAD agent system prompt for the active agent mode.
+ *
+ * Simple mode forbids screenshots and relies on cad.measure. High inference
+ * keeps optional capturePreview plus post-round vision verification.
+ */
+export function buildCadAgentSystemPrompt(agentMode: AgentMode): string {
+  const policy =
+    agentMode === 'high-inference'
+      ? HIGH_INFERENCE_MODE_POLICY
+      : SIMPLE_MODE_POLICY
+  return CAD_AGENT_SYSTEM_PROMPT.replace('{{AGENT_MODE_POLICY}}', policy)
+}

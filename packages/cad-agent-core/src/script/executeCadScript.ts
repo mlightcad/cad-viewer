@@ -49,6 +49,11 @@ export interface CadScriptRunOptions {
   limits?: Partial<CadScriptLimits>
   /** Maximum JSON length of the returned `data` field. */
   maxResultChars?: number
+  /**
+   * When `false`, queued `cad.view.capturePreview` requests are not fulfilled
+   * (no PNG capture, no `images` on the result). Default `true`.
+   */
+  fulfillPreviews?: boolean
 }
 
 /**
@@ -98,7 +103,7 @@ export async function executeCadScript(
       value,
       options.maxResultChars ?? MAX_SCRIPT_RESULT_CHARS
     )
-    const images = await fulfillPreviewRequests(effects)
+    const images = await fulfillPreviewRequests(effects, options.fulfillPreviews)
     return {
       success: true,
       message: input.intent
@@ -112,7 +117,7 @@ export async function executeCadScript(
     }
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
-    const images = await fulfillPreviewRequests(effects)
+    const images = await fulfillPreviewRequests(effects, options.fulfillPreviews)
     return {
       success: false,
       message: 'Script failed',
@@ -125,9 +130,17 @@ export async function executeCadScript(
 }
 
 async function fulfillPreviewRequests(
-  effects: CadScriptEffects
+  effects: CadScriptEffects,
+  fulfillPreviews = true
 ): Promise<ToolResultImage[]> {
   if (!effects.previewRequests.length) return []
+
+  if (!fulfillPreviews) {
+    effects.log.push(
+      'capturePreview skipped: screenshots disabled in this session'
+    )
+    return []
+  }
 
   const images: ToolResultImage[] = []
   for (const request of effects.previewRequests) {

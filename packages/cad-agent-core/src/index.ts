@@ -58,7 +58,10 @@ export {
 export { createDocManagerSession } from './session/createDocManagerSession'
 export { requireDocument, requireView } from './session/documentAccess'
 export { CadActionExecutor } from './tools/CadActionExecutor'
-export { createCadToolCatalog } from './tools/createCadToolCatalog'
+export {
+  createCadToolCatalog,
+  type CadToolCatalogOptions
+} from './tools/createCadToolCatalog'
 export {
   type CadToolAccess,
   type CadToolDefinition,

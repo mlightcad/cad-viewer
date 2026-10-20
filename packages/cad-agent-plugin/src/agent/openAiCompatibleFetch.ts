@@ -32,6 +32,16 @@ export function createOpenAiCompatibleFetch(
       return baseFetch(input, init)
     }
 
+    // Vision requests embed multi-MB base64 images. Skip JSON parse/stringify
+    // when there is nothing to rewrite — re-serializing stalls the main thread
+    // and leaves the chat stuck in `submitted` with no tokens.
+    if (
+      !init.body.includes('"role":"developer"') &&
+      !init.body.includes('"role": "developer"')
+    ) {
+      return baseFetch(input, init)
+    }
+
     try {
       const body = JSON.parse(init.body) as {
         messages?: MessageLike[]
