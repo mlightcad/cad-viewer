@@ -33,6 +33,8 @@ export const agentCs = {
   emptyHint:
     'Popište, co se má nakreslit, nebo přiložte referenční obrázek (skica, snímek obrazovky, půdorys).',
   toolPrefix: 'nástroj',
+  copyTool: 'Kopírovat volání nástroje (vstup a výstup)',
+  toolCopied: 'Zkopírováno',
   inputPlaceholder: 'Popište svůj požadavek…',
   attachImage: 'Přiložit obrázek',
   removeAttachment: 'Odebrat',

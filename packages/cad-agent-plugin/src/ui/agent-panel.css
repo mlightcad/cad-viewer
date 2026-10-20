@@ -19,6 +19,9 @@
   display: flex;
   flex-direction: column;
   pointer-events: auto;
+  /* Override `.ml-tool-palette-content { user-select: none }` so chat text can be copied. */
+  -webkit-user-select: text;
+  user-select: text;
   background: #1e1e1e;
   color: #e8e8e8;
   border-left: 1px solid #3a3a3a;
@@ -230,9 +233,17 @@
 }
 
 .cad-agent-tool {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   font-size: 11px;
   color: #9cdcfe;
   margin-top: 4px;
+}
+
+.cad-agent-tool-body {
+  flex: 1;
+  min-width: 0;
 }
 
 .cad-agent-tool-detail {
@@ -241,6 +252,37 @@
   color: #cccccc;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.cad-agent-tool-copy {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #9a9a9a;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cad-agent-tool-copy svg {
+  width: 13px;
+  height: 13px;
+}
+
+.cad-agent-tool-copy:hover {
+  color: #e8e8e8;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #4a4a4a;
+}
+
+.cad-agent-tool-copy.is-copied {
+  color: #89d185;
+  border-color: rgba(137, 209, 133, 0.35);
 }
 
 .cad-agent-panel-empty {
@@ -296,17 +338,20 @@
   font: inherit;
   font-size: 12px;
   cursor: pointer;
+  overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* Prefer full mode labels (e.g. 高推理模式 / High inference); shrink only when tight. */
 .cad-agent-mode-select {
-  flex: 0 1 38%;
-  max-width: 108px;
+  flex: 0 1 11rem;
+  max-width: 16rem;
 }
 
+/* Grow into leftover space so longer model names stay readable. */
 .cad-agent-model-select {
-  flex: 1 1 62%;
-  max-width: 128px;
+  flex: 1 1 12rem;
 }
 
 .cad-agent-mode-select:hover:not(:disabled),

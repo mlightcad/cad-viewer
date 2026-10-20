@@ -88,10 +88,14 @@ export const CAD_EDIT_TX_METHODS = [
  *
  * Adapters must embed this string instead of maintaining a second copy.
  */
-export const CAD_SCRIPT_API_SUMMARY = `execute_cad_script runs a JavaScript function body with one argument, cad.
-This is the only chat tool. Prefer it for ALL drawing, queries, statistics, batch edits,
-selection highlighting, and reading drawing context (cad.drawing). Do not expect draw_*
-or get_drawing_context tools.
+export const CAD_SCRIPT_API_SUMMARY = `execute_cad_script({ code, intent? }) is the only chat tool.
+- code (required): JavaScript function body with one argument, cad. Must be non-empty.
+- intent (optional): short label only. Never call with intent alone — that draws nothing.
+Emit the code field first in the tool arguments JSON (before intent). Keep each script
+modest in size; for complex / figurative drawings, use successive short calls (body parts,
+clothes, hair, details) instead of one huge script.
+Prefer it for ALL drawing, queries, statistics, batch edits, selection highlighting, and
+reading drawing context (cad.drawing). Do not expect draw_* or get_drawing_context tools.
 The body may return JSON. Do not import modules or touch the page.
 
 cad.drawing -> { title, currentLayer, units, layers: [{ name, isOn, isFrozen, isLocked }], extents }

@@ -63,7 +63,7 @@ export interface CadScriptRunOptions {
  * @returns A {@link ToolResult}. Write scripts that time out do not commit.
  */
 export async function executeCadScript(
-  input: { code: string; intent: string },
+  input: { code: string; intent?: string },
   session: CadSession,
   options: CadScriptRunOptions = {}
 ): Promise<ToolResult> {
@@ -107,8 +107,8 @@ export async function executeCadScript(
       data,
       log: effects.log,
       highlightedIds: effects.highlightedIds,
-      entityIds: effects.createdIds.length ? effects.createdIds : undefined,
-      images: images.length ? images : undefined
+      ...(effects.createdIds.length ? { entityIds: effects.createdIds } : {}),
+      ...(images.length ? { images } : {})
     }
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
@@ -119,7 +119,7 @@ export async function executeCadScript(
       error: reason,
       log: effects.log,
       highlightedIds: effects.highlightedIds,
-      images: images.length ? images : undefined
+      ...(images.length ? { images } : {})
     }
   }
 }

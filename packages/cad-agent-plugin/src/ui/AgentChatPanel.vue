@@ -107,6 +107,10 @@ watch(modelSelection, selection => {
   }
 })
 
+/** Recently copied tool row keys for brief “copied” feedback. */
+const copiedToolKeys = ref(new Set<string>())
+const copyFeedbackTimers = new Map<string, ReturnType<typeof setTimeout>>()
+
 watch(
   pendingImages,
   files => {
@@ -118,6 +122,8 @@ watch(
 
 onUnmounted(() => {
   pendingPreviewUrls.value.forEach(url => URL.revokeObjectURL(url))
+  for (const timer of copyFeedbackTimers.values()) clearTimeout(timer)
+  copyFeedbackTimers.clear()
 })
 
 const { chat, resetChat } = useAgentChatRef(() => ({
@@ -131,8 +137,9 @@ onMounted(async () => {
   activeSettings.value = { ...loaded }
   agentMode.value = loadAgentMode()
   modelSelection.value = resolveModelSelection(loaded.provider, loaded.model)
+  // Do not resetChat() here: getConfig() is live, and replacing the Chat while
+  // a first Enter send is in flight orphans that request (no UI response).
   settingsReady.value = true
-  resetChat()
 })
 
 const settingsDirty = computed(
@@ -354,9 +361,11 @@ function toFileList(files: File[]): FileList {
 
 /** Sends the current text and optional images to the CAD agent. */
 async function sendMessage() {
+  // Align with the send button: Enter must not bypass settingsReady / canSend.
+  if (!canSend.value) return
+
   const text = input.value.trim()
   const files = supportsVision.value ? pendingImages.value : []
-  if ((!text && files.length === 0) || isBusy.value) return
 
   input.value = ''
   clearPendingImages()
@@ -412,6 +421,9 @@ function imageParts(message: UIMessage): FilePart[] {
 interface ToolCallSummary {
   name: string
   detail?: string
+  input?: unknown
+  output?: unknown
+  state?: string
 }
 
 /** Returns tool names and, for scripts, a short result preview. */
@@ -422,9 +434,24 @@ function toolParts(message: UIMessage): ToolCallSummary[] {
       return []
     }
     const name = part.type.replace(/^tool-/, '')
-    if (name !== 'execute_cad_script') return [{ name }]
-    const output = (part as { output?: unknown }).output
-    return [{ name, detail: scriptToolDetail(output) }]
+    const toolPart = part as {
+      input?: unknown
+      output?: unknown
+      state?: string
+    }
+    const input = toolPart.input
+    const output = toolPart.output
+    const state = toolPart.state
+    return [
+      {
+        name,
+        input,
+        output,
+        state,
+        detail:
+          name === 'execute_cad_script' ? scriptToolDetail(output) : undefined
+      }
+    ]
   })
 }
 
@@ -448,6 +475,106 @@ function scriptToolDetail(output: unknown): string | undefined {
     }
   }
   return bits.length ? bits.join(' — ') : undefined
+}
+
+/** Stable JSON for clipboard debugging; strips bulky image payloads. */
+function serializeToolValue(value: unknown): string {
+  if (value === undefined) return '(none)'
+  try {
+    return JSON.stringify(sanitizeToolValue(value), null, 2)
+  } catch {
+    return String(value)
+  }
+}
+
+/** Removes data-URL images so copied tool dumps stay readable. */
+function sanitizeToolValue(value: unknown): unknown {
+  if (!value || typeof value !== 'object') return value
+  if (Array.isArray(value)) return value.map(sanitizeToolValue)
+
+  const record = value as Record<string, unknown>
+  const next: Record<string, unknown> = {}
+  for (const [key, entry] of Object.entries(record)) {
+    if (key === 'images' && Array.isArray(entry)) {
+      next.images = entry.map(image => {
+        if (!image || typeof image !== 'object') return image
+        const img = image as Record<string, unknown>
+        if (typeof img.dataUrl === 'string') {
+          return {
+            ...img,
+            dataUrl: `[omitted data URL, length=${img.dataUrl.length}]`
+          }
+        }
+        return image
+      })
+      continue
+    }
+    next[key] = sanitizeToolValue(entry)
+  }
+  return next
+}
+
+/** Builds a debug dump of a tool call for clipboard copy. */
+function formatToolCallCopyText(toolCall: ToolCallSummary): string {
+  const lines = [
+    `${labels.value.toolPrefix}: ${toolCall.name}`,
+    toolCall.state ? `state: ${toolCall.state}` : undefined,
+    '',
+    'input:',
+    serializeToolValue(toolCall.input),
+    '',
+    'output:',
+    serializeToolValue(toolCall.output)
+  ]
+  return lines.filter(line => line !== undefined).join('\n')
+}
+
+/** Copies tool tip / input / output to the clipboard for debugging. */
+async function copyToolCall(
+  messageId: string,
+  toolIndex: number,
+  toolCall: ToolCallSummary
+) {
+  const text = formatToolCallCopyText(toolCall)
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      const textarea = document.createElement('textarea')
+      textarea.value = text
+      textarea.setAttribute('readonly', '')
+      textarea.style.position = 'fixed'
+      textarea.style.left = '-9999px'
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textarea)
+    }
+  } catch {
+    return
+  }
+
+  const key = `${messageId}-${toolIndex}`
+  const next = new Set(copiedToolKeys.value)
+  next.add(key)
+  copiedToolKeys.value = next
+
+  const previous = copyFeedbackTimers.get(key)
+  if (previous) clearTimeout(previous)
+  copyFeedbackTimers.set(
+    key,
+    setTimeout(() => {
+      const cleared = new Set(copiedToolKeys.value)
+      cleared.delete(key)
+      copiedToolKeys.value = cleared
+      copyFeedbackTimers.delete(key)
+    }, 1500)
+  )
+}
+
+/** Whether the copy button for a tool row should show the “copied” state. */
+function isToolCopied(messageId: string, toolIndex: number): boolean {
+  return copiedToolKeys.value.has(`${messageId}-${toolIndex}`)
 }
 
 /** True when the message contains a high-inference verification review block. */
@@ -646,10 +773,51 @@ function isVerificationMessage(message: UIMessage): boolean {
           :key="`${message.id}-tool-${toolIndex}`"
           class="cad-agent-tool"
         >
-          {{ `${labels.toolPrefix}: ${toolCall.name}` }}
-          <span v-if="toolCall.detail" class="cad-agent-tool-detail">
-            {{ toolCall.detail }}
-          </span>
+          <div class="cad-agent-tool-body">
+            {{ `${labels.toolPrefix}: ${toolCall.name}` }}
+            <span
+              v-if="toolCall.state && toolCall.state !== 'output-available'"
+              class="cad-agent-tool-detail"
+            >
+              {{ toolCall.state }}
+            </span>
+            <span v-if="toolCall.detail" class="cad-agent-tool-detail">
+              {{ toolCall.detail }}
+            </span>
+          </div>
+          <button
+            type="button"
+            class="cad-agent-tool-copy"
+            :class="{ 'is-copied': isToolCopied(message.id, toolIndex) }"
+            :title="
+              isToolCopied(message.id, toolIndex)
+                ? labels.toolCopied
+                : labels.copyTool
+            "
+            :aria-label="
+              isToolCopied(message.id, toolIndex)
+                ? labels.toolCopied
+                : labels.copyTool
+            "
+            @click="copyToolCall(message.id, toolIndex, toolCall)"
+          >
+            <svg
+              v-if="isToolCopied(message.id, toolIndex)"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                fill="currentColor"
+                d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+              />
+            </svg>
+            <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+              />
+            </svg>
+          </button>
         </div>
       </div>
       <div v-if="error" class="cad-agent-msg error">
@@ -713,6 +881,7 @@ function isVerificationMessage(message: UIMessage): boolean {
       <textarea
         v-model="input"
         :placeholder="labels.inputPlaceholder"
+        :disabled="!settingsReady"
         @keydown.enter.exact.prevent="sendMessage"
         @paste="onPaste"
       />

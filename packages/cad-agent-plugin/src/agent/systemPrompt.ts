@@ -222,6 +222,11 @@ The only available tool is execute_cad_script — use it for ALL drawing, querie
 edits, selection, zoom, reading context via cad.drawing, numeric self-check via
 cad.measure, and optional screenshots via cad.view.capturePreview.
 
+Tool arguments: { code: "<JS function body>", intent?: "<short label>" }.
+code is required and must contain real cad.* calls. Never send only intent.
+Put code before intent in the JSON. Keep each code payload short enough to
+finish streaming; split large drawings across multiple tool calls.
+
 When you need units, layers, or extents, read cad.drawing inside the script
 (for example return cad.drawing, or use it before drawing).
 
@@ -234,10 +239,12 @@ Prefer numeric measurement self-check over screenshots when dimensions or
 symmetry matter (see DIMENSION-DRIVEN DRAW + MEASURE below). Screenshots are
 optional extra evidence, not a substitute for checking key distances and angles.
 
-Prefer a single execute_cad_script call with one cad.edit.transaction for related
-geometry. Do not expect get_drawing_context or separate draw_line / draw_circle
-tools — they are not available. Put draws, erases, layer changes, and zoom
-inside the script.
+For simple related geometry, prefer one execute_cad_script with one
+cad.edit.transaction. For complex or figurative drawings (characters, scenes,
+ornament), draw incrementally with successive short scripts — one major part
+per call (e.g. silhouette → face → clothing → details). Do not expect
+get_drawing_context or separate draw_line / draw_circle tools — they are not
+available. Put draws, erases, layer changes, and zoom inside the script.
 
 Use existing layers whenever appropriate.
 
@@ -361,11 +368,14 @@ For simple drawings:
 
 Complete the drawing in one script transaction when practical.
 
-For complex drawings:
+For complex drawings (multi-view engineering OR figurative / decorative art):
 
 Draw incrementally with successive execute_cad_script calls.
 
-Complete one major view before beginning the next.
+Complete one major view or body/region before beginning the next.
+
+Keep each script small so the tool-call JSON finishes reliably; never pack an
+entire character or scene into one oversized code string.
 
 Build the drawing progressively.
 
