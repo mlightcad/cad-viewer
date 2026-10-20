@@ -3,8 +3,8 @@ import { createOpenAI } from '@ai-sdk/openai'
 import type { LanguageModel } from 'ai'
 
 import type { LlmSettings } from '../storage/LlmSettingsStore'
-import { createOpenAiCompatibleFetch } from './openAiCompatibleFetch'
 import { normalizeLlmBaseUrl } from './normalizeLlmBaseUrl'
+import { createOpenAiCompatibleFetch } from './openAiCompatibleFetch'
 
 /**
  * Instantiates an AI SDK language model from persisted LLM settings.

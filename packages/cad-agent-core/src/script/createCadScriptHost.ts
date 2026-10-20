@@ -10,13 +10,13 @@ import { requireDocument } from '../session/documentAccess'
 import { runInsideScriptEdit } from '../session/editDepth'
 import { CadActionExecutor } from '../tools/CadActionExecutor'
 import type { Point2dInput, ToolResult } from '../tools/types'
+import { createCadMeasure } from './createCadMeasure'
 import {
   type EntitySnapshot,
   iterateDatabaseEntities,
   openEntityFilterView,
   toEntitySnapshot
 } from './entitySnapshot'
-import { createCadMeasure } from './createCadMeasure'
 import { CAD_EDIT_TX_METHODS, CAD_SCRIPT_API_TREE } from './scriptApi'
 import { toBlockSnapshots, toDatabaseTables } from './tableSnapshot'
 

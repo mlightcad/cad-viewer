@@ -1194,7 +1194,7 @@ const MEASURE_MEMBERS: MemberSpec[] = [
     '(name, expected, actual, tolerance?) => { name, expected, actual, pass }',
     'One numeric check. Default tolerance 1e-3.',
     'unknown',
-    "check('${name}', ${expected}, ${actual})"
+    'check(\'${name}\', ${expected}, ${actual})'
   ),
   method(
     'report',
