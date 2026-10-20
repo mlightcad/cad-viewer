@@ -39,6 +39,10 @@ export const agentTr = {
   attachImage: 'Görsel ekle',
   removeAttachment: 'Kaldır',
   imageAlt: 'Eklenen görsel',
+  imageOnlyRequest:
+    'Lütfen eklenen referans görseli/görselleri analiz edin ve bunu CAD olarak çizmeye yardımcı olun.',
+  prepareImageFailed:
+    'Eklenen görsel hazırlanamadı. Daha küçük bir PNG veya JPEG deneyin.',
   errorTitle: 'Bir şeyler ters gitti',
   dismissError: 'Kapat',
   send: 'Gönder',
@@ -48,9 +52,9 @@ export const agentTr = {
   agentModeSimple: 'Basit',
   agentModeHighInference: 'Yüksek akıl yürütme',
   agentModeSimpleHint:
-    'Varsayılan. Hızlı — çizimden sonra ekran görüntüsü doğrulaması yapılmaz.',
+    'Varsayılan. Hızlı — yalnızca ölçüm API’si ile öz kontrol; ekran görüntüsü veya görsel doğrulama yok.',
   agentModeHighInferenceHint:
-    'Karmaşık görevler için isteğe bağlı. Ekran görüntüsü + görsel model ile doğrular (en fazla 5 tur). Görsel destekli model gerekir.',
+    'Karmaşık görevler için isteğe bağlı. Ekran görüntüsüne izin verir; ekran görüntüsü + görsel model ile doğrular (en fazla 5 tur). Görsel destekli model gerekir.',
   highInferenceRequiresVision:
     'Yüksek akıl yürütme modu görsel destekli bir model gerektirir.',
   verificationTitle: 'Çizim doğrulaması',

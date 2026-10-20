@@ -310,6 +310,30 @@ describe('executeCadScript', () => {
     ])
   })
 
+  test('skips capturePreview when fulfillPreviews is false', async () => {
+    const { session } = createFixture()
+    ;(captureDrawingPreview as jest.Mock).mockClear()
+
+    const result = await executeCadScript(
+      {
+        code: `
+          cad.view.capturePreview({ longSide: 512 })
+          return { ok: true }
+        `,
+        intent: 'no screenshot'
+      },
+      session,
+      { fulfillPreviews: false }
+    )
+
+    expect(result.success).toBe(true)
+    expect(captureDrawingPreview).not.toHaveBeenCalled()
+    expect(result.images).toBeUndefined()
+    expect(result.log).toContain(
+      'capturePreview skipped: screenshots disabled in this session'
+    )
+  })
+
   test('draws extended entity types in one transaction', async () => {
     const { session, db } = createFixture()
     const before = countEntities(db)

@@ -28,6 +28,7 @@ import {
 } from '../storage/modelCatalog'
 import { areLlmSettingsEqual } from '../storage/settingsEquality'
 import { formatChatError } from './formatChatError'
+import { prepareImageAttachments } from './prepareImageAttachments'
 import { createAgentChatOptions, useAgentChatRef } from './useAgentChat'
 
 /** Image file part on a {@link UIMessage} from the AI SDK. */
@@ -153,6 +154,22 @@ const errorMessage = computed(() =>
   error.value ? formatChatError(error.value) : ''
 )
 
+/** Local send-prep error when chat.error is not set yet (e.g. image resize). */
+const sendPrepError = ref('')
+
+watch(error, value => {
+  if (value) sendPrepError.value = ''
+})
+
+const displayErrorMessage = computed(() => {
+  if (errorMessage.value) return errorMessage.value
+  return sendPrepError.value
+})
+
+const hasDisplayError = computed(
+  () => !!error.value || sendPrepError.value.length > 0
+)
+
 const visionModelOptions = computed(() =>
   modelOptionsForProvider(settings.value.provider, true)
 )
@@ -240,6 +257,7 @@ function modelLabel(option: LlmModelOption): string {
 
 /** Clears the current chat error state without removing messages. */
 function dismissError() {
+  sendPrepError.value = ''
   chat.value.clearError()
 }
 
@@ -350,33 +368,51 @@ function clearPendingImages() {
   pendingImages.value = []
 }
 
-/** Builds a {@link FileList} so the AI SDK can convert attachments to file UI parts. */
-function toFileList(files: File[]): FileList {
-  const dataTransfer = new DataTransfer()
-  for (const file of files) {
-    dataTransfer.items.add(file)
-  }
-  return dataTransfer.files
-}
-
 /** Sends the current text and optional images to the CAD agent. */
 async function sendMessage() {
   // Align with the send button: Enter must not bypass settingsReady / canSend.
   if (!canSend.value) return
 
   const text = input.value.trim()
-  const files = supportsVision.value ? pendingImages.value : []
+  const files = supportsVision.value ? [...pendingImages.value] : []
+  sendPrepError.value = ''
 
+  let fileParts: Awaited<ReturnType<typeof prepareImageAttachments>> = []
+  if (files.length > 0) {
+    try {
+      fileParts = await prepareImageAttachments(files)
+    } catch (prepError) {
+      sendPrepError.value =
+        prepError instanceof Error && prepError.message.trim()
+          ? prepError.message
+          : labels.value.prepareImageFailed
+      return
+    }
+  }
+
+  const requestText =
+    text || (fileParts.length > 0 ? labels.value.imageOnlyRequest : '')
+  if (!requestText && fileParts.length === 0) return
+
+  // Clear only after attachments are ready so a prep failure keeps the draft.
   input.value = ''
   clearPendingImages()
 
   try {
     await chat.value.sendMessage({
-      ...(text ? { text } : {}),
-      ...(files.length > 0 ? { files: toFileList(files) } : {})
+      text: requestText,
+      ...(fileParts.length > 0 ? { files: fileParts } : {})
     })
-  } catch {
-    // error surfaced via chat.error
+  } catch (sendError) {
+    // makeRequest errors land on chat.error; restore the draft for the rest.
+    if (!chat.value.error) {
+      sendPrepError.value =
+        sendError instanceof Error
+          ? formatChatError(sendError)
+          : labels.value.prepareImageFailed
+    }
+    input.value = text
+    if (files.length) pendingImages.value = files
   }
 }
 
@@ -736,7 +772,10 @@ function isVerificationMessage(message: UIMessage): boolean {
     </div>
 
     <div class="cad-agent-panel-messages">
-      <div v-if="messages.length === 0 && !error" class="cad-agent-panel-empty">
+      <div
+        v-if="messages.length === 0 && !hasDisplayError"
+        class="cad-agent-panel-empty"
+      >
         {{ labels.emptyHint }}
       </div>
       <div
@@ -820,7 +859,7 @@ function isVerificationMessage(message: UIMessage): boolean {
           </button>
         </div>
       </div>
-      <div v-if="error" class="cad-agent-msg error">
+      <div v-if="hasDisplayError" class="cad-agent-msg error">
         <div class="cad-agent-error-card">
           <svg
             class="cad-agent-error-icon"
@@ -834,7 +873,7 @@ function isVerificationMessage(message: UIMessage): boolean {
           </svg>
           <div class="cad-agent-error-body">
             <div class="cad-agent-error-title">{{ labels.errorTitle }}</div>
-            <div class="cad-agent-error-message">{{ errorMessage }}</div>
+            <div class="cad-agent-error-message">{{ displayErrorMessage }}</div>
           </div>
           <button
             type="button"

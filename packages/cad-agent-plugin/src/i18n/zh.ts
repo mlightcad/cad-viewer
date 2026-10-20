@@ -38,6 +38,8 @@ export const agentZh = {
   attachImage: '添加图片',
   removeAttachment: '移除',
   imageAlt: '附加图片',
+  imageOnlyRequest: '请分析附图，并根据图片帮我绘制 CAD 图纸。',
+  prepareImageFailed: '图片处理失败，请尝试更小的 PNG 或 JPEG。',
   errorTitle: '请求出错',
   dismissError: '关闭',
   send: '发送',
@@ -46,9 +48,10 @@ export const agentZh = {
   agentMode: 'Agent 模式',
   agentModeSimple: '简单模式',
   agentModeHighInference: '高推理模式',
-  agentModeSimpleHint: '默认。速度快 — 生成后不做截图验证。',
+  agentModeSimpleHint:
+    '默认。速度快 — 仅用测量 API 自检，不截图、不做视觉验证。',
   agentModeHighInferenceHint:
-    '复杂任务可选。生成后用截图 + 视觉模型验证（最多 5 轮）。需使用支持视觉的模型。',
+    '复杂任务可选。可用截图自检，生成后用截图 + 视觉模型验证（最多 5 轮）。需使用支持视觉的模型。',
   highInferenceRequiresVision: '高推理模式需要使用支持视觉的模型。',
   verificationTitle: '图纸验证',
   verifying: '正在将图纸截图与您的需求和参考图进行比对…',

@@ -24,7 +24,10 @@ export interface AgentChatSessionConfig {
 export function createAgentChat(getConfig: () => AgentChatSessionConfig) {
   return new Chat({
     transport: createAgentChatTransport(
-      () => createCadAgent({ ...getConfig().settings }),
+      () => {
+        const { settings, options } = getConfig()
+        return createCadAgent({ ...settings }, { ...options })
+      },
       () => ({ ...getConfig().settings }),
       () => ({ ...getConfig().options })
     )

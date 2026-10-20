@@ -22,7 +22,9 @@ import {
   MAX_VERIFICATION_ATTEMPTS,
   verifyDrawing
 } from './drawingVerifier'
-import { CAD_AGENT_SYSTEM_PROMPT } from './systemPrompt'
+import { normalizeInlineFileData } from './normalizeInlineFileData'
+import { skipDataUrlDownload } from './skipDataUrlDownload'
+import { buildCadAgentSystemPrompt } from './systemPrompt'
 import {
   appendAssistantText,
   appendVerificationReview,
@@ -50,13 +52,17 @@ export interface AgentChatOptions {
  * Builds an AI SDK agent configured for CAD drawing with tool calling.
  *
  * @param settings - LLM provider credentials and model selection.
+ * @param options - Runtime options (agent mode controls screenshots / verification).
  * @returns An agent that streams responses and can invoke {@link createCadTools}.
  */
-export function createCadAgent(settings: LlmSettings) {
+export function createCadAgent(
+  settings: LlmSettings,
+  options: AgentChatOptions = { agentMode: 'simple' }
+) {
   return new Agent({
     model: createModelFromSettings(settings),
-    system: CAD_AGENT_SYSTEM_PROMPT,
-    tools: createCadTools(),
+    system: buildCadAgentSystemPrompt(options.agentMode),
+    tools: createCadTools({ agentMode: options.agentMode }),
     stopWhen: stepCountIs(10)
   })
 }
@@ -71,16 +77,21 @@ async function streamAgentRound(options: {
   write: UIMessageChunkWriter
 }): Promise<UIMessage[]> {
   const { agent, workingMessages, abortSignal, write } = options
-  const modelMessages = await convertToModelMessages(workingMessages, {
-    tools: agent.tools,
-    // Incomplete tool calls (e.g. input-streaming cut off) must not poison the
-    // next round's prompt — especially after a huge script arg failed mid-stream.
-    ignoreIncompleteToolCalls: true
-  })
+  const modelMessages = normalizeInlineFileData(
+    await convertToModelMessages(workingMessages, {
+      tools: agent.tools,
+      // Incomplete tool calls (e.g. input-streaming cut off) must not poison the
+      // next round's prompt — especially after a huge script arg failed mid-stream.
+      ignoreIncompleteToolCalls: true
+    })
+  )
+  // Agent.stream typings omit streamText extras; both options are forwarded at runtime.
   const result = agent.stream({
     prompt: modelMessages,
-    abortSignal
-  })
+    abortSignal,
+    // Skip redundant fetch of inline image data URLs (can stall large attachments).
+    experimental_download: skipDataUrlDownload
+  } as Parameters<Agent['stream']>[0])
 
   let finishedMessages = workingMessages
   const uiStream = result.toUIMessageStream({
