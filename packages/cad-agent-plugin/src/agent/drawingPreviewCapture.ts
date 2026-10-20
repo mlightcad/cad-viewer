@@ -1,55 +1,13 @@
-import {
-  AcApDocManager,
-  AcApEntityPreviewConvertor,
-  AcTrView2d
-} from '@mlightcad/cad-simple-viewer'
-import {
-  accmYieldForPaint,
-  type AcDbObjectId
-} from '@mlightcad/data-model'
-
-/** Default preview long side in pixels for drawing verification. */
-export const VERIFICATION_PREVIEW_LONG_SIDE_PX = 1024
-
-const SCENE_READY_TIMEOUT_MS = 15000
-
-/** Collects all entity object ids in model space. */
-export function getModelSpaceEntityIds(): AcDbObjectId[] {
-  const modelSpace =
-    AcApDocManager.instance.curDocument.database.tables.blockTable.modelSpace
-  return [...modelSpace.newIterator()].map(entity => entity.objectId)
-}
-
 /**
- * Waits until the view finishes async entity batch conversion so preview
- * bounds exist in the renderer scene.
- */
-export async function waitForDrawingSceneReady(
-  timeoutMs = SCENE_READY_TIMEOUT_MS
-): Promise<boolean> {
-  const view = AcApDocManager.instance.curView
-  if (!(view instanceof AcTrView2d)) {
-    return false
-  }
-
-  const idle = await view.waitUntilIdle(timeoutMs)
-  await accmYieldForPaint()
-  return idle
-}
-
-/**
- * Captures a PNG preview of the current model-space drawing for LLM verification.
+ * Re-exports drawing preview capture from `@mlightcad/cad-agent-core`.
  *
- * @param longSide - Maximum output width or height in pixels.
+ * Kept as a thin shim so existing plugin imports keep working.
  */
-export async function captureDrawingPreview(
-  longSide = VERIFICATION_PREVIEW_LONG_SIDE_PX
-) {
-  const sceneReady = await waitForDrawingSceneReady()
-  if (!sceneReady) {
-    return { ok: false as const, reason: 'scene-not-ready' as const }
-  }
-
-  const entityIds = getModelSpaceEntityIds()
-  return new AcApEntityPreviewConvertor().capture(entityIds, longSide)
-}
+export {
+  captureDrawingPreview,
+  DRAWING_PREVIEW_LONG_SIDE_PX,
+  VERIFICATION_PREVIEW_LONG_SIDE_PX,
+  waitForDrawingSceneReady,
+  type CaptureDrawingPreviewFailure,
+  type CaptureDrawingPreviewResult
+} from '@mlightcad/cad-agent-core'

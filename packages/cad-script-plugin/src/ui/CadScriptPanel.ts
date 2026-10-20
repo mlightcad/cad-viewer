@@ -241,7 +241,7 @@ export class CadScriptPanel {
       setTimeout(resolve, 0)
     })
     try {
-      this.result = executeCadScript(
+      this.result = await executeCadScript(
         { code: this.editor.value, intent: '' },
         this.session
       )

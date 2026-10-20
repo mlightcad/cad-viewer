@@ -251,6 +251,50 @@ cad.selection.clear()
 cad.view.zoomExtents()
 ```
 
+### `cad.view.capturePreview({ longSide? })`
+
+排队截取图纸范围的 PNG 截图。截图在脚本主体执行结束后异步完成。返回 `{ queued: true, index }`。在 Agent 对话中，图片会作为工具结果附件交给模型（不会以 JSON data URL 返回）。
+
+```javascript
+cad.view.zoomExtents()
+cad.view.capturePreview()
+// 可选：cad.view.capturePreview({ longSide: 512 })
+```
+
+## cad.measure
+
+绘图后用于数值自检的辅助 API。优先使用这些方法，而不是手写 `Math.hypot` / `atan2`。点均为 WCS 下的 `{ x, y }`。
+
+| 方法 | 返回值 |
+|------|--------|
+| `cad.measure.distance(a, b)` | 两点距离 |
+| `cad.measure.angleDeg(a, b)` | a→b 相对 +X 的方位角，度，范围 (-180, 180] |
+| `cad.measure.angleDeg(a, b, c)` | 以 b 为顶点的内角 (a–b–c)，度，范围 [0, 180] |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)` | 两方位角的最小绝对差，范围 [0, 180] |
+| `cad.measure.center(id)` | 圆/弧/椭圆圆心，或点/文字位置；否则 `undefined` |
+| `cad.measure.radius(id)` | 圆/弧半径或椭圆长半轴；否则 `undefined` |
+| `cad.measure.length(id)` | 直线长度或多段线/样条路径长；否则 `undefined` |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }`（默认容差 `1e-3`） |
+| `cad.measure.report(checks)` | `{ ok, checks }` — 全部通过时 `ok` 为 true |
+
+非平凡绘制后推荐的返回格式：
+
+```javascript
+const origin = { x: 0, y: 0 }
+let circleId = ''
+cad.edit.transaction('draw', tx => {
+  circleId = tx.drawCircle({ center: { x: 30, y: 40 }, radius: 10 })
+})
+const center = cad.measure.center(circleId)
+return {
+  ...cad.measure.report([
+    cad.measure.check('r', 10, cad.measure.radius(circleId)),
+    cad.measure.check('pcd', 50, cad.measure.distance(origin, center), 0.01)
+  ]),
+  entityIds: [circleId]
+}
+```
+
 ## cad.edit.transaction
 
 执行编辑操作，所有修改会作为一个撤销组。图纸必须处于可编辑状态（非只读模式）。
@@ -273,6 +317,12 @@ cad.edit.transaction('批量修改', tx => {
 | `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })` | `center: {x,y}` | 新实体 ID |
 | `tx.drawRectangle({ corner1, corner2, layer? })` | `corner1/corner2: {x,y}` | 新实体 ID |
 | `tx.drawPolyline({ points, closed?, layer? })` | `points: Array<{x,y}>` | 新实体 ID |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}` | 新实体 ID |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })` | `boundary: Array<{x,y}>`（至少 3 点） | 新实体 ID |
+| `tx.drawPoint({ position, layer? })` | `position: {x,y}` | 新实体 ID |
+| `tx.drawRay({ start, through, layer? })` | `start/through: {x,y}` | 新实体 ID |
+| `tx.drawXline({ start, through, layer? })` | `start/through: {x,y}` | 新实体 ID |
+| `tx.drawSpline({ points, closed?, layer? })` | `points: Array<{x,y}>` | 新实体 ID |
 | `tx.drawText({ position, text, height?, layer? })` | `position: {x,y}` | 新实体 ID |
 
 ### 编辑方法

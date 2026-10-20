@@ -89,6 +89,16 @@ Control the selection set:
 
 ### cad.view
 - cad.view.zoomExtents() -> Zoom to model space extents
+- cad.view.capturePreview({ longSide? }) -> Queue a PNG screenshot after the script finishes; returns { queued: true, index }. Prefer for visual self-check; skip for simple edits
+
+### cad.measure
+- cad.measure.distance(a, b) -> Distance between {x,y} points
+- cad.measure.angleDeg(a, b) -> Bearing a→b deg (-180,180]; angleDeg(a,b,c) -> interior angle at b
+- cad.measure.deltaAngleDeg(fromDeg, toDeg) -> Smallest |Δ| in [0,180]
+- cad.measure.center(id) / radius(id) / length(id) -> From entity geometry, or undefined
+- cad.measure.check(name, expected, actual, tolerance=1e-3) -> { name, expected, actual, pass }
+- cad.measure.report(checks) -> { ok, checks }
+After non-trivial draws prefer: return { ...cad.measure.report([...]), entityIds }
 
 ### cad.edit.transaction(label, tx => { ... })
 Execute edit operations within a transaction; all modifications are grouped as a single undo unit. label is the operation description.
@@ -99,6 +109,12 @@ Methods available within a transaction:
 - tx.drawArc({ center: {x,y}, radius, startAngleDeg, endAngleDeg, layer? }) -> Returns the new entity ID
 - tx.drawRectangle({ corner1: {x,y}, corner2: {x,y}, layer? }) -> Returns the new entity ID
 - tx.drawPolyline({ points: [{x,y}...], closed?, layer? }) -> Returns the new entity ID
+- tx.drawEllipse({ center: {x,y}, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? }) -> Returns the new entity ID
+- tx.drawHatch({ boundary: [{x,y}...], patternName?, patternScale?, patternAngleDeg?, layer? }) -> Returns the new entity ID
+- tx.drawPoint({ position: {x,y}, layer? }) -> Returns the new entity ID
+- tx.drawRay({ start: {x,y}, through: {x,y}, layer? }) -> Returns the new entity ID
+- tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> Returns the new entity ID
+- tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> Returns the new entity ID
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> Returns the new entity ID
 - tx.erase(ids) -> Returns the number of entities erased
 - tx.setLayer(ids, layer)

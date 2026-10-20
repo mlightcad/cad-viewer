@@ -2,6 +2,8 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
   AcEdOpenMode: { Read: 0, Review: 4, Write: 8 },
   AcApDocManager: {},
   resolveDrawingExtents: () => undefined,
+  AcApRasterImageConvertor: class {},
+  AcTrView2d: class {},
   acapRunDatabaseEdit: (
     db: { runDatabaseEdit: (label: string, fn: () => void) => void },
     label: string,
@@ -9,6 +11,16 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
   ) => {
     db.runDatabaseEdit(label, fn)
   }
+}))
+
+jest.mock('../src/preview/captureDrawingPreview', () => ({
+  DRAWING_PREVIEW_LONG_SIDE_PX: 1024,
+  VERIFICATION_PREVIEW_LONG_SIDE_PX: 1024,
+  captureDrawingPreview: jest.fn(async () => ({
+    ok: true,
+    dataUrl: 'data:image/png;base64,aaa'
+  })),
+  waitForDrawingSceneReady: jest.fn(async () => true)
 }))
 
 import {
@@ -21,6 +33,7 @@ import {
 } from '@mlightcad/data-model'
 
 import { AcEdOpenMode } from '../../cad-simple-viewer/src/editor/view/AcEdOpenMode'
+import { captureDrawingPreview } from '../src/preview/captureDrawingPreview'
 import { executeCadScript } from '../src/script/executeCadScript'
 import type { CadSession, CadSessionView } from '../src/session/CadSession'
 
@@ -40,9 +53,9 @@ return { counts, highlightLayer: top, count: max }
 `
 
 describe('executeCadScript', () => {
-  test('stops an infinite loop', () => {
+  test('stops an infinite loop', async () => {
     const { session } = createFixture()
-    const result = executeCadScript(
+    const result = await executeCadScript(
       { code: 'while (true) {}', intent: 'loop' },
       session,
       { limits: { maxTicks: 30, maxMilliseconds: 2_000 } }
@@ -51,14 +64,14 @@ describe('executeCadScript', () => {
     expect(result.error).toBe('script_timeout')
   })
 
-  test('counts circles by layer and highlights the busiest layer', () => {
+  test('counts circles by layer and highlights the busiest layer', async () => {
     const { session, db, selection } = createFixture()
     const walls = [...db.tables.blockTable.modelSpace.newIterator()]
       .filter(entity => entity.type === 'Circle' && entity.layer === 'Walls')
       .map(entity => entity.objectId)
       .sort()
 
-    const result = executeCadScript(
+    const result = await executeCadScript(
       { code: COUNT_SCRIPT, intent: 'count circles' },
       session
     )
@@ -73,7 +86,7 @@ describe('executeCadScript', () => {
     expect([...(result.highlightedIds ?? [])].sort()).toEqual(walls)
   })
 
-  test('copies snapshots only for entities the predicate accepts', () => {
+  test('copies snapshots only for entities the predicate accepts', async () => {
     const { session, db } = createFixture()
     const line = [...db.tables.blockTable.modelSpace.newIterator()].find(
       entity => entity.type === 'Line'
@@ -81,7 +94,7 @@ describe('executeCadScript', () => {
     if (!line) throw new Error('fixture line missing')
     const extents = jest.spyOn(line, 'geometricExtents', 'get')
 
-    const result = executeCadScript(
+    const result = await executeCadScript(
       {
         code: `
           return cad.entities.where(e => e.type === 'Circle' && e.geometry.radius > 1)
@@ -97,9 +110,9 @@ describe('executeCadScript', () => {
     expect(extents).not.toHaveBeenCalled()
   })
 
-  test('serializes the host without failing on toJSON', () => {
+  test('serializes the host without failing on toJSON', async () => {
     const { session } = createFixture()
-    const result = executeCadScript(
+    const result = await executeCadScript(
       { code: 'return cad', intent: 'inspect host' },
       session
     )
@@ -118,9 +131,9 @@ describe('executeCadScript', () => {
     expect(result.data).not.toHaveProperty('__tick')
   })
 
-  test('returns selection methods instead of an empty object', () => {
+  test('returns selection methods instead of an empty object', async () => {
     const { session } = createFixture()
-    const result = executeCadScript(
+    const result = await executeCadScript(
       { code: 'return cad.selection', intent: 'inspect selection' },
       session
     )
@@ -136,13 +149,13 @@ describe('executeCadScript', () => {
     })
   })
 
-  test('resolves selection ids without scanning model space', () => {
+  test('resolves selection ids without scanning model space', async () => {
     const { session, db, selection } = createFixture()
     const id = [...db.tables.blockTable.modelSpace.newIterator()][0].objectId
     selection.add(id)
     const iterator = jest.spyOn(db.tables.blockTable.modelSpace, 'newIterator')
 
-    const result = executeCadScript(
+    const result = await executeCadScript(
       {
         code: `
           return {
@@ -163,12 +176,12 @@ describe('executeCadScript', () => {
     expect(iterator).not.toHaveBeenCalled()
   })
 
-  test('rejects a write script on a read-only drawing', () => {
+  test('rejects a write script on a read-only drawing', async () => {
     const { session, db } = createFixture(AcEdOpenMode.Read)
     const spy = jest.spyOn(db, 'runDatabaseEdit')
     const before = countEntities(db)
 
-    const result = executeCadScript(
+    const result = await executeCadScript(
       {
         code: `
           cad.edit.transaction('add', tx => {
@@ -186,12 +199,12 @@ describe('executeCadScript', () => {
     expect(countEntities(db)).toBe(before)
   })
 
-  test('groups script draws into one undo mark', () => {
+  test('groups script draws into one undo mark', async () => {
     const { session, db } = createFixture()
     const before = countEntities(db)
     const spy = jest.spyOn(db, 'runDatabaseEdit')
 
-    const result = executeCadScript(
+    const result = await executeCadScript(
       {
         code: `
           cad.edit.transaction('batch', tx => {
@@ -212,7 +225,147 @@ describe('executeCadScript', () => {
     expect(countEntities(db)).toBe(before)
   })
 
-  test('reads every block, symbol table, and entity owner', () => {
+  test('measures drawn geometry and returns a check report', async () => {
+    const { session } = createFixture()
+
+    const result = await executeCadScript(
+      {
+        code: `
+          let circleId = ''
+          let lineId = ''
+          cad.edit.transaction('measure draw', tx => {
+            circleId = tx.drawCircle({ center: { x: 30, y: 40 }, radius: 10 })
+            lineId = tx.drawLine({
+              start: { x: 0, y: 0 },
+              end: { x: 3, y: 4 }
+            })
+          })
+          const origin = { x: 0, y: 0 }
+          const center = cad.measure.center(circleId)
+          const bearing = cad.measure.angleDeg(origin, center)
+          return {
+            ...cad.measure.report([
+              cad.measure.check('r', 10, cad.measure.radius(circleId)),
+              cad.measure.check('pcd', 50, cad.measure.distance(origin, center)),
+              cad.measure.check('len', 5, cad.measure.length(lineId)),
+              cad.measure.check(
+                'angle',
+                53.130102,
+                bearing,
+                0.01
+              ),
+              cad.measure.check(
+                'delta',
+                90,
+                cad.measure.deltaAngleDeg(0, 90)
+              )
+            ]),
+            entityIds: [circleId, lineId]
+          }
+        `,
+        intent: 'measure'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({
+      ok: true,
+      checks: [
+        { name: 'r', expected: 10, actual: 10, pass: true },
+        { name: 'pcd', expected: 50, actual: 50, pass: true },
+        { name: 'len', expected: 5, actual: 5, pass: true },
+        {
+          name: 'angle',
+          expected: 53.130102,
+          actual: expect.closeTo(53.130102, 5),
+          pass: true
+        },
+        { name: 'delta', expected: 90, actual: 90, pass: true }
+      ],
+      entityIds: expect.any(Array)
+    })
+  })
+
+  test('queues capturePreview and attaches images after the script', async () => {
+    const { session } = createFixture()
+    ;(captureDrawingPreview as jest.Mock).mockClear()
+
+    const result = await executeCadScript(
+      {
+        code: `
+          const shot = cad.view.capturePreview({ longSide: 512 })
+          return shot
+        `,
+        intent: 'screenshot'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({ queued: true, index: 0 })
+    expect(captureDrawingPreview).toHaveBeenCalledWith(512)
+    expect(result.images).toEqual([
+      { mediaType: 'image/png', dataUrl: 'data:image/png;base64,aaa' }
+    ])
+  })
+
+  test('draws extended entity types in one transaction', async () => {
+    const { session, db } = createFixture()
+    const before = countEntities(db)
+
+    const result = await executeCadScript(
+      {
+        code: `
+          const ids = []
+          cad.edit.transaction('extended draws', tx => {
+            ids.push(tx.drawEllipse({
+              center: { x: 0, y: 0 },
+              majorRadius: 10,
+              minorRadius: 5
+            }))
+            ids.push(tx.drawHatch({
+              boundary: [
+                { x: 0, y: 0 },
+                { x: 4, y: 0 },
+                { x: 4, y: 3 }
+              ],
+              patternName: 'SOLID'
+            }))
+            ids.push(tx.drawPoint({ position: { x: 1, y: 2 } }))
+            ids.push(tx.drawRay({
+              start: { x: 0, y: 0 },
+              through: { x: 1, y: 0 }
+            }))
+            ids.push(tx.drawXline({
+              start: { x: 0, y: 0 },
+              through: { x: 0, y: 1 }
+            }))
+            ids.push(tx.drawSpline({
+              points: [
+                { x: 0, y: 0 },
+                { x: 2, y: 1 },
+                { x: 4, y: 0 }
+              ]
+            }))
+          })
+          return { ids, types: ids.map(id => cad.entities.byId(id).type) }
+        `,
+        intent: 'extended draws'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.entityIds).toHaveLength(6)
+    expect(countEntities(db)).toBe(before + 6)
+    expect(result.data).toEqual({
+      ids: expect.any(Array),
+      types: ['Ellipse', 'Hatch', 'Point', 'Ray', 'Xline', 'Spline']
+    })
+  })
+
+  test('reads every block, symbol table, and entity owner', async () => {
     const { session, db } = createFixture()
     const block = new AcDbBlockTableRecord({ name: 'Widget' })
     db.tables.blockTable.add(block)
@@ -228,7 +381,7 @@ describe('executeCadScript', () => {
     )
     paper.appendEntity(paperLine)
 
-    const result = executeCadScript(
+    const result = await executeCadScript(
       {
         code: `
           const widget = cad.blocks.find(block => block.name === 'Widget')

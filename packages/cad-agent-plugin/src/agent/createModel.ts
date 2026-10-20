@@ -4,6 +4,7 @@ import type { LanguageModel } from 'ai'
 
 import type { LlmSettings } from '../storage/LlmSettingsStore'
 import { createOpenAiCompatibleFetch } from './openAiCompatibleFetch'
+import { normalizeLlmBaseUrl } from './normalizeLlmBaseUrl'
 
 /**
  * Instantiates an AI SDK language model from persisted LLM settings.
@@ -20,10 +21,12 @@ export function createModelFromSettings(settings: LlmSettings): LanguageModel {
     throw new Error('API key is required. Open Agent settings to configure it.')
   }
 
+  const baseURL = normalizeLlmBaseUrl(settings.baseUrl)
+
   if (settings.provider === 'anthropic') {
     const anthropic = createAnthropic({
       apiKey: settings.apiKey,
-      baseURL: settings.baseUrl || undefined
+      baseURL
     })
     return anthropic(settings.model)
   }
@@ -31,7 +34,7 @@ export function createModelFromSettings(settings: LlmSettings): LanguageModel {
   if (settings.provider === 'openai') {
     const openai = createOpenAI({
       apiKey: settings.apiKey,
-      baseURL: settings.baseUrl || undefined,
+      baseURL,
       compatibility: 'strict'
     })
     return openai.chat(settings.model)
@@ -41,7 +44,7 @@ export function createModelFromSettings(settings: LlmSettings): LanguageModel {
   // /chat/completions and reject the `developer` role that AI SDK 5 may emit.
   const openai = createOpenAI({
     apiKey: settings.apiKey,
-    baseURL: settings.baseUrl || undefined,
+    baseURL,
     compatibility: 'compatible',
     fetch: createOpenAiCompatibleFetch()
   })

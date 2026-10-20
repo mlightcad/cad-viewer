@@ -25,6 +25,7 @@ The manual script console lives in [`@mlightcad/cad-script-plugin`](../cad-scrip
 
 Tool schemas and execution live in [`@mlightcad/cad-agent-core`](../cad-agent-core/README.md). This package maps that catalog onto the AI SDK.
 
-- `get_drawing_context`
-- `draw_*`, `set_current_layer`, `create_layer`, `delete_entities`, `zoom_extents`
-- `execute_cad_script` for queries, batch edits, and selection highlighting
+- `execute_cad_script` — all drawing, queries, edits, selection, zoom, and context (`cad.drawing`)
+
+Agent mode defaults to Simple (no screenshot verification). Enable High inference
+in the panel for opt-in visual verification on complex tasks.

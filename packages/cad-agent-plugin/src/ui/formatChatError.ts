@@ -59,5 +59,15 @@ export function formatChatError(error: Error): string {
     }
   }
 
+  // Browser "Failed to fetch" when CORS/preflight fails or the host path is
+  // wrong (e.g. gateway root without `/v1`). Do not treat every TypeError as
+  // a network failure — unrelated client bugs should keep their message.
+  if (/failed to fetch/i.test(message)) {
+    return (
+      'Failed to fetch. Check Base URL (include /v1, e.g. https://ai-api.example.com/v1), ' +
+      'CORS on the gateway, and that the selected provider matches the API protocol.'
+    )
+  }
+
   return message
 }

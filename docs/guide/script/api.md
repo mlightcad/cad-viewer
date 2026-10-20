@@ -251,6 +251,53 @@ Zooms the view to the model space extents.
 cad.view.zoomExtents()
 ```
 
+### `cad.view.capturePreview({ longSide? })`
+
+Queues a PNG screenshot of the drawing extents. Capture runs after the script
+body finishes. Returns `{ queued: true, index }`. In the Agent chat, images are
+attached to the tool result for the model (not returned as JSON data URLs).
+
+```javascript
+cad.view.zoomExtents()
+cad.view.capturePreview()
+// optional: cad.view.capturePreview({ longSide: 512 })
+```
+
+## cad.measure
+
+Numeric helpers for self-check after drawing. Prefer these over hand-rolled
+`Math.hypot` / `atan2`. Points are `{ x, y }` in WCS.
+
+| Method | Returns |
+|--------|---------|
+| `cad.measure.distance(a, b)` | Distance between two points |
+| `cad.measure.angleDeg(a, b)` | Bearing of a→b from +X, degrees in (-180, 180] |
+| `cad.measure.angleDeg(a, b, c)` | Interior angle at b (a–b–c), degrees in [0, 180] |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)` | Smallest absolute bearing difference in [0, 180] |
+| `cad.measure.center(id)` | Circle/arc/ellipse center, or point/text position; else `undefined` |
+| `cad.measure.radius(id)` | Circle/arc radius or ellipse majorRadius; else `undefined` |
+| `cad.measure.length(id)` | Line length or polyline/spline path length; else `undefined` |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`) |
+| `cad.measure.report(checks)` | `{ ok, checks }` — `ok` is true iff every check passed |
+
+Recommended return shape after a non-trivial draw:
+
+```javascript
+const origin = { x: 0, y: 0 }
+let circleId = ''
+cad.edit.transaction('draw', tx => {
+  circleId = tx.drawCircle({ center: { x: 30, y: 40 }, radius: 10 })
+})
+const center = cad.measure.center(circleId)
+return {
+  ...cad.measure.report([
+    cad.measure.check('r', 10, cad.measure.radius(circleId)),
+    cad.measure.check('pcd', 50, cad.measure.distance(origin, center), 0.01)
+  ]),
+  entityIds: [circleId]
+}
+```
+
 ## cad.edit.transaction
 
 Executes edit operations. All modifications are grouped as a single undo unit. The drawing must be in an editable state (not read-only mode).
@@ -273,6 +320,12 @@ Methods available within a transaction:
 | `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })` | `center: {x,y}` | New entity ID |
 | `tx.drawRectangle({ corner1, corner2, layer? })` | `corner1/corner2: {x,y}` | New entity ID |
 | `tx.drawPolyline({ points, closed?, layer? })` | `points: Array<{x,y}>` | New entity ID |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}` | New entity ID |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })` | `boundary: Array<{x,y}>` (min 3) | New entity ID |
+| `tx.drawPoint({ position, layer? })` | `position: {x,y}` | New entity ID |
+| `tx.drawRay({ start, through, layer? })` | `start/through: {x,y}` | New entity ID |
+| `tx.drawXline({ start, through, layer? })` | `start/through: {x,y}` | New entity ID |
+| `tx.drawSpline({ points, closed?, layer? })` | `points: Array<{x,y}>` | New entity ID |
 | `tx.drawText({ position, text, height?, layer? })` | `position: {x,y}` | New entity ID |
 
 ### Edit Methods

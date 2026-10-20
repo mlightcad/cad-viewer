@@ -39,4 +39,16 @@ describe('validateCadScript', () => {
     `)
     expect(result).toEqual({ ok: true, usesEdit: false })
   })
+
+  test('accepts cad.measure helpers as read-only', () => {
+    const result = validateCadScript(`
+      const d = cad.measure.distance({ x: 0, y: 0 }, { x: 3, y: 4 })
+      const r = cad.measure.radius('abc')
+      return cad.measure.report([
+        cad.measure.check('hyp', 5, d),
+        cad.measure.check('r', 10, r ?? 0)
+      ])
+    `)
+    expect(result).toEqual({ ok: true, usesEdit: false })
+  })
 })

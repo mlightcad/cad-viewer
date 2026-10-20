@@ -16,8 +16,15 @@ import {
   openEntityFilterView,
   toEntitySnapshot
 } from './entitySnapshot'
+import { createCadMeasure } from './createCadMeasure'
 import { CAD_EDIT_TX_METHODS, CAD_SCRIPT_API_TREE } from './scriptApi'
 import { toBlockSnapshots, toDatabaseTables } from './tableSnapshot'
+
+/** Queued screenshot request from `cad.view.capturePreview`. */
+export interface CadScriptPreviewRequest {
+  /** Optional max dimension in pixels for the PNG. */
+  longSide?: number
+}
 
 /** Side effects collected while a script runs. */
 export interface CadScriptEffects {
@@ -27,6 +34,11 @@ export interface CadScriptEffects {
   highlightedIds: string[]
   /** Entity ids created inside `cad.edit.transaction`. */
   createdIds: string[]
+  /**
+   * Preview captures requested during the script body.
+   * Fulfilled asynchronously after the script returns.
+   */
+  previewRequests: CadScriptPreviewRequest[]
 }
 
 /** Limits enforced by `cad.__tick`. */
@@ -145,8 +157,34 @@ export function createCadScriptHost(
     zoomExtents(): void {
       const result = executor.zoomExtents()
       if (!result.success) throw new Error(result.message)
+    },
+    /**
+     * Queues a PNG screenshot of the current drawing extents.
+     *
+     * Capture runs after the script body finishes (async WebGL). The image is
+     * attached to the tool result for the model; it is not returned inline
+     * (data URLs exceed the script JSON size limit).
+     *
+     * @param options - Optional `longSide` in pixels (default 1024).
+     * @returns `{ queued: true, index }` identifying this capture.
+     */
+    capturePreview(options?: { longSide?: number }): {
+      queued: true
+      index: number
+    } {
+      const longSide =
+        options && typeof options.longSide === 'number'
+          ? options.longSide
+          : undefined
+      const index = effects.previewRequests.length
+      effects.previewRequests.push(
+        longSide !== undefined ? { longSide } : {}
+      )
+      return { queued: true, index }
     }
   }
+
+  const measure = createCadMeasure(id => snapshotById(session, id))
 
   const edit = {
     transaction(label: string, fn: (tx: CadEditTransaction) => void): void {
@@ -196,6 +234,7 @@ export function createCadScriptHost(
     },
     selection,
     view,
+    measure,
     edit,
     log(...values: unknown[]): void {
       effects.log.push(values.map(formatLogValue).join(' '))
@@ -243,6 +282,38 @@ export interface CadEditTransaction {
     closed?: boolean
     layer?: string
   }): string
+  drawEllipse(input: {
+    center: Point2dInput
+    majorRadius: number
+    minorRadius: number
+    rotationDeg?: number
+    startAngleDeg?: number
+    endAngleDeg?: number
+    layer?: string
+  }): string
+  drawHatch(input: {
+    boundary: Point2dInput[]
+    patternName?: string
+    patternScale?: number
+    patternAngleDeg?: number
+    layer?: string
+  }): string
+  drawPoint(input: { position: Point2dInput; layer?: string }): string
+  drawRay(input: {
+    start: Point2dInput
+    through: Point2dInput
+    layer?: string
+  }): string
+  drawXline(input: {
+    start: Point2dInput
+    through: Point2dInput
+    layer?: string
+  }): string
+  drawSpline(input: {
+    points: Point2dInput[]
+    closed?: boolean
+    layer?: string
+  }): string
   drawText(input: {
     position: Point2dInput
     text: string
@@ -276,6 +347,12 @@ function createTransaction(
     drawArc: input => created(executor.drawArc(input)),
     drawRectangle: input => created(executor.drawRectangle(input)),
     drawPolyline: input => created(executor.drawPolyline(input)),
+    drawEllipse: input => created(executor.drawEllipse(input)),
+    drawHatch: input => created(executor.drawHatch(input)),
+    drawPoint: input => created(executor.drawPoint(input)),
+    drawRay: input => created(executor.drawRay(input)),
+    drawXline: input => created(executor.drawXline(input)),
+    drawSpline: input => created(executor.drawSpline(input)),
     drawText: input => created(executor.drawText(input)),
     erase(ids) {
       return session.getDocument()!.entityService.eraseEntities(ids)

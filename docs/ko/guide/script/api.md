@@ -212,6 +212,51 @@ cad.selection.clear()
 cad.view.zoomExtents()
 ```
 
+### `cad.view.capturePreview({ longSide? })`
+
+도면 범위의 PNG 스크린샷을 대기열에 넣습니다. 캡처는 스크립트 본문이 끝난 뒤에 실행됩니다. 반환값은 `{ queued: true, index }` 입니다. Agent 채팅에서는 이미지가 도구 결과에 첨부되어 모델로 전달됩니다(JSON data URL로는 반환되지 않음).
+
+```javascript
+cad.view.zoomExtents()
+cad.view.capturePreview()
+// optional: cad.view.capturePreview({ longSide: 512 })
+```
+
+
+## cad.measure
+
+Numeric helpers for self-check after drawing. Prefer these over hand-rolled `Math.hypot` / `atan2`. Points are `{ x, y }` in WCS.
+
+| Method | Returns |
+|--------|---------|
+| `cad.measure.distance(a, b)` | Distance between two points |
+| `cad.measure.angleDeg(a, b)` | Bearing of a→b from +X, degrees in (-180, 180] |
+| `cad.measure.angleDeg(a, b, c)` | Interior angle at b (a–b–c), degrees in [0, 180] |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)` | Smallest absolute bearing difference in [0, 180] |
+| `cad.measure.center(id)` | Circle/arc/ellipse center, or point/text position; else `undefined` |
+| `cad.measure.radius(id)` | Circle/arc radius or ellipse majorRadius; else `undefined` |
+| `cad.measure.length(id)` | Line length or polyline/spline path length; else `undefined` |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`) |
+| `cad.measure.report(checks)` | `{ ok, checks }` — `ok` is true iff every check passed |
+
+Recommended return shape after a non-trivial draw:
+
+```javascript
+const origin = { x: 0, y: 0 }
+let circleId = ''
+cad.edit.transaction('draw', tx => {
+  circleId = tx.drawCircle({ center: { x: 30, y: 40 }, radius: 10 })
+})
+const center = cad.measure.center(circleId)
+return {
+  ...cad.measure.report([
+    cad.measure.check('r', 10, cad.measure.radius(circleId)),
+    cad.measure.check('pcd', 50, cad.measure.distance(origin, center), 0.01)
+  ]),
+  entityIds: [circleId]
+}
+```
+
 ## cad.edit.transaction
 
 편집 작업을 실행하며, 모든 수정 사항은 하나의 실행 취소 그룹으로 처리됩니다. 도면은 편집 가능한 상태여야 합니다(읽기 전용 모드가 아님).
@@ -234,6 +279,12 @@ cad.edit.transaction('일괄 수정', tx => {
 | `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })` | `center: {x,y}` | 새 엔티티 ID |
 | `tx.drawRectangle({ corner1, corner2, layer? })` | `corner1/corner2: {x,y}` | 새 엔티티 ID |
 | `tx.drawPolyline({ points, closed?, layer? })` | `points: Array<{x,y}>` | 새 엔티티 ID |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}` | 새 엔티티 ID |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })` | `boundary: Array<{x,y}>` (min 3) | 새 엔티티 ID |
+| `tx.drawPoint({ position, layer? })` | `position: {x,y}` | 새 엔티티 ID |
+| `tx.drawRay({ start, through, layer? })` | `start/through: {x,y}` | 새 엔티티 ID |
+| `tx.drawXline({ start, through, layer? })` | `start/through: {x,y}` | 새 엔티티 ID |
+| `tx.drawSpline({ points, closed?, layer? })` | `points: Array<{x,y}>` | 새 엔티티 ID |
 | `tx.drawText({ position, text, height?, layer? })` | `position: {x,y}` | 새 엔티티 ID |
 
 ### 편집 메서드

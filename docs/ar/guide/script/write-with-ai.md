@@ -88,6 +88,17 @@ layerTable يتضمن color وlinetype وlineWeight وisOff وisFrozen وisLocke
 
 ### cad.view
 - cad.view.zoomExtents() -> التكبير إلى نطاق مساحة النموذج
+- cad.view.capturePreview({ longSide? }) -> يضع لقطة PNG في الانتظار بعد انتهاء السكربت؛ يُرجع { queued: true, index }. استخدمه للتحقق البصري؛ يمكن تخطيه في التعديلات البسيطة
+
+
+### cad.measure
+- cad.measure.distance(a, b) -> Distance between {x,y} points
+- cad.measure.angleDeg(a, b) -> Bearing a→b deg (-180,180]; angleDeg(a,b,c) -> interior angle at b
+- cad.measure.deltaAngleDeg(fromDeg, toDeg) -> Smallest |Δ| in [0,180]
+- cad.measure.center(id) / radius(id) / length(id) -> From entity geometry, or undefined
+- cad.measure.check(name, expected, actual, tolerance=1e-3) -> { name, expected, actual, pass }
+- cad.measure.report(checks) -> { ok, checks }
+After non-trivial draws prefer: return { ...cad.measure.report([...]), entityIds }
 
 ### cad.edit.transaction(label, tx => { ... })
 تنفيذ عمليات التحرير داخل معاملة، حيث تُعامل جميع التعديلات كمجموعة تراجع واحدة. label هو وصف العملية.
@@ -98,6 +109,12 @@ layerTable يتضمن color وlinetype وlineWeight وisOff وisFrozen وisLocke
 - tx.drawArc({ center: {x,y}, radius, startAngleDeg, endAngleDeg, layer? }) -> تُعيد معرّف الكيان الجديد
 - tx.drawRectangle({ corner1: {x,y}, corner2: {x,y}, layer? }) -> تُعيد معرّف الكيان الجديد
 - tx.drawPolyline({ points: [{x,y}...], closed?, layer? }) -> تُعيد معرّف الكيان الجديد
+- tx.drawEllipse({ center: {x,y}, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? }) -> تُعيد معرّف الكيان الجديد
+- tx.drawHatch({ boundary: [{x,y}...], patternName?, patternScale?, patternAngleDeg?, layer? }) -> تُعيد معرّف الكيان الجديد
+- tx.drawPoint({ position: {x,y}, layer? }) -> تُعيد معرّف الكيان الجديد
+- tx.drawRay({ start: {x,y}, through: {x,y}, layer? }) -> تُعيد معرّف الكيان الجديد
+- tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> تُعيد معرّف الكيان الجديد
+- tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> تُعيد معرّف الكيان الجديد
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> تُعيد معرّف الكيان الجديد
 - tx.erase(ids) -> تُعيد عدد الكيانات المحذوفة
 - tx.setLayer(ids, layer)

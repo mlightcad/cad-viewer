@@ -39,7 +39,18 @@ export const CAD_SCRIPT_API_TREE = {
     clear: true
   },
   view: {
-    zoomExtents: true
+    zoomExtents: true,
+    capturePreview: true
+  },
+  measure: {
+    distance: true,
+    angleDeg: true,
+    deltaAngleDeg: true,
+    center: true,
+    radius: true,
+    length: true,
+    check: true,
+    report: true
   },
   edit: {
     transaction: true
@@ -57,6 +68,12 @@ export const CAD_EDIT_TX_METHODS = [
   'drawArc',
   'drawRectangle',
   'drawPolyline',
+  'drawEllipse',
+  'drawHatch',
+  'drawPoint',
+  'drawRay',
+  'drawXline',
+  'drawSpline',
   'drawText',
   'erase',
   'setLayer',
@@ -72,8 +89,9 @@ export const CAD_EDIT_TX_METHODS = [
  * Adapters must embed this string instead of maintaining a second copy.
  */
 export const CAD_SCRIPT_API_SUMMARY = `execute_cad_script runs a JavaScript function body with one argument, cad.
-Use it for queries, statistics, batch edits, and selection highlighting.
-Use draw_* tools for a single straightforward entity.
+This is the only chat tool. Prefer it for ALL drawing, queries, statistics, batch edits,
+selection highlighting, and reading drawing context (cad.drawing). Do not expect draw_*
+or get_drawing_context tools.
 The body may return JSON. Do not import modules or touch the page.
 
 cad.drawing -> { title, currentLayer, units, layers: [{ name, isOn, isFrozen, isLocked }], extents }
@@ -89,18 +107,47 @@ cad.selection.ids -> selected entity ids
 cad.selection.entities -> snapshots of the current selection
 cad.selection.replace(ids) / add(ids) / remove(ids) / clear()
 cad.view.zoomExtents()
+cad.view.capturePreview({ longSide? }) queues a PNG of drawing extents after the script
+finishes. Returns { queued: true, index }. Images are attached to the tool result for the
+model (not returned as JSON). Capture frames model space (temporarily switches away from
+paper space if needed). Use for visual self-check; skip for simple edits.
+cad.measure — prefer for numeric self-check (saves tokens vs hand-rolled Math):
+  distance(a, b) -> number
+  angleDeg(a, b) -> bearing a→b deg (-180,180]; angleDeg(a, b, c) -> interior angle at b [0,180]
+  deltaAngleDeg(fromDeg, toDeg) -> smallest |Δ| in [0,180]
+  center(id) / radius(id) / length(id) -> from entity geometry, or undefined
+  check(name, expected, actual, tolerance=1e-3) -> { name, expected, actual, pass }
+  report(checks) -> { ok, checks }  (ok iff every pass)
+After non-trivial draws, return measure.report([...]) (optionally spread with entityIds).
+Example:
+const o = { x: 0, y: 0 }
+const id = /* from tx.drawCircle */
+const c = cad.measure.center(id)
+return cad.measure.report([
+  cad.measure.check('r', 10, cad.measure.radius(id)),
+  cad.measure.check('pcd', 57, cad.measure.distance(o, c), 0.01)
+])
 cad.log(...values)
 cad.edit.transaction(label, tx => { ... }) performs one undo group.
-tx methods: drawLine, drawCircle, drawArc, drawRectangle, drawPolyline, drawText,
-erase(ids), setLayer(ids, layer), move(ids, dx, dy), rotate(ids, center, angleDeg),
+tx draw methods: drawLine, drawCircle, drawArc, drawRectangle, drawPolyline, drawEllipse,
+drawHatch, drawPoint, drawRay, drawXline, drawSpline, drawText.
+tx edit methods: erase(ids), setLayer(ids, layer), move(ids, dx, dy), rotate(ids, center, angleDeg),
 createLayer(name), setCurrentLayer(name).
-Draw inputs match the draw_* tools. tx draw methods return the new entity id.
+tx draw methods return the new entity id. Prefer one transaction for related geometry.
 Snapshots cover every data-model entity type. Common geometry:
 Circle { center, radius }, Line { start, end }, Arc { center, radius, startAngle, endAngle } in radians,
 Ellipse { center, majorRadius, minorRadius }, Polyline / 2dPolyline / 3dPolyline { points, closed },
 Spline { points, closed }, Text / MText / Attribute { position, text, height },
 Insert { name, position, rotation, scale }, Hatch { patternName, patternScale, boundary },
 Dimension { text, measurement, textPosition, styleName } plus definition points.
+
+Example: draw a circle, zoom, then request a screenshot for visual check.
+cad.edit.transaction('draw circle', tx => {
+  tx.drawCircle({ center: { x: 0, y: 0 }, radius: 100 })
+})
+cad.view.zoomExtents()
+cad.view.capturePreview()
+return { ok: true }
 
 Example: count circles per layer and highlight every entity on the busiest layer.
 const counts = {}

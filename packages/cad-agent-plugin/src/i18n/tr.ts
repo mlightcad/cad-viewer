@@ -8,7 +8,7 @@ export const agentTr = {
   tab: 'Ajan',
   title: 'CAD Ajanı',
   settings: 'Ayarlar',
-  clear: 'Temizle',
+  clear: 'Yeni sohbet',
   close: 'Kapat',
   provider: 'Sağlayıcı',
   providerDeepseek: 'DeepSeek',
@@ -19,6 +19,8 @@ export const agentTr = {
   providerAnthropic: 'Anthropic',
   providerOpenaiCompatible: 'OpenAI Uyumlu',
   baseUrl: 'Taban URL',
+  baseUrlHint:
+    'Çoğu ağ geçidi için /v1 gerekir, örn. https://ai-api.example.com/v1. Yalnızca ana bilgisayar adı otomatik düzeltilir.',
   model: 'Model',
   visionModels: 'Görsel modeller',
   textModels: 'Yalnızca metin modelleri',
@@ -31,7 +33,7 @@ export const agentTr = {
   emptyHint:
     'Çizilecek şeyi tanımlayın veya bir referans görsel ekleyin (kroki, ekran görüntüsü, kat planı).',
   toolPrefix: 'araç',
-  inputPlaceholder: 'Oluşturulacak geometriyi tanımlayın…',
+  inputPlaceholder: 'İsteğinizi yazın…',
   attachImage: 'Görsel ekle',
   removeAttachment: 'Kaldır',
   imageAlt: 'Eklenen görsel',
@@ -44,9 +46,9 @@ export const agentTr = {
   agentModeSimple: 'Basit',
   agentModeHighInference: 'Yüksek akıl yürütme',
   agentModeSimpleHint:
-    'Hızlı — çizimden sonra ekran görüntüsü doğrulaması yapılmaz.',
+    'Varsayılan. Hızlı — çizimden sonra ekran görüntüsü doğrulaması yapılmaz.',
   agentModeHighInferenceHint:
-    'Çizimden sonra ekran görüntüsü + görsel model ile doğrular (en fazla 5 tur). Görsel destekli model gerekir.',
+    'Karmaşık görevler için isteğe bağlı. Ekran görüntüsü + görsel model ile doğrular (en fazla 5 tur). Görsel destekli model gerekir.',
   highInferenceRequiresVision:
     'Yüksek akıl yürütme modu görsel destekli bir model gerektirir.',
   verificationTitle: 'Çizim doğrulaması',

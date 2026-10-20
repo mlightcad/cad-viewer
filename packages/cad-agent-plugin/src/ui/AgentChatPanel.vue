@@ -84,11 +84,16 @@ const pendingPreviewUrls = ref<string[]>([])
 const modelSelection = ref(
   resolveModelSelection(settings.value.provider, settings.value.model)
 )
-const agentMode = ref<AgentMode>('high-inference')
+const agentMode = ref<AgentMode>('simple')
 
 watch(
   () => settings.value.provider,
-  (provider: LlmProviderId) => {
+  (provider: LlmProviderId, previous: LlmProviderId | undefined) => {
+    // Skip hydration / same-value updates so a saved custom baseUrl is not
+    // overwritten by provider defaults after loadLlmSettings().
+    if (!settingsReady.value || previous === undefined || previous === provider) {
+      return
+    }
     const defaults = getProviderDefaults(provider)
     settings.value.baseUrl = defaults.baseUrl
     settings.value.model = defaults.model
@@ -268,15 +273,64 @@ function openFilePicker() {
   fileInputRef.value?.click()
 }
 
+/** Appends image files to the pending attachment list when vision is available. */
+function appendPendingImages(files: Iterable<File>) {
+  if (!supportsVision.value || isBusy.value) return
+  const images = [...files].filter(file => file.type.startsWith('image/'))
+  if (!images.length) return
+  pendingImages.value = [...pendingImages.value, ...images]
+}
+
 /** Appends selected image files to the pending attachment list. */
 function onFilesSelected(event: Event) {
   const target = event.target as HTMLInputElement
   if (!target.files?.length) return
-  pendingImages.value = [
-    ...pendingImages.value,
-    ...Array.from(target.files).filter(file => file.type.startsWith('image/'))
-  ]
+  appendPendingImages(target.files)
   target.value = ''
+}
+
+/**
+ * Accepts image paste from the clipboard (e.g. screenshot).
+ * Text paste is left alone; image-only paste is prevented from inserting junk.
+ */
+function onPaste(event: ClipboardEvent) {
+  if (!supportsVision.value || isBusy.value) return
+
+  const clipboard = event.clipboardData
+  if (!clipboard) return
+
+  const images: File[] = []
+  if (clipboard.items?.length) {
+    for (const item of Array.from(clipboard.items)) {
+      if (!item.type.startsWith('image/')) continue
+      const blob = item.getAsFile()
+      if (!blob) continue
+      if (blob instanceof File && blob.name) {
+        images.push(blob)
+        continue
+      }
+      const ext = blob.type.split('/')[1]?.split('+')[0] || 'png'
+      images.push(
+        new File([blob], `paste-${Date.now()}-${images.length}.${ext}`, {
+          type: blob.type || 'image/png'
+        })
+      )
+    }
+  } else if (clipboard.files?.length) {
+    images.push(
+      ...Array.from(clipboard.files).filter(file =>
+        file.type.startsWith('image/')
+      )
+    )
+  }
+
+  if (!images.length) return
+
+  appendPendingImages(images)
+  const text = clipboard.getData('text/plain')?.trim() ?? ''
+  if (!text) {
+    event.preventDefault()
+  }
 }
 
 /** Removes one pending image attachment by index. */
@@ -330,6 +384,10 @@ async function stopAgent() {
 
 /** Discards the conversation and starts a fresh agent session. */
 function clearChat() {
+  input.value = ''
+  clearPendingImages()
+  dismissError()
+  showSettings.value = false
   resetChat()
 }
 
@@ -438,7 +496,7 @@ function isVerificationMessage(message: UIMessage): boolean {
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path
               fill="currentColor"
-              d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+              d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
             />
           </svg>
         </button>
@@ -477,7 +535,7 @@ function isVerificationMessage(message: UIMessage): boolean {
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path
             fill="currentColor"
-            d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+            d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"
           />
         </svg>
       </button>
@@ -500,6 +558,7 @@ function isVerificationMessage(message: UIMessage): boolean {
         {{ labels.baseUrl }}
         <input v-model="settings.baseUrl" type="text" />
       </label>
+      <p class="cad-agent-model-hint">{{ labels.baseUrlHint }}</p>
       <p
         v-if="settings.provider === 'deepseek-vl'"
         class="cad-agent-model-hint"
@@ -655,6 +714,7 @@ function isVerificationMessage(message: UIMessage): boolean {
         v-model="input"
         :placeholder="labels.inputPlaceholder"
         @keydown.enter.exact.prevent="sendMessage"
+        @paste="onPaste"
       />
       <input
         ref="fileInputRef"

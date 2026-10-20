@@ -8,11 +8,19 @@ export interface Point2dInput {
   y: number
 }
 
+/** Image attached to a tool result (e.g. script `cad.view.capturePreview`). */
+export interface ToolResultImage {
+  /** IANA media type, typically `image/png`. */
+  mediaType: string
+  /** Full data URL (`data:image/png;base64,...`). */
+  dataUrl: string
+}
+
 /**
  * Outcome of a CAD tool invocation.
  *
  * Serialized back to the model as JSON. Script execution adds `data`, `log`,
- * and `highlightedIds`.
+ * `highlightedIds`, and optionally `images` (kept out of the JSON `data` cap).
  */
 export interface ToolResult {
   /** Whether the operation completed without error. */
@@ -29,6 +37,11 @@ export interface ToolResult {
   log?: string[]
   /** Entity ids last passed to `cad.selection` during a script. */
   highlightedIds?: string[]
+  /**
+   * Screenshots captured via `cad.view.capturePreview`.
+   * Adapters should pass these to the model as multimodal tool-result media.
+   */
+  images?: ToolResultImage[]
 }
 
 /**

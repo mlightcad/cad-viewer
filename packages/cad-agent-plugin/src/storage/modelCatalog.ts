@@ -26,47 +26,83 @@ export const PROVIDER_MODEL_OPTIONS: Record<
 > = {
   openai: [
     {
-      value: 'gpt-4o',
-      labelEn: 'GPT-4o',
-      labelZh: 'GPT-4o',
+      value: 'gpt-5.4-mini',
+      labelEn: 'GPT-5.4 Mini',
+      labelZh: 'GPT-5.4 Mini',
       supportsVision: true
     },
     {
-      value: 'gpt-4o-mini',
-      labelEn: 'GPT-4o Mini',
-      labelZh: 'GPT-4o Mini',
+      value: 'gpt-5.4',
+      labelEn: 'GPT-5.4',
+      labelZh: 'GPT-5.4',
       supportsVision: true
     },
     {
-      value: 'gpt-4-turbo',
-      labelEn: 'GPT-4 Turbo',
-      labelZh: 'GPT-4 Turbo',
+      value: 'gpt-5.5',
+      labelEn: 'GPT-5.5',
+      labelZh: 'GPT-5.5',
       supportsVision: true
     },
     {
-      value: 'gpt-3.5-turbo',
-      labelEn: 'GPT-3.5 Turbo',
-      labelZh: 'GPT-3.5 Turbo',
-      supportsVision: false
+      value: 'gpt-5.6-luna',
+      labelEn: 'GPT-5.6 Luna',
+      labelZh: 'GPT-5.6 Luna',
+      supportsVision: true
+    },
+    {
+      value: 'gpt-5.6-terra',
+      labelEn: 'GPT-5.6 Terra',
+      labelZh: 'GPT-5.6 Terra',
+      supportsVision: true
+    },
+    {
+      value: 'gpt-5.6-sol',
+      labelEn: 'GPT-5.6 Sol',
+      labelZh: 'GPT-5.6 Sol',
+      supportsVision: true
     }
   ],
   anthropic: [
     {
-      value: 'claude-3-5-sonnet-latest',
-      labelEn: 'Claude 3.5 Sonnet',
-      labelZh: 'Claude 3.5 Sonnet',
+      value: 'claude-sonnet-4-6',
+      labelEn: 'Claude Sonnet 4.6',
+      labelZh: 'Claude Sonnet 4.6',
       supportsVision: true
     },
     {
-      value: 'claude-3-5-haiku-latest',
-      labelEn: 'Claude 3.5 Haiku',
-      labelZh: 'Claude 3.5 Haiku',
+      value: 'claude-sonnet-5',
+      labelEn: 'Claude Sonnet 5',
+      labelZh: 'Claude Sonnet 5',
       supportsVision: true
     },
     {
-      value: 'claude-3-opus-latest',
-      labelEn: 'Claude 3 Opus',
-      labelZh: 'Claude 3 Opus',
+      value: 'claude-opus-4-6',
+      labelEn: 'Claude Opus 4.6',
+      labelZh: 'Claude Opus 4.6',
+      supportsVision: true
+    },
+    {
+      value: 'claude-opus-4-7',
+      labelEn: 'Claude Opus 4.7',
+      labelZh: 'Claude Opus 4.7',
+      supportsVision: true
+    },
+    {
+      value: 'claude-opus-4-8',
+      labelEn: 'Claude Opus 4.8',
+      labelZh: 'Claude Opus 4.8',
+      supportsVision: true
+    },
+    {
+      value: 'claude-opus-5',
+      labelEn: 'Claude Opus 5',
+      labelZh: 'Claude Opus 5',
+      supportsVision: true
+    },
+    {
+      value: 'claude-fable-5',
+      labelEn: 'Claude Fable 5',
+      labelZh: 'Claude Fable 5',
       supportsVision: true
     }
   ],
@@ -124,35 +160,55 @@ export const PROVIDER_MODEL_OPTIONS: Record<
   ],
   'openai-compatible': [
     {
-      value: 'gpt-4o-mini',
-      labelEn: 'GPT-4o Mini',
-      labelZh: 'GPT-4o Mini',
+      value: 'gpt-5.4-mini',
+      labelEn: 'GPT-5.4 Mini',
+      labelZh: 'GPT-5.4 Mini',
       supportsVision: true
     },
     {
-      value: 'gpt-4o',
-      labelEn: 'GPT-4o',
-      labelZh: 'GPT-4o',
+      value: 'gpt-5.4',
+      labelEn: 'GPT-5.4',
+      labelZh: 'GPT-5.4',
       supportsVision: true
     },
     {
-      value: 'gpt-3.5-turbo',
-      labelEn: 'GPT-3.5 Turbo',
-      labelZh: 'GPT-3.5 Turbo',
-      supportsVision: false
+      value: 'gpt-5.5',
+      labelEn: 'GPT-5.5',
+      labelZh: 'GPT-5.5',
+      supportsVision: true
+    },
+    {
+      value: 'gpt-5.6-luna',
+      labelEn: 'GPT-5.6 Luna',
+      labelZh: 'GPT-5.6 Luna',
+      supportsVision: true
+    },
+    {
+      value: 'gpt-5.6-terra',
+      labelEn: 'GPT-5.6 Terra',
+      labelZh: 'GPT-5.6 Terra',
+      supportsVision: true
+    },
+    {
+      value: 'gpt-5.6-sol',
+      labelEn: 'GPT-5.6 Sol',
+      labelZh: 'GPT-5.6 Sol',
+      supportsVision: true
     }
   ]
 }
 
 /** Heuristic patterns for vision-capable models not listed in presets. */
 const VISION_MODEL_PATTERNS = [
+  /gpt-5/i,
   /gpt-4o/i,
   /gpt-4-turbo/i,
   /gpt-4-vision/i,
   /claude-3/i,
-  /claude-sonnet-4/i,
-  /claude-opus-4/i,
-  /claude-haiku-4/i,
+  /claude-sonnet/i,
+  /claude-opus/i,
+  /claude-haiku/i,
+  /claude-fable/i,
   /gemini/i,
   /qwen.*vl/i,
   /deepseek-vl/i,

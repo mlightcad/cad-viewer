@@ -52,6 +52,7 @@ type TypeName =
   | 'block'
   | 'selection'
   | 'view'
+  | 'measure'
   | 'edit'
   | 'entity'
   | 'entityArray'
@@ -97,6 +98,7 @@ const TYPE_LABEL: Record<TypeName, string> = {
   block: 'Block',
   selection: 'Selection',
   view: 'View',
+  measure: 'Measure',
   edit: 'Edit',
   entity: 'Entity',
   entityArray: 'Entity[]',
@@ -145,7 +147,7 @@ function identifierCompletions(
       label: 'cad',
       type: 'namespace',
       detail: 'script host',
-      info: 'The only argument. Drawing, entities, tables, blocks, selection, view, edit, and log.',
+      info: 'The only argument. Drawing, entities, tables, blocks, selection, view, measure, edit, and log.',
       boost: 2
     })
   }
@@ -295,6 +297,8 @@ function membersOf(type: TypeName): MemberSpec[] {
       return SELECTION_MEMBERS
     case 'view':
       return VIEW_MEMBERS
+    case 'measure':
+      return MEASURE_MEMBERS
     case 'edit':
       return EDIT_MEMBERS
     case 'entity':
@@ -945,6 +949,13 @@ const CAD_MEMBERS: MemberSpec[] = [
   ),
   prop('view', 'View', 'Change the drawing view.', 'view', 'namespace'),
   prop(
+    'measure',
+    'Measure',
+    'Distance, angle, entity radius/length, and check/report helpers.',
+    'measure',
+    'namespace'
+  ),
+  prop(
     'edit',
     'Edit',
     'Change the drawing inside one undo group.',
@@ -1125,6 +1136,72 @@ const VIEW_MEMBERS: MemberSpec[] = [
     'Zooms to the drawing extents.',
     'void',
     'zoomExtents()'
+  ),
+  method(
+    'capturePreview',
+    '({ longSide? }?) => { queued, index }',
+    'Queues a PNG screenshot after the script finishes (attached to the result for the model).',
+    'unknown',
+    'capturePreview()'
+  )
+]
+
+const MEASURE_MEMBERS: MemberSpec[] = [
+  method(
+    'distance',
+    '(a, b) => number',
+    'Euclidean distance between two { x, y } points.',
+    'number',
+    'distance(${a}, ${b})'
+  ),
+  method(
+    'angleDeg',
+    '(a, b, c?) => number',
+    'Bearing a→b from +X, or interior angle at b when c is given.',
+    'number',
+    'angleDeg(${a}, ${b})'
+  ),
+  method(
+    'deltaAngleDeg',
+    '(fromDeg, toDeg) => number',
+    'Smallest absolute bearing difference in [0, 180].',
+    'number',
+    'deltaAngleDeg(${fromDeg}, ${toDeg})'
+  ),
+  method(
+    'center',
+    '(id) => Point | undefined',
+    'Circle/arc/ellipse center or point/text position.',
+    'point',
+    'center(${id})'
+  ),
+  method(
+    'radius',
+    '(id) => number | undefined',
+    'Circle/arc radius or ellipse majorRadius.',
+    'number',
+    'radius(${id})'
+  ),
+  method(
+    'length',
+    '(id) => number | undefined',
+    'Line length or polyline/spline path length.',
+    'number',
+    'length(${id})'
+  ),
+  method(
+    'check',
+    '(name, expected, actual, tolerance?) => { name, expected, actual, pass }',
+    'One numeric check. Default tolerance 1e-3.',
+    'unknown',
+    "check('${name}', ${expected}, ${actual})"
+  ),
+  method(
+    'report',
+    '(checks) => { ok, checks }',
+    'Aggregates checks; ok is true iff every pass.',
+    'unknown',
+    'report([${checks}])'
   )
 ]
 
@@ -1333,6 +1410,48 @@ const TX_DOCS: Record<string, MemberSpec> = {
     'Draws a polyline and returns the new entity id.',
     'string',
     'drawPolyline({ points: [{ x: ${x}, y: ${y} }], closed: ${closed} })'
+  ),
+  drawEllipse: method(
+    'drawEllipse',
+    '({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? }) => id',
+    'Draws an ellipse or elliptical arc and returns the new entity id.',
+    'string',
+    'drawEllipse({ center: { x: ${cx}, y: ${cy} }, majorRadius: ${major}, minorRadius: ${minor} })'
+  ),
+  drawHatch: method(
+    'drawHatch',
+    '({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? }) => id',
+    'Draws a hatch inside a closed polygon and returns the new entity id.',
+    'string',
+    'drawHatch({ boundary: [{ x: ${x}, y: ${y} }], patternName: ${pattern} })'
+  ),
+  drawPoint: method(
+    'drawPoint',
+    '({ position, layer? }) => id',
+    'Draws a point and returns the new entity id.',
+    'string',
+    'drawPoint({ position: { x: ${x}, y: ${y} } })'
+  ),
+  drawRay: method(
+    'drawRay',
+    '({ start, through, layer? }) => id',
+    'Draws a ray and returns the new entity id.',
+    'string',
+    'drawRay({ start: { x: ${sx}, y: ${sy} }, through: { x: ${tx}, y: ${ty} } })'
+  ),
+  drawXline: method(
+    'drawXline',
+    '({ start, through, layer? }) => id',
+    'Draws a construction line (xline) and returns the new entity id.',
+    'string',
+    'drawXline({ start: { x: ${sx}, y: ${sy} }, through: { x: ${tx}, y: ${ty} } })'
+  ),
+  drawSpline: method(
+    'drawSpline',
+    '({ points, closed?, layer? }) => id',
+    'Draws a fit spline and returns the new entity id.',
+    'string',
+    'drawSpline({ points: [{ x: ${x}, y: ${y} }], closed: ${closed} })'
   ),
   drawText: method(
     'drawText',

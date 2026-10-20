@@ -156,7 +156,7 @@ export class CadActionExecutor {
   ) {}
 
   /**
-   * Returns a snapshot of the active drawing for the `get_drawing_context` tool.
+   * Returns a snapshot of the active drawing (same data as script `cad.drawing`).
    *
    * @returns Layer list, units, and extents.
    */
