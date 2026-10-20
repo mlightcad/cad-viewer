@@ -1,6 +1,10 @@
+import {
+  captureDrawingPreview,
+  DRAWING_PREVIEW_LONG_SIDE_PX
+} from '../preview/captureDrawingPreview'
 import type { CadSession } from '../session/CadSession'
 import { requireDocument } from '../session/documentAccess'
-import type { ToolResult } from '../tools/types'
+import type { ToolResult, ToolResultImage } from '../tools/types'
 import {
   type CadScriptEffects,
   type CadScriptLimits,
@@ -50,16 +54,19 @@ export interface CadScriptRunOptions {
 /**
  * Validates and runs a CAD script against `session`.
  *
+ * When the script calls `cad.view.capturePreview`, screenshots are captured
+ * after the script body finishes and attached as {@link ToolResult.images}.
+ *
  * @param input - Script body and a short description used in the result message.
  * @param session - Drawing and view access.
  * @param options - Time, tick, and result-size limits.
  * @returns A {@link ToolResult}. Write scripts that time out do not commit.
  */
-export function executeCadScript(
+export async function executeCadScript(
   input: { code: string; intent: string },
   session: CadSession,
   options: CadScriptRunOptions = {}
-): ToolResult {
+): Promise<ToolResult> {
   const validation = validateCadScript(input.code)
   if (!validation.ok) {
     return {
@@ -76,7 +83,8 @@ export function executeCadScript(
   const effects: CadScriptEffects = {
     log: [],
     highlightedIds: [],
-    createdIds: []
+    createdIds: [],
+    previewRequests: []
   }
   const host = createCadScriptHost(session, effects, {
     maxTicks: options.limits?.maxTicks ?? 100_000,
@@ -90,24 +98,51 @@ export function executeCadScript(
       value,
       options.maxResultChars ?? MAX_SCRIPT_RESULT_CHARS
     )
+    const images = await fulfillPreviewRequests(effects)
     return {
       success: true,
-      message: input.intent ? `Script finished: ${input.intent}` : 'Script finished',
+      message: input.intent
+        ? `Script finished: ${input.intent}`
+        : 'Script finished',
       data,
       log: effects.log,
       highlightedIds: effects.highlightedIds,
-      entityIds: effects.createdIds.length ? effects.createdIds : undefined
+      entityIds: effects.createdIds.length ? effects.createdIds : undefined,
+      images: images.length ? images : undefined
     }
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
+    const images = await fulfillPreviewRequests(effects)
     return {
       success: false,
       message: 'Script failed',
       error: reason,
       log: effects.log,
-      highlightedIds: effects.highlightedIds
+      highlightedIds: effects.highlightedIds,
+      images: images.length ? images : undefined
     }
   }
+}
+
+async function fulfillPreviewRequests(
+  effects: CadScriptEffects
+): Promise<ToolResultImage[]> {
+  if (!effects.previewRequests.length) return []
+
+  const images: ToolResultImage[] = []
+  for (const request of effects.previewRequests) {
+    const longSide =
+      typeof request.longSide === 'number' && request.longSide > 0
+        ? request.longSide
+        : DRAWING_PREVIEW_LONG_SIDE_PX
+    const capture = await captureDrawingPreview(longSide)
+    if (!capture.ok) {
+      effects.log.push(`capturePreview failed: ${capture.reason}`)
+      continue
+    }
+    images.push({ mediaType: 'image/png', dataUrl: capture.dataUrl })
+  }
+  return images
 }
 
 function serializeResult(value: unknown, maxChars: number): unknown {

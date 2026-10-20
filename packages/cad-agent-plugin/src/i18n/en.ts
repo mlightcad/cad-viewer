@@ -8,7 +8,7 @@ export const agentEn = {
   tab: 'Agent',
   title: 'CAD Agent',
   settings: 'Settings',
-  clear: 'Clear',
+  clear: 'New chat',
   close: 'Close',
   provider: 'Provider',
   providerDeepseek: 'DeepSeek',
@@ -19,6 +19,8 @@ export const agentEn = {
   providerAnthropic: 'Anthropic',
   providerOpenaiCompatible: 'OpenAI Compatible',
   baseUrl: 'Base URL',
+  baseUrlHint:
+    'Must include /v1 for most gateways, e.g. https://ai-api.example.com/v1. Host-only URLs are auto-corrected.',
   model: 'Model',
   visionModels: 'Vision models',
   textModels: 'Text-only models',
@@ -31,7 +33,7 @@ export const agentEn = {
   emptyHint:
     'Describe what to draw, or attach a reference image (sketch, screenshot, floor plan).',
   toolPrefix: 'tool',
-  inputPlaceholder: 'Describe the geometry to create…',
+  inputPlaceholder: 'Describe your request…',
   attachImage: 'Attach image',
   removeAttachment: 'Remove',
   imageAlt: 'Attached image',
@@ -43,9 +45,10 @@ export const agentEn = {
   agentMode: 'Agent mode',
   agentModeSimple: 'Simple',
   agentModeHighInference: 'High inference',
-  agentModeSimpleHint: 'Fast — no screenshot verification after drawing.',
+  agentModeSimpleHint:
+    'Default. Fast — no screenshot verification after drawing.',
   agentModeHighInferenceHint:
-    'Verifies the drawing with screenshot + vision model (up to 5 rounds). Requires a vision model.',
+    'Opt-in for complex tasks. Verifies with screenshot + vision model (up to 5 rounds). Requires a vision model.',
   highInferenceRequiresVision:
     'High inference mode requires a vision-capable model.',
   verificationTitle: 'Drawing verification',

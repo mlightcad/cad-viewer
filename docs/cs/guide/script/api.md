@@ -212,6 +212,51 @@ Přiblíží pohled na rozsah modelového prostoru.
 cad.view.zoomExtents()
 ```
 
+### `cad.view.capturePreview({ longSide? })`
+
+Zařadí PNG snímek rozsahu výkresu. Snímek se pořídí až po dokončení těla skriptu. Vrací `{ queued: true, index }`. V Agent chatu se obrázky připojí k výsledku nástroje pro model (nevracejí se jako JSON data URL).
+
+```javascript
+cad.view.zoomExtents()
+cad.view.capturePreview()
+// optional: cad.view.capturePreview({ longSide: 512 })
+```
+
+
+## cad.measure
+
+Numeric helpers for self-check after drawing. Prefer these over hand-rolled `Math.hypot` / `atan2`. Points are `{ x, y }` in WCS.
+
+| Method | Returns |
+|--------|---------|
+| `cad.measure.distance(a, b)` | Distance between two points |
+| `cad.measure.angleDeg(a, b)` | Bearing of a→b from +X, degrees in (-180, 180] |
+| `cad.measure.angleDeg(a, b, c)` | Interior angle at b (a–b–c), degrees in [0, 180] |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)` | Smallest absolute bearing difference in [0, 180] |
+| `cad.measure.center(id)` | Circle/arc/ellipse center, or point/text position; else `undefined` |
+| `cad.measure.radius(id)` | Circle/arc radius or ellipse majorRadius; else `undefined` |
+| `cad.measure.length(id)` | Line length or polyline/spline path length; else `undefined` |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`) |
+| `cad.measure.report(checks)` | `{ ok, checks }` — `ok` is true iff every check passed |
+
+Recommended return shape after a non-trivial draw:
+
+```javascript
+const origin = { x: 0, y: 0 }
+let circleId = ''
+cad.edit.transaction('draw', tx => {
+  circleId = tx.drawCircle({ center: { x: 30, y: 40 }, radius: 10 })
+})
+const center = cad.measure.center(circleId)
+return {
+  ...cad.measure.report([
+    cad.measure.check('r', 10, cad.measure.radius(circleId)),
+    cad.measure.check('pcd', 50, cad.measure.distance(origin, center), 0.01)
+  ]),
+  entityIds: [circleId]
+}
+```
+
 ## cad.edit.transaction
 
 Provede editační operace, všechny změny budou tvořit jednu skupinu pro vrácení zpět. Výkres musí být v editovatelném stavu (ne v režimu pouze pro čtení).
@@ -234,6 +279,12 @@ Metody dostupné v transakci:
 | `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })` | `center: {x,y}` | ID nové entity |
 | `tx.drawRectangle({ corner1, corner2, layer? })` | `corner1/corner2: {x,y}` | ID nové entity |
 | `tx.drawPolyline({ points, closed?, layer? })` | `points: Array<{x,y}>` | ID nové entity |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}` | ID nové entity |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })` | `boundary: Array<{x,y}>` (min 3) | ID nové entity |
+| `tx.drawPoint({ position, layer? })` | `position: {x,y}` | ID nové entity |
+| `tx.drawRay({ start, through, layer? })` | `start/through: {x,y}` | ID nové entity |
+| `tx.drawXline({ start, through, layer? })` | `start/through: {x,y}` | ID nové entity |
+| `tx.drawSpline({ points, closed?, layer? })` | `points: Array<{x,y}>` | ID nové entity |
 | `tx.drawText({ position, text, height?, layer? })` | `position: {x,y}` | ID nové entity |
 
 ### Metody úprav

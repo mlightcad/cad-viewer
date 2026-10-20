@@ -88,6 +88,17 @@ DXF BLOCKS 섹션에 해당합니다. *Model_Space와 *Paper_Space를 포함합�
 
 ### cad.view
 - cad.view.zoomExtents() -> 모형 공간 범위로 확대/축소
+- cad.view.capturePreview({ longSide? }) -> 스크립트 종료 후 PNG를 대기열에 넣음. { queued: true, index } 반환. 시각 확인이 필요할 때 사용하고 단순 편집에서는 생략 가능
+
+
+### cad.measure
+- cad.measure.distance(a, b) -> Distance between {x,y} points
+- cad.measure.angleDeg(a, b) -> Bearing a→b deg (-180,180]; angleDeg(a,b,c) -> interior angle at b
+- cad.measure.deltaAngleDeg(fromDeg, toDeg) -> Smallest |Δ| in [0,180]
+- cad.measure.center(id) / radius(id) / length(id) -> From entity geometry, or undefined
+- cad.measure.check(name, expected, actual, tolerance=1e-3) -> { name, expected, actual, pass }
+- cad.measure.report(checks) -> { ok, checks }
+After non-trivial draws prefer: return { ...cad.measure.report([...]), entityIds }
 
 ### cad.edit.transaction(label, tx => { ... })
 트랜잭션 내에서 편집 작업을 실행하며, 모든 수정 사항은 하나의 실행 취소 그룹으로 처리됩니다. label은 작업 설명입니다.
@@ -98,6 +109,12 @@ DXF BLOCKS 섹션에 해당합니다. *Model_Space와 *Paper_Space를 포함합�
 - tx.drawArc({ center: {x,y}, radius, startAngleDeg, endAngleDeg, layer? }) -> 새 엔티티 ID 반환
 - tx.drawRectangle({ corner1: {x,y}, corner2: {x,y}, layer? }) -> 새 엔티티 ID 반환
 - tx.drawPolyline({ points: [{x,y}...], closed?, layer? }) -> 새 엔티티 ID 반환
+- tx.drawEllipse({ center: {x,y}, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? }) -> 새 엔티티 ID 반환
+- tx.drawHatch({ boundary: [{x,y}...], patternName?, patternScale?, patternAngleDeg?, layer? }) -> 새 엔티티 ID 반환
+- tx.drawPoint({ position: {x,y}, layer? }) -> 새 엔티티 ID 반환
+- tx.drawRay({ start: {x,y}, through: {x,y}, layer? }) -> 새 엔티티 ID 반환
+- tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> 새 엔티티 ID 반환
+- tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> 새 엔티티 ID 반환
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> 새 엔티티 ID 반환
 - tx.erase(ids) -> 삭제된 엔티티 수 반환
 - tx.setLayer(ids, layer)

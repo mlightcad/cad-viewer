@@ -89,6 +89,16 @@ title: 用 AI 编写脚本
 
 ### cad.view
 - cad.view.zoomExtents() -> 缩放到模型空间范围
+- cad.view.capturePreview({ longSide? }) -> 脚本结束后排队截取 PNG；返回 { queued: true, index }。复杂结果需要视觉自检时使用，简单修改可跳过
+
+### cad.measure
+- cad.measure.distance(a, b) -> 两点距离
+- cad.measure.angleDeg(a, b) -> a→b 方位角（度）；angleDeg(a,b,c) -> 顶点 b 的内角
+- cad.measure.deltaAngleDeg(fromDeg, toDeg) -> 最小绝对角差 [0,180]
+- cad.measure.center(id) / radius(id) / length(id) -> 从图元几何读取，或 undefined
+- cad.measure.check(name, expected, actual, tolerance=1e-3) -> { name, expected, actual, pass }
+- cad.measure.report(checks) -> { ok, checks }
+非平凡绘制后建议：return { ...cad.measure.report([...]), entityIds }
 
 ### cad.edit.transaction(label, tx => { ... })
 在事务中执行编辑操作，所有修改作为一个撤销组。label 是操作描述。
@@ -99,6 +109,12 @@ title: 用 AI 编写脚本
 - tx.drawArc({ center: {x,y}, radius, startAngleDeg, endAngleDeg, layer? }) -> 返回新实体 ID
 - tx.drawRectangle({ corner1: {x,y}, corner2: {x,y}, layer? }) -> 返回新实体 ID
 - tx.drawPolyline({ points: [{x,y}...], closed?, layer? }) -> 返回新实体 ID
+- tx.drawEllipse({ center: {x,y}, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? }) -> 返回新实体 ID
+- tx.drawHatch({ boundary: [{x,y}...], patternName?, patternScale?, patternAngleDeg?, layer? }) -> 返回新实体 ID
+- tx.drawPoint({ position: {x,y}, layer? }) -> 返回新实体 ID
+- tx.drawRay({ start: {x,y}, through: {x,y}, layer? }) -> 返回新实体 ID
+- tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> 返回新实体 ID
+- tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> 返回新实体 ID
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> 返回新实体 ID
 - tx.erase(ids) -> 返回删除的实体数量
 - tx.setLayer(ids, layer)

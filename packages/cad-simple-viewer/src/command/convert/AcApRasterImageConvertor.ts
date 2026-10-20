@@ -42,6 +42,38 @@ export class AcApRasterImageConvertor {
    * @param longSide - Optional maximum dimension (width or height) in pixels.
    */
   async convert(bounds?: AcGeBox2d, longSide?: number) {
+    const capture = await this.captureEncoded(bounds, longSide)
+    if (!capture) {
+      return
+    }
+    this.downloadDataUrl(capture.dataUrl)
+  }
+
+  /**
+   * Renders the current CAD drawing to an encoded data URL without downloading.
+   *
+   * Uses the live scene (not per-entity jig preview extraction), so cost stays
+   * roughly constant with drawing size — suitable for agent verification.
+   *
+   * @param bounds - Optional world coordinate bounding box to frame.
+   * @param longSide - Optional maximum dimension (width or height) in pixels.
+   * @returns PNG/JPEG/BMP data URL, or `undefined` when the scene is unavailable.
+   */
+  async captureToDataUrl(
+    bounds?: AcGeBox2d,
+    longSide?: number
+  ): Promise<string | undefined> {
+    const capture = await this.captureEncoded(bounds, longSide)
+    return capture?.dataUrl
+  }
+
+  /**
+   * Shared offscreen render path used by {@link convert} and {@link captureToDataUrl}.
+   */
+  private async captureEncoded(
+    bounds?: AcGeBox2d,
+    longSide?: number
+  ): Promise<{ dataUrl: string } | undefined> {
     const tag = this.logTag
     const view = AcApDocManager.instance.curView as AcTrView2d
     const sceneReady = await view.waitUntilIdle()
@@ -59,7 +91,7 @@ export class AcApRasterImageConvertor {
 
     if (!scene || !camera || !layoutView) {
       console.error(`[${tag}] Scene or camera not available`)
-      return
+      return undefined
     }
 
     const viewAspect = view.width / Math.max(view.height, 1)
@@ -151,7 +183,14 @@ export class AcApRasterImageConvertor {
         outputHeight
       )
 
-      this.createFileAndDownloadIt(canvas, finalPixels, outputWidth, outputHeight)
+      return {
+        dataUrl: this.encodeDataUrl(
+          canvas,
+          finalPixels,
+          outputWidth,
+          outputHeight
+        )
+      }
     } finally {
       renderer.setRenderTarget(originalRenderTarget)
       renderTarget?.dispose()
@@ -339,30 +378,17 @@ export class AcApRasterImageConvertor {
   }
 
   /**
-   * Creates a downloadable image file and triggers the download.
-   *
-   * @param canvas - Canvas used for PNG/JPEG encoding
-   * @param pixels - RGBA pixel buffer used for BMP encoding
-   * @param width - Image width in pixels
-   * @param height - Image height in pixels
-   * @private
+   * Triggers a browser download for an encoded image data URL.
    */
-  private createFileAndDownloadIt(
-    canvas: HTMLCanvasElement,
-    pixels: Uint8Array,
-    width: number,
-    height: number
-  ) {
+  private downloadDataUrl(dataUrl: string) {
     const doc = AcApDocManager.instance.curDocument
     const downloadName = resolveExportDownloadName(
       doc.fileName || doc.docTitle,
       this.fileExtension
     )
 
-    const dataURL = this.encodeDataUrl(canvas, pixels, width, height)
-
     const downloadLink = document.createElement('a')
-    downloadLink.href = dataURL
+    downloadLink.href = dataUrl
     downloadLink.download = downloadName
 
     document.body.appendChild(downloadLink)

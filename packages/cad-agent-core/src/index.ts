@@ -12,12 +12,27 @@ export {
   type DrawingContextSnapshot
 } from './context/DrawingContextProvider'
 export {
+  createCadMeasure,
+  type CadMeasureApi,
+  type MeasureCheck,
+  type MeasureReport
+} from './script/createCadMeasure'
+export {
   createCadScriptHost,
   type CadEditTransaction,
   type CadScriptEffects,
-  type CadScriptLimits
+  type CadScriptLimits,
+  type CadScriptPreviewRequest
 } from './script/createCadScriptHost'
 export { toEntitySnapshot, type EntitySnapshot } from './script/entitySnapshot'
+export {
+  captureDrawingPreview,
+  DRAWING_PREVIEW_LONG_SIDE_PX,
+  VERIFICATION_PREVIEW_LONG_SIDE_PX,
+  waitForDrawingSceneReady,
+  type CaptureDrawingPreviewFailure,
+  type CaptureDrawingPreviewResult
+} from './preview/captureDrawingPreview'
 export {
   executeCadScript,
   MAX_SCRIPT_RESULT_CHARS,
@@ -48,5 +63,6 @@ export {
   type CadToolAccess,
   type CadToolDefinition,
   type Point2dInput,
-  type ToolResult
+  type ToolResult,
+  type ToolResultImage
 } from './tools/types'

@@ -88,6 +88,17 @@ Ovládání výběru:
 
 ### cad.view
 - cad.view.zoomExtents() -> přiblíží na rozsah modelového prostoru
+- cad.view.capturePreview({ longSide? }) -> zařadí PNG snímek po dokončení skriptu; vrací { queued: true, index }. Použijte při vizuální kontrole; u jednoduchých úprav lze vynechat
+
+
+### cad.measure
+- cad.measure.distance(a, b) -> Distance between {x,y} points
+- cad.measure.angleDeg(a, b) -> Bearing a→b deg (-180,180]; angleDeg(a,b,c) -> interior angle at b
+- cad.measure.deltaAngleDeg(fromDeg, toDeg) -> Smallest |Δ| in [0,180]
+- cad.measure.center(id) / radius(id) / length(id) -> From entity geometry, or undefined
+- cad.measure.check(name, expected, actual, tolerance=1e-3) -> { name, expected, actual, pass }
+- cad.measure.report(checks) -> { ok, checks }
+After non-trivial draws prefer: return { ...cad.measure.report([...]), entityIds }
 
 ### cad.edit.transaction(label, tx => { ... })
 Provede editační operace v transakci, všechny změny tvoří jednu skupinu pro vrácení zpět. label je popis operace.
@@ -98,6 +109,12 @@ Metody dostupné v transakci:
 - tx.drawArc({ center: {x,y}, radius, startAngleDeg, endAngleDeg, layer? }) -> vrací ID nové entity
 - tx.drawRectangle({ corner1: {x,y}, corner2: {x,y}, layer? }) -> vrací ID nové entity
 - tx.drawPolyline({ points: [{x,y}...], closed?, layer? }) -> vrací ID nové entity
+- tx.drawEllipse({ center: {x,y}, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? }) -> vrací ID nové entity
+- tx.drawHatch({ boundary: [{x,y}...], patternName?, patternScale?, patternAngleDeg?, layer? }) -> vrací ID nové entity
+- tx.drawPoint({ position: {x,y}, layer? }) -> vrací ID nové entity
+- tx.drawRay({ start: {x,y}, through: {x,y}, layer? }) -> vrací ID nové entity
+- tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> vrací ID nové entity
+- tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> vrací ID nové entity
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> vrací ID nové entity
 - tx.erase(ids) -> vrací počet smazaných entit
 - tx.setLayer(ids, layer)

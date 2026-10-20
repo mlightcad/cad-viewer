@@ -88,6 +88,17 @@ Seçim kümesini kontrol etme:
 
 ### cad.view
 - cad.view.zoomExtents() -> Görünümü model alanı sınırlarına sığdırır
+- cad.view.capturePreview({ longSide? }) -> Komut dosyası bittikten sonra PNG kuyruğa alır; { queued: true, index } döner. Görsel kontrol için kullanın; basit düzenlemelerde atlanabilir
+
+
+### cad.measure
+- cad.measure.distance(a, b) -> Distance between {x,y} points
+- cad.measure.angleDeg(a, b) -> Bearing a→b deg (-180,180]; angleDeg(a,b,c) -> interior angle at b
+- cad.measure.deltaAngleDeg(fromDeg, toDeg) -> Smallest |Δ| in [0,180]
+- cad.measure.center(id) / radius(id) / length(id) -> From entity geometry, or undefined
+- cad.measure.check(name, expected, actual, tolerance=1e-3) -> { name, expected, actual, pass }
+- cad.measure.report(checks) -> { ok, checks }
+After non-trivial draws prefer: return { ...cad.measure.report([...]), entityIds }
 
 ### cad.edit.transaction(label, tx => { ... })
 İşlem içinde düzenleme işlemlerini gerçekleştirir; tüm değişiklikler tek bir geri alma grubudur. label işlem açıklamasıdır.
@@ -98,6 +109,12 @@ Seçim kümesini kontrol etme:
 - tx.drawArc({ center: {x,y}, radius, startAngleDeg, endAngleDeg, layer? }) -> Yeni varlık ID'si döndürür
 - tx.drawRectangle({ corner1: {x,y}, corner2: {x,y}, layer? }) -> Yeni varlık ID'si döndürür
 - tx.drawPolyline({ points: [{x,y}...], closed?, layer? }) -> Yeni varlık ID'si döndürür
+- tx.drawEllipse({ center: {x,y}, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? }) -> Yeni varlık ID'si döndürür
+- tx.drawHatch({ boundary: [{x,y}...], patternName?, patternScale?, patternAngleDeg?, layer? }) -> Yeni varlık ID'si döndürür
+- tx.drawPoint({ position: {x,y}, layer? }) -> Yeni varlık ID'si döndürür
+- tx.drawRay({ start: {x,y}, through: {x,y}, layer? }) -> Yeni varlık ID'si döndürür
+- tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> Yeni varlık ID'si döndürür
+- tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> Yeni varlık ID'si döndürür
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> Yeni varlık ID'si döndürür
 - tx.erase(ids) -> Silinen varlık sayısını döndürür
 - tx.setLayer(ids, layer)

@@ -212,6 +212,51 @@ Görünümü model alanı sınırlarına sığdırır.
 cad.view.zoomExtents()
 ```
 
+### `cad.view.capturePreview({ longSide? })`
+
+Çizim sınırlarının PNG ekran görüntüsünü kuyruğa alır. Yakalama, komut dosyası gövdesi bittikten sonra çalışır. `{ queued: true, index }` döner. Agent sohbetinde görüntüler model için araç sonucuna eklenir (JSON data URL olarak dönmez).
+
+```javascript
+cad.view.zoomExtents()
+cad.view.capturePreview()
+// optional: cad.view.capturePreview({ longSide: 512 })
+```
+
+
+## cad.measure
+
+Numeric helpers for self-check after drawing. Prefer these over hand-rolled `Math.hypot` / `atan2`. Points are `{ x, y }` in WCS.
+
+| Method | Returns |
+|--------|---------|
+| `cad.measure.distance(a, b)` | Distance between two points |
+| `cad.measure.angleDeg(a, b)` | Bearing of a→b from +X, degrees in (-180, 180] |
+| `cad.measure.angleDeg(a, b, c)` | Interior angle at b (a–b–c), degrees in [0, 180] |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)` | Smallest absolute bearing difference in [0, 180] |
+| `cad.measure.center(id)` | Circle/arc/ellipse center, or point/text position; else `undefined` |
+| `cad.measure.radius(id)` | Circle/arc radius or ellipse majorRadius; else `undefined` |
+| `cad.measure.length(id)` | Line length or polyline/spline path length; else `undefined` |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`) |
+| `cad.measure.report(checks)` | `{ ok, checks }` — `ok` is true iff every check passed |
+
+Recommended return shape after a non-trivial draw:
+
+```javascript
+const origin = { x: 0, y: 0 }
+let circleId = ''
+cad.edit.transaction('draw', tx => {
+  circleId = tx.drawCircle({ center: { x: 30, y: 40 }, radius: 10 })
+})
+const center = cad.measure.center(circleId)
+return {
+  ...cad.measure.report([
+    cad.measure.check('r', 10, cad.measure.radius(circleId)),
+    cad.measure.check('pcd', 50, cad.measure.distance(origin, center), 0.01)
+  ]),
+  entityIds: [circleId]
+}
+```
+
 ## cad.edit.transaction
 
 Düzenleme işlemlerini gerçekleştirir; tüm değişiklikler tek bir geri alma grubu olarak ele alınır. Teknik resim düzenlenebilir durumda olmalıdır (salt okunur mod değil).
@@ -234,6 +279,12 @@ cad.edit.transaction('Toplu değişiklik', tx => {
 | `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })` | `center: {x,y}` | Yeni varlık ID'si |
 | `tx.drawRectangle({ corner1, corner2, layer? })` | `corner1/corner2: {x,y}` | Yeni varlık ID'si |
 | `tx.drawPolyline({ points, closed?, layer? })` | `points: Array<{x,y}>` | Yeni varlık ID'si |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}` | Yeni varlık ID'si |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })` | `boundary: Array<{x,y}>` (min 3) | Yeni varlık ID'si |
+| `tx.drawPoint({ position, layer? })` | `position: {x,y}` | Yeni varlık ID'si |
+| `tx.drawRay({ start, through, layer? })` | `start/through: {x,y}` | Yeni varlık ID'si |
+| `tx.drawXline({ start, through, layer? })` | `start/through: {x,y}` | Yeni varlık ID'si |
+| `tx.drawSpline({ points, closed?, layer? })` | `points: Array<{x,y}>` | Yeni varlık ID'si |
 | `tx.drawText({ position, text, height?, layer? })` | `position: {x,y}` | Yeni varlık ID'si |
 
 ### Düzenleme Yöntemleri

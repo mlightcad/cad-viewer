@@ -45,15 +45,15 @@ export const PROVIDER_DEFAULTS: Record<
 > = {
   openai: {
     baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-4o-mini'
+    model: 'gpt-5.4-mini'
   },
   anthropic: {
     baseUrl: 'https://api.anthropic.com/v1',
-    model: 'claude-3-5-haiku-latest'
+    model: 'claude-sonnet-4-6'
   },
   'openai-compatible': {
     baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-4o-mini'
+    model: 'gpt-5.4-mini'
   },
   deepseek: {
     baseUrl: 'https://api.deepseek.com/v1',

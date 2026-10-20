@@ -35,12 +35,14 @@ adapter can reuse `createDocManagerSession()`.
 - `access`: `read`, `write`, or `view`
 - `execute`
 
+The catalog is script-first and currently exposes only:
+
+- `execute_cad_script` — all drawing, queries, edits, and context (`cad.drawing`)
+
 `execute_cad_script` is marked `write` because a script may mutate the drawing.
 The runner still accepts a read-only drawing when the script never touches
-`cad.edit`.
-
-Fixed tools (`draw_line`, `draw_circle`, and the rest) each open one undo mark.
-They delegate to `CadActionExecutor`.
+`cad.edit`. Drawing primitives live on `CadActionExecutor` and are reached
+through `cad.edit.transaction` inside the script host.
 
 ## Script host
 
@@ -78,13 +80,16 @@ highlights those ids.
 | `cad.entities.inBox(min, max)` | Snapshots whose scene bounds meet a WCS box |
 | `cad.selection` | `ids`, `entities`, `replace`, `add`, `remove`, `clear` |
 | `cad.view.zoomExtents()` | Fit the view to the drawing |
+| `cad.view.capturePreview({ longSide? })` | Queue a PNG screenshot fulfilled after the script; attached as `images` on the tool result |
+| `cad.measure.*` | `distance`, `angleDeg`, `deltaAngleDeg`, `center`, `radius`, `length`, `check`, `report` for numeric self-check |
 | `cad.log(...)` | Lines returned on the tool result |
 | `cad.edit.transaction(label, tx => {})` | One undo group |
 
 Inside the transaction, `tx` can `drawLine`, `drawCircle`, `drawArc`,
-`drawRectangle`, `drawPolyline`, `drawText`, `erase`, `setLayer`, `move`,
+`drawRectangle`, `drawPolyline`, `drawEllipse`, `drawHatch`, `drawPoint`,
+`drawRay`, `drawXline`, `drawSpline`, `drawText`, `erase`, `setLayer`, `move`,
 `rotate`, `createLayer`, and `setCurrentLayer`. Draw methods return the new
-entity id. Draw argument shapes match the fixed tools.
+entity id.
 
 Snapshot `geometry` for common types:
 

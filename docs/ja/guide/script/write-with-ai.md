@@ -88,6 +88,17 @@ DXF の BLOCKS セクションに相当します。*Model_Space と *Paper_Space
 
 ### cad.view
 - cad.view.zoomExtents() -> モデル空間の範囲にズーム
+- cad.view.capturePreview({ longSide? }) -> スクリプト終了後に PNG をキュー。戻り値は { queued: true, index }。視覚確認が必要なときに使用し、単純な編集では省略可
+
+
+### cad.measure
+- cad.measure.distance(a, b) -> Distance between {x,y} points
+- cad.measure.angleDeg(a, b) -> Bearing a→b deg (-180,180]; angleDeg(a,b,c) -> interior angle at b
+- cad.measure.deltaAngleDeg(fromDeg, toDeg) -> Smallest |Δ| in [0,180]
+- cad.measure.center(id) / radius(id) / length(id) -> From entity geometry, or undefined
+- cad.measure.check(name, expected, actual, tolerance=1e-3) -> { name, expected, actual, pass }
+- cad.measure.report(checks) -> { ok, checks }
+After non-trivial draws prefer: return { ...cad.measure.report([...]), entityIds }
 
 ### cad.edit.transaction(label, tx => { ... })
 トランザクション内で編集操作を実行し、すべての変更が 1 つのアンドゥグループになる。label は操作の説明。
@@ -98,6 +109,12 @@ DXF の BLOCKS セクションに相当します。*Model_Space と *Paper_Space
 - tx.drawArc({ center: {x,y}, radius, startAngleDeg, endAngleDeg, layer? }) -> 新しいエンティティ ID を返す
 - tx.drawRectangle({ corner1: {x,y}, corner2: {x,y}, layer? }) -> 新しいエンティティ ID を返す
 - tx.drawPolyline({ points: [{x,y}...], closed?, layer? }) -> 新しいエンティティ ID を返す
+- tx.drawEllipse({ center: {x,y}, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? }) -> 新しいエンティティ ID を返す
+- tx.drawHatch({ boundary: [{x,y}...], patternName?, patternScale?, patternAngleDeg?, layer? }) -> 新しいエンティティ ID を返す
+- tx.drawPoint({ position: {x,y}, layer? }) -> 新しいエンティティ ID を返す
+- tx.drawRay({ start: {x,y}, through: {x,y}, layer? }) -> 新しいエンティティ ID を返す
+- tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> 新しいエンティティ ID を返す
+- tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> 新しいエンティティ ID を返す
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> 新しいエンティティ ID を返す
 - tx.erase(ids) -> 削除されたエンティティ数を返す
 - tx.setLayer(ids, layer)

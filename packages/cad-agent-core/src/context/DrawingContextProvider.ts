@@ -3,7 +3,7 @@ import { resolveDrawingExtents } from '@mlightcad/cad-simple-viewer'
 import type { CadSession } from '../session/CadSession'
 
 /**
- * Snapshot of the active drawing passed to the model via `get_drawing_context`.
+ * Snapshot of the active drawing used by `cad.drawing` in the script host.
  */
 export interface DrawingContextSnapshot {
   /** Name of the current layer (CLAYER). */

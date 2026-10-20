@@ -3,7 +3,7 @@ export type AgentMode = 'simple' | 'high-inference'
 
 const STORAGE_KEY = 'cad-agent-plugin.agent-mode'
 
-const DEFAULT_MODE: AgentMode = 'high-inference'
+const DEFAULT_MODE: AgentMode = 'simple'
 
 /** Loads the persisted agent mode from `localStorage`. */
 export function loadAgentMode(): AgentMode {
