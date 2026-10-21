@@ -16,6 +16,8 @@ depend on `@mlightcad/cad-simple-viewer` or a browser.
   Set `zipPackage: false` and pass an output folder to write those files
   directly. Set `maxChunkBytes` (1–64 MiB, default 10 MiB) and `compressChunks`
   (default `true`; gzip of chunk payloads, independent of the outer zip).
+  When the DWG/DXF provides a drawing thumbnail (`AcDbDatabase.thumbnailImage`),
+  a `preview.jpg` is written next to `viewer.html` (and included in the zip).
 - `viewerMode` defaults to `measure` for both formats: measure tools and
   review markup. Pass `view` for pan, zoom, and layers only.
 
@@ -44,6 +46,9 @@ await exportFileToHtml('drawing.dwg', 'drawing.html', {
   fontsDir: 'D:/code/cad-data',
   // Or override the remote library (ignored when fontsDir is set).
   // fontsUrl: 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data/fonts/'
+  // Optional commercial DWG parser (must install @mlightcad/dwg-converter):
+  // dwgParser: 'dwg',
+  // dwgLicenseKey: process.env.DWG_LICENSE_KEY
 })
 
 await exportFileToHtml('drawing.dwg', 'drawing.zip', {
@@ -200,9 +205,25 @@ It was ~340 ms of an ~11 s pack. The bytes are already walked once to build
 the ACEC buffer; a second thread would need those typed arrays copied or
 transferred first.
 
+## DWG parsers
+
+`exportFileToHtml` defaults to LibreDWG (`dwgParser: 'libredwg'`), which is a
+normal dependency of this package.
+
+To use the commercial parser instead:
+
+1. Install `@mlightcad/dwg-converter` yourself from the private registry (it is
+   **not** listed in this package's dependencies, so `pnpm i` never fetches it).
+2. Pass `dwgParser: 'dwg'` and, when needed, `dwgLicenseKey`.
+3. Or on the CLI: `--dwg-parser dwg --dwg-license-key <key>`.
+
+If the package is missing, or the license/trial cannot be activated, registration
+fails with an explicit error; LibreDWG remains the default path for users who
+never install the commercial converter.
+
 ## Notes
 
-- Requires Node 20+ (`crypto.subtle` for optional password protection).
+- Requires Node 22+ (`crypto.subtle` for optional password protection).
 - Embeds `viewer-runtime.iife.js` from `@mlightcad/cad-html-plugin` (copied at
   build time into `runtime/`).
 - See [Performance](#performance) for zlib, local fonts, headless conversion,

@@ -47,8 +47,19 @@
         <div class="ml-linetype-item">
           <span
             class="ml-linetype-preview"
+            :class="{
+              'ml-linetype-preview--svg':
+                isDropdownOpen && !!resolveOptionPreviewSvg(item)
+            }"
             :style="{ '--ml-linetype-bg': resolveLineTypeBackground(item) }"
-          />
+          >
+            <span
+              v-if="isDropdownOpen"
+              class="ml-linetype-preview-svg"
+              aria-hidden="true"
+              v-html="resolveOptionPreviewSvg(item) ?? ''"
+            />
+          </span>
           <span class="ml-linetype-text">{{ item.label }}</span>
         </div>
       </el-option>
@@ -72,6 +83,7 @@ import { useI18n } from 'vue-i18n'
 import {
   buildLineTypeOptions,
   type LineTypeOption,
+  lineTypeHasEmbeddedText,
   resolveLineTypeBackground,
   resolveLineTypePreviewSvg
 } from './lineTypeOptions'
@@ -121,6 +133,7 @@ const emit = defineEmits<{
 }>()
 
 const selectRef = ref<SelectInstance>()
+const isDropdownOpen = ref(false)
 const activeDatabase = shallowRef(
   AcApDocManager.instance?.curDocument?.database
 )
@@ -129,10 +142,10 @@ const resolvedOptions = computed(() =>
   (props.options ?? buildLineTypeOptions(activeDatabase.value)).map(item => ({
     ...item,
     label: localizeSymbolicLineTypeLabel(item.value, item.label)
-    // Intentionally omit per-option SVG. Large linetype tables (800+ complex
-    // TEXT styles) plus multiple selects explode DOM/memory; CSS dash
-    // previews stay cheap. The closed control still resolves SVG for the
-    // selected value only.
+    // Intentionally omit eager per-option SVG strings. Large linetype tables
+    // (800+ complex TEXT styles) plus multiple selects explode DOM/memory.
+    // CSS dash previews stay cheap while closed; SVG is resolved on demand
+    // for the selected value and for open-menu rows that need text glyphs.
   }))
 )
 const selectedOption = computed(() =>
@@ -148,6 +161,15 @@ const selectedPreviewSvg = computed(() =>
   resolveLineTypePreviewSvg(selectedOption.value)
 )
 const resolvedModelValue = computed(() => selectedOption.value?.value)
+
+/**
+ * Resolves an option-row SVG only when it can show embedded text that CSS
+ * dash previews cannot. Plain dash patterns keep the cheap CSS fallback.
+ */
+function resolveOptionPreviewSvg(option: LineTypeOption) {
+  if (!lineTypeHasEmbeddedText(option.lineType)) return undefined
+  return resolveLineTypePreviewSvg(option)
+}
 
 /**
  * Refreshes the database-backed option list after the active document changes.
@@ -168,9 +190,11 @@ function onSelect(value: string) {
 
 /**
  * Forwards dropdown open/close so hosts (e.g. click-to-edit layer cells) can
- * tear down the select when the menu closes.
+ * tear down the select when the menu closes. Also gates option-row SVG so
+ * closed selects do not allocate preview markup for every linetype.
  */
 function onVisibleChange(visible: boolean) {
+  isDropdownOpen.value = visible
   emit('visible-change', visible)
 }
 
@@ -239,9 +263,10 @@ defineExpose({
 
 .ml-linetype-preview {
   position: relative;
-  width: 52px;
-  height: 14px;
-  flex: 0 0 52px;
+  width: 96px;
+  height: 20px;
+  flex: 0 0 96px;
+  overflow: visible;
 }
 
 .ml-linetype-preview::before {
@@ -263,12 +288,20 @@ defineExpose({
   display: block;
   width: 100%;
   height: 100%;
+  line-height: 0;
+  color: inherit;
 }
 
 .ml-linetype-preview-svg :deep(svg) {
   display: block;
   width: 100%;
   height: 100%;
+  overflow: visible;
+}
+
+.ml-linetype-preview-svg :deep(text) {
+  /* Keep embedded linetype labels readable inside the compact swatch. */
+  paint-order: stroke fill;
 }
 
 .ml-linetype-text {

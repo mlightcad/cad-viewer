@@ -20,11 +20,15 @@ import { zipPackageEntries } from './nodeZip'
 
 /**
  * Packs a snapshot into HTML or a multi-file zip using the shared core APIs.
+ *
+ * @param previewJpeg - Optional drawing thumbnail JPEG for multi-file packages
+ *   (`preview.jpg` next to `viewer.html`). Ignored for single-file HTML.
  */
 export async function packSnapshot(
   snapshot: AcExSnapshot,
   options: AcExHtmlExporterOptions = {},
-  baseName = 'drawing'
+  baseName = 'drawing',
+  previewJpeg?: Uint8Array
 ): Promise<AcExHtmlExportResult> {
   installNodeSnapshotCompressor()
   const viewerRuntime = await loadViewerRuntime(options.viewerRuntimePath)
@@ -37,14 +41,18 @@ export async function packSnapshot(
       baseName,
       ...packageBuild
     })
+    const files =
+      previewJpeg?.length
+        ? [...pkg.files, { path: 'preview.jpg', bytes: previewJpeg }]
+        : pkg.files
     if (options.zipPackage === false) {
       return {
         kind: 'directory',
-        files: pkg.files,
+        files,
         fileName: baseName
       }
     }
-    const zipBytes = await zipPackageEntries(pkg.files)
+    const zipBytes = await zipPackageEntries(files)
     return {
       kind: 'zip',
       zipBytes,
