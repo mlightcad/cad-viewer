@@ -1,5 +1,23 @@
 # @mlightcad/cad-viewer-example
 
+## 1.7.7-preview.0
+
+### Patch Changes
+
+- feat: adds Node HTML export with thumbnails and complex linetype SVG previews, plus a script-first CAD agent with measure APIs, searchable built-in scripts, and a Vue-free script console. Fixes layout framing via openViewMode, locked-layer edits, INSERT highlight/pan stability, and agent tool streaming. Also upgrades data-model/libredwg-converter and three.js rendering deps
+- Updated dependencies
+  - @mlightcad/cad-agent-core@1.7.7-preview.0
+  - @mlightcad/cad-agent-plugin@1.7.7-preview.0
+  - @mlightcad/cad-google-drive-plugin@1.7.7-preview.0
+  - @mlightcad/cad-html-plugin@1.7.7-preview.0
+  - @mlightcad/cad-onedrive-plugin@1.7.7-preview.0
+  - @mlightcad/cad-pdf-plugin@1.7.7-preview.0
+  - @mlightcad/cad-script-plugin@1.7.7-preview.0
+  - @mlightcad/cad-simple-viewer@1.7.7-preview.0
+  - @mlightcad/cad-viewer@1.7.7-preview.0
+  - @mlightcad/pdf-renderer@1.7.7-preview.0
+  - @mlightcad/three-renderer@1.7.7-preview.0
+
 ## 1.7.6
 
 ### Patch Changes

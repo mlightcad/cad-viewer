@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-agent-core",
-  "version": "1.7.6",
+  "version": "1.7.7-preview.0",
   "license": "MIT",
   "type": "module",
   "repository": {

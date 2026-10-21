@@ -8,6 +8,8 @@
       "@mlightcad/cad-agent-plugin",
       "@mlightcad/cad-script-plugin",
       "@mlightcad/cad-google-drive-plugin",
+      "@mlightcad/cad-html-core",
+      "@mlightcad/cad-html-exporter",
       "@mlightcad/cad-html-plugin",
       "@mlightcad/cad-onedrive-plugin",
       "@mlightcad/cad-pdf-plugin",
