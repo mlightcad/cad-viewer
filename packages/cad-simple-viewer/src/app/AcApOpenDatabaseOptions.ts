@@ -113,10 +113,16 @@ export interface AcApOpenDatabaseOptions extends Omit<
   waitForTextGeometry?: boolean
 
   /**
-   * How to frame the view when the document finishes opening.
+   * How to frame each layout the user has not operated on yet:
+   * the startup layout at open, and every other layout on its **first visit**.
+   *
+   * - {@link AcApOpenViewMode.Extents}: zoom to converted geometry.
+   * - {@link AcApOpenViewMode.Saved}: restore AutoCAD's saved view (model
+   *   VPORT `*ACTIVE`; paper uses layout limits only when they contain
+   *   real viewports, otherwise the viewport box).
    *
    * When omitted, Read and Review modes use {@link AcApOpenViewMode.Extents};
-   * Write mode uses {@link AcApOpenViewMode.Saved} (AutoCAD VPORT behavior).
+   * Write mode uses {@link AcApOpenViewMode.Saved}.
    */
   openViewMode?: AcApOpenViewMode
 

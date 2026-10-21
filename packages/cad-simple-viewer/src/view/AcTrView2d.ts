@@ -45,6 +45,7 @@ import Stats from 'three/examples/jsm/libs/stats.module'
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
 import { AcApDocManager, AcApSettingManager } from '../app'
+import { AcApOpenViewMode } from '../app/AcApOpenDatabaseOptions'
 import { AcApZoomCmd } from '../command/AcApZoomCmd'
 import { isMarkupHtmlTextEditing } from '../command/markup/AcApMarkupTextEdit'
 import { notifyMeasurementLayoutChanged } from '../command/measure/AcApMeasurementStore'
@@ -85,6 +86,7 @@ import type { AcTrLazySpatialChildren } from '../spatialIndex'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
+import { acapResolveLayoutFrameBox } from '../util/AcApLayoutViewFraming'
 import {
   collectTextStyleFontNames,
   planTextStyleFontPreload
@@ -243,6 +245,12 @@ export class AcTrView2d extends AcEdBaseView {
    * race during document open.
    */
   private _externallyFramedLayouts: Set<AcDbObjectId> = new Set()
+  /**
+   * Open options → Initial view (`Extents` / `Saved`) for this document.
+   * Applied at document open for the startup layout, and again on the
+   * **first visit** to every other layout the user has not framed yet.
+   */
+  private _openViewMode: AcApOpenViewMode = AcApOpenViewMode.Extents
   /** Progressive camera framing while entities batch-convert at document open. */
   private readonly _progressiveOpenFit: AcTrProgressiveOpenFitController
   /** Entity display policy for layer-aware conversion skipping. */
@@ -2739,6 +2747,16 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * Records the Open options → Initial view choice for this document.
+   *
+   * Used by {@link applyInitialZoom} on the first visit to any layout that
+   * was not already framed at open time.
+   */
+  setOpenViewMode(mode: AcApOpenViewMode) {
+    this._openViewMode = mode
+  }
+
+  /**
    * Whether the layout has already been visited (or framed by the
    * application layer), i.e. a switch to it will not run the first-visit
    * auto zoom. Lets callers that frame a layout themselves (FIND) call
@@ -2767,41 +2785,18 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Applies the initial zoom-to-fit for a layout the user just switched
-   * into for the first time. Picks the best available "what should the
-   * camera frame?" signal in this order:
+   * Applies Open options → Initial view for a layout the user just switched
+   * into for the **first** time ({@link setOpenViewMode}).
    *
-   * 1. **`AcDbLayout.limits`** (LIMMIN/LIMMAX) — only when it actually
-   *    contains the layout's viewports. Many real DWGs ship with garbage
-   *    limits (e.g. `(0,0)-(12,9)` from a legacy template setup) that
-   *    don't reflect the actual paper sheet. We reject those by
-   *    checking containment against `viewportsBoundingBox`.
+   * - **Saved + model**: VPORT `*ACTIVE`, else geometry fallback.
+   * - **Saved + paper**: {@link acapResolveLayoutFrameBox} with limits
+   *   trusted only when they contain real viewports (rejects template
+   *   `(0,0)-(12,9)`), then viewports → layout extents → entity box.
+   * - **Extents**: frame converted geometry (and paper viewports as a
+   *   content proxy). Does not prefer LIMMIN/LIMMAX over drawable bounds.
    *
-   * 2. **`AcTrLayoutView.viewportsBoundingBox`** — bounding box of all
-   *    real user viewports in the layout. In production sheets viewports
-   *    typically span 70-90% of the paper, so this is a great proxy for
-   *    the printable area and (crucially) ignores outliers like title
-   *    blocks authored in a different unit/scale.
-   *
-   * 3. **`AcDbLayout.extents`** — the layout's own EXTMIN/EXTMAX, if
-   *    populated. Many parsers leave this empty (we've seen `(0,0)-(0,0)`),
-   *    so it sits below the viewport-based heuristic.
-   *
-   * 4. **`getDrawingExtents`** (entity extents from batch geometry) —
-   *    last-resort fallback for layouts with no viewports and no
-   *    sensible limits/extents (e.g. a freshly created empty paper).
-   *    Vulnerable to scale-mismatch outliers, but better than no zoom.
-   *
-   * **Critically, this runs through `AcEdConditionWaiter`**: at the
-   * moment `layoutSwitched` fires, the layout's entities (including its
-   * `AcDbViewport`s) have not yet been batch-converted into the scene
-   * — `loadLayoutEntitiesIfNeeded` chunked-converts via the progressive
-   * convert queue (or direct `batchConvert`).
-   * Without the waiter, `viewportsBoundingBox` returns undefined and
-   * the strategy degrades into (1) zooming to garbage `limits`, or
-   * (4) zooming to an empty scene box. The waiter polls
-   * {@link isProcessingEntities} (convert queue + deferred glyph jobs)
-   * and only fires the heuristic once conversion and text geometry finish.
+   * Runs through {@link AcEdConditionWaiter} so viewport / entity convert
+   * finishes before framing.
    */
   private applyInitialZoom(btrId: AcDbObjectId, layout: AcDbLayout) {
     const waiter = new AcEdConditionWaiter(
@@ -2811,38 +2806,9 @@ export class AcTrView2d extends AcEdBaseView {
           return
         }
 
-        const limits = layout.limits
-        const layoutView = this._layoutViewManager.getAt(btrId)
-        const vpsBox = layoutView?.viewportsBoundingBox
-
-        const limitsContainsViewports = (() => {
-          if (!limits || limits.isEmpty()) return false
-          if (!vpsBox) return true
-          return (
-            limits.min.x <= vpsBox.min.x &&
-            limits.min.y <= vpsBox.min.y &&
-            limits.max.x >= vpsBox.max.x &&
-            limits.max.y >= vpsBox.max.y
-          )
-        })()
-
-        if (limits && !limits.isEmpty() && limitsContainsViewports) {
-          this.zoomTo(limits)
-        } else if (vpsBox) {
-          this.zoomTo(vpsBox)
-        } else if (layout.extents && !layout.extents.isEmpty()) {
-          const extents = layout.extents
-          this.zoomTo(
-            new AcGeBox2d(
-              { x: extents.min.x, y: extents.min.y },
-              { x: extents.max.x, y: extents.max.y }
-            )
-          )
-        } else {
-          const box = this.getDrawingExtents()
-          if (box) {
-            this.zoomTo(box)
-          }
+        const box = this.resolveFirstVisitFrameBox(btrId, layout)
+        if (box) {
+          this.zoomTo(box)
         }
         this._isDirty = true
         AcApZoomCmd.rememberOriginalView(this, btrId)
@@ -2851,6 +2817,56 @@ export class AcTrView2d extends AcEdBaseView {
       0
     )
     waiter.start()
+  }
+
+  /**
+   * Resolves the camera box for a layout's first visit from
+   * {@link _openViewMode}.
+   */
+  private resolveFirstVisitFrameBox(
+    btrId: AcDbObjectId,
+    layout: AcDbLayout
+  ): AcGeBox2d | undefined {
+    const isModelSpace = btrId === this.modelSpaceBtrId
+    const wantSaved = this._openViewMode === AcApOpenViewMode.Saved
+
+    if (wantSaved && isModelSpace) {
+      const db = AcApDocManager.instance.curDocument.database
+      const aspect = this.width / Math.max(this.height, 1)
+      const savedBox = db.tables.viewportTable.getActiveVportBox(aspect)
+      if (savedBox) return savedBox
+    }
+
+    const layoutView = this._layoutViewManager.getAt(btrId)
+    const extents = layout.extents
+    const layoutExtents =
+      extents && !extents.isEmpty()
+        ? {
+            min: { x: extents.min.x, y: extents.min.y },
+            max: { x: extents.max.x, y: extents.max.y }
+          }
+        : undefined
+    const entityBox = this.getDrawingExtents()
+    const viewportsBox = layoutView?.viewportsBoundingBox
+
+    if (wantSaved && !isModelSpace) {
+      // Paper Saved: trust LIMMIN/LIMMAX only when they contain viewports.
+      return acapResolveLayoutFrameBox({
+        limits: layout.limits,
+        viewportsBox,
+        layoutExtents,
+        entityBox
+      })?.box
+    }
+
+    // Extents (any layout), or Saved model fallback without *ACTIVE:
+    // prefer drawable content; never lead with template model/paper limits.
+    return acapResolveLayoutFrameBox({
+      limits: undefined,
+      viewportsBox: isModelSpace ? undefined : viewportsBox,
+      layoutExtents,
+      entityBox
+    })?.box
   }
 
   /**
@@ -2886,6 +2902,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._missedImages.clear()
     this._initializedLayouts.clear()
     this._externallyFramedLayouts.clear()
+    this._openViewMode = AcApOpenViewMode.Extents
     this._loadingLayouts.clear()
     this._renderer.dispose()
     // Drop block templates when the scene is torn down (next open / close).
@@ -2904,6 +2921,7 @@ export class AcTrView2d extends AcEdBaseView {
       layoutViewManager: this._layoutViewManager,
       initializedLayouts: this._initializedLayouts,
       externallyFramedLayouts: this._externallyFramedLayouts,
+      openViewMode: this._openViewMode,
       loadingLayouts: this._loadingLayouts,
       missedImages: this._missedImages,
       missedFonts: this._renderer.snapshotMissedFonts(),
@@ -2931,6 +2949,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._layoutViewManager = state.layoutViewManager
     this._initializedLayouts = state.initializedLayouts
     this._externallyFramedLayouts = state.externallyFramedLayouts
+    this._openViewMode = state.openViewMode ?? AcApOpenViewMode.Extents
     this._loadingLayouts = state.loadingLayouts
     this._missedImages = state.missedImages
     this._renderer.replaceMissedFonts(state.missedFonts ?? {})
@@ -2965,6 +2984,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._layoutViewManager = new AcTrLayoutViewManager()
     this._initializedLayouts = new Set()
     this._externallyFramedLayouts = new Set()
+    this._openViewMode = AcApOpenViewMode.Extents
     this._loadingLayouts = new Set()
     this._missedImages = new Map()
     this._renderer.clearMissedFonts()

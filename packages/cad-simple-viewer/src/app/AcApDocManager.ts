@@ -90,6 +90,10 @@ import {
   eventBus
 } from '../editor'
 import { AcApPluginManager } from '../plugin/AcApPluginManager'
+import {
+  acapCollectPaperViewportsBox,
+  acapResolveLayoutFrameBox
+} from '../util/AcApLayoutViewFraming'
 import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser'
 import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
 import { AcTrView2d } from '../view'
@@ -2335,34 +2339,19 @@ export class AcApDocManager {
         mode: this.getDocumentEventMode(options)
       })
 
-      // View framing at document open time (see `openViewMode`):
+      // View framing at document open time (see `openViewMode`). The same
+      // preference is stored on the view so the **first visit** to every
+      // other layout (not yet operated by the user) follows it too.
       //
-      // 1. **Paper space + has LIMMIN/LIMMAX**: frame the authoritative
-      //    paper sheet rectangle (`AcDbLayout.limits`). Real-world DWGs
-      //    frequently mix scales inside paper space (e.g. a title block
-      //    authored in mm alongside viewport rectangles authored in m),
-      //    so the entity bounding box is unreliable here 鈥?it gets
-      //    dominated by the largest-scale outliers and shrinks the
-      //    actual paper to a grain.
-      //
-      // 2. **Extents** (Read/Review default): poll `zoomToFitDrawing`
-      //    and frame batch-derived geometry bounds once entities land.
-      //
-      // 3. **Saved** (Write default) in model space: restore VPORT
-      //    `*ACTIVE` via `getActiveVportBox(aspect)` (structural / max-span
-      //    checks only — not vs header EXTMIN/EXTMAX, which often span
-      //    outliers and reject a valid tight saved view). When missing or
-      //    implausible, poll `zoomToFitDrawing`.
-      //
-      // 4. **Fallback** (paper without limits, or model with empty
-      //    extents 鈥?typically DXF): poll `zoomToFitDrawing` and frame
-      //    the populated layout bounding box once entities land.
+      // - **Saved + paper**: {@link acapResolveLayoutFrameBox} with DB
+      //   viewport borders; LIMMIN/LIMMAX only when they contain those
+      //   viewports (rejects unused template `(0,0)-(12,9)`).
+      // - **Saved + model**: VPORT `*ACTIVE` via `getActiveVportBox`.
+      // - **Extents** (any space): poll `zoomToFitDrawing` once geometry
+      //   lands.
       //
       // The pre-fix code used `db.extmin/db.extmax` (always model-space
-      // EXTMIN/EXTMAX sysvars) even when opening into paper, landing on
-      // coordinates that don't exist in paper WCS. Paper layout would
-      // render zoomed into a random quadrant 鈥?title block looking
-      // giant, viewport collapsed to pixels. See
+      // EXTMIN/EXTMAX sysvars) even when opening into paper. See
       // `next_14_viewports_full.md` Bug C-open.
       const modelSpaceId = db.tables.blockTable.modelSpace.objectId
       const isPaperSpaceActive = db.currentSpaceId !== modelSpaceId
@@ -2370,26 +2359,46 @@ export class AcApDocManager {
         acdbHostApplicationServices().layoutManager.getActiveLayout(db)
       const layoutLimits = activeLayout?.limits
       const openViewMode = this.resolveOpenViewMode(options)
+      view.setOpenViewMode(openViewMode)
 
       const progressiveRendering = options?.progressiveRendering ?? false
       let framedSynchronously = false
-      if (isPaperSpaceActive && layoutLimits && !layoutLimits.isEmpty()) {
-        view.zoomTo(layoutLimits)
-        framedSynchronously = true
-      } else if (openViewMode === AcApOpenViewMode.Extents) {
+      const startExtentsFit = () => {
         if (progressiveRendering) {
           view.beginProgressiveOpenFit()
         }
         view.zoomToFitDrawing()
         view.requestOpenLineworkFrame()
-      } else if (!isPaperSpaceActive) {
+      }
+
+      if (
+        isPaperSpaceActive &&
+        openViewMode === AcApOpenViewMode.Saved
+      ) {
+        const layoutExtents = activeLayout?.extents
+        const paperFrame = acapResolveLayoutFrameBox({
+          limits: layoutLimits,
+          viewportsBox: acapCollectPaperViewportsBox(db, db.currentSpaceId),
+          layoutExtents:
+            layoutExtents && !layoutExtents.isEmpty()
+              ? {
+                  min: { x: layoutExtents.min.x, y: layoutExtents.min.y },
+                  max: { x: layoutExtents.max.x, y: layoutExtents.max.y }
+                }
+              : undefined
+        })
+        if (paperFrame) {
+          view.zoomTo(paperFrame.box)
+          framedSynchronously = true
+        } else {
+          startExtentsFit()
+        }
+      } else if (
+        !isPaperSpaceActive &&
+        openViewMode === AcApOpenViewMode.Saved
+      ) {
         const canvasAspect = view.width / Math.max(view.height, 1)
         // Restore *ACTIVE without comparing to header EXTMIN/EXTMAX.
-        // Extents-relative heuristics reject valid saved views that sit in a
-        // dense island while $EXTMAX still spans a mirrored/outlier wing
-        // (center offset fails). Raw `modelViewBox` alone still accepts
-        // stale zoomed-out saves; `getActiveVportBox` without extents keeps
-        // structural checks + a max-span guard for those.
         const activeModelViewBox =
           db.tables.viewportTable.getActiveVportBox(canvasAspect)
 
@@ -2397,21 +2406,11 @@ export class AcApDocManager {
           view.zoomTo(activeModelViewBox)
           framedSynchronously = true
         } else {
-          // No plausible saved view (missing VPORT or zoomed absurdly far).
-          // Frame converted scene bounds — do not trust header extents alone
-          // (often a title-block island while model content sits far away).
-          if (progressiveRendering) {
-            view.beginProgressiveOpenFit()
-          }
-          view.zoomToFitDrawing()
-          view.requestOpenLineworkFrame()
+          startExtentsFit()
         }
       } else {
-        if (progressiveRendering) {
-          view.beginProgressiveOpenFit()
-        }
-        view.zoomToFitDrawing()
-        view.requestOpenLineworkFrame()
+        // Extents (paper or model), or Auto→Extents.
+        startExtentsFit()
       }
 
       // Tell the view we've already framed the startup layout, so that
