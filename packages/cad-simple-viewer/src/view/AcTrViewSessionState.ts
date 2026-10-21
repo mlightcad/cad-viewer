@@ -1,5 +1,6 @@
 import type { AcDbObjectId } from '@mlightcad/data-model'
 
+import type { AcApOpenViewMode } from '../app/AcApOpenDatabaseOptions'
 import type { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
 import type { AcTrScene } from './AcTrScene'
 
@@ -18,6 +19,12 @@ export interface AcTrViewSessionState {
   initializedLayouts: Set<AcDbObjectId>
   /** Layouts framed by document-open, not first user visit. */
   externallyFramedLayouts: Set<AcDbObjectId>
+  /**
+   * Open options → Initial view for this document (Extents / Saved).
+   * Kept with the session so a late first visit to any unvisited layout
+   * still matches the choice used when the file was opened.
+   */
+  openViewMode: AcApOpenViewMode
   /** Layouts currently being batch-converted. */
   loadingLayouts: Set<AcDbObjectId>
   /** Missing raster images keyed by entity id. */
