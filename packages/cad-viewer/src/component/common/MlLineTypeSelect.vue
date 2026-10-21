@@ -82,8 +82,8 @@ import { useI18n } from 'vue-i18n'
 
 import {
   buildLineTypeOptions,
-  type LineTypeOption,
   lineTypeHasEmbeddedText,
+  type LineTypeOption,
   resolveLineTypeBackground,
   resolveLineTypePreviewSvg
 } from './lineTypeOptions'
