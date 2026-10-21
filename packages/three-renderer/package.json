@@ -40,16 +40,16 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
-    "@mlightcad/data-model": "^1.15.13",
-    "@mlightcad/mtext-parser": "^1.5.5",
-    "@mlightcad/mtext-renderer": "^0.13.5",
+    "@mlightcad/data-model": "1.15.13",
+    "@mlightcad/mtext-parser": "1.5.5",
+    "@mlightcad/mtext-renderer": "0.13.5",
     "@types/three": "^0.186.0",
     "three": "^0.186.1"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "^1.15.13",
-    "@mlightcad/mtext-parser": "^1.5.5",
-    "@mlightcad/mtext-renderer": "^0.13.5",
+    "@mlightcad/data-model": "1.15.13",
+    "@mlightcad/mtext-parser": "1.5.5",
+    "@mlightcad/mtext-renderer": "0.13.5",
     "@velipso/polybool": "^1.1.1",
     "three": "^0.186.1"
   }
