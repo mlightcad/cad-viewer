@@ -20,6 +20,9 @@
       "inputs": [
         "default",
         "^default",
+        {
+          "runtime": "node tools/hash-linked-external-deps.mjs"
+        },
         { "env": "VITE_MSAL_CLIENT_ID" },
         { "env": "VITE_MSAL_TENANT_ID" },
         { "env": "VITE_MSAL_REDIRECT_URI" },

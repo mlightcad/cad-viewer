@@ -33,6 +33,8 @@ Options:
   --viewer-mode view|measure   Default: measure (view omits snap and measure)
   --max-chunk-mib <n>       Multi-file chunk budget, 1–64 (default 2)
   --no-compress-chunks      Write raw chunk bytes instead of .acex.gz
+  --dwg-parser libredwg|dwg Default: libredwg (dwg needs optional @mlightcad/dwg-converter)
+  --dwg-license-key <key>   License for --dwg-parser dwg (omit to use trial if active)
 `
 }
 
@@ -64,6 +66,10 @@ function parseArgs(argv) {
       options.maxChunkBytes = Number(argv[++i]) * 1024 * 1024
     } else if (arg === '--no-compress-chunks') {
       options.compressChunks = false
+    } else if (arg === '--dwg-parser') {
+      options.dwgParser = argv[++i]
+    } else if (arg === '--dwg-license-key') {
+      options.dwgLicenseKey = argv[++i]
     } else if (arg.startsWith('-')) {
       throw new Error(`Unknown option: ${arg}`)
     } else {
@@ -102,6 +108,15 @@ if (options.format !== 'single' && options.format !== 'multi') {
 if (options.format === 'single' && options.zipPackage === false) {
   throw new Error('--no-zip applies only to --format multi')
 }
+if (
+  options.dwgParser != null &&
+  options.dwgParser !== 'libredwg' &&
+  options.dwgParser !== 'dwg'
+) {
+  throw new Error(
+    `--dwg-parser must be libredwg or dwg, got ${options.dwgParser}`
+  )
+}
 
 const [input, output] = positional
 console.log('[export] start', new Date().toISOString())
@@ -116,7 +131,9 @@ const result = await exportFileToHtml(input, output, {
   fontsDir: options.fontsDir,
   fontsUrl: options.fontsUrl,
   maxChunkBytes: options.maxChunkBytes,
-  compressChunks: options.compressChunks
+  compressChunks: options.compressChunks,
+  dwgParser: options.dwgParser,
+  dwgLicenseKey: options.dwgLicenseKey
 })
 const elapsedMs = performance.now() - started
 

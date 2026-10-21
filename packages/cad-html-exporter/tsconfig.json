@@ -8,6 +8,9 @@
     "paths": {
       "@mlightcad/cad-html-exporter": [
         "./src/index.ts"
+      ],
+      "@mlightcad/libredwg-converter/node": [
+        "./node_modules/@mlightcad/libredwg-converter/lib/node.d.ts"
       ]
     }
   },

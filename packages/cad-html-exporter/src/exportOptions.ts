@@ -4,6 +4,8 @@ import {
   type AcExViewerMode
 } from '@mlightcad/cad-html-core'
 
+import type { AcExDwgParser } from './registerDwg'
+
 /** Packaging mode for headless HTML export. */
 export type AcExHtmlExportFormat = 'single' | 'multi'
 
@@ -28,7 +30,8 @@ export interface AcExHtmlExporterOptions {
    *   ACEX snapshot; large drawings embed progressive ACEC chunks.
    * - `multi` — multi-file ACEX package. Written as one `.zip` unless
    *   {@link AcExHtmlExporterOptions.zipPackage} is `false`, in which case
-   *   the package files are written into an output folder.
+   *   the package files are written into an output folder. When the drawing
+   *   has a thumbnail, `preview.jpg` is included next to `viewer.html`.
    * Password and expiry apply only to `'single'`.
    * Chunk size, chunk compression, and {@link AcExHtmlExporterOptions.zipPackage}
    * apply only to `'multi'`.
@@ -73,8 +76,9 @@ export interface AcExHtmlExporterOptions {
   /**
    * When `true` (default), a multi-file export is written as one `.zip`.
    * When `false`, the zip members (`viewer.html`, `drawing.acex.json`,
-   * geometry and OSNAP chunks) are written directly into the output folder
-   * passed to {@link exportFileToHtml}. Ignored for `'single'`.
+   * geometry and OSNAP chunks, and `preview.jpg` when the drawing has a
+   * thumbnail) are written directly into the output folder passed to
+   * {@link exportFileToHtml}. Ignored for `'single'`.
    * Independent of {@link AcExHtmlExporterOptions.compressChunks}, which
    * gzip-compresses chunk payloads either way.
    */
@@ -108,6 +112,17 @@ export interface AcExHtmlExporterOptions {
   height?: number
   /** Locale embedded in the snapshot (`en`, `zh`, …). Defaults to `en`. */
   locale?: string
+  /**
+   * DWG parser used by {@link exportFileToHtml}. Defaults to `'libredwg'`.
+   * `'dwg'` needs a separately installed `@mlightcad/dwg-converter` (and a
+   * license or active trial). Ignored for DXF inputs.
+   */
+  dwgParser?: AcExDwgParser
+  /**
+   * License key for `@mlightcad/dwg-converter` when
+   * {@link AcExHtmlExporterOptions.dwgParser} is `'dwg'`.
+   */
+  dwgLicenseKey?: string
 }
 
 export interface AcExHtmlExportResult {
@@ -122,7 +137,8 @@ export interface AcExHtmlExportResult {
   zipBytes?: Uint8Array
   /**
    * Package members when {@link AcExHtmlExportResult.kind} is `'directory'`.
-   * Paths are relative to the output folder (`viewer.html`, `chunks/…`).
+   * Paths are relative to the output folder (`viewer.html`, `preview.jpg`,
+   * `chunks/…`).
    */
   files?: ReadonlyArray<{ path: string; bytes: Uint8Array }>
   /**

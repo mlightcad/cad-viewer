@@ -1,5 +1,6 @@
 import {
   type AcDbDatabase,
+  type AcDbLinetypePreviewSvgOptions,
   type AcGiBaseLineStyle
 } from '@mlightcad/data-model'
 
@@ -18,10 +19,32 @@ export interface LineTypeOption {
   pattern?: 'solid' | 'dashed' | 'hidden' | 'center'
   /** Backing CAD line type record used to derive a preview from dash segments. */
   lineType?: AcGiBaseLineStyle
+  /**
+   * Object that can produce an SVG preview (typically `AcDbLinetypeTableRecord`).
+   * Kept separate from {@link lineType} because `record.linetype` is only a
+   * plain style snapshot and does not expose `toPreviewSvgString`.
+   */
+  previewSvgProvider?: LineTypePreviewSvgProvider
+}
+
+/**
+ * Matches the ribbon / select preview swatch (96×20). Sized like the
+ * data-model example preview so embedded TEXT glyphs stay legible.
+ */
+const LINE_TYPE_PREVIEW_SVG_OPTIONS: AcDbLinetypePreviewSvgOptions = {
+  width: 192,
+  height: 40,
+  padding: 6,
+  strokeWidth: 1.5
 }
 
 const SOLID_LINE_BACKGROUND =
   'linear-gradient(90deg, currentColor, currentColor)'
+
+/** DXF group 74 bit: embedded text in a complex linetype. */
+const COMPLEX_LTYPE_TEXT = 2
+
+const previewSvgCache = new WeakMap<object, string | undefined>()
 
 /**
  * Restricts a numeric value to the inclusive range expected by the preview UI.
@@ -94,23 +117,32 @@ function buildPatternBackground(lineType: AcGiBaseLineStyle) {
   return `repeating-linear-gradient(90deg, ${stops.join(', ')})`
 }
 
-type PreviewSvgProvider = {
-  toPreviewSvgString?: () => string | null | undefined
+/**
+ * Object capable of generating an inline SVG linetype preview.
+ */
+export type LineTypePreviewSvgProvider = {
+  toPreviewSvgString?: (
+    options?: AcDbLinetypePreviewSvgOptions
+  ) => string | null | undefined
 }
 
 /**
  * Invokes the preview-SVG generator defensively and normalizes blank output.
  *
  * @param provider Potential object carrying `toPreviewSvgString`.
+ * @param options Optional SVG sizing / styling overrides.
  * @returns Inline SVG markup when available.
  */
-function callPreviewSvgString(provider?: PreviewSvgProvider) {
+function callPreviewSvgString(
+  provider?: LineTypePreviewSvgProvider,
+  options?: AcDbLinetypePreviewSvgOptions
+) {
   if (!provider || typeof provider.toPreviewSvgString !== 'function') {
     return undefined
   }
 
   try {
-    const svgString = provider.toPreviewSvgString()
+    const svgString = provider.toPreviewSvgString(options)
     if (!svgString) return undefined
     const normalized = svgString.trim()
     return normalized.length ? normalized : undefined
@@ -120,18 +152,49 @@ function callPreviewSvgString(provider?: PreviewSvgProvider) {
 }
 
 /**
+ * Returns whether a line style pattern embeds TEXT elements that CSS dash
+ * previews cannot represent.
+ *
+ * @param lineType CAD line style to inspect.
+ */
+export function lineTypeHasEmbeddedText(lineType?: AcGiBaseLineStyle) {
+  return (
+    lineType?.pattern?.some(
+      element =>
+        ((element.elementTypeFlag ?? 0) & COMPLEX_LTYPE_TEXT) !== 0 &&
+        typeof element.text === 'string' &&
+        element.text.trim().length > 0
+    ) ?? false
+  )
+}
+
+/**
  * Resolves the optional inline SVG preview from explicit option metadata or the
- * backing CAD line type object.
+ * backing CAD line type table record.
  *
  * @param option Option to visualize.
  * @returns Inline SVG markup string when available.
  */
 export function resolveLineTypePreviewSvg(option?: LineTypeOption) {
   if (!option) return undefined
-  return (
-    callPreviewSvgString({
-      toPreviewSvgString: () => option.previewSvgString
-    }) ?? callPreviewSvgString(option.lineType as PreviewSvgProvider)
+
+  if (option.previewSvgString?.trim()) {
+    return option.previewSvgString.trim()
+  }
+
+  const provider = option.previewSvgProvider
+  if (provider && typeof provider === 'object') {
+    if (previewSvgCache.has(provider)) {
+      return previewSvgCache.get(provider)
+    }
+    const svg = callPreviewSvgString(provider, LINE_TYPE_PREVIEW_SVG_OPTIONS)
+    previewSvgCache.set(provider, svg)
+    return svg
+  }
+
+  return callPreviewSvgString(
+    option.lineType as LineTypePreviewSvgProvider | undefined,
+    LINE_TYPE_PREVIEW_SVG_OPTIONS
   )
 }
 
@@ -179,11 +242,13 @@ export function buildLineTypeOptions(db?: AcDbDatabase): LineTypeOption[] {
     // Do not eagerly call `toPreviewSvgString` for every record. Drawings with
     // hundreds of complex TEXT linetypes (and N layer-table selects) otherwise
     // allocate megabytes of SVG strings up front. Dropdown rows use the CSS
-    // dash preview; the selected value can still resolve SVG on demand.
+    // dash preview (or resolve SVG on demand when the menu is open); the
+    // selected value can still resolve SVG on demand via previewSvgProvider.
     options.push({
       value: name,
       label: name,
-      lineType: record.linetype
+      lineType: record.linetype,
+      previewSvgProvider: record
     })
   }
 

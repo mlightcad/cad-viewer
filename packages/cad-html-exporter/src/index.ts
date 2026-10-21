@@ -19,7 +19,15 @@ export {
   packSnapshot
 } from './packSnapshot'
 export {
+  extractDrawingPreviewJpeg
+} from './extractPreviewJpeg'
+export {
+  ensureDwgParserRegistered,
   ensureLibreDwgRegistered
+} from './registerDwg'
+export type {
+  AcExDwgParser,
+  AcExDwgParserRegisterOptions
 } from './registerDwg'
 export {
   loadViewerRuntime
