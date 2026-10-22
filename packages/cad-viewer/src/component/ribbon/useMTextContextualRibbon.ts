@@ -731,11 +731,19 @@ export function useMTextContextualRibbon({
   /**
    * Responds to active input box changes reported by the editor bridge.
    *
+   * Activates the contextual tab before format sync so a sync error cannot
+   * leave the Text Editor tab hidden while the inline editor is open.
+   *
    * @param inputBox Editor-like object from the bridge, or `null` on close.
    */
   const handleActiveInputBoxChanged: ActiveInputBoxChangeListener =
     inputBox => {
-      bindEditorEvents(inputBox as MTextRibbonEditor | null)
+      const editor = (inputBox as MTextRibbonEditor | null) ?? null
+      if (editor) {
+        activeEditor.value = editor
+        void ensureContextTabActivated()
+      }
+      bindEditorEvents(editor)
       void ensureContextTabActivated()
     }
 
@@ -1218,7 +1226,10 @@ export function useMTextContextualRibbon({
       id: MTEXT_CONTEXTUAL_TAB_ID,
       title: t('main.ribbon.tab.mtextEditorContext'),
       contextual: true,
-      contextualMode: 'exclusive',
+      // Command creation stays exclusive; double-click edit uses selection mode
+      // so a missed active-tab switch still leaves the Text Editor header
+      // visible and does not grey out the rest of the ribbon.
+      contextualMode: isCommandActive.value ? 'exclusive' : 'selection',
       contextualColor: '#9a6a22',
       visible: isVisible.value,
       groups: [
