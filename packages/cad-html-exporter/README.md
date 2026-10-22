@@ -217,6 +217,11 @@ To use the commercial parser instead:
 2. Pass `dwgParser: 'dwg'` and, when needed, `dwgLicenseKey`.
 3. Or on the CLI: `--dwg-parser dwg --dwg-license-key <key>`.
 
+`@mlightcad/data-model` is **external** in this package's Node build so the
+commercial converter and the exporter share one `AcDb*` / host-services
+singleton. That requires a `data-model` (and its `lib/` dependency packages)
+release with Node-native ESM relative imports (`.js` / `index.js` specifiers).
+
 If the package is missing, or the license/trial cannot be activated, registration
 fails with an explicit error; LibreDWG remains the default path for users who
 never install the commercial converter.
