@@ -49,14 +49,19 @@ const nodeBuiltins = [
   // Keep as runtime deps so WASM / Worker resolve via package import.meta.url.
   'web-worker',
   '@mlightcad/libredwg-web',
+  // Must stay external so @mlightcad/dwg-converter shares one AcDb* / host
+  // services singleton (bundling data-model here caused a dual-package hazard).
+  // Requires @mlightcad/data-model lib/ to be Node-native ESM (.js specifiers).
+  '@mlightcad/data-model',
   // Optional peer: dynamic import + sibling dwg-parser-main.js via import.meta.url.
   '@mlightcad/dwg-converter'
 ]
 
 /**
- * Node library build. Bundles data-model / libredwg / three-renderer so the
- * published package does not hit data-model's broken native ESM directory
- * imports under plain Node.
+ * Node library build. Bundles libredwg / three-renderer (and friends) so the
+ * published package does not hit extensionless `three/examples/...` imports
+ * under plain Node. Leaves `@mlightcad/data-model` external so commercial
+ * `dwg-converter` and this exporter share one module instance.
  *
  * `ssr.noExternal: true` forces Vite to inline workspace/npm deps that SSR
  * would otherwise leave as bare imports (e.g. `three/examples/...`).

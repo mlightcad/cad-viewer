@@ -11,11 +11,18 @@ import {
 describe('acedGuardCanvasTouchCallout', () => {
   it('applies iOS callout / selection suppression styles', () => {
     const canvas = document.createElement('canvas')
+    const setProperty = jest.spyOn(canvas.style, 'setProperty')
     acedApplyCanvasTouchCalloutStyles(canvas)
     expect(canvas.style.touchAction).toBe('none')
     expect(canvas.style.userSelect).toBe('none')
-    // jsdom normalizes / drops some -webkit-* properties; tap-highlight remains.
-    expect(canvas.style.cssText).toContain('-webkit-tap-highlight-color')
+    // jsdom 30+ drops several -webkit-* values from cssText/getPropertyValue;
+    // assert the calls that real Safari still honors.
+    expect(setProperty).toHaveBeenCalledWith('-webkit-user-select', 'none')
+    expect(setProperty).toHaveBeenCalledWith('-webkit-touch-callout', 'none')
+    expect(setProperty).toHaveBeenCalledWith(
+      '-webkit-tap-highlight-color',
+      'transparent'
+    )
   })
 
   it('prevents default on touchstart and selectstart', () => {
