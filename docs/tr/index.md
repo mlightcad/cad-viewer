@@ -13,6 +13,9 @@ hero:
       text: Başlayın
       link: /tr/guide/ui/read-only
     - theme: alt
+      text: Geliştirme Kılavuzu
+      link: /tr/development/
+    - theme: alt
       text: API Belgeleri
       link: https://cad-viewer.readthedocs.io/en/latest/
 
@@ -44,4 +47,8 @@ features:
   - icon: 🧩
     title: Eklenti mimarisi
     details: Çözülmüş motor ve arayüz, zengin genişletme noktalarıyla — kendi ürününüze kolayca entegre edin.
+  - icon: 🛠️
+    title: Geliştirme Kılavuzu
+    details: CAD-Viewer'ı yerleştirme, genişletme ve hata ayıklama — bileşen entegrasyonu, eklentiler, komutlar, işleme iç yapısı ve dağıtım.
+    link: /tr/development/
 ---

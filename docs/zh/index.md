@@ -13,6 +13,9 @@ hero:
       text: 快速上手
       link: /zh/guide/ui/read-only
     - theme: alt
+      text: 开发指南
+      link: /zh/development/
+    - theme: alt
       text: API 文档
       link: https://cad-viewer.readthedocs.io/en/latest/
 
@@ -44,4 +47,8 @@ features:
   - icon: 🧩
     title: 插件化架构
     details: 核心引擎与 UI 解耦，提供丰富的扩展点，轻松集成到你的产品中。
+  - icon: 🛠️
+    title: 开发指南
+    details: 嵌入、扩展与调试 CAD-Viewer——组件集成、插件、命令、渲染内部机制与部署。
+    link: /zh/development/
 ---

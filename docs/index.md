@@ -13,6 +13,9 @@ hero:
       text: Get Started
       link: /guide/ui/read-only
     - theme: alt
+      text: Development Guide
+      link: /development/
+    - theme: alt
       text: API Reference
       link: https://cad-viewer.readthedocs.io/en/latest/
 
@@ -44,4 +47,8 @@ features:
   - icon: 🧩
     title: Plugin architecture
     details: Decoupled engine and UI with rich extension points — integrate it into your own product with ease.
+  - icon: 🛠️
+    title: Development Guide
+    details: Embed, extend and debug CAD-Viewer — component integration, plugins, commands, rendering internals and deployment.
+    link: /development/
 ---

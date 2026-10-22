@@ -13,6 +13,9 @@ hero:
       text: 始める
       link: /ja/guide/ui/read-only
     - theme: alt
+      text: 開発ガイド
+      link: /ja/development/
+    - theme: alt
       text: API リファレンス
       link: https://cad-viewer.readthedocs.io/en/latest/
 
@@ -44,4 +47,8 @@ features:
   - icon: 🧩
     title: プラグインアーキテクチャ
     details: エンジンと UI を分離し、豊富な拡張ポイントを提供 — 自分の製品に簡単に統合。
+  - icon: 🛠️
+    title: 開発ガイド
+    details: CAD-Viewer の埋め込み・拡張・デバッグ — コンポーネント統合、プラグイン、コマンド、レンダリング内部、デプロイ。
+    link: /ja/development/
 ---

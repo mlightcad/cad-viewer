@@ -13,6 +13,9 @@ hero:
       text: 시작하기
       link: /ko/guide/ui/read-only
     - theme: alt
+      text: 개발 가이드
+      link: /ko/development/
+    - theme: alt
       text: API 참조
       link: https://cad-viewer.readthedocs.io/en/latest/
 
@@ -44,4 +47,8 @@ features:
   - icon: 🧩
     title: 플러그인 아키텍처
     details: 엔진과 UI를 분리하고 풍부한 확장점 제공 — 자체 제품에 쉽게 통합.
+  - icon: 🛠️
+    title: 개발 가이드
+    details: CAD-Viewer 임베드, 확장 및 디버깅 — 컴포넌트 통합, 플러그인, 명령, 렌더링 내부 구조 및 배포.
+    link: /ko/development/
 ---

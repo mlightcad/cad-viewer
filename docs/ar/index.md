@@ -13,6 +13,9 @@ hero:
       text: ابدأ الآن
       link: /ar/guide/ui/read-only
     - theme: alt
+      text: دليل التطوير
+      link: /ar/development/
+    - theme: alt
       text: مرجع API
       link: https://cad-viewer.readthedocs.io/en/latest/
 
@@ -44,4 +47,8 @@ features:
   - icon: 🧩
     title: بنية إضافية (Plugins)
     details: محرك وواجهة مستقلان مع نقاط توسعة غنية — دمجها في منتجك بسهولة.
+  - icon: 🛠️
+    title: دليل التطوير
+    details: تضمين CAD-Viewer وتوسيعه وتصحيح أخطائه — تكامل المكوّنات والإضافات والأوامر والبنية الداخلية للعرض والنشر.
+    link: /ar/development/
 ---

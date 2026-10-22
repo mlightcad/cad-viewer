@@ -13,6 +13,9 @@ hero:
       text: Začít
       link: /cs/guide/ui/read-only
     - theme: alt
+      text: Vývojová příručka
+      link: /cs/development/
+    - theme: alt
       text: API dokumentace
       link: https://cad-viewer.readthedocs.io/en/latest/
 
@@ -44,4 +47,8 @@ features:
   - icon: 🧩
     title: Pluginová architektura
     details: Oddělené jádro a UI s bohatými rozšiřujícími body — snadno jej integrujete do vlastního produktu.
+  - icon: 🛠️
+    title: Vývojová příručka
+    details: Vložení, rozšíření a ladění CAD-Vieweru — integrace komponent, pluginy, příkazy, vnitřní struktura vykreslování a nasazení.
+    link: /cs/development/
 ---
