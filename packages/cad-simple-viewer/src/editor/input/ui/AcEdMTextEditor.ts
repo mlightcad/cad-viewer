@@ -152,6 +152,29 @@ export interface AcEdMTextEditorOptions {
  * This class binds the MTEXT input component to the current `AcTrView2d`
  * render loop and handles lifecycle cleanup when the editor is closed.
  */
+const ACED_MTEXT_ACTIVE_INPUT_BOX_GLOBAL_KEY =
+  '__mlightcadAcEdMTextActiveInputBox__' as const
+const ACED_MTEXT_ACTIVE_INPUT_BOX_LISTENERS_GLOBAL_KEY =
+  '__mlightcadAcEdMTextActiveInputBoxListeners__' as const
+
+type AcEdMTextActiveInputBoxGlobal = typeof globalThis & {
+  [ACED_MTEXT_ACTIVE_INPUT_BOX_GLOBAL_KEY]?: AcEdMTextEditorActiveInputBox | null
+  [ACED_MTEXT_ACTIVE_INPUT_BOX_LISTENERS_GLOBAL_KEY]?: Set<AcEdMTextEditorActiveInputBoxChangeListener>
+}
+
+/**
+ * Process-wide active-input-box listeners shared across duplicate module copies.
+ */
+function getSharedActiveInputBoxListeners() {
+  const globalStore = globalThis as AcEdMTextActiveInputBoxGlobal
+  let listeners = globalStore[ACED_MTEXT_ACTIVE_INPUT_BOX_LISTENERS_GLOBAL_KEY]
+  if (!listeners) {
+    listeners = new Set<AcEdMTextEditorActiveInputBoxChangeListener>()
+    globalStore[ACED_MTEXT_ACTIVE_INPUT_BOX_LISTENERS_GLOBAL_KEY] = listeners
+  }
+  return listeners
+}
+
 export class AcEdMTextEditor {
   static readonly defaultLineSpacingFactor = 0.3
 
@@ -198,18 +221,30 @@ export class AcEdMTextEditor {
 
   /**
    * Returns the MTEXT input box currently being edited, if any.
+   *
+   * Falls back to the process-wide slot so callers still resolve the editor
+   * when a duplicate {@link AcEdMTextEditor} module instance opened it.
    */
   static getActiveInputBox(): AcEdMTextEditorActiveInputBox | null {
-    return AcEdMTextEditor.activeInputBox
+    if (AcEdMTextEditor.activeInputBox) {
+      return AcEdMTextEditor.activeInputBox
+    }
+    const globalStore = globalThis as AcEdMTextActiveInputBoxGlobal
+    return globalStore[ACED_MTEXT_ACTIVE_INPUT_BOX_GLOBAL_KEY] ?? null
   }
 
   /**
    * Subscribes to active MTEXT input box changes.
+   *
+   * Listeners are stored on `globalThis` so hosts still receive notifications
+   * when a duplicate {@link AcEdMTextEditor} module instance opens the editor
+   * (common with Vite/pnpm peer graphs).
    */
   static addActiveInputBoxChangeListener(
     listener: AcEdMTextEditorActiveInputBoxChangeListener
   ): void {
     AcEdMTextEditor.activeInputBoxChangeListeners.add(listener)
+    getSharedActiveInputBoxListeners().add(listener)
   }
 
   /**
@@ -219,12 +254,16 @@ export class AcEdMTextEditor {
     listener: AcEdMTextEditorActiveInputBoxChangeListener
   ): void {
     AcEdMTextEditor.activeInputBoxChangeListeners.delete(listener)
+    getSharedActiveInputBoxListeners().delete(listener)
   }
 
   private static setActiveInputBox(inputBox: MTextInputBox | null): void {
     if (AcEdMTextEditor.activeInputBox === inputBox) return
     AcEdMTextEditor.activeInputBox = inputBox
-    AcEdMTextEditor.activeInputBoxChangeListeners.forEach(listener => {
+    const globalStore = globalThis as AcEdMTextActiveInputBoxGlobal
+    globalStore[ACED_MTEXT_ACTIVE_INPUT_BOX_GLOBAL_KEY] = inputBox
+    // Prefer the shared set so duplicate module instances notify one another.
+    getSharedActiveInputBoxListeners().forEach(listener => {
       listener(inputBox)
     })
   }

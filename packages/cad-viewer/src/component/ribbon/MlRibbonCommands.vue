@@ -253,6 +253,7 @@ const {
 const {
   handleCommandWillStart: handleMTextCommandWillStart,
   handleCommandEnded: handleMTextCommandEnded,
+  syncActiveEditorContext: syncMTextActiveEditorContext,
   handleItem: handleMTextItem,
   buildContextualTab: buildMTextContextualTab,
   characterMapVisible: mtextCharacterMapVisible,
@@ -432,6 +433,10 @@ const handleSelectionChanged = () => {
   syncSelectedEntityIds()
   syncRibbonProperties(observedDatabase)
   syncHatchSelectionContext(observedDatabase)
+  // Failsafe for double-click MTEXT edit: keep Text Editor contextual tab
+  // aligned with the active input box even if a ribbon watcher raced the
+  // initial editor-bridge notification (issue #790 follow-up).
+  syncMTextActiveEditorContext()
 }
 
 const handleObservedEntityChange = (args: {
@@ -447,6 +452,7 @@ const handleObservedEntityChange = (args: {
   if (!hasSelectedEntityChanged) return
   syncRibbonProperties(observedDatabase)
   syncHatchSelectionContext(observedDatabase)
+  syncMTextActiveEditorContext()
 }
 
 /**
@@ -2653,13 +2659,19 @@ const ribbonData = computed(() => {
 watch(
   () =>
     ribbonData.value.tabs
-      .filter(tab => tab.visible !== false && !tab.contextual)
+      .filter(tab => tab.visible !== false)
       .map(tab => tab.id),
-  tabIds => {
-    if (tabIds.length === 0) return
-    if (!tabIds.includes(activeRibbonTabId.value)) {
-      activeRibbonTabId.value = tabIds[0]
-    }
+  visibleTabIds => {
+    if (visibleTabIds.length === 0) return
+    // Allow contextual tabs (e.g. MTEXT/HATCH) as a valid active selection.
+    // Resetting them to the first non-contextual tab fights showContextTab and
+    // can recurse with ribbonData when builders mutate tab state (issue #790).
+    if (visibleTabIds.includes(activeRibbonTabId.value)) return
+    const fallbackTabId =
+      ribbonData.value.tabs.find(
+        tab => tab.visible !== false && !tab.contextual
+      )?.id ?? visibleTabIds[0]
+    activeRibbonTabId.value = fallbackTabId
   },
   { immediate: true }
 )

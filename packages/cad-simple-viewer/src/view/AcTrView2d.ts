@@ -15,6 +15,7 @@ import {
   AcDbRay,
   AcDbRenderingCache,
   AcDbSysVarManager,
+  AcDbText,
   AcDbViewport,
   AcDbXline,
   AcGeBox2d,
@@ -22,6 +23,7 @@ import {
   AcGeMatrix3d,
   AcGePoint2d,
   AcGePoint2dLike,
+  AcGePoint3d,
   acgiForegroundColorForBackground,
   AcGiViewport,
   log
@@ -2036,10 +2038,16 @@ export class AcTrView2d extends AcEdBaseView {
       return
     }
 
-    if (!(entity instanceof AcDbMText)) return
+    if (entity instanceof AcDbMText) {
+      e.preventDefault()
+      await this.editMTextEntity(entity)
+      return
+    }
 
-    e.preventDefault()
-    await this.editMTextEntity(entity)
+    if (entity instanceof AcDbText) {
+      e.preventDefault()
+      await this.editTextEntity(entity)
+    }
   }
 
   /**
@@ -2117,6 +2125,54 @@ export class AcTrView2d extends AcEdBaseView {
     } finally {
       if (!applied) {
         this.updateEntity(mtext)
+        this._isDirty = true
+      }
+    }
+  }
+
+  /**
+   * Opens the shared inline editor for a single-line TEXT entity.
+   *
+   * Uses the MTEXT input box so the contextual Text Editor ribbon appears the
+   * same way as double-click MTEXT editing. Formatting codes are written back
+   * as the TEXT string content.
+   */
+  private async editTextEntity(text: AcDbText) {
+    const db = text.database
+    this._isDirty = true
+
+    const height = Number(text.height)
+    const textHeight =
+      Number.isFinite(height) && height > 0 ? height : this.pixelsToWorldY(24)
+    const content = text.textString ?? ''
+    const width = Math.max(textHeight * Math.max(content.length, 1) * 0.6, textHeight)
+
+    const editor = new AcEdMTextEditor()
+    let applied = false
+    try {
+      const result = await editor.open({
+        view: this,
+        location: text.position,
+        width,
+        textHeight,
+        initialText: content,
+        toolbarFontFamilies: await this.getMTextToolbarFontFamilies()
+      })
+      if (!result) return
+
+      acapRunDatabaseEdit(db, 'Edit Text', () => {
+        const opened = db.openEntityForWrite(text)
+        if (!(opened instanceof AcDbText)) return
+        opened.position = new AcGePoint3d(result.location)
+        opened.textString = result.contents
+        if (Number.isFinite(result.height) && result.height > 0) {
+          opened.height = result.height
+        }
+      })
+      applied = true
+    } finally {
+      if (!applied) {
+        this.updateEntity(text)
         this._isDirty = true
       }
     }
