@@ -1146,16 +1146,15 @@ export function useMTextContextualRibbon({
   /**
    * Builds the current MTEXT contextual ribbon tab model.
    *
-   * The editor format is refreshed before construction so gallery, dropdown,
-   * toggle, color, height, and paragraph controls reflect the current cursor or
-   * selection state at render time.
+   * Reads existing reactive format/visibility state only. Format sync and
+   * contextual-tab show/hide must stay on event paths (editor bridge, command
+   * handlers) — calling them here from a computed causes a recursive update
+   * loop with the active-tab watch when MTEXT starts (issue #790).
    *
    * @param t Translation callback used for all user-facing labels.
    * @returns Ribbon tab model consumed by the ribbon renderer.
    */
   const buildContextualTab = (t: Translate): RibbonTabModel => {
-    syncFormatFromEditor()
-
     const disabled = !activeEditor.value
     const format = currentFormat.value
 

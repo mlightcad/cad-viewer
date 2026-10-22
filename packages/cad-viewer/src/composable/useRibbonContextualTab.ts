@@ -31,13 +31,17 @@ export function useRibbonContextualTab({
   const showContextTab = () => {
     if (activeTabId.value !== tabId) {
       previousTabId.value = activeTabId.value || fallbackTabId
+      activeTabId.value = tabId
     }
-    isVisible.value = true
-    activeTabId.value = tabId
+    if (!isVisible.value) {
+      isVisible.value = true
+    }
   }
 
   const hideContextTab = () => {
-    isVisible.value = false
+    if (isVisible.value) {
+      isVisible.value = false
+    }
     if (activeTabId.value === tabId) {
       activeTabId.value = previousTabId.value || fallbackTabId
     }
