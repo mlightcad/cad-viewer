@@ -25,6 +25,7 @@
     "@mlightcad/three-renderer": "1.7.6"
   },
   "changesets": [
-    "html-script-agent-preview"
+    "html-script-agent-preview",
+    "mtext-html-exporter-preview"
   ]
 }

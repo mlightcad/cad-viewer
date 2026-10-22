@@ -1,5 +1,23 @@
 # @mlightcad/cad-viewer
 
+## 1.7.7-preview.1
+
+### Patch Changes
+
+- fix: stops the MTEXT ribbon from hanging in production builds and externalizes data-model in the HTML exporter Node build so Node consumers resolve correctly. Pins @mlightcad package versions to exact releases for reproducible installs, and adds a development guide for contributors
+- Updated dependencies
+  - @mlightcad/cad-agent-core@1.7.7-preview.1
+  - @mlightcad/cad-agent-plugin@1.7.7-preview.1
+  - @mlightcad/cad-google-drive-plugin@1.7.7-preview.1
+  - @mlightcad/cad-html-plugin@1.7.7-preview.1
+  - @mlightcad/cad-onedrive-plugin@1.7.7-preview.1
+  - @mlightcad/cad-pdf-plugin@1.7.7-preview.1
+  - @mlightcad/cad-script-plugin@1.7.7-preview.1
+  - @mlightcad/cad-simple-viewer@1.7.7-preview.1
+  - @mlightcad/cad-svg-plugin@1.7.7-preview.1
+  - @mlightcad/pdf-renderer@1.7.7-preview.1
+  - @mlightcad/three-renderer@1.7.7-preview.1
+
 ## 1.7.7-preview.0
 
 ### Patch Changes

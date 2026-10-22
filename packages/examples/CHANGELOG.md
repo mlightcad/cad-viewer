@@ -1,5 +1,11 @@
 # @mlightcad/cad-viewer-examples
 
+## 1.7.7-preview.1
+
+### Patch Changes
+
+- fix: stops the MTEXT ribbon from hanging in production builds and externalizes data-model in the HTML exporter Node build so Node consumers resolve correctly. Pins @mlightcad package versions to exact releases for reproducible installs, and adds a development guide for contributors
+
 ## 1.7.7-preview.0
 
 ### Patch Changes
