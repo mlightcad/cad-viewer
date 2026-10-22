@@ -23,6 +23,7 @@ import {
   AcGeMatrix3d,
   AcGePoint2d,
   AcGePoint2dLike,
+  AcGePoint3d,
   acgiForegroundColorForBackground,
   AcGiViewport,
   log
@@ -2162,7 +2163,7 @@ export class AcTrView2d extends AcEdBaseView {
       acapRunDatabaseEdit(db, 'Edit Text', () => {
         const opened = db.openEntityForWrite(text)
         if (!(opened instanceof AcDbText)) return
-        opened.position = result.location
+        opened.position = new AcGePoint3d(result.location)
         opened.textString = result.contents
         if (Number.isFinite(result.height) && result.height > 0) {
           opened.height = result.height
