@@ -253,6 +253,7 @@ const {
 const {
   handleCommandWillStart: handleMTextCommandWillStart,
   handleCommandEnded: handleMTextCommandEnded,
+  syncActiveEditorContext: syncMTextActiveEditorContext,
   handleItem: handleMTextItem,
   buildContextualTab: buildMTextContextualTab,
   characterMapVisible: mtextCharacterMapVisible,
@@ -432,6 +433,10 @@ const handleSelectionChanged = () => {
   syncSelectedEntityIds()
   syncRibbonProperties(observedDatabase)
   syncHatchSelectionContext(observedDatabase)
+  // Failsafe for double-click MTEXT edit: keep Text Editor contextual tab
+  // aligned with the active input box even if a ribbon watcher raced the
+  // initial editor-bridge notification (issue #790 follow-up).
+  syncMTextActiveEditorContext()
 }
 
 const handleObservedEntityChange = (args: {
@@ -447,6 +452,7 @@ const handleObservedEntityChange = (args: {
   if (!hasSelectedEntityChanged) return
   syncRibbonProperties(observedDatabase)
   syncHatchSelectionContext(observedDatabase)
+  syncMTextActiveEditorContext()
 }
 
 /**

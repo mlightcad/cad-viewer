@@ -29,12 +29,15 @@ export function useRibbonContextualTab({
   }
 
   const showContextTab = () => {
+    // Make the tab visible before selecting it so consumers that validate
+    // activeTab against currently visible tabs (ribbon watchers) do not
+    // immediately bounce the selection back to a non-contextual tab.
+    if (!isVisible.value) {
+      isVisible.value = true
+    }
     if (activeTabId.value !== tabId) {
       previousTabId.value = activeTabId.value || fallbackTabId
       activeTabId.value = tabId
-    }
-    if (!isVisible.value) {
-      isVisible.value = true
     }
   }
 

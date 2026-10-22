@@ -18,6 +18,7 @@ import {
   computed,
   defineComponent,
   h,
+  nextTick,
   onMounted,
   onUnmounted,
   type Ref,
@@ -615,11 +616,32 @@ export function useMTextContextualRibbon({
    * Shows the contextual tab while MTEXT is running or an inline editor exists.
    */
   const refreshContextTabVisibility = () => {
-    if (isCommandActive.value || activeEditor.value) {
+    if (isCommandActive.value || activeEditor.value || getActiveEditor()) {
       showContextTab()
       return
     }
     hideContextTab()
+  }
+
+  /**
+   * Re-asserts the contextual tab after Vue/ribbon watchers flush.
+   *
+   * Opening the inline editor (double-click) can race with tab-visibility
+   * watchers that temporarily reject a not-yet-visible contextual id. A
+   * next-tick pass keeps the Text Editor tab selected once it is visible.
+   */
+  const ensureContextTabActivated = async () => {
+    refreshContextTabVisibility()
+    await nextTick()
+    if (!(isCommandActive.value || activeEditor.value || getActiveEditor())) {
+      return
+    }
+    if (!isVisible.value) {
+      isVisible.value = true
+    }
+    if (activeTabId.value !== MTEXT_CONTEXTUAL_TAB_ID) {
+      activeTabId.value = MTEXT_CONTEXTUAL_TAB_ID
+    }
   }
 
   /**
@@ -682,7 +704,12 @@ export function useMTextContextualRibbon({
    * @param editor Editor adapter to observe, or `null` to remove listeners.
    */
   const bindEditorEvents = (editor: MTextRibbonEditor | null) => {
-    if (observedEditor === editor) return
+    if (observedEditor === editor) {
+      // Same editor instance: still refresh format/visibility. Callers such as
+      // selection failsafe sync may run after a watcher bounced the active tab.
+      syncFormatFromEditor()
+      return
+    }
     if (observedEditor?.off) {
       observedEditor.off('change', syncFormatFromEditor)
       observedEditor.off('selectionChange', syncFormatFromEditor)
@@ -709,7 +736,35 @@ export function useMTextContextualRibbon({
   const handleActiveInputBoxChanged: ActiveInputBoxChangeListener =
     inputBox => {
       bindEditorEvents(inputBox as MTextRibbonEditor | null)
+      void ensureContextTabActivated()
     }
+
+  /**
+   * Polls the editor bridge and reconciles contextual-tab visibility.
+   *
+   * Used as a failsafe from selection-change handlers so double-click edit
+   * still activates the Text Editor tab even if a ribbon watcher raced the
+   * initial bridge notification.
+   */
+  const syncActiveEditorContext = () => {
+    const editor = getActiveEditor()
+    bindEditorEvents(editor)
+    if (editor || isCommandActive.value) {
+      void ensureContextTabActivated()
+    }
+  }
+
+  /**
+   * Handles CAD command start events for the MTEXT contextual tab.
+   *
+   * @param args Command event payload raised by the CAD command manager.
+   */
+  const handleRibbonCommandWillStart = (args: AcEdCommandEventArgs) => {
+    handleCommandWillStart(args)
+    if (isContextCommand(args)) {
+      void ensureContextTabActivated()
+    }
+  }
 
   /**
    * Handles CAD command completion events for the MTEXT contextual tab.
@@ -726,6 +781,7 @@ export function useMTextContextualRibbon({
     const bridge = getMTextEditorBridge()
     bridge.addActiveInputBoxChangeListener?.(handleActiveInputBoxChanged)
     bindEditorEvents(bridge.getActiveInputBox?.() ?? null)
+    void ensureContextTabActivated()
     void ensureAvailableFontsLoaded()
   })
 
@@ -1728,8 +1784,9 @@ export function useMTextContextualRibbon({
   return {
     isVisible,
     isCommandActive,
-    handleCommandWillStart,
+    handleCommandWillStart: handleRibbonCommandWillStart,
     handleCommandEnded: handleRibbonCommandEnded,
+    syncActiveEditorContext,
     handleItem,
     buildContextualTab,
     characterMapVisible,
