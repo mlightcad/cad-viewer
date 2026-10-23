@@ -802,7 +802,18 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       }
       return
     }
-    const contents = (mtext as { contents?: string }).contents ?? ''
+    // AcDbText passes `text`; MTEXT may use `contents`. Prefer non-empty
+    // either field. Seed ActualText synchronously so INSERT clones (taken
+    // before awaitPending) still carry searchable labels even when glyph
+    // fills land only on the template.
+    const contents =
+      (mtext as { contents?: string }).contents || mtext.text || ''
+    if (this._embedTextActualText) {
+      const plain = stripMtextCodes(contents).trim()
+      if (plain) {
+        entity.actualText = plain
+      }
+    }
     const inflight = this._mtextGlyphInflight.get(key)
     if (!inflight) {
       const render = Promise.resolve(
