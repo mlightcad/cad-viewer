@@ -39,7 +39,10 @@ describe('AcTrShape wcsBbox', () => {
     const placementRoot = createPlacementRoot({ x: 5, y: 15, z: 0 })
     const rendered = createShapeObject(new THREE.Box3(), placementRoot)
     jest.mocked(AcTrMTextRenderer.getInstance).mockReturnValue({
-      syncRenderShape: () => rendered
+      syncRenderShape: () => rendered,
+      // Keep mesh-glyph InstancedMesh path off so attachRendered finishes
+      // updateSelectionBox (incomplete mocks would throw and leave an empty box).
+      getMeshGlyphInstancing: () => false
     } as never)
 
     const shape = new AcTrShape(

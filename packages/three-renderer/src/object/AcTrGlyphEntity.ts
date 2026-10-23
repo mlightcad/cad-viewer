@@ -388,9 +388,14 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
     // Grip/jig transients share the live entity objectId — skip batching so
     // preview/remove cannot leave duplicate world instances behind.
     const batchObjectId = this.resolveMeshGlyphBatchObjectId()
+    // Guard typeof so incomplete test mocks cannot abort attachRendered
+    // mid-way (syncDraw catches and leaves an empty wcsBbox).
+    const meshGlyphInstancing =
+      typeof mtextRenderer.getMeshGlyphInstancing === 'function' &&
+      mtextRenderer.getMeshGlyphInstancing()
     if (
       !this.shouldSkipMeshGlyphInstancing() &&
-      mtextRenderer.getMeshGlyphInstancing() &&
+      meshGlyphInstancing &&
       batchObjectId
     ) {
       this.updateMatrixWorld(true)
