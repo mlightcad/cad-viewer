@@ -49,6 +49,17 @@ export interface CadViewerCliOpenOptions {
    * Default when omitted: draft quality (50).
    */
   circleSides?: number
+  /**
+   * When false, MTEXT uses the worker pool. Default true (main thread).
+   */
+  useMainThreadDraw?: boolean
+  /** Override TrueType glyph path (`mesh` fill vs `line` stroke). */
+  meshFontRenderMode?: 'mesh' | 'line'
+  /**
+   * Scene-level InstancedMesh for TrueType mesh glyphs (skips per-entity
+   * mergeMesh). Prefer with main-thread MTEXT draw.
+   */
+  meshGlyphInstancing?: boolean
 }
 
 /**
@@ -126,6 +137,9 @@ declare global {
         circleSides?: number
         baseUrl?: string
         saveBaseUrl?: string
+        useMainThreadDraw?: boolean
+        meshFontRenderMode?: 'mesh' | 'line'
+        meshGlyphInstancing?: boolean
       }
     ) => Promise<{ ok: true; files: Array<{ fileName: string }> }>
   }
@@ -508,7 +522,10 @@ export class HeadlessCadSession {
       drawNoPlotLayers: options.drawNoPlotLayers,
       circleSides: options.circleSides,
       baseUrl: options.baseUrl,
-      saveBaseUrl: `${this.server.url}/__cli_save__/`
+      saveBaseUrl: `${this.server.url}/__cli_save__/`,
+      useMainThreadDraw: options.useMainThreadDraw,
+      meshFontRenderMode: options.meshFontRenderMode,
+      meshGlyphInstancing: options.meshGlyphInstancing
     }
 
     const tScript = performance.now()
@@ -525,7 +542,10 @@ export class HeadlessCadSession {
           drawNoPlotLayers,
           circleSides,
           baseUrl,
-          saveBaseUrl
+          saveBaseUrl,
+          useMainThreadDraw,
+          meshFontRenderMode,
+          meshGlyphInstancing
         }) => {
           return window.runCadScript(name, url, script, {
             locale,
@@ -535,7 +555,10 @@ export class HeadlessCadSession {
             drawNoPlotLayers,
             circleSides,
             baseUrl,
-            saveBaseUrl
+            saveBaseUrl,
+            useMainThreadDraw,
+            meshFontRenderMode,
+            meshGlyphInstancing
           })
         },
         {

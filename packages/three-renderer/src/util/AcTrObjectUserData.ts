@@ -84,6 +84,17 @@ export interface AcTrEntityIdentityUserData {
 export interface AcTrEntityUserData
   extends AcTrEntityIdentityUserData, AcTrRteObjectUserData {
   originalMaterial?: THREE.Material | THREE.Material[]
+  /**
+   * Selectable INSERT object id for mesh-glyph InstancedMesh slots when this
+   * glyph is a block-reference attribute (ATTRIB handle ≠ INSERT handle).
+   */
+  meshGlyphBatchObjectId?: string
+  /**
+   * When true, mesh glyphs stay as per-entity merged meshes (no world-batch
+   * InstancedMesh). Used for grip/jig transients that share a database objectId
+   * with the live entity — otherwise preview enqueues duplicate instances.
+   */
+  skipMeshGlyphInstancing?: boolean
 }
 
 /**

@@ -4,6 +4,7 @@ import {
   AcTrEntity,
   AcTrEntityPreview,
   AcTrHtmlTransientManager,
+  AcTrMTextRenderer,
   AcTrPreviewOverlayManager,
   AcTrTransientManager
 } from '@mlightcad/three-renderer'
@@ -338,6 +339,7 @@ export class AcTrScene {
   hover(ids: AcDbObjectId[]) {
     if (this._layouts.size === 0) return false
     this._layouts.forEach(layout => layout.hover(ids))
+    this.applyMeshGlyphHighlight(ids, 'hover', true)
     return true
   }
 
@@ -348,6 +350,7 @@ export class AcTrScene {
   unhover(ids: AcDbObjectId[]) {
     if (this._layouts.size === 0) return false
     this._layouts.forEach(layout => layout.unhover(ids))
+    this.applyMeshGlyphHighlight(ids, 'hover', false)
     return true
   }
 
@@ -371,6 +374,7 @@ export class AcTrScene {
   select(ids: AcDbObjectId[]) {
     if (this._layouts.size === 0) return false
     this._layouts.forEach(layout => layout.select(ids))
+    this.applyMeshGlyphHighlight(ids, 'select', true)
     return true
   }
 
@@ -381,7 +385,26 @@ export class AcTrScene {
   unselect(ids: AcDbObjectId[]) {
     if (this._layouts.size === 0) return false
     this._layouts.forEach(layout => layout.unselect(ids))
+    this.applyMeshGlyphHighlight(ids, 'select', false)
     return true
+  }
+
+  /**
+   * Forwards selection/hover to scene-level mesh-glyph InstancedMeshes
+   * (they are not registered in {@link AcTrBatchedGroup} entity slots).
+   */
+  private applyMeshGlyphHighlight(
+    ids: AcDbObjectId[],
+    kind: 'select' | 'hover',
+    enabled: boolean
+  ): void {
+    const renderer = AcTrMTextRenderer.getInstance()
+    if (!renderer.getMeshGlyphInstancing()) {
+      return
+    }
+    for (const id of ids) {
+      renderer.setMeshGlyphHighlight(id, kind, enabled)
+    }
   }
 
   /**
@@ -855,8 +878,13 @@ export class AcTrScene {
    * @returns Return true if remove the specified entity successfully. Otherwise, return false.
    */
   removeEntity(objectId: AcDbObjectId) {
+    // Mesh-glyph InstancedMesh slots live outside the entity tree — always
+    // clear them for this id (layout remove may no-op if already gone).
+    AcTrMTextRenderer.getInstance().removeMeshGlyphInstances(objectId)
     for (const [_, layout] of this._layouts) {
-      if (layout.removeEntity(objectId)) return true
+      if (layout.removeEntity(objectId)) {
+        return true
+      }
     }
     return false
   }
@@ -894,6 +922,9 @@ export class AcTrScene {
       if (layout.setEntityVisible(objectId, visible)) {
         updated = true
       }
+    }
+    if (updated) {
+      AcTrMTextRenderer.getInstance().setMeshGlyphVisible(objectId, visible)
     }
     return updated
   }

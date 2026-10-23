@@ -58,7 +58,12 @@ export class AcTrMText extends AcTrGlyphEntity {
         x: position.x,
         y: position.y,
         z: 0
-      }
+      },
+      // Open/convert paths pick via mesh AABB (`bboxIntersectionCheck`), not
+      // per-glyph char boxes. Skipping them avoids 100k+ bbox copies on text-
+      // heavy drawings. Callers that need char-level hit testing can set
+      // `collectCharBoxes: true` on the source payload.
+      collectCharBoxes: source.collectCharBoxes ?? false
     }
   }
 

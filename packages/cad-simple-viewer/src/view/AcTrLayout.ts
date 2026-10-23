@@ -4,6 +4,7 @@ import {
   AcTrEntity,
   AcTrEntityPreview,
   AcTrGroup,
+  AcTrMTextRenderer,
   disposePreviewSubset
 } from '@mlightcad/three-renderer'
 import * as THREE from 'three'
@@ -417,7 +418,12 @@ export class AcTrLayout {
       const layer = layers[index]
       if (layer && layer.isIntersectWith(objectId, raycaster)) return true
     }
-    return false
+    // Mesh-glyph InstancedMeshes live under layer groups but are not registered
+    // in BatchedGroup entity slots — test them after the batch path misses.
+    return AcTrMTextRenderer.getInstance().intersectMeshGlyphObjectId(
+      objectId,
+      raycaster
+    )
   }
 
   hasVisibleEntity(objectId: AcDbObjectId) {

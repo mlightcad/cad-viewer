@@ -4,9 +4,15 @@ import {
   AcGiTextStyle,
   log
 } from '@mlightcad/data-model'
-import { ColorSettings, MTextObject } from '@mlightcad/mtext-renderer'
+import {
+  ColorSettings,
+  MESH_GLYPH_PLACEMENTS_USERDATA,
+  type MeshGlyphPlacement,
+  MTextObject
+} from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
+import { AcTrMeshGlyphWorldBatch } from '../batch/AcTrMeshGlyphWorldBatch'
 import type { AcTrDrawMode } from '../draw/AcTrDrawMode'
 import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
@@ -375,6 +381,35 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
     // space before flatten/unbatch. Must run while the renderer hierarchy is
     // still intact so the placement root can absorb this.matrix.
     this.collapseInverseParentTransformIntoPlacement(rendered)
+
+    const mtextRenderer = AcTrMTextRenderer.getInstance()
+    // Scene-level InstancedMesh: bake world matrices after hierarchy is
+    // parented, then steal placements before flatten destroys the tree.
+    // Grip/jig transients share the live entity objectId — skip batching so
+    // preview/remove cannot leave duplicate world instances behind.
+    const batchObjectId = this.resolveMeshGlyphBatchObjectId()
+    // Guard typeof so incomplete test mocks cannot abort attachRendered
+    // mid-way (syncDraw catches and leaves an empty wcsBbox).
+    const meshGlyphInstancing =
+      typeof mtextRenderer.getMeshGlyphInstancing === 'function' &&
+      mtextRenderer.getMeshGlyphInstancing()
+    if (
+      !this.shouldSkipMeshGlyphInstancing() &&
+      meshGlyphInstancing &&
+      batchObjectId
+    ) {
+      this.updateMatrixWorld(true)
+      rendered.updateMatrixWorld(true)
+      this.captureMeshGlyphSelectionBox(rendered)
+      mtextRenderer.enqueueMeshGlyphPlacementsFromObject(rendered, {
+        // INSERT attributes must key by the INSERT objectId so pick/highlight
+        // match the selectable database entity (not the ATTRIB handle).
+        objectId: batchObjectId,
+        layerName: this.layerName || '0',
+        visible: this.visible !== false
+      })
+    }
+
     const renderRoot = resolveMTextRenderRoot(rendered)
     if (this.resolveDrawMode() === 'unbatch') {
       this.markDrawableUnbatched(renderRoot)
@@ -398,6 +433,88 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
       getSceneDrawableUserData(object).bboxIntersectionCheck = true
     })
     this.updateSelectionBox(rendered)
+  }
+
+  /**
+   * Unions mesh-glyph placement AABBs into {@link wcsBbox} before placements
+   * are stolen for InstancedMesh batching (no mesh children left to measure).
+   */
+  private captureMeshGlyphSelectionBox(rendered: MTextObject): void {
+    const worldBox = new THREE.Box3()
+    rendered.traverse(node => {
+      const placements = node.userData?.[MESH_GLYPH_PLACEMENTS_USERDATA] as
+        | MeshGlyphPlacement[]
+        | undefined
+      if (!placements?.length) {
+        return
+      }
+      AcTrMeshGlyphWorldBatch.expandBoxFromPlacements(
+        worldBox,
+        placements,
+        node.matrixWorld
+      )
+    })
+    if (worldBox.isEmpty()) {
+      return
+    }
+    if (this.parent) {
+      this.parent.updateMatrixWorld(true)
+      _toParentLocal.copy(this.parent.matrixWorld).invert()
+      worldBox.applyMatrix4(_toParentLocal)
+    }
+    if (this._wcsBbox.isEmpty()) {
+      this._wcsBbox.copy(worldBox)
+    } else {
+      this._wcsBbox.union(worldBox)
+    }
+  }
+
+  /**
+   * Object id used for mesh-glyph InstancedMesh slots / pick / highlight.
+   *
+   * Block-reference attributes keep their ATTRIB handle on `this.objectId`,
+   * but selection targets the parent INSERT ({@link AcTrGroup}). Prefer that
+   * ancestor so clicks on attribute text select the INSERT.
+   */
+  protected resolveMeshGlyphBatchObjectId(): string {
+    const stamped = this.userData?.meshGlyphBatchObjectId
+    if (typeof stamped === 'string' && stamped.length > 0) {
+      return stamped
+    }
+    let node: THREE.Object3D | null = this.parent
+    while (node) {
+      // Prefer INSERT AcTrGroup over intermediate entity wrappers.
+      if (
+        node instanceof AcTrEntity &&
+        'isOnTheSameLayer' in node &&
+        typeof (node as AcTrEntity & { isOnTheSameLayer: unknown })
+          .isOnTheSameLayer === 'boolean' &&
+        node.objectId
+      ) {
+        return node.objectId
+      }
+      node = node.parent
+    }
+    return this.objectId || ''
+  }
+
+  /**
+   * True when this glyph or an ancestor is a grip/jig transient that must not
+   * enqueue into the scene-level mesh-glyph InstancedMesh batch.
+   */
+  protected shouldSkipMeshGlyphInstancing(): boolean {
+    if (this.userData?.skipMeshGlyphInstancing === true) {
+      return true
+    }
+    let node: THREE.Object3D | null = this.parent
+    while (node) {
+      const data = (node as AcTrEntity).userData
+      if (data?.skipMeshGlyphInstancing === true) {
+        return true
+      }
+      node = node.parent
+    }
+    return false
   }
 
   /**

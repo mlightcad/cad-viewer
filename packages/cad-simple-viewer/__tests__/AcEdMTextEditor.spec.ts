@@ -238,6 +238,29 @@ describe('AcEdMTextEditor', () => {
     globalListeners.delete(listener)
   })
 
+  it('marks the view dirty on each render frame so the caret WebGL overlay paints', async () => {
+    const view = createView()
+    const resultPromise = new AcEdMTextEditor().open({
+      view: view as never,
+      location: { x: 0, y: 0, z: 0 },
+      width: 10,
+      textHeight: 2,
+      toolbarEnabled: false
+    })
+
+    const onRenderFrame = view.events.renderFrame.addEventListener.mock
+      .calls[0]?.[0] as (() => void) | undefined
+    expect(onRenderFrame).toEqual(expect.any(Function))
+
+    view.isDirty = false
+    onRenderFrame?.()
+    expect(mockMTextInputBoxInstances[0].update).toHaveBeenCalled()
+    expect(view.isDirty).toBe(true)
+
+    mockMTextInputBoxInstances[0].emit('close')
+    await resultPromise
+  })
+
   it('keeps the input box toolbar object alive in a hidden host when disabled', async () => {
     const view = createView()
     const resultPromise = new AcEdMTextEditor().open({
