@@ -4,9 +4,13 @@ import {
   createDefaultColorSettings,
   DefaultFontsPreset,
   FontManager,
+  MESH_GLYPH_PLACEMENTS_USERDATA,
   type MemoryUsageReport,
+  type MeshFontRenderMode,
+  type MeshGlyphPlacement,
   MTextData,
   MTextObject,
+  type TextRenderProfileSnapshot,
   RenderMode,
   ShapeData,
   StyleManager,
@@ -15,6 +19,8 @@ import {
 } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
+import { AcTrMeshGlyphWorldBatch } from '../batch/AcTrMeshGlyphWorldBatch'
+import type { AcTrBatchHighlightKind } from '../batch/highlight'
 import { AcTrStyleManager } from '../style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../util'
 
@@ -95,14 +101,37 @@ export class AcTrMTextRenderer {
   private _defaultFonts?: DefaultFontsPreset | string | readonly string[]
   private _lazyFontLoading?: boolean
   private _awaitFontsBeforeDraw?: boolean
+  /** Optional override for TrueType fill vs contour stroke (OPENPROF A/B). */
+  private _meshFontRenderMode?: MeshFontRenderMode
+  /**
+   * When true, MTEXT mesh glyphs emit placements for
+   * {@link AcTrMeshGlyphWorldBatch} instead of per-entity merged meshes.
+   * Effective only on main-thread render mode (worker falls back to merge).
+   */
+  private _meshGlyphInstancing = true
+  private _meshGlyphBatch = new AcTrMeshGlyphWorldBatch()
   /**
    * Fonts successfully pushed into the active worker pool (or main renderer)
    * via {@link loadFonts}. Cleared when the unified renderer is destroyed.
    */
   private _rendererLoadedFonts = new Set<string>()
+  /** Complex-linetype shared glyph group draws (OPENPROF). */
+  private _sharedGlyphDrawCount = 0
 
   private constructor() {
     // Do nothing for now
+  }
+
+  /** Increments when a complex-linetype shared glyph group is drawn. */
+  noteSharedGlyphDraw(): void {
+    this._sharedGlyphDrawCount++
+  }
+
+  /** Returns and clears the shared-glyph draw counter. */
+  takeSharedGlyphDrawCount(): number {
+    const count = this._sharedGlyphDrawCount
+    this._sharedGlyphDrawCount = 0
+    return count
   }
 
   /**
@@ -146,6 +175,11 @@ export class AcTrMTextRenderer {
    */
   setRenderMode(mode: RenderMode) {
     this._renderMode = mode
+    if (mode === 'worker') {
+      // Placement / InstancedMesh path is main-thread only; drop any live batch.
+      this._meshGlyphBatch.dispose()
+      this._meshGlyphBatch = new AcTrMeshGlyphWorldBatch()
+    }
     if (this._renderer) {
       this._renderer.setDefaultMode(mode)
       this.applyFontUrl()
@@ -255,6 +289,253 @@ export class AcTrMTextRenderer {
   }
 
   /**
+   * Overrides how TrueType/OTF glyphs are drawn (`mesh` fill vs `line` stroke).
+   * Pass `undefined` to leave each {@link MTextData.meshFontRenderMode} unchanged.
+   */
+  setMeshFontRenderMode(mode: MeshFontRenderMode | undefined): void {
+    this._meshFontRenderMode = mode
+  }
+
+  getMeshFontRenderMode(): MeshFontRenderMode | undefined {
+    return this._meshFontRenderMode
+  }
+
+  /**
+   * Enables scene-level mesh-glyph InstancedMesh batching (skips per-entity
+   * mergeMesh). Default on. Effective only when render mode is `main`
+   * (worker mode keeps merge).
+   */
+  setMeshGlyphInstancing(enabled: boolean): void {
+    this._meshGlyphInstancing = enabled
+    if (!enabled) {
+      this.resetMeshGlyphBatch()
+    }
+  }
+
+  /**
+   * True when mesh-glyph InstancedMesh batching is preferred **and** the
+   * active render mode is main-thread (worker cannot carry BufferGeometry
+   * placements across postMessage).
+   */
+  getMeshGlyphInstancing(): boolean {
+    return this._meshGlyphInstancing && this.getRenderMode() !== 'worker'
+  }
+
+  /**
+   * Disposes live InstancedMeshes / slot maps and installs an empty batch.
+   * Call when the active scene is cleared (not when parking a multi-doc session).
+   */
+  resetMeshGlyphBatch(): void {
+    this._meshGlyphBatch.dispose()
+    this._meshGlyphBatch = new AcTrMeshGlyphWorldBatch()
+  }
+
+  /**
+   * Detaches the active mesh-glyph batch so a document session can park it
+   * with its scene. Installs an empty batch for the next document.
+   */
+  detachMeshGlyphBatch(): AcTrMeshGlyphWorldBatch {
+    const previous = this._meshGlyphBatch
+    this._meshGlyphBatch = new AcTrMeshGlyphWorldBatch()
+    return previous
+  }
+
+  /**
+   * Restores a parked mesh-glyph batch when switching back to a document.
+   * Disposes any batch currently attached to this renderer.
+   */
+  attachMeshGlyphBatch(batch: AcTrMeshGlyphWorldBatch): void {
+    if (this._meshGlyphBatch === batch) {
+      return
+    }
+    this._meshGlyphBatch.dispose()
+    this._meshGlyphBatch = batch
+  }
+
+  /**
+   * Queues placements from one drawn MText object (reads
+   * {@link MESH_GLYPH_PLACEMENTS_USERDATA}).
+   *
+   * Bakes each placement into **world space** using `object`'s hierarchy
+   * (call after the MText root is parented under the entity and
+   * `updateMatrixWorld` has run).
+   */
+  enqueueMeshGlyphPlacementsFromObject(
+    object: THREE.Object3D,
+    meta: { objectId: string; layerName: string; visible?: boolean }
+  ): number {
+    if (!this.getMeshGlyphInstancing() || !meta.objectId) {
+      return 0
+    }
+    let queued = 0
+    object.updateMatrixWorld(true)
+    object.traverse(node => {
+      const placements = node.userData?.[MESH_GLYPH_PLACEMENTS_USERDATA] as
+        | MeshGlyphPlacement[]
+        | undefined
+      const material = node.userData?.meshGlyphMaterial as
+        | THREE.Material
+        | undefined
+      if (!placements?.length || !material) {
+        return
+      }
+      const baked = AcTrMeshGlyphWorldBatch.bakeWorldMatrices(node, placements)
+      const byGeom = new Map<
+        string,
+        { geometry: THREE.BufferGeometry; matrices: Float32Array[] }
+      >()
+      for (const item of baked) {
+        let group = byGeom.get(item.geometry.uuid)
+        if (!group) {
+          group = { geometry: item.geometry, matrices: [] }
+          byGeom.set(item.geometry.uuid, group)
+        }
+        group.matrices.push(item.matrixElements)
+      }
+      for (const group of byGeom.values()) {
+        this._meshGlyphBatch.enqueue(
+          group.matrices,
+          group.geometry,
+          material,
+          meta
+        )
+        queued += group.matrices.length
+      }
+      delete node.userData[MESH_GLYPH_PLACEMENTS_USERDATA]
+      delete node.userData.meshGlyphMaterial
+    })
+    return queued
+  }
+
+  /**
+   * Builds InstancedMeshes. Prefer layer-group parents so layer on/off works.
+   * Call after deferred glyph `asyncDraw` drains.
+   */
+  flushMeshGlyphInstances(
+    fallbackParent: THREE.Object3D,
+    resolveLayerParent?: (
+      layerName: string
+    ) => THREE.Object3D | undefined | null
+  ): {
+    placements: number
+    buckets: number
+  } {
+    const placements = this._meshGlyphBatch.placementCount
+    const bucketsBefore = this._meshGlyphBatch.bucketCount
+    this._meshGlyphBatch.flush(fallbackParent, resolveLayerParent)
+    return { placements, buckets: bucketsBefore }
+  }
+
+  /** Syncs InstancedMesh slots when an entity is shown/hidden. */
+  setMeshGlyphVisible(objectId: string, visible: boolean): boolean {
+    if (!this._meshGlyphInstancing || !objectId) {
+      return false
+    }
+    return this._meshGlyphBatch.setVisibleByObjectId(objectId, visible)
+  }
+
+  /** Drops InstancedMesh slots when an entity is removed from the scene. */
+  removeMeshGlyphInstances(objectId: string): boolean {
+    if (!this._meshGlyphInstancing || !objectId) {
+      return false
+    }
+    return this._meshGlyphBatch.removeByObjectId(objectId)
+  }
+
+  /**
+   * Selection/hover tint for scene-level mesh-glyph instances.
+   * No-op when instancing is off or the entity has no glyph slots.
+   */
+  setMeshGlyphHighlight(
+    objectId: string,
+    kind: AcTrBatchHighlightKind,
+    enabled: boolean
+  ): boolean {
+    if (!this._meshGlyphInstancing || !objectId) {
+      return false
+    }
+    return this._meshGlyphBatch.setHighlightByObjectId(objectId, kind, enabled)
+  }
+
+  /**
+   * Ray-tests scene-level mesh-glyph instances for one selectable object id.
+   * Complements {@link AcTrBatchedGroup.isIntersectWith} after placements are
+   * stolen into InstancedMeshes.
+   */
+  intersectMeshGlyphObjectId(
+    objectId: string,
+    raycaster: THREE.Raycaster
+  ): boolean {
+    if (!this.getMeshGlyphInstancing() || !objectId) {
+      return false
+    }
+    return this._meshGlyphBatch.intersectsObjectId(objectId, raycaster)
+  }
+
+  /**
+   * Selectable object ids whose mesh-glyph world AABB intersects `box`.
+   * Covers INSERT text missing from spatial-index child boxes.
+   */
+  queryMeshGlyphObjectIdsIntersectingBox(box: {
+    minX: number
+    minY: number
+    maxX: number
+    maxY: number
+  }): string[] {
+    if (!this.getMeshGlyphInstancing()) {
+      return []
+    }
+    return this._meshGlyphBatch.queryObjectIdsIntersectingBox(box)
+  }
+
+  /** World pick boxes from the latest mesh-glyph flush. */
+  getMeshGlyphWorldPickBoxes(): ReadonlyMap<string, THREE.Box3> {
+    return this._meshGlyphBatch.getWorldPickBoxes()
+  }
+
+  /**
+   * Enables {@link TextRenderProfiler} on the unified renderer (main + workers).
+   */
+  async setTextRenderProfilerEnabled(enabled: boolean): Promise<void> {
+    this.ensureRendererCreated()
+    await this._renderer?.setTextRenderProfilerEnabled(enabled)
+  }
+
+  /** Merged main/worker text-render timing snapshot. */
+  getTextRenderProfile(): TextRenderProfileSnapshot | null {
+    return this._renderer?.getTextRenderProfile() ?? null
+  }
+
+  resetTextRenderProfiler(): void {
+    this._renderer?.resetTextRenderProfiler()
+  }
+
+  private applyMeshFontRenderMode(mtextContent: MTextData): MTextData {
+    let next = mtextContent
+    if (
+      this._meshFontRenderMode &&
+      mtextContent.meshFontRenderMode !== this._meshFontRenderMode
+    ) {
+      next = {
+        ...next,
+        meshFontRenderMode: this._meshFontRenderMode
+      }
+    }
+    // Callers may force `'merge'` (PDF glyph extract, tests). Only default to
+    // placement when the mode is left unspecified.
+    if (
+      this.getMeshGlyphInstancing() &&
+      next.meshGlyphOutputMode == null
+    ) {
+      next = {
+        ...next,
+        meshGlyphOutputMode: 'placement'
+      }
+    }
+    return next
+  }
+
+  /**
    * Render MText using the current mode asynchronously
    */
   async asyncRenderMText(
@@ -266,7 +547,7 @@ export class AcTrMTextRenderer {
       throw new Error('AcTrMTextRenderer not initialized!')
     }
     const mtext = await this._renderer!.asyncRenderMText(
-      mtextContent,
+      this.applyMeshFontRenderMode(mtextContent),
       textStyle,
       colorSettings
     )
@@ -286,7 +567,7 @@ export class AcTrMTextRenderer {
       throw new Error('AcTrMTextRenderer not initialized!')
     }
     const mtext = this._renderer.syncRenderMText(
-      mtextContent,
+      this.applyMeshFontRenderMode(mtextContent),
       textStyle,
       colorSettings
     )

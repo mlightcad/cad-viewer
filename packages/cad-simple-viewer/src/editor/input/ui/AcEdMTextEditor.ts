@@ -2,7 +2,8 @@ import {
   AcDbSystemVariables,
   AcDbSysVarManager,
   AcGePoint3dLike,
-  AcGiMTextAttachmentPoint
+  AcGiMTextAttachmentPoint,
+  AcGiMTextFlowDirection
 } from '@mlightcad/data-model'
 import {
   MTextInputBox,
@@ -10,7 +11,10 @@ import {
   type MTextToolbarTheme
 } from '@mlightcad/mtext-input-box'
 import { MTextColor } from '@mlightcad/mtext-parser'
-import { MTextAttachmentPoint } from '@mlightcad/mtext-renderer'
+import {
+  MTextAttachmentPoint,
+  MTextFlowDirection
+} from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
 import { AcApDocManager } from '../../../app'
@@ -30,6 +34,15 @@ function mTextAttachmentToAcGi(
   ap: MTextAttachmentPoint
 ): AcGiMTextAttachmentPoint {
   return ap as unknown as AcGiMTextAttachmentPoint
+}
+
+function acGiFlowToMText(
+  dir: AcGiMTextFlowDirection | undefined
+): MTextFlowDirection | undefined {
+  if (dir === undefined) return undefined
+  const v = dir as number
+  if (v >= 1 && v <= 5) return v as MTextFlowDirection
+  return MTextFlowDirection.LEFT_TO_RIGHT
 }
 
 export type AcEdMTextEditorCurrentFormatChangeListener = () => void
@@ -113,19 +126,40 @@ export interface AcEdMTextEditorResult {
 export interface AcEdMTextEditorOptions {
   /** Active 2D view where the editor overlay and text box are rendered. */
   view: AcTrView2d
-  /** Insertion location (top-left anchor) in world coordinates. */
+  /**
+   * DXF insertion point in world coordinates. Combined with
+   * {@link initialAttachmentPoint} this is the attachment location on the
+   * text box (not always the top-left corner).
+   */
   location: AcGePoint3dLike
   /**
    * Initial MTEXT attachment (DXF 71). When omitted, the editor uses top-left
    * until the user changes justify in the ribbon.
    */
   initialAttachmentPoint?: AcGiMTextAttachmentPoint
+  /** Initial MTEXT flow direction (DXF 72). Defaults to left-to-right. */
+  initialDrawingDirection?: AcGiMTextFlowDirection
+  /** Optional rotation in radians (DXF 50). */
+  rotation?: number
+  /** Optional text direction vector; preferred over {@link rotation} when set. */
+  directionVector?: { x: number; y: number; z?: number }
   /** Initial MTEXT box width in world units. */
   width: number
   /** Default text height in world units. */
   textHeight: number
   /** Optional initial MTEXT source string. Defaults to empty string. */
   initialText?: string
+  /**
+   * Optional text style name (DXF group 7). When set, the editor resolves
+   * font / widthFactor from this style instead of the drawing's current
+   * `TEXTSTYLE`, matching the entity being edited.
+   */
+  textStyleName?: string
+  /**
+   * Optional MTEXT line spacing factor (DXF group 44). When set, the editor
+   * matches the entity's drawing layout instead of the ribbon default.
+   */
+  initialLineSpaceFactor?: number
   /**
    * Optional font family list displayed in toolbar font dropdown.
    *
@@ -435,7 +469,12 @@ export class AcEdMTextEditor {
       toolbarFontFamilies = [],
       toolbarColorPicker,
       toolbarEnabled = AcEdMTextEditor.defaultToolbarEnabled,
-      initialAttachmentPoint
+      initialAttachmentPoint,
+      initialDrawingDirection,
+      rotation,
+      directionVector,
+      textStyleName,
+      initialLineSpaceFactor
     } = options
     const origin = new THREE.Vector3(location.x, location.y, location.z ?? 0)
     const isLightBg = acgiIsLightBackground(view.backgroundColor)
@@ -465,12 +504,21 @@ export class AcEdMTextEditor {
           .filter(fontName => fontName.length > 0)
       )
     )
-    const resolveLayerTextStyle = () => {
-      const record = database.tables.textStyleTable.getAt(database.textstyle)
-      return record?.textStyle
+    const resolveEditorTextStyle = () => {
+      const table = database.tables.textStyleTable
+      const preferred = textStyleName?.trim()
+      if (preferred) {
+        const fromEntity =
+          typeof table.resolveAt === 'function'
+            ? table.resolveAt(preferred)
+            : table.getAt(preferred)
+        if (fromEntity?.textStyle) return fromEntity.textStyle
+      }
+      const current = table.getAt(database.textstyle)
+      return current?.textStyle
     }
-    const normalizedTextHeight = Math.max(1, textHeight)
-    const layerTextStyle = resolveLayerTextStyle()
+    const normalizedTextHeight = Math.max(Number.EPSILON, textHeight)
+    const layerTextStyle = resolveEditorTextStyle()
     const defaultTextStyle = layerTextStyle
       ? {
           ...layerTextStyle,
@@ -487,6 +535,7 @@ export class AcEdMTextEditor {
       : AcEdMTextEditor.createHiddenToolbarContainer(view.container)
 
     const mtextAttachment = acGiAttachmentToMText(initialAttachmentPoint)
+    const mtextFlow = acGiFlowToMText(initialDrawingDirection)
 
     const mtextInputBox = new MTextInputBox({
       scene: view.internalScene,
@@ -496,6 +545,16 @@ export class AcEdMTextEditor {
       initialText,
       ...(mtextAttachment !== undefined
         ? { initialAttachmentPoint: mtextAttachment }
+        : {}),
+      ...(mtextFlow !== undefined ? { initialDrawingDirection: mtextFlow } : {}),
+      ...(typeof rotation === 'number' && Number.isFinite(rotation)
+        ? { rotation }
+        : {}),
+      ...(directionVector ? { directionVector } : {}),
+      ...(typeof initialLineSpaceFactor === 'number' &&
+      Number.isFinite(initialLineSpaceFactor) &&
+      initialLineSpaceFactor > 0
+        ? { initialLineSpaceFactor }
         : {}),
       textStyle: defaultTextStyle,
       cursorStyle: {
@@ -531,7 +590,10 @@ export class AcEdMTextEditor {
       const onRenderFrame = () => {
         if (done) return
         mtextInputBox.update()
-        view.isHtmlDirty = true
+        // Cursor/selection overlays are Three.js meshes rebuilt every frame.
+        // isHtmlDirty only refreshes CSS2D and skips WebGL, so the caret never
+        // appears unless the drawing is also marked dirty.
+        view.isDirty = true
       }
 
       const onSysVarChanged = (args: { name: string; database: unknown }) => {
@@ -542,7 +604,7 @@ export class AcEdMTextEditor {
           return
         }
         mtextInputBox.setToolbarTheme(getToolbarTheme())
-        view.isHtmlDirty = true
+        view.isDirty = true
       }
 
       const cleanup = () => {
@@ -557,7 +619,7 @@ export class AcEdMTextEditor {
         AcDbSysVarManager.instance().events.sysVarChanged.removeEventListener(
           onSysVarChanged
         )
-        view.isHtmlDirty = true
+        view.isDirty = true
       }
 
       const finish = (result: AcEdMTextEditorResult | null) => {

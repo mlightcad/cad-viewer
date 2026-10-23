@@ -7,6 +7,11 @@ import {
   AcDbSysVarManager,
   log
 } from '@mlightcad/data-model'
+import {
+  TextRenderProfiler,
+  type TextRenderProfileSnapshot
+} from '@mlightcad/mtext-renderer'
+import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
 import type { AcTrView2d } from '../view/AcTrView2d'
 import { getLastFontLoadStats } from './AcApFontLoader'
@@ -59,9 +64,17 @@ export interface AcApOpenFileProfileSnapshot {
   }
   convertPhase?: {
     finishGeometryMs: number
+    /** Cumulative asyncDraw work inside finishEntityGeometry (may exceed wall under concurrency). */
+    finishGeometryAsyncDrawMs: number
+    /** Cumulative deferred-queue wait (enqueue → start). */
+    finishGeometryQueueWaitMs: number
     handleGroupMs: number
     addEntityMs: number
     awaitFontsMs: number
+    glyphEntityCount: number
+    mtextCount: number
+    shapeCount: number
+    sharedGlyphDrawCount: number
     fontPreload?: {
       critical: string[]
       workerWarm?: string[]
@@ -71,6 +84,8 @@ export interface AcApOpenFileProfileSnapshot {
       parseSite?: 'main' | 'worker'
     }
   }
+  /** Merged mtext-renderer TextRenderProfiler snapshot when OPENPROF enabled. */
+  mtextProfile?: TextRenderProfileSnapshot
 }
 
 /**
@@ -148,6 +163,19 @@ export class AcApOpenFileProfiler {
 
     AcDbRenderingCache.resetProfile()
     AcDbRenderingCache.profiling = true
+
+    // Fine-grained mtext CPU buckets when OPENPROF (or __MTEXTPROF__) is on.
+    // Prefer globalThis so duplicate module copies (bundler) still share the flag.
+    if (this._printToConsole || TextRenderProfiler.enabled) {
+      try {
+        ;(globalThis as { __MTEXTPROF__?: boolean }).__MTEXTPROF__ = true
+      } catch {
+        // ignore
+      }
+      TextRenderProfiler.setEnabled(true)
+      TextRenderProfiler.reset()
+      void AcTrMTextRenderer.getInstance().setTextRenderProfilerEnabled(true)
+    }
 
     this._progressListener = (args: AcDbProgressdEventArgs) => {
       this.onProgress(args)
@@ -267,12 +295,38 @@ export class AcApOpenFileProfiler {
       typeof view.takeConvertPhaseTimings === 'function'
         ? view.takeConvertPhaseTimings()
         : null
+    const mtextRenderer = AcTrMTextRenderer.getInstance()
+    const sharedGlyphDrawCount =
+      (convertPhaseRaw?.sharedGlyphDrawCount ?? 0) +
+      mtextRenderer.takeSharedGlyphDrawCount()
+    // Prefer renderer snapshot (main+worker merged); fall back to whichever
+    // TextRenderProfiler copy this module resolved.
+    const mtextProfileRaw =
+      mtextRenderer.getTextRenderProfile() ?? TextRenderProfiler.snapshot()
+    const mtextProfile =
+      mtextProfileRaw.enabled ||
+      mtextProfileRaw.drawCount > 0 ||
+      mtextProfileRaw.placedChars > 0 ||
+      mtextProfileRaw.triangulateMs > 0 ||
+      mtextProfileRaw.mergeMeshMs > 0 ||
+      mtextProfileRaw.mergeLineMs > 0
+        ? mtextProfileRaw
+        : undefined
+
     const convertPhase = convertPhaseRaw
       ? {
           finishGeometryMs: convertPhaseRaw.finishGeometry,
+          finishGeometryAsyncDrawMs:
+            convertPhaseRaw.finishGeometryAsyncDraw ?? 0,
+          finishGeometryQueueWaitMs:
+            convertPhaseRaw.finishGeometryQueueWait ?? 0,
           handleGroupMs: convertPhaseRaw.handleGroup,
           addEntityMs: convertPhaseRaw.addEntity,
           awaitFontsMs: convertPhaseRaw.awaitFonts,
+          glyphEntityCount: convertPhaseRaw.glyphEntityCount ?? 0,
+          mtextCount: convertPhaseRaw.mtextCount ?? 0,
+          shapeCount: convertPhaseRaw.shapeCount ?? 0,
+          sharedGlyphDrawCount,
           fontPreload: convertPhaseRaw.fontPreload
         }
       : undefined
@@ -317,7 +371,8 @@ export class AcApOpenFileProfiler {
         paintCount: progressiveStats.paintCount,
         yieldCount: progressiveStats.yieldCount
       },
-      convertPhase
+      convertPhase,
+      mtextProfile
     }
     AcApOpenFileProfiler._lastSnapshot = snapshot
 
@@ -343,7 +398,16 @@ export class AcApOpenFileProfiler {
 
     if (convertPhase) {
       lines.push(
-        `    finishGeometry:   ${convertPhase.finishGeometryMs.toFixed(0)} ms (cumulative)`,
+        `    finishGeometry:   ${convertPhase.finishGeometryMs.toFixed(0)} ms (cumulative wall across jobs)`,
+        `      asyncDraw:      ${convertPhase.finishGeometryAsyncDrawMs.toFixed(0)} ms (cumulative work; may exceed wall @ concurrency)`,
+        `      queueWait:      ${convertPhase.finishGeometryQueueWaitMs.toFixed(0)} ms cumulative` +
+          ` (avg ${(
+            convertPhase.glyphEntityCount > 0
+              ? convertPhase.finishGeometryQueueWaitMs /
+                convertPhase.glyphEntityCount
+              : 0
+          ).toFixed(0)} ms/job enqueue→start)`,
+        `      glyphEntities:  ${convertPhase.glyphEntityCount} (mtext=${convertPhase.mtextCount} shape=${convertPhase.shapeCount} sharedGlyphDraws=${convertPhase.sharedGlyphDrawCount})`,
         `    handleGroup:      ${convertPhase.handleGroupMs.toFixed(0)} ms (cumulative)`,
         `    addEntity:        ${convertPhase.addEntityMs.toFixed(0)} ms`,
         // Wall time of preset + STYLE font preload awaited before glyph draw.
@@ -369,6 +433,10 @@ export class AcApOpenFileProfiler {
           ` (critical=[${fontLoad.criticalFonts.join(',')}]` +
           ` deferred=[${fontLoad.deferredFonts.join(',')}])`
       )
+    }
+
+    if (mtextProfile) {
+      lines.push('', ...TextRenderProfiler.formatReport(mtextProfile))
     }
 
     lines.push(

@@ -16,6 +16,7 @@ import {
   AcTrBatchedGroup,
   type AcTrDirectEntityMeta,
   AcTrEntity,
+  AcTrMTextRenderer,
   AcTrRenderer,
   AcTrViewportView,
   tryBuildDirectEntityMeta
@@ -163,6 +164,10 @@ async function convertOpenDatabaseToSnapshot(
   await settlePendingDraws(pendingDraws, ASYNC_DRAW_CONCURRENCY)
   const asyncDrawMs = performance.now() - tAsyncDraw
 
+  // setupExportTextRendering disables mesh-glyph InstancedMesh; if that ever
+  // changes, flush pending placements into layer groups before snapshot.
+  flushMeshGlyphInstancesIntoLayouts(layoutBuckets)
+
   const layerMeta = collectLayerMeta(database)
   const layouts: AcExExportLayoutInput[] = []
   for (const btrId of layoutBtrIds) {
@@ -203,6 +208,42 @@ async function convertOpenDatabaseToSnapshot(
   )
 
   return snapshot
+}
+
+/**
+ * Parents any pending mesh-glyph InstancedMeshes under export layer groups.
+ * Normally a no-op because {@link setupExportTextRendering} disables
+ * instancing; kept as a safety net if that default changes.
+ */
+function flushMeshGlyphInstancesIntoLayouts(
+  layoutBuckets: Map<string, LayoutBucket>
+): void {
+  const mtext = AcTrMTextRenderer.getInstance()
+  if (!mtext.getMeshGlyphInstancing()) {
+    return
+  }
+  const layerGroups = new Map<string, THREE.Object3D>()
+  // Prefer model-space when the same layer name exists in multiple layouts.
+  const ordered = [...layoutBuckets.values()].sort(
+    (a, b) => Number(b.isModelSpace) - Number(a.isModelSpace)
+  )
+  for (const bucket of ordered) {
+    for (const [name, layer] of bucket.layers) {
+      if (!layerGroups.has(name)) {
+        layerGroups.set(name, layer.group as unknown as THREE.Object3D)
+      }
+    }
+  }
+  const fallback = new THREE.Group()
+  const { placements } = mtext.flushMeshGlyphInstances(
+    fallback,
+    name => layerGroups.get(name)
+  )
+  if (placements > 0) {
+    console.info(
+      `[cad-html-exporter] mesh glyph InstancedMesh flush: placements=${placements}`
+    )
+  }
 }
 
 /**

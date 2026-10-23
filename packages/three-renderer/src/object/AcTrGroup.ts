@@ -421,6 +421,9 @@ export class AcTrGroup extends AcTrEntity {
       if (this.bucketSharedLinetypeGlyph(child, shared)) {
         return
       }
+      if (this.objectId && child instanceof AcTrGlyphEntity) {
+        child.userData.meshGlyphBatchObjectId = this.objectId
+      }
       child.syncDraw()
     }
 
@@ -481,6 +484,11 @@ export class AcTrGroup extends AcTrEntity {
       }
       if (this.bucketSharedLinetypeGlyph(child, shared)) {
         return
+      }
+      // Stamp INSERT id so mesh-glyph InstancedMesh slots / pick / highlight
+      // key by the selectable block reference, not ATTRIB handles.
+      if (this.objectId && child instanceof AcTrGlyphEntity) {
+        child.userData.meshGlyphBatchObjectId = this.objectId
       }
       tasks.push(() => child.asyncDraw())
     }

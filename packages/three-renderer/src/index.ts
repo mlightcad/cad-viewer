@@ -1,6 +1,7 @@
 import './types/three-material'
 
 export * from './batch/AcTrBatchedGroup'
+export { AcTrMeshGlyphWorldBatch } from './batch/AcTrMeshGlyphWorldBatch'
 export {
   isBatchGeometryActive,
   isBatchGeometryVisible
@@ -14,6 +15,8 @@ export * from './linetype'
 export * from './object/AcTrObject'
 export * from './object/AcTrEntity'
 export * from './object/AcTrGlyphEntity'
+export * from './object/AcTrMText'
+export * from './object/AcTrShape'
 export * from './object/AcTrLineGeometryBuilder'
 export * from './object/AcTrGroup'
 export * from './html'

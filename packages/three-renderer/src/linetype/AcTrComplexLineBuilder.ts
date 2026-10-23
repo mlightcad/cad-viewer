@@ -15,6 +15,7 @@ import { AcTrEntity } from '../object/AcTrEntity'
 import { AcTrGlyphEntity } from '../object/AcTrGlyphEntity'
 import { AcTrMText } from '../object/AcTrMText'
 import { AcTrShape } from '../object/AcTrShape'
+import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer'
 import { AcTrRenderContext } from '../renderer/AcTrRenderContext'
 import { AcTrBufferGeometryUtil, getSceneDrawableUserData } from '../util'
 import {
@@ -525,6 +526,7 @@ export async function asyncDrawSharedGlyphGroup(
   if (group.length === 0) {
     return
   }
+  AcTrMTextRenderer.getInstance().noteSharedGlyphDraw()
   const { placements, template } = prepareSharedGlyphGroup(group)
   await template.asyncDraw()
   let budgetStart = performance.now()

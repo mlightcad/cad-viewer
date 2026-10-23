@@ -67,10 +67,12 @@ export function createViewerPdfGlyphProvider(): AcPdfGlyphProvider {
     ) {
       try {
         const renderer = AcTrMTextRenderer.getInstance()
+        // Vector PDF extracts Mesh/Line BufferGeometry. Scene-level placement
+        // mode leaves empty groups — force per-entity merge for this draw only.
         const object = (await renderer.asyncRenderMText(
           // AcGi and mtext-renderer attachment enums are structurally compatible
           // at runtime but diverge in the TypeScript type graph.
-          data as never,
+          { ...(data as object), meshGlyphOutputMode: 'merge' } as never,
           style as never,
           toMTextColorSettings(colorSettings) as never
         )) as SceneNode

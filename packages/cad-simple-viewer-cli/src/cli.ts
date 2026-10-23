@@ -108,6 +108,18 @@ program
     '--disable-gpu',
     'Force software WebGL (SwiftShader); omit to prefer hardware GPU with automatic fallback'
   )
+  .option(
+    '--mtext-workers',
+    'Render MTEXT via worker pool (default: main thread for clearer OPENPROF)'
+  )
+  .option(
+    '--mesh-font-mode <mesh|line>',
+    'TrueType glyph path: mesh (filled) or line (contour stroke)'
+  )
+  .option(
+    '--no-mesh-glyph-instancing',
+    'Disable scene-level InstancedMesh for TrueType glyphs (use per-entity mergeMesh)'
+  )
   .option('--logfile <path>', 'Append runtime log lines to this file')
   .action(async opts => {
     try {
@@ -119,6 +131,10 @@ program
         opts.drawNoPlotLayers != null
           ? parseBooleanFlag('--draw-no-plot-layers', opts.drawNoPlotLayers)
           : undefined
+      const meshFontRenderMode =
+        opts.meshFontMode === 'mesh' || opts.meshFontMode === 'line'
+          ? opts.meshFontMode
+          : undefined
       const result = await runHeadless({
         inputPath: opts.input
           ? /^https?:\/\//i.test(opts.input)
@@ -127,6 +143,11 @@ program
           : undefined,
         scriptPath: path.resolve(opts.script),
         outputDir: opts.output ? path.resolve(opts.output) : undefined,
+        useMainThreadDraw: opts.mtextWorkers ? false : true,
+        meshFontRenderMode,
+        // Commander maps `--no-mesh-glyph-instancing` to `meshGlyphInstancing`
+        // (default true); there is no `noMeshGlyphInstancing` opt key.
+        meshGlyphInstancing: opts.meshGlyphInstancing,
         mode,
         openViewMode,
         drawNoPlotLayers,

@@ -16,9 +16,13 @@ import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin/register'
 import {
   accmYieldForPaint,
   AcDbDatabaseConverterManager,
-  AcDbFileType
+  AcDbFileType,
+  AcDbSystemVariables,
+  AcDbSysVarManager
 } from '@mlightcad/data-model'
 import { AcDbLibreDwgConverter } from '@mlightcad/libredwg-converter'
+import { TextRenderProfiler } from '@mlightcad/mtext-renderer'
+import { AcTrMTextRenderer } from '@mlightcad/three-renderer'
 
 /** Max time to wait for convert + deferred font/text geometry after open. */
 const SCENE_IDLE_TIMEOUT_MS = 120_000
@@ -75,6 +79,19 @@ export interface CadViewerCliRunOptions {
    * (`${saveBaseUrl}${fileName}`). Avoids base64 over CDP.
    */
   saveBaseUrl?: string
+  /**
+   * When false, MTEXT uses the worker pool. Default true (main thread) for
+   * headless OPENPROF so transfer cost is not mixed into glyph build.
+   */
+  useMainThreadDraw?: boolean
+  /**
+   * Override TrueType glyph path for OPENPROF A/B (`mesh` fill vs `line` stroke).
+   */
+  meshFontRenderMode?: 'mesh' | 'line'
+  /**
+   * Scene-level InstancedMesh for TrueType mesh glyphs (skip per-entity merge).
+   */
+  meshGlyphInstancing?: boolean
 }
 
 declare global {
@@ -269,9 +286,43 @@ function logOpenProfile() {
     lines.push(
       '[cad-simple-viewer-cli] OPENPROF convertPhase' +
         ` finishGeometry=${p.finishGeometryMs.toFixed(0)}ms` +
+        ` asyncDraw=${p.finishGeometryAsyncDrawMs.toFixed(0)}ms` +
+        ` queueWait=${p.finishGeometryQueueWaitMs.toFixed(0)}ms` +
         ` handleGroup=${p.handleGroupMs.toFixed(0)}ms` +
         ` addEntity=${p.addEntityMs.toFixed(0)}ms` +
-        ` awaitFonts=${p.awaitFontsMs.toFixed(0)}ms`
+        ` awaitFonts=${p.awaitFontsMs.toFixed(0)}ms` +
+        ` glyphs=${p.glyphEntityCount}` +
+        ` mtext=${p.mtextCount}` +
+        ` shape=${p.shapeCount}` +
+        ` sharedGlyph=${p.sharedGlyphDrawCount}`
+    )
+  }
+  try {
+    const liveProfile =
+      snapshot.mtextProfile ??
+      AcTrMTextRenderer.getInstance().getTextRenderProfile() ??
+      TextRenderProfiler.snapshot()
+    // Prefix required: HeadlessCadSession only forwards console lines that
+    // start with `[cad-simple-viewer-cli]`.
+    const prefix = '[cad-simple-viewer-cli]'
+    lines.push(
+      `${prefix} mtextProfile.enabled=${String(liveProfile?.enabled)}` +
+        ` drawCount=${liveProfile?.drawCount ?? 0}` +
+        ` placedChars=${liveProfile?.placedChars ?? 0}` +
+        ` triangulateMs=${(liveProfile?.triangulateMs ?? 0).toFixed(1)}` +
+        ` mergeMeshMs=${(liveProfile?.mergeMeshMs ?? 0).toFixed(1)}` +
+        ` parseLayoutMs=${(liveProfile?.parseLayoutMs ?? 0).toFixed(1)}`
+    )
+    if (liveProfile) {
+      for (const row of TextRenderProfiler.formatReport(liveProfile)) {
+        lines.push(`${prefix} ${row.trimStart()}`)
+      }
+    }
+  } catch (error) {
+    lines.push(
+      `[cad-simple-viewer-cli] mtextProfile error: ${
+        error instanceof Error ? error.message : String(error)
+      }`
     )
   }
   for (const line of lines) {
@@ -295,18 +346,34 @@ async function ensureViewer(options: CadViewerCliRunOptions = {}): Promise<void>
       parserWorkerUrl: dwgParserUrl
     })
   )
+  const useMainThreadDraw = options.useMainThreadDraw !== false
   AcApDocManager.createInstance({
     container,
     width: 1280,
     height: 720,
     autoResize: false,
     ...(options.baseUrl ? { baseUrl: options.baseUrl } : {}),
-    useMainThreadDraw: true,
+    useMainThreadDraw,
     webworkerFileUrls: {
       dwgParser: dwgParserUrl,
       mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`
     }
   })
+  if (options.meshFontRenderMode) {
+    AcTrMTextRenderer.getInstance().setMeshFontRenderMode(
+      options.meshFontRenderMode
+    )
+  }
+  // Default on in AcTrMTextRenderer; only force-off when explicitly disabled.
+  if (options.meshGlyphInstancing === false) {
+    AcTrMTextRenderer.getInstance().setMeshGlyphInstancing(false)
+  }
+  // Headless OPENPROF always wants fine-grained mtext buckets.
+  // Set globalThis first so every bundled copy of TextRenderProfiler sees it.
+  ;(globalThis as { __MTEXTPROF__?: boolean }).__MTEXTPROF__ = true
+  TextRenderProfiler.setEnabled(true)
+  TextRenderProfiler.reset()
+  void AcTrMTextRenderer.getInstance().setTextRenderProfilerEnabled(true)
 
   const pluginManager = AcApDocManager.instance.pluginManager
   registerLazyHtmlPlugin(pluginManager, {
@@ -332,6 +399,17 @@ window.runCadScript = async (fileName, drawingUrl, script, options = {}) => {
   const docManager = AcApDocManager.instance
   const hasDrawing = !!(drawingUrl && fileName)
   const openOptions = buildOpenOptions(options)
+
+  // Enable OPENPROF console + mtext fine buckets for every CLI open.
+  try {
+    AcDbSysVarManager.instance().setVar(
+      AcDbSystemVariables.OPENPROF,
+      true,
+      docManager.curDocument.database
+    )
+  } catch {
+    // Session var may not exist on older data-model builds; profiler still runs.
+  }
 
   const openT0 = performance.now()
   const openWallClock = Date.now()

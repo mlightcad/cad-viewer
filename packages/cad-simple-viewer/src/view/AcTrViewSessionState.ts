@@ -1,4 +1,5 @@
 import type { AcDbObjectId } from '@mlightcad/data-model'
+import type { AcTrMeshGlyphWorldBatch } from '@mlightcad/three-renderer'
 
 import type { AcApOpenViewMode } from '../app/AcApOpenDatabaseOptions'
 import type { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
@@ -37,4 +38,10 @@ export interface AcTrViewSessionState {
   missedFonts: Record<string, number>
   /** Selected entity ids at the moment the session was parked. */
   selectionIds: AcDbObjectId[]
+  /**
+   * Scene-level TrueType mesh-glyph InstancedMesh batch for this document.
+   * Parked with the scene so multi-doc switch keeps pick/highlight maps
+   * aligned with the parked layer groups.
+   */
+  meshGlyphBatch: AcTrMeshGlyphWorldBatch
 }

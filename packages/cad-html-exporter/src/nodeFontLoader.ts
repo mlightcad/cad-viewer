@@ -43,6 +43,10 @@ export async function setupExportTextRendering(options: {
   mtext.setRenderMode('main')
   // Main mode does not need a worker URL.
   mtext.initialize()
+  // Headless export builds per-layer AcTrBatchedGroup trees and never runs the
+  // viewer's mesh-glyph InstancedMesh flush. Keep merge mode so TrueType glyphs
+  // remain as Mesh children on each entity.
+  mtext.setMeshGlyphInstancing(false)
   await mtext.setDefaultFonts(DEFAULT_FONTS_PRESET)
   await mtext.setLazyFontLoading(true)
   await mtext.setAwaitFontsBeforeDraw(true)

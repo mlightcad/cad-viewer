@@ -90,7 +90,7 @@ function hasDrawableShapeInFont(
         ? parser.getCharShape(byCode, size)
         : undefined
     const polylines = glyph?.polylines
-    return !!polylines?.some(line => line.length >= 2)
+    return !!polylines?.some((line: unknown[]) => line.length >= 2)
   } finally {
     parser.release()
   }
