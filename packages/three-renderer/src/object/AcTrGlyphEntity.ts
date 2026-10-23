@@ -498,7 +498,10 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
    * enqueue into the scene-level mesh-glyph InstancedMesh batch.
    */
   protected shouldSkipMeshGlyphInstancing(): boolean {
-    let node: THREE.Object3D | null = this
+    if (this.userData?.skipMeshGlyphInstancing === true) {
+      return true
+    }
+    let node: THREE.Object3D | null = this.parent
     while (node) {
       const data = (node as AcTrEntity).userData
       if (data?.skipMeshGlyphInstancing === true) {

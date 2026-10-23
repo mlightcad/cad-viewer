@@ -4,16 +4,16 @@ import {
   createDefaultColorSettings,
   DefaultFontsPreset,
   FontManager,
-  MESH_GLYPH_PLACEMENTS_USERDATA,
   type MemoryUsageReport,
+  MESH_GLYPH_PLACEMENTS_USERDATA,
   type MeshFontRenderMode,
   type MeshGlyphPlacement,
   MTextData,
   MTextObject,
-  type TextRenderProfileSnapshot,
   RenderMode,
   ShapeData,
   StyleManager,
+  type TextRenderProfileSnapshot,
   TextStyle,
   UnifiedRenderer
 } from '@mlightcad/mtext-renderer'

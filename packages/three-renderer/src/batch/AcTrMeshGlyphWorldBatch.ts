@@ -1,13 +1,13 @@
 import type { MeshGlyphPlacement } from '@mlightcad/mtext-renderer'
 import * as THREE from 'three'
 
-import type { AcTrBatchHighlightKind } from './highlight'
 import {
   AcTrMaterialUtil,
   HIGHLIGHT_HOVER_COLOR,
   HIGHLIGHT_SELECT_COLOR
 } from '../util/AcTrMaterialUtil'
 import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
+import type { AcTrBatchHighlightKind } from './highlight'
 
 const _matrix = /*@__PURE__*/ new THREE.Matrix4()
 const _world = /*@__PURE__*/ new THREE.Matrix4()
