@@ -52,7 +52,7 @@ deploy:
     - pnpm docs:build
     - pnpm pre-serve
     - mkdir -p public
-    - cp -r ./packages/examples/public/* public/
+    - cp -r ./packages/cad-demo-gallery/public/* public/
   artifacts:
     paths:
       - public

@@ -23,7 +23,7 @@
       "@mlightcad/pdf-renderer",
       "@mlightcad/cad-viewer",
       "@mlightcad/cad-viewer-example",
-      "@mlightcad/cad-viewer-examples",
+      "@mlightcad/cad-demo-gallery",
       "@mlightcad/three-renderer"
     ]
   ],

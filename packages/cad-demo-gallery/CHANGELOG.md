@@ -1,4 +1,4 @@
-# @mlightcad/cad-viewer-examples
+# @mlightcad/cad-demo-gallery
 
 ## 1.7.7
 

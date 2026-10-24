@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="MLightCAD Demo Gallery: CAD Simple Viewer, CAD Diff Viewer, CAD Editor, CDN bootstrap, and DWG-to-HTML export — browser-native DWG/DXF demos with no backend and no upload.">
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+    <meta name="theme-color" content="#0b0f14">
+    <link rel="canonical" href="https://mlightcad.github.io/cad-viewer/">
+    <title>MLightCAD Demo Gallery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Syne:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        color-scheme: dark;
+        --ink: #0b0f14;
+        --ink-elevated: #121821;
+        --paper: #e8eef5;
+        --steel: #8b9bb4;
+        --steel-dim: #5a6a82;
+        --cyan: #3ddcff;
+        --cyan-dim: rgba(61, 220, 255, 0.14);
+        --amber: #e8a54b;
+        --amber-ink: #0b0f14;
+        --line: rgba(232, 238, 245, 0.12);
+        --line-strong: rgba(61, 220, 255, 0.35);
+        --font-display: "Syne", "Segoe UI", sans-serif;
+        --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+        --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+        --max: 1120px;
+        --nav-h: 4rem;
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: var(--font-body);
+        font-size: 1.05rem;
+        line-height: 1.65;
+        color: var(--paper);
+        background-color: var(--ink);
+        background-image:
+          radial-gradient(ellipse 80% 50% at 50% -10%, rgba(61, 220, 255, 0.08), transparent 55%),
+          linear-gradient(rgba(61, 220, 255, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(61, 220, 255, 0.035) 1px, transparent 1px);
+        background-size: auto, 48px 48px, 48px 48px;
+        background-attachment: fixed;
+      }
+
+      a {
+        color: var(--cyan);
+        transition: color 0.2s var(--ease);
+      }
+
+      a:hover {
+        color: var(--paper);
+      }
+
+      code {
+        font-family: var(--font-mono);
+        font-size: 0.88em;
+        color: var(--cyan);
+        background: var(--cyan-dim);
+        padding: 0.1em 0.35em;
+      }
+
+      /* Hosts for mlightcad.com site chrome (`site-chrome.js`). */
+      [data-site-nav] {
+        display: block;
+        flex-shrink: 0;
+        min-height: var(--nav-h);
+      }
+
+      [data-site-footer] {
+        display: block;
+        flex-shrink: 0;
+        width: 100%;
+        margin-top: auto;
+      }
+
+      .page {
+        max-width: var(--max);
+        margin: 0 auto;
+        padding: 2.5rem 1.25rem 5rem;
+      }
+
+      .hero {
+        position: relative;
+        margin-bottom: 3.5rem;
+        padding: 2.25rem 1.5rem 2.5rem;
+        border: 1px solid var(--line);
+        background: rgba(18, 24, 33, 0.55);
+      }
+
+      .hero::before,
+      .hero::after {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border-color: var(--cyan);
+        border-style: solid;
+        pointer-events: none;
+      }
+
+      .hero::before {
+        top: -1px;
+        left: -1px;
+        border-width: 2px 0 0 2px;
+        box-shadow: -2px -2px 12px rgba(61, 220, 255, 0.25);
+      }
+
+      .hero::after {
+        top: -1px;
+        right: -1px;
+        border-width: 2px 2px 0 0;
+        box-shadow: 2px -2px 12px rgba(61, 220, 255, 0.25);
+      }
+
+      .hero__corners {
+        position: absolute;
+        inset: auto 0 0 0;
+        height: 18px;
+        pointer-events: none;
+      }
+
+      .hero__corners::before,
+      .hero__corners::after {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        width: 18px;
+        height: 18px;
+        border-color: var(--cyan);
+        border-style: solid;
+      }
+
+      .hero__corners::before {
+        left: -1px;
+        border-width: 0 0 2px 2px;
+      }
+
+      .hero__corners::after {
+        right: -1px;
+        border-width: 0 2px 2px 0;
+      }
+
+      .boot {
+        margin: 0 0 1.25rem;
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        letter-spacing: 0.04em;
+        color: var(--steel-dim);
+      }
+
+      .boot strong {
+        color: var(--cyan);
+        font-weight: 500;
+      }
+
+      .eyebrow {
+        margin: 0 0 0.75rem;
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        font-weight: 400;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--cyan);
+      }
+
+      .hero h1 {
+        margin: 0 0 0.85rem;
+        font-family: var(--font-display);
+        font-size: clamp(2.1rem, 5vw, 3rem);
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        color: var(--paper);
+      }
+
+      .lead {
+        margin: 0;
+        max-width: 40rem;
+        color: var(--steel);
+        font-size: 1.05rem;
+      }
+
+      section {
+        margin-bottom: 3.25rem;
+      }
+
+      .section-head {
+        margin-bottom: 1.25rem;
+      }
+
+      .section-head h2 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--paper);
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1px;
+        background: var(--line);
+        border: 1px solid var(--line);
+      }
+
+      .card-wide {
+        grid-column: 1 / -1;
+      }
+
+      .card {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding: 1.5rem 1.4rem 1.45rem;
+        background: var(--ink-elevated);
+        border: 0;
+        border-radius: 0;
+      }
+
+      @media (max-width: 800px) {
+        .cards {
+          grid-template-columns: 1fr;
+        }
+
+        .card-wide {
+          grid-column: auto;
+        }
+      }
+
+      .card h3 {
+        margin: 0 0 0.55rem;
+        font-family: var(--font-display);
+        font-size: 1.2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--paper);
+      }
+
+      .card > p {
+        margin: 0 0 0.9rem;
+        color: var(--steel);
+      }
+
+      .card ul {
+        margin: 0 0 1.15rem;
+        padding-left: 1.15rem;
+        color: var(--steel);
+      }
+
+      .card li + li {
+        margin-top: 0.3rem;
+      }
+
+      .card li::marker {
+        color: var(--cyan);
+      }
+
+      .card > a.button:first-of-type {
+        margin-top: auto;
+      }
+
+      .card-split {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.25rem 1.75rem;
+        align-items: start;
+      }
+
+      @media (min-width: 801px) {
+        .card-split {
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        }
+      }
+
+      .card a.button {
+        display: inline-block;
+        padding: 0.7rem 1.15rem;
+        border-radius: 2px;
+        background: var(--amber);
+        color: var(--amber-ink);
+        text-decoration: none;
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        margin: 0 0.55rem 0.35rem 0;
+        transition: filter 0.2s var(--ease), box-shadow 0.2s var(--ease);
+      }
+
+      .card a.button:hover {
+        filter: brightness(1.06);
+        box-shadow: 0 0 20px rgba(232, 165, 75, 0.35);
+        color: var(--amber-ink);
+      }
+
+      .card a.button.secondary {
+        background: rgba(11, 15, 20, 0.4);
+        color: var(--paper);
+        border: 1px solid var(--line-strong);
+        box-shadow: none;
+      }
+
+      .card a.button.secondary:hover {
+        filter: none;
+        color: var(--cyan);
+        border-color: var(--cyan);
+        box-shadow: none;
+      }
+
+      .pill-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-bottom: 0.9rem;
+      }
+
+      .pill {
+        display: inline-block;
+        padding: 0.22rem 0.55rem;
+        border-radius: 2px;
+        border: 1px solid var(--line-strong);
+        background: var(--cyan-dim);
+        color: var(--cyan);
+        font-family: var(--font-mono);
+        font-size: 0.72rem;
+        font-weight: 400;
+        letter-spacing: 0.04em;
+      }
+
+      .note {
+        margin-top: 0.85rem;
+        font-size: 0.9rem;
+        color: var(--steel-dim);
+      }
+
+      .note a {
+        color: var(--cyan);
+      }
+
+      .compare-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 1rem;
+        font-size: 0.92rem;
+      }
+
+      .compare-table th,
+      .compare-table td {
+        padding: 0.55rem 0.75rem;
+        border: 1px solid var(--line);
+        text-align: left;
+      }
+
+      .compare-table th {
+        background: var(--cyan-dim);
+        color: var(--paper);
+        font-family: var(--font-mono);
+        font-size: 0.78rem;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .compare-table tr:last-child td,
+      .compare-table tr:nth-last-child(2) td {
+        font-weight: 600;
+        color: var(--cyan);
+      }
+
+      .docs-list {
+        margin: 0;
+        padding-left: 1.15rem;
+      }
+
+      .docs-list a {
+        color: var(--cyan);
+        text-decoration: none;
+      }
+
+      .docs-list a:hover {
+        color: var(--paper);
+        text-decoration: underline;
+      }
+
+    </style>
+</head>
+<body>
+    <!-- Lock chrome to English: this gallery has no localized body copy. -->
+    <div data-site-nav data-locale-lock="en"></div>
+
+    <div class="page">
+      <header class="hero">
+        <p class="boot">mlightcad://demo-gallery <strong>[OK]</strong></p>
+        <p class="eyebrow">Live demos</p>
+        <h1>Demo Gallery</h1>
+        <p class="lead">
+          Live demos in the same order as the MLightCAD product line — CAD Simple Viewer,
+          CAD Diff Viewer, CAD Editor, CAD SDK embed, and DWG to HTML. Everything runs in the
+          browser; drawings are never uploaded.
+        </p>
+        <div class="hero__corners" aria-hidden="true"></div>
+      </header>
+
+      <section aria-labelledby="interactive-demos">
+        <div class="section-head">
+          <p class="eyebrow">Product line</p>
+          <h2 id="interactive-demos">Interactive Demos</h2>
+        </div>
+        <div class="cards">
+          <article class="card">
+            <h3>CAD Simple Viewer</h3>
+            <div class="pill-row">
+              <span class="pill">View &amp; measure</span>
+              <span class="pill">No upload</span>
+              <span class="pill">Browser-native</span>
+            </div>
+            <p>
+              A production-grade WebGL CAD runtime for DWG/DXF: view, measure, and annotate
+              drawings entirely in the browser — no CAD server, no upload. This demo embeds
+              <code>@mlightcad/cad-simple-viewer</code> with a minimal host UI.
+            </p>
+            <ul>
+              <li>View, measure distances, and add review markup on DWG/DXF entirely in the browser</li>
+              <li>Open-source toolkit for real web viewing workflows — no CAD server, no upload</li>
+              <li>Your drawing stays on your device — no cloud conversion, no installation</li>
+              <li>One-file offline HTML export with pan, zoom, layers, and distance measure</li>
+            </ul>
+            <a class="button" href="./cad-simple-viewer/" target="_blank" rel="noopener">Open CAD Simple Viewer</a>
+          </article>
+
+          <article class="card">
+            <h3>CAD Diff Viewer</h3>
+            <div class="pill-row">
+              <span class="pill">Side-by-side</span>
+              <span class="pill">Review colors</span>
+              <span class="pill">No upload</span>
+            </div>
+            <p>
+              Compare DWG/DXF revisions in the browser — see what was added, deleted, or changed
+              in seconds. No AutoCAD, no upload server, no waiting.
+            </p>
+            <ul>
+              <li>Runs entirely in the browser — drawings never leave the user’s device</li>
+              <li>No desktop CAD required — open two revisions and start reviewing immediately</li>
+              <li>Clear review colors — gray unchanged, red deleted, green added</li>
+              <li>Filter by change type or entity type — focus on what matters</li>
+            </ul>
+            <a class="button" href="./cad-diff-viewer/" target="_blank" rel="noopener">Open CAD Diff Viewer</a>
+          </article>
+
+          <article class="card">
+            <h3>CAD Editor</h3>
+            <div class="pill-row">
+              <span class="pill">AutoCAD-like</span>
+              <span class="pill">Write mode</span>
+              <span class="pill">No upload</span>
+            </div>
+            <p>
+              An AutoCAD-like experience in the browser — the same ribbon layout, the same
+              commands, the same shortcuts, the same muscle memory. Open a DWG/DXF and start
+              editing with almost no learning curve.
+            </p>
+            <ul>
+              <li>Same AutoCAD-like ribbon, commands, and shortcuts — your muscle memory carries over</li>
+              <li>Edit geometry in place with grips and familiar CAD modify tools</li>
+              <li>Measure and review markup in the same session as drafting</li>
+              <li>Privacy by design — parse and edit on-device, no conversion farm</li>
+            </ul>
+            <a class="button" href="./cad-viewer/" target="_blank" rel="noopener">Open CAD Editor</a>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="cdn-bootstrap">
+        <div class="section-head">
+          <p class="eyebrow">CAD SDK</p>
+          <h2 id="cdn-bootstrap">Zero-build CDN Bootstrap</h2>
+        </div>
+        <div class="cards">
+          <article class="card card-wide">
+            <h3>Single HTML CDN embed</h3>
+            <div class="pill-row">
+              <span class="pill">No Node / Vite</span>
+              <span class="pill">Import maps</span>
+              <span class="pill">jsDelivr</span>
+            </div>
+            <p>
+              Embed browser-native CAD into your product with a single HTML host — load
+              <code>@mlightcad/cad-viewer</code> and its peers from jsDelivr with no Node, Vite,
+              or local <code>node_modules</code>. One line of embed, or a TypeScript package you control.
+            </p>
+            <ul>
+              <li>No CAD backend to run or scale — parse and render stay in the tab</li>
+              <li>No file upload to our servers; works offline in view / review workflows</li>
+              <li>Measurement, layers, and extents — custom UI via plugins or your own chrome</li>
+              <li>Import map + jsDelivr bootstrap; pin versions in one file when you upgrade</li>
+            </ul>
+            <a class="button" href="./cdn-bootstrap/cad-viewer.html" target="_blank" rel="noopener">Open CDN Bootstrap</a>
+            <p class="note">
+              Serve over HTTP(S) (for example <code>pnpm serve</code> from <code>packages/cad-demo-gallery</code>).
+              Opening the file via <code>file://</code> will fail because browsers block ES module CDN imports.
+              Source:
+              <a href="https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-demo-gallery/public/cdn-bootstrap/cad-viewer.html"><code>packages/cad-demo-gallery/public/cdn-bootstrap/cad-viewer.html</code></a>.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="offline-html">
+        <div class="section-head">
+          <p class="eyebrow">DWG to HTML</p>
+          <h2 id="offline-html">Export self-contained offline HTML</h2>
+        </div>
+        <div class="cards">
+          <article class="card card-wide">
+            <h3>Convert your drawing in the browser</h3>
+            <div class="pill-row">
+              <span class="pill">No backend</span>
+              <span class="pill">Self-contained</span>
+              <span class="pill">Offline</span>
+            </div>
+            <p>
+              Turn a live drawing into a self-contained <code>.html</code> artifact with an embedded
+              viewer — pan, zoom, extents, layers, and distance measure. Parsing, rendering, and
+              packaging all run in this tab — never uploaded to a conversion server.
+            </p>
+            <ul>
+              <li>Drag-and-drop or file picker for <code>.dwg</code> / <code>.dxf</code></li>
+              <li>Recipients open it in any modern browser: no install, no cad-viewer instance, no server</li>
+              <li>Export invisible layers, paper-space layouts, and view / measure mode</li>
+              <li>Optional sample <code>canteen.dwg</code> if you do not have a file handy</li>
+            </ul>
+            <a class="button" href="./cad-simple-viewer/html-converter.html" target="_blank" rel="noopener">Open HTML converter</a>
+            <p class="note">
+              Conversion never leaves the browser. Fonts and templates may be loaded from the public
+              cad-data CDN. When serving this page locally, run <code>pnpm build</code> and
+              <code>pnpm pre-serve</code> so workers and <code>viewer-runtime.iife.js</code> are copied.
+            </p>
+          </article>
+
+          <article class="card card-wide">
+            <h3>Canteen sample (self-contained HTML)</h3>
+            <div class="pill-row">
+              <span class="pill">Single file</span>
+              <span class="pill">No install</span>
+              <span class="pill">Low memory</span>
+            </div>
+            <div class="card-split">
+              <div>
+                <p>
+                  A ready-made DWG-to-HTML export of the sample <code>canteen.dwg</code> drawing.
+                  Recipients open it in any modern browser — no CAD software, no server, and no
+                  product deployment needed.
+                </p>
+                <ul>
+                  <li><strong>Ultra-low memory footprint</strong> — far below desktop CAD viewers when opening the same drawing</li>
+                  <li><strong>Works offline</strong> — email, archive, or host on any static file server</li>
+                  <li><strong>Built-in tools</strong> — pan, zoom, zoom extents, layer toggle, and distance measurement</li>
+                  <li><strong>Same pipeline as the live converter</strong> — generated with <code>cad-simple-viewer-cli</code></li>
+                </ul>
+                <a class="button" href="./self-contained-html/canteen.html" target="_blank" rel="noopener">Open offline HTML demo</a>
+                <a class="button secondary" href="https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli" target="_blank" rel="noopener">CLI docs</a>
+              </div>
+              <div>
+                <p class="note">
+                  Memory consumption measured with the sample drawing
+                  <a href="https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg"><code>canteen.dwg</code></a>:
+                </p>
+                <table class="compare-table" aria-label="Memory consumption comparison for canteen.dwg">
+                  <thead>
+                    <tr>
+                      <th scope="col">Viewer</th>
+                      <th scope="col">Memory consumption</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>AutoCAD 2020</td>
+                      <td>320 MB</td>
+                    </tr>
+                    <tr>
+                      <td>GstarCAD Viewer (浩辰看图王)</td>
+                      <td>246 MB</td>
+                    </tr>
+                    <tr>
+                      <td>Self-contained HTML (measure mode)</td>
+                      <td>56 MB</td>
+                    </tr>
+                    <tr>
+                      <td>Self-contained HTML (view mode)</td>
+                      <td>33 MB</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p class="note">
+                  View mode uses about 83% less memory than AutoCAD 2020 and 77% less than GstarCAD Viewer,
+                  while measure mode adds distance tools at 56 MB.
+                </p>
+              </div>
+            </div>
+            <p class="note">
+              This file is produced automatically in CI on the <code>main</code> branch and published to GitHub Pages.
+              When serving locally with <code>pnpm serve</code>, run <code>pnpm export:demo-html</code> from
+              <code>packages/cad-demo-gallery</code> to generate it.
+            </p>
+          </article>
+
+          <article class="card card-wide">
+            <h3>Canteen sample (progressive multi-file package)</h3>
+            <div class="pill-row">
+              <span class="pill">Multi-file ACEX</span>
+              <span class="pill">Progressive load</span>
+              <span class="pill">Faster first paint</span>
+            </div>
+            <p>
+              The same DWG-to-HTML sample as a multi-file ACEX package. The shell HTML loads a small
+              manifest first, then fetches geometry chunks one by one — so you see part of the drawing sooner
+              instead of waiting for a single monolithic payload.
+            </p>
+            <ul>
+              <li><strong>Progressive loading</strong> — paint each compressed chunk as it arrives</li>
+              <li><strong>Hosted unzipped</strong> — open <code>viewer.html</code> on any static file server</li>
+              <li><strong>Same tools</strong> — pan, zoom, layers, and measurement as the single-file demo</li>
+              <li><strong>Zip for distribution</strong> — download the archive, unzip before hosting elsewhere</li>
+            </ul>
+            <a class="button" href="./self-contained-html/canteen-progressive/viewer.html" target="_blank" rel="noopener">Open progressive demo</a>
+            <a class="button secondary" href="./self-contained-html/canteen.zip" rel="noopener">Download package zip</a>
+            <p class="note">
+              CI builds <code>canteen.zip</code> and extracts it to
+              <code>self-contained-html/canteen-progressive/</code> before deploying to GitHub Pages.
+              Locally, <code>pnpm export:demo-html</code> does the same export and unzip step.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="documentation">
+        <div class="section-head">
+          <p class="eyebrow">Resources</p>
+          <h2 id="documentation">Documentation</h2>
+        </div>
+        <div class="cards">
+          <article class="card">
+            <h3>User Guide</h3>
+            <div class="pill-row">
+              <span class="pill">Multi-language</span>
+              <span class="pill">How-to</span>
+            </div>
+            <p>
+              Step-by-step guides for the viewer interface, desktop and touch operations,
+              the simulated mouse and magnifier, markup, and measurement tools.
+            </p>
+            <a class="button" href="https://mlightcad.com/cad-viewer/docs/" target="_blank" rel="noopener">Open User Guide</a>
+          </article>
+
+          <article class="card">
+            <h3>API Reference</h3>
+            <div class="pill-row">
+              <span class="pill">Read the Docs</span>
+              <span class="pill">Versioned</span>
+            </div>
+            <p>
+              TypeDoc-generated API reference for all published packages, with versioned
+              documentation hosted on Read the Docs.
+            </p>
+            <ul class="docs-list">
+              <li><a href="https://cad-viewer.readthedocs.io/en/latest/" target="_blank" rel="noopener">API documentation home</a></li>
+              <li><a href="https://cad-viewer.readthedocs.io/en/latest/modules/_mlightcad_cad-viewer.html" target="_blank" rel="noopener">cad-viewer</a></li>
+              <li><a href="https://cad-viewer.readthedocs.io/en/latest/modules/_mlightcad_cad-simple-viewer.html" target="_blank" rel="noopener">cad-simple-viewer</a></li>
+              <li><a href="https://cad-viewer.readthedocs.io/en/latest/modules/_mlightcad_cad-diff-viewer.html" target="_blank" rel="noopener">cad-diff-viewer</a></li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+    </div>
+
+    <div data-site-footer></div>
+
+    <script type="module">
+      try {
+        await import('https://mlightcad.com/site-chrome.js')
+      } catch (error) {
+        console.warn('Failed to load MLightCAD site chrome:', error)
+      }
+    </script>
+</body>
+</html>
