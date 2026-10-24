@@ -13,8 +13,9 @@
 -->
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.12.0/dist/index.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.5.11/dist/cad-viewer.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mlightcad/cad-agent-plugin@1.5.11/dist/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.7/dist/cad-viewer.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mlightcad/cad-agent-plugin@1.7.7/dist/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mlightcad/cad-script-plugin@1.7.7/dist/style.css">
 
 <style>
   * { box-sizing: border-box; }
@@ -67,8 +68,8 @@
     "element-plus/dist/index.css": "data:text/javascript,export%20default%20undefined;",
     "element-plus/es/": "https://cdn.jsdelivr.net/npm/element-plus@2.12.0/es/",
     "@element-plus/icons-vue": "https://cdn.jsdelivr.net/npm/@element-plus/icons-vue@2.3.1/dist/index.js",
-    "three": "https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.module.js",
-    "three/": "https://cdn.jsdelivr.net/npm/three@0.172.0/",
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+    "three/": "https://cdn.jsdelivr.net/npm/three@0.186.1/",
     "lodash-es": "https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/+esm",
     "lodash-es/": "https://cdn.jsdelivr.net/npm/lodash-es@4.17.21/",
     "lodash-unified": "https://cdn.jsdelivr.net/npm/lodash-unified@1.0.3/import.js",
@@ -92,19 +93,27 @@
     "@floating-ui/dom": "https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.6.13/+esm",
     "@popperjs/core": "https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/lib/index.js",
     "@types/lodash": "data:text/javascript,export%20default%20undefined;",
-    "@mlightcad/cad-simple-viewer": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-simple-viewer@1.5.11/+esm",
-    "@mlightcad/cad-viewer": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.5.11/dist/cad-viewer.js",
-    "@mlightcad/data-model": "https://cdn.jsdelivr.net/npm/@mlightcad/data-model@1.12.5/+esm",
-    "@mlightcad/three-renderer": "https://cdn.jsdelivr.net/npm/@mlightcad/three-renderer@1.5.11/+esm",
-    "@mlightcad/cad-agent-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-agent-plugin@1.5.11/+esm",
-    "@mlightcad/cad-agent-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-agent-plugin@1.5.11/register/+esm",
+    "@mlightcad/cad-simple-viewer": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-simple-viewer@1.7.7/+esm",
+    "@mlightcad/cad-simple-viewer/icons": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-simple-viewer@1.7.7/lib/ui/icons.js",
+    "@mlightcad/cad-viewer": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.7/dist/cad-viewer.js",
+    "@mlightcad/data-model": "https://cdn.jsdelivr.net/npm/@mlightcad/data-model@1.15.14/+esm",
+    "@mlightcad/three-renderer": "https://cdn.jsdelivr.net/npm/@mlightcad/three-renderer@1.7.7/+esm",
+    "@mlightcad/mtext-parser": "https://cdn.jsdelivr.net/npm/@mlightcad/mtext-parser@1.5.5/+esm",
+    "@mlightcad/mtext-renderer": "https://cdn.jsdelivr.net/npm/@mlightcad/mtext-renderer@0.13.5/+esm",
+    "@mlightcad/cad-agent-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-agent-plugin@1.7.7/+esm",
+    "@mlightcad/cad-agent-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-agent-plugin@1.7.7/register/+esm",
     "@mlightcad/cad-agent-plugin/style.css": "data:text/javascript,export%20default%20undefined;",
-    "@mlightcad/cad-html-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-html-plugin@1.5.11/+esm",
-    "@mlightcad/cad-html-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-html-plugin@1.5.11/register/+esm",
-    "@mlightcad/cad-pdf-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-pdf-plugin@1.5.11/+esm",
-    "@mlightcad/cad-pdf-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-pdf-plugin@1.5.11/register/+esm",
-    "@mlightcad/cad-svg-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-svg-plugin@1.5.11/+esm",
-    "@mlightcad/cad-svg-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-svg-plugin@1.5.11/register/+esm"
+    "@mlightcad/cad-script-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-script-plugin@1.7.7/+esm",
+    "@mlightcad/cad-script-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-script-plugin@1.7.7/register/+esm",
+    "@mlightcad/cad-script-plugin/style.css": "data:text/javascript,export%20default%20undefined;",
+    "@mlightcad/cad-html-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-html-plugin@1.7.7/+esm",
+    "@mlightcad/cad-html-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-html-plugin@1.7.7/register/+esm",
+    "@mlightcad/cad-pdf-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-pdf-plugin@1.7.7/+esm",
+    "@mlightcad/cad-pdf-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-pdf-plugin@1.7.7/register/+esm",
+    "@mlightcad/cad-svg-plugin": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-svg-plugin@1.7.7/+esm",
+    "@mlightcad/cad-svg-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-svg-plugin@1.7.7/register/+esm",
+    "@mlightcad/cad-onedrive-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-onedrive-plugin@1.7.7/register/+esm",
+    "@mlightcad/cad-google-drive-plugin/register": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-google-drive-plugin@1.7.7/register/+esm"
   }
 }
 </script>
@@ -125,13 +134,16 @@
 <pre id="status"></pre>
 
 <script type="module">
-const ML = '1.5.11'
+const ML = '1.7.7'
+const DATA_MODEL = '1.15.14'
+const LIBREDWG = '3.15.14'
+const THREE = '0.186.1'
 const LIBREDWG_PARSER_WORKER_FILE = 'libredwg-parser-worker.js'
 const npm = (pkg, path = '') => `https://cdn.jsdelivr.net/npm/${pkg}${path}`
 const CAD_VIEWER_URL = npm(`@mlightcad/cad-viewer@${ML}`, '/dist/cad-viewer.js')
 const BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
 const DWG_WORKER = npm(
-  '@mlightcad/libredwg-converter@3.13.0',
+  `@mlightcad/libredwg-converter@${LIBREDWG}`,
   `/dist/${LIBREDWG_PARSER_WORKER_FILE}`
 )
 const CSS_SHIM = null
@@ -144,7 +156,7 @@ const EXACT = {
   'element-plus/es': npm('element-plus@2.12.0', '/es/index.mjs'),
   'element-plus/dist/index.css': CSS_SHIM,
   '@element-plus/icons-vue': npm('@element-plus/icons-vue@2.3.1', '/dist/index.js'),
-  three: npm('three@0.172.0', '/build/three.module.js'),
+  three: npm(`three@${THREE}`, '/build/three.module.js'),
   'lodash-es': npm('lodash-es@4.17.21', '/+esm'),
   'lodash-unified': npm('lodash-unified@1.0.3', '/import.js'),
   '@vue/shared': npm('@vue/shared@3.4.21', '/+esm'),
@@ -159,17 +171,25 @@ const EXACT = {
   '@floating-ui/dom': npm('@floating-ui/dom@1.6.13', '/+esm'),
   '@popperjs/core': npm('@popperjs/core@2.11.8', '/lib/index.js'),
   '@mlightcad/cad-simple-viewer': npm(`@mlightcad/cad-simple-viewer@${ML}`, '/+esm'),
-  '@mlightcad/data-model': npm('@mlightcad/data-model@1.12.5', '/+esm'),
+  '@mlightcad/cad-simple-viewer/icons': npm(`@mlightcad/cad-simple-viewer@${ML}`, '/lib/ui/icons.js'),
+  '@mlightcad/data-model': npm(`@mlightcad/data-model@${DATA_MODEL}`, '/+esm'),
   '@mlightcad/three-renderer': npm(`@mlightcad/three-renderer@${ML}`, '/+esm'),
+  '@mlightcad/mtext-parser': npm('@mlightcad/mtext-parser@1.5.5', '/+esm'),
+  '@mlightcad/mtext-renderer': npm('@mlightcad/mtext-renderer@0.13.5', '/+esm'),
   '@mlightcad/cad-agent-plugin': npm(`@mlightcad/cad-agent-plugin@${ML}`, '/+esm'),
   '@mlightcad/cad-agent-plugin/register': npm(`@mlightcad/cad-agent-plugin@${ML}`, '/register/+esm'),
   '@mlightcad/cad-agent-plugin/style.css': CSS_SHIM,
+  '@mlightcad/cad-script-plugin': npm(`@mlightcad/cad-script-plugin@${ML}`, '/+esm'),
+  '@mlightcad/cad-script-plugin/register': npm(`@mlightcad/cad-script-plugin@${ML}`, '/register/+esm'),
+  '@mlightcad/cad-script-plugin/style.css': CSS_SHIM,
   '@mlightcad/cad-html-plugin': npm(`@mlightcad/cad-html-plugin@${ML}`, '/+esm'),
   '@mlightcad/cad-html-plugin/register': npm(`@mlightcad/cad-html-plugin@${ML}`, '/register/+esm'),
   '@mlightcad/cad-pdf-plugin': npm(`@mlightcad/cad-pdf-plugin@${ML}`, '/+esm'),
   '@mlightcad/cad-pdf-plugin/register': npm(`@mlightcad/cad-pdf-plugin@${ML}`, '/register/+esm'),
   '@mlightcad/cad-svg-plugin': npm(`@mlightcad/cad-svg-plugin@${ML}`, '/+esm'),
   '@mlightcad/cad-svg-plugin/register': npm(`@mlightcad/cad-svg-plugin@${ML}`, '/register/+esm'),
+  '@mlightcad/cad-onedrive-plugin/register': npm(`@mlightcad/cad-onedrive-plugin@${ML}`, '/register/+esm'),
+  '@mlightcad/cad-google-drive-plugin/register': npm(`@mlightcad/cad-google-drive-plugin@${ML}`, '/register/+esm'),
   './cad-viewer.css': CSS_SHIM
 }
 
@@ -193,7 +213,7 @@ function resolveSpec(spec) {
   if (spec.startsWith('three/')) {
     let rest = spec.slice(6)
     if (spec.startsWith('three/examples/jsm/') && !/\.[a-z0-9]+$/i.test(rest)) rest += '.js'
-    return npm('three@0.172.0', `/${rest}`)
+    return npm(`three@${THREE}`, `/${rest}`)
   }
   if (spec.startsWith('lodash-es/')) return npm('lodash-es@4.17.21', `/${spec.slice(10)}`)
   if (spec.startsWith('dayjs/plugin/')) return npm('dayjs@1.11.13', `/plugin/${spec.slice(13)}/+esm`)
@@ -211,10 +231,12 @@ function resolveSpec(spec) {
 
 function collectSpecs(source) {
   const specs = new Set()
-  for (const re of [/\bfrom\s*["']([^"']+)["']/g, /\bimport\s*["']([^"']+)["']/g, /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g]) {
+  // Require whitespace after bare `import` so ids like "measurement-import" are ignored.
+  for (const re of [/\bfrom\s*["']([^"']+)["']/g, /\bimport\s+["']([^"']+)["']/g, /\bimport\s*\(\s*["']([^"']+)["']\s*\)/g]) {
     let m
     while ((m = re.exec(source))) {
-      if (m[1] && !m[1].includes('{')) specs.add(m[1])
+      const spec = m[1]
+      if (spec && !spec.includes('{') && !/[\s,]/.test(spec)) specs.add(spec)
     }
   }
   return specs
@@ -317,7 +339,7 @@ async function openFile(file) {
   const { MlCadViewer, i18n } = cadViewer
   const { AcDbDatabaseConverterManager, AcDbFileType } = await import(EXACT['@mlightcad/data-model'])
   const { AcDbLibreDwgConverter } = await import(
-    npm('@mlightcad/libredwg-converter@3.13.0', '/+esm')
+    npm(`@mlightcad/libredwg-converter@${LIBREDWG}`, '/+esm')
   )
 
   // Opt into GPL DWG support; worker (+ sibling wasm) live on the converter package CDN.
