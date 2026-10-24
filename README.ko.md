@@ -61,6 +61,7 @@ cad-viewer를 자체 제품에 통합하는 방법을 보여주는 공식 샘플
 - **향상된 데이터 보안** — 파일이 기기를 떠나지 않아 완전한 프라이버시 보장
 - **쉬운 통합** — 서버 설정이나 백엔드 인프라 불필요
 - 서드파티 통합을 위한 모듈형 아키텍처
+- **플러그인 시스템** — 확장 가능한 플러그인 아키텍처로 UI, AI 어시스턴트, HTML/PDF/SVG 내보내기 공식 플러그인 제공. 자세한 내용은 [플러그인 시스템 개발 가이드](https://mlightcad.com/cad-viewer/docs/ko/development/plugin-system.html) 참조
 - **모바일 레이아웃 및 터치** — `@mlightcad/cad-simple-viewer`에 반응형 폰/태블릿 UI와 터치 제스처(핀치 줌, 한 손가락 팬, 탭 선택)가 내장되어 별도 모바일 앱 없이 모바일 브라우저에서 사용 가능
 - **오프라인 HTML로 내보내기** — 현재 도면을 내장 뷰어(팬/줌, 범위 줌, 레이어, 거리 측정, EN/ZH UI)가 포함된 단일 자체 포함 `.html` 파일로 내보내기. 모든 브라우저에서 오프라인으로 열림. cad-viewer 인스턴스나 백엔드 불필요.
 - 오프라인 및 온라인 편집 워크플로
@@ -137,63 +138,18 @@ CAD Viewer를 처음 사용하시나요? **[사용자 가이드](https://mlightc
 - **줌**: 두 손가락으로 핀치
 - **팬**: 한 손가락으로 드래그
 
-## 플러그인 시스템
+## 성능
 
-CAD-Viewer는 [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer)의 모듈형 **플러그인 시스템**을 중심으로 구축됩니다. 플러그인은 `AcApPlugin` 인터페이스를 구현하고 `onLoad` / `onUnload`를 통해 뷰어 생명주기에 연결됩니다—일반적으로 명령 등록, UI 추가, 내보내기/가져오기 파이프라인 연결에 사용됩니다.
+CAD-Viewer는 **탁월한 성능**을 위해 설계되었으며, 높은 프레임률을 유지하면서 매우 큰 DXF/DWG 파일을 처리할 수 있습니다. 여러 고급 렌더링 기술로 성능을 최적화합니다:
 
-`AcApDocManager.instance.pluginManager`(`loadPlugin`, `registerLazyPlugin`, 또는 문서 관리자 생성 시 `plugins.fromConfig`)를 통해 플러그인을 로드합니다. 내보내기 지향 플러그인은 **지연 로딩**을 지원합니다: 작은 stub을 먼저 등록하고, 사용자가 관련 명령(예: `-chtml`, 또는 `cad-viewer`의 `chtml` 대화상자에서 내보내기 확인)을 실행할 때만 무거운 번들을 다운로드합니다.
+- **커스텀 셰이더 머티리얼**: GPU 가속 셰이더 머티리얼로 복잡한 선종과 해치 채우기 패턴을 효율적으로 렌더링
+- **지오메트리 배칭**: 동일 머티리얼의 점, 선, 영역을 병합하여 드로우 호출을 크게 줄임
+- **인스턴스 렌더링**: 인스턴싱 기법으로 반복 지오메트리 렌더링 최적화
+- **버퍼 지오메트리 최적화**: 효율적인 메모리 관리 및 지오메트리 병합으로 GPU 오버헤드 감소
+- **머티리얼 캐싱**: 유사 엔티티 간 머티리얼 재사용으로 상태 변경 최소화
+- **WebGL 최적화**: 최신 WebGL 기능으로 하드웨어 가속 렌더링 활용
 
-모노레포에는 여러 퍼스트파티 플러그인이 포함되어 있습니다. 각각 하나의 관심사에 집중하며, 필요에 따라 조합할 수 있습니다. **설치, 등록, API 세부 사항은 각 패키지 README**에 있습니다—아래 링크를 참조하세요.
-
-### 공식 플러그인
-
-| 패키지 | 역할 | 명령 / 기능 |
-|---------|------|-------------------------|
-| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | `cad-simple-viewer`용 **툴바·레이어 관리자·검토 팔레트 UI**(순수 DOM, Vue/React 없음) | `layer`, `markuppanel`, 기본 툴바(보기, 측정, 내보내기, 검토, 테마, 로케일) |
-| [`@mlightcad/cad-agent-plugin`](packages/cad-agent-plugin) | **자연어 CAD 에이전트**(AI 채팅 패널 + 도면 도구 호출) | `agent` |
-| [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | 도면을 **자체 포함 오프라인 HTML**로 내보내기 | `chtml` (`cad-viewer` 대화상자), `-chtml` (명령줄) |
-| [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **PDF 내보내기 및 가져오기**(벡터 파이프라인) | `cpdf`, `ipdf` |
-| [`@mlightcad/cad-svg-plugin`](packages/cad-svg-plugin) | **SVG 내보내기** 및 공유 벡터 렌더러(PDF 내보내기에서도 사용) | `csvg` |
-
-### `@mlightcad/cad-simple-ui-plugin` — 간단한 뷰어용 UI 크롬
-
-[`cad-simple-viewer`](packages/cad-simple-viewer)는 의도적으로 **애플리케이션 UI 없이** 캔버스와 CAD 코어만 제공합니다. 자체 웹 앱에 간단한 뷰어를 임베드하고 전체 Vue 기반 [`cad-viewer`](packages/cad-viewer) 셸을 채택하지 않으려면 **`cad-simple-ui-plugin`이 의도된 UI 레이어**입니다.
-
-제공 기능:
-
-- **구성 가능한 툴바**(임의의 가장자리 배치, 기본 CAD 명령, 중첩 메뉴, 커스텀 항목)
-- **독 패널**: **레이어 관리자** 탭(레이어 켜기/끄기, ACI 색상 선택기, 더블클릭으로 레이어로 줌)과 **검토 팔레트** 탭(마크업 목록, 상태, 댓글)
-- **`COLORTHEME` sysvar 및 호스트 요소의 `--ml-ui-*` CSS 토큰과 테마 동기화**
-- **`AcApI18n`과 로케일 동기화**(영어 / 중국어 / 체코어 / 터키어)
-
-모든 위젯은 프레임워크에 독립적(순수 DOM)입니다. 전체 Vue [`cad-viewer`](packages/cad-viewer) 앱은 자체 Element Plus UI가 있으며 이 플러그인이 필요하지 않습니다. `cad-simple-viewer`를 직접 기반으로 구축할 때 `cad-simple-ui-plugin`을 사용하세요.
-
-→ **빠른 시작, 툴바 커스터마이징, 옵션:** [packages/cad-simple-ui-plugin/README.md](packages/cad-simple-ui-plugin/README.md)
-
-### `@mlightcad/cad-agent-plugin` — AI 도면 어시스턴트
-
-[`cad-agent-plugin`](packages/cad-agent-plugin)은 `cad-simple-viewer` 기반 앱에 **자연어 CAD 에이전트**를 추가합니다. 사용자가 일반 언어로 원하는 것을 설명하면, 에이전트가 CAD 도구를 호출하여 도면을 검사하고 지오메트리를 생성하거나 수정합니다.
-
-제공 기능:
-
-- **지연 로딩** `AcApPlugin`(트리거 명령: `agent`) — AI 번들이 크리티컬 패스에 포함되지 않음
-- Vercel AI SDK(`Experimental_Agent` + `@ai-sdk/vue`) 기반 **Vue 채팅 패널**(`AgentChatPanel`)
-- **브라우저 측 LLM 구성** — OpenAI, Anthropic 또는 OpenAI 호환 엔드포인트용 API 키가 클라이언트에 유지(`localStorage`에 암호화 저장)
-- **1단계 CAD 도구** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
-- 플러그인 i18n 레이어를 통한 **영어 / 중국어 / 터키어 / 체코어** UI 문자열
-
-전체 Vue [`cad-viewer`](packages/cad-viewer) 앱은 패키지가 설치되면 에이전트를 자동 등록합니다(팔레트 탭). [`cad-simple-viewer-example`](packages/cad-simple-viewer-example)은 `cad-simple-ui-plugin`을 통해 도킹 탭에 연결합니다. 호스트 앱은 `registerLazyAgentPlugin`과 `setAgentPaletteOpener`를 호출하여 원하는 위치에 패널을 마운트합니다.
-
-→ **설치, 등록, 도구 목록:** [packages/cad-agent-plugin/README.md](packages/cad-agent-plugin/README.md)
-
-### 내보내기 플러그인(HTML / PDF / SVG)
-
-이 플러그인들은 동일한 플러그인 관리자에 내보내기(및 PDF 가져오기) 명령을 추가합니다. **지연 로딩**되어 초기 페이지 용량을 작게 유지합니다. [`cad-simple-viewer-example`](packages/cad-simple-viewer-example) 데모는 세 내보내기 플러그인, `cad-simple-ui-plugin`, `cad-agent-plugin`을 모두 등록합니다. 전체 [`cad-viewer`](packages/cad-viewer) 앱은 부트스트랩에서 내보내기 플러그인과(설치 시) 에이전트 플러그인을 등록합니다.
-
-- **HTML** — 공유 및 아카이브용 단일 파일 오프라인 뷰어: [packages/cad-html-plugin/README.md](packages/cad-html-plugin/README.md)  
-  (동일 파이프라인의 헤드리스 CLI: [packages/cad-simple-viewer-cli/README.md](packages/cad-simple-viewer-cli/README.md))
-- **PDF** — 벡터 PDF 내보내기 및 PDF-to-CAD 가져오기: [packages/cad-pdf-plugin/README.md](packages/cad-pdf-plugin/README.md)
-- **SVG** — 벡터 SVG 내보내기: [packages/cad-svg-plugin/README.md](packages/cad-svg-plugin/README.md)
+이러한 최적화를 통해 CAD-Viewer는 수천 개의 엔티티가 있는 복잡한 CAD 도면을 부드럽게 렌더링하면서 반응성 있는 사용자 상호작용을 유지합니다.
 
 #### 자체 포함 HTML 메모리 사용량
 
@@ -207,19 +163,6 @@ CAD-Viewer는 [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer)의 �
 | 자체 포함 HTML(보기 모드) | 33 MB |
 
 오프라인 HTML 뷰어는 보기 모드에서 AutoCAD 2020보다 약 **83% 적은** 메모리, GstarCAD Viewer보다 약 **77% 적은** 메모리를 사용하면서도 팬/줌, 레이어 전환, 거리 측정(측정 모드)을 지원합니다.
-
-## 성능
-
-CAD-Viewer는 **탁월한 성능**을 위해 설계되었으며, 높은 프레임률을 유지하면서 매우 큰 DXF/DWG 파일을 처리할 수 있습니다. 여러 고급 렌더링 기술로 성능을 최적화합니다:
-
-- **커스텀 셰이더 머티리얼**: GPU 가속 셰이더 머티리얼로 복잡한 선종과 해치 채우기 패턴을 효율적으로 렌더링
-- **지오메트리 배칭**: 동일 머티리얼의 점, 선, 영역을 병합하여 드로우 호출을 크게 줄임
-- **인스턴스 렌더링**: 인스턴싱 기법으로 반복 지오메트리 렌더링 최적화
-- **버퍼 지오메트리 최적화**: 효율적인 메모리 관리 및 지오메트리 병합으로 GPU 오버헤드 감소
-- **머티리얼 캐싱**: 유사 엔티티 간 머티리얼 재사용으로 상태 변경 최소화
-- **WebGL 최적화**: 최신 WebGL 기능으로 하드웨어 가속 렌더링 활용
-
-이러한 최적화를 통해 CAD-Viewer는 수천 개의 엔티티가 있는 복잡한 CAD 도면을 부드럽게 렌더링하면서 반응성 있는 사용자 상호작용을 유지합니다.
 
 ## 알려진 문제
 

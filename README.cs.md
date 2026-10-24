@@ -61,6 +61,7 @@ Oficiální ukázkové aplikace, které ukazují, jak integrovat cad-viewer do v
 - **Vyšší bezpečnost dat** — soubory nikdy neopustí vaše zařízení, zajištění úplného soukromí
 - **Snadná integrace** — není potřeba nastavení serveru ani backendové infrastruktury
 - Modulární architektura pro bezproblémovou integraci třetích stran
+- **Systém pluginů** — Rozšiřitelná architektura pluginů s oficiálními pluginy pro UI, AI asistenta a export do HTML/PDF/SVG; viz [průvodce systémem pluginů](https://mlightcad.com/cad-viewer/docs/cs/development/plugin-system.html)
 - **Mobilní rozložení a dotykové ovládání** — responzivní UI pro telefon/tablet a dotyková gesta (štípnutí pro zoom, posun jedním prstem, klepnutí pro výběr) vestavěná v `@mlightcad/cad-simple-viewer`, bez nutnosti samostatné mobilní aplikace
 - **Export do offline HTML** — export aktuálního výkresu jako jediného samostatného souboru `.html` s vloženým prohlížečem (posun/přiblížení, přizpůsobení zobrazení, vrstvy, měření vzdálenosti, UI EN/ZH). Otevírá se offline v jakémkoli prohlížeči; není vyžadována instance cad-viewer ani backend.
 - Offline i online editační pracovní postupy
@@ -137,63 +138,18 @@ Jste v CAD Viewer noví? **[Uživatelská příručka](https://mlightcad.com/cad
 - **Přiblížení**: stažení dvěma prsty
 - **Posun**: tažení jedním prstem
 
-## Systém pluginů
+## Výkon
 
-CAD-Viewer je postaven kolem modulárního **systému pluginů** v [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer). Pluginy implementují rozhraní `AcApPlugin` a napojují se na životní cyklus prohlížeče přes `onLoad` / `onUnload` — typicky pro registraci příkazů, přidání UI nebo propojení exportních/importních pipeline.
+CAD-Viewer je navržen pro **výjimečný výkon** a zvládne velmi rozsáhlé soubory DXF/DWG při zachování vysoké snímkové frekvence. Využívá několik pokročilých vykreslovacích technologií pro optimalizaci výkonu:
 
-Pluginy načítejte přes `AcApDocManager.instance.pluginManager` (`loadPlugin`, `registerLazyPlugin` nebo `plugins.fromConfig` při vytváření správce dokumentů). Exportně orientované pluginy podporují **lazy loading**: zaregistrujte malý stub předem a stáhněte těžký balíček až když uživatel spustí související příkaz (například `-chtml`, nebo při potvrzení exportu z dialogu `chtml` v `cad-viewer`).
+- **Vlastní shader materiály**: GPU-akcelerované shader materiály pro efektivní vykreslování složitých typů čar a vzorů výplně šrafování
+- **Dávkování geometrie**: slučování bodů, čar a ploch se stejným materiálem pro výrazné snížení počtu draw callů
+- **Instancované vykreslování**: optimalizace vykreslování opakující se geometrie pomocí instancing technik
+- **Optimalizace buffer geometrie**: efektivní správa paměti a slučování geometrie pro snížení GPU režie
+- **Cache materiálů**: opakované použití materiálů u podobných entit pro minimalizaci změn stavu
+- **WebGL optimalizace**: využití moderních WebGL funkcí pro hardwarově akcelerované vykreslování
 
-Monorepo dodává několik oficiálních pluginů. Každý se zaměřuje na jednu oblast; kombinujte je podle potřeby. **Instalace, registrace a podrobnosti API jsou v README každého balíčku** — viz odkazy níže.
-
-### Oficiální pluginy
-
-| Balíček | Účel | Příkazy / schopnosti |
-|---------|------|-------------------------|
-| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | **Panel nástrojů, správce vrstev a paleta revizí** pro `cad-simple-viewer` (čisté DOM, bez Vue/React) | `layer`, `markuppanel`, výchozí panel nástrojů (zobrazení, měření, export, revize, motiv, jazyk) |
-| [`@mlightcad/cad-agent-plugin`](packages/cad-agent-plugin) | **CAD agent v přirozeném jazyce** (AI chat panel + volání nástrojů pro výkres) | `agent` |
-| [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | Export výkresů do **samostatného offline HTML** | `chtml` (dialog v `cad-viewer`), `-chtml` (příkazová řádka) |
-| [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **Export a import PDF** (vektorová pipeline) | `cpdf`, `ipdf` |
-| [`@mlightcad/cad-svg-plugin`](packages/cad-svg-plugin) | **Export SVG** a sdílený vektorový renderer (používá se také u exportu PDF) | `csvg` |
-
-### `@mlightcad/cad-simple-ui-plugin` — UI vrstva pro jednoduchý prohlížeč
-
-[`cad-simple-viewer`](packages/cad-simple-viewer) záměrně **nedodává aplikační UI** — pouze plátno a CAD jádro. Pokud vkládáte jednoduchý prohlížeč do vlastní webové aplikace a chcete hotovou UI vrstvu bez plné Vue [`cad-viewer`](packages/cad-viewer) shell aplikace, **`cad-simple-ui-plugin` je určená UI vrstva**.
-
-Poskytuje:
-
-- **Konfigurovatelný panel nástrojů** (umístění na libovolném okraji, výchozí CAD příkazy, vnořená menu, vlastní položky)
-- **Dokovací panel** se záložkou **správce vrstev** (zapnutí/vypnutí vrstvy, výběr barvy ACI, přiblížení na vrstvu dvojklikem) a záložkou **palety revizí** (seznam značek, stav, komentáře)
-- **Synchronizaci motivu** se sysvar `COLORTHEME` a CSS tokeny `--ml-ui-*` na hostitelském elementu
-- **Synchronizaci jazyka** s `AcApI18n` (angličtina / čínština / čeština / turečtina)
-
-Všechny widgety jsou nezávislé na frameworku (čisté DOM). Plná Vue aplikace [`cad-viewer`](packages/cad-viewer) má vlastní Element Plus UI a tento plugin nevyžaduje; použijte `cad-simple-ui-plugin`, když stavíte přímo na `cad-simple-viewer`.
-
-→ **Rychlý start, přizpůsobení panelu nástrojů a možnosti:** [packages/cad-simple-ui-plugin/README.md](packages/cad-simple-ui-plugin/README.md)
-
-### `@mlightcad/cad-agent-plugin` — AI asistent pro výkresy
-
-[`cad-agent-plugin`](packages/cad-agent-plugin) přidává **CAD agenta v přirozeném jazyce** do aplikací založených na `cad-simple-viewer`. Uživatelé popíší, co chtějí, běžnou řečí; agent volá CAD nástroje pro prohlížení výkresu a vytváření nebo úpravu geometrie.
-
-Poskytuje:
-
-- **Lazy-loaded** `AcApPlugin` (spouštěcí příkaz: `agent`), takže AI balíček není na kritické cestě
-- **Vue chat panel** (`AgentChatPanel`) postavený na Vercel AI SDK (`Experimental_Agent` + `@ai-sdk/vue`)
-- **Konfiguraci LLM v prohlížeči** — API klíče pro OpenAI, Anthropic nebo OpenAI-kompatibilní endpointy zůstávají v klientovi (šifrované v `localStorage`)
-- **CAD nástroje fáze 1** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
-- **UI řetězce v angličtině / čínštině / turečtině / češtině** přes i18n vrstvu pluginu
-
-Plná Vue aplikace [`cad-viewer`](packages/cad-viewer) registruje agenta automaticky, pokud je balíček nainstalován (záložka palety). [`cad-simple-viewer-example`](packages/cad-simple-viewer-example) ho propojuje do dock záložky přes `cad-simple-ui-plugin`. Hostitelské aplikace volají `registerLazyAgentPlugin` a `setAgentPaletteOpener` pro umístění panelu podle potřeby.
-
-→ **Instalace, registrace a seznam nástrojů:** [packages/cad-agent-plugin/README.md](packages/cad-agent-plugin/README.md)
-
-### Exportní pluginy (HTML / PDF / SVG)
-
-Tyto pluginy přidávají exportní (a u PDF importní) příkazy do stejného správce pluginů. Jsou **lazy-loaded**, aby počáteční velikost stránky zůstala malá. Demo [`cad-simple-viewer-example`](packages/cad-simple-viewer-example) registruje všechny tři exportní pluginy, `cad-simple-ui-plugin` a `cad-agent-plugin`; plná aplikace [`cad-viewer`](packages/cad-viewer) registruje exportní pluginy a agent plugin (pokud je nainstalován) při bootstrapu.
-
-- **HTML** — jednosouborový offline prohlížeč pro sdílení a archivaci: [packages/cad-html-plugin/README.md](packages/cad-html-plugin/README.md)  
-  (Headless CLI používající stejnou pipeline: [packages/cad-simple-viewer-cli/README.md](packages/cad-simple-viewer-cli/README.md))
-- **PDF** — vektorový export PDF a import PDF do CAD: [packages/cad-pdf-plugin/README.md](packages/cad-pdf-plugin/README.md)
-- **SVG** — vektorový export SVG: [packages/cad-svg-plugin/README.md](packages/cad-svg-plugin/README.md)
+Tyto optimalizace umožňují CAD-Viewer plynule vykreslovat složité CAD výkresy s tisíci entitami při zachování responzivní interakce s uživatelem.
 
 #### Spotřeba paměti samostatného HTML
 
@@ -207,19 +163,6 @@ Při otevírání ukázkového výkresu [`canteen.dwg`](https://cdn.jsdelivr.net
 | Samostatné HTML (režim prohlížení) | 33 MB |
 
 Offline HTML prohlížeč spotřebovává přibližně o **83 % méně paměti než AutoCAD 2020** a v režimu prohlížení o **77 % méně než GstarCAD Viewer**, přičemž stále podporuje posun/přiblížení, přepínání vrstev a měření vzdálenosti (režim měření).
-
-## Výkon
-
-CAD-Viewer je navržen pro **výjimečný výkon** a zvládne velmi rozsáhlé soubory DXF/DWG při zachování vysoké snímkové frekvence. Využívá několik pokročilých vykreslovacích technologií pro optimalizaci výkonu:
-
-- **Vlastní shader materiály**: GPU-akcelerované shader materiály pro efektivní vykreslování složitých typů čar a vzorů výplně šrafování
-- **Dávkování geometrie**: slučování bodů, čar a ploch se stejným materiálem pro výrazné snížení počtu draw callů
-- **Instancované vykreslování**: optimalizace vykreslování opakující se geometrie pomocí instancing technik
-- **Optimalizace buffer geometrie**: efektivní správa paměti a slučování geometrie pro snížení GPU režie
-- **Cache materiálů**: opakované použití materiálů u podobných entit pro minimalizaci změn stavu
-- **WebGL optimalizace**: využití moderních WebGL funkcí pro hardwarově akcelerované vykreslování
-
-Tyto optimalizace umožňují CAD-Viewer plynule vykreslovat složité CAD výkresy s tisíci entitami při zachování responzivní interakce s uživatelem.
 
 ## Známé problémy
 

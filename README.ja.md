@@ -61,6 +61,7 @@ cad-viewer を自社プロダクトへ組み込む方法を示す公式サンプ
 - **データセキュリティの強化** — ファイルがデバイス外に出ないため、完全なプライバシーを確保
 - **容易な統合** — サーバー設定やバックエンドインフラが不要
 - サードパーティ連携に適したモジュラーアーキテクチャ
+- **プラグインシステム** — 拡張可能なプラグインアーキテクチャ。UI、AI アシスタント、HTML/PDF/SVG エクスポートの公式プラグインを提供。詳細は[プラグインシステム開発ガイド](https://mlightcad.com/cad-viewer/docs/ja/development/plugin-system.html)
 - **モバイルレイアウトとタッチ操作** — `@mlightcad/cad-simple-viewer` にレスポンシブなスマホ/タブレット UI とタッチジェスチャ（ピンチズーム、単指パン、タップ選択）を内蔵。専用モバイルアプリなしでモバイルブラウザから利用可能
 - **オフライン HTML へのエクスポート** — 現在の図面を、埋め込みビューア付きの単一自己完結型 `.html` ファイルとしてエクスポート（パン/ズーム、範囲ズーム、レイヤー、距離測定、EN/ZH UI）。任意のブラウザでオフライン起動可能。cad-viewer インスタンスやバックエンドは不要
 - オフラインおよびオンライン編集ワークフロー
@@ -137,63 +138,18 @@ CAD Viewer を初めてお使いですか？**[ユーザーガイド](https://ml
 - **ズーム**：2 本指でピンチ
 - **パン**：1 本指でドラッグ
 
-## プラグインシステム
+## パフォーマンス
 
-CAD-Viewer は [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer) 内のモジュラー **プラグインシステム** を中心に構築されています。プラグインは `AcApPlugin` インターフェースを実装し、`onLoad` / `onUnload` 経由でビューアのライフサイクルにフックします。通常はコマンド登録、UI 追加、エクスポート/インポートパイプラインの接続に使用します。
+CAD-Viewer は **卓越したパフォーマンス** 向けに設計されており、高フレームレートを維持しながら非常に大きな DXF/DWG ファイルを処理できます。複数の高度なレンダリング技術でパフォーマンスを最適化しています：
 
-プラグインは `AcApDocManager.instance.pluginManager`（`loadPlugin`、`registerLazyPlugin`、またはドキュメントマネージャー作成時の `plugins.fromConfig`）から読み込みます。エクスポート向けプラグインは **遅延読み込み** をサポートします。起動時に小さなスタブだけを登録し、ユーザーが関連コマンド（例：`-chtml`、または `cad-viewer` の `chtml` ダイアログでエクスポートを確定したとき）を実行した時点で重いバンドルをダウンロードします。
+- **カスタムシェーダーマテリアル**：GPU 加速シェーダーマテリアルで複雑な線種とハッチ塗りつぶしパターンを効率的にレンダリング
+- **ジオメトリバッチング**：同一マテリアルの点、線、面をマージし、ドローコールを大幅に削減
+- **インスタンスレンダリング**：インスタンシング技術で反復ジオメトリのレンダリングを最適化
+- **バッファジオメトリ最適化**：効率的なメモリ管理とジオメトリマージングで GPU オーバーヘッドを低減
+- **マテリアルキャッシュ**：類似エンティティ間でマテリアルを再利用し、状態変更を最小化
+- **WebGL 最適化**：モダン WebGL 機能でハードウェア加速レンダリングを活用
 
-モノレポには複数のファーストパーティプラグインが同梱されています。各プラグインは 1 つの関心事に集中しており、必要に応じて組み合わせられます。**インストール、登録、API の詳細は各パッケージの README に記載されています** — 下記リンクを参照してください。
-
-### 公式プラグイン
-
-| パッケージ | 役割 | コマンド / 機能 |
-|---------|------|-------------------------|
-| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | `cad-simple-viewer` 向け **ツールバー・レイヤーマネージャー・レビューパレット UI**（プレーン DOM、Vue/React 非依存） | `layer`、`markuppanel`、デフォルトツールバー（表示、測定、エクスポート、レビュー、テーマ、ロケール） |
-| [`@mlightcad/cad-agent-plugin`](packages/cad-agent-plugin) | **自然言語 CAD エージェント**（AI チャットパネル + 図面ツール呼び出し） | `agent` |
-| [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | 図面を **自己完結型オフライン HTML** へエクスポート | `chtml`（`cad-viewer` のダイアログ）、`-chtml`（コマンドライン） |
-| [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **PDF エクスポートとインポート**（ベクターパイプライン） | `cpdf`、`ipdf` |
-| [`@mlightcad/cad-svg-plugin`](packages/cad-svg-plugin) | **SVG エクスポート** と共有ベクターレンダラー（PDF エクスポートでも使用） | `csvg` |
-
-### `@mlightcad/cad-simple-ui-plugin` — シンプルビューア向け UI 層
-
-[`cad-simple-viewer`](packages/cad-simple-viewer) は意図的に **アプリケーション UI を同梱しません** — キャンバスと CAD コアのみです。シンプルビューアを独自 Web アプリに埋め込み、Vue ベースのフル [`cad-viewer`](packages/cad-viewer) シェルを採用せずにすぐ使える UI が必要な場合、**`cad-simple-ui-plugin` が想定される UI 層** です。
-
-提供機能：
-
-- **設定可能なツールバー**（任意の辺に配置、デフォルト CAD コマンド、ネストメニュー、カスタム項目）
-- **ドックパネル**：**レイヤーマネージャー**タブ（レイヤー ON/OFF、ACI カラーピッカー、ダブルクリックでレイヤーへズーム）と**レビューパレット**タブ（マークアップ一覧、ステータス、コメント）
-- **`COLORTHEME` システム変数とホスト要素上の `--ml-ui-*` CSS トークンとのテーマ同期**
-- **`AcApI18n` とのロケール同期**（英語 / 中国語 / チェコ語 / トルコ語）
-
-すべてのウィジェットはフレームワーク非依存（プレーン DOM）です。フル Vue [`cad-viewer`](packages/cad-viewer) アプリは Element Plus UI を内蔵しており、このプラグインは不要です。`cad-simple-viewer` を直接ベースに構築する場合に `cad-simple-ui-plugin` を使用してください。
-
-→ **クイックスタート、ツールバーカスタマイズ、オプション：** [packages/cad-simple-ui-plugin/README.md](packages/cad-simple-ui-plugin/README.md)
-
-### `@mlightcad/cad-agent-plugin` — AI 図面アシスタント
-
-[`cad-agent-plugin`](packages/cad-agent-plugin) は `cad-simple-viewer` ベースのアプリに **自然言語 CAD エージェント** を追加します。ユーザーは平易な言語で希望を記述し、エージェントが CAD ツールを呼び出して図面を調査し、ジオメトリを作成または変更します。
-
-提供機能：
-
-- **遅延読み込み** `AcApPlugin`（トリガーコマンド：`agent`）により、AI バンドルをクリティカルパスから外す
-- Vercel AI SDK（`Experimental_Agent` + `@ai-sdk/vue`）上の **Vue チャットパネル**（`AgentChatPanel`）
-- **ブラウザ側 LLM 設定** — OpenAI、Anthropic、OpenAI 互換エンドポイントの API キーはクライアントに保持（`localStorage` に暗号化保存）
-- **フェーズ 1 CAD ツール** — `get_drawing_context`；`draw_line`、`draw_circle`、`draw_arc`、`draw_rectangle`、`draw_polyline`、`draw_text`；`set_current_layer`、`create_layer`、`zoom_extents`
-- プラグイン i18n 層による **英語 / 中国語 / トルコ語 / チェコ語** UI 文字列
-
-フル Vue [`cad-viewer`](packages/cad-viewer) アプリは、パッケージインストール時にエージェントを自動登録します（パレットタブ）。[`cad-simple-viewer-example`](packages/cad-simple-viewer-example) は `cad-simple-ui-plugin` 経由でドックタブに接続します。ホストアプリは `registerLazyAgentPlugin` と `setAgentPaletteOpener` を呼び出し、パネルのマウント位置を決定します。
-
-→ **インストール、登録、ツール一覧：** [packages/cad-agent-plugin/README.md](packages/cad-agent-plugin/README.md)
-
-### エクスポートプラグイン（HTML / PDF / SVG）
-
-これらのプラグインは、同一プラグインマネージャーにエクスポート（および PDF インポート）コマンドを追加します。**遅延読み込み** により初期ページ重量を抑えます。[`cad-simple-viewer-example`](packages/cad-simple-viewer-example) デモは 3 つのエクスポートプラグイン、`cad-simple-ui-plugin`、`cad-agent-plugin` をすべて登録します。フル [`cad-viewer`](packages/cad-viewer) アプリはブートストラップ時にエクスポートプラグインと（インストール時）エージェントプラグインを登録します。
-
-- **HTML** — 共有とアーカイブ向けの単一ファイルオフラインビューア：[packages/cad-html-plugin/README.md](packages/cad-html-plugin/README.md)  
-  （同一パイプラインのヘッドレス CLI：[packages/cad-simple-viewer-cli/README.md](packages/cad-simple-viewer-cli/README.md)）
-- **PDF** — ベクター PDF エクスポートと PDF から CAD へのインポート：[packages/cad-pdf-plugin/README.md](packages/cad-pdf-plugin/README.md)
-- **SVG** — ベクター SVG エクスポート：[packages/cad-svg-plugin/README.md](packages/cad-svg-plugin/README.md)
+これらの最適化により、CAD-Viewer は数千のエンティティを含む複雑な CAD 図面を滑らかにレンダリングし、応答性の高いユーザー操作を維持します。
 
 #### 自己完結型 HTML のメモリ使用量
 
@@ -207,19 +163,6 @@ CAD-Viewer は [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer) 内�
 | 自己完結型 HTML（表示モード） | 33 MB |
 
 オフライン HTML ビューアは、表示モードで AutoCAD 2020 より約 **83% 少ない** メモリ、GstarCAD Viewer より約 **77% 少ない** メモリを使用しながら、パン/ズーム、レイヤー切り替え、距離測定（測定モード）をサポートします。
-
-## パフォーマンス
-
-CAD-Viewer は **卓越したパフォーマンス** 向けに設計されており、高フレームレートを維持しながら非常に大きな DXF/DWG ファイルを処理できます。複数の高度なレンダリング技術でパフォーマンスを最適化しています：
-
-- **カスタムシェーダーマテリアル**：GPU 加速シェーダーマテリアルで複雑な線種とハッチ塗りつぶしパターンを効率的にレンダリング
-- **ジオメトリバッチング**：同一マテリアルの点、線、面をマージし、ドローコールを大幅に削減
-- **インスタンスレンダリング**：インスタンシング技術で反復ジオメトリのレンダリングを最適化
-- **バッファジオメトリ最適化**：効率的なメモリ管理とジオメトリマージングで GPU オーバーヘッドを低減
-- **マテリアルキャッシュ**：類似エンティティ間でマテリアルを再利用し、状態変更を最小化
-- **WebGL 最適化**：モダン WebGL 機能でハードウェア加速レンダリングを活用
-
-これらの最適化により、CAD-Viewer は数千のエンティティを含む複雑な CAD 図面を滑らかにレンダリングし、応答性の高いユーザー操作を維持します。
 
 ## 既知の問題
 

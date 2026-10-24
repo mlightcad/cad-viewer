@@ -61,6 +61,7 @@ Aplicaciones de ejemplo oficiales que muestran cómo integrar cad-viewer en su p
 - **Mayor seguridad de los datos** — Los archivos nunca abandonan su dispositivo, garantizando privacidad total
 - **Integración sencilla** — No se necesita configuración de servidor ni infraestructura backend
 - Arquitectura modular para una integración fluida con terceros
+- **Sistema de plugins** — Arquitectura de plugins extensible con plugins oficiales para UI, asistente de IA y exportación a HTML/PDF/SVG; consulte la [guía del sistema de plugins](https://mlightcad.com/cad-viewer/docs/development/plugin-system.html)
 - **Diseño móvil y gestos táctiles** — Interfaz responsive para teléfono/tableta y gestos táctiles (pellizcar para zoom, arrastrar con un dedo, tocar para seleccionar) integrados en `@mlightcad/cad-simple-viewer`, sin necesidad de una app móvil aparte
 - **Exportación a HTML sin conexión** — Exporte el dibujo actual como un único archivo `.html` autocontenido con un visor integrado (desplazamiento/zoom, zoom a extensión, capas, medición de distancias, interfaz EN/ZH). Se abre sin conexión en cualquier navegador; no requiere instancia de cad-viewer ni backend.
 - Flujos de trabajo de edición sin conexión y en línea
@@ -137,63 +138,18 @@ pnpm preview:simple
 - **Zoom**: Pellizco con dos dedos
 - **Desplazar**: Arrastre con un dedo
 
-## Sistema de plugins
+## Rendimiento
 
-CAD-Viewer está construido en torno a un **sistema de plugins** modular en [`@mlightcad/cad-simple-viewer`](packages/cad-simple-viewer). Los plugins implementan la interfaz `AcApPlugin` y se enganchan al ciclo de vida del visor mediante `onLoad` / `onUnload`, normalmente para registrar comandos, añadir interfaz de usuario o conectar flujos de exportación/importación.
+CAD-Viewer está diseñado para un **rendimiento excepcional** y puede manejar archivos DXF/DWG muy grandes manteniendo altas tasas de fotogramas. Emplea múltiples tecnologías avanzadas de renderizado para optimizar el rendimiento:
 
-Cargue los plugins a través de `AcApDocManager.instance.pluginManager` (`loadPlugin`, `registerLazyPlugin` o `plugins.fromConfig` al crear el administrador de documentos). Los plugins orientados a la exportación admiten **carga diferida**: registre un pequeño stub por adelantado y descargue el paquete pesado solo cuando el usuario ejecute el comando relacionado (por ejemplo `-chtml`, o al confirmar la exportación desde el diálogo `chtml` en `cad-viewer`).
+- **Materiales de shader personalizados**: Utiliza materiales de shader acelerados por GPU para renderizar tipos de línea complejos y patrones de sombreado de forma eficiente
+- **Agrupación de geometría**: Fusiona puntos, líneas y áreas con el mismo material para reducir drásticamente las draw calls
+- **Renderizado instanciado**: Optimiza el renderizado de geometrías repetidas mediante técnicas de instanciación
+- **Optimización de geometría en búfer**: Gestión eficiente de memoria y fusión de geometría para reducir la sobrecarga de GPU
+- **Caché de materiales**: Reutiliza materiales entre entidades similares para minimizar los cambios de estado
+- **Optimización WebGL**: Aprovecha las funciones modernas de WebGL para renderizado acelerado por hardware
 
-El monorepo incluye varios plugins propios. Cada uno se centra en un aspecto; combínelos según sea necesario. **La instalación, el registro y los detalles de la API están en el README de cada paquete** — consulte los enlaces a continuación.
-
-### Plugins oficiales
-
-| Paquete | Función | Comandos / capacidades |
-|---------|------|-------------------------|
-| [`@mlightcad/cad-simple-ui-plugin`](packages/cad-simple-ui-plugin) | **Barra de herramientas, administrador de capas y paleta de revisión** para `cad-simple-viewer` (DOM plano, sin Vue/React) | `layer`, `markuppanel`, barra de herramientas predeterminada (vista, medición, exportación, revisión, tema, idioma) |
-| [`@mlightcad/cad-agent-plugin`](packages/cad-agent-plugin) | **Agente CAD en lenguaje natural** (panel de chat con IA + llamadas a herramientas de dibujo) | `agent` |
-| [`@mlightcad/cad-html-plugin`](packages/cad-html-plugin) | Exportar dibujos a **HTML sin conexión autocontenido** | `chtml` (diálogo en `cad-viewer`), `-chtml` (línea de comandos) |
-| [`@mlightcad/cad-pdf-plugin`](packages/cad-pdf-plugin) | **Exportación e importación de PDF** (canal vectorial) | `cpdf`, `ipdf` |
-| [`@mlightcad/cad-svg-plugin`](packages/cad-svg-plugin) | **Exportación SVG** y renderizador vectorial compartido (también usado por la exportación PDF) | `csvg` |
-
-### `@mlightcad/cad-simple-ui-plugin` — Interfaz de usuario para el visor simple
-
-[`cad-simple-viewer`](packages/cad-simple-viewer) deliberadamente **no incluye interfaz de aplicación** — solo el lienzo y el núcleo CAD. Si incrusta el visor simple en su propia aplicación web y desea una interfaz lista para usar sin adoptar el shell completo basado en Vue de [`cad-viewer`](packages/cad-viewer), **`cad-simple-ui-plugin` es la capa de interfaz prevista**.
-
-Proporciona:
-
-- Una **barra de herramientas configurable** (colocación en cualquier borde, comandos CAD predeterminados, menús anidados, elementos personalizados)
-- Un **panel acoplable** con pestaña de **administrador de capas** (capa activa/inactiva, selector de color ACI, zoom a capa con doble clic) y pestaña de **paleta de revisión** (lista de marcas, estado, comentarios)
-- **Sincronización de tema** con la sysvar `COLORTHEME` y los tokens CSS `--ml-ui-*` en su elemento host
-- **Sincronización de idioma** con `AcApI18n` (inglés / chino / checo / turco)
-
-Todos los widgets son independientes del framework (DOM plano). La aplicación completa de Vue [`cad-viewer`](packages/cad-viewer) tiene su propia interfaz Element Plus y no requiere este plugin; use `cad-simple-ui-plugin` cuando construya directamente sobre `cad-simple-viewer`.
-
-→ **Inicio rápido, personalización de la barra de herramientas y opciones:** [packages/cad-simple-ui-plugin/README.md](packages/cad-simple-ui-plugin/README.md)
-
-### `@mlightcad/cad-agent-plugin` — Asistente de dibujo con IA
-
-[`cad-agent-plugin`](packages/cad-agent-plugin) añade un **agente CAD en lenguaje natural** a las aplicaciones basadas en `cad-simple-viewer`. Los usuarios describen lo que desean en lenguaje llano; el agente llama a herramientas CAD para inspeccionar el dibujo y crear o modificar geometría.
-
-Proporciona:
-
-- Un `AcApPlugin` **de carga diferida** (comando de activación: `agent`) para que el paquete de IA no esté en la ruta crítica
-- Un **panel de chat Vue** (`AgentChatPanel`) construido sobre el Vercel AI SDK (`Experimental_Agent` + `@ai-sdk/vue`)
-- **Configuración de LLM en el navegador** — las claves API para OpenAI, Anthropic o endpoints compatibles con OpenAI permanecen en el cliente (cifradas en `localStorage`)
-- **Herramientas CAD de fase 1** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
-- Cadenas de interfaz en **inglés / chino / turco / checo** a través de la capa i18n del plugin
-
-La aplicación completa de Vue [`cad-viewer`](packages/cad-viewer) registra el agente automáticamente cuando el paquete está instalado (pestaña del panel). [`cad-simple-viewer-example`](packages/cad-simple-viewer-example) lo conecta a una pestaña acoplable mediante `cad-simple-ui-plugin`. Las aplicaciones host llaman a `registerLazyAgentPlugin` y `setAgentPaletteOpener` para montar el panel donde deseen.
-
-→ **Instalación, registro y lista de herramientas:** [packages/cad-agent-plugin/README.md](packages/cad-agent-plugin/README.md)
-
-### Plugins de exportación (HTML / PDF / SVG)
-
-Estos plugins añaden comandos de exportación (e importación de PDF) al mismo administrador de plugins. Tienen **carga diferida** para que el peso inicial de la página se mantenga bajo. La demo [`cad-simple-viewer-example`](packages/cad-simple-viewer-example) registra los tres plugins de exportación, `cad-simple-ui-plugin` y `cad-agent-plugin`; la aplicación completa [`cad-viewer`](packages/cad-viewer) registra los plugins de exportación y el plugin del agente (cuando está instalado) en su arranque.
-
-- **HTML** — visor sin conexión de un solo archivo para compartir y archivar: [packages/cad-html-plugin/README.md](packages/cad-html-plugin/README.md)  
-  (CLI sin interfaz que utiliza el mismo canal: [packages/cad-simple-viewer-cli/README.md](packages/cad-simple-viewer-cli/README.md))
-- **PDF** — exportación vectorial a PDF e importación de PDF a CAD: [packages/cad-pdf-plugin/README.md](packages/cad-pdf-plugin/README.md)
-- **SVG** — exportación vectorial a SVG: [packages/cad-svg-plugin/README.md](packages/cad-svg-plugin/README.md)
+Estas optimizaciones permiten que CAD-Viewer renderice sin problemas dibujos CAD complejos con miles de entidades manteniendo interacciones de usuario fluidas.
 
 #### Uso de memoria del HTML autocontenido
 
@@ -207,19 +163,6 @@ Al abrir el dibujo de ejemplo [`canteen.dwg`](https://cdn.jsdelivr.net/gh/mlight
 | HTML autocontenido (modo vista) | 33 MB |
 
 El visor HTML sin conexión utiliza aproximadamente un **83 % menos de memoria que AutoCAD 2020** y aproximadamente un **77 % menos que GstarCAD Viewer** en modo vista, manteniendo soporte para desplazamiento/zoom, alternancia de capas y medición de distancias (modo medición).
-
-## Rendimiento
-
-CAD-Viewer está diseñado para un **rendimiento excepcional** y puede manejar archivos DXF/DWG muy grandes manteniendo altas tasas de fotogramas. Emplea múltiples tecnologías avanzadas de renderizado para optimizar el rendimiento:
-
-- **Materiales de shader personalizados**: Utiliza materiales de shader acelerados por GPU para renderizar tipos de línea complejos y patrones de sombreado de forma eficiente
-- **Agrupación de geometría**: Fusiona puntos, líneas y áreas con el mismo material para reducir drásticamente las draw calls
-- **Renderizado instanciado**: Optimiza el renderizado de geometrías repetidas mediante técnicas de instanciación
-- **Optimización de geometría en búfer**: Gestión eficiente de memoria y fusión de geometría para reducir la sobrecarga de GPU
-- **Caché de materiales**: Reutiliza materiales entre entidades similares para minimizar los cambios de estado
-- **Optimización WebGL**: Aprovecha las funciones modernas de WebGL para renderizado acelerado por hardware
-
-Estas optimizaciones permiten que CAD-Viewer renderice sin problemas dibujos CAD complejos con miles de entidades manteniendo interacciones de usuario fluidas.
 
 ## Problemas conocidos
 
