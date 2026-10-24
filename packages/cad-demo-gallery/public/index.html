@@ -96,10 +96,93 @@
 
       .hero {
         position: relative;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        align-items: center;
         margin-bottom: 3.5rem;
         padding: 2.25rem 1.5rem 2.5rem;
         border: 1px solid var(--line);
         background: rgba(18, 24, 33, 0.55);
+      }
+
+      .hero__copy {
+        min-width: 0;
+      }
+
+      .hero__visual {
+        position: relative;
+        justify-self: center;
+        min-width: 0;
+        max-width: 100%;
+        margin: 0;
+        overflow: visible;
+        line-height: 0;
+      }
+
+      .hero__visual::before {
+        content: "";
+        position: absolute;
+        inset: 8% 4%;
+        z-index: 0;
+        pointer-events: none;
+        background: radial-gradient(
+          74% 62% at 50% 46%,
+          rgba(61, 220, 255, 0.28) 0%,
+          rgba(61, 220, 255, 0.08) 42%,
+          transparent 74%
+        );
+        filter: blur(20px);
+        opacity: 0.9;
+      }
+
+      .hero__visual img {
+        position: relative;
+        z-index: 1;
+        display: block;
+        width: auto;
+        max-width: 100%;
+        max-height: 260px;
+        height: auto;
+        margin-inline: auto;
+        object-fit: contain;
+        filter:
+          drop-shadow(0 0 18px rgba(61, 220, 255, 0.22))
+          drop-shadow(0 0 40px rgba(61, 220, 255, 0.12));
+        -webkit-mask-image:
+          linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%),
+          linear-gradient(transparent 0%, #000 10%, #000 90%, transparent 100%);
+        mask-image:
+          linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%),
+          linear-gradient(transparent 0%, #000 10%, #000 90%, transparent 100%);
+        -webkit-mask-composite: source-in;
+        mask-composite: intersect;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-size: 100% 100%;
+        mask-size: 100% 100%;
+        transition: filter 0.45s var(--ease);
+      }
+
+      .hero__visual:hover img {
+        filter:
+          drop-shadow(0 0 22px rgba(61, 220, 255, 0.34))
+          drop-shadow(0 0 52px rgba(61, 220, 255, 0.18));
+      }
+
+      @media (min-width: 900px) {
+        .hero {
+          grid-template-columns: 1fr min(42%, 420px);
+          gap: 2rem;
+        }
+
+        .hero__visual {
+          justify-self: end;
+        }
+
+        .hero__visual img {
+          max-height: 280px;
+        }
       }
 
       .hero::before,
@@ -130,6 +213,8 @@
       .hero__corners {
         position: absolute;
         inset: auto 0 0 0;
+        grid-column: 1 / -1;
+        grid-row: 1 / -1;
         height: 18px;
         pointer-events: none;
       }
@@ -407,14 +492,26 @@
 
     <div class="page">
       <header class="hero">
-        <p class="boot">mlightcad://demo-gallery <strong>[OK]</strong></p>
-        <p class="eyebrow">Live demos</p>
-        <h1>Demo Gallery</h1>
-        <p class="lead">
-          Live demos in the same order as the MLightCAD product line — CAD Simple Viewer,
-          CAD Diff Viewer, CAD Editor, CAD SDK embed, and DWG to HTML. Everything runs in the
-          browser; drawings are never uploaded.
-        </p>
+        <div class="hero__copy">
+          <p class="boot">mlightcad://demo-gallery <strong>[OK]</strong></p>
+          <p class="eyebrow">Live demos</p>
+          <h1>Demo Gallery</h1>
+          <p class="lead">
+            Live demos in the same order as the MLightCAD product line — CAD Simple Viewer,
+            CAD Diff Viewer, CAD Editor, CAD SDK embed, and DWG to HTML. Everything runs in the
+            browser; drawings are never uploaded.
+          </p>
+        </div>
+        <figure class="hero__visual">
+          <img
+            src="./demo-gallery.webp"
+            alt="MLightCAD Demo Gallery — browser-native DWG and DXF viewing"
+            width="964"
+            height="885"
+            decoding="async"
+            fetchpriority="high"
+          >
+        </figure>
         <div class="hero__corners" aria-hidden="true"></div>
       </header>
 
