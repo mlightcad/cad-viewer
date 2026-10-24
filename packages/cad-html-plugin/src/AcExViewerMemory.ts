@@ -94,13 +94,24 @@ export function releaseLayerGroupsGeometryCpuArrays(
 ): void {
   for (const group of layerGroups.values()) {
     group.traverse(object => {
+      // Use Three.js type flags instead of instanceof: objects created by a
+      // second copy of Three.js (or by the Jest LineSegments2 mock) may not
+      // share constructors with the copy imported in this module.
+      const drawable = object as THREE.Object3D & {
+        isMesh?: boolean
+        isLineSegments?: boolean
+        isLine?: boolean
+        isPoints?: boolean
+        geometry?: THREE.BufferGeometry
+      }
       if (
-        object instanceof THREE.Mesh ||
-        object instanceof THREE.LineSegments ||
-        object instanceof THREE.Line ||
-        object instanceof THREE.Points
+        (drawable.isMesh ||
+          drawable.isLineSegments ||
+          drawable.isLine ||
+          drawable.isPoints) &&
+        drawable.geometry?.isBufferGeometry === true
       ) {
-        releaseBufferGeometryCpuArrays(object.geometry)
+        releaseBufferGeometryCpuArrays(drawable.geometry)
       }
     })
   }
