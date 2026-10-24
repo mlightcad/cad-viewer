@@ -156,7 +156,7 @@ Prefer writing the changeset file directly (agents often lack an interactive TTY
 "@mlightcad/cad-svg-plugin": patch
 "@mlightcad/cad-viewer": patch
 "@mlightcad/cad-viewer-example": patch
-"@mlightcad/cad-viewer-examples": patch
+"@mlightcad/cad-demo-gallery": patch
 "@mlightcad/three-renderer": patch
 ---
 

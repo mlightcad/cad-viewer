@@ -105,7 +105,7 @@ Toast messages at the top report success or errors. The window title updates whe
 
 ### HTML converter
 
-Open `/html-converter.html` (or `cad-simple-viewer/html-converter.html` when served from `packages/examples`). Choose a local `.dwg` / `.dxf`, or load the sample `canteen.dwg`. Export options match the full viewer dialog:
+Open `/html-converter.html` (or `cad-simple-viewer/html-converter.html` when served from `packages/cad-demo-gallery`). Choose a local `.dwg` / `.dxf`, or load the sample `canteen.dwg`. Export options match the full viewer dialog:
 
 - Invisible layers and paper-space layouts
 - Initial view (zoom to extents vs the viewport saved in the drawing)

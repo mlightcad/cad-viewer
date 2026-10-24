@@ -776,7 +776,7 @@ importers:
         specifier: ^2.1.6
         version: 2.2.12(typescript@5.9.3)
 
-  packages/examples:
+  packages/cad-demo-gallery:
     devDependencies:
       '@mlightcad/cad-diff-viewer-example':
         specifier: workspace:*

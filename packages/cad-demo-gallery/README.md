@@ -1,14 +1,14 @@
-# CAD Viewer Examples
+# CAD Demo Gallery
 
-This package serves as a central hub for all CAD viewer examples, providing easy access to both the full-featured CAD viewer and the simple viewer demonstrations.
+Private demo gallery package (`@mlightcad/cad-demo-gallery`) that hosts the static site for all browser CAD demos — full UI, simple embed, side-by-side diff, CDN bootstrap, and offline HTML export.
 
 ## Overview
 
-This package consolidates the built examples from `@mlightcad/cad-viewer-example`,
+This package consolidates the built demos from `@mlightcad/cad-viewer-example`,
 `@mlightcad/cad-simple-viewer-example`, and `@mlightcad/cad-diff-viewer-example`
-into a single, easily accessible location. It's designed for showcasing the capabilities of the CAD viewer libraries and providing reference implementations.
+into a single gallery, plus zero-build CDN and self-contained HTML demos.
 
-## Available Examples
+## Available Demos
 
 ### 1. CAD Viewer Demo (`/cad-viewer/`)
 A full-featured CAD viewer application built with Vue.js and Element Plus.
@@ -125,7 +125,7 @@ pnpm install
 pnpm build
 
 # Navigate to the examples directory
-cd packages/examples
+cd packages/cad-demo-gallery
 
 # Copy built examples to public directory
 pnpm pre-serve
@@ -154,7 +154,7 @@ To generate the file locally (requires a built workspace and Playwright Chromium
 
 ```bash
 pnpm build
-cd packages/examples
+cd packages/cad-demo-gallery
 pnpm export:demo-html
 pnpm serve
 ```
@@ -183,7 +183,7 @@ cd packages/cad-diff-viewer-example && pnpm build
 ### File Structure
 
 ```
-packages/examples/
+packages/cad-demo-gallery/
 ├── public/
 │   ├── index.html              # Main navigation page
 │   ├── robots.txt              # Crawlers policy

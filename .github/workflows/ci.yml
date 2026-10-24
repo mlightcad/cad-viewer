@@ -116,16 +116,16 @@ jobs:
       # GitHub Pages can serve progressive chunk loading without a zip download.
       - name: Export self-contained HTML demos
         if: github.ref == 'refs/heads/main'
-        run: node packages/examples/exportDemoHtml.js
+        run: node packages/cad-demo-gallery/exportDemoHtml.js
         env:
           PLAYWRIGHT_BROWSER_CHANNEL: chrome
 
       - name: Verify progressive package extracted for Pages
         if: github.ref == 'refs/heads/main'
         run: |
-          test -f packages/examples/public/self-contained-html/canteen.html
-          test -f packages/examples/public/self-contained-html/canteen.zip
-          test -f packages/examples/public/self-contained-html/canteen-progressive/viewer.html
+          test -f packages/cad-demo-gallery/public/self-contained-html/canteen.html
+          test -f packages/cad-demo-gallery/public/self-contained-html/canteen.zip
+          test -f packages/cad-demo-gallery/public/self-contained-html/canteen-progressive/viewer.html
 
       # Keep release/pages-only actions out of this job so PR builds do not
       # download softprops/action-gh-release or upload-pages-artifact (GitHub
@@ -135,7 +135,7 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: pages-source
-          path: packages/examples/public/
+          path: packages/cad-demo-gallery/public/
           retention-days: 1
 
   # Authenticates via npm Trusted Publishing (OIDC); no NPM_TOKEN needed.
@@ -209,12 +209,12 @@ jobs:
         uses: actions/download-artifact@v6
         with:
           name: pages-source
-          path: packages/examples/public/
+          path: packages/cad-demo-gallery/public/
 
       - name: Upload github pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: './packages/examples/public/'
+          path: './packages/cad-demo-gallery/public/'
 
   deploy-pages:
     needs: upload-pages
