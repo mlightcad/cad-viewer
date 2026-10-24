@@ -13,7 +13,7 @@ Sıradan DWG varlıklarının aksine, Tianzheng varlıkları (duvarlar, kapılar
 DWG dosyalarında bu Tianzheng'e özgü nesneler [özel varlıklar](https://help.autodesk.com/view/OARX/2024/ENU/?guid=GUID-4E5C1B56-95C3-4D4F-8F1C-A9D34B1E1408) (proxy varlıklar) olarak saklanır. İç verileri yalnızca Tianzheng'in kendi ObjectARX çalışma zamanı için anlamlıdır. Sonuç olarak:
 
 - Hiçbir genel amaçlı ticari DWG ayrıştırıcısı bu tescilli Tianzheng varlıklarını doğrudan ayrıştıramaz.
-- Genel bir ayrıştırıcı (CAD-Viewer dahil), bu tür çizimlerde yalnızca standart AutoCAD varlıklarını işleyebilir; Tianzheng özel varlıkları atlanır veya proxy grafik olarak görüntülenir.
+- Genel bir ayrıştırıcı (MLightCAD dahil), bu tür çizimlerde yalnızca standart AutoCAD varlıklarını işleyebilir; Tianzheng özel varlıkları atlanır veya proxy grafik olarak görüntülenir.
 
 ## Yaygın Sektör Çözümü: T3 Biçimine Dönüştürme
 
@@ -59,11 +59,11 @@ Detect Tianzheng entities  ->  If present, convert to T3 DWG
 Store converted DWG
       |
       v
-CAD-Viewer parsing & rendering
+MLightCAD parsing & rendering
 ```
 
 - Gelen bir DWG'nin Tianzheng özel varlıkları içerip içermediğini belirleyin (örneğin, Tianzheng'e özgü proxy varlık sınıf adlarını veya uygulama imzalarını kontrol ederek).
 - Varsa, T3 dönüştürmesini çalıştırın (ör. bir Windows sunucusunda `t3-conv` aracılığıyla) ve dönüştürülen dosyayı saklayın.
-- Dönüştürülen T3 DWG'yi CAD-Viewer'a verin. Önceden görünmez olan tüm Tianzheng nesneleri artık standart varlıklar olarak işlenir.
+- Dönüştürülen T3 DWG'yi MLightCAD'a verin. Önceden görünmez olan tüm Tianzheng nesneleri artık standart varlıklar olarak işlenir.
 
 Bu, görüntüleyicinin kendisini hafif ve ayrıştırıcıdan bağımsız tutarken Tianzheng çizimlerinin son kullanıcılar tarafından tam olarak görülebilmesini sağlar.

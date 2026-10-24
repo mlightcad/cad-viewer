@@ -1,8 +1,8 @@
 ---
-title: "Simple CAD Viewer Entegrasyonu"
+title: "Simple Viewer Entegrasyonu"
 ---
 
-# Simple CAD Viewer Entegrasyonu
+# Simple Viewer Entegrasyonu
 
 **cad-simple-viewer**, bir CAD görüntüleyicinin belge yönetimi, komut işleme ve UI ile işleme motorları arasındaki işbirliği gibi **yüksek performanslı** temel bileşenlerini sağlar. Büyük CAD dosyalarını işlerken optimum performans için tasarlanmıştır.
 

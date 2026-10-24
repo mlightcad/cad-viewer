@@ -192,7 +192,7 @@ await AcApDocManager.instance.openUrl(templateUrl)
 
 ### CORS Yapılandırması
 
-Sunucunuzun CAD Viewer'ın kaynakları yüklemesi için çapraz kaynak isteklerine izin verdiğinden emin olun:
+Sunucunuzun MLightCAD'ın kaynakları yüklemesi için çapraz kaynak isteklerine izin verdiğinden emin olun:
 
 ```
 Access-Control-Allow-Origin: *

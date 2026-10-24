@@ -4,11 +4,11 @@ title: "Jig Sistemi"
 
 # Jig Sistemi
 
-AutoCAD, kullanıcı girdisi alırken gerçek zamanlı görsel geri bildirim sağlamak için AcEdJig çerçevesine dayanır. Güçlü olmakla birlikte, bu sistem istemleri, önizleme işlemesini ve girdi örneklemesini birden çok geçersiz kılınan yönteme ayırır — bu da genellikle mantığı farklı işlevlere ve yaşam döngüsü aşamalarına dağıtır. CAD-Viewer bu kavramı web için, istem girdisiyle sorunsuz biçimde bütünleşen birleşik ve TypeScript tabanlı bir jig mekanizması sunarak yeniden tasarlar. Geliştiriciler sürükleme döngülerini veya örnekleyici durum kodlarını yönetmek yerine, bir jig'i doğrudan istem seçeneklerine ekler; böylece dinamik önizleme mantığı, kullanıcı girdisi ve nihai varlık oluşturma tek ve okunaklı bir iş akışında bir arada kalır.
+AutoCAD, kullanıcı girdisi alırken gerçek zamanlı görsel geri bildirim sağlamak için AcEdJig çerçevesine dayanır. Güçlü olmakla birlikte, bu sistem istemleri, önizleme işlemesini ve girdi örneklemesini birden çok geçersiz kılınan yönteme ayırır — bu da genellikle mantığı farklı işlevlere ve yaşam döngüsü aşamalarına dağıtır. MLightCAD bu kavramı web için, istem girdisiyle sorunsuz biçimde bütünleşen birleşik ve TypeScript tabanlı bir jig mekanizması sunarak yeniden tasarlar. Geliştiriciler sürükleme döngülerini veya örnekleyici durum kodlarını yönetmek yerine, bir jig'i doğrudan istem seçeneklerine ekler; böylece dinamik önizleme mantığı, kullanıcı girdisi ve nihai varlık oluşturma tek ve okunaklı bir iş akışında bir arada kalır.
 
 ## Genel Bakış
 
-CAD-Viewer'daki **Jig sistemi**, AutoCAD'in **AcEdJig** (ObjectARX) sistemine benzer bir iş akışı sunarak etkileşimli önizlemeler ve dinamik varlık oluşturma sağlar. Bir *jig*, imleç hareketine veya artımlı kullanıcı girdisine göre sürekli güncellenen geçici bir önizleme varlığını yönetir.
+MLightCAD'daki **Jig sistemi**, AutoCAD'in **AcEdJig** (ObjectARX) sistemine benzer bir iş akışı sunarak etkileşimli önizlemeler ve dinamik varlık oluşturma sağlar. Bir *jig*, imleç hareketine veya artımlı kullanıcı girdisine göre sürekli güncellenen geçici bir önizleme varlığını yönetir.
 
 Kullanım durumları şunları içerir:
 
@@ -16,7 +16,7 @@ Kullanım durumları şunları içerir:
 * Canlı mesafe veya açı ölçümü
 * Mevcut varlıkların gerçek zamanlı değiştirilmesi
 
-Ancak CAD-Viewer, AutoCAD jig'lerinde tipik olarak bulunan yapısal karmaşıklığı azaltan **daha basit, daha bütüncül ve TypeScript dostu bir tasarım** sunar.
+Ancak MLightCAD, AutoCAD jig'lerinde tipik olarak bulunan yapısal karmaşıklığı azaltan **daha basit, daha bütüncül ve TypeScript dostu bir tasarım** sunar.
 
 
 ## Temel Mimari Fark
@@ -25,7 +25,7 @@ Ancak CAD-Viewer, AutoCAD jig'lerinde tipik olarak bulunan yapısal karmaşıkl�
 
 AutoCAD'te istemler ve jig'ler ayrı mekanizmalardır. Jig yürütmesi `sampler()`, `worldDraw()` yöntemlerinin geçersiz kılınmasını ve `drag()` çağrılmasını gerektirir.
 
-CAD-Viewer'da istemler doğrudan **bir jig örneği taşıyabilir**:
+MLightCAD'da istemler doğrudan **bir jig örneği taşıyabilir**:
 
 ```ts
 const opts = new AcEdPromptDistanceOptions('Specify radius:')
@@ -49,7 +49,7 @@ Bu tasarım:
 * `createEllipse()` — elips merkez noktasını alır
 * `sampler()` — ana eksen uç noktasını ve elips merkezinden küçük eksen uç noktasına olan mesafeyi alır
 
-CAD-Viewer'da dinamik girdi iş akışının tamamı sırayla şu şekilde ifade edilir.
+MLightCAD'da dinamik girdi iş akışının tamamı sırayla şu şekilde ifade edilir.
 
 ```ts
 const center = await editor.getPoint(pointOpts)

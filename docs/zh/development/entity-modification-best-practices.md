@@ -4,9 +4,9 @@ title: "实体修改最佳实践"
 
 # 实体修改最佳实践
 
-本页说明如何在 **CAD-Viewer** 中修改图纸实体，以确保更改被正确跟踪、**撤销/重做**按预期工作，并且**视图与数据库保持同步**。
+本页说明如何在 **MLightCAD** 中修改图纸实体，以确保更改被正确跟踪、**撤销/重做**按预期工作，并且**视图与数据库保持同步**。
 
-数据库层来自 [`@mlightcad/data-model`](https://github.com/mlightcad/realdwg-web)。CAD-Viewer 添加了应用层辅助工具，并将数据库事件连接到渲染器。
+数据库层来自 [`@mlightcad/data-model`](https://github.com/mlightcad/realdwg-web)。MLightCAD 添加了应用层辅助工具，并将数据库事件连接到渲染器。
 
 ---
 
@@ -67,7 +67,7 @@ opened.color = newColor
 
 ### 严格模式
 
-`transactionManager.strictMode`（data-model 中的默认值）可以要求所有变更都必须在活动事务内发生。撤销/重做回放不受此限制，以便更改应用器能够恢复状态。在实践中，CAD-Viewer 命令和 `acapRunDatabaseEdit` 总是在编辑前建立事务。
+`transactionManager.strictMode`（data-model 中的默认值）可以要求所有变更都必须在活动事务内发生。撤销/重做回放不受此限制，以便更改应用器能够恢复状态。在实践中，MLightCAD 命令和 `acapRunDatabaseEdit` 总是在编辑前建立事务。
 
 ---
 
@@ -159,7 +159,7 @@ try {
 - `database` — 源数据库
 - `entity` — 一个实体或实体数组
 
-CAD-Viewer 为修改事件扩展了可选的 `changes` 字段（`AcApEntityUpdate` 中的 `AcDbEntityModifiedEventArgs`），以便视图能够应用轻量级更新（例如仅切换可见性）而无需重建几何体。
+MLightCAD 为修改事件扩展了可选的 `changes` 字段（`AcApEntityUpdate` 中的 `AcDbEntityModifiedEventArgs`），以便视图能够应用轻量级更新（例如仅切换可见性）而无需重建几何体。
 
 ### 视图同步
 
@@ -322,7 +322,7 @@ acapRunDatabaseEdit(db, 'Color', () => {
 
 ### 更低层的替代方案
 
-如果你仅基于 data-model 构建库代码（不使用 CAD-Viewer UI），请调用：
+如果你仅基于 data-model 构建库代码（不使用 MLightCAD UI），请调用：
 
 ```typescript
 db.runDatabaseEdit('My Operation', () => {
@@ -338,7 +338,7 @@ db.transactionManager.runUndoable('My Operation', () => {
 })
 ```
 
-与 CAD-Viewer UI 集成时，记得自行调用 `acapNotifyUndoStackChanged()`。
+与 MLightCAD UI 集成时，记得自行调用 `acapNotifyUndoStackChanged()`。
 
 ---
 
@@ -385,6 +385,6 @@ sequenceDiagram
 
 - [命令](./command) — 命令生命周期和注册
 - [Jig（动态预览）系统](./jig-system) — 不写入数据库的交互式预览
-- [CAD Viewer 基础](./cad-viewer-basics) — 文档、数据库和视图概念
+- [MLightCAD 基础](./cad-viewer-basics) — 文档、数据库和视图概念
 - [架构总览](./architecture-overview) — 模块之间如何连接
 

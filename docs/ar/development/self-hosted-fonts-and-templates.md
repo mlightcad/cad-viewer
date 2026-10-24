@@ -192,7 +192,7 @@ await AcApDocManager.instance.openUrl(templateUrl)
 
 ### تهيئة CORS
 
-تأكد من أن خادمك يسمح بطلبات المصادر المتقاطعة كي يتمكن CAD Viewer من تحميل الموارد:
+تأكد من أن خادمك يسمح بطلبات المصادر المتقاطعة كي يتمكن MLightCAD من تحميل الموارد:
 
 ```
 Access-Control-Allow-Origin: *

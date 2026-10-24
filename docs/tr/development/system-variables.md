@@ -4,7 +4,7 @@ title: "Sistem Değişkenleri"
 
 # Sistem Değişkenleri
 
-Bu sayfa, CAD-Viewer'da sistem değişkenlerinin nasıl çalıştığını, kullanıcıların bunları komut satırından nasıl değiştirebileceğini ve `AcDbSystemVariables` ile `AcDbSysVarManager` aracılığıyla nasıl uygulandığını açıklar.
+Bu sayfa, MLightCAD'da sistem değişkenlerinin nasıl çalıştığını, kullanıcıların bunları komut satırından nasıl değiştirebileceğini ve `AcDbSystemVariables` ile `AcDbSysVarManager` aracılığıyla nasıl uygulandığını açıklar.
 
 ## Sistem Değişkeni Nedir
 
@@ -19,7 +19,7 @@ Tipik örnekler şunları içerir:
 - bir görüntüleme modunun etkin olup olmadığı
 - düzenleyicinin veya görüntüleyicinin görsel olarak nasıl tepki vereceği
 
-Bu, kasıtlı olarak AutoCAD'e benzer. CAD-Viewer'da, değişken adını ve ardından yeni değerini girerek bir sistem değişkenini doğrudan komut satırından ayarlayabilirsiniz.
+Bu, kasıtlı olarak AutoCAD'e benzer. MLightCAD'da, değişken adını ve ardından yeni değerini girerek bir sistem değişkenini doğrudan komut satırından ayarlayabilirsiniz.
 
 Örneğin:
 
@@ -30,7 +30,7 @@ New value for PICKBOX <3>: 5
 
 Bu, komut satırının sistem değişkeni adının kendisini, o ayarı güncellemek için kullanılan komut olarak ele aldığı anlamına gelir.
 
-CAD-Viewer bu modeli benimser; böylece çalışma zamanı ayarları komut mantığına gömülmek yerine tek ve tutarlı bir mekanizma üzerinden okunabilir, değiştirilebilir ve izlenebilir.
+MLightCAD bu modeli benimser; böylece çalışma zamanı ayarları komut mantığına gömülmek yerine tek ve tutarlı bir mekanizma üzerinden okunabilir, değiştirilebilir ve izlenebilir.
 
 ## Komut Satırından Sistem Değişkeni Ayarlama
 
@@ -61,7 +61,7 @@ Başka bir deyişle, bir sistem değişkenine değer atamak ayrı bir `SETVAR` t
 
 ## Sistem Değişkenleri Komut Olarak Nasıl Kaydedilir
 
-CAD-Viewer'da sistem değişkenleri komut satırından kullanılabilir; çünkü uygulama başlatılırken normal komutlar olarak kaydedilirler.
+MLightCAD'da sistem değişkenleri komut satırından kullanılabilir; çünkü uygulama başlatılırken normal komutlar olarak kaydedilirler.
 
 Kayıt işlemi `AcApDocManager` içinde gerçekleşir. `AcDbSysVarManager` içindeki tüm sistem değişkeni tanımlayıcılarını yükler ve her değişken adını bir komut olarak kaydeder:
 
@@ -96,7 +96,7 @@ Yani iki katman devrededir:
 
 Bu nedenle yeni bir sistem değişkeni için destek eklemek genellikle tanımlayıcısını `AcDbSysVarManager` içinde kaydetmekle başlar. `getAllDescriptors()` içine dahil edildiğinde, komut yığınına da kaydedilebilir ve doğrudan komut satırından kullanılabilir.
 
-## CAD-Viewer'da Nasıl Tasarlanmıştır
+## MLightCAD'da Nasıl Tasarlanmıştır
 
 Mevcut uygulama iki dosya üzerine kuruludur:
 
@@ -116,7 +116,7 @@ Başlıca rolleri şunlardır:
 - çağıranlara değişkenlere tip güvenli bir şekilde başvurma imkânı vermek
 - `AcDbSystemVariableName` gibi türetilmiş tipleri desteklemek
 
-Bunu, CAD-Viewer'daki sistem değişkeni adı kayıt defteri olarak anlamak en doğrusudur.
+Bunu, MLightCAD'daki sistem değişkeni adı kayıt defteri olarak anlamak en doğrusudur.
 
 ### 2. `AcDbSysVarManager`
 
@@ -322,7 +322,7 @@ Bundan sonra, yerleşik sistem değişkenleriyle aynı birleşik `getVar` / `set
 
 ## Özet
 
-CAD-Viewer'da sistem değişkenleri, gevşek bir ayar koleksiyonundan daha fazlasıdır. Uygulama durumu için birleşik bir soyutlama oluştururlar:
+MLightCAD'da sistem değişkenleri, gevşek bir ayar koleksiyonundan daha fazlasıdır. Uygulama durumu için birleşik bir soyutlama oluştururlar:
 
 - aşağıya doğru, çizimle ilgili veritabanı durumuna eşlenirler
 - yukarıya doğru, düzenleyici ve arayüz davranışını yönlendirirler

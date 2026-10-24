@@ -1,8 +1,8 @@
 ---
-title: "CAD Viewer Temelleri"
+title: "MLightCAD Temelleri"
 ---
 
-# CAD Viewer Temelleri
+# MLightCAD Temelleri
 
 Bu proje, kullanıcılar için `cad-viewer` ve `cad-simple-viewer` olmak üzere iki görüntüleyici sunar. Hangi görüntüleyicinin seçileceği, proje gereksinimlerinize ve istediğiniz entegrasyon düzeyine bağlıdır:
 
@@ -32,7 +32,7 @@ Bu proje, kullanıcılar için `cad-viewer` ve `cad-simple-viewer` olmak üzere 
 | `cad-viewer`        | Evet        | Vue 3   | Modern UI içeren kullanıma hazır CAD görüntüleyici/düzenleyici |
 | `cad-simple-viewer` | Hayır       | Yok     | Özel veya başsız kullanım için temel CAD mantığı |
 
-Daha fazla ayrıntı için [**Simple CAD Viewer Entegrasyonu**](./integrate-simple-cad-viewer) ve [**CAD Viewer Bileşeni Entegrasyonu**](./integrate-cad-viewer-component) sayfalarına bakın.
+Daha fazla ayrıntı için [**Simple Viewer Entegrasyonu**](./integrate-simple-cad-viewer) ve [**Vue Bileşeni Entegrasyonu**](./integrate-cad-viewer-component) sayfalarına bakın.
 
 ## Örnekler
 

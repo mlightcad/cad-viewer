@@ -2,13 +2,13 @@
 title: "Příkaz"
 ---
 
-# Vytvoření vlastního příkazu v CAD-Viewer
+# Vytvoření vlastního příkazu v MLightCAD
 
-Tato stránka vysvětluje, jak vytvořit vlastní příkaz v **CAD-Viewer** a zaregistrovat jej tak, aby jej uživatel mohl spustit.
+Tato stránka vysvětluje, jak vytvořit vlastní příkaz v **MLightCAD** a zaregistrovat jej tak, aby jej uživatel mohl spustit.
 
 ## Přehled
 
-Příkazy jsou hlavním způsobem interakce uživatelů s CAD-Viewer. Každý příkaz představuje konkrétní operaci, například kreslení čáry, vytvoření kružnice, přiblížení nebo výběr objektů.
+Příkazy jsou hlavním způsobem interakce uživatelů s MLightCAD. Každý příkaz představuje konkrétní operaci, například kreslení čáry, vytvoření kružnice, přiblížení nebo výběr objektů.
 
 Systém poskytuje **zásobník příkazů** (`AcEdCommandStack`) pro správu příkazů ve skupinách, jejich vyhledávání podle názvu a zpracování událostí jejich životního cyklu prostřednictvím editoru.
 
@@ -261,7 +261,7 @@ editor.events.commandEnded.addEventListener(({ command }) => {
 
 ### Režimy otevření
 
-CAD-Viewer podporuje tři režimy otevření dokumentu:
+MLightCAD podporuje tři režimy otevření dokumentu:
 
 ```
 export enum AcEdOpenMode {
@@ -371,7 +371,7 @@ register.addCommand(
 
 ## Alias příkazu
 
-CAD-Viewer podporuje aliasy příkazů ve stylu AutoCADu (podobně jako chování `acad.pgp`).
+MLightCAD podporuje aliasy příkazů ve stylu AutoCADu (podobně jako chování `acad.pgp`).
 
 ### Registrace aliasu pomocí `addCommand`
 

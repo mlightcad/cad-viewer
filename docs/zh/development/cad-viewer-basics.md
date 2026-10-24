@@ -1,8 +1,8 @@
 ---
-title: "CAD Viewer 基础"
+title: "MLightCAD 基础"
 ---
 
-# CAD Viewer 基础
+# MLightCAD 基础
 
 本项目为用户提供了两个查看器：`cad-viewer` 和 `cad-simple-viewer`。选择哪个查看器取决于你的项目需求和期望的集成程度：
 
@@ -32,7 +32,7 @@ title: "CAD Viewer 基础"
 | `cad-viewer`        | 是         | Vue 3     | 带现代 UI 的开箱即用 CAD 查看器/编辑器       |
 | `cad-simple-viewer` | 否          | 无      | 用于自定义或无头场景的核心 CAD 逻辑      |
 
-更多详情，请参阅[**集成 Simple CAD Viewer**](./integrate-simple-cad-viewer) 和[**集成 CAD Viewer 组件**](./integrate-cad-viewer-component)。
+更多详情，请参阅[**集成 Simple Viewer**](./integrate-simple-cad-viewer) 和[**集成 Vue 组件**](./integrate-cad-viewer-component)。
 
 ## 示例
 

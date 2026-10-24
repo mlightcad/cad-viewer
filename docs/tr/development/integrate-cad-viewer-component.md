@@ -1,8 +1,8 @@
 ---
-title: "CAD Viewer Bileşeni Entegrasyonu"
+title: "Vue Bileşeni Entegrasyonu"
 ---
 
-# CAD Viewer Bileşeni Entegrasyonu
+# Vue Bileşeni Entegrasyonu
 
 **cad-viewer**, CAD dosyalarını (DXF, DWG) **herhangi bir arka uç sunucusuna ihtiyaç duymadan tamamen tarayıcıda** görüntülemek ve düzenlemek için **yüksek performanslı** bir Vue 3 bileşenidir. Modern bir kullanıcı arayüzü, durum yönetimi ve optimize edilmiş işleme motorlarıyla sorunsuz entegrasyon sunarak olağanüstü performansla akıcı tarayıcı tabanlı CAD iş akışları sağlar.
 
@@ -315,7 +315,7 @@ Bileşen çeşitli olayları otomatik olarak işler:
 
 ### İleri Düzey Kullanım
 
-Aşağıdaki ileri düzey kullanımları öğrenmek için [CAD Viewer Bileşeni Entegrasyonu](./) sayfasına bakın.
+Aşağıdaki ileri düzey kullanımları öğrenmek için [Vue Bileşeni Entegrasyonu](./) sayfasına bakın.
 
 - DWG biçimindeki çizimleri görüntülemek için DWG dönüştürücüsünü kaydetme
 - Yazı tiplerini kendi sunucunuzdan yüklemek için kendi yazı tipi yükleyicinizi tanımlama

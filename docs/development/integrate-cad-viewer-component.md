@@ -1,8 +1,8 @@
 ---
-title: "Integrate CAD Viewer Component"
+title: "Integrate Vue Component"
 ---
 
-# Integrate CAD Viewer Component
+# Integrate Vue Component
 
 **cad-viewer** is a **high-performance** Vue 3 component for viewing and editing CAD files (DXF, DWG) **entirely in the browser without requiring any backend server**. It provides a modern user interface, state management, and seamless integration with optimized rendering engines for smooth browser-based CAD workflows with exceptional performance.
 
@@ -315,7 +315,7 @@ The component automatically handles various events:
 
 ### Advanced Usage
 
-Please refer to [Integrate CAD Viewer Component](./) to learn the following advanced usage.
+Please refer to [Integrate Vue Component](./) to learn the following advanced usage.
 
 - Register DWG converter to display drawings in DWG format
 - Define your own font loader to load fonts from your own server

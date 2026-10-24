@@ -441,6 +441,6 @@ Ukázková aplikace jej zapojuje přes konfiguraci prostředí (`packages/cad-si
 ## Související dokumentace
 
 - [Systém pluginů](./plugin-system) — `AcApPlugin`, registrace příkazů, líné načítání
-- [Integrace Simple CAD Viewer](./integrate-simple-cad-viewer) — vložení `cad-simple-viewer`
+- [Integrace Simple Viewer](./integrate-simple-cad-viewer) — vložení `cad-simple-viewer`
 - [Lokalizace](./localization) — přidávání klíčů i18n, jako `main.dataSource.*`
 - [Přehled architektury](./architecture-overview) — rozvržení modulů

@@ -4,15 +4,9 @@ title: "نظام الإضافات"
 
 # نظام الإضافات
 
-تشرح هذه الصفحة كيفية بناء **إضافة** لـ CAD-Viewer وتسجيلها واستخدامها. تُوسّع الإضافات العارض عبر تسجيل الأوامر والوصول إلى المستند والعرض النشطين والتنظيف عند إلغاء التحميل.
+تشرح هذه الصفحة كيفية بناء **إضافة** لـ MLightCAD وتسجيلها واستخدامها. تُوسّع الإضافات العارض عبر تسجيل الأوامر والوصول إلى المستند والعرض النشطين والتنظيف عند إلغاء التحميل.
 
-يعيش نظام الإضافات في `@mlightcad/cad-simple-viewer` (`packages/cad-simple-viewer/src/plugin`). تُشحن إضافات التصدير الرسمية كحزم npm منفصلة:
-
-| الحزمة | اسم الإضافة | أوامر التشغيل | الغرض |
-|---------|-------------|------------------|---------|
-| `@mlightcad/cad-html-plugin` | `HtmlPlugin` | `chtml` | تصدير الرسم إلى HTML غير متصل |
-| `@mlightcad/cad-pdf-plugin` | `PdfPlugin` | `cpdf`, `ipdf` | التصدير إلى PDF / استيراد PDF متجهي |
-| `@mlightcad/cad-svg-plugin` | `SvgPlugin` | `csvg` | تصدير الرسم إلى SVG |
+يعيش نظام الإضافات في `@mlightcad/cad-simple-viewer` (`packages/cad-simple-viewer/src/plugin`). تُشحن الإضافات الرسمية (واجهة المستخدم، وكيل الذكاء الاصطناعي، وحدة تحكم النصوص، تصدير HTML/PDF/SVG، مصادر بيانات OneDrive/Google Drive) كحزم npm منفصلة — راجع [الإضافات المدمجة](./built-in-plugins) للقائمة الكاملة.
 
 ---
 
@@ -326,29 +320,9 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## مرجع الإضافات المدمجة
 
-### HTML (`@mlightcad/cad-html-plugin`)
+يأتي المستودع الأحادي (monorepo) مع عدة إضافات رسمية: `AcApHtmlPlugin` (`chtml`)، و`AcApPdfPlugin` (`cpdf`، `ipdf`)، و`AcApSvgPlugin` (`csvg`)، بالإضافة إلى إضافات واجهة المستخدم والوكيل ووحدة تحكم النصوص ومصادر البيانات.
 
-| العنصر | القيمة |
-|------|-------|
-| الأمر | `chtml` |
-| إعداد إضافي | `htmlViewerRuntimeUrl` على `AcApDocManager.createInstance()` — عنوان URL إلى `viewer-runtime.iife.js` (انسخه من `dist/` في الحزمة) |
-| واجهة عامة | `registerLazyHtmlPlugin`، `createHtmlPlugin`، `AcApHtmlConvertor`، `packHtml`، أنواع اللقطات |
-
-### PDF (`@mlightcad/cad-pdf-plugin`)
-
-| العنصر | القيمة |
-|------|-------|
-| الأوامر | `cpdf` (تصدير)، `ipdf` (استيراد) |
-| واجهة عامة | `registerLazyPdfPlugin`، `createPdfPlugin`، المحوّلات |
-
-### SVG (`@mlightcad/cad-svg-plugin`)
-
-| العنصر | القيمة |
-|------|-------|
-| الأمر | `csvg` |
-| واجهة عامة | `registerLazySvgPlugin`، `createSvgPlugin`، `AcApSvgConvertor`، أدوات عارض SVG |
-
-يوثّق ملف README لكل حزمة مخرجات البناء واعتماديات الأقران وتفاصيل التكامل.
+للحصول على القائمة الكاملة مع أوامر كل إضافة وواجهتها العامة وتهيئتها وروابط ملف README لكل حزمة، راجع [الإضافات المدمجة](./built-in-plugins).
 
 ---
 
@@ -380,8 +354,9 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## وثائق ذات صلة
 
+- [الإضافات المدمجة](./built-in-plugins) — جميع الإضافات الرسمية المرفقة مع MLightCAD
 - [الأوامر](./command) — دورة حياة الأمر و`AcEdCommand`
 - [إضافة مصدر البيانات](./data-source-plugin) — أصول الرسومات القابلة للتوصيل (محلي، URL، OneDrive، …)
-- [دمج Simple CAD Viewer](./integrate-simple-cad-viewer) — تضمين `cad-simple-viewer`
-- [دمج مكوّن CAD Viewer](./integrate-cad-viewer-component) — مكوّن Vue و`initializeCadViewer`
+- [دمج Simple Viewer](./integrate-simple-cad-viewer) — تضمين `cad-simple-viewer`
+- [دمج مكوّن Vue](./integrate-cad-viewer-component) — مكوّن Vue و`initializeCadViewer`
 - [نظرة عامة على البنية](./architecture-overview) — تخطيط الوحدات

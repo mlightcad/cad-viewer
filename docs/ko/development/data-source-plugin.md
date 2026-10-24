@@ -441,6 +441,6 @@ if (file) {
 ## 관련 문서
 
 - [플러그인 시스템](./plugin-system) — `AcApPlugin`, 명령 등록, 지연 로딩
-- [Simple CAD Viewer 통합](./integrate-simple-cad-viewer) — `cad-simple-viewer` 포함
+- [Simple Viewer 통합](./integrate-simple-cad-viewer) — `cad-simple-viewer` 포함
 - [현지화](./localization) — `main.dataSource.*` 같은 i18n 키 추가
 - [아키텍처 개요](./architecture-overview) — 모듈 구성

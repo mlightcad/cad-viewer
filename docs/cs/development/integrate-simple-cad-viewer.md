@@ -1,8 +1,8 @@
 ---
-title: "Integrace Simple CAD Viewer"
+title: "Integrace Simple Viewer"
 ---
 
-# Integrace Simple CAD Viewer
+# Integrace Simple Viewer
 
 **cad-simple-viewer** poskytuje **vysoce výkonné** základní komponenty CAD prohlížeče, jako je správa dokumentů, zpracování příkazů a spolupráce mezi UI a vykreslovacími enginy. Je navržen pro optimální výkon při práci s velkými CAD soubory.
 

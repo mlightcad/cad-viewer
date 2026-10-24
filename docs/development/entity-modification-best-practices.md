@@ -4,9 +4,9 @@ title: "Entity Modification Best Practices"
 
 # Entity Modification Best Practices
 
-This page explains how to modify drawing entities in **CAD-Viewer** so that changes are tracked correctly, **undo/redo** works as expected, and the **view stays in sync** with the database.
+This page explains how to modify drawing entities in **MLightCAD** so that changes are tracked correctly, **undo/redo** works as expected, and the **view stays in sync** with the database.
 
-The database layer comes from [`@mlightcad/data-model`](https://github.com/mlightcad/realdwg-web). CAD-Viewer adds application helpers and wires database events to the renderer.
+The database layer comes from [`@mlightcad/data-model`](https://github.com/mlightcad/realdwg-web). MLightCAD adds application helpers and wires database events to the renderer.
 
 ---
 
@@ -67,7 +67,7 @@ When a transaction is active, `openEntityForWrite` routes the object through the
 
 ### Strict mode
 
-`transactionManager.strictMode` (default in data-model) can require that all mutations happen inside an active transaction. Undo/redo replay is exempt so the change applier can restore state. In practice, CAD-Viewer commands and `acapRunDatabaseEdit` always establish a transaction before editing.
+`transactionManager.strictMode` (default in data-model) can require that all mutations happen inside an active transaction. Undo/redo replay is exempt so the change applier can restore state. In practice, MLightCAD commands and `acapRunDatabaseEdit` always establish a transaction before editing.
 
 ---
 
@@ -159,7 +159,7 @@ Commands that go through `AcEdCommand.trigger()` call this automatically on succ
 - `database` — the source database
 - `entity` — one entity or an array of entities
 
-CAD-Viewer extends modified events with an optional `changes` field (`AcDbEntityModifiedEventArgs` in `AcApEntityUpdate`) so the view can apply lightweight updates (for example visibility-only toggles) without rebuilding geometry.
+MLightCAD extends modified events with an optional `changes` field (`AcDbEntityModifiedEventArgs` in `AcApEntityUpdate`) so the view can apply lightweight updates (for example visibility-only toggles) without rebuilding geometry.
 
 ### View synchronization
 
@@ -322,7 +322,7 @@ acapRunDatabaseEdit(db, 'Color', () => {
 
 ### Lower-level alternative
 
-If you are building library code on top of data-model only (without CAD-Viewer UI), call:
+If you are building library code on top of data-model only (without MLightCAD UI), call:
 
 ```typescript
 db.runDatabaseEdit('My Operation', () => {
@@ -338,7 +338,7 @@ db.transactionManager.runUndoable('My Operation', () => {
 })
 ```
 
-Remember to call `acapNotifyUndoStackChanged()` yourself when integrating with CAD-Viewer UI.
+Remember to call `acapNotifyUndoStackChanged()` yourself when integrating with MLightCAD UI.
 
 ---
 
@@ -385,7 +385,7 @@ For non-command edits, replace `AcEdCommand.trigger` with `acapRunDatabaseEdit`;
 
 - [Command](./command) — command lifecycle and registration
 - [Jig System](./jig-system) — interactive preview without database writes
-- [CAD Viewer Basics](./cad-viewer-basics) — document, database, and view concepts
+- [MLightCAD Basics](./cad-viewer-basics) — document, database, and view concepts
 - [Architecture Overview](./architecture-overview) — how modules connect
 
 

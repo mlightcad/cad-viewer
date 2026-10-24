@@ -192,7 +192,7 @@ await AcApDocManager.instance.openUrl(templateUrl)
 
 ### CORS 配置
 
-确保你的服务器允许跨域请求，以便 CAD Viewer 加载资源：
+确保你的服务器允许跨域请求，以便 MLightCAD 加载资源：
 
 ```
 Access-Control-Allow-Origin: *

@@ -4,14 +4,14 @@ title: "Geliştirme Kılavuzu"
 
 # Geliştirme Kılavuzu
 
-**CAD-Viewer Geliştirme Kılavuzu**'na hoş geldiniz.  
-Bu bölüm, kullanıcıların CAD-Viewer'ı kendi web uygulamanıza nasıl gömeceğini, yeteneklerini nasıl genişleteceğini ve projede yerel olarak nasıl hata ayıklayacağını anlamasına yardımcı olur.
+**MLightCAD Geliştirme Kılavuzu**'na hoş geldiniz.  
+Bu bölüm, kullanıcıların MLightCAD'ı kendi web uygulamanıza nasıl gömeceğini, yeteneklerini nasıl genişleteceğini ve projede yerel olarak nasıl hata ayıklayacağını anlamasına yardımcı olur.
 
 ## İçindekiler
 
-- [CAD Viewer Temelleri](./cad-viewer-basics)
-- [Simple CAD Viewer Entegrasyonu](./integrate-simple-cad-viewer)
-- [CAD Viewer Bileşeni Entegrasyonu](./integrate-cad-viewer-component)
+- [MLightCAD Temelleri](./cad-viewer-basics)
+- [Simple Viewer Entegrasyonu](./integrate-simple-cad-viewer)
+- [Vue Bileşeni Entegrasyonu](./integrate-cad-viewer-component)
 - [Worker URL'lerini Yapılandırma](./configure-worker-urls)
 - [Tescilli DWG Dönüştürücüsünü Kurma ve Kullanma](./install-and-use-proprietary-dwg-converter)
 - [Kendinde Barındırılan Yazı Tipleri ve Şablonlar](./self-hosted-fonts-and-templates)
@@ -25,6 +25,7 @@ Bu bölüm, kullanıcıların CAD-Viewer'ı kendi web uygulamanıza nasıl göme
 - [Açıklama Komutları](./annotation-commands)
 - [Yerelleştirme](./localization)
 - [Eklenti Sistemi](./plugin-system)
+- [Yerleşik Eklentiler](./built-in-plugins)
 - [Veri Kaynağı Eklentisi](./data-source-plugin)
 - [Birden Fazla Depo Değişikliğiyle Hata Ayıklama](./debugging-with-multiple-repo-changes)
 - [Tianzheng DWG Çizimlerini Destekleme](./supporting-tianzheng-dwg-drawings)

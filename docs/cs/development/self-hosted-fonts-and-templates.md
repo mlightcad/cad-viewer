@@ -192,7 +192,7 @@ await AcApDocManager.instance.openUrl(templateUrl)
 
 ### Konfigurace CORS
 
-Zajistěte, aby váš server povoloval požadavky z jiných domén, aby CAD Viewer mohl načítat prostředky:
+Zajistěte, aby váš server povoloval požadavky z jiných domén, aby MLightCAD mohl načítat prostředky:
 
 ```
 Access-Control-Allow-Origin: *

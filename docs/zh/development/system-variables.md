@@ -4,7 +4,7 @@ title: "系统变量"
 
 # 系统变量
 
-本页介绍系统变量在 CAD-Viewer 中的工作方式、用户如何通过命令行修改它们，以及它们如何通过 `AcDbSystemVariables` 和 `AcDbSysVarManager` 实现。
+本页介绍系统变量在 MLightCAD 中的工作方式、用户如何通过命令行修改它们，以及它们如何通过 `AcDbSystemVariables` 和 `AcDbSysVarManager` 实现。
 
 ## 什么是系统变量
 
@@ -19,7 +19,7 @@ title: "系统变量"
 - 是否启用某种显示模式
 - 编辑器或查看器应如何以视觉方式响应
 
-这是有意与 AutoCAD 保持一致的。在 CAD-Viewer 中，你可以直接在命令行输入变量名，然后输入新的值，从而设置系统变量。
+这是有意与 AutoCAD 保持一致的。在 MLightCAD 中，你可以直接在命令行输入变量名，然后输入新的值，从而设置系统变量。
 
 例如：
 
@@ -30,7 +30,7 @@ New value for PICKBOX <3>: 5
 
 这意味着命令行把系统变量名本身当作更新该设置的命令。
 
-CAD-Viewer 采用这一模型，使运行时设置可以通过统一机制被读取、修改和观察，而不必在命令逻辑中硬编码。
+MLightCAD 采用这一模型，使运行时设置可以通过统一机制被读取、修改和观察，而不必在命令逻辑中硬编码。
 
 ## 从命令行设置系统变量
 
@@ -61,7 +61,7 @@ New value for PICKBOX <3>: 10
 
 ## 系统变量如何注册为命令
 
-在 CAD-Viewer 中，系统变量之所以能在命令行使用，是因为它们在应用初始化时被注册为普通命令。
+在 MLightCAD 中，系统变量之所以能在命令行使用，是因为它们在应用初始化时被注册为普通命令。
 
 注册发生在 `AcApDocManager` 中。它从 `AcDbSysVarManager` 加载所有系统变量描述符，并将每个变量名注册为命令：
 
@@ -96,7 +96,7 @@ sysVars.forEach(sysVar => {
 
 这也是为什么新增一个系统变量的支持通常从在 `AcDbSysVarManager` 中注册其描述符开始。一旦它被纳入 `getAllDescriptors()`，就可以同时注册到命令栈中，并直接在命令行使用。
 
-## CAD-Viewer 中的设计方式
+## MLightCAD 中的设计方式
 
 当前实现集中在两个文件中：
 
@@ -116,7 +116,7 @@ sysVars.forEach(sysVar => {
 - 为调用方提供类型安全的变量引用方式
 - 支持派生类型，例如 `AcDbSystemVariableName`
 
-最好把它理解为 CAD-Viewer 中的系统变量名注册表。
+最好把它理解为 MLightCAD 中的系统变量名注册表。
 
 ### 2. `AcDbSysVarManager`
 
@@ -322,7 +322,7 @@ New value for MYNEWVAR <default>: ...
 
 ## 总结
 
-在 CAD-Viewer 中，系统变量不仅仅是一组松散的设置。它们构成了应用状态的统一抽象：
+在 MLightCAD 中，系统变量不仅仅是一组松散的设置。它们构成了应用状态的统一抽象：
 
 - 向下，它们映射到与图纸相关的数据库状态
 - 向上，它们驱动编辑器与 UI 行为

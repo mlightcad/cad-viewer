@@ -4,9 +4,9 @@ title: "エンティティ変更のベストプラクティス"
 
 # エンティティ変更のベストプラクティス
 
-このページでは、**CAD-Viewer** で図面のエンティティを変更する際に、変更が正しく追跡され、**元に戻す/やり直し**が期待どおりに動作し、**ビューがデータベースと同期**した状態を保つ方法について説明します。
+このページでは、**MLightCAD** で図面のエンティティを変更する際に、変更が正しく追跡され、**元に戻す/やり直し**が期待どおりに動作し、**ビューがデータベースと同期**した状態を保つ方法について説明します。
 
-データベース層は [`@mlightcad/data-model`](https://github.com/mlightcad/realdwg-web) から提供されます。CAD-Viewer はアプリケーションヘルパーを追加し、データベースイベントをレンダラーに接続します。
+データベース層は [`@mlightcad/data-model`](https://github.com/mlightcad/realdwg-web) から提供されます。MLightCAD はアプリケーションヘルパーを追加し、データベースイベントをレンダラーに接続します。
 
 ---
 
@@ -67,7 +67,7 @@ opened.color = newColor
 
 ### 厳格モード
 
-`transactionManager.strictMode`（data-model のデフォルト）は、すべての変更がアクティブなトランザクション内で行われることを要求できます。undo/redo の再生は、変更アプライヤーが状態を復元できるよう除外されます。実際には、CAD-Viewer のコマンドと `acapRunDatabaseEdit` は常に編集前にトランザクションを確立します。
+`transactionManager.strictMode`（data-model のデフォルト）は、すべての変更がアクティブなトランザクション内で行われることを要求できます。undo/redo の再生は、変更アプライヤーが状態を復元できるよう除外されます。実際には、MLightCAD のコマンドと `acapRunDatabaseEdit` は常に編集前にトランザクションを確立します。
 
 ---
 
@@ -159,7 +159,7 @@ undo/redo の可用性が変化した後、`@mlightcad/cad-simple-viewer` から
 - `database` — ソースデータベース
 - `entity` — 1 つのエンティティまたはエンティティの配列
 
-CAD-Viewer は変更イベントをオプションの `changes` フィールド（`AcApEntityUpdate` の `AcDbEntityModifiedEventArgs`）で拡張し、ビューがジオメトリを再構築せずに軽量な更新（たとえば表示のみの切り替え）を適用できるようにします。
+MLightCAD は変更イベントをオプションの `changes` フィールド（`AcApEntityUpdate` の `AcDbEntityModifiedEventArgs`）で拡張し、ビューがジオメトリを再構築せずに軽量な更新（たとえば表示のみの切り替え）を適用できるようにします。
 
 ### ビューの同期
 
@@ -322,7 +322,7 @@ acapRunDatabaseEdit(db, 'Color', () => {
 
 ### 低レベルな代替手段
 
-CAD-Viewer UI なしで data-model のみを基にライブラリコードを構築する場合は、次を呼び出します：
+MLightCAD UI なしで data-model のみを基にライブラリコードを構築する場合は、次を呼び出します：
 
 ```typescript
 db.runDatabaseEdit('My Operation', () => {
@@ -338,7 +338,7 @@ db.transactionManager.runUndoable('My Operation', () => {
 })
 ```
 
-CAD-Viewer UI と統合する際は、`acapNotifyUndoStackChanged()` を自分で呼び出すことを忘れないでください。
+MLightCAD UI と統合する際は、`acapNotifyUndoStackChanged()` を自分で呼び出すことを忘れないでください。
 
 ---
 
@@ -385,5 +385,5 @@ sequenceDiagram
 
 - [コマンド](./command) — コマンドのライフサイクルと登録
 - [Jig システム](./jig-system) — データベースに書き込まないインタラクティブプレビュー
-- [CAD Viewer の基礎](./cad-viewer-basics) — ドキュメント、データベース、ビューの概念
+- [MLightCAD の基礎](./cad-viewer-basics) — ドキュメント、データベース、ビューの概念
 - [アーキテクチャ概要](./architecture-overview) — モジュール間の接続方法

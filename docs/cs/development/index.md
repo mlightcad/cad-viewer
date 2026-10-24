@@ -4,14 +4,14 @@ title: "Vývojová příručka"
 
 # Vývojová příručka
 
-Vítejte v **Vývojové příručce CAD-Viewer**.  
-Tato sekce vám pomůže pochopit, jak vložit CAD-Viewer do vlastní webové aplikace, rozšířit jeho možnosti a ladit projekt lokálně.
+Vítejte v **Vývojové příručce MLightCAD**.  
+Tato sekce vám pomůže pochopit, jak vložit MLightCAD do vlastní webové aplikace, rozšířit jeho možnosti a ladit projekt lokálně.
 
 ## Obsah
 
-- [Základy CAD Viewer](./cad-viewer-basics)
-- [Integrace Simple CAD Viewer](./integrate-simple-cad-viewer)
-- [Integrace komponenty CAD Viewer](./integrate-cad-viewer-component)
+- [Základy MLightCAD](./cad-viewer-basics)
+- [Integrace Simple Viewer](./integrate-simple-cad-viewer)
+- [Integrace komponenty Vue](./integrate-cad-viewer-component)
 - [Konfigurace adres URL Worker](./configure-worker-urls)
 - [Instalace a použití proprietárního převodníku DWG](./install-and-use-proprietary-dwg-converter)
 - [Vlastní hostování fontů a šablon](./self-hosted-fonts-and-templates)
@@ -25,6 +25,7 @@ Tato sekce vám pomůže pochopit, jak vložit CAD-Viewer do vlastní webové ap
 - [Anotační příkazy](./annotation-commands)
 - [Lokalizace](./localization)
 - [Systém pluginů](./plugin-system)
+- [Vestavěné pluginy](./built-in-plugins)
 - [Plugin datového zdroje](./data-source-plugin)
 - [Ladění se změnami ve více repozitářích](./debugging-with-multiple-repo-changes)
 - [Podpora výkresů Tianzheng DWG](./supporting-tianzheng-dwg-drawings)

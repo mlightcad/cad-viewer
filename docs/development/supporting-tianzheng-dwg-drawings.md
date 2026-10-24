@@ -13,7 +13,7 @@ Unlike ordinary DWG entities, Tianzheng entities (walls, doors, windows, columns
 In DWG files, these Tianzheng-specific objects are stored as [custom entities](https://help.autodesk.com/view/OARX/2024/ENU/?guid=GUID-4E5C1B56-95C3-4D4F-8F1C-A9D34B1E1408) (proxy entities). Their internal data is only meaningful to Tianzheng's own ObjectARX runtime. As a result:
 
 - No general-purpose commercial DWG parser can directly parse these proprietary Tianzheng entities.
-- A generic parser (including CAD-Viewer) can only render the standard AutoCAD entities in such drawings, while the Tianzheng custom entities are skipped or displayed as proxy graphics.
+- A generic parser (including MLightCAD) can only render the standard AutoCAD entities in such drawings, while the Tianzheng custom entities are skipped or displayed as proxy graphics.
 
 ## The Common Industry Solution: Convert to T3 Format
 
@@ -59,12 +59,12 @@ Detect Tianzheng entities  ->  If present, convert to T3 DWG
 Store converted DWG
       |
       v
-CAD-Viewer parsing & rendering
+MLightCAD parsing & rendering
 ```
 
 - Detect whether an incoming DWG contains Tianzheng custom entities (for example, by checking for Tianzheng-specific proxy entity class names or application signatures).
 - If present, run the T3 conversion (e.g. via `t3-conv` on a Windows server) and store the converted file.
-- Feed the converted T3 DWG to CAD-Viewer. All previously invisible Tianzheng objects will now render as standard entities.
+- Feed the converted T3 DWG to MLightCAD. All previously invisible Tianzheng objects will now render as standard entities.
 
 This keeps the viewer itself lightweight and parser-agnostic, while ensuring Tianzheng drawings are fully visible to end users.
 

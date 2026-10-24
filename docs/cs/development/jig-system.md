@@ -4,11 +4,11 @@ title: "Systém Jig"
 
 # Systém Jig
 
-AutoCAD spoléhá na framework AcEdJig, který poskytuje vizuální zpětnou vazbu v reálném čase při získávání uživatelského vstupu. Ačkoli je tento systém výkonný, rozděluje vyzvání, vykreslování náhledu a vzorkování vstupu do několika přepsaných metod – logika se tak často rozprostírá do různých funkcí a fází životního cyklu. CAD-Viewer přetváří tento koncept pro web zavedením jednotného mechanismu jig řízeného TypeScriptem, který se bezproblémově integruje se vstupem výzev. Namísto správy drag smyček nebo stavových kódů vzorkovače mohou vývojáři připojit jig přímo k možnostem výzvy, čímž zůstává logika dynamického náhledu, uživatelský vstup a finální vytvoření entity pohromadě v jednom čitelném pracovním postupu.
+AutoCAD spoléhá na framework AcEdJig, který poskytuje vizuální zpětnou vazbu v reálném čase při získávání uživatelského vstupu. Ačkoli je tento systém výkonný, rozděluje vyzvání, vykreslování náhledu a vzorkování vstupu do několika přepsaných metod – logika se tak často rozprostírá do různých funkcí a fází životního cyklu. MLightCAD přetváří tento koncept pro web zavedením jednotného mechanismu jig řízeného TypeScriptem, který se bezproblémově integruje se vstupem výzev. Namísto správy drag smyček nebo stavových kódů vzorkovače mohou vývojáři připojit jig přímo k možnostem výzvy, čímž zůstává logika dynamického náhledu, uživatelský vstup a finální vytvoření entity pohromadě v jednom čitelném pracovním postupu.
 
 ## Přehled
 
-**Systém Jig** v CAD-Viewer umožňuje interaktivní náhledy a dynamické vytváření entit a nabízí pracovní postup podobný **AcEdJig** (ObjectARX) v AutoCADu. *Jig* spravuje dočasnou entitu náhledu, která se nepřetržitě aktualizuje podle pohybu kurzoru nebo přírůstkového uživatelského vstupu.
+**Systém Jig** v MLightCAD umožňuje interaktivní náhledy a dynamické vytváření entit a nabízí pracovní postup podobný **AcEdJig** (ObjectARX) v AutoCADu. *Jig* spravuje dočasnou entitu náhledu, která se nepřetržitě aktualizuje podle pohybu kurzoru nebo přírůstkového uživatelského vstupu.
 
 Mezi případy použití patří:
 
@@ -16,7 +16,7 @@ Mezi případy použití patří:
 * měření vzdálenosti nebo úhlu v reálném čase
 * úpravy existujících entit v reálném čase
 
-CAD-Viewer však zavádí **jednodušší, ucelenější a TypeScriptu bližší design**, který snižuje strukturální složitost obvykle se vyskytující u jigů v AutoCADu.
+MLightCAD však zavádí **jednodušší, ucelenější a TypeScriptu bližší design**, který snižuje strukturální složitost obvykle se vyskytující u jigů v AutoCADu.
 
 
 ## Klíčový architektonický rozdíl
@@ -25,7 +25,7 @@ CAD-Viewer však zavádí **jednodušší, ucelenější a TypeScriptu bližší
 
 V AutoCADu jsou výzvy a jigy samostatné mechanismy. Spuštění jigu vyžaduje přepsání `sampler()`, `worldDraw()` a volání `drag()`.
 
-V CAD-Viewer mohou výzvy přímo **nést instanci jigu**:
+V MLightCAD mohou výzvy přímo **nést instanci jigu**:
 
 ```ts
 const opts = new AcEdPromptDistanceOptions('Specify radius:')
@@ -49,7 +49,7 @@ Jak můžete vidět v [AutoCAD AcEdJig Sample Code](https://help.autodesk.com/vi
 * `createEllipse()` — získá střed elipsy
 * `sampler()` — získá koncový bod hlavní osy a vzdálenost od středu elipsy ke koncovému bodu vedlejší osy
 
-V CAD-Viewer je celý pracovní postup dynamického vstupu vyjádřen sekvenčně takto.
+V MLightCAD je celý pracovní postup dynamického vstupu vyjádřen sekvenčně takto.
 
 ```ts
 const center = await editor.getPoint(pointOpts)

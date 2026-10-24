@@ -4,15 +4,9 @@ title: "プラグインシステム"
 
 # プラグインシステム
 
-このページでは、CAD-Viewer 用の**プラグイン**を構築、登録、使用する方法を説明します。プラグインは、コマンドの登録、アクティブなドキュメントとビューへのアクセス、アンロード時のクリーンアップを通じてビューアを拡張します。
+このページでは、MLightCAD 用の**プラグイン**を構築、登録、使用する方法を説明します。プラグインは、コマンドの登録、アクティブなドキュメントとビューへのアクセス、アンロード時のクリーンアップを通じてビューアを拡張します。
 
-プラグインシステムは `@mlightcad/cad-simple-viewer`（`packages/cad-simple-viewer/src/plugin`）にあります。公式のエクスポートプラグインは、別々の npm パッケージとして提供されています。
-
-| パッケージ | プラグイン名 | トリガーコマンド | 目的 |
-|---------|-------------|------------------|---------|
-| `@mlightcad/cad-html-plugin` | `HtmlPlugin` | `chtml` | 図面をオフライン HTML にエクスポート |
-| `@mlightcad/cad-pdf-plugin` | `PdfPlugin` | `cpdf`, `ipdf` | PDF へのエクスポート / ベクター PDF のインポート |
-| `@mlightcad/cad-svg-plugin` | `SvgPlugin` | `csvg` | 図面を SVG にエクスポート |
+プラグインシステムは `@mlightcad/cad-simple-viewer`（`packages/cad-simple-viewer/src/plugin`）にあります。ファーストパーティのプラグイン（UI、AI エージェント、スクリプトコンソール、HTML/PDF/SVG エクスポート、OneDrive/Google Drive データソース）は、別々の npm パッケージとして提供されています。完全な一覧については、[組み込みプラグイン](./built-in-plugins)を参照してください。
 
 ---
 
@@ -326,29 +320,9 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## 組み込みプラグインリファレンス
 
-### HTML（`@mlightcad/cad-html-plugin`）
+モノレポには、いくつかのファーストパーティのプラグインが同梱されています：`AcApHtmlPlugin`（`chtml`）、`AcApPdfPlugin`（`cpdf`、`ipdf`）、`AcApSvgPlugin`（`csvg`）、さらに UI、エージェント、スクリプトコンソール、データソースの各プラグインがあります。
 
-| 項目 | 値 |
-|------|-------|
-| コマンド | `chtml` |
-| 追加設定 | `AcApDocManager.createInstance()` の `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` への URL（パッケージの `dist/` からコピー） |
-| パブリック API | `registerLazyHtmlPlugin`、`createHtmlPlugin`、`AcApHtmlConvertor`、`packHtml`、スナップショット型 |
-
-### PDF（`@mlightcad/cad-pdf-plugin`）
-
-| 項目 | 値 |
-|------|-------|
-| コマンド | `cpdf`（エクスポート）、`ipdf`（インポート） |
-| パブリック API | `registerLazyPdfPlugin`、`createPdfPlugin`、コンバーター |
-
-### SVG（`@mlightcad/cad-svg-plugin`）
-
-| 項目 | 値 |
-|------|-------|
-| コマンド | `csvg` |
-| パブリック API | `registerLazySvgPlugin`、`createSvgPlugin`、`AcApSvgConvertor`、SVG レンダラーユーティリティ |
-
-各パッケージの README には、ビルド出力、ピア依存関係、統合の詳細が記載されています。
+プラグインごとのコマンド、パブリック API、設定、各パッケージの README へのリンクを含む完全な一覧については、[組み込みプラグイン](./built-in-plugins)を参照してください。
 
 ---
 
@@ -380,8 +354,9 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## 関連ドキュメント
 
+- [組み込みプラグイン](./built-in-plugins) — MLightCAD に同梱されているすべてのファーストパーティプラグイン
 - [コマンド](./command) — コマンドのライフサイクルと `AcEdCommand`
 - [データソースプラグイン](./data-source-plugin) — プラグイン可能な図面の取得元（ローカル、URL、OneDrive など）
-- [Simple CAD Viewer の統合](./integrate-simple-cad-viewer) — `cad-simple-viewer` の埋め込み
-- [CAD Viewer コンポーネントの統合](./integrate-cad-viewer-component) — Vue コンポーネントと `initializeCadViewer`
+- [Simple Viewer の統合](./integrate-simple-cad-viewer) — `cad-simple-viewer` の埋め込み
+- [Vue コンポーネントの統合](./integrate-cad-viewer-component) — Vue コンポーネントと `initializeCadViewer`
 - [アーキテクチャ概要](./architecture-overview) — モジュール構成

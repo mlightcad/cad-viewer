@@ -441,6 +441,6 @@ if (file) {
 ## İlgili sayfalar
 
 - [Eklenti Sistemi](./plugin-system) — `AcApPlugin`, komut kaydı, tembel yükleme
-- [Simple CAD Viewer Entegrasyonu](./integrate-simple-cad-viewer) — `cad-simple-viewer` gömme
+- [Simple Viewer Entegrasyonu](./integrate-simple-cad-viewer) — `cad-simple-viewer` gömme
 - [Yerelleştirme](./localization) — `main.dataSource.*` gibi i18n anahtarları ekleme
 - [Mimariye Genel Bakış](./architecture-overview) — modül düzeni

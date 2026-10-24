@@ -1,8 +1,8 @@
 ---
-title: "CAD Viewer 기본"
+title: "MLightCAD 기본"
 ---
 
-# CAD Viewer 기본
+# MLightCAD 기본
 
 이 프로젝트는 사용자를 위해 `cad-viewer`와 `cad-simple-viewer` 두 가지 뷰어를 제공합니다. 어떤 뷰어를 선택할지는 프로젝트 요구 사항과 원하는 통합 수준에 따라 달라집니다:
 
@@ -32,7 +32,7 @@ title: "CAD Viewer 기본"
 | `cad-viewer`        | 예          | Vue 3     | 현대적인 UI를 갖춘 턴키 CAD 뷰어/편집기         |
 | `cad-simple-viewer` | 아니오      | 없음      | 사용자 정의 또는 헤드리스 용도를 위한 핵심 CAD 로직 |
 
-자세한 내용은 [**Simple CAD Viewer 통합**](./integrate-simple-cad-viewer) 및 [**CAD Viewer 컴포넌트 통합**](./integrate-cad-viewer-component)을 참조하십시오.
+자세한 내용은 [**Simple Viewer 통합**](./integrate-simple-cad-viewer) 및 [**Vue 컴포넌트 통합**](./integrate-cad-viewer-component)을 참조하십시오.
 
 ## 예제
 

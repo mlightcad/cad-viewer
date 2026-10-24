@@ -4,14 +4,14 @@ title: "Architecture Overview"
 
 # Architecture Overview
 
-CAD-Viewer operates entirely in the browser with **no backend dependencies**. DWG/DXF files are parsed and processed locally using WebAssembly and JavaScript, ensuring:
+MLightCAD operates entirely in the browser with **no backend dependencies**. DWG/DXF files are parsed and processed locally using WebAssembly and JavaScript, ensuring:
 
 - **Zero server requirements** - Deploy anywhere with just static file hosting
 - **Complete data privacy** - Files never leave the user's device
 - **Instant integration** - No complex backend setup or API configuration
 - **Offline capability** - Works without internet connectivity
 
-CAD-Viewer is organized into several subpackages, each responsible for a specific aspect of the system:
+MLightCAD is organized into several subpackages, each responsible for a specific aspect of the system:
 
 - **cad-viewer**: Main Vue 3 component and frontend application, including UI components, dialogs, toolbars, state management, and integration with rendering engines.
 - **cad-simple-viewer**: Core logic for document management, command handling, and integration between UI and rendering engines. Framework-agnostic and UI-free (canvas only).
@@ -20,11 +20,11 @@ CAD-Viewer is organized into several subpackages, each responsible for a specifi
 
 ## Architecture Overview
 
-**CAD-Viewer** is a high-performance, browser-only DWG/DXF viewer that adopts a modular and extensible architecture to support loading, parsing, rendering, and interacting with multiple CAD data formats. The system is divided into the following core layers:
+**MLightCAD** is a high-performance, browser-only DWG/DXF viewer that adopts a modular and extensible architecture to support loading, parsing, rendering, and interacting with multiple CAD data formats. The system is divided into the following core layers:
 
 ![Architecture Overview](https://github.com/mlightcad/cad-viewer/blob/main/assets/arch-en.jpg?raw=true)
 
-This layered architecture ensures that **CAD-Viewer** can maintain high performance, low latency, and strong scalability when dealing with different data scales, rendering requirements, and deployment environments.
+This layered architecture ensures that **MLightCAD** can maintain high performance, low latency, and strong scalability when dealing with different data scales, rendering requirements, and deployment environments.
 
 ### **Model Layer**
 

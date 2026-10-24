@@ -4,9 +4,9 @@ title: "Osvědčené postupy pro úpravy entit"
 
 # Osvědčené postupy pro úpravy entit
 
-Tato stránka vysvětluje, jak upravovat entity výkresu v **CAD-Viewer** tak, aby byly změny správně sledovány, aby **undo/redo** fungovalo podle očekávání a aby **zobrazení zůstalo synchronizované** s databází.
+Tato stránka vysvětluje, jak upravovat entity výkresu v **MLightCAD** tak, aby byly změny správně sledovány, aby **undo/redo** fungovalo podle očekávání a aby **zobrazení zůstalo synchronizované** s databází.
 
-Databázová vrstva pochází z [`@mlightcad/data-model`](https://github.com/mlightcad/realdwg-web). CAD-Viewer přidává pomocné funkce aplikace a propojuje databázové události s rendererem.
+Databázová vrstva pochází z [`@mlightcad/data-model`](https://github.com/mlightcad/realdwg-web). MLightCAD přidává pomocné funkce aplikace a propojuje databázové události s rendererem.
 
 ---
 
@@ -67,7 +67,7 @@ Když je transakce aktivní, `openEntityForWrite` směruje objekt přes transakc
 
 ### Přísný režim
 
-`transactionManager.strictMode` (výchozí v data-model) může vyžadovat, aby všechny změny probíhaly v aktivní transakci. Přehrávání undo/redo je vyjmuto, aby applier změn mohl obnovit stav. V praxi příkazy CAD-Viewer a `acapRunDatabaseEdit` vždy před úpravou vytvoří transakci.
+`transactionManager.strictMode` (výchozí v data-model) může vyžadovat, aby všechny změny probíhaly v aktivní transakci. Přehrávání undo/redo je vyjmuto, aby applier změn mohl obnovit stav. V praxi příkazy MLightCAD a `acapRunDatabaseEdit` vždy před úpravou vytvoří transakci.
 
 ---
 
@@ -159,7 +159,7 @@ Příkazy procházející `AcEdCommand.trigger()` volají tuto funkci automatick
 - `database` — zdrojová databáze
 - `entity` — jednu entitu nebo pole entit
 
-CAD-Viewer rozšiřuje události úprav o volitelné pole `changes` (`AcDbEntityModifiedEventArgs` v `AcApEntityUpdate`), aby zobrazení mohlo aplikovat odlehčené aktualizace (například přepnutí pouze viditelnosti) bez opětovného sestavení geometrie.
+MLightCAD rozšiřuje události úprav o volitelné pole `changes` (`AcDbEntityModifiedEventArgs` v `AcApEntityUpdate`), aby zobrazení mohlo aplikovat odlehčené aktualizace (například přepnutí pouze viditelnosti) bez opětovného sestavení geometrie.
 
 ### Synchronizace zobrazení
 
@@ -322,7 +322,7 @@ acapRunDatabaseEdit(db, 'Color', () => {
 
 ### Alternativa na nižší úrovni
 
-Pokud vytváříte knihovní kód pouze nad data-model (bez UI CAD-Viewer), zavolejte:
+Pokud vytváříte knihovní kód pouze nad data-model (bez UI MLightCAD), zavolejte:
 
 ```typescript
 db.runDatabaseEdit('My Operation', () => {
@@ -338,7 +338,7 @@ db.transactionManager.runUndoable('My Operation', () => {
 })
 ```
 
-Při integraci s UI CAD-Viewer nezapomeňte sami zavolat `acapNotifyUndoStackChanged()`.
+Při integraci s UI MLightCAD nezapomeňte sami zavolat `acapNotifyUndoStackChanged()`.
 
 ---
 
@@ -385,6 +385,6 @@ U úprav mimo příkazy nahraďte `AcEdCommand.trigger` funkcí `acapRunDatabase
 
 - [Příkaz](./command) — životní cyklus a registrace příkazů
 - [Systém Jig](./jig-system) — interaktivní náhled bez zápisů do databáze
-- [Základy CAD Viewer](./cad-viewer-basics) — koncepty dokumentu, databáze a zobrazení
+- [Základy MLightCAD](./cad-viewer-basics) — koncepty dokumentu, databáze a zobrazení
 - [Přehled architektury](./architecture-overview) — jak jsou moduly propojeny
 

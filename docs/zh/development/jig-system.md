@@ -4,11 +4,11 @@ title: "Jig（动态预览）系统"
 
 # Jig（动态预览）系统
 
-AutoCAD 依赖 AcEdJig 框架在获取用户输入时提供实时视觉反馈。该系统虽然强大，但将提示、预览渲染和输入采样分散在多个重写方法中——常常把逻辑分散到不同的函数和生命周期阶段。CAD-Viewer 面向 Web 重新构想了这一概念，引入了统一的、由 TypeScript 驱动的 jig 机制，并与提示输入无缝集成。开发者无需管理拖拽循环或采样器状态码，只需将 jig 直接附加到提示选项上，即可将动态预览逻辑、用户输入和最终实体创建保持在一个可读的工作流中。
+AutoCAD 依赖 AcEdJig 框架在获取用户输入时提供实时视觉反馈。该系统虽然强大，但将提示、预览渲染和输入采样分散在多个重写方法中——常常把逻辑分散到不同的函数和生命周期阶段。MLightCAD 面向 Web 重新构想了这一概念，引入了统一的、由 TypeScript 驱动的 jig 机制，并与提示输入无缝集成。开发者无需管理拖拽循环或采样器状态码，只需将 jig 直接附加到提示选项上，即可将动态预览逻辑、用户输入和最终实体创建保持在一个可读的工作流中。
 
 ## 概览
 
-CAD-Viewer 中的 **Jig 系统**支持交互式预览和动态实体创建，提供与 AutoCAD 的 **AcEdJig**（ObjectARX）类似的工作流。*jig* 管理一个临时预览实体，该实体会根据光标移动或增量用户输入持续更新。
+MLightCAD 中的 **Jig 系统**支持交互式预览和动态实体创建，提供与 AutoCAD 的 **AcEdJig**（ObjectARX）类似的工作流。*jig* 管理一个临时预览实体，该实体会根据光标移动或增量用户输入持续更新。
 
 使用场景包括：
 
@@ -16,7 +16,7 @@ CAD-Viewer 中的 **Jig 系统**支持交互式预览和动态实体创建，提
 * 实时距离或角度测量
 * 现有实体的实时修改
 
-不过，CAD-Viewer 引入了**更简单、更内聚、对 TypeScript 更友好**的设计，减少了 AutoCAD jig 中常见的结构复杂性。
+不过，MLightCAD 引入了**更简单、更内聚、对 TypeScript 更友好**的设计，减少了 AutoCAD jig 中常见的结构复杂性。
 
 
 ## 关键架构差异
@@ -25,7 +25,7 @@ CAD-Viewer 中的 **Jig 系统**支持交互式预览和动态实体创建，提
 
 在 AutoCAD 中，提示和 jig 是分离的机制。执行 jig 需要重写 `sampler()`、`worldDraw()` 并调用 `drag()`。
 
-在 CAD-Viewer 中，提示可以直接**携带 jig 实例**：
+在 MLightCAD 中，提示可以直接**携带 jig 实例**：
 
 ```ts
 const opts = new AcEdPromptDistanceOptions('Specify radius:')
@@ -49,7 +49,7 @@ const radius = await editor.getDistance(opts)
 * `createEllipse()` — 获取椭圆中心点
 * `sampler()` — 获取长轴端点以及从椭圆中心到短轴端点的距离
 
-在 CAD-Viewer 中，整个动态输入工作流按顺序表达如下。
+在 MLightCAD 中，整个动态输入工作流按顺序表达如下。
 
 ```ts
 const center = await editor.getPoint(pointOpts)

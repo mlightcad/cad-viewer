@@ -441,6 +441,6 @@ if (file) {
 ## وثائق ذات صلة
 
 - [نظام الإضافات](./plugin-system) — `AcApPlugin`، تسجيل الأوامر، التحميل الكسول
-- [دمج Simple CAD Viewer](./integrate-simple-cad-viewer) — تضمين `cad-simple-viewer`
+- [دمج Simple Viewer](./integrate-simple-cad-viewer) — تضمين `cad-simple-viewer`
 - [الترجمة المحلية](./localization) — إضافة مفاتيح i18n مثل `main.dataSource.*`
 - [نظرة عامة على البنية](./architecture-overview) — تخطيط الوحدات
