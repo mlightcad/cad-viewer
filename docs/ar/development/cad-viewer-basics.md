@@ -1,8 +1,8 @@
 ---
-title: "أساسيات CAD Viewer"
+title: "أساسيات MLightCAD"
 ---
 
-# أساسيات CAD Viewer
+# أساسيات MLightCAD
 
 يوفر هذا المشروع عارضَين هما `cad-viewer` و`cad-simple-viewer`. يعتمد اختيار العارض المناسب على متطلبات مشروعك ومستوى الدمج المطلوب:
 
@@ -32,7 +32,7 @@ title: "أساسيات CAD Viewer"
 | `cad-viewer`        | نعم         | Vue 3     | عارض/محرر CAD جاهز بواجهة حديثة       |
 | `cad-simple-viewer` | لا          | لا يوجد      | منطق CAD أساسي للاستخدام المخصص أو بدون واجهة      |
 
-للمزيد من التفاصيل، راجع [**دمج Simple CAD Viewer**](./integrate-simple-cad-viewer) و[**دمج مكوّن CAD Viewer**](./integrate-cad-viewer-component).
+للمزيد من التفاصيل، راجع [**دمج Simple Viewer**](./integrate-simple-cad-viewer) و[**دمج مكوّن Vue**](./integrate-cad-viewer-component).
 
 ## أمثلة
 

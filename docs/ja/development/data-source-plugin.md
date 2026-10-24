@@ -441,7 +441,7 @@ if (file) {
 ## 関連ドキュメント
 
 - [プラグインシステム](./plugin-system) — `AcApPlugin`、コマンド登録、遅延ロード
-- [Simple CAD Viewer の統合](./integrate-simple-cad-viewer) — `cad-simple-viewer` の埋め込み
+- [Simple Viewer の統合](./integrate-simple-cad-viewer) — `cad-simple-viewer` の埋め込み
 - [ローカリゼーション](./localization) — `main.dataSource.*` などの i18n キーの追加
 - [アーキテクチャ概要](./architecture-overview) — モジュール構成
 

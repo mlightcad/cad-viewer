@@ -4,15 +4,9 @@ title: "Plugin System"
 
 # Plugin System
 
-This page explains how to build, register, and use a **plugin** for CAD-Viewer. Plugins extend the viewer by registering commands, accessing the active document and view, and cleaning up when unloaded.
+This page explains how to build, register, and use a **plugin** for MLightCAD. Plugins extend the viewer by registering commands, accessing the active document and view, and cleaning up when unloaded.
 
-The plugin system lives in `@mlightcad/cad-simple-viewer` (`packages/cad-simple-viewer/src/plugin`). Official export plugins ship as separate npm packages:
-
-| Package | Plugin name | Trigger commands | Purpose |
-|---------|-------------|------------------|---------|
-| `@mlightcad/cad-html-plugin` | `HtmlPlugin` | `chtml` | Export drawing to offline HTML |
-| `@mlightcad/cad-pdf-plugin` | `PdfPlugin` | `cpdf`, `ipdf` | Export to PDF / import vector PDF |
-| `@mlightcad/cad-svg-plugin` | `SvgPlugin` | `csvg` | Export drawing to SVG |
+The plugin system lives in `@mlightcad/cad-simple-viewer` (`packages/cad-simple-viewer/src/plugin`). First-party plugins (UI, AI agent, script console, HTML/PDF/SVG export, OneDrive/Google Drive data sources) ship as separate npm packages — see [Built-in Plugins](./built-in-plugins) for the full list.
 
 ---
 
@@ -326,29 +320,9 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## Built-in plugin reference
 
-### HTML (`@mlightcad/cad-html-plugin`)
+The monorepo ships several first-party plugins: `AcApHtmlPlugin` (`chtml`), `AcApPdfPlugin` (`cpdf`, `ipdf`), `AcApSvgPlugin` (`csvg`), plus UI, agent, script console, and data source plugins.
 
-| Item | Value |
-|------|-------|
-| Command | `chtml` |
-| Extra config | `htmlViewerRuntimeUrl` on `AcApDocManager.createInstance()` — URL to `viewer-runtime.iife.js` (copy from package `dist/`) |
-| Public API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `packHtml`, snapshot types |
-
-### PDF (`@mlightcad/cad-pdf-plugin`)
-
-| Item | Value |
-|------|-------|
-| Commands | `cpdf` (export), `ipdf` (import) |
-| Public API | `registerLazyPdfPlugin`, `createPdfPlugin`, convertors |
-
-### SVG (`@mlightcad/cad-svg-plugin`)
-
-| Item | Value |
-|------|-------|
-| Command | `csvg` |
-| Public API | `registerLazySvgPlugin`, `createSvgPlugin`, `AcApSvgConvertor`, SVG renderer utilities |
-
-Each package README documents build output, peer dependencies, and integration details.
+For the complete list with per-plugin commands, public API, configuration, and links to each package README, see [Built-in Plugins](./built-in-plugins).
 
 ---
 
@@ -380,10 +354,11 @@ Each package README documents build output, peer dependencies, and integration d
 
 ## Related documentation
 
+- [Built-in Plugins](./built-in-plugins) — all first-party plugins shipped with MLightCAD
 - [Command](./command) — command lifecycle and `AcEdCommand`
 - [Data Source Plugin](./data-source-plugin) — pluggable drawing origins (local, URL, OneDrive, …)
-- [Integrate Simple CAD Viewer](./integrate-simple-cad-viewer) — embedding `cad-simple-viewer`
-- [Integrate CAD Viewer Component](./integrate-cad-viewer-component) — Vue component and `initializeCadViewer`
+- [Integrate Simple Viewer](./integrate-simple-cad-viewer) — embedding `cad-simple-viewer`
+- [Integrate Vue Component](./integrate-cad-viewer-component) — Vue component and `initializeCadViewer`
 - [Architecture Overview](./architecture-overview) — module layout
 
 

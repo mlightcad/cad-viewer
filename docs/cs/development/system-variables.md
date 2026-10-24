@@ -4,7 +4,7 @@ title: "Systémové proměnné"
 
 # Systémové proměnné
 
-Tato stránka vysvětluje, jak v CAD-Viewer fungují systémové proměnné, jak je uživatelé mohou měnit z příkazového řádku a jak jsou implementovány prostřednictvím `AcDbSystemVariables` a `AcDbSysVarManager`.
+Tato stránka vysvětluje, jak v MLightCAD fungují systémové proměnné, jak je uživatelé mohou měnit z příkazového řádku a jak jsou implementovány prostřednictvím `AcDbSystemVariables` a `AcDbSysVarManager`.
 
 ## Co je systémová proměnná
 
@@ -19,7 +19,7 @@ Typické příklady zahrnují:
 - zda je zapnut režim zobrazení
 - jak má editor nebo prohlížeč vizuálně reagovat
 
-Záměrně je to podobné AutoCADu. V CAD-Viewer můžete systémovou proměnnou nastavit přímo z příkazového řádku zadáním jejího názvu a následně nové hodnoty.
+Záměrně je to podobné AutoCADu. V MLightCAD můžete systémovou proměnnou nastavit přímo z příkazového řádku zadáním jejího názvu a následně nové hodnoty.
 
 Například:
 
@@ -30,7 +30,7 @@ New value for PICKBOX <3>: 5
 
 To znamená, že příkazový řádek považuje samotný název systémové proměnné za příkaz sloužící k aktualizaci daného nastavení.
 
-CAD-Viewer tento model přebírá, aby bylo možné nastavení za běhu číst, měnit a sledovat jediným konzistentním mechanismem, místo aby bylo natvrdo zadrátováno v logice příkazů.
+MLightCAD tento model přebírá, aby bylo možné nastavení za běhu číst, měnit a sledovat jediným konzistentním mechanismem, místo aby bylo natvrdo zadrátováno v logice příkazů.
 
 ## Nastavení systémové proměnné z příkazového řádku
 
@@ -61,7 +61,7 @@ Jinými slovy, přiřazení systémové proměnné nevyžaduje samostatný postu
 
 ## Jak jsou systémové proměnné registrovány jako příkazy
 
-V CAD-Viewer lze systémové proměnné používat z příkazového řádku proto, že jsou během inicializace aplikace registrovány jako běžné příkazy.
+V MLightCAD lze systémové proměnné používat z příkazového řádku proto, že jsou během inicializace aplikace registrovány jako běžné příkazy.
 
 Registrace probíhá v `AcApDocManager`. Načte všechny deskriptory systémových proměnných z `AcDbSysVarManager` a zaregistruje každý název proměnné jako příkaz:
 
@@ -96,7 +96,7 @@ Zapojeny jsou tedy dvě vrstvy:
 
 Proto přidání podpory nové systémové proměnné obvykle začíná registrací jejího deskriptoru v `AcDbSysVarManager`. Jakmile je zahrnuta v `getAllDescriptors()`, může být zaregistrována do zásobníku příkazů a používána přímo z příkazového řádku.
 
-## Jak je to navrženo v CAD-Viewer
+## Jak je to navrženo v MLightCAD
 
 Současná implementace je soustředěna do dvou souborů:
 
@@ -116,7 +116,7 @@ Jeho hlavní role jsou:
 - nabízet volajícím typově bezpečný způsob odkazování na proměnné
 - podporovat odvozené typy, jako je `AcDbSystemVariableName`
 
-Nejlépe jej chápete jako registr názvů systémových proměnných v CAD-Viewer.
+Nejlépe jej chápete jako registr názvů systémových proměnných v MLightCAD.
 
 ### 2. `AcDbSysVarManager`
 
@@ -322,7 +322,7 @@ Poté se může účastnit stejného jednotného pracovního postupu `getVar` / 
 
 ## Shrnutí
 
-V CAD-Viewer jsou systémové proměnné víc než jen volná sbírka nastavení. Tvoří jednotnou abstrakci stavu aplikace:
+V MLightCAD jsou systémové proměnné víc než jen volná sbírka nastavení. Tvoří jednotnou abstrakci stavu aplikace:
 
 - směrem dolů se mapují na databázový stav související s výkresem
 - směrem nahoru řídí chování editoru a uživatelského rozhraní

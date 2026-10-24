@@ -13,7 +13,7 @@ title: "톈정(Tianzheng) DWG 도면 지원"
 DWG 파일에서 이러한 톈정 전용 객체는 [사용자 정의 엔티티](https://help.autodesk.com/view/OARX/2024/ENU/?guid=GUID-4E5C1B56-95C3-4D4F-8F1C-A9D34B1E1408)(프록시 엔티티)로 저장됩니다. 이들의 내부 데이터는 톈정 자체의 ObjectARX 런타임에서만 의미가 있습니다. 그 결과:
 
 - 어떤 범용 상용 DWG 파서도 이러한 독점 톈정 엔티티를 직접 파싱할 수 없습니다.
-- 범용 파서(CAD-Viewer 포함)는 해당 도면의 표준 AutoCAD 엔티티만 렌더링할 수 있으며, 톈정 사용자 정의 엔티티는 건너뛰거나 프록시 그래픽으로 표시됩니다.
+- 범용 파서(MLightCAD 포함)는 해당 도면의 표준 AutoCAD 엔티티만 렌더링할 수 있으며, 톈정 사용자 정의 엔티티는 건너뛰거나 프록시 그래픽으로 표시됩니다.
 
 ## 업계의 일반적인 해결책: T3 형식으로 변환
 
@@ -59,11 +59,11 @@ Detect Tianzheng entities  ->  If present, convert to T3 DWG
 Store converted DWG
       |
       v
-CAD-Viewer parsing & rendering
+MLightCAD parsing & rendering
 ```
 
 - 들어오는 DWG에 톈정 사용자 정의 엔티티가 포함되어 있는지 감지합니다(예: 톈정 전용 프록시 엔티티 클래스 이름이나 애플리케이션 시그니처 확인).
 - 포함되어 있다면 T3 변환을 실행하고(예: Windows 서버의 `t3-conv` 사용) 변환된 파일을 저장합니다.
-- 변환된 T3 DWG를 CAD-Viewer에 제공합니다. 이전에는 보이지 않던 모든 톈정 객체가 이제 표준 엔티티로 렌더링됩니다.
+- 변환된 T3 DWG를 MLightCAD에 제공합니다. 이전에는 보이지 않던 모든 톈정 객체가 이제 표준 엔티티로 렌더링됩니다.
 
 이렇게 하면 뷰어 자체는 경량이고 파서 독립적으로 유지하면서도 최종 사용자에게 톈정 도면이 완전히 표시되도록 보장할 수 있습니다.

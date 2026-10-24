@@ -2,13 +2,13 @@
 title: "命令"
 ---
 
-# 在 CAD-Viewer 中创建自定义命令
+# 在 MLightCAD 中创建自定义命令
 
-本页说明如何在 **CAD-Viewer** 中创建自定义命令并注册它，以便用户能够触发。
+本页说明如何在 **MLightCAD** 中创建自定义命令并注册它，以便用户能够触发。
 
 ## 概览
 
-命令是用户与 CAD-Viewer 交互的主要方式。每个命令代表一个具体操作，例如绘制直线、创建圆、缩放或选择对象。
+命令是用户与 MLightCAD 交互的主要方式。每个命令代表一个具体操作，例如绘制直线、创建圆、缩放或选择对象。
 
 系统提供**命令栈**（`AcEdCommandStack`），用于按组管理命令、按名称查找命令，并通过编辑器处理其生命周期事件。
 
@@ -260,7 +260,7 @@ editor.events.commandEnded.addEventListener(({ command }) => {
 
 ### 打开模式
 
-CAD-Viewer 支持三种文档打开模式：
+MLightCAD 支持三种文档打开模式：
 
 ```
 export enum AcEdOpenMode {
@@ -370,7 +370,7 @@ register.addCommand(
 
 ## 命令别名
 
-CAD-Viewer 支持 AutoCAD 风格的命令别名（类似于 `acad.pgp` 的行为）。
+MLightCAD 支持 AutoCAD 风格的命令别名（类似于 `acad.pgp` 的行为）。
 
 ### 通过 `addCommand` 注册别名
 

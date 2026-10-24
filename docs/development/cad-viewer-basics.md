@@ -1,8 +1,8 @@
 ---
-title: "CAD Viewer Basics"
+title: "MLightCAD Basics"
 ---
 
-# CAD Viewer Basics
+# MLightCAD Basics
 
 This project provides two viewers `cad-viewer` and `cad-simple-viewer` for users. Which viewer to choose depends on your project requirements and desired level of integration:
 
@@ -32,7 +32,7 @@ This project provides two viewers `cad-viewer` and `cad-simple-viewer` for users
 | `cad-viewer`        | Yes         | Vue 3     | Turnkey CAD viewer/editor with modern UI       |
 | `cad-simple-viewer` | No          | None      | Core CAD logic for custom or headless use      |
 
-For more details, see [**Integrate Simple CAD Viewer**](./integrate-simple-cad-viewer) and [**Integrate CAD Viewer Component**](./integrate-cad-viewer-component).
+For more details, see [**Integrate Simple Viewer**](./integrate-simple-cad-viewer) and [**Integrate Vue Component**](./integrate-cad-viewer-component).
 
 ## Examples
 

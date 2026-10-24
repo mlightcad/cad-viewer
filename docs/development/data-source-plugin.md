@@ -441,7 +441,7 @@ The example app wires it up via env config (`packages/cad-simple-viewer-example/
 ## Related documentation
 
 - [Plugin System](./plugin-system) — `AcApPlugin`, command registration, lazy loading
-- [Integrate Simple CAD Viewer](./integrate-simple-cad-viewer) — embedding `cad-simple-viewer`
+- [Integrate Simple Viewer](./integrate-simple-cad-viewer) — embedding `cad-simple-viewer`
 - [Localization](./localization) — adding i18n keys such as `main.dataSource.*`
 - [Architecture Overview](./architecture-overview) — module layout
 

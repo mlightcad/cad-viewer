@@ -13,7 +13,7 @@ title: "支持天正 DWG 图纸"
 在 DWG 文件中，这些天正特有的对象以[自定义实体](https://help.autodesk.com/view/OARX/2024/ENU/?guid=GUID-4E5C1B56-95C3-4D4F-8F1C-A9D34B1E1408)（代理实体）的形式存储。它们的内部数据只对天正自己的 ObjectARX 运行时有意义。因此：
 
 - 没有任何通用商业 DWG 解析器能够直接解析这些专有的天正实体。
-- 通用解析器（包括 CAD-Viewer）只能渲染此类图纸中的标准 AutoCAD 实体，而天正自定义实体则会被跳过或显示为代理图形。
+- 通用解析器（包括 MLightCAD）只能渲染此类图纸中的标准 AutoCAD 实体，而天正自定义实体则会被跳过或显示为代理图形。
 
 ## 行业通用方案：转换为 T3 格式
 
@@ -59,11 +59,11 @@ Detect Tianzheng entities  ->  If present, convert to T3 DWG
 Store converted DWG
       |
       v
-CAD-Viewer parsing & rendering
+MLightCAD parsing & rendering
 ```
 
 - 检测传入的 DWG 是否包含天正自定义实体（例如检查天正特有的代理实体类名或应用签名）。
 - 如果存在，则运行 T3 转换（例如在 Windows 服务器上通过 `t3-conv`），并存储转换后的文件。
-- 将转换后的 T3 DWG 交给 CAD-Viewer。所有此前不可见的天正对象现在都会作为标准实体渲染。
+- 将转换后的 T3 DWG 交给 MLightCAD。所有此前不可见的天正对象现在都会作为标准实体渲染。
 
 这样既保持查看器本身轻量且与解析器无关，又能确保最终用户完整查看天正图纸。

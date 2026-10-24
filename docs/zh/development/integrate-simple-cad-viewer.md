@@ -1,8 +1,8 @@
 ---
-title: "集成 Simple CAD Viewer"
+title: "集成 Simple Viewer"
 ---
 
-# 集成 Simple CAD Viewer
+# 集成 Simple Viewer
 
 **cad-simple-viewer** 提供 CAD 查看器的**高性能**核心组件，例如文档管理、命令处理以及 UI 与渲染引擎之间的协作。它在处理大型 CAD 文件时经过性能优化设计。
 

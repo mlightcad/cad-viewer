@@ -192,7 +192,7 @@ await AcApDocManager.instance.openUrl(templateUrl)
 
 ### CORS 구성
 
-CAD Viewer가 리소스를 로드할 수 있도록 서버가 교차 출처 요청을 허용하는지 확인하십시오:
+MLightCAD가 리소스를 로드할 수 있도록 서버가 교차 출처 요청을 허용하는지 확인하십시오:
 
 ```
 Access-Control-Allow-Origin: *

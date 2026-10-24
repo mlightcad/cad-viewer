@@ -73,6 +73,7 @@
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
     "lint-staged": "^15.2.7",
+    "mermaid": "^11.17.2",
     "nx": "20.0.4",
     "prettier": "^3.3.3",
     "rimraf": "^6.0.1",
@@ -84,7 +85,8 @@
     "typescript-eslint": "^8.4.0",
     "vite": "^6.4.3",
     "vite-plugin-static-copy": "^4.1.1",
-    "vitepress": "^1.6.4"
+    "vitepress": "^1.6.4",
+    "vitepress-plugin-mermaid": "^2.0.17"
   },
   "lint-staged": {
     "*.{ts,js,vue}": [

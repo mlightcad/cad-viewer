@@ -2,13 +2,13 @@
 title: "Komut"
 ---
 
-# CAD-Viewer'da Özel Komut Oluşturma
+# MLightCAD'da Özel Komut Oluşturma
 
-Bu sayfa, **CAD-Viewer**'da özel bir komutun nasıl oluşturulacağını ve kullanıcı tarafından tetiklenebilmesi için nasıl kaydedileceğini açıklar.
+Bu sayfa, **MLightCAD**'da özel bir komutun nasıl oluşturulacağını ve kullanıcı tarafından tetiklenebilmesi için nasıl kaydedileceğini açıklar.
 
 ## Genel Bakış
 
-Komutlar, kullanıcıların CAD-Viewer ile etkileşim kurmasının başlıca yoludur. Her komut, çizgi çizme, daire oluşturma, yakınlaştırma veya nesne seçme gibi belirli bir işlemi temsil eder.
+Komutlar, kullanıcıların MLightCAD ile etkileşim kurmasının başlıca yoludur. Her komut, çizgi çizme, daire oluşturma, yakınlaştırma veya nesne seçme gibi belirli bir işlemi temsil eder.
 
 Sistem, komutları gruplar halinde yönetmek, adlarına göre aramak ve yaşam döngüsü olaylarını düzenleyici aracılığıyla işlemek için bir **komut yığını** (`AcEdCommandStack`) sağlar.
 
@@ -258,7 +258,7 @@ editor.events.commandEnded.addEventListener(({ command }) => {
 
 ### Açma Modları
 
-CAD-Viewer üç belge açma modunu destekler:
+MLightCAD üç belge açma modunu destekler:
 
 ```
 export enum AcEdOpenMode {
@@ -368,7 +368,7 @@ register.addCommand(
 
 ## Komut Takma Adı
 
-CAD-Viewer, AutoCAD tarzı komut takma adlarını destekler (`acad.pgp` davranışına benzer).
+MLightCAD, AutoCAD tarzı komut takma adlarını destekler (`acad.pgp` davranışına benzer).
 
 ### `addCommand` ile Takma Ad Kaydetme
 

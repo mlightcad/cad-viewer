@@ -13,7 +13,7 @@ Na rozdíl od běžných entit DWG používají entity Tianzheng (stěny, dveře
 V souborech DWG jsou tyto objekty specifické pro Tianzheng uloženy jako [vlastní entity](https://help.autodesk.com/view/OARX/2024/ENU/?guid=GUID-4E5C1B56-95C3-4D4F-8F1C-A9D34B1E1408) (proxy entity). Jejich interní data mají význam pouze pro vlastní běhové prostředí ObjectARX Tianzheng. Výsledkem je:
 
 - Žádný univerzální komerční DWG parser nedokáže tyto proprietární entity Tianzheng parsovat přímo.
-- Generický parser (včetně CAD-Viewer) dokáže vykreslit pouze standardní entity AutoCADu v takových výkresech, zatímco vlastní entity Tianzheng jsou přeskočeny nebo zobrazeny jako proxy grafika.
+- Generický parser (včetně MLightCAD) dokáže vykreslit pouze standardní entity AutoCADu v takových výkresech, zatímco vlastní entity Tianzheng jsou přeskočeny nebo zobrazeny jako proxy grafika.
 
 ## Běžné průmyslové řešení: Převod do formátu T3
 
@@ -59,11 +59,11 @@ Detect Tianzheng entities  ->  If present, convert to T3 DWG
 Store converted DWG
       |
       v
-CAD-Viewer parsing & rendering
+MLightCAD parsing & rendering
 ```
 
 - Zjistěte, zda příchozí DWG obsahuje vlastní entity Tianzheng (například kontrolou názvů tříd proxy entit specifických pro Tianzheng nebo podpisů aplikace).
 - Pokud ano, spusťte konverzi T3 (např. přes `t3-conv` na Windows serveru) a uložte převedený soubor.
-- Předložte převedený T3 DWG do CAD-Viewer. Všechny dříve neviditelné objekty Tianzheng se nyní vykreslí jako standardní entity.
+- Předložte převedený T3 DWG do MLightCAD. Všechny dříve neviditelné objekty Tianzheng se nyní vykreslí jako standardní entity.
 
 Díky tomu zůstává prohlížeč sám lehký a nezávislý na parseru, zatímco výkresy Tianzheng jsou koncovým uživatelům plně viditelné.

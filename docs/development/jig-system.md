@@ -4,11 +4,11 @@ title: "Jig System"
 
 # Jig System
 
-AutoCAD relies on the AcEdJig framework to provide real-time visual feedback while acquiring user input. While powerful, that system separates prompting, preview rendering, and input sampling across multiple overridden methods—often spreading logic across different functions and lifecycle stages. CAD-Viewer reimagines this concept for the web by introducing a unified, TypeScript-driven jig mechanism that integrates seamlessly with prompt input. Instead of managing drag loops or sampler status codes, developers attach a jig directly to prompt options, keeping dynamic preview logic, user input, and final entity creation together in a single, readable workflow.
+AutoCAD relies on the AcEdJig framework to provide real-time visual feedback while acquiring user input. While powerful, that system separates prompting, preview rendering, and input sampling across multiple overridden methods—often spreading logic across different functions and lifecycle stages. MLightCAD reimagines this concept for the web by introducing a unified, TypeScript-driven jig mechanism that integrates seamlessly with prompt input. Instead of managing drag loops or sampler status codes, developers attach a jig directly to prompt options, keeping dynamic preview logic, user input, and final entity creation together in a single, readable workflow.
 
 ## Overview
 
-The **Jig system** in CAD-Viewer enables interactive previews and dynamic entity creation, offering a workflow similar to AutoCAD’s **AcEdJig** (ObjectARX). A *jig* manages a temporary preview entity that updates continuously based on cursor movement or incremental user input.
+The **Jig system** in MLightCAD enables interactive previews and dynamic entity creation, offering a workflow similar to AutoCAD’s **AcEdJig** (ObjectARX). A *jig* manages a temporary preview entity that updates continuously based on cursor movement or incremental user input.
 
 Use cases include:
 
@@ -16,7 +16,7 @@ Use cases include:
 * Live distance or angle measurement
 * Real‑time modification of existing entities
 
-However, CAD-Viewer introduces a **simpler, more cohesive, and more TypeScript‑friendly design**, reducing the structural complexity typically found in AutoCAD jigs.
+However, MLightCAD introduces a **simpler, more cohesive, and more TypeScript‑friendly design**, reducing the structural complexity typically found in AutoCAD jigs.
 
 
 ## Key Architectural Difference
@@ -25,7 +25,7 @@ However, CAD-Viewer introduces a **simpler, more cohesive, and more TypeScript�
 
 In AutoCAD, prompts and jigs are separate mechanisms. Jig execution requires overriding `sampler()`, `worldDraw()`, and calling `drag()`.
 
-In CAD-Viewer, prompts can directly **carry a jig instance**:
+In MLightCAD, prompts can directly **carry a jig instance**:
 
 ```ts
 const opts = new AcEdPromptDistanceOptions('Specify radius:')
@@ -49,7 +49,7 @@ As you can see in [AutoCAD AcEdJig Sample Code](https://help.autodesk.com/view/O
 * `createEllipse()` — acquire ellipse center point
 * `sampler()` — acquire the major axis endpoint and the distance from ellipse center to minor axis endpoint
 
-In CAD-Viewer, the entire dynamic input workflow is expressed sequentially as follows.
+In MLightCAD, the entire dynamic input workflow is expressed sequentially as follows.
 
 ```ts
 const center = await editor.getPoint(pointOpts)

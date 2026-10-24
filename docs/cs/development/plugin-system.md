@@ -4,15 +4,9 @@ title: "Systém pluginů"
 
 # Systém pluginů
 
-Tato stránka vysvětluje, jak pro CAD-Viewer vytvořit, zaregistrovat a používat **plugin**. Pluginy rozšiřují prohlížeč registrací příkazů, přístupem k aktivnímu dokumentu a zobrazení a úklidem při uvolnění.
+Tato stránka vysvětluje, jak pro MLightCAD vytvořit, zaregistrovat a používat **plugin**. Pluginy rozšiřují prohlížeč registrací příkazů, přístupem k aktivnímu dokumentu a zobrazení a úklidem při uvolnění.
 
-Systém pluginů žije v `@mlightcad/cad-simple-viewer` (`packages/cad-simple-viewer/src/plugin`). Oficiální exportní pluginy jsou dodávány jako samostatné balíčky npm:
-
-| Balíček | Název pluginu | Spouštěcí příkazy | Účel |
-|---------|-------------|------------------|---------|
-| `@mlightcad/cad-html-plugin` | `HtmlPlugin` | `chtml` | Export výkresu do offline HTML |
-| `@mlightcad/cad-pdf-plugin` | `PdfPlugin` | `cpdf`, `ipdf` | Export do PDF / import vektorového PDF |
-| `@mlightcad/cad-svg-plugin` | `SvgPlugin` | `csvg` | Export výkresu do SVG |
+Systém pluginů žije v `@mlightcad/cad-simple-viewer` (`packages/cad-simple-viewer/src/plugin`). Oficiální pluginy (UI, AI agent, konzole skriptů, export HTML/PDF/SVG, datové zdroje OneDrive/Google Drive) jsou dodávány jako samostatné balíčky npm — úplný seznam viz [Vestavěné pluginy](./built-in-plugins).
 
 ---
 
@@ -326,29 +320,9 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## Přehled vestavěných pluginů
 
-### HTML (`@mlightcad/cad-html-plugin`)
+Monorepo přibaluje několik oficiálních pluginů: `AcApHtmlPlugin` (`chtml`), `AcApPdfPlugin` (`cpdf`, `ipdf`), `AcApSvgPlugin` (`csvg`) a dále pluginy pro UI, agenta, konzoli skriptů a datové zdroje.
 
-| Položka | Hodnota |
-|------|-------|
-| Příkaz | `chtml` |
-| Další konfigurace | `htmlViewerRuntimeUrl` v `AcApDocManager.createInstance()` — adresa URL souboru `viewer-runtime.iife.js` (zkopírujte z `dist/` balíčku) |
-| Veřejné API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `packHtml`, typy snímků |
-
-### PDF (`@mlightcad/cad-pdf-plugin`)
-
-| Položka | Hodnota |
-|------|-------|
-| Příkazy | `cpdf` (export), `ipdf` (import) |
-| Veřejné API | `registerLazyPdfPlugin`, `createPdfPlugin`, převodníky |
-
-### SVG (`@mlightcad/cad-svg-plugin`)
-
-| Položka | Hodnota |
-|------|-------|
-| Příkaz | `csvg` |
-| Veřejné API | `registerLazySvgPlugin`, `createSvgPlugin`, `AcApSvgConvertor`, nástroje rendereru SVG |
-
-README každého balíčku dokumentuje výstup sestavení, peer závislosti a podrobnosti integrace.
+Úplný seznam s příkazy, veřejným API a konfigurací jednotlivých pluginů a s odkazy na README každého balíčku najdete v části [Vestavěné pluginy](./built-in-plugins).
 
 ---
 
@@ -380,8 +354,9 @@ README každého balíčku dokumentuje výstup sestavení, peer závislosti a po
 
 ## Související dokumentace
 
+- [Vestavěné pluginy](./built-in-plugins) — všechny oficiální pluginy MLightCADu
 - [Příkaz](./command) — životní cyklus příkazu a `AcEdCommand`
 - [Plugin datového zdroje](./data-source-plugin) — zásuvné zdroje výkresů (lokální, URL, OneDrive, …)
-- [Integrace Simple CAD Viewer](./integrate-simple-cad-viewer) — vložení `cad-simple-viewer`
-- [Integrace komponenty CAD Viewer](./integrate-cad-viewer-component) — komponenta Vue a `initializeCadViewer`
+- [Integrace Simple Viewer](./integrate-simple-cad-viewer) — vložení `cad-simple-viewer`
+- [Integrace komponenty Vue](./integrate-cad-viewer-component) — komponenta Vue a `initializeCadViewer`
 - [Přehled architektury](./architecture-overview) — rozvržení modulů

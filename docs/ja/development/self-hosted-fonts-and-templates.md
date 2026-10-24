@@ -192,7 +192,7 @@ await AcApDocManager.instance.openUrl(templateUrl)
 
 ### CORS 設定
 
-CAD Viewer がリソースを読み込めるよう、サーバーがクロスオリジンリクエストを許可していることを確認してください：
+MLightCAD がリソースを読み込めるよう、サーバーがクロスオリジンリクエストを許可していることを確認してください：
 
 ```
 Access-Control-Allow-Origin: *

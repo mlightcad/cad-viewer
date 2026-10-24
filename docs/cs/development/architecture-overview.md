@@ -4,14 +4,14 @@ title: "Přehled architektury"
 
 # Přehled architektury
 
-CAD-Viewer pracuje zcela v prohlížeči a **nevyžaduje žádný backend**. Soubory DWG/DXF jsou zpracovávány lokálně pomocí WebAssembly a JavaScriptu, což zajišťuje:
+MLightCAD pracuje zcela v prohlížeči a **nevyžaduje žádný backend**. Soubory DWG/DXF jsou zpracovávány lokálně pomocí WebAssembly a JavaScriptu, což zajišťuje:
 
 - **Nulové požadavky na server** – nasazení kdekoli pouze pomocí statického hostingu
 - **Kompletní soukromí dat** – soubory nikdy neopustí zařízení uživatele
 - **Okamžitou integraci** – žádné složité nastavení backendu ani konfigurace API
 - **Funkčnost offline** – funguje bez připojení k internetu
 
-CAD-Viewer je organizován do několika dílčích balíčků, z nichž každý odpovídá za určitou oblast systému:
+MLightCAD je organizován do několika dílčích balíčků, z nichž každý odpovídá za určitou oblast systému:
 
 - **cad-viewer**: hlavní komponenta Vue 3 a frontendová aplikace, včetně UI komponent, dialogů, panelů nástrojů, správy stavu a integrace s vykreslovacími enginy.
 - **cad-simple-viewer**: základní logika pro správu dokumentů, zpracování příkazů a integraci mezi UI a vykreslovacími enginy. Nezávislá na frameworku a bez UI (pouze plátno).
@@ -20,11 +20,11 @@ CAD-Viewer je organizován do několika dílčích balíčků, z nichž každý 
 
 ## Přehled architektury
 
-**CAD-Viewer** je vysoce výkonný prohlížeč DWG/DXF fungující pouze v prohlížeči, který používá modulární a rozšiřitelnou architekturu pro načítání, parsování, vykreslování a interakci s různými formáty CAD dat. Systém je rozdělen do následujících základních vrstev:
+**MLightCAD** je vysoce výkonný prohlížeč DWG/DXF fungující pouze v prohlížeči, který používá modulární a rozšiřitelnou architekturu pro načítání, parsování, vykreslování a interakci s různými formáty CAD dat. Systém je rozdělen do následujících základních vrstev:
 
 ![Přehled architektury](https://github.com/mlightcad/cad-viewer/blob/main/assets/arch-en.jpg?raw=true)
 
-Tato vrstvená architektura zajišťuje, že si **CAD-Viewer** udrží vysoký výkon, nízkou latenci a silnou rozšiřitelnost při práci s různými objemy dat, požadavky na vykreslování a prostředími nasazení.
+Tato vrstvená architektura zajišťuje, že si **MLightCAD** udrží vysoký výkon, nízkou latenci a silnou rozšiřitelnost při práci s různými objemy dat, požadavky na vykreslování a prostředími nasazení.
 
 ### **Vrstva modelu**
 

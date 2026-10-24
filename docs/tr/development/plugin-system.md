@@ -4,15 +4,9 @@ title: "Eklenti Sistemi"
 
 # Eklenti Sistemi
 
-Bu sayfa, CAD-Viewer için bir **eklentinin** nasıl oluşturulacağını, kaydedileceğini ve kullanılacağını açıklar. Eklentiler, komut kaydederek, etkin belgeye ve görünüme erişerek ve kaldırıldığında temizlik yaparak görüntüleyiciyi genişletir.
+Bu sayfa, MLightCAD için bir **eklentinin** nasıl oluşturulacağını, kaydedileceğini ve kullanılacağını açıklar. Eklentiler, komut kaydederek, etkin belgeye ve görünüme erişerek ve kaldırıldığında temizlik yaparak görüntüleyiciyi genişletir.
 
-Eklenti sistemi `@mlightcad/cad-simple-viewer` (`packages/cad-simple-viewer/src/plugin`) içinde yer alır. Resmi dışa aktarma eklentileri ayrı npm paketleri olarak sunulur:
-
-| Paket | Eklenti adı | Tetikleme komutları | Amaç |
-|---------|-------------|------------------|---------|
-| `@mlightcad/cad-html-plugin` | `HtmlPlugin` | `chtml` | Çizimi çevrimdışı HTML'e aktarma |
-| `@mlightcad/cad-pdf-plugin` | `PdfPlugin` | `cpdf`, `ipdf` | PDF'e aktarma / vektör PDF içe aktarma |
-| `@mlightcad/cad-svg-plugin` | `SvgPlugin` | `csvg` | Çizimi SVG'ye aktarma |
+Eklenti sistemi `@mlightcad/cad-simple-viewer` (`packages/cad-simple-viewer/src/plugin`) içinde yer alır. Resmi eklentiler (arayüz, yapay zekâ ajanı, betik konsolu, HTML/PDF/SVG dışa aktarma, OneDrive/Google Drive veri kaynakları) ayrı npm paketleri olarak sunulur — tam liste için [Yerleşik Eklentiler](./built-in-plugins) sayfasına bakın.
 
 ---
 
@@ -326,29 +320,9 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## Yerleşik eklenti başvurusu
 
-### HTML (`@mlightcad/cad-html-plugin`)
+Monorepo birkaç resmi eklenti ile birlikte gelir: `AcApHtmlPlugin` (`chtml`), `AcApPdfPlugin` (`cpdf`, `ipdf`), `AcApSvgPlugin` (`csvg`), ayrıca arayüz, ajan, betik konsolu ve veri kaynağı eklentileri.
 
-| Öğe | Değer |
-|------|-------|
-| Komut | `chtml` |
-| Ek yapılandırma | `AcApDocManager.createInstance()` üzerinde `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` dosyasının URL'si (paketin `dist/` dizininden kopyalayın) |
-| Genel API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `packHtml`, anlık görüntü tipleri |
-
-### PDF (`@mlightcad/cad-pdf-plugin`)
-
-| Öğe | Değer |
-|------|-------|
-| Komutlar | `cpdf` (dışa aktarma), `ipdf` (içe aktarma) |
-| Genel API | `registerLazyPdfPlugin`, `createPdfPlugin`, dönüştürücüler |
-
-### SVG (`@mlightcad/cad-svg-plugin`)
-
-| Öğe | Değer |
-|------|-------|
-| Komut | `csvg` |
-| Genel API | `registerLazySvgPlugin`, `createSvgPlugin`, `AcApSvgConvertor`, SVG işleyici yardımcıları |
-
-Her paketin README dosyası derleme çıktısını, eş bağımlılıkları ve entegrasyon ayrıntılarını belgeler.
+Komutları, genel API'si, yapılandırması ve her paketin README bağlantılarıyla birlikte tam liste için [Yerleşik Eklentiler](./built-in-plugins) sayfasına bakın.
 
 ---
 
@@ -380,8 +354,9 @@ Her paketin README dosyası derleme çıktısını, eş bağımlılıkları ve e
 
 ## İlgili sayfalar
 
+- [Yerleşik Eklentiler](./built-in-plugins) — MLightCAD ile birlikte sunulan tüm resmi eklentiler
 - [Komut](./command) — komut yaşam döngüsü ve `AcEdCommand`
 - [Veri Kaynağı Eklentisi](./data-source-plugin) — takılabilir çizim kaynakları (yerel, URL, OneDrive, …)
-- [Simple CAD Viewer Entegrasyonu](./integrate-simple-cad-viewer) — `cad-simple-viewer` gömme
-- [CAD Viewer Bileşeni Entegrasyonu](./integrate-cad-viewer-component) — Vue bileşeni ve `initializeCadViewer`
+- [Simple Viewer Entegrasyonu](./integrate-simple-cad-viewer) — `cad-simple-viewer` gömme
+- [Vue Bileşeni Entegrasyonu](./integrate-cad-viewer-component) — Vue bileşeni ve `initializeCadViewer`
 - [Mimariye Genel Bakış](./architecture-overview) — modül düzeni

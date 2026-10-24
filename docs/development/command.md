@@ -2,13 +2,13 @@
 title: "Command"
 ---
 
-# Creating a Custom Command in CAD-Viewer
+# Creating a Custom Command in MLightCAD
 
-This page explains how to create a custom command in **CAD-Viewer** and register it so that it can be triggered by the user.
+This page explains how to create a custom command in **MLightCAD** and register it so that it can be triggered by the user.
 
 ## Overview
 
-Commands are the primary way users interact with the CAD-Viewer. Each command represents a specific operation, such as drawing a line, creating a circle, zooming, or selecting objects.
+Commands are the primary way users interact with the MLightCAD. Each command represents a specific operation, such as drawing a line, creating a circle, zooming, or selecting objects.
 
 The system provides a **command stack** (`AcEdCommandStack`) to manage commands in groups, look them up by name, and handle their lifecycle events through the editor.
 
@@ -261,7 +261,7 @@ editor.events.commandEnded.addEventListener(({ command }) => {
 
 ### Open Modes
 
-CAD-Viewer supports three document open modes:
+MLightCAD supports three document open modes:
 
 ```
 export enum AcEdOpenMode {
@@ -371,7 +371,7 @@ register.addCommand(
 
 ## Command Alias
 
-CAD-Viewer supports AutoCAD-style command aliases (similar to `acad.pgp` behavior).
+MLightCAD supports AutoCAD-style command aliases (similar to `acad.pgp` behavior).
 
 ### Register Alias with `addCommand`
 

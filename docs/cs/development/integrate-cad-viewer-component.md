@@ -1,8 +1,8 @@
 ---
-title: "Integrace komponenty CAD Viewer"
+title: "Integrace komponenty Vue"
 ---
 
-# Integrace komponenty CAD Viewer
+# Integrace komponenty Vue
 
 **cad-viewer** je **vysoce výkonná** komponenta Vue 3 pro prohlížení a úpravy CAD souborů (DXF, DWG) **zcela v prohlížeči bez nutnosti jakéhokoli backendového serveru**. Poskytuje moderní uživatelské rozhraní, správu stavu a bezproblémovou integraci s optimalizovanými vykreslovacími enginy pro plynulé CAD pracovní postupy v prohlížeči s výjimečným výkonem.
 
@@ -315,7 +315,7 @@ Komponenta automaticky zpracovává různé události:
 
 ### Pokročilé použití
 
-Pokročilé použití naleznete v části [Integrace komponenty CAD Viewer](./).
+Pokročilé použití naleznete v části [Integrace komponenty Vue](./).
 
 - Registrace převodníku DWG pro zobrazení výkresů ve formátu DWG
 - Definice vlastního načítače fontů pro načítání fontů z vlastního serveru

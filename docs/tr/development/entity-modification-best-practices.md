@@ -4,9 +4,9 @@ title: "Varlık Değiştirme En İyi Uygulamaları"
 
 # Varlık Değiştirme En İyi Uygulamaları
 
-Bu sayfa, **CAD-Viewer**'da çizim varlıklarının nasıl değiştirileceğini açıklar; böylece değişiklikler doğru şekilde izlenir, **geri al/yinele** beklendiği gibi çalışır ve **görünüm veritabanıyla senkronize kalır**.
+Bu sayfa, **MLightCAD**'da çizim varlıklarının nasıl değiştirileceğini açıklar; böylece değişiklikler doğru şekilde izlenir, **geri al/yinele** beklendiği gibi çalışır ve **görünüm veritabanıyla senkronize kalır**.
 
-Veritabanı katmanı [`@mlightcad/data-model`](https://github.com/mlightcad/realdwg-web) paketinden gelir. CAD-Viewer, uygulama yardımcıları ekler ve veritabanı olaylarını işleyiciye bağlar.
+Veritabanı katmanı [`@mlightcad/data-model`](https://github.com/mlightcad/realdwg-web) paketinden gelir. MLightCAD, uygulama yardımcıları ekler ve veritabanı olaylarını işleyiciye bağlar.
 
 ---
 
@@ -67,7 +67,7 @@ Bir işlem etkinken `openEntityForWrite`, nesneyi işlem aracılığıyla yönle
 
 ### Katı mod
 
-`transactionManager.strictMode` (data-model'de varsayılan), tüm değişikliklerin etkin bir işlem içinde gerçekleşmesini zorunlu kılabilir. Değişiklik uygulayıcısının durumu geri yükleyebilmesi için geri al/yinele oynatımı muaftır. Pratikte CAD-Viewer komutları ve `acapRunDatabaseEdit` düzenlemeden önce her zaman bir işlem başlatır.
+`transactionManager.strictMode` (data-model'de varsayılan), tüm değişikliklerin etkin bir işlem içinde gerçekleşmesini zorunlu kılabilir. Değişiklik uygulayıcısının durumu geri yükleyebilmesi için geri al/yinele oynatımı muaftır. Pratikte MLightCAD komutları ve `acapRunDatabaseEdit` düzenlemeden önce her zaman bir işlem başlatır.
 
 ---
 
@@ -159,7 +159,7 @@ Geri al/yinele kullanılabilirliği değiştikten sonra `@mlightcad/cad-simple-v
 - `database` — kaynak veritabanı
 - `entity` — bir varlık veya varlık dizisi
 
-CAD-Viewer, değiştirilmiş olayları isteğe bağlı bir `changes` alanıyla genişletir (`AcApEntityUpdate` içinde `AcDbEntityModifiedEventArgs`); böylece görünüm, geometriyi yeniden oluşturmadan hafif güncellemeler (örneğin yalnızca görünürlük geçişleri) uygulayabilir.
+MLightCAD, değiştirilmiş olayları isteğe bağlı bir `changes` alanıyla genişletir (`AcApEntityUpdate` içinde `AcDbEntityModifiedEventArgs`); böylece görünüm, geometriyi yeniden oluşturmadan hafif güncellemeler (örneğin yalnızca görünürlük geçişleri) uygulayabilir.
 
 ### Görünüm senkronizasyonu
 
@@ -322,7 +322,7 @@ acapRunDatabaseEdit(db, 'Color', () => {
 
 ### Daha alt düzey alternatif
 
-Yalnızca data-model üzerine kitaplık kodu geliştiriyorsanız (CAD-Viewer UI'si olmadan) şunu çağırın:
+Yalnızca data-model üzerine kitaplık kodu geliştiriyorsanız (MLightCAD UI'si olmadan) şunu çağırın:
 
 ```typescript
 db.runDatabaseEdit('My Operation', () => {
@@ -338,7 +338,7 @@ db.transactionManager.runUndoable('My Operation', () => {
 })
 ```
 
-CAD-Viewer UI'siyle bütünleşirken `acapNotifyUndoStackChanged()` işlevini kendiniz çağırmayı unutmayın.
+MLightCAD UI'siyle bütünleşirken `acapNotifyUndoStackChanged()` işlevini kendiniz çağırmayı unutmayın.
 
 ---
 
@@ -385,5 +385,5 @@ Komut dışı düzenlemeler için `AcEdCommand.trigger` yerine `acapRunDatabaseE
 
 - [Komut](./command) — komut yaşam döngüsü ve kaydı
 - [Jig Sistemi](./jig-system) — veritabanına yazmadan etkileşimli önizleme
-- [CAD Viewer Temelleri](./cad-viewer-basics) — belge, veritabanı ve görünüm kavramları
+- [MLightCAD Temelleri](./cad-viewer-basics) — belge, veritabanı ve görünüm kavramları
 - [Mimariye Genel Bakış](./architecture-overview) — modüllerin nasıl bağlandığı

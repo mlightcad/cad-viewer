@@ -1,8 +1,8 @@
 ---
-title: "Základy CAD Viewer"
+title: "Základy MLightCAD"
 ---
 
-# Základy CAD Viewer
+# Základy MLightCAD
 
 Tento projekt nabízí uživatelům dva prohlížeče: `cad-viewer` a `cad-simple-viewer`. Který prohlížeč zvolit, závisí na požadavcích vašeho projektu a požadované míře integrace:
 
@@ -32,7 +32,7 @@ Tento projekt nabízí uživatelům dva prohlížeče: `cad-viewer` a `cad-simpl
 | `cad-viewer`        | Ano         | Vue 3     | Kompletní prohlížeč/editor CAD s moderním UI       |
 | `cad-simple-viewer` | Ne          | Žádný      | Základní CAD logika pro vlastní nebo headless použití      |
 
-Další podrobnosti najdete v částech [**Integrace Simple CAD Viewer**](./integrate-simple-cad-viewer) a [**Integrace komponenty CAD Viewer**](./integrate-cad-viewer-component).
+Další podrobnosti najdete v částech [**Integrace Simple Viewer**](./integrate-simple-cad-viewer) a [**Integrace komponenty Vue**](./integrate-cad-viewer-component).
 
 ## Příklady
 

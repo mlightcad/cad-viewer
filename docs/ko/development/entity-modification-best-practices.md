@@ -4,9 +4,9 @@ title: "엔티티 수정 모범 사례"
 
 # 엔티티 수정 모범 사례
 
-이 페이지는 **CAD-Viewer**에서 도면 엔티티를 수정할 때 변경 사항이 올바르게 추적되고, **실행 취소/재실행**이 예상대로 동작하며, **뷰가 데이터베이스와 동기화 상태를 유지**하도록 하는 방법을 설명합니다.
+이 페이지는 **MLightCAD**에서 도면 엔티티를 수정할 때 변경 사항이 올바르게 추적되고, **실행 취소/재실행**이 예상대로 동작하며, **뷰가 데이터베이스와 동기화 상태를 유지**하도록 하는 방법을 설명합니다.
 
-데이터베이스 계층은 [`@mlightcad/data-model`](https://github.com/mlightcad/realdwg-web)에서 제공됩니다. CAD-Viewer는 애플리케이션 헬퍼를 추가하고 데이터베이스 이벤트를 렌더러에 연결합니다.
+데이터베이스 계층은 [`@mlightcad/data-model`](https://github.com/mlightcad/realdwg-web)에서 제공됩니다. MLightCAD는 애플리케이션 헬퍼를 추가하고 데이터베이스 이벤트를 렌더러에 연결합니다.
 
 ---
 
@@ -67,7 +67,7 @@ opened.color = newColor
 
 ### 엄격 모드
 
-`transactionManager.strictMode`(data-model의 기본값)는 모든 변경이 활성 트랜잭션 내에서 발생하도록 요구할 수 있습니다. 실행 취소/재실행 재생은 변경 적용기가 상태를 복원할 수 있도록 예외입니다. 실제로 CAD-Viewer 명령과 `acapRunDatabaseEdit`는 편집 전에 항상 트랜잭션을 설정합니다.
+`transactionManager.strictMode`(data-model의 기본값)는 모든 변경이 활성 트랜잭션 내에서 발생하도록 요구할 수 있습니다. 실행 취소/재실행 재생은 변경 적용기가 상태를 복원할 수 있도록 예외입니다. 실제로 MLightCAD 명령과 `acapRunDatabaseEdit`는 편집 전에 항상 트랜잭션을 설정합니다.
 
 ---
 
@@ -159,7 +159,7 @@ try {
 - `database` — 소스 데이터베이스
 - `entity` — 하나의 엔티티 또는 엔티티 배열
 
-CAD-Viewer는 수정 이벤트를 선택적 `changes` 필드(`AcApEntityUpdate`의 `AcDbEntityModifiedEventArgs`)로 확장하여 뷰가 기하를 재구축하지 않고도 경량 업데이트(예: 가시성 전용 토글)를 적용할 수 있게 합니다.
+MLightCAD는 수정 이벤트를 선택적 `changes` 필드(`AcApEntityUpdate`의 `AcDbEntityModifiedEventArgs`)로 확장하여 뷰가 기하를 재구축하지 않고도 경량 업데이트(예: 가시성 전용 토글)를 적용할 수 있게 합니다.
 
 ### 뷰 동기화
 
@@ -322,7 +322,7 @@ acapRunDatabaseEdit(db, 'Color', () => {
 
 ### 하위 수준 대안
 
-data-model만을 기반으로 라이브러리 코드를 구축하는 경우(CAD-Viewer UI 없이) 다음을 호출하십시오:
+data-model만을 기반으로 라이브러리 코드를 구축하는 경우(MLightCAD UI 없이) 다음을 호출하십시오:
 
 ```typescript
 db.runDatabaseEdit('My Operation', () => {
@@ -338,7 +338,7 @@ db.transactionManager.runUndoable('My Operation', () => {
 })
 ```
 
-CAD-Viewer UI와 통합할 때는 `acapNotifyUndoStackChanged()`를 직접 호출해야 합니다.
+MLightCAD UI와 통합할 때는 `acapNotifyUndoStackChanged()`를 직접 호출해야 합니다.
 
 ---
 
@@ -385,5 +385,5 @@ sequenceDiagram
 
 - [명령](./command) — 명령 수명 주기 및 등록
 - [Jig 시스템](./jig-system) — 데이터베이스 쓰기 없는 대화형 미리보기
-- [CAD Viewer 기본](./cad-viewer-basics) — 문서, 데이터베이스 및 뷰 개념
+- [MLightCAD 기본](./cad-viewer-basics) — 문서, 데이터베이스 및 뷰 개념
 - [아키텍처 개요](./architecture-overview) — 모듈 연결 방식

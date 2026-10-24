@@ -4,15 +4,9 @@ title: "플러그인 시스템"
 
 # 플러그인 시스템
 
-이 페이지는 CAD-Viewer용 **플러그인**을 빌드하고 등록하고 사용하는 방법을 설명합니다. 플러그인은 명령을 등록하고, 활성 문서와 뷰에 접근하고, 언로드 시 정리함으로써 뷰어를 확장합니다.
+이 페이지는 MLightCAD용 **플러그인**을 빌드하고 등록하고 사용하는 방법을 설명합니다. 플러그인은 명령을 등록하고, 활성 문서와 뷰에 접근하고, 언로드 시 정리함으로써 뷰어를 확장합니다.
 
-플러그인 시스템은 `@mlightcad/cad-simple-viewer`(`packages/cad-simple-viewer/src/plugin`)에 있습니다. 공식 내보내기 플러그인은 별도의 npm 패키지로 제공됩니다:
-
-| 패키지 | 플러그인 이름 | 트리거 명령 | 목적 |
-|---------|-------------|------------------|---------|
-| `@mlightcad/cad-html-plugin` | `HtmlPlugin` | `chtml` | 도면을 오프라인 HTML로 내보내기 |
-| `@mlightcad/cad-pdf-plugin` | `PdfPlugin` | `cpdf`, `ipdf` | PDF로 내보내기 / 벡터 PDF 가져오기 |
-| `@mlightcad/cad-svg-plugin` | `SvgPlugin` | `csvg` | 도면을 SVG로 내보내기 |
+플러그인 시스템은 `@mlightcad/cad-simple-viewer`(`packages/cad-simple-viewer/src/plugin`)에 있습니다. 공식 플러그인(UI, AI 에이전트, 스크립트 콘솔, HTML/PDF/SVG 내보내기, OneDrive/Google Drive 데이터 소스)은 별도의 npm 패키지로 제공됩니다 — 전체 목록은 [내장 플러그인](./built-in-plugins)을 참조하십시오.
 
 ---
 
@@ -326,29 +320,9 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## 내장 플러그인 참조
 
-### HTML(`@mlightcad/cad-html-plugin`)
+모노레포에는 여러 공식 플러그인이 포함되어 있습니다: `AcApHtmlPlugin`(`chtml`), `AcApPdfPlugin`(`cpdf`, `ipdf`), `AcApSvgPlugin`(`csvg`), 그리고 UI, 에이전트, 스크립트 콘솔, 데이터 소스 플러그인이 있습니다.
 
-| 항목 | 값 |
-|------|-------|
-| 명령 | `chtml` |
-| 추가 구성 | `AcApDocManager.createInstance()`의 `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` URL(패키지 `dist/`에서 복사) |
-| 공개 API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `packHtml`, 스냅샷 타입 |
-
-### PDF(`@mlightcad/cad-pdf-plugin`)
-
-| 항목 | 값 |
-|------|-------|
-| 명령 | `cpdf`(내보내기), `ipdf`(가져오기) |
-| 공개 API | `registerLazyPdfPlugin`, `createPdfPlugin`, 컨버터 |
-
-### SVG(`@mlightcad/cad-svg-plugin`)
-
-| 항목 | 값 |
-|------|-------|
-| 명령 | `csvg` |
-| 공개 API | `registerLazySvgPlugin`, `createSvgPlugin`, `AcApSvgConvertor`, SVG 렌더러 유틸리티 |
-
-각 패키지의 README는 빌드 출력, 피어 의존성, 통합 세부 사항을 문서화합니다.
+플러그인별 명령, 공개 API, 구성 및 각 패키지 README 링크가 포함된 전체 목록은 [내장 플러그인](./built-in-plugins)을 참조하십시오.
 
 ---
 
@@ -380,8 +354,9 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## 관련 문서
 
+- [내장 플러그인](./built-in-plugins) — MLightCAD와 함께 제공되는 모든 공식 플러그인
 - [명령](./command) — 명령 수명 주기와 `AcEdCommand`
 - [데이터 소스 플러그인](./data-source-plugin) — 플러그 가능한 도면 원본(로컬, URL, OneDrive, …)
-- [Simple CAD Viewer 통합](./integrate-simple-cad-viewer) — `cad-simple-viewer` 포함
-- [CAD Viewer 컴포넌트 통합](./integrate-cad-viewer-component) — Vue 컴포넌트와 `initializeCadViewer`
+- [Simple Viewer 통합](./integrate-simple-cad-viewer) — `cad-simple-viewer` 포함
+- [Vue 컴포넌트 통합](./integrate-cad-viewer-component) — Vue 컴포넌트와 `initializeCadViewer`
 - [아키텍처 개요](./architecture-overview) — 모듈 구성

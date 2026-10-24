@@ -192,7 +192,7 @@ await AcApDocManager.instance.openUrl(templateUrl)
 
 ### CORS Configuration
 
-Ensure your server allows cross-origin requests for the CAD Viewer to load resources:
+Ensure your server allows cross-origin requests for the MLightCAD to load resources:
 
 ```
 Access-Control-Allow-Origin: *

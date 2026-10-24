@@ -4,11 +4,11 @@ title: "명령"
 
 # 명령
 
-이 페이지는 **CAD-Viewer**에서 사용자 정의 명령을 생성하고 사용자가 트리거할 수 있도록 등록하는 방법을 설명합니다.
+이 페이지는 **MLightCAD**에서 사용자 정의 명령을 생성하고 사용자가 트리거할 수 있도록 등록하는 방법을 설명합니다.
 
 ## 개요
 
-명령은 사용자가 CAD-Viewer와 상호 작용하는 주된 방법입니다. 각 명령은 선 그리기, 원 생성, 확대 또는 객체 선택과 같은 특정 작업을 나타냅니다.
+명령은 사용자가 MLightCAD와 상호 작용하는 주된 방법입니다. 각 명령은 선 그리기, 원 생성, 확대 또는 객체 선택과 같은 특정 작업을 나타냅니다.
 
 시스템은 명령을 그룹으로 관리하고, 이름으로 조회하며, 편집기를 통해 수명 주기 이벤트를 처리하기 위한 **명령 스택**(`AcEdCommandStack`)을 제공합니다.
 
@@ -257,7 +257,7 @@ editor.events.commandEnded.addEventListener(({ command }) => {
 
 ### 열기 모드
 
-CAD-Viewer는 세 가지 문서 열기 모드를 지원합니다:
+MLightCAD는 세 가지 문서 열기 모드를 지원합니다:
 
 ```
 export enum AcEdOpenMode {
@@ -367,7 +367,7 @@ register.addCommand(
 
 ## 명령 별칭
 
-CAD-Viewer는 AutoCAD 스타일 명령 별칭(`acad.pgp` 동작과 유사)을 지원합니다.
+MLightCAD는 AutoCAD 스타일 명령 별칭(`acad.pgp` 동작과 유사)을 지원합니다.
 
 ### `addCommand`로 별칭 등록
 

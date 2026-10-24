@@ -4,15 +4,9 @@ title: "插件系统"
 
 # 插件系统
 
-本页介绍如何为 CAD-Viewer 构建、注册和使用**插件**。插件通过注册命令、访问活动文档和视图，以及在卸载时进行清理来扩展查看器。
+本页介绍如何为 MLightCAD 构建、注册和使用**插件**。插件通过注册命令、访问活动文档和视图，以及在卸载时进行清理来扩展查看器。
 
-插件系统位于 `@mlightcad/cad-simple-viewer`（`packages/cad-simple-viewer/src/plugin`）。官方导出插件以独立的 npm 包形式发布：
-
-| 包 | 插件名 | 触发命令 | 用途 |
-|---------|-------------|------------------|---------|
-| `@mlightcad/cad-html-plugin` | `HtmlPlugin` | `chtml` | 将图纸导出为离线 HTML |
-| `@mlightcad/cad-pdf-plugin` | `PdfPlugin` | `cpdf`, `ipdf` | 导出为 PDF / 导入矢量 PDF |
-| `@mlightcad/cad-svg-plugin` | `SvgPlugin` | `csvg` | 将图纸导出为 SVG |
+插件系统位于 `@mlightcad/cad-simple-viewer`（`packages/cad-simple-viewer/src/plugin`）。官方插件（UI、AI 智能体、脚本控制台、HTML/PDF/SVG 导出、OneDrive/Google Drive 数据源）以独立的 npm 包形式发布 —— 完整列表请参阅[内置插件](./built-in-plugins)。
 
 ---
 
@@ -326,29 +320,9 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## 内置插件参考
 
-### HTML（`@mlightcad/cad-html-plugin`）
+本仓库随附多个官方插件：`AcApHtmlPlugin`（`chtml`）、`AcApPdfPlugin`（`cpdf`、`ipdf`）、`AcApSvgPlugin`（`csvg`），以及 UI、智能体、脚本控制台和数据源插件。
 
-| 项 | 值 |
-|------|-------|
-| 命令 | `chtml` |
-| 额外配置 | `AcApDocManager.createInstance()` 上的 `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` 的 URL（从包的 `dist/` 复制） |
-| 公开 API | `registerLazyHtmlPlugin`、`createHtmlPlugin`、`AcApHtmlConvertor`、`packHtml`、快照类型 |
-
-### PDF（`@mlightcad/cad-pdf-plugin`）
-
-| 项 | 值 |
-|------|-------|
-| 命令 | `cpdf`（导出）、`ipdf`（导入） |
-| 公开 API | `registerLazyPdfPlugin`、`createPdfPlugin`、转换器 |
-
-### SVG（`@mlightcad/cad-svg-plugin`）
-
-| 项 | 值 |
-|------|-------|
-| 命令 | `csvg` |
-| 公开 API | `registerLazySvgPlugin`、`createSvgPlugin`、`AcApSvgConvertor`、SVG 渲染器工具 |
-
-每个包的 README 都记录了构建产物、peer 依赖和集成细节。
+包含各插件命令、公开 API、配置及包 README 链接的完整列表，请参阅[内置插件](./built-in-plugins)。
 
 ---
 
@@ -380,8 +354,9 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## 相关文档
 
+- [内置插件](./built-in-plugins) — MLightCAD 随附的所有官方插件
 - [命令](./command) — 命令生命周期与 `AcEdCommand`
 - [数据源插件](./data-source-plugin) — 可插拔的图纸来源（本地、URL、OneDrive 等）
-- [集成 Simple CAD Viewer](./integrate-simple-cad-viewer) — 嵌入 `cad-simple-viewer`
-- [集成 CAD Viewer 组件](./integrate-cad-viewer-component) — Vue 组件与 `initializeCadViewer`
+- [集成 Simple Viewer](./integrate-simple-cad-viewer) — 嵌入 `cad-simple-viewer`
+- [集成 Vue 组件](./integrate-cad-viewer-component) — Vue 组件与 `initializeCadViewer`
 - [架构总览](./architecture-overview) — 模块结构

@@ -1,8 +1,8 @@
 ---
-title: "Simple CAD Viewer の統合"
+title: "Simple Viewer の統合"
 ---
 
-# Simple CAD Viewer の統合
+# Simple Viewer の統合
 
 **cad-simple-viewer** は、ドキュメント管理、コマンド処理、UI とレンダリングエンジン間の連携など、CAD ビューアの**高性能**なコアコンポーネントを提供します。大規模な CAD ファイルを扱う際に最適な性能を実現するように設計されています。
 

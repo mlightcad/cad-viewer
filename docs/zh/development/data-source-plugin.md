@@ -441,6 +441,6 @@ if (file) {
 ## 相关文档
 
 - [插件系统](./plugin-system) — `AcApPlugin`、命令注册、延迟加载
-- [集成 Simple CAD Viewer](./integrate-simple-cad-viewer) — 嵌入 `cad-simple-viewer`
+- [集成 Simple Viewer](./integrate-simple-cad-viewer) — 嵌入 `cad-simple-viewer`
 - [本地化](./localization) — 添加 `main.dataSource.*` 等 i18n 键
 - [架构总览](./architecture-overview) — 模块结构

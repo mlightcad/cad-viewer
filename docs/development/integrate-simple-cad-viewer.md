@@ -1,8 +1,8 @@
 ---
-title: "Integrate Simple CAD Viewer"
+title: "Integrate Simple Viewer"
 ---
 
-# Integrate Simple CAD Viewer
+# Integrate Simple Viewer
 
 **cad-simple-viewer** provides the **high-performance** core components of a CAD viewer such as document management, command handling, and collaboration between the UI and rendering engines. It's designed for optimal performance when handling large CAD files.
 

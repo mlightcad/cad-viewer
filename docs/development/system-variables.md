@@ -4,7 +4,7 @@ title: "System Variables"
 
 # System Variables
 
-This page explains how system variables work in CAD-Viewer, how users can change them from the command line, and how they are implemented through `AcDbSystemVariables` and `AcDbSysVarManager`.
+This page explains how system variables work in MLightCAD, how users can change them from the command line, and how they are implemented through `AcDbSystemVariables` and `AcDbSysVarManager`.
 
 ## What Is a System Variable
 
@@ -19,7 +19,7 @@ Typical examples include:
 - whether a display mode is enabled
 - how the editor or viewer should respond visually
 
-This is intentionally similar to AutoCAD. In CAD-Viewer, you can set a system variable directly from the command line by entering the variable name, then entering its new value.
+This is intentionally similar to AutoCAD. In MLightCAD, you can set a system variable directly from the command line by entering the variable name, then entering its new value.
 
 For example:
 
@@ -30,7 +30,7 @@ New value for PICKBOX <3>: 5
 
 That means the command line treats the system variable name itself as the command used to update that setting.
 
-CAD-Viewer adopts this model so runtime settings can be read, changed, and observed through one consistent mechanism instead of being hardcoded across command logic.
+MLightCAD adopts this model so runtime settings can be read, changed, and observed through one consistent mechanism instead of being hardcoded across command logic.
 
 ## Setting a System Variable from the Command Line
 
@@ -61,7 +61,7 @@ In other words, assigning a system variable does not require a separate `SETVAR`
 
 ## How System Variables Are Registered as Commands
 
-In CAD-Viewer, system variables can be used from the command line because they are registered as normal commands during application initialization.
+In MLightCAD, system variables can be used from the command line because they are registered as normal commands during application initialization.
 
 The registration happens in `AcApDocManager`. It loads all system variable descriptors from `AcDbSysVarManager` and registers each variable name as a command:
 
@@ -96,7 +96,7 @@ So there are two layers involved:
 
 That is why adding support for a new system variable usually starts with registering its descriptor in `AcDbSysVarManager`. Once it is included in `getAllDescriptors()`, it can also be registered into the command stack and used directly from the command line.
 
-## How It Is Designed in CAD-Viewer
+## How It Is Designed in MLightCAD
 
 The current implementation is centered on two files:
 
@@ -116,7 +116,7 @@ Its main roles are:
 - giving callers a type-safe way to reference variables
 - supporting derived types such as `AcDbSystemVariableName`
 
-It is best understood as the system variable name registry in CAD-Viewer.
+It is best understood as the system variable name registry in MLightCAD.
 
 ### 2. `AcDbSysVarManager`
 
@@ -322,7 +322,7 @@ After that, it can participate in the same unified `getVar` / `setVar` workflow 
 
 ## Summary
 
-In CAD-Viewer, system variables are more than a loose collection of settings. They form a unified abstraction for application state:
+In MLightCAD, system variables are more than a loose collection of settings. They form a unified abstraction for application state:
 
 - downward, they map to drawing-related database state
 - upward, they drive editor and UI behavior

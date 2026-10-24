@@ -1,8 +1,8 @@
 ---
-title: "CAD Viewer の基礎"
+title: "MLightCAD の基礎"
 ---
 
-# CAD Viewer の基礎
+# MLightCAD の基礎
 
 本プロジェクトでは、`cad-viewer` と `cad-simple-viewer` という 2 つのビューアを提供しています。どちらを選択するかは、プロジェクトの要件と必要な統合レベルによって決まります：
 
@@ -32,7 +32,7 @@ title: "CAD Viewer の基礎"
 | `cad-viewer`        | あり         | Vue 3     | モダンな UI を備えたすぐに使える CAD ビューア/エディタ       |
 | `cad-simple-viewer` | なし          | なし      | カスタム用途またはヘッドレス用途向けのコア CAD ロジック      |
 
-詳細は [**Simple CAD Viewer の統合**](./integrate-simple-cad-viewer) と [**CAD Viewer コンポーネントの統合**](./integrate-cad-viewer-component) を参照してください。
+詳細は [**Simple Viewer の統合**](./integrate-simple-cad-viewer) と [**Vue コンポーネントの統合**](./integrate-cad-viewer-component) を参照してください。
 
 ## 例
 

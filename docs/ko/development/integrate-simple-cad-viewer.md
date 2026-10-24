@@ -1,8 +1,8 @@
 ---
-title: "Simple CAD Viewer 통합"
+title: "Simple Viewer 통합"
 ---
 
-# Simple CAD Viewer 통합
+# Simple Viewer 통합
 
 **cad-simple-viewer**는 문서 관리, 명령 처리 및 UI와 렌더링 엔진 간의 협업 등 CAD 뷰어의 **고성능** 핵심 컴포넌트를 제공합니다. 대용량 CAD 파일을 처리할 때 최적의 성능을 발휘하도록 설계되었습니다.
 

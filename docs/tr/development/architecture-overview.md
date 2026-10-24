@@ -4,14 +4,14 @@ title: "Mimariye Genel Bakış"
 
 # Mimariye Genel Bakış
 
-CAD-Viewer, **arka uç bağımlılığı olmadan** tamamen tarayıcıda çalışır. DWG/DXF dosyaları WebAssembly ve JavaScript kullanılarak yerel olarak ayrıştırılır ve işlenir; bu da şunları sağlar:
+MLightCAD, **arka uç bağımlılığı olmadan** tamamen tarayıcıda çalışır. DWG/DXF dosyaları WebAssembly ve JavaScript kullanılarak yerel olarak ayrıştırılır ve işlenir; bu da şunları sağlar:
 
 - **Sunucu gereksinimi yok** - Yalnızca statik dosya barındırma ile her yere dağıtın
 - **Tam veri gizliliği** - Dosyalar asla kullanıcının cihazından ayrılmaz
 - **Anında entegrasyon** - Karmaşık arka uç kurulumu veya API yapılandırması yok
 - **Çevrimdışı çalışabilme** - İnternet bağlantısı olmadan çalışır
 
-CAD-Viewer, her biri sistemin belirli bir yönünden sorumlu olan birkaç alt pakete ayrılmıştır:
+MLightCAD, her biri sistemin belirli bir yönünden sorumlu olan birkaç alt pakete ayrılmıştır:
 
 - **cad-viewer**: UI bileşenleri, iletişim kutuları, araç çubukları, durum yönetimi ve işleme motorlarıyla entegrasyon dahil olmak üzere ana Vue 3 bileşeni ve ön uç uygulaması.
 - **cad-simple-viewer**: Belge yönetimi, komut işleme ve UI ile işleme motorları arasındaki entegrasyon için temel mantık. Çerçeveden bağımsız ve UI içermez (yalnızca canvas).
@@ -20,11 +20,11 @@ CAD-Viewer, her biri sistemin belirli bir yönünden sorumlu olan birkaç alt pa
 
 ## Mimariye Genel Bakış
 
-**CAD-Viewer**, birden çok CAD veri biçimini yükleme, ayrıştırma, işleme ve bunlarla etkileşim kurmayı desteklemek için modüler ve genişletilebilir bir mimari benimseyen, yüksek performanslı, yalnızca tarayıcıda çalışan bir DWG/DXF görüntüleyicisidir. Sistem aşağıdaki temel katmanlara ayrılmıştır:
+**MLightCAD**, birden çok CAD veri biçimini yükleme, ayrıştırma, işleme ve bunlarla etkileşim kurmayı desteklemek için modüler ve genişletilebilir bir mimari benimseyen, yüksek performanslı, yalnızca tarayıcıda çalışan bir DWG/DXF görüntüleyicisidir. Sistem aşağıdaki temel katmanlara ayrılmıştır:
 
 ![Mimariye Genel Bakış](https://github.com/mlightcad/cad-viewer/blob/main/assets/arch-en.jpg?raw=true)
 
-Bu katmanlı mimari, **CAD-Viewer**'ın farklı veri ölçekleri, işleme gereksinimleri ve dağıtım ortamlarıyla uğraşırken yüksek performansı, düşük gecikmeyi ve güçlü ölçeklenebilirliği koruyabilmesini sağlar.
+Bu katmanlı mimari, **MLightCAD**'ın farklı veri ölçekleri, işleme gereksinimleri ve dağıtım ortamlarıyla uğraşırken yüksek performansı, düşük gecikmeyi ve güçlü ölçeklenebilirliği koruyabilmesini sağlar.
 
 ### **Model Katmanı**
 
