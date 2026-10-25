@@ -263,6 +263,22 @@ cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
 ```
 
+## cad.file
+
+Exports the current drawing. The DXF text is not returned to the script.
+
+### `cad.file.saveDxf(path?)`
+
+Queues a DXF export that runs after the script succeeds. Pass a path string or `{ path?, fileName? }`. `.dxf` is appended when the extension is missing. Returns `{ queued: true, index, fileName }`.
+
+- In the in-app agent and the script panel, this starts a browser download.
+- In `cad-mcp-server`, the server writes `path` on disk. Relative paths resolve from the server process working directory. The tool result lists `savedFiles` with the absolute path and byte size.
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+// or: cad.file.saveDxf({ path: './plan-out.dxf' })
+```
+
 ## cad.measure
 
 Numeric helpers for self-check after drawing. Prefer these over hand-rolled

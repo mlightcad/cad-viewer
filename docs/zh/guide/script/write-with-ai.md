@@ -91,6 +91,9 @@ title: 用 AI 编写脚本
 - cad.view.zoomExtents() -> 缩放到模型空间范围
 - cad.view.capturePreview({ longSide? }) -> 脚本结束后排队截取 PNG；返回 { queued: true, index }。复杂结果需要视觉自检时使用，简单修改可跳过
 
+### cad.file
+- cad.file.saveDxf(path?) -> 脚本成功后导出 DXF。路径字符串或 { path?, fileName? }。应用内 Agent 触发下载；cad-mcp-server 把文件写到 path（相对路径相对于服务器工作目录）。返回 { queued: true, index, fileName }。不返回 DXF 正文。工具结果包含 savedFiles
+
 ### cad.measure
 - cad.measure.distance(a, b) -> 两点距离
 - cad.measure.angleDeg(a, b) -> a→b 方位角（度）；angleDeg(a,b,c) -> 顶点 b 的内角

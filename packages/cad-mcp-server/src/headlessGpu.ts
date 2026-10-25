@@ -1,7 +1,7 @@
 import { type Browser, chromium } from 'playwright'
 
 /**
- * ANGLE / GL backend tried for headless WebGL, in preference order.
+ * ANGLE / GL backend tried for WebGL, in preference order.
  * `swiftshader` is the software renderer used when no hardware backend works.
  */
 type GpuBackend =
@@ -19,6 +19,11 @@ export interface HeadlessGpuLaunch {
   /** UNMASKED_RENDERER_WEBGL string, or `unavailable`. */
   renderer: string
   backend: GpuBackend
+}
+
+type LaunchBase = {
+  headless: boolean
+  channel?: string
 }
 
 /**
@@ -88,11 +93,13 @@ export interface LaunchHeadlessChromiumOptions {
    * When hardware is unavailable, falls back to SwiftShader.
    */
   useGpu?: boolean
+  /**
+   * Show a Chromium window. Default `false` (headless).
+   */
+  headed?: boolean
 }
 
-async function launchSwiftShader(
-  base: { headless: true; channel?: string }
-): Promise<HeadlessGpuLaunch> {
+async function launchSwiftShader(base: LaunchBase): Promise<HeadlessGpuLaunch> {
   const browser = await chromium.launch({
     ...base,
     args: chromiumArgsForBackend('swiftshader')
@@ -102,7 +109,9 @@ async function launchSwiftShader(
 }
 
 /**
- * Launches headless Chromium for WebGL (same strategy as cad-simple-viewer-cli).
+ * Launches Chromium for WebGL (same GPU strategy as cad-simple-viewer-cli).
+ *
+ * Pass `headed: true` to show a visible browser window.
  */
 export async function launchHeadlessChromium(
   options: LaunchHeadlessChromiumOptions = {}
@@ -110,8 +119,9 @@ export async function launchHeadlessChromium(
   const channel = options.channel
   const platform = options.platform ?? process.platform
   const useGpu = options.useGpu !== false
-  const base = {
-    headless: true as const,
+  const headed = options.headed === true
+  const base: LaunchBase = {
+    headless: !headed,
     ...(channel ? { channel } : {})
   }
 

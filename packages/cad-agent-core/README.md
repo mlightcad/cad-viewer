@@ -107,6 +107,7 @@ highlights those ids.
 | `cad.entities.inBox(min, max)` | Snapshots whose scene bounds meet a WCS box |
 | `cad.selection` | `ids`, `entities`, `replace`, `add`, `remove`, `clear` |
 | `cad.view.zoomExtents()` | Fit the view to the drawing |
+| `cad.file.saveDxf(path?)` | After a successful script, export DXF. A path string or `{ path?, fileName? }`. The in-app agent downloads the file; `cad-mcp-server` writes `path` (relative to the server cwd). The tool result lists `savedFiles` and does not include the DXF body |
 | `cad.view.capturePreview({ longSide? })` | Queue a PNG screenshot fulfilled after the script; attached as `images` on the tool result |
 | `cad.measure.*` | `distance`, `angleDeg`, `deltaAngleDeg`, `center`, `radius`, `length`, `check`, `report` for numeric self-check |
 | `cad.log(...)` | Lines returned on the tool result |

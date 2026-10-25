@@ -197,3 +197,12 @@ const styles = cad.tables.textStyleTable.records.map(record => ({
 }))
 return { layers, styles }
 ```
+
+## 図面を DXF として保存
+
+スクリプト成功後に実行されます。アプリ内エージェントはファイルをダウンロードし、`cad-mcp-server` は指定パスへ書き込みます。
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+return { saved: true }
+```

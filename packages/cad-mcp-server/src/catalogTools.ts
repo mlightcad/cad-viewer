@@ -4,6 +4,13 @@ import { z } from 'zod'
 
 import { toolResultToMcpContent } from './toolResult.js'
 
+const visibleField = z
+  .boolean()
+  .optional()
+  .describe(
+    'Show a Chromium window so the user can watch the drawing. true = visible window (stays open). false/omit = headless (auto-closes after idle). Use true when the user asks to see the result; use headless for batch work. Changing this after a session started rebuilds the browser and resets drawing state.'
+  )
+
 /**
  * Input schema for `execute_cad_script`.
  *
@@ -23,7 +30,8 @@ export const executeCadScriptInputSchema = {
     .optional()
     .describe(
       'Optional short label for the tool result. Never send intent alone — code is required. Prefer emitting code before intent.'
-    )
+    ),
+  visible: visibleField
 }
 
 /**
@@ -41,7 +49,8 @@ export const openDrawingInputSchema = {
     .optional()
     .describe(
       'Open mode. Default: write when path is omitted, read when path is set. Use write to edit an existing file.'
-    )
+    ),
+  visible: visibleField
 }
 
 export interface RegisterCadMcpToolsOptions {
@@ -51,6 +60,7 @@ export interface RegisterCadMcpToolsOptions {
   openDrawing: (input: {
     path?: string
     mode?: 'read' | 'write'
+    visible?: boolean
   }) => Promise<{ ok: true; title: string; mode: 'read' | 'write' }>
   /**
    * Runs `execute_cad_script` against the live CadSession (typically in-page).
@@ -58,6 +68,7 @@ export interface RegisterCadMcpToolsOptions {
   executeCadScript: (input: {
     code: string
     intent?: string
+    visible?: boolean
   }) => Promise<unknown>
 }
 
@@ -96,14 +107,15 @@ export function registerCadMcpTools(
     'open_drawing',
     {
       description:
-        'Open a DXF/DWG drawing (local path or http(s) URL), or omit path to create a blank ISO template. Call before editing an existing file. Drawing ops use execute_cad_script.',
+        'Open a DXF/DWG drawing (local path or http(s) URL), or omit path to create a blank ISO template. Call before editing an existing file. Drawing ops use execute_cad_script. Pass visible=true when the user should see the browser/drawing; omit or false for headless (auto-closes after idle).',
       inputSchema: openDrawingInputSchema
     },
     async input => {
       try {
         const result = await options.openDrawing({
           path: input.path as string | undefined,
-          mode: input.mode as 'read' | 'write' | undefined
+          mode: input.mode as 'read' | 'write' | undefined,
+          visible: input.visible as boolean | undefined
         })
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(result) }]
@@ -135,7 +147,8 @@ export function registerCadMcpTools(
       try {
         const raw = await options.executeCadScript({
           code: input.code as string,
-          intent: input.intent as string | undefined
+          intent: input.intent as string | undefined,
+          visible: input.visible as boolean | undefined
         })
         return toolResultToMcpContent(
           raw as import('@mlightcad/cad-agent-core').ToolResult

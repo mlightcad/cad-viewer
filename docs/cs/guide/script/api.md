@@ -222,6 +222,21 @@ cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
 ```
 
+## cad.file
+
+Exportuje aktuální výkres. Text DXF se do návratové hodnoty skriptu nedostane.
+
+### `cad.file.saveDxf(path?)`
+
+Po úspěšném skriptu zařadí export DXF. Předá se cesta jako řetězec, nebo `{ path?, fileName? }`. Chybí-li přípona, doplní se `.dxf`. Vrací `{ queued: true, index, fileName }`.
+
+- V agentovi v aplikaci a ve skript panelu se spustí stažení v prohlížeči.
+- V `cad-mcp-server` server zapíše soubor na `path`. Relativní cesty se počítají od pracovního adresáře procesu serveru. Výsledek nástroje obsahuje `savedFiles` s absolutní cestou a velikostí v bajtech.
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+// or: cad.file.saveDxf({ path: './plan-out.dxf' })
+```
 
 ## cad.measure
 

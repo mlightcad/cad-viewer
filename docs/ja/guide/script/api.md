@@ -222,6 +222,21 @@ cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
 ```
 
+## cad.file
+
+現在の図面を書き出します。DXF 本文はスクリプトの戻り値には含まれません。
+
+### `cad.file.saveDxf(path?)`
+
+スクリプトが成功したあと DXF 書き出しをキューします。パス文字列、または `{ path?, fileName? }` を渡します。拡張子が無い場合は `.dxf` が付きます。戻り値は `{ queued: true, index, fileName }` です。
+
+- アプリ内エージェントとスクリプトパネルでは、ブラウザのダウンロードが始まります。
+- `cad-mcp-server` では、サーバーが `path` にファイルを書き込みます。相対パスはサーバープロセスの作業ディレクトリ基準です。ツール結果の `savedFiles` に絶対パスとバイト数が入ります。
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+// or: cad.file.saveDxf({ path: './plan-out.dxf' })
+```
 
 ## cad.measure
 

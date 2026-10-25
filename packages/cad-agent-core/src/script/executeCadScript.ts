@@ -12,6 +12,7 @@ import {
   stringifyScriptValue
 } from './createCadScriptHost'
 import { instrumentCadScript } from './instrumentCadScript'
+import { fulfillDxfSaveRequests } from './saveDxf'
 import { validateCadScript } from './validateCadScript'
 
 /** Default cap on the JSON returned to the model. */
@@ -89,7 +90,8 @@ export async function executeCadScript(
     log: [],
     highlightedIds: [],
     createdIds: [],
-    previewRequests: []
+    previewRequests: [],
+    dxfSaveRequests: []
   }
   const host = createCadScriptHost(session, effects, {
     maxTicks: options.limits?.maxTicks ?? 100_000,
@@ -104,6 +106,7 @@ export async function executeCadScript(
       options.maxResultChars ?? MAX_SCRIPT_RESULT_CHARS
     )
     const images = await fulfillPreviewRequests(effects, options.fulfillPreviews)
+    const savedFiles = fulfillScriptDxfSaves(session, effects)
     return {
       success: true,
       message: input.intent
@@ -113,7 +116,8 @@ export async function executeCadScript(
       log: effects.log,
       highlightedIds: effects.highlightedIds,
       ...(effects.createdIds.length ? { entityIds: effects.createdIds } : {}),
-      ...(images.length ? { images } : {})
+      ...(images.length ? { images } : {}),
+      ...(savedFiles.length ? { savedFiles } : {})
     }
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
@@ -156,6 +160,16 @@ async function fulfillPreviewRequests(
     images.push({ mediaType: 'image/png', dataUrl: capture.dataUrl })
   }
   return images
+}
+
+function fulfillScriptDxfSaves(
+  session: CadSession,
+  effects: CadScriptEffects
+) {
+  if (!effects.dxfSaveRequests.length) return []
+  const doc = session.getDocument()
+  if (!doc) throw new Error('no_document')
+  return fulfillDxfSaveRequests(doc.database, effects.dxfSaveRequests)
 }
 
 function serializeResult(value: unknown, maxChars: number): unknown {

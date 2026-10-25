@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import type { CadScriptLimits } from '../script/createCadScriptHost'
 import { executeCadScript } from '../script/executeCadScript'
 import { CAD_SCRIPT_API_SUMMARY } from '../script/scriptApi'
 import type { CadSession } from '../session/CadSession'
@@ -13,6 +14,11 @@ export interface CadToolCatalogOptions {
    * tool description tells the model not to call it. Default `true`.
    */
   allowPreviewCapture?: boolean
+  /**
+   * Overrides default script tick / wall-clock limits (100k ticks / 2s).
+   * MCP and batch runners should raise these for large drawings.
+   */
+  scriptLimits?: Partial<CadScriptLimits>
 }
 
 /**
@@ -31,6 +37,7 @@ export function createCadToolCatalog(
   options: CadToolCatalogOptions = {}
 ): CadToolDefinition[] {
   const allowPreviewCapture = options.allowPreviewCapture !== false
+  const scriptLimits = options.scriptLimits
   const description = allowPreviewCapture
     ? CAD_SCRIPT_API_SUMMARY
     : `${CAD_SCRIPT_API_SUMMARY}
@@ -65,7 +72,8 @@ for High inference mode.`
       execute: (input: unknown) => {
         const args = input as { code: string; intent?: string }
         return executeCadScript(args, session, {
-          fulfillPreviews: allowPreviewCapture
+          fulfillPreviews: allowPreviewCapture,
+          limits: scriptLimits
         })
       }
     }

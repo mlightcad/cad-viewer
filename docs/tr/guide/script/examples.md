@@ -197,3 +197,12 @@ const styles = cad.tables.textStyleTable.records.map(record => ({
 }))
 return { layers, styles }
 ```
+
+## Çizimi DXF olarak kaydetme
+
+Betik başarılı olduktan sonra çalışır. Uygulama içi ajan dosyayı indirir; `cad-mcp-server` dosyayı verilen yola yazar.
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+return { saved: true }
+```

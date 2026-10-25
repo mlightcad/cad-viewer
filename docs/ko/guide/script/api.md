@@ -222,6 +222,21 @@ cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
 ```
 
+## cad.file
+
+현재 도면을 내보냅니다. DXF 본문은 스크립트 반환값에 포함되지 않습니다.
+
+### `cad.file.saveDxf(path?)`
+
+스크립트가 성공한 뒤 DXF 내보내기를 대기열에 넣습니다. 경로 문자열 또는 `{ path?, fileName? }` 를 넘깁니다. 확장자가 없으면 `.dxf` 가 붙습니다. 반환값은 `{ queued: true, index, fileName }` 입니다.
+
+- 앱 내 에이전트와 스크립트 패널에서는 브라우저 다운로드가 시작됩니다.
+- `cad-mcp-server` 에서는 서버가 `path` 에 파일을 씁니다. 상대 경로는 서버 프로세스의 작업 디렉터리 기준입니다. 도구 결과의 `savedFiles` 에 절대 경로와 바이트 수가 들어갑니다.
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+// or: cad.file.saveDxf({ path: './plan-out.dxf' })
+```
 
 ## cad.measure
 

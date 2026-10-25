@@ -222,6 +222,21 @@ cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
 ```
 
+## cad.file
+
+Geçerli çizimi dışa aktarır. DXF metni betiğin dönüş değerine girmez.
+
+### `cad.file.saveDxf(path?)`
+
+Betik başarılı olduktan sonra bir DXF dışa aktarmayı kuyruğa alır. Yol dizesi veya `{ path?, fileName? }` verin. Uzantı yoksa `.dxf` eklenir. `{ queued: true, index, fileName }` döner.
+
+- Uygulama içi ajan ve betik panelinde tarayıcı indirmesi başlar.
+- `cad-mcp-server` içinde sunucu dosyayı `path` konumuna yazar. Göreli yollar sunucu işleminin çalışma dizinine göredir. Araç sonucu `savedFiles` içinde mutlak yol ve bayt boyutunu listeler.
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+// or: cad.file.saveDxf({ path: './plan-out.dxf' })
+```
 
 ## cad.measure
 

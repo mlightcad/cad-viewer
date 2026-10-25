@@ -8,6 +8,23 @@ export interface Point2dInput {
   y: number
 }
 
+/** DXF written or downloaded by `cad.file.saveDxf`. The file body is not included. */
+export interface ToolResultSavedFile {
+  /** Absolute path when MCP wrote the file; otherwise the download file name or requested path. */
+  path: string
+  /** Base name including `.dxf`. */
+  fileName: string
+  /** UTF-8 size of the DXF. */
+  bytes: number
+  /**
+   * `file` — written by the MCP server.
+   * `mcp` — queued for the MCP server (replaced with `file` after the write).
+   * `download` — browser download started.
+   * `none` — no host accepted the file (tests / non-browser).
+   */
+  delivery: 'file' | 'mcp' | 'download' | 'none'
+}
+
 /** Image attached to a tool result (e.g. script `cad.view.capturePreview`). */
 export interface ToolResultImage {
   /** IANA media type, typically `image/png`. */
@@ -42,6 +59,11 @@ export interface ToolResult {
    * Adapters should pass these to the model as multimodal tool-result media.
    */
   images?: ToolResultImage[]
+  /**
+   * DXF files produced by `cad.file.saveDxf`.
+   * Summaries only — adapters must not echo the DXF body to the model.
+   */
+  savedFiles?: ToolResultSavedFile[]
 }
 
 /**

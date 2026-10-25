@@ -90,6 +90,8 @@ layerTable يتضمن color وlinetype وlineWeight وisOff وisFrozen وisLocke
 - cad.view.zoomExtents() -> التكبير إلى نطاق مساحة النموذج
 - cad.view.capturePreview({ longSide? }) -> يضع لقطة PNG في الانتظار بعد انتهاء السكربت؛ يُرجع { queued: true, index }. استخدمه للتحقق البصري؛ يمكن تخطيه في التعديلات البسيطة
 
+### cad.file
+- cad.file.saveDxf(path?) -> بعد نجاح السكربت يُصدّر DXF. مسار نصي أو { path?, fileName? }. الوكيل داخل التطبيق يُنزّل الملف؛ cad-mcp-server يكتب path (المسارات النسبية من مجلد عمل الخادم). يُرجع { queued: true, index, fileName }. لا يُعاد نص DXF. نتيجة الأداة تتضمن savedFiles
 
 ### cad.measure
 - cad.measure.distance(a, b) -> Distance between {x,y} points

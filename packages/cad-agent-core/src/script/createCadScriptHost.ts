@@ -17,6 +17,10 @@ import {
   openEntityFilterView,
   toEntitySnapshot
 } from './entitySnapshot'
+import {
+  type CadScriptDxfSaveRequest,
+  normalizeDxfSaveRequest
+} from './saveDxf'
 import { CAD_EDIT_TX_METHODS, CAD_SCRIPT_API_TREE } from './scriptApi'
 import { toBlockSnapshots, toDatabaseTables } from './tableSnapshot'
 
@@ -39,6 +43,11 @@ export interface CadScriptEffects {
    * Fulfilled asynchronously after the script returns.
    */
   previewRequests: CadScriptPreviewRequest[]
+  /**
+   * DXF saves requested by `cad.file.saveDxf`.
+   * Fulfilled after the script returns; the DXF body is not part of this list.
+   */
+  dxfSaveRequests: CadScriptDxfSaveRequest[]
 }
 
 /** Limits enforced by `cad.__tick`. */
@@ -186,6 +195,29 @@ export function createCadScriptHost(
 
   const measure = createCadMeasure(id => snapshotById(session, id))
 
+  const file = {
+    /**
+     * Queues a DXF export of the current drawing.
+     *
+     * The file is written after the script succeeds. In the in-app agent this
+     * downloads; in cad-mcp-server the Node host writes `path`.
+     *
+     * @param options - Path string, or `{ path?, fileName? }`.
+     * @returns Queue handle. The DXF text is not included.
+     */
+    saveDxf(options?: Parameters<typeof normalizeDxfSaveRequest>[1]): {
+      queued: true
+      index: number
+      fileName: string
+    } {
+      const doc = requireDocumentRecord(session)
+      const request = normalizeDxfSaveRequest(doc.docTitle, options)
+      const index = effects.dxfSaveRequests.length
+      effects.dxfSaveRequests.push(request)
+      return { queued: true, index, fileName: request.fileName }
+    }
+  }
+
   const edit = {
     transaction(label: string, fn: (tx: CadEditTransaction) => void): void {
       if (typeof fn !== 'function') {
@@ -234,6 +266,7 @@ export function createCadScriptHost(
     },
     selection,
     view,
+    file,
     measure,
     edit,
     log(...values: unknown[]): void {

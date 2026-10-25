@@ -197,3 +197,12 @@ const styles = cad.tables.textStyleTable.records.map(record => ({
 }))
 return { layers, styles }
 ```
+
+## Uložení výkresu jako DXF
+
+Proběhne po úspěšném skriptu. Agent v aplikaci soubor stáhne; `cad-mcp-server` jej zapíše na zadanou cestu.
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+return { saved: true }
+```
