@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import {
   createServer,
   type IncomingMessage,
@@ -8,22 +8,68 @@ import {
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import type { ToolResult } from '@mlightcad/cad-agent-core'
+import type { ToolResult, ToolResultSavedFile } from '@mlightcad/cad-agent-core'
+import { CAD_MCP_DXF_OUTBOX_KEY } from '@mlightcad/cad-agent-core/script-api'
 import { type Browser, type Page } from 'playwright'
 
 import { launchHeadlessChromium } from './headlessGpu.js'
 
 export type CadMcpOpenMode = 'read' | 'write'
 
+const DEFAULT_IDLE_CLOSE_MS = 30_000
+
 export interface CadMcpSessionCreateOptions {
   /** Prefer hardware GPU WebGL. Default `true`. */
   useGpu?: boolean
+  /**
+   * Show a Chromium window so the user can watch the drawing.
+   * Default `false` (headless).
+   */
+  headed?: boolean
+  /**
+   * Headless-only: close the browser after this many ms of idle time
+   * since the last tool call. Default `30000`. Ignored when headed.
+   */
+  idleCloseMs?: number
 }
 
 interface McpStaticServer {
   url: string
   close: () => Promise<void>
   mountInput: (absolutePath: string, fileName: string) => string
+}
+
+async function writeDxfOutbox(page: Page): Promise<ToolResultSavedFile[]> {
+  const items = await page.evaluate((key: string) => {
+    const host = window as unknown as Record<string, unknown>
+    const queued =
+      (host[key] as
+        | Array<{ path?: string; fileName: string; text: string }>
+        | undefined) ?? []
+    host[key] = []
+    return queued
+  }, CAD_MCP_DXF_OUTBOX_KEY)
+
+  const saved: ToolResultSavedFile[] = []
+  for (const item of items) {
+    const fileName = item.fileName.toLowerCase().endsWith('.dxf')
+      ? item.fileName
+      : `${item.fileName}.dxf`
+    const requested = item.path?.trim() || fileName
+    const absolute = path.resolve(requested)
+    const target = absolute.toLowerCase().endsWith('.dxf')
+      ? absolute
+      : `${absolute}.dxf`
+    await mkdir(path.dirname(target), { recursive: true })
+    await writeFile(target, item.text, 'utf8')
+    saved.push({
+      path: target,
+      fileName: path.basename(target),
+      bytes: Buffer.byteLength(item.text),
+      delivery: 'file'
+    })
+  }
+  return saved
 }
 
 function packageRoot(): string {
@@ -63,6 +109,20 @@ function contentTypeFor(filePath: string): string {
     '.dxf': 'application/octet-stream'
   }
   return types[ext] ?? 'application/octet-stream'
+}
+
+function resolveIdleCloseMs(override?: number): number {
+  if (typeof override === 'number' && Number.isFinite(override) && override >= 0) {
+    return override
+  }
+  const fromEnv = process.env.CAD_MCP_IDLE_CLOSE_MS
+  if (fromEnv !== undefined && fromEnv !== '') {
+    const parsed = Number(fromEnv)
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return parsed
+    }
+  }
+  return DEFAULT_IDLE_CLOSE_MS
 }
 
 function startStaticServer(root: string): Promise<McpStaticServer> {
@@ -146,31 +206,61 @@ function startStaticServer(root: string): Promise<McpStaticServer> {
 }
 
 /**
- * Long-lived headless Chromium session hosting cad-simple-viewer + agent-core.
+ * Long-lived Chromium session hosting cad-simple-viewer + agent-core.
  *
- * Started lazily on the first tool call and kept for the process lifetime so
- * drawing state persists across MCP tool invocations.
+ * Started lazily on the first tool call. Headless sessions auto-close after
+ * idle time; headed sessions stay open so the user can watch the drawing.
  */
 export class CadMcpSession {
+  private idleTimer: ReturnType<typeof setTimeout> | undefined
+
   private constructor(
     private readonly browser: Browser,
     private readonly page: Page,
-    private readonly server: McpStaticServer
+    private readonly server: McpStaticServer,
+    readonly headed: boolean,
+    private readonly idleCloseMs: number
   ) {}
 
   private static instance: Promise<CadMcpSession> | undefined
+  /** Resolved session used to detect headed mismatches before await. */
+  private static resolved: CadMcpSession | undefined
 
   /**
    * Returns the shared session, creating it on first call.
+   *
+   * If an existing session has a different `headed` flag, it is closed and
+   * rebuilt (drawing state is lost).
    */
-  static shared(
+  static async shared(
     options: CadMcpSessionCreateOptions = {}
   ): Promise<CadMcpSession> {
+    const headed = options.headed === true
+
+    if (this.instance) {
+      const existing = await this.instance.catch(() => undefined)
+      if (existing) {
+        if (existing.headed === headed) {
+          return existing
+        }
+        console.error(
+          `[cad-mcp-server] switching to ${headed ? 'headed' : 'headless'}; rebuilding session (drawing state reset)`
+        )
+        await existing.close()
+      }
+    }
+
     if (!this.instance) {
-      this.instance = this.create(options).catch(error => {
-        this.instance = undefined
-        throw error
-      })
+      this.instance = this.create(options)
+        .then(session => {
+          this.resolved = session
+          return session
+        })
+        .catch(error => {
+          this.instance = undefined
+          this.resolved = undefined
+          throw error
+        })
     }
     return this.instance
   }
@@ -185,17 +275,24 @@ export class CadMcpSession {
       )
     }
 
+    const headed = options.headed === true
+    const idleCloseMs = resolveIdleCloseMs(options.idleCloseMs)
     const server = await startStaticServer(runnerDir)
     const channel = process.env.PLAYWRIGHT_BROWSER_CHANNEL
     const gpu = await launchHeadlessChromium({
       channel,
-      useGpu: options.useGpu
+      useGpu: options.useGpu,
+      headed
     })
     const browser = gpu.browser
     console.error(
-      `[cad-mcp-server] webgl: ${gpu.renderer} (${gpu.backend})`
+      `[cad-mcp-server] webgl: ${gpu.renderer} (${gpu.backend}); ${headed ? 'headed' : 'headless'}`
     )
-    const context = await browser.newContext()
+    // Headed: match the real window so resizing updates layout / canvas.
+    // Headless: keep Playwright's default fixed viewport for stable capture.
+    const context = await browser.newContext(
+      headed ? { viewport: null } : undefined
+    )
     const page = await context.newPage()
     page.on('console', msg => {
       const text = msg.text()
@@ -220,13 +317,47 @@ export class CadMcpSession {
         'undefined'
     )
     console.error('[cad-mcp-server] browser ready')
-    return new CadMcpSession(browser, page, server)
+    return new CadMcpSession(browser, page, server, headed, idleCloseMs)
+  }
+
+  private clearIdleClose(): void {
+    if (this.idleTimer !== undefined) {
+      clearTimeout(this.idleTimer)
+      this.idleTimer = undefined
+    }
+  }
+
+  private scheduleIdleClose(): void {
+    this.clearIdleClose()
+    if (this.headed || this.idleCloseMs <= 0) {
+      return
+    }
+    this.idleTimer = setTimeout(() => {
+      console.error(
+        `[cad-mcp-server] headless idle ${this.idleCloseMs}ms; closing browser`
+      )
+      void this.close()
+    }, this.idleCloseMs)
+    // Allow the Node process to exit if only the idle timer remains.
+    this.idleTimer.unref?.()
+  }
+
+  private touchActivity(): void {
+    if (this.headed) {
+      this.clearIdleClose()
+      return
+    }
+    this.scheduleIdleClose()
   }
 
   async openDrawing(input: {
     path?: string
     mode?: CadMcpOpenMode
   }): Promise<{ ok: true; title: string; mode: CadMcpOpenMode }> {
+    // Pause idle close for the whole tool call — a prior 30s timer must not
+    // kill Chromium while open/load (or a long script) is still running.
+    this.clearIdleClose()
+
     let fileName: string | null = null
     let drawingUrl: string | null = null
     const pathArg = input.path?.trim()
@@ -248,51 +379,73 @@ export class CadMcpSession {
     const mode: CadMcpOpenMode =
       input.mode ?? (pathArg ? 'read' : 'write')
 
-    return this.page.evaluate(
-      async ({ fileName: name, drawingUrl: url, mode: openMode }) => {
-        const api = (
-          window as unknown as {
-            __cadMcp: {
-              openDrawing: (a: {
-                fileName: string | null
-                drawingUrl: string | null
-                mode: CadMcpOpenMode
-                startBlank: boolean
-              }) => Promise<{ ok: true; title: string; mode: CadMcpOpenMode }>
+    try {
+      return await this.page.evaluate(
+        async ({ fileName: name, drawingUrl: url, mode: openMode }) => {
+          const api = (
+            window as unknown as {
+              __cadMcp: {
+                openDrawing: (a: {
+                  fileName: string | null
+                  drawingUrl: string | null
+                  mode: CadMcpOpenMode
+                  startBlank: boolean
+                }) => Promise<{ ok: true; title: string; mode: CadMcpOpenMode }>
+              }
             }
-          }
-        ).__cadMcp
-        return api.openDrawing({
-          fileName: name,
-          drawingUrl: url,
-          mode: openMode,
-          startBlank: !url
-        })
-      },
-      { fileName, drawingUrl, mode }
-    )
+          ).__cadMcp
+          return api.openDrawing({
+            fileName: name,
+            drawingUrl: url,
+            mode: openMode,
+            startBlank: !url
+          })
+        },
+        { fileName, drawingUrl, mode }
+      )
+    } finally {
+      this.touchActivity()
+    }
   }
 
   async executeCadScript(input: {
     code: string
     intent?: string
   }): Promise<ToolResult> {
-    return this.page.evaluate(async args => {
-      const api = (
-        window as unknown as {
-          __cadMcp: {
-            executeCadScript: (a: {
-              code: string
-              intent?: string
-            }) => Promise<ToolResult>
+    // Scripts can exceed the idle window (MCP raises tick/ms limits for large
+    // drawings). Clear before evaluate so the prior idle timer cannot close us.
+    this.clearIdleClose()
+
+    try {
+      const result = await this.page.evaluate(async args => {
+        const api = (
+          window as unknown as {
+            __cadMcp: {
+              executeCadScript: (a: {
+                code: string
+                intent?: string
+              }) => Promise<ToolResult>
+            }
           }
-        }
-      ).__cadMcp
-      return api.executeCadScript(args)
-    }, input)
+        ).__cadMcp
+        return api.executeCadScript(args)
+      }, input)
+      const written = await writeDxfOutbox(this.page)
+      if (written.length) {
+        result.savedFiles = written
+      }
+      return result
+    } finally {
+      this.touchActivity()
+    }
   }
 
   async close(): Promise<void> {
+    this.clearIdleClose()
+    if (CadMcpSession.resolved === this) {
+      CadMcpSession.resolved = undefined
+    }
+    CadMcpSession.instance = undefined
     await this.browser.close().catch(() => undefined)
     await this.server.close().catch(() => undefined)
   }

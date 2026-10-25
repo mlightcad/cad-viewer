@@ -35,6 +35,7 @@ import {
 import { AcEdOpenMode } from '../../cad-simple-viewer/src/editor/view/AcEdOpenMode'
 import { captureDrawingPreview } from '../src/preview/captureDrawingPreview'
 import { executeCadScript } from '../src/script/executeCadScript'
+import { CAD_MCP_DXF_OUTBOX_KEY } from '../src/script/scriptApi'
 import type { CadSession, CadSessionView } from '../src/session/CadSession'
 
 const COUNT_SCRIPT = `
@@ -332,6 +333,45 @@ describe('executeCadScript', () => {
     expect(result.log).toContain(
       'capturePreview skipped: screenshots disabled in this session'
     )
+  })
+
+  test('queues saveDxf without returning DXF text', async () => {
+    const { session } = createFixture()
+    const host = globalThis as unknown as Record<string, unknown>
+    host.__cadMcp = {}
+    host[CAD_MCP_DXF_OUTBOX_KEY] = []
+
+    try {
+      const result = await executeCadScript(
+        {
+          code: `return cad.file.saveDxf('out/plan.dxf')`,
+          intent: 'save dxf'
+        },
+        session
+      )
+
+      expect(result.success).toBe(true)
+      expect(result.data).toEqual({
+        queued: true,
+        index: 0,
+        fileName: 'plan.dxf'
+      })
+      expect(result.savedFiles).toEqual([
+        expect.objectContaining({
+          fileName: 'plan.dxf',
+          path: 'out/plan.dxf',
+          delivery: 'mcp',
+          bytes: expect.any(Number)
+        })
+      ])
+      const outbox = host[CAD_MCP_DXF_OUTBOX_KEY] as Array<{ text: string }>
+      expect(outbox).toHaveLength(1)
+      expect(outbox[0]?.text.length).toBeGreaterThan(0)
+      expect(JSON.stringify(result)).not.toContain(outbox[0]?.text.slice(0, 40))
+    } finally {
+      delete host.__cadMcp
+      delete host[CAD_MCP_DXF_OUTBOX_KEY]
+    }
   })
 
   test('draws extended entity types in one transaction', async () => {

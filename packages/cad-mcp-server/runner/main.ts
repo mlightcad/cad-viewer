@@ -90,9 +90,9 @@ async function ensureViewer(options: { baseUrl?: string } = {}): Promise<void> {
   )
   AcApDocManager.createInstance({
     container,
-    width: 1280,
-    height: 720,
-    autoResize: false,
+    width: container.clientWidth || 1280,
+    height: container.clientHeight || 720,
+    autoResize: true,
     ...(options.baseUrl ? { baseUrl: options.baseUrl } : {}),
     useMainThreadDraw: true,
     webworkerFileUrls: {
@@ -168,7 +168,9 @@ window.__cadMcp = {
       await window.__cadMcp.openDrawing({ startBlank: true, mode: 'write' })
     }
     const catalog = createCadToolCatalog(createDocManagerSession(), {
-      allowPreviewCapture: true
+      allowPreviewCapture: true,
+      // Large DWGs need more than the default 2s / 100k-tick budget.
+      scriptLimits: { maxTicks: 10_000_000, maxMilliseconds: 600_000 }
     })
     const tool = catalog.find(t => t.name === 'execute_cad_script')
     if (!tool) {

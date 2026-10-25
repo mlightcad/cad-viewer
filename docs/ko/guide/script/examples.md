@@ -197,3 +197,12 @@ const styles = cad.tables.textStyleTable.records.map(record => ({
 }))
 return { layers, styles }
 ```
+
+## 도면을 DXF로 저장
+
+스크립트가 성공한 뒤에 실행됩니다. 앱 안 에이전트는 파일을 다운로드하고, `cad-mcp-server` 는 지정한 경로에 씁니다.
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+return { saved: true }
+```

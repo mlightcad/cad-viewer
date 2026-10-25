@@ -261,6 +261,22 @@ cad.view.capturePreview()
 // 可选：cad.view.capturePreview({ longSide: 512 })
 ```
 
+## cad.file
+
+导出当前图纸。DXF 正文不会作为脚本返回值。
+
+### `cad.file.saveDxf(path?)`
+
+在脚本成功结束后排队导出 DXF。参数为路径字符串，或 `{ path?, fileName? }`。缺少扩展名时会补上 `.dxf`。返回 `{ queued: true, index, fileName }`。
+
+- 应用内 Agent 和脚本面板会触发浏览器下载。
+- 在 `cad-mcp-server` 中，服务器把文件写到 `path`。相对路径相对于服务器进程的工作目录。工具结果的 `savedFiles` 给出绝对路径和字节数。
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+// 或：cad.file.saveDxf({ path: './plan-out.dxf' })
+```
+
 ## cad.measure
 
 绘图后用于数值自检的辅助 API。优先使用这些方法，而不是手写 `Math.hypot` / `atan2`。点均为 WCS 下的 `{ x, y }`。

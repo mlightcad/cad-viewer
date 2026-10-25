@@ -24,6 +24,11 @@ export {
   type CadScriptLimits,
   type CadScriptPreviewRequest
 } from './script/createCadScriptHost'
+export {
+  normalizeDxfSaveRequest,
+  type CadScriptDxfSaveOptions,
+  type CadScriptDxfSaveRequest
+} from './script/saveDxf'
 export { toEntitySnapshot, type EntitySnapshot } from './script/entitySnapshot'
 export {
   captureDrawingPreview,
@@ -41,6 +46,7 @@ export {
 export { instrumentCadScript } from './script/instrumentCadScript'
 export {
   CAD_EDIT_TX_METHODS,
+  CAD_MCP_DXF_OUTBOX_KEY,
   CAD_SCRIPT_API_SUMMARY,
   CAD_SCRIPT_API_TREE
 } from './script/scriptApi'
@@ -67,5 +73,6 @@ export {
   type CadToolDefinition,
   type Point2dInput,
   type ToolResult,
-  type ToolResultImage
+  type ToolResultImage,
+  type ToolResultSavedFile
 } from './tools/types'

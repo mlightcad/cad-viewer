@@ -1,4 +1,10 @@
 /**
+ * Window key holding DXF payloads for the MCP Node host to write.
+ * Lives here so Node hosts can import it from `script-api` without loading the viewer.
+ */
+export const CAD_MCP_DXF_OUTBOX_KEY = '__cadMcpDxfOutbox'
+
+/**
  * Host member tree enforced by the script validator and the runtime proxy.
  *
  * A value of `true` is a callable method or a data leaf. Nested objects are
@@ -41,6 +47,9 @@ export const CAD_SCRIPT_API_TREE = {
   view: {
     zoomExtents: true,
     capturePreview: true
+  },
+  file: {
+    saveDxf: true
   },
   measure: {
     distance: true,
@@ -111,6 +120,12 @@ cad.selection.ids -> selected entity ids
 cad.selection.entities -> snapshots of the current selection
 cad.selection.replace(ids) / add(ids) / remove(ids) / clear()
 cad.view.zoomExtents()
+cad.file.saveDxf(path?) writes the current drawing as DXF after the script succeeds.
+Pass a path string or { path?, fileName? }. .dxf is appended when missing.
+In the in-app agent this downloads the file. In cad-mcp-server it writes path
+on disk (relative paths use the server process cwd). The DXF text is not
+returned to the model. Returns { queued: true, index, fileName }.
+The tool result then includes savedFiles: [{ path, fileName, bytes, delivery }].
 cad.view.capturePreview({ longSide? }) queues a PNG of drawing extents after the script
 finishes. Returns { queued: true, index }. Images are attached to the tool result for the
 model (not returned as JSON). Capture frames model space (temporarily switches away from

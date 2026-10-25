@@ -18,10 +18,10 @@ This server follows the design in
 - **Tools** for clear lifecycle steps (open / blank drawing)
 - **Scripts** for combining the CAD API into analysis, edits, and verification
 
-The model writes a `cad.*` function body; the headless viewer runs it. Same
-runtime as the in-app CAD Agent (`@mlightcad/cad-agent-core`), so external
-agents (Claude Code, Cursor, Codex, …) get flexibility without a ballooning
-tool list — and with lower token and round-trip cost for bulk work.
+The model writes a `cad.*` function body; the Chromium viewer runs it (headless
+or with a visible window). Same runtime as the in-app CAD Agent
+(`@mlightcad/cad-agent-core`), so external agents get flexibility without a
+ballooning tool list — and with lower token and round-trip cost for bulk work.
 
 ## Tools (intentionally small)
 
@@ -30,15 +30,26 @@ tool list — and with lower token and round-trip cost for bulk work.
 | `open_drawing` | Open a local/remote DXF/DWG, or omit `path` for a blank ISO template |
 | `execute_cad_script` | Run a `cad.*` JavaScript function body ([script API](https://mlightcad.github.io/cad-viewer/guide/script/overview.html)) |
 
+Both tools accept optional `visible`:
+
+| `visible` | Browser | Session lifecycle |
+| --- | --- | --- |
+| `false` / omit | Headless Chromium | Reused across tool calls; **auto-closes after idle** (default 30s) |
+| `true` | Visible Chromium window | Stays open so the user can watch the drawing |
+
+The agent chooses based on the user prompt (e.g. “open the browser so I can
+see the drawing” → `visible: true`; batch QA → headless). Changing `visible`
+after a session started rebuilds the browser and **resets drawing state**.
+
 There are **no** per-entity `draw_line` / `draw_circle` tools. All drawing,
 queries, edits, and context live inside one script call.
 
 ## Works with cad-simple-viewer and cad-viewer
 
 Both products share `AcApDocManager` from `@mlightcad/cad-simple-viewer`. This
-server’s headless runner boots that kernel (not the Vue UI package). Scripts
-you write for the Script panel or CAD Agent in either product are valid here,
-and the reverse is true.
+server’s runner boots that kernel (not the Vue UI package). Scripts you write
+for the Script panel or CAD Agent in either product are valid here, and the
+reverse is true.
 
 This package does **not** depend on `@mlightcad/cad-viewer`.
 
@@ -56,12 +67,72 @@ cad-mcp-server
 # or: node packages/cad-mcp-server/dist/cli.js
 ```
 
+### Environment variables
+
+| Variable | Purpose |
+| --- | --- |
+| `CAD_MCP_VISIBLE=1` | Default headed when tools omit `visible` |
+| `CAD_MCP_IDLE_CLOSE_MS` | Headless idle auto-close delay in ms (default `30000`) |
+
 ## MCP client config
 
-### Cursor (`.cursor/mcp.json`)
+### Cursor (this monorepo)
 
-Prefer `${workspaceFolder}` over a hardcoded absolute path or a bare
-relative path (MCP cwd is not always the repo root):
+`npx` from the workspace root crashes npm (Arborist + workspace link). Use the
+launcher, which runs npx from the OS temp directory:
+
+```json
+{
+  "mcpServers": {
+    "cad": {
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/packages/cad-mcp-server/scripts/run-published.mjs"
+      ]
+    }
+  }
+}
+```
+
+Override the pin with `CAD_MCP_SERVER_VERSION` (default `1.7.8-preview.1`).
+
+To force a visible browser by default (agent can still pass `visible: false`):
+
+```json
+{
+  "mcpServers": {
+    "cad": {
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/packages/cad-mcp-server/dist/cli.js"
+      ],
+      "env": {
+        "CAD_MCP_VISIBLE": "1"
+      }
+    }
+  }
+}
+```
+
+### Claude Code / Claude Desktop (outside this repo)
+
+```json
+{
+  "mcpServers": {
+    "cad": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "--package=@mlightcad/cad-mcp-server@1.7.8-preview.1",
+        "cad-mcp-server"
+      ]
+    }
+  }
+}
+```
+
+For local monorepo development against an unbuilt/unpublished tree, point at
+the built CLI instead:
 
 ```json
 {
@@ -76,25 +147,11 @@ relative path (MCP cwd is not always the repo root):
 }
 ```
 
-### Claude Code / Claude Desktop
-
-```json
-{
-  "mcpServers": {
-    "cad": {
-      "command": "npx",
-      "args": ["-y", "@mlightcad/cad-mcp-server"]
-    }
-  }
-}
-```
-
-(After the package is published; for local monorepo use the `node …/dist/cli.js` form.)
-
 ## Typical flow
 
 1. `open_drawing` with `{ "path": "./plan.dxf", "mode": "write" }`  
-   (local path or http(s) URL; omit `path` to start blank).
+   (local path or http(s) URL; omit `path` to start blank).  
+   Add `"visible": true` when the user should see the drawing.
 2. `execute_cad_script` with a function body:
 
 ```js
@@ -111,6 +168,17 @@ return cad.measure.report([
 `cad.view.capturePreview` is enabled; screenshots are returned as MCP image
 content.
 
+Save the drawing after edits:
+
+```js
+cad.file.saveDxf('./plan-out.dxf')
+```
+
+The MCP server writes that path (relative to the server process working
+directory). The DXF text is not sent back to the model; the tool result
+includes `savedFiles` with the absolute path. In the in-app CAD agent the same
+call downloads the file instead.
+
 ## Architecture
 
 ```
@@ -118,13 +186,13 @@ MCP client  --stdio-->  cad-mcp-server (Node)
                            |
                            | Playwright (lazy)
                            v
-                     headless Chromium
+                     Chromium (headless or headed)
                      cad-simple-viewer + cad-agent-core
                      createCadToolCatalog / execute_cad_script
 ```
 
-The browser session stays alive for the process lifetime so drawing state
-persists across tool calls.
+Headless sessions persist across tool calls until idle timeout. Headed sessions
+stay open until the MCP process exits.
 
 ## Library API
 
@@ -132,7 +200,8 @@ persists across tool calls.
 import {
   createCadMcpServer,
   registerCadMcpTools,
-  CadMcpSession
+  CadMcpSession,
+  resolveVisible
 } from '@mlightcad/cad-mcp-server'
 ```
 

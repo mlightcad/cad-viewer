@@ -222,6 +222,21 @@ cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
 ```
 
+## cad.file
+
+يُصدّر الرسم الحالي. لا يُعاد نص DXF ضمن قيمة السكربت.
+
+### `cad.file.saveDxf(path?)`
+
+يضع تصدير DXF في الانتظار بعد نجاح السكربت. مرّر مسارًا نصيًا أو `{ path?, fileName? }`. تُضاف `.dxf` إن غابت اللاحقة. يُرجع `{ queued: true, index, fileName }`.
+
+- في الوكيل داخل التطبيق ولوحة السكربت يبدأ تنزيل المتصفح.
+- في `cad-mcp-server` يكتب الخادم الملف إلى `path`. المسارات النسبية تُحسب من مجلد عمل عملية الخادم. تتضمن نتيجة الأداة `savedFiles` مع المسار المطلق وعدد البايتات.
+
+```javascript
+cad.file.saveDxf('./plan-out.dxf')
+// or: cad.file.saveDxf({ path: './plan-out.dxf' })
+```
 
 ## cad.measure
 

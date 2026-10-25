@@ -12,7 +12,7 @@ export {
   registerCadMcpTools,
   type RegisterCadMcpToolsOptions
 } from './catalogTools.js'
-export { createCadMcpServer } from './server.js'
+export { createCadMcpServer, resolveVisible } from './server.js'
 export {
   CadMcpSession,
   type CadMcpOpenMode,
