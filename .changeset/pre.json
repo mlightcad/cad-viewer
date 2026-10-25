@@ -26,6 +26,6 @@
     "@mlightcad/three-renderer": "1.7.7"
   },
   "changesets": [
-    "script-first-mcp-preview"
+    "fix-mcp-script-api-bundle"
   ]
 }

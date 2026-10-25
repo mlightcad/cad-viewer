@@ -10,7 +10,7 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tsc && vite build",
+        "command": "tsc && vite build && vite build --config vite.script-api.config.ts",
         "cwd": "packages/cad-agent-core"
       },
       "dependsOn": [

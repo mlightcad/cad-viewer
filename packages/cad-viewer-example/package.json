@@ -1,7 +1,7 @@
 {
   "name": "@mlightcad/cad-viewer-example",
   "private": true,
-  "version": "1.7.8-preview.0",
+  "version": "1.7.8-preview.1",
   "license": "MIT",
   "type": "module",
   "repository": {
