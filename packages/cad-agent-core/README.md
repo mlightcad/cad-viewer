@@ -4,11 +4,38 @@ Transport-neutral CAD runtime for agents. It exposes a drawing-tool catalog and 
 checked JavaScript host on top of `@mlightcad/data-model` and
 `@mlightcad/cad-simple-viewer`.
 
-`@mlightcad/cad-agent-plugin` maps the catalog onto the Vercel AI SDK. A future
-MCP server or in-page WebMCP adapter should map the same catalog instead of
-reimplementing drawing operations.
+`@mlightcad/cad-agent-plugin` maps the catalog onto the Vercel AI SDK.
+`@mlightcad/cad-mcp-server` maps the same catalog over stdio MCP. An in-page
+WebMCP adapter should also map this catalog instead of reimplementing drawing
+operations.
+
+Node hosts that only need the script API text (no viewer) can import
+`@mlightcad/cad-agent-core/script-api` so they do not pull browser peers.
 
 This package does not depend on a model SDK or a UI framework.
+
+## Why scripts, not hundreds of tools?
+
+Wrapping every CAD operation as its own AI tool (`draw_line`, `draw_circle`,
+`set_entity_layer`, …) scales poorly: the catalog grows without bound, token
+cost climbs with every tool description and round-trip, and users still invent
+tasks the catalog never covered.
+
+We take the opposite approach. The runtime exposes a **checked JavaScript host**
+(`cad.*`). The model writes a short function body — loops, filters, geometry
+checks, and edits in one shot — instead of orchestrating dozens of tool calls.
+MCP and a few lifecycle tools still matter (open a drawing, connect remote
+systems); they are not the place to mirror the entire CAD API.
+
+Practical wins:
+
+- **Fewer tokens** — filter 100k entities in-process; return only the hits
+- **Easier verification** — `cad.measure.check` / `report` and assertions live
+  in the same script as the work
+- **Faster execution** — one script run vs. many model↔tool round-trips
+
+Background and motivation:
+[Building a CAD Agent: MCP, Tools, or Let AI Write Code?](https://dev.to/mlightcad/building-a-cad-agent-mcp-tools-or-let-ai-write-code-2nc4)
 
 ## Session
 

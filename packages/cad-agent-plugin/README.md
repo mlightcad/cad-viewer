@@ -2,6 +2,25 @@
 
 Natural-language CAD drawing agent for [cad-viewer](https://github.com/mlightcad/cad-viewer).
 
+## Why scripts, not hundreds of tools?
+
+A CAD agent that only exposes fine-grained tools (`draw_line`, `draw_circle`,
+…) tends to grow into a second CAD API for AI — still incomplete, expensive in
+tokens, and weak on ad-hoc analysis.
+
+This plugin maps a **script-first** catalog from
+[`@mlightcad/cad-agent-core`](../cad-agent-core/README.md): the model writes
+`cad.*` JavaScript, and the host runs it against the open drawing. Lifecycle
+UI stays in the chat panel; drawing logic stays in code the model can iterate
+on (filter, measure, edit, verify in one call).
+
+That means fewer tool definitions in the prompt, less round-tripping for bulk
+work, and built-in self-check via `cad.measure` — the same design used by
+`@mlightcad/cad-mcp-server` for external agents.
+
+Read more:
+[Building a CAD Agent: MCP, Tools, or Let AI Write Code?](https://dev.to/mlightcad/building-a-cad-agent-mcp-tools-or-let-ai-write-code-2nc4)
+
 ## Features
 
 - Lazy-loaded `AcApPlugin` (trigger command: `agent`)

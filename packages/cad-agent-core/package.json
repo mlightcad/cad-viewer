@@ -22,11 +22,16 @@
       "types": "./lib/index.d.ts",
       "import": "./dist/cad-agent-core.js",
       "require": "./dist/cad-agent-core.umd.cjs"
+    },
+    "./script-api": {
+      "types": "./lib/script-api.d.ts",
+      "import": "./dist/cad-agent-core-script-api.js",
+      "require": "./dist/cad-agent-core-script-api.umd.cjs"
     }
   },
   "scripts": {
     "clean": "rimraf dist lib tsconfig.tsbuildinfo",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && vite build --config vite.script-api.config.ts",
     "lint": "eslint src/",
     "lint:fix": "eslint --fix --quiet src/"
   },
