@@ -5,6 +5,12 @@
     },
     "mtext-renderer Docs": {
       "url": "https://gitmcp.io/mlightcad/mtext-renderer"
+    },
+    "cad": {
+      "command": "node",
+      "args": [
+        "${workspaceFolder}/packages/cad-mcp-server/dist/cli.js"
+      ]
     }
   }
 }

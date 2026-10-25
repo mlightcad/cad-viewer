@@ -16,6 +16,7 @@
       "@mlightcad/cad-simple-ui-plugin",
       "@mlightcad/cad-simple-viewer",
       "@mlightcad/cad-simple-viewer-cli",
+      "@mlightcad/cad-mcp-server",
       "@mlightcad/cad-simple-viewer-example",
       "@mlightcad/cad-diff-viewer",
       "@mlightcad/cad-diff-viewer-example",

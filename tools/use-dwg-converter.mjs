@@ -148,6 +148,11 @@ const targets = [
     transform: replacePackageDep
   },
   {
+    path: join(rootDir, 'packages', 'cad-mcp-server', 'package.json'),
+    label: 'cad-mcp-server/package.json',
+    transform: replacePackageDep
+  },
+  {
     path: join(
       rootDir,
       'packages',
@@ -181,6 +186,17 @@ const targets = [
       'copy-runner-assets.mjs'
     ),
     label: 'cad-simple-viewer-cli/scripts/copy-runner-assets.mjs',
+    transform: replaceViteLibreDwg
+  },
+  {
+    path: join(
+      rootDir,
+      'packages',
+      'cad-mcp-server',
+      'scripts',
+      'copy-runner-assets.mjs'
+    ),
+    label: 'cad-mcp-server/scripts/copy-runner-assets.mjs',
     transform: replaceViteLibreDwg
   },
   {
@@ -341,6 +357,35 @@ const targets = [
 
       if (next === content) {
         throw new Error('No libredwg references found in CLI runner/main.ts')
+      }
+      return next
+    }
+  },
+  {
+    path: join(rootDir, 'packages', 'cad-mcp-server', 'runner', 'main.ts'),
+    label: 'cad-mcp-server/runner/main.ts',
+    transform(content) {
+      if (
+        content.includes('AcDbDwgConverter') &&
+        !content.includes('AcDbLibreDwgConverter')
+      ) {
+        console.log('  already using AcDbDwgConverter')
+        return null
+      }
+
+      let next = content
+      next = next.replaceAll(
+        "from '@mlightcad/libredwg-converter'",
+        "from '@mlightcad/dwg-converter'"
+      )
+      next = next.replaceAll('AcDbLibreDwgConverter', 'AcDbDwgConverter')
+      next = next.replaceAll(
+        'LIBREDWG_PARSER_WORKER_FILE',
+        'DWG_PARSER_WORKER_FILE'
+      )
+
+      if (next === content) {
+        throw new Error('No libredwg references found in MCP runner/main.ts')
       }
       return next
     }
