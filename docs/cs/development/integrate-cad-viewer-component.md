@@ -102,7 +102,7 @@ npm install @mlightcad/cad-viewer
 
 ## Použití
 
-Jako příklad použijte dílčí balíček `cad-viewer-example`.
+Jako příklad použijte dílčí balíček `cad-editor-demo`.
 
 ### Základní použití
 

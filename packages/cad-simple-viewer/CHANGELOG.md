@@ -246,7 +246,7 @@
 
 ### Patch Changes
 
-- fix: fix issue 103 and update cad-simple-viewer-example to be able to verify it
+- fix: fix issue 103 and update cad-simple-viewer-demo to be able to verify it
 
 ## 1.4.8
 
@@ -282,7 +282,7 @@
 
 ### Patch Changes
 
-- feat: refine cad-simple-viewer-example to show how to config 'webworkerFileUrls'
+- feat: refine cad-simple-viewer-demo to show how to config 'webworkerFileUrls'
 
 ## 1.4.2
 
@@ -456,7 +456,7 @@
 
 ### Patch Changes
 
-- feat: move some logic to repo cad-simple-viewer-example
+- feat: move some logic to repo cad-simple-viewer-demo
 
 ## 1.0.21
 

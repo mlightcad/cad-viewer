@@ -29,7 +29,7 @@ Všechny pluginy spouštěné příkazy jsou **líně načítané**: nejprve se 
 
 ### `@mlightcad/cad-simple-ui-plugin` — UI rozhraní pro simple viewer
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) záměrně nepřibaluje **žádné aplikační UI** — jen plátno a CAD jádro. Pokud vkládáte simple viewer do vlastní webové aplikace a chcete hotové rozhraní, aniž byste museli přijmout kompletní Vue základnu [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-viewer), **`cad-simple-ui-plugin` je zamýšlená UI vrstva**.
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) záměrně nepřibaluje **žádné aplikační UI** — jen plátno a CAD jádro. Pokud vkládáte simple viewer do vlastní webové aplikace a chcete hotové rozhraní, aniž byste museli přijmout kompletní Vue základnu [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor), **`cad-simple-ui-plugin` je zamýšlená UI vrstva**.
 
 Poskytuje:
 
@@ -54,7 +54,7 @@ Poskytuje:
 - **CAD nástroje fáze 1** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
 - Řetězce UI v **angličtině / čínštině / turečtině / češtině** prostřednictvím vrstvy i18n pluginu
 
-Kompletní Vue aplikace `cad-viewer` registruje agenta automaticky, jakmile je balíček nainstalován (karta palety). `cad-simple-viewer-example` jej přes `cad-simple-ui-plugin` zapojuje do dokovací karty. Hostitelské aplikace volají `registerLazyAgentPlugin` a `setAgentPaletteOpener`, aby panel umístily tam, kde chtějí.
+Kompletní Vue aplikace `cad-viewer` registruje agenta automaticky, jakmile je balíček nainstalován (karta palety). `cad-simple-viewer-demo` jej přes `cad-simple-ui-plugin` zapojuje do dokovací karty. Hostitelské aplikace volají `registerLazyAgentPlugin` a `setAgentPaletteOpener`, aby panel umístily tam, kde chtějí.
 
 → **Instalace, registrace a seznam nástrojů:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -64,7 +64,7 @@ Kompletní Vue aplikace `cad-viewer` registruje agenta automaticky, jakmile je b
 
 - Líně načítaný `AcApPlugin` (spouštěcí příkaz: `cadscript`)
 - Znovu využívá CAD nástroje z `@mlightcad/cad-agent-core`; tento balíček přidává pouze panel a příkaz
-- Hostitelské aplikace volají `registerLazyCadScriptPlugin` a namontují `new CadScriptPanel().element` (dokovací karta v `cad-simple-viewer-example`, karta nástrojové palety v `cad-viewer`); při odebrání karty zavolejte `destroy()`
+- Hostitelské aplikace volají `registerLazyCadScriptPlugin` a namontují `new CadScriptPanel().element` (dokovací karta v `cad-simple-viewer-demo`, karta nástrojové palety v `cad-viewer`); při odebrání karty zavolejte `destroy()`
 
 → **Použití:** [packages/cad-script-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin/README.md)
 
@@ -72,7 +72,7 @@ Kompletní Vue aplikace `cad-viewer` registruje agenta automaticky, jakmile je b
 
 ## Pluginy pro export / import (HTML / PDF / SVG)
 
-Tyto pluginy přidávají do stejného správce pluginů příkazy pro export (a import PDF). Jsou **líně načítané**, takže počáteční velikost stránky zůstává malá. Ukázka `cad-simple-viewer-example` registruje všechny tři exportní pluginy plus pluginy UI/agenta/skriptů; kompletní aplikace `cad-viewer` registruje při bootstrapu exportní pluginy a pluginy agenta/skriptů (pokud jsou nainstalovány).
+Tyto pluginy přidávají do stejného správce pluginů příkazy pro export (a import PDF). Jsou **líně načítané**, takže počáteční velikost stránky zůstává malá. Ukázka `cad-simple-viewer-demo` registruje všechny tři exportní pluginy plus pluginy UI/agenta/skriptů; kompletní aplikace `cad-viewer` registruje při bootstrapu exportní pluginy a pluginy agenta/skriptů (pokud jsou nainstalovány).
 
 ### HTML (`@mlightcad/cad-html-plugin`)
 
@@ -150,7 +150,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 | Aplikace | Registrované pluginy |
 |-----|--------------------|
 | `cad-simple-viewer` | Žádné — pouze jádro, pluginy jsou volitelné |
-| `cad-simple-viewer-example` | Exportní pluginy (HTML/PDF/SVG), `cad-simple-ui-plugin`, `cad-agent-plugin`, `cad-script-plugin` |
+| `cad-simple-viewer-demo` | Exportní pluginy (HTML/PDF/SVG), `cad-simple-ui-plugin`, `cad-agent-plugin`, `cad-script-plugin` |
 | `cad-viewer` (Vue) | Exportní pluginy (HTML/PDF/SVG); pluginy agenta a skriptů se registrují automaticky, **pokud jsou nainstalovány** (volitelné peer závislosti) |
 
 ---

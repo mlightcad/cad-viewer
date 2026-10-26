@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 
 describe('cad-viewer ESM import support', () => {
   const repoRoot = path.resolve(__dirname, '../../..')
-  const cadViewerRoot = path.join(repoRoot, 'packages', 'cad-viewer')
+  const cadViewerRoot = path.join(repoRoot, 'packages', 'cad-editor')
 
   it('uses explicit dot subpath in exports map', () => {
     const pkgJsonPath = path.join(cadViewerRoot, 'package.json')

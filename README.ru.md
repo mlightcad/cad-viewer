@@ -48,8 +48,8 @@ MLightCAD — `первый в мире веб-просмотрщик и ред�
 
 Официальные примеры, показывающие, как встроить MLightCAD в собственный продукт:
 
-- [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — Минимальный vanilla TypeScript-хост для [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer): открытие локальных или CDN DXF/DWG, команды через компактную панель инструментов и ленивая загрузка плагинов экспорта HTML/PDF/SVG без полного Vue UI.
-- [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — Полнофункциональное Vue 3-приложение на [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) с меню, лентами, диалогами, командной строкой и строкой состояния ([живая демонстрация](https://mlightcad.github.io/cad-viewer-example/)).
+- [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) — Минимальный vanilla TypeScript-хост для [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer): открытие локальных или CDN DXF/DWG, команды через компактную панель инструментов и ленивая загрузка плагинов экспорта HTML/PDF/SVG без полного Vue UI.
+- [cad-editor-demo](https://github.com/mlightcad/cad-viewer-example) — Полнофункциональное Vue 3-приложение на [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) с меню, лентами, диалогами, командной строкой и строкой состояния ([живая демонстрация](https://mlightcad.github.io/cad-viewer-example/)).
 - [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js-демо «CAD-диск»: возобновляемая chunk-загрузка DWG/DXF, список файлов в SQLite с превью и открытие чертежей через **живой разбор в браузере** (`cad-simple-viewer`) или **серверный ACEX-пререндер** (быстрее открытие, меньше памяти).
 
 ![MLightCAD Quick Demo](./assets/cad-viewer.gif)

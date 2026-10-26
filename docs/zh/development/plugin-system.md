@@ -204,7 +204,7 @@ registerLazyPdfPlugin(pm)
 registerLazySvgPlugin(pm)
 ```
 
-示例应用：`packages/cad-simple-viewer-example/src/main.ts`。
+示例应用：`packages/cad-simple-viewer-demo/src/main.ts`。
 
 当用户运行触发命令时，如果该命令尚未注册，`AcApDocManager` 会自动调用 `loadByTrigger`：
 
@@ -217,7 +217,7 @@ AcApDocManager.instance.sendStringToExecute('cpdf')
 
 ### B. 内联延迟注册（cad-viewer 组件）
 
-`@mlightcad/cad-viewer` 在 `registerLazyPlugins()`（`packages/cad-viewer/src/app/register.ts`）中注册 PDF/HTML/SVG 插件，该函数由 `app.ts` 中的 `initializeCadViewer()` 调用。Vue 组件的使用者无需额外设置即可获得延迟插件。
+`@mlightcad/cad-viewer` 在 `registerLazyPlugins()`（`packages/cad-editor/src/app/register.ts`）中注册 PDF/HTML/SVG 插件，该函数由 `app.ts` 中的 `initializeCadViewer()` 调用。Vue 组件的使用者无需额外设置即可获得延迟插件。
 
 ### C. 通过 `pluginManager.loadPlugin()` 立即加载
 

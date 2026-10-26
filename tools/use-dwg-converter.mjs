@@ -131,15 +131,15 @@ const targets = [
     path: join(
       rootDir,
       'packages',
-      'cad-simple-viewer-example',
+      'cad-simple-viewer-demo',
       'package.json'
     ),
-    label: 'cad-simple-viewer-example/package.json',
+    label: 'cad-simple-viewer-demo/package.json',
     transform: replacePackageDep
   },
   {
-    path: join(rootDir, 'packages', 'cad-viewer-example', 'package.json'),
-    label: 'cad-viewer-example/package.json',
+    path: join(rootDir, 'packages', 'cad-editor-demo', 'package.json'),
+    label: 'cad-editor-demo/package.json',
     transform: replacePackageDep
   },
   {
@@ -166,15 +166,15 @@ const targets = [
     path: join(
       rootDir,
       'packages',
-      'cad-simple-viewer-example',
+      'cad-simple-viewer-demo',
       'vite.config.ts'
     ),
-    label: 'cad-simple-viewer-example/vite.config.ts',
+    label: 'cad-simple-viewer-demo/vite.config.ts',
     transform: replaceViteLibreDwg
   },
   {
-    path: join(rootDir, 'packages', 'cad-viewer-example', 'vite.config.ts'),
-    label: 'cad-viewer-example/vite.config.ts',
+    path: join(rootDir, 'packages', 'cad-editor-demo', 'vite.config.ts'),
+    label: 'cad-editor-demo/vite.config.ts',
     transform: replaceViteLibreDwg
   },
   {
@@ -214,22 +214,22 @@ const targets = [
     path: join(
       rootDir,
       'packages',
-      'cad-simple-viewer-example',
+      'cad-simple-viewer-demo',
       'src',
       'registerLibreDwg.ts'
     ),
-    label: 'cad-simple-viewer-example/src/registerLibreDwg.ts',
+    label: 'cad-simple-viewer-demo/src/registerLibreDwg.ts',
     transform: replaceRegisterModule
   },
   {
     path: join(
       rootDir,
       'packages',
-      'cad-viewer-example',
+      'cad-editor-demo',
       'src',
       'registerLibreDwg.ts'
     ),
-    label: 'cad-viewer-example/src/registerLibreDwg.ts',
+    label: 'cad-editor-demo/src/registerLibreDwg.ts',
     transform: replaceRegisterModule
   },
   {
@@ -261,11 +261,11 @@ const targets = [
     path: join(
       rootDir,
       'packages',
-      'cad-simple-viewer-example',
+      'cad-simple-viewer-demo',
       'src',
       'main.ts'
     ),
-    label: 'cad-simple-viewer-example/src/main.ts',
+    label: 'cad-simple-viewer-demo/src/main.ts',
     transform(content) {
       let next = replaceLibreDwgParserWorkerFile(content)
       if (next == null) {
@@ -286,11 +286,11 @@ const targets = [
     path: join(
       rootDir,
       'packages',
-      'cad-simple-viewer-example',
+      'cad-simple-viewer-demo',
       'src',
       'htmlConverter.ts'
     ),
-    label: 'cad-simple-viewer-example/src/htmlConverter.ts',
+    label: 'cad-simple-viewer-demo/src/htmlConverter.ts',
     transform(content) {
       let next = replaceLibreDwgParserWorkerFile(content)
       if (next == null) {
@@ -308,8 +308,8 @@ const targets = [
     }
   },
   {
-    path: join(rootDir, 'packages', 'cad-viewer-example', 'src', 'main.ts'),
-    label: 'cad-viewer-example/src/main.ts',
+    path: join(rootDir, 'packages', 'cad-editor-demo', 'src', 'main.ts'),
+    label: 'cad-editor-demo/src/main.ts',
     transform(content) {
       let next = replaceLibreDwgParserWorkerFile(content)
       if (next == null) {

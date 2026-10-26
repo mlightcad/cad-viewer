@@ -204,7 +204,7 @@ registerLazyPdfPlugin(pm)
 registerLazySvgPlugin(pm)
 ```
 
-예제 앱: `packages/cad-simple-viewer-example/src/main.ts`.
+예제 앱: `packages/cad-simple-viewer-demo/src/main.ts`.
 
 사용자가 트리거 명령을 실행할 때 명령이 아직 등록되지 않았다면 `AcApDocManager`가 자동으로 `loadByTrigger`를 호출합니다:
 
@@ -217,7 +217,7 @@ AcApDocManager.instance.sendStringToExecute('cpdf')
 
 ### B. 인라인 지연 등록(cad-viewer 컴포넌트)
 
-`@mlightcad/cad-viewer`는 `registerLazyPlugins()`(`packages/cad-viewer/src/app/register.ts`)에서 PDF/HTML/SVG 플러그인을 등록하며, 이는 `app.ts`의 `initializeCadViewer()`에서 호출됩니다. Vue 컴포넌트 소비자는 추가 설정 없이 지연 플러그인을 얻습니다.
+`@mlightcad/cad-viewer`는 `registerLazyPlugins()`(`packages/cad-editor/src/app/register.ts`)에서 PDF/HTML/SVG 플러그인을 등록하며, 이는 `app.ts`의 `initializeCadViewer()`에서 호출됩니다. Vue 컴포넌트 소비자는 추가 설정 없이 지연 플러그인을 얻습니다.
 
 ### C. `pluginManager.loadPlugin()`을 통한 즉시 로드
 

@@ -204,7 +204,7 @@ registerLazyPdfPlugin(pm)
 registerLazySvgPlugin(pm)
 ```
 
-Örnek uygulama: `packages/cad-simple-viewer-example/src/main.ts`.
+Örnek uygulama: `packages/cad-simple-viewer-demo/src/main.ts`.
 
 Kullanıcı bir tetikleme komutu çalıştırdığında, komut henüz kayıtlı değilse `AcApDocManager` otomatik olarak `loadByTrigger` çağırır:
 
@@ -217,7 +217,7 @@ AcApDocManager.instance.sendStringToExecute('cpdf')
 
 ### B. Satır içi tembel kayıt (cad-viewer bileşeni)
 
-`@mlightcad/cad-viewer`, PDF/HTML/SVG eklentilerini `registerLazyPlugins()` (`packages/cad-viewer/src/app/register.ts`) içinde kaydeder; bu fonksiyon `app.ts` içindeki `initializeCadViewer()` tarafından çağrılır. Vue bileşeninin tüketicileri ek kurulum yapmadan tembel eklentilere sahip olur.
+`@mlightcad/cad-viewer`, PDF/HTML/SVG eklentilerini `registerLazyPlugins()` (`packages/cad-editor/src/app/register.ts`) içinde kaydeder; bu fonksiyon `app.ts` içindeki `initializeCadViewer()` tarafından çağrılır. Vue bileşeninin tüketicileri ek kurulum yapmadan tembel eklentilere sahip olur.
 
 ### C. `pluginManager.loadPlugin()` ile hemen yükleme
 

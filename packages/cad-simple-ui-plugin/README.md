@@ -67,9 +67,9 @@ await acuiRegisterSimpleUiPlugin(AcApDocManager.instance.pluginManager, {
 })
 ```
 
-### Example app pattern (`cad-simple-viewer-example`)
+### Example app pattern (`cad-simple-viewer-demo`)
 
-The [vanilla example](../cad-simple-viewer-example) **defers viewer and plugin initialization until the user opens a file** (local upload or predefined sample). That keeps the first paint lightweight:
+The [vanilla example](../cad-simple-viewer-demo) **defers viewer and plugin initialization until the user opens a file** (local upload or predefined sample). That keeps the first paint lightweight:
 
 1. Page load — only file picker UI; no `AcApDocManager` yet.
 2. First open — `acedApplyUiTheme`, `AcApDocManager.createInstance`, lazy export plugins, then `acuiRegisterSimpleUiPlugin`.
@@ -229,11 +229,11 @@ Usage:
 
 Limitations: text produced by fields (only the stored text is searched) and xref content are not searched; non-constant `ATTDEF` templates and `ATTDEF`s loose in a layout are not searched; a `DIMENSION` whose block has no matching text can still match its stored override text even if the block does not display it; only entities present in the loaded database are searched (what the DXF/DWG parser attaches to each layout - a layout never opened is searched from the database, not from the rendered scene); selecting a hit in a layout that has never been visited waits for its entities to be converted (up to 15 s) before zooming; no regex / whole-word / replace; selection highlight requires entity selection to be enabled on the view (it is by default); on large drawings the synchronous whole-drawing pass can hitch the UI briefly.
 
-Known follow-ups: the whole-drawing pass is synchronous and runs on the UI thread (it has not been benchmarked on large drawings; chunking or a worker is a possible follow-up); the real-drawing end-to-end check in `cad-viewer-example` (`find-b11l1.spec.ts`) is opt-in via `B11L1_DWG` and skipped in the default CI run, which exercises the committed fixtures only.
+Known follow-ups: the whole-drawing pass is synchronous and runs on the UI thread (it has not been benchmarked on large drawings; chunking or a worker is a possible follow-up); the real-drawing end-to-end check in `cad-editor-demo` (`find-b11l1.spec.ts`) is opt-in via `B11L1_DWG` and skipped in the default CI run, which exercises the committed fixtures only.
 
 Client-side only: there is no backend, index or upload - the search is a pass over the drawing already loaded in the browser, so the static-hosting / client-side deployment recommendation is unchanged.
 
-Demo / verification: `__tests__/fixtures/find-text.dxf` is a fictitious single-layout drawing (Portuguese labels, an MTEXT with formatting, an attribute, an off layer) and `../cad-viewer-example/e2e/fixtures/find-layouts.dxf` a fictitious three-layout drawing (Model, Planta, Alçados). `__tests__/e2e/find-text.e2e.mjs` and `__tests__/e2e/find-layouts.e2e.mjs` drive `cad-simple-viewer-example` with them in Chromium (see the file headers for usage); `packages/cad-viewer-example/e2e/tests/find-layouts.spec.ts` covers the Vue UI.
+Demo / verification: `__tests__/fixtures/find-text.dxf` is a fictitious single-layout drawing (Portuguese labels, an MTEXT with formatting, an attribute, an off layer) and `../cad-editor-demo/e2e/fixtures/find-layouts.dxf` a fictitious three-layout drawing (Model, Planta, Alçados). `__tests__/e2e/find-text.e2e.mjs` and `__tests__/e2e/find-layouts.e2e.mjs` drive `cad-simple-viewer-demo` with them in Chromium (see the file headers for usage); `packages/cad-editor-demo/e2e/tests/find-layouts.spec.ts` covers the Vue UI.
 
 ### Collapsible toolbar
 
@@ -382,7 +382,7 @@ plugin.setToolbarItems(
 )
 ```
 
-See `cad-simple-viewer-example` (`demoToolbarPresets.ts`) for a working layout switcher prepended to the **viewer toolbar** (via `acuiCreateToolbarLayoutSwitcher` + `setToolbarItems`). The example dev toolbar also includes a layout dropdown that calls the same preset helpers.
+See `cad-simple-viewer-demo` (`demoToolbarPresets.ts`) for a working layout switcher prepended to the **viewer toolbar** (via `acuiCreateToolbarLayoutSwitcher` + `setToolbarItems`). The example dev toolbar also includes a layout dropdown that calls the same preset helpers.
 
 ### `AcUiToolbarItem` fields
 
@@ -699,5 +699,5 @@ Omit the layer button from `items` if you do not want the layer dock UI or `laye
 
 ## See also
 
-- [cad-simple-viewer-example](../cad-simple-viewer-example) — vanilla TypeScript demo (lazy init on first file open; uses `acuiRegisterSimpleUiPlugin`)
+- [cad-simple-viewer-demo](../cad-simple-viewer-demo) — vanilla TypeScript demo (lazy init on first file open; uses `acuiRegisterSimpleUiPlugin`)
 - [cad-viewer](../cad-viewer) — full Vue + Element Plus application shell

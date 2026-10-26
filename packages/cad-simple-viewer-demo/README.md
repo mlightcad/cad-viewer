@@ -54,7 +54,7 @@ pnpm dev:html-converter
 Or from this package:
 
 ```bash
-cd packages/cad-simple-viewer-example
+cd packages/cad-simple-viewer-demo
 pnpm dev
 # or: pnpm dev:html-converter
 ```
@@ -180,7 +180,7 @@ From the monorepo root: `pnpm dev:simple`, `pnpm preview:simple`.
 
 ## Related packages
 
-- [`@mlightcad/cad-viewer`](../cad-viewer) + [`cad-viewer-example`](../cad-viewer-example) — Full Vue UI, i18n, ribbons, dialogs
+- [`@mlightcad/cad-viewer`](../cad-viewer) + [`cad-editor-demo`](../cad-editor-demo) — Full Vue UI, i18n, ribbons, dialogs
 - [`@mlightcad/cad-html-plugin`](../cad-html-plugin) — HTML export details and `viewer-runtime.iife.js`
 - [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli) — Headless HTML export (same viewer path as this example)
 

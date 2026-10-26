@@ -204,7 +204,7 @@ registerLazyPdfPlugin(pm)
 registerLazySvgPlugin(pm)
 ```
 
-サンプルアプリ：`packages/cad-simple-viewer-example/src/main.ts`。
+サンプルアプリ：`packages/cad-simple-viewer-demo/src/main.ts`。
 
 ユーザーがトリガーコマンドを実行すると、コマンドがまだ登録されていない場合、`AcApDocManager` が自動的に `loadByTrigger` を呼び出します。
 
@@ -217,7 +217,7 @@ AcApDocManager.instance.sendStringToExecute('cpdf')
 
 ### B. インラインの遅延登録（cad-viewer コンポーネント）
 
-`@mlightcad/cad-viewer` は、`app.ts` の `initializeCadViewer()` から呼び出される `registerLazyPlugins()`（`packages/cad-viewer/src/app/register.ts`）で PDF/HTML/SVG プラグインを登録します。Vue コンポーネントの利用者は、追加の設定なしで遅延プラグインを利用できます。
+`@mlightcad/cad-viewer` は、`app.ts` の `initializeCadViewer()` から呼び出される `registerLazyPlugins()`（`packages/cad-editor/src/app/register.ts`）で PDF/HTML/SVG プラグインを登録します。Vue コンポーネントの利用者は、追加の設定なしで遅延プラグインを利用できます。
 
 ### C. `pluginManager.loadPlugin()` による即時ロード
 

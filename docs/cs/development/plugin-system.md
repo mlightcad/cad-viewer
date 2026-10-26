@@ -204,7 +204,7 @@ registerLazyPdfPlugin(pm)
 registerLazySvgPlugin(pm)
 ```
 
-Ukázková aplikace: `packages/cad-simple-viewer-example/src/main.ts`.
+Ukázková aplikace: `packages/cad-simple-viewer-demo/src/main.ts`.
 
 Když uživatel spustí spouštěcí příkaz, `AcApDocManager` automaticky zavolá `loadByTrigger`, pokud příkaz ještě není zaregistrován:
 
@@ -217,7 +217,7 @@ Při použití `sendStringToExecute` **nemusíte** volat `loadByTrigger` ručně
 
 ### B. Inline líná registrace (komponenta cad-viewer)
 
-`@mlightcad/cad-viewer` registruje pluginy PDF/HTML/SVG v `registerLazyPlugins()` (`packages/cad-viewer/src/app/register.ts`), která je volána z `initializeCadViewer()` v `app.ts`. Spotřebitelé komponenty Vue získají líné pluginy bez dalšího nastavení.
+`@mlightcad/cad-viewer` registruje pluginy PDF/HTML/SVG v `registerLazyPlugins()` (`packages/cad-editor/src/app/register.ts`), která je volána z `initializeCadViewer()` v `app.ts`. Spotřebitelé komponenty Vue získají líné pluginy bez dalšího nastavení.
 
 ### C. Okamžité načtení pomocí `pluginManager.loadPlugin()`
 

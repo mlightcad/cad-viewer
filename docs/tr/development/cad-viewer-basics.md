@@ -36,5 +36,5 @@ Daha fazla ayrıntı için [**Simple Viewer Entegrasyonu**](./integrate-simple-c
 
 ## Örnekler
 
-- [`cad-simple-viewer-example`](https://github.com/mlightcad/cad-simple-viewer-example): `cad-simple-viewer` bileşeninin gerçek bir projede nasıl kullanılacağını gösteren örnek uygulama.
-- [`cad-viewer-example`](https://github.com/mlightcad/cad-viewer-example): `cad-viewer` bileşeninin gerçek bir projede nasıl kullanılacağını gösteren örnek uygulama.
+- [`cad-simple-viewer-demo`](https://github.com/mlightcad/cad-simple-viewer-example): `cad-simple-viewer` bileşeninin gerçek bir projede nasıl kullanılacağını gösteren örnek uygulama.
+- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): `cad-viewer` bileşeninin gerçek bir projede nasıl kullanılacağını gösteren örnek uygulama.

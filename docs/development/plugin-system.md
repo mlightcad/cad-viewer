@@ -204,7 +204,7 @@ registerLazyPdfPlugin(pm)
 registerLazySvgPlugin(pm)
 ```
 
-Example app: `packages/cad-simple-viewer-example/src/main.ts`.
+Example app: `packages/cad-simple-viewer-demo/src/main.ts`.
 
 When the user runs a trigger command, `AcApDocManager` automatically calls `loadByTrigger` if the command is not yet registered:
 
@@ -217,7 +217,7 @@ You do **not** need to call `loadByTrigger` manually when using `sendStringToExe
 
 ### B. Inline lazy registration (cad-viewer component)
 
-`@mlightcad/cad-viewer` registers PDF/HTML/SVG plugins in `registerLazyPlugins()` (`packages/cad-viewer/src/app/register.ts`), invoked from `initializeCadViewer()` in `app.ts`. Consumers of the Vue component get lazy plugins without extra setup.
+`@mlightcad/cad-viewer` registers PDF/HTML/SVG plugins in `registerLazyPlugins()` (`packages/cad-editor/src/app/register.ts`), invoked from `initializeCadViewer()` in `app.ts`. Consumers of the Vue component get lazy plugins without extra setup.
 
 ### C. Eager load via `pluginManager.loadPlugin()`
 

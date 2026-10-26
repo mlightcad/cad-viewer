@@ -6,7 +6,7 @@
  *   - Target DWG at AB_DWG (default: 14.1 MiB water/drainage fixture)
  *
  * Run:
- *   node packages/cad-simple-viewer-example/scripts/ab-progressive-open.mjs
+ *   node packages/cad-simple-viewer-demo/scripts/ab-progressive-open.mjs
  *
  * Optional env:
  *   AB_DWG=D:/path/to.dwg
@@ -22,8 +22,8 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '../../..')
-const EXAMPLE = join(ROOT, 'packages/cad-simple-viewer-example')
-const PLAYWRIGHT_EXAMPLE = join(ROOT, 'packages/cad-viewer-example')
+const EXAMPLE = join(ROOT, 'packages/cad-simple-viewer-demo')
+const PLAYWRIGHT_EXAMPLE = join(ROOT, 'packages/cad-editor-demo')
 const require = createRequire(join(PLAYWRIGHT_EXAMPLE, 'package.json'))
 const { chromium } = require('@playwright/test')
 const PORT = Number(process.env.AB_PORT || 5174)

@@ -1,7 +1,7 @@
 /**
  * One-shot OPENPROF for a DWG (warmup + one measure).
  *
- *   AB_DWG=C:/path/to.dwg node packages/cad-simple-viewer-example/scripts/openprof-once.mjs
+ *   AB_DWG=C:/path/to.dwg node packages/cad-simple-viewer-demo/scripts/openprof-once.mjs
  * Optional: AB_PORT=5177 AB_WORKER=1 AB_PROGRESSIVE=0 AB_SKIP_SERVER=1 AB_BASE_URL=...
  */
 import { spawn } from 'node:child_process'
@@ -12,9 +12,9 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '../../..')
-const EXAMPLE = join(ROOT, 'packages/cad-simple-viewer-example')
+const EXAMPLE = join(ROOT, 'packages/cad-simple-viewer-demo')
 // This package has no @playwright/test; share the e2e example's install.
-const PLAYWRIGHT_EXAMPLE = join(ROOT, 'packages/cad-viewer-example')
+const PLAYWRIGHT_EXAMPLE = join(ROOT, 'packages/cad-editor-demo')
 const require = createRequire(join(PLAYWRIGHT_EXAMPLE, 'package.json'))
 const { chromium } = require('@playwright/test')
 

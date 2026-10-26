@@ -16,7 +16,7 @@ function isEnvFlagEnabled(name: string): boolean {
   return flag === '1' || flag?.toLowerCase() === 'true'
 }
 
-/** Opt-in only — matches cad-viewer-example. Auto-linking a stale sibling dist breaks builds. */
+/** Opt-in only — matches cad-editor-demo. Auto-linking a stale sibling dist breaks builds. */
 const useLocalMtextRenderer = isEnvFlagEnabled(
   'CAD_VIEWER_USE_LOCAL_MTEXT_RENDERER'
 )

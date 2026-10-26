@@ -102,7 +102,7 @@ npm install @mlightcad/cad-viewer
 
 ## 使用方法
 
-サブパッケージ `cad-viewer-example` を一例として参照してください。
+サブパッケージ `cad-editor-demo` を一例として参照してください。
 
 ### 基本的な使用方法
 

@@ -153,9 +153,9 @@ Kanonickým zdrojem pravdy pro každé vydání je sekce `overrides` v `pnpm-wor
 
 ---
 
-## Metoda 2 — Sledujte upgradovací commity `cad-simple-viewer-example`
+## Metoda 2 — Sledujte upgradovací commity `cad-simple-viewer-demo`
 
-Repozitář [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) je oficiální minimální hostitel pro `cad-simple-viewer`. Pokaždé, když je jádro vydáno, obdrží ukázkový projekt commit s názvem `feat: upgrade to cad-simple-viewer vX.Y.Z`, který aktualizuje **všechny související závislosti společně**. Tento commit je praktická, konkrétní reference ukazující přesně, které verze správci pro dané vydání použili.
+Repozitář [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) je oficiální minimální hostitel pro `cad-simple-viewer`. Pokaždé, když je jádro vydáno, obdrží ukázkový projekt commit s názvem `feat: upgrade to cad-simple-viewer vX.Y.Z`, který aktualizuje **všechny související závislosti společně**. Tento commit je praktická, konkrétní reference ukazující přesně, které verze správci pro dané vydání použili.
 
 ### Kroky
 
@@ -240,4 +240,4 @@ A: Semver rozsahy (`^`, `~`) fungují dobře pro navyšování na úrovni patch 
 
 **Q: Používám npm/yarn místo pnpm. Platí to stále?**
 
-A: Ano. Koordinace verzí je stejná bez ohledu na správce balíčků. Použijte `overrides` (pnpm), `resolutions` (yarn) nebo `overrides` (npm) s hodnotami z `pnpm-workspace.yaml`, nebo jednoduše připněte verze z diffu `cad-simple-viewer-example` ve vašem `package.json`.
+A: Ano. Koordinace verzí je stejná bez ohledu na správce balíčků. Použijte `overrides` (pnpm), `resolutions` (yarn) nebo `overrides` (npm) s hodnotami z `pnpm-workspace.yaml`, nebo jednoduše připněte verze z diffu `cad-simple-viewer-demo` ve vašem `package.json`.

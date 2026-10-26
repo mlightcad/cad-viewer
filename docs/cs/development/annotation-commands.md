@@ -96,7 +96,7 @@ Tento návrh umožňuje:
 
 Při vytváření anotační entity se zobrazí následující komponenta uživatelského rozhraní:
 
--   [`MlEntityDrawStyleToolbar`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/layout/MlEntityDrawStyleToolbar.vue)
+-   [`MlEntityDrawStyleToolbar`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-editor/src/component/layout/MlEntityDrawStyleToolbar.vue)
 
 #### Chování
 

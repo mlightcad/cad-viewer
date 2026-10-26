@@ -102,7 +102,7 @@ npm install @mlightcad/cad-viewer
 
 ## Usage
 
-Please refer to sub-package `cad-viewer-example` as one example.
+Please refer to sub-package `cad-editor-demo` as one example.
 
 ### Basic Usage
 

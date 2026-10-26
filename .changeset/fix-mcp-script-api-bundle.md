@@ -15,10 +15,10 @@
 "@mlightcad/cad-simple-ui-plugin": patch
 "@mlightcad/cad-simple-viewer": patch
 "@mlightcad/cad-simple-viewer-cli": patch
-"@mlightcad/cad-simple-viewer-example": patch
+"@mlightcad/cad-simple-viewer-demo": patch
 "@mlightcad/cad-svg-plugin": patch
 "@mlightcad/cad-viewer": patch
-"@mlightcad/cad-viewer-example": patch
+"@mlightcad/cad-editor-demo": patch
 "@mlightcad/pdf-renderer": patch
 "@mlightcad/three-renderer": patch
 ---

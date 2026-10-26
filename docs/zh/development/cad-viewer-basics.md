@@ -36,6 +36,6 @@ title: "MLightCAD 基础"
 
 ## 示例
 
-- [`cad-simple-viewer-example`](https://github.com/mlightcad/cad-simple-viewer-example)：演示如何在真实项目中使用 `cad-simple-viewer` 组件的示例应用。
-- [`cad-viewer-example`](https://github.com/mlightcad/cad-viewer-example)：演示如何在真实项目中使用 `cad-viewer` 组件的示例应用。
+- [`cad-simple-viewer-demo`](https://github.com/mlightcad/cad-simple-viewer-example)：演示如何在真实项目中使用 `cad-simple-viewer` 组件的示例应用。
+- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example)：演示如何在真实项目中使用 `cad-viewer` 组件的示例应用。
 

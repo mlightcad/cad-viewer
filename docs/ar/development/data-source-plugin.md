@@ -6,7 +6,7 @@ title: "إضافة مصدر البيانات"
 
 تشرح هذه الصفحة آلية **إضافة مصدر البيانات** في `@mlightcad/cad-simple-viewer` — الطبقة القابلة للتوصيل التي تقرر **من أين تأتي الرسومات** (القرص المحلي، عنوان URL عبر HTTP، OneDrive، Google Drive، …). وتغطي كيفية عمل الآلية، وكيفية إنشاء مصدر بيانات خاص بك، وكيفية تسجيله واستخدامه.
 
-تعيش الآلية في `packages/cad-simple-viewer/src/app/dataSource`. ويُشحن تنفيذ مرجعي كامل كحزمة npm منفصلة: `@mlightcad/cad-onedrive-plugin` (`packages/cad-onedrive-plugin`)، ويستخدمها التطبيق التجريبي في `packages/cad-simple-viewer-example`.
+تعيش الآلية في `packages/cad-simple-viewer/src/app/dataSource`. ويُشحن تنفيذ مرجعي كامل كحزمة npm منفصلة: `@mlightcad/cad-onedrive-plugin` (`packages/cad-onedrive-plugin`)، ويستخدمها التطبيق التجريبي في `packages/cad-simple-viewer-demo`.
 
 > بالنسبة لـ **إضافات الأوامر** (أوامر التصدير مثل `cpdf` و`chtml`)، راجع [نظام الإضافات](./plugin-system). إضافة مصدر البيانات *هي* `AcApPlugin` — لكنها تستخدم `onLoad` لتسجيل مصدر بيانات بدلًا من أمر.
 
@@ -351,7 +351,7 @@ await registerOneDrivePlugin(AcApDocManager.instance.pluginManager, {
 })
 ```
 
-أبقِ كعب التسجيل في الحزمة الأولية بالاستيراد من المسار الفرعي `/register` والاستيراد الديناميكي للباقي (راجع `packages/cad-simple-viewer-example/src/register.ts`):
+أبقِ كعب التسجيل في الحزمة الأولية بالاستيراد من المسار الفرعي `/register` والاستيراد الديناميكي للباقي (راجع `packages/cad-simple-viewer-demo/src/register.ts`):
 
 ```typescript
 const { registerOneDrivePlugin } = await import('@mlightcad/cad-onedrive-plugin/register')
@@ -403,7 +403,7 @@ if (file) {
 }
 ```
 
-**مأزق إيماءة المستخدم** (من `cad-simple-viewer-example/src/main.ts`): إذا كان معالج النقر يجب أن ينتظر (`await`) تهيئة العارض قبل تشغيل إجراء `pick`، فستفقد إيماءة المستخدم وتُحجب النافذة المنبثقة. إما أن تشغّل الإجراء بشكل متزامن عندما يكون التهيئة مكتملًا، أو أن تعرض تلميحًا *سجّل الدخول أولًا، ثم افتح* لعناصر `pick` (راجع `handleDataSourceMenuAction` في التطبيق النموذجي).
+**مأزق إيماءة المستخدم** (من `cad-simple-viewer-demo/src/main.ts`): إذا كان معالج النقر يجب أن ينتظر (`await`) تهيئة العارض قبل تشغيل إجراء `pick`، فستفقد إيماءة المستخدم وتُحجب النافذة المنبثقة. إما أن تشغّل الإجراء بشكل متزامن عندما يكون التهيئة مكتملًا، أو أن تعرض تلميحًا *سجّل الدخول أولًا، ثم افتح* لعناصر `pick` (راجع `handleDataSourceMenuAction` في التطبيق النموذجي).
 
 ---
 
@@ -419,7 +419,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | مساعد تسجيل فوري (يتحقق من `clientId`) |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | مصنع غير متزامن لنسخة الإضافة |
 
-يوصّل التطبيق النموذجي ذلك عبر إعداد البيئة (`packages/cad-simple-viewer-example/src/onedriveEnv.ts`): عندما تكون `VITE_MSAL_CLIENT_ID` مضبوطة، يسجّل `registerOneDriveFromEnv` الإضافة؛ وتسرد لوحة الهبوط عنصر *تسجيل الدخول إلى OneDrive* عبر `extraMenuItems` في `AcUiFileOpenPanel`.
+يوصّل التطبيق النموذجي ذلك عبر إعداد البيئة (`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`): عندما تكون `VITE_MSAL_CLIENT_ID` مضبوطة، يسجّل `registerOneDriveFromEnv` الإضافة؛ وتسرد لوحة الهبوط عنصر *تسجيل الدخول إلى OneDrive* عبر `extraMenuItems` في `AcUiFileOpenPanel`.
 
 **إعداد تطبيق Azure** (لـ OneDrive): سجّل **تطبيق صفحة واحدة (Single-page application)** في Microsoft Entra ID، وأضف URI لإعادة التوجيه يطابق أصل تطبيقك، وامنح أذونات Graph المفوَّضة `User.Read` + `Files.Read.All` (رموز منتقي OneDrive الشخصي تغطي أيضًا `OneDrive.ReadOnly`).
 

@@ -6,7 +6,7 @@ title: "Plugin datového zdroje"
 
 Tato stránka vysvětluje mechanismus **pluginu datového zdroje** v `@mlightcad/cad-simple-viewer` — zásuvnou vrstvu, která rozhoduje o tom, **odkud výkresy pocházejí** (lokální disk, HTTP URL, OneDrive, Google Drive, …). Popisuje, jak mechanismus funguje, jak vytvořit vlastní datový zdroj a jak jej zaregistrovat a používat.
 
-Mechanismus žije v `packages/cad-simple-viewer/src/app/dataSource`. Kompletní referenční implementace je dodávána jako samostatný balíček npm: `@mlightcad/cad-onedrive-plugin` (`packages/cad-onedrive-plugin`), který používá ukázková aplikace v `packages/cad-simple-viewer-example`.
+Mechanismus žije v `packages/cad-simple-viewer/src/app/dataSource`. Kompletní referenční implementace je dodávána jako samostatný balíček npm: `@mlightcad/cad-onedrive-plugin` (`packages/cad-onedrive-plugin`), který používá ukázková aplikace v `packages/cad-simple-viewer-demo`.
 
 > Pro **pluginy příkazů** (exportní příkazy jako `cpdf`, `chtml`) viz [Systém pluginů](./plugin-system). Plugin datového zdroje *je* `AcApPlugin` — pouze používá `onLoad` k registraci datového zdroje namísto příkazu.
 
@@ -351,7 +351,7 @@ await registerOneDrivePlugin(AcApDocManager.instance.pluginManager, {
 })
 ```
 
-Udržujte registrační stub v počátečním bundlu importem z podcesty `/register` a zbytek importujte dynamicky (viz `packages/cad-simple-viewer-example/src/register.ts`):
+Udržujte registrační stub v počátečním bundlu importem z podcesty `/register` a zbytek importujte dynamicky (viz `packages/cad-simple-viewer-demo/src/register.ts`):
 
 ```typescript
 const { registerOneDrivePlugin } = await import('@mlightcad/cad-onedrive-plugin/register')
@@ -403,7 +403,7 @@ if (file) {
 }
 ```
 
-**Úskalí uživatelského gesta** (z `cad-simple-viewer-example/src/main.ts`): pokud obsluha kliknutí musí nejprve `await`ovat inicializaci prohlížeče, než spustí akci `pick`, uživatelské gesto se ztratí a popup je zablokován. Buď spusťte akci synchronně, když je již inicializováno, nebo u položek `pick` zobrazte nápovědu *nejprve se přihlaste, poté otevřete* (viz `handleDataSourceMenuAction` v ukázkové aplikaci).
+**Úskalí uživatelského gesta** (z `cad-simple-viewer-demo/src/main.ts`): pokud obsluha kliknutí musí nejprve `await`ovat inicializaci prohlížeče, než spustí akci `pick`, uživatelské gesto se ztratí a popup je zablokován. Buď spusťte akci synchronně, když je již inicializováno, nebo u položek `pick` zobrazte nápovědu *nejprve se přihlaste, poté otevřete* (viz `handleDataSourceMenuAction` v ukázkové aplikaci).
 
 ---
 
@@ -419,7 +419,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | Eager pomocník pro registraci (validuje `clientId`) |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | Asynchronní továrna pro instanci pluginu |
 
-Ukázková aplikace jej zapojuje přes konfiguraci prostředí (`packages/cad-simple-viewer-example/src/onedriveEnv.ts`): když je nastaven `VITE_MSAL_CLIENT_ID`, `registerOneDriveFromEnv` plugin zaregistruje; vstupní panel vypisuje položku *Přihlásit se k OneDrive* prostřednictvím `extraMenuItems` panelu `AcUiFileOpenPanel`.
+Ukázková aplikace jej zapojuje přes konfiguraci prostředí (`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`): když je nastaven `VITE_MSAL_CLIENT_ID`, `registerOneDriveFromEnv` plugin zaregistruje; vstupní panel vypisuje položku *Přihlásit se k OneDrive* prostřednictvím `extraMenuItems` panelu `AcUiFileOpenPanel`.
 
 **Nastavení aplikace Azure** (pro OneDrive): zaregistrujte **Single-page application** v Microsoft Entra ID, přidejte redirect URI odpovídající původu vaší aplikace a udělte delegovaná oprávnění Graph `User.Read` + `Files.Read.All` (tokeny osobního výběru OneDrive pokrývají také `OneDrive.ReadOnly`).
 

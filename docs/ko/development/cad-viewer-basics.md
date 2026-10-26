@@ -36,5 +36,5 @@ title: "MLightCAD 기본"
 
 ## 예제
 
-- [`cad-simple-viewer-example`](https://github.com/mlightcad/cad-simple-viewer-example): 실제 프로젝트에서 `cad-simple-viewer` 컴포넌트를 사용하는 방법을 보여주는 예제 애플리케이션입니다.
-- [`cad-viewer-example`](https://github.com/mlightcad/cad-viewer-example): 실제 프로젝트에서 `cad-viewer` 컴포넌트를 사용하는 방법을 보여주는 예제 애플리케이션입니다.
+- [`cad-simple-viewer-demo`](https://github.com/mlightcad/cad-simple-viewer-example): 실제 프로젝트에서 `cad-simple-viewer` 컴포넌트를 사용하는 방법을 보여주는 예제 애플리케이션입니다.
+- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): 실제 프로젝트에서 `cad-viewer` 컴포넌트를 사용하는 방법을 보여주는 예제 애플리케이션입니다.

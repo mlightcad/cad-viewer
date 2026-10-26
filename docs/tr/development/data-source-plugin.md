@@ -6,7 +6,7 @@ title: "Veri Kaynağı Eklentisi"
 
 Bu sayfa, `@mlightcad/cad-simple-viewer` içindeki **veri kaynağı eklentisi** mekanizmasını açıklar — **çizimlerin nereden geldiğine** karar veren takılabilir katman (yerel disk, HTTP URL, OneDrive, Google Drive, …). Mekanizmanın nasıl çalıştığını, kendi veri kaynağınızı nasıl oluşturacağınızı ve nasıl kaydedip kullanacağınızı kapsar.
 
-Mekanizma `packages/cad-simple-viewer/src/app/dataSource` içinde yer alır. Tam bir başvuru uygulaması ayrı bir npm paketi olarak sunulur: `@mlightcad/cad-onedrive-plugin` (`packages/cad-onedrive-plugin`); `packages/cad-simple-viewer-example` içindeki demo uygulaması tarafından kullanılır.
+Mekanizma `packages/cad-simple-viewer/src/app/dataSource` içinde yer alır. Tam bir başvuru uygulaması ayrı bir npm paketi olarak sunulur: `@mlightcad/cad-onedrive-plugin` (`packages/cad-onedrive-plugin`); `packages/cad-simple-viewer-demo` içindeki demo uygulaması tarafından kullanılır.
 
 > **Komut eklentileri** (`cpdf`, `chtml` gibi dışa aktarma komutları) için [Eklenti Sistemi](./plugin-system) sayfasına bakın. Bir veri kaynağı eklentisi *de* bir `AcApPlugin`'tir — yalnızca komut yerine `onLoad` ile bir veri kaynağı kaydeder.
 
@@ -351,7 +351,7 @@ await registerOneDrivePlugin(AcApDocManager.instance.pluginManager, {
 })
 ```
 
-Kayıt taslağını, `/register` alt yolundan içe aktarıp geri kalanını dinamik olarak içe aktararak ilk pakette tutun (`packages/cad-simple-viewer-example/src/register.ts` dosyasına bakın):
+Kayıt taslağını, `/register` alt yolundan içe aktarıp geri kalanını dinamik olarak içe aktararak ilk pakette tutun (`packages/cad-simple-viewer-demo/src/register.ts` dosyasına bakın):
 
 ```typescript
 const { registerOneDrivePlugin } = await import('@mlightcad/cad-onedrive-plugin/register')
@@ -403,7 +403,7 @@ if (file) {
 }
 ```
 
-**Kullanıcı hareketi tuzağı** (`cad-simple-viewer-example/src/main.ts` dosyasından): tıklama işleyicisinin bir `pick` eylemini çalıştırmadan önce görüntüleyici başlatmayı `await` ile beklemesi gerekiyorsa, kullanıcı hareketi kaybolur ve açılır pencere engellenir. Ya zaten başlatılmışsa eylemi eşzamanlı olarak çalıştırın ya da `pick` öğeleri için *önce oturum aç, sonra aç* ipucu gösterin (örnek uygulamadaki `handleDataSourceMenuAction` fonksiyonuna bakın).
+**Kullanıcı hareketi tuzağı** (`cad-simple-viewer-demo/src/main.ts` dosyasından): tıklama işleyicisinin bir `pick` eylemini çalıştırmadan önce görüntüleyici başlatmayı `await` ile beklemesi gerekiyorsa, kullanıcı hareketi kaybolur ve açılır pencere engellenir. Ya zaten başlatılmışsa eylemi eşzamanlı olarak çalıştırın ya da `pick` öğeleri için *önce oturum aç, sonra aç* ipucu gösterin (örnek uygulamadaki `handleDataSourceMenuAction` fonksiyonuna bakın).
 
 ---
 
@@ -419,7 +419,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | Hemen kayıt yardımcısı (`clientId` doğrular) |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | Eklenti örneği için asenkron fabrika |
 
-Örnek uygulama bunu ortam yapılandırması aracılığıyla bağlar (`packages/cad-simple-viewer-example/src/onedriveEnv.ts`): `VITE_MSAL_CLIENT_ID` ayarlandığında `registerOneDriveFromEnv` eklentiyi kaydeder; açılış paneli `AcUiFileOpenPanel`'in `extraMenuItems` özelliği aracılığıyla bir *OneDrive'da oturum aç* öğesi listeler.
+Örnek uygulama bunu ortam yapılandırması aracılığıyla bağlar (`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`): `VITE_MSAL_CLIENT_ID` ayarlandığında `registerOneDriveFromEnv` eklentiyi kaydeder; açılış paneli `AcUiFileOpenPanel`'in `extraMenuItems` özelliği aracılığıyla bir *OneDrive'da oturum aç* öğesi listeler.
 
 **Azure uygulama kurulumu** (OneDrive için): Microsoft Entra ID'de bir **Tek sayfalı uygulama** kaydedin, uygulama kaynağınızla eşleşen bir yönlendirme URI'si ekleyin, temsilci Graph izinleri `User.Read` + `Files.Read.All` verin (kişisel OneDrive seçici belirteçleri `OneDrive.ReadOnly` iznini de kapsar).
 

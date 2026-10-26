@@ -29,7 +29,7 @@ All command-triggered plugins are **lazy-loaded**: a small registration stub is 
 
 ### `@mlightcad/cad-simple-ui-plugin` — UI chrome for the simple viewer
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) deliberately ships **no application UI** — only the canvas and CAD core. If you embed the simple viewer in your own web app and want ready-made chrome without adopting the full Vue-based [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-viewer) shell, **`cad-simple-ui-plugin` is the intended UI layer**.
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) deliberately ships **no application UI** — only the canvas and CAD core. If you embed the simple viewer in your own web app and want ready-made chrome without adopting the full Vue-based [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) shell, **`cad-simple-ui-plugin` is the intended UI layer**.
 
 It provides:
 
@@ -54,7 +54,7 @@ It provides:
 - **Phase 1 CAD tools** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
 - **English / Chinese / Turkish / Czech** UI strings via the plugin i18n layer
 
-The full Vue `cad-viewer` app registers the agent automatically when the package is installed (palette tab). `cad-simple-viewer-example` wires it into a dock tab via `cad-simple-ui-plugin`. Host apps call `registerLazyAgentPlugin` and `setAgentPaletteOpener` to mount the panel where they want.
+The full Vue `cad-viewer` app registers the agent automatically when the package is installed (palette tab). `cad-simple-viewer-demo` wires it into a dock tab via `cad-simple-ui-plugin`. Host apps call `registerLazyAgentPlugin` and `setAgentPaletteOpener` to mount the panel where they want.
 
 → **Installation, registration, and tool list:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -64,7 +64,7 @@ The full Vue `cad-viewer` app registers the agent automatically when the package
 
 - Lazy-loaded `AcApPlugin` (trigger command: `cadscript`)
 - Reuses the CAD tools from `@mlightcad/cad-agent-core`; this package only adds the panel and the command
-- Host apps call `registerLazyCadScriptPlugin` and mount `new CadScriptPanel().element` (dock tab in `cad-simple-viewer-example`, tool-palette tab in `cad-viewer`); call `destroy()` when the tab is removed
+- Host apps call `registerLazyCadScriptPlugin` and mount `new CadScriptPanel().element` (dock tab in `cad-simple-viewer-demo`, tool-palette tab in `cad-viewer`); call `destroy()` when the tab is removed
 
 → **Usage:** [packages/cad-script-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin/README.md)
 
@@ -72,7 +72,7 @@ The full Vue `cad-viewer` app registers the agent automatically when the package
 
 ## Export / import plugins (HTML / PDF / SVG)
 
-These plugins add export (and PDF import) commands to the same plugin manager. They are **lazy-loaded** so initial page weight stays small. The `cad-simple-viewer-example` demo registers all three export plugins plus the UI/agent/script plugins; the full `cad-viewer` app registers the export plugins and the agent/script plugins (when installed) in its bootstrap.
+These plugins add export (and PDF import) commands to the same plugin manager. They are **lazy-loaded** so initial page weight stays small. The `cad-simple-viewer-demo` demo registers all three export plugins plus the UI/agent/script plugins; the full `cad-viewer` app registers the export plugins and the agent/script plugins (when installed) in its bootstrap.
 
 ### HTML (`@mlightcad/cad-html-plugin`)
 
@@ -150,7 +150,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 | App | Registered plugins |
 |-----|--------------------|
 | `cad-simple-viewer` | None — core only, plugins are optional |
-| `cad-simple-viewer-example` | Export plugins (HTML/PDF/SVG), `cad-simple-ui-plugin`, `cad-agent-plugin`, `cad-script-plugin` |
+| `cad-simple-viewer-demo` | Export plugins (HTML/PDF/SVG), `cad-simple-ui-plugin`, `cad-agent-plugin`, `cad-script-plugin` |
 | `cad-viewer` (Vue) | Export plugins (HTML/PDF/SVG); agent and script plugins are registered automatically **when installed** (optional peers) |
 
 ---

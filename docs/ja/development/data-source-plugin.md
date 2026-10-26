@@ -6,7 +6,7 @@ title: "データソースプラグイン"
 
 このページでは、`@mlightcad/cad-simple-viewer` の**データソースプラグイン**の仕組みを説明します。これは、**図面をどこから取得するか**（ローカルディスク、HTTP URL、OneDrive、Google Drive など）を決定するプラグイン可能な層です。仕組みの動作、独自のデータソースの作成方法、登録と使用方法を扱います。
 
-この仕組みは `packages/cad-simple-viewer/src/app/dataSource` にあります。完全な参照実装は別の npm パッケージ `@mlightcad/cad-onedrive-plugin`（`packages/cad-onedrive-plugin`）として提供されており、`packages/cad-simple-viewer-example` のデモアプリで使用されています。
+この仕組みは `packages/cad-simple-viewer/src/app/dataSource` にあります。完全な参照実装は別の npm パッケージ `@mlightcad/cad-onedrive-plugin`（`packages/cad-onedrive-plugin`）として提供されており、`packages/cad-simple-viewer-demo` のデモアプリで使用されています。
 
 > **コマンドプラグイン**（`cpdf`、`chtml` などのエクスポートコマンド）については、[プラグインシステム](./plugin-system)を参照してください。データソースプラグインも `AcApPlugin` であり、コマンドの代わりに `onLoad` でデータソースを登録するだけです。
 
@@ -351,7 +351,7 @@ await registerOneDrivePlugin(AcApDocManager.instance.pluginManager, {
 })
 ```
 
-`/register` サブパスからインポートして残りを動的インポートすることで、登録スタブを初期バンドルに含めます（`packages/cad-simple-viewer-example/src/register.ts` 参照）。
+`/register` サブパスからインポートして残りを動的インポートすることで、登録スタブを初期バンドルに含めます（`packages/cad-simple-viewer-demo/src/register.ts` 参照）。
 
 ```typescript
 const { registerOneDrivePlugin } = await import('@mlightcad/cad-onedrive-plugin/register')
@@ -403,7 +403,7 @@ if (file) {
 }
 ```
 
-**ユーザー操作の落とし穴**（`cad-simple-viewer-example/src/main.ts` より）：クリックハンドラーが `pick` アクションを実行する前にビューアの初期化を `await` する必要がある場合、ユーザー操作が失われ、ポップアップがブロックされます。すでに初期化済みの場合は同期的にアクションを実行するか、`pick` 項目に対して「先にサインインしてから開く」ヒントを表示してください（サンプルアプリの `handleDataSourceMenuAction` 参照）。
+**ユーザー操作の落とし穴**（`cad-simple-viewer-demo/src/main.ts` より）：クリックハンドラーが `pick` アクションを実行する前にビューアの初期化を `await` する必要がある場合、ユーザー操作が失われ、ポップアップがブロックされます。すでに初期化済みの場合は同期的にアクションを実行するか、`pick` 項目に対して「先にサインインしてから開く」ヒントを表示してください（サンプルアプリの `handleDataSourceMenuAction` 参照）。
 
 ---
 
@@ -419,7 +419,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | 即時登録ヘルパー（`clientId` を検証） |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | プラグインインスタンス用の非同期ファクトリー |
 
-サンプルアプリは環境設定（`packages/cad-simple-viewer-example/src/onedriveEnv.ts`）を介して接続します。`VITE_MSAL_CLIENT_ID` が設定されている場合、`registerOneDriveFromEnv` がプラグインを登録し、ランディングパネルは `AcUiFileOpenPanel` の `extraMenuItems` を通じて*OneDrive にサインイン*項目を一覧表示します。
+サンプルアプリは環境設定（`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`）を介して接続します。`VITE_MSAL_CLIENT_ID` が設定されている場合、`registerOneDriveFromEnv` がプラグインを登録し、ランディングパネルは `AcUiFileOpenPanel` の `extraMenuItems` を通じて*OneDrive にサインイン*項目を一覧表示します。
 
 **Azure アプリの設定**（OneDrive 用）：Microsoft Entra ID で **Single-page application** を登録し、アプリのオリジンに一致するリダイレクト URI を追加し、委任された Graph 権限 `User.Read` + `Files.Read.All` を付与します（個人用 OneDrive ピッカーのトークンは `OneDrive.ReadOnly` もカバーします）。
 

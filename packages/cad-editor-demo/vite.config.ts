@@ -70,7 +70,7 @@ export default defineConfig(({ command, mode }) => {
   const hasViewerRuntime = existsSync(resolve(__dirname, VIEWER_RUNTIME_SRC))
   if (!hasViewerRuntime) {
     console.warn(
-      '[cad-viewer-example] viewer-runtime.iife.js not found — HTML export will be unavailable. ' +
+      '[cad-editor-demo] viewer-runtime.iife.js not found — HTML export will be unavailable. ' +
         'Build @mlightcad/cad-html-plugin to enable it. Opening DXF/DWG does not require this file.'
     )
   }
@@ -100,13 +100,18 @@ export default defineConfig(({ command, mode }) => {
       find: /^@mlightcad\/cad-pdf-plugin\/register$/,
       replacement: resolve(__dirname, '../cad-pdf-plugin/src/register.ts')
     })
+    // Package name stays @mlightcad/cad-viewer; folder is packages/cad-editor.
     aliases.push({
-      find: /^@mlightcad\/(cad-svg-plugin|cad-pdf-plugin|pdf-renderer|three-renderer|cad-simple-viewer|cad-viewer)$/,
+      find: /^@mlightcad\/cad-viewer$/,
+      replacement: resolve(__dirname, '../cad-editor/src')
+    })
+    aliases.push({
+      find: /^@mlightcad\/(cad-svg-plugin|cad-pdf-plugin|pdf-renderer|three-renderer|cad-simple-viewer)$/,
       replacement: resolve(__dirname, '../$1/src')
     })
     if (linkLocalMtextRenderer) {
       console.info(
-        '[cad-viewer-example] Aliasing @mlightcad/mtext-renderer to local dist:',
+        '[cad-editor-demo] Aliasing @mlightcad/mtext-renderer to local dist:',
         LOCAL_MTEXT_RENDERER_DIST
       )
       aliases.push({
@@ -118,7 +123,7 @@ export default defineConfig(({ command, mode }) => {
       !existsSync(LOCAL_MTEXT_RENDERER_ENTRY)
     ) {
       console.warn(
-        '[cad-viewer-example] Local mtext-renderer alias requested but not found at:',
+        '[cad-editor-demo] Local mtext-renderer alias requested but not found at:',
         LOCAL_MTEXT_RENDERER_ENTRY
       )
     }
@@ -129,13 +134,13 @@ export default defineConfig(({ command, mode }) => {
       })
     } else if (useLocalDataModel(mode) && !existsSync(LOCAL_DATA_MODEL_ENTRY)) {
       console.warn(
-        '[cad-viewer-example] Local data-model alias requested but not found at:',
+        '[cad-editor-demo] Local data-model alias requested but not found at:',
         LOCAL_DATA_MODEL_ENTRY
       )
     }
     if (linkLocalUiComponents) {
       console.info(
-        '[cad-viewer-example] Aliasing @mlightcad/ui-components to local source:',
+        '[cad-editor-demo] Aliasing @mlightcad/ui-components to local source:',
         LOCAL_UI_COMPONENTS_SRC
       )
       aliases.push({
@@ -147,7 +152,7 @@ export default defineConfig(({ command, mode }) => {
       !existsSync(LOCAL_UI_COMPONENTS_SRC)
     ) {
       console.warn(
-        '[cad-viewer-example] Local ui-components alias requested but not found at:',
+        '[cad-editor-demo] Local ui-components alias requested but not found at:',
         LOCAL_UI_COMPONENTS_SRC
       )
     }

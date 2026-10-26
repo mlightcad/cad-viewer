@@ -153,9 +153,9 @@ title: "cad-simple-viewer 및 cad-viewer 업그레이드"
 
 ---
 
-## 방법 2 — `cad-simple-viewer-example` 업그레이드 커밋 따르기
+## 방법 2 — `cad-simple-viewer-demo` 업그레이드 커밋 따르기
 
-[cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) 저장소는 `cad-simple-viewer`의 공식 최소 호스트입니다. 코어가 릴리스될 때마다 예제 프로젝트는 **모든 관련 의존성을 함께** 업데이트하는 `feat: upgrade to cad-simple-viewer vX.Y.Z` 제목의 커밋을 받습니다. 이 커밋은 해당 릴리스에서 유지 관리자가 사용한 정확한 버전을 보여 주는 실용적이고 구체적인 참조입니다.
+[cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) 저장소는 `cad-simple-viewer`의 공식 최소 호스트입니다. 코어가 릴리스될 때마다 예제 프로젝트는 **모든 관련 의존성을 함께** 업데이트하는 `feat: upgrade to cad-simple-viewer vX.Y.Z` 제목의 커밋을 받습니다. 이 커밋은 해당 릴리스에서 유지 관리자가 사용한 정확한 버전을 보여 주는 실용적이고 구체적인 참조입니다.
 
 ### 단계
 
@@ -240,4 +240,4 @@ A: Semver 범위(`^`, `~`)는 릴리스 계열 *내*의 패치 수준 상승에�
 
 **Q: pnpm 대신 npm/yarn을 사용합니다. 이것이 여전히 적용되나요?**
 
-A: 예. 버전 조정은 패키지 관리자와 무관하게 동일합니다. `pnpm-workspace.yaml`의 값을 사용하여 `overrides`(pnpm), `resolutions`(yarn) 또는 `overrides`(npm)를 설정하거나, 단순히 `cad-simple-viewer-example` diff의 버전을 `package.json`에 고정하십시오.
+A: 예. 버전 조정은 패키지 관리자와 무관하게 동일합니다. `pnpm-workspace.yaml`의 값을 사용하여 `overrides`(pnpm), `resolutions`(yarn) 또는 `overrides`(npm)를 설정하거나, 단순히 `cad-simple-viewer-demo` diff의 버전을 `package.json`에 고정하십시오.

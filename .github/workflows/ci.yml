@@ -86,10 +86,10 @@ jobs:
       # Use system Google Chrome (preinstalled on ubuntu-latest) via channel "chrome".
       # Avoids playwright install chromium, which often hangs at zip extraction on CI.
       - name: Install Playwright system dependencies
-        run: pnpm --filter @mlightcad/cad-viewer-example exec playwright install-deps chromium
+        run: pnpm --filter @mlightcad/cad-editor-demo exec playwright install-deps chromium
 
       - name: Run E2E tests
-        run: pnpm --filter @mlightcad/cad-viewer-example test:e2e
+        run: pnpm --filter @mlightcad/cad-editor-demo test:e2e
         env:
           PLAYWRIGHT_BROWSER_CHANNEL: chrome
 
@@ -99,8 +99,8 @@ jobs:
         with:
           name: playwright-artifacts
           path: |
-            packages/cad-viewer-example/playwright-report/
-            packages/cad-viewer-example/test-results/
+            packages/cad-editor-demo/playwright-report/
+            packages/cad-editor-demo/test-results/
           if-no-files-found: ignore
 
       # GitHub Pages hosts the VitePress user guide only. The TypeDoc API

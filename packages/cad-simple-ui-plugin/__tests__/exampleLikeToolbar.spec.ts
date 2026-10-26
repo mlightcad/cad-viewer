@@ -188,7 +188,7 @@ describe('example-like toolbar mount', () => {
     expect(normalized.toolbar.enabled).toBe(true)
   })
 
-  it('creates toolbar when host is viewerPane like cad-simple-viewer-example', () => {
+  it('creates toolbar when host is viewerPane like cad-simple-viewer-demo', () => {
     const { viewerPane, cadContainer, canvasArea } = createExampleDom()
     const plugin = new AcApSimpleUiPlugin({
       host: viewerPane,

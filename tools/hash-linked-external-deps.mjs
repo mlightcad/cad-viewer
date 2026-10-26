@@ -44,8 +44,8 @@ const FALLBACK_LINKED_PACKAGES = [
  * Paths are relative to the workspace root.
  */
 const RESOLVE_FROM = [
-  'packages/cad-viewer-example/node_modules',
-  'packages/cad-viewer/node_modules',
+  'packages/cad-editor-demo/node_modules',
+  'packages/cad-editor/node_modules',
   'packages/cad-simple-viewer/node_modules',
   'packages/three-renderer/node_modules',
   'node_modules'

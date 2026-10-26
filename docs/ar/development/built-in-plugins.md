@@ -29,7 +29,7 @@ title: "الإضافات المدمجة"
 
 ### `@mlightcad/cad-simple-ui-plugin` — واجهة العارض البسيط
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) لا يأتي عمدًا مع **أي واجهة تطبيق** — فقط اللوحة (canvas) ونواة CAD. إذا كنت تدمج العارض البسيط في تطبيق الويب الخاص بك وتريد واجهة جاهزة دون اعتماد غلاف [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-viewer) الكامل القائم على Vue، فإن **`cad-simple-ui-plugin` هو طبقة الواجهة المقصودة**.
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) لا يأتي عمدًا مع **أي واجهة تطبيق** — فقط اللوحة (canvas) ونواة CAD. إذا كنت تدمج العارض البسيط في تطبيق الويب الخاص بك وتريد واجهة جاهزة دون اعتماد غلاف [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) الكامل القائم على Vue، فإن **`cad-simple-ui-plugin` هو طبقة الواجهة المقصودة**.
 
 يوفر:
 
@@ -54,7 +54,7 @@ title: "الإضافات المدمجة"
 - **أدوات CAD للمرحلة الأولى** — `get_drawing_context`؛ و`draw_line` و`draw_circle` و`draw_arc` و`draw_rectangle` و`draw_polyline` و`draw_text`؛ و`set_current_layer` و`create_layer` و`zoom_extents`
 - **الإنجليزية / الصينية / التركية / التشيكية** لسلاسل واجهة المستخدم عبر طبقة i18n الخاصة بالإضافة
 
-يسجّل تطبيق Vue الكامل `cad-viewer` الوكيل تلقائيًا عند تثبيت الحزمة (علامة تبويب في اللوحة). يربطه `cad-simple-viewer-example` بعلامة تبويب دوك عبر `cad-simple-ui-plugin`. تستدعي التطبيقات المضيفة `registerLazyAgentPlugin` و`setAgentPaletteOpener` لتركيب اللوحة حيث تريد.
+يسجّل تطبيق Vue الكامل `cad-viewer` الوكيل تلقائيًا عند تثبيت الحزمة (علامة تبويب في اللوحة). يربطه `cad-simple-viewer-demo` بعلامة تبويب دوك عبر `cad-simple-ui-plugin`. تستدعي التطبيقات المضيفة `registerLazyAgentPlugin` و`setAgentPaletteOpener` لتركيب اللوحة حيث تريد.
 
 → **التثبيت والتسجيل وقائمة الأدوات:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -64,7 +64,7 @@ title: "الإضافات المدمجة"
 
 - `AcApPlugin` كسول التحميل (أمر التشغيل: `cadscript`)
 - يعيد استخدام أدوات CAD من `@mlightcad/cad-agent-core`؛ تضيف هذه الحزمة اللوحة والأمر فقط
-- تستدعي التطبيقات المضيفة `registerLazyCadScriptPlugin` وتركّب `new CadScriptPanel().element` (علامة تبويب دوك في `cad-simple-viewer-example`، علامة تبويب لوحة الأدوات في `cad-viewer`)؛ استدعِ `destroy()` عند إزالة علامة التبويب
+- تستدعي التطبيقات المضيفة `registerLazyCadScriptPlugin` وتركّب `new CadScriptPanel().element` (علامة تبويب دوك في `cad-simple-viewer-demo`، علامة تبويب لوحة الأدوات في `cad-viewer`)؛ استدعِ `destroy()` عند إزالة علامة التبويب
 
 → **الاستخدام:** [packages/cad-script-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin/README.md)
 
@@ -72,7 +72,7 @@ title: "الإضافات المدمجة"
 
 ## إضافات التصدير / الاستيراد (HTML / PDF / SVG)
 
-تضيف هذه الإضافات أوامر تصدير (واستيراد PDF) إلى مدير الإضافات نفسه. وهي **كسولة التحميل** حتى يبقى وزن الصفحة الأولي صغيرًا. يسجّل العرض النموذجي `cad-simple-viewer-example` إضافات التصدير الثلاث كلها بالإضافة إلى إضافات الواجهة/الوكيل/النصوص؛ ويسجّل تطبيق `cad-viewer` الكامل إضافات التصدير وإضافات الوكيل/النصوص (عند تثبيتها) في تهيئته.
+تضيف هذه الإضافات أوامر تصدير (واستيراد PDF) إلى مدير الإضافات نفسه. وهي **كسولة التحميل** حتى يبقى وزن الصفحة الأولي صغيرًا. يسجّل العرض النموذجي `cad-simple-viewer-demo` إضافات التصدير الثلاث كلها بالإضافة إلى إضافات الواجهة/الوكيل/النصوص؛ ويسجّل تطبيق `cad-viewer` الكامل إضافات التصدير وإضافات الوكيل/النصوص (عند تثبيتها) في تهيئته.
 
 ### HTML (`@mlightcad/cad-html-plugin`)
 
@@ -150,7 +150,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 | التطبيق | الإضافات المسجّلة |
 |-----|--------------------|
 | `cad-simple-viewer` | لا شيء — النواة فقط، والإضافات اختيارية |
-| `cad-simple-viewer-example` | إضافات التصدير (HTML/PDF/SVG)، `cad-simple-ui-plugin`، `cad-agent-plugin`، `cad-script-plugin` |
+| `cad-simple-viewer-demo` | إضافات التصدير (HTML/PDF/SVG)، `cad-simple-ui-plugin`، `cad-agent-plugin`، `cad-script-plugin` |
 | `cad-viewer` (Vue) | إضافات التصدير (HTML/PDF/SVG)؛ وتسجَّل إضافتا الوكيل والنصوص تلقائيًا **عند تثبيتهما** (أقران اختياريون) |
 
 ---

@@ -14,8 +14,8 @@
   },
   "devDependencies": {
     "@mlightcad/cad-diff-viewer-example": "workspace:*",
-    "@mlightcad/cad-simple-viewer-example": "workspace:*",
-    "@mlightcad/cad-viewer-example": "workspace:*",
+    "@mlightcad/cad-simple-viewer-demo": "workspace:*",
+    "@mlightcad/cad-editor-demo": "workspace:*",
     "@types/fs-extra": "^11.0.4",
     "fflate": "^0.8.2",
     "fs-extra": "^11.3.1",

@@ -96,7 +96,7 @@ This design allows:
 
 When creating an annotation entity, the following UI component is shown:
 
--   [`MlEntityDrawStyleToolbar`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/layout/MlEntityDrawStyleToolbar.vue)
+-   [`MlEntityDrawStyleToolbar`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-editor/src/component/layout/MlEntityDrawStyleToolbar.vue)
 
 #### Behavior
 
