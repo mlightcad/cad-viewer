@@ -178,7 +178,7 @@ For DXF/DWG → HTML without a browser UI, use [`@mlightcad/cad-simple-viewer-cl
 
 When embedding HTML export in a web app:
 
-1. Build `@mlightcad/cad-html-plugin` and expose `viewer-runtime.iife.js` at a URL your app can `fetch` (e.g. Vite `public/` copy — see `cad-viewer-example` / `cad-simple-viewer-example` vite configs). **Skip this step if you do not use HTML export** — opening DXF/DWG does not need this file or this package.
+1. Build `@mlightcad/cad-html-plugin` and expose `viewer-runtime.iife.js` at a URL your app can `fetch` (e.g. Vite `public/` copy — see `cad-editor-demo` / `cad-simple-viewer-demo` vite configs). **Skip this step if you do not use HTML export** — opening DXF/DWG does not need this file or this package.
 2. Register via `@mlightcad/cad-html-plugin/register` (or load the plugin eagerly).
 3. Pass `viewerRuntimeUrl` to `registerLazyHtmlPlugin` / `createHtmlPlugin` / `AcApHtmlConvertor` (default `./viewer-runtime.iife.js`). Do **not** put this on `AcApDocManager.createInstance()`.
 4. Ensure fonts used by the drawing are reachable during export if you rely on web-font substitution.

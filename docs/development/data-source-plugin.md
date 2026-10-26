@@ -6,7 +6,7 @@ title: "Data Source Plugin"
 
 This page explains the **data source plugin** mechanism in `@mlightcad/cad-simple-viewer` — the pluggable layer that decides **where drawings come from** (local disk, HTTP URL, OneDrive, Google Drive, …). It covers how the mechanism works, how to create your own data source, and how to register and use it.
 
-The mechanism lives in `packages/cad-simple-viewer/src/app/dataSource`. A complete reference implementation ships as a separate npm package: `@mlightcad/cad-onedrive-plugin` (`packages/cad-onedrive-plugin`), used by the demo app in `packages/cad-simple-viewer-example`.
+The mechanism lives in `packages/cad-simple-viewer/src/app/dataSource`. A complete reference implementation ships as a separate npm package: `@mlightcad/cad-onedrive-plugin` (`packages/cad-onedrive-plugin`), used by the demo app in `packages/cad-simple-viewer-demo`.
 
 > For **command plugins** (export commands like `cpdf`, `chtml`), see [Plugin System](./plugin-system). A data source plugin *is* an `AcApPlugin` — it just uses `onLoad` to register a data source instead of a command.
 
@@ -351,7 +351,7 @@ await registerOneDrivePlugin(AcApDocManager.instance.pluginManager, {
 })
 ```
 
-Keep the registration stub in the initial bundle by importing from the `/register` subpath and dynamic-importing the rest (see `packages/cad-simple-viewer-example/src/register.ts`):
+Keep the registration stub in the initial bundle by importing from the `/register` subpath and dynamic-importing the rest (see `packages/cad-simple-viewer-demo/src/register.ts`):
 
 ```typescript
 const { registerOneDrivePlugin } = await import('@mlightcad/cad-onedrive-plugin/register')
@@ -403,7 +403,7 @@ if (file) {
 }
 ```
 
-**User-gesture pitfall** (from `cad-simple-viewer-example/src/main.ts`): if the click handler must first `await` viewer initialization before running a `pick` action, the user gesture is lost and the popup is blocked. Either run the action synchronously when already initialized, or show a *sign in first, then open* hint for `pick` items (see `handleDataSourceMenuAction` in the example app).
+**User-gesture pitfall** (from `cad-simple-viewer-demo/src/main.ts`): if the click handler must first `await` viewer initialization before running a `pick` action, the user gesture is lost and the popup is blocked. Either run the action synchronously when already initialized, or show a *sign in first, then open* hint for `pick` items (see `handleDataSourceMenuAction` in the example app).
 
 ---
 
@@ -419,7 +419,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | Eager registration helper (validates `clientId`) |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | Async factory for the plugin instance |
 
-The example app wires it up via env config (`packages/cad-simple-viewer-example/src/onedriveEnv.ts`): when `VITE_MSAL_CLIENT_ID` is set, `registerOneDriveFromEnv` registers the plugin; the landing panel lists a *Sign in to OneDrive* item through `AcUiFileOpenPanel`'s `extraMenuItems`.
+The example app wires it up via env config (`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`): when `VITE_MSAL_CLIENT_ID` is set, `registerOneDriveFromEnv` registers the plugin; the landing panel lists a *Sign in to OneDrive* item through `AcUiFileOpenPanel`'s `extraMenuItems`.
 
 **Azure app setup** (for OneDrive): register a **Single-page application** in Microsoft Entra ID, add a redirect URI matching your app origin, grant delegated Graph permissions `User.Read` + `Files.Read.All` (personal OneDrive picker tokens also cover `OneDrive.ReadOnly`).
 

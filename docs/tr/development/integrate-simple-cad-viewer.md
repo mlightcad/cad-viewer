@@ -33,7 +33,7 @@ npm install @mlightcad/cad-simple-viewer
 
 ## Kullanım
 
-Temel kullanım ve ileri düzey kullanım için [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) sayfasına bakın.
+Temel kullanım ve ileri düzey kullanım için [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) sayfasına bakın.
 
 Entegrasyon iki adımdan oluşur: önce **uygulamayı başlatın** (`AcApDocManager` tekil örneğini bir kez oluşturun), sonra **bir çizim açın**.
 
@@ -210,7 +210,7 @@ Bu yetenek, `cad-simple-viewer`'ı yalnızca CAD dosyalarını görüntülemekle
 
 **Önemli Not**: `cad-simple-viewer` içindeki kullanım kalıpları **AutoCAD RealDWG'ye çok benzer**. AutoCAD RealDWG geliştirmesine aşinaysanız, API yapısını ve iş akışını neredeyse aynı bulacaksınız. Temel fark, yerel RealDWG kitaplıkları yerine [**realdwg-web API**](https://mlightcad.github.io/realdwg-web/) kullanmamızdır.
 
-[cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) projesinde [**realdwg-web API**](https://mlightcad.github.io/realdwg-web/) ile nasıl çizim oluşturulacağı gösterilmektedir.
+[cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) projesinde [**realdwg-web API**](https://mlightcad.github.io/realdwg-web/) ile nasıl çizim oluşturulacağı gösterilmektedir.
 
 ## MLightCAD İçindeki Rolü
 

@@ -2,7 +2,7 @@
  * Ensures cad-viewer no longer ships the unused `@mlightcad/ui-components`
  * MlToolBar (vertical toolbar now uses AcUiToolbar from simple-viewer).
  *
- * Requires `packages/cad-viewer/dist/cad-viewer.js` (run package build).
+ * Requires `packages/cad-editor/dist/cad-viewer.js` (run package build).
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'

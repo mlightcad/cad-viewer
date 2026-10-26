@@ -153,9 +153,9 @@ title: "ترقية cad-simple-viewer و cad-viewer"
 
 ---
 
-## الطريقة 2 — متابعة التزامات ترقية `cad-simple-viewer-example`
+## الطريقة 2 — متابعة التزامات ترقية `cad-simple-viewer-demo`
 
-مستودع [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) هو المضيف الأدنى الرسمي لـ `cad-simple-viewer`. وفي كل مرة تُنشر النواة، يتلقى المشروع النموذجي التزامًا بعنوان `feat: upgrade to cad-simple-viewer vX.Y.Z` يحدّث **جميع الاعتماديات ذات الصلة معًا**. هذا الالتزام مرجع عملي ملموس يبيّن بدقة الإصدارات التي استخدمها القائمون على الصيانة لذلك الإصدار.
+مستودع [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) هو المضيف الأدنى الرسمي لـ `cad-simple-viewer`. وفي كل مرة تُنشر النواة، يتلقى المشروع النموذجي التزامًا بعنوان `feat: upgrade to cad-simple-viewer vX.Y.Z` يحدّث **جميع الاعتماديات ذات الصلة معًا**. هذا الالتزام مرجع عملي ملموس يبيّن بدقة الإصدارات التي استخدمها القائمون على الصيانة لذلك الإصدار.
 
 ### الخطوات
 
@@ -240,4 +240,4 @@ title: "ترقية cad-simple-viewer و cad-viewer"
 
 **س: أستخدم npm/yarn بدلًا من pnpm. هل ينطبق هذا أيضًا؟**
 
-ج: نعم. تنسيق الإصدارات هو نفسه بغض النظر عن مدير الحزم. استخدم `overrides` (pnpm) أو `resolutions` (yarn) أو `overrides` (npm) بالقيم من `pnpm-workspace.yaml`، أو ببساطة ثبّت الإصدارات من فرق `cad-simple-viewer-example` في `package.json` الخاص بك.
+ج: نعم. تنسيق الإصدارات هو نفسه بغض النظر عن مدير الحزم. استخدم `overrides` (pnpm) أو `resolutions` (yarn) أو `overrides` (npm) بالقيم من `pnpm-workspace.yaml`، أو ببساطة ثبّت الإصدارات من فرق `cad-simple-viewer-demo` في `package.json` الخاص بك.

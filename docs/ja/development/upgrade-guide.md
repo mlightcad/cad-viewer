@@ -153,9 +153,9 @@ title: "cad-simple-viewer と cad-viewer のアップグレード"
 
 ---
 
-## 方法 2 — `cad-simple-viewer-example` のアップグレードコミットを追う
+## 方法 2 — `cad-simple-viewer-demo` のアップグレードコミットを追う
 
-[cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) リポジトリは、`cad-simple-viewer` の公式の最小ホストです。コアがリリースされるたびに、サンプルプロジェクトには `feat: upgrade to cad-simple-viewer vX.Y.Z` というタイトルのコミットが追加され、**すべての関連依存関係が一緒に**更新されます。このコミットは、そのリリースでメンテナーが実際に使用したバージョンを正確に示す、実用的で具体的な参考資料です。
+[cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) リポジトリは、`cad-simple-viewer` の公式の最小ホストです。コアがリリースされるたびに、サンプルプロジェクトには `feat: upgrade to cad-simple-viewer vX.Y.Z` というタイトルのコミットが追加され、**すべての関連依存関係が一緒に**更新されます。このコミットは、そのリリースでメンテナーが実際に使用したバージョンを正確に示す、実用的で具体的な参考資料です。
 
 ### 手順
 
@@ -240,4 +240,4 @@ A: semver 範囲（`^`、`~`）は、リリースシリーズ**内**でのパッ
 
 **Q: pnpm の代わりに npm/yarn を使用しています。これは引き続き適用されますか？**
 
-A: はい。バージョンの調整はパッケージマネージャーに関係なく同じです。`pnpm-workspace.yaml` の値を使用して `overrides`（pnpm）、`resolutions`（yarn）、または `overrides`（npm）を使用するか、`cad-simple-viewer-example` の差分からバージョンを `package.json` に固定するだけです。
+A: はい。バージョンの調整はパッケージマネージャーに関係なく同じです。`pnpm-workspace.yaml` の値を使用して `overrides`（pnpm）、`resolutions`（yarn）、または `overrides`（npm）を使用するか、`cad-simple-viewer-demo` の差分からバージョンを `package.json` に固定するだけです。

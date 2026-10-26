@@ -46,7 +46,7 @@ import { registerLazyPlugins } from './register'
 import { registerLibreDwgConverter } from './registerLibreDwg'
 import { SCRIPT_TOOLBAR_ITEM } from './scriptToolbarItem'
 
-// Isolate this example's prefs from cad-viewer-example on localhost.
+// Isolate this example's prefs from cad-editor-demo on localhost.
 AcApSettingManager.configure({
   storageKey: 'mlightcad.settings.simple-viewer'
 })

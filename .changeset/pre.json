@@ -18,10 +18,10 @@
     "@mlightcad/cad-simple-ui-plugin": "1.7.7",
     "@mlightcad/cad-simple-viewer": "1.7.7",
     "@mlightcad/cad-simple-viewer-cli": "1.7.7",
-    "@mlightcad/cad-simple-viewer-example": "1.7.7",
+    "@mlightcad/cad-simple-viewer-demo": "1.7.7",
     "@mlightcad/cad-svg-plugin": "1.7.7",
     "@mlightcad/cad-viewer": "1.7.7",
-    "@mlightcad/cad-viewer-example": "1.7.7",
+    "@mlightcad/cad-editor-demo": "1.7.7",
     "@mlightcad/pdf-renderer": "1.7.7",
     "@mlightcad/three-renderer": "1.7.7"
   },

@@ -262,7 +262,7 @@
 
 ### Patch Changes
 
-- fix: fix issue 103 and update cad-simple-viewer-example to be able to verify it
+- fix: fix issue 103 and update cad-simple-viewer-demo to be able to verify it
 
 ## 1.4.8
 

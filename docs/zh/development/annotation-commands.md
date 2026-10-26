@@ -96,7 +96,7 @@ title: "标注命令"
 
 创建标注实体时，会显示以下 UI 组件：
 
--   [`MlEntityDrawStyleToolbar`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/layout/MlEntityDrawStyleToolbar.vue)
+-   [`MlEntityDrawStyleToolbar`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-editor/src/component/layout/MlEntityDrawStyleToolbar.vue)
 
 #### 行为
 

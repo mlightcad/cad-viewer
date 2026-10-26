@@ -12,6 +12,6 @@ import { registerLazyCadScriptPlugin } from '@mlightcad/cad-script-plugin/regist
 registerLazyCadScriptPlugin(AcApDocManager.instance.pluginManager)
 ```
 
-The host calls `setCadScriptPaletteOpener` before the command runs, and appends `new CadScriptPanel().element` where it wants the console. `cad-simple-viewer-example` uses a dock tab. `cad-viewer` uses a tool-palette tab. Call `destroy()` when that tab is removed.
+The host calls `setCadScriptPaletteOpener` before the command runs, and appends `new CadScriptPanel().element` where it wants the console. `cad-simple-viewer-demo` uses a dock tab. `cad-viewer` uses a tool-palette tab. Call `destroy()` when that tab is removed.
 
 Run `cadscript` to open the console. Drawing tools used by the agent stay in `@mlightcad/cad-agent-core`; this package only adds the panel and the command.

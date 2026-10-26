@@ -4,8 +4,8 @@ Private demo gallery package (`@mlightcad/cad-demo-gallery`) that hosts the stat
 
 ## Overview
 
-This package consolidates the built demos from `@mlightcad/cad-viewer-example`,
-`@mlightcad/cad-simple-viewer-example`, and `@mlightcad/cad-diff-viewer-example`
+This package consolidates the built demos from `@mlightcad/cad-editor-demo`,
+`@mlightcad/cad-simple-viewer-demo`, and `@mlightcad/cad-diff-viewer-example`
 into a single gallery, plus zero-build CDN and self-contained HTML demos.
 
 ## Available Demos
@@ -146,7 +146,7 @@ The examples will be available at:
 
 ### Self-Contained HTML Demo
 
-The landing page includes an **in-browser converter** at `/cad-simple-viewer/html-converter.html` (copied from `@mlightcad/cad-simple-viewer-example` by `pnpm pre-serve`). Upload a DWG/DXF, adjust options, and download HTML without a backend.
+The landing page includes an **in-browser converter** at `/cad-simple-viewer/html-converter.html` (copied from `@mlightcad/cad-simple-viewer-demo` by `pnpm pre-serve`). Upload a DWG/DXF, adjust options, and download HTML without a backend.
 
 The **canteen sample** offline HTML file is built from [`canteen.dwg`](https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/data/canteen.dwg) using [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli). The same script also exports a multi-file progressive package (`canteen.zip`) and extracts it to `canteen-progressive/` for static hosting. GitHub Actions on the `main` branch runs this step automatically before deploying to GitHub Pages.
 
@@ -168,8 +168,8 @@ pnpm serve
 pnpm build
 
 # Or build individual examples
-cd packages/cad-viewer-example && pnpm build
-cd packages/cad-simple-viewer-example && pnpm build
+cd packages/cad-editor-demo && pnpm build
+cd packages/cad-simple-viewer-demo && pnpm build
 cd packages/cad-diff-viewer-example && pnpm build
 ```
 

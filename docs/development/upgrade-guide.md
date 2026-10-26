@@ -153,9 +153,9 @@ The canonical source of truth for every release is the monorepo's `pnpm-workspac
 
 ---
 
-## Method 2 — Follow the `cad-simple-viewer-example` Upgrade Commits
+## Method 2 — Follow the `cad-simple-viewer-demo` Upgrade Commits
 
-The [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) repository is the official minimal host for `cad-simple-viewer`. Every time the core is released, the example project receives a commit titled `feat: upgrade to cad-simple-viewer vX.Y.Z` that updates **all related dependencies together**. This commit is a practical, concrete reference that shows exactly which versions were used by the maintainers for that release.
+The [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) repository is the official minimal host for `cad-simple-viewer`. Every time the core is released, the example project receives a commit titled `feat: upgrade to cad-simple-viewer vX.Y.Z` that updates **all related dependencies together**. This commit is a practical, concrete reference that shows exactly which versions were used by the maintainers for that release.
 
 ### Steps
 
@@ -240,6 +240,6 @@ A: Semver ranges (`^`, `~`) work fine for patch-level bumping *within* a release
 
 **Q: I use npm/yarn instead of pnpm. Does this still apply?**
 
-A: Yes. The version coordination is the same regardless of package manager. Use `overrides` (pnpm), `resolutions` (yarn), or `overrides` (npm) with the values from `pnpm-workspace.yaml`, or simply pin the versions from the `cad-simple-viewer-example` diff in your `package.json`.
+A: Yes. The version coordination is the same regardless of package manager. Use `overrides` (pnpm), `resolutions` (yarn), or `overrides` (npm) with the values from `pnpm-workspace.yaml`, or simply pin the versions from the `cad-simple-viewer-demo` diff in your `package.json`.
 
 

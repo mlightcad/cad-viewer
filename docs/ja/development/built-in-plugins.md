@@ -29,7 +29,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 
 ### `@mlightcad/cad-simple-ui-plugin` — シンプルビューアの UI
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) は意図的に**アプリケーション UI を含まず**、キャンバスと CAD コアのみを提供します。シンプルビューアを独自の Web アプリに埋め込み、Vue ベースの完全な [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-viewer) シェルを採用せずにすぐに使える UI を求める場合は、**`cad-simple-ui-plugin` が目的の UI レイヤーです**。
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) は意図的に**アプリケーション UI を含まず**、キャンバスと CAD コアのみを提供します。シンプルビューアを独自の Web アプリに埋め込み、Vue ベースの完全な [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) シェルを採用せずにすぐに使える UI を求める場合は、**`cad-simple-ui-plugin` が目的の UI レイヤーです**。
 
 提供されるもの:
 
@@ -54,7 +54,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 - **フェーズ 1 の CAD ツール** — `get_drawing_context`；`draw_line`、`draw_circle`、`draw_arc`、`draw_rectangle`、`draw_polyline`、`draw_text`；`set_current_layer`、`create_layer`、`zoom_extents`
 - プラグイン i18n レイヤーによる**英語 / 中国語 / トルコ語 / チェコ語**の UI 文字列
 
-完全な Vue アプリである `cad-viewer` は、パッケージがインストールされるとエージェントを自動的に登録します（パレットタブ）。`cad-simple-viewer-example` は `cad-simple-ui-plugin` を介してドックタブに組み込みます。ホストアプリは `registerLazyAgentPlugin` と `setAgentPaletteOpener` を呼び出して、パネルを任意の場所にマウントします。
+完全な Vue アプリである `cad-viewer` は、パッケージがインストールされるとエージェントを自動的に登録します（パレットタブ）。`cad-simple-viewer-demo` は `cad-simple-ui-plugin` を介してドックタブに組み込みます。ホストアプリは `registerLazyAgentPlugin` と `setAgentPaletteOpener` を呼び出して、パネルを任意の場所にマウントします。
 
 → **インストール、登録、ツール一覧:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -64,7 +64,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 
 - 遅延ロードされる `AcApPlugin`（トリガーコマンド: `cadscript`）
 - `@mlightcad/cad-agent-core` の CAD ツールを再利用します。このパッケージはパネルとコマンドのみを追加します
-- ホストアプリは `registerLazyCadScriptPlugin` を呼び出し、`new CadScriptPanel().element` をマウントします（`cad-simple-viewer-example` ではドックタブ、`cad-viewer` ではツールパレットタブ）。タブを削除するときは `destroy()` を呼び出します
+- ホストアプリは `registerLazyCadScriptPlugin` を呼び出し、`new CadScriptPanel().element` をマウントします（`cad-simple-viewer-demo` ではドックタブ、`cad-viewer` ではツールパレットタブ）。タブを削除するときは `destroy()` を呼び出します
 
 → **使用方法:** [packages/cad-script-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin/README.md)
 
@@ -72,7 +72,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 
 ## エクスポート / インポートプラグイン（HTML / PDF / SVG）
 
-これらのプラグインは、同じプラグインマネージャーにエクスポート（および PDF インポート）コマンドを追加します。初期ページのサイズを小さく保つため、**遅延ロード**されます。`cad-simple-viewer-example` デモは、3 つのエクスポートプラグインすべてに加えて UI/エージェント/スクリプトプラグインを登録します。完全な `cad-viewer` アプリは、ブートストラップでエクスポートプラグインと、エージェント/スクリプトプラグイン（インストールされている場合）を登録します。
+これらのプラグインは、同じプラグインマネージャーにエクスポート（および PDF インポート）コマンドを追加します。初期ページのサイズを小さく保つため、**遅延ロード**されます。`cad-simple-viewer-demo` デモは、3 つのエクスポートプラグインすべてに加えて UI/エージェント/スクリプトプラグインを登録します。完全な `cad-viewer` アプリは、ブートストラップでエクスポートプラグインと、エージェント/スクリプトプラグイン（インストールされている場合）を登録します。
 
 ### HTML（`@mlightcad/cad-html-plugin`）
 
@@ -150,7 +150,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 | アプリ | 登録されるプラグイン |
 |-----|--------------------|
 | `cad-simple-viewer` | なし — コアのみ、プラグインは任意 |
-| `cad-simple-viewer-example` | エクスポートプラグイン（HTML/PDF/SVG）、`cad-simple-ui-plugin`、`cad-agent-plugin`、`cad-script-plugin` |
+| `cad-simple-viewer-demo` | エクスポートプラグイン（HTML/PDF/SVG）、`cad-simple-ui-plugin`、`cad-agent-plugin`、`cad-script-plugin` |
 | `cad-viewer`（Vue） | エクスポートプラグイン（HTML/PDF/SVG）。エージェントおよびスクリプトプラグインは、**インストールされている場合**（オプションのピア依存関係）に自動的に登録されます |
 
 ---

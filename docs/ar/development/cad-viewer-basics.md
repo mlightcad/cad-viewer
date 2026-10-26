@@ -36,5 +36,5 @@ title: "أساسيات MLightCAD"
 
 ## أمثلة
 
-- [`cad-simple-viewer-example`](https://github.com/mlightcad/cad-simple-viewer-example): تطبيق مثال يوضح كيفية استخدام مكوّن `cad-simple-viewer` في مشروع حقيقي.
-- [`cad-viewer-example`](https://github.com/mlightcad/cad-viewer-example): تطبيق مثال يوضح كيفية استخدام مكوّن `cad-viewer` في مشروع حقيقي.
+- [`cad-simple-viewer-demo`](https://github.com/mlightcad/cad-simple-viewer-example): تطبيق مثال يوضح كيفية استخدام مكوّن `cad-simple-viewer` في مشروع حقيقي.
+- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): تطبيق مثال يوضح كيفية استخدام مكوّن `cad-viewer` في مشروع حقيقي.

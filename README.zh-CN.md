@@ -48,8 +48,8 @@ MLightCAD 是`全球首个完全运行在浏览器端、无需依赖任何后端
 
 官方示例应用，展示如何把 MLightCAD 集成到你自己的产品中：
 
-- [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — 基于 [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer) 的极简 vanilla TypeScript 宿主：打开本地或 CDN 的 DXF/DWG，用小型工具栏驱动命令，并懒加载 HTML/PDF/SVG 导出插件（不含完整 Vue UI）。
-- [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — 基于 [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) 的完整 Vue 3 应用，含菜单、功能区、对话框、命令行与状态栏（[在线演示](https://mlightcad.github.io/cad-viewer-example/)）。
+- [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) — 基于 [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer) 的极简 vanilla TypeScript 宿主：打开本地或 CDN 的 DXF/DWG，用小型工具栏驱动命令，并懒加载 HTML/PDF/SVG 导出插件（不含完整 Vue UI）。
+- [cad-editor-demo](https://github.com/mlightcad/cad-viewer-example) — 基于 [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) 的完整 Vue 3 应用，含菜单、功能区、对话框、命令行与状态栏（[在线演示](https://mlightcad.github.io/cad-viewer-example/)）。
 - [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js「CAD 网盘」演示：分片断点续传上传 DWG/DXF、SQLite 文件列表与预览缩略图，并支持以**浏览器实时解析**（`cad-simple-viewer`）或**服务端 ACEX 预渲染**（打开更快、内存更少）两种方式查看图纸。
 
 ![MLightCAD Quick Demo](./assets/cad-viewer.gif)

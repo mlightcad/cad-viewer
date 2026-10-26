@@ -96,7 +96,7 @@ title: "注釈コマンド"
 
 注釈エンティティを作成する際に、次の UI コンポーネントが表示されます。
 
--   [`MlEntityDrawStyleToolbar`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/layout/MlEntityDrawStyleToolbar.vue)
+-   [`MlEntityDrawStyleToolbar`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-editor/src/component/layout/MlEntityDrawStyleToolbar.vue)
 
 #### 動作
 

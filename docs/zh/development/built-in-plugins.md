@@ -29,7 +29,7 @@ MLightCAD 随附一组官方插件。每个插件专注于一项职责 —— UI
 
 ### `@mlightcad/cad-simple-ui-plugin` — 简单查看器的 UI 界面
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) 刻意不包含**任何应用 UI** —— 只有画布和 CAD 核心。如果你将简单查看器嵌入自己的 Web 应用，并希望获得现成的界面而不必采用完整的 Vue 版 [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-viewer) 外壳，**`cad-simple-ui-plugin` 就是预期的 UI 层**。
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) 刻意不包含**任何应用 UI** —— 只有画布和 CAD 核心。如果你将简单查看器嵌入自己的 Web 应用，并希望获得现成的界面而不必采用完整的 Vue 版 [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) 外壳，**`cad-simple-ui-plugin` 就是预期的 UI 层**。
 
 它提供：
 
@@ -54,7 +54,7 @@ MLightCAD 随附一组官方插件。每个插件专注于一项职责 —— UI
 - **第一阶段 CAD 工具** — `get_drawing_context`；`draw_line`、`draw_circle`、`draw_arc`、`draw_rectangle`、`draw_polyline`、`draw_text`；`set_current_layer`、`create_layer`、`zoom_extents`
 - 通过插件 i18n 层支持**英语 / 中文 / 土耳其语 / 捷克语**界面
 
-完整 Vue 版 `cad-viewer` 应用在安装了该包时会自动注册智能体（面板标签页）。`cad-simple-viewer-example` 通过 `cad-simple-ui-plugin` 将其接入停靠标签页。宿主应用调用 `registerLazyAgentPlugin` 和 `setAgentPaletteOpener` 来挂载面板。
+完整 Vue 版 `cad-viewer` 应用在安装了该包时会自动注册智能体（面板标签页）。`cad-simple-viewer-demo` 通过 `cad-simple-ui-plugin` 将其接入停靠标签页。宿主应用调用 `registerLazyAgentPlugin` 和 `setAgentPaletteOpener` 来挂载面板。
 
 → **安装、注册与工具列表：** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -64,7 +64,7 @@ MLightCAD 随附一组官方插件。每个插件专注于一项职责 —— UI
 
 - 延迟加载的 `AcApPlugin`（触发命令：`cadscript`）
 - 复用 `@mlightcad/cad-agent-core` 的 CAD 工具；本包仅添加面板和命令
-- 宿主应用调用 `registerLazyCadScriptPlugin` 并挂载 `new CadScriptPanel().element`（`cad-simple-viewer-example` 中为停靠标签页，`cad-viewer` 中为工具面板标签页）；移除标签页时调用 `destroy()`
+- 宿主应用调用 `registerLazyCadScriptPlugin` 并挂载 `new CadScriptPanel().element`（`cad-simple-viewer-demo` 中为停靠标签页，`cad-viewer` 中为工具面板标签页）；移除标签页时调用 `destroy()`
 
 → **用法：** [packages/cad-script-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin/README.md)
 
@@ -72,7 +72,7 @@ MLightCAD 随附一组官方插件。每个插件专注于一项职责 —— UI
 
 ## 导出 / 导入插件（HTML / PDF / SVG）
 
-这些插件向同一个插件管理器添加导出（及 PDF 导入）命令。它们都是**延迟加载**的，以保持初始页面体积较小。`cad-simple-viewer-example` 示例注册了全部三个导出插件以及 UI/智能体/脚本插件；完整 `cad-viewer` 应用在其引导过程中注册导出插件和智能体/脚本插件（如已安装）。
+这些插件向同一个插件管理器添加导出（及 PDF 导入）命令。它们都是**延迟加载**的，以保持初始页面体积较小。`cad-simple-viewer-demo` 示例注册了全部三个导出插件以及 UI/智能体/脚本插件；完整 `cad-viewer` 应用在其引导过程中注册导出插件和智能体/脚本插件（如已安装）。
 
 ### HTML（`@mlightcad/cad-html-plugin`）
 
@@ -150,7 +150,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 | 应用 | 注册的插件 |
 |-----|--------------------|
 | `cad-simple-viewer` | 无 —— 仅核心，插件均为可选 |
-| `cad-simple-viewer-example` | 导出插件（HTML/PDF/SVG）、`cad-simple-ui-plugin`、`cad-agent-plugin`、`cad-script-plugin` |
+| `cad-simple-viewer-demo` | 导出插件（HTML/PDF/SVG）、`cad-simple-ui-plugin`、`cad-agent-plugin`、`cad-script-plugin` |
 | `cad-viewer`（Vue） | 导出插件（HTML/PDF/SVG）；智能体和脚本插件在**已安装时**自动注册（可选 peer 依赖） |
 
 ---

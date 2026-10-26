@@ -33,7 +33,7 @@ npm install @mlightcad/cad-simple-viewer
 
 ## 使用方法
 
-基本的な使用方法と応用的な使用方法については、[cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) を参照してください。
+基本的な使用方法と応用的な使用方法については、[cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) を参照してください。
 
 統合は 2 段階です。まず**アプリケーションを初期化**し（`AcApDocManager` シングルトンを一度作成）、次に**図面を開きます**。
 
@@ -210,7 +210,7 @@ if (!success) {
 
 **重要な注意**：`cad-simple-viewer` の使用方法は **AutoCAD RealDWG と非常によく似ています**。AutoCAD RealDWG の開発に慣れている方なら、API の構造とワークフローがほぼ同じであることがわかります。主な違いは、ネイティブの RealDWG ライブラリではなく [**realdwg-web API**](https://mlightcad.github.io/realdwg-web/) を使用していることです。
 
-[cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) では、[**realdwg-web API**](https://mlightcad.github.io/realdwg-web/) を使用して 1 つの図面を作成する方法を示しています。
+[cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) では、[**realdwg-web API**](https://mlightcad.github.io/realdwg-web/) を使用して 1 つの図面を作成する方法を示しています。
 
 ## MLightCAD における役割
 

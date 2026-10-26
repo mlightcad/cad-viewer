@@ -204,7 +204,7 @@ registerLazyPdfPlugin(pm)
 registerLazySvgPlugin(pm)
 ```
 
-التطبيق النموذجي: `packages/cad-simple-viewer-example/src/main.ts`.
+التطبيق النموذجي: `packages/cad-simple-viewer-demo/src/main.ts`.
 
 عندما يشغّل المستخدم أمر تشغيل، يستدعي `AcApDocManager` تلقائيًا `loadByTrigger` إذا لم يكن الأمر مسجّلًا بعد:
 
@@ -217,7 +217,7 @@ AcApDocManager.instance.sendStringToExecute('cpdf')
 
 ### ب. التسجيل الكسول المضمّن (مكوّن cad-viewer)
 
-يسجّل `@mlightcad/cad-viewer` إضافات PDF/HTML/SVG في `registerLazyPlugins()` (`packages/cad-viewer/src/app/register.ts`)، ويُستدعى ذلك من `initializeCadViewer()` في `app.ts`. يحصل مستخدمو مكوّن Vue على الإضافات الكسولة دون إعداد إضافي.
+يسجّل `@mlightcad/cad-viewer` إضافات PDF/HTML/SVG في `registerLazyPlugins()` (`packages/cad-editor/src/app/register.ts`)، ويُستدعى ذلك من `initializeCadViewer()` في `app.ts`. يحصل مستخدمو مكوّن Vue على الإضافات الكسولة دون إعداد إضافي.
 
 ### ج. التحميل الفوري عبر `pluginManager.loadPlugin()`
 

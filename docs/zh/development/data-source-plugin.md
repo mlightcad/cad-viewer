@@ -6,7 +6,7 @@ title: "数据源插件"
 
 本页介绍 `@mlightcad/cad-simple-viewer` 中的**数据源插件**机制——决定**图纸来自哪里**（本地磁盘、HTTP URL、OneDrive、Google Drive 等）的可插拔层。内容涵盖该机制的工作方式、如何创建自己的数据源，以及如何注册和使用它。
 
-该机制位于 `packages/cad-simple-viewer/src/app/dataSource`。完整的参考实现作为独立的 npm 包发布：`@mlightcad/cad-onedrive-plugin`（`packages/cad-onedrive-plugin`），由 `packages/cad-simple-viewer-example` 中的演示应用使用。
+该机制位于 `packages/cad-simple-viewer/src/app/dataSource`。完整的参考实现作为独立的 npm 包发布：`@mlightcad/cad-onedrive-plugin`（`packages/cad-onedrive-plugin`），由 `packages/cad-simple-viewer-demo` 中的演示应用使用。
 
 > 关于**命令插件**（如 `cpdf`、`chtml` 等导出命令），请参见[插件系统](./plugin-system)。数据源插件*本身*就是一个 `AcApPlugin`——它只是使用 `onLoad` 注册数据源而不是命令。
 
@@ -351,7 +351,7 @@ await registerOneDrivePlugin(AcApDocManager.instance.pluginManager, {
 })
 ```
 
-通过从 `/register` 子路径导入并动态导入其余部分，将注册桩保留在初始 bundle 中（参见 `packages/cad-simple-viewer-example/src/register.ts`）：
+通过从 `/register` 子路径导入并动态导入其余部分，将注册桩保留在初始 bundle 中（参见 `packages/cad-simple-viewer-demo/src/register.ts`）：
 
 ```typescript
 const { registerOneDrivePlugin } = await import('@mlightcad/cad-onedrive-plugin/register')
@@ -403,7 +403,7 @@ if (file) {
 }
 ```
 
-**用户手势陷阱**（摘自 `cad-simple-viewer-example/src/main.ts`）：如果点击处理器必须先 `await` 查看器初始化，然后才执行 `pick` 操作，用户手势就会丢失，弹窗会被拦截。要么在已初始化时同步执行操作，要么为 `pick` 项显示*请先登录，然后打开*的提示（参见示例应用中的 `handleDataSourceMenuAction`）。
+**用户手势陷阱**（摘自 `cad-simple-viewer-demo/src/main.ts`）：如果点击处理器必须先 `await` 查看器初始化，然后才执行 `pick` 操作，用户手势就会丢失，弹窗会被拦截。要么在已初始化时同步执行操作，要么为 `pick` 项显示*请先登录，然后打开*的提示（参见示例应用中的 `handleDataSourceMenuAction`）。
 
 ---
 
@@ -419,7 +419,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | 立即注册辅助函数（校验 `clientId`） |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | 插件实例的异步工厂函数 |
 
-示例应用通过环境配置将其接入（`packages/cad-simple-viewer-example/src/onedriveEnv.ts`）：当设置了 `VITE_MSAL_CLIENT_ID` 时，`registerOneDriveFromEnv` 会注册该插件；落地页面板通过 `AcUiFileOpenPanel` 的 `extraMenuItems` 列出*Sign in to OneDrive*项。
+示例应用通过环境配置将其接入（`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`）：当设置了 `VITE_MSAL_CLIENT_ID` 时，`registerOneDriveFromEnv` 会注册该插件；落地页面板通过 `AcUiFileOpenPanel` 的 `extraMenuItems` 列出*Sign in to OneDrive*项。
 
 **Azure 应用设置**（用于 OneDrive）：在 Microsoft Entra ID 中注册一个 **Single-page application**，添加与你的应用来源匹配的重定向 URI，授予委托的 Graph 权限 `User.Read` + `Files.Read.All`（个人 OneDrive 选择器令牌也涵盖 `OneDrive.ReadOnly`）。
 

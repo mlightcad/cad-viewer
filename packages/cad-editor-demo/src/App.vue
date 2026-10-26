@@ -68,7 +68,7 @@ import {
 } from './onedriveEnv'
 import { store } from './store'
 
-// Isolate this example's prefs from cad-simple-viewer-example on localhost.
+// Isolate this example's prefs from cad-simple-viewer-demo on localhost.
 AcApSettingManager.configure({
   storageKey: 'mlightcad.settings.cad-viewer'
 })

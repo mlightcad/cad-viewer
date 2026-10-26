@@ -33,7 +33,7 @@ npm install @mlightcad/cad-simple-viewer
 
 ## Použití
 
-Základní i pokročilé použití naleznete v projektu [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example).
+Základní i pokročilé použití naleznete v projektu [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example).
 
 Integrace má dva kroky: nejprve **inicializujte aplikaci** (jednou vytvořte singleton `AcApDocManager`) a poté **otevřete výkres**.
 
@@ -210,7 +210,7 @@ Díky této možnosti je `cad-simple-viewer` vhodný pro aplikace, které potře
 
 **Důležitá poznámka**: vzory použití v `cad-simple-viewer` jsou **velmi podobné AutoCAD RealDWG**. Pokud máte zkušenosti s vývojem pro AutoCAD RealDWG, budou vám struktura API a pracovní postup téměř totožné. Hlavní rozdíl je v tom, že používáme [**realdwg-web API**](https://mlightcad.github.io/realdwg-web/) místo nativních knihoven RealDWG.
 
-Projekt [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) ukazuje, jak vytvořit výkres pomocí [**realdwg-web API**](https://mlightcad.github.io/realdwg-web/).
+Projekt [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) ukazuje, jak vytvořit výkres pomocí [**realdwg-web API**](https://mlightcad.github.io/realdwg-web/).
 
 ## Role v MLightCAD
 

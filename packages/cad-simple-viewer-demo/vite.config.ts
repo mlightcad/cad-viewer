@@ -22,7 +22,7 @@ export default defineConfig(() => {
   const hasViewerRuntime = existsSync(runtimePath)
   if (!hasViewerRuntime) {
     console.warn(
-      '[cad-simple-viewer-example] viewer-runtime.iife.js not found — HTML export (chtml) will be unavailable. ' +
+      '[cad-simple-viewer-demo] viewer-runtime.iife.js not found — HTML export (chtml) will be unavailable. ' +
         'Build @mlightcad/cad-html-plugin to enable it. Opening DXF/DWG does not require this file.'
     )
   }

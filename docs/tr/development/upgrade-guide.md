@@ -153,9 +153,9 @@ Her sürüm için kanonik doğruluk kaynağı, ilgili Git etiketindeki monorepo'
 
 ---
 
-## Yöntem 2 — `cad-simple-viewer-example` Yükseltme Commit'lerini Takip Edin
+## Yöntem 2 — `cad-simple-viewer-demo` Yükseltme Commit'lerini Takip Edin
 
-[cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) deposu, `cad-simple-viewer` için resmi minimal ana uygulamadır. Çekirdek her sürümlendiğinde örnek proje, **tüm ilgili bağımlılıkları birlikte** güncelleyen `feat: upgrade to cad-simple-viewer vX.Y.Z` başlıklı bir commit alır. Bu commit, o sürüm için bakımcıların tam olarak hangi sürümleri kullandığını gösteren pratik ve somut bir başvurudur.
+[cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) deposu, `cad-simple-viewer` için resmi minimal ana uygulamadır. Çekirdek her sürümlendiğinde örnek proje, **tüm ilgili bağımlılıkları birlikte** güncelleyen `feat: upgrade to cad-simple-viewer vX.Y.Z` başlıklı bir commit alır. Bu commit, o sürüm için bakımcıların tam olarak hangi sürümleri kullandığını gösteren pratik ve somut bir başvurudur.
 
 ### Adımlar
 
@@ -240,4 +240,4 @@ C: Semver aralıkları (`^`, `~`) bir sürüm serisi *içinde* yama düzeyinde y
 
 **S: pnpm yerine npm/yarn kullanıyorum. Bu yine de geçerli mi?**
 
-C: Evet. Paket yöneticisinden bağımsız olarak sürüm koordinasyonu aynıdır. `pnpm-workspace.yaml` içindeki değerlerle `overrides` (pnpm), `resolutions` (yarn) veya `overrides` (npm) kullanın ya da `cad-simple-viewer-example` farkındaki sürümleri doğrudan `package.json` dosyanıza sabitleyin.
+C: Evet. Paket yöneticisinden bağımsız olarak sürüm koordinasyonu aynıdır. `pnpm-workspace.yaml` içindeki değerlerle `overrides` (pnpm), `resolutions` (yarn) veya `overrides` (npm) kullanın ya da `cad-simple-viewer-demo` farkındaki sürümleri doğrudan `package.json` dosyanıza sabitleyin.

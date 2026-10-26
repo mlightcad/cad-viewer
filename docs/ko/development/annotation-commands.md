@@ -96,7 +96,7 @@ title: "주석 명령"
 
 주석 엔티티를 생성할 때 다음 UI 컴포넌트가 표시됩니다:
 
--   [`MlEntityDrawStyleToolbar`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/layout/MlEntityDrawStyleToolbar.vue)
+-   [`MlEntityDrawStyleToolbar`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-editor/src/component/layout/MlEntityDrawStyleToolbar.vue)
 
 #### 동작
 

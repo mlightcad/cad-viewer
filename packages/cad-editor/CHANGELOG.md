@@ -1,4 +1,4 @@
-# @mlightcad/cad-simple-viewer-example
+# @mlightcad/cad-viewer
 
 ## 1.7.8-preview.1
 
@@ -13,7 +13,6 @@
   - @mlightcad/cad-onedrive-plugin@1.7.8-preview.1
   - @mlightcad/cad-pdf-plugin@1.7.8-preview.1
   - @mlightcad/cad-script-plugin@1.7.8-preview.1
-  - @mlightcad/cad-simple-ui-plugin@1.7.8-preview.1
   - @mlightcad/cad-simple-viewer@1.7.8-preview.1
   - @mlightcad/cad-svg-plugin@1.7.8-preview.1
   - @mlightcad/pdf-renderer@1.7.8-preview.1
@@ -32,7 +31,6 @@
   - @mlightcad/cad-onedrive-plugin@1.7.8-preview.0
   - @mlightcad/cad-pdf-plugin@1.7.8-preview.0
   - @mlightcad/cad-script-plugin@1.7.8-preview.0
-  - @mlightcad/cad-simple-ui-plugin@1.7.8-preview.0
   - @mlightcad/cad-simple-viewer@1.7.8-preview.0
   - @mlightcad/cad-svg-plugin@1.7.8-preview.0
   - @mlightcad/pdf-renderer@1.7.8-preview.0
@@ -51,7 +49,6 @@
   - @mlightcad/cad-onedrive-plugin@1.7.7
   - @mlightcad/cad-pdf-plugin@1.7.7
   - @mlightcad/cad-script-plugin@1.7.7
-  - @mlightcad/cad-simple-ui-plugin@1.7.7
   - @mlightcad/cad-simple-viewer@1.7.7
   - @mlightcad/cad-svg-plugin@1.7.7
   - @mlightcad/pdf-renderer@1.7.7
@@ -70,7 +67,6 @@
   - @mlightcad/cad-onedrive-plugin@1.7.7-preview.1
   - @mlightcad/cad-pdf-plugin@1.7.7-preview.1
   - @mlightcad/cad-script-plugin@1.7.7-preview.1
-  - @mlightcad/cad-simple-ui-plugin@1.7.7-preview.1
   - @mlightcad/cad-simple-viewer@1.7.7-preview.1
   - @mlightcad/cad-svg-plugin@1.7.7-preview.1
   - @mlightcad/pdf-renderer@1.7.7-preview.1
@@ -89,7 +85,6 @@
   - @mlightcad/cad-onedrive-plugin@1.7.7-preview.0
   - @mlightcad/cad-pdf-plugin@1.7.7-preview.0
   - @mlightcad/cad-script-plugin@1.7.7-preview.0
-  - @mlightcad/cad-simple-ui-plugin@1.7.7-preview.0
   - @mlightcad/cad-simple-viewer@1.7.7-preview.0
   - @mlightcad/cad-svg-plugin@1.7.7-preview.0
   - @mlightcad/pdf-renderer@1.7.7-preview.0
@@ -106,7 +101,6 @@
   - @mlightcad/cad-html-plugin@1.7.6
   - @mlightcad/cad-onedrive-plugin@1.7.6
   - @mlightcad/cad-pdf-plugin@1.7.6
-  - @mlightcad/cad-simple-ui-plugin@1.7.6
   - @mlightcad/cad-simple-viewer@1.7.6
   - @mlightcad/cad-svg-plugin@1.7.6
   - @mlightcad/pdf-renderer@1.7.6
@@ -123,7 +117,6 @@
   - @mlightcad/cad-html-plugin@1.7.6-preview.0
   - @mlightcad/cad-onedrive-plugin@1.7.6-preview.0
   - @mlightcad/cad-pdf-plugin@1.7.6-preview.0
-  - @mlightcad/cad-simple-ui-plugin@1.7.6-preview.0
   - @mlightcad/cad-simple-viewer@1.7.6-preview.0
   - @mlightcad/cad-svg-plugin@1.7.6-preview.0
   - @mlightcad/pdf-renderer@1.7.6-preview.0
@@ -140,7 +133,6 @@
   - @mlightcad/cad-html-plugin@1.7.5
   - @mlightcad/cad-onedrive-plugin@1.7.5
   - @mlightcad/cad-pdf-plugin@1.7.5
-  - @mlightcad/cad-simple-ui-plugin@1.7.5
   - @mlightcad/cad-simple-viewer@1.7.5
   - @mlightcad/cad-svg-plugin@1.7.5
   - @mlightcad/pdf-renderer@1.7.5
@@ -155,7 +147,6 @@
   - @mlightcad/cad-agent-plugin@1.7.4
   - @mlightcad/cad-html-plugin@1.7.4
   - @mlightcad/cad-pdf-plugin@1.7.4
-  - @mlightcad/cad-simple-ui-plugin@1.7.4
   - @mlightcad/cad-simple-viewer@1.7.4
   - @mlightcad/cad-svg-plugin@1.7.4
   - @mlightcad/pdf-renderer@1.7.4
@@ -170,7 +161,6 @@
   - @mlightcad/cad-agent-plugin@1.7.3
   - @mlightcad/cad-html-plugin@1.7.3
   - @mlightcad/cad-pdf-plugin@1.7.3
-  - @mlightcad/cad-simple-ui-plugin@1.7.3
   - @mlightcad/cad-simple-viewer@1.7.3
   - @mlightcad/cad-svg-plugin@1.7.3
   - @mlightcad/pdf-renderer@1.7.3
@@ -185,7 +175,6 @@
   - @mlightcad/cad-agent-plugin@1.7.2
   - @mlightcad/cad-html-plugin@1.7.2
   - @mlightcad/cad-pdf-plugin@1.7.2
-  - @mlightcad/cad-simple-ui-plugin@1.7.2
   - @mlightcad/cad-simple-viewer@1.7.2
   - @mlightcad/cad-svg-plugin@1.7.2
   - @mlightcad/pdf-renderer@1.7.2
@@ -200,7 +189,6 @@
   - @mlightcad/cad-agent-plugin@1.7.1
   - @mlightcad/cad-html-plugin@1.7.1
   - @mlightcad/cad-pdf-plugin@1.7.1
-  - @mlightcad/cad-simple-ui-plugin@1.7.1
   - @mlightcad/cad-simple-viewer@1.7.1
   - @mlightcad/cad-svg-plugin@1.7.1
   - @mlightcad/pdf-renderer@1.7.1
@@ -218,7 +206,6 @@
   - @mlightcad/cad-agent-plugin@1.7.0
   - @mlightcad/cad-html-plugin@1.7.0
   - @mlightcad/cad-pdf-plugin@1.7.0
-  - @mlightcad/cad-simple-ui-plugin@1.7.0
   - @mlightcad/cad-simple-viewer@1.7.0
   - @mlightcad/cad-svg-plugin@1.7.0
   - @mlightcad/three-renderer@1.7.0
@@ -232,7 +219,6 @@
   - @mlightcad/cad-agent-plugin@1.6.3
   - @mlightcad/cad-html-plugin@1.6.3
   - @mlightcad/cad-pdf-plugin@1.6.3
-  - @mlightcad/cad-simple-ui-plugin@1.6.3
   - @mlightcad/cad-simple-viewer@1.6.3
   - @mlightcad/cad-svg-plugin@1.6.3
   - @mlightcad/three-renderer@1.6.3
@@ -246,7 +232,6 @@
   - @mlightcad/cad-agent-plugin@1.6.2
   - @mlightcad/cad-html-plugin@1.6.2
   - @mlightcad/cad-pdf-plugin@1.6.2
-  - @mlightcad/cad-simple-ui-plugin@1.6.2
   - @mlightcad/cad-simple-viewer@1.6.2
   - @mlightcad/cad-svg-plugin@1.6.2
   - @mlightcad/three-renderer@1.6.2
@@ -260,7 +245,6 @@
   - @mlightcad/cad-agent-plugin@1.6.1
   - @mlightcad/cad-html-plugin@1.6.1
   - @mlightcad/cad-pdf-plugin@1.6.1
-  - @mlightcad/cad-simple-ui-plugin@1.6.1
   - @mlightcad/cad-simple-viewer@1.6.1
   - @mlightcad/cad-svg-plugin@1.6.1
   - @mlightcad/three-renderer@1.6.1
@@ -277,7 +261,6 @@
   - @mlightcad/cad-agent-plugin@1.6.0
   - @mlightcad/cad-html-plugin@1.6.0
   - @mlightcad/cad-pdf-plugin@1.6.0
-  - @mlightcad/cad-simple-ui-plugin@1.6.0
   - @mlightcad/cad-simple-viewer@1.6.0
   - @mlightcad/cad-svg-plugin@1.6.0
   - @mlightcad/three-renderer@1.6.0
@@ -291,7 +274,6 @@
   - @mlightcad/cad-agent-plugin@1.5.11
   - @mlightcad/cad-html-plugin@1.5.11
   - @mlightcad/cad-pdf-plugin@1.5.11
-  - @mlightcad/cad-simple-ui-plugin@1.5.11
   - @mlightcad/cad-simple-viewer@1.5.11
   - @mlightcad/cad-svg-plugin@1.5.11
   - @mlightcad/three-renderer@1.5.11
@@ -305,7 +287,6 @@
   - @mlightcad/cad-agent-plugin@1.5.10
   - @mlightcad/cad-html-plugin@1.5.10
   - @mlightcad/cad-pdf-plugin@1.5.10
-  - @mlightcad/cad-simple-ui-plugin@1.5.10
   - @mlightcad/cad-simple-viewer@1.5.10
   - @mlightcad/cad-svg-plugin@1.5.10
 
@@ -315,7 +296,6 @@
 
 - feat: this release adds Czech localization, an Attribute Definition dialog, and an About dialog; improves XREF overlays, XATTACH defaults, and INSERT Off/Freeze layer behavior; ships a faster DXF pipeline with compacted block templates; expands offline HTML locales (Czech, Turkish); and documents the proprietary DWG converter plus Read the Docs API publishing
 - Updated dependencies
-  - @mlightcad/cad-simple-ui-plugin@1.5.9
   - @mlightcad/cad-simple-viewer@1.5.9
   - @mlightcad/cad-agent-plugin@1.5.9
   - @mlightcad/cad-html-plugin@1.5.9
@@ -331,7 +311,6 @@
   - @mlightcad/cad-agent-plugin@1.5.8
   - @mlightcad/cad-html-plugin@1.5.8
   - @mlightcad/cad-pdf-plugin@1.5.8
-  - @mlightcad/cad-simple-ui-plugin@1.5.8
   - @mlightcad/cad-simple-viewer@1.5.8
   - @mlightcad/cad-svg-plugin@1.5.8
 
@@ -343,7 +322,6 @@
 - Updated dependencies
   - @mlightcad/cad-html-plugin@1.5.7
   - @mlightcad/cad-pdf-plugin@1.5.7
-  - @mlightcad/cad-simple-ui-plugin@1.5.7
   - @mlightcad/cad-simple-viewer@1.5.7
   - @mlightcad/cad-svg-plugin@1.5.7
 
@@ -408,7 +386,6 @@
 
 - feat: adds offline HTML export (self-contained viewer, Playwright CLI, measurement, object snap, OrbitControls), MTEXT editing with ribbon integration and positioning fixes, the OFFSET command, and a Drawing Units (UNITS) dialog with LUNITS/AUNITS formatting. It improves paper-space layout switching, viewport picking, hatch rendering, and DXF/DWG load UX. Infrastructure updates include Node.js 24, pnpm 10, dependency upgrades, and production build/tree-shaking fixes
 - Updated dependencies
-  - @mlightcad/cad-html-exporter@1.5.1
   - @mlightcad/cad-simple-viewer@1.5.1
 
 ## 1.5.0
@@ -458,7 +435,7 @@
 
 ### Patch Changes
 
-- fix: fix issue 103 and update cad-simple-viewer-example to be able to verify it
+- fix: fix issue 103 and update cad-simple-viewer-demo to be able to verify it
 - Updated dependencies
   - @mlightcad/cad-simple-viewer@1.4.9
 
@@ -506,7 +483,6 @@
 
 ### Patch Changes
 
-- feat: refine cad-simple-viewer-example to show how to config 'webworkerFileUrls'
 - Updated dependencies
   - @mlightcad/cad-simple-viewer@1.4.3
 
@@ -657,6 +633,7 @@
 
 ### Patch Changes
 
+- fix: fix UI bugs on layer manager
 - Updated dependencies
   - @mlightcad/cad-simple-viewer@1.1.9
 
@@ -718,6 +695,7 @@
 
 ### Patch Changes
 
+- feat: upgrade dependencies to fix bug on rendering shx fonts
 - Updated dependencies
   - @mlightcad/cad-simple-viewer@1.1.1
 
@@ -733,6 +711,7 @@
 
 ### Patch Changes
 
+- feat: remove property 'canvasId' and add property 'localFile' for cad-viewer component
 - Updated dependencies
   - @mlightcad/cad-simple-viewer@1.0.23
 
@@ -754,7 +733,6 @@
 
 ### Patch Changes
 
-- fix: fix issue on loading mtext-renderer-worker.js in prod mode
 - Updated dependencies
   - @mlightcad/cad-simple-viewer@1.0.20
 
@@ -850,6 +828,7 @@
 
 ### Patch Changes
 
+- fix: catch errors to continue rendering drawing if bigfont characters are found
 - Updated dependencies
   - @mlightcad/cad-simple-viewer@1.0.8
 

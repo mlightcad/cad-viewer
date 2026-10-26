@@ -36,7 +36,7 @@ For more details, see [**Integrate Simple Viewer**](./integrate-simple-cad-viewe
 
 ## Examples
 
-- [`cad-simple-viewer-example`](https://github.com/mlightcad/cad-simple-viewer-example): Example application demonstrating how to use the `cad-simple-viewer` component in a real project.
-- [`cad-viewer-example`](https://github.com/mlightcad/cad-viewer-example): Example application demonstrating how to use the `cad-viewer` component in a real project.
+- [`cad-simple-viewer-demo`](https://github.com/mlightcad/cad-simple-viewer-example): Example application demonstrating how to use the `cad-simple-viewer` component in a real project.
+- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): Example application demonstrating how to use the `cad-viewer` component in a real project.
 
 

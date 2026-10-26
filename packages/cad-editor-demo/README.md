@@ -1,6 +1,6 @@
 # CAD Viewer Example
 
-A Vue 3 demo that embeds [`@mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-viewer): a file-upload landing screen, then the full CAD UI (menus, ribbons, dialogs, command line, status bar) for viewing and editing local DXF/DWG files.
+A Vue 3 demo that embeds [`@mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor): a file-upload landing screen, then the full CAD UI (menus, ribbons, dialogs, command line, status bar) for viewing and editing local DXF/DWG files.
 
 ## Features
 
@@ -50,7 +50,7 @@ pnpm dev
 Or from this package:
 
 ```bash
-cd packages/cad-viewer-example
+cd packages/cad-editor-demo
 pnpm dev
 ```
 
@@ -177,7 +177,7 @@ From the monorepo root: `pnpm dev`, `pnpm preview`, `pnpm test:e2e`.
 ## Related packages
 
 - [`@mlightcad/cad-viewer`](../cad-viewer) — Component API, props, and customization
-- [`cad-simple-viewer-example`](../cad-simple-viewer-example) — Minimal vanilla TypeScript host without the full Vue UI
+- [`cad-simple-viewer-demo`](../cad-simple-viewer-demo) — Minimal vanilla TypeScript host without the full Vue UI
 - [`@mlightcad/cad-html-plugin`](../cad-html-plugin) — HTML export and `viewer-runtime.iife.js`
 - [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli) — Headless HTML export CLI (`-chtml` via `.scr`)
 

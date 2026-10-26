@@ -29,7 +29,7 @@ Komutla tetiklenen tüm eklentiler **tembel yüklenir**: başlangıçta küçük
 
 ### `@mlightcad/cad-simple-ui-plugin` — Basit görüntüleyici için arayüz bileşenleri
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) kasıtlı olarak **uygulama arayüzü olmadan** gelir — yalnızca tuval ve CAD çekirdeği. Basit görüntüleyiciyi kendi web uygulamanıza gömerken tam Vue tabanlı [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-viewer) kabuğunu benimsemeden hazır arayüz bileşenleri istiyorsanız, **`cad-simple-ui-plugin` amaçlanan arayüz katmanıdır**.
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) kasıtlı olarak **uygulama arayüzü olmadan** gelir — yalnızca tuval ve CAD çekirdeği. Basit görüntüleyiciyi kendi web uygulamanıza gömerken tam Vue tabanlı [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) kabuğunu benimsemeden hazır arayüz bileşenleri istiyorsanız, **`cad-simple-ui-plugin` amaçlanan arayüz katmanıdır**.
 
 Şunları sağlar:
 
@@ -54,7 +54,7 @@ Tüm bileşenler çerçeveden bağımsızdır (saf DOM). Tam Vue `cad-viewer` uy
 - **Aşama 1 CAD araçları** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
 - Eklenti i18n katmanı aracılığıyla **İngilizce / Çince / Türkçe / Çekçe** arayüz metinleri
 
-Tam Vue `cad-viewer` uygulaması, paket kurulduğunda ajanı otomatik olarak kaydeder (palet sekmesi). `cad-simple-viewer-example`, `cad-simple-ui-plugin` aracılığıyla bunu bir dock sekmesine bağlar. Ana uygulamalar, paneli istedikleri yere monte etmek için `registerLazyAgentPlugin` ve `setAgentPaletteOpener` çağırır.
+Tam Vue `cad-viewer` uygulaması, paket kurulduğunda ajanı otomatik olarak kaydeder (palet sekmesi). `cad-simple-viewer-demo`, `cad-simple-ui-plugin` aracılığıyla bunu bir dock sekmesine bağlar. Ana uygulamalar, paneli istedikleri yere monte etmek için `registerLazyAgentPlugin` ve `setAgentPaletteOpener` çağırır.
 
 → **Kurulum, kayıt ve araç listesi:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -64,7 +64,7 @@ Tam Vue `cad-viewer` uygulaması, paket kurulduğunda ajanı otomatik olarak kay
 
 - Tembel yüklenen `AcApPlugin` (tetikleme komutu: `cadscript`)
 - `@mlightcad/cad-agent-core` paketindeki CAD araçlarını yeniden kullanır; bu paket yalnızca paneli ve komutu ekler
-- Ana uygulamalar `registerLazyCadScriptPlugin` çağırır ve `new CadScriptPanel().element` öğesini monte eder (`cad-simple-viewer-example` içinde dock sekmesi, `cad-viewer` içinde araç paleti sekmesi); sekme kaldırıldığında `destroy()` çağırın
+- Ana uygulamalar `registerLazyCadScriptPlugin` çağırır ve `new CadScriptPanel().element` öğesini monte eder (`cad-simple-viewer-demo` içinde dock sekmesi, `cad-viewer` içinde araç paleti sekmesi); sekme kaldırıldığında `destroy()` çağırın
 
 → **Kullanım:** [packages/cad-script-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin/README.md)
 
@@ -72,7 +72,7 @@ Tam Vue `cad-viewer` uygulaması, paket kurulduğunda ajanı otomatik olarak kay
 
 ## Dışa / içe aktarma eklentileri (HTML / PDF / SVG)
 
-Bu eklentiler, aynı eklenti yöneticisine dışa aktarma (ve PDF içe aktarma) komutları ekler. Başlangıç sayfası ağırlığının küçük kalması için **tembel yüklenir**. `cad-simple-viewer-example` demosu, üç dışa aktarma eklentisini de artı arayüz/ajan/betik eklentilerini kaydeder; tam `cad-viewer` uygulaması, başlatma sırasında dışa aktarma eklentilerini ve ajan/betik eklentilerini (kurulmuşsa) kaydeder.
+Bu eklentiler, aynı eklenti yöneticisine dışa aktarma (ve PDF içe aktarma) komutları ekler. Başlangıç sayfası ağırlığının küçük kalması için **tembel yüklenir**. `cad-simple-viewer-demo` demosu, üç dışa aktarma eklentisini de artı arayüz/ajan/betik eklentilerini kaydeder; tam `cad-viewer` uygulaması, başlatma sırasında dışa aktarma eklentilerini ve ajan/betik eklentilerini (kurulmuşsa) kaydeder.
 
 ### HTML (`@mlightcad/cad-html-plugin`)
 
@@ -150,7 +150,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 | Uygulama | Kayıtlı eklentiler |
 |-----|--------------------|
 | `cad-simple-viewer` | Yok — yalnızca çekirdek, eklentiler isteğe bağlıdır |
-| `cad-simple-viewer-example` | Dışa aktarma eklentileri (HTML/PDF/SVG), `cad-simple-ui-plugin`, `cad-agent-plugin`, `cad-script-plugin` |
+| `cad-simple-viewer-demo` | Dışa aktarma eklentileri (HTML/PDF/SVG), `cad-simple-ui-plugin`, `cad-agent-plugin`, `cad-script-plugin` |
 | `cad-viewer` (Vue) | Dışa aktarma eklentileri (HTML/PDF/SVG); ajan ve betik eklentileri, **kurulmuşsa** otomatik olarak kaydedilir (isteğe bağlı peer bağımlılıklar) |
 
 ---

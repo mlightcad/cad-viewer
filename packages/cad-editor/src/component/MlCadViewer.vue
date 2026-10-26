@@ -85,7 +85,7 @@
  * ```
  *
  * @see {@link https://github.com/mlightcad/cad-viewer | Project Repository}
- * @see {@link https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/MlCadViewer.vue | Source Code}
+ * @see {@link https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-editor/src/component/MlCadViewer.vue | Source Code}
  */
 import {
   AcApDocManager,

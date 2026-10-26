@@ -153,9 +153,9 @@ title: "升级 cad-simple-viewer 和 cad-viewer"
 
 ---
 
-## 方法 2 — 查看 `cad-simple-viewer-example` 的升级提交
+## 方法 2 — 查看 `cad-simple-viewer-demo` 的升级提交
 
-[cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) 仓库是 `cad-simple-viewer` 的官方最小宿主。每次核心发布时，示例项目都会收到一个标题为 `feat: upgrade to cad-simple-viewer vX.Y.Z` 的提交，该提交会**一并更新所有相关依赖**。这个提交是一个具体、实用的参考，准确展示了维护者在该版本中使用了哪些版本。
+[cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) 仓库是 `cad-simple-viewer` 的官方最小宿主。每次核心发布时，示例项目都会收到一个标题为 `feat: upgrade to cad-simple-viewer vX.Y.Z` 的提交，该提交会**一并更新所有相关依赖**。这个提交是一个具体、实用的参考，准确展示了维护者在该版本中使用了哪些版本。
 
 ### 步骤
 
@@ -240,4 +240,4 @@ title: "升级 cad-simple-viewer 和 cad-viewer"
 
 **Q：我使用 npm/yarn 而不是 pnpm，这是否仍然适用？**
 
-答：适用。无论使用哪种包管理器，版本协同方式都相同。使用 `overrides`（pnpm）、`resolutions`（yarn）或 `overrides`（npm），填入 `pnpm-workspace.yaml` 中的值，或者直接在 `package.json` 中固定 `cad-simple-viewer-example` diff 中的版本。
+答：适用。无论使用哪种包管理器，版本协同方式都相同。使用 `overrides`（pnpm）、`resolutions`（yarn）或 `overrides`（npm），填入 `pnpm-workspace.yaml` 中的值，或者直接在 `package.json` 中固定 `cad-simple-viewer-demo` diff 中的版本。

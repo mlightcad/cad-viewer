@@ -96,7 +96,7 @@ title: "أوامر التعليقات التوضيحية"
 
 عند إنشاء كيان تعليق توضيحي، يُعرض مكوّن واجهة المستخدم التالي:
 
--   [`MlEntityDrawStyleToolbar`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-viewer/src/component/layout/MlEntityDrawStyleToolbar.vue)
+-   [`MlEntityDrawStyleToolbar`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-editor/src/component/layout/MlEntityDrawStyleToolbar.vue)
 
 #### السلوك
 

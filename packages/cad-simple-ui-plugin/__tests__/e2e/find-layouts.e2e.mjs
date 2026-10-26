@@ -1,19 +1,19 @@
 /**
  * Browser verification of FIND across layouts in cad-simple-ui-plugin, using
  * the fictitious three-layout fixture
- * `cad-viewer-example/e2e/fixtures/find-layouts.dxf` (Model, Planta, Alçados)
- * and the `cad-simple-viewer-example` app.
+ * `cad-editor-demo/e2e/fixtures/find-layouts.dxf` (Model, Planta, Alçados)
+ * and the `cad-simple-viewer-demo` app.
  *
  * Not part of the jest run (`/e2e/` is ignored). Usage:
  *
- *   pnpm --filter @mlightcad/cad-simple-viewer-example dev --port 5199 &
+ *   pnpm --filter @mlightcad/cad-simple-viewer-demo dev --port 5199 &
  *   FIND_E2E_URL=http://127.0.0.1:5199/ node packages/cad-simple-ui-plugin/__tests__/e2e/find-layouts.e2e.mjs
  *
  * Env: FIND_E2E_URL (default http://127.0.0.1:5199/), FIND_E2E_CHROME
  * (chromium executable; defaults to Playwright's own), FIND_E2E_SHOTS
  * (directory for screenshots; default: none).
  *
- * Playwright is resolved from `packages/cad-viewer-example`.
+ * Playwright is resolved from `packages/cad-editor-demo`.
  */
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const require = createRequire(
-  path.resolve(here, '../../../cad-viewer-example/package.json')
+  path.resolve(here, '../../../cad-editor-demo/package.json')
 )
 const { chromium } = require('@playwright/test')
 
@@ -30,7 +30,7 @@ const URL = process.env.FIND_E2E_URL ?? 'http://127.0.0.1:5199/'
 const SHOTS = process.env.FIND_E2E_SHOTS
 const FIXTURE = path.resolve(
   here,
-  '../../../cad-viewer-example/e2e/fixtures/find-layouts.dxf'
+  '../../../cad-editor-demo/e2e/fixtures/find-layouts.dxf'
 )
 
 const browser = await chromium.launch({

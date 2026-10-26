@@ -17,13 +17,13 @@
       "@mlightcad/cad-simple-viewer",
       "@mlightcad/cad-simple-viewer-cli",
       "@mlightcad/cad-mcp-server",
-      "@mlightcad/cad-simple-viewer-example",
+      "@mlightcad/cad-simple-viewer-demo",
       "@mlightcad/cad-diff-viewer",
       "@mlightcad/cad-diff-viewer-example",
       "@mlightcad/cad-svg-plugin",
       "@mlightcad/pdf-renderer",
       "@mlightcad/cad-viewer",
-      "@mlightcad/cad-viewer-example",
+      "@mlightcad/cad-editor-demo",
       "@mlightcad/cad-demo-gallery",
       "@mlightcad/three-renderer"
     ]

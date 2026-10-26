@@ -6,7 +6,7 @@ title: "데이터 소스 플러그인"
 
 이 페이지는 `@mlightcad/cad-simple-viewer`의 **데이터 소스 플러그인** 메커니즘, 즉 **도면이 어디에서 오는지**(로컬 디스크, HTTP URL, OneDrive, Google Drive, …)를 결정하는 플러그 가능한 계층을 설명합니다. 메커니즘의 동작 방식, 사용자 정의 데이터 소스를 만드는 방법, 등록 및 사용 방법을 다룹니다.
 
-이 메커니즘은 `packages/cad-simple-viewer/src/app/dataSource`에 있습니다. 완전한 참조 구현은 별도 npm 패키지인 `@mlightcad/cad-onedrive-plugin`(`packages/cad-onedrive-plugin`)으로 제공되며, `packages/cad-simple-viewer-example`의 데모 앱에서 사용됩니다.
+이 메커니즘은 `packages/cad-simple-viewer/src/app/dataSource`에 있습니다. 완전한 참조 구현은 별도 npm 패키지인 `@mlightcad/cad-onedrive-plugin`(`packages/cad-onedrive-plugin`)으로 제공되며, `packages/cad-simple-viewer-demo`의 데모 앱에서 사용됩니다.
 
 > **명령 플러그인**(`cpdf`, `chtml` 같은 내보내기 명령)에 대해서는 [플러그인 시스템](./plugin-system)을 참조하십시오. 데이터 소스 플러그인도 *바로* `AcApPlugin`이며, 단지 명령 대신 데이터 소스를 등록하기 위해 `onLoad`를 사용할 뿐입니다.
 
@@ -351,7 +351,7 @@ await registerOneDrivePlugin(AcApDocManager.instance.pluginManager, {
 })
 ```
 
-`/register` 하위 경로에서 import하고 나머지는 동적 import하여 등록 스텁을 초기 번들에 유지합니다(`packages/cad-simple-viewer-example/src/register.ts` 참조):
+`/register` 하위 경로에서 import하고 나머지는 동적 import하여 등록 스텁을 초기 번들에 유지합니다(`packages/cad-simple-viewer-demo/src/register.ts` 참조):
 
 ```typescript
 const { registerOneDrivePlugin } = await import('@mlightcad/cad-onedrive-plugin/register')
@@ -403,7 +403,7 @@ if (file) {
 }
 ```
 
-**사용자 제스처 함정**(`cad-simple-viewer-example/src/main.ts`에서): 클릭 핸들러가 `pick` 작업을 실행하기 전에 먼저 뷰어 초기화를 `await`해야 한다면 사용자 제스처가 상실되어 팝업이 차단됩니다. 이미 초기화된 경우 작업을 동기적으로 실행하거나, `pick` 항목에 대해 *먼저 로그인한 다음 열기* 안내를 표시합니다(예제 앱의 `handleDataSourceMenuAction` 참조).
+**사용자 제스처 함정**(`cad-simple-viewer-demo/src/main.ts`에서): 클릭 핸들러가 `pick` 작업을 실행하기 전에 먼저 뷰어 초기화를 `await`해야 한다면 사용자 제스처가 상실되어 팝업이 차단됩니다. 이미 초기화된 경우 작업을 동기적으로 실행하거나, `pick` 항목에 대해 *먼저 로그인한 다음 열기* 안내를 표시합니다(예제 앱의 `handleDataSourceMenuAction` 참조).
 
 ---
 
@@ -419,7 +419,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | 즉시 등록 헬퍼(`clientId` 검증) |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | 플러그인 인스턴스용 비동기 팩토리 |
 
-예제 앱은 환경 구성(`packages/cad-simple-viewer-example/src/onedriveEnv.ts`)을 통해 이를 연결합니다. `VITE_MSAL_CLIENT_ID`가 설정되면 `registerOneDriveFromEnv`가 플러그인을 등록하고, 랜딩 패널은 `AcUiFileOpenPanel`의 `extraMenuItems`를 통해 *Sign in to OneDrive* 항목을 나열합니다.
+예제 앱은 환경 구성(`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`)을 통해 이를 연결합니다. `VITE_MSAL_CLIENT_ID`가 설정되면 `registerOneDriveFromEnv`가 플러그인을 등록하고, 랜딩 패널은 `AcUiFileOpenPanel`의 `extraMenuItems`를 통해 *Sign in to OneDrive* 항목을 나열합니다.
 
 **Azure 앱 설정**(OneDrive용): Microsoft Entra ID에 **Single-page application**을 등록하고, 앱 origin과 일치하는 리디렉션 URI를 추가하고, 위임된 Graph 권한 `User.Read` + `Files.Read.All`을 부여합니다(개인 OneDrive 선택기 토큰은 `OneDrive.ReadOnly`도 포함).
 

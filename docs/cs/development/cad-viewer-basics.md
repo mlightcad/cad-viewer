@@ -36,6 +36,6 @@ Další podrobnosti najdete v částech [**Integrace Simple Viewer**](./integrat
 
 ## Příklady
 
-- [`cad-simple-viewer-example`](https://github.com/mlightcad/cad-simple-viewer-example): Ukázková aplikace předvádějící použití komponenty `cad-simple-viewer` v reálném projektu.
-- [`cad-viewer-example`](https://github.com/mlightcad/cad-viewer-example): Ukázková aplikace předvádějící použití komponenty `cad-viewer` v reálném projektu.
+- [`cad-simple-viewer-demo`](https://github.com/mlightcad/cad-simple-viewer-example): Ukázková aplikace předvádějící použití komponenty `cad-simple-viewer` v reálném projektu.
+- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): Ukázková aplikace předvádějící použití komponenty `cad-viewer` v reálném projektu.
 

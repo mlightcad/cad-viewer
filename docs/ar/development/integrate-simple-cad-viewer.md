@@ -33,7 +33,7 @@ npm install @mlightcad/cad-simple-viewer
 
 ## الاستخدام
 
-يرجى الرجوع إلى [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) للاطلاع على الاستخدام الأساسي والاستخدام المتقدم.
+يرجى الرجوع إلى [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) للاطلاع على الاستخدام الأساسي والاستخدام المتقدم.
 
 تتكامل الوحدة على خطوتين: أولًا **تهيئة التطبيق** (إنشاء الكائن الأحادي `AcApDocManager` مرة واحدة)، ثم **فتح الرسم**.
 
@@ -210,7 +210,7 @@ if (!success) {
 
 **ملاحظة مهمة**: أنماط الاستخدام في `cad-simple-viewer` **شديدة الشبه بـ AutoCAD RealDWG**. إذا كانت لديك خبرة في تطوير AutoCAD RealDWG، فستجد بنية API وسير العمل متطابقين تقريبًا. الفرق الرئيسي هو أننا نستخدم [**realdwg-web API**](https://mlightcad.github.io/realdwg-web/) بدلًا من مكتبات RealDWG الأصلية.
 
-يوضّح [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) كيفية إنشاء رسم واحد باستخدام [**realdwg-web API**](https://mlightcad.github.io/realdwg-web/).
+يوضّح [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) كيفية إنشاء رسم واحد باستخدام [**realdwg-web API**](https://mlightcad.github.io/realdwg-web/).
 
 ## الدور في MLightCAD
 
