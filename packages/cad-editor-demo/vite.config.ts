@@ -100,8 +100,13 @@ export default defineConfig(({ command, mode }) => {
       find: /^@mlightcad\/cad-pdf-plugin\/register$/,
       replacement: resolve(__dirname, '../cad-pdf-plugin/src/register.ts')
     })
+    // Package name stays @mlightcad/cad-viewer; folder is packages/cad-editor.
     aliases.push({
-      find: /^@mlightcad\/(cad-svg-plugin|cad-pdf-plugin|pdf-renderer|three-renderer|cad-simple-viewer|cad-viewer)$/,
+      find: /^@mlightcad\/cad-viewer$/,
+      replacement: resolve(__dirname, '../cad-editor/src')
+    })
+    aliases.push({
+      find: /^@mlightcad\/(cad-svg-plugin|cad-pdf-plugin|pdf-renderer|three-renderer|cad-simple-viewer)$/,
       replacement: resolve(__dirname, '../$1/src')
     })
     if (linkLocalMtextRenderer) {
