@@ -1,4 +1,4 @@
-# CAD-Viewer（中文）
+# MLightCAD（中文）
 
 [English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md)
 
@@ -7,10 +7,10 @@
 
 <a href="https://trendshift.io/repositories/16129?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-16129" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/16129/daily?language=TypeScript" alt="mlightcad%2Fcad-viewer | Trendshift" width="250" height="55"/></a>
 
-CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后端服务的 Web 版 DXF/DWG 查看与编辑器`。
-通过在浏览器中直接完成 DWG/DXF 解析、几何处理和渲染，CAD-Viewer 实现了真正的无服务器（serverless）CAD 查看与编辑，非常适合云应用、离线使用以及对隐私敏感的工作场景。
+MLightCAD 是`全球首个完全运行在浏览器端、无需依赖任何后端服务的 Web 版 DXF/DWG 查看与编辑器`。
+通过在浏览器中直接完成 DWG/DXF 解析、几何处理和渲染，MLightCAD 实现了真正的无服务器（serverless）CAD 查看与编辑，非常适合云应用、离线使用以及对隐私敏感的工作场景。
 
-此外，它还提供市面上 CAD 看图软件中极为少见的能力——**一键导出为单个自包含 HTML 文件**。下载的 `.html` 内嵌图纸快照与轻量查看器运行时，接收方只需用任意现代浏览器即可离线打开、平移缩放、切换图层并测量距离，**无需安装 CAD 软件、无需服务器、无需再打开 CAD-Viewer**。多数桌面或 Web CAD 看图工具只能在自家产品内查看；CAD-Viewer 则把当前图纸变成可邮件发送、可归档、可放到静态站点上的便携文件，非常适合对外分享、合规留档与内网隔离环境。离线查看器的内存占用也远低于传统桌面 CAD 看图软件（见下文[内存对比](#自包含-html-内存占用)）。
+此外，它还提供市面上 CAD 看图软件中极为少见的能力——**一键导出为单个自包含 HTML 文件**。下载的 `.html` 内嵌图纸快照与轻量查看器运行时，接收方只需用任意现代浏览器即可离线打开、平移缩放、切换图层并测量距离，**无需安装 CAD 软件、无需服务器、无需再打开 MLightCAD**。多数桌面或 Web CAD 看图工具只能在自家产品内查看；MLightCAD 则把当前图纸变成可邮件发送、可归档、可放到静态站点上的便携文件，非常适合对外分享、合规留档与内网隔离环境。离线查看器的内存占用也远低于传统桌面 CAD 看图软件（见下文[内存对比](#自包含-html-内存占用)）。
 
 - [**🌐 主页**](https://mlightcad.com/)
 - **🌐 在线演示**：[Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
@@ -22,9 +22,9 @@ CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后�
 - DEV.to: [@mlightcad](https://dev.to/mlightcad)
 - 稀土掘金: [@mlightcad](https://juejin.cn/column/7501992214283501579)
 
-### 基于 cad-viewer 构建的应用（Apps Built with cad-viewer）
+### 基于 MLightCAD 构建的应用（Apps Built with MLightCAD）
 
-[Thingraph](https://cad.thingraph.site/) 团队在 cad-viewer 之上构建了面向生产环境的 DWG/DXF 查看器与平台集成，服务全球数万用户：
+[Thingraph](https://cad.thingraph.site/) 团队在 MLightCAD 之上构建了面向生产环境的 DWG/DXF 查看器与平台集成，服务全球数万用户：
 
 - [DWG Viewer Web App](https://cad.thingraph.site/dwg-viewer) — 浏览器端 DWG/DXF 查看器，工程团队可快速、无服务器地访问图纸。各平台安装入口：
   - [Google Drive](https://workspace.google.com/marketplace/app/dwg_viewer/641533811831) — 在 Drive 中通过 **Open with** 打开 DWG/DXF
@@ -46,13 +46,13 @@ CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后�
 
 ### 示例应用（Demo Apps）
 
-官方示例应用，展示如何把 cad-viewer 集成到你自己的产品中：
+官方示例应用，展示如何把 MLightCAD 集成到你自己的产品中：
 
 - [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — 基于 [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer) 的极简 vanilla TypeScript 宿主：打开本地或 CDN 的 DXF/DWG，用小型工具栏驱动命令，并懒加载 HTML/PDF/SVG 导出插件（不含完整 Vue UI）。
 - [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — 基于 [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) 的完整 Vue 3 应用，含菜单、功能区、对话框、命令行与状态栏（[在线演示](https://mlightcad.github.io/cad-viewer-example/)）。
 - [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js「CAD 网盘」演示：分片断点续传上传 DWG/DXF、SQLite 文件列表与预览缩略图，并支持以**浏览器实时解析**（`cad-simple-viewer`）或**服务端 ACEX 预渲染**（打开更快、内存更少）两种方式查看图纸。
 
-![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
+![MLightCAD Quick Demo](./assets/cad-viewer.gif)
 
 ## 功能特性
 
@@ -63,7 +63,7 @@ CAD-Viewer 是`全球首个完全运行在浏览器端、无需依赖任何后�
 - 模块化架构，便于第三方系统集成
 - **插件系统**：可扩展的插件架构，官方提供 UI、AI 助手及 HTML/PDF/SVG 导出等插件，详见[插件系统开发指南](https://mlightcad.com/cad-viewer/docs/zh/development/plugin-system.html)
 - **移动端布局与触控**：`@mlightcad/cad-simple-viewer` 内置响应式手机/平板布局与触控手势（双指缩放、单指平移、点选），无需单独的移动端应用即可在移动浏览器中使用
-- **导出为离线 HTML**：将当前图纸导出为单个自包含 `.html` 文件，内嵌查看器（平移缩放、范围缩放、图层、距离测量、中英文界面），可在任意浏览器中离线打开，无需 CAD-Viewer 实例或后端。
+- **导出为离线 HTML**：将当前图纸导出为单个自包含 `.html` 文件，内嵌查看器（平移缩放、范围缩放、图层、距离测量、中英文界面），可在任意浏览器中离线打开，无需 MLightCAD 实例或后端。
 - 支持离线与在线编辑流程
 - 基于 THREE.js 的 3D 渲染引擎，包含多项性能优化
 - 面向可扩展与二次开发，适配 CMS、Notion、微信等平台
@@ -125,7 +125,7 @@ pnpm preview:simple
 
 ## 使用说明
 
-初次使用 CAD Viewer？**[用户指南](https://mlightcad.com/cad-viewer/docs/)** 提供了分步说明，涵盖查看器界面、桌面端与触屏操作、批注和测量工具。
+初次使用 MLightCAD？**[用户指南](https://mlightcad.com/cad-viewer/docs/)** 提供了分步说明，涵盖查看器界面、桌面端与触屏操作、批注和测量工具。
 
 ### 桌面浏览器操作
 - **选择**：鼠标左键单击实体
@@ -140,7 +140,7 @@ pnpm preview:simple
 
 ## 性能优化
 
-CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率的同时处理大规模 DXF/DWG 文件：
+MLightCAD 针对复杂图纸渲染进行了多项优化，可在保持高帧率的同时处理大规模 DXF/DWG 文件：
 
 - **自定义着色器材质**：在 GPU 侧高效绘制复杂线型与剖面填充
 - **几何体合批**：对相同材质的点/线/面进行合并，显著减少 draw call
@@ -149,7 +149,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 - **材质缓存**：复用相似实体的材质以减少状态切换
 - **WebGL 优化**：充分利用现代 WebGL 的硬件加速能力
 
-这些优化使得 CAD-Viewer 能够在渲染大量复杂实体的同时保持交互顺畅。
+这些优化使得 MLightCAD 能够在渲染大量复杂实体的同时保持交互顺畅。
 
 #### 自包含 HTML 内存占用
 
@@ -398,7 +398,7 @@ CAD-Viewer 针对复杂图纸渲染进行了多项优化，可在保持高帧率
 
 ## 许可证
 
-cad-viewer monorepo 主体采用 [MIT](LICENSE) 授权。
+MLightCAD monorepo 主体采用 [MIT](LICENSE) 授权。
 
 DXF 加载使用 `@mlightcad/data-model` 中内置的 MIT 解析器。DWG 加载为**按需接入（opt-in）**：`@mlightcad/cad-simple-viewer` 不依赖 GPL 的 LibreDWG 包。若宿主需要开源 DWG 支持，需自行添加 `@mlightcad/libredwg-converter`（GPL-3.0）、部署其 worker 与 wasm，并注册 converter。若您交付闭源产品且无法向客户分发 GPL 代码，请改用 [**专有 DWG 解析器**](./PROPRIETARY-PARSER.zh-CN.md)。
 

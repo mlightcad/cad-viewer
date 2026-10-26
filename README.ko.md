@@ -1,4 +1,4 @@
-# CAD-Viewer（한국어）
+# MLightCAD（한국어）
 
 [English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md)
 
@@ -7,10 +7,10 @@
 
 <a href="https://trendshift.io/repositories/16129?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-16129" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/16129/daily?language=TypeScript" alt="mlightcad%2Fcad-viewer | Trendshift" width="250" height="55"/></a>
 
-cad-viewer는 `백엔드 서비스에 전혀 의존하지 않고 완전히 브라우저에서 동작하는 세계 최초의 웹 기반 DXF/DWG 뷰어 및 에디터`입니다.
-DWG/DXF 파싱, 지오메트리 처리, 렌더링을 브라우저에서 직접 수행함으로써 cad-viewer는 진정한 서버리스 CAD 보기 및 편집을 가능하게 하며, 클라우드 앱, 오프라인 사용, 개인정보에 민감한 워크플로에 이상적입니다.
+MLightCAD는 `백엔드 서비스에 전혀 의존하지 않고 완전히 브라우저에서 동작하는 세계 최초의 웹 기반 DXF/DWG 뷰어 및 에디터`입니다.
+DWG/DXF 파싱, 지오메트리 처리, 렌더링을 브라우저에서 직접 수행함으로써 MLightCAD는 진정한 서버리스 CAD 보기 및 편집을 가능하게 하며, 클라우드 앱, 오프라인 사용, 개인정보에 민감한 워크플로에 이상적입니다.
 
-또한 다른 CAD 뷰어에서는 거의 찾아볼 수 없는 기능을 제공합니다—**클릭 한 번으로 단일 자체 포함 HTML 파일로 내보내기**. 다운로드한 `.html`에는 도면 스냅샷과 경량 뷰어 런타임이 내장되어 있어, 수신자는 **CAD 앱, 서버, 설치 없이** 모든 최신 브라우저에서 열어 팬, 줌, 레이어 전환, 거리 측정을 할 수 있습니다. 대부분의 데스크톱 및 웹 CAD 뷰어는 자사 제품 내에서만 보기를 허용합니다. cad-viewer는 라이브 도면을 이메일로 보내거나, 보관하거나, 정적 파일 호스트에 올릴 수 있는 휴대용 오프라인 산출물로 바꿉니다—클라이언트 공유, 규정 준수 아카이브, 에어갭 워크플로에 이상적입니다. 오프라인 뷰어는 동일한 도면을 열 때 기존 데스크톱 도구보다 훨씬 적은 메모리를 사용합니다(아래 [메모리 비교](#자체-포함-html-메모리-사용량) 참조).
+또한 다른 CAD 뷰어에서는 거의 찾아볼 수 없는 기능을 제공합니다—**클릭 한 번으로 단일 자체 포함 HTML 파일로 내보내기**. 다운로드한 `.html`에는 도면 스냅샷과 경량 뷰어 런타임이 내장되어 있어, 수신자는 **CAD 앱, 서버, 설치 없이** 모든 최신 브라우저에서 열어 팬, 줌, 레이어 전환, 거리 측정을 할 수 있습니다. 대부분의 데스크톱 및 웹 CAD 뷰어는 자사 제품 내에서만 보기를 허용합니다. MLightCAD는 라이브 도면을 이메일로 보내거나, 보관하거나, 정적 파일 호스트에 올릴 수 있는 휴대용 오프라인 산출물로 바꿉니다—클라이언트 공유, 규정 준수 아카이브, 에어갭 워크플로에 이상적입니다. 오프라인 뷰어는 동일한 도면을 열 때 기존 데스크톱 도구보다 훨씬 적은 메모리를 사용합니다(아래 [메모리 비교](#자체-포함-html-메모리-사용량) 참조).
 
 - [**🌐 홈페이지**](https://mlightcad.com/)
 - **🌐 라이브 데모**: [Netlify](https://mlightcad.netlify.app/) · [GitHub Pages](https://mlightcad.github.io/cad-viewer/)
@@ -22,9 +22,9 @@ DWG/DXF 파싱, 지오메트리 처리, 렌더링을 브라우저에서 직접 �
 - DEV.to: [@mlightcad](https://dev.to/mlightcad)
 - Juejin(稀土掘金): [@mlightcad](https://juejin.cn/column/7501992214283501579)
 
-### cad-viewer 기반 앱
+### MLightCAD 기반 앱
 
-[Thingraph](https://cad.thingraph.site/) 팀은 cad-viewer 위에 프로덕션급 DWG/DXF 뷰어와 플랫폼 통합을 구축하여 전 세계 수만 명의 사용자에게 서비스를 제공합니다:
+[Thingraph](https://cad.thingraph.site/) 팀은 MLightCAD 위에 프로덕션급 DWG/DXF 뷰어와 플랫폼 통합을 구축하여 전 세계 수만 명의 사용자에게 서비스를 제공합니다:
 
 - [DWG Viewer Web App](https://cad.thingraph.site/dwg-viewer) — 전 세계 엔지니어링 팀이 빠르고 서버리스하게 도면에 접근하는 데 사용하는 브라우저 기반 DWG/DXF 뷰어. 플랫폼별 설치:
   - [Google Drive](https://workspace.google.com/marketplace/app/dwg_viewer/641533811831) — **Open with**로 Drive에서 DWG/DXF 열기
@@ -46,13 +46,13 @@ DWG/DXF 파싱, 지오메트리 처리, 렌더링을 브라우저에서 직접 �
 
 ### 데모 앱 (Demo Apps)
 
-cad-viewer를 자체 제품에 통합하는 방법을 보여주는 공식 샘플 앱입니다:
+MLightCAD를 자체 제품에 통합하는 방법을 보여주는 공식 샘플 앱입니다:
 
 - [cad-simple-viewer-example](https://github.com/mlightcad/cad-simple-viewer-example) — [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer)용 최소 vanilla TypeScript 호스트. 로컬 또는 CDN DXF/DWG를 열고, 작은 툴바로 명령을 실행하며, 전체 Vue UI 없이 HTML/PDF/SVG 내보내기 플러그인을 지연 로드합니다.
 - [cad-viewer-example](https://github.com/mlightcad/cad-viewer-example) — [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) 기반의 전체 기능 Vue 3 앱. 메뉴, 리본, 대화상자, 명령줄, 상태 표시줄 포함([라이브 데모](https://mlightcad.github.io/cad-viewer-example/)).
 - [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js “CAD 드라이브” 데모. DWG/DXF 청크 이어받기 업로드, SQLite 파일 목록과 미리보기, **브라우저 라이브 파싱**(`cad-simple-viewer`) 또는 **서버측 ACEX 프리렌더**(더 빠른 로딩, 낮은 메모리)로 도면 열기를 지원합니다.
 
-![CAD-Viewer Quick Demo](./assets/cad-viewer.gif)
+![MLightCAD Quick Demo](./assets/cad-viewer.gif)
 
 ## 기능
 
@@ -63,7 +63,7 @@ cad-viewer를 자체 제품에 통합하는 방법을 보여주는 공식 샘플
 - 서드파티 통합을 위한 모듈형 아키텍처
 - **플러그인 시스템** — 확장 가능한 플러그인 아키텍처로 UI, AI 어시스턴트, HTML/PDF/SVG 내보내기 공식 플러그인 제공. 자세한 내용은 [플러그인 시스템 개발 가이드](https://mlightcad.com/cad-viewer/docs/ko/development/plugin-system.html) 참조
 - **모바일 레이아웃 및 터치** — `@mlightcad/cad-simple-viewer`에 반응형 폰/태블릿 UI와 터치 제스처(핀치 줌, 한 손가락 팬, 탭 선택)가 내장되어 별도 모바일 앱 없이 모바일 브라우저에서 사용 가능
-- **오프라인 HTML로 내보내기** — 현재 도면을 내장 뷰어(팬/줌, 범위 줌, 레이어, 거리 측정, EN/ZH UI)가 포함된 단일 자체 포함 `.html` 파일로 내보내기. 모든 브라우저에서 오프라인으로 열림. cad-viewer 인스턴스나 백엔드 불필요.
+- **오프라인 HTML로 내보내기** — 현재 도면을 내장 뷰어(팬/줌, 범위 줌, 레이어, 거리 측정, EN/ZH UI)가 포함된 단일 자체 포함 `.html` 파일로 내보내기. 모든 브라우저에서 오프라인으로 열림. MLightCAD 인스턴스나 백엔드 불필요.
 - 오프라인 및 온라인 편집 워크플로
 - 고급 최적화 기법을 적용한 THREE.js 3D 렌더링 엔진
 - CMS, Notion, WeChat 등 플랫폼과의 확장 및 통합을 위해 설계
@@ -74,7 +74,7 @@ cad-viewer를 자체 제품에 통합하는 방법을 보여주는 공식 샘플
 
 ```html
 <iframe
-  src="https://mlightcad.com/embed.html?url=https://example.com/plans/floor.dwg&mode=review&toolbar=1"
+  src="https://mlightcad.com/embed.html?url=https://example.com/plans/floor.dwg&mode=review&toolbar=1
   style="width:100%;height:600px;border:0"
   allowfullscreen>
 </iframe>
@@ -125,7 +125,7 @@ pnpm preview:simple
 
 ## 사용 방법
 
-CAD Viewer를 처음 사용하시나요? **[사용자 가이드](https://mlightcad.com/cad-viewer/docs/)**에서 뷰어 인터페이스, 데스크톱 및 터치 조작, 마크업, 측정 도구에 대한 단계별 안내를 확인하세요.
+MLightCAD를 처음 사용하시나요? **[사용자 가이드](https://mlightcad.com/cad-viewer/docs/)**에서 뷰어 인터페이스, 데스크톱 및 터치 조작, 마크업, 측정 도구에 대한 단계별 안내를 확인하세요.
 
 ### 데스크톱 브라우저 조작
 - **선택**: 엔티티를 왼쪽 클릭
@@ -140,7 +140,7 @@ CAD Viewer를 처음 사용하시나요? **[사용자 가이드](https://mlightc
 
 ## 성능
 
-CAD-Viewer는 **탁월한 성능**을 위해 설계되었으며, 높은 프레임률을 유지하면서 매우 큰 DXF/DWG 파일을 처리할 수 있습니다. 여러 고급 렌더링 기술로 성능을 최적화합니다:
+MLightCAD는 **탁월한 성능**을 위해 설계되었으며, 높은 프레임률을 유지하면서 매우 큰 DXF/DWG 파일을 처리할 수 있습니다. 여러 고급 렌더링 기술로 성능을 최적화합니다:
 
 - **커스텀 셰이더 머티리얼**: GPU 가속 셰이더 머티리얼로 복잡한 선종과 해치 채우기 패턴을 효율적으로 렌더링
 - **지오메트리 배칭**: 동일 머티리얼의 점, 선, 영역을 병합하여 드로우 호출을 크게 줄임
@@ -149,7 +149,7 @@ CAD-Viewer는 **탁월한 성능**을 위해 설계되었으며, 높은 프레�
 - **머티리얼 캐싱**: 유사 엔티티 간 머티리얼 재사용으로 상태 변경 최소화
 - **WebGL 최적화**: 최신 WebGL 기능으로 하드웨어 가속 렌더링 활용
 
-이러한 최적화를 통해 CAD-Viewer는 수천 개의 엔티티가 있는 복잡한 CAD 도면을 부드럽게 렌더링하면서 반응성 있는 사용자 상호작용을 유지합니다.
+이러한 최적화를 통해 MLightCAD는 수천 개의 엔티티가 있는 복잡한 CAD 도면을 부드럽게 렌더링하면서 반응성 있는 사용자 상호작용을 유지합니다.
 
 #### 자체 포함 HTML 메모리 사용량
 
@@ -397,7 +397,7 @@ CAD-Viewer는 **탁월한 성능**을 위해 설계되었으며, 높은 프레�
 
 ## 라이선스
 
-cad-viewer 모노레포는 주로 [MIT](LICENSE) 라이선스입니다.
+MLightCAD 모노레포는 주로 [MIT](LICENSE) 라이선스입니다.
 
 DXF 로딩은 `@mlightcad/data-model`의 내장 MIT 파서를 사용합니다. DWG 로딩은 **옵트인**입니다: `@mlightcad/cad-simple-viewer`는 GPL LibreDWG 패키지에 의존하지 않습니다. 오픈소스 DWG 지원이 필요한 호스트는 직접 `@mlightcad/libredwg-converter`(GPL-3.0)를 추가하고, worker + wasm을 배포한 뒤 컨버터를 등록합니다. 클로즈드소스 제품을 배포하고 고객에게 GPL 코드를 배포할 수 없다면, [**프로프라이어터리 DWG 파서**](./PROPRIETARY-PARSER.md)를 대신 사용하세요.
 
