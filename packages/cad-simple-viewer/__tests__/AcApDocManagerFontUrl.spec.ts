@@ -317,9 +317,20 @@ jest.mock('@mlightcad/data-model', () => ({
     DXF: 'DXF',
     DWG: 'DWG'
   },
+  AcDbSystemVariables: {
+    CANNOSCALE: 'CANNOSCALE',
+    ANNOALLVISIBLE: 'ANNOALLVISIBLE'
+  },
   AcDbSysVarManager: {
     instance: jest.fn(() => ({
-      getAllDescriptors: jest.fn(() => [])
+      getAllDescriptors: jest.fn(() => []),
+      events: {
+        sysVarChanged: {
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn(),
+          dispatch: jest.fn()
+        }
+      }
     }))
   },
   AcGeBox2d: jest.fn(),
