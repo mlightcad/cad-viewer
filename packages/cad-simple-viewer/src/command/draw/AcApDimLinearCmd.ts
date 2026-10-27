@@ -21,13 +21,13 @@ import {
   addCommonDimKeywords,
   addDimKeyword,
   applyCurrentDimStyle,
-  rememberCreatedDimension,
   commitDimBlock,
   definitionPointsFromEntity,
   DIM_PREVIEW_BLOCK,
   handleCommonDimKeyword,
   inferLinearRotation,
   rebuildPreviewBlock,
+  rememberCreatedDimension,
   removePreviewBlock
 } from './AcApDimCmdUtil'
 

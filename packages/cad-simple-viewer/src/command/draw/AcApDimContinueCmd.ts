@@ -16,11 +16,11 @@ import {
 import { AcApI18n } from '../../i18n'
 import {
   applySourceDimStyle,
+  type ChainKind,
   createContinuedDimension,
   isChainDimension,
   promptSelectChainDimension,
-  resolveChainDimension,
-  type ChainKind
+  resolveChainDimension
 } from './AcApDimChainUtil'
 import {
   addDimKeyword,

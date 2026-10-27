@@ -107,9 +107,9 @@
   >
     <el-tabs v-model="tab">
       <el-tab-pane
-        v-for="group in fieldGroups"
+        v-for="group in labeledFieldGroups"
         :key="group.id"
-        :label="t(group.label)"
+        :label="group.title"
         :name="group.id"
       >
         <div class="ml-dim-style__grid">
@@ -158,7 +158,6 @@
 </template>
 
 <script lang="ts" setup>
-import { AcDbDatabase, AcDbDimension, AcDbDimStyleTableRecord } from '@mlightcad/data-model'
 import {
   AcApDocManager,
   DIM_STYLE_FIELDS,
@@ -168,6 +167,7 @@ import {
   setDimStyleOverride,
   writeDimStyleFields
 } from '@mlightcad/cad-simple-viewer'
+import { AcDbDatabase, AcDbDimension, AcDbDimStyleTableRecord } from '@mlightcad/data-model'
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -254,6 +254,14 @@ const fieldGroups: { id: string; label: string; fields: DimStyleField[] }[] = [
     fields: ['dimtol', 'dimlim', 'dimtp', 'dimtm', 'dimtdec', 'dimtfac', 'dimtolj', 'dimtzin']
   }
 ]
+
+const labeledFieldGroups = computed(() =>
+  fieldGroups.map(group => ({
+    ...group,
+    // eslint-disable-next-line @intlify/vue-i18n/no-dynamic-keys -- tab labels are data-driven keys
+    title: t(group.label)
+  }))
+)
 
 function database(): AcDbDatabase | undefined {
   return AcApDocManager.instance.curDocument?.database

@@ -1,10 +1,9 @@
 import {
   acdbAddAnnotationScaleToObject,
+  type AcDbEntity,
   acdbGetAnnotationScaleContexts,
   acdbListAnnotationScales,
-  acdbRemoveAnnotationScaleFromObject,
-  type AcDbEntity
-} from '@mlightcad/data-model'
+  acdbRemoveAnnotationScaleFromObject} from '@mlightcad/data-model'
 
 import { AcApContext, AcApDocManager } from '../app'
 import {

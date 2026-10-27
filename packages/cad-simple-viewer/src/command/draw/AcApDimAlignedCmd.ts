@@ -19,12 +19,12 @@ import { AcApI18n } from '../../i18n'
 import {
   addCommonDimKeywords,
   applyCurrentDimStyle,
-  rememberCreatedDimension,
   commitDimBlock,
   definitionPointsFromEntity,
   DIM_PREVIEW_BLOCK,
   handleCommonDimKeyword,
   rebuildPreviewBlock,
+  rememberCreatedDimension,
   removePreviewBlock
 } from './AcApDimCmdUtil'
 

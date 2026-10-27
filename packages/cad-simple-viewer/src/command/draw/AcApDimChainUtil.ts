@@ -3,11 +3,10 @@ import {
   AcDbAlignedDimension,
   AcDbDatabase,
   AcDbDimension,
+  acdbDimFeatureScale,
   AcDbRotatedDimension,
   AcGePoint3d,
-  AcGePoint3dLike,
-  acdbDimFeatureScale
-} from '@mlightcad/data-model'
+  AcGePoint3dLike} from '@mlightcad/data-model'
 
 import { AcApDocManager } from '../../app'
 import { AcEdPromptEntityOptions, AcEdPromptStatus } from '../../editor'
