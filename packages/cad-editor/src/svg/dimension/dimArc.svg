@@ -1,6 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-  <path fill="none" stroke="currentColor" stroke-width="1.2" d="M4 15.5A7 7 0 0 1 16 15.5"/>
-  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.25" d="M5.2 14.2A5.6 5.6 0 0 1 14.8 14.2"/>
-  <path fill="var(--el-color-primary)" d="M5.2 14.2 7.4 12.6 6.2 15.4Z"/>
-  <path fill="var(--el-color-primary)" d="M14.8 14.2 12.6 12.6 13.8 15.4Z"/>
+  <!-- Arc geometry with perpendicular extension bars at both ends -->
+  <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt"
+    d="M2.2 17.8h5.1M17.8 2.2v5.1M7.3 17.8A10.5 10.5 0 0 1 17.8 7.3"/>
+  <!-- Arc length dimension (outside the geometry arc) -->
+  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.6" stroke-linecap="butt"
+    d="M4.3 17.7A13.4 13.4 0 0 1 16.4 4.4"/>
+  <!-- Dimension arrowheads -->
+  <path fill="var(--el-color-primary)" d="M3.4 18.9 5.79 16.31 2.94 15.41Z"/>
+  <path fill="var(--el-color-primary)" d="M15.6 1.2 17.89 3.91 14.98 4.69Z"/>
 </svg>

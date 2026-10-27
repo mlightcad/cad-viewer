@@ -1,8 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-  <path fill="none" stroke="currentColor" stroke-width="1.2" d="M3 6v8M10 6v8M17 6v8"/>
-  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.25" d="M4.2 8h4.6M11.2 8h4.6"/>
-  <path fill="var(--el-color-primary)" d="M4.2 8 6.2 6.8v2.4Z"/>
-  <path fill="var(--el-color-primary)" d="M8.8 8 6.8 6.8v2.4Z"/>
-  <path fill="var(--el-color-primary)" d="M11.2 8 13.2 6.8v2.4Z"/>
-  <path fill="var(--el-color-primary)" d="M15.8 8 13.8 6.8v2.4Z"/>
+  <!-- Dotted extension lines with leading dots -->
+  <circle cx="2.6" cy="2.2" r="1.5" fill="var(--el-color-primary)"/>
+  <circle cx="10" cy="2.2" r="1.5" fill="var(--el-color-primary)"/>
+  <circle cx="17.4" cy="2.2" r="1.5" fill="var(--el-color-primary)"/>
+  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.8" stroke-dasharray="2 1.9"
+    d="M2.6 5.2v13.4M10 5.2v13.4M17.4 5.2v13.4"/>
+  <!-- Continue dimension line -->
+  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.9" stroke-linecap="butt"
+    d="M5.3 16.4h9.4"/>
+  <!-- Arrowheads -->
+  <path fill="var(--el-color-primary)" d="M0.6 16.4 5.3 14.3v4.2Z"/>
+  <path fill="var(--el-color-primary)" d="M19.4 16.4 14.7 14.3v4.2Z"/>
 </svg>

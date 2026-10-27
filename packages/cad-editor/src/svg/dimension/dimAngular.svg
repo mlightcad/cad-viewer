@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-  <!-- Angle rays (geometry) -->
-  <path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"
-    d="M3.4 14.6h12.4M3.4 14.6 12.8 4.2"/>
+  <!-- Angle rays (geometry), vertex off-canvas to the left -->
+  <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="butt"
+    d="M1.7 10.3 16.5 1.5M1.2 16.6h17"/>
   <!-- Dimension arc -->
-  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.25" stroke-linecap="butt"
-    d="M10.55 14.6A5.35 5.35 0 0 0 8.05 8.85"/>
+  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.6" stroke-linecap="butt"
+    d="M14.4 3.7A10.4 10.4 0 0 1 14.9 16.3"/>
   <!-- Arc arrowheads -->
-  <path fill="var(--el-color-primary)" d="M10.55 14.6 8.95 13.05h2.55Z"/>
-  <path fill="var(--el-color-primary)" d="M8.05 8.85 9.85 9.55 8.85 11.25Z"/>
+  <path fill="var(--el-color-primary)" d="M14.8 2.6 16 6.1 12.9 5.7Z"/>
+  <path fill="var(--el-color-primary)" d="M13.2 16.8 15.9 14.3 13 13.2Z"/>
 </svg>
