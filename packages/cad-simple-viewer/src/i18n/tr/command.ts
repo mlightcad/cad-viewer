@@ -103,6 +103,30 @@ export default {
     dimlinear: {
       description: 'Doğrusal ölçülendirmeler oluşturur'
     },
+    dimaligned: {
+      description: 'Hizalı doğrusal ölçülendirme oluşturur'
+    },
+    dimradius: {
+      description: 'Daire ve yaylar için yarıçap ölçülendirmesi oluşturur'
+    },
+    dimdiameter: {
+      description: 'Daire ve yaylar için çap ölçülendirmesi oluşturur'
+    },
+    dimangular: {
+      description: 'Açısal ölçülendirmeler oluşturur'
+    },
+    dimarc: {
+      description: 'Yay uzunluğu ölçüsü oluşturur'
+    },
+    dimordinate: {
+      description: 'Ordinat ölçüsü oluşturur'
+    },
+    dimcontinue: {
+      description: 'Sürekli ölçü oluşturur'
+    },
+    dimbaseline: {
+      description: 'Taban çizgisi ölçüsü oluşturur'
+    },
     dimstyle: {
       description: 'Geçerli ölçülendirme stilinin adını ayarlar'
     },

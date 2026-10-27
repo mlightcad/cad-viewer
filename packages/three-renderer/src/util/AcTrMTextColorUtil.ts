@@ -436,7 +436,14 @@ export class AcTrMTextColorUtil {
     }
 
     if (color.isByACI && typeof color.colorIndex === 'number') {
-      resolved.aci = color.colorIndex
+      const aci = color.colorIndex
+      // Guard against NaN / out-of-range (e.g. bad DIMCLRT CMC decode) so
+      // mtext-parser does not abort glyph construction mid-draw.
+      if (Number.isFinite(aci) && aci >= 0 && aci <= 256) {
+        resolved.aci = aci
+      } else {
+        resolved.aci = 256
+      }
       return resolved
     }
 

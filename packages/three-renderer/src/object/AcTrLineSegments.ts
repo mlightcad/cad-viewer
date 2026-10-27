@@ -144,6 +144,9 @@ export class AcTrLineSegments extends AcTrEntity {
   }
 
   override resolveDrawMode(): AcTrDrawMode {
+    if (this.hasAnnotationScaleMetadata()) {
+      return 'unbatch'
+    }
     return this.batchDrawPolicy.resolveDrawMode({
       anchor: resolveAnchorFromBox(this.wcsBbox)
     })

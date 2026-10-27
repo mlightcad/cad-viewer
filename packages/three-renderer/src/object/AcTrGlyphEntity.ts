@@ -358,6 +358,9 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
    *   `'unbatch'`.
    */
   override resolveDrawMode(): AcTrDrawMode {
+    if (this.hasAnnotationScaleMetadata()) {
+      return 'unbatch'
+    }
     return this.batchDrawPolicy.resolveDrawMode({
       position: this.getDrawPosition()
     })
@@ -393,11 +396,8 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
     const meshGlyphInstancing =
       typeof mtextRenderer.getMeshGlyphInstancing === 'function' &&
       mtextRenderer.getMeshGlyphInstancing()
-    if (
-      !this.shouldSkipMeshGlyphInstancing() &&
-      meshGlyphInstancing &&
-      batchObjectId
-    ) {
+    const skipInstancing = this.shouldSkipMeshGlyphInstancing()
+    if (!skipInstancing && meshGlyphInstancing && batchObjectId) {
       this.updateMatrixWorld(true)
       rendered.updateMatrixWorld(true)
       this.captureMeshGlyphSelectionBox(rendered)
@@ -503,6 +503,9 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
    * enqueue into the scene-level mesh-glyph InstancedMesh batch.
    */
   protected shouldSkipMeshGlyphInstancing(): boolean {
+    if (this.renderContext.skipMeshGlyphInstancing) {
+      return true
+    }
     if (this.userData?.skipMeshGlyphInstancing === true) {
       return true
     }

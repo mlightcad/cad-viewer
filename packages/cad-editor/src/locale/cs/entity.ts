@@ -222,6 +222,7 @@ export default {
     patternName: 'Název',
     patternAngle: 'Úhel',
     patternScale: 'Měřítko',
+    annotative: 'Anotační',
     elevation: 'Výškové umístění',
     text: 'Text',
     dimensionText: 'Text kóty',

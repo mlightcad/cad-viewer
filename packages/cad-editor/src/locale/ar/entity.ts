@@ -106,6 +106,7 @@ export default {
     patternName: 'اسم النمط',
     patternAngle: 'زاوية النمط',
     patternScale: 'مقياس النمط',
+    annotative: 'تعليقي',
 
     elevation: 'المنسوب',
 

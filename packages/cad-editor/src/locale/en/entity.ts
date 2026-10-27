@@ -222,6 +222,7 @@ export default {
     patternName: 'Name',
     patternAngle: 'Angle',
     patternScale: 'Scale',
+    annotative: 'Annotative',
     elevation: 'Elevation',
     text: 'Text',
     dimensionText: 'Dim Text',

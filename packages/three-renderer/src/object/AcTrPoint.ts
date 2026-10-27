@@ -68,6 +68,9 @@ export class AcTrPoint extends AcTrEntity {
   }
 
   override resolveDrawMode(): AcTrDrawMode {
+    if (this.hasAnnotationScaleMetadata()) {
+      return 'unbatch'
+    }
     return this.batchDrawPolicy.resolveDrawMode({
       position: this._point
     })

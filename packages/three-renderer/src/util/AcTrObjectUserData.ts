@@ -95,6 +95,16 @@ export interface AcTrEntityUserData
    * with the live entity — otherwise preview enqueues duplicate instances.
    */
   skipMeshGlyphInstancing?: boolean
+  /**
+   * Present on annotative entities so paper viewports can rescale/hide them
+   * (`AcDbAnnotationScaleDrawInfo` from data-model).
+   */
+  annotationScale?: {
+    drawnScaleFactor: number
+    drawnScaleName?: string
+    supportedScaleFactors: number[]
+    supportedScaleNames: string[]
+  }
 }
 
 /**

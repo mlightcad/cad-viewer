@@ -1,4 +1,9 @@
+import enDialog from '../en/dialog'
+
 export default {
+  dimStyleDlg: {
+    ...enDialog.dimStyleDlg
+  },
   baseDialog: {
     ok: 'Tamam',
     cancel: 'İptal',

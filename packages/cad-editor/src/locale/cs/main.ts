@@ -209,6 +209,7 @@ export default {
     },
     group: {
       draw: 'Kreslení',
+      dimension: 'Kóty',
       modify: 'Úpravy',
       layer: 'Hladiny',
       properties: 'Vlastnosti',
@@ -285,6 +286,16 @@ export default {
       point: 'Umístí do výkresu bod.',
       hatch: 'Vyplní uzavřenou oblast vzorem šrafování.',
       text: 'Vytvoří ve výkresu víceřádkový text.',
+      dimlinear: 'Vytvoří vodorovnou, svislou nebo otočenou lineární kótu.',
+      dimaligned: 'Vytvoří zarovnanou lineární kótu.',
+      dimradius: 'Vytvoří poloměrovou kótu kružnice nebo oblouku.',
+      dimdiameter: 'Vytvoří průměrovou kótu kružnice nebo oblouku.',
+      dimangular: 'Vytvoří úhlovou kótu.',
+      dimarc: 'Vytvoří kótu délky oblouku.',
+      dimordinate: 'Vytvoří souřadnicovou kótu.',
+      dimcontinue: 'Vytvoří řetězovou kótu z předchozí.',
+      dimbaseline: 'Vytvoří základnovou kótu z předchozí.',
+      dimstyle: 'Otevře správce stylů kót.',
       move: 'Posune vybrané objekty na novou pozici.',
       rotate: 'Otočí vybrané objekty kolem základního bodu.',
       copy: 'Zkopíruje vybrané objekty na nové místo.',
@@ -397,6 +408,16 @@ export default {
       hatch: 'Šrafování',
       text: 'Text',
       gradient: 'Přechod',
+      dimlinear: 'Lineární',
+      dimaligned: 'Zarovnaná',
+      dimradius: 'Poloměr',
+      dimdiameter: 'Průměr',
+      dimangular: 'Úhel',
+      dimarc: 'Oblouk',
+      dimordinate: 'Souřadnice',
+      dimcontinue: 'Řetězová',
+      dimbaseline: 'Základna',
+      dimstyle: 'Styl\nkót',
       move: 'Posunout',
       rotate: 'Otočit',
       copy: 'Kopírovat',
@@ -605,6 +626,13 @@ export default {
       ribbon: 'Pás karet',
       toolbar: 'Panel nástrojů',
       stats: 'Statistiky'
+    },
+    cannoscale: {
+      tooltip: 'Měřítko anotací (CANNOSCALE)'
+    },
+    annoallvisible: {
+      on: 'Skrýt anotační objekty nepodporující aktuální měřítko',
+      off: 'Zobrazit všechny anotační objekty (ANNOALLVISIBLE)'
     },
     osnap: {
       tooltip: 'Uchopení objektů',

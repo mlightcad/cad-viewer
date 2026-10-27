@@ -13,6 +13,10 @@ export default {
     acadver: {
       description: 'Stores the drawing database version identifier (read-only)'
     },
+    annoallvisible: {
+      description:
+        'Controls whether annotative objects that do not support the current annotation scale are displayed'
+    },
     angbase: {
       description:
         'Sets the base angle 0 direction with respect to the current UCS'
@@ -33,6 +37,9 @@ export default {
     },
     bmpout: {
       description: 'Exports to BMP'
+    },
+    cannoscale: {
+      description: 'Sets the name of the current annotation scale'
     },
     cdxf: {
       description: 'Exports current drawing to DXF'
@@ -97,6 +104,30 @@ export default {
     },
     dimlinear: {
       description: 'Creates linear dimensions'
+    },
+    dimaligned: {
+      description: 'Creates an aligned linear dimension'
+    },
+    dimradius: {
+      description: 'Creates radial dimensions for circles and arcs'
+    },
+    dimdiameter: {
+      description: 'Creates diameter dimensions for circles and arcs'
+    },
+    dimangular: {
+      description: 'Creates angular dimensions'
+    },
+    dimarc: {
+      description: 'Creates arc length dimensions'
+    },
+    dimordinate: {
+      description: 'Creates ordinate dimensions'
+    },
+    dimcontinue: {
+      description: 'Creates a continued dimension'
+    },
+    dimbaseline: {
+      description: 'Creates a baseline dimension'
     },
     dimstyle: {
       description: 'Sets the name of the current dimension style'
@@ -334,6 +365,11 @@ export default {
     move: {
       description: 'Moves selected entities by a displacement vector',
       prompt: 'Select entities'
+    },
+    objectscale: {
+      description:
+        'Adds or deletes supported annotation scales for selected annotative objects',
+      prompt: 'Select annotative objects'
     },
     offset: {
       description:

@@ -82,9 +82,15 @@ export class AcApContext {
     // Add entity to scene
     bind(doc.database.events.entityAppended, args => {
       if (!this._active) return
-      const pending = asEntityList(args.entity).filter(
-        entity => !this.view.hasEntity(entity.objectId)
-      )
+      // Only layout-space entities belong in the scene. Dimension jig rebuilds
+      // `*UDIM` inside an undo transaction; on commit every preview MTEXT/line
+      // was incorrectly notified here and converted as top-level drawables
+      // (ghost dim text at every cursor sample, visible only after pan/flush).
+      const pending = asEntityList(args.entity).filter(entity => {
+        if (this.view.hasEntity(entity.objectId)) return false
+        const owner = doc.database.tables.blockTable.getIdAt(entity.ownerId)
+        return !!(owner && (owner.isModelSapce || owner.isPaperSapce))
+      })
       if (pending.length === 0) {
         return
       }

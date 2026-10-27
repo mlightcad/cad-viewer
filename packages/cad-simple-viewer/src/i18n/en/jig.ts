@@ -131,9 +131,130 @@ export default {
     }
   },
   dimlinear: {
-    xLine1Point: 'Specify the first extension line origin',
-    xLine2Point: 'Specify the second extension line origin',
-    dimLinePoint: 'Specify dimension line location'
+    xLine1Point: 'Specify first extension line origin or <select object>',
+    xLine2Point: 'Specify second extension line origin',
+    dimLinePoint: 'Specify dimension line location',
+    selectObject: 'Select object to dimension',
+    rejectObject: 'Object cannot be dimensioned with DIMLINEAR.',
+    dimensionText: 'Enter dimension text',
+    textAngle: 'Specify angle of dimension text',
+    rotationAngle: 'Specify angle of dimension line',
+    keywords: {
+      mtext: { display: 'Mtext(M)', local: 'Mtext', global: 'Mtext' },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Angle(A)', local: 'Angle', global: 'Angle' },
+      horizontal: {
+        display: 'Horizontal(H)',
+        local: 'Horizontal',
+        global: 'Horizontal'
+      },
+      vertical: {
+        display: 'Vertical(V)',
+        local: 'Vertical',
+        global: 'Vertical'
+      },
+      rotated: {
+        display: 'Rotated(R)',
+        local: 'Rotated',
+        global: 'Rotated'
+      }
+    }
+  },
+  dimaligned: {
+    xLine1Point: 'Specify first extension line origin or <select object>',
+    xLine2Point: 'Specify second extension line origin',
+    dimLinePoint: 'Specify dimension line location',
+    selectObject: 'Select object to dimension',
+    rejectObject: 'Object cannot be dimensioned with DIMALIGNED.',
+    dimensionText: 'Enter dimension text',
+    textAngle: 'Specify angle of dimension text',
+    keywords: {
+      mtext: { display: 'Mtext(M)', local: 'Mtext', global: 'Mtext' },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Angle(A)', local: 'Angle', global: 'Angle' }
+    }
+  },
+  dimradius: {
+    selectObject: 'Select arc or circle',
+    rejectObject: 'Must select an arc or circle.',
+    dimLinePoint: 'Specify dimension line location',
+    dimensionText: 'Enter dimension text',
+    textAngle: 'Specify angle of dimension text',
+    keywords: {
+      mtext: { display: 'Mtext(M)', local: 'Mtext', global: 'Mtext' },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Angle(A)', local: 'Angle', global: 'Angle' }
+    }
+  },
+  dimdiameter: {
+    selectObject: 'Select arc or circle',
+    rejectObject: 'Must select an arc or circle.',
+    dimLinePoint: 'Specify dimension line location',
+    dimensionText: 'Enter dimension text',
+    textAngle: 'Specify angle of dimension text',
+    keywords: {
+      mtext: { display: 'Mtext(M)', local: 'Mtext', global: 'Mtext' },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Angle(A)', local: 'Angle', global: 'Angle' }
+    }
+  },
+  dimangular: {
+    vertexOrSelect: 'Specify angle vertex or <select line>',
+    xLine1Point: 'Specify first angle endpoint',
+    xLine2Point: 'Specify second angle endpoint',
+    arcPoint: 'Specify dimension arc line location',
+    selectFirstLine: 'Select first line',
+    selectSecondLine: 'Select second line',
+    rejectObject: 'Must select a line.',
+    linesParallel: 'Lines are parallel — no angle intersection.',
+    dimensionText: 'Enter dimension text',
+    textAngle: 'Specify angle of dimension text',
+    keywords: {
+      mtext: { display: 'Mtext(M)', local: 'Mtext', global: 'Mtext' },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Angle(A)', local: 'Angle', global: 'Angle' }
+    }
+  },
+  dimarc: {
+    selectArc: 'Select arc',
+    rejectObject: 'Must select an arc.',
+    arcPoint: 'Specify arc length dimension location',
+    dimensionText: 'Enter dimension text',
+    textAngle: 'Specify angle of dimension text',
+    keywords: {
+      mtext: { display: 'Mtext(M)', local: 'Mtext', global: 'Mtext' },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Angle(A)', local: 'Angle', global: 'Angle' }
+    }
+  },
+  dimordinate: {
+    featurePoint: 'Specify feature location',
+    leaderEndpoint: 'Specify leader endpoint',
+    dimensionText: 'Enter dimension text',
+    textAngle: 'Specify angle of dimension text',
+    keywords: {
+      mtext: { display: 'Mtext(M)', local: 'Mtext', global: 'Mtext' },
+      text: { display: 'Text(T)', local: 'Text', global: 'Text' },
+      angle: { display: 'Angle(A)', local: 'Angle', global: 'Angle' },
+      xdatum: { display: 'Xdatum(X)', local: 'Xdatum', global: 'Xdatum' },
+      ydatum: { display: 'Ydatum(Y)', local: 'Ydatum', global: 'Ydatum' }
+    }
+  },
+  dimcontinue: {
+    nextPoint: 'Specify a second extension line origin or',
+    selectDimension: 'Select continued dimension',
+    rejectObject: 'Must select a linear or angular dimension.',
+    keywords: {
+      select: { display: 'Select(S)', local: 'Select', global: 'Select' }
+    }
+  },
+  dimbaseline: {
+    nextPoint: 'Specify a second extension line origin or',
+    selectDimension: 'Select base dimension',
+    rejectObject: 'Must select a linear or angular dimension.',
+    keywords: {
+      select: { display: 'Select(S)', local: 'Select', global: 'Select' }
+    }
   },
   ellipse: {
     axisEndpointOrOptions: 'Specify axis endpoint of ellipse or',
@@ -1174,6 +1295,29 @@ export default {
         display: 'Uniform(U)',
         local: 'Uniform',
         global: 'Uniform'
+      }
+    }
+  },
+  objectscale: {
+    action: 'Enter an option',
+    scaleName: 'Enter annotation scale name',
+    done: 'Updated objects',
+    none: '(none)',
+    keywords: {
+      add: {
+        display: 'Add(A)',
+        local: 'Add',
+        global: 'Add'
+      },
+      delete: {
+        display: 'Delete(D)',
+        local: 'Delete',
+        global: 'Delete'
+      },
+      list: {
+        display: 'List(L)',
+        local: 'List',
+        global: 'List'
       }
     }
   },

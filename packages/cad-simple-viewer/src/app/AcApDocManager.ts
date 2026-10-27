@@ -5,6 +5,7 @@ import {
   AcDbFileType,
   acdbHostApplicationServices,
   AcDbOpenDatabaseOptions,
+  AcDbSystemVariables,
   AcDbSysVarManager,
   log
 } from '@mlightcad/data-model'
@@ -23,7 +24,15 @@ import {
   AcApConvertToJpgCmd,
   AcApConvertToPngCmd,
   AcApCopyCmd,
+  AcApDimAlignedCmd,
+  AcApDimAngularCmd,
+  AcApDimArcCmd,
+  AcApDimBaselineCmd,
+  AcApDimContinueCmd,
+  AcApDimDiameterCmd,
   AcApDimLinearCmd,
+  AcApDimOrdinateCmd,
+  AcApDimRadiusCmd,
   acapDisposeMarkupSession,
   AcApEllipseCmd,
   AcApEntityPreviewCmd,
@@ -68,6 +77,7 @@ import {
   AcApSketchCmd,
   AcApSplineCmd,
   AcApSwitchBgCmd,
+  AcApObjectScaleCmd,
   AcApSysVarCmd,
   AcApUndoCmd,
   AcApUnisolateObjectsCmd,
@@ -161,6 +171,14 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   ELLIPSE: ['EL'],
   ERASE: ['E'],
   DIMLINEAR: ['DLI'],
+  DIMALIGNED: ['DAL', 'DIMALI'],
+  DIMRADIUS: ['DRA', 'DIMRAD'],
+  DIMDIAMETER: ['DDI', 'DIMDIA'],
+  DIMANGULAR: ['DAN', 'DIMANG'],
+  DIMARC: ['DAR'],
+  DIMORDINATE: ['DOR'],
+  DIMCONTINUE: ['DCO'],
+  DIMBASELINE: ['DBA'],
   MEASUREDISTANCE: ['DI', 'DIST'],
   MEASUREAREA: ['AA', 'AREA'],
   MEASUREANGLE: ['ANG'],
@@ -609,6 +627,17 @@ export class AcApDocManager {
 
     this._commandManager = new AcEdCommandStack()
     this.registerCommands()
+    // Annotative display depends on CANNOSCALE / ANNOALLVISIBLE; redraw when
+    // either changes (status bar, command line, or script).
+    AcDbSysVarManager.instance().events.sysVarChanged.addEventListener(args => {
+      const name = args.name.toUpperCase()
+      if (
+        name === AcDbSystemVariables.CANNOSCALE ||
+        name === AcDbSystemVariables.ANNOALLVISIBLE
+      ) {
+        this.regen()
+      }
+    })
     this._pluginManager = new AcApPluginManager(
       this.context,
       this._commandManager
@@ -1909,6 +1938,14 @@ export class AcApDocManager {
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
     addSystemCommand('hideobjects', 'hideobjects', new AcApHideObjectsCmd())
     addSystemCommand('dimlinear', 'dimlinear', new AcApDimLinearCmd())
+    addSystemCommand('dimaligned', 'dimaligned', new AcApDimAlignedCmd())
+    addSystemCommand('dimradius', 'dimradius', new AcApDimRadiusCmd())
+    addSystemCommand('dimdiameter', 'dimdiameter', new AcApDimDiameterCmd())
+    addSystemCommand('dimangular', 'dimangular', new AcApDimAngularCmd())
+    addSystemCommand('dimarc', 'dimarc', new AcApDimArcCmd())
+    addSystemCommand('dimordinate', 'dimordinate', new AcApDimOrdinateCmd())
+    addSystemCommand('dimcontinue', 'dimcontinue', new AcApDimContinueCmd())
+    addSystemCommand('dimbaseline', 'dimbaseline', new AcApDimBaselineCmd())
     registerMeasureCommands(addSystemCommand, {
       view: this._mainView,
       commandManager: this._commandManager
@@ -1938,6 +1975,7 @@ export class AcApDocManager {
     addSystemCommand('offset', 'offset', new AcApOffsetCmd())
     addSystemCommand('rotate', 'rotate', new AcApRotateCmd())
     addSystemCommand('log', 'log', new AcApLogCmd())
+    addSystemCommand('objectscale', 'objectscale', new AcApObjectScaleCmd())
     addSystemCommand('open', 'open', new AcApOpenCmd())
     addSystemCommand('pan', 'pan', new AcApPanCmd())
     addSystemCommand('point', 'point', new AcApPointCmd())

@@ -12,6 +12,9 @@ export default {
     acadver: {
       description: '存储图形数据库版本标识符（只读）'
     },
+    annoallvisible: {
+      description: '控制不支持当前注释比例的注释性对象是否显示'
+    },
     angbase: {
       description: '设置当前 UCS 中 0 度的基准角方向'
     },
@@ -29,6 +32,9 @@ export default {
     },
     bmpout: {
       description: '导出为 BMP 图片'
+    },
+    cannoscale: {
+      description: '设置当前注释比例名称'
     },
     cdxf: {
       description: '导出当前图纸为DXF格式'
@@ -90,6 +96,30 @@ export default {
     },
     dimlinear: {
       description: '创建线性尺寸标注'
+    },
+    dimaligned: {
+      description: '创建对齐线性尺寸标注'
+    },
+    dimradius: {
+      description: '为圆和圆弧创建半径尺寸标注'
+    },
+    dimdiameter: {
+      description: '为圆和圆弧创建直径尺寸标注'
+    },
+    dimangular: {
+      description: '创建角度尺寸标注'
+    },
+    dimarc: {
+      description: '创建弧长标注'
+    },
+    dimordinate: {
+      description: '创建坐标标注'
+    },
+    dimcontinue: {
+      description: '创建连续标注'
+    },
+    dimbaseline: {
+      description: '创建基线标注'
     },
     dimstyle: {
       description: '设置当前标注样式的名称'
@@ -304,6 +334,10 @@ export default {
     move: {
       description: '通过位移向量移动所选图元',
       prompt: '选择对象'
+    },
+    objectscale: {
+      description: '为选定的注释性对象添加或删除支持的注释比例',
+      prompt: '选择注释性对象'
     },
     offset: {
       description: '按指定距离创建平行曲线、多段线或圆'

@@ -206,6 +206,7 @@ export default {
     },
     group: {
       draw: '绘制',
+      dimension: '标注',
       modify: '修改',
       layer: '图层',
       properties: '属性',
@@ -282,6 +283,16 @@ export default {
       point: '在图纸中放置点对象。',
       hatch: '用填充图案填充闭合区域。',
       text: '在图纸中创建多行文字标注。',
+      dimlinear: '创建水平、垂直或旋转的线性尺寸标注。',
+      dimaligned: '创建对齐线性尺寸标注。',
+      dimradius: '为圆或圆弧创建半径尺寸标注。',
+      dimdiameter: '为圆或圆弧创建直径尺寸标注。',
+      dimangular: '创建角度尺寸标注。',
+      dimarc: '创建弧长标注。',
+      dimordinate: '创建坐标标注。',
+      dimcontinue: '从上一个标注创建连续标注。',
+      dimbaseline: '从上一个标注创建基线标注。',
+      dimstyle: '打开标注样式管理器。',
       move: '将选中的对象移动到新位置。',
       rotate: '围绕基点旋转选中的对象。',
       copy: '将选中的对象复制到新位置。',
@@ -367,6 +378,16 @@ export default {
       hatch: '填充',
       text: '文字',
       gradient: '渐变',
+      dimlinear: '线性',
+      dimaligned: '对齐',
+      dimradius: '半径',
+      dimdiameter: '直径',
+      dimangular: '角度',
+      dimarc: '弧长',
+      dimordinate: '坐标',
+      dimcontinue: '连续',
+      dimbaseline: '基线',
+      dimstyle: '标注\n样式',
       move: '移动',
       rotate: '旋转',
       copy: '复制',
@@ -572,6 +593,13 @@ export default {
       ribbon: '功能区',
       toolbar: '工具栏',
       stats: '性能面板'
+    },
+    cannoscale: {
+      tooltip: '注释比例 (CANNOSCALE)'
+    },
+    annoallvisible: {
+      on: '隐藏不支持当前比例的注释性对象',
+      off: '显示全部注释性对象 (ANNOALLVISIBLE)'
     },
     osnap: {
       tooltip: '对象捕捉',

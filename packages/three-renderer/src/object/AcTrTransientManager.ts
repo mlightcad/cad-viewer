@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 
+import { AcTrMTextRenderer } from '../renderer/AcTrMTextRenderer'
 import { AcTrEntity } from './AcTrEntity'
 
 /**
@@ -26,10 +27,21 @@ export class AcTrTransientManager {
   }
 
   /**
+   * Drops scene-level mesh-glyph InstancedMesh slots for a transient id.
+   * Jig/preview draws may have enqueued placements under the shared objectId
+   * before skip flags applied; clearing on replace/remove prevents trails.
+   */
+  private clearMeshGlyphInstances(objectId: string): void {
+    if (!objectId) return
+    AcTrMTextRenderer.getInstance().removeMeshGlyphInstances(objectId)
+  }
+
+  /**
    * Clear all transient entities and their GPU resources.
    */
   clear(): void {
     for (const ent of this.entities.values()) {
+      this.clearMeshGlyphInstances(ent.objectId)
       ent.dispose()
     }
 
@@ -49,6 +61,7 @@ export class AcTrTransientManager {
     const existing = this.entities.get(key)
     if (existing) {
       this.transientGroup.remove(existing)
+      this.clearMeshGlyphInstances(key)
       existing.dispose()
     }
 
@@ -66,6 +79,7 @@ export class AcTrTransientManager {
 
     if (old) {
       this.transientGroup.remove(old)
+      this.clearMeshGlyphInstances(newEntity.objectId)
       old.dispose()
     }
 
@@ -79,9 +93,15 @@ export class AcTrTransientManager {
    */
   remove(id: string): void {
     const ent = this.entities.get(id)
-    if (!ent) return
+    if (!ent) {
+      // Still clear mesh glyphs: a stale asyncDraw may have enqueued under this
+      // id without ever publishing into the transient map.
+      this.clearMeshGlyphInstances(id)
+      return
+    }
 
     this.transientGroup.remove(ent)
+    this.clearMeshGlyphInstances(id)
     AcTrEntity.disposeObject(ent)
     this.entities.delete(id)
     this._baselineMatrices.delete(id)

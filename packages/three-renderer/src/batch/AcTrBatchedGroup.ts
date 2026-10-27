@@ -1295,6 +1295,27 @@ export class AcTrBatchedGroup extends THREE.Group {
     const styleManager = entity.styleManager
 
     entity.updateMatrixWorld(true)
+
+    // Annotative drawables (Dimension / MLeader / Hatch / INSERT / …) carry
+    // annotationScale on the entity root. Keep them as one unbatched subtree
+    // so paper viewports can rescale without tearing multi-leaf geometry.
+    // Groups never call finalizeLeafDrawables, so this early path is required.
+    // Use a plain Object3D shell — AcTrGroup/AcTrEntity.clone() re-enters
+    // constructors that expect conversion-time arguments.
+    const annotationScale = entity.userData.annotationScale
+    if (annotationScale) {
+      const shell = this.cloneEntityAsPlainShell(entity)
+      shell.visible = entityVisible
+      this._unbatchedObjects.add(shell)
+      unbatchedObjects.push(shell)
+      if (!this._entitiesMap.has(objectId)) {
+        this._entitiesMap.set(objectId, null)
+      }
+      this._unbatchedEntities.set(objectId, unbatchedObjects)
+      this.syncCompareRoleForEntity(objectId)
+      return
+    }
+
     const visitDrawable = (object: THREE.Object3D) => {
       // traverse() visits descendants even when an intermediate AcTrEntity is invisible.
       if (!isObjectHierarchyVisible(object)) {
@@ -3439,7 +3460,59 @@ export class AcTrBatchedGroup extends THREE.Group {
    * Returns true when an unbatched source is a placement root with child drawables.
    */
   private shouldCloneUnbatchedSubtree(source: THREE.Object3D) {
-    return source.children.length > 0 && !this.hasGeometry(source)
+    if (source.children.length === 0) return false
+    // AcTrLine / similar containers store a geometry handle for bounds while
+    // render leaves live in children — still clone the full subtree.
+    if (source instanceof AcTrEntity) return true
+    return !this.hasGeometry(source)
+  }
+
+  /**
+   * Clones an {@link AcTrEntity} into a plain Object3D shell.
+   *
+   * `AcTrGroup` / `AcTrEntity.clone()` re-enter typed constructors that expect
+   * conversion-time arguments, so unbatched annotative roots must use a plain
+   * THREE container while preserving world matrix + annotationScale metadata.
+   */
+  private cloneEntityAsPlainShell(entity: AcTrEntity) {
+    const shell = new THREE.Object3D()
+    this.copyWorldMatrixOntoClone(entity, shell)
+    shell.userData = { ...entity.userData }
+    const sourceDrawable = getSceneDrawableUserData(entity)
+    const shellDrawable = getSceneDrawableUserData(shell)
+    shellDrawable.noBatch = true
+    shellDrawable.bboxIntersectionCheck = sourceDrawable.bboxIntersectionCheck
+    shellDrawable.bakedWorldMatrix = entity.matrixWorld.toArray(
+      new Array<number>(16)
+    )
+    if (sourceDrawable.textEntityTraits) {
+      shellDrawable.textEntityTraits = AcTrMTextColorUtil.cloneEntityTraits(
+        sourceDrawable.textEntityTraits
+      )
+    }
+
+    for (const child of entity.children) {
+      // After flatten, children are Mesh/Line leaves. Nested AcTrEntity shells
+      // (rare pre-flatten) contribute their drawable children instead.
+      if (child instanceof AcTrEntity) {
+        for (const leaf of child.children) {
+          shell.add(leaf.clone(true))
+        }
+      } else {
+        shell.add(child.clone(true))
+      }
+    }
+
+    shell.traverse(node => {
+      if (!this.hasMaterial(node)) return
+      const drawable = getSceneDrawableUserData(node)
+      if (drawable.styleMaterialId == null) {
+        drawable.styleMaterialId = this.getMaterialId(
+          (node as THREE.Mesh).material as THREE.Material
+        )
+      }
+    })
+    return shell
   }
 
   /**
@@ -3447,6 +3520,11 @@ export class AcTrBatchedGroup extends THREE.Group {
    * keeps merged glyph geometry in local space under one insertion transform.
    */
   private cloneUnbatchedSubtree(source: THREE.Object3D) {
+    // AcTr* .clone() re-enters typed constructors; use a plain Object3D shell.
+    if (source instanceof AcTrEntity) {
+      return this.cloneEntityAsPlainShell(source)
+    }
+
     const cloned = source.clone(true) as THREE.Object3D
     this.copyWorldMatrixOntoClone(source, cloned)
 

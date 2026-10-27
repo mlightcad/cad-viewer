@@ -1,3 +1,5 @@
+import enJig from '../en/jig'
+
 export default {
   arc: {
     startPointOrCenter: 'Zadejte počáteční bod oblouku nebo',
@@ -129,10 +131,19 @@ export default {
     }
   },
   dimlinear: {
+    ...enJig.dimlinear,
     xLine1Point: 'Zadejte počátek první pomocné čáry',
     xLine2Point: 'Zadejte počátek druhé pomocné čáry',
     dimLinePoint: 'Zadejte umístění kótovací čáry'
   },
+  dimaligned: { ...enJig.dimaligned },
+  dimradius: { ...enJig.dimradius },
+  dimdiameter: { ...enJig.dimdiameter },
+  dimangular: { ...enJig.dimangular },
+  dimarc: { ...enJig.dimarc },
+  dimordinate: { ...enJig.dimordinate },
+  dimcontinue: { ...enJig.dimcontinue },
+  dimbaseline: { ...enJig.dimbaseline },
   ellipse: {
     axisEndpointOrOptions: 'Zadejte koncový bod osy elipsy nebo',
     arcAxisEndpointOrCenter: 'Zadejte koncový bod osy eliptického oblouku nebo',

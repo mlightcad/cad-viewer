@@ -114,10 +114,24 @@ export class AcTrMText extends AcTrGlyphEntity {
    * individual drawables for the active annotation scale.
    */
   override resolveDrawMode() {
-    if ((this.userData as { annotationScale?: unknown }).annotationScale) {
+    if (this.hasAnnotationScaleMetadata()) {
       return 'unbatch'
     }
     return super.resolveDrawMode()
+  }
+
+  /**
+   * MTEXT payload for the active draw. Jig / transient overlays force
+   * `meshGlyphOutputMode: 'merge'` so glyphs stay as local meshes — placement
+   * mode only appears after InstancedMesh flush, which is wrong for previews
+   * (invisible during drag, then a trail of every cursor sample on flush).
+   */
+  private mtextDataForRender(): MTextData {
+    const data = this.toPlanViewMTextData()
+    if (this.shouldSkipMeshGlyphInstancing()) {
+      return { ...data, meshGlyphOutputMode: 'merge' }
+    }
+    return data
   }
 
   /**
@@ -125,7 +139,7 @@ export class AcTrMText extends AcTrGlyphEntity {
    */
   protected override renderSync(renderer: AcTrMTextRenderer) {
     return renderer.syncRenderMText(
-      this.toPlanViewMTextData(),
+      this.mtextDataForRender(),
       this._style,
       this._colorSettings
     )
@@ -136,7 +150,7 @@ export class AcTrMText extends AcTrGlyphEntity {
    */
   protected override async renderAsync(renderer: AcTrMTextRenderer) {
     const rendered = await renderer.asyncRenderMText(
-      this.toPlanViewMTextData(),
+      this.mtextDataForRender(),
       this._style,
       this._colorSettings
     )

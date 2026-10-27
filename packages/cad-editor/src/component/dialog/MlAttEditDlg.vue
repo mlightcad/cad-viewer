@@ -187,7 +187,11 @@
 
             <div class="ml-att-edit-dlg__annotative-row">
               <div class="ml-att-edit-dlg__annotative-check-wrap">
-                <el-checkbox v-model="textForm.annotative" disabled>
+                <el-checkbox
+                  v-model="textForm.annotative"
+                  :disabled="currentRow?.isConst"
+                  @change="markDirty"
+                >
                   {{ t('dialog.attEditDlg.annotative') }}
                 </el-checkbox>
               </div>
@@ -334,6 +338,7 @@ interface AttributeRow {
   rotationDeg: number
   obliqueDeg: number
   justification: string
+  annotative: boolean
   layer: string
   lineType: string
   colorKey: string
@@ -659,6 +664,7 @@ function attributeToRow(attr: AcDbAttribute, prompt: string): AttributeRow {
     rotationDeg: radToDeg(attr.rotation || 0),
     obliqueDeg: radToDeg(attr.oblique || 0),
     justification: justificationKey(attr.horizontalMode, attr.verticalMode),
+    annotative: !!attr.annotative,
     layer: attr.layer || '0',
     lineType: attr.lineType || 'ByLayer',
     colorKey: attr.color?.toString() ?? createByLayerColor().toString(),
@@ -726,7 +732,7 @@ function syncFormsFromRow(row: AttributeRow | null) {
   textForm.obliqueDeg = row.obliqueDeg
   textForm.backwards = false
   textForm.upsideDown = false
-  textForm.annotative = false
+  textForm.annotative = row.annotative
 
   propForm.layer = row.layer
   propForm.lineType = row.lineType
@@ -747,6 +753,7 @@ function commitTextFormToRow() {
   row.widthFactor = Number(textForm.widthFactor) || 1
   row.rotationDeg = Number(textForm.rotationDeg) || 0
   row.obliqueDeg = Number(textForm.obliqueDeg) || 0
+  row.annotative = !!textForm.annotative
   isDirty.value = true
 }
 
@@ -816,6 +823,7 @@ function applyRowToAttribute(opened: AcDbAttribute, row: AttributeRow) {
   opened.lineType = row.lineType
   opened.color = AcCmColor.fromString(row.colorKey) ?? createByLayerColor()
   opened.lineWeight = row.lineWeight
+  opened.annotative = row.annotative
 }
 
 function openAttributeForWrite(
