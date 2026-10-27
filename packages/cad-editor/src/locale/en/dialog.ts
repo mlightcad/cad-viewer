@@ -306,5 +306,43 @@ export default {
       bottomCenter: 'Bottom center',
       bottomRight: 'Bottom right'
     }
+  },
+  dimStyleDlg: {
+    title: 'Dimension Style Manager',
+    current: 'Current dimension style: {name}',
+    styles: 'Styles',
+    filterAll: 'All styles',
+    filterUsed: 'Styles in use',
+    previewOf: 'Preview of: {name}',
+    description: 'Description',
+    setCurrent: 'Set Current',
+    new: 'New...',
+    modify: 'Modify...',
+    override: 'Override...',
+    compare: 'Compare...',
+    close: 'Close',
+    newTitle: 'Create New Dimension Style',
+    newName: 'New style name',
+    startWith: 'Start with',
+    useFor: 'Use for',
+    allDimensions: 'All dimensions',
+    continue: 'Continue',
+    modifyTitle: 'Modify Dimension Style: {name}',
+    newStyleTitle: 'New Dimension Style: {name}',
+    overrideTitle: 'Override Current Style',
+    compareTitle: 'Compare Dimension Styles',
+    style1: 'Style 1',
+    style2: 'Style 2',
+    variable: 'Variable',
+    noDifferences: 'No differences.',
+    tabs: {
+      lines: 'Lines',
+      symbols: 'Symbols and Arrows',
+      text: 'Text',
+      fit: 'Fit',
+      primary: 'Primary Units',
+      alternate: 'Alternate Units',
+      tolerances: 'Tolerances'
+    }
   }
 }

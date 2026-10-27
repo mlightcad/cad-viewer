@@ -16,6 +16,7 @@ import {
   AcApAttDefCmd,
   AcApAttEditCmd,
   AcApCountListCmd,
+  AcApDimStyleCmd,
   AcApDrawingUnitsCmd,
   AcApExportHtmlDlgCmd,
   AcApExportPdfDlgCmd,
@@ -38,6 +39,7 @@ import {
   createMlColorIndexPickerToolbarFactory,
   MlAttDefDlg,
   MlAttEditDlg,
+  MlDimStyleDlg,
   MlDrawingUnitsDlg,
   MlExportHtmlDlg,
   MlExportPdfDlg,
@@ -168,6 +170,16 @@ export const registerCmds = () => {
       new AcApTextStyleCmd(),
       'st'
     )
+    // DIMSTYLE is also registered as a sysvar command. Replace it so the
+    // name opens the Dimension Style Manager instead of a value prompt.
+    register.removeCmd(AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME, 'dimstyle')
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'dimstyle',
+      'dimstyle',
+      new AcApDimStyleCmd(),
+      'ddim'
+    )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'attedit',
@@ -221,6 +233,11 @@ export const registerDialogs = () => {
     registerDialog({
       name: 'TextStyleDlg',
       component: markRaw(MlTextStyleDlg),
+      props: {}
+    })
+    registerDialog({
+      name: 'DimStyleDlg',
+      component: markRaw(MlDimStyleDlg),
       props: {}
     })
     registerDialog({

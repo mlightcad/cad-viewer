@@ -1,3 +1,5 @@
+import enJig from '../en/jig'
+
 export default {
   arc: {
     startPointOrCenter: 'Yayın başlangıç noktasını belirtin veya',
@@ -129,10 +131,19 @@ export default {
     }
   },
   dimlinear: {
+    ...enJig.dimlinear,
     xLine1Point: 'İlk uzatma çizgisinin başlangıç noktasını belirtin',
     xLine2Point: 'İkinci uzatma çizgisinin başlangıç noktasını belirtin',
     dimLinePoint: 'Ölçü çizgisi konumunu belirtin'
   },
+  dimaligned: { ...enJig.dimaligned },
+  dimradius: { ...enJig.dimradius },
+  dimdiameter: { ...enJig.dimdiameter },
+  dimangular: { ...enJig.dimangular },
+  dimarc: { ...enJig.dimarc },
+  dimordinate: { ...enJig.dimordinate },
+  dimcontinue: { ...enJig.dimcontinue },
+  dimbaseline: { ...enJig.dimbaseline },
   ellipse: {
     axisEndpointOrOptions: 'Elipsin eksen uç noktasını belirtin veya',
     arcAxisEndpointOrCenter: 'Eliptik yayın eksen uç noktasını belirtin veya',

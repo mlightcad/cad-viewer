@@ -41,6 +41,8 @@ export class AcApSysVarCmd extends AcEdCommand {
     const value = result.stringResult
     const sysVar = sysVarManager.getDescriptor(this.globalName)
     if (sysVar) {
+      // CANNOSCALE / ANNOALLVISIBLE regen is handled by AcApDocManager's
+      // sysVarChanged listener.
       sysVarManager.setVar(this.globalName, value, context.doc.database)
     }
   }

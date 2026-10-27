@@ -43,6 +43,17 @@ export class AcTrRenderContext extends AcGiContext {
    */
   yieldDuringAsyncDraw = true
 
+  /**
+   * When `true`, glyph entities skip scene-level mesh-glyph InstancedMesh
+   * enqueue during attach. Used for jig / transient overlay draws so preview
+   * text cannot leave world instances that outlive each cursor update.
+   *
+   * Prefer this over only setting `userData.skipMeshGlyphInstancing` on the
+   * root: nested MTEXT may `syncDraw` (e.g. INSERT `compactForInstancing`)
+   * before the root flag exists and before children are parented to it.
+   */
+  skipMeshGlyphInstancing = false
+
   constructor(
     styleManager: AcTrStyleManager = new AcTrStyleManager(),
     batchDrawPolicy: AcTrBatchDrawPolicy = alwaysBatchDrawPolicy

@@ -174,6 +174,9 @@ export class AcTrPolygon extends AcTrEntity {
   }
 
   override resolveDrawMode(): AcTrDrawMode {
+    if (this.hasAnnotationScaleMetadata()) {
+      return 'unbatch'
+    }
     if (this.isPatternedHatch(this._traits)) {
       return 'unbatch'
     }

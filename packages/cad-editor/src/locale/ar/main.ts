@@ -33,6 +33,7 @@ export default {
     group: {
       ...enMain.ribbon.group,
       draw: 'رسم',
+      dimension: 'أبعاد',
       modify: 'تعديل',
       layer: 'الطبقات',
       properties: 'الخصائص',

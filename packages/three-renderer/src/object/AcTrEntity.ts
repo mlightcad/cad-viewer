@@ -38,11 +38,25 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   }
 
   /**
+   * True when data-model attached `userData.annotationScale` metadata so
+   * paper-space viewports can rescale/hide this drawable.
+   */
+  protected hasAnnotationScaleMetadata(): boolean {
+    return !!(this.userData as { annotationScale?: unknown }).annotationScale
+  }
+
+  /**
    * Resolves how this entity should enter the scene graph. Subclasses override
    * this to return `'unbatch'` when they cannot batch, or delegate to
    * {@link AcTrBatchDrawPolicy} for coordinate-based rules.
+   *
+   * Annotative drawables always unbatch so the viewport annotation-scale pass
+   * can find a single scene root.
    */
   resolveDrawMode(): AcTrDrawMode {
+    if (this.hasAnnotationScaleMetadata()) {
+      return 'unbatch'
+    }
     return 'batch'
   }
 
@@ -326,9 +340,14 @@ export class AcTrEntity extends AcTrObject implements AcGiEntity {
   }
 
   protected finalizeLeafDrawables() {
-    if (this.resolveDrawMode() === 'unbatch') {
-      this.markUnbatchedLeaves()
+    if (this.resolveDrawMode() !== 'unbatch') return
+    // Annotative entities must stay one unbatched unit: scaling each leaf
+    // about its own origin would tear Hatch / Dimension / MLeader geometry.
+    if (this.hasAnnotationScaleMetadata()) {
+      this.markDrawableUnbatched(this)
+      return
     }
+    this.markUnbatchedLeaves()
   }
 
   /**

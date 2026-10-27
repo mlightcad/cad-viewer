@@ -222,6 +222,7 @@ export default {
     patternName: '图案名',
     patternAngle: '角度',
     patternScale: '比例',
+    annotative: '注释性',
     elevation: '标高',
     text: '文字',
     dimensionText: '标注文字',

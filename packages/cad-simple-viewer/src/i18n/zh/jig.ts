@@ -124,9 +124,118 @@ export default {
     }
   },
   dimlinear: {
-    xLine1Point: '指定第一条尺寸界限原点',
-    xLine2Point: '指定第二条尺寸界限原点',
-    dimLinePoint: '指定尺寸线位置'
+    xLine1Point: '指定第一条尺寸界线原点或 <选择对象>',
+    xLine2Point: '指定第二条尺寸界线原点',
+    dimLinePoint: '指定尺寸线位置',
+    selectObject: '选择要标注的对象',
+    rejectObject: '无法使用 DIMLINEAR 标注该对象。',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    rotationAngle: '指定尺寸线角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' },
+      horizontal: { display: '水平(H)', local: '水平', global: 'Horizontal' },
+      vertical: { display: '垂直(V)', local: '垂直', global: 'Vertical' },
+      rotated: { display: '旋转(R)', local: '旋转', global: 'Rotated' }
+    }
+  },
+  dimaligned: {
+    xLine1Point: '指定第一条尺寸界线原点或 <选择对象>',
+    xLine2Point: '指定第二条尺寸界线原点',
+    dimLinePoint: '指定尺寸线位置',
+    selectObject: '选择要标注的对象',
+    rejectObject: '无法使用 DIMALIGNED 标注该对象。',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' }
+    }
+  },
+  dimradius: {
+    selectObject: '选择圆弧或圆',
+    rejectObject: '必须选择圆弧或圆。',
+    dimLinePoint: '指定尺寸线位置',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' }
+    }
+  },
+  dimdiameter: {
+    selectObject: '选择圆弧或圆',
+    rejectObject: '必须选择圆弧或圆。',
+    dimLinePoint: '指定尺寸线位置',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' }
+    }
+  },
+  dimangular: {
+    vertexOrSelect: '指定角的顶点或 <选择直线>',
+    xLine1Point: '指定第一个角度端点',
+    xLine2Point: '指定第二个角度端点',
+    arcPoint: '指定标注弧线位置',
+    selectFirstLine: '选择第一条直线',
+    selectSecondLine: '选择第二条直线',
+    rejectObject: '必须选择直线。',
+    linesParallel: '两条直线平行，无法求交点。',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' }
+    }
+  },
+  dimarc: {
+    selectArc: '选择圆弧',
+    rejectObject: '必须选择圆弧。',
+    arcPoint: '指定弧长标注位置',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' }
+    }
+  },
+  dimordinate: {
+    featurePoint: '指定特征位置',
+    leaderEndpoint: '指定引线端点',
+    dimensionText: '输入标注文字',
+    textAngle: '指定标注文字的角度',
+    keywords: {
+      mtext: { display: '多行文字(M)', local: '多行文字', global: 'Mtext' },
+      text: { display: '文字(T)', local: '文字', global: 'Text' },
+      angle: { display: '角度(A)', local: '角度', global: 'Angle' },
+      xdatum: { display: 'X基准(X)', local: 'X基准', global: 'Xdatum' },
+      ydatum: { display: 'Y基准(Y)', local: 'Y基准', global: 'Ydatum' }
+    }
+  },
+  dimcontinue: {
+    nextPoint: '指定第二条尺寸界线原点或',
+    selectDimension: '选择连续标注',
+    rejectObject: '必须选择线性或角度标注。',
+    keywords: {
+      select: { display: '选择(S)', local: '选择', global: 'Select' }
+    }
+  },
+  dimbaseline: {
+    nextPoint: '指定第二条尺寸界线原点或',
+    selectDimension: '选择基准标注',
+    rejectObject: '必须选择线性或角度标注。',
+    keywords: {
+      select: { display: '选择(S)', local: '选择', global: 'Select' }
+    }
   },
   ellipse: {
     axisEndpointOrOptions: '指定椭圆的轴端点或',
@@ -1162,6 +1271,29 @@ export default {
         display: '均匀(U)',
         local: '均匀',
         global: 'Uniform'
+      }
+    }
+  },
+  objectscale: {
+    action: '输入选项',
+    scaleName: '输入注释比例名称',
+    done: '已更新对象',
+    none: '（无）',
+    keywords: {
+      add: {
+        display: '添加(A)',
+        local: '添加',
+        global: 'Add'
+      },
+      delete: {
+        display: '删除(D)',
+        local: '删除',
+        global: 'Delete'
+      },
+      list: {
+        display: '列表(L)',
+        local: '列表',
+        global: 'List'
       }
     }
   },

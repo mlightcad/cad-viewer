@@ -143,7 +143,7 @@
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-checkbox v-model="form.annotative" disabled>
+              <el-checkbox v-model="form.annotative">
                 {{ t('dialog.attDefDlg.annotative') }}
               </el-checkbox>
             </el-form-item>
@@ -599,6 +599,7 @@ function buildAttributeDefinition(position: AcGePoint3d): AcDbAttributeDefinitio
   attDef.styleName = form.styleName
   attDef.horizontalMode = justify.horizontal
   attDef.verticalMode = justify.vertical
+  attDef.annotative = form.annotative
 
   if (form.multipleLines) {
     const mtext = new AcDbMText()
@@ -608,6 +609,7 @@ function buildAttributeDefinition(position: AcGePoint3d): AcDbAttributeDefinitio
     mtext.location = new AcGePoint3d(position)
     mtext.rotation = degToRad(form.rotationDeg)
     mtext.styleName = form.styleName
+    mtext.annotative = form.annotative
     attDef.mtext = mtext
   }
 

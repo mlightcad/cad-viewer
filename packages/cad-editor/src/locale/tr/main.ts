@@ -210,6 +210,7 @@ export default {
     },
     group: {
       draw: 'Çiz',
+      dimension: 'Ölçü',
       modify: 'Düzenle',
       layer: 'Katman',
       properties: 'Özellikler',
@@ -290,6 +291,16 @@ export default {
       point: 'Çizime bir nokta nesnesi yerleştirin.',
       hatch: 'Kapalı bir alanı tarama deseniyle doldurun.',
       text: 'Çizimde çok satırlı metin açıklamaları oluşturun.',
+      dimlinear: 'Yatay, düşey veya döndürülmüş doğrusal ölçü oluşturun.',
+      dimaligned: 'Hizalı doğrusal ölçü oluşturun.',
+      dimradius: 'Daire veya yay için yarıçap ölçüsü oluşturun.',
+      dimdiameter: 'Daire veya yay için çap ölçüsü oluşturun.',
+      dimangular: 'Açısal ölçü oluşturun.',
+      dimarc: 'Yay uzunluğu ölçüsü oluşturun.',
+      dimordinate: 'Ordinat ölçüsü oluşturun.',
+      dimcontinue: 'Önceki ölçüden sürekli ölçü oluşturun.',
+      dimbaseline: 'Önceki ölçüden taban çizgisi ölçüsü oluşturun.',
+      dimstyle: 'Ölçü stili yöneticisini açın.',
       move: 'Seçili nesneleri yeni bir konuma taşıyın.',
       rotate: 'Seçili nesneleri bir taban noktası etrafında döndürün.',
       copy: 'Seçili nesneleri yeni bir konuma kopyalayın.',
@@ -407,6 +418,16 @@ export default {
       hatch: 'Tarama',
       text: 'Metin',
       gradient: 'Geçiş',
+      dimlinear: 'Doğrusal',
+      dimaligned: 'Hizalı',
+      dimradius: 'Yarıçap',
+      dimdiameter: 'Çap',
+      dimangular: 'Açı',
+      dimarc: 'Yay',
+      dimordinate: 'Ordinat',
+      dimcontinue: 'Sürekli',
+      dimbaseline: 'Taban',
+      dimstyle: 'Ölçü\nStili',
       move: 'Taşı',
       rotate: 'Döndür',
       copy: 'Kopyala',
@@ -618,6 +639,13 @@ export default {
       ribbon: 'Şerit',
       toolbar: 'Araç Çubuğu',
       stats: 'İstatistikler'
+    },
+    cannoscale: {
+      tooltip: 'Açıklama ölçeği (CANNOSCALE)'
+    },
+    annoallvisible: {
+      on: 'Geçerli ölçeği desteklemeyen açıklamalı nesneleri gizle',
+      off: 'Tüm açıklamalı nesneleri göster (ANNOALLVISIBLE)'
     },
     osnap: {
       tooltip: 'Nesne Yakalama',

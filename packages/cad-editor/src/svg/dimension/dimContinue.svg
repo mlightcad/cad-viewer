@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <path fill="none" stroke="currentColor" stroke-width="1.2" d="M3 6v8M10 6v8M17 6v8"/>
+  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.25" d="M4.2 8h4.6M11.2 8h4.6"/>
+  <path fill="var(--el-color-primary)" d="M4.2 8 6.2 6.8v2.4Z"/>
+  <path fill="var(--el-color-primary)" d="M8.8 8 6.8 6.8v2.4Z"/>
+  <path fill="var(--el-color-primary)" d="M11.2 8 13.2 6.8v2.4Z"/>
+  <path fill="var(--el-color-primary)" d="M15.8 8 13.8 6.8v2.4Z"/>
+</svg>

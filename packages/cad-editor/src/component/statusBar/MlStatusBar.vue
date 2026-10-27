@@ -29,6 +29,8 @@
         />
         <ml-full-screen-button />
         <ml-point-style-button />
+        <ml-canno-scale-button />
+        <ml-anno-all-visible-button />
         <ml-osnap-button />
         <ml-sys-var-toggle-button
           :sys-var-name="AcDbSystemVariables.ORTHOMODE"
@@ -77,6 +79,8 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentPos, useDocument, useIsMobile, useSettings } from '../../composable'
 import { dynamicInput, lineWidth, orthoMode } from '../../svg'
 import { MlSysVarToggleButton } from '../common'
+import MlAnnoAllVisibleButton from './MlAnnoAllVisibleButton.vue'
+import MlCannoScaleButton from './MlCannoScaleButton.vue'
 import MlFullScreenButton from './MlFullScreenButton.vue'
 import MlLayoutTabs from './MlLayoutTabs.vue'
 import MlNotificationButton from './MlNotificationButton.vue'

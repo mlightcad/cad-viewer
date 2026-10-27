@@ -174,6 +174,14 @@ export default {
     dimLinePoint:
       'حدد موقع خط البُعد'
   },
+  dimaligned: { ...enJig.dimaligned },
+  dimradius: { ...enJig.dimradius },
+  dimdiameter: { ...enJig.dimdiameter },
+  dimangular: { ...enJig.dimangular },
+  dimarc: { ...enJig.dimarc },
+  dimordinate: { ...enJig.dimordinate },
+  dimcontinue: { ...enJig.dimcontinue },
+  dimbaseline: { ...enJig.dimbaseline },
 
   ellipse: {
     ...enJig.ellipse,

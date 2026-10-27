@@ -1,9 +1,19 @@
 import * as THREE from 'three'
 
+import { AcTrBatchedGroup } from '../src/batch/AcTrBatchedGroup'
+import type { AcTrBatchDrawPolicy } from '../src/draw/AcTrBatchDrawPolicy'
+import { AcTrEntity } from '../src/object/AcTrEntity'
+import { AcTrGroup } from '../src/object/AcTrGroup'
+import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
+import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
 import {
   applyAnnotationScalePass,
   hasAnnotationScaleUserData
 } from '../src/viewport/AcTrAnnotationScale'
+
+const batchPolicy: AcTrBatchDrawPolicy = {
+  resolveDrawMode: () => 'batch'
+}
 
 describe('applyAnnotationScalePass', () => {
   it('scales matching annotative drawables and restores afterward', () => {
@@ -187,5 +197,64 @@ describe('applyAnnotationScalePass', () => {
     root.add(child)
     expect(hasAnnotationScaleUserData(root)).toBe(true)
     expect(hasAnnotationScaleUserData(new THREE.Group())).toBe(false)
+  })
+})
+
+describe('annotative entity unbatch', () => {
+  it('keeps annotationScale on one unbatched group root for viewport rescale', () => {
+    const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
+    const leafA = new AcTrEntity(context)
+    const meshA = new THREE.Mesh(
+      new THREE.BufferGeometry(),
+      new THREE.MeshBasicMaterial()
+    )
+    leafA.add(meshA)
+    const leafB = new AcTrEntity(context)
+    const meshB = new THREE.Mesh(
+      new THREE.BufferGeometry(),
+      new THREE.MeshBasicMaterial()
+    )
+    leafB.add(meshB)
+
+    const group = new AcTrGroup([leafA, leafB], context)
+    group.objectId = 'anno-group-1'
+    group.layerName = '0'
+    ;(group.userData as { annotationScale?: unknown }).annotationScale = {
+      drawnScaleFactor: 50,
+      drawnScaleName: '1:50',
+      supportedScaleFactors: [50, 100],
+      supportedScaleNames: ['1:50', '1:100']
+    }
+
+    const batched = new AcTrBatchedGroup()
+    batched.addEntity(group)
+
+    expect(batched.stats.unbatched.count).toBeGreaterThan(0)
+
+    let annotativeRoots = 0
+    batched.traverse(child => {
+      const info = (child.userData as { annotationScale?: unknown })
+        .annotationScale
+      if (info) annotativeRoots++
+    })
+    expect(annotativeRoots).toBe(1)
+    expect(hasAnnotationScaleUserData(batched)).toBe(true)
+
+    const restore = applyAnnotationScalePass(batched, {
+      annotationScaleFactor: 100
+    })
+    restore()
+  })
+
+  it('AcTrEntity.resolveDrawMode unbatches when annotationScale is set', () => {
+    const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
+    const entity = new AcTrEntity(context)
+    expect(entity.resolveDrawMode()).toBe('batch')
+    ;(entity.userData as { annotationScale?: unknown }).annotationScale = {
+      drawnScaleFactor: 1,
+      supportedScaleFactors: [1],
+      supportedScaleNames: ['1:1']
+    }
+    expect(entity.resolveDrawMode()).toBe('unbatch')
   })
 })

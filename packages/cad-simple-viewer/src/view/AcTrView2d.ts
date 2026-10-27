@@ -326,6 +326,20 @@ export class AcTrView2d extends AcEdBaseView {
    * document open.
    */
   private _convertEpoch = 0
+  /**
+   * Per-objectId generation for transient overlay draws. Each
+   * {@link addTransientEntity} / {@link removeTransientEntity} bumps the
+   * counter so a stale `asyncDraw` cannot publish an older jig frame after a
+   * newer cursor update already started.
+   */
+  private _transientDrawGeneration = new Map<string, number>()
+  /**
+   * Nested count of in-flight transient convert/asyncDraw passes that need
+   * {@link AcTrRenderContext.skipMeshGlyphInstancing}. Kept elevated until
+   * every jig `asyncDraw` finishes so nested MTEXT cannot enqueue world
+   * InstancedMesh slots mid-preview.
+   */
+  private _transientSkipMeshGlyphDepth = 0
   /** Last time progressive open actually painted mid-convert. */
   private _lastProgressivePaintAt = 0
   /**
@@ -2596,9 +2610,34 @@ export class AcTrView2d extends AcEdBaseView {
     // lineweight even when LWDISPLAY is off; otherwise ribbon style is a no-op.
     const previousForce = this._renderer.forceShowLineWeight
     this._renderer.forceShowLineWeight = true
+    // Force merge-mode glyphs on the transient tree (see AcTrMText). Keep the
+    // context flag raised for the whole sync convert so nested MTEXT never
+    // enqueue world InstancedMesh placements that flush after the command.
+    const renderContext = this._renderer.context
+    this._transientSkipMeshGlyphDepth++
+    renderContext.skipMeshGlyphInstancing = true
+    const releaseSkipMeshGlyph = () => {
+      this._transientSkipMeshGlyphDepth = Math.max(
+        0,
+        this._transientSkipMeshGlyphDepth - 1
+      )
+      if (this._transientSkipMeshGlyphDepth === 0) {
+        renderContext.skipMeshGlyphInstancing = false
+      }
+    }
     try {
       for (let i = 0; i < entities.length; ++i) {
         const entity = entities[i]
+        const objectId = String(entity.objectId ?? '')
+        const generation = objectId
+          ? (this._transientDrawGeneration.get(objectId) ?? 0) + 1
+          : 0
+        if (objectId) {
+          this._transientDrawGeneration.set(objectId, generation)
+          // Drop live InstancedMesh slots and any not-yet-flushed placements
+          // left by a previous jig frame under the same id.
+          AcTrMTextRenderer.getInstance().removeMeshGlyphInstances(objectId)
+        }
         const threeEntity: AcTrEntity | null = this.drawEntity(entity, true)
         if (threeEntity) {
           threeEntity.objectId = entity.objectId
@@ -2606,25 +2645,34 @@ export class AcTrView2d extends AcEdBaseView {
           // the transient tree (merge) so preview cannot enqueue duplicate
           // world InstancedMesh instances that outlive the transient.
           threeEntity.userData.skipMeshGlyphInstancing = true
-          void threeEntity
-            .asyncDraw()
-            .then(() => {
-              // Drop stale transients started before clear()/regen invalidated the view.
-              if (epoch !== this._convertEpoch) {
-                threeEntity.dispose()
-                return
-              }
-              this._scene.addTransientEntity(threeEntity)
-              this._isDirty = true
-            })
-            .catch(error => {
-              log.error('[AcTrView2d] Transient entity geometry failed:', error)
-              threeEntity.dispose()
-            })
+          // Sync draw: asyncDraw + generation discard left previews blank while
+          // the mouse moved, then flushed every enqueued sample when the
+          // command ended. Jig blocks are small enough to bake synchronously.
+          try {
+            threeEntity.syncDraw()
+          } catch (error) {
+            log.error('[AcTrView2d] Transient entity geometry failed:', error)
+            threeEntity.dispose()
+            continue
+          }
+          if (epoch !== this._convertEpoch) {
+            threeEntity.dispose()
+            continue
+          }
+          if (
+            objectId &&
+            this._transientDrawGeneration.get(objectId) !== generation
+          ) {
+            threeEntity.dispose()
+            continue
+          }
+          this._scene.addTransientEntity(threeEntity)
+          this._isDirty = true
         }
       }
     } finally {
       this._renderer.forceShowLineWeight = previousForce
+      releaseSkipMeshGlyph()
     }
   }
 
@@ -2633,6 +2681,13 @@ export class AcTrView2d extends AcEdBaseView {
    * @param objectId Input the object id of the transient entity to remove
    */
   removeTransientEntity(objectId: AcDbObjectId) {
+    const id = String(objectId ?? '')
+    if (id) {
+      this._transientDrawGeneration.set(
+        id,
+        (this._transientDrawGeneration.get(id) ?? 0) + 1
+      )
+    }
     this._scene.removeTransientEntity(objectId)
     this._isDirty = true
   }
@@ -5143,6 +5198,9 @@ export class AcTrView2d extends AcEdBaseView {
       console.log(
         `[cad-simple-viewer-cli] mesh glyph InstancedMesh flush: placements=${placements} buckets=${buckets}`
       )
+      // Flush can run while `_isDirty` was already cleared after the last
+      // paint; without this, InstancedMesh text stays invisible until pan.
+      this._isDirty = true
     }
   }
 

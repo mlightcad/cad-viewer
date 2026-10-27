@@ -222,6 +222,7 @@ export default {
     patternName: 'Ad',
     patternAngle: 'Açı',
     patternScale: 'Ölçek',
+    annotative: 'Açıklamalı',
     elevation: 'Yükseklik',
     text: 'Metin',
     dimensionText: 'Ölçü Metni',

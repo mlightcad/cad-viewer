@@ -299,5 +299,43 @@ export default {
       bottomCenter: '正下',
       bottomRight: '右下'
     }
+  },
+  dimStyleDlg: {
+    title: '标注样式管理器',
+    current: '当前标注样式: {name}',
+    styles: '样式',
+    filterAll: '所有样式',
+    filterUsed: '正在使用的样式',
+    previewOf: '预览: {name}',
+    description: '说明',
+    setCurrent: '置为当前',
+    new: '新建...',
+    modify: '修改...',
+    override: '替代...',
+    compare: '比较...',
+    close: '关闭',
+    newTitle: '创建新标注样式',
+    newName: '新样式名',
+    startWith: '基础样式',
+    useFor: '用于',
+    allDimensions: '所有标注',
+    continue: '继续',
+    modifyTitle: '修改标注样式: {name}',
+    newStyleTitle: '新建标注样式: {name}',
+    overrideTitle: '替代当前样式',
+    compareTitle: '比较标注样式',
+    style1: '样式 1',
+    style2: '样式 2',
+    variable: '变量',
+    noDifferences: '没有差异。',
+    tabs: {
+      lines: '线',
+      symbols: '符号和箭头',
+      text: '文字',
+      fit: '调整',
+      primary: '主单位',
+      alternate: '换算单位',
+      tolerances: '公差'
+    }
   }
 }

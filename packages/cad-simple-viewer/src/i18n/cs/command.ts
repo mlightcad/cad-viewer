@@ -100,6 +100,30 @@ export default {
     dimlinear: {
       description: 'Vytvoří lineární kóty'
     },
+    dimaligned: {
+      description: 'Vytvoří zarovnanou lineární kótu'
+    },
+    dimradius: {
+      description: 'Vytvoří poloměrové kóty kruhů a oblouků'
+    },
+    dimdiameter: {
+      description: 'Vytvoří průměrové kóty kruhů a oblouků'
+    },
+    dimangular: {
+      description: 'Vytvoří úhlové kóty'
+    },
+    dimarc: {
+      description: 'Vytvoří kótu délky oblouku'
+    },
+    dimordinate: {
+      description: 'Vytvoří souřadnicovou kótu'
+    },
+    dimcontinue: {
+      description: 'Vytvoří řetězovou kótu'
+    },
+    dimbaseline: {
+      description: 'Vytvoří základnovou kótu'
+    },
     dimstyle: {
       description: 'Nastaví název aktuálního stylu kótování'
     },

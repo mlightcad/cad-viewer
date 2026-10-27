@@ -188,6 +188,23 @@ export default {
         'إنشاء أبعاد خطية'
     },
 
+    dimaligned: {
+      ...enCommand.ACAD.dimaligned
+    },
+    dimradius: {
+      ...enCommand.ACAD.dimradius
+    },
+    dimdiameter: {
+      ...enCommand.ACAD.dimdiameter
+    },
+    dimangular: {
+      ...enCommand.ACAD.dimangular
+    },
+    dimarc: { ...enCommand.ACAD.dimarc },
+    dimordinate: { ...enCommand.ACAD.dimordinate },
+    dimcontinue: { ...enCommand.ACAD.dimcontinue },
+    dimbaseline: { ...enCommand.ACAD.dimbaseline },
+
     dimstyle: {
       ...enCommand.ACAD.dimstyle,
       description:

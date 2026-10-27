@@ -322,8 +322,44 @@ export class AcTrMeshGlyphWorldBatch {
     return true
   }
 
+  /**
+   * Drops not-yet-flushed placements for `objectId` from pending buckets.
+   * Jig frames may enqueue under a shared id and never reach {@link flush}
+   * until convert drains — without this, every cursor sample appears at once.
+   */
+  clearPendingByObjectId(objectId: string): boolean {
+    if (!objectId || this._buckets.size === 0) {
+      return false
+    }
+    let removed = false
+    for (const [key, bucket] of this._buckets) {
+      let write = 0
+      for (let i = 0; i < bucket.objectIds.length; i++) {
+        if (bucket.objectIds[i] === objectId) {
+          removed = true
+          this._placementCount = Math.max(0, this._placementCount - 1)
+          continue
+        }
+        if (write !== i) {
+          bucket.objectIds[write] = bucket.objectIds[i]
+          bucket.matrices[write] = bucket.matrices[i]
+        }
+        write++
+      }
+      if (write === 0) {
+        this._buckets.delete(key)
+      } else if (write !== bucket.objectIds.length) {
+        bucket.objectIds.length = write
+        bucket.matrices.length = write
+      }
+    }
+    this._startHiddenObjectIds.delete(objectId)
+    return removed
+  }
+
   /** Hides and forgets slots for a removed entity. */
   removeByObjectId(objectId: string): boolean {
+    const clearedPending = this.clearPendingByObjectId(objectId)
     const slots = this._slotsByObjectId.get(objectId)
     const hadSlots = !!slots?.length
     this._selectedIds.delete(objectId)
@@ -339,7 +375,7 @@ export class AcTrMeshGlyphWorldBatch {
     this._slotsByObjectId.delete(objectId)
     this._worldPickBoxByObjectId.delete(objectId)
     this._startHiddenObjectIds.delete(objectId)
-    return hadSlots
+    return hadSlots || clearedPending
   }
 
   /** Drops GPU objects and queued placements. */

@@ -209,6 +209,7 @@ export default {
     },
     group: {
       draw: 'Draw',
+      dimension: 'Dimension',
       modify: 'Modify',
       layer: 'Layer',
       properties: 'Properties',
@@ -286,6 +287,16 @@ export default {
       point: 'Place a point object in the drawing.',
       hatch: 'Fill a closed area with a hatch pattern.',
       text: 'Create multiline text annotations in the drawing.',
+      dimlinear: 'Create a horizontal, vertical, or rotated linear dimension.',
+      dimaligned: 'Create an aligned linear dimension.',
+      dimradius: 'Create a radial dimension for a circle or arc.',
+      dimdiameter: 'Create a diameter dimension for a circle or arc.',
+      dimangular: 'Create an angular dimension.',
+      dimarc: 'Create an arc length dimension.',
+      dimordinate: 'Create an ordinate dimension.',
+      dimcontinue: 'Create a continued dimension from the previous one.',
+      dimbaseline: 'Create a baseline dimension from the previous one.',
+      dimstyle: 'Open the Dimension Style Manager.',
       move: 'Move selected objects to a new position.',
       rotate: 'Rotate selected objects around a base point.',
       copy: 'Copy selected objects to a new location.',
@@ -403,6 +414,16 @@ export default {
       hatch: 'Hatch',
       text: 'Text',
       gradient: 'Gradient',
+      dimlinear: 'Linear',
+      dimaligned: 'Aligned',
+      dimradius: 'Radius',
+      dimdiameter: 'Diameter',
+      dimangular: 'Angular',
+      dimarc: 'Arc\nLength',
+      dimordinate: 'Ordinate',
+      dimcontinue: 'Continue',
+      dimbaseline: 'Baseline',
+      dimstyle: 'Dim\nStyle',
       move: 'Move',
       rotate: 'Rotate',
       copy: 'Copy',
@@ -618,6 +639,13 @@ export default {
       ribbon: 'Ribbon',
       toolbar: 'Toolbar',
       stats: 'Statistics'
+    },
+    cannoscale: {
+      tooltip: 'Annotation scale (CANNOSCALE)'
+    },
+    annoallvisible: {
+      on: 'Hide annotative objects that do not support the current scale',
+      off: 'Show all annotative objects (ANNOALLVISIBLE)'
     },
     osnap: {
       tooltip: 'Object Snap',
