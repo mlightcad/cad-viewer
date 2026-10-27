@@ -1206,6 +1206,7 @@ const buildBaseTabs = (
     point: t('main.ribbon.tooltip.point'),
     hatch: t('main.ribbon.tooltip.hatch'),
     text: t('main.ribbon.tooltip.text'),
+    dimension: t('main.ribbon.tooltip.dimension'),
     dimlinear: t('main.ribbon.tooltip.dimlinear'),
     dimaligned: t('main.ribbon.tooltip.dimaligned'),
     dimradius: t('main.ribbon.tooltip.dimradius'),
@@ -2072,99 +2073,6 @@ const buildBaseTabs = (
           ]
         },
         {
-          id: 'home-dimension',
-          title: t('main.ribbon.group.dimension'),
-          orientation: 'row',
-          collections: [
-            {
-              id: 'home-dimension-main',
-              layout: 'row',
-              items: [
-                {
-                  id: 'cmd-dimlinear',
-                  type: 'button',
-                  label: t('main.ribbon.command.dimlinear'),
-                  tooltip: ribbonTooltips.dimlinear,
-                  size: 'large',
-                  props: { icon: dimLinear }
-                },
-                {
-                  id: 'cmd-dimaligned',
-                  type: 'button',
-                  label: t('main.ribbon.command.dimaligned'),
-                  tooltip: ribbonTooltips.dimaligned,
-                  size: 'large',
-                  props: { icon: dimAligned }
-                },
-                {
-                  id: 'cmd-dimradius',
-                  type: 'button',
-                  label: t('main.ribbon.command.dimradius'),
-                  tooltip: ribbonTooltips.dimradius,
-                  size: 'large',
-                  props: { icon: dimRadius }
-                },
-                {
-                  id: 'cmd-dimdiameter',
-                  type: 'button',
-                  label: t('main.ribbon.command.dimdiameter'),
-                  tooltip: ribbonTooltips.dimdiameter,
-                  size: 'large',
-                  props: { icon: dimDiameter }
-                },
-                {
-                  id: 'cmd-dimangular',
-                  type: 'button',
-                  label: t('main.ribbon.command.dimangular'),
-                  tooltip: ribbonTooltips.dimangular,
-                  size: 'large',
-                  props: { icon: dimAngular }
-                },
-                {
-                  id: 'cmd-dimarc',
-                  type: 'button',
-                  label: t('main.ribbon.command.dimarc'),
-                  tooltip: ribbonTooltips.dimarc,
-                  size: 'large',
-                  props: { icon: dimArc }
-                },
-                {
-                  id: 'cmd-dimordinate',
-                  type: 'button',
-                  label: t('main.ribbon.command.dimordinate'),
-                  tooltip: ribbonTooltips.dimordinate,
-                  size: 'large',
-                  props: { icon: dimOrdinate }
-                },
-                {
-                  id: 'cmd-dimcontinue',
-                  type: 'button',
-                  label: t('main.ribbon.command.dimcontinue'),
-                  tooltip: ribbonTooltips.dimcontinue,
-                  size: 'large',
-                  props: { icon: dimContinue }
-                },
-                {
-                  id: 'cmd-dimbaseline',
-                  type: 'button',
-                  label: t('main.ribbon.command.dimbaseline'),
-                  tooltip: ribbonTooltips.dimbaseline,
-                  size: 'large',
-                  props: { icon: dimBaseline }
-                },
-                {
-                  id: 'cmd-dimstyle',
-                  type: 'button',
-                  label: t('main.ribbon.command.dimstyle'),
-                  tooltip: ribbonTooltips.dimstyle,
-                  size: 'large',
-                  props: { icon: dimStyle }
-                }
-              ]
-            }
-          ]
-        },
-        {
           id: 'home-modify',
           title: t('main.ribbon.group.modify'),
           orientation: 'row',
@@ -2446,6 +2354,88 @@ const buildBaseTabs = (
                   props: { icon: mtext }
                 }
               ]
+            },
+            {
+              id: 'home-annotation-dimension',
+              layout: 'column',
+              rows: 2,
+              items: [
+                {
+                  id: 'cmd-dimension',
+                  type: 'dropdown',
+                  label: t('main.ribbon.command.dimension'),
+                  tooltip: ribbonTooltips.dimension,
+                  size: 'small',
+                  props: {
+                    icon: dimLinear,
+                    syncLabelWithSelection: true,
+                    options: [
+                      {
+                        value: 'dimlinear',
+                        label: t('main.ribbon.command.dimlinear'),
+                        tooltip: ribbonTooltips.dimlinear,
+                        icon: dimLinear
+                      },
+                      {
+                        value: 'dimaligned',
+                        label: t('main.ribbon.command.dimaligned'),
+                        tooltip: ribbonTooltips.dimaligned,
+                        icon: dimAligned
+                      },
+                      {
+                        value: 'dimradius',
+                        label: t('main.ribbon.command.dimradius'),
+                        tooltip: ribbonTooltips.dimradius,
+                        icon: dimRadius
+                      },
+                      {
+                        value: 'dimdiameter',
+                        label: t('main.ribbon.command.dimdiameter'),
+                        tooltip: ribbonTooltips.dimdiameter,
+                        icon: dimDiameter
+                      },
+                      {
+                        value: 'dimangular',
+                        label: t('main.ribbon.command.dimangular'),
+                        tooltip: ribbonTooltips.dimangular,
+                        icon: dimAngular
+                      },
+                      {
+                        value: 'dimarc',
+                        label: t('main.ribbon.command.dimarc'),
+                        tooltip: ribbonTooltips.dimarc,
+                        icon: dimArc
+                      },
+                      {
+                        value: 'dimordinate',
+                        label: t('main.ribbon.command.dimordinate'),
+                        tooltip: ribbonTooltips.dimordinate,
+                        icon: dimOrdinate
+                      },
+                      {
+                        value: 'dimcontinue',
+                        label: t('main.ribbon.command.dimcontinue'),
+                        tooltip: ribbonTooltips.dimcontinue,
+                        icon: dimContinue
+                      },
+                      {
+                        value: 'dimbaseline',
+                        label: t('main.ribbon.command.dimbaseline'),
+                        tooltip: ribbonTooltips.dimbaseline,
+                        icon: dimBaseline
+                      }
+                    ]
+                  }
+                },
+                {
+                  id: 'cmd-dimstyle',
+                  type: 'button',
+                  label: t('main.ribbon.command.dimstyle'),
+                  tooltip: ribbonTooltips.dimstyle,
+                  size: 'small',
+                  props: { icon: dimStyle }
+                }
+              ]
             }
           ]
         },
@@ -2704,15 +2694,16 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-mtext', 'mtext')
   commandByItemId.set('cmd-mline', 'mline')
   commandByItemId.set('cmd-xline', 'xline')
-  commandByItemId.set('cmd-dimlinear', 'dimlinear')
-  commandByItemId.set('cmd-dimaligned', 'dimaligned')
-  commandByItemId.set('cmd-dimradius', 'dimradius')
-  commandByItemId.set('cmd-dimdiameter', 'dimdiameter')
-  commandByItemId.set('cmd-dimangular', 'dimangular')
-  commandByItemId.set('cmd-dimarc', 'dimarc')
-  commandByItemId.set('cmd-dimordinate', 'dimordinate')
-  commandByItemId.set('cmd-dimcontinue', 'dimcontinue')
-  commandByItemId.set('cmd-dimbaseline', 'dimbaseline')
+  commandByItemId.set('cmd-dimension', 'dimlinear')
+  commandByItemId.set('dimlinear', 'dimlinear')
+  commandByItemId.set('dimaligned', 'dimaligned')
+  commandByItemId.set('dimradius', 'dimradius')
+  commandByItemId.set('dimdiameter', 'dimdiameter')
+  commandByItemId.set('dimangular', 'dimangular')
+  commandByItemId.set('dimarc', 'dimarc')
+  commandByItemId.set('dimordinate', 'dimordinate')
+  commandByItemId.set('dimcontinue', 'dimcontinue')
+  commandByItemId.set('dimbaseline', 'dimbaseline')
   commandByItemId.set('cmd-dimstyle', 'dimstyle')
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-rotate', 'rotate')
