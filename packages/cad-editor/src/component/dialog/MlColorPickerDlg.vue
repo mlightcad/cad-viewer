@@ -3,6 +3,7 @@
     v-model:modelValue="visible"
     :title="title"
     :width="360"
+    :z-index="zIndex"
     @ok="handleOk"
     @cancel="handleCancel"
   >
@@ -19,11 +20,16 @@ import { MlBaseDialog, MlColorPickerTabs } from '../common'
 /**
  * Props
  */
-const props = defineProps<{
-  modelValue: boolean
-  color?: string
-  title: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean
+    color?: string
+    title: string
+    /** Stacking order; raise it when opened from a dialog with a higher z-index. */
+    zIndex?: number
+  }>(),
+  { zIndex: 2100 }
+)
 
 /**
  * Emits
