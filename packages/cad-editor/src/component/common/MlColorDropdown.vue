@@ -65,6 +65,7 @@
       v-model="dlgVisible"
       :title="t('dialog.colorPickerDlg.title')"
       :color="selectedColor"
+      :z-index="props.zIndex"
       @ok="handleDialogOk"
       @cancel="handleDialogCancel"
     />
@@ -87,6 +88,8 @@ defineOptions({
 const props = defineProps<{
   modelValue: AcCmColor | undefined
   disabled?: boolean
+  /** Stacking order for the custom-color dialog. */
+  zIndex?: number
   displayColor?: string
   leadingIcon?: string | Component
   placeholder?: string

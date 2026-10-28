@@ -66,6 +66,9 @@ export const DIM_STYLE_FIELDS = [
   'dimtfac',
   'dimgap',
   'dimaltrnd',
+  'dimtfill',
+  'dimtfillclr',
+  'dimtxtdirection',
   'dimtol',
   'dimlim',
   'dimtih',
@@ -102,6 +105,7 @@ export const DIM_STYLE_FIELDS = [
   'dimaltz',
   'dimalttz',
   'dimatfit',
+  'dimupt',
   'dimtxsty',
   'dimldrblk',
   'dimblk',
@@ -121,7 +125,7 @@ export function readDimStyleFields(
 ): Record<DimStyleField, unknown> {
   const out = {} as Record<DimStyleField, unknown>
   for (const key of DIM_STYLE_FIELDS) {
-    out[key] = style[key]
+    out[key] = (style as unknown as Record<string, unknown>)[key]
   }
   return out
 }
