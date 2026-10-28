@@ -26,6 +26,10 @@
     "@mlightcad/three-renderer": "1.7.7"
   },
   "changesets": [
-    "fix-mcp-script-api-bundle"
+    "dim-style-text-tab",
+    "fix-mcp-script-api-bundle",
+    "fix-multiple-redo-steps",
+    "fix-redo-restores-entity",
+    "preview-1-7-8-preview-2"
   ]
 }

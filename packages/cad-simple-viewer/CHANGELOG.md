@@ -1,5 +1,50 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.7.8-preview.2
+
+### Patch Changes
+
+- 8a2d140: feat: rebuild Dimension Style Manager tabs after AutoCAD
+
+  Replace the plain field grids with AutoCAD-style layouts for Lines,
+  Symbols and Arrows, Text, Fit, Primary Units, Alternate Units, and
+  Tolerances. The Text tab adds text style ("..." opens Text Style),
+  text/fill color, height, fraction height scale, draw text frame,
+  position, view direction, and alignment. The live SVG preview now
+  honors text background fills (DIMTFILL/DIMTFILLCLR), the text frame
+  (negative DIMGAP), right-to-left text (DIMTXTDIRECTION), and outside
+  alignment (DIMTOH). Requires the new `@mlightcad/data-model` DIMSTYLE
+  fields (1.15.16+).
+
+- 07ef40e: fix: allow multiple consecutive redo steps
+
+  `AcDbUndoStack` re-pushed the redone record through `push()`, which also
+  clears the redo stack. As a result the second redo step was lost: after
+  creating two shapes, undoing twice and redoing once, the redo button
+  became disabled and the second shape could not be restored.
+
+  Redo now re-pushes through a dedicated `pushUndo()` that keeps the
+  remaining redo entries, while `push()` still drops them when a new edit
+  is made. Requires `@mlightcad/data-model` 1.15.17+.
+
+- 07ef40e: fix: restore entities after undo then redo
+
+  `AcTrView2d.batchConvert` claims an object id before committing its geometry
+  and keeps that claim for as long as the entity stays in the scene. Undo erases
+  the entity from the database, which calls `AcTrView2d.removeEntity`; that
+  dropped the scene drawable but left the convert claim behind. The redo pass then
+  hit the "already scheduled" skip in `batchConvert`, so a redone line or circle
+  never reappeared in the view even though the database and the undo/redo stack
+  were correct.
+
+  `removeEntity` now releases the claim and bumps the per-id convert generation,
+  so the redone entity converts again while an in-flight convert or deferred glyph
+  commit for the erased id can no longer re-add geometry.
+
+- feat: adds dimension drawing commands and annotation scale UI, rebuilds the Dimension Style Manager tabs to follow AutoCAD layouts for lines, symbols, text, fit, units, and tolerances, and moves the ribbon dimension commands into the Annotation panel dropdown. Undo/redo is fixed so repeated redo steps work and redone entities reappear, and the proprietary parser document now describes pricing as a one-time payment with an annual license fee.
+- Updated dependencies
+  - @mlightcad/three-renderer@1.7.8-preview.2
+
 ## 1.7.8-preview.1
 
 ### Patch Changes

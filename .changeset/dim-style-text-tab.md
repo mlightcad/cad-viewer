@@ -1,6 +1,6 @@
 ---
-"@mlightcad/cad-viewer": minor
-"@mlightcad/cad-simple-viewer": minor
+"@mlightcad/cad-viewer": patch
+"@mlightcad/cad-simple-viewer": patch
 ---
 
 feat: rebuild Dimension Style Manager tabs after AutoCAD

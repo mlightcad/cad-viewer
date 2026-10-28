@@ -1,5 +1,11 @@
 # @mlightcad/three-renderer
 
+## 1.7.8-preview.2
+
+### Patch Changes
+
+- feat: adds dimension drawing commands and annotation scale UI, rebuilds the Dimension Style Manager tabs to follow AutoCAD layouts for lines, symbols, text, fit, units, and tolerances, and moves the ribbon dimension commands into the Annotation panel dropdown. Undo/redo is fixed so repeated redo steps work and redone entities reappear, and the proprietary parser document now describes pricing as a one-time payment with an annual license fee.
+
 ## 1.7.8-preview.1
 
 ### Patch Changes
