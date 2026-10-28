@@ -49,17 +49,17 @@ If your use case does not fit the above (for example, you plan to ship a parser 
 
 ### Pricing
 
-Purchase is handled through a **one-time donation** model:
+Purchase is handled through a **one-time payment** model:
 
 | Item | Amount (USD) |
 |------|----------------|
-| **Perpetual license** (one-time donation) | **$3,000** |
+| **Perpetual license** (one-time payment) | **$3,000** |
 | **Upgrade packages — first year** | Included at no extra cost |
-| **Upgrade packages — after the first year** | **$1,500 / year** (donation) |
+| **Upgrade packages — after the first year** | **$1,500 / year** (annual license fee) |
 
-- The **$3,000 donation** grants **perpetual use** of the parser version delivered at purchase time and ongoing use of that version in production.
+- The **$3,000 license fee** grants **perpetual use** of the parser version delivered at purchase time and ongoing use of that version in production.
 - For **one year** after purchase, you receive **free upgrade packages** (bug fixes, parser improvements, compatibility updates).
-- **After the first year**, a **$1,500 annual donation** is required to receive **new upgrade packages**. You may continue running the version you already have without paying for upgrades; the annual donation applies only if you want updated packages.
+- **After the first year**, a **$1,500 annual license fee** is required to receive **new upgrade packages**. You may continue running the version you already have without paying for upgrades; the annual fee applies only if you want updated packages.
 
 There are **no royalties**, **no per-seat fees**, and **no usage caps**.
 
@@ -148,7 +148,7 @@ cad-viewer is currently maintained as a **personal open-source project** (not op
 | Area | Included |
 |------|----------|
 | **Bug fixes** | Yes — reported issues are addressed as quickly as possible |
-| **Parser updates / upgrade packages** | First year included; thereafter with annual donation |
+| **Parser updates / upgrade packages** | First year included; thereafter with annual license fee |
 | **New DWG version compatibility** | Delivered via upgrade packages |
 | **Technical integration support** | Reasonable email support for integrating the converter |
 | **Response time** | Typically **within one business day** for reported bugs |
@@ -171,13 +171,13 @@ There is no formal SLA or 24/7 on-call service. For enterprise support requireme
 
 **Yes**, as part of your application bundle, subject to the restriction that you do not resell the parser itself as a standalone parsing product.
 
-### What happens if we stop paying the annual donation?
+### What happens if we stop paying the annual license fee?
 
-You **keep perpetual rights** to the version(s) you already received. You simply will not receive **new** upgrade packages until the annual donation is renewed.
+You **keep perpetual rights** to the version(s) you already received. You simply will not receive **new** upgrade packages until the annual license fee is renewed.
 
 ### How do we purchase?
 
-Email [mlight.lee@outlook.com](mailto:mlight.lee@outlook.com) with a brief description of your product and deployment model. We will arrange the donation and deliver the npm package and integration notes.
+Email [mlight.lee@outlook.com](mailto:mlight.lee@outlook.com) with a brief description of your product and deployment model. We will arrange the purchase and deliver the npm package and integration notes.
 
 ### How do we apply for a trial license?
 
