@@ -2798,8 +2798,34 @@ export class AcTrView2d extends AcEdBaseView {
    */
   removeEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
-    entities.forEach(entity => this._scene.removeEntity(entity.objectId))
+    entities.forEach(entity => {
+      this.releaseConvertClaim(entity.objectId)
+      this._scene.removeEntity(entity.objectId)
+    })
     this._isDirty = true
+  }
+
+  /**
+   * Drops convert bookkeeping for an object id that left the scene.
+   *
+   * {@link batchConvert} claims an id before committing geometry and never
+   * releases it while the entity stays in the scene. An undo erases the entity
+   * from the database and calls {@link removeEntity}, but the stale claim made
+   * the follow-up redo pass hit the "already scheduled" skip in
+   * {@link batchConvert}, so the redone entity never reappeared. The generation
+   * bump also prevents an in-flight convert or deferred glyph commit for the
+   * same id from re-adding geometry after the erase.
+   *
+   * @param objectId - Object id leaving the scene
+   */
+  private releaseConvertClaim(objectId: AcDbObjectId) {
+    const id = String(objectId ?? '')
+    if (!id) return
+    this._claimedConvertObjectIds.delete(id)
+    this._entityConvertGeneration.set(
+      id,
+      (this._entityConvertGeneration.get(id) ?? 0) + 1
+    )
   }
 
   /**
