@@ -1,5 +1,13 @@
 # @mlightcad/cad-diff-viewer
 
+## 1.7.8-preview.3
+
+### Patch Changes
+
+- fix: HTML export now includes instanced block geometry from a hidden model layout, so paper viewports keep walls, fills, and borders. ACI color 7 is remapped onto the selected canvas background, and gradient hatch endpoints flip when the offline viewer changes that background. This preview also upgrades realdwg-web to 1.15.18.
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.7.8-preview.3
+
 ## 1.7.8-preview.2
 
 ### Patch Changes
