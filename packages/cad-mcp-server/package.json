@@ -51,8 +51,8 @@
   "dependencies": {
     "@mlightcad/cad-agent-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "1.15.17",
-    "@mlightcad/libredwg-converter": "3.15.17",
+    "@mlightcad/data-model": "1.15.18",
+    "@mlightcad/libredwg-converter": "3.15.18",
     "@mlightcad/mtext-renderer": "0.13.6",
     "@modelcontextprotocol/sdk": "^1.25.0",
     "playwright": "^1.49.1",
