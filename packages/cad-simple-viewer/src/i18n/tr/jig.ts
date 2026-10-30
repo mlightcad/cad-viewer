@@ -1250,6 +1250,7 @@ export default {
     exportFormat: 'Dışa aktarma biçimi',
     exportInvisibleLayers: 'Görünmez katmanları dışa aktar',
     exportLayouts: 'Yerleşimleri dışa aktar',
+    background: 'Arka plan rengi',
     initialView: 'HTML açılırken başlangıç görünümü',
     viewerMode: 'Çevrimdışı görüntüleyici modu',
     chunkSizeMiB: 'Parça boyutu (MiB, çok dosyalı paket)',
@@ -1294,6 +1295,21 @@ export default {
         display: 'Ölçüm ve İnceleme(Ö)',
         local: 'Ölçüm ve İnceleme',
         global: 'Measure'
+      },
+      black: {
+        display: 'Siyah(B)',
+        local: 'Siyah',
+        global: 'Black'
+      },
+      white: {
+        display: 'Beyaz(W)',
+        local: 'Beyaz',
+        global: 'White'
+      },
+      space: {
+        display: 'Alan(S)',
+        local: 'Alan',
+        global: 'Space'
       }
     }
   },

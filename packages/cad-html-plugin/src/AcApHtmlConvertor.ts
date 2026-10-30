@@ -1,5 +1,6 @@
 import type { AcExSnapshot } from '@mlightcad/cad-html-core'
 import {
+  applyAcExHtmlBackground,
   protectAcExHtmlEncodedSnapshot,
   resolveAcApHtmlExpiresAt
 } from '@mlightcad/cad-html-core'
@@ -144,9 +145,16 @@ export class AcApHtmlConvertor {
               exportView.activeLayoutBtrId === exportView.modelSpaceBtrId)
               ? captureAcApHtmlViewState(exportView)
               : undefined,
-          canvasAspectRatio:
-            exportView.width / Math.max(exportView.height, 1)
+          canvasAspectRatio: exportView.width / Math.max(exportView.height, 1)
         }
+      )
+      // Live geometry is baked for the active layout canvas (white in paper
+      // space). Remap near-black / near-white ink onto the chosen canvas.
+      // `'space'` remaps each layout on its own: model black, paper white.
+      applyAcExHtmlBackground(
+        snapshot,
+        exportView.backgroundColor,
+        resolved.background
       )
       logExportTiming('snapshot build', performance.now() - t0)
 

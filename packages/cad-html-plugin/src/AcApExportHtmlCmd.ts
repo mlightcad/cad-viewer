@@ -81,6 +81,11 @@ export class AcApExportHtmlCmd extends AcEdCommand {
       return undefined
     }
 
+    const background = await this.promptBackground()
+    if (background === undefined) {
+      return undefined
+    }
+
     const initialView = await this.promptInitialView()
     if (initialView === undefined) {
       return undefined
@@ -112,11 +117,10 @@ export class AcApExportHtmlCmd extends AcEdCommand {
       exportFormat,
       exportInvisibleLayers,
       exportLayouts,
+      background,
       initialView,
       viewerMode,
-      ...(exportFormat === 'multi'
-        ? { maxChunkBytes, compressChunks }
-        : {})
+      ...(exportFormat === 'multi' ? { maxChunkBytes, compressChunks } : {})
     })
   }
 
@@ -138,8 +142,7 @@ export class AcApExportHtmlCmd extends AcEdCommand {
       AcApI18n.t('jig.chtml.keywords.multi.global'),
       AcApI18n.t('jig.chtml.keywords.multi.local')
     )
-    prompt.keywords.default =
-      defaults.exportFormat === 'multi' ? multi : single
+    prompt.keywords.default = defaults.exportFormat === 'multi' ? multi : single
 
     const result = await AcApDocManager.instance.editor.getKeywords(prompt)
     if (result.status === AcEdPromptStatus.Cancel) {
@@ -221,6 +224,57 @@ export class AcApExportHtmlCmd extends AcEdCommand {
     if (result.status === AcEdPromptStatus.OK) {
       const miB = clampAcApHtmlChunkSizeMiB(result.value ?? defaultMiB)
       return acexChunkSizeMiBToBytes(miB)
+    }
+    return undefined
+  }
+
+  private async promptBackground(): Promise<
+    AcApHtmlExportOptions['background'] | undefined
+  > {
+    const defaults = resolveAcApHtmlExportOptions()
+    const prompt = new AcEdPromptKeywordOptions(
+      AcApI18n.t('jig.chtml.background')
+    )
+    prompt.allowNone = true
+    const black = prompt.keywords.add(
+      AcApI18n.t('jig.chtml.keywords.black.display'),
+      AcApI18n.t('jig.chtml.keywords.black.global'),
+      AcApI18n.t('jig.chtml.keywords.black.local')
+    )
+    const white = prompt.keywords.add(
+      AcApI18n.t('jig.chtml.keywords.white.display'),
+      AcApI18n.t('jig.chtml.keywords.white.global'),
+      AcApI18n.t('jig.chtml.keywords.white.local')
+    )
+    const space = prompt.keywords.add(
+      AcApI18n.t('jig.chtml.keywords.space.display'),
+      AcApI18n.t('jig.chtml.keywords.space.global'),
+      AcApI18n.t('jig.chtml.keywords.space.local')
+    )
+    prompt.keywords.default =
+      defaults.background === 'white'
+        ? white
+        : defaults.background === 'space'
+          ? space
+          : black
+
+    const result = await AcApDocManager.instance.editor.getKeywords(prompt)
+    if (result.status === AcEdPromptStatus.Cancel) {
+      return undefined
+    }
+    if (result.status === AcEdPromptStatus.None) {
+      return defaults.background
+    }
+    if (
+      result.status === AcEdPromptStatus.OK ||
+      result.status === AcEdPromptStatus.Keyword
+    ) {
+      if (!result.stringResult) {
+        return defaults.background
+      }
+      if (result.stringResult === 'White') return 'white'
+      if (result.stringResult === 'Space') return 'space'
+      return 'black'
     }
     return undefined
   }

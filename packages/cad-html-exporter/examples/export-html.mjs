@@ -7,6 +7,8 @@
  *   node examples/export-html.mjs drawing.dwg drawing.html
  *   node examples/export-html.mjs drawing.dwg drawing.zip --format multi
  *   node examples/export-html.mjs drawing.dwg ./out --format multi --no-zip --fonts-dir D:/cad-data
+ *   node examples/export-html.mjs drawing.dwg drawing.html --background white
+ *   node examples/export-html.mjs drawing.dwg drawing.html --background space
  *
  * In a published install, import `@mlightcad/cad-html-exporter` instead of
  * `../dist/index.js`.
@@ -31,6 +33,8 @@ Options:
   --fonts-dir <path>        Local font library (folder, fonts.json, or cad-data root)
   --fonts-url <url>         Remote font library base URL (ignored when --fonts-dir is set)
   --viewer-mode view|measure   Default: measure (view omits snap and measure)
+  --background black|white|space  Drawing canvas. Default: black.
+                       space = black in model space, white in paper space
   --max-chunk-mib <n>       Multi-file chunk budget, 1–64 (default 2)
   --no-compress-chunks      Write raw chunk bytes instead of .acex.gz
   --dwg-parser libredwg|dwg Default: libredwg (dwg needs optional @mlightcad/dwg-converter)
@@ -44,6 +48,7 @@ function parseArgs(argv) {
     format: 'single',
     zipPackage: true,
     viewerMode: 'measure',
+    background: undefined,
     compressChunks: true
   }
   for (let i = 0; i < argv.length; i++) {
@@ -62,6 +67,8 @@ function parseArgs(argv) {
       options.fontsUrl = argv[++i]
     } else if (arg === '--viewer-mode') {
       options.viewerMode = argv[++i]
+    } else if (arg === '--background') {
+      options.background = argv[++i]
     } else if (arg === '--max-chunk-mib') {
       options.maxChunkBytes = Number(argv[++i]) * 1024 * 1024
     } else if (arg === '--no-compress-chunks') {
@@ -105,6 +112,16 @@ if (options.help || positional.length !== 2) {
 if (options.format !== 'single' && options.format !== 'multi') {
   throw new Error(`--format must be single or multi, got ${options.format}`)
 }
+if (
+  options.background != null &&
+  options.background !== 'black' &&
+  options.background !== 'white' &&
+  options.background !== 'space'
+) {
+  throw new Error(
+    `--background must be black, white, or space, got ${options.background}`
+  )
+}
 if (options.format === 'single' && options.zipPackage === false) {
   throw new Error('--no-zip applies only to --format multi')
 }
@@ -128,6 +145,7 @@ const result = await exportFileToHtml(input, output, {
   exportFormat: options.format,
   zipPackage: options.zipPackage,
   viewerMode: options.viewerMode,
+  background: options.background,
   fontsDir: options.fontsDir,
   fontsUrl: options.fontsUrl,
   maxChunkBytes: options.maxChunkBytes,

@@ -8,8 +8,8 @@ import {
   isBatchGeometryActive,
   isBatchGeometryVisible,
   isHighlightCloneDrawable,
-  isHighlightOverlayDescendant,
-  isObjectHierarchyVisible} from '@mlightcad/three-renderer'
+  isHighlightOverlayDescendant
+} from '@mlightcad/three-renderer'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
@@ -413,8 +413,24 @@ function exportLineSegments2Slice(
   return { positions: new Float32Array(activeFloats) }
 }
 
-function shouldExportPlainDrawable(object: THREE.Object3D): boolean {
-  return isObjectHierarchyVisible(object)
+/**
+ * Whether a drawable under `root` should be written into the snapshot.
+ *
+ * Inactive layouts set the layout group's `visible` flag to false while paper
+ * space is showing. Export walks each layer root explicitly, so ancestors
+ * outside that root must not drop geometry. Objects hidden inside the root
+ * (and hidden ancestors between the drawable and the root) are still skipped.
+ */
+function shouldExportPlainDrawable(
+  object: THREE.Object3D,
+  root: THREE.Object3D
+): boolean {
+  let node: THREE.Object3D | null = object
+  while (node && node !== root) {
+    if (node.visible === false) return false
+    node = node.parent
+  }
+  return true
 }
 
 function readLineWidth(material: THREE.Material): number | undefined {
@@ -974,7 +990,7 @@ export function collectBatchesFromObject3D(
       return
     }
     if (isInstancedExportDrawable(child)) {
-      if (!shouldExportPlainDrawable(child)) return
+      if (!shouldExportPlainDrawable(child, root)) return
       if ((child as unknown as THREE.Points).isPoints === true) {
         pushInstancedMesh(child, meshBatches, true)
       } else if (isExportLineSegments(child) && !isExportLineSegments2(child)) {
@@ -1005,7 +1021,7 @@ export function collectBatchesFromObject3D(
       return
     }
     if (isExportLineSegments2(child)) {
-      if (!shouldExportPlainDrawable(child)) return
+      if (!shouldExportPlainDrawable(child, root)) return
       const rawSlice = exportLineSegments2Slice(child.geometry)
       if (rawSlice.positions.length === 0) return
       const material = readExportMaterial(child)
@@ -1024,7 +1040,7 @@ export function collectBatchesFromObject3D(
       assignRenderOrder(exported, child, material)
       lineBatches.push(exported)
     } else if (isExportLineSegments(child) && !(child instanceof AcTrBatchedLine)) {
-      if (!shouldExportPlainDrawable(child)) return
+      if (!shouldExportPlainDrawable(child, root)) return
       const rawSlice = omitNonFinitePrimitives(
         exportBufferGeometrySlice(child.geometry),
         2
@@ -1054,7 +1070,7 @@ export function collectBatchesFromObject3D(
       !isExportLineSegments2(child) &&
       !(child instanceof AcTrBatchedMesh)
     ) {
-      if (!shouldExportPlainDrawable(child)) return
+      if (!shouldExportPlainDrawable(child, root)) return
       const material = readExportMaterial(child)
       if (isTransparentImagePlaceholder(material)) return
       const rawSlice = omitNonFinitePrimitives(

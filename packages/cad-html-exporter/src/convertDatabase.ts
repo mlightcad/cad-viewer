@@ -1,11 +1,16 @@
 import { availableParallelism } from 'node:os'
 
 import {
+  ACEX_HTML_BACKGROUND_BLACK,
+  ACEX_HTML_BACKGROUND_WHITE,
   type AcExExportLayoutInput,
   type AcExExportSceneInput,
+  type AcExHtmlBackground,
   type AcExSnapshot,
+  applyAcExHtmlBackground,
   buildSnapshotFromExportScene,
-  listDatabaseLayouts
+  listDatabaseLayouts,
+  resolveAcExHtmlBackground
 } from '@mlightcad/cad-html-core'
 import {
   type AcDbDatabase,
@@ -83,6 +88,17 @@ async function convertOpenDatabaseToSnapshot(
 
   const renderer = AcTrRenderer.createForExport({ width, height })
   renderer.context.database = database
+  // Bake ACI 7 against one known canvas, then remap. `'space'` is drawn on
+  // black and paper layouts are remapped to white afterwards — changing the
+  // renderer background mid-draw would repaint geometry already captured.
+  const backgroundMode: AcExHtmlBackground = resolveAcExHtmlBackground(
+    options.background
+  )
+  const background =
+    backgroundMode === 'white'
+      ? ACEX_HTML_BACKGROUND_WHITE
+      : ACEX_HTML_BACKGROUND_BLACK
+  renderer.currentBackgroundColor = background
   // Browser glyph draws yield every 32ms so the UI can paint. That timer
   // delay only slows a headless export.
   renderer.context.yieldDuringAsyncDraw = false
@@ -194,6 +210,7 @@ async function convertOpenDatabaseToSnapshot(
   const tSnapshot = performance.now()
   const snapshot = buildSnapshotFromExportScene(database, scene, {
     title: options.title,
+    background,
     locale: options.locale ?? 'en',
     exportInvisibleLayers,
     exportLayouts,
@@ -201,6 +218,7 @@ async function convertOpenDatabaseToSnapshot(
     viewerMode: options.viewerMode ?? 'measure',
     canvasAspectRatio: width / height
   })
+  applyAcExHtmlBackground(snapshot, background, backgroundMode)
   const snapshotMs = performance.now() - tSnapshot
 
   console.info(
@@ -235,9 +253,8 @@ function flushMeshGlyphInstancesIntoLayouts(
     }
   }
   const fallback = new THREE.Group()
-  const { placements } = mtext.flushMeshGlyphInstances(
-    fallback,
-    name => layerGroups.get(name)
+  const { placements } = mtext.flushMeshGlyphInstances(fallback, name =>
+    layerGroups.get(name)
   )
   if (placements > 0) {
     console.info(

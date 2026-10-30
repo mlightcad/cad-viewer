@@ -20,6 +20,10 @@ depend on `@mlightcad/cad-simple-viewer` or a browser.
   a `preview.jpg` is written next to `viewer.html` (and included in the zip).
 - `viewerMode` defaults to `measure` for both formats: measure tools and
   review markup. Pass `view` for pan, zoom, and layers only.
+- `background` is `black` (default), `white`, or `space`. ACI 7 ink is drawn
+  against that canvas. A paper-space drawing still exports on black unless
+  `white` or `space` is set. `space` uses a black canvas in model space and a
+  white canvas in paper space; the offline viewer switches when the layout changes.
 
 ## Example
 

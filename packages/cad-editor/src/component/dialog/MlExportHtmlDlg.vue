@@ -9,10 +9,7 @@
   >
     <div class="ml-export-html-dlg">
       <el-tabs v-model="activeTab" class="ml-export-html-dlg__tabs">
-        <el-tab-pane
-          :label="t('dialog.exportHtmlDlg.tabData')"
-          name="data"
-        >
+        <el-tab-pane :label="t('dialog.exportHtmlDlg.tabData')" name="data">
           <div class="ml-export-html-dlg__tab-body">
             <ml-fieldset-group
               :title="t('dialog.exportHtmlDlg.exportFormat')"
@@ -155,6 +152,56 @@
         >
           <div class="ml-export-html-dlg__tab-body">
             <ml-fieldset-group
+              :title="t('dialog.exportHtmlDlg.background')"
+              class="ml-export-html-dlg__section"
+            >
+              <el-radio-group
+                v-model="form.background"
+                class="ml-export-html-dlg__bg-row"
+              >
+                <el-radio
+                  value="black"
+                  class="ml-export-html-dlg__bg-option"
+                  :title="t('dialog.exportHtmlDlg.backgroundBlackHint')"
+                >
+                  <span
+                    class="ml-export-html-dlg__swatch ml-export-html-dlg__swatch--black"
+                  />
+                  <span class="ml-export-html-dlg__bg-label">{{
+                    t('dialog.exportHtmlDlg.backgroundBlack')
+                  }}</span>
+                </el-radio>
+                <el-radio
+                  value="white"
+                  class="ml-export-html-dlg__bg-option"
+                  :title="t('dialog.exportHtmlDlg.backgroundWhiteHint')"
+                >
+                  <span
+                    class="ml-export-html-dlg__swatch ml-export-html-dlg__swatch--white"
+                  />
+                  <span class="ml-export-html-dlg__bg-label">{{
+                    t('dialog.exportHtmlDlg.backgroundWhite')
+                  }}</span>
+                </el-radio>
+                <el-radio
+                  value="space"
+                  class="ml-export-html-dlg__bg-option"
+                  :title="t('dialog.exportHtmlDlg.backgroundSpaceHint')"
+                >
+                  <span
+                    class="ml-export-html-dlg__swatch ml-export-html-dlg__swatch--space"
+                  />
+                  <span class="ml-export-html-dlg__bg-label">{{
+                    t('dialog.exportHtmlDlg.backgroundSpace')
+                  }}</span>
+                </el-radio>
+              </el-radio-group>
+              <p class="ml-export-html-dlg__section-hint">
+                {{ backgroundHint }}
+              </p>
+            </ml-fieldset-group>
+
+            <ml-fieldset-group
               :title="t('dialog.exportHtmlDlg.initialView')"
               class="ml-export-html-dlg__section"
             >
@@ -166,7 +213,10 @@
                   class="ml-export-html-dlg__card"
                   :class="{ 'is-selected': form.initialView === 'fit' }"
                 >
-                  <el-radio value="fit" class="ml-export-html-dlg__card-radio" />
+                  <el-radio
+                    value="fit"
+                    class="ml-export-html-dlg__card-radio"
+                  />
                   <span class="ml-export-html-dlg__card-body">
                     <span class="ml-export-html-dlg__card-title">{{
                       t('dialog.exportHtmlDlg.initialViewExtents')
@@ -208,7 +258,10 @@
                   class="ml-export-html-dlg__card"
                   :class="{ 'is-selected': form.viewerMode === 'view' }"
                 >
-                  <el-radio value="view" class="ml-export-html-dlg__card-radio" />
+                  <el-radio
+                    value="view"
+                    class="ml-export-html-dlg__card-radio"
+                  />
                   <span class="ml-export-html-dlg__card-body">
                     <span class="ml-export-html-dlg__card-title">{{
                       t('dialog.exportHtmlDlg.viewerModeView')
@@ -254,87 +307,87 @@
               {{ t('dialog.exportHtmlDlg.securitySingleOnlyHint') }}
             </p>
             <template v-else>
-            <ml-fieldset-group
-              :title="t('dialog.exportHtmlDlg.expirySection')"
-              class="ml-export-html-dlg__section"
-            >
-              <div class="ml-export-html-dlg__expiry-grid">
-                <el-radio-group
-                  v-model="form.expiryDays"
-                  class="ml-export-html-dlg__expiry-group"
-                >
-                  <el-radio :value="1">{{
-                    t('dialog.exportHtmlDlg.expiry1Day')
-                  }}</el-radio>
-                  <el-radio :value="7">{{
-                    t('dialog.exportHtmlDlg.expiry7Days')
-                  }}</el-radio>
-                  <el-radio :value="30">{{
-                    t('dialog.exportHtmlDlg.expiry30Days')
-                  }}</el-radio>
-                  <el-radio value="custom">{{
-                    t('dialog.exportHtmlDlg.expiryCustom')
-                  }}</el-radio>
-                  <el-radio value="never">{{
-                    t('dialog.exportHtmlDlg.expiryNever')
-                  }}</el-radio>
-                </el-radio-group>
-                <el-date-picker
-                  v-if="form.expiryDays === 'custom'"
-                  v-model="form.customExpiresAt"
-                  type="datetime"
-                  class="ml-export-html-dlg__custom-expiry"
-                  :placeholder="
-                    t('dialog.exportHtmlDlg.expiryCustomPlaceholder')
-                  "
-                  :disabled-date="isPastExpiryDate"
-                  :clearable="false"
-                />
-              </div>
-              <p class="ml-export-html-dlg__section-hint">
-                {{ t('dialog.exportHtmlDlg.expiryHint') }}
-              </p>
-            </ml-fieldset-group>
+              <ml-fieldset-group
+                :title="t('dialog.exportHtmlDlg.expirySection')"
+                class="ml-export-html-dlg__section"
+              >
+                <div class="ml-export-html-dlg__expiry-grid">
+                  <el-radio-group
+                    v-model="form.expiryDays"
+                    class="ml-export-html-dlg__expiry-group"
+                  >
+                    <el-radio :value="1">{{
+                      t('dialog.exportHtmlDlg.expiry1Day')
+                    }}</el-radio>
+                    <el-radio :value="7">{{
+                      t('dialog.exportHtmlDlg.expiry7Days')
+                    }}</el-radio>
+                    <el-radio :value="30">{{
+                      t('dialog.exportHtmlDlg.expiry30Days')
+                    }}</el-radio>
+                    <el-radio value="custom">{{
+                      t('dialog.exportHtmlDlg.expiryCustom')
+                    }}</el-radio>
+                    <el-radio value="never">{{
+                      t('dialog.exportHtmlDlg.expiryNever')
+                    }}</el-radio>
+                  </el-radio-group>
+                  <el-date-picker
+                    v-if="form.expiryDays === 'custom'"
+                    v-model="form.customExpiresAt"
+                    type="datetime"
+                    class="ml-export-html-dlg__custom-expiry"
+                    :placeholder="
+                      t('dialog.exportHtmlDlg.expiryCustomPlaceholder')
+                    "
+                    :disabled-date="isPastExpiryDate"
+                    :clearable="false"
+                  />
+                </div>
+                <p class="ml-export-html-dlg__section-hint">
+                  {{ t('dialog.exportHtmlDlg.expiryHint') }}
+                </p>
+              </ml-fieldset-group>
 
-            <ml-fieldset-group
-              :title="t('dialog.exportHtmlDlg.passwordSection')"
-              class="ml-export-html-dlg__section"
-            >
-              <div class="ml-export-html-dlg__password-row">
-                <!--
+              <ml-fieldset-group
+                :title="t('dialog.exportHtmlDlg.passwordSection')"
+                class="ml-export-html-dlg__section"
+              >
+                <div class="ml-export-html-dlg__password-row">
+                  <!--
                   Optional field: block password-manager autofill/auto-generate.
                   Lazy security tab keeps the input out of the DOM until opened;
                   readonly-until-focus stops fill on mount; new-password matches
                   the HTML converter example.
                 -->
-                <el-input
-                  v-model="form.password"
-                  type="password"
-                  autocomplete="new-password"
-                  name="mlcad-html-export-password"
-                  show-password
-                  clearable
-                  :readonly="passwordFieldLocked"
-                  :placeholder="t('dialog.exportHtmlDlg.passwordPlaceholder')"
-                  class="ml-export-html-dlg__password-input"
-                  @focus="unlockPasswordField"
-                />
-                <div class="ml-export-html-dlg__password-actions">
-                  <el-button @click="generatePassword">
-                    {{ t('dialog.exportHtmlDlg.generatePassword') }}
-                  </el-button>
-                  <el-button
-                    :disabled="!canCopyPassword"
-                    @click="copyPassword"
-                  >
-                    {{ t('dialog.exportHtmlDlg.copyPassword') }}
-                  </el-button>
+                  <el-input
+                    v-model="form.password"
+                    type="password"
+                    autocomplete="new-password"
+                    name="mlcad-html-export-password"
+                    show-password
+                    clearable
+                    :readonly="passwordFieldLocked"
+                    :placeholder="t('dialog.exportHtmlDlg.passwordPlaceholder')"
+                    class="ml-export-html-dlg__password-input"
+                    @focus="unlockPasswordField"
+                  />
+                  <div class="ml-export-html-dlg__password-actions">
+                    <el-button @click="generatePassword">
+                      {{ t('dialog.exportHtmlDlg.generatePassword') }}
+                    </el-button>
+                    <el-button
+                      :disabled="!canCopyPassword"
+                      @click="copyPassword"
+                    >
+                      {{ t('dialog.exportHtmlDlg.copyPassword') }}
+                    </el-button>
+                  </div>
                 </div>
-              </div>
-              <p class="ml-export-html-dlg__section-hint">
-                {{ t('dialog.exportHtmlDlg.passwordHint') }}
-              </p>
-            </ml-fieldset-group>
+                <p class="ml-export-html-dlg__section-hint">
+                  {{ t('dialog.exportHtmlDlg.passwordHint') }}
+                </p>
+              </ml-fieldset-group>
             </template>
           </div>
         </el-tab-pane>
@@ -353,6 +406,7 @@ import type {
   AcApHtmlExpiryDays,
   AcApHtmlExportFormat,
   AcApHtmlExportOptions,
+  AcExHtmlBackground,
   AcExInitialViewMode,
   AcExViewerMode
 } from '@mlightcad/cad-html-plugin'
@@ -416,6 +470,10 @@ export interface MlExportHtmlDlgForm {
    * When `true`, paper-space layouts are included in the exported snapshot.
    */
   exportLayouts: boolean
+  /**
+   * Canvas background written into the exported HTML.
+   */
+  background: AcExHtmlBackground
   /**
    * Initial framing when the exported HTML is opened (`fit` = zoom extents).
    */
@@ -481,6 +539,7 @@ const form = reactive<MlExportHtmlDlgForm>({
   exportFormat: 'single',
   exportInvisibleLayers: true,
   exportLayouts: true,
+  background: 'black',
   initialView: 'fit',
   viewerMode: 'measure',
   chunkSizeMiB: ACEX_DEFAULT_CHUNK_SIZE_MIB,
@@ -490,6 +549,18 @@ const form = reactive<MlExportHtmlDlgForm>({
   password: ''
 })
 
+/** Hint for the background choice currently selected. */
+const backgroundHint = computed(() => {
+  switch (form.background) {
+    case 'white':
+      return t('dialog.exportHtmlDlg.backgroundWhiteHint')
+    case 'space':
+      return t('dialog.exportHtmlDlg.backgroundSpaceHint')
+    default:
+      return t('dialog.exportHtmlDlg.backgroundBlackHint')
+  }
+})
+
 /**
  * Restores {@link form} to HTML export package defaults.
  */
@@ -497,6 +568,7 @@ function resetForm() {
   form.exportFormat = 'single'
   form.exportInvisibleLayers = true
   form.exportLayouts = true
+  form.background = 'black'
   form.initialView = 'fit'
   form.viewerMode = 'measure'
   form.chunkSizeMiB = ACEX_DEFAULT_CHUNK_SIZE_MIB
@@ -627,6 +699,7 @@ async function handleOk() {
     exportFormat: form.exportFormat,
     exportInvisibleLayers: form.exportInvisibleLayers,
     exportLayouts: form.exportLayouts,
+    background: form.background,
     initialView: form.initialView,
     viewerMode: form.viewerMode,
     expiryDays: form.exportFormat === 'multi' ? 'never' : form.expiryDays,
@@ -656,8 +729,11 @@ async function handleOk() {
       )
     }
 
-    const { AcApHtmlConvertor, getHtmlPluginOptions, resolveAcApHtmlExportOptions } =
-      await import('@mlightcad/cad-html-plugin')
+    const {
+      AcApHtmlConvertor,
+      getHtmlPluginOptions,
+      resolveAcApHtmlExportOptions
+    } = await import('@mlightcad/cad-html-plugin')
     const converter = new AcApHtmlConvertor(getHtmlPluginOptions())
     await converter.convert(
       document.fileName || document.docTitle,
@@ -784,6 +860,58 @@ async function handleOk() {
   box-shadow: inset 0 0 0 1px var(--el-color-primary-light-7);
 }
 
+.ml-export-html-dlg__bg-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.ml-export-html-dlg__bg-option {
+  display: flex;
+  align-items: center;
+  height: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--el-border-color);
+  border-radius: 4px;
+  background: var(--el-fill-color-blank);
+  cursor: pointer;
+  white-space: normal;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ml-export-html-dlg__bg-option:hover {
+  border-color: var(--el-color-primary-light-5);
+}
+
+.ml-export-html-dlg__bg-option.is-checked {
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  box-shadow: inset 0 0 0 1px var(--el-color-primary-light-7);
+}
+
+.ml-export-html-dlg__bg-option :deep(.el-radio__label) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding-left: 6px;
+}
+
+.ml-export-html-dlg__bg-label {
+  min-width: 0;
+  font-size: var(--ml-dialog-font-size, 12px);
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  line-height: 1.3;
+}
+
 .ml-export-html-dlg__card-radio {
   flex: 0 0 auto;
   margin-right: 0;
@@ -802,10 +930,33 @@ async function handleOk() {
 }
 
 .ml-export-html-dlg__card-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: var(--ml-dialog-font-size, 12px);
   font-weight: 600;
   color: var(--el-text-color-primary);
   line-height: 1.35;
+}
+
+.ml-export-html-dlg__swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid var(--el-border-color);
+  flex: 0 0 auto;
+}
+
+.ml-export-html-dlg__swatch--black {
+  background: #000;
+}
+
+.ml-export-html-dlg__swatch--white {
+  background: #fff;
+}
+
+.ml-export-html-dlg__swatch--space {
+  background: linear-gradient(90deg, #000 50%, #fff 50%);
 }
 
 .ml-export-html-dlg__card-hint {

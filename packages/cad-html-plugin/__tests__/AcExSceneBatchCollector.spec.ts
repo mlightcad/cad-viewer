@@ -688,6 +688,55 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     expect(lineBatches).toHaveLength(1)
   })
 
+  it('exports layer geometry when the parent layout group is hidden', () => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+    const line = new THREE.LineSegments(
+      geometry,
+      new THREE.LineBasicMaterial({ color: 0xffffff })
+    )
+    const layer = new THREE.Group()
+    layer.add(line)
+    const layout = new THREE.Group()
+    layout.visible = false
+    layout.add(layer)
+
+    const { lineBatches } = collectBatchesFromObject3D(layer)
+    expect(lineBatches).toHaveLength(1)
+  })
+
+  it('exports shared INSERT geometry when the parent layout group is hidden', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff })
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+    const segment = new THREE.LineSegments(geometry, material)
+    segment.updateMatrixWorld(true)
+    getSceneDrawableUserData(segment).sharesTemplateGeometry = true
+
+    const batched = new AcTrBatchedGroup()
+    batched.addEntity(sharedEntity('insert-hidden-layout', segment))
+    const layer = new THREE.Group()
+    layer.add(batched)
+    const layout = new THREE.Group()
+    layout.visible = false
+    layout.add(layer)
+
+    const { lineBatches } = collectBatchesFromObject3D(layer)
+    expect(lineBatches).toHaveLength(1)
+    const world = worldPositions(
+      lineBatches[0]!.positions,
+      lineBatches[0]!.offset
+    )
+    expect(world[0]).toBeCloseTo(0)
+    expect(world[3]).toBeCloseTo(10)
+  })
+
   it('exports only active LineSegments2 instanceCount segments', () => {
     const geometry = new LineSegmentsGeometry()
     geometry.setPositions(

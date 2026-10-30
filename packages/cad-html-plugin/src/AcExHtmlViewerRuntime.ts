@@ -7,6 +7,7 @@ import type {
   AcExSnapshot,
   AcExViewerMode
 } from '@mlightcad/cad-html-core'
+import { acExHtmlLayoutBackground } from '@mlightcad/cad-html-core'
 import { decodeChunkPayload } from '@mlightcad/cad-html-core'
 import { acexSetDocsBaseUrl } from '@mlightcad/cad-html-core'
 import {
@@ -293,20 +294,34 @@ function invertNearBlackWhite(hex: number): number | null {
   return null
 }
 
+function flipColorValue(color: THREE.Color | undefined): void {
+  if (!color?.getHex) return
+  const next = invertNearBlackWhite(color.getHex())
+  if (next != null) color.setHex(next)
+}
+
 function flipMaterialColor(material: THREE.Material): void {
   const colorMats = material as THREE.MeshBasicMaterial & {
     color?: THREE.Color
-    uniforms?: { u_color?: { value: THREE.Color } }
+    map?: THREE.Texture | null
+    uniforms?: {
+      u_color?: { value: THREE.Color }
+      u_startColor?: { value: THREE.Color }
+      u_endColor?: { value: THREE.Color }
+    }
   }
-  if (colorMats.color?.getHex) {
-    const next = invertNearBlackWhite(colorMats.color.getHex())
-    if (next != null) colorMats.color.setHex(next)
+  // Image and OLE rasters stay white so the texture is not tinted.
+  if (colorMats.map) return
+  flipColorValue(colorMats.color)
+  const uniforms = colorMats.uniforms
+  if (!uniforms) return
+  // Skip when u_color is the same Color already inverted above.
+  if (uniforms.u_color?.value !== colorMats.color) {
+    flipColorValue(uniforms.u_color?.value)
   }
-  const uniformColor = colorMats.uniforms?.u_color?.value
-  if (uniformColor?.getHex) {
-    const next = invertNearBlackWhite(uniformColor.getHex())
-    if (next != null) uniformColor.setHex(next)
-  }
+  // Gradient hatches store the two ends separately from u_color.
+  flipColorValue(uniforms.u_startColor?.value)
+  flipColorValue(uniforms.u_endColor?.value)
 }
 
 function flipNearBlackWhiteMaterials(root: THREE.Object3D): void {
@@ -736,7 +751,12 @@ async function startViewer(): Promise<void> {
 
   const scene = new THREE.Scene()
   const originalBackground = snapshot.meta.background >>> 0
+  const spaceMode = snapshot.meta.backgroundMode === 'space'
   let backgroundSwapped = false
+  /** Model materials are inverted from the colors baked at export. */
+  let modelInkFlipped = false
+  /** Paper materials are inverted from the colors baked at export. */
+  let paperInkFlipped = false
   scene.background = new THREE.Color(originalBackground)
 
   const getCanvasSize = () => ({
@@ -822,16 +842,29 @@ async function startViewer(): Promise<void> {
     parent: THREE.Object3D,
     materials: LineMaterial[]
   ) => {
+    const created: THREE.Object3D[] = []
     for (const batch of lineBatches) {
       const object = createLineObject(batch, materials, wideLineResolution)
-      if (object) getOrCreateLayerGroup(groups, parent, batch.layer).add(object)
+      if (!object) continue
+      getOrCreateLayerGroup(groups, parent, batch.layer).add(object)
+      created.push(object)
     }
     for (const batch of meshBatches) {
       const object = batch.points
         ? createPointObject(batch)
         : createMeshObject(batch)
-      if (object) getOrCreateLayerGroup(groups, parent, batch.layer).add(object)
+      if (!object) continue
+      getOrCreateLayerGroup(groups, parent, batch.layer).add(object)
+      created.push(object)
     }
+    const flipped =
+      parent === modelRoot
+        ? modelInkFlipped
+        : parent === paperRoot
+          ? paperInkFlipped
+          : false
+    if (!flipped) return
+    for (const object of created) flipNearBlackWhiteMaterials(object)
   }
 
   const populateLayoutGeometry = (
@@ -964,6 +997,7 @@ async function startViewer(): Promise<void> {
     }
     paperLayerGroups.clear()
     paperWideLineMaterials.length = 0
+    paperInkFlipped = false
   }
 
   const clearLayoutSceneGeometry = (target: AcExLayoutSnapshot) => {
@@ -974,6 +1008,7 @@ async function startViewer(): Promise<void> {
       }
       modelLayerGroups.clear()
       modelWideLineMaterials.length = 0
+      modelInkFlipped = false
     } else {
       disposePaperGeometry()
     }
@@ -1111,6 +1146,7 @@ async function startViewer(): Promise<void> {
     clearLayoutSceneGeometry(target)
     target.lineBatches.length = 0
     target.meshBatches.length = 0
+    syncBackground()
 
     try {
       await fetchPackageLayoutChunks(target, { uploadToGpu: true })
@@ -1189,6 +1225,50 @@ async function startViewer(): Promise<void> {
     packageSession.loadedOsnapLayouts.add(target.btrId)
   }
 
+  /**
+   * Canvas color for the layout on screen. `'space'` follows model/paper;
+   * the background toggle inverts that natural color.
+   */
+  const displayBackground = (target: AcExLayoutSnapshot): number => {
+    const natural = acExHtmlLayoutBackground(
+      spaceMode ? 'space' : undefined,
+      target.isModelSpace,
+      originalBackground
+    )
+    if (!backgroundSwapped) return natural
+    return isLightRgb(natural) ? 0x000000 : 0xffffff
+  }
+
+  /**
+   * Near-black and near-white ink is baked for one canvas per space. When the
+   * canvas on screen has the opposite lightness, flip those materials. Batches
+   * appended while the flag is set are flipped as they arrive.
+   */
+  const ensureInk = (isModel: boolean) => {
+    const canvas = displayBackground(layout)
+    const bake = spaceMode
+      ? isModel
+        ? 0x000000
+        : 0xffffff
+      : originalBackground
+    const wanted = isLightRgb(bake) !== isLightRgb(canvas)
+    const current = isModel ? modelInkFlipped : paperInkFlipped
+    const hasGeometry = isModel
+      ? modelLayerGroups.size > 0
+      : paperLayerGroups.size > 0
+    if (hasGeometry && wanted !== current) {
+      flipNearBlackWhiteMaterials(isModel ? modelRoot : paperRoot)
+    }
+    if (isModel) modelInkFlipped = wanted
+    else paperInkFlipped = wanted
+  }
+
+  const syncBackground = () => {
+    scene.background = new THREE.Color(displayBackground(layout))
+    ensureInk(true)
+    ensureInk(false)
+  }
+
   // Attach roots before any progressive fetch so appended batches are visible.
   if (layout.isModelSpace) {
     scene.add(modelRoot)
@@ -1198,6 +1278,8 @@ async function startViewer(): Promise<void> {
       modelScene.add(modelRoot)
     }
   }
+
+  syncBackground()
 
   if (!packageSession) {
     if (modelLayout) {
@@ -1442,14 +1524,7 @@ async function startViewer(): Promise<void> {
 
   const switchDrawingBackground = () => {
     backgroundSwapped = !backgroundSwapped
-    const next = backgroundSwapped
-      ? isLightRgb(originalBackground)
-        ? 0x000000
-        : 0xffffff
-      : originalBackground
-    scene.background = new THREE.Color(next)
-    flipNearBlackWhiteMaterials(scene)
-    flipNearBlackWhiteMaterials(modelScene)
+    syncBackground()
     render()
   }
 
@@ -2486,6 +2561,7 @@ async function startViewer(): Promise<void> {
     rebuildPaper: boolean
   ) => {
     layout = target
+    syncBackground()
     if (target.isModelSpace) {
       scene.add(modelRoot)
     } else {
@@ -2497,9 +2573,6 @@ async function startViewer(): Promise<void> {
           paperRoot,
           paperWideLineMaterials
         )
-        if (backgroundSwapped) {
-          flipNearBlackWhiteMaterials(paperRoot)
-        }
       }
       if (hasPaperViewports) {
         modelScene.add(modelRoot)
@@ -2557,6 +2630,8 @@ async function startViewer(): Promise<void> {
         modelScene.add(modelRoot)
       }
     }
+
+    syncBackground()
 
     // Frame the target layout BEFORE geometry / OSNAP reload. Otherwise the
     // camera stays on the previous paper/model view and progressive chunks
@@ -2674,9 +2749,6 @@ async function startViewer(): Promise<void> {
           paperRoot,
           paperWideLineMaterials
         )
-      }
-      if (backgroundSwapped) {
-        flipNearBlackWhiteMaterials(paperRoot)
       }
     } else if (
       geometrySource === 'monolithic' &&

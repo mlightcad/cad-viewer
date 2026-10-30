@@ -118,17 +118,21 @@ npm install -D @mlightcad/cad-simple-viewer-cli
 npx playwright install chromium
 ```
 
-Dışa aktarma, `-chtml` istemlerini satır satır yanıtlayan bir `.scr` betiği gerektirir (`Single/Multi`, `Yes/No`, `Extents/Current`, `Measure/View`). CLI paketi kullanıma hazır bir `examples/export-html-multi.scr` dosyası içerir (npm kurulumundan sonra `node_modules/@mlightcad/cad-simple-viewer-cli/examples/` konumunda bulunur; depoda ise [`packages/cad-simple-viewer-cli/examples/`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-simple-viewer-cli/examples/export-html-multi.scr) konumundadır):
+Dışa aktarma, `-chtml` istemlerini satır satır yanıtlayan bir `.scr` betiği gerektirir (`Single/Multi`, `Yes/No`, `Black/White/Space`, `Extents/Current`, `Measure/View`). CLI paketi kullanıma hazır bir `examples/export-html-multi.scr` dosyası içerir (npm kurulumundan sonra `node_modules/@mlightcad/cad-simple-viewer-cli/examples/` konumunda bulunur; depoda ise [`packages/cad-simple-viewer-cli/examples/`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-simple-viewer-cli/examples/export-html-multi.scr) konumundadır):
 
 ```text
 ; Export a multi-file ACEX package (zip)
-; Prompt order: export format / export hidden layers / export layouts / initial view / viewer mode
+; Prompt order: export format / hidden layers / layouts / background /
+; initial view / viewer mode / chunk size MiB / compress chunks
 -chtml
 Multi
 Yes
 Yes
+Black
 Extents
 Measure
+2
+Yes
 quit
 ```
 

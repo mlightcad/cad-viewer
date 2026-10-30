@@ -166,6 +166,16 @@ export {
   ACEO_OSNAP_VERSION
 } from './AcExOsnapCatalogCodec'
 export { zipAcExPackageFiles, unzipAcExPackageFiles } from './AcExPackageZip'
+export {
+  ACEX_HTML_BACKGROUND_BLACK,
+  ACEX_HTML_BACKGROUND_WHITE,
+  acExHtmlBackgroundRgb,
+  acExHtmlLayoutBackground,
+  applyAcExHtmlBackground,
+  remapAcExSnapshotForegroundForBackground,
+  resolveAcExHtmlBackground,
+  type AcExHtmlBackground
+} from './AcExHtmlBackground'
 
 export {
   buildSnapshotFromExportScene,

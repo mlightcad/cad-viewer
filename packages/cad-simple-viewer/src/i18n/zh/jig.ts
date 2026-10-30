@@ -1359,6 +1359,7 @@ export default {
     exportFormat: '导出格式',
     exportInvisibleLayers: '是否导出不可见图层',
     exportLayouts: '是否导出布局',
+    background: '背景颜色',
     initialView: '打开 HTML 时的初始视图',
     viewerMode: '离线查看器模式',
     chunkSizeMiB: '每个分片大小（MiB，多文件包）',
@@ -1403,6 +1404,21 @@ export default {
         display: '测量与批注(M)',
         local: '测量与批注',
         global: 'Measure'
+      },
+      black: {
+        display: '黑色(B)',
+        local: '黑色',
+        global: 'Black'
+      },
+      white: {
+        display: '白色(W)',
+        local: '白色',
+        global: 'White'
+      },
+      space: {
+        display: '随空间(S)',
+        local: '随空间',
+        global: 'Space'
       }
     }
   },

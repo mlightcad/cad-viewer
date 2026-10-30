@@ -396,8 +396,24 @@ export interface AcExSnapshot {
      * AutoCAD-like defaults (8px, `#0080ff` / `#ff0000`).
      */
     grip?: AcExViewerGripAppearance
-    /** Canvas background color as 24-bit RGB hex. */
+    /**
+     * Canvas background color as 24-bit RGB hex.
+     *
+     * When {@link backgroundMode} is `'space'`, this is the initially active
+     * layout's color (black in model space, white in paper space). The offline
+     * viewer switches the canvas on layout change. Older snapshots omit the
+     * mode and use this color for every layout.
+     */
     background: number
+    /**
+     * How {@link background} relates to layouts.
+     *
+     * - `'black'` / `'white'` — every layout uses {@link background}.
+     * - `'space'` — model space is black and paper space is white.
+     *
+     * Omitted on snapshots produced before this field existed.
+     */
+    backgroundMode?: 'black' | 'white' | 'space'
     /** Export-time UI locale from the CAD app (informational; runtime uses browser language). */
     locale?: string
     /**

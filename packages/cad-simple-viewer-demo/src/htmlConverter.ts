@@ -6,8 +6,10 @@ import {
   ACEX_MAX_CHUNK_SIZE_MIB,
   ACEX_MIN_CHUNK_SIZE_MIB,
   acexChunkSizeMiBToBytes,
+  type AcExHtmlBackground,
   type AcExInitialViewMode,
   type AcExViewerMode,
+  applyAcExHtmlBackground,
   buildAcExPackage,
   captureAcApHtmlViewState,
   clampAcApHtmlChunkSizeMiB,
@@ -610,11 +612,17 @@ class HtmlConverterApp {
         'input[name="initialView"]:checked'
       ) as HTMLInputElement | null
     )?.value as AcExInitialViewMode | undefined
+    const background = (
+      document.querySelector(
+        'input[name="background"]:checked'
+      ) as HTMLInputElement | null
+    )?.value as AcExHtmlBackground | undefined
     const expiryDays = this.readExpiryDays()
     return resolveAcApHtmlExportOptions({
       exportFormat,
       exportInvisibleLayers: this.exportInvisibleLayers.checked,
       exportLayouts: this.exportLayouts.checked,
+      background: background ?? 'black',
       initialView: initialView ?? 'fit',
       viewerMode: viewerMode ?? 'measure',
       expiryDays: exportFormat === 'multi' ? 'never' : expiryDays,
@@ -700,6 +708,13 @@ class HtmlConverterApp {
             : undefined,
         canvasAspectRatio: view.width / Math.max(view.height, 1)
       }
+    )
+    // Live geometry is baked for the canvas on screen. Remap ACI 7 onto the
+    // chosen background; `'space'` uses black in model and white on paper.
+    applyAcExHtmlBackground(
+      snapshot,
+      view.backgroundColor,
+      resolved.background
     )
 
     const viewerRuntime = await (this.runtimePromise ?? this.loadViewerRuntime())
