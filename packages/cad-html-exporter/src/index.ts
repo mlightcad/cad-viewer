@@ -5,6 +5,7 @@
  */
 
 import { installNodeSnapshotCompressor } from './nodeGzip'
+import { installNodeRasterCodec } from './nodeRaster'
 
 export {
   exportDatabaseToHtml
@@ -44,4 +45,5 @@ export type {
   AcExHtmlExportResult
 } from './exportOptions'
 
+installNodeRasterCodec()
 installNodeSnapshotCompressor()
