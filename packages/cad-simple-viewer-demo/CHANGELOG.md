@@ -1,5 +1,24 @@
 # @mlightcad/cad-simple-viewer-demo
 
+## 1.7.8-preview.4
+
+### Patch Changes
+
+- fix: headless HTML export now embeds raster and OLE images. Node has no canvas, so IMAGE and OLE textures were omitted from offline HTML. The exporter decodes PNG, JPEG, and BMP and writes those pixels back into the snapshot as PNG, so pictures in paper drawings survive a headless export.
+- Updated dependencies
+  - @mlightcad/cad-agent-core@1.7.8-preview.4
+  - @mlightcad/cad-agent-plugin@1.7.8-preview.4
+  - @mlightcad/cad-google-drive-plugin@1.7.8-preview.4
+  - @mlightcad/cad-html-plugin@1.7.8-preview.4
+  - @mlightcad/cad-onedrive-plugin@1.7.8-preview.4
+  - @mlightcad/cad-pdf-plugin@1.7.8-preview.4
+  - @mlightcad/cad-script-plugin@1.7.8-preview.4
+  - @mlightcad/cad-simple-ui-plugin@1.7.8-preview.4
+  - @mlightcad/cad-simple-viewer@1.7.8-preview.4
+  - @mlightcad/cad-svg-plugin@1.7.8-preview.4
+  - @mlightcad/pdf-renderer@1.7.8-preview.4
+  - @mlightcad/three-renderer@1.7.8-preview.4
+
 ## 1.7.8-preview.3
 
 ### Patch Changes

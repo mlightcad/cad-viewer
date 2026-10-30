@@ -1,5 +1,14 @@
 # @mlightcad/cad-html-exporter
 
+## 1.7.8-preview.4
+
+### Patch Changes
+
+- fix: headless HTML export now embeds raster and OLE images. Node has no canvas, so IMAGE and OLE textures were omitted from offline HTML. The exporter decodes PNG, JPEG, and BMP and writes those pixels back into the snapshot as PNG, so pictures in paper drawings survive a headless export.
+- Updated dependencies
+  - @mlightcad/cad-html-core@1.7.8-preview.4
+  - @mlightcad/three-renderer@1.7.8-preview.4
+
 ## 1.7.8-preview.3
 
 ### Patch Changes
