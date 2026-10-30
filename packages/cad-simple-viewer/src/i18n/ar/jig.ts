@@ -2024,6 +2024,9 @@ export default {
     exportLayouts:
       'تصدير المخططات',
 
+    background:
+      'لون الخلفية',
+
     initialView:
       'العرض الأولي عند فتح HTML',
 
@@ -2077,6 +2080,21 @@ export default {
         display: 'قياس(M)',
         local: 'قياس',
         global: 'Measure'
+      },
+      black: {
+        display: 'أسود(B)',
+        local: 'أسود',
+        global: 'Black'
+      },
+      white: {
+        display: 'أبيض(W)',
+        local: 'أبيض',
+        global: 'White'
+      },
+      space: {
+        display: 'حسب المساحة(S)',
+        local: 'حسب المساحة',
+        global: 'Space'
       },
     },
   },

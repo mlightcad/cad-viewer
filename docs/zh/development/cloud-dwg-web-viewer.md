@@ -118,17 +118,21 @@ npm install -D @mlightcad/cad-simple-viewer-cli
 npx playwright install chromium
 ```
 
-导出需要一个 `.scr` 脚本，逐行回答 `-chtml` 的提示（`Single/Multi`、`Yes/No`、`Extents/Current`、`Measure/View`）。CLI 包中包含可直接使用的 `examples/export-html-multi.scr`（通过 npm 安装后位于 `node_modules/@mlightcad/cad-simple-viewer-cli/examples/`；在仓库中位于 [`packages/cad-simple-viewer-cli/examples/`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-simple-viewer-cli/examples/export-html-multi.scr)）：
+导出需要一个 `.scr` 脚本，逐行回答 `-chtml` 的提示（`Single/Multi`、`Yes/No`、`Black/White/Space`、`Extents/Current`、`Measure/View`）。CLI 包中包含可直接使用的 `examples/export-html-multi.scr`（通过 npm 安装后位于 `node_modules/@mlightcad/cad-simple-viewer-cli/examples/`；在仓库中位于 [`packages/cad-simple-viewer-cli/examples/`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-simple-viewer-cli/examples/export-html-multi.scr)）：
 
 ```text
 ; Export a multi-file ACEX package (zip)
-; Prompt order: export format / export hidden layers / export layouts / initial view / viewer mode
+; Prompt order: export format / hidden layers / layouts / background /
+; initial view / viewer mode / chunk size MiB / compress chunks
 -chtml
 Multi
 Yes
 Yes
+Black
 Extents
 Measure
+2
+Yes
 quit
 ```
 

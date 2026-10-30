@@ -1,5 +1,6 @@
 import {
   type AcApHtmlExpiryDays,
+  type AcExHtmlBackground,
   type AcExInitialViewMode,
   type AcExViewerMode
 } from '@mlightcad/cad-html-core'
@@ -39,6 +40,19 @@ export interface AcExHtmlExporterOptions {
   exportFormat?: AcExHtmlExportFormat
   exportInvisibleLayers?: boolean
   exportLayouts?: boolean
+  /**
+   * Canvas background written into the HTML.
+   * `'black'` (default), `'white'`, or `'space'`.
+   *
+   * `'black'` and `'white'` apply to every layout. Foreground ink (ACI 7) is
+   * drawn against that color, so a white background uses black ink. The active
+   * layout does not choose the color: a paper-space drawing still exports on
+   * black unless this is `'white'` or `'space'`.
+   *
+   * `'space'` matches AutoCAD: model space is black and paper space is white.
+   * The offline viewer switches the canvas when the layout changes.
+   */
+  background?: AcExHtmlBackground
   initialView?: AcExInitialViewMode
   /**
    * Toolbar written into the HTML. Defaults to `'measure'`: distance, area,
@@ -154,7 +168,10 @@ export interface AcExHtmlExportResult {
  * {@link AcExHtmlExporterOptions.maxChunkBytes}.
  */
 export function resolveAcExHtmlPackageBuildOptions(
-  options: Pick<AcExHtmlExporterOptions, 'maxChunkBytes' | 'compressChunks'> = {}
+  options: Pick<
+    AcExHtmlExporterOptions,
+    'maxChunkBytes' | 'compressChunks'
+  > = {}
 ): {
   maxChunkBytes: number
   maxBatchBytes: number

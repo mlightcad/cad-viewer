@@ -1247,6 +1247,7 @@ export default {
     exportFormat: 'Formát exportu',
     exportInvisibleLayers: 'Exportovat neviditelné hladiny',
     exportLayouts: 'Exportovat rozvržení',
+    background: 'Barva pozadí',
     initialView: 'Počáteční pohled při otevření HTML',
     viewerMode: 'Režim offline prohlížeče',
     chunkSizeMiB: 'Velikost části v MiB (vícesouborový balíček)',
@@ -1291,6 +1292,21 @@ export default {
         display: 'Měření a kontrola(M)',
         local: 'Měření a kontrola',
         global: 'Measure'
+      },
+      black: {
+        display: 'Černá(B)',
+        local: 'Černá',
+        global: 'Black'
+      },
+      white: {
+        display: 'Bílá(W)',
+        local: 'Bílá',
+        global: 'White'
+      },
+      space: {
+        display: 'Prostor(S)',
+        local: 'Prostor',
+        global: 'Space'
       }
     }
   },

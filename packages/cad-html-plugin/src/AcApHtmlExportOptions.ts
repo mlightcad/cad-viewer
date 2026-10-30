@@ -1,10 +1,14 @@
 import type { AcApHtmlExpiryDays } from '@mlightcad/cad-html-core'
 import type {
+  AcExHtmlBackground,
   AcExInitialViewMode,
   AcExViewerMode,
   AcExViewState
 } from '@mlightcad/cad-html-core'
-import { ACEX_DEFAULT_CHUNK_MAX_BYTES } from '@mlightcad/cad-html-core'
+import {
+  ACEX_DEFAULT_CHUNK_MAX_BYTES,
+  resolveAcExHtmlBackground
+} from '@mlightcad/cad-html-core'
 import type { AcTrView2d } from '@mlightcad/cad-simple-viewer'
 
 export type { AcApHtmlExpiryDays } from '@mlightcad/cad-html-core'
@@ -52,6 +56,17 @@ export interface AcApHtmlExportOptions {
    * draw. Defaults to `true`.
    */
   exportLayouts?: boolean
+  /**
+   * Canvas background written into the exported HTML.
+   * `'black'` (default), `'white'`, or `'space'`.
+   *
+   * `'black'` and `'white'` apply to every layout. A paper-space sheet still
+   * exports on black unless `'white'` or `'space'` is selected. `'space'`
+   * uses a black canvas in model space and a white canvas in paper space.
+   * Near-black and near-white ink (ACI 7, wipeouts) is remapped so it stays
+   * visible on each canvas.
+   */
+  background?: AcExHtmlBackground
   /**
    * Initial framing when the exported HTML is opened. Defaults to `'fit'`.
    */
@@ -104,10 +119,7 @@ export function acexChunkSizeMiBToBytes(miB: number): number {
  * Converts an uncompressed byte budget to a mebibyte setting for prompts/UI.
  */
 export function acexChunkSizeBytesToMiB(bytes: number): number {
-  return Math.max(
-    ACEX_MIN_CHUNK_SIZE_MIB,
-    Math.round(bytes / (1024 * 1024))
-  )
+  return Math.max(ACEX_MIN_CHUNK_SIZE_MIB, Math.round(bytes / (1024 * 1024)))
 }
 
 /**
@@ -151,9 +163,11 @@ export function resolveAcApHtmlExportOptions(
     exportFormat,
     exportInvisibleLayers: options.exportInvisibleLayers !== false,
     exportLayouts: options.exportLayouts !== false,
+    background: resolveAcExHtmlBackground(options.background),
     initialView: options.initialView ?? 'fit',
     viewerMode: options.viewerMode ?? 'measure',
-    expiryDays: exportFormat === 'multi' ? 'never' : (options.expiryDays ?? 'never'),
+    expiryDays:
+      exportFormat === 'multi' ? 'never' : (options.expiryDays ?? 'never'),
     expiresAt: exportFormat === 'multi' ? null : (options.expiresAt ?? null),
     password: exportFormat === 'multi' ? '' : (options.password?.trim() ?? ''),
     maxChunkBytes,
@@ -174,7 +188,8 @@ export function resolveAcApHtmlPackageBuildOptions(
   compressChunks: boolean
 } {
   const maxChunkBytes =
-    options.maxChunkBytes ?? acexChunkSizeMiBToBytes(ACEX_DEFAULT_CHUNK_SIZE_MIB)
+    options.maxChunkBytes ??
+    acexChunkSizeMiBToBytes(ACEX_DEFAULT_CHUNK_SIZE_MIB)
   const compressChunks = options.compressChunks !== false
   return {
     maxChunkBytes,

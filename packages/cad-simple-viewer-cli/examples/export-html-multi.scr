@@ -1,13 +1,14 @@
 ; Export a multi-file ACEX package as a zip (-chtml Multi).
 ; Unzip before hosting so the offline viewer can fetch chunks progressively.
 ; Prompts: export format / export invisible layers / export layouts /
-; initial view / viewer mode / chunk size MiB / compress chunks.
+; background (Black / White / Space) / initial view / viewer mode / chunk size MiB / compress chunks.
 ; Usage:
 ;   cad-simple-viewer-cli -i drawing.dwg -s examples/export-html-multi.scr -o ./out
 -chtml
 Multi
 Yes
 Yes
+Black
 Extents
 Measure
 2

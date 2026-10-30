@@ -53,7 +53,10 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
           'jig.chtml.keywords.extents.global': 'Extents',
           'jig.chtml.keywords.current.global': 'Current',
           'jig.chtml.keywords.view.global': 'View',
-          'jig.chtml.keywords.measure.global': 'Measure'
+          'jig.chtml.keywords.measure.global': 'Measure',
+          'jig.chtml.keywords.black.global': 'Black',
+          'jig.chtml.keywords.white.global': 'White',
+          'jig.chtml.keywords.space.global': 'Space'
         }
 
         return globals[key] ?? key
@@ -107,6 +110,7 @@ const defaultExportOptions = {
   exportFormat: 'single',
   exportInvisibleLayers: true,
   exportLayouts: true,
+  background: 'black',
   initialView: 'fit',
   viewerMode: 'measure',
   expiryDays: 'never',
@@ -141,16 +145,18 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
 
     await cmd.execute(context)
 
-    expect(getKeywords).toHaveBeenCalledTimes(5)
+    expect(getKeywords).toHaveBeenCalledTimes(6)
     expect(getInteger).not.toHaveBeenCalled()
     expect(getKeywords.mock.calls[0][0].allowNone).toBe(true)
     expect(getKeywords.mock.calls[1][0].allowNone).toBe(true)
     expect(getKeywords.mock.calls[2][0].allowNone).toBe(true)
     expect(getKeywords.mock.calls[3][0].allowNone).toBe(true)
     expect(getKeywords.mock.calls[4][0].allowNone).toBe(true)
+    expect(getKeywords.mock.calls[5][0].allowNone).toBe(true)
 
     expect(convert()).toHaveBeenCalledWith(
       'drawing.dwg',
@@ -172,6 +178,10 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
       .mockResolvedValueOnce({
         status: AcEdPromptStatus.OK,
         stringResult: 'Yes'
+      })
+      .mockResolvedValueOnce({
+        status: AcEdPromptStatus.OK,
+        stringResult: 'Black'
       })
       .mockResolvedValueOnce({
         status: AcEdPromptStatus.OK,
@@ -202,12 +212,13 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
     getInteger.mockResolvedValueOnce(none())
 
     await cmd.execute(context)
 
     expect(getInteger).toHaveBeenCalledTimes(1)
-    expect(getKeywords).toHaveBeenCalledTimes(6)
+    expect(getKeywords).toHaveBeenCalledTimes(7)
     expect(convert()).toHaveBeenCalledWith(
       'drawing.dwg',
       defaultMultiExportOptions,
@@ -221,6 +232,7 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
         status: AcEdPromptStatus.OK,
         stringResult: 'Multi'
       })
+      .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
@@ -253,6 +265,7 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
       .mockResolvedValueOnce({
         status: AcEdPromptStatus.OK,
         stringResult: 'View'
@@ -267,6 +280,48 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
     )
   })
 
+  test('exports with a white background when White is selected', async () => {
+    getKeywords
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce({
+        status: AcEdPromptStatus.OK,
+        stringResult: 'White'
+      })
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+
+    await cmd.execute(context)
+
+    expect(convert()).toHaveBeenCalledWith(
+      'drawing.dwg',
+      { ...defaultExportOptions, background: 'white' },
+      context.view
+    )
+  })
+
+  test('exports with a by-space background when Space is selected', async () => {
+    getKeywords
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce({
+        status: AcEdPromptStatus.OK,
+        stringResult: 'Space'
+      })
+      .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
+
+    await cmd.execute(context)
+
+    expect(convert()).toHaveBeenCalledWith(
+      'drawing.dwg',
+      { ...defaultExportOptions, background: 'space' },
+      context.view
+    )
+  })
+
   test('exports without layouts when No is selected for the layouts prompt', async () => {
     getKeywords
       .mockResolvedValueOnce(none())
@@ -275,6 +330,7 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
         status: AcEdPromptStatus.OK,
         stringResult: 'No'
       })
+      .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
 
@@ -314,11 +370,12 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
       .mockResolvedValueOnce({ status: AcEdPromptStatus.Cancel })
 
     await cmd.execute(context)
 
-    expect(getKeywords).toHaveBeenCalledTimes(5)
+    expect(getKeywords).toHaveBeenCalledTimes(6)
     expect(AcApHtmlConvertor).not.toHaveBeenCalled()
   })
 
@@ -328,6 +385,7 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
         status: AcEdPromptStatus.OK,
         stringResult: 'Multi'
       })
+      .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
@@ -347,14 +405,16 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
       .mockResolvedValueOnce(none())
+      .mockResolvedValueOnce(none())
 
     await cmd.execute(context)
 
     const exportFormatPrompt = getKeywords.mock.calls[0][0]
     const invisibleLayersPrompt = getKeywords.mock.calls[1][0]
     const layoutsPrompt = getKeywords.mock.calls[2][0]
-    const initialViewPrompt = getKeywords.mock.calls[3][0]
-    const viewerModePrompt = getKeywords.mock.calls[4][0]
+    const backgroundPrompt = getKeywords.mock.calls[3][0]
+    const initialViewPrompt = getKeywords.mock.calls[4][0]
+    const viewerModePrompt = getKeywords.mock.calls[5][0]
 
     expect(exportFormatPrompt.keywords.default).toEqual(
       expect.objectContaining({ global: 'Single' })
@@ -364,6 +424,9 @@ describe('AcApExportHtmlCmd prompt defaults', () => {
     )
     expect(layoutsPrompt.keywords.default).toEqual(
       expect.objectContaining({ global: 'Yes' })
+    )
+    expect(backgroundPrompt.keywords.default).toEqual(
+      expect.objectContaining({ global: 'Black' })
     )
     expect(initialViewPrompt.keywords.default).toEqual(
       expect.objectContaining({ global: 'Extents' })

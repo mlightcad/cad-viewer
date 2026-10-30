@@ -118,17 +118,21 @@ npm install -D @mlightcad/cad-simple-viewer-cli
 npx playwright install chromium
 ```
 
-Export vyžaduje skript `.scr`, který odpovídá na výzvy `-chtml` řádek po řádku (`Single/Multi`, `Yes/No`, `Extents/Current`, `Measure/View`). CLI balíček obsahuje připravený `examples/export-html-multi.scr` (po instalaci npm se nachází v `node_modules/@mlightcad/cad-simple-viewer-cli/examples/`; v repozitáři je umístěn v [`packages/cad-simple-viewer-cli/examples/`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-simple-viewer-cli/examples/export-html-multi.scr)):
+Export vyžaduje skript `.scr`, který odpovídá na výzvy `-chtml` řádek po řádku (`Single/Multi`, `Yes/No`, `Black/White/Space`, `Extents/Current`, `Measure/View`). CLI balíček obsahuje připravený `examples/export-html-multi.scr` (po instalaci npm se nachází v `node_modules/@mlightcad/cad-simple-viewer-cli/examples/`; v repozitáři je umístěn v [`packages/cad-simple-viewer-cli/examples/`](https://github.com/mlightcad/cad-viewer/blob/main/packages/cad-simple-viewer-cli/examples/export-html-multi.scr)):
 
 ```text
 ; Export a multi-file ACEX package (zip)
-; Prompt order: export format / export hidden layers / export layouts / initial view / viewer mode
+; Prompt order: export format / hidden layers / layouts / background /
+; initial view / viewer mode / chunk size MiB / compress chunks
 -chtml
 Multi
 Yes
 Yes
+Black
 Extents
 Measure
+2
+Yes
 quit
 ```
 

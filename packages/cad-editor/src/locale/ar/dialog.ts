@@ -129,6 +129,14 @@ export default {
     yes: 'نعم',
     no: 'لا',
 
+    background: 'الخلفية',
+    backgroundBlack: 'أسود',
+    backgroundBlackHint: 'لوحة سوداء مع رسم فاتح',
+    backgroundWhite: 'أبيض',
+    backgroundWhiteHint: 'لوحة بيضاء مع رسم داكن',
+    backgroundSpace: 'حسب المساحة',
+    backgroundSpaceHint: 'أسود في مساحة النموذج، أبيض في مساحة الورق',
+
     initialView: 'العرض الأولي',
     initialViewExtents: 'حدود الرسم',
     initialViewExtentsHint:

@@ -1383,6 +1383,7 @@ export default {
     exportFormat: 'Export format',
     exportInvisibleLayers: 'Export invisible layers',
     exportLayouts: 'Export layouts',
+    background: 'Background color',
     initialView: 'Initial view when opening HTML',
     viewerMode: 'Offline viewer mode',
     chunkSizeMiB: 'Chunk size in MiB (multi-file package)',
@@ -1427,6 +1428,21 @@ export default {
         display: 'Measure & Review(M)',
         local: 'Measure & Review',
         global: 'Measure'
+      },
+      black: {
+        display: 'Black(B)',
+        local: 'Black',
+        global: 'Black'
+      },
+      white: {
+        display: 'White(W)',
+        local: 'White',
+        global: 'White'
+      },
+      space: {
+        display: 'Space(S)',
+        local: 'Space',
+        global: 'Space'
       }
     }
   },
