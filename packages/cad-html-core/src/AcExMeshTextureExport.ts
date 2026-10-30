@@ -3,6 +3,30 @@ import * as THREE from 'three'
 import { copyFloat32Range } from './AcExBatchBuffers'
 import type { AcExMeshTexture } from './AcExSnapshotTypes'
 
+/** RGBA image a headless host can turn into PNG bytes without a canvas. */
+export interface AcExHeadlessPngSource {
+  width: number
+  height: number
+  data: ArrayLike<number>
+}
+
+/**
+ * PNG encoder used when `document` is missing (Node HTML export).
+ * Browsers encode through canvas and ignore this.
+ */
+export type AcExHeadlessPngEncoder = (
+  image: AcExHeadlessPngSource
+) => Uint8Array | undefined
+
+let headlessPngEncoder: AcExHeadlessPngEncoder | undefined
+
+/** Registers the Node PNG encoder for {@link encodeTextureForExport}. */
+export function setHeadlessPngEncoder(
+  encoder: AcExHeadlessPngEncoder | undefined
+): void {
+  headlessPngEncoder = encoder
+}
+
 /**
  * Encodes a THREE texture image to PNG bytes for HTML snapshot embedding.
  * Returns `undefined` when the texture has no drawable image payload.
@@ -11,8 +35,11 @@ export function encodeTextureForExport(
   texture: THREE.Texture
 ): AcExMeshTexture | undefined {
   const image = texture.image as unknown
-  if (!image || typeof document === 'undefined') {
+  if (!image) {
     return undefined
+  }
+  if (typeof document === 'undefined') {
+    return encodeHeadlessTexture(image)
   }
 
   const canvas = document.createElement('canvas')
@@ -64,6 +91,24 @@ export function encodeTextureForExport(
     bytes[i] = binary.charCodeAt(i)
   }
   return { mimeType: 'image/png', bytes }
+}
+
+function encodeHeadlessTexture(
+  image: unknown
+): AcExMeshTexture | undefined {
+  const encode = headlessPngEncoder
+  if (!encode || !isDataTextureImage(image)) {
+    return undefined
+  }
+  try {
+    const bytes = encode(image)
+    if (!bytes?.byteLength) {
+      return undefined
+    }
+    return { mimeType: 'image/png', bytes }
+  } catch {
+    return undefined
+  }
 }
 
 function isCanvasImageSource(image: unknown): image is CanvasImageSource & {

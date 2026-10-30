@@ -10,12 +10,48 @@ import { AcTrBufferGeometryUtil } from '../util/AcTrBufferGeometryUtil'
 import { AcTrEntity } from './AcTrEntity'
 
 /**
+ * RGBA image produced by a host decoder when `document` is unavailable.
+ * The headless HTML exporter installs one so Node can texture OLE/raster
+ * entities without Three.js `TextureLoader`.
+ */
+export interface AcTrHeadlessRasterImage {
+  width: number
+  height: number
+  data: ArrayLike<number>
+}
+
+/**
+ * Decodes PNG, JPEG, or BMP bytes. Returns `undefined` when the payload is
+ * not a supported raster (the mesh stays a transparent placeholder).
+ */
+export type AcTrHeadlessRasterDecoder = (
+  bytes: Uint8Array,
+  mime: string
+) => AcTrHeadlessRasterImage | undefined
+
+let headlessRasterDecoder: AcTrHeadlessRasterDecoder | undefined
+
+/**
+ * Registers the Node raster decoder used by {@link AcTrImage} during headless
+ * export. Browsers keep Three.js `TextureLoader` and ignore this.
+ */
+export function setHeadlessRasterDecoder(
+  decoder: AcTrHeadlessRasterDecoder | undefined
+): void {
+  headlessRasterDecoder = decoder
+}
+
+/**
  * Textured image drawable for {@link AcDbRasterImage} / {@link AcDbOle2Frame}.
  *
  * Raster blobs (`image/png`, `image/bmp`, …) are textured immediately.
  * OLE metafile blobs (`image/wmf`, `image/emf`) are rasterized asynchronously
  * via {@link acdbRasterizeOleMetafile} before the texture is bound — otherwise
  * Three.js `TextureLoader` fails and the mesh stays an opaque white fill.
+ *
+ * In Node there is no `document`, so `TextureLoader` cannot build an image
+ * element. Headless export installs {@link setHeadlessRasterDecoder} and
+ * this class binds a data texture from the decoded pixels instead.
  *
  * Metafile loads participate in {@link asyncDraw} so export/`waitUntilIdle`
  * waits for the PNG texture before capturing the canvas.
@@ -104,6 +140,9 @@ export class AcTrImage extends AcTrEntity {
   }
 
   private loadRasterTexture(blob: Blob): Promise<void> {
+    if (typeof document === 'undefined') {
+      return this.loadHeadlessRasterTexture(blob)
+    }
     return new Promise(resolve => {
       const blobUrl = URL.createObjectURL(blob)
       const textureLoader = new THREE.TextureLoader()
@@ -123,6 +162,39 @@ export class AcTrImage extends AcTrEntity {
       )
       texture.colorSpace = THREE.SRGBColorSpace
     })
+  }
+
+  /**
+   * Decodes a raster blob with the host codec and binds a data texture.
+   * Used by headless HTML export, where `TextureLoader` needs `document`.
+   */
+  private async loadHeadlessRasterTexture(blob: Blob): Promise<void> {
+    const decode = headlessRasterDecoder
+    if (!decode) {
+      this._textureReady = true
+      return
+    }
+    try {
+      const bytes = new Uint8Array(await blob.arrayBuffer())
+      const image = decode(bytes, blob.type || '')
+      const rgba = image ? copyRgba(image) : undefined
+      if (!image || !rgba) {
+        this._textureReady = true
+        return
+      }
+      const texture = new THREE.DataTexture(
+        rgba,
+        image.width,
+        image.height,
+        THREE.RGBAFormat
+      )
+      texture.colorSpace = THREE.SRGBColorSpace
+      texture.flipY = false
+      texture.needsUpdate = true
+      this.applyTexture(texture)
+    } catch {
+      this._textureReady = true
+    }
   }
 
   private async loadMetafileTexture(blob: Blob): Promise<void> {
@@ -166,4 +238,22 @@ export class AcTrImage extends AcTrEntity {
     this.clear()
     this._mesh = undefined
   }
+}
+
+function copyRgba(image: AcTrHeadlessRasterImage): Uint8Array | undefined {
+  if (
+    !Number.isInteger(image.width) ||
+    !Number.isInteger(image.height) ||
+    image.width < 1 ||
+    image.height < 1
+  ) {
+    return undefined
+  }
+  const expected = image.width * image.height * 4
+  const out = new Uint8Array(expected)
+  const sourceLength = Math.min(expected, image.data.length)
+  for (let i = 0; i < sourceLength; i++) {
+    out[i] = image.data[i] ?? 0
+  }
+  return out
 }

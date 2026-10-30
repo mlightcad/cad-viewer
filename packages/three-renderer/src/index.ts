@@ -14,6 +14,11 @@ export { AcTrBatchedPoint } from './batch/AcTrBatchedPoint'
 export * from './linetype'
 export * from './object/AcTrObject'
 export * from './object/AcTrEntity'
+export {
+  setHeadlessRasterDecoder,
+  type AcTrHeadlessRasterDecoder,
+  type AcTrHeadlessRasterImage
+} from './object/AcTrImage'
 export * from './object/AcTrGlyphEntity'
 export * from './object/AcTrMText'
 export * from './object/AcTrShape'
