@@ -202,7 +202,11 @@ export default {
     Embedded: 'Embedded',
     Static: 'Static',
     ModelSpace: 'Model Space',
-    PaperSpace: 'Paper Space'
+    PaperSpace: 'Paper Space',
+    MText: 'MText',
+    Fcf: 'Feature Control Frame',
+    BlockReference: 'Block Reference',
+    NoAnnotation: 'None'
   },
   property: {
     general: 'General',
@@ -213,6 +217,7 @@ export default {
     shape: 'Shape',
     table: 'Table',
     ole: 'OLE',
+    leader: 'Leader',
     others: 'Others',
     name: 'Name',
     size: 'Size',
@@ -356,6 +361,23 @@ export default {
     linkName: 'Link Name',
     linkPath: 'Link Path',
     outputQuality: 'Output Quality',
-    autoOutputQuality: 'Auto Output Quality'
+    autoOutputQuality: 'Auto Output Quality',
+    annoType: 'Annotation Type',
+    hasArrowHead: 'Arrowhead',
+    hasHookLine: 'Hook Line',
+    isHookLineSameDirection: 'Hook Line Same Direction',
+    isSplined: 'Spline',
+    associatedAnnotation: 'Annotation Handle',
+    byBlockColor: 'ByBlock Color',
+    textWidth: 'Text Width',
+    horizontalDirectionX: 'Horizontal Dir X',
+    horizontalDirectionY: 'Horizontal Dir Y',
+    horizontalDirectionZ: 'Horizontal Dir Z',
+    offsetFromBlockX: 'Block Offset X',
+    offsetFromBlockY: 'Block Offset Y',
+    offsetFromBlockZ: 'Block Offset Z',
+    offsetFromAnnotationX: 'Annotation Offset X',
+    offsetFromAnnotationY: 'Annotation Offset Y',
+    offsetFromAnnotationZ: 'Annotation Offset Z'
   }
 }

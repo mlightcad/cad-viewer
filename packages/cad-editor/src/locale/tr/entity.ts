@@ -202,7 +202,11 @@ export default {
     Embedded: 'Gömülü',
     Static: 'Statik',
     ModelSpace: 'Model Alanı',
-    PaperSpace: 'Kağıt Alanı'
+    PaperSpace: 'Kağıt Alanı',
+    MText: 'MText',
+    Fcf: 'Özellik Kontrol Çerçevesi',
+    BlockReference: 'Blok Referansı',
+    NoAnnotation: 'Yok'
   },
   property: {
     general: 'Genel',
@@ -213,6 +217,7 @@ export default {
     shape: 'Şekil',
     table: 'Tablo',
     ole: 'OLE',
+    leader: 'Lider',
     others: 'Diğer',
     name: 'Ad',
     size: 'Boyut',
@@ -356,6 +361,23 @@ export default {
     linkName: 'Bağlantı Adı',
     linkPath: 'Bağlantı Yolu',
     outputQuality: 'Çıktı Kalitesi',
-    autoOutputQuality: 'Otomatik Çıktı Kalitesi'
+    autoOutputQuality: 'Otomatik Çıktı Kalitesi',
+    annoType: 'Açıklama Türü',
+    hasArrowHead: 'Ok Ucu',
+    hasHookLine: 'Kanca Çizgisi',
+    isHookLineSameDirection: 'Kanca Çizgisi Aynı Yönde',
+    isSplined: 'Eğri (Spline)',
+    associatedAnnotation: 'İlişkili Açıklama Tanıtıcısı',
+    byBlockColor: 'Blok Rengi',
+    textWidth: 'Metin Genişliği',
+    horizontalDirectionX: 'Yatay Yön X',
+    horizontalDirectionY: 'Yatay Yön Y',
+    horizontalDirectionZ: 'Yatay Yön Z',
+    offsetFromBlockX: 'Blok Ofseti X',
+    offsetFromBlockY: 'Blok Ofseti Y',
+    offsetFromBlockZ: 'Blok Ofseti Z',
+    offsetFromAnnotationX: 'Açıklama Ofseti X',
+    offsetFromAnnotationY: 'Açıklama Ofseti Y',
+    offsetFromAnnotationZ: 'Açıklama Ofseti Z'
   }
 }

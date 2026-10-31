@@ -202,7 +202,11 @@ export default {
     Embedded: 'Vložený',
     Static: 'Statický',
     ModelSpace: 'Modelový prostor',
-    PaperSpace: 'Výkresový prostor'
+    PaperSpace: 'Výkresový prostor',
+    MText: 'MText',
+    Fcf: 'Rámeček tolerance tvaru',
+    BlockReference: 'Odkaz na blok',
+    NoAnnotation: 'Žádná'
   },
   property: {
     general: 'Obecné',
@@ -213,6 +217,7 @@ export default {
     shape: 'Tvar',
     table: 'Tabulka',
     ole: 'OLE',
+    leader: 'Odkaz',
     others: 'Ostatní',
     name: 'Název',
     size: 'Velikost',
@@ -356,6 +361,23 @@ export default {
     linkName: 'Název propojení',
     linkPath: 'Cesta propojení',
     outputQuality: 'Kvalita výstupu',
-    autoOutputQuality: 'Automatická kvalita výstupu'
+    autoOutputQuality: 'Automatická kvalita výstupu',
+    annoType: 'Typ anotace',
+    hasArrowHead: 'Šipka',
+    hasHookLine: 'Ohybová čára',
+    isHookLineSameDirection: 'Ohybová čára ve stejném směru',
+    isSplined: 'Spline',
+    associatedAnnotation: 'Popisovač přidružené anotace',
+    byBlockColor: 'Barva podle bloku',
+    textWidth: 'Šířka textu',
+    horizontalDirectionX: 'Vodorovný směr X',
+    horizontalDirectionY: 'Vodorovný směr Y',
+    horizontalDirectionZ: 'Vodorovný směr Z',
+    offsetFromBlockX: 'Odsazení bloku X',
+    offsetFromBlockY: 'Odsazení bloku Y',
+    offsetFromBlockZ: 'Odsazení bloku Z',
+    offsetFromAnnotationX: 'Odsazení anotace X',
+    offsetFromAnnotationY: 'Odsazení anotace Y',
+    offsetFromAnnotationZ: 'Odsazení anotace Z'
   }
 }
