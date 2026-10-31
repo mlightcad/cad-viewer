@@ -1,5 +1,23 @@
 # @mlightcad/cad-viewer
 
+## 1.7.8-preview.5
+
+### Patch Changes
+
+- 1020d4d: fix: leader entities now expose their properties in the properties palette with localized labels, and TrueType text glyphs are parented to the layout that owns them, so model-space text no longer disappears inside paper-space viewports or headless HTML exports. Dependencies move to data-model 1.15.19 and libredwg-converter 3.15.19.
+- Updated dependencies [1020d4d]
+  - @mlightcad/cad-agent-core@1.7.8-preview.5
+  - @mlightcad/cad-agent-plugin@1.7.8-preview.5
+  - @mlightcad/cad-google-drive-plugin@1.7.8-preview.5
+  - @mlightcad/cad-html-plugin@1.7.8-preview.5
+  - @mlightcad/cad-onedrive-plugin@1.7.8-preview.5
+  - @mlightcad/cad-pdf-plugin@1.7.8-preview.5
+  - @mlightcad/cad-script-plugin@1.7.8-preview.5
+  - @mlightcad/cad-simple-viewer@1.7.8-preview.5
+  - @mlightcad/cad-svg-plugin@1.7.8-preview.5
+  - @mlightcad/pdf-renderer@1.7.8-preview.5
+  - @mlightcad/three-renderer@1.7.8-preview.5
+
 ## 1.7.8-preview.4
 
 ### Patch Changes
