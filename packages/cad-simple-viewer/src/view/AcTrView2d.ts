@@ -888,7 +888,11 @@ export class AcTrView2d extends AcEdBaseView {
     this.canvas.addEventListener(
       'mousemove',
       e => {
-        if (!selectionStartWcs || !selectionPreviewEl || !selectionStartCanvas) {
+        if (
+          !selectionStartWcs ||
+          !selectionPreviewEl ||
+          !selectionStartCanvas
+        ) {
           return
         }
         if (acedIsTouchDerivedMouseEvent(e) || acedShouldIgnoreCompatMouse()) {
@@ -2142,7 +2146,9 @@ export class AcTrView2d extends AcEdBaseView {
       }
     ).resolveAnnotativePresentation
     const presentation =
-      typeof resolvePresentation === 'function' ? resolvePresentation.call(mtext) : null
+      typeof resolvePresentation === 'function'
+        ? resolvePresentation.call(mtext)
+        : null
     const rawLocation = presentation?.position ?? mtext.location
     const location = {
       x: rawLocation.x,
@@ -2153,11 +2159,15 @@ export class AcTrView2d extends AcEdBaseView {
     const attachmentPoint =
       presentation?.attachmentPoint ?? mtext.attachmentPoint
     const editorWidth =
-      presentation && Number.isFinite(presentation.width) && presentation.width > 0
+      presentation &&
+      Number.isFinite(presentation.width) &&
+      presentation.width > 0
         ? presentation.width
         : this.resolveMTextEditorWidth(mtext)
     const textHeight =
-      presentation && Number.isFinite(presentation.height) && presentation.height > 0
+      presentation &&
+      Number.isFinite(presentation.height) &&
+      presentation.height > 0
         ? presentation.height
         : this.resolveMTextEditorTextHeight(mtext)
 
@@ -2225,7 +2235,10 @@ export class AcTrView2d extends AcEdBaseView {
     const textHeight =
       Number.isFinite(height) && height > 0 ? height : this.pixelsToWorldY(24)
     const content = text.textString ?? ''
-    const width = Math.max(textHeight * Math.max(content.length, 1) * 0.6, textHeight)
+    const width = Math.max(
+      textHeight * Math.max(content.length, 1) * 0.6,
+      textHeight
+    )
     const rotation = Number(text.rotation)
 
     const editor = new AcEdMTextEditor()
@@ -4075,10 +4088,9 @@ export class AcTrView2d extends AcEdBaseView {
     const singleton = AcApDocManager as unknown as {
       _instance?: AcApDocManager
     }
-    const preset =
-      singleton._instance?.lastPresetFontsForOpen?.length
-        ? [...singleton._instance.lastPresetFontsForOpen]
-        : [...fallbackFonts]
+    const preset = singleton._instance?.lastPresetFontsForOpen?.length
+      ? [...singleton._instance.lastPresetFontsForOpen]
+      : [...fallbackFonts]
     this._fontPreloadDiag = {
       critical: [...plan.critical],
       workerWarm: [],
@@ -5019,7 +5031,8 @@ export class AcTrView2d extends AcEdBaseView {
       for (const [layerName, objects] of objectsGroupByLayer) {
         // Nested layer-0 may already be resolved to an inner INSERT layer during
         // flatten. Remaining "0" buckets inherit this (outermost) INSERT layer.
-        const effectiveLayerName = layerName === '0' ? groupLayerName : layerName
+        const effectiveLayerName =
+          layerName === '0' ? groupLayerName : layerName
 
         // Material remap must still treat authored layer-0 drawables as layer-0
         // ByLayer even when nest resolution already rewrote layerName.
@@ -5217,7 +5230,8 @@ export class AcTrView2d extends AcEdBaseView {
     }
     const { placements, buckets } = mtextRenderer.flushMeshGlyphInstances(
       this._scene.internalScene,
-      (layerName: string) => this.resolveMeshGlyphLayerParent(layerName)
+      (layerName, ownerId) =>
+        this.resolveMeshGlyphLayerParent(layerName, ownerId)
     )
     if (placements > 0) {
       // Prefix for headless CLI console forwarding.
@@ -5231,13 +5245,26 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Prefers the active layout's layer group, then any layout that already has
-   * that layer (multi-layout HTML export). Falls back to null so flush can
-   * parent under the bookkeeping root.
+   * Parents mesh glyphs under the layout that owns the entity.
+   *
+   * Every layout has a layer group for each layer name. Preferring the active
+   * layout puts model-space TrueType text into the paper-space group while a
+   * paper layout is current, so viewports (which draw model space) never see
+   * it. When `ownerId` names a layout, only that layout's layer is used.
+   * Glyphs with no layout owner still follow the active layout.
    */
   private resolveMeshGlyphLayerParent(
-    layerName: string
+    layerName: string,
+    ownerId?: string
   ): THREE.Object3D | undefined | null {
+    const owner = ownerId?.trim()
+    if (owner) {
+      const layout = this._scene.layouts.get(owner)
+      if (!layout) {
+        return null
+      }
+      return layout.getLayer(layerName)?.internalObject ?? null
+    }
     const active = this._scene.activeLayout?.getLayer(layerName)
     if (active) {
       return active.internalObject

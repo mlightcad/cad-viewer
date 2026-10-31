@@ -35,8 +35,8 @@
   "dependencies": {
     "@huh-david/bmp-js": "^0.8.8",
     "@mlightcad/cad-html-core": "workspace:*",
-    "@mlightcad/data-model": "1.15.18",
-    "@mlightcad/libredwg-converter": "3.15.18",
+    "@mlightcad/data-model": "1.15.19",
+    "@mlightcad/libredwg-converter": "3.15.19",
     "@mlightcad/libredwg-web": "0.8.2",
     "@mlightcad/mtext-renderer": "0.13.6",
     "@mlightcad/three-renderer": "workspace:*",
