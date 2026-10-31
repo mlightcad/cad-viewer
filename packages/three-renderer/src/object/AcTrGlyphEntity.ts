@@ -406,6 +406,9 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
         // match the selectable database entity (not the ATTRIB handle).
         objectId: batchObjectId,
         layerName: this.layerName || '0',
+        // Outermost layout owner: a block-definition ownerId must not pull
+        // these glyphs onto the active paper-space layer group.
+        ownerId: this.resolveMeshGlyphLayoutOwnerId(),
         visible: this.visible !== false
       })
     }
@@ -467,6 +470,36 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
     } else {
       this._wcsBbox.union(worldBox)
     }
+  }
+
+  /**
+   * Layout block-table-record id used to parent mesh-glyph InstancedMeshes.
+   *
+   * Nested TEXT keeps the block-definition owner, while the INSERT that
+   * places it carries the model- or paper-space owner. The outermost id wins
+   * so glyphs follow the layout that actually displays them.
+   */
+  protected resolveMeshGlyphLayoutOwnerId(): string {
+    return AcTrGlyphEntity.findLayoutOwnerId(this)
+  }
+
+  /**
+   * Returns the owner id of the highest {@link AcTrEntity} ancestor (or the
+   * node itself) that carries one. Iterative so deep block nesting cannot
+   * overflow the stack.
+   */
+  private static findLayoutOwnerId(node: THREE.Object3D | null): string {
+    const chain: THREE.Object3D[] = []
+    for (let current = node; current; current = current.parent) {
+      chain.push(current)
+    }
+    for (let i = chain.length - 1; i >= 0; i--) {
+      const candidate = chain[i]
+      if (!(candidate instanceof AcTrEntity)) continue
+      const id = candidate.ownerId
+      if (typeof id === 'string' && id.length > 0) return id
+    }
+    return ''
   }
 
   /**

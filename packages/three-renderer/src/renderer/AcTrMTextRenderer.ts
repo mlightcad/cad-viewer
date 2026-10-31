@@ -362,7 +362,12 @@ export class AcTrMTextRenderer {
    */
   enqueueMeshGlyphPlacementsFromObject(
     object: THREE.Object3D,
-    meta: { objectId: string; layerName: string; visible?: boolean }
+    meta: {
+      objectId: string
+      layerName: string
+      ownerId?: string
+      visible?: boolean
+    }
   ): number {
     if (!this.getMeshGlyphInstancing() || !meta.objectId) {
       return 0
@@ -414,7 +419,8 @@ export class AcTrMTextRenderer {
   flushMeshGlyphInstances(
     fallbackParent: THREE.Object3D,
     resolveLayerParent?: (
-      layerName: string
+      layerName: string,
+      ownerId: string
     ) => THREE.Object3D | undefined | null
   ): {
     placements: number
@@ -523,10 +529,7 @@ export class AcTrMTextRenderer {
     }
     // Callers may force `'merge'` (PDF glyph extract, tests). Only default to
     // placement when the mode is left unspecified.
-    if (
-      this.getMeshGlyphInstancing() &&
-      next.meshGlyphOutputMode == null
-    ) {
+    if (this.getMeshGlyphInstancing() && next.meshGlyphOutputMode == null) {
       next = {
         ...next,
         meshGlyphOutputMode: 'placement'

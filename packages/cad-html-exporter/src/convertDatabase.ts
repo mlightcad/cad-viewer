@@ -169,6 +169,9 @@ async function convertOpenDatabaseToSnapshot(
 
       const drawn = entity.worldDraw(renderer) as AcTrEntity | null
       if (!drawn) continue
+      // Glyph InstancedMeshes are parented by layout owner. Set it before
+      // asyncDraw so nested block text walks out to this layout.
+      drawn.ownerId = btrId
       // Defer asyncDraw so glyph/INSERT finalize runs with bounded concurrency
       // (serial await was multi-minute on text-heavy DWGs).
       pendingDraws.push({ drawn, group: layerBucket.group })
@@ -253,8 +256,22 @@ function flushMeshGlyphInstancesIntoLayouts(
     }
   }
   const fallback = new THREE.Group()
-  const { placements } = mtext.flushMeshGlyphInstances(fallback, name =>
-    layerGroups.get(name)
+  const { placements } = mtext.flushMeshGlyphInstances(
+    fallback,
+    (name, ownerId) => {
+      const owner = ownerId?.trim()
+      if (owner) {
+        const layout = layoutBuckets.get(owner)
+        const layer = layout?.layers.get(name)
+        if (layer) {
+          return layer.group as unknown as THREE.Object3D
+        }
+        if (layout) {
+          return null
+        }
+      }
+      return layerGroups.get(name)
+    }
   )
   if (placements > 0) {
     console.info(

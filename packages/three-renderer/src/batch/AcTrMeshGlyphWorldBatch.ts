@@ -20,6 +20,12 @@ export interface AcTrMeshGlyphEnqueueMeta {
   objectId: string
   /** AutoCAD layer name — InstancedMesh is parented under this layer group. */
   layerName: string
+  /**
+   * Layout block-table-record id that owns the entity. The same layer name
+   * exists on every layout, so model-space and paper-space glyphs must not
+   * share one InstancedMesh.
+   */
+  ownerId?: string
   /** When false, slots are scale-hidden immediately after flush. */
   visible?: boolean
 }
@@ -28,6 +34,8 @@ interface GlyphBatchBucket {
   geometry: THREE.BufferGeometry
   material: THREE.Material
   layerName: string
+  /** Layout block-table-record id; empty when the glyph has no layout owner. */
+  ownerId: string
   /** World-space column-major matrices. */
   matrices: Float32Array[]
   objectIds: string[]
@@ -47,10 +55,11 @@ interface LiveSlot {
  * contributes a world-space 4×4 matrix, avoiding per-entity `mergeMesh`
  * vertex bake on text-heavy drawings.
  *
- * Buckets are keyed by `geometry × material × layer` and parented under the
- * layer group so layer on/off works. Per-entity hide uses the same scale-0
- * instance-matrix trick as {@link AcTrSharedGeometryBatch}. Selection/hover
- * uses cloned-geometry overlays (same pattern as shared INSERT batches).
+ * Buckets are keyed by `geometry × material × layer × layout owner` and
+ * parented under that layout's layer group so layer on/off works. Per-entity
+ * hide uses the same scale-0 instance-matrix trick as
+ * {@link AcTrSharedGeometryBatch}. Selection/hover uses cloned-geometry
+ * overlays (same pattern as shared INSERT batches).
  */
 export class AcTrMeshGlyphWorldBatch {
   private readonly _buckets = new Map<string, GlyphBatchBucket>()
@@ -92,13 +101,15 @@ export class AcTrMeshGlyphWorldBatch {
       return
     }
     const layerName = meta.layerName || '0'
-    const key = `${geometry.uuid}\0${material.uuid}\0${layerName}`
+    const ownerId = meta.ownerId?.trim() || ''
+    const key = `${geometry.uuid}\0${material.uuid}\0${layerName}\0${ownerId}`
     let bucket = this._buckets.get(key)
     if (!bucket) {
       bucket = {
         geometry,
         material,
         layerName,
+        ownerId,
         matrices: [],
         objectIds: []
       }
@@ -115,12 +126,15 @@ export class AcTrMeshGlyphWorldBatch {
   }
 
   /**
-   * Builds InstancedMeshes. Prefer parenting under the layer group via
-   * `resolveLayerParent`; falls back to `fallbackParent`.
+   * Builds InstancedMeshes. Prefer parenting under the layout's layer group
+   * via `resolveLayerParent`; falls back to `fallbackParent`.
    */
   flush(
     fallbackParent: THREE.Object3D,
-    resolveLayerParent?: (layerName: string) => THREE.Object3D | undefined | null
+    resolveLayerParent?: (
+      layerName: string,
+      ownerId: string
+    ) => THREE.Object3D | undefined | null
   ): THREE.Group | null {
     if (this._buckets.size === 0) {
       return this._root
@@ -138,7 +152,11 @@ export class AcTrMeshGlyphWorldBatch {
       if (count === 0) {
         continue
       }
-      const mesh = new THREE.InstancedMesh(bucket.geometry, bucket.material, count)
+      const mesh = new THREE.InstancedMesh(
+        bucket.geometry,
+        bucket.material,
+        count
+      )
       mesh.frustumCulled = false
       mesh.name = `meshGlyph:${bucket.layerName}`
       // Picking goes through {@link intersectsObjectId} so hits map to objectId.
@@ -180,7 +198,7 @@ export class AcTrMeshGlyphWorldBatch {
         mesh.boundingBox = meshWorldBox
       }
 
-      const layerParent = resolveLayerParent?.(bucket.layerName)
+      const layerParent = resolveLayerParent?.(bucket.layerName, bucket.ownerId)
       ;(layerParent ?? this._root).add(mesh)
     }
 

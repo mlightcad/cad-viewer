@@ -202,7 +202,11 @@ export default {
     Embedded: '嵌入',
     Static: '静态',
     ModelSpace: '模型空间',
-    PaperSpace: '图纸空间'
+    PaperSpace: '图纸空间',
+    MText: '多行文字',
+    Fcf: '形位公差框格',
+    BlockReference: '块引用',
+    NoAnnotation: '无'
   },
   property: {
     general: '常规',
@@ -213,6 +217,7 @@ export default {
     shape: '形状',
     table: '表格',
     ole: 'OLE',
+    leader: '引线',
     others: '其它',
     name: '名称',
     size: '大小',
@@ -356,6 +361,23 @@ export default {
     linkName: '链接名称',
     linkPath: '链接路径',
     outputQuality: '输出质量',
-    autoOutputQuality: '自动输出质量'
+    autoOutputQuality: '自动输出质量',
+    annoType: '注释类型',
+    hasArrowHead: '箭头',
+    hasHookLine: '钩线',
+    isHookLineSameDirection: '钩线与水平方向一致',
+    isSplined: '样条曲线',
+    associatedAnnotation: '关联注释句柄',
+    byBlockColor: '随块颜色',
+    textWidth: '文字宽度',
+    horizontalDirectionX: '水平方向 X',
+    horizontalDirectionY: '水平方向 Y',
+    horizontalDirectionZ: '水平方向 Z',
+    offsetFromBlockX: '块偏移 X',
+    offsetFromBlockY: '块偏移 Y',
+    offsetFromBlockZ: '块偏移 Z',
+    offsetFromAnnotationX: '注释偏移 X',
+    offsetFromAnnotationY: '注释偏移 Y',
+    offsetFromAnnotationZ: '注释偏移 Z'
   }
 }
