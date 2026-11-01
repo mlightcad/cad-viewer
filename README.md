@@ -185,8 +185,6 @@ The goal of this project is to create a full-featured **2D AutoCAD-like system i
 
 Legend:
 - [x] Completed
-- [ ] Planned
-- [ ] ⏳ In progress
 
 ### Core File & Data Layer
 
@@ -196,16 +194,16 @@ Legend:
 * [x] DWG loading
 * [x] Export to self-contained offline HTML (embedded viewer)
 * [x] Large file streaming / incremental loading
-* [ ] ⏳ File version compatibility (R12–Latest)
+* [x] File version compatibility (R12–Latest)
 
 #### Data Model
 
 * [x] Unified entity data model
 * [x] Layer table support
 * [x] Block / insert structure
-* [ ] ⏳ Handle & object ID management: currently objectId is same as handle and represented as one string instead of bigint (int64).
-* [ ] ⏳ XData / extension dictionary support
-* [ ] Proxy entity handling
+* [ ] Handle & object ID management: currently objectId is same as handle and represented as one string instead of bigint (int64).
+* [x] XData / extension dictionary support
+* [x] Proxy entity handling
 
 ### Rendering & Performance
 
@@ -215,7 +213,7 @@ Legend:
 * [x] 2D-only optimized pipeline
 * [x] Layer-based scene organization
 * [x] Layout / paper space rendering
-* [ ] Viewport entity support
+* [x] Viewport entity support
 
 #### Performance Optimization
 
@@ -240,7 +238,7 @@ Legend:
 * [x] Layer visibility on/off
 * [x] Layer freeze / lock
 * [x] Lineweight display
-* [ ] Linetype scaling
+* [x] Linetype scaling
 * [x] Background / theme switching
 
 ### Selection & Interaction
@@ -302,9 +300,9 @@ Legend:
 #### Advanced Entities
 
 * [x] Hatch
-* [ ] Text (single-line / multi-line)
-* [ ] Dimensions (linear, aligned, angular)
-* [ ] Blocks creation & insertion
+* [x] Text (single-line / multi-line)
+* [x] Dimensions (linear, aligned, angular)
+* [x] Blocks creation & insertion
 
 ### Measurement
 
@@ -312,14 +310,14 @@ Legend:
 * [x] Arc length
 * [x] Area
 * [x] Angle
-* [ ] Coordinate
-* [ ] Entity statistics (length, area, count)
+* [x] Coordinate
+* [x] Entity statistics (length, area, count)
 
 ### Dimension
 
 * [x] Linear dimension
-* [ ] Angle dimension
-* [ ] Coordinate
+* [x] Angle dimension
+* [x] Coordinate
 
 ### Properties & UI Panels
 
@@ -332,7 +330,7 @@ Legend:
 #### Panels & UI
 
 * [x] Layer manager
-* [ ] Block manager
+* [x] Block manager
 * [x] Command history / console
 * [x] Status bar (snap, ortho, grid)
 
@@ -349,6 +347,7 @@ Legend:
 * [x] Framework-agnostic core
 * [ ] React integration example
 * [x] Vue integration example
+* [x] [Next.js integration example](https://github.com/mlightcad/cad-viewer-nextjs-demo)
 * [ ] OpenLayers / Map integration
 * [ ] CMS / Notion embedding
 
@@ -364,7 +363,7 @@ Legend:
 
 * [x] Local editing in browser
 * [x] Save to DXF
-* [ ] Save change set / diff
+* [x] Save change set / diff
 * [ ] IndexedDB persistence
 
 #### Online Editor
@@ -378,6 +377,7 @@ Legend:
 ### Platform Targets
 
 * [x] Google Drive Integration (Picker data source; Drive “Open with” optional follow-up)
+* [x] OneDrive Integration (Microsoft OneDrive / SharePoint data source)
 * [ ] WeChat Mini Program viewer
 * [x] Mobile browser support (responsive layout & touch)
 

@@ -185,8 +185,6 @@ El objetivo de este proyecto es crear un **sistema 2D similar a AutoCAD en el na
 
 Leyenda:
 - [x] Completado
-- [ ] Planificado
-- [ ] ⏳ En progreso
 
 ### Capa central de archivos y datos
 
@@ -196,16 +194,16 @@ Leyenda:
 * [x] Carga de DWG
 * [x] Exportación a HTML sin conexión autocontenido (visor integrado)
 * [x] Transmisión de archivos grandes / carga incremental
-* [ ] ⏳ Compatibilidad de versiones de archivo (R12–Latest)
+* [x] Compatibilidad de versiones de archivo (R12–Latest)
 
 #### Modelo de datos
 
 * [x] Modelo de datos de entidades unificado
 * [x] Soporte de tabla de capas
 * [x] Estructura de bloques / inserciones
-* [ ] ⏳ Gestión de handle e ID de objeto: actualmente objectId es igual al handle y se representa como una cadena en lugar de bigint (int64).
-* [ ] ⏳ Soporte de XData / diccionario de extensiones
-* [ ] Manejo de entidades proxy
+* [ ] Gestión de handle e ID de objeto: actualmente objectId es igual al handle y se representa como una cadena en lugar de bigint (int64).
+* [x] Soporte de XData / diccionario de extensiones
+* [x] Manejo de entidades proxy
 
 ### Renderizado y rendimiento
 
@@ -215,7 +213,7 @@ Leyenda:
 * [x] Canal optimizado solo para 2D
 * [x] Organización de escena por capas
 * [x] Renderizado de layout / espacio papel
-* [ ] Soporte de entidades viewport
+* [x] Soporte de entidades viewport
 
 #### Optimización de rendimiento
 
@@ -240,7 +238,7 @@ Leyenda:
 * [x] Visibilidad de capas activa/inactiva
 * [x] Congelar / bloquear capas
 * [x] Visualización de grosor de línea
-* [ ] Escalado de tipo de línea
+* [x] Escalado de tipo de línea
 * [x] Cambio de fondo / tema
 
 ### Selección e interacción
@@ -302,9 +300,9 @@ Leyenda:
 #### Entidades avanzadas
 
 * [x] Sombreado
-* [ ] Texto (una línea / multilínea)
-* [ ] Cotas (lineal, alineada, angular)
-* [ ] Creación e inserción de bloques
+* [x] Texto (una línea / multilínea)
+* [x] Cotas (lineal, alineada, angular)
+* [x] Creación e inserción de bloques
 
 ### Medición
 
@@ -312,14 +310,14 @@ Leyenda:
 * [x] Longitud de arco
 * [x] Área
 * [x] Ángulo
-* [ ] Coordenada
-* [ ] Estadísticas de entidades (longitud, área, recuento)
+* [x] Coordenada
+* [x] Estadísticas de entidades (longitud, área, recuento)
 
 ### Cota
 
 * [x] Cota lineal
-* [ ] Cota angular
-* [ ] Coordenada
+* [x] Cota angular
+* [x] Coordenada
 
 ### Propiedades y paneles de interfaz
 
@@ -332,7 +330,7 @@ Leyenda:
 #### Paneles e interfaz
 
 * [x] Administrador de capas
-* [ ] Administrador de bloques
+* [x] Administrador de bloques
 * [x] Historial de comandos / consola
 * [x] Barra de estado (ajuste, ortogonal, cuadrícula)
 
@@ -349,6 +347,7 @@ Leyenda:
 * [x] Núcleo independiente del framework
 * [ ] Ejemplo de integración con React
 * [x] Ejemplo de integración con Vue
+* [x] [Ejemplo de integración con Next.js](https://github.com/mlightcad/cad-viewer-nextjs-demo)
 * [ ] Integración con OpenLayers / Map
 * [ ] Incrustación en CMS / Notion
 
@@ -364,7 +363,7 @@ Leyenda:
 
 * [x] Edición local en el navegador
 * [x] Guardar en DXF
-* [ ] Guardar conjunto de cambios / diff
+* [x] Guardar conjunto de cambios / diff
 * [ ] Persistencia en IndexedDB
 
 #### Editor en línea
@@ -378,6 +377,7 @@ Leyenda:
 ### Plataformas objetivo
 
 * [x] Integración con Google Drive (origen de datos Picker; Drive “Open with” como seguimiento opcional)
+* [x] Integración con OneDrive (origen de datos de Microsoft OneDrive / SharePoint)
 * [ ] Visor de Mini Program de WeChat
 * [x] Soporte de navegador móvil (diseño responsive y gestos táctiles)
 

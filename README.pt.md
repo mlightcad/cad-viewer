@@ -185,8 +185,6 @@ O objetivo deste projeto é criar um **sistema 2D semelhante ao AutoCAD no naveg
 
 Legenda:
 - [x] Concluído
-- [ ] Planejado
-- [ ] ⏳ Em andamento
 
 ### Camada central de arquivos e dados
 
@@ -196,16 +194,16 @@ Legenda:
 * [x] Carregamento DWG
 * [x] Exportação para HTML offline autossuficiente (visualizador incorporado)
 * [x] Streaming de arquivos grandes / carregamento incremental
-* [ ] ⏳ Compatibilidade de versão de arquivo (R12–Latest)
+* [x] Compatibilidade de versão de arquivo (R12–Latest)
 
 #### Modelo de dados
 
 * [x] Modelo de dados unificado de entidades
 * [x] Suporte a tabela de camadas
 * [x] Estrutura de bloco / insert
-* [ ] ⏳ Gerenciamento de handle e object ID: atualmente objectId é igual ao handle e representado como uma string em vez de bigint (int64).
-* [ ] ⏳ Suporte a XData / dicionário de extensão
-* [ ] Tratamento de entidades proxy
+* [ ] Gerenciamento de handle e object ID: atualmente objectId é igual ao handle e representado como uma string em vez de bigint (int64).
+* [x] Suporte a XData / dicionário de extensão
+* [x] Tratamento de entidades proxy
 
 ### Renderização e desempenho
 
@@ -215,7 +213,7 @@ Legenda:
 * [x] Pipeline otimizado apenas 2D
 * [x] Organização de cena baseada em camadas
 * [x] Renderização de layout / paper space
-* [ ] Suporte a entidade viewport
+* [x] Suporte a entidade viewport
 
 #### Otimização de desempenho
 
@@ -240,7 +238,7 @@ Legenda:
 * [x] Visibilidade de camada ligada/desligada
 * [x] Congelar / bloquear camada
 * [x] Exibição de espessura de linha
-* [ ] Escala de tipo de linha
+* [x] Escala de tipo de linha
 * [x] Alternância de fundo / tema
 
 ### Seleção e interação
@@ -302,9 +300,9 @@ Legenda:
 #### Entidades avançadas
 
 * [x] Hachura
-* [ ] Texto (linha única / multilinha)
-* [ ] Cotas (linear, alinhada, angular)
-* [ ] Criação e inserção de blocos
+* [x] Texto (linha única / multilinha)
+* [x] Cotas (linear, alinhada, angular)
+* [x] Criação e inserção de blocos
 
 ### Medição
 
@@ -312,14 +310,14 @@ Legenda:
 * [x] Comprimento de arco
 * [x] Área
 * [x] Ângulo
-* [ ] Coordenada
-* [ ] Estatísticas de entidades (comprimento, área, contagem)
+* [x] Coordenada
+* [x] Estatísticas de entidades (comprimento, área, contagem)
 
 ### Cota
 
 * [x] Cota linear
-* [ ] Cota angular
-* [ ] Coordenada
+* [x] Cota angular
+* [x] Coordenada
 
 ### Propriedades e painéis de UI
 
@@ -332,7 +330,7 @@ Legenda:
 #### Painéis e UI
 
 * [x] Gerenciador de camadas
-* [ ] Gerenciador de blocos
+* [x] Gerenciador de blocos
 * [x] Histórico de comandos / console
 * [x] Barra de status (captura, ortogonal, grade)
 
@@ -349,6 +347,7 @@ Legenda:
 * [x] Núcleo agnóstico a framework
 * [ ] Exemplo de integração React
 * [x] Exemplo de integração Vue
+* [x] [Exemplo de integração Next.js](https://github.com/mlightcad/cad-viewer-nextjs-demo)
 * [ ] Integração OpenLayers / Map
 * [ ] Incorporação CMS / Notion
 
@@ -364,7 +363,7 @@ Legenda:
 
 * [x] Edição local no navegador
 * [x] Salvar em DXF
-* [ ] Salvar conjunto de alterações / diff
+* [x] Salvar conjunto de alterações / diff
 * [ ] Persistência IndexedDB
 
 #### Editor online
@@ -378,6 +377,7 @@ Legenda:
 ### Plataformas-alvo
 
 * [x] Integração com Google Drive (fonte de dados Picker; Drive “Open with” como acompanhamento opcional)
+* [x] Integração com OneDrive (fonte de dados do Microsoft OneDrive / SharePoint)
 * [ ] Visualizador WeChat Mini Program
 * [x] Suporte a navegador mobile (layout responsivo e gestos de toque)
 

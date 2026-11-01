@@ -185,8 +185,6 @@ Cílem tohoto projektu je vytvořit plnohodnotný **2D systém podobný AutoCADu
 
 Legenda:
 - [x] Dokončeno
-- [ ] Plánováno
-- [ ] ⏳ Probíhá
 
 ### Jádro souborů a datové vrstvy
 
@@ -196,16 +194,16 @@ Legenda:
 * [x] Načítání DWG
 * [x] Export do samostatného offline HTML (vložený prohlížeč)
 * [x] Streamování / přírůstkové načítání velkých souborů
-* [ ] ⏳ Kompatibilita verzí souborů (R12–Latest)
+* [x] Kompatibilita verzí souborů (R12–Latest)
 
 #### Datový model
 
 * [x] Jednotný datový model entit
 * [x] Podpora tabulky vrstev
 * [x] Struktura bloků / vložení
-* [ ] ⏳ Správa handle a object ID: v současnosti je objectId stejný jako handle a reprezentován jako jeden řetězec místo bigint (int64).
-* [ ] ⏳ Podpora XData / rozšiřujícího slovníku
-* [ ] Zpracování proxy entit
+* [ ] Správa handle a object ID: v současnosti je objectId stejný jako handle a reprezentován jako jeden řetězec místo bigint (int64).
+* [x] Podpora XData / rozšiřujícího slovníku
+* [x] Zpracování proxy entit
 
 ### Vykreslování a výkon
 
@@ -215,7 +213,7 @@ Legenda:
 * [x] Pipeline optimalizovaná pouze pro 2D
 * [x] Organizace scény podle vrstev
 * [x] Vykreslování layoutu / papírového prostoru
-* [ ] Podpora entit viewportu
+* [x] Podpora entit viewportu
 
 #### Optimalizace výkonu
 
@@ -240,7 +238,7 @@ Legenda:
 * [x] Viditelnost vrstev zap/vyp
 * [x] Zmrazení / uzamčení vrstev
 * [x] Zobrazení tloušťky čar
-* [ ] Měřítko typů čar
+* [x] Měřítko typů čar
 * [x] Přepínání pozadí / motivu
 
 ### Výběr a interakce
@@ -302,9 +300,9 @@ Legenda:
 #### Pokročilé entity
 
 * [x] Šrafování
-* [ ] Text (jednořádkový / víceřádkový)
-* [ ] Kóty (lineární, zarovnané, úhlové)
-* [ ] Vytváření a vkládání bloků
+* [x] Text (jednořádkový / víceřádkový)
+* [x] Kóty (lineární, zarovnané, úhlové)
+* [x] Vytváření a vkládání bloků
 
 ### Měření
 
@@ -312,14 +310,14 @@ Legenda:
 * [x] Délka oblouku
 * [x] Plocha
 * [x] Úhel
-* [ ] Souřadnice
-* [ ] Statistiky entit (délka, plocha, počet)
+* [x] Souřadnice
+* [x] Statistiky entit (délka, plocha, počet)
 
 ### Kóty
 
 * [x] Lineární kóta
-* [ ] Úhlová kóta
-* [ ] Souřadnice
+* [x] Úhlová kóta
+* [x] Souřadnice
 
 ### Vlastnosti a UI panely
 
@@ -332,7 +330,7 @@ Legenda:
 #### Panely a UI
 
 * [x] Správce vrstev
-* [ ] Správce bloků
+* [x] Správce bloků
 * [x] Historie příkazů / konzole
 * [x] Stavový řádek (přichycení, orto, mřížka)
 
@@ -349,6 +347,7 @@ Legenda:
 * [x] Jádro nezávislé na frameworku
 * [ ] Příklad integrace React
 * [x] Příklad integrace Vue
+* [x] [Příklad integrace Next.js](https://github.com/mlightcad/cad-viewer-nextjs-demo)
 * [ ] Integrace OpenLayers / Map
 * [ ] Vkládání do CMS / Notion
 
@@ -364,7 +363,7 @@ Legenda:
 
 * [x] Lokální úpravy v prohlížeči
 * [x] Uložení do DXF
-* [ ] Uložení sady změn / diff
+* [x] Uložení sady změn / diff
 * [ ] Perzistence IndexedDB
 
 #### Online editor
@@ -378,6 +377,7 @@ Legenda:
 ### Cílové platformy
 
 * [x] Integrace Google Drive (datový zdroj Picker; Drive „Open with“ jako volitelné pokračování)
+* [x] Integrace OneDrive (datový zdroj Microsoft OneDrive / SharePoint)
 * [ ] Prohlížeč pro WeChat Mini Program
 * [x] Podpora mobilního prohlížeče (responzivní rozložení a dotykové ovládání)
 
