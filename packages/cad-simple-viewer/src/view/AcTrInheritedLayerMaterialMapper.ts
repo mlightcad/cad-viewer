@@ -1,9 +1,9 @@
 import { AcGiSubEntityTraits } from '@mlightcad/data-model'
 import {
+  type AcTrMaterialMetadataPatch,
   AcTrRenderer,
   getMaterialMetadata,
   getSceneDrawableUserData,
-  hasByLayerBinding,
   setMaterialMetadata,
   syncStyleMaterialIdFromMaterials
 } from '@mlightcad/three-renderer'
@@ -113,6 +113,11 @@ export class AcTrInheritedLayerMaterialMapper {
    * INSERT remapping. Those materials must still inherit the INSERT layer when their colour
    * is layer-bound, while explicit ACI-7 entities on layer 0 stay untouched.
    *
+   * An explicit ACI-7 colour (`isByLayerColor === false`) is a real entity colour, not an
+   * inherited one: AutoCAD keeps it white no matter which layer the INSERT lives on. Only a
+   * *missing* binding (`isByLayerColor == null`, seen when a conversion path drops the flag)
+   * may be inferred from the remaining ByLayer markers.
+   *
    * @param material - Candidate material to evaluate for INSERT-layer rebinding.
    * @param sourceLayerName - Layer name from the block definition before inheritance.
    * @returns True when the material should be rebound to the INSERT layer.
@@ -128,26 +133,20 @@ export class AcTrInheritedLayerMaterialMapper {
     if (sourceLayerName !== '0') {
       return false
     }
-    if (metadata.isByLayerColor === true) {
-      return true
+    if (metadata.isByLayerColor != null) {
+      return metadata.isByLayerColor === true
     }
-    return (
-      sourceLayerName === '0' &&
-      (metadata.isByLayerLineType === true ||
-        metadata.isByLayerLineWeight === true ||
-        metadata.isByLayerTransparency === true)
-    )
+    return this.byLayerColorBindingWasLost(metadata)
   }
 
   /**
-   * Some DXF conversion paths lose `isByLayerColor` on layer-0 block contents while still
-   * retaining other ByLayer markers (lineType/lineWeight/transparency). For AutoCAD-compatible
-   * INSERT inheritance, treat such colours as inheritable when remapping from layer "0".
+   * Repairs layer-0 materials whose colour binding was dropped by a conversion path while
+   * other ByLayer markers (lineType/lineWeight/transparency) survived.
    *
-   * That repair is only for the ByLayer→ACI-7 (foreground) case. Explicit absolute colours
-   * (`isByLayerColor === false` and not foreground) must never be promoted — otherwise a
-   * solid hatch with ACI 251 on layer 0 inherits the INSERT layer colour (often ACI 7 white)
-   * and legend headers / non-ByLayer fills wash out.
+   * Both explicit colours are left alone: an absolute colour (`isByLayerColor === false`,
+   * not foreground) must not inherit the INSERT layer, otherwise a solid hatch with ACI 251
+   * on layer 0 washes out to the INSERT layer's ACI 7; and an explicit ACI-7 foreground
+   * colour must stay white/black instead of becoming the INSERT layer colour (e.g. red).
    *
    * @param material - Material whose ByLayer metadata may need normalization.
    * @param sourceLayerName - Source bucket layer name (typically `"0"`).
@@ -158,15 +157,26 @@ export class AcTrInheritedLayerMaterialMapper {
     sourceLayerName: string
   ): THREE.Material {
     const metadata = getMaterialMetadata(material)
-    if (metadata.isByLayerColor === false && metadata.isForeground !== true) {
+    if (metadata.isByLayerColor != null) {
       return material
     }
-    const hasAnyOtherByLayerBinding =
-      hasByLayerBinding(metadata) && metadata.isByLayerColor !== true
-
-    if (sourceLayerName === '0' && hasAnyOtherByLayerBinding) {
+    if (sourceLayerName === '0' && this.byLayerColorBindingWasLost(metadata)) {
       setMaterialMetadata(material, { isByLayerColor: true })
     }
     return material
+  }
+
+  /**
+   * Whether a material lacking `isByLayerColor` still carries another ByLayer trait, which
+   * is the only signal that its colour was layer-bound before the flag was lost.
+   */
+  private byLayerColorBindingWasLost(
+    metadata: AcTrMaterialMetadataPatch
+  ): boolean {
+    return (
+      metadata.isByLayerLineType === true ||
+      metadata.isByLayerLineWeight === true ||
+      metadata.isByLayerTransparency === true
+    )
   }
 }
