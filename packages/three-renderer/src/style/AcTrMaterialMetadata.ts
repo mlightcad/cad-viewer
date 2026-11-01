@@ -37,6 +37,16 @@ export interface AcTrMaterialMetadata extends AcTrByLayerBindingFlags {
   drawOrder?: number
   /** Culling side used by fill materials. Present only when explicitly set. */
   side?: 'front' | 'back'
+  /**
+   * True when `isByLayerColor` reflects authored provenance rather than being
+   * inferred from a colour that was already resolved against the layer table.
+   *
+   * Only set when `data-model` reported `isColorByLayer`. It lets consumers
+   * distinguish "we know this colour is explicit" from "this colour looks
+   * explicit but its provenance was lost", which need opposite handling for
+   * layer-0 INSERT inheritance.
+   */
+  hasColorProvenance?: boolean
 }
 
 /**

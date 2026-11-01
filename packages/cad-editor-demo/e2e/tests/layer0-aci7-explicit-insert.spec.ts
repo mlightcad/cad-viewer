@@ -36,6 +36,7 @@ type SceneMaterial = {
   key: string | undefined
   isByLayerColor: boolean | undefined
   isForeground: boolean | undefined
+  hasColorProvenance: boolean | undefined
 }
 
 async function waitForViewer(page: Page) {
@@ -121,7 +122,10 @@ async function readMaterials(page: Page): Promise<SceneMaterial[]> {
           hex,
           key,
           isByLayerColor: mat.userData?.isByLayerColor as boolean | undefined,
-          isForeground: mat.userData?.isForeground as boolean | undefined
+          isForeground: mat.userData?.isForeground as boolean | undefined,
+          hasColorProvenance: mat.userData?.hasColorProvenance as
+            | boolean
+            | undefined
         })
       }
     })

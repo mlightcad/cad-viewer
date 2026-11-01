@@ -135,7 +135,9 @@ describe('AcTrInheritedLayerMaterialMapper', () => {
       isByLayerLineType: false,
       isByLayerLineWeight: true,
       isByLayerTransparency: false,
-      isForeground: true
+      isForeground: true,
+      // Provenance is what makes `isByLayerColor: false` authoritative.
+      hasColorProvenance: true
     })
 
     const getLayerBoundMaterial = jest.fn(
@@ -159,10 +161,14 @@ describe('AcTrInheritedLayerMaterialMapper', () => {
 
     mapper.remap([mesh], '0', 'INSERT')
 
+    // The colour is explicitly ACI-7, so the material must not be promoted to
+    // ByLayer and must not be rebound to the red INSERT layer material.
     expect(getMaterialMetadata(sourceMaterial).isByLayerColor).toBe(false)
-    const rebound = getLayerBoundMaterial.mock.calls[0][0] as THREE.Material
-    expect(getMaterialMetadata(rebound).isByLayerColor).toBe(false)
-    expect((rebound as THREE.LineBasicMaterial).color.getHex()).toBe(0xffffff)
+    expect(getLayerBoundMaterial).not.toHaveBeenCalled()
+    expect(mesh.material).toBe(sourceMaterial)
+    expect((sourceMaterial as THREE.LineBasicMaterial).color.getHex()).toBe(
+      0xffffff
+    )
   })
 
   it('does not promote absolute non-foreground colour when only lineweight is ByLayer', () => {

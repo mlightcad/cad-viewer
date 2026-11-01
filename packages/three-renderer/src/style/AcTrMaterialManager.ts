@@ -576,7 +576,10 @@ export abstract class AcTrMaterialManager<T> {
       isForeground,
       isBackgroundFill,
       drawOrder: traits.drawOrder ?? 0,
-      materialKey: key
+      materialKey: key,
+      hasColorProvenance:
+        (traits as AcGiSubEntityTraits & Partial<AcGiColorByLayerProvenance>)
+          .isColorByLayer != null
     })
 
     this.cache[key] = material
@@ -670,9 +673,23 @@ export abstract class AcTrMaterialManager<T> {
 
   /**
    * Builds the colour portion of a material cache key from symbolic CAD colour.
+   *
+   * Authored provenance is part of the key. A ByLayer colour on an ACI-7 layer
+   * and an explicit ACI-7 both resolve to the same symbolic colour, so without
+   * it they share one cache entry and the first creator's `isByLayerColor`
+   * leaks to the other. INSERT layer-0 inheritance then either promotes an
+   * explicit ACI-7 frame into the INSERT layer colour or leaves ByLayer content
+   * behind — both wrong, and dependent on draw order.
    */
   protected buildKeyColorSegment(traits: AcGiSubEntityTraits): string {
-    return traits.color.toString()
+    const provenance = (
+      traits as AcGiSubEntityTraits & Partial<AcGiColorByLayerProvenance>
+    ).isColorByLayer
+    const colorKey = traits.color.toString()
+    // Absent provenance (older data-model) keeps the historical key.
+    return provenance == null
+      ? colorKey
+      : `${colorKey}_${provenance ? 'bylayer' : 'explicit'}`
   }
 
   /**

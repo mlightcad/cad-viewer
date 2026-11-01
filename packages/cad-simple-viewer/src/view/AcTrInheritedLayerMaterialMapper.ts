@@ -111,10 +111,10 @@ export class AcTrInheritedLayerMaterialMapper {
   /**
    * Whether a layer-0 block material should be rebound to the INSERT layer.
    *
-   * With truthful `isByLayerColor` metadata every case is decidable directly:
-   * a ByLayer colour inherits, an explicit colour (including ACI-7) does not.
-   * The foreground check only short-circuits non-layer-0 sources, where the
-   * bucket layer was authored explicitly and must keep its own colour.
+   * With authored provenance the answer is exact: a ByLayer colour inherits, an
+   * explicit colour (including ACI-7) does not. Without provenance the colour is
+   * already resolved and looks explicit either way, so only a genuine ByLayer
+   * `isByLayerColor` or a surviving ByLayer sibling trait may justify inheriting.
    *
    * @param material - Candidate material to evaluate for INSERT-layer rebinding.
    * @param sourceLayerName - Layer name from the block definition before inheritance.
@@ -128,11 +128,14 @@ export class AcTrInheritedLayerMaterialMapper {
     if (metadata.isByLayerColor === true) {
       return true
     }
+    if (metadata.hasColorProvenance === true) {
+      return false
+    }
     if (sourceLayerName !== '0') {
       return false
     }
-    // Layer-0 colour that is still not known to be ByLayer: only other
-    // ByLayer traits can justify inheriting, never the colour itself.
+    // Legacy path: colour provenance was lost during conversion, so only other
+    // ByLayer traits can justify inheriting — never the colour itself.
     return (
       metadata.isByLayerLineType === true ||
       metadata.isByLayerLineWeight === true ||
@@ -141,13 +144,16 @@ export class AcTrInheritedLayerMaterialMapper {
   }
 
   /**
-   * Repairs layer-0 materials whose colour binding was dropped by a conversion
-   * path while other ByLayer markers (lineType/lineWeight/transparency) survived.
+   * Repairs layer-0 materials whose colour binding was dropped or resolved
+   * before it could be recorded, while other ByLayer markers
+   * (lineType/lineWeight/transparency) survived.
    *
-   * Both explicit colours are left alone. With `isColorByLayer` provenance now
-   * carried on the traits, an ACI-7 entity that was authored ByLayer already
-   * reports `isByLayerColor === true`; one that was authored explicitly reports
-   * `false` and must keep its own colour.
+   * An explicit colour must never be promoted. With `isColorByLayer` provenance
+   * available an explicit ACI-7 reports `isByLayerColor === false` and is left
+   * alone; an explicit absolute colour is likewise untouched. Without
+   * provenance (older `data-model`), a layer-0 ByLayer colour and an explicit
+   * ACI-7 both arrive as `false` + foreground, so the legacy promotion is
+   * required — dropping it would stop layer-0 content from inheriting.
    *
    * @param material - Material whose ByLayer metadata may need normalization.
    * @param sourceLayerName - Source bucket layer name (typically `"0"`).
@@ -158,10 +164,20 @@ export class AcTrInheritedLayerMaterialMapper {
     sourceLayerName: string
   ): THREE.Material {
     const metadata = getMaterialMetadata(material)
-    if (metadata.isByLayerColor != null) {
+    if (metadata.isByLayerColor === false && metadata.isForeground !== true) {
       return material
     }
-    if (sourceLayerName === '0' && hasByLayerBinding(metadata)) {
+    // With authored provenance, `isByLayerColor === false` is authoritative: the
+    // colour really is explicit (an ACI-7 frame inside a red layer must stay
+    // white), so it must never be promoted.
+    if (metadata.hasColorProvenance === true) {
+      return material
+    }
+    if (
+      sourceLayerName === '0' &&
+      hasByLayerBinding(metadata) &&
+      metadata.isByLayerColor !== true
+    ) {
       setMaterialMetadata(material, { isByLayerColor: true })
     }
     return material
