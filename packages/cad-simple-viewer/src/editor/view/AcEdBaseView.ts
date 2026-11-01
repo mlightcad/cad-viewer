@@ -44,6 +44,7 @@ import {
   isEffectiveSpatialQueryHit
 } from './AcEdSpatialQueryResult'
 import { AcEdViewMode } from './AcEdViewMode'
+import { acedMergeSelectionIds } from './AcEdViewportBoxSelection'
 
 export { AcEdViewMode } from './AcEdViewMode'
 
@@ -1026,10 +1027,38 @@ export abstract class AcEdBaseView {
     const results = this.search(box, { selectionMode: mode }).filter(
       isEffectiveSpatialQueryHit
     )
-    if (mode === 'crossing') {
-      return this.refineCrossingSelectionHits(box, results)
-    }
-    return results.map(item => item.id)
+    const ids =
+      mode === 'crossing'
+        ? this.refineCrossingSelectionHits(box, results)
+        : results.map(item => item.id)
+
+    // Paper-space layouts only index their own entities, so model-space
+    // content drawn through a viewport is invisible to the query above. Merge
+    // the drill-through hits so box selection matches click selection.
+    const drillThroughIds = this.collectViewportDrillThroughSelectionIds(
+      box,
+      mode
+    )
+    return acedMergeSelectionIds(ids, drillThroughIds)
+  }
+
+  /**
+   * Collects model-space entities selected through paper-space viewports.
+   *
+   * Click selection drills through a viewport into the model-space content it
+   * renders; box selection must do the same or the same entities become
+   * unselectable with a drag. Layouts without viewports (model space) have
+   * nothing to drill into, so the default returns no ids.
+   *
+   * @param _box - Pick rectangle in the active layout's WCS.
+   * @param _mode - Window or crossing semantics.
+   * @returns Ids of model-space entities visible through the viewports.
+   */
+  protected collectViewportDrillThroughSelectionIds(
+    _box: AcGeBox2d,
+    _mode: AcEdSelectionMode
+  ): AcDbObjectId[] {
+    return []
   }
 
   /**

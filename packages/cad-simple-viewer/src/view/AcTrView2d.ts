@@ -58,6 +58,7 @@ import {
   acedAttachMobileBoxGesture,
   AcEdBaseView,
   AcEdCalculateSizeCallback,
+  acedCollectViewportBoxSelectionIds,
   AcEdConditionWaiter,
   AcEdCorsorType,
   AcEdGripManager,
@@ -67,11 +68,13 @@ import {
   AcEdMTextEditor,
   AcEdOpenMode,
   AcEdSelectionAction,
+  AcEdSelectionMode,
   acedShouldIgnoreCompatMouse,
   AcEdSnapLoupeViewState,
   AcEdSpatialQueryResultItem,
   AcEdSpatialQueryResultItemEx,
   AcEdViewMode,
+  AcEdViewportBoxProjection,
   AcEdViewportCoordinateMapper,
   eventBus,
   resolvePointerSelectionAction
@@ -2527,6 +2530,48 @@ export class AcTrView2d extends AcEdBaseView {
    */
   selectByBox(box: AcGeBox2d) {
     this.selectByBoxWithMode(box, 'crossing', 'add')
+  }
+
+  /**
+   * Collects model-space entities selected through the active layout's paper
+   * viewports.
+   *
+   * Box selection used to query only the active layout's spatial index, so
+   * model-space content rendered inside a viewport could be clicked (pick
+   * drills through) but never box-selected — reported for LEADER entities in
+   * `布局1`. Each viewport's visible slice of the pick rectangle is mapped to
+   * model WCS, queried, and mapped back so window / crossing keeps its exact
+   * AutoCAD meaning.
+   */
+  protected override collectViewportDrillThroughSelectionIds(
+    box: AcGeBox2d,
+    mode: AcEdSelectionMode
+  ): AcDbObjectId[] {
+    const activeLayoutView = this.activeLayoutView
+    const modelLayout = this._scene.modelSpaceLayout
+    if (!activeLayoutView || !modelLayout) return []
+    if (activeLayoutView.layoutBtrId === this._scene.modelSpaceBtrId) return []
+
+    const viewports: AcEdViewportBoxProjection[] = []
+    for (const vpView of activeLayoutView.viewportViews) {
+      viewports.push({
+        paperBox: vpView.viewport.box,
+        frozenLayers: vpView.viewport.frozenLayers,
+        paperPointToModel: point => vpView.paperPointToModel(point),
+        modelPointToPaper: point => vpView.modelPointToPaper(point)
+      })
+    }
+    if (viewports.length === 0) return []
+
+    const database = AcApDocManager.tryGetInstance()?.curDocument?.database
+    return acedCollectViewportBoxSelectionIds({
+      selectionBox: box,
+      mode,
+      viewports,
+      searchModel: (modelBox, selectionMode) =>
+        modelLayout.search(modelBox, { selectionMode }),
+      entityOf: id => database?.tables.blockTable.getEntityById(id) ?? undefined
+    })
   }
 
   /**
