@@ -1,4 +1,9 @@
-import { AcDbEntity, AcGeBox2d, AcGePoint3dLike } from '@mlightcad/data-model'
+import {
+  AcDbEntity,
+  AcGeBox2d,
+  AcGePoint2dLike,
+  AcGePoint3dLike
+} from '@mlightcad/data-model'
 
 /**
  * Minimal line primitive shape used for crossing-selection refinement.
@@ -18,11 +23,12 @@ type SelectionIntersectLinePrimitive = {
  * Returns whether a line segment intersects or touches an axis-aligned box in XY.
  *
  * Endpoints inside the box count as a hit. Otherwise the segment is tested
- * against the four box edges.
+ * against the four box edges. Only X/Y are read, so both 2D and 3D points are
+ * accepted.
  */
 export function acedLineSegmentIntersectsBox2d(
-  start: AcGePoint3dLike,
-  end: AcGePoint3dLike,
+  start: AcGePoint2dLike | AcGePoint3dLike,
+  end: AcGePoint2dLike | AcGePoint3dLike,
   box: AcGeBox2d
 ): boolean {
   if (box.containsPoint(start) || box.containsPoint(end)) {
@@ -60,18 +66,27 @@ export function acedLineSegmentIntersectsBox2d(
  *
  * Line segments are tested precisely. Other primitive kinds fall back to
  * `true` so arc/spline AABB hits stay selectable until dedicated tests exist.
+ *
+ * @param primitive - Curve primitive in model WCS.
+ * @param box - Selection box, in the coordinate system `transform` maps to.
+ * @param transform - Optional point mapping applied to the primitive first.
+ *   Paper-space viewport selection passes `modelPointToPaper` so a twisted
+ *   viewport tests the real rotated geometry instead of its larger AABB.
  */
 export function acedPrimitiveIntersectsSelectionBox(
   primitive: { kind: string },
-  box: AcGeBox2d
+  box: AcGeBox2d,
+  transform?: (point: AcGePoint3dLike) => { x: number; y: number }
 ): boolean {
   if (primitive.kind === 'line') {
     const linePrimitive = primitive as SelectionIntersectLinePrimitive
-    return acedLineSegmentIntersectsBox2d(
-      linePrimitive.line.startPoint,
-      linePrimitive.line.endPoint,
-      box
-    )
+    const start = transform
+      ? transform(linePrimitive.line.startPoint)
+      : linePrimitive.line.startPoint
+    const end = transform
+      ? transform(linePrimitive.line.endPoint)
+      : linePrimitive.line.endPoint
+    return acedLineSegmentIntersectsBox2d(start, end, box)
   }
   return true
 }
@@ -83,17 +98,22 @@ export function acedPrimitiveIntersectsSelectionBox(
  * spatial-index AABB hit is preserved. Polyline / line entities are tested
  * against the box so long thin AABBs do not false-positive when the pick
  * rectangle sits in empty space inside a large closed boundary.
+ *
+ * @param entity - Entity whose drawable curves are tested.
+ * @param box - Selection box in the coordinate system `transform` produces.
+ * @param transform - Optional point mapping applied to each curve point first.
  */
 export function acedEntityIntersectsSelectionBox(
   entity: AcDbEntity,
-  box: AcGeBox2d
+  box: AcGeBox2d,
+  transform?: (point: AcGePoint3dLike) => { x: number; y: number }
 ): boolean {
   const curves = entity.subGetIntersectCurves()
   if (curves.length === 0) {
     return true
   }
   for (const primitive of curves) {
-    if (acedPrimitiveIntersectsSelectionBox(primitive, box)) {
+    if (acedPrimitiveIntersectsSelectionBox(primitive, box, transform)) {
       return true
     }
   }
