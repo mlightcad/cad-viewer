@@ -249,7 +249,8 @@ export function snapshotSkeletonFromManifest(
       lineBatches: [],
       meshBatches: [],
       viewports: layout.viewports,
-      ...(layout.savedView ? { savedView: layout.savedView } : {})
+      ...(layout.savedView ? { savedView: layout.savedView } : {}),
+      ...(layout.fitExtents ? { fitExtents: layout.fitExtents } : {})
     }))
   }
 }

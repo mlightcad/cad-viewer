@@ -248,6 +248,7 @@ function collectPackageJobs(
       isModelSpace: layout.isModelSpace,
       viewports: layout.viewports,
       ...(layout.savedView ? { savedView: layout.savedView } : {}),
+      ...(layout.fitExtents ? { fitExtents: layout.fitExtents } : {}),
       chunkIds
     }
 

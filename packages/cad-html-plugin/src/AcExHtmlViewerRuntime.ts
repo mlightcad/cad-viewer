@@ -36,7 +36,9 @@ import {
   collectLayoutBatchExtentEntries,
   computeIntelligentExtentsFromBatchEntries,
   computeLayerExtentsMap,
-  resolveLayoutViewExtents} from '@mlightcad/cad-html-core'
+  resolveLayoutFallbackExtents,
+  resolveLayoutViewExtents
+} from '@mlightcad/cad-html-core'
 import {
   ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY,
   createAcExOrderedBytePrefetcher,
@@ -737,6 +739,14 @@ async function startViewer(): Promise<void> {
   }
   let layout = initialLayout
 
+  /**
+   * Last-resort box for a layout with neither geometry nor an export-time fit
+   * box. See {@link resolveLayoutFallbackExtents} for why the active layout
+   * prefers `meta.viewExtents`.
+   */
+  const fallbackExtentsForLayout = (target: AcExLayoutSnapshot): AcExExtents =>
+    resolveLayoutFallbackExtents(target, snapshot)
+
   const layerVisible = new Map(
     snapshot.layers.map(layer => [layer.name, layer.visible])
   )
@@ -1319,10 +1329,6 @@ async function startViewer(): Promise<void> {
   >()
   layerExtentsByLayout.set(layout.btrId, new Map(layerExtents))
   refreshBatchExtentCache(layout)
-  let layoutExtents = resolveLayoutViewExtents(
-    layout,
-    snapshot.meta.viewExtents ?? snapshot.meta.extents
-  )
 
   let osnapIndex: AcExOsnapIndex | null = null
   let modelOsnapIndex: AcExOsnapIndex | null = null
@@ -1466,9 +1472,21 @@ async function startViewer(): Promise<void> {
     render()
   }
 
+  /**
+   * Zoom-to-fit box for one layout.
+   *
+   * Prefers the export-time box persisted in the snapshot so the initial
+   * framing and the toolbar “Extents” action always agree, and so progressive
+   * packages do not frame a partial chunk set. Falls back to live geometry for
+   * snapshots produced before `fitExtents` existed.
+   */
+  const viewExtentsForLayout = (target: AcExLayoutSnapshot): AcExExtents =>
+    resolveLayoutViewExtents(target, fallbackExtentsForLayout(target))
+
   const fit = () => {
-    // Initial open and toolbar "Zoom extents" both use batch-derived layout bounds.
-    zoomToExtents(layoutExtents)
+    // Initial open and toolbar "Zoom extents" both frame the same export-time
+    // layout box (viewport frames + geometry), never a partially painted one.
+    zoomToExtents(viewExtentsForLayout(layout))
   }
 
   const fitSmart = () => {
@@ -1486,7 +1504,7 @@ async function startViewer(): Promise<void> {
           ? layout
           : undefined
     })
-    zoomToExtents(smart ?? layoutExtents)
+    zoomToExtents(smart ?? viewExtentsForLayout(layout))
   }
 
   const captureViewState = () => ({
@@ -2072,10 +2090,6 @@ async function startViewer(): Promise<void> {
     }
     layerExtentsByLayout.set(layout.btrId, new Map(layerExtents))
     refreshBatchExtentCache(layout)
-    layoutExtents = resolveLayoutViewExtents(
-      layout,
-      snapshot.meta.viewExtents ?? snapshot.meta.extents
-    )
     layerPanel?.syncLayerZoomButtons()
     render()
   }
@@ -2636,10 +2650,6 @@ async function startViewer(): Promise<void> {
     // Frame the target layout BEFORE geometry / OSNAP reload. Otherwise the
     // camera stays on the previous paper/model view and progressive chunks
     // paint off-screen until load finishes.
-    layoutExtents = resolveLayoutViewExtents(
-      layout,
-      snapshot.meta.viewExtents ?? snapshot.meta.extents
-    )
     const cachedLayerExtents = layerExtentsByLayout.get(btrId)
     if (cachedLayerExtents) {
       layerExtents.clear()
@@ -2722,8 +2732,8 @@ async function startViewer(): Promise<void> {
           layerExtents.set(name, extents)
         }
       }
-      layoutExtents = resolveLayoutViewExtents(previousLayout)
       layerPanel?.syncLayerZoomButtons()
+
       measure?.syncLayoutVisibility()
       markup?.syncLayoutVisibility()
       markGeometryReady(true)
@@ -2795,10 +2805,6 @@ async function startViewer(): Promise<void> {
       }
     }
 
-    layoutExtents = resolveLayoutViewExtents(
-      layout,
-      snapshot.meta.viewExtents ?? snapshot.meta.extents
-    )
     if (layoutHasBatchGeometry(layout)) {
       const nextLayerExtents = computeLayerExtentsMap(
         layout.lineBatches,
@@ -3088,10 +3094,6 @@ async function startViewer(): Promise<void> {
       // Leave the last "n/n" up only while chunks are in flight. View-only
       // packages never replace it with an OSNAP status, so clear it now.
       clearStatusBar()
-      layoutExtents = resolveLayoutViewExtents(
-        layout,
-        snapshot.meta.viewExtents ?? snapshot.meta.extents
-      )
       layerPanel?.syncLayerZoomButtons()
       recomputeOsnapThresholdWcs()
       bumpSnapCacheKey()

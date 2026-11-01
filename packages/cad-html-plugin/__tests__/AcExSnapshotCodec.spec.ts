@@ -458,6 +458,123 @@ describe('AcExSnapshotCodec', () => {
     })
   })
 
+  it('round-trips per-layout fitExtents via meta without changing the layout wire shape', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        viewExtents: { minX: 0, minY: 0, maxX: 12, maxY: 9 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: 'Model',
+          isModelSpace: true,
+          lineBatches: [],
+          meshBatches: [],
+          fitExtents: { minX: -50, minY: -25, maxX: 250, maxY: 175 }
+        },
+        {
+          btrId: 'ps',
+          name: 'Layout1',
+          isModelSpace: false,
+          lineBatches: [],
+          meshBatches: [],
+          viewports: [
+            {
+              paper: { minX: 0, minY: 0, maxX: 12, maxY: 9 },
+              model: { minX: 100, minY: 200, maxX: 400, maxY: 500 },
+              twist: 0
+            }
+          ],
+          fitExtents: { minX: 0, minY: 0, maxX: 12, maxY: 9 }
+        }
+      ],
+      activeLayoutBtrId: 'ps'
+    }
+
+    const binary = encodeSnapshotBinary(snapshot)
+    const asText = new TextDecoder().decode(binary)
+    expect(asText).toContain('"fitExtents"')
+    const decoded = decodeSnapshotBinary(binary)
+    expect(decoded.meta.fitExtents?.ms).toEqual({
+      minX: -50,
+      minY: -25,
+      maxX: 250,
+      maxY: 175
+    })
+    expect(decoded.layouts[0]!.fitExtents).toEqual({
+      minX: -50,
+      minY: -25,
+      maxX: 250,
+      maxY: 175
+    })
+    expect(decoded.layouts[1]!.fitExtents).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 12,
+      maxY: 9
+    })
+    // The active layout's meta.viewExtents still describes paper space only.
+    expect(decoded.meta.viewExtents).toEqual({
+      minX: 0,
+      minY: 0,
+      maxX: 12,
+      maxY: 9
+    })
+  })
+
+  it('omits meta.fitExtents when no layout carries one', () => {
+    const snapshot = {
+      version: ACEX_SNAPSHOT_VERSION,
+      meta: {
+        createdAt: '2026-01-01T00:00:00.000Z',
+        extents: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+        units: {
+          insunits: 4,
+          lunits: 2,
+          luprec: 4,
+          aunits: 0,
+          auprec: 0,
+          measurement: 1,
+          ltscale: 1,
+          angbase: 0,
+          angdir: 0
+        },
+        background: 0
+      },
+      layers: [{ name: '0', color: 0xffffff, visible: true }],
+      layouts: [
+        {
+          btrId: 'ms',
+          name: 'Model',
+          isModelSpace: true,
+          lineBatches: [],
+          meshBatches: []
+        }
+      ],
+      activeLayoutBtrId: 'ms'
+    }
+
+    const decoded = decodeSnapshotBinary(encodeSnapshotBinary(snapshot))
+    expect(decoded.meta.fitExtents).toBeUndefined()
+    expect(decoded.layouts[0]!.fitExtents).toBeUndefined()
+  })
+
   it('self-contained HTML payloads shrink when osnap omits duplicated line primitives', () => {
     const meta = {
       createdAt: '2026-01-01T00:00:00.000Z',

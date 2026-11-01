@@ -1,6 +1,4 @@
-import { strFromU8, zipSync } from 'fflate'
-
-import { resolveAcApHtmlPackageBuildOptions } from '../src/AcApHtmlExportOptions'
+import type { AcExSnapshot } from '@mlightcad/cad-html-core'
 import { decodeChunkGzip, encodeChunkGzip } from '@mlightcad/cad-html-core'
 import {
   buildAcExPackage,
@@ -20,8 +18,10 @@ import {
   unzipAcExPackageFiles,
   zipAcExPackageFiles
 } from '@mlightcad/cad-html-core'
-import type { AcExSnapshot } from '@mlightcad/cad-html-core'
 import { ACEX_SNAPSHOT_VERSION } from '@mlightcad/cad-html-core'
+import { strFromU8, zipSync } from 'fflate'
+
+import { resolveAcApHtmlPackageBuildOptions } from '../src/AcApHtmlExportOptions'
 
 function f32(values: number[]): Float32Array {
   return Float32Array.from(values)
@@ -270,6 +270,48 @@ describe('AcEx package format', () => {
     expect(skeleton.layouts[0]?.lineBatches).toEqual([])
     expect(skeleton.layouts[0]?.osnap).toBeUndefined()
     expect(skeleton.activeLayoutBtrId).toBe('ms')
+  })
+
+  it('carries per-layout fitExtents from the manifest into the skeleton', () => {
+    const snapshot = makeSnapshot()
+    snapshot.layouts[0]!.fitExtents = {
+      minX: -5,
+      minY: -5,
+      maxX: 15,
+      maxY: 15
+    }
+    snapshot.layouts[1]!.fitExtents = {
+      minX: 1,
+      minY: 1,
+      maxX: 9,
+      maxY: 7
+    }
+    const pkg = buildAcExPackage(snapshot, {
+      viewerRuntime: '/* runtime */',
+      baseName: 'demo'
+    })
+    const manifest = parseAcExPackageManifest(pkg.manifest)
+    expect(manifest.layouts[1]?.fitExtents).toEqual({
+      minX: 1,
+      minY: 1,
+      maxX: 9,
+      maxY: 7
+    })
+    const skeleton = snapshotSkeletonFromManifest(manifest)
+    // Progressive load starts with empty batches, so the skeleton must keep the
+    // export-time box for the initial framing to match toolbar "Extents".
+    expect(skeleton.layouts[0]?.fitExtents).toEqual({
+      minX: -5,
+      minY: -5,
+      maxX: 15,
+      maxY: 15
+    })
+    expect(skeleton.layouts[1]?.fitExtents).toEqual({
+      minX: 1,
+      minY: 1,
+      maxX: 9,
+      maxY: 7
+    })
   })
 
   it('always names the package manifest drawing.acex.json', () => {
