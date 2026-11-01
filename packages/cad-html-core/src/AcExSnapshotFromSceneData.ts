@@ -386,6 +386,21 @@ function collectLayoutSnapshot(
     isModelSpace,
     options.canvasAspectRatio
   )
+  const viewports = collectLayoutViewports(
+    database,
+    layoutInput.btrId,
+    isModelSpace
+  )
+  // Persist this layout's own zoom-to-fit box. The offline viewer cannot derive
+  // it at open time for progressive packages (chunks have not painted yet) or
+  // for layouts that were never active, so both would frame a different box
+  // than export-time “Extents”.
+  const fitExtents =
+    computeLayoutViewExtents({
+      lineBatches,
+      meshBatches,
+      viewports
+    }) ?? undefined
 
   let osnap: ReturnType<typeof buildOsnapCatalog> | undefined
   if (shouldExportOsnap(options)) {
@@ -410,8 +425,9 @@ function collectLayoutSnapshot(
     lineBatches,
     meshBatches,
     osnap,
-    viewports: collectLayoutViewports(database, layoutInput.btrId, isModelSpace),
-    ...(savedView ? { savedView } : {})
+    viewports,
+    ...(savedView ? { savedView } : {}),
+    ...(fitExtents ? { fitExtents } : {})
   }
 }
 

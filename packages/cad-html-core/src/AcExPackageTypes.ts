@@ -71,6 +71,11 @@ export interface AcExPackageLayoutRef {
    * Omitted when the drawing has no usable saved view.
    */
   savedView?: AcExExtents
+  /**
+   * Export-time zoom-to-fit box for this layout, so the offline viewer frames
+   * the same box before its geometry chunks arrive.
+   */
+  fitExtents?: AcExExtents
   /** Geometry chunks for this layout, in paint order. */
   chunkIds: string[]
   /**

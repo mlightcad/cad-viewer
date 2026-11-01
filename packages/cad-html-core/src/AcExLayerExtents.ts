@@ -7,7 +7,8 @@ import type {
   AcExExtents,
   AcExLayoutSnapshot,
   AcExLineBatch,
-  AcExMeshBatch
+  AcExMeshBatch,
+  AcExSnapshot
 } from './AcExSnapshotTypes'
 
 /**
@@ -171,14 +172,25 @@ export function computeLayoutViewExtents(
 /**
  * Resolves zoom-to-fit extents for one layout snapshot.
  *
- * Prefers live batch geometry unioned with viewport paper frames, then
- * persisted {@link AcExSnapshot.meta.viewExtents}, and only then a unit box.
+ * Order: the export-time {@link AcExLayoutSnapshot.fitExtents}, then live batch
+ * geometry unioned with viewport paper frames, then the caller's fallback and
+ * finally a unit box.
+ *
+ * The export-time box has to win over painted geometry in one important case:
+ * a progressive package paints viewport frames before its geometry chunks
+ * arrive, so an early fit would frame a smaller box than the completed layout.
+ * Keeping the export-time box stable also makes the initial framing identical
+ * to the toolbar “Extents” result.
  */
 export function resolveLayoutViewExtents(
-  layout: Pick<AcExLayoutSnapshot, 'lineBatches' | 'meshBatches' | 'viewports'>,
+  layout: Pick<
+    AcExLayoutSnapshot,
+    'lineBatches' | 'meshBatches' | 'viewports' | 'fitExtents'
+  >,
   fallbackExtents?: AcExExtents
 ): AcExExtents {
   return (
+    layout.fitExtents ??
     computeLayoutViewExtents(layout) ??
     fallbackExtents ?? {
       minX: 0,
@@ -187,6 +199,29 @@ export function resolveLayoutViewExtents(
       maxY: 1
     }
   )
+}
+
+/**
+ * Last-resort box for a layout that has neither geometry nor an export-time
+ * {@link AcExLayoutSnapshot.fitExtents} (an empty paper tab, or a snapshot
+ * written before that field existed).
+ *
+ * {@link AcExSnapshot.meta.viewExtents} is geometry-derived but describes only
+ * {@link AcExSnapshot.activeLayoutBtrId}; handing it to every layout would
+ * frame a paper-space sheet when fitting model space (and vice versa). For
+ * that one layout it still beats {@link AcExLayoutSnapshot.savedView}, which is
+ * the printable area / saved VPORT rather than the drawn content.
+ */
+export function resolveLayoutFallbackExtents(
+  layout: Pick<AcExLayoutSnapshot, 'btrId' | 'savedView'>,
+  snapshot: Pick<AcExSnapshot, 'activeLayoutBtrId' | 'meta'>
+): AcExExtents {
+  if (layout.btrId === snapshot.activeLayoutBtrId) {
+    return (
+      snapshot.meta.viewExtents ?? layout.savedView ?? snapshot.meta.extents
+    )
+  }
+  return layout.savedView ?? snapshot.meta.extents
 }
 
 /**

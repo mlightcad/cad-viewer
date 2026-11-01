@@ -21,6 +21,12 @@ import type { AcExOsnapCatalog } from './AcExOsnapPrimitiveTypes'
  * is a layout field used by the offline “Saved” zoom action. In ACEX binary it
  * is stored under {@link AcExSnapshot.meta.savedViews} so the viewport JSON
  * slot stays a bare array compatible with older runtimes.
+ *
+ * Optional {@link AcExLayoutSnapshot.fitExtents} is a both backwards- and
+ * forwards-compatible addition: the binary codec carries it under
+ * {@link AcExSnapshot.meta.fitExtents} (keyed by layout BTR id) so the layout
+ * JSON slot keeps its v4 wire shape. Runtimes that predate it simply ignore
+ * the extra meta key and fall back to computing bounds from painted geometry.
  */
 export const ACEX_SNAPSHOT_VERSION = 4 as const
 
@@ -340,6 +346,18 @@ export interface AcExLayoutSnapshot {
    * drawing has no usable saved view.
    */
   savedView?: AcExExtents
+  /**
+   * Zoom-to-fit box computed at export time from this layout's own geometry
+   * (batches unioned with viewport paper frames, see
+   * {@link computeLayoutViewExtents}).
+   *
+   * Persisted per layout so “Zoom extents” in the offline viewer frames the
+   * same box as the export-time fit — including layouts whose geometry is not
+   * resident yet (progressive packages paint viewport frames before chunks
+   * arrive) and layouts that were never the active export layout
+   * ({@link AcExSnapshot.meta.viewExtents} only describes the active one).
+   */
+  fitExtents?: AcExExtents
 }
 
 /** Camera state for restoring the export-time view in the offline HTML viewer. */
@@ -385,6 +403,9 @@ export interface AcExSnapshot {
     /**
      * Batch-derived extents for the initially active layout, used by the
      * offline viewer for zoom-to-fit instead of {@link AcExSnapshot.meta.extents}.
+     *
+     * Only describes {@link AcExSnapshot.activeLayoutBtrId}; every layout's own
+     * box lives on {@link AcExLayoutSnapshot.fitExtents}.
      */
     viewExtents?: AcExExtents
     /** Unit and formatting sysvars for measurement display. */
@@ -450,6 +471,13 @@ export interface AcExSnapshot {
      * no layout has a usable saved view.
      */
     savedViews?: Record<string, AcExExtents>
+    /**
+     * Per-layout zoom-to-fit boxes keyed by layout BTR id
+     * ({@link AcExLayoutSnapshot.fitExtents}). Written by the ACEX binary codec
+     * (and by the package manifest's layout refs) so the layout JSON slot keeps
+     * its v4 wire shape. Omitted when no layout has geometry.
+     */
+    fitExtents?: Record<string, AcExExtents>
   }
   /** Layer table used by the layer drawer (visibility toggles, swatches). */
   layers: AcExLayerSnapshot[]
