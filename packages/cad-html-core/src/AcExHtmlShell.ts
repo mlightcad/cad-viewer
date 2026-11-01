@@ -15,6 +15,27 @@ export const ML_UI_MOBILE_MAX_WIDTH = 600
 export const ML_UI_COMPACT_MAX_WIDTH = 960
 
 /**
+ * Lift of a coordinate bubble above its anchor point, in `em`.
+ *
+ * The capsule itself is entirely `em`-sized (padding, radius, border), so the
+ * lift is published in `em` too: a px lift would stop matching the capsule
+ * whenever the user changes the text height. Shared by the shell stylesheet
+ * (first paint) and `acexOverlayTransform` (runtime, zoom-synced) so the two
+ * cannot drift apart.
+ *
+ * Rounded to the CSS precision the gap actually needs; it is 16 CSS px at
+ * {@link ACEX_COORDINATE_BADGE_REF_FONT_PX}.
+ */
+export const ACEX_COORDINATE_BADGE_LIFT_EM = 1.231
+
+/**
+ * Badge font size, in CSS px, that {@link ACEX_COORDINATE_BADGE_LIFT_EM} was
+ * derived from. Keep in sync with `ACEX_MEASUREMENT_FONT_SIZE` in
+ * `cad-html-plugin`.
+ */
+export const ACEX_COORDINATE_BADGE_REF_FONT_PX = 13
+
+/**
  * Shared CSS for the offline HTML viewer chrome (toolbar, layer drawer, status bar).
  * Injected into the `<style>` block by {@link packHtml}.
  */
@@ -868,7 +889,8 @@ export const ACEX_HTML_SHELL_CSS = `
     pointer-events: none;
   }
   .mlcad-measure-badge--coordinate {
-    transform: translate(-50%, calc(-50% - 16px));
+    /* em so the lift tracks the capsule when text height changes. */
+    transform: translate(-50%, calc(-50% - ${ACEX_COORDINATE_BADGE_LIFT_EM}em));
   }
   .mlcad-measure-badge.mlcad-measure-selected {
     /* Hard ring at half original em thickness + soft glow */
@@ -1571,4 +1593,3 @@ function buildAcExMeasureDrawer(): string {
         </div>
       </div>`
 }
-

@@ -190,6 +190,8 @@ export {
 } from './AcExSnapshotFromSceneData'
 
 export {
+  ACEX_COORDINATE_BADGE_LIFT_EM,
+  ACEX_COORDINATE_BADGE_REF_FONT_PX,
   ACEX_HTML_SHELL_CSS,
   buildAcExHtmlShellBody,
   ML_UI_COMPACT_MAX_WIDTH,

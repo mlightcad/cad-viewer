@@ -3,6 +3,11 @@
 import './helpers/installTextCodecs'
 
 import {
+  ACEX_COORDINATE_BADGE_LIFT_EM,
+  ACEX_COORDINATE_BADGE_REF_FONT_PX
+} from '@mlightcad/cad-html-core'
+
+import {
   ACEX_OVERLAY_ARROW_WCS,
   ACEX_OVERLAY_BASE_ZOOM,
   ACEX_OVERLAY_CLOUD_WCS,
@@ -16,6 +21,11 @@ import {
   acexScaledOverlayArrowSize,
   acexSeedOverlaySizesFromWcs
 } from '../src/AcExHtmlOverlayDom'
+
+/** Mirrors the plugin's three-decimal CSS rounding. */
+function round3(value: number): number {
+  return Math.round(value * 1000) / 1000
+}
 
 describe('AcExHtmlOverlayDom', () => {
   it('anchors view scale on first layout and scales with zoom', () => {
@@ -32,6 +42,46 @@ describe('AcExHtmlOverlayDom', () => {
     acexOverlayViewScale(2, el)
     acexResetOverlayViewScale(el)
     expect(acexOverlayViewScale(3, el)).toBe(1)
+  })
+
+  it('scales the coordinate bubble lift with the view so it stays off the point', () => {
+    const badge = document.createElement('div')
+    badge.className = 'mlcad-measure-badge mlcad-measure-badge--coordinate'
+
+    // The reference lift is 16px at the 13px badge font size.
+    expect(
+      ACEX_COORDINATE_BADGE_LIFT_EM * ACEX_COORDINATE_BADGE_REF_FONT_PX
+    ).toBeCloseTo(16, 1)
+
+    expect(acexOverlayTransform(badge, 1)).toBe(
+      `translate(-50%, calc(-50% - ${ACEX_COORDINATE_BADGE_LIFT_EM}em))`
+    )
+    // Lift grows with the capsule; a px lift would not, and the bubble would
+    // drift into the point as the camera zooms in.
+    expect(acexOverlayTransform(badge, 2)).toBe(
+      `translate(-50%, calc(-50% - ${round3(ACEX_COORDINATE_BADGE_LIFT_EM * 2)}em)) scale(2)`
+    )
+    expect(acexOverlayTransform(badge, 0.5)).toBe(
+      `translate(-50%, calc(-50% - ${round3(ACEX_COORDINATE_BADGE_LIFT_EM * 0.5)}em)) scale(0.5)`
+    )
+  })
+
+  it('keeps the coordinate lift proportional to the badge font size', () => {
+    const badge = document.createElement('div')
+    badge.className = 'mlcad-measure-badge mlcad-measure-badge--coordinate'
+    // em units make the gap track the capsule's own em-based padding/radius,
+    // so a text-height change cannot revive the drift at 1x zoom.
+    const transform = acexOverlayTransform(badge, 1)
+    expect(transform).toContain('em')
+    expect(transform).not.toContain('px')
+  })
+
+  it('keeps other measure badges centered without a lift', () => {
+    const badge = document.createElement('div')
+    badge.className = 'mlcad-measure-badge'
+    expect(acexOverlayTransform(badge, 3)).toBe(
+      'translate(-50%, -50%) scale(3)'
+    )
   })
 
   it('positions WCS overlays in root-local coordinates', () => {

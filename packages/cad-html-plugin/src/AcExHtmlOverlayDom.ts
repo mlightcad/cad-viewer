@@ -1,3 +1,5 @@
+import { ACEX_COORDINATE_BADGE_LIFT_EM } from '@mlightcad/cad-html-core'
+
 /** Dataset key storing orthographic zoom when an overlay was first positioned. */
 export const ACEX_OVERLAY_BASE_ZOOM = 'overlayBaseZoom'
 
@@ -80,17 +82,38 @@ export function acexSyncLiveOverlayTextHeight(
   acexResetOverlayViewScale(el)
 }
 
-/** CSS transform prefix before optional view-synced `scale()`. */
-export function acexOverlayTransformPrefix(el: HTMLElement): string {
+/**
+ * Formats a CSS length without float noise.
+ *
+ * Three decimals keep the `em` lift readable while staying well below a
+ * device pixel at any plausible capsule size.
+ */
+function roundCssLength(value: number): number {
+  return Math.round(value * 1000) / 1000
+}
+
+/**
+ * CSS transform prefix before optional view-synced `scale()`.
+ *
+ * @param el - Overlay element whose variant decides the anchoring transform
+ * @param scale - View-synced scale that will be appended after this prefix
+ */
+export function acexOverlayTransformPrefix(el: HTMLElement, scale = 1): string {
   if (el.classList.contains('mlcad-measure-badge--coordinate')) {
-    return 'translate(-50%, calc(-50% - 16px))'
+    // The lift is measured in `em`, so it must carry the view scale itself:
+    // without that, the capsule keeps growing while its offset stays put and
+    // it drifts over (or away from) the measured point as the camera zooms.
+    // `em` (not px) is what keeps the gap proportional to the capsule when the
+    // user changes the text height.
+    const lift = roundCssLength(ACEX_COORDINATE_BADGE_LIFT_EM * scale)
+    return `translate(-50%, calc(-50% - ${lift}em))`
   }
   return 'translate(-50%, -50%)'
 }
 
 /** Composes centering transform with optional view-synced scale. */
 export function acexOverlayTransform(el: HTMLElement, scale: number): string {
-  const prefix = acexOverlayTransformPrefix(el)
+  const prefix = acexOverlayTransformPrefix(el, scale)
   if (scale === 1) return prefix
   return `${prefix} scale(${scale})`
 }

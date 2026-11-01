@@ -1,10 +1,22 @@
 import {
+  ACEX_COORDINATE_BADGE_LIFT_EM,
   ACEX_HTML_SHELL_CSS,
   buildAcExHtmlShellBody,
   ML_UI_COMPACT_MAX_WIDTH
 } from '@mlightcad/cad-html-core'
 
 describe('ACEX_HTML_SHELL_CSS', () => {
+  it('lifts the coordinate capsule by the shared em offset', () => {
+    // Same constant the runtime transform uses, so first paint and every later
+    // re-position cannot disagree on where the bubble sits.
+    expect(ACEX_HTML_SHELL_CSS).toContain(
+      `.mlcad-measure-badge--coordinate {
+    /* em so the lift tracks the capsule when text height changes. */
+    transform: translate(-50%, calc(-50% - ${ACEX_COORDINATE_BADGE_LIFT_EM}em));
+  }`
+    )
+  })
+
   it('hides drawer title rows on the phone breakpoint', () => {
     expect(ACEX_HTML_SHELL_CSS).toContain(
       '#mlcad-layer-drawer .mlcad-drawer-header,'
@@ -56,12 +68,8 @@ describe('ACEX_HTML_SHELL_CSS', () => {
     expect(ACEX_HTML_SHELL_CSS).toContain('--mlcad-z-chrome: 7;')
     expect(ACEX_HTML_SHELL_CSS).toContain('--mlcad-z-measure: 1;')
     expect(ACEX_HTML_SHELL_CSS).toContain('--mlcad-z-markup: 2;')
-    expect(ACEX_HTML_SHELL_CSS).toContain(
-      'z-index: var(--mlcad-z-measure);'
-    )
-    expect(ACEX_HTML_SHELL_CSS).toContain(
-      'z-index: var(--mlcad-z-markup);'
-    )
+    expect(ACEX_HTML_SHELL_CSS).toContain('z-index: var(--mlcad-z-measure);')
+    expect(ACEX_HTML_SHELL_CSS).toContain('z-index: var(--mlcad-z-markup);')
     expect(ACEX_HTML_SHELL_CSS).toContain(
       'z-index: calc(var(--mlcad-z-chrome) + 3);'
     )
