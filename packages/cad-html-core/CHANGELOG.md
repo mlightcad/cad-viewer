@@ -1,5 +1,72 @@
 # @mlightcad/cad-html-core
 
+## 1.7.8-preview.6
+
+### Patch Changes
+
+- 4e7ed11: fix: keep the coordinate bubble anchored to its point while zooming in offline HTML
+
+  In the exported HTML viewer, measuring a point and then zooming moved the X/Y
+  bubble away from the picked point. The coordinate capsule is lifted above its
+  anchor with `translate(-50%, calc(-50% - 16px))`, but the badge also scales with
+  the camera (`scale(zoom / baseZoom)`). The lift stayed 16 CSS px while the
+  capsule grew, so the bubble drifted into the point when zooming in and floated
+  far above it when zooming out:
+
+  | zoom | gap: point → bubble bottom  |
+  | ---- | --------------------------- |
+  | 1x   | +3.75px                     |
+  | 3.4x | -25.95px (covers the point) |
+  | 40x  | -476px                      |
+
+  `acexOverlayTransformPrefix` now carries the lift in `em` and multiplies it by
+  the same view scale that is appended to the transform, so the gap stays a
+  constant 1.231em (16px at the 13px reference font) at every zoom level and
+  tracks the capsule when the user changes the text height. Every other capsule
+  dimension (padding, radius, border) is already `em`-based, which is why the
+  lift is too: a px lift would reintroduce the same drift at a different font
+  size.
+
+  `ACEX_COORDINATE_BADGE_LIFT_EM` lives in `cad-html-core` and is consumed by
+  both the `AcExHtmlShell` stylesheet (first paint) and the runtime transform, so
+  the two can no longer disagree.
+
+  `cad-viewer` and `cad-simple-viewer` are unaffected: their badges are anchored
+  by `CSS2DObject.center` (a percentage) rather than a fixed pixel offset.
+
+- 9220b20: fix: frame every layout with its export-time extents in offline HTML
+
+  Opening an exported HTML viewer whose initially active layout was paper space
+  produced two framing bugs when the export option "Initial View" was "Extents":
+  - The first paint was slightly smaller than the toolbar **Zoom → Extents**
+    result. Progressive packages mount the paper layout before its geometry
+    chunks arrive, so the initial fit saw viewport frames only, while the toolbar
+    action saw the fully painted layout.
+  - Model space did not frame its own entities on first visit. Its only fallback
+    was `meta.viewExtents`, which describes the active export layout (paper
+    space) — so switching to model space zoomed to the sheet's area instead of
+    the model geometry, and it kept that wrong box even after the chunks painted.
+
+  Both come from the same gap: the runtime derived zoom-to-fit bounds at open
+  time, when only part of the drawing is resident and only one layout's bounds
+  are persisted. The snapshot now stores the fit box each layout computed at
+  export time (`AcExLayoutSnapshot.fitExtents`, written to `meta.fitExtents` by
+  the binary codec and to the manifest for multi-file packages), and
+  `resolveLayoutViewExtents` prefers it, falling back to live geometry for
+  snapshots written before this change.
+
+  `fitExtents` is additive and backwards compatible: the layout JSON slot keeps
+  its v4 wire shape, and older runtimes ignore the extra meta key.
+
+  The initial framing and **Extents** now also stay identical for layouts loaded
+  from a package, and user zoom/pan is still preserved per layout — a fit only
+  happens while the layout has no stored view state of its own.
+
+- fix: box selection in paper-space viewports now reaches model entities, offline HTML exports frame every layout with its own export-time extents, and the coordinate bubble stays anchored to its point while zooming. Explicit ACI-7 block colours on layer 0 keep their colour instead of inheriting the INSERT layer, and the layer-material cache no longer leaks ByLayer provenance between entities.
+- Updated dependencies [42351f3]
+- Updated dependencies
+  - @mlightcad/three-renderer@1.7.8-preview.6
+
 ## 1.7.8-preview.5
 
 ### Patch Changes

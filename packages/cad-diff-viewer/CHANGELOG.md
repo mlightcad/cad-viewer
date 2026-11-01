@@ -1,5 +1,15 @@
 # @mlightcad/cad-diff-viewer
 
+## 1.7.8-preview.6
+
+### Patch Changes
+
+- fix: box selection in paper-space viewports now reaches model entities, offline HTML exports frame every layout with its own export-time extents, and the coordinate bubble stays anchored to its point while zooming. Explicit ACI-7 block colours on layer 0 keep their colour instead of inheriting the INSERT layer, and the layer-material cache no longer leaks ByLayer provenance between entities.
+- Updated dependencies [42351f3]
+- Updated dependencies [57c330c]
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.7.8-preview.6
+
 ## 1.7.8-preview.5
 
 ### Patch Changes

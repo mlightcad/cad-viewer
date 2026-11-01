@@ -1,5 +1,83 @@
 # @mlightcad/cad-viewer
 
+## 1.7.8-preview.6
+
+### Patch Changes
+
+- 42351f3: fix: keep explicit ACI-7 block colours on layer 0 instead of inheriting the INSERT layer
+
+  A block entity authored on layer `0` with an explicit ACI-7 (foreground) colour
+  was rebound to the INSERT layer's colour, so a title frame that AutoCAD draws
+  white rendered red on a red INSERT layer.
+
+  The two cases were indistinguishable: `AcGiSubEntityTraits.color` is stored
+  pre-resolved, so ByLayer content on an ACI-7 layer also arrives as an absolute
+  ACI 7. `data-model` now records the original provenance on the traits
+  (`isColorByLayer`), and `three-renderer` uses it to set `isByLayerColor`
+  truthfully. `AcTrInheritedLayerMaterialMapper` can then decide directly: a
+  ByLayer colour inherits the INSERT layer, an explicit colour does not.
+
+  Missing bindings (`isByLayerColor == null`, from conversion paths that drop the
+  flag) are still inferred from the remaining ByLayer markers, so the earlier
+  fixes for ByLayer legend headers (#602) and lost-flag DXF conversions keep
+  working.
+
+  The material cache key now includes that provenance. A ByLayer colour on an
+  ACI-7 layer and an explicit ACI-7 resolve to the same symbolic colour, so they
+  previously shared one cache entry and the first creator's `isByLayerColor`
+  leaked to every later user. Which one won depended on draw order, so the same
+  title frame could inherit the INSERT colour, and inherited ByLayer content could
+  fall back to black on model-space (dark) backgrounds. Traits without provenance
+  keep the historical key.
+
+- 57c330c: fix: box-select model entities through paper-space viewports
+
+  A drag rectangle in a paper-space layout queried only that layout's spatial
+  index, so model-space content rendered inside a viewport could be clicked
+  (pick drills through the viewport) but was never box-selected — reported for
+  LEADER handles 72834 / 72832 / 72CCB in `布局1` where clicking worked and
+  dragging did not.
+
+  `AcEdBaseView.collectSelectionIdsByBox` now merges a drill-through pass from
+  `collectViewportDrillThroughSelectionIds`, implemented by `AcTrView2d` and
+  exported as the pure helper `acedCollectViewportBoxSelectionIds`. Each
+  viewport maps the visible part of the pick rectangle into model WCS, queries
+  the model-space layout, and maps hits back to paper space so window still
+  requires full containment and crossing still requires a real geometric hit.
+  Hit testing respects the viewport border (clipped content is never selected),
+  VPLAYER-frozen layers, block-reference child boxes, and overlapping viewports.
+
+  Two refinements keep the new pass exact:
+  - The selection mode is forwarded to the model-space spatial query. Only the
+    index knows the full child set of a block reference — the hits it returns
+    list just the children that intersect the query box — so deriving window
+    containment from those children alone would select a partially overlapping
+    INSERT. Block hits are now also tested child by child instead of as one
+    union box, because the union of two distant children covers the empty gap
+    between them.
+  - Crossing hits are geometry-tested in paper space. For a viewport with a
+    non-zero `viewTwistAngle` the paper pick rectangle is rotated relative to
+    model WCS, so the model-space query box is a superset of the real region and
+    a leader crossing only its corner would be wrongly selected.
+
+- fix: box selection in paper-space viewports now reaches model entities, offline HTML exports frame every layout with its own export-time extents, and the coordinate bubble stays anchored to its point while zooming. Explicit ACI-7 block colours on layer 0 keep their colour instead of inheriting the INSERT layer, and the layer-material cache no longer leaks ByLayer provenance between entities.
+- Updated dependencies [4e7ed11]
+- Updated dependencies [9220b20]
+- Updated dependencies [42351f3]
+- Updated dependencies [57c330c]
+- Updated dependencies
+  - @mlightcad/cad-html-plugin@1.7.8-preview.6
+  - @mlightcad/three-renderer@1.7.8-preview.6
+  - @mlightcad/cad-simple-viewer@1.7.8-preview.6
+  - @mlightcad/cad-agent-core@1.7.8-preview.6
+  - @mlightcad/cad-agent-plugin@1.7.8-preview.6
+  - @mlightcad/cad-google-drive-plugin@1.7.8-preview.6
+  - @mlightcad/cad-onedrive-plugin@1.7.8-preview.6
+  - @mlightcad/cad-pdf-plugin@1.7.8-preview.6
+  - @mlightcad/cad-script-plugin@1.7.8-preview.6
+  - @mlightcad/cad-svg-plugin@1.7.8-preview.6
+  - @mlightcad/pdf-renderer@1.7.8-preview.6
+
 ## 1.7.8-preview.5
 
 ### Patch Changes

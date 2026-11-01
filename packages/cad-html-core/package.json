@@ -1,6 +1,6 @@
 {
   "name": "@mlightcad/cad-html-core",
-  "version": "1.7.8-preview.5",
+  "version": "1.7.8-preview.6",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -34,13 +34,13 @@
     "fflate": "^0.8.2"
   },
   "devDependencies": {
-    "@mlightcad/data-model": "1.15.19",
+    "@mlightcad/data-model": "1.15.20",
     "@mlightcad/three-renderer": "workspace:*",
     "@types/three": "^0.186.0",
     "three": "^0.186.1"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "1.15.19",
+    "@mlightcad/data-model": "1.15.20",
     "@mlightcad/three-renderer": "workspace:*",
     "three": "^0.186.1"
   }

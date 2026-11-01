@@ -27,12 +27,17 @@
   },
   "changesets": [
     "dim-style-text-tab",
+    "fix-coordinate-badge-zoom-drift",
+    "fix-html-layout-fit-extents",
+    "fix-layer0-aci7-insert-inheritance",
     "fix-mcp-script-api-bundle",
     "fix-multiple-redo-steps",
+    "fix-paper-space-box-selection",
     "fix-redo-restores-entity",
     "preview-1-7-8-preview-2",
     "preview-1-7-8-preview-3",
     "preview-1-7-8-preview-4",
-    "preview-1-7-8-preview-5"
+    "preview-1-7-8-preview-5",
+    "preview-1-7-8-preview-6"
   ]
 }
