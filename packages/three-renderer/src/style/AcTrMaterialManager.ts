@@ -17,6 +17,17 @@ import {
 } from './AcTrMaterialMetadata'
 import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
 
+/**
+ * Optional colour-provenance fields on sub-entity traits.
+ *
+ * Declared locally so this package keeps building against `@mlightcad/data-model`
+ * releases that predate the field; `data-model` supplies it at runtime.
+ */
+interface AcGiColorByLayerProvenance {
+  /** Whether the entity's own colour was authored ByLayer before resolution. */
+  isColorByLayer?: boolean
+}
+
 /** Diagnostic snapshot of one material cache. */
 export interface AcTrMaterialCacheStats {
   /** Number of cached materials. */
@@ -126,8 +137,7 @@ export abstract class AcTrMaterialManager<T> {
         typeof layerColorRgb === 'number' &&
         getMaterialMetadata(cached).isForeground !== true
       ) {
-        const swatch =
-          layerColor ?? new AcCmColor().setRGBValue(layerColorRgb)
+        const swatch = layerColor ?? new AcCmColor().setRGBValue(layerColorRgb)
         this.refreshMaterialResolvedColor(cached, { color: swatch })
       }
       return cached
@@ -474,11 +484,18 @@ export abstract class AcTrMaterialManager<T> {
     const inferredTransparencyByLayer =
       (traits.transparency as Partial<{ isByLayer: boolean }>)?.isByLayer ===
       true
+    // `isColorByLayer` records whether the entity's own colour was authored
+    // ByLayer before `traits.color` was resolved against the layer table. It is
+    // typed optionally and read structurally so this builds against data-model
+    // versions that predate the field.
+    const traitsWithProvenance = traits as AcGiSubEntityTraits &
+      Partial<AcGiColorByLayerProvenance>
 
     return {
       isByLayerColor:
         metadata?.isByLayerColor === true ||
-        (traits.color.isByLayer === true && metadata?.isForeground !== true),
+        (traitsWithProvenance.isColorByLayer ?? traits.color.isByLayer) ===
+          true,
       isByLayerLineType:
         metadata?.isByLayerLineType ?? traits.lineType.type === 'ByLayer',
       isByLayerLineWeight:

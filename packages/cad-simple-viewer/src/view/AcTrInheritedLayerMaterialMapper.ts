@@ -109,9 +109,12 @@ export class AcTrInheritedLayerMaterialMapper {
   }
 
   /**
-   * Layer-0 block contents with ByLayer color resolve to ACI-7 foreground materials before
-   * INSERT remapping. Those materials must still inherit the INSERT layer when their colour
-   * is layer-bound, while explicit ACI-7 entities on layer 0 stay untouched.
+   * Whether a layer-0 block material should be rebound to the INSERT layer.
+   *
+   * With truthful `isByLayerColor` metadata every case is decidable directly:
+   * a ByLayer colour inherits, an explicit colour (including ACI-7) does not.
+   * The foreground check only short-circuits non-layer-0 sources, where the
+   * bucket layer was authored explicitly and must keep its own colour.
    *
    * @param material - Candidate material to evaluate for INSERT-layer rebinding.
    * @param sourceLayerName - Layer name from the block definition before inheritance.
@@ -122,32 +125,29 @@ export class AcTrInheritedLayerMaterialMapper {
     sourceLayerName: string
   ): boolean {
     const metadata = getMaterialMetadata(material)
-    if (metadata.isForeground !== true) {
+    if (metadata.isByLayerColor === true) {
       return true
     }
     if (sourceLayerName !== '0') {
       return false
     }
-    if (metadata.isByLayerColor === true) {
-      return true
-    }
+    // Layer-0 colour that is still not known to be ByLayer: only other
+    // ByLayer traits can justify inheriting, never the colour itself.
     return (
-      sourceLayerName === '0' &&
-      (metadata.isByLayerLineType === true ||
-        metadata.isByLayerLineWeight === true ||
-        metadata.isByLayerTransparency === true)
+      metadata.isByLayerLineType === true ||
+      metadata.isByLayerLineWeight === true ||
+      metadata.isByLayerTransparency === true
     )
   }
 
   /**
-   * Some DXF conversion paths lose `isByLayerColor` on layer-0 block contents while still
-   * retaining other ByLayer markers (lineType/lineWeight/transparency). For AutoCAD-compatible
-   * INSERT inheritance, treat such colours as inheritable when remapping from layer "0".
+   * Repairs layer-0 materials whose colour binding was dropped by a conversion
+   * path while other ByLayer markers (lineType/lineWeight/transparency) survived.
    *
-   * That repair is only for the ByLayer→ACI-7 (foreground) case. Explicit absolute colours
-   * (`isByLayerColor === false` and not foreground) must never be promoted — otherwise a
-   * solid hatch with ACI 251 on layer 0 inherits the INSERT layer colour (often ACI 7 white)
-   * and legend headers / non-ByLayer fills wash out.
+   * Both explicit colours are left alone. With `isColorByLayer` provenance now
+   * carried on the traits, an ACI-7 entity that was authored ByLayer already
+   * reports `isByLayerColor === true`; one that was authored explicitly reports
+   * `false` and must keep its own colour.
    *
    * @param material - Material whose ByLayer metadata may need normalization.
    * @param sourceLayerName - Source bucket layer name (typically `"0"`).
@@ -158,13 +158,10 @@ export class AcTrInheritedLayerMaterialMapper {
     sourceLayerName: string
   ): THREE.Material {
     const metadata = getMaterialMetadata(material)
-    if (metadata.isByLayerColor === false && metadata.isForeground !== true) {
+    if (metadata.isByLayerColor != null) {
       return material
     }
-    const hasAnyOtherByLayerBinding =
-      hasByLayerBinding(metadata) && metadata.isByLayerColor !== true
-
-    if (sourceLayerName === '0' && hasAnyOtherByLayerBinding) {
+    if (sourceLayerName === '0' && hasByLayerBinding(metadata)) {
       setMaterialMetadata(material, { isByLayerColor: true })
     }
     return material
