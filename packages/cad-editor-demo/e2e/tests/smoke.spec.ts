@@ -83,6 +83,28 @@ async function getInsertInheritedColorPixelCounts(page: Page) {
   }, pngBase64)
 }
 
+/**
+ * Waits until the uploaded drawing has actually reached the framebuffer.
+ *
+ * `isConvertingEntities` going false is **not** enough: deferred glyph jobs
+ * keep the scene busy afterwards and the animation loop skips WebGL while
+ * busy, so a fixed sleep after upload can screenshot a blank canvas. Polling
+ * the real pixels is the only reliable readiness signal for colour checks.
+ */
+async function waitForDrawingPainted(
+  page: Page,
+  timeoutMs = 60_000
+): Promise<{ white: number; yellow: number; blue: number; magenta: number }> {
+  const deadline = Date.now() + timeoutMs
+  let last = { white: 0, yellow: 0, blue: 0, magenta: 0 }
+  while (Date.now() < deadline) {
+    last = await getInsertInheritedColorPixelCounts(page)
+    if (last.white > 20 && last.yellow > 20) return last
+    await page.waitForTimeout(250)
+  }
+  return last
+}
+
 test('shows upload screen on first load', async ({ page }) => {
   await page.goto('/')
   await expect(page.locator('.upload-screen')).toBeVisible()
@@ -142,12 +164,16 @@ test('keeps block layer-0 ByLayer entities inheriting INSERT layer colors', asyn
 
   const container = page.locator('.ml-cad-container')
   await expect(container).toBeVisible()
-  await page.waitForTimeout(1200)
 
   const canvas = page.locator('.ml-cad-container canvas').first()
   await expect(canvas).toBeVisible()
 
-  const colorCounts = await getInsertInheritedColorPixelCounts(page)
+  // Deferred glyph jobs keep the scene marked busy after convert drains, and
+  // the animation loop skips WebGL while busy — so the first real paint can
+  // land well after any fixed delay. Wait for the drawing to reach the
+  // framebuffer before asserting each colour.
+  const colorCounts = await waitForDrawingPainted(page)
+
   expect(colorCounts.white).toBeGreaterThan(20)
   expect(colorCounts.yellow).toBeGreaterThan(20)
   expect(colorCounts.blue).toBeGreaterThan(20)

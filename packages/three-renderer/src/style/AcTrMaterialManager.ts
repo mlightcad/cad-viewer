@@ -17,6 +17,17 @@ import {
 } from './AcTrMaterialMetadata'
 import { AcTrStyleManagerOptions } from './AcTrStyleManagerOptions'
 
+/**
+ * Optional colour-provenance fields on sub-entity traits.
+ *
+ * Declared locally so this package keeps building against `@mlightcad/data-model`
+ * releases that predate the field; `data-model` supplies it at runtime.
+ */
+interface AcGiColorByLayerProvenance {
+  /** Whether the entity's own colour was authored ByLayer before resolution. */
+  isColorByLayer?: boolean
+}
+
 /** Diagnostic snapshot of one material cache. */
 export interface AcTrMaterialCacheStats {
   /** Number of cached materials. */
@@ -126,8 +137,7 @@ export abstract class AcTrMaterialManager<T> {
         typeof layerColorRgb === 'number' &&
         getMaterialMetadata(cached).isForeground !== true
       ) {
-        const swatch =
-          layerColor ?? new AcCmColor().setRGBValue(layerColorRgb)
+        const swatch = layerColor ?? new AcCmColor().setRGBValue(layerColorRgb)
         this.refreshMaterialResolvedColor(cached, { color: swatch })
       }
       return cached
@@ -474,11 +484,18 @@ export abstract class AcTrMaterialManager<T> {
     const inferredTransparencyByLayer =
       (traits.transparency as Partial<{ isByLayer: boolean }>)?.isByLayer ===
       true
+    // `isColorByLayer` records whether the entity's own colour was authored
+    // ByLayer before `traits.color` was resolved against the layer table. It is
+    // typed optionally and read structurally so this builds against data-model
+    // versions that predate the field.
+    const traitsWithProvenance = traits as AcGiSubEntityTraits &
+      Partial<AcGiColorByLayerProvenance>
 
     return {
       isByLayerColor:
         metadata?.isByLayerColor === true ||
-        (traits.color.isByLayer === true && metadata?.isForeground !== true),
+        (traitsWithProvenance.isColorByLayer ?? traits.color.isByLayer) ===
+          true,
       isByLayerLineType:
         metadata?.isByLayerLineType ?? traits.lineType.type === 'ByLayer',
       isByLayerLineWeight:
@@ -559,7 +576,10 @@ export abstract class AcTrMaterialManager<T> {
       isForeground,
       isBackgroundFill,
       drawOrder: traits.drawOrder ?? 0,
-      materialKey: key
+      materialKey: key,
+      hasColorProvenance:
+        (traits as AcGiSubEntityTraits & Partial<AcGiColorByLayerProvenance>)
+          .isColorByLayer != null
     })
 
     this.cache[key] = material
@@ -653,9 +673,23 @@ export abstract class AcTrMaterialManager<T> {
 
   /**
    * Builds the colour portion of a material cache key from symbolic CAD colour.
+   *
+   * Authored provenance is part of the key. A ByLayer colour on an ACI-7 layer
+   * and an explicit ACI-7 both resolve to the same symbolic colour, so without
+   * it they share one cache entry and the first creator's `isByLayerColor`
+   * leaks to the other. INSERT layer-0 inheritance then either promotes an
+   * explicit ACI-7 frame into the INSERT layer colour or leaves ByLayer content
+   * behind — both wrong, and dependent on draw order.
    */
   protected buildKeyColorSegment(traits: AcGiSubEntityTraits): string {
-    return traits.color.toString()
+    const provenance = (
+      traits as AcGiSubEntityTraits & Partial<AcGiColorByLayerProvenance>
+    ).isColorByLayer
+    const colorKey = traits.color.toString()
+    // Absent provenance (older data-model) keeps the historical key.
+    return provenance == null
+      ? colorKey
+      : `${colorKey}_${provenance ? 'bylayer' : 'explicit'}`
   }
 
   /**

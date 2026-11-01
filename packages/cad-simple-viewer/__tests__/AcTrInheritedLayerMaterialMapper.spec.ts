@@ -88,12 +88,14 @@ describe('AcTrInheritedLayerMaterialMapper', () => {
     expect(getLayerBoundMaterial).not.toHaveBeenCalled()
   })
 
-  it('remaps layer-0 foreground materials with other ByLayer bindings', () => {
+  it('repairs layer-0 foreground materials whose colour binding was lost', () => {
+    // Legacy conversion paths can drop `isByLayerColor` entirely while other
+    // ByLayer markers survive. Such a material is still layer-bound, so it must
+    // inherit the INSERT layer (and the repair promotes it for future updates).
     const sourceMaterial = new THREE.LineBasicMaterial({ color: 0xffffff })
     setMaterialMetadata(sourceMaterial, {
       layer: '0',
       materialKey: 'layer0-lw',
-      isByLayerColor: false,
       isByLayerLineType: false,
       isByLayerLineWeight: true,
       isByLayerTransparency: false,
@@ -121,6 +123,54 @@ describe('AcTrInheritedLayerMaterialMapper', () => {
     expect(getLayerBoundMaterial).toHaveBeenCalled()
   })
 
+  it('keeps an explicit ACI-7 colour on layer 0 inside a coloured INSERT', () => {
+    // Regression (ASD96 title frame): an explicit ACI-7 polyline with ByLayer
+    // lineweight was promoted to ByLayer colour and rendered in the INSERT
+    // layer's red. With truthful `isByLayerColor` metadata it must stay white.
+    const sourceMaterial = new THREE.LineBasicMaterial({ color: 0xffffff })
+    setMaterialMetadata(sourceMaterial, {
+      layer: '0',
+      materialKey: 'layer0-explicit-aci7',
+      isByLayerColor: false,
+      isByLayerLineType: false,
+      isByLayerLineWeight: true,
+      isByLayerTransparency: false,
+      isForeground: true,
+      // Provenance is what makes `isByLayerColor: false` authoritative.
+      hasColorProvenance: true
+    })
+
+    const getLayerBoundMaterial = jest.fn(
+      (material: THREE.Material) => material
+    )
+    const renderer = {
+      getLayerBoundMaterial
+    } as unknown as AcTrRenderer
+
+    const mapper = new AcTrInheritedLayerMaterialMapper(
+      () =>
+        ({
+          layer: 'INSERT',
+          color: { isForeground: false, RGB: 0xff0000 }
+        }) as Partial<AcGiSubEntityTraits>,
+      renderer
+    )
+
+    const mesh = new THREE.Line(new THREE.BufferGeometry(), sourceMaterial)
+    mesh.userData.layerName = '0'
+
+    mapper.remap([mesh], '0', 'INSERT')
+
+    // The colour is explicitly ACI-7, so the material must not be promoted to
+    // ByLayer and must not be rebound to the red INSERT layer material.
+    expect(getMaterialMetadata(sourceMaterial).isByLayerColor).toBe(false)
+    expect(getLayerBoundMaterial).not.toHaveBeenCalled()
+    expect(mesh.material).toBe(sourceMaterial)
+    expect((sourceMaterial as THREE.LineBasicMaterial).color.getHex()).toBe(
+      0xffffff
+    )
+  })
+
   it('does not promote absolute non-foreground colour when only lineweight is ByLayer', () => {
     // Regression: legend header hatch (ACI 251 gray on layer 0) was promoted to
     // ByLayer colour and inherited the INSERT layer's ACI 7 → solid white header.
@@ -135,7 +185,9 @@ describe('AcTrInheritedLayerMaterialMapper', () => {
       isForeground: false
     })
 
-    const getLayerBoundMaterial = jest.fn((material: THREE.Material) => material)
+    const getLayerBoundMaterial = jest.fn(
+      (material: THREE.Material) => material
+    )
     const renderer = {
       getLayerBoundMaterial
     } as unknown as AcTrRenderer
