@@ -47,9 +47,9 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@mlightcad/data-model": "1.15.20"
+    "@mlightcad/data-model": "1.15.21"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "1.15.20"
+    "@mlightcad/data-model": "1.15.21"
   }
 }
