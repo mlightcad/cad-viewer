@@ -74,6 +74,7 @@ import {
 } from './AcEdFloatingInputTypes'
 import { AcEdFloatingMessage } from './AcEdFloatingMessage'
 import { acedInteractionStrategy } from './AcEdInteractionStrategy'
+import { acedIsConfirmKey } from './AcEdKeyboardUtil'
 import { AcEdMessageType } from './AcEdMessageType'
 import { acedAttachMobileBoxGesture } from './AcEdMobileBoxGesture'
 import {
@@ -354,6 +355,31 @@ export class AcEdInputManager {
   /** Reset toggle-style inputs to their default state. */
   resetToggles() {
     this._ctrlArcFlip = false
+  }
+
+  /**
+   * Types a character pressed outside the command line (e.g. on the canvas or
+   * in numeric dynamic-input fields) into the command line.
+   *
+   * While a prompt is active the text is accepted only if a command-line
+   * session can interpret it (keywords or typed values); otherwise Enter would
+   * start a second command on top of the running one.
+   *
+   * @param char - Single printable character
+   * @returns `true` when the command line took the character
+   */
+  typeIntoCommandLine(char: string): boolean {
+    if (this.active && !this._commandLine.hasActiveSession) return false
+    return this._commandLine.typeText(char)
+  }
+
+  /**
+   * Repeats the last command, like Enter or Space on an idle AutoCAD canvas.
+   * Does nothing while a prompt is acquiring input.
+   */
+  repeatLastCommand(): void {
+    if (this.active) return
+    this._commandLine.executeCommand('')
   }
 
   /**
@@ -821,19 +847,32 @@ export class AcEdInputManager {
       'allowNone' in options
         ? (options as { allowNone: boolean }).allowNone
         : false
+    const mode = this.resolvePromptInputMode(handler)
 
     return {
       promise: this._commandLine.getPromptInput(
         keywordOptions,
         text => this.parseCommandLineInput(text, handler, inputCount, options),
         {
-          mode: this.resolvePromptInputMode(handler),
+          mode,
           allowNone,
-          allowTyping
+          allowTyping,
+          spaceInsertsText:
+            mode === 'string' && this.promptAllowsSpaces(options)
         }
       ),
       cancel: () => this._commandLine.cancelActiveSession()
     }
+  }
+
+  /**
+   * Whether a string prompt's value may contain spaces, in which case Space is
+   * literal text rather than Enter.
+   */
+  private promptAllowsSpaces(options: AcEdPromptOptions<unknown>): boolean {
+    return 'allowSpaces' in options
+      ? (options as { allowSpaces: boolean }).allowSpaces
+      : false
   }
 
   /**
@@ -1598,7 +1637,8 @@ export class AcEdInputManager {
               return
             }
 
-            if (e.key === 'Enter') {
+            if (acedIsConfirmKey(e)) {
+              if (e.key === ' ') e.preventDefault()
               cleanup()
               resolve([...selected])
             }
@@ -1924,7 +1964,8 @@ export class AcEdInputManager {
               return
             }
 
-            if (e.key === 'Enter' && options.allowNone) {
+            if (acedIsConfirmKey(e) && options.allowNone) {
+              if (e.key === ' ') e.preventDefault()
               cleanup()
               resolve(null)
             }
@@ -2192,7 +2233,8 @@ export class AcEdInputManager {
           rejector()
           return
         }
-        if (e.key === 'Enter' && options.allowNone) {
+        if (acedIsConfirmKey(e) && options.allowNone) {
+          if (e.key === ' ') e.preventDefault()
           cleanup()
           resolve(new AcEdPromptBoxResult(AcEdPromptStatus.None))
         }
@@ -2736,6 +2778,7 @@ export class AcEdInputManager {
         : (options.showMetrics ??
           (options.inputCount === 2 || basePoint != null))
       const allowPickCommit = options.allowPickCommit !== false
+      const isStringPrompt = options.handler instanceof AcEdStringHandler
 
       const getDynamicValue: AcEdFloatingInputDynamicValueCallback<T> = pos => {
         if (!showStringInput) {
@@ -2785,6 +2828,14 @@ export class AcEdInputManager {
           }
           return result
         },
+        // Numeric fields cannot hold letters, so a letter starts a keyword
+        // and is moved to the command line, which resolves keywords. String
+        // prompts keep letters in their own field.
+        onLetter: isStringPrompt
+          ? undefined
+          : char => this.typeIntoCommandLine(char),
+        spaceCommits:
+          !isStringPrompt || !this.promptAllowsSpaces(options.promptOptions),
         onCancel: () => rejector(),
         onNone: () => noneRejector()
       })

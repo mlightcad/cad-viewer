@@ -76,6 +76,14 @@ export type AcEdFloatingInputCancelCallback = () => void
 export type AcEdFloatingInputNoneCallback = () => void
 
 /**
+ * Callback invoked when a Latin letter is typed into numeric floating inputs.
+ *
+ * @param char - The typed character
+ * @returns `true` when the key was consumed (e.g. moved to the command line)
+ */
+export type AcEdFloatingInputLetterCallback = (char: string) => boolean
+
+/**
  * Callback invoked on mousemove to update the preview geometry.
  */
 export type AcEdFloatingInputDrawPreviewCallback = (
@@ -191,6 +199,17 @@ export interface AcEdFloatingInputOptions<T> {
    * Callback invoked when user enters no value and prompt allows none.
    */
   onNone?: AcEdFloatingInputNoneCallback
+
+  /**
+   * Callback invoked when a Latin letter is typed into the fields. Numeric
+   * prompts use it to hand keyword/command text over to the command line.
+   */
+  onLetter?: AcEdFloatingInputLetterCallback
+
+  /**
+   * Whether Space confirms the typed value like Enter. Default: `false`.
+   */
+  spaceCommits?: boolean
 
   /**
    * Whether pressing Enter with no manual input should submit defaultValue.

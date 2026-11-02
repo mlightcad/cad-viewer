@@ -17,8 +17,9 @@ import { AcEdMessageType } from './AcEdMessageType'
  *  - Floating command bar with left terminal glyph + down toggle and right up toggle
  *  - Command history popup
  *  - Message panel above the bar
- *  - Enter repeats last command if input empty
- *  - Esc cancels current command
+ *  - Enter or Space repeats last command if input empty
+ *  - Space confirms like Enter unless the active prompt accepts spaces
+ *  - Esc cancels current command and returns focus to the view
  *  - Inline clickable options
  *  - Keyboard navigation
  *  - Promise-based execution for async command handling
@@ -50,6 +51,8 @@ export class AcEdCommandLine {
   private activeSession?: AcEdCommandLineSessionControl
   private resizeObserver?: ResizeObserver
   private isPromptActive: boolean = false
+  /** Whether the active prompt takes Space as literal text instead of Enter. */
+  private spaceInsertsText: boolean = false
   private readonly recentMessages: string[] = []
   private recentHideTimer?: ReturnType<typeof setTimeout>
   private isCommandLifecycleBound: boolean = false
@@ -157,6 +160,33 @@ export class AcEdCommandLine {
     this.textInput.readOnly = readOnly
   }
 
+  /** Whether a prompt session currently owns the command line input. */
+  get hasActiveSession(): boolean {
+    return this.activeSession != null
+  }
+
+  /**
+   * Types a character that was pressed outside the command line input (for
+   * example on the canvas) so a command can be started without clicking the
+   * command line first.
+   *
+   * @param char - Single printable character to insert at the caret
+   * @returns `true` when the character was inserted; `false` when the command
+   * line is hidden or read-only
+   */
+  typeText(char: string): boolean {
+    if (!char || !this.visible || this.textInput.readOnly) return false
+    const input = this.textInput
+    input.focus()
+    const start = input.selectionStart ?? input.value.length
+    const end = input.selectionEnd ?? start
+    input.value = input.value.slice(0, start) + char + input.value.slice(end)
+    const caret = start + char.length
+    input.setSelectionRange(caret, caret)
+    this.handleInputChange()
+    return true
+  }
+
   /**
    * Displays a message in the command line history panel.
    *
@@ -184,6 +214,7 @@ export class AcEdCommandLine {
   ): Promise<string> {
     const session = new AcEdKeywordSession(this, options, allowTyping)
     this.activeSession = session
+    this.spaceInsertsText = false
     try {
       return await session.start()
     } finally {
@@ -202,6 +233,8 @@ export class AcEdCommandLine {
       mode: AcEdPromptInputMode
       allowNone: boolean
       allowTyping?: boolean
+      /** Treat Space as literal text instead of Enter (string prompts). */
+      spaceInsertsText?: boolean
     }
   ): Promise<AcEdPromptInputResult<T>> {
     const session = new AcEdPromptInputSession(
@@ -213,6 +246,7 @@ export class AcEdCommandLine {
       config.allowTyping ?? true
     )
     this.activeSession = session
+    this.spaceInsertsText = config.spaceInsertsText ?? false
     try {
       return await session.start()
     } finally {
@@ -699,16 +733,12 @@ export class AcEdCommandLine {
       { signal: domSignal }
     )
 
-    this.textInput.addEventListener(
-      'keydown',
-      e => this.handleKeyDown(e),
-      { signal: domSignal }
-    )
-    this.textInput.addEventListener(
-      'input',
-      () => this.handleInputChange(),
-      { signal: domSignal }
-    )
+    this.textInput.addEventListener('keydown', e => this.handleKeyDown(e), {
+      signal: domSignal
+    })
+    this.textInput.addEventListener('input', () => this.handleInputChange(), {
+      signal: domSignal
+    })
     this.centerEl.addEventListener(
       'focus',
       () => this.updatePopups({ showCmd: false, showMsg: false }),
@@ -729,30 +759,22 @@ export class AcEdCommandLine {
     )
   }
 
-  /** Handle Enter/Escape keys */
+  /** Handle Enter/Space/Escape keys */
   private handleKeyDown(e: KeyboardEvent) {
     // IME / composition safety (important!)
     if (e.isComposing) return
 
     switch (e.key) {
-      case 'Enter': {
-        e.preventDefault()
-        e.stopImmediatePropagation()
-
-        if (this.activeSession) {
-          const handled = this.activeSession.handleEnter(this.getInputText())
-          if (!handled) {
-            this.showMessage(
-              this.localize('main.commandLine.invalidInput', 'Invalid input.'),
-              'warning'
-            )
-          }
+      case 'Enter':
+      case ' ': {
+        // Space confirms like Enter (AutoCAD) unless the prompt value may
+        // itself contain spaces.
+        if (e.key === ' ' && this.activeSession && this.spaceInsertsText) {
           return
         }
-
-        this.executeCommand(this.getInputText())
-        this.historyIndex = this.history.length
-        this.updatePopups({ showCmd: false, showMsg: false })
+        e.preventDefault()
+        e.stopImmediatePropagation()
+        this.confirmInput()
         return
       }
 
@@ -763,12 +785,12 @@ export class AcEdCommandLine {
         if (this.activeSession) {
           this.activeSession.handleEscape()
           this.activeSession = undefined
-          return
+        } else {
+          this.clear()
+          this.showMessage(this.localize('main.commandLine.canceled'))
+          this.updatePopups({ showCmd: false, showMsg: false })
         }
-
-        this.clear()
-        this.showMessage(this.localize('main.commandLine.canceled'))
-        this.updatePopups({ showCmd: false, showMsg: false })
+        this.returnFocusToView()
         return
       }
 
@@ -795,6 +817,37 @@ export class AcEdCommandLine {
         return
       }
     }
+  }
+
+  /** Submits the input to the active prompt, or runs it as a command. */
+  private confirmInput() {
+    if (this.activeSession) {
+      const handled = this.activeSession.handleEnter(this.getInputText())
+      if (!handled) {
+        this.showMessage(
+          this.localize('main.commandLine.invalidInput', 'Invalid input.'),
+          'warning'
+        )
+      }
+      return
+    }
+
+    this.executeCommand(this.getInputText())
+    this.historyIndex = this.history.length
+    this.updatePopups({ showCmd: false, showMsg: false })
+  }
+
+  /**
+   * Moves keyboard focus from the input back to the host view so view
+   * shortcuts (Delete, Ctrl+Z, type-to-command), which are scoped to focus
+   * inside the view container, keep working after Esc.
+   */
+  private returnFocusToView() {
+    if (document.activeElement !== this.textInput) return
+    if (this.container !== document.body) {
+      this.container.focus({ preventScroll: true })
+    }
+    if (document.activeElement === this.textInput) this.textInput.blur()
   }
 
   /** Handle input change to show auto-complete */
