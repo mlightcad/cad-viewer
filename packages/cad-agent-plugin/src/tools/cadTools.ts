@@ -2,7 +2,7 @@ import {
   createCadToolCatalog,
   type ToolResult
 } from '@mlightcad/cad-agent-core'
-import { tool } from 'ai'
+import { type Schema, tool } from 'ai'
 
 import type { AgentMode } from '../storage/AgentModeStore'
 
@@ -104,10 +104,13 @@ export function createCadTools(options: CreateCadToolsOptions = {}) {
   return Object.fromEntries(
     createCadToolCatalog(undefined, { allowPreviewCapture }).map(entry => [
       entry.name,
-      // Pin OUTPUT so `toModelOutput` is checked against ToolResult.
+      // Pin OUTPUT so `toModelOutput` is checked against ToolResult. The
+      // schema is cast to the AI SDK's own `Schema` type: letting TS compare
+      // `ZodType<unknown>` against the zod-v4 branch of `FlexibleSchema`
+      // overflows the instantiation depth (TS2589).
       tool<unknown, ToolResult>({
         description: entry.description,
-        inputSchema: entry.inputSchema,
+        inputSchema: entry.inputSchema as unknown as Schema<unknown>,
         execute: async (input: unknown) => entry.execute(input),
         // AI SDK v5 passes the raw execute() result here, not `{ output }`;
         // destructuring it sends `null` to the model (see cadTools.spec.ts).
