@@ -1,4 +1,8 @@
 import {
+  type CaptureDrawingPreviewResult,
+  DRAWING_PREVIEW_LONG_SIDE_PX
+} from '@mlightcad/cad-script-core'
+import {
   AcApDocManager,
   AcApRasterImageConvertor,
   AcTrView2d,
@@ -6,24 +10,7 @@ import {
 } from '@mlightcad/cad-simple-viewer'
 import { accmYieldForPaint } from '@mlightcad/data-model'
 
-/** Default preview long side in pixels. */
-export const DRAWING_PREVIEW_LONG_SIDE_PX = 1024
-
-/** @deprecated Use {@link DRAWING_PREVIEW_LONG_SIDE_PX}. */
-export const VERIFICATION_PREVIEW_LONG_SIDE_PX = DRAWING_PREVIEW_LONG_SIDE_PX
-
 const SCENE_READY_TIMEOUT_MS = 15000
-
-/** Failure reasons returned by {@link captureDrawingPreview}. */
-export type CaptureDrawingPreviewFailure =
-  | 'scene-not-ready'
-  | 'unsupported-view'
-  | 'no-bounds'
-  | 'capture-failed'
-
-export type CaptureDrawingPreviewResult =
-  | { ok: true; dataUrl: string }
-  | { ok: false; reason: CaptureDrawingPreviewFailure }
 
 /**
  * Waits until the view finishes async entity batch conversion so preview

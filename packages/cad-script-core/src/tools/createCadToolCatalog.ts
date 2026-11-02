@@ -4,7 +4,6 @@ import type { CadScriptLimits } from '../script/createCadScriptHost'
 import { executeCadScript } from '../script/executeCadScript'
 import { CAD_SCRIPT_API_SUMMARY } from '../script/scriptApi'
 import type { CadSession } from '../session/CadSession'
-import { createDocManagerSession } from '../session/createDocManagerSession'
 import type { CadToolDefinition } from './types'
 
 /** Options for {@link createCadToolCatalog}. */
@@ -12,6 +11,9 @@ export interface CadToolCatalogOptions {
   /**
    * When `false`, `cad.view.capturePreview` queues are not fulfilled and the
    * tool description tells the model not to call it. Default `true`.
+   *
+   * Previews also count as disabled when the session has no
+   * {@link CadSession.capturePreview}.
    */
   allowPreviewCapture?: boolean
   /**
@@ -28,25 +30,29 @@ export interface CadToolCatalogOptions {
  * available as `cad.drawing` inside the script. Chat, MCP, and WebMCP adapters
  * should call this instead of declaring tools themselves.
  *
- * @param session - Drawing access captured by every tool in the catalog.
+ * @param session - Drawing access captured by every tool in the catalog. Use
+ *   `createDatabaseSession` for a drawing without a viewer.
  * @param options - Catalog behavior (e.g. whether screenshots are allowed).
  * @returns Tool definitions in a stable order.
  */
 export function createCadToolCatalog(
-  session: CadSession = createDocManagerSession(),
+  session: CadSession,
   options: CadToolCatalogOptions = {}
 ): CadToolDefinition[] {
-  const allowPreviewCapture = options.allowPreviewCapture !== false
+  const canRender = typeof session.capturePreview === 'function'
+  const allowPreviewCapture = options.allowPreviewCapture !== false && canRender
   const scriptLimits = options.scriptLimits
+  const reason = canRender
+    ? 'Screenshots are reserved\nfor High inference mode.'
+    : 'This session has no\nrenderer, so screenshots are not available.'
   const description = allowPreviewCapture
     ? CAD_SCRIPT_API_SUMMARY
     : `${CAD_SCRIPT_API_SUMMARY}
 
 IMPORTANT: cad.view.capturePreview is DISABLED in this session. Do not call it.
-Verify geometry only with cad.measure (check / report). Screenshots are reserved
-for High inference mode.`
+Verify geometry only with cad.measure (check / report). ${reason}`
 
-  const tools = [
+  const tools: CadToolDefinition[] = [
     {
       name: 'execute_cad_script',
       description,
@@ -78,5 +84,5 @@ for High inference mode.`
       }
     }
   ]
-  return tools as CadToolDefinition[]
+  return tools
 }

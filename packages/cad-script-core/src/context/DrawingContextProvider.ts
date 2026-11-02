@@ -1,6 +1,10 @@
-import { resolveDrawingExtents } from '@mlightcad/cad-simple-viewer'
+import {
+  type AcDbDatabase,
+  AcGeBox2d,
+  AcGePoint2d
+} from '@mlightcad/data-model'
 
-import type { CadSession } from '../session/CadSession'
+import type { CadSession, CadSessionView } from '../session/CadSession'
 
 /**
  * Snapshot of the active drawing used by `cad.drawing` in the script host.
@@ -58,4 +62,27 @@ export function getDrawingContext(session: CadSession): DrawingContextSnapshot {
         },
     documentTitle: doc.docTitle
   }
+}
+
+/**
+ * Drawable XY extents: the view's scene extents, else the header EXTMIN/EXTMAX.
+ *
+ * Header extents can be stale, so they are only used when the view reports
+ * nothing (empty drawing, or before the scene is built).
+ */
+function resolveDrawingExtents(
+  view: Pick<CadSessionView, 'getDrawingExtents'>,
+  database: AcDbDatabase
+): AcGeBox2d | undefined {
+  const fromView = view.getDrawingExtents()
+  if (fromView && !fromView.isEmpty()) return fromView
+
+  const header = database.extents
+  if (header && !header.isEmpty()) {
+    return new AcGeBox2d(
+      new AcGePoint2d(header.min.x, header.min.y),
+      new AcGePoint2d(header.max.x, header.max.y)
+    )
+  }
+  return undefined
 }

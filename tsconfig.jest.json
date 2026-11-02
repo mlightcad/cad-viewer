@@ -13,6 +13,12 @@
       ],
       "@mlightcad/cad-simple-viewer/find": [
         "packages/cad-simple-viewer/src/find/index.ts"
+      ],
+      "@mlightcad/cad-script-core": [
+        "packages/cad-script-core/src/index.ts"
+      ],
+      "@mlightcad/cad-script-core/script-api": [
+        "packages/cad-script-core/src/script-api.ts"
       ]
     },
     "noUnusedLocals": false,

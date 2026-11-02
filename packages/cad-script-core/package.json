@@ -1,0 +1,55 @@
+{
+  "name": "@mlightcad/cad-script-core",
+  "version": "1.7.8-preview.6",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "files": [
+    "dist",
+    "lib",
+    "README.md",
+    "package.json"
+  ],
+  "main": "./dist/cad-script-core.umd.cjs",
+  "module": "./dist/cad-script-core.js",
+  "types": "./lib/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "script-api": [
+        "./lib/script-api.d.ts"
+      ]
+    }
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./dist/cad-script-core.js",
+      "require": "./dist/cad-script-core.umd.cjs"
+    },
+    "./script-api": {
+      "types": "./lib/script-api.d.ts",
+      "import": "./dist/cad-script-core-script-api.js",
+      "require": "./dist/cad-script-core-script-api.umd.cjs"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build": "tsc && vite build && vite build --config vite.script-api.config.ts",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "dependencies": {
+    "acorn": "^8.15.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@mlightcad/data-model": "1.15.20"
+  },
+  "peerDependencies": {
+    "@mlightcad/data-model": "1.15.20"
+  }
+}

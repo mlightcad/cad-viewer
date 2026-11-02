@@ -95,7 +95,11 @@ export interface CadToolDefinition<TInput = unknown> {
    * Runs the tool against the session captured when the catalog was created.
    *
    * @param input - Arguments already parsed by the caller, or raw model input.
-   * @returns A JSON-serializable result.
+   * Typed as {@link ToolResult} (not `unknown`) so adapters such as the AI SDK
+   * infer the tool output type and reject mismatched `toModelOutput` signatures.
+   *
+   * @param input - Arguments already parsed by the caller, or raw model input.
+   * @returns A JSON-serializable tool result.
    */
-  execute(input: TInput): Promise<unknown> | unknown
+  execute(input: TInput): Promise<ToolResult>
 }

@@ -1,4 +1,4 @@
-import { validateCadScript } from '../../cad-agent-core/src/script/validateCadScript'
+import { validateCadScript } from '../../cad-script-core/src/script/validateCadScript'
 
 import {
   filterScriptExamples,

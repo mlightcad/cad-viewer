@@ -1,13 +1,11 @@
-import {
-  AcApLayerService,
-  acapRunDatabaseEdit
-} from '@mlightcad/cad-simple-viewer'
 import { AcDbEntity, AcGePoint3d } from '@mlightcad/data-model'
 
 import { getDrawingContext } from '../context/DrawingContextProvider'
 import type { CadSession } from '../session/CadSession'
 import { requireDocument } from '../session/documentAccess'
 import { runInsideScriptEdit } from '../session/editDepth'
+import { isEntityOnLockedLayer } from '../session/lockedLayer'
+import { runSessionEdit } from '../session/runSessionEdit'
 import { CadActionExecutor } from '../tools/CadActionExecutor'
 import type { Point2dInput, ToolResult } from '../tools/types'
 import { createCadMeasure } from './createCadMeasure'
@@ -227,7 +225,7 @@ export function createCadScriptHost(
       if (accessError) throw new Error(accessError.error ?? accessError.message)
       const db = session.getDocument()!.database
       runInsideScriptEdit(() => {
-        acapRunDatabaseEdit(db, label || 'Agent script', () => {
+        runSessionEdit(session, db, label || 'Agent script', () => {
           fn(
             seal(
               createTransaction(session, executor, effects),
@@ -399,11 +397,11 @@ function createTransaction(
       const db = doc.database
       for (const id of ids) {
         const existing = db.tables.blockTable.getEntityById(id)
-        if (existing && AcApLayerService.isEntityOnLockedLayer(db, existing)) {
+        if (existing && isEntityOnLockedLayer(db, existing)) {
           continue
         }
         const entity = db.openEntityForWrite(id)
-        if (!entity || AcApLayerService.isEntityOnLockedLayer(db, entity)) {
+        if (!entity || isEntityOnLockedLayer(db, entity)) {
           continue
         }
         entity.layer = layer

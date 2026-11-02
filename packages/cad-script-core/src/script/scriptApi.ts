@@ -1,6 +1,6 @@
 /**
  * Window key holding DXF payloads for the MCP Node host to write.
- * Lives here so Node hosts can import it from `script-api` without loading the viewer.
+ * Lives here so Node hosts can import it from `script-api` without loading data-model.
  */
 export const CAD_MCP_DXF_OUTBOX_KEY = '__cadMcpDxfOutbox'
 

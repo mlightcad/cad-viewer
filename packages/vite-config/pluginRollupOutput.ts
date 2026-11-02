@@ -87,7 +87,8 @@ export const VIEWER_PACKAGE_IDS = [
   'cad-viewer',
   'three-renderer',
   'cad-html-core',
-  'cad-agent-core'
+  'cad-agent-core',
+  'cad-script-core'
 ] as const
 
 /**

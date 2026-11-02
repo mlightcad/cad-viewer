@@ -1,5 +1,11 @@
 /**
- * Shared CAD agent runtime: drawing tools, script host, and session access.
+ * Viewer binding for the CAD agent runtime.
+ *
+ * The script runtime lives in `@mlightcad/cad-script-core`, which depends only
+ * on `@mlightcad/data-model`. This package binds it to
+ * `@mlightcad/cad-simple-viewer` (live document, selection highlight, zoom,
+ * screenshots, undo notifications) and re-exports the runtime API, so
+ * existing imports keep working.
  *
  * Chat, MCP, and WebMCP adapters depend on this package. It does not depend
  * on a model SDK or a UI framework.
@@ -7,72 +13,67 @@
  * @packageDocumentation
  */
 
+// Runtime API that needs no viewer, re-exported unchanged.
 export {
-  getDrawingContext,
-  type DrawingContextSnapshot
-} from './context/DrawingContextProvider'
-export {
-  createCadMeasure,
-  type CadMeasureApi,
-  type MeasureCheck,
-  type MeasureReport
-} from './script/createCadMeasure'
-export {
-  createCadScriptHost,
   type CadEditTransaction,
+  type CadMeasureApi,
+  type CadScriptDxfSaveOptions,
+  type CadScriptDxfSaveRequest,
   type CadScriptEffects,
   type CadScriptLimits,
-  type CadScriptPreviewRequest
-} from './script/createCadScriptHost'
-export {
-  normalizeDxfSaveRequest,
-  type CadScriptDxfSaveOptions,
-  type CadScriptDxfSaveRequest
-} from './script/saveDxf'
-export { toEntitySnapshot, type EntitySnapshot } from './script/entitySnapshot'
-export {
-  captureDrawingPreview,
-  DRAWING_PREVIEW_LONG_SIDE_PX,
-  VERIFICATION_PREVIEW_LONG_SIDE_PX,
-  waitForDrawingSceneReady,
-  type CaptureDrawingPreviewFailure,
-  type CaptureDrawingPreviewResult
-} from './preview/captureDrawingPreview'
-export {
-  executeCadScript,
-  MAX_SCRIPT_RESULT_CHARS,
-  type CadScriptRunOptions
-} from './script/executeCadScript'
-export { instrumentCadScript } from './script/instrumentCadScript'
-export {
-  CAD_EDIT_TX_METHODS,
-  CAD_MCP_DXF_OUTBOX_KEY,
-  CAD_SCRIPT_API_SUMMARY,
-  CAD_SCRIPT_API_TREE
-} from './script/scriptApi'
-export {
-  MAX_SCRIPT_SOURCE_CHARS,
-  validateCadScript,
-  type CadScriptValidation
-} from './script/validateCadScript'
-export {
+  type CadScriptPreviewRequest,
+  type CadScriptRunOptions,
+  type CadScriptValidation,
   type CadSession,
   type CadSessionDocument,
   type CadSessionLayerInfo,
-  type CadSessionView
-} from './session/CadSession'
-export { createDocManagerSession } from './session/createDocManagerSession'
-export { requireDocument, requireView } from './session/documentAccess'
-export { CadActionExecutor } from './tools/CadActionExecutor'
-export {
-  createCadToolCatalog,
-  type CadToolCatalogOptions
-} from './tools/createCadToolCatalog'
-export {
+  CadSessionOpenMode,
+  type CadSessionView,
   type CadToolAccess,
+  type CadToolCatalogOptions,
   type CadToolDefinition,
+  CAD_EDIT_TX_METHODS,
+  CAD_MCP_DXF_OUTBOX_KEY,
+  CAD_SCRIPT_API_SUMMARY,
+  CAD_SCRIPT_API_TREE,
+  type CaptureDrawingPreviewFailure,
+  type CaptureDrawingPreviewResult,
+  createCadMeasure,
+  createDatabaseSession,
+  type CreateDatabaseSessionOptions,
+  DRAWING_PREVIEW_LONG_SIDE_PX,
+  type DrawingContextSnapshot,
+  type EntitySnapshot,
+  getDrawingContext,
+  instrumentCadScript,
+  isEntityOnLockedLayer,
+  MAX_SCRIPT_RESULT_CHARS,
+  MAX_SCRIPT_SOURCE_CHARS,
+  type MeasureCheck,
+  type MeasureReport,
+  normalizeDxfSaveRequest,
   type Point2dInput,
+  requireDocument,
+  requireView,
+  runSessionEdit,
+  toEntitySnapshot,
   type ToolResult,
   type ToolResultImage,
-  type ToolResultSavedFile
-} from './tools/types'
+  type ToolResultSavedFile,
+  validateCadScript,
+  VERIFICATION_PREVIEW_LONG_SIDE_PX
+} from '@mlightcad/cad-script-core'
+
+// Viewer bindings.
+export {
+  captureDrawingPreview,
+  waitForDrawingSceneReady
+} from './preview/captureDrawingPreview'
+export { createDocManagerSession } from './session/createDocManagerSession'
+export { viewerRunEdit, withViewerDefaults } from './session/withViewerDefaults'
+export {
+  CadActionExecutor,
+  createCadScriptHost,
+  createCadToolCatalog,
+  executeCadScript
+} from './tools/viewerBindings'

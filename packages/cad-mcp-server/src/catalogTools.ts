@@ -1,4 +1,4 @@
-import { CAD_SCRIPT_API_SUMMARY } from '@mlightcad/cad-agent-core/script-api'
+import { CAD_SCRIPT_API_SUMMARY } from '@mlightcad/cad-script-core/script-api'
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 
@@ -14,7 +14,7 @@ const visibleField = z
 /**
  * Input schema for `execute_cad_script`.
  *
- * Kept in sync with {@link createCadToolCatalog} in `@mlightcad/cad-agent-core`
+ * Kept in sync with {@link createCadToolCatalog} in `@mlightcad/cad-script-core`
  * (`code` first so streaming providers do not finalize on `intent` alone).
  */
 export const executeCadScriptInputSchema = {
@@ -151,7 +151,7 @@ export function registerCadMcpTools(
           visible: input.visible as boolean | undefined
         })
         return toolResultToMcpContent(
-          raw as import('@mlightcad/cad-agent-core').ToolResult
+          raw as import('@mlightcad/cad-script-core').ToolResult
         )
       } catch (error) {
         return {
