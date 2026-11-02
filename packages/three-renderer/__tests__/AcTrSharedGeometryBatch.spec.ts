@@ -132,6 +132,14 @@ describe('AcTrBatchedGroup shared block geometry', () => {
     expect(overlays).toHaveLength(1)
     expect(overlays[0].geometry).not.toBe(sharedGeometry)
     expect(overlays[0].material).not.toBe(instanced.material)
+    // The overlay draws on top (renderOrder 10000) of the instanced base line
+    // it tints. It must not depth-test or write depth against that line, or
+    // per-instance float32 rounding of the origin-relative matrix can push the
+    // overlay just behind the base line and a LESS_EQUAL depth test drops it —
+    // the INSERT selects but never highlights until it is moved.
+    const overlayMaterial = overlays[0].material as THREE.Material
+    expect(overlayMaterial.depthTest).toBe(false)
+    expect(overlayMaterial.depthWrite).toBe(false)
     expect(sharedGeometry.getAttribute('position').array).toEqual(position.array)
     expect(
       (

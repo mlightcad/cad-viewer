@@ -659,13 +659,24 @@ export class AcTrSharedGeometryBatch extends THREE.Object3D {
     overlay.raycast = () => {}
     const material = overlay.material
     if (material && !Array.isArray(material)) {
-      overlay.material = AcTrMaterialUtil.cloneMaterial(
+      const highlightMaterial = AcTrMaterialUtil.cloneMaterial(
         material
       ) as THREE.Material
       AcTrMaterialUtil.setMaterialColor(
-        overlay.material,
+        highlightMaterial,
         selected ? HIGHLIGHT_SELECT_COLOR : HIGHLIGHT_HOVER_COLOR
       )
+      // The overlay sits at the same Z as the instanced base line it tints.
+      // Per-instance float32 rounding of the origin-relative matrix can push
+      // the overlay's depth just behind that base line, so a default
+      // LESS_EQUAL depth test drops the overlay for instances that round
+      // unfavorably while their neighbours still render (the symptom: one
+      // INSERT of a shared block selects but never highlights until it is
+      // moved). This is an on-top highlight (renderOrder 10000), so it must
+      // neither depth-test nor write depth against the geometry it highlights.
+      highlightMaterial.depthTest = false
+      highlightMaterial.depthWrite = false
+      overlay.material = highlightMaterial
     }
     this.add(overlay)
     this._highlights.set(index, overlay)
