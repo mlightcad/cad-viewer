@@ -57,9 +57,9 @@
   },
   "devDependencies": {
     "@mlightcad/data-model": "1.15.20",
-    "@mlightcad/mtext-input-box": "0.3.6",
-    "@mlightcad/mtext-parser": "1.5.5",
-    "@mlightcad/mtext-renderer": "0.13.6",
+    "@mlightcad/mtext-input-box": "0.3.7",
+    "@mlightcad/mtext-parser": "1.5.7",
+    "@mlightcad/mtext-renderer": "0.13.7",
     "@mlightcad/three-renderer": "workspace:*",
     "@mlightcad/three-viewcube": "0.0.9",
     "@types/lodash-es": "^4.17.12",
@@ -72,8 +72,8 @@
   },
   "peerDependencies": {
     "@mlightcad/data-model": "1.15.20",
-    "@mlightcad/mtext-parser": "1.5.5",
-    "@mlightcad/mtext-renderer": "0.13.6",
+    "@mlightcad/mtext-parser": "1.5.7",
+    "@mlightcad/mtext-renderer": "0.13.7",
     "@mlightcad/three-renderer": "workspace:*",
     "lodash-es": "4.17.21",
     "three": "^0.186.1"
