@@ -2,6 +2,7 @@ import { AcApDocManager } from '../app'
 import { runMarkupEdit } from '../command/markup/AcApMarkupHistory'
 import { runMeasurementEdit } from '../command/measure/AcApMeasurementHistory'
 import { MEASUREMENT_LAYER } from '../command/measure/AcApMeasurementStore'
+import { acedIsSpaceActivatedTarget } from '../editor/input/ui/AcEdKeyboardUtil'
 import { AcEdMTextEditor } from '../editor/input/ui/AcEdMTextEditor'
 import type { AcTrView2d } from './AcTrView2d'
 
@@ -21,6 +22,10 @@ export type AcEdUndoRedoShortcut = 'undo' | 'redo'
  * Shortcuts are suppressed while the user is typing in editable fields, during
  * IME composition, while a command is acquiring input, or while MText is being
  * edited inline.
+ *
+ * Printable keys pressed on the view are typed into the command line so a
+ * command can be started without clicking it first, and Space on an idle view
+ * repeats the last command (AutoCAD behavior).
  */
 export class AcEdViewKeyHandler {
   private static readonly COMMAND_LINE_INPUT_CLASS = 'ml-cli-text'
@@ -106,7 +111,48 @@ export class AcEdViewKeyHandler {
         return false
     }
 
-    return false
+    return this.handleTypedKey(e)
+  }
+
+  /**
+   * Routes a printable key pressed on the view to the command line.
+   *
+   * Space repeats the last command when no prompt is active; prompts handle
+   * Space themselves (as Enter). Other characters start typing in the command
+   * line, which also covers keywords of the active prompt.
+   */
+  private handleTypedKey(e: KeyboardEvent): boolean {
+    if (e.ctrlKey || e.metaKey || e.altKey) return false
+    if (typeof e.key !== 'string' || e.key.length !== 1) return false
+    if (AcEdMTextEditor.getActiveInputBox() || this.isModalDialogOpen()) {
+      return false
+    }
+
+    const editor = this.view.editor
+    if (e.key === ' ') {
+      // A held Space must not relaunch the command on every auto-repeat.
+      if (e.repeat || editor.isActive || acedIsSpaceActivatedTarget(e.target)) {
+        return false
+      }
+      editor.inputManager.repeatLastCommand()
+      e.preventDefault()
+      return true
+    }
+
+    if (!editor.inputManager.typeIntoCommandLine(e.key)) return false
+    e.preventDefault()
+    return true
+  }
+
+  /**
+   * Whether a modal dialog is showing; its controls own the keyboard even when
+   * the dialog is mounted inside the view container.
+   */
+  private isModalDialogOpen(): boolean {
+    const candidates = document.querySelectorAll<HTMLElement>(
+      '.ml-ui-dialog-backdrop, [aria-modal="true"]'
+    )
+    return Array.from(candidates).some(el => el.getClientRects().length > 0)
   }
 
   private resolveUndoRedoShortcut(

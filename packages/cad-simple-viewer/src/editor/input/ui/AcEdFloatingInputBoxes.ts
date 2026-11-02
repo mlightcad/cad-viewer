@@ -3,6 +3,7 @@ import {
   AcEdFloatingInputCancelCallback,
   AcEdFloatingInputChangeCallback,
   AcEdFloatingInputCommitCallback,
+  AcEdFloatingInputLetterCallback,
   AcEdFloatingInputNoneCallback,
   AcEdFloatingInputRawData,
   AcEdFloatingInputValidationCallback,
@@ -50,6 +51,21 @@ export interface AcEdFloatingInputBoxesOptions<T> {
    * Callback invoked when Enter submits "none" (AllowNone + empty typed input).
    */
   onNone?: AcEdFloatingInputNoneCallback
+
+  /**
+   * Callback invoked when a Latin letter is typed into the fields. Numeric
+   * prompts use it to hand keyword/command text over to the command line;
+   * return `true` to consume the key.
+   */
+  onLetter?: AcEdFloatingInputLetterCallback
+
+  /**
+   * Whether Space confirms the input like Enter (AutoCAD behavior). Leave it
+   * off for prompts whose value may itself contain spaces.
+   *
+   * Default: `false`
+   */
+  spaceCommits?: boolean
 
   /**
    * Whether to autofocus/select inputs after mount.
@@ -113,6 +129,8 @@ export class AcEdFloatingInputBoxes<T> {
   private onChange?: AcEdFloatingInputChangeCallback<T>
   private onCancel?: AcEdFloatingInputCancelCallback
   private onNone?: AcEdFloatingInputNoneCallback
+  private onLetter?: AcEdFloatingInputLetterCallback
+  private spaceCommits: boolean
   private validateFn: AcEdFloatingInputValidationCallback<T>
   private allowNone: boolean
   private useDefaultValue: boolean
@@ -145,6 +163,8 @@ export class AcEdFloatingInputBoxes<T> {
     this.onChange = options.onChange
     this.onCancel = options.onCancel
     this.onNone = options.onNone
+    this.onLetter = options.onLetter
+    this.spaceCommits = options.spaceCommits ?? false
     this.allowNone = options.allowNone ?? false
     this.useDefaultValue = options.useDefaultValue ?? false
     this.defaultValue = options.defaultValue
@@ -219,7 +239,8 @@ export class AcEdFloatingInputBoxes<T> {
   }
 
   /**
-   * Handles keyboard events (Enter for commit, Escape for cancel).
+   * Handles keyboard events (Enter, or Space when enabled, to commit; Escape
+   * to cancel; letters forwarded through `onLetter`).
    */
   private handleKeyDown(e: KeyboardEvent): void {
     // Find out which input element triggers this event
@@ -230,7 +251,22 @@ export class AcEdFloatingInputBoxes<T> {
       nextInput = this.xInput
     }
 
-    if (e.key === 'Enter') {
+    if (e.isComposing) return
+
+    if (
+      this.onLetter &&
+      /^[a-z]$/i.test(e.key) &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      this.onLetter(e.key)
+    ) {
+      e.preventDefault()
+      e.stopPropagation()
+      return
+    }
+
+    if (e.key === 'Enter' || (e.key === ' ' && this.spaceCommits)) {
       if (this.useDefaultValue && !this.userTyped) {
         const committed =
           !this.onCommit || this.onCommit(this.defaultValue as T)

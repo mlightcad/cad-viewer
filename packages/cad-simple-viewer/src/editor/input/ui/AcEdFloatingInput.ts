@@ -128,6 +128,12 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
    * otherwise hit the canvas and commit the next point prompt.
    */
   private mouseClickArmed = false
+  /**
+   * Set once typed letters were handed to the command line: preview refreshes
+   * must not pull focus back into the fields for the rest of this prompt, or
+   * the next mouse move would split the user's text between two inputs.
+   */
+  private typingMovedToCommandLine = false
   /** Whether to suppress UI display while keeping input active */
   private suppressDisplay: boolean = false
   /** When false, click / touch pick must not commit (string prompts). */
@@ -195,12 +201,21 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     // Input boxes
     // -----------------------------
     if (options.inputCount !== 0) {
+      const onLetter = options.onLetter
       this.inputs = new AcEdFloatingInputBoxes<T>({
         parent: this.container,
         twoInputs: options.inputCount === 2,
         validate: this.validateFn,
         onCancel: this.onCancel,
         onNone: this.onNone,
+        onLetter: onLetter
+          ? char => {
+              if (!onLetter(char)) return false
+              this.typingMovedToCommandLine = true
+              return true
+            }
+          : undefined,
+        spaceCommits: options.spaceCommits,
         onCommit: this.onCommit,
         onChange: this.onChange,
         autoFocus: this.isDynamicInputEnabled(),
@@ -325,6 +340,7 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
   override dispose() {
     if (this.disposed) return
     this.cancelTouchPreciseSchedule()
+    const hadFocus = !!this.inputs?.focused
     super.dispose()
 
     this.parent.removeEventListener('click', this.boundOnClick)
@@ -335,7 +351,11 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     )
     this.parent.removeEventListener('pointermove', this.boundOnPointerMove)
     this.parent.removeEventListener('touchstart', this.boundOnTouchStart, true)
-    this.parent.removeEventListener('contextmenu', this.boundOnContextMenu, true)
+    this.parent.removeEventListener(
+      'contextmenu',
+      this.boundOnContextMenu,
+      true
+    )
     window.removeEventListener('pointerup', this.boundOnPointerUp)
     window.removeEventListener('pointercancel', this.boundOnPointerCancel)
     window.removeEventListener('touchmove', this.boundOnTouchMove)
@@ -353,6 +373,9 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.rubberBand?.dispose()
     this.osnapMarkerManager?.clear()
     this.view.osnapResolver.clearAcquiredCenters()
+    // Removing the focused field would drop focus to <body>, where the view's
+    // shortcuts (type-to-command, Space, Delete, Ctrl+Z) no longer see keys.
+    if (hadFocus) this.view.container.focus({ preventScroll: true })
   }
 
   /**
@@ -750,7 +773,12 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
     this.inputs?.setValue(defaults.raw)
 
     // Ensure focus stays in input boxes
-    if (this.inputs && !this.inputs.focused && !this.suppressDisplay) {
+    if (
+      this.inputs &&
+      !this.inputs.focused &&
+      !this.suppressDisplay &&
+      !this.typingMovedToCommandLine
+    ) {
       this.inputs.focus()
     }
 
@@ -832,7 +860,11 @@ export class AcEdFloatingInput<T> extends AcEdFloatingMessage {
       this.inputs?.blur()
     } else {
       this.container.style.display = 'flex'
-      if (this.inputs && !this.inputs.focused) {
+      if (
+        this.inputs &&
+        !this.inputs.focused &&
+        !this.typingMovedToCommandLine
+      ) {
         this.inputs.focus()
       }
     }
