@@ -1,5 +1,18 @@
 # @mlightcad/cad-agent-plugin
 
+## 1.7.8
+
+### Patch Changes
+
+- d2f9e04: fix: send CAD tool results to the agent model again. `toModelOutput` destructured `{ output }`, but AI SDK v5 passes the raw tool result, so every `execute_cad_script` result reached the model as `null`. `CadToolDefinition.execute` now returns `Promise<ToolResult>` instead of `unknown`, and the plugin pins the `tool()` output type so a wrong signature is a type error.
+- feat: adds dimension drawing commands with an annotation scale selector, rebuilds the Dimension Style Manager with AutoCAD-style tabs, and moves the ribbon dimension tools into the Annotation dropdown. Adds a script-first MCP server with headed/idle session control and `cad.file.saveDxf`, and splits the script runtime into `@mlightcad/cad-script-core`. Fixes repeated redo and redone-entity rendering, box selection through paper-space viewports, offline HTML layout framing, coordinate-bubble drift, embedded raster images, ACI-7 block colours on layer 0, and large-coordinate glyph precision.
+- Updated dependencies [d2f9e04]
+- Updated dependencies
+- Updated dependencies [d2f9e04]
+  - @mlightcad/cad-script-core@1.7.8
+  - @mlightcad/cad-agent-core@1.7.8
+  - @mlightcad/cad-simple-viewer@1.7.8
+
 ## 1.7.8-preview.6
 
 ### Patch Changes

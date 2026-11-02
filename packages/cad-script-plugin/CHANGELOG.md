@@ -1,5 +1,17 @@
 # @mlightcad/cad-script-plugin
 
+## 1.7.8
+
+### Patch Changes
+
+- feat: adds dimension drawing commands with an annotation scale selector, rebuilds the Dimension Style Manager with AutoCAD-style tabs, and moves the ribbon dimension tools into the Annotation dropdown. Adds a script-first MCP server with headed/idle session control and `cad.file.saveDxf`, and splits the script runtime into `@mlightcad/cad-script-core`. Fixes repeated redo and redone-entity rendering, box selection through paper-space viewports, offline HTML layout framing, coordinate-bubble drift, embedded raster images, ACI-7 block colours on layer 0, and large-coordinate glyph precision.
+- Updated dependencies [d2f9e04]
+- Updated dependencies
+- Updated dependencies [d2f9e04]
+  - @mlightcad/cad-script-core@1.7.8
+  - @mlightcad/cad-agent-core@1.7.8
+  - @mlightcad/cad-simple-viewer@1.7.8
+
 ## 1.7.8-preview.6
 
 ### Patch Changes

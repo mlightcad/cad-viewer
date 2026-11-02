@@ -1,5 +1,23 @@
 # @mlightcad/three-renderer
 
+## 1.7.8
+
+### Patch Changes
+
+- 05fdcf3: fix: rebase mesh-glyph instance matrices around a bucket origin
+
+  Scene-level TrueType glyph InstancedMesh batching baked absolute world
+  coordinates into float32 instance matrices, so on large-coordinate
+  (georeferenced, e.g. CGCS2000) drawings glyph vertices quantized to
+  0.25–2 drawing units and text rendered mangled; hover/selection
+  overlays were unaffected, which hid the cause. Instance matrices now
+  bake in float64 and are rebased at flush around each bucket's first
+  placement, with the origin carried on the InstancedMesh position where
+  the CPU's float64 model-view math absorbs it. Highlight overlays parent
+  under the InstancedMesh so they inherit the same origin.
+
+- feat: adds dimension drawing commands with an annotation scale selector, rebuilds the Dimension Style Manager with AutoCAD-style tabs, and moves the ribbon dimension tools into the Annotation dropdown. Adds a script-first MCP server with headed/idle session control and `cad.file.saveDxf`, and splits the script runtime into `@mlightcad/cad-script-core`. Fixes repeated redo and redone-entity rendering, box selection through paper-space viewports, offline HTML layout framing, coordinate-bubble drift, embedded raster images, ACI-7 block colours on layer 0, and large-coordinate glyph precision.
+
 ## 1.7.8-preview.6
 
 ### Patch Changes
