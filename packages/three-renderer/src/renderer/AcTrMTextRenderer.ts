@@ -387,7 +387,7 @@ export class AcTrMTextRenderer {
       const baked = AcTrMeshGlyphWorldBatch.bakeWorldMatrices(node, placements)
       const byGeom = new Map<
         string,
-        { geometry: THREE.BufferGeometry; matrices: Float32Array[] }
+        { geometry: THREE.BufferGeometry; matrices: Float64Array[] }
       >()
       for (const item of baked) {
         let group = byGeom.get(item.geometry.uuid)

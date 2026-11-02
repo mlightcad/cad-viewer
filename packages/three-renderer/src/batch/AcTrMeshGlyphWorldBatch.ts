@@ -13,7 +13,16 @@ const _matrix = /*@__PURE__*/ new THREE.Matrix4()
 const _world = /*@__PURE__*/ new THREE.Matrix4()
 const _box = /*@__PURE__*/ new THREE.Box3()
 const _hitPoint = /*@__PURE__*/ new THREE.Vector3()
+const _origin = /*@__PURE__*/ new THREE.Vector3()
 const _hiddenMatrix = /*@__PURE__*/ new THREE.Matrix4().makeScale(0, 0, 0)
+
+/**
+ * Column-major 4×4 matrix elements accepted by the glyph batch. Enqueue in
+ * `Float64Array` whenever the matrix carries world-space translation — large
+ * drawing coordinates (georeferenced drawings) do not survive a float32
+ * round trip.
+ */
+export type AcTrGlyphMatrixElements = Float32Array | Float64Array
 
 export interface AcTrMeshGlyphEnqueueMeta {
   /** Database object id of the owning TEXT/MTEXT entity. */
@@ -37,7 +46,7 @@ interface GlyphBatchBucket {
   /** Layout block-table-record id; empty when the glyph has no layout owner. */
   ownerId: string
   /** World-space column-major matrices. */
-  matrices: Float32Array[]
+  matrices: AcTrGlyphMatrixElements[]
   objectIds: string[]
 }
 
@@ -53,7 +62,10 @@ interface LiveSlot {
  *
  * Unit glyph geometries stay in the mtext-renderer cache. Each placement
  * contributes a world-space 4×4 matrix, avoiding per-entity `mergeMesh`
- * vertex bake on text-heavy drawings.
+ * vertex bake on text-heavy drawings. At {@link flush} each bucket's
+ * matrices are rebased around the first placement's translation (carried on
+ * the InstancedMesh's `position`) so float32 instance buffers keep sub-unit
+ * precision on large-coordinate (georeferenced) drawings.
  *
  * Buckets are keyed by `geometry × material × layer × layout owner` and
  * parented under that layout's layer group so layer on/off works. Per-entity
@@ -92,7 +104,7 @@ export class AcTrMeshGlyphWorldBatch {
    * MTextObject.position / entity hierarchy into each matrix).
    */
   enqueue(
-    worldMatrices: readonly Float32Array[],
+    worldMatrices: readonly AcTrGlyphMatrixElements[],
     geometry: THREE.BufferGeometry,
     material: THREE.Material,
     meta: AcTrMeshGlyphEnqueueMeta
@@ -171,18 +183,25 @@ export class AcTrMeshGlyphWorldBatch {
       const local = bucket.geometry.boundingBox
       const meshWorldBox = new THREE.Box3()
 
+      // Rebase instance translations around the bucket's first placement so
+      // the float32 instance buffer (and the GPU's per-vertex float32 math)
+      // only ever sees drawing-extent offsets. The origin rides on
+      // `mesh.position`, where the CPU's float64 model-view multiply cancels
+      // large georeferenced coordinates against the camera — same origin
+      // trick as {@link AcTrBatchedMesh}. Without this, CGCS2000-scale
+      // coordinates quantize glyph vertices to 0.25–2 drawing units.
+      const first = bucket.matrices[0]
+      _origin.set(first[12], first[13], first[14])
+      mesh.position.copy(_origin)
+      mesh.updateMatrix()
+
       for (let i = 0; i < count; i++) {
         _matrix.fromArray(bucket.matrices[i])
-        mesh.setMatrixAt(i, _matrix)
         const objectId = bucket.objectIds[i]
-        let slots = this._slotsByObjectId.get(objectId)
-        if (!slots) {
-          slots = []
-          this._slotsByObjectId.set(objectId, slots)
-        }
-        slots.push({ mesh, index: i })
 
         if (local && !local.isEmpty()) {
+          // Pick boxes stay world-space: use the full-precision matrix
+          // before its translation is rebased below.
           _box.copy(local).applyMatrix4(_matrix)
           meshWorldBox.union(_box)
           let pickBox = this._worldPickBoxByObjectId.get(objectId)
@@ -192,9 +211,25 @@ export class AcTrMeshGlyphWorldBatch {
           }
           pickBox.union(_box)
         }
+
+        const elements = _matrix.elements
+        elements[12] -= _origin.x
+        elements[13] -= _origin.y
+        elements[14] -= _origin.z
+        mesh.setMatrixAt(i, _matrix)
+
+        let slots = this._slotsByObjectId.get(objectId)
+        if (!slots) {
+          slots = []
+          this._slotsByObjectId.set(objectId, slots)
+        }
+        slots.push({ mesh, index: i })
       }
       mesh.instanceMatrix.needsUpdate = true
       if (!meshWorldBox.isEmpty()) {
+        // `boundingBox` is mesh-local; shift the world union back by the origin.
+        meshWorldBox.min.sub(_origin)
+        meshWorldBox.max.sub(_origin)
         mesh.boundingBox = meshWorldBox
       }
 
@@ -434,22 +469,26 @@ export class AcTrMeshGlyphWorldBatch {
   /**
    * Converts local placements under `anchor` into world-space matrices.
    * Call after `anchor` is parented and `updateMatrixWorld` has run.
+   *
+   * Matrices are returned in float64: world translations on georeferenced
+   * drawings exceed float32 precision, and {@link flush} needs the exact
+   * values to rebase instance matrices around each bucket origin.
    */
   static bakeWorldMatrices(
     anchor: THREE.Object3D,
     placements: readonly MeshGlyphPlacement[]
-  ): Array<{ geometry: THREE.BufferGeometry; matrixElements: Float32Array }> {
+  ): Array<{ geometry: THREE.BufferGeometry; matrixElements: Float64Array }> {
     anchor.updateMatrixWorld(true)
     const out: Array<{
       geometry: THREE.BufferGeometry
-      matrixElements: Float32Array
+      matrixElements: Float64Array
     }> = []
     for (const placement of placements) {
       _matrix.fromArray(placement.matrixElements)
       _world.multiplyMatrices(anchor.matrixWorld, _matrix)
       out.push({
         geometry: placement.geometry,
-        matrixElements: new Float32Array(_world.elements)
+        matrixElements: new Float64Array(_world.elements)
       })
     }
     return out
@@ -541,12 +580,9 @@ export class AcTrMeshGlyphWorldBatch {
       overlay.renderOrder = 10000
       overlay.raycast = () => {}
       getSceneDrawableUserData(overlay).sharesTemplateGeometry = false
-      const parent = slot.mesh.parent
-      if (parent) {
-        parent.add(overlay)
-      } else if (this._root) {
-        this._root.add(overlay)
-      }
+      // Instance matrices are origin-rebased at flush; parenting under the
+      // InstancedMesh inherits the bucket origin on `mesh.position`.
+      slot.mesh.add(overlay)
       overlays.push(overlay)
     }
     if (overlays.length > 0) {
