@@ -123,14 +123,10 @@ importers:
         version: 2.0.17(mermaid@11.17.2)(vitepress@1.6.4(@algolia/client-search@5.57.0)(@types/node@24.12.4)(async-validator@4.2.5)(axios@1.14.0)(postcss@8.5.8)(sass@1.98.0)(search-insights@2.17.3)(typescript@5.9.3))
 
   packages/cad-agent-core:
-    dependencies:
-      acorn:
-        specifier: ^8.15.0
-        version: 8.16.0
-      zod:
-        specifier: ^3.24.0
-        version: 3.25.76
     devDependencies:
+      '@mlightcad/cad-script-core':
+        specifier: workspace:*
+        version: link:../cad-script-core
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
@@ -159,6 +155,9 @@ importers:
       '@mlightcad/cad-agent-core':
         specifier: workspace:*
         version: link:../cad-agent-core
+      '@mlightcad/cad-script-core':
+        specifier: workspace:*
+        version: link:../cad-script-core
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
@@ -261,6 +260,9 @@ importers:
       '@mlightcad/cad-pdf-plugin':
         specifier: workspace:*
         version: link:../cad-pdf-plugin
+      '@mlightcad/cad-script-core':
+        specifier: workspace:*
+        version: link:../cad-script-core
       '@mlightcad/cad-script-plugin':
         specifier: workspace:*
         version: link:../cad-script-plugin
@@ -357,6 +359,9 @@ importers:
       '@mlightcad/cad-pdf-plugin':
         specifier: workspace:*
         version: link:../cad-pdf-plugin
+      '@mlightcad/cad-script-core':
+        specifier: workspace:*
+        version: link:../cad-script-core
       '@mlightcad/cad-script-plugin':
         specifier: workspace:*
         version: link:../cad-script-plugin
@@ -543,6 +548,9 @@ importers:
       '@mlightcad/cad-agent-core':
         specifier: workspace:*
         version: link:../cad-agent-core
+      '@mlightcad/cad-script-core':
+        specifier: workspace:*
+        version: link:../cad-script-core
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
@@ -612,6 +620,19 @@ importers:
         specifier: ^5.6.205
         version: 5.7.284
 
+  packages/cad-script-core:
+    dependencies:
+      acorn:
+        specifier: ^8.15.0
+        version: 8.16.0
+      zod:
+        specifier: ^3.24.0
+        version: 3.25.76
+    devDependencies:
+      '@mlightcad/data-model':
+        specifier: 1.15.20
+        version: 1.15.20
+
   packages/cad-script-plugin:
     dependencies:
       '@codemirror/autocomplete':
@@ -645,6 +666,9 @@ importers:
       '@mlightcad/cad-agent-core':
         specifier: workspace:*
         version: link:../cad-agent-core
+      '@mlightcad/cad-script-core':
+        specifier: workspace:*
+        version: link:../cad-script-core
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
@@ -775,6 +799,9 @@ importers:
       '@mlightcad/cad-pdf-plugin':
         specifier: workspace:*
         version: link:../cad-pdf-plugin
+      '@mlightcad/cad-script-core':
+        specifier: workspace:*
+        version: link:../cad-script-core
       '@mlightcad/cad-script-plugin':
         specifier: workspace:*
         version: link:../cad-script-plugin

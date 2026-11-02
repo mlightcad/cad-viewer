@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "@mlightcad/cad-agent-core": "workspace:*",
+    "@mlightcad/cad-script-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "1.15.20",
     "@mlightcad/libredwg-converter": "3.15.20",

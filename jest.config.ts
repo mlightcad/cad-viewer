@@ -5,6 +5,14 @@ const config: Config = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   transform: {
+    // Transpile-only: type-checking the `ai` / `@ai-sdk/*` graph that
+    // cad-agent-plugin pulls in exhausts the heap (see its copy-typings.mjs).
+    '^.+[\\\\/]packages[\\\\/]cad-agent-plugin[\\\\/].+\\.ts$': [
+      'ts-jest',
+      {
+        tsconfig: '<rootDir>/packages/cad-agent-plugin/tsconfig.jest.json'
+      }
+    ],
     '^.+\\.(ts|tsx)$': [
       'ts-jest',
       {
@@ -31,6 +39,10 @@ const config: Config = {
       '<rootDir>/packages/cad-html-core/src/index.ts',
     '^@mlightcad/cad-agent-core$':
       '<rootDir>/packages/cad-agent-core/src/index.ts',
+    '^@mlightcad/cad-script-core$':
+      '<rootDir>/packages/cad-script-core/src/index.ts',
+    '^@mlightcad/cad-script-core/script-api$':
+      '<rootDir>/packages/cad-script-core/src/script-api.ts',
     '^@mlightcad/cad-simple-viewer$':
       '<rootDir>/packages/cad-simple-viewer/src/index.ts',
     '^@mlightcad/cad-simple-viewer/icons$':

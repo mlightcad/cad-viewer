@@ -1,28 +1,3 @@
-jest.mock('@mlightcad/cad-simple-viewer', () => ({
-  AcEdOpenMode: { Read: 0, Review: 4, Write: 8 },
-  AcApDocManager: {},
-  resolveDrawingExtents: () => undefined,
-  AcApRasterImageConvertor: class {},
-  AcTrView2d: class {},
-  acapRunDatabaseEdit: (
-    db: { runDatabaseEdit: (label: string, fn: () => void) => void },
-    label: string,
-    fn: () => void
-  ) => {
-    db.runDatabaseEdit(label, fn)
-  }
-}))
-
-jest.mock('../src/preview/captureDrawingPreview', () => ({
-  DRAWING_PREVIEW_LONG_SIDE_PX: 1024,
-  VERIFICATION_PREVIEW_LONG_SIDE_PX: 1024,
-  captureDrawingPreview: jest.fn(async () => ({
-    ok: true,
-    dataUrl: 'data:image/png;base64,aaa'
-  })),
-  waitForDrawingSceneReady: jest.fn(async () => true)
-}))
-
 import {
   AcDbBlockTableRecord,
   AcDbCircle,
@@ -32,11 +7,13 @@ import {
   AcGePoint3d
 } from '@mlightcad/data-model'
 
-import { AcEdOpenMode } from '../../cad-simple-viewer/src/editor/view/AcEdOpenMode'
-import { captureDrawingPreview } from '../src/preview/captureDrawingPreview'
 import { executeCadScript } from '../src/script/executeCadScript'
 import { CAD_MCP_DXF_OUTBOX_KEY } from '../src/script/scriptApi'
-import type { CadSession, CadSessionView } from '../src/session/CadSession'
+import {
+  type CadSession,
+  CadSessionOpenMode,
+  type CadSessionView
+} from '../src/session/CadSession'
 
 const COUNT_SCRIPT = `
 const counts = {}
@@ -178,7 +155,7 @@ describe('executeCadScript', () => {
   })
 
   test('rejects a write script on a read-only drawing', async () => {
-    const { session, db } = createFixture(AcEdOpenMode.Read)
+    const { session, db } = createFixture(CadSessionOpenMode.Read)
     const spy = jest.spyOn(db, 'runDatabaseEdit')
     const before = countEntities(db)
 
@@ -289,8 +266,7 @@ describe('executeCadScript', () => {
   })
 
   test('queues capturePreview and attaches images after the script', async () => {
-    const { session } = createFixture()
-    ;(captureDrawingPreview as jest.Mock).mockClear()
+    const { session, capturePreview } = createFixture()
 
     const result = await executeCadScript(
       {
@@ -305,15 +281,14 @@ describe('executeCadScript', () => {
 
     expect(result.success).toBe(true)
     expect(result.data).toEqual({ queued: true, index: 0 })
-    expect(captureDrawingPreview).toHaveBeenCalledWith(512)
+    expect(capturePreview).toHaveBeenCalledWith(512)
     expect(result.images).toEqual([
       { mediaType: 'image/png', dataUrl: 'data:image/png;base64,aaa' }
     ])
   })
 
   test('skips capturePreview when fulfillPreviews is false', async () => {
-    const { session } = createFixture()
-    ;(captureDrawingPreview as jest.Mock).mockClear()
+    const { session, capturePreview } = createFixture()
 
     const result = await executeCadScript(
       {
@@ -328,7 +303,7 @@ describe('executeCadScript', () => {
     )
 
     expect(result.success).toBe(true)
-    expect(captureDrawingPreview).not.toHaveBeenCalled()
+    expect(capturePreview).not.toHaveBeenCalled()
     expect(result.images).toBeUndefined()
     expect(result.log).toContain(
       'capturePreview skipped: screenshots disabled in this session'
@@ -494,7 +469,7 @@ describe('executeCadScript', () => {
   })
 })
 
-function createFixture(openMode = AcEdOpenMode.Write) {
+function createFixture(openMode: number = CadSessionOpenMode.Write) {
   const db = new AcDbDatabase()
   db.tables.layerTable.add(new AcDbLayerTableRecord({ name: 'Walls' }))
 
@@ -524,7 +499,12 @@ function createFixture(openMode = AcEdOpenMode.Write) {
       return []
     }
   }
+  const capturePreview = jest.fn(async (_longSide: number) => ({
+    ok: true as const,
+    dataUrl: 'data:image/png;base64,aaa'
+  }))
   const session: CadSession = {
+    capturePreview,
     getDocument: () => ({
       database: db,
       openMode,
@@ -552,7 +532,7 @@ function createFixture(openMode = AcEdOpenMode.Write) {
     }),
     getView: () => view
   }
-  return { session, db, selection }
+  return { session, db, selection, capturePreview }
 }
 
 function countEntities(db: AcDbDatabase): number {

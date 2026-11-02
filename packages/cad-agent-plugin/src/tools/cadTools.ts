@@ -18,7 +18,9 @@ export interface CreateCadToolsOptions {
 /**
  * Strips bulky image payloads from a tool result before JSON text for the model.
  */
-function toolResultWithoutImages(result: ToolResult): Omit<ToolResult, 'images'> {
+function toolResultWithoutImages(
+  result: ToolResult
+): Omit<ToolResult, 'images'> {
   const { images: _images, ...rest } = result
   return rest
 }
@@ -102,11 +104,14 @@ export function createCadTools(options: CreateCadToolsOptions = {}) {
   return Object.fromEntries(
     createCadToolCatalog(undefined, { allowPreviewCapture }).map(entry => [
       entry.name,
-      tool({
+      // Pin OUTPUT so `toModelOutput` is checked against ToolResult.
+      tool<unknown, ToolResult>({
         description: entry.description,
         inputSchema: entry.inputSchema,
         execute: async (input: unknown) => entry.execute(input),
-        toModelOutput: ({ output }: { output: unknown }) =>
+        // AI SDK v5 passes the raw execute() result here, not `{ output }`;
+        // destructuring it sends `null` to the model (see cadTools.spec.ts).
+        toModelOutput: (output: ToolResult) =>
           toCadToolModelOutput(output, allowPreviewCapture)
       })
     ])

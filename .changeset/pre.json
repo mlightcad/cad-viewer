@@ -14,6 +14,7 @@
     "@mlightcad/cad-mcp-server": "1.7.7",
     "@mlightcad/cad-onedrive-plugin": "1.7.7",
     "@mlightcad/cad-pdf-plugin": "1.7.7",
+    "@mlightcad/cad-script-core": "1.7.7",
     "@mlightcad/cad-script-plugin": "1.7.7",
     "@mlightcad/cad-simple-ui-plugin": "1.7.7",
     "@mlightcad/cad-simple-viewer": "1.7.7",

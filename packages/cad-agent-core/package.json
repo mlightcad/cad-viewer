@@ -35,15 +35,13 @@
     "lint": "eslint src/",
     "lint:fix": "eslint --fix --quiet src/"
   },
-  "dependencies": {
-    "acorn": "^8.15.0",
-    "zod": "^3.24.0"
-  },
   "devDependencies": {
+    "@mlightcad/cad-script-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "1.15.20"
   },
   "peerDependencies": {
+    "@mlightcad/cad-script-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "1.15.20"
   }

@@ -1,4 +1,3 @@
-import { acapRunDatabaseEdit } from '@mlightcad/cad-simple-viewer'
 import {
   AcDbArc,
   AcDbCircle,
@@ -26,9 +25,9 @@ import {
 import type { DrawingContextSnapshot } from '../context/DrawingContextProvider'
 import { getDrawingContext } from '../context/DrawingContextProvider'
 import type { CadSession } from '../session/CadSession'
-import { createDocManagerSession } from '../session/createDocManagerSession'
 import { requireDocument, requireView } from '../session/documentAccess'
 import { getScriptEditDepth } from '../session/editDepth'
+import { runSessionEdit } from '../session/runSessionEdit'
 import type { Point2dInput, ToolResult } from './types'
 
 export type { Point2dInput, ToolResult } from './types'
@@ -134,12 +133,7 @@ function runEdit<T>(session: CadSession, label: string, fn: () => T): T {
   if (getScriptEditDepth() > 0) {
     return fn()
   }
-  const db = session.getDocument()!.database
-  let result!: T
-  acapRunDatabaseEdit(db, label, () => {
-    result = fn()
-  })
-  return result
+  return runSessionEdit(session, session.getDocument()!.database, label, fn)
 }
 
 /**
@@ -149,11 +143,10 @@ function runEdit<T>(session: CadSession, label: string, fn: () => T): T {
  */
 export class CadActionExecutor {
   /**
-   * @param session - Drawing access. Defaults to the live {@link AcApDocManager} session.
+   * @param session - Drawing access. Edits go through {@link CadSession.runEdit}
+   *   when the session provides it.
    */
-  constructor(
-    private readonly session: CadSession = createDocManagerSession()
-  ) {}
+  constructor(private readonly session: CadSession) {}
 
   /**
    * Returns a snapshot of the active drawing (same data as script `cad.drawing`).
@@ -950,6 +943,3 @@ export class CadActionExecutor {
     }
   }
 }
-
-/** Shared singleton used by {@link createCadTools}. */
-export const cadActionExecutor = new CadActionExecutor()

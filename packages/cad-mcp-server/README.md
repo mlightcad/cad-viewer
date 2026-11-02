@@ -210,7 +210,8 @@ import {
 
 ## Related packages
 
-- `@mlightcad/cad-agent-core` — script host and tool catalog
+- `@mlightcad/cad-script-core` — script host and tool catalog (data-model only; the Node side imports its `script-api` entry)
+- `@mlightcad/cad-agent-core` — binds the runtime to the viewer inside the Chromium runner page
 - `@mlightcad/cad-agent-plugin` — in-app chat agent
 - `@mlightcad/cad-script-plugin` — manual script console
 - `@mlightcad/cad-simple-viewer-cli` — AutoCAD `.scr` headless CLI (different script model)

@@ -55,6 +55,43 @@ export default [
   },
   eslintConfigPrettier,
   {
+    // cad-script-core must run without a viewer: keep it on data-model only.
+    files: ['packages/cad-script-core/src/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                '@mlightcad/*',
+                '!@mlightcad/data-model',
+                '!@mlightcad/cad-script-core'
+              ],
+              message:
+                'cad-script-core may only depend on @mlightcad/data-model. Put viewer code in cad-agent-core.'
+            },
+            {
+              // Relative imports into higher-level workspace packages.
+              group: [
+                '**/cad-simple-viewer/**',
+                '**/three-renderer/**',
+                '**/cad-agent-core/**'
+              ],
+              message:
+                'cad-script-core may only depend on @mlightcad/data-model. Put viewer code in cad-agent-core.'
+            },
+            {
+              group: ['three', 'three/*', 'vue', '@vue/*'],
+              message:
+                'cad-script-core may only depend on @mlightcad/data-model. Put viewer code in cad-agent-core.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
     rules: {
       '@intlify/vue-i18n/no-dynamic-keys': 'error',
       '@intlify/vue-i18n/no-unused-keys': [

@@ -8,8 +8,11 @@ import {
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import type { ToolResult, ToolResultSavedFile } from '@mlightcad/cad-agent-core'
-import { CAD_MCP_DXF_OUTBOX_KEY } from '@mlightcad/cad-agent-core/script-api'
+import type {
+  ToolResult,
+  ToolResultSavedFile
+} from '@mlightcad/cad-script-core'
+import { CAD_MCP_DXF_OUTBOX_KEY } from '@mlightcad/cad-script-core/script-api'
 import { type Browser, type Page } from 'playwright'
 
 import { launchHeadlessChromium } from './headlessGpu.js'

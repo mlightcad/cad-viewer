@@ -1,7 +1,5 @@
-import { AcEdOpenMode } from '@mlightcad/cad-simple-viewer'
-
 import type { ToolResult } from '../tools/types'
-import type { CadSession } from './CadSession'
+import { type CadSession, CadSessionOpenMode } from './CadSession'
 
 /**
  * Verifies that the session has an active drawing.
@@ -24,7 +22,7 @@ export function requireDocument(
       }
     }
 
-    if (requireWrite && doc.openMode !== AcEdOpenMode.Write) {
+    if (requireWrite && doc.openMode !== CadSessionOpenMode.Write) {
       return {
         success: false,
         message: 'The drawing is open in read-only mode.',

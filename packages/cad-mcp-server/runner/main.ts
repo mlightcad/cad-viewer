@@ -176,7 +176,7 @@ window.__cadMcp = {
     if (!tool) {
       throw new Error('execute_cad_script missing from cad-agent-core catalog')
     }
-    return (await tool.execute(args)) as ToolResult
+    return tool.execute(args)
   }
 }
 

@@ -1,4 +1,4 @@
-import type { ToolResult } from '@mlightcad/cad-agent-core'
+import type { ToolResult } from '@mlightcad/cad-script-core'
 
 /**
  * MCP tool-result content block (text or image).
@@ -8,7 +8,7 @@ export type McpContentBlock =
   | { type: 'image'; data: string; mimeType: string }
 
 /**
- * Converts a cad-agent-core {@link ToolResult} into MCP content blocks.
+ * Converts a cad-script-core {@link ToolResult} into MCP content blocks.
  *
  * Screenshot data URLs from `cad.view.capturePreview` become image parts;
  * the JSON summary omits bulky data URLs.

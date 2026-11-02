@@ -1,7 +1,4 @@
-import {
-  captureDrawingPreview,
-  DRAWING_PREVIEW_LONG_SIDE_PX
-} from '../preview/captureDrawingPreview'
+import { DRAWING_PREVIEW_LONG_SIDE_PX } from '../preview/types'
 import type { CadSession } from '../session/CadSession'
 import { requireDocument } from '../session/documentAccess'
 import type { ToolResult, ToolResultImage } from '../tools/types'
@@ -53,6 +50,9 @@ export interface CadScriptRunOptions {
   /**
    * When `false`, queued `cad.view.capturePreview` requests are not fulfilled
    * (no PNG capture, no `images` on the result). Default `true`.
+   *
+   * Capture uses {@link CadSession.capturePreview}; sessions without it skip
+   * previews regardless of this flag.
    */
   fulfillPreviews?: boolean
 }
@@ -61,7 +61,8 @@ export interface CadScriptRunOptions {
  * Validates and runs a CAD script against `session`.
  *
  * When the script calls `cad.view.capturePreview`, screenshots are captured
- * after the script body finishes and attached as {@link ToolResult.images}.
+ * through {@link CadSession.capturePreview} after the script body finishes and
+ * attached as {@link ToolResult.images}.
  *
  * @param input - Script body and a short description used in the result message.
  * @param session - Drawing and view access.
@@ -105,7 +106,11 @@ export async function executeCadScript(
       value,
       options.maxResultChars ?? MAX_SCRIPT_RESULT_CHARS
     )
-    const images = await fulfillPreviewRequests(effects, options.fulfillPreviews)
+    const images = await fulfillPreviewRequests(
+      session,
+      effects,
+      options.fulfillPreviews
+    )
     const savedFiles = fulfillScriptDxfSaves(session, effects)
     return {
       success: true,
@@ -121,7 +126,11 @@ export async function executeCadScript(
     }
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
-    const images = await fulfillPreviewRequests(effects, options.fulfillPreviews)
+    const images = await fulfillPreviewRequests(
+      session,
+      effects,
+      options.fulfillPreviews
+    )
     return {
       success: false,
       message: 'Script failed',
@@ -134,6 +143,7 @@ export async function executeCadScript(
 }
 
 async function fulfillPreviewRequests(
+  session: CadSession,
   effects: CadScriptEffects,
   fulfillPreviews = true
 ): Promise<ToolResultImage[]> {
@@ -146,13 +156,20 @@ async function fulfillPreviewRequests(
     return []
   }
 
+  if (!session.capturePreview) {
+    effects.log.push(
+      'capturePreview skipped: this session has no renderer for previews'
+    )
+    return []
+  }
+
   const images: ToolResultImage[] = []
   for (const request of effects.previewRequests) {
     const longSide =
       typeof request.longSide === 'number' && request.longSide > 0
         ? request.longSide
         : DRAWING_PREVIEW_LONG_SIDE_PX
-    const capture = await captureDrawingPreview(longSide)
+    const capture = await session.capturePreview(longSide)
     if (!capture.ok) {
       effects.log.push(`capturePreview failed: ${capture.reason}`)
       continue

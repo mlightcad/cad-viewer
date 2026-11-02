@@ -44,6 +44,7 @@
   },
   "devDependencies": {
     "@mlightcad/cad-agent-core": "workspace:*",
+    "@mlightcad/cad-script-core": "workspace:*",
     "@mlightcad/cad-agent-plugin": "workspace:*",
     "@mlightcad/cad-script-plugin": "workspace:*",
     "@mlightcad/cad-html-plugin": "workspace:*",
@@ -77,6 +78,7 @@
   },
   "peerDependencies": {
     "@mlightcad/cad-agent-core": "workspace:*",
+    "@mlightcad/cad-script-core": "workspace:*",
     "@mlightcad/cad-agent-plugin": "workspace:*",
     "@mlightcad/cad-script-plugin": "workspace:*",
     "@mlightcad/cad-html-plugin": "workspace:*",
@@ -97,6 +99,9 @@
   },
   "peerDependenciesMeta": {
     "@mlightcad/cad-agent-core": {
+      "optional": true
+    },
+    "@mlightcad/cad-script-core": {
       "optional": true
     },
     "@mlightcad/cad-agent-plugin": {

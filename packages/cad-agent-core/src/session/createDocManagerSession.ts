@@ -1,12 +1,23 @@
+import type {
+  CadSession,
+  CadSessionDocument,
+  CadSessionView
+} from '@mlightcad/cad-script-core'
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 
-import type { CadSession, CadSessionDocument, CadSessionView } from './CadSession'
+import { captureDrawingPreview } from '../preview/captureDrawingPreview'
+import { viewerRunEdit } from './withViewerDefaults'
 
 /**
  * Session that reads {@link AcApDocManager.instance} on every call.
  *
- * Used by the in-page agent plugin and, later, by an in-page WebMCP adapter.
- * A process-external MCP server should implement {@link CadSession} itself.
+ * Besides document and view access it wires the viewer-only hooks:
+ * edits notify the UI through `acapRunDatabaseEdit`, and
+ * `cad.view.capturePreview` renders through {@link captureDrawingPreview}.
+ *
+ * Used by the in-page agent plugin, the script console, and the MCP runner
+ * page. Without a viewer, use `createDatabaseSession` from
+ * `@mlightcad/cad-script-core` instead.
  *
  * @returns A session bound to the viewer singleton.
  */
@@ -29,6 +40,8 @@ export function createDocManagerSession(): CadSession {
       } catch {
         return undefined
       }
-    }
+    },
+    runEdit: viewerRunEdit,
+    capturePreview: longSide => captureDrawingPreview(longSide)
   }
 }
