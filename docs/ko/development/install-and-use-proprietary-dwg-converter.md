@@ -13,7 +13,7 @@ title: "독점 DWG 변환기 설치 및 사용"
 ## 개요
 
 - `@mlightcad/dwg-converter`는 **GitHub Packages**에 게시됩니다.
-- 다른 `@mlightcad/*` 패키지(예: `@mlightcad/data-model`, `@mlightcad/cad-viewer`)는 공개 **npm 레지스트리**에 게시됩니다.
+- 다른 `@mlightcad/*` 패키지(예: `@mlightcad/data-model`, `@mlightcad/cad-editor`)는 공개 **npm 레지스트리**에 게시됩니다.
 - npm과 pnpm은 **스코프 수준**의 레지스트리 매핑만 지원합니다 — 동일한 스코프 내에서 **공식적인 패키지 수준** 레지스트리 매핑은 **없습니다**.
 
 즉, 다음을 사용하여

@@ -13,7 +13,7 @@ MLightCAD 完全运行在浏览器中，**不依赖任何后端**。DWG/DXF 文�
 
 MLightCAD 划分为多个子包，每个子包负责系统中的某个特定方面：
 
-- **cad-viewer**：主 Vue 3 组件和前端应用，包括 UI 组件、对话框、工具栏、状态管理以及与渲染引擎的集成。
+- **cad-editor**：主 Vue 3 组件和前端应用，包括 UI 组件、对话框、工具栏、状态管理以及与渲染引擎的集成。
 - **cad-simple-viewer**：文档管理、命令处理以及 UI 与渲染引擎集成的核心逻辑。与框架无关且不含 UI（仅画布）。
 - **svg-renderer**：将 DWG/DXF 实体渲染为 SVG 图形，用于导出和可缩放的 2D 输出。
 - **three-renderer**：使用 THREE.js 将 DWG/DXF 实体渲染为可交互的 2D/3D 图形，支持高级可视化和自定义着色器。
@@ -45,7 +45,7 @@ MLightCAD 划分为多个子包，每个子包负责系统中的某个特定方�
 ### **视图层**
 
 - `cad-viewer` 中的 [`@mlightcad/cad-simple-viewer`](https://github.com/mlightcad/cad-viewer) 模块提供 CAD 文件的核心查看逻辑，例如文档管理、命令处理以及 UI 与渲染引擎之间的协调。它不依赖任何 UI 框架，除画布之外不提供任何 UI 元素。
-- [`@mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer) 模块基于 `@mlightcad/cad-simple-viewer` 构建，提供基于 Vue 3 的 UI，包括菜单、工具栏、命令行、状态栏以及深色和浅色主题。它将所有核心功能打包为一个 Vue 3 组件，便于集成。
+- [`@mlightcad/cad-editor`](https://github.com/mlightcad/cad-viewer) 模块基于 `@mlightcad/cad-simple-viewer` 构建，提供基于 Vue 3 的 UI，包括菜单、工具栏、命令行、状态栏以及深色和浅色主题。它将所有核心功能打包为一个 Vue 3 组件，便于集成。
 
 ## 渲染引擎
 

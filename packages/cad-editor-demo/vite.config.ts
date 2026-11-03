@@ -81,7 +81,7 @@ export default defineConfig(({ command, mode }) => {
     'pdf-renderer',
     'three-renderer',
     'cad-simple-viewer',
-    'cad-viewer'
+    'cad-editor'
   ]
   const linkLocalDataModel =
     command === 'serve' &&
@@ -100,9 +100,9 @@ export default defineConfig(({ command, mode }) => {
       find: /^@mlightcad\/cad-pdf-plugin\/register$/,
       replacement: resolve(__dirname, '../cad-pdf-plugin/src/register.ts')
     })
-    // Package name stays @mlightcad/cad-viewer; folder is packages/cad-editor.
+    // Package name is @mlightcad/cad-editor; the repo itself is still cad-viewer.
     aliases.push({
-      find: /^@mlightcad\/cad-viewer$/,
+      find: /^@mlightcad\/cad-editor$/,
       replacement: resolve(__dirname, '../cad-editor/src')
     })
     aliases.push({

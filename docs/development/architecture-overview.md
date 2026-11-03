@@ -13,7 +13,7 @@ MLightCAD operates entirely in the browser with **no backend dependencies**. DWG
 
 MLightCAD is organized into several subpackages, each responsible for a specific aspect of the system:
 
-- **cad-viewer**: Main Vue 3 component and frontend application, including UI components, dialogs, toolbars, state management, and integration with rendering engines.
+- **cad-editor**: Main Vue 3 component and frontend application, including UI components, dialogs, toolbars, state management, and integration with rendering engines.
 - **cad-simple-viewer**: Core logic for document management, command handling, and integration between UI and rendering engines. Framework-agnostic and UI-free (canvas only).
 - **svg-renderer**: Renders DWG/DXF entities as SVG graphics for exporting and scalable 2D output.
 - **three-renderer**: Uses THREE.js to render DWG/DXF entities as interactive 2D/3D graphics with advanced visualization and custom shaders.
@@ -45,7 +45,7 @@ A quick note on why we define the `AcDbDatabaseConverter` interface: existing DX
 ### **View Layer**
 
 - The [`@mlightcad/cad-simple-viewer`](https://github.com/mlightcad/cad-viewer) module in `cad-viewer` provides the core viewing logic for CAD files, such as document management, command handling, and coordination between the UI and rendering engine. It has no UI framework dependency and offers no UI elements apart from the canvas.
-- The [`@mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer) module builds on `@mlightcad/cad-simple-viewer` to provide a Vue 3-based UI with menus, toolbars, command line, status bar, and both dark and light themes. It packages all core features into a Vue 3 component for easy integration.
+- The [`@mlightcad/cad-editor`](https://github.com/mlightcad/cad-viewer) module builds on `@mlightcad/cad-simple-viewer` to provide a Vue 3-based UI with menus, toolbars, command line, status bar, and both dark and light themes. It packages all core features into a Vue 3 component for easy integration.
 
 ## Rendering Engine
 

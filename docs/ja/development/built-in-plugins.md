@@ -15,7 +15,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 | [`@mlightcad/cad-simple-ui-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin) | `cad-simple-viewer` 用の**ツールバー、レイヤマネージャー、レビューパレット UI**（プレーンな DOM、Vue/React なし） | `layer`、`markuppanel`、デフォルトツールバー（ビュー、計測、エクスポート、レビュー、テーマ、ロケール） |
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **自然言語 CAD エージェント**（AI チャットパネル + 図面ツールの呼び出し） | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **手動 CAD スクリプトコンソール**（チェック済みスクリプトを図面に対して実行、LLM / API キー不要） | `cadscript` |
-| [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | 図面を**自己完結型のオフライン HTML** にエクスポート | `chtml`（`cad-viewer` 内のダイアログ）、`-chtml`（コマンドライン） |
+| [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | 図面を**自己完結型のオフライン HTML** にエクスポート | `chtml`（`cad-editor` 内のダイアログ）、`-chtml`（コマンドライン） |
 | [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **PDF エクスポートとインポート**（ベクターパイプライン） | `cpdf`、`ipdf` |
 | [`@mlightcad/cad-svg-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin) | **SVG エクスポート**と共有ベクターレンダラー（PDF エクスポートでも使用） | `csvg` |
 | [`@mlightcad/cad-onedrive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-onedrive-plugin) | **OneDrive データソース** — OneDrive / SharePoint から DWG/DXF を開く | `AcApDataSource` を登録（`onedrive`）、「サインイン → 開く」の 2 ステップ（ポップアップブロッカーセーフ） |
@@ -29,7 +29,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 
 ### `@mlightcad/cad-simple-ui-plugin` — シンプルビューアの UI
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) は意図的に**アプリケーション UI を含まず**、キャンバスと CAD コアのみを提供します。シンプルビューアを独自の Web アプリに埋め込み、Vue ベースの完全な [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) シェルを採用せずにすぐに使える UI を求める場合は、**`cad-simple-ui-plugin` が目的の UI レイヤーです**。
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) は意図的に**アプリケーション UI を含まず**、キャンバスと CAD コアのみを提供します。シンプルビューアを独自の Web アプリに埋め込み、Vue ベースの完全な [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) シェルを採用せずにすぐに使える UI を求める場合は、**`cad-simple-ui-plugin` が目的の UI レイヤーです**。
 
 提供されるもの:
 
@@ -38,7 +38,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 - ホスト要素上の `COLORTHEME` システム変数と `--ml-ui-*` CSS トークンとの**テーマ同期**
 - `AcApI18n` との**ロケール同期**（英語 / 中国語 / チェコ語 / トルコ語）
 
-すべてのウィジェットはフレームワークに依存しません（プレーンな DOM）。完全な Vue アプリである `cad-viewer` には独自の Element Plus UI があるため、このプラグインは不要です。`cad-simple-viewer` を直接使用して構築する場合に `cad-simple-ui-plugin` を使用してください。
+すべてのウィジェットはフレームワークに依存しません（プレーンな DOM）。完全な Vue アプリである `cad-editor` には独自の Element Plus UI があるため、このプラグインは不要です。`cad-simple-viewer` を直接使用して構築する場合に `cad-simple-ui-plugin` を使用してください。
 
 → **クイックスタート、ツールバーのカスタマイズ、オプション:** [packages/cad-simple-ui-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin/README.md)
 
@@ -54,7 +54,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 - **フェーズ 1 の CAD ツール** — `get_drawing_context`；`draw_line`、`draw_circle`、`draw_arc`、`draw_rectangle`、`draw_polyline`、`draw_text`；`set_current_layer`、`create_layer`、`zoom_extents`
 - プラグイン i18n レイヤーによる**英語 / 中国語 / トルコ語 / チェコ語**の UI 文字列
 
-完全な Vue アプリである `cad-viewer` は、パッケージがインストールされるとエージェントを自動的に登録します（パレットタブ）。`cad-simple-viewer-demo` は `cad-simple-ui-plugin` を介してドックタブに組み込みます。ホストアプリは `registerLazyAgentPlugin` と `setAgentPaletteOpener` を呼び出して、パネルを任意の場所にマウントします。
+完全な Vue アプリである `cad-editor` は、パッケージがインストールされるとエージェントを自動的に登録します（パレットタブ）。`cad-simple-viewer-demo` は `cad-simple-ui-plugin` を介してドックタブに組み込みます。ホストアプリは `registerLazyAgentPlugin` と `setAgentPaletteOpener` を呼び出して、パネルを任意の場所にマウントします。
 
 → **インストール、登録、ツール一覧:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -64,7 +64,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 
 - 遅延ロードされる `AcApPlugin`（トリガーコマンド: `cadscript`）
 - `@mlightcad/cad-agent-core` の CAD ツールを再利用します。このパッケージはパネルとコマンドのみを追加します
-- ホストアプリは `registerLazyCadScriptPlugin` を呼び出し、`new CadScriptPanel().element` をマウントします（`cad-simple-viewer-demo` ではドックタブ、`cad-viewer` ではツールパレットタブ）。タブを削除するときは `destroy()` を呼び出します
+- ホストアプリは `registerLazyCadScriptPlugin` を呼び出し、`new CadScriptPanel().element` をマウントします（`cad-simple-viewer-demo` ではドックタブ、`cad-editor` ではツールパレットタブ）。タブを削除するときは `destroy()` を呼び出します
 
 → **使用方法:** [packages/cad-script-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin/README.md)
 
@@ -72,7 +72,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 
 ## エクスポート / インポートプラグイン（HTML / PDF / SVG）
 
-これらのプラグインは、同じプラグインマネージャーにエクスポート（および PDF インポート）コマンドを追加します。初期ページのサイズを小さく保つため、**遅延ロード**されます。`cad-simple-viewer-demo` デモは、3 つのエクスポートプラグインすべてに加えて UI/エージェント/スクリプトプラグインを登録します。完全な `cad-viewer` アプリは、ブートストラップでエクスポートプラグインと、エージェント/スクリプトプラグイン（インストールされている場合）を登録します。
+これらのプラグインは、同じプラグインマネージャーにエクスポート（および PDF インポート）コマンドを追加します。初期ページのサイズを小さく保つため、**遅延ロード**されます。`cad-simple-viewer-demo` デモは、3 つのエクスポートプラグインすべてに加えて UI/エージェント/スクリプトプラグインを登録します。完全な `cad-editor` アプリは、ブートストラップでエクスポートプラグインと、エージェント/スクリプトプラグイン（インストールされている場合）を登録します。
 
 ### HTML（`@mlightcad/cad-html-plugin`）
 
@@ -80,7 +80,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 
 | 項目 | 値 |
 |------|-------|
-| コマンド | `chtml`（`cad-viewer` 内のダイアログ）、`-chtml`（`cad-simple-viewer-cli` 経由のコマンドライン） |
+| コマンド | `chtml`（`cad-editor` 内のダイアログ）、`-chtml`（`cad-simple-viewer-cli` 経由のコマンドライン） |
 | 追加設定 | `AcApDocManager.createInstance()` の `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` への URL（パッケージの `dist/` からコピー） |
 | パブリック API | `registerLazyHtmlPlugin`、`createHtmlPlugin`、`AcApHtmlConvertor`、`packHtml`、スナップショット型 |
 
@@ -151,7 +151,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 |-----|--------------------|
 | `cad-simple-viewer` | なし — コアのみ、プラグインは任意 |
 | `cad-simple-viewer-demo` | エクスポートプラグイン（HTML/PDF/SVG）、`cad-simple-ui-plugin`、`cad-agent-plugin`、`cad-script-plugin` |
-| `cad-viewer`（Vue） | エクスポートプラグイン（HTML/PDF/SVG）。エージェントおよびスクリプトプラグインは、**インストールされている場合**（オプションのピア依存関係）に自動的に登録されます |
+| `cad-editor`（Vue） | エクスポートプラグイン（HTML/PDF/SVG）。エージェントおよびスクリプトプラグインは、**インストールされている場合**（オプションのピア依存関係）に自動的に登録されます |
 
 ---
 

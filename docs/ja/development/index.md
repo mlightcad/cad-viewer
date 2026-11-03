@@ -30,4 +30,4 @@ title: "開発ガイド"
 - [複数リポジトリでのデバッグ](./debugging-with-multiple-repo-changes)
 - [天正 DWG 図面のサポート](./supporting-tianzheng-dwg-drawings)
 - [クラウド DWG Web ビューアの構築（プリレンダリング + 静的ホスティング）](./cloud-dwg-web-viewer)
-- [cad-simple-viewer と cad-viewer のアップグレード](./upgrade-guide)
+- [cad-simple-viewer と cad-editor のアップグレード](./upgrade-guide)

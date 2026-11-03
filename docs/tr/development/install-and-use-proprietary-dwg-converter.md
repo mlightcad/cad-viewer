@@ -13,7 +13,7 @@ Lisanslama, deneme erişimi, fiyatlandırma ve GPL uyumluluğu için ana depodak
 ## Genel Bakış
 
 - `@mlightcad/dwg-converter` **GitHub Packages** üzerinde yayınlanır.
-- Diğer `@mlightcad/*` paketleri (örneğin `@mlightcad/data-model`, `@mlightcad/cad-viewer`) genel **npm registry** üzerinde yayınlanır.
+- Diğer `@mlightcad/*` paketleri (örneğin `@mlightcad/data-model`, `@mlightcad/cad-editor`) genel **npm registry** üzerinde yayınlanır.
 - npm ve pnpm yalnızca **kapsam düzeyinde** registry eşlemesini destekler — aynı kapsam içinde **resmi bir paket düzeyinde** registry eşlemesi **yoktur**.
 
 Bu şu anlama gelir: yalnızca `@mlightcad/dwg-converter` paketini getirmek için şunu **kullanamazsınız**:

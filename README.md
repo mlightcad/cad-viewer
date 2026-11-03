@@ -3,7 +3,7 @@
 [English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md)
 
 [![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-simple-viewer.svg?label=cad-simple-viewer)](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer)
-[![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-viewer.svg?label=cad-viewer)](https://www.npmjs.com/package/@mlightcad/cad-viewer)
+[![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-editor.svg?label=cad-editor)](https://www.npmjs.com/package/@mlightcad/cad-editor)
 
 <a href="https://trendshift.io/repositories/16129?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-16129" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/16129/daily?language=TypeScript" alt="mlightcad%2Fcad-viewer | Trendshift" width="250" height="55"/></a>
 
@@ -49,7 +49,7 @@ Community Linux desktop packages:
 Official sample apps that show how to integrate MLightCAD into your own product:
 
 - [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) — Minimal vanilla TypeScript host for [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer): open local or CDN DXF/DWG, drive commands from a small toolbar, and lazy-load HTML/PDF/SVG export plugins without the full Vue UI.
-- [cad-editor-demo](https://github.com/mlightcad/cad-viewer-example) — Full-featured Vue 3 app built on [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) with menus, ribbons, dialogs, command line, and status bar ([live demo](https://mlightcad.github.io/cad-viewer-example/)).
+- [cad-editor-demo](https://github.com/mlightcad/cad-viewer-example) — Full-featured Vue 3 app built on [`@mlightcad/cad-editor`](https://www.npmjs.com/package/@mlightcad/cad-editor) with menus, ribbons, dialogs, command line, and status bar ([live demo](https://mlightcad.github.io/cad-viewer-example/)).
 - [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js “CAD drive” demo: chunked resumable DWG/DXF upload, SQLite-backed file list with preview thumbnails, and open drawings either with **live browser parse** (`cad-simple-viewer`) or **server-side ACEX prerender** (faster load, lower memory).
 
 ![MLightCAD Quick Demo](./assets/cad-viewer.gif)

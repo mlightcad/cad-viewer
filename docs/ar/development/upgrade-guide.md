@@ -1,16 +1,16 @@
 ---
-title: "ترقية cad-simple-viewer و cad-viewer"
+title: "ترقية cad-simple-viewer و cad-editor"
 ---
 
-# ترقية cad-simple-viewer و cad-viewer
+# ترقية cad-simple-viewer و cad-editor
 
-يشرح هذا الدليل كيفية ترقية `@mlightcad/cad-simple-viewer` و`@mlightcad/cad-viewer` بأمان — ولماذا لا يمكن رفعهما بمعزل عن غيرهما، وأي الحزم ذات الصلة يجب أن تتحرك معًا، وطريقتان موثوقتان لتحديد مجموعة الإصدارات المتوافقة الصحيحة لأي إصدار معين.
+يشرح هذا الدليل كيفية ترقية `@mlightcad/cad-simple-viewer` و`@mlightcad/cad-editor` بأمان — ولماذا لا يمكن رفعهما بمعزل عن غيرهما، وأي الحزم ذات الصلة يجب أن تتحرك معًا، وطريقتان موثوقتان لتحديد مجموعة الإصدارات المتوافقة الصحيحة لأي إصدار معين.
 
 ## نظرة عامة
 
-`@mlightcad/cad-simple-viewer` و`@mlightcad/cad-viewer` **ليسا حزمتين مستقلتين**. إنهما جزء من منظومة مترابطة بإحكام تشترك في قاعدة شيفرة ودورة إصدار مشتركتين. يجمع كل إصدار مجموعة منسّقة من التحديثات عبر الإضافات والعارضات وحزم نموذج البيانات ومكتبات عرض النصوص وأطر عمل واجهة المستخدم الخارجية.
+`@mlightcad/cad-simple-viewer` و`@mlightcad/cad-editor` **ليسا حزمتين مستقلتين**. إنهما جزء من منظومة مترابطة بإحكام تشترك في قاعدة شيفرة ودورة إصدار مشتركتين. يجمع كل إصدار مجموعة منسّقة من التحديثات عبر الإضافات والعارضات وحزم نموذج البيانات ومكتبات عرض النصوص وأطر عمل واجهة المستخدم الخارجية.
 
-**ترقية `cad-simple-viewer` أو `cad-viewer` وحدهما بمعزل عن غيرهما قد تؤدي إلى أعطال خفية في وقت التشغيل**، بما في ذلك:
+**ترقية `cad-simple-viewer` أو `cad-editor` وحدهما بمعزل عن غيرهما قد تؤدي إلى أعطال خفية في وقت التشغيل**، بما في ذلك:
 
 - واجهات الإضافات التي تتوقع توقيعات API تغيّرت في إصدارات النواة الأحدث (أو الأقدم)
 - عدم تطابق شكل نموذج البيانات بين ما تتوقعه النواة وما ينتجه محلّل/عارض أقدم
@@ -24,14 +24,14 @@ title: "ترقية cad-simple-viewer و cad-viewer"
 
 ## المنظومة في لمحة
 
-قبل الترقية، من المفيد معرفة الحزم التي تنتمي إلى الإصدار المنسّق وأيها خارجي. تُزامَن الفئات التالية مع إصدار cad-viewer نفسه:
+قبل الترقية، من المفيد معرفة الحزم التي تنتمي إلى الإصدار المنسّق وأيها خارجي. تُزامَن الفئات التالية مع إصدار cad-editor نفسه:
 
 ### حزم العارض الأساسية
 
 | الحزمة | الدور |
 | --- | --- |
 | `@mlightcad/cad-simple-viewer` | النواة المستقلة عن إطار العمل (إدارة المستندات، مكدس الأوامر، لصق العرض) |
-| `@mlightcad/cad-viewer` | غلاف واجهة المستخدم Vue 3 + Element Plus المبني فوق cad-simple-viewer |
+| `@mlightcad/cad-editor` | غلاف واجهة المستخدم Vue 3 + Element Plus المبني فوق cad-simple-viewer |
 
 ### الإضافات — **يجب أن تطابق إصدار cad-simple-viewer بدقة**
 
@@ -66,9 +66,9 @@ title: "ترقية cad-simple-viewer و cad-viewer"
 | `@mlightcad/mtext-renderer` | عارض MTEXT → هندسة THREE |
 | `@mlightcad/mtext-input-box` | أداة تحرير MTEXT داخل اللوحة |
 
-### اعتماديات واجهة Vue الخاصة بـ cad-viewer فقط
+### اعتماديات واجهة Vue الخاصة بـ cad-editor فقط
 
-تظهر هذه في تجاوزات `pnpm-workspace.yaml` لكنها مطلوبة فقط عند استخدام `@mlightcad/cad-viewer` (واجهة Vue 3 الكاملة). لا تثبّتها تكاملات cad-simple-viewer مباشرةً.
+تظهر هذه في تجاوزات `pnpm-workspace.yaml` لكنها مطلوبة فقط عند استخدام `@mlightcad/cad-editor` (واجهة Vue 3 الكاملة). لا تثبّتها تكاملات cad-simple-viewer مباشرةً.
 
 | الحزمة | الغرض |
 | --- | --- |
@@ -80,9 +80,9 @@ title: "ترقية cad-simple-viewer و cad-viewer"
 | الحزمة |
 | --- |
 | `three` |
-| `vue` (لـ cad-viewer فقط) |
-| `element-plus` (لـ cad-viewer فقط) |
-| `vue-i18n` (لـ cad-viewer فقط) |
+| `vue` (لـ cad-editor فقط) |
+| `element-plus` (لـ cad-editor فقط) |
+| `vue-i18n` (لـ cad-editor فقط) |
 | `lodash-es` |
 
 ---
@@ -129,13 +129,13 @@ title: "ترقية cad-simple-viewer و cad-viewer"
      vue-i18n: '^11.4.4'
    ```
 
-4. حدّث كل `@mlightcad/cad-*-plugin` تستخدمه إلى **الإصدار نفسه** كـ `cad-simple-viewer` / `cad-viewer`:
+4. حدّث كل `@mlightcad/cad-*-plugin` تستخدمه إلى **الإصدار نفسه** كـ `cad-simple-viewer` / `cad-editor`:
 
    ```json
    {
      "dependencies": {
        "@mlightcad/cad-simple-viewer": "1.7.5",
-       "@mlightcad/cad-viewer": "1.7.5",
+       "@mlightcad/cad-editor": "1.7.5",
        "@mlightcad/cad-html-plugin": "1.7.5",
        "@mlightcad/cad-pdf-plugin": "1.7.5",
        "@mlightcad/cad-svg-plugin": "1.7.5",

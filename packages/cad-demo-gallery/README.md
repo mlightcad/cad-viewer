@@ -57,10 +57,10 @@ The host supplies one parent container; the component creates both canvases.
 
 ### 4. Zero-build CDN Bootstrap (`/cdn-bootstrap/cad-viewer.html`)
 
-A single HTML file that loads `@mlightcad/cad-viewer` from jsDelivr — no Node, Vite, or local `node_modules`. The landing page is a plain file picker; Vue is only used to mount the viewer.
+A single HTML file that loads `@mlightcad/cad-editor` from jsDelivr — no Node, Vite, or local `node_modules`. The landing page is a plain file picker; Vue is only used to mount the viewer.
 
 **Features:**
-- Import map + in-browser rewrite of the published `cad-viewer.js` bundle
+- Import map + in-browser rewrite of the published `cad-editor.js` bundle
 - Minimal DWG/DXF upload (no open-options UI)
 - LibreDWG DWG parser via a blob module worker that imports the jsDelivr script; MTEXT uses main-thread rendering
 - Useful as a drop-in CDN host, not as a full product UI reference

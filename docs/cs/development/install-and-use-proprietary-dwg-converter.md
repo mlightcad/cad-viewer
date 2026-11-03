@@ -13,7 +13,7 @@ Informace o licencování, zkušebním přístupu, cenách a dodržování GPL n
 ## Přehled
 
 - `@mlightcad/dwg-converter` je publikován v **GitHub Packages**.
-- Ostatní balíčky `@mlightcad/*` (například `@mlightcad/data-model`, `@mlightcad/cad-viewer`) jsou publikovány ve veřejném **registru npm**.
+- Ostatní balíčky `@mlightcad/*` (například `@mlightcad/data-model`, `@mlightcad/cad-editor`) jsou publikovány ve veřejném **registru npm**.
 - npm a pnpm podporují mapování registru pouze na **úrovni scope** – **neexistuje žádné oficiální mapování registru na úrovni balíčku** v rámci stejného scope.
 
 To znamená, že **nemůžete** použít:

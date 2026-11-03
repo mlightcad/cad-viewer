@@ -4,9 +4,9 @@ title: "أساسيات MLightCAD"
 
 # أساسيات MLightCAD
 
-يوفر هذا المشروع عارضَين هما `cad-viewer` و`cad-simple-viewer`. يعتمد اختيار العارض المناسب على متطلبات مشروعك ومستوى الدمج المطلوب:
+يوفر هذا المشروع عارضَين هما `cad-editor` و`cad-simple-viewer`. يعتمد اختيار العارض المناسب على متطلبات مشروعك ومستوى الدمج المطلوب:
 
-## استخدم **cad-viewer** إذا:
+## استخدم **cad-editor** إذا:
 
 - كنت تريد **مكوّن Vue 3 جاهزًا للاستخدام** بواجهة حديثة وحوارات وأشرطة أدوات وإدارة حالة.
 - كنت بحاجة إلى تضمين عارض/محرر CAD عالي الأداء بسرعة في تطبيق Vue الخاص بك بأقل إعداد ممكن.
@@ -29,7 +29,7 @@ title: "أساسيات MLightCAD"
 
 | الحزمة             | توفّر واجهة مستخدم | إطار العمل | حالة الاستخدام                                      |
 |---------------------|-------------|-----------|-----------------------------------------------|
-| `cad-viewer`        | نعم         | Vue 3     | عارض/محرر CAD جاهز بواجهة حديثة       |
+| `cad-editor`        | نعم         | Vue 3     | عارض/محرر CAD جاهز بواجهة حديثة       |
 | `cad-simple-viewer` | لا          | لا يوجد      | منطق CAD أساسي للاستخدام المخصص أو بدون واجهة      |
 
 للمزيد من التفاصيل، راجع [**دمج Simple Viewer**](./integrate-simple-cad-viewer) و[**دمج مكوّن Vue**](./integrate-cad-viewer-component).
@@ -37,4 +37,4 @@ title: "أساسيات MLightCAD"
 ## أمثلة
 
 - [`cad-simple-viewer-demo`](https://github.com/mlightcad/cad-simple-viewer-example): تطبيق مثال يوضح كيفية استخدام مكوّن `cad-simple-viewer` في مشروع حقيقي.
-- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): تطبيق مثال يوضح كيفية استخدام مكوّن `cad-viewer` في مشروع حقيقي.
+- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): تطبيق مثال يوضح كيفية استخدام مكوّن `cad-editor` في مشروع حقيقي.

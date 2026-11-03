@@ -1,5 +1,5 @@
+import { i18n } from '@mlightcad/cad-editor'
 import { AcApI18n } from '@mlightcad/cad-simple-viewer'
-import { i18n } from '@mlightcad/cad-viewer'
 
 import ar from './ar'
 import cs from './cs'

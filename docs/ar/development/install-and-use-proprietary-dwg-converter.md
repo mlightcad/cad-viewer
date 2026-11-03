@@ -13,7 +13,7 @@ title: "تثبيت واستخدام محوّل DWG الخاص"
 ## نظرة عامة
 
 - تُنشر `@mlightcad/dwg-converter` على **GitHub Packages**.
-- تُنشر حزم `@mlightcad/*` الأخرى (مثل `@mlightcad/data-model` و`@mlightcad/cad-viewer`) على **سجل npm** العام.
+- تُنشر حزم `@mlightcad/*` الأخرى (مثل `@mlightcad/data-model` و`@mlightcad/cad-editor`) على **سجل npm** العام.
 - يدعم npm وpnpm تعيين السجلات على **مستوى النطاق (scope)** فقط — ولا يوجد **تعيين رسمي على مستوى الحزمة** ضمن النطاق نفسه.
 
 وهذا يعني أنك **لا تستطيع** استخدام:

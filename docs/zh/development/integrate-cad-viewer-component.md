@@ -4,7 +4,7 @@ title: "集成 Vue 组件"
 
 # 集成 Vue 组件
 
-**cad-viewer** 是一个**高性能**的 Vue 3 组件，用于**完全在浏览器中查看和编辑 CAD 文件（DXF、DWG），无需任何后端服务器**。它提供现代用户界面、状态管理，并与经过优化的渲染引擎无缝集成，从而在浏览器中实现流畅、性能卓越的 CAD 工作流程。
+**cad-editor** 是一个**高性能**的 Vue 3 组件，用于**完全在浏览器中查看和编辑 CAD 文件（DXF、DWG），无需任何后端服务器**。它提供现代用户界面、状态管理，并与经过优化的渲染引擎无缝集成，从而在浏览器中实现流畅、性能卓越的 CAD 工作流程。
 
 ## 主要特性
 
@@ -22,9 +22,9 @@ title: "集成 Vue 组件"
 - 对话框、工具栏和命令行界面
 - 用于在你自己的应用中嵌入高性能 CAD 查看器的 Vue 3 组件
 
-## 何时应该选择 cad-viewer？
+## 何时应该选择 cad-editor？
 
-如果你想要一个**开箱即用的 Vue 3 组件**，自带现代 UI、对话框、工具栏和状态管理，用于查看和编辑 CAD 文件，请使用 `cad-viewer`。以下情况该包非常理想：
+如果你想要一个**开箱即用的 Vue 3 组件**，自带现代 UI、对话框、工具栏和状态管理，用于查看和编辑 CAD 文件，请使用 `cad-editor`。以下情况该包非常理想：
 
 - 你需要以最少的配置，快速将高性能的 CAD 查看器/编辑器嵌入到 Vue 应用中。
 - 你需要同时支持本地文件加载（来自用户电脑）和远程文件加载（来自 URL）。
@@ -74,7 +74,7 @@ MlCadViewer 组件支持多种加载 CAD 文件的方式：
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 
 const selectedFile = ref<File | undefined>()
 
@@ -97,7 +97,7 @@ const handleFileSelect = (event: Event) => {
 ## 安装
 
 ```bash
-npm install @mlightcad/cad-viewer
+npm install @mlightcad/cad-editor
 ```
 
 ## 使用
@@ -110,7 +110,7 @@ npm install @mlightcad/cad-viewer
 
 - @element-plus/icons-vue
 - @mlightcad/cad-simple-viewer
-- @mlightcad/cad-viewer
+- @mlightcad/cad-editor
 - @mlightcad/data-model
 - @vueuse/core
 - element-plus
@@ -153,7 +153,7 @@ import 'element-plus/dist/index.css'
 import {
   i18n,
   MlCadViewer
-} from '@mlightcad/cad-viewer'
+} from '@mlightcad/cad-editor'
 import ElementPlus from 'element-plus'
 import { createApp } from 'vue'
 
@@ -236,7 +236,7 @@ initApp()
 </template>
 
 <script setup lang="ts">
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 
 // Configure global UI flags before the viewer mounts

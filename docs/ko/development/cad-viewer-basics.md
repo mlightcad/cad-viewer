@@ -4,9 +4,9 @@ title: "MLightCAD 기본"
 
 # MLightCAD 기본
 
-이 프로젝트는 사용자를 위해 `cad-viewer`와 `cad-simple-viewer` 두 가지 뷰어를 제공합니다. 어떤 뷰어를 선택할지는 프로젝트 요구 사항과 원하는 통합 수준에 따라 달라집니다:
+이 프로젝트는 사용자를 위해 `cad-editor`와 `cad-simple-viewer` 두 가지 뷰어를 제공합니다. 어떤 뷰어를 선택할지는 프로젝트 요구 사항과 원하는 통합 수준에 따라 달라집니다:
 
-## **cad-viewer**를 사용해야 하는 경우:
+## **cad-editor**를 사용해야 하는 경우:
 
 - 현대적인 UI, 대화상자, 툴바 및 상태 관리를 갖춘 **바로 사용할 수 있는 Vue 3 컴포넌트**를 원하는 경우.
 - 최소한의 설정으로 고성능 CAD 뷰어/편집기를 Vue 애플리케이션에 신속하게 포함하고자 하는 경우.
@@ -29,7 +29,7 @@ title: "MLightCAD 기본"
 
 | 패키지              | UI 제공 여부 | 프레임워크 | 사용 사례                                      |
 |---------------------|-------------|-----------|-----------------------------------------------|
-| `cad-viewer`        | 예          | Vue 3     | 현대적인 UI를 갖춘 턴키 CAD 뷰어/편집기         |
+| `cad-editor`        | 예          | Vue 3     | 현대적인 UI를 갖춘 턴키 CAD 뷰어/편집기         |
 | `cad-simple-viewer` | 아니오      | 없음      | 사용자 정의 또는 헤드리스 용도를 위한 핵심 CAD 로직 |
 
 자세한 내용은 [**Simple Viewer 통합**](./integrate-simple-cad-viewer) 및 [**Vue 컴포넌트 통합**](./integrate-cad-viewer-component)을 참조하십시오.
@@ -37,4 +37,4 @@ title: "MLightCAD 기본"
 ## 예제
 
 - [`cad-simple-viewer-demo`](https://github.com/mlightcad/cad-simple-viewer-example): 실제 프로젝트에서 `cad-simple-viewer` 컴포넌트를 사용하는 방법을 보여주는 예제 애플리케이션입니다.
-- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): 실제 프로젝트에서 `cad-viewer` 컴포넌트를 사용하는 방법을 보여주는 예제 애플리케이션입니다.
+- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): 실제 프로젝트에서 `cad-editor` 컴포넌트를 사용하는 방법을 보여주는 예제 애플리케이션입니다.

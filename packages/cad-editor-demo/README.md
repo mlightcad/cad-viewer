@@ -1,6 +1,6 @@
 # CAD Viewer Example
 
-A Vue 3 demo that embeds [`@mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor): a file-upload landing screen, then the full CAD UI (menus, ribbons, dialogs, command line, status bar) for viewing and editing local DXF/DWG files.
+A Vue 3 demo that embeds [`@mlightcad/cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor): a file-upload landing screen, then the full CAD UI (menus, ribbons, dialogs, command line, status bar) for viewing and editing local DXF/DWG files.
 
 ## Features
 
@@ -20,7 +20,7 @@ A Vue 3 demo that embeds [`@mlightcad/cad-viewer`](https://github.com/mlightcad/
 - Node.js **≥ 24** and pnpm **≥ 10** (monorepo workspace)
 - Built dependencies before **dev** or **build**:
   - `@mlightcad/cad-html-plugin` (produces `viewer-runtime.iife.js`, copied into the example dist)
-  - `@mlightcad/cad-simple-viewer` and `@mlightcad/cad-viewer` (workers and bundles)
+  - `@mlightcad/cad-simple-viewer` and `@mlightcad/cad-editor` (workers and bundles)
 
 From the repo root, a full workspace build satisfies this:
 
@@ -34,7 +34,7 @@ Or build only what this example needs:
 ```bash
 pnpm --filter @mlightcad/cad-html-plugin build
 pnpm --filter @mlightcad/cad-simple-viewer build
-pnpm --filter @mlightcad/cad-viewer build
+pnpm --filter @mlightcad/cad-editor build
 ```
 
 ## Getting Started
@@ -54,7 +54,7 @@ cd packages/cad-editor-demo
 pnpm dev
 ```
 
-Vite prints the local URL (default `http://localhost:5173`). In dev mode, Vite aliases `@mlightcad/cad-viewer`, `@mlightcad/cad-simple-viewer`, and renderer packages to their **source** for faster iteration.
+Vite prints the local URL (default `http://localhost:5173`). In dev mode, Vite aliases `@mlightcad/cad-editor`, `@mlightcad/cad-simple-viewer`, and renderer packages to their **source** for faster iteration.
 
 ### OneDrive (optional)
 
@@ -99,18 +99,18 @@ The build runs `vue-tsc`, then copies parser workers and `viewer-runtime.iife.js
 
 ## What this example demonstrates
 
-Integration patterns useful when embedding `@mlightcad/cad-viewer` in your own Vue app:
+Integration patterns useful when embedding `@mlightcad/cad-editor` in your own Vue app:
 
 | Topic | Implementation |
 |-------|----------------|
 | Viewer component | `<MlCadViewer :local-file="file" :mode="openMode" locale="en" base-url="…" @create="onCreate" />` |
-| App bootstrap | `createApp(App).use(i18n).mount('#app')` — `i18n` exported from `@mlightcad/cad-viewer` |
+| App bootstrap | `createApp(App).use(i18n).mount('#app')` — `i18n` exported from `@mlightcad/cad-editor` |
 | Open modes | `AcEdOpenMode` (Read / Review / Write) passed via `:mode` |
 | Custom i18n | `AcApI18n.mergeLocaleMessage('en' \| 'zh', messages)` in `@create` (`src/locale/`) |
 | Custom commands | `AcApDocManager.instance.commandManager.addCommand(…)` — see `quit` / `exit` in `src/commands/` |
 | Upload flow | Reactive store + conditional render: upload screen until `selectedFile` is set |
 | Workers & runtime | `vite-plugin-static-copy` copies MTEXT worker, LibreDWG worker/wasm, and `viewer-runtime.iife.js` |
-| Export plugins | Declared in `package.json`; `@mlightcad/cad-viewer` registers them via `@mlightcad/cad-*-plugin/register` on bootstrap |
+| Export plugins | Declared in `package.json`; `@mlightcad/cad-editor` registers them via `@mlightcad/cad-*-plugin/register` on bootstrap |
 
 Minimal host wiring in `App.vue`:
 
@@ -129,7 +129,7 @@ Minimal host wiring in `App.vue`:
 | Path | Role |
 |------|------|
 | `index.html` | Page shell and loading spinner |
-| `src/main.ts` | Vue app entry; mounts `i18n` from `@mlightcad/cad-viewer` |
+| `src/main.ts` | Vue app entry; mounts `i18n` from `@mlightcad/cad-editor` |
 | `src/App.vue` | Upload screen + `MlCadViewer`; registers custom commands on `@create` |
 | `src/components/FileUpload.vue` | Element Plus drag-and-drop uploader with open-mode selector |
 | `src/store.ts` | Reactive `selectedFile` for upload ↔ viewer navigation |
@@ -142,7 +142,7 @@ Minimal host wiring in `App.vue`:
 
 | Package | Role |
 |---------|------|
-| `@mlightcad/cad-viewer` | `MlCadViewer` component, UI, and `i18n` setup |
+| `@mlightcad/cad-editor` | `MlCadViewer` component, UI, and `i18n` setup |
 | `@mlightcad/cad-simple-viewer` | `AcApDocManager`, commands, `AcEdOpenMode`, `AcApI18n` |
 | `@mlightcad/data-model` | Logging and CAD data types |
 | `@mlightcad/cad-html-plugin` | Offline HTML export; supplies `viewer-runtime.iife.js` |
@@ -176,7 +176,7 @@ From the monorepo root: `pnpm dev`, `pnpm preview`, `pnpm test:e2e`.
 
 ## Related packages
 
-- [`@mlightcad/cad-viewer`](../cad-viewer) — Component API, props, and customization
+- [`@mlightcad/cad-editor`](../cad-editor) — Component API, props, and customization
 - [`cad-simple-viewer-demo`](../cad-simple-viewer-demo) — Minimal vanilla TypeScript host without the full Vue UI
 - [`@mlightcad/cad-html-plugin`](../cad-html-plugin) — HTML export and `viewer-runtime.iife.js`
 - [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli) — Headless HTML export CLI (`-chtml` via `.scr`)

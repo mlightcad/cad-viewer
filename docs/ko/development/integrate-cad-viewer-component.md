@@ -4,7 +4,7 @@ title: "Vue 컴포넌트 통합"
 
 # Vue 컴포넌트 통합
 
-**cad-viewer**는 **백엔드 서버 없이** 전적으로 브라우저에서 CAD 파일(DXF, DWG)을 보고 편집하기 위한 **고성능** Vue 3 컴포넌트입니다. 현대적인 사용자 인터페이스, 상태 관리를 제공하며 최적화된 렌더링 엔진과의 원활한 통합을 통해 뛰어난 성능으로 부드러운 브라우저 기반 CAD 워크플로를 구현합니다.
+**cad-editor**는 **백엔드 서버 없이** 전적으로 브라우저에서 CAD 파일(DXF, DWG)을 보고 편집하기 위한 **고성능** Vue 3 컴포넌트입니다. 현대적인 사용자 인터페이스, 상태 관리를 제공하며 최적화된 렌더링 엔진과의 원활한 통합을 통해 뛰어난 성능으로 부드러운 브라우저 기반 CAD 워크플로를 구현합니다.
 
 ## 주요 기능
 
@@ -22,9 +22,9 @@ title: "Vue 컴포넌트 통합"
 - 대화상자, 툴바 및 명령줄 인터페이스
 - 자체 앱에 고성능 CAD 뷰어를 포함하기 위한 Vue 3 컴포넌트
 
-## cad-viewer를 선택해야 하는 경우
+## cad-editor를 선택해야 하는 경우
 
-현대적인 UI, 대화상자, 툴바 및 상태 관리를 갖춘 CAD 파일 보기 및 편집용 **바로 사용할 수 있는 Vue 3 컴포넌트**를 원하는 경우 `cad-viewer`를 사용하십시오. 이 패키지는 다음과 같은 경우에 이상적입니다:
+현대적인 UI, 대화상자, 툴바 및 상태 관리를 갖춘 CAD 파일 보기 및 편집용 **바로 사용할 수 있는 Vue 3 컴포넌트**를 원하는 경우 `cad-editor`를 사용하십시오. 이 패키지는 다음과 같은 경우에 이상적입니다:
 
 - 최소한의 설정으로 고성능 CAD 뷰어/편집기를 Vue 애플리케이션에 신속하게 포함하고자 하는 경우.
 - 로컬 파일 로딩(사용자의 컴퓨터에서)과 원격 파일 로딩(URL에서)을 모두 지원해야 하는 경우.
@@ -74,7 +74,7 @@ MlCadViewer 컴포넌트는 CAD 파일을 로드하는 여러 가지 방법을 �
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 
 const selectedFile = ref<File | undefined>()
 
@@ -97,7 +97,7 @@ URL에서 파일을 자동으로 로드합니다:
 ## 설치
 
 ```bash
-npm install @mlightcad/cad-viewer
+npm install @mlightcad/cad-editor
 ```
 
 ## 사용법
@@ -110,7 +110,7 @@ npm install @mlightcad/cad-viewer
 
 - @element-plus/icons-vue
 - @mlightcad/cad-simple-viewer
-- @mlightcad/cad-viewer
+- @mlightcad/cad-editor
 - @mlightcad/data-model
 - @vueuse/core
 - element-plus
@@ -153,7 +153,7 @@ import 'element-plus/dist/index.css'
 import {
   i18n,
   MlCadViewer
-} from '@mlightcad/cad-viewer'
+} from '@mlightcad/cad-editor'
 import ElementPlus from 'element-plus'
 import { createApp } from 'vue'
 
@@ -236,7 +236,7 @@ initApp()
 </template>
 
 <script setup lang="ts">
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 
 // Configure global UI flags before the viewer mounts

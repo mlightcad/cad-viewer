@@ -1,17 +1,17 @@
 /**
- * Ensures cad-viewer no longer ships the unused `@mlightcad/ui-components`
+ * Ensures cad-editor no longer ships the unused `@mlightcad/ui-components`
  * MlToolBar (vertical toolbar now uses AcUiToolbar from simple-viewer).
  *
- * Requires `packages/cad-editor/dist/cad-viewer.js` (run package build).
+ * Requires `packages/cad-editor/dist/cad-editor.js` (run package build).
  */
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-const bundlePath = resolve(__dirname, '../dist/cad-viewer.js')
+const bundlePath = resolve(__dirname, '../dist/cad-editor.js')
 
 const describeIfBuilt = existsSync(bundlePath) ? describe : describe.skip
 
-describeIfBuilt('cad-viewer bundle tree-shakes ui-components MlToolBar', () => {
+describeIfBuilt('cad-editor bundle tree-shakes ui-components MlToolBar', () => {
   const source = readFileSync(bundlePath, 'utf8')
 
   it('keeps the local MlToolBars host that mounts AcUiToolbar', () => {
@@ -37,6 +37,6 @@ describeIfBuilt('cad-viewer bundle tree-shakes ui-components MlToolBar', () => {
 if (!existsSync(bundlePath)) {
   // eslint-disable-next-line no-console
   console.warn(
-    `[cadViewerBundle] skipped: missing ${bundlePath} (build @mlightcad/cad-viewer first)`
+    `[cadEditorBundle] skipped: missing ${bundlePath} (build @mlightcad/cad-editor first)`
   )
 }

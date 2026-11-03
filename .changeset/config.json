@@ -23,7 +23,7 @@
       "@mlightcad/cad-diff-viewer-example",
       "@mlightcad/cad-svg-plugin",
       "@mlightcad/pdf-renderer",
-      "@mlightcad/cad-viewer",
+      "@mlightcad/cad-editor",
       "@mlightcad/cad-editor-demo",
       "@mlightcad/cad-demo-gallery",
       "@mlightcad/three-renderer"

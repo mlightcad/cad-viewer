@@ -410,7 +410,7 @@ export default withMermaid(
               debugging: '多仓库联合调试',
               tianzheng: '支持天正 DWG 图纸',
               cloudViewer: '构建云端 DWG Web 查看器',
-              upgrade: '升级 cad-simple-viewer 和 cad-viewer'
+              upgrade: '升级 cad-simple-viewer 和 cad-editor'
             })
           }
         }
@@ -494,7 +494,7 @@ export default withMermaid(
               debugging: 'Debugging with Multiple Repo Changes',
               tianzheng: 'Supporting Tianzheng DWG Drawings',
               cloudViewer: 'Build a Cloud DWG Web Viewer',
-              upgrade: 'Upgrading cad-simple-viewer and cad-viewer'
+              upgrade: 'Upgrading cad-simple-viewer and cad-editor'
             })
           }
         }
@@ -578,7 +578,7 @@ export default withMermaid(
               debugging: '複数リポジトリでのデバッグ',
               tianzheng: '天正 DWG 図面のサポート',
               cloudViewer: 'クラウド DWG Web ビューアの構築',
-              upgrade: 'cad-simple-viewer と cad-viewer のアップグレード'
+              upgrade: 'cad-simple-viewer と cad-editor のアップグレード'
             })
           }
         }
@@ -662,7 +662,7 @@ export default withMermaid(
               debugging: '다중 저장소 디버깅',
               tianzheng: '톈정(Tianzheng) DWG 도면 지원',
               cloudViewer: '클라우드 DWG 웹 뷰어 구축',
-              upgrade: 'cad-simple-viewer 및 cad-viewer 업그레이드'
+              upgrade: 'cad-simple-viewer 및 cad-editor 업그레이드'
             })
           }
         }
@@ -747,7 +747,7 @@ export default withMermaid(
               debugging: 'تصحيح الأخطاء مع تغييرات متعددة للمستودعات',
               tianzheng: 'دعم رسومات Tianzheng DWG',
               cloudViewer: 'إنشاء عارض ويب سحابي لملفات DWG',
-              upgrade: 'ترقية cad-simple-viewer و cad-viewer'
+              upgrade: 'ترقية cad-simple-viewer و cad-editor'
             })
           }
         }
@@ -832,7 +832,7 @@ export default withMermaid(
               debugging: 'Ladění se změnami ve více repozitářích',
               tianzheng: 'Podpora výkresů Tianzheng DWG',
               cloudViewer: 'Vytvoření cloudového webového prohlížeče DWG',
-              upgrade: 'Upgrade cad-simple-viewer a cad-viewer'
+              upgrade: 'Upgrade cad-simple-viewer a cad-editor'
             })
           }
         }
@@ -918,7 +918,7 @@ export default withMermaid(
               debugging: 'Birden Fazla Depo Değişikliğiyle Hata Ayıklama',
               tianzheng: 'Tianzheng DWG Çizimlerini Destekleme',
               cloudViewer: 'Bulut DWG Web Görüntüleyici Oluşturma',
-              upgrade: 'cad-simple-viewer ve cad-viewer Yükseltme'
+              upgrade: 'cad-simple-viewer ve cad-editor Yükseltme'
             })
           }
         }

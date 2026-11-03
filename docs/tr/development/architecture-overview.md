@@ -13,7 +13,7 @@ MLightCAD, **arka uç bağımlılığı olmadan** tamamen tarayıcıda çalış�
 
 MLightCAD, her biri sistemin belirli bir yönünden sorumlu olan birkaç alt pakete ayrılmıştır:
 
-- **cad-viewer**: UI bileşenleri, iletişim kutuları, araç çubukları, durum yönetimi ve işleme motorlarıyla entegrasyon dahil olmak üzere ana Vue 3 bileşeni ve ön uç uygulaması.
+- **cad-editor**: UI bileşenleri, iletişim kutuları, araç çubukları, durum yönetimi ve işleme motorlarıyla entegrasyon dahil olmak üzere ana Vue 3 bileşeni ve ön uç uygulaması.
 - **cad-simple-viewer**: Belge yönetimi, komut işleme ve UI ile işleme motorları arasındaki entegrasyon için temel mantık. Çerçeveden bağımsız ve UI içermez (yalnızca canvas).
 - **svg-renderer**: Dışa aktarma ve ölçeklenebilir 2D çıktı için DWG/DXF varlıklarını SVG grafikleri olarak işler.
 - **three-renderer**: Gelişmiş görselleştirme ve özel gölgelendiricilerle DWG/DXF varlıklarını etkileşimli 2D/3D grafikler olarak işlemek için THREE.js kullanır.
@@ -45,7 +45,7 @@ Bu katmanlı mimari, **MLightCAD**'ın farklı veri ölçekleri, işleme gereksi
 ### **Görünüm Katmanı**
 
 - `cad-viewer` içindeki [`@mlightcad/cad-simple-viewer`](https://github.com/mlightcad/cad-viewer) modülü, CAD dosyaları için belge yönetimi, komut işleme ve UI ile işleme motoru arasında koordinasyon gibi temel görüntüleme mantığını sağlar. Herhangi bir UI çerçevesi bağımlılığı yoktur ve canvas dışında UI öğesi sunmaz.
-- [`@mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer) modülü, menüler, araç çubukları, komut satırı, durum çubuğu ve hem koyu hem de açık temalar içeren Vue 3 tabanlı bir UI sağlamak için `@mlightcad/cad-simple-viewer` üzerine inşa edilmiştir. Tüm temel özellikleri kolay entegrasyon için bir Vue 3 bileşeninde paketler.
+- [`@mlightcad/cad-editor`](https://github.com/mlightcad/cad-viewer) modülü, menüler, araç çubukları, komut satırı, durum çubuğu ve hem koyu hem de açık temalar içeren Vue 3 tabanlı bir UI sağlamak için `@mlightcad/cad-simple-viewer` üzerine inşa edilmiştir. Tüm temel özellikleri kolay entegrasyon için bir Vue 3 bileşeninde paketler.
 
 ## İşleme Motoru
 

@@ -13,7 +13,7 @@ title: "独自 DWG コンバーターのインストールと使用"
 ## 概要
 
 - `@mlightcad/dwg-converter` は **GitHub Packages** に公開されています。
-- その他の `@mlightcad/*` パッケージ（例：`@mlightcad/data-model`、`@mlightcad/cad-viewer`）は、公開 **npm レジストリ**に公開されています。
+- その他の `@mlightcad/*` パッケージ（例：`@mlightcad/data-model`、`@mlightcad/cad-editor`）は、公開 **npm レジストリ**に公開されています。
 - npm と pnpm は**スコープレベル**のレジストリマッピングのみをサポートしており、同一スコープ内での**パッケージレベルの公式な**レジストリマッピングは**ありません**。
 
 つまり、次の設定を使用して `@mlightcad/dwg-converter` だけを取得することは**できません**：

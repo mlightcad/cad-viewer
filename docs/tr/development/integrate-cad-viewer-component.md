@@ -4,7 +4,7 @@ title: "Vue Bileşeni Entegrasyonu"
 
 # Vue Bileşeni Entegrasyonu
 
-**cad-viewer**, CAD dosyalarını (DXF, DWG) **herhangi bir arka uç sunucusuna ihtiyaç duymadan tamamen tarayıcıda** görüntülemek ve düzenlemek için **yüksek performanslı** bir Vue 3 bileşenidir. Modern bir kullanıcı arayüzü, durum yönetimi ve optimize edilmiş işleme motorlarıyla sorunsuz entegrasyon sunarak olağanüstü performansla akıcı tarayıcı tabanlı CAD iş akışları sağlar.
+**cad-editor**, CAD dosyalarını (DXF, DWG) **herhangi bir arka uç sunucusuna ihtiyaç duymadan tamamen tarayıcıda** görüntülemek ve düzenlemek için **yüksek performanslı** bir Vue 3 bileşenidir. Modern bir kullanıcı arayüzü, durum yönetimi ve optimize edilmiş işleme motorlarıyla sorunsuz entegrasyon sunarak olağanüstü performansla akıcı tarayıcı tabanlı CAD iş akışları sağlar.
 
 ## Temel Özellikler
 
@@ -22,9 +22,9 @@ title: "Vue Bileşeni Entegrasyonu"
 - İletişim kutuları, araç çubukları ve komut satırı arayüzü
 - Yüksek performanslı CAD görüntüleyicileri kendi uygulamalarınıza gömmek için Vue 3 bileşeni
 
-## cad-viewer'ı Ne Zaman Seçmelisiniz?
+## cad-editor'ı Ne Zaman Seçmelisiniz?
 
-CAD dosyalarını modern bir UI, iletişim kutuları, araç çubukları ve durum yönetimiyle görüntülemek ve düzenlemek için **kullanıma hazır bir Vue 3 bileşeni** istiyorsanız `cad-viewer` kullanın. Bu paket şu durumlarda idealdir:
+CAD dosyalarını modern bir UI, iletişim kutuları, araç çubukları ve durum yönetimiyle görüntülemek ve düzenlemek için **kullanıma hazır bir Vue 3 bileşeni** istiyorsanız `cad-editor` kullanın. Bu paket şu durumlarda idealdir:
 
 - Yüksek performanslı bir CAD görüntüleyici/düzenleyiciyi minimum kurulumla Vue uygulamanıza hızlıca gömmek istiyorsanız.
 - Hem yerel dosya yükleme (kullanıcının bilgisayarından) hem de uzak dosya yükleme (URL'lerden) desteğine ihtiyaç duyuyorsanız.
@@ -74,7 +74,7 @@ Kullanıcılar dosyaları doğrudan bilgisayarlarından yükleyebilir:
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 
 const selectedFile = ref<File | undefined>()
 
@@ -97,7 +97,7 @@ Dosyaları URL'lerden otomatik olarak yükleyin:
 ## Kurulum
 
 ```bash
-npm install @mlightcad/cad-viewer
+npm install @mlightcad/cad-editor
 ```
 
 ## Kullanım
@@ -110,7 +110,7 @@ Bir örnek olarak `cad-editor-demo` alt paketine başvurun.
 
 - @element-plus/icons-vue
 - @mlightcad/cad-simple-viewer
-- @mlightcad/cad-viewer
+- @mlightcad/cad-editor
 - @mlightcad/data-model
 - @vueuse/core
 - element-plus
@@ -153,7 +153,7 @@ import 'element-plus/dist/index.css'
 import {
   i18n,
   MlCadViewer
-} from '@mlightcad/cad-viewer'
+} from '@mlightcad/cad-editor'
 import ElementPlus from 'element-plus'
 import { createApp } from 'vue'
 
@@ -236,7 +236,7 @@ initApp()
 </template>
 
 <script setup lang="ts">
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 
 // Configure global UI flags before the viewer mounts

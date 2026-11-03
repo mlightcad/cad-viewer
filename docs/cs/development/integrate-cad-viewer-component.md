@@ -4,7 +4,7 @@ title: "Integrace komponenty Vue"
 
 # Integrace komponenty Vue
 
-**cad-viewer** je **vysoce výkonná** komponenta Vue 3 pro prohlížení a úpravy CAD souborů (DXF, DWG) **zcela v prohlížeči bez nutnosti jakéhokoli backendového serveru**. Poskytuje moderní uživatelské rozhraní, správu stavu a bezproblémovou integraci s optimalizovanými vykreslovacími enginy pro plynulé CAD pracovní postupy v prohlížeči s výjimečným výkonem.
+**cad-editor** je **vysoce výkonná** komponenta Vue 3 pro prohlížení a úpravy CAD souborů (DXF, DWG) **zcela v prohlížeči bez nutnosti jakéhokoli backendového serveru**. Poskytuje moderní uživatelské rozhraní, správu stavu a bezproblémovou integraci s optimalizovanými vykreslovacími enginy pro plynulé CAD pracovní postupy v prohlížeči s výjimečným výkonem.
 
 ## Klíčové vlastnosti
 
@@ -22,9 +22,9 @@ title: "Integrace komponenty Vue"
 - Dialogy, panely nástrojů a příkazové rozhraní
 - Komponenta Vue 3 pro vložení vysoce výkonných CAD prohlížečů do vašich aplikací
 
-## Kdy byste měli zvolit cad-viewer?
+## Kdy byste měli zvolit cad-editor?
 
-Použijte `cad-viewer`, pokud chcete **komponentu Vue 3 připravenou k použití** pro prohlížení a úpravy CAD souborů s moderním UI, dialogy, panely nástrojů a správou stavu. Tento balíček je ideální, pokud:
+Použijte `cad-editor`, pokud chcete **komponentu Vue 3 připravenou k použití** pro prohlížení a úpravy CAD souborů s moderním UI, dialogy, panely nástrojů a správou stavu. Tento balíček je ideální, pokud:
 
 - Chcete rychle vložit vysoce výkonný prohlížeč/editor CAD do své aplikace Vue s minimálním nastavením.
 - Potřebujete podporu načítání místních souborů (z počítače uživatele) i vzdálených souborů (z adres URL).
@@ -74,7 +74,7 @@ Uživatelé mohou načítat soubory přímo ze svého počítače:
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 
 const selectedFile = ref<File | undefined>()
 
@@ -97,7 +97,7 @@ Automatické načítání souborů z adres URL:
 ## Instalace
 
 ```bash
-npm install @mlightcad/cad-viewer
+npm install @mlightcad/cad-editor
 ```
 
 ## Použití
@@ -110,7 +110,7 @@ Nejprve přidejte následující závislosti do souboru package.json.
 
 - @element-plus/icons-vue
 - @mlightcad/cad-simple-viewer
-- @mlightcad/cad-viewer
+- @mlightcad/cad-editor
 - @mlightcad/data-model
 - @vueuse/core
 - element-plus
@@ -153,7 +153,7 @@ import 'element-plus/dist/index.css'
 import {
   i18n,
   MlCadViewer
-} from '@mlightcad/cad-viewer'
+} from '@mlightcad/cad-editor'
 import ElementPlus from 'element-plus'
 import { createApp } from 'vue'
 
@@ -236,7 +236,7 @@ Komponenta `MlCadViewer` přijímá následující props:
 </template>
 
 <script setup lang="ts">
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 
 // Configure global UI flags before the viewer mounts

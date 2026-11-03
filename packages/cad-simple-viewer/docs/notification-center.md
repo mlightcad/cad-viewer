@@ -1,6 +1,6 @@
 # Notification Center
 
-`@mlightcad/cad-simple-viewer` writes user-visible alerts — **missing fonts**, **unsupported entities** (including Tianzheng heuristics), **open failures**, and similar — into a **Notification Center** when a drawing opens. A lightweight DOM bell UI is installed by default. Hosts (for example `@mlightcad/cad-viewer`, or your own shell) can implement the same interface and **replace** that UI while still reusing the engine-side event bridge and message formatters.
+`@mlightcad/cad-simple-viewer` writes user-visible alerts — **missing fonts**, **unsupported entities** (including Tianzheng heuristics), **open failures**, and similar — into a **Notification Center** when a drawing opens. A lightweight DOM bell UI is installed by default. Hosts (for example `@mlightcad/cad-editor`, or your own shell) can implement the same interface and **replace** that UI while still reusing the engine-side event bridge and message formatters.
 
 This guide covers architecture, visibility, default behavior, how to override the center, and the contract custom centers must honor.
 
@@ -327,7 +327,7 @@ acapNotificationCenter().warning('Custom title', 'A warning pushed by the host')
 
 ## 5. UI framework integration (Vue example)
 
-The `@mlightcad/cad-viewer` pattern:
+The `@mlightcad/cad-editor` pattern:
 
 1. `createInstance({ notificationCenter: { showDefaultUi: false } })`
 2. Implement (or adapt) `AcApNotificationCenter` with a reactive Vue store (**per session**)

@@ -347,6 +347,9 @@ importers:
       '@mlightcad/cad-agent-plugin':
         specifier: workspace:*
         version: link:../cad-agent-plugin
+      '@mlightcad/cad-editor':
+        specifier: workspace:*
+        version: link:../cad-editor
       '@mlightcad/cad-google-drive-plugin':
         specifier: workspace:*
         version: link:../cad-google-drive-plugin
@@ -368,9 +371,6 @@ importers:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
-      '@mlightcad/cad-viewer':
-        specifier: workspace:*
-        version: link:../cad-editor
       '@mlightcad/data-model':
         specifier: 1.15.21
         version: 1.15.21

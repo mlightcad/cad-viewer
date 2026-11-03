@@ -122,7 +122,7 @@ Click **Convert and download HTML**. The page opens the drawing locally, builds 
 
 ## What this example demonstrates
 
-Integration patterns useful when building your own host app (not a full CAD UI like `@mlightcad/cad-viewer`):
+Integration patterns useful when building your own host app (not a full CAD UI like `@mlightcad/cad-editor`):
 
 | Topic | Implementation |
 |-------|----------------|
@@ -180,7 +180,7 @@ From the monorepo root: `pnpm dev:simple`, `pnpm preview:simple`.
 
 ## Related packages
 
-- [`@mlightcad/cad-viewer`](../cad-viewer) + [`cad-editor-demo`](../cad-editor-demo) — Full Vue UI, i18n, ribbons, dialogs
+- [`@mlightcad/cad-editor`](../cad-editor) + [`cad-editor-demo`](../cad-editor-demo) — Full Vue UI, i18n, ribbons, dialogs
 - [`@mlightcad/cad-html-plugin`](../cad-html-plugin) — HTML export details and `viewer-runtime.iife.js`
 - [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli) — Headless HTML export (same viewer path as this example)
 

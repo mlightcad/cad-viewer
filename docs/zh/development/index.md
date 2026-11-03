@@ -30,4 +30,4 @@ title: "开发指南"
 - [多仓库联合调试](./debugging-with-multiple-repo-changes)
 - [支持天正 DWG 图纸](./supporting-tianzheng-dwg-drawings)
 - [构建云端 DWG Web 查看器（预渲染 + 静态托管）](./cloud-dwg-web-viewer)
-- [升级 cad-simple-viewer 和 cad-viewer](./upgrade-guide)
+- [升级 cad-simple-viewer 和 cad-editor](./upgrade-guide)

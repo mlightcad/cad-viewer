@@ -217,7 +217,7 @@ AcApDocManager.instance.sendStringToExecute('cpdf')
 
 ### B. 인라인 지연 등록(cad-viewer 컴포넌트)
 
-`@mlightcad/cad-viewer`는 `registerLazyPlugins()`(`packages/cad-editor/src/app/register.ts`)에서 PDF/HTML/SVG 플러그인을 등록하며, 이는 `app.ts`의 `initializeCadViewer()`에서 호출됩니다. Vue 컴포넌트 소비자는 추가 설정 없이 지연 플러그인을 얻습니다.
+`@mlightcad/cad-editor`는 `registerLazyPlugins()`(`packages/cad-editor/src/app/register.ts`)에서 PDF/HTML/SVG 플러그인을 등록하며, 이는 `app.ts`의 `initializeCadViewer()`에서 호출됩니다. Vue 컴포넌트 소비자는 추가 설정 없이 지연 플러그인을 얻습니다.
 
 ### C. `pluginManager.loadPlugin()`을 통한 즉시 로드
 

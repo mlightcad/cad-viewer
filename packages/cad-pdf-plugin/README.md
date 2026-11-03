@@ -8,7 +8,7 @@ PDF **export** and **import** plugin for [`@mlightcad/cad-simple-viewer`](../cad
 | Command | Description |
 |---------|-------------|
 | `-cpdf` | Export via **command-line prompts** (no dialog; AutoCAD-style `-` prefix) |
-| `cpdf` | Same as `-cpdf` when no UI command is registered. In [`cad-viewer`](../cad-viewer), `cpdf` opens an **export options dialog** instead |
+| `cpdf` | Same as `-cpdf` when no UI command is registered. In [`cad-editor`](../cad-editor), `cpdf` opens an **export options dialog** instead |
 | `ipdf` | Import vector geometry from a PDF file into model space |
 
 The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@mlightcad/pdf-renderer`, `pdfjs-dist`) are only downloaded when a user runs `-cpdf` / `cpdf` or `ipdf`.
@@ -87,7 +87,7 @@ await AcApDocManager.instance.editor.executeCommand('-cpdf')
 await AcApDocManager.instance.editor.executeCommand('ipdf')
 ```
 
-In [`cad-viewer`](../cad-viewer), use `cpdf` to open the export options dialog; `-cpdf` remains available on the command line for prompt-based export.
+In [`cad-editor`](../cad-editor), use `cpdf` to open the export options dialog; `-cpdf` remains available on the command line for prompt-based export.
 
 `cad-viewer` registers this plugin automatically via `registerLazyPlugins()` in its app bootstrap and registers the `cpdf` dialog command separately.
 

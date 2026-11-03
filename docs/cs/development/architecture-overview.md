@@ -13,7 +13,7 @@ MLightCAD pracuje zcela v prohlížeči a **nevyžaduje žádný backend**. Soub
 
 MLightCAD je organizován do několika dílčích balíčků, z nichž každý odpovídá za určitou oblast systému:
 
-- **cad-viewer**: hlavní komponenta Vue 3 a frontendová aplikace, včetně UI komponent, dialogů, panelů nástrojů, správy stavu a integrace s vykreslovacími enginy.
+- **cad-editor**: hlavní komponenta Vue 3 a frontendová aplikace, včetně UI komponent, dialogů, panelů nástrojů, správy stavu a integrace s vykreslovacími enginy.
 - **cad-simple-viewer**: základní logika pro správu dokumentů, zpracování příkazů a integraci mezi UI a vykreslovacími enginy. Nezávislá na frameworku a bez UI (pouze plátno).
 - **svg-renderer**: vykresluje entity DWG/DXF jako SVG grafiku pro export a škálovatelný 2D výstup.
 - **three-renderer**: používá THREE.js k vykreslování entit DWG/DXF jako interaktivní 2D/3D grafiku s pokročilou vizualizací a vlastními shadery.
@@ -45,7 +45,7 @@ Krátká poznámka k tomu, proč definujeme rozhraní `AcDbDatabaseConverter`: e
 ### **Vrstva zobrazení**
 
 - Modul [`@mlightcad/cad-simple-viewer`](https://github.com/mlightcad/cad-viewer) v `cad-viewer` poskytuje základní logiku pro prohlížení CAD souborů, například správu dokumentů, zpracování příkazů a koordinaci mezi UI a vykreslovacím enginem. Nezávisí na žádném UI frameworku a nenabízí žádné UI prvky kromě plátna.
-- Modul [`@mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer) staví na `@mlightcad/cad-simple-viewer` a poskytuje UI založené na Vue 3 s nabídkami, panely nástrojů, příkazovým řádkem, stavovým řádkem a tmavým i světlým motivem. Všechny základní funkce zabaluje do komponenty Vue 3 pro snadnou integraci.
+- Modul [`@mlightcad/cad-editor`](https://github.com/mlightcad/cad-viewer) staví na `@mlightcad/cad-simple-viewer` a poskytuje UI založené na Vue 3 s nabídkami, panely nástrojů, příkazovým řádkem, stavovým řádkem a tmavým i světlým motivem. Všechny základní funkce zabaluje do komponenty Vue 3 pro snadnou integraci.
 
 ## Vykreslovací engine
 

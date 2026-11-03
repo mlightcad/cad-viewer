@@ -252,7 +252,7 @@ if (isPreview) {
   console.log(
     `✅ Preview tag ${tag} pushed successfully (CI publishes with npm dist-tag "preview")`
   );
-  console.log(`   Install: pnpm add @mlightcad/cad-viewer@preview`);
+  console.log(`   Install: pnpm add @mlightcad/cad-editor@preview`);
 } else {
   console.log(`✅ Release tag ${tag} pushed successfully`);
 }

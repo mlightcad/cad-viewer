@@ -1,5 +1,5 @@
 {
-  "name": "@mlightcad/cad-viewer",
+  "name": "@mlightcad/cad-editor",
   "version": "1.7.8",
   "license": "MIT",
   "type": "module",
@@ -10,6 +10,7 @@
   "keywords": [
     "autocad",
     "cad",
+    "cad-editor",
     "cad-viewer",
     "dwg",
     "dwg-viewer",
@@ -18,13 +19,13 @@
     "mlight",
     "mlightcad"
   ],
-  "main": "./dist/cad-viewer.js",
-  "module": "./dist/cad-viewer.js",
-  "types": "./dist/cad-viewer.d.ts",
+  "main": "./dist/cad-editor.js",
+  "module": "./dist/cad-editor.js",
+  "types": "./dist/cad-editor.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/cad-viewer.d.ts",
-      "import": "./dist/cad-viewer.js"
+      "types": "./dist/cad-editor.d.ts",
+      "import": "./dist/cad-editor.js"
     }
   },
   "files": [

@@ -4,7 +4,7 @@ title: "دمج مكوّن Vue"
 
 # دمج مكوّن Vue
 
-**cad-viewer** هو مكوّن Vue 3 **عالي الأداء** لعرض ملفات CAD (DXF، DWG) وتحريرها **بالكامل في المتصفح دون الحاجة إلى أي خادم خلفي**. يوفّر واجهة مستخدم حديثة وإدارة حالة وتكاملًا سلسًا مع محركات عرض محسّنة، لتوفير سير عمل CAD سلس في المتصفح بأداء استثنائي.
+**cad-editor** هو مكوّن Vue 3 **عالي الأداء** لعرض ملفات CAD (DXF، DWG) وتحريرها **بالكامل في المتصفح دون الحاجة إلى أي خادم خلفي**. يوفّر واجهة مستخدم حديثة وإدارة حالة وتكاملًا سلسًا مع محركات عرض محسّنة، لتوفير سير عمل CAD سلس في المتصفح بأداء استثنائي.
 
 ## الميزات الرئيسية
 
@@ -22,9 +22,9 @@ title: "دمج مكوّن Vue"
 - حوارات وأشرطة أدوات وواجهة سطر أوامر
 - مكوّن Vue 3 لتضمين عوارض CAD عالية الأداء في تطبيقاتك
 
-## متى ينبغي عليك اختيار cad-viewer؟
+## متى ينبغي عليك اختيار cad-editor؟
 
-استخدم `cad-viewer` إذا كنت تريد **مكوّن Vue 3 جاهزًا للاستخدام** لعرض ملفات CAD وتحريرها بواجهة حديثة وحوارات وأشرطة أدوات وإدارة حالة. تكون هذه الحزمة مثالية إذا:
+استخدم `cad-editor` إذا كنت تريد **مكوّن Vue 3 جاهزًا للاستخدام** لعرض ملفات CAD وتحريرها بواجهة حديثة وحوارات وأشرطة أدوات وإدارة حالة. تكون هذه الحزمة مثالية إذا:
 
 - كنت تريد تضمين عارض/محرر CAD عالي الأداء بسرعة في تطبيق Vue الخاص بك بأقل إعداد ممكن.
 - كنت بحاجة إلى دعم تحميل الملفات المحلية (من جهاز المستخدم) والملفات البعيدة (من عناوين URL) معًا.
@@ -74,7 +74,7 @@ title: "دمج مكوّن Vue"
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 
 const selectedFile = ref<File | undefined>()
 
@@ -97,7 +97,7 @@ const handleFileSelect = (event: Event) => {
 ## التثبيت
 
 ```bash
-npm install @mlightcad/cad-viewer
+npm install @mlightcad/cad-editor
 ```
 
 ## الاستخدام
@@ -110,7 +110,7 @@ npm install @mlightcad/cad-viewer
 
 - @element-plus/icons-vue
 - @mlightcad/cad-simple-viewer
-- @mlightcad/cad-viewer
+- @mlightcad/cad-editor
 - @mlightcad/data-model
 - @vueuse/core
 - element-plus
@@ -153,7 +153,7 @@ import 'element-plus/dist/index.css'
 import {
   i18n,
   MlCadViewer
-} from '@mlightcad/cad-viewer'
+} from '@mlightcad/cad-editor'
 import ElementPlus from 'element-plus'
 import { createApp } from 'vue'
 
@@ -236,7 +236,7 @@ initApp()
 </template>
 
 <script setup lang="ts">
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 
 // Configure global UI flags before the viewer mounts
