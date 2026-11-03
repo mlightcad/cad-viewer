@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "@mlightcad/cad-html-plugin": "workspace:*",
+    "@mlightcad/cad-pdf-core": "workspace:*",
     "@mlightcad/cad-pdf-plugin": "workspace:*",
     "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",

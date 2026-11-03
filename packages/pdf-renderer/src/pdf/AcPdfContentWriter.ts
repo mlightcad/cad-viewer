@@ -13,10 +13,12 @@ import {
 
 import { AcPdfMatrixUtil } from '../renderer/AcPdfMatrixUtil'
 import type {
+  AcPdfColorMode,
   AcPdfFillStyle,
   AcPdfGradientOp,
   AcPdfOp,
   AcPdfPoint,
+  AcPdfRgb,
   AcPdfStrokeStyle
 } from '../renderer/AcPdfStyle'
 import type { AcPdfFontManager } from './AcPdfFontManager'
@@ -24,6 +26,13 @@ import { pdfEntityText, pdfHexText } from './AcPdfMarkedContent'
 import { setPageNamedResource } from './AcPdfOcgManager'
 
 const KAPPA = 0.5522847498307936
+
+/** Ink colour for {@link AcPdfColorMode} `'monochrome'`. */
+const MONOCHROME_INK: AcPdfRgb = { r: 0, g: 0, b: 0 }
+
+function rgbArray(rgb: AcPdfRgb): [number, number, number] {
+  return [rgb.r, rgb.g, rgb.b]
+}
 
 export interface AcPdfContentWriterOptions {
   /**
@@ -51,6 +60,13 @@ export interface AcPdfContentWriterOptions {
    * have no page scale yet).
    */
   coordinateDecimals?: number
+  /**
+   * Colour treatment for every paint operator. `'monochrome'` paints
+   * linework/text black and area fills grey; fills flagged
+   * {@link AcPdfFillStyle.paper} (wipeouts) keep their paper colour.
+   * Defaults to `'color'`.
+   */
+  colorMode?: AcPdfColorMode
 }
 
 /**
@@ -85,9 +101,10 @@ function flateStreamBytes(bytes: Uint8Array): Uint8Array | null {
     return null
   }
   try {
-    // Level 9: CAD content streams are highly repetitive (layers, Entity/OCG
-    // tags, path ops); max compression is worth the extra CPU on export.
-    return deflate(bytes, { level: 9 })
+    // Level 6 (zlib default): on a 105 MiB layout stream level 9 took 26 s of
+    // blocking main-thread time for a 2% smaller result, versus 5.5 s here.
+    // The browser UI (busy spinner included) freezes for the whole call.
+    return deflate(bytes, { level: 6 })
   } catch {
     return null
   }
@@ -224,6 +241,8 @@ export class AcPdfContentWriter {
   private readonly _fonts?: AcPdfFontManager
   /** Path-coordinate decimal places; `null` keeps full precision. */
   private readonly _coordDecimals: number | null
+  /** Colour treatment applied to every paint operator. */
+  private readonly _colorMode: AcPdfColorMode
   private readonly _chunks: string[] = []
   private readonly _segments: Uint8Array[] = []
   private _segmentLength = 0
@@ -240,6 +259,8 @@ export class AcPdfContentWriter {
     this._images = options.imageCache ?? new Map<Uint8Array, PDFImage>()
     this._forms = options.formRegistry ?? createPdfFormRegistry()
     this._fonts = options.fonts
+    this._colorMode =
+      options.colorMode === 'monochrome' ? 'monochrome' : 'color'
     const places = options.coordinateDecimals
     this._coordDecimals =
       places == null || !Number.isFinite(places)
@@ -253,6 +274,7 @@ export class AcPdfContentWriter {
       imageCache: this._images,
       formRegistry: this._forms,
       fonts: this._fonts,
+      colorMode: this._colorMode,
       ...(this._coordDecimals != null
         ? { coordinateDecimals: this._coordDecimals }
         : {})
@@ -660,7 +682,7 @@ export class AcPdfContentWriter {
       : 0
     let chunk = 'q\n'
     chunk += this.applyOpacity(op.style.opacity)
-    chunk += `${pdfNum(op.style.rgb.r)} ${pdfNum(op.style.rgb.g)} ${pdfNum(op.style.rgb.b)} rg\n`
+    chunk += this.fillColorOp(op.style)
     chunk += 'BT\n'
     chunk += `/${resource.name} 1 Tf\n`
     chunk +=
@@ -714,7 +736,7 @@ export class AcPdfContentWriter {
     }
     let chunk = 'q\n'
     chunk += this.applyOpacity(op.style.opacity)
-    chunk += `${pdfNum(op.style.rgb.r)} ${pdfNum(op.style.rgb.g)} ${pdfNum(op.style.rgb.b)} rg\n`
+    chunk += this.fillColorOp(op.style)
     if (matrix) {
       const m = AcPdfMatrixUtil.toPdfMatrix(matrix)
       chunk += `${pdfNum(m.a)} ${pdfNum(m.b)} ${pdfNum(m.c)} ${pdfNum(m.d)} ${pdfNum(m.e)} ${pdfNum(m.f)} cm\n`
@@ -805,7 +827,7 @@ export class AcPdfContentWriter {
       : Math.max(scaledWidth, this._minUserLineWidth)
     let chunk = 'q\n'
     chunk += this.applyOpacity(op.style.opacity)
-    chunk += `${pdfNum(op.style.rgb.r)} ${pdfNum(op.style.rgb.g)} ${pdfNum(op.style.rgb.b)} RG ${pdfNum(lineWidth)} w 1 J 1 j\n`
+    chunk += this.strokeColorOp(op.style) + `${pdfNum(lineWidth)} w 1 J 1 j\n`
     if (op.style.dashArray && op.style.dashArray.length > 0) {
       chunk += `[${op.style.dashArray.map(d => pdfNum(d * scale)).join(' ')}] 0 d\n`
     }
@@ -889,6 +911,54 @@ export class AcPdfContentWriter {
     return name
   }
 
+  /**
+   * Resolves the colour a paint operator actually uses. Monochrome output
+   * turns every ink colour black (area fills use {@link areaRgb}); paper
+   * fills (wipeouts) keep the paper colour so they still mask the geometry
+   * beneath them.
+   */
+  private inkRgb(style: { rgb: AcPdfRgb; paper?: boolean }): AcPdfRgb {
+    if (this._colorMode !== 'monochrome' || style.paper) {
+      return style.rgb
+    }
+    return MONOCHROME_INK
+  }
+
+  /** Non-stroking colour operator (`rg`) for `style`. */
+  private fillColorOp(style: { rgb: AcPdfRgb; paper?: boolean }): string {
+    const rgb = this.inkRgb(style)
+    return `${pdfNum(rgb.r)} ${pdfNum(rgb.g)} ${pdfNum(rgb.b)} rg\n`
+  }
+
+  /**
+   * Resolves the colour of an area fill (solid hatch, SOLID/TRACE, gradient).
+   *
+   * Monochrome output turns area fills into grey by luminance instead of
+   * black: painting every solid hatch black would bury the linework drawn on
+   * top of it (facade walls, shaded rooms). Linework, text and points still
+   * print pure black through {@link inkRgb}.
+   */
+  private areaRgb(style: { rgb: AcPdfRgb; paper?: boolean }): AcPdfRgb {
+    if (this._colorMode !== 'monochrome' || style.paper) {
+      return style.rgb
+    }
+    const { r, g, b } = style.rgb
+    const luma = Math.min(1, Math.max(0, 0.299 * r + 0.587 * g + 0.114 * b))
+    return { r: luma, g: luma, b: luma }
+  }
+
+  /** Non-stroking colour operator (`rg`) for an area fill. */
+  private areaColorOp(style: { rgb: AcPdfRgb; paper?: boolean }): string {
+    const rgb = this.areaRgb(style)
+    return `${pdfNum(rgb.r)} ${pdfNum(rgb.g)} ${pdfNum(rgb.b)} rg\n`
+  }
+
+  /** Stroking colour operator (`RG`) for `style`, followed by a space. */
+  private strokeColorOp(style: { rgb: AcPdfRgb }): string {
+    const rgb = this.inkRgb(style)
+    return `${pdfNum(rgb.r)} ${pdfNum(rgb.g)} ${pdfNum(rgb.b)} RG `
+  }
+
   private applyOpacity(opacity: number): string {
     if (opacity >= 0.999) {
       return ''
@@ -930,7 +1000,7 @@ export class AcPdfContentWriter {
       ? Math.max(style.lineWidth, 0)
       : Math.max(style.lineWidth, this._minUserLineWidth)
     chunk +=
-      `${pdfNum(style.rgb.r)} ${pdfNum(style.rgb.g)} ${pdfNum(style.rgb.b)} RG ` +
+      this.strokeColorOp(style) +
       `${pdfNum(lineWidth)} w 1 J 1 j\n`
     if (style.dashArray && style.dashArray.length > 0) {
       chunk += `[${style.dashArray.map(pdfNum).join(' ')}] 0 d\n`
@@ -948,7 +1018,7 @@ export class AcPdfContentWriter {
     }
     let chunk = 'q\n'
     chunk += this.applyOpacity(style.opacity)
-    chunk += `${pdfNum(style.rgb.r)} ${pdfNum(style.rgb.g)} ${pdfNum(style.rgb.b)} rg\n`
+    chunk += this.areaColorOp(style)
     for (const loop of loops) {
       if (loop.length < 3) {
         continue
@@ -977,8 +1047,7 @@ export class AcPdfContentWriter {
         if (strip.points.length < 3) {
           continue
         }
-        chunk +=
-          `${pdfNum(strip.rgb.r)} ${pdfNum(strip.rgb.g)} ${pdfNum(strip.rgb.b)} rg\n`
+        chunk += this.areaColorOp({ rgb: strip.rgb })
         chunk += this.polylineChunk(strip.points, true)
         chunk += 'f*\n'
       }
@@ -990,8 +1059,8 @@ export class AcPdfContentWriter {
     const functionDict = this._doc.context.obj({
       FunctionType: 2,
       Domain: [0, 1],
-      C0: [op.c0.r, op.c0.g, op.c0.b],
-      C1: [op.c1.r, op.c1.g, op.c1.b],
+      C0: rgbArray(this.areaRgb({ rgb: op.c0 })),
+      C1: rgbArray(this.areaRgb({ rgb: op.c1 })),
       N: 1
     })
     const shading = this._doc.context.obj({
@@ -1014,7 +1083,7 @@ export class AcPdfContentWriter {
     const ox = r * KAPPA
     let chunk = 'q\n'
     chunk += this.applyOpacity(style.opacity)
-    chunk += `${pdfNum(style.rgb.r)} ${pdfNum(style.rgb.g)} ${pdfNum(style.rgb.b)} rg\n`
+    chunk += this.fillColorOp(style)
     chunk += `${pdfNum(x + r)} ${pdfNum(y)} m `
     chunk += `${pdfNum(x + r)} ${pdfNum(y + ox)} ${pdfNum(x + ox)} ${pdfNum(y + r)} ${pdfNum(x)} ${pdfNum(y + r)} c `
     chunk += `${pdfNum(x - ox)} ${pdfNum(y + r)} ${pdfNum(x - r)} ${pdfNum(y + ox)} ${pdfNum(x - r)} ${pdfNum(y)} c `
@@ -1076,5 +1145,13 @@ function sameStrokeStyle(a: AcPdfStrokeStyle, b: AcPdfStrokeStyle): boolean {
 }
 
 function sameFillStyle(a: AcPdfFillStyle, b: AcPdfFillStyle): boolean {
-  return a === b || (a.opacity === b.opacity && sameRgb(a.rgb, b.rgb))
+  // `paper` must match too: a wipeout keeps its paper colour in monochrome
+  // output while an ink fill of the same RGB turns grey/black, so merging the
+  // two into one fill run would recolour one of them.
+  return (
+    a === b ||
+    (a.opacity === b.opacity &&
+      !!a.paper === !!b.paper &&
+      sameRgb(a.rgb, b.rgb))
+  )
 }

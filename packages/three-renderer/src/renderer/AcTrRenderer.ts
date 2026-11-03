@@ -797,6 +797,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
    * @inheritdoc
    */
   area(area: AcGeArea2d) {
+    this.solidifyBackgroundFill()
     if (this._directCapture !== 'off') {
       if (this.tryCaptureDirectPayload({ kind: 'area', area })) {
         return this.createDirectCapturePlaceholder() as AcTrPolygon
@@ -804,6 +805,35 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
       return this.createDirectCapturePlaceholder() as AcTrPolygon
     }
     return new AcTrPolygon(area, this._subEntityTraits, this._context)
+  }
+
+  /**
+   * Background fills (wipeouts) are always a solid mask.
+   *
+   * `AcDbWipeout` only sets `isBackgroundFill`, so `fillType` still holds the
+   * pattern of the last hatch drawn. Left as is, the wipeout got a hatch
+   * shader (background-coloured lines that do not mask) and was unbatched.
+   * Normalizing the shared traits covers both the direct-capture and
+   * {@link AcTrPolygon} paths; the next hatch sets its own `fillType`.
+   */
+  private solidifyBackgroundFill() {
+    const traits = this._subEntityTraits
+    if (!traits.isBackgroundFill) {
+      return
+    }
+    const fillType = traits.fillType
+    if (
+      fillType.solidFill &&
+      !fillType.gradient &&
+      !fillType.definitionLines?.length
+    ) {
+      return
+    }
+    traits.fillType = {
+      solidFill: true,
+      patternAngle: 0,
+      definitionLines: []
+    }
   }
 
   /**

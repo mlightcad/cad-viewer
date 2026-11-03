@@ -1450,6 +1450,7 @@ export default {
     modelSpaceFit: 'Model space frame',
     exportLayouts: 'Export layouts',
     textMode: 'Text rendering',
+    colorMode: 'Color mode',
     keywords: {
       extents: {
         display: 'Extents(E)',
@@ -1480,6 +1481,16 @@ export default {
         display: 'No(N)',
         local: 'No',
         global: 'No'
+      },
+      color: {
+        display: 'Color(C)',
+        local: 'Color',
+        global: 'Color'
+      },
+      monochrome: {
+        display: 'Monochrome(M)',
+        local: 'Monochrome',
+        global: 'Monochrome'
       }
     }
   }

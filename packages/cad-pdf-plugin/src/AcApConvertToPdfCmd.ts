@@ -9,6 +9,7 @@ import {
 
 import { AcApPdfConvertor } from './AcApPdfConvertor'
 import {
+  type AcApPdfColorMode,
   type AcApPdfExportOptions,
   type AcApPdfModelSpaceFit,
   resolveAcApPdfExportOptions
@@ -58,11 +59,59 @@ export class AcApConvertToPdfCmd extends AcEdCommand {
       return undefined
     }
 
+    const colorMode = await this.promptColorMode()
+    if (colorMode === undefined) {
+      return undefined
+    }
+
     return resolveAcApPdfExportOptions({
       modelSpaceFit,
       exportLayouts,
-      textMode
+      textMode,
+      colorMode
     })
+  }
+
+  /**
+   * Prompts the colour treatment: keep entity colours, or black drawing
+   * content on white paper (monochrome).
+   */
+  private async promptColorMode(): Promise<AcApPdfColorMode | undefined> {
+    const defaults = resolveAcApPdfExportOptions()
+    const prompt = new AcEdPromptKeywordOptions(
+      AcApI18n.t('jig.cpdf.colorMode')
+    )
+    prompt.allowNone = true
+    const color = prompt.keywords.add(
+      AcApI18n.t('jig.cpdf.keywords.color.display'),
+      AcApI18n.t('jig.cpdf.keywords.color.global'),
+      AcApI18n.t('jig.cpdf.keywords.color.local')
+    )
+    const monochrome = prompt.keywords.add(
+      AcApI18n.t('jig.cpdf.keywords.monochrome.display'),
+      AcApI18n.t('jig.cpdf.keywords.monochrome.global'),
+      AcApI18n.t('jig.cpdf.keywords.monochrome.local')
+    )
+    prompt.keywords.default =
+      defaults.colorMode === 'monochrome' ? monochrome : color
+
+    const result = await AcApDocManager.instance.editor.getKeywords(prompt)
+    if (result.status === AcEdPromptStatus.Cancel) {
+      return undefined
+    }
+    if (result.status === AcEdPromptStatus.None) {
+      return defaults.colorMode
+    }
+    if (
+      result.status === AcEdPromptStatus.OK ||
+      result.status === AcEdPromptStatus.Keyword
+    ) {
+      if (!result.stringResult) {
+        return defaults.colorMode
+      }
+      return result.stringResult === 'Monochrome' ? 'monochrome' : 'color'
+    }
+    return undefined
   }
 
   /**

@@ -86,7 +86,8 @@ export class AcPdfStyleUtil {
     if (traits.isBackgroundFill) {
       return {
         rgb: rgbFromPacked(ctx.backgroundColor),
-        opacity: this.resolveOpacity(traits) ?? 1
+        opacity: this.resolveOpacity(traits) ?? 1,
+        paper: true
       }
     }
     const packed = this.contrastAgainstPaper(

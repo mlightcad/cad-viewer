@@ -42,8 +42,11 @@ type SceneNode = {
 }
 
 /**
- * Turns the viewer's already-initialized mtext renderer into PDF glyph
- * geometry so TEXT/MTEXT are not dropped during export.
+ * Turns the already-initialized {@link AcTrMTextRenderer} singleton into PDF
+ * glyph geometry so TEXT/MTEXT are not dropped during export.
+ *
+ * The host owns renderer setup: the browser viewer initializes it at startup,
+ * and headless exporters run it in `'main'` mode with a Node font loader.
  *
  * Geometry is emitted as flat float32 buffers relative to the text's own
  * insertion point. Large drawings carry tens of thousands of MTEXT instances;
@@ -53,7 +56,7 @@ type SceneNode = {
  * across identical texts, so a drawing's unique text content costs ~24 bytes
  * per triangle.
  */
-export function createViewerPdfGlyphProvider(): AcPdfGlyphProvider {
+export function acPdCreateGlyphProvider(): AcPdfGlyphProvider {
   const empty: AcPdfGlyphPrimitives = {
     triangles: new Float32Array(0),
     polylines: new Float32Array(0)
@@ -94,7 +97,7 @@ export function createViewerPdfGlyphProvider(): AcPdfGlyphProvider {
           (data as { text?: string }).text ||
           ''
         console.warn(
-          '[cad-pdf-plugin] MTEXT glyph render failed; vector geometry omitted',
+          '[cad-pdf-core] MTEXT glyph render failed; vector geometry omitted',
           error instanceof Error ? error.message : error
         )
         return { primitives: empty, actualText: contents, box: emptyBox }
@@ -115,7 +118,7 @@ export function createViewerPdfGlyphProvider(): AcPdfGlyphProvider {
         return { primitives, box }
       } catch (error) {
         console.warn(
-          '[cad-pdf-plugin] SHAPE glyph render failed; vector geometry omitted',
+          '[cad-pdf-core] SHAPE glyph render failed; vector geometry omitted',
           error instanceof Error ? error.message : error
         )
         return { primitives: empty, box: emptyBox }
@@ -124,12 +127,14 @@ export function createViewerPdfGlyphProvider(): AcPdfGlyphProvider {
   }
 }
 
-function toMTextColorSettings(settings?: AcPdfGlyphColorSettings): {
-  color: MTextColor
-  byLayerColor: number
-  byBlockColor: number
-  layer?: string
-} | undefined {
+function toMTextColorSettings(settings?: AcPdfGlyphColorSettings):
+  | {
+      color: MTextColor
+      byLayerColor: number
+      byBlockColor: number
+      layer?: string
+    }
+  | undefined {
   if (!settings) {
     return undefined
   }
@@ -235,10 +240,7 @@ function extractGlyphPrimitives(
   })
 
   const colors = [
-    ...new Set([
-      ...triangleFloatsByColor.keys(),
-      ...lineFloatsByColor.keys()
-    ])
+    ...new Set([...triangleFloatsByColor.keys(), ...lineFloatsByColor.keys()])
   ]
   const groups = new Map<
     number,

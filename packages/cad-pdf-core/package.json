@@ -1,0 +1,45 @@
+{
+  "name": "@mlightcad/cad-pdf-core",
+  "version": "1.7.8",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "files": [
+    "dist",
+    "lib",
+    "README.md",
+    "package.json"
+  ],
+  "main": "./dist/cad-pdf-core.umd.cjs",
+  "module": "./dist/cad-pdf-core.js",
+  "types": "./lib/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./dist/cad-pdf-core.js",
+      "require": "./dist/cad-pdf-core.umd.cjs"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build": "tsc && vite build",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "devDependencies": {
+    "@mlightcad/data-model": "1.15.21",
+    "@mlightcad/mtext-parser": "1.5.7",
+    "@mlightcad/pdf-renderer": "workspace:*",
+    "@mlightcad/three-renderer": "workspace:*"
+  },
+  "peerDependencies": {
+    "@mlightcad/data-model": "1.15.21",
+    "@mlightcad/mtext-parser": "1.5.7",
+    "@mlightcad/pdf-renderer": "workspace:^",
+    "@mlightcad/three-renderer": "workspace:^"
+  }
+}

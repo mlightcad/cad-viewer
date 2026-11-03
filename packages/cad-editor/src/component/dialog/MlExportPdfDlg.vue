@@ -93,6 +93,48 @@
       </ml-fieldset-group>
 
       <ml-fieldset-group
+        :title="t('dialog.exportPdfDlg.colorModeSection')"
+        class="ml-export-pdf-dlg__section"
+      >
+        <el-radio-group
+          v-model="form.colorMode"
+          class="ml-export-pdf-dlg__card-group"
+        >
+          <label
+            class="ml-export-pdf-dlg__card"
+            :class="{ 'is-selected': form.colorMode === 'color' }"
+          >
+            <el-radio value="color" class="ml-export-pdf-dlg__card-radio" />
+            <span class="ml-export-pdf-dlg__card-body">
+              <span class="ml-export-pdf-dlg__card-title">{{
+                t('dialog.exportPdfDlg.colorModeColor')
+              }}</span>
+              <span class="ml-export-pdf-dlg__card-hint">{{
+                t('dialog.exportPdfDlg.colorModeColorHint')
+              }}</span>
+            </span>
+          </label>
+          <label
+            class="ml-export-pdf-dlg__card"
+            :class="{ 'is-selected': form.colorMode === 'monochrome' }"
+          >
+            <el-radio
+              value="monochrome"
+              class="ml-export-pdf-dlg__card-radio"
+            />
+            <span class="ml-export-pdf-dlg__card-body">
+              <span class="ml-export-pdf-dlg__card-title">{{
+                t('dialog.exportPdfDlg.colorModeMonochrome')
+              }}</span>
+              <span class="ml-export-pdf-dlg__card-hint">{{
+                t('dialog.exportPdfDlg.colorModeMonochromeHint')
+              }}</span>
+            </span>
+          </label>
+        </el-radio-group>
+      </ml-fieldset-group>
+
+      <ml-fieldset-group
         :title="t('dialog.exportPdfDlg.paperSpaceSection')"
         class="ml-export-pdf-dlg__section"
       >
@@ -124,6 +166,7 @@
  * without this UI is available via `-cpdf`.
  */
 import type {
+  AcApPdfColorMode,
   AcApPdfExportOptions,
   AcApPdfModelSpaceFit
 } from '@mlightcad/cad-pdf-plugin'
@@ -165,6 +208,11 @@ export interface MlExportPdfDlgForm {
    * How MTEXT/TEXT are painted: real PDF text objects or vector outlines.
    */
   textMode: 'vector' | 'text'
+  /**
+   * Colour treatment: keep entity colours (`color`) or export black content
+   * on white paper (`monochrome`).
+   */
+  colorMode: AcApPdfColorMode
 }
 
 /**
@@ -190,7 +238,8 @@ const visible = computed({
 const form = reactive<MlExportPdfDlgForm>({
   modelSpaceFit: 'extents',
   exportLayouts: true,
-  textMode: 'text'
+  textMode: 'text',
+  colorMode: 'color'
 })
 
 /**
@@ -200,6 +249,7 @@ function resetForm() {
   form.modelSpaceFit = 'extents'
   form.exportLayouts = true
   form.textMode = 'text'
+  form.colorMode = 'color'
 }
 
 /**
@@ -217,7 +267,8 @@ async function handleOk() {
   const options: AcApPdfExportOptions = {
     modelSpaceFit: form.modelSpaceFit,
     exportLayouts: form.exportLayouts,
-    textMode: form.textMode
+    textMode: form.textMode,
+    colorMode: form.colorMode
   }
 
   try {

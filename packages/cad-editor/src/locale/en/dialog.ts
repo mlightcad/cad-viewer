@@ -154,6 +154,12 @@ export default {
     textModeVector: 'Vector outlines',
     textModeVectorHint:
       'Convert text to lines and fills, matching the screen, but the file is larger',
+    colorModeSection: 'Color',
+    colorModeColor: 'Color',
+    colorModeColorHint: 'Keep the drawing colors as shown on screen',
+    colorModeMonochrome: 'Monochrome',
+    colorModeMonochromeHint:
+      'White paper with black lines and text; filled areas print in grey',
     yes: 'Yes',
     no: 'No'
   },

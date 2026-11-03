@@ -112,8 +112,12 @@ function createConfiguredRenderer(
     renderer.textFontManager = new AcPdfFontManager(options.textFontResolver)
   }
 
+  // Monochrome output is defined as black ink on white paper, so a custom
+  // page background would contradict it.
   const background =
-    options.background === 'none' || options.background == null
+    options.colorMode === 'monochrome' ||
+    options.background === 'none' ||
+    options.background == null
       ? 0xffffff
       : options.background
   renderer.currentBackgroundColor = background

@@ -1,6 +1,7 @@
 import type { AcGiFontMapping } from '@mlightcad/data-model'
 
 import type { AcPdfTextFontResolver } from './pdf/AcPdfFontManager'
+import type { AcPdfColorMode } from './renderer/AcPdfStyle'
 import type { AcPdfGlyphProvider } from './text/AcPdfGlyphProvider'
 
 /**
@@ -102,4 +103,15 @@ export interface AcPdfExportOptions {
    * and the current space when set.
    */
   blockId?: string
+  /**
+   * Colour treatment of the exported pages.
+   *
+   * - `'color'` (default): entity colours are kept.
+   * - `'monochrome'`: white paper; linework, hatch patterns, points and
+   *   text print black, solid/gradient fill areas print grey by luminance
+   *   so linework on top of them stays readable. {@link background} is
+   *   ignored so the page stays white. Wipeouts keep masking in white and
+   *   raster images keep their pixels.
+   */
+  colorMode?: AcPdfColorMode
 }

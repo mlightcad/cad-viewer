@@ -105,6 +105,21 @@ quit
 
 Useful commands (non-exhaustive): `zoom`, `pngout`, `cdxf`, `-chtml`, `chtml`, `cpdf`, `csvg`, `-layer`, `qnew`, `line`, `circle`, …
 
+### PDF export prompts (`-cpdf`)
+
+`-cpdf` asks four questions, in order. An empty line accepts the default.
+
+| Prompt | Keywords | Default |
+|--------|----------|---------|
+| Model space frame | `Extents` / `Display` | `Extents` |
+| Export layouts | `Yes` / `No` | `Yes` |
+| Text rendering | `Text` / `Vector` | `Text` |
+| Color mode | `Color` / `Monochrome` | `Color` |
+
+`Monochrome` writes white paper with black linework and text; solid fills print in grey. Scripts written before the color prompt existed should add a `Color` (or empty) line after the text-rendering answer.
+
+For PDF export without a browser, see [`@mlightcad/cad-pdf-exporter`](../cad-pdf-exporter).
+
 Layer edits need `--mode write`. Export commands write files via browser download; the CLI captures them into `-o`.
 
 ## Sample scripts
@@ -117,6 +132,8 @@ After install, examples live under `node_modules/@mlightcad/cad-simple-viewer-cl
 | `export-html.scr` | Offline HTML (`-chtml`) |
 | `export-html-multi.scr` | Multi-file ACEX package zip (`-chtml` Multi) |
 | `export-html-multi-preview.scr` | Multi ACEX zip + zoom-extents JPEG preview (one run) |
+| `export-pdf.scr` | Zoom extents → vector PDF in color, every layout (`-cpdf`) |
+| `export-pdf-monochrome.scr` | Print-ready PDF: white paper, black linework and text, grey fills (`-cpdf` … `Monochrome`) |
 | `export-dxf.scr` | DXF download (`cdxf`) |
 | `create-drawing-dxf.scr` | Blank drawing + LINE → DXF (no `-i`) |
 | `create-shapes-dxf.scr` | Blank drawing + LINE + CIRCLE → DXF |
@@ -124,6 +141,7 @@ After install, examples live under `node_modules/@mlightcad/cad-simple-viewer-cl
 | `freeze-layer-png.scr` | `-layer` Off then PNG (`--mode write`; edit `LAYER_NAME`) |
 | `batch-export-png.mjs` | Scan a folder of drawings → PNG |
 | `batch-export-html.mjs` | Scan a folder → HTML |
+| `batch-export-pdf.mjs` | Scan a folder → PDF (`--color-mode monochrome` for black and white) |
 | `batch-export-html-multi-preview.mjs` | Scan a folder → multi ACEX + preview, demo-drawings layout |
 
 Batch helpers (from your project after `npm install -D`):
@@ -131,6 +149,7 @@ Batch helpers (from your project after `npm install -D`):
 ```bash
 node node_modules/@mlightcad/cad-simple-viewer-cli/examples/batch-export-png.mjs ./drawings ./out-png
 node node_modules/@mlightcad/cad-simple-viewer-cli/examples/batch-export-html.mjs ./drawings ./out-html
+node node_modules/@mlightcad/cad-simple-viewer-cli/examples/batch-export-pdf.mjs ./drawings ./out-pdf --color-mode monochrome
 node node_modules/@mlightcad/cad-simple-viewer-cli/examples/batch-export-html-multi-preview.mjs ./drawings ./out-demo
 ```
 

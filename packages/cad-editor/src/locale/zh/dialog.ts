@@ -147,6 +147,12 @@ export default {
     textModeTextHint: '文字保留为可选中/可搜索的文字对象，文件显著减小（SHX 文字仍按矢量输出）',
     textModeVector: '矢量轮廓',
     textModeVectorHint: '文字转换为线条和填充，与屏幕显示一致，但文件较大',
+    colorModeSection: '颜色',
+    colorModeColor: '彩色',
+    colorModeColorHint: '保留图纸中的实体颜色',
+    colorModeMonochrome: '黑白',
+    colorModeMonochromeHint:
+      '白色底纸，线条和文字为黑色，填充区域为灰色，适合打印',
     yes: '是',
     no: '否'
   },

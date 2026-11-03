@@ -2,6 +2,7 @@ import { AcGeBox2d, AcGeMatrix3d } from '@mlightcad/data-model'
 import { PDFDocument, PDFImage } from 'pdf-lib'
 
 import type { AcPdfEntity } from '../renderer/AcPdfEntity'
+import type { AcPdfColorMode } from '../renderer/AcPdfStyle'
 import type { AcPdfFormRegistry } from './AcPdfContentWriter'
 import { AcPdfContentWriter } from './AcPdfContentWriter'
 import type { AcPdfFontManager } from './AcPdfFontManager'
@@ -51,6 +52,8 @@ export interface AcPdfWriteOptions extends AcPdfPageLayoutInput {
    * per page.
    */
   formRegistry?: AcPdfFormRegistry
+  /** Colour treatment for every paint operator. Defaults to `'color'`. */
+  colorMode?: AcPdfColorMode
 }
 
 /**
@@ -119,6 +122,7 @@ export class AcPdfDocumentWriter {
       imageCache: options.imageCache,
       fonts: options.fonts,
       formRegistry: options.formRegistry,
+      colorMode: options.colorMode,
       // Drop float64 noise from path operands. The page CTM stays full
       // precision so framing does not drift.
       coordinateDecimals: pdfCoordinateDecimals(layout.scale)

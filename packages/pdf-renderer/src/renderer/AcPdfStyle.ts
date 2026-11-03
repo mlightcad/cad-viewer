@@ -27,7 +27,25 @@ export interface AcPdfStrokeStyle {
 export interface AcPdfFillStyle {
   rgb: AcPdfRgb
   opacity: number
+  /**
+   * Set for fills that paint the paper colour (wipeouts, background masks).
+   * {@link AcPdfColorMode} `'monochrome'` leaves these untouched so they keep
+   * hiding the geometry beneath them.
+   */
+  paper?: boolean
 }
+
+/**
+ * Colour treatment of an exported PDF.
+ *
+ * - `'color'`: entity colours are kept (ACI 7 / near-paper colours flip to
+ *   the paper foreground so they stay visible).
+ * - `'monochrome'`: white paper; linework, hatch patterns, points and text
+ *   are painted black, solid/gradient fill areas grey by luminance (pure
+ *   black fills would hide the linework drawn over them). Wipeouts stay
+ *   white and raster images keep their pixels.
+ */
+export type AcPdfColorMode = 'color' | 'monochrome'
 
 export interface AcPdfGradientOp {
   kind: 'gradient'

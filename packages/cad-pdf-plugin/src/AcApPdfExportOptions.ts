@@ -1,48 +1,45 @@
+import {
+  type AcPdColorMode,
+  type AcPdExportOptions,
+  type AcPdModelSpaceFit,
+  acPdResolveExportOptions,
+  type AcPdTextMode
+} from '@mlightcad/cad-pdf-core'
+
 /**
  * Model-space page framing for PDF export.
  *
- * - `display` — fit the live viewport (on-screen view).
- * - `extents` — fit drawable geometry in the current space.
+ * Alias of {@link AcPdModelSpaceFit} from `@mlightcad/cad-pdf-core`.
  */
-export type AcApPdfModelSpaceFit = 'display' | 'extents'
+export type AcApPdfModelSpaceFit = AcPdModelSpaceFit
+
+/**
+ * How MTEXT/TEXT are painted. Alias of {@link AcPdTextMode}.
+ */
+export type AcApPdfTextMode = AcPdTextMode
+
+/**
+ * Colour treatment of the exported PDF (`'color'` or black-on-white
+ * `'monochrome'`). Alias of {@link AcPdColorMode}.
+ */
+export type AcApPdfColorMode = AcPdColorMode
 
 /**
  * User-configurable options for PDF export (`cpdf` dialog, `-cpdf`, and API).
+ *
+ * Alias of {@link AcPdExportOptions} from `@mlightcad/cad-pdf-core`, shared
+ * with the headless `@mlightcad/cad-pdf-exporter`.
  */
-export interface AcApPdfExportOptions {
-  /**
-   * How to frame model-space pages. Defaults to `'extents'`.
-   * Paper-space pages always use their own drawable extents / paper size.
-   */
-  modelSpaceFit?: AcApPdfModelSpaceFit
-  /**
-   * When `true`, every layout (model + paper space) becomes a PDF page.
-   * When `false`, only the current space is exported. Defaults to `true`.
-   */
-  exportLayouts?: boolean
-  /**
-   * How MTEXT/TEXT are painted.
-   *
-   * - `'text'` (default): laid-out text is painted as real PDF text through
-   *   fonts resolved from the viewer font catalog — text stays
-   *   selectable/searchable and the file shrinks dramatically. Texts whose
-   *   font is SHX or cannot be embedded fall back to vector glyphs.
-   * - `'vector'`: glyphs are tessellated into line/fill geometry
-   *   (self-contained, but dense text dominates the file size).
-   */
-  textMode?: 'vector' | 'text'
-}
+export type AcApPdfExportOptions = AcPdExportOptions
 
 /**
  * Resolves PDF export options with package defaults.
+ *
+ * @param options - Partial options
+ * @returns Fully populated options
  */
 export function resolveAcApPdfExportOptions(
   options: AcApPdfExportOptions = {}
 ): Required<AcApPdfExportOptions> {
-  return {
-    modelSpaceFit:
-      options.modelSpaceFit === 'display' ? 'display' : 'extents',
-    exportLayouts: options.exportLayouts !== false,
-    textMode: options.textMode === 'vector' ? 'vector' : 'text'
-  }
+  return acPdResolveExportOptions(options)
 }

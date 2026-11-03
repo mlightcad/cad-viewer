@@ -1,0 +1,13 @@
+; export-pdf-monochrome.scr
+; Export a print-ready PDF: white paper, black linework and text, solid fills
+; in grey (-cpdf ... Monochrome).
+; Usage:
+;   cad-simple-viewer-cli -i drawing.dwg -s examples/export-pdf-monochrome.scr -o ./out
+zoom
+e
+-cpdf
+Extents
+Yes
+Text
+Monochrome
+quit

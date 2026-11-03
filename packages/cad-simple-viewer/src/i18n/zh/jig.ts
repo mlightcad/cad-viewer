@@ -1426,6 +1426,7 @@ export default {
     modelSpaceFit: '模型空间范围',
     exportLayouts: '是否导出布局',
     textMode: '文字渲染方式',
+    colorMode: '颜色模式',
     keywords: {
       extents: {
         display: '范围(E)',
@@ -1456,6 +1457,16 @@ export default {
         display: '否(N)',
         local: '否',
         global: 'No'
+      },
+      color: {
+        display: '彩色(C)',
+        local: '彩色',
+        global: 'Color'
+      },
+      monochrome: {
+        display: '黑白(M)',
+        local: '黑白',
+        global: 'Monochrome'
       }
     }
   }

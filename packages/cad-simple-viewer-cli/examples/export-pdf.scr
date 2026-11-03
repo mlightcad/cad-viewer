@@ -1,9 +1,14 @@
 ; export-pdf.scr
+; Export a vector PDF (-cpdf).
+; Prompts: model space frame (Extents / Display) / export layouts (Yes / No) /
+; text rendering (Text / Vector) / color mode (Color / Monochrome).
+; Usage:
+;   cad-simple-viewer-cli -i drawing.dwg -s examples/export-pdf.scr -o ./out
 zoom
 e
 -cpdf
 Extents
 Yes
 Text
-
+Color
 quit

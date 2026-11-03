@@ -59,7 +59,7 @@ import type {
 } from '../text/AcPdfGlyphProvider'
 import { AcPdfEntity } from './AcPdfEntity'
 import { AcPdfGroup } from './AcPdfGroup'
-import type { AcPdfOp, AcPdfPoint } from './AcPdfStyle'
+import type { AcPdfColorMode, AcPdfOp, AcPdfPoint } from './AcPdfStyle'
 import { rgbFromPacked } from './AcPdfStyle'
 import { AcPdfStyleContext, AcPdfStyleUtil } from './AcPdfStyleUtil'
 import {
@@ -71,6 +71,13 @@ import {
   UNDERLINE_OFFSET_RATIO} from './AcPdfTextLayout'
 
 const DEFAULT_POINT_RADIUS = 0.5
+
+/** Fill type every background fill (wipeout) is painted with. */
+const BACKGROUND_FILL_TYPE: AcGiSubEntityTraits['fillType'] = {
+  solidFill: true,
+  patternAngle: 0,
+  definitionLines: []
+}
 
 /**
  * AcGi backend that records vector drawables for PDF serialization.
@@ -94,6 +101,8 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
   private _celtscale = 1
   private _currentBackgroundColor = 0xffffff
   private _foregroundColor = 0x000000
+  /** Colour treatment forwarded to the document writer. */
+  private _colorMode: AcPdfColorMode = 'color'
   private _showLineWeight = false
   private _insunits = 4
   private _title?: string
@@ -229,7 +238,11 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     this._title = options.title
     this._paper = options.paper
     this._marginMm = options.marginMm
-    this._pageBackground = options.background ?? 'none'
+    this._colorMode =
+      options.colorMode === 'monochrome' ? 'monochrome' : 'color'
+    // Monochrome output is black ink on white paper: ignore any background.
+    this._pageBackground =
+      this._colorMode === 'monochrome' ? 'none' : (options.background ?? 'none')
     this._glyphProvider = options.glyphProvider
     this._fitBox = options.fitBox
     this._embedTextActualText = options.embedTextActualText !== false
@@ -448,7 +461,14 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       this._subEntityTraits,
       this.styleContext
     )
-    const fillType = this._subEntityTraits.fillType
+    // Background fills (wipeouts) are always a solid paper-coloured mask.
+    // AcDbWipeout never sets `fillType`, so the traits still hold the pattern
+    // of the last hatch drawn; tessellating it here turned one large wipeout
+    // into ~750k paper-white strokes (hundreds of MiB, export never ending)
+    // that did not even mask the geometry beneath.
+    const fillType = this._subEntityTraits.isBackgroundFill
+      ? BACKGROUND_FILL_TYPE
+      : this._subEntityTraits.fillType
     if (pdfLoops.length > 0 && fillType.gradient) {
       const packed =
         (Math.round(style.rgb.r * 255) << 16) |
@@ -1078,6 +1098,7 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       embedTextActualText: this._embedTextActualText,
       embedEntityMarkedContent: this._embedEntityMarkedContent,
       fonts: this._fonts,
+      colorMode: this._colorMode,
       ...overrides
     }
   }
