@@ -59,7 +59,7 @@ import type {
 } from '../text/AcPdfGlyphProvider'
 import { AcPdfEntity } from './AcPdfEntity'
 import { AcPdfGroup } from './AcPdfGroup'
-import type { AcPdfOp, AcPdfPoint } from './AcPdfStyle'
+import type { AcPdfColorMode, AcPdfOp, AcPdfPoint } from './AcPdfStyle'
 import { rgbFromPacked } from './AcPdfStyle'
 import { AcPdfStyleContext, AcPdfStyleUtil } from './AcPdfStyleUtil'
 import {
@@ -94,6 +94,8 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
   private _celtscale = 1
   private _currentBackgroundColor = 0xffffff
   private _foregroundColor = 0x000000
+  /** Colour treatment forwarded to the document writer. */
+  private _colorMode: AcPdfColorMode = 'color'
   private _showLineWeight = false
   private _insunits = 4
   private _title?: string
@@ -229,7 +231,11 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
     this._title = options.title
     this._paper = options.paper
     this._marginMm = options.marginMm
-    this._pageBackground = options.background ?? 'none'
+    this._colorMode =
+      options.colorMode === 'monochrome' ? 'monochrome' : 'color'
+    // Monochrome output is black ink on white paper: ignore any background.
+    this._pageBackground =
+      this._colorMode === 'monochrome' ? 'none' : (options.background ?? 'none')
     this._glyphProvider = options.glyphProvider
     this._fitBox = options.fitBox
     this._embedTextActualText = options.embedTextActualText !== false
@@ -1078,6 +1084,7 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       embedTextActualText: this._embedTextActualText,
       embedEntityMarkedContent: this._embedEntityMarkedContent,
       fonts: this._fonts,
+      colorMode: this._colorMode,
       ...overrides
     }
   }

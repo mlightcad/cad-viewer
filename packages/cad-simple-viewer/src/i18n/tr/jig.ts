@@ -1317,6 +1317,7 @@ export default {
     modelSpaceFit: 'Model alanı çerçevesi',
     exportLayouts: 'Yerleşimleri dışa aktar',
     textMode: 'Metin işleme',
+    colorMode: 'Renk modu',
     keywords: {
       extents: {
         display: 'Kapsam(K)',
@@ -1347,6 +1348,16 @@ export default {
         display: 'Hayır(H)',
         local: 'Hayır',
         global: 'No'
+      },
+      color: {
+        display: 'Renkli(R)',
+        local: 'Renkli',
+        global: 'Color'
+      },
+      monochrome: {
+        display: 'Siyah-beyaz(S)',
+        local: 'Siyah-beyaz',
+        global: 'Monochrome'
       }
     }
   }

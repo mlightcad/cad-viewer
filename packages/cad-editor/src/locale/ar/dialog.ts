@@ -193,6 +193,12 @@ export default {
     textModeTextHint: 'يبقي النص قابلاً للتحديد/البحث ويصغر الملف (نص SHX يبقى متجهًا)',
     textModeVector: 'مخططات متجهة',
     textModeVectorHint: 'يحوّل النص إلى خطوط وتعبئة مطابقة للشاشة، لكن الملف أكبر',
+    colorModeSection: 'الألوان',
+    colorModeColor: 'ملون',
+    colorModeColorHint: 'يحتفظ بألوان الرسم كما تظهر على الشاشة',
+    colorModeMonochrome: 'أحادي اللون',
+    colorModeMonochromeHint:
+      'ورق أبيض مع خطوط ونصوص سوداء؛ تُطبع المساحات المعبأة بالرمادي',
     yes: 'نعم',
     no: 'لا'
   },

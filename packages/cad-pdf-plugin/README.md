@@ -17,7 +17,8 @@ The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@ml
 
 - **Vector PDF export** — renders model space and each paper-space layout as PDF pages with `@mlightcad/pdf-renderer` (native AcGi PDF backend). Paper-space pages include model content shown through viewports, clipped to each viewport frame.
 - **Busy indicator** — export shows the same conversion spinner as `chtml` so the browser stays responsive
-- **Export options** — model-space framing (`Extents` / `Display`) and optional paper-space layouts
+- **Export options** — model-space framing (`Extents` / `Display`), optional paper-space layouts, text mode (`Text` / `Vector`) and colour mode (`Color` / `Monochrome` — black content on white paper)
+- **Shared core** — export logic lives in [`@mlightcad/cad-pdf-core`](../cad-pdf-core), which the headless [`@mlightcad/cad-pdf-exporter`](../cad-pdf-exporter) also uses
 - **PDF import** — parses vector paths from the first page of a PDF (lines, polylines, Bézier curves) and appends CAD entities
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyPdfPlugin`
 - **Framework-agnostic** — no Vue/React dependency; works anywhere `cad-simple-viewer` runs
@@ -30,9 +31,12 @@ pnpm add @mlightcad/cad-pdf-plugin
 
 Peer dependencies:
 
+- `@mlightcad/cad-pdf-core`
 - `@mlightcad/cad-simple-viewer`
 - `@mlightcad/data-model`
+- `@mlightcad/mtext-parser`
 - `@mlightcad/pdf-renderer`
+- `@mlightcad/three-renderer`
 
 Runtime dependencies (bundled with this package):
 
@@ -119,7 +123,9 @@ await new AcApPdfConvertor().convert(
   context,
   resolveAcApPdfExportOptions({
     modelSpaceFit: 'extents',
-    exportLayouts: true
+    exportLayouts: true,
+    textMode: 'text',
+    colorMode: 'monochrome' // or 'color' (default)
   })
 )
 
@@ -132,9 +138,9 @@ await new AcApPdfImportConvertor().convert(context, buffer, 1) // page 1
 
 ### Export (`-cpdf` / dialog)
 
-1. Collect options: model-space framing (`Extents` / `Display`) and whether to export layouts.
+1. Collect options: model-space framing (`Extents` / `Display`), whether to export layouts, text mode (`Text` / `Vector`) and colour mode (`Color` / `Monochrome`).
 2. Show the application busy overlay (same animation pattern as `chtml`).
-3. Call `@mlightcad/pdf-renderer` `exportDatabaseToPdf`. With layouts enabled, model space and every paper space become one PDF page each.
+3. Call `@mlightcad/cad-pdf-core` `acPdExportDatabase` (built on `@mlightcad/pdf-renderer`). With layouts enabled, model space and every paper space become one PDF page each. Monochrome paints linework and text black on white paper (solid fills become grey).
 4. Download the resulting PDF bytes.
 
 ### Import (`ipdf`)
@@ -156,7 +162,7 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 | `AcApConvertToPdfCmd` | `-cpdf` / fallback `cpdf` command class |
 | `AcApImportPdfCmd` | `ipdf` command class |
 | `AcApPdfConvertor` | CAD → PDF export utility |
-| `AcApPdfExportOptions`, `resolveAcApPdfExportOptions` | Export option types and defaults |
+| `AcApPdfExportOptions`, `AcApPdfColorMode`, `resolveAcApPdfExportOptions` | Export option types and defaults (aliases of `@mlightcad/cad-pdf-core`) |
 | `AcApPdfImportConvertor` | PDF → CAD entities import utility |
 
 ## Project layout
@@ -167,13 +173,13 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 | `src/AcApPdfPlugin.ts` | Plugin lifecycle (`onLoad` / `onUnload`) |
 | `src/AcApConvertToPdfCmd.ts` | `-cpdf` command (command-line prompts) |
 | `src/AcApImportPdfCmd.ts` | `ipdf` command |
-| `src/AcApPdfConvertor.ts` | Export pipeline (`exportDatabaseToPdf`) |
+| `src/AcApPdfConvertor.ts` | Browser export: view box, fonts, download (rendering via `cad-pdf-core`) |
 | `src/AcApPdfExportOptions.ts` | Export option types and defaults |
 | `src/AcApPdfImportConvertor.ts` | Import pipeline (pdf.js operator parsing) |
 
 ## Role in MLightCAD
 
-This package extends `cad-simple-viewer` with optional PDF I/O. Export uses `@mlightcad/pdf-renderer`; import uses `pdfjs-dist`. Heavy PDF dependencies stay out of the core viewer bundle through lazy loading.
+This package extends `cad-simple-viewer` with optional PDF I/O. Export uses `@mlightcad/cad-pdf-core` (on top of `@mlightcad/pdf-renderer`); import uses `pdfjs-dist`. Heavy PDF dependencies stay out of the core viewer bundle through lazy loading.
 
 ## License
 

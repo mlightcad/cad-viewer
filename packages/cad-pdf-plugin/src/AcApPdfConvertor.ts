@@ -1,3 +1,4 @@
+import { acPdExportDatabase, type AcPdFitBox } from '@mlightcad/cad-pdf-core'
 import {
   type AcApContext,
   AcApDocManager,
@@ -6,72 +7,47 @@ import {
   type AcEdBaseView,
   resolveExportDownloadName
 } from '@mlightcad/cad-simple-viewer'
-import {
-  type AcPdfExportOptions,
-  exportDatabaseToPdf
-} from '@mlightcad/pdf-renderer'
 
 import {
   type AcApPdfExportOptions,
   resolveAcApPdfExportOptions
 } from './AcApPdfExportOptions'
 import { resolveViewerTextFont } from './AcApPdfFontResolver'
-import { createViewerPdfGlyphProvider } from './AcApPdfGlyphProvider'
 
 /**
  * Converts the current CAD drawing to a vector PDF and downloads it.
  *
- * Framing matches HTML export: `'extents'` fits drawable geometry; `'display'`
- * uses the live camera box. Paper-space pages ignore model-space fit and use
- * their own drawable extents.
+ * Rendering is delegated to `@mlightcad/cad-pdf-core` (shared with the
+ * headless `cad-pdf-exporter`); this class only supplies viewer services —
+ * the live view box for `'display'` framing, the viewer font mapping and
+ * catalog-backed font embedding — and triggers the browser download.
  *
  * When {@link AcApPdfExportOptions.exportLayouts} is true, every layout becomes
- * one PDF page. Stroke widths follow the drawing `LWDISPLAY` flag: on uses
- * object lineweights, off emits true PDF hairlines. A busy indicator is shown
- * for the duration.
+ * one PDF page. {@link AcApPdfExportOptions.colorMode} `'monochrome'` exports
+ * black content on white paper. A busy indicator is shown for the duration.
  */
 export class AcApPdfConvertor {
   /**
    * Renders the current drawing to PDF and triggers a browser download.
    *
    * @param context - Active document context
-   * @param options - Export framing and layout options
+   * @param options - Export framing, layout, text and colour options
    */
   async convert(context: AcApContext, options: AcApPdfExportOptions = {}) {
     const resolved = resolveAcApPdfExportOptions(options)
 
     await AcApDocManager.instance.withBusyIndicator(async () => {
       const db = context.doc.database
-      const pdfOptions: AcPdfExportOptions = {
+      const bytes = await acPdExportDatabase(db, {
+        ...resolved,
         title: context.doc.fileName || context.doc.docTitle,
-        ltscale: db.ltscale,
-        celtscale: db.celtscale,
-        showLineWeight: !!db.lwdisplay,
         fontMapping: AcApSettingManager.instance.fontMapping,
-        background: 'none',
-        fit: resolved.modelSpaceFit === 'display' ? 'current' : 'extents',
-        layouts: resolved.exportLayouts ? 'all' : 'current',
-        glyphProvider: createViewerPdfGlyphProvider(),
-        textMode: resolved.textMode
-      }
-      if (resolved.textMode === 'text') {
-        pdfOptions.textFontResolver = resolveViewerTextFont
-      }
-
-      if (resolved.modelSpaceFit === 'display') {
-        // Display framing must use coordinates from the space being framed.
-        // When exporting all layouts from paper space, the active camera is in
-        // paper WCS — applying that box to the model-space page would be wrong.
-        // In that case omit fitBox so the model page falls back to extents;
-        // paper pages already ignore model-space fitBox in exportAllLayouts.
-        const inModelSpace =
-          db.currentSpaceId === db.tables.blockTable.modelSpace.objectId
-        if (inModelSpace || !resolved.exportLayouts) {
-          pdfOptions.fitBox = this.captureFitBox(context.view)
-        }
-      }
-
-      const bytes = await exportDatabaseToPdf(db, pdfOptions)
+        displayBox:
+          resolved.modelSpaceFit === 'display'
+            ? this.captureFitBox(context.view)
+            : undefined,
+        textFontResolver: resolveViewerTextFont
+      })
       const downloadName = resolveExportDownloadName(
         context.doc.fileName || context.doc.docTitle,
         'pdf'
@@ -83,7 +59,7 @@ export class AcApPdfConvertor {
   /**
    * Captures the visible world box from the active view’s screen corners.
    */
-  private captureFitBox(view: AcEdBaseView): NonNullable<AcPdfExportOptions['fitBox']> {
+  private captureFitBox(view: AcEdBaseView): AcPdFitBox {
     const topLeft = view.screenToWorld({ x: 0, y: 0 })
     const bottomRight = view.screenToWorld({
       x: view.width,

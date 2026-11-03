@@ -66,6 +66,24 @@
       "runnable": true
     },
     {
+      "id": "export-pdf",
+      "title": "Export PDF",
+      "description": "Zoom extents and export a vector PDF in color with every layout (-cpdf).",
+      "script": "export-pdf.scr",
+      "mode": "read",
+      "inputKind": "file",
+      "runnable": true
+    },
+    {
+      "id": "export-pdf-monochrome",
+      "title": "Export PDF (monochrome)",
+      "description": "Export a print-ready PDF: white paper, black linework and text, grey fills (-cpdf ... Monochrome).",
+      "script": "export-pdf-monochrome.scr",
+      "mode": "read",
+      "inputKind": "file",
+      "runnable": true
+    },
+    {
       "id": "export-dxf",
       "title": "Export DXF",
       "description": "Convert the open drawing to DXF (cdxf).",
@@ -97,6 +115,15 @@
       "title": "Batch export HTML",
       "description": "Scan a folder and export each drawing to HTML.",
       "script": "batch-export-html.mjs",
+      "kind": "batch",
+      "inputKind": "directory",
+      "runnable": true
+    },
+    {
+      "id": "batch-export-pdf",
+      "title": "Batch export PDF",
+      "description": "Scan a folder and export each drawing to PDF (pass --color-mode monochrome for black and white).",
+      "script": "batch-export-pdf.mjs",
       "kind": "batch",
       "inputKind": "directory",
       "runnable": true

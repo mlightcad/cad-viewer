@@ -257,6 +257,9 @@ importers:
       '@mlightcad/cad-onedrive-plugin':
         specifier: workspace:*
         version: link:../cad-onedrive-plugin
+      '@mlightcad/cad-pdf-core':
+        specifier: workspace:*
+        version: link:../cad-pdf-core
       '@mlightcad/cad-pdf-plugin':
         specifier: workspace:*
         version: link:../cad-pdf-plugin
@@ -359,6 +362,9 @@ importers:
       '@mlightcad/cad-onedrive-plugin':
         specifier: workspace:*
         version: link:../cad-onedrive-plugin
+      '@mlightcad/cad-pdf-core':
+        specifier: workspace:*
+        version: link:../cad-pdf-core
       '@mlightcad/cad-pdf-plugin':
         specifier: workspace:*
         version: link:../cad-pdf-plugin
@@ -599,8 +605,66 @@ importers:
         specifier: 1.15.21
         version: 1.15.21
 
+  packages/cad-pdf-core:
+    devDependencies:
+      '@mlightcad/data-model':
+        specifier: 1.15.21
+        version: 1.15.21
+      '@mlightcad/mtext-parser':
+        specifier: 1.5.7
+        version: 1.5.7
+      '@mlightcad/pdf-renderer':
+        specifier: workspace:*
+        version: link:../pdf-renderer
+      '@mlightcad/three-renderer':
+        specifier: workspace:*
+        version: link:../three-renderer
+
+  packages/cad-pdf-exporter:
+    dependencies:
+      '@mlightcad/cad-pdf-core':
+        specifier: workspace:*
+        version: link:../cad-pdf-core
+      '@mlightcad/data-model':
+        specifier: 1.15.21
+        version: 1.15.21
+      '@mlightcad/libredwg-converter':
+        specifier: 3.15.21
+        version: 3.15.21(@mlightcad/data-model@1.15.21)
+      '@mlightcad/libredwg-web':
+        specifier: 0.8.2
+        version: 0.8.2
+      '@mlightcad/mtext-parser':
+        specifier: 1.5.7
+        version: 1.5.7
+      '@mlightcad/mtext-renderer':
+        specifier: 0.13.7
+        version: 0.13.7(@mlightcad/mtext-parser@1.5.7)(three@0.186.1)
+      '@mlightcad/pdf-renderer':
+        specifier: workspace:*
+        version: link:../pdf-renderer
+      '@mlightcad/three-renderer':
+        specifier: workspace:*
+        version: link:../three-renderer
+      three:
+        specifier: ^0.186.1
+        version: 0.186.1
+      web-worker:
+        specifier: 1.5.0
+        version: 1.5.0
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.12.4
+      '@types/three':
+        specifier: ^0.186.0
+        version: 0.186.0
+
   packages/cad-pdf-plugin:
     devDependencies:
+      '@mlightcad/cad-pdf-core':
+        specifier: workspace:*
+        version: link:../cad-pdf-core
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
@@ -735,6 +799,9 @@ importers:
       '@mlightcad/cad-html-plugin':
         specifier: workspace:*
         version: link:../cad-html-plugin
+      '@mlightcad/cad-pdf-core':
+        specifier: workspace:*
+        version: link:../cad-pdf-core
       '@mlightcad/cad-pdf-plugin':
         specifier: workspace:*
         version: link:../cad-pdf-plugin
@@ -796,6 +863,9 @@ importers:
       '@mlightcad/cad-onedrive-plugin':
         specifier: workspace:*
         version: link:../cad-onedrive-plugin
+      '@mlightcad/cad-pdf-core':
+        specifier: workspace:*
+        version: link:../cad-pdf-core
       '@mlightcad/cad-pdf-plugin':
         specifier: workspace:*
         version: link:../cad-pdf-plugin

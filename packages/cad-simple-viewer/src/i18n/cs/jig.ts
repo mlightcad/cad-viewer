@@ -1314,6 +1314,7 @@ export default {
     modelSpaceFit: 'Rám modelového prostoru',
     exportLayouts: 'Exportovat rozvržení',
     textMode: 'Vykreslení textu',
+    colorMode: 'Barevný režim',
     keywords: {
       extents: {
         display: 'Rozsah(E)',
@@ -1344,6 +1345,16 @@ export default {
         display: 'Ne(N)',
         local: 'Ne',
         global: 'No'
+      },
+      color: {
+        display: 'Barevně(B)',
+        local: 'Barevně',
+        global: 'Color'
+      },
+      monochrome: {
+        display: 'Černobíle(C)',
+        local: 'Černobíle',
+        global: 'Monochrome'
       }
     }
   }

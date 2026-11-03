@@ -35,6 +35,8 @@ const config: Config = {
   testPathIgnorePatterns: ['/e2e/', '/__tests__/helpers/'],
   moduleNameMapper: {
     '^lodash-es$': 'lodash',
+    '^@mlightcad/cad-pdf-core$':
+      '<rootDir>/packages/cad-pdf-core/src/index.ts',
     '^@mlightcad/cad-html-core$':
       '<rootDir>/packages/cad-html-core/src/index.ts',
     '^@mlightcad/cad-agent-core$':

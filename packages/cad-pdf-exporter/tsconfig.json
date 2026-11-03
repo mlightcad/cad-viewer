@@ -1,0 +1,20 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "rootDir": "./src",
+    "outDir": "./lib",
+    "types": ["node"],
+    "paths": {
+      "@mlightcad/cad-pdf-exporter": [
+        "./src/index.ts"
+      ],
+      "@mlightcad/libredwg-converter/node": [
+        "./node_modules/@mlightcad/libredwg-converter/lib/node.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "src"
+  ]
+}

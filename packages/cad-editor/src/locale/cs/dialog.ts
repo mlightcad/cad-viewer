@@ -160,6 +160,12 @@ export default {
     textModeVector: 'Vektorové obrysy',
     textModeVectorHint:
       'Převede text na čáry a výplně podle obrazovky, ale soubor je větší',
+    colorModeSection: 'Barvy',
+    colorModeColor: 'Barevně',
+    colorModeColorHint: 'Zachová barvy výkresu jako na obrazovce',
+    colorModeMonochrome: 'Černobíle',
+    colorModeMonochromeHint:
+      'Bílý papír, čáry a text černě, vyplněné plochy šedě',
     yes: 'Ano',
     no: 'Ne'
   },

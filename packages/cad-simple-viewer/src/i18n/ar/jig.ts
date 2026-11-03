@@ -2105,6 +2105,7 @@ export default {
       'إطار مساحة النموذج',
     exportLayouts: 'تصدير المخططات',
     textMode: 'عرض النص',
+    colorMode: 'وضع الألوان',
     keywords: {
       ...enJig.cpdf.keywords,
       extents: {
@@ -2126,6 +2127,16 @@ export default {
         display: 'لا(N)',
         local: 'لا',
         global: 'No'
+      },
+      color: {
+        display: 'ملون(C)',
+        local: 'ملون',
+        global: 'Color'
+      },
+      monochrome: {
+        display: 'أحادي اللون(M)',
+        local: 'أحادي اللون',
+        global: 'Monochrome'
       }
     }
   }

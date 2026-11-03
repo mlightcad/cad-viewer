@@ -51,6 +51,7 @@
     "@mlightcad/cad-html-plugin": "workspace:*",
     "@mlightcad/cad-onedrive-plugin": "workspace:*",
     "@mlightcad/cad-google-drive-plugin": "workspace:*",
+    "@mlightcad/cad-pdf-core": "workspace:*",
     "@mlightcad/cad-pdf-plugin": "workspace:*",
     "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
@@ -85,6 +86,7 @@
     "@mlightcad/cad-html-plugin": "workspace:^",
     "@mlightcad/cad-onedrive-plugin": "workspace:^",
     "@mlightcad/cad-google-drive-plugin": "workspace:^",
+    "@mlightcad/cad-pdf-core": "workspace:^",
     "@mlightcad/cad-pdf-plugin": "workspace:^",
     "@mlightcad/pdf-renderer": "workspace:^",
     "@mlightcad/cad-svg-plugin": "workspace:^",
@@ -118,6 +120,9 @@
       "optional": true
     },
     "@mlightcad/cad-google-drive-plugin": {
+      "optional": true
+    },
+    "@mlightcad/cad-pdf-core": {
       "optional": true
     },
     "@mlightcad/cad-pdf-plugin": {

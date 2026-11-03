@@ -27,6 +27,7 @@ Single test file: `pnpm jest packages/<pkg>/__tests__/Foo.spec.ts`.
 - `three-renderer` / `pdf-renderer`: rendering engines (THREE.js batching, PDF output).
 - `*-plugin` (`cad-simple-ui`, `cad-script`, `cad-agent`, `cad-pdf`, `cad-html`, `cad-svg`, `cad-onedrive`, `cad-google-drive`): optional features, lazy-loaded.
 - `cad-html-core` / `cad-html-exporter` / `cad-simple-viewer-cli` / `cad-mcp-server`: self-contained HTML export, CLI, MCP server.
+- `cad-pdf-core` / `cad-pdf-exporter`: shared PDF export pipeline (no `cad-simple-viewer` / DOM dependency) and the headless Node PDF exporter built on it; `cad-pdf-plugin` uses the same core in the browser.
 - `cad-script-core` -> `@mlightcad/cad-script-core`: agent script runtime (`cad.*` host, tool catalog, headless `createDatabaseSession`). Depends on `data-model` only; ESLint rejects other `@mlightcad/*`, `three`, and `vue` imports there. `cad-agent-core` binds it to `cad-simple-viewer` and re-exports it.
 - `*-demo` / `*-example`: sample apps (not published). `vite-config`: shared Rollup/Vite helpers.
 

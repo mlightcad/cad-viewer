@@ -163,6 +163,12 @@ export default {
     textModeVector: 'Vektör konturlar',
     textModeVectorHint:
       'Metni çizgi ve dolguya dönüştürür, ekrana uygun, ancak dosya daha büyük',
+    colorModeSection: 'Renk',
+    colorModeColor: 'Renkli',
+    colorModeColorHint: 'Çizim renklerini ekrandaki gibi korur',
+    colorModeMonochrome: 'Siyah-beyaz',
+    colorModeMonochromeHint:
+      'Beyaz kâğıt, siyah çizgi ve metin; dolu alanlar gri basılır',
     yes: 'Evet',
     no: 'Hayır'
   },
