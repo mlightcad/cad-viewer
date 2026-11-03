@@ -41,7 +41,7 @@
   },
   "peerDependencies": {
     "@mlightcad/data-model": "1.15.21",
-    "@mlightcad/three-renderer": "workspace:*",
+    "@mlightcad/three-renderer": "workspace:^",
     "three": "^0.186.1"
   }
 }

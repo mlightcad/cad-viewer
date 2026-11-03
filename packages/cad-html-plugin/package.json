@@ -59,10 +59,10 @@
     "three": "^0.186.1"
   },
   "peerDependencies": {
-    "@mlightcad/cad-html-core": "workspace:*",
-    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/cad-html-core": "workspace:^",
+    "@mlightcad/cad-simple-viewer": "workspace:^",
     "@mlightcad/data-model": "1.15.21",
-    "@mlightcad/three-renderer": "workspace:*",
+    "@mlightcad/three-renderer": "workspace:^",
     "three": "^0.186.1"
   }
 }

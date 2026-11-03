@@ -49,7 +49,7 @@
     "@mlightcad/mtext-renderer": "0.13.7"
   },
   "peerDependencies": {
-    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/cad-simple-viewer": "workspace:^",
     "@mlightcad/data-model": "1.15.21",
     "@mlightcad/mtext-parser": "1.5.7",
     "@mlightcad/mtext-renderer": "0.13.7"

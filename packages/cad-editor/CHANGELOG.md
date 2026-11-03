@@ -1,5 +1,8 @@
 # @mlightcad/cad-viewer
 
+> Renamed to `@mlightcad/cad-editor` in 1.8.0. This file keeps the old heading
+> for the 1.7.x entries below; see the 1.8.0 entry for the migration.
+
 ## 1.7.8
 
 ### Patch Changes

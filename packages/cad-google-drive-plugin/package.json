@@ -50,7 +50,7 @@
     "@types/google.accounts": "^0.0.18"
   },
   "peerDependencies": {
-    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/cad-simple-viewer": "workspace:^",
     "@mlightcad/data-model": "1.15.21"
   }
 }

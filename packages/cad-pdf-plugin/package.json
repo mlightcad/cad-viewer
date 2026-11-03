@@ -51,10 +51,10 @@
     "pdfjs-dist": "^5.6.205"
   },
   "peerDependencies": {
-    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/cad-simple-viewer": "workspace:^",
     "@mlightcad/data-model": "1.15.21",
     "@mlightcad/mtext-parser": "1.5.7",
-    "@mlightcad/pdf-renderer": "workspace:*",
-    "@mlightcad/three-renderer": "workspace:*"
+    "@mlightcad/pdf-renderer": "workspace:^",
+    "@mlightcad/three-renderer": "workspace:^"
   }
 }
