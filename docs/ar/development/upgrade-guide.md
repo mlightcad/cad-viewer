@@ -6,6 +6,42 @@ title: "ترقية cad-simple-viewer و cad-editor"
 
 يشرح هذا الدليل كيفية ترقية `@mlightcad/cad-simple-viewer` و`@mlightcad/cad-editor` بأمان — ولماذا لا يمكن رفعهما بمعزل عن غيرهما، وأي الحزم ذات الصلة يجب أن تتحرك معًا، وطريقتان موثوقتان لتحديد مجموعة الإصدارات المتوافقة الصحيحة لأي إصدار معين.
 
+::: warning تمت إعادة تسمية الحزمة: `@mlightcad/cad-viewer` → `@mlightcad/cad-editor`
+بدءًا من الإصدار **1.8.0**، أصبحت الحزمة التي كانت تُنشر باسم `@mlightcad/cad-viewer` تُسمى `@mlightcad/cad-editor`، ليعبّر اسمها عن وظيفتها الحقيقية.
+
+- **الحزمة القديمة لم تعد تُحدَّث.** تتوقف `@mlightcad/cad-viewer` عند 1.7.x ولن يظهر أي إصدار لاحق في السجل، لذا فإن `pnpm add @mlightcad/cad-viewer@1.8.0` سيفشل بخطأ 404. المشروع ما زال قائمًا — لكن باسم جديد.
+- **لم يتغيّر أي شيء آخر.** تحوّل اسم الحزمة وأسماء الملفات الناتجة فقط؛ أما الصادرات (`MlCadViewer` و`i18n` وغيرها) وطريقة استخدامها فلم تتغيّر.
+- **أعِد التسمية ضمن الترقية نفسها**، ليبقى العارض على الإصدار نفسه الذي تستخدمه بقية الحزم:
+
+```diff
+  {
+    "dependencies": {
+-     "@mlightcad/cad-viewer": "1.7.8",
++     "@mlightcad/cad-editor": "1.8.0",
+      "@mlightcad/cad-simple-viewer": "1.8.0"
+    }
+  }
+```
+
+```diff
+- import { MlCadViewer, i18n } from '@mlightcad/cad-viewer'
++ import { MlCadViewer, i18n } from '@mlightcad/cad-editor'
+```
+
+إذا كنت تثبّت ملفات CDN على إصدار محدد (jsDelivr أو unpkg أو غيرهما)، فحدّث أسماء الملفات أيضًا:
+
+```diff
+- https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.8/dist/cad-viewer.js
+- https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.8/dist/cad-viewer.css
++ https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.8.0/dist/cad-editor.js
++ https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.8.0/dist/cad-editor.css
+```
+
+::: tip اسم المستودع لم يتغيّر
+مستودع GitHub ما زال [`mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer)، كما تحتفظ مواقع التوثيق والعروض الحية بمساراتها الحالية. التغيير يخص **اسم حزمة npm** فقط، لذا تبقى جميع روابط المستودع والمشكلات في هذا الدليل صالحة.
+:::
+:::
+
 ## نظرة عامة
 
 `@mlightcad/cad-simple-viewer` و`@mlightcad/cad-editor` **ليسا حزمتين مستقلتين**. إنهما جزء من منظومة مترابطة بإحكام تشترك في قاعدة شيفرة ودورة إصدار مشتركتين. يجمع كل إصدار مجموعة منسّقة من التحديثات عبر الإضافات والعارضات وحزم نموذج البيانات ومكتبات عرض النصوص وأطر عمل واجهة المستخدم الخارجية.

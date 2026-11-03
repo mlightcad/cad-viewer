@@ -6,6 +6,42 @@ title: "Upgrade cad-simple-viewer a cad-editor"
 
 Tato příručka vysvětluje, jak bezpečně upgradovat `@mlightcad/cad-simple-viewer` a `@mlightcad/cad-editor` — proč je nelze navyšovat izolovaně, které související balíčky se musí posunout společně a jaké existují dva spolehlivé způsoby, jak pro dané vydání určit správnou kompatibilní sadu verzí.
 
+::: warning Balíček byl přejmenován: `@mlightcad/cad-viewer` → `@mlightcad/cad-editor`
+Od verze **1.8.0** se balíček dříve publikovaný jako `@mlightcad/cad-viewer` jmenuje `@mlightcad/cad-editor`, aby jeho název odpovídal tomu, co skutečně dělá.
+
+- **Starý balíček se už nevyvíjí.** `@mlightcad/cad-viewer` končí na 1.7.x a žádné další vydání se v registry neobjeví, takže `pnpm add @mlightcad/cad-viewer@1.8.0` skončí chybou 404. Projekt je stále udržovaný — jen pod novým názvem.
+- **Nic jiného se nezměnilo.** Změnil se pouze název balíčku a názvy generovaných souborů; exporty (`MlCadViewer`, `i18n`, …) i jejich použití jsou stejné.
+- **Přejmenujte v rámci stejného upgradu**, aby prohlížeč zůstal na stejné verzi jako zbytek sady:
+
+```diff
+  {
+    "dependencies": {
+-     "@mlightcad/cad-viewer": "1.7.8",
++     "@mlightcad/cad-editor": "1.8.0",
+      "@mlightcad/cad-simple-viewer": "1.8.0"
+    }
+  }
+```
+
+```diff
+- import { MlCadViewer, i18n } from '@mlightcad/cad-viewer'
++ import { MlCadViewer, i18n } from '@mlightcad/cad-editor'
+```
+
+Pokud soubory z CDN (jsDelivr, unpkg, …) připínáte na konkrétní verzi, upravte i názvy souborů:
+
+```diff
+- https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.8/dist/cad-viewer.js
+- https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.8/dist/cad-viewer.css
++ https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.8.0/dist/cad-editor.js
++ https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.8.0/dist/cad-editor.css
+```
+
+::: tip Název repozitáře se nezměnil
+GitHub repozitář je stále [`mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer) a dokumentační web i živá dema si zachovávají stávající cesty. Změnil se pouze **název balíčku na npm**, takže všechny odkazy na repozitář a issue v této příručce fungují dál.
+:::
+:::
+
 ## Přehled
 
 `@mlightcad/cad-simple-viewer` a `@mlightcad/cad-editor` **nejsou samostatné balíčky**. Jsou součástí těsně integrovaného ekosystému, který sdílí společnou kódovou základnu a cyklus vydávání. Každé vydání obsahuje koordinovanou sadu aktualizací napříč pluginy, renderery, balíčky data-model, knihovnami pro vykreslování textu a UI frameworky třetích stran.

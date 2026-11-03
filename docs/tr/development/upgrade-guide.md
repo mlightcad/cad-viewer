@@ -6,6 +6,42 @@ title: "cad-simple-viewer ve cad-editor Yükseltme"
 
 Bu kılavuz, `@mlightcad/cad-simple-viewer` ve `@mlightcad/cad-editor` paketlerinin güvenli şekilde nasıl yükseltileceğini açıklar — neden tek başlarına yükseltilemeyeceklerini, hangi ilgili paketlerin birlikte hareket etmesi gerektiğini ve belirli bir sürüm için doğru uyumlu sürüm kümesini belirlemenin iki güvenilir yolunu.
 
+::: warning Paket adı değişti: `@mlightcad/cad-viewer` → `@mlightcad/cad-editor`
+**1.8.0** sürümünden itibaren, adının gerçek işlevini yansıtması için `@mlightcad/cad-viewer` paketinin adı `@mlightcad/cad-editor` olarak değiştirildi.
+
+- **Eski paket artık güncellenmiyor.** `@mlightcad/cad-viewer` 1.7.x'te kalır ve registry'de bundan sonra yeni sürümü yayınlanmaz; bu nedenle `pnpm add @mlightcad/cad-viewer@1.8.0` 404 hatası verir. Bu, projenin durdurulduğu anlamına gelmez — yalnızca yeni adı kullanın.
+- **API'de hiçbir değişiklik yok.** Yalnızca paket adı ve üretilen dosya adları değişti; `MlCadViewer`, `i18n` ve diğer dışa aktarımlar ile kullanımları aynıdır.
+- **Adı, diğer paketlerle aynı sürüme geçerken bir defada değiştirin:**
+
+```diff
+  {
+    "dependencies": {
+-     "@mlightcad/cad-viewer": "1.7.8",
++     "@mlightcad/cad-editor": "1.8.0",
+      "@mlightcad/cad-simple-viewer": "1.8.0"
+    }
+  }
+```
+
+```diff
+- import { MlCadViewer, i18n } from '@mlightcad/cad-viewer'
++ import { MlCadViewer, i18n } from '@mlightcad/cad-editor'
+```
+
+CDN dosyalarını sürüme göre sabitliyorsanız (jsDelivr, unpkg, …) dosya adlarını da güncelleyin:
+
+```diff
+- https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.8/dist/cad-viewer.js
+- https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.8/dist/cad-viewer.css
++ https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.8.0/dist/cad-editor.js
++ https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.8.0/dist/cad-editor.css
+```
+
+::: tip Depo adı değişmedi
+GitHub deposu hâlâ [`mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer); belge sitesi ve canlı demolar da mevcut yollarını koruyor. Yalnızca **npm paket adı** değişti, bu yüzden bu kılavuzdaki tüm depo ve issue bağlantıları geçerliliğini korur.
+:::
+:::
+
 ## Genel Bakış
 
 `@mlightcad/cad-simple-viewer` ve `@mlightcad/cad-editor` **bağımsız paketler değildir**. Ortak bir kod tabanını ve sürüm döngüsünü paylaşan sıkı entegre bir ekosistemin parçasıdırlar. Her sürüm, eklentiler, işleyiciler, veri modeli paketleri, metin işleme kütüphaneleri ve üçüncü taraf arayüz çerçeveleri genelinde koordineli bir güncelleme kümesini bir arada sunar.
