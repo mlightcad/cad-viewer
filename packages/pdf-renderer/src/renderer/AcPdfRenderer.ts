@@ -72,6 +72,13 @@ import {
 
 const DEFAULT_POINT_RADIUS = 0.5
 
+/** Fill type every background fill (wipeout) is painted with. */
+const BACKGROUND_FILL_TYPE: AcGiSubEntityTraits['fillType'] = {
+  solidFill: true,
+  patternAngle: 0,
+  definitionLines: []
+}
+
 /**
  * AcGi backend that records vector drawables for PDF serialization.
  */
@@ -454,7 +461,14 @@ export class AcPdfRenderer implements AcGiRenderer<AcPdfEntity> {
       this._subEntityTraits,
       this.styleContext
     )
-    const fillType = this._subEntityTraits.fillType
+    // Background fills (wipeouts) are always a solid paper-coloured mask.
+    // AcDbWipeout never sets `fillType`, so the traits still hold the pattern
+    // of the last hatch drawn; tessellating it here turned one large wipeout
+    // into ~750k paper-white strokes (hundreds of MiB, export never ending)
+    // that did not even mask the geometry beneath.
+    const fillType = this._subEntityTraits.isBackgroundFill
+      ? BACKGROUND_FILL_TYPE
+      : this._subEntityTraits.fillType
     if (pdfLoops.length > 0 && fillType.gradient) {
       const packed =
         (Math.round(style.rgb.r * 255) << 16) |

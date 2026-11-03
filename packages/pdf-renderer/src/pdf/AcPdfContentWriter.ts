@@ -101,9 +101,10 @@ function flateStreamBytes(bytes: Uint8Array): Uint8Array | null {
     return null
   }
   try {
-    // Level 9: CAD content streams are highly repetitive (layers, Entity/OCG
-    // tags, path ops); max compression is worth the extra CPU on export.
-    return deflate(bytes, { level: 9 })
+    // Level 6 (zlib default): on a 105 MiB layout stream level 9 took 26 s of
+    // blocking main-thread time for a 2% smaller result, versus 5.5 s here.
+    // The browser UI (busy spinner included) freezes for the whole call.
+    return deflate(bytes, { level: 6 })
   } catch {
     return null
   }

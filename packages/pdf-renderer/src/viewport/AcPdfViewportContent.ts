@@ -32,6 +32,12 @@ export class AcPdfViewportContent extends AcPdfEntity {
   private readonly _annotationScaleFactor?: number
   /** Mirrors AutoCAD ANNOALLVISIBLE for unsupported annotative objects. */
   private readonly _annoAllVisible: boolean
+  /**
+   * Model-space box this viewport shows (paper clip mapped back through the
+   * inverse model→paper transform), or `undefined` when it cannot be
+   * computed. Roots entirely outside it are not painted.
+   */
+  private readonly _modelViewBox?: AcGeBox2d
 
   constructor(
     sharedRoots: AcPdfEntity[],
@@ -51,6 +57,7 @@ export class AcPdfViewportContent extends AcPdfEntity {
         ? annotationScaleFactor
         : undefined
     this._annoAllVisible = annoAllVisible
+    this._modelViewBox = modelViewBox(paperBox, this._modelToPaper)
     this.entityType = 'VIEWPORT_CONTENT'
     // Page framing and clipping both use the paper-space frame.
     this.setClipBox(paperBox)
@@ -126,6 +133,12 @@ export class AcPdfViewportContent extends AcPdfEntity {
       annoAllVisible: this._annoAllVisible
     }
     for (const root of this._sharedRoots) {
+      // Every viewport shares the whole model tree; painting roots it cannot
+      // show only to clip them away wrote the full model once per viewport
+      // (a layout with 30 detail viewports produced a 1 GB content stream).
+      if (this.isOutsideView(root)) {
+        continue
+      }
       root.paint(childCtx)
     }
     if (clipBox) {
@@ -139,6 +152,53 @@ export class AcPdfViewportContent extends AcPdfEntity {
       writer.endMarked()
     }
   }
+
+  /**
+   * True when `root` lies entirely outside the model region this viewport
+   * shows. Roots without a known box are always painted (the clip still
+   * applies), so culling can only drop geometry that would be clipped away.
+   */
+  private isOutsideView(root: AcPdfEntity): boolean {
+    const view = this._modelViewBox
+    if (!view || root.box.isEmpty()) {
+      return false
+    }
+    return !view.intersectsBox(root.box)
+  }
 }
+
+/**
+ * Maps the viewport's paper rectangle back into model space.
+ *
+ * Uses all four corners, so twisted viewports get the axis-aligned bound of
+ * the rotated view. The box is padded so strokes whose box sits on the
+ * viewport edge are never culled; the paper clip trims the overshoot.
+ */
+function modelViewBox(
+  paperBox: AcGeBox2d,
+  modelToPaper: AcGeMatrix3d
+): AcGeBox2d | undefined {
+  if (paperBox.isEmpty() || modelToPaper.determinant() === 0) {
+    return undefined
+  }
+  const box = paperBox.clone()
+  AcPdfMatrixUtil.transformBox(box, modelToPaper.clone().invert())
+  if (
+    !Number.isFinite(box.min.x) ||
+    !Number.isFinite(box.min.y) ||
+    !Number.isFinite(box.max.x) ||
+    !Number.isFinite(box.max.y)
+  ) {
+    return undefined
+  }
+  const pad =
+    Math.max(box.max.x - box.min.x, box.max.y - box.min.y) *
+    VIEW_BOX_PADDING_RATIO
+  box.expandByScalar(pad)
+  return box
+}
+
+/** Padding around the culling box, as a fraction of its larger side. */
+const VIEW_BOX_PADDING_RATIO = 0.01
 
 type AcPdfContentWriterOrCtx = Parameters<AcPdfEntity['paint']>[0]
