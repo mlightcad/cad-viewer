@@ -6,6 +6,42 @@ title: "Upgrading cad-simple-viewer and cad-editor"
 
 This guide explains how to safely upgrade `@mlightcad/cad-simple-viewer` and`@mlightcad/cad-editor` — why they cannot be bumped in isolation, which related packages must move together, and two reliable ways to determine the correct compatible version set for any given release.
 
+::: warning Package renamed: `@mlightcad/cad-viewer` → `@mlightcad/cad-editor`
+Starting with **1.8.0**, the package previously published as `@mlightcad/cad-viewer` is now `@mlightcad/cad-editor`, so that its name matches what it actually does.
+
+- **The old package is frozen.** `@mlightcad/cad-viewer` stops at 1.7.x and no release after that will appear on the registry, so `pnpm add @mlightcad/cad-viewer@1.8.0` fails with a 404. The project is still maintained — just under the new name.
+- **Nothing else changed.** Only the package name and the emitted artifact filenames moved; the exports (`MlCadViewer`, `i18n`, …) and their usage are identical.
+- **Rename as part of the same upgrade**, so the viewer stays on the same version as the rest of the package set:
+
+```diff
+  {
+    "dependencies": {
+-     "@mlightcad/cad-viewer": "1.7.8",
++     "@mlightcad/cad-editor": "1.8.0",
+      "@mlightcad/cad-simple-viewer": "1.8.0"
+    }
+  }
+```
+
+```diff
+- import { MlCadViewer, i18n } from '@mlightcad/cad-viewer'
++ import { MlCadViewer, i18n } from '@mlightcad/cad-editor'
+```
+
+If you pin CDN files by version (jsDelivr, unpkg, …), update the filenames as well:
+
+```diff
+- https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.8/dist/cad-viewer.js
+- https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.8/dist/cad-viewer.css
++ https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.8.0/dist/cad-editor.js
++ https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.8.0/dist/cad-editor.css
+```
+
+::: tip The repository name did not change
+The GitHub repository is still [`mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer), and the docs site and live demos keep their existing paths. Only the **npm package name** changed, so every repository and issue link in this guide still works.
+:::
+:::
+
 ## Overview
 
 `@mlightcad/cad-simple-viewer` and `@mlightcad/cad-editor` are **not standalone packages**. They are part of a tightly integrated ecosystem that shares a common codebase and release cycle. Each release bundles a coordinated set of updates across plugins, renderers, data-model packages, text-rendering libraries, and third-party UI frameworks.

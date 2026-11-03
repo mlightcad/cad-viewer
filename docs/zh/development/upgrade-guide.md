@@ -6,6 +6,42 @@ title: "升级 cad-simple-viewer 和 cad-editor"
 
 本指南介绍如何安全地升级 `@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-editor`——为什么它们不能单独升级、哪些相关包必须一起迁移，以及两种可靠的方法来确定任意给定版本的正确兼容版本集。
 
+::: warning 包改名：`@mlightcad/cad-viewer` → `@mlightcad/cad-editor`
+从 **1.8.0** 开始，为了让包名体现出它真正的功能，原先的 `@mlightcad/cad-viewer` 已改名为 `@mlightcad/cad-editor`。
+
+- **旧包不再更新**：`@mlightcad/cad-viewer` 停在 1.7.x，registry 上不会再出现新版本，所以直接 `pnpm add @mlightcad/cad-viewer@1.8.0` 会报 404——这并不表示项目停止维护，请改用新包名。
+- **API 没有任何变化**：只有包名和产物文件名变了，`MlCadViewer`、`i18n` 等导出与用法完全一致。
+- **升级时请一次性换名**，与本页其余包一起升级到同一版本：
+
+```diff
+  {
+    "dependencies": {
+-     "@mlightcad/cad-viewer": "1.7.8",
++     "@mlightcad/cad-editor": "1.8.0",
+      "@mlightcad/cad-simple-viewer": "1.8.0"
+    }
+  }
+```
+
+```diff
+- import { MlCadViewer, i18n } from '@mlightcad/cad-viewer'
++ import { MlCadViewer, i18n } from '@mlightcad/cad-editor'
+```
+
+如果你通过 jsDelivr 等 CDN 按版本固定文件路径，请一并修改文件名：
+
+```diff
+- https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.8/dist/cad-viewer.js
+- https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.8/dist/cad-viewer.css
++ https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.8.0/dist/cad-editor.js
++ https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.8.0/dist/cad-editor.css
+```
+
+::: tip 仓库名没有变
+GitHub 仓库仍然是 [`mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer)，文档站和在线演示也沿用原路径。改名只涉及 **npm 包名**，因此本指南中的仓库链接、issue 链接都可以照旧使用。
+:::
+:::
+
 ## 概览
 
 `@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-editor` **不是独立的包**。它们属于一个紧密集成的生态系统，共享同一代码库和发布周期。每个版本都会捆绑一组协调一致的更新，涵盖插件、渲染器、data-model 包、文本渲染库以及第三方 UI 框架。
