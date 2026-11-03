@@ -1,5 +1,5 @@
 ---
-"@mlightcad/cad-demo-gallery": patch
+'@mlightcad/cad-demo-gallery': patch
 ---
 
 docs: explain the `@mlightcad/cad-viewer` → `@mlightcad/cad-editor` rename and unbreak the CDN bootstrap

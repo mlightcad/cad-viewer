@@ -65,9 +65,9 @@
     "vue-tsc": "^2.1.6"
   },
   "peerDependencies": {
-    "@mlightcad/cad-agent-core": "workspace:*",
-    "@mlightcad/cad-script-core": "workspace:*",
-    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/cad-agent-core": "workspace:^",
+    "@mlightcad/cad-script-core": "workspace:^",
+    "@mlightcad/cad-simple-viewer": "workspace:^",
     "@mlightcad/data-model": "1.15.21",
     "vue": "^3.4.21"
   }

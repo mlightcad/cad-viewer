@@ -55,9 +55,9 @@
     "vite": "^6.4.3"
   },
   "peerDependencies": {
-    "@mlightcad/cad-agent-core": "workspace:*",
-    "@mlightcad/cad-script-core": "workspace:*",
-    "@mlightcad/cad-simple-viewer": "workspace:*",
+    "@mlightcad/cad-agent-core": "workspace:^",
+    "@mlightcad/cad-script-core": "workspace:^",
+    "@mlightcad/cad-simple-viewer": "workspace:^",
     "@mlightcad/data-model": "1.15.21"
   },
   "dependencies": {
