@@ -3,7 +3,7 @@
 [English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md)
 
 [![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-simple-viewer.svg?label=cad-simple-viewer)](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer)
-[![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-viewer.svg?label=cad-viewer)](https://www.npmjs.com/package/@mlightcad/cad-viewer)
+[![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-editor.svg?label=cad-editor)](https://www.npmjs.com/package/@mlightcad/cad-editor)
 
 <a href="https://trendshift.io/repositories/16129?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-16129" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/16129/daily?language=TypeScript" alt="mlightcad%2Fcad-viewer | Trendshift" width="250" height="55"/></a>
 
@@ -49,7 +49,7 @@ DWG/DXF の解析、ジオメトリ処理、レンダリングをすべてブラ
 MLightCAD を自社プロダクトへ組み込む方法を示す公式サンプルです：
 
 - [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) — [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer) 向けの最小構成 vanilla TypeScript ホスト。ローカルまたは CDN の DXF/DWG を開き、小型ツールバーでコマンドを実行し、フル Vue UI なしで HTML/PDF/SVG エクスポートプラグインを遅延読み込みします。
-- [cad-editor-demo](https://github.com/mlightcad/cad-viewer-example) — [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) ベースのフル機能 Vue 3 アプリ。メニュー、リボン、ダイアログ、コマンドライン、ステータスバー付き（[ライブデモ](https://mlightcad.github.io/cad-viewer-example/)）。
+- [cad-editor-demo](https://github.com/mlightcad/cad-viewer-example) — [`@mlightcad/cad-editor`](https://www.npmjs.com/package/@mlightcad/cad-editor) ベースのフル機能 Vue 3 アプリ。メニュー、リボン、ダイアログ、コマンドライン、ステータスバー付き（[ライブデモ](https://mlightcad.github.io/cad-viewer-example/)）。
 - [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js の「CAD ドライブ」デモ。DWG/DXF のチャンク再開アップロード、SQLite のファイル一覧とプレビュー、**ブラウザ側ライブ解析**（`cad-simple-viewer`）または**サーバー側 ACEX プリレンダ**（高速表示・低メモリ）での図面オープンに対応。
 
 ![MLightCAD Quick Demo](./assets/cad-viewer.gif)

@@ -3,7 +3,7 @@
 [English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md)
 
 [![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-simple-viewer.svg?label=cad-simple-viewer)](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer)
-[![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-viewer.svg?label=cad-viewer)](https://www.npmjs.com/package/@mlightcad/cad-viewer)
+[![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-editor.svg?label=cad-editor)](https://www.npmjs.com/package/@mlightcad/cad-editor)
 
 <a href="https://trendshift.io/repositories/16129?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-16129" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/16129/daily?language=TypeScript" alt="mlightcad%2Fcad-viewer | Trendshift" width="250" height="55"/></a>
 
@@ -49,7 +49,7 @@ MLightCAD 是`全球首个完全运行在浏览器端、无需依赖任何后端
 官方示例应用，展示如何把 MLightCAD 集成到你自己的产品中：
 
 - [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) — 基于 [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer) 的极简 vanilla TypeScript 宿主：打开本地或 CDN 的 DXF/DWG，用小型工具栏驱动命令，并懒加载 HTML/PDF/SVG 导出插件（不含完整 Vue UI）。
-- [cad-editor-demo](https://github.com/mlightcad/cad-viewer-example) — 基于 [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) 的完整 Vue 3 应用，含菜单、功能区、对话框、命令行与状态栏（[在线演示](https://mlightcad.github.io/cad-viewer-example/)）。
+- [cad-editor-demo](https://github.com/mlightcad/cad-viewer-example) — 基于 [`@mlightcad/cad-editor`](https://www.npmjs.com/package/@mlightcad/cad-editor) 的完整 Vue 3 应用，含菜单、功能区、对话框、命令行与状态栏（[在线演示](https://mlightcad.github.io/cad-viewer-example/)）。
 - [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js「CAD 网盘」演示：分片断点续传上传 DWG/DXF、SQLite 文件列表与预览缩略图，并支持以**浏览器实时解析**（`cad-simple-viewer`）或**服务端 ACEX 预渲染**（打开更快、内存更少）两种方式查看图纸。
 
 ![MLightCAD Quick Demo](./assets/cad-viewer.gif)

@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<meta name="description" content="Minimal CDN bootstrap for @mlightcad/cad-viewer — no Node, no Vite.">
+<meta name="description" content="Minimal CDN bootstrap for @mlightcad/cad-editor — no Node, no Vite.">
 <title>CAD Viewer — CDN Bootstrap</title>
 
 <!--
-  Minimal zero-build host for @mlightcad/cad-viewer (jsDelivr only).
+  Minimal zero-build host for @mlightcad/cad-editor (jsDelivr only).
   Serve over HTTP(S). file:// cannot load CDN ES modules.
-  Upload UI is plain HTML. Vue/Element Plus are peer deps of cad-viewer only.
+  Upload UI is plain HTML. Vue/Element Plus are peer deps of cad-editor only.
 -->
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-plus@2.12.0/dist/index.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.7/dist/cad-viewer.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.7.7/dist/cad-editor.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mlightcad/cad-agent-plugin@1.7.7/dist/style.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mlightcad/cad-script-plugin@1.7.7/dist/style.css">
 
@@ -95,7 +95,7 @@
     "@types/lodash": "data:text/javascript,export%20default%20undefined;",
     "@mlightcad/cad-simple-viewer": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-simple-viewer@1.7.7/+esm",
     "@mlightcad/cad-simple-viewer/icons": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-simple-viewer@1.7.7/lib/ui/icons.js",
-    "@mlightcad/cad-viewer": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-viewer@1.7.7/dist/cad-viewer.js",
+    "@mlightcad/cad-editor": "https://cdn.jsdelivr.net/npm/@mlightcad/cad-editor@1.7.7/dist/cad-editor.js",
     "@mlightcad/data-model": "https://cdn.jsdelivr.net/npm/@mlightcad/data-model@1.15.14/+esm",
     "@mlightcad/three-renderer": "https://cdn.jsdelivr.net/npm/@mlightcad/three-renderer@1.7.7/+esm",
     "@mlightcad/mtext-parser": "https://cdn.jsdelivr.net/npm/@mlightcad/mtext-parser@1.5.5/+esm",
@@ -140,7 +140,7 @@ const LIBREDWG = '3.15.14'
 const THREE = '0.186.1'
 const LIBREDWG_PARSER_WORKER_FILE = 'libredwg-parser-worker.js'
 const npm = (pkg, path = '') => `https://cdn.jsdelivr.net/npm/${pkg}${path}`
-const CAD_VIEWER_URL = npm(`@mlightcad/cad-viewer@${ML}`, '/dist/cad-viewer.js')
+const CAD_EDITOR_URL = npm(`@mlightcad/cad-editor@${ML}`, '/dist/cad-editor.js')
 const BASE_URL = 'https://cdn.jsdelivr.net/gh/mlightcad/cad-data@main/'
 const DWG_WORKER = npm(
   `@mlightcad/libredwg-converter@${LIBREDWG}`,
@@ -190,7 +190,7 @@ const EXACT = {
   '@mlightcad/cad-svg-plugin/register': npm(`@mlightcad/cad-svg-plugin@${ML}`, '/register/+esm'),
   '@mlightcad/cad-onedrive-plugin/register': npm(`@mlightcad/cad-onedrive-plugin@${ML}`, '/register/+esm'),
   '@mlightcad/cad-google-drive-plugin/register': npm(`@mlightcad/cad-google-drive-plugin@${ML}`, '/register/+esm'),
-  './cad-viewer.css': CSS_SHIM
+  './cad-editor.css': CSS_SHIM
 }
 
 const statusEl = document.getElementById('status')
@@ -224,7 +224,7 @@ function resolveSpec(spec) {
   }
   if (spec.startsWith('dayjs/')) return npm('dayjs@1.11.13', `/${spec.slice(6)}/+esm`)
   if (spec.startsWith('@vueuse/')) return npm(`${spec}@11.1.0`, '/index.mjs')
-  if (spec.startsWith('./') || spec.startsWith('../')) return new URL(spec, CAD_VIEWER_URL).href
+  if (spec.startsWith('./') || spec.startsWith('../')) return new URL(spec, CAD_EDITOR_URL).href
   if (/^https?:/.test(spec)) return spec
   return undefined
 }
@@ -242,7 +242,7 @@ function collectSpecs(source) {
   return specs
 }
 
-function rewriteCadViewer(source) {
+function rewriteCadEditor(source) {
   const specs = collectSpecs(source)
   const bad = [...specs].filter((s) => resolveSpec(s) === undefined)
   if (bad.length) throw new Error(`Unresolved imports: ${bad.join(', ')}`)
@@ -265,7 +265,7 @@ function rewriteCadViewer(source) {
   }
 
   const exports = [...out.matchAll(/\bexport\s*\{([\s\S]*?)\}\s*;?/g)]
-  if (!exports.length) throw new Error('cad-viewer.js final export not found')
+  if (!exports.length) throw new Error('cad-editor.js final export not found')
   const last = exports[exports.length - 1]
   const map = new Map()
   for (const part of last[1].split(',').map((s) => s.trim()).filter(Boolean)) {
@@ -275,19 +275,19 @@ function rewriteCadViewer(source) {
   }
   const MlCadViewer = map.get('MlCadViewer')
   const i18n = map.get('i18n')
-  if (!MlCadViewer || !i18n) throw new Error('MlCadViewer/i18n missing from cad-viewer export')
+  if (!MlCadViewer || !i18n) throw new Error('MlCadViewer/i18n missing from cad-editor export')
   const bridge = `\n;globalThis.__MLIGHTCAD_INLINE_EXPORTS__={MlCadViewer:${MlCadViewer},i18n:${i18n}};\n`
   return out.slice(0, last.index) + bridge + out.slice(last.index + last[0].length)
 }
 
-async function loadInlineCadViewer() {
-  setStatus('Downloading cad-viewer.js…')
+async function loadInlineCadEditor() {
+  setStatus('Downloading cad-editor.js…')
   const source = await fetch(CAD_VIEWER_URL, { cache: 'force-cache' }).then((r) => {
-    if (!r.ok) throw new Error(`HTTP ${r.status} for cad-viewer.js`)
+    if (!r.ok) throw new Error(`HTTP ${r.status} for cad-editor.js`)
     return r.text()
   })
-  setStatus(`Rewriting cad-viewer.js (${(source.length / 1024 / 1024).toFixed(2)} MB)…`)
-  const rewritten = rewriteCadViewer(source)
+  setStatus(`Rewriting cad-editor.js (${(source.length / 1024 / 1024).toFixed(2)} MB)…`)
+  const rewritten = rewriteCadEditor(source)
   delete globalThis.__MLIGHTCAD_INLINE_EXPORTS__
   const script = document.createElement('script')
   script.type = 'module'
@@ -301,7 +301,7 @@ async function loadInlineCadViewer() {
     }, 25)
     script.onerror = (ev) => {
       clearInterval(timer)
-      reject(ev?.error || new Error('Failed to run rewritten cad-viewer.js'))
+      reject(ev?.error || new Error('Failed to run rewritten cad-editor.js'))
     }
     document.head.appendChild(script)
   })
@@ -309,14 +309,14 @@ async function loadInlineCadViewer() {
 
 const runtimeReady = (async () => {
   setStatus('Loading CDN peers…')
-  const [vue, elementPlus, simpleViewer, cadViewer] = await Promise.all([
+  const [vue, elementPlus, simpleViewer, cadEditor] = await Promise.all([
     import('vue'),
     import('element-plus'),
     import('@mlightcad/cad-simple-viewer'),
-    loadInlineCadViewer()
+    loadInlineCadEditor()
   ])
   setStatus('CDN runtime ready. Choose a DWG/DXF file.')
-  return { vue, elementPlus, simpleViewer, cadViewer }
+  return { vue, elementPlus, simpleViewer, cadEditor }
 })().catch((err) => {
   setStatus(err?.stack || String(err), true)
   throw err
@@ -333,10 +333,10 @@ async function openFile(file) {
     return
   }
   setStatus(`Opening ${file.name}…`)
-  const { vue, elementPlus, simpleViewer, cadViewer } = await runtimeReady
+  const { vue, elementPlus, simpleViewer, cadEditor } = await runtimeReady
   const { createApp, h } = vue
   const { AcApDocManager } = simpleViewer
-  const { MlCadViewer, i18n } = cadViewer
+  const { MlCadViewer, i18n } = cadEditor
   const { AcDbDatabaseConverterManager, AcDbFileType } = await import(EXACT['@mlightcad/data-model'])
   const { AcDbLibreDwgConverter } = await import(
     npm(`@mlightcad/libredwg-converter@${LIBREDWG}`, '/+esm')

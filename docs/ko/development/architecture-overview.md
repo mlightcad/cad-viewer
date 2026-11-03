@@ -13,7 +13,7 @@ MLightCAD는 **백엔드 의존성 없이** 전적으로 브라우저에서 동�
 
 MLightCAD는 시스템의 특정 측면을 담당하는 여러 하위 패키지로 구성됩니다:
 
-- **cad-viewer**: UI 컴포넌트, 대화상자, 툴바, 상태 관리 및 렌더링 엔진과의 통합을 포함하는 메인 Vue 3 컴포넌트이자 프런트엔드 애플리케이션입니다.
+- **cad-editor**: UI 컴포넌트, 대화상자, 툴바, 상태 관리 및 렌더링 엔진과의 통합을 포함하는 메인 Vue 3 컴포넌트이자 프런트엔드 애플리케이션입니다.
 - **cad-simple-viewer**: 문서 관리, 명령 처리 및 UI와 렌더링 엔진 간의 통합을 위한 핵심 로직입니다. 프레임워크에 독립적이며 UI가 없습니다(캔버스만 제공).
 - **svg-renderer**: 내보내기 및 확장 가능한 2D 출력을 위해 DWG/DXF 엔티티를 SVG 그래픽으로 렌더링합니다.
 - **three-renderer**: THREE.js를 사용하여 DWG/DXF 엔티티를 고급 시각화 및 사용자 정의 셰이더를 갖춘 대화형 2D/3D 그래픽으로 렌더링합니다.
@@ -45,7 +45,7 @@ MLightCAD는 시스템의 특정 측면을 담당하는 여러 하위 패키지�
 ### **뷰 계층**
 
 - `cad-viewer`의 [`@mlightcad/cad-simple-viewer`](https://github.com/mlightcad/cad-viewer) 모듈은 문서 관리, 명령 처리 및 UI와 렌더링 엔진 간의 조정 등 CAD 파일에 대한 핵심 보기 로직을 제공합니다. UI 프레임워크 의존성이 없으며 캔버스 외에는 UI 요소를 제공하지 않습니다.
-- [`@mlightcad/cad-viewer`](https://github.com/mlightcad/cad-viewer) 모듈은 `@mlightcad/cad-simple-viewer`를 기반으로 구축되어, 메뉴, 툴바, 명령줄, 상태 표시줄 및 밝은/어두운 테마를 갖춘 Vue 3 기반 UI를 제공합니다. 모든 핵심 기능을 손쉬운 통합을 위한 Vue 3 컴포넌트로 패키징합니다.
+- [`@mlightcad/cad-editor`](https://github.com/mlightcad/cad-viewer) 모듈은 `@mlightcad/cad-simple-viewer`를 기반으로 구축되어, 메뉴, 툴바, 명령줄, 상태 표시줄 및 밝은/어두운 테마를 갖춘 Vue 3 기반 UI를 제공합니다. 모든 핵심 기능을 손쉬운 통합을 위한 Vue 3 컴포넌트로 패키징합니다.
 
 ## 렌더링 엔진
 

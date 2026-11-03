@@ -99,7 +99,7 @@ https://cdn.example/viewer.html?manifest=https://cdn.example/packages/floor-plan
 
 ### 方式一：在 cad-viewer 网页端手动导出（适合偶尔导出）
 
-- 在 [cad-viewer](../../cad-viewer) 中打开图纸，运行 `chtml` 命令打开导出对话框，导出格式选择 **「多文件包 (ZIP)」**；
+- 在 [cad-editor](../../cad-editor) 中打开图纸，运行 `chtml` 命令打开导出对话框，导出格式选择 **「多文件包 (ZIP)」**；
 - 或在命令行运行 `-chtml`，按提示回答，格式一项选 **Multi**：
 
   ```text

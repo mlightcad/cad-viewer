@@ -13,7 +13,7 @@ For licensing, trial access, pricing, and GPL compliance, see [PROPRIETARY-PARSE
 ## Overview
 
 - `@mlightcad/dwg-converter` is published to **GitHub Packages**.
-- Other `@mlightcad/*` packages (for example `@mlightcad/data-model`, `@mlightcad/cad-viewer`) are published to the public **npm registry**.
+- Other `@mlightcad/*` packages (for example `@mlightcad/data-model`, `@mlightcad/cad-editor`) are published to the public **npm registry**.
 - npm and pnpm support **scope-level** registry mapping only — there is **no official package-level** registry mapping within the same scope.
 
 That means you **cannot** use:

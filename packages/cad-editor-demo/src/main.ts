@@ -1,7 +1,7 @@
 import 'element-plus/dist/index.css'
 
+import { i18n } from '@mlightcad/cad-editor'
 import { LIBREDWG_PARSER_WORKER_FILE } from '@mlightcad/cad-simple-viewer'
-import { i18n } from '@mlightcad/cad-viewer'
 import ElementPlus from 'element-plus'
 import { createApp } from 'vue'
 

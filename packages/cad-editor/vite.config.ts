@@ -14,7 +14,7 @@ import dts from 'vite-plugin-dts'
 import { libInjectCss } from 'vite-plugin-lib-inject-css'
 import { createLibEntryFileName } from '../vite-config/pluginRollupOutput'
 
-const packageId = 'cad-viewer'
+const packageId = 'cad-editor'
 const require = createRequire(import.meta.url)
 /** Prefer package sources so unused exports (e.g. MlToolBar) can tree-shake. */
 const uiComponentsSrc = resolve(

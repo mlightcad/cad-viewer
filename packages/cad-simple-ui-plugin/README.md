@@ -187,7 +187,7 @@ Review palette behavior:
 
 ### Find text (dock panel)
 
-The Find tab is enabled automatically when the resolved toolbar includes the Find button (`id: 'find'`, in the default desktop/pad toolbar after Zoom and in the phone toolbar). Remove it with `excludeItems: ['find']`. It is a plain DOM view (no Vue) that searches the **whole drawing** (model space and every paper-space layout) by default - or only the active layout when **Current layout only** is checked - when the user submits a query. The same search is available in the full Vue `@mlightcad/cad-viewer` UI, which shares the implementation (`@mlightcad/cad-simple-viewer/find`).
+The Find tab is enabled automatically when the resolved toolbar includes the Find button (`id: 'find'`, in the default desktop/pad toolbar after Zoom and in the phone toolbar). Remove it with `excludeItems: ['find']`. It is a plain DOM view (no Vue) that searches the **whole drawing** (model space and every paper-space layout) by default - or only the active layout when **Current layout only** is checked - when the user submits a query. The same search is available in the full Vue `@mlightcad/cad-editor` UI, which shares the implementation (`@mlightcad/cad-simple-viewer/find`).
 
 ```typescript
 acuiCreateSimpleUiPlugin({ host }) // Find button included by default
@@ -700,4 +700,4 @@ Omit the layer button from `items` if you do not want the layer dock UI or `laye
 ## See also
 
 - [cad-simple-viewer-demo](../cad-simple-viewer-demo) — vanilla TypeScript demo (lazy init on first file open; uses `acuiRegisterSimpleUiPlugin`)
-- [cad-viewer](../cad-viewer) — full Vue + Element Plus application shell
+- [cad-editor](../cad-editor) — full Vue + Element Plus application shell

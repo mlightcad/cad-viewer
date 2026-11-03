@@ -15,7 +15,7 @@ O samotném mechanismu pluginů (`AcApPlugin`, správce pluginů, líné načít
 | [`@mlightcad/cad-simple-ui-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin) | **UI s panelem nástrojů, správcem hladin a recenzní paletou** pro `cad-simple-viewer` (čistý DOM, bez Vue/React) | `layer`, `markuppanel`, výchozí panel nástrojů (zobrazení, měření, export, revize, motiv, jazyk) |
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **CAD agent ovládaný přirozeným jazykem** (AI chatovací panel + volání kreslicích nástrojů) | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **Ruční konzole CAD skriptů** (spouští ověřené skripty nad výkresem, nepotřebuje LLM ani API klíč) | `cadscript` |
-| [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | Export výkresů do **samostatného offline HTML** | `chtml` (dialog v `cad-viewer`), `-chtml` (příkazový řádek) |
+| [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | Export výkresů do **samostatného offline HTML** | `chtml` (dialog v `cad-editor`), `-chtml` (příkazový řádek) |
 | [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **Export a import PDF** (vektorová pipeline) | `cpdf`, `ipdf` |
 | [`@mlightcad/cad-svg-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin) | **Export SVG** a sdílený vektorový renderer (používaný i exportem PDF) | `csvg` |
 | [`@mlightcad/cad-onedrive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-onedrive-plugin) | **Datový zdroj OneDrive** — otevírání DWG/DXF z OneDrive / SharePoint | Registruje `AcApDataSource` (`onedrive`); dvoukrokový Sign in → Open (bezpečný vůči blokování vyskakovacích oken) |
@@ -29,7 +29,7 @@ Všechny pluginy spouštěné příkazy jsou **líně načítané**: nejprve se 
 
 ### `@mlightcad/cad-simple-ui-plugin` — UI rozhraní pro simple viewer
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) záměrně nepřibaluje **žádné aplikační UI** — jen plátno a CAD jádro. Pokud vkládáte simple viewer do vlastní webové aplikace a chcete hotové rozhraní, aniž byste museli přijmout kompletní Vue základnu [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor), **`cad-simple-ui-plugin` je zamýšlená UI vrstva**.
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) záměrně nepřibaluje **žádné aplikační UI** — jen plátno a CAD jádro. Pokud vkládáte simple viewer do vlastní webové aplikace a chcete hotové rozhraní, aniž byste museli přijmout kompletní Vue základnu [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor), **`cad-simple-ui-plugin` je zamýšlená UI vrstva**.
 
 Poskytuje:
 
@@ -38,7 +38,7 @@ Poskytuje:
 - **Synchronizaci motivu** se systémovou proměnnou `COLORTHEME` a CSS tokeny `--ml-ui-*` na hostitelském prvku
 - **Synchronizaci jazyka** s `AcApI18n` (angličtina / čínština / čeština / turečtina)
 
-Všechny widgety jsou nezávislé na frameworku (čistý DOM). Kompletní Vue aplikace `cad-viewer` má vlastní UI Element Plus a tento plugin nevyžaduje; `cad-simple-ui-plugin` použijte, když stavíte přímo na `cad-simple-viewer`.
+Všechny widgety jsou nezávislé na frameworku (čistý DOM). Kompletní Vue aplikace `cad-editor` má vlastní UI Element Plus a tento plugin nevyžaduje; `cad-simple-ui-plugin` použijte, když stavíte přímo na `cad-simple-viewer`.
 
 → **Rychlý start, přizpůsobení panelu nástrojů a možnosti:** [packages/cad-simple-ui-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin/README.md)
 
@@ -54,7 +54,7 @@ Poskytuje:
 - **CAD nástroje fáze 1** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
 - Řetězce UI v **angličtině / čínštině / turečtině / češtině** prostřednictvím vrstvy i18n pluginu
 
-Kompletní Vue aplikace `cad-viewer` registruje agenta automaticky, jakmile je balíček nainstalován (karta palety). `cad-simple-viewer-demo` jej přes `cad-simple-ui-plugin` zapojuje do dokovací karty. Hostitelské aplikace volají `registerLazyAgentPlugin` a `setAgentPaletteOpener`, aby panel umístily tam, kde chtějí.
+Kompletní Vue aplikace `cad-editor` registruje agenta automaticky, jakmile je balíček nainstalován (karta palety). `cad-simple-viewer-demo` jej přes `cad-simple-ui-plugin` zapojuje do dokovací karty. Hostitelské aplikace volají `registerLazyAgentPlugin` a `setAgentPaletteOpener`, aby panel umístily tam, kde chtějí.
 
 → **Instalace, registrace a seznam nástrojů:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -64,7 +64,7 @@ Kompletní Vue aplikace `cad-viewer` registruje agenta automaticky, jakmile je b
 
 - Líně načítaný `AcApPlugin` (spouštěcí příkaz: `cadscript`)
 - Znovu využívá CAD nástroje z `@mlightcad/cad-agent-core`; tento balíček přidává pouze panel a příkaz
-- Hostitelské aplikace volají `registerLazyCadScriptPlugin` a namontují `new CadScriptPanel().element` (dokovací karta v `cad-simple-viewer-demo`, karta nástrojové palety v `cad-viewer`); při odebrání karty zavolejte `destroy()`
+- Hostitelské aplikace volají `registerLazyCadScriptPlugin` a namontují `new CadScriptPanel().element` (dokovací karta v `cad-simple-viewer-demo`, karta nástrojové palety v `cad-editor`); při odebrání karty zavolejte `destroy()`
 
 → **Použití:** [packages/cad-script-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin/README.md)
 
@@ -72,7 +72,7 @@ Kompletní Vue aplikace `cad-viewer` registruje agenta automaticky, jakmile je b
 
 ## Pluginy pro export / import (HTML / PDF / SVG)
 
-Tyto pluginy přidávají do stejného správce pluginů příkazy pro export (a import PDF). Jsou **líně načítané**, takže počáteční velikost stránky zůstává malá. Ukázka `cad-simple-viewer-demo` registruje všechny tři exportní pluginy plus pluginy UI/agenta/skriptů; kompletní aplikace `cad-viewer` registruje při bootstrapu exportní pluginy a pluginy agenta/skriptů (pokud jsou nainstalovány).
+Tyto pluginy přidávají do stejného správce pluginů příkazy pro export (a import PDF). Jsou **líně načítané**, takže počáteční velikost stránky zůstává malá. Ukázka `cad-simple-viewer-demo` registruje všechny tři exportní pluginy plus pluginy UI/agenta/skriptů; kompletní aplikace `cad-editor` registruje při bootstrapu exportní pluginy a pluginy agenta/skriptů (pokud jsou nainstalovány).
 
 ### HTML (`@mlightcad/cad-html-plugin`)
 
@@ -80,7 +80,7 @@ Jednosouborový **offline prohlížeč** pro sdílení a archivaci — exportova
 
 | Položka | Hodnota |
 |------|-------|
-| Příkaz | `chtml` (dialog v `cad-viewer`), `-chtml` (příkazový řádek přes `cad-simple-viewer-cli`) |
+| Příkaz | `chtml` (dialog v `cad-editor`), `-chtml` (příkazový řádek přes `cad-simple-viewer-cli`) |
 | Další konfigurace | `htmlViewerRuntimeUrl` v `AcApDocManager.createInstance()` — adresa URL souboru `viewer-runtime.iife.js` (zkopírujte z `dist/` balíčku) |
 | Veřejné API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `packHtml`, typy snímků |
 
@@ -151,7 +151,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 |-----|--------------------|
 | `cad-simple-viewer` | Žádné — pouze jádro, pluginy jsou volitelné |
 | `cad-simple-viewer-demo` | Exportní pluginy (HTML/PDF/SVG), `cad-simple-ui-plugin`, `cad-agent-plugin`, `cad-script-plugin` |
-| `cad-viewer` (Vue) | Exportní pluginy (HTML/PDF/SVG); pluginy agenta a skriptů se registrují automaticky, **pokud jsou nainstalovány** (volitelné peer závislosti) |
+| `cad-editor` (Vue) | Exportní pluginy (HTML/PDF/SVG); pluginy agenta a skriptů se registrují automaticky, **pokud jsou nainstalovány** (volitelné peer závislosti) |
 
 ---
 

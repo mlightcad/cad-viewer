@@ -4,9 +4,9 @@ title: "MLightCAD Basics"
 
 # MLightCAD Basics
 
-This project provides two viewers `cad-viewer` and `cad-simple-viewer` for users. Which viewer to choose depends on your project requirements and desired level of integration:
+This project provides two viewers `cad-editor` and `cad-simple-viewer` for users. Which viewer to choose depends on your project requirements and desired level of integration:
 
-## Use **cad-viewer** if:
+## Use **cad-editor** if:
 
 - You want a **ready-to-use Vue 3 component** with a modern UI, dialogs, toolbars, and state management.
 - You need to quickly embed a high-performance CAD viewer/editor into your Vue application with minimal setup.
@@ -29,7 +29,7 @@ This project provides two viewers `cad-viewer` and `cad-simple-viewer` for users
 
 | Package             | UI Provided | Framework | Use Case                                      |
 |---------------------|-------------|-----------|-----------------------------------------------|
-| `cad-viewer`        | Yes         | Vue 3     | Turnkey CAD viewer/editor with modern UI       |
+| `cad-editor`        | Yes         | Vue 3     | Turnkey CAD viewer/editor with modern UI       |
 | `cad-simple-viewer` | No          | None      | Core CAD logic for custom or headless use      |
 
 For more details, see [**Integrate Simple Viewer**](./integrate-simple-cad-viewer) and [**Integrate Vue Component**](./integrate-cad-viewer-component).
@@ -37,6 +37,6 @@ For more details, see [**Integrate Simple Viewer**](./integrate-simple-cad-viewe
 ## Examples
 
 - [`cad-simple-viewer-demo`](https://github.com/mlightcad/cad-simple-viewer-example): Example application demonstrating how to use the `cad-simple-viewer` component in a real project.
-- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): Example application demonstrating how to use the `cad-viewer` component in a real project.
+- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): Example application demonstrating how to use the `cad-editor` component in a real project.
 
 

@@ -217,7 +217,7 @@ Při použití `sendStringToExecute` **nemusíte** volat `loadByTrigger` ručně
 
 ### B. Inline líná registrace (komponenta cad-viewer)
 
-`@mlightcad/cad-viewer` registruje pluginy PDF/HTML/SVG v `registerLazyPlugins()` (`packages/cad-editor/src/app/register.ts`), která je volána z `initializeCadViewer()` v `app.ts`. Spotřebitelé komponenty Vue získají líné pluginy bez dalšího nastavení.
+`@mlightcad/cad-editor` registruje pluginy PDF/HTML/SVG v `registerLazyPlugins()` (`packages/cad-editor/src/app/register.ts`), která je volána z `initializeCadViewer()` v `app.ts`. Spotřebitelé komponenty Vue získají líné pluginy bez dalšího nastavení.
 
 ### C. Okamžité načtení pomocí `pluginManager.loadPlugin()`
 

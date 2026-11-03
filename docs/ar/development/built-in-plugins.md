@@ -15,7 +15,7 @@ title: "الإضافات المدمجة"
 | [`@mlightcad/cad-simple-ui-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin) | **واجهة شريط الأدوات ومدير الطبقات ولوحة المراجعة** لـ `cad-simple-viewer` (DOM عادي، بدون Vue/React) | `layer`، `markuppanel`، شريط الأدوات الافتراضي (عرض، قياس، تصدير، مراجعة، سمة، لغة) |
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **وكيل CAD بلغة طبيعية** (لوحة محادثة AI + استدعاءات أدوات الرسم) | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **وحدة تحكم نصوص CAD يدوية** (تشغّل النصوص المُتحقق منها على الرسم، بدون LLM / مفتاح API) | `cadscript` |
-| [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | تصدير الرسومات إلى **HTML غير متصل مكتفٍ ذاتيًا** | `chtml` (نافذة حوار في `cad-viewer`)، `-chtml` (سطر الأوامر) |
+| [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | تصدير الرسومات إلى **HTML غير متصل مكتفٍ ذاتيًا** | `chtml` (نافذة حوار في `cad-editor`)، `-chtml` (سطر الأوامر) |
 | [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **تصدير واستيراد PDF متجهي** | `cpdf`, `ipdf` |
 | [`@mlightcad/cad-svg-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin) | **تصدير SVG متجهي** والعارض المتجهي المشترك (يُستخدم أيضًا في تصدير PDF) | `csvg` |
 | [`@mlightcad/cad-onedrive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-onedrive-plugin) | **مصدر بيانات OneDrive** — افتح DWG/DXF من OneDrive / SharePoint | يسجّل `AcApDataSource` (`onedrive`)؛ تدفق من خطوتين: تسجيل الدخول ← فتح (آمن ضد حاجب النوافذ المنبثقة) |
@@ -29,7 +29,7 @@ title: "الإضافات المدمجة"
 
 ### `@mlightcad/cad-simple-ui-plugin` — واجهة العارض البسيط
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) لا يأتي عمدًا مع **أي واجهة تطبيق** — فقط اللوحة (canvas) ونواة CAD. إذا كنت تدمج العارض البسيط في تطبيق الويب الخاص بك وتريد واجهة جاهزة دون اعتماد غلاف [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) الكامل القائم على Vue، فإن **`cad-simple-ui-plugin` هو طبقة الواجهة المقصودة**.
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) لا يأتي عمدًا مع **أي واجهة تطبيق** — فقط اللوحة (canvas) ونواة CAD. إذا كنت تدمج العارض البسيط في تطبيق الويب الخاص بك وتريد واجهة جاهزة دون اعتماد غلاف [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) الكامل القائم على Vue، فإن **`cad-simple-ui-plugin` هو طبقة الواجهة المقصودة**.
 
 يوفر:
 
@@ -38,7 +38,7 @@ title: "الإضافات المدمجة"
 - **مزامنة السمة** مع متغير النظام `COLORTHEME` ورموز CSS ‏`--ml-ui-*` على عنصر المضيف
 - **مزامنة اللغة** مع `AcApI18n` (الإنجليزية / الصينية / التشيكية / التركية)
 
-جميع العناصر مستقلة عن إطار العمل (DOM عادي). تطبيق Vue الكامل `cad-viewer` لديه واجهة Element Plus خاصة به ولا يحتاج هذه الإضافة؛ استخدم `cad-simple-ui-plugin` عندما تبني على `cad-simple-viewer` مباشرة.
+جميع العناصر مستقلة عن إطار العمل (DOM عادي). تطبيق Vue الكامل `cad-editor` لديه واجهة Element Plus خاصة به ولا يحتاج هذه الإضافة؛ استخدم `cad-simple-ui-plugin` عندما تبني على `cad-simple-viewer` مباشرة.
 
 → **البداية السريعة وتخصيص شريط الأدوات والخيارات:** [packages/cad-simple-ui-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin/README.md)
 
@@ -54,7 +54,7 @@ title: "الإضافات المدمجة"
 - **أدوات CAD للمرحلة الأولى** — `get_drawing_context`؛ و`draw_line` و`draw_circle` و`draw_arc` و`draw_rectangle` و`draw_polyline` و`draw_text`؛ و`set_current_layer` و`create_layer` و`zoom_extents`
 - **الإنجليزية / الصينية / التركية / التشيكية** لسلاسل واجهة المستخدم عبر طبقة i18n الخاصة بالإضافة
 
-يسجّل تطبيق Vue الكامل `cad-viewer` الوكيل تلقائيًا عند تثبيت الحزمة (علامة تبويب في اللوحة). يربطه `cad-simple-viewer-demo` بعلامة تبويب دوك عبر `cad-simple-ui-plugin`. تستدعي التطبيقات المضيفة `registerLazyAgentPlugin` و`setAgentPaletteOpener` لتركيب اللوحة حيث تريد.
+يسجّل تطبيق Vue الكامل `cad-editor` الوكيل تلقائيًا عند تثبيت الحزمة (علامة تبويب في اللوحة). يربطه `cad-simple-viewer-demo` بعلامة تبويب دوك عبر `cad-simple-ui-plugin`. تستدعي التطبيقات المضيفة `registerLazyAgentPlugin` و`setAgentPaletteOpener` لتركيب اللوحة حيث تريد.
 
 → **التثبيت والتسجيل وقائمة الأدوات:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -64,7 +64,7 @@ title: "الإضافات المدمجة"
 
 - `AcApPlugin` كسول التحميل (أمر التشغيل: `cadscript`)
 - يعيد استخدام أدوات CAD من `@mlightcad/cad-agent-core`؛ تضيف هذه الحزمة اللوحة والأمر فقط
-- تستدعي التطبيقات المضيفة `registerLazyCadScriptPlugin` وتركّب `new CadScriptPanel().element` (علامة تبويب دوك في `cad-simple-viewer-demo`، علامة تبويب لوحة الأدوات في `cad-viewer`)؛ استدعِ `destroy()` عند إزالة علامة التبويب
+- تستدعي التطبيقات المضيفة `registerLazyCadScriptPlugin` وتركّب `new CadScriptPanel().element` (علامة تبويب دوك في `cad-simple-viewer-demo`، علامة تبويب لوحة الأدوات في `cad-editor`)؛ استدعِ `destroy()` عند إزالة علامة التبويب
 
 → **الاستخدام:** [packages/cad-script-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin/README.md)
 
@@ -72,7 +72,7 @@ title: "الإضافات المدمجة"
 
 ## إضافات التصدير / الاستيراد (HTML / PDF / SVG)
 
-تضيف هذه الإضافات أوامر تصدير (واستيراد PDF) إلى مدير الإضافات نفسه. وهي **كسولة التحميل** حتى يبقى وزن الصفحة الأولي صغيرًا. يسجّل العرض النموذجي `cad-simple-viewer-demo` إضافات التصدير الثلاث كلها بالإضافة إلى إضافات الواجهة/الوكيل/النصوص؛ ويسجّل تطبيق `cad-viewer` الكامل إضافات التصدير وإضافات الوكيل/النصوص (عند تثبيتها) في تهيئته.
+تضيف هذه الإضافات أوامر تصدير (واستيراد PDF) إلى مدير الإضافات نفسه. وهي **كسولة التحميل** حتى يبقى وزن الصفحة الأولي صغيرًا. يسجّل العرض النموذجي `cad-simple-viewer-demo` إضافات التصدير الثلاث كلها بالإضافة إلى إضافات الواجهة/الوكيل/النصوص؛ ويسجّل تطبيق `cad-editor` الكامل إضافات التصدير وإضافات الوكيل/النصوص (عند تثبيتها) في تهيئته.
 
 ### HTML (`@mlightcad/cad-html-plugin`)
 
@@ -80,7 +80,7 @@ title: "الإضافات المدمجة"
 
 | العنصر | القيمة |
 |------|-------|
-| الأمر | `chtml` (نافذة حوار في `cad-viewer`)، `-chtml` (سطر الأوامر عبر `cad-simple-viewer-cli`) |
+| الأمر | `chtml` (نافذة حوار في `cad-editor`)، `-chtml` (سطر الأوامر عبر `cad-simple-viewer-cli`) |
 | إعداد إضافي | `htmlViewerRuntimeUrl` على `AcApDocManager.createInstance()` — عنوان URL إلى `viewer-runtime.iife.js` (انسخه من `dist/` في الحزمة) |
 | واجهة عامة | `registerLazyHtmlPlugin`، `createHtmlPlugin`، `AcApHtmlConvertor`، `packHtml`، أنواع اللقطات |
 
@@ -151,7 +151,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 |-----|--------------------|
 | `cad-simple-viewer` | لا شيء — النواة فقط، والإضافات اختيارية |
 | `cad-simple-viewer-demo` | إضافات التصدير (HTML/PDF/SVG)، `cad-simple-ui-plugin`، `cad-agent-plugin`، `cad-script-plugin` |
-| `cad-viewer` (Vue) | إضافات التصدير (HTML/PDF/SVG)؛ وتسجَّل إضافتا الوكيل والنصوص تلقائيًا **عند تثبيتهما** (أقران اختياريون) |
+| `cad-editor` (Vue) | إضافات التصدير (HTML/PDF/SVG)؛ وتسجَّل إضافتا الوكيل والنصوص تلقائيًا **عند تثبيتهما** (أقران اختياريون) |
 
 ---
 

@@ -4,9 +4,9 @@ title: "MLightCAD Temelleri"
 
 # MLightCAD Temelleri
 
-Bu proje, kullanıcılar için `cad-viewer` ve `cad-simple-viewer` olmak üzere iki görüntüleyici sunar. Hangi görüntüleyicinin seçileceği, proje gereksinimlerinize ve istediğiniz entegrasyon düzeyine bağlıdır:
+Bu proje, kullanıcılar için `cad-editor` ve `cad-simple-viewer` olmak üzere iki görüntüleyici sunar. Hangi görüntüleyicinin seçileceği, proje gereksinimlerinize ve istediğiniz entegrasyon düzeyine bağlıdır:
 
-## **cad-viewer**'ı şu durumlarda kullanın:
+## **cad-editor**'ı şu durumlarda kullanın:
 
 - Modern bir UI, iletişim kutuları, araç çubukları ve durum yönetimi içeren **kullanıma hazır bir Vue 3 bileşeni** istiyorsanız.
 - Yüksek performanslı bir CAD görüntüleyici/düzenleyiciyi minimum kurulumla Vue uygulamanıza hızlıca gömmek istiyorsanız.
@@ -29,7 +29,7 @@ Bu proje, kullanıcılar için `cad-viewer` ve `cad-simple-viewer` olmak üzere 
 
 | Paket               | Sağlanan UI | Çerçeve | Kullanım Durumu                               |
 |---------------------|-------------|---------|-----------------------------------------------|
-| `cad-viewer`        | Evet        | Vue 3   | Modern UI içeren kullanıma hazır CAD görüntüleyici/düzenleyici |
+| `cad-editor`        | Evet        | Vue 3   | Modern UI içeren kullanıma hazır CAD görüntüleyici/düzenleyici |
 | `cad-simple-viewer` | Hayır       | Yok     | Özel veya başsız kullanım için temel CAD mantığı |
 
 Daha fazla ayrıntı için [**Simple Viewer Entegrasyonu**](./integrate-simple-cad-viewer) ve [**Vue Bileşeni Entegrasyonu**](./integrate-cad-viewer-component) sayfalarına bakın.
@@ -37,4 +37,4 @@ Daha fazla ayrıntı için [**Simple Viewer Entegrasyonu**](./integrate-simple-c
 ## Örnekler
 
 - [`cad-simple-viewer-demo`](https://github.com/mlightcad/cad-simple-viewer-example): `cad-simple-viewer` bileşeninin gerçek bir projede nasıl kullanılacağını gösteren örnek uygulama.
-- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): `cad-viewer` bileşeninin gerçek bir projede nasıl kullanılacağını gösteren örnek uygulama.
+- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example): `cad-editor` bileşeninin gerçek bir projede nasıl kullanılacağını gösteren örnek uygulama.

@@ -81,7 +81,7 @@
  * />
  *
  * // Import statement
- * import { MlCadViewer } from '@mlightcad/cad-viewer'
+ * import { MlCadViewer } from '@mlightcad/cad-editor'
  * ```
  *
  * @see {@link https://github.com/mlightcad/cad-viewer | Project Repository}

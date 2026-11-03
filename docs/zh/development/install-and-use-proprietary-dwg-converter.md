@@ -13,7 +13,7 @@ title: "安装和使用私有 DWG 转换器"
 ## 概览
 
 - `@mlightcad/dwg-converter` 发布到 **GitHub Packages**。
-- 其他 `@mlightcad/*` 包（例如 `@mlightcad/data-model`、`@mlightcad/cad-viewer`）发布到公共 **npm registry**。
+- 其他 `@mlightcad/*` 包（例如 `@mlightcad/data-model`、`@mlightcad/cad-editor`）发布到公共 **npm registry**。
 - npm 和 pnpm 仅支持**作用域级别**的 registry 映射——同一作用域内**没有官方的包级别** registry 映射。
 
 这意味着你**不能**使用：

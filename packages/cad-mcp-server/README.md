@@ -51,7 +51,7 @@ server’s runner boots that kernel (not the Vue UI package). Scripts you write
 for the Script panel or CAD Agent in either product are valid here, and the
 reverse is true.
 
-This package does **not** depend on `@mlightcad/cad-viewer`.
+This package does **not** depend on `@mlightcad/cad-editor`.
 
 ## Requirements
 

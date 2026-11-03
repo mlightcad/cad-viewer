@@ -4,7 +4,7 @@ title: "Integrate Vue Component"
 
 # Integrate Vue Component
 
-**cad-viewer** is a **high-performance** Vue 3 component for viewing and editing CAD files (DXF, DWG) **entirely in the browser without requiring any backend server**. It provides a modern user interface, state management, and seamless integration with optimized rendering engines for smooth browser-based CAD workflows with exceptional performance.
+**cad-editor** is a **high-performance** Vue 3 component for viewing and editing CAD files (DXF, DWG) **entirely in the browser without requiring any backend server**. It provides a modern user interface, state management, and seamless integration with optimized rendering engines for smooth browser-based CAD workflows with exceptional performance.
 
 ## Key Features
 
@@ -22,9 +22,9 @@ title: "Integrate Vue Component"
 - Dialogs, toolbars, and command line interface
 - Vue 3 component for embedding high-performance CAD viewers in your own apps
 
-## When Should You Choose cad-viewer?
+## When Should You Choose cad-editor?
 
-Use `cad-viewer` if you want a **ready-to-use Vue 3 component** for viewing and editing CAD files with a modern UI, dialogs, toolbars, and state management. This package is ideal if:
+Use `cad-editor` if you want a **ready-to-use Vue 3 component** for viewing and editing CAD files with a modern UI, dialogs, toolbars, and state management. This package is ideal if:
 
 - You want to quickly embed a high-performance CAD viewer/editor into your Vue application with minimal setup.
 - You need support for both local file loading (from user's computer) and remote file loading (from URLs).
@@ -74,7 +74,7 @@ Users can load files directly from their computer:
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 
 const selectedFile = ref<File | undefined>()
 
@@ -97,7 +97,7 @@ Automatically load files from URLs:
 ## Installation
 
 ```bash
-npm install @mlightcad/cad-viewer
+npm install @mlightcad/cad-editor
 ```
 
 ## Usage
@@ -110,7 +110,7 @@ Firstly, add the following dependencies into your package.json.
 
 - @element-plus/icons-vue
 - @mlightcad/cad-simple-viewer
-- @mlightcad/cad-viewer
+- @mlightcad/cad-editor
 - @mlightcad/data-model
 - @vueuse/core
 - element-plus
@@ -153,7 +153,7 @@ import 'element-plus/dist/index.css'
 import {
   i18n,
   MlCadViewer
-} from '@mlightcad/cad-viewer'
+} from '@mlightcad/cad-editor'
 import ElementPlus from 'element-plus'
 import { createApp } from 'vue'
 
@@ -236,7 +236,7 @@ The `MlCadViewer` reads its UI visibility from the global `AcApSettingManager` (
 </template>
 
 <script setup lang="ts">
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 
 // Configure global UI flags before the viewer mounts

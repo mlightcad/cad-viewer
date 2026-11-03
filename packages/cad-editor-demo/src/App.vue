@@ -34,6 +34,7 @@
 </template>
 
 <script setup lang="ts">
+import { MlCadViewer } from '@mlightcad/cad-editor'
 import {
   type AcApDataSource,
   AcApDataSourceManager,
@@ -47,7 +48,6 @@ import {
   AcEdOpenMode,
   layoutBackgroundColorFromRgb
 } from '@mlightcad/cad-simple-viewer'
-import { MlCadViewer } from '@mlightcad/cad-viewer'
 import {
   ACDB_DRAW_CIRCLE_SIDES_DRAFT,
   ACGI_PAPER_SPACE_BACKGROUND,

@@ -15,7 +15,7 @@ For the plugin mechanism itself (`AcApPlugin`, the plugin manager, lazy loading,
 | [`@mlightcad/cad-simple-ui-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin) | **Toolbar, layer manager & review palette UI** for `cad-simple-viewer` (plain DOM, no Vue/React) | `layer`, `markuppanel`, default toolbar (view, measure, export, review, theme, locale) |
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **Natural-language CAD agent** (AI chat panel + drawing tool calls) | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **Manual CAD script console** (runs checked scripts against the drawing, no LLM / API key needed) | `cadscript` |
-| [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | Export drawings to **self-contained offline HTML** | `chtml` (dialog in `cad-viewer`), `-chtml` (command-line) |
+| [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | Export drawings to **self-contained offline HTML** | `chtml` (dialog in `cad-editor`), `-chtml` (command-line) |
 | [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **PDF export and import** (vector pipeline) | `cpdf`, `ipdf` |
 | [`@mlightcad/cad-svg-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin) | **SVG export** and shared vector renderer (also used by PDF export) | `csvg` |
 | [`@mlightcad/cad-onedrive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-onedrive-plugin) | **OneDrive data source** — open DWG/DXF from OneDrive / SharePoint | Registers `AcApDataSource` (`onedrive`); two-step Sign in → Open (popup-safe) |
@@ -29,7 +29,7 @@ All command-triggered plugins are **lazy-loaded**: a small registration stub is 
 
 ### `@mlightcad/cad-simple-ui-plugin` — UI chrome for the simple viewer
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) deliberately ships **no application UI** — only the canvas and CAD core. If you embed the simple viewer in your own web app and want ready-made chrome without adopting the full Vue-based [`cad-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) shell, **`cad-simple-ui-plugin` is the intended UI layer**.
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) deliberately ships **no application UI** — only the canvas and CAD core. If you embed the simple viewer in your own web app and want ready-made chrome without adopting the full Vue-based [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) shell, **`cad-simple-ui-plugin` is the intended UI layer**.
 
 It provides:
 
@@ -38,7 +38,7 @@ It provides:
 - **Theme sync** with the `COLORTHEME` sysvar and `--ml-ui-*` CSS tokens on your host element
 - **Locale sync** with `AcApI18n` (English / Chinese / Czech / Turkish)
 
-All widgets are framework-agnostic (plain DOM). The full Vue `cad-viewer` app has its own Element Plus UI and does not require this plugin; use `cad-simple-ui-plugin` when you build on `cad-simple-viewer` directly.
+All widgets are framework-agnostic (plain DOM). The full Vue `cad-editor` app has its own Element Plus UI and does not require this plugin; use `cad-simple-ui-plugin` when you build on `cad-simple-viewer` directly.
 
 → **Quick start, toolbar customization, and options:** [packages/cad-simple-ui-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin/README.md)
 
@@ -54,7 +54,7 @@ It provides:
 - **Phase 1 CAD tools** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
 - **English / Chinese / Turkish / Czech** UI strings via the plugin i18n layer
 
-The full Vue `cad-viewer` app registers the agent automatically when the package is installed (palette tab). `cad-simple-viewer-demo` wires it into a dock tab via `cad-simple-ui-plugin`. Host apps call `registerLazyAgentPlugin` and `setAgentPaletteOpener` to mount the panel where they want.
+The full Vue `cad-editor` app registers the agent automatically when the package is installed (palette tab). `cad-simple-viewer-demo` wires it into a dock tab via `cad-simple-ui-plugin`. Host apps call `registerLazyAgentPlugin` and `setAgentPaletteOpener` to mount the panel where they want.
 
 → **Installation, registration, and tool list:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -64,7 +64,7 @@ The full Vue `cad-viewer` app registers the agent automatically when the package
 
 - Lazy-loaded `AcApPlugin` (trigger command: `cadscript`)
 - Reuses the CAD tools from `@mlightcad/cad-agent-core`; this package only adds the panel and the command
-- Host apps call `registerLazyCadScriptPlugin` and mount `new CadScriptPanel().element` (dock tab in `cad-simple-viewer-demo`, tool-palette tab in `cad-viewer`); call `destroy()` when the tab is removed
+- Host apps call `registerLazyCadScriptPlugin` and mount `new CadScriptPanel().element` (dock tab in `cad-simple-viewer-demo`, tool-palette tab in `cad-editor`); call `destroy()` when the tab is removed
 
 → **Usage:** [packages/cad-script-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin/README.md)
 
@@ -72,7 +72,7 @@ The full Vue `cad-viewer` app registers the agent automatically when the package
 
 ## Export / import plugins (HTML / PDF / SVG)
 
-These plugins add export (and PDF import) commands to the same plugin manager. They are **lazy-loaded** so initial page weight stays small. The `cad-simple-viewer-demo` demo registers all three export plugins plus the UI/agent/script plugins; the full `cad-viewer` app registers the export plugins and the agent/script plugins (when installed) in its bootstrap.
+These plugins add export (and PDF import) commands to the same plugin manager. They are **lazy-loaded** so initial page weight stays small. The `cad-simple-viewer-demo` demo registers all three export plugins plus the UI/agent/script plugins; the full `cad-editor` app registers the export plugins and the agent/script plugins (when installed) in its bootstrap.
 
 ### HTML (`@mlightcad/cad-html-plugin`)
 
@@ -80,7 +80,7 @@ One-file **offline viewer** for sharing and archiving — the exported HTML embe
 
 | Item | Value |
 |------|-------|
-| Command | `chtml` (dialog in `cad-viewer`), `-chtml` (command-line via `cad-simple-viewer-cli`) |
+| Command | `chtml` (dialog in `cad-editor`), `-chtml` (command-line via `cad-simple-viewer-cli`) |
 | Extra config | `htmlViewerRuntimeUrl` on `AcApDocManager.createInstance()` — URL to `viewer-runtime.iife.js` (copy from package `dist/`) |
 | Public API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `packHtml`, snapshot types |
 
@@ -151,7 +151,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 |-----|--------------------|
 | `cad-simple-viewer` | None — core only, plugins are optional |
 | `cad-simple-viewer-demo` | Export plugins (HTML/PDF/SVG), `cad-simple-ui-plugin`, `cad-agent-plugin`, `cad-script-plugin` |
-| `cad-viewer` (Vue) | Export plugins (HTML/PDF/SVG); agent and script plugins are registered automatically **when installed** (optional peers) |
+| `cad-editor` (Vue) | Export plugins (HTML/PDF/SVG); agent and script plugins are registered automatically **when installed** (optional peers) |
 
 ---
 

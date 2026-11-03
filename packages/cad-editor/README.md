@@ -1,7 +1,7 @@
 # CAD Viewer Component
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![npm version](https://img.shields.io/npm/v/@mlightcad/cad-viewer.svg)](https://www.npmjs.com/package/@mlightcad/cad-viewer)
+[![npm version](https://img.shields.io/npm/v/@mlightcad/cad-editor.svg)](https://www.npmjs.com/package/@mlightcad/cad-editor)
 
 CAD Viewer is a **high-performance** Vue 3 component for viewing and editing CAD files (DXF, DWG) **entirely in the browser without requiring any backend server**. It provides a modern user interface, state management, and seamless integration with optimized rendering engines for smooth browser-based CAD workflows with exceptional performance.
 
@@ -21,9 +21,9 @@ CAD Viewer is a **high-performance** Vue 3 component for viewing and editing CAD
 - Dialogs, toolbars, and command line interface
 - Vue 3 component for embedding high-performance CAD viewers in your own apps
 
-## When Should You Choose cad-viewer?
+## When Should You Choose cad-editor?
 
-Use `cad-viewer` if you want a **ready-to-use Vue 3 component** for viewing and editing CAD files with a modern UI, dialogs, toolbars, and state management. This package is ideal if:
+Use `cad-editor` if you want a **ready-to-use Vue 3 component** for viewing and editing CAD files with a modern UI, dialogs, toolbars, and state management. This package is ideal if:
 
 - You want to quickly embed a high-performance CAD viewer/editor into your Vue application with minimal setup.
 - You need support for both local file loading (from user's computer) and remote file loading (from URLs).
@@ -73,7 +73,7 @@ Users can load files directly from their computer:
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 
 const selectedFile = ref<File | undefined>()
 
@@ -105,7 +105,7 @@ Automatically load files from URLs:
 ## Installation
 
 ```bash
-npm install @mlightcad/cad-viewer
+npm install @mlightcad/cad-editor
 ```
 
 ## Usage
@@ -118,7 +118,7 @@ Firstly, add the following dependencies into your package.json.
 
 - @element-plus/icons-vue
 - @mlightcad/cad-simple-viewer
-- @mlightcad/cad-viewer
+- @mlightcad/cad-editor
 - @mlightcad/data-model
 - @vueuse/core
 - element-plus
@@ -161,7 +161,7 @@ import 'element-plus/dist/index.css'
 import {
   i18n,
   MlCadViewer
-} from '@mlightcad/cad-viewer'
+} from '@mlightcad/cad-editor'
 import ElementPlus from 'element-plus'
 import { createApp } from 'vue'
 
@@ -192,7 +192,7 @@ The `MlCadViewer` component accepts the following props:
 | `background` | `number` | `undefined` | Background color as 24-bit hexadecimal RGB (e.g., `0x000000` for black, `0x808080` for gray). |
 | `baseUrl` | `string` | `undefined` | Base URL for loading fonts, templates, and example files. This URL is used by the CAD viewer to load resources like fonts and drawing templates. **Note**: If not provided, uses the default URL. |
 | `useMainThreadDraw` | `boolean` | `false` | Optional flag whether to use main thread or webwork to render drawing. The true value means using main thread to render drawing. This approach take less memory and take longer time to show rendering results. The false value means using web worker to render drawing. This approach take more memory and take shorter time to show rendering results. |
-| `theme` | `'light' \| 'dark'` | `'dark'` | Initial UI theme of the CAD viewer. On mount, this prop initializes the `COLORTHEME` system variable in the active database (`0 = dark`, `1 = light`). After that, the viewer theme is driven by `COLORTHEME`, so runtime changes from the status bar theme button or direct system-variable updates stay synchronized across `cad-viewer` and `cad-simple-viewer`. |
+| `theme` | `'light' \| 'dark'` | `'dark'` | Initial UI theme of the CAD viewer. On mount, this prop initializes the `COLORTHEME` system variable in the active database (`0 = dark`, `1 = light`). After that, the viewer theme is driven by `COLORTHEME`, so runtime changes from the status bar theme button or direct system-variable updates stay synchronized across `cad-editor` and `cad-simple-viewer`. |
 | `mode` | `AcEdOpenMode` | `'AcEdOpenMode.Write'` | Access mode for opening CAD files. `'AcEdOpenMode.Read'` means read-only access. `'AcEdOpenMode.Review'` means review access, compatible with read. `'AcEdOpenMode.Write'` means full read/write access, compatible with review and read. |
 ### UI Settings
 
@@ -236,12 +236,12 @@ Settings resolve in three layers (later wins): built-in defaults, user preferenc
 </template>
 
 <script setup lang="ts">
-import { MlCadViewer } from '@mlightcad/cad-viewer'
+import { MlCadViewer } from '@mlightcad/cad-editor'
 import { AcApSettingManager } from '@mlightcad/cad-simple-viewer'
 
 // Optional: isolate this product's preferences on a shared origin
 AcApSettingManager.configure({
-  storageKey: 'mlightcad.settings.cad-viewer'
+  storageKey: 'mlightcad.settings.cad-editor'
 })
 
 // Host layout before mount — session only (does not write localStorage)

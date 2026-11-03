@@ -30,5 +30,5 @@ This section helps users understand how to embed MLightCAD into your own web app
 - [Debugging with Multiple Repo Changes](./debugging-with-multiple-repo-changes)
 - [Supporting Tianzheng DWG Drawings](./supporting-tianzheng-dwg-drawings)
 - [Build a Cloud DWG Web Viewer (Pre-rendering + Static Hosting)](./cloud-dwg-web-viewer)
-- [Upgrading cad-simple-viewer and cad-viewer](./upgrade-guide)
+- [Upgrading cad-simple-viewer and cad-editor](./upgrade-guide)
 

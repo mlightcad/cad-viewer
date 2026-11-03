@@ -4,9 +4,9 @@ title: "MLightCAD 基础"
 
 # MLightCAD 基础
 
-本项目为用户提供了两个查看器：`cad-viewer` 和 `cad-simple-viewer`。选择哪个查看器取决于你的项目需求和期望的集成程度：
+本项目为用户提供了两个查看器：`cad-editor` 和 `cad-simple-viewer`。选择哪个查看器取决于你的项目需求和期望的集成程度：
 
-## 在以下情况使用 **cad-viewer**：
+## 在以下情况使用 **cad-editor**：
 
 - 你想要一个**开箱即用的 Vue 3 组件**，自带现代 UI、对话框、工具栏和状态管理。
 - 你需要以最少的配置，快速将高性能的 CAD 查看器/编辑器嵌入到 Vue 应用中。
@@ -29,7 +29,7 @@ title: "MLightCAD 基础"
 
 | 包                  | 提供 UI | 框架  | 使用场景                                  |
 |---------------------|-------------|-----------|-----------------------------------------------|
-| `cad-viewer`        | 是         | Vue 3     | 带现代 UI 的开箱即用 CAD 查看器/编辑器       |
+| `cad-editor`        | 是         | Vue 3     | 带现代 UI 的开箱即用 CAD 查看器/编辑器       |
 | `cad-simple-viewer` | 否          | 无      | 用于自定义或无头场景的核心 CAD 逻辑      |
 
 更多详情，请参阅[**集成 Simple Viewer**](./integrate-simple-cad-viewer) 和[**集成 Vue 组件**](./integrate-cad-viewer-component)。
@@ -37,5 +37,5 @@ title: "MLightCAD 基础"
 ## 示例
 
 - [`cad-simple-viewer-demo`](https://github.com/mlightcad/cad-simple-viewer-example)：演示如何在真实项目中使用 `cad-simple-viewer` 组件的示例应用。
-- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example)：演示如何在真实项目中使用 `cad-viewer` 组件的示例应用。
+- [`cad-editor-demo`](https://github.com/mlightcad/cad-viewer-example)：演示如何在真实项目中使用 `cad-editor` 组件的示例应用。
 

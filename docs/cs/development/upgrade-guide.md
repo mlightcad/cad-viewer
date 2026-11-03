@@ -1,16 +1,16 @@
 ---
-title: "Upgrade cad-simple-viewer a cad-viewer"
+title: "Upgrade cad-simple-viewer a cad-editor"
 ---
 
-# Upgrade cad-simple-viewer a cad-viewer
+# Upgrade cad-simple-viewer a cad-editor
 
-Tato příručka vysvětluje, jak bezpečně upgradovat `@mlightcad/cad-simple-viewer` a `@mlightcad/cad-viewer` — proč je nelze navyšovat izolovaně, které související balíčky se musí posunout společně a jaké existují dva spolehlivé způsoby, jak pro dané vydání určit správnou kompatibilní sadu verzí.
+Tato příručka vysvětluje, jak bezpečně upgradovat `@mlightcad/cad-simple-viewer` a `@mlightcad/cad-editor` — proč je nelze navyšovat izolovaně, které související balíčky se musí posunout společně a jaké existují dva spolehlivé způsoby, jak pro dané vydání určit správnou kompatibilní sadu verzí.
 
 ## Přehled
 
-`@mlightcad/cad-simple-viewer` a `@mlightcad/cad-viewer` **nejsou samostatné balíčky**. Jsou součástí těsně integrovaného ekosystému, který sdílí společnou kódovou základnu a cyklus vydávání. Každé vydání obsahuje koordinovanou sadu aktualizací napříč pluginy, renderery, balíčky data-model, knihovnami pro vykreslování textu a UI frameworky třetích stran.
+`@mlightcad/cad-simple-viewer` a `@mlightcad/cad-editor` **nejsou samostatné balíčky**. Jsou součástí těsně integrovaného ekosystému, který sdílí společnou kódovou základnu a cyklus vydávání. Každé vydání obsahuje koordinovanou sadu aktualizací napříč pluginy, renderery, balíčky data-model, knihovnami pro vykreslování textu a UI frameworky třetích stran.
 
-**Upgrade pouze `cad-simple-viewer` nebo `cad-viewer` izolovaně může vést k jemným chybám za běhu**, včetně:
+**Upgrade pouze `cad-simple-viewer` nebo `cad-editor` izolovaně může vést k jemným chybám za běhu**, včetně:
 
 - Rozhraní pluginů očekávající API signatury, které se změnily v novějších (nebo starších) verzích jádra
 - Nesoulad tvaru data-model mezi tím, co jádro očekává, a tím, co starší parser/renderer produkuje
@@ -24,14 +24,14 @@ Vždy upgradujte **celou sadu souvisejících balíčků společně**. Dva spole
 
 ## Ekosystém v kostce
 
-Před upgradem pomůže vědět, které balíčky patří ke koordinovanému vydání a které jsou třetích stran. Následující kategorie jsou synchronizovány se stejným vydáním cad-viewer:
+Před upgradem pomůže vědět, které balíčky patří ke koordinovanému vydání a které jsou třetích stran. Následující kategorie jsou synchronizovány se stejným vydáním cad-editor:
 
 ### Základní balíčky prohlížeče
 
 | Balíček | Role |
 | --- | --- |
 | `@mlightcad/cad-simple-viewer` | Jádro nezávislé na frameworku (správa dokumentů, zásobník příkazů, propojení vykreslování) |
-| `@mlightcad/cad-viewer` | Obal uživatelského rozhraní Vue 3 + Element Plus postavený nad cad-simple-viewer |
+| `@mlightcad/cad-editor` | Obal uživatelského rozhraní Vue 3 + Element Plus postavený nad cad-simple-viewer |
 
 ### Pluginy — **musí přesně odpovídat verzi cad-simple-viewer**
 
@@ -66,9 +66,9 @@ Tyto jsou interně spotřebovávány pluginy a cad-simple-viewer. Obvykle je **n
 | `@mlightcad/mtext-renderer` | Renderer geometrie MTEXT → THREE |
 | `@mlightcad/mtext-input-box` | Widget editoru MTEXT na plátně |
 
-### Vue UI závislosti pouze pro cad-viewer
+### Vue UI závislosti pouze pro cad-editor
 
-Tyto se objevují v overrides v `pnpm-workspace.yaml`, ale jsou potřeba pouze při použití `@mlightcad/cad-viewer` (plné Vue 3 UI). Integrace cad-simple-viewer je přímo neinstalují.
+Tyto se objevují v overrides v `pnpm-workspace.yaml`, ale jsou potřeba pouze při použití `@mlightcad/cad-editor` (plné Vue 3 UI). Integrace cad-simple-viewer je přímo neinstalují.
 
 | Balíček | Účel |
 | --- | --- |
@@ -80,9 +80,9 @@ Tyto se objevují v overrides v `pnpm-workspace.yaml`, ale jsou potřeba pouze p
 | Balíček |
 | --- |
 | `three` |
-| `vue` (pouze pro cad-viewer) |
-| `element-plus` (pouze pro cad-viewer) |
-| `vue-i18n` (pouze pro cad-viewer) |
+| `vue` (pouze pro cad-editor) |
+| `element-plus` (pouze pro cad-editor) |
+| `vue-i18n` (pouze pro cad-editor) |
 | `lodash-es` |
 
 ---
@@ -129,13 +129,13 @@ Kanonickým zdrojem pravdy pro každé vydání je sekce `overrides` v `pnpm-wor
      vue-i18n: '^11.4.4'
    ```
 
-4. Aktualizujte každý používaný `@mlightcad/cad-*-plugin` na **stejnou verzi** jako `cad-simple-viewer` / `cad-viewer`:
+4. Aktualizujte každý používaný `@mlightcad/cad-*-plugin` na **stejnou verzi** jako `cad-simple-viewer` / `cad-editor`:
 
    ```json
    {
      "dependencies": {
        "@mlightcad/cad-simple-viewer": "1.7.5",
-       "@mlightcad/cad-viewer": "1.7.5",
+       "@mlightcad/cad-editor": "1.7.5",
        "@mlightcad/cad-html-plugin": "1.7.5",
        "@mlightcad/cad-pdf-plugin": "1.7.5",
        "@mlightcad/cad-svg-plugin": "1.7.5",

@@ -3,7 +3,7 @@
 [English](./README.md) | [简体中文](./README.zh-CN.md) | [日本語](./README.ja.md) | [한국어](./README.ko.md) | [Español](./README.es.md) | [Português](./README.pt.md) | [Русский](./README.ru.md) | [Čeština](./README.cs.md)
 
 [![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-simple-viewer.svg?label=cad-simple-viewer)](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer)
-[![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-viewer.svg?label=cad-viewer)](https://www.npmjs.com/package/@mlightcad/cad-viewer)
+[![npm downloads](https://img.shields.io/npm/dy/@mlightcad/cad-editor.svg?label=cad-editor)](https://www.npmjs.com/package/@mlightcad/cad-editor)
 
 <a href="https://trendshift.io/repositories/16129?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-16129" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/16129/daily?language=TypeScript" alt="mlightcad%2Fcad-viewer | Trendshift" width="250" height="55"/></a>
 
@@ -49,7 +49,7 @@ Komunitní desktopové balíčky pro Linux:
 Oficiální ukázkové aplikace, které ukazují, jak integrovat MLightCAD do vlastního produktu:
 
 - [cad-simple-viewer-demo](https://github.com/mlightcad/cad-simple-viewer-example) — Minimální vanilla TypeScript host pro [`@mlightcad/cad-simple-viewer`](https://www.npmjs.com/package/@mlightcad/cad-simple-viewer): otevření lokálních nebo CDN DXF/DWG, ovládání příkazů malým toolbarem a líné načítání pluginů pro export HTML/PDF/SVG bez plného Vue UI.
-- [cad-editor-demo](https://github.com/mlightcad/cad-viewer-example) — Plnohodnotná Vue 3 aplikace na [`@mlightcad/cad-viewer`](https://www.npmjs.com/package/@mlightcad/cad-viewer) s nabídkami, ribbonem, dialogy, příkazovým řádkem a stavovým řádkem ([živé demo](https://mlightcad.github.io/cad-viewer-example/)).
+- [cad-editor-demo](https://github.com/mlightcad/cad-viewer-example) — Plnohodnotná Vue 3 aplikace na [`@mlightcad/cad-editor`](https://www.npmjs.com/package/@mlightcad/cad-editor) s nabídkami, ribbonem, dialogy, příkazovým řádkem a stavovým řádkem ([živé demo](https://mlightcad.github.io/cad-viewer-example/)).
 - [cad-viewer-nextjs-demo](https://github.com/mlightcad/cad-viewer-nextjs-demo) — Next.js demo „CAD disk“: obnovitelné chunkované nahrávání DWG/DXF, seznam souborů v SQLite s náhledy a otevření výkresů buď **živým parsováním v prohlížeči** (`cad-simple-viewer`), nebo **serverovým ACEX prerenderem** (rychlejší otevření, méně paměti).
 
 ![MLightCAD Quick Demo](./assets/cad-viewer.gif)

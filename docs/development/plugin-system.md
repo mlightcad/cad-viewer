@@ -217,7 +217,7 @@ You do **not** need to call `loadByTrigger` manually when using `sendStringToExe
 
 ### B. Inline lazy registration (cad-viewer component)
 
-`@mlightcad/cad-viewer` registers PDF/HTML/SVG plugins in `registerLazyPlugins()` (`packages/cad-editor/src/app/register.ts`), invoked from `initializeCadViewer()` in `app.ts`. Consumers of the Vue component get lazy plugins without extra setup.
+`@mlightcad/cad-editor` registers PDF/HTML/SVG plugins in `registerLazyPlugins()` (`packages/cad-editor/src/app/register.ts`), invoked from `initializeCadViewer()` in `app.ts`. Consumers of the Vue component get lazy plugins without extra setup.
 
 ### C. Eager load via `pluginManager.loadPlugin()`
 

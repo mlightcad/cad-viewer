@@ -30,4 +30,4 @@ Tato sekce vám pomůže pochopit, jak vložit MLightCAD do vlastní webové apl
 - [Ladění se změnami ve více repozitářích](./debugging-with-multiple-repo-changes)
 - [Podpora výkresů Tianzheng DWG](./supporting-tianzheng-dwg-drawings)
 - [Vytvoření cloudového webového prohlížeče DWG (předrenderování + statické hostování)](./cloud-dwg-web-viewer)
-- [Upgrade cad-simple-viewer a cad-viewer](./upgrade-guide)
+- [Upgrade cad-simple-viewer a cad-editor](./upgrade-guide)

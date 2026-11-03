@@ -67,7 +67,7 @@ Do **not** leave the repo in pre mode when cutting a normal stable release.
 | Version shape | `X.Y.Z-preview.N` (e.g. `1.8.0-preview.0`) |
 | Git tag | `vX.Y.Z-preview.N` |
 | npm dist-tag | `preview` (CI: `pnpm publish:viewer:preview`) |
-| User install | `pnpm add @mlightcad/cad-viewer@preview` |
+| User install | `pnpm add @mlightcad/cad-editor@preview` |
 
 ### 1. Find last release tag
 
@@ -154,7 +154,7 @@ Prefer writing the changeset file directly (agents often lack an interactive TTY
 "@mlightcad/cad-diff-viewer": patch
 "@mlightcad/cad-diff-viewer-example": patch
 "@mlightcad/cad-svg-plugin": patch
-"@mlightcad/cad-viewer": patch
+"@mlightcad/cad-editor": patch
 "@mlightcad/cad-editor-demo": patch
 "@mlightcad/cad-demo-gallery": patch
 "@mlightcad/three-renderer": patch

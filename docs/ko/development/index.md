@@ -30,4 +30,4 @@ title: "개발 가이드"
 - [다중 저장소 디버깅](./debugging-with-multiple-repo-changes)
 - [톈정(Tianzheng) DWG 도면 지원](./supporting-tianzheng-dwg-drawings)
 - [클라우드 DWG 웹 뷰어 구축(사전 렌더링 + 정적 호스팅)](./cloud-dwg-web-viewer)
-- [cad-simple-viewer 및 cad-viewer 업그레이드](./upgrade-guide)
+- [cad-simple-viewer 및 cad-editor 업그레이드](./upgrade-guide)

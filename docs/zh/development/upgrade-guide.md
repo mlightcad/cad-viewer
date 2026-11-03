@@ -1,16 +1,16 @@
 ---
-title: "升级 cad-simple-viewer 和 cad-viewer"
+title: "升级 cad-simple-viewer 和 cad-editor"
 ---
 
-# 升级 cad-simple-viewer 和 cad-viewer
+# 升级 cad-simple-viewer 和 cad-editor
 
-本指南介绍如何安全地升级 `@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-viewer`——为什么它们不能单独升级、哪些相关包必须一起迁移，以及两种可靠的方法来确定任意给定版本的正确兼容版本集。
+本指南介绍如何安全地升级 `@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-editor`——为什么它们不能单独升级、哪些相关包必须一起迁移，以及两种可靠的方法来确定任意给定版本的正确兼容版本集。
 
 ## 概览
 
-`@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-viewer` **不是独立的包**。它们属于一个紧密集成的生态系统，共享同一代码库和发布周期。每个版本都会捆绑一组协调一致的更新，涵盖插件、渲染器、data-model 包、文本渲染库以及第三方 UI 框架。
+`@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-editor` **不是独立的包**。它们属于一个紧密集成的生态系统，共享同一代码库和发布周期。每个版本都会捆绑一组协调一致的更新，涵盖插件、渲染器、data-model 包、文本渲染库以及第三方 UI 框架。
 
-**仅单独升级 `cad-simple-viewer` 或 `cad-viewer` 可能导致难以察觉的运行时故障**，包括：
+**仅单独升级 `cad-simple-viewer` 或 `cad-editor` 可能导致难以察觉的运行时故障**，包括：
 
 - 插件接口期望的 API 签名在新版（或旧版）核心中已经改变
 - 核心期望的数据模型结构与旧版解析器/渲染器产出的结构不匹配
@@ -24,14 +24,14 @@ title: "升级 cad-simple-viewer 和 cad-viewer"
 
 ## 生态系统一览
 
-升级前，了解哪些包属于协同发布、哪些属于第三方会有所帮助。以下类别与同一个 cad-viewer 版本保持同步：
+升级前，了解哪些包属于协同发布、哪些属于第三方会有所帮助。以下类别与同一个 cad-editor 版本保持同步：
 
 ### 核心查看器包
 
 | 包 | 作用 |
 | --- | --- |
 | `@mlightcad/cad-simple-viewer` | 与框架无关的核心（文档管理、命令栈、渲染粘合层） |
-| `@mlightcad/cad-viewer` | 构建在 cad-simple-viewer 之上的 Vue 3 + Element Plus UI 封装 |
+| `@mlightcad/cad-editor` | 构建在 cad-simple-viewer 之上的 Vue 3 + Element Plus UI 封装 |
 
 ### 插件——**必须与 cad-simple-viewer 版本完全一致**
 
@@ -66,9 +66,9 @@ title: "升级 cad-simple-viewer 和 cad-viewer"
 | `@mlightcad/mtext-renderer` | MTEXT → THREE 几何渲染器 |
 | `@mlightcad/mtext-input-box` | 画布内 MTEXT 编辑器控件 |
 
-### 仅 cad-viewer 使用的 Vue UI 依赖
+### 仅 cad-editor 使用的 Vue UI 依赖
 
-这些出现在 `pnpm-workspace.yaml` 的 overrides 中，但仅在使用 `@mlightcad/cad-viewer`（完整的 Vue 3 UI）时需要。cad-simple-viewer 的集成不会直接安装它们。
+这些出现在 `pnpm-workspace.yaml` 的 overrides 中，但仅在使用 `@mlightcad/cad-editor`（完整的 Vue 3 UI）时需要。cad-simple-viewer 的集成不会直接安装它们。
 
 | 包 | 用途 |
 | --- | --- |
@@ -80,9 +80,9 @@ title: "升级 cad-simple-viewer 和 cad-viewer"
 | 包 |
 | --- |
 | `three` |
-| `vue`（仅 cad-viewer 使用） |
-| `element-plus`（仅 cad-viewer 使用） |
-| `vue-i18n`（仅 cad-viewer 使用） |
+| `vue`（仅 cad-editor 使用） |
+| `element-plus`（仅 cad-editor 使用） |
+| `vue-i18n`（仅 cad-editor 使用） |
 | `lodash-es` |
 
 ---
@@ -129,13 +129,13 @@ title: "升级 cad-simple-viewer 和 cad-viewer"
      vue-i18n: '^11.4.4'
    ```
 
-4. 将你使用的每个 `@mlightcad/cad-*-plugin` 更新为与 `cad-simple-viewer` / `cad-viewer` **相同的版本**：
+4. 将你使用的每个 `@mlightcad/cad-*-plugin` 更新为与 `cad-simple-viewer` / `cad-editor` **相同的版本**：
 
    ```json
    {
      "dependencies": {
        "@mlightcad/cad-simple-viewer": "1.7.5",
-       "@mlightcad/cad-viewer": "1.7.5",
+       "@mlightcad/cad-editor": "1.7.5",
        "@mlightcad/cad-html-plugin": "1.7.5",
        "@mlightcad/cad-pdf-plugin": "1.7.5",
        "@mlightcad/cad-svg-plugin": "1.7.5",

@@ -30,4 +30,4 @@ title: "دليل التطوير"
 - [تصحيح الأخطاء مع تغييرات متعددة للمستودعات](./debugging-with-multiple-repo-changes)
 - [دعم رسومات Tianzheng DWG](./supporting-tianzheng-dwg-drawings)
 - [إنشاء عارض ويب سحابي لملفات DWG (العرض المسبق + الاستضافة الثابتة)](./cloud-dwg-web-viewer)
-- [ترقية cad-simple-viewer و cad-viewer](./upgrade-guide)
+- [ترقية cad-simple-viewer و cad-editor](./upgrade-guide)
