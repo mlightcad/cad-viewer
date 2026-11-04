@@ -8,13 +8,16 @@ export interface Point2dInput {
   y: number
 }
 
-/** DXF written or downloaded by `cad.file.saveDxf`. The file body is not included. */
+/**
+ * File written or downloaded by `cad.file.saveDxf` / `savePdf` / `saveHtml`.
+ * The file body is never included.
+ */
 export interface ToolResultSavedFile {
   /** Absolute path when MCP wrote the file; otherwise the download file name or requested path. */
   path: string
-  /** Base name including `.dxf`. */
+  /** Base name including the format extension (`.dxf`, `.pdf`, `.html`, `.zip`). */
   fileName: string
-  /** UTF-8 size of the DXF. */
+  /** Byte length of the file body. */
   bytes: number
   /**
    * `file` — written by the MCP server.
@@ -60,8 +63,8 @@ export interface ToolResult {
    */
   images?: ToolResultImage[]
   /**
-   * DXF files produced by `cad.file.saveDxf`.
-   * Summaries only — adapters must not echo the DXF body to the model.
+   * Files produced by `cad.file.saveDxf` / `savePdf` / `saveHtml`.
+   * Summaries only — adapters must not echo file bodies to the model.
    */
   savedFiles?: ToolResultSavedFile[]
 }

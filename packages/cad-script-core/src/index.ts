@@ -1,13 +1,15 @@
 /**
- * CAD script runtime that depends only on `@mlightcad/data-model`.
+ * CAD script runtime for agent scripts (`cad.*`).
  *
- * Validates, sandboxes, and runs agent scripts (`cad.*`) against a
- * {@link CadSession}, and builds the transport-agnostic tool catalog. It does
- * not depend on a viewer, a renderer, a UI framework, or a model SDK.
+ * Depends on `@mlightcad/data-model` plus `@mlightcad/cad-pdf-core` for
+ * `cad.file.savePdf`. HTML export (`cad.file.saveHtml`) is fulfilled through
+ * an optional {@link CadSession.exportHtml} hook — typically provided by
+ * `@mlightcad/cad-agent-core` in a viewer host. This package does not depend
+ * on `cad-simple-viewer`, a UI framework, or a model SDK.
  *
  * Use {@link createDatabaseSession} to run scripts on a bare `AcDbDatabase`.
  * In the browser, `@mlightcad/cad-agent-core` provides a session bound to the
- * live viewer (selection highlight, zoom, screenshots, undo notifications).
+ * live viewer (selection highlight, zoom, screenshots, HTML export, undo).
  *
  * @packageDocumentation
  */
@@ -40,6 +42,21 @@ export {
   type CadScriptDxfSaveOptions,
   type CadScriptDxfSaveRequest
 } from './script/saveDxf'
+export {
+  fulfillHtmlSaveRequests,
+  normalizeHtmlSaveRequest,
+  type CadScriptHtmlExportOptions,
+  type CadScriptHtmlExportResult,
+  type CadScriptHtmlSaveOptions,
+  type CadScriptHtmlSaveRequest
+} from './script/saveHtml'
+export {
+  fulfillPdfSaveRequests,
+  normalizePdfSaveRequest,
+  type CadScriptPdfExportOptions,
+  type CadScriptPdfSaveOptions,
+  type CadScriptPdfSaveRequest
+} from './script/savePdf'
 export { toEntitySnapshot, type EntitySnapshot } from './script/entitySnapshot'
 export {
   executeCadScript,
@@ -50,6 +67,7 @@ export { instrumentCadScript } from './script/instrumentCadScript'
 export {
   CAD_EDIT_TX_METHODS,
   CAD_MCP_DXF_OUTBOX_KEY,
+  CAD_MCP_FILE_OUTBOX_KEY,
   CAD_SCRIPT_API_SUMMARY,
   CAD_SCRIPT_API_TREE
 } from './script/scriptApi'

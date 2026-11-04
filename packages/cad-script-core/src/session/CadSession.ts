@@ -6,6 +6,11 @@ import type {
 } from '@mlightcad/data-model'
 
 import type { CaptureDrawingPreviewResult } from '../preview/types'
+import type {
+  CadScriptHtmlExportOptions,
+  CadScriptHtmlExportResult
+} from '../script/saveHtml'
+import type { CadScriptPdfExportOptions } from '../script/savePdf'
 
 /**
  * Open-mode codes used by {@link CadSessionDocument.openMode}.
@@ -156,4 +161,26 @@ export interface CadSession {
    * @param longSide - Maximum output width or height in pixels.
    */
   capturePreview?(longSide: number): Promise<CaptureDrawingPreviewResult>
+  /**
+   * Renders the current drawing to PDF for `cad.file.savePdf`.
+   *
+   * When this is a function, the script runtime uses it instead of the
+   * built-in `@mlightcad/cad-pdf-core` fallback (viewer hosts supply fonts).
+   * Declare the key as `undefined` to opt out of host defaults without
+   * disabling the core fallback.
+   *
+   * @param options - Framing, layout, text, and colour options.
+   */
+  exportPdf?(options: CadScriptPdfExportOptions): Promise<Uint8Array>
+  /**
+   * Builds offline HTML (or a multi-file zip) for `cad.file.saveHtml`.
+   *
+   * Sessions without a viewer HTML pipeline leave this out or set it to
+   * `undefined`; those requests are then skipped with a log note.
+   *
+   * @param options - Format, layout, and background options.
+   */
+  exportHtml?(
+    options: CadScriptHtmlExportOptions
+  ): Promise<CadScriptHtmlExportResult>
 }

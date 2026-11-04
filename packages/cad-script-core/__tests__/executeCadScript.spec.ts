@@ -8,12 +8,16 @@ import {
 } from '@mlightcad/data-model'
 
 import { executeCadScript } from '../src/script/executeCadScript'
-import { CAD_MCP_DXF_OUTBOX_KEY } from '../src/script/scriptApi'
+import {
+  CAD_MCP_DXF_OUTBOX_KEY,
+  CAD_MCP_FILE_OUTBOX_KEY
+} from '../src/script/scriptApi'
 import {
   type CadSession,
   CadSessionOpenMode,
   type CadSessionView
 } from '../src/session/CadSession'
+import { createDatabaseSession } from '../src/session/createDatabaseSession'
 
 const COUNT_SCRIPT = `
 const counts = {}
@@ -346,6 +350,139 @@ describe('executeCadScript', () => {
     } finally {
       delete host.__cadMcp
       delete host[CAD_MCP_DXF_OUTBOX_KEY]
+    }
+  })
+
+  test('queues savePdf through exportPdf without returning bytes', async () => {
+    const { session } = createFixture()
+    const pdfBytes = new Uint8Array([1, 2, 3, 4, 5])
+    session.exportPdf = jest.fn(async () => pdfBytes)
+    const host = globalThis as unknown as Record<string, unknown>
+    host.__cadMcp = {}
+    host[CAD_MCP_FILE_OUTBOX_KEY] = []
+
+    try {
+      const result = await executeCadScript(
+        {
+          code: `return cad.file.savePdf('out/plan.pdf')`,
+          intent: 'save pdf'
+        },
+        session
+      )
+
+      expect(result.success).toBe(true)
+      expect(result.data).toEqual({
+        queued: true,
+        index: 0,
+        fileName: 'plan.pdf'
+      })
+      expect(session.exportPdf).toHaveBeenCalled()
+      expect(result.savedFiles).toEqual([
+        expect.objectContaining({
+          fileName: 'plan.pdf',
+          path: 'out/plan.pdf',
+          delivery: 'mcp',
+          bytes: 5
+        })
+      ])
+      const outbox = host[CAD_MCP_FILE_OUTBOX_KEY] as Array<{
+        bytesBase64: string
+        mediaType: string
+      }>
+      expect(outbox).toHaveLength(1)
+      expect(outbox[0]?.mediaType).toBe('application/pdf')
+      expect(outbox[0]?.bytesBase64.length).toBeGreaterThan(0)
+      expect(JSON.stringify(result)).not.toContain(outbox[0]?.bytesBase64)
+    } finally {
+      delete host.__cadMcp
+      delete host[CAD_MCP_FILE_OUTBOX_KEY]
+    }
+  })
+
+  test('skips saveHtml when the session has no exportHtml hook', async () => {
+    const session = createDatabaseSession(new AcDbDatabase(), {
+      title: 'blank'
+    })
+    const result = await executeCadScript(
+      {
+        code: `return cad.file.saveHtml('out/plan.html')`,
+        intent: 'save html'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({
+      queued: true,
+      index: 0,
+      fileName: 'plan.html'
+    })
+    expect(result.savedFiles).toBeUndefined()
+    expect(result.log).toContain(
+      'saveHtml skipped: this session has no HTML exporter (needs a viewer host)'
+    )
+  })
+
+  test('keeps success when savePdf fails after the script body', async () => {
+    const { session } = createFixture()
+    session.exportPdf = jest.fn(async () => {
+      throw new Error('pdf boom')
+    })
+
+    const result = await executeCadScript(
+      {
+        code: `
+          cad.edit.transaction('draw', tx => {
+            tx.drawCircle({ center: { x: 0, y: 0 }, radius: 1 })
+          })
+          return cad.file.savePdf('out/plan.pdf')
+        `,
+        intent: 'draw then pdf'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.savedFiles).toBeUndefined()
+    expect(result.log?.some(line => line.includes('savePdf failed'))).toBe(
+      true
+    )
+  })
+
+  test('queues saveHtml through exportHtml without returning bytes', async () => {
+    const { session } = createFixture()
+    const html = new TextEncoder().encode('<html></html>')
+    session.exportHtml = jest.fn(async () => ({
+      fileName: 'plan.html',
+      bytes: html,
+      mediaType: 'text/html;charset=utf-8'
+    }))
+    const host = globalThis as unknown as Record<string, unknown>
+    host.__cadMcp = {}
+    host[CAD_MCP_FILE_OUTBOX_KEY] = []
+
+    try {
+      const result = await executeCadScript(
+        {
+          code: `return cad.file.saveHtml('out/plan.html')`,
+          intent: 'save html'
+        },
+        session
+      )
+
+      expect(result.success).toBe(true)
+      expect(session.exportHtml).toHaveBeenCalled()
+      expect(result.savedFiles).toEqual([
+        expect.objectContaining({
+          fileName: 'plan.html',
+          path: 'out/plan.html',
+          delivery: 'mcp',
+          bytes: html.byteLength
+        })
+      ])
+    } finally {
+      delete host.__cadMcp
+      delete host[CAD_MCP_FILE_OUTBOX_KEY]
     }
   })
 

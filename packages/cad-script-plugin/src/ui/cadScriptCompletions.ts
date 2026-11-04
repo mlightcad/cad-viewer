@@ -52,6 +52,7 @@ type TypeName =
   | 'block'
   | 'selection'
   | 'view'
+  | 'file'
   | 'measure'
   | 'edit'
   | 'entity'
@@ -98,6 +99,7 @@ const TYPE_LABEL: Record<TypeName, string> = {
   block: 'Block',
   selection: 'Selection',
   view: 'View',
+  file: 'File',
   measure: 'Measure',
   edit: 'Edit',
   entity: 'Entity',
@@ -297,6 +299,8 @@ function membersOf(type: TypeName): MemberSpec[] {
       return SELECTION_MEMBERS
     case 'view':
       return VIEW_MEMBERS
+    case 'file':
+      return FILE_MEMBERS
     case 'measure':
       return MEASURE_MEMBERS
     case 'edit':
@@ -949,6 +953,13 @@ const CAD_MEMBERS: MemberSpec[] = [
   ),
   prop('view', 'View', 'Change the drawing view.', 'view', 'namespace'),
   prop(
+    'file',
+    'File',
+    'Export the current drawing as DXF, PDF, or HTML.',
+    'file',
+    'namespace'
+  ),
+  prop(
     'measure',
     'Measure',
     'Distance, angle, entity radius/length, and check/report helpers.',
@@ -1143,6 +1154,30 @@ const VIEW_MEMBERS: MemberSpec[] = [
     'Queues a PNG screenshot after the script finishes (attached to the result for the model).',
     'unknown',
     'capturePreview()'
+  )
+]
+
+const FILE_MEMBERS: MemberSpec[] = [
+  method(
+    'saveDxf',
+    '(path?) => { queued, index, fileName }',
+    'Queues a DXF export after the script succeeds. Path string or { path?, fileName? }.',
+    'unknown',
+    'saveDxf(\'${path}\')'
+  ),
+  method(
+    'savePdf',
+    '(path?) => { queued, index, fileName }',
+    'Queues a PDF export after the script succeeds. Path string or { path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }.',
+    'unknown',
+    'savePdf(\'${path}\')'
+  ),
+  method(
+    'saveHtml',
+    '(path?) => { queued, index, fileName }',
+    'Queues an offline HTML (or multi zip) export after success. Needs a viewer host. Path string or { path?, fileName?, exportFormat?, exportLayouts?, background? }.',
+    'unknown',
+    'saveHtml(\'${path}\')'
   )
 ]
 

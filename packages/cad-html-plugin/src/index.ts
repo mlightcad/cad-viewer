@@ -17,7 +17,10 @@ export * from '@mlightcad/cad-html-core'
 export const HTML_VIEWER_RUNTIME_FILE = 'viewer-runtime.iife.js'
 
 export { AcApExportHtmlCmd } from './AcApExportHtmlCmd'
-export { AcApHtmlConvertor } from './AcApHtmlConvertor'
+export {
+  AcApHtmlConvertor,
+  type AcApHtmlExportResult
+} from './AcApHtmlConvertor'
 export {
   type AcApHtmlExportFormat,
   type AcApHtmlExportOptions,

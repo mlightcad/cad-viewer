@@ -39,6 +39,8 @@ const config: Config = {
       '<rootDir>/packages/cad-pdf-core/src/index.ts',
     '^@mlightcad/cad-html-core$':
       '<rootDir>/packages/cad-html-core/src/index.ts',
+    '^@mlightcad/cad-html-plugin$':
+      '<rootDir>/packages/cad-html-plugin/src/index.ts',
     '^@mlightcad/cad-agent-core$':
       '<rootDir>/packages/cad-agent-core/src/index.ts',
     '^@mlightcad/cad-script-core$':

@@ -172,12 +172,15 @@ Save the drawing after edits:
 
 ```js
 cad.file.saveDxf('./plan-out.dxf')
+cad.file.savePdf('./plan.pdf')
+cad.file.saveHtml('./plan.html')
 ```
 
-The MCP server writes that path (relative to the server process working
-directory). The DXF text is not sent back to the model; the tool result
-includes `savedFiles` with the absolute path. In the in-app CAD agent the same
-call downloads the file instead.
+The MCP server writes those paths (relative to the server process working
+directory). File bodies are not sent back to the model; the tool result
+includes `savedFiles` with the absolute path and byte size. In the in-app CAD
+agent the same calls download the files instead. `saveHtml` uses the viewer
+HTML pipeline (requires `viewer-runtime.iife.js` next to the runner page).
 
 ## Architecture
 

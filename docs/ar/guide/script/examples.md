@@ -206,3 +206,10 @@ return { layers, styles }
 cad.file.saveDxf('./plan-out.dxf')
 return { saved: true }
 ```
+
+## Save the drawing as PDF or HTML
+
+```javascript
+cad.file.savePdf('./plan.pdf')
+cad.file.saveHtml('./plan.html')
+```

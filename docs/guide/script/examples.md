@@ -206,3 +206,15 @@ Runs after the script succeeds. The in-app agent downloads the file. `cad-mcp-se
 cad.file.saveDxf('./plan-out.dxf')
 return { saved: true }
 ```
+
+## Save the drawing as PDF or HTML
+
+Same delivery as DXF. HTML needs a viewer host (`cad-agent-core`); headless database sessions skip `saveHtml`.
+
+```javascript
+cad.file.savePdf('./plan.pdf')
+cad.file.saveHtml('./plan.html')
+// multi-file package:
+cad.file.saveHtml({ path: './plan.zip', exportFormat: 'multi' })
+return { saved: true }
+```

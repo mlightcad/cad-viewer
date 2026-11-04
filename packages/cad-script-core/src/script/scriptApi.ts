@@ -5,6 +5,12 @@
 export const CAD_MCP_DXF_OUTBOX_KEY = '__cadMcpDxfOutbox'
 
 /**
+ * Window key holding binary file payloads (PDF/HTML/ZIP) for the MCP Node host.
+ * Items use base64 so Playwright `page.evaluate` can round-trip them safely.
+ */
+export const CAD_MCP_FILE_OUTBOX_KEY = '__cadMcpFileOutbox'
+
+/**
  * Host member tree enforced by the script validator and the runtime proxy.
  *
  * A value of `true` is a callable method or a data leaf. Nested objects are
@@ -49,7 +55,9 @@ export const CAD_SCRIPT_API_TREE = {
     capturePreview: true
   },
   file: {
-    saveDxf: true
+    saveDxf: true,
+    savePdf: true,
+    saveHtml: true
   },
   measure: {
     distance: true,
@@ -126,6 +134,17 @@ In the in-app agent this downloads the file. In cad-mcp-server it writes path
 on disk (relative paths use the server process cwd). The DXF text is not
 returned to the model. Returns { queued: true, index, fileName }.
 The tool result then includes savedFiles: [{ path, fileName, bytes, delivery }].
+cad.file.savePdf(path?) writes the current drawing as PDF after the script succeeds.
+Pass a path string or { path?, fileName?, exportLayouts?, colorMode?, textMode?,
+modelSpaceFit? }. .pdf is appended when missing. Defaults: exportLayouts true,
+colorMode 'color', textMode 'text', modelSpaceFit 'extents'. File bytes are not
+returned to the model. Returns { queued: true, index, fileName }.
+cad.file.saveHtml(path?) writes offline HTML (or a multi-file zip) after success.
+Pass a path string or { path?, fileName?, exportFormat?, exportLayouts?, background? }.
+exportFormat is 'single' (default, .html) or 'multi' (.zip). background is
+'black' | 'white' | 'space' (default). Requires a viewer host that provides
+exportHtml (in-app agent / cad-mcp-server); headless database sessions skip it
+with a log note. Returns { queued: true, index, fileName }.
 cad.view.capturePreview({ longSide? }) queues a PNG of drawing extents after the script
 finishes. Returns { queued: true, index }. Images are attached to the tool result for the
 model (not returned as JSON). Capture frames model space (temporarily switches away from

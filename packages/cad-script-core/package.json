@@ -43,13 +43,20 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "dependencies": {
+    "@mlightcad/cad-pdf-core": "workspace:*",
     "acorn": "^8.15.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@mlightcad/data-model": "1.15.21"
+    "@mlightcad/data-model": "1.15.21",
+    "@mlightcad/mtext-parser": "1.5.7",
+    "@mlightcad/pdf-renderer": "workspace:*",
+    "@mlightcad/three-renderer": "workspace:*"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "1.15.21"
+    "@mlightcad/data-model": "1.15.21",
+    "@mlightcad/mtext-parser": "1.5.7",
+    "@mlightcad/pdf-renderer": "workspace:^",
+    "@mlightcad/three-renderer": "workspace:^"
   }
 }

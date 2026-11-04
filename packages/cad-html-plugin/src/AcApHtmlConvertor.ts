@@ -37,6 +37,16 @@ function logExportTiming(label: string, ms: number) {
   console.log(`[chtml] ${label}: ${ms.toFixed(0)} ms`)
 }
 
+/** Bytes produced by {@link AcApHtmlConvertor.exportToResult} (no download). */
+export interface AcApHtmlExportResult {
+  /** Suggested download name including extension. */
+  fileName: string
+  /** File body. */
+  bytes: Uint8Array
+  /** IANA media type (`text/html;charset=utf-8` or `application/zip`). */
+  mediaType: string
+}
+
 /**
  * Orchestrates export of the active drawing to a downloadable HTML file
  * or multi-file ACEX package zip.
@@ -98,6 +108,34 @@ export class AcApHtmlConvertor {
   }
 
   /**
+   * Exports the document currently open in {@link AcApDocManager} and returns
+   * the file bytes without starting a download.
+   *
+   * Used by agent script hosts (`cad.file.saveHtml`) that deliver the payload
+   * themselves (MCP outbox or a later download).
+   *
+   * @param fileName - Optional base name (without extension).
+   * @param options - Export options including {@link AcApHtmlExportOptions.exportFormat}.
+   * @param view - Optional view to export from. Defaults to the active view.
+   */
+  async exportToResult(
+    fileName?: string,
+    options: AcApHtmlExportOptions = {},
+    view?: AcEdBaseView | null
+  ): Promise<AcApHtmlExportResult> {
+    const docManager = AcApDocManager.instance
+    const resolved = resolveAcApHtmlExportOptions(options)
+    const totalT0 = performance.now()
+    let result!: AcApHtmlExportResult
+
+    await docManager.withBusyIndicator(async () => {
+      result = await this.buildExportResult(fileName, resolved, view)
+      logExportTiming('chtml total', performance.now() - totalT0)
+    })
+    return result
+  }
+
+  /**
    * Exports the document currently open in {@link AcApDocManager}.
    *
    * @param fileName - Optional base name for the download (without extension).
@@ -111,105 +149,109 @@ export class AcApHtmlConvertor {
     options: AcApHtmlExportOptions = {},
     view?: AcEdBaseView | null
   ) {
+    const result = await this.exportToResult(fileName, options, view)
+    this.downloadBytes(result.bytes, result.fileName, result.mediaType)
+  }
+
+  private async buildExportResult(
+    fileName: string | undefined,
+    resolved: ReturnType<typeof resolveAcApHtmlExportOptions>,
+    view?: AcEdBaseView | null
+  ): Promise<AcApHtmlExportResult> {
     const docManager = AcApDocManager.instance
-    const resolved = resolveAcApHtmlExportOptions(options)
-    const totalT0 = performance.now()
+    await accmYieldForPaint()
 
-    await docManager.withBusyIndicator(async () => {
-      await accmYieldForPaint()
+    const document = docManager.curDocument
+    let t0 = performance.now()
+    const exportView = await this.prepareAcTrView2dForHtmlExport(
+      view ?? docManager.curView,
+      resolved
+    )
+    logExportTiming('prepare (missing entities)', performance.now() - t0)
 
-      const document = docManager.curDocument
-      let t0 = performance.now()
-      const exportView = await this.prepareAcTrView2dForHtmlExport(
-        view ?? docManager.curView,
-        resolved
-      )
-      logExportTiming('prepare (missing entities)', performance.now() - t0)
-
-      const sourceName = fileName || document.fileName || document.docTitle
-      const baseName = getDrawingExportBaseName(sourceName)
-      t0 = performance.now()
-      const snapshot = await this._snapshotBuilder.buildAsync(
-        exportView.cadScene,
-        document.database,
-        {
-          title: baseName,
-          background: exportView.backgroundColor,
-          exportInvisibleLayers: resolved.exportInvisibleLayers,
-          exportLayouts: resolved.exportLayouts,
-          initialView: resolved.initialView,
-          viewerMode: resolved.viewerMode,
-          viewState:
-            resolved.initialView === 'current' &&
-            (resolved.exportLayouts ||
-              exportView.activeLayoutBtrId === exportView.modelSpaceBtrId)
-              ? captureAcApHtmlViewState(exportView)
-              : undefined,
-          canvasAspectRatio: exportView.width / Math.max(exportView.height, 1)
-        }
-      )
-      // Live geometry is baked for the active layout canvas (white in paper
-      // space). Remap near-black / near-white ink onto the chosen canvas.
-      // `'space'` remaps each layout on its own: model black, paper white.
-      applyAcExHtmlBackground(
-        snapshot,
-        exportView.backgroundColor,
-        resolved.background
-      )
-      logExportTiming('snapshot build', performance.now() - t0)
-
-      await accmYieldForPaint()
-
-      t0 = performance.now()
-      const viewerRuntime = await this.loadViewerRuntime()
-      logExportTiming('load viewer runtime', performance.now() - t0)
-
-      await accmYieldForPaint()
-
-      if (resolved.exportFormat === 'multi') {
-        t0 = performance.now()
-        const packageBuild = resolveAcApHtmlPackageBuildOptions(resolved)
-        const pkg = await buildAcExPackageAsync(snapshot, {
-          viewerRuntime,
-          baseName,
-          ...packageBuild
-        })
-        logExportTiming(
-          packageBuild.compressChunks
-            ? 'package + gzip chunks'
-            : 'package chunks',
-          performance.now() - t0
-        )
-        t0 = performance.now()
-        const zipBytes = zipAcExPackageFiles(pkg)
-        logExportTiming('zip package', performance.now() - t0)
-        await accmYieldForPaint()
-        this.downloadBytes(
-          zipBytes,
-          resolveExportDownloadName(sourceName, 'zip'),
-          'application/zip'
-        )
-        logExportTiming('chtml total', performance.now() - totalT0)
-        return
+    const sourceName = fileName || document.fileName || document.docTitle
+    const baseName = getDrawingExportBaseName(sourceName)
+    t0 = performance.now()
+    const snapshot = await this._snapshotBuilder.buildAsync(
+      exportView.cadScene,
+      document.database,
+      {
+        title: baseName,
+        background: exportView.backgroundColor,
+        exportInvisibleLayers: resolved.exportInvisibleLayers,
+        exportLayouts: resolved.exportLayouts,
+        initialView: resolved.initialView,
+        viewerMode: resolved.viewerMode,
+        viewState:
+          resolved.initialView === 'current' &&
+          (resolved.exportLayouts ||
+            exportView.activeLayoutBtrId === exportView.modelSpaceBtrId)
+            ? captureAcApHtmlViewState(exportView)
+            : undefined,
+        canvasAspectRatio: exportView.width / Math.max(exportView.height, 1)
       }
+    )
+    // Live geometry is baked for the active layout canvas (white in paper
+    // space). Remap near-black / near-white ink onto the chosen canvas.
+    // `'space'` remaps each layout on its own: model black, paper white.
+    applyAcExHtmlBackground(
+      snapshot,
+      exportView.backgroundColor,
+      resolved.background
+    )
+    logExportTiming('snapshot build', performance.now() - t0)
 
-      const expiresAt = resolveAcApHtmlExpiresAt(
-        resolved.expiryDays,
-        Date.now(),
-        resolved.expiresAt
+    await accmYieldForPaint()
+
+    t0 = performance.now()
+    const viewerRuntime = await this.loadViewerRuntime()
+    logExportTiming('load viewer runtime', performance.now() - t0)
+
+    await accmYieldForPaint()
+
+    if (resolved.exportFormat === 'multi') {
+      t0 = performance.now()
+      const packageBuild = resolveAcApHtmlPackageBuildOptions(resolved)
+      const pkg = await buildAcExPackageAsync(snapshot, {
+        viewerRuntime,
+        baseName,
+        ...packageBuild
+      })
+      logExportTiming(
+        packageBuild.compressChunks
+          ? 'package + gzip chunks'
+          : 'package chunks',
+        performance.now() - t0
       )
       t0 = performance.now()
-      const html = await this.packSelfContainedHtml(snapshot, viewerRuntime, {
-        expiresAt,
-        password: resolved.password || undefined
-      })
-      logExportTiming('pack self-contained html', performance.now() - t0)
-
+      const zipBytes = zipAcExPackageFiles(pkg)
+      logExportTiming('zip package', performance.now() - t0)
       await accmYieldForPaint()
+      return {
+        fileName: resolveExportDownloadName(sourceName, 'zip'),
+        bytes: zipBytes,
+        mediaType: 'application/zip'
+      }
+    }
 
-      this.downloadHtml(html, resolveExportDownloadName(sourceName, 'html'))
-      logExportTiming('chtml total', performance.now() - totalT0)
+    const expiresAt = resolveAcApHtmlExpiresAt(
+      resolved.expiryDays,
+      Date.now(),
+      resolved.expiresAt
+    )
+    t0 = performance.now()
+    const html = await this.packSelfContainedHtml(snapshot, viewerRuntime, {
+      expiresAt,
+      password: resolved.password || undefined
     })
+    logExportTiming('pack self-contained html', performance.now() - t0)
+
+    await accmYieldForPaint()
+    return {
+      fileName: resolveExportDownloadName(sourceName, 'html'),
+      bytes: new TextEncoder().encode(html),
+      mediaType: 'text/html;charset=utf-8'
+    }
   }
 
   /**
