@@ -1,4 +1,4 @@
-import { acPdExportDatabase } from '@mlightcad/cad-pdf-core'
+import { acexPdfExportDatabase } from '@mlightcad/cad-pdf-core'
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
 import type { CadSession } from '../session/CadSession'
@@ -119,7 +119,7 @@ export function normalizePdfSaveRequest(
  * Renders the drawing to PDF and hands bytes to the current host.
  *
  * Prefers {@link CadSession.exportPdf} when it is a function (viewer fonts).
- * Otherwise uses `@mlightcad/cad-pdf-core` `acPdExportDatabase`.
+ * Otherwise uses `@mlightcad/cad-pdf-core` `acexPdfExportDatabase`.
  *
  * Per-request failures are logged and skipped so a successful script is not
  * marked failed after edits already committed.
@@ -146,7 +146,7 @@ export async function fulfillPdfSaveRequests(
       const bytes =
         typeof session.exportPdf === 'function'
           ? await session.exportPdf(exportOptions)
-          : await acPdExportDatabase(database, {
+          : await acexPdfExportDatabase(database, {
               exportLayouts: exportOptions.exportLayouts,
               colorMode: exportOptions.colorMode,
               textMode: exportOptions.textMode,

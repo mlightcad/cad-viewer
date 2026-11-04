@@ -21,8 +21,8 @@ export {
   ensureLibreDwgRegistered
 } from './registerDwg'
 export {
-  type AcPdColorMode,
-  type AcPdExportOptions,
-  acPdResolveExportOptions,
-  type AcPdTextMode
+  type AcExPdfColorMode,
+  type AcExPdfExportOptions,
+  acexPdfResolveExportOptions,
+  type AcExPdfTextMode
 } from '@mlightcad/cad-pdf-core'

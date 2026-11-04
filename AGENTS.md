@@ -49,8 +49,8 @@ Always read the actual source when a dependency's behavior matters; do not infer
 - ESLint: single quotes, `simple-import-sort` (third party block, blank line, relative imports), prefix unused vars/args with `_`. Run `pnpm lint:fix` before committing.
 - TypeScript is `strict` with `noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch` (see `tsconfig.base.json`). Avoid `any`; prefer explicit types/interfaces.
 - **Prefixes encode the owning layer** and apply to classes _and_ to exported functions/values, not just types:
-  - Classes/types: `AcAp` (app/core), `AcEd` (editor/commands), `AcTr` (three renderer), `AcEx` (extended interaction, e.g. osnap), `AcExHtml` (`cad-html-core`), `AcUi` (UI controllers), `AcSv`/`AcSvg` (SVG), `AcPd` (PDF).
-  - Exported functions/values: same prefix in lowerCamelCase — `acapFoo()`, `acedFoo()`, `acTrFoo()`, `acExFoo()`, `acexHtmlFoo()`, `acuiFoo()`. Exceptions: Vue hooks/composables use `use*` (e.g. `useSettings`), and local (non-exported) helpers do not need a prefix.
+  - Classes/types: `AcAp` (app/core), `AcEd` (editor/commands), `AcTr` (three renderer), `AcEx` (extended interaction, e.g. osnap), `AcExHtml` (`cad-html-core`), `AcUi` (UI controllers), `AcSv`/`AcSvg` (SVG), `AcPdf` (PDF renderer), `AcExPdf` (`cad-pdf-core`).
+  - Exported functions/values: same prefix in lowerCamelCase — `acapFoo()`, `acedFoo()`, `acTrFoo()`, `acExFoo()`, `acexHtmlFoo()`, `acexPdfFoo()`, `acuiFoo()`. Exceptions: Vue hooks/composables use `use*` (e.g. `useSettings`), and local (non-exported) helpers do not need a prefix.
 - File name matches its primary class (`AcApFoo.ts`); commands are `AcAp<Name>Cmd.ts`.
 - Public API gets JSDoc — TypeDoc generates the API reference from it. Inline comments explain _why_, not _what_.
 - Entry point is always `src/index.ts` (re-exports); plugins additionally expose `src/register.ts`.

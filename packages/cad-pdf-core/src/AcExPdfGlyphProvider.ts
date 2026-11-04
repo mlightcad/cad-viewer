@@ -56,7 +56,7 @@ type SceneNode = {
  * across identical texts, so a drawing's unique text content costs ~24 bytes
  * per triangle.
  */
-export function acPdCreateGlyphProvider(): AcPdfGlyphProvider {
+export function acexPdfCreateGlyphProvider(): AcPdfGlyphProvider {
   const empty: AcPdfGlyphPrimitives = {
     triangles: new Float32Array(0),
     polylines: new Float32Array(0)

@@ -29,12 +29,12 @@ raster images keep their pixels.
 
 ```ts
 import {
-  acPdExportDatabase,
-  acPdResolveExportOptions
+  acexPdfExportDatabase,
+  acexPdfResolveExportOptions
 } from '@mlightcad/cad-pdf-core'
 
-const bytes = await acPdExportDatabase(database, {
-  ...acPdResolveExportOptions({ colorMode: 'monochrome' }),
+const bytes = await acexPdfExportDatabase(database, {
+  ...acexPdfResolveExportOptions({ colorMode: 'monochrome' }),
   title: 'drawing',
   // Optional host services:
   // displayBox, fontMapping, glyphProvider, textFontResolver

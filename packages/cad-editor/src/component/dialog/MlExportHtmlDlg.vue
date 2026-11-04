@@ -403,10 +403,10 @@
  * this UI is available via `-chtml`.
  */
 import type {
-  AcExHtmlExpiryDays,
   AcApHtmlExportFormat,
   AcApHtmlExportOptions,
   AcExHtmlBackground,
+  AcExHtmlExpiryDays,
   AcExHtmlInitialViewMode,
   AcExHtmlViewerMode
 } from '@mlightcad/cad-html-plugin'

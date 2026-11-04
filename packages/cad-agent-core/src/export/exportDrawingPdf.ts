@@ -1,4 +1,4 @@
-import { acPdExportDatabase, type AcPdFitBox } from '@mlightcad/cad-pdf-core'
+import { acexPdfExportDatabase, type AcExPdfFitBox } from '@mlightcad/cad-pdf-core'
 import type { CadScriptPdfExportOptions } from '@mlightcad/cad-script-core'
 import {
   AcApDocManager,
@@ -26,7 +26,7 @@ export async function exportDrawingPdf(
   const modelSpaceFit = options.modelSpaceFit === 'display' ? 'display' : 'extents'
   const displayBox =
     modelSpaceFit === 'display' ? captureFitBox(docManager.curView) : undefined
-  return acPdExportDatabase(doc.database, {
+  return acexPdfExportDatabase(doc.database, {
     exportLayouts: options.exportLayouts,
     colorMode: options.colorMode,
     textMode: options.textMode,
@@ -38,7 +38,7 @@ export async function exportDrawingPdf(
   })
 }
 
-function captureFitBox(view: AcEdBaseView | undefined): AcPdFitBox | undefined {
+function captureFitBox(view: AcEdBaseView | undefined): AcExPdfFitBox | undefined {
   if (!view || !(view.width > 0) || !(view.height > 0)) return undefined
   const topLeft = view.screenToWorld({ x: 0, y: 0 })
   const bottomRight = view.screenToWorld({

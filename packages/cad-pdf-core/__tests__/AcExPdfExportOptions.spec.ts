@@ -5,8 +5,8 @@ import {
 import type { AcPdfGlyphProvider } from '@mlightcad/pdf-renderer'
 
 import {
-  acPdBuildRendererOptions,
-  acPdResolveExportOptions
+  acexPdfBuildRendererOptions,
+  acexPdfResolveExportOptions
 } from '../src/index'
 
 const stubGlyphs = {} as AcPdfGlyphProvider
@@ -18,9 +18,9 @@ function createDb() {
   return db
 }
 
-describe('acPdResolveExportOptions', () => {
+describe('acexPdfResolveExportOptions', () => {
   it('fills defaults', () => {
-    expect(acPdResolveExportOptions()).toEqual({
+    expect(acexPdfResolveExportOptions()).toEqual({
       modelSpaceFit: 'extents',
       exportLayouts: true,
       textMode: 'text',
@@ -30,7 +30,7 @@ describe('acPdResolveExportOptions', () => {
 
   it('keeps valid values and drops unknown ones', () => {
     expect(
-      acPdResolveExportOptions({
+      acexPdfResolveExportOptions({
         modelSpaceFit: 'display',
         exportLayouts: false,
         textMode: 'vector',
@@ -43,7 +43,7 @@ describe('acPdResolveExportOptions', () => {
       colorMode: 'monochrome'
     })
     expect(
-      acPdResolveExportOptions({
+      acexPdfResolveExportOptions({
         colorMode: 'grey' as never,
         textMode: 'outline' as never
       })
@@ -51,11 +51,11 @@ describe('acPdResolveExportOptions', () => {
   })
 })
 
-describe('acPdBuildRendererOptions', () => {
+describe('acexPdfBuildRendererOptions', () => {
   const displayBox = { min: { x: 0, y: 0 }, max: { x: 10, y: 5 } }
 
   it('forwards colour mode and layouts', () => {
-    const options = acPdBuildRendererOptions(createDb(), {
+    const options = acexPdfBuildRendererOptions(createDb(), {
       colorMode: 'monochrome',
       exportLayouts: false,
       glyphProvider: stubGlyphs
@@ -69,14 +69,14 @@ describe('acPdBuildRendererOptions', () => {
   it('only passes the font resolver in text mode', () => {
     const db = createDb()
     expect(
-      acPdBuildRendererOptions(db, {
+      acexPdfBuildRendererOptions(db, {
         textMode: 'text',
         textFontResolver: fontResolver,
         glyphProvider: stubGlyphs
       }).textFontResolver
     ).toBe(fontResolver)
     expect(
-      acPdBuildRendererOptions(db, {
+      acexPdfBuildRendererOptions(db, {
         textMode: 'vector',
         textFontResolver: fontResolver,
         glyphProvider: stubGlyphs
@@ -87,14 +87,14 @@ describe('acPdBuildRendererOptions', () => {
   it('uses the display box only for display framing', () => {
     const db = createDb()
     expect(
-      acPdBuildRendererOptions(db, {
+      acexPdfBuildRendererOptions(db, {
         modelSpaceFit: 'display',
         displayBox,
         glyphProvider: stubGlyphs
       }).fitBox
     ).toEqual(displayBox)
     expect(
-      acPdBuildRendererOptions(db, {
+      acexPdfBuildRendererOptions(db, {
         modelSpaceFit: 'extents',
         displayBox,
         glyphProvider: stubGlyphs
@@ -102,7 +102,7 @@ describe('acPdBuildRendererOptions', () => {
     ).toBeUndefined()
     // Headless: display framing without a view box falls back to extents.
     expect(
-      acPdBuildRendererOptions(db, {
+      acexPdfBuildRendererOptions(db, {
         modelSpaceFit: 'display',
         glyphProvider: stubGlyphs
       }).fitBox
