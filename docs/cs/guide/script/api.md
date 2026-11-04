@@ -43,13 +43,13 @@ Kromě výše uvedených zakázaných objektů mohou být další globální pro
 
 Vrací statické informace o aktuálním výkresu.
 
-| Pole | Typ | Popis |
-|------|------|------|
-| `title` | `string` | Název výkresu |
-| `currentLayer` | `string` | Název aktuální hladiny |
-| `units` | `number` | Vkládací jednotky (INSUNITS) |
-| `layers` | `Array<{ name, isOn, isFrozen, isLocked }>` | Seznam všech hladin |
-| `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | Rozsah modelového prostoru |
+| Pole           | Typ                                           | Popis                        |
+| -------------- | --------------------------------------------- | ---------------------------- |
+| `title`        | `string`                                      | Název výkresu                |
+| `currentLayer` | `string`                                      | Název aktuální hladiny       |
+| `units`        | `number`                                      | Vkládací jednotky (INSUNITS) |
+| `layers`       | `Array<{ name, isOn, isFrozen, isLocked }>`   | Seznam všech hladin          |
+| `extents`      | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | Rozsah modelového prostoru   |
 
 ```javascript
 const info = cad.drawing
@@ -90,31 +90,54 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 ### Snímek entity (EntitySnapshot)
 
-| Pole | Typ | Popis |
-|------|------|------|
-| `id` | `string` | ID objektu entity |
-| `ownerId` | `string` | ID záznamu tabulky bloků, u atributu ID reference bloku |
-| `type` | `string` | Typ entity bez předpony `AcDb`, např. `Circle`, `Line` |
-| `layer` | `string` | Název hladiny, ve které se nachází |
-| `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | Rozsah ve světovém souřadnicovém systému |
-| `geometry` | `object \| undefined` | Geometrická data specifická pro typ |
+| Pole            | Typ                                           | Popis                                                                 |
+| --------------- | --------------------------------------------- | --------------------------------------------------------------------- |
+| `id`            | `string`                                      | ID objektu entity                                                     |
+| `ownerId`       | `string`                                      | ID záznamu tabulky bloků, u atributu ID reference bloku               |
+| `type`          | `string`                                      | Typ entity bez předpony `AcDb`, např. `Circle`, `Line`                |
+| `layer`         | `string`                                      | Název hladiny, ve které se nachází                                    |
+| `color`         | `EntityColor`                                 | Uložená barva před rozlišením ByLayer / ByBlock                       |
+| `resolvedColor` | `EntityColor`                                 | Barva po rozlišení ByLayer / ByBlock                                  |
+| `lineType`      | `string`                                      | Název typu čáry (`ByLayer` / `ByBlock` zůstávají jako uložené)        |
+| `lineWeight`    | `number`                                      | Hodnota `AcGiLineWeight`; záporné hodnoty znamenají ByLayer / ByBlock |
+| `linetypeScale` | `number`                                      | Měřítko typu čáry                                                     |
+| `visibility`    | `boolean`                                     | `false`, když je entita skrytá                                        |
+| `transparency`  | `EntityTransparency`                          | Metoda průhlednosti a alpha                                           |
+| `thickness`     | `number \| undefined`                         | Tloušťka vytažení, pokud ji typ má                                    |
+| `normal`        | `{x,y,z} \| undefined`                        | Směr vytažení / normála roviny, pokud ji typ má                       |
+| `extents`       | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | Rozsah ve světovém souřadnicovém systému                              |
+| `geometry`      | `object \| undefined`                         | Geometrická data specifická pro typ                                   |
+
+`EntityColor` je `{ red?, green?, blue?, hex?, colorIndex?, isByColor, isByACI, isByLayer, isByBlock, isForeground }`.
+Barvy ByLayer / ByBlock nemají RGB; potřebujete-li skutečnou barvu, čtěte `resolvedColor`.
+`EntityTransparency` je `{ method, alpha, percentage?, isByAlpha, isByLayer, isByBlock }`.
+
+V predikátu `cad.entities.where(...)` se tyto zobrazovací vlastnosti čtou líně: rozliší se jen pole, kterých se predikát dotkne, a na plný snapshot se převedou jen odpovídající entity.
 
 Podporované typy `geometry`:
 
-| Typ entity | Pole `geometry` |
-|----------|----------------|
-| `Circle` | `{ center: {x,y,z}, radius }` |
-| `Line` | `{ start: {x,y,z}, end: {x,y,z} }` |
-| `Arc` | `{ center: {x,y,z}, radius, startAngle, endAngle, startAngleDeg, endAngleDeg }` |
-| `Ellipse` | `{ center: {x,y,z}, majorRadius, minorRadius }` |
-| `Polyline` | `{ points: Array<{x,y,z}>, closed }` |
-| `Text` | `{ position: {x,y,z}, text, height }` |
-| `MText` | `{ position: {x,y,z}, text, height }` |
-| `Point` | `{ position: {x,y,z} }` |
-| `Ray` / `Xline` | `{ basePoint: {x,y,z}, unitDir: {x,y,z} }` |
-| `BlockReference`（Insert） | `{ name, position: {x,y,z}, rotation, scale: {x,y,z} }` |
+| Typ entity                          | Pole `geometry`                                                                                                                                                                                                                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Circle`                            | `{ center, radius, area, circumference, closed }`                                                                                                                                                                                                                                                        |
+| `Line`                              | `{ start, end, length, midPoint, direction, closed }`                                                                                                                                                                                                                                                    |
+| `Arc`                               | `{ center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg, length, area, startPoint, endPoint, midPoint, closed }`                                                                                                                                                                             |
+| `Ellipse`                           | `{ center, majorAxis, majorRadius, minorRadius, startAngle, endAngle, startAngleDeg, endAngleDeg, area, isCircular, closed }`                                                                                                                                                                            |
+| `Polyline`                          | `{ points, vertices: [{ bulge, startWidth, endWidth }], bulges, hasBulges, hasWidths, closed, elevation, length, area }`                                                                                                                                                                                 |
+| `2dPolyline`                        | `{ points, vertices, bulges, hasBulges, closed, polyType, elevation, length, area }`                                                                                                                                                                                                                     |
+| `3dPolyline`                        | `{ points, closed, polyType, length }`                                                                                                                                                                                                                                                                   |
+| `Spline`                            | `{ points, controlPoints, fitPoints, knots, weights, degree, length, area, isFitPointSpline, isControlPointSpline, startPoint, endPoint, closed, normal }`                                                                                                                                               |
+| `Text`                              | `{ position, text, height, rotation, styleName, alignmentPoint, hasAlignmentPoint, oblique, obliqueDeg, horizontalMode, verticalMode, widthFactor, isBackward, isUpsideDown }`                                                                                                                           |
+| `MText`                             | `{ position, text, plainText, height, width, extentsWidth, rotation, styleName, attachmentPoint, direction, lineSpacingFactor, lineSpacingStyle, backgroundFill, backgroundFillColor, backgroundScaleFactor, drawingDirection, columnType, columnCount, columnWidth, columnGutter, columnFlowReversed }` |
+| `Attribute` / `AttributeDefinition` | Textová pole navíc `{ tag, invisible }` apod.                                                                                                                                                                                                                                                            |
+| `Point`                             | `{ position, ecsRotation }`                                                                                                                                                                                                                                                                              |
+| `Ray` / `Xline`                     | `{ basePoint, unitDir }`                                                                                                                                                                                                                                                                                 |
+| `BlockReference`（Insert）          | `{ name, effectiveName, isDynamicBlock, position, rotation, scale, columnCount, rowCount, columnSpacing, rowSpacing, blockTransform, attributes: [{ tag, text, position, invisible }] }`                                                                                                                 |
+| `Table`                             | Pole reference bloku navíc `{ rows, columns, attachmentPoint, rowHeights, columnWidths, tableWidth, tableHeight, cells }`                                                                                                                                                                                |
+| `Hatch`                             | `{ patternName, hatchStyle, isSolidFill, isHatch, isGradient, area, loops: [{ closed, points, length }], gradient* }`                                                                                                                                                                                    |
 
 Pole úhlů `startAngle` / `endAngle` používají radiány, `startAngleDeg` / `endAngleDeg` používají stupně.
+`plainText` má odstraněné řídicí kódy MTEXT (`\P`, `\fSimSun|b0|i0;`, složené závorky), takže je přímo prohledávatelné.
+`measurement` kóty se vypočte z definičních bodů, když entita neuchovává hodnotu.
 
 `geometry` je vyplněna pro každý konkrétní typ entity v data-model, včetně `Hatch`, `Spline`, `Leader`, `MLeader`, `MLine`, kót, `RasterImage`, `Viewport`, `3dSolid` a `ProxyEntity`. Binární data ACIS, OLE a proxy grafiky se nekopírují.
 
@@ -122,31 +145,31 @@ Pole úhlů `startAngle` / `endAngle` používají radiány, `startAngleDeg` / `
 
 Jen pro čtení, všechny tabulky symbolů jako `AcDbDatabase.tables`. Každá tabulka je `{ id, records }`. Záznam má alespoň `id` a `name`.
 
-| Vlastnost | Obsah |
-|------|------|
-| `appIdTable` | Registrované názvy aplikací |
-| `blockTable` | Definice bloků. Entity jsou v `cad.blocks` |
-| `dimStyleTable` | Kótovací styly |
-| `linetypeTable` | Typy čar |
-| `textStyleTable` | Styly textu |
-| `ucsTable` | Pojmenované USS |
-| `viewTable` | Pojmenované pohledy |
-| `layerTable` | Hladiny: `color`, `linetype`, `lineWeight`, `isOff`, `isFrozen`, `isLocked`, `isPlottable` |
-| `viewportTable` | Záznamy VPORT modelového prostoru, ne entity `Viewport` ve výkresovém prostoru |
+| Vlastnost        | Obsah                                                                                      |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| `appIdTable`     | Registrované názvy aplikací                                                                |
+| `blockTable`     | Definice bloků. Entity jsou v `cad.blocks`                                                 |
+| `dimStyleTable`  | Kótovací styly                                                                             |
+| `linetypeTable`  | Typy čar                                                                                   |
+| `textStyleTable` | Styly textu                                                                                |
+| `ucsTable`       | Pojmenované USS                                                                            |
+| `viewTable`      | Pojmenované pohledy                                                                        |
+| `layerTable`     | Hladiny: `color`, `linetype`, `lineWeight`, `isOff`, `isFrozen`, `isLocked`, `isPlottable` |
+| `viewportTable`  | Záznamy VPORT modelového prostoru, ne entity `Viewport` ve výkresovém prostoru             |
 
 ## cad.blocks
 
 Všechny definice bloků, obdobně jako sekce BLOCKS v DXF, včetně `*Model_Space` a `*Paper_Space`.
 
-| Pole | Popis |
-|------|------|
-| `id` | ID záznamu tabulky bloků a `ownerId` entit v bloku |
-| `name` | Název bloku |
-| `origin` | Vztažný bod `{ x, y, z }` |
-| `isModelSpace` / `isPaperSpace` | Modelový / výkresový prostor |
-| `flags` | Skupinový kód 70 objektu BLOCK |
-| `pathName` / `isXref` | Cesta a příznak externí reference |
-| `entities` | Snímky entit uložených přímo v bloku |
+| Pole                            | Popis                                              |
+| ------------------------------- | -------------------------------------------------- |
+| `id`                            | ID záznamu tabulky bloků a `ownerId` entit v bloku |
+| `name`                          | Název bloku                                        |
+| `origin`                        | Vztažný bod `{ x, y, z }`                          |
+| `isModelSpace` / `isPaperSpace` | Modelový / výkresový prostor                       |
+| `flags`                         | Skupinový kód 70 objektu BLOCK                     |
+| `pathName` / `isXref`           | Cesta a příznak externí reference                  |
+| `entities`                      | Snímky entit uložených přímo v bloku               |
 
 ## cad.selection
 
@@ -238,7 +261,6 @@ cad.file.saveDxf('./plan-out.dxf')
 // or: cad.file.saveDxf({ path: './plan-out.dxf' })
 ```
 
-
 ### `cad.file.savePdf(path?)`
 
 Queues a PDF export after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Returns `{ queued: true, index, fileName }`.
@@ -260,17 +282,18 @@ cad.file.saveHtml({ path: './plan.zip', exportFormat: 'multi' })
 
 Numeric helpers for self-check after drawing. Prefer these over hand-rolled `Math.hypot` / `atan2`. Points are `{ x, y }` in WCS.
 
-| Method | Returns |
-|--------|---------|
-| `cad.measure.distance(a, b)` | Distance between two points |
-| `cad.measure.angleDeg(a, b)` | Bearing of a→b from +X, degrees in (-180, 180] |
-| `cad.measure.angleDeg(a, b, c)` | Interior angle at b (a–b–c), degrees in [0, 180] |
-| `cad.measure.deltaAngleDeg(fromDeg, toDeg)` | Smallest absolute bearing difference in [0, 180] |
-| `cad.measure.center(id)` | Circle/arc/ellipse center, or point/text position; else `undefined` |
-| `cad.measure.radius(id)` | Circle/arc radius or ellipse majorRadius; else `undefined` |
-| `cad.measure.length(id)` | Line length or polyline/spline path length; else `undefined` |
-| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`) |
-| `cad.measure.report(checks)` | `{ ok, checks }` — `ok` is true iff every check passed |
+| Method                                                  | Returns                                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `cad.measure.distance(a, b)`                            | Distance between two points                                                           |
+| `cad.measure.angleDeg(a, b)`                            | Bearing of a→b from +X, degrees in (-180, 180]                                        |
+| `cad.measure.angleDeg(a, b, c)`                         | Interior angle at b (a–b–c), degrees in [0, 180]                                      |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)`             | Smallest absolute bearing difference in [0, 180]                                      |
+| `cad.measure.center(id)`                                | Circle/arc/ellipse center, or point/text position; else `undefined`                   |
+| `cad.measure.radius(id)`                                | Circle/arc radius or ellipse majorRadius; else `undefined`                            |
+| `cad.measure.length(id)`                                | Line length, or polyline/spline/2dPolyline/3dPolyline path length; else `undefined`   |
+| `cad.measure.area(id)`                                  | Area reported by the entity, or polygon area of its boundary points; else `undefined` |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`)                         |
+| `cad.measure.report(checks)`                            | `{ ok, checks }` — `ok` is true iff every check passed                                |
 
 Recommended return shape after a non-trivial draw:
 
@@ -305,31 +328,31 @@ Metody dostupné v transakci:
 
 ### Metody kreslení
 
-| Metoda | Parametry | Návratová hodnota |
-|------|------|--------|
-| `tx.drawLine({ start, end, layer? })` | `start/end: {x,y}` | ID nové entity |
-| `tx.drawCircle({ center, radius, layer? })` | `center: {x,y}` | ID nové entity |
-| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })` | `center: {x,y}` | ID nové entity |
-| `tx.drawRectangle({ corner1, corner2, layer? })` | `corner1/corner2: {x,y}` | ID nové entity |
-| `tx.drawPolyline({ points, closed?, layer? })` | `points: Array<{x,y}>` | ID nové entity |
-| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}` | ID nové entity |
-| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })` | `boundary: Array<{x,y}>` (min 3) | ID nové entity |
-| `tx.drawPoint({ position, layer? })` | `position: {x,y}` | ID nové entity |
-| `tx.drawRay({ start, through, layer? })` | `start/through: {x,y}` | ID nové entity |
-| `tx.drawXline({ start, through, layer? })` | `start/through: {x,y}` | ID nové entity |
-| `tx.drawSpline({ points, closed?, layer? })` | `points: Array<{x,y}>` | ID nové entity |
-| `tx.drawText({ position, text, height?, layer? })` | `position: {x,y}` | ID nové entity |
+| Metoda                                                                                                     | Parametry                        | Návratová hodnota |
+| ---------------------------------------------------------------------------------------------------------- | -------------------------------- | ----------------- |
+| `tx.drawLine({ start, end, layer? })`                                                                      | `start/end: {x,y}`               | ID nové entity    |
+| `tx.drawCircle({ center, radius, layer? })`                                                                | `center: {x,y}`                  | ID nové entity    |
+| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })`                                       | `center: {x,y}`                  | ID nové entity    |
+| `tx.drawRectangle({ corner1, corner2, layer? })`                                                           | `corner1/corner2: {x,y}`         | ID nové entity    |
+| `tx.drawPolyline({ points, closed?, layer? })`                                                             | `points: Array<{x,y}>`           | ID nové entity    |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}`                  | ID nové entity    |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })`                        | `boundary: Array<{x,y}>` (min 3) | ID nové entity    |
+| `tx.drawPoint({ position, layer? })`                                                                       | `position: {x,y}`                | ID nové entity    |
+| `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`           | ID nové entity    |
+| `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | ID nové entity    |
+| `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | ID nové entity    |
+| `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | ID nové entity    |
 
 ### Metody úprav
 
-| Metoda | Parametry | Návratová hodnota |
-|------|------|--------|
-| `tx.erase(ids)` | `string[]` | Počet smazaných entit |
-| `tx.setLayer(ids, layer)` | `string[], string` | — |
-| `tx.move(ids, dx, dy)` | `string[], number, number` | Počet přesunutých entit |
-| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number` | Počet otočených entit |
-| `tx.createLayer(name)` | `string` | — |
-| `tx.setCurrentLayer(name)` | `string` | — |
+| Metoda                             | Parametry                  | Návratová hodnota       |
+| ---------------------------------- | -------------------------- | ----------------------- |
+| `tx.erase(ids)`                    | `string[]`                 | Počet smazaných entit   |
+| `tx.setLayer(ids, layer)`          | `string[], string`         | —                       |
+| `tx.move(ids, dx, dy)`             | `string[], number, number` | Počet přesunutých entit |
+| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number`  | Počet otočených entit   |
+| `tx.createLayer(name)`             | `string`                   | —                       |
+| `tx.setCurrentLayer(name)`         | `string`                   | —                       |
 
 ## cad.log
 

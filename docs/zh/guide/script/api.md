@@ -43,13 +43,13 @@ title: 脚本 API
 
 返回当前图纸的静态信息。
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `title` | `string` | 图纸标题 |
-| `currentLayer` | `string` | 当前图层名 |
-| `units` | `number` | 插入单位（INSUNITS） |
-| `layers` | `Array<{ name, isOn, isFrozen, isLocked }>` | 所有图层列表 |
-| `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | 模型空间范围 |
+| 字段           | 类型                                          | 说明                 |
+| -------------- | --------------------------------------------- | -------------------- |
+| `title`        | `string`                                      | 图纸标题             |
+| `currentLayer` | `string`                                      | 当前图层名           |
+| `units`        | `number`                                      | 插入单位（INSUNITS） |
+| `layers`       | `Array<{ name, isOn, isFrozen, isLocked }>`   | 所有图层列表         |
+| `extents`      | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | 模型空间范围         |
 
 ```javascript
 const info = cad.drawing
@@ -90,68 +90,86 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 ### 实体快照（EntitySnapshot）
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | `string` | 实体对象 ID |
-| `ownerId` | `string` | 所属块表记录的 ID。属性实体则为所属块参照的 ID |
-| `type` | `string` | 实体类型，不含 `AcDb` 前缀，如 `Circle`、`Line` |
-| `layer` | `string` | 所在图层名 |
-| `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | 世界坐标系范围 |
-| `geometry` | `object \| undefined` | 类型相关的几何数据 |
+| 字段            | 类型                                          | 说明                                            |
+| --------------- | --------------------------------------------- | ----------------------------------------------- |
+| `id`            | `string`                                      | 实体对象 ID                                     |
+| `ownerId`       | `string`                                      | 所属块表记录的 ID。属性实体则为所属块参照的 ID  |
+| `type`          | `string`                                      | 实体类型，不含 `AcDb` 前缀，如 `Circle`、`Line` |
+| `layer`         | `string`                                      | 所在图层名                                      |
+| `color`         | `EntityColor`                                 | 存储颜色（未解析 ByLayer / ByBlock）            |
+| `resolvedColor` | `EntityColor`                                 | 已解析 ByLayer / ByBlock 的颜色                 |
+| `lineType`      | `string`                                      | 线型名（`ByLayer` / `ByBlock` 按存储值返回）    |
+| `lineWeight`    | `number`                                      | `AcGiLineWeight` 值，负值表示 ByLayer / ByBlock |
+| `linetypeScale` | `number`                                      | 线型比例                                        |
+| `visibility`    | `boolean`                                     | `false` 表示实体隐藏                            |
+| `transparency`  | `EntityTransparency`                          | 透明度方式与 alpha                              |
+| `thickness`     | `number \| undefined`                         | 拉伸厚度（该类型有时）                          |
+| `normal`        | `{x,y,z} \| undefined`                        | 拉伸方向 / 平面法向（该类型有时）               |
+| `extents`       | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | 世界坐标系范围                                  |
+| `geometry`      | `object \| undefined`                         | 类型相关的几何数据                              |
+
+`EntityColor` 为 `{ red?, green?, blue?, hex?, colorIndex?, isByColor, isByACI, isByLayer, isByBlock, isForeground }`。
+ByLayer / ByBlock 颜色没有 RGB，需要真实颜色时读取 `resolvedColor`。
+`EntityTransparency` 为 `{ method, alpha, percentage?, isByAlpha, isByLayer, isByBlock }`。
+
+`cad.entities.where(...)` 的谓词中这些显示属性是懒读的：只解析谓词访问到的字段，且只有匹配的实体才会转换成完整快照。
 
 `geometry` 覆盖 `@mlightcad/data-model` 中的全部具体实体类型。常用字段如下：
 
-| 实体类型 | `geometry` 字段 |
-|----------|----------------|
-| `Circle` | `{ center, radius }` |
-| `Line` | `{ start, end }` |
-| `Arc` | `{ center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg }` |
-| `Ellipse` | `{ center, majorAxis, majorRadius, minorRadius, startAngle, endAngle, startAngleDeg, endAngleDeg }` |
-| `Polyline` | `{ points, closed, elevation }` |
-| `2dPolyline` / `3dPolyline` | `{ points, closed, polyType }` |
-| `Spline` | `{ points, closed, fitTolerance, knotTolerance, normal }` |
-| `Point` / `2dVertex` / `3dVertex` | `{ position }` |
-| `Ray` / `Xline` | `{ basePoint, unitDir }` |
-| `Text` | `{ position, text, height, rotation, styleName }` |
-| `MText` | `{ position, text, height, width, rotation, styleName, attachmentPoint }` |
-| `Attribute` | 文字字段，另加 `{ tag, invisible }` |
-| `AttributeDefinition` | 文字字段，另加 `{ tag, prompt, invisible }` |
-| `ArcAlignedText` | `{ text, height, center, radius, startAngle, endAngle, styleName, arcId }` |
-| `BlockReference` | `{ name, position, rotation, scale }` |
-| `Table` | 块参照字段，另加 `{ rows, columns }` |
-| `Hatch` | `{ patternName, patternType, patternAngle, patternScale, isSolidFill, isGradient, elevation, associative, boundary }` |
-| `Leader` | `{ vertices, dimensionStyle, hasArrowHead }` |
-| `MLeader` | `{ contents, textLocation, textHeight, textRotation, landingPoint, contentType, numberOfLeaders }` |
-| `MLine` | `{ styleName, scale, justification, closed, startPosition, vertices }` |
-| `Solid` / `Trace` / `Face` | `{ points }` |
-| `PolyFaceMesh` | `{ vertices, faces }` |
-| `PolygonMesh` | `{ mCount, nCount, closedM, closedN, vertices }` |
-| `RasterImage` / `Wipeout` | `{ position, rotation, width, height, imageFileName, imageDisplayName, isClipped }` |
-| `Ole2Frame` | `{ upperLeft, lowerRight, userType, oleObjectType }` |
-| `Viewport` | `{ number, center, width, height, viewCenter, viewTarget, viewHeight, viewTwistAngle }` |
-| `Shape` | `{ name, position, size, rotation, styleName }` |
-| `Fcf` | `{ position, text, dimensionStyle }` |
-| `3dSolid` | `{ version, guid, hasRenderableGeometry }`。不包含 ACIS 体数据 |
-| `ProxyEntity` | `{ originalDxfName, originalClassName, applicationName }`。不包含代理图形二进制 |
-| 各类 `Dimension` | `{ text, measurement, textPosition, styleName, rotation }`，并带定义点，如 `xLine1Point`、`chordPoint`、`definingPoint` |
+| 实体类型                          | `geometry` 字段                                                                                                                                                                                                                                                                                                                                             |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Circle`                          | `{ center, radius, area, circumference, closed }`                                                                                                                                                                                                                                                                                                           |
+| `Line`                            | `{ start, end, length, midPoint, direction, closed }`                                                                                                                                                                                                                                                                                                       |
+| `Arc`                             | `{ center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg, length, area, startPoint, endPoint, midPoint, closed }`                                                                                                                                                                                                                                |
+| `Ellipse`                         | `{ center, majorAxis, majorRadius, minorRadius, startAngle, endAngle, startAngleDeg, endAngleDeg, area, isCircular, closed }`                                                                                                                                                                                                                               |
+| `Polyline`                        | `{ points, vertices: [{ bulge, startWidth, endWidth }], bulges, hasBulges, hasWidths, closed, elevation, length, area }`                                                                                                                                                                                                                                    |
+| `2dPolyline`                      | `{ points, vertices, bulges, hasBulges, closed, polyType, elevation, length, area }`                                                                                                                                                                                                                                                                        |
+| `3dPolyline`                      | `{ points, closed, polyType, length }`                                                                                                                                                                                                                                                                                                                      |
+| `Spline`                          | `{ points, controlPoints, fitPoints, knots, weights, degree, length, area, isFitPointSpline, isControlPointSpline, startPoint, endPoint, closed, normal }`                                                                                                                                                                                                  |
+| `Point` / `2dVertex` / `3dVertex` | `{ position }`，`Point` 另有 `ecsRotation`                                                                                                                                                                                                                                                                                                                  |
+| `Ray` / `Xline`                   | `{ basePoint, unitDir }`                                                                                                                                                                                                                                                                                                                                    |
+| `Text`                            | `{ position, text, height, rotation, styleName, alignmentPoint, hasAlignmentPoint, oblique, obliqueDeg, horizontalMode, verticalMode, widthFactor, isBackward, isUpsideDown }`                                                                                                                                                                              |
+| `MText`                           | `{ position, text, plainText, height, width, extentsWidth, rotation, styleName, attachmentPoint, direction, lineSpacingFactor, lineSpacingStyle, backgroundFill, backgroundFillColor, backgroundScaleFactor, drawingDirection, columnType, columnCount, columnWidth, columnGutter, columnFlowReversed }`                                                    |
+| `Attribute`                       | 文字字段，另加 `{ tag, invisible, isMTextAttribute, mtextContents }`                                                                                                                                                                                                                                                                                        |
+| `AttributeDefinition`             | 文字字段，另加 `{ tag, prompt, invisible }`                                                                                                                                                                                                                                                                                                                 |
+| `ArcAlignedText`                  | `{ text, height, center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg, styleName, arcId, xScale, characterSpacing, offsetFromArc, leftOffset, rightOffset, alignment, isReverse }`                                                                                                                                                              |
+| `BlockReference`                  | `{ name, effectiveName, isDynamicBlock, position, rotation, scale, columnCount, rowCount, columnSpacing, rowSpacing, blockTransform, attributes: [{ tag, text, position, invisible }] }`                                                                                                                                                                    |
+| `Table`                           | 块参照字段，另加 `{ rows, columns, attachmentPoint, rowHeights, columnWidths, tableWidth, tableHeight, cells }`                                                                                                                                                                                                                                             |
+| `Hatch`                           | `{ patternName, patternType, patternAngle, patternScale, patternDouble, hatchStyle, isSolidFill, isHatch, isGradient, backgroundColor, elevation, associative, area, gradientAngle, gradientShift, gradientType, gradientName, gradientOneColorMode, shadeTintValue, gradientStartColor, gradientEndColor, boundary, loops: [{ closed, points, length }] }` |
+| `Leader`                          | `{ vertices, dimensionStyle, hasArrowHead, hasHookLine, isSplined, numVertices, textHeight, textWidth, annoType, associatedAnnotation }`                                                                                                                                                                                                      |
+| `MLeader`                         | `{ contents, textLocation, textHeight, textWidth, textRotation, landingPoint, contentType, numberOfLeaders, doglegLength, doglegEnabled, leaderLineType, leaderLineColor, leaders: [{ vertices, lastLeaderLinePoint, landingPoint }] }`                                                                                                                     |
+| `MLine`                           | `{ styleName, scale, justification, closed, startPosition, vertices }`                                                                                                                                                                                                                                                                                      |
+| `Solid` / `Trace` / `Face`        | `{ points, area }`                                                                                                                                                                                                                                                                                                                                          |
+| `PolyFaceMesh`                    | `{ vertices, faces }`                                                                                                                                                                                                                                                                                                                                 |
+| `PolygonMesh`                     | `{ mCount, nCount, closedM, closedN, vertices }`                                                                                                                                                                                                                                                                                                      |
+| `RasterImage` / `Wipeout`         | `{ position, rotation, width, height, imageSize, scale, clipBoundary, clipBoundaryType, brightness, contrast, fade, isImageShown, isImageTransparent, imageFileName, imageDisplayName, isClipped }`                                                                                                                                                         |
+| `Ole2Frame`                       | `{ upperLeft, lowerRight, userType, oleObjectType }`                                                                                                                                                                                                                                                                                                        |
+| `Viewport`                        | `{ number, center, width, height, viewCenter, viewTarget, viewDirection, viewHeight, viewTwistAngle, sheetName, status, frozenLayerIds }`                                                                                                                                                                                                                   |
+| `Shape`                           | `{ name, position, size, rotation, styleName, shapeNumber, widthFactor, oblique, isPlanar }`                                                                                                                                                                                                                                                                |
+| `Fcf`                             | `{ position, text, dimensionStyle, textHeight, direction, annotative }`                                                                                                                                                                                                                                                                                     |
+| `3dSolid`                         | `{ version, guid, hasRenderableGeometry }`。不包含 ACIS 体数据                                                                                                                                                                                                                                                                                              |
+| `ProxyEntity`                     | `{ originalDxfName, originalClassName, applicationName }`。不包含代理图形二进制                                                                                                                                                                                                                                                                             |
+| 各类 `Dimension`                  | `{ text, annotationText, measurement, dimensionType, textPosition, styleName, rotation, horizontalRotation, horizontalRotationDeg, attachmentPoint, textLineSpacingFactor, textLineSpacingStyle, normal }`，并带定义点，如 `xLine1Point`、`chordPoint`、`definingPoint`                                                                                     |
 
 点均为 `{ x, y, z }`。角度字段 `startAngle` / `endAngle` 使用弧度，`startAngleDeg` / `endAngleDeg` 使用度数。
+`plainText` 已去掉 MTEXT 控制码（`\P`、`\fSimSun|b0|i0;`、花括号），可直接用于检索。
+标注的 `measurement` 在实体没有存值时由定义点计算得出。
 
 ## cad.tables
 
 只读访问数据库中的全部符号表，对应 `AcDbDatabase.tables`。每张表都是 `{ id, records }`。`records` 中的每一项至少包含 `id` 和 `name`，并带有该表特有的字段。
 
-| 属性 | 内容 |
-|------|------|
-| `appIdTable` | 已注册的应用程序名 |
-| `blockTable` | 块表记录。这里只有定义信息，块内实体在 `cad.blocks` |
-| `dimStyleTable` | 标注样式，包含 `dimtxt`、`dimscale` 等标注变量 |
-| `linetypeTable` | 线型，包含 `numDashes`、`patternLength`、`comments` |
-| `textStyleTable` | 文字样式，包含 `fileName`、`textSize`、`xScale` |
-| `ucsTable` | 命名用户坐标系，包含 `origin`、`xAxis`、`yAxis` |
-| `viewTable` | 命名视图 |
-| `layerTable` | 图层，包含 `color`、`linetype`、`lineWeight`、`isOff`、`isFrozen`、`isLocked`、`isPlottable` |
-| `viewportTable` | 模型空间视口表记录（`*Active` 等 VPORT），不是图纸空间里的 `Viewport` 实体 |
+| 属性             | 内容                                                                                         |
+| ---------------- | -------------------------------------------------------------------------------------------- |
+| `appIdTable`     | 已注册的应用程序名                                                                           |
+| `blockTable`     | 块表记录。这里只有定义信息，块内实体在 `cad.blocks`                                          |
+| `dimStyleTable`  | 标注样式，包含 `dimtxt`、`dimscale` 等标注变量                                               |
+| `linetypeTable`  | 线型，包含 `numDashes`、`patternLength`、`comments`                                          |
+| `textStyleTable` | 文字样式，包含 `fileName`、`textSize`、`xScale`                                              |
+| `ucsTable`       | 命名用户坐标系，包含 `origin`、`xAxis`、`yAxis`                                              |
+| `viewTable`      | 命名视图                                                                                     |
+| `layerTable`     | 图层，包含 `color`、`linetype`、`lineWeight`、`isOff`、`isFrozen`、`isLocked`、`isPlottable` |
+| `viewportTable`  | 模型空间视口表记录（`*Active` 等 VPORT），不是图纸空间里的 `Viewport` 实体                   |
 
 ```javascript
 const layers = cad.tables.layerTable.records
@@ -166,18 +184,18 @@ return layers
 
 返回数据库中的全部块定义，对应 DXF 的 BLOCKS 段。模型空间 `*Model_Space` 和各个图纸空间 `*Paper_Space` 也在其中。
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | `string` | 块表记录 ID，也是块内实体的 `ownerId` |
-| `name` | `string` | 块名 |
-| `origin` | `{ x, y, z }` | 基点 |
-| `isModelSpace` | `boolean` | 是否为模型空间 |
-| `isPaperSpace` | `boolean` | 是否为图纸空间 |
-| `flags` | `number` | BLOCK 组码 70 |
-| `pathName` | `string` | 外部参照路径，本地块为空字符串 |
-| `isXref` | `boolean` | 是否为外部参照 |
-| `layoutId` | `string \| undefined` | 关联的布局 ID |
-| `entities` | `EntitySnapshot[]` | 直接存放在该块中的实体 |
+| 字段           | 类型                  | 说明                                  |
+| -------------- | --------------------- | ------------------------------------- |
+| `id`           | `string`              | 块表记录 ID，也是块内实体的 `ownerId` |
+| `name`         | `string`              | 块名                                  |
+| `origin`       | `{ x, y, z }`         | 基点                                  |
+| `isModelSpace` | `boolean`             | 是否为模型空间                        |
+| `isPaperSpace` | `boolean`             | 是否为图纸空间                        |
+| `flags`        | `number`              | BLOCK 组码 70                         |
+| `pathName`     | `string`              | 外部参照路径，本地块为空字符串        |
+| `isXref`       | `boolean`             | 是否为外部参照                        |
+| `layoutId`     | `string \| undefined` | 关联的布局 ID                         |
+| `entities`     | `EntitySnapshot[]`    | 直接存放在该块中的实体                |
 
 ```javascript
 const widget = cad.blocks.find(block => block.name === 'Widget')
@@ -277,7 +295,6 @@ cad.file.saveDxf('./plan-out.dxf')
 // 或：cad.file.saveDxf({ path: './plan-out.dxf' })
 ```
 
-
 ### `cad.file.savePdf(path?)`
 
 Queues a PDF export after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Returns `{ queued: true, index, fileName }`.
@@ -299,17 +316,18 @@ cad.file.saveHtml({ path: './plan.zip', exportFormat: 'multi' })
 
 绘图后用于数值自检的辅助 API。优先使用这些方法，而不是手写 `Math.hypot` / `atan2`。点均为 WCS 下的 `{ x, y }`。
 
-| 方法 | 返回值 |
-|------|--------|
-| `cad.measure.distance(a, b)` | 两点距离 |
-| `cad.measure.angleDeg(a, b)` | a→b 相对 +X 的方位角，度，范围 (-180, 180] |
-| `cad.measure.angleDeg(a, b, c)` | 以 b 为顶点的内角 (a–b–c)，度，范围 [0, 180] |
-| `cad.measure.deltaAngleDeg(fromDeg, toDeg)` | 两方位角的最小绝对差，范围 [0, 180] |
-| `cad.measure.center(id)` | 圆/弧/椭圆圆心，或点/文字位置；否则 `undefined` |
-| `cad.measure.radius(id)` | 圆/弧半径或椭圆长半轴；否则 `undefined` |
-| `cad.measure.length(id)` | 直线长度或多段线/样条路径长；否则 `undefined` |
-| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }`（默认容差 `1e-3`） |
-| `cad.measure.report(checks)` | `{ ok, checks }` — 全部通过时 `ok` 为 true |
+| 方法                                                    | 返回值                                                                 |
+| ------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `cad.measure.distance(a, b)`                            | 两点距离                                                               |
+| `cad.measure.angleDeg(a, b)`                            | a→b 相对 +X 的方位角，度，范围 (-180, 180]                             |
+| `cad.measure.angleDeg(a, b, c)`                         | 以 b 为顶点的内角 (a–b–c)，度，范围 [0, 180]                           |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)`             | 两方位角的最小绝对差，范围 [0, 180]                                    |
+| `cad.measure.center(id)`                                | 圆/弧/椭圆圆心，或点/文字位置；否则 `undefined`                        |
+| `cad.measure.radius(id)`                                | 圆/弧半径或椭圆长半轴；否则 `undefined`                                |
+| `cad.measure.length(id)`                                | 直线长度，或多段线/样条/2dPolyline/3dPolyline 路径长；否则 `undefined` |
+| `cad.measure.area(id)`                                  | 实体报告的面积；无面积时按边界点用多边形面积计算；否则 `undefined`     |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }`（默认容差 `1e-3`）                  |
+| `cad.measure.report(checks)`                            | `{ ok, checks }` — 全部通过时 `ok` 为 true                             |
 
 非平凡绘制后推荐的返回格式：
 
@@ -344,31 +362,31 @@ cad.edit.transaction('批量修改', tx => {
 
 ### 绘图方法
 
-| 方法 | 参数 | 返回值 |
-|------|------|--------|
-| `tx.drawLine({ start, end, layer? })` | `start/end: {x,y}` | 新实体 ID |
-| `tx.drawCircle({ center, radius, layer? })` | `center: {x,y}` | 新实体 ID |
-| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })` | `center: {x,y}` | 新实体 ID |
-| `tx.drawRectangle({ corner1, corner2, layer? })` | `corner1/corner2: {x,y}` | 新实体 ID |
-| `tx.drawPolyline({ points, closed?, layer? })` | `points: Array<{x,y}>` | 新实体 ID |
-| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}` | 新实体 ID |
-| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })` | `boundary: Array<{x,y}>`（至少 3 点） | 新实体 ID |
-| `tx.drawPoint({ position, layer? })` | `position: {x,y}` | 新实体 ID |
-| `tx.drawRay({ start, through, layer? })` | `start/through: {x,y}` | 新实体 ID |
-| `tx.drawXline({ start, through, layer? })` | `start/through: {x,y}` | 新实体 ID |
-| `tx.drawSpline({ points, closed?, layer? })` | `points: Array<{x,y}>` | 新实体 ID |
-| `tx.drawText({ position, text, height?, layer? })` | `position: {x,y}` | 新实体 ID |
+| 方法                                                                                                       | 参数                                  | 返回值    |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------- | --------- |
+| `tx.drawLine({ start, end, layer? })`                                                                      | `start/end: {x,y}`                    | 新实体 ID |
+| `tx.drawCircle({ center, radius, layer? })`                                                                | `center: {x,y}`                       | 新实体 ID |
+| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })`                                       | `center: {x,y}`                       | 新实体 ID |
+| `tx.drawRectangle({ corner1, corner2, layer? })`                                                           | `corner1/corner2: {x,y}`              | 新实体 ID |
+| `tx.drawPolyline({ points, closed?, layer? })`                                                             | `points: Array<{x,y}>`                | 新实体 ID |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}`                       | 新实体 ID |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })`                        | `boundary: Array<{x,y}>`（至少 3 点） | 新实体 ID |
+| `tx.drawPoint({ position, layer? })`                                                                       | `position: {x,y}`                     | 新实体 ID |
+| `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`                | 新实体 ID |
+| `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`                | 新实体 ID |
+| `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`                | 新实体 ID |
+| `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                     | 新实体 ID |
 
 ### 编辑方法
 
-| 方法 | 参数 | 返回值 |
-|------|------|--------|
-| `tx.erase(ids)` | `string[]` | 删除的实体数量 |
-| `tx.setLayer(ids, layer)` | `string[], string` | — |
-| `tx.move(ids, dx, dy)` | `string[], number, number` | 移动的实体数量 |
-| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number` | 旋转的实体数量 |
-| `tx.createLayer(name)` | `string` | — |
-| `tx.setCurrentLayer(name)` | `string` | — |
+| 方法                               | 参数                       | 返回值         |
+| ---------------------------------- | -------------------------- | -------------- |
+| `tx.erase(ids)`                    | `string[]`                 | 删除的实体数量 |
+| `tx.setLayer(ids, layer)`          | `string[], string`         | —              |
+| `tx.move(ids, dx, dy)`             | `string[], number, number` | 移动的实体数量 |
+| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number`  | 旋转的实体数量 |
+| `tx.createLayer(name)`             | `string`                   | —              |
+| `tx.setCurrentLayer(name)`         | `string`                   | —              |
 
 ## cad.log
 

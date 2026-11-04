@@ -43,13 +43,13 @@ Besides the banned objects above, other browser globals (such as `alert`, `setTi
 
 Returns static information about the current drawing.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `title` | `string` | Drawing title |
-| `currentLayer` | `string` | Current layer name |
-| `units` | `number` | Insertion units (INSUNITS) |
-| `layers` | `Array<{ name, isOn, isFrozen, isLocked }>` | List of all layers |
-| `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | Model space extents |
+| Field          | Type                                          | Description                |
+| -------------- | --------------------------------------------- | -------------------------- |
+| `title`        | `string`                                      | Drawing title              |
+| `currentLayer` | `string`                                      | Current layer name         |
+| `units`        | `number`                                      | Insertion units (INSUNITS) |
+| `layers`       | `Array<{ name, isOn, isFrozen, isLocked }>`   | List of all layers         |
+| `extents`      | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | Model space extents        |
 
 ```javascript
 const info = cad.drawing
@@ -90,68 +90,87 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 ### Entity Snapshot (EntitySnapshot)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `string` | Entity object ID |
-| `ownerId` | `string` | Owning block table record ID, or the block reference ID for an attribute |
-| `type` | `string` | Entity type, without the `AcDb` prefix, e.g. `Circle`, `Line` |
-| `layer` | `string` | Layer name the entity resides on |
-| `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | World coordinate system extents |
-| `geometry` | `object \| undefined` | Type-specific geometry data |
+| Field           | Type                                          | Description                                                              |
+| --------------- | --------------------------------------------- | ------------------------------------------------------------------------ |
+| `id`            | `string`                                      | Entity object ID                                                         |
+| `ownerId`       | `string`                                      | Owning block table record ID, or the block reference ID for an attribute |
+| `type`          | `string`                                      | Entity type, without the `AcDb` prefix, e.g. `Circle`, `Line`            |
+| `layer`         | `string`                                      | Layer name the entity resides on                                         |
+| `color`         | `EntityColor`                                 | Stored color, before ByLayer / ByBlock resolution                        |
+| `resolvedColor` | `EntityColor`                                 | Color with ByLayer / ByBlock already resolved                            |
+| `lineType`      | `string`                                      | Linetype name (`ByLayer` / `ByBlock` are kept as stored)                 |
+| `lineWeight`    | `number`                                      | `AcGiLineWeight` value; negative values mean ByLayer / ByBlock           |
+| `linetypeScale` | `number`                                      | Linetype scale factor                                                    |
+| `visibility`    | `boolean`                                     | `false` when the entity is hidden                                        |
+| `transparency`  | `EntityTransparency`                          | Transparency method plus alpha                                           |
+| `thickness`     | `number \| undefined`                         | Extrusion thickness, when the type has one                               |
+| `normal`        | `{x,y,z} \| undefined`                        | Extrusion / plane normal, when the type has one                          |
+| `extents`       | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | World coordinate system extents                                          |
+| `geometry`      | `object \| undefined`                         | Type-specific geometry data                                              |
+
+`EntityColor` is `{ red?, green?, blue?, hex?, colorIndex?, isByColor, isByACI, isByLayer, isByBlock, isForeground }`.
+ByLayer / ByBlock colors carry no RGB; read `resolvedColor` when an actual color is needed.
+`EntityTransparency` is `{ method, alpha, percentage?, isByAlpha, isByLayer, isByBlock }`.
+
+Display properties are read lazily inside `cad.entities.where(...)` predicates: only the fields a
+predicate touches are resolved, and only matching entities are converted into full snapshots.
 
 `geometry` is filled for every concrete entity type in `@mlightcad/data-model`. Common fields:
 
-| Entity Type | `geometry` Fields |
-|-------------|-------------------|
-| `Circle` | `{ center, radius }` |
-| `Line` | `{ start, end }` |
-| `Arc` | `{ center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg }` |
-| `Ellipse` | `{ center, majorAxis, majorRadius, minorRadius, startAngle, endAngle, startAngleDeg, endAngleDeg }` |
-| `Polyline` | `{ points, closed, elevation }` |
-| `2dPolyline` / `3dPolyline` | `{ points, closed, polyType }` |
-| `Spline` | `{ points, closed, fitTolerance, knotTolerance, normal }` |
-| `Point` / `2dVertex` / `3dVertex` | `{ position }` |
-| `Ray` / `Xline` | `{ basePoint, unitDir }` |
-| `Text` | `{ position, text, height, rotation, styleName }` |
-| `MText` | `{ position, text, height, width, rotation, styleName, attachmentPoint }` |
-| `Attribute` | Text fields plus `{ tag, invisible }` |
-| `AttributeDefinition` | Text fields plus `{ tag, prompt, invisible }` |
-| `ArcAlignedText` | `{ text, height, center, radius, startAngle, endAngle, styleName, arcId }` |
-| `BlockReference` | `{ name, position, rotation, scale }` |
-| `Table` | Insert fields plus `{ rows, columns }` |
-| `Hatch` | `{ patternName, patternType, patternAngle, patternScale, isSolidFill, isGradient, elevation, associative, boundary }` |
-| `Leader` | `{ vertices, dimensionStyle, hasArrowHead }` |
-| `MLeader` | `{ contents, textLocation, textHeight, textRotation, landingPoint, contentType, numberOfLeaders }` |
-| `MLine` | `{ styleName, scale, justification, closed, startPosition, vertices }` |
-| `Solid` / `Trace` / `Face` | `{ points }` |
-| `PolyFaceMesh` | `{ vertices, faces }` |
-| `PolygonMesh` | `{ mCount, nCount, closedM, closedN, vertices }` |
-| `RasterImage` / `Wipeout` | `{ position, rotation, width, height, imageFileName, imageDisplayName, isClipped }` |
-| `Ole2Frame` | `{ upperLeft, lowerRight, userType, oleObjectType }` |
-| `Viewport` | `{ number, center, width, height, viewCenter, viewTarget, viewHeight, viewTwistAngle }` |
-| `Shape` | `{ name, position, size, rotation, styleName }` |
-| `Fcf` | `{ position, text, dimensionStyle }` |
-| `3dSolid` | `{ version, guid, hasRenderableGeometry }`. ACIS body data is omitted |
-| `ProxyEntity` | `{ originalDxfName, originalClassName, applicationName }`. Proxy graphics bytes are omitted |
-| Dimension types | `{ text, measurement, textPosition, styleName, rotation }` plus definition points such as `xLine1Point`, `chordPoint`, or `definingPoint` |
+| Entity Type                       | `geometry` Fields                                                                                                                                                                                                                                                                                                                                           |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Circle`                          | `{ center, radius, area, circumference, closed }`                                                                                                                                                                                                                                                                                                           |
+| `Line`                            | `{ start, end, length, midPoint, direction, closed }`                                                                                                                                                                                                                                                                                                       |
+| `Arc`                             | `{ center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg, length, area, startPoint, endPoint, midPoint, closed }`                                                                                                                                                                                                                                |
+| `Ellipse`                         | `{ center, majorAxis, majorRadius, minorRadius, startAngle, endAngle, startAngleDeg, endAngleDeg, area, isCircular, closed }`                                                                                                                                                                                                                               |
+| `Polyline`                        | `{ points, vertices: [{ bulge, startWidth, endWidth }], bulges, hasBulges, hasWidths, closed, elevation, length, area }`                                                                                                                                                                                                                                    |
+| `2dPolyline`                      | `{ points, vertices, bulges, hasBulges, closed, polyType, elevation, length, area }`                                                                                                                                                                                                                                                                        |
+| `3dPolyline`                      | `{ points, closed, polyType, length }`                                                                                                                                                                                                                                                                                                                      |
+| `Spline`                          | `{ points, controlPoints, fitPoints, knots, weights, degree, length, area, isFitPointSpline, isControlPointSpline, startPoint, endPoint, closed, normal }`                                                                                                                                                                                                  |
+| `Point` / `2dVertex` / `3dVertex` | `{ position }`, plus `ecsRotation` for `Point`                                                                                                                                                                                                                                                                                                              |
+| `Ray` / `Xline`                   | `{ basePoint, unitDir }`                                                                                                                                                                                                                                                                                                                                    |
+| `Text`                            | `{ position, text, height, rotation, styleName, alignmentPoint, hasAlignmentPoint, oblique, obliqueDeg, horizontalMode, verticalMode, widthFactor, isBackward, isUpsideDown }`                                                                                                                                                                              |
+| `MText`                           | `{ position, text, plainText, height, width, extentsWidth, rotation, styleName, attachmentPoint, direction, lineSpacingFactor, lineSpacingStyle, backgroundFill, backgroundFillColor, backgroundScaleFactor, drawingDirection, columnType, columnCount, columnWidth, columnGutter, columnFlowReversed }`                                                    |
+| `Attribute`                       | Text fields plus `{ tag, invisible, isMTextAttribute, mtextContents }`                                                                                                                                                                                                                                                                                      |
+| `AttributeDefinition`             | Text fields plus `{ tag, prompt, invisible }`                                                                                                                                                                                                                                                                                                               |
+| `ArcAlignedText`                  | `{ text, height, center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg, styleName, arcId, xScale, characterSpacing, offsetFromArc, leftOffset, rightOffset, alignment, isReverse }`                                                                                                                                                              |
+| `BlockReference`                  | `{ name, effectiveName, isDynamicBlock, position, rotation, scale, columnCount, rowCount, columnSpacing, rowSpacing, blockTransform, attributes: [{ tag, text, position, invisible }] }`                                                                                                                                                                    |
+| `Table`                           | Insert fields plus `{ rows, columns, attachmentPoint, rowHeights, columnWidths, tableWidth, tableHeight, cells }`                                                                                                                                                                                                                                           |
+| `Hatch`                           | `{ patternName, patternType, patternAngle, patternScale, patternDouble, hatchStyle, isSolidFill, isHatch, isGradient, backgroundColor, elevation, associative, area, gradientAngle, gradientShift, gradientType, gradientName, gradientOneColorMode, shadeTintValue, gradientStartColor, gradientEndColor, boundary, loops: [{ closed, points, length }] }` |
+| `Leader`                          | `{ vertices, dimensionStyle, hasArrowHead, hasHookLine, isSplined, numVertices, textHeight, textWidth, annoType, associatedAnnotation }`                                                                                                                                                                                                      |
+| `MLeader`                         | `{ contents, textLocation, textHeight, textWidth, textRotation, landingPoint, contentType, numberOfLeaders, doglegLength, doglegEnabled, leaderLineType, leaderLineColor, leaders: [{ vertices, lastLeaderLinePoint, landingPoint }] }`                                                                                                                     |
+| `MLine`                           | `{ styleName, scale, justification, closed, startPosition, vertices }`                                                                                                                                                                                                                                                                                      |
+| `Solid` / `Trace` / `Face`        | `{ points, area }`                                                                                                                                                                                                                                                                                                                                          |
+| `PolyFaceMesh`                    | `{ vertices, faces }`                                                                                                                                                                                                                                                                                                                                 |
+| `PolygonMesh`                     | `{ mCount, nCount, closedM, closedN, vertices }`                                                                                                                                                                                                                                                                                                      |
+| `RasterImage` / `Wipeout`         | `{ position, rotation, width, height, imageSize, scale, clipBoundary, clipBoundaryType, brightness, contrast, fade, isImageShown, isImageTransparent, imageFileName, imageDisplayName, isClipped }`                                                                                                                                                         |
+| `Ole2Frame`                       | `{ upperLeft, lowerRight, userType, oleObjectType }`                                                                                                                                                                                                                                                                                                        |
+| `Viewport`                        | `{ number, center, width, height, viewCenter, viewTarget, viewDirection, viewHeight, viewTwistAngle, sheetName, status, frozenLayerIds }`                                                                                                                                                                                                                   |
+| `Shape`                           | `{ name, position, size, rotation, styleName, shapeNumber, widthFactor, oblique, isPlanar }`                                                                                                                                                                                                                                                                |
+| `Fcf`                             | `{ position, text, dimensionStyle, textHeight, direction, annotative }`                                                                                                                                                                                                                                                                                     |
+| `3dSolid`                         | `{ version, guid, hasRenderableGeometry }`. ACIS body data is omitted                                                                                                                                                                                                                                                                                       |
+| `ProxyEntity`                     | `{ originalDxfName, originalClassName, applicationName }`. Proxy graphics bytes are omitted                                                                                                                                                                                                                                                                 |
+| Dimension types                   | `{ text, annotationText, measurement, dimensionType, textPosition, styleName, rotation, horizontalRotation, horizontalRotationDeg, attachmentPoint, textLineSpacingFactor, textLineSpacingStyle, normal }` plus definition points such as `xLine1Point`, `chordPoint`, or `definingPoint`                                                                   |
 
 Points are `{ x, y, z }`. `startAngle` / `endAngle` are radians. `startAngleDeg` / `endAngleDeg` are degrees.
+`plainText` has MTEXT formatting codes (`\P`, `\fSimSun|b0|i0;`, braces) stripped, so it can be searched directly.
+`measurement` on a dimension is computed from the definition points when the entity holds no stored value.
 
 ## cad.tables
 
 Read-only access to every symbol table, matching `AcDbDatabase.tables`. Each table is `{ id, records }`. Every record has at least `id` and `name`, plus fields for that table.
 
-| Property | Contents |
-|----------|----------|
-| `appIdTable` | Registered application names |
-| `blockTable` | Block table records. Definitions only; entities are on `cad.blocks` |
-| `dimStyleTable` | Dimension styles, including variables such as `dimtxt` and `dimscale` |
-| `linetypeTable` | Linetypes: `numDashes`, `patternLength`, `comments` |
-| `textStyleTable` | Text styles: `fileName`, `textSize`, `xScale` |
-| `ucsTable` | Named UCSs: `origin`, `xAxis`, `yAxis` |
-| `viewTable` | Named views |
-| `layerTable` | Layers: `color`, `linetype`, `lineWeight`, `isOff`, `isFrozen`, `isLocked`, `isPlottable` |
-| `viewportTable` | Model-space VPORT records (`*Active` and named views), not paper-space `Viewport` entities |
+| Property         | Contents                                                                                   |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| `appIdTable`     | Registered application names                                                               |
+| `blockTable`     | Block table records. Definitions only; entities are on `cad.blocks`                        |
+| `dimStyleTable`  | Dimension styles, including variables such as `dimtxt` and `dimscale`                      |
+| `linetypeTable`  | Linetypes: `numDashes`, `patternLength`, `comments`                                        |
+| `textStyleTable` | Text styles: `fileName`, `textSize`, `xScale`                                              |
+| `ucsTable`       | Named UCSs: `origin`, `xAxis`, `yAxis`                                                     |
+| `viewTable`      | Named views                                                                                |
+| `layerTable`     | Layers: `color`, `linetype`, `lineWeight`, `isOff`, `isFrozen`, `isLocked`, `isPlottable`  |
+| `viewportTable`  | Model-space VPORT records (`*Active` and named views), not paper-space `Viewport` entities |
 
 ```javascript
 const layers = cad.tables.layerTable.records
@@ -166,18 +185,18 @@ A layer color is `{ red, green, blue, colorIndex, isByACI, isByLayer, isByBlock 
 
 Returns every block definition, in the same role as a DXF BLOCKS section. `*Model_Space` and each `*Paper_Space` are included.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `id` | `string` | Block table record ID. Also the `ownerId` of entities in the block |
-| `name` | `string` | Block name |
-| `origin` | `{ x, y, z }` | Base point |
-| `isModelSpace` | `boolean` | True for model space |
-| `isPaperSpace` | `boolean` | True for a paper-space layout block |
-| `flags` | `number` | BLOCK group code 70 |
-| `pathName` | `string` | Xref path. Empty for a local block |
-| `isXref` | `boolean` | True when the block is an external reference |
-| `layoutId` | `string \| undefined` | Associated layout ID |
-| `entities` | `EntitySnapshot[]` | Entities stored directly in the block |
+| Field          | Type                  | Description                                                        |
+| -------------- | --------------------- | ------------------------------------------------------------------ |
+| `id`           | `string`              | Block table record ID. Also the `ownerId` of entities in the block |
+| `name`         | `string`              | Block name                                                         |
+| `origin`       | `{ x, y, z }`         | Base point                                                         |
+| `isModelSpace` | `boolean`             | True for model space                                               |
+| `isPaperSpace` | `boolean`             | True for a paper-space layout block                                |
+| `flags`        | `number`              | BLOCK group code 70                                                |
+| `pathName`     | `string`              | Xref path. Empty for a local block                                 |
+| `isXref`       | `boolean`             | True when the block is an external reference                       |
+| `layoutId`     | `string \| undefined` | Associated layout ID                                               |
+| `entities`     | `EntitySnapshot[]`    | Entities stored directly in the block                              |
 
 ```javascript
 const widget = cad.blocks.find(block => block.name === 'Widget')
@@ -309,17 +328,18 @@ cad.file.saveHtml('./plan.html')
 Numeric helpers for self-check after drawing. Prefer these over hand-rolled
 `Math.hypot` / `atan2`. Points are `{ x, y }` in WCS.
 
-| Method | Returns |
-|--------|---------|
-| `cad.measure.distance(a, b)` | Distance between two points |
-| `cad.measure.angleDeg(a, b)` | Bearing of a→b from +X, degrees in (-180, 180] |
-| `cad.measure.angleDeg(a, b, c)` | Interior angle at b (a–b–c), degrees in [0, 180] |
-| `cad.measure.deltaAngleDeg(fromDeg, toDeg)` | Smallest absolute bearing difference in [0, 180] |
-| `cad.measure.center(id)` | Circle/arc/ellipse center, or point/text position; else `undefined` |
-| `cad.measure.radius(id)` | Circle/arc radius or ellipse majorRadius; else `undefined` |
-| `cad.measure.length(id)` | Line length or polyline/spline path length; else `undefined` |
-| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`) |
-| `cad.measure.report(checks)` | `{ ok, checks }` — `ok` is true iff every check passed |
+| Method                                                  | Returns                                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `cad.measure.distance(a, b)`                            | Distance between two points                                                           |
+| `cad.measure.angleDeg(a, b)`                            | Bearing of a→b from +X, degrees in (-180, 180]                                        |
+| `cad.measure.angleDeg(a, b, c)`                         | Interior angle at b (a–b–c), degrees in [0, 180]                                      |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)`             | Smallest absolute bearing difference in [0, 180]                                      |
+| `cad.measure.center(id)`                                | Circle/arc/ellipse center, or point/text position; else `undefined`                   |
+| `cad.measure.radius(id)`                                | Circle/arc radius or ellipse majorRadius; else `undefined`                            |
+| `cad.measure.length(id)`                                | Line length, or polyline/spline/2dPolyline/3dPolyline path length; else `undefined`   |
+| `cad.measure.area(id)`                                  | Area reported by the entity, or polygon area of its boundary points; else `undefined` |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`)                         |
+| `cad.measure.report(checks)`                            | `{ ok, checks }` — `ok` is true iff every check passed                                |
 
 Recommended return shape after a non-trivial draw:
 
@@ -354,31 +374,31 @@ Methods available within a transaction:
 
 ### Drawing Methods
 
-| Method | Parameters | Return Value |
-|--------|-----------|--------------|
-| `tx.drawLine({ start, end, layer? })` | `start/end: {x,y}` | New entity ID |
-| `tx.drawCircle({ center, radius, layer? })` | `center: {x,y}` | New entity ID |
-| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })` | `center: {x,y}` | New entity ID |
-| `tx.drawRectangle({ corner1, corner2, layer? })` | `corner1/corner2: {x,y}` | New entity ID |
-| `tx.drawPolyline({ points, closed?, layer? })` | `points: Array<{x,y}>` | New entity ID |
-| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}` | New entity ID |
-| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })` | `boundary: Array<{x,y}>` (min 3) | New entity ID |
-| `tx.drawPoint({ position, layer? })` | `position: {x,y}` | New entity ID |
-| `tx.drawRay({ start, through, layer? })` | `start/through: {x,y}` | New entity ID |
-| `tx.drawXline({ start, through, layer? })` | `start/through: {x,y}` | New entity ID |
-| `tx.drawSpline({ points, closed?, layer? })` | `points: Array<{x,y}>` | New entity ID |
-| `tx.drawText({ position, text, height?, layer? })` | `position: {x,y}` | New entity ID |
+| Method                                                                                                     | Parameters                       | Return Value  |
+| ---------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------- |
+| `tx.drawLine({ start, end, layer? })`                                                                      | `start/end: {x,y}`               | New entity ID |
+| `tx.drawCircle({ center, radius, layer? })`                                                                | `center: {x,y}`                  | New entity ID |
+| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })`                                       | `center: {x,y}`                  | New entity ID |
+| `tx.drawRectangle({ corner1, corner2, layer? })`                                                           | `corner1/corner2: {x,y}`         | New entity ID |
+| `tx.drawPolyline({ points, closed?, layer? })`                                                             | `points: Array<{x,y}>`           | New entity ID |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}`                  | New entity ID |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })`                        | `boundary: Array<{x,y}>` (min 3) | New entity ID |
+| `tx.drawPoint({ position, layer? })`                                                                       | `position: {x,y}`                | New entity ID |
+| `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`           | New entity ID |
+| `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | New entity ID |
+| `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | New entity ID |
+| `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | New entity ID |
 
 ### Edit Methods
 
-| Method | Parameters | Return Value |
-|--------|-----------|--------------|
-| `tx.erase(ids)` | `string[]` | Number of entities erased |
-| `tx.setLayer(ids, layer)` | `string[], string` | — |
-| `tx.move(ids, dx, dy)` | `string[], number, number` | Number of entities moved |
-| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number` | Number of entities rotated |
-| `tx.createLayer(name)` | `string` | — |
-| `tx.setCurrentLayer(name)` | `string` | — |
+| Method                             | Parameters                 | Return Value               |
+| ---------------------------------- | -------------------------- | -------------------------- |
+| `tx.erase(ids)`                    | `string[]`                 | Number of entities erased  |
+| `tx.setLayer(ids, layer)`          | `string[], string`         | —                          |
+| `tx.move(ids, dx, dy)`             | `string[], number, number` | Number of entities moved   |
+| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number`  | Number of entities rotated |
+| `tx.createLayer(name)`             | `string`                   | —                          |
+| `tx.setCurrentLayer(name)`         | `string`                   | —                          |
 
 ## cad.log
 

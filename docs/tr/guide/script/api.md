@@ -43,13 +43,13 @@ Yukarıda yasaklananlar dışındaki tarayıcı global değişkenleri (örn. `al
 
 Mevcut teknik resmin statik bilgilerini döndürür.
 
-| Alan | Tür | Açıklama |
-|------|------|------|
-| `title` | `string` | Teknik resim başlığı |
-| `currentLayer` | `string` | Mevcut katman adı |
-| `units` | `number` | Ekleme birimi (INSUNITS) |
-| `layers` | `Array<{ name, isOn, isFrozen, isLocked }>` | Tüm katmanların listesi |
-| `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | Model alanı sınırları |
+| Alan           | Tür                                           | Açıklama                 |
+| -------------- | --------------------------------------------- | ------------------------ |
+| `title`        | `string`                                      | Teknik resim başlığı     |
+| `currentLayer` | `string`                                      | Mevcut katman adı        |
+| `units`        | `number`                                      | Ekleme birimi (INSUNITS) |
+| `layers`       | `Array<{ name, isOn, isFrozen, isLocked }>`   | Tüm katmanların listesi  |
+| `extents`      | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | Model alanı sınırları    |
 
 ```javascript
 const info = cad.drawing
@@ -90,29 +90,54 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 ### Varlık Anlık Görüntüsü (EntitySnapshot)
 
-| Alan | Tür | Açıklama |
-|------|------|------|
-| `id` | `string` | Varlık nesne ID'si |
-| `ownerId` | `string` | Ait olunan blok tablosu kaydının ID'si; öznitelikte blok referansının ID'si |
-| `type` | `string` | Varlık türü, `AcDb` öneki olmadan, örn. `Circle`, `Line` |
-| `layer` | `string` | Bulunduğu katman adı |
-| `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | Dünya koordinat sistemi sınırları |
-| `geometry` | `object \| undefined` | Türüne bağlı geometrik veriler |
+| Alan            | Tür                                           | Açıklama                                                                    |
+| --------------- | --------------------------------------------- | --------------------------------------------------------------------------- |
+| `id`            | `string`                                      | Varlık nesne ID'si                                                          |
+| `ownerId`       | `string`                                      | Ait olunan blok tablosu kaydının ID'si; öznitelikte blok referansının ID'si |
+| `type`          | `string`                                      | Varlık türü, `AcDb` öneki olmadan, örn. `Circle`, `Line`                    |
+| `layer`         | `string`                                      | Bulunduğu katman adı                                                        |
+| `color`         | `EntityColor`                                 | ByLayer / ByBlock çözülmemiş saklı renk                                     |
+| `resolvedColor` | `EntityColor`                                 | ByLayer / ByBlock çözülmüş renk                                             |
+| `lineType`      | `string`                                      | Çizgi türü adı (`ByLayer` / `ByBlock` saklandığı gibi)                      |
+| `lineWeight`    | `number`                                      | `AcGiLineWeight` değeri; negatif değerler ByLayer / ByBlock                 |
+| `linetypeScale` | `number`                                      | Çizgi türü ölçeği                                                           |
+| `visibility`    | `boolean`                                     | Varlık gizliyse `false`                                                     |
+| `transparency`  | `EntityTransparency`                          | Saydamlık yöntemi ve alpha                                                  |
+| `thickness`     | `number \| undefined`                         | Ekstrüzyon kalınlığı (türde varsa)                                          |
+| `normal`        | `{x,y,z} \| undefined`                        | Ekstrüzyon yönü / düzlem normali (türde varsa)                              |
+| `extents`       | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | Dünya koordinat sistemi sınırları                                           |
+| `geometry`      | `object \| undefined`                         | Türüne bağlı geometrik veriler                                              |
+
+`EntityColor` şudur: `{ red?, green?, blue?, hex?, colorIndex?, isByColor, isByACI, isByLayer, isByBlock, isForeground }`.
+ByLayer / ByBlock renklerinde RGB yoktur; gerçek renk gerektiğinde `resolvedColor` okunur.
+`EntityTransparency` şudur: `{ method, alpha, percentage?, isByAlpha, isByLayer, isByBlock }`.
+
+`cad.entities.where(...)` yüklemi içinde bu görüntü özellikleri tembel okunur: yalnızca yüklemin dokunduğu alanlar çözülür ve yalnızca eşleşen varlıklar tam anlık görüntüye dönüştürülür.
 
 Desteklenen `geometry` türleri:
 
-| Varlık Türü | `geometry` Alanları |
-|----------|----------------|
-| `Circle` | `{ center: {x,y,z}, radius }` |
-| `Line` | `{ start: {x,y,z}, end: {x,y,z} }` |
-| `Arc` | `{ center: {x,y,z}, radius, startAngle, endAngle, startAngleDeg, endAngleDeg }` |
-| `Ellipse` | `{ center: {x,y,z}, majorRadius, minorRadius }` |
-| `Polyline` | `{ points: Array<{x,y,z}>, closed }` |
-| `Text` | `{ position: {x,y,z}, text, height }` |
-| `MText` | `{ position: {x,y,z}, text, height }` |
-| `Point` | `{ position: {x,y,z} }` |
-| `Ray` / `Xline` | `{ basePoint: {x,y,z}, unitDir: {x,y,z} }` |
-| `BlockReference` (Insert) | `{ name, position: {x,y,z}, rotation, scale: {x,y,z} }` |
+| Varlık Türü                         | `geometry` Alanları                                                                                                                                                                                                                                                                                      |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Circle`                            | `{ center, radius, area, circumference, closed }`                                                                                                                                                                                                                                                        |
+| `Line`                              | `{ start, end, length, midPoint, direction, closed }`                                                                                                                                                                                                                                                    |
+| `Arc`                               | `{ center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg, length, area, startPoint, endPoint, midPoint, closed }`                                                                                                                                                                             |
+| `Ellipse`                           | `{ center, majorAxis, majorRadius, minorRadius, startAngle, endAngle, startAngleDeg, endAngleDeg, area, isCircular, closed }`                                                                                                                                                                            |
+| `Polyline`                          | `{ points, vertices: [{ bulge, startWidth, endWidth }], bulges, hasBulges, hasWidths, closed, elevation, length, area }`                                                                                                                                                                                 |
+| `2dPolyline`                        | `{ points, vertices, bulges, hasBulges, closed, polyType, elevation, length, area }`                                                                                                                                                                                                                     |
+| `3dPolyline`                        | `{ points, closed, polyType, length }`                                                                                                                                                                                                                                                                   |
+| `Spline`                            | `{ points, controlPoints, fitPoints, knots, weights, degree, length, area, isFitPointSpline, isControlPointSpline, startPoint, endPoint, closed, normal }`                                                                                                                                               |
+| `Text`                              | `{ position, text, height, rotation, styleName, alignmentPoint, hasAlignmentPoint, oblique, obliqueDeg, horizontalMode, verticalMode, widthFactor, isBackward, isUpsideDown }`                                                                                                                           |
+| `MText`                             | `{ position, text, plainText, height, width, extentsWidth, rotation, styleName, attachmentPoint, direction, lineSpacingFactor, lineSpacingStyle, backgroundFill, backgroundFillColor, backgroundScaleFactor, drawingDirection, columnType, columnCount, columnWidth, columnGutter, columnFlowReversed }` |
+| `Attribute` / `AttributeDefinition` | Metin alanlarına ek olarak `{ tag, invisible }` vb.                                                                                                                                                                                                                                                      |
+| `Point`                             | `{ position, ecsRotation }`                                                                                                                                                                                                                                                                              |
+| `Ray` / `Xline`                     | `{ basePoint, unitDir }`                                                                                                                                                                                                                                                                                 |
+| `BlockReference` (Insert)           | `{ name, effectiveName, isDynamicBlock, position, rotation, scale, columnCount, rowCount, columnSpacing, rowSpacing, blockTransform, attributes: [{ tag, text, position, invisible }] }`                                                                                                                 |
+| `Table`                             | Blok referansı alanlarına ek olarak `{ rows, columns, attachmentPoint, rowHeights, columnWidths, tableWidth, tableHeight, cells }`                                                                                                                                                                       |
+| `Hatch`                             | `{ patternName, hatchStyle, isSolidFill, isHatch, isGradient, area, loops: [{ closed, points, length }], gradient* }`                                                                                                                                                                                    |
+
+Açı alanları `startAngle` / `endAngle` radyan cinsindendir, `startAngleDeg` / `endAngleDeg` derece cinsindendir.
+`plainText` içinden MTEXT denetim kodları (`\P`, `\fSimSun|b0|i0;`, süslü parantezler) çıkarılmıştır; doğrudan aranabilir.
+Ölçünün `measurement` değeri, varlıkta saklı değer yoksa tanım noktalarından hesaplanır.
 
 Açı alanları `startAngle` / `endAngle` radyan cinsindendir, `startAngleDeg` / `endAngleDeg` derece cinsindendir.
 
@@ -122,31 +147,31 @@ data-model içindeki her somut varlık türünün `geometry` alanı vardır: `Ha
 
 `AcDbDatabase.tables` ile aynı şekilde tüm sembol tablolarını salt okunur verir. Her tablo `{ id, records }` biçimindedir. Kayıtta en az `id` ve `name` vardır.
 
-| Özellik | İçerik |
-|------|------|
-| `appIdTable` | Kayıtlı uygulama adları |
-| `blockTable` | Blok tanımları. Varlıklar `cad.blocks` üzerindedir |
-| `dimStyleTable` | Ölçü stilleri |
-| `linetypeTable` | Çizgi tipleri |
-| `textStyleTable` | Yazı stilleri |
-| `ucsTable` | Adlandırılmış UCS kayıtları |
-| `viewTable` | Adlandırılmış görünümler |
-| `layerTable` | Katmanlar: `color`, `linetype`, `lineWeight`, `isOff`, `isFrozen`, `isLocked`, `isPlottable` |
-| `viewportTable` | Model alanı VPORT kayıtları; kağıt alanındaki `Viewport` varlıkları değildir |
+| Özellik          | İçerik                                                                                       |
+| ---------------- | -------------------------------------------------------------------------------------------- |
+| `appIdTable`     | Kayıtlı uygulama adları                                                                      |
+| `blockTable`     | Blok tanımları. Varlıklar `cad.blocks` üzerindedir                                           |
+| `dimStyleTable`  | Ölçü stilleri                                                                                |
+| `linetypeTable`  | Çizgi tipleri                                                                                |
+| `textStyleTable` | Yazı stilleri                                                                                |
+| `ucsTable`       | Adlandırılmış UCS kayıtları                                                                  |
+| `viewTable`      | Adlandırılmış görünümler                                                                     |
+| `layerTable`     | Katmanlar: `color`, `linetype`, `lineWeight`, `isOff`, `isFrozen`, `isLocked`, `isPlottable` |
+| `viewportTable`  | Model alanı VPORT kayıtları; kağıt alanındaki `Viewport` varlıkları değildir                 |
 
 ## cad.blocks
 
 DXF BLOCKS bölümüne karşılık gelen tüm blok tanımları. `*Model_Space` ve `*Paper_Space` dahildir.
 
-| Alan | Açıklama |
-|------|------|
-| `id` | Blok tablosu kaydı ID'si ve bloktaki varlıkların `ownerId` değeri |
-| `name` | Blok adı |
-| `origin` | Taban nokta `{ x, y, z }` |
-| `isModelSpace` / `isPaperSpace` | Model alanı / kağıt alanı |
-| `flags` | BLOCK grup kodu 70 |
-| `pathName` / `isXref` | Dış referans yolu ve bayrağı |
-| `entities` | Blokta doğrudan duran varlık anlık görüntüleri |
+| Alan                            | Açıklama                                                          |
+| ------------------------------- | ----------------------------------------------------------------- |
+| `id`                            | Blok tablosu kaydı ID'si ve bloktaki varlıkların `ownerId` değeri |
+| `name`                          | Blok adı                                                          |
+| `origin`                        | Taban nokta `{ x, y, z }`                                         |
+| `isModelSpace` / `isPaperSpace` | Model alanı / kağıt alanı                                         |
+| `flags`                         | BLOCK grup kodu 70                                                |
+| `pathName` / `isXref`           | Dış referans yolu ve bayrağı                                      |
+| `entities`                      | Blokta doğrudan duran varlık anlık görüntüleri                    |
 
 ## cad.selection
 
@@ -238,7 +263,6 @@ cad.file.saveDxf('./plan-out.dxf')
 // or: cad.file.saveDxf({ path: './plan-out.dxf' })
 ```
 
-
 ### `cad.file.savePdf(path?)`
 
 Queues a PDF export after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Returns `{ queued: true, index, fileName }`.
@@ -260,17 +284,18 @@ cad.file.saveHtml({ path: './plan.zip', exportFormat: 'multi' })
 
 Numeric helpers for self-check after drawing. Prefer these over hand-rolled `Math.hypot` / `atan2`. Points are `{ x, y }` in WCS.
 
-| Method | Returns |
-|--------|---------|
-| `cad.measure.distance(a, b)` | Distance between two points |
-| `cad.measure.angleDeg(a, b)` | Bearing of a→b from +X, degrees in (-180, 180] |
-| `cad.measure.angleDeg(a, b, c)` | Interior angle at b (a–b–c), degrees in [0, 180] |
-| `cad.measure.deltaAngleDeg(fromDeg, toDeg)` | Smallest absolute bearing difference in [0, 180] |
-| `cad.measure.center(id)` | Circle/arc/ellipse center, or point/text position; else `undefined` |
-| `cad.measure.radius(id)` | Circle/arc radius or ellipse majorRadius; else `undefined` |
-| `cad.measure.length(id)` | Line length or polyline/spline path length; else `undefined` |
-| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`) |
-| `cad.measure.report(checks)` | `{ ok, checks }` — `ok` is true iff every check passed |
+| Method                                                  | Returns                                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `cad.measure.distance(a, b)`                            | Distance between two points                                                           |
+| `cad.measure.angleDeg(a, b)`                            | Bearing of a→b from +X, degrees in (-180, 180]                                        |
+| `cad.measure.angleDeg(a, b, c)`                         | Interior angle at b (a–b–c), degrees in [0, 180]                                      |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)`             | Smallest absolute bearing difference in [0, 180]                                      |
+| `cad.measure.center(id)`                                | Circle/arc/ellipse center, or point/text position; else `undefined`                   |
+| `cad.measure.radius(id)`                                | Circle/arc radius or ellipse majorRadius; else `undefined`                            |
+| `cad.measure.length(id)`                                | Line length, or polyline/spline/2dPolyline/3dPolyline path length; else `undefined`   |
+| `cad.measure.area(id)`                                  | Area reported by the entity, or polygon area of its boundary points; else `undefined` |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`)                         |
+| `cad.measure.report(checks)`                            | `{ ok, checks }` — `ok` is true iff every check passed                                |
 
 Recommended return shape after a non-trivial draw:
 
@@ -305,31 +330,31 @@ cad.edit.transaction('Toplu değişiklik', tx => {
 
 ### Çizim Yöntemleri
 
-| Yöntem | Parametreler | Dönüş Değeri |
-|------|------|--------|
-| `tx.drawLine({ start, end, layer? })` | `start/end: {x,y}` | Yeni varlık ID'si |
-| `tx.drawCircle({ center, radius, layer? })` | `center: {x,y}` | Yeni varlık ID'si |
-| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })` | `center: {x,y}` | Yeni varlık ID'si |
-| `tx.drawRectangle({ corner1, corner2, layer? })` | `corner1/corner2: {x,y}` | Yeni varlık ID'si |
-| `tx.drawPolyline({ points, closed?, layer? })` | `points: Array<{x,y}>` | Yeni varlık ID'si |
-| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}` | Yeni varlık ID'si |
-| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })` | `boundary: Array<{x,y}>` (min 3) | Yeni varlık ID'si |
-| `tx.drawPoint({ position, layer? })` | `position: {x,y}` | Yeni varlık ID'si |
-| `tx.drawRay({ start, through, layer? })` | `start/through: {x,y}` | Yeni varlık ID'si |
-| `tx.drawXline({ start, through, layer? })` | `start/through: {x,y}` | Yeni varlık ID'si |
-| `tx.drawSpline({ points, closed?, layer? })` | `points: Array<{x,y}>` | Yeni varlık ID'si |
-| `tx.drawText({ position, text, height?, layer? })` | `position: {x,y}` | Yeni varlık ID'si |
+| Yöntem                                                                                                     | Parametreler                     | Dönüş Değeri      |
+| ---------------------------------------------------------------------------------------------------------- | -------------------------------- | ----------------- |
+| `tx.drawLine({ start, end, layer? })`                                                                      | `start/end: {x,y}`               | Yeni varlık ID'si |
+| `tx.drawCircle({ center, radius, layer? })`                                                                | `center: {x,y}`                  | Yeni varlık ID'si |
+| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })`                                       | `center: {x,y}`                  | Yeni varlık ID'si |
+| `tx.drawRectangle({ corner1, corner2, layer? })`                                                           | `corner1/corner2: {x,y}`         | Yeni varlık ID'si |
+| `tx.drawPolyline({ points, closed?, layer? })`                                                             | `points: Array<{x,y}>`           | Yeni varlık ID'si |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}`                  | Yeni varlık ID'si |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })`                        | `boundary: Array<{x,y}>` (min 3) | Yeni varlık ID'si |
+| `tx.drawPoint({ position, layer? })`                                                                       | `position: {x,y}`                | Yeni varlık ID'si |
+| `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`           | Yeni varlık ID'si |
+| `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | Yeni varlık ID'si |
+| `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | Yeni varlık ID'si |
+| `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | Yeni varlık ID'si |
 
 ### Düzenleme Yöntemleri
 
-| Yöntem | Parametreler | Dönüş Değeri |
-|------|------|--------|
-| `tx.erase(ids)` | `string[]` | Silinen varlık sayısı |
-| `tx.setLayer(ids, layer)` | `string[], string` | — |
-| `tx.move(ids, dx, dy)` | `string[], number, number` | Taşınan varlık sayısı |
-| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number` | Döndürülen varlık sayısı |
-| `tx.createLayer(name)` | `string` | — |
-| `tx.setCurrentLayer(name)` | `string` | — |
+| Yöntem                             | Parametreler               | Dönüş Değeri             |
+| ---------------------------------- | -------------------------- | ------------------------ |
+| `tx.erase(ids)`                    | `string[]`                 | Silinen varlık sayısı    |
+| `tx.setLayer(ids, layer)`          | `string[], string`         | —                        |
+| `tx.move(ids, dx, dy)`             | `string[], number, number` | Taşınan varlık sayısı    |
+| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number`  | Döndürülen varlık sayısı |
+| `tx.createLayer(name)`             | `string`                   | —                        |
+| `tx.setCurrentLayer(name)`         | `string`                   | —                        |
 
 ## cad.log
 

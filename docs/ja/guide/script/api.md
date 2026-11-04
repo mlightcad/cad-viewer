@@ -43,13 +43,13 @@ title: スクリプト API
 
 現在の図面の静的情報を返します。
 
-| フィールド | 型 | 説明 |
-|------|------|------|
-| `title` | `string` | 図面タイトル |
-| `currentLayer` | `string` | 現在のレイヤー名 |
-| `units` | `number` | 挿入単位（INSUNITS） |
-| `layers` | `Array<{ name, isOn, isFrozen, isLocked }>` | すべてのレイヤーのリスト |
-| `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | モデル空間の範囲 |
+| フィールド     | 型                                            | 説明                     |
+| -------------- | --------------------------------------------- | ------------------------ |
+| `title`        | `string`                                      | 図面タイトル             |
+| `currentLayer` | `string`                                      | 現在のレイヤー名         |
+| `units`        | `number`                                      | 挿入単位（INSUNITS）     |
+| `layers`       | `Array<{ name, isOn, isFrozen, isLocked }>`   | すべてのレイヤーのリスト |
+| `extents`      | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | モデル空間の範囲         |
 
 ```javascript
 const info = cad.drawing
@@ -90,31 +90,54 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 ### エンティティスナップショット（EntitySnapshot）
 
-| フィールド | 型 | 説明 |
-|------|------|------|
-| `id` | `string` | エンティティオブジェクト ID |
-| `ownerId` | `string` | 所属ブロック表レコードの ID。属性の場合はブロック参照の ID |
-| `type` | `string` | エンティティタイプ。`AcDb` プレフィックスを含まない。例：`Circle`、`Line` |
-| `layer` | `string` | 所属するレイヤー名 |
-| `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | ワールド座標系での範囲 |
-| `geometry` | `object \| undefined` | タイプに依存するジオメトリデータ |
+| フィールド      | 型                                            | 説明                                                                      |
+| --------------- | --------------------------------------------- | ------------------------------------------------------------------------- |
+| `id`            | `string`                                      | エンティティオブジェクト ID                                               |
+| `ownerId`       | `string`                                      | 所属ブロック表レコードの ID。属性の場合はブロック参照の ID                |
+| `type`          | `string`                                      | エンティティタイプ。`AcDb` プレフィックスを含まない。例：`Circle`、`Line` |
+| `layer`         | `string`                                      | 所属するレイヤー名                                                        |
+| `color`         | `EntityColor`                                 | 保存されている色（ByLayer / ByBlock 未解決）                              |
+| `resolvedColor` | `EntityColor`                                 | ByLayer / ByBlock を解決した色                                            |
+| `lineType`      | `string`                                      | 線種名（`ByLayer` / `ByBlock` は保存値のまま）                            |
+| `lineWeight`    | `number`                                      | `AcGiLineWeight` 値。負値は ByLayer / ByBlock                             |
+| `linetypeScale` | `number`                                      | 線種尺度                                                                  |
+| `visibility`    | `boolean`                                     | `false` のとき非表示                                                      |
+| `transparency`  | `EntityTransparency`                          | 透明度の方式と alpha                                                      |
+| `thickness`     | `number \| undefined`                         | 押し出し厚さ（その型が持つ場合）                                          |
+| `normal`        | `{x,y,z} \| undefined`                        | 押し出し方向 / 平面法線（その型が持つ場合）                               |
+| `extents`       | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | ワールド座標系での範囲                                                    |
+| `geometry`      | `object \| undefined`                         | タイプに依存するジオメトリデータ                                          |
+
+`EntityColor` は `{ red?, green?, blue?, hex?, colorIndex?, isByColor, isByACI, isByLayer, isByBlock, isForeground }` です。
+ByLayer / ByBlock の色には RGB がありません。実際の色が必要な場合は `resolvedColor` を読み取ります。
+`EntityTransparency` は `{ method, alpha, percentage?, isByAlpha, isByLayer, isByBlock }` です。
+
+`cad.entities.where(...)` の述語内ではこれらの表示プロパティは遅延読み取りされます。述語が触れたフィールドだけを解決し、一致したエンティティだけを完全なスナップショットに変換します。
 
 サポートされている `geometry` タイプ：
 
-| エンティティタイプ | `geometry` フィールド |
-|----------|----------------|
-| `Circle` | `{ center: {x,y,z}, radius }` |
-| `Line` | `{ start: {x,y,z}, end: {x,y,z} }` |
-| `Arc` | `{ center: {x,y,z}, radius, startAngle, endAngle, startAngleDeg, endAngleDeg }` |
-| `Ellipse` | `{ center: {x,y,z}, majorRadius, minorRadius }` |
-| `Polyline` | `{ points: Array<{x,y,z}>, closed }` |
-| `Text` | `{ position: {x,y,z}, text, height }` |
-| `MText` | `{ position: {x,y,z}, text, height }` |
-| `Point` | `{ position: {x,y,z} }` |
-| `Ray` / `Xline` | `{ basePoint: {x,y,z}, unitDir: {x,y,z} }` |
-| `BlockReference`（Insert） | `{ name, position: {x,y,z}, rotation, scale: {x,y,z} }` |
+| エンティティタイプ                  | `geometry` フィールド                                                                                                                                                                                                                                                                                    |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Circle`                            | `{ center, radius, area, circumference, closed }`                                                                                                                                                                                                                                                        |
+| `Line`                              | `{ start, end, length, midPoint, direction, closed }`                                                                                                                                                                                                                                                    |
+| `Arc`                               | `{ center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg, length, area, startPoint, endPoint, midPoint, closed }`                                                                                                                                                                             |
+| `Ellipse`                           | `{ center, majorAxis, majorRadius, minorRadius, startAngle, endAngle, startAngleDeg, endAngleDeg, area, isCircular, closed }`                                                                                                                                                                            |
+| `Polyline`                          | `{ points, vertices: [{ bulge, startWidth, endWidth }], bulges, hasBulges, hasWidths, closed, elevation, length, area }`                                                                                                                                                                                 |
+| `2dPolyline`                        | `{ points, vertices, bulges, hasBulges, closed, polyType, elevation, length, area }`                                                                                                                                                                                                                     |
+| `3dPolyline`                        | `{ points, closed, polyType, length }`                                                                                                                                                                                                                                                                   |
+| `Spline`                            | `{ points, controlPoints, fitPoints, knots, weights, degree, length, area, isFitPointSpline, isControlPointSpline, startPoint, endPoint, closed, normal }`                                                                                                                                               |
+| `Text`                              | `{ position, text, height, rotation, styleName, alignmentPoint, hasAlignmentPoint, oblique, obliqueDeg, horizontalMode, verticalMode, widthFactor, isBackward, isUpsideDown }`                                                                                                                           |
+| `MText`                             | `{ position, text, plainText, height, width, extentsWidth, rotation, styleName, attachmentPoint, direction, lineSpacingFactor, lineSpacingStyle, backgroundFill, backgroundFillColor, backgroundScaleFactor, drawingDirection, columnType, columnCount, columnWidth, columnGutter, columnFlowReversed }` |
+| `Attribute` / `AttributeDefinition` | 文字フィールドに `{ tag, invisible }` などを追加                                                                                                                                                                                                                                                         |
+| `Point`                             | `{ position, ecsRotation }`                                                                                                                                                                                                                                                                              |
+| `Ray` / `Xline`                     | `{ basePoint, unitDir }`                                                                                                                                                                                                                                                                                 |
+| `BlockReference`（Insert）          | `{ name, effectiveName, isDynamicBlock, position, rotation, scale, columnCount, rowCount, columnSpacing, rowSpacing, blockTransform, attributes: [{ tag, text, position, invisible }] }`                                                                                                                 |
+| `Table`                             | ブロック参照フィールドに `{ rows, columns, attachmentPoint, rowHeights, columnWidths, tableWidth, tableHeight, cells }` を追加                                                                                                                                                                           |
+| `Hatch`                             | `{ patternName, hatchStyle, isSolidFill, isHatch, isGradient, area, loops: [{ closed, points, length }], gradient* }`                                                                                                                                                                                    |
 
 角度フィールド `startAngle` / `endAngle` はラジアン、`startAngleDeg` / `endAngleDeg` は度を使用します。
+`plainText` は MTEXT の制御コード（`\P`、`\fSimSun|b0|i0;`、中括弧）を除去済みで、そのまま検索できます。
+寸法の `measurement` は、エンティティに値がない場合に定義点から計算されます。
 
 `Hatch`、`Spline`、`Leader`、`MLeader`、`MLine`、各種 `Dimension`、`RasterImage`、`Viewport`、`3dSolid`、`ProxyEntity` など、data-model の具体エンティティにも `geometry` があります。ACIS、OLE、プロキシ図形のバイナリは含まれません。
 
@@ -122,31 +145,31 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 `AcDbDatabase.tables` と同じく、すべてのシンボルテーブルを読み取ります。各テーブルは `{ id, records }` です。レコードには少なくとも `id` と `name` があります。
 
-| プロパティ | 内容 |
-|----------|------|
-| `appIdTable` | 登録アプリケーション名 |
-| `blockTable` | ブロック定義。図形は `cad.blocks` |
-| `dimStyleTable` | 寸法スタイル（`dimtxt`、`dimscale` など） |
-| `linetypeTable` | 線種 |
-| `textStyleTable` | 文字スタイル |
-| `ucsTable` | 名前付き UCS |
-| `viewTable` | 名前付きビュー |
-| `layerTable` | 画層。`color`、`linetype`、`lineWeight`、`isOff`、`isFrozen`、`isLocked`、`isPlottable` |
-| `viewportTable` | モデル空間の VPORT レコード。ペーパー空間の `Viewport` 図形ではありません |
+| プロパティ       | 内容                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------- |
+| `appIdTable`     | 登録アプリケーション名                                                                  |
+| `blockTable`     | ブロック定義。図形は `cad.blocks`                                                       |
+| `dimStyleTable`  | 寸法スタイル（`dimtxt`、`dimscale` など）                                               |
+| `linetypeTable`  | 線種                                                                                    |
+| `textStyleTable` | 文字スタイル                                                                            |
+| `ucsTable`       | 名前付き UCS                                                                            |
+| `viewTable`      | 名前付きビュー                                                                          |
+| `layerTable`     | 画層。`color`、`linetype`、`lineWeight`、`isOff`、`isFrozen`、`isLocked`、`isPlottable` |
+| `viewportTable`  | モデル空間の VPORT レコード。ペーパー空間の `Viewport` 図形ではありません               |
 
 ## cad.blocks
 
 DXF の BLOCKS セクションに相当する、すべてのブロック定義です。`*Model_Space` と `*Paper_Space` も含みます。
 
-| フィールド | 説明 |
-|------|------|
-| `id` | ブロック表レコード ID。ブロック内図形の `ownerId` |
-| `name` | ブロック名 |
-| `origin` | 基点 `{ x, y, z }` |
-| `isModelSpace` / `isPaperSpace` | モデル空間 / ペーパー空間 |
-| `flags` | BLOCK グループコード 70 |
-| `pathName` / `isXref` | 外部参照のパスとフラグ |
-| `entities` | そのブロックに直接入っている図形のスナップショット |
+| フィールド                      | 説明                                               |
+| ------------------------------- | -------------------------------------------------- |
+| `id`                            | ブロック表レコード ID。ブロック内図形の `ownerId`  |
+| `name`                          | ブロック名                                         |
+| `origin`                        | 基点 `{ x, y, z }`                                 |
+| `isModelSpace` / `isPaperSpace` | モデル空間 / ペーパー空間                          |
+| `flags`                         | BLOCK グループコード 70                            |
+| `pathName` / `isXref`           | 外部参照のパスとフラグ                             |
+| `entities`                      | そのブロックに直接入っている図形のスナップショット |
 
 ## cad.selection
 
@@ -238,7 +261,6 @@ cad.file.saveDxf('./plan-out.dxf')
 // or: cad.file.saveDxf({ path: './plan-out.dxf' })
 ```
 
-
 ### `cad.file.savePdf(path?)`
 
 Queues a PDF export after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Returns `{ queued: true, index, fileName }`.
@@ -260,17 +282,18 @@ cad.file.saveHtml({ path: './plan.zip', exportFormat: 'multi' })
 
 Numeric helpers for self-check after drawing. Prefer these over hand-rolled `Math.hypot` / `atan2`. Points are `{ x, y }` in WCS.
 
-| Method | Returns |
-|--------|---------|
-| `cad.measure.distance(a, b)` | Distance between two points |
-| `cad.measure.angleDeg(a, b)` | Bearing of a→b from +X, degrees in (-180, 180] |
-| `cad.measure.angleDeg(a, b, c)` | Interior angle at b (a–b–c), degrees in [0, 180] |
-| `cad.measure.deltaAngleDeg(fromDeg, toDeg)` | Smallest absolute bearing difference in [0, 180] |
-| `cad.measure.center(id)` | Circle/arc/ellipse center, or point/text position; else `undefined` |
-| `cad.measure.radius(id)` | Circle/arc radius or ellipse majorRadius; else `undefined` |
-| `cad.measure.length(id)` | Line length or polyline/spline path length; else `undefined` |
-| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`) |
-| `cad.measure.report(checks)` | `{ ok, checks }` — `ok` is true iff every check passed |
+| Method                                                  | Returns                                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `cad.measure.distance(a, b)`                            | Distance between two points                                                           |
+| `cad.measure.angleDeg(a, b)`                            | Bearing of a→b from +X, degrees in (-180, 180]                                        |
+| `cad.measure.angleDeg(a, b, c)`                         | Interior angle at b (a–b–c), degrees in [0, 180]                                      |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)`             | Smallest absolute bearing difference in [0, 180]                                      |
+| `cad.measure.center(id)`                                | Circle/arc/ellipse center, or point/text position; else `undefined`                   |
+| `cad.measure.radius(id)`                                | Circle/arc radius or ellipse majorRadius; else `undefined`                            |
+| `cad.measure.length(id)`                                | Line length, or polyline/spline/2dPolyline/3dPolyline path length; else `undefined`   |
+| `cad.measure.area(id)`                                  | Area reported by the entity, or polygon area of its boundary points; else `undefined` |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`)                         |
+| `cad.measure.report(checks)`                            | `{ ok, checks }` — `ok` is true iff every check passed                                |
 
 Recommended return shape after a non-trivial draw:
 
@@ -305,31 +328,31 @@ cad.edit.transaction('批量修改', tx => {
 
 ### 描画メソッド
 
-| メソッド | 引数 | 戻り値 |
-|------|------|--------|
-| `tx.drawLine({ start, end, layer? })` | `start/end: {x,y}` | 新しいエンティティ ID |
-| `tx.drawCircle({ center, radius, layer? })` | `center: {x,y}` | 新しいエンティティ ID |
-| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })` | `center: {x,y}` | 新しいエンティティ ID |
-| `tx.drawRectangle({ corner1, corner2, layer? })` | `corner1/corner2: {x,y}` | 新しいエンティティ ID |
-| `tx.drawPolyline({ points, closed?, layer? })` | `points: Array<{x,y}>` | 新しいエンティティ ID |
-| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}` | 新しいエンティティ ID |
-| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })` | `boundary: Array<{x,y}>` (min 3) | 新しいエンティティ ID |
-| `tx.drawPoint({ position, layer? })` | `position: {x,y}` | 新しいエンティティ ID |
-| `tx.drawRay({ start, through, layer? })` | `start/through: {x,y}` | 新しいエンティティ ID |
-| `tx.drawXline({ start, through, layer? })` | `start/through: {x,y}` | 新しいエンティティ ID |
-| `tx.drawSpline({ points, closed?, layer? })` | `points: Array<{x,y}>` | 新しいエンティティ ID |
-| `tx.drawText({ position, text, height?, layer? })` | `position: {x,y}` | 新しいエンティティ ID |
+| メソッド                                                                                                   | 引数                             | 戻り値                |
+| ---------------------------------------------------------------------------------------------------------- | -------------------------------- | --------------------- |
+| `tx.drawLine({ start, end, layer? })`                                                                      | `start/end: {x,y}`               | 新しいエンティティ ID |
+| `tx.drawCircle({ center, radius, layer? })`                                                                | `center: {x,y}`                  | 新しいエンティティ ID |
+| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })`                                       | `center: {x,y}`                  | 新しいエンティティ ID |
+| `tx.drawRectangle({ corner1, corner2, layer? })`                                                           | `corner1/corner2: {x,y}`         | 新しいエンティティ ID |
+| `tx.drawPolyline({ points, closed?, layer? })`                                                             | `points: Array<{x,y}>`           | 新しいエンティティ ID |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}`                  | 新しいエンティティ ID |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })`                        | `boundary: Array<{x,y}>` (min 3) | 新しいエンティティ ID |
+| `tx.drawPoint({ position, layer? })`                                                                       | `position: {x,y}`                | 新しいエンティティ ID |
+| `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`           | 新しいエンティティ ID |
+| `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | 新しいエンティティ ID |
+| `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | 新しいエンティティ ID |
+| `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | 新しいエンティティ ID |
 
 ### 編集メソッド
 
-| メソッド | 引数 | 戻り値 |
-|------|------|--------|
-| `tx.erase(ids)` | `string[]` | 削除されたエンティティ数 |
-| `tx.setLayer(ids, layer)` | `string[], string` | — |
-| `tx.move(ids, dx, dy)` | `string[], number, number` | 移動されたエンティティ数 |
-| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number` | 回転されたエンティティ数 |
-| `tx.createLayer(name)` | `string` | — |
-| `tx.setCurrentLayer(name)` | `string` | — |
+| メソッド                           | 引数                       | 戻り値                   |
+| ---------------------------------- | -------------------------- | ------------------------ |
+| `tx.erase(ids)`                    | `string[]`                 | 削除されたエンティティ数 |
+| `tx.setLayer(ids, layer)`          | `string[], string`         | —                        |
+| `tx.move(ids, dx, dy)`             | `string[], number, number` | 移動されたエンティティ数 |
+| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number`  | 回転されたエンティティ数 |
+| `tx.createLayer(name)`             | `string`                   | —                        |
+| `tx.setCurrentLayer(name)`         | `string`                   | —                        |
 
 ## cad.log
 
