@@ -93,10 +93,7 @@ export function hatchLoopHasSelfIntersection(
 
 function polyboolEpsilonFor(points: AcGePoint2dLike[]): number {
   const first = points[0]
-  if (
-    first &&
-    typeof (first as AcGePoint2d).relativeEps === 'function'
-  ) {
+  if (first && typeof (first as AcGePoint2d).relativeEps === 'function') {
     return Math.min((first as AcGePoint2d).relativeEps(), 1e-6)
   }
   const scale = Math.max(
@@ -109,8 +106,9 @@ function polyboolEpsilonFor(points: AcGePoint2dLike[]): number {
 /**
  * Decomposes a self-intersecting hatch loop into simple even-odd regions.
  *
- * Uses PolyBool's segment rebuild (`segments` → `polygon`), which splits at
- * crossings and emits non-self-intersecting rings earcut can triangulate.
+ * Uses PolyBool's segment rebuild (`segments` → `selectUnion` → `polygon`),
+ * which splits at crossings, drops edges without fill on either side (edges
+ * drawn twice), and emits non-self-intersecting rings earcut can triangulate.
  * Loops that are already simple are returned unchanged.
  *
  * @returns One or more simple rings. On failure, returns the original loop.
@@ -126,17 +124,21 @@ export function resolveSelfIntersectingHatchLoop(
   const epsilon = polyboolEpsilonFor(ring)
   try {
     const polybool = new PolyBool(new GeometryEpsilon(epsilon))
+    const segments = polybool.segments({
+      regions: [ring.map(p => [p.x, p.y] as [number, number])],
+      inverted: false
+    })
+    // An edge drawn twice yields segments with no fill on either side. Without
+    // a selection step they stay in the chain and either break it (no regions)
+    // or swallow the boundary they trace (a notch disappears). A union with an
+    // empty polygon keeps only segments that actually bound filled area.
+    const empty = polybool.segments({ regions: [], inverted: false })
     const rebuilt = polybool.polygon(
-      polybool.segments({
-        regions: [ring.map(p => [p.x, p.y] as [number, number])],
-        inverted: false
-      })
+      polybool.selectUnion(polybool.combine(segments, empty))
     )
     const regions = rebuilt.regions
       .filter(region => region.length >= 3)
-      .map(region =>
-        region.map(p => new AcGePoint2d(p[0], p[1]))
-      )
+      .map(region => region.map(p => new AcGePoint2d(p[0], p[1])))
     if (regions.length > 0) {
       return regions
     }
