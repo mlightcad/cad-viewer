@@ -116,5 +116,8 @@ export const agentZh = {
   save: '保存',
   createProvider: '创建提供商',
   deleteProvider: '删除提供商',
-  deleteProviderConfirm: '确定删除提供商“{id}”及其 API 密钥吗？'
+  deleteProviderConfirm: '确定删除提供商“{id}”及其 API 密钥吗？',
+  toolsSummary: '已执行 {count} 个工具',
+  toolsRunning: '正在执行工具（{count}）…',
+  toolsFailed: '{count} 个失败'
 } as const

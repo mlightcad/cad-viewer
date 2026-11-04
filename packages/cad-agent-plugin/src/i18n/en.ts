@@ -125,5 +125,8 @@ export const agentEn = {
   save: 'Save',
   createProvider: 'Create provider',
   deleteProvider: 'Delete provider',
-  deleteProviderConfirm: 'Delete provider "{id}" and its API key?'
+  deleteProviderConfirm: 'Delete provider "{id}" and its API key?',
+  toolsSummary: 'Tool calls: {count}',
+  toolsRunning: 'Running tools ({count})…',
+  toolsFailed: '{count} failed'
 } as const

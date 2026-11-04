@@ -126,5 +126,8 @@ export const agentTr = {
   save: 'Kaydet',
   createProvider: 'Sağlayıcı oluştur',
   deleteProvider: 'Sağlayıcıyı sil',
-  deleteProviderConfirm: '"{id}" sağlayıcısı ve API anahtarı silinsin mi?'
+  deleteProviderConfirm: '"{id}" sağlayıcısı ve API anahtarı silinsin mi?',
+  toolsSummary: '{count} araç çağrısı',
+  toolsRunning: 'Araçlar çalışıyor ({count})…',
+  toolsFailed: '{count} başarısız'
 } as const

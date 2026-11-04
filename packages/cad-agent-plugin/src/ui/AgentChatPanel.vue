@@ -423,6 +423,7 @@ function clearChat() {
   clearPendingImages()
   dismissError()
   showSettings.value = false
+  toolGroupOverrides.value = new Map()
   resetChat()
 }
 
@@ -604,6 +605,50 @@ function isToolCopied(messageId: string, toolIndex: number): boolean {
   return copiedToolKeys.value.has(`${messageId}-${toolIndex}`)
 }
 
+/**
+ * Tool groups the user opened or closed by hand, keyed by message id. Groups
+ * without an entry follow {@link isMessageInFlight}: open while the response
+ * streams so progress stays visible, collapsed once the turn completes.
+ */
+const toolGroupOverrides = ref(new Map<string, boolean>())
+
+/** True for the assistant message the agent is still producing. */
+function isMessageInFlight(message: UIMessage): boolean {
+  const list = messages.value
+  return (
+    isBusy.value &&
+    message.role === 'assistant' &&
+    list[list.length - 1]?.id === message.id
+  )
+}
+
+/** Whether a message's tool-call list is expanded. */
+function isToolGroupOpen(message: UIMessage): boolean {
+  return toolGroupOverrides.value.get(message.id) ?? isMessageInFlight(message)
+}
+
+/** Expands or collapses a message's tool-call list. */
+function toggleToolGroup(message: UIMessage) {
+  const next = new Map(toolGroupOverrides.value)
+  next.set(message.id, !isToolGroupOpen(message))
+  toolGroupOverrides.value = next
+}
+
+/** One-line header of a tool group, e.g. "Tool calls: 3 · 1 failed". */
+function toolGroupSummary(message: UIMessage): string {
+  const tools = toolParts(message)
+  const count = String(tools.length)
+  const summary = (
+    isMessageInFlight(message)
+      ? labels.value.toolsRunning
+      : labels.value.toolsSummary
+  ).replace('{count}', count)
+  const failed = tools.filter(tool => tool.state === 'output-error').length
+  return failed
+    ? `${summary} · ${labels.value.toolsFailed.replace('{count}', String(failed))}`
+    : summary
+}
+
 /** True when the message contains a high-inference verification review block. */
 function isVerificationMessage(message: UIMessage): boolean {
   return (
@@ -734,55 +779,83 @@ function isVerificationMessage(message: UIMessage): boolean {
           </figure>
         </div>
         <div
-          v-for="(toolCall, toolIndex) in toolParts(message)"
-          :key="`${message.id}-tool-${toolIndex}`"
-          class="cad-agent-tool"
+          v-if="toolParts(message).length"
+          class="cad-agent-tool-group"
+          :class="{ 'is-open': isToolGroupOpen(message) }"
         >
-          <div class="cad-agent-tool-body">
-            {{ `${labels.toolPrefix}: ${toolCall.name}` }}
-            <span
-              v-if="toolCall.state && toolCall.state !== 'output-available'"
-              class="cad-agent-tool-detail"
-            >
-              {{ toolCall.state }}
-            </span>
-            <span v-if="toolCall.detail" class="cad-agent-tool-detail">
-              {{ toolCall.detail }}
-            </span>
-          </div>
           <button
             type="button"
-            class="cad-agent-tool-copy"
-            :class="{ 'is-copied': isToolCopied(message.id, toolIndex) }"
-            :title="
-              isToolCopied(message.id, toolIndex)
-                ? labels.toolCopied
-                : labels.copyTool
-            "
-            :aria-label="
-              isToolCopied(message.id, toolIndex)
-                ? labels.toolCopied
-                : labels.copyTool
-            "
-            @click="copyToolCall(message.id, toolIndex, toolCall)"
+            class="cad-agent-tool-summary"
+            :aria-expanded="isToolGroupOpen(message)"
+            @click="toggleToolGroup(message)"
           >
             <svg
-              v-if="isToolCopied(message.id, toolIndex)"
+              class="cad-agent-tool-chevron"
               viewBox="0 0 24 24"
               aria-hidden="true"
             >
               <path
                 fill="currentColor"
-                d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"
               />
             </svg>
-            <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
-              />
-            </svg>
+            <span class="cad-agent-tool-summary-text">
+              {{ toolGroupSummary(message) }}
+            </span>
           </button>
+          <template v-if="isToolGroupOpen(message)">
+            <div
+              v-for="(toolCall, toolIndex) in toolParts(message)"
+              :key="`${message.id}-tool-${toolIndex}`"
+              class="cad-agent-tool"
+            >
+              <div class="cad-agent-tool-body">
+                {{ `${labels.toolPrefix}: ${toolCall.name}` }}
+                <span
+                  v-if="toolCall.state && toolCall.state !== 'output-available'"
+                  class="cad-agent-tool-detail"
+                >
+                  {{ toolCall.state }}
+                </span>
+                <span v-if="toolCall.detail" class="cad-agent-tool-detail">
+                  {{ toolCall.detail }}
+                </span>
+              </div>
+              <button
+                type="button"
+                class="cad-agent-tool-copy"
+                :class="{ 'is-copied': isToolCopied(message.id, toolIndex) }"
+                :title="
+                  isToolCopied(message.id, toolIndex)
+                    ? labels.toolCopied
+                    : labels.copyTool
+                "
+                :aria-label="
+                  isToolCopied(message.id, toolIndex)
+                    ? labels.toolCopied
+                    : labels.copyTool
+                "
+                @click="copyToolCall(message.id, toolIndex, toolCall)"
+              >
+                <svg
+                  v-if="isToolCopied(message.id, toolIndex)"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                  />
+                </svg>
+                <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    fill="currentColor"
+                    d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </template>
         </div>
       </div>
       <div v-if="hasDisplayError" class="cad-agent-msg error">
