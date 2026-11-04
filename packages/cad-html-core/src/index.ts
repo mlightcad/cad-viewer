@@ -5,83 +5,83 @@
  */
 
 /** Binary reader/writer used by ACEC / ACEO codecs. */
-export * from './AcExBinaryIO'
+export * from './AcExHtmlBinaryIO'
 /** Snapshot schema types, version constant, and geometry batch shapes. */
-export * from './AcExSnapshotTypes'
+export * from './AcExHtmlSnapshotTypes'
 /** Gzip encode and decode for embedded snapshot payloads. */
-export * from './AcExSnapshotCompression'
+export * from './AcExHtmlSnapshotCompression'
 /** Compressed/base85 encode and decode for embedded snapshot payloads. */
-export * from './AcExSnapshotCodec'
+export * from './AcExHtmlSnapshotCodec'
 /** HTML-safe binary text encodings (base85 / legacy base64). */
 export * from './AcExHtmlBinaryText'
-/** Binary snapshot serialization used by {@link encodeSnapshot}. */
+/** Binary snapshot serialization used by {@link acexHtmlEncodeSnapshot}. */
 export {
-  decodeSnapshotBinary,
-  encodeSnapshotBinary
-} from './AcExSnapshotBinaryCodec'
+  acexHtmlDecodeSnapshotBinary,
+  acexHtmlEncodeSnapshotBinary
+} from './AcExHtmlSnapshotBinaryCodec'
 /** THREE.js scene traversal helpers that produce export batches. */
-export * from './AcExSceneBatchCollector'
+export * from './AcExHtmlSceneBatchCollector'
 /** Database metadata extraction for snapshot `meta` fields. */
-export * from './AcExViewerMetadata'
+export * from './AcExHtmlViewerMetadata'
 /**
- * Analytic OSNAP primitive types ({@link AcExOsnapPrimitive}, {@link AcExOsnapCatalog})
+ * Analytic OSNAP primitive types ({@link AcExHtmlOsnapPrimitive}, {@link AcExHtmlOsnapCatalog})
  * and mode definitions for the offline HTML viewer.
  */
-export * from './AcExOsnapPrimitiveTypes'
+export * from './AcExHtmlOsnapPrimitiveTypes'
 /**
- * Builds per-layout {@link AcExOsnapCatalog} from an open `AcDbDatabase`
+ * Builds per-layout {@link AcExHtmlOsnapCatalog} from an open `AcDbDatabase`
  * (lines, curves, splines, nested blocks in WCS).
  */
-export { buildOsnapCatalog } from './AcExOsnapPrimitiveBuilder'
+export { acexHtmlBuildOsnapCatalog } from './AcExHtmlOsnapPrimitiveBuilder'
 /** Maps snapshot primitives to `AcGe*` curves for OSNAP. */
-export * from './AcExOsnapPrimitiveToAcGe'
+export * from './AcExHtmlOsnapPrimitiveToAcGe'
 export {
-  packHtml,
-  packHtmlPackage,
-  type AcExPackHtmlOptions,
-  type AcExPackHtmlPackageOptions
+  acexHtmlPackHtml,
+  acexHtmlPackHtmlPackage,
+  type AcExHtmlPackHtmlOptions,
+  type AcExHtmlPackHtmlPackageOptions
 } from './AcExHtmlPackager'
 export {
   ACEX_DEFAULT_MANIFEST_FILE,
   ACEX_DEFAULT_MANIFEST_HREF,
   ACEX_MANIFEST_QUERY_KEYS,
   ACEX_PACKAGE_DIRECTORY_ORIGIN,
-  acexGlobalFetch,
-  buildPackageDirectoryFileMap,
-  canOpenLocalPackageFolder,
-  chooseInitialManifestHref,
-  createPackageDirectoryFetch,
-  detectLocalFolderOpenSupport,
-  detectSharedDirectoryRoot,
-  findDefaultManifestInDirectory,
-  isAbsoluteHttpUrl,
-  normalizePackageDirectoryPath,
-  probePackageManifest,
-  readManifestUrlFromSearchParams,
-  resolveViewerManifestUrl,
-  type AcExLocalFolderOpenSupport,
-  type AcExManifestProbeResult
+  acexHtmlGlobalFetch,
+  acexHtmlBuildPackageDirectoryFileMap,
+  acexHtmlCanOpenLocalPackageFolder,
+  acexHtmlChooseInitialManifestHref,
+  acexHtmlCreatePackageDirectoryFetch,
+  acexHtmlDetectLocalFolderOpenSupport,
+  acexHtmlDetectSharedDirectoryRoot,
+  acexHtmlFindDefaultManifestInDirectory,
+  acexHtmlIsAbsoluteHttpUrl,
+  acexHtmlNormalizePackageDirectoryPath,
+  acexHtmlProbePackageManifest,
+  acexHtmlReadManifestUrlFromSearchParams,
+  acexHtmlResolveViewerManifestUrl,
+  type AcExHtmlLocalFolderOpenSupport,
+  type AcExHtmlManifestProbeResult
 } from './AcExHtmlPackageBootstrap'
 export {
-  type AcApHtmlExpiryDays,
+  type AcExHtmlExpiryDays,
   type AcExHtmlAccessManifest,
   ACEX_HTML_EXPIRY_COUNTDOWN_MS,
-  acExHtmlBase64ToBytes,
-  acExHtmlBytesToBase64,
-  buildAcExHtmlAccessManifest,
-  createAcExHtmlAccessKey,
-  decryptAcExHtmlBytes,
-  decryptAcExHtmlSnapshotPayload,
-  encryptAcExHtmlBytes,
-  encryptAcExHtmlSnapshotPayload,
-  formatAcExHtmlCountdown,
-  formatAcExHtmlExpiresAt,
-  isAcExHtmlAccessExpired,
-  isAcExHtmlExpiryCountdownActive,
-  needsAcExHtmlAccessControl,
-  parseAcExHtmlAccessManifest,
-  protectAcExHtmlEncodedSnapshot,
-  resolveAcApHtmlExpiresAt
+  acexHtmlBase64ToBytes,
+  acexHtmlBytesToBase64,
+  acexHtmlBuildAccessManifest,
+  acexHtmlCreateAccessKey,
+  acexHtmlDecryptBytes,
+  acexHtmlDecryptSnapshotPayload,
+  acexHtmlEncryptBytes,
+  acexHtmlEncryptSnapshotPayload,
+  acexHtmlFormatCountdown,
+  acexHtmlFormatExpiresAt,
+  acexHtmlIsAccessExpired,
+  acexHtmlIsExpiryCountdownActive,
+  acexHtmlNeedsAccessControl,
+  acexHtmlParseAccessManifest,
+  acexHtmlProtectEncodedSnapshot,
+  acexHtmlResolveExpiresAt
 } from './AcExHtmlAccess'
 export {
   ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME,
@@ -89,18 +89,18 @@ export {
   ACEX_EMBEDDED_CHUNK_HREF_ATTR,
   ACEX_EMBEDDED_CHUNK_MIME,
   ACEX_EMBEDDED_CHUNK_MIME_BASE64,
-  collectAcExEmbeddedChunkBytes,
-  consumeAcExEmbeddedChunkFromDom,
-  createAcExDomEmbeddedPackageFetch,
-  createAcExEmbeddedPackageFetch,
-  decryptAcExEmbeddedManifest,
-  estimateAcExSnapshotGeometryBytes,
-  packHtmlEmbeddedPackage,
-  parseAcExEmbeddedPackageConfig,
-  readAcExEmbeddedChunkFromDom,
-  shouldEmbedAcExChunks,
-  type AcExEmbeddedPackageConfig,
-  type AcExPackHtmlEmbeddedOptions
+  acexHtmlCollectEmbeddedChunkBytes,
+  acexHtmlConsumeEmbeddedChunkFromDom,
+  acexHtmlCreateDomEmbeddedPackageFetch,
+  acexHtmlCreateEmbeddedPackageFetch,
+  acexHtmlDecryptEmbeddedManifest,
+  acexHtmlEstimateSnapshotGeometryBytes,
+  acexHtmlPackHtmlEmbeddedPackage,
+  acexHtmlParseEmbeddedPackageConfig,
+  acexHtmlReadEmbeddedChunkFromDom,
+  acexHtmlShouldEmbedChunks,
+  type AcExHtmlEmbeddedPackageConfig,
+  type AcExHtmlPackHtmlEmbeddedOptions
 } from './AcExHtmlEmbeddedPackage'
 export * from './AcExHtmlI18n'
 
@@ -112,88 +112,88 @@ export {
   ACEX_EMBEDDED_CHUNK_THRESHOLD_BYTES,
   ACEX_EMBEDDED_CHUNK_MAX_BYTES,
   ACEX_EMBEDDED_OSNAP_CHUNK_MAX_BYTES,
-  type AcExPackageVersion,
-  type AcExPackageChunkRef,
-  type AcExPackageOsnapChunkRef,
-  type AcExPackageLayoutRef,
-  type AcExPackageManifest,
-  type AcExPackageFile,
-  type AcExPackageFiles
-} from './AcExPackageTypes'
+  type AcExHtmlPackageVersion,
+  type AcExHtmlPackageChunkRef,
+  type AcExHtmlPackageOsnapChunkRef,
+  type AcExHtmlPackageLayoutRef,
+  type AcExHtmlPackageManifest,
+  type AcExHtmlPackageFile,
+  type AcExHtmlPackageFiles
+} from './AcExHtmlPackageTypes'
 export {
-  encodeChunkBinary,
-  decodeChunkBinary,
-  encodeChunkGzip,
-  decodeChunkGzip,
-  decodeChunkPayload,
+  acexHtmlEncodeChunkBinary,
+  acexHtmlDecodeChunkBinary,
+  acexHtmlEncodeChunkGzip,
+  acexHtmlDecodeChunkGzip,
+  acexHtmlDecodeChunkPayload,
   ACEC_CHUNK_MAGIC,
-  type AcExGeometryChunk
-} from './AcExChunkBinaryCodec'
+  type AcExHtmlGeometryChunk
+} from './AcExHtmlChunkBinaryCodec'
 export {
-  buildAcExPackage,
-  buildAcExPackageAsync,
-  buildAcExPackageData,
-  buildAcExPackageDataAsync,
-  splitLayoutIntoSlices,
-  type AcExBuildPackageOptions,
-  type AcExBuildPackageDataOptions
-} from './AcExPackageBuilder'
+  acexHtmlBuildPackage,
+  acexHtmlBuildPackageAsync,
+  acexHtmlBuildPackageData,
+  acexHtmlBuildPackageDataAsync,
+  acexHtmlSplitLayoutIntoSlices,
+  type AcExHtmlBuildPackageOptions,
+  type AcExHtmlBuildPackageDataOptions
+} from './AcExHtmlPackageBuilder'
 export {
   ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY,
-  createAcExOrderedBytePrefetcher,
-  parseAcExPackageManifest,
-  snapshotSkeletonFromManifest,
-  resolveChunkUrl,
-  resolvePackageManifestUrl,
-  isSafePackageHref,
-  loadAcExPackage,
-  loadAcExPackageLayout,
-  loadAcExPackageLayoutOsnap,
-  type AcExOrderedBytePrefetcher,
-  type AcExOrderedPrefetchedItem,
-  type AcExPackageLoadProgress,
-  type AcExPackageLoaderOptions
-} from './AcExPackageLoader'
+  acexHtmlCreateOrderedBytePrefetcher,
+  acexHtmlParsePackageManifest,
+  acexHtmlSnapshotSkeletonFromManifest,
+  acexHtmlResolveChunkUrl,
+  acexHtmlResolvePackageManifestUrl,
+  acexHtmlIsSafePackageHref,
+  acexHtmlLoadPackage,
+  acexHtmlLoadPackageLayout,
+  acexHtmlLoadPackageLayoutOsnap,
+  type AcExHtmlOrderedBytePrefetcher,
+  type AcExHtmlOrderedPrefetchedItem,
+  type AcExHtmlPackageLoadProgress,
+  type AcExHtmlPackageLoaderOptions
+} from './AcExHtmlPackageLoader'
 export {
-  encodeOsnapCatalogBinary,
-  decodeOsnapCatalogBinary,
-  encodeOsnapCatalogGzip,
-  decodeOsnapCatalogGzip,
-  decodeOsnapCatalogPayload,
-  splitOsnapPrimitives,
-  estimateOsnapPrimitiveBytes,
+  acexHtmlEncodeOsnapCatalogBinary,
+  acexHtmlDecodeOsnapCatalogBinary,
+  acexHtmlEncodeOsnapCatalogGzip,
+  acexHtmlDecodeOsnapCatalogGzip,
+  acexHtmlDecodeOsnapCatalogPayload,
+  acexHtmlSplitOsnapPrimitives,
+  acexHtmlEstimateOsnapPrimitiveBytes,
   ACEO_OSNAP_MAGIC,
   ACEO_OSNAP_VERSION
-} from './AcExOsnapCatalogCodec'
-export { zipAcExPackageFiles, unzipAcExPackageFiles } from './AcExPackageZip'
+} from './AcExHtmlOsnapCatalogCodec'
+export { acexHtmlZipPackageFiles, acexHtmlUnzipPackageFiles } from './AcExHtmlPackageZip'
 export {
   ACEX_HTML_BACKGROUND_BLACK,
   ACEX_HTML_BACKGROUND_WHITE,
-  acExHtmlBackgroundRgb,
-  acExHtmlLayoutBackground,
-  applyAcExHtmlBackground,
-  remapAcExSnapshotForegroundForBackground,
-  resolveAcExHtmlBackground,
+  acexHtmlBackgroundRgb,
+  acexHtmlLayoutBackground,
+  acexHtmlApplyBackground,
+  acexHtmlRemapSnapshotForegroundForBackground,
+  acexHtmlResolveBackground,
   type AcExHtmlBackground
 } from './AcExHtmlBackground'
 
 export {
-  buildSnapshotFromExportScene,
-  buildSnapshotFromExportSceneAsync,
-  listDatabaseLayouts,
-  type AcExBuildSnapshotOptions,
-  type AcExDatabaseLayoutInfo,
-  type AcExExportLayerMeta,
-  type AcExExportLayoutInput,
-  type AcExExportLayoutLayerGeometry,
-  type AcExExportSceneInput
-} from './AcExSnapshotFromSceneData'
+  acexHtmlBuildSnapshotFromExportScene,
+  acexHtmlBuildSnapshotFromExportSceneAsync,
+  acexHtmlListDatabaseLayouts,
+  type AcExHtmlBuildSnapshotOptions,
+  type AcExHtmlDatabaseLayoutInfo,
+  type AcExHtmlExportLayerMeta,
+  type AcExHtmlExportLayoutInput,
+  type AcExHtmlExportLayoutLayerGeometry,
+  type AcExHtmlExportSceneInput
+} from './AcExHtmlSnapshotFromSceneData'
 
 export {
   ACEX_COORDINATE_BADGE_LIFT_EM,
   ACEX_COORDINATE_BADGE_REF_FONT_PX,
   ACEX_HTML_SHELL_CSS,
-  buildAcExHtmlShellBody,
+  acexHtmlBuildShellBody,
   ML_UI_COMPACT_MAX_WIDTH,
   ML_UI_MOBILE_MAX_WIDTH
 } from './AcExHtmlShell'
@@ -201,22 +201,22 @@ export {
   ACEX_DEFAULT_POLAR_ANGLE,
   ACEX_ORTHO_POLAR_ANGLE,
   ACEX_POLAR_ANGLE_INCREMENTS,
-  buildAcExHtmlLocaleStrip,
-  buildAcExHtmlPolarAnglesPanel,
-  buildAcExHtmlSnapStrip
+  acexHtmlBuildLocaleStrip,
+  acexHtmlBuildPolarAnglesPanel,
+  acexHtmlBuildSnapStrip
 } from './AcExHtmlShellFragments'
 export {
   AcExHtmlIcons,
-  acexDropdownItem,
-  acexToolbarButton
+  acexHtmlDropdownItem,
+  acexHtmlToolbarButton
 } from './AcExHtmlIcons'
-export * from './AcExDocsUrl'
-export * from './AcExLayerExtents'
-export { captureAcExSavedViewExtents } from './AcExSavedView'
-export * from './AcExBatchBuffers'
-export * from './AcExBatchBinaryCodec'
-export * from './AcExGeometryBatchSplit'
-export * from './AcExExtentCluster'
-export * from './AcExMeshTextureExport'
-export * from './AcExPatternSnapshot'
-export { collectLayoutViewports } from './AcExPaperViewportCollector'
+export * from './AcExHtmlDocsUrl'
+export * from './AcExHtmlLayerExtents'
+export { acexHtmlCaptureSavedViewExtents } from './AcExHtmlSavedView'
+export * from './AcExHtmlBatchBuffers'
+export * from './AcExHtmlBatchBinaryCodec'
+export * from './AcExHtmlGeometryBatchSplit'
+export * from './AcExHtmlExtentCluster'
+export * from './AcExHtmlMeshTextureExport'
+export * from './AcExHtmlPatternSnapshot'
+export { acexHtmlCollectLayoutViewports } from './AcExHtmlPaperViewportCollector'

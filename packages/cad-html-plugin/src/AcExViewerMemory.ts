@@ -1,10 +1,10 @@
-import type { AcExLayoutSnapshot, AcExSnapshot } from '@mlightcad/cad-html-core'
+import type { AcExHtmlLayoutSnapshot, AcExHtmlSnapshot } from '@mlightcad/cad-html-core'
 import * as THREE from 'three'
 
 /**
  * True when a layout still holds tessellated CPU batches.
  */
-export function layoutHasBatchGeometry(layout: AcExLayoutSnapshot): boolean {
+export function layoutHasBatchGeometry(layout: AcExHtmlLayoutSnapshot): boolean {
   return layout.lineBatches.length > 0 || layout.meshBatches.length > 0
 }
 
@@ -13,8 +13,8 @@ export function layoutHasBatchGeometry(layout: AcExLayoutSnapshot): boolean {
  * skeleton / previously released layout (same `btrId`).
  */
 export function assignLayoutGeometryFrom(
-  target: AcExLayoutSnapshot,
-  source: AcExLayoutSnapshot
+  target: AcExHtmlLayoutSnapshot,
+  source: AcExHtmlLayoutSnapshot
 ): void {
   target.lineBatches = source.lineBatches
   target.meshBatches = source.meshBatches
@@ -25,7 +25,7 @@ export function assignLayoutGeometryFrom(
  * Clears tessellated batch typed arrays on one layout so inactive package
  * layouts can be unloaded and re-fetched later.
  */
-export function releaseLayoutBatchBuffers(layout: AcExLayoutSnapshot): void {
+export function releaseLayoutBatchBuffers(layout: AcExHtmlLayoutSnapshot): void {
   clearLayoutBatchBuffers(layout)
 }
 
@@ -35,7 +35,7 @@ export function releaseLayoutBatchBuffers(layout: AcExLayoutSnapshot): void {
  * Call only after the THREE scene has uploaded geometry to the GPU and any
  * OSNAP index has been built from analytic primitives or tessellated segments.
  */
-export function releaseSnapshotBatchBuffers(snapshot: AcExSnapshot): void {
+export function releaseSnapshotBatchBuffers(snapshot: AcExHtmlSnapshot): void {
   for (const layout of snapshot.layouts) {
     clearLayoutBatchBuffers(layout)
   }
@@ -47,7 +47,7 @@ export function releaseSnapshotBatchBuffers(snapshot: AcExSnapshot): void {
  * model space when paper viewports need it).
  */
 export function releaseInactiveLayoutBatchBuffers(
-  snapshot: AcExSnapshot,
+  snapshot: AcExHtmlSnapshot,
   keepBtrIds: ReadonlySet<string>
 ): void {
   for (const layout of snapshot.layouts) {
@@ -58,7 +58,7 @@ export function releaseInactiveLayoutBatchBuffers(
 }
 
 /**
- * Drops {@link AcExLayoutSnapshot.osnap} from every layout after
+ * Drops {@link AcExHtmlLayoutSnapshot.osnap} from every layout after
  * {@link AcExOsnapIndex.rebuild}.
  *
  * Call only after the index has copied or retained the catalog's
@@ -67,7 +67,7 @@ export function releaseInactiveLayoutBatchBuffers(
  * catalog wrapper is removed from the snapshot while primitive data
  * remains alive for nearest / intersection snap queries.
  */
-export function releaseSnapshotOsnapCatalogs(snapshot: AcExSnapshot): void {
+export function releaseSnapshotOsnapCatalogs(snapshot: AcExHtmlSnapshot): void {
   for (const layout of snapshot.layouts) {
     layout.osnap = undefined
   }
@@ -117,7 +117,7 @@ export function releaseLayerGroupsGeometryCpuArrays(
   }
 }
 
-function clearLayoutBatchBuffers(layout: AcExLayoutSnapshot): void {
+function clearLayoutBatchBuffers(layout: AcExHtmlLayoutSnapshot): void {
   for (const batch of layout.lineBatches) {
     batch.positions = new Float32Array(0)
     if (batch.indices) batch.indices = new Uint32Array(0)

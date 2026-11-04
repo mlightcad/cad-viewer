@@ -4,11 +4,11 @@ import { AcTrSubEntityTraitsUtil } from '../../three-renderer/src/util/AcTrEntit
 import * as THREE from 'three'
 
 import {
-  createViewerMeshMaterial,
-  extractHatchPattern
+  acexHtmlCreateViewerMeshMaterial,
+  acexHtmlExtractHatchPattern
 } from '@mlightcad/cad-html-core'
-import { collectBatchesFromObject3D } from '@mlightcad/cad-html-core'
-import { decodeSnapshot, encodeSnapshot } from '@mlightcad/cad-html-core'
+import { acexHtmlCollectBatchesFromObject3D } from '@mlightcad/cad-html-core'
+import { acexHtmlDecodeSnapshot, acexHtmlEncodeSnapshot } from '@mlightcad/cad-html-core'
 import { ACEX_SNAPSHOT_VERSION } from '@mlightcad/cad-html-core'
 
 function createPatternedHatchMaterial(
@@ -75,7 +75,7 @@ describe('patterned hatch HTML export', () => {
   it('collects hatch pattern data from unbatched world-baked meshes', () => {
     const styleManager = new AcTrStyleManager()
     const material = createPatternedHatchMaterial(styleManager)
-    expect(extractHatchPattern(material)).toBeDefined()
+    expect(acexHtmlExtractHatchPattern(material)).toBeDefined()
 
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute(
@@ -93,12 +93,12 @@ describe('patterned hatch HTML export', () => {
     const root = new THREE.Group()
     root.add(cloneUnbatchedHatchMesh(source))
 
-    const { meshBatches } = collectBatchesFromObject3D(root)
+    const { meshBatches } = acexHtmlCollectBatchesFromObject3D(root)
     expect(meshBatches).toHaveLength(1)
     expect(meshBatches[0]?.hatchPattern?.patternLines.length).toBeGreaterThan(0)
     expect(meshBatches[0]?.renderOrder).toBe(-1)
 
-    const viewerMaterial = createViewerMeshMaterial(meshBatches[0]!)
+    const viewerMaterial = acexHtmlCreateViewerMeshMaterial(meshBatches[0]!)
     expect(viewerMaterial).toBeInstanceOf(THREE.ShaderMaterial)
     expect(viewerMaterial.type).toBe('ShaderMaterial')
   })
@@ -119,7 +119,7 @@ describe('patterned hatch HTML export', () => {
 
     const root = new THREE.Group()
     root.add(cloneUnbatchedHatchMesh(source))
-    const { meshBatches } = collectBatchesFromObject3D(root)
+    const { meshBatches } = acexHtmlCollectBatchesFromObject3D(root)
     const batch = meshBatches[0]!
 
     const snapshot = {
@@ -153,13 +153,13 @@ describe('patterned hatch HTML export', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const encoded = encodeSnapshot(snapshot)
-    const decoded = decodeSnapshot(encoded.payload)
+    const encoded = acexHtmlEncodeSnapshot(snapshot)
+    const decoded = acexHtmlDecodeSnapshot(encoded.payload)
     const decodedBatch = decoded.layouts[0]!.meshBatches[0]!
     expect(decodedBatch.hatchPattern).toEqual(batch.hatchPattern)
     expect(decodedBatch.renderOrder).toBe(-1)
 
-    const viewerMaterial = createViewerMeshMaterial(decodedBatch)
+    const viewerMaterial = acexHtmlCreateViewerMeshMaterial(decodedBatch)
     expect(viewerMaterial).toBeInstanceOf(THREE.ShaderMaterial)
   })
 
@@ -183,7 +183,7 @@ describe('patterned hatch HTML export', () => {
     const root = new THREE.Group()
     root.add(cloneUnbatchedHatchMeshFromGroup(source))
 
-    const { meshBatches } = collectBatchesFromObject3D(root)
+    const { meshBatches } = acexHtmlCollectBatchesFromObject3D(root)
     expect(meshBatches).toHaveLength(1)
 
     const exported = meshBatches[0]!
@@ -196,7 +196,7 @@ describe('patterned hatch HTML export', () => {
 
     const base = exported.hatchPattern!.patternLines[0]!.base
     expect(Math.hypot(base[0], base[1])).toBeLessThan(20)
-    expect(createViewerMeshMaterial(exported).type).toBe('ShaderMaterial')
+    expect(acexHtmlCreateViewerMeshMaterial(exported).type).toBe('ShaderMaterial')
   })
 
   it('keeps large-coordinate origin-shifted hatches local after HTML export', () => {
@@ -222,7 +222,7 @@ describe('patterned hatch HTML export', () => {
     mesh.position.set(originX, originY, 0)
     mesh.updateMatrixWorld(true)
 
-    const { meshBatches } = collectBatchesFromObject3D(mesh)
+    const { meshBatches } = acexHtmlCollectBatchesFromObject3D(mesh)
     expect(meshBatches).toHaveLength(1)
 
     const exported = meshBatches[0]!
@@ -239,7 +239,7 @@ describe('patterned hatch HTML export', () => {
       spacing + 5
     )
 
-    const viewerMaterial = createViewerMeshMaterial(exported) as THREE.ShaderMaterial
+    const viewerMaterial = acexHtmlCreateViewerMeshMaterial(exported) as THREE.ShaderMaterial
     const viewerBase = (
       viewerMaterial.uniforms.u_patternLines.value[0] as { base: THREE.Vector2 }
     ).base

@@ -1,14 +1,14 @@
 /**
- * Builds {@link AcExOsnapCatalog} from an open `AcDbDatabase`.
+ * Builds {@link AcExHtmlOsnapCatalog} from an open `AcDbDatabase`.
  *
  * Walks layout block table records recursively, expands `AcDbBlockReference`
  * (INSERT) with full insertion transforms, and emits compact analytic primitives
  * for the offline HTML viewer. Straight drawing-line edges are omitted (they
- * duplicate display {@link AcExLineBatch} data). Circle/arc/ellipse/spline/point
+ * duplicate display {@link AcExHtmlLineBatch} data). Circle/arc/ellipse/spline/point
  * remain so measurement-grade analytic snap survives tessellation. Fill/frame
  * boundaries that are drawn as meshes (hatch, TRACE/SOLID, IMAGE clip, OLE,
  * and wide LWPOLYLINE centerlines) are stored as compact
- * {@link AcExOsnapPathPrimitive} records.
+ * {@link AcExHtmlOsnapPathPrimitive} records.
  *
  * @packageDocumentation
  */
@@ -61,17 +61,17 @@ import {
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
 
-import { wcsPointToOcsArcAngle } from './AcExOsnapPrimitiveToAcGe'
+import { acexHtmlWcsPointToOcsArcAngle } from './AcExHtmlOsnapPrimitiveToAcGe'
 import type {
-  AcExOsnapArcPrimitive,
-  AcExOsnapCatalog,
-  AcExOsnapCirclePrimitive,
-  AcExOsnapEllipsePrimitive,
-  AcExOsnapPrimitive,
-  AcExOsnapSplinePrimitive
-} from './AcExOsnapPrimitiveTypes'
+  AcExHtmlOsnapArcPrimitive,
+  AcExHtmlOsnapCatalog,
+  AcExHtmlOsnapCirclePrimitive,
+  AcExHtmlOsnapEllipsePrimitive,
+  AcExHtmlOsnapPrimitive,
+  AcExHtmlOsnapSplinePrimitive
+} from './AcExHtmlOsnapPrimitiveTypes'
 
-/** Vertex used when packing a fill/frame {@link AcExOsnapPathPrimitive}. */
+/** Vertex used when packing a fill/frame {@link AcExHtmlOsnapPathPrimitive}. */
 type AcExOsnapPathVertex = AcGePoint3dLike & { bulge?: number }
 
 /** Maps entity extrusion normal to arc/circle winding sign. @internal */
@@ -83,11 +83,11 @@ function normalSignFromVector(normal: AcGeVector3dLike): 1 | -1 {
  * Serializes a WCS circular arc using OCS angles expected by HTML snap.
  *
  * Clockwise `AcGeCircArc2d` getters Y-mirror public angles; HTML reconstruction
- * X-mirrors when `normalSign` is `-1`. Invert {@link wcsPointToOcsArcAngle}
+ * X-mirrors when `normalSign` is `-1`. Invert {@link acexHtmlWcsPointToOcsArcAngle}
  * from the actual endpoints so both CCW and CW bulges round-trip.
  */
 function pushGeCircArc(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   arc: AcGeCircArc2d
 ) {
@@ -101,14 +101,14 @@ function pushGeCircArc(
     cx,
     cy,
     r: arc.radius,
-    startAngle: wcsPointToOcsArcAngle(
+    startAngle: acexHtmlWcsPointToOcsArcAngle(
       cx,
       cy,
       arc.startPoint.x,
       arc.startPoint.y,
       normalSign
     ),
-    endAngle: wcsPointToOcsArcAngle(
+    endAngle: acexHtmlWcsPointToOcsArcAngle(
       cx,
       cy,
       arc.endPoint.x,
@@ -186,7 +186,7 @@ function transformVector(
  * Returns whether the XY scale factors of `matrix` are equal.
  *
  * Circles/arcs stay circular only under uniform XY scale; otherwise they are
- * exported as {@link AcExOsnapEllipsePrimitive}.
+ * exported as {@link AcExHtmlOsnapEllipsePrimitive}.
  *
  * @internal
  */
@@ -207,7 +207,7 @@ function scaleIsUniform(matrix: THREE.Matrix4): boolean {
 /**
  * Resolves the block table record (BTR) that owns a layout's geometry.
  *
- * {@link buildOsnapCatalog} walks this BTR recursively to emit analytic snap
+ * {@link acexHtmlBuildOsnapCatalog} walks this BTR recursively to emit analytic snap
  * primitives. Lookup tries, in order:
  *
  * 1. {@link AcDbBlockTable.getIdAt} with `layoutBtrId`
@@ -216,7 +216,7 @@ function scaleIsUniform(matrix: THREE.Matrix4): boolean {
  *
  * @param database - Open drawing whose block table is searched.
  * @param layoutBtrId - Object id of the layout's owning block table record
- *   (same value stored on {@link AcExLayoutSnapshot.btrId}).
+ *   (same value stored on {@link AcExHtmlLayoutSnapshot.btrId}).
  * @returns The matching BTR, or `undefined` when no block can be resolved.
  * @internal
  */
@@ -250,7 +250,7 @@ function resolveLayoutBlock(
  *
  * @param entity - Candidate entity from a layout BTR iterator.
  * @returns `true` when the entity carries two geometric endpoints suitable for
- *   {@link AcExOsnapLinePrimitive} export.
+ *   {@link AcExHtmlOsnapLinePrimitive} export.
  * @internal
  */
 function isLineLikeEntity(entity: AcDbEntity): entity is AcDbEntity & {
@@ -273,7 +273,7 @@ function isLineLikeEntity(entity: AcDbEntity): entity is AcDbEntity & {
 }
 
 /**
- * Appends one {@link AcExOsnapLinePrimitive} from a line-like database entity.
+ * Appends one {@link AcExHtmlOsnapLinePrimitive} from a line-like database entity.
  *
  * Transforms {@link AcDbLine.startPoint} / {@link AcDbLine.endPoint} (or equivalent
  * duck-typed fields) into WCS via `matrix`, then delegates to {@link pushLine}.
@@ -285,7 +285,7 @@ function isLineLikeEntity(entity: AcDbEntity): entity is AcDbEntity & {
  * @internal
  */
 function pushLineEntity(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   entity: AcDbEntity & {
@@ -412,7 +412,7 @@ function isBlockReferenceEntity(
 /**
  * Line primitives are intentionally not exported into the HTML OSNAP catalog.
  *
- * Straight edges duplicate {@link AcExLineBatch} geometry already shipped for
+ * Straight edges duplicate {@link AcExHtmlLineBatch} geometry already shipped for
  * display. The offline viewer rebuilds line snap from those batches after
  * geometry loads (see {@link AcExOsnapIndex.rebuildAsync}).
  *
@@ -422,7 +422,7 @@ function isBlockReferenceEntity(
  * @internal
  */
 function pushLine(
-  _out: AcExOsnapPrimitive[],
+  _out: AcExHtmlOsnapPrimitive[],
   _layer: string,
   _matrix: THREE.Matrix4,
   _start: AcGePoint3dLike,
@@ -438,7 +438,7 @@ function pushLine(
  * @internal
  */
 function pushDirectedLine(
-  _out: AcExOsnapPrimitive[],
+  _out: AcExHtmlOsnapPrimitive[],
   _layer: string,
   _matrix: THREE.Matrix4,
   _base: AcGePoint3dLike,
@@ -449,10 +449,10 @@ function pushDirectedLine(
 }
 
 /**
- * Packs a fill/frame boundary as one {@link AcExOsnapPathPrimitive}.
+ * Packs a fill/frame boundary as one {@link AcExHtmlOsnapPathPrimitive}.
  *
  * Mesh-drawn entities (hatch, TRACE/SOLID, IMAGE clip, OLE, wide LWPOLYLINE)
- * have no edges in {@link AcExLineBatch}; this keeps their outline / centerline
+ * have no edges in {@link AcExHtmlLineBatch}; this keeps their outline / centerline
  * in ACEO without exploding every edge into a `line` primitive.
  *
  * Bulge is invariant only under similarity. Vertices are transformed first;
@@ -463,7 +463,7 @@ function pushDirectedLine(
  * @internal
  */
 function pushCatalogPath(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   vertices: AcExOsnapPathVertex[],
@@ -532,7 +532,7 @@ function finalizePathVertices(verts: AcExOsnapPathVertex[]): AcExOsnapPathVertex
  * @internal
  */
 function pushVertexPath(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   vertices: AcGePoint3dLike[],
@@ -560,7 +560,7 @@ function pushVertexPath(
  * @internal
  */
 function pushMLine(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   entity: AcDbMLine
@@ -616,7 +616,7 @@ function resolveMLeaderLineDrawPoints(
  * @internal
  */
 function pushMLeader(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   entity: AcDbMLeader
@@ -645,7 +645,7 @@ function pushMLeader(
  * @internal
  */
 function push2dPolyline(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   entity: AcDb2dPolyline
@@ -673,7 +673,7 @@ function push2dPolyline(
 
 /** Appends a WCS circle primitive (uniform scale on radius). @internal */
 function pushCircle(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   center: AcGePoint3dLike,
@@ -686,7 +686,7 @@ function pushCircle(
     matrix.elements[1],
     matrix.elements[2]
   ).length()
-  const prim: AcExOsnapCirclePrimitive = {
+  const prim: AcExHtmlOsnapCirclePrimitive = {
     kind: 'circle',
     layer,
     cx: c.x,
@@ -699,7 +699,7 @@ function pushCircle(
 
 /** Appends a WCS arc primitive from `AcDbArc` (uniform XY scale). @internal */
 function pushArc(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   entity: AcDbArc
@@ -710,7 +710,7 @@ function pushArc(
     matrix.elements[1],
     matrix.elements[2]
   ).length()
-  const prim: AcExOsnapArcPrimitive = {
+  const prim: AcExHtmlOsnapArcPrimitive = {
     kind: 'arc',
     layer,
     cx: center.x,
@@ -725,7 +725,7 @@ function pushArc(
 
 /** Appends a WCS ellipse primitive from `AcDbEllipse`. @internal */
 function pushEllipse(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   entity: AcDbEllipse
@@ -746,7 +746,7 @@ function pushEllipse(
     matrix.elements[5],
     matrix.elements[6]
   ).length()
-  const prim: AcExOsnapEllipsePrimitive = {
+  const prim: AcExHtmlOsnapEllipsePrimitive = {
     kind: 'ellipse',
     layer,
     cx: center.x,
@@ -772,7 +772,7 @@ function pushEllipse(
  * @internal
  */
 function pushSpline(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   entity: AcDbSpline
@@ -797,7 +797,7 @@ function pushSpline(
     controlPoints.push(p.x, p.y)
   }
 
-  const prim: AcExOsnapSplinePrimitive = {
+  const prim: AcExHtmlOsnapSplinePrimitive = {
     kind: 'spline',
     layer,
     controlPoints,
@@ -878,16 +878,16 @@ function polylineHasRenderableWidth(vertices: AcExLwPolylineVertex[]): boolean {
  * Decomposes `AcDbPolyline` into ACEO primitives.
  *
  * Thin polylines (`lineStrip`) keep bulge arcs in ACEO and omit straight
- * edges (those duplicate {@link AcExLineBatch}). Wide polylines are drawn as
+ * edges (those duplicate {@link AcExHtmlLineBatch}). Wide polylines are drawn as
  * a filled mesh from the width profile, so they never appear in lineBatches —
  * their **centerline** (vertices + bulge, the same geometry
  * {@link AcDbPolyline.subGetOsnapPoints} snaps to) is stored as one
- * {@link AcExOsnapPathPrimitive}.
+ * {@link AcExHtmlOsnapPathPrimitive}.
  *
  * @internal
  */
 function pushPolyline(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   entity: AcDbPolyline
@@ -918,7 +918,7 @@ function pushPolyline(
 
 /** Appends a WCS ellipse arc from a 2D ellipse arc at a fixed elevation. @internal */
 function pushEllipseArc2dBoundary(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   arc: AcGeEllipseArc2d,
@@ -969,7 +969,7 @@ function pushEllipseArc2dBoundary(
  * @internal
  */
 function pushHatchPolyline2d(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   polyline: AcGePolyline2d,
@@ -993,7 +993,7 @@ function pushHatchPolyline2d(
 
 /** Exports one hatch boundary loop (polyline or edge loop). @internal */
 function pushHatchLoop(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   loop: AcGeLoop2dType,
@@ -1069,7 +1069,7 @@ function pushHatchLoop(
  * @internal
  */
 function pushHatch(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   entity: AcDbHatch
@@ -1095,7 +1095,7 @@ function pushHatch(
  * @internal
  */
 function pushTableGrid(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   entity: AcDbTable
@@ -1145,7 +1145,7 @@ function visitTableEntity(
   entity: AcDbTable,
   matrix: THREE.Matrix4,
   insertLayer: string,
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   blockStack: Set<AcDbObjectId>,
   database: AcDbDatabase,
   includeLayer?: (layerName: string) => boolean,
@@ -1186,7 +1186,7 @@ function visitTableEntity(
  * @internal
  */
 function pushRasterImage(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   entity: AcDbRasterImage
@@ -1217,7 +1217,7 @@ function pushRasterImage(
  * @internal
  */
 function pushOle2Frame(
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   layer: string,
   matrix: THREE.Matrix4,
   entity: AcDbOle2Frame
@@ -1267,7 +1267,7 @@ function visitEntity(
   entity: AcDbEntity,
   matrix: THREE.Matrix4,
   insertLayer: string,
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   blockStack: Set<AcDbObjectId>,
   database: AcDbDatabase,
   includeLayer?: (layerName: string) => boolean,
@@ -1563,7 +1563,7 @@ function visitBlock(
   block: AcDbBlockTableRecord,
   matrix: THREE.Matrix4,
   insertLayer: string,
-  out: AcExOsnapPrimitive[],
+  out: AcExHtmlOsnapPrimitive[],
   blockStack: Set<AcDbObjectId>,
   database: AcDbDatabase,
   includeLayer?: (layerName: string) => boolean,
@@ -1634,26 +1634,26 @@ function ellipseFromArc(entity: AcDbArc): AcDbEllipse {
  *
  * @example
  * ```ts
- * const osnap = buildOsnapCatalog(database, scene.modelSpaceBtrId)
+ * const osnap = acexHtmlBuildOsnapCatalog(database, scene.modelSpaceBtrId)
  * layoutSnapshot.osnap = osnap
  * ```
  */
-export interface AcExOsnapCatalogOptions {
+export interface AcExHtmlOsnapCatalogOptions {
   /** When set, only entities on layers for which this returns `true` are exported. */
   includeLayer?: (layerName: string) => boolean
 }
 
-export function buildOsnapCatalog(
+export function acexHtmlBuildOsnapCatalog(
   database: AcDbDatabase,
   layoutBtrId: string,
-  options: AcExOsnapCatalogOptions = {}
-): AcExOsnapCatalog {
+  options: AcExHtmlOsnapCatalogOptions = {}
+): AcExHtmlOsnapCatalog {
   const block = resolveLayoutBlock(database, layoutBtrId)
   if (!block) {
     return { primitives: [] }
   }
 
-  const primitives: AcExOsnapPrimitive[] = []
+  const primitives: AcExHtmlOsnapPrimitive[] = []
   const identity = new THREE.Matrix4()
   visitBlock(
     block,
@@ -1674,7 +1674,7 @@ export function buildOsnapCatalog(
   }
 }
 
-function isFiniteOsnapPrimitive(primitive: AcExOsnapPrimitive): boolean {
+function isFiniteOsnapPrimitive(primitive: AcExHtmlOsnapPrimitive): boolean {
   switch (primitive.kind) {
     case 'line':
       return (

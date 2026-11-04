@@ -1,7 +1,7 @@
 import {
   ACEX_SNAPSHOT_VERSION,
-  buildSnapshotFromExportScene,
-  collectBatchesFromObject3D
+  acexHtmlBuildSnapshotFromExportScene,
+  acexHtmlCollectBatchesFromObject3D
 } from '@mlightcad/cad-html-core'
 import type { AcDbDatabase } from '@mlightcad/data-model'
 import * as THREE from 'three'
@@ -54,7 +54,7 @@ describe('export-time layout fit extents', () => {
     const paperRoot = new THREE.Group()
     paperRoot.add(lineObject(1000, 1000, 1100, 1050))
 
-    const snapshot = buildSnapshotFromExportScene(
+    const snapshot = acexHtmlBuildSnapshotFromExportScene(
       fakeDatabase(),
       {
         layers: [{ name: '0', color: 0xffffff, visible: true }],
@@ -100,7 +100,7 @@ describe('export-time layout fit extents', () => {
 
   it('omits fit boxes for layouts without geometry', () => {
     const empty = new THREE.Group()
-    const snapshot = buildSnapshotFromExportScene(
+    const snapshot = acexHtmlBuildSnapshotFromExportScene(
       fakeDatabase(),
       {
         layers: [{ name: '0', color: 0xffffff, visible: true }],
@@ -124,7 +124,7 @@ describe('export-time layout fit extents', () => {
   it('collects batches without mutating the source layout', () => {
     const root = new THREE.Group()
     root.add(lineObject(0, 0, 10, 10))
-    const collected = collectBatchesFromObject3D(root)
+    const collected = acexHtmlCollectBatchesFromObject3D(root)
     expect(collected.lineBatches.length).toBeGreaterThan(0)
     expect(root.children.length).toBe(1)
   })

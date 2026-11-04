@@ -1,26 +1,26 @@
 /**
- * Expands compact ACEO {@link AcExOsnapPathPrimitive} records into line/arc
+ * Expands compact ACEO {@link AcExHtmlOsnapPathPrimitive} records into line/arc
  * edges for query-time snap (entity-bbox index, not per-edge export).
  *
  * @packageDocumentation
  */
 
 import type {
-  AcExOsnapArcPrimitive,
-  AcExOsnapLinePrimitive,
-  AcExOsnapPathPrimitive,
-  AcExOsnapPrimitive
+  AcExHtmlOsnapArcPrimitive,
+  AcExHtmlOsnapLinePrimitive,
+  AcExHtmlOsnapPathPrimitive,
+  AcExHtmlOsnapPrimitive
 } from '@mlightcad/cad-html-core'
-import { wcsPointToOcsArcAngle } from '@mlightcad/cad-html-core'
+import { acexHtmlWcsPointToOcsArcAngle } from '@mlightcad/cad-html-core'
 import { AcGeCircArc2d, AcGeTol } from '@mlightcad/data-model'
 
 /** Line or bulge-arc edge produced by {@link expandOsnapPath}. */
-export type AcExOsnapPathEdge = AcExOsnapLinePrimitive | AcExOsnapArcPrimitive
+export type AcExOsnapPathEdge = AcExHtmlOsnapLinePrimitive | AcExHtmlOsnapArcPrimitive
 
 /**
  * Axis-aligned bounds of a fill/frame path in WCS.
  */
-export function pathPrimitiveBounds(path: AcExOsnapPathPrimitive): {
+export function pathPrimitiveBounds(path: AcExHtmlOsnapPathPrimitive): {
   minX: number
   minY: number
   maxX: number
@@ -66,7 +66,7 @@ export function pathPrimitiveBounds(path: AcExOsnapPathPrimitive): {
  * does, so endpoint / midpoint / center snap matches the live viewer.
  */
 export function expandOsnapPath(
-  path: AcExOsnapPathPrimitive
+  path: AcExHtmlOsnapPathPrimitive
 ): AcExOsnapPathEdge[] {
   const verts = path.vertices
   const count = (verts.length / 3) | 0
@@ -135,7 +135,7 @@ function pathEdgeFromBulge(
   x1: number,
   y1: number,
   bulge: number
-): AcExOsnapArcPrimitive | undefined {
+): AcExHtmlOsnapArcPrimitive | undefined {
   const arc = new AcGeCircArc2d({ x: x0, y: y0 }, { x: x1, y: y1 }, bulge)
   if (!(arc.radius > 0) || !Number.isFinite(arc.radius)) {
     return undefined
@@ -149,14 +149,14 @@ function pathEdgeFromBulge(
     cx,
     cy,
     r: arc.radius,
-    startAngle: wcsPointToOcsArcAngle(
+    startAngle: acexHtmlWcsPointToOcsArcAngle(
       cx,
       cy,
       arc.startPoint.x,
       arc.startPoint.y,
       normalSign
     ),
-    endAngle: wcsPointToOcsArcAngle(
+    endAngle: acexHtmlWcsPointToOcsArcAngle(
       cx,
       cy,
       arc.endPoint.x,
@@ -169,7 +169,7 @@ function pathEdgeFromBulge(
 
 /** Type guard used when walking mixed ACEO catalogs. */
 export function isOsnapPathPrimitive(
-  prim: AcExOsnapPrimitive
-): prim is AcExOsnapPathPrimitive {
+  prim: AcExHtmlOsnapPrimitive
+): prim is AcExHtmlOsnapPathPrimitive {
   return prim.kind === 'path'
 }

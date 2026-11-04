@@ -9,7 +9,7 @@
  */
 
 import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
-import type { AcExExtents } from '@mlightcad/cad-html-core'
+import type { AcExHtmlExtents } from '@mlightcad/cad-html-core'
 import { AcExHtmlIcons } from '@mlightcad/cad-html-core'
 import * as THREE from 'three'
 
@@ -67,7 +67,7 @@ import type {
 } from './AcExMarkupTypes'
 import type { AcExTrackingOptions } from './AcExMeasureTracking'
 import { constrainToAcExTracking } from './AcExMeasureTracking'
-import type { AcExOsnapPoint } from './AcExOsnap'
+import type { AcExHtmlOsnapPoint } from './AcExOsnap'
 import { acexOverlayGripClassName } from './AcExOverlayGrip'
 import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
 import type { AcExSessionHistory } from './AcExSessionHistory'
@@ -108,7 +108,7 @@ const STAMP_LABELS: Record<AcExBuiltinStampId, string> = {
 
 interface AcExResolvedPoint {
   point: THREE.Vector2
-  snap: AcExOsnapPoint | null
+  snap: AcExHtmlOsnapPoint | null
 }
 
 /**
@@ -123,7 +123,7 @@ export interface AcExMarkupViewApi {
   getCameraZoom: () => number
   resolvePoint: (clientX: number, clientY: number) => AcExResolvedPoint
   /** Frames the camera on world XY extents (review-panel zoom-to). */
-  zoomToExtents: (extents: AcExExtents) => void
+  zoomToExtents: (extents: AcExHtmlExtents) => void
 }
 
 export interface AcExMarkupControllerOptions {
@@ -134,7 +134,7 @@ export interface AcExMarkupControllerOptions {
   getReadyStatus: () => string
   drawingName?: string
   onOsnapMarker: (
-    snap: AcExOsnapPoint | null,
+    snap: AcExHtmlOsnapPoint | null,
     screen: { x: number; y: number } | null
   ) => void
   onActiveChange?: (active: boolean) => void
@@ -274,7 +274,7 @@ export class AcExMarkupController {
     clientY: number
     cacheKey: number
     point: THREE.Vector2
-    snap: AcExOsnapPoint | null
+    snap: AcExHtmlOsnapPoint | null
   } | null = null
   private _drawColor = ACEX_MARKUP_COLOR
   private _drawFontSize = ACEX_MARKUP_FONT_SIZE
@@ -1095,7 +1095,7 @@ export class AcExMarkupController {
    *
    * @returns True when selection state changed.
    */
-  handleSelectionBox(box: AcExExtents, mode: AcExSelectionMode): boolean {
+  handleSelectionBox(box: AcExHtmlExtents, mode: AcExSelectionMode): boolean {
     if (this._mode || !this._visible) return false
     const next = new Set<string>()
     for (const item of this._committed) {

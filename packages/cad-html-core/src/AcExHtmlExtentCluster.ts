@@ -1,9 +1,9 @@
-import type { AcExExtents } from './AcExSnapshotTypes'
+import type { AcExHtmlExtents } from './AcExHtmlSnapshotTypes'
 
 /**
  * Axis-aligned box used while peeling outlier clusters for intelligent fit.
  */
-export interface AcExClusterBox {
+export interface AcExHtmlClusterBox {
   minX: number
   minY: number
   maxX: number
@@ -22,10 +22,10 @@ export interface AcExClusterBox {
  * @param axis - Projection axis for the gap search.
  * @returns Majority-side boxes, or the input when no outlier-scale gap exists.
  */
-export function splitDominantCluster(
-  boxes: AcExClusterBox[],
+export function acexHtmlSplitDominantCluster(
+  boxes: AcExHtmlClusterBox[],
   axis: 'x' | 'y'
-): AcExClusterBox[] {
+): AcExHtmlClusterBox[] {
   if (boxes.length < 8) {
     return boxes
   }
@@ -81,9 +81,9 @@ export function splitDominantCluster(
  * @param boxes - Finite, non-empty candidate boxes.
  * @returns Union of the surviving cluster, or `null` when empty.
  */
-export function unionDominantCluster(
-  boxes: AcExClusterBox[]
-): AcExExtents | null {
+export function acexHtmlUnionDominantCluster(
+  boxes: AcExHtmlClusterBox[]
+): AcExHtmlExtents | null {
   if (boxes.length === 0) {
     return null
   }
@@ -95,13 +95,13 @@ export function unionDominantCluster(
   let previous = -1
   while (working.length !== previous) {
     previous = working.length
-    working = splitDominantCluster(working, 'x')
-    working = splitDominantCluster(working, 'y')
+    working = acexHtmlSplitDominantCluster(working, 'x')
+    working = acexHtmlSplitDominantCluster(working, 'y')
   }
   return unionBoxes(working) ?? fallback
 }
 
-function unionBoxes(boxes: AcExClusterBox[]): AcExExtents | null {
+function unionBoxes(boxes: AcExHtmlClusterBox[]): AcExHtmlExtents | null {
   if (boxes.length === 0) {
     return null
   }

@@ -6,11 +6,11 @@
  */
 
 import {
-  estimateLineBatchBytes,
-  estimateMeshBatchBytes
-} from './AcExBatchBinaryCodec'
-import { ACEX_MAX_GEOMETRY_BATCH_BYTES } from './AcExPackageTypes'
-import type { AcExLineBatch, AcExMeshBatch } from './AcExSnapshotTypes'
+  acexHtmlEstimateLineBatchBytes,
+  acexHtmlEstimateMeshBatchBytes
+} from './AcExHtmlBatchBinaryCodec'
+import { ACEX_MAX_GEOMETRY_BATCH_BYTES } from './AcExHtmlPackageTypes'
+import type { AcExHtmlLineBatch, AcExHtmlMeshBatch } from './AcExHtmlSnapshotTypes'
 
 /** Fixed per-batch header allowance used when budgeting piece size. */
 const BATCH_HEADER_BYTES = 256
@@ -22,11 +22,11 @@ const BATCH_HEADER_BYTES = 256
  * both preserved; vertex attributes (`lineDistances`) are remapped with the
  * vertices they belong to.
  */
-export function splitLineBatch(
-  batch: AcExLineBatch,
+export function acexHtmlSplitLineBatch(
+  batch: AcExHtmlLineBatch,
   maxBytes: number = ACEX_MAX_GEOMETRY_BATCH_BYTES
-): AcExLineBatch[] {
-  if (!(maxBytes > 0) || estimateLineBatchBytes(batch) <= maxBytes) {
+): AcExHtmlLineBatch[] {
+  if (!(maxBytes > 0) || acexHtmlEstimateLineBatchBytes(batch) <= maxBytes) {
     return [batch]
   }
 
@@ -42,14 +42,14 @@ export function splitLineBatch(
  * Textured IMAGE/OLE batches are not split (the bitmap cannot be painted in
  * fragments without duplicating the texture in every chunk).
  */
-export function splitMeshBatch(
-  batch: AcExMeshBatch,
+export function acexHtmlSplitMeshBatch(
+  batch: AcExHtmlMeshBatch,
   maxBytes: number = ACEX_MAX_GEOMETRY_BATCH_BYTES
-): AcExMeshBatch[] {
+): AcExHtmlMeshBatch[] {
   if (batch.texture) {
     return [batch]
   }
-  if (!(maxBytes > 0) || estimateMeshBatchBytes(batch) <= maxBytes) {
+  if (!(maxBytes > 0) || acexHtmlEstimateMeshBatchBytes(batch) <= maxBytes) {
     return [batch]
   }
 
@@ -62,11 +62,11 @@ export function splitMeshBatch(
   return splitIndexedMeshBatch(batch, maxBytes)
 }
 
-function linePatternOverhead(batch: AcExLineBatch): number {
+function linePatternOverhead(batch: AcExHtmlLineBatch): number {
   return batch.linePattern ? 64 + batch.linePattern.pattern.length * 8 : 0
 }
 
-function meshStyleOverhead(batch: AcExMeshBatch): number {
+function meshStyleOverhead(batch: AcExHtmlMeshBatch): number {
   return (batch.hatchPattern ? 128 : 0) + (batch.gradientFill ? 64 : 0)
 }
 
@@ -83,9 +83,9 @@ function maxPrimitivesPerPiece(
 }
 
 function splitSequentialLineBatch(
-  batch: AcExLineBatch,
+  batch: AcExHtmlLineBatch,
   maxBytes: number
-): AcExLineBatch[] {
+): AcExHtmlLineBatch[] {
   const hasDistances = (batch.lineDistances?.length ?? 0) >= 2
   const bytesPerSegment = 24 + (hasDistances ? 8 : 0)
   const maxSegments = maxPrimitivesPerPiece(
@@ -98,11 +98,11 @@ function splitSequentialLineBatch(
     return [batch]
   }
 
-  const pieces: AcExLineBatch[] = []
+  const pieces: AcExHtmlLineBatch[] = []
   for (let start = 0; start < totalSegments; start += maxSegments) {
     const count = Math.min(maxSegments, totalSegments - start)
     const posStart = start * 6
-    const piece: AcExLineBatch = {
+    const piece: AcExHtmlLineBatch = {
       layer: batch.layer,
       color: batch.color,
       offset: batch.offset,
@@ -122,9 +122,9 @@ function splitSequentialLineBatch(
 }
 
 function splitIndexedLineBatch(
-  batch: AcExLineBatch,
+  batch: AcExHtmlLineBatch,
   maxBytes: number
-): AcExLineBatch[] {
+): AcExHtmlLineBatch[] {
   const indices = batch.indices!
   const hasDistances = (batch.lineDistances?.length ?? 0) > 0
   // Worst case: two unique vertices per segment (no sharing).
@@ -134,7 +134,7 @@ function splitIndexedLineBatch(
     linePatternOverhead(batch),
     bytesPerSegment
   )
-  const pieces: AcExLineBatch[] = []
+  const pieces: AcExHtmlLineBatch[] = []
   for (let i = 0; i + 1 < indices.length; ) {
     const indexCount = Math.min(maxSegments * 2, indices.length - i)
     const aligned = indexCount - (indexCount % 2)
@@ -146,17 +146,17 @@ function splitIndexedLineBatch(
 }
 
 function remapLineSlice(
-  batch: AcExLineBatch,
+  batch: AcExHtmlLineBatch,
   indexStart: number,
   indexCount: number
-): AcExLineBatch {
+): AcExHtmlLineBatch {
   const mapped = remapIndexedVertices(
     batch.positions,
     batch.indices!.subarray(indexStart, indexStart + indexCount),
     batch.lineDistances ? [batch.lineDistances] : [],
     [1]
   )
-  const piece: AcExLineBatch = {
+  const piece: AcExHtmlLineBatch = {
     layer: batch.layer,
     color: batch.color,
     offset: batch.offset,
@@ -171,9 +171,9 @@ function remapLineSlice(
 }
 
 function splitPointMeshBatch(
-  batch: AcExMeshBatch,
+  batch: AcExHtmlMeshBatch,
   maxBytes: number
-): AcExMeshBatch[] {
+): AcExHtmlMeshBatch[] {
   if (batch.indices && batch.indices.length > 0) {
     return splitIndexedPointMeshBatch(batch, maxBytes)
   }
@@ -181,9 +181,9 @@ function splitPointMeshBatch(
 }
 
 function splitIndexedPointMeshBatch(
-  batch: AcExMeshBatch,
+  batch: AcExHtmlMeshBatch,
   maxBytes: number
-): AcExMeshBatch[] {
+): AcExHtmlMeshBatch[] {
   const indices = batch.indices!
   const bytesPerPoint =
     12 + 4 + (batch.uvs ? 8 : 0) + (batch.gradientPositions ? 8 : 0)
@@ -192,7 +192,7 @@ function splitIndexedPointMeshBatch(
     meshStyleOverhead(batch),
     bytesPerPoint
   )
-  const pieces: AcExMeshBatch[] = []
+  const pieces: AcExHtmlMeshBatch[] = []
   for (let i = 0; i < indices.length; ) {
     const count = Math.min(maxPoints, indices.length - i)
     if (count < 1) break
@@ -203,9 +203,9 @@ function splitIndexedPointMeshBatch(
 }
 
 function splitPointOrUnindexedMeshBatch(
-  batch: AcExMeshBatch,
+  batch: AcExHtmlMeshBatch,
   maxBytes: number
-): AcExMeshBatch[] {
+): AcExHtmlMeshBatch[] {
   const vertexCount = (batch.positions.length / 3) | 0
   if (vertexCount <= 1) {
     return [batch]
@@ -219,7 +219,7 @@ function splitPointOrUnindexedMeshBatch(
   )
   const group = batch.points ? 1 : 3
   const alignedMax = Math.max(group, maxVertices - (maxVertices % group))
-  const pieces: AcExMeshBatch[] = []
+  const pieces: AcExHtmlMeshBatch[] = []
   for (let start = 0; start < vertexCount; start += alignedMax) {
     const count = Math.min(alignedMax, vertexCount - start)
     const alignedCount = count - (count % group)
@@ -230,9 +230,9 @@ function splitPointOrUnindexedMeshBatch(
 }
 
 function splitIndexedMeshBatch(
-  batch: AcExMeshBatch,
+  batch: AcExHtmlMeshBatch,
   maxBytes: number
-): AcExMeshBatch[] {
+): AcExHtmlMeshBatch[] {
   const indices = batch.indices!
   const bytesPerTriangle =
     36 + 12 + (batch.uvs ? 24 : 0) + (batch.gradientPositions ? 24 : 0)
@@ -241,7 +241,7 @@ function splitIndexedMeshBatch(
     meshStyleOverhead(batch),
     bytesPerTriangle
   )
-  const pieces: AcExMeshBatch[] = []
+  const pieces: AcExHtmlMeshBatch[] = []
   for (let i = 0; i + 2 < indices.length; ) {
     const indexCount = Math.min(maxTriangles * 3, indices.length - i)
     const aligned = indexCount - (indexCount % 3)
@@ -253,12 +253,12 @@ function splitIndexedMeshBatch(
 }
 
 function sliceMeshVertices(
-  batch: AcExMeshBatch,
+  batch: AcExHtmlMeshBatch,
   vertexStart: number,
   vertexCount: number
-): AcExMeshBatch {
+): AcExHtmlMeshBatch {
   const posStart = vertexStart * 3
-  const piece: AcExMeshBatch = {
+  const piece: AcExHtmlMeshBatch = {
     layer: batch.layer,
     color: batch.color,
     offset: batch.offset,
@@ -278,10 +278,10 @@ function sliceMeshVertices(
 }
 
 function remapMeshSlice(
-  batch: AcExMeshBatch,
+  batch: AcExHtmlMeshBatch,
   indexStart: number,
   indexCount: number
-): AcExMeshBatch {
+): AcExHtmlMeshBatch {
   const extras: Float32Array[] = []
   const strides: number[] = []
   if (batch.uvs) {
@@ -298,7 +298,7 @@ function remapMeshSlice(
     extras,
     strides
   )
-  const piece: AcExMeshBatch = {
+  const piece: AcExHtmlMeshBatch = {
     layer: batch.layer,
     color: batch.color,
     offset: batch.offset,
@@ -362,14 +362,14 @@ function remapIndexedVertices(
   }
 }
 
-function copyLineStyle(from: AcExLineBatch, to: AcExLineBatch): void {
+function copyLineStyle(from: AcExHtmlLineBatch, to: AcExHtmlLineBatch): void {
   if (from.linePattern) to.linePattern = from.linePattern
   if (from.lineWidth != null) to.lineWidth = from.lineWidth
   if (from.renderOrder != null) to.renderOrder = from.renderOrder
   if (from.excludeFromOsnap) to.excludeFromOsnap = true
 }
 
-function copyMeshStyle(from: AcExMeshBatch, to: AcExMeshBatch): void {
+function copyMeshStyle(from: AcExHtmlMeshBatch, to: AcExHtmlMeshBatch): void {
   if (from.hatchPattern) to.hatchPattern = from.hatchPattern
   if (from.gradientFill) to.gradientFill = from.gradientFill
   if (from.side != null) to.side = from.side

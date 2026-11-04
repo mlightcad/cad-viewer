@@ -1,4 +1,4 @@
-import type { AcExExtents, AcExViewportSnapshot } from '@mlightcad/cad-html-core'
+import type { AcExHtmlExtents, AcExHtmlViewportSnapshot } from '@mlightcad/cad-html-core'
 
 import {
   type AcExCssRect,
@@ -12,7 +12,7 @@ const EPS = 1e-12
  * Returns `true` when `(x, y)` (paper WCS) lies inside the viewport frame.
  */
 export function viewportContainsPaperPoint(
-  viewport: AcExViewportSnapshot,
+  viewport: AcExHtmlViewportSnapshot,
   x: number,
   y: number
 ): boolean {
@@ -26,7 +26,7 @@ export function viewportContainsPaperPoint(
  * drilling through to model space.
  */
 export function viewportIsNearPaperBorder(
-  viewport: AcExViewportSnapshot,
+  viewport: AcExHtmlViewportSnapshot,
   x: number,
   y: number,
   tolerance: number
@@ -43,7 +43,7 @@ export function viewportIsNearPaperBorder(
 /**
  * View twist in radians, or `0` when omitted / non-finite.
  */
-export function viewportTwist(viewport: AcExViewportSnapshot): number {
+export function viewportTwist(viewport: AcExHtmlViewportSnapshot): number {
   const twist = viewport.twist
   return typeof twist === 'number' && Number.isFinite(twist) ? twist : 0
 }
@@ -52,14 +52,14 @@ export function viewportTwist(viewport: AcExViewportSnapshot): number {
  * Paper-space WCS → model-space WCS through a viewport.
  *
  * Maps the paper rectangle onto the DCS view (`model` size around its
- * center), then rotates by {@link AcExViewportSnapshot.twist} so a
+ * center), then rotates by {@link AcExHtmlViewportSnapshot.twist} so a
  * non-zero DVIEW twist matches `AcGiViewport.dcsCenterToWcs`. Degenerate
  * paper boxes return the model view center.
  *
  * Inverse of {@link modelPointToPaper}.
  */
 export function paperPointToModel(
-  viewport: AcExViewportSnapshot,
+  viewport: AcExHtmlViewportSnapshot,
   x: number,
   y: number
 ): { x: number; y: number } {
@@ -84,7 +84,7 @@ export function paperPointToModel(
  * paper rectangle center.
  */
 export function modelPointToPaper(
-  viewport: AcExViewportSnapshot,
+  viewport: AcExHtmlViewportSnapshot,
   x: number,
   y: number
 ): { x: number; y: number } {
@@ -152,7 +152,7 @@ function unrotateOffset(
  * snap aperture into model units).
  */
 export function viewportPaperToModelScale(
-  viewport: AcExViewportSnapshot
+  viewport: AcExHtmlViewportSnapshot
 ): number {
   const paperW = viewport.paper.maxX - viewport.paper.minX
   if (paperW <= EPS) return 1
@@ -165,7 +165,7 @@ export function viewportPaperToModelScale(
  * where `_frustum = vpH / 2`.
  */
 export function computeViewportCamera(
-  model: AcExExtents,
+  model: AcExHtmlExtents,
   vpW: number,
   vpH: number
 ): {
@@ -206,10 +206,10 @@ export function computeViewportCamera(
  *   viewport is fully outside `clip` or has an empty mapping.
  */
 export function computeOnscreenPaperViewportPass(
-  viewport: AcExViewportSnapshot,
+  viewport: AcExHtmlViewportSnapshot,
   cssVp: AcExCssRect,
   clip: AcExCssRect
-): { hit: AcExCssRect; model: AcExExtents } | null {
+): { hit: AcExCssRect; model: AcExHtmlExtents } | null {
   const hit = acexIntersectCssRects(cssVp, clip)
   if (!hit) return null
   const model = acexCssRectToWcsBox(hit, viewport.model, cssVp)
@@ -232,11 +232,11 @@ export function computeOnscreenPaperViewportPass(
  * viewports (typically drawn on top) win.
  */
 export function findDrillThroughViewport(
-  viewports: readonly AcExViewportSnapshot[] | undefined,
+  viewports: readonly AcExHtmlViewportSnapshot[] | undefined,
   x: number,
   y: number,
   borderTolerance: number
-): AcExViewportSnapshot | undefined {
+): AcExHtmlViewportSnapshot | undefined {
   if (!viewports || viewports.length === 0) return undefined
   for (let i = viewports.length - 1; i >= 0; i--) {
     const viewport = viewports[i]!
@@ -251,7 +251,7 @@ export function findDrillThroughViewport(
  * `true` when any exported paper layout has at least one user viewport.
  */
 export function snapshotHasPaperViewports(
-  layouts: ReadonlyArray<{ viewports?: AcExViewportSnapshot[] }>
+  layouts: ReadonlyArray<{ viewports?: AcExHtmlViewportSnapshot[] }>
 ): boolean {
   return layouts.some(
     layout => layout.viewports != null && layout.viewports.length > 0

@@ -8,22 +8,22 @@ import {
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
-import { copyFloat32Range } from './AcExBatchBuffers'
+import { acexHtmlCopyFloat32Range } from './AcExHtmlBatchBuffers'
 import {
-  createTextureFromExportedBytes,
-  releaseExportedTextureBytes
-} from './AcExMeshTextureExport'
+  acexHtmlCreateTextureFromExportedBytes,
+  acexHtmlReleaseExportedTextureBytes
+} from './AcExHtmlMeshTextureExport'
 import type {
-  AcExGradientFill,
-  AcExHatchPattern,
-  AcExHatchPatternLine,
-  AcExLineBatch,
-  AcExLinePattern,
-  AcExMeshBatch
-} from './AcExSnapshotTypes'
+  AcExHtmlGradientFill,
+  AcExHtmlHatchPattern,
+  AcExHtmlHatchPatternLine,
+  AcExHtmlLineBatch,
+  AcExHtmlLinePattern,
+  AcExHtmlMeshBatch
+} from './AcExHtmlSnapshotTypes'
 
 /** Shared camera zoom uniform updated by the offline HTML viewer. */
-export const AcExCameraZoomUniform = { value: 1.0 }
+export const AcExHtmlCameraZoomUniform = { value: 1.0 }
 
 function asShaderMaterial(
   material: THREE.Material
@@ -41,9 +41,9 @@ function asShaderMaterial(
 /**
  * Reads a serialized linetype from a live export-time shader material.
  */
-export function extractLinePattern(
+export function acexHtmlExtractLinePattern(
   material: THREE.Material
-): AcExLinePattern | undefined {
+): AcExHtmlLinePattern | undefined {
   const shaderMaterial = asShaderMaterial(material)
   if (!shaderMaterial) {
     return undefined
@@ -67,9 +67,9 @@ export function extractLinePattern(
 /**
  * Reads a serialized hatch pattern from a live export-time shader material.
  */
-export function extractHatchPattern(
+export function acexHtmlExtractHatchPattern(
   material: THREE.Material
-): AcExHatchPattern | undefined {
+): AcExHtmlHatchPattern | undefined {
   const shaderMaterial = asShaderMaterial(material)
   if (!shaderMaterial) {
     return undefined
@@ -99,9 +99,9 @@ export function extractHatchPattern(
 /**
  * Reads a serialized gradient fill from a live export-time shader material.
  */
-export function extractGradientFill(
+export function acexHtmlExtractGradientFill(
   material: THREE.Material
-): AcExGradientFill | undefined {
+): AcExHtmlGradientFill | undefined {
   const shaderMaterial = asShaderMaterial(material)
   if (!shaderMaterial) {
     return undefined
@@ -134,7 +134,7 @@ function serializeHatchPatternLine(line: {
   offset: THREE.Vector2
   dashLengths: number[]
   patternLength: number
-}): AcExHatchPatternLine {
+}): AcExHtmlHatchPatternLine {
   return {
     angle: line.angle,
     base: [line.base.x, line.base.y],
@@ -145,7 +145,7 @@ function serializeHatchPatternLine(line: {
 }
 
 function deserializeHatchPatternLine(
-  line: AcExHatchPatternLine
+  line: AcExHtmlHatchPatternLine
 ): AcTrPatternLine {
   return {
     angle: line.angle,
@@ -159,7 +159,7 @@ function deserializeHatchPatternLine(
 /**
  * Computes cumulative `lineDistance` values for line-segment geometry.
  */
-export function computeLineDistancesForSegments(
+export function acexHtmlComputeLineDistancesForSegments(
   positions: Float32Array
 ): Float32Array {
   const vertexCount = positions.length / 3
@@ -191,7 +191,7 @@ export function computeLineDistancesForSegments(
 /**
  * Copies the `lineDistance` attribute honoring the geometry draw range.
  */
-export function exportLineDistanceSlice(
+export function acexHtmlExportLineDistanceSlice(
   geometry: THREE.BufferGeometry
 ): Float32Array | undefined {
   const lineDistanceAttr = geometry.getAttribute('lineDistance') as
@@ -204,7 +204,7 @@ export function exportLineDistanceSlice(
   const indexAttr = geometry.getIndex()
   if (indexAttr) {
     const array = lineDistanceAttr.array as ArrayLike<number>
-    return copyFloat32Range(array, 0, lineDistanceAttr.count)
+    return acexHtmlCopyFloat32Range(array, 0, lineDistanceAttr.count)
   }
 
   const drawRange = geometry.drawRange
@@ -220,13 +220,13 @@ export function exportLineDistanceSlice(
   }
 
   const array = lineDistanceAttr.array as ArrayLike<number>
-  return copyFloat32Range(array, vertexStart, drawCount)
+  return acexHtmlCopyFloat32Range(array, vertexStart, drawCount)
 }
 
 /**
  * Copies a per-vertex buffer attribute honoring the geometry draw range.
  */
-export function exportVertexAttributeSlice(
+export function acexHtmlExportVertexAttributeSlice(
   geometry: THREE.BufferGeometry,
   attributeName: string
 ): Float32Array | undefined {
@@ -241,7 +241,7 @@ export function exportVertexAttributeSlice(
   const indexAttr = geometry.getIndex()
   if (indexAttr) {
     const array = attribute.array as ArrayLike<number>
-    return copyFloat32Range(array, 0, attribute.count * itemSize)
+    return acexHtmlCopyFloat32Range(array, 0, attribute.count * itemSize)
   }
 
   const drawRange = geometry.drawRange
@@ -257,14 +257,14 @@ export function exportVertexAttributeSlice(
   }
 
   const array = attribute.array as ArrayLike<number>
-  return copyFloat32Range(array, vertexStart * itemSize, drawCount * itemSize)
+  return acexHtmlCopyFloat32Range(array, vertexStart * itemSize, drawCount * itemSize)
 }
 
 /**
  * Creates a viewer material for one exported line batch.
  */
-export function createViewerLineMaterial(
-  batch: AcExLineBatch,
+export function acexHtmlCreateViewerLineMaterial(
+  batch: AcExHtmlLineBatch,
   resolution?: THREE.Vector2
 ): THREE.Material {
   if (batch.lineWidth != null && batch.lineWidth > 0) {
@@ -283,7 +283,7 @@ export function createViewerLineMaterial(
       batch.linePattern.patternLength,
       batch.color,
       batch.linePattern.viewportScale,
-      AcExCameraZoomUniform
+      AcExHtmlCameraZoomUniform
     )
   }
   return new THREE.LineBasicMaterial({ color: batch.color })
@@ -292,8 +292,8 @@ export function createViewerLineMaterial(
 /**
  * Creates a viewer material for one exported point batch.
  */
-export function createViewerPointsMaterial(
-  batch: AcExMeshBatch
+export function acexHtmlCreateViewerPointsMaterial(
+  batch: AcExHtmlMeshBatch
 ): THREE.PointsMaterial {
   return new THREE.PointsMaterial({
     color: batch.color,
@@ -325,10 +325,10 @@ export function createViewerPointsMaterial(
  *    must scale by the matrix's stretch factor along it (a block scaled 2x
  *    keeps the original dash period otherwise).
  */
-export function transformHatchPatternToWorldSpace(
-  pattern: AcExHatchPattern,
+export function acexHtmlTransformHatchPatternToWorldSpace(
+  pattern: AcExHtmlHatchPattern,
   matrixElements: number[]
-): AcExHatchPattern {
+): AcExHtmlHatchPattern {
   const m00 = matrixElements[0]!
   const m10 = matrixElements[1]!
   const m01 = matrixElements[4]!
@@ -389,17 +389,17 @@ export function transformHatchPatternToWorldSpace(
  * vertices (`batch.offset`), then period-wraps each line base so the offline
  * hatch shader keeps float32 precision at large survey coordinates.
  *
- * {@link AcExHatchPatternLine.offset} is already in the hatch-shader uniform
+ * {@link AcExHtmlHatchPatternLine.offset} is already in the hatch-shader uniform
  * frame (rotated by `-line.angle` when the live material was built, then
- * optionally transformed by {@link transformHatchPatternToWorldSpace}). Do
+ * optionally transformed by {@link acexHtmlTransformHatchPatternToWorldSpace}). Do
  * **not** rotate it again before {@link wrapPatternBaseToLocalFrame} — that
  * helper expects the pre-rotated offset, matching
  * `AcTrFillMaterialManager.createHatchShaderMaterial`.
  */
-export function rebaseHatchPatternToLocalOffset(
-  pattern: AcExHatchPattern,
+export function acexHtmlRebaseHatchPatternToLocalOffset(
+  pattern: AcExHtmlHatchPattern,
   offset: [number, number, number]
-): AcExHatchPattern {
+): AcExHtmlHatchPattern {
   return {
     patternAngle: pattern.patternAngle,
     patternLines: pattern.patternLines.map(line => {
@@ -407,7 +407,7 @@ export function rebaseHatchPatternToLocalOffset(
         line.base[0] - offset[0],
         line.base[1] - offset[1]
       )
-      // Shader-frame offset from extractHatchPattern / world transform — already
+      // Shader-frame offset from acexHtmlExtractHatchPattern / world transform — already
       // rotated by -line.angle; pass through to wrapPatternBaseToLocalFrame.
       const patternOffset = new THREE.Vector2(line.offset[0], line.offset[1])
       wrapPatternBaseToLocalFrame(
@@ -429,7 +429,7 @@ export function rebaseHatchPatternToLocalOffset(
 }
 
 /** Optional hooks when building viewer materials from exported mesh batches. */
-export interface AcExViewerMeshMaterialOptions {
+export interface AcExHtmlViewerMeshMaterialOptions {
   /**
    * Called after an async IMAGE/OLE texture becomes ready. Offline viewers should
    * pass their `render()` so the mesh is not stuck at opacity 0 until the next
@@ -441,9 +441,9 @@ export interface AcExViewerMeshMaterialOptions {
 /**
  * Creates a viewer material for one exported mesh batch.
  */
-export function createViewerMeshMaterial(
-  batch: AcExMeshBatch,
-  options: AcExViewerMeshMaterialOptions = {}
+export function acexHtmlCreateViewerMeshMaterial(
+  batch: AcExHtmlMeshBatch,
+  options: AcExHtmlViewerMeshMaterialOptions = {}
 ): THREE.Material {
   if (batch.hatchPattern && batch.hatchPattern.patternLines.length > 0) {
     try {
@@ -453,7 +453,7 @@ export function createViewerMeshMaterial(
       return createHatchPatternShaderMaterial(
         patternLines,
         batch.hatchPattern.patternAngle,
-        AcExCameraZoomUniform,
+        AcExHtmlCameraZoomUniform,
         new THREE.Color(batch.color),
         0,
         (batch.side ?? THREE.FrontSide) as THREE.Side
@@ -486,10 +486,10 @@ export function createViewerMeshMaterial(
       opacity: 0,
       depthWrite: false
     })
-    material.map = createTextureFromExportedBytes(batch.texture, {
+    material.map = acexHtmlCreateTextureFromExportedBytes(batch.texture, {
       onLoad: () => {
         // PNG/JPEG bytes are no longer needed once the GPU texture exists.
-        releaseExportedTextureBytes(batch.texture)
+        acexHtmlReleaseExportedTextureBytes(batch.texture)
         material.opacity = 1
         material.depthWrite = true
         material.needsUpdate = true

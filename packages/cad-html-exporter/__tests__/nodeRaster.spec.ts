@@ -1,4 +1,4 @@
-import { encodeTextureForExport } from '@mlightcad/cad-html-core'
+import { acexHtmlEncodeTextureForExport } from '@mlightcad/cad-html-core'
 import { encode as encodeJpeg } from 'jpeg-js'
 import { PNG } from 'pngjs'
 import * as THREE from 'three'
@@ -55,7 +55,7 @@ describe('headless texture export', () => {
       decoded.height,
       THREE.RGBAFormat
     )
-    const exported = encodeTextureForExport(texture)
+    const exported = acexHtmlEncodeTextureForExport(texture)
     expect(exported?.mimeType).toBe('image/png')
     const again = decodeNodeRaster(exported!.bytes, 'image/png')
     expect(again).toEqual({

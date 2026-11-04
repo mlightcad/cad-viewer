@@ -82,7 +82,7 @@ MLightCAD 随附一组官方插件。每个插件专注于一项职责 —— UI
 |------|-------|
 | 命令 | `chtml`（`cad-editor` 中为对话框）、`-chtml`（通过 `cad-simple-viewer-cli` 的命令行） |
 | 额外配置 | `AcApDocManager.createInstance()` 上的 `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` 的 URL（从包的 `dist/` 复制） |
-| 公开 API | `registerLazyHtmlPlugin`、`createHtmlPlugin`、`AcApHtmlConvertor`、`packHtml`、快照类型 |
+| 公开 API | `registerLazyHtmlPlugin`、`createHtmlPlugin`、`AcApHtmlConvertor`、`acexHtmlPackHtml`、快照类型 |
 
 → **构建产物与集成：** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **使用相同管线的无头 CLI：** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)

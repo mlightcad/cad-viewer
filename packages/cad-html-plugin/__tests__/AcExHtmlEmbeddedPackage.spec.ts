@@ -1,31 +1,31 @@
 import { TextDecoder, TextEncoder } from 'node:util'
 
-import { decodeChunkGzip } from '@mlightcad/cad-html-core'
+import { acexHtmlDecodeChunkGzip } from '@mlightcad/cad-html-core'
 import {
-  createAcExHtmlAccessKey,
-  decryptAcExHtmlBytes
+  acexHtmlCreateAccessKey,
+  acexHtmlDecryptBytes
 } from '@mlightcad/cad-html-core'
 import {
-  acExHtmlTextToBytes,
-  parseAcExHtmlBinaryEncoding
+  acexHtmlTextToBytes,
+  acexHtmlParseBinaryEncoding
 } from '@mlightcad/cad-html-core'
 import {
   ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME,
   ACEX_EMBEDDED_CHUNK_HREF_ATTR,
   ACEX_EMBEDDED_CHUNK_MIME,
-  createAcExEmbeddedPackageFetch,
-  decryptAcExEmbeddedManifest,
-  estimateAcExSnapshotGeometryBytes,
-  packHtmlEmbeddedPackage,
-  parseAcExEmbeddedPackageConfig,
-  shouldEmbedAcExChunks
+  acexHtmlCreateEmbeddedPackageFetch,
+  acexHtmlDecryptEmbeddedManifest,
+  acexHtmlEstimateSnapshotGeometryBytes,
+  acexHtmlPackHtmlEmbeddedPackage,
+  acexHtmlParseEmbeddedPackageConfig,
+  acexHtmlShouldEmbedChunks
 } from '@mlightcad/cad-html-core'
-import { loadAcExPackage } from '@mlightcad/cad-html-core'
+import { acexHtmlLoadPackage } from '@mlightcad/cad-html-core'
 import {
   ACEX_EMBEDDED_CHUNK_THRESHOLD_BYTES,
   ACEX_SNAPSHOT_VERSION
 } from '@mlightcad/cad-html-core'
-import type { AcExSnapshot } from '@mlightcad/cad-html-core'
+import type { AcExHtmlSnapshot } from '@mlightcad/cad-html-core'
 
 // Node/Jest may omit Web Text* globals depending on the environment.
 Object.assign(globalThis, { TextEncoder, TextDecoder })
@@ -38,7 +38,7 @@ function extractPackageConfig(html: string) {
   const match = html.match(
     /<script id="mlcad-package" type="application\/json">([\s\S]*?)<\/script>/
   )
-  return parseAcExEmbeddedPackageConfig(match?.[1])
+  return acexHtmlParseEmbeddedPackageConfig(match?.[1])
 }
 
 function extractAccessSalt(html: string): string {
@@ -62,8 +62,8 @@ function extractEmbeddedChunkBytes(html: string): Map<string, Uint8Array> {
     const mime = match[1]!
     const href = match[2]!
     const payload = match[3]!.replace(/\s+/g, '')
-    const encoding = parseAcExHtmlBinaryEncoding(mime)
-    out.set(href, acExHtmlTextToBytes(payload, encoding))
+    const encoding = acexHtmlParseBinaryEncoding(mime)
+    out.set(href, acexHtmlTextToBytes(payload, encoding))
   }
   return out
 }
@@ -71,7 +71,7 @@ function extractEmbeddedChunkBytes(html: string): Map<string, Uint8Array> {
 function makeSnapshot(options?: {
   lineCount?: number
   positionsPerLine?: number
-}): AcExSnapshot {
+}): AcExHtmlSnapshot {
   const lineCount = options?.lineCount ?? 2
   const positionsPerLine = options?.positionsPerLine ?? 6
   const lineBatches = Array.from({ length: lineCount }, (_, i) => ({
@@ -120,17 +120,17 @@ function makeSnapshot(options?: {
 describe('AcExHtmlEmbeddedPackage', () => {
   it('keeps small drawings on the monolithic path by default', () => {
     const snapshot = makeSnapshot()
-    expect(estimateAcExSnapshotGeometryBytes(snapshot)).toBeLessThan(
+    expect(acexHtmlEstimateSnapshotGeometryBytes(snapshot)).toBeLessThan(
       ACEX_EMBEDDED_CHUNK_THRESHOLD_BYTES
     )
-    expect(shouldEmbedAcExChunks(snapshot)).toBe(false)
+    expect(acexHtmlShouldEmbedChunks(snapshot)).toBe(false)
   })
 
   it('switches to embedded chunks when geometry exceeds the threshold', () => {
     // ~9 MiB of float positions → over the 8 MiB threshold
     const positionsPerLine = Math.ceil((9 * 1024 * 1024) / 4)
     const snapshot = makeSnapshot({ lineCount: 1, positionsPerLine })
-    expect(shouldEmbedAcExChunks(snapshot)).toBe(true)
+    expect(acexHtmlShouldEmbedChunks(snapshot)).toBe(true)
   })
 
   it('packs embedded HTML and loads geometry progressively without a password', async () => {
@@ -138,7 +138,7 @@ describe('AcExHtmlEmbeddedPackage', () => {
       lineCount: 8,
       positionsPerLine: 6
     })
-    const html = await packHtmlEmbeddedPackage(snapshot, {
+    const html = await acexHtmlPackHtmlEmbeddedPackage(snapshot, {
       viewerRuntime: '/* runtime */',
       maxChunkBytes: 400,
       maxBatchBytes: 400
@@ -161,11 +161,11 @@ describe('AcExHtmlEmbeddedPackage', () => {
     expect(chunkBytes.size).toBeGreaterThan(1)
     expect(chunkBytes.size).toBe(config.manifest.chunks.length)
 
-    const session = createAcExEmbeddedPackageFetch({
+    const session = acexHtmlCreateEmbeddedPackageFetch({
       manifest: config.manifest,
       chunkBytes
     })
-    const loaded = await loadAcExPackage({
+    const loaded = await acexHtmlLoadPackage({
       manifestUrl: session.manifestUrl,
       fetchImpl: session.fetchImpl
     })
@@ -181,7 +181,7 @@ describe('AcExHtmlEmbeddedPackage', () => {
       lineCount: 4,
       positionsPerLine: 6
     })
-    const html = await packHtmlEmbeddedPackage(snapshot, {
+    const html = await acexHtmlPackHtmlEmbeddedPackage(snapshot, {
       viewerRuntime: '/* runtime */',
       maxChunkBytes: 400,
       maxBatchBytes: 400
@@ -193,7 +193,7 @@ describe('AcExHtmlEmbeddedPackage', () => {
 
     // Minimal DOM stub builder: each embedded chunk script from the packed
     // HTML. `remove` mirrors the real Element API so
-    // `consumeAcExEmbeddedChunkFromDom` can detach nodes after decoding.
+    // `acexHtmlConsumeEmbeddedChunkFromDom` can detach nodes after decoding.
     const buildScriptNodes = (): Array<{
       getAttribute: (name: string) => string | null
       textContent: string
@@ -237,40 +237,40 @@ describe('AcExHtmlEmbeddedPackage', () => {
       }) as unknown as ParentNode
 
     const {
-      createAcExDomEmbeddedPackageFetch,
-      consumeAcExEmbeddedChunkFromDom,
-      readAcExEmbeddedChunkFromDom
+      acexHtmlCreateDomEmbeddedPackageFetch,
+      acexHtmlConsumeEmbeddedChunkFromDom,
+      acexHtmlReadEmbeddedChunkFromDom
     } = await import('@mlightcad/cad-html-core')
 
-    // `readAcExEmbeddedChunkFromDom` keeps the node in the DOM.
+    // `acexHtmlReadEmbeddedChunkFromDom` keeps the node in the DOM.
     const readNodes = buildScriptNodes()
     const readRoot = buildRoot(readNodes)
     const href = config.manifest.chunks[0]!.href
-    const once = readAcExEmbeddedChunkFromDom(href, readRoot)
-    const twice = readAcExEmbeddedChunkFromDom(href, readRoot)
+    const once = acexHtmlReadEmbeddedChunkFromDom(href, readRoot)
+    const twice = acexHtmlReadEmbeddedChunkFromDom(href, readRoot)
     expect(once?.byteLength).toBeGreaterThan(0)
     expect(Array.from(once ?? [])).toEqual(Array.from(twice ?? []))
     expect(readNodes.every(n => !n._detached)).toBe(true)
 
-    // `consumeAcExEmbeddedChunkFromDom` returns the same bytes but detaches
+    // `acexHtmlConsumeEmbeddedChunkFromDom` returns the same bytes but detaches
     // the script node so its text payload can be GC'd.
     const consumeNodes = buildScriptNodes()
     const consumeRoot = buildRoot(consumeNodes)
     const beforeCount = consumeNodes.filter(n => !n._detached).length
-    const consumed = consumeAcExEmbeddedChunkFromDom(href, consumeRoot)
+    const consumed = acexHtmlConsumeEmbeddedChunkFromDom(href, consumeRoot)
     expect(consumed?.byteLength).toBe(once?.byteLength)
     expect(consumeNodes.filter(n => !n._detached).length).toBe(beforeCount - 1)
     // A second consume on the same href returns undefined — the node is gone.
-    expect(consumeAcExEmbeddedChunkFromDom(href, consumeRoot)).toBeUndefined()
+    expect(acexHtmlConsumeEmbeddedChunkFromDom(href, consumeRoot)).toBeUndefined()
 
     // First progressive load detaches every script as chunks are read.
     const sessionNodes = buildScriptNodes()
     const sessionRoot = buildRoot(sessionNodes)
-    const session = createAcExDomEmbeddedPackageFetch({
+    const session = acexHtmlCreateDomEmbeddedPackageFetch({
       manifest: config.manifest,
       root: sessionRoot
     })
-    const loaded = await loadAcExPackage({
+    const loaded = await acexHtmlLoadPackage({
       manifestUrl: session.manifestUrl,
       fetchImpl: session.fetchImpl
     })
@@ -281,7 +281,7 @@ describe('AcExHtmlEmbeddedPackage', () => {
     expect(sessionNodes.every(n => n._detached)).toBe(true)
 
     // Layout-switch reload is served from the in-memory byte cache, not DOM.
-    const again = await loadAcExPackage({
+    const again = await acexHtmlLoadPackage({
       manifestUrl: session.manifestUrl,
       fetchImpl: session.fetchImpl
     })
@@ -296,7 +296,7 @@ describe('AcExHtmlEmbeddedPackage', () => {
       positionsPerLine: 6
     })
     const password = 'chunk-secret'
-    const html = await packHtmlEmbeddedPackage(snapshot, {
+    const html = await acexHtmlPackHtmlEmbeddedPackage(snapshot, {
       viewerRuntime: '/* runtime */',
       password,
       maxChunkBytes: 400,
@@ -315,17 +315,17 @@ describe('AcExHtmlEmbeddedPackage', () => {
       throw new Error('expected encrypted embedded config')
     }
 
-    const { key } = await createAcExHtmlAccessKey(password, salt)
-    const manifest = await decryptAcExEmbeddedManifest(
+    const { key } = await acexHtmlCreateAccessKey(password, salt)
+    const manifest = await acexHtmlDecryptEmbeddedManifest(
       config.encryptedManifest,
       key
     )
     expect(manifest.chunks.length).toBeGreaterThan(1)
 
     await expect(
-      decryptAcExEmbeddedManifest(
+      acexHtmlDecryptEmbeddedManifest(
         config.encryptedManifest,
-        (await createAcExHtmlAccessKey('wrong', salt)).key
+        (await acexHtmlCreateAccessKey('wrong', salt)).key
       )
     ).rejects.toThrow()
 
@@ -333,17 +333,17 @@ describe('AcExHtmlEmbeddedPackage', () => {
     expect(chunkBytes.size).toBe(manifest.chunks.length)
     const firstHref = manifest.chunks[0]!.href
     const encrypted = chunkBytes.get(firstHref)!
-    const plain = await decryptAcExHtmlBytes(key, encrypted)
-    const decoded = decodeChunkGzip(plain)
+    const plain = await acexHtmlDecryptBytes(key, encrypted)
+    const decoded = acexHtmlDecodeChunkGzip(plain)
     expect(decoded.layoutBtrId).toBe('ms')
     expect(decoded.lineBatches.length).toBeGreaterThan(0)
 
-    const session = createAcExEmbeddedPackageFetch({
+    const session = acexHtmlCreateEmbeddedPackageFetch({
       manifest,
       chunkBytes,
       decryptKey: key
     })
-    const loaded = await loadAcExPackage({
+    const loaded = await acexHtmlLoadPackage({
       manifestUrl: session.manifestUrl,
       fetchImpl: session.fetchImpl
     })

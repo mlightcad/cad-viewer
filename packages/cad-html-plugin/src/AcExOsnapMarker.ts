@@ -1,10 +1,10 @@
-import type { AcExOsnapMode } from './AcExOsnap'
+import type { AcExHtmlOsnapMode } from './AcExOsnap'
 import { acexOsnapModeToMarkerType } from './AcExOsnap'
 
 /**
  * Visual shape of an object-snap marker in the offline HTML viewer.
  *
- * Selected by {@link acexOsnapModeToMarkerType} from {@link AcExOsnapMode}:
+ * Selected by {@link acexOsnapModeToMarkerType} from {@link AcExHtmlOsnapMode}:
  * - `rect` — endpoint, node
  * - `triangle` — midpoint
  * - `circle` — center
@@ -57,7 +57,7 @@ export class AcExOsnapMarker {
    * @param clientY - Viewport Y in pixels.
    * @param mode - Snap mode (determines marker shape).
    */
-  show(clientX: number, clientY: number, mode: AcExOsnapMode): void {
+  show(clientX: number, clientY: number, mode: AcExHtmlOsnapMode): void {
     const rect = this.host.getBoundingClientRect()
     const shape = acexOsnapModeToMarkerType(mode)
     if (shape !== this.shape) {

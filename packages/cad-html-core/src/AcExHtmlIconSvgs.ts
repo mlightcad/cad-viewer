@@ -397,7 +397,7 @@ export const ICON_CLOSE =
  * @param className - Wrapper class. Defaults to `ml-ex-ui-icon`.
  * @returns Wrapper span, or a cloned/factory element.
  */
-export function createIconElement(
+export function acexHtmlCreateIconElement(
   icon: string | HTMLElement | (() => HTMLElement),
   className = 'ml-ex-ui-icon'
 ): HTMLElement {

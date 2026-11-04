@@ -3,15 +3,14 @@ import { availableParallelism } from 'node:os'
 import {
   ACEX_HTML_BACKGROUND_BLACK,
   ACEX_HTML_BACKGROUND_WHITE,
-  type AcExExportLayoutInput,
-  type AcExExportSceneInput,
+  acexHtmlApplyBackground,
   type AcExHtmlBackground,
-  type AcExSnapshot,
-  applyAcExHtmlBackground,
-  buildSnapshotFromExportScene,
-  listDatabaseLayouts,
-  resolveAcExHtmlBackground
-} from '@mlightcad/cad-html-core'
+  acexHtmlBuildSnapshotFromExportScene,
+  type AcExHtmlExportLayoutInput,
+  type AcExHtmlExportSceneInput,
+  acexHtmlListDatabaseLayouts,
+  acexHtmlResolveBackground,
+  type AcExHtmlSnapshot} from '@mlightcad/cad-html-core'
 import {
   type AcDbDatabase,
   type AcDbEntity,
@@ -61,7 +60,7 @@ const ASYNC_DRAW_CONCURRENCY = Math.max(8, Math.min(32, availableParallelism()))
 export async function convertDatabaseToSnapshot(
   database: AcDbDatabase,
   options: AcExHtmlExporterOptions = {}
-): Promise<AcExSnapshot> {
+): Promise<AcExHtmlSnapshot> {
   return withWorkingDatabase(database, () =>
     convertOpenDatabaseToSnapshot(database, options)
   )
@@ -70,7 +69,7 @@ export async function convertDatabaseToSnapshot(
 async function convertOpenDatabaseToSnapshot(
   database: AcDbDatabase,
   options: AcExHtmlExporterOptions
-): Promise<AcExSnapshot> {
+): Promise<AcExHtmlSnapshot> {
   const exportInvisibleLayers = options.exportInvisibleLayers !== false
   const exportLayouts = options.exportLayouts !== false
   const width = options.width ?? 1920
@@ -91,7 +90,7 @@ async function convertOpenDatabaseToSnapshot(
   // Bake ACI 7 against one known canvas, then remap. `'space'` is drawn on
   // black and paper layouts are remapped to white afterwards — changing the
   // renderer background mid-draw would repaint geometry already captured.
-  const backgroundMode: AcExHtmlBackground = resolveAcExHtmlBackground(
+  const backgroundMode: AcExHtmlBackground = acexHtmlResolveBackground(
     options.background
   )
   const background =
@@ -105,7 +104,7 @@ async function convertOpenDatabaseToSnapshot(
 
   const modelSpace = database.tables.blockTable.modelSpace
   const modelSpaceBtrId = modelSpace.objectId
-  const tableLayouts = listDatabaseLayouts(database)
+  const tableLayouts = acexHtmlListDatabaseLayouts(database)
 
   const layoutBtrIds: string[] = []
   if (!exportLayouts) {
@@ -188,7 +187,7 @@ async function convertOpenDatabaseToSnapshot(
   flushMeshGlyphInstancesIntoLayouts(layoutBuckets)
 
   const layerMeta = collectLayerMeta(database)
-  const layouts: AcExExportLayoutInput[] = []
+  const layouts: AcExHtmlExportLayoutInput[] = []
   for (const btrId of layoutBtrIds) {
     const bucket = layoutBuckets.get(btrId)
     layouts.push({
@@ -203,7 +202,7 @@ async function convertOpenDatabaseToSnapshot(
     })
   }
 
-  const scene: AcExExportSceneInput = {
+  const scene: AcExHtmlExportSceneInput = {
     layers: layerMeta,
     layouts,
     activeLayoutBtrId: modelSpaceBtrId,
@@ -211,7 +210,7 @@ async function convertOpenDatabaseToSnapshot(
   }
 
   const tSnapshot = performance.now()
-  const snapshot = buildSnapshotFromExportScene(database, scene, {
+  const snapshot = acexHtmlBuildSnapshotFromExportScene(database, scene, {
     title: options.title,
     background,
     locale: options.locale ?? 'en',
@@ -221,7 +220,7 @@ async function convertOpenDatabaseToSnapshot(
     viewerMode: options.viewerMode ?? 'measure',
     canvasAspectRatio: width / height
   })
-  applyAcExHtmlBackground(snapshot, background, backgroundMode)
+  acexHtmlApplyBackground(snapshot, background, backgroundMode)
   const snapshotMs = performance.now() - tSnapshot
 
   console.info(

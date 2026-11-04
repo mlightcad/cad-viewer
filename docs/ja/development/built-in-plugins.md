@@ -82,7 +82,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 |------|-------|
 | コマンド | `chtml`（`cad-editor` 内のダイアログ）、`-chtml`（`cad-simple-viewer-cli` 経由のコマンドライン） |
 | 追加設定 | `AcApDocManager.createInstance()` の `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` への URL（パッケージの `dist/` からコピー） |
-| パブリック API | `registerLazyHtmlPlugin`、`createHtmlPlugin`、`AcApHtmlConvertor`、`packHtml`、スナップショット型 |
+| パブリック API | `registerLazyHtmlPlugin`、`createHtmlPlugin`、`AcApHtmlConvertor`、`acexHtmlPackHtml`、スナップショット型 |
 
 → **ビルド出力と統合:** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **同じパイプラインを使用するヘッドレス CLI:** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)

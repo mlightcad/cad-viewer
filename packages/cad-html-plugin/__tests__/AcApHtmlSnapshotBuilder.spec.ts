@@ -7,7 +7,7 @@ import type { AcDbDatabase } from '@mlightcad/data-model'
 
 import {
   AcApHtmlSnapshotBuilder,
-  listDatabaseLayouts
+  acexHtmlListDatabaseLayouts
 } from '../src/AcApHtmlSnapshotBuilder'
 
 function fakeDatabase(
@@ -62,7 +62,7 @@ function fakeScene(
   } as unknown as AcTrScene
 }
 
-describe('listDatabaseLayouts', () => {
+describe('acexHtmlListDatabaseLayouts', () => {
   it('sorts layouts by tab order and keeps display names', () => {
     const database = fakeDatabase([
       { layoutName: 'Layout1', tabOrder: 2, blockTableRecordId: 'ps1' },
@@ -70,7 +70,7 @@ describe('listDatabaseLayouts', () => {
       { layoutName: 'Layout2', tabOrder: 3, blockTableRecordId: 'ps2' }
     ])
 
-    expect(listDatabaseLayouts(database).map(layout => layout.name)).toEqual([
+    expect(acexHtmlListDatabaseLayouts(database).map(layout => layout.name)).toEqual([
       'Model',
       'Layout1',
       'Layout2'

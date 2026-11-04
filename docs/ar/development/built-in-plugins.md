@@ -82,7 +82,7 @@ title: "الإضافات المدمجة"
 |------|-------|
 | الأمر | `chtml` (نافذة حوار في `cad-editor`)، `-chtml` (سطر الأوامر عبر `cad-simple-viewer-cli`) |
 | إعداد إضافي | `htmlViewerRuntimeUrl` على `AcApDocManager.createInstance()` — عنوان URL إلى `viewer-runtime.iife.js` (انسخه من `dist/` في الحزمة) |
-| واجهة عامة | `registerLazyHtmlPlugin`، `createHtmlPlugin`، `AcApHtmlConvertor`، `packHtml`، أنواع اللقطات |
+| واجهة عامة | `registerLazyHtmlPlugin`، `createHtmlPlugin`، `AcApHtmlConvertor`، `acexHtmlPackHtml`، أنواع اللقطات |
 
 → **مخرجات البناء والتكامل:** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **واجهة سطر أوامر headless تستخدم خط المعالجة نفسه:** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)

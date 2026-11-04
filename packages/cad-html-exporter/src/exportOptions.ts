@@ -1,8 +1,8 @@
 import {
-  type AcApHtmlExpiryDays,
   type AcExHtmlBackground,
-  type AcExInitialViewMode,
-  type AcExViewerMode
+  type AcExHtmlExpiryDays,
+  type AcExHtmlInitialViewMode,
+  type AcExHtmlViewerMode
 } from '@mlightcad/cad-html-core'
 
 import type { AcExDwgParser } from './registerDwg'
@@ -53,18 +53,18 @@ export interface AcExHtmlExporterOptions {
    * The offline viewer switches the canvas when the layout changes.
    */
   background?: AcExHtmlBackground
-  initialView?: AcExInitialViewMode
+  initialView?: AcExHtmlInitialViewMode
   /**
    * Toolbar written into the HTML. Defaults to `'measure'`: distance, area,
    * and the other measure tools, plus review markup. `'view'` is pan, zoom,
    * and layers only — no object-snap index and no measure or markup tools.
    */
-  viewerMode?: AcExViewerMode
+  viewerMode?: AcExHtmlViewerMode
   /**
    * How long a single-file HTML remains valid. Defaults to `'never'`.
    * Ignored when {@link AcExHtmlExporterOptions.exportFormat} is `'multi'`.
    */
-  expiryDays?: AcApHtmlExpiryDays
+  expiryDays?: AcExHtmlExpiryDays
   /**
    * Absolute expiry timestamp (Unix ms) when {@link AcExHtmlExporterOptions.expiryDays}
    * is `'custom'`. Ignored for `'multi'`.

@@ -15,7 +15,8 @@ import {
   AcUiTextHeightDialog,
   type AcUiTextHeightDialogResult,
   createIconElement,
-  ICON_TEXT_HEIGHT} from './AcExHtmlSimpleViewerUi'
+  ICON_TEXT_HEIGHT
+} from './AcExHtmlSimpleViewerUi'
 
 /** Active drawing session that owns the accessory. */
 export type AcExDrawStyleKind = 'measure' | 'markup'

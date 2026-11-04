@@ -1,6 +1,6 @@
 import { unzipSync, zipSync } from 'fflate'
 
-import type { AcExPackageFile, AcExPackageFiles } from './AcExPackageTypes'
+import type { AcExHtmlPackageFile, AcExHtmlPackageFiles } from './AcExHtmlPackageTypes'
 
 function isSafeZipPath(path: string): boolean {
   if (!path || path.startsWith('/') || path.includes('\\') || path.includes('\0')) {
@@ -32,7 +32,7 @@ function isPrecompressedPackagePath(path: string): boolean {
  * (deflate level 0). Small text entries such as `viewer.html` and the
  * manifest keep a modest compression level.
  */
-export function zipAcExPackageFiles(pkg: AcExPackageFiles): Uint8Array {
+export function acexHtmlZipPackageFiles(pkg: AcExHtmlPackageFiles): Uint8Array {
   const entries: Record<
     string,
     Uint8Array | [Uint8Array, { level: 0 | 6 }]
@@ -51,12 +51,12 @@ export function zipAcExPackageFiles(pkg: AcExPackageFiles): Uint8Array {
 }
 
 /**
- * Unzips a package archive produced by {@link zipAcExPackageFiles}.
+ * Unzips a package archive produced by {@link acexHtmlZipPackageFiles}.
  * Entries with path traversal or absolute paths are rejected.
  */
-export function unzipAcExPackageFiles(bytes: Uint8Array): AcExPackageFile[] {
+export function acexHtmlUnzipPackageFiles(bytes: Uint8Array): AcExHtmlPackageFile[] {
   const entries = unzipSync(bytes)
-  const files: AcExPackageFile[] = []
+  const files: AcExHtmlPackageFile[] = []
   for (const [path, data] of Object.entries(entries)) {
     if (!isSafeZipPath(path)) {
       throw new Error('Unsafe path in package archive')

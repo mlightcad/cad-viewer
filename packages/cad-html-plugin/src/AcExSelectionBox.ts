@@ -1,4 +1,4 @@
-import type { AcExExtents } from '@mlightcad/cad-html-core'
+import type { AcExHtmlExtents } from '@mlightcad/cad-html-core'
 
 /** AutoCAD-style box selection semantics. */
 export type AcExSelectionMode = 'window' | 'crossing'
@@ -9,8 +9,8 @@ export type AcExSelectionMode = 'window' | 'crossing'
  * Window requires full containment; crossing requires intersection.
  */
 export function acexExtentsMatchBox(
-  item: AcExExtents,
-  box: AcExExtents,
+  item: AcExHtmlExtents,
+  box: AcExHtmlExtents,
   mode: AcExSelectionMode
 ): boolean {
   if (mode === 'window') {

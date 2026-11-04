@@ -1,8 +1,8 @@
 /**
  * Object snap candidate collection for exported analytic primitives.
  *
- * Thin orchestration layer: converts {@link AcExOsnapPrimitive} via
- * {@link primitiveToAcGeCurve}, then calls `AcGeLine2d`, `AcGeCircArc2d`,
+ * Thin orchestration layer: converts {@link AcExHtmlOsnapPrimitive} via
+ * {@link acexHtmlPrimitiveToAcGeCurve}, then calls `AcGeLine2d`, `AcGeCircArc2d`,
  * `AcGeEllipseArc2d`, and `AcGeNurbsCurve` from `@mlightcad/data-model`
  * (geometry-engine) for all snap math.
  *
@@ -10,13 +10,13 @@
  */
 
 import type {
-  AcExOsnapMode,
-  AcExOsnapPrimitive
+  AcExHtmlOsnapMode,
+  AcExHtmlOsnapPrimitive
 } from '@mlightcad/cad-html-core'
 import {
-  type AcExOsnapAcGeCurve,
-  ellipsePointAtNormalized,
-  primitiveToAcGeCurve
+  acexHtmlEllipsePointAtNormalized,
+  type AcExHtmlOsnapAcGeCurve,
+  acexHtmlPrimitiveToAcGeCurve
 } from '@mlightcad/cad-html-core'
 import { AcGeCircArc2d, type AcGePoint2dLike } from '@mlightcad/data-model'
 
@@ -89,7 +89,7 @@ export function isBetterArcLock(
 function pushPoint(
   out: AcExOsnapCandidate[],
   p: AcGePoint2dLike,
-  mode: AcExOsnapMode
+  mode: AcExHtmlOsnapMode
 ): void {
   out.push({ x: p.x, y: p.y, mode })
 }
@@ -98,7 +98,7 @@ function pushPoint(
 export interface AcExOsnapCandidate {
   x: number
   y: number
-  mode: AcExOsnapMode
+  mode: AcExHtmlOsnapMode
 }
 
 /**
@@ -106,12 +106,12 @@ export interface AcExOsnapCandidate {
  *
  * @param prim - Exported primitive in WCS.
  * @param modes - Enabled OSNAP modes.
- * @param geo - Optional pre-built curve from {@link primitiveToAcGeCurve}.
+ * @param geo - Optional pre-built curve from {@link acexHtmlPrimitiveToAcGeCurve}.
  */
 export function collectPrimitiveDiscreteSnapCandidates(
-  prim: AcExOsnapPrimitive,
-  modes: Set<AcExOsnapMode>,
-  geo?: AcExOsnapAcGeCurve
+  prim: AcExHtmlOsnapPrimitive,
+  modes: Set<AcExHtmlOsnapMode>,
+  geo?: AcExHtmlOsnapAcGeCurve
 ): AcExOsnapCandidate[] {
   if (prim.kind === 'path') {
     const out: AcExOsnapCandidate[] = []
@@ -122,7 +122,7 @@ export function collectPrimitiveDiscreteSnapCandidates(
   }
 
   const out: AcExOsnapCandidate[] = []
-  const resolved = geo ?? primitiveToAcGeCurve(prim)
+  const resolved = geo ?? acexHtmlPrimitiveToAcGeCurve(prim)
 
   switch (resolved.kind) {
     case 'line': {
@@ -166,14 +166,14 @@ export function collectPrimitiveDiscreteSnapCandidates(
       const ellipse = resolved.curve
       if (prim.kind !== 'ellipse') break
       if (modes.has('endpoint') && !prim.closed) {
-        pushPoint(out, ellipsePointAtNormalized(prim, 0), 'endpoint')
-        pushPoint(out, ellipsePointAtNormalized(prim, 1), 'endpoint')
+        pushPoint(out, acexHtmlEllipsePointAtNormalized(prim, 0), 'endpoint')
+        pushPoint(out, acexHtmlEllipsePointAtNormalized(prim, 1), 'endpoint')
       }
       if (modes.has('center')) {
         pushPoint(out, ellipse.center, 'center')
       }
       if (modes.has('midpoint') && !prim.closed) {
-        pushPoint(out, ellipsePointAtNormalized(prim, 0.5), 'midpoint')
+        pushPoint(out, acexHtmlEllipsePointAtNormalized(prim, 0.5), 'midpoint')
       }
       if (modes.has('quadrant')) {
         for (const p of ellipse.getQuadrantPoints()) {
@@ -217,10 +217,10 @@ export function collectPrimitiveDiscreteSnapCandidates(
  * Nearest snap on one primitive; uses a pre-built curve when provided.
  */
 export function collectPrimitiveNearestSnapCandidate(
-  prim: AcExOsnapPrimitive,
+  prim: AcExHtmlOsnapPrimitive,
   px: number,
   py: number,
-  geo?: AcExOsnapAcGeCurve
+  geo?: AcExHtmlOsnapAcGeCurve
 ): AcExOsnapCandidate | undefined {
   if (prim.kind === 'path') {
     let best: AcExOsnapCandidate | undefined
@@ -240,7 +240,7 @@ export function collectPrimitiveNearestSnapCandidate(
   }
 
   const pick = { x: px, y: py, z: 0 }
-  const resolved = geo ?? primitiveToAcGeCurve(prim)
+  const resolved = geo ?? acexHtmlPrimitiveToAcGeCurve(prim)
 
   switch (resolved.kind) {
     case 'line': {
@@ -273,10 +273,10 @@ export function collectPrimitiveNearestSnapCandidate(
  * @param modes - Enabled OSNAP modes.
  */
 export function collectPrimitiveSnapCandidates(
-  prim: AcExOsnapPrimitive,
+  prim: AcExHtmlOsnapPrimitive,
   px: number,
   py: number,
-  modes: Set<AcExOsnapMode>
+  modes: Set<AcExHtmlOsnapMode>
 ): AcExOsnapCandidate[] {
   const out = collectPrimitiveDiscreteSnapCandidates(prim, modes)
   if (modes.has('nearest')) {

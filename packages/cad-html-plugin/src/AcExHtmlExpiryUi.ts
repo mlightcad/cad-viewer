@@ -1,8 +1,8 @@
 import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import {
   ACEX_HTML_EXPIRY_COUNTDOWN_MS,
-  formatAcExHtmlCountdown,
-  formatAcExHtmlExpiresAt
+  acexHtmlFormatCountdown,
+  acexHtmlFormatExpiresAt
 } from '@mlightcad/cad-html-core'
 
 import { showAcExHtmlAccessExpired } from './AcExHtmlAccessGate'
@@ -55,11 +55,11 @@ export function setupAcExHtmlExpiryMonitor(
     }
 
     const remaining = expiresAt - now
-    const timeLabel = formatAcExHtmlExpiresAt(expiresAt, i18n.locale)
+    const timeLabel = acexHtmlFormatExpiresAt(expiresAt, i18n.locale)
     if (remaining <= ACEX_HTML_EXPIRY_COUNTDOWN_MS) {
       badge.classList.add('mlcad-expiry-countdown')
       badge.textContent = i18n.t('access.badgeCountdown', {
-        time: formatAcExHtmlCountdown(remaining)
+        time: acexHtmlFormatCountdown(remaining)
       })
     } else {
       badge.classList.remove('mlcad-expiry-countdown')

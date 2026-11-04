@@ -6,9 +6,9 @@ import {
   AcGePoint3d
 } from '@mlightcad/data-model'
 
-import { collectLayoutViewports } from '@mlightcad/cad-html-core'
+import { acexHtmlCollectLayoutViewports } from '@mlightcad/cad-html-core'
 
-describe('collectLayoutViewports', () => {
+describe('acexHtmlCollectLayoutViewports', () => {
   it('skips model space and the default paper-space viewport', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
@@ -36,10 +36,10 @@ describe('collectLayoutViewports', () => {
     paper.appendEntity(userVp)
 
     expect(
-      collectLayoutViewports(db, modelSpace.objectId, true)
+      acexHtmlCollectLayoutViewports(db, modelSpace.objectId, true)
     ).toBeUndefined()
 
-    const viewports = collectLayoutViewports(db, paper.objectId, false)
+    const viewports = acexHtmlCollectLayoutViewports(db, paper.objectId, false)
     expect(viewports).toHaveLength(1)
     expect(viewports![0]!.paper).toEqual({
       minX: 0,
@@ -71,7 +71,7 @@ describe('collectLayoutViewports', () => {
     userVp.frozenLayerIds = [layer.objectId]
     paper.appendEntity(userVp)
 
-    const viewports = collectLayoutViewports(db, paper.objectId, false)
+    const viewports = acexHtmlCollectLayoutViewports(db, paper.objectId, false)
     expect(viewports).toHaveLength(1)
     expect(viewports![0]!.frozenLayers).toEqual(['VpFrozen'])
   })

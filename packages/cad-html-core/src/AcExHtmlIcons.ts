@@ -173,7 +173,7 @@ export const AcExHtmlIcons = {
  * @param attrs - Additional attributes (e.g. `data-action`, `data-i18n-key`).
  * @returns HTML string for one toolbar button.
  */
-export function acexToolbarButton(
+export function acexHtmlToolbarButton(
   icon: string,
   title: string,
   attrs: Record<string, string>
@@ -195,7 +195,7 @@ export function acexToolbarButton(
  * @param label - Default visible label before i18n overrides.
  * @param attrs - Additional attributes (e.g. `data-action`, `data-i18n-key`).
  */
-export function acexDropdownItem(
+export function acexHtmlDropdownItem(
   icon: string,
   label: string,
   attrs: Record<string, string>

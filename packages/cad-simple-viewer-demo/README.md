@@ -111,7 +111,7 @@ Open `/html-converter.html` (or `cad-simple-viewer/html-converter.html` when ser
 - Initial view (zoom to extents vs the viewport saved in the drawing)
 - Viewer mode (view-only vs measure & review)
 
-Click **Convert and download HTML**. The page opens the drawing locally, builds a snapshot with `AcApHtmlSnapshotBuilder`, packs it with `packHtml`, and downloads the file — nothing is uploaded to a server.
+Click **Convert and download HTML**. The page opens the drawing locally, builds a snapshot with `AcApHtmlSnapshotBuilder`, packs it with `acexHtmlPackHtml`, and downloads the file — nothing is uploaded to a server.
 
 ## Supported formats
 
@@ -144,7 +144,7 @@ Lazy initialization: `AcApDocManager` is created on first file open, not at page
 | `index.html` | Layout: sidebar, toolbar, canvas container, styles |
 | `html-converter.html` | Browser-only DWG/DXF → offline HTML converter UI |
 | `src/main.ts` | `CadViewerApp` — wiring UI to `AcApDocManager` |
-| `src/htmlConverter.ts` | Converter page: open drawing, collect options, snapshot + `packHtml` |
+| `src/htmlConverter.ts` | Converter page: open drawing, collect options, snapshot + `acexHtmlPackHtml` |
 | `src/register.ts` | Registers export plugins from `@mlightcad/cad-*-plugin/register` |
 | `vite.config.ts` | `base: './'`, MPA entries, copies workers + `viewer-runtime.iife.js` |
 | `package.json` | Scripts and workspace dependencies |

@@ -82,7 +82,7 @@ One-file **offline viewer** for sharing and archiving — the exported HTML embe
 |------|-------|
 | Command | `chtml` (dialog in `cad-editor`), `-chtml` (command-line via `cad-simple-viewer-cli`) |
 | Extra config | `htmlViewerRuntimeUrl` on `AcApDocManager.createInstance()` — URL to `viewer-runtime.iife.js` (copy from package `dist/`) |
-| Public API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `packHtml`, snapshot types |
+| Public API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `acexHtmlPackHtml`, snapshot types |
 
 → **Build output and integration:** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **Headless CLI using the same pipeline:** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)

@@ -4,7 +4,7 @@ Display-only render data for the offline HTML viewer, split so a shell page can
 download geometry **progressively**: the viewer keeps up to six compressed
 chunks downloading in parallel, but inflates and paints them strictly in
 manifest order — one chunk at a time, each painted as soon as it is reached
-(see `createAcExOrderedBytePrefetcher`). Embedded / local-directory packages
+(see `acexHtmlCreateOrderedBytePrefetcher`). Embedded / local-directory packages
 fetch serially because their bytes are already local.
 
 > **Export zip vs hosted files**  
@@ -85,7 +85,7 @@ MIME: `application/json`
   "format": "acex-package",
   "packageVersion": 1,
   "snapshotVersion": 4,
-  "meta": { "...": "same shape as AcExSnapshot.meta" },
+  "meta": { "...": "same shape as AcExHtmlSnapshot.meta" },
   "layers": [{ "name": "0", "color": 16777215, "visible": true }],
   "activeLayoutBtrId": "...",
   "layouts": [

@@ -1,6 +1,6 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
-import type { AcExExtents } from './AcExSnapshotTypes'
+import type { AcExHtmlExtents } from './AcExHtmlSnapshotTypes'
 
 /**
  * Default canvas aspect used when capturing AutoCAD's saved model-space
@@ -20,12 +20,12 @@ const DEFAULT_CANVAS_ASPECT = 16 / 9
  * @param canvasAspectRatio - Width/height used to resolve the VPORT box.
  * @returns Saved-view extents, or `undefined` when missing / implausible.
  */
-export function captureAcExSavedViewExtents(
+export function acexHtmlCaptureSavedViewExtents(
   database: AcDbDatabase,
   layoutBtrId: string,
   isModelSpace: boolean,
   canvasAspectRatio: number = DEFAULT_CANVAS_ASPECT
-): AcExExtents | undefined {
+): AcExHtmlExtents | undefined {
   const aspect =
     Number.isFinite(canvasAspectRatio) && canvasAspectRatio > 0
       ? canvasAspectRatio
@@ -53,7 +53,7 @@ function extentsFromBox2d(box: {
   min: { x: number; y: number }
   max: { x: number; y: number }
   isEmpty?: () => boolean
-} | null | undefined): AcExExtents | undefined {
+} | null | undefined): AcExHtmlExtents | undefined {
   if (!box) return undefined
   if (typeof box.isEmpty === 'function' && box.isEmpty()) return undefined
   const minX = box.min.x

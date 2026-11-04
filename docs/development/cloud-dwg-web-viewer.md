@@ -184,18 +184,18 @@ Lower-level APIs (assemble the package yourself and decide whether to write it t
 
 ```typescript
 import {
-  buildAcExPackage,
-  zipAcExPackageFiles,
-  unzipAcExPackageFiles
+  acexHtmlBuildPackage,
+  acexHtmlZipPackageFiles,
+  acexHtmlUnzipPackageFiles
 } from '@mlightcad/cad-html-plugin'
 
 // snapshot is built from the Three.js scene by AcApHtmlSnapshotBuilder
-const pkg = buildAcExPackage(snapshot, {
+const pkg = acexHtmlBuildPackage(snapshot, {
   viewerRuntime,          // Text of viewer-runtime.iife.js
   baseName: 'floor-plan'
 })
 
-const zipBytes = zipAcExPackageFiles(pkg)     // Package into a zip for download
+const zipBytes = acexHtmlZipPackageFiles(pkg)     // Package into a zip for download
 // Or directly write pkg.files ([{ path, bytes }, ...]) to disk / upload to object storage,
 // completely skipping the extraction step:
 for (const file of pkg.files) {
@@ -294,7 +294,7 @@ A minimal Node script for "convert → extract → publish" (which can be connec
 ```js
 // publish-cad-package.mjs
 import { runHeadless } from '@mlightcad/cad-simple-viewer-cli'
-import { unzipAcExPackageFiles } from '@mlightcad/cad-html-plugin'
+import { acexHtmlUnzipPackageFiles } from '@mlightcad/cad-html-plugin'
 import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -312,7 +312,7 @@ const { outputDir } = await runHeadless({
 // 2. Find the generated zip and extract it to the publishing directory
 const zipName = (await readdir(outputDir)).find(f => f.endsWith('.zip'))
 const zipBytes = await readFile(path.join(outputDir, zipName))
-const files = unzipAcExPackageFiles(
+const files = acexHtmlUnzipPackageFiles(
   new Uint8Array(zipBytes)
 ) // Includes path security validation and rejects dangerous entries such as ../
 const target = path.join(publishRoot, path.basename(zipName, '.zip'))
@@ -326,7 +326,7 @@ for (const file of files) {
 console.log(`Published: https://drawings.example.com/${path.basename(target)}/viewer.html`)
 ```
 
-In a production environment, you can also add features such as: using a hash of the drawing content to determine whether duplicate conversion can be skipped, retrying failed conversions, or directly using `PutObject` to upload `pkg.files` to object storage (using `buildAcExPackage` from Method 3 so that you do not even need to create a zip).
+In a production environment, you can also add features such as: using a hash of the drawing content to determine whether duplicate conversion can be skipped, retrying failed conversions, or directly using `PutObject` to upload `pkg.files` to object storage (using `acexHtmlBuildPackage` from Method 3 so that you do not even need to create a zip).
 
 ---
 
@@ -334,7 +334,7 @@ In a production environment, you can also add features such as: using a hash of 
 
 **Q: Can I simply put the zip file on the server and provide a link to it?**
 
-No. The zip is only a packaging format for download and distribution. At runtime, the viewer fetches the extracted `viewer.html` / `*.acex.json` / `chunks/*.gz`. You must either extract it on the server and host the resulting files, or use `unzipAcExPackageFiles` in your own application to extract it on the frontend (be aware of same-origin and memory issues; this is not recommended for large drawings).
+No. The zip is only a packaging format for download and distribution. At runtime, the viewer fetches the extracted `viewer.html` / `*.acex.json` / `chunks/*.gz`. You must either extract it on the server and host the resulting files, or use `acexHtmlUnzipPackageFiles` in your own application to extract it on the frontend (be aware of same-origin and memory issues; this is not recommended for large drawings).
 
 **Q: The chunk files return 404 / fail to load after opening the page.**
 

@@ -1,14 +1,14 @@
-import { AcExBinaryReader, AcExBinaryWriter } from './AcExBinaryIO'
+import { AcExHtmlBinaryReader, AcExHtmlBinaryWriter } from './AcExHtmlBinaryIO'
 import type {
-  AcExOsnapCatalog,
-  AcExOsnapPrimitive
-} from './AcExOsnapPrimitiveTypes'
+  AcExHtmlOsnapCatalog,
+  AcExHtmlOsnapPrimitive
+} from './AcExHtmlOsnapPrimitiveTypes'
 import {
-  compressSnapshotBinary,
-  compressSnapshotBinaryAsync,
-  decompressSnapshotBinary,
-  isGzipPayload
-} from './AcExSnapshotCompression'
+  acexHtmlCompressSnapshotBinary,
+  acexHtmlCompressSnapshotBinaryAsync,
+  acexHtmlDecompressSnapshotBinary,
+  acexHtmlIsGzipPayload
+} from './AcExHtmlSnapshotCompression'
 
 /** Magic for ACEO osnap catalog payloads (`ACEO` little-endian). */
 export const ACEO_OSNAP_MAGIC = 0x4f454341
@@ -39,8 +39,8 @@ const KIND_PATH = 7
  * Rough uncompressed ACEO size estimate for one primitive (used when splitting
  * catalogs into downloadable chunks). Prefer slightly overestimating.
  */
-export function estimateOsnapPrimitiveBytes(
-  primitive: AcExOsnapPrimitive
+export function acexHtmlEstimateOsnapPrimitiveBytes(
+  primitive: AcExHtmlOsnapPrimitive
 ): number {
   // kind(1) + layerIndex(4) + payload; ignore shared layer-dictionary overhead.
   switch (primitive.kind) {
@@ -74,15 +74,15 @@ export function estimateOsnapPrimitiveBytes(
 /**
  * Splits OSNAP primitives into slices that stay under `maxChunkBytes` (estimate).
  */
-export function splitOsnapPrimitives(
-  primitives: AcExOsnapPrimitive[],
+export function acexHtmlSplitOsnapPrimitives(
+  primitives: AcExHtmlOsnapPrimitive[],
   maxChunkBytes: number
-): AcExOsnapPrimitive[][] {
+): AcExHtmlOsnapPrimitive[][] {
   if (primitives.length === 0) {
     return []
   }
-  const slices: AcExOsnapPrimitive[][] = []
-  let current: AcExOsnapPrimitive[] = []
+  const slices: AcExHtmlOsnapPrimitive[][] = []
+  let current: AcExHtmlOsnapPrimitive[] = []
   let estimated = 64
 
   const flush = () => {
@@ -93,7 +93,7 @@ export function splitOsnapPrimitives(
   }
 
   for (const primitive of primitives) {
-    const size = estimateOsnapPrimitiveBytes(primitive)
+    const size = acexHtmlEstimateOsnapPrimitiveBytes(primitive)
     if (
       current.length > 0 &&
       estimated + size > maxChunkBytes
@@ -111,10 +111,10 @@ export function splitOsnapPrimitives(
  * Encodes an analytic OSNAP catalog to uncompressed ACEO bytes.
  * Coordinates stay float64; layer names are dictionary-compressed.
  */
-export function encodeOsnapCatalogBinary(
-  catalog: AcExOsnapCatalog
+export function acexHtmlEncodeOsnapCatalogBinary(
+  catalog: AcExHtmlOsnapCatalog
 ): Uint8Array {
-  const writer = new AcExBinaryWriter()
+  const writer = new AcExHtmlBinaryWriter()
   writer.writeU32(ACEO_OSNAP_MAGIC)
   writer.writeU8(ACEO_OSNAP_VERSION)
   writer.writeU8(0)
@@ -153,8 +153,8 @@ export function encodeOsnapCatalogBinary(
 /**
  * Decodes an uncompressed ACEO osnap catalog.
  */
-export function decodeOsnapCatalogBinary(bytes: Uint8Array): AcExOsnapCatalog {
-  const reader = new AcExBinaryReader(bytes)
+export function acexHtmlDecodeOsnapCatalogBinary(bytes: Uint8Array): AcExHtmlOsnapCatalog {
+  const reader = new AcExHtmlBinaryReader(bytes)
   const magic = reader.readU32()
   if (magic !== ACEO_OSNAP_MAGIC) {
     throw new Error('Invalid osnap catalog magic')
@@ -180,7 +180,7 @@ export function decodeOsnapCatalogBinary(bytes: Uint8Array): AcExOsnapCatalog {
   if (primitiveCount > ACEX_MAX_OSNAP_PRIMITIVES_PER_CHUNK) {
     throw new Error('Osnap primitive count exceeds limit')
   }
-  const primitives: AcExOsnapPrimitive[] = []
+  const primitives: AcExHtmlOsnapPrimitive[] = []
   for (let i = 0; i < primitiveCount; i++) {
     primitives.push(readPrimitive(reader, layers))
   }
@@ -189,63 +189,63 @@ export function decodeOsnapCatalogBinary(bytes: Uint8Array): AcExOsnapCatalog {
 }
 
 /** Encodes and gzip-compresses an OSNAP catalog (`.osnap.gz` payload). */
-export function encodeOsnapCatalogGzip(catalog: AcExOsnapCatalog): {
+export function acexHtmlEncodeOsnapCatalogGzip(catalog: AcExHtmlOsnapCatalog): {
   uncompressed: Uint8Array
   compressed: Uint8Array
 } {
-  const uncompressed = encodeOsnapCatalogBinary(catalog)
-  const compressed = compressSnapshotBinary(uncompressed).bytes
+  const uncompressed = acexHtmlEncodeOsnapCatalogBinary(catalog)
+  const compressed = acexHtmlCompressSnapshotBinary(uncompressed).bytes
   return { uncompressed, compressed }
 }
 
-/** Async variant of {@link encodeOsnapCatalogGzip} for parallel package builds. */
-export async function encodeOsnapCatalogGzipAsync(
-  catalog: AcExOsnapCatalog
+/** Async variant of {@link acexHtmlEncodeOsnapCatalogGzip} for parallel package builds. */
+export async function acexHtmlEncodeOsnapCatalogGzipAsync(
+  catalog: AcExHtmlOsnapCatalog
 ): Promise<{
   uncompressed: Uint8Array
   compressed: Uint8Array
 }> {
-  const uncompressed = encodeOsnapCatalogBinary(catalog)
-  const compressed = (await compressSnapshotBinaryAsync(uncompressed)).bytes
+  const uncompressed = acexHtmlEncodeOsnapCatalogBinary(catalog)
+  const compressed = (await acexHtmlCompressSnapshotBinaryAsync(uncompressed)).bytes
   return { uncompressed, compressed }
 }
 
 /** Gunzips and decodes a `.osnap.gz` catalog payload. */
-export function decodeOsnapCatalogGzip(
+export function acexHtmlDecodeOsnapCatalogGzip(
   compressed: Uint8Array
-): AcExOsnapCatalog {
-  return decodeOsnapCatalogBinary(decompressSnapshotBinary(compressed))
+): AcExHtmlOsnapCatalog {
+  return acexHtmlDecodeOsnapCatalogBinary(acexHtmlDecompressSnapshotBinary(compressed))
 }
 
 /**
  * Decodes an OSNAP catalog payload that may be gzip (`.osnap.gz`) or raw ACEO
  * (`.osnap`). Detection uses the gzip magic header.
  */
-export function decodeOsnapCatalogPayload(
+export function acexHtmlDecodeOsnapCatalogPayload(
   bytes: Uint8Array
-): AcExOsnapCatalog {
-  if (isGzipPayload(bytes)) {
-    return decodeOsnapCatalogGzip(bytes)
+): AcExHtmlOsnapCatalog {
+  if (acexHtmlIsGzipPayload(bytes)) {
+    return acexHtmlDecodeOsnapCatalogGzip(bytes)
   }
-  return decodeOsnapCatalogBinary(bytes)
+  return acexHtmlDecodeOsnapCatalogBinary(bytes)
 }
 
-function writeNormalSign(writer: AcExBinaryWriter, sign: 1 | -1): void {
+function writeNormalSign(writer: AcExHtmlBinaryWriter, sign: 1 | -1): void {
   writer.writeU8(sign < 0 ? 0 : 1)
 }
 
-function readNormalSign(reader: AcExBinaryReader): 1 | -1 {
+function readNormalSign(reader: AcExHtmlBinaryReader): 1 | -1 {
   return reader.readU8() === 0 ? -1 : 1
 }
 
-function writeF64Array(writer: AcExBinaryWriter, values: number[]): void {
+function writeF64Array(writer: AcExHtmlBinaryWriter, values: number[]): void {
   writer.writeU32(values.length)
   for (const value of values) {
     writer.writeF64(value)
   }
 }
 
-function readF64Array(reader: AcExBinaryReader): number[] {
+function readF64Array(reader: AcExHtmlBinaryReader): number[] {
   const count = reader.readU32()
   if (count > ACEX_MAX_OSNAP_PRIMITIVES_PER_CHUNK) {
     throw new Error('Float64 array count exceeds limit')
@@ -258,8 +258,8 @@ function readF64Array(reader: AcExBinaryReader): number[] {
 }
 
 function writePrimitive(
-  writer: AcExBinaryWriter,
-  primitive: AcExOsnapPrimitive,
+  writer: AcExHtmlBinaryWriter,
+  primitive: AcExHtmlOsnapPrimitive,
   layer: number
 ): void {
   switch (primitive.kind) {
@@ -333,9 +333,9 @@ function writePrimitive(
 }
 
 function readPrimitive(
-  reader: AcExBinaryReader,
+  reader: AcExHtmlBinaryReader,
   layers: string[]
-): AcExOsnapPrimitive {
+): AcExHtmlOsnapPrimitive {
   const kind = reader.readU8()
   const layerIdx = reader.readU32()
   const layer = layers[layerIdx]

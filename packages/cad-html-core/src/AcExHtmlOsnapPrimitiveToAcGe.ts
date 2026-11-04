@@ -1,5 +1,5 @@
 /**
- * Converts exported {@link AcExOsnapPrimitive} records into `AcGe*` curves
+ * Converts exported {@link AcExHtmlOsnapPrimitive} records into `AcGe*` curves
  * for object snap evaluation in the offline HTML viewer.
  *
  * @packageDocumentation
@@ -15,15 +15,15 @@ import {
 } from '@mlightcad/data-model'
 
 import type {
-  AcExOsnapArcPrimitive,
-  AcExOsnapCirclePrimitive,
-  AcExOsnapEllipsePrimitive,
-  AcExOsnapPrimitive,
-  AcExOsnapSplinePrimitive
-} from './AcExOsnapPrimitiveTypes'
+  AcExHtmlOsnapArcPrimitive,
+  AcExHtmlOsnapCirclePrimitive,
+  AcExHtmlOsnapEllipsePrimitive,
+  AcExHtmlOsnapPrimitive,
+  AcExHtmlOsnapSplinePrimitive
+} from './AcExHtmlOsnapPrimitiveTypes'
 
-/** Discriminated result of {@link primitiveToAcGeCurve}. */
-export type AcExOsnapAcGeCurve =
+/** Discriminated result of {@link acexHtmlPrimitiveToAcGeCurve}. */
+export type AcExHtmlOsnapAcGeCurve =
   | { kind: 'line'; curve: AcGeLine2d }
   | { kind: 'circArc'; curve: AcGeCircArc2d }
   | { kind: 'ellipse'; curve: AcGeEllipseArc2d }
@@ -31,7 +31,7 @@ export type AcExOsnapAcGeCurve =
   | { kind: 'point'; point: AcGePoint2d }
 
 /** Positive CCW sweep from start to end angle (radians). */
-export function normalizeArcDelta(
+export function acexHtmlNormalizeArcDelta(
   startAngle: number,
   endAngle: number
 ): number {
@@ -42,7 +42,7 @@ export function normalizeArcDelta(
 }
 
 /** WCS point on a circular arc from center/radius and OCS-style angle. */
-export function arcWcsPoint(
+export function acexHtmlArcWcsPoint(
   cx: number,
   cy: number,
   r: number,
@@ -57,13 +57,13 @@ export function arcWcsPoint(
 }
 
 /**
- * Inverse of {@link arcWcsPoint}: OCS parameter angle of a WCS point.
+ * Inverse of {@link acexHtmlArcWcsPoint}: OCS parameter angle of a WCS point.
  *
  * Used when exporting WCS {@link AcGeCircArc2d} bulge geometry (polylines,
  * hatch loops). Clockwise `AcGeCircArc2d` public angles are Y-mirrored, which
- * is not the AutoCAD −Z / X-mirror convention {@link arcToAcGe} expects.
+ * is not the AutoCAD −Z / X-mirror convention {@link acexHtmlArcToAcGe} expects.
  */
-export function wcsPointToOcsArcAngle(
+export function acexHtmlWcsPointToOcsArcAngle(
   cx: number,
   cy: number,
   x: number,
@@ -80,22 +80,22 @@ export function wcsPointToOcsArcAngle(
  * WCS. {@link AcGeCircArc2d}'s `clockwise` flag alone does not reproduce that,
  * so the arc is reconstructed from WCS endpoints and bulge.
  */
-export function arcToAcGe(prim: AcExOsnapArcPrimitive): AcGeCircArc2d {
-  const start = arcWcsPoint(
+export function acexHtmlArcToAcGe(prim: AcExHtmlOsnapArcPrimitive): AcGeCircArc2d {
+  const start = acexHtmlArcWcsPoint(
     prim.cx,
     prim.cy,
     prim.r,
     prim.startAngle,
     prim.normalSign
   )
-  const end = arcWcsPoint(
+  const end = acexHtmlArcWcsPoint(
     prim.cx,
     prim.cy,
     prim.r,
     prim.endAngle,
     prim.normalSign
   )
-  const delta = normalizeArcDelta(prim.startAngle, prim.endAngle)
+  const delta = acexHtmlNormalizeArcDelta(prim.startAngle, prim.endAngle)
   const bulge = prim.normalSign * Math.tan(delta / 4)
   return new AcGeCircArc2d(start, end, bulge)
 }
@@ -105,8 +105,8 @@ export function arcToAcGe(prim: AcExOsnapArcPrimitive): AcGeCircArc2d {
  *
  * @param prim - Exported ellipse primitive.
  */
-export function ellipseArcDelta(prim: AcExOsnapEllipsePrimitive): number {
-  return normalizeArcDelta(prim.startAngle, prim.endAngle)
+export function acexHtmlEllipseArcDelta(prim: AcExHtmlOsnapEllipsePrimitive): number {
+  return acexHtmlNormalizeArcDelta(prim.startAngle, prim.endAngle)
 }
 
 /**
@@ -117,11 +117,11 @@ export function ellipseArcDelta(prim: AcExOsnapEllipsePrimitive): number {
  * @param prim - Exported ellipse primitive.
  * @param u - Normalized parameter along the arc (`0` = start, `1` = end).
  */
-export function ellipsePointAtNormalized(
-  prim: AcExOsnapEllipsePrimitive,
+export function acexHtmlEllipsePointAtNormalized(
+  prim: AcExHtmlOsnapEllipsePrimitive,
   u: number
 ): AcGePoint2d {
-  const delta = ellipseArcDelta(prim)
+  const delta = acexHtmlEllipseArcDelta(prim)
   const t = prim.startAngle + u * delta
   const normalSign = prim.normalSign ?? 1
   const lx = prim.majorR * Math.cos(t)
@@ -136,8 +136,8 @@ export function ellipsePointAtNormalized(
  *
  * @param prim - Circle or arc in WCS.
  */
-export function circleOrArcToAcGe(
-  prim: AcExOsnapCirclePrimitive | AcExOsnapArcPrimitive
+export function acexHtmlCircleOrArcToAcGe(
+  prim: AcExHtmlOsnapCirclePrimitive | AcExHtmlOsnapArcPrimitive
 ): AcGeCircArc2d {
   if (prim.kind === 'circle') {
     return new AcGeCircArc2d(
@@ -148,7 +148,7 @@ export function circleOrArcToAcGe(
       prim.normalSign === -1
     )
   }
-  return arcToAcGe(prim)
+  return acexHtmlArcToAcGe(prim)
 }
 
 /**
@@ -156,8 +156,8 @@ export function circleOrArcToAcGe(
  *
  * @param prim - Ellipse or elliptical arc in WCS.
  */
-export function ellipseToAcGe(
-  prim: AcExOsnapEllipsePrimitive
+export function acexHtmlEllipseToAcGe(
+  prim: AcExHtmlOsnapEllipsePrimitive
 ): AcGeEllipseArc2d {
   const rotation = Math.atan2(prim.majorY, prim.majorX)
   return new AcGeEllipseArc2d(
@@ -176,7 +176,7 @@ export function ellipseToAcGe(
  *
  * @param prim - Serialized NURBS data in WCS.
  */
-export function splineToAcGe(prim: AcExOsnapSplinePrimitive): AcGeNurbsCurve {
+export function acexHtmlSplineToAcGe(prim: AcExHtmlOsnapSplinePrimitive): AcGeNurbsCurve {
   const controlPoints: { x: number; y: number; z: number }[] = []
   for (let i = 0; i + 1 < prim.controlPoints.length; i += 2) {
     controlPoints.push({
@@ -196,12 +196,12 @@ export function splineToAcGe(prim: AcExOsnapSplinePrimitive): AcGeNurbsCurve {
 /**
  * Maps one snapshot primitive to the corresponding `AcGe` curve or point.
  *
- * @param prim - Exported primitive from {@link AcExOsnapCatalog}.
+ * @param prim - Exported primitive from {@link AcExHtmlOsnapCatalog}.
  * @returns Wrapped geometry for snap evaluation.
  */
-export function primitiveToAcGeCurve(
-  prim: AcExOsnapPrimitive
-): AcExOsnapAcGeCurve {
+export function acexHtmlPrimitiveToAcGeCurve(
+  prim: AcExHtmlOsnapPrimitive
+): AcExHtmlOsnapAcGeCurve {
   switch (prim.kind) {
     case 'line':
       return {
@@ -213,11 +213,11 @@ export function primitiveToAcGeCurve(
       }
     case 'circle':
     case 'arc':
-      return { kind: 'circArc', curve: circleOrArcToAcGe(prim) }
+      return { kind: 'circArc', curve: acexHtmlCircleOrArcToAcGe(prim) }
     case 'ellipse':
-      return { kind: 'ellipse', curve: ellipseToAcGe(prim) }
+      return { kind: 'ellipse', curve: acexHtmlEllipseToAcGe(prim) }
     case 'spline':
-      return { kind: 'spline', curve: splineToAcGe(prim) }
+      return { kind: 'spline', curve: acexHtmlSplineToAcGe(prim) }
     case 'point':
       return { kind: 'point', point: new AcGePoint2d(prim.x, prim.y) }
     case 'path':

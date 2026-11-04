@@ -32,10 +32,10 @@ import {
   acdbHostApplicationServices
 } from '@mlightcad/data-model'
 
-import { buildOsnapCatalog } from '@mlightcad/cad-html-core'
+import { acexHtmlBuildOsnapCatalog } from '@mlightcad/cad-html-core'
 import { AcExOsnapIndex } from '../src/AcExOsnap'
 
-describe('buildOsnapCatalog', () => {
+describe('acexHtmlBuildOsnapCatalog', () => {
   it('omits line primitives from block references (lines come from geometry batches)', () => {
     const db = new AcDbDatabase()
     const modelSpace = db.tables.blockTable.modelSpace
@@ -51,7 +51,7 @@ describe('buildOsnapCatalog', () => {
     insert.position = new AcGePoint3d(100, 50, 0)
     modelSpace.appendEntity(insert)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
   })
 
@@ -71,7 +71,7 @@ describe('buildOsnapCatalog', () => {
     insert.rotation = Math.PI / 2
     modelSpace.appendEntity(insert)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
   })
 
@@ -93,7 +93,7 @@ describe('buildOsnapCatalog', () => {
       )
     )
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
 
     expect(catalog.primitives.some(prim => prim.kind === 'line')).toBe(false)
     expect(catalog.primitives.some(prim => prim.kind === 'ellipse')).toBe(true)
@@ -108,7 +108,7 @@ describe('buildOsnapCatalog', () => {
     polyline.addVertexAt(2, new AcGePoint2d(10, 10))
     modelSpace.appendEntity(polyline)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line').length).toBe(0)
     expect(catalog.primitives.filter(p => p.kind === 'path').length).toBe(0)
   })
@@ -122,7 +122,7 @@ describe('buildOsnapCatalog', () => {
     polyline.addVertexAt(2, new AcGePoint2d(10, 10), 0, 2, 2)
     modelSpace.appendEntity(polyline)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
     const paths = catalog.primitives.filter(p => p.kind === 'path')
     expect(paths).toHaveLength(1)
@@ -158,7 +158,7 @@ describe('buildOsnapCatalog', () => {
     polyline.addVertexAt(1, new AcGePoint2d(10, 0), 0, 2, 2)
     modelSpace.appendEntity(polyline)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     const path = catalog.primitives.find(p => p.kind === 'path')
     expect(path?.kind).toBe('path')
     if (path?.kind === 'path') {
@@ -192,7 +192,7 @@ describe('buildOsnapCatalog', () => {
     polyline.addVertexAt(2, new AcGePoint2d(50, 0))
     modelSpace.appendEntity(polyline)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'arc')).toHaveLength(2)
 
     const index = new AcExOsnapIndex(['nearest'])
@@ -243,7 +243,7 @@ describe('buildOsnapCatalog', () => {
     polyline.addVertexAt(2, new AcGePoint2d(50, 0))
     modelSpace.appendEntity(polyline)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     const index = new AcExOsnapIndex(['nearest'])
     index.rebuild({
       btrId: modelSpace.objectId,
@@ -303,7 +303,7 @@ describe('buildOsnapCatalog', () => {
     db.tables.blockTable.add(dimension.createDimBlock(blockName))
     dimension.dimBlockId = blockName
     modelSpace.appendEntity(dimension)
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
     const arrowPaths = catalog.primitives.filter(p => p.kind === 'path')
     expect(arrowPaths.length).toBeGreaterThan(0)
@@ -350,7 +350,7 @@ describe('buildOsnapCatalog', () => {
     point.position = new AcGePoint3d(70, 70, 0)
     modelSpace.appendEntity(point)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.some(p => p.kind === 'line')).toBe(false)
     const tracePath = catalog.primitives.find(p => p.kind === 'path')
     expect(tracePath?.kind).toBe('path')
@@ -404,7 +404,7 @@ describe('buildOsnapCatalog', () => {
     ]
     modelSpace.appendEntity(mline)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
   })
 
@@ -425,7 +425,7 @@ describe('buildOsnapCatalog', () => {
     ])
     modelSpace.appendEntity(mleader)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.some(p => p.kind === 'line')).toBe(false)
     expect(
       catalog.primitives.some(
@@ -473,7 +473,7 @@ describe('buildOsnapCatalog', () => {
     )
     modelSpace.appendEntity(hatch)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
     const paths = catalog.primitives.filter(p => p.kind === 'path')
     expect(paths).toHaveLength(1)
@@ -497,7 +497,7 @@ describe('buildOsnapCatalog', () => {
     hatch.add(loop)
     modelSpace.appendEntity(hatch)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
     const paths = catalog.primitives.filter(p => p.kind === 'path')
     expect(paths).toHaveLength(1)
@@ -518,7 +518,7 @@ describe('buildOsnapCatalog', () => {
     image.height = 10
     modelSpace.appendEntity(image)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
     expect(
       catalog.primitives.some(p => p.kind === 'point' && p.x === 5 && p.y === 5)
@@ -541,7 +541,7 @@ describe('buildOsnapCatalog', () => {
     table.setUniformColumnWidth(8)
     modelSpace.appendEntity(table)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
     expect(
       catalog.primitives.some(
@@ -565,7 +565,7 @@ describe('buildOsnapCatalog', () => {
     table.position = new AcGePoint3d(0, 0, 0)
     modelSpace.appendEntity(table)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(catalog.primitives.filter(p => p.kind === 'line')).toHaveLength(0)
   })
 
@@ -632,7 +632,7 @@ describe('buildOsnapCatalog', () => {
     insert.position = new AcGePoint3d(100, 50, 0)
     modelSpace.appendEntity(insert)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(
       catalog.primitives.some(
         p => p.kind === 'point' && p.x === 100 && p.y === 50
@@ -673,7 +673,7 @@ describe('buildOsnapCatalog', () => {
     insert.scaleFactors = new AcGePoint3d(2, 1, 1)
     modelSpace.appendEntity(insert)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     const path = catalog.primitives.find(p => p.kind === 'path')
     expect(path?.kind).toBe('path')
     if (path?.kind === 'path') {
@@ -709,7 +709,7 @@ describe('buildOsnapCatalog', () => {
     insert.scaleFactors = new AcGePoint3d(-1, 1, 1)
     modelSpace.appendEntity(insert)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     const path = catalog.primitives.find(p => p.kind === 'path')
     expect(path?.kind).toBe('path')
     if (path?.kind === 'path') {
@@ -734,7 +734,7 @@ describe('buildOsnapCatalog', () => {
     insert.rowSpacing = 20
     modelSpace.appendEntity(insert)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     const points = catalog.primitives.filter(p => p.kind === 'point')
     expect(points).toEqual(
       expect.arrayContaining([
@@ -763,7 +763,7 @@ describe('buildOsnapCatalog', () => {
     attrib.position = new AcGePoint3d(45, 12, 0)
     insert.appendAttributes(attrib)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     expect(
       catalog.primitives.some(
         p => p.kind === 'point' && p.x === 45 && p.y === 12
@@ -788,7 +788,7 @@ describe('buildOsnapCatalog', () => {
     ]
     modelSpace.appendEntity(image)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     const path = catalog.primitives.find(p => p.kind === 'path')
     expect(path?.kind).toBe('path')
     if (path?.kind === 'path') {
@@ -839,7 +839,7 @@ describe('buildOsnapCatalog', () => {
     dimension.dimBlockId = dimBlock.name
     modelSpace.appendEntity(dimension)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     const paths = catalog.primitives.filter(p => p.kind === 'path')
     expect(paths.length).toBeGreaterThanOrEqual(2)
     expect(
@@ -869,7 +869,7 @@ describe('buildOsnapCatalog', () => {
     ole.setWcsHeight(4)
     modelSpace.appendEntity(ole)
 
-    const catalog = buildOsnapCatalog(db, modelSpace.objectId)
+    const catalog = acexHtmlBuildOsnapCatalog(db, modelSpace.objectId)
     const path = catalog.primitives.find(p => p.kind === 'path')
     expect(path?.kind).toBe('path')
     expect(

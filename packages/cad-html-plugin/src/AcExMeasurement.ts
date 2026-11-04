@@ -6,7 +6,7 @@
  */
 
 import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
-import type { AcExExtents } from '@mlightcad/cad-html-core'
+import type { AcExHtmlExtents } from '@mlightcad/cad-html-core'
 import { AcExHtmlIcons } from '@mlightcad/cad-html-core'
 import { AcGeCircArc2d, AcGeMathUtil } from '@mlightcad/data-model'
 import * as THREE from 'three'
@@ -62,7 +62,7 @@ import {
   type AcExTrackingOptions,
   constrainToAcExTracking
 } from './AcExMeasureTracking'
-import type { AcExCircleOrArcNearHit, AcExOsnapPoint } from './AcExOsnap'
+import type { AcExCircleOrArcNearHit, AcExHtmlOsnapPoint } from './AcExOsnap'
 import { acexIsOverlayGrip, acexOverlayGripClassName } from './AcExOverlayGrip'
 import { acexExtentsMatchBox, type AcExSelectionMode } from './AcExSelectionBox'
 import type { AcExSessionHistory } from './AcExSessionHistory'
@@ -133,7 +133,7 @@ interface AcExResolvedPoint {
   /** Snapped or raw world position (Z = 0). */
   point: THREE.Vector2
   /** Object-snap hit, if any; otherwise `null`. */
-  snap: AcExOsnapPoint | null
+  snap: AcExHtmlOsnapPoint | null
 }
 
 /**
@@ -194,7 +194,7 @@ export interface AcExMeasureViewApi {
   formatAngle: (valueDeg: number) => string
 
   /** Frames the camera on a world-space AABB. */
-  zoomToExtents: (extents: AcExExtents) => void
+  zoomToExtents: (extents: AcExHtmlExtents) => void
 }
 
 /**
@@ -219,7 +219,7 @@ export interface AcExMeasureControllerOptions {
    * @param screen - Viewport position for the snap glyph, or `null` when hidden.
    */
   onOsnapMarker: (
-    snap: AcExOsnapPoint | null,
+    snap: AcExHtmlOsnapPoint | null,
     screen: { x: number; y: number } | null
   ) => void
   /** Returns ortho/polar tracking options while measuring; omit to disable tracking. */
@@ -278,7 +278,7 @@ function isRecordOnLayout(
 /** World AABB of a measurement's control geometry (no overlay padding). */
 function measurementGeometryExtents(
   geometry: AcExMeasurementGeometry
-): AcExExtents | null {
+): AcExHtmlExtents | null {
   const xs: number[] = []
   const ys: number[] = []
   const add = (point: { x: number; y: number }) => {
@@ -327,7 +327,7 @@ function measurementGeometryExtents(
   }
 }
 
-function padDegenerateExtents(extents: AcExExtents): AcExExtents {
+function padDegenerateExtents(extents: AcExHtmlExtents): AcExHtmlExtents {
   if (
     extents.maxX - extents.minX > 1e-8 ||
     extents.maxY - extents.minY > 1e-8
@@ -357,7 +357,7 @@ function measurementFocusExtents(
     bottom: number
   }>,
   clientToWorld: (clientX: number, clientY: number) => { x: number; y: number }
-): AcExExtents | null {
+): AcExHtmlExtents | null {
   const extents = acexExpandExtentsByClientRects(
     measurementGeometryExtents(geometry),
     overlayRects,
@@ -1103,7 +1103,7 @@ export class AcExMeasureController {
     clientY: number
     cacheKey: number
     point: THREE.Vector2
-    snap: AcExOsnapPoint | null
+    snap: AcExHtmlOsnapPoint | null
   } | null = null
   /** Phone/pad plus marks at confirmed in-progress pick points. */
   private readonly _confirmedPointMarks: AcExConfirmedPointMarks
@@ -1923,7 +1923,7 @@ export class AcExMeasureController {
    *
    * @returns True when selection state changed.
    */
-  handleSelectionBox(box: AcExExtents, mode: AcExSelectionMode): boolean {
+  handleSelectionBox(box: AcExHtmlExtents, mode: AcExSelectionMode): boolean {
     if (this._mode || !this._visible) return false
     const next = new Set<string>()
     for (const measure of this._committed) {

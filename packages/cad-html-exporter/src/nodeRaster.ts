@@ -1,5 +1,5 @@
 import { decodeRgba } from '@huh-david/bmp-js'
-import { setHeadlessPngEncoder } from '@mlightcad/cad-html-core'
+import { acexHtmlSetHeadlessPngEncoder } from '@mlightcad/cad-html-core'
 import { setHeadlessRasterDecoder } from '@mlightcad/three-renderer'
 import { decode as decodeJpeg } from 'jpeg-js'
 import { PNG } from 'pngjs'
@@ -21,7 +21,7 @@ export function installNodeRasterCodec(): void {
   if (installed) return
   installed = true
   setHeadlessRasterDecoder(decodeNodeRaster)
-  setHeadlessPngEncoder(encodeNodeRgbaPng)
+  acexHtmlSetHeadlessPngEncoder(encodeNodeRgbaPng)
 }
 
 /**

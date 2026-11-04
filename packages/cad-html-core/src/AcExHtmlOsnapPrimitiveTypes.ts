@@ -4,13 +4,13 @@
  * These definitions describe **analytic** geometry in world coordinates (WCS, XY plane).
  * All coordinate fields use IEEE-754 `number` (double precision) for measurement-grade
  * accuracy on large-coordinate drawings.
- * Curve/point/path kinds are serialized per layout in {@link AcExLayoutSnapshot.osnap}
- * at export time (see {@link buildOsnapCatalog}). Ordinary drawing `line` strokes are
- * omitted from exported catalogs and rebuilt at runtime from {@link AcExLineBatch}
+ * Curve/point/path kinds are serialized per layout in {@link AcExHtmlLayoutSnapshot.osnap}
+ * at export time (see {@link acexHtmlBuildOsnapCatalog}). Ordinary drawing `line` strokes are
+ * omitted from exported catalogs and rebuilt at runtime from {@link AcExHtmlLineBatch}
  * display geometry. Fill/frame boundaries (hatch, TRACE/SOLID, IMAGE clip, …) are
- * stored as compact {@link AcExOsnapPathPrimitive} records, not exploded line edges.
+ * stored as compact {@link AcExHtmlOsnapPathPrimitive} records, not exploded line edges.
  * Wide LWPOLYLINE entities (start/end width) are also stored as a centerline
- * `path` because they render as meshes and never appear in {@link AcExLineBatch}.
+ * `path` because they render as meshes and never appear in {@link AcExHtmlLineBatch}.
  *
  * @packageDocumentation
  */
@@ -32,7 +32,7 @@
  *
  * Tangent snap is not implemented in the offline viewer.
  */
-export type AcExOsnapMode =
+export type AcExHtmlOsnapMode =
   | 'endpoint'
   | 'midpoint'
   | 'center'
@@ -46,13 +46,13 @@ export type AcExOsnapMode =
  *
  * Coordinates are in drawing WCS (XY); Z is not stored.
  */
-export interface AcExOsnapPoint {
+export interface AcExHtmlOsnapPoint {
   /** Snap X in world coordinates. */
   x: number
   /** Snap Y in world coordinates. */
   y: number
   /** Which OSNAP mode produced this point. */
-  mode: AcExOsnapMode
+  mode: AcExHtmlOsnapMode
 }
 
 /**
@@ -62,7 +62,7 @@ export interface AcExOsnapPoint {
  * (endpoint, midpoint, center, quadrant, nearest). Additional modes such as
  * `node` can be passed explicitly to {@link AcExOsnapIndex}.
  */
-export const ACEX_DEFAULT_OSNAP_MODES: readonly AcExOsnapMode[] = [
+export const ACEX_DEFAULT_OSNAP_MODES: readonly AcExHtmlOsnapMode[] = [
   'endpoint',
   'midpoint',
   'center',
@@ -77,7 +77,7 @@ export const ACEX_DEFAULT_OSNAP_MODES: readonly AcExOsnapMode[] = [
  * All coordinates are already transformed into layout WCS, including geometry
  * that originated inside block references.
  */
-export interface AcExOsnapPrimitiveBase {
+export interface AcExHtmlOsnapPrimitiveBase {
   /**
    * Effective layer name used for visibility filtering in the viewer.
    *
@@ -90,13 +90,13 @@ export interface AcExOsnapPrimitiveBase {
 /**
  * A straight line segment (`AcDbLine`, or a non-bulge polyline edge).
  *
- * Not written by {@link buildOsnapCatalog}; retained so runtime / tests can
- * represent tessellated snap edges derived from {@link AcExLineBatch}.
+ * Not written by {@link acexHtmlBuildOsnapCatalog}; retained so runtime / tests can
+ * represent tessellated snap edges derived from {@link AcExHtmlLineBatch}.
  *
- * @see {@link AcExOsnapLinePrimitive.kind}
+ * @see {@link AcExHtmlOsnapLinePrimitive.kind}
  */
-export interface AcExOsnapLinePrimitive extends AcExOsnapPrimitiveBase {
-  /** Discriminator for {@link AcExOsnapPrimitive}. */
+export interface AcExHtmlOsnapLinePrimitive extends AcExHtmlOsnapPrimitiveBase {
+  /** Discriminator for {@link AcExHtmlOsnapPrimitive}. */
   kind: 'line'
   /** Start X in WCS. */
   x0: number
@@ -114,8 +114,8 @@ export interface AcExOsnapLinePrimitive extends AcExOsnapPrimitiveBase {
  * Snap support: center, quadrant (four cardinal directions), nearest on circumference.
  * A full circle has no arc midpoint or endpoints.
  */
-export interface AcExOsnapCirclePrimitive extends AcExOsnapPrimitiveBase {
-  /** Discriminator for {@link AcExOsnapPrimitive}. */
+export interface AcExHtmlOsnapCirclePrimitive extends AcExHtmlOsnapPrimitiveBase {
+  /** Discriminator for {@link AcExHtmlOsnapPrimitive}. */
   kind: 'circle'
   /** Center X in WCS. */
   cx: number
@@ -134,13 +134,13 @@ export interface AcExOsnapCirclePrimitive extends AcExOsnapPrimitiveBase {
  * A circular arc (`AcDbArc`, or a bulge segment from `AcDbPolyline`).
  *
  * Angles are AutoCAD OCS parameters in radians. When
- * {@link AcExOsnapArcPrimitive.normalSign} is `+1`, they match WCS `atan2`;
+ * {@link AcExHtmlOsnapArcPrimitive.normalSign} is `+1`, they match WCS `atan2`;
  * when `-1`, X is mirrored (−Z extrusion) so HTML snap can rebuild the WCS
  * stroke. Do not copy clockwise `AcGeCircArc2d` public angles here — those
  * are Y-mirrored, not OCS.
  */
-export interface AcExOsnapArcPrimitive extends AcExOsnapPrimitiveBase {
-  /** Discriminator for {@link AcExOsnapPrimitive}. */
+export interface AcExHtmlOsnapArcPrimitive extends AcExHtmlOsnapPrimitiveBase {
+  /** Discriminator for {@link AcExHtmlOsnapPrimitive}. */
   kind: 'arc'
   /** Arc center X in WCS. */
   cx: number
@@ -152,7 +152,7 @@ export interface AcExOsnapArcPrimitive extends AcExOsnapPrimitiveBase {
   startAngle: number
   /** End angle in radians (entity parameter, not degrees). */
   endAngle: number
-  /** See {@link AcExOsnapCirclePrimitive.normalSign}. */
+  /** See {@link AcExHtmlOsnapCirclePrimitive.normalSign}. */
   normalSign: 1 | -1
 }
 
@@ -165,8 +165,8 @@ export interface AcExOsnapArcPrimitive extends AcExOsnapPrimitiveBase {
  * Parameter angles follow the AutoCAD / `AcGeEllipseArc` convention (not geometric
  * polar angle from the center).
  */
-export interface AcExOsnapEllipsePrimitive extends AcExOsnapPrimitiveBase {
-  /** Discriminator for {@link AcExOsnapPrimitive}. */
+export interface AcExHtmlOsnapEllipsePrimitive extends AcExHtmlOsnapPrimitiveBase {
+  /** Discriminator for {@link AcExHtmlOsnapPrimitive}. */
   kind: 'ellipse'
   /** Ellipse center X in WCS. */
   cx: number
@@ -201,8 +201,8 @@ export interface AcExOsnapEllipsePrimitive extends AcExOsnapPrimitiveBase {
  * into WCS. The offline viewer evaluates the curve with de Boor (not render
  * tessellation) for nearest-point snap.
  */
-export interface AcExOsnapSplinePrimitive extends AcExOsnapPrimitiveBase {
-  /** Discriminator for {@link AcExOsnapPrimitive}. */
+export interface AcExHtmlOsnapSplinePrimitive extends AcExHtmlOsnapPrimitiveBase {
+  /** Discriminator for {@link AcExHtmlOsnapPrimitive}. */
   kind: 'spline'
   /**
    * Control polygon vertices in WCS: `[x0, y0, x1, y1, …]`.
@@ -235,8 +235,8 @@ export interface AcExOsnapSplinePrimitive extends AcExOsnapPrimitiveBase {
  *
  * Contributes `node` (and legacy `endpoint`) snap when those modes are enabled.
  */
-export interface AcExOsnapPointPrimitive extends AcExOsnapPrimitiveBase {
-  /** Discriminator for {@link AcExOsnapPrimitive}. */
+export interface AcExHtmlOsnapPointPrimitive extends AcExHtmlOsnapPrimitiveBase {
+  /** Discriminator for {@link AcExHtmlOsnapPrimitive}. */
   kind: 'point'
   /** Point X in WCS. */
   x: number
@@ -253,8 +253,8 @@ export interface AcExOsnapPointPrimitive extends AcExOsnapPrimitiveBase {
  * from start/end/bulge). Indexed by the whole-path bbox at query time so a
  * 200-edge hatch is one RBush entry, not 200 ACEO lines.
  */
-export interface AcExOsnapPathPrimitive extends AcExOsnapPrimitiveBase {
-  /** Discriminator for {@link AcExOsnapPrimitive}. */
+export interface AcExHtmlOsnapPathPrimitive extends AcExHtmlOsnapPrimitiveBase {
+  /** Discriminator for {@link AcExHtmlOsnapPrimitive}. */
   kind: 'path'
   /**
    * Vertex pack: three numbers per vertex (`x`, `y`, outgoing `bulge`).
@@ -268,25 +268,25 @@ export interface AcExOsnapPathPrimitive extends AcExOsnapPrimitiveBase {
 /**
  * Discriminated union of all analytic primitives stored in a layout snapshot.
  *
- * Select on {@link AcExOsnapPrimitive.kind} before reading geometry fields.
+ * Select on {@link AcExHtmlOsnapPrimitive.kind} before reading geometry fields.
  */
-export type AcExOsnapPrimitive =
-  | AcExOsnapLinePrimitive
-  | AcExOsnapCirclePrimitive
-  | AcExOsnapArcPrimitive
-  | AcExOsnapEllipsePrimitive
-  | AcExOsnapSplinePrimitive
-  | AcExOsnapPointPrimitive
-  | AcExOsnapPathPrimitive
+export type AcExHtmlOsnapPrimitive =
+  | AcExHtmlOsnapLinePrimitive
+  | AcExHtmlOsnapCirclePrimitive
+  | AcExHtmlOsnapArcPrimitive
+  | AcExHtmlOsnapEllipsePrimitive
+  | AcExHtmlOsnapSplinePrimitive
+  | AcExHtmlOsnapPointPrimitive
+  | AcExHtmlOsnapPathPrimitive
 
 /**
  * Per-layout catalog of analytic geometry used for object snap.
  *
- * Embedded on {@link AcExLayoutSnapshot.osnap} when exporting HTML.
+ * Embedded on {@link AcExHtmlLayoutSnapshot.osnap} when exporting HTML.
  * {@link AcExOsnapIndex} indexes ACEO curves/paths together with tessellated
- * line segments from {@link AcExLineBatch}.
+ * line segments from {@link AcExHtmlLineBatch}.
  */
-export interface AcExOsnapCatalog {
+export interface AcExHtmlOsnapCatalog {
   /** Analytic OSNAP geometry serialized into the HTML snapshot. */
-  primitives: AcExOsnapPrimitive[]
+  primitives: AcExHtmlOsnapPrimitive[]
 }

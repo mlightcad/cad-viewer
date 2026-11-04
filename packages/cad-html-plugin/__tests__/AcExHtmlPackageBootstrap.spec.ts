@@ -4,18 +4,18 @@ import {
   ACEX_DEFAULT_MANIFEST_FILE,
   ACEX_DEFAULT_MANIFEST_HREF,
   ACEX_PACKAGE_DIRECTORY_ORIGIN,
-  acexGlobalFetch,
-  buildPackageDirectoryFileMap,
-  canOpenLocalPackageFolder,
-  chooseInitialManifestHref,
-  createPackageDirectoryFetch,
-  detectLocalFolderOpenSupport,
-  detectSharedDirectoryRoot,
-  isAbsoluteHttpUrl,
-  normalizePackageDirectoryPath,
-  probePackageManifest,
-  readManifestUrlFromSearchParams,
-  resolveViewerManifestUrl
+  acexHtmlGlobalFetch,
+  acexHtmlBuildPackageDirectoryFileMap,
+  acexHtmlCanOpenLocalPackageFolder,
+  acexHtmlChooseInitialManifestHref,
+  acexHtmlCreatePackageDirectoryFetch,
+  acexHtmlDetectLocalFolderOpenSupport,
+  acexHtmlDetectSharedDirectoryRoot,
+  acexHtmlIsAbsoluteHttpUrl,
+  acexHtmlNormalizePackageDirectoryPath,
+  acexHtmlProbePackageManifest,
+  acexHtmlReadManifestUrlFromSearchParams,
+  acexHtmlResolveViewerManifestUrl
 } from '@mlightcad/cad-html-core'
 import { ACEX_PACKAGE_VERSION } from '@mlightcad/cad-html-core'
 import { ACEX_SNAPSHOT_VERSION } from '@mlightcad/cad-html-core'
@@ -69,7 +69,7 @@ describe('AcExHtmlPackageBootstrap', () => {
       return Promise.resolve(new Response('ok', { status: 200 }))
     }) as typeof fetch
     try {
-      const detached = acexGlobalFetch
+      const detached = acexHtmlGlobalFetch
       const response = await detached('https://cdn.example/drawing.acex.json')
       expect(response.status).toBe(200)
       expect(calls).toEqual(['https://cdn.example/drawing.acex.json'])
@@ -80,7 +80,7 @@ describe('AcExHtmlPackageBootstrap', () => {
 
   it('detects local folder open support with secure-context and webkitdirectory fallbacks', () => {
     expect(
-      detectLocalFolderOpenSupport({
+      acexHtmlDetectLocalFolderOpenSupport({
         hasDirectoryPicker: true,
         isSecureContext: true,
         supportsWebkitDirectoryAttribute: false
@@ -88,7 +88,7 @@ describe('AcExHtmlPackageBootstrap', () => {
     ).toEqual({ directoryPicker: true, webkitDirectory: false })
 
     expect(
-      detectLocalFolderOpenSupport({
+      acexHtmlDetectLocalFolderOpenSupport({
         hasDirectoryPicker: true,
         isSecureContext: false,
         supportsWebkitDirectoryAttribute: true
@@ -96,7 +96,7 @@ describe('AcExHtmlPackageBootstrap', () => {
     ).toEqual({ directoryPicker: false, webkitDirectory: true })
 
     expect(
-      detectLocalFolderOpenSupport({
+      acexHtmlDetectLocalFolderOpenSupport({
         hasDirectoryPicker: false,
         isSecureContext: true,
         supportsWebkitDirectoryAttribute: false
@@ -104,13 +104,13 @@ describe('AcExHtmlPackageBootstrap', () => {
     ).toEqual({ directoryPicker: false, webkitDirectory: false })
 
     expect(
-      canOpenLocalPackageFolder({
+      acexHtmlCanOpenLocalPackageFolder({
         directoryPicker: false,
         webkitDirectory: true
       })
     ).toBe(true)
     expect(
-      canOpenLocalPackageFolder({
+      acexHtmlCanOpenLocalPackageFolder({
         directoryPicker: false,
         webkitDirectory: false
       })
@@ -119,19 +119,19 @@ describe('AcExHtmlPackageBootstrap', () => {
 
   it('reads manifest URL from query parameters', () => {
     expect(
-      readManifestUrlFromSearchParams(
+      acexHtmlReadManifestUrlFromSearchParams(
         '?manifest=https://cdn.example/pkg/drawing.acex.json'
       )
     ).toBe('https://cdn.example/pkg/drawing.acex.json')
     expect(
-      readManifestUrlFromSearchParams('?acex=./other.acex.json&x=1')
+      acexHtmlReadManifestUrlFromSearchParams('?acex=./other.acex.json&x=1')
     ).toBe('./other.acex.json')
-    expect(readManifestUrlFromSearchParams('?foo=bar')).toBeNull()
+    expect(acexHtmlReadManifestUrlFromSearchParams('?foo=bar')).toBeNull()
   })
 
   it('prefers query over config over sibling default', () => {
     expect(
-      chooseInitialManifestHref({
+      acexHtmlChooseInitialManifestHref({
         search: '?manifest=https://cdn.example/a.acex.json',
         configManifestUrl: './legacy.acex.json'
       })
@@ -140,35 +140,35 @@ describe('AcExHtmlPackageBootstrap', () => {
       fromQuery: true
     })
     expect(
-      chooseInitialManifestHref({
+      acexHtmlChooseInitialManifestHref({
         search: '',
         configManifestUrl: './legacy.acex.json'
       })
     ).toEqual({ href: './legacy.acex.json', fromQuery: false })
-    expect(chooseInitialManifestHref({})).toEqual({
+    expect(acexHtmlChooseInitialManifestHref({})).toEqual({
       href: ACEX_DEFAULT_MANIFEST_HREF,
       fromQuery: false
     })
   })
 
   it('resolves absolute and relative viewer manifest URLs', () => {
-    expect(isAbsoluteHttpUrl('https://cdn.example/drawing.acex.json')).toBe(
+    expect(acexHtmlIsAbsoluteHttpUrl('https://cdn.example/drawing.acex.json')).toBe(
       true
     )
     expect(
-      resolveViewerManifestUrl(
+      acexHtmlResolveViewerManifestUrl(
         'https://cdn.example/pkg/drawing.acex.json',
         'https://viewer.example/app/viewer.html'
       )
     ).toBe('https://cdn.example/pkg/drawing.acex.json')
     expect(
-      resolveViewerManifestUrl(
+      acexHtmlResolveViewerManifestUrl(
         ACEX_DEFAULT_MANIFEST_HREF,
         'https://cdn.example/pkg/viewer.html'
       )
     ).toBe('https://cdn.example/pkg/drawing.acex.json')
     expect(() =>
-      resolveViewerManifestUrl(
+      acexHtmlResolveViewerManifestUrl(
         'https://evil.example/x',
         'https://cdn.example/pkg/viewer.html'
       )
@@ -181,7 +181,7 @@ describe('AcExHtmlPackageBootstrap', () => {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       })
-    const ok = await probePackageManifest(
+    const ok = await acexHtmlProbePackageManifest(
       'https://cdn.example/drawing.acex.json',
       okFetch
     )
@@ -190,13 +190,13 @@ describe('AcExHtmlPackageBootstrap', () => {
       expect(ok.manifest.format).toBe('acex-package')
     }
 
-    const missing = await probePackageManifest(
+    const missing = await acexHtmlProbePackageManifest(
       'https://cdn.example/drawing.acex.json',
       async () => new Response(null, { status: 404 })
     )
     expect(missing).toMatchObject({ ok: false, reason: 'not-found' })
 
-    const badVersion = await probePackageManifest(
+    const badVersion = await acexHtmlProbePackageManifest(
       'https://cdn.example/drawing.acex.json',
       async () =>
         new Response(validManifestJson({ packageVersion: 999 }), {
@@ -212,19 +212,19 @@ describe('AcExHtmlPackageBootstrap', () => {
 
   it('normalizes webkitdirectory paths and serves via directory fetch', async () => {
     expect(
-      detectSharedDirectoryRoot([
+      acexHtmlDetectSharedDirectoryRoot([
         'canteen/drawing.acex.json',
         'canteen/chunks/L0-000.acex.gz'
       ])
     ).toBe('canteen')
     expect(
-      normalizePackageDirectoryPath(
+      acexHtmlNormalizePackageDirectoryPath(
         'canteen/chunks/L0-000.acex.gz',
         'canteen'
       )
     ).toBe('chunks/L0-000.acex.gz')
 
-    const files = buildPackageDirectoryFileMap([
+    const files = acexHtmlBuildPackageDirectoryFileMap([
       {
         relativePath: 'pkg/drawing.acex.json',
         bytes: strToU8(validManifestJson())
@@ -237,10 +237,10 @@ describe('AcExHtmlPackageBootstrap', () => {
     expect(files.has(ACEX_DEFAULT_MANIFEST_FILE)).toBe(true)
     expect(files.has('chunks/L0-000.acex.gz')).toBe(true)
 
-    const { manifestUrl, fetchImpl } = createPackageDirectoryFetch(files)
+    const { manifestUrl, fetchImpl } = acexHtmlCreatePackageDirectoryFetch(files)
     expect(manifestUrl.startsWith(ACEX_PACKAGE_DIRECTORY_ORIGIN)).toBe(true)
 
-    const probed = await probePackageManifest(manifestUrl, fetchImpl)
+    const probed = await acexHtmlProbePackageManifest(manifestUrl, fetchImpl)
     expect(probed.ok).toBe(true)
 
     const chunk = await fetchImpl(
@@ -254,7 +254,7 @@ describe('AcExHtmlPackageBootstrap', () => {
 
   it('rejects a folder map without drawing.acex.json', () => {
     expect(() =>
-      createPackageDirectoryFetch(
+      acexHtmlCreatePackageDirectoryFetch(
         new Map([['readme.txt', strToU8('hi')]])
       )
     ).toThrow(/drawing\.acex\.json/)

@@ -22,7 +22,7 @@ export type AcExHtmlBinaryEncoding = 'base64' | 'base85'
  * Reads the trailing `;base64` / `;base85` token from a script MIME type.
  * Defaults to `base64` for legacy exports that omit the token.
  */
-export function parseAcExHtmlBinaryEncoding(
+export function acexHtmlParseBinaryEncoding(
   mimeType: string | null | undefined
 ): AcExHtmlBinaryEncoding {
   const mime = mimeType?.toLowerCase() ?? ''
@@ -33,17 +33,17 @@ export function parseAcExHtmlBinaryEncoding(
 }
 
 /** Encodes bytes with the selected HTML binary text encoding. */
-export function acExHtmlBytesToText(
+export function acexHtmlBytesToText(
   bytes: Uint8Array,
   encoding: AcExHtmlBinaryEncoding
 ): string {
   return encoding === 'base85'
-    ? acExHtmlBytesToBase85(bytes)
+    ? acexHtmlBytesToBase85(bytes)
     : uint8ToBase64(bytes)
 }
 
 /** Decodes an HTML binary text payload with the selected encoding. */
-export function acExHtmlTextToBytes(
+export function acexHtmlTextToBytes(
   text: string,
   encoding: AcExHtmlBinaryEncoding
 ): Uint8Array {
@@ -53,14 +53,14 @@ export function acExHtmlTextToBytes(
       ? text.trim()
       : text
   return encoding === 'base85'
-    ? acExHtmlBase85ToBytes(payload)
+    ? acexHtmlBase85ToBytes(payload)
     : base64ToUint8(payload)
 }
 
 /**
  * Encodes bytes as HTML-safe base85 (pad to 4-byte groups, emit ceil(n·5/4) chars).
  */
-export function acExHtmlBytesToBase85(bytes: Uint8Array): string {
+export function acexHtmlBytesToBase85(bytes: Uint8Array): string {
   const length = bytes.length
   if (length === 0) return ''
 
@@ -88,12 +88,12 @@ export function acExHtmlBytesToBase85(bytes: Uint8Array): string {
 }
 
 /**
- * Decodes HTML-safe base85 produced by {@link acExHtmlBytesToBase85}.
+ * Decodes HTML-safe base85 produced by {@link acexHtmlBytesToBase85}.
  *
  * Incomplete final groups are padded with the max digit (Ascii85 `u` rule) so
  * truncating `ceil(n·5/4)` encode chars round-trips the original `n` bytes.
  */
-export function acExHtmlBase85ToBytes(text: string): Uint8Array {
+export function acexHtmlBase85ToBytes(text: string): Uint8Array {
   const input = text.replace(/\s+/g, '')
   const length = input.length
   if (length === 0) return new Uint8Array(0)

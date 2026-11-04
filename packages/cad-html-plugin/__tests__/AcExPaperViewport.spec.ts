@@ -1,4 +1,4 @@
-import type { AcExViewportSnapshot } from '@mlightcad/cad-html-core'
+import type { AcExHtmlViewportSnapshot } from '@mlightcad/cad-html-core'
 import {
   computeOnscreenPaperViewportPass,
   computeViewportCamera,
@@ -11,7 +11,7 @@ import {
   viewportPaperToModelScale
 } from '../src/AcExPaperViewport'
 
-const viewport: AcExViewportSnapshot = {
+const viewport: AcExHtmlViewportSnapshot = {
   paper: { minX: 0, minY: 0, maxX: 10, maxY: 10 },
   model: { minX: 100, minY: 200, maxX: 200, maxY: 400 }
 }
@@ -32,7 +32,7 @@ describe('AcExPaperViewport', () => {
   })
 
   it('rotates paper-to-model mapping by view twist', () => {
-    const twisted: AcExViewportSnapshot = {
+    const twisted: AcExHtmlViewportSnapshot = {
       ...viewport,
       twist: Math.PI / 2
     }
@@ -57,11 +57,11 @@ describe('AcExPaperViewport', () => {
   })
 
   it('picks the top-most interior viewport for drill-through', () => {
-    const bottom: AcExViewportSnapshot = {
+    const bottom: AcExHtmlViewportSnapshot = {
       paper: { minX: 0, minY: 0, maxX: 20, maxY: 20 },
       model: { minX: 0, minY: 0, maxX: 1, maxY: 1 }
     }
-    const top: AcExViewportSnapshot = {
+    const top: AcExHtmlViewportSnapshot = {
       paper: { minX: 4, minY: 4, maxX: 8, maxY: 8 },
       model: { minX: 10, minY: 10, maxX: 20, maxY: 20 }
     }
@@ -98,7 +98,7 @@ describe('AcExPaperViewport', () => {
   })
 
   it('keeps the full DCS view box when the paper viewport is on-screen', () => {
-    const twisted: AcExViewportSnapshot = {
+    const twisted: AcExHtmlViewportSnapshot = {
       ...viewport,
       twist: Math.PI / 4
     }

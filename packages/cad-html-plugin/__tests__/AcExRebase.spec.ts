@@ -1,13 +1,13 @@
 import * as THREE from 'three'
 
-import { readBatchWorldOffset, toWcsCoord } from '@mlightcad/cad-html-core'
+import { acexHtmlReadBatchWorldOffset, acexHtmlToWcsCoord } from '@mlightcad/cad-html-core'
 import { AcExOsnapIndex } from '../src/AcExOsnap'
 
 describe('rebase and measurement precision', () => {
   it('combines float32 local vertices with double origins in WCS', () => {
     const origin = 1_000_000_000.5
     const local = 0.125
-    expect(toWcsCoord(local, origin)).toBe(1_000_000_000.625)
+    expect(acexHtmlToWcsCoord(local, origin)).toBe(1_000_000_000.625)
   })
 
   it('snaps using analytic osnap primitives stored as number', () => {
@@ -77,6 +77,6 @@ describe('rebase and measurement precision', () => {
     parent.add(line)
     parent.updateMatrixWorld(true)
 
-    expect(readBatchWorldOffset(line)).toEqual([1_000_060, 2_000_045, 0])
+    expect(acexHtmlReadBatchWorldOffset(line)).toEqual([1_000_060, 2_000_045, 0])
   })
 })

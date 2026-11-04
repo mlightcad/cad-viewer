@@ -1,15 +1,15 @@
-import { acExHtmlBytesToText } from '@mlightcad/cad-html-core'
+import { acexHtmlBytesToText } from '@mlightcad/cad-html-core'
 import {
-  decodeSnapshot,
-  decodeSnapshotFromCompressedBytes,
-  encodeSnapshot,
-  snapshotPayloadToCompressedBytes
+  acexHtmlDecodeSnapshot,
+  acexHtmlDecodeSnapshotFromCompressedBytes,
+  acexHtmlEncodeSnapshot,
+  acexHtmlSnapshotPayloadToCompressedBytes
 } from '@mlightcad/cad-html-core'
 import {
-  decodeSnapshotBinary,
-  encodeSnapshotBinary
+  acexHtmlDecodeSnapshotBinary,
+  acexHtmlEncodeSnapshotBinary
 } from '@mlightcad/cad-html-core'
-import { AcExBinaryWriter } from '@mlightcad/cad-html-core'
+import { AcExHtmlBinaryWriter } from '@mlightcad/cad-html-core'
 import { ACEO_OSNAP_MAGIC } from '@mlightcad/cad-html-core'
 import { ACEX_SNAPSHOT_VERSION } from '@mlightcad/cad-html-core'
 
@@ -29,7 +29,7 @@ function indexOfBytes(haystack: Uint8Array, needle: Uint8Array): number {
 
 /** Builds ACEX bytes with the pre-ACEO JSON osnap field for decode compat. */
 function encodeLegacyJsonOsnapSnapshot(osnap: unknown): Uint8Array {
-  const writer = new AcExBinaryWriter()
+  const writer = new AcExHtmlBinaryWriter()
   writer.writeU32(0x58454341) // ACEX
   writer.writeU8(ACEX_SNAPSHOT_VERSION)
   writer.writeU8(0)
@@ -96,14 +96,14 @@ describe('AcExSnapshotCodec', () => {
       ],
       activeLayoutBtrId: 'ms'
     }
-    const encoded = encodeSnapshot(snapshot)
+    const encoded = acexHtmlEncodeSnapshot(snapshot)
     expect(encoded.compression).toBe('gzip')
-    const decoded = decodeSnapshot(encoded.payload)
+    const decoded = acexHtmlDecodeSnapshot(encoded.payload)
     expect(decoded.meta.extents.maxX).toBe(10)
     expect(decoded.layers[0]?.name).toBe('0')
 
-    const compressed = snapshotPayloadToCompressedBytes(encoded.payload)
-    const fromBytes = decodeSnapshotFromCompressedBytes(compressed)
+    const compressed = acexHtmlSnapshotPayloadToCompressedBytes(encoded.payload)
+    const fromBytes = acexHtmlDecodeSnapshotFromCompressedBytes(compressed)
     expect(fromBytes.meta.extents.maxX).toBe(10)
   })
 
@@ -140,19 +140,19 @@ describe('AcExSnapshotCodec', () => {
       ],
       activeLayoutBtrId: 'ms'
     }
-    const encoded = encodeSnapshot(snapshot)
-    const gzipBytes = snapshotPayloadToCompressedBytes(encoded.payload, 'base85')
-    const legacyPayload = acExHtmlBytesToText(gzipBytes, 'base64')
+    const encoded = acexHtmlEncodeSnapshot(snapshot)
+    const gzipBytes = acexHtmlSnapshotPayloadToCompressedBytes(encoded.payload, 'base85')
+    const legacyPayload = acexHtmlBytesToText(gzipBytes, 'base64')
 
-    const fromExplicit = decodeSnapshot(legacyPayload, 'base64')
+    const fromExplicit = acexHtmlDecodeSnapshot(legacyPayload, 'base64')
     expect(fromExplicit.meta.extents.maxX).toBe(10)
 
-    const fromMime = snapshotPayloadToCompressedBytes(
+    const fromMime = acexHtmlSnapshotPayloadToCompressedBytes(
       legacyPayload,
       'application/vnd.mlightcad.acex-snapshot+binary+gzip;base64'
     )
     expect(
-      decodeSnapshotFromCompressedBytes(fromMime).meta.extents.maxX
+      acexHtmlDecodeSnapshotFromCompressedBytes(fromMime).meta.extents.maxX
     ).toBe(10)
   })
 
@@ -206,8 +206,8 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const encoded = encodeSnapshot(snapshot)
-    const decoded = decodeSnapshot(encoded.payload)
+    const encoded = acexHtmlEncodeSnapshot(snapshot)
+    const decoded = acexHtmlDecodeSnapshot(encoded.payload)
     const line = decoded.layouts[0]!.lineBatches[0]!
     expect(Array.from(line.positions)).toEqual([0, 0, 0, 10, 0, 0])
     expect(Array.from(line.indices!)).toEqual([0, 1])
@@ -268,8 +268,8 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const encoded = encodeSnapshot(snapshot)
-    const line = decodeSnapshot(encoded.payload).layouts[0]!.lineBatches[0]!
+    const encoded = acexHtmlEncodeSnapshot(snapshot)
+    const line = acexHtmlDecodeSnapshot(encoded.payload).layouts[0]!.lineBatches[0]!
     expect(line.offset[0]).toBe(largeOrigin)
     expect(line.offset[1]).toBe(largeOrigin + 100)
     expect(Array.from(line.positions)).toEqual([0.5, 1.25, 0, 10.5, 2.75, 0])
@@ -315,8 +315,8 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const encoded = encodeSnapshot(snapshot)
-    const line = decodeSnapshot(encoded.payload).layouts[0]!.lineBatches[0]!
+    const encoded = acexHtmlEncodeSnapshot(snapshot)
+    const line = acexHtmlDecodeSnapshot(encoded.payload).layouts[0]!.lineBatches[0]!
     expect(line.lineWidth).toBe(2.5)
     expect(line.color).toBe(0x00ff00)
     expect(Array.from(line.positions)).toEqual([0, 0, 0, 100, 50, 0])
@@ -362,7 +362,7 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ps'
     }
 
-    const decoded = decodeSnapshot(encodeSnapshot(snapshot).payload)
+    const decoded = acexHtmlDecodeSnapshot(acexHtmlEncodeSnapshot(snapshot).payload)
     expect(decoded.layouts[0]!.viewports?.[0]?.paper).toEqual({
       minX: 0,
       minY: 0,
@@ -426,12 +426,12 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const binary = encodeSnapshotBinary(snapshot)
+    const binary = acexHtmlEncodeSnapshotBinary(snapshot)
     const asText = new TextDecoder().decode(binary)
     // savedView travels in meta; layout viewport slot stays a bare array value.
     expect(asText).toContain('"savedViews"')
     expect(asText).not.toContain('"savedView"')
-    const decoded = decodeSnapshotBinary(binary)
+    const decoded = acexHtmlDecodeSnapshotBinary(binary)
     expect(decoded.meta.savedViews?.ms).toEqual({
       minX: 100,
       minY: 200,
@@ -507,10 +507,10 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ps'
     }
 
-    const binary = encodeSnapshotBinary(snapshot)
+    const binary = acexHtmlEncodeSnapshotBinary(snapshot)
     const asText = new TextDecoder().decode(binary)
     expect(asText).toContain('"fitExtents"')
-    const decoded = decodeSnapshotBinary(binary)
+    const decoded = acexHtmlDecodeSnapshotBinary(binary)
     expect(decoded.meta.fitExtents?.ms).toEqual({
       minX: -50,
       minY: -25,
@@ -570,7 +570,7 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const decoded = decodeSnapshotBinary(encodeSnapshotBinary(snapshot))
+    const decoded = acexHtmlDecodeSnapshotBinary(acexHtmlEncodeSnapshotBinary(snapshot))
     expect(decoded.meta.fitExtents).toBeUndefined()
     expect(decoded.layouts[0]!.fitExtents).toBeUndefined()
   })
@@ -651,11 +651,11 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const legacyPayload = encodeSnapshot(withDuplicatedLines).payload
-    const compactPayload = encodeSnapshot(curvesOnly).payload
+    const legacyPayload = acexHtmlEncodeSnapshot(withDuplicatedLines).payload
+    const compactPayload = acexHtmlEncodeSnapshot(curvesOnly).payload
     expect(compactPayload.length).toBeLessThan(legacyPayload.length * 0.25)
 
-    const decoded = decodeSnapshot(compactPayload)
+    const decoded = acexHtmlDecodeSnapshot(compactPayload)
     expect(decoded.layouts[0]!.osnap?.primitives.every(p => p.kind !== 'line')).toBe(
       true
     )
@@ -706,13 +706,13 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const binary = encodeSnapshotBinary(snapshot)
+    const binary = acexHtmlEncodeSnapshotBinary(snapshot)
     const magicBytes = new Uint8Array(4)
     new DataView(magicBytes.buffer).setUint32(0, ACEO_OSNAP_MAGIC, true)
     const aceoIndex = indexOfBytes(binary, magicBytes)
     expect(aceoIndex).toBeGreaterThanOrEqual(0)
 
-    const decoded = decodeSnapshotBinary(binary)
+    const decoded = acexHtmlDecodeSnapshotBinary(binary)
     expect(decoded.layouts[0]!.osnap?.primitives).toEqual(
       snapshot.layouts[0]!.osnap!.primitives
     )
@@ -730,7 +730,7 @@ describe('AcExSnapshotCodec', () => {
       ]
     }
     const binary = encodeLegacyJsonOsnapSnapshot(osnap)
-    const decoded = decodeSnapshotBinary(binary)
+    const decoded = acexHtmlDecodeSnapshotBinary(binary)
     expect(decoded.layouts[0]!.osnap).toEqual(osnap)
   })
 
@@ -782,7 +782,7 @@ describe('AcExSnapshotCodec', () => {
       activeLayoutBtrId: 'ms'
     }
 
-    const decoded = decodeSnapshot(encodeSnapshot(snapshot).payload)
+    const decoded = acexHtmlDecodeSnapshot(acexHtmlEncodeSnapshot(snapshot).payload)
     expect(decoded.layouts[0]!.lineBatches[0]!.renderOrder).toBeUndefined()
     expect(decoded.layouts[0]!.meshBatches[0]!.renderOrder).toBe(-1)
   })

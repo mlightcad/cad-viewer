@@ -1,14 +1,14 @@
-import { estimateLineBatchBytes, estimateMeshBatchBytes } from '@mlightcad/cad-html-core'
+import { acexHtmlEstimateLineBatchBytes, acexHtmlEstimateMeshBatchBytes } from '@mlightcad/cad-html-core'
 import {
-  splitLineBatch,
-  splitMeshBatch
+  acexHtmlSplitLineBatch,
+  acexHtmlSplitMeshBatch
 } from '@mlightcad/cad-html-core'
-import { splitLayoutIntoSlices } from '@mlightcad/cad-html-core'
+import { acexHtmlSplitLayoutIntoSlices } from '@mlightcad/cad-html-core'
 import {
   ACEX_DEFAULT_CHUNK_MAX_BYTES,
   ACEX_MAX_GEOMETRY_BATCH_BYTES
 } from '@mlightcad/cad-html-core'
-import type { AcExLayoutSnapshot, AcExLineBatch, AcExMeshBatch } from '@mlightcad/cad-html-core'
+import type { AcExHtmlLayoutSnapshot, AcExHtmlLineBatch, AcExHtmlMeshBatch } from '@mlightcad/cad-html-core'
 
 function sequentialLinePositions(segmentCount: number): Float32Array {
   const positions = new Float32Array(segmentCount * 6)
@@ -19,7 +19,7 @@ function sequentialLinePositions(segmentCount: number): Float32Array {
   return positions
 }
 
-function lineSegmentKeys(batch: AcExLineBatch): string[] {
+function lineSegmentKeys(batch: AcExHtmlLineBatch): string[] {
   const keys: string[] = []
   const pos = batch.positions
   if (batch.indices && batch.indices.length >= 2) {
@@ -40,7 +40,7 @@ function lineSegmentKeys(batch: AcExLineBatch): string[] {
   return keys
 }
 
-function triangleKeys(batch: AcExMeshBatch): string[] {
+function triangleKeys(batch: AcExHtmlMeshBatch): string[] {
   const keys: string[] = []
   const pos = batch.positions
   const idx = batch.indices!
@@ -61,17 +61,17 @@ describe('AcExGeometryBatchSplit', () => {
   })
 
   it('leaves small line batches intact', () => {
-    const batch: AcExLineBatch = {
+    const batch: AcExHtmlLineBatch = {
       layer: '0',
       color: 0xff0000,
       offset: [1, 2, 3],
       positions: sequentialLinePositions(2)
     }
-    expect(splitLineBatch(batch, ACEX_MAX_GEOMETRY_BATCH_BYTES)).toEqual([batch])
+    expect(acexHtmlSplitLineBatch(batch, ACEX_MAX_GEOMETRY_BATCH_BYTES)).toEqual([batch])
   })
 
   it('splits a large sequential line batch and keeps every segment', () => {
-    const batch: AcExLineBatch = {
+    const batch: AcExHtmlLineBatch = {
       layer: 'WALL',
       color: 0x00ff00,
       offset: [10, 20, 0],
@@ -81,9 +81,9 @@ describe('AcExGeometryBatchSplit', () => {
       excludeFromOsnap: true,
       lineDistances: Float32Array.from({ length: 800 }, (_, i) => i)
     }
-    const pieces = splitLineBatch(batch, 2000)
+    const pieces = acexHtmlSplitLineBatch(batch, 2000)
     expect(pieces.length).toBeGreaterThan(1)
-    expect(pieces.every(piece => estimateLineBatchBytes(piece) <= 2000 + 24)).toBe(
+    expect(pieces.every(piece => acexHtmlEstimateLineBatchBytes(piece) <= 2000 + 24)).toBe(
       true
     )
     expect(pieces.flatMap(lineSegmentKeys).sort()).toEqual(
@@ -104,7 +104,7 @@ describe('AcExGeometryBatchSplit', () => {
       indices[i * 2] = i * 2
       indices[i * 2 + 1] = i * 2 + 1
     }
-    const batch: AcExLineBatch = {
+    const batch: AcExHtmlLineBatch = {
       layer: '0',
       color: 1,
       offset: [0, 0, 0],
@@ -112,7 +112,7 @@ describe('AcExGeometryBatchSplit', () => {
       indices,
       lineDistances: Float32Array.from({ length: 160 }, (_, i) => i * 0.5)
     }
-    const pieces = splitLineBatch(batch, 1500)
+    const pieces = acexHtmlSplitLineBatch(batch, 1500)
     expect(pieces.length).toBeGreaterThan(1)
     expect(pieces.flatMap(lineSegmentKeys).sort()).toEqual(
       lineSegmentKeys(batch).sort()
@@ -134,7 +134,7 @@ describe('AcExGeometryBatchSplit', () => {
       indices[t * 3 + 1] = (t + 1) % 7
       indices[t * 3 + 2] = (t + 2) % 7
     }
-    const batch: AcExMeshBatch = {
+    const batch: AcExHtmlMeshBatch = {
       layer: 'HATCH',
       color: 0x0000ff,
       offset: [0, 0, 0],
@@ -146,7 +146,7 @@ describe('AcExGeometryBatchSplit', () => {
       },
       renderOrder: -1
     }
-    const pieces = splitMeshBatch(batch, 500)
+    const pieces = acexHtmlSplitMeshBatch(batch, 500)
     expect(pieces.length).toBeGreaterThan(1)
     expect(pieces.flatMap(triangleKeys).sort()).toEqual(triangleKeys(batch).sort())
     expect(pieces.every(piece => piece.hatchPattern?.patternAngle === 0)).toBe(
@@ -156,7 +156,7 @@ describe('AcExGeometryBatchSplit', () => {
   })
 
   it('does not split textured IMAGE/OLE mesh batches', () => {
-    const batch: AcExMeshBatch = {
+    const batch: AcExHtmlMeshBatch = {
       layer: '0',
       color: 0xffffff,
       offset: [0, 0, 0],
@@ -165,12 +165,12 @@ describe('AcExGeometryBatchSplit', () => {
       uvs: new Float32Array(2000),
       texture: { mimeType: 'image/png', bytes: new Uint8Array(80_000) }
     }
-    expect(estimateMeshBatchBytes(batch)).toBeGreaterThan(2000)
-    expect(splitMeshBatch(batch, 2000)).toEqual([batch])
+    expect(acexHtmlEstimateMeshBatchBytes(batch)).toBeGreaterThan(2000)
+    expect(acexHtmlSplitMeshBatch(batch, 2000)).toEqual([batch])
   })
 
   it('turns one oversized layer batch into multiple layout slices', () => {
-    const layout: AcExLayoutSnapshot = {
+    const layout: AcExHtmlLayoutSnapshot = {
       btrId: 'ms',
       name: '*Model_Space',
       isModelSpace: true,
@@ -184,7 +184,7 @@ describe('AcExGeometryBatchSplit', () => {
       ],
       meshBatches: []
     }
-    const slices = splitLayoutIntoSlices(layout, 2000, 2000)
+    const slices = acexHtmlSplitLayoutIntoSlices(layout, 2000, 2000)
     expect(slices.length).toBeGreaterThan(1)
     const totalSegments = slices.reduce(
       (n, slice) =>

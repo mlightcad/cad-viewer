@@ -1,30 +1,30 @@
 import type { AcDbDatabase } from '@mlightcad/data-model'
 import type * as THREE from 'three'
 
-import { acexGetDocsBaseUrl } from './AcExDocsUrl'
-import { computeLayoutViewExtents } from './AcExLayerExtents'
-import { buildOsnapCatalog } from './AcExOsnapPrimitiveBuilder'
-import { collectLayoutViewports } from './AcExPaperViewportCollector'
-import { captureAcExSavedViewExtents } from './AcExSavedView'
-import { collectBatchesFromObject3D } from './AcExSceneBatchCollector'
+import { acexHtmlGetDocsBaseUrl } from './AcExHtmlDocsUrl'
+import { acexHtmlComputeLayoutViewExtents } from './AcExHtmlLayerExtents'
+import { acexHtmlBuildOsnapCatalog } from './AcExHtmlOsnapPrimitiveBuilder'
+import { acexHtmlCollectLayoutViewports } from './AcExHtmlPaperViewportCollector'
+import { acexHtmlCaptureSavedViewExtents } from './AcExHtmlSavedView'
+import { acexHtmlCollectBatchesFromObject3D } from './AcExHtmlSceneBatchCollector'
 import {
   ACEX_SNAPSHOT_VERSION,
-  type AcExInitialViewMode,
-  type AcExLayerSnapshot,
-  type AcExLayoutSnapshot,
-  type AcExLineBatch,
-  type AcExMeshBatch,
-  type AcExSnapshot,
-  type AcExViewerMode,
-  type AcExViewState
-} from './AcExSnapshotTypes'
-import { buildViewerMetadata } from './AcExViewerMetadata'
+  type AcExHtmlInitialViewMode,
+  type AcExHtmlLayerSnapshot,
+  type AcExHtmlLayoutSnapshot,
+  type AcExHtmlLineBatch,
+  type AcExHtmlMeshBatch,
+  type AcExHtmlSnapshot,
+  type AcExHtmlViewerMode,
+  type AcExHtmlViewState
+} from './AcExHtmlSnapshotTypes'
+import { acexHtmlBuildViewerMetadata } from './AcExHtmlViewerMetadata'
 
 /**
  * Layer table row for an export snapshot (visibility is independent of
  * whether geometry for that layer is present).
  */
-export interface AcExExportLayerMeta {
+export interface AcExHtmlExportLayerMeta {
   name: string
   color: number
   visible: boolean
@@ -33,7 +33,7 @@ export interface AcExExportLayerMeta {
 /**
  * One layer's geometry root inside a layout (typically an `AcTrGroup`).
  */
-export interface AcExExportLayoutLayerGeometry {
+export interface AcExHtmlExportLayoutLayerGeometry {
   name: string
   root: THREE.Object3D
 }
@@ -41,38 +41,38 @@ export interface AcExExportLayoutLayerGeometry {
 /**
  * Layout geometry and identity for snapshot assembly.
  */
-export interface AcExExportLayoutInput {
+export interface AcExHtmlExportLayoutInput {
   btrId: string
   name?: string
   isModelSpace: boolean
-  layers: AcExExportLayoutLayerGeometry[]
+  layers: AcExHtmlExportLayoutLayerGeometry[]
 }
 
 /**
- * Scene-agnostic input for {@link buildSnapshotFromExportScene}.
+ * Scene-agnostic input for {@link acexHtmlBuildSnapshotFromExportScene}.
  *
  * Callers (browser `AcTrScene` or a headless exporter) map their scene graph
  * into this shape; core never imports cad-simple-viewer types.
  */
-export interface AcExExportSceneInput {
-  layers: AcExExportLayerMeta[]
-  layouts: AcExExportLayoutInput[]
+export interface AcExHtmlExportSceneInput {
+  layers: AcExHtmlExportLayerMeta[]
+  layouts: AcExHtmlExportLayoutInput[]
   activeLayoutBtrId: string
   modelSpaceBtrId: string
 }
 
 /**
- * Options for {@link buildSnapshotFromExportScene}.
+ * Options for {@link acexHtmlBuildSnapshotFromExportScene}.
  */
-export interface AcExBuildSnapshotOptions {
+export interface AcExHtmlBuildSnapshotOptions {
   title?: string
   background?: number
   locale?: string
   exportInvisibleLayers?: boolean
   exportLayouts?: boolean
-  initialView?: AcExInitialViewMode
-  viewState?: AcExViewState
-  viewerMode?: AcExViewerMode
+  initialView?: AcExHtmlInitialViewMode
+  viewState?: AcExHtmlViewState
+  viewerMode?: AcExHtmlViewerMode
   canvasAspectRatio?: number
   /** Docs base URL embedded in snapshot meta. Defaults to Acex default. */
   docsBaseUrl?: string
@@ -84,7 +84,7 @@ export interface AcExBuildSnapshotOptions {
 }
 
 /** One layout-table row used to order and name exported layouts. */
-export interface AcExDatabaseLayoutInfo {
+export interface AcExHtmlDatabaseLayoutInfo {
   name: string
   tabOrder: number
   blockTableRecordId: string
@@ -94,13 +94,13 @@ export interface AcExDatabaseLayoutInfo {
  * Lists layouts from the drawing's layout table, including model space,
  * sorted by tab order.
  */
-export function listDatabaseLayouts(
+export function acexHtmlListDatabaseLayouts(
   database: AcDbDatabase
-): AcExDatabaseLayoutInfo[] {
+): AcExHtmlDatabaseLayoutInfo[] {
   const layoutTable = database.objects?.layout
   if (!layoutTable?.newIterator) return []
 
-  const layouts: AcExDatabaseLayoutInfo[] = []
+  const layouts: AcExHtmlDatabaseLayoutInfo[] = []
   for (const layout of layoutTable.newIterator()) {
     const blockTableRecordId = layout.blockTableRecordId
     if (!blockTableRecordId) continue
@@ -115,25 +115,25 @@ export function listDatabaseLayouts(
 }
 
 /**
- * Builds an {@link AcExSnapshot} from database metadata plus pre-built
+ * Builds an {@link AcExHtmlSnapshot} from database metadata plus pre-built
  * per-layout Object3D layer roots.
  */
-export function buildSnapshotFromExportScene(
+export function acexHtmlBuildSnapshotFromExportScene(
   database: AcDbDatabase,
-  scene: AcExExportSceneInput,
-  options: AcExBuildSnapshotOptions = {}
-): AcExSnapshot {
+  scene: AcExHtmlExportSceneInput,
+  options: AcExHtmlBuildSnapshotOptions = {}
+): AcExHtmlSnapshot {
   return buildSnapshotSync(database, scene, options)
 }
 
 /**
  * Async variant that optionally yields between layouts.
  */
-export async function buildSnapshotFromExportSceneAsync(
+export async function acexHtmlBuildSnapshotFromExportSceneAsync(
   database: AcDbDatabase,
-  scene: AcExExportSceneInput,
-  options: AcExBuildSnapshotOptions = {}
-): Promise<AcExSnapshot> {
+  scene: AcExHtmlExportSceneInput,
+  options: AcExHtmlBuildSnapshotOptions = {}
+): Promise<AcExHtmlSnapshot> {
   const yieldFn = options.yieldBetweenLayouts
   if (yieldFn) {
     await yieldFn()
@@ -146,20 +146,20 @@ export async function buildSnapshotFromExportSceneAsync(
     : (layerName: string) =>
         shouldExportLayer(scene, layerName, exportInvisibleLayers)
 
-  const meta = buildViewerMetadata(database, {
+  const meta = acexHtmlBuildViewerMetadata(database, {
     title: options.title,
     background: options.background
   })
 
   const layers = collectLayerSnapshots(scene, exportInvisibleLayers)
-  const tableLayouts = listDatabaseLayouts(database)
+  const tableLayouts = acexHtmlListDatabaseLayouts(database)
   const layoutNames = new Map(
     tableLayouts.map(layout => [layout.blockTableRecordId, layout.name])
   )
   const activeLayoutBtrId = resolveExportActiveLayoutBtrId(scene, exportLayouts)
   const layoutInputs = listExportLayouts(scene, tableLayouts, exportLayouts)
 
-  const layouts: AcExLayoutSnapshot[] = []
+  const layouts: AcExHtmlLayoutSnapshot[] = []
   for (const layoutInput of layoutInputs) {
     layouts.push(
       collectLayoutSnapshot(
@@ -192,9 +192,9 @@ export async function buildSnapshotFromExportSceneAsync(
 
 function buildSnapshotSync(
   database: AcDbDatabase,
-  scene: AcExExportSceneInput,
-  options: AcExBuildSnapshotOptions
-): AcExSnapshot {
+  scene: AcExHtmlExportSceneInput,
+  options: AcExHtmlBuildSnapshotOptions
+): AcExHtmlSnapshot {
   const exportInvisibleLayers = options.exportInvisibleLayers !== false
   const exportLayouts = options.exportLayouts !== false
   const includeLayer = exportInvisibleLayers
@@ -202,20 +202,20 @@ function buildSnapshotSync(
     : (layerName: string) =>
         shouldExportLayer(scene, layerName, exportInvisibleLayers)
 
-  const meta = buildViewerMetadata(database, {
+  const meta = acexHtmlBuildViewerMetadata(database, {
     title: options.title,
     background: options.background
   })
 
   const layers = collectLayerSnapshots(scene, exportInvisibleLayers)
-  const tableLayouts = listDatabaseLayouts(database)
+  const tableLayouts = acexHtmlListDatabaseLayouts(database)
   const layoutNames = new Map(
     tableLayouts.map(layout => [layout.blockTableRecordId, layout.name])
   )
   const activeLayoutBtrId = resolveExportActiveLayoutBtrId(scene, exportLayouts)
   const layoutInputs = listExportLayouts(scene, tableLayouts, exportLayouts)
 
-  const layouts: AcExLayoutSnapshot[] = []
+  const layouts: AcExHtmlLayoutSnapshot[] = []
   for (const layoutInput of layoutInputs) {
     layouts.push(
       collectLayoutSnapshot(
@@ -244,10 +244,10 @@ function buildSnapshotSync(
 }
 
 function collectLayerSnapshots(
-  scene: AcExExportSceneInput,
+  scene: AcExHtmlExportSceneInput,
   exportInvisibleLayers: boolean
-): AcExLayerSnapshot[] {
-  const layers: AcExLayerSnapshot[] = []
+): AcExHtmlLayerSnapshot[] {
+  const layers: AcExHtmlLayerSnapshot[] = []
   for (const layer of scene.layers) {
     if (!shouldExportLayer(scene, layer.name, exportInvisibleLayers)) {
       continue
@@ -262,15 +262,15 @@ function collectLayerSnapshots(
 }
 
 function buildSnapshotMeta(
-  meta: ReturnType<typeof buildViewerMetadata>,
-  options: AcExBuildSnapshotOptions,
-  layouts: AcExLayoutSnapshot[],
+  meta: ReturnType<typeof acexHtmlBuildViewerMetadata>,
+  options: AcExHtmlBuildSnapshotOptions,
+  layouts: AcExHtmlLayoutSnapshot[],
   activeLayoutBtrId: string
 ) {
   const activeLayout =
     layouts.find(layout => layout.btrId === activeLayoutBtrId) ?? layouts[0]
   const viewExtents = activeLayout
-    ? computeLayoutViewExtents(activeLayout)
+    ? acexHtmlComputeLayoutViewExtents(activeLayout)
     : null
   const initialView = options.initialView ?? 'fit'
 
@@ -287,16 +287,16 @@ function buildSnapshotMeta(
     viewState: initialView === 'current' ? options.viewState : undefined,
     viewerMode: options.viewerMode ?? 'measure',
     exportLayouts: options.exportLayouts !== false,
-    docsBaseUrl: options.docsBaseUrl ?? acexGetDocsBaseUrl()
+    docsBaseUrl: options.docsBaseUrl ?? acexHtmlGetDocsBaseUrl()
   }
 }
 
-function shouldExportOsnap(options: AcExBuildSnapshotOptions): boolean {
+function shouldExportOsnap(options: AcExHtmlBuildSnapshotOptions): boolean {
   return (options.viewerMode ?? 'measure') === 'measure'
 }
 
 function shouldExportLayer(
-  scene: AcExExportSceneInput,
+  scene: AcExHtmlExportSceneInput,
   layerName: string,
   exportInvisibleLayers: boolean
 ): boolean {
@@ -311,10 +311,10 @@ function shouldExportLayer(
 }
 
 function listExportLayouts(
-  scene: AcExExportSceneInput,
-  tableLayouts: AcExDatabaseLayoutInfo[],
+  scene: AcExHtmlExportSceneInput,
+  tableLayouts: AcExHtmlDatabaseLayoutInfo[],
   exportLayouts: boolean
-): AcExExportLayoutInput[] {
+): AcExHtmlExportLayoutInput[] {
   if (!exportLayouts) {
     const model = scene.layouts.find(
       layout => layout.btrId === scene.modelSpaceBtrId
@@ -324,7 +324,7 @@ function listExportLayouts(
 
   const byId = new Map(scene.layouts.map(layout => [layout.btrId, layout]))
   const seen = new Set<string>()
-  const result: AcExExportLayoutInput[] = []
+  const result: AcExHtmlExportLayoutInput[] = []
 
   for (const table of tableLayouts) {
     if (seen.has(table.blockTableRecordId)) continue
@@ -350,7 +350,7 @@ function listExportLayouts(
 }
 
 function resolveExportActiveLayoutBtrId(
-  scene: AcExExportSceneInput,
+  scene: AcExHtmlExportSceneInput,
   exportLayouts: boolean
 ): string {
   if (!exportLayouts) {
@@ -361,32 +361,32 @@ function resolveExportActiveLayoutBtrId(
 
 function collectLayoutSnapshot(
   database: AcDbDatabase,
-  scene: AcExExportSceneInput,
-  layoutInput: AcExExportLayoutInput,
+  scene: AcExHtmlExportSceneInput,
+  layoutInput: AcExHtmlExportLayoutInput,
   layoutNames: Map<string, string>,
-  options: AcExBuildSnapshotOptions,
+  options: AcExHtmlBuildSnapshotOptions,
   includeLayer: ((layerName: string) => boolean) | undefined
-): AcExLayoutSnapshot {
-  const lineBatches: AcExLineBatch[] = []
-  const meshBatches: AcExMeshBatch[] = []
+): AcExHtmlLayoutSnapshot {
+  const lineBatches: AcExHtmlLineBatch[] = []
+  const meshBatches: AcExHtmlMeshBatch[] = []
   for (const layer of layoutInput.layers) {
     if (includeLayer && !includeLayer(layer.name)) {
       continue
     }
-    const collected = collectBatchesFromObject3D(layer.root)
+    const collected = acexHtmlCollectBatchesFromObject3D(layer.root)
     lineBatches.push(...collected.lineBatches)
     meshBatches.push(...collected.meshBatches)
   }
 
   const isModelSpace =
     layoutInput.isModelSpace || layoutInput.btrId === scene.modelSpaceBtrId
-  const savedView = captureAcExSavedViewExtents(
+  const savedView = acexHtmlCaptureSavedViewExtents(
     database,
     layoutInput.btrId,
     isModelSpace,
     options.canvasAspectRatio
   )
-  const viewports = collectLayoutViewports(
+  const viewports = acexHtmlCollectLayoutViewports(
     database,
     layoutInput.btrId,
     isModelSpace
@@ -396,16 +396,16 @@ function collectLayoutSnapshot(
   // for layouts that were never active, so both would frame a different box
   // than export-time “Extents”.
   const fitExtents =
-    computeLayoutViewExtents({
+    acexHtmlComputeLayoutViewExtents({
       lineBatches,
       meshBatches,
       viewports
     }) ?? undefined
 
-  let osnap: ReturnType<typeof buildOsnapCatalog> | undefined
+  let osnap: ReturnType<typeof acexHtmlBuildOsnapCatalog> | undefined
   if (shouldExportOsnap(options)) {
     const osnapT0 = performance.now()
-    osnap = buildOsnapCatalog(database, layoutInput.btrId, { includeLayer })
+    osnap = acexHtmlBuildOsnapCatalog(database, layoutInput.btrId, { includeLayer })
     console.log(
       `[chtml] osnap catalog ${
         layoutNames.get(layoutInput.btrId) ?? layoutInput.name ?? layoutInput.btrId

@@ -1,6 +1,6 @@
 import { AcExHtmlIcons } from './AcExHtmlIcons'
-import { buildAcExHtmlPolarAnglesPanel } from './AcExHtmlShellFragments'
-import type { AcExViewerMode } from './AcExSnapshotTypes'
+import { acexHtmlBuildPolarAnglesPanel } from './AcExHtmlShellFragments'
+import type { AcExHtmlViewerMode } from './AcExHtmlSnapshotTypes'
 
 /**
  * Phone breakpoint for the offline HTML chrome.
@@ -37,7 +37,7 @@ export const ACEX_COORDINATE_BADGE_REF_FONT_PX = 13
 
 /**
  * Shared CSS for the offline HTML viewer chrome (toolbar, layer drawer, status bar).
- * Injected into the `<style>` block by {@link packHtml}.
+ * Injected into the `<style>` block by {@link acexHtmlPackHtml}.
  */
 export const ACEX_HTML_SHELL_CSS = `
   :root {
@@ -1426,23 +1426,23 @@ export const ACEX_HTML_SHELL_CSS = `
 
 /**
  * Body markup for the offline viewer (loading overlay, canvas root, sidebar).
- * Excludes snapshot and runtime `<script>` tags — those are appended by {@link packHtml}.
+ * Excludes snapshot and runtime `<script>` tags — those are appended by {@link acexHtmlPackHtml}.
  *
  * @param loadingBg - CSS color for the initial loading screen (matches drawing background).
  * @param viewerMode - `'view'` shows pan/zoom/layers only; `'measure'` adds measurement and markup tools.
  * @param exportLayouts - When `false`, the layout switcher is omitted from the toolbar.
  * @returns HTML fragment inserted inside `<body>`.
  */
-export function buildAcExHtmlShellBody(
+export function acexHtmlBuildShellBody(
   loadingBg: string,
-  viewerMode: AcExViewerMode = 'measure',
+  viewerMode: AcExHtmlViewerMode = 'measure',
   exportLayouts = true
 ): string {
   // exportLayouts is applied at runtime by AcExHtmlMainToolbar options.
   void exportLayouts
   const measureChrome =
     viewerMode === 'measure'
-      ? `${buildAcExHtmlPolarAnglesPanel()}${buildAcExMeasureDrawer()}${buildAcExReviewDrawer()}`
+      ? `${acexHtmlBuildPolarAnglesPanel()}${buildAcExMeasureDrawer()}${buildAcExReviewDrawer()}`
       : ''
 
   return `

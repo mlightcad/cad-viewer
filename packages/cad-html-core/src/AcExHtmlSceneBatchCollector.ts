@@ -15,49 +15,49 @@ import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 
 import {
-  bakePlainDrawableSlice,
-  compactIndexedSlice,
-  copyFloat32Range,
-  copyUint32Range,
-  exportPlainDrawableSlice,
-  omitNonFinitePrimitives,
-  readBatchWorldOffset,
-  rebasePlainDrawableSliceAroundCentroid
-} from './AcExBatchBuffers'
+  acexHtmlBakePlainDrawableSlice,
+  acexHtmlCompactIndexedSlice,
+  acexHtmlCopyFloat32Range,
+  acexHtmlCopyUint32Range,
+  acexHtmlExportPlainDrawableSlice,
+  acexHtmlOmitNonFinitePrimitives,
+  acexHtmlReadBatchWorldOffset,
+  acexHtmlRebasePlainDrawableSliceAroundCentroid
+} from './AcExHtmlBatchBuffers'
 import {
-  encodeTextureForExport,
-  exportUvsForPositionSlice,
-  isTransparentImagePlaceholder
-} from './AcExMeshTextureExport'
+  acexHtmlEncodeTextureForExport,
+  acexHtmlExportUvsForPositionSlice,
+  acexHtmlIsTransparentImagePlaceholder
+} from './AcExHtmlMeshTextureExport'
 import {
-  computeLineDistancesForSegments,
-  exportVertexAttributeSlice,
-  extractGradientFill,
-  extractHatchPattern,
-  extractLinePattern,
-  rebaseHatchPatternToLocalOffset,
-  transformHatchPatternToWorldSpace
-} from './AcExPatternSnapshot'
-import type { AcExLineBatch, AcExMeshBatch } from './AcExSnapshotTypes'
+  acexHtmlComputeLineDistancesForSegments,
+  acexHtmlExportVertexAttributeSlice,
+  acexHtmlExtractGradientFill,
+  acexHtmlExtractHatchPattern,
+  acexHtmlExtractLinePattern,
+  acexHtmlRebaseHatchPatternToLocalOffset,
+  acexHtmlTransformHatchPatternToWorldSpace
+} from './AcExHtmlPatternSnapshot'
+import type { AcExHtmlLineBatch, AcExHtmlMeshBatch } from './AcExHtmlSnapshotTypes'
 
 /** Slice of buffer geometry exported for HTML snapshot batches. */
-export interface AcExBufferGeometrySlice {
+export interface AcExHtmlBufferGeometrySlice {
   /**
    * Flat vertex positions `[x0, y0, z0, …]` honoring the geometry draw range.
    */
   positions: Float32Array
   /**
-   * Optional index buffer referencing vertices in {@link AcExBufferGeometrySlice.positions}.
+   * Optional index buffer referencing vertices in {@link AcExHtmlBufferGeometrySlice.positions}.
    */
   indices?: Uint32Array
 }
 
-/** Result of {@link collectBatchesFromObject3D}. */
-export interface AcExCollectedBatches {
+/** Result of {@link acexHtmlCollectBatchesFromObject3D}. */
+export interface AcExHtmlCollectedBatches {
   /** Line segment batches extracted from the subtree. */
-  lineBatches: AcExLineBatch[]
+  lineBatches: AcExHtmlLineBatch[]
   /** Mesh and point batches extracted from the subtree. */
-  meshBatches: AcExMeshBatch[]
+  meshBatches: AcExHtmlMeshBatch[]
 }
 
 /** Per-slot geometry range metadata from {@link AcTrBatchedExportSource}. */
@@ -109,9 +109,9 @@ function resolveRangeCount(
  * @param geometry - THREE buffer geometry (often from `AcTrBatchedLine` / `AcTrBatchedMesh`).
  * @returns Position (and optional index) arrays ready for snapshot packing.
  */
-export function exportBufferGeometrySlice(
+export function acexHtmlExportBufferGeometrySlice(
   geometry: THREE.BufferGeometry
-): AcExBufferGeometrySlice {
+): AcExHtmlBufferGeometrySlice {
   const positionAttr = geometry.getAttribute('position') as
     | THREE.BufferAttribute
     | undefined
@@ -125,7 +125,7 @@ export function exportBufferGeometrySlice(
   const indexAttr = geometry.getIndex()
 
   if (indexAttr) {
-    const positions = copyFloat32Range(array, 0, positionAttr.count * itemSize)
+    const positions = acexHtmlCopyFloat32Range(array, 0, positionAttr.count * itemSize)
     const indexArray = indexAttr.array
     const indexStart = clampRangeStart(drawRange.start, indexAttr.count)
     const indexCount = resolveRangeCount(
@@ -133,8 +133,8 @@ export function exportBufferGeometrySlice(
       indexAttr.count,
       indexStart
     )
-    const indices = copyUint32Range(indexArray, indexStart, indexCount)
-    return compactIndexedSlice(positions, indices)
+    const indices = acexHtmlCopyUint32Range(indexArray, indexStart, indexCount)
+    return acexHtmlCompactIndexedSlice(positions, indices)
   }
 
   const vertexStart = clampRangeStart(drawRange.start, positionAttr.count)
@@ -143,7 +143,7 @@ export function exportBufferGeometrySlice(
     positionAttr.count,
     vertexStart
   )
-  const positions = copyFloat32Range(
+  const positions = acexHtmlCopyFloat32Range(
     array,
     vertexStart * itemSize,
     vertexCount * itemSize
@@ -194,10 +194,10 @@ function drawableExcludesFromOsnap(object: THREE.Object3D): boolean {
  * Exports only active geometry data from a batched line/mesh/point buffer,
  * skipping reserved padding and inactive (deleted) slots.
  */
-export function exportActiveBatchedSlice(
+export function acexHtmlExportActiveBatchedSlice(
   batch: AcTrBatchedExportSource,
   geometry: THREE.BufferGeometry
-): AcExBufferGeometrySlice {
+): AcExHtmlBufferGeometrySlice {
   const positionAttr = geometry.getAttribute('position') as
     | THREE.BufferAttribute
     | undefined
@@ -211,7 +211,7 @@ export function exportActiveBatchedSlice(
   const { count } = batch.mappingStats
 
   if (indexAttr) {
-    const positions = copyFloat32Range(
+    const positions = acexHtmlCopyFloat32Range(
       positionArray,
       0,
       positionAttr.count * itemSize
@@ -248,7 +248,7 @@ export function exportActiveBatchedSlice(
       }
     }
 
-    return compactIndexedSlice(positions, activeIndices)
+    return acexHtmlCompactIndexedSlice(positions, activeIndices)
   }
 
   let totalFloats = 0
@@ -312,10 +312,10 @@ function appendSegmentFromAttribute(
  * Extracts active wide-line segment data from a batched `LineSegments2` buffer.
  * Each segment is exported as `[startX, startY, startZ, endX, endY, endZ]`.
  */
-export function exportActiveBatchedLine2Slice(
+export function acexHtmlExportActiveBatchedLine2Slice(
   batch: AcTrBatchedExportSource,
   geometry: THREE.BufferGeometry
-): AcExBufferGeometrySlice {
+): AcExHtmlBufferGeometrySlice {
   const startAttr = geometry.getAttribute('instanceStart') as
     | THREE.BufferAttribute
     | THREE.InterleavedBufferAttribute
@@ -369,7 +369,7 @@ function resolveLineSegments2SegmentCount(
 
 function exportLineSegments2Slice(
   geometry: THREE.BufferGeometry
-): AcExBufferGeometrySlice {
+): AcExHtmlBufferGeometrySlice {
   const startAttr = geometry.getAttribute('instanceStart') as
     | THREE.BufferAttribute
     | THREE.InterleavedBufferAttribute
@@ -459,9 +459,9 @@ function readExportMaterial(object: THREE.Object3D): THREE.Material {
 function readMaterialStyle(material: THREE.Material): {
   color: number
   layer: string
-  linePattern?: ReturnType<typeof extractLinePattern>
-  hatchPattern?: ReturnType<typeof extractHatchPattern>
-  gradientFill?: ReturnType<typeof extractGradientFill>
+  linePattern?: ReturnType<typeof acexHtmlExtractLinePattern>
+  hatchPattern?: ReturnType<typeof acexHtmlExtractHatchPattern>
+  gradientFill?: ReturnType<typeof acexHtmlExtractGradientFill>
   side?: number
 } {
   const meta = getMaterialMetadata(material)
@@ -473,9 +473,9 @@ function readMaterialStyle(material: THREE.Material): {
     mat.color != null
       ? mat.color.getHex()
       : ((meta as { color?: number }).color ?? 0xffffff)
-  const linePattern = extractLinePattern(material)
-  const hatchPattern = extractHatchPattern(material)
-  const gradientFill = extractGradientFill(material)
+  const linePattern = acexHtmlExtractLinePattern(material)
+  const hatchPattern = acexHtmlExtractHatchPattern(material)
+  const gradientFill = acexHtmlExtractGradientFill(material)
   if (
     material instanceof THREE.ShaderMaterial ||
     material.type === 'ShaderMaterial'
@@ -530,8 +530,8 @@ function assignRenderOrder(
 
 function resolveExportedHatchPattern(
   object: THREE.Object3D,
-  hatchPattern: ReturnType<typeof extractHatchPattern> | undefined
-): ReturnType<typeof extractHatchPattern> {
+  hatchPattern: ReturnType<typeof acexHtmlExtractHatchPattern> | undefined
+): ReturnType<typeof acexHtmlExtractHatchPattern> {
   if (!hatchPattern) {
     return undefined
   }
@@ -541,25 +541,25 @@ function resolveExportedHatchPattern(
   const bakedWorldMatrix = (object.userData as { bakedWorldMatrix?: number[] })
     .bakedWorldMatrix
   if (bakedWorldMatrix && bakedWorldMatrix.length >= 16) {
-    return transformHatchPatternToWorldSpace(hatchPattern, bakedWorldMatrix)
+    return acexHtmlTransformHatchPatternToWorldSpace(hatchPattern, bakedWorldMatrix)
   }
   object.updateMatrixWorld(true)
-  return transformHatchPatternToWorldSpace(
+  return acexHtmlTransformHatchPatternToWorldSpace(
     hatchPattern,
     Array.from(object.matrixWorld.elements)
   )
 }
 
 function readWorldOffset(object: THREE.Object3D): [number, number, number] {
-  return readBatchWorldOffset(object)
+  return acexHtmlReadBatchWorldOffset(object)
 }
 
 function exportSceneDrawableSlice(
   object: THREE.Object3D,
-  slice: AcExBufferGeometrySlice,
+  slice: AcExHtmlBufferGeometrySlice,
   options: { preserveWorldSpaceForPatternFill?: boolean } = {}
-): AcExBufferGeometrySlice & { offset: [number, number, number] } {
-  const exported = exportPlainDrawableSlice(object, slice, options)
+): AcExHtmlBufferGeometrySlice & { offset: [number, number, number] } {
+  const exported = acexHtmlExportPlainDrawableSlice(object, slice, options)
   return {
     ...exported.slice,
     offset: exported.offset
@@ -567,8 +567,8 @@ function exportSceneDrawableSlice(
 }
 
 function withTriangleIndices(
-  slice: AcExBufferGeometrySlice
-): AcExBufferGeometrySlice {
+  slice: AcExHtmlBufferGeometrySlice
+): AcExHtmlBufferGeometrySlice {
   if (slice.indices && slice.indices.length >= 3) {
     return slice
   }
@@ -587,10 +587,10 @@ function buildMeshBatch(
   geometry: THREE.BufferGeometry,
   material: THREE.Material,
   object: THREE.Object3D,
-  slice: AcExBufferGeometrySlice,
+  slice: AcExHtmlBufferGeometrySlice,
   offset: [number, number, number],
   triangleList = false
-): AcExMeshBatch | undefined {
+): AcExHtmlMeshBatch | undefined {
   if (triangleList) {
     slice = withTriangleIndices(slice)
   }
@@ -600,12 +600,12 @@ function buildMeshBatch(
     style.hatchPattern
   )
   const hatchPattern = worldHatchPattern
-    ? rebaseHatchPatternToLocalOffset(worldHatchPattern, offset)
+    ? acexHtmlRebaseHatchPatternToLocalOffset(worldHatchPattern, offset)
     : undefined
   const gradientPositions = style.gradientFill
-    ? exportVertexAttributeSlice(geometry, 'gradientPosition')
+    ? acexHtmlExportVertexAttributeSlice(geometry, 'gradientPosition')
     : undefined
-  const batch: AcExMeshBatch = {
+  const batch: AcExHtmlMeshBatch = {
     layer: style.layer,
     color: style.color,
     offset,
@@ -618,8 +618,8 @@ function buildMeshBatch(
 
   const meshMaterial = material as THREE.MeshBasicMaterial
   if (meshMaterial.map) {
-    const texture = encodeTextureForExport(meshMaterial.map)
-    const uvs = exportUvsForPositionSlice(geometry, slice.positions)
+    const texture = acexHtmlEncodeTextureForExport(meshMaterial.map)
+    const uvs = acexHtmlExportUvsForPositionSlice(geometry, slice.positions)
     if (!texture || !uvs) {
       // Prefer omitting a broken IMAGE/OLE frame over a solid white fill.
       return undefined
@@ -638,14 +638,14 @@ function buildMeshBatch(
 
 function exportBatchedLine2(
   batch: AcTrBatchedLine2
-): AcExLineBatch | undefined {
-  const slice = exportActiveBatchedLine2Slice(batch, batch.geometry)
+): AcExHtmlLineBatch | undefined {
+  const slice = acexHtmlExportActiveBatchedLine2Slice(batch, batch.geometry)
   if (slice.positions.length === 0) {
     return undefined
   }
   const { color, layer } = readMaterialStyle(batch.material as THREE.Material)
   const lineWidth = readLineWidth(batch.material as THREE.Material)
-  const exported: AcExLineBatch = {
+  const exported: AcExHtmlLineBatch = {
     layer,
     color,
     offset: readWorldOffset(batch),
@@ -659,8 +659,8 @@ function exportBatchedLine2(
   return exported
 }
 
-function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
-  const slice = exportActiveBatchedSlice(batch, batch.geometry)
+function exportBatchedLine(batch: AcTrBatchedLine): AcExHtmlLineBatch | undefined {
+  const slice = acexHtmlExportActiveBatchedSlice(batch, batch.geometry)
   if (slice.positions.length === 0) {
     return undefined
   }
@@ -668,9 +668,9 @@ function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
     batch.material as THREE.Material
   )
   const lineDistances = linePattern
-    ? computeLineDistancesForSegments(slice.positions)
+    ? acexHtmlComputeLineDistancesForSegments(slice.positions)
     : undefined
-  const exported: AcExLineBatch = {
+  const exported: AcExHtmlLineBatch = {
     layer,
     color,
     offset: readWorldOffset(batch),
@@ -685,8 +685,8 @@ function exportBatchedLine(batch: AcTrBatchedLine): AcExLineBatch | undefined {
   return exported
 }
 
-function exportBatchedMesh(batch: AcTrBatchedMesh): AcExMeshBatch | undefined {
-  const slice = exportActiveBatchedSlice(batch, batch.geometry)
+function exportBatchedMesh(batch: AcTrBatchedMesh): AcExHtmlMeshBatch | undefined {
+  const slice = acexHtmlExportActiveBatchedSlice(batch, batch.geometry)
   if (slice.positions.length === 0) {
     return undefined
   }
@@ -702,8 +702,8 @@ function exportBatchedMesh(batch: AcTrBatchedMesh): AcExMeshBatch | undefined {
 
 function exportBatchedPoint(
   batch: AcTrBatchedPoint
-): AcExMeshBatch | undefined {
-  const slice = exportActiveBatchedSlice(batch, batch.geometry)
+): AcExHtmlMeshBatch | undefined {
+  const slice = acexHtmlExportActiveBatchedSlice(batch, batch.geometry)
   if (slice.positions.length === 0) {
     return undefined
   }
@@ -784,12 +784,12 @@ function expandInstancedGeometry(
   primitiveVertexCount: 1 | 2 | 3
 ):
   | {
-      slice: AcExBufferGeometrySlice
+      slice: AcExHtmlBufferGeometrySlice
       offset: [number, number, number]
     }
   | undefined {
-  const template = omitNonFinitePrimitives(
-    exportBufferGeometrySlice(object.geometry),
+  const template = acexHtmlOmitNonFinitePrimitives(
+    acexHtmlExportBufferGeometrySlice(object.geometry),
     primitiveVertexCount
   )
   const floatsPerInstance = template.positions.length
@@ -814,7 +814,7 @@ function expandInstancedGeometry(
     _instanceMatrix.fromArray(array, i * 16)
     if (!isUsableInstanceMatrix(_instanceMatrix)) continue
     _instanceWorld.multiplyMatrices(object.matrixWorld, _instanceMatrix)
-    const baked = bakePlainDrawableSlice(template, _instanceWorld)
+    const baked = acexHtmlBakePlainDrawableSlice(template, _instanceWorld)
     positions.set(baked.positions, slot * floatsPerInstance)
     if (indices && baked.indices) {
       const base = slot * vertexCount
@@ -825,8 +825,8 @@ function expandInstancedGeometry(
     slot++
   }
 
-  const rebased = rebasePlainDrawableSliceAroundCentroid(
-    omitNonFinitePrimitives(
+  const rebased = acexHtmlRebasePlainDrawableSliceAroundCentroid(
+    acexHtmlOmitNonFinitePrimitives(
       { positions, indices },
       primitiveVertexCount
     )
@@ -857,16 +857,16 @@ function forEachVisibleInstanceMatrix(
 
 function pushInstancedLine(
   object: InstancedExportDrawable,
-  lineBatches: AcExLineBatch[]
+  lineBatches: AcExHtmlLineBatch[]
 ): void {
   const expanded = expandInstancedGeometry(object, 2)
   if (!expanded) return
   const material = readExportMaterial(object)
   const { color, layer, linePattern } = readMaterialStyle(material)
   const lineDistances = linePattern
-    ? computeLineDistancesForSegments(expanded.slice.positions)
+    ? acexHtmlComputeLineDistancesForSegments(expanded.slice.positions)
     : undefined
-  const exported: AcExLineBatch = {
+  const exported: AcExHtmlLineBatch = {
     layer,
     color,
     offset: expanded.offset,
@@ -883,25 +883,25 @@ function pushInstancedLine(
 
 function pushInstancedMesh(
   object: InstancedExportDrawable,
-  meshBatches: AcExMeshBatch[],
+  meshBatches: AcExHtmlMeshBatch[],
   asPoints: boolean
 ): void {
   const material = readExportMaterial(object)
-  if (!asPoints && isTransparentImagePlaceholder(material)) return
+  if (!asPoints && acexHtmlIsTransparentImagePlaceholder(material)) return
 
   if (!asPoints && meshNeedsPerInstanceExport(material)) {
-    const template = omitNonFinitePrimitives(
-      exportBufferGeometrySlice(object.geometry),
+    const template = acexHtmlOmitNonFinitePrimitives(
+      acexHtmlExportBufferGeometrySlice(object.geometry),
       3
     )
     if (template.positions.length === 0) return
     forEachVisibleInstanceMatrix(object, matrixWorld => {
-      const baked = omitNonFinitePrimitives(
-        bakePlainDrawableSlice(template, matrixWorld),
+      const baked = acexHtmlOmitNonFinitePrimitives(
+        acexHtmlBakePlainDrawableSlice(template, matrixWorld),
         3
       )
       if (baked.positions.length === 0) return
-      const rebased = rebasePlainDrawableSliceAroundCentroid(baked)
+      const rebased = acexHtmlRebasePlainDrawableSliceAroundCentroid(baked)
       _instancePose.matrix.copy(matrixWorld)
       _instancePose.matrixWorld.copy(matrixWorld)
       _instancePose.matrixWorldNeedsUpdate = false
@@ -973,13 +973,13 @@ function isExportMesh(object: THREE.Object3D): object is THREE.Mesh {
  * and points).
  *
  * @param root - Layout or scene root to traverse.
- * @returns Batches grouped by geometry kind, ready to attach to {@link AcExLayoutSnapshot}.
+ * @returns Batches grouped by geometry kind, ready to attach to {@link AcExHtmlLayoutSnapshot}.
  */
-export function collectBatchesFromObject3D(
+export function acexHtmlCollectBatchesFromObject3D(
   root: THREE.Object3D
-): AcExCollectedBatches {
-  const lineBatches: AcExLineBatch[] = []
-  const meshBatches: AcExMeshBatch[] = []
+): AcExHtmlCollectedBatches {
+  const lineBatches: AcExHtmlLineBatch[] = []
+  const meshBatches: AcExHtmlMeshBatch[] = []
 
   root.traverse(child => {
     if (
@@ -1027,7 +1027,7 @@ export function collectBatchesFromObject3D(
       const material = readExportMaterial(child)
       const { color, layer } = readMaterialStyle(material)
       const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice)
-      const exported: AcExLineBatch = {
+      const exported: AcExHtmlLineBatch = {
         layer,
         color,
         offset,
@@ -1041,8 +1041,8 @@ export function collectBatchesFromObject3D(
       lineBatches.push(exported)
     } else if (isExportLineSegments(child) && !(child instanceof AcTrBatchedLine)) {
       if (!shouldExportPlainDrawable(child, root)) return
-      const rawSlice = omitNonFinitePrimitives(
-        exportBufferGeometrySlice(child.geometry),
+      const rawSlice = acexHtmlOmitNonFinitePrimitives(
+        acexHtmlExportBufferGeometrySlice(child.geometry),
         2
       )
       if (rawSlice.positions.length === 0) return
@@ -1050,9 +1050,9 @@ export function collectBatchesFromObject3D(
       const { color, layer, linePattern } = readMaterialStyle(material)
       const { offset, ...slice } = exportSceneDrawableSlice(child, rawSlice)
       const lineDistances = linePattern
-        ? computeLineDistancesForSegments(slice.positions)
+        ? acexHtmlComputeLineDistancesForSegments(slice.positions)
         : undefined
-      const exported: AcExLineBatch = {
+      const exported: AcExHtmlLineBatch = {
         layer,
         color,
         offset,
@@ -1072,9 +1072,9 @@ export function collectBatchesFromObject3D(
     ) {
       if (!shouldExportPlainDrawable(child, root)) return
       const material = readExportMaterial(child)
-      if (isTransparentImagePlaceholder(material)) return
-      const rawSlice = omitNonFinitePrimitives(
-        exportBufferGeometrySlice(child.geometry),
+      if (acexHtmlIsTransparentImagePlaceholder(material)) return
+      const rawSlice = acexHtmlOmitNonFinitePrimitives(
+        acexHtmlExportBufferGeometrySlice(child.geometry),
         3
       )
       if (rawSlice.positions.length === 0) return

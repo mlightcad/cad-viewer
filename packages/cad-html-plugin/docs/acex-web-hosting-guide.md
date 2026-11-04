@@ -187,19 +187,19 @@ await new AcApHtmlConvertor({ viewerRuntimeUrl: './viewer-runtime.iife.js' })
 ```typescript
 import {
   ACEX_DEFAULT_MANIFEST_FILE,
-  buildAcExPackage,
-  zipAcExPackageFiles,
-  unzipAcExPackageFiles
+  acexHtmlBuildPackage,
+  acexHtmlZipPackageFiles,
+  acexHtmlUnzipPackageFiles
 } from '@mlightcad/cad-html-plugin'
 
 // snapshot 由 AcApHtmlSnapshotBuilder 从 Three.js 场景构建
-const pkg = buildAcExPackage(snapshot, {
+const pkg = acexHtmlBuildPackage(snapshot, {
   viewerRuntime // viewer-runtime.iife.js 的文本
   // baseName 仅保留 API 兼容；清单文件名始终是 drawing.acex.json
 })
 // pkg.manifestFileName === ACEX_DEFAULT_MANIFEST_FILE
 
-const zipBytes = zipAcExPackageFiles(pkg)     // 打成 zip 供下载
+const zipBytes = acexHtmlZipPackageFiles(pkg)     // 打成 zip 供下载
 // 或者直接把 pkg.files（[{ path, bytes }, ...]）写到磁盘 / 上传对象存储，
 // 连解压这一步都省了：
 for (const file of pkg.files) {
@@ -307,7 +307,7 @@ http://localhost:3000/viewer.html?manifest=./drawing.acex.json
 ```js
 // publish-cad-package.mjs
 import { runHeadless } from '@mlightcad/cad-simple-viewer-cli'
-import { unzipAcExPackageFiles } from '@mlightcad/cad-html-plugin'
+import { acexHtmlUnzipPackageFiles } from '@mlightcad/cad-html-plugin'
 import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -325,7 +325,7 @@ const { outputDir } = await runHeadless({
 // 2. 找到生成的 zip 并解压到发布目录
 const zipName = (await readdir(outputDir)).find(f => f.endsWith('.zip'))
 const zipBytes = await readFile(path.join(outputDir, zipName))
-const files = unzipAcExPackageFiles(
+const files = acexHtmlUnzipPackageFiles(
   new Uint8Array(zipBytes)
 ) // 自带路径安全校验，拒绝 ../ 等危险条目
 
@@ -340,14 +340,14 @@ for (const file of files) {
 console.log(`Published: https://drawings.example.com/${path.basename(target)}/viewer.html`)
 ```
 
-生产环境中还可以加上：按图纸内容哈希决定是否跳过重复转换、转换失败重试、把 `pkg.files` 直接 `PutObject` 到对象存储（用方式三的 `buildAcExPackage` 连 zip 都不用打）。
+生产环境中还可以加上：按图纸内容哈希决定是否跳过重复转换、转换失败重试、把 `pkg.files` 直接 `PutObject` 到对象存储（用方式三的 `acexHtmlBuildPackage` 连 zip 都不用打）。
 
 ---
 
 ## 7. FAQ
 
 **Q：能不能直接把 zip 放到服务器上给个链接？**
-不能。zip 只是下载分发用的封装，查看器运行时 fetch 的是解压后的 `viewer.html` / `drawing.acex.json` / `chunks/*.gz`。要么服务器端解压后托管，要么在你自己的应用里用 `unzipAcExPackageFiles` 在前端解压（注意同源和内存问题，不推荐大图这么做）。
+不能。zip 只是下载分发用的封装，查看器运行时 fetch 的是解压后的 `viewer.html` / `drawing.acex.json` / `chunks/*.gz`。要么服务器端解压后托管，要么在你自己的应用里用 `acexHtmlUnzipPackageFiles` 在前端解压（注意同源和内存问题，不推荐大图这么做）。
 
 **Q：打开页面后提示找不到图纸 / 块文件 404？**
 检查：是否通过 http(s) 访问；同级是否有 `drawing.acex.json`；`chunks/` 是否随清单一起部署；query `manifest` 是否指向正确 URL。缺少默认清单时，页面会提供选文件夹或输入 URL 的入口。

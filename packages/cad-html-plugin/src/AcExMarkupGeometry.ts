@@ -5,7 +5,7 @@
  * @packageDocumentation
  */
 
-import type { AcExExtents } from '@mlightcad/cad-html-core'
+import type { AcExHtmlExtents } from '@mlightcad/cad-html-core'
 
 import {
   ACEX_OVERLAY_ARROW_SIZE_PX,
@@ -555,9 +555,9 @@ export function acexMarkupCenter(
 }
 
 function expandExtents(
-  extents: AcExExtents | null,
+  extents: AcExHtmlExtents | null,
   point: AcExMarkupPoint2d
-): AcExExtents {
+): AcExHtmlExtents {
   if (!extents) {
     return { minX: point.x, minY: point.y, maxX: point.x, maxY: point.y }
   }
@@ -570,9 +570,9 @@ function expandExtents(
 }
 
 function expandExtentsByCallout(
-  extents: AcExExtents | null,
+  extents: AcExHtmlExtents | null,
   callout: AcExMarkupAttachedCallout | undefined
-): AcExExtents | null {
+): AcExHtmlExtents | null {
   if (!callout) return extents
   return expandExtents(expandExtents(extents, callout.tip), callout.anchor)
 }
@@ -585,7 +585,7 @@ function expandExtentsByCallout(
  */
 export function acexMarkupBounds(
   geometry: AcExMarkupGeometry
-): AcExExtents | null {
+): AcExHtmlExtents | null {
   switch (geometry.type) {
     case 'line':
     case 'arrow':
@@ -632,7 +632,7 @@ export function acexMarkupBounds(
  * Used so zoom-to includes HTML text boxes / badges / stamps.
  */
 export function acexExpandExtentsByClientRects(
-  extents: AcExExtents | null,
+  extents: AcExHtmlExtents | null,
   rects: ReadonlyArray<{
     left: number
     top: number
@@ -640,7 +640,7 @@ export function acexExpandExtentsByClientRects(
     bottom: number
   }>,
   clientToWorld: (clientX: number, clientY: number) => AcExMarkupPoint2d
-): AcExExtents | null {
+): AcExHtmlExtents | null {
   let next = extents
   for (const rect of rects) {
     if (rect.right <= rect.left && rect.bottom <= rect.top) continue
@@ -662,7 +662,7 @@ export function acexMarkupFocusExtents(
     bottom: number
   }>,
   clientToWorld: (clientX: number, clientY: number) => AcExMarkupPoint2d
-): AcExExtents | null {
+): AcExHtmlExtents | null {
   return acexExpandExtentsByClientRects(
     acexMarkupBounds(geometry),
     overlayRects,

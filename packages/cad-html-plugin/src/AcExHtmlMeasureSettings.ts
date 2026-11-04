@@ -12,9 +12,9 @@ export {
   ACEX_DEFAULT_POLAR_ANGLE,
   ACEX_ORTHO_POLAR_ANGLE,
   ACEX_POLAR_ANGLE_INCREMENTS,
-  buildAcExHtmlLocaleStrip,
-  buildAcExHtmlPolarAnglesPanel,
-  buildAcExHtmlSnapStrip
+  acexHtmlBuildLocaleStrip,
+  acexHtmlBuildPolarAnglesPanel,
+  acexHtmlBuildSnapStrip
 } from '@mlightcad/cad-html-core'
 
 /** Default measurement accent color (`--mlcad-accent`). */
