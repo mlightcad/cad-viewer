@@ -42,6 +42,69 @@ GitHub repozitář je stále [`mlightcad/cad-viewer`](https://github.com/mlightc
 :::
 :::
 
+::: warning Veřejné API exportu HTML bylo přejmenováno (`AcExHtml` / `acexHtml`)
+Od verze **1.8.0** používají veřejné typy a funkce `@mlightcad/cad-html-core` (znovu exportované přes `@mlightcad/cad-html-plugin`) vrstvové předpony `AcExHtml*` (typy) a `acexHtml*` (funkce), stejně jako ostatní vrstvy v monorepu.
+
+Chování se nemění; mění se jen názvy symbolů. Při upgradu z 1.7.x aktualizujte importy:
+
+```diff
+  import {
+-   type AcExSnapshot,
+-   buildAcExPackage,
+-   zipAcExPackageFiles,
+-   unzipAcExPackageFiles,
+-   packHtml,
+-   packHtmlPackage
++   type AcExHtmlSnapshot,
++   acexHtmlBuildPackage,
++   acexHtmlZipPackageFiles,
++   acexHtmlUnzipPackageFiles,
++   acexHtmlPackHtml,
++   acexHtmlPackHtmlPackage
+  } from '@mlightcad/cad-html-plugin'
+```
+
+Stejné přejmenování platí i pro další pomocné funkce HTML-core (například `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`, `buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`). API na úrovni příkazů jako `AcApHtmlConvertor` a `chtml` / `-chtml` nejsou ovlivněna. Vývojové příručky s novými názvy cílí na **1.8.0+**; na 1.7.x používejte i nadále staré symboly.
+:::
+
+::: info Export PDF rozdělen do sdíleného jádra (prohlížeč + Node)
+Od verze **1.8.0** používá export PDF stejné vrstvení jako export HTML. Sdílená logika je v `@mlightcad/cad-pdf-core` (model voleb a pipeline database → PDF, **bez** závislosti na `cad-simple-viewer` / DOM). Spotřebovávají ji dvě frontendy:
+
+| Balíček | Role |
+| --- | --- |
+| `@mlightcad/cad-pdf-plugin` | Prohlížečové `cpdf` / `-cpdf` / `ipdf` (a Vue dialog exportu) |
+| `@mlightcad/cad-pdf-exporter` | Headless Node DXF/DWG → PDF — **bez prohlížeče** |
+
+**Integrátoři v prohlížeči — většinou beze změny.** Nadále používejte `cpdf` / `-cpdf` / `ipdf`, `AcApPdfConvertor`, `AcApPdfExportOptions` a `resolveAcApPdfExportOptions`. Nainstalujte nový peer `@mlightcad/cad-pdf-core` vedle pluginu (stejná verze jako `cad-simple-viewer`).
+
+**API / chování, které se uživatelů týkají:**
+
+- Nová volba `colorMode: 'color' | 'monochrome'` (výchozí `'color'`). Dostupná v dialogu `cpdf`, jako **poslední** výzva `-cpdf` (`Color` / `Monochrome`) a na `AcApPdfExportOptions`. Stávající skripty `-cpdf` musí po odpovědi na režim textu tuto výzvu zodpovědět (nebo poslat prázdný řádek pro výchozí hodnotu).
+- Server / CI bez prohlížeče: místo ovládání `cpdf` přes Playwright použijte `@mlightcad/cad-pdf-exporter` (`exportFileToPdf`, `convertDatabaseToPdf`).
+
+```ts
+// Prohlížeč (názvy beze změny)
+import {
+  AcApPdfConvertor,
+  resolveAcApPdfExportOptions
+} from '@mlightcad/cad-pdf-plugin'
+
+await new AcApPdfConvertor().convert(
+  context,
+  resolveAcApPdfExportOptions({ colorMode: 'monochrome' })
+)
+
+// Node, bez prohlížeče
+import { exportFileToPdf } from '@mlightcad/cad-pdf-exporter'
+
+await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
+  colorMode: 'monochrome'
+})
+```
+
+Pokročilé volání sdílené pipeline přímo používá `acexPdfExportDatabase` / `acexPdfResolveExportOptions` z `@mlightcad/cad-pdf-core`. Fonty, rozvržení a režim textu popisují README jednotlivých balíčků.
+:::
+
 ## Přehled
 
 `@mlightcad/cad-simple-viewer` a `@mlightcad/cad-editor` **nejsou samostatné balíčky**. Jsou součástí těsně integrovaného ekosystému, který sdílí společnou kódovou základnu a cyklus vydávání. Každé vydání obsahuje koordinovanou sadu aktualizací napříč pluginy, renderery, balíčky data-model, knihovnami pro vykreslování textu a UI frameworky třetích stran.
@@ -74,7 +137,7 @@ Před upgradem pomůže vědět, které balíčky patří ke koordinovanému vyd
 | Balíček | Účel |
 | --- | --- |
 | `@mlightcad/cad-html-plugin` | Export samostatného HTML jedním kliknutím |
-| `@mlightcad/cad-pdf-plugin` | Export PDF a import PDF podkladu |
+| `@mlightcad/cad-pdf-plugin` | Prohlížečový export PDF a import PDF do CAD |
 | `@mlightcad/cad-svg-plugin` | Export SVG |
 | `@mlightcad/cad-simple-ui-plugin` | Panel nástrojů v čistém DOM, správce hladin, dokovací panel |
 | `@mlightcad/cad-agent-plugin` | Interakce poháněná AI agentem |
@@ -83,12 +146,21 @@ Před upgradem pomůže vědět, které balíčky patří ke koordinovanému vyd
 
 > **Základní pravidlo:** každý plugin ve výše uvedeném seznamu by měl být připnut k **přesně stejnému číslu verze** jako `cad-simple-viewer`, na který upgradujete (například `1.7.5`).
 
+### Sdílená exportní jádra a headless exportéry (stejná verze jako jádro)
+
+| Balíček | Účel |
+| --- | --- |
+| `@mlightcad/cad-html-core` | Sdílená pipeline HTML snapshot / balení (bez prohlížeče / DOM) |
+| `@mlightcad/cad-html-exporter` | Headless Node export HTML |
+| `@mlightcad/cad-pdf-core` | Sdílený model voleb PDF a pipeline database → PDF (bez prohlížeče / DOM) |
+| `@mlightcad/cad-pdf-exporter` | Headless Node DXF/DWG → PDF (bez prohlížeče) |
+
 ### Interní vrstva rendereru (stejná verze jako jádro, publikováno samostatně)
 
 | Balíček | Účel |
 | --- | --- |
 | `@mlightcad/three-renderer` | Vykreslovací engine 2D/3D založený na THREE.js |
-| `@mlightcad/pdf-renderer` | Backend používaný cad-pdf-plugin pro generování obsahu PDF |
+| `@mlightcad/pdf-renderer` | Backend obsahu PDF používaný `cad-pdf-core` |
 
 Tyto jsou interně spotřebovávány pluginy a cad-simple-viewer. Obvykle je **neinstalujete** přímo, ale jejich verze musí být kompatibilní s pluginy, které instalujete.
 

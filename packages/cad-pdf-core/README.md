@@ -4,6 +4,11 @@ Shared PDF export logic for MLightCAD: the export option model, the
 MTEXT/SHAPE glyph provider, and the drawing database → PDF pipeline built on
 `@mlightcad/pdf-renderer`.
 
+> **1.8.0:** This package is new. PDF export was split out of the browser plugin
+> so the same pipeline can run in the browser (`cad-pdf-plugin`) and in Node
+> without a browser (`cad-pdf-exporter`). See the
+> [upgrade guide](../../docs/development/upgrade-guide.md).
+
 This package has **no** dependency on `@mlightcad/cad-simple-viewer` or the
 DOM. Both consumers build on it:
 

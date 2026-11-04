@@ -8,6 +8,8 @@ Browser plugins and Node exporters both consume it.
 
 ## Public surface
 
+> **1.8.0:** Types use the `AcExHtml*` prefix and functions use `acexHtml*`. Earlier 1.7.x releases used names such as `AcExSnapshot`, `packHtml`, and `buildAcExPackage` — see the [upgrade guide](../../docs/development/upgrade-guide.md).
+
 - Snapshot types and encode/decode (`acexHtmlEncodeSnapshot`, codecs, gzip)
 - Geometry collection (`acexHtmlCollectBatchesFromObject3D`)
 - OSNAP catalogs from `AcDbDatabase`

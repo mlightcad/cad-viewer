@@ -42,6 +42,69 @@ GitHub 仓库仍然是 [`mlightcad/cad-viewer`](https://github.com/mlightcad/cad
 :::
 :::
 
+::: warning HTML 导出公开 API 重命名（`AcExHtml` / `acexHtml`）
+从 **1.8.0** 开始，`@mlightcad/cad-html-core`（并由 `@mlightcad/cad-html-plugin` 再导出）的公开类型与函数统一使用层前缀：`AcExHtml*`（类型）与 `acexHtml*`（函数），与仓库其余部分的命名约定一致。
+
+行为不变，只改符号名。从 1.7.x 升级时请同步修改 import：
+
+```diff
+  import {
+-   type AcExSnapshot,
+-   buildAcExPackage,
+-   zipAcExPackageFiles,
+-   unzipAcExPackageFiles,
+-   packHtml,
+-   packHtmlPackage
++   type AcExHtmlSnapshot,
++   acexHtmlBuildPackage,
++   acexHtmlZipPackageFiles,
++   acexHtmlUnzipPackageFiles,
++   acexHtmlPackHtml,
++   acexHtmlPackHtmlPackage
+  } from '@mlightcad/cad-html-plugin'
+```
+
+其他 HTML-core 辅助函数同样改名（例如 `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`，`buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`）。命令级 API（如 `AcApHtmlConvertor` 以及 `chtml` / `-chtml`）不受影响。开发指南中展示的新名称面向 **1.8.0+**；若仍使用 1.7.x，请继续用旧符号名。
+:::
+
+::: info PDF 导出拆分为共享核心（浏览器 + Node）
+从 **1.8.0** 开始，PDF 导出与 HTML 导出采用相同的分层：共享逻辑放在 `@mlightcad/cad-pdf-core`（选项模型与 database → PDF 管线，**不**依赖 `cad-simple-viewer` / DOM）。两个前端都基于它：
+
+| 包 | 作用 |
+| --- | --- |
+| `@mlightcad/cad-pdf-plugin` | 浏览器端 `cpdf` / `-cpdf` / `ipdf`（以及 Vue 导出对话框） |
+| `@mlightcad/cad-pdf-exporter` | Node 无头 DXF/DWG → PDF — **无需浏览器** |
+
+**浏览器集成方——大体不变。** 继续使用 `cpdf` / `-cpdf` / `ipdf`、`AcApPdfConvertor`、`AcApPdfExportOptions`、`resolveAcApPdfExportOptions`。请把新的 peer `@mlightcad/cad-pdf-core` 与插件一起安装（版本与 `cad-simple-viewer` 相同）。
+
+**对用户有影响的 API / 行为变化：**
+
+- 新增选项 `colorMode: 'color' | 'monochrome'`（默认 `'color'`）。出现在 `cpdf` 对话框、`-cpdf` 的**最后一个**提示（`Color` / `Monochrome`），以及 `AcApPdfExportOptions`。既有 `-cpdf` 脚本须在文字模式提示之后回答该提示（或回车取默认值）。
+- 无浏览器的服务端 / CI：请使用 `@mlightcad/cad-pdf-exporter`（`exportFileToPdf`、`convertDatabaseToPdf`），不必再通过 Playwright 驱动 `cpdf`。
+
+```ts
+// 浏览器（名称不变）
+import {
+  AcApPdfConvertor,
+  resolveAcApPdfExportOptions
+} from '@mlightcad/cad-pdf-plugin'
+
+await new AcApPdfConvertor().convert(
+  context,
+  resolveAcApPdfExportOptions({ colorMode: 'monochrome' })
+)
+
+// Node，无需浏览器
+import { exportFileToPdf } from '@mlightcad/cad-pdf-exporter'
+
+await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
+  colorMode: 'monochrome'
+})
+```
+
+直接调用共享管线的高级用法见 `@mlightcad/cad-pdf-core` 的 `acexPdfExportDatabase` / `acexPdfResolveExportOptions`。字体、布局与文字模式细节见各包 README。
+:::
+
 ## 概览
 
 `@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-editor` **不是独立的包**。它们属于一个紧密集成的生态系统，共享同一代码库和发布周期。每个版本都会捆绑一组协调一致的更新，涵盖插件、渲染器、data-model 包、文本渲染库以及第三方 UI 框架。
@@ -74,7 +137,7 @@ GitHub 仓库仍然是 [`mlightcad/cad-viewer`](https://github.com/mlightcad/cad
 | 包 | 用途 |
 | --- | --- |
 | `@mlightcad/cad-html-plugin` | 一键导出自包含 HTML |
-| `@mlightcad/cad-pdf-plugin` | PDF 导出和 PDF 底图导入 |
+| `@mlightcad/cad-pdf-plugin` | 浏览器端 PDF 导出与 PDF 转 CAD 导入 |
 | `@mlightcad/cad-svg-plugin` | SVG 导出 |
 | `@mlightcad/cad-simple-ui-plugin` | 纯 DOM 工具栏、图层管理器、停靠面板 |
 | `@mlightcad/cad-agent-plugin` | AI 智能体驱动的交互 |
@@ -83,12 +146,21 @@ GitHub 仓库仍然是 [`mlightcad/cad-viewer`](https://github.com/mlightcad/cad
 
 > **经验法则：** 上面列表中的每个插件都应固定为与你正在升级到的 `cad-simple-viewer` **完全相同的版本号**（例如 `1.7.5`）。
 
+### 共享导出核心与无头导出器（与核心同版本）
+
+| 包 | 用途 |
+| --- | --- |
+| `@mlightcad/cad-html-core` | 共享 HTML 快照 / 打包管线（无查看器 / DOM） |
+| `@mlightcad/cad-html-exporter` | Node 无头 HTML 导出 |
+| `@mlightcad/cad-pdf-core` | 共享 PDF 选项模型与 database → PDF 管线（无查看器 / DOM） |
+| `@mlightcad/cad-pdf-exporter` | Node 无头 DXF/DWG → PDF（无需浏览器） |
+
 ### 内部渲染器层（与核心同版本，单独发布）
 
 | 包 | 用途 |
 | --- | --- |
 | `@mlightcad/three-renderer` | 基于 THREE.js 的 2D/3D 渲染引擎 |
-| `@mlightcad/pdf-renderer` | cad-pdf-plugin 用于生成 PDF 内容的后端 |
+| `@mlightcad/pdf-renderer` | `cad-pdf-core` 使用的 PDF 内容后端 |
 
 这些包由插件和 cad-simple-viewer 在内部使用。你通常**不会**直接安装它们，但它们的版本必须与你安装的插件兼容。
 

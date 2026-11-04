@@ -180,7 +180,7 @@ await new AcApHtmlConvertor({ viewerRuntimeUrl: './viewer-runtime.iife.js' })
   })
 ```
 
-Daha düşük seviyeli API'ler (paketi kendiniz oluşturun ve diske yazacağınıza veya yükleyeceğinize karar verin):
+Daha düşük seviyeli API'ler (paketi kendiniz oluşturun ve diske yazacağınıza veya yükleyeceğinize karar verin). **Bu `acexHtml*` / `AcExHtml*` adları 1.8.0'dan itibaren geçerlidir**; 1.7.x'te karşılıkları `buildAcExPackage`, `zipAcExPackageFiles`, `unzipAcExPackageFiles` vb. idi ([yükseltme kılavuzuna](./upgrade-guide.md) bakın):
 
 ```typescript
 import {

@@ -82,21 +82,23 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 |------|-------|
 | コマンド | `chtml`（`cad-editor` 内のダイアログ）、`-chtml`（`cad-simple-viewer-cli` 経由のコマンドライン） |
 | 追加設定 | `AcApDocManager.createInstance()` の `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` への URL（パッケージの `dist/` からコピー） |
-| パブリック API | `registerLazyHtmlPlugin`、`createHtmlPlugin`、`AcApHtmlConvertor`、`acexHtmlPackHtml`、スナップショット型 |
+| パブリック API | `registerLazyHtmlPlugin`、`createHtmlPlugin`、`AcApHtmlConvertor`、`acexHtmlPackHtml`、スナップショット型（`acexHtml*` / `AcExHtml*` は **1.8.0** から；[アップグレードガイド](./upgrade-guide.md) を参照） |
 
 → **ビルド出力と統合:** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **同じパイプラインを使用するヘッドレス CLI:** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)
 
 ### PDF（`@mlightcad/cad-pdf-plugin`）
 
-**ベクター PDF エクスポートと PDF から CAD へのインポート。**
+**ベクター PDF エクスポートと PDF から CAD へのインポート。** **1.8.0** から、エクスポートロジックは共有の [`@mlightcad/cad-pdf-core`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-core)（ビューア / DOM なし）にあります。ブラウザプラグインとヘッドレス [`@mlightcad/cad-pdf-exporter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter)（`exportFileToPdf`、`convertDatabaseToPdf`）が同じコアを使い、Node はブラウザなしで PDF を書き出せます。ブラウザのコマンドとコンバーター名は変わりません。エクスポートオプションに `colorMode: 'color' | 'monochrome'` が追加されます。
 
 | 項目 | 値 |
 |------|-------|
 | コマンド | `cpdf`（エクスポート）、`ipdf`（インポート） |
-| パブリック API | `registerLazyPdfPlugin`、`createPdfPlugin`、コンバーター |
+| パブリック API | `registerLazyPdfPlugin`、`createPdfPlugin`、`AcApPdfConvertor`、`resolveAcApPdfExportOptions` |
 
 → **ビルド出力と統合:** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)
+→ **ヘッドレス Node エクスポーター（同一コア）:** [packages/cad-pdf-exporter/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter/README.md)
+→ **1.8.0 のアップグレード注意:** [アップグレードガイド](./upgrade-guide.md)
 
 ### SVG（`@mlightcad/cad-svg-plugin`）
 

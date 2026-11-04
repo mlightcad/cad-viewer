@@ -42,6 +42,69 @@ GitHub deposu hâlâ [`mlightcad/cad-viewer`](https://github.com/mlightcad/cad-v
 :::
 :::
 
+::: warning HTML dışa aktarma genel API’si yeniden adlandırıldı (`AcExHtml` / `acexHtml`)
+**1.8.0** sürümünden itibaren `@mlightcad/cad-html-core` (`@mlightcad/cad-html-plugin` tarafından yeniden dışa aktarılır) genel türleri ve işlevleri, monorepodaki diğer katmanlarla aynı adlandırma kuralına uyarak `AcExHtml*` (türler) ve `acexHtml*` (işlevler) katman öneklerini kullanır.
+
+Davranış değişmez; yalnızca sembol adları değişir. 1.7.x’ten yükseltirken import’ları güncelleyin:
+
+```diff
+  import {
+-   type AcExSnapshot,
+-   buildAcExPackage,
+-   zipAcExPackageFiles,
+-   unzipAcExPackageFiles,
+-   packHtml,
+-   packHtmlPackage
++   type AcExHtmlSnapshot,
++   acexHtmlBuildPackage,
++   acexHtmlZipPackageFiles,
++   acexHtmlUnzipPackageFiles,
++   acexHtmlPackHtml,
++   acexHtmlPackHtmlPackage
+  } from '@mlightcad/cad-html-plugin'
+```
+
+Diğer HTML-core yardımcıları da aynı şekilde yeniden adlandırıldı (örneğin `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`, `buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`). `AcApHtmlConvertor` ile `chtml` / `-chtml` gibi komut düzeyindeki API’ler etkilenmez. Geliştirme kılavuzlarındaki yeni adlar **1.8.0+** içindir; 1.7.x’te eski sembolleri kullanmaya devam edin.
+:::
+
+::: info PDF dışa aktarma paylaşılan çekirdeğe ayrıldı (tarayıcı + Node)
+**1.8.0** sürümünden itibaren PDF dışa aktarma, HTML dışa aktarma ile aynı katmanlamayı kullanır. Paylaşılan mantık `@mlightcad/cad-pdf-core` içindedir (seçenek modeli ve database → PDF hattı; `cad-simple-viewer` / DOM’a **bağımlı değildir**). Bunu iki ön uç kullanır:
+
+| Paket | Rol |
+| --- | --- |
+| `@mlightcad/cad-pdf-plugin` | Tarayıcıda `cpdf` / `-cpdf` / `ipdf` (ve Vue dışa aktarma iletişim kutusu) |
+| `@mlightcad/cad-pdf-exporter` | Node’da başsız DXF/DWG → PDF — **tarayıcı gerekmez** |
+
+**Tarayıcı entegratörleri — büyük ölçüde aynı.** `cpdf` / `-cpdf` / `ipdf`, `AcApPdfConvertor`, `AcApPdfExportOptions` ve `resolveAcApPdfExportOptions` kullanmaya devam edin. Yeni peer `@mlightcad/cad-pdf-core`’u eklentiyle aynı sürümde ekleyin.
+
+**Kullanıcıyı etkileyen API / davranış farkları:**
+
+- Yeni seçenek `colorMode: 'color' | 'monochrome'` (varsayılan `'color'`). `cpdf` iletişim kutusunda, `-cpdf`’nin **son** isteminde (`Color` / `Monochrome`) ve `AcApPdfExportOptions` üzerinde kullanılabilir. Mevcut `-cpdf` betikleri, metin modu yanıtından sonra bu istemi yanıtlamalıdır (veya varsayılan için boş satır).
+- Tarayıcısız sunucu / CI: Playwright ile `cpdf` çalıştırmak yerine `@mlightcad/cad-pdf-exporter` (`exportFileToPdf`, `convertDatabaseToPdf`) kullanın.
+
+```ts
+// Tarayıcı (adlar değişmedi)
+import {
+  AcApPdfConvertor,
+  resolveAcApPdfExportOptions
+} from '@mlightcad/cad-pdf-plugin'
+
+await new AcApPdfConvertor().convert(
+  context,
+  resolveAcApPdfExportOptions({ colorMode: 'monochrome' })
+)
+
+// Node, tarayıcı yok
+import { exportFileToPdf } from '@mlightcad/cad-pdf-exporter'
+
+await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
+  colorMode: 'monochrome'
+})
+```
+
+Paylaşılan hattı doğrudan çağıran ileri düzey kullanım için `@mlightcad/cad-pdf-core` içindeki `acexPdfExportDatabase` / `acexPdfResolveExportOptions`’a bakın. Yazı tipleri, yerleşimler ve metin modu ayrıntıları paket README’lerindedir.
+:::
+
 ## Genel Bakış
 
 `@mlightcad/cad-simple-viewer` ve `@mlightcad/cad-editor` **bağımsız paketler değildir**. Ortak bir kod tabanını ve sürüm döngüsünü paylaşan sıkı entegre bir ekosistemin parçasıdırlar. Her sürüm, eklentiler, işleyiciler, veri modeli paketleri, metin işleme kütüphaneleri ve üçüncü taraf arayüz çerçeveleri genelinde koordineli bir güncelleme kümesini bir arada sunar.
@@ -74,7 +137,7 @@ Yükseltmeden önce hangi paketlerin koordineli sürüme ait olduğunu ve hangil
 | Paket | Amaç |
 | --- | --- |
 | `@mlightcad/cad-html-plugin` | Tek tıkla kendi kendine yeten HTML dışa aktarma |
-| `@mlightcad/cad-pdf-plugin` | PDF dışa aktarma ve PDF altlık içe aktarma |
+| `@mlightcad/cad-pdf-plugin` | Tarayıcıda PDF dışa aktarma ve PDF→CAD içe aktarma |
 | `@mlightcad/cad-svg-plugin` | SVG dışa aktarma |
 | `@mlightcad/cad-simple-ui-plugin` | Düz DOM araç çubuğu, katman yöneticisi, dock paneli |
 | `@mlightcad/cad-agent-plugin` | Yapay zeka ajanı destekli etkileşim |
@@ -83,12 +146,21 @@ Yükseltmeden önce hangi paketlerin koordineli sürüme ait olduğunu ve hangil
 
 > **Genel kural:** yukarıdaki listedeki her eklenti, yükselttiğiniz `cad-simple-viewer` sürümüyle **tam olarak aynı sürüm numarasına** sabitlenmelidir (örneğin `1.7.5`).
 
+### Paylaşılan dışa aktarma çekirdekleri ve başsız dışa aktarıcılar (çekirdekle aynı sürüm)
+
+| Paket | Amaç |
+| --- | --- |
+| `@mlightcad/cad-html-core` | Paylaşılan HTML anlık görüntü / paketleme hattı (görüntüleyici / DOM yok) |
+| `@mlightcad/cad-html-exporter` | Node başsız HTML dışa aktarma |
+| `@mlightcad/cad-pdf-core` | Paylaşılan PDF seçenek modeli ve database → PDF hattı (görüntüleyici / DOM yok) |
+| `@mlightcad/cad-pdf-exporter` | Node başsız DXF/DWG → PDF (tarayıcı yok) |
+
 ### Dahili işleyici katmanı (çekirdekle aynı sürüm, ayrı yayımlanır)
 
 | Paket | Amaç |
 | --- | --- |
 | `@mlightcad/three-renderer` | THREE.js tabanlı 2D/3D işleme motoru |
-| `@mlightcad/pdf-renderer` | cad-pdf-plugin tarafından PDF içerik üretimi için kullanılan arka uç |
+| `@mlightcad/pdf-renderer` | `cad-pdf-core` tarafından kullanılan PDF içerik arka ucu |
 
 Bunlar eklentiler ve cad-simple-viewer tarafından dahili olarak tüketilir. Genellikle bunları doğrudan **kurmanız gerekmez**, ancak sürümleri kurduğunuz eklentilerle uyumlu olmalıdır.
 

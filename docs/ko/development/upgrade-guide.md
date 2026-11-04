@@ -42,6 +42,69 @@ GitHub 저장소는 여전히 [`mlightcad/cad-viewer`](https://github.com/mlight
 :::
 :::
 
+::: warning HTML 내보내기 공개 API 이름 변경(`AcExHtml` / `acexHtml`)
+**1.8.0**부터 `@mlightcad/cad-html-core`(`@mlightcad/cad-html-plugin`에서 재내보내기)의 공개 타입과 함수는 레이어 접두사 `AcExHtml*`(타입)와 `acexHtml*`(함수)를 사용하며, 모노레포의 다른 부분과 동일한 명명 규칙을 따릅니다.
+
+동작은 그대로이고 심볼 이름만 바뀝니다. 1.7.x에서 업그레이드할 때 import를 갱신하세요.
+
+```diff
+  import {
+-   type AcExSnapshot,
+-   buildAcExPackage,
+-   zipAcExPackageFiles,
+-   unzipAcExPackageFiles,
+-   packHtml,
+-   packHtmlPackage
++   type AcExHtmlSnapshot,
++   acexHtmlBuildPackage,
++   acexHtmlZipPackageFiles,
++   acexHtmlUnzipPackageFiles,
++   acexHtmlPackHtml,
++   acexHtmlPackHtmlPackage
+  } from '@mlightcad/cad-html-plugin'
+```
+
+다른 HTML-core 헬퍼도 같습니다(예: `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`, `buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`). `AcApHtmlConvertor` 및 `chtml` / `-chtml` 같은 명령 수준 API는 영향을 받지 않습니다. 개발 가이드에 나오는 새 이름은 **1.8.0+** 기준이며, 1.7.x에서는 이전 심볼을 계속 사용하세요.
+:::
+
+::: info PDF 내보내기를 공유 코어로 분리(브라우저 + Node)
+**1.8.0**부터 PDF 내보내기는 HTML 내보내기와 같은 계층을 사용합니다. 공유 로직은 `@mlightcad/cad-pdf-core`(옵션 모델과 database → PDF 파이프라인, `cad-simple-viewer` / DOM에 **의존하지 않음**)에 있으며, 다음 두 프론트엔드가 이를 사용합니다.
+
+| 패키지 | 역할 |
+| --- | --- |
+| `@mlightcad/cad-pdf-plugin` | 브라우저 `cpdf` / `-cpdf` / `ipdf`(및 Vue 내보내기 대화상자) |
+| `@mlightcad/cad-pdf-exporter` | Node 헤드리스 DXF/DWG → PDF — **브라우저 불필요** |
+
+**브라우저 통합 측 — 대부분 동일.** `cpdf` / `-cpdf` / `ipdf`, `AcApPdfConvertor`, `AcApPdfExportOptions`, `resolveAcApPdfExportOptions`를 그대로 사용하세요. 새 peer `@mlightcad/cad-pdf-core`를 플러그인과 같은 버전으로 함께 설치하세요.
+
+**사용자에게 영향을 주는 API / 동작 변경:**
+
+- 새 옵션 `colorMode: 'color' | 'monochrome'`(기본 `'color'`). `cpdf` 대화상자, `-cpdf`의 **마지막** 프롬프트(`Color` / `Monochrome`), 그리고 `AcApPdfExportOptions`에서 사용할 수 있습니다. 기존 `-cpdf` 스크립트는 텍스트 모드 응답 뒤에 이 프롬프트에 답해야 합니다(또는 빈 줄로 기본값).
+- 브라우저 없는 서버 / CI: Playwright로 `cpdf`를 돌리는 대신 `@mlightcad/cad-pdf-exporter`(`exportFileToPdf`, `convertDatabaseToPdf`)를 사용하세요.
+
+```ts
+// 브라우저(이름 변경 없음)
+import {
+  AcApPdfConvertor,
+  resolveAcApPdfExportOptions
+} from '@mlightcad/cad-pdf-plugin'
+
+await new AcApPdfConvertor().convert(
+  context,
+  resolveAcApPdfExportOptions({ colorMode: 'monochrome' })
+)
+
+// Node, 브라우저 불필요
+import { exportFileToPdf } from '@mlightcad/cad-pdf-exporter'
+
+await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
+  colorMode: 'monochrome'
+})
+```
+
+공유 파이프라인을 직접 호출하는 고급 사용은 `@mlightcad/cad-pdf-core`의 `acexPdfExportDatabase` / `acexPdfResolveExportOptions`를 참고하세요. 글꼴·레이아웃·텍스트 모드 세부 사항은 각 패키지 README에 있습니다.
+:::
+
 ## 개요
 
 `@mlightcad/cad-simple-viewer`와 `@mlightcad/cad-editor`는 **독립형 패키지가 아닙니다**. 이들은 공통 코드베이스와 릴리스 주기를 공유하는 긴밀히 통합된 생태계의 일부입니다. 각 릴리스는 플러그인, 렌더러, 데이터 모델 패키지, 텍스트 렌더링 라이브러리, 서드파티 UI 프레임워크에 걸친 조정된 업데이트 집합을 묶어 제공합니다.
@@ -74,7 +137,7 @@ GitHub 저장소는 여전히 [`mlightcad/cad-viewer`](https://github.com/mlight
 | 패키지 | 목적 |
 | --- | --- |
 | `@mlightcad/cad-html-plugin` | 원클릭 자체 포함 HTML 내보내기 |
-| `@mlightcad/cad-pdf-plugin` | PDF 내보내기 및 PDF 언더레이 가져오기 |
+| `@mlightcad/cad-pdf-plugin` | 브라우저 PDF 내보내기 및 PDF→CAD 가져오기 |
 | `@mlightcad/cad-svg-plugin` | SVG 내보내기 |
 | `@mlightcad/cad-simple-ui-plugin` | 순수 DOM 툴바, 레이어 관리자, 도킹 패널 |
 | `@mlightcad/cad-agent-plugin` | AI 에이전트 기반 상호 작용 |
@@ -83,12 +146,21 @@ GitHub 저장소는 여전히 [`mlightcad/cad-viewer`](https://github.com/mlight
 
 > **경험칙:** 위 목록의 모든 플러그인은 업그레이드 대상인 `cad-simple-viewer`와 **정확히 동일한 버전 번호**(예: `1.7.5`)로 고정해야 합니다.
 
+### 공유 내보내기 코어 및 헤드리스 내보내기(코어와 동일 버전)
+
+| 패키지 | 목적 |
+| --- | --- |
+| `@mlightcad/cad-html-core` | 공유 HTML 스냅샷 / 패키징 파이프라인(뷰어 / DOM 없음) |
+| `@mlightcad/cad-html-exporter` | Node 헤드리스 HTML 내보내기 |
+| `@mlightcad/cad-pdf-core` | 공유 PDF 옵션 모델 및 database → PDF 파이프라인(뷰어 / DOM 없음) |
+| `@mlightcad/cad-pdf-exporter` | Node 헤드리스 DXF/DWG → PDF(브라우저 불필요) |
+
 ### 내부 렌더러 계층(코어와 동일 버전, 별도 게시)
 
 | 패키지 | 목적 |
 | --- | --- |
 | `@mlightcad/three-renderer` | THREE.js 기반 2D/3D 렌더링 엔진 |
-| `@mlightcad/pdf-renderer` | cad-pdf-plugin이 PDF 콘텐츠 생성에 사용하는 백엔드 |
+| `@mlightcad/pdf-renderer` | `cad-pdf-core`가 사용하는 PDF 콘텐츠 백엔드 |
 
 이들은 플러그인과 cad-simple-viewer에서 내부적으로 사용됩니다. 일반적으로 직접 설치하지 **않지만**, 해당 버전은 설치하는 플러그인과 호환되어야 합니다.
 

@@ -82,21 +82,23 @@ Jednosouborový **offline prohlížeč** pro sdílení a archivaci — exportova
 |------|-------|
 | Příkaz | `chtml` (dialog v `cad-editor`), `-chtml` (příkazový řádek přes `cad-simple-viewer-cli`) |
 | Další konfigurace | `htmlViewerRuntimeUrl` v `AcApDocManager.createInstance()` — adresa URL souboru `viewer-runtime.iife.js` (zkopírujte z `dist/` balíčku) |
-| Veřejné API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `acexHtmlPackHtml`, typy snímků |
+| Veřejné API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `acexHtmlPackHtml`, typy snímků (`acexHtml*` / `AcExHtml*` od **1.8.0**; viz [průvodce upgradem](./upgrade-guide.md)) |
 
 → **Výstup sestavení a integrace:** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **Headless CLI využívající stejnou pipeline:** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)
 
 ### PDF (`@mlightcad/cad-pdf-plugin`)
 
-**Vektorový export PDF a import PDF do CAD.**
+**Vektorový export PDF a import PDF do CAD.** Od **1.8.0** je exportní logika ve sdíleném [`@mlightcad/cad-pdf-core`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-core) (bez prohlížeče / DOM). Prohlížečový plugin i headless [`@mlightcad/cad-pdf-exporter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter) (`exportFileToPdf`, `convertDatabaseToPdf`) používají stejné jádro — Node může exportovat PDF bez prohlížeče. Názvy prohlížečových příkazů a převodníků zůstávají; exportní volby získávají `colorMode: 'color' | 'monochrome'`.
 
 | Položka | Hodnota |
 |------|-------|
 | Příkazy | `cpdf` (export), `ipdf` (import) |
-| Veřejné API | `registerLazyPdfPlugin`, `createPdfPlugin`, převodníky |
+| Veřejné API | `registerLazyPdfPlugin`, `createPdfPlugin`, `AcApPdfConvertor`, `resolveAcApPdfExportOptions` |
 
 → **Výstup sestavení a integrace:** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)
+→ **Headless Node exporter (stejné jádro):** [packages/cad-pdf-exporter/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter/README.md)
+→ **Poznámky k upgradu 1.8.0:** [průvodce upgradem](./upgrade-guide.md)
 
 ### SVG (`@mlightcad/cad-svg-plugin`)
 

@@ -82,21 +82,23 @@ MLightCAD는 일련의 공식 플러그인을 제공합니다. 각 플러그인�
 |------|-------|
 | 명령 | `chtml`(`cad-editor`의 대화상자), `-chtml`(`cad-simple-viewer-cli`를 통한 명령줄) |
 | 추가 구성 | `AcApDocManager.createInstance()`의 `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` URL(패키지 `dist/`에서 복사) |
-| 공개 API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `acexHtmlPackHtml`, 스냅샷 타입 |
+| 공개 API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `acexHtmlPackHtml`, 스냅샷 타입(`acexHtml*` / `AcExHtml*`는 **1.8.0**부터; [업그레이드 가이드](./upgrade-guide.md) 참조) |
 
 → **빌드 출력 및 통합:** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **동일한 파이프라인을 사용하는 헤드리스 CLI:** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)
 
 ### PDF(`@mlightcad/cad-pdf-plugin`)
 
-**벡터 PDF 내보내기 및 PDF를 CAD로 가져오기.**
+**벡터 PDF 내보내기 및 PDF를 CAD로 가져오기.** **1.8.0**부터 내보내기 로직은 공유 [`@mlightcad/cad-pdf-core`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-core)(뷰어 / DOM 없음)에 있습니다. 브라우저 플러그인과 헤드리스 [`@mlightcad/cad-pdf-exporter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter)(`exportFileToPdf`, `convertDatabaseToPdf`)가 같은 코어를 쓰므로 Node는 브라우저 없이 PDF를 내보낼 수 있습니다. 브라우저 명령과 컨버터 이름은 그대로이며, 내보내기 옵션에 `colorMode: 'color' | 'monochrome'`가 추가됩니다.
 
 | 항목 | 값 |
 |------|-------|
 | 명령 | `cpdf`(내보내기), `ipdf`(가져오기) |
-| 공개 API | `registerLazyPdfPlugin`, `createPdfPlugin`, 컨버터 |
+| 공개 API | `registerLazyPdfPlugin`, `createPdfPlugin`, `AcApPdfConvertor`, `resolveAcApPdfExportOptions` |
 
 → **빌드 출력 및 통합:** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)
+→ **헤드리스 Node 내보내기(동일 코어):** [packages/cad-pdf-exporter/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter/README.md)
+→ **1.8.0 업그레이드 참고:** [업그레이드 가이드](./upgrade-guide.md)
 
 ### SVG(`@mlightcad/cad-svg-plugin`)
 

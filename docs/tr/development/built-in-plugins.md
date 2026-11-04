@@ -82,21 +82,23 @@ Paylaşım ve arşivleme için tek dosyalık **çevrimdışı görüntüleyici**
 |------|-------|
 | Komut | `chtml` (`cad-editor` içinde iletişim kutusu), `-chtml` (`cad-simple-viewer-cli` üzerinden komut satırı) |
 | Ek yapılandırma | `AcApDocManager.createInstance()` üzerinde `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` dosyasının URL'si (paketin `dist/` dizininden kopyalayın) |
-| Genel API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `acexHtmlPackHtml`, anlık görüntü tipleri |
+| Genel API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `acexHtmlPackHtml`, anlık görüntü tipleri (`acexHtml*` / `AcExHtml*` **1.8.0**’dan itibaren; [yükseltme kılavuzuna](./upgrade-guide.md) bakın) |
 
 → **Derleme çıktısı ve entegrasyon:** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **Aynı hattı kullanan headless CLI:** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)
 
 ### PDF (`@mlightcad/cad-pdf-plugin`)
 
-**Vektör PDF dışa aktarma ve PDF'ten CAD'e içe aktarma.**
+**Vektör PDF dışa aktarma ve PDF'ten CAD'e içe aktarma.** **1.8.0**’dan itibaren dışa aktarma mantığı paylaşılan [`@mlightcad/cad-pdf-core`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-core) içindedir (görüntüleyici / DOM yok). Tarayıcı eklentisi ile başsız [`@mlightcad/cad-pdf-exporter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter) (`exportFileToPdf`, `convertDatabaseToPdf`) aynı çekirdeği kullanır — Node tarayıcı olmadan PDF yazabilir. Tarayıcı komutları ve dönüştürücü adları aynı kalır; dışa aktarma seçeneklerine `colorMode: 'color' | 'monochrome'` eklenir.
 
 | Öğe | Değer |
 |------|-------|
 | Komutlar | `cpdf` (dışa aktarma), `ipdf` (içe aktarma) |
-| Genel API | `registerLazyPdfPlugin`, `createPdfPlugin`, dönüştürücüler |
+| Genel API | `registerLazyPdfPlugin`, `createPdfPlugin`, `AcApPdfConvertor`, `resolveAcApPdfExportOptions` |
 
 → **Derleme çıktısı ve entegrasyon:** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)
+→ **Başsız Node dışa aktarıcı (aynı çekirdek):** [packages/cad-pdf-exporter/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter/README.md)
+→ **1.8.0 yükseltme notları:** [yükseltme kılavuzu](./upgrade-guide.md)
 
 ### SVG (`@mlightcad/cad-svg-plugin`)
 

@@ -180,7 +180,7 @@ await new AcApHtmlConvertor({ viewerRuntimeUrl: './viewer-runtime.iife.js' })
   })
 ```
 
-底层 API（自行组装包，并决定写入磁盘还是上传）：
+底层 API（自行组装包，并决定写入磁盘还是上传）。**这些 `acexHtml*` / `AcExHtml*` 名称从 1.8.0 起生效**；在 1.7.x 中对应的是 `buildAcExPackage`、`zipAcExPackageFiles`、`unzipAcExPackageFiles` 等（参见[升级指南](./upgrade-guide.md)）：
 
 ```typescript
 import {
