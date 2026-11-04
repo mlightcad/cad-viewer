@@ -67,4 +67,10 @@ copy(
   join(workersDir, MTEXT_RENDERER_WORKER_FILE)
 )
 
+const htmlPluginDist = join(pkgRoot('@mlightcad/cad-html-plugin'), 'dist')
+copyIfExists(
+  join(htmlPluginDist, 'viewer-runtime.iife.js'),
+  join(outDir, 'viewer-runtime.iife.js')
+)
+
 console.log('Copied runner workers into dist-runner/')

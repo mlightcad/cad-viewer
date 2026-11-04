@@ -206,3 +206,10 @@ Betik başarılı olduktan sonra çalışır. Uygulama içi ajan dosyayı indiri
 cad.file.saveDxf('./plan-out.dxf')
 return { saved: true }
 ```
+
+## Save the drawing as PDF or HTML
+
+```javascript
+cad.file.savePdf('./plan.pdf')
+cad.file.saveHtml('./plan.html')
+```

@@ -265,7 +265,7 @@ cad.view.capturePreview()
 
 ## cad.file
 
-Exports the current drawing. The DXF text is not returned to the script.
+Exports the current drawing. File bodies are not returned to the script or the model; the tool result lists `savedFiles` summaries only.
 
 ### `cad.file.saveDxf(path?)`
 
@@ -277,6 +277,31 @@ Queues a DXF export that runs after the script succeeds. Pass a path string or `
 ```javascript
 cad.file.saveDxf('./plan-out.dxf')
 // or: cad.file.saveDxf({ path: './plan-out.dxf' })
+```
+
+### `cad.file.savePdf(path?)`
+
+Queues a PDF export that runs after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Defaults: `exportLayouts: true`, `colorMode: 'color'`, `textMode: 'text'`, `modelSpaceFit: 'extents'`. Returns `{ queued: true, index, fileName }`.
+
+Delivery matches `saveDxf` (browser download or MCP disk write).
+
+```javascript
+cad.file.savePdf('./plan.pdf')
+// or: cad.file.savePdf({ path: './plan.pdf', colorMode: 'monochrome' })
+```
+
+### `cad.file.saveHtml(path?)`
+
+Queues an offline HTML export (or a multi-file `.zip` package) after the script succeeds. Pass a path string or `{ path?, fileName?, exportFormat?, exportLayouts?, background? }`.
+
+- `exportFormat`: `'single'` (default, `.html`) or `'multi'` (`.zip`)
+- `background`: `'black'`, `'white'`, or `'space'` (default)
+
+Requires a viewer host that provides `CadSession.exportHtml` (in-app agent / `cad-mcp-server`). Headless `createDatabaseSession` skips the request with a log note. Returns `{ queued: true, index, fileName }`.
+
+```javascript
+cad.file.saveHtml('./plan.html')
+// or: cad.file.saveHtml({ path: './plan.zip', exportFormat: 'multi' })
 ```
 
 ## cad.measure

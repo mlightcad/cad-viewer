@@ -14,6 +14,8 @@ import { viewerRunEdit } from './withViewerDefaults'
  * Besides document and view access it wires the viewer-only hooks:
  * edits notify the UI through `acapRunDatabaseEdit`, and
  * `cad.view.capturePreview` renders through {@link captureDrawingPreview}.
+ * PDF/HTML export hooks are filled by {@link withViewerDefaults} when the
+ * catalog or `executeCadScript` wrappers run.
  *
  * Used by the in-page agent plugin, the script console, and the MCP runner
  * page. Without a viewer, use `createDatabaseSession` from

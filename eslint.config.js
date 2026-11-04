@@ -55,7 +55,8 @@ export default [
   },
   eslintConfigPrettier,
   {
-    // cad-script-core must run without a viewer: keep it on data-model only.
+    // cad-script-core runs without cad-simple-viewer: data-model + pdf-core only.
+    // HTML export goes through CadSession.exportHtml (filled by cad-agent-core).
     files: ['packages/cad-script-core/src/**/*.ts'],
     rules: {
       'no-restricted-imports': [
@@ -66,25 +67,27 @@ export default [
               group: [
                 '@mlightcad/*',
                 '!@mlightcad/data-model',
+                '!@mlightcad/cad-pdf-core',
                 '!@mlightcad/cad-script-core'
               ],
               message:
-                'cad-script-core may only depend on @mlightcad/data-model. Put viewer code in cad-agent-core.'
+                'cad-script-core may only depend on @mlightcad/data-model and @mlightcad/cad-pdf-core. Put viewer/HTML export in cad-agent-core.'
             },
             {
               // Relative imports into higher-level workspace packages.
               group: [
                 '**/cad-simple-viewer/**',
                 '**/three-renderer/**',
-                '**/cad-agent-core/**'
+                '**/cad-agent-core/**',
+                '**/cad-html-core/**'
               ],
               message:
-                'cad-script-core may only depend on @mlightcad/data-model. Put viewer code in cad-agent-core.'
+                'cad-script-core may only depend on @mlightcad/data-model and @mlightcad/cad-pdf-core. Put viewer/HTML export in cad-agent-core.'
             },
             {
               group: ['three', 'three/*', 'vue', '@vue/*'],
               message:
-                'cad-script-core may only depend on @mlightcad/data-model. Put viewer code in cad-agent-core.'
+                'cad-script-core may only depend on @mlightcad/data-model and @mlightcad/cad-pdf-core. Put viewer/HTML export in cad-agent-core.'
             }
           ]
         }

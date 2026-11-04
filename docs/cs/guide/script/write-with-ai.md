@@ -92,6 +92,8 @@ Ovládání výběru:
 
 ### cad.file
 - cad.file.saveDxf(path?) -> Po úspěšném skriptu exportuje DXF. Řetězec cesty nebo { path?, fileName? }. Agent v aplikaci soubor stáhne; cad-mcp-server zapíše path (relativní cesty od pracovního adresáře serveru). Vrací { queued: true, index, fileName }. Text DXF se nevrací. Výsledek nástroje obsahuje savedFiles
+- cad.file.savePdf(path?) -> After a successful script, export PDF. Path string or { path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }. Bytes are not returned. The tool result includes savedFiles
+- cad.file.saveHtml(path?) -> After a successful script, export offline HTML (or multi zip). Path string or { path?, fileName?, exportFormat?, exportLayouts?, background? }. Requires a viewer host; skipped on headless sessions. Bytes are not returned. The tool result includes savedFiles
 
 ### cad.measure
 - cad.measure.distance(a, b) -> Distance between {x,y} points

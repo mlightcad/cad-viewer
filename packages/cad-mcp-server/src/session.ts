@@ -12,7 +12,10 @@ import type {
   ToolResult,
   ToolResultSavedFile
 } from '@mlightcad/cad-script-core'
-import { CAD_MCP_DXF_OUTBOX_KEY } from '@mlightcad/cad-script-core/script-api'
+import {
+  CAD_MCP_DXF_OUTBOX_KEY,
+  CAD_MCP_FILE_OUTBOX_KEY
+} from '@mlightcad/cad-script-core/script-api'
 import { type Browser, type Page } from 'playwright'
 
 import { launchHeadlessChromium } from './headlessGpu.js'
@@ -73,6 +76,64 @@ async function writeDxfOutbox(page: Page): Promise<ToolResultSavedFile[]> {
     })
   }
   return saved
+}
+
+async function writeFileOutbox(page: Page): Promise<ToolResultSavedFile[]> {
+  const items = await page.evaluate((key: string) => {
+    const host = window as unknown as Record<string, unknown>
+    const queued =
+      (host[key] as
+        | Array<{
+            path?: string
+            fileName: string
+            mediaType: string
+            bytesBase64: string
+          }>
+        | undefined) ?? []
+    host[key] = []
+    return queued
+  }, CAD_MCP_FILE_OUTBOX_KEY)
+
+  const saved: ToolResultSavedFile[] = []
+  for (const item of items) {
+    const fileName = ensureBinaryFileName(item.fileName, item.mediaType)
+    const requested = item.path?.trim() || fileName
+    const absolute = path.resolve(requested)
+    const target = ensureBinaryPath(absolute, item.mediaType)
+    await mkdir(path.dirname(target), { recursive: true })
+    const bytes = Buffer.from(item.bytesBase64, 'base64')
+    await writeFile(target, bytes)
+    saved.push({
+      path: target,
+      fileName: path.basename(target),
+      bytes: bytes.byteLength,
+      delivery: 'file'
+    })
+  }
+  return saved
+}
+
+function binaryExtensionForMediaType(mediaType: string): string {
+  if (mediaType.includes('pdf')) return '.pdf'
+  if (mediaType.includes('zip')) return '.zip'
+  if (mediaType.includes('html')) return '.html'
+  return ''
+}
+
+function ensureBinaryFileName(fileName: string, mediaType: string): string {
+  const extension = binaryExtensionForMediaType(mediaType)
+  if (!extension) return fileName
+  return fileName.toLowerCase().endsWith(extension)
+    ? fileName
+    : `${fileName}${extension}`
+}
+
+function ensureBinaryPath(absolute: string, mediaType: string): string {
+  const extension = binaryExtensionForMediaType(mediaType)
+  if (!extension) return absolute
+  return absolute.toLowerCase().endsWith(extension)
+    ? absolute
+    : `${absolute}${extension}`
 }
 
 function packageRoot(): string {
@@ -420,20 +481,32 @@ export class CadMcpSession {
     this.clearIdleClose()
 
     try {
-      const result = await this.page.evaluate(async args => {
-        const api = (
-          window as unknown as {
-            __cadMcp: {
-              executeCadScript: (a: {
-                code: string
-                intent?: string
-              }) => Promise<ToolResult>
+      let result: ToolResult
+      try {
+        result = await this.page.evaluate(async args => {
+          const api = (
+            window as unknown as {
+              __cadMcp: {
+                executeCadScript: (a: {
+                  code: string
+                  intent?: string
+                }) => Promise<ToolResult>
+              }
             }
-          }
-        ).__cadMcp
-        return api.executeCadScript(args)
-      }, input)
-      const written = await writeDxfOutbox(this.page)
+          ).__cadMcp
+          return api.executeCadScript(args)
+        }, input)
+      } catch (error) {
+        // Drain any partial outbox so a failed evaluate cannot leak payloads
+        // into the next tool call.
+        await writeDxfOutbox(this.page).catch(() => [])
+        await writeFileOutbox(this.page).catch(() => [])
+        throw error
+      }
+      const written = [
+        ...(await writeDxfOutbox(this.page)),
+        ...(await writeFileOutbox(this.page))
+      ]
       if (written.length) {
         result.savedFiles = written
       }

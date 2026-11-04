@@ -277,6 +277,24 @@ cad.file.saveDxf('./plan-out.dxf')
 // 或：cad.file.saveDxf({ path: './plan-out.dxf' })
 ```
 
+
+### `cad.file.savePdf(path?)`
+
+Queues a PDF export after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Returns `{ queued: true, index, fileName }`.
+
+```javascript
+cad.file.savePdf('./plan.pdf')
+```
+
+### `cad.file.saveHtml(path?)`
+
+Queues offline HTML (or a multi-file `.zip`) after success. Pass a path string or `{ path?, fileName?, exportFormat?, exportLayouts?, background? }`. Requires a viewer host (`exportHtml`). Headless sessions skip with a log note.
+
+```javascript
+cad.file.saveHtml('./plan.html')
+cad.file.saveHtml({ path: './plan.zip', exportFormat: 'multi' })
+```
+
 ## cad.measure
 
 绘图后用于数值自检的辅助 API。优先使用这些方法，而不是手写 `Math.hypot` / `atan2`。点均为 WCS 下的 `{ x, y }`。

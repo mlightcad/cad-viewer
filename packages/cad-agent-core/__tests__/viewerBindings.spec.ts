@@ -8,7 +8,28 @@ const mockAcapRunDatabaseEdit = jest.fn(
 
 jest.mock('@mlightcad/cad-simple-viewer', () => ({
   AcApDocManager: { instance: undefined },
+  AcApSettingManager: { instance: { fontMapping: {} } },
+  AcApFontUtil: {
+    findFontInfoByName: () => undefined,
+    getReplacementFontName: () => undefined,
+    getCachedMeshFontProgram: async () => undefined,
+    persistMeshFontProgram: async () => undefined
+  },
   acapRunDatabaseEdit: mockAcapRunDatabaseEdit
+}))
+
+jest.mock('@mlightcad/cad-pdf-core', () => ({
+  acPdExportDatabase: jest.fn(async () => new Uint8Array([37, 80, 68, 70]))
+}))
+
+jest.mock('@mlightcad/cad-html-plugin', () => ({
+  AcApHtmlConvertor: jest.fn().mockImplementation(() => ({
+    exportToResult: jest.fn(async () => ({
+      fileName: 'drawing.html',
+      bytes: new TextEncoder().encode('<html></html>'),
+      mediaType: 'text/html;charset=utf-8'
+    }))
+  }))
 }))
 
 jest.mock('../src/preview/captureDrawingPreview', () => ({
@@ -17,6 +38,18 @@ jest.mock('../src/preview/captureDrawingPreview', () => ({
     dataUrl: 'data:image/png;base64,viewer'
   })),
   waitForDrawingSceneReady: jest.fn(async () => true)
+}))
+
+jest.mock('../src/export/exportDrawingPdf', () => ({
+  exportDrawingPdf: jest.fn(async () => new Uint8Array([37, 80, 68, 70]))
+}))
+
+jest.mock('../src/export/exportDrawingHtml', () => ({
+  exportDrawingHtml: jest.fn(async () => ({
+    fileName: 'drawing.html',
+    bytes: new TextEncoder().encode('<html></html>'),
+    mediaType: 'text/html;charset=utf-8'
+  }))
 }))
 
 import { AcDbDatabase } from '@mlightcad/data-model'
@@ -31,7 +64,10 @@ import {
   createDocManagerSession,
   executeCadScript
 } from '../src'
+import { exportDrawingHtml } from '../src/export/exportDrawingHtml'
+import { exportDrawingPdf } from '../src/export/exportDrawingPdf'
 import { captureDrawingPreview } from '../src/preview/captureDrawingPreview'
+import { withViewerDefaults } from '../src/session/withViewerDefaults'
 
 const DRAW_AND_CAPTURE = `
   cad.edit.transaction('agent draw', tx => {
@@ -49,6 +85,8 @@ function plainSession(db: AcDbDatabase): CadSession {
 beforeEach(() => {
   mockAcapRunDatabaseEdit.mockClear()
   ;(captureDrawingPreview as jest.Mock).mockClear()
+  ;(exportDrawingPdf as jest.Mock).mockClear()
+  ;(exportDrawingHtml as jest.Mock).mockClear()
 })
 
 describe('viewer bindings', () => {
@@ -141,5 +179,19 @@ describe('viewer bindings', () => {
       radius: 1
     })
     expect(mockAcapRunDatabaseEdit).not.toHaveBeenCalled()
+  })
+
+  test('withViewerDefaults attaches exportPdf and exportHtml when absent', () => {
+    const db = new AcDbDatabase()
+    const session = withViewerDefaults(plainSession(db))
+    expect(typeof session.exportPdf).toBe('function')
+    expect(typeof session.exportHtml).toBe('function')
+  })
+
+  test('createDatabaseSession opts out of viewer exporters', () => {
+    const db = new AcDbDatabase()
+    const session = withViewerDefaults(createDatabaseSession(db))
+    expect(session.exportPdf).toBeUndefined()
+    expect(session.exportHtml).toBeUndefined()
   })
 })

@@ -19,6 +19,14 @@ import {
   type CadScriptDxfSaveRequest,
   normalizeDxfSaveRequest
 } from './saveDxf'
+import {
+  type CadScriptHtmlSaveRequest,
+  normalizeHtmlSaveRequest
+} from './saveHtml'
+import {
+  type CadScriptPdfSaveRequest,
+  normalizePdfSaveRequest
+} from './savePdf'
 import { CAD_EDIT_TX_METHODS, CAD_SCRIPT_API_TREE } from './scriptApi'
 import { toBlockSnapshots, toDatabaseTables } from './tableSnapshot'
 
@@ -46,6 +54,16 @@ export interface CadScriptEffects {
    * Fulfilled after the script returns; the DXF body is not part of this list.
    */
   dxfSaveRequests: CadScriptDxfSaveRequest[]
+  /**
+   * PDF saves requested by `cad.file.savePdf`.
+   * Fulfilled after the script returns; PDF bytes are not part of this list.
+   */
+  pdfSaveRequests: CadScriptPdfSaveRequest[]
+  /**
+   * HTML saves requested by `cad.file.saveHtml`.
+   * Fulfilled after the script returns; HTML/zip bytes are not part of this list.
+   */
+  htmlSaveRequests: CadScriptHtmlSaveRequest[]
 }
 
 /** Limits enforced by `cad.__tick`. */
@@ -212,6 +230,40 @@ export function createCadScriptHost(
       const request = normalizeDxfSaveRequest(doc.docTitle, options)
       const index = effects.dxfSaveRequests.length
       effects.dxfSaveRequests.push(request)
+      return { queued: true, index, fileName: request.fileName }
+    },
+    /**
+     * Queues a PDF export of the current drawing.
+     *
+     * @param options - Path string, or `{ path?, fileName?, exportLayouts?, ... }`.
+     * @returns Queue handle. PDF bytes are not included.
+     */
+    savePdf(options?: Parameters<typeof normalizePdfSaveRequest>[1]): {
+      queued: true
+      index: number
+      fileName: string
+    } {
+      const doc = requireDocumentRecord(session)
+      const request = normalizePdfSaveRequest(doc.docTitle, options)
+      const index = effects.pdfSaveRequests.length
+      effects.pdfSaveRequests.push(request)
+      return { queued: true, index, fileName: request.fileName }
+    },
+    /**
+     * Queues an offline HTML (or multi-file zip) export of the current drawing.
+     *
+     * @param options - Path string, or `{ path?, fileName?, exportFormat?, ... }`.
+     * @returns Queue handle. HTML/zip bytes are not included.
+     */
+    saveHtml(options?: Parameters<typeof normalizeHtmlSaveRequest>[1]): {
+      queued: true
+      index: number
+      fileName: string
+    } {
+      const doc = requireDocumentRecord(session)
+      const request = normalizeHtmlSaveRequest(doc.docTitle, options)
+      const index = effects.htmlSaveRequests.length
+      effects.htmlSaveRequests.push(request)
       return { queued: true, index, fileName: request.fileName }
     }
   }

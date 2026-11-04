@@ -47,12 +47,15 @@ const ENTITY_EDIT_LABEL = 'Entity'
  * - `cad.selection` works on an in-memory selection set; nothing is highlighted.
  * - `cad.view.zoomExtents()` does nothing.
  * - `cad.view.capturePreview()` is skipped with a note in the script log.
+ * - `cad.file.saveHtml()` is skipped with a note (needs a viewer HTML pipeline).
+ * - `cad.file.savePdf()` uses the built-in `@mlightcad/cad-pdf-core` path.
  * - Drawing extents are the union of model-space entity extents.
  *
  * Edits go through `database.runDatabaseEdit`, so undo works as in the viewer.
- * The session declares `runEdit` and an `undefined` `capturePreview`, so
- * `withViewerDefaults` in `@mlightcad/cad-agent-core` does not attach the live
- * viewer's edit notifications or screenshots to this unrelated database.
+ * The session declares `runEdit` and `undefined` hooks for `capturePreview`,
+ * `exportPdf`, and `exportHtml`, so `withViewerDefaults` in
+ * `@mlightcad/cad-agent-core` does not attach the live viewer's notifications,
+ * screenshots, or exporters to this unrelated database.
  *
  * @param database - Drawing to operate on.
  * @param options - Title and open mode.
@@ -70,7 +73,10 @@ export function createDatabaseSession(
     runEdit(db, label, fn) {
       db.runDatabaseEdit(label, fn)
     },
-    capturePreview: undefined
+    capturePreview: undefined,
+    // Opt out of viewer exporters; PDF still uses the cad-pdf-core fallback.
+    exportPdf: undefined,
+    exportHtml: undefined
   }
 }
 

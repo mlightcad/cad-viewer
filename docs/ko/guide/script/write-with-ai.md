@@ -92,6 +92,8 @@ DXF BLOCKS 섹션에 해당합니다. *Model_Space와 *Paper_Space를 포함합�
 
 ### cad.file
 - cad.file.saveDxf(path?) -> 스크립트 성공 후 DXF를 내보냄. 경로 문자열 또는 { path?, fileName? }. 앱 안에서는 다운로드, cad-mcp-server에서는 path에 저장(상대 경로는 서버 작업 디렉터리). 반환값 { queued: true, index, fileName }. DXF 본문은 반환하지 않음. 도구 결과에 savedFiles가 포함됨
+- cad.file.savePdf(path?) -> After a successful script, export PDF. Path string or { path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }. Bytes are not returned. The tool result includes savedFiles
+- cad.file.saveHtml(path?) -> After a successful script, export offline HTML (or multi zip). Path string or { path?, fileName?, exportFormat?, exportLayouts?, background? }. Requires a viewer host; skipped on headless sessions. Bytes are not returned. The tool result includes savedFiles
 
 ### cad.measure
 - cad.measure.distance(a, b) -> Distance between {x,y} points

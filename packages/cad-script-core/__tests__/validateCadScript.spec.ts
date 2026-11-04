@@ -51,4 +51,20 @@ describe('validateCadScript', () => {
     `)
     expect(result).toEqual({ ok: true, usesEdit: false })
   })
+
+  test('accepts cad.file saveDxf, savePdf, and saveHtml', () => {
+    const result = validateCadScript(`
+      cad.file.saveDxf('a.dxf')
+      cad.file.savePdf({ path: 'a.pdf', colorMode: 'monochrome' })
+      cad.file.saveHtml({ path: 'a.html', exportFormat: 'single' })
+      return { ok: true }
+    `)
+    expect(result).toEqual({ ok: true, usesEdit: false })
+  })
+
+  test('rejects unknown cad.file members', () => {
+    expect(validateCadScript('cad.file.saveSvg()').error).toContain(
+      'unknown_api'
+    )
+  })
 })

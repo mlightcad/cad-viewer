@@ -1,7 +1,11 @@
 import { DRAWING_PREVIEW_LONG_SIDE_PX } from '../preview/types'
 import type { CadSession } from '../session/CadSession'
 import { requireDocument } from '../session/documentAccess'
-import type { ToolResult, ToolResultImage } from '../tools/types'
+import type {
+  ToolResult,
+  ToolResultImage,
+  ToolResultSavedFile
+} from '../tools/types'
 import {
   type CadScriptEffects,
   type CadScriptLimits,
@@ -10,6 +14,8 @@ import {
 } from './createCadScriptHost'
 import { instrumentCadScript } from './instrumentCadScript'
 import { fulfillDxfSaveRequests } from './saveDxf'
+import { fulfillHtmlSaveRequests } from './saveHtml'
+import { fulfillPdfSaveRequests } from './savePdf'
 import { validateCadScript } from './validateCadScript'
 
 /** Default cap on the JSON returned to the model. */
@@ -92,7 +98,9 @@ export async function executeCadScript(
     highlightedIds: [],
     createdIds: [],
     previewRequests: [],
-    dxfSaveRequests: []
+    dxfSaveRequests: [],
+    pdfSaveRequests: [],
+    htmlSaveRequests: []
   }
   const host = createCadScriptHost(session, effects, {
     maxTicks: options.limits?.maxTicks ?? 100_000,
@@ -111,7 +119,9 @@ export async function executeCadScript(
       effects,
       options.fulfillPreviews
     )
-    const savedFiles = fulfillScriptDxfSaves(session, effects)
+    // File exports run after the script body. Failures are logged per request
+    // so a successful edit is not reported as a failed script.
+    const savedFiles = await fulfillQueuedFileSaves(session, effects)
     return {
       success: true,
       message: input.intent
@@ -179,14 +189,55 @@ async function fulfillPreviewRequests(
   return images
 }
 
-function fulfillScriptDxfSaves(
+async function fulfillQueuedFileSaves(
   session: CadSession,
   effects: CadScriptEffects
-) {
-  if (!effects.dxfSaveRequests.length) return []
+): Promise<ToolResultSavedFile[]> {
+  const hasSaves =
+    effects.dxfSaveRequests.length ||
+    effects.pdfSaveRequests.length ||
+    effects.htmlSaveRequests.length
+  if (!hasSaves) return []
+
   const doc = session.getDocument()
-  if (!doc) throw new Error('no_document')
-  return fulfillDxfSaveRequests(doc.database, effects.dxfSaveRequests)
+  if (!doc) {
+    effects.log.push('file save skipped: no document')
+    return []
+  }
+
+  const saved: ToolResultSavedFile[] = []
+  if (effects.dxfSaveRequests.length) {
+    try {
+      saved.push(
+        ...fulfillDxfSaveRequests(doc.database, effects.dxfSaveRequests)
+      )
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error)
+      effects.log.push(`saveDxf failed: ${reason}`)
+    }
+  }
+  if (effects.pdfSaveRequests.length) {
+    saved.push(
+      ...(await fulfillPdfSaveRequests(
+        session,
+        doc.database,
+        doc.docTitle,
+        effects.pdfSaveRequests,
+        effects.log
+      ))
+    )
+  }
+  if (effects.htmlSaveRequests.length) {
+    saved.push(
+      ...(await fulfillHtmlSaveRequests(
+        session,
+        doc.docTitle,
+        effects.htmlSaveRequests,
+        effects.log
+      ))
+    )
+  }
+  return saved
 }
 
 function serializeResult(value: unknown, maxChars: number): unknown {

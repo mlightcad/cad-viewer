@@ -1,10 +1,10 @@
 # @mlightcad/cad-agent-core
 
 Viewer binding for the CAD agent runtime. The script runtime itself lives in
-[`@mlightcad/cad-script-core`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-core), which depends only
-on `@mlightcad/data-model`. This package connects that runtime to
-`@mlightcad/cad-simple-viewer` and re-exports its whole API, so existing imports
-from `@mlightcad/cad-agent-core` keep working.
+[`@mlightcad/cad-script-core`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-core)
+(`data-model` + `cad-pdf-core`). This package connects that runtime to
+`@mlightcad/cad-simple-viewer` (and PDF/HTML export peers) and re-exports its
+whole API, so existing imports from `@mlightcad/cad-agent-core` keep working.
 
 `@mlightcad/cad-agent-plugin` maps the catalog onto the Vercel AI SDK.
 `@mlightcad/cad-mcp-server` maps the same catalog over stdio MCP. An in-page
@@ -23,13 +23,16 @@ the next tool. On top of the plain data-model behavior it:
 - fits the camera for `cad.view.zoomExtents()`
 - uses the scene extents for `cad.drawing.extents`
 - renders `cad.view.capturePreview()` with `captureDrawingPreview` (WebGL)
+- fulfills `cad.file.savePdf` with viewer font mapping via `cad-pdf-core`
+- fulfills `cad.file.saveHtml` through `@mlightcad/cad-html-plugin`
 - runs edits through `acapRunDatabaseEdit`, which notifies the UI about the
   undo stack after each commit
 
 `createCadToolCatalog`, `executeCadScript`, `createCadScriptHost`, and
 `CadActionExecutor` from this package behave as before: the session defaults
-to `createDocManagerSession()`, and a custom session without `runEdit` or
-`capturePreview` gets the viewer implementation of those hooks.
+to `createDocManagerSession()`, and a custom session without `runEdit`,
+`capturePreview`, `exportPdf`, or `exportHtml` gets the viewer implementation
+of those hooks.
 
 ## When to use which package
 
@@ -50,4 +53,7 @@ script host API, checks, and limits.
 
 - `@mlightcad/cad-script-core`
 - `@mlightcad/cad-simple-viewer`
+- `@mlightcad/cad-pdf-core`
+- `@mlightcad/cad-html-plugin`
 - `@mlightcad/data-model`
+- `@mlightcad/pdf-renderer` / `@mlightcad/three-renderer` / `@mlightcad/mtext-parser` (via PDF stack)
