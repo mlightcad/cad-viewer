@@ -31,13 +31,13 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
-    "@mlightcad/data-model": "1.15.21",
+    "@mlightcad/data-model": "1.15.22",
     "@mlightcad/mtext-parser": "1.5.7",
     "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "1.15.21",
+    "@mlightcad/data-model": "1.15.22",
     "@mlightcad/mtext-parser": "1.5.7",
     "@mlightcad/pdf-renderer": "workspace:^",
     "@mlightcad/three-renderer": "workspace:^"
