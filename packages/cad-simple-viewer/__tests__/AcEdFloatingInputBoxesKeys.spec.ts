@@ -103,4 +103,15 @@ describe('AcEdFloatingInputBoxes key routing', () => {
 
     expect(onLetter).not.toHaveBeenCalled()
   })
+
+  it('hands coordinate prefix keys to onLetter', () => {
+    const onLetter = jest.fn(() => true)
+    const { field } = createBoxes({ onLetter })
+
+    for (const key of ['@', '#', '*', '<']) {
+      const event = press(field, key)
+      expect(onLetter).toHaveBeenCalledWith(key)
+      expect(event.defaultPrevented).toBe(true)
+    }
+  })
 })

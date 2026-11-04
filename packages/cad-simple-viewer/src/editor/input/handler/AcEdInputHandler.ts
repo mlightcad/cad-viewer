@@ -4,8 +4,11 @@ import { AcGePoint2dLike } from '@mlightcad/data-model'
  * Optional context for AutoCAD-style command-line point entry.
  */
 export interface AcEdPointInputContext {
-  /** Last picked point or prompt base point for relative (`@`) entry. */
-  referencePoint?: AcGePoint2dLike | null
+  /**
+   * Last picked point or prompt base point for relative (`@`) entry.
+   * Optional `z` participates in relative Cartesian / cylindrical Z offsets.
+   */
+  referencePoint?: (AcGePoint2dLike & { z?: number }) | null
   /**
    * Current cursor position in WCS. Required to interpret a lone distance value
    * as a point along the active rubber-band direction.
