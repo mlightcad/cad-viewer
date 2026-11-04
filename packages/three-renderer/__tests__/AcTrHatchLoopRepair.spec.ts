@@ -53,6 +53,44 @@ describe('AcTrHatchLoopRepair', () => {
     expect(regions.some(region => pointInPoly(1437, 650, region))).toBe(true)
     expect(regions.some(region => pointInPoly(1425, 640, region))).toBe(false)
   })
+
+  it('drops a spike drawn out and back along the same edge', () => {
+    const regions = resolveSelfIntersectingHatchLoop(
+      ring([
+        [0, 0],
+        [100, 0],
+        [100, 100],
+        [50, 100],
+        [50, -50],
+        [50, 100],
+        [0, 100]
+      ])
+    )
+    expect(regions).toHaveLength(1)
+    // The unrepaired fallback also has shoelace area 10000, but crosses itself.
+    expect(hatchLoopHasSelfIntersection(regions[0])).toBe(false)
+    expect(totalArea(regions)).toBeCloseTo(10000)
+    expect(regions.some(region => pointInPoly(50.5, -25, region))).toBe(false)
+  })
+
+  it('keeps a notch reached along an edge drawn twice', () => {
+    const regions = resolveSelfIntersectingHatchLoop(
+      ring([
+        [0, 0],
+        [100, 0],
+        [100, 100],
+        [0, 100],
+        [0, 60],
+        [60, 60],
+        [60, 40],
+        [0, 40],
+        [0, 60]
+      ])
+    )
+    expect(regions).toHaveLength(1)
+    expect(totalArea(regions)).toBeCloseTo(8800)
+    expect(regions.some(region => pointInPoly(30, 50, region))).toBe(false)
+  })
 })
 
 function pointInPoly(
@@ -71,4 +109,20 @@ function pointInPoly(
     }
   }
   return inside
+}
+
+function ring(coords: Array<[number, number]>): AcGePoint2d[] {
+  return coords.map(([x, y]) => new AcGePoint2d(x, y))
+}
+
+function totalArea(regions: Array<Array<{ x: number; y: number }>>): number {
+  return regions.reduce((sum, region) => {
+    let area = 0
+    for (let i = 0; i < region.length; i++) {
+      const p = region[i]
+      const q = region[(i + 1) % region.length]
+      area += p.x * q.y - q.x * p.y
+    }
+    return sum + Math.abs(area) / 2
+  }, 0)
 }
