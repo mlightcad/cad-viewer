@@ -10,9 +10,9 @@ framework, or a model SDK. HTML export (`cad.file.saveHtml`) is fulfilled
 through an optional `CadSession.exportHtml` hook — typically filled by
 `@mlightcad/cad-agent-core` in a viewer host.
 
-| Package                      | Adds                                                                                                                          | Depends on                                                                      |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| `@mlightcad/cad-script-core` | Script validation, sandbox, `cad.*` host, tool catalog, headless session, PDF export                                          | `@mlightcad/data-model`, `@mlightcad/cad-pdf-core`                              |
+| Package                      | Adds                                                                                                                              | Depends on                                                                |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `@mlightcad/cad-script-core` | Script validation, sandbox, `cad.*` host, tool catalog, headless session, PDF export                                              | `@mlightcad/data-model`, `@mlightcad/cad-pdf-core`                        |
 | `@mlightcad/cad-agent-core`  | Viewer session: selection highlight, zoom, PNG previews, PDF/HTML export hooks, undo-stack notifications. Re-exports this package | `cad-script-core`, `cad-simple-viewer`, `cad-pdf-core`, `cad-html-plugin` |
 
 Use `@mlightcad/cad-agent-core` inside a viewer app. Use this package directly
@@ -180,7 +180,7 @@ ids are highlighted; a headless session only records them.
 | `cad.file.savePdf(path?)`                | After a successful script, export PDF via `cad-pdf-core` (or `session.exportPdf`). Path string or `{ path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }`. Bytes are not returned to the model                                   |
 | `cad.file.saveHtml(path?)`               | After a successful script, export offline HTML/zip via `session.exportHtml`. Path string or `{ path?, fileName?, exportFormat?, exportLayouts?, background? }`. Skipped with a log line when the session has no HTML exporter                          |
 | `cad.view.capturePreview({ longSide? })` | Queue a PNG screenshot fulfilled after the script through `session.capturePreview`; attached as `images` on the tool result. Skipped with a log line when the session has no renderer                                                                  |
-| `cad.measure.*`                          | `distance`, `angleDeg`, `deltaAngleDeg`, `center`, `radius`, `length`, `check`, `report` for numeric self-check                                                                                                                                        |
+| `cad.measure.*`                          | `distance`, `angleDeg`, `deltaAngleDeg`, `center`, `radius`, `length`, `area`, `check`, `report` for numeric self-check                                                                                                                                |
 | `cad.log(...)`                           | Lines returned on the tool result                                                                                                                                                                                                                      |
 | `cad.edit.transaction(label, tx => {})`  | One undo group                                                                                                                                                                                                                                         |
 
@@ -192,15 +192,36 @@ entity id.
 
 Snapshot `geometry` for common types:
 
-- Circle: `center`, `radius`
-- Line: `start`, `end`
-- Arc: `center`, `radius`, `startAngle`, `endAngle` (radians as stored on the entity) plus degree copies
-- Ellipse: `center`, `majorRadius`, `minorRadius`
-- Polyline: `points`, `closed`
-- Text / MText: `position`, `text`, `height`
-- Point: `position`
-- Ray / Xline: `basePoint`, `unitDir`
-- Insert: `name`, `position`, `rotation`, `scale`
+- Circle: `center`, `radius`, `area`, `circumference`, `closed`
+- Line: `start`, `end`, `length`, `midPoint`, `direction` (unit vector)
+- Arc: `center`, `radius`, `startAngle`, `endAngle` (radians as stored on the entity) plus degree copies,
+  `length`, `area`, `startPoint`, `endPoint`, `midPoint`
+- Ellipse: `center`, `majorAxis`, `majorRadius`, `minorRadius`, `area`, `isCircular`
+- Polyline / 2dPolyline: `points`, `vertices` (`{ bulge, startWidth, endWidth }`), `bulges`, `hasBulges`,
+  `hasWidths`, `closed`, `length`, `area`
+- 3dPolyline: `points`, `closed`, `length`
+- Spline: `controlPoints`, `fitPoints`, `knots`, `weights`, `degree`, `length`, `area`,
+  `isFitPointSpline`, `isControlPointSpline`
+- Text / MText: `position`, `text`, `height`, plus alignment and formatting fields. MText adds
+  `plainText` (control codes stripped), columns, line spacing, and background fill
+- Point: `position`, `ecsRotation`; Ray / Xline: `basePoint`, `unitDir`
+- Insert: `name`, `effectiveName`, `isDynamicBlock`, `position`, `rotation`, `scale`, `blockTransform`,
+  MINSERT row/column data, and `attributes: [{ tag, text, position }]`
+- Table: insert fields plus `cells` (`string[][]`), `rowHeights`, `columnWidths`, `attachmentPoint`
+- Hatch: `patternName`, `hatchStyle`, `isSolidFill`, `area`, `loops: [{ closed, points, length }]`,
+  gradient fields
+- Dimension: `text`, `annotationText`, `measurement` (computed from definition points when missing),
+  `dimensionType`, and the definition points of each subtype
+
+Every snapshot also carries the `AcDbEntity` display properties, always present: `color`,
+`resolvedColor`, `lineType`, `lineWeight`, `linetypeScale`, `visibility`, `transparency`, plus
+`thickness` / `normal` when the type has them. `color` / `resolvedColor` are
+`{ red?, green?, blue?, hex?, colorIndex?, isByColor, isByACI, isByLayer, isByBlock, isForeground }`,
+so a ByLayer entity reports `isByLayer: true` while `resolvedColor` carries the layer RGB.
+Inside `cad.entities.where(...)` these fields are read lazily: only the properties a predicate touches
+are resolved, and only matching entities become full snapshots.
+
+`cad.measure.area(id)` returns the entity's area (or the polygon area of its boundary points).
 
 Geometry is copied for every concrete entity type in `@mlightcad/data-model`. A property that cannot be read is omitted. Binary payloads such as ACIS, OLE streams, and proxy graphics are not copied. `cad.entities` walks every block table record, so model space, paper space, and block definitions are all included. Attributes on inserts are included too. `ownerId` is the owning block id, or the insert id for an attribute.
 

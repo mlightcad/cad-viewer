@@ -43,13 +43,13 @@ title: API البرنامج النصي
 
 تُعيد المعلومات الثابتة للرسم الحالي.
 
-| الحقل | النوع | الوصف |
-|------|------|------|
-| `title` | `string` | عنوان الرسم |
-| `currentLayer` | `string` | اسم الطبقة الحالية |
-| `units` | `number` | وحدة الإدراج (INSUNITS) |
-| `layers` | `Array<{ name, isOn, isFrozen, isLocked }>` | قائمة جميع الطبقات |
-| `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | نطاق مساحة النموذج |
+| الحقل          | النوع                                         | الوصف                   |
+| -------------- | --------------------------------------------- | ----------------------- |
+| `title`        | `string`                                      | عنوان الرسم             |
+| `currentLayer` | `string`                                      | اسم الطبقة الحالية      |
+| `units`        | `number`                                      | وحدة الإدراج (INSUNITS) |
+| `layers`       | `Array<{ name, isOn, isFrozen, isLocked }>`   | قائمة جميع الطبقات      |
+| `extents`      | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | نطاق مساحة النموذج      |
 
 ```javascript
 const info = cad.drawing
@@ -90,31 +90,54 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 ### لقطة الكيان (EntitySnapshot)
 
-| الحقل | النوع | الوصف |
-|------|------|------|
-| `id` | `string` | معرّف كائن الكيان |
-| `ownerId` | `string` | معرّف سجل جدول الكتل المالك، أو مرجع الكتلة للسمة |
-| `type` | `string` | نوع الكيان بدون البادئة `AcDb`، مثل `Circle` و`Line` |
-| `layer` | `string` | اسم الطبقة الموجود بها |
-| `extents` | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | النطاق في نظام الإحداثيات العالمي |
-| `geometry` | `object \| undefined` | البيانات الهندسية الخاصة بالنوع |
+| الحقل           | النوع                                         | الوصف                                                       |
+| --------------- | --------------------------------------------- | ----------------------------------------------------------- |
+| `id`            | `string`                                      | معرّف كائن الكيان                                           |
+| `ownerId`       | `string`                                      | معرّف سجل جدول الكتل المالك، أو مرجع الكتلة للسمة           |
+| `type`          | `string`                                      | نوع الكيان بدون البادئة `AcDb`، مثل `Circle` و`Line`        |
+| `layer`         | `string`                                      | اسم الطبقة الموجود بها                                      |
+| `color`         | `EntityColor`                                 | اللون المخزَّن قبل حل ByLayer / ByBlock                     |
+| `resolvedColor` | `EntityColor`                                 | اللون بعد حل ByLayer / ByBlock                              |
+| `lineType`      | `string`                                      | اسم نوع الخط (`ByLayer` / `ByBlock` تُعاد كما هي)           |
+| `lineWeight`    | `number`                                      | قيمة `AcGiLineWeight`؛ القيم السالبة تعني ByLayer / ByBlock |
+| `linetypeScale` | `number`                                      | مقياس نوع الخط                                              |
+| `visibility`    | `boolean`                                     | `false` عندما يكون الكيان مخفيًا                            |
+| `transparency`  | `EntityTransparency`                          | طريقة الشفافية مع alpha                                     |
+| `thickness`     | `number \| undefined`                         | سماكة البثق عند وجودها                                      |
+| `normal`        | `{x,y,z} \| undefined`                        | اتجاه البثق / العمود على المستوى عند وجوده                  |
+| `extents`       | `{ min: {x,y,z}, max: {x,y,z} } \| undefined` | النطاق في نظام الإحداثيات العالمي                           |
+| `geometry`      | `object \| undefined`                         | البيانات الهندسية الخاصة بالنوع                             |
+
+`EntityColor` هو `{ red?, green?, blue?, hex?, colorIndex?, isByColor, isByACI, isByLayer, isByBlock, isForeground }`.
+ألوان ByLayer / ByBlock لا تحمل RGB؛ اقرأ `resolvedColor` عندما تحتاج إلى لون فعلي.
+`EntityTransparency` هو `{ method, alpha, percentage?, isByAlpha, isByLayer, isByBlock }`.
+
+داخل محمول `cad.entities.where(...)` تُقرأ خصائص العرض هذه بتأخير: تُحلَّل الحقول التي يلمسها المحمول فقط، ولا يُحوَّل إلى لقطة كاملة إلا الكيانات المطابقة.
 
 أنواع `geometry` المدعومة:
 
-| نوع الكيان | حقول `geometry` |
-|----------|----------------|
-| `Circle` | `{ center: {x,y,z}, radius }` |
-| `Line` | `{ start: {x,y,z}, end: {x,y,z} }` |
-| `Arc` | `{ center: {x,y,z}, radius, startAngle, endAngle, startAngleDeg, endAngleDeg }` |
-| `Ellipse` | `{ center: {x,y,z}, majorRadius, minorRadius }` |
-| `Polyline` | `{ points: Array<{x,y,z}>, closed }` |
-| `Text` | `{ position: {x,y,z}, text, height }` |
-| `MText` | `{ position: {x,y,z}, text, height }` |
-| `Point` | `{ position: {x,y,z} }` |
-| `Ray` / `Xline` | `{ basePoint: {x,y,z}, unitDir: {x,y,z} }` |
-| `BlockReference` (إدراج) | `{ name, position: {x,y,z}, rotation, scale: {x,y,z} }` |
+| نوع الكيان                          | حقول `geometry`                                                                                                                                                                                                                                                                                          |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Circle`                            | `{ center, radius, area, circumference, closed }`                                                                                                                                                                                                                                                        |
+| `Line`                              | `{ start, end, length, midPoint, direction, closed }`                                                                                                                                                                                                                                                    |
+| `Arc`                               | `{ center, radius, startAngle, endAngle, startAngleDeg, endAngleDeg, length, area, startPoint, endPoint, midPoint, closed }`                                                                                                                                                                             |
+| `Ellipse`                           | `{ center, majorAxis, majorRadius, minorRadius, startAngle, endAngle, startAngleDeg, endAngleDeg, area, isCircular, closed }`                                                                                                                                                                            |
+| `Polyline`                          | `{ points, vertices: [{ bulge, startWidth, endWidth }], bulges, hasBulges, hasWidths, closed, elevation, length, area }`                                                                                                                                                                                 |
+| `2dPolyline`                        | `{ points, vertices, bulges, hasBulges, closed, polyType, elevation, length, area }`                                                                                                                                                                                                                     |
+| `3dPolyline`                        | `{ points, closed, polyType, length }`                                                                                                                                                                                                                                                                   |
+| `Spline`                            | `{ points, controlPoints, fitPoints, knots, weights, degree, length, area, isFitPointSpline, isControlPointSpline, startPoint, endPoint, closed, normal }`                                                                                                                                               |
+| `Text`                              | `{ position, text, height, rotation, styleName, alignmentPoint, hasAlignmentPoint, oblique, obliqueDeg, horizontalMode, verticalMode, widthFactor, isBackward, isUpsideDown }`                                                                                                                           |
+| `MText`                             | `{ position, text, plainText, height, width, extentsWidth, rotation, styleName, attachmentPoint, direction, lineSpacingFactor, lineSpacingStyle, backgroundFill, backgroundFillColor, backgroundScaleFactor, drawingDirection, columnType, columnCount, columnWidth, columnGutter, columnFlowReversed }` |
+| `Attribute` / `AttributeDefinition` | حقول النص مع `{ tag, invisible }` وأمثالها                                                                                                                                                                                                                                                               |
+| `Point`                             | `{ position, ecsRotation }`                                                                                                                                                                                                                                                                              |
+| `Ray` / `Xline`                     | `{ basePoint, unitDir }`                                                                                                                                                                                                                                                                                 |
+| `BlockReference` (إدراج)            | `{ name, effectiveName, isDynamicBlock, position, rotation, scale, columnCount, rowCount, columnSpacing, rowSpacing, blockTransform, attributes: [{ tag, text, position, invisible }] }`                                                                                                                 |
+| `Table`                             | حقول مرجع الكتلة مع `{ rows, columns, attachmentPoint, rowHeights, columnWidths, tableWidth, tableHeight, cells }`                                                                                                                                                                                       |
+| `Hatch`                             | `{ patternName, hatchStyle, isSolidFill, isHatch, isGradient, area, loops: [{ closed, points, length }], gradient* }`                                                                                                                                                                                    |
 
 يستخدم حقل الزاوية `startAngle` / `endAngle` الراديان، بينما يستخدم `startAngleDeg` / `endAngleDeg` الدرجات.
+يُزال من `plainText` رموز تحكم MTEXT (`\P` و`\fSimSun|b0|i0;` والأقواس) فيصبح قابلًا للبحث مباشرة.
+تُحسب `measurement` للكوتة من نقاط التعريف عندما لا يحمل الكيان قيمة مخزنة.
 
 لدى كل أنواع الكيانات الملموسة في data-model حقل `geometry`، ومنها `Hatch` و`Spline` و`Leader` و`MLeader` و`MLine` وأنواع `Dimension` و`RasterImage` و`Viewport` و`3dSolid` و`ProxyEntity`. لا تُنسخ بيانات ACIS أو OLE أو رسوم الوكيل الثنائية.
 
@@ -122,31 +145,31 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 قراءة كل جداول الرموز، كما في `AcDbDatabase.tables`. كل جدول هو `{ id, records }`، وكل سجل يحتوي على الأقل على `id` و`name`.
 
-| الخاصية | المحتوى |
-|------|------|
-| `appIdTable` | أسماء التطبيقات المسجلة |
-| `blockTable` | تعريفات الكتل. الكيانات في `cad.blocks` |
-| `dimStyleTable` | أنماط الأبعاد |
-| `linetypeTable` | أنواع الخطوط |
-| `textStyleTable` | أنماط النص |
-| `ucsTable` | أنظمة الإحداثيات المسماة |
-| `viewTable` | العروض المسماة |
-| `layerTable` | الطبقات: `color` و`linetype` و`lineWeight` و`isOff` و`isFrozen` و`isLocked` و`isPlottable` |
-| `viewportTable` | سجلات VPORT في مساحة النموذج، وليست كيانات `Viewport` في مساحة الورق |
+| الخاصية          | المحتوى                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| `appIdTable`     | أسماء التطبيقات المسجلة                                                                    |
+| `blockTable`     | تعريفات الكتل. الكيانات في `cad.blocks`                                                    |
+| `dimStyleTable`  | أنماط الأبعاد                                                                              |
+| `linetypeTable`  | أنواع الخطوط                                                                               |
+| `textStyleTable` | أنماط النص                                                                                 |
+| `ucsTable`       | أنظمة الإحداثيات المسماة                                                                   |
+| `viewTable`      | العروض المسماة                                                                             |
+| `layerTable`     | الطبقات: `color` و`linetype` و`lineWeight` و`isOff` و`isFrozen` و`isLocked` و`isPlottable` |
+| `viewportTable`  | سجلات VPORT في مساحة النموذج، وليست كيانات `Viewport` في مساحة الورق                       |
 
 ## cad.blocks
 
 كل تعريفات الكتل، بما يقابل قسم BLOCKS في DXF، بما في ذلك `*Model_Space` و`*Paper_Space`.
 
-| الحقل | الوصف |
-|------|------|
-| `id` | معرّف سجل جدول الكتل، وهو `ownerId` لكيانات الكتلة |
-| `name` | اسم الكتلة |
-| `origin` | نقطة الأساس `{ x, y, z }` |
-| `isModelSpace` / `isPaperSpace` | مساحة النموذج / مساحة الورق |
-| `flags` | مجموعة BLOCK رقم 70 |
-| `pathName` / `isXref` | مسار المرجع الخارجي وعلامته |
-| `entities` | لقطات الكيانات المخزنة مباشرة في الكتلة |
+| الحقل                           | الوصف                                              |
+| ------------------------------- | -------------------------------------------------- |
+| `id`                            | معرّف سجل جدول الكتل، وهو `ownerId` لكيانات الكتلة |
+| `name`                          | اسم الكتلة                                         |
+| `origin`                        | نقطة الأساس `{ x, y, z }`                          |
+| `isModelSpace` / `isPaperSpace` | مساحة النموذج / مساحة الورق                        |
+| `flags`                         | مجموعة BLOCK رقم 70                                |
+| `pathName` / `isXref`           | مسار المرجع الخارجي وعلامته                        |
+| `entities`                      | لقطات الكيانات المخزنة مباشرة في الكتلة            |
 
 ## cad.selection
 
@@ -238,7 +261,6 @@ cad.file.saveDxf('./plan-out.dxf')
 // or: cad.file.saveDxf({ path: './plan-out.dxf' })
 ```
 
-
 ### `cad.file.savePdf(path?)`
 
 Queues a PDF export after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Returns `{ queued: true, index, fileName }`.
@@ -260,17 +282,18 @@ cad.file.saveHtml({ path: './plan.zip', exportFormat: 'multi' })
 
 Numeric helpers for self-check after drawing. Prefer these over hand-rolled `Math.hypot` / `atan2`. Points are `{ x, y }` in WCS.
 
-| Method | Returns |
-|--------|---------|
-| `cad.measure.distance(a, b)` | Distance between two points |
-| `cad.measure.angleDeg(a, b)` | Bearing of a→b from +X, degrees in (-180, 180] |
-| `cad.measure.angleDeg(a, b, c)` | Interior angle at b (a–b–c), degrees in [0, 180] |
-| `cad.measure.deltaAngleDeg(fromDeg, toDeg)` | Smallest absolute bearing difference in [0, 180] |
-| `cad.measure.center(id)` | Circle/arc/ellipse center, or point/text position; else `undefined` |
-| `cad.measure.radius(id)` | Circle/arc radius or ellipse majorRadius; else `undefined` |
-| `cad.measure.length(id)` | Line length or polyline/spline path length; else `undefined` |
-| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`) |
-| `cad.measure.report(checks)` | `{ ok, checks }` — `ok` is true iff every check passed |
+| Method                                                  | Returns                                                                               |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `cad.measure.distance(a, b)`                            | Distance between two points                                                           |
+| `cad.measure.angleDeg(a, b)`                            | Bearing of a→b from +X, degrees in (-180, 180]                                        |
+| `cad.measure.angleDeg(a, b, c)`                         | Interior angle at b (a–b–c), degrees in [0, 180]                                      |
+| `cad.measure.deltaAngleDeg(fromDeg, toDeg)`             | Smallest absolute bearing difference in [0, 180]                                      |
+| `cad.measure.center(id)`                                | Circle/arc/ellipse center, or point/text position; else `undefined`                   |
+| `cad.measure.radius(id)`                                | Circle/arc radius or ellipse majorRadius; else `undefined`                            |
+| `cad.measure.length(id)`                                | Line length, or polyline/spline/2dPolyline/3dPolyline path length; else `undefined`   |
+| `cad.measure.area(id)`                                  | Area reported by the entity, or polygon area of its boundary points; else `undefined` |
+| `cad.measure.check(name, expected, actual, tolerance?)` | `{ name, expected, actual, pass }` (default tolerance `1e-3`)                         |
+| `cad.measure.report(checks)`                            | `{ ok, checks }` — `ok` is true iff every check passed                                |
 
 Recommended return shape after a non-trivial draw:
 
@@ -305,31 +328,31 @@ cad.edit.transaction('批量修改', tx => {
 
 ### أساليب الرسم
 
-| الأسلوب | المعاملات | القيمة المُعادة |
-|------|------|--------|
-| `tx.drawLine({ start, end, layer? })` | `start/end: {x,y}` | معرّف الكيان الجديد |
-| `tx.drawCircle({ center, radius, layer? })` | `center: {x,y}` | معرّف الكيان الجديد |
-| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })` | `center: {x,y}` | معرّف الكيان الجديد |
-| `tx.drawRectangle({ corner1, corner2, layer? })` | `corner1/corner2: {x,y}` | معرّف الكيان الجديد |
-| `tx.drawPolyline({ points, closed?, layer? })` | `points: Array<{x,y}>` | معرّف الكيان الجديد |
-| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}` | معرّف الكيان الجديد |
-| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })` | `boundary: Array<{x,y}>` (min 3) | معرّف الكيان الجديد |
-| `tx.drawPoint({ position, layer? })` | `position: {x,y}` | معرّف الكيان الجديد |
-| `tx.drawRay({ start, through, layer? })` | `start/through: {x,y}` | معرّف الكيان الجديد |
-| `tx.drawXline({ start, through, layer? })` | `start/through: {x,y}` | معرّف الكيان الجديد |
-| `tx.drawSpline({ points, closed?, layer? })` | `points: Array<{x,y}>` | معرّف الكيان الجديد |
-| `tx.drawText({ position, text, height?, layer? })` | `position: {x,y}` | معرّف الكيان الجديد |
+| الأسلوب                                                                                                    | المعاملات                        | القيمة المُعادة     |
+| ---------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------- |
+| `tx.drawLine({ start, end, layer? })`                                                                      | `start/end: {x,y}`               | معرّف الكيان الجديد |
+| `tx.drawCircle({ center, radius, layer? })`                                                                | `center: {x,y}`                  | معرّف الكيان الجديد |
+| `tx.drawArc({ center, radius, startAngleDeg, endAngleDeg, layer? })`                                       | `center: {x,y}`                  | معرّف الكيان الجديد |
+| `tx.drawRectangle({ corner1, corner2, layer? })`                                                           | `corner1/corner2: {x,y}`         | معرّف الكيان الجديد |
+| `tx.drawPolyline({ points, closed?, layer? })`                                                             | `points: Array<{x,y}>`           | معرّف الكيان الجديد |
+| `tx.drawEllipse({ center, majorRadius, minorRadius, rotationDeg?, startAngleDeg?, endAngleDeg?, layer? })` | `center: {x,y}`                  | معرّف الكيان الجديد |
+| `tx.drawHatch({ boundary, patternName?, patternScale?, patternAngleDeg?, layer? })`                        | `boundary: Array<{x,y}>` (min 3) | معرّف الكيان الجديد |
+| `tx.drawPoint({ position, layer? })`                                                                       | `position: {x,y}`                | معرّف الكيان الجديد |
+| `tx.drawRay({ start, through, layer? })`                                                                   | `start/through: {x,y}`           | معرّف الكيان الجديد |
+| `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | معرّف الكيان الجديد |
+| `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | معرّف الكيان الجديد |
+| `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | معرّف الكيان الجديد |
 
 ### أساليب التحرير
 
-| الأسلوب | المعاملات | القيمة المُعادة |
-|------|------|--------|
-| `tx.erase(ids)` | `string[]` | عدد الكيانات المحذوفة |
-| `tx.setLayer(ids, layer)` | `string[], string` | — |
-| `tx.move(ids, dx, dy)` | `string[], number, number` | عدد الكيانات المنقولة |
-| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number` | عدد الكيانات المدارة |
-| `tx.createLayer(name)` | `string` | — |
-| `tx.setCurrentLayer(name)` | `string` | — |
+| الأسلوب                            | المعاملات                  | القيمة المُعادة       |
+| ---------------------------------- | -------------------------- | --------------------- |
+| `tx.erase(ids)`                    | `string[]`                 | عدد الكيانات المحذوفة |
+| `tx.setLayer(ids, layer)`          | `string[], string`         | —                     |
+| `tx.move(ids, dx, dy)`             | `string[], number, number` | عدد الكيانات المنقولة |
+| `tx.rotate(ids, center, angleDeg)` | `string[], {x,y}, number`  | عدد الكيانات المدارة  |
+| `tx.createLayer(name)`             | `string`                   | —                     |
+| `tx.setCurrentLayer(name)`         | `string`                   | —                     |
 
 ## cad.log
 

@@ -66,6 +66,7 @@ export const CAD_SCRIPT_API_TREE = {
     center: true,
     radius: true,
     length: true,
+    area: true,
     check: true,
     report: true
   },
@@ -117,9 +118,19 @@ The body may return JSON. Do not import modules or touch the page.
 
 cad.drawing -> { title, currentLayer, units, layers: [{ name, isOn, isFrozen, isLocked }], extents }
 cad.entities lists every entity in the database (model space, paper space, and block definitions, plus attributes on inserts).
-cad.entities.where(predicate) -> snapshots { id, ownerId, type, layer, extents, geometry }
+cad.entities.where(predicate) -> snapshots (every field below is always present)
 cad.entities.byId(id) -> snapshot or undefined
 cad.entities.inBox(min, max) -> snapshots whose extents hit a WCS box
+Snapshot shape: {
+  id, ownerId, type, layer,
+  color, resolvedColor, lineType, lineWeight, linetypeScale, visibility, transparency,
+  thickness?, normal?, extents?, geometry?
+}
+color / resolvedColor: { red?, green?, blue?, hex?, colorIndex?, isByColor, isByACI, isByLayer, isByBlock, isForeground }.
+resolvedColor has ByLayer / ByBlock already applied. Use lineType / lineWeight / color to classify
+walls, axes, dimensions, and fills.
+transparency: { method, alpha, percentage?, isByAlpha, isByLayer, isByBlock }.
+Predicates in where() read these lazily; only matched entities pay the cost.
 cad.tables mirrors AcDbDatabase.tables: appIdTable, blockTable, dimStyleTable, linetypeTable, textStyleTable, ucsTable, viewTable, layerTable, viewportTable.
 Each table is { id, records: [{ id, name, ...fields }] }.
 cad.blocks -> block definitions like a DXF BLOCKS section: { id, name, origin, isModelSpace, isPaperSpace, flags, pathName, isXref, entities }.
@@ -154,7 +165,7 @@ cad.measure — prefer for numeric self-check (saves tokens vs hand-rolled Math)
   distance(a, b) -> number
   angleDeg(a, b) -> bearing a→b deg (-180,180]; angleDeg(a, b, c) -> interior angle at b [0,180]
   deltaAngleDeg(fromDeg, toDeg) -> smallest |Δ| in [0,180]
-  center(id) / radius(id) / length(id) -> from entity geometry, or undefined
+  center(id) / radius(id) / length(id) / area(id) -> from entity geometry, or undefined
   check(name, expected, actual, tolerance=1e-3) -> { name, expected, actual, pass }
   report(checks) -> { ok, checks }  (ok iff every pass)
 After non-trivial draws, return measure.report([...]) (optionally spread with entityIds).
@@ -173,12 +184,21 @@ drawHatch, drawPoint, drawRay, drawXline, drawSpline, drawText.
 tx edit methods: erase(ids), setLayer(ids, layer), move(ids, dx, dy), rotate(ids, center, angleDeg),
 createLayer(name), setCurrentLayer(name).
 tx draw methods return the new entity id. Prefer one transaction for related geometry.
-Snapshots cover every data-model entity type. Common geometry:
-Circle { center, radius }, Line { start, end }, Arc { center, radius, startAngle, endAngle } in radians,
-Ellipse { center, majorRadius, minorRadius }, Polyline / 2dPolyline / 3dPolyline { points, closed },
-Spline { points, closed }, Text / MText / Attribute { position, text, height },
-Insert { name, position, rotation, scale }, Hatch { patternName, patternScale, boundary },
-Dimension { text, measurement, textPosition, styleName } plus definition points.
+Snapshots cover every data-model entity type. Extra geometry per type:
+Line { start, end, length, midPoint, direction }.
+Circle { center, radius, area, circumference }; Arc adds startPoint, endPoint, midPoint, length, area.
+Ellipse { center, majorRadius, minorRadius, area, isCircular, closed }.
+Polyline / 2dPolyline { points, vertices: [{ bulge, startWidth, endWidth }], bulges, hasBulges, length, area, closed }.
+3dPolyline { points, length, closed }. Spline { controlPoints, fitPoints, knots, weights, degree, length, area }.
+Spline also has points (grip points). Text { position, text, height, alignmentPoint, widthFactor, horizontalMode }.
+MText { position, text, plainText (control codes stripped), height, width, columns, background }.
+Attribute / AttributeDefinition add { tag, prompt?, isMTextAttribute }.
+Insert { name, effectiveName, isDynamicBlock, position, rotation, scale, blockTransform, attributes: [{ tag, text, position }], rowCount, columnCount }.
+Table adds { rows, columns, cells: string[][], rowHeights, columnWidths, attachmentPoint }.
+Hatch { patternName, hatchStyle, isSolidFill, area, loops: [{ closed, points, length }], gradient* fields }.
+Dimension { text, measurement, textPosition, styleName } plus definition points; measurement is computed when missing.
+Leader { vertices, ... }, MLeader { contents, textLocation, leaders: [{ vertices }] },
+RasterImage / Wipeout { position, width, height, clipBoundary, brightness, contrast, fade }, Viewport { center, width, height, viewTarget }.
 
 Example: draw a circle, zoom, and verify with measure (preferred in Simple mode).
 let circleId

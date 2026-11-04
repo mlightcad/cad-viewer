@@ -47,6 +47,12 @@ export interface CadMeasureApi {
    */
   length(id: string): number | undefined
   /**
+   * Enclosed area reported by the entity, falling back to the polygon area of
+   * the boundary points for a closed shape that reports 0. Open paths report
+   * 0 because they enclose nothing. Undefined when unsupported.
+   */
+  area(id: string): number | undefined
+  /**
    * One check row. Default absolute tolerance is `1e-3` drawing units.
    * Passes when `|actual - expected| <= tolerance`.
    */
@@ -126,9 +132,9 @@ export function createCadMeasure(
     },
 
     length(id) {
-      const snapshot = byId(id)
-      if (!snapshot?.geometry) return undefined
-      const geometry = snapshot.geometry
+      const geometry = geometryOf(byId, id)
+      if (!geometry) return undefined
+      if (typeof geometry.length === 'number') return geometry.length
       const start = asPoint(geometry.start)
       const end = asPoint(geometry.end)
       if (start && end) {
@@ -149,6 +155,23 @@ export function createCadMeasure(
         total += Math.hypot(first.x - last.x, first.y - last.y)
       }
       return total
+    },
+
+    area(id) {
+      const geometry = geometryOf(byId, id)
+      if (!geometry) return undefined
+      const reported =
+        typeof geometry.area === 'number' && Number.isFinite(geometry.area)
+          ? geometry.area
+          : undefined
+      if (reported !== undefined && reported !== 0) return reported
+      // A closed polyline can report 0 when its vertex loop was rebuilt from
+      // sampled points; fall back to the polygon area. An open path encloses
+      // nothing, so a reported 0 stands.
+      if (geometry.closed !== true) return reported
+      const points = asPointList(geometry.points)
+      if (!points || points.length < 3) return reported
+      return polygonArea(points)
     },
 
     check(name, expected, actual, tolerance = DEFAULT_TOLERANCE) {
@@ -220,6 +243,17 @@ function asPointList(value: unknown): Point2dInput[] | undefined {
 
 function radToDeg(radians: number): number {
   return (radians * 180) / Math.PI
+}
+
+/** Signed shoelace area of a closed polygon, returned as a positive value. */
+function polygonArea(points: readonly Point2dInput[]): number {
+  let twice = 0
+  for (let index = 0; index < points.length; index++) {
+    const current = points[index]
+    const next = points[(index + 1) % points.length]
+    twice += current.x * next.y - next.x * current.y
+  }
+  return Math.abs(twice) / 2
 }
 
 function clamp(value: number, min: number, max: number): number {
