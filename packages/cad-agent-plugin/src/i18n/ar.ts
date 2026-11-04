@@ -161,5 +161,8 @@ export const agentAr = {
   save: 'حفظ',
   createProvider: 'إنشاء المزوّد',
   deleteProvider: 'حذف المزوّد',
-  deleteProviderConfirm: 'هل تريد حذف المزوّد "{id}" ومفتاح API الخاص به؟'
+  deleteProviderConfirm: 'هل تريد حذف المزوّد "{id}" ومفتاح API الخاص به؟',
+  toolsSummary: 'استدعاءات الأدوات: {count}',
+  toolsRunning: 'جارٍ تشغيل الأدوات ({count})…',
+  toolsFailed: 'فشل {count}'
 } as const

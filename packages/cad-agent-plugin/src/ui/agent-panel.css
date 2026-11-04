@@ -236,6 +236,53 @@
   background: rgba(244, 135, 113, 0.15);
 }
 
+.cad-agent-tool-group {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cad-agent-tool-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  padding: 2px 6px 2px 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #9cdcfe;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.cad-agent-tool-summary:hover {
+  color: #c5e8ff;
+}
+
+.cad-agent-tool-summary-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cad-agent-tool-chevron {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  transition: transform 0.15s ease;
+}
+
+.cad-agent-tool-group.is-open .cad-agent-tool-chevron {
+  transform: rotate(90deg);
+}
+
+.cad-agent-tool-group .cad-agent-tool {
+  padding-left: 16px;
+}
+
 .cad-agent-tool {
   display: flex;
   align-items: flex-start;

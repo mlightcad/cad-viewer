@@ -124,5 +124,8 @@ export const agentCs = {
   save: 'Uložit',
   createProvider: 'Vytvořit poskytovatele',
   deleteProvider: 'Smazat poskytovatele',
-  deleteProviderConfirm: 'Smazat poskytovatele „{id}“ a jeho API klíč?'
+  deleteProviderConfirm: 'Smazat poskytovatele „{id}“ a jeho API klíč?',
+  toolsSummary: 'Volání nástrojů: {count}',
+  toolsRunning: 'Probíhá volání nástrojů ({count})…',
+  toolsFailed: 'Selhalo: {count}'
 } as const
