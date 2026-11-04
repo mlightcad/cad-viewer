@@ -20,95 +20,52 @@ export const agentAr = {
   providerOpenai: 'OpenAI',
   providerAnthropic: 'Anthropic',
 
-  providerOpenaiCompatible:
-    'متوافق مع OpenAI',
-
-  baseUrl:
-    'عنوان Base URL',
+  baseUrl: 'عنوان Base URL',
 
   baseUrlHint:
     'يجب أن يتضمن /v1 لمعظم البوابات، مثل https://ai-api.example.com/v1. يتم تصحيح عنوان المضيف فقط تلقائيًا.',
 
-  model:
-    'النموذج',
+  model: 'النموذج',
 
-  visionModels:
-    'نماذج الرؤية',
-
-  textModels:
-    'نماذج نصية فقط',
-
-  customModel:
-    'نموذج مخصص…',
-
-  customModelName:
-    'اسم النموذج المخصص',
-
-  modelSupportsVision:
-    'يدعم إدخال الصور',
-
-  modelTextOnly:
-    'نصي فقط — تم تعطيل إرفاق الصور',
-
-  apiKey:
-    'مفتاح API',
-
-  saveSettings:
-    'حفظ الإعدادات',
+  apiKey: 'مفتاح API',
 
   emptyHint:
     'صف ما تريد رسمه، أو أرفق صورة مرجعية مثل رسم تخطيطي أو لقطة شاشة أو مخطط معماري.',
 
-  toolPrefix:
-    'أداة',
+  toolPrefix: 'أداة',
 
-  copyTool:
-    'نسخ استدعاء الأداة (الإدخال والإخراج)',
+  copyTool: 'نسخ استدعاء الأداة (الإدخال والإخراج)',
 
-  toolCopied:
-    'تم النسخ',
+  toolCopied: 'تم النسخ',
 
-  inputPlaceholder:
-    'صف طلبك…',
+  inputPlaceholder: 'صف طلبك…',
 
-  attachImage:
-    'إرفاق صورة',
+  attachImage: 'إرفاق صورة',
 
-  removeAttachment:
-    'إزالة',
+  removeAttachment: 'إزالة',
 
-  imageAlt:
-    'الصورة المرفقة',
+  imageAlt: 'الصورة المرفقة',
 
   imageOnlyRequest:
     'يرجى تحليل الصورة المرجعية المرفقة ومساعدتي في رسمها في CAD.',
 
-  prepareImageFailed:
-    'تعذّر تجهيز الصورة المرفقة. جرّب ملف PNG أو JPEG أصغر.',
+  prepareImageFailed: 'تعذّر تجهيز الصورة المرفقة. جرّب ملف PNG أو JPEG أصغر.',
 
-  errorTitle:
-    'حدث خطأ',
+  errorTitle: 'حدث خطأ',
 
-  dismissError:
-    'إغلاق الخطأ',
+  dismissError: 'إغلاق الخطأ',
 
-  send:
-    'إرسال',
+  send: 'إرسال',
 
-  stop:
-    'إيقاف',
+  stop: 'إيقاف',
 
-  working:
-    'جارٍ العمل…',
+  working: 'جارٍ العمل…',
 
-  agentMode:
-    'وضع الوكيل',
+  agentMode: 'وضع الوكيل',
 
-  agentModeSimple:
-    'بسيط',
+  agentModeSimple: 'بسيط',
 
-  agentModeHighInference:
-    'استدلال متقدم',
+  agentModeHighInference: 'استدلال متقدم',
 
   agentModeSimpleHint:
     'الافتراضي. سريع — تحقق ذاتي عبر واجهة القياس فقط؛ بدون لقطات أو تحقق بصري.',
@@ -119,39 +76,90 @@ export const agentAr = {
   highInferenceRequiresVision:
     'وضع الاستدلال المتقدم يتطلب نموذجًا يدعم الرؤية.',
 
-  verificationTitle:
-    'التحقق من الرسم',
+  verificationTitle: 'التحقق من الرسم',
 
-  verifying:
-    'جارٍ مقارنة لقطة شاشة الرسم بطلبك والصور المرجعية…',
+  verifying: 'جارٍ مقارنة لقطة شاشة الرسم بطلبك والصور المرجعية…',
 
-  verificationPassed:
-    'نجح التحقق — الرسم يطابق الطلب.',
+  verificationPassed: 'نجح التحقق — الرسم يطابق الطلب.',
 
-  verificationFailed:
-    'فشل التحقق — تم العثور على مشكلات:',
+  verificationFailed: 'فشل التحقق — تم العثور على مشكلات:',
 
-  verificationSkipped:
-    'تم تخطي التحقق',
+  verificationSkipped: 'تم تخطي التحقق',
 
-  verificationError:
-    'حدث خطأ أثناء التحقق',
+  verificationError: 'حدث خطأ أثناء التحقق',
 
-  verificationContinuing:
-    'جارٍ متابعة تحسين الرسم…',
+  verificationContinuing: 'جارٍ متابعة تحسين الرسم…',
 
-  verificationMaxAttempts:
-    'لم ينجح التحقق خلال الحد الأقصى لعدد المحاولات.',
+  verificationMaxAttempts: 'لم ينجح التحقق خلال الحد الأقصى لعدد المحاولات.',
 
-  referenceImages:
-    'الصور المرجعية',
+  referenceImages: 'الصور المرجعية',
 
-  drawingScreenshot:
-    'لقطة شاشة الرسم الحالي',
+  drawingScreenshot: 'لقطة شاشة الرسم الحالي',
 
-  unsavedSettings:
-    'احفظ الإعدادات قبل إرسال الرسائل.',
+  unsavedSettings: 'احفظ الإعدادات قبل إرسال الرسائل.',
 
-  missingApiKey:
-    'اضبط مفتاح API في الإعدادات قبل إرسال الرسائل.'
+  missingApiKey: 'اضبط مفتاح API في الإعدادات قبل إرسال الرسائل.',
+  tabBuiltin: 'مزوّدو الطرف الثالث',
+  tabCustom: 'واجهة API مخصّصة للنموذج',
+  builtinIntro:
+    'اختر مزوّدًا مدمجًا مثل DeepSeek أو OpenAI أو Anthropic وأدخل مفتاح API الخاص به.',
+  customIntro:
+    'اتصل بخادم وسيط أو خدمة مستضافة ذاتيًا أو أي نقطة نهاية متوافقة مع OpenAI / Anthropic. أدخل عنوان API والبروتوكول والنماذج.',
+  providerConfigured: 'تم الإعداد',
+  apiKeyPlaceholder: 'أدخل مفتاح API',
+  apiKeyRequired:
+    'لا يوجد مفتاح API بعد. أدخل مفتاحًا لإرسال الرسائل عبر هذا المزوّد.',
+  advancedSettings: 'إعدادات مخصّصة',
+  baseUrlDefault: 'اتركه فارغًا لاستخدام العنوان الافتراضي: {url}',
+  baseUrlInvalid: 'يجب أن يبدأ عنوان API بـ http:// أو https://.',
+  customProvider: 'مزوّد مخصّص',
+  newCustomProvider: '+ واجهة API مخصّصة جديدة',
+  providerId: 'معرّف المزوّد',
+  providerIdHint:
+    'معرّف بأحرف صغيرة يبدأ بحرف (أحرف وأرقام وشرطات). لا يمكن تغييره بعد الإنشاء.',
+  providerIdInvalid:
+    'يجب أن يبدأ معرّف المزوّد بحرف صغير وأن يحتوي على أحرف صغيرة وأرقام وشرطات فقط.',
+  providerIdTaken: 'معرّف المزوّد هذا مستخدم بالفعل.',
+  displayName: 'الاسم المعروض',
+  protocol: 'بروتوكول API',
+  protocolOpenaiChat: 'OpenAI Chat Completions',
+  protocolOpenaiResponses: 'OpenAI Responses',
+  protocolAnthropicMessages: 'Anthropic Messages',
+  models: 'كتالوج النماذج',
+  modelsDefault: 'يتم استخدام النماذج الافتراضية المدمجة',
+  modelsCustomized: 'مخصّص',
+  resetModels: 'استعادة الافتراضي',
+  modelsEmpty:
+    'لا توجد نماذج بعد. انقر على "جلب النماذج المتاحة" أو أضف معرّف نموذج يدويًا.',
+  modelId: 'معرّف النموذج',
+  modelVision: 'صور',
+  modelVisionHint: 'يدعم إدخال الصور',
+  removeModel: 'إزالة النموذج',
+  addModel: 'إضافة نموذج',
+  fetchModels: 'جلب النماذج المتاحة',
+  fetching: 'جارٍ الجلب…',
+  fetchNeedsKey: 'أدخل مفتاح API أولًا',
+  fetchNeedsBaseUrl: 'أدخل عنوان API أولًا',
+  fetchTitle: 'اختر النماذج',
+  fetchSearch: 'ابحث عن النماذج',
+  fetchSelectAll: 'تحديد الكل',
+  fetchDeselectAll: 'إلغاء تحديد الكل',
+  fetchNoMatches: 'لا توجد نماذج مطابقة',
+  fetchAdopt: 'تطبيق',
+  fetchKeepOne: 'أبقِ نموذجًا واحدًا على الأقل',
+  fetchEmpty: 'لم تُرجع نقطة النهاية أي نماذج. أضفها يدويًا.',
+  fetchFailedNetwork:
+    'تعذّر الوصول إلى {url}. قد تكون هناك مشكلة في الشبكة، أو أن نقطة النهاية لا تسمح بطلبات المتصفح (CORS). أضف النماذج يدويًا.',
+  fetchFailedHttp:
+    'فشل جلب النماذج: أعادت نقطة النهاية HTTP {status}. تحقّق من مفتاح API والعنوان.',
+  fetchFailedFormat:
+    'لم يتم التعرّف على قائمة النماذج التي أعادتها نقطة النهاية. أضف النماذج يدويًا.',
+  needsProviderId: 'أدخل معرّف المزوّد.',
+  needsBaseUrl: 'أدخل عنوان API.',
+  needsModels: 'أضف نموذجًا واحدًا على الأقل.',
+  cancel: 'إلغاء',
+  save: 'حفظ',
+  createProvider: 'إنشاء المزوّد',
+  deleteProvider: 'حذف المزوّد',
+  deleteProviderConfirm: 'هل تريد حذف المزوّد "{id}" ومفتاح API الخاص به؟'
 } as const
