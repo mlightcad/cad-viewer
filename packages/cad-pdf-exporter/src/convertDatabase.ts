@@ -1,6 +1,6 @@
 import {
-  acPdExportDatabase,
-  acPdResolveExportOptions
+  acexPdfExportDatabase,
+  acexPdfResolveExportOptions
 } from '@mlightcad/cad-pdf-core'
 import type { AcDbDatabase } from '@mlightcad/data-model'
 
@@ -28,7 +28,7 @@ export async function convertDatabaseToPdf(
   options: AcPdfExporterOptions = {}
 ): Promise<Uint8Array> {
   return withWorkingDatabase(database, async () => {
-    const resolved = acPdResolveExportOptions({
+    const resolved = acexPdfResolveExportOptions({
       exportLayouts: options.exportLayouts,
       textMode: options.textMode,
       colorMode: options.colorMode
@@ -43,7 +43,7 @@ export async function convertDatabaseToPdf(
     const fontsMs = performance.now() - tFonts
 
     const tRender = performance.now()
-    const bytes = await acPdExportDatabase(database, {
+    const bytes = await acexPdfExportDatabase(database, {
       ...resolved,
       // No live view headless: frame model space by drawable extents.
       modelSpaceFit: 'extents',

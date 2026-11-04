@@ -7,39 +7,39 @@ import {
 } from '@mlightcad/pdf-renderer'
 
 import {
-  type AcPdExportOptions,
-  acPdResolveExportOptions
-} from './AcPdExportOptions'
-import { acPdCreateGlyphProvider } from './AcPdGlyphProvider'
+  type AcExPdfExportOptions,
+  acexPdfResolveExportOptions
+} from './AcExPdfExportOptions'
+import { acexPdfCreateGlyphProvider } from './AcExPdfGlyphProvider'
 
 /** Axis-aligned WCS box used to frame a model-space page. */
-export interface AcPdFitBox {
+export interface AcExPdfFitBox {
   min: { x: number; y: number }
   max: { x: number; y: number }
 }
 
 /**
- * Inputs for {@link acPdExportDatabase}: the user options plus the
+ * Inputs for {@link acexPdfExportDatabase}: the user options plus the
  * host-provided services that differ between the browser and Node.
  */
-export interface AcPdDatabaseExportOptions extends AcPdExportOptions {
+export interface AcExPdfDatabaseExportOptions extends AcExPdfExportOptions {
   /** PDF document title. */
   title?: string
   /** Font name substitutions passed to the glyph engine. */
   fontMapping?: AcGiFontMapping
   /**
-   * Visible WCS box for {@link AcPdExportOptions.modelSpaceFit} `'display'`.
+   * Visible WCS box for {@link AcExPdfExportOptions.modelSpaceFit} `'display'`.
    * Ignored for `'extents'`. When omitted, `'display'` behaves like
    * `'extents'` (headless hosts have no live view).
    */
-  displayBox?: AcPdFitBox
+  displayBox?: AcExPdfFitBox
   /**
-   * MTEXT/SHAPE glyph engine. Defaults to {@link acPdCreateGlyphProvider},
+   * MTEXT/SHAPE glyph engine. Defaults to {@link acexPdfCreateGlyphProvider},
    * which requires an initialized `AcTrMTextRenderer`.
    */
   glyphProvider?: AcPdfGlyphProvider
   /**
-   * Resolves embeddable font programs for {@link AcPdExportOptions.textMode}
+   * Resolves embeddable font programs for {@link AcExPdfExportOptions.textMode}
    * `'text'`. Without it, every text paints as vector glyphs.
    */
   textFontResolver?: AcPdfTextFontResolver
@@ -56,11 +56,11 @@ export interface AcPdDatabaseExportOptions extends AcPdExportOptions {
  * @param options - User options and host services
  * @returns Options for `exportDatabaseToPdf`
  */
-export function acPdBuildRendererOptions(
+export function acexPdfBuildRendererOptions(
   db: AcDbDatabase,
-  options: AcPdDatabaseExportOptions = {}
+  options: AcExPdfDatabaseExportOptions = {}
 ): AcPdfExportOptions {
-  const resolved = acPdResolveExportOptions(options)
+  const resolved = acexPdfResolveExportOptions(options)
   const pdfOptions: AcPdfExportOptions = {
     title: options.title,
     ltscale: db.ltscale,
@@ -70,7 +70,7 @@ export function acPdBuildRendererOptions(
     background: 'none',
     fit: resolved.modelSpaceFit === 'display' ? 'current' : 'extents',
     layouts: resolved.exportLayouts ? 'all' : 'current',
-    glyphProvider: options.glyphProvider ?? acPdCreateGlyphProvider(),
+    glyphProvider: options.glyphProvider ?? acexPdfCreateGlyphProvider(),
     textMode: resolved.textMode,
     colorMode: resolved.colorMode
   }
@@ -98,16 +98,16 @@ export function acPdBuildRendererOptions(
  *
  * Shared by the browser plugin (`cpdf` / `-cpdf`) and the headless
  * `cad-pdf-exporter`. Framing matches HTML export: `'extents'` fits drawable
- * geometry; `'display'` uses {@link AcPdDatabaseExportOptions.displayBox}.
+ * geometry; `'display'` uses {@link AcExPdfDatabaseExportOptions.displayBox}.
  * Paper-space pages ignore model-space fit and use their own extents.
  *
  * @param db - Drawing to export
  * @param options - User options and host services
  * @returns PDF file bytes
  */
-export async function acPdExportDatabase(
+export async function acexPdfExportDatabase(
   db: AcDbDatabase,
-  options: AcPdDatabaseExportOptions = {}
+  options: AcExPdfDatabaseExportOptions = {}
 ): Promise<Uint8Array> {
-  return exportDatabaseToPdf(db, acPdBuildRendererOptions(db, options))
+  return exportDatabaseToPdf(db, acexPdfBuildRendererOptions(db, options))
 }

@@ -19,7 +19,7 @@ jest.mock('@mlightcad/cad-simple-viewer', () => ({
 }))
 
 jest.mock('@mlightcad/cad-pdf-core', () => ({
-  acPdExportDatabase: jest.fn(async () => new Uint8Array([37, 80, 68, 70]))
+  acexPdfExportDatabase: jest.fn(async () => new Uint8Array([37, 80, 68, 70]))
 }))
 
 jest.mock('@mlightcad/cad-html-plugin', () => ({

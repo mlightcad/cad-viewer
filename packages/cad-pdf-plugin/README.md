@@ -140,7 +140,7 @@ await new AcApPdfImportConvertor().convert(context, buffer, 1) // page 1
 
 1. Collect options: model-space framing (`Extents` / `Display`), whether to export layouts, text mode (`Text` / `Vector`) and colour mode (`Color` / `Monochrome`).
 2. Show the application busy overlay (same animation pattern as `chtml`).
-3. Call `@mlightcad/cad-pdf-core` `acPdExportDatabase` (built on `@mlightcad/pdf-renderer`). With layouts enabled, model space and every paper space become one PDF page each. Monochrome paints linework and text black on white paper (solid fills become grey).
+3. Call `@mlightcad/cad-pdf-core` `acexPdfExportDatabase` (built on `@mlightcad/pdf-renderer`). With layouts enabled, model space and every paper space become one PDF page each. Monochrome paints linework and text black on white paper (solid fills become grey).
 4. Download the resulting PDF bytes.
 
 ### Import (`ipdf`)

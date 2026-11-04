@@ -1,7 +1,7 @@
 import type {
-  AcPdColorMode,
-  AcPdExportOptions,
-  AcPdTextMode
+  AcExPdfColorMode,
+  AcExPdfExportOptions,
+  AcExPdfTextMode
 } from '@mlightcad/cad-pdf-core'
 import type { AcGiFontMapping } from '@mlightcad/data-model'
 
@@ -14,7 +14,7 @@ import type { AcExDwgParser } from './registerDwg'
  * view to frame.
  */
 export interface AcPdfExporterOptions extends Omit<
-  AcPdExportOptions,
+  AcExPdfExportOptions,
   'modelSpaceFit'
 > {
   /**
@@ -26,12 +26,12 @@ export interface AcPdfExporterOptions extends Omit<
    * How MTEXT/TEXT are painted. `'text'` (default) embeds fonts from the
    * font library as real PDF text; `'vector'` tessellates glyph outlines.
    */
-  textMode?: AcPdTextMode
+  textMode?: AcExPdfTextMode
   /**
    * Colour treatment. `'color'` (default) keeps entity colours;
    * `'monochrome'` exports black drawing content on white paper.
    */
-  colorMode?: AcPdColorMode
+  colorMode?: AcExPdfColorMode
   /**
    * PDF document title. Defaults to the input file stem when exporting
    * from a path.
