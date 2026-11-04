@@ -76,7 +76,8 @@ export type AcEdFloatingInputCancelCallback = () => void
 export type AcEdFloatingInputNoneCallback = () => void
 
 /**
- * Callback invoked when a Latin letter is typed into numeric floating inputs.
+ * Callback invoked when a Latin letter or coordinate-prefix key (`@`, `#`,
+ * `*`, `<`) is typed into numeric floating inputs.
  *
  * @param char - The typed character
  * @returns `true` when the key was consumed (e.g. moved to the command line)
@@ -201,8 +202,9 @@ export interface AcEdFloatingInputOptions<T> {
   onNone?: AcEdFloatingInputNoneCallback
 
   /**
-   * Callback invoked when a Latin letter is typed into the fields. Numeric
-   * prompts use it to hand keyword/command text over to the command line.
+   * Callback invoked when a Latin letter or coordinate-prefix key is typed.
+   * Numeric prompts use it to hand keyword/command text over to the command
+   * line.
    */
   onLetter?: AcEdFloatingInputLetterCallback
 

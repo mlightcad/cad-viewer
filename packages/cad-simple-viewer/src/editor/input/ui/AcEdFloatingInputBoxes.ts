@@ -53,9 +53,10 @@ export interface AcEdFloatingInputBoxesOptions<T> {
   onNone?: AcEdFloatingInputNoneCallback
 
   /**
-   * Callback invoked when a Latin letter is typed into the fields. Numeric
-   * prompts use it to hand keyword/command text over to the command line;
-   * return `true` to consume the key.
+   * Callback invoked when a Latin letter or AutoCAD coordinate-prefix key
+   * (`@`, `#`, `*`, `<`) is typed into the fields. Numeric prompts use it to
+   * hand keyword/command text over to the command line; return `true` to
+   * consume the key.
    */
   onLetter?: AcEdFloatingInputLetterCallback
 
@@ -253,9 +254,12 @@ export class AcEdFloatingInputBoxes<T> {
 
     if (e.isComposing) return
 
+    // Letters start keywords; @ # * < start AutoCAD coordinate tokens and are
+    // handed to the command line the same way (two-box dynamic input cannot
+    // host a full ` @10<45 ` token).
     if (
       this.onLetter &&
-      /^[a-z]$/i.test(e.key) &&
+      (/^[a-z]$/i.test(e.key) || /^[@#*<]$/.test(e.key)) &&
       !e.ctrlKey &&
       !e.metaKey &&
       !e.altKey &&
