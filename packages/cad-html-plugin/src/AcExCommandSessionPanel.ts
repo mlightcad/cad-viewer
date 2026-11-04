@@ -1,7 +1,7 @@
 import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import {
   ACEX_DOCS_PATH_MAGNIFIER,
-  acexDocsUrl
+  acexHtmlDocsUrl
 } from '@mlightcad/cad-html-core'
 import { ML_UI_MOBILE_MAX_WIDTH } from '@mlightcad/cad-html-core'
 
@@ -97,7 +97,7 @@ export class AcExCommandSessionPanel {
       activeClass: 'ml-mobile-cmd-active',
       isPhoneLayout: acexHtmlIsPhoneLayout,
       helpDocsUrl: () =>
-        acexDocsUrl(ACEX_DOCS_PATH_MAGNIFIER, this.i18n.locale),
+        acexHtmlDocsUrl(ACEX_DOCS_PATH_MAGNIFIER, this.i18n.locale),
       helpHost: () => document.getElementById('mlcad-root') ?? document.body,
       labels: () => sessionLabels(this.i18n)
     })

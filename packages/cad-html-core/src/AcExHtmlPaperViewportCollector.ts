@@ -5,7 +5,7 @@ import {
 } from '@mlightcad/data-model'
 import { AcTrViewportView } from '@mlightcad/three-renderer'
 
-import type { AcExExtents, AcExViewportSnapshot } from './AcExSnapshotTypes'
+import type { AcExHtmlExtents, AcExHtmlViewportSnapshot } from './AcExHtmlSnapshotTypes'
 
 /**
  * Collects user-created paper-space viewports for HTML export.
@@ -18,17 +18,17 @@ import type { AcExExtents, AcExViewportSnapshot } from './AcExSnapshotTypes'
  * @param layoutBtrId - Block-table-record id of the layout.
  * @param isModelSpace - When `true`, no viewports are collected.
  */
-export function collectLayoutViewports(
+export function acexHtmlCollectLayoutViewports(
   database: AcDbDatabase,
   layoutBtrId: string,
   isModelSpace: boolean
-): AcExViewportSnapshot[] | undefined {
+): AcExHtmlViewportSnapshot[] | undefined {
   if (isModelSpace) return undefined
 
   const block = resolveLayoutBlock(database, layoutBtrId)
   if (!block?.newIterator) return undefined
 
-  const viewports: AcExViewportSnapshot[] = []
+  const viewports: AcExHtmlViewportSnapshot[] = []
   for (const entity of block.newIterator()) {
     if (!(entity instanceof AcDbViewport)) continue
     if (AcTrViewportView.isDefaultPaperSpaceViewport(entity)) continue
@@ -47,7 +47,7 @@ export function collectLayoutViewports(
       gi as { frozenLayers?: readonly string[] },
       entity
     )
-    const snapshot: AcExViewportSnapshot = { paper, model }
+    const snapshot: AcExHtmlViewportSnapshot = { paper, model }
     if (Number.isFinite(twist) && Math.abs(twist) > 1e-12) {
       snapshot.twist = twist
     }
@@ -89,7 +89,7 @@ function extentsFromBox2d(box: {
   min: { x: number; y: number }
   max: { x: number; y: number }
   isEmpty?: () => boolean
-}): AcExExtents | undefined {
+}): AcExHtmlExtents | undefined {
   if (typeof box.isEmpty === 'function' && box.isEmpty()) return undefined
   const minX = box.min.x
   const minY = box.min.y

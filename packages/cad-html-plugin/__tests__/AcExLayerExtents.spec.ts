@@ -1,9 +1,9 @@
 import {
-  computeLayerExtentsMap,
-  computeLayoutExtents,
-  computeLayoutViewExtents,
-  resolveLayoutFallbackExtents,
-  resolveLayoutViewExtents
+  acexHtmlComputeLayerExtentsMap,
+  acexHtmlComputeLayoutExtents,
+  acexHtmlComputeLayoutViewExtents,
+  acexHtmlResolveLayoutFallbackExtents,
+  acexHtmlResolveLayoutViewExtents
 } from '@mlightcad/cad-html-core'
 
 function f32(values: number[]): Float32Array {
@@ -12,7 +12,7 @@ function f32(values: number[]): Float32Array {
 
 describe('AcExLayerExtents', () => {
   it('computes per-layer bounds from batches', () => {
-    const map = computeLayerExtentsMap(
+    const map = acexHtmlComputeLayerExtentsMap(
       [
         {
           layer: 'A',
@@ -46,7 +46,7 @@ describe('AcExLayerExtents', () => {
 
   it('unions all batches into one layout extent', () => {
     expect(
-      computeLayoutExtents(
+      acexHtmlComputeLayoutExtents(
         [
           {
             layer: 'A',
@@ -74,7 +74,7 @@ describe('AcExLayerExtents', () => {
 
   it('prefers batch extents over persisted viewExtents fallback', () => {
     expect(
-      resolveLayoutViewExtents(
+      acexHtmlResolveLayoutViewExtents(
         {
           lineBatches: [
             {
@@ -98,7 +98,7 @@ describe('AcExLayerExtents', () => {
 
   it('unions viewport paper frames when a paper layout has no batches', () => {
     expect(
-      computeLayoutViewExtents({
+      acexHtmlComputeLayoutViewExtents({
         lineBatches: [],
         meshBatches: [],
         viewports: [
@@ -122,7 +122,7 @@ describe('AcExLayerExtents', () => {
 
   it('frames empty paper layouts to viewport paper instead of the unit box', () => {
     expect(
-      resolveLayoutViewExtents({
+      acexHtmlResolveLayoutViewExtents({
         lineBatches: [],
         meshBatches: [],
         viewports: [
@@ -144,7 +144,7 @@ describe('AcExLayerExtents', () => {
     // Progressive packages paint viewport frames before their chunks arrive;
     // the persisted export box keeps the initial framing stable.
     expect(
-      resolveLayoutViewExtents({
+      acexHtmlResolveLayoutViewExtents({
         lineBatches: [],
         meshBatches: [],
         viewports: [
@@ -165,7 +165,7 @@ describe('AcExLayerExtents', () => {
 
   it('keeps the export-time fit box after geometry becomes resident', () => {
     expect(
-      resolveLayoutViewExtents({
+      acexHtmlResolveLayoutViewExtents({
         lineBatches: [
           {
             layer: '0',
@@ -185,7 +185,7 @@ describe('AcExLayerExtents', () => {
     })
   })
 
-  describe('resolveLayoutFallbackExtents', () => {
+  describe('acexHtmlResolveLayoutFallbackExtents', () => {
     const meta = {
       createdAt: '2026-01-01T00:00:00.000Z',
       extents: { minX: -1000, minY: -1000, maxX: 1000, maxY: 1000 },
@@ -208,7 +208,7 @@ describe('AcExLayerExtents', () => {
       // savedView is the printable sheet (LIMMIN/LIMMAX), not the drawn content,
       // so it must not beat the batch-derived box on the active layout.
       expect(
-        resolveLayoutFallbackExtents(
+        acexHtmlResolveLayoutFallbackExtents(
           {
             btrId: 'ps',
             savedView: { minX: 0, minY: 0, maxX: 200, maxY: 150 }
@@ -222,7 +222,7 @@ describe('AcExLayerExtents', () => {
       // Falling back to viewExtents here would frame the paper sheet when
       // fitting model space.
       expect(
-        resolveLayoutFallbackExtents(
+        acexHtmlResolveLayoutFallbackExtents(
           { btrId: 'ms' },
           { activeLayoutBtrId: 'ps', meta }
         )
@@ -231,7 +231,7 @@ describe('AcExLayerExtents', () => {
 
     it('prefers a non-active layout saved view over the header extents', () => {
       expect(
-        resolveLayoutFallbackExtents(
+        acexHtmlResolveLayoutFallbackExtents(
           { btrId: 'ms', savedView: { minX: 1, minY: 2, maxX: 30, maxY: 40 } },
           { activeLayoutBtrId: 'ps', meta }
         )
@@ -241,13 +241,13 @@ describe('AcExLayerExtents', () => {
     it('falls back to savedView then header extents when viewExtents is absent', () => {
       const { viewExtents: _omit, ...metaNoView } = meta
       expect(
-        resolveLayoutFallbackExtents(
+        acexHtmlResolveLayoutFallbackExtents(
           { btrId: 'ps', savedView: { minX: 0, minY: 0, maxX: 3, maxY: 4 } },
           { activeLayoutBtrId: 'ps', meta: metaNoView }
         )
       ).toEqual({ minX: 0, minY: 0, maxX: 3, maxY: 4 })
       expect(
-        resolveLayoutFallbackExtents(
+        acexHtmlResolveLayoutFallbackExtents(
           { btrId: 'ps' },
           { activeLayoutBtrId: 'ps', meta: metaNoView }
         )

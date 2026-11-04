@@ -1,4 +1,4 @@
-import type { AcExOsnapMode } from './AcExOsnap'
+import type { AcExHtmlOsnapMode } from './AcExOsnap'
 import { acexOsnapModeToMarkerType } from './AcExOsnap'
 import type { AcExOsnapMarkerShape } from './AcExOsnapMarker'
 import {
@@ -87,7 +87,7 @@ export class AcExSnapLoupe {
     canvasX: number,
     canvasY: number,
     snapCanvas?: { x: number; y: number },
-    mode?: AcExOsnapMode
+    mode?: AcExHtmlOsnapMode
   ) {
     const placement = acexResolveLoupePlacement(this.host)
     this.lastTop = placement.y

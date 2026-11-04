@@ -55,15 +55,15 @@ import {
   getSceneDrawableUserData
 } from '../../three-renderer/src/util/AcTrObjectUserData'
 import {
-  compactIndexedSlice,
-  readBatchWorldOffset,
-  toWcsCoord
+  acexHtmlCompactIndexedSlice,
+  acexHtmlReadBatchWorldOffset,
+  acexHtmlToWcsCoord
 } from '@mlightcad/cad-html-core'
 import {
-  collectBatchesFromObject3D,
-  exportActiveBatchedLine2Slice,
-  exportActiveBatchedSlice,
-  exportBufferGeometrySlice
+  acexHtmlCollectBatchesFromObject3D,
+  acexHtmlExportActiveBatchedLine2Slice,
+  acexHtmlExportActiveBatchedSlice,
+  acexHtmlExportBufferGeometrySlice
 } from '@mlightcad/cad-html-core'
 
 const BATCH_SLOT_ACTIVE = 0b11
@@ -102,7 +102,7 @@ function createMockBatch(
   }
 }
 
-describe('exportBufferGeometrySlice', () => {
+describe('acexHtmlExportBufferGeometrySlice', () => {
   it('exports non-indexed geometry when drawRange.count is Infinity', () => {
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute(
@@ -111,7 +111,7 @@ describe('exportBufferGeometrySlice', () => {
     )
     geometry.setDrawRange(0, Infinity)
 
-    const slice = exportBufferGeometrySlice(geometry)
+    const slice = acexHtmlExportBufferGeometrySlice(geometry)
 
     expect(Array.from(slice.positions)).toEqual([0, 0, 0, 1, 0, 0])
     expect(slice.indices).toBeUndefined()
@@ -129,7 +129,7 @@ describe('exportBufferGeometrySlice', () => {
     geometry.setIndex([0, 1, 2])
     geometry.setDrawRange(0, Infinity)
 
-    const slice = exportBufferGeometrySlice(geometry)
+    const slice = acexHtmlExportBufferGeometrySlice(geometry)
 
     expect(Array.from(slice.positions)).toEqual([0, 0, 0, 1, 0, 0, 2, 0, 0])
     expect(Array.from(slice.indices!)).toEqual([0, 1, 2])
@@ -146,7 +146,7 @@ describe('exportBufferGeometrySlice', () => {
     )
     geometry.setDrawRange(1, 2)
 
-    const slice = exportBufferGeometrySlice(geometry)
+    const slice = acexHtmlExportBufferGeometrySlice(geometry)
 
     expect(Array.from(slice.positions)).toEqual([1, 0, 0, 2, 0, 0])
   })
@@ -165,14 +165,14 @@ describe('exportBufferGeometrySlice', () => {
     geometry.setIndex([0, 1, 2])
     geometry.setDrawRange(0, 3)
 
-    const slice = exportBufferGeometrySlice(geometry)
+    const slice = acexHtmlExportBufferGeometrySlice(geometry)
 
     expect(Array.from(slice.positions)).toEqual([0, 0, 0, 10, 0, 0, 0, 10, 0])
     expect(Array.from(slice.indices!)).toEqual([0, 1, 2])
   })
 })
 
-describe('exportActiveBatchedSlice', () => {
+describe('acexHtmlExportActiveBatchedSlice', () => {
   it('exports only active indexCount for indexed batched geometry', () => {
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute(
@@ -185,7 +185,7 @@ describe('exportActiveBatchedSlice', () => {
     geometry.setIndex([0, 1, 2, 0, 0, 0])
     geometry.setDrawRange(0, 6)
 
-    const slice = exportActiveBatchedSlice(
+    const slice = acexHtmlExportActiveBatchedSlice(
       createMockBatch([
         {
           flags: BATCH_SLOT_ACTIVE,
@@ -215,7 +215,7 @@ describe('exportActiveBatchedSlice', () => {
     )
     geometry.setDrawRange(0, 8)
 
-    const slice = exportActiveBatchedSlice(
+    const slice = acexHtmlExportActiveBatchedSlice(
       createMockBatch([
         {
           flags: BATCH_SLOT_ACTIVE,
@@ -257,7 +257,7 @@ describe('exportActiveBatchedSlice', () => {
       )
     )
 
-    const slice = exportActiveBatchedSlice(
+    const slice = acexHtmlExportActiveBatchedSlice(
       createMockBatch([
         {
           flags: BATCH_SLOT_HIDDEN,
@@ -281,7 +281,7 @@ describe('exportActiveBatchedSlice', () => {
   })
 })
 
-describe('exportActiveBatchedLine2Slice', () => {
+describe('acexHtmlExportActiveBatchedLine2Slice', () => {
   it('exports active wide-line segments as start/end position pairs', () => {
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute(
@@ -293,7 +293,7 @@ describe('exportActiveBatchedLine2Slice', () => {
       new THREE.Float32BufferAttribute([10, 0, 0, 10, 10, 0, 99, 99, 99], 3)
     )
 
-    const slice = exportActiveBatchedLine2Slice(
+    const slice = acexHtmlExportActiveBatchedLine2Slice(
       createMockBatch([
         {
           flags: BATCH_SLOT_ACTIVE,
@@ -317,7 +317,7 @@ describe('exportActiveBatchedLine2Slice', () => {
       new Float32Array([0, 0, 0, 10, 0, 0, 0, 10, 0, 10, 10, 0])
     )
 
-    const slice = exportActiveBatchedLine2Slice(
+    const slice = acexHtmlExportActiveBatchedLine2Slice(
       createMockBatch([
         {
           flags: BATCH_SLOT_ACTIVE,
@@ -336,12 +336,12 @@ describe('exportActiveBatchedLine2Slice', () => {
   })
 })
 
-describe('compactIndexedSlice', () => {
+describe('acexHtmlCompactIndexedSlice', () => {
   it('keeps positions referenced by the index buffer', () => {
     const positions = new Float32Array([0, 0, 0, 1, 0, 0, 2, 0, 0, 99, 99, 99])
     const indices = new Uint32Array([0, 1, 2])
 
-    const compact = compactIndexedSlice(positions, indices)
+    const compact = acexHtmlCompactIndexedSlice(positions, indices)
 
     expect(Array.from(compact.positions)).toEqual([0, 0, 0, 1, 0, 0, 2, 0, 0])
     expect(Array.from(compact.indices)).toEqual([0, 1, 2])
@@ -375,7 +375,7 @@ function createRebasedLineSegments(
   return line
 }
 
-describe('collectBatchesFromObject3D rebase offsets', () => {
+describe('acexHtmlCollectBatchesFromObject3D rebase offsets', () => {
   it('exports batched line geometry with the batch origin offset', () => {
     const worldOffset = new THREE.Vector3(1_000_000, 2_000_000, 0)
     const geometry = new THREE.BufferGeometry()
@@ -393,26 +393,26 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     root.add(batch)
     root.updateMatrixWorld(true)
 
-    const { lineBatches } = collectBatchesFromObject3D(root)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(root)
     expect(lineBatches).toHaveLength(1)
 
     const exported = lineBatches[0]!
     // Batch origin is the first geometry bbox center plus worldOffset.
     expect(exported.offset[0]).toBeCloseTo(1_000_050, 3)
     expect(exported.offset[1]).toBeCloseTo(2_000_025, 3)
-    expect(toWcsCoord(exported.positions[0]!, exported.offset[0]!)).toBeCloseTo(
+    expect(acexHtmlToWcsCoord(exported.positions[0]!, exported.offset[0]!)).toBeCloseTo(
       1_000_000,
       3
     )
-    expect(toWcsCoord(exported.positions[1]!, exported.offset[1]!)).toBeCloseTo(
+    expect(acexHtmlToWcsCoord(exported.positions[1]!, exported.offset[1]!)).toBeCloseTo(
       2_000_000,
       3
     )
-    expect(toWcsCoord(exported.positions[3]!, exported.offset[0]!)).toBeCloseTo(
+    expect(acexHtmlToWcsCoord(exported.positions[3]!, exported.offset[0]!)).toBeCloseTo(
       1_000_100,
       3
     )
-    expect(toWcsCoord(exported.positions[4]!, exported.offset[1]!)).toBeCloseTo(
+    expect(acexHtmlToWcsCoord(exported.positions[4]!, exported.offset[1]!)).toBeCloseTo(
       2_000_050,
       3
     )
@@ -428,25 +428,25 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     parent.add(line)
     parent.updateMatrixWorld(true)
 
-    const { lineBatches } = collectBatchesFromObject3D(parent)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(parent)
     expect(lineBatches).toHaveLength(1)
 
     const exported = lineBatches[0]!
     expect(exported.offset[0]).toBeCloseTo(1_000_060, 3)
     expect(exported.offset[1]).toBeCloseTo(2_000_045, 3)
-    expect(toWcsCoord(exported.positions[0]!, exported.offset[0]!)).toBeCloseTo(
+    expect(acexHtmlToWcsCoord(exported.positions[0]!, exported.offset[0]!)).toBeCloseTo(
       1_000_010,
       3
     )
-    expect(toWcsCoord(exported.positions[1]!, exported.offset[1]!)).toBeCloseTo(
+    expect(acexHtmlToWcsCoord(exported.positions[1]!, exported.offset[1]!)).toBeCloseTo(
       2_000_020,
       3
     )
-    expect(toWcsCoord(exported.positions[3]!, exported.offset[0]!)).toBeCloseTo(
+    expect(acexHtmlToWcsCoord(exported.positions[3]!, exported.offset[0]!)).toBeCloseTo(
       1_000_110,
       3
     )
-    expect(toWcsCoord(exported.positions[4]!, exported.offset[1]!)).toBeCloseTo(
+    expect(acexHtmlToWcsCoord(exported.positions[4]!, exported.offset[1]!)).toBeCloseTo(
       2_000_070,
       3
     )
@@ -459,7 +459,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     parent.add(line)
     parent.updateMatrixWorld(true)
 
-    expect(readBatchWorldOffset(line)).toEqual([900_060, 1_800_045, 0])
+    expect(acexHtmlReadBatchWorldOffset(line)).toEqual([900_060, 1_800_045, 0])
   })
 
   it('exports multiple origin-split batched lines with reconstructable WCS', () => {
@@ -504,7 +504,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
       group.children.filter(child => child instanceof AcTrBatchedLine)
     ).toHaveLength(2)
 
-    const { lineBatches } = collectBatchesFromObject3D(group)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(group)
     expect(lineBatches).toHaveLength(2)
 
     lineBatches.sort((a, b) => a.offset[0] - b.offset[0])
@@ -512,23 +512,23 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     const farExport = lineBatches[1]!
 
     expect(
-      toWcsCoord(nearExport.positions[0]!, nearExport.offset[0]!)
+      acexHtmlToWcsCoord(nearExport.positions[0]!, nearExport.offset[0]!)
     ).toBeCloseTo(100_000, 0)
     expect(
-      toWcsCoord(nearExport.positions[1]!, nearExport.offset[1]!)
+      acexHtmlToWcsCoord(nearExport.positions[1]!, nearExport.offset[1]!)
     ).toBeCloseTo(2_000_000, 0)
     expect(
-      toWcsCoord(nearExport.positions[3]!, nearExport.offset[0]!)
+      acexHtmlToWcsCoord(nearExport.positions[3]!, nearExport.offset[0]!)
     ).toBeCloseTo(100_100, 0)
     expect(
-      toWcsCoord(nearExport.positions[4]!, nearExport.offset[1]!)
+      acexHtmlToWcsCoord(nearExport.positions[4]!, nearExport.offset[1]!)
     ).toBeCloseTo(2_000_050, 0)
 
     expect(
-      toWcsCoord(farExport.positions[0]!, farExport.offset[0]!)
+      acexHtmlToWcsCoord(farExport.positions[0]!, farExport.offset[0]!)
     ).toBeCloseTo(farX, 0)
     expect(
-      toWcsCoord(farExport.positions[1]!, farExport.offset[1]!)
+      acexHtmlToWcsCoord(farExport.positions[1]!, farExport.offset[1]!)
     ).toBeCloseTo(3_000_000, 0)
 
     for (const batch of lineBatches) {
@@ -553,25 +553,25 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     root.add(batch)
     root.updateMatrixWorld(true)
 
-    const { lineBatches } = collectBatchesFromObject3D(root)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(root)
     expect(lineBatches).toHaveLength(1)
 
     const exported = lineBatches[0]!
     expect(exported.lineWidth).toBe(2.5)
     expect(exported.color).toBe(0x00ff00)
-    expect(toWcsCoord(exported.positions[0]!, exported.offset[0]!)).toBeCloseTo(
+    expect(acexHtmlToWcsCoord(exported.positions[0]!, exported.offset[0]!)).toBeCloseTo(
       100_000,
       0
     )
-    expect(toWcsCoord(exported.positions[1]!, exported.offset[1]!)).toBeCloseTo(
+    expect(acexHtmlToWcsCoord(exported.positions[1]!, exported.offset[1]!)).toBeCloseTo(
       2_000_000,
       0
     )
-    expect(toWcsCoord(exported.positions[3]!, exported.offset[0]!)).toBeCloseTo(
+    expect(acexHtmlToWcsCoord(exported.positions[3]!, exported.offset[0]!)).toBeCloseTo(
       100_100,
       0
     )
-    expect(toWcsCoord(exported.positions[4]!, exported.offset[1]!)).toBeCloseTo(
+    expect(acexHtmlToWcsCoord(exported.positions[4]!, exported.offset[1]!)).toBeCloseTo(
       2_000_050,
       0
     )
@@ -584,7 +584,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     line.position.set(100_000, 2_000_000, 0)
     line.updateMatrixWorld(true)
 
-    const { lineBatches } = collectBatchesFromObject3D(line)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(line)
     expect(lineBatches).toHaveLength(1)
     expect(lineBatches[0]!.lineWidth).toBe(2.5)
     expect(lineBatches[0]!.color).toBe(0xff0000)
@@ -611,7 +611,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     group.addEntity(entity)
     group.select('line-1')
 
-    const { lineBatches } = collectBatchesFromObject3D(group)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(group)
     expect(lineBatches).toHaveLength(1)
     expect(lineBatches[0]!.color).toBe(0xffffff)
   })
@@ -635,7 +635,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     root.add(source)
     root.add(highlightClone)
 
-    const { lineBatches } = collectBatchesFromObject3D(root)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(root)
     expect(lineBatches).toHaveLength(1)
     expect(lineBatches[0]!.color).toBe(0xffffff)
   })
@@ -657,7 +657,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     root.add(visible)
     root.add(hidden)
 
-    const { lineBatches } = collectBatchesFromObject3D(root)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(root)
     expect(lineBatches).toHaveLength(1)
   })
 
@@ -684,7 +684,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     root.add(hiddenGroup)
     root.add(visible)
 
-    const { lineBatches } = collectBatchesFromObject3D(root)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(root)
     expect(lineBatches).toHaveLength(1)
   })
 
@@ -704,7 +704,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     layout.visible = false
     layout.add(layer)
 
-    const { lineBatches } = collectBatchesFromObject3D(layer)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(layer)
     expect(lineBatches).toHaveLength(1)
   })
 
@@ -727,7 +727,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     layout.visible = false
     layout.add(layer)
 
-    const { lineBatches } = collectBatchesFromObject3D(layer)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(layer)
     expect(lineBatches).toHaveLength(1)
     const world = worldPositions(
       lineBatches[0]!.positions,
@@ -749,7 +749,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     const material = new LineMaterial({ color: 0xff0000, linewidth: 2.5 })
     const line = new LineSegments2(geometry, material)
 
-    const { lineBatches } = collectBatchesFromObject3D(line)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(line)
     expect(lineBatches).toHaveLength(1)
     expect(lineBatches[0]!.positions.length).toBe(12)
   })
@@ -769,7 +769,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
     const mesh = new THREE.Mesh(geometry, material)
     expect(mesh.renderOrder).toBe(0)
 
-    const { meshBatches } = collectBatchesFromObject3D(mesh)
+    const { meshBatches } = acexHtmlCollectBatchesFromObject3D(mesh)
     expect(meshBatches).toHaveLength(1)
     expect(meshBatches[0]!.renderOrder).toBe(-1)
   })
@@ -785,7 +785,7 @@ describe('collectBatchesFromObject3D rebase offsets', () => {
       new THREE.LineBasicMaterial({ color: 0xff0000 })
     )
 
-    const { lineBatches } = collectBatchesFromObject3D(line)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(line)
     expect(lineBatches).toHaveLength(1)
     expect(lineBatches[0]!.renderOrder).toBeUndefined()
   })
@@ -798,9 +798,9 @@ function worldPositions(
   const world: number[] = []
   for (let i = 0; i < positions.length; i += 3) {
     world.push(
-      toWcsCoord(positions[i]!, offset[0]),
-      toWcsCoord(positions[i + 1]!, offset[1]),
-      toWcsCoord(positions[i + 2]!, offset[2])
+      acexHtmlToWcsCoord(positions[i]!, offset[0]),
+      acexHtmlToWcsCoord(positions[i + 1]!, offset[1]),
+      acexHtmlToWcsCoord(positions[i + 2]!, offset[2])
     )
   }
   return world
@@ -814,7 +814,7 @@ function sharedEntity(objectId: string, drawable: THREE.Object3D) {
   return entity
 }
 
-describe('collectBatchesFromObject3D shared block instances', () => {
+describe('acexHtmlCollectBatchesFromObject3D shared block instances', () => {
   it('bakes every visible INSERT of a shared line', () => {
     const material = new THREE.LineBasicMaterial({ color: 0xffffff })
     const geometry = new THREE.BufferGeometry()
@@ -836,7 +836,7 @@ describe('collectBatchesFromObject3D shared block instances', () => {
     group.addEntity(sharedEntity('insert-a', first))
     group.addEntity(sharedEntity('insert-b', second))
 
-    const { lineBatches } = collectBatchesFromObject3D(group)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(group)
     expect(lineBatches).toHaveLength(1)
     const exported = lineBatches[0]!
     expect(exported.excludeFromOsnap).toBe(true)
@@ -852,7 +852,7 @@ describe('collectBatchesFromObject3D shared block instances', () => {
     expect(world[10]).toBeCloseTo(100)
 
     group.setEntityVisible('insert-a', false)
-    const hidden = collectBatchesFromObject3D(group).lineBatches
+    const hidden = acexHtmlCollectBatchesFromObject3D(group).lineBatches
     expect(hidden).toHaveLength(1)
     const hiddenWorld = worldPositions(hidden[0]!.positions, hidden[0]!.offset)
     expect(hiddenWorld).toHaveLength(6)
@@ -876,7 +876,7 @@ describe('collectBatchesFromObject3D shared block instances', () => {
     const group = new AcTrBatchedGroup()
     group.addEntity(sharedEntity('insert-a', line))
 
-    const { lineBatches } = collectBatchesFromObject3D(group)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(group)
     expect(lineBatches).toHaveLength(1)
     const world = worldPositions(
       lineBatches[0]!.positions,
@@ -920,7 +920,7 @@ describe('collectBatchesFromObject3D shared block instances', () => {
     group.addEntity(sharedEntity('mesh-a', mesh))
     group.addEntity(sharedEntity('point-a', point))
 
-    const { meshBatches } = collectBatchesFromObject3D(group)
+    const { meshBatches } = acexHtmlCollectBatchesFromObject3D(group)
     const fill = meshBatches.find(batch => !batch.points)
     const points = meshBatches.find(batch => batch.points)
     expect(fill).toBeDefined()
@@ -956,7 +956,7 @@ describe('collectBatchesFromObject3D shared block instances', () => {
     group.addEntity(sharedEntity('insert-a', first))
     group.addEntity(sharedEntity('insert-b', second))
 
-    const { lineBatches } = collectBatchesFromObject3D(group)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(group)
     expect(lineBatches).toHaveLength(1)
     const world = worldPositions(
       lineBatches[0]!.positions,
@@ -998,7 +998,7 @@ describe('collectBatchesFromObject3D shared block instances', () => {
       array.fill(Number.NaN, 0, 16)
     })
 
-    const { lineBatches } = collectBatchesFromObject3D(group)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(group)
     expect(lineBatches).toHaveLength(1)
     const world = worldPositions(
       lineBatches[0]!.positions,
@@ -1025,7 +1025,7 @@ describe('collectBatchesFromObject3D shared block instances', () => {
 
     const group = new AcTrBatchedGroup()
     group.addEntity(sharedEntity('mesh-a', mesh))
-    const { meshBatches } = collectBatchesFromObject3D(group)
+    const { meshBatches } = acexHtmlCollectBatchesFromObject3D(group)
     expect(meshBatches).toHaveLength(1)
     expect(meshBatches[0]!.indices).toEqual(new Uint32Array([0, 1, 2]))
     const world = worldPositions(
@@ -1061,7 +1061,7 @@ describe('collectBatchesFromObject3D shared block instances', () => {
 
     const group = new AcTrBatchedGroup()
     group.addEntity(sharedEntity('insert-a', line))
-    const collected = collectBatchesFromObject3D(group)
+    const collected = acexHtmlCollectBatchesFromObject3D(group)
     expect(collected.lineBatches).toHaveLength(1)
     expect(collected.meshBatches).toHaveLength(1)
   })
@@ -1094,7 +1094,7 @@ describe('collectBatchesFromObject3D shared block instances', () => {
     group.addEntity(place('266146', 2480563.735070212, -2716794.9168123663))
     group.addEntity(place('265D5C', 2395832.9938094905, -2716794.9168123663))
 
-    const { lineBatches } = collectBatchesFromObject3D(group)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(group)
     const segments: Array<{ x0: number; y0: number; x1: number; len: number }> =
       []
     for (const batch of lineBatches) {
@@ -1163,7 +1163,7 @@ describe('collectBatchesFromObject3D shared block instances', () => {
 
     const group = new AcTrBatchedGroup()
     group.addEntity(entity)
-    const { lineBatches } = collectBatchesFromObject3D(group)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(group)
     const world: number[] = []
     for (const batch of lineBatches) {
       for (let i = 0; i < batch.positions.length; i += 3) {
@@ -1244,7 +1244,7 @@ describe('collectBatchesFromObject3D shared block instances', () => {
       group.addEntity(entity)
     }
 
-    const { lineBatches } = collectBatchesFromObject3D(group)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(group)
     const xs: number[] = []
     for (const batch of lineBatches) {
       for (let i = 0; i + 5 < batch.positions.length; i += 6) {
@@ -1282,7 +1282,7 @@ describe('collectBatchesFromObject3D shared block instances', () => {
       group.addEntity(sharedEntity(place.id, line))
     }
 
-    const { lineBatches } = collectBatchesFromObject3D(group)
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(group)
     const starts: number[] = []
     for (const batch of lineBatches) {
       for (let i = 0; i + 5 < batch.positions.length; i += 6) {

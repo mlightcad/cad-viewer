@@ -1,63 +1,63 @@
 import {
-  decryptAcExHtmlSnapshotPayload,
-  encryptAcExHtmlSnapshotPayload,
-  formatAcExHtmlCountdown,
-  isAcExHtmlAccessExpired,
-  isAcExHtmlExpiryCountdownActive,
-  needsAcExHtmlAccessControl,
-  protectAcExHtmlEncodedSnapshot,
-  resolveAcApHtmlExpiresAt
+  acexHtmlDecryptSnapshotPayload,
+  acexHtmlEncryptSnapshotPayload,
+  acexHtmlFormatCountdown,
+  acexHtmlIsAccessExpired,
+  acexHtmlIsExpiryCountdownActive,
+  acexHtmlNeedsAccessControl,
+  acexHtmlProtectEncodedSnapshot,
+  acexHtmlResolveExpiresAt
 } from '@mlightcad/cad-html-core'
 
 describe('AcExHtmlAccess', () => {
   it('resolves expiry timestamps from validity periods', () => {
     const exportedAt = Date.UTC(2026, 0, 1)
-    expect(resolveAcApHtmlExpiresAt('never', exportedAt)).toBeNull()
-    expect(resolveAcApHtmlExpiresAt(1, exportedAt)).toBe(
+    expect(acexHtmlResolveExpiresAt('never', exportedAt)).toBeNull()
+    expect(acexHtmlResolveExpiresAt(1, exportedAt)).toBe(
       exportedAt + 24 * 60 * 60 * 1000
     )
-    expect(resolveAcApHtmlExpiresAt(7, exportedAt)).toBe(
+    expect(acexHtmlResolveExpiresAt(7, exportedAt)).toBe(
       exportedAt + 7 * 24 * 60 * 60 * 1000
     )
-    expect(resolveAcApHtmlExpiresAt('custom', exportedAt, 123)).toBe(123)
-    expect(resolveAcApHtmlExpiresAt('custom', exportedAt)).toBeNull()
+    expect(acexHtmlResolveExpiresAt('custom', exportedAt, 123)).toBe(123)
+    expect(acexHtmlResolveExpiresAt('custom', exportedAt)).toBeNull()
   })
 
   it('formats countdown durations', () => {
-    expect(formatAcExHtmlCountdown(5_000)).toBe('0:05')
-    expect(formatAcExHtmlCountdown(65_000)).toBe('1:05')
-    expect(formatAcExHtmlCountdown(3_665_000)).toBe('1:01:05')
+    expect(acexHtmlFormatCountdown(5_000)).toBe('0:05')
+    expect(acexHtmlFormatCountdown(65_000)).toBe('1:05')
+    expect(acexHtmlFormatCountdown(3_665_000)).toBe('1:01:05')
   })
 
   it('detects the near-expiry countdown window', () => {
     const expiresAt = Date.now() + 5 * 60 * 1000
-    expect(isAcExHtmlExpiryCountdownActive(expiresAt)).toBe(true)
+    expect(acexHtmlIsExpiryCountdownActive(expiresAt)).toBe(true)
     expect(
-      isAcExHtmlExpiryCountdownActive(Date.now() + 20 * 60 * 1000)
+      acexHtmlIsExpiryCountdownActive(Date.now() + 20 * 60 * 1000)
     ).toBe(false)
   })
 
   it('detects when access control is required', () => {
     expect(
-      needsAcExHtmlAccessControl({ expiresAt: null, password: '' })
+      acexHtmlNeedsAccessControl({ expiresAt: null, password: '' })
     ).toBe(false)
     expect(
-      needsAcExHtmlAccessControl({ expiresAt: Date.now() + 1000 })
+      acexHtmlNeedsAccessControl({ expiresAt: Date.now() + 1000 })
     ).toBe(true)
     expect(
-      needsAcExHtmlAccessControl({ expiresAt: null, password: 'secret' })
+      acexHtmlNeedsAccessControl({ expiresAt: null, password: 'secret' })
     ).toBe(true)
   })
 
   it('detects expired manifests', () => {
     expect(
-      isAcExHtmlAccessExpired(
+      acexHtmlIsAccessExpired(
         { v: 1, expiresAt: Date.now() - 1, encrypted: false },
         Date.now()
       )
     ).toBe(true)
     expect(
-      isAcExHtmlAccessExpired(
+      acexHtmlIsAccessExpired(
         { v: 1, expiresAt: Date.now() + 60_000, encrypted: false },
         Date.now()
       )
@@ -65,14 +65,14 @@ describe('AcExHtmlAccess', () => {
   })
 
   it('encrypts and decrypts snapshot payloads with a password', async () => {
-    const { acExHtmlBytesToBase85 } = await import('@mlightcad/cad-html-core')
-    const payload = acExHtmlBytesToBase85(
+    const { acexHtmlBytesToBase85 } = await import('@mlightcad/cad-html-core')
+    const payload = acexHtmlBytesToBase85(
       new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
     )
     const password = 'cad-export-password'
 
-    const encrypted = await encryptAcExHtmlSnapshotPayload(password, payload)
-    const decrypted = await decryptAcExHtmlSnapshotPayload(
+    const encrypted = await acexHtmlEncryptSnapshotPayload(password, payload)
+    const decrypted = await acexHtmlDecryptSnapshotPayload(
       password,
       encrypted.encryptedPayload,
       encrypted.salt
@@ -80,7 +80,7 @@ describe('AcExHtmlAccess', () => {
 
     expect(decrypted).toBe(payload)
     await expect(
-      decryptAcExHtmlSnapshotPayload(
+      acexHtmlDecryptSnapshotPayload(
         'wrong-password',
         encrypted.encryptedPayload,
         encrypted.salt
@@ -89,14 +89,14 @@ describe('AcExHtmlAccess', () => {
   })
 
   it('builds manifests for expiry-only and password-protected exports', async () => {
-    const { acExHtmlBytesToBase85 } = await import('@mlightcad/cad-html-core')
+    const { acexHtmlBytesToBase85 } = await import('@mlightcad/cad-html-core')
     const encoded = {
-      payload: acExHtmlBytesToBase85(new Uint8Array([9, 8, 7])),
+      payload: acexHtmlBytesToBase85(new Uint8Array([9, 8, 7])),
       compression: 'gzip' as const
     }
     const expiresAt = Date.now() + 86_400_000
 
-    const expiryOnly = await protectAcExHtmlEncodedSnapshot(encoded, {
+    const expiryOnly = await acexHtmlProtectEncodedSnapshot(encoded, {
       expiresAt
     })
     expect(expiryOnly.manifest).toEqual({
@@ -106,7 +106,7 @@ describe('AcExHtmlAccess', () => {
     })
     expect(expiryOnly.encoded).toEqual(encoded)
 
-    const protectedExport = await protectAcExHtmlEncodedSnapshot(encoded, {
+    const protectedExport = await acexHtmlProtectEncodedSnapshot(encoded, {
       expiresAt,
       password: 'secret'
     })
@@ -118,14 +118,14 @@ describe('AcExHtmlAccess', () => {
   it('does not encrypt when password is omitted, empty, or whitespace', async () => {
     // Regression: optional HTML open password must stay off unless the user
     // sets one. Empty/autofilled whitespace must never produce encrypted:true.
-    const { acExHtmlBytesToBase85 } = await import('@mlightcad/cad-html-core')
+    const { acexHtmlBytesToBase85 } = await import('@mlightcad/cad-html-core')
     const encoded = {
-      payload: acExHtmlBytesToBase85(new TextEncoder().encode('plaintext')),
+      payload: acexHtmlBytesToBase85(new TextEncoder().encode('plaintext')),
       compression: 'gzip' as const
     }
 
     for (const password of [undefined, '', '   ', '\t\n'] as const) {
-      const result = await protectAcExHtmlEncodedSnapshot(encoded, {
+      const result = await acexHtmlProtectEncodedSnapshot(encoded, {
         expiresAt: null,
         password
       })

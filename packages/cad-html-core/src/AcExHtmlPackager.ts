@@ -1,18 +1,18 @@
 import type { AcExHtmlAccessManifest } from './AcExHtmlAccess'
-import { resolveAcExHtmlLocale } from './AcExHtmlI18n'
+import { acexHtmlResolveLocale } from './AcExHtmlI18n'
 import { ACEX_DEFAULT_MANIFEST_HREF } from './AcExHtmlPackageBootstrap'
-import { ACEX_HTML_SHELL_CSS, buildAcExHtmlShellBody } from './AcExHtmlShell'
-import { encodeSnapshot, snapshotMimeType } from './AcExSnapshotCodec'
-import type { AcExEncodedSnapshot } from './AcExSnapshotCompression'
-import type { AcExSnapshot } from './AcExSnapshotTypes'
+import { ACEX_HTML_SHELL_CSS, acexHtmlBuildShellBody } from './AcExHtmlShell'
+import { acexHtmlEncodeSnapshot, acexHtmlSnapshotMimeType } from './AcExHtmlSnapshotCodec'
+import type { AcExHtmlEncodedSnapshot } from './AcExHtmlSnapshotCompression'
+import type { AcExHtmlSnapshot } from './AcExHtmlSnapshotTypes'
 
 /**
- * Options passed to {@link packHtml} when assembling a self-contained HTML file.
+ * Options passed to {@link acexHtmlPackHtml} when assembling a self-contained HTML file.
  */
-export interface AcExPackHtmlOptions {
+export interface AcExHtmlPackHtmlOptions {
   /**
    * Page `<title>` and default download filename stem.
-   * Falls back to {@link AcExSnapshot.meta.title} or `"CAD Drawing"`.
+   * Falls back to {@link AcExHtmlSnapshot.meta.title} or `"CAD Drawing"`.
    */
   title?: string
   /**
@@ -21,20 +21,20 @@ export interface AcExPackHtmlOptions {
    */
   viewerRuntime: string
   /**
-   * Pre-encoded snapshot payload. When omitted, {@link packHtml} encodes `snapshot`.
+   * Pre-encoded snapshot payload. When omitted, {@link acexHtmlPackHtml} encodes `snapshot`.
    */
-  encoded?: AcExEncodedSnapshot
+  encoded?: AcExHtmlEncodedSnapshot
   /** Optional access manifest for expiry and password protection. */
   accessManifest?: AcExHtmlAccessManifest
 }
 
 /**
- * Options for {@link packHtmlPackage}: shell HTML that loads a remote package.
+ * Options for {@link acexHtmlPackHtmlPackage}: shell HTML that loads a remote package.
  */
-export interface AcExPackHtmlPackageOptions {
+export interface AcExHtmlPackHtmlPackageOptions {
   /**
    * Page `<title>`.
-   * Falls back to {@link AcExSnapshot.meta.title} or `"CAD Drawing"`.
+   * Falls back to {@link AcExHtmlSnapshot.meta.title} or `"CAD Drawing"`.
    */
   title?: string
   /** Inline viewer bootstrap script (IIFE). */
@@ -55,18 +55,18 @@ export interface AcExPackHtmlPackageOptions {
  * @param options - Page title override and viewer IIFE source.
  * @returns Complete HTML document string (DOCTYPE, shell markup, snapshot, runtime).
  */
-export function packHtml(
-  snapshot: AcExSnapshot,
-  options: AcExPackHtmlOptions
+export function acexHtmlPackHtml(
+  snapshot: AcExHtmlSnapshot,
+  options: AcExHtmlPackHtmlOptions
 ): string {
   const title = options.title ?? snapshot.meta.title ?? 'CAD Drawing'
-  const encoded = options.encoded ?? encodeSnapshot(snapshot)
+  const encoded = options.encoded ?? acexHtmlEncodeSnapshot(snapshot)
   const runtime = options.viewerRuntime
-  const mime = snapshotMimeType()
+  const mime = acexHtmlSnapshotMimeType()
   const compression = encoded.compression
   const encrypted = options.accessManifest?.encrypted === true
   const loadingBg = `#${snapshot.meta.background.toString(16).padStart(6, '0')}`
-  const htmlLang = resolveAcExHtmlLocale(snapshot.meta.locale) ?? 'en'
+  const htmlLang = acexHtmlResolveLocale(snapshot.meta.locale) ?? 'en'
   const viewerMode = snapshot.meta.viewerMode ?? 'measure'
   const exportLayouts = snapshot.meta.exportLayouts !== false
   const accessScript = options.accessManifest
@@ -88,7 +88,7 @@ export function packHtml(
   <style>${ACEX_HTML_SHELL_CSS}</style>
 </head>
 <body>
-${buildAcExHtmlShellBody(loadingBg, viewerMode, exportLayouts)}
+${acexHtmlBuildShellBody(loadingBg, viewerMode, exportLayouts)}
 ${accessScript}  <script id="mlcad-snapshot" type="${snapshotType}">${encoded.payload}</script>
   <script>${escapeInlineScript(runtime)}</script>
 </body>
@@ -103,14 +103,14 @@ ${accessScript}  <script id="mlcad-snapshot" type="${snapshotType}">${encoded.pa
  * @param snapshot - Used for title, locale, background, and viewer mode chrome.
  * @param options - Runtime source and optional manifest URL override.
  */
-export function packHtmlPackage(
-  snapshot: AcExSnapshot,
-  options: AcExPackHtmlPackageOptions
+export function acexHtmlPackHtmlPackage(
+  snapshot: AcExHtmlSnapshot,
+  options: AcExHtmlPackHtmlPackageOptions
 ): string {
   const title = options.title ?? snapshot.meta.title ?? 'CAD Drawing'
   const runtime = options.viewerRuntime
   const loadingBg = `#${snapshot.meta.background.toString(16).padStart(6, '0')}`
-  const htmlLang = resolveAcExHtmlLocale(snapshot.meta.locale) ?? 'en'
+  const htmlLang = acexHtmlResolveLocale(snapshot.meta.locale) ?? 'en'
   const viewerMode = snapshot.meta.viewerMode ?? 'measure'
   const exportLayouts = snapshot.meta.exportLayouts !== false
   const manifestUrl = options.manifestUrl?.trim()
@@ -130,7 +130,7 @@ export function packHtmlPackage(
   <style>${ACEX_HTML_SHELL_CSS}</style>
 </head>
 <body>
-${buildAcExHtmlShellBody(loadingBg, viewerMode, exportLayouts)}
+${acexHtmlBuildShellBody(loadingBg, viewerMode, exportLayouts)}
   <script id="mlcad-package" type="application/json">${escapeInlineJson(
     packageConfig
   )}</script>

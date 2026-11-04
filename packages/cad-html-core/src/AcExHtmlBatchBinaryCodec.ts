@@ -1,5 +1,5 @@
-import type { AcExBinaryReader, AcExBinaryWriter } from './AcExBinaryIO'
-import type { AcExLineBatch, AcExMeshBatch } from './AcExSnapshotTypes'
+import type { AcExHtmlBinaryReader, AcExHtmlBinaryWriter } from './AcExHtmlBinaryIO'
+import type { AcExHtmlLineBatch, AcExHtmlMeshBatch } from './AcExHtmlSnapshotTypes'
 
 /** Optional line-batch feature flags (append-only; never renumber). */
 export const F_LINE_INDICES = 1
@@ -25,7 +25,7 @@ export const F_MESH_TEXTURE = 128
  * Rough uncompressed payload size for chunk-size budgeting.
  * Includes geometry buffers plus a small fixed overhead for headers/strings.
  */
-export function estimateLineBatchBytes(batch: AcExLineBatch): number {
+export function acexHtmlEstimateLineBatchBytes(batch: AcExHtmlLineBatch): number {
   let size = 256 + batch.positions.byteLength
   if (batch.indices) size += batch.indices.byteLength
   if (batch.lineDistances) size += batch.lineDistances.byteLength
@@ -36,7 +36,7 @@ export function estimateLineBatchBytes(batch: AcExLineBatch): number {
 /**
  * Rough uncompressed payload size for chunk-size budgeting.
  */
-export function estimateMeshBatchBytes(batch: AcExMeshBatch): number {
+export function acexHtmlEstimateMeshBatchBytes(batch: AcExHtmlMeshBatch): number {
   let size = 256 + batch.positions.byteLength
   if (batch.indices) size += batch.indices.byteLength
   if (batch.gradientPositions) size += batch.gradientPositions.byteLength
@@ -47,10 +47,10 @@ export function estimateMeshBatchBytes(batch: AcExMeshBatch): number {
   return size
 }
 
-/** Writes one {@link AcExLineBatch} with length-prefixed buffers and feature flags. */
-export function writeLineBatch(
-  writer: AcExBinaryWriter,
-  batch: AcExLineBatch
+/** Writes one {@link AcExHtmlLineBatch} with length-prefixed buffers and feature flags. */
+export function acexHtmlWriteLineBatch(
+  writer: AcExHtmlBinaryWriter,
+  batch: AcExHtmlLineBatch
 ): void {
   writer.writeString(batch.layer)
   writer.writeU32(batch.color >>> 0)
@@ -93,8 +93,8 @@ export function writeLineBatch(
   }
 }
 
-/** Reads one {@link AcExLineBatch}; unknown flag bits are ignored (reserved). */
-export function readLineBatch(reader: AcExBinaryReader): AcExLineBatch {
+/** Reads one {@link AcExHtmlLineBatch}; unknown flag bits are ignored (reserved). */
+export function acexHtmlReadLineBatch(reader: AcExHtmlBinaryReader): AcExHtmlLineBatch {
   const layer = reader.readString()
   const color = reader.readU32()
   const offset: [number, number, number] = [
@@ -105,13 +105,13 @@ export function readLineBatch(reader: AcExBinaryReader): AcExLineBatch {
   const positions = reader.readFloat32Array()
   const flags = reader.readU8()
 
-  const batch: AcExLineBatch = { layer, color, offset, positions }
+  const batch: AcExHtmlLineBatch = { layer, color, offset, positions }
   if (flags & F_LINE_INDICES) {
     batch.indices = reader.readUint32Array()
   }
   if (flags & F_LINE_PATTERN) {
     batch.linePattern =
-      reader.readJson<NonNullable<AcExLineBatch['linePattern']>>()
+      reader.readJson<NonNullable<AcExHtmlLineBatch['linePattern']>>()
   }
   if (flags & F_LINE_DISTANCES) {
     batch.lineDistances = reader.readFloat32Array()
@@ -128,10 +128,10 @@ export function readLineBatch(reader: AcExBinaryReader): AcExLineBatch {
   return batch
 }
 
-/** Writes one {@link AcExMeshBatch} with length-prefixed buffers and feature flags. */
-export function writeMeshBatch(
-  writer: AcExBinaryWriter,
-  batch: AcExMeshBatch
+/** Writes one {@link AcExHtmlMeshBatch} with length-prefixed buffers and feature flags. */
+export function acexHtmlWriteMeshBatch(
+  writer: AcExHtmlBinaryWriter,
+  batch: AcExHtmlMeshBatch
 ): void {
   writer.writeString(batch.layer)
   writer.writeU32(batch.color >>> 0)
@@ -188,8 +188,8 @@ export function writeMeshBatch(
   }
 }
 
-/** Reads one {@link AcExMeshBatch}; unknown flag bits are ignored (reserved). */
-export function readMeshBatch(reader: AcExBinaryReader): AcExMeshBatch {
+/** Reads one {@link AcExHtmlMeshBatch}; unknown flag bits are ignored (reserved). */
+export function acexHtmlReadMeshBatch(reader: AcExHtmlBinaryReader): AcExHtmlMeshBatch {
   const layer = reader.readString()
   const color = reader.readU32()
   const offset: [number, number, number] = [
@@ -200,17 +200,17 @@ export function readMeshBatch(reader: AcExBinaryReader): AcExMeshBatch {
   const positions = reader.readFloat32Array()
   const flags = reader.readU8()
 
-  const batch: AcExMeshBatch = { layer, color, offset, positions }
+  const batch: AcExHtmlMeshBatch = { layer, color, offset, positions }
   if (flags & F_MESH_INDICES) {
     batch.indices = reader.readUint32Array()
   }
   if (flags & F_MESH_HATCH) {
     batch.hatchPattern =
-      reader.readJson<NonNullable<AcExMeshBatch['hatchPattern']>>()
+      reader.readJson<NonNullable<AcExHtmlMeshBatch['hatchPattern']>>()
   }
   if (flags & F_MESH_GRADIENT_FILL) {
     batch.gradientFill =
-      reader.readJson<NonNullable<AcExMeshBatch['gradientFill']>>()
+      reader.readJson<NonNullable<AcExHtmlMeshBatch['gradientFill']>>()
   }
   if (flags & F_MESH_GRADIENT_POS) {
     batch.gradientPositions = reader.readFloat32Array()

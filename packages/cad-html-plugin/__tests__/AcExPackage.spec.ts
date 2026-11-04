@@ -1,22 +1,22 @@
-import type { AcExSnapshot } from '@mlightcad/cad-html-core'
-import { decodeChunkGzip, encodeChunkGzip } from '@mlightcad/cad-html-core'
+import type { AcExHtmlSnapshot } from '@mlightcad/cad-html-core'
+import { acexHtmlDecodeChunkGzip, acexHtmlEncodeChunkGzip } from '@mlightcad/cad-html-core'
 import {
-  buildAcExPackage,
-  splitLayoutIntoSlices
+  acexHtmlBuildPackage,
+  acexHtmlSplitLayoutIntoSlices
 } from '@mlightcad/cad-html-core'
 import {
   ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY,
-  createAcExOrderedBytePrefetcher,
-  isSafePackageHref,
-  loadAcExPackage,
-  parseAcExPackageManifest,
-  resolveChunkUrl,
-  resolvePackageManifestUrl,
-  snapshotSkeletonFromManifest
+  acexHtmlCreateOrderedBytePrefetcher,
+  acexHtmlIsSafePackageHref,
+  acexHtmlLoadPackage,
+  acexHtmlParsePackageManifest,
+  acexHtmlResolveChunkUrl,
+  acexHtmlResolvePackageManifestUrl,
+  acexHtmlSnapshotSkeletonFromManifest
 } from '@mlightcad/cad-html-core'
 import {
-  unzipAcExPackageFiles,
-  zipAcExPackageFiles
+  acexHtmlUnzipPackageFiles,
+  acexHtmlZipPackageFiles
 } from '@mlightcad/cad-html-core'
 import { ACEX_SNAPSHOT_VERSION } from '@mlightcad/cad-html-core'
 import { strFromU8, zipSync } from 'fflate'
@@ -27,7 +27,7 @@ function f32(values: number[]): Float32Array {
   return Float32Array.from(values)
 }
 
-function makeSnapshot(): AcExSnapshot {
+function makeSnapshot(): AcExHtmlSnapshot {
   return {
     version: ACEX_SNAPSHOT_VERSION,
     meta: {
@@ -114,8 +114,8 @@ describe('AcEx package format', () => {
       ],
       meshBatches: []
     }
-    const { compressed } = encodeChunkGzip(chunk)
-    const decoded = decodeChunkGzip(compressed)
+    const { compressed } = acexHtmlEncodeChunkGzip(chunk)
+    const decoded = acexHtmlDecodeChunkGzip(compressed)
     expect(decoded.layoutBtrId).toBe('ms')
     expect(decoded.lineBatches[0]?.positions).toEqual(
       chunk.lineBatches[0]!.positions
@@ -124,7 +124,7 @@ describe('AcEx package format', () => {
 
   it('splits oversized layouts into multiple slices', () => {
     const layout = makeSnapshot().layouts[0]!
-    const slices = splitLayoutIntoSlices(layout, 400)
+    const slices = acexHtmlSplitLayoutIntoSlices(layout, 400)
     expect(slices.length).toBeGreaterThan(1)
     const lineCount = slices.reduce((n, s) => n + s.lineBatches.length, 0)
     const meshCount = slices.reduce((n, s) => n + s.meshBatches.length, 0)
@@ -134,7 +134,7 @@ describe('AcEx package format', () => {
 
   it('builds a package and restores geometry via progressive fetch', async () => {
     const snapshot = makeSnapshot()
-    const pkg = buildAcExPackage(snapshot, {
+    const pkg = acexHtmlBuildPackage(snapshot, {
       viewerRuntime: '/* runtime */',
       baseName: 'demo',
       maxChunkBytes: 400
@@ -174,7 +174,7 @@ describe('AcEx package format', () => {
     }
 
     const progresses: number[] = []
-    const loaded = await loadAcExPackage({
+    const loaded = await acexHtmlLoadPackage({
       manifestUrl: 'https://cdn.example/drawing.acex.json',
       fetchImpl,
       onChunk: (_layout, _chunk, progress) => {
@@ -193,12 +193,12 @@ describe('AcEx package format', () => {
   })
 
   it('zips and unzips package files without loss', () => {
-    const pkg = buildAcExPackage(makeSnapshot(), {
+    const pkg = acexHtmlBuildPackage(makeSnapshot(), {
       viewerRuntime: '/* runtime */',
       baseName: 'demo'
     })
-    const zipped = zipAcExPackageFiles(pkg)
-    const unzipped = unzipAcExPackageFiles(zipped)
+    const zipped = acexHtmlZipPackageFiles(pkg)
+    const unzipped = acexHtmlUnzipPackageFiles(zipped)
     expect(unzipped.map(f => f.path).sort()).toEqual(
       pkg.files.map(f => f.path).sort()
     )
@@ -210,7 +210,7 @@ describe('AcEx package format', () => {
 
   it('builds uncompressed chunks and restores geometry via progressive fetch', async () => {
     const snapshot = makeSnapshot()
-    const pkg = buildAcExPackage(snapshot, {
+    const pkg = acexHtmlBuildPackage(snapshot, {
       viewerRuntime: '/* runtime */',
       baseName: 'demo',
       maxChunkBytes: 400,
@@ -247,7 +247,7 @@ describe('AcEx package format', () => {
       return new Response(copy, { status: 200 })
     }
 
-    const loaded = await loadAcExPackage({
+    const loaded = await acexHtmlLoadPackage({
       manifestUrl: 'https://cdn.example/drawing.acex.json',
       fetchImpl
     })
@@ -261,12 +261,12 @@ describe('AcEx package format', () => {
   })
 
   it('parses manifest and builds an empty skeleton', () => {
-    const pkg = buildAcExPackage(makeSnapshot(), {
+    const pkg = acexHtmlBuildPackage(makeSnapshot(), {
       viewerRuntime: '/* runtime */',
       baseName: 'demo'
     })
-    const manifest = parseAcExPackageManifest(pkg.manifest)
-    const skeleton = snapshotSkeletonFromManifest(manifest)
+    const manifest = acexHtmlParsePackageManifest(pkg.manifest)
+    const skeleton = acexHtmlSnapshotSkeletonFromManifest(manifest)
     expect(skeleton.layouts[0]?.lineBatches).toEqual([])
     expect(skeleton.layouts[0]?.osnap).toBeUndefined()
     expect(skeleton.activeLayoutBtrId).toBe('ms')
@@ -286,18 +286,18 @@ describe('AcEx package format', () => {
       maxX: 9,
       maxY: 7
     }
-    const pkg = buildAcExPackage(snapshot, {
+    const pkg = acexHtmlBuildPackage(snapshot, {
       viewerRuntime: '/* runtime */',
       baseName: 'demo'
     })
-    const manifest = parseAcExPackageManifest(pkg.manifest)
+    const manifest = acexHtmlParsePackageManifest(pkg.manifest)
     expect(manifest.layouts[1]?.fitExtents).toEqual({
       minX: 1,
       minY: 1,
       maxX: 9,
       maxY: 7
     })
-    const skeleton = snapshotSkeletonFromManifest(manifest)
+    const skeleton = acexHtmlSnapshotSkeletonFromManifest(manifest)
     // Progressive load starts with empty batches, so the skeleton must keep the
     // export-time box for the initial framing to match toolbar "Extents".
     expect(skeleton.layouts[0]?.fitExtents).toEqual({
@@ -315,52 +315,52 @@ describe('AcEx package format', () => {
   })
 
   it('always names the package manifest drawing.acex.json', () => {
-    const pkg = buildAcExPackage(makeSnapshot(), {
+    const pkg = acexHtmlBuildPackage(makeSnapshot(), {
       viewerRuntime: '/* runtime */',
       baseName: 'FJP-898E-G-_-V01 + 1'
     })
     expect(pkg.manifestFileName).toBe('drawing.acex.json')
-    expect(isSafePackageHref(`./${pkg.manifestFileName}`)).toBe(true)
-    expect(() => zipAcExPackageFiles(pkg)).not.toThrow()
+    expect(acexHtmlIsSafePackageHref(`./${pkg.manifestFileName}`)).toBe(true)
+    expect(() => acexHtmlZipPackageFiles(pkg)).not.toThrow()
   })
 
   it('rejects unsafe package hrefs and absolute chunk URLs', () => {
-    expect(isSafePackageHref('./demo.acex.json')).toBe(true)
-    expect(isSafePackageHref('chunks/L0-000.acex.gz')).toBe(true)
-    expect(isSafePackageHref('https://evil.example/x')).toBe(false)
-    expect(isSafePackageHref('../escape.acex.gz')).toBe(false)
-    expect(isSafePackageHref('/abs.acex.gz')).toBe(false)
+    expect(acexHtmlIsSafePackageHref('./demo.acex.json')).toBe(true)
+    expect(acexHtmlIsSafePackageHref('chunks/L0-000.acex.gz')).toBe(true)
+    expect(acexHtmlIsSafePackageHref('https://evil.example/x')).toBe(false)
+    expect(acexHtmlIsSafePackageHref('../escape.acex.gz')).toBe(false)
+    expect(acexHtmlIsSafePackageHref('/abs.acex.gz')).toBe(false)
 
     expect(() =>
-      resolveChunkUrl(
+      acexHtmlResolveChunkUrl(
         'https://cdn.example/pkg/demo.acex.json',
         'chunks/a.acex.gz'
       )
     ).not.toThrow()
     expect(() =>
-      resolveChunkUrl(
+      acexHtmlResolveChunkUrl(
         'https://cdn.example/pkg/demo.acex.json',
         'https://evil.example/x'
       )
     ).toThrow(/relative package path/)
     expect(() =>
-      resolveChunkUrl('https://cdn.example/pkg/demo.acex.json', '../x.acex.gz')
+      acexHtmlResolveChunkUrl('https://cdn.example/pkg/demo.acex.json', '../x.acex.gz')
     ).toThrow(/relative package path/)
 
     expect(
-      resolvePackageManifestUrl(
+      acexHtmlResolvePackageManifestUrl(
         './demo.acex.json',
         'https://cdn.example/pkg/viewer.html'
       )
     ).toBe('https://cdn.example/pkg/demo.acex.json')
     expect(() =>
-      resolvePackageManifestUrl(
+      acexHtmlResolvePackageManifestUrl(
         'https://evil.example/demo.acex.json',
         'https://cdn.example/pkg/viewer.html'
       )
     ).toThrow(/relative package path/)
 
-    const pkg = buildAcExPackage(makeSnapshot(), {
+    const pkg = acexHtmlBuildPackage(makeSnapshot(), {
       viewerRuntime: '/* runtime */',
       baseName: 'demo'
     })
@@ -373,7 +373,7 @@ describe('AcEx package format', () => {
         }
       ]
     }
-    expect(() => parseAcExPackageManifest(evil)).toThrow(/chunk href/)
+    expect(() => acexHtmlParsePackageManifest(evil)).toThrow(/chunk href/)
   })
 
   it('rejects zip-slip paths when unzipping', () => {
@@ -381,7 +381,7 @@ describe('AcEx package format', () => {
       'chunks/ok.acex.gz': new Uint8Array([1, 2, 3]),
       '../escape.txt': new Uint8Array([4, 5, 6])
     })
-    expect(() => unzipAcExPackageFiles(evil)).toThrow(/Unsafe path/)
+    expect(() => acexHtmlUnzipPackageFiles(evil)).toThrow(/Unsafe path/)
   })
 
   it('mirrors maxChunkBytes onto OSNAP package build options', () => {
@@ -410,7 +410,7 @@ describe('AcEx package format', () => {
     }
 
     const maxChunkBytes = 400
-    const pkg = buildAcExPackage(snapshot, {
+    const pkg = acexHtmlBuildPackage(snapshot, {
       viewerRuntime: '/* runtime */',
       baseName: 'demo',
       maxChunkBytes
@@ -436,7 +436,7 @@ describe('AcEx package format', () => {
       }))
     }
 
-    const pkg = buildAcExPackage(snapshot, {
+    const pkg = acexHtmlBuildPackage(snapshot, {
       viewerRuntime: '/* runtime */',
       baseName: 'demo',
       // Force multiple OSNAP chunks.
@@ -479,7 +479,7 @@ describe('AcEx package format', () => {
       return new Response(copy, { status: 200 })
     }
 
-    const geometryOnly = await loadAcExPackage({
+    const geometryOnly = await acexHtmlLoadPackage({
       manifestUrl: 'https://cdn.example/drawing.acex.json',
       fetchImpl,
       loadOsnap: false
@@ -487,7 +487,7 @@ describe('AcEx package format', () => {
     expect(geometryOnly.layouts[0]?.osnap).toBeUndefined()
     expect(geometryOnly.layouts[0]?.lineBatches.length).toBeGreaterThan(0)
 
-    const loaded = await loadAcExPackage({
+    const loaded = await acexHtmlLoadPackage({
       manifestUrl: 'https://cdn.example/drawing.acex.json',
       fetchImpl
     })
@@ -505,7 +505,7 @@ describe('AcEx package format', () => {
       offset: [0, 0, 0] as [number, number, number],
       positions: f32([0, i, 0, 10, i, 0])
     }))
-    const pkg = buildAcExPackage(snapshot, {
+    const pkg = acexHtmlBuildPackage(snapshot, {
       viewerRuntime: '/* runtime */',
       baseName: 'demo',
       maxChunkBytes: 120
@@ -560,7 +560,7 @@ describe('AcEx package format', () => {
     // Default: bounded parallel window, strictly ordered callbacks.
     const parallel = buildTrackingFetch()
     const progresses: number[] = []
-    const loaded = await loadAcExPackage({
+    const loaded = await acexHtmlLoadPackage({
       manifestUrl: 'https://cdn.example/drawing.acex.json',
       fetchImpl: parallel.fetchImpl,
       loadOsnap: false,
@@ -578,7 +578,7 @@ describe('AcEx package format', () => {
 
     // fetchConcurrency: 1 fully serializes downloads.
     const serial = buildTrackingFetch()
-    await loadAcExPackage({
+    await acexHtmlLoadPackage({
       manifestUrl: 'https://cdn.example/drawing.acex.json',
       fetchImpl: serial.fetchImpl,
       loadOsnap: false,
@@ -598,7 +598,7 @@ describe('AcEx package format', () => {
     })
     let active = 0
     let maxActive = 0
-    const prefetcher = createAcExOrderedBytePrefetcher(items, 3, async item => {
+    const prefetcher = acexHtmlCreateOrderedBytePrefetcher(items, 3, async item => {
       active += 1
       maxActive = Math.max(maxActive, active)
       try {
@@ -652,7 +652,7 @@ describe('AcEx package format', () => {
 
   it('never fetches when the item list is empty', async () => {
     let calls = 0
-    const prefetcher = createAcExOrderedBytePrefetcher([], 6, async () => {
+    const prefetcher = acexHtmlCreateOrderedBytePrefetcher([], 6, async () => {
       calls += 1
       return new Uint8Array()
     })

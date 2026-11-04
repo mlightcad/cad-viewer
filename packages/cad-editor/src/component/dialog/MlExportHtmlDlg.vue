@@ -403,12 +403,12 @@
  * this UI is available via `-chtml`.
  */
 import type {
-  AcApHtmlExpiryDays,
   AcApHtmlExportFormat,
   AcApHtmlExportOptions,
   AcExHtmlBackground,
-  AcExInitialViewMode,
-  AcExViewerMode
+  AcExHtmlExpiryDays,
+  AcExHtmlInitialViewMode,
+  AcExHtmlViewerMode
 } from '@mlightcad/cad-html-plugin'
 import {
   ACEX_DEFAULT_CHUNK_SIZE_MIB,
@@ -477,11 +477,11 @@ export interface MlExportHtmlDlgForm {
   /**
    * Initial framing when the exported HTML is opened (`fit` = zoom extents).
    */
-  initialView: AcExInitialViewMode
+  initialView: AcExHtmlInitialViewMode
   /**
    * Offline viewer capability profile (`view` omits measurement tools and OSNAP data).
    */
-  viewerMode: AcExViewerMode
+  viewerMode: AcExHtmlViewerMode
   /**
    * Max uncompressed geometry chunk size in MiB (multi-file package only).
    */
@@ -491,7 +491,7 @@ export interface MlExportHtmlDlgForm {
    */
   compressChunks: boolean
   /** How long the exported HTML remains valid. */
-  expiryDays: AcApHtmlExpiryDays
+  expiryDays: AcExHtmlExpiryDays
   /** Absolute expiry used when {@link MlExportHtmlDlgForm.expiryDays} is `'custom'`. */
   customExpiresAt: Date | null
   /** Optional password required to open the exported HTML. */

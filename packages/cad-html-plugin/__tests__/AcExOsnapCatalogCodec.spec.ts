@@ -1,14 +1,14 @@
 import {
-  decodeOsnapCatalogGzip,
-  encodeOsnapCatalogBinary,
-  encodeOsnapCatalogGzip,
-  splitOsnapPrimitives
+  acexHtmlDecodeOsnapCatalogGzip,
+  acexHtmlEncodeOsnapCatalogBinary,
+  acexHtmlEncodeOsnapCatalogGzip,
+  acexHtmlSplitOsnapPrimitives
 } from '@mlightcad/cad-html-core'
-import type { AcExOsnapCatalog } from '@mlightcad/cad-html-core'
+import type { AcExHtmlOsnapCatalog } from '@mlightcad/cad-html-core'
 
 describe('AcExOsnapCatalogCodec', () => {
   it('round-trips mixed primitive kinds through ACEO gzip', () => {
-    const catalog: AcExOsnapCatalog = {
+    const catalog: AcExHtmlOsnapCatalog = {
       primitives: [
         { kind: 'line', layer: '0', x0: 1, y0: 2, x1: 3, y1: 4 },
         { kind: 'circle', layer: 'L1', cx: 0, cy: 0, r: 5, normalSign: -1 },
@@ -56,11 +56,11 @@ describe('AcExOsnapCatalogCodec', () => {
       ]
     }
 
-    const { compressed } = encodeOsnapCatalogGzip(catalog)
+    const { compressed } = acexHtmlEncodeOsnapCatalogGzip(catalog)
     expect(compressed[0]).toBe(0x1f)
     expect(compressed[1]).toBe(0x8b)
 
-    const decoded = decodeOsnapCatalogGzip(compressed)
+    const decoded = acexHtmlDecodeOsnapCatalogGzip(compressed)
     expect(decoded).toEqual(catalog)
   })
 
@@ -73,9 +73,9 @@ describe('AcExOsnapCatalogCodec', () => {
       x1: i + 1,
       y1: i + 1.5
     }))
-    const catalog: AcExOsnapCatalog = { primitives }
+    const catalog: AcExHtmlOsnapCatalog = { primitives }
     const jsonBytes = Buffer.byteLength(JSON.stringify(catalog))
-    const binaryBytes = encodeOsnapCatalogBinary(catalog).byteLength
+    const binaryBytes = acexHtmlEncodeOsnapCatalogBinary(catalog).byteLength
     expect(binaryBytes).toBeLessThan(jsonBytes * 0.6)
   })
 
@@ -88,7 +88,7 @@ describe('AcExOsnapCatalogCodec', () => {
       x1: i + 1,
       y1: 1
     }))
-    const slices = splitOsnapPrimitives(primitives, 200)
+    const slices = acexHtmlSplitOsnapPrimitives(primitives, 200)
     expect(slices.length).toBeGreaterThan(1)
     expect(slices.reduce((n, s) => n + s.length, 0)).toBe(100)
   })

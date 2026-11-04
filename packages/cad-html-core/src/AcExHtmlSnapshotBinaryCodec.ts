@@ -1,20 +1,20 @@
 import { strFromU8 } from 'fflate'
 
-import { readLineBatch, readMeshBatch, writeLineBatch, writeMeshBatch } from './AcExBatchBinaryCodec'
-import { AcExBinaryReader, AcExBinaryWriter } from './AcExBinaryIO'
+import { acexHtmlReadLineBatch, acexHtmlReadMeshBatch, acexHtmlWriteLineBatch, acexHtmlWriteMeshBatch } from './AcExHtmlBatchBinaryCodec'
+import { AcExHtmlBinaryReader, AcExHtmlBinaryWriter } from './AcExHtmlBinaryIO'
 import {
   ACEO_OSNAP_MAGIC,
-  decodeOsnapCatalogBinary,
-  encodeOsnapCatalogBinary
-} from './AcExOsnapCatalogCodec'
+  acexHtmlDecodeOsnapCatalogBinary,
+  acexHtmlEncodeOsnapCatalogBinary
+} from './AcExHtmlOsnapCatalogCodec'
 import {
   ACEX_SNAPSHOT_VERSION,
-  type AcExExtents,
-  type AcExLayoutSnapshot,
-  type AcExLineBatch,
-  type AcExMeshBatch,
-  type AcExSnapshot
-} from './AcExSnapshotTypes'
+  type AcExHtmlExtents,
+  type AcExHtmlLayoutSnapshot,
+  type AcExHtmlLineBatch,
+  type AcExHtmlMeshBatch,
+  type AcExHtmlSnapshot
+} from './AcExHtmlSnapshotTypes'
 
 const MAGIC = 0x58454341 // 'ACEX' little-endian
 
@@ -25,15 +25,15 @@ const MAGIC = 0x58454341 // 'ACEX' little-endian
  * geometry buffers are stored as raw {@link Float32Array} / {@link Uint32Array} bytes.
  * Layout OSNAP catalogs use uncompressed ACEO (same schema as package sidecars).
  *
- * @param snapshot - Snapshot to encode; {@link AcExSnapshot.version} must match
+ * @param snapshot - Snapshot to encode; {@link AcExHtmlSnapshot.version} must match
  *   {@link ACEX_SNAPSHOT_VERSION}.
  */
-export function encodeSnapshotBinary(snapshot: AcExSnapshot): Uint8Array {
+export function acexHtmlEncodeSnapshotBinary(snapshot: AcExHtmlSnapshot): Uint8Array {
   if (snapshot.version !== ACEX_SNAPSHOT_VERSION) {
     throw new Error(`Unsupported snapshot version: ${snapshot.version}`)
   }
 
-  const writer = new AcExBinaryWriter()
+  const writer = new AcExHtmlBinaryWriter()
   writer.writeU32(MAGIC)
   writer.writeU8(ACEX_SNAPSHOT_VERSION)
   writer.writeU8(0)
@@ -56,10 +56,10 @@ export function encodeSnapshotBinary(snapshot: AcExSnapshot): Uint8Array {
 }
 
 /**
- * Parses a binary snapshot byte array produced by {@link encodeSnapshotBinary}.
+ * Parses a binary snapshot byte array produced by {@link acexHtmlEncodeSnapshotBinary}.
  */
-export function decodeSnapshotBinary(bytes: Uint8Array): AcExSnapshot {
-  const reader = new AcExBinaryReader(bytes)
+export function acexHtmlDecodeSnapshotBinary(bytes: Uint8Array): AcExHtmlSnapshot {
+  const reader = new AcExHtmlBinaryReader(bytes)
   const magic = reader.readU32()
   if (magic !== MAGIC) {
     throw new Error('Invalid snapshot magic')
@@ -74,15 +74,15 @@ export function decodeSnapshotBinary(bytes: Uint8Array): AcExSnapshot {
   }
 
   const meta = reader.readJson<
-    AcExSnapshot['meta'] & {
-      savedViews?: Record<string, AcExExtents>
-      fitExtents?: Record<string, AcExExtents>
+    AcExHtmlSnapshot['meta'] & {
+      savedViews?: Record<string, AcExHtmlExtents>
+      fitExtents?: Record<string, AcExHtmlExtents>
     }
   >()
-  const layers = reader.readJson<AcExSnapshot['layers']>()
+  const layers = reader.readJson<AcExHtmlSnapshot['layers']>()
   const activeLayoutBtrId = reader.readString()
   const layoutCount = reader.readU32()
-  const layouts: AcExLayoutSnapshot[] = []
+  const layouts: AcExHtmlLayoutSnapshot[] = []
   for (let i = 0; i < layoutCount; i++) {
     layouts.push(readLayout(reader))
   }
@@ -97,11 +97,11 @@ export function decodeSnapshotBinary(bytes: Uint8Array): AcExSnapshot {
   }
 }
 
-function metaWithLayoutViews(snapshot: AcExSnapshot): AcExSnapshot['meta'] {
-  const savedViews: NonNullable<AcExSnapshot['meta']['savedViews']> = {
+function metaWithLayoutViews(snapshot: AcExHtmlSnapshot): AcExHtmlSnapshot['meta'] {
+  const savedViews: NonNullable<AcExHtmlSnapshot['meta']['savedViews']> = {
     ...(snapshot.meta.savedViews ?? {})
   }
-  const fitExtents: NonNullable<AcExSnapshot['meta']['fitExtents']> = {
+  const fitExtents: NonNullable<AcExHtmlSnapshot['meta']['fitExtents']> = {
     ...(snapshot.meta.fitExtents ?? {})
   }
   for (const layout of snapshot.layouts) {
@@ -134,9 +134,9 @@ function metaWithLayoutViews(snapshot: AcExSnapshot): AcExSnapshot['meta'] {
 }
 
 function applyLayoutViewsFromMeta(
-  layouts: AcExLayoutSnapshot[],
-  savedViews: Record<string, AcExLayoutSnapshot['savedView']> | undefined,
-  fitExtents: Record<string, AcExLayoutSnapshot['fitExtents']> | undefined
+  layouts: AcExHtmlLayoutSnapshot[],
+  savedViews: Record<string, AcExHtmlLayoutSnapshot['savedView']> | undefined,
+  fitExtents: Record<string, AcExHtmlLayoutSnapshot['fitExtents']> | undefined
 ): void {
   if (!savedViews && !fitExtents) return
   for (const layout of layouts) {
@@ -155,7 +155,7 @@ function applyLayoutViewsFromMeta(
   }
 }
 
-function writeLayout(writer: AcExBinaryWriter, layout: AcExLayoutSnapshot): void {
+function writeLayout(writer: AcExHtmlBinaryWriter, layout: AcExHtmlLayoutSnapshot): void {
   writer.writeString(layout.btrId)
   writer.writeString(layout.name)
   writer.writeU8(layout.isModelSpace ? 1 : 0)
@@ -165,29 +165,29 @@ function writeLayout(writer: AcExBinaryWriter, layout: AcExLayoutSnapshot): void
 
   writer.writeU32(layout.lineBatches.length)
   for (const batch of layout.lineBatches) {
-    writeLineBatch(writer, batch)
+    acexHtmlWriteLineBatch(writer, batch)
   }
 
   writer.writeU32(layout.meshBatches.length)
   for (const batch of layout.meshBatches) {
-    writeMeshBatch(writer, batch)
+    acexHtmlWriteMeshBatch(writer, batch)
   }
 }
 
 function writeLayoutOsnap(
-  writer: AcExBinaryWriter,
-  osnap: AcExLayoutSnapshot['osnap']
+  writer: AcExHtmlBinaryWriter,
+  osnap: AcExHtmlLayoutSnapshot['osnap']
 ): void {
   if (!osnap || osnap.primitives.length === 0) {
     writer.writeU32(0)
     return
   }
-  const bytes = encodeOsnapCatalogBinary(osnap)
+  const bytes = acexHtmlEncodeOsnapCatalogBinary(osnap)
   writer.writeU32(bytes.length)
   writer.writeBytes(bytes)
 }
 
-function readLayout(reader: AcExBinaryReader): AcExLayoutSnapshot {
+function readLayout(reader: AcExHtmlBinaryReader): AcExHtmlLayoutSnapshot {
   const btrId = reader.readString()
   const name = reader.readString()
   const isModelSpace = reader.readU8() !== 0
@@ -197,15 +197,15 @@ function readLayout(reader: AcExBinaryReader): AcExLayoutSnapshot {
   const viewports = readLayoutViewports(reader.readJson<unknown>())
 
   const lineBatchCount = reader.readU32()
-  const lineBatches: AcExLineBatch[] = []
+  const lineBatches: AcExHtmlLineBatch[] = []
   for (let i = 0; i < lineBatchCount; i++) {
-    lineBatches.push(readLineBatch(reader))
+    lineBatches.push(acexHtmlReadLineBatch(reader))
   }
 
   const meshBatchCount = reader.readU32()
-  const meshBatches: AcExMeshBatch[] = []
+  const meshBatches: AcExHtmlMeshBatch[] = []
   for (let i = 0; i < meshBatchCount; i++) {
-    meshBatches.push(readMeshBatch(reader))
+    meshBatches.push(acexHtmlReadMeshBatch(reader))
   }
 
   return {
@@ -223,16 +223,16 @@ function readLayout(reader: AcExBinaryReader): AcExLayoutSnapshot {
  * Accepts legacy/current bare viewport arrays/null and an object `{ viewports }`
  * form so mismatched mid-development snapshots still decode.
  */
-function readLayoutViewports(raw: unknown): AcExLayoutSnapshot['viewports'] {
+function readLayoutViewports(raw: unknown): AcExHtmlLayoutSnapshot['viewports'] {
   if (raw == null) {
     return undefined
   }
   if (Array.isArray(raw)) {
-    return raw as AcExLayoutSnapshot['viewports']
+    return raw as AcExHtmlLayoutSnapshot['viewports']
   }
   if (typeof raw === 'object') {
     const record = raw as {
-      viewports?: AcExLayoutSnapshot['viewports'] | null
+      viewports?: AcExHtmlLayoutSnapshot['viewports'] | null
     }
     return record.viewports ?? undefined
   }
@@ -243,22 +243,22 @@ function readLayoutViewports(raw: unknown): AcExLayoutSnapshot['viewports'] {
  * Reads a layout OSNAP payload: ACEO bytes, empty, or legacy UTF-8 JSON.
  */
 function readLayoutOsnap(
-  reader: AcExBinaryReader
-): AcExLayoutSnapshot['osnap'] {
+  reader: AcExHtmlBinaryReader
+): AcExHtmlLayoutSnapshot['osnap'] {
   const length = reader.readU32()
   if (length === 0) {
     return undefined
   }
   const bytes = reader.readBytes(length)
   if (isAceoPayload(bytes)) {
-    return decodeOsnapCatalogBinary(bytes)
+    return acexHtmlDecodeOsnapCatalogBinary(bytes)
   }
   // Legacy monolithic ACEX stored osnap as length-prefixed JSON (`null` / object).
   const text = strFromU8(bytes)
   if (text.length === 0 || text === 'null') {
     return undefined
   }
-  return JSON.parse(text) as AcExLayoutSnapshot['osnap']
+  return JSON.parse(text) as AcExHtmlLayoutSnapshot['osnap']
 }
 
 function isAceoPayload(bytes: Uint8Array): boolean {

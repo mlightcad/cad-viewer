@@ -1,21 +1,21 @@
-import { toWcsCoord } from './AcExBatchBuffers'
+import { acexHtmlToWcsCoord } from './AcExHtmlBatchBuffers'
 import {
-  type AcExClusterBox,
-  unionDominantCluster
-} from './AcExExtentCluster'
+  type AcExHtmlClusterBox,
+  acexHtmlUnionDominantCluster
+} from './AcExHtmlExtentCluster'
 import type {
-  AcExExtents,
-  AcExLayoutSnapshot,
-  AcExLineBatch,
-  AcExMeshBatch,
-  AcExSnapshot
-} from './AcExSnapshotTypes'
+  AcExHtmlExtents,
+  AcExHtmlLayoutSnapshot,
+  AcExHtmlLineBatch,
+  AcExHtmlMeshBatch,
+  AcExHtmlSnapshot
+} from './AcExHtmlSnapshotTypes'
 
 /**
  * Mutable 2D extents accumulator used while scanning batch geometry.
- * Tracks whether any vertex has been seen via {@link AcExMutableExtents.valid}.
+ * Tracks whether any vertex has been seen via {@link AcExHtmlMutableExtents.valid}.
  */
-export interface AcExMutableExtents {
+export interface AcExHtmlMutableExtents {
   /** Running minimum X in world coordinates. */
   minX: number
   /** Running minimum Y in world coordinates. */
@@ -29,9 +29,9 @@ export interface AcExMutableExtents {
 }
 
 /**
- * Creates an empty extents bucket with {@link AcExMutableExtents.valid} set to `false`.
+ * Creates an empty extents bucket with {@link AcExHtmlMutableExtents.valid} set to `false`.
  */
-export function createEmptyExtents(): AcExMutableExtents {
+export function acexHtmlCreateEmptyExtents(): AcExHtmlMutableExtents {
   return {
     minX: 0,
     minY: 0,
@@ -48,8 +48,8 @@ export function createEmptyExtents(): AcExMutableExtents {
  * @param positions - Flat `[x, y, z, …]` buffer in local space.
  * @param offset - World translation added to each vertex before comparing XY.
  */
-export function expandExtentsFromPositions(
-  extents: AcExMutableExtents,
+export function acexHtmlExpandExtentsFromPositions(
+  extents: AcExHtmlMutableExtents,
   positions: Float32Array,
   offset: [number, number, number]
 ): void {
@@ -57,8 +57,8 @@ export function expandExtentsFromPositions(
   const ox = offset[0]
   const oy = offset[1]
   for (let i = 0; i + 2 < positions.length; i += 3) {
-    const x = toWcsCoord(positions[i]!, ox)
-    const y = toWcsCoord(positions[i + 1]!, oy)
+    const x = acexHtmlToWcsCoord(positions[i]!, ox)
+    const y = acexHtmlToWcsCoord(positions[i + 1]!, oy)
     if (!extents.valid) {
       extents.minX = extents.maxX = x
       extents.minY = extents.maxY = y
@@ -76,23 +76,23 @@ export function expandExtentsFromPositions(
  * Incorporates all vertices from a line or mesh batch into mutable extents.
  *
  * @param extents - Extents bucket to update in place.
- * @param batch - Exported batch whose {@link AcExLineBatch.positions} and
- *   {@link AcExLineBatch.offset} are scanned.
+ * @param batch - Exported batch whose {@link AcExHtmlLineBatch.positions} and
+ *   {@link AcExHtmlLineBatch.offset} are scanned.
  */
-export function expandExtentsFromBatch(
-  extents: AcExMutableExtents,
-  batch: AcExLineBatch | AcExMeshBatch
+export function acexHtmlExpandExtentsFromBatch(
+  extents: AcExHtmlMutableExtents,
+  batch: AcExHtmlLineBatch | AcExHtmlMeshBatch
 ): void {
-  expandExtentsFromPositions(extents, batch.positions, batch.offset)
+  acexHtmlExpandExtentsFromPositions(extents, batch.positions, batch.offset)
 }
 
 /**
- * Converts a mutable extents bucket to an immutable {@link AcExExtents}, or `null` if empty.
+ * Converts a mutable extents bucket to an immutable {@link AcExHtmlExtents}, or `null` if empty.
  *
  * @param extents - Accumulator that may still be invalid.
  * @returns Frozen extents, or `null` when no geometry was added.
  */
-export function toExtents(extents: AcExMutableExtents): AcExExtents | null {
+export function acexHtmlToExtents(extents: AcExHtmlMutableExtents): AcExHtmlExtents | null {
   if (!extents.valid) return null
   return {
     minX: extents.minX,
@@ -106,30 +106,30 @@ export function toExtents(extents: AcExMutableExtents): AcExExtents | null {
  * Unions XY extents from every line and mesh batch in one layout.
  *
  * Used for initial zoom-to-fit in the offline viewer so hatch pattern shaders
- * receive a realistic {@link AcExCameraZoomUniform} instead of zooming to the
+ * receive a realistic {@link AcExHtmlCameraZoomUniform} instead of zooming to the
  * often much larger database `EXTMIN`/`EXTMAX` header.
  */
-export function computeLayoutExtents(
-  lineBatches: AcExLineBatch[],
-  meshBatches: AcExMeshBatch[]
-): AcExExtents | null {
-  const bucket = createEmptyExtents()
+export function acexHtmlComputeLayoutExtents(
+  lineBatches: AcExHtmlLineBatch[],
+  meshBatches: AcExHtmlMeshBatch[]
+): AcExHtmlExtents | null {
+  const bucket = acexHtmlCreateEmptyExtents()
   for (const batch of lineBatches) {
-    expandExtentsFromBatch(bucket, batch)
+    acexHtmlExpandExtentsFromBatch(bucket, batch)
   }
   for (const batch of meshBatches) {
-    expandExtentsFromBatch(bucket, batch)
+    acexHtmlExpandExtentsFromBatch(bucket, batch)
   }
-  return toExtents(bucket)
+  return acexHtmlToExtents(bucket)
 }
 
 /**
  * Unions two XY extents, ignoring `null` operands.
  */
-export function unionExtents(
-  a: AcExExtents | null | undefined,
-  b: AcExExtents | null | undefined
-): AcExExtents | null {
+export function acexHtmlUnionExtents(
+  a: AcExHtmlExtents | null | undefined,
+  b: AcExHtmlExtents | null | undefined
+): AcExHtmlExtents | null {
   if (!a) return b ?? null
   if (!b) return a
   return {
@@ -144,13 +144,13 @@ export function unionExtents(
  * Unions paper-space rectangles of exported viewports. Used so an otherwise
  * empty paper layout still frames its viewport frames instead of `0,0–1,1`.
  */
-export function computeViewportPaperExtents(
-  viewports: ReadonlyArray<{ paper: AcExExtents }> | undefined
-): AcExExtents | null {
+export function acexHtmlComputeViewportPaperExtents(
+  viewports: ReadonlyArray<{ paper: AcExHtmlExtents }> | undefined
+): AcExHtmlExtents | null {
   if (!viewports || viewports.length === 0) return null
-  let result: AcExExtents | null = null
+  let result: AcExHtmlExtents | null = null
   for (const viewport of viewports) {
-    result = unionExtents(result, viewport.paper)
+    result = acexHtmlUnionExtents(result, viewport.paper)
   }
   return result
 }
@@ -160,19 +160,19 @@ export function computeViewportPaperExtents(
  *
  * Returns `null` when the layout has neither drawable batches nor viewports.
  */
-export function computeLayoutViewExtents(
-  layout: Pick<AcExLayoutSnapshot, 'lineBatches' | 'meshBatches' | 'viewports'>
-): AcExExtents | null {
-  return unionExtents(
-    computeLayoutExtents(layout.lineBatches, layout.meshBatches),
-    computeViewportPaperExtents(layout.viewports)
+export function acexHtmlComputeLayoutViewExtents(
+  layout: Pick<AcExHtmlLayoutSnapshot, 'lineBatches' | 'meshBatches' | 'viewports'>
+): AcExHtmlExtents | null {
+  return acexHtmlUnionExtents(
+    acexHtmlComputeLayoutExtents(layout.lineBatches, layout.meshBatches),
+    acexHtmlComputeViewportPaperExtents(layout.viewports)
   )
 }
 
 /**
  * Resolves zoom-to-fit extents for one layout snapshot.
  *
- * Order: the export-time {@link AcExLayoutSnapshot.fitExtents}, then live batch
+ * Order: the export-time {@link AcExHtmlLayoutSnapshot.fitExtents}, then live batch
  * geometry unioned with viewport paper frames, then the caller's fallback and
  * finally a unit box.
  *
@@ -182,16 +182,16 @@ export function computeLayoutViewExtents(
  * Keeping the export-time box stable also makes the initial framing identical
  * to the toolbar “Extents” result.
  */
-export function resolveLayoutViewExtents(
+export function acexHtmlResolveLayoutViewExtents(
   layout: Pick<
-    AcExLayoutSnapshot,
+    AcExHtmlLayoutSnapshot,
     'lineBatches' | 'meshBatches' | 'viewports' | 'fitExtents'
   >,
-  fallbackExtents?: AcExExtents
-): AcExExtents {
+  fallbackExtents?: AcExHtmlExtents
+): AcExHtmlExtents {
   return (
     layout.fitExtents ??
-    computeLayoutViewExtents(layout) ??
+    acexHtmlComputeLayoutViewExtents(layout) ??
     fallbackExtents ?? {
       minX: 0,
       minY: 0,
@@ -203,19 +203,19 @@ export function resolveLayoutViewExtents(
 
 /**
  * Last-resort box for a layout that has neither geometry nor an export-time
- * {@link AcExLayoutSnapshot.fitExtents} (an empty paper tab, or a snapshot
+ * {@link AcExHtmlLayoutSnapshot.fitExtents} (an empty paper tab, or a snapshot
  * written before that field existed).
  *
- * {@link AcExSnapshot.meta.viewExtents} is geometry-derived but describes only
- * {@link AcExSnapshot.activeLayoutBtrId}; handing it to every layout would
+ * {@link AcExHtmlSnapshot.meta.viewExtents} is geometry-derived but describes only
+ * {@link AcExHtmlSnapshot.activeLayoutBtrId}; handing it to every layout would
  * frame a paper-space sheet when fitting model space (and vice versa). For
- * that one layout it still beats {@link AcExLayoutSnapshot.savedView}, which is
+ * that one layout it still beats {@link AcExHtmlLayoutSnapshot.savedView}, which is
  * the printable area / saved VPORT rather than the drawn content.
  */
-export function resolveLayoutFallbackExtents(
-  layout: Pick<AcExLayoutSnapshot, 'btrId' | 'savedView'>,
-  snapshot: Pick<AcExSnapshot, 'activeLayoutBtrId' | 'meta'>
-): AcExExtents {
+export function acexHtmlResolveLayoutFallbackExtents(
+  layout: Pick<AcExHtmlLayoutSnapshot, 'btrId' | 'savedView'>,
+  snapshot: Pick<AcExHtmlSnapshot, 'activeLayoutBtrId' | 'meta'>
+): AcExHtmlExtents {
   if (layout.btrId === snapshot.activeLayoutBtrId) {
     return (
       snapshot.meta.viewExtents ?? layout.savedView ?? snapshot.meta.extents
@@ -228,28 +228,28 @@ export function resolveLayoutFallbackExtents(
  * One batch AABB captured before CPU buffers are released, so intelligent fit
  * can still peel outliers after {@link releaseSnapshotBatchBuffers}.
  */
-export interface AcExBatchExtentEntry {
+export interface AcExHtmlBatchExtentEntry {
   /** Layer name for visibility filtering. */
   layer: string
   /** World XY AABB of the batch at capture time. */
-  extents: AcExExtents
+  extents: AcExHtmlExtents
 }
 
 /**
  * Collects per-batch AABBs from still-resident layout geometry.
  *
  * Call before CPU typed arrays are cleared. Entries survive buffer release and
- * drive {@link computeIntelligentExtentsFromBatchEntries}.
+ * drive {@link acexHtmlComputeIntelligentExtentsFromBatchEntries}.
  */
-export function collectLayoutBatchExtentEntries(
-  layout: Pick<AcExLayoutSnapshot, 'lineBatches' | 'meshBatches'>
-): AcExBatchExtentEntry[] {
-  const entries: AcExBatchExtentEntry[] = []
-  const consider = (batch: AcExLineBatch | AcExMeshBatch) => {
+export function acexHtmlCollectLayoutBatchExtentEntries(
+  layout: Pick<AcExHtmlLayoutSnapshot, 'lineBatches' | 'meshBatches'>
+): AcExHtmlBatchExtentEntry[] {
+  const entries: AcExHtmlBatchExtentEntry[] = []
+  const consider = (batch: AcExHtmlLineBatch | AcExHtmlMeshBatch) => {
     if (batch.positions.length < 3) return
-    const bucket = createEmptyExtents()
-    expandExtentsFromBatch(bucket, batch)
-    const extents = toExtents(bucket)
+    const bucket = acexHtmlCreateEmptyExtents()
+    acexHtmlExpandExtentsFromBatch(bucket, batch)
+    const extents = acexHtmlToExtents(bucket)
     if (!extents) return
     entries.push({ layer: batch.layer, extents })
   }
@@ -269,21 +269,21 @@ export function collectLayoutBatchExtentEntries(
  * (post CPU-release), so a single corrupt ARC AABB cannot dominate the fit
  * even when fewer than 8 boxes remain.
  */
-export function computeIntelligentExtentsFromBatchEntries(
-  entries: ReadonlyArray<AcExBatchExtentEntry>,
+export function acexHtmlComputeIntelligentExtentsFromBatchEntries(
+  entries: ReadonlyArray<AcExHtmlBatchExtentEntry>,
   options?: {
     isLayerVisible?: (layerName: string) => boolean
-    viewports?: ReadonlyArray<{ paper: AcExExtents }>
+    viewports?: ReadonlyArray<{ paper: AcExHtmlExtents }>
     /**
      * When set, oversized batches are expanded into vertex samples instead of
      * being dropped. Only useful while CPU positions are still resident.
      */
     sampleFromLayout?: Pick<
-      AcExLayoutSnapshot,
+      AcExHtmlLayoutSnapshot,
       'lineBatches' | 'meshBatches'
     >
   }
-): AcExExtents | null {
+): AcExHtmlExtents | null {
   const isLayerVisible = options?.isLayerVisible
   const visible = entries.filter(
     entry => !isLayerVisible || isLayerVisible(entry.layer)
@@ -312,7 +312,7 @@ export function computeIntelligentExtentsFromBatchEntries(
   const medianSize = sizes[Math.floor(sizes.length / 2)] || 1
   const hugeSpan = Math.max(medianSize * 50, 1e10)
 
-  const boxes: AcExClusterBox[] = []
+  const boxes: AcExHtmlClusterBox[] = []
   const canSample = options?.sampleFromLayout != null
   for (const entry of visible) {
     const span = Math.max(
@@ -341,7 +341,7 @@ export function computeIntelligentExtentsFromBatchEntries(
     boxes.push(viewport.paper)
   }
   const peeled = peelFarCenterBoxes(boxes)
-  return unionDominantCluster(peeled.length > 0 ? peeled : boxes)
+  return acexHtmlUnionDominantCluster(peeled.length > 0 ? peeled : boxes)
 }
 
 /**
@@ -350,7 +350,7 @@ export function computeIntelligentExtentsFromBatchEntries(
  * Catches tiny corrupt entities (near-zero AABB at 1e75) that the span-based
  * huge-batch filter misses, including when fewer than 8 boxes remain.
  */
-function peelFarCenterBoxes(boxes: AcExClusterBox[]): AcExClusterBox[] {
+function peelFarCenterBoxes(boxes: AcExHtmlClusterBox[]): AcExHtmlClusterBox[] {
   if (boxes.length < 2) {
     return boxes
   }
@@ -376,15 +376,15 @@ function peelFarCenterBoxes(boxes: AcExClusterBox[]): AcExClusterBox[] {
 }
 
 function findBatchWithExtents(
-  batches: ReadonlyArray<AcExLineBatch | AcExMeshBatch>,
-  entry: AcExBatchExtentEntry
-): AcExLineBatch | AcExMeshBatch | undefined {
+  batches: ReadonlyArray<AcExHtmlLineBatch | AcExHtmlMeshBatch>,
+  entry: AcExHtmlBatchExtentEntry
+): AcExHtmlLineBatch | AcExHtmlMeshBatch | undefined {
   for (const batch of batches) {
     if (batch.layer !== entry.layer) continue
     if (batch.positions.length < 3) continue
-    const bucket = createEmptyExtents()
-    expandExtentsFromBatch(bucket, batch)
-    const extents = toExtents(bucket)
+    const bucket = acexHtmlCreateEmptyExtents()
+    acexHtmlExpandExtentsFromBatch(bucket, batch)
+    const extents = acexHtmlToExtents(bucket)
     if (
       extents &&
       extents.minX === entry.extents.minX &&
@@ -411,17 +411,17 @@ function findBatchWithExtents(
  * @returns Clustered extents, or the naive layout union when clustering does
  *   not shrink the set, or `null` when empty.
  */
-export function computeIntelligentLayoutExtents(
-  layout: Pick<AcExLayoutSnapshot, 'lineBatches' | 'meshBatches' | 'viewports'>,
+export function acexHtmlComputeIntelligentLayoutExtents(
+  layout: Pick<AcExHtmlLayoutSnapshot, 'lineBatches' | 'meshBatches' | 'viewports'>,
   isLayerVisible?: (layerName: string) => boolean
-): AcExExtents | null {
-  const entries = collectLayoutBatchExtentEntries(layout)
+): AcExHtmlExtents | null {
+  const entries = acexHtmlCollectLayoutBatchExtentEntries(layout)
   return (
-    computeIntelligentExtentsFromBatchEntries(entries, {
+    acexHtmlComputeIntelligentExtentsFromBatchEntries(entries, {
       isLayerVisible,
       viewports: layout.viewports,
       sampleFromLayout: layout
-    }) ?? computeLayoutViewExtents(layout)
+    }) ?? acexHtmlComputeLayoutViewExtents(layout)
   )
 }
 
@@ -429,8 +429,8 @@ export function computeIntelligentLayoutExtents(
 const SMART_EXTENT_MAX_SAMPLES = 256
 
 function sampleBatchVertexBoxes(
-  batch: AcExLineBatch | AcExMeshBatch,
-  out: AcExClusterBox[]
+  batch: AcExHtmlLineBatch | AcExHtmlMeshBatch,
+  out: AcExHtmlClusterBox[]
 ): void {
   const positions = batch.positions
   const offset = batch.offset
@@ -439,8 +439,8 @@ function sampleBatchVertexBoxes(
   const step = Math.max(1, Math.ceil(vertexCount / SMART_EXTENT_MAX_SAMPLES))
   for (let i = 0; i < vertexCount; i += step) {
     const base = i * 3
-    const x = toWcsCoord(positions[base]!, offset[0])
-    const y = toWcsCoord(positions[base + 1]!, offset[1])
+    const x = acexHtmlToWcsCoord(positions[base]!, offset[0])
+    const y = acexHtmlToWcsCoord(positions[base + 1]!, offset[1])
     if (!Number.isFinite(x) || !Number.isFinite(y)) continue
     out.push({ minX: x, minY: y, maxX: x, maxY: y })
   }
@@ -454,31 +454,31 @@ function sampleBatchVertexBoxes(
  * @param meshBatches - Mesh batches for the active layout.
  * @returns Map from layer name to extents, or `null` when the layer has no geometry.
  */
-export function computeLayerExtentsMap(
-  lineBatches: AcExLineBatch[],
-  meshBatches: AcExMeshBatch[]
-): Map<string, AcExExtents | null> {
-  const buckets = new Map<string, AcExMutableExtents>()
+export function acexHtmlComputeLayerExtentsMap(
+  lineBatches: AcExHtmlLineBatch[],
+  meshBatches: AcExHtmlMeshBatch[]
+): Map<string, AcExHtmlExtents | null> {
+  const buckets = new Map<string, AcExHtmlMutableExtents>()
 
-  const ensure = (layer: string): AcExMutableExtents => {
+  const ensure = (layer: string): AcExHtmlMutableExtents => {
     let bucket = buckets.get(layer)
     if (!bucket) {
-      bucket = createEmptyExtents()
+      bucket = acexHtmlCreateEmptyExtents()
       buckets.set(layer, bucket)
     }
     return bucket
   }
 
   for (const batch of lineBatches) {
-    expandExtentsFromBatch(ensure(batch.layer), batch)
+    acexHtmlExpandExtentsFromBatch(ensure(batch.layer), batch)
   }
   for (const batch of meshBatches) {
-    expandExtentsFromBatch(ensure(batch.layer), batch)
+    acexHtmlExpandExtentsFromBatch(ensure(batch.layer), batch)
   }
 
-  const result = new Map<string, AcExExtents | null>()
+  const result = new Map<string, AcExHtmlExtents | null>()
   for (const [layer, bucket] of buckets) {
-    result.set(layer, toExtents(bucket))
+    result.set(layer, acexHtmlToExtents(bucket))
   }
   return result
 }

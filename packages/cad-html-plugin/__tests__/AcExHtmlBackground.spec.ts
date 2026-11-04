@@ -1,12 +1,12 @@
-import type { AcExSnapshot } from '@mlightcad/cad-html-core'
+import type { AcExHtmlSnapshot } from '@mlightcad/cad-html-core'
 import {
   ACEX_HTML_BACKGROUND_BLACK,
   ACEX_HTML_BACKGROUND_WHITE,
-  acExHtmlBackgroundRgb,
-  acExHtmlLayoutBackground,
-  applyAcExHtmlBackground,
-  remapAcExSnapshotForegroundForBackground,
-  resolveAcExHtmlBackground
+  acexHtmlBackgroundRgb,
+  acexHtmlLayoutBackground,
+  acexHtmlApplyBackground,
+  acexHtmlRemapSnapshotForegroundForBackground,
+  acexHtmlResolveBackground
 } from '@mlightcad/cad-html-core'
 
 function snapshot(options?: {
@@ -14,7 +14,7 @@ function snapshot(options?: {
   meshColor?: number
   texture?: boolean
   gradient?: { startColor: number; endColor: number }
-}): AcExSnapshot {
+}): AcExHtmlSnapshot {
   return {
     meta: { background: 0x112233 },
     layouts: [
@@ -39,19 +39,19 @@ function snapshot(options?: {
         ]
       }
     ]
-  } as unknown as AcExSnapshot
+  } as unknown as AcExHtmlSnapshot
 }
 
 describe('HTML export background', () => {
   it('resolves omitted and black to black, and white to white', () => {
-    expect(acExHtmlBackgroundRgb(undefined)).toBe(ACEX_HTML_BACKGROUND_BLACK)
-    expect(acExHtmlBackgroundRgb('black')).toBe(ACEX_HTML_BACKGROUND_BLACK)
-    expect(acExHtmlBackgroundRgb('white')).toBe(ACEX_HTML_BACKGROUND_WHITE)
+    expect(acexHtmlBackgroundRgb(undefined)).toBe(ACEX_HTML_BACKGROUND_BLACK)
+    expect(acexHtmlBackgroundRgb('black')).toBe(ACEX_HTML_BACKGROUND_BLACK)
+    expect(acexHtmlBackgroundRgb('white')).toBe(ACEX_HTML_BACKGROUND_WHITE)
   })
 
   it('keeps paper-space ink when the export canvas stays light', () => {
     const exported = snapshot({ lineColor: 0x000000, meshColor: 0xffffff })
-    remapAcExSnapshotForegroundForBackground(
+    acexHtmlRemapSnapshotForegroundForBackground(
       exported,
       ACEX_HTML_BACKGROUND_WHITE,
       ACEX_HTML_BACKGROUND_WHITE
@@ -67,7 +67,7 @@ describe('HTML export background', () => {
       meshColor: 0xf0f0f0,
       gradient: { startColor: 0x000000, endColor: 0xff0000 }
     })
-    remapAcExSnapshotForegroundForBackground(
+    acexHtmlRemapSnapshotForegroundForBackground(
       exported,
       ACEX_HTML_BACKGROUND_WHITE,
       ACEX_HTML_BACKGROUND_BLACK
@@ -89,7 +89,7 @@ describe('HTML export background', () => {
       meshColor: 0xffffff,
       texture: true
     })
-    remapAcExSnapshotForegroundForBackground(
+    acexHtmlRemapSnapshotForegroundForBackground(
       exported,
       ACEX_HTML_BACKGROUND_BLACK,
       ACEX_HTML_BACKGROUND_WHITE
@@ -99,17 +99,17 @@ describe('HTML export background', () => {
   })
 
   it('resolves space and treats anything else as black', () => {
-    expect(resolveAcExHtmlBackground(undefined)).toBe('black')
-    expect(resolveAcExHtmlBackground('black')).toBe('black')
-    expect(resolveAcExHtmlBackground('white')).toBe('white')
-    expect(resolveAcExHtmlBackground('space')).toBe('space')
-    expect(acExHtmlLayoutBackground('space', true, 0xffffff)).toBe(
+    expect(acexHtmlResolveBackground(undefined)).toBe('black')
+    expect(acexHtmlResolveBackground('black')).toBe('black')
+    expect(acexHtmlResolveBackground('white')).toBe('white')
+    expect(acexHtmlResolveBackground('space')).toBe('space')
+    expect(acexHtmlLayoutBackground('space', true, 0xffffff)).toBe(
       ACEX_HTML_BACKGROUND_BLACK
     )
-    expect(acExHtmlLayoutBackground('space', false, 0)).toBe(
+    expect(acexHtmlLayoutBackground('space', false, 0)).toBe(
       ACEX_HTML_BACKGROUND_WHITE
     )
-    expect(acExHtmlLayoutBackground('black', false, 0x112233)).toBe(0x112233)
+    expect(acexHtmlLayoutBackground('black', false, 0x112233)).toBe(0x112233)
   })
 
   it('bakes model space black and paper space white', () => {
@@ -130,9 +130,9 @@ describe('HTML export background', () => {
           meshBatches: [{ color: 0xf0f0f0, texture: undefined }]
         }
       ]
-    } as unknown as AcExSnapshot
+    } as unknown as AcExHtmlSnapshot
 
-    applyAcExHtmlBackground(exported, ACEX_HTML_BACKGROUND_WHITE, 'space')
+    acexHtmlApplyBackground(exported, ACEX_HTML_BACKGROUND_WHITE, 'space')
 
     expect(exported.meta.backgroundMode).toBe('space')
     expect(exported.meta.background).toBe(ACEX_HTML_BACKGROUND_WHITE)

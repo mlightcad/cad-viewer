@@ -184,18 +184,18 @@ await new AcApHtmlConvertor({ viewerRuntimeUrl: './viewer-runtime.iife.js' })
 
 ```typescript
 import {
-  buildAcExPackage,
-  zipAcExPackageFiles,
-  unzipAcExPackageFiles
+  acexHtmlBuildPackage,
+  acexHtmlZipPackageFiles,
+  acexHtmlUnzipPackageFiles
 } from '@mlightcad/cad-html-plugin'
 
 // snapshot is built from the Three.js scene by AcApHtmlSnapshotBuilder
-const pkg = buildAcExPackage(snapshot, {
+const pkg = acexHtmlBuildPackage(snapshot, {
   viewerRuntime,          // Text of viewer-runtime.iife.js
   baseName: 'floor-plan'
 })
 
-const zipBytes = zipAcExPackageFiles(pkg)     // Package into a zip for download
+const zipBytes = acexHtmlZipPackageFiles(pkg)     // Package into a zip for download
 // Or directly write pkg.files ([{ path, bytes }, ...]) to disk / upload to object storage,
 // completely skipping the extraction step:
 for (const file of pkg.files) {
@@ -294,7 +294,7 @@ npx serve .
 ```js
 // publish-cad-package.mjs
 import { runHeadless } from '@mlightcad/cad-simple-viewer-cli'
-import { unzipAcExPackageFiles } from '@mlightcad/cad-html-plugin'
+import { acexHtmlUnzipPackageFiles } from '@mlightcad/cad-html-plugin'
 import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -312,7 +312,7 @@ const { outputDir } = await runHeadless({
 // 2. Find the generated zip and extract it to the publishing directory
 const zipName = (await readdir(outputDir)).find(f => f.endsWith('.zip'))
 const zipBytes = await readFile(path.join(outputDir, zipName))
-const files = unzipAcExPackageFiles(
+const files = acexHtmlUnzipPackageFiles(
   new Uint8Array(zipBytes)
 ) // Includes path security validation and rejects dangerous entries such as ../
 const target = path.join(publishRoot, path.basename(zipName, '.zip'))
@@ -326,7 +326,7 @@ for (const file of files) {
 console.log(`Published: https://drawings.example.com/${path.basename(target)}/viewer.html`)
 ```
 
-本番環境では、次のような機能も追加できます。図面内容のハッシュを使用して重複変換をスキップできるか判断する、失敗した変換を再試行する、または `PutObject` を直接使用して `pkg.files` をオブジェクトストレージにアップロードする（方法 3 の `buildAcExPackage` を使用すれば zip を作成する必要すらありません）。
+本番環境では、次のような機能も追加できます。図面内容のハッシュを使用して重複変換をスキップできるか判断する、失敗した変換を再試行する、または `PutObject` を直接使用して `pkg.files` をオブジェクトストレージにアップロードする（方法 3 の `acexHtmlBuildPackage` を使用すれば zip を作成する必要すらありません）。
 
 ---
 
@@ -334,7 +334,7 @@ console.log(`Published: https://drawings.example.com/${path.basename(target)}/vi
 
 **Q: zip ファイルをサーバーに置いて、そのリンクを提供するだけではだめですか？**
 
-いいえ。zip はダウンロードと配布のためのパッケージ形式にすぎません。実行時、ビューアは展開された `viewer.html` / `*.acex.json` / `chunks/*.gz` をフェッチします。サーバーで展開して結果のファイルをホスティングするか、独自のアプリケーションで `unzipAcExPackageFiles` を使用してフロントエンドで展開する必要があります（同一オリジンとメモリの問題に注意してください。大きな図面には推奨されません）。
+いいえ。zip はダウンロードと配布のためのパッケージ形式にすぎません。実行時、ビューアは展開された `viewer.html` / `*.acex.json` / `chunks/*.gz` をフェッチします。サーバーで展開して結果のファイルをホスティングするか、独自のアプリケーションで `acexHtmlUnzipPackageFiles` を使用してフロントエンドで展開する必要があります（同一オリジンとメモリの問題に注意してください。大きな図面には推奨されません）。
 
 **Q: ページを開いた後、チャンクファイルが 404 になったり、読み込みに失敗したりします。**
 

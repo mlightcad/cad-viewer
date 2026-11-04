@@ -9,7 +9,7 @@
  * @packageDocumentation
  */
 
-import type { AcExLayoutSnapshot, AcExViewerMode } from '@mlightcad/cad-html-core'
+import type { AcExHtmlLayoutSnapshot, AcExHtmlViewerMode } from '@mlightcad/cad-html-core'
 import {
   ACEX_HTML_LOCALE_BADGES,
   ACEX_HTML_LOCALES,
@@ -127,11 +127,11 @@ export interface AcExHtmlMainToolbarOptions {
   /** Theme / dropdown host; defaults to `#mlcad-root` or `document.body`. */
   themeHost?: HTMLElement
   i18n: AcExHtmlI18n
-  viewerMode: AcExViewerMode
+  viewerMode: AcExHtmlViewerMode
   /** When false, the layout switcher is omitted. */
   exportLayouts: boolean
   /** Snapshot layouts for the layout menu (may be empty). */
-  layouts: Pick<AcExLayoutSnapshot, 'btrId' | 'name'>[]
+  layouts: Pick<AcExHtmlLayoutSnapshot, 'btrId' | 'name'>[]
   /** BTR id of the layout currently shown. */
   getActiveLayoutBtrId: () => string
   handlers: AcExHtmlMainToolbarHandlers
@@ -647,7 +647,7 @@ function createAnnotationItem(
 function createSettingsItem(
   i18n: AcExHtmlI18n,
   handlers: AcExHtmlMainToolbarHandlers,
-  viewerMode: AcExViewerMode
+  viewerMode: AcExHtmlViewerMode
 ): AcUiToolbarItem {
   const children: AcUiToolbarItem[] = [createSimulatedMouseItem()]
   const snap = viewerMode === 'measure' ? createSnapItem(handlers) : null

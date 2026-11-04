@@ -77,7 +77,7 @@ itself stays on the caller. The techniques below are the Node exporter; the
 browser plugin keeps its own codec and thread model.
 
 A server should run **one drawing per process** (or a process pool capped by
-the machine's cores). `worldDraw`, glyph `asyncDraw`, and `encodeChunkBinary`
+the machine's cores). `worldDraw`, glyph `asyncDraw`, and `acexHtmlEncodeChunkBinary`
 are JavaScript on that process's main thread. A second `exportFileToHtml` in
 the same process shares the thread, so it does not shorten the busy export.
 Separate processes are how multiple drawings overlap.
@@ -186,8 +186,8 @@ zip. Pack was 78 geometry chunks, ~571 MiB of geometry buffers, and no OSNAP
 chunks. Do not reintroduce the following for this exporter.
 
 **`worker_threads` pool for chunk encode + gzip.**
-`buildAcExPackageDataAsync` already overlaps chunk gzip on the libuv pool.
-Moving `encodeChunkBinary` / `encodeOsnapCatalogBinary` plus gzip onto up to
+`acexHtmlBuildPackageDataAsync` already overlaps chunk gzip on the libuv pool.
+Moving `acexHtmlEncodeChunkBinary` / `acexHtmlEncodeOsnapCatalogBinary` plus gzip onto up to
 `min(8, availableParallelism())` workers did not move pack time (10.7 s with
 the pool, 11.3 s on the main thread). Binary encode of every chunk summed to
 ~340 ms. Structured-clone of the chunk graph onto the workers cost ~410 ms.
@@ -204,7 +204,7 @@ beat 4 by about 1.4× on that synthetic gzip, not 4×. On the drawing above,
 pack stayed ~11.4 s with the default pool of 4. A larger pool on every
 concurrent exporter process oversubscribes the machine for that small gain.
 
-**Parallelizing `encodeChunkBinary` on its own.**
+**Parallelizing `acexHtmlEncodeChunkBinary` on its own.**
 It was ~340 ms of an ~11 s pack. The bytes are already walked once to build
 the ACEC buffer; a second thread would need those typed arrays copied or
 transferred first.

@@ -1,10 +1,10 @@
 import {
   ACEX_HTML_LOCALE_STORAGE_KEY,
   AcExHtmlI18n,
-  detectAcExHtmlLocale,
-  detectBrowserAcExHtmlLocale,
-  formatAcExHtmlMessage,
-  resolveAcExHtmlLocale
+  acexHtmlDetectLocale,
+  acexHtmlDetectBrowserLocale,
+  acexHtmlFormatMessage,
+  acexHtmlResolveLocale
 } from '@mlightcad/cad-html-core'
 
 describe('AcExHtmlI18n', () => {
@@ -50,37 +50,37 @@ describe('AcExHtmlI18n', () => {
   }
 
   it('resolves locale codes', () => {
-    expect(resolveAcExHtmlLocale('zh-CN')).toBe('zh')
-    expect(resolveAcExHtmlLocale('en-US')).toBe('en')
-    expect(resolveAcExHtmlLocale('cs-CZ')).toBe('cs')
-    expect(resolveAcExHtmlLocale('tr-TR')).toBe('tr')
-    expect(resolveAcExHtmlLocale('ar-SA')).toBe('ar')
-    expect(resolveAcExHtmlLocale('fr')).toBeNull()
+    expect(acexHtmlResolveLocale('zh-CN')).toBe('zh')
+    expect(acexHtmlResolveLocale('en-US')).toBe('en')
+    expect(acexHtmlResolveLocale('cs-CZ')).toBe('cs')
+    expect(acexHtmlResolveLocale('tr-TR')).toBe('tr')
+    expect(acexHtmlResolveLocale('ar-SA')).toBe('ar')
+    expect(acexHtmlResolveLocale('fr')).toBeNull()
   })
 
   it('detects browser locale from language preferences', () => {
     mockNavigator(['zh-CN', 'en-US'])
-    expect(detectBrowserAcExHtmlLocale()).toBe('zh')
+    expect(acexHtmlDetectBrowserLocale()).toBe('zh')
 
     mockNavigator(['en-US', 'zh-CN'])
-    expect(detectBrowserAcExHtmlLocale()).toBe('en')
+    expect(acexHtmlDetectBrowserLocale()).toBe('en')
 
     mockNavigator(['ar-SA', 'en-US'])
-    expect(detectBrowserAcExHtmlLocale()).toBe('ar')
+    expect(acexHtmlDetectBrowserLocale()).toBe('ar')
 
     mockNavigator(['fr-FR'])
-    expect(detectBrowserAcExHtmlLocale()).toBe('en')
+    expect(acexHtmlDetectBrowserLocale()).toBe('en')
   })
 
   it('prefers stored locale over browser language', () => {
     mockNavigator(['zh-CN'])
     localStorage.setItem(ACEX_HTML_LOCALE_STORAGE_KEY, 'en')
-    expect(detectAcExHtmlLocale()).toBe('en')
+    expect(acexHtmlDetectLocale()).toBe('en')
   })
 
   it('falls back to browser locale when storage is empty', () => {
     mockNavigator(['zh-CN'])
-    expect(detectAcExHtmlLocale()).toBe('zh')
+    expect(acexHtmlDetectLocale()).toBe('zh')
   })
 
   it('translates messages with parameters', () => {
@@ -103,7 +103,7 @@ describe('AcExHtmlI18n', () => {
     expect(i18n.t('status.radius', { value: '5' })).toBe('半径：5')
     expect(i18n.t('session.confirm')).toBe('确定')
     expect(i18n.t('session.undo')).toBe('撤销')
-    expect(formatAcExHtmlMessage('Zoom: {name}', { name: '0' })).toBe('Zoom: 0')
+    expect(acexHtmlFormatMessage('Zoom: {name}', { name: '0' })).toBe('Zoom: 0')
   })
 
   it('cycles the locale through en -> zh -> cs -> tr -> ar -> en', () => {

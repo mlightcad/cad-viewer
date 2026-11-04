@@ -1,26 +1,25 @@
 import {
-  type AcApHtmlExpiryDays,
   type AcApHtmlExportFormat,
   AcApHtmlSnapshotBuilder,
   ACEX_DEFAULT_CHUNK_SIZE_MIB,
   ACEX_MAX_CHUNK_SIZE_MIB,
   ACEX_MIN_CHUNK_SIZE_MIB,
   acexChunkSizeMiBToBytes,
+  acexHtmlApplyBackground,
   type AcExHtmlBackground,
-  type AcExInitialViewMode,
-  type AcExViewerMode,
-  applyAcExHtmlBackground,
-  buildAcExPackage,
+  acexHtmlBuildPackage,
+  acexHtmlEncodeSnapshot,
+  type AcExHtmlExpiryDays,
+  type AcExHtmlInitialViewMode,
+  acexHtmlPackHtml,
+  acexHtmlProtectEncodedSnapshot,
+  acexHtmlResolveExpiresAt,
+  type AcExHtmlViewerMode,
+  acexHtmlZipPackageFiles,
   captureAcApHtmlViewState,
   clampAcApHtmlChunkSizeMiB,
-  encodeSnapshot,
-  packHtml,
-  protectAcExHtmlEncodedSnapshot,
-  resolveAcApHtmlExpiresAt,
   resolveAcApHtmlExportOptions,
-  resolveAcApHtmlPackageBuildOptions,
-  zipAcExPackageFiles
-} from '@mlightcad/cad-html-plugin'
+  resolveAcApHtmlPackageBuildOptions} from '@mlightcad/cad-html-plugin'
 import {
   AcApDocManager,
   type AcApOpenDatabaseOptions,
@@ -561,7 +560,7 @@ class HtmlConverterApp {
     )
   }
 
-  private readExpiryDays(): AcApHtmlExpiryDays {
+  private readExpiryDays(): AcExHtmlExpiryDays {
     const raw = (
       document.querySelector(
         'input[name="expiryDays"]:checked'
@@ -606,12 +605,12 @@ class HtmlConverterApp {
       document.querySelector(
         'input[name="viewerMode"]:checked'
       ) as HTMLInputElement | null
-    )?.value as AcExViewerMode | undefined
+    )?.value as AcExHtmlViewerMode | undefined
     const initialView = (
       document.querySelector(
         'input[name="initialView"]:checked'
       ) as HTMLInputElement | null
-    )?.value as AcExInitialViewMode | undefined
+    )?.value as AcExHtmlInitialViewMode | undefined
     const background = (
       document.querySelector(
         'input[name="background"]:checked'
@@ -711,7 +710,7 @@ class HtmlConverterApp {
     )
     // Live geometry is baked for the canvas on screen. Remap ACI 7 onto the
     // chosen background; `'space'` uses black in model and white on paper.
-    applyAcExHtmlBackground(
+    acexHtmlApplyBackground(
       snapshot,
       view.backgroundColor,
       resolved.background
@@ -720,7 +719,7 @@ class HtmlConverterApp {
     const viewerRuntime = await (this.runtimePromise ?? this.loadViewerRuntime())
 
     if (resolved.exportFormat === 'multi') {
-      const pkg = buildAcExPackage(snapshot, {
+      const pkg = acexHtmlBuildPackage(snapshot, {
         viewerRuntime,
         baseName,
         ...resolveAcApHtmlPackageBuildOptions(resolved)
@@ -728,24 +727,24 @@ class HtmlConverterApp {
       return {
         downloadName: resolveExportDownloadName(fileName, 'zip'),
         mimeType: 'application/zip',
-        data: zipAcExPackageFiles(pkg)
+        data: acexHtmlZipPackageFiles(pkg)
       }
     }
 
-    const expiresAt = resolveAcApHtmlExpiresAt(
+    const expiresAt = acexHtmlResolveExpiresAt(
       resolved.expiryDays,
       Date.now(),
       resolved.expiresAt
     )
-    const protectedSnapshot = await protectAcExHtmlEncodedSnapshot(
-      encodeSnapshot(snapshot),
+    const protectedSnapshot = await acexHtmlProtectEncodedSnapshot(
+      acexHtmlEncodeSnapshot(snapshot),
       {
         expiresAt,
         password: resolved.password || undefined
       }
     )
 
-    const html = packHtml(snapshot, {
+    const html = acexHtmlPackHtml(snapshot, {
       title: snapshot.meta.title,
       viewerRuntime,
       encoded: protectedSnapshot.encoded,

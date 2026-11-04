@@ -1,9 +1,9 @@
 import {
   type AcExHtmlBinaryEncoding,
-  acExHtmlBytesToText,
-  acExHtmlTextToBytes
+  acexHtmlBytesToText,
+  acexHtmlTextToBytes
 } from './AcExHtmlBinaryText'
-import type { AcExEncodedSnapshot } from './AcExSnapshotCodec'
+import type { AcExHtmlEncodedSnapshot } from './AcExHtmlSnapshotCodec'
 
 /** Access-control manifest schema version embedded in exported HTML. */
 export const ACEX_HTML_ACCESS_VERSION = 1 as const
@@ -12,7 +12,7 @@ export const ACEX_HTML_ACCESS_VERSION = 1 as const
 export const ACEX_HTML_EXPIRY_COUNTDOWN_MS = 10 * 60 * 1000
 
 /** Supported HTML export validity periods. */
-export type AcApHtmlExpiryDays = 1 | 7 | 30 | 'never' | 'custom'
+export type AcExHtmlExpiryDays = 1 | 7 | 30 | 'never' | 'custom'
 
 /**
  * Access metadata embedded in protected HTML exports.
@@ -49,8 +49,8 @@ const LOCALE_TO_BCP47: Record<string, string> = {
  *
  * When `expiryDays` is `'custom'`, returns `customExpiresAt` (or `null`).
  */
-export function resolveAcApHtmlExpiresAt(
-  expiryDays: AcApHtmlExpiryDays,
+export function acexHtmlResolveExpiresAt(
+  expiryDays: AcExHtmlExpiryDays,
   exportedAt = Date.now(),
   customExpiresAt?: number | null
 ): number | null {
@@ -66,7 +66,7 @@ export function resolveAcApHtmlExpiresAt(
 /**
  * Returns whether export options require an access manifest in the HTML file.
  */
-export function needsAcExHtmlAccessControl(options: {
+export function acexHtmlNeedsAccessControl(options: {
   expiresAt: number | null
   password?: string
 }): boolean {
@@ -77,7 +77,7 @@ export function needsAcExHtmlAccessControl(options: {
 /**
  * Returns whether an access manifest has passed its expiry time.
  */
-export function isAcExHtmlAccessExpired(
+export function acexHtmlIsAccessExpired(
   manifest: AcExHtmlAccessManifest,
   now = Date.now()
 ): boolean {
@@ -87,7 +87,7 @@ export function isAcExHtmlAccessExpired(
 /**
  * Returns whether the near-expiry countdown should be shown.
  */
-export function isAcExHtmlExpiryCountdownActive(
+export function acexHtmlIsExpiryCountdownActive(
   expiresAt: number,
   now = Date.now()
 ): boolean {
@@ -98,7 +98,7 @@ export function isAcExHtmlExpiryCountdownActive(
 /**
  * Formats an absolute expiry timestamp for display in the given locale.
  */
-export function formatAcExHtmlExpiresAt(
+export function acexHtmlFormatExpiresAt(
   expiresAt: number,
   locale = 'en'
 ): string {
@@ -121,7 +121,7 @@ export function formatAcExHtmlExpiresAt(
 /**
  * Formats a remaining duration as `M:SS` or `H:MM:SS`.
  */
-export function formatAcExHtmlCountdown(remainingMs: number): string {
+export function acexHtmlFormatCountdown(remainingMs: number): string {
   const totalSeconds = Math.max(0, Math.ceil(remainingMs / 1000))
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
@@ -137,7 +137,7 @@ export function formatAcExHtmlCountdown(remainingMs: number): string {
 /**
  * Parses the `#mlcad-access` JSON manifest from an exported HTML file.
  */
-export function parseAcExHtmlAccessManifest(
+export function acexHtmlParseAccessManifest(
   raw: string | null | undefined
 ): AcExHtmlAccessManifest | null {
   const text = raw?.trim()
@@ -156,14 +156,14 @@ export function parseAcExHtmlAccessManifest(
 }
 
 /**
- * Builds an access manifest for {@link packHtml}.
+ * Builds an access manifest for {@link acexHtmlPackHtml}.
  */
-export function buildAcExHtmlAccessManifest(options: {
+export function acexHtmlBuildAccessManifest(options: {
   expiresAt: number | null
   password?: string
   salt?: string
 }): AcExHtmlAccessManifest | undefined {
-  if (!needsAcExHtmlAccessControl(options)) {
+  if (!acexHtmlNeedsAccessControl(options)) {
     return undefined
   }
   const encrypted = Boolean(options.password?.trim())
@@ -179,7 +179,7 @@ export function buildAcExHtmlAccessManifest(options: {
  * Derives an AES-GCM key from a password and optional salt.
  * When `saltBase64` is omitted, a fresh random salt is generated.
  */
-export async function createAcExHtmlAccessKey(
+export async function acexHtmlCreateAccessKey(
   password: string,
   saltBase64?: string
 ): Promise<{ key: CryptoKey; salt: string }> {
@@ -194,7 +194,7 @@ export async function createAcExHtmlAccessKey(
 /**
  * Encrypts raw bytes with AES-GCM. Returns `iv || ciphertext`.
  */
-export async function encryptAcExHtmlBytes(
+export async function acexHtmlEncryptBytes(
   key: CryptoKey,
   plain: Uint8Array
 ): Promise<Uint8Array> {
@@ -210,11 +210,11 @@ export async function encryptAcExHtmlBytes(
 }
 
 /**
- * Decrypts AES-GCM bytes produced by {@link encryptAcExHtmlBytes}.
+ * Decrypts AES-GCM bytes produced by {@link acexHtmlEncryptBytes}.
  *
  * @throws When the key is wrong or the ciphertext is invalid.
  */
-export async function decryptAcExHtmlBytes(
+export async function acexHtmlDecryptBytes(
   key: CryptoKey,
   combined: Uint8Array
 ): Promise<Uint8Array> {
@@ -229,18 +229,18 @@ export async function decryptAcExHtmlBytes(
  * Encrypts a gzip-compressed snapshot payload for password-protected HTML export.
  *
  * @param encoding - Text encoding of {@link payload} and the returned ciphertext
- *   (defaults to `base85`, matching {@link encodeSnapshot}).
+ *   (defaults to `base85`, matching {@link acexHtmlEncodeSnapshot}).
  */
-export async function encryptAcExHtmlSnapshotPayload(
+export async function acexHtmlEncryptSnapshotPayload(
   password: string,
   payload: string,
   encoding: AcExHtmlBinaryEncoding = 'base85'
 ): Promise<{ encryptedPayload: string; salt: string }> {
-  const { key, salt } = await createAcExHtmlAccessKey(password)
-  const plainBytes = acExHtmlTextToBytes(payload, encoding)
-  const combined = await encryptAcExHtmlBytes(key, plainBytes)
+  const { key, salt } = await acexHtmlCreateAccessKey(password)
+  const plainBytes = acexHtmlTextToBytes(payload, encoding)
+  const combined = await acexHtmlEncryptBytes(key, plainBytes)
   return {
-    encryptedPayload: acExHtmlBytesToText(combined, encoding),
+    encryptedPayload: acexHtmlBytesToText(combined, encoding),
     salt
   }
 }
@@ -251,47 +251,47 @@ export async function encryptAcExHtmlSnapshotPayload(
  * @param encoding - Text encoding of the ciphertext and the returned gzip payload.
  * @throws When the password is wrong or the ciphertext is invalid.
  */
-export async function decryptAcExHtmlSnapshotPayload(
+export async function acexHtmlDecryptSnapshotPayload(
   password: string,
   encryptedPayload: string,
   saltBase64: string,
   encoding: AcExHtmlBinaryEncoding = 'base85'
 ): Promise<string> {
-  const { key } = await createAcExHtmlAccessKey(password, saltBase64)
-  const plainBytes = await decryptAcExHtmlBytes(
+  const { key } = await acexHtmlCreateAccessKey(password, saltBase64)
+  const plainBytes = await acexHtmlDecryptBytes(
     key,
-    acExHtmlTextToBytes(encryptedPayload, encoding)
+    acexHtmlTextToBytes(encryptedPayload, encoding)
   )
-  return acExHtmlBytesToText(plainBytes, encoding)
+  return acexHtmlBytesToText(plainBytes, encoding)
 }
 
 /** Encodes bytes as standard base64 (for HTML embedding). */
-export function acExHtmlBytesToBase64(bytes: Uint8Array): string {
+export function acexHtmlBytesToBase64(bytes: Uint8Array): string {
   return uint8ToBase64(bytes)
 }
 
 /** Decodes standard base64 to bytes. */
-export function acExHtmlBase64ToBytes(base64: string): Uint8Array {
+export function acexHtmlBase64ToBytes(base64: string): Uint8Array {
   return base64ToUint8(base64)
 }
 
 /**
  * Applies password encryption to an encoded snapshot when a password is set.
  */
-export async function protectAcExHtmlEncodedSnapshot(
-  encoded: AcExEncodedSnapshot,
+export async function acexHtmlProtectEncodedSnapshot(
+  encoded: AcExHtmlEncodedSnapshot,
   options: { expiresAt: number | null; password?: string }
 ): Promise<{
-  encoded: AcExEncodedSnapshot
+  encoded: AcExHtmlEncodedSnapshot
   manifest?: AcExHtmlAccessManifest
 }> {
-  if (!needsAcExHtmlAccessControl(options)) {
+  if (!acexHtmlNeedsAccessControl(options)) {
     return { encoded }
   }
 
   const password = options.password?.trim()
   if (password) {
-    const { encryptedPayload, salt } = await encryptAcExHtmlSnapshotPayload(
+    const { encryptedPayload, salt } = await acexHtmlEncryptSnapshotPayload(
       password,
       encoded.payload
     )
@@ -300,7 +300,7 @@ export async function protectAcExHtmlEncodedSnapshot(
         payload: encryptedPayload,
         compression: encoded.compression
       },
-      manifest: buildAcExHtmlAccessManifest({
+      manifest: acexHtmlBuildAccessManifest({
         expiresAt: options.expiresAt,
         password,
         salt
@@ -310,7 +310,7 @@ export async function protectAcExHtmlEncodedSnapshot(
 
   return {
     encoded,
-    manifest: buildAcExHtmlAccessManifest({
+    manifest: acexHtmlBuildAccessManifest({
       expiresAt: options.expiresAt
     })
   }

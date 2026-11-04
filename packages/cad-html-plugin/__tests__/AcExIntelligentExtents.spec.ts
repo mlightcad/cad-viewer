@@ -1,14 +1,14 @@
 import {
-  collectLayoutBatchExtentEntries,
-  computeIntelligentExtentsFromBatchEntries
+  acexHtmlCollectLayoutBatchExtentEntries,
+  acexHtmlComputeIntelligentExtentsFromBatchEntries
 } from '@mlightcad/cad-html-core'
-import type { AcExLineBatch } from '@mlightcad/cad-html-core'
+import type { AcExHtmlLineBatch } from '@mlightcad/cad-html-core'
 
 function makeLineBatch(
   layer: string,
   positions: number[],
   offset: [number, number, number] = [0, 0, 0]
-): AcExLineBatch {
+): AcExHtmlLineBatch {
   return {
     layer,
     color: 0xffffff,
@@ -17,7 +17,7 @@ function makeLineBatch(
   }
 }
 
-describe('computeIntelligentExtentsFromBatchEntries', () => {
+describe('acexHtmlComputeIntelligentExtentsFromBatchEntries', () => {
   it('drops outlier-scale batch AABBs after CPU release (no vertex samples)', () => {
     const siteBatches = Array.from({ length: 10 }, (_, i) =>
       makeLineBatch('site', [
@@ -41,11 +41,11 @@ describe('computeIntelligentExtentsFromBatchEntries', () => {
       lineBatches: [...siteBatches, poison],
       meshBatches: [] as never[]
     }
-    const entries = collectLayoutBatchExtentEntries(layout)
+    const entries = acexHtmlCollectLayoutBatchExtentEntries(layout)
     expect(entries.length).toBe(11)
 
     // Simulate CPU release: no sampleFromLayout.
-    const smart = computeIntelligentExtentsFromBatchEntries(entries)
+    const smart = acexHtmlComputeIntelligentExtentsFromBatchEntries(entries)
     expect(smart).not.toBeNull()
     expect(smart!.maxX).toBeLessThan(1e10)
     expect(smart!.minX).toBeGreaterThan(489000)
@@ -66,7 +66,7 @@ describe('computeIntelligentExtentsFromBatchEntries', () => {
         extents: { minX: 1e75, minY: 1e63, maxX: 1e75 + 1, maxY: 1e63 + 1 }
       }
     ]
-    const smart = computeIntelligentExtentsFromBatchEntries(entries)
+    const smart = acexHtmlComputeIntelligentExtentsFromBatchEntries(entries)
     expect(smart).not.toBeNull()
     expect(smart!.maxX).toBeLessThan(1e10)
   })

@@ -9,12 +9,12 @@
  */
 
 import type {
-  AcExOsnapArcPrimitive,
-  AcExOsnapCirclePrimitive,
-  AcExOsnapLinePrimitive,
-  AcExOsnapPrimitive
+  AcExHtmlOsnapArcPrimitive,
+  AcExHtmlOsnapCirclePrimitive,
+  AcExHtmlOsnapLinePrimitive,
+  AcExHtmlOsnapPrimitive
 } from '@mlightcad/cad-html-core'
-import { normalizeArcDelta } from '@mlightcad/cad-html-core'
+import { acexHtmlNormalizeArcDelta } from '@mlightcad/cad-html-core'
 import { FLOAT_TOL, TAU } from '@mlightcad/data-model'
 
 /** Tessellated segment for intersection fallback. */
@@ -25,7 +25,7 @@ export interface AcExOsnapSegmentLike {
   y1: number
 }
 
-type AcExCircArcLike = AcExOsnapCirclePrimitive | AcExOsnapArcPrimitive
+type AcExCircArcLike = AcExHtmlOsnapCirclePrimitive | AcExHtmlOsnapArcPrimitive
 
 /** Max nearby geometry sources considered per intersection query. */
 export const ACEX_MAX_INTERSECTION_SOURCES = 48
@@ -180,10 +180,10 @@ export function intersectLineSegmentPoints(
 
 function isAngleInArcSweep(
   angle: number,
-  prim: AcExOsnapArcPrimitive,
+  prim: AcExHtmlOsnapArcPrimitive,
   tol: number
 ): boolean {
-  const delta = normalizeArcDelta(prim.startAngle, prim.endAngle)
+  const delta = acexHtmlNormalizeArcDelta(prim.startAngle, prim.endAngle)
   let rel = angle - prim.startAngle
   while (rel < 0) rel += TAU
   while (rel >= TAU) rel -= TAU
@@ -212,7 +212,7 @@ function isPointOnCircArc(
 }
 
 function lineEndpointsOnCircArc(
-  line: AcExOsnapLinePrimitive,
+  line: AcExHtmlOsnapLinePrimitive,
   circ: AcExCircArcLike,
   geomTol: number
 ): Array<{ x: number; y: number }> {
@@ -242,7 +242,7 @@ function lineEndpointsOnCircArc(
 }
 
 function intersectLineCircle(
-  line: AcExOsnapLinePrimitive,
+  line: AcExHtmlOsnapLinePrimitive,
   circ: AcExCircArcLike,
   paramTol: number,
   geomTol = paramTol
@@ -329,8 +329,8 @@ function intersectCircles(
  * Supports line/arc/circle pairs; ellipse and spline are skipped.
  */
 export function intersectPrimitivePair(
-  a: AcExOsnapPrimitive,
-  b: AcExOsnapPrimitive,
+  a: AcExHtmlOsnapPrimitive,
+  b: AcExHtmlOsnapPrimitive,
   paramTol: number,
   geomTol = paramTol
 ): Array<{ x: number; y: number }> {
@@ -354,7 +354,7 @@ export function intersectPrimitivePair(
 
 /** Whether a primitive can participate in intersection snap. */
 export function isIntersectionCapablePrimitive(
-  prim: AcExOsnapPrimitive
+  prim: AcExHtmlOsnapPrimitive
 ): boolean {
   return prim.kind === 'line' || prim.kind === 'circle' || prim.kind === 'arc'
 }

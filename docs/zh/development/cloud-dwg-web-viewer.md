@@ -184,18 +184,18 @@ await new AcApHtmlConvertor({ viewerRuntimeUrl: './viewer-runtime.iife.js' })
 
 ```typescript
 import {
-  buildAcExPackage,
-  zipAcExPackageFiles,
-  unzipAcExPackageFiles
+  acexHtmlBuildPackage,
+  acexHtmlZipPackageFiles,
+  acexHtmlUnzipPackageFiles
 } from '@mlightcad/cad-html-plugin'
 
 // snapshot is built from the Three.js scene by AcApHtmlSnapshotBuilder
-const pkg = buildAcExPackage(snapshot, {
+const pkg = acexHtmlBuildPackage(snapshot, {
   viewerRuntime,          // Text of viewer-runtime.iife.js
   baseName: 'floor-plan'
 })
 
-const zipBytes = zipAcExPackageFiles(pkg)     // Package into a zip for download
+const zipBytes = acexHtmlZipPackageFiles(pkg)     // Package into a zip for download
 // Or directly write pkg.files ([{ path, bytes }, ...]) to disk / upload to object storage,
 // completely skipping the extraction step:
 for (const file of pkg.files) {
@@ -294,7 +294,7 @@ npx serve .
 ```js
 // publish-cad-package.mjs
 import { runHeadless } from '@mlightcad/cad-simple-viewer-cli'
-import { unzipAcExPackageFiles } from '@mlightcad/cad-html-plugin'
+import { acexHtmlUnzipPackageFiles } from '@mlightcad/cad-html-plugin'
 import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -312,7 +312,7 @@ const { outputDir } = await runHeadless({
 // 2. Find the generated zip and extract it to the publishing directory
 const zipName = (await readdir(outputDir)).find(f => f.endsWith('.zip'))
 const zipBytes = await readFile(path.join(outputDir, zipName))
-const files = unzipAcExPackageFiles(
+const files = acexHtmlUnzipPackageFiles(
   new Uint8Array(zipBytes)
 ) // Includes path security validation and rejects dangerous entries such as ../
 const target = path.join(publishRoot, path.basename(zipName, '.zip'))
@@ -326,7 +326,7 @@ for (const file of files) {
 console.log(`Published: https://drawings.example.com/${path.basename(target)}/viewer.html`)
 ```
 
-在生产环境中，你还可以添加诸如以下功能：使用图纸内容的哈希判断是否可以跳过重复转换、重试失败的转换，或直接使用 `PutObject` 将 `pkg.files` 上传到对象存储（使用方式 3 中的 `buildAcExPackage`，这样甚至无需创建 zip）。
+在生产环境中，你还可以添加诸如以下功能：使用图纸内容的哈希判断是否可以跳过重复转换、重试失败的转换，或直接使用 `PutObject` 将 `pkg.files` 上传到对象存储（使用方式 3 中的 `acexHtmlBuildPackage`，这样甚至无需创建 zip）。
 
 ---
 
@@ -334,7 +334,7 @@ console.log(`Published: https://drawings.example.com/${path.basename(target)}/vi
 
 **Q：能否直接把 zip 文件放到服务器上并提供链接？**
 
-不能。zip 只是用于下载和分发的打包格式。运行时，查看器会获取解压后的 `viewer.html` / `*.acex.json` / `chunks/*.gz`。你必须在服务器上解压并托管结果文件，或在自有应用中使用 `unzipAcExPackageFiles` 在前端解压（注意同源和内存问题；不建议用于大型图纸）。
+不能。zip 只是用于下载和分发的打包格式。运行时，查看器会获取解压后的 `viewer.html` / `*.acex.json` / `chunks/*.gz`。你必须在服务器上解压并托管结果文件，或在自有应用中使用 `acexHtmlUnzipPackageFiles` 在前端解压（注意同源和内存问题；不建议用于大型图纸）。
 
 **Q：打开页面后数据块文件返回 404 / 加载失败。**
 

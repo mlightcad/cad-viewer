@@ -184,18 +184,18 @@ Daha düşük seviyeli API'ler (paketi kendiniz oluşturun ve diske yazacağın�
 
 ```typescript
 import {
-  buildAcExPackage,
-  zipAcExPackageFiles,
-  unzipAcExPackageFiles
+  acexHtmlBuildPackage,
+  acexHtmlZipPackageFiles,
+  acexHtmlUnzipPackageFiles
 } from '@mlightcad/cad-html-plugin'
 
 // snapshot is built from the Three.js scene by AcApHtmlSnapshotBuilder
-const pkg = buildAcExPackage(snapshot, {
+const pkg = acexHtmlBuildPackage(snapshot, {
   viewerRuntime,          // Text of viewer-runtime.iife.js
   baseName: 'floor-plan'
 })
 
-const zipBytes = zipAcExPackageFiles(pkg)     // Package into a zip for download
+const zipBytes = acexHtmlZipPackageFiles(pkg)     // Package into a zip for download
 // Or directly write pkg.files ([{ path, bytes }, ...]) to disk / upload to object storage,
 // completely skipping the extraction step:
 for (const file of pkg.files) {
@@ -294,7 +294,7 @@ npx serve .
 ```js
 // publish-cad-package.mjs
 import { runHeadless } from '@mlightcad/cad-simple-viewer-cli'
-import { unzipAcExPackageFiles } from '@mlightcad/cad-html-plugin'
+import { acexHtmlUnzipPackageFiles } from '@mlightcad/cad-html-plugin'
 import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -312,7 +312,7 @@ const { outputDir } = await runHeadless({
 // 2. Find the generated zip and extract it to the publishing directory
 const zipName = (await readdir(outputDir)).find(f => f.endsWith('.zip'))
 const zipBytes = await readFile(path.join(outputDir, zipName))
-const files = unzipAcExPackageFiles(
+const files = acexHtmlUnzipPackageFiles(
   new Uint8Array(zipBytes)
 ) // Includes path security validation and rejects dangerous entries such as ../
 const target = path.join(publishRoot, path.basename(zipName, '.zip'))
@@ -326,7 +326,7 @@ for (const file of files) {
 console.log(`Published: https://drawings.example.com/${path.basename(target)}/viewer.html`)
 ```
 
-Üretim ortamında ayrıca şu özellikleri ekleyebilirsiniz: yinelenen dönüştürmenin atlanıp atlanamayacağını belirlemek için çizim içeriğinin bir karmasını kullanmak, başarısız dönüştürmeleri yeniden denemek veya zip oluşturmaya bile gerek kalmaması için Yöntem 3'teki `buildAcExPackage` kullanarak `pkg.files` dosyalarını doğrudan `PutObject` ile nesne depolamaya yüklemek.
+Üretim ortamında ayrıca şu özellikleri ekleyebilirsiniz: yinelenen dönüştürmenin atlanıp atlanamayacağını belirlemek için çizim içeriğinin bir karmasını kullanmak, başarısız dönüştürmeleri yeniden denemek veya zip oluşturmaya bile gerek kalmaması için Yöntem 3'teki `acexHtmlBuildPackage` kullanarak `pkg.files` dosyalarını doğrudan `PutObject` ile nesne depolamaya yüklemek.
 
 ---
 
@@ -334,7 +334,7 @@ console.log(`Published: https://drawings.example.com/${path.basename(target)}/vi
 
 **S: Zip dosyasını sunucuya koyup ona bir bağlantı verebilir miyim?**
 
-Hayır. Zip yalnızca indirme ve dağıtım için bir paketleme biçimidir. Çalışma zamanında görüntüleyici, çıkarılmış `viewer.html` / `*.acex.json` / `chunks/*.gz` dosyalarını getirir. Ya sunucuda çıkarıp ortaya çıkan dosyaları barındırmalısınız ya da ön uçta çıkarmak için kendi uygulamanızda `unzipAcExPackageFiles` kullanmalısınız (aynı köken ve bellek sorunlarına dikkat edin; büyük çizimler için önerilmez).
+Hayır. Zip yalnızca indirme ve dağıtım için bir paketleme biçimidir. Çalışma zamanında görüntüleyici, çıkarılmış `viewer.html` / `*.acex.json` / `chunks/*.gz` dosyalarını getirir. Ya sunucuda çıkarıp ortaya çıkan dosyaları barındırmalısınız ya da ön uçta çıkarmak için kendi uygulamanızda `acexHtmlUnzipPackageFiles` kullanmalısınız (aynı köken ve bellek sorunlarına dikkat edin; büyük çizimler için önerilmez).
 
 **S: Parça dosyaları 404 döndürüyor / sayfa açıldıktan sonra yüklenemiyor.**
 

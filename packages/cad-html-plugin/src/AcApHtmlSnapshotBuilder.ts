@@ -1,15 +1,14 @@
 import {
-  type AcExBuildSnapshotOptions,
-  type AcExExportSceneInput,
-  acexGetDocsBaseUrl,
-  type AcExInitialViewMode,
-  acexSetDocsBaseUrl,
-  type AcExSnapshot,
-  type AcExViewerMode,
-  type AcExViewState,
-  buildSnapshotFromExportScene,
-  buildSnapshotFromExportSceneAsync,
-  listDatabaseLayouts} from '@mlightcad/cad-html-core'
+  acexHtmlBuildSnapshotFromExportScene,
+  acexHtmlBuildSnapshotFromExportSceneAsync,
+  type AcExHtmlBuildSnapshotOptions,
+  type AcExHtmlExportSceneInput,
+  acexHtmlGetDocsBaseUrl,
+  type AcExHtmlInitialViewMode,
+  acexHtmlListDatabaseLayouts,  acexHtmlSetDocsBaseUrl,
+  type AcExHtmlSnapshot,
+  type AcExHtmlViewerMode,
+  type AcExHtmlViewState} from '@mlightcad/cad-html-core'
 import {
   acapGetDocsBaseUrl,
   AcApI18n,
@@ -49,16 +48,16 @@ export interface AcApHtmlSnapshotBuilderOptions {
   /**
    * Initial framing when the exported HTML is opened. Defaults to `'fit'`.
    */
-  initialView?: AcExInitialViewMode
+  initialView?: AcExHtmlInitialViewMode
   /**
    * Saved view center and zoom when {@link AcApHtmlSnapshotBuilderOptions.initialView}
    * is `'current'`.
    */
-  viewState?: AcExViewState
+  viewState?: AcExHtmlViewState
   /**
    * Offline viewer capability profile. When `'view'`, OSNAP catalogs are omitted.
    */
-  viewerMode?: AcExViewerMode
+  viewerMode?: AcExHtmlViewerMode
   /**
    * Canvas width/height used when resolving model-space VPORT `*ACTIVE` into
    * layout `savedView`. Defaults to 16:9 when omitted.
@@ -66,10 +65,10 @@ export interface AcApHtmlSnapshotBuilderOptions {
   canvasAspectRatio?: number
 }
 
-export { listDatabaseLayouts }
+export { acexHtmlListDatabaseLayouts }
 
 /**
- * Serializes the live Three.js scene into a versioned {@link AcExSnapshot}.
+ * Serializes the live Three.js scene into a versioned {@link AcExHtmlSnapshot}.
  *
  * Maps {@link AcTrScene} into the scene-agnostic core builder so packing stays
  * shared with the headless exporter.
@@ -84,8 +83,8 @@ export class AcApHtmlSnapshotBuilder {
     scene: AcTrScene,
     database: AcDbDatabase,
     options: AcApHtmlSnapshotBuilderOptions = {}
-  ): AcExSnapshot {
-    return buildSnapshotFromExportScene(
+  ): AcExHtmlSnapshot {
+    return acexHtmlBuildSnapshotFromExportScene(
       database,
       mapAcTrSceneToExportInput(scene),
       toCoreOptions(options)
@@ -99,8 +98,8 @@ export class AcApHtmlSnapshotBuilder {
     scene: AcTrScene,
     database: AcDbDatabase,
     options: AcApHtmlSnapshotBuilderOptions = {}
-  ): Promise<AcExSnapshot> {
-    return buildSnapshotFromExportSceneAsync(
+  ): Promise<AcExHtmlSnapshot> {
+    return acexHtmlBuildSnapshotFromExportSceneAsync(
       database,
       mapAcTrSceneToExportInput(scene),
       {
@@ -113,7 +112,7 @@ export class AcApHtmlSnapshotBuilder {
 
 function toCoreOptions(
   options: AcApHtmlSnapshotBuilderOptions
-): AcExBuildSnapshotOptions {
+): AcExHtmlBuildSnapshotOptions {
   return {
     title: options.title,
     background: options.background,
@@ -134,14 +133,14 @@ function toCoreOptions(
  */
 function resolveDocsBaseUrlForExport(): string {
   try {
-    acexSetDocsBaseUrl(acapGetDocsBaseUrl())
+    acexHtmlSetDocsBaseUrl(acapGetDocsBaseUrl())
   } catch {
     // Live viewer docs helper unavailable — keep Acex default.
   }
-  return acexGetDocsBaseUrl()
+  return acexHtmlGetDocsBaseUrl()
 }
 
-function mapAcTrSceneToExportInput(scene: AcTrScene): AcExExportSceneInput {
+function mapAcTrSceneToExportInput(scene: AcTrScene): AcExHtmlExportSceneInput {
   const layers = [...scene.layers.values()].map(layer => ({
     name: layer.name,
     color: layer.color.RGB ?? 0xffffff,

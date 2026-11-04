@@ -82,7 +82,7 @@ Jednosouborový **offline prohlížeč** pro sdílení a archivaci — exportova
 |------|-------|
 | Příkaz | `chtml` (dialog v `cad-editor`), `-chtml` (příkazový řádek přes `cad-simple-viewer-cli`) |
 | Další konfigurace | `htmlViewerRuntimeUrl` v `AcApDocManager.createInstance()` — adresa URL souboru `viewer-runtime.iife.js` (zkopírujte z `dist/` balíčku) |
-| Veřejné API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `packHtml`, typy snímků |
+| Veřejné API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `acexHtmlPackHtml`, typy snímků |
 
 → **Výstup sestavení a integrace:** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **Headless CLI využívající stejnou pipeline:** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)

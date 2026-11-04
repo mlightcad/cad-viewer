@@ -10,7 +10,7 @@ HTML **export** for [`@mlightcad/cad-simple-viewer`](../cad-simple-viewer): snap
 | `-chtml` | Export via **command-line prompts** (no dialog; AutoCAD-style `-` prefix) |
 | `chtml` | Same as `-chtml` when no UI command is registered (e.g. `cad-simple-viewer` only). In [`cad-editor`](../cad-editor), `chtml` opens an **export options dialog** instead |
 
-The plugin path is designed for **lazy loading** so the export bundle is only downloaded when a user runs `-chtml` or confirms export from the `chtml` dialog (or runs `chtml` in a host that has no dialog command). Low-level APIs (`packHtml`, snapshot types, scene collectors) are also exported for custom pipelines and the headless CLI [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli).
+The plugin path is designed for **lazy loading** so the export bundle is only downloaded when a user runs `-chtml` or confirms export from the `chtml` dialog (or runs `chtml` in a host that has no dialog command). Low-level APIs (`acexHtmlPackHtml`, snapshot types, scene collectors) are also exported for custom pipelines and the headless CLI [`@mlightcad/cad-simple-viewer-cli`](../cad-simple-viewer-cli).
 
 ## Key features
 
@@ -20,7 +20,7 @@ The plugin path is designed for **lazy loading** so the export bundle is only do
 - **Offline viewer** — select / pan / zoom (extents, window, original view), layer panel, layout switching, measurement, Design Review markup annotations, object snap (OSNAP). Select, pan, and zoom tools exit any active measurement or review drawing tool.
 - **i18n** — embedded English / Chinese / Czech / Turkish UI; initial language follows the browser (`zh*` → Chinese, `cs*` → Czech, `tr*` → Turkish, otherwise English); the toolbar language button opens a strip to pick a locale, and the choice persists in `localStorage`
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyHtmlPlugin`
-- **Composable API** — build snapshots from your own pipeline or call `packHtml` / `buildAcExPackage` with a pre-built snapshot
+- **Composable API** — build snapshots from your own pipeline or call `acexHtmlPackHtml` / `acexHtmlBuildPackage` with a pre-built snapshot
 
 ## Installation
 
@@ -45,7 +45,7 @@ The package produces two artifacts:
 
 | Output | Description |
 |--------|-------------|
-| `dist/index.js` | Library entry (snapshot types, codec, `packHtml`, `createHtmlPlugin`, …) |
+| `dist/index.js` | Library entry (snapshot types, codec, `acexHtmlPackHtml`, `createHtmlPlugin`, …) |
 | `dist/register.js` | Lightweight lazy-registration entry (safe for static import in app bundles) |
 | `dist/viewer-runtime.iife.js` | Offline viewer bootstrap (loaded/inlined into exported HTML) |
 
@@ -112,19 +112,19 @@ See **[docs/acex-package-format.md](./docs/acex-package-format.md)** for the on-
 ```typescript
 import {
   ACEX_DEFAULT_MANIFEST_FILE,
-  buildAcExPackage,
-  zipAcExPackageFiles,
-  packHtmlPackage
+  acexHtmlBuildPackage,
+  acexHtmlZipPackageFiles,
+  acexHtmlPackHtmlPackage
 } from '@mlightcad/cad-html-plugin'
 
 // Always writes viewer.html + drawing.acex.json + chunks/
 // (baseName is retained for API compatibility; it does not rename the manifest).
-const pkg = buildAcExPackage(snapshot, {
+const pkg = acexHtmlBuildPackage(snapshot, {
   viewerRuntime: runtime,
   baseName: 'my-drawing'
 })
 // pkg.manifestFileName === ACEX_DEFAULT_MANIFEST_FILE ('drawing.acex.json')
-const zipBytes = zipAcExPackageFiles(pkg)
+const zipBytes = acexHtmlZipPackageFiles(pkg)
 // Or serve pkg.files as a static directory after unzip
 ```
 
@@ -141,18 +141,18 @@ Unsupported package / snapshot versions surface as an on-page error.
 ```typescript
 import {
   ACEX_SNAPSHOT_VERSION,
-  type AcExSnapshotV1,
-  buildViewerMetadata,
-  collectBatchesFromObject3D,
-  buildOsnapCatalog,
-  packHtml,
+  type AcExHtmlSnapshot,
+  acexHtmlBuildViewerMetadata,
+  acexHtmlCollectBatchesFromObject3D,
+  acexHtmlBuildOsnapCatalog,
+  acexHtmlPackHtml,
   HTML_VIEWER_RUNTIME_FILE
 } from '@mlightcad/cad-html-plugin'
 
-const snapshot: AcExSnapshotV1 = /* built via AcApHtmlSnapshotBuilder or manually */
+const snapshot: AcExHtmlSnapshot = /* built via AcApHtmlSnapshotBuilder or manually */
 
 const runtime = await fetch(`./${HTML_VIEWER_RUNTIME_FILE}`).then(r => r.text())
-const html = packHtml(snapshot, {
+const html = acexHtmlPackHtml(snapshot, {
   title: 'My Drawing',
   viewerRuntime: runtime
 })
@@ -200,20 +200,20 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 | `HTML_PLUGIN_NAME`, `HTML_PLUGIN_TRIGGERS` | Plugin id and command triggers |
 | `@mlightcad/cad-html-plugin/register` | `registerLazyHtmlPlugin` and registration constants |
 | `AcApExportHtmlCmd`, `AcApHtmlConvertor` | `-chtml` command and full export workflow |
-| `AcApHtmlSnapshotBuilder` | Live Three.js scene → `AcExSnapshotV1` |
-| `packHtml`, `AcExPackHtmlOptions` | Assemble self-contained HTML from snapshot + runtime |
-| `packHtmlEmbeddedPackage`, `shouldEmbedAcExChunks` | Progressive self-contained HTML (large drawings) |
-| `packHtmlPackage`, `buildAcExPackage`, `zipAcExPackageFiles` | Multi-file package shell, builder, and export zip |
+| `AcApHtmlSnapshotBuilder` | Live Three.js scene → `AcExHtmlSnapshot` |
+| `acexHtmlPackHtml`, `AcExHtmlPackHtmlOptions` | Assemble self-contained HTML from snapshot + runtime |
+| `acexHtmlPackHtmlEmbeddedPackage`, `acexHtmlShouldEmbedChunks` | Progressive self-contained HTML (large drawings) |
+| `acexHtmlPackHtmlPackage`, `acexHtmlBuildPackage`, `acexHtmlZipPackageFiles` | Multi-file package shell, builder, and export zip |
 | `ACEX_DEFAULT_MANIFEST_FILE`, `ACEX_DEFAULT_MANIFEST_HREF`, package bootstrap helpers | Canonical `drawing.acex.json` name and generic viewer resolve / probe / directory-fetch helpers |
 | `HTML_VIEWER_RUNTIME_FILE` | Default runtime filename (`viewer-runtime.iife.js`) |
-| `AcExSnapshot`, `ACEX_SNAPSHOT_VERSION`, batch/layer types | Snapshot schema |
+| `AcExHtmlSnapshot`, `ACEX_SNAPSHOT_VERSION`, batch/layer types | Snapshot schema |
 | Package format doc | [`docs/acex-package-format.md`](./docs/acex-package-format.md) |
 | Web hosting guide | [`docs/acex-web-hosting-guide.md`](./docs/acex-web-hosting-guide.md) |
-| `encodeSnapshot`, `decodeSnapshot` | Gzip/base64 codec for embedded payloads |
-| `collectBatchesFromObject3D` | THREE.js scene → line/mesh batches |
-| `buildViewerMetadata` | Database → viewer meta (units, extents, background, …) |
-| `buildOsnapCatalog`, OSNAP primitive helpers | Analytic snap geometry for the offline viewer |
-| `AcExHtmlI18n`, `detectAcExHtmlLocale`, `detectBrowserAcExHtmlLocale`, `resolveAcExHtmlLocale` | Viewer UI strings and locale detection |
+| `acexHtmlEncodeSnapshot`, `acexHtmlDecodeSnapshot` | Gzip/base64 codec for embedded payloads |
+| `acexHtmlCollectBatchesFromObject3D` | THREE.js scene → line/mesh batches |
+| `acexHtmlBuildViewerMetadata` | Database → viewer meta (units, extents, background, …) |
+| `acexHtmlBuildOsnapCatalog`, OSNAP primitive helpers | Analytic snap geometry for the offline viewer |
+| `AcExHtmlI18n`, `acexHtmlDetectLocale`, `acexHtmlDetectBrowserLocale`, `acexHtmlResolveLocale` | Viewer UI strings and locale detection |
 
 ## Project layout
 
@@ -224,21 +224,13 @@ import '@mlightcad/cad-html-plugin/viewer-runtime' // dist/viewer-runtime.iife.j
 | `src/AcApExportHtmlCmd.ts` | `-chtml` command (command-line prompts) |
 | `src/AcApHtmlConvertor.ts` | Export orchestration (snapshot, runtime fetch, download) |
 | `src/AcApHtmlSnapshotBuilder.ts` | Three.js scene → snapshot builder |
-| `src/AcExSnapshotTypes.ts` | Snapshot schema (v1) |
-| `src/AcExSnapshotCodec.ts` | Encode/decode embedded snapshot script tag |
-| `src/AcExSceneBatchCollector.ts` | THREE.js traversal → export batches |
-| `src/AcExHtmlPackager.ts` | `packHtml` / `packHtmlPackage` — shell + snapshot or package marker + runtime |
-| `src/AcExHtmlEmbeddedPackage.ts` | Auto progressive embed for large self-contained HTML (+ per-chunk AES) |
-| `src/AcExPackageBuilder.ts` | Multi-file package builder (`viewer.html` + `drawing.acex.json` + chunks) |
-| `src/AcExHtmlPackageBootstrap.ts` | Generic package resolve (query / sibling / probe / local directory fetch) |
+| `@mlightcad/cad-html-core` | Snapshot schema, codecs, packagers, package builder/loader (`AcExHtml*` / `acexHtml*`) |
 | `src/AcExHtmlPackageSourceGate.ts` | Folder / URL picker when sibling `drawing.acex.json` is missing |
 | `src/AcExHtmlViewerRuntime.ts` | Offline viewer (built as IIFE) |
-| `src/AcExHtmlShell.ts` | Static HTML/CSS shell markup |
 | `src/AcExOsnap*.ts` | Object snap index and primitives |
 | `src/AcExMeasurement.ts` | Distance/area measurement in the offline viewer |
 | `src/AcExMeasurementSidecar.ts` | Measurement sidecar JSON import/export (`*.measurement.json`, compatible with cad-simple-viewer) |
 | `src/AcExMarkup.ts` | Design Review markup tools (cloud, callout, text, rect, circle, arrow, stamp) with sidecar JSON import/export |
-| `src/AcExHtmlI18n.ts` | English / Chinese / Czech / Turkish UI messages |
 
 ## Role in MLightCAD
 

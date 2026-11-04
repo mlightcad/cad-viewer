@@ -1,10 +1,10 @@
 import * as THREE from 'three'
 
-import { copyFloat32Range } from './AcExBatchBuffers'
-import type { AcExMeshTexture } from './AcExSnapshotTypes'
+import { acexHtmlCopyFloat32Range } from './AcExHtmlBatchBuffers'
+import type { AcExHtmlMeshTexture } from './AcExHtmlSnapshotTypes'
 
 /** RGBA image a headless host can turn into PNG bytes without a canvas. */
-export interface AcExHeadlessPngSource {
+export interface AcExHtmlHeadlessPngSource {
   width: number
   height: number
   data: ArrayLike<number>
@@ -14,15 +14,15 @@ export interface AcExHeadlessPngSource {
  * PNG encoder used when `document` is missing (Node HTML export).
  * Browsers encode through canvas and ignore this.
  */
-export type AcExHeadlessPngEncoder = (
-  image: AcExHeadlessPngSource
+export type AcExHtmlHeadlessPngEncoder = (
+  image: AcExHtmlHeadlessPngSource
 ) => Uint8Array | undefined
 
-let headlessPngEncoder: AcExHeadlessPngEncoder | undefined
+let headlessPngEncoder: AcExHtmlHeadlessPngEncoder | undefined
 
-/** Registers the Node PNG encoder for {@link encodeTextureForExport}. */
-export function setHeadlessPngEncoder(
-  encoder: AcExHeadlessPngEncoder | undefined
+/** Registers the Node PNG encoder for {@link acexHtmlEncodeTextureForExport}. */
+export function acexHtmlSetHeadlessPngEncoder(
+  encoder: AcExHtmlHeadlessPngEncoder | undefined
 ): void {
   headlessPngEncoder = encoder
 }
@@ -31,9 +31,9 @@ export function setHeadlessPngEncoder(
  * Encodes a THREE texture image to PNG bytes for HTML snapshot embedding.
  * Returns `undefined` when the texture has no drawable image payload.
  */
-export function encodeTextureForExport(
+export function acexHtmlEncodeTextureForExport(
   texture: THREE.Texture
-): AcExMeshTexture | undefined {
+): AcExHtmlMeshTexture | undefined {
   const image = texture.image as unknown
   if (!image) {
     return undefined
@@ -95,7 +95,7 @@ export function encodeTextureForExport(
 
 function encodeHeadlessTexture(
   image: unknown
-): AcExMeshTexture | undefined {
+): AcExHtmlMeshTexture | undefined {
   const encode = headlessPngEncoder
   if (!encode || !isDataTextureImage(image)) {
     return undefined
@@ -200,7 +200,7 @@ function toUint8ClampedRgba(
  * Reads UV coordinates from a geometry so they stay aligned with an exported
  * position slice (same vertex count after compact/trim).
  */
-export function exportUvsForPositionSlice(
+export function acexHtmlExportUvsForPositionSlice(
   geometry: THREE.BufferGeometry,
   positions: Float32Array
 ): Float32Array | undefined {
@@ -220,14 +220,14 @@ export function exportUvsForPositionSlice(
   if (available < expected) {
     return undefined
   }
-  return copyFloat32Range(array, 0, expected)
+  return acexHtmlCopyFloat32Range(array, 0, expected)
 }
 
 /**
  * True when a mesh material is an unloaded IMAGE/OLE placeholder (transparent,
  * no map) that would otherwise export as a solid white fill.
  */
-export function isTransparentImagePlaceholder(
+export function acexHtmlIsTransparentImagePlaceholder(
   material: THREE.Material
 ): boolean {
   const meshMaterial = material as THREE.MeshBasicMaterial
@@ -245,11 +245,11 @@ export function isTransparentImagePlaceholder(
  * Builds a THREE texture from exported PNG (or other) bytes.
  *
  * Uses `texture.bytes` directly for the Blob (no intermediate copy). Callers
- * that still hold a snapshot batch should clear {@link AcExMeshTexture.bytes}
+ * that still hold a snapshot batch should clear {@link AcExHtmlMeshTexture.bytes}
  * from `onLoad` once the GPU texture is ready.
  */
-export function createTextureFromExportedBytes(
-  texture: AcExMeshTexture,
+export function acexHtmlCreateTextureFromExportedBytes(
+  texture: AcExHtmlMeshTexture,
   options: {
     onLoad?: (loaded: THREE.Texture) => void
     onError?: () => void
@@ -279,8 +279,8 @@ export function createTextureFromExportedBytes(
 /**
  * Drops PNG/JPEG payload bytes from an exported mesh texture after GPU upload.
  */
-export function releaseExportedTextureBytes(
-  texture: AcExMeshTexture | undefined
+export function acexHtmlReleaseExportedTextureBytes(
+  texture: AcExHtmlMeshTexture | undefined
 ): void {
   if (!texture) return
   texture.bytes = new Uint8Array(0)

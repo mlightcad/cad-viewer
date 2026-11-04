@@ -82,7 +82,7 @@ Paylaşım ve arşivleme için tek dosyalık **çevrimdışı görüntüleyici**
 |------|-------|
 | Komut | `chtml` (`cad-editor` içinde iletişim kutusu), `-chtml` (`cad-simple-viewer-cli` üzerinden komut satırı) |
 | Ek yapılandırma | `AcApDocManager.createInstance()` üzerinde `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` dosyasının URL'si (paketin `dist/` dizininden kopyalayın) |
-| Genel API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `packHtml`, anlık görüntü tipleri |
+| Genel API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `acexHtmlPackHtml`, anlık görüntü tipleri |
 
 → **Derleme çıktısı ve entegrasyon:** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **Aynı hattı kullanan headless CLI:** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)

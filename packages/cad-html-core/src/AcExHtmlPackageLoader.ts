@@ -1,44 +1,44 @@
-import { decodeChunkPayload } from './AcExChunkBinaryCodec'
-import { acexGlobalFetch } from './AcExHtmlPackageBootstrap'
-import { decodeOsnapCatalogPayload } from './AcExOsnapCatalogCodec'
-import type { AcExOsnapPrimitive } from './AcExOsnapPrimitiveTypes'
+import { acexHtmlDecodeChunkPayload } from './AcExHtmlChunkBinaryCodec'
+import { acexHtmlDecodeOsnapCatalogPayload } from './AcExHtmlOsnapCatalogCodec'
+import type { AcExHtmlOsnapPrimitive } from './AcExHtmlOsnapPrimitiveTypes'
+import { acexHtmlGlobalFetch } from './AcExHtmlPackageBootstrap'
 import {
   ACEX_PACKAGE_VERSION,
   ACEX_SNAPSHOT_VERSION,
-  type AcExPackageChunkRef,
-  type AcExPackageManifest,
-  type AcExPackageOsnapChunkRef
-} from './AcExPackageTypes'
-import { ACEX_MAX_COMPRESSED_BYTES } from './AcExSnapshotCompression'
+  type AcExHtmlPackageChunkRef,
+  type AcExHtmlPackageManifest,
+  type AcExHtmlPackageOsnapChunkRef
+} from './AcExHtmlPackageTypes'
+import { ACEX_MAX_COMPRESSED_BYTES } from './AcExHtmlSnapshotCompression'
 import type {
-  AcExLayoutSnapshot,
-  AcExLineBatch,
-  AcExMeshBatch,
-  AcExSnapshot
-} from './AcExSnapshotTypes'
+  AcExHtmlLayoutSnapshot,
+  AcExHtmlLineBatch,
+  AcExHtmlMeshBatch,
+  AcExHtmlSnapshot
+} from './AcExHtmlSnapshotTypes'
 
-export interface AcExPackageLoadProgress {
+export interface AcExHtmlPackageLoadProgress {
   loadedChunks: number
   totalChunks: number
   layoutBtrId: string
   chunkId: string
 }
 
-export interface AcExPackageLoaderOptions {
+export interface AcExHtmlPackageLoaderOptions {
   /** Absolute or relative URL of the `*.acex.json` manifest. */
   manifestUrl: string
   /** Optional fetch implementation (defaults to global `fetch`). */
   fetchImpl?: typeof fetch
   /** Called after each geometry chunk is decoded. */
   onChunk?: (
-    layout: AcExLayoutSnapshot,
-    chunk: AcExPackageChunkRef,
-    progress: AcExPackageLoadProgress
+    layout: AcExHtmlLayoutSnapshot,
+    chunk: AcExHtmlPackageChunkRef,
+    progress: AcExHtmlPackageLoadProgress
   ) => void | Promise<void>
   /**
    * When `false`, skip OSNAP sidecars (geometry only). Defaults to `true`.
    * Viewers that paint first should load geometry with this `false`, then call
-   * {@link loadAcExPackageLayoutOsnap} after first paint.
+   * {@link acexHtmlLoadPackageLayoutOsnap} after first paint.
    */
   loadOsnap?: boolean
   /** When set, only these layout BTR ids are fetched (others stay empty). */
@@ -53,13 +53,13 @@ export interface AcExPackageLoaderOptions {
   fetchConcurrency?: number
 }
 
-export interface AcExPackageOsnapLoadOptions {
+export interface AcExHtmlPackageOsnapLoadOptions {
   fetchImpl?: typeof fetch
   /**
    * Called after each OSNAP chunk is decoded (before the next decode).
    * Use to update status UI and yield for paint.
    */
-  onChunk?: (progress: AcExPackageLoadProgress) => void | Promise<void>
+  onChunk?: (progress: AcExHtmlPackageLoadProgress) => void | Promise<void>
   /** Yield between decode steps so the canvas stays responsive. */
   yieldFn?: () => Promise<void>
   /**
@@ -79,8 +79,8 @@ export interface AcExPackageOsnapLoadOptions {
  */
 export const ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY = 6
 
-/** One ordered entry handed back by {@link createAcExOrderedBytePrefetcher}. */
-export interface AcExOrderedPrefetchedItem<T> {
+/** One ordered entry handed back by {@link acexHtmlCreateOrderedBytePrefetcher}. */
+export interface AcExHtmlOrderedPrefetchedItem<T> {
   item: T
   index: number
   bytes: Uint8Array
@@ -95,20 +95,20 @@ export interface AcExOrderedPrefetchedItem<T> {
  * download chunks in parallel while decode / GPU upload / paint happen one
  * chunk at a time (progressive rendering, no main-thread decode burst).
  */
-export interface AcExOrderedBytePrefetcher<T> {
-  next(): Promise<AcExOrderedPrefetchedItem<T> | null>
+export interface AcExHtmlOrderedBytePrefetcher<T> {
+  next(): Promise<AcExHtmlOrderedPrefetchedItem<T> | null>
 }
 
 /**
- * Creates {@link AcExOrderedBytePrefetcher}. The first fetch window starts
+ * Creates {@link AcExHtmlOrderedBytePrefetcher}. The first fetch window starts
  * immediately; a new fetch is launched each time the consumer takes an item,
  * keeping the pipeline full until every item has been requested.
  */
-export function createAcExOrderedBytePrefetcher<T>(
+export function acexHtmlCreateOrderedBytePrefetcher<T>(
   items: readonly T[],
   concurrency: number,
   fetchBytes: (item: T, index: number) => Promise<Uint8Array>
-): AcExOrderedBytePrefetcher<T> {
+): AcExHtmlOrderedBytePrefetcher<T> {
   const total = items.length
   // Never launch for an empty item list: the window must stay 0 so
   // `fetchBytes` is only ever invoked with a valid index.
@@ -166,7 +166,7 @@ const SAFE_PACKAGE_HREF =
  * Returns true when `href` is a relative package path (no scheme, `..`, or
  * absolute URL). Used for manifest chunk refs and package `manifestUrl`.
  */
-export function isSafePackageHref(href: string): boolean {
+export function acexHtmlIsSafePackageHref(href: string): boolean {
   const trimmed = href.trim()
   if (!trimmed || trimmed !== href) {
     return false
@@ -186,7 +186,7 @@ export function isSafePackageHref(href: string): boolean {
 }
 
 function assertSafePackageHref(href: string, label: string): void {
-  if (!isSafePackageHref(href)) {
+  if (!acexHtmlIsSafePackageHref(href)) {
     throw new Error(`Invalid ${label}: must be a relative package path`)
   }
 }
@@ -194,11 +194,11 @@ function assertSafePackageHref(href: string, label: string): void {
 /**
  * Parses and validates a package manifest JSON value.
  */
-export function parseAcExPackageManifest(data: unknown): AcExPackageManifest {
+export function acexHtmlParsePackageManifest(data: unknown): AcExHtmlPackageManifest {
   if (!data || typeof data !== 'object') {
     throw new Error('Invalid package manifest')
   }
-  const manifest = data as AcExPackageManifest
+  const manifest = data as AcExHtmlPackageManifest
   if (manifest.format !== 'acex-package') {
     throw new Error('Unsupported package format')
   }
@@ -231,12 +231,12 @@ export function parseAcExPackageManifest(data: unknown): AcExPackageManifest {
 }
 
 /**
- * Builds an empty {@link AcExSnapshot} skeleton from a manifest (no geometry yet).
- * OSNAP catalogs are loaded later via {@link loadAcExPackageLayoutOsnap}.
+ * Builds an empty {@link AcExHtmlSnapshot} skeleton from a manifest (no geometry yet).
+ * OSNAP catalogs are loaded later via {@link acexHtmlLoadPackageLayoutOsnap}.
  */
-export function snapshotSkeletonFromManifest(
-  manifest: AcExPackageManifest
-): AcExSnapshot {
+export function acexHtmlSnapshotSkeletonFromManifest(
+  manifest: AcExHtmlPackageManifest
+): AcExHtmlSnapshot {
   return {
     version: ACEX_SNAPSHOT_VERSION,
     meta: manifest.meta,
@@ -259,7 +259,7 @@ export function snapshotSkeletonFromManifest(
  * Resolves a chunk href against the manifest URL.
  * Only relative package paths under the manifest directory are allowed.
  */
-export function resolveChunkUrl(manifestUrl: string, href: string): string {
+export function acexHtmlResolveChunkUrl(manifestUrl: string, href: string): string {
   assertSafePackageHref(href, 'chunk href')
   let resolved: URL
   let manifest: URL
@@ -291,7 +291,7 @@ export function resolveChunkUrl(manifestUrl: string, href: string): string {
  * Resolves a package `manifestUrl` from viewer.html config against the page URL.
  * Absolute and cross-origin URLs are rejected.
  */
-export function resolvePackageManifestUrl(
+export function acexHtmlResolvePackageManifestUrl(
   manifestUrl: string,
   pageUrl: string
 ): string {
@@ -337,16 +337,16 @@ async function fetchCompressedBytes(
  * Fetches the package manifest, then progressively downloads geometry chunks.
  *
  * Chunk bytes download through a bounded parallel window (see
- * {@link createAcExOrderedBytePrefetcher}), but gunzip, batch append, and the
+ * {@link acexHtmlCreateOrderedBytePrefetcher}), but gunzip, batch append, and the
  * `onChunk` paint callback run strictly one at a time in manifest order, so
  * progressive rendering is unchanged while network time is overlapped.
- * OSNAP sidecars load afterward (unless {@link AcExPackageLoaderOptions.loadOsnap}
+ * OSNAP sidecars load afterward (unless {@link AcExHtmlPackageLoaderOptions.loadOsnap}
  * is `false`) so display data is not blocked by snap catalogs.
  */
-export async function loadAcExPackage(
-  options: AcExPackageLoaderOptions
-): Promise<AcExSnapshot> {
-  const fetchImpl = options.fetchImpl ?? acexGlobalFetch
+export async function acexHtmlLoadPackage(
+  options: AcExHtmlPackageLoaderOptions
+): Promise<AcExHtmlSnapshot> {
+  const fetchImpl = options.fetchImpl ?? acexHtmlGlobalFetch
   const loadOsnap = options.loadOsnap !== false
   const concurrency =
     options.fetchConcurrency ?? ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY
@@ -356,8 +356,8 @@ export async function loadAcExPackage(
       `Failed to load package manifest (${manifestResponse.status})`
     )
   }
-  const manifest = parseAcExPackageManifest(await manifestResponse.json())
-  const snapshot = snapshotSkeletonFromManifest(manifest)
+  const manifest = acexHtmlParsePackageManifest(await manifestResponse.json())
+  const snapshot = acexHtmlSnapshotSkeletonFromManifest(manifest)
 
   const layoutById = new Map(
     snapshot.layouts.map(layout => [layout.btrId, layout])
@@ -374,13 +374,13 @@ export async function loadAcExPackage(
     chunk => filter == null || filter.has(chunk.layoutBtrId)
   )
 
-  const prefetcher = createAcExOrderedBytePrefetcher(
+  const prefetcher = acexHtmlCreateOrderedBytePrefetcher(
     chunksToLoad,
     concurrency,
     chunkRef =>
       fetchCompressedBytes(
         fetchImpl,
-        resolveChunkUrl(options.manifestUrl, chunkRef.href),
+        acexHtmlResolveChunkUrl(options.manifestUrl, chunkRef.href),
         'geometry chunk'
       )
   )
@@ -397,7 +397,7 @@ export async function loadAcExPackage(
       throw new Error('Unknown layout for package chunk')
     }
 
-    const decoded = decodeChunkPayload(entry.bytes)
+    const decoded = acexHtmlDecodeChunkPayload(entry.bytes)
     if (decoded.layoutBtrId !== chunkRef.layoutBtrId) {
       throw new Error('Chunk layout mismatch')
     }
@@ -422,7 +422,7 @@ export async function loadAcExPackage(
       if (!layout) {
         continue
       }
-      await loadAcExPackageLayoutOsnap(
+      await acexHtmlLoadPackageLayoutOsnap(
         manifest,
         options.manifestUrl,
         layoutRef.btrId,
@@ -437,19 +437,19 @@ export async function loadAcExPackage(
 
 /**
  * Loads geometry chunks for a single layout into an existing snapshot skeleton.
- * Does not load OSNAP — call {@link loadAcExPackageLayoutOsnap} after paint.
+ * Does not load OSNAP — call {@link acexHtmlLoadPackageLayoutOsnap} after paint.
  */
-export async function loadAcExPackageLayout(
-  manifest: AcExPackageManifest,
+export async function acexHtmlLoadPackageLayout(
+  manifest: AcExHtmlPackageManifest,
   manifestUrl: string,
   layoutBtrId: string,
-  layout: AcExLayoutSnapshot,
+  layout: AcExHtmlLayoutSnapshot,
   options: Pick<
-    AcExPackageLoaderOptions,
+    AcExHtmlPackageLoaderOptions,
     'fetchImpl' | 'onChunk' | 'fetchConcurrency'
   > = {}
 ): Promise<void> {
-  const fetchImpl = options.fetchImpl ?? acexGlobalFetch
+  const fetchImpl = options.fetchImpl ?? acexHtmlGlobalFetch
   const concurrency =
     options.fetchConcurrency ?? ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY
   const layoutRef = manifest.layouts.find(l => l.btrId === layoutBtrId)
@@ -459,15 +459,15 @@ export async function loadAcExPackageLayout(
   const chunkById = new Map(manifest.chunks.map(c => [c.id, c]))
   const chunks = layoutRef.chunkIds
     .map(id => chunkById.get(id))
-    .filter((c): c is AcExPackageChunkRef => c != null)
+    .filter((c): c is AcExHtmlPackageChunkRef => c != null)
 
-  const prefetcher = createAcExOrderedBytePrefetcher(
+  const prefetcher = acexHtmlCreateOrderedBytePrefetcher(
     chunks,
     concurrency,
     chunkRef =>
       fetchCompressedBytes(
         fetchImpl,
-        resolveChunkUrl(manifestUrl, chunkRef.href),
+        acexHtmlResolveChunkUrl(manifestUrl, chunkRef.href),
         'geometry chunk'
       )
   )
@@ -479,7 +479,7 @@ export async function loadAcExPackageLayout(
       break
     }
     const chunkRef = entry.item
-    const decoded = decodeChunkPayload(entry.bytes)
+    const decoded = acexHtmlDecodeChunkPayload(entry.bytes)
     appendBatches(layout, decoded.lineBatches, decoded.meshBatches)
     loadedChunks += 1
     await options.onChunk?.(layout, chunkRef, {
@@ -495,17 +495,17 @@ export async function loadAcExPackageLayout(
  * Loads OSNAP ACEO chunks for one layout (no-op when absent).
  *
  * Compressed chunks download through a bounded parallel window
- * ({@link createAcExOrderedBytePrefetcher}), but gunzip/decode never runs on
+ * ({@link acexHtmlCreateOrderedBytePrefetcher}), but gunzip/decode never runs on
  * more than one chunk at a time and primitives are assembled in
  * `osnapChunkIds` order — parallel decode of dozens of ~500 KiB ACEO payloads
  * would freeze the main thread on large drawings.
  */
-export async function loadAcExPackageLayoutOsnap(
-  manifest: AcExPackageManifest,
+export async function acexHtmlLoadPackageLayoutOsnap(
+  manifest: AcExHtmlPackageManifest,
   manifestUrl: string,
   layoutBtrId: string,
-  layout: AcExLayoutSnapshot,
-  options: AcExPackageOsnapLoadOptions = {}
+  layout: AcExHtmlLayoutSnapshot,
+  options: AcExHtmlPackageOsnapLoadOptions = {}
 ): Promise<void> {
   if (layout.osnap) {
     return
@@ -523,12 +523,12 @@ export async function loadAcExPackageLayoutOsnap(
   )
   const refs = ids
     .map(id => osnapById.get(id))
-    .filter((c): c is AcExPackageOsnapChunkRef => c != null)
+    .filter((c): c is AcExHtmlPackageOsnapChunkRef => c != null)
   if (refs.length === 0) {
     return
   }
 
-  const fetchImpl = options.fetchImpl ?? acexGlobalFetch
+  const fetchImpl = options.fetchImpl ?? acexHtmlGlobalFetch
   const concurrency =
     options.fetchConcurrency ?? ACEX_GEOMETRY_CHUNK_FETCH_CONCURRENCY
   const yieldFn =
@@ -539,17 +539,17 @@ export async function loadAcExPackageLayoutOsnap(
       }))
 
   const totalPrimitives = refs.reduce((sum, ref) => sum + ref.primitiveCount, 0)
-  const primitives: AcExOsnapPrimitive[] =
+  const primitives: AcExHtmlOsnapPrimitive[] =
     totalPrimitives > 0 ? new Array(totalPrimitives) : []
   let writeOffset = 0
 
-  const prefetcher = createAcExOrderedBytePrefetcher(
+  const prefetcher = acexHtmlCreateOrderedBytePrefetcher(
     refs,
     concurrency,
     chunkRef =>
       fetchCompressedBytes(
         fetchImpl,
-        resolveChunkUrl(manifestUrl, chunkRef.href),
+        acexHtmlResolveChunkUrl(manifestUrl, chunkRef.href),
         'osnap chunk'
       )
   )
@@ -562,7 +562,7 @@ export async function loadAcExPackageLayoutOsnap(
     }
     const chunkRef = entry.item
 
-    const decoded = decodeOsnapCatalogPayload(entry.bytes)
+    const decoded = acexHtmlDecodeOsnapCatalogPayload(entry.bytes)
     const slice = decoded.primitives
     if (totalPrimitives > 0) {
       for (let p = 0; p < slice.length; p++) {
@@ -591,9 +591,9 @@ export async function loadAcExPackageLayoutOsnap(
 }
 
 function appendBatches(
-  layout: AcExLayoutSnapshot,
-  lineBatches: AcExLineBatch[],
-  meshBatches: AcExMeshBatch[]
+  layout: AcExHtmlLayoutSnapshot,
+  lineBatches: AcExHtmlLineBatch[],
+  meshBatches: AcExHtmlMeshBatch[]
 ): void {
   layout.lineBatches.push(...lineBatches)
   layout.meshBatches.push(...meshBatches)

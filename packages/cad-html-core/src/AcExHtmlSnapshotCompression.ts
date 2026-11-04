@@ -16,17 +16,17 @@ export const ACEX_MAX_DECOMPRESSED_BYTES = 512 * 1024 * 1024
 /** Hard cap on compressed gzip bytes accepted before inflate. */
 export const ACEX_MAX_COMPRESSED_BYTES = 256 * 1024 * 1024
 
-export type AcExSnapshotCompression = typeof ACEX_SNAPSHOT_COMPRESSION
+export type AcExHtmlSnapshotCompression = typeof ACEX_SNAPSHOT_COMPRESSION
 
-export interface AcExCompressedSnapshotBinary {
+export interface AcExHtmlCompressedSnapshotBinary {
   bytes: Uint8Array
-  compression: AcExSnapshotCompression
+  compression: AcExHtmlSnapshotCompression
 }
 
-/** Result of {@link encodeSnapshot} for HTML packaging. */
-export interface AcExEncodedSnapshot {
+/** Result of {@link acexHtmlEncodeSnapshot} for HTML packaging. */
+export interface AcExHtmlEncodedSnapshot {
   payload: string
-  compression: AcExSnapshotCompression
+  compression: AcExHtmlSnapshotCompression
 }
 
 /**
@@ -34,27 +34,27 @@ export interface AcExEncodedSnapshot {
  * Browsers keep fflate / {@link CompressionStream}. Node hosts (the headless
  * exporter) install `zlib` so chunk gzip runs on the libuv thread pool.
  */
-export interface AcExSnapshotCompressor {
+export interface AcExHtmlSnapshotCompressor {
   gzipSync: (data: Uint8Array) => Uint8Array
   gzip: (data: Uint8Array) => Promise<Uint8Array>
 }
 
-let snapshotCompressor: AcExSnapshotCompressor | null = null
+let snapshotCompressor: AcExHtmlSnapshotCompressor | null = null
 
 /**
  * Overrides gzip for snapshot and package-chunk encoding.
  * Pass `null` to restore the default fflate / {@link CompressionStream} path.
  */
-export function setAcExSnapshotCompressor(
-  compressor: AcExSnapshotCompressor | null
+export function acexHtmlSetSnapshotCompressor(
+  compressor: AcExHtmlSnapshotCompressor | null
 ): void {
   snapshotCompressor = compressor
 }
 
 /** Compresses a snapshot binary payload with gzip for HTML export. */
-export function compressSnapshotBinary(
+export function acexHtmlCompressSnapshotBinary(
   data: Uint8Array
-): AcExCompressedSnapshotBinary {
+): AcExHtmlCompressedSnapshotBinary {
   const bytes = snapshotCompressor
     ? snapshotCompressor.gzipSync(data)
     : gzipSync(data)
@@ -69,9 +69,9 @@ export function compressSnapshotBinary(
  * Uses an installed compressor when present (Node `zlib`), otherwise the
  * browser {@link CompressionStream}, then sync {@link gzipSync}.
  */
-export async function compressSnapshotBinaryAsync(
+export async function acexHtmlCompressSnapshotBinaryAsync(
   data: Uint8Array
-): Promise<AcExCompressedSnapshotBinary> {
+): Promise<AcExHtmlCompressedSnapshotBinary> {
   if (snapshotCompressor) {
     return {
       bytes: await snapshotCompressor.gzip(data),
@@ -79,7 +79,7 @@ export async function compressSnapshotBinaryAsync(
     }
   }
   if (typeof CompressionStream === 'undefined') {
-    return compressSnapshotBinary(data)
+    return acexHtmlCompressSnapshotBinary(data)
   }
   try {
     // Copy into a standalone ArrayBuffer — Blob rejects SharedArrayBuffer views.
@@ -94,17 +94,17 @@ export async function compressSnapshotBinaryAsync(
       compression: ACEX_SNAPSHOT_COMPRESSION
     }
   } catch {
-    return compressSnapshotBinary(data)
+    return acexHtmlCompressSnapshotBinary(data)
   }
 }
 
 /** True when `bytes` start with the gzip magic header (`1f 8b`). */
-export function isGzipPayload(bytes: Uint8Array): boolean {
+export function acexHtmlIsGzipPayload(bytes: Uint8Array): boolean {
   return bytes.byteLength >= 2 && bytes[0] === 0x1f && bytes[1] === 0x8b
 }
 
 /** Decompresses a gzip snapshot binary payload from an exported HTML file. */
-export function decompressSnapshotBinary(data: Uint8Array): Uint8Array {
+export function acexHtmlDecompressSnapshotBinary(data: Uint8Array): Uint8Array {
   if (data.byteLength > ACEX_MAX_COMPRESSED_BYTES) {
     throw new Error('Compressed payload exceeds size limit')
   }

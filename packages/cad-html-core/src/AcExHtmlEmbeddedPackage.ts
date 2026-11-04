@@ -8,44 +8,42 @@
  */
 
 import {
-  estimateLineBatchBytes,
-  estimateMeshBatchBytes
-} from './AcExBatchBinaryCodec'
-import {
   type AcExHtmlAccessManifest,
-  acExHtmlBase64ToBytes,
-  acExHtmlBytesToBase64,
-  buildAcExHtmlAccessManifest,
-  createAcExHtmlAccessKey,
-  decryptAcExHtmlBytes,
-  encryptAcExHtmlBytes
+  acexHtmlBase64ToBytes,
+  acexHtmlBuildAccessManifest,
+  acexHtmlBytesToBase64,
+  acexHtmlCreateAccessKey,
+  acexHtmlDecryptBytes,
+  acexHtmlEncryptBytes
 } from './AcExHtmlAccess'
 import {
+  acexHtmlEstimateLineBatchBytes,
+  acexHtmlEstimateMeshBatchBytes
+} from './AcExHtmlBatchBinaryCodec'
+import {
   type AcExHtmlBinaryEncoding,
-  acExHtmlBytesToText,
-  acExHtmlTextToBytes,
-  parseAcExHtmlBinaryEncoding
-} from './AcExHtmlBinaryText'
-import { resolveAcExHtmlLocale } from './AcExHtmlI18n'
+  acexHtmlBytesToText,
+  acexHtmlParseBinaryEncoding,
+  acexHtmlTextToBytes} from './AcExHtmlBinaryText'
+import { acexHtmlResolveLocale } from './AcExHtmlI18n'
+import { acexHtmlEstimateOsnapPrimitiveBytes } from './AcExHtmlOsnapCatalogCodec'
 import {
   ACEX_DEFAULT_MANIFEST_FILE,
   ACEX_PACKAGE_DIRECTORY_ORIGIN
 } from './AcExHtmlPackageBootstrap'
-import { ACEX_HTML_SHELL_CSS, buildAcExHtmlShellBody } from './AcExHtmlShell'
-import { estimateOsnapPrimitiveBytes } from './AcExOsnapCatalogCodec'
 import {
-  type AcExBuildPackageDataOptions,
-  buildAcExPackageDataAsync
-} from './AcExPackageBuilder'
-import { parseAcExPackageManifest } from './AcExPackageLoader'
+  acexHtmlBuildPackageDataAsync,
+  type AcExHtmlBuildPackageDataOptions} from './AcExHtmlPackageBuilder'
+import { acexHtmlParsePackageManifest } from './AcExHtmlPackageLoader'
 import {
   ACEX_EMBEDDED_CHUNK_MAX_BYTES,
   ACEX_EMBEDDED_CHUNK_THRESHOLD_BYTES,
   ACEX_EMBEDDED_OSNAP_CHUNK_MAX_BYTES,
-  type AcExPackageFile,
-  type AcExPackageManifest
-} from './AcExPackageTypes'
-import type { AcExSnapshot } from './AcExSnapshotTypes'
+  type AcExHtmlPackageFile,
+  type AcExHtmlPackageManifest
+} from './AcExHtmlPackageTypes'
+import { ACEX_HTML_SHELL_CSS, acexHtmlBuildShellBody } from './AcExHtmlShell'
+import type { AcExHtmlSnapshot } from './AcExHtmlSnapshotTypes'
 
 /** MIME type for embedded chunk `<script>` bodies (base85 gzip ACEC/ACEO). */
 export const ACEX_EMBEDDED_CHUNK_MIME =
@@ -69,11 +67,11 @@ export const ACEX_EMBEDDED_CHUNK_HREF_ATTR = 'data-acex-href'
 /**
  * `#mlcad-package` config when geometry is embedded for progressive paint.
  */
-export type AcExEmbeddedPackageConfig =
+export type AcExHtmlEmbeddedPackageConfig =
   | {
       mode: 'embedded'
       encrypted?: false
-      manifest: AcExPackageManifest
+      manifest: AcExHtmlPackageManifest
     }
   | {
       mode: 'embedded'
@@ -82,7 +80,7 @@ export type AcExEmbeddedPackageConfig =
       encryptedManifest: string
     }
 
-export interface AcExPackHtmlEmbeddedOptions {
+export interface AcExHtmlPackHtmlEmbeddedOptions {
   title?: string
   viewerRuntime: string
   expiresAt?: number | null
@@ -95,21 +93,21 @@ export interface AcExPackHtmlEmbeddedOptions {
 /**
  * Rough uncompressed geometry + OSNAP size used to decide monolithic vs chunked.
  */
-export function estimateAcExSnapshotGeometryBytes(
-  snapshot: AcExSnapshot
+export function acexHtmlEstimateSnapshotGeometryBytes(
+  snapshot: AcExHtmlSnapshot
 ): number {
   let total = 0
   for (const layout of snapshot.layouts) {
     for (const batch of layout.lineBatches) {
-      total += estimateLineBatchBytes(batch)
+      total += acexHtmlEstimateLineBatchBytes(batch)
     }
     for (const batch of layout.meshBatches) {
-      total += estimateMeshBatchBytes(batch)
+      total += acexHtmlEstimateMeshBatchBytes(batch)
     }
     const primitives = layout.osnap?.primitives
     if (primitives) {
       for (const primitive of primitives) {
-        total += estimateOsnapPrimitiveBytes(primitive)
+        total += acexHtmlEstimateOsnapPrimitiveBytes(primitive)
       }
     }
   }
@@ -119,31 +117,31 @@ export function estimateAcExSnapshotGeometryBytes(
 /**
  * Returns true when self-contained HTML should embed progressive chunks.
  */
-export function shouldEmbedAcExChunks(
-  snapshot: AcExSnapshot,
+export function acexHtmlShouldEmbedChunks(
+  snapshot: AcExHtmlSnapshot,
   thresholdBytes: number = ACEX_EMBEDDED_CHUNK_THRESHOLD_BYTES
 ): boolean {
-  return estimateAcExSnapshotGeometryBytes(snapshot) >= thresholdBytes
+  return acexHtmlEstimateSnapshotGeometryBytes(snapshot) >= thresholdBytes
 }
 
 /**
  * Builds a self-contained HTML document with an embedded progressive package.
  * Chunks use a larger size budget than hosted multi-file packages.
  */
-export async function packHtmlEmbeddedPackage(
-  snapshot: AcExSnapshot,
-  options: AcExPackHtmlEmbeddedOptions
+export async function acexHtmlPackHtmlEmbeddedPackage(
+  snapshot: AcExHtmlSnapshot,
+  options: AcExHtmlPackHtmlEmbeddedOptions
 ): Promise<string> {
   const title = options.title ?? snapshot.meta.title ?? 'CAD Drawing'
   const runtime = options.viewerRuntime
   const loadingBg = `#${snapshot.meta.background.toString(16).padStart(6, '0')}`
-  const htmlLang = resolveAcExHtmlLocale(snapshot.meta.locale) ?? 'en'
+  const htmlLang = acexHtmlResolveLocale(snapshot.meta.locale) ?? 'en'
   const viewerMode = snapshot.meta.viewerMode ?? 'measure'
   const exportLayouts = snapshot.meta.exportLayouts !== false
   const expiresAt = options.expiresAt ?? null
   const password = options.password?.trim() || undefined
 
-  const dataOptions: AcExBuildPackageDataOptions = {
+  const dataOptions: AcExHtmlBuildPackageDataOptions = {
     maxChunkBytes: options.maxChunkBytes ?? ACEX_EMBEDDED_CHUNK_MAX_BYTES,
     maxBatchBytes:
       options.maxBatchBytes ??
@@ -152,15 +150,15 @@ export async function packHtmlEmbeddedPackage(
     maxOsnapChunkBytes:
       options.maxOsnapChunkBytes ?? ACEX_EMBEDDED_OSNAP_CHUNK_MAX_BYTES
   }
-  const pkg = await buildAcExPackageDataAsync(snapshot, dataOptions)
+  const pkg = await acexHtmlBuildPackageDataAsync(snapshot, dataOptions)
 
   let accessManifest: AcExHtmlAccessManifest | undefined
-  let packageConfig: AcExEmbeddedPackageConfig
+  let packageConfig: AcExHtmlEmbeddedPackageConfig
   let chunkScripts: string
 
   if (password) {
-    const { key, salt } = await createAcExHtmlAccessKey(password)
-    accessManifest = buildAcExHtmlAccessManifest({
+    const { key, salt } = await acexHtmlCreateAccessKey(password)
+    accessManifest = acexHtmlBuildAccessManifest({
       expiresAt,
       password,
       salt
@@ -168,15 +166,15 @@ export async function packHtmlEmbeddedPackage(
     const manifestPlain = new TextEncoder().encode(
       `${JSON.stringify(pkg.manifest)}\n`
     )
-    const encryptedManifest = await encryptAcExHtmlBytes(key, manifestPlain)
+    const encryptedManifest = await acexHtmlEncryptBytes(key, manifestPlain)
     packageConfig = {
       mode: 'embedded',
       encrypted: true,
-      encryptedManifest: acExHtmlBytesToBase64(encryptedManifest)
+      encryptedManifest: acexHtmlBytesToBase64(encryptedManifest)
     }
     chunkScripts = await buildEncryptedChunkScripts(pkg.files, key)
   } else {
-    accessManifest = buildAcExHtmlAccessManifest({ expiresAt })
+    accessManifest = acexHtmlBuildAccessManifest({ expiresAt })
     packageConfig = {
       mode: 'embedded',
       manifest: pkg.manifest
@@ -200,7 +198,7 @@ export async function packHtmlEmbeddedPackage(
   <style>${ACEX_HTML_SHELL_CSS}</style>
 </head>
 <body>
-${buildAcExHtmlShellBody(loadingBg, viewerMode, exportLayouts)}
+${acexHtmlBuildShellBody(loadingBg, viewerMode, exportLayouts)}
 ${accessScript}  <script id="mlcad-package" type="application/json">${escapeInlineJson(
     JSON.stringify(packageConfig)
   )}</script>
@@ -209,31 +207,31 @@ ${chunkScripts}  <script>${escapeInlineScript(runtime)}</script>
 </html>`
 }
 
-function buildPlainChunkScripts(files: AcExPackageFile[]): string {
+function buildPlainChunkScripts(files: AcExHtmlPackageFile[]): string {
   const parts: string[] = []
   for (const file of files) {
     if (file.path === ACEX_DEFAULT_MANIFEST_FILE) continue
     parts.push(
       `  <script type="${ACEX_EMBEDDED_CHUNK_MIME}" ${ACEX_EMBEDDED_CHUNK_HREF_ATTR}="${escapeHtmlAttr(
         file.path
-      )}">${acExHtmlBytesToText(file.bytes, 'base85')}</script>\n`
+      )}">${acexHtmlBytesToText(file.bytes, 'base85')}</script>\n`
     )
   }
   return parts.join('')
 }
 
 async function buildEncryptedChunkScripts(
-  files: AcExPackageFile[],
+  files: AcExHtmlPackageFile[],
   key: CryptoKey
 ): Promise<string> {
   const parts: string[] = []
   for (const file of files) {
     if (file.path === ACEX_DEFAULT_MANIFEST_FILE) continue
-    const encrypted = await encryptAcExHtmlBytes(key, file.bytes)
+    const encrypted = await acexHtmlEncryptBytes(key, file.bytes)
     parts.push(
       `  <script type="${ACEX_EMBEDDED_CHUNK_ENCRYPTED_MIME}" ${ACEX_EMBEDDED_CHUNK_HREF_ATTR}="${escapeHtmlAttr(
         file.path
-      )}">${acExHtmlBytesToText(encrypted, 'base85')}</script>\n`
+      )}">${acexHtmlBytesToText(encrypted, 'base85')}</script>\n`
     )
   }
   return parts.join('')
@@ -247,22 +245,22 @@ function decodeEmbeddedChunkScript(script: Element): Uint8Array | undefined {
       ? raw.trim()
       : raw
   if (payload.length === 0) return undefined
-  const encoding: AcExHtmlBinaryEncoding = parseAcExHtmlBinaryEncoding(
+  const encoding: AcExHtmlBinaryEncoding = acexHtmlParseBinaryEncoding(
     script.getAttribute('type')
   )
-  return acExHtmlTextToBytes(payload, encoding)
+  return acexHtmlTextToBytes(payload, encoding)
 }
 
 /**
  * Parses `#mlcad-package` JSON as an embedded progressive package config.
  */
-export function parseAcExEmbeddedPackageConfig(
+export function acexHtmlParseEmbeddedPackageConfig(
   raw: string | null | undefined
-): AcExEmbeddedPackageConfig | null {
+): AcExHtmlEmbeddedPackageConfig | null {
   const text = raw?.trim()
   if (!text) return null
   try {
-    const parsed = JSON.parse(text) as Partial<AcExEmbeddedPackageConfig>
+    const parsed = JSON.parse(text) as Partial<AcExHtmlEmbeddedPackageConfig>
     if (parsed?.mode !== 'embedded') return null
     if (parsed.encrypted === true) {
       if (
@@ -271,12 +269,12 @@ export function parseAcExEmbeddedPackageConfig(
       ) {
         return null
       }
-      return parsed as AcExEmbeddedPackageConfig
+      return parsed as AcExHtmlEmbeddedPackageConfig
     }
     if (!(parsed as { manifest?: unknown }).manifest) return null
     return {
       mode: 'embedded',
-      manifest: parseAcExPackageManifest(
+      manifest: acexHtmlParsePackageManifest(
         (parsed as { manifest: unknown }).manifest
       )
     }
@@ -289,10 +287,10 @@ export function parseAcExEmbeddedPackageConfig(
  * Collects embedded chunk script payloads into a path → bytes map.
  * Bytes are still ciphertext when scripts use the encrypted MIME type.
  *
- * Prefer {@link readAcExEmbeddedChunkFromDom} for the offline viewer so large
+ * Prefer {@link acexHtmlReadEmbeddedChunkFromDom} for the offline viewer so large
  * drawings do not decode every chunk into a resident Map at open time.
  */
-export function collectAcExEmbeddedChunkBytes(
+export function acexHtmlCollectEmbeddedChunkBytes(
   root: ParentNode = document
 ): Map<string, Uint8Array> {
   const out = new Map<string, Uint8Array>()
@@ -313,7 +311,7 @@ export function collectAcExEmbeddedChunkBytes(
  * Decodes one embedded chunk from an HTML `<script data-acex-href>` node.
  * Used for on-demand reload without keeping every gzip payload in a JS Map.
  */
-export function readAcExEmbeddedChunkFromDom(
+export function acexHtmlReadEmbeddedChunkFromDom(
   href: string,
   root: ParentNode = document
 ): Uint8Array | undefined {
@@ -335,9 +333,9 @@ export function readAcExEmbeddedChunkFromDom(
  *
  * The decoded bytes are returned for the caller to cache. Re-reading the same
  * href afterwards returns `undefined` because the node is gone — callers must
- * cache the bytes themselves (see {@link createAcExDomEmbeddedPackageFetch}).
+ * cache the bytes themselves (see {@link acexHtmlCreateDomEmbeddedPackageFetch}).
  */
-export function consumeAcExEmbeddedChunkFromDom(
+export function acexHtmlConsumeEmbeddedChunkFromDom(
   href: string,
   root: ParentNode = document
 ): Uint8Array | undefined {
@@ -367,20 +365,20 @@ export function consumeAcExEmbeddedChunkFromDom(
  * in-memory byte cache, so progressive rendering and re-fetch on layout
  * switch keep working without keeping the DOM text alive.
  */
-export function createAcExDomEmbeddedPackageFetch(options: {
-  manifest: AcExPackageManifest
+export function acexHtmlCreateDomEmbeddedPackageFetch(options: {
+  manifest: AcExHtmlPackageManifest
   decryptKey?: CryptoKey | null
   root?: ParentNode
 }): { manifestUrl: string; fetchImpl: typeof fetch } {
   const root = options.root ?? document
   const chunkBytesCache = new Map<string, Uint8Array>()
-  return createAcExEmbeddedPackageFetch({
+  return acexHtmlCreateEmbeddedPackageFetch({
     manifest: options.manifest,
     decryptKey: options.decryptKey,
     getChunk: async href => {
       const cached = chunkBytesCache.get(href)
       if (cached) return cached
-      const bytes = consumeAcExEmbeddedChunkFromDom(href, root)
+      const bytes = acexHtmlConsumeEmbeddedChunkFromDom(href, root)
       if (bytes) chunkBytesCache.set(href, bytes)
       return bytes
     }
@@ -391,11 +389,11 @@ export function createAcExDomEmbeddedPackageFetch(options: {
  * Creates an in-memory (or getter-backed) fetch for an embedded package.
  * When `decryptKey` is set, chunk bodies are decrypted on each fetch.
  *
- * Prefer {@link createAcExDomEmbeddedPackageFetch} in the offline viewer.
+ * Prefer {@link acexHtmlCreateDomEmbeddedPackageFetch} in the offline viewer.
  * The `chunkBytes` Map path remains for tests.
  */
-export function createAcExEmbeddedPackageFetch(options: {
-  manifest: AcExPackageManifest
+export function acexHtmlCreateEmbeddedPackageFetch(options: {
+  manifest: AcExHtmlPackageManifest
   chunkBytes?: Map<string, Uint8Array>
   /**
    * Async chunk resolver. When set, takes precedence over {@link chunkBytes}.
@@ -444,7 +442,7 @@ export function createAcExEmbeddedPackageFetch(options: {
     }
 
     const bytes = decryptKey
-      ? await decryptAcExHtmlBytes(decryptKey, stored)
+      ? await acexHtmlDecryptBytes(decryptKey, stored)
       : stored
     if (consumeOnFetch && chunkBytes) {
       chunkBytes.delete(rel)
@@ -458,16 +456,16 @@ export function createAcExEmbeddedPackageFetch(options: {
 /**
  * Decrypts an embedded encrypted manifest with the derived access key.
  */
-export async function decryptAcExEmbeddedManifest(
+export async function acexHtmlDecryptEmbeddedManifest(
   encryptedManifestBase64: string,
   key: CryptoKey
-): Promise<AcExPackageManifest> {
-  const plain = await decryptAcExHtmlBytes(
+): Promise<AcExHtmlPackageManifest> {
+  const plain = await acexHtmlDecryptBytes(
     key,
-    acExHtmlBase64ToBytes(encryptedManifestBase64)
+    acexHtmlBase64ToBytes(encryptedManifestBase64)
   )
   const text = new TextDecoder().decode(plain)
-  return parseAcExPackageManifest(JSON.parse(text))
+  return acexHtmlParsePackageManifest(JSON.parse(text))
 }
 
 function escapeHtml(value: string): string {

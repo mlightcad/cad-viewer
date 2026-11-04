@@ -1,8 +1,8 @@
 import type { AcExHtmlI18n, AcExHtmlMessageKey } from '@mlightcad/cad-html-core'
 import {
   ACEX_HTML_EXPIRY_COUNTDOWN_MS,
-  formatAcExHtmlCountdown,
-  formatAcExHtmlExpiresAt
+  acexHtmlFormatCountdown,
+  acexHtmlFormatExpiresAt
 } from '@mlightcad/cad-html-core'
 
 /** Maximum wrong-password attempts before the access gate is locked. */
@@ -178,7 +178,7 @@ export function showAcExHtmlAccessExpired(
     hint.textContent =
       expiresAt != null
         ? i18n.t('access.expiredDetail', {
-            time: formatAcExHtmlExpiresAt(expiresAt, i18n.locale)
+            time: acexHtmlFormatExpiresAt(expiresAt, i18n.locale)
           })
         : i18n.t('access.expired')
   }
@@ -243,12 +243,12 @@ export function setAcExHtmlAccessExpiryInfo(
     if (remaining <= ACEX_HTML_EXPIRY_COUNTDOWN_MS) {
       expiryEl.classList.add('mlcad-expiry-countdown')
       expiryEl.textContent = i18n.t('access.badgeCountdown', {
-        time: formatAcExHtmlCountdown(remaining)
+        time: acexHtmlFormatCountdown(remaining)
       })
     } else {
       expiryEl.classList.remove('mlcad-expiry-countdown')
       expiryEl.textContent = i18n.t('access.expiresAt', {
-        time: formatAcExHtmlExpiresAt(expiresAt, i18n.locale)
+        time: acexHtmlFormatExpiresAt(expiresAt, i18n.locale)
       })
     }
   }

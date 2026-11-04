@@ -1,17 +1,17 @@
 import type {
-  AcExOsnapMode,
-  AcExOsnapPoint,
-  AcExOsnapPrimitive
+  AcExHtmlOsnapMode,
+  AcExHtmlOsnapPoint,
+  AcExHtmlOsnapPrimitive
 } from '@mlightcad/cad-html-core'
 import type {
-  AcExLayoutSnapshot,
-  AcExLineBatch
+  AcExHtmlLayoutSnapshot,
+  AcExHtmlLineBatch
 } from '@mlightcad/cad-html-core'
-import { toWcsCoord } from '@mlightcad/cad-html-core'
+import { acexHtmlToWcsCoord } from '@mlightcad/cad-html-core'
 import {
-  arcWcsPoint,
-  normalizeArcDelta,
-  primitiveToAcGeCurve
+  acexHtmlArcWcsPoint,
+  acexHtmlNormalizeArcDelta,
+  acexHtmlPrimitiveToAcGeCurve
 } from '@mlightcad/cad-html-core'
 import { ACEX_DEFAULT_OSNAP_MODES } from '@mlightcad/cad-html-core'
 import { FLOAT_TOL } from '@mlightcad/data-model'
@@ -39,7 +39,7 @@ import {
   pathPrimitiveBounds
 } from './AcExOsnapPath'
 
-export type { AcExOsnapMode, AcExOsnapPoint } from '@mlightcad/cad-html-core'
+export type { AcExHtmlOsnapMode, AcExHtmlOsnapPoint } from '@mlightcad/cad-html-core'
 export { ACEX_DEFAULT_OSNAP_MODES } from '@mlightcad/cad-html-core'
 
 /**
@@ -174,7 +174,7 @@ interface AcExOsnapSegment {
   y1: number
 }
 
-function modePriority(mode: AcExOsnapMode): number {
+function modePriority(mode: AcExHtmlOsnapMode): number {
   switch (mode) {
     case 'endpoint':
     case 'midpoint':
@@ -230,7 +230,7 @@ function segmentsFromIterable(
   return result
 }
 
-function* iterLineSegments(batch: AcExLineBatch): Generator<AcExOsnapSegment> {
+function* iterLineSegments(batch: AcExHtmlLineBatch): Generator<AcExOsnapSegment> {
   const [ox, oy] = batch.offset
   const p = batch.positions
   if (batch.indices && batch.indices.length >= 2) {
@@ -238,20 +238,20 @@ function* iterLineSegments(batch: AcExLineBatch): Generator<AcExOsnapSegment> {
       const i0 = batch.indices[i]! * 3
       const i1 = batch.indices[i + 1]! * 3
       yield {
-        x0: toWcsCoord(p[i0]!, ox),
-        y0: toWcsCoord(p[i0 + 1]!, oy),
-        x1: toWcsCoord(p[i1]!, ox),
-        y1: toWcsCoord(p[i1 + 1]!, oy)
+        x0: acexHtmlToWcsCoord(p[i0]!, ox),
+        y0: acexHtmlToWcsCoord(p[i0 + 1]!, oy),
+        x1: acexHtmlToWcsCoord(p[i1]!, ox),
+        y1: acexHtmlToWcsCoord(p[i1 + 1]!, oy)
       }
     }
     return
   }
   for (let i = 0; i + 5 < p.length; i += 6) {
     yield {
-      x0: toWcsCoord(p[i]!, ox),
-      y0: toWcsCoord(p[i + 1]!, oy),
-      x1: toWcsCoord(p[i + 3]!, ox),
-      y1: toWcsCoord(p[i + 4]!, oy)
+      x0: acexHtmlToWcsCoord(p[i]!, ox),
+      y0: acexHtmlToWcsCoord(p[i + 1]!, oy),
+      x1: acexHtmlToWcsCoord(p[i + 3]!, ox),
+      y1: acexHtmlToWcsCoord(p[i + 4]!, oy)
     }
   }
 }
@@ -280,8 +280,8 @@ function pointsEqual(
 /**
  * Merges line segments that share endpoints into longer logical segments.
  *
- * Non-indexed {@link AcExLineBatch} geometry stores disconnected vertex pairs
- * (one pair per rendered edge). When {@link AcExLineBatch.linePattern} is set,
+ * Non-indexed {@link AcExHtmlLineBatch} geometry stores disconnected vertex pairs
+ * (one pair per rendered edge). When {@link AcExHtmlLineBatch.linePattern} is set,
  * consecutive pairs that meet at a common endpoint belong to the same CAD entity
  * and should snap as one line, not as independent dash or tessellation fragments.
  *
@@ -361,24 +361,24 @@ export function mergeConnectedSegments(
 }
 
 /**
- * Extracts WCS snap segments from one exported {@link AcExLineBatch}.
+ * Extracts WCS snap segments from one exported {@link AcExHtmlLineBatch}.
  *
  * Always walks stored segment pairs / index edges via {@link iterLineSegments}.
  * Patterned (dashed) batches are **not** collapsed to first/last chain ends —
  * that dropped intermediate WidePolyline / LWPOLYLINE vertices. Linetype gaps
  * are shader-only; the vertex chain is the entity geometry AutoCAD snaps to.
  *
- * @param batch - One line batch from {@link AcExLayoutSnapshot.lineBatches}.
+ * @param batch - One line batch from {@link AcExHtmlLayoutSnapshot.lineBatches}.
  * @returns Snap segments in WCS; may be empty when the batch has no geometry.
  */
 export function extractLineBatchSnapSegments(
-  batch: AcExLineBatch
+  batch: AcExHtmlLineBatch
 ): AcExOsnapSegment[] {
   return segmentsFromIterable(iterLineSegments(batch))
 }
 
 /**
- * Collects tessellated snap segments from drawable {@link AcExLineBatch}s.
+ * Collects tessellated snap segments from drawable {@link AcExHtmlLineBatch}s.
  *
  * Mesh / hatch triangulation (`meshBatches`) is intentionally skipped: those
  * edges are display fills, not CAD snap targets, and indexing every triangle
@@ -391,7 +391,7 @@ export function extractLineBatchSnapSegments(
  * @returns Flat list of WCS segments and parallel layer names for spatial indexing.
  * @internal
  */
-function collectBatchSegments(layout: AcExLayoutSnapshot): {
+function collectBatchSegments(layout: AcExHtmlLayoutSnapshot): {
   segments: AcExOsnapSegment[]
   segmentLayers: string[]
 } {
@@ -412,7 +412,7 @@ function collectBatchSegments(layout: AcExLayoutSnapshot): {
   return { segments, segmentLayers }
 }
 
-function layoutHasDrawableLineBatches(layout: AcExLayoutSnapshot): boolean {
+function layoutHasDrawableLineBatches(layout: AcExHtmlLayoutSnapshot): boolean {
   for (const batch of layout.lineBatches) {
     if (batch.excludeFromOsnap) continue
     if (batch.positions.length >= 6) {
@@ -428,7 +428,7 @@ function layoutHasDrawableLineBatches(layout: AcExLayoutSnapshot): boolean {
  * large drawings take minutes).
  */
 async function collectBatchSegmentsAsync(
-  layout: AcExLayoutSnapshot,
+  layout: AcExHtmlLayoutSnapshot,
   yieldFn: () => Promise<void>
 ): Promise<{
   segments: AcExOsnapSegment[]
@@ -558,7 +558,7 @@ function packedSegmentBounds(
  * Rough item count for deciding whether to show a "building OSNAP" status.
  * Counts analytic primitives + line-batch edges only (meshes are not indexed).
  */
-export function estimateOsnapRebuildWork(layout: AcExLayoutSnapshot): number {
+export function estimateOsnapRebuildWork(layout: AcExHtmlLayoutSnapshot): number {
   let n = layout.osnap?.primitives.length ?? 0
   for (const batch of layout.lineBatches) {
     if (batch.excludeFromOsnap) continue
@@ -621,7 +621,7 @@ function isFiniteBounds(box: {
   )
 }
 
-function primitiveBounds(prim: AcExOsnapPrimitive): {
+function primitiveBounds(prim: AcExHtmlOsnapPrimitive): {
   minX: number
   minY: number
   maxX: number
@@ -681,19 +681,19 @@ function primitiveBounds(prim: AcExOsnapPrimitive): {
  */
 export class AcExOsnapIndex {
   private packedSegments: AcExPackedSegments = emptyPackedSegments()
-  private primitives: AcExOsnapPrimitive[] = []
+  private primitives: AcExHtmlOsnapPrimitive[] = []
   private primitiveTree = new RBush<AcExRbushEntry>()
   private segmentTree = new RBush<AcExRbushEntry>()
   /** Extra bulk-loaded trees when async rebuild splits {@link OSNAP_RBUSH_LOAD_CHUNK}. */
   private primitiveTreeExtras: RBush<AcExRbushEntry>[] = []
   private segmentTreeExtras: RBush<AcExRbushEntry>[] = []
-  private modes: Set<AcExOsnapMode>
+  private modes: Set<AcExHtmlOsnapMode>
   private hiddenLayers = new Set<string>()
 
   /**
    * @param modes - Enabled snap modes; defaults to {@link ACEX_DEFAULT_OSNAP_MODES}.
    */
-  constructor(modes: Iterable<AcExOsnapMode> = ACEX_DEFAULT_OSNAP_MODES) {
+  constructor(modes: Iterable<AcExHtmlOsnapMode> = ACEX_DEFAULT_OSNAP_MODES) {
     this.modes = new Set(modes)
   }
 
@@ -732,15 +732,15 @@ export class AcExOsnapIndex {
    * Builds spatial indexes from the active layout snapshot.
    *
    * Loads analytic curve/point primitives (when present) and tessellated line
-   * segments from {@link AcExLineBatch} into RBush trees. Straight edges are
+   * segments from {@link AcExHtmlLineBatch} into RBush trees. Straight edges are
    * expected from batches; ACEO catalogs omit `line` kinds to avoid duplication.
    *
    * Prefer {@link rebuildAsync} for large layouts so the UI thread can paint
    * between batches.
    *
-   * @param layout - Active layout snapshot (batches + optional {@link AcExLayoutSnapshot.osnap}).
+   * @param layout - Active layout snapshot (batches + optional {@link AcExHtmlLayoutSnapshot.osnap}).
    */
-  rebuild(layout: AcExLayoutSnapshot): void {
+  rebuild(layout: AcExHtmlLayoutSnapshot): void {
     this.resetFromLayout(layout)
     this.collectSegmentsFromLayout(layout)
     this.loadPrimitiveTreeSync()
@@ -755,7 +755,7 @@ export class AcExOsnapIndex {
    * @param yieldFn - Called between work batches (defaults to a macrotask yield).
    */
   async rebuildAsync(
-    layout: AcExLayoutSnapshot,
+    layout: AcExHtmlLayoutSnapshot,
     yieldFn: () => Promise<void> = yieldToBrowser
   ): Promise<void> {
     this.resetIndexState()
@@ -777,7 +777,7 @@ export class AcExOsnapIndex {
     this.packedSegments = emptyPackedSegments()
   }
 
-  private resetFromLayout(layout: AcExLayoutSnapshot): void {
+  private resetFromLayout(layout: AcExHtmlLayoutSnapshot): void {
     this.resetIndexState()
     this.primitives = (layout.osnap?.primitives ?? []).filter(prim =>
       isFiniteBounds(primitiveBounds(prim))
@@ -785,14 +785,14 @@ export class AcExOsnapIndex {
   }
 
   private async filterPrimitivesAsync(
-    source: readonly AcExOsnapPrimitive[],
+    source: readonly AcExHtmlOsnapPrimitive[],
     yieldFn: () => Promise<void>
   ): Promise<void> {
     if (source.length === 0) {
       this.primitives = []
       return
     }
-    const filtered: AcExOsnapPrimitive[] = []
+    const filtered: AcExHtmlOsnapPrimitive[] = []
     const schedule = createOsnapYieldScheduler(yieldFn)
     for (let i = 0; i < source.length; i++) {
       const prim = source[i]!
@@ -805,7 +805,7 @@ export class AcExOsnapIndex {
     this.primitives = filtered
   }
 
-  private collectSegmentsFromLayout(layout: AcExLayoutSnapshot): void {
+  private collectSegmentsFromLayout(layout: AcExHtmlLayoutSnapshot): void {
     if (!layoutHasDrawableLineBatches(layout)) {
       return
     }
@@ -817,7 +817,7 @@ export class AcExOsnapIndex {
   }
 
   private async collectSegmentsFromLayoutAsync(
-    layout: AcExLayoutSnapshot,
+    layout: AcExHtmlLayoutSnapshot,
     yieldFn: () => Promise<void>
   ): Promise<void> {
     if (!layoutHasDrawableLineBatches(layout)) {
@@ -977,7 +977,7 @@ export class AcExOsnapIndex {
             : []
       for (const arcPrim of arcs) {
         if (arcPrim.kind !== 'circle' && arcPrim.kind !== 'arc') continue
-        const geo = primitiveToAcGeCurve(arcPrim)
+        const geo = acexHtmlPrimitiveToAcGeCurve(arcPrim)
         if (geo.kind !== 'circArc') continue
         const nearest = geo.curve.nearestPoint({ x: px, y: py })
         const d2 = distSq(px, py, nearest.x, nearest.y)
@@ -994,25 +994,25 @@ export class AcExOsnapIndex {
             y: nearest.y
           }
           if (arcPrim.kind === 'arc') {
-            const start = arcWcsPoint(
+            const start = acexHtmlArcWcsPoint(
               arcPrim.cx,
               arcPrim.cy,
               arcPrim.r,
               arcPrim.startAngle,
               arcPrim.normalSign
             )
-            const end = arcWcsPoint(
+            const end = acexHtmlArcWcsPoint(
               arcPrim.cx,
               arcPrim.cy,
               arcPrim.r,
               arcPrim.endAngle,
               arcPrim.normalSign
             )
-            const delta = normalizeArcDelta(
+            const delta = acexHtmlNormalizeArcDelta(
               arcPrim.startAngle,
               arcPrim.endAngle
             )
-            const mid = arcWcsPoint(
+            const mid = acexHtmlArcWcsPoint(
               arcPrim.cx,
               arcPrim.cy,
               arcPrim.r,
@@ -1039,8 +1039,8 @@ export class AcExOsnapIndex {
   /**
    * Finds the best snap point near the cursor in WCS.
    *
-   * Queries analytic {@link AcExLayoutSnapshot.osnap} curve primitives together
-   * with tessellated {@link AcExLineBatch} segments (lines are derived from
+   * Queries analytic {@link AcExHtmlLayoutSnapshot.osnap} curve primitives together
+   * with tessellated {@link AcExHtmlLineBatch} segments (lines are derived from
    * geometry, not duplicated in ACEO). Hatch/mesh triangulation is not indexed.
    *
    * Uses AutoCAD-style mode priority: endpoint / midpoint / center beat
@@ -1056,7 +1056,7 @@ export class AcExOsnapIndex {
     px: number,
     py: number,
     threshold: number
-  ): AcExOsnapPoint | undefined {
+  ): AcExHtmlOsnapPoint | undefined {
     if (threshold <= 0) return undefined
     if (
       this.primitives.length === 0 &&
@@ -1088,12 +1088,12 @@ export class AcExOsnapIndex {
     px: number,
     py: number,
     threshold: number,
-    candidates: Array<AcExOsnapPoint | undefined>
-  ): AcExOsnapPoint | undefined {
+    candidates: Array<AcExHtmlOsnapPoint | undefined>
+  ): AcExHtmlOsnapPoint | undefined {
     const threshSq = threshold * threshold
     let bestPriority = Number.MAX_VALUE
     let bestDistSq = Number.MAX_VALUE
-    let best: AcExOsnapPoint | undefined
+    let best: AcExHtmlOsnapPoint | undefined
 
     for (const candidate of candidates) {
       if (!candidate) continue
@@ -1121,7 +1121,7 @@ export class AcExOsnapIndex {
     px: number,
     py: number,
     threshold: number
-  ): AcExOsnapPoint | undefined {
+  ): AcExHtmlOsnapPoint | undefined {
     const box = searchBox(px, py, threshold)
     const primHits = searchRbushForest(
       this.primitiveTree,
@@ -1143,7 +1143,7 @@ export class AcExOsnapIndex {
     const segIndices: number[] = []
     const primSeen = new Set<number>()
     const segSeen = new Set<number>()
-    const workPrims: AcExOsnapPrimitive[] = []
+    const workPrims: AcExHtmlOsnapPrimitive[] = []
 
     for (const hit of primHits) {
       const prim = this.primitives[hit.index]!
@@ -1173,7 +1173,7 @@ export class AcExOsnapIndex {
     }
 
     let bestDistSq = threshSq
-    let best: AcExOsnapPoint | undefined
+    let best: AcExHtmlOsnapPoint | undefined
 
     for (let i = 0; i < workPrims.length; i++) {
       const primA = workPrims[i]!
@@ -1240,7 +1240,7 @@ export class AcExOsnapIndex {
         const layer = packedSegmentLayerAt(this.packedSegments, segIndex)
         if (this.hiddenLayers.has(layer)) continue
         const seg = packedSegmentAt(this.packedSegments, segIndex)
-        const asLine: AcExOsnapPrimitive = {
+        const asLine: AcExHtmlOsnapPrimitive = {
           kind: 'line',
           layer,
           x0: seg.x0,
@@ -1266,7 +1266,7 @@ export class AcExOsnapIndex {
     return best
   }
 
-  private discreteModes(): Set<AcExOsnapMode> {
+  private discreteModes(): Set<AcExHtmlOsnapMode> {
     const discreteModes = new Set(this.modes)
     discreteModes.delete('nearest')
     discreteModes.delete('intersection')
@@ -1277,12 +1277,12 @@ export class AcExOsnapIndex {
     px: number,
     py: number,
     threshSq: number,
-    candidate: AcExOsnapPoint,
+    candidate: AcExHtmlOsnapPoint,
     layer: string,
     state: {
       bestPriority: number
       bestDistSq: number
-      best: AcExOsnapPoint | undefined
+      best: AcExHtmlOsnapPoint | undefined
     }
   ): void {
     if (!this.modes.has(candidate.mode)) return
@@ -1305,7 +1305,7 @@ export class AcExOsnapIndex {
     px: number,
     py: number,
     threshold: number
-  ): AcExOsnapPoint | undefined {
+  ): AcExHtmlOsnapPoint | undefined {
     const discreteModes = this.discreteModes()
     if (discreteModes.size === 0) return undefined
 
@@ -1314,7 +1314,7 @@ export class AcExOsnapIndex {
     const state = {
       bestPriority: Number.MAX_VALUE,
       bestDistSq: Number.MAX_VALUE,
-      best: undefined as AcExOsnapPoint | undefined
+      best: undefined as AcExHtmlOsnapPoint | undefined
     }
 
     for (const hit of searchRbushForest(
@@ -1386,11 +1386,11 @@ export class AcExOsnapIndex {
     px: number,
     py: number,
     threshold: number
-  ): AcExOsnapPoint | undefined {
+  ): AcExHtmlOsnapPoint | undefined {
     const threshSq = threshold * threshold
     const box = searchBox(px, py, threshold)
     let bestDistSq = Number.MAX_VALUE
-    let best: AcExOsnapPoint | undefined
+    let best: AcExHtmlOsnapPoint | undefined
 
     for (const hit of searchRbushForest(
       this.primitiveTree,
@@ -1415,7 +1415,7 @@ export class AcExOsnapIndex {
               prim,
               px,
               py,
-              primitiveToAcGeCurve(prim)
+              acexHtmlPrimitiveToAcGeCurve(prim)
             )
       if (!nearest) continue
       const d2 = distSq(px, py, nearest.x, nearest.y)
@@ -1456,13 +1456,13 @@ export class AcExOsnapIndex {
 }
 
 /**
- * Maps an {@link AcExOsnapMode} to the on-screen marker glyph in the offline viewer.
+ * Maps an {@link AcExHtmlOsnapMode} to the on-screen marker glyph in the offline viewer.
  *
  * @param mode - Active snap mode from {@link findSnap} or measurement UI.
  * @returns CSS shape key used by {@link AcExOsnapMarker}.
  */
 export function acexOsnapModeToMarkerType(
-  mode: AcExOsnapMode
+  mode: AcExHtmlOsnapMode
 ): 'rect' | 'triangle' | 'x' | 'circle' | 'diamond' | 'intersection' {
   switch (mode) {
     case 'endpoint':

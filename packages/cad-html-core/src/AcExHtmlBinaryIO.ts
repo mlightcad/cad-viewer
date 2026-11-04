@@ -20,7 +20,7 @@ export const ACEX_MAX_BINARY_ARRAY_BYTES = 512 * 1024 * 1024
  * Little-endian binary writer used by ACEX snapshot and ACEC chunk codecs.
  * Geometry buffers are length-prefixed and 4-byte aligned.
  */
-export class AcExBinaryWriter {
+export class AcExHtmlBinaryWriter {
   private readonly chunks: Uint8Array[] = []
   private length = 0
 
@@ -119,9 +119,9 @@ export class AcExBinaryWriter {
 }
 
 /**
- * Little-endian binary reader paired with {@link AcExBinaryWriter}.
+ * Little-endian binary reader paired with {@link AcExHtmlBinaryWriter}.
  */
-export class AcExBinaryReader {
+export class AcExHtmlBinaryReader {
   private offset = 0
 
   constructor(private readonly bytes: Uint8Array) {}

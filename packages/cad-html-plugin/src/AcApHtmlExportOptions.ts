@@ -1,17 +1,17 @@
-import type { AcApHtmlExpiryDays } from '@mlightcad/cad-html-core'
+import type { AcExHtmlExpiryDays } from '@mlightcad/cad-html-core'
 import type {
   AcExHtmlBackground,
-  AcExInitialViewMode,
-  AcExViewerMode,
-  AcExViewState
+  AcExHtmlInitialViewMode,
+  AcExHtmlViewerMode,
+  AcExHtmlViewState
 } from '@mlightcad/cad-html-core'
 import {
   ACEX_DEFAULT_CHUNK_MAX_BYTES,
-  resolveAcExHtmlBackground
+  acexHtmlResolveBackground
 } from '@mlightcad/cad-html-core'
 import type { AcTrView2d } from '@mlightcad/cad-simple-viewer'
 
-export type { AcApHtmlExpiryDays } from '@mlightcad/cad-html-core'
+export type { AcExHtmlExpiryDays } from '@mlightcad/cad-html-core'
 
 /** Matches the offline HTML viewer orthographic half-height in world units. */
 const HTML_VIEWER_CAMERA_FRUSTUM = 400
@@ -70,18 +70,18 @@ export interface AcApHtmlExportOptions {
   /**
    * Initial framing when the exported HTML is opened. Defaults to `'fit'`.
    */
-  initialView?: AcExInitialViewMode
+  initialView?: AcExHtmlInitialViewMode
   /**
    * Offline viewer capability profile. `'view'` omits OSNAP data, measurement,
    * and markup UI for a smaller, faster HTML file. Defaults to `'measure'`.
    */
-  viewerMode?: AcExViewerMode
+  viewerMode?: AcExHtmlViewerMode
   /**
    * How long the exported HTML remains valid. Defaults to `'never'`.
    * Use `'custom'` with {@link AcApHtmlExportOptions.expiresAt} for an absolute time.
    * Ignored when {@link AcApHtmlExportOptions.exportFormat} is `'multi'`.
    */
-  expiryDays?: AcApHtmlExpiryDays
+  expiryDays?: AcExHtmlExpiryDays
   /**
    * Absolute expiry timestamp (Unix ms). Used when {@link AcApHtmlExportOptions.expiryDays}
    * is `'custom'`. Ignored for relative periods and `'never'`.
@@ -143,7 +143,7 @@ export function resolveAcApHtmlExportOptions(
 ): Required<
   Omit<AcApHtmlExportOptions, 'password' | 'expiryDays' | 'expiresAt'>
 > & {
-  expiryDays: AcApHtmlExpiryDays
+  expiryDays: AcExHtmlExpiryDays
   expiresAt: number | null
   password: string
 } {
@@ -163,7 +163,7 @@ export function resolveAcApHtmlExportOptions(
     exportFormat,
     exportInvisibleLayers: options.exportInvisibleLayers !== false,
     exportLayouts: options.exportLayouts !== false,
-    background: resolveAcExHtmlBackground(options.background),
+    background: acexHtmlResolveBackground(options.background),
     initialView: options.initialView ?? 'fit',
     viewerMode: options.viewerMode ?? 'measure',
     expiryDays:
@@ -205,7 +205,7 @@ export function resolveAcApHtmlPackageBuildOptions(
 /**
  * Captures the active 2D view as camera state understood by the offline viewer.
  */
-export function captureAcApHtmlViewState(view: AcTrView2d): AcExViewState {
+export function captureAcApHtmlViewState(view: AcTrView2d): AcExHtmlViewState {
   const layoutView = view.activeLayoutView
   const center = layoutView.center
   const zoomMain = layoutView.trCamera.zoom

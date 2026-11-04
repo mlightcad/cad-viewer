@@ -3,14 +3,14 @@ import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
 import {
-  computeLineDistancesForSegments,
-  createViewerLineMaterial,
-  createViewerMeshMaterial,
-  extractGradientFill,
-  extractHatchPattern,
-  extractLinePattern,
-  rebaseHatchPatternToLocalOffset,
-  transformHatchPatternToWorldSpace
+  acexHtmlComputeLineDistancesForSegments,
+  acexHtmlCreateViewerLineMaterial,
+  acexHtmlCreateViewerMeshMaterial,
+  acexHtmlExtractGradientFill,
+  acexHtmlExtractHatchPattern,
+  acexHtmlExtractLinePattern,
+  acexHtmlRebaseHatchPatternToLocalOffset,
+  acexHtmlTransformHatchPatternToWorldSpace
 } from '@mlightcad/cad-html-core'
 import {
   createGradientHatchShaderMaterial,
@@ -28,7 +28,7 @@ describe('AcExPatternSnapshot', () => {
         { value: 1 }
       )
 
-    expect(extractLinePattern(material)).toEqual({
+    expect(acexHtmlExtractLinePattern(material)).toEqual({
       pattern: [5, -2],
       patternLength: 7,
       viewportScale: 1.25
@@ -52,7 +52,7 @@ describe('AcExPatternSnapshot', () => {
       new THREE.Color(0x00ff00)
     )
 
-    expect(extractHatchPattern(material)).toEqual({
+    expect(acexHtmlExtractHatchPattern(material)).toEqual({
       patternAngle: 0.25,
       patternLines: [
         {
@@ -69,7 +69,7 @@ describe('AcExPatternSnapshot', () => {
   it('computes cumulative line distances for segment pairs', () => {
     expect(
       Array.from(
-        computeLineDistancesForSegments(
+        acexHtmlComputeLineDistancesForSegments(
           Float32Array.from([0, 0, 0, 3, 4, 0, 3, 4, 0, 6, 8, 0])
         )
       )
@@ -89,7 +89,7 @@ describe('AcExPatternSnapshot', () => {
       new THREE.Color(0xffffff)
     )
 
-    expect(extractGradientFill(material)).toEqual({
+    expect(acexHtmlExtractGradientFill(material)).toEqual({
       startColor: 0xff0000,
       endColor: 0x0000ff,
       angle: 0.75,
@@ -100,7 +100,7 @@ describe('AcExPatternSnapshot', () => {
 
   it('recreates wide-line viewer materials from snapshot batches', () => {
     const resolution = new THREE.Vector2(1280, 720)
-    const lineMaterial = createViewerLineMaterial(
+    const lineMaterial = acexHtmlCreateViewerLineMaterial(
       {
         layer: '0',
         color: 0x00ff00,
@@ -119,7 +119,7 @@ describe('AcExPatternSnapshot', () => {
   })
 
   it('recreates patterned viewer materials from snapshot batches', () => {
-    const lineMaterial = createViewerLineMaterial({
+    const lineMaterial = acexHtmlCreateViewerLineMaterial({
       layer: '0',
       color: 0xff0000,
       offset: [0, 0, 0],
@@ -132,7 +132,7 @@ describe('AcExPatternSnapshot', () => {
     })
     expect(lineMaterial).toBeInstanceOf(THREE.ShaderMaterial)
 
-    const meshMaterial = createViewerMeshMaterial({
+    const meshMaterial = acexHtmlCreateViewerMeshMaterial({
       layer: '0',
       color: 0x00ff00,
       offset: [0, 0, 0],
@@ -155,7 +155,7 @@ describe('AcExPatternSnapshot', () => {
       (meshMaterial as THREE.ShaderMaterial).defines?.MAX_PATTERN_SEGMENT_COUNT
     ).toBe(2)
 
-    const gradientMaterial = createViewerMeshMaterial({
+    const gradientMaterial = acexHtmlCreateViewerMeshMaterial({
       layer: '0',
       color: 0xff0000,
       offset: [0, 0, 0],
@@ -189,7 +189,7 @@ describe('AcExPatternSnapshot', () => {
       ]
     }
     const matrix = new THREE.Matrix4().makeTranslation(10, 20, 0).toArray()
-    expect(transformHatchPatternToWorldSpace(pattern, matrix)).toEqual({
+    expect(acexHtmlTransformHatchPatternToWorldSpace(pattern, matrix)).toEqual({
       patternAngle: 0,
       patternLines: [
         {
@@ -221,7 +221,7 @@ describe('AcExPatternSnapshot', () => {
     }
     const rotation = Math.PI / 6
     const matrix = new THREE.Matrix4().makeRotationZ(rotation).toArray()
-    const result = transformHatchPatternToWorldSpace(pattern, matrix)
+    const result = acexHtmlTransformHatchPatternToWorldSpace(pattern, matrix)
 
     expect(result.patternAngle).toBe(0)
     expect(result.patternLines[0]!.angle).toBeCloseTo(rotation)
@@ -247,7 +247,7 @@ describe('AcExPatternSnapshot', () => {
       ]
     }
     const matrix = new THREE.Matrix4().makeScale(2, 2, 1).toArray()
-    const result = transformHatchPatternToWorldSpace(pattern, matrix)
+    const result = acexHtmlTransformHatchPatternToWorldSpace(pattern, matrix)
 
     expect(result.patternLines[0]!.angle).toBeCloseTo(0)
     expect(result.patternLines[0]!.offset[1]).toBeCloseTo(2)
@@ -275,7 +275,7 @@ describe('AcExPatternSnapshot', () => {
     }
     const rotation = Math.PI / 6
     const matrix = new THREE.Matrix4().makeRotationZ(rotation).toArray()
-    const result = transformHatchPatternToWorldSpace(pattern, matrix)
+    const result = acexHtmlTransformHatchPatternToWorldSpace(pattern, matrix)
 
     const totalAngle = result.patternLines[0]!.angle + result.patternAngle
     expect(totalAngle).toBeCloseTo(lineAngle + rotation)
@@ -304,7 +304,7 @@ describe('AcExPatternSnapshot', () => {
       ]
     }
     const meshOffset: [number, number, number] = [10_650_000, 3_200_000, 0]
-    const local = rebaseHatchPatternToLocalOffset(pattern, meshOffset)
+    const local = acexHtmlRebaseHatchPatternToLocalOffset(pattern, meshOffset)
     const base = local.patternLines[0]!.base
     expect(Math.hypot(base[0], base[1])).toBeLessThan(
       Math.abs(shaderOffset.y) + 1e-9
@@ -352,12 +352,12 @@ describe('AcExPatternSnapshot', () => {
         }
       ]
     }
-    const local = rebaseHatchPatternToLocalOffset(pattern, [
+    const local = acexHtmlRebaseHatchPatternToLocalOffset(pattern, [
       10_650_000,
       3_200_000,
       0
     ])
-    // Exported offset must stay in shader frame for createViewerMeshMaterial
+    // Exported offset must stay in shader frame for acexHtmlCreateViewerMeshMaterial
     // (which feeds createHatchPatternShaderMaterial without another rotate).
     expect(local.patternLines[0]!.offset[0]).toBeCloseTo(shaderOffset.x, 10)
     expect(local.patternLines[0]!.offset[1]).toBeCloseTo(shaderOffset.y, 10)

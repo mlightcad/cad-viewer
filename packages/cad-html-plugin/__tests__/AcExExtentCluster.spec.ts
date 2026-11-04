@@ -1,6 +1,6 @@
 import {
-  splitDominantCluster,
-  unionDominantCluster
+  acexHtmlSplitDominantCluster,
+  acexHtmlUnionDominantCluster
 } from '@mlightcad/cad-html-core'
 
 function box(
@@ -19,7 +19,7 @@ describe('AcExExtentCluster', () => {
       box(2, 0, 3, 1),
       box(4, 0, 5, 1)
     ]
-    expect(unionDominantCluster(boxes)).toEqual({
+    expect(acexHtmlUnionDominantCluster(boxes)).toEqual({
       minX: 0,
       minY: 0,
       maxX: 5,
@@ -33,7 +33,7 @@ describe('AcExExtentCluster', () => {
       site.push(box(490000 + i * 100, 3420000, 490050 + i * 100, 3420100))
     }
     const outlier = box(1e75, 1e63, 1e75 + 12, 1e63 + 12)
-    const clustered = unionDominantCluster([...site, outlier])
+    const clustered = acexHtmlUnionDominantCluster([...site, outlier])
     expect(clustered).not.toBeNull()
     expect(clustered!.maxX).toBeLessThan(1e10)
     expect(clustered!.minX).toBeGreaterThan(489000)
@@ -50,7 +50,7 @@ describe('AcExExtentCluster', () => {
       box(120, 0, 130, 10),
       box(140, 0, 150, 10)
     ]
-    const afterX = splitDominantCluster(boxes, 'x')
+    const afterX = acexHtmlSplitDominantCluster(boxes, 'x')
     expect(afterX).toHaveLength(boxes.length)
   })
 })

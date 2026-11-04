@@ -184,18 +184,18 @@ await new AcApHtmlConvertor({ viewerRuntimeUrl: './viewer-runtime.iife.js' })
 
 ```typescript
 import {
-  buildAcExPackage,
-  zipAcExPackageFiles,
-  unzipAcExPackageFiles
+  acexHtmlBuildPackage,
+  acexHtmlZipPackageFiles,
+  acexHtmlUnzipPackageFiles
 } from '@mlightcad/cad-html-plugin'
 
 // snapshot is built from the Three.js scene by AcApHtmlSnapshotBuilder
-const pkg = buildAcExPackage(snapshot, {
+const pkg = acexHtmlBuildPackage(snapshot, {
   viewerRuntime,          // Text of viewer-runtime.iife.js
   baseName: 'floor-plan'
 })
 
-const zipBytes = zipAcExPackageFiles(pkg)     // Package into a zip for download
+const zipBytes = acexHtmlZipPackageFiles(pkg)     // Package into a zip for download
 // Or directly write pkg.files ([{ path, bytes }, ...]) to disk / upload to object storage,
 // completely skipping the extraction step:
 for (const file of pkg.files) {
@@ -294,7 +294,7 @@ npx serve .
 ```js
 // publish-cad-package.mjs
 import { runHeadless } from '@mlightcad/cad-simple-viewer-cli'
-import { unzipAcExPackageFiles } from '@mlightcad/cad-html-plugin'
+import { acexHtmlUnzipPackageFiles } from '@mlightcad/cad-html-plugin'
 import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -312,7 +312,7 @@ const { outputDir } = await runHeadless({
 // 2. Find the generated zip and extract it to the publishing directory
 const zipName = (await readdir(outputDir)).find(f => f.endsWith('.zip'))
 const zipBytes = await readFile(path.join(outputDir, zipName))
-const files = unzipAcExPackageFiles(
+const files = acexHtmlUnzipPackageFiles(
   new Uint8Array(zipBytes)
 ) // Includes path security validation and rejects dangerous entries such as ../
 const target = path.join(publishRoot, path.basename(zipName, '.zip'))
@@ -326,7 +326,7 @@ for (const file of files) {
 console.log(`Published: https://drawings.example.com/${path.basename(target)}/viewer.html`)
 ```
 
-في بيئة الإنتاج، يمكنك أيضًا إضافة ميزات مثل: استخدام تجزئة (hash) لمحتوى الرسم لتحديد ما إذا كان يمكن تخطي تحويل مكرر، أو إعادة محاولة التحويلات الفاشلة، أو استخدام `PutObject` مباشرةً لرفع `pkg.files` إلى تخزين الكائنات (باستخدام `buildAcExPackage` من الطريقة 3 حتى لا تحتاج إلى إنشاء ملف مضغوط أصلًا).
+في بيئة الإنتاج، يمكنك أيضًا إضافة ميزات مثل: استخدام تجزئة (hash) لمحتوى الرسم لتحديد ما إذا كان يمكن تخطي تحويل مكرر، أو إعادة محاولة التحويلات الفاشلة، أو استخدام `PutObject` مباشرةً لرفع `pkg.files` إلى تخزين الكائنات (باستخدام `acexHtmlBuildPackage` من الطريقة 3 حتى لا تحتاج إلى إنشاء ملف مضغوط أصلًا).
 
 ---
 
@@ -334,7 +334,7 @@ console.log(`Published: https://drawings.example.com/${path.basename(target)}/vi
 
 **س: هل يمكنني ببساطة وضع ملف zip على الخادم وتقديم رابط له؟**
 
-لا. الملف المضغوط مجرد صيغة تغليف للتنزيل والتوزيع. في وقت التشغيل، يجلب العارض `viewer.html` / `*.acex.json` / `chunks/*.gz` المفكوكة. يجب إما فك ضغطه على الخادم واستضافة الملفات الناتجة، أو استخدام `unzipAcExPackageFiles` في تطبيقك لفك ضغطه على الواجهة الأمامية (انتبه لمشكلات الأصل نفسه والذاكرة؛ وهذا غير موصى به للرسومات الكبيرة).
+لا. الملف المضغوط مجرد صيغة تغليف للتنزيل والتوزيع. في وقت التشغيل، يجلب العارض `viewer.html` / `*.acex.json` / `chunks/*.gz` المفكوكة. يجب إما فك ضغطه على الخادم واستضافة الملفات الناتجة، أو استخدام `acexHtmlUnzipPackageFiles` في تطبيقك لفك ضغطه على الواجهة الأمامية (انتبه لمشكلات الأصل نفسه والذاكرة؛ وهذا غير موصى به للرسومات الكبيرة).
 
 **س: ملفات الأجزاء تعيد 404 / تفشل في التحميل بعد فتح الصفحة.**
 

@@ -4,7 +4,7 @@ import './helpers/installTextCodecs'
 
 import { AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import { setupAcExHtmlMeasurePanel } from '../src/AcExHtmlMeasurePanel'
-import { buildAcExHtmlShellBody } from '@mlightcad/cad-html-core'
+import { acexHtmlBuildShellBody } from '@mlightcad/cad-html-core'
 import type { AcExMeasureController } from '../src/AcExMeasurement'
 import type { AcExMeasurementType } from '../src/AcExMeasurementTypes'
 
@@ -46,7 +46,7 @@ describe('setupAcExHtmlMeasurePanel', () => {
     items.length = 0
     selectedId = undefined
     listener = undefined
-    document.body.innerHTML = buildAcExHtmlShellBody('#000000', 'measure')
+    document.body.innerHTML = acexHtmlBuildShellBody('#000000', 'measure')
     jest.clearAllMocks()
   })
 

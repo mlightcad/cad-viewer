@@ -7,12 +7,12 @@ import {
 } from '@mlightcad/data-model'
 
 import type {
-  AcExExtents,
-  AcExViewerGripAppearance,
-  AcExViewerUnits
-} from './AcExSnapshotTypes'
+  AcExHtmlExtents,
+  AcExHtmlViewerGripAppearance,
+  AcExHtmlViewerUnits
+} from './AcExHtmlSnapshotTypes'
 
-const DEFAULT_GRIP: AcExViewerGripAppearance = {
+const DEFAULT_GRIP: AcExHtmlViewerGripAppearance = {
   size: 8,
   colorCss: '#0080ff',
   hotColorCss: '#ff0000'
@@ -29,7 +29,7 @@ function aciIndexToCss(index: number): string {
  */
 function readExportGripAppearance(
   database: AcDbDatabase
-): AcExViewerGripAppearance {
+): AcExHtmlViewerGripAppearance {
   try {
     const manager = AcDbSysVarManager.instance()
     const size = manager.getVar(
@@ -55,16 +55,16 @@ function readExportGripAppearance(
   }
 }
 
-/** Return type of {@link buildViewerMetadata}. */
-export interface AcExViewerMetadata {
+/** Return type of {@link acexHtmlBuildViewerMetadata}. */
+export interface AcExHtmlViewerMetadata {
   /** Optional drawing title copied into the snapshot. */
   title?: string
   /** Axis-aligned extents from the database `EXTMIN` / `EXTMAX`. */
-  extents: AcExExtents
+  extents: AcExHtmlExtents
   /** Unit and formatting sysvars for the offline viewer. */
-  units: AcExViewerUnits
+  units: AcExHtmlViewerUnits
   /** CAD entity square-grip appearance from `GRIPSIZE` / `GRIPCOLOR` / `GRIPHOT`. */
-  grip: AcExViewerGripAppearance
+  grip: AcExHtmlViewerGripAppearance
   /** Canvas background color as 24-bit RGB hex. */
   background: number
 }
@@ -74,17 +74,17 @@ export interface AcExViewerMetadata {
  * Does not serialize entities or DXF/DWG content.
  *
  * Object-snap (OSNAP) curve/point definitions are **not** part of this metadata
- * object. They are stored per layout in {@link AcExLayoutSnapshot.osnap}
+ * object. They are stored per layout in {@link AcExHtmlLayoutSnapshot.osnap}
  * (curves/points only; straight lines come from `lineBatches` at runtime).
  *
  * @param database - Open `AcDbDatabase` to read sysvars and extents from.
  * @param options - Optional title override and background color (default `0x000000`).
- * @returns Metadata object suitable for {@link AcExSnapshot.meta}.
+ * @returns Metadata object suitable for {@link AcExHtmlSnapshot.meta}.
  */
-export function buildViewerMetadata(
+export function acexHtmlBuildViewerMetadata(
   database: AcDbDatabase,
   options?: { title?: string; background?: number }
-): AcExViewerMetadata {
+): AcExHtmlViewerMetadata {
   const extmin = database.extmin
   const extmax = database.extmax
   const grip = readExportGripAppearance(database)

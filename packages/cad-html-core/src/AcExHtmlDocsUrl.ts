@@ -12,22 +12,22 @@ export const ACEX_DOCS_PATH_MAGNIFIER = 'guide/magnifier.html'
 export const ACEX_DEFAULT_DOCS_BASE_URL =
   'https://mlightcad.com/cad-viewer/docs/'
 
-let docsBaseUrl = normalizeAcExDocsBaseUrl(ACEX_DEFAULT_DOCS_BASE_URL)
+let docsBaseUrl = acexHtmlNormalizeDocsBaseUrl(ACEX_DEFAULT_DOCS_BASE_URL)
 
 /**
  * Returns the configured docs root (no trailing slash).
  */
-export function acexGetDocsBaseUrl(): string {
+export function acexHtmlGetDocsBaseUrl(): string {
   return docsBaseUrl
 }
 
 /**
- * Sets the docs root used by {@link acexDocsUrl}.
+ * Sets the docs root used by {@link acexHtmlDocsUrl}.
  *
  * @param url - Absolute docs root from export metadata or host config.
  */
-export function acexSetDocsBaseUrl(url: string): void {
-  docsBaseUrl = normalizeAcExDocsBaseUrl(url)
+export function acexHtmlSetDocsBaseUrl(url: string): void {
+  docsBaseUrl = acexHtmlNormalizeDocsBaseUrl(url)
 }
 
 /**
@@ -36,7 +36,7 @@ export function acexSetDocsBaseUrl(url: string): void {
  * @param docPath - Path under the docs root (e.g. `guide/magnifier.html`).
  * @param locale - Locale id (`en`, `zh`, …). English omits the locale segment.
  */
-export function acexDocsUrl(docPath: string, locale: string): string {
+export function acexHtmlDocsUrl(docPath: string, locale: string): string {
   const lang = locale.toLowerCase().split(/[-_]/)[0]
   const prefix = !lang || lang === 'en' ? '' : `/${lang}`
   const path = docPath.replace(/^\/+/, '')
@@ -48,7 +48,7 @@ export function acexDocsUrl(docPath: string, locale: string): string {
  *
  * @param url - Raw docs base URL.
  */
-export function normalizeAcExDocsBaseUrl(url: string): string {
+export function acexHtmlNormalizeDocsBaseUrl(url: string): string {
   const trimmed = url.trim()
   if (!trimmed) return ACEX_DEFAULT_DOCS_BASE_URL.replace(/\/+$/, '')
   return trimmed.replace(/\/+$/, '')

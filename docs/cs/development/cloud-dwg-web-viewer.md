@@ -184,18 +184,18 @@ API nižší úrovně (balíček sestavíte sami a rozhodnete, zda jej zapsat na
 
 ```typescript
 import {
-  buildAcExPackage,
-  zipAcExPackageFiles,
-  unzipAcExPackageFiles
+  acexHtmlBuildPackage,
+  acexHtmlZipPackageFiles,
+  acexHtmlUnzipPackageFiles
 } from '@mlightcad/cad-html-plugin'
 
 // snapshot is built from the Three.js scene by AcApHtmlSnapshotBuilder
-const pkg = buildAcExPackage(snapshot, {
+const pkg = acexHtmlBuildPackage(snapshot, {
   viewerRuntime,          // Text of viewer-runtime.iife.js
   baseName: 'floor-plan'
 })
 
-const zipBytes = zipAcExPackageFiles(pkg)     // Package into a zip for download
+const zipBytes = acexHtmlZipPackageFiles(pkg)     // Package into a zip for download
 // Or directly write pkg.files ([{ path, bytes }, ...]) to disk / upload to object storage,
 // completely skipping the extraction step:
 for (const file of pkg.files) {
@@ -294,7 +294,7 @@ Minimální Node skript pro „konverze → rozbalení → publikování“ (kte
 ```js
 // publish-cad-package.mjs
 import { runHeadless } from '@mlightcad/cad-simple-viewer-cli'
-import { unzipAcExPackageFiles } from '@mlightcad/cad-html-plugin'
+import { acexHtmlUnzipPackageFiles } from '@mlightcad/cad-html-plugin'
 import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 
@@ -312,7 +312,7 @@ const { outputDir } = await runHeadless({
 // 2. Find the generated zip and extract it to the publishing directory
 const zipName = (await readdir(outputDir)).find(f => f.endsWith('.zip'))
 const zipBytes = await readFile(path.join(outputDir, zipName))
-const files = unzipAcExPackageFiles(
+const files = acexHtmlUnzipPackageFiles(
   new Uint8Array(zipBytes)
 ) // Includes path security validation and rejects dangerous entries such as ../
 const target = path.join(publishRoot, path.basename(zipName, '.zip'))
@@ -326,7 +326,7 @@ for (const file of files) {
 console.log(`Published: https://drawings.example.com/${path.basename(target)}/viewer.html`)
 ```
 
-V produkčním prostředí můžete také přidat funkce, jako: použití hashe obsahu výkresu k určení, zda lze přeskočit duplicitní konverzi, opakování neúspěšných konverzí, nebo přímé nahrání `pkg.files` do objektového úložiště pomocí `PutObject` (s použitím `buildAcExPackage` z metody 3, takže ani nemusíte vytvářet zip).
+V produkčním prostředí můžete také přidat funkce, jako: použití hashe obsahu výkresu k určení, zda lze přeskočit duplicitní konverzi, opakování neúspěšných konverzí, nebo přímé nahrání `pkg.files` do objektového úložiště pomocí `PutObject` (s použitím `acexHtmlBuildPackage` z metody 3, takže ani nemusíte vytvářet zip).
 
 ---
 
@@ -334,7 +334,7 @@ V produkčním prostředí můžete také přidat funkce, jako: použití hashe 
 
 **Q: Mohu jednoduše umístit soubor zip na server a poskytnout na něj odkaz?**
 
-Ne. Zip je pouze formát balení pro stažení a distribuci. Za běhu prohlížeč načítá rozbalené `viewer.html` / `*.acex.json` / `chunks/*.gz`. Musíte jej buď rozbalit na serveru a hostovat výsledné soubory, nebo použít `unzipAcExPackageFiles` ve vlastní aplikaci k rozbalení na frontendu (pozor na problémy se stejným origin a pamětí; u velkých výkresů se to nedoporučuje).
+Ne. Zip je pouze formát balení pro stažení a distribuci. Za běhu prohlížeč načítá rozbalené `viewer.html` / `*.acex.json` / `chunks/*.gz`. Musíte jej buď rozbalit na serveru a hostovat výsledné soubory, nebo použít `acexHtmlUnzipPackageFiles` ve vlastní aplikaci k rozbalení na frontendu (pozor na problémy se stejným origin a pamětí; u velkých výkresů se to nedoporučuje).
 
 **Q: Soubory chunků po otevření stránky vrací 404 / selhávají při načítání.**
 

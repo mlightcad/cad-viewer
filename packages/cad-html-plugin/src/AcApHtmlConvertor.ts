@@ -1,17 +1,17 @@
-import type { AcExSnapshot } from '@mlightcad/cad-html-core'
+import type { AcExHtmlSnapshot } from '@mlightcad/cad-html-core'
 import {
-  applyAcExHtmlBackground,
-  protectAcExHtmlEncodedSnapshot,
-  resolveAcApHtmlExpiresAt
+  acexHtmlApplyBackground,
+  acexHtmlProtectEncodedSnapshot,
+  acexHtmlResolveExpiresAt
 } from '@mlightcad/cad-html-core'
 import {
-  packHtmlEmbeddedPackage,
-  shouldEmbedAcExChunks
+  acexHtmlPackHtmlEmbeddedPackage,
+  acexHtmlShouldEmbedChunks
 } from '@mlightcad/cad-html-core'
-import { packHtml } from '@mlightcad/cad-html-core'
-import { buildAcExPackageAsync } from '@mlightcad/cad-html-core'
-import { zipAcExPackageFiles } from '@mlightcad/cad-html-core'
-import { encodeSnapshot } from '@mlightcad/cad-html-core'
+import { acexHtmlPackHtml } from '@mlightcad/cad-html-core'
+import { acexHtmlBuildPackageAsync } from '@mlightcad/cad-html-core'
+import { acexHtmlZipPackageFiles } from '@mlightcad/cad-html-core'
+import { acexHtmlEncodeSnapshot } from '@mlightcad/cad-html-core'
 import {
   AcApDocManager,
   AcEdBaseView,
@@ -52,7 +52,7 @@ export interface AcApHtmlExportResult {
  * or multi-file ACEX package zip.
  *
  * Workflow:
- * 1. Build a display-only {@link AcExSnapshot} from the current scene and database.
+ * 1. Build a display-only {@link AcExHtmlSnapshot} from the current scene and database.
  * 2. Fetch the IIFE viewer runtime (inlined into the HTML).
  * 3. Package as self-contained HTML (`single`) or zip of package files (`multi`).
  *    For `single`, large drawings automatically embed progressive ACEC chunks;
@@ -194,7 +194,7 @@ export class AcApHtmlConvertor {
     // Live geometry is baked for the active layout canvas (white in paper
     // space). Remap near-black / near-white ink onto the chosen canvas.
     // `'space'` remaps each layout on its own: model black, paper white.
-    applyAcExHtmlBackground(
+    acexHtmlApplyBackground(
       snapshot,
       exportView.backgroundColor,
       resolved.background
@@ -212,7 +212,7 @@ export class AcApHtmlConvertor {
     if (resolved.exportFormat === 'multi') {
       t0 = performance.now()
       const packageBuild = resolveAcApHtmlPackageBuildOptions(resolved)
-      const pkg = await buildAcExPackageAsync(snapshot, {
+      const pkg = await acexHtmlBuildPackageAsync(snapshot, {
         viewerRuntime,
         baseName,
         ...packageBuild
@@ -224,7 +224,7 @@ export class AcApHtmlConvertor {
         performance.now() - t0
       )
       t0 = performance.now()
-      const zipBytes = zipAcExPackageFiles(pkg)
+      const zipBytes = acexHtmlZipPackageFiles(pkg)
       logExportTiming('zip package', performance.now() - t0)
       await accmYieldForPaint()
       return {
@@ -234,7 +234,7 @@ export class AcApHtmlConvertor {
       }
     }
 
-    const expiresAt = resolveAcApHtmlExpiresAt(
+    const expiresAt = acexHtmlResolveExpiresAt(
       resolved.expiryDays,
       Date.now(),
       resolved.expiresAt
@@ -265,7 +265,7 @@ export class AcApHtmlConvertor {
    *   include the `.html` extension).
    * @returns Resolves when packaging and download complete.
    */
-  async packSnapshot(snapshot: AcExSnapshot, downloadName: string) {
+  async packSnapshot(snapshot: AcExHtmlSnapshot, downloadName: string) {
     const docManager = AcApDocManager.instance
 
     await docManager.withBusyIndicator(async () => {
@@ -285,12 +285,12 @@ export class AcApHtmlConvertor {
    * Large drawings embed progressive ACEC chunks; small ones keep a monolithic ACEX.
    */
   private async packSelfContainedHtml(
-    snapshot: AcExSnapshot,
+    snapshot: AcExHtmlSnapshot,
     viewerRuntime: string,
     options: { expiresAt: number | null; password?: string }
   ): Promise<string> {
-    if (shouldEmbedAcExChunks(snapshot)) {
-      return packHtmlEmbeddedPackage(snapshot, {
+    if (acexHtmlShouldEmbedChunks(snapshot)) {
+      return acexHtmlPackHtmlEmbeddedPackage(snapshot, {
         title: snapshot.meta.title,
         viewerRuntime,
         expiresAt: options.expiresAt,
@@ -298,14 +298,14 @@ export class AcApHtmlConvertor {
       })
     }
 
-    const protectedSnapshot = await protectAcExHtmlEncodedSnapshot(
-      encodeSnapshot(snapshot),
+    const protectedSnapshot = await acexHtmlProtectEncodedSnapshot(
+      acexHtmlEncodeSnapshot(snapshot),
       {
         expiresAt: options.expiresAt,
         password: options.password
       }
     )
-    return packHtml(snapshot, {
+    return acexHtmlPackHtml(snapshot, {
       title: snapshot.meta.title,
       viewerRuntime,
       encoded: protectedSnapshot.encoded,

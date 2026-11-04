@@ -25,7 +25,7 @@ import type { AcApHtmlPluginOptions } from './AcApHtmlPluginOptions'
  * using command-line prompts (`-chtml`).
  *
  * The command delegates to {@link AcApHtmlConvertor}, which serializes the
- * current Three.js scene into an {@link AcExSnapshot} HTML snapshot,
+ * current Three.js scene into an {@link AcExHtmlSnapshot} HTML snapshot,
  * bundles the offline viewer runtime, and triggers a browser download.
  */
 export class AcApExportHtmlCmd extends AcEdCommand {

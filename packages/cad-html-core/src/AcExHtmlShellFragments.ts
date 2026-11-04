@@ -3,7 +3,7 @@ import {
   ACEX_HTML_LOCALES,
   type AcExHtmlLocale
 } from './AcExHtmlI18n'
-import { AcExHtmlIcons, acexToolbarButton } from './AcExHtmlIcons'
+import { AcExHtmlIcons, acexHtmlToolbarButton } from './AcExHtmlIcons'
 
 /** Common polar angle increments for the offline HTML viewer. */
 export const ACEX_POLAR_ANGLE_INCREMENTS = [90, 45, 30, 23, 18, 10, 5] as const
@@ -40,7 +40,7 @@ const LOCALE_FALLBACK_LABELS: Record<AcExHtmlLocale, string> = {
 /**
  * Dismissible language strip shown beside the language parent button.
  */
-export function buildAcExHtmlLocaleStrip(): string {
+export function acexHtmlBuildLocaleStrip(): string {
   const buttons = ACEX_HTML_LOCALES.map(locale => {
     const label = LOCALE_FALLBACK_LABELS[locale]
     const key = LOCALE_LABEL_KEYS[locale]
@@ -59,7 +59,7 @@ export function buildAcExHtmlLocaleStrip(): string {
  * Builds the polar-angle panel used by measure settings (opened from the snap
  * sticky sub-toolbar).
  */
-export function buildAcExHtmlPolarAnglesPanel(): string {
+export function acexHtmlBuildPolarAnglesPanel(): string {
   const polarAngleButtons = ACEX_POLAR_ANGLE_INCREMENTS.map(
     angle =>
       `<button type="button" class="mlcad-tool-btn mlcad-settings-option-btn mlcad-polar-angle-btn" data-polar-ang="${angle}" title="${angle}°" aria-label="${angle}°"><span class="mlcad-settings-option-indicator" aria-hidden="true"></span><span class="mlcad-settings-option-text">${angle}°</span></button>`
@@ -72,24 +72,24 @@ export function buildAcExHtmlPolarAnglesPanel(): string {
 
 /**
  * @deprecated Snap tools now live under AcUiToolbar settings. Prefer
- * {@link buildAcExHtmlPolarAnglesPanel}.
+ * {@link acexHtmlBuildPolarAnglesPanel}.
  */
-export function buildAcExHtmlSnapStrip(): string {
+export function acexHtmlBuildSnapStrip(): string {
   return `<div id="mlcad-snap-strip-wrap" hidden>
         <div id="mlcad-snap-strip" role="toolbar" data-i18n-attr="aria-label" data-i18n-key="toolbar.snap" aria-label="Object snap">
-          ${acexToolbarButton(AcExHtmlIcons.orthoMode, 'Orthogonal mode', {
+          ${acexHtmlToolbarButton(AcExHtmlIcons.orthoMode, 'Orthogonal mode', {
             id: 'mlcad-ortho-btn',
             'data-toggle': 'ortho',
             'data-i18n-key': 'settings.ortho',
             'data-i18n-attr': 'title aria-label'
           })}
-          ${acexToolbarButton(AcExHtmlIcons.polarTracking, 'Polar tracking', {
+          ${acexHtmlToolbarButton(AcExHtmlIcons.polarTracking, 'Polar tracking', {
             id: 'mlcad-polar-btn',
             'data-toggle': 'polar',
             'data-i18n-key': 'settings.polar',
             'data-i18n-attr': 'title aria-label'
           })}
         </div>
-        ${buildAcExHtmlPolarAnglesPanel()}
+        ${acexHtmlBuildPolarAnglesPanel()}
       </div>`
 }

@@ -5,7 +5,7 @@ import * as THREE from 'three'
  *
  * @internal
  */
-export function copyFloat32Range(
+export function acexHtmlCopyFloat32Range(
   array: ArrayLike<number>,
   start: number,
   count: number
@@ -28,7 +28,7 @@ export function copyFloat32Range(
  *
  * @internal
  */
-export function copyUint32Range(
+export function acexHtmlCopyUint32Range(
   array: ArrayLike<number>,
   start: number,
   count: number
@@ -50,7 +50,7 @@ export function copyUint32Range(
  * buffer but only a subset of indices. Unused tail vertices must not participate
  * in fallback triangulation when indices are missing during HTML playback.
  */
-export function compactIndexedSlice(
+export function acexHtmlCompactIndexedSlice(
   positions: Float32Array,
   indices: Uint32Array
 ): { positions: Float32Array; indices: Uint32Array } {
@@ -72,7 +72,7 @@ export function compactIndexedSlice(
   }
 
   return {
-    positions: copyFloat32Range(positions, 0, vertexFloatCount),
+    positions: acexHtmlCopyFloat32Range(positions, 0, vertexFloatCount),
     indices
   }
 }
@@ -83,7 +83,7 @@ export function compactIndexedSlice(
  * Used by extent and legacy batch-based OSNAP paths so large origins are not
  * baked into {@link Float32Array} vertex buffers.
  */
-export function toWcsCoord(local: number, origin: number): number {
+export function acexHtmlToWcsCoord(local: number, origin: number): number {
   return local + origin
 }
 
@@ -97,7 +97,7 @@ const _worldOffset = /*@__PURE__*/ { x: 0, y: 0, z: 0 }
  * Nested no-batch subtrees (MTEXT, block-like placement roots) carry insertion
  * on ancestors, so the translation must come from {@link THREE.Object3D.matrixWorld}.
  */
-export function readBatchWorldOffset(
+export function acexHtmlReadBatchWorldOffset(
   object: THREE.Object3D
 ): [number, number, number] {
   object.updateMatrixWorld(true)
@@ -109,7 +109,7 @@ export function readBatchWorldOffset(
 }
 
 /** Minimal geometry slice used while rebasing plain drawables for HTML export. */
-export interface AcExPlainDrawableSlice {
+export interface AcExHtmlPlainDrawableSlice {
   positions: Float32Array
   indices?: Uint32Array
 }
@@ -117,10 +117,10 @@ export interface AcExPlainDrawableSlice {
 /**
  * Applies a world matrix to every vertex in a geometry slice using double precision.
  */
-export function bakePlainDrawableSlice(
-  slice: AcExPlainDrawableSlice,
+export function acexHtmlBakePlainDrawableSlice(
+  slice: AcExHtmlPlainDrawableSlice,
   matrix: THREE.Matrix4
-): AcExPlainDrawableSlice {
+): AcExHtmlPlainDrawableSlice {
   const elements = matrix.elements
   const source = slice.positions
   if (source.length === 0) {
@@ -164,10 +164,10 @@ function vertexIsFinite(positions: Float32Array, vertex: number): boolean {
  *
  * @param primitiveVertexCount - 1 for points, 2 for line segments, 3 for triangles.
  */
-export function omitNonFinitePrimitives(
-  slice: AcExPlainDrawableSlice,
+export function acexHtmlOmitNonFinitePrimitives(
+  slice: AcExHtmlPlainDrawableSlice,
   primitiveVertexCount: 1 | 2 | 3
-): AcExPlainDrawableSlice {
+): AcExHtmlPlainDrawableSlice {
   const positions = slice.positions
   const vertexCount = (positions.length / 3) | 0
   if (vertexCount === 0 || primitiveVertexCount <= 0) {
@@ -267,9 +267,9 @@ export function omitNonFinitePrimitives(
  * Non-finite coordinates are ignored while placing the origin and written as the
  * local origin so one corrupt vertex cannot make the whole batch's bounds NaN.
  */
-export function rebasePlainDrawableSliceAroundCentroid(
-  slice: AcExPlainDrawableSlice
-): { slice: AcExPlainDrawableSlice; offset: [number, number, number] } {
+export function acexHtmlRebasePlainDrawableSliceAroundCentroid(
+  slice: AcExHtmlPlainDrawableSlice
+): { slice: AcExHtmlPlainDrawableSlice; offset: [number, number, number] } {
   const source = slice.positions
   if (source.length < 3) {
     return { slice, offset: [0, 0, 0] }
@@ -342,17 +342,17 @@ export function rebasePlainDrawableSliceAroundCentroid(
  *
  * Pattern-fill meshes follow the same centroid rebase as other plain meshes so
  * hatch shader sampling stays float32-precise. Callers must also rebase hatch
- * pattern bases with {@link rebaseHatchPatternToLocalOffset}.
+ * pattern bases with {@link acexHtmlRebaseHatchPatternToLocalOffset}.
  */
-export function exportPlainDrawableSlice(
+export function acexHtmlExportPlainDrawableSlice(
   object: THREE.Object3D,
-  slice: AcExPlainDrawableSlice,
+  slice: AcExHtmlPlainDrawableSlice,
   _options: { preserveWorldSpaceForPatternFill?: boolean } = {}
-): { slice: AcExPlainDrawableSlice; offset: [number, number, number] } {
+): { slice: AcExHtmlPlainDrawableSlice; offset: [number, number, number] } {
   object.updateMatrixWorld(true)
-  const worldSlice = bakePlainDrawableSlice(slice, object.matrixWorld)
+  const worldSlice = acexHtmlBakePlainDrawableSlice(slice, object.matrixWorld)
 
   // Legacy option kept for call-site compatibility; pattern fills now rebase
   // like other meshes (world-baked verts + zero offset caused blocky hatches).
-  return rebasePlainDrawableSliceAroundCentroid(worldSlice)
+  return acexHtmlRebasePlainDrawableSliceAroundCentroid(worldSlice)
 }

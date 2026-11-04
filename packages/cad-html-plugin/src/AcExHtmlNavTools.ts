@@ -1,5 +1,5 @@
 import type { AcExHtmlI18n } from '@mlightcad/cad-html-core'
-import type { AcExExtents } from '@mlightcad/cad-html-core'
+import type { AcExHtmlExtents } from '@mlightcad/cad-html-core'
 
 /** Idle navigation tools on the first-level HTML toolbar. */
 export type AcExHtmlNavMode = 'select' | 'pan' | 'zoom-window'
@@ -40,7 +40,7 @@ export interface AcExHtmlNavToolsOptions {
   /** Converts a client point to world XY. */
   screenToWcs: (clientX: number, clientY: number) => { x: number; y: number }
   /** Zooms the camera to a world-space box. */
-  zoomToExtents: (extents: AcExExtents) => void
+  zoomToExtents: (extents: AcExHtmlExtents) => void
   /** Exits measurement / review drawing and clears their tool-button selection. */
   exitDrawingTools: () => void
   /** True while a measure or markup drawing tool is active. */

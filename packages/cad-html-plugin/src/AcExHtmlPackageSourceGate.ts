@@ -9,11 +9,10 @@
 import type { AcExHtmlI18n, AcExHtmlMessageKey } from '@mlightcad/cad-html-core'
 import {
   ACEX_DEFAULT_MANIFEST_FILE,
-  type AcExLocalFolderOpenSupport,
-  buildPackageDirectoryFileMap,
-  canOpenLocalPackageFolder,
-  createPackageDirectoryFetch,
-  detectLocalFolderOpenSupport} from '@mlightcad/cad-html-core'
+  acexHtmlBuildPackageDirectoryFileMap,
+  acexHtmlCanOpenLocalPackageFolder,
+  acexHtmlCreatePackageDirectoryFetch,
+  acexHtmlDetectLocalFolderOpenSupport,  type AcExHtmlLocalFolderOpenSupport} from '@mlightcad/cad-html-core'
 
 export type AcExHtmlPackageSourceChoice =
   | { kind: 'url'; href: string }
@@ -39,7 +38,7 @@ export function promptAcExHtmlPackageSource(
     >
     errorMessage?: string
     /** Override capability detection (tests). */
-    folderSupport?: AcExLocalFolderOpenSupport
+    folderSupport?: AcExHtmlLocalFolderOpenSupport
   }
 ): Promise<AcExHtmlPackageSourceChoice> {
   const loading = document.getElementById('mlcad-loading')
@@ -47,8 +46,8 @@ export function promptAcExHtmlPackageSource(
   loading?.classList.add('mlcad-loading--gate')
 
   const folderSupport =
-    options?.folderSupport ?? detectLocalFolderOpenSupport()
-  const folderAvailable = canOpenLocalPackageFolder(folderSupport)
+    options?.folderSupport ?? acexHtmlDetectLocalFolderOpenSupport()
+  const folderAvailable = acexHtmlCanOpenLocalPackageFolder(folderSupport)
 
   ensurePackageSourceGateDom(folderSupport)
   const gate = document.getElementById('mlcad-package-gate')
@@ -146,12 +145,12 @@ export function promptAcExHtmlPackageSource(
           const buffer = new Uint8Array(await file.arrayBuffer())
           entries.push({ relativePath, bytes: buffer })
         }
-        const files = buildPackageDirectoryFileMap(entries)
+        const files = acexHtmlBuildPackageDirectoryFileMap(entries)
         if (!files.has(ACEX_DEFAULT_MANIFEST_FILE)) {
           showError(i18n.t('package.folderMissingManifest'))
           return
         }
-        const { manifestUrl, fetchImpl } = createPackageDirectoryFetch(files)
+        const { manifestUrl, fetchImpl } = acexHtmlCreatePackageDirectoryFetch(files)
         finish({ kind: 'directory', manifestUrl, fetchImpl })
       } catch (error) {
         showError(
@@ -193,12 +192,12 @@ export function promptAcExHtmlPackageSource(
           try {
             const root = await dirPicker.call(globalThis)
             const entries = await collectDirectoryEntries(root)
-            const files = buildPackageDirectoryFileMap(entries)
+            const files = acexHtmlBuildPackageDirectoryFileMap(entries)
             if (!files.has(ACEX_DEFAULT_MANIFEST_FILE)) {
               showError(i18n.t('package.folderMissingManifest'))
               return
             }
-            const { manifestUrl, fetchImpl } = createPackageDirectoryFetch(files)
+            const { manifestUrl, fetchImpl } = acexHtmlCreatePackageDirectoryFetch(files)
             finish({ kind: 'directory', manifestUrl, fetchImpl })
           } catch (error) {
             // User cancel — keep the gate open.
@@ -315,7 +314,7 @@ async function listDirectoryHandles(
 }
 
 function ensurePackageSourceGateDom(
-  folderSupport: AcExLocalFolderOpenSupport
+  folderSupport: AcExHtmlLocalFolderOpenSupport
 ): void {
   const existing = document.getElementById('mlcad-package-gate')
   if (existing) {
@@ -457,9 +456,9 @@ function ensurePackageSourceGateDom(
 
 function syncFolderControls(
   gate: HTMLElement,
-  folderSupport: AcExLocalFolderOpenSupport
+  folderSupport: AcExHtmlLocalFolderOpenSupport
 ): void {
-  const available = canOpenLocalPackageFolder(folderSupport)
+  const available = acexHtmlCanOpenLocalPackageFolder(folderSupport)
   const folderBtn = gate.querySelector(
     '#mlcad-package-folder-btn'
   ) as HTMLButtonElement | null

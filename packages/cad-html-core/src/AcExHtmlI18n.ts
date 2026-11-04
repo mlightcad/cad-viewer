@@ -1574,7 +1574,7 @@ const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
  * @param value - Arbitrary string to test.
  * @returns `true` when `value` is one of {@link ACEX_HTML_LOCALES}.
  */
-export function isAcExHtmlLocale(value: string): value is AcExHtmlLocale {
+export function acexHtmlIsLocale(value: string): value is AcExHtmlLocale {
   return (ACEX_HTML_LOCALES as readonly string[]).includes(value)
 }
 
@@ -1584,7 +1584,7 @@ export function isAcExHtmlLocale(value: string): value is AcExHtmlLocale {
  * @param value - Locale string from snapshot meta, `<html lang>`, or `navigator.language`.
  * @returns a supported locale, or `null` when unrecognized.
  */
-export function resolveAcExHtmlLocale(
+export function acexHtmlResolveLocale(
   value?: string | null
 ): AcExHtmlLocale | null {
   if (value == null || value === '') return null
@@ -1602,7 +1602,7 @@ export function resolveAcExHtmlLocale(
  * Returns the first preferred language that maps to a supported locale;
  * defaults to `'en'`.
  */
-export function detectBrowserAcExHtmlLocale(): AcExHtmlLocale {
+export function acexHtmlDetectBrowserLocale(): AcExHtmlLocale {
   if (typeof navigator === 'undefined') return 'en'
 
   const candidates = [
@@ -1611,7 +1611,7 @@ export function detectBrowserAcExHtmlLocale(): AcExHtmlLocale {
   ].filter(Boolean)
 
   for (const candidate of candidates) {
-    const resolved = resolveAcExHtmlLocale(candidate)
+    const resolved = acexHtmlResolveLocale(candidate)
     if (resolved) return resolved
   }
 
@@ -1620,22 +1620,22 @@ export function detectBrowserAcExHtmlLocale(): AcExHtmlLocale {
 
 /**
  * Chooses the initial locale for the offline viewer using, in order:
- * persisted user choice in `localStorage`, then {@link detectBrowserAcExHtmlLocale}.
+ * persisted user choice in `localStorage`, then {@link acexHtmlDetectBrowserLocale}.
  *
  * @returns Resolved locale, defaulting to `'en'`.
  */
-export function detectAcExHtmlLocale(): AcExHtmlLocale {
+export function acexHtmlDetectLocale(): AcExHtmlLocale {
   if (typeof localStorage !== 'undefined') {
     try {
       const stored = localStorage.getItem(ACEX_HTML_LOCALE_STORAGE_KEY)
-      const fromStorage = resolveAcExHtmlLocale(stored)
+      const fromStorage = acexHtmlResolveLocale(stored)
       if (fromStorage) return fromStorage
     } catch {
       /* private mode */
     }
   }
 
-  return detectBrowserAcExHtmlLocale()
+  return acexHtmlDetectBrowserLocale()
 }
 
 function lookupMessage(tree: AcExMessageTree, key: string): string | undefined {
@@ -1655,7 +1655,7 @@ function lookupMessage(tree: AcExMessageTree, key: string): string | undefined {
  * @param params - Values substituted by token name; missing keys are left unchanged.
  * @returns Interpolated user-visible string.
  */
-export function formatAcExHtmlMessage(
+export function acexHtmlFormatMessage(
   template: string,
   params?: Record<string, string | number>
 ): string {
@@ -1675,10 +1675,10 @@ export class AcExHtmlI18n {
   private _onChange: (() => void) | null = null
 
   /**
-   * @param initialLocale - Starting locale; defaults to {@link detectAcExHtmlLocale} when omitted.
+   * @param initialLocale - Starting locale; defaults to {@link acexHtmlDetectLocale} when omitted.
    */
   constructor(initialLocale?: AcExHtmlLocale) {
-    this._locale = initialLocale ?? detectAcExHtmlLocale()
+    this._locale = initialLocale ?? acexHtmlDetectLocale()
   }
 
   /** Active locale used for {@link AcExHtmlI18n.t}. */
@@ -1712,7 +1712,7 @@ export class AcExHtmlI18n {
       lookupMessage(MESSAGES[this._locale], key) ??
       lookupMessage(MESSAGES.en, key) ??
       key
-    return formatAcExHtmlMessage(template, params)
+    return acexHtmlFormatMessage(template, params)
   }
 
   /**

@@ -1,21 +1,21 @@
 import {
-  readLineBatch,
-  readMeshBatch,
-  writeLineBatch,
-  writeMeshBatch
-} from './AcExBatchBinaryCodec'
-import { AcExBinaryReader, AcExBinaryWriter } from './AcExBinaryIO'
+  acexHtmlReadLineBatch,
+  acexHtmlReadMeshBatch,
+  acexHtmlWriteLineBatch,
+  acexHtmlWriteMeshBatch
+} from './AcExHtmlBatchBinaryCodec'
+import { AcExHtmlBinaryReader, AcExHtmlBinaryWriter } from './AcExHtmlBinaryIO'
 import {
-  compressSnapshotBinary,
-  compressSnapshotBinaryAsync,
-  decompressSnapshotBinary,
-  isGzipPayload
-} from './AcExSnapshotCompression'
+  acexHtmlCompressSnapshotBinary,
+  acexHtmlCompressSnapshotBinaryAsync,
+  acexHtmlDecompressSnapshotBinary,
+  acexHtmlIsGzipPayload
+} from './AcExHtmlSnapshotCompression'
 import {
   ACEX_SNAPSHOT_VERSION,
-  type AcExLineBatch,
-  type AcExMeshBatch
-} from './AcExSnapshotTypes'
+  type AcExHtmlLineBatch,
+  type AcExHtmlMeshBatch
+} from './AcExHtmlSnapshotTypes'
 
 /** Magic for ACEC geometry chunks (`ACEC` little-endian). */
 export const ACEC_CHUNK_MAGIC = 0x43454341
@@ -27,24 +27,24 @@ export const ACEX_MAX_BATCHES_PER_CHUNK = 100_000
  * Uncompressed geometry chunk: batches for one layout slice.
  * Schema version matches {@link ACEX_SNAPSHOT_VERSION}.
  */
-export interface AcExGeometryChunk {
+export interface AcExHtmlGeometryChunk {
   /** Snapshot / batch schema version. */
   version: typeof ACEX_SNAPSHOT_VERSION
   /** Layout BTR id these batches belong to. */
   layoutBtrId: string
-  lineBatches: AcExLineBatch[]
-  meshBatches: AcExMeshBatch[]
+  lineBatches: AcExHtmlLineBatch[]
+  meshBatches: AcExHtmlMeshBatch[]
 }
 
 /**
  * Encodes an uncompressed ACEC geometry chunk.
  */
-export function encodeChunkBinary(chunk: AcExGeometryChunk): Uint8Array {
+export function acexHtmlEncodeChunkBinary(chunk: AcExHtmlGeometryChunk): Uint8Array {
   if (chunk.version !== ACEX_SNAPSHOT_VERSION) {
     throw new Error(`Unsupported chunk version: ${chunk.version}`)
   }
 
-  const writer = new AcExBinaryWriter()
+  const writer = new AcExHtmlBinaryWriter()
   writer.writeU32(ACEC_CHUNK_MAGIC)
   writer.writeU8(ACEX_SNAPSHOT_VERSION)
   writer.writeU8(0)
@@ -54,12 +54,12 @@ export function encodeChunkBinary(chunk: AcExGeometryChunk): Uint8Array {
 
   writer.writeU32(chunk.lineBatches.length)
   for (const batch of chunk.lineBatches) {
-    writeLineBatch(writer, batch)
+    acexHtmlWriteLineBatch(writer, batch)
   }
 
   writer.writeU32(chunk.meshBatches.length)
   for (const batch of chunk.meshBatches) {
-    writeMeshBatch(writer, batch)
+    acexHtmlWriteMeshBatch(writer, batch)
   }
 
   return writer.toUint8Array()
@@ -68,8 +68,8 @@ export function encodeChunkBinary(chunk: AcExGeometryChunk): Uint8Array {
 /**
  * Decodes an uncompressed ACEC geometry chunk.
  */
-export function decodeChunkBinary(bytes: Uint8Array): AcExGeometryChunk {
-  const reader = new AcExBinaryReader(bytes)
+export function acexHtmlDecodeChunkBinary(bytes: Uint8Array): AcExHtmlGeometryChunk {
+  const reader = new AcExHtmlBinaryReader(bytes)
   const magic = reader.readU32()
   if (magic !== ACEC_CHUNK_MAGIC) {
     throw new Error('Invalid chunk magic')
@@ -88,18 +88,18 @@ export function decodeChunkBinary(bytes: Uint8Array): AcExGeometryChunk {
   if (lineBatchCount > ACEX_MAX_BATCHES_PER_CHUNK) {
     throw new Error('Chunk line batch count exceeds limit')
   }
-  const lineBatches: AcExLineBatch[] = []
+  const lineBatches: AcExHtmlLineBatch[] = []
   for (let i = 0; i < lineBatchCount; i++) {
-    lineBatches.push(readLineBatch(reader))
+    lineBatches.push(acexHtmlReadLineBatch(reader))
   }
 
   const meshBatchCount = reader.readU32()
   if (meshBatchCount > ACEX_MAX_BATCHES_PER_CHUNK) {
     throw new Error('Chunk mesh batch count exceeds limit')
   }
-  const meshBatches: AcExMeshBatch[] = []
+  const meshBatches: AcExHtmlMeshBatch[] = []
   for (let i = 0; i < meshBatchCount; i++) {
-    meshBatches.push(readMeshBatch(reader))
+    meshBatches.push(acexHtmlReadMeshBatch(reader))
   }
 
   return {
@@ -111,37 +111,37 @@ export function decodeChunkBinary(bytes: Uint8Array): AcExGeometryChunk {
 }
 
 /** Encodes and gzip-compresses a geometry chunk (`.acex.gz` payload). */
-export function encodeChunkGzip(chunk: AcExGeometryChunk): {
+export function acexHtmlEncodeChunkGzip(chunk: AcExHtmlGeometryChunk): {
   uncompressed: Uint8Array
   compressed: Uint8Array
 } {
-  const uncompressed = encodeChunkBinary(chunk)
-  const compressed = compressSnapshotBinary(uncompressed).bytes
+  const uncompressed = acexHtmlEncodeChunkBinary(chunk)
+  const compressed = acexHtmlCompressSnapshotBinary(uncompressed).bytes
   return { uncompressed, compressed }
 }
 
-/** Async variant of {@link encodeChunkGzip} for parallel package builds. */
-export async function encodeChunkGzipAsync(chunk: AcExGeometryChunk): Promise<{
+/** Async variant of {@link acexHtmlEncodeChunkGzip} for parallel package builds. */
+export async function acexHtmlEncodeChunkGzipAsync(chunk: AcExHtmlGeometryChunk): Promise<{
   uncompressed: Uint8Array
   compressed: Uint8Array
 }> {
-  const uncompressed = encodeChunkBinary(chunk)
-  const compressed = (await compressSnapshotBinaryAsync(uncompressed)).bytes
+  const uncompressed = acexHtmlEncodeChunkBinary(chunk)
+  const compressed = (await acexHtmlCompressSnapshotBinaryAsync(uncompressed)).bytes
   return { uncompressed, compressed }
 }
 
 /** Gunzips and decodes a `.acex.gz` geometry chunk payload. */
-export function decodeChunkGzip(compressed: Uint8Array): AcExGeometryChunk {
-  return decodeChunkBinary(decompressSnapshotBinary(compressed))
+export function acexHtmlDecodeChunkGzip(compressed: Uint8Array): AcExHtmlGeometryChunk {
+  return acexHtmlDecodeChunkBinary(acexHtmlDecompressSnapshotBinary(compressed))
 }
 
 /**
  * Decodes a geometry chunk payload that may be gzip (`.acex.gz`) or raw ACEC
  * (`.acex`). Detection uses the gzip magic header so loaders stay extension-agnostic.
  */
-export function decodeChunkPayload(bytes: Uint8Array): AcExGeometryChunk {
-  if (isGzipPayload(bytes)) {
-    return decodeChunkGzip(bytes)
+export function acexHtmlDecodeChunkPayload(bytes: Uint8Array): AcExHtmlGeometryChunk {
+  if (acexHtmlIsGzipPayload(bytes)) {
+    return acexHtmlDecodeChunkGzip(bytes)
   }
-  return decodeChunkBinary(bytes)
+  return acexHtmlDecodeChunkBinary(bytes)
 }

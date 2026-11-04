@@ -82,7 +82,7 @@ MLightCAD는 일련의 공식 플러그인을 제공합니다. 각 플러그인�
 |------|-------|
 | 명령 | `chtml`(`cad-editor`의 대화상자), `-chtml`(`cad-simple-viewer-cli`를 통한 명령줄) |
 | 추가 구성 | `AcApDocManager.createInstance()`의 `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` URL(패키지 `dist/`에서 복사) |
-| 공개 API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `packHtml`, 스냅샷 타입 |
+| 공개 API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `acexHtmlPackHtml`, 스냅샷 타입 |
 
 → **빌드 출력 및 통합:** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **동일한 파이프라인을 사용하는 헤드리스 CLI:** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)

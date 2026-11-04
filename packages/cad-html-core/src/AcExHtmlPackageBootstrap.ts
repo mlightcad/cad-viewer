@@ -7,10 +7,10 @@
  */
 
 import {
-  parseAcExPackageManifest,
-  resolvePackageManifestUrl
-} from './AcExPackageLoader'
-import type { AcExPackageManifest } from './AcExPackageTypes'
+  acexHtmlParsePackageManifest,
+  acexHtmlResolvePackageManifestUrl
+} from './AcExHtmlPackageLoader'
+import type { AcExHtmlPackageManifest } from './AcExHtmlPackageTypes'
 
 /** Canonical package manifest file name next to `viewer.html`. */
 export const ACEX_DEFAULT_MANIFEST_FILE = 'drawing.acex.json'
@@ -24,7 +24,7 @@ export const ACEX_DEFAULT_MANIFEST_HREF = `./${ACEX_DEFAULT_MANIFEST_FILE}`
  */
 export const ACEX_MANIFEST_QUERY_KEYS = ['manifest', 'acex'] as const
 
-/** Virtual origin used by {@link createPackageDirectoryFetch}. */
+/** Virtual origin used by {@link acexHtmlCreatePackageDirectoryFetch}. */
 export const ACEX_PACKAGE_DIRECTORY_ORIGIN = 'https://acex-package.invalid/'
 
 /**
@@ -32,14 +32,14 @@ export const ACEX_PACKAGE_DIRECTORY_ORIGIN = 'https://acex-package.invalid/'
  * Passing the bare `fetch` function loses the Window receiver and throws
  * `TypeError: Illegal invocation` in browsers.
  */
-export const acexGlobalFetch: typeof fetch = (input, init) =>
+export const acexHtmlGlobalFetch: typeof fetch = (input, init) =>
   globalThis.fetch(input, init)
 
 /**
  * Which local-folder APIs the current browser exposes for opening an ACEX
  * package directory.
  */
-export interface AcExLocalFolderOpenSupport {
+export interface AcExHtmlLocalFolderOpenSupport {
   /** File System Access API `showDirectoryPicker` (secure contexts). */
   directoryPicker: boolean
   /** Legacy `<input webkitdirectory>` / `directory` file input. */
@@ -47,8 +47,8 @@ export interface AcExLocalFolderOpenSupport {
 }
 
 /** True when at least one local-folder selection path is available. */
-export function canOpenLocalPackageFolder(
-  support: AcExLocalFolderOpenSupport
+export function acexHtmlCanOpenLocalPackageFolder(
+  support: AcExHtmlLocalFolderOpenSupport
 ): boolean {
   return support.directoryPicker || support.webkitDirectory
 }
@@ -58,11 +58,11 @@ export function canOpenLocalPackageFolder(
  *
  * @param env - Optional stubs for unit tests (defaults to the current window / DOM).
  */
-export function detectLocalFolderOpenSupport(env?: {
+export function acexHtmlDetectLocalFolderOpenSupport(env?: {
   hasDirectoryPicker?: boolean
   isSecureContext?: boolean
   supportsWebkitDirectoryAttribute?: boolean
-}): AcExLocalFolderOpenSupport {
+}): AcExHtmlLocalFolderOpenSupport {
   const hasDirectoryPicker =
     env?.hasDirectoryPicker ??
     typeof (
@@ -94,20 +94,20 @@ export function detectLocalFolderOpenSupport(env?: {
   }
 }
 
-export type AcExManifestProbeFailureReason =
+export type AcExHtmlManifestProbeFailureReason =
   | 'not-found'
   | 'invalid'
   | 'network'
 
-export type AcExManifestProbeResult =
-  | { ok: true; manifest: AcExPackageManifest }
-  | { ok: false; reason: AcExManifestProbeFailureReason; error: Error }
+export type AcExHtmlManifestProbeResult =
+  | { ok: true; manifest: AcExHtmlPackageManifest }
+  | { ok: false; reason: AcExHtmlManifestProbeFailureReason; error: Error }
 
 /**
  * Reads a manifest URL from `location.search` / a search string.
  * Accepts absolute `http(s)` URLs or relative package paths.
  */
-export function readManifestUrlFromSearchParams(
+export function acexHtmlReadManifestUrlFromSearchParams(
   search: string
 ): string | null {
   const raw = search.startsWith('?') ? search.slice(1) : search
@@ -130,11 +130,11 @@ export function readManifestUrlFromSearchParams(
  *
  * Priority: query param → `#mlcad-package` config → sibling default.
  */
-export function chooseInitialManifestHref(options: {
+export function acexHtmlChooseInitialManifestHref(options: {
   search?: string
   configManifestUrl?: string | null
 }): { href: string; fromQuery: boolean } {
-  const fromQuery = readManifestUrlFromSearchParams(options.search ?? '')
+  const fromQuery = acexHtmlReadManifestUrlFromSearchParams(options.search ?? '')
   if (fromQuery) {
     return { href: fromQuery, fromQuery: true }
   }
@@ -146,7 +146,7 @@ export function chooseInitialManifestHref(options: {
 }
 
 /** Returns true for absolute `http:` / `https:` URLs. */
-export function isAbsoluteHttpUrl(value: string): boolean {
+export function acexHtmlIsAbsoluteHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value.trim())
 }
 
@@ -154,9 +154,9 @@ export function isAbsoluteHttpUrl(value: string): boolean {
  * Resolves a viewer manifest href against the page URL.
  *
  * Absolute `http(s)` URLs (query / user paste) are accepted as-is.
- * Relative paths stay same-origin via {@link resolvePackageManifestUrl}.
+ * Relative paths stay same-origin via {@link acexHtmlResolvePackageManifestUrl}.
  */
-export function resolveViewerManifestUrl(
+export function acexHtmlResolveViewerManifestUrl(
   href: string,
   pageUrl: string
 ): string {
@@ -164,24 +164,24 @@ export function resolveViewerManifestUrl(
   if (!trimmed) {
     throw new Error('Missing manifest URL')
   }
-  if (isAbsoluteHttpUrl(trimmed)) {
+  if (acexHtmlIsAbsoluteHttpUrl(trimmed)) {
     try {
       return new URL(trimmed).toString()
     } catch {
       throw new Error('Invalid manifest URL')
     }
   }
-  return resolvePackageManifestUrl(trimmed, pageUrl)
+  return acexHtmlResolvePackageManifestUrl(trimmed, pageUrl)
 }
 
 /**
  * Fetches and validates a package manifest. Distinguishes missing files from
  * unsupported versions / malformed JSON so the UI can react accordingly.
  */
-export async function probePackageManifest(
+export async function acexHtmlProbePackageManifest(
   manifestUrl: string,
-  fetchImpl: typeof fetch = acexGlobalFetch
-): Promise<AcExManifestProbeResult> {
+  fetchImpl: typeof fetch = acexHtmlGlobalFetch
+): Promise<AcExHtmlManifestProbeResult> {
   let response: Response
   try {
     response = await fetchImpl(manifestUrl)
@@ -226,7 +226,7 @@ export async function probePackageManifest(
   }
 
   try {
-    return { ok: true, manifest: parseAcExPackageManifest(data) }
+    return { ok: true, manifest: acexHtmlParsePackageManifest(data) }
   } catch (error) {
     return {
       ok: false,
@@ -241,7 +241,7 @@ export async function probePackageManifest(
  * sit at the package root (strips a shared top-level folder from
  * `webkitdirectory` / folder-picker listings).
  */
-export function normalizePackageDirectoryPath(
+export function acexHtmlNormalizePackageDirectoryPath(
   relativePath: string,
   stripRootPrefix?: string | null
 ): string {
@@ -261,7 +261,7 @@ export function normalizePackageDirectoryPath(
  * Detects a shared root folder when every path starts with the same segment
  * (typical of `<input webkitdirectory>` FileList entries).
  */
-export function detectSharedDirectoryRoot(
+export function acexHtmlDetectSharedDirectoryRoot(
   relativePaths: Iterable<string>
 ): string | null {
   const normalized = [...relativePaths]
@@ -283,14 +283,14 @@ export function detectSharedDirectoryRoot(
 /**
  * Builds a path → bytes map for local package loading.
  */
-export function buildPackageDirectoryFileMap(
+export function acexHtmlBuildPackageDirectoryFileMap(
   entries: Iterable<{ relativePath: string; bytes: Uint8Array }>
 ): Map<string, Uint8Array> {
   const list = [...entries]
-  const root = detectSharedDirectoryRoot(list.map(e => e.relativePath))
+  const root = acexHtmlDetectSharedDirectoryRoot(list.map(e => e.relativePath))
   const out = new Map<string, Uint8Array>()
   for (const entry of list) {
-    const path = normalizePackageDirectoryPath(entry.relativePath, root)
+    const path = acexHtmlNormalizePackageDirectoryPath(entry.relativePath, root)
     if (!path || path.endsWith('/')) continue
     out.set(path, entry.bytes)
   }
@@ -300,9 +300,9 @@ export function buildPackageDirectoryFileMap(
 /**
  * Creates a `fetch` implementation that serves package files from an in-memory
  * directory map. `manifestUrl` is a virtual absolute URL so
- * {@link resolveChunkUrl} can resolve relative chunk hrefs.
+ * {@link acexHtmlResolveChunkUrl} can resolve relative chunk hrefs.
  */
-export function createPackageDirectoryFetch(
+export function acexHtmlCreatePackageDirectoryFetch(
   files: ReadonlyMap<string, Uint8Array>,
   options?: { manifestFileName?: string }
 ): { manifestUrl: string; fetchImpl: typeof fetch } {
@@ -345,7 +345,7 @@ export function createPackageDirectoryFetch(
 /**
  * Locates `drawing.acex.json` in a directory file map (root only).
  */
-export function findDefaultManifestInDirectory(
+export function acexHtmlFindDefaultManifestInDirectory(
   files: ReadonlyMap<string, Uint8Array>
 ): string | null {
   if (files.has(ACEX_DEFAULT_MANIFEST_FILE)) {

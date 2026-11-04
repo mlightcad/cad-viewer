@@ -1,6 +1,6 @@
 import { gzip, gzipSync } from 'node:zlib'
 
-import { setAcExSnapshotCompressor } from '@mlightcad/cad-html-core'
+import { acexHtmlSetSnapshotCompressor } from '@mlightcad/cad-html-core'
 
 let installed = false
 
@@ -13,7 +13,7 @@ let installed = false
 export function installNodeSnapshotCompressor(): void {
   if (installed) return
   installed = true
-  setAcExSnapshotCompressor({
+  acexHtmlSetSnapshotCompressor({
     gzipSync(data) {
       return toUint8Array(gzipSync(data))
     },

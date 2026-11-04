@@ -4,29 +4,29 @@ import {
   ACEX_MAX_COMPRESSED_BYTES,
   ACEX_MAX_DECOMPRESSED_BYTES,
   ACEX_SNAPSHOT_COMPRESSION,
-  compressSnapshotBinary,
-  compressSnapshotBinaryAsync,
-  decompressSnapshotBinary,
-  setAcExSnapshotCompressor
+  acexHtmlCompressSnapshotBinary,
+  acexHtmlCompressSnapshotBinaryAsync,
+  acexHtmlDecompressSnapshotBinary,
+  acexHtmlSetSnapshotCompressor
 } from '@mlightcad/cad-html-core'
 
-describe('AcExSnapshotCompression', () => {
+describe('AcExHtmlSnapshotCompression', () => {
   afterEach(() => {
-    setAcExSnapshotCompressor(null)
+    acexHtmlSetSnapshotCompressor(null)
   })
 
   it('compresses exports with gzip', () => {
     const input = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8])
-    const compressed = compressSnapshotBinary(input)
+    const compressed = acexHtmlCompressSnapshotBinary(input)
     expect(compressed.compression).toBe(ACEX_SNAPSHOT_COMPRESSION)
-    expect(Array.from(decompressSnapshotBinary(compressed.bytes))).toEqual(
+    expect(Array.from(acexHtmlDecompressSnapshotBinary(compressed.bytes))).toEqual(
       Array.from(input)
     )
   })
 
   it('rejects compressed input above the hard cap without inflating', () => {
     const oversized = new Uint8Array(ACEX_MAX_COMPRESSED_BYTES + 1)
-    expect(() => decompressSnapshotBinary(oversized)).toThrow(
+    expect(() => acexHtmlDecompressSnapshotBinary(oversized)).toThrow(
       'Compressed payload exceeds size limit'
     )
   })
@@ -40,7 +40,7 @@ describe('AcExSnapshotCompression', () => {
   it('round-trips an installed node zlib compressor', async () => {
     const input = new Uint8Array(64 * 1024)
     for (let i = 0; i < input.length; i++) input[i] = i & 0xff
-    setAcExSnapshotCompressor({
+    acexHtmlSetSnapshotCompressor({
       gzipSync: data => gzipSync(data),
       gzip: data =>
         new Promise((resolve, reject) => {
@@ -51,12 +51,12 @@ describe('AcExSnapshotCompression', () => {
         })
     })
 
-    const sync = compressSnapshotBinary(input)
-    expect(Array.from(decompressSnapshotBinary(sync.bytes))).toEqual(
+    const sync = acexHtmlCompressSnapshotBinary(input)
+    expect(Array.from(acexHtmlDecompressSnapshotBinary(sync.bytes))).toEqual(
       Array.from(input)
     )
-    const asyncResult = await compressSnapshotBinaryAsync(input)
-    expect(Array.from(decompressSnapshotBinary(asyncResult.bytes))).toEqual(
+    const asyncResult = await acexHtmlCompressSnapshotBinaryAsync(input)
+    expect(Array.from(acexHtmlDecompressSnapshotBinary(asyncResult.bytes))).toEqual(
       Array.from(input)
     )
   })

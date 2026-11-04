@@ -1,22 +1,22 @@
 import {
   ACEX_SNAPSHOT_VERSION,
-  type AcExExtents,
-  type AcExLayerSnapshot,
-  type AcExSnapshot,
-  type AcExSnapshotVersion,
-  type AcExViewportSnapshot
-} from './AcExSnapshotTypes'
+  type AcExHtmlExtents,
+  type AcExHtmlLayerSnapshot,
+  type AcExHtmlSnapshot,
+  type AcExHtmlSnapshotVersion,
+  type AcExHtmlViewportSnapshot
+} from './AcExHtmlSnapshotTypes'
 
 /** Current multi-file package / manifest protocol version. */
 export const ACEX_PACKAGE_VERSION = 1 as const
 
-export type AcExPackageVersion = typeof ACEX_PACKAGE_VERSION
+export type AcExHtmlPackageVersion = typeof ACEX_PACKAGE_VERSION
 
 /** Snapshot schema version embedded in package manifests (matches ACEX batches). */
-export type AcExPackageSnapshotVersion = AcExSnapshotVersion
+export type AcExHtmlPackageSnapshotVersion = AcExHtmlSnapshotVersion
 
 /** One geometry chunk listed in the package manifest (gzip or raw ACEC). */
-export interface AcExPackageChunkRef {
+export interface AcExHtmlPackageChunkRef {
   /** Stable chunk id (also used in the default file name). */
   id: string
   /** Relative URL from the manifest file (e.g. `chunks/L0-000.acex.gz`). */
@@ -39,7 +39,7 @@ export interface AcExPackageChunkRef {
  * One ACEO OSNAP chunk (measure mode), gzip or raw.
  * Loaded after geometry so viewing does not wait on snap catalogs.
  */
-export interface AcExPackageOsnapChunkRef {
+export interface AcExHtmlPackageOsnapChunkRef {
   /** Stable chunk id (also used in the default file name). */
   id: string
   /** Relative URL from the manifest (e.g. `chunks/L0-osnap-000.osnap.gz`). */
@@ -60,22 +60,22 @@ export interface AcExPackageOsnapChunkRef {
  * Layout directory entry in the package manifest.
  * Geometry and OSNAP catalogs live in referenced files, not inline.
  */
-export interface AcExPackageLayoutRef {
+export interface AcExHtmlPackageLayoutRef {
   btrId: string
   name: string
   isModelSpace: boolean
   /** Paper-space viewports (model space omits this). */
-  viewports?: AcExViewportSnapshot[]
+  viewports?: AcExHtmlViewportSnapshot[]
   /**
    * AutoCAD saved view for this layout (model: VPORT `*ACTIVE`; paper: limits).
    * Omitted when the drawing has no usable saved view.
    */
-  savedView?: AcExExtents
+  savedView?: AcExHtmlExtents
   /**
    * Export-time zoom-to-fit box for this layout, so the offline viewer frames
    * the same box before its geometry chunks arrive.
    */
-  fitExtents?: AcExExtents
+  fitExtents?: AcExHtmlExtents
   /** Geometry chunks for this layout, in paint order. */
   chunkIds: string[]
   /**
@@ -89,29 +89,29 @@ export interface AcExPackageLayoutRef {
  * Versioned package manifest (`*.acex.json`).
  * Small JSON fetched first; geometry is loaded progressively from chunks.
  */
-export interface AcExPackageManifest {
+export interface AcExHtmlPackageManifest {
   /** Discriminator for package manifests. */
   format: 'acex-package'
   /** Package protocol version ({@link ACEX_PACKAGE_VERSION}). */
-  packageVersion: AcExPackageVersion
+  packageVersion: AcExHtmlPackageVersion
   /** Batch / snapshot schema version ({@link ACEX_SNAPSHOT_VERSION}). */
-  snapshotVersion: AcExPackageSnapshotVersion
-  /** Document-level metadata (same shape as {@link AcExSnapshot.meta}). */
-  meta: AcExSnapshot['meta']
-  layers: AcExLayerSnapshot[]
+  snapshotVersion: AcExHtmlPackageSnapshotVersion
+  /** Document-level metadata (same shape as {@link AcExHtmlSnapshot.meta}). */
+  meta: AcExHtmlSnapshot['meta']
+  layers: AcExHtmlLayerSnapshot[]
   activeLayoutBtrId: string
-  layouts: AcExPackageLayoutRef[]
-  /** Flat geometry chunk list; layouts reference ids via {@link AcExPackageLayoutRef.chunkIds}. */
-  chunks: AcExPackageChunkRef[]
+  layouts: AcExHtmlPackageLayoutRef[]
+  /** Flat geometry chunk list; layouts reference ids via {@link AcExHtmlPackageLayoutRef.chunkIds}. */
+  chunks: AcExHtmlPackageChunkRef[]
   /**
    * Flat OSNAP chunk list (measure mode). Layouts reference ids via
-   * {@link AcExPackageLayoutRef.osnapChunkIds}. Omitted or empty for view-only.
+   * {@link AcExHtmlPackageLayoutRef.osnapChunkIds}. Omitted or empty for view-only.
    */
-  osnapChunks?: AcExPackageOsnapChunkRef[]
+  osnapChunks?: AcExHtmlPackageOsnapChunkRef[]
 }
 
 /** One file in a multi-file package before zipping for download. */
-export interface AcExPackageFile {
+export interface AcExHtmlPackageFile {
   /** Path relative to the package root (forward slashes). */
   path: string
   /** File bytes (UTF-8 for text, raw for binary). */
@@ -121,15 +121,15 @@ export interface AcExPackageFile {
 /**
  * Complete multi-file package ready to zip or write to disk.
  */
-export interface AcExPackageFiles {
+export interface AcExHtmlPackageFiles {
   /** Shell HTML (`viewer.html`) with `#mlcad-package` config. */
   html: string
   /** Manifest object (also serialized as `*.acex.json`). */
-  manifest: AcExPackageManifest
+  manifest: AcExHtmlPackageManifest
   /** Manifest file name at package root (always `drawing.acex.json`). */
   manifestFileName: string
   /** All package files including HTML, manifest, and chunk `.acex` / `.acex.gz` files. */
-  files: AcExPackageFile[]
+  files: AcExHtmlPackageFile[]
 }
 
 /**
