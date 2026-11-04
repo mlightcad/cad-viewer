@@ -1,36 +1,36 @@
 import {
-  type AcPdColorMode,
-  type AcPdExportOptions,
-  type AcPdModelSpaceFit,
-  acPdResolveExportOptions,
-  type AcPdTextMode
+  type AcExPdfColorMode,
+  type AcExPdfExportOptions,
+  type AcExPdfModelSpaceFit,
+  acexPdfResolveExportOptions,
+  type AcExPdfTextMode
 } from '@mlightcad/cad-pdf-core'
 
 /**
  * Model-space page framing for PDF export.
  *
- * Alias of {@link AcPdModelSpaceFit} from `@mlightcad/cad-pdf-core`.
+ * Alias of {@link AcExPdfModelSpaceFit} from `@mlightcad/cad-pdf-core`.
  */
-export type AcApPdfModelSpaceFit = AcPdModelSpaceFit
+export type AcApPdfModelSpaceFit = AcExPdfModelSpaceFit
 
 /**
- * How MTEXT/TEXT are painted. Alias of {@link AcPdTextMode}.
+ * How MTEXT/TEXT are painted. Alias of {@link AcExPdfTextMode}.
  */
-export type AcApPdfTextMode = AcPdTextMode
+export type AcApPdfTextMode = AcExPdfTextMode
 
 /**
  * Colour treatment of the exported PDF (`'color'` or black-on-white
- * `'monochrome'`). Alias of {@link AcPdColorMode}.
+ * `'monochrome'`). Alias of {@link AcExPdfColorMode}.
  */
-export type AcApPdfColorMode = AcPdColorMode
+export type AcApPdfColorMode = AcExPdfColorMode
 
 /**
  * User-configurable options for PDF export (`cpdf` dialog, `-cpdf`, and API).
  *
- * Alias of {@link AcPdExportOptions} from `@mlightcad/cad-pdf-core`, shared
+ * Alias of {@link AcExPdfExportOptions} from `@mlightcad/cad-pdf-core`, shared
  * with the headless `@mlightcad/cad-pdf-exporter`.
  */
-export type AcApPdfExportOptions = AcPdExportOptions
+export type AcApPdfExportOptions = AcExPdfExportOptions
 
 /**
  * Resolves PDF export options with package defaults.
@@ -41,5 +41,5 @@ export type AcApPdfExportOptions = AcPdExportOptions
 export function resolveAcApPdfExportOptions(
   options: AcApPdfExportOptions = {}
 ): Required<AcApPdfExportOptions> {
-  return acPdResolveExportOptions(options)
+  return acexPdfResolveExportOptions(options)
 }

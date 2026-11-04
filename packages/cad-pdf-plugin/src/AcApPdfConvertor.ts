@@ -1,4 +1,4 @@
-import { acPdExportDatabase, type AcPdFitBox } from '@mlightcad/cad-pdf-core'
+import { acexPdfExportDatabase, type AcExPdfFitBox } from '@mlightcad/cad-pdf-core'
 import {
   type AcApContext,
   AcApDocManager,
@@ -38,7 +38,7 @@ export class AcApPdfConvertor {
 
     await AcApDocManager.instance.withBusyIndicator(async () => {
       const db = context.doc.database
-      const bytes = await acPdExportDatabase(db, {
+      const bytes = await acexPdfExportDatabase(db, {
         ...resolved,
         title: context.doc.fileName || context.doc.docTitle,
         fontMapping: AcApSettingManager.instance.fontMapping,
@@ -59,7 +59,7 @@ export class AcApPdfConvertor {
   /**
    * Captures the visible world box from the active view’s screen corners.
    */
-  private captureFitBox(view: AcEdBaseView): AcPdFitBox {
+  private captureFitBox(view: AcEdBaseView): AcExPdfFitBox {
     const topLeft = view.screenToWorld({ x: 0, y: 0 })
     const bottomRight = view.screenToWorld({
       x: view.width,
