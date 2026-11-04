@@ -1,4 +1,8 @@
-import { AcCmColor, AcGiLineWeight } from '@mlightcad/data-model'
+import {
+  AcCmColor,
+  AcGiLineWeight,
+  type AcGiSubEntityTraits
+} from '@mlightcad/data-model'
 import * as THREE from 'three'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 
@@ -337,6 +341,79 @@ describe('AcTrStyleManager', () => {
     expect(material.color.getHex()).toBe(0x000000)
 
     styleManager.currentBackgroundColor = 0xffffff
+    expect(material.color.getHex()).toBe(0xffffff)
+  })
+
+  it('ByLayer wipeouts stay paper-white under layer refresh to ACI 7', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0xffffff
+
+    // Matches AcDbWipeout after worldDraw: color is already resolved to the
+    // layer ACI-7 swatch, but isColorByLayer stays true. Without clearing
+    // isByLayerColor on background fills, updateLayerMaterial would repaint
+    // the wipeout black on light paper.
+    const wipeoutTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    wipeoutTraits.layer = 'AM_0'
+    wipeoutTraits.color = new AcCmColor().setForeground()
+    ;(
+      wipeoutTraits as AcGiSubEntityTraits & { isColorByLayer?: boolean }
+    ).isColorByLayer = true
+    wipeoutTraits.drawOrder = 0
+    wipeoutTraits.isBackgroundFill = true
+    wipeoutTraits.fillType = {
+      solidFill: true,
+      patternAngle: 0,
+      definitionLines: []
+    }
+
+    const material = styleManager.getFillMaterial(
+      wipeoutTraits
+    ) as THREE.MeshBasicMaterial
+    expect(getMaterialMetadata(material).isBackgroundFill).toBe(true)
+    expect(getMaterialMetadata(material).isByLayerColor).toBe(false)
+    expect(material.color.getHex()).toBe(0xffffff)
+
+    styleManager.updateLayerMaterial('AM_0', {
+      color: new AcCmColor().setForeground()
+    })
+    expect(getMaterialMetadata(material).isBackgroundFill).toBe(true)
+    expect(getMaterialMetadata(material).isForeground).not.toBe(true)
+    expect(material.color.getHex()).toBe(0xffffff)
+  })
+
+  it('MTEXT canvas masks stay paper-white under layer refresh to ACI 7', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.currentBackgroundColor = 0xffffff
+
+    // Matches AcDbMText.drawBackgroundMask when useBackgroundColor: clears
+    // ByLayer provenance and opts into canvas tracking while color remains
+    // the entity's already-resolved swatch.
+    const maskTraits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    maskTraits.layer = 'AM_0'
+    maskTraits.color = new AcCmColor().setForeground()
+    ;(
+      maskTraits as AcGiSubEntityTraits & { isColorByLayer?: boolean }
+    ).isColorByLayer = false
+    maskTraits.drawOrder = 0
+    maskTraits.isBackgroundFill = true
+    maskTraits.fillType = {
+      solidFill: true,
+      patternAngle: 0,
+      definitionLines: []
+    }
+
+    const material = styleManager.getFillMaterial(
+      maskTraits
+    ) as THREE.MeshBasicMaterial
+    expect(getMaterialMetadata(material).isBackgroundFill).toBe(true)
+    expect(getMaterialMetadata(material).isByLayerColor).toBe(false)
+    expect(material.color.getHex()).toBe(0xffffff)
+
+    styleManager.updateLayerMaterial('AM_0', {
+      color: new AcCmColor().setForeground()
+    })
+    expect(getMaterialMetadata(material).isBackgroundFill).toBe(true)
+    expect(getMaterialMetadata(material).isForeground).not.toBe(true)
     expect(material.color.getHex()).toBe(0xffffff)
   })
 

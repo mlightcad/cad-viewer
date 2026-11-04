@@ -132,10 +132,15 @@ export abstract class AcTrMaterialManager<T> {
       // later caller (e.g. MText `\C256`) supplies the layer RGB, paint the
       // shared layer material in place — it is keyed by layer name, so only
       // that layer's ByLayer glyphs are affected.
+      const cachedMeta = getMaterialMetadata(cached)
+      // Canvas-background fills (wipeouts / MTEXT masks) must keep fusing with
+      // MODELBKCOLOR / PAPERBKCOLOR — never rewrite them from a ByLayer ACI-7
+      // swatch (that paints black on light paper).
       if (
         traits.color.isByLayer &&
         typeof layerColorRgb === 'number' &&
-        getMaterialMetadata(cached).isForeground !== true
+        cachedMeta.isForeground !== true &&
+        cachedMeta.isBackgroundFill !== true
       ) {
         const swatch = layerColor ?? new AcCmColor().setRGBValue(layerColorRgb)
         this.refreshMaterialResolvedColor(cached, { color: swatch })
@@ -214,7 +219,11 @@ export abstract class AcTrMaterialManager<T> {
       const oldMaterialId = oldMaterial.id
 
       if (newKey === oldKey) {
-        if (byLayerBindings.isByLayerColor && newTraits.color) {
+        if (
+          byLayerBindings.isByLayerColor &&
+          newTraits.color &&
+          metadata.isBackgroundFill !== true
+        ) {
           this.refreshMaterialResolvedColor(oldMaterial, newTraits)
         }
         this.keyToTraits[oldKey] = mergedTraits
@@ -362,10 +371,12 @@ export abstract class AcTrMaterialManager<T> {
 
     if (this.cache[remappedKey]) {
       const cached = this.cache[remappedKey]
+      const cachedMeta = getMaterialMetadata(cached)
       if (
         remappedTraits.color.isByLayer &&
         layerTraits?.color &&
-        getMaterialMetadata(cached).isByLayerColor
+        cachedMeta.isByLayerColor &&
+        cachedMeta.isBackgroundFill !== true
       ) {
         this.refreshMaterialResolvedColor(cached, layerTraits)
       }
@@ -453,6 +464,9 @@ export abstract class AcTrMaterialManager<T> {
     material?: THREE.Material
   ): boolean {
     const metadata = material ? getMaterialMetadata(material) : undefined
+    if (metadata?.isBackgroundFill === true || traits.isBackgroundFill) {
+      return false
+    }
 
     if (byLayerBindings?.isByLayerColor === true) {
       return true
@@ -566,10 +580,15 @@ export abstract class AcTrMaterialManager<T> {
     const resolvedByLayerBindings =
       byLayerBindings ?? this.resolveByLayerBindings(traits)
 
-    // Attach metadata required for layer updates and side-variant lookups
+    // Attach metadata required for layer updates and side-variant lookups.
+    // Background fills ignore entity/layer colour — do not mark them
+    // ByLayer-colour or layer refresh will repaint them as ACI 7 (black on
+    // light paper) instead of the canvas background.
     setMaterialMetadata(material, {
       layer: traits.layer,
-      isByLayerColor: resolvedByLayerBindings.isByLayerColor,
+      isByLayerColor: isBackgroundFill
+        ? false
+        : resolvedByLayerBindings.isByLayerColor,
       isByLayerLineType: resolvedByLayerBindings.isByLayerLineType,
       isByLayerLineWeight: resolvedByLayerBindings.isByLayerLineWeight,
       isByLayerTransparency: resolvedByLayerBindings.isByLayerTransparency,
@@ -704,6 +723,10 @@ export abstract class AcTrMaterialManager<T> {
     material: THREE.Material,
     layerTraits: Partial<AcGiSubEntityTraits>
   ): void {
+    // Wipeouts / MTEXT canvas masks track the layout background only.
+    if (getMaterialMetadata(material).isBackgroundFill === true) {
+      return
+    }
     const color = layerTraits.color
     if (!color) {
       return
