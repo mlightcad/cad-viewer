@@ -33,13 +33,20 @@
     "agent-provider-settings",
     "background-fill-layer-refresh",
     "enrich-entity-snapshot",
+    "file-open-panel-entry",
+    "fix-pdf-exporter-no-plot-layers",
     "hatch-loop-edge-drawn-twice",
+    "html-invisible-layer-toggle",
+    "html-skip-selection-overlays",
     "pdf-core-exporter-color-mode",
+    "pdf-export-respect-layer-off-frozen",
     "pdf-export-wipeout-viewport-hang",
     "peer-range-bumps",
+    "release-1-8-0-preview-1",
     "release-1-8-0-preview",
     "rename-cad-viewer-to-cad-editor",
     "rename-docs-and-cdn-pin",
+    "simple-ui-layer-search",
     "type-to-command-line"
   ]
 }

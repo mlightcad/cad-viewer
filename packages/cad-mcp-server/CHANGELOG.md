@@ -1,5 +1,23 @@
 # @mlightcad/cad-mcp-server
 
+## 1.8.0-preview.1
+
+### Patch Changes
+
+- feat: adds a lightweight `@mlightcad/cad-simple-viewer/file-open-panel` landing entry so demos can pick a drawing before loading the full viewer, and fuzzy layer-name search in the simple UI layer panel. PDF and HTML export now respect Off, Frozen, and no-plot layers; HTML keeps OLE/IMAGE layer toggles working after geometry release and skips baking selection overlays into the offline scene
+- Updated dependencies [a6b5042]
+- Updated dependencies [7399150]
+- Updated dependencies
+- Updated dependencies [66328f6]
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.1
+  - @mlightcad/cad-html-plugin@1.8.0-preview.1
+  - @mlightcad/three-renderer@1.8.0-preview.1
+  - @mlightcad/pdf-renderer@1.8.0-preview.1
+  - @mlightcad/cad-agent-core@1.8.0-preview.1
+  - @mlightcad/cad-pdf-core@1.8.0-preview.1
+  - @mlightcad/cad-script-core@1.8.0-preview.1
+
 ## 1.8.0-preview.0
 
 ### Minor Changes

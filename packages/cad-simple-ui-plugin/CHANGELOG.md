@@ -1,5 +1,22 @@
 # @mlightcad/cad-simple-ui-plugin
 
+## 1.8.0-preview.1
+
+### Patch Changes
+
+- feat: adds a lightweight `@mlightcad/cad-simple-viewer/file-open-panel` landing entry so demos can pick a drawing before loading the full viewer, and fuzzy layer-name search in the simple UI layer panel. PDF and HTML export now respect Off, Frozen, and no-plot layers; HTML keeps OLE/IMAGE layer toggles working after geometry release and skips baking selection overlays into the offline scene
+- d1c25cd: feat: search layers by name in the simple UI layer panel
+
+  The layer list now has a search box that filters rows with a
+  case-insensitive substring match on the layer name. Sorting still
+  applies to the filtered results, and the header On checkbox only
+  toggles layers that match the current search.
+
+- Updated dependencies [a6b5042]
+- Updated dependencies
+- Updated dependencies
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.1
+
 ## 1.8.0-preview.0
 
 ### Minor Changes

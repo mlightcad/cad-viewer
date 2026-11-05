@@ -1,5 +1,25 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.8.0-preview.1
+
+### Minor Changes
+
+- a6b5042: Add `@mlightcad/cad-simple-viewer/file-open-panel` so landing pages can load the file picker and data-source registry without pulling `AcApDocManager` / three-renderer. Demo apps lazy-load the full viewer after a drawing is chosen; `@mlightcad/cad-editor/locale` exposes i18n without mounting `MlCadViewer`.
+
+### Patch Changes
+
+- fix: skip in-batch selection overlays in HTML export
+
+  Mark shared INSERT and mesh-glyph highlight overlays with
+  `transientHighlight` so HTML export does not bake the cyan selection
+  tint into the offline scene.
+
+- feat: adds a lightweight `@mlightcad/cad-simple-viewer/file-open-panel` landing entry so demos can pick a drawing before loading the full viewer, and fuzzy layer-name search in the simple UI layer panel. PDF and HTML export now respect Off, Frozen, and no-plot layers; HTML keeps OLE/IMAGE layer toggles working after geometry release and skips baking selection overlays into the offline scene
+- Updated dependencies [7399150]
+- Updated dependencies
+- Updated dependencies
+  - @mlightcad/three-renderer@1.8.0-preview.1
+
 ## 1.8.0-preview.0
 
 ### Minor Changes

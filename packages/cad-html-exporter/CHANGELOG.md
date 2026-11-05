@@ -1,5 +1,17 @@
 # @mlightcad/cad-html-exporter
 
+## 1.8.0-preview.1
+
+### Patch Changes
+
+- 66328f6: fix: headless PDF/HTML export now omits non-plottable layers by default (matching cad-editor), so no-plot markup like `不打印` / `仪表确认层` no longer appears as misplaced geometry
+- feat: adds a lightweight `@mlightcad/cad-simple-viewer/file-open-panel` landing entry so demos can pick a drawing before loading the full viewer, and fuzzy layer-name search in the simple UI layer panel. PDF and HTML export now respect Off, Frozen, and no-plot layers; HTML keeps OLE/IMAGE layer toggles working after geometry release and skips baking selection overlays into the offline scene
+- Updated dependencies [7399150]
+- Updated dependencies
+- Updated dependencies
+  - @mlightcad/cad-html-core@1.8.0-preview.1
+  - @mlightcad/three-renderer@1.8.0-preview.1
+
 ## 1.8.0-preview.0
 
 ### Minor Changes

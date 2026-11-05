@@ -1,5 +1,22 @@
 # @mlightcad/cad-html-core
 
+## 1.8.0-preview.1
+
+### Patch Changes
+
+- 7399150: fix: HTML export keeps IMAGE/OLE on their real layer, and offline viewers can turn initially-off layers back on after CPU geometry release
+- fix: skip in-batch selection overlays in HTML export
+
+  Mark shared INSERT and mesh-glyph highlight overlays with
+  `transientHighlight` so HTML export does not bake the cyan selection
+  tint into the offline scene.
+
+- feat: adds a lightweight `@mlightcad/cad-simple-viewer/file-open-panel` landing entry so demos can pick a drawing before loading the full viewer, and fuzzy layer-name search in the simple UI layer panel. PDF and HTML export now respect Off, Frozen, and no-plot layers; HTML keeps OLE/IMAGE layer toggles working after geometry release and skips baking selection overlays into the offline scene
+- Updated dependencies [7399150]
+- Updated dependencies
+- Updated dependencies
+  - @mlightcad/three-renderer@1.8.0-preview.1
+
 ## 1.8.0-preview.0
 
 ### Minor Changes

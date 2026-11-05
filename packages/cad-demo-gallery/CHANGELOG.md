@@ -1,5 +1,11 @@
 # @mlightcad/cad-demo-gallery
 
+## 1.8.0-preview.1
+
+### Patch Changes
+
+- feat: adds a lightweight `@mlightcad/cad-simple-viewer/file-open-panel` landing entry so demos can pick a drawing before loading the full viewer, and fuzzy layer-name search in the simple UI layer panel. PDF and HTML export now respect Off, Frozen, and no-plot layers; HTML keeps OLE/IMAGE layer toggles working after geometry release and skips baking selection overlays into the offline scene
+
 ## 1.8.0-preview.0
 
 ### Minor Changes
