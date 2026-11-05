@@ -32,6 +32,8 @@ export interface AcUiLayerListViewOptions {
 export class AcUiLayerListView {
   /** Root element containing optional header and table. */
   readonly element: HTMLDivElement
+  /** Search box filtering the layer table by name. */
+  private searchInput!: HTMLInputElement
   /** Layer table body receiving row nodes. */
   private tbody!: HTMLTableSectionElement
   /** Header checkbox toggling all layers on/off. */
@@ -85,6 +87,22 @@ export class AcUiLayerListView {
       this.element.appendChild(header)
     }
 
+    const toolbar = document.createElement('div')
+    toolbar.className = 'ml-ex-ui-layer-toolbar'
+    this.searchInput = document.createElement('input')
+    this.searchInput.type = 'search'
+    this.searchInput.className = 'ml-ex-ui-layer-search'
+    this.searchInput.placeholder = options.i18n.t(
+      'layerManager.searchPlaceholder'
+    )
+    this.searchInput.setAttribute(
+      'aria-label',
+      options.i18n.t('layerManager.searchPlaceholder')
+    )
+    this.searchInput.addEventListener('input', () => this.renderRows())
+    toolbar.appendChild(this.searchInput)
+    this.element.appendChild(toolbar)
+
     const tableWrap = document.createElement('div')
     tableWrap.className = 'ml-ex-ui-layer-table-wrap'
 
@@ -127,13 +145,10 @@ export class AcUiLayerListView {
     this.masterCheckbox = document.createElement('input')
     this.masterCheckbox.type = 'checkbox'
     this.masterCheckbox.addEventListener('change', () => {
-      const store = this.activeLayerStore
-      if (!store) return
-      if (this.masterCheckbox.checked) {
-        store.setAllLayersOn()
-      } else {
-        store.setAllLayersOffExceptCurrent()
-      }
+      this.toggleVisibleLayers(this.masterCheckbox.checked)
+      // Native checkboxes keep the clicked state even when the toggle is a
+      // no-op (empty filter, or store rejects the edit). Re-sync from data.
+      this.renderRows()
     })
     onHeader.appendChild(onLabel)
     onHeader.appendChild(this.masterCheckbox)
@@ -194,6 +209,9 @@ export class AcUiLayerListView {
     if (this.titleEl) {
       this.titleEl.textContent = this.i18n.t('layerManager.title')
     }
+    const searchLabel = this.i18n.t('layerManager.searchPlaceholder')
+    this.searchInput.placeholder = searchLabel
+    this.searchInput.setAttribute('aria-label', searchLabel)
     this.nameHeaderLabelEl.textContent = this.i18n.t('layerManager.name')
     this.onLabelEl.textContent = this.i18n.t('layerManager.on')
     this.colorHeaderEl.textContent = this.i18n.t('layerManager.color')
@@ -249,6 +267,19 @@ export class AcUiLayerListView {
   }
 
   /**
+   * Returns layers matching the current name search query.
+   *
+   * Matching is case-insensitive substring search on the layer name.
+   *
+   * @param layers - Layer snapshots from the store.
+   */
+  private getFilteredLayers(layers: AcApLayerInfo[]): AcApLayerInfo[] {
+    const query = this.searchInput.value.trim().toLowerCase()
+    if (!query) return layers
+    return layers.filter(layer => layer.name.toLowerCase().includes(query))
+  }
+
+  /**
    * Returns layers ordered by the current name sort setting.
    *
    * @param layers - Layer snapshots from the store.
@@ -266,6 +297,36 @@ export class AcUiLayerListView {
           sensitivity: 'base'
         })
     )
+  }
+
+  /**
+   * Turns visible (filtered) layers on or off.
+   *
+   * With an empty search query this uses the store bulk APIs so turning
+   * layers off still keeps the current layer on. With an active filter it
+   * only updates matching layers (including the current layer, which the
+   * store may switch away from before turning off).
+   *
+   * @param on - Whether matching layers should be visible.
+   */
+  private toggleVisibleLayers(on: boolean) {
+    const store = this.activeLayerStore
+    if (!store) return
+
+    const query = this.searchInput.value.trim()
+    if (!query) {
+      if (on) {
+        store.setAllLayersOn()
+      } else {
+        store.setAllLayersOffExceptCurrent()
+      }
+      return
+    }
+
+    for (const layer of this.getFilteredLayers(store.getLayers())) {
+      if (layer.isOn === on) continue
+      store.setLayerOn(layer.name, on)
+    }
   }
 
   /** Removes event listeners. Does not remove DOM (caller owns mount point). */
@@ -290,12 +351,15 @@ export class AcUiLayerListView {
     const store = this.activeLayerStore
     this.tbody.replaceChildren()
     if (!store) {
+      this.masterCheckbox.disabled = true
       this.masterCheckbox.checked = false
       this.masterCheckbox.indeterminate = false
       return
     }
 
-    const layers = this.getSortedLayers(store.getLayers())
+    const layers = this.getSortedLayers(
+      this.getFilteredLayers(store.getLayers())
+    )
     const currentLayer = store.getCurrentLayerName()
 
     layers.forEach(layer => {
@@ -304,6 +368,7 @@ export class AcUiLayerListView {
 
     const allOn = layers.length > 0 && layers.every(layer => layer.isOn)
     const someOn = layers.some(layer => layer.isOn)
+    this.masterCheckbox.disabled = layers.length === 0
     this.masterCheckbox.checked = allOn
     this.masterCheckbox.indeterminate = someOn && !allOn
   }

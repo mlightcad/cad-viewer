@@ -264,6 +264,34 @@ export function acuiEnsureUiStyles() {
       height: 100%;
       min-height: 0;
       overflow: hidden;
+      gap: 8px;
+    }
+
+    .ml-ex-ui-layer-toolbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex: 0 0 auto;
+      padding: 0 8px;
+      box-sizing: border-box;
+    }
+
+    .ml-ex-ui-layer-list > .ml-ex-ui-layer-toolbar:first-child {
+      padding-top: 8px;
+    }
+
+    .ml-ex-ui-layer-search {
+      box-sizing: border-box;
+      width: 100%;
+      min-width: 0;
+      flex: 1;
+      border: 1px solid var(--ml-ui-border, #dcdfe6);
+      border-radius: 4px;
+      background: var(--ml-ui-bg, #ffffff);
+      color: var(--ml-ui-text, #303133);
+      font: inherit;
+      font-size: 12px;
+      padding: 4px 8px;
     }
 
     .ml-ex-ui-review-palette {
