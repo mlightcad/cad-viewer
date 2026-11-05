@@ -33,6 +33,7 @@ Options:
   --fonts-url <url>         Remote font library base URL (ignored when --fonts-dir is set)
   --dwg-parser libredwg|dwg Default: libredwg (dwg needs optional @mlightcad/dwg-converter)
   --dwg-license-key <key>   License for --dwg-parser dwg (omit to use trial if active)
+  --draw-no-plot-layers     Include non-plottable layers (default: omit them)
 `
 }
 
@@ -67,6 +68,8 @@ function parseArgs(argv) {
       options.dwgParser = argv[++i]
     } else if (arg === '--dwg-license-key') {
       options.dwgLicenseKey = argv[++i]
+    } else if (arg === '--draw-no-plot-layers') {
+      options.drawNoPlotLayers = true
     } else if (arg.startsWith('-')) {
       throw new Error(`Unknown option: ${arg}`)
     } else {

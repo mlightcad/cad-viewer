@@ -10,6 +10,7 @@ import {
 
 import { AcPdfEntity } from '../renderer/AcPdfEntity'
 import type { AcPdfRenderer } from '../renderer/AcPdfRenderer'
+import { acPdfApplyDatabaseLayerVisibility } from './AcPdfLayerVisibility'
 import {
   buildModelToPaperMatrix,
   isDefaultPaperSpaceViewport,
@@ -121,12 +122,20 @@ function walkCollectPass(
 
 /**
  * Walks model space and returns PDF drawables for viewport reuse.
+ *
+ * Applies database Off / Frozen layer visibility so shared model trees used by
+ * paper-space viewports omit closed layers (matching AutoCAD plot).
  */
 export async function collectModelSpaceRoots(
   db: AcDbDatabase,
   renderer: AcPdfRenderer
 ): Promise<AcPdfEntity[]> {
-  return collectBlockRoots(db.tables.blockTable.modelSpace, renderer)
+  const roots = await collectBlockRoots(
+    db.tables.blockTable.modelSpace,
+    renderer
+  )
+  acPdfApplyDatabaseLayerVisibility(roots, db)
+  return roots
 }
 
 /**

@@ -52,7 +52,15 @@ export async function exportFileToHtml(
   // Hatch / entity conversion falls back to the host working database before
   // entities are bound — set it explicitly for Node (no viewer DocManager).
   return withWorkingDatabase(database, async () => {
-    await database.read(buffer, { fileName: basename(inputPath) }, fileType)
+    // Match AcApDocManager / cad-editor: omit no-plot layers from the snapshot.
+    await database.read(
+      buffer,
+      {
+        fileName: basename(inputPath),
+        drawNoPlotLayers: options.drawNoPlotLayers === true
+      },
+      fileType
+    )
     const readMs = performance.now() - tRead
 
     const title = options.title ?? basename(inputPath).replace(/\.[^.]+$/, '')

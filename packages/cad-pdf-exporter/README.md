@@ -24,6 +24,7 @@ Uses `@mlightcad/data-model` + `@mlightcad/pdf-renderer` through
 | `fontMapping`   | `{ [from]: to }`        | —         | Font name substitutions |
 | `dwgParser`     | `libredwg` / `dwg`      | `libredwg`| `dwg` needs the optional `@mlightcad/dwg-converter` |
 | `dwgLicenseKey` | string                  | —         | License for `dwgParser: 'dwg'` |
+| `drawNoPlotLayers` | `true` / `false`     | `false`   | `false`: omit no-plot layers (matches cad-editor / AutoCAD plot) |
 
 Model space is always framed by drawable extents. A headless export has no
 live view, so the plugin's `Display` framing is not offered.

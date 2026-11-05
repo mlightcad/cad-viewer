@@ -137,6 +137,14 @@ export interface AcExHtmlExporterOptions {
    * {@link AcExHtmlExporterOptions.dwgParser} is `'dwg'`.
    */
   dwgLicenseKey?: string
+  /**
+   * Whether entities on non-plottable ("no-plot") layers are drawn.
+   *
+   * Defaults to `false` so headless HTML matches `cad-editor` (Defpoints,
+   * `不打印`, markup-only layers, etc. are omitted). Pass `true` to keep
+   * those layers visible.
+   */
+  drawNoPlotLayers?: boolean
 }
 
 export interface AcExHtmlExportResult {

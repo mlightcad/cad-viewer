@@ -63,6 +63,14 @@ export interface AcPdfExporterOptions extends Omit<
    * {@link AcPdfExporterOptions.dwgParser} is `'dwg'`.
    */
   dwgLicenseKey?: string
+  /**
+   * Whether entities on non-plottable ("no-plot") layers are drawn.
+   *
+   * Defaults to `false` so headless PDF matches `cad-editor` / AutoCAD plot
+   * (Defpoints, `不打印`, markup-only layers, etc. are omitted). Pass `true`
+   * to keep those layers visible, matching desktop AutoCAD editor display.
+   */
+  drawNoPlotLayers?: boolean
 }
 
 /** Result of {@link exportFileToPdf}. */
