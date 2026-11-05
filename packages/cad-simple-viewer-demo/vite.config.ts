@@ -40,7 +40,16 @@ export default defineConfig(() => {
   return {
     base: './',
     resolve: {
-      alias: examplePeerPackageAliases(__dirname)
+      alias: [
+        {
+          find: /^@mlightcad\/cad-simple-viewer\/file-open-panel$/,
+          replacement: resolve(
+            __dirname,
+            '../cad-simple-viewer/src/file-open-panel.ts'
+          )
+        },
+        ...examplePeerPackageAliases(__dirname)
+      ]
     },
     server: {
       // Local pnpm overrides point at sibling realdwg-web packages.

@@ -23,8 +23,10 @@
     "lib",
     "icons.ts",
     "find.ts",
+    "file-open-panel.ts",
     "src/ui/icons.ts",
     "src/find",
+    "src/file-open-panel.ts",
     "README.md",
     "package.json"
   ],
@@ -36,6 +38,14 @@
       "types": "./lib/index.d.ts",
       "import": "./dist/cad-simple-viewer.js",
       "require": "./dist/cad-simple-viewer.umd.cjs"
+    },
+    "./file-open-panel": {
+      "types": "./lib/file-open-panel.d.ts",
+      "import": {
+        "development": "./src/file-open-panel.ts",
+        "default": "./dist/cad-simple-viewer-file-open-panel.js"
+      },
+      "default": "./dist/cad-simple-viewer-file-open-panel.js"
     },
     "./icons": {
       "types": "./src/ui/icons.ts",

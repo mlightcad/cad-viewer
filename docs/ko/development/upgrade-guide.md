@@ -6,6 +6,18 @@ title: "cad-simple-viewer 및 cad-editor 업그레이드"
 
 이 가이드는 `@mlightcad/cad-simple-viewer`와 `@mlightcad/cad-editor`를 안전하게 업그레이드하는 방법을 설명합니다. 즉, 왜 이들을 개별적으로 올릴 수 없는지, 어떤 관련 패키지가 함께 이동해야 하는지, 그리고 주어진 릴리스에 대해 올바른 호환 버전 집합을 확인하는 두 가지 신뢰할 수 있는 방법을 다룹니다.
 
+::: info 가벼운 파일 열기 랜딩 엔트리
+**1.8.0**부터 `@mlightcad/cad-simple-viewer`는 DocManager에 의존하지 않는 랜딩용 서브경로를 제공합니다. **`acuiCreateFileOpenSession`**(지연 `createDocManager` + 자동 열기 / `attachSourcesTo`)을 우선하십시오. 도면을 직접 여는 경우(예: Vue `MlCadViewer`)에는 `AcUiFileOpenLanding`을 사용하십시오.
+
+```ts
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
+```
+
+홈 / 파일 선택 화면에서 사용해 도면이 열릴 때까지 전체 뷰어를 lazy로 유지하십시오. Vue 에디터 쪽은 `@mlightcad/cad-editor/locale`로 `MlCadViewer` 없이 i18n을 쓸 수 있습니다.
+
+전체 설명은 [파일 열기 패널](./file-open-panel)을 참조하십시오. 클라우드 소스 계약은 [데이터 소스 플러그인](./data-source-plugin)을 참조하십시오.
+:::
+
 ::: warning 패키지 이름 변경: `@mlightcad/cad-viewer` → `@mlightcad/cad-editor`
 **1.8.0**부터 패키지 이름이 실제 기능을 드러내도록 `@mlightcad/cad-viewer`의 이름이 `@mlightcad/cad-editor`로 변경되었습니다.
 

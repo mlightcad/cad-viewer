@@ -1,17 +1,20 @@
-import { AcApDocManager } from '../app/AcApDocManager'
 import {
   acapBuildDataSourceMenu,
   type AcApDataSourceMenuItem
 } from '../app/dataSource/acapBuildDataSourceMenu'
 import type { AcApDataSource } from '../app/dataSource/AcApDataSource'
 import type { AcApDataSourceAccountProfile } from '../app/dataSource/AcApDataSource'
-import { ACAP_LOCAL_DATA_SOURCE_ID } from '../app/dataSource/AcApLocalDataSource'
-import { ACAP_URL_DATA_SOURCE_ID } from '../app/dataSource/AcApUrlDataSource'
+import {
+  ACAP_LOCAL_DATA_SOURCE_ID,
+  ACAP_URL_DATA_SOURCE_ID
+} from '../app/dataSource/AcApDataSourceIds'
+import type { AcApDataSourceManager } from '../app/dataSource/AcApDataSourceManager'
 import {
   acedApplyUiTheme,
   acedSubscribeUiTheme,
   type AcEdUiTheme,
-  resolveUiTheme} from '../editor/global/AcEdUiTheme'
+  resolveUiTheme
+} from '../editor/global/AcEdUiTheme'
 import { AcApI18n } from '../i18n/AcApI18n'
 
 const SUPPORTED_EXTENSIONS = ['.dxf', '.dwg'] as const
@@ -58,8 +61,14 @@ export interface AcUiFileOpenPanelOptions {
   /** Optional subtitle under the title. */
   subtitle?: string
   /**
-   * Isolated card palette (`light` / `dark`), independent of the host app theme.
-   * When omitted, the panel follows {@link resolveUiTheme} from the host / document.
+   * Card palette (`light` / `dark`).
+   *
+   * When set, the panel locks to that palette via {@link AcUiFileOpenPanel.setTheme}.
+   * When omitted, the panel follows {@link resolveUiTheme} from the host / document
+   * and refreshes when {@link acedApplyUiTheme} updates the document root.
+   *
+   * Either way, tokens are applied as an isolated palette on the panel root so
+   * host Element Plus CSS cannot wash out the chosen light/dark look.
    */
   theme?: AcEdUiTheme
   /**
@@ -88,9 +97,19 @@ export interface AcUiFileOpenPanelOptions {
   /**
    * Registered / landing data sources used to build cloud entries.
    * Built-in `local` / `url` are filtered out (handled by the panel UI).
-   * Defaults to {@link AcApDocManager.tryGetInstance}`.dataSourceManager.list()`.
+   * Defaults to {@link manager}`.list()` when a manager is provided.
    */
   getSources?: () => AcApDataSource[]
+  /**
+   * Optional registry for source listing (when {@link getSources} is omitted)
+   * and for `changed` / `auth-changed` refresh subscriptions.
+   *
+   * Hosts should pass a landing or document-owned {@link AcApDataSourceManager}
+   * explicitly — this panel never reaches into the viewer document singleton.
+   */
+  manager?:
+    | AcApDataSourceManager
+    | (() => AcApDataSourceManager | undefined)
   /**
    * Called when the user picks a local file, URL, cloud action, or new drawing.
    */
@@ -329,7 +348,14 @@ export class AcUiFileOpenPanel {
   }
 
   /**
-   * Sets an isolated card theme, or `undefined` to follow the host app theme.
+   * Effective card theme (locked option, or resolved from the host / document).
+   */
+  get theme(): AcEdUiTheme {
+    return this.options.theme ?? resolveUiTheme(this.options.host)
+  }
+
+  /**
+   * Sets a locked card theme, or `undefined` to follow the host app theme.
    *
    * @param theme - `light`, `dark`, or `undefined` to track {@link resolveUiTheme}
    */
@@ -369,9 +395,10 @@ export class AcUiFileOpenPanel {
   }
 
   private applyTheme(): void {
-    const isolated = this.options.theme != null
-    const theme = this.options.theme ?? resolveUiTheme(this.options.host)
-    acedApplyUiTheme(theme, this.root, { isolated })
+    // Always paint isolated hex tokens on the panel root. Non-isolated tokens
+    // resolve through `--el-*`, which stay light when only Element Plus's
+    // default stylesheet is loaded — washing out a dark landing theme.
+    acedApplyUiTheme(this.theme, this.root, { isolated: true })
   }
 
   private applyCardSize(): void {
@@ -656,11 +683,16 @@ export class AcUiFileOpenPanel {
     return [...fromManager, ...pending]
   }
 
+  private resolveManager(): AcApDataSourceManager | undefined {
+    const manager = this.options.manager
+    return typeof manager === 'function' ? manager() : manager
+  }
+
   private resolveSources(): AcApDataSource[] {
     if (this.options.getSources) {
       return this.options.getSources()
     }
-    return AcApDocManager.tryGetInstance()?.dataSourceManager.list() ?? []
+    return this.resolveManager()?.list() ?? []
   }
 
   private resolveExtraMenuItems(): AcApDataSourceMenuItem[] {
@@ -671,7 +703,7 @@ export class AcUiFileOpenPanel {
 
   private bindManagerEvents(): void {
     if (this.unsubManager) return
-    const dsm = AcApDocManager.tryGetInstance()?.dataSourceManager
+    const dsm = this.resolveManager()
     if (!dsm) return
     const refresh = () => this.refreshSourceButtons()
     dsm.on('changed', refresh)

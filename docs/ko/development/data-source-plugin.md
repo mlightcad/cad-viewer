@@ -9,6 +9,8 @@ title: "데이터 소스 플러그인"
 이 메커니즘은 `packages/cad-simple-viewer/src/app/dataSource`에 있습니다. 완전한 참조 구현은 별도 npm 패키지인 `@mlightcad/cad-onedrive-plugin`(`packages/cad-onedrive-plugin`)으로 제공되며, `packages/cad-simple-viewer-demo`의 데모 앱에서 사용됩니다.
 
 > **명령 플러그인**(`cpdf`, `chtml` 같은 내보내기 명령)에 대해서는 [플러그인 시스템](./plugin-system)을 참조하십시오. 데이터 소스 플러그인도 *바로* `AcApPlugin`이며, 단지 명령 대신 데이터 소스를 등록하기 위해 `onLoad`를 사용할 뿐입니다.
+>
+> **랜딩 페이지 파일 선택 UI**(`AcUiFileOpenLanding` / `AcUiFileOpenPanel`) 및 **전체 뷰어 지연 로딩**은 [파일 열기 패널](./file-open-panel)을 참조하십시오.
 
 ---
 
@@ -391,19 +393,27 @@ dsm.on('auth-changed', rebuildOpenMenu)
 
 ### 3. 랜딩 페이지(뷰어가 존재하기 전)
 
-랜딩 페이지는 종종 `AcApDocManager`가 생성되기 전에 사용자가 파일을 선택할 수 있게 합니다. `AcUiFileOpenPanel`은 이미 이 패턴을 구현하고 있습니다. `onDataSourceAction`을 전달하고 뷰어가 준비되면 항목을 실행합니다. 자체 랜딩 UI에서 소스를 직접 호출할 때는 `acapInvokeDataSourceMenuAction` + `acapOpenDataSourceResult`를 사용합니다:
+랜딩 페이지는 종종 `AcApDocManager`가 생성되기 전에 사용자가 파일을 선택할 수 있게 합니다. `@mlightcad/cad-simple-viewer/file-open-panel`의 **`acuiCreateFileOpenSession`** 을 우선하십시오 — 레지스트리를 소유하고, 클라우드 로그인 / 선택을 처리하며, DocManager를 lazy 생성하고, 소스를 attach한 뒤 도면을 엽니다. 전체 설명: **[파일 열기 패널](./file-open-panel)**.
 
 ```typescript
-import { acapInvokeDataSourceMenuAction, acapOpenDataSourceResult } from '@mlightcad/cad-simple-viewer'
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
 
-const source = myDataSourceManager.get('onedrive') // or the built-in 'local' / 'url'
-const file = await acapInvokeDataSourceMenuAction(source, menuItem)
-if (file) {
-  await acapOpenDataSourceResult(file, openOptions)
-}
+const session = acuiCreateFileOpenSession({
+  host,
+  createDocManager: async () => {
+    const { AcApDocManager } = await import('@mlightcad/cad-simple-viewer')
+    if (!AcApDocManager.tryGetInstance()) {
+      AcApDocManager.createInstance({ container /* … */ })
+    }
+    return AcApDocManager.instance
+  }
+})
+session.registerSource(oneDriveSource)
 ```
 
-**사용자 제스처 함정**(`cad-simple-viewer-demo/src/main.ts`에서): 클릭 핸들러가 `pick` 작업을 실행하기 전에 먼저 뷰어 초기화를 `await`해야 한다면 사용자 제스처가 상실되어 팝업이 차단됩니다. 이미 초기화된 경우 작업을 동기적으로 실행하거나, `pick` 항목에 대해 *먼저 로그인한 다음 열기* 안내를 표시합니다(예제 앱의 `handleDataSourceMenuAction` 참조).
+자체 랜딩 UI에서 소스를 직접 호출할 때는 랜딩 manager에서 `acapInvokeDataSourceMenuAction`을 사용하고, 반환된 파일은 뷰어가 존재한 뒤에만 여십시오.
+
+**사용자 제스처 함정**: 클릭 핸들러가 `pick` 전에 뷰어 초기화를 `await`해야 하면 제스처가 상실되어 팝업이 차단됩니다. DocManager 없이 랜딩에서 로그인한 뒤 선택하십시오 — `AcUiFileOpenLanding`이 이미 해당 제스처를 분리합니다.
 
 ---
 
@@ -419,7 +429,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | 즉시 등록 헬퍼(`clientId` 검증) |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | 플러그인 인스턴스용 비동기 팩토리 |
 
-예제 앱은 환경 구성(`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`)을 통해 이를 연결합니다. `VITE_MSAL_CLIENT_ID`가 설정되면 `registerOneDriveFromEnv`가 플러그인을 등록하고, 랜딩 패널은 `AcUiFileOpenPanel`의 `extraMenuItems`를 통해 *Sign in to OneDrive* 항목을 나열합니다.
+예제 앱은 환경 구성(`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`)을 통해 이를 연결합니다. `VITE_MSAL_CLIENT_ID`가 설정되면 랜딩 페이지는 `AcUiFileOpenLanding.manager`에 `AcApOneDriveDataSource`를 구성하고(이후 DocManager에 `attachSourcesTo`), 플러그인 로드 시 `registerOneDriveFromEnv`가 해당 인스턴스를 재사용합니다.
 
 **Azure 앱 설정**(OneDrive용): Microsoft Entra ID에 **Single-page application**을 등록하고, 앱 origin과 일치하는 리디렉션 URI를 추가하고, 위임된 Graph 권한 `User.Read` + `Files.Read.All`을 부여합니다(개인 OneDrive 선택기 토큰은 `OneDrive.ReadOnly`도 포함).
 
@@ -440,6 +450,7 @@ if (file) {
 
 ## 관련 문서
 
+- [파일 열기 패널](./file-open-panel) — `AcUiFileOpenLanding` / `AcUiFileOpenPanel` 및 랜딩 페이지에서 뷰어 지연 로딩
 - [플러그인 시스템](./plugin-system) — `AcApPlugin`, 명령 등록, 지연 로딩
 - [Simple Viewer 통합](./integrate-simple-cad-viewer) — `cad-simple-viewer` 포함
 - [현지화](./localization) — `main.dataSource.*` 같은 i18n 키 추가

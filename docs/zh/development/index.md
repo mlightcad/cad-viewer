@@ -27,6 +27,7 @@ title: "开发指南"
 - [插件系统](./plugin-system)
 - [内置插件](./built-in-plugins)
 - [数据源插件](./data-source-plugin)
+- [文件打开面板（落地页 UI）](./file-open-panel)
 - [多仓库联合调试](./debugging-with-multiple-repo-changes)
 - [支持天正 DWG 图纸](./supporting-tianzheng-dwg-drawings)
 - [构建云端 DWG Web 查看器（预渲染 + 静态托管）](./cloud-dwg-web-viewer)

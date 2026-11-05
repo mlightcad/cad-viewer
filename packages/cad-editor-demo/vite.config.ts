@@ -96,6 +96,20 @@ export default defineConfig(({ command, mode }) => {
     command === 'serve' &&
     useLocalMtextRenderer(mode) &&
     existsSync(LOCAL_MTEXT_RENDERER_ENTRY)
+  // Light landing subpaths — always source so demo builds do not depend on a
+  // prior `cad-simple-viewer` dist chunk graph for the file-open panel.
+  aliases.push({
+    find: /^@mlightcad\/cad-simple-viewer\/file-open-panel$/,
+    replacement: resolve(
+      __dirname,
+      '../cad-simple-viewer/src/file-open-panel.ts'
+    )
+  })
+  aliases.push({
+    find: /^@mlightcad\/cad-editor\/locale$/,
+    replacement: resolve(__dirname, '../cad-editor/src/locale/i18n.ts')
+  })
+
   if (command === 'serve') {
     aliases.push({
       find: /^@mlightcad\/cad-pdf-plugin\/register$/,

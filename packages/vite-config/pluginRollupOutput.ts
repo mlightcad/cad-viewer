@@ -153,9 +153,34 @@ function matchThreePackage(id: string): boolean {
  * Groups monorepo packages into predictable Rollup chunks for example app builds.
  */
 export const exampleManualChunks: ManualChunksOption = (id: string) => {
+  const normalized = id.replace(/\\/g, '/')
+
+  // Keep Vite's preload helper in a tiny dedicated chunk. If it lands inside a
+  // fat package chunk (cad-simple-viewer / cad-html-plugin / …), the landing
+  // entry statically imports that whole chunk just for `__vitePreload`.
+  if (
+    id.startsWith('\0') ||
+    normalized.includes('vite/preload') ||
+    normalized.includes('modulepreload-polyfill') ||
+    normalized.includes('commonjsHelpers')
+  ) {
+    return 'vite-runtime'
+  }
+
+  // Keep Element Plus out of the cad-editor chunk so landing pages that use
+  // el-* without MlCadViewer do not download the full editor bundle.
+  if (
+    normalized.includes('/element-plus/') ||
+    normalized.includes('/@element-plus/') ||
+    normalized.includes('/element-plus@') ||
+    normalized.includes('/@element-plus@')
+  ) {
+    return 'element-plus'
+  }
+
   if (
     matchMonorepoPackage(id, 'pdf-renderer') ||
-    /(?:^|\/)pdf-lib(?:\/|$)/.test(id.replace(/\\/g, '/'))
+    /(?:^|\/)pdf-lib(?:\/|$)/.test(normalized)
   ) {
     return 'cad-pdf-plugin'
   }
@@ -197,10 +222,56 @@ export const exampleManualChunks: ManualChunksOption = (id: string) => {
     if (packageId === 'three-renderer') {
       continue
     }
+    if (packageId === 'cad-simple-viewer') {
+      if (!matchMonorepoPackage(id, packageId)) {
+        continue
+      }
+      // Keep the `/file-open-panel` subgraph in its own chunk so demo landing
+      // pages can load it without pulling DocManager / three-renderer.
+      if (isCadSimpleViewerFileOpenPanelModule(id)) {
+        return 'cad-simple-viewer-file-open-panel'
+      }
+      return packageId
+    }
+    if (packageId === 'cad-editor') {
+      if (!matchMonorepoPackage(id, packageId)) {
+        continue
+      }
+      // vue-i18n messages used on the landing page before MlCadViewer mounts.
+      if (/\/cad-editor\/src\/locale\//.test(id.replace(/\\/g, '/'))) {
+        return 'cad-editor-locale'
+      }
+      return packageId
+    }
     if (matchMonorepoPackage(id, packageId)) {
       return packageId
     }
   }
+}
+
+/**
+ * Modules that belong to `@mlightcad/cad-simple-viewer/file-open-panel`.
+ * Matched before the fat `cad-simple-viewer` chunk so shared helpers (i18n,
+ * theme, data-source registry) stay on the light side of the split.
+ */
+function isCadSimpleViewerFileOpenPanelModule(id: string): boolean {
+  const normalized = id.replace(/\\/g, '/')
+  if (!normalized.includes('/cad-simple-viewer/')) {
+    return false
+  }
+  return (
+    /\/file-open-panel\.ts$/.test(normalized) ||
+    /\/ui\/AcUiFileOpen(?:Panel|Landing|Session)\.ts$/.test(normalized) ||
+    /\/app\/dataSource\/(?:AcApDataSource(?:Ids|Manager)?|acapBuildDataSourceMenu|acapInvokeDataSourceMenuAction|acapOpenCenteredPopup)\.ts$/.test(
+      normalized
+    ) ||
+    /\/app\/AcApOpenDatabaseOptions\.ts$/.test(normalized) ||
+    /\/i18n\/AcApI18n\.ts$/.test(normalized) ||
+    /\/i18n\/(?:en|zh|tr|cs|ar)\/main\.ts$/.test(normalized) ||
+    /\/editor\/global\/AcEdUiTheme\.ts$/.test(normalized) ||
+    /\/editor\/global\/AcEdUiLayout\.ts$/.test(normalized) ||
+    /\/editor\/view\/AcEdOpenMode\.ts$/.test(normalized)
+  )
 }
 
 /** Rollup output options shared by cad-*-viewer-example apps. */
@@ -216,7 +287,10 @@ export function createLibEntryFileName(
   format: string,
   entryName = 'index'
 ): string {
-  const base = entryName === 'register' ? `${packageId}-register` : packageId
+  const base =
+    entryName === 'index' || entryName === packageId
+      ? packageId
+      : `${packageId}-${entryName}`
   return format === 'es' ? `${base}.js` : `${base}.umd.cjs`
 }
 

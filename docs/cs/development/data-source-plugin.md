@@ -9,6 +9,8 @@ Tato stránka vysvětluje mechanismus **pluginu datového zdroje** v `@mlightcad
 Mechanismus žije v `packages/cad-simple-viewer/src/app/dataSource`. Kompletní referenční implementace je dodávána jako samostatný balíček npm: `@mlightcad/cad-onedrive-plugin` (`packages/cad-onedrive-plugin`), který používá ukázková aplikace v `packages/cad-simple-viewer-demo`.
 
 > Pro **pluginy příkazů** (exportní příkazy jako `cpdf`, `chtml`) viz [Systém pluginů](./plugin-system). Plugin datového zdroje *je* `AcApPlugin` — pouze používá `onLoad` k registraci datového zdroje namísto příkazu.
+>
+> Pro **UI výběru souboru na vstupní stránce** (`AcUiFileOpenLanding` / `AcUiFileOpenPanel`) a **líné načítání** plného prohlížeče viz [Panel otevření souboru](./file-open-panel).
 
 ---
 
@@ -391,19 +393,27 @@ dsm.on('auth-changed', rebuildOpenMenu)
 
 ### 3. Vstupní stránky (před existencí prohlížeče)
 
-Vstupní stránky často umožňují vybrat soubor ještě před vytvořením `AcApDocManager`. `AcUiFileOpenPanel` tento vzor již implementuje: předejte `onDataSourceAction` a položku spusťte, jakmile je prohlížeč připraven. Když vaše vlastní vstupní UI vyvolává zdroj přímo, použijte `acapInvokeDataSourceMenuAction` + `acapOpenDataSourceResult`:
+Vstupní stránky často umožňují vybrat soubor ještě před vytvořením `AcApDocManager`. Upřednostněte **`acuiCreateFileOpenSession`** z `@mlightcad/cad-simple-viewer/file-open-panel` — vlastní registr, zvládá cloud přihlášení / výběr, lazy vytvoří DocManager, připojí zdroje a otevře výkres. Celý postup: **[Panel otevření souboru](./file-open-panel)**.
 
 ```typescript
-import { acapInvokeDataSourceMenuAction, acapOpenDataSourceResult } from '@mlightcad/cad-simple-viewer'
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
 
-const source = myDataSourceManager.get('onedrive') // or the built-in 'local' / 'url'
-const file = await acapInvokeDataSourceMenuAction(source, menuItem)
-if (file) {
-  await acapOpenDataSourceResult(file, openOptions)
-}
+const session = acuiCreateFileOpenSession({
+  host,
+  createDocManager: async () => {
+    const { AcApDocManager } = await import('@mlightcad/cad-simple-viewer')
+    if (!AcApDocManager.tryGetInstance()) {
+      AcApDocManager.createInstance({ container /* … */ })
+    }
+    return AcApDocManager.instance
+  }
+})
+session.registerSource(oneDriveSource)
 ```
 
-**Úskalí uživatelského gesta** (z `cad-simple-viewer-demo/src/main.ts`): pokud obsluha kliknutí musí nejprve `await`ovat inicializaci prohlížeče, než spustí akci `pick`, uživatelské gesto se ztratí a popup je zablokován. Buď spusťte akci synchronně, když je již inicializováno, nebo u položek `pick` zobrazte nápovědu *nejprve se přihlaste, poté otevřete* (viz `handleDataSourceMenuAction` v ukázkové aplikaci).
+Když vaše vlastní vstupní UI vyvolává zdroj přímo, použijte `acapInvokeDataSourceMenuAction` na vstupním manageru a vrácený soubor otevřete až po existenci prohlížeče.
+
+**Úskalí uživatelského gesta**: pokud obsluha kliknutí musí před akcí `pick` `await`ovat inicializaci prohlížeče, gesto se ztratí a popup je zablokován. Raději se přihlaste na landingu (DocManager není potřeba) a pak vybírejte — `AcUiFileOpenLanding` tyto gesta už odděluje.
 
 ---
 
@@ -419,7 +429,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | Eager pomocník pro registraci (validuje `clientId`) |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | Asynchronní továrna pro instanci pluginu |
 
-Ukázková aplikace jej zapojuje přes konfiguraci prostředí (`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`): když je nastaven `VITE_MSAL_CLIENT_ID`, `registerOneDriveFromEnv` plugin zaregistruje; vstupní panel vypisuje položku *Přihlásit se k OneDrive* prostřednictvím `extraMenuItems` panelu `AcUiFileOpenPanel`.
+Ukázková aplikace jej zapojuje přes konfiguraci prostředí (`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`): když je nastaven `VITE_MSAL_CLIENT_ID`, landing vytvoří `AcApOneDriveDataSource` na `AcUiFileOpenLanding.manager` (a později `attachSourcesTo` DocManageru); `registerOneDriveFromEnv` tuto instanci při načtení pluginu znovu použije.
 
 **Nastavení aplikace Azure** (pro OneDrive): zaregistrujte **Single-page application** v Microsoft Entra ID, přidejte redirect URI odpovídající původu vaší aplikace a udělte delegovaná oprávnění Graph `User.Read` + `Files.Read.All` (tokeny osobního výběru OneDrive pokrývají také `OneDrive.ReadOnly`).
 
@@ -440,6 +450,7 @@ Ukázková aplikace jej zapojuje přes konfiguraci prostředí (`packages/cad-si
 
 ## Související dokumentace
 
+- [Panel otevření souboru](./file-open-panel) — `AcUiFileOpenLanding` / `AcUiFileOpenPanel` a líné načítání prohlížeče na vstupních stránkách
 - [Systém pluginů](./plugin-system) — `AcApPlugin`, registrace příkazů, líné načítání
 - [Integrace Simple Viewer](./integrate-simple-cad-viewer) — vložení `cad-simple-viewer`
 - [Lokalizace](./localization) — přidávání klíčů i18n, jako `main.dataSource.*`

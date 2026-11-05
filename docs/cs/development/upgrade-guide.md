@@ -6,6 +6,18 @@ title: "Upgrade cad-simple-viewer a cad-editor"
 
 Tato příručka vysvětluje, jak bezpečně upgradovat `@mlightcad/cad-simple-viewer` a `@mlightcad/cad-editor` — proč je nelze navyšovat izolovaně, které související balíčky se musí posunout společně a jaké existují dva spolehlivé způsoby, jak pro dané vydání určit správnou kompatibilní sadu verzí.
 
+::: info Lehký vstup pro úvodní stránku otevření souboru
+Od **1.8.0** nabízí `@mlightcad/cad-simple-viewer` podcestu bez DocManageru pro úvodní stránky. Upřednostněte **`acuiCreateFileOpenSession`** (lazy `createDocManager` + automatické otevření / `attachSourcesTo`). Použijte `AcUiFileOpenLanding`, když otevíráte výkresy sami (např. Vue `MlCadViewer`):
+
+```ts
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
+```
+
+Použijte ji na domovské / výběrové obrazovce, aby plný prohlížeč zůstal lazy až do otevření výkresu. Pro Vue editor je protějškem `@mlightcad/cad-editor/locale` pro i18n bez montáže `MlCadViewer`.
+
+Úplný postup: [Panel otevření souboru](./file-open-panel). Smlouvy cloudových zdrojů: [Plugin datového zdroje](./data-source-plugin).
+:::
+
 ::: warning Balíček byl přejmenován: `@mlightcad/cad-viewer` → `@mlightcad/cad-editor`
 Od verze **1.8.0** se balíček dříve publikovaný jako `@mlightcad/cad-viewer` jmenuje `@mlightcad/cad-editor`, aby jeho název odpovídal tomu, co skutečně dělá.
 

@@ -6,6 +6,18 @@ title: "cad-simple-viewer ve cad-editor Yükseltme"
 
 Bu kılavuz, `@mlightcad/cad-simple-viewer` ve `@mlightcad/cad-editor` paketlerinin güvenli şekilde nasıl yükseltileceğini açıklar — neden tek başlarına yükseltilemeyeceklerini, hangi ilgili paketlerin birlikte hareket etmesi gerektiğini ve belirli bir sürüm için doğru uyumlu sürüm kümesini belirlemenin iki güvenilir yolunu.
 
+::: info Hafif dosya açma giriş ekranı girişi
+**1.8.0** sürümünden itibaren `@mlightcad/cad-simple-viewer`, açılış sayfaları için DocManager’sız bir alt yol sunar. **`acuiCreateFileOpenSession`** (tembel `createDocManager` + otomatik açma / `attachSourcesTo`) tercih edin. Çizimleri kendiniz açtığınızda (ör. Vue `MlCadViewer`) `AcUiFileOpenLanding` kullanın:
+
+```ts
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
+```
+
+Ana sayfa / dosya seçicide kullanın; tam görüntüleyici bir çizim açılana kadar tembel kalsın. Vue düzenleyici karşılığı, `MlCadViewer` mount etmeden i18n için `@mlightcad/cad-editor/locale` yoludur.
+
+Tam anlatım: [Dosya Açma Paneli](./file-open-panel). Bulut kaynağı sözleşmeleri: [Veri Kaynağı Eklentisi](./data-source-plugin).
+:::
+
 ::: warning Paket adı değişti: `@mlightcad/cad-viewer` → `@mlightcad/cad-editor`
 **1.8.0** sürümünden itibaren, adının gerçek işlevini yansıtması için `@mlightcad/cad-viewer` paketinin adı `@mlightcad/cad-editor` olarak değiştirildi.
 

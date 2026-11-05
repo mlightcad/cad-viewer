@@ -6,6 +6,18 @@ title: "升级 cad-simple-viewer 和 cad-editor"
 
 本指南介绍如何安全地升级 `@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-editor`——为什么它们不能单独升级、哪些相关包必须一起迁移，以及两种可靠的方法来确定任意给定版本的正确兼容版本集。
 
+::: info 轻量文件打开落地页入口
+从 **1.8.0** 起，`@mlightcad/cad-simple-viewer` 为落地页提供不依赖 DocManager 的子路径。请优先使用 **`acuiCreateFileOpenSession`**（延迟 `createDocManager` + 自动打开 / `attachSourcesTo`）。当你自行打开图纸时使用 `AcUiFileOpenLanding`（例如 Vue `MlCadViewer`）：
+
+```ts
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
+```
+
+在首页 / 文件选择界面使用，使完整查看器在打开图纸之前保持懒加载。Vue 编辑器对应的是 `@mlightcad/cad-editor/locale`，可在不挂载 `MlCadViewer` 时使用 i18n。
+
+完整说明见[文件打开面板](./file-open-panel)。云端源契约见[数据源插件](./data-source-plugin)。
+:::
+
 ::: warning 包改名：`@mlightcad/cad-viewer` → `@mlightcad/cad-editor`
 从 **1.8.0** 开始，为了让包名体现出它真正的功能，原先的 `@mlightcad/cad-viewer` 已改名为 `@mlightcad/cad-editor`。
 

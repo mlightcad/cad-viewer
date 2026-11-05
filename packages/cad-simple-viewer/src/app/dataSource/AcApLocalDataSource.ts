@@ -5,12 +5,12 @@ import type {
   AcApDataSourceAuthState,
   AcApDataSourceFile
 } from './AcApDataSource'
+import { ACAP_LOCAL_DATA_SOURCE_ID } from './AcApDataSourceIds'
+
+export { ACAP_LOCAL_DATA_SOURCE_ID } from './AcApDataSourceIds'
 
 /** File extensions accepted by the local data source. */
 const SUPPORTED_EXTENSIONS = ['.dxf', '.dwg'] as const
-
-/** Built-in local-file data source id. */
-export const ACAP_LOCAL_DATA_SOURCE_ID = 'local'
 
 let fileInput: HTMLInputElement | undefined
 

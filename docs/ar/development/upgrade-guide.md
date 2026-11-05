@@ -6,6 +6,18 @@ title: "ترقية cad-simple-viewer و cad-editor"
 
 يشرح هذا الدليل كيفية ترقية `@mlightcad/cad-simple-viewer` و`@mlightcad/cad-editor` بأمان — ولماذا لا يمكن رفعهما بمعزل عن غيرهما، وأي الحزم ذات الصلة يجب أن تتحرك معًا، وطريقتان موثوقتان لتحديد مجموعة الإصدارات المتوافقة الصحيحة لأي إصدار معين.
 
+::: info مدخل خفيف لصفحة فتح الملفات
+بدءًا من **1.8.0**، يوفّر `@mlightcad/cad-simple-viewer` مسارًا فرعيًا خاليًا من DocManager لصفحات الهبوط. فضّل **`acuiCreateFileOpenSession`** (`createDocManager` كسول + فتح تلقائي / `attachSourcesTo`). استخدم `AcUiFileOpenLanding` عندما تفتح الرسومات بنفسك (مثل Vue `MlCadViewer`):
+
+```ts
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
+```
+
+استخدمه في الصفحة الرئيسية / منتقي الملفات حتى يبقى العارض الكامل كسولًا حتى فتح رسم. مقابل محرر Vue هو `@mlightcad/cad-editor/locale` لاستخدام i18n دون تركيب `MlCadViewer`.
+
+الشرح الكامل: [لوحة فتح الملفات](./file-open-panel). عقود مصادر السحابة: [إضافة مصدر البيانات](./data-source-plugin).
+:::
+
 ::: warning تمت إعادة تسمية الحزمة: `@mlightcad/cad-viewer` → `@mlightcad/cad-editor`
 بدءًا من الإصدار **1.8.0**، أصبحت الحزمة التي كانت تُنشر باسم `@mlightcad/cad-viewer` تُسمى `@mlightcad/cad-editor`، ليعبّر اسمها عن وظيفتها الحقيقية.
 

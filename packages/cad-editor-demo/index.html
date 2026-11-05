@@ -1,40 +1,86 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-ml-ui-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DWG/DXF Viewer</title>
     <style>
+      :root {
+        --ml-ui-text: #e5eaf3;
+        --ml-ui-text-muted: #cfd3dc;
+        --ml-ui-bg: #1d1e1f;
+        --ml-ui-bg-page: #141414;
+        --ml-ui-bg-fill: #262727;
+        --ml-ui-border: #4c4d4f;
+        --ml-ui-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+        --ml-ui-accent: #409eff;
+      }
+
+      html[data-ml-ui-theme='light'] {
+        --ml-ui-text: #303133;
+        --ml-ui-text-muted: #606266;
+        --ml-ui-bg: #ffffff;
+        --ml-ui-bg-page: #f2f3f5;
+        --ml-ui-bg-fill: #f5f7fa;
+        --ml-ui-border: #dcdfe6;
+        --ml-ui-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+        --ml-ui-accent: #409eff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: var(--ml-ui-bg-page);
+        color: var(--ml-ui-text);
+        color-scheme: dark;
+      }
+
+      html[data-ml-ui-theme='light'],
+      html[data-ml-ui-theme='light'] body {
+        color-scheme: light;
+      }
+
       .spinner {
         width: 40px;
         height: 40px;
-        border: 4px solid #ccc;
-        border-top-color: #409EFF; /* Element Plus primary color */
+        border: 4px solid var(--ml-ui-border);
+        border-top-color: var(--ml-ui-accent);
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }
-    
+
       @keyframes spin {
-        to { transform: rotate(360deg); }
+        to {
+          transform: rotate(360deg);
+        }
       }
     </style>
   </head>
   <body>
     <!-- Loading overlay -->
-    <div id="loader" style="
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: white;
-      z-index: 9999;
-    ">
+    <div
+      id="loader"
+      style="
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--ml-ui-bg-page);
+        z-index: 9999;
+      "
+    >
       <div class="spinner"></div>
     </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
-</html> 
+</html>

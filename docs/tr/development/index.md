@@ -27,6 +27,7 @@ Bu bölüm, kullanıcıların MLightCAD'ı kendi web uygulamanıza nasıl gömec
 - [Eklenti Sistemi](./plugin-system)
 - [Yerleşik Eklentiler](./built-in-plugins)
 - [Veri Kaynağı Eklentisi](./data-source-plugin)
+- [Dosya Açma Paneli (Açılış Sayfası UI)](./file-open-panel)
 - [Birden Fazla Depo Değişikliğiyle Hata Ayıklama](./debugging-with-multiple-repo-changes)
 - [Tianzheng DWG Çizimlerini Destekleme](./supporting-tianzheng-dwg-drawings)
 - [Bulut DWG Web Görüntüleyici Oluşturma (Ön İşleme + Statik Barındırma)](./cloud-dwg-web-viewer)

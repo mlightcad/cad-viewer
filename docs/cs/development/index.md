@@ -27,6 +27,7 @@ Tato sekce vám pomůže pochopit, jak vložit MLightCAD do vlastní webové apl
 - [Systém pluginů](./plugin-system)
 - [Vestavěné pluginy](./built-in-plugins)
 - [Plugin datového zdroje](./data-source-plugin)
+- [Panel otevření souboru (UI vstupní stránky)](./file-open-panel)
 - [Ladění se změnami ve více repozitářích](./debugging-with-multiple-repo-changes)
 - [Podpora výkresů Tianzheng DWG](./supporting-tianzheng-dwg-drawings)
 - [Vytvoření cloudového webového prohlížeče DWG (předrenderování + statické hostování)](./cloud-dwg-web-viewer)

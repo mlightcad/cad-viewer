@@ -9,6 +9,8 @@ title: "إضافة مصدر البيانات"
 تعيش الآلية في `packages/cad-simple-viewer/src/app/dataSource`. ويُشحن تنفيذ مرجعي كامل كحزمة npm منفصلة: `@mlightcad/cad-onedrive-plugin` (`packages/cad-onedrive-plugin`)، ويستخدمها التطبيق التجريبي في `packages/cad-simple-viewer-demo`.
 
 > بالنسبة لـ **إضافات الأوامر** (أوامر التصدير مثل `cpdf` و`chtml`)، راجع [نظام الإضافات](./plugin-system). إضافة مصدر البيانات *هي* `AcApPlugin` — لكنها تستخدم `onLoad` لتسجيل مصدر بيانات بدلًا من أمر.
+>
+> لواجهة **منتقي الملفات في صفحة الهبوط** (`AcUiFileOpenLanding` / `AcUiFileOpenPanel`) و**التحميل الكسول** للعارض الكامل، راجع [لوحة فتح الملفات](./file-open-panel).
 
 ---
 
@@ -391,19 +393,27 @@ dsm.on('auth-changed', rebuildOpenMenu)
 
 ### 3. صفحات الهبوط (قبل وجود العارض)
 
-غالبًا ما تتيح صفحات الهبوط للمستخدمين اختيار ملف قبل إنشاء `AcApDocManager`. `AcUiFileOpenPanel` ينفّذ هذا النمط بالفعل: مرّر `onDataSourceAction` وشغّل العنصر بمجرد أن يصبح العارض جاهزًا. عندما تستدعي واجهة الهبوط الخاصة بك مصدرًا مباشرةً، استخدم `acapInvokeDataSourceMenuAction` + `acapOpenDataSourceResult`:
+غالبًا ما تتيح صفحات الهبوط للمستخدمين اختيار ملف قبل إنشاء `AcApDocManager`. فضّل **`acuiCreateFileOpenSession`** من `@mlightcad/cad-simple-viewer/file-open-panel` — يملك السجل، يتعامل مع تسجيل الدخول / الاختيار السحابي، ينشئ DocManager كسولًا، يربط المصادر ويفتح الرسم. الشرح الكامل: **[لوحة فتح الملفات](./file-open-panel)**.
 
 ```typescript
-import { acapInvokeDataSourceMenuAction, acapOpenDataSourceResult } from '@mlightcad/cad-simple-viewer'
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
 
-const source = myDataSourceManager.get('onedrive') // or the built-in 'local' / 'url'
-const file = await acapInvokeDataSourceMenuAction(source, menuItem)
-if (file) {
-  await acapOpenDataSourceResult(file, openOptions)
-}
+const session = acuiCreateFileOpenSession({
+  host,
+  createDocManager: async () => {
+    const { AcApDocManager } = await import('@mlightcad/cad-simple-viewer')
+    if (!AcApDocManager.tryGetInstance()) {
+      AcApDocManager.createInstance({ container /* … */ })
+    }
+    return AcApDocManager.instance
+  }
+})
+session.registerSource(oneDriveSource)
 ```
 
-**مأزق إيماءة المستخدم** (من `cad-simple-viewer-demo/src/main.ts`): إذا كان معالج النقر يجب أن ينتظر (`await`) تهيئة العارض قبل تشغيل إجراء `pick`، فستفقد إيماءة المستخدم وتُحجب النافذة المنبثقة. إما أن تشغّل الإجراء بشكل متزامن عندما يكون التهيئة مكتملًا، أو أن تعرض تلميحًا *سجّل الدخول أولًا، ثم افتح* لعناصر `pick` (راجع `handleDataSourceMenuAction` في التطبيق النموذجي).
+عندما تستدعي واجهة الهبوط الخاصة بك مصدرًا مباشرةً، استخدم `acapInvokeDataSourceMenuAction` على مدير الهبوط وافتح الملف المُرجَع فقط بعد وجود العارض.
+
+**مأزق إيماءة المستخدم**: إذا كان معالج النقر يجب أن ينتظر (`await`) تهيئة العارض قبل `pick`، تفقد الإيماءة وتُحجب النافذة. فضّل تسجيل الدخول في landing (بدون DocManager) ثم الاختيار — `AcUiFileOpenLanding` يفصل هذه الإيماءات بالفعل.
 
 ---
 
@@ -419,7 +429,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | مساعد تسجيل فوري (يتحقق من `clientId`) |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | مصنع غير متزامن لنسخة الإضافة |
 
-يوصّل التطبيق النموذجي ذلك عبر إعداد البيئة (`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`): عندما تكون `VITE_MSAL_CLIENT_ID` مضبوطة، يسجّل `registerOneDriveFromEnv` الإضافة؛ وتسرد لوحة الهبوط عنصر *تسجيل الدخول إلى OneDrive* عبر `extraMenuItems` في `AcUiFileOpenPanel`.
+يوصّل التطبيق النموذجي ذلك عبر إعداد البيئة (`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`): عندما تكون `VITE_MSAL_CLIENT_ID` مضبوطة، تنشئ صفحة landing `AcApOneDriveDataSource` على `AcUiFileOpenLanding.manager` (ولاحقًا `attachSourcesTo` لـ DocManager); `registerOneDriveFromEnv` يعيد استخدام ذلك الـ instance عند تحميل الإضافة.
 
 **إعداد تطبيق Azure** (لـ OneDrive): سجّل **تطبيق صفحة واحدة (Single-page application)** في Microsoft Entra ID، وأضف URI لإعادة التوجيه يطابق أصل تطبيقك، وامنح أذونات Graph المفوَّضة `User.Read` + `Files.Read.All` (رموز منتقي OneDrive الشخصي تغطي أيضًا `OneDrive.ReadOnly`).
 
@@ -440,6 +450,7 @@ if (file) {
 
 ## وثائق ذات صلة
 
+- [لوحة فتح الملفات](./file-open-panel) — `AcUiFileOpenLanding` / `AcUiFileOpenPanel` والتحميل الكسول للعارض في صفحات الهبوط
 - [نظام الإضافات](./plugin-system) — `AcApPlugin`، تسجيل الأوامر، التحميل الكسول
 - [دمج Simple Viewer](./integrate-simple-cad-viewer) — تضمين `cad-simple-viewer`
 - [الترجمة المحلية](./localization) — إضافة مفاتيح i18n مثل `main.dataSource.*`

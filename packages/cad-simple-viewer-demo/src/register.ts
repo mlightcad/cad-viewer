@@ -2,7 +2,6 @@ import { registerLazyAgentPlugin } from '@mlightcad/cad-agent-plugin/register'
 import { registerLazyHtmlPlugin } from '@mlightcad/cad-html-plugin/register'
 import { registerLazyPdfPlugin } from '@mlightcad/cad-pdf-plugin/register'
 import { registerLazyCadScriptPlugin } from '@mlightcad/cad-script-plugin/register'
-import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 import { registerLazySvgPlugin } from '@mlightcad/cad-svg-plugin/register'
 import { log } from '@mlightcad/data-model'
 
@@ -24,6 +23,7 @@ export const registerLazyPlugins = async () => {
   }
   isLazyPluginRegistered = true
 
+  const { AcApDocManager } = await import('@mlightcad/cad-simple-viewer')
   const pluginManager = AcApDocManager.instance.pluginManager
   registerLazyHtmlPlugin(pluginManager, {
     viewerRuntimeUrl: './viewer-runtime.iife.js'
