@@ -27,6 +27,7 @@ title: "دليل التطوير"
 - [نظام الإضافات](./plugin-system)
 - [الإضافات المدمجة](./built-in-plugins)
 - [إضافة مصدر البيانات](./data-source-plugin)
+- [لوحة فتح الملفات (واجهة صفحة الهبوط)](./file-open-panel)
 - [تصحيح الأخطاء مع تغييرات متعددة للمستودعات](./debugging-with-multiple-repo-changes)
 - [دعم رسومات Tianzheng DWG](./supporting-tianzheng-dwg-drawings)
 - [إنشاء عارض ويب سحابي لملفات DWG (العرض المسبق + الاستضافة الثابتة)](./cloud-dwg-web-viewer)

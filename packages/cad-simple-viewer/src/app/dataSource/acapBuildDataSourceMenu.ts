@@ -1,6 +1,6 @@
 import { AcApI18n } from '../../i18n/AcApI18n'
 import type { AcApDataSource } from './AcApDataSource'
-import { ACAP_LOCAL_DATA_SOURCE_ID } from './AcApLocalDataSource'
+import { ACAP_LOCAL_DATA_SOURCE_ID } from './AcApDataSourceIds'
 
 /** Action triggered when a data-source menu item is clicked. */
 export type AcApDataSourceMenuAction = 'pick' | 'sign-in' | 'sign-out'

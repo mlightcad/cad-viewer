@@ -1,55 +1,66 @@
-import {
-  type AcApSimpleUiPlugin,
-  type AcUiDockPanelSide,
-  type AcUiToolbarPlacement,
-  SIMPLE_UI_PLUGIN_NAME
+import type {
+  AcApSimpleUiPlugin,
+  AcUiDockPanelSide,
+  AcUiToolbarPlacement
 } from '@mlightcad/cad-simple-ui-plugin'
-import { acuiRegisterSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin/register'
 import {
-  acapAppendLinkedText,
-  type AcApDataSourceMenuItem,
-  AcApDocManager,
-  acapFormatOpenFileErrorToastMessage,
-  AcApI18n,
-  AcApOpenDatabaseOptions,
-  acapRunDataSourceMenuAction,
-  AcApSettingManager,
+  type AcApOpenDatabaseOptions,
   acedApplyUiTheme,
   acedIsCompactUiLayout,
   AcEdOpenMode,
-  ACGI_PAPER_SPACE_BACKGROUND,
-  AcUiFileOpenPanel,
-  eventBus,
-  layoutBackgroundColorFromRgb,
-  LIBREDWG_PARSER_WORKER_FILE,
-  MTEXT_RENDERER_WORKER_FILE
-} from '@mlightcad/cad-simple-viewer'
+  acuiCreateFileOpenSession,
+  type AcUiFileOpenRequest,
+  type AcUiFileOpenSession
+} from '@mlightcad/cad-simple-viewer/file-open-panel'
 import {
   AcDbSystemVariables,
   AcDbSysVarManager,
   log
 } from '@mlightcad/data-model'
 
-import { setupAgentIntegration } from './agentIntegration'
-import { AGENT_TOOLBAR_ITEM } from './agentToolbarItem'
 import { injectAppShellResponsiveStyles } from './appShellResponsiveStyles'
 import { createDemoDockTabPanel } from './demoDockTabPanel'
-import {
-  applyDemoToolbarLayout,
-  DEMO_TOOLBAR_LAYOUTS,
-  getCurrentDemoToolbarLayoutId
-} from './demoToolbarPresets'
+import { DEMO_TOOLBAR_LAYOUTS } from './demoToolbarLayouts'
 import { setupFileSidebarResize } from './fileSidebarResize'
 import { getGoogleDriveEnvConfig } from './googleDriveEnv'
 import { getOneDriveEnvConfig } from './onedriveEnv'
-import { registerLazyPlugins } from './register'
-import { registerLibreDwgConverter } from './registerLibreDwg'
-import { SCRIPT_TOOLBAR_ITEM } from './scriptToolbarItem'
 
-// Isolate this example's prefs from cad-editor-demo on localhost.
-AcApSettingManager.configure({
-  storageKey: 'mlightcad.settings.simple-viewer'
-})
+type CadSimpleViewerModule = typeof import('@mlightcad/cad-simple-viewer')
+
+/** Lazily loaded viewer runtime — kept off the landing-page critical path. */
+const viewerApi = {
+  mod: null as CadSimpleViewerModule | null
+}
+
+async function loadViewerApi(): Promise<CadSimpleViewerModule> {
+  if (!viewerApi.mod) {
+    viewerApi.mod = await import('@mlightcad/cad-simple-viewer')
+  }
+  return viewerApi.mod
+}
+
+function viewer(): CadSimpleViewerModule {
+  if (!viewerApi.mod) {
+    throw new Error('CAD viewer runtime is not initialized yet')
+  }
+  return viewerApi.mod
+}
+
+async function loadSimpleUiPlugin() {
+  const [{ SIMPLE_UI_PLUGIN_NAME }, { acuiRegisterSimpleUiPlugin }] =
+    await Promise.all([
+      import('@mlightcad/cad-simple-ui-plugin'),
+      import('@mlightcad/cad-simple-ui-plugin/register')
+    ])
+  return { SIMPLE_UI_PLUGIN_NAME, acuiRegisterSimpleUiPlugin }
+}
+
+async function loadDemoToolbarPresets() {
+  return import('./demoToolbarPresets')
+}
+
+// AcApSettingManager.configure runs inside initialize() after the viewer module
+// is loaded, so the landing page stays on /file-open-panel only.
 
 const EXAMPLE_COMMAND_ALIASES = {
   LINE: ['LX'],
@@ -106,7 +117,7 @@ class CadViewerApp {
   private container: HTMLDivElement
   private fileInput: HTMLInputElement
   private fileOpenPanelHost: HTMLElement
-  private fileOpenPanel: AcUiFileOpenPanel | null = null
+  private fileOpenSession: AcUiFileOpenSession | null = null
   private viewerPane: HTMLElement
   private emptyState: HTMLDivElement
   private predefinedButtons: NodeListOf<HTMLButtonElement>
@@ -141,6 +152,7 @@ class CadViewerApp {
   private viewerToolbarMenuOpen = false
   private isInitialized = false
   private documentEventsRegistered = false
+  private displayMenuSettingListenerRegistered = false
   private hasOpenedFile = false
   private isLoadingFile = false
 
@@ -258,7 +270,7 @@ class CadViewerApp {
       progressiveRendering: isProgressiveOpenMode(),
       sysVars: {
         lwdisplay: false,
-        paperbkcolor: layoutBackgroundColorFromRgb(ACGI_PAPER_SPACE_BACKGROUND)
+        paperbkcolor: viewer().layoutBackgroundColorFromRgb(viewer().ACGI_PAPER_SPACE_BACKGROUND)
       },
       ...overrides
     }
@@ -294,11 +306,6 @@ class CadViewerApp {
       this.applySidebarDisplay(this.displaySidebarCheckbox.checked)
     })
 
-    AcApSettingManager.instance.events.modified.addEventListener(args => {
-      if (args.key !== 'isShowCommandLine' || !this.displayMenuOpen) return
-      this.syncDisplayMenuState()
-    })
-
     document.addEventListener('pointerdown', event => {
       if (!this.displayMenuOpen) return
       if (!(event.target instanceof Node)) return
@@ -310,6 +317,17 @@ class CadViewerApp {
       }
       this.closeDisplayMenu()
     })
+  }
+
+  private registerDisplayMenuSettingListener() {
+    if (this.displayMenuSettingListenerRegistered || !viewerApi.mod) return
+    this.displayMenuSettingListenerRegistered = true
+    viewer().AcApSettingManager.instance.events.modified.addEventListener(
+      args => {
+        if (args.key !== 'isShowCommandLine' || !this.displayMenuOpen) return
+        this.syncDisplayMenuState()
+      }
+    )
   }
 
   private async toggleDisplayMenu() {
@@ -340,7 +358,7 @@ class CadViewerApp {
   private async applyLineWeightDisplay(enabled: boolean) {
     await this.initialize()
 
-    const doc = AcApDocManager.instance.curDocument
+    const doc = viewer().AcApDocManager.instance.curDocument
     if (!doc) {
       this.syncDisplayMenuState()
       this.showMessage('Open a drawing first to toggle line weight', 'info')
@@ -362,7 +380,7 @@ class CadViewerApp {
   private async applyCommandLineDisplay(visible: boolean) {
     await this.initialize()
 
-    AcApSettingManager.instance.isShowCommandLine = visible
+    viewer().AcApSettingManager.instance.isShowCommandLine = visible
     this.syncDisplayMenuState()
     this.showMessage(
       visible ? 'Command line shown' : 'Command line hidden',
@@ -383,7 +401,11 @@ class CadViewerApp {
   private syncDisplayMenuState() {
     const enabled = this.isDevToolbarEnabled()
     const lineWeightOn = enabled && this.isLineWeightEnabled()
-    const commandLineOn = AcApSettingManager.instance.isShowCommandLine
+    // Command-line visibility lives on AcApSettingManager — unavailable until
+    // the viewer runtime is lazily loaded after the first open/create.
+    const commandLineOn =
+      this.isInitialized &&
+      viewer().AcApSettingManager.instance.isShowCommandLine
     const sidebarOn = this.isFileSidebarVisible()
 
     this.displayButton.disabled = !enabled
@@ -762,7 +784,9 @@ class CadViewerApp {
 
     this.toolbarLayoutSelect.disabled = !enabled
     if (enabled) {
-      this.toolbarLayoutSelect.value = getCurrentDemoToolbarLayoutId()
+      void loadDemoToolbarPresets().then(({ getCurrentDemoToolbarLayoutId }) => {
+        this.toolbarLayoutSelect.value = getCurrentDemoToolbarLayoutId()
+      })
     }
 
     this.viewerToolbarButton.textContent = 'Toolbar'
@@ -784,6 +808,7 @@ class CadViewerApp {
       return
     }
 
+    const { applyDemoToolbarLayout } = await loadDemoToolbarPresets()
     applyDemoToolbarLayout(plugin, presetId)
     this.syncViewerToolbarMenuState()
 
@@ -809,16 +834,18 @@ class CadViewerApp {
     this.syncDisplayMenuState()
   }
 
+  private simpleUiPluginName: string | null = null
+
   private getSimpleUiPlugin(): AcApSimpleUiPlugin | undefined {
-    if (!this.isInitialized) return undefined
-    return AcApDocManager.instance.pluginManager.getPlugin(
-      SIMPLE_UI_PLUGIN_NAME
+    if (!this.isInitialized || !this.simpleUiPluginName) return undefined
+    return viewer().AcApDocManager.instance.pluginManager.getPlugin(
+      this.simpleUiPluginName
     ) as AcApSimpleUiPlugin | undefined
   }
 
   private isLineWeightEnabled(): boolean {
     if (!this.isInitialized) return false
-    const doc = AcApDocManager.instance.curDocument
+    const doc = viewer().AcApDocManager.instance.curDocument
     if (!doc) return false
     return Boolean(
       AcDbSysVarManager.instance().getVar('LWDISPLAY', doc.database)
@@ -832,7 +859,7 @@ class CadViewerApp {
   private registerDocumentEvents() {
     if (this.documentEventsRegistered) return
 
-    AcApDocManager.instance.events.documentActivated.addEventListener(
+    viewer().AcApDocManager.instance.events.documentActivated.addEventListener(
       args => {
         document.title = args.doc.docTitle
         this.onFileOpened()
@@ -841,16 +868,16 @@ class CadViewerApp {
       }
     )
 
-    AcApDocManager.instance.events.documentToBeOpened.addEventListener(() => {
+    viewer().AcApDocManager.instance.events.documentToBeOpened.addEventListener(() => {
       this.setLoadingState(true)
     })
 
-    eventBus.on('open-local-file-started', () => {
+    viewer().eventBus.on('open-local-file-started', () => {
       this.setLoadingState(true)
     })
 
-    eventBus.on('failed-to-open-file', params => {
-      this.showMessage(acapFormatOpenFileErrorToastMessage(params), 'error')
+    viewer().eventBus.on('failed-to-open-file', params => {
+      this.showMessage(viewer().acapFormatOpenFileErrorToastMessage(params), 'error')
       this.finishLoadingState()
     })
 
@@ -867,11 +894,16 @@ class CadViewerApp {
 
   /** Shows or hides viewer chrome without persisting those preferences. */
   private setViewerChromeVisible(visible: boolean) {
+    // Landing-page open sets loading before `initialize()` finishes loading the
+    // viewer module — skip setting managers until the runtime exists.
+    if (!this.isInitialized && !viewerApi.mod) {
+      return
+    }
     if (visible) {
-      AcApSettingManager.instance.clearSessionOverride('isShowCommandLine')
-      AcApSettingManager.instance.clearSessionOverride('isShowShortCutToolbar')
+      viewer().AcApSettingManager.instance.clearSessionOverride('isShowCommandLine')
+      viewer().AcApSettingManager.instance.clearSessionOverride('isShowShortCutToolbar')
     } else {
-      AcApSettingManager.instance.apply(
+      viewer().AcApSettingManager.instance.apply(
         {
           isShowCommandLine: false,
           isShowShortCutToolbar: false
@@ -886,6 +918,11 @@ class CadViewerApp {
     if (this.isInitialized) return
 
     try {
+      await loadViewerApi()
+      viewer().AcApSettingManager.configure({
+        storageKey: 'mlightcad.settings.simple-viewer'
+      })
+      this.registerDisplayMenuSettingListener()
       acedApplyUiTheme('dark', document.documentElement)
       acedApplyUiTheme('dark', this.viewerPane)
 
@@ -893,7 +930,7 @@ class CadViewerApp {
       // Hide command line / shortcut toolbar before createInstance mounts them,
       // so cloud sign-in (init without opening a file) does not flash chrome.
       if (!showChrome) {
-        AcApSettingManager.instance.apply(
+        viewer().AcApSettingManager.instance.apply(
           {
             isShowCommandLine: false,
             isShowShortCutToolbar: false
@@ -906,9 +943,14 @@ class CadViewerApp {
       // Prefer main-thread MTEXT by default (less peak memory). Pass `?worker=1`
       // with openprof, or rely on worker mode only when explicitly requested.
       const useWorkers = openProf ? isWorkerOpenMode() : false
-      const dwgParserUrl = `./workers/${LIBREDWG_PARSER_WORKER_FILE}`
+      const dwgParserUrl = `./workers/${viewer().LIBREDWG_PARSER_WORKER_FILE}`
+      const [{ registerLibreDwgConverter }, { registerLazyPlugins }] =
+        await Promise.all([
+          import('./registerLibreDwg'),
+          import('./register')
+        ])
       registerLibreDwgConverter(dwgParserUrl)
-      AcApDocManager.createInstance({
+      viewer().AcApDocManager.createInstance({
         container: this.container,
         busyIndicatorHost: this.viewerPane,
         autoResize: true,
@@ -918,7 +960,7 @@ class CadViewerApp {
         useMainThreadDraw: openProf ? !useWorkers : true,
         openDocumentDefaults: () => this.buildOpenOptions(),
         webworkerFileUrls: {
-          mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`,
+          mtextRender: `./workers/${viewer().MTEXT_RENDERER_WORKER_FILE}`,
           dwgParser: dwgParserUrl
         }
       })
@@ -929,45 +971,65 @@ class CadViewerApp {
         console.log(`[openprof] mode=${w.__OPEN_MODE__}`)
       }
 
+      // Attach before cloud plugins load so they reuse landing MSAL / GIS clients.
+      this.fileOpenSession?.landing.attachSourcesTo(
+        viewer().AcApDocManager.instance.dataSourceManager
+      )
       await registerLazyPlugins()
-      this.fileOpenPanel?.refreshSourceButtons()
+      this.fileOpenSession?.refreshSourceButtons()
 
-      await acuiRegisterSimpleUiPlugin(AcApDocManager.instance.pluginManager, {
-        host: this.viewerPane,
-        dockPanel: {
-          defaultOpen: false,
-          defaultHeight: 240,
-          defaultWidth: 280
-        },
-        toolbar: {
-          placement: 'right',
-          items: 'default',
-          appendItems: [AGENT_TOOLBAR_ITEM, SCRIPT_TOOLBAR_ITEM],
-          appendItemsAfter: 'layout',
-          collapsible: true
-        },
-        layouts: {
-          phone: {
-            toolbar: {
-              placement: 'bottom',
-              showLabels: true,
-              size: 'stretch',
-              edgeOffset: 0,
-              collapsible: false,
-              inCanvasParent: true,
-              subToolbar: {
+      const [
+        { SIMPLE_UI_PLUGIN_NAME, acuiRegisterSimpleUiPlugin },
+        { AGENT_TOOLBAR_ITEM },
+        { SCRIPT_TOOLBAR_ITEM },
+        { setupAgentIntegration }
+      ] = await Promise.all([
+        loadSimpleUiPlugin(),
+        import('./agentToolbarItem'),
+        import('./scriptToolbarItem'),
+        import('./agentIntegration')
+      ])
+      this.simpleUiPluginName = SIMPLE_UI_PLUGIN_NAME
+
+      await acuiRegisterSimpleUiPlugin(
+        viewer().AcApDocManager.instance.pluginManager,
+        {
+          host: this.viewerPane,
+          dockPanel: {
+            defaultOpen: false,
+            defaultHeight: 240,
+            defaultWidth: 280
+          },
+          toolbar: {
+            placement: 'right',
+            items: 'default',
+            appendItems: [AGENT_TOOLBAR_ITEM, SCRIPT_TOOLBAR_ITEM],
+            appendItemsAfter: 'layout',
+            collapsible: true
+          },
+          layouts: {
+            phone: {
+              toolbar: {
+                placement: 'bottom',
                 showLabels: true,
-                showSeparators: false,
                 size: 'stretch',
-                overflow: 'wrap',
-                replaceOnNested: true
+                edgeOffset: 0,
+                collapsible: false,
+                inCanvasParent: true,
+                subToolbar: {
+                  showLabels: true,
+                  showSeparators: false,
+                  size: 'stretch',
+                  overflow: 'wrap',
+                  replaceOnNested: true
+                }
               }
             }
           }
         }
-      })
+      )
 
-      const plugin = AcApDocManager.instance.pluginManager.getPlugin(
+      const plugin = viewer().AcApDocManager.instance.pluginManager.getPlugin(
         SIMPLE_UI_PLUGIN_NAME
       ) as AcApSimpleUiPlugin
       setupAgentIntegration(plugin)
@@ -987,98 +1049,106 @@ class CadViewerApp {
     this.fileInput.addEventListener('change', event => {
       const file = (event.target as HTMLInputElement).files?.[0]
       if (file) {
-        this.setLoadingState(true)
-        void this.loadLocalFile(file)
+        void this.openViaSession({ kind: 'file', file })
       }
       this.fileInput.value = ''
     })
   }
 
-  private buildLandingCloudMenuItems(): AcApDataSourceMenuItem[] {
-    const signInTemplate = AcApI18n.t('main.dataSource.signInTo')
-    const items: AcApDataSourceMenuItem[] = []
-    if (getOneDriveEnvConfig()) {
-      const name = AcApI18n.t('main.dataSource.onedrive')
-      items.push({
-        id: 'onedrive:sign-in',
-        sourceId: 'onedrive',
-        action: 'sign-in',
-        labelKey: 'main.dataSource.signInTo',
-        labelParams: { name },
-        label: signInTemplate.includes('{name}')
-          ? signInTemplate.split('{name}').join(name)
-          : `Sign in to ${name}`
-      })
+  private openViaSession(request: AcUiFileOpenRequest) {
+    if (!this.fileOpenSession) {
+      log.error('File open session is not ready')
+      return
     }
-    if (getGoogleDriveEnvConfig()) {
-      const name = AcApI18n.t('main.dataSource.googledrive')
-      items.push({
-        id: 'googledrive:sign-in',
-        sourceId: 'googledrive',
-        action: 'sign-in',
-        labelKey: 'main.dataSource.signInTo',
-        labelParams: { name },
-        label: signInTemplate.includes('{name}')
-          ? signInTemplate.split('{name}').join(name)
-          : `Sign in to ${name}`
-      })
-    }
-    return items
+    void this.fileOpenSession.open(request)
   }
 
   private setupFileOpenPanel() {
     if (!this.fileOpenPanelHost) return
-    this.fileOpenPanel = new AcUiFileOpenPanel({
+    this.fileOpenSession = acuiCreateFileOpenSession({
       host: this.fileOpenPanelHost,
       theme: 'dark',
-      extraMenuItems: () => this.buildLandingCloudMenuItems(),
-      onLocalFile: file => {
-        this.setLoadingState(true)
-        void this.loadLocalFile(file)
+      showNewDrawing: true,
+      createDocManager: async () => {
+        await this.initialize()
+        return viewer().AcApDocManager.instance
       },
-      onUrl: url => {
+      getOpenOptions: () => this.buildOpenOptions(),
+      onBeforeOpen: () => {
         this.setLoadingState(true)
-        void this.loadRemoteUrl(url)
+        this.clearMessages()
       },
-      onDataSourceAction: item => {
-        // Keep the landing panel visible while the File Picker is open.
-        // Download/open show DocManager busy + open-file progress overlays.
-        void this.handleDataSourceMenuAction(item)
+      onPrepareOpen: async (request, _dm) => {
+        if (request.kind !== 'file' || !isOpenProfMode()) return
+        installOpenProfConsoleCapture()
+        AcDbSysVarManager.instance().setVar(
+          AcDbSystemVariables.OPENPROF,
+          true,
+          viewer().AcApDocManager.instance.curDocument.database
+        )
+      },
+      onAfterOpen: (request, result) => {
+        if (result.ok) {
+          this.onFileOpened()
+          this.predefinedButtons.forEach(item => item.classList.remove('active'))
+          this.updateFileSidebarSubtitle('Tap to browse sample files')
+          if (request.kind === 'new') {
+            this.showMessage('New drawing created', 'success')
+          } else if (request.kind === 'file') {
+            this.showMessage(
+              `Successfully loaded: ${request.file.name}`,
+              'success'
+            )
+          } else {
+            this.showMessage(
+              `Successfully loaded: ${this.getFileNameFromUrl(request.url)}`,
+              'success'
+            )
+          }
+        } else if (result.error) {
+          log.error('Error opening drawing:', result.error)
+          this.showMessage(`Error loading file: ${result.error}`, 'error')
+        }
+        this.finishLoadingState()
       }
     })
+    void this.setupLandingCloudSources()
   }
 
-  private handleDataSourceMenuAction(item: AcApDataSourceMenuItem) {
-    const run = () =>
-      acapRunDataSourceMenuAction(item, this.buildOpenOptions()).finally(() =>
-        this.finishLoadingState()
-      )
+  private async setupLandingCloudSources() {
+    const session = this.fileOpenSession
+    if (!session) return
 
-    // `await initialize()` is a microtask even when already done, which
-    // drops the user gesture and blocks the OneDrive File Picker popup.
-    if (this.isInitialized) {
-      void run()
-      return
+    const oneDriveEnv = getOneDriveEnvConfig()
+    if (oneDriveEnv && !session.manager.get('onedrive')) {
+      try {
+        const { AcApOneDriveDataSource } = await import(
+          '@mlightcad/cad-onedrive-plugin'
+        )
+        const source = new AcApOneDriveDataSource(oneDriveEnv, session.manager)
+        session.registerSource(source)
+        await source.restoreSession()
+      } catch (error) {
+        log.warn('Landing OneDrive data source unavailable:', error)
+      }
     }
 
-    if (item.action === 'pick') {
-      this.showMessage(
-        'The viewer is still starting. Sign in first, then open the file.',
-        'info'
-      )
-      this.finishLoadingState()
-      void this.initialize().then(() => {
-        this.fileOpenPanel?.refreshSourceButtons()
-      })
-      return
+    const googleDriveEnv = getGoogleDriveEnvConfig()
+    if (googleDriveEnv && !session.manager.get('googledrive')) {
+      try {
+        const { AcApGoogleDriveDataSource } = await import(
+          '@mlightcad/cad-google-drive-plugin'
+        )
+        const source = new AcApGoogleDriveDataSource(
+          googleDriveEnv,
+          session.manager
+        )
+        session.registerSource(source)
+        await source.restoreSession()
+      } catch (error) {
+        log.warn('Landing Google Drive data source unavailable:', error)
+      }
     }
-
-    void this.initialize()
-      .then(() => {
-        this.fileOpenPanel?.refreshSourceButtons()
-        return acapRunDataSourceMenuAction(item, this.buildOpenOptions())
-      })
-      .finally(() => this.finishLoadingState())
   }
 
   private setupPredefinedFileActions() {
@@ -1090,8 +1160,7 @@ class CadViewerApp {
         button.classList.add('active')
         this.updateFileSidebarSubtitle(button.textContent?.trim() || '')
         this.setFileSidebarExpanded(false)
-        this.setLoadingState(true)
-        void this.loadPredefinedFile(url)
+        void this.openViaSession({ kind: 'url', url })
       })
     })
   }
@@ -1129,6 +1198,8 @@ class CadViewerApp {
   }
 
   private isMobileLayout() {
+    // Available from the light /file-open-panel entry — do not wait for the
+    // full viewer runtime (landing page + resize / pointer handlers).
     return acedIsCompactUiLayout()
   }
 
@@ -1179,155 +1250,7 @@ class CadViewerApp {
   }
 
   private async createNewDrawing() {
-    await this.initialize()
-
-    if (!this.isInitialized) {
-      return
-    }
-
-    this.clearMessages()
-    this.setLoadingState(true)
-
-    try {
-      const success = await AcApDocManager.instance.newDocument(
-        this.buildOpenOptions()
-      )
-      if (!success) {
-        throw new Error('Failed to create new drawing')
-      }
-      this.onFileOpened()
-      this.predefinedButtons.forEach(item => item.classList.remove('active'))
-      this.updateFileSidebarSubtitle('Tap to browse sample files')
-      this.showMessage('New drawing created', 'success')
-    } catch (error) {
-      log.error('Error creating new drawing:', error)
-      this.showMessage(`Error creating new drawing: ${error}`, 'error')
-      this.finishLoadingState()
-    }
-  }
-
-  private async loadLocalFile(file: File) {
-    await this.initialize()
-
-    const fileName = file.name.toLowerCase()
-    if (!fileName.endsWith('.dxf') && !fileName.endsWith('.dwg')) {
-      this.showMessage('Please select a DXF or DWG file', 'error')
-      this.finishLoadingState()
-      return
-    }
-
-    this.clearMessages()
-
-    let fileContent: ArrayBuffer | null = null
-    try {
-      fileContent = await this.readFile(file)
-      const openProf = isOpenProfMode()
-      if (openProf) {
-        installOpenProfConsoleCapture()
-        // OPENPROF is session-scoped (isDbVar: false). Must be set before
-        // onBeforeOpenDocument → AcApOpenFileProfiler.begin().
-        AcDbSysVarManager.instance().setVar(
-          AcDbSystemVariables.OPENPROF,
-          true,
-          AcApDocManager.instance.curDocument.database
-        )
-      }
-      const options: AcApOpenDatabaseOptions = this.buildOpenOptions()
-
-      const openStartedAt = performance.now()
-      const success = await AcApDocManager.instance.openDocument(
-        file.name,
-        fileContent,
-        options
-      )
-      if (openProf) {
-        const w = window as Window & {
-          __OPEN_WALL_MS__?: number
-          __OPEN_SUCCESS__?: boolean
-          __OPEN_ENTITY_STATS__?: Record<string, number>
-        }
-        w.__OPEN_WALL_MS__ = performance.now() - openStartedAt
-        w.__OPEN_SUCCESS__ = success
-        try {
-          const db = AcApDocManager.instance.curDocument.database
-          const counts: Record<string, number> = {
-            modelSpace: 0,
-            paperLike: 0
-          }
-          const modelId = db.tables.blockTable.modelSpace.objectId
-          for (const btr of db.tables.blockTable.newIterator()) {
-            let n = 0
-            for (const _entity of btr.newIterator()) n++
-            if (btr.objectId === modelId || btr.isModelSapce) counts.modelSpace = n
-            else if (btr.isPaperSapce) counts.paperLike += n
-            counts.blocks = (counts.blocks ?? 0) + 1
-            counts.blockEntities = (counts.blockEntities ?? 0) + n
-          }
-          w.__OPEN_ENTITY_STATS__ = counts
-        } catch {
-          // optional diagnostics
-        }
-      }
-
-      if (success) {
-        this.onFileOpened()
-        this.predefinedButtons.forEach(item => item.classList.remove('active'))
-        this.updateFileSidebarSubtitle('Tap to browse sample files')
-        this.showMessage(`Successfully loaded: ${file.name}`, 'success')
-      }
-      // Open failures emit `failed-to-open-file` with a localized message.
-    } catch (error) {
-      log.error('Error loading file:', error)
-      this.showMessage(`Error loading file: ${error}`, 'error')
-    } finally {
-      fileContent = null
-      this.finishLoadingState()
-    }
-  }
-
-  private async loadRemoteUrl(url: string) {
-    await this.initialize()
-    this.clearMessages()
-
-    try {
-      const success = await AcApDocManager.instance.openUrl(
-        url,
-        this.buildOpenOptions()
-      )
-      if (success) {
-        this.onFileOpened()
-        const fileName = this.getFileNameFromUrl(url)
-        this.showMessage(`Successfully loaded: ${fileName}`, 'success')
-      }
-    } catch (error) {
-      log.error('Error loading remote file:', error)
-      this.showMessage(`Error loading file: ${error}`, 'error')
-    } finally {
-      this.finishLoadingState()
-    }
-  }
-
-  private async loadPredefinedFile(url: string) {
-    await this.initialize()
-    this.clearMessages()
-
-    try {
-      const options: AcApOpenDatabaseOptions = this.buildOpenOptions()
-
-      const success = await AcApDocManager.instance.openUrl(url, options)
-
-      if (success) {
-        this.onFileOpened()
-        const fileName = this.getFileNameFromUrl(url)
-        this.showMessage(`Successfully loaded: ${fileName}`, 'success')
-      }
-      // Open failures emit `failed-to-open-file` with a localized message.
-    } catch (error) {
-      log.error('Error loading predefined file:', error)
-      this.showMessage(`Error loading file: ${error}`, 'error')
-    } finally {
-      this.finishLoadingState()
-    }
+    this.openViaSession({ kind: 'new' })
   }
 
   private onFileOpened() {
@@ -1361,15 +1284,6 @@ class CadViewerApp {
   private getFileNameFromUrl(url: string) {
     const paths = url.split('/')
     return paths[paths.length - 1] || url
-  }
-
-  private readFile(file: File): Promise<ArrayBuffer> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as ArrayBuffer)
-      reader.onerror = () => reject(reader.error)
-      reader.readAsArrayBuffer(file)
-    })
   }
 
   private showMessage(
@@ -1411,7 +1325,11 @@ class CadViewerApp {
     }
 
     const text = document.createElement('span')
-    acapAppendLinkedText(text, message)
+    if (viewerApi.mod) {
+      viewer().acapAppendLinkedText(text, message)
+    } else {
+      text.textContent = message
+    }
     text.style.flex = '1'
     text.style.lineHeight = '1.4'
     popup.appendChild(text)

@@ -9,6 +9,8 @@ title: "数据源插件"
 该机制位于 `packages/cad-simple-viewer/src/app/dataSource`。完整的参考实现作为独立的 npm 包发布：`@mlightcad/cad-onedrive-plugin`（`packages/cad-onedrive-plugin`），由 `packages/cad-simple-viewer-demo` 中的演示应用使用。
 
 > 关于**命令插件**（如 `cpdf`、`chtml` 等导出命令），请参见[插件系统](./plugin-system)。数据源插件*本身*就是一个 `AcApPlugin`——它只是使用 `onLoad` 注册数据源而不是命令。
+>
+> 关于**落地页文件选择 UI**（`AcUiFileOpenLanding` / `AcUiFileOpenPanel`）以及如何**懒加载**完整查看器，请参见[文件打开面板](./file-open-panel)。
 
 ---
 
@@ -391,19 +393,27 @@ dsm.on('auth-changed', rebuildOpenMenu)
 
 ### 3. 落地页（查看器存在之前）
 
-落地页通常允许用户在 `AcApDocManager` 创建之前选择文件。`AcUiFileOpenPanel` 已经实现了这种模式：传入 `onDataSourceAction`，并在查看器就绪后执行该项。当你自己的落地页 UI 直接调用数据源时，使用 `acapInvokeDataSourceMenuAction` + `acapOpenDataSourceResult`：
+落地页通常允许用户在 `AcApDocManager` 创建之前选择文件。请优先使用 **`acuiCreateFileOpenSession`**（来自 `@mlightcad/cad-simple-viewer/file-open-panel`）— 它管理注册表、处理云端登录 / 选取、延迟创建 DocManager、附加源并打开图纸。完整说明：**[文件打开面板](./file-open-panel)**。
 
 ```typescript
-import { acapInvokeDataSourceMenuAction, acapOpenDataSourceResult } from '@mlightcad/cad-simple-viewer'
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
 
-const source = myDataSourceManager.get('onedrive') // or the built-in 'local' / 'url'
-const file = await acapInvokeDataSourceMenuAction(source, menuItem)
-if (file) {
-  await acapOpenDataSourceResult(file, openOptions)
-}
+const session = acuiCreateFileOpenSession({
+  host,
+  createDocManager: async () => {
+    const { AcApDocManager } = await import('@mlightcad/cad-simple-viewer')
+    if (!AcApDocManager.tryGetInstance()) {
+      AcApDocManager.createInstance({ container /* … */ })
+    }
+    return AcApDocManager.instance
+  }
+})
+session.registerSource(oneDriveSource)
 ```
 
-**用户手势陷阱**（摘自 `cad-simple-viewer-demo/src/main.ts`）：如果点击处理器必须先 `await` 查看器初始化，然后才执行 `pick` 操作，用户手势就会丢失，弹窗会被拦截。要么在已初始化时同步执行操作，要么为 `pick` 项显示*请先登录，然后打开*的提示（参见示例应用中的 `handleDataSourceMenuAction`）。
+当你自己的落地页 UI 直接调用数据源时，在落地页 manager 上使用 `acapInvokeDataSourceMenuAction`，并仅在查看器存在后再打开返回的文件。
+
+**用户手势陷阱**：如果点击处理器必须先 `await` 查看器初始化，然后才执行 `pick` 操作，用户手势就会丢失，弹窗会被拦截。请优先在落地页登录（无需 DocManager），再选取 — `AcUiFileOpenLanding` 已将这些手势分开。
 
 ---
 
@@ -419,7 +429,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | 立即注册辅助函数（校验 `clientId`） |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | 插件实例的异步工厂函数 |
 
-示例应用通过环境配置将其接入（`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`）：当设置了 `VITE_MSAL_CLIENT_ID` 时，`registerOneDriveFromEnv` 会注册该插件；落地页面板通过 `AcUiFileOpenPanel` 的 `extraMenuItems` 列出*Sign in to OneDrive*项。
+示例应用通过环境配置将其接入（`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`）：当设置了 `VITE_MSAL_CLIENT_ID` 时，落地页在 `AcUiFileOpenLanding.manager` 上构造 `AcApOneDriveDataSource`（之后 `attachSourcesTo` DocManager）；`registerOneDriveFromEnv` 在插件加载时复用该实例。
 
 **Azure 应用设置**（用于 OneDrive）：在 Microsoft Entra ID 中注册一个 **Single-page application**，添加与你的应用来源匹配的重定向 URI，授予委托的 Graph 权限 `User.Read` + `Files.Read.All`（个人 OneDrive 选择器令牌也涵盖 `OneDrive.ReadOnly`）。
 
@@ -440,6 +450,7 @@ if (file) {
 
 ## 相关文档
 
+- [文件打开面板](./file-open-panel) — `AcUiFileOpenLanding` / `AcUiFileOpenPanel` 与落地页懒加载查看器
 - [插件系统](./plugin-system) — `AcApPlugin`、命令注册、延迟加载
 - [集成 Simple Viewer](./integrate-simple-cad-viewer) — 嵌入 `cad-simple-viewer`
 - [本地化](./localization) — 添加 `main.dataSource.*` 等 i18n 键

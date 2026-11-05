@@ -1,4 +1,4 @@
-import { ML_UI_COMPACT_MAX_WIDTH } from '@mlightcad/cad-simple-viewer'
+import { ML_UI_COMPACT_MAX_WIDTH } from '@mlightcad/cad-simple-viewer/file-open-panel'
 
 const STORAGE_KEY = 'cad-example-file-sidebar-width'
 const DEFAULT_WIDTH = 180

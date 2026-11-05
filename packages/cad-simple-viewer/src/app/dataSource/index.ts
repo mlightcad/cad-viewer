@@ -5,18 +5,18 @@ export type {
   AcApDataSourceFile
 } from './AcApDataSource'
 export {
+  ACAP_LOCAL_DATA_SOURCE_ID,
+  ACAP_URL_DATA_SOURCE_ID
+} from './AcApDataSourceIds'
+export {
   AcApDataSourceManager,
   type AcApDataSourceManagerEvents
 } from './AcApDataSourceManager'
 export {
-  ACAP_LOCAL_DATA_SOURCE_ID,
   AcApLocalDataSource,
   acapPickLocalCadFile
 } from './AcApLocalDataSource'
-export {
-  ACAP_URL_DATA_SOURCE_ID,
-  AcApUrlDataSource
-} from './AcApUrlDataSource'
+export { AcApUrlDataSource } from './AcApUrlDataSource'
 export {
   acapBuildDataSourceMenu,
   acapIsSingleLocalOpen,

@@ -9,6 +9,8 @@ This page explains the **data source plugin** mechanism in `@mlightcad/cad-simpl
 The mechanism lives in `packages/cad-simple-viewer/src/app/dataSource`. A complete reference implementation ships as a separate npm package: `@mlightcad/cad-onedrive-plugin` (`packages/cad-onedrive-plugin`), used by the demo app in `packages/cad-simple-viewer-demo`.
 
 > For **command plugins** (export commands like `cpdf`, `chtml`), see [Plugin System](./plugin-system). A data source plugin *is* an `AcApPlugin` — it just uses `onLoad` to register a data source instead of a command.
+>
+> For the **landing-page file picker UI** (`AcUiFileOpenLanding` / `AcUiFileOpenPanel`) and how to **lazy-load** the full viewer, see [File Open Panel](./file-open-panel).
 
 ---
 
@@ -391,19 +393,27 @@ dsm.on('auth-changed', rebuildOpenMenu)
 
 ### 3. Landing pages (before the viewer exists)
 
-Landing pages often let users pick a file before `AcApDocManager` is created. `AcUiFileOpenPanel` already implements this pattern: pass `onDataSourceAction` and run the item once the viewer is ready. When your own landing UI invokes a source directly, use `acapInvokeDataSourceMenuAction` + `acapOpenDataSourceResult`:
+Landing pages often let users pick a file before `AcApDocManager` is created. Prefer **`acuiCreateFileOpenSession`** from `@mlightcad/cad-simple-viewer/file-open-panel` — it owns the registry, handles cloud sign-in / pick, lazily creates DocManager, attaches sources, and opens the drawing. Full walkthrough: **[File Open Panel](./file-open-panel)**.
 
 ```typescript
-import { acapInvokeDataSourceMenuAction, acapOpenDataSourceResult } from '@mlightcad/cad-simple-viewer'
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
 
-const source = myDataSourceManager.get('onedrive') // or the built-in 'local' / 'url'
-const file = await acapInvokeDataSourceMenuAction(source, menuItem)
-if (file) {
-  await acapOpenDataSourceResult(file, openOptions)
-}
+const session = acuiCreateFileOpenSession({
+  host,
+  createDocManager: async () => {
+    const { AcApDocManager } = await import('@mlightcad/cad-simple-viewer')
+    if (!AcApDocManager.tryGetInstance()) {
+      AcApDocManager.createInstance({ container /* … */ })
+    }
+    return AcApDocManager.instance
+  }
+})
+session.registerSource(oneDriveSource)
 ```
 
-**User-gesture pitfall** (from `cad-simple-viewer-demo/src/main.ts`): if the click handler must first `await` viewer initialization before running a `pick` action, the user gesture is lost and the popup is blocked. Either run the action synchronously when already initialized, or show a *sign in first, then open* hint for `pick` items (see `handleDataSourceMenuAction` in the example app).
+When your own landing UI invokes a source directly, use `acapInvokeDataSourceMenuAction` on the landing manager and open the returned file only after the viewer exists.
+
+**User-gesture pitfall**: if the click handler must first `await` viewer initialization before running a `pick` action, the user gesture is lost and the popup is blocked. Prefer signing in on the landing page (no DocManager required), then picking — `AcUiFileOpenLanding` already separates those gestures.
 
 ---
 
@@ -419,7 +429,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | Eager registration helper (validates `clientId`) |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | Async factory for the plugin instance |
 
-The example app wires it up via env config (`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`): when `VITE_MSAL_CLIENT_ID` is set, `registerOneDriveFromEnv` registers the plugin; the landing panel lists a *Sign in to OneDrive* item through `AcUiFileOpenPanel`'s `extraMenuItems`.
+The example app wires it up via env config (`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`): when `VITE_MSAL_CLIENT_ID` is set, the landing page constructs `AcApOneDriveDataSource` on `AcUiFileOpenLanding.manager` (and later `attachSourcesTo` DocManager); `registerOneDriveFromEnv` reuses that instance when the plugin loads.
 
 **Azure app setup** (for OneDrive): register a **Single-page application** in Microsoft Entra ID, add a redirect URI matching your app origin, grant delegated Graph permissions `User.Read` + `Files.Read.All` (personal OneDrive picker tokens also cover `OneDrive.ReadOnly`).
 
@@ -440,6 +450,7 @@ The example app wires it up via env config (`packages/cad-simple-viewer-demo/src
 
 ## Related documentation
 
+- [File Open Panel](./file-open-panel) — `AcUiFileOpenLanding` / `AcUiFileOpenPanel` and lazy-loading the viewer on landing pages
 - [Plugin System](./plugin-system) — `AcApPlugin`, command registration, lazy loading
 - [Integrate Simple Viewer](./integrate-simple-cad-viewer) — embedding `cad-simple-viewer`
 - [Localization](./localization) — adding i18n keys such as `main.dataSource.*`

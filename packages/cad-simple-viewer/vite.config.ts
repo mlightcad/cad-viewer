@@ -1,3 +1,4 @@
+import { resolve } from 'path'
 import peerDepsExternal from 'rollup-plugin-peer-deps-external'
 import { defineConfig, PluginOption } from 'vite'
 import { viteStaticCopy } from 'vite-plugin-static-copy'
@@ -14,13 +15,18 @@ export default defineConfig({
     outDir: 'dist',
     emptyOutDir: true,
     lib: {
-      entry: 'src/index.ts',
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        'file-open-panel': resolve(__dirname, 'src/file-open-panel.ts')
+      },
       name: packageId,
-      fileName: format => createLibEntryFileName(packageId, format)
+      fileName: (format, entryName) =>
+        createLibEntryFileName(packageId, format, entryName)
     },
     minify: true,
     rollupOptions: {
       output: {
+        // Keep the light landing entry out of the fat viewer chunk graph.
         chunkFileNames: `${packageId}-[name]-[hash].js`
       }
     }

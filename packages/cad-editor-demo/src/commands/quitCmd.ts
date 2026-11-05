@@ -10,6 +10,5 @@ export class AcApQuitCmd extends AcEdCommand {
     store.selectedFile = null
     store.selectedUrl = null
     store.isNewDrawing = false
-    store.pendingDataSourceAction = null
   }
 }

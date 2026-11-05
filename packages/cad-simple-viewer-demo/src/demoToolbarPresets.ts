@@ -1,14 +1,16 @@
 import type {
   AcApSimpleUiPlugin,
-  AcUiToolbarItemsInput,
-  AcUiToolbarLayoutPreset
+  AcUiToolbarItemsInput
 } from '@mlightcad/cad-simple-ui-plugin'
 import {
   acuiCreateToolbarLayoutSwitcher,
   acuiCreateToolbarSeparator,
   acuiToolbarPreset
 } from '@mlightcad/cad-simple-ui-plugin'
-import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
+
+import { DEMO_TOOLBAR_LAYOUTS } from './demoToolbarLayouts'
+
+export { DEMO_TOOLBAR_LAYOUTS } from './demoToolbarLayouts'
 
 const ICON_DEMO_INFO =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="currentColor" d="M9 9h2v5H9zm0-3h2v2H9z"/></svg>'
@@ -17,14 +19,6 @@ const ICON_DEMO_ZOOM =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M13 13l4 4"/></svg>'
 
 let demoCustomToolsVisible = true
-
-/** Selectable demo toolbar layouts (full `items` definitions, not appendItems). */
-export const DEMO_TOOLBAR_LAYOUTS: AcUiToolbarLayoutPreset[] = [
-  { id: 'default', label: 'Built-in default' },
-  { id: 'minimal', label: 'Minimal view tools' },
-  { id: 'draw', label: 'Draw tools' },
-  { id: 'custom', label: 'Custom actions demo' }
-]
 
 /** Full toolbar `items` for each demo layout preset. */
 export const DEMO_TOOLBAR_PRESET_ITEMS: Record<string, AcUiToolbarItemsInput> =
@@ -104,8 +98,10 @@ export const DEMO_TOOLBAR_PRESET_ITEMS: Record<string, AcUiToolbarItemsInput> =
         label: 'Layer Count',
         icon: ICON_DEMO_INFO,
         requiresDocument: true,
-        disabled: () => !AcApDocManager.instance.curDocument,
-        action: () => {
+        action: async () => {
+          const { AcApDocManager } = await import(
+            '@mlightcad/cad-simple-viewer'
+          )
           const doc = AcApDocManager.instance.curDocument
           const count = doc?.layerStore.getLayers().length ?? 0
           window.alert(`Layer count: ${count}`)
@@ -137,7 +133,7 @@ export function applyDemoToolbarLayout(
   }
 
   const layoutSwitcher = acuiCreateToolbarLayoutSwitcher({
-    presets: DEMO_TOOLBAR_LAYOUTS,
+    presets: [...DEMO_TOOLBAR_LAYOUTS],
     currentId: presetId,
     onSelect: id => applyDemoToolbarLayout(plugin, id)
   })

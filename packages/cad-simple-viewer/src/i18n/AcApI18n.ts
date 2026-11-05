@@ -1,6 +1,16 @@
 import { AcCmEventManager } from '@mlightcad/data-model'
 
-import { AcEdCommandStack } from '../editor/command/AcEdCommandStack'
+/**
+ * Must stay aligned with {@link AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME}.
+ * Kept as a literal so {@link AcApI18n} stays free of the command stack graph
+ * (used by the lightweight `@mlightcad/cad-simple-viewer/file-open-panel` entry).
+ */
+const SYSTEM_COMMAND_GROUP_NAME = 'ACAD'
+
+/**
+ * Must stay aligned with {@link AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME}.
+ */
+const DEFAULT_COMMAND_GROUP_NAME = 'USER'
 
 /**
  * Language/locale id used in the application.
@@ -230,18 +240,14 @@ export class AcApI18n {
    * @returns localized string
    */
   public static sysCmd(cmdName: string, key: string): string {
-    return this.cmd(AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME, cmdName, key)
+    return this.cmd(SYSTEM_COMMAND_GROUP_NAME, cmdName, key)
   }
 
   /**
    * Build the localization key for a system-group command message entry.
    */
   public static sysCmdKey(cmdName: string, key: string): string {
-    return this.cmdKey(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      cmdName,
-      key
-    )
+    return this.cmdKey(SYSTEM_COMMAND_GROUP_NAME, cmdName, key)
   }
 
   /**
@@ -252,14 +258,14 @@ export class AcApI18n {
    * @returns localized string
    */
   public static userCmd(cmdName: string, key: string): string {
-    return this.cmd(AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME, cmdName, key)
+    return this.cmd(DEFAULT_COMMAND_GROUP_NAME, cmdName, key)
   }
 
   /**
    * Build the localization key for a user-group command message entry.
    */
   public static userCmdKey(cmdName: string, key: string): string {
-    return this.cmdKey(AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME, cmdName, key)
+    return this.cmdKey(DEFAULT_COMMAND_GROUP_NAME, cmdName, key)
   }
 
   /**
@@ -268,10 +274,7 @@ export class AcApI18n {
    * @returns - The localized command description
    */
   public static sysCmdDescription(name: string) {
-    return this.cmdDescription(
-      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
-      name
-    )
+    return this.cmdDescription(SYSTEM_COMMAND_GROUP_NAME, name)
   }
 
   /**
@@ -280,7 +283,7 @@ export class AcApI18n {
    * @returns - The localized command description
    */
   public static userCmdDescription = (name: string) => {
-    return this.cmdDescription(AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME, name)
+    return this.cmdDescription(DEFAULT_COMMAND_GROUP_NAME, name)
   }
 
   /**
@@ -289,7 +292,7 @@ export class AcApI18n {
    * @returns - The localized command prompt message
    */
   public static sysCmdPrompt(name: string) {
-    return this.cmdPrompt(AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME, name)
+    return this.cmdPrompt(SYSTEM_COMMAND_GROUP_NAME, name)
   }
 
   /**
@@ -298,7 +301,7 @@ export class AcApI18n {
    * @returns - The localized command prompt message
    */
   public static userCmdPrompt = (name: string) => {
-    return this.cmdPrompt(AcEdCommandStack.DEFAUT_COMMAND_GROUP_NAME, name)
+    return this.cmdPrompt(DEFAULT_COMMAND_GROUP_NAME, name)
   }
 }
 

@@ -6,6 +6,18 @@ title: "Upgrading cad-simple-viewer and cad-editor"
 
 This guide explains how to safely upgrade `@mlightcad/cad-simple-viewer` and`@mlightcad/cad-editor` — why they cannot be bumped in isolation, which related packages must move together, and two reliable ways to determine the correct compatible version set for any given release.
 
+::: info Lightweight file-open landing entry
+Starting with **1.8.0**, `@mlightcad/cad-simple-viewer` exposes a DocManager-free subpath for landing pages. Prefer **`acuiCreateFileOpenSession`** (lazy `createDocManager` + auto open / `attachSourcesTo`). Use `AcUiFileOpenLanding` when you open drawings yourself (e.g. Vue `MlCadViewer`):
+
+```ts
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
+```
+
+Use this on the home / file-picker screen so the full viewer stays lazy until a drawing opens. The Vue editor counterpart is `@mlightcad/cad-editor/locale` for i18n without mounting `MlCadViewer`.
+
+Full walkthrough: [File Open Panel](./file-open-panel). Cloud source contracts: [Data Source Plugin](./data-source-plugin).
+:::
+
 ::: warning Package renamed: `@mlightcad/cad-viewer` → `@mlightcad/cad-editor`
 Starting with **1.8.0**, the package previously published as `@mlightcad/cad-viewer` is now `@mlightcad/cad-editor`, so that its name matches what it actually does.
 

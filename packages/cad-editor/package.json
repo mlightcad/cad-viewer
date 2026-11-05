@@ -26,11 +26,17 @@
     ".": {
       "types": "./dist/cad-editor.d.ts",
       "import": "./dist/cad-editor.js"
+    },
+    "./locale": {
+      "types": "./src/locale/i18n.ts",
+      "import": "./src/locale/i18n.ts",
+      "default": "./src/locale/i18n.ts"
     }
   },
   "files": [
     "dist",
     "lib",
+    "src/locale",
     "README.md",
     "package.json"
   ],

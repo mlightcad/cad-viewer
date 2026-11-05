@@ -164,6 +164,10 @@ function developmentSidebar(prefix: string, labels: Record<string, string>) {
         {
           text: labels.dataSourcePlugin,
           link: `${prefix}/development/data-source-plugin`
+        },
+        {
+          text: labels.fileOpenPanel,
+          link: `${prefix}/development/file-open-panel`
         }
       ]
     },
@@ -407,6 +411,7 @@ export default withMermaid({
               pluginSystem: '插件系统',
               builtInPlugins: '内置插件',
               dataSourcePlugin: '数据源插件',
+              fileOpenPanel: '文件打开面板',
               debugging: '多仓库联合调试',
               tianzheng: '支持天正 DWG 图纸',
               cloudViewer: '构建云端 DWG Web 查看器',
@@ -491,6 +496,7 @@ export default withMermaid({
               pluginSystem: 'Plugin System',
               builtInPlugins: 'Built-in Plugins',
               dataSourcePlugin: 'Data Source Plugin',
+              fileOpenPanel: 'File Open Panel',
               debugging: 'Debugging with Multiple Repo Changes',
               tianzheng: 'Supporting Tianzheng DWG Drawings',
               cloudViewer: 'Build a Cloud DWG Web Viewer',
@@ -575,6 +581,7 @@ export default withMermaid({
               pluginSystem: 'プラグインシステム',
               builtInPlugins: '組み込みプラグイン',
               dataSourcePlugin: 'データソースプラグイン',
+              fileOpenPanel: 'ファイルオープンパネル',
               debugging: '複数リポジトリでのデバッグ',
               tianzheng: '天正 DWG 図面のサポート',
               cloudViewer: 'クラウド DWG Web ビューアの構築',
@@ -659,6 +666,7 @@ export default withMermaid({
               pluginSystem: '플러그인 시스템',
               builtInPlugins: '내장 플러그인',
               dataSourcePlugin: '데이터 소스 플러그인',
+              fileOpenPanel: '파일 열기 패널',
               debugging: '다중 저장소 디버깅',
               tianzheng: '톈정(Tianzheng) DWG 도면 지원',
               cloudViewer: '클라우드 DWG 웹 뷰어 구축',
@@ -744,6 +752,7 @@ export default withMermaid({
               pluginSystem: 'نظام الإضافات',
               builtInPlugins: 'الإضافات المدمجة',
               dataSourcePlugin: 'إضافة مصدر البيانات',
+              fileOpenPanel: 'لوحة فتح الملفات',
               debugging: 'تصحيح الأخطاء مع تغييرات متعددة للمستودعات',
               tianzheng: 'دعم رسومات Tianzheng DWG',
               cloudViewer: 'إنشاء عارض ويب سحابي لملفات DWG',
@@ -829,6 +838,7 @@ export default withMermaid({
               pluginSystem: 'Systém pluginů',
               builtInPlugins: 'Vestavěné pluginy',
               dataSourcePlugin: 'Plugin datového zdroje',
+              fileOpenPanel: 'Panel pro otevření souboru',
               debugging: 'Ladění se změnami ve více repozitářích',
               tianzheng: 'Podpora výkresů Tianzheng DWG',
               cloudViewer: 'Vytvoření cloudového webového prohlížeče DWG',
@@ -915,6 +925,7 @@ export default withMermaid({
               pluginSystem: 'Eklenti Sistemi',
               builtInPlugins: 'Yerleşik Eklentiler',
               dataSourcePlugin: 'Veri Kaynağı Eklentisi',
+              fileOpenPanel: 'Dosya Açma Paneli',
               debugging: 'Birden Fazla Depo Değişikliğiyle Hata Ayıklama',
               tianzheng: 'Tianzheng DWG Çizimlerini Destekleme',
               cloudViewer: 'Bulut DWG Web Görüntüleyici Oluşturma',

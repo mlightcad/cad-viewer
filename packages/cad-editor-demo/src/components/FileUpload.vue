@@ -302,11 +302,13 @@
 <script setup lang="ts">
 import { UploadFilled } from '@element-plus/icons-vue'
 import {
-  type AcApDataSource,
-  type AcApDataSourceMenuItem,
+  AcApDataSourceManager,
   AcApOpenViewMode,
   AcEdOpenMode,
-  AcUiFileOpenPanel} from '@mlightcad/cad-simple-viewer'
+  type AcEdUiTheme,
+  AcUiFileOpenLanding,
+  type AcUiFileOpenRequest
+} from '@mlightcad/cad-simple-viewer/file-open-panel'
 import {
   ACDB_DRAW_CIRCLE_SIDES_DRAFT,
   ACDB_DRAW_CIRCLE_SIDES_HIGH,
@@ -351,31 +353,22 @@ interface Props {
     paperSpaceBackground: number,
     disableExport: boolean
   ) => void
-  onDataSourceAction?: (
-    item: AcApDataSourceMenuItem,
-    mode: AcEdOpenMode,
-    useMainThreadDraw: boolean,
-    drawNoPlotLayers: boolean,
-    progressiveRendering: boolean,
-    openViewMode: AcApOpenViewMode | undefined,
-    circleSides: number,
-    paperSpaceBackground: number,
-    disableExport: boolean
-  ) => void
   /**
-   * Cloud {@link AcApDataSource} instances for the landing open panel
-   * (before DocManager exists). Provider-agnostic.
+   * Shared landing registry (owned by the parent so it outlives this screen
+   * and can be attached to DocManager after the viewer mounts).
    */
-  getCloudSources?: () => AcApDataSource[]
-  /** Bump when landing cloud source auth/registry changes. */
-  cloudSourcesEpoch?: number
+  landingManager: AcApDataSourceManager
+  /**
+   * File-open card theme. Omit to follow the document / host theme.
+   */
+  theme?: AcEdUiTheme
 }
 
 const props = defineProps<Props>()
 const { t } = useI18n({ useScope: 'global' })
 
 const fileOpenHost = ref<HTMLElement | null>(null)
-let fileOpenPanel: AcUiFileOpenPanel | null = null
+let fileOpenLanding: AcUiFileOpenLanding | null = null
 
 const emitOpenOptions = () =>
   [
@@ -389,33 +382,35 @@ const emitOpenOptions = () =>
     disableExport.value
   ] as const
 
-const mountFileOpenPanel = () => {
-  if (!fileOpenHost.value || fileOpenPanel) return
-  fileOpenPanel = new AcUiFileOpenPanel({
+const handleLandingOpen = (request: AcUiFileOpenRequest) => {
+  const options = emitOpenOptions()
+  if (request.kind === 'file') {
+    if (!isValidFile(request.file)) return
+    props.onFileSelect(request.file, ...options)
+    return
+  }
+  if (request.kind === 'url') {
+    props.onUrlSelect?.(request.url, ...options)
+    return
+  }
+  props.onNewDrawing?.(...options)
+}
+
+const mountFileOpenLanding = () => {
+  if (!fileOpenHost.value || fileOpenLanding) return
+  fileOpenLanding = new AcUiFileOpenLanding({
     host: fileOpenHost.value,
-    theme: 'light',
+    theme: props.theme,
     showNewDrawing: true,
-    getSources: () => props.getCloudSources?.() ?? [],
-    onLocalFile: file => {
-      if (!isValidFile(file)) return
-      props.onFileSelect(file, ...emitOpenOptions())
-    },
-    onUrl: url => {
-      props.onUrlSelect?.(url, ...emitOpenOptions())
-    },
-    onDataSourceAction: item => {
-      props.onDataSourceAction?.(item, ...emitOpenOptions())
-    },
-    onNewDrawing: () => {
-      props.onNewDrawing?.(...emitOpenOptions())
-    }
+    manager: props.landingManager,
+    onOpen: handleLandingOpen
   })
 }
 
 watch(
-  () => props.cloudSourcesEpoch,
-  () => {
-    fileOpenPanel?.refreshSourceButtons()
+  () => props.theme,
+  theme => {
+    fileOpenLanding?.setTheme(theme)
   }
 )
 
@@ -464,14 +459,14 @@ onMounted(() => {
   mobileMediaQuery = window.matchMedia(MOBILE_MAX_WIDTH)
   syncMobileLayout()
   mobileMediaQuery.addEventListener('change', syncMobileLayout)
-  mountFileOpenPanel()
+  mountFileOpenLanding()
 })
 
 onUnmounted(() => {
   mobileMediaQuery?.removeEventListener('change', syncMobileLayout)
   mobileMediaQuery = null
-  fileOpenPanel?.dispose()
-  fileOpenPanel = null
+  fileOpenLanding?.dispose()
+  fileOpenLanding = null
 })
 
 const openViewModes = computed(() => [
@@ -544,7 +539,7 @@ const isValidFile = (file: File): boolean => {
   justify-content: center;
   width: 100%;
   max-width: 820px;
-  padding: 12px 16px;
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -554,11 +549,11 @@ const isValidFile = (file: File): boolean => {
   grid-template-rows: auto;
   width: 100%;
   border-radius: 14px;
-  background: #ffffff;
-  box-shadow:
-    0 20px 40px rgba(15, 23, 42, 0.16),
-    0 0 0 1px rgba(255, 255, 255, 0.08);
+  background: var(--ml-ui-bg, #1d1e1f);
+  border: 1px solid var(--ml-ui-border, #4c4d4f);
+  box-shadow: var(--ml-ui-shadow, 0 6px 18px rgba(0, 0, 0, 0.35));
   overflow: hidden;
+  color: var(--ml-ui-text, #e5eaf3);
 }
 
 .upload-main {
@@ -583,9 +578,10 @@ const isValidFile = (file: File): boolean => {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #667eea 0%, #5b6fd6 100%);
+  background: var(--ml-ui-accent, #409eff);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.28);
+  box-shadow: 0 4px 12px
+    color-mix(in srgb, var(--ml-ui-accent, #409eff) 35%, transparent);
 }
 
 .upload-hero-text {
@@ -597,14 +593,14 @@ const isValidFile = (file: File): boolean => {
   font-size: 17px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: #0f172a;
+  color: var(--ml-ui-text, #e5eaf3);
   line-height: 1.25;
 }
 
 .upload-subtitle {
   margin: 2px 0 0;
   font-size: 12px;
-  color: #64748b;
+  color: var(--ml-ui-text-muted, #cfd3dc);
   line-height: 1.35;
 }
 
@@ -612,9 +608,14 @@ const isValidFile = (file: File): boolean => {
   margin: 12px 0 0;
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid #fde68a;
-  background: #fffbeb;
-  color: #92400e;
+  border: 1px solid
+    color-mix(in srgb, var(--ml-ui-accent, #409eff) 35%, var(--ml-ui-border, #4c4d4f));
+  background: color-mix(
+    in srgb,
+    var(--ml-ui-accent, #409eff) 12%,
+    var(--ml-ui-bg-fill, #262727)
+  );
+  color: var(--ml-ui-text-muted, #cfd3dc);
   font-size: 11px;
   line-height: 1.45;
 }
@@ -638,8 +639,8 @@ const isValidFile = (file: File): boolean => {
   flex-direction: column;
   justify-content: center;
   padding: 18px 20px;
-  background: #f8fafc;
-  border-left: 1px solid #e8edf5;
+  background: var(--ml-ui-bg-fill, #262727);
+  border-left: 1px solid var(--ml-ui-border, #4c4d4f);
 }
 
 .settings-header {
@@ -654,20 +655,21 @@ const isValidFile = (file: File): boolean => {
   background: transparent;
   text-align: left;
   cursor: default;
+  color: inherit;
 }
 
 .settings-title {
   margin: 0;
   font-size: 12px;
   font-weight: 600;
-  color: #334155;
+  color: var(--ml-ui-text, #e5eaf3);
 }
 
 .settings-chevron {
   display: none;
   flex-shrink: 0;
   font-size: 0.65rem;
-  color: #94a3b8;
+  color: var(--ml-ui-text-muted, #cfd3dc);
   line-height: 1;
   transition: transform 0.2s ease;
 }
@@ -708,15 +710,15 @@ const isValidFile = (file: File): boolean => {
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--ml-ui-text-muted, #cfd3dc);
 }
 
 .pill-segment {
   display: flex;
   gap: 0;
-  border: 1.5px solid #e2e8f0;
+  border: 1.5px solid var(--ml-ui-border, #4c4d4f);
   border-radius: 7px;
-  background: #ffffff;
+  background: var(--ml-ui-bg, #1d1e1f);
   overflow: hidden;
 }
 
@@ -727,7 +729,7 @@ const isValidFile = (file: File): boolean => {
   background: transparent;
   font-size: 11px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--ml-ui-text-muted, #cfd3dc);
   cursor: pointer;
   text-align: center;
   white-space: nowrap;
@@ -737,24 +739,31 @@ const isValidFile = (file: File): boolean => {
 }
 
 .pill-option:not(:last-child) {
-  border-right: 1px solid #e2e8f0;
+  border-right: 1px solid var(--ml-ui-border, #4c4d4f);
 }
 
 .pill-option:hover:not(.is-active) {
-  background: #f8fafc;
-  color: #475569;
+  background: color-mix(
+    in srgb,
+    var(--ml-ui-accent, #409eff) 8%,
+    transparent
+  );
+  color: var(--ml-ui-text, #e5eaf3);
 }
 
 .pill-option.is-active {
-  background: #f1f5ff;
-  color: #4f5fd0;
+  background: color-mix(
+    in srgb,
+    var(--ml-ui-accent, #409eff) 18%,
+    transparent
+  );
+  color: var(--ml-ui-accent, #409eff);
 }
 
 /* Narrow viewports: stack upload + settings as two vertical rows */
 @media (max-width: 768px) {
   .file-upload-container {
     max-width: 100%;
-    padding: 12px;
   }
 
   .upload-panel {
@@ -764,7 +773,7 @@ const isValidFile = (file: File): boolean => {
 
   .settings-section {
     border-left: none;
-    border-top: 1px solid #e8edf5;
+    border-top: 1px solid var(--ml-ui-border, #4c4d4f);
     padding-top: 12px;
     padding-bottom: 12px;
   }

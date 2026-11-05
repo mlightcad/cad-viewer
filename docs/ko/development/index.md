@@ -27,6 +27,7 @@ title: "개발 가이드"
 - [플러그인 시스템](./plugin-system)
 - [내장 플러그인](./built-in-plugins)
 - [데이터 소스 플러그인](./data-source-plugin)
+- [파일 열기 패널(랜딩 UI)](./file-open-panel)
 - [다중 저장소 디버깅](./debugging-with-multiple-repo-changes)
 - [톈정(Tianzheng) DWG 도면 지원](./supporting-tianzheng-dwg-drawings)
 - [클라우드 DWG 웹 뷰어 구축(사전 렌더링 + 정적 호스팅)](./cloud-dwg-web-viewer)

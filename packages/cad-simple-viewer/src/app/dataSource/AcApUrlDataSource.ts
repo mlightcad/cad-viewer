@@ -5,9 +5,9 @@ import type {
   AcApDataSourceAuthState,
   AcApDataSourceFile
 } from './AcApDataSource'
+import { ACAP_URL_DATA_SOURCE_ID } from './AcApDataSourceIds'
 
-/** Built-in URL data source id. */
-export const ACAP_URL_DATA_SOURCE_ID = 'url'
+export { ACAP_URL_DATA_SOURCE_ID } from './AcApDataSourceIds'
 
 /**
  * Compact dialog that asks the user for a drawing file URL.

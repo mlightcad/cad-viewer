@@ -27,6 +27,7 @@ title: "開発ガイド"
 - [プラグインシステム](./plugin-system)
 - [組み込みプラグイン](./built-in-plugins)
 - [データソースプラグイン](./data-source-plugin)
+- [ファイルを開くパネル（ランディング UI）](./file-open-panel)
 - [複数リポジトリでのデバッグ](./debugging-with-multiple-repo-changes)
 - [天正 DWG 図面のサポート](./supporting-tianzheng-dwg-drawings)
 - [クラウド DWG Web ビューアの構築（プリレンダリング + 静的ホスティング）](./cloud-dwg-web-viewer)

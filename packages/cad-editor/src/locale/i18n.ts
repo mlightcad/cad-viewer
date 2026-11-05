@@ -1,4 +1,7 @@
-import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApI18n,
+  type AcApLocale
+} from '@mlightcad/cad-simple-viewer/file-open-panel'
 import { AcDbEntity } from '@mlightcad/data-model'
 import { createI18n } from 'vue-i18n'
 

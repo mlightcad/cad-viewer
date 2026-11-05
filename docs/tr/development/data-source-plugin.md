@@ -9,6 +9,8 @@ Bu sayfa, `@mlightcad/cad-simple-viewer` içindeki **veri kaynağı eklentisi** 
 Mekanizma `packages/cad-simple-viewer/src/app/dataSource` içinde yer alır. Tam bir başvuru uygulaması ayrı bir npm paketi olarak sunulur: `@mlightcad/cad-onedrive-plugin` (`packages/cad-onedrive-plugin`); `packages/cad-simple-viewer-demo` içindeki demo uygulaması tarafından kullanılır.
 
 > **Komut eklentileri** (`cpdf`, `chtml` gibi dışa aktarma komutları) için [Eklenti Sistemi](./plugin-system) sayfasına bakın. Bir veri kaynağı eklentisi *de* bir `AcApPlugin`'tir — yalnızca komut yerine `onLoad` ile bir veri kaynağı kaydeder.
+>
+> **Açılış sayfası dosya seçici UI** (`AcUiFileOpenLanding` / `AcUiFileOpenPanel`) ve tam görüntüleyicinin **tembel yüklenmesi** için [Dosya Açma Paneli](./file-open-panel) sayfasına bakın.
 
 ---
 
@@ -391,19 +393,27 @@ dsm.on('auth-changed', rebuildOpenMenu)
 
 ### 3. Açılış sayfaları (görüntüleyici var olmadan önce)
 
-Açılış sayfaları genellikle kullanıcıların `AcApDocManager` oluşturulmadan önce bir dosya seçmesine izin verir. `AcUiFileOpenPanel` bu deseni zaten uygular: `onDataSourceAction` geçirin ve görüntüleyici hazır olduğunda öğeyi çalıştırın. Kendi açılış arayüzünüz bir kaynağı doğrudan çağırdığında `acapInvokeDataSourceMenuAction` + `acapOpenDataSourceResult` kullanın:
+Açılış sayfaları genellikle kullanıcıların `AcApDocManager` oluşturulmadan önce bir dosya seçmesine izin verir. `@mlightcad/cad-simple-viewer/file-open-panel` içindeki **`acuiCreateFileOpenSession`** tercih edin — kaydı sahiplenir, bulut oturum açma / seçimi yönetir, DocManager'ı tembel oluşturur, kaynakları ekler ve çizimi açar. Tam anlatım: **[Dosya Açma Paneli](./file-open-panel)**.
 
 ```typescript
-import { acapInvokeDataSourceMenuAction, acapOpenDataSourceResult } from '@mlightcad/cad-simple-viewer'
+import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-open-panel'
 
-const source = myDataSourceManager.get('onedrive') // or the built-in 'local' / 'url'
-const file = await acapInvokeDataSourceMenuAction(source, menuItem)
-if (file) {
-  await acapOpenDataSourceResult(file, openOptions)
-}
+const session = acuiCreateFileOpenSession({
+  host,
+  createDocManager: async () => {
+    const { AcApDocManager } = await import('@mlightcad/cad-simple-viewer')
+    if (!AcApDocManager.tryGetInstance()) {
+      AcApDocManager.createInstance({ container /* … */ })
+    }
+    return AcApDocManager.instance
+  }
+})
+session.registerSource(oneDriveSource)
 ```
 
-**Kullanıcı hareketi tuzağı** (`cad-simple-viewer-demo/src/main.ts` dosyasından): tıklama işleyicisinin bir `pick` eylemini çalıştırmadan önce görüntüleyici başlatmayı `await` ile beklemesi gerekiyorsa, kullanıcı hareketi kaybolur ve açılır pencere engellenir. Ya zaten başlatılmışsa eylemi eşzamanlı olarak çalıştırın ya da `pick` öğeleri için *önce oturum aç, sonra aç* ipucu gösterin (örnek uygulamadaki `handleDataSourceMenuAction` fonksiyonuna bakın).
+Kendi açılış arayüzünüz bir kaynağı doğrudan çağırdığında, açılış yöneticisinde `acapInvokeDataSourceMenuAction` kullanın ve dönen dosyayı yalnızca görüntüleyici varken açın.
+
+**Kullanıcı hareketi tuzağı**: tıklama işleyicisi bir `pick` eyleminden önce görüntüleyici başlatmayı `await` etmek zorundaysa hareket kaybolur ve açılır pencere engellenir. DocManager olmadan landing'de oturum açıp sonra seçmeyi tercih edin — `AcUiFileOpenLanding` bu hareketleri zaten ayırır.
 
 ---
 
@@ -419,7 +429,7 @@ if (file) {
 | `registerOneDrivePlugin` | `src/register.ts` | Hemen kayıt yardımcısı (`clientId` doğrular) |
 | `createOneDrivePlugin` | `src/createOneDrivePlugin.ts` | Eklenti örneği için asenkron fabrika |
 
-Örnek uygulama bunu ortam yapılandırması aracılığıyla bağlar (`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`): `VITE_MSAL_CLIENT_ID` ayarlandığında `registerOneDriveFromEnv` eklentiyi kaydeder; açılış paneli `AcUiFileOpenPanel`'in `extraMenuItems` özelliği aracılığıyla bir *OneDrive'da oturum aç* öğesi listeler.
+Örnek uygulama bunu ortam yapılandırması aracılığıyla bağlar (`packages/cad-simple-viewer-demo/src/onedriveEnv.ts`): `VITE_MSAL_CLIENT_ID` ayarlandığında landing, `AcUiFileOpenLanding.manager` üzerinde `AcApOneDriveDataSource` oluşturur (sonra DocManager'a `attachSourcesTo`); `registerOneDriveFromEnv` eklenti yüklenirken bu örneği yeniden kullanır.
 
 **Azure uygulama kurulumu** (OneDrive için): Microsoft Entra ID'de bir **Tek sayfalı uygulama** kaydedin, uygulama kaynağınızla eşleşen bir yönlendirme URI'si ekleyin, temsilci Graph izinleri `User.Read` + `Files.Read.All` verin (kişisel OneDrive seçici belirteçleri `OneDrive.ReadOnly` iznini de kapsar).
 
@@ -440,6 +450,7 @@ if (file) {
 
 ## İlgili sayfalar
 
+- [Dosya Açma Paneli](./file-open-panel) — `AcUiFileOpenLanding` / `AcUiFileOpenPanel` ve açılış sayfalarında görüntüleyiciyi tembel yükleme
 - [Eklenti Sistemi](./plugin-system) — `AcApPlugin`, komut kaydı, tembel yükleme
 - [Simple Viewer Entegrasyonu](./integrate-simple-cad-viewer) — `cad-simple-viewer` gömme
 - [Yerelleştirme](./localization) — `main.dataSource.*` gibi i18n anahtarları ekleme

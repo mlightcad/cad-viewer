@@ -39,6 +39,20 @@ Use `cad-simple-viewer` if you need **core CAD logic only** (document management
 npm install @mlightcad/cad-simple-viewer
 ```
 
+## File open landing entry
+
+Landing pages that only need the file picker / data-source registry can import the DocManager-free subpath so the full viewer stays lazy:
+
+```ts
+import {
+  AcUiFileOpenPanel,
+  AcApDataSourceManager,
+  acapInvokeDataSourceMenuAction
+} from '@mlightcad/cad-simple-viewer/file-open-panel'
+```
+
+Pass cloud sources via `manager` / `getSources`. Load `@mlightcad/cad-simple-viewer` (main entry) only when opening a drawing.
+
 ## Usage
 
 Please refer to [cad-simple-viewer-demo](https://github.com/mlight-lee/cad-simple-viewer-demo) on basic usage and advanced usage.
