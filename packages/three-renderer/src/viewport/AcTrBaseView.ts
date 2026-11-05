@@ -6,7 +6,7 @@ import {
   AcGeVector2d
 } from '@mlightcad/data-model'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 import { AcTrEntityPreview } from '../renderer/AcTrEntityPreview'
 import { AcTrRenderer } from '../renderer/AcTrRenderer'
