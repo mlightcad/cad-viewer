@@ -76,6 +76,7 @@ export const zh: Record<string, string> = {
   'layerManager.on': '开',
   'layerManager.color': '颜色',
   'layerManager.currentLayer': '当前图层',
+  'layerManager.searchPlaceholder': '搜索图层',
   'layerManager.zoomToLayer': '已缩放至图层：{layer}',
   'layerManager.sortByNameAsc': '按名称升序排序',
   'layerManager.sortByNameDesc': '按名称降序排序',

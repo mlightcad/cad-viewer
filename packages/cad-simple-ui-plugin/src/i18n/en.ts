@@ -76,6 +76,7 @@ export const en: Record<string, string> = {
   'layerManager.on': 'On',
   'layerManager.color': 'Color',
   'layerManager.currentLayer': 'Current layer',
+  'layerManager.searchPlaceholder': 'Search layers',
   'layerManager.zoomToLayer': 'Zoomed to layer: {layer}',
   'layerManager.sortByNameAsc': 'Sort by name ascending',
   'layerManager.sortByNameDesc': 'Sort by name descending',

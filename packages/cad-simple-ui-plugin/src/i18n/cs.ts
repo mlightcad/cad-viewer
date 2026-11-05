@@ -76,6 +76,7 @@ export const cs: Record<string, string> = {
   'layerManager.on': 'Zapnuto',
   'layerManager.color': 'Barva',
   'layerManager.currentLayer': 'Aktuální hladina',
+  'layerManager.searchPlaceholder': 'Hledat hladiny',
   'layerManager.zoomToLayer': 'Přiblíženo na hladinu: {layer}',
   'layerManager.sortByNameAsc': 'Řadit podle názvu vzestupně',
   'layerManager.sortByNameDesc': 'Řadit podle názvu sestupně',
