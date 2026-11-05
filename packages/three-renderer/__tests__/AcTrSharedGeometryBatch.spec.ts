@@ -10,7 +10,10 @@ import {
 import { AcTrSharedGeometryBatch } from '../src/batch/AcTrSharedGeometryBatch'
 import { AcTrEntity } from '../src/object/AcTrEntity'
 import { AcTrRenderContext } from '../src/renderer/AcTrRenderContext'
-import { getSceneDrawableUserData } from '../src/util/AcTrObjectUserData'
+import {
+  getHighlightUserData,
+  getSceneDrawableUserData
+} from '../src/util/AcTrObjectUserData'
 
 function createSharedLine(offsetY: number, material: THREE.LineBasicMaterial) {
   const geometry = new THREE.BufferGeometry()
@@ -132,6 +135,8 @@ describe('AcTrBatchedGroup shared block geometry', () => {
     expect(overlays).toHaveLength(1)
     expect(overlays[0].geometry).not.toBe(sharedGeometry)
     expect(overlays[0].material).not.toBe(instanced.material)
+    expect(getHighlightUserData(overlays[0]).transientHighlight).toBe(true)
+    expect(getHighlightUserData(overlays[0]).objectId).toBe('insert-a')
     // The overlay draws on top (renderOrder 10000) of the instanced base line
     // it tints. It must not depth-test or write depth against that line, or
     // per-instance float32 rounding of the origin-relative matrix can push the

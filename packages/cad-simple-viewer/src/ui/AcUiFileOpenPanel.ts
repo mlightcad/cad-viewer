@@ -114,7 +114,7 @@ type SourceOption = {
  * palette, and {@link AcUiFileOpenPanelOptions.cardSize} for width/height.
  */
 export class AcUiFileOpenPanel {
-  public static readonly styleId = 'ml-ui-file-open-panel-styles-v3'
+  public static readonly styleId = 'ml-ui-file-open-panel-styles-v4'
 
   private readonly options: AcUiFileOpenPanelOptions
   private readonly root: HTMLDivElement
@@ -844,7 +844,8 @@ export class AcUiFileOpenPanel {
   padding: 16px;
   box-sizing: border-box;
   border: 1.5px dashed transparent;
-  border-radius: 0;
+  /* Match the card's top corners so the hover dashed border isn't clipped. */
+  border-radius: 12px 12px 0 0;
   background: transparent;
   cursor: pointer;
   outline: none;

@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 
 import { AcTrMeshGlyphWorldBatch } from '../src/batch/AcTrMeshGlyphWorldBatch'
+import { getHighlightUserData } from '../src/util/AcTrObjectUserData'
 
 describe('AcTrMeshGlyphWorldBatch layout owner', () => {
   it('parents the same layer under different layout owners', () => {
@@ -136,6 +137,8 @@ describe('AcTrMeshGlyphWorldBatch large-coordinate precision', () => {
       }
     })
     expect(overlays).toHaveLength(2)
+    expect(getHighlightUserData(overlays[0]).transientHighlight).toBe(true)
+    expect(getHighlightUserData(overlays[0]).objectId).toBe('A')
     expect(Math.abs(overlays[0].matrixWorld.elements[12] - x0)).toBeLessThan(
       1e-3
     )
