@@ -47,7 +47,16 @@ export async function exportFileToPdf(
   // Hatch / entity conversion falls back to the host working database before
   // entities are bound — set it explicitly for Node (no viewer DocManager).
   return withWorkingDatabase(database, async () => {
-    await database.read(buffer, { fileName: basename(inputPath) }, fileType)
+    // Match AcApDocManager / cad-editor: omit no-plot layers so PDF matches
+    // what the viewer shows and what AutoCAD plots (not editor-screen extras).
+    await database.read(
+      buffer,
+      {
+        fileName: basename(inputPath),
+        drawNoPlotLayers: options.drawNoPlotLayers === true
+      },
+      fileType
+    )
     const readMs = performance.now() - tRead
 
     const title = options.title ?? basename(inputPath).replace(/\.[^.]+$/, '')

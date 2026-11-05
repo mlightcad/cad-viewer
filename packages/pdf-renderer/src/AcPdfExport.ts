@@ -15,6 +15,11 @@ import { AcPdfOcgManager } from './pdf/AcPdfOcgManager'
 import { AcPdfEntity } from './renderer/AcPdfEntity'
 import { AcPdfRenderer } from './renderer/AcPdfRenderer'
 import {
+  acPdfApplyLayerVisibility,
+  acPdfCollectDatabaseLayerVisibility,
+  acPdfIsLayerClosed
+} from './viewport/AcPdfLayerVisibility'
+import {
   buildViewportModelContent,
   collectBlockRoots,
   collectModelSpaceRoots,
@@ -204,11 +209,19 @@ async function collectLayoutRoots(
   // Paper-space INSERTs hit the same async-clone race as model space; use
   // the two-pass collector so block text is filled before INSERT clones.
   const paperRoots = await collectBlockRoots(block, renderer)
+  const layerVisibility = acPdfCollectDatabaseLayerVisibility(db)
+  // Model roots already apply Off/Frozen in collectModelSpaceRoots; paper
+  // annotations need the same pass so closed layers stay closed.
+  acPdfApplyLayerVisibility(paperRoots, layerVisibility)
 
   const viewportContents: AcPdfEntity[] = []
   if (viewportEntities.length > 0) {
     const modelRoots = await getModelRoots(db, renderer, modelCache)
     for (const viewport of viewportEntities) {
+      // AutoCAD: Off/Frozen viewport layer hides border and model content.
+      if (acPdfIsLayerClosed(viewport.layer, layerVisibility)) {
+        continue
+      }
       const built = buildViewportModelContent(
         viewport,
         () => modelRoots,
@@ -217,6 +230,8 @@ async function collectLayoutRoots(
       if (built) {
         viewportContents.push(built.content)
         if (built.border) {
+          // Borders are created after the paperRoots visibility pass.
+          acPdfApplyLayerVisibility([built.border], layerVisibility)
           paperRoots.push(built.border)
         }
       }

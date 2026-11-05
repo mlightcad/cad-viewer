@@ -55,14 +55,42 @@ interface PendingDraw {
 const ASYNC_DRAW_CONCURRENCY = Math.max(8, Math.min(32, availableParallelism()))
 
 /**
+ * Applies {@link AcExHtmlExporterOptions.drawNoPlotLayers} for the duration of
+ * `fn`, then restores the previous policy.
+ *
+ * `AcDbDatabase` only sets the flag through `read()` options and exposes no
+ * public setter; headless callers that already hold a database still need the
+ * same no-plot default as {@link exportFileToHtml} / cad-editor.
+ */
+async function withDrawNoPlotLayers<T>(
+  database: AcDbDatabase,
+  drawNoPlotLayers: boolean,
+  fn: () => Promise<T>
+): Promise<T> {
+  const host = database as unknown as { _drawNoPlotLayers: boolean }
+  const previous = host._drawNoPlotLayers
+  host._drawNoPlotLayers = drawNoPlotLayers
+  try {
+    return await fn()
+  } finally {
+    host._drawNoPlotLayers = previous
+  }
+}
+
+/**
  * Converts an open database into an ACEX snapshot without a browser view.
  */
 export async function convertDatabaseToSnapshot(
   database: AcDbDatabase,
   options: AcExHtmlExporterOptions = {}
 ): Promise<AcExHtmlSnapshot> {
+  // Default false: match cad-editor open policy and AutoCAD plot (omit no-plot
+  // layers). Callers can pass `drawNoPlotLayers: true` for editor-screen extras.
+  const drawNoPlotLayers = options.drawNoPlotLayers === true
   return withWorkingDatabase(database, () =>
-    convertOpenDatabaseToSnapshot(database, options)
+    withDrawNoPlotLayers(database, drawNoPlotLayers, () =>
+      convertOpenDatabaseToSnapshot(database, options)
+    )
   )
 }
 
