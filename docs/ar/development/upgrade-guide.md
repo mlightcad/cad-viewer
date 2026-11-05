@@ -42,6 +42,69 @@ title: "ترقية cad-simple-viewer و cad-editor"
 :::
 :::
 
+::: warning إعادة تسمية واجهة HTML العامة للتصدير (`AcExHtml` / `acexHtml`)
+بدءًا من **1.8.0**، تستخدم الأنواع والدوال العامة في `@mlightcad/cad-html-core` (والتي يعيد تصديرها `@mlightcad/cad-html-plugin`) بادئات الطبقة `AcExHtml*` (للأنواع) و`acexHtml*` (للدوال)، بما يتوافق مع اصطلاح التسمية في بقية المستودع.
+
+السلوك لم يتغيّر؛ تغيّرت أسماء الرموز فقط. حدّث الاستيرادات عند الترقية من 1.7.x:
+
+```diff
+  import {
+-   type AcExSnapshot,
+-   buildAcExPackage,
+-   zipAcExPackageFiles,
+-   unzipAcExPackageFiles,
+-   packHtml,
+-   packHtmlPackage
++   type AcExHtmlSnapshot,
++   acexHtmlBuildPackage,
++   acexHtmlZipPackageFiles,
++   acexHtmlUnzipPackageFiles,
++   acexHtmlPackHtml,
++   acexHtmlPackHtmlPackage
+  } from '@mlightcad/cad-html-plugin'
+```
+
+ينطبق نفس التغيير على بقية مساعدات HTML-core (مثل `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents` و`buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`). واجهات مستوى الأوامر مثل `AcApHtmlConvertor` و`chtml` / `-chtml` غير متأثرة. أدلة التطوير التي تعرض الأسماء الجديدة تستهدف **1.8.0+**؛ وعلى 1.7.x استمر في استخدام الرموز القديمة.
+:::
+
+::: info تقسيم تصدير PDF إلى نواة مشتركة (المتصفح + Node)
+بدءًا من **1.8.0**، يستخدم تصدير PDF نفس التقسيم الطبقي لتصدير HTML. المنطق المشترك في `@mlightcad/cad-pdf-core` (نموذج الخيارات ومسار database → PDF، **بدون** اعتماد على `cad-simple-viewer` / DOM). يستهلكه واجهتان أماميتان:
+
+| الحزمة | الدور |
+| --- | --- |
+| `@mlightcad/cad-pdf-plugin` | أوامر المتصفح `cpdf` / `-cpdf` / `ipdf` (وحوار التصدير في Vue) |
+| `@mlightcad/cad-pdf-exporter` | DXF/DWG → PDF بلا واجهة في Node — **بدون متصفح** |
+
+**مدمجو المتصفح — دون تغيير يُذكر.** استمر في استخدام `cpdf` / `-cpdf` / `ipdf` و`AcApPdfConvertor` و`AcApPdfExportOptions` و`resolveAcApPdfExportOptions`. ثبّت الـ peer الجديد `@mlightcad/cad-pdf-core` بجانب الإضافة (نفس إصدار `cad-simple-viewer`).
+
+**فروق واجهة / سلوك تؤثر على المستخدم:**
+
+- خيار جديد `colorMode: 'color' | 'monochrome'` (الافتراضي `'color'`). متاح في حوار `cpdf`، وكـ**آخر** موجه لـ `-cpdf` (`Color` / `Monochrome`)، وعلى `AcApPdfExportOptions`. يجب أن تجيب سكربتات `-cpdf` الحالية عن هذا الموجه بعد إجابة وضع النص (أو ترسل سطرًا فارغًا للافتراضي).
+- خادم / CI بلا متصفح: استخدم `@mlightcad/cad-pdf-exporter` (`exportFileToPdf` و`convertDatabaseToPdf`) بدل تشغيل `cpdf` عبر Playwright.
+
+```ts
+// المتصفح (الأسماء لم تتغيّر)
+import {
+  AcApPdfConvertor,
+  resolveAcApPdfExportOptions
+} from '@mlightcad/cad-pdf-plugin'
+
+await new AcApPdfConvertor().convert(
+  context,
+  resolveAcApPdfExportOptions({ colorMode: 'monochrome' })
+)
+
+// Node، بدون متصفح
+import { exportFileToPdf } from '@mlightcad/cad-pdf-exporter'
+
+await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
+  colorMode: 'monochrome'
+})
+```
+
+للاستدعاء المتقدم للمسار المشترك مباشرة، استخدم `acexPdfExportDatabase` / `acexPdfResolveExportOptions` من `@mlightcad/cad-pdf-core`. تفاصيل الخطوط والتخطيطات ووضع النص في ملفات README للحزم.
+:::
+
 ## نظرة عامة
 
 `@mlightcad/cad-simple-viewer` و`@mlightcad/cad-editor` **ليسا حزمتين مستقلتين**. إنهما جزء من منظومة مترابطة بإحكام تشترك في قاعدة شيفرة ودورة إصدار مشتركتين. يجمع كل إصدار مجموعة منسّقة من التحديثات عبر الإضافات والعارضات وحزم نموذج البيانات ومكتبات عرض النصوص وأطر عمل واجهة المستخدم الخارجية.
@@ -74,7 +137,7 @@ title: "ترقية cad-simple-viewer و cad-editor"
 | الحزمة | الغرض |
 | --- | --- |
 | `@mlightcad/cad-html-plugin` | تصدير HTML مكتفٍ ذاتيًا بنقرة واحدة |
-| `@mlightcad/cad-pdf-plugin` | تصدير PDF واستيراد طبقات PDF السفلية |
+| `@mlightcad/cad-pdf-plugin` | تصدير PDF في المتصفح واستيراد PDF إلى CAD |
 | `@mlightcad/cad-svg-plugin` | تصدير SVG |
 | `@mlightcad/cad-simple-ui-plugin` | شريط أدوات DOM عادي، مدير طبقات، لوحة مثبتة |
 | `@mlightcad/cad-agent-plugin` | تفاعل مدعوم بوكيل ذكاء اصطناعي |
@@ -83,12 +146,21 @@ title: "ترقية cad-simple-viewer و cad-editor"
 
 > **قاعدة عامة:** يجب تثبيت كل إضافة في القائمة أعلاه على **رقم الإصدار نفسه بالضبط** الذي تنتقل إليه في `cad-simple-viewer` (على سبيل المثال، `1.7.5`).
 
+### نوى التصدير المشتركة والمصدّرون بلا واجهة (نفس إصدار النواة)
+
+| الحزمة | الغرض |
+| --- | --- |
+| `@mlightcad/cad-html-core` | مسار لقطة/حزم HTML مشترك (بلا عارض / DOM) |
+| `@mlightcad/cad-html-exporter` | تصدير HTML بلا واجهة في Node |
+| `@mlightcad/cad-pdf-core` | نموذج خيارات PDF المشترك ومسار database → PDF (بلا عارض / DOM) |
+| `@mlightcad/cad-pdf-exporter` | DXF/DWG → PDF بلا واجهة في Node (بدون متصفح) |
+
 ### طبقة العارض الداخلية (الإصدار نفسه كالنواة، تُنشر منفصلة)
 
 | الحزمة | الغرض |
 | --- | --- |
 | `@mlightcad/three-renderer` | محرك عرض 2D/3D مبني على THREE.js |
-| `@mlightcad/pdf-renderer` | الخلفية التي تستخدمها cad-pdf-plugin لتوليد محتوى PDF |
+| `@mlightcad/pdf-renderer` | خلفية محتوى PDF التي يستخدمها `cad-pdf-core` |
 
 تُستهلك هذه داخليًا بواسطة الإضافات وcad-simple-viewer. عادةً **لا** تثبّتها مباشرةً، لكن إصدارها يجب أن يكون متوافقًا مع الإضافات التي تثبّتها.
 

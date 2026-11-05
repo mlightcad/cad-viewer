@@ -42,6 +42,69 @@ GitHub リポジトリは引き続き [`mlightcad/cad-viewer`](https://github.co
 :::
 :::
 
+::: warning HTML エクスポート公開 API の改名（`AcExHtml` / `acexHtml`）
+**1.8.0** から、`@mlightcad/cad-html-core`（`@mlightcad/cad-html-plugin` が再エクスポート）の公開型と関数は、層プレフィックス `AcExHtml*`（型）と `acexHtml*`（関数）を使います。モノレポのほかの層と同じ命名規則です。
+
+挙動は変わりません。シンボル名だけが変わります。1.7.x からアップグレードするときは import を更新してください。
+
+```diff
+  import {
+-   type AcExSnapshot,
+-   buildAcExPackage,
+-   zipAcExPackageFiles,
+-   unzipAcExPackageFiles,
+-   packHtml,
+-   packHtmlPackage
++   type AcExHtmlSnapshot,
++   acexHtmlBuildPackage,
++   acexHtmlZipPackageFiles,
++   acexHtmlUnzipPackageFiles,
++   acexHtmlPackHtml,
++   acexHtmlPackHtmlPackage
+  } from '@mlightcad/cad-html-plugin'
+```
+
+ほかの HTML-core ヘルパーも同様です（例: `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`、`buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`）。`AcApHtmlConvertor` や `chtml` / `-chtml` などのコマンド級 API は影響を受けません。開発ガイドに出てくる新しい名前は **1.8.0+** 向けです。1.7.x では従来のシンボルを使い続けてください。
+:::
+
+::: info PDF エクスポートを共有コアに分割（ブラウザ + Node）
+**1.8.0** から、PDF エクスポートは HTML エクスポートと同じ階層になります。共有ロジックは `@mlightcad/cad-pdf-core`（オプションモデルと database → PDF パイプライン。`cad-simple-viewer` / DOM に**依存しません**）にあり、次の 2 つのフロントエンドがそれを使います。
+
+| パッケージ | 役割 |
+| --- | --- |
+| `@mlightcad/cad-pdf-plugin` | ブラウザの `cpdf` / `-cpdf` / `ipdf`（および Vue のエクスポートダイアログ） |
+| `@mlightcad/cad-pdf-exporter` | Node のヘッドレス DXF/DWG → PDF — **ブラウザ不要** |
+
+**ブラウザ統合側 — ほぼ変更なし。** `cpdf` / `-cpdf` / `ipdf`、`AcApPdfConvertor`、`AcApPdfExportOptions`、`resolveAcApPdfExportOptions` をそのまま使えます。新しい peer `@mlightcad/cad-pdf-core` をプラグインと同じバージョンで追加インストールしてください。
+
+**ユーザーに影響する API / 挙動の差分:**
+
+- 新しいオプション `colorMode: 'color' | 'monochrome'`（既定 `'color'`）。`cpdf` ダイアログ、`-cpdf` の**最後の**プロンプト（`Color` / `Monochrome`）、および `AcApPdfExportOptions` で利用できます。既存の `-cpdf` スクリプトは、テキストモードの回答のあとにこのプロンプトへ答える（または空行で既定）必要があります。
+- ブラウザなしのサーバー / CI: Playwright で `cpdf` を動かす代わりに `@mlightcad/cad-pdf-exporter`（`exportFileToPdf`、`convertDatabaseToPdf`）を使います。
+
+```ts
+// ブラウザ（名前は変わらず）
+import {
+  AcApPdfConvertor,
+  resolveAcApPdfExportOptions
+} from '@mlightcad/cad-pdf-plugin'
+
+await new AcApPdfConvertor().convert(
+  context,
+  resolveAcApPdfExportOptions({ colorMode: 'monochrome' })
+)
+
+// Node、ブラウザ不要
+import { exportFileToPdf } from '@mlightcad/cad-pdf-exporter'
+
+await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
+  colorMode: 'monochrome'
+})
+```
+
+共有パイプラインを直接呼ぶ高度な用途は `@mlightcad/cad-pdf-core` の `acexPdfExportDatabase` / `acexPdfResolveExportOptions` を参照してください。フォント・レイアウト・テキストモードの詳細は各パッケージの README にあります。
+:::
+
 ## 概要
 
 `@mlightcad/cad-simple-viewer` と `@mlightcad/cad-editor` は**独立したパッケージではありません**。これらは共通のコードベースとリリースサイクルを共有する、緊密に統合されたエコシステムの一部です。各リリースには、プラグイン、レンダラー、data-model パッケージ、テキストレンダリングライブラリ、サードパーティの UI フレームワークにまたがる、調整された一連の更新が含まれています。
@@ -74,7 +137,7 @@ GitHub リポジトリは引き続き [`mlightcad/cad-viewer`](https://github.co
 | パッケージ | 目的 |
 | --- | --- |
 | `@mlightcad/cad-html-plugin` | ワンクリックの自己完結型 HTML エクスポート |
-| `@mlightcad/cad-pdf-plugin` | PDF エクスポートと PDF アンダーレイのインポート |
+| `@mlightcad/cad-pdf-plugin` | ブラウザの PDF エクスポートと PDF → CAD インポート |
 | `@mlightcad/cad-svg-plugin` | SVG エクスポート |
 | `@mlightcad/cad-simple-ui-plugin` | プレーン DOM のツールバー、レイヤマネージャー、ドックパネル |
 | `@mlightcad/cad-agent-plugin` | AI エージェントによるインタラクション |
@@ -83,12 +146,21 @@ GitHub リポジトリは引き続き [`mlightcad/cad-viewer`](https://github.co
 
 > **経験則：** 上記のリストのすべてのプラグインは、アップグレード先の `cad-simple-viewer` と**完全に同じバージョン番号**（たとえば `1.7.5`）に固定する必要があります。
 
+### 共有エクスポートコアとヘッドレスエクスポーター（コアと同じバージョン）
+
+| パッケージ | 目的 |
+| --- | --- |
+| `@mlightcad/cad-html-core` | 共有 HTML スナップショット / パッケージングパイプライン（ビューア / DOM なし） |
+| `@mlightcad/cad-html-exporter` | Node ヘッドレス HTML エクスポート |
+| `@mlightcad/cad-pdf-core` | 共有 PDF オプションモデルと database → PDF パイプライン（ビューア / DOM なし） |
+| `@mlightcad/cad-pdf-exporter` | Node ヘッドレス DXF/DWG → PDF（ブラウザ不要） |
+
 ### 内部レンダラー層（コアと同じバージョン、別途公開）
 
 | パッケージ | 目的 |
 | --- | --- |
 | `@mlightcad/three-renderer` | THREE.js ベースの 2D/3D レンダリングエンジン |
-| `@mlightcad/pdf-renderer` | cad-pdf-plugin が PDF コンテンツ生成に使用するバックエンド |
+| `@mlightcad/pdf-renderer` | `cad-pdf-core` が使う PDF コンテンツバックエンド |
 
 これらはプラグインと cad-simple-viewer によって内部的に使用されます。通常は直接インストールする**必要はありません**が、そのバージョンはインストールするプラグインと互換性がある必要があります。
 

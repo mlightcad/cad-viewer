@@ -82,21 +82,23 @@ MLightCAD 随附一组官方插件。每个插件专注于一项职责 —— UI
 |------|-------|
 | 命令 | `chtml`（`cad-editor` 中为对话框）、`-chtml`（通过 `cad-simple-viewer-cli` 的命令行） |
 | 额外配置 | `AcApDocManager.createInstance()` 上的 `htmlViewerRuntimeUrl` — `viewer-runtime.iife.js` 的 URL（从包的 `dist/` 复制） |
-| 公开 API | `registerLazyHtmlPlugin`、`createHtmlPlugin`、`AcApHtmlConvertor`、`acexHtmlPackHtml`、快照类型 |
+| 公开 API | `registerLazyHtmlPlugin`、`createHtmlPlugin`、`AcApHtmlConvertor`、`acexHtmlPackHtml`、快照类型（`acexHtml*` / `AcExHtml*` 自 **1.8.0**；见[升级指南](./upgrade-guide.md)） |
 
 → **构建产物与集成：** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **使用相同管线的无头 CLI：** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)
 
 ### PDF（`@mlightcad/cad-pdf-plugin`）
 
-**矢量 PDF 导出与 PDF 转 CAD 导入。**
+**矢量 PDF 导出与 PDF 转 CAD 导入。** 从 **1.8.0** 起，导出逻辑放在共享的 [`@mlightcad/cad-pdf-core`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-core)（无查看器 / DOM）。浏览器插件与无头 [`@mlightcad/cad-pdf-exporter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter)（`exportFileToPdf`、`convertDatabaseToPdf`）共用该核心——Node 可在无浏览器环境下导出 PDF。浏览器命令与转换器名称不变；导出选项新增 `colorMode: 'color' | 'monochrome'`。
 
 | 项 | 值 |
 |------|-------|
 | 命令 | `cpdf`（导出）、`ipdf`（导入） |
-| 公开 API | `registerLazyPdfPlugin`、`createPdfPlugin`、转换器 |
+| 公开 API | `registerLazyPdfPlugin`、`createPdfPlugin`、`AcApPdfConvertor`、`resolveAcApPdfExportOptions` |
 
 → **构建产物与集成：** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)
+→ **无头 Node 导出器（同一核心）：** [packages/cad-pdf-exporter/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter/README.md)
+→ **1.8.0 升级说明：** [升级指南](./upgrade-guide.md)
 
 ### SVG（`@mlightcad/cad-svg-plugin`）
 

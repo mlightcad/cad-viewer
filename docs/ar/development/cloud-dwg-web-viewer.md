@@ -180,7 +180,7 @@ await new AcApHtmlConvertor({ viewerRuntimeUrl: './viewer-runtime.iife.js' })
   })
 ```
 
-واجهات برمجية أدنى (جمّع الحزمة بنفسك وحدد ما إذا كنت ستكتبها على القرص أو ترفعها):
+واجهات برمجية أدنى (جمّع الحزمة بنفسك وحدد ما إذا كنت ستكتبها على القرص أو ترفعها). **تسري أسماء `acexHtml*` / `AcExHtml*` هذه بدءًا من 1.8.0**؛ وفي 1.7.x كانت المكافئات `buildAcExPackage` و`zipAcExPackageFiles` و`unzipAcExPackageFiles` وما شابه (انظر [دليل الترقية](./upgrade-guide.md)):
 
 ```typescript
 import {

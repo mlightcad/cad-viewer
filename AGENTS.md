@@ -80,5 +80,5 @@ The full recipe for a new CAD command lives in `packages/cad-simple-viewer/src/c
 
 - Client secrets/config reach the build through `VITE_*` env vars (CI injects secrets/vars). **Never export empty `VITE_*` values** — Vite treats them as set and will not fall back to `.env`.
 - Cross-repo debugging (`realdwg-web`, `mtext-renderer`) uses temporary `file:` overrides in `pnpm-workspace.yaml`, not `pnpm link`; revert before committing. See `docs/development/debugging-with-multiple-repo-changes.md`.
-- Docs: development guides live in `docs/development/` (English) plus `docs/{zh,ja,ko,ar,cs,tr}/`; new dev docs should be added to the translations too.
+- Docs: development guides live in `docs/development/` (English) plus `docs/{zh,ja,ko,ar,cs,tr}/`; new dev docs should be added to the translations too. **After a large module split/move or a user-facing public API change, update the upgrade guide** (`docs/development/upgrade-guide.md` and every locale under `docs/{zh,ja,ko,ar,cs,tr}/development/upgrade-guide.md`): state which release the change lands in, what consumers must migrate, and keep related development guides / package READMEs in sync with the new names and package layout.
 - `dist/`, `lib/`, `public/` are build output — never edit by hand.

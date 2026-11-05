@@ -109,6 +109,8 @@ await new AcApHtmlConvertor().convert('my-drawing.dwg', {
 
 See **[docs/acex-package-format.md](./docs/acex-package-format.md)** for the on-disk format, and **[docs/acex-web-hosting-guide.md](./docs/acex-web-hosting-guide.md)** for static hosting / CDN deployment (includes a live progressive demo).
 
+> **1.8.0:** Public helpers use the `acexHtml*` / `AcExHtml*` prefixes (`acexHtmlBuildPackage`, `acexHtmlPackHtml`, …). On 1.7.x they were still `buildAcExPackage`, `packHtml`, and so on — see the [upgrade guide](../../docs/development/upgrade-guide.md).
+
 ```typescript
 import {
   ACEX_DEFAULT_MANIFEST_FILE,

@@ -2,6 +2,10 @@
 
 Headless (Node) export of DXF/DWG drawings to vector PDF.
 
+> **1.8.0:** New package. Same shared pipeline as browser `cpdf`, via
+> `@mlightcad/cad-pdf-core`, so server/CI export does not need Playwright or a
+> browser. See the [upgrade guide](../../docs/development/upgrade-guide.md).
+
 Uses `@mlightcad/data-model` + `@mlightcad/pdf-renderer` through
 `@mlightcad/cad-pdf-core`, the same pipeline as the browser `cpdf` command in
 `@mlightcad/cad-pdf-plugin`. **Does not** depend on

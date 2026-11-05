@@ -42,6 +42,69 @@ The GitHub repository is still [`mlightcad/cad-viewer`](https://github.com/mligh
 :::
 :::
 
+::: warning HTML export public API renamed (`AcExHtml` / `acexHtml`)
+Starting with **1.8.0**, the public types and functions of `@mlightcad/cad-html-core` (re-exported by `@mlightcad/cad-html-plugin`) use the layer prefixes `AcExHtml*` (types) and `acexHtml*` (functions), matching the convention used elsewhere in the monorepo.
+
+Behavior is unchanged; only the symbol names moved. Update imports when you upgrade from 1.7.x:
+
+```diff
+  import {
+-   type AcExSnapshot,
+-   buildAcExPackage,
+-   zipAcExPackageFiles,
+-   unzipAcExPackageFiles,
+-   packHtml,
+-   packHtmlPackage
++   type AcExHtmlSnapshot,
++   acexHtmlBuildPackage,
++   acexHtmlZipPackageFiles,
++   acexHtmlUnzipPackageFiles,
++   acexHtmlPackHtml,
++   acexHtmlPackHtmlPackage
+  } from '@mlightcad/cad-html-plugin'
+```
+
+The same rename applies to other HTML-core helpers (for example `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`, `buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`). Command-level APIs such as `AcApHtmlConvertor` and `chtml` / `-chtml` are unaffected. Development guides that show the new names target **1.8.0+**; on 1.7.x keep using the old symbols.
+:::
+
+::: info PDF export split into a shared core (browser + Node)
+Starting with **1.8.0**, PDF export uses the same layering as HTML export. Shared logic lives in `@mlightcad/cad-pdf-core` (option model and database → PDF pipeline, **no** `cad-simple-viewer` / DOM dependency). Two front ends consume it:
+
+| Package | Role |
+| --- | --- |
+| `@mlightcad/cad-pdf-plugin` | Browser `cpdf` / `-cpdf` / `ipdf` (and the Vue export dialog) |
+| `@mlightcad/cad-pdf-exporter` | Headless Node DXF/DWG → PDF — **no browser** |
+
+**Browser integrators — mostly unchanged.** Keep using `cpdf` / `-cpdf` / `ipdf`, `AcApPdfConvertor`, `AcApPdfExportOptions`, and `resolveAcApPdfExportOptions`. Install the new peer `@mlightcad/cad-pdf-core` next to the plugin (same version as `cad-simple-viewer`).
+
+**User-facing API / behaviour deltas:**
+
+- New option `colorMode: 'color' | 'monochrome'` (default `'color'`). Available in the `cpdf` dialog, as the **last** `-cpdf` prompt (`Color` / `Monochrome`), and on `AcApPdfExportOptions`. Existing `-cpdf` scripts must answer that prompt (or send an empty line for the default) after the text-mode answer.
+- Headless / CI without a browser: use `@mlightcad/cad-pdf-exporter` (`exportFileToPdf`, `convertDatabaseToPdf`) instead of driving `cpdf` through Playwright.
+
+```ts
+// Browser (names unchanged)
+import {
+  AcApPdfConvertor,
+  resolveAcApPdfExportOptions
+} from '@mlightcad/cad-pdf-plugin'
+
+await new AcApPdfConvertor().convert(
+  context,
+  resolveAcApPdfExportOptions({ colorMode: 'monochrome' })
+)
+
+// Node, no browser
+import { exportFileToPdf } from '@mlightcad/cad-pdf-exporter'
+
+await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
+  colorMode: 'monochrome'
+})
+```
+
+Advanced callers that talk to the shared pipeline directly use `acexPdfExportDatabase` / `acexPdfResolveExportOptions` from `@mlightcad/cad-pdf-core`. See the package READMEs for fonts, layouts, and text mode.
+:::
+
 ## Overview
 
 `@mlightcad/cad-simple-viewer` and `@mlightcad/cad-editor` are **not standalone packages**. They are part of a tightly integrated ecosystem that shares a common codebase and release cycle. Each release bundles a coordinated set of updates across plugins, renderers, data-model packages, text-rendering libraries, and third-party UI frameworks.
@@ -74,7 +137,7 @@ Before upgrading, it helps to know which packages belong to the coordinated rele
 | Package | Purpose |
 | --- | --- |
 | `@mlightcad/cad-html-plugin` | One-click self-contained HTML export |
-| `@mlightcad/cad-pdf-plugin` | PDF export and PDF underlay import |
+| `@mlightcad/cad-pdf-plugin` | Browser PDF export and PDF-to-CAD import |
 | `@mlightcad/cad-svg-plugin` | SVG export |
 | `@mlightcad/cad-simple-ui-plugin` | Plain-DOM toolbar, layer manager, dock panel |
 | `@mlightcad/cad-agent-plugin` | AI-agent-powered interaction |
@@ -83,12 +146,21 @@ Before upgrading, it helps to know which packages belong to the coordinated rele
 
 > **Rule of thumb:** every plugin in the list above should be pinned to the **exact same version number** as `cad-simple-viewer` you are upgrading to (for example, `1.7.5`).
 
+### Shared export cores and headless exporters (same version as core)
+
+| Package | Purpose |
+| --- | --- |
+| `@mlightcad/cad-html-core` | Shared HTML snapshot / packaging pipeline (no viewer / DOM) |
+| `@mlightcad/cad-html-exporter` | Headless Node HTML export |
+| `@mlightcad/cad-pdf-core` | Shared PDF option model and database → PDF pipeline (no viewer / DOM) |
+| `@mlightcad/cad-pdf-exporter` | Headless Node DXF/DWG → PDF (no browser) |
+
 ### Internal renderer layer (same version as core, published separately)
 
 | Package | Purpose |
 | --- | --- |
 | `@mlightcad/three-renderer` | THREE.js-based 2D/3D rendering engine |
-| `@mlightcad/pdf-renderer` | Backend used by cad-pdf-plugin for PDF content generation |
+| `@mlightcad/pdf-renderer` | PDF content backend used by `cad-pdf-core` |
 
 These are consumed internally by plugins and cad-simple-viewer. You typically do **not** install them directly, but their version must be compatible with the plugins you install.
 

@@ -82,21 +82,23 @@ title: "الإضافات المدمجة"
 |------|-------|
 | الأمر | `chtml` (نافذة حوار في `cad-editor`)، `-chtml` (سطر الأوامر عبر `cad-simple-viewer-cli`) |
 | إعداد إضافي | `htmlViewerRuntimeUrl` على `AcApDocManager.createInstance()` — عنوان URL إلى `viewer-runtime.iife.js` (انسخه من `dist/` في الحزمة) |
-| واجهة عامة | `registerLazyHtmlPlugin`، `createHtmlPlugin`، `AcApHtmlConvertor`، `acexHtmlPackHtml`، أنواع اللقطات |
+| واجهة عامة | `registerLazyHtmlPlugin`، `createHtmlPlugin`، `AcApHtmlConvertor`، `acexHtmlPackHtml`، أنواع اللقطات (`acexHtml*` / `AcExHtml*` من **1.8.0**؛ انظر [دليل الترقية](./upgrade-guide.md)) |
 
 → **مخرجات البناء والتكامل:** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **واجهة سطر أوامر headless تستخدم خط المعالجة نفسه:** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)
 
 ### PDF (`@mlightcad/cad-pdf-plugin`)
 
-**تصدير PDF متجهي واستيراد PDF إلى CAD.**
+**تصدير PDF متجهي واستيراد PDF إلى CAD.** بدءًا من **1.8.0**، يعيش منطق التصدير في [`@mlightcad/cad-pdf-core`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-core) المشترك (بلا عارض / DOM). تستخدم إضافة المتصفح و[`@mlightcad/cad-pdf-exporter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter) بلا واجهة (`exportFileToPdf` و`convertDatabaseToPdf`) النواة نفسها — يمكن لـ Node تصدير PDF دون متصفح. أسماء أوامر ومحوّلات المتصفح كما هي؛ وتكتسب خيارات التصدير `colorMode: 'color' | 'monochrome'`.
 
 | العنصر | القيمة |
 |------|-------|
 | الأوامر | `cpdf` (تصدير)، `ipdf` (استيراد) |
-| واجهة عامة | `registerLazyPdfPlugin`، `createPdfPlugin`، المحوّلات |
+| واجهة عامة | `registerLazyPdfPlugin`، `createPdfPlugin`، `AcApPdfConvertor`، `resolveAcApPdfExportOptions` |
 
 → **مخرجات البناء والتكامل:** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)
+→ **مصدّر Node بلا واجهة (نفس النواة):** [packages/cad-pdf-exporter/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter/README.md)
+→ **ملاحظات ترقية 1.8.0:** [دليل الترقية](./upgrade-guide.md)
 
 ### SVG (`@mlightcad/cad-svg-plugin`)
 

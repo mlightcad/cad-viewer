@@ -82,21 +82,23 @@ One-file **offline viewer** for sharing and archiving — the exported HTML embe
 |------|-------|
 | Command | `chtml` (dialog in `cad-editor`), `-chtml` (command-line via `cad-simple-viewer-cli`) |
 | Extra config | `htmlViewerRuntimeUrl` on `AcApDocManager.createInstance()` — URL to `viewer-runtime.iife.js` (copy from package `dist/`) |
-| Public API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `acexHtmlPackHtml`, snapshot types |
+| Public API | `registerLazyHtmlPlugin`, `createHtmlPlugin`, `AcApHtmlConvertor`, `acexHtmlPackHtml`, snapshot types (`acexHtml*` / `AcExHtml*` from **1.8.0**; see [upgrade guide](./upgrade-guide.md)) |
 
 → **Build output and integration:** [packages/cad-html-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin/README.md)
 → **Headless CLI using the same pipeline:** [packages/cad-simple-viewer-cli/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli/README.md)
 
 ### PDF (`@mlightcad/cad-pdf-plugin`)
 
-**Vector PDF export and PDF-to-CAD import.**
+**Vector PDF export and PDF-to-CAD import.** From **1.8.0**, export logic lives in shared [`@mlightcad/cad-pdf-core`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-core) (no viewer / DOM). The browser plugin and the headless [`@mlightcad/cad-pdf-exporter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter) (`exportFileToPdf`, `convertDatabaseToPdf`) both use that core — Node can export PDF without a browser. Browser commands and convertors keep their names; export options gain `colorMode: 'color' | 'monochrome'`.
 
 | Item | Value |
 |------|-------|
 | Commands | `cpdf` (export), `ipdf` (import) |
-| Public API | `registerLazyPdfPlugin`, `createPdfPlugin`, convertors |
+| Public API | `registerLazyPdfPlugin`, `createPdfPlugin`, `AcApPdfConvertor`, `resolveAcApPdfExportOptions` |
 
 → **Build output and integration:** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)
+→ **Headless Node exporter (same core):** [packages/cad-pdf-exporter/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter/README.md)
+→ **1.8.0 upgrade notes:** [upgrade guide](./upgrade-guide.md)
 
 ### SVG (`@mlightcad/cad-svg-plugin`)
 
