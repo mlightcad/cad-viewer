@@ -149,6 +149,13 @@ export interface AcTrHighlightUserData {
   disposeGeometryOnRemove?: boolean
   /** Marks geometry extracted for command preview overlays. */
   previewDrawable?: boolean
+  /**
+   * In-batch selection/hover overlay (shared INSERT / mesh-glyph).
+   *
+   * These sit next to source geometry rather than under a highlight overlay
+   * group, so export must skip them via {@link isHighlightCloneDrawable}.
+   */
+  transientHighlight?: true
 }
 
 /**
@@ -376,9 +383,18 @@ export function isHighlightOverlayDescendant(object: THREE.Object3D): boolean {
  * Highlight clones receive `userData.objectId` in
  * {@link AcTrBatchedGroup.highlight}; leaf drawables in the normal scene graph do
  * not. Entity containers also carry `objectId`, but they are excluded here.
+ *
+ * Shared INSERT and mesh-glyph selection overlays are marked with
+ * {@link AcTrHighlightUserData.transientHighlight} instead of living under a
+ * highlight overlay group.
  */
 export function isHighlightCloneDrawable(object: THREE.Object3D): boolean {
-  if (getHighlightUserData(object).objectId == null) {
+  const highlight = getHighlightUserData(object)
+  if (highlight.transientHighlight === true) {
+    return true
+  }
+
+  if (highlight.objectId == null) {
     return false
   }
 

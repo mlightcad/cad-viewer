@@ -754,6 +754,10 @@ function isInstancedExportDrawable(
 /**
  * Selection overlays for shared block geometry sit in the batch, not in the
  * highlight group, so the usual overlay filters do not see them.
+ *
+ * Prefer {@link isHighlightCloneDrawable} (`transientHighlight`) for current
+ * overlays; this keeps a back-compat path for older scenes that only set
+ * `sharesTemplateGeometry` + `renderOrder`.
  */
 function isSharedTemplateHighlight(object: THREE.Object3D): boolean {
   if (object.renderOrder < 10000) return false

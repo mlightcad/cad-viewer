@@ -616,6 +616,64 @@ describe('acexHtmlCollectBatchesFromObject3D rebase offsets', () => {
     expect(lineBatches[0]!.color).toBe(0xffffff)
   })
 
+  it('skips shared INSERT selection highlight overlays during export', () => {
+    const material = new THREE.LineBasicMaterial({ color: 0xffffff })
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 10, 0, 0], 3)
+    )
+    const first = new THREE.LineSegments(geometry, material)
+    first.updateMatrixWorld(true)
+    getSceneDrawableUserData(first).sharesTemplateGeometry = true
+
+    const second = new THREE.LineSegments(geometry, material)
+    second.position.set(0, 100, 0)
+    second.updateMatrixWorld(true)
+    getSceneDrawableUserData(second).sharesTemplateGeometry = true
+
+    const group = new AcTrBatchedGroup()
+    group.addEntity(sharedEntity('insert-a', first))
+    group.addEntity(sharedEntity('insert-b', second))
+    group.select('insert-a')
+
+    const { lineBatches } = acexHtmlCollectBatchesFromObject3D(group)
+    expect(lineBatches).toHaveLength(1)
+    expect(lineBatches[0]!.color).toBe(0xffffff)
+    // Two INSERTs, one shared template — not a third cyan highlight overlay.
+    expect(lineBatches[0]!.positions.length).toBe(12)
+  })
+
+  it('skips mesh-glyph selection highlight overlays during export', () => {
+    const geometry = new THREE.BufferGeometry()
+    geometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute([0, 0, 0, 1, 0, 0, 0, 1, 0], 3)
+    )
+    geometry.setIndex([0, 1, 2])
+
+    const source = new THREE.Mesh(
+      geometry,
+      new THREE.MeshBasicMaterial({ color: 0xffffff })
+    )
+    const highlight = new THREE.Mesh(
+      geometry.clone(),
+      new THREE.MeshBasicMaterial({ color: 0x08e8de })
+    )
+    highlight.renderOrder = 10000
+    getSceneDrawableUserData(highlight).sharesTemplateGeometry = false
+    getHighlightUserData(highlight).transientHighlight = true
+    getHighlightUserData(highlight).objectId = 'text-1'
+
+    const root = new THREE.Group()
+    root.add(source)
+    root.add(highlight)
+
+    const { meshBatches } = acexHtmlCollectBatchesFromObject3D(root)
+    expect(meshBatches).toHaveLength(1)
+    expect(meshBatches[0]!.color).toBe(0xffffff)
+  })
+
   it('skips highlight clone drawables even without overlay group markers', () => {
     const geometry = new THREE.BufferGeometry()
     geometry.setAttribute(

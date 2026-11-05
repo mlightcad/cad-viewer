@@ -8,7 +8,10 @@ import {
   HIGHLIGHT_HOVER_COLOR,
   HIGHLIGHT_SELECT_COLOR
 } from '../util/AcTrMaterialUtil'
-import { getSceneDrawableUserData } from '../util/AcTrObjectUserData'
+import {
+  getHighlightUserData,
+  getSceneDrawableUserData
+} from '../util/AcTrObjectUserData'
 import type { AcTrBatchHighlightKind } from './highlight'
 
 /**
@@ -657,6 +660,12 @@ export class AcTrSharedGeometryBatch extends THREE.Object3D {
     overlay.frustumCulled = false
     overlay.renderOrder = 10000
     overlay.raycast = () => {}
+    const highlightUserData = getHighlightUserData(overlay)
+    highlightUserData.transientHighlight = true
+    const objectId = this._objectIds[index]
+    if (objectId != null) {
+      highlightUserData.objectId = objectId
+    }
     const material = overlay.material
     if (material && !Array.isArray(material)) {
       const highlightMaterial = AcTrMaterialUtil.cloneMaterial(
