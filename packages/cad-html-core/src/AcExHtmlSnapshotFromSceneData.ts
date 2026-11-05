@@ -178,12 +178,7 @@ export async function acexHtmlBuildSnapshotFromExportSceneAsync(
 
   return {
     version: ACEX_SNAPSHOT_VERSION,
-    meta: buildSnapshotMeta(
-      meta,
-      options,
-      layouts,
-      activeLayoutBtrId
-    ),
+    meta: buildSnapshotMeta(meta, options, layouts, activeLayoutBtrId),
     layers,
     layouts,
     activeLayoutBtrId
@@ -231,12 +226,7 @@ function buildSnapshotSync(
 
   return {
     version: ACEX_SNAPSHOT_VERSION,
-    meta: buildSnapshotMeta(
-      meta,
-      options,
-      layouts,
-      activeLayoutBtrId
-    ),
+    meta: buildSnapshotMeta(meta, options, layouts, activeLayoutBtrId),
     layers,
     layouts,
     activeLayoutBtrId
@@ -374,6 +364,17 @@ function collectLayoutSnapshot(
       continue
     }
     const collected = acexHtmlCollectBatchesFromObject3D(layer.root)
+    // Scene geometry is already bucketed by layer root. Material metadata is
+    // not authoritative for every drawable (IMAGE / OLE use a plain
+    // MeshBasicMaterial with no `userData.layer`), so stamp the owning layer
+    // name onto every batch. Otherwise the offline viewer parents those
+    // meshes under layer "0" and they stay visible when this layer is off.
+    for (const batch of collected.lineBatches) {
+      batch.layer = layer.name
+    }
+    for (const batch of collected.meshBatches) {
+      batch.layer = layer.name
+    }
     lineBatches.push(...collected.lineBatches)
     meshBatches.push(...collected.meshBatches)
   }
@@ -405,10 +406,14 @@ function collectLayoutSnapshot(
   let osnap: ReturnType<typeof acexHtmlBuildOsnapCatalog> | undefined
   if (shouldExportOsnap(options)) {
     const osnapT0 = performance.now()
-    osnap = acexHtmlBuildOsnapCatalog(database, layoutInput.btrId, { includeLayer })
+    osnap = acexHtmlBuildOsnapCatalog(database, layoutInput.btrId, {
+      includeLayer
+    })
     console.log(
       `[chtml] osnap catalog ${
-        layoutNames.get(layoutInput.btrId) ?? layoutInput.name ?? layoutInput.btrId
+        layoutNames.get(layoutInput.btrId) ??
+        layoutInput.name ??
+        layoutInput.btrId
       }: ${(performance.now() - osnapT0).toFixed(0)} ms (${
         osnap?.primitives.length ?? 0
       } primitives)`

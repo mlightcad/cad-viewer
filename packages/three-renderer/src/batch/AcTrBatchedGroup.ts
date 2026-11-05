@@ -571,9 +571,7 @@ export class AcTrBatchedGroup extends THREE.Group {
   ): Map<string, THREE.Box3> {
     const scratch = new THREE.Box3()
 
-    const absorbBatch = (
-      batch: AcTrBatchedLine | AcTrBatchedPoint
-    ) => {
+    const absorbBatch = (batch: AcTrBatchedLine | AcTrBatchedPoint) => {
       batch.updateMatrixWorld(true)
       for (let i = 0; i < batch.geometryCount; i++) {
         let info: { objectId?: string; vertexCount: number }
@@ -737,10 +735,7 @@ export class AcTrBatchedGroup extends THREE.Group {
       if (!('material' in object)) return
       const drawableUserData = getSceneDrawableUserData(object)
       if (drawableUserData.styleMaterialId === oldId) {
-        const drawable = object as
-          | THREE.Mesh
-          | THREE.Line
-          | THREE.LineSegments
+        const drawable = object as THREE.Mesh | THREE.Line | THREE.LineSegments
         drawable.material = material
         drawableUserData.styleMaterialId = material.id
         // Same arming as the batched path above: a cache-push rebind may swap
@@ -1349,6 +1344,9 @@ export class AcTrBatchedGroup extends THREE.Group {
             cloned.matrixWorld.elements[14] += drawOrderZ
           }
         }
+        // IMAGE / OLE materials are created without layer metadata. Stamp the
+        // entity layer onto the clone so HTML export and layer sync see it.
+        this.stampUnbatchedDrawableLayer(cloned, entity.layerName)
         getSceneDrawableUserData(cloned).bboxIntersectionCheck =
           bboxIntersectionCheck
         this._unbatchedObjects.add(cloned)
@@ -2677,7 +2675,11 @@ export class AcTrBatchedGroup extends THREE.Group {
       kind,
       translation
     )
-    const batchId = batch.addInstance(matrixWorld, objectId, bboxIntersectionCheck)
+    const batchId = batch.addInstance(
+      matrixWorld,
+      objectId,
+      bboxIntersectionCheck
+    )
     return { batchedObjectId: batch.id, batchId }
   }
 
@@ -3416,6 +3418,34 @@ export class AcTrBatchedGroup extends THREE.Group {
       ;(cloned as THREE.MeshBasicMaterial).map = mapClone
     }
     return cloned
+  }
+
+  /**
+   * Copies the entity layer onto an unbatched clone and its materials when
+   * they lack layer metadata (typical for {@link AcTrImage} / OLE frames).
+   */
+  private stampUnbatchedDrawableLayer(
+    object: THREE.Object3D,
+    layerName: string | undefined
+  ): void {
+    if (!layerName) {
+      return
+    }
+    const objectData = getObjectUserData(object)
+    if (objectData.layerName == null || objectData.layerName === '') {
+      objectData.layerName = layerName
+    }
+    if (!this.hasMaterial(object)) {
+      return
+    }
+    const material = object.material
+    const materials = Array.isArray(material) ? material : [material]
+    for (const entry of materials) {
+      if (!entry) continue
+      if (getMaterialMetadata(entry).layer == null) {
+        setMaterialMetadata(entry, { layer: layerName })
+      }
+    }
   }
 
   /**

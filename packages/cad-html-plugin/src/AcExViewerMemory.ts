@@ -1,10 +1,15 @@
-import type { AcExHtmlLayoutSnapshot, AcExHtmlSnapshot } from '@mlightcad/cad-html-core'
+import type {
+  AcExHtmlLayoutSnapshot,
+  AcExHtmlSnapshot
+} from '@mlightcad/cad-html-core'
 import * as THREE from 'three'
 
 /**
  * True when a layout still holds tessellated CPU batches.
  */
-export function layoutHasBatchGeometry(layout: AcExHtmlLayoutSnapshot): boolean {
+export function layoutHasBatchGeometry(
+  layout: AcExHtmlLayoutSnapshot
+): boolean {
   return layout.lineBatches.length > 0 || layout.meshBatches.length > 0
 }
 
@@ -25,7 +30,9 @@ export function assignLayoutGeometryFrom(
  * Clears tessellated batch typed arrays on one layout so inactive package
  * layouts can be unloaded and re-fetched later.
  */
-export function releaseLayoutBatchBuffers(layout: AcExHtmlLayoutSnapshot): void {
+export function releaseLayoutBatchBuffers(
+  layout: AcExHtmlLayoutSnapshot
+): void {
   clearLayoutBatchBuffers(layout)
 }
 
@@ -84,10 +91,41 @@ export function removeSnapshotElement(element: HTMLElement): void {
 }
 
 /**
+ * Runs `fn` with every layer group forced visible, then restores prior flags.
+ *
+ * THREE skips invisible objects during `render()`, so geometry on layers that
+ * start off never reaches the GPU. Call this around the upload render that
+ * precedes {@link releaseLayerGroupsGeometryCpuArrays}.
+ */
+export function acexHtmlWithAllLayerGroupsVisible(
+  layerGroupMaps: Iterable<Map<string, THREE.Group>>,
+  fn: () => void
+): void {
+  const restored: Array<[THREE.Group, boolean]> = []
+  for (const groups of layerGroupMaps) {
+    for (const group of groups.values()) {
+      restored.push([group, group.visible])
+      group.visible = true
+    }
+  }
+  try {
+    fn()
+  } finally {
+    for (const [group, visible] of restored) {
+      group.visible = visible
+    }
+  }
+}
+
+/**
  * Drops CPU-side typed arrays for static CAD geometry after the first GPU upload.
  *
  * Only traverses layer groups (not measurement overlays). WebGL buffer objects
  * retain the uploaded data; static display geometry never updates CPU buffers again.
+ *
+ * Callers must GPU-upload geometry for layers that start invisible (see
+ * {@link acexHtmlWithAllLayerGroupsVisible}) before invoking this — otherwise
+ * toggling those layers on later shows empty meshes.
  */
 export function releaseLayerGroupsGeometryCpuArrays(
   layerGroups: Map<string, THREE.Group>
@@ -130,7 +168,8 @@ function clearLayoutBatchBuffers(layout: AcExHtmlLayoutSnapshot): void {
     if (batch.indices) batch.indices = new Uint32Array(0)
     if (batch.gradientPositions) batch.gradientPositions = new Float32Array(0)
     if (batch.uvs) batch.uvs = new Float32Array(0)
-    if (batch.texture) batch.texture = { mimeType: '', bytes: new Uint8Array(0) }
+    if (batch.texture)
+      batch.texture = { mimeType: '', bytes: new Uint8Array(0) }
   }
   layout.meshBatches.length = 0
 }

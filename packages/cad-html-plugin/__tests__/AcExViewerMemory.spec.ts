@@ -4,6 +4,7 @@ import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2.js'
 import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry.js'
 
 import {
+  acexHtmlWithAllLayerGroupsVisible,
   assignLayoutGeometryFrom,
   layoutHasBatchGeometry,
   releaseInactiveLayoutBatchBuffers,
@@ -156,6 +157,30 @@ describe('AcExViewerMemory', () => {
       x1: 1,
       y1: 0
     })
+  })
+
+  it('acexHtmlWithAllLayerGroupsVisible forces visibility during fn then restores', () => {
+    const hidden = new THREE.Group()
+    hidden.visible = false
+    const shown = new THREE.Group()
+    shown.visible = true
+    const seen: boolean[] = []
+
+    acexHtmlWithAllLayerGroupsVisible(
+      [
+        new Map([
+          ['Wall', hidden],
+          ['0', shown]
+        ])
+      ],
+      () => {
+        seen.push(hidden.visible, shown.visible)
+      }
+    )
+
+    expect(seen).toEqual([true, true])
+    expect(hidden.visible).toBe(false)
+    expect(shown.visible).toBe(true)
   })
 
   it('releaseLayerGroupsGeometryCpuArrays empties geometry attribute arrays', () => {
