@@ -1,5 +1,23 @@
 # @mlightcad/cad-script-core
 
+## 1.8.0-preview.0
+
+### Minor Changes
+
+- b7a838f: Enrich entity snapshots so scripts can read, filter, and measure real drawings without private API access.
+  - Every snapshot now carries the `AcDbEntity` display properties: `color`, `resolvedColor`, `lineType`, `lineWeight`, `linetypeScale`, `visibility`, `transparency`, plus `thickness` / `normal` when the type has them. ByLayer / ByBlock colors keep their flags instead of being dropped.
+  - `cad.entities.where(...)` still reads these lazily: only the fields a predicate touches are resolved, and only matching entities are converted into full snapshots.
+  - Per-type `geometry` now includes derived values: line length / midPoint / direction, arc length and endpoints, circle and ellipse area, polyline vertices with bulge and widths, spline control points / knots / weights / degree / length, text alignment and formatting, MTEXT `plainText` with control codes stripped, block attributes and dynamic-block names, table cell text, hatch boundary loops and gradient fields, and a computed dimension `measurement`.
+  - New `cad.measure.area(id)`; `cad.measure.length(id)` now prefers the entity's own length.
+
+- feat: renames `@mlightcad/cad-viewer` to `@mlightcad/cad-editor`, adds headless PDF export with monochrome mode plus script savePdf/saveHtml APIs, and ships richer entity snapshots for drawing analysis. Agent settings move to a multi-provider model catalog with collapsible tool-call groups. Canvas typing starts commands with Space to confirm or repeat, and coordinate entry matches AutoCAD syntax. Public HTML/PDF core exports use AcExHtml/AcExPdf prefixes; hatch, wipeout, and PDF-export hangs are fixed
+
+### Patch Changes
+
+- Updated dependencies [c525fa8]
+- Updated dependencies
+  - @mlightcad/cad-pdf-core@1.8.0-preview.0
+
 ## 1.7.8
 
 ### Patch Changes

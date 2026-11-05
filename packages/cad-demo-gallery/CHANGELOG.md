@@ -1,5 +1,36 @@
 # @mlightcad/cad-demo-gallery
 
+## 1.8.0-preview.0
+
+### Minor Changes
+
+- feat: renames `@mlightcad/cad-viewer` to `@mlightcad/cad-editor`, adds headless PDF export with monochrome mode plus script savePdf/saveHtml APIs, and ships richer entity snapshots for drawing analysis. Agent settings move to a multi-provider model catalog with collapsible tool-call groups. Canvas typing starts commands with Space to confirm or repeat, and coordinate entry matches AutoCAD syntax. Public HTML/PDF core exports use AcExHtml/AcExPdf prefixes; hatch, wipeout, and PDF-export hangs are fixed
+- 19c1add: feat: renames the `@mlightcad/cad-viewer` package to `@mlightcad/cad-editor`
+
+  The Vue 3 UI package is now published as `@mlightcad/cad-editor`, matching its
+  folder under `packages/`. Consumers must update imports
+  (`import { MlCadViewer } from '@mlightcad/cad-editor'`), the dependency name in
+  `package.json`, and version-pinned CDN paths, which now point at
+  `dist/cad-editor.js` / `dist/cad-editor.css`. The repository itself is still
+  named `cad-viewer`. `@mlightcad/cad-viewer` stays at 1.7.x and receives no
+  further releases.
+
+### Patch Changes
+
+- 840edef: docs: explain the `@mlightcad/cad-viewer` → `@mlightcad/cad-editor` rename and unbreak the CDN bootstrap
+
+  The upgrade guide in all seven locales now opens with a warning that states the
+  1.8.0 rename, why `@mlightcad/cad-viewer` no longer receives releases, that the
+  API is unchanged, and how to migrate the dependency, the import specifier, and
+  version-pinned CDN URLs. The root READMEs keep pointing their npm downloads
+  badge and the `cad-editor-demo` link at `@mlightcad/cad-viewer`, because that is
+  still the published package until 1.8.0 ships.
+
+  The zero-build CDN bootstrap demo pinned `@mlightcad/cad-editor@1.7.7`, which
+  does not exist on npm and returned 404. It loads the published
+  `@mlightcad/cad-viewer@1.7.7` bundle again, and fixes the undefined
+  `CAD_VIEWER_URL` reference that crashed the inline loader.
+
 ## 1.7.8
 
 ### Patch Changes

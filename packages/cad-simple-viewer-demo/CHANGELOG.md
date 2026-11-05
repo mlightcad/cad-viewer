@@ -1,5 +1,37 @@
 # @mlightcad/cad-simple-viewer-demo
 
+## 1.8.0-preview.0
+
+### Minor Changes
+
+- feat: renames `@mlightcad/cad-viewer` to `@mlightcad/cad-editor`, adds headless PDF export with monochrome mode plus script savePdf/saveHtml APIs, and ships richer entity snapshots for drawing analysis. Agent settings move to a multi-provider model catalog with collapsible tool-call groups. Canvas typing starts commands with Space to confirm or repeat, and coordinate entry matches AutoCAD syntax. Public HTML/PDF core exports use AcExHtml/AcExPdf prefixes; hatch, wipeout, and PDF-export hangs are fixed
+
+### Patch Changes
+
+- Updated dependencies [135bf80]
+- Updated dependencies [f6f75a4]
+- Updated dependencies [6551be6]
+- Updated dependencies [b7a838f]
+- Updated dependencies [f5b6152]
+- Updated dependencies [c525fa8]
+- Updated dependencies [c525fa8]
+- Updated dependencies
+- Updated dependencies [c06985d]
+  - @mlightcad/cad-agent-plugin@1.8.0-preview.0
+  - @mlightcad/three-renderer@1.8.0-preview.0
+  - @mlightcad/cad-script-core@1.8.0-preview.0
+  - @mlightcad/cad-pdf-core@1.8.0-preview.0
+  - @mlightcad/cad-pdf-plugin@1.8.0-preview.0
+  - @mlightcad/pdf-renderer@1.8.0-preview.0
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.0
+  - @mlightcad/cad-agent-core@1.8.0-preview.0
+  - @mlightcad/cad-google-drive-plugin@1.8.0-preview.0
+  - @mlightcad/cad-html-plugin@1.8.0-preview.0
+  - @mlightcad/cad-onedrive-plugin@1.8.0-preview.0
+  - @mlightcad/cad-script-plugin@1.8.0-preview.0
+  - @mlightcad/cad-simple-ui-plugin@1.8.0-preview.0
+  - @mlightcad/cad-svg-plugin@1.8.0-preview.0
+
 ## 1.7.8
 
 ### Patch Changes

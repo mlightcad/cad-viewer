@@ -1,5 +1,47 @@
 # @mlightcad/cad-editor-demo
 
+## 1.8.0-preview.0
+
+### Minor Changes
+
+- feat: renames `@mlightcad/cad-viewer` to `@mlightcad/cad-editor`, adds headless PDF export with monochrome mode plus script savePdf/saveHtml APIs, and ships richer entity snapshots for drawing analysis. Agent settings move to a multi-provider model catalog with collapsible tool-call groups. Canvas typing starts commands with Space to confirm or repeat, and coordinate entry matches AutoCAD syntax. Public HTML/PDF core exports use AcExHtml/AcExPdf prefixes; hatch, wipeout, and PDF-export hangs are fixed
+- 19c1add: feat: renames the `@mlightcad/cad-viewer` package to `@mlightcad/cad-editor`
+
+  The Vue 3 UI package is now published as `@mlightcad/cad-editor`, matching its
+  folder under `packages/`. Consumers must update imports
+  (`import { MlCadViewer } from '@mlightcad/cad-editor'`), the dependency name in
+  `package.json`, and version-pinned CDN paths, which now point at
+  `dist/cad-editor.js` / `dist/cad-editor.css`. The repository itself is still
+  named `cad-viewer`. `@mlightcad/cad-viewer` stays at 1.7.x and receives no
+  further releases.
+
+### Patch Changes
+
+- Updated dependencies [135bf80]
+- Updated dependencies [f6f75a4]
+- Updated dependencies [6551be6]
+- Updated dependencies [b7a838f]
+- Updated dependencies [f5b6152]
+- Updated dependencies [c525fa8]
+- Updated dependencies [c525fa8]
+- Updated dependencies [c571cbc]
+- Updated dependencies
+- Updated dependencies [19c1add]
+- Updated dependencies [c06985d]
+  - @mlightcad/cad-agent-plugin@1.8.0-preview.0
+  - @mlightcad/three-renderer@1.8.0-preview.0
+  - @mlightcad/cad-script-core@1.8.0-preview.0
+  - @mlightcad/cad-pdf-core@1.8.0-preview.0
+  - @mlightcad/cad-pdf-plugin@1.8.0-preview.0
+  - @mlightcad/pdf-renderer@1.8.0-preview.0
+  - @mlightcad/cad-editor@1.8.0-preview.0
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.0
+  - @mlightcad/cad-agent-core@1.8.0-preview.0
+  - @mlightcad/cad-google-drive-plugin@1.8.0-preview.0
+  - @mlightcad/cad-html-plugin@1.8.0-preview.0
+  - @mlightcad/cad-onedrive-plugin@1.8.0-preview.0
+  - @mlightcad/cad-script-plugin@1.8.0-preview.0
+
 ## 1.7.8
 
 ### Patch Changes

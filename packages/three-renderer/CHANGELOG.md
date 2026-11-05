@@ -1,5 +1,46 @@
 # @mlightcad/three-renderer
 
+## 1.8.0-preview.0
+
+### Minor Changes
+
+- feat: renames `@mlightcad/cad-viewer` to `@mlightcad/cad-editor`, adds headless PDF export with monochrome mode plus script savePdf/saveHtml APIs, and ships richer entity snapshots for drawing analysis. Agent settings move to a multi-provider model catalog with collapsible tool-call groups. Canvas typing starts commands with Space to confirm or repeat, and coordinate entry matches AutoCAD syntax. Public HTML/PDF core exports use AcExHtml/AcExPdf prefixes; hatch, wipeout, and PDF-export hangs are fixed
+
+### Patch Changes
+
+- 6551be6: fix: keep wipeouts and MTEXT canvas masks fused with the paper background when their layer refreshes to ACI 7
+
+  Background fills were still eligible for ByLayer colour sync, so a layer-table
+  update that supplied ACI 7 (black on light paper) overwrote MODELBKCOLOR /
+  PAPERBKCOLOR tracking. Materials marked `isBackgroundFill` now skip layer
+  colour refresh and are not stored as ByLayer-colour. Bumps `@mlightcad/data-model`
+  to 1.15.22 and `@mlightcad/libredwg-converter` to 3.15.22 for the matching
+  MTEXT mask / wipeout trait flags.
+
+- f5b6152: fix(three-renderer): repair hatch loops that draw an edge twice
+
+  `resolveSelfIntersectingHatchLoop` now runs the PolyBool segments through a
+  union selection before rebuilding rings, so edges without fill on either side
+  are dropped. A spike drawn out and back no longer makes the repair fail (and
+  leak fill outside the boundary), and a notch reached along a doubled edge is no
+  longer filled in.
+
+- c525fa8: fix: PDF export of drawings with wipeouts and many viewports no longer hangs
+
+  Wipeouts are now always painted as a solid mask. `AcDbWipeout` does not set
+  a fill type, so the PDF renderer tessellated the pattern of the last hatch
+  drawn across each wipeout (hundreds of thousands of paper-white strokes per
+  wipeout) and the on-screen renderer drew it with the hatch shader instead of
+  masking.
+
+  Paper-space viewports now skip model-space entities outside the region they
+  show instead of painting all of model space and clipping it. Content streams
+  are compressed at zlib level 6 instead of 9, which cut main-thread
+  compression time about 5× for a 2% larger file.
+
+  On a drawing with 30 layout viewports, export went from never finishing to
+  about 1.5 minutes, with a 19 MB PDF.
+
 ## 1.7.8
 
 ### Patch Changes

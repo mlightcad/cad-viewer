@@ -1,5 +1,34 @@
 # @mlightcad/cad-agent-plugin
 
+## 1.8.0-preview.0
+
+### Minor Changes
+
+- 135bf80: feat(agent): collapse tool calls once an agent response completes
+
+  Tool calls in the agent palette are now grouped under a one-line summary per
+  response ("Tool calls: 3", plus a failed count when any failed). The group stays
+  expanded while the response is streaming so progress is visible, collapses
+  when that response finishes, and can be expanded or collapsed by clicking the
+  summary.
+
+- f6f75a4: feat(agent): redesign the agent palette model settings around providers
+
+  The settings card now has two modes, modelled on the DeepSeek harness web UI:
+  "Third-party providers" (DeepSeek, DeepSeek VL, OpenAI, Anthropic — enter an
+  API key, optionally override the base URL under "Custom settings") and
+  "Custom model API" (Provider ID, display name, API URL, protocol — OpenAI Chat
+  Completions, OpenAI Responses or Anthropic Messages — and API key). Each
+  provider keeps its own model catalog with per-model image support, editable by
+  hand or filled via "Fetch available models", which queries the endpoint's
+  `/models` listing with the values in the form and opens a searchable picker.
+  Several providers can be configured at once; the input-bar model selector
+  lists the models of every provider that has a key. Settings saved by earlier
+  versions are migrated automatically (`openai-compatible` becomes a custom
+  provider).
+
+- feat: renames `@mlightcad/cad-viewer` to `@mlightcad/cad-editor`, adds headless PDF export with monochrome mode plus script savePdf/saveHtml APIs, and ships richer entity snapshots for drawing analysis. Agent settings move to a multi-provider model catalog with collapsible tool-call groups. Canvas typing starts commands with Space to confirm or repeat, and coordinate entry matches AutoCAD syntax. Public HTML/PDF core exports use AcExHtml/AcExPdf prefixes; hatch, wipeout, and PDF-export hangs are fixed
+
 ## 1.7.8
 
 ### Patch Changes

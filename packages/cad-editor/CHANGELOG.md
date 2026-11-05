@@ -1,5 +1,54 @@
 # @mlightcad/cad-viewer
 
+## 1.8.0-preview.0
+
+### Minor Changes
+
+- c525fa8: feat: headless PDF exporter and a monochrome PDF color mode
+
+  PDF export logic moved into the new `@mlightcad/cad-pdf-core` package (option
+  model, glyph provider, database → PDF pipeline), which does not depend on
+  `cad-simple-viewer` or the DOM. `@mlightcad/cad-pdf-plugin` now builds on it,
+  and the new `@mlightcad/cad-pdf-exporter` uses it to export DXF/DWG to PDF in
+  Node without a browser (`exportFileToPdf`, `convertDatabaseToPdf`), mirroring
+  `cad-html-core` / `cad-html-exporter`.
+
+  PDF export gains a `colorMode` option: `color` (default, unchanged output) or
+  `monochrome` — white paper with black linework and text, and solid/gradient
+  fills in grey by luminance so linework on top of them stays readable.
+  Wipeouts still mask in white. The option is available in the `cpdf` dialog,
+  as a new last `-cpdf` prompt (`Color` / `Monochrome`, default `Color`), in
+  `pdf-renderer` (`AcPdfExportOptions.colorMode`) and in the exporter
+  (`--color-mode`). The CLI ships `export-pdf-monochrome.scr` and
+  `batch-export-pdf.mjs`; existing `-cpdf` scripts should add a `Color` or empty
+  line after the text-mode answer.
+
+- feat: renames `@mlightcad/cad-viewer` to `@mlightcad/cad-editor`, adds headless PDF export with monochrome mode plus script savePdf/saveHtml APIs, and ships richer entity snapshots for drawing analysis. Agent settings move to a multi-provider model catalog with collapsible tool-call groups. Canvas typing starts commands with Space to confirm or repeat, and coordinate entry matches AutoCAD syntax. Public HTML/PDF core exports use AcExHtml/AcExPdf prefixes; hatch, wipeout, and PDF-export hangs are fixed
+- 19c1add: feat: renames the `@mlightcad/cad-viewer` package to `@mlightcad/cad-editor`
+
+  The Vue 3 UI package is now published as `@mlightcad/cad-editor`, matching its
+  folder under `packages/`. Consumers must update imports
+  (`import { MlCadViewer } from '@mlightcad/cad-editor'`), the dependency name in
+  `package.json`, and version-pinned CDN paths, which now point at
+  `dist/cad-editor.js` / `dist/cad-editor.css`. The repository itself is still
+  named `cad-viewer`. `@mlightcad/cad-viewer` stays at 1.7.x and receives no
+  further releases.
+
+### Patch Changes
+
+- c571cbc: fix: declare peer dependencies as compatible ranges instead of exact versions
+
+  Peer dependencies were pinned with `workspace:*`, which Changesets treats as the
+  exact current version. Any package taking a minor bump therefore fell outside
+  those peers and was escalated to a major, and the fixed group then dragged every
+  other package up with it — a routine `pnpm changeset version` could only ever
+  produce a patch or the next major.
+
+  Peers now use `workspace:^`, so a minor release of a peer stays inside the
+  declared range and dependents keep the minor bump. Combined with
+  `onlyUpdatePeerDependentsWhenOutOfRange`, a major is still forced when a peer
+  actually leaves the range.
+
 > Renamed to `@mlightcad/cad-editor` in 1.8.0. This file keeps the old heading
 > for the 1.7.x entries below; see the 1.8.0 entry for the migration.
 

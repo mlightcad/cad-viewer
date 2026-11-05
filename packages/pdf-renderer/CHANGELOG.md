@@ -1,5 +1,48 @@
 # @mlightcad/pdf-renderer
 
+## 1.8.0-preview.0
+
+### Minor Changes
+
+- c525fa8: feat: headless PDF exporter and a monochrome PDF color mode
+
+  PDF export logic moved into the new `@mlightcad/cad-pdf-core` package (option
+  model, glyph provider, database → PDF pipeline), which does not depend on
+  `cad-simple-viewer` or the DOM. `@mlightcad/cad-pdf-plugin` now builds on it,
+  and the new `@mlightcad/cad-pdf-exporter` uses it to export DXF/DWG to PDF in
+  Node without a browser (`exportFileToPdf`, `convertDatabaseToPdf`), mirroring
+  `cad-html-core` / `cad-html-exporter`.
+
+  PDF export gains a `colorMode` option: `color` (default, unchanged output) or
+  `monochrome` — white paper with black linework and text, and solid/gradient
+  fills in grey by luminance so linework on top of them stays readable.
+  Wipeouts still mask in white. The option is available in the `cpdf` dialog,
+  as a new last `-cpdf` prompt (`Color` / `Monochrome`, default `Color`), in
+  `pdf-renderer` (`AcPdfExportOptions.colorMode`) and in the exporter
+  (`--color-mode`). The CLI ships `export-pdf-monochrome.scr` and
+  `batch-export-pdf.mjs`; existing `-cpdf` scripts should add a `Color` or empty
+  line after the text-mode answer.
+
+- feat: renames `@mlightcad/cad-viewer` to `@mlightcad/cad-editor`, adds headless PDF export with monochrome mode plus script savePdf/saveHtml APIs, and ships richer entity snapshots for drawing analysis. Agent settings move to a multi-provider model catalog with collapsible tool-call groups. Canvas typing starts commands with Space to confirm or repeat, and coordinate entry matches AutoCAD syntax. Public HTML/PDF core exports use AcExHtml/AcExPdf prefixes; hatch, wipeout, and PDF-export hangs are fixed
+
+### Patch Changes
+
+- c525fa8: fix: PDF export of drawings with wipeouts and many viewports no longer hangs
+
+  Wipeouts are now always painted as a solid mask. `AcDbWipeout` does not set
+  a fill type, so the PDF renderer tessellated the pattern of the last hatch
+  drawn across each wipeout (hundreds of thousands of paper-white strokes per
+  wipeout) and the on-screen renderer drew it with the hatch shader instead of
+  masking.
+
+  Paper-space viewports now skip model-space entities outside the region they
+  show instead of painting all of model space and clipping it. Content streams
+  are compressed at zlib level 6 instead of 9, which cut main-thread
+  compression time about 5× for a 2% larger file.
+
+  On a drawing with 30 layout viewports, export went from never finishing to
+  about 1.5 minutes, with a 19 MB PDF.
+
 ## 1.7.8
 
 ### Patch Changes

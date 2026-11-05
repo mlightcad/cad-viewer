@@ -1,5 +1,45 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.8.0-preview.0
+
+### Minor Changes
+
+- c525fa8: feat: headless PDF exporter and a monochrome PDF color mode
+
+  PDF export logic moved into the new `@mlightcad/cad-pdf-core` package (option
+  model, glyph provider, database → PDF pipeline), which does not depend on
+  `cad-simple-viewer` or the DOM. `@mlightcad/cad-pdf-plugin` now builds on it,
+  and the new `@mlightcad/cad-pdf-exporter` uses it to export DXF/DWG to PDF in
+  Node without a browser (`exportFileToPdf`, `convertDatabaseToPdf`), mirroring
+  `cad-html-core` / `cad-html-exporter`.
+
+  PDF export gains a `colorMode` option: `color` (default, unchanged output) or
+  `monochrome` — white paper with black linework and text, and solid/gradient
+  fills in grey by luminance so linework on top of them stays readable.
+  Wipeouts still mask in white. The option is available in the `cpdf` dialog,
+  as a new last `-cpdf` prompt (`Color` / `Monochrome`, default `Color`), in
+  `pdf-renderer` (`AcPdfExportOptions.colorMode`) and in the exporter
+  (`--color-mode`). The CLI ships `export-pdf-monochrome.scr` and
+  `batch-export-pdf.mjs`; existing `-cpdf` scripts should add a `Color` or empty
+  line after the text-mode answer.
+
+- feat: renames `@mlightcad/cad-viewer` to `@mlightcad/cad-editor`, adds headless PDF export with monochrome mode plus script savePdf/saveHtml APIs, and ships richer entity snapshots for drawing analysis. Agent settings move to a multi-provider model catalog with collapsible tool-call groups. Canvas typing starts commands with Space to confirm or repeat, and coordinate entry matches AutoCAD syntax. Public HTML/PDF core exports use AcExHtml/AcExPdf prefixes; hatch, wipeout, and PDF-export hangs are fixed
+
+### Patch Changes
+
+- c06985d: feat: type commands on the canvas and confirm or repeat them with Space
+
+  Printable keys pressed while the view has focus now go to the command line,
+  so a command starts without clicking the input first. Space works like Enter
+  (AutoCAD behavior): it confirms the command line, the dynamic-input fields,
+  and selection/entity/box prompts, and repeats the last command on an idle
+  view. String prompts that accept spaces keep Space as text. Letters typed
+  into numeric dynamic-input fields move to the command line so keywords can be
+  entered there. Esc in the command line, and the end of a dynamic-input prompt,
+  hand focus back to the view so Delete and Ctrl+Z keep working. Keys are not
+  captured while the command line is hidden (by the host setting or the phone
+  layout) or while a modal dialog is open.
+
 ## 1.7.8
 
 ### Patch Changes
