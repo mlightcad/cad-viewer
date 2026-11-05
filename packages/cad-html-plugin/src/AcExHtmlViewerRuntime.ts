@@ -22,7 +22,7 @@ import {
   acexHtmlDecryptEmbeddedManifest,
   acexHtmlParseEmbeddedPackageConfig
 } from '@mlightcad/cad-html-core'
-import { acexHtmlDetectLocale,AcExHtmlI18n } from '@mlightcad/cad-html-core'
+import { acexHtmlDetectLocale, AcExHtmlI18n } from '@mlightcad/cad-html-core'
 import { AcExHtmlIcons } from '@mlightcad/cad-html-core'
 import {
   ACEX_PACKAGE_DIRECTORY_ORIGIN,
@@ -147,6 +147,7 @@ import {
 } from './AcExTouchPointSession'
 import { acexMaybeShowTouchPointTutorial } from './AcExTouchPointTutorial'
 import {
+  acexHtmlWithAllLayerGroupsVisible,
   assignLayoutGeometryFrom,
   layoutHasBatchGeometry,
   releaseInactiveLayoutBatchBuffers,
@@ -744,8 +745,9 @@ async function startViewer(): Promise<void> {
    * box. See {@link acexHtmlResolveLayoutFallbackExtents} for why the active layout
    * prefers `meta.viewExtents`.
    */
-  const fallbackExtentsForLayout = (target: AcExHtmlLayoutSnapshot): AcExHtmlExtents =>
-    acexHtmlResolveLayoutFallbackExtents(target, snapshot)
+  const fallbackExtentsForLayout = (
+    target: AcExHtmlLayoutSnapshot
+  ): AcExHtmlExtents => acexHtmlResolveLayoutFallbackExtents(target, snapshot)
 
   const layerVisible = new Map(
     snapshot.layers.map(layer => [layer.name, layer.visible])
@@ -954,7 +956,9 @@ async function startViewer(): Promise<void> {
   /**
    * True when the layout has no GPU and no CPU batches but a reload source exists.
    */
-  const layoutNeedsGeometrySource = (target: AcExHtmlLayoutSnapshot): boolean => {
+  const layoutNeedsGeometrySource = (
+    target: AcExHtmlLayoutSnapshot
+  ): boolean => {
     if (layoutGpuResident(target) || layoutHasBatchGeometry(target)) {
       return false
     }
@@ -986,8 +990,22 @@ async function startViewer(): Promise<void> {
   /**
    * After GPU upload (+ hybrid OSNAP when measure is on), drop CPU typed arrays.
    * GPU buffers stay; layout switch reloads from package chunks or monolithic gzip.
+   *
+   * Layers that start off (`visible: false` in the snapshot) sit in invisible
+   * THREE groups and are skipped by the first `render()`. Force one upload pass
+   * with every layer group visible before releasing CPU arrays.
    */
   const releaseCpuAfterGpuUpload = () => {
+    acexHtmlWithAllLayerGroupsVisible(
+      [paperLayerGroups, modelLayerGroups],
+      () => {
+        render()
+      }
+    )
+    // Paint the correct visibility; the upload pass above may have drawn
+    // every layer into the framebuffer.
+    render()
+
     // Snapshot every layout that still has CPU batches (active + sidecar model).
     for (const target of snapshot.layouts) {
       refreshBatchExtentCache(target)
@@ -1480,7 +1498,9 @@ async function startViewer(): Promise<void> {
    * packages do not frame a partial chunk set. Falls back to live geometry for
    * snapshots produced before `fitExtents` existed.
    */
-  const viewExtentsForLayout = (target: AcExHtmlLayoutSnapshot): AcExHtmlExtents =>
+  const viewExtentsForLayout = (
+    target: AcExHtmlLayoutSnapshot
+  ): AcExHtmlExtents =>
     acexHtmlResolveLayoutViewExtents(target, fallbackExtentsForLayout(target))
 
   const fit = () => {
@@ -1499,10 +1519,7 @@ async function startViewer(): Promise<void> {
     const smart = acexHtmlComputeIntelligentExtentsFromBatchEntries(entries, {
       isLayerVisible: layerName => layerVisible.get(layerName) !== false,
       viewports: layout.viewports,
-      sampleFromLayout:
-        liveEntries.length > 0
-          ? layout
-          : undefined
+      sampleFromLayout: liveEntries.length > 0 ? layout : undefined
     })
     zoomToExtents(smart ?? viewExtentsForLayout(layout))
   }
@@ -2083,7 +2100,10 @@ async function startViewer(): Promise<void> {
   }
 
   paintPackageChunk = () => {
-    const next = acexHtmlComputeLayerExtentsMap(layout.lineBatches, layout.meshBatches)
+    const next = acexHtmlComputeLayerExtentsMap(
+      layout.lineBatches,
+      layout.meshBatches
+    )
     layerExtents.clear()
     for (const [name, extents] of next) {
       layerExtents.set(name, extents)
