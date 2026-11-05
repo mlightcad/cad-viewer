@@ -128,6 +128,24 @@
   padding-right: 24px;
 }
 
+/* ---------- Mermaid diagrams ---------- */
+
+/* Keep diagram labels near body text size. Wide block diagrams may
+   overflow; allow horizontal scroll instead of shrinking the SVG. */
+.vp-doc .mermaid {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1rem 0;
+}
+
+.vp-doc .mermaid svg {
+  max-width: none;
+  height: auto;
+  margin-inline: auto;
+}
+
 /* ---------- Content typography ---------- */
 
 .vp-doc h1 {

@@ -318,8 +318,8 @@ const searchTranslations = {
   }
 }
 
-export default withMermaid(
-  defineConfig({
+export default withMermaid({
+  ...defineConfig({
     title: 'MLightCAD',
     description: 'Web-based CAD Viewer',
     base,
@@ -941,5 +941,15 @@ export default withMermaid(
         }
       }
     }
-  })
-)
+  }),
+  // Architecture block diagrams are wide; useMaxWidth would shrink labels
+  // far below body text. Keep natural size (scroll horizontally if needed).
+  mermaid: {
+    themeVariables: {
+      fontSize: '16px'
+    },
+    block: {
+      useMaxWidth: false
+    }
+  }
+})
