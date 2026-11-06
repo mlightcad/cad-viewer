@@ -378,6 +378,147 @@
   gap: 6px;
 }
 
+.cad-agent-context-usage {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cad-agent-context-usage-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #9a9a9a;
+  cursor: pointer;
+}
+
+.cad-agent-context-usage-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #d0d0d0;
+}
+
+.cad-agent-context-usage-btn--warning {
+  color: #d4a017;
+}
+
+.cad-agent-context-usage-btn--danger {
+  color: #e07070;
+}
+
+.cad-agent-context-usage-ring {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.cad-agent-context-usage-track {
+  stroke: rgba(255, 255, 255, 0.18);
+}
+
+.cad-agent-context-usage-progress {
+  stroke: currentColor;
+  transition: stroke-dashoffset 0.25s ease;
+}
+
+.cad-agent-context-usage-popover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 20;
+  width: 280px;
+  padding: 12px 14px;
+  border: 1px solid #4a4a4a;
+  border-radius: 10px;
+  background: #2a2a2a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  color: #e8e8e8;
+}
+
+.cad-agent-context-usage-popover-header {
+  font-size: 12px;
+  font-weight: 500;
+  color: #c8c8c8;
+  margin-bottom: 10px;
+}
+
+.cad-agent-context-usage-popover-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.cad-agent-context-usage-popover-full {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #f2f2f2;
+}
+
+.cad-agent-context-usage-popover-tokens {
+  font-size: 11px;
+  color: #9a9a9a;
+  white-space: nowrap;
+}
+
+.cad-agent-context-usage-popover-bar {
+  display: flex;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.cad-agent-context-usage-popover-segment {
+  height: 100%;
+  min-width: 0;
+  flex-shrink: 0;
+  transition: width 0.25s ease;
+}
+
+.cad-agent-context-usage-popover-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cad-agent-context-usage-popover-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.cad-agent-context-usage-popover-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.cad-agent-context-usage-popover-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #d0d0d0;
+}
+
+.cad-agent-context-usage-popover-count {
+  flex-shrink: 0;
+  color: #9a9a9a;
+  font-variant-numeric: tabular-nums;
+}
+
 .cad-agent-mode-select,
 .cad-agent-model-select {
   min-width: 0;

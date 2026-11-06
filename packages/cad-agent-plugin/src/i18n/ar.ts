@@ -42,6 +42,24 @@ export const agentAr = {
 
   attachImage: 'إرفاق صورة',
 
+  showContextUsage: 'عرض استخدام السياق',
+
+  contextUsage: 'استخدام السياق',
+
+  contextUsageDetail: '{percent}% · {used} / {limit}',
+
+  contextUsageFull: '{percent}% ممتلئ',
+
+  contextUsageTokens: '~{used} / {limit} رمزًا',
+
+  contextUsageSystemPrompt: 'موجه النظام',
+
+  contextUsageToolDefinitions: 'تعريفات الأدوات',
+
+  contextUsageImages: 'الصور',
+
+  contextUsageConversation: 'المحادثة',
+
   removeAttachment: 'إزالة',
 
   imageAlt: 'الصورة المرفقة',

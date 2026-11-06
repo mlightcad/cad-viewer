@@ -4,6 +4,14 @@ import '../ui/agent-panel.css'
 import type { UIMessage } from 'ai'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
+import {
+  type AgentContextUsage,
+  type AgentContextUsageCategoryId,
+  contextUsagePercent,
+  formatTokenCount,
+  resolveContextWindow
+} from '../agent/contextUsage'
+import type { AgentChatLabelKey } from '../i18n'
 import { agentT } from '../i18n'
 import { useAgentI18n } from '../i18n/useAgentI18n'
 import {
@@ -73,6 +81,10 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const pendingImages = ref<File[]>([])
 const pendingPreviewUrls = ref<string[]>([])
 const agentMode = ref<AgentMode>('simple')
+/** Last-step prompt tokens from the provider; drives the context ring. */
+const contextUsage = ref<AgentContextUsage | null>(null)
+/** Whether the context-usage detail popover is open. */
+const showContextUsage = ref(false)
 
 watch(showSettings, open => {
   if (!open) settingsDirty.value = false
@@ -91,23 +103,120 @@ watch(
   { deep: true }
 )
 
-onUnmounted(() => {
-  pendingPreviewUrls.value.forEach(url => URL.revokeObjectURL(url))
-  for (const timer of copyFeedbackTimers.values()) clearTimeout(timer)
-  copyFeedbackTimers.clear()
-})
-
 const { chat, resetChat } = useAgentChatRef(() => ({
   settings: { ...activeSettings.value },
-  options: createAgentChatOptions(agentMode.value)
+  options: {
+    ...createAgentChatOptions(agentMode.value),
+    onContextUsage: usage => {
+      contextUsage.value = usage
+    }
+  }
 }))
 
+const contextWindowTokens = computed(() =>
+  resolveContextWindow(activeSettings.value.model)
+)
+
+const usedContextTokens = computed(() => contextUsage.value?.usedTokens ?? 0)
+
+const contextUsagePct = computed(() =>
+  contextUsagePercent(usedContextTokens.value, contextWindowTokens.value)
+)
+
+/** SVG ring geometry matching Cursor's compact context meter. */
+const CONTEXT_RING_RADIUS = 6
+const CONTEXT_RING_CIRCUMFERENCE = 2 * Math.PI * CONTEXT_RING_RADIUS
+
+const contextRingDashOffset = computed(
+  () => CONTEXT_RING_CIRCUMFERENCE * (1 - contextUsagePct.value / 100)
+)
+
+const contextUsageLevel = computed(() => {
+  const pct = contextUsagePct.value
+  if (pct >= 90) return 'danger'
+  if (pct >= 70) return 'warning'
+  return 'normal'
+})
+
+const contextUsageDetailText = computed(() =>
+  labels.value.contextUsageDetail
+    .replace('{percent}', String(Math.round(contextUsagePct.value)))
+    .replace('{used}', formatTokenCount(usedContextTokens.value))
+    .replace('{limit}', formatTokenCount(contextWindowTokens.value))
+)
+
+const contextUsageFullText = computed(() =>
+  labels.value.contextUsageFull.replace(
+    '{percent}',
+    String(Math.round(contextUsagePct.value))
+  )
+)
+
+const contextUsageTokensText = computed(() =>
+  labels.value.contextUsageTokens
+    .replace('{used}', formatTokenCount(usedContextTokens.value))
+    .replace('{limit}', formatTokenCount(contextWindowTokens.value))
+)
+
+const contextUsageTitle = computed(() =>
+  contextUsage.value
+    ? contextUsageDetailText.value
+    : labels.value.showContextUsage
+)
+
+const CONTEXT_USAGE_LABEL_KEYS: Record<
+  AgentContextUsageCategoryId,
+  AgentChatLabelKey
+> = {
+  system: 'contextUsageSystemPrompt',
+  tools: 'contextUsageToolDefinitions',
+  images: 'contextUsageImages',
+  conversation: 'contextUsageConversation'
+}
+
+const contextUsageCategories = computed(() => {
+  // Scale against the larger of window vs used so an over-capacity report
+  // still fits the bar instead of overflowing past 100%.
+  const barDenominator = Math.max(
+    contextWindowTokens.value,
+    usedContextTokens.value,
+    1
+  )
+  return (contextUsage.value?.breakdown ?? []).map(row => ({
+    ...row,
+    label: labels.value[CONTEXT_USAGE_LABEL_KEYS[row.id]],
+    widthPercent: Math.max(0, (row.tokens / barDenominator) * 100)
+  }))
+})
+
+/** Toggles the context-usage detail popover. */
+function toggleContextUsage() {
+  showContextUsage.value = !showContextUsage.value
+}
+
+/** Closes the context-usage popover when clicking outside. */
+function onDocumentPointerDown(event: PointerEvent) {
+  if (!showContextUsage.value) return
+  const target = event.target
+  if (!(target instanceof Element)) return
+  if (target.closest('.cad-agent-context-usage')) return
+  showContextUsage.value = false
+}
+
 onMounted(async () => {
+  document.addEventListener('pointerdown', onDocumentPointerDown)
   config.value = await loadLlmConfig()
   agentMode.value = loadAgentMode()
   // Do not resetChat() here: getConfig() is live, and replacing the Chat while
   // a first Enter send is in flight orphans that request (no UI response).
   settingsReady.value = true
+})
+
+onUnmounted(() => {
+  document.removeEventListener('pointerdown', onDocumentPointerDown)
+  pendingPreviewUrls.value.forEach(url => URL.revokeObjectURL(url))
+  for (const timer of copyFeedbackTimers.values()) clearTimeout(timer)
+  copyFeedbackTimers.clear()
 })
 
 const messages = computed(() => chat.value.messages)
@@ -258,6 +367,8 @@ function dismissError() {
 async function applySettings(next: LlmConfig) {
   config.value = next
   showSettings.value = false
+  showContextUsage.value = false
+  contextUsage.value = null
   await saveLlmConfig(next)
   resetChat()
 }
@@ -272,6 +383,9 @@ async function onInputModelChange(event: Event) {
     activeProviderId: value.slice(0, separator),
     activeModel: value.slice(separator + 1)
   }
+  // Drop prior step usage so the ring doesn't mix old tokens with the new window.
+  showContextUsage.value = false
+  contextUsage.value = null
   await saveLlmConfig(config.value)
 }
 
@@ -281,6 +395,9 @@ function onAgentModeChange(event: Event) {
   if (mode !== 'simple' && mode !== 'high-inference') return
   agentMode.value = mode
   saveAgentMode(mode)
+  // Mode changes the system prompt / tools; clear until the next step reports.
+  showContextUsage.value = false
+  contextUsage.value = null
 }
 
 /** Opens the hidden file input for image attachments. */
@@ -423,6 +540,8 @@ function clearChat() {
   clearPendingImages()
   dismissError()
   showSettings.value = false
+  showContextUsage.value = false
+  contextUsage.value = null
   toolGroupOverrides.value = new Map()
   resetChat()
 }
@@ -970,6 +1089,96 @@ function isVerificationMessage(message: UIMessage): boolean {
               </option>
             </optgroup>
           </select>
+          <div class="cad-agent-context-usage">
+            <button
+              type="button"
+              class="cad-agent-context-usage-btn"
+              :class="`cad-agent-context-usage-btn--${contextUsageLevel}`"
+              :title="contextUsageTitle"
+              :aria-label="labels.showContextUsage"
+              :aria-expanded="showContextUsage"
+              @click="toggleContextUsage"
+            >
+              <svg
+                class="cad-agent-context-usage-ring"
+                viewBox="0 0 16 16"
+                aria-hidden="true"
+              >
+                <circle
+                  class="cad-agent-context-usage-track"
+                  cx="8"
+                  cy="8"
+                  :r="CONTEXT_RING_RADIUS"
+                  fill="none"
+                  stroke-width="2"
+                />
+                <circle
+                  class="cad-agent-context-usage-progress"
+                  cx="8"
+                  cy="8"
+                  :r="CONTEXT_RING_RADIUS"
+                  fill="none"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  :stroke-dasharray="CONTEXT_RING_CIRCUMFERENCE"
+                  :stroke-dashoffset="contextRingDashOffset"
+                  transform="rotate(-90 8 8)"
+                />
+              </svg>
+            </button>
+            <div
+              v-if="showContextUsage"
+              class="cad-agent-context-usage-popover"
+              role="dialog"
+              :aria-label="labels.contextUsage"
+            >
+              <div class="cad-agent-context-usage-popover-header">
+                {{ labels.contextUsage }}
+              </div>
+              <div class="cad-agent-context-usage-popover-summary">
+                <span class="cad-agent-context-usage-popover-full">
+                  {{ contextUsageFullText }}
+                </span>
+                <span class="cad-agent-context-usage-popover-tokens">
+                  {{ contextUsageTokensText }}
+                </span>
+              </div>
+              <div class="cad-agent-context-usage-popover-bar">
+                <div
+                  v-for="category in contextUsageCategories"
+                  :key="category.id"
+                  class="cad-agent-context-usage-popover-segment"
+                  :style="{
+                    width: `${category.widthPercent}%`,
+                    background: category.color
+                  }"
+                  :title="`${category.label}: ${formatTokenCount(category.tokens)}`"
+                />
+              </div>
+              <ul
+                v-if="contextUsageCategories.length"
+                class="cad-agent-context-usage-popover-list"
+              >
+                <li
+                  v-for="category in contextUsageCategories"
+                  :key="category.id"
+                  class="cad-agent-context-usage-popover-row"
+                >
+                  <span
+                    class="cad-agent-context-usage-popover-swatch"
+                    :style="{ background: category.color }"
+                    aria-hidden="true"
+                  />
+                  <span class="cad-agent-context-usage-popover-label">
+                    {{ category.label }}
+                  </span>
+                  <span class="cad-agent-context-usage-popover-count">
+                    {{ formatTokenCount(category.tokens) }}
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
         </div>
         <div class="cad-agent-panel-input-right">
           <button
