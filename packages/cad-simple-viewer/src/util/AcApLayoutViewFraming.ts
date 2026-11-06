@@ -174,3 +174,41 @@ export function acapResolveLayoutFrameBox(
   }
   return undefined
 }
+
+export type AcApResolveContentFrameBoxInput = {
+  /** True for the Model layout (no paper viewports). */
+  isModelSpace: boolean
+  /** Bounding box of real paper viewports (ignored in Model space). */
+  viewportsBox?: AcGeBox2d | AcApLayoutFrameBox | null
+  /** Layout EXTMIN/EXTMAX projected to XY when present. */
+  layoutExtents?: AcGeBox2d | AcApLayoutFrameBox | null
+  /** Batch / entity extents for the layout (after convert). */
+  entityBox?: AcGeBox2d | AcApLayoutFrameBox | null
+}
+
+/**
+ * Content-first frame for a layout's first visit in Extents mode (and the
+ * Saved-model fallback when VPORT `*ACTIVE` is missing). LIMMIN/LIMMAX are
+ * never the lead signal.
+ *
+ * In Model space the converted geometry wins over EXTMIN/EXTMAX, which is
+ * often stale (and far from the drawing) when the document opened into a
+ * paper layout. This matches opening straight into Model, which frames via
+ * `zoomToFitDrawing`. EXTMIN/EXTMAX is only a fallback before any geometry
+ * has been converted.
+ */
+export function acapResolveContentFrameBox(
+  input: AcApResolveContentFrameBoxInput
+): AcApResolveLayoutFrameBoxResult | undefined {
+  if (input.isModelSpace) {
+    return acapResolveLayoutFrameBox({
+      layoutExtents: input.entityBox ? undefined : input.layoutExtents,
+      entityBox: input.entityBox
+    })
+  }
+  return acapResolveLayoutFrameBox({
+    viewportsBox: input.viewportsBox,
+    layoutExtents: input.layoutExtents,
+    entityBox: input.entityBox
+  })
+}

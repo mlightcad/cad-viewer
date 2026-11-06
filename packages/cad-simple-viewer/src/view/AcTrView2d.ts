@@ -94,7 +94,10 @@ import type { AcTrLazySpatialChildren } from '../spatialIndex'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
 import { acapRunDatabaseEdit } from '../util/AcApDatabaseEdit'
-import { acapResolveLayoutFrameBox } from '../util/AcApLayoutViewFraming'
+import {
+  acapResolveContentFrameBox,
+  acapResolveLayoutFrameBox
+} from '../util/AcApLayoutViewFraming'
 import {
   collectTextStyleFontNames,
   planTextStyleFontPreload
@@ -3174,9 +3177,9 @@ export class AcTrView2d extends AcEdBaseView {
 
     // Extents (any layout), or Saved model fallback without *ACTIVE:
     // prefer drawable content; never lead with template model/paper limits.
-    return acapResolveLayoutFrameBox({
-      limits: undefined,
-      viewportsBox: isModelSpace ? undefined : viewportsBox,
+    return acapResolveContentFrameBox({
+      isModelSpace,
+      viewportsBox,
       layoutExtents,
       entityBox
     })?.box

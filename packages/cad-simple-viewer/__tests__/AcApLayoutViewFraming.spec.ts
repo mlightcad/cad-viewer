@@ -3,6 +3,7 @@ import { AcGeBox2d } from '@mlightcad/data-model'
 import {
   acapBoxContains,
   acapFrameBoxToGeBox2d,
+  acapResolveContentFrameBox,
   acapResolveLayoutFrameBox,
   acapViewportPaperBox
 } from '../src/util/AcApLayoutViewFraming'
@@ -111,5 +112,51 @@ describe('acapResolveLayoutFrameBox', () => {
     const box = acapFrameBoxToGeBox2d(templateLimits)
     expect(box.min.x).toBe(0)
     expect(box.max.y).toBe(9)
+  })
+})
+
+describe('acapResolveContentFrameBox', () => {
+  const staleModelExtents = { min: { x: 0, y: 0 }, max: { x: 120, y: 80 } }
+  const modelEntities = {
+    min: { x: 489920, y: 3418677 },
+    max: { x: 496000, y: 3424000 }
+  }
+  const viewports = { min: { x: 10, y: 10 }, max: { x: 400, y: 280 } }
+
+  it('frames converted geometry on a first Model visit, not stale EXTMIN/EXTMAX', () => {
+    const framed = acapResolveContentFrameBox({
+      isModelSpace: true,
+      layoutExtents: staleModelExtents,
+      entityBox: modelEntities
+    })
+    expect(framed?.source).toBe('entityBox')
+    expect(framed?.box.min.x).toBe(489920)
+  })
+
+  it('falls back to Model EXTMIN/EXTMAX when nothing is converted yet', () => {
+    const framed = acapResolveContentFrameBox({
+      isModelSpace: true,
+      layoutExtents: staleModelExtents
+    })
+    expect(framed?.source).toBe('layoutExtents')
+  })
+
+  it('keeps paper layouts framed by their viewports', () => {
+    const framed = acapResolveContentFrameBox({
+      isModelSpace: false,
+      viewportsBox: viewports,
+      layoutExtents: staleModelExtents,
+      entityBox: modelEntities
+    })
+    expect(framed?.source).toBe('viewports')
+  })
+
+  it('ignores viewports in Model space', () => {
+    const framed = acapResolveContentFrameBox({
+      isModelSpace: true,
+      viewportsBox: viewports,
+      entityBox: modelEntities
+    })
+    expect(framed?.source).toBe('entityBox')
   })
 })
