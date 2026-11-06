@@ -1,5 +1,11 @@
 # @mlightcad/pdf-renderer
 
+## 1.8.0-preview.2
+
+### Patch Changes
+
+- fix: keeps MTEXT background masks under their glyphs after INSERT compact by preserving original child order in the group compactor, and loads OrbitControls via an explicit .js import so ESM resolution does not break. Also upgrades mtext-renderer to 0.13.8 and mtext-input-box to 0.3.8
+
 ## 1.8.0-preview.1
 
 ### Patch Changes

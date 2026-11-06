@@ -1,5 +1,19 @@
 # @mlightcad/three-renderer
 
+## 1.8.0-preview.2
+
+### Patch Changes
+
+- aeaed4c: fix: keep MTEXT background masks under their glyphs after INSERT compact
+
+  `AcTrGroupCompactor` now rebuilds compacted block children in the original
+  relative order instead of appending non-mergeable wrappers (empty `AcTrMText`
+  shells) before singleton meshes. That restores the mask-then-glyphs packing
+  order so draw-order Z no longer lets a canvas-coloured MTEXT mask hide its
+  own text inside title-block INSERTs.
+
+- fix: keeps MTEXT background masks under their glyphs after INSERT compact by preserving original child order in the group compactor, and loads OrbitControls via an explicit .js import so ESM resolution does not break. Also upgrades mtext-renderer to 0.13.8 and mtext-input-box to 0.3.8
+
 ## 1.8.0-preview.1
 
 ### Patch Changes

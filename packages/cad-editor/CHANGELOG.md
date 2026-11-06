@@ -1,5 +1,26 @@
 # @mlightcad/cad-viewer
 
+## 1.8.0-preview.2
+
+### Patch Changes
+
+- fix: keeps MTEXT background masks under their glyphs after INSERT compact by preserving original child order in the group compactor, and loads OrbitControls via an explicit .js import so ESM resolution does not break. Also upgrades mtext-renderer to 0.13.8 and mtext-input-box to 0.3.8
+- Updated dependencies [aeaed4c]
+- Updated dependencies
+  - @mlightcad/three-renderer@1.8.0-preview.2
+  - @mlightcad/cad-agent-core@1.8.0-preview.2
+  - @mlightcad/cad-agent-plugin@1.8.0-preview.2
+  - @mlightcad/cad-google-drive-plugin@1.8.0-preview.2
+  - @mlightcad/cad-html-plugin@1.8.0-preview.2
+  - @mlightcad/cad-onedrive-plugin@1.8.0-preview.2
+  - @mlightcad/cad-pdf-core@1.8.0-preview.2
+  - @mlightcad/cad-pdf-plugin@1.8.0-preview.2
+  - @mlightcad/cad-script-core@1.8.0-preview.2
+  - @mlightcad/cad-script-plugin@1.8.0-preview.2
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.2
+  - @mlightcad/cad-svg-plugin@1.8.0-preview.2
+  - @mlightcad/pdf-renderer@1.8.0-preview.2
+
 ## 1.8.0-preview.1
 
 ### Patch Changes
