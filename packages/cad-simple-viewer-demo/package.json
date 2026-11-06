@@ -1,7 +1,7 @@
 {
   "name": "@mlightcad/cad-simple-viewer-demo",
   "private": true,
-  "version": "1.8.0-preview.2",
+  "version": "1.8.0-preview.3",
   "type": "module",
   "repository": {
     "type": "git",

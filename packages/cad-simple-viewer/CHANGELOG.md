@@ -1,5 +1,22 @@
 # @mlightcad/cad-simple-viewer
 
+## 1.8.0-preview.3
+
+### Patch Changes
+
+- 5926492: fix: frame the first Model visit by converted geometry
+
+  When a document opens into a paper layout, the first switch to Model framed
+  the Model layout's stored EXTMIN/EXTMAX ahead of the converted entity box.
+  Those extents are often stale, so Model looked empty and ZOOM Original kept
+  returning to the same blank area. Model now frames the converted geometry,
+  like opening straight into Model does; EXTMIN/EXTMAX remains the fallback
+  before anything is converted. Paper layouts are unchanged.
+
+- feat: adds drawDim\* script APIs for real dimensions, suggested-task prompts and a context-usage ring in the agent palette, and narrower entity queries so large drawings avoid script_timeout. Also frames the first Model visit from converted geometry when opening into a paper layout so ZOOM Original does not land on a blank view
+- Updated dependencies
+  - @mlightcad/three-renderer@1.8.0-preview.3
+
 ## 1.8.0-preview.2
 
 ### Patch Changes

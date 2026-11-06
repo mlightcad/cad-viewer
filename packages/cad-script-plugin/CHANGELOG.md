@@ -1,5 +1,26 @@
 # @mlightcad/cad-script-plugin
 
+## 1.8.0-preview.3
+
+### Patch Changes
+
+- 9667011: fix(agent): avoid script_timeout on large drawing queries
+
+  Add per-block `entityCount` / `typeCounts` on `cad.blocks`, plus
+  `cad.entities.count` / `inBlock(id, pred?)`. `where`/`count`/`inBox` scan
+  layout spaces only (not block defs). Cap snapshot queries (`too_many_matches`),
+  raise script budget to 5s and per-turn steps to 50/80, and steer agents off
+  full-DB `extents` scans (use `inBox`; type is `BlockReference`).
+
+- feat: adds drawDim\* script APIs for real dimensions, suggested-task prompts and a context-usage ring in the agent palette, and narrower entity queries so large drawings avoid script_timeout. Also frames the first Model visit from converted geometry when opening into a paper layout so ZOOM Original does not land on a blank view
+- Updated dependencies [9667011]
+- Updated dependencies [5926492]
+- Updated dependencies
+- Updated dependencies [ab2447c]
+  - @mlightcad/cad-script-core@1.8.0-preview.3
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.3
+  - @mlightcad/cad-agent-core@1.8.0-preview.3
+
 ## 1.8.0-preview.2
 
 ### Patch Changes

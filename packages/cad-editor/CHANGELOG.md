@@ -1,5 +1,38 @@
 # @mlightcad/cad-viewer
 
+## 1.8.0-preview.3
+
+### Patch Changes
+
+- dd031f0: feat(agent): add suggested-task prompts in the agent palette toolbar
+
+  Add a toolbar icon that opens categorized common CAD tasks (extract,
+  stats, modify, create, review). Choosing a task inserts its prompt into
+  the chat composer for editing before send. Also bridge the landing
+  `AcApI18n` locale onto the full-viewer singleton so agent UI strings
+  follow the host language selector.
+
+- feat: adds drawDim\* script APIs for real dimensions, suggested-task prompts and a context-usage ring in the agent palette, and narrower entity queries so large drawings avoid script_timeout. Also frames the first Model visit from converted geometry when opening into a paper layout so ZOOM Original does not land on a blank view
+- Updated dependencies [5e6c08e]
+- Updated dependencies [9667011]
+- Updated dependencies [dd031f0]
+- Updated dependencies [5926492]
+- Updated dependencies
+- Updated dependencies [ab2447c]
+  - @mlightcad/cad-agent-plugin@1.8.0-preview.3
+  - @mlightcad/cad-script-core@1.8.0-preview.3
+  - @mlightcad/cad-script-plugin@1.8.0-preview.3
+  - @mlightcad/cad-simple-viewer@1.8.0-preview.3
+  - @mlightcad/cad-agent-core@1.8.0-preview.3
+  - @mlightcad/cad-google-drive-plugin@1.8.0-preview.3
+  - @mlightcad/cad-html-plugin@1.8.0-preview.3
+  - @mlightcad/cad-onedrive-plugin@1.8.0-preview.3
+  - @mlightcad/cad-pdf-core@1.8.0-preview.3
+  - @mlightcad/cad-pdf-plugin@1.8.0-preview.3
+  - @mlightcad/cad-svg-plugin@1.8.0-preview.3
+  - @mlightcad/pdf-renderer@1.8.0-preview.3
+  - @mlightcad/three-renderer@1.8.0-preview.3
+
 ## 1.8.0-preview.2
 
 ### Patch Changes

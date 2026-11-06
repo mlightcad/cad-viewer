@@ -30,10 +30,14 @@
   },
   "changesets": [
     "agent-collapse-tool-calls",
+    "agent-context-usage-ring",
+    "agent-narrow-entity-queries",
     "agent-provider-settings",
+    "agent-task-prompts",
     "background-fill-layer-refresh",
     "enrich-entity-snapshot",
     "file-open-panel-entry",
+    "first-model-visit-frame",
     "fix-pdf-exporter-no-plot-layers",
     "hatch-loop-edge-drawn-twice",
     "html-invisible-layer-toggle",
@@ -45,9 +49,11 @@
     "peer-range-bumps",
     "release-1-8-0-preview-1",
     "release-1-8-0-preview-2",
+    "release-1-8-0-preview-3",
     "release-1-8-0-preview",
     "rename-cad-viewer-to-cad-editor",
     "rename-docs-and-cdn-pin",
+    "script-draw-dimensions",
     "simple-ui-layer-search",
     "type-to-command-line"
   ]
