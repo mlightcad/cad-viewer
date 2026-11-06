@@ -34,6 +34,12 @@ import AgentModelSettings from './AgentModelSettings.vue'
 import { formatChatError } from './formatChatError'
 import { prepareImageAttachments } from './prepareImageAttachments'
 import { providerLabel } from './providerLabels'
+import {
+  AGENT_TASK_CATEGORY_LABEL_KEYS,
+  AGENT_TASK_CATEGORY_ORDER,
+  AGENT_TASKS,
+  type AgentTaskDef
+} from './taskPrompts'
 import { createAgentChatOptions, useAgentChatRef } from './useAgentChat'
 
 /** Image file part on a {@link UIMessage} from the AI SDK. */
@@ -77,6 +83,7 @@ const showSettings = ref(false)
 /** Whether the open settings card holds unsaved edits. */
 const settingsDirty = ref(false)
 const input = ref('')
+const inputRef = ref<HTMLTextAreaElement | null>(null)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const pendingImages = ref<File[]>([])
 const pendingPreviewUrls = ref<string[]>([])
@@ -85,6 +92,8 @@ const agentMode = ref<AgentMode>('simple')
 const contextUsage = ref<AgentContextUsage | null>(null)
 /** Whether the context-usage detail popover is open. */
 const showContextUsage = ref(false)
+/** Whether the suggested-task prompt picker is open. */
+const showTaskPrompts = ref(false)
 
 watch(showSettings, open => {
   if (!open) settingsDirty.value = false
@@ -192,15 +201,74 @@ const contextUsageCategories = computed(() => {
 /** Toggles the context-usage detail popover. */
 function toggleContextUsage() {
   showContextUsage.value = !showContextUsage.value
+  if (showContextUsage.value) showTaskPrompts.value = false
 }
 
-/** Closes the context-usage popover when clicking outside. */
+/** Toggles the suggested-task prompt picker. */
+function toggleTaskPrompts() {
+  showTaskPrompts.value = !showTaskPrompts.value
+  if (showTaskPrompts.value) {
+    showContextUsage.value = false
+    showSettings.value = false
+  }
+}
+
+/** Toggles the settings card and closes the task picker when opening settings. */
+function toggleSettings() {
+  showSettings.value = !showSettings.value
+  if (showSettings.value) showTaskPrompts.value = false
+}
+
+/**
+ * Task groups for the picker, with localized category / title / prompt text.
+ */
+const taskPromptGroups = computed(() =>
+  AGENT_TASK_CATEGORY_ORDER.map(category => ({
+    category,
+    label: labels.value[AGENT_TASK_CATEGORY_LABEL_KEYS[category]],
+    tasks: AGENT_TASKS.filter(task => task.category === category).map(task => ({
+      ...task,
+      title: labels.value[task.titleKey],
+      prompt: labels.value[task.promptKey]
+    }))
+  })).filter(group => group.tasks.length > 0)
+)
+
+/**
+ * Puts a suggested task prompt into the composer so the user can edit and send.
+ */
+function applyTaskPrompt(task: AgentTaskDef) {
+  const prompt = labels.value[task.promptKey]
+  input.value = prompt
+  showTaskPrompts.value = false
+  showSettings.value = false
+  // Next tick isn’t needed for focus; textarea exists whenever the composer does.
+  requestAnimationFrame(() => {
+    const el = inputRef.value
+    if (!el) return
+    el.focus()
+    el.setSelectionRange(prompt.length, prompt.length)
+  })
+}
+
+/** Closes floating popovers when clicking outside their anchors. */
 function onDocumentPointerDown(event: PointerEvent) {
-  if (!showContextUsage.value) return
   const target = event.target
   if (!(target instanceof Element)) return
-  if (target.closest('.cad-agent-context-usage')) return
-  showContextUsage.value = false
+  if (
+    showContextUsage.value &&
+    !target.closest('.cad-agent-context-usage') &&
+    !target.closest('.cad-agent-context-usage-popover')
+  ) {
+    showContextUsage.value = false
+  }
+  if (
+    showTaskPrompts.value &&
+    !target.closest('.cad-agent-task-prompts') &&
+    !target.closest('.cad-agent-task-prompts-popover')
+  ) {
+    showTaskPrompts.value = false
+  }
 }
 
 onMounted(async () => {
@@ -540,6 +608,7 @@ function clearChat() {
   clearPendingImages()
   dismissError()
   showSettings.value = false
+  showTaskPrompts.value = false
   showContextUsage.value = false
   contextUsage.value = null
   toolGroupOverrides.value = new Map()
@@ -789,13 +858,32 @@ function isVerificationMessage(message: UIMessage): boolean {
     <div v-if="!embedded" class="cad-agent-panel-header">
       <span class="cad-agent-panel-title">{{ labels.title }}</span>
       <div class="cad-agent-panel-actions">
+        <div class="cad-agent-task-prompts">
+          <button
+            type="button"
+            class="cad-agent-icon-btn"
+            :class="{ 'is-active': showTaskPrompts }"
+            :title="labels.taskPrompts"
+            :aria-label="labels.taskPrompts"
+            :aria-expanded="showTaskPrompts"
+            @click="toggleTaskPrompts"
+          >
+            <!-- Suggested-tasks icon: stacked prompt cards + spark -->
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M8 3h9c1.1 0 2 .9 2 2v9h-1.75V5.25H8V3zm-3.25 4H14c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H4.75c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2zm1.1 3.15v1.35h7.3V10.15h-7.3zm0 3.1v1.35h5.6v-1.35h-5.6zm0 3.1v1.35h7.3v-1.35h-7.3zM19.2 1.2l.55 1.45 1.45.55-1.45.55-.55 1.45-.55-1.45-1.45-.55 1.45-.55.55-1.45z"
+              />
+            </svg>
+          </button>
+        </div>
         <button
           type="button"
           class="cad-agent-icon-btn"
           :class="{ 'is-active': showSettings }"
           :title="labels.settings"
           :aria-label="labels.settings"
-          @click="showSettings = !showSettings"
+          @click="toggleSettings"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path
@@ -823,15 +911,63 @@ function isVerificationMessage(message: UIMessage): boolean {
           {{ labels.close }}
         </button>
       </div>
+      <div
+        v-if="showTaskPrompts"
+        class="cad-agent-task-prompts-popover"
+        role="dialog"
+        :aria-label="labels.taskPromptsTitle"
+      >
+        <div class="cad-agent-task-prompts-popover-header">
+          {{ labels.taskPromptsTitle }}
+        </div>
+        <div
+          v-for="group in taskPromptGroups"
+          :key="group.category"
+          class="cad-agent-task-prompts-group"
+        >
+          <div class="cad-agent-task-prompts-group-label">
+            {{ group.label }}
+          </div>
+          <button
+            v-for="task in group.tasks"
+            :key="task.id"
+            type="button"
+            class="cad-agent-task-prompts-item"
+            @click="applyTaskPrompt(task)"
+          >
+            <span class="cad-agent-task-prompts-item-title">
+              {{ task.title }}
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
     <div v-else class="cad-agent-panel-toolbar">
+      <div class="cad-agent-task-prompts">
+        <button
+          type="button"
+          class="cad-agent-icon-btn"
+          :class="{ 'is-active': showTaskPrompts }"
+          :title="labels.taskPrompts"
+          :aria-label="labels.taskPrompts"
+          :aria-expanded="showTaskPrompts"
+          @click="toggleTaskPrompts"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M8 3h9c1.1 0 2 .9 2 2v9h-1.75V5.25H8V3zm-3.25 4H14c1.1 0 2 .9 2 2v10c0 1.1-.9 2-2 2H4.75c-1.1 0-2-.9-2-2V9c0-1.1.9-2 2-2zm1.1 3.15v1.35h7.3V10.15h-7.3zm0 3.1v1.35h5.6v-1.35h-5.6zm0 3.1v1.35h7.3v-1.35h-7.3zM19.2 1.2l.55 1.45 1.45.55-1.45.55-.55 1.45-.55-1.45-1.45-.55 1.45-.55.55-1.45z"
+            />
+          </svg>
+        </button>
+      </div>
       <button
         type="button"
         class="cad-agent-icon-btn"
         :class="{ 'is-active': showSettings }"
         :title="labels.settings"
         :aria-label="labels.settings"
-        @click="showSettings = !showSettings"
+        @click="toggleSettings"
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path
@@ -851,6 +987,36 @@ function isVerificationMessage(message: UIMessage): boolean {
           <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
         </svg>
       </button>
+      <div
+        v-if="showTaskPrompts"
+        class="cad-agent-task-prompts-popover"
+        role="dialog"
+        :aria-label="labels.taskPromptsTitle"
+      >
+        <div class="cad-agent-task-prompts-popover-header">
+          {{ labels.taskPromptsTitle }}
+        </div>
+        <div
+          v-for="group in taskPromptGroups"
+          :key="group.category"
+          class="cad-agent-task-prompts-group"
+        >
+          <div class="cad-agent-task-prompts-group-label">
+            {{ group.label }}
+          </div>
+          <button
+            v-for="task in group.tasks"
+            :key="task.id"
+            type="button"
+            class="cad-agent-task-prompts-item"
+            @click="applyTaskPrompt(task)"
+          >
+            <span class="cad-agent-task-prompts-item-title">
+              {{ task.title }}
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
 
     <AgentModelSettings
@@ -1012,6 +1178,58 @@ function isVerificationMessage(message: UIMessage): boolean {
     </div>
 
     <div class="cad-agent-panel-input">
+      <div
+        v-if="showContextUsage"
+        class="cad-agent-context-usage-popover"
+        role="dialog"
+        :aria-label="labels.contextUsage"
+      >
+        <div class="cad-agent-context-usage-popover-header">
+          {{ labels.contextUsage }}
+        </div>
+        <div class="cad-agent-context-usage-popover-summary">
+          <span class="cad-agent-context-usage-popover-full">
+            {{ contextUsageFullText }}
+          </span>
+          <span class="cad-agent-context-usage-popover-tokens">
+            {{ contextUsageTokensText }}
+          </span>
+        </div>
+        <div class="cad-agent-context-usage-popover-bar">
+          <div
+            v-for="category in contextUsageCategories"
+            :key="category.id"
+            class="cad-agent-context-usage-popover-segment"
+            :style="{
+              width: `${category.widthPercent}%`,
+              background: category.color
+            }"
+            :title="`${category.label}: ${formatTokenCount(category.tokens)}`"
+          />
+        </div>
+        <ul
+          v-if="contextUsageCategories.length"
+          class="cad-agent-context-usage-popover-list"
+        >
+          <li
+            v-for="category in contextUsageCategories"
+            :key="category.id"
+            class="cad-agent-context-usage-popover-row"
+          >
+            <span
+              class="cad-agent-context-usage-popover-swatch"
+              :style="{ background: category.color }"
+              aria-hidden="true"
+            />
+            <span class="cad-agent-context-usage-popover-label">
+              {{ category.label }}
+            </span>
+            <span class="cad-agent-context-usage-popover-count">
+              {{ formatTokenCount(category.tokens) }}
+            </span>
+          </li>
+        </ul>
+      </div>
       <div v-if="pendingImages.length" class="cad-agent-attachments">
         <div
           v-for="(file, index) in pendingImages"
@@ -1036,6 +1254,7 @@ function isVerificationMessage(message: UIMessage): boolean {
         </div>
       </div>
       <textarea
+        ref="inputRef"
         v-model="input"
         :placeholder="labels.inputPlaceholder"
         :disabled="!settingsReady"
@@ -1126,58 +1345,6 @@ function isVerificationMessage(message: UIMessage): boolean {
                 />
               </svg>
             </button>
-            <div
-              v-if="showContextUsage"
-              class="cad-agent-context-usage-popover"
-              role="dialog"
-              :aria-label="labels.contextUsage"
-            >
-              <div class="cad-agent-context-usage-popover-header">
-                {{ labels.contextUsage }}
-              </div>
-              <div class="cad-agent-context-usage-popover-summary">
-                <span class="cad-agent-context-usage-popover-full">
-                  {{ contextUsageFullText }}
-                </span>
-                <span class="cad-agent-context-usage-popover-tokens">
-                  {{ contextUsageTokensText }}
-                </span>
-              </div>
-              <div class="cad-agent-context-usage-popover-bar">
-                <div
-                  v-for="category in contextUsageCategories"
-                  :key="category.id"
-                  class="cad-agent-context-usage-popover-segment"
-                  :style="{
-                    width: `${category.widthPercent}%`,
-                    background: category.color
-                  }"
-                  :title="`${category.label}: ${formatTokenCount(category.tokens)}`"
-                />
-              </div>
-              <ul
-                v-if="contextUsageCategories.length"
-                class="cad-agent-context-usage-popover-list"
-              >
-                <li
-                  v-for="category in contextUsageCategories"
-                  :key="category.id"
-                  class="cad-agent-context-usage-popover-row"
-                >
-                  <span
-                    class="cad-agent-context-usage-popover-swatch"
-                    :style="{ background: category.color }"
-                    aria-hidden="true"
-                  />
-                  <span class="cad-agent-context-usage-popover-label">
-                    {{ category.label }}
-                  </span>
-                  <span class="cad-agent-context-usage-popover-count">
-                    {{ formatTokenCount(category.tokens) }}
-                  </span>
-                </li>
-              </ul>
-            </div>
           </div>
         </div>
         <div class="cad-agent-panel-input-right">

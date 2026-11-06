@@ -122,7 +122,7 @@ import {
   useLocale,
   useSettings
 } from '../composable'
-import { LocaleProp } from '../locale'
+import { LocaleProp, syncViewerAcApI18n } from '../locale'
 import { resolveOpenFileErrorToastMessage } from '../util/openFileErrorMessage'
 import { MlDialogManager, MlFontFileReader } from './common'
 import { MlEntityInfo, MlToolBars } from './layout'
@@ -265,6 +265,8 @@ const { t } = useI18n()
 const { currentLocale, effectiveLocale, elementPlusLocale } = useLocale(
   props.locale
 )
+// Bridge landing-page AcApI18n → full-viewer singleton before plugins load.
+syncViewerAcApI18n()
 provideLocale(currentLocale)
 // Canvas element reference
 const containerRef = ref<HTMLDivElement>()

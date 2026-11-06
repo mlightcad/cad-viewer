@@ -138,5 +138,48 @@ export const agentTr = {
   deleteProviderConfirm: '"{id}" sağlayıcısı ve API anahtarı silinsin mi?',
   toolsSummary: '{count} araç çağrısı',
   toolsRunning: 'Araçlar çalışıyor ({count})…',
-  toolsFailed: '{count} başarısız'
+  toolsFailed: '{count} başarısız',
+  taskPrompts: 'Önerilen görevler',
+  taskPromptsTitle: 'Sık kullanılan görevler',
+  taskCategoryExtract: 'Çıkarma',
+  taskCategoryStats: 'İstatistik',
+  taskCategoryModify: 'Düzenleme',
+  taskCategoryCreate: 'Oluşturma',
+  taskCategoryReview: 'İnceleme',
+  taskDrawingOverviewTitle: 'Çizim özeti',
+  taskDrawingOverviewPrompt:
+    'Açık çizimi özetle: extents, varsa birim sistemi, katman listesi ve çizimin ne içerdiğine dair kısa bir açıklama. Sorgula — yeniden çizme.',
+  taskExtractTextTitle: 'Metin ve antet çıkar',
+  taskExtractTextPrompt:
+    'Açık çizimdeki tüm okunabilir metni çıkar; varsa antet alanlarını da dahil et. Yararlıysa katmana veya bölgeye göre grupla ve değerleri net listele.',
+  taskListDimensionsTitle: 'Ölçüleri listele',
+  taskListDimensionsPrompt:
+    'Açık çizimdeki ölçü nesnelerini bul; ölçülen değerleri, ilişkili metni ve yaklaşık konumları listele. Eksik veya tutarsız ölçüleri özetle.',
+  taskEntityStatsTitle: 'Nesne sayıları',
+  taskEntityStatsPrompt:
+    'Açık çizimdeki nesneleri türe ve katmana göre say. Her nesneyi dökmek yerine özet sorguları tercih et. Kompakt bir tablo veya madde listesi sun.',
+  taskLayerReportTitle: 'Katman kullanım raporu',
+  taskLayerReportPrompt:
+    'Açık çizimdeki katmanları bildir: ad, açık/kapalı, dondurma, renk, çizgi tipi ve katman başına yaklaşık nesne sayısı. Boş, kullanılmayan veya tuhaf adlı katmanları işaretle.',
+  taskOrganizeLayersTitle: 'Katmanlara göre düzenle',
+  taskOrganizeLayersPrompt:
+    'Açık çizim için mantıklı bir katman düzeni öner ve uygula (ör. duvarlar, kapılar, metin, ölçüler, mobilya). Yanlış katmandaki nesneleri taşı; gerekirse eksik katmanları oluştur. Değişiklikleri açıkla.',
+  taskCleanupDrawingTitle: 'Çizimi temizle',
+  taskCleanupDrawingPrompt:
+    'Açık çizimi yaygın temizlik sorunları için incele (sıfır uzunluklu geometri, tespit edilebilen çakışan kopyalar, boş metin, kullanılmayan katmanlar) ve güvenli olanları düzelt. Yapılanları ve manuel inceleme gerekenleri özetle.',
+  taskDrawDimensionedRectTitle: 'Ölçülü dikdörtgen çiz',
+  taskDrawDimensionedRectPrompt:
+    'Sol alt köşesi (0, 0) olan 1000 × 600 (çizim birimi) kapalı bir dikdörtgen çiz. Genişlik ve yükseklik için yatay ve dikey ölçüler ekle. Geometri ve ölçüler için net katmanlar kullan.',
+  taskCreateTitleBlockTitle: 'Antet oluştur',
+  taskCreateTitleBlockPrompt:
+    'Model alanında (veya kuruluysa kağıt alanında) basit bir A3 tarzı antet oluştur: dış çerçeve, başlık, çizim no, ölçek, tarih ve çizen alanları yer tutucu metinle. Geometriyi ayrı bir katmana koy.',
+  taskFromReferenceTitle: 'Referans görüntüden çiz',
+  taskFromReferencePrompt:
+    'Bir referans görüntü ekleyeceğim (kroki, ekran görüntüsü veya plan). Dikkatle analiz et, ardından doğru oranlarla 2B CAD geometrisini yeniden oluştur; katmanlara ayır ve görünen ölçüleri ekle. Yalnızca kritik bir boyut belirsizse sor.',
+  taskDraftingReviewTitle: 'Çizim kalitesi incelemesi',
+  taskDraftingReviewPrompt:
+    'Açık çizimi çizim kalitesi açısından incele: tutarsız metin yükseklikleri, geometriyle uyuşmayabilecek ölçüler, çakışan notlar, 0 katmanında olması gereken nesneler, eksik görünümler. Bulguları önem sırasıyla listele; aksi istenmedikçe yalnızca net ve güvenli sorunları düzelt.',
+  taskLayerStandardsTitle: 'Katman adlandırma kontrolü',
+  taskLayerStandardsPrompt:
+    'Katman adlarını, renkleri ve kullanımı yaygın CAD kurallarına göre incele. Daha net bir adlandırma öner; önerilen değişiklikleri özetledikten sonra isteğe bağlı olarak yeniden adlandır/renkleri güncelle.'
 } as const

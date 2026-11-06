@@ -128,5 +128,48 @@ export const agentZh = {
   deleteProviderConfirm: '确定删除提供商“{id}”及其 API 密钥吗？',
   toolsSummary: '已执行 {count} 个工具',
   toolsRunning: '正在执行工具（{count}）…',
-  toolsFailed: '{count} 个失败'
+  toolsFailed: '{count} 个失败',
+  taskPrompts: '建议任务',
+  taskPromptsTitle: '常用任务',
+  taskCategoryExtract: '信息提取',
+  taskCategoryStats: '统计',
+  taskCategoryModify: '修改',
+  taskCategoryCreate: '创建',
+  taskCategoryReview: '审核',
+  taskDrawingOverviewTitle: '图纸概览',
+  taskDrawingOverviewPrompt:
+    '总结当前打开的图纸：范围（extents）、可识别的单位制、图层列表，以及图纸内容的简要说明。请查询图纸，不要重画。',
+  taskExtractTextTitle: '提取文字与标题栏',
+  taskExtractTextPrompt:
+    '提取当前图纸中所有可读文字，包括标题栏字段（如有）。可按图层或区域分组，并清晰列出各项内容。',
+  taskListDimensionsTitle: '列出尺寸标注',
+  taskListDimensionsPrompt:
+    '查找当前图纸中的尺寸标注实体，列出测量值、关联文字和大致位置，并总结明显缺失或不一致的尺寸。',
+  taskEntityStatsTitle: '图元数量统计',
+  taskEntityStatsPrompt:
+    '按类型和图层统计当前图纸中的图元数量。优先使用汇总查询（计数 / 按块统计），不要导出全部图元。用紧凑表格或条目呈现。',
+  taskLayerReportTitle: '图层使用报告',
+  taskLayerReportPrompt:
+    '报告当前图纸的图层情况：名称、开关、冻结、颜色、线型，以及各图层大致图元数量。标出空图层、未使用或命名异常的图层。',
+  taskOrganizeLayersTitle: '按图层整理',
+  taskOrganizeLayersPrompt:
+    '为当前图纸提出并应用合理的图层组织（例如墙、门、文字、尺寸、家具）。将放错图层的图元移到合适图层，必要时创建缺失图层，并说明改动。',
+  taskCleanupDrawingTitle: '清理图纸',
+  taskCleanupDrawingPrompt:
+    '检查当前图纸中常见的清理问题（零长度几何、可检测的重复重叠图元、空文字、未使用图层），安全可修的请修复。总结已处理项和需人工确认的项。',
+  taskDrawDimensionedRectTitle: '绘制带尺寸的矩形',
+  taskDrawDimensionedRectPrompt:
+    '绘制一个 1000 × 600（图纸单位）的闭合矩形，左下角在 (0, 0)。为宽度和高度添加水平和垂直尺寸标注。几何与尺寸使用清晰的图层。',
+  taskCreateTitleBlockTitle: '创建标题栏',
+  taskCreateTitleBlockPrompt:
+    '在模型空间（或已有布局的图纸空间）创建一个简易 A3 风格标题栏：外框、图名、图号、比例、日期、绘制人等占位字段。几何放在专用图层。',
+  taskFromReferenceTitle: '根据参考图绘制',
+  taskFromReferencePrompt:
+    '我将附加一张参考图（草图、截图或平面图）。请仔细分析，并按正确比例重建二维 CAD 几何，分好图层，可见尺寸一并标注。仅在关键尺寸无法判断时再询问我。',
+  taskDraftingReviewTitle: '制图质量审核',
+  taskDraftingReviewPrompt:
+    '审核当前图纸的制图质量：文字高度是否不一致、尺寸是否可能与几何不符、注释是否重叠、本应分层却在 0 层的图元、视图是否不完整等。按严重程度列出问题；除非我要求，否则只修复明确且安全的问题。',
+  taskLayerStandardsTitle: '图层命名规范检查',
+  taskLayerStandardsPrompt:
+    '按常见 CAD 约定检查图层名称、颜色与用法。提出更清晰的命名方案，并在总结拟议改动后可选地重命名/重设颜色。'
 } as const
