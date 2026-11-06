@@ -90,6 +90,11 @@ export function clearAcTrDrawOrderZAllocator(): void {
  * Elevates linework-tier geometry so later entities occlude earlier ones.
  * Hatch-tier fills (`drawOrder < 0`) keep Z unchanged so they stay under
  * linework via `renderOrder` regardless of creation order.
+ *
+ * Within one entity, Z follows the order {@link AcTrBatchedGroup.addEntity}
+ * visits drawable leaves. INSERT templates must therefore keep MTEXT
+ * background-mask meshes before their glyph wrappers (see
+ * {@link AcTrGroupCompactor}) so the canvas-coloured mask stays under the text.
  */
 function applyDrawOrderZ(
   worldOffset: THREE.Vector3,
