@@ -184,6 +184,92 @@ describe('AcTrGroupCompactor', () => {
     expect(group.children.length).toBe(before)
   })
 
+  it('preserves relative order of masks ahead of AcTrEntity glyph wrappers', () => {
+    // Mirrors MTEXT background-mask + deferred AcTrMText under an INSERT:
+    // compact used to rebuild as [wrappers..., meshes...], so the mask packed
+    // after glyphs and received a higher draw-order Z that hid the text.
+    // Distinct colours keep the leaves as singletons so identity stays stable.
+    const context = new AcTrRenderContext()
+    const early = createLine(
+      'early',
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+      context,
+      { color: 0xff0000 }
+    )
+    const mask = createLine(
+      'mask',
+      { x: 0, y: 5 },
+      { x: 10, y: 5 },
+      context,
+      { color: 0x00ff00 }
+    )
+    const late = createLine(
+      'late',
+      { x: 0, y: 10 },
+      { x: 10, y: 10 },
+      context,
+      { color: 0x0000ff }
+    )
+    const group = new AcTrGroup([early, mask, late], context)
+
+    const glyphShell = new AcTrEntity(context)
+    glyphShell.objectId = 'mtext'
+    glyphShell.userData.layerName = '0'
+    // Insert the empty MTEXT shell immediately after the mask, matching the
+    // flatten order from AcDbMText's [background, textDrawable] group.
+    const maskLeaf = group.children[1]
+    group.children.splice(2, 0, glyphShell)
+    glyphShell.parent = group
+
+    expect(group.children.indexOf(maskLeaf)).toBeLessThan(
+      group.children.indexOf(glyphShell)
+    )
+
+    group.compactForInstancing()
+
+    const orderAfter = group.children.slice()
+    const maskAfter = orderAfter.indexOf(maskLeaf)
+    const shellAfter = orderAfter.indexOf(glyphShell)
+    expect(maskAfter).toBeGreaterThan(-1)
+    expect(shellAfter).toBeGreaterThan(-1)
+    // Mask must stay before the glyph shell so batching allocates it a lower Z.
+    expect(maskAfter).toBeLessThan(shellAfter)
+    // Without the order-preserving rebuild, glyphShell would land at index 0
+    // (all AcTrEntity wrappers were appended before singleton meshes).
+    expect(shellAfter).not.toBe(0)
+  })
+
+  it('keeps merged linework before a glyph shell that sits between sources', () => {
+    // Title-block pattern: same-material linework merges, while an empty
+    // MTEXT shell stays between the first and later sources. The merged leaf
+    // must replace the first source slot so the shell is not rebuilt first.
+    const context = new AcTrRenderContext()
+    const lineA = createLine('a', { x: 0, y: 0 }, { x: 10, y: 0 }, context)
+    const lineB = createLine('b', { x: 0, y: 5 }, { x: 10, y: 5 }, context)
+    const lineC = createLine('c', { x: 0, y: 10 }, { x: 10, y: 10 }, context)
+    const group = new AcTrGroup([lineA, lineB, lineC], context)
+
+    const glyphShell = new AcTrEntity(context)
+    glyphShell.objectId = 'mtext'
+    glyphShell.userData.layerName = '0'
+    // Place the shell after the first flattened leaf: [leafA, shell, leafB, leafC].
+    group.children.splice(1, 0, glyphShell)
+    glyphShell.parent = group
+
+    const beforeVertices = countVertices(group)
+    expect(group.children.length).toBe(4)
+
+    group.compactForInstancing()
+
+    expect(group.isCompacted).toBe(true)
+    expect(countVertices(group)).toBe(beforeVertices)
+    expect(group.children.length).toBe(2)
+    expect(group.children[0]).not.toBe(glyphShell)
+    expect(group.children[1]).toBe(glyphShell)
+    expect(group.children.some(child => child instanceof AcTrEntity)).toBe(true)
+  })
+
   it('merges LineSegments2 fat-line leaves', () => {
     const context = new AcTrRenderContext()
     // basicMaterialOnly=false may produce LineSegments2 depending on style.

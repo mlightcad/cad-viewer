@@ -91,6 +91,11 @@ const _translation = /*@__PURE__*/ new THREE.Vector3()
  * Compaction must run while the group is still at identity (before the INSERT
  * transform is applied): baking uses each leaf's local `matrix`, while the
  * bucket origin is taken from `matrixWorld` translation.
+ *
+ * Relative child order is preserved. {@link AcTrBatchedGroup} assigns rising
+ * draw-order Z while packing leaves, so reordering non-mergeable wrappers
+ * (e.g. {@link AcTrMText}) ahead of earlier meshes (e.g. an MTEXT background
+ * mask) would let the mask occlude its own glyphs.
  */
 export class AcTrGroupCompactor {
   /**
@@ -101,6 +106,12 @@ export class AcTrGroupCompactor {
    *
    * Bake/merge is fail-soft: originals are kept until a merged leaf is
    * successfully created, so geometry is never silently dropped.
+   *
+   * Re-adds results in the original relative child order (merged leaves take
+   * the slot of their first source). Callers that allocate draw-order Z by
+   * walking children — notably {@link AcTrBatchedGroup.addEntity} — depend on
+   * that order so earlier fills (MTEXT background masks) stay under later
+   * glyph meshes.
    *
    * @param group - Flattened group whose direct children should be compacted.
    */
@@ -239,15 +250,18 @@ export class AcTrGroupCompactor {
       bucket.candidates.length = 0
     }
 
-    // Detach all children; re-add kept + merged (or restored sources).
-    group.children = []
-    for (const child of children) {
-      child.parent = null
-    }
-
-    for (const child of kept) {
-      group.add(child)
-    }
+    // Resolve each multi-source bucket to the leaf that will replace its
+    // sources (merged geometry, or the originals on fail-soft / singleton
+    // bake). Do this before reparenting so the rebuild below can walk the
+    // original child list and preserve relative order.
+    //
+    // Order matters for draw-order Z: AcTrBatchedGroup allocates rising Z as
+    // it packs leaves. The previous "kept wrappers first, then merged meshes"
+    // rebuild put AcTrMText (non-mergeable) ahead of its MTEXT background-mask
+    // mesh, so the canvas-coloured mask received a higher Z and hid the glyphs.
+    const keptSet = new Set(kept)
+    const replacementByFirstSource = new Map<THREE.Object3D, THREE.Object3D>()
+    const consumedSources = new Set<THREE.Object3D>()
 
     for (const bucket of buckets) {
       if (bucket.sources.length === 0) {
@@ -259,7 +273,7 @@ export class AcTrGroupCompactor {
         bucket.line2Positions = undefined
         bucket.line2SegmentRuns = undefined
         for (const source of bucket.sources) {
-          group.add(source)
+          keptSet.add(source)
         }
         bucket.sources.length = 0
         continue
@@ -267,8 +281,12 @@ export class AcTrGroupCompactor {
 
       const merged = this.buildMergedLeaf(bucket)
       if (merged) {
-        group.add(merged)
+        // sources were pushed in candidate (original child) order, so [0]
+        // is the earliest slot that should carry the merged replacement.
+        const firstSource = bucket.sources[0]
+        replacementByFirstSource.set(firstSource, merged)
         for (const source of bucket.sources) {
+          consumedSources.add(source)
           this.disposeLeafGeometry(source)
         }
         bucket.sources.length = 0
@@ -280,9 +298,28 @@ export class AcTrGroupCompactor {
       bucket.line2Positions = undefined
       bucket.line2SegmentRuns = undefined
       for (const source of bucket.sources) {
-        group.add(source)
+        keptSet.add(source)
       }
       bucket.sources.length = 0
+    }
+
+    // Detach all children; re-add in the original relative order.
+    group.children = []
+    for (const child of children) {
+      child.parent = null
+    }
+
+    for (const child of children) {
+      if (consumedSources.has(child)) {
+        const replacement = replacementByFirstSource.get(child)
+        if (replacement) {
+          group.add(replacement)
+        }
+        continue
+      }
+      if (keptSet.has(child)) {
+        group.add(child)
+      }
     }
 
     group.updateMatrixWorld(true)
