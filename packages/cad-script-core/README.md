@@ -186,9 +186,14 @@ ids are highlighted; a headless session only records them.
 
 Inside the transaction, `tx` can `drawLine`, `drawCircle`, `drawArc`,
 `drawRectangle`, `drawPolyline`, `drawEllipse`, `drawHatch`, `drawPoint`,
-`drawRay`, `drawXline`, `drawSpline`, `drawText`, `erase`, `setLayer`, `move`,
-`rotate`, `createLayer`, and `setCurrentLayer`. Draw methods return the new
-entity id.
+`drawRay`, `drawXline`, `drawSpline`, `drawText`, `drawDimAligned`,
+`drawDimLinear`, `drawDimDiameter`, `drawDimRadius`, `drawDimAngular`,
+`drawDimArc`, `drawDimOrdinate`, `erase`, `setLayer`, `move`, `rotate`,
+`createLayer`, and `setCurrentLayer`. Draw methods return the new entity id.
+
+Prefer `drawDim*` for annotations — do not approximate dimensions with lines,
+arrows, and text. Diameter/radius accept `center` + `radius` (optional
+`angleDeg` / `leaderLength`) so a circle snapshot can feed them directly.
 
 Snapshot `geometry` for common types:
 

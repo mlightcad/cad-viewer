@@ -73,6 +73,28 @@ cad.edit.transaction('画矩形', tx => {
 return 'done'
 ```
 
+## 円に直径寸法を追加
+
+各円の中心と半径から本物の直径寸法エンティティを作成します。
+
+```javascript
+const dimIds = []
+cad.edit.transaction('直径寸法', tx => {
+  for (const c of cad.entities.where(e => e.type === 'Circle')) {
+    const g = c.geometry
+    dimIds.push(
+      tx.drawDimDiameter({
+        center: g.center,
+        radius: g.radius,
+        angleDeg: 0,
+        leaderLength: Math.max(g.radius * 0.25, 1)
+      })
+    )
+  }
+})
+return { count: dimIds.length, dimIds }
+```
+
 ## レイヤー上のすべてのエンティティを移動
 
 「标注」レイヤー上のすべてのエンティティを右に 1000 単位移動します。

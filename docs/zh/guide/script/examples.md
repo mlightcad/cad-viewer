@@ -73,6 +73,28 @@ cad.edit.transaction('画矩形', tx => {
 return 'done'
 ```
 
+## 给圆添加直径标注
+
+根据每个圆的圆心和半径创建真正的直径标注实体。
+
+```javascript
+const dimIds = []
+cad.edit.transaction('直径标注', tx => {
+  for (const c of cad.entities.where(e => e.type === 'Circle')) {
+    const g = c.geometry
+    dimIds.push(
+      tx.drawDimDiameter({
+        center: g.center,
+        radius: g.radius,
+        angleDeg: 0,
+        leaderLength: Math.max(g.radius * 0.25, 1)
+      })
+    )
+  }
+})
+return { count: dimIds.length, dimIds }
+```
+
 ## 移动图层上的所有实体
 
 将「标注」图层上的所有实体向右移动 1000 单位。

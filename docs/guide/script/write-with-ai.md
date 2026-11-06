@@ -121,6 +121,14 @@ Methods available within a transaction:
 - tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> Returns the new entity ID
 - tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> Returns the new entity ID
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> Returns the new entity ID
+- tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? }) -> New entity ID
+- tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? }) -> New entity ID
+- tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> New entity ID (or chordPoint+farChordPoint)
+- tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> New entity ID (or center+chordPoint)
+- tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> New entity ID
+- tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> New entity ID
+- tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? }) -> New entity ID
+- Prefer drawDim* for dimensions; do not fake them with lines, arrows, and text
 - tx.erase(ids) -> Returns the number of entities erased
 - tx.setLayer(ids, layer)
 - tx.move(ids, dx, dy) -> Returns the number of entities moved

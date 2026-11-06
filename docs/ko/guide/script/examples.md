@@ -73,6 +73,28 @@ cad.edit.transaction('사각형 그리기', tx => {
 return 'done'
 ```
 
+## 원에 지름 치수 추가
+
+각 원의 중심과 반지름으로 실제 지름 치수 엔티티를 만듭니다.
+
+```javascript
+const dimIds = []
+cad.edit.transaction('지름 치수', tx => {
+  for (const c of cad.entities.where(e => e.type === 'Circle')) {
+    const g = c.geometry
+    dimIds.push(
+      tx.drawDimDiameter({
+        center: g.center,
+        radius: g.radius,
+        angleDeg: 0,
+        leaderLength: Math.max(g.radius * 0.25, 1)
+      })
+    )
+  }
+})
+return { count: dimIds.length, dimIds }
+```
+
 ## 레이어의 모든 엔티티 이동
 
 「치수」 레이어의 모든 엔티티를 오른쪽으로 1000 단위 이동합니다.

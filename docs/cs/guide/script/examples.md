@@ -73,6 +73,28 @@ cad.edit.transaction('Kreslení obdélníku', tx => {
 return 'done'
 ```
 
+## Přidání průměrových kót ke kružnicím
+
+Vytvoří skutečné průměrové kóty z středu a poloměru každé kružnice.
+
+```javascript
+const dimIds = []
+cad.edit.transaction('Průměrové kóty', tx => {
+  for (const c of cad.entities.where(e => e.type === 'Circle')) {
+    const g = c.geometry
+    dimIds.push(
+      tx.drawDimDiameter({
+        center: g.center,
+        radius: g.radius,
+        angleDeg: 0,
+        leaderLength: Math.max(g.radius * 0.25, 1)
+      })
+    )
+  }
+})
+return { count: dimIds.length, dimIds }
+```
+
 ## Přesunutí všech entit na hladině
 
 Přesune všechny entity na hladině „标注“ o 1000 jednotek doprava.

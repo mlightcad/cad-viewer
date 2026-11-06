@@ -342,6 +342,15 @@ cad.edit.transaction('일괄 수정', tx => {
 | `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | 새 엔티티 ID |
 | `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | 새 엔티티 ID |
 | `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | 새 엔티티 ID |
+| `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | 점 `{x,y}`                       | 새 엔티티 ID |
+| `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | `rotationDeg` 생략 시 배치로 수평/수직 | 새 엔티티 ID |
+| `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | 중심+반지름 또는 현 점               | 새 엔티티 ID |
+| `tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, … } \| { center, chordPoint, … })`           | 중심+반지름 또는 중심+현 점          | 새 엔티티 ID |
+| `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | 3점 각도                         | 새 엔티티 ID |
+| `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | 호 길이                          | 새 엔티티 ID |
+| `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | 좌표 치수                        | 새 엔티티 ID |
+
+치수는 `drawDim*`로 만드세요. 선·화살표·문자로 치수를 흉내 내지 마세요. 기본값은 도면 `$DIMSTYLE`이며, 재정의할 때는 `cad.tables.dimStyleTable`의 `styleName`을 넘깁니다.
 
 ### 편집 메서드
 

@@ -79,6 +79,15 @@ import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-ope
 ينطبق نفس التغيير على بقية مساعدات HTML-core (مثل `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents` و`buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`). واجهات مستوى الأوامر مثل `AcApHtmlConvertor` و`chtml` / `-chtml` غير متأثرة. أدلة التطوير التي تعرض الأسماء الجديدة تستهدف **1.8.0+**؛ وعلى 1.7.x استمر في استخدام الرموز القديمة.
 :::
 
+::: tip مضيف السكربت: إنشاء كيانات بُعد حقيقية (`drawDim*`)
+بدءًا من الإصدار الذي يلي **1.8.0-preview.2**، يمكن لـ `cad.edit.transaction` في `@mlightcad/cad-script-core` إنشاء كيانات أبعاد — وليس قراءتها فقط:
+
+- `drawDimAligned`، `drawDimLinear`، `drawDimDiameter`، `drawDimRadius`
+- `drawDimAngular`، `drawDimArc`، `drawDimOrdinate`
+
+يجب على الوكلاء والسكربتات استدعاء هذه الواجهات بدل تقليد الأبعاد بخطوط وأسهم ونص. القطر/نصف القطر يقبلان `center` + `radius` لتمرير لقطة الدائرة مباشرة. انظر [واجهة السكربت](../guide/script/api.md).
+:::
+
 ::: info تقسيم تصدير PDF إلى نواة مشتركة (المتصفح + Node)
 بدءًا من **1.8.0**، يستخدم تصدير PDF نفس التقسيم الطبقي لتصدير HTML. المنطق المشترك في `@mlightcad/cad-pdf-core` (نموذج الخيارات ومسار database → PDF، **بدون** اعتماد على `cad-simple-viewer` / DOM). يستهلكه واجهتان أماميتان:
 

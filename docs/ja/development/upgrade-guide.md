@@ -79,6 +79,15 @@ GitHub リポジトリは引き続き [`mlightcad/cad-viewer`](https://github.co
 ほかの HTML-core ヘルパーも同様です（例: `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`、`buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`）。`AcApHtmlConvertor` や `chtml` / `-chtml` などのコマンド級 API は影響を受けません。開発ガイドに出てくる新しい名前は **1.8.0+** 向けです。1.7.x では従来のシンボルを使い続けてください。
 :::
 
+::: tip スクリプトホスト: 本物の寸法エンティティを作成（`drawDim*`）
+**1.8.0-preview.2** 以降のリリースから、`@mlightcad/cad-script-core` の `cad.edit.transaction` で寸法エンティティを作成できます（以前はスナップショットの読み取りのみ）:
+
+- `drawDimAligned`、`drawDimLinear`、`drawDimDiameter`、`drawDimRadius`
+- `drawDimAngular`、`drawDimArc`、`drawDimOrdinate`
+
+Agent / スクリプトは線・矢印・文字で寸法を模倣せず、これらを呼び出してください。直径/半径は `center` + `radius` を受け取り、円スナップショットをそのまま渡せます。詳細は [スクリプト API](../guide/script/api.md)。
+:::
+
 ::: info PDF エクスポートを共有コアに分割（ブラウザ + Node）
 **1.8.0** から、PDF エクスポートは HTML エクスポートと同じ階層になります。共有ロジックは `@mlightcad/cad-pdf-core`（オプションモデルと database → PDF パイプライン。`cad-simple-viewer` / DOM に**依存しません**）にあり、次の 2 つのフロントエンドがそれを使います。
 

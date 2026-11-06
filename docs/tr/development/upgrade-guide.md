@@ -79,6 +79,15 @@ Davranış değişmez; yalnızca sembol adları değişir. 1.7.x’ten yükselti
 Diğer HTML-core yardımcıları da aynı şekilde yeniden adlandırıldı (örneğin `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`, `buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`). `AcApHtmlConvertor` ile `chtml` / `-chtml` gibi komut düzeyindeki API’ler etkilenmez. Geliştirme kılavuzlarındaki yeni adlar **1.8.0+** içindir; 1.7.x’te eski sembolleri kullanmaya devam edin.
 :::
 
+::: tip Betik host’u: gerçek ölçü varlıkları oluşturun (`drawDim*`)
+**1.8.0-preview.2** sonrasındaki sürümden itibaren `@mlightcad/cad-script-core` içindeki `cad.edit.transaction` ölçü varlıkları oluşturabilir (önceden yalnızca anlık görüntü okunurdu):
+
+- `drawDimAligned`, `drawDimLinear`, `drawDimDiameter`, `drawDimRadius`
+- `drawDimAngular`, `drawDimArc`, `drawDimOrdinate`
+
+Agent / betikler ölçüleri çizgi, ok ve metinle taklit etmemeli; bu API’leri kullanmalıdır. Çap/yarıçap `center` + `radius` kabul eder, böylece çember anlık görüntüsü doğrudan verilebilir. Ayrıntılar: [Betik API](../guide/script/api.md).
+:::
+
 ::: info PDF dışa aktarma paylaşılan çekirdeğe ayrıldı (tarayıcı + Node)
 **1.8.0** sürümünden itibaren PDF dışa aktarma, HTML dışa aktarma ile aynı katmanlamayı kullanır. Paylaşılan mantık `@mlightcad/cad-pdf-core` içindedir (seçenek modeli ve database → PDF hattı; `cad-simple-viewer` / DOM’a **bağımlı değildir**). Bunu iki ön uç kullanır:
 

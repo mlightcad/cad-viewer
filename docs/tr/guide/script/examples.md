@@ -73,6 +73,28 @@ cad.edit.transaction('Dikdörtgen çiz', tx => {
 return 'done'
 ```
 
+## Çemberlere Çap Ölçüsü Ekleme
+
+Her çemberin merkezi ve yarıçapından gerçek çap ölçüsü varlıkları oluşturur.
+
+```javascript
+const dimIds = []
+cad.edit.transaction('Çap ölçüleri', tx => {
+  for (const c of cad.entities.where(e => e.type === 'Circle')) {
+    const g = c.geometry
+    dimIds.push(
+      tx.drawDimDiameter({
+        center: g.center,
+        radius: g.radius,
+        angleDeg: 0,
+        leaderLength: Math.max(g.radius * 0.25, 1)
+      })
+    )
+  }
+})
+return { count: dimIds.length, dimIds }
+```
+
 ## Katmandaki Tüm Varlıkları Taşıma
 
 "Ölçü" katmanındaki tüm varlıkları sağa doğru 1000 birim taşır.

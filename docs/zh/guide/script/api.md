@@ -376,6 +376,15 @@ cad.edit.transaction('批量修改', tx => {
 | `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`                | 新实体 ID |
 | `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`                | 新实体 ID |
 | `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                     | 新实体 ID |
+| `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | 点 `{x,y}`                            | 新实体 ID |
+| `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | 省略 `rotationDeg` 时按放置推断水平/垂直 | 新实体 ID |
+| `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | 圆心+半径 或 弦点对                   | 新实体 ID |
+| `tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, … } \| { center, chordPoint, … })`           | 圆心+半径 或 圆心+弦点                | 新实体 ID |
+| `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | 三点角度                              | 新实体 ID |
+| `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | 弧长                                  | 新实体 ID |
+| `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | 坐标标注                              | 新实体 ID |
+
+请使用 `drawDim*` 创建真正的标注实体，不要用直线、箭头和文字拼假标注。默认使用图纸当前 `$DIMSTYLE`；也可传入 `cad.tables.dimStyleTable` 中的 `styleName`。
 
 ### 编辑方法
 

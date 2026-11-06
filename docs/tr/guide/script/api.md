@@ -344,6 +344,15 @@ cad.edit.transaction('Toplu değişiklik', tx => {
 | `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | Yeni varlık ID'si |
 | `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | Yeni varlık ID'si |
 | `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | Yeni varlık ID'si |
+| `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | noktalar `{x,y}`                 | Yeni varlık ID'si |
+| `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | `rotationDeg` yoksa yerleşime göre Y/D | Yeni varlık ID'si |
+| `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | merkez+yarıçap veya kiriş       | Yeni varlık ID'si |
+| `tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, … } \| { center, chordPoint, … })`           | merkez+yarıçap veya merkez+kiriş | Yeni varlık ID'si |
+| `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | 3 noktalı açı                    | Yeni varlık ID'si |
+| `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | yay uzunluğu                     | Yeni varlık ID'si |
+| `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | ordinat ölçüsü                   | Yeni varlık ID'si |
+
+Ölçüler için `drawDim*` kullanın; çizgi, ok ve metinle ölçü taklidi yapmayın. Varsayılan çizimin `$DIMSTYLE` değeridir; `cad.tables.dimStyleTable` içinden `styleName` geçerek geçersiz kılın.
 
 ### Düzenleme Yöntemleri
 
