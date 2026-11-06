@@ -59,7 +59,15 @@ cad.log('图层总数:', info.layers.length)
 
 ## cad.entities
 
-تُعيد كل الكيانات في قاعدة البيانات: مساحة النموذج، وكل مساحات الورق، وكل تعريفات الكتل، وسمات مراجع الكتل. `ownerId` للسمة هو مرجع الكتلة، ولغير ذلك هو سجل جدول الكتل المالك.
+`where` / `count` / `inBox` تمسح **مساحة النموذج ومساحات الورق فقط** (تعريفات الكتل عبر `inBlock(id)`). `ownerId` للسمة هو مرجع الكتلة، ولغير ذلك سجل جدول الكتل. نوع مرجع الكتلة هو `BlockReference`.
+
+### `cad.entities.count(predicate)`
+
+تعدّ المطابقات دون بناء لقطات. فضّله للإحصاء — `where(pred).length` يلتقط كل مطابقة.
+
+```javascript
+const n = cad.entities.count(e => e.type === 'Circle')
+```
 
 ### `cad.entities.where(predicate)`
 
@@ -80,9 +88,18 @@ if (entity) {
 }
 ```
 
+### `cad.entities.inBlock(blockId)`
+
+تلتقط الكيانات المخزّنة مباشرة في تعريف كتلة واحد (أو مساحة نموذج/ورق).
+
+```javascript
+const widget = cad.blocks.find(block => block.name === 'Widget')
+const ents = widget ? cad.entities.inBlock(widget.id) : []
+```
+
 ### `cad.entities.inBox(min, max)`
 
-تُعيد جميع لقطات الكيانات الواقعة داخل المستطيل المحدد في نظام الإحداثيات العالمي (WCS).
+تُعيد لقطات مساحة التخطيط التي تتقاطع حدودها مع المستطيل (نموذج/ورق فقط).
 
 ```javascript
 const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
@@ -159,7 +176,7 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 
 ## cad.blocks
 
-كل تعريفات الكتل، بما يقابل قسم BLOCKS في DXF، بما في ذلك `*Model_Space` و`*Paper_Space`.
+**بيانات وصفية فقط** لما يقابل قسم BLOCKS في DXF (بما في ذلك `*Model_Space` و`*Paper_Space`). لا مصفوفة كيانات — استخدم `cad.entities.inBlock(id)`.
 
 | الحقل                           | الوصف                                              |
 | ------------------------------- | -------------------------------------------------- |
@@ -169,7 +186,8 @@ const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
 | `isModelSpace` / `isPaperSpace` | مساحة النموذج / مساحة الورق                        |
 | `flags`                         | مجموعة BLOCK رقم 70                                |
 | `pathName` / `isXref`           | مسار المرجع الخارجي وعلامته                        |
-| `entities`                      | لقطات الكيانات المخزنة مباشرة في الكتلة            |
+| `entityCount`                   | عدد الكيانات (بدون لقطات)                                  |
+| `typeCounts`                    | العدد حسب النوع (بدون لقطات)                               |
 
 ## cad.selection
 

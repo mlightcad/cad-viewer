@@ -88,6 +88,10 @@ GitHub リポジトリは引き続き [`mlightcad/cad-viewer`](https://github.co
 Agent / スクリプトは線・矢印・文字で寸法を模倣せず、これらを呼び出してください。直径/半径は `center` + `radius` を受け取り、円スナップショットをそのまま渡せます。詳細は [スクリプト API](../guide/script/api.md)。
 :::
 
+::: tip スクリプトホスト: ブロック単位の集計は `cad.blocks`
+この変更を含むリリースから、`cad.blocks` はブロックごとの `entityCount` / `typeCounts` メタデータを公開し、完全な `entities` 配列は埋め込みません。集計はこれらのフィールドまたは `count(pred)` を使ってください。スナップショットは `where` / `inBlock(id, pred)` — 空間全体の裸スナップショットは約 500 件で `too_many_matches` になります。`where` / `count` / `inBox` はモデル／ペーパー空間のみです。
+:::
+
 ::: info PDF エクスポートを共有コアに分割（ブラウザ + Node）
 **1.8.0** から、PDF エクスポートは HTML エクスポートと同じ階層になります。共有ロジックは `@mlightcad/cad-pdf-core`（オプションモデルと database → PDF パイプライン。`cad-simple-viewer` / DOM に**依存しません**）にあり、次の 2 つのフロントエンドがそれを使います。
 

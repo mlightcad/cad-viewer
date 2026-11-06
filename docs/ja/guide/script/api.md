@@ -59,7 +59,15 @@ cad.log('图层总数:', info.layers.length)
 
 ## cad.entities
 
-データベース内のすべてのエンティティを返します。モデル空間、各ペーパー空間、各ブロック定義、およびブロック参照に付く属性が含まれます。属性の `ownerId` はブロック参照、それ以外の `ownerId` は所属するブロック表レコードです。
+`where` / `count` / `inBox` は**モデル空間とペーパー空間のみ**を走査します（ブロック定義内は `inBlock(id)`）。ブロック参照の属性の `ownerId` は参照自身、それ以外は所属ブロック表レコードです。ブロック参照の `type` は `BlockReference` です。
+
+### `cad.entities.count(predicate)`
+
+スナップショットを作らずに一致数を数えます。集計はこちらを優先（`where(pred).length` は一致ごとにスナップショットします）。
+
+```javascript
+const n = cad.entities.count(e => e.type === 'Circle')
+```
 
 ### `cad.entities.where(predicate)`
 
@@ -80,9 +88,18 @@ if (entity) {
 }
 ```
 
+### `cad.entities.inBlock(blockId)`
+
+1 つのブロック定義（またはモデル／ペーパー空間）内の図形をスナップショットします。
+
+```javascript
+const widget = cad.blocks.find(block => block.name === 'Widget')
+const ents = widget ? cad.entities.inBlock(widget.id) : []
+```
+
 ### `cad.entities.inBox(min, max)`
 
-WCS 矩形ボックス内にあるすべてのエンティティスナップショットを返します。
+WCS 矩形と交差するレイアウト空間のスナップショットを返します（モデル／ペーパーのみ）。
 
 ```javascript
 const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
@@ -159,7 +176,7 @@ ByLayer / ByBlock の色には RGB がありません。実際の色が必要な
 
 ## cad.blocks
 
-DXF の BLOCKS セクションに相当する、すべてのブロック定義です。`*Model_Space` と `*Paper_Space` も含みます。
+DXF の BLOCKS に相当する**メタデータのみ**（`*Model_Space` / `*Paper_Space` 含む）。図形配列は埋め込みません — `cad.entities.inBlock(id)` を使います。
 
 | フィールド                      | 説明                                               |
 | ------------------------------- | -------------------------------------------------- |
@@ -169,7 +186,8 @@ DXF の BLOCKS セクションに相当する、すべてのブロック定義�
 | `isModelSpace` / `isPaperSpace` | モデル空間 / ペーパー空間                          |
 | `flags`                         | BLOCK グループコード 70                            |
 | `pathName` / `isXref`           | 外部参照のパスとフラグ                             |
-| `entities`                      | そのブロックに直接入っている図形のスナップショット |
+| `entityCount`                   | 図形数（スナップショットなし）                     |
+| `typeCounts`                    | 型ごとの件数（スナップショットなし）               |
 
 ## cad.selection
 

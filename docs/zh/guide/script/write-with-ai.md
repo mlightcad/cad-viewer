@@ -71,12 +71,12 @@ title: 用 AI 编写脚本
 只读符号表，对应 AcDbDatabase.tables。每张表为 { id, records: [{ id, name, ... }] }。
 - appIdTable、blockTable、dimStyleTable、linetypeTable、textStyleTable、ucsTable、viewTable、layerTable、viewportTable
 - layerTable 记录包含 color、linetype、lineWeight、isOff、isFrozen、isLocked、isPlottable
-- blockTable 只有块定义。块内实体使用 cad.blocks
+- blockTable 只有块定义。块内实体用 cad.entities.inBlock(id)
 
 ### cad.blocks
-全部块定义，对应 DXF 的 BLOCKS 段，包含 *Model_Space 和 *Paper_Space。
-- 字段：id、name、origin、isModelSpace、isPaperSpace、flags、pathName、isXref、layoutId、entities
-- entities 与 cad.entities 使用同一套快照
+仅块元数据（对应 DXF BLOCKS 段），含 *Model_Space 与 *Paper_Space。
+- 字段：id、name、origin、isModelSpace、isPaperSpace、flags、pathName、isXref、layoutId、entityCount、typeCounts
+- 无 entities 数组 — 用 cad.entities.inBlock(id)。统计用 block.entityCount / typeCounts
 
 ### cad.selection
 控制选择集：

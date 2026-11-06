@@ -190,37 +190,51 @@ export function toEntitySnapshot(entity: AcDbEntity): EntitySnapshot {
 }
 
 /**
- * Lists every entity stored in the database.
+ * Yields entities from selected block table records.
  *
- * The list covers model space, every paper space, and every block definition.
  * Attributes attached to a block reference are included after that reference.
  * Their `ownerId` is the reference. Other entities use the owning block id.
  *
  * @param database - Open drawing database.
- * @returns Entities in block-table order.
+ * @param options - When `layoutOnly` is true, only model and paper spaces.
+ * @yields Entities in block-table order.
  */
-export function iterateDatabaseEntities(database: AcDbDatabase): AcDbEntity[] {
-  const entities: AcDbEntity[] = []
+export function* iterateDatabaseEntities(
+  database: AcDbDatabase,
+  options: { layoutOnly?: boolean } = {}
+): Generator<AcDbEntity, void, undefined> {
+  const layoutOnly = options.layoutOnly === true
   const seen = new Set<string>()
-  const push = (entity: AcDbEntity) => {
-    const id = entity.objectId
-    if (!id || seen.has(id)) return
-    seen.add(id)
-    entities.push(entity)
-  }
-
   for (const block of database.tables.blockTable.newIterator(true)) {
+    if (layoutOnly && !block.isModelSapce && !block.isPaperSapce) continue
     for (const entity of block.newIterator()) {
-      push(entity)
+      const id = entity.objectId
+      if (!id || seen.has(id)) continue
+      seen.add(id)
+      yield entity
       if (!(entity instanceof AcDbBlockReference)) continue
       try {
-        for (const attribute of entity.attributeIterator()) push(attribute)
+        for (const attribute of entity.attributeIterator()) {
+          const attrId = attribute.objectId
+          if (!attrId || seen.has(attrId)) continue
+          seen.add(attrId)
+          yield attribute
+        }
       } catch {
         // A reference without attributes throws nothing; ignore a broken iterator.
       }
     }
   }
-  return entities
+}
+
+/**
+ * Yields entities in model space and paper spaces only (not block definitions).
+ * Prefer this for queries and spatial scans on real drawings.
+ */
+export function iterateLayoutEntities(
+  database: AcDbDatabase
+): Generator<AcDbEntity, void, undefined> {
+  return iterateDatabaseEntities(database, { layoutOnly: true })
 }
 
 /**

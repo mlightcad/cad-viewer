@@ -27,7 +27,9 @@ export const CAD_SCRIPT_API_TREE = {
   },
   entities: {
     where: true,
+    count: true,
     byId: true,
+    inBlock: true,
     inBox: true
   },
   tables: {
@@ -123,11 +125,14 @@ Prefer it for ALL drawing, queries, statistics, batch edits, selection highlight
 reading drawing context (cad.drawing). Do not expect draw_* or get_drawing_context tools.
 The body may return JSON. Do not import modules or touch the page.
 
-cad.drawing -> { title, currentLayer, units, layers: [{ name, isOn, isFrozen, isLocked }], extents }
-cad.entities lists every entity in the database (model space, paper space, and block definitions, plus attributes on inserts).
-cad.entities.where(predicate) -> snapshots (every field below is always present)
+cad.drawing -> { title, currentLayer, units, layers, extents }
+cad.entities.where/count/inBox scan model + paper spaces only (not block definitions).
+Use inBlock(id) for entities inside a block definition.
+cad.entities.count(predicate) -> number (no snapshots; use for tallies)
+cad.entities.where(predicate) -> snapshots (cap ~500 matches → too_many_matches)
 cad.entities.byId(id) -> snapshot or undefined
-cad.entities.inBox(min, max) -> snapshots whose extents hit a WCS box
+cad.entities.inBlock(blockId, predicate?) -> snapshots in one block (predicate recommended)
+cad.entities.inBox(min, max) -> layout-space snapshots whose extents hit a WCS box
 Snapshot shape: {
   id, ownerId, type, layer,
   color, resolvedColor, lineType, lineWeight, linetypeScale, visibility, transparency,
@@ -137,10 +142,14 @@ color / resolvedColor: { red?, green?, blue?, hex?, colorIndex?, isByColor, isBy
 resolvedColor has ByLayer / ByBlock already applied. Use lineType / lineWeight / color to classify
 walls, axes, dimensions, and fills.
 transparency: { method, alpha, percentage?, isByAlpha, isByLayer, isByBlock }.
-Predicates in where() read these lazily; only matched entities pay the cost.
+Predicates lazy; where/inBlock snapshot matches (cap ~500). Budget ~100k ticks / 5s → script_timeout.
+NEVER snapshot a whole model space, and NEVER read e.extents inside a full where/count
+(that computes bounds for every entity). For “what’s inside a frame”, use inBox per frame.
+Block refs use type === 'BlockReference' (not Insert). Title blocks: BlockReference with
+attributes, else text keywords. Overview tallies: cad.blocks entityCount/typeCounts.
+cad.blocks -> metadata only: { id, name, origin, isModelSpace, isPaperSpace, flags, pathName, isXref, layoutId?, entityCount, typeCounts }. No entities array — use inBlock(id).
 cad.tables mirrors AcDbDatabase.tables: appIdTable, blockTable, dimStyleTable, linetypeTable, textStyleTable, ucsTable, viewTable, layerTable, viewportTable.
 Each table is { id, records: [{ id, name, ...fields }] }.
-cad.blocks -> block definitions like a DXF BLOCKS section: { id, name, origin, isModelSpace, isPaperSpace, flags, pathName, isXref, entities }.
 ownerId on an entity snapshot is the owning block id, or the insert id for an attribute.
 cad.selection.ids -> selected entity ids
 cad.selection.entities -> snapshots of the current selection
@@ -215,7 +224,7 @@ Polyline / 2dPolyline { points, vertices: [{ bulge, startWidth, endWidth }], bul
 Spline also has points (grip points). Text { position, text, height, alignmentPoint, widthFactor, horizontalMode }.
 MText { position, text, plainText (control codes stripped), height, width, columns, background }.
 Attribute / AttributeDefinition add { tag, prompt?, isMTextAttribute }.
-Insert { name, effectiveName, isDynamicBlock, position, rotation, scale, blockTransform, attributes: [{ tag, text, position }], rowCount, columnCount }.
+BlockReference { name, effectiveName, isDynamicBlock, position, rotation, scale, blockTransform, attributes: [{ tag, text, position }], rowCount, columnCount }.
 Table adds { rows, columns, cells: string[][], rowHeights, columnWidths, attachmentPoint }.
 Hatch { patternName, hatchStyle, isSolidFill, area, loops: [{ closed, points, length }], gradient* fields }.
 Dimension { text, measurement, textPosition, styleName } plus definition points; measurement is computed when missing.

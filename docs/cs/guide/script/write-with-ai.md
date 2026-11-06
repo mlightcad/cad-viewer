@@ -71,11 +71,12 @@ Snímek obsahuje `ownerId`. Zahrnuje modelový prostor, výkresový prostor, def
 ### cad.tables
 Tabulky symbolů jako `AcDbDatabase.tables`. Každá tabulka je { id, records: [{ id, name, ... }] }.
 appIdTable, blockTable, dimStyleTable, linetypeTable, textStyleTable, ucsTable, viewTable, layerTable, viewportTable.
-layerTable obsahuje color, linetype, lineWeight, isOff, isFrozen, isLocked, isPlottable. Entity v bloku jsou v cad.blocks.
+layerTable obsahuje color, linetype, lineWeight, isOff, isFrozen, isLocked, isPlottable. Entity v bloku přes cad.entities.inBlock(id).
 
 ### cad.blocks
-Odpovídá sekci BLOCKS v DXF, včetně *Model_Space a *Paper_Space.
-Pole: id, name, origin, isModelSpace, isPaperSpace, flags, pathName, isXref, layoutId, entities.
+Pouze metadata (včetně *Model_Space a *Paper_Space).
+Pole: id, name, origin, isModelSpace, isPaperSpace, flags, pathName, isXref, layoutId, entityCount, typeCounts.
+Bez pole entities — inBlock(id). Počty přes entityCount / typeCounts.
 
 ### cad.selection
 Ovládání výběru:

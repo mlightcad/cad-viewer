@@ -71,11 +71,12 @@ title: كتابة البرامج النصية باستخدام الذكاء ال
 ### cad.tables
 جداول الرموز كما في `AcDbDatabase.tables`. كل جدول هو { id, records: [{ id, name, ... }] }.
 appIdTable وblockTable وdimStyleTable وlinetypeTable وtextStyleTable وucsTable وviewTable وlayerTable وviewportTable.
-layerTable يتضمن color وlinetype وlineWeight وisOff وisFrozen وisLocked وisPlottable. كيانات الكتلة عبر cad.blocks.
+layerTable يتضمن color وlinetype وlineWeight وisOff وisFrozen وisLocked وisPlottable. كيانات الكتلة عبر cad.entities.inBlock(id).
 
 ### cad.blocks
-يقابل قسم BLOCKS في DXF، ويشمل *Model_Space و*Paper_Space.
-الحقول: id وname وorigin وisModelSpace وisPaperSpace وflags وpathName وisXref وlayoutId وentities.
+بيانات وصفية فقط (يشمل *Model_Space و*Paper_Space).
+الحقول: id وname وorigin وisModelSpace وisPaperSpace وflags وpathName وisXref وlayoutId وentityCount وtypeCounts.
+لا مصفوفة entities — inBlock(id). الإحصاء عبر entityCount / typeCounts.
 
 ### cad.selection
 التحكم في مجموعة التحديد:

@@ -88,6 +88,10 @@ GitHub 仓库仍然是 [`mlightcad/cad-viewer`](https://github.com/mlightcad/cad
 Agent / 脚本应调用这些方法，而不是用直线、箭头和文字拼假标注。直径/半径支持 `center` + `radius`，可直接使用圆快照。详见 [脚本 API](../guide/script/api.md)。
 :::
 
+::: tip 脚本宿主：按块统计挂在 `cad.blocks`
+包含此改动的版本起，`cad.blocks` 提供每个块的 `entityCount` / `typeCounts` 元数据，不再内嵌实体数组。统计请用这些字段或 `count(pred)`。快照用 `where` / `inBlock(id, pred)`——整空间裸快照会在约 500 条时以 `too_many_matches` 中止。`where` / `count` / `inBox` 只扫模型/图纸空间（块定义用 `inBlock`）。块参照的 `type` 为 `BlockReference`。
+:::
+
 ::: info PDF 导出拆分为共享核心（浏览器 + Node）
 从 **1.8.0** 开始，PDF 导出与 HTML 导出采用相同的分层：共享逻辑放在 `@mlightcad/cad-pdf-core`（选项模型与 database → PDF 管线，**不**依赖 `cad-simple-viewer` / DOM）。两个前端都基于它：
 

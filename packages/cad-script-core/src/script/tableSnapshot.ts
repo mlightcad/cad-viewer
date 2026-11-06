@@ -30,7 +30,7 @@ export interface SymbolTableSnapshot {
  * Symbol tables on `cad.tables`.
  *
  * Names match {@link AcDbDatabase.tables}. Block records here are definitions
- * only. Entity lists live on {@link BlockSnapshot}.
+ * only. Block entity lists are loaded via `cad.entities.inBlock`.
  */
 export interface DatabaseTablesSnapshot {
   appIdTable: SymbolTableSnapshot
@@ -66,8 +66,13 @@ export interface BlockSnapshot {
   isXref: boolean
   /** Layout object id when this block is a paper space. */
   layoutId?: string
-  /** Entities stored in the block, not including attributes on inserts. */
-  entities: EntitySnapshot[]
+  /**
+   * Number of entities stored in the block (no snapshots).
+   * Load entities with `cad.entities.inBlock(id)` when needed.
+   */
+  entityCount: number
+  /** Counts by entity type inside the block (no snapshots). */
+  typeCounts: Record<string, number>
 }
 
 const LAYER_FIELDS = [
@@ -256,7 +261,11 @@ export function toDatabaseTables(
 }
 
 /**
- * Copies every block definition and the entities stored in it.
+ * Copies every block definition as metadata (no entity snapshots).
+ *
+ * Use {@link snapshotBlockEntities} or `cad.entities.inBlock` when entity
+ * geometry is required. Eagerly snapshotting every block's entities commonly
+ * hits `script_timeout` on real drawings.
  *
  * @param database - Open drawing database.
  * @returns Block snapshots in table order, including model space and paper space.
@@ -269,10 +278,31 @@ export function toBlockSnapshots(database: AcDbDatabase): BlockSnapshot[] {
   return blocks
 }
 
-function toBlock(record: AcDbBlockTableRecord): BlockSnapshot {
+/**
+ * Snapshots entities stored directly in one block table record.
+ *
+ * Does not include attributes attached to inserts (those are reached through
+ * {@link iterateDatabaseEntities}).
+ *
+ * @param record - Block table record.
+ * @returns Entity snapshots in iterator order.
+ */
+export function snapshotBlockEntities(
+  record: AcDbBlockTableRecord
+): EntitySnapshot[] {
   const entities: EntitySnapshot[] = []
   for (const entity of record.newIterator()) {
     entities.push(toEntitySnapshot(entity))
+  }
+  return entities
+}
+
+function toBlock(record: AcDbBlockTableRecord): BlockSnapshot {
+  const typeCounts: Record<string, number> = {}
+  let entityCount = 0
+  for (const entity of record.newIterator()) {
+    entityCount++
+    typeCounts[entity.type] = (typeCounts[entity.type] || 0) + 1
   }
   const layoutId = record.layoutId
   return {
@@ -289,7 +319,8 @@ function toBlock(record: AcDbBlockTableRecord): BlockSnapshot {
     pathName: record.pathName,
     isXref: record.isXref,
     ...(layoutId ? { layoutId } : {}),
-    entities
+    entityCount,
+    typeCounts
   }
 }
 
