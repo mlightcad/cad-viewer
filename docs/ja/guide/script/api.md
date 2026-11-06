@@ -342,6 +342,15 @@ cad.edit.transaction('批量修改', tx => {
 | `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | 新しいエンティティ ID |
 | `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | 新しいエンティティ ID |
 | `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | 新しいエンティティ ID |
+| `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | 点 `{x,y}`                       | 新しいエンティティ ID |
+| `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | `rotationDeg` 省略時は配置から水平/垂直 | 新しいエンティティ ID |
+| `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | 中心+半径 または弦点                 | 新しいエンティティ ID |
+| `tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, … } \| { center, chordPoint, … })`           | 中心+半径 または中心+弦点            | 新しいエンティティ ID |
+| `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | 3 点角度                         | 新しいエンティティ ID |
+| `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | 弧長                             | 新しいエンティティ ID |
+| `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | 座標寸法                         | 新しいエンティティ ID |
+
+寸法は `drawDim*` で作成してください。線・矢印・文字で寸法を模倣しないでください。既定は図面の `$DIMSTYLE` で、上書きする場合は `cad.tables.dimStyleTable` の `styleName` を渡します。
 
 ### 編集メソッド
 

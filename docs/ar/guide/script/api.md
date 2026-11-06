@@ -342,6 +342,15 @@ cad.edit.transaction('批量修改', tx => {
 | `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | معرّف الكيان الجديد |
 | `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | معرّف الكيان الجديد |
 | `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | معرّف الكيان الجديد |
+| `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | نقاط `{x,y}`                     | معرّف الكيان الجديد |
+| `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | بدون `rotationDeg` → أفقي/عمودي حسب الموضع | معرّف الكيان الجديد |
+| `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | مركز+نصف قطر أو وتر              | معرّف الكيان الجديد |
+| `tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, … } \| { center, chordPoint, … })`           | مركز+نصف قطر أو مركز+وتر         | معرّف الكيان الجديد |
+| `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | زاوية بثلاث نقاط                 | معرّف الكيان الجديد |
+| `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | طول قوس                          | معرّف الكيان الجديد |
+| `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | بُعد إحداثي                      | معرّف الكيان الجديد |
+
+استخدم `drawDim*` لأبعاد حقيقية. لا تقلّد الأبعاد بخطوط وأسهم ونص. الافتراضي هو `$DIMSTYLE` للرسم؛ مرّر `styleName` من `cad.tables.dimStyleTable` للتجاوز.
 
 ### أساليب التحرير
 

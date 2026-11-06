@@ -79,6 +79,15 @@ GitHub 저장소는 여전히 [`mlightcad/cad-viewer`](https://github.com/mlight
 다른 HTML-core 헬퍼도 같습니다(예: `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`, `buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`). `AcApHtmlConvertor` 및 `chtml` / `-chtml` 같은 명령 수준 API는 영향을 받지 않습니다. 개발 가이드에 나오는 새 이름은 **1.8.0+** 기준이며, 1.7.x에서는 이전 심볼을 계속 사용하세요.
 :::
 
+::: tip 스크립트 호스트: 실제 치수 엔티티 생성(`drawDim*`)
+**1.8.0-preview.2** 이후 릴리스부터 `@mlightcad/cad-script-core`의 `cad.edit.transaction`으로 치수 엔티티를 만들 수 있습니다(이전에는 스냅샷 읽기만 가능):
+
+- `drawDimAligned`, `drawDimLinear`, `drawDimDiameter`, `drawDimRadius`
+- `drawDimAngular`, `drawDimArc`, `drawDimOrdinate`
+
+Agent/스크립트는 선·화살표·문자로 치수를 흉내 내지 말고 이 API를 호출하세요. 지름/반지름은 `center` + `radius`를 받으므로 원 스냅샷을 바로 넘길 수 있습니다. 자세한 내용: [스크립트 API](../guide/script/api.md).
+:::
+
 ::: info PDF 내보내기를 공유 코어로 분리(브라우저 + Node)
 **1.8.0**부터 PDF 내보내기는 HTML 내보내기와 같은 계층을 사용합니다. 공유 로직은 `@mlightcad/cad-pdf-core`(옵션 모델과 database → PDF 파이프라인, `cad-simple-viewer` / DOM에 **의존하지 않음**)에 있으며, 다음 두 프론트엔드가 이를 사용합니다.
 

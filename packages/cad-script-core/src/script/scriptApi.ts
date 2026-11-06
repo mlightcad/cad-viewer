@@ -93,6 +93,13 @@ export const CAD_EDIT_TX_METHODS = [
   'drawXline',
   'drawSpline',
   'drawText',
+  'drawDimAligned',
+  'drawDimLinear',
+  'drawDimDiameter',
+  'drawDimRadius',
+  'drawDimAngular',
+  'drawDimArc',
+  'drawDimOrdinate',
   'erase',
   'setLayer',
   'move',
@@ -180,10 +187,25 @@ return cad.measure.report([
 cad.log(...values)
 cad.edit.transaction(label, tx => { ... }) performs one undo group.
 tx draw methods: drawLine, drawCircle, drawArc, drawRectangle, drawPolyline, drawEllipse,
-drawHatch, drawPoint, drawRay, drawXline, drawSpline, drawText.
+drawHatch, drawPoint, drawRay, drawXline, drawSpline, drawText,
+drawDimAligned, drawDimLinear, drawDimDiameter, drawDimRadius, drawDimAngular,
+drawDimArc, drawDimOrdinate.
 tx edit methods: erase(ids), setLayer(ids, layer), move(ids, dx, dy), rotate(ids, center, angleDeg),
 createLayer(name), setCurrentLayer(name).
 tx draw methods return the new entity id. Prefer one transaction for related geometry.
+Do NOT fake dimensions with lines/arrows/text — use drawDim* so measurement stays associative.
+Dimension draw inputs (optional text?, styleName?, layer? on all):
+  drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint })
+  drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg? })
+    — omit rotationDeg to pick horizontal/vertical from dimLinePoint (AutoCAD DIMLINEAR)
+  drawDimDiameter({ center, radius, angleDeg?, leaderLength? })
+    — or { chordPoint, farChordPoint, leaderLength? }
+  drawDimRadius({ center, radius, angleDeg?, leaderLength? })
+    — or { center, chordPoint, leaderLength? }
+  drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint })
+  drawDimArc({ center, xLine1Point, xLine2Point, arcPoint })
+  drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin? })
+Omit styleName to use the drawing $DIMSTYLE; cad.tables.dimStyleTable lists names for styleName.
 Snapshots cover every data-model entity type. Extra geometry per type:
 Line { start, end, length, midPoint, direction }.
 Circle { center, radius, area, circumference }; Arc adds startPoint, endPoint, midPoint, length, area.
@@ -209,6 +231,21 @@ cad.view.zoomExtents()
 return cad.measure.report([
   cad.measure.check('r', 100, cad.measure.radius(circleId))
 ])
+
+Example: diameter-dimension every circle (use drawDimDiameter, not line+text).
+const dimIds = []
+cad.edit.transaction('diameter dims', tx => {
+  for (const c of cad.entities.where(e => e.type === 'Circle')) {
+    const g = c.geometry
+    dimIds.push(tx.drawDimDiameter({
+      center: g.center,
+      radius: g.radius,
+      angleDeg: 0,
+      leaderLength: Math.max(g.radius * 0.25, 1)
+    }))
+  }
+})
+return { dimIds, count: dimIds.length }
 
 Example: count circles per layer and highlight every entity on the busiest layer.
 const counts = {}

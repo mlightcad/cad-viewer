@@ -403,6 +403,71 @@ export interface CadEditTransaction {
     height?: number
     layer?: string
   }): string
+  drawDimAligned(input: {
+    xLine1Point: Point2dInput
+    xLine2Point: Point2dInput
+    dimLinePoint: Point2dInput
+    text?: string
+    styleName?: string
+    layer?: string
+  }): string
+  drawDimLinear(input: {
+    xLine1Point: Point2dInput
+    xLine2Point: Point2dInput
+    dimLinePoint: Point2dInput
+    rotationDeg?: number
+    text?: string
+    styleName?: string
+    layer?: string
+  }): string
+  drawDimDiameter(input: {
+    center?: Point2dInput
+    radius?: number
+    angleDeg?: number
+    chordPoint?: Point2dInput
+    farChordPoint?: Point2dInput
+    leaderLength?: number
+    text?: string
+    styleName?: string
+    layer?: string
+  }): string
+  drawDimRadius(input: {
+    center: Point2dInput
+    chordPoint?: Point2dInput
+    radius?: number
+    angleDeg?: number
+    leaderLength?: number
+    text?: string
+    styleName?: string
+    layer?: string
+  }): string
+  drawDimAngular(input: {
+    center: Point2dInput
+    xLine1Point: Point2dInput
+    xLine2Point: Point2dInput
+    arcPoint: Point2dInput
+    text?: string
+    styleName?: string
+    layer?: string
+  }): string
+  drawDimArc(input: {
+    center: Point2dInput
+    xLine1Point: Point2dInput
+    xLine2Point: Point2dInput
+    arcPoint: Point2dInput
+    text?: string
+    styleName?: string
+    layer?: string
+  }): string
+  drawDimOrdinate(input: {
+    definingPoint: Point2dInput
+    leaderEndPoint: Point2dInput
+    useXAxis?: boolean
+    origin?: Point2dInput
+    text?: string
+    styleName?: string
+    layer?: string
+  }): string
   erase(ids: string[]): number
   setLayer(ids: string[], layer: string): void
   move(ids: string[], dx: number, dy: number): number
@@ -437,6 +502,13 @@ function createTransaction(
     drawXline: input => created(executor.drawXline(input)),
     drawSpline: input => created(executor.drawSpline(input)),
     drawText: input => created(executor.drawText(input)),
+    drawDimAligned: input => created(executor.drawDimAligned(input)),
+    drawDimLinear: input => created(executor.drawDimLinear(input)),
+    drawDimDiameter: input => created(executor.drawDimDiameter(input)),
+    drawDimRadius: input => created(executor.drawDimRadius(input)),
+    drawDimAngular: input => created(executor.drawDimAngular(input)),
+    drawDimArc: input => created(executor.drawDimArc(input)),
+    drawDimOrdinate: input => created(executor.drawDimOrdinate(input)),
     erase(ids) {
       return session.getDocument()!.entityService.eraseEntities(ids)
     },

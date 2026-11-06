@@ -342,6 +342,15 @@ Metody dostupné v transakci:
 | `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | ID nové entity    |
 | `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | ID nové entity    |
 | `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | ID nové entity    |
+| `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | body `{x,y}`                     | ID nové entity    |
+| `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | bez `rotationDeg` → H/V podle umístění | ID nové entity |
+| `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | střed+poloměr nebo tětiva        | ID nové entity    |
+| `tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, … } \| { center, chordPoint, … })`           | střed+poloměr nebo střed+tětiva  | ID nové entity    |
+| `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | 3bodový úhel                     | ID nové entity    |
+| `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | délka oblouku                    | ID nové entity    |
+| `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | souřadnicová kóta                | ID nové entity    |
+
+Pro kóty používejte `drawDim*`. Nenapodobujte je čarami, šipkami a textem. Výchozí je `$DIMSTYLE` výkresu; přepište ho pomocí `styleName` z `cad.tables.dimStyleTable`.
 
 ### Metody úprav
 

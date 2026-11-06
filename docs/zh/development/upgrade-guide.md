@@ -79,6 +79,15 @@ GitHub 仓库仍然是 [`mlightcad/cad-viewer`](https://github.com/mlightcad/cad
 其他 HTML-core 辅助函数同样改名（例如 `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`，`buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`）。命令级 API（如 `AcApHtmlConvertor` 以及 `chtml` / `-chtml`）不受影响。开发指南中展示的新名称面向 **1.8.0+**；若仍使用 1.7.x，请继续用旧符号名。
 :::
 
+::: tip 脚本宿主：创建真正的标注实体（`drawDim*`）
+自 **1.8.0-preview.2** 之后的版本起，`@mlightcad/cad-script-core` 的 `cad.edit.transaction` 可创建标注实体（此前只能读取快照）：
+
+- `drawDimAligned`、`drawDimLinear`、`drawDimDiameter`、`drawDimRadius`
+- `drawDimAngular`、`drawDimArc`、`drawDimOrdinate`
+
+Agent / 脚本应调用这些方法，而不是用直线、箭头和文字拼假标注。直径/半径支持 `center` + `radius`，可直接使用圆快照。详见 [脚本 API](../guide/script/api.md)。
+:::
+
 ::: info PDF 导出拆分为共享核心（浏览器 + Node）
 从 **1.8.0** 开始，PDF 导出与 HTML 导出采用相同的分层：共享逻辑放在 `@mlightcad/cad-pdf-core`（选项模型与 database → PDF 管线，**不**依赖 `cad-simple-viewer` / DOM）。两个前端都基于它：
 

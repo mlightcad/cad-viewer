@@ -486,6 +486,128 @@ describe('executeCadScript', () => {
     }
   })
 
+  test('draws dimension entities including diameter from circle geometry', async () => {
+    const { session, db } = createFixture()
+    const before = countEntities(db)
+
+    const result = await executeCadScript(
+      {
+        code: `
+          const ids = []
+          cad.edit.transaction('dims', tx => {
+            ids.push(tx.drawDimAligned({
+              xLine1Point: { x: 0, y: 0 },
+              xLine2Point: { x: 10, y: 0 },
+              dimLinePoint: { x: 5, y: 3 }
+            }))
+            ids.push(tx.drawDimLinear({
+              xLine1Point: { x: 0, y: 0 },
+              xLine2Point: { x: 0, y: 8 },
+              dimLinePoint: { x: -2, y: 4 },
+              rotationDeg: 90
+            }))
+            ids.push(tx.drawDimDiameter({
+              center: { x: 20, y: 0 },
+              radius: 2,
+              angleDeg: 30,
+              leaderLength: 1
+            }))
+            ids.push(tx.drawDimRadius({
+              center: { x: 30, y: 0 },
+              radius: 2,
+              angleDeg: 45,
+              leaderLength: 1
+            }))
+            ids.push(tx.drawDimAngular({
+              center: { x: 0, y: 0 },
+              xLine1Point: { x: 10, y: 0 },
+              xLine2Point: { x: 0, y: 10 },
+              arcPoint: { x: 5, y: 5 }
+            }))
+            ids.push(tx.drawDimArc({
+              center: { x: 40, y: 0 },
+              xLine1Point: { x: 45, y: 0 },
+              xLine2Point: { x: 40, y: 5 },
+              arcPoint: { x: 43.5, y: 3.5 }
+            }))
+            ids.push(tx.drawDimOrdinate({
+              definingPoint: { x: 12, y: 7 },
+              leaderEndPoint: { x: 18, y: 7 },
+              useXAxis: true,
+              origin: { x: 0, y: 0 }
+            }))
+          })
+          const snaps = ids.map(id => cad.entities.byId(id))
+          return {
+            types: snaps.map(s => s.type),
+            diameter: snaps[2].geometry.measurement,
+            radius: snaps[3].geometry.measurement
+          }
+        `,
+        intent: 'draw dimensions'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.entityIds).toHaveLength(7)
+    expect(countEntities(db)).toBe(before + 7)
+    const data = result.data as {
+      types: string[]
+      diameter: number
+      radius: number
+    }
+    expect(data.types).toEqual([
+      'AlignedDimension',
+      'RotatedDimension',
+      'DiametricDimension',
+      'RadialDimension',
+      '3PointAngularDimension',
+      'ArcDimension',
+      'OrdinateDimension'
+    ])
+    expect(data.diameter).toBeCloseTo(4, 10)
+    expect(data.radius).toBeCloseTo(2, 10)
+
+    const dimBlocks = [...db.tables.blockTable.newIterator()].filter(block =>
+      block.name.startsWith('*D')
+    )
+    expect(dimBlocks).toHaveLength(7)
+  })
+
+  test('rejects radius dimension without center', async () => {
+    const { session, db } = createFixture()
+    const before = countEntities(db)
+
+    const result = await executeCadScript(
+      {
+        code: `
+          let outcome
+          cad.edit.transaction('bad radius', tx => {
+            try {
+              tx.drawDimRadius({ radius: 5, angleDeg: 0 })
+              outcome = { threw: false }
+            } catch (error) {
+              outcome = {
+                threw: true,
+                message: error instanceof Error ? error.message : String(error)
+              }
+            }
+          })
+          return outcome
+        `,
+        intent: 'invalid radius dim'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    const data = result.data as { threw: boolean; message?: string }
+    expect(data.threw).toBe(true)
+    expect(data.message).toBe('invalid_radius_points')
+    expect(countEntities(db)).toBe(before)
+  })
+
   test('draws extended entity types in one transaction', async () => {
     const { session, db } = createFixture()
     const before = countEntities(db)

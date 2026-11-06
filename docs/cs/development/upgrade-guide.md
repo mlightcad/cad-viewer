@@ -79,6 +79,15 @@ Chování se nemění; mění se jen názvy symbolů. Při upgradu z 1.7.x aktua
 Stejné přejmenování platí i pro další pomocné funkce HTML-core (například `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`, `buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`). API na úrovni příkazů jako `AcApHtmlConvertor` a `chtml` / `-chtml` nejsou ovlivněna. Vývojové příručky s novými názvy cílí na **1.8.0+**; na 1.7.x používejte i nadále staré symboly.
 :::
 
+::: tip Skriptový hostitel: vytváření skutečných kót (`drawDim*`)
+Od vydání po **1.8.0-preview.2** umí `cad.edit.transaction` v `@mlightcad/cad-script-core` vytvářet kótovací entity — nejen je číst ze snapshotů:
+
+- `drawDimAligned`, `drawDimLinear`, `drawDimDiameter`, `drawDimRadius`
+- `drawDimAngular`, `drawDimArc`, `drawDimOrdinate`
+
+Agenti a skripty by měli volat tato API místo napodobování kót čarami, šipkami a textem. Průměr/poloměr přijímají `center` + `radius`, takže snapshot kružnice lze předat přímo. Viz [API skriptů](../guide/script/api.md).
+:::
+
 ::: info Export PDF rozdělen do sdíleného jádra (prohlížeč + Node)
 Od verze **1.8.0** používá export PDF stejné vrstvení jako export HTML. Sdílená logika je v `@mlightcad/cad-pdf-core` (model voleb a pipeline database → PDF, **bez** závislosti na `cad-simple-viewer` / DOM). Spotřebovávají ji dvě frontendy:
 

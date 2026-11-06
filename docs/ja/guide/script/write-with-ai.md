@@ -120,6 +120,14 @@ After non-trivial draws prefer: return { ...cad.measure.report([...]), entityIds
 - tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> 新しいエンティティ ID を返す
 - tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> 新しいエンティティ ID を返す
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> 新しいエンティティ ID を返す
+- tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? }) -> 新しいエンティティ ID
+- tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? }) -> 新しいエンティティ ID
+- tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> 新しいエンティティ ID（または chordPoint+farChordPoint）
+- tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> 新しいエンティティ ID（または center+chordPoint）
+- tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> 新しいエンティティ ID
+- tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> 新しいエンティティ ID
+- tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? }) -> 新しいエンティティ ID
+- 寸法は drawDim* を使う。線・矢印・文字で寸法を模倣しない
 - tx.erase(ids) -> 削除されたエンティティ数を返す
 - tx.setLayer(ids, layer)
 - tx.move(ids, dx, dy) -> 移動されたエンティティ数を返す

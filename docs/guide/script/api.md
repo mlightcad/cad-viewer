@@ -388,6 +388,15 @@ Methods available within a transaction:
 | `tx.drawXline({ start, through, layer? })`                                                                 | `start/through: {x,y}`           | New entity ID |
 | `tx.drawSpline({ points, closed?, layer? })`                                                               | `points: Array<{x,y}>`           | New entity ID |
 | `tx.drawText({ position, text, height?, layer? })`                                                         | `position: {x,y}`                | New entity ID |
+| `tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? })`                 | points `{x,y}`                   | New entity ID |
+| `tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? })`     | omit `rotationDeg` → H/V by placement | New entity ID |
+| `tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, … } \| { chordPoint, farChordPoint, … })` | circle form or chord form        | New entity ID |
+| `tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, … } \| { center, chordPoint, … })`           | circle form or chord form        | New entity ID |
+| `tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`             | 3-point angle                    | New entity ID |
+| `tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? })`                  | arc length                       | New entity ID |
+| `tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? })`     | X/Y ordinate                     | New entity ID |
+
+Use `drawDim*` for true dimension entities. Do not fake dimensions with lines, arrows, and text. Style defaults to the drawing `$DIMSTYLE`; pass `styleName` from `cad.tables.dimStyleTable` to override.
 
 ### Edit Methods
 

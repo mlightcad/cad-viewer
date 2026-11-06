@@ -73,6 +73,28 @@ cad.edit.transaction('Draw rectangle', tx => {
 return 'done'
 ```
 
+## Add Diameter Dimensions to Circles
+
+Create real diametric dimension entities from each circle's center and radius.
+
+```javascript
+const dimIds = []
+cad.edit.transaction('Diameter dimensions', tx => {
+  for (const c of cad.entities.where(e => e.type === 'Circle')) {
+    const g = c.geometry
+    dimIds.push(
+      tx.drawDimDiameter({
+        center: g.center,
+        radius: g.radius,
+        angleDeg: 0,
+        leaderLength: Math.max(g.radius * 0.25, 1)
+      })
+    )
+  }
+})
+return { count: dimIds.length, dimIds }
+```
+
 ## Move All Entities on a Layer
 
 Move all entities on the "标注" layer 1000 units to the right.

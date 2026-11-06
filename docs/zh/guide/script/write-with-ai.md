@@ -121,6 +121,14 @@ title: 用 AI 编写脚本
 - tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> 返回新实体 ID
 - tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> 返回新实体 ID
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> 返回新实体 ID
+- tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? }) -> 新实体 ID
+- tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? }) -> 新实体 ID
+- tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> 新实体 ID（或 chordPoint+farChordPoint）
+- tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> 新实体 ID（或 center+chordPoint）
+- tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> 新实体 ID
+- tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> 新实体 ID
+- tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? }) -> 新实体 ID
+- 标注请用 drawDim*，不要用直线、箭头和文字拼假标注
 - tx.erase(ids) -> 返回删除的实体数量
 - tx.setLayer(ids, layer)
 - tx.move(ids, dx, dy) -> 返回移动的实体数量

@@ -120,6 +120,14 @@ After non-trivial draws prefer: return { ...cad.measure.report([...]), entityIds
 - tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> Yeni varlık ID'si döndürür
 - tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> Yeni varlık ID'si döndürür
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> Yeni varlık ID'si döndürür
+- tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? }) -> Yeni varlık ID'si
+- tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? }) -> Yeni varlık ID'si
+- tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> Yeni varlık ID'si (veya chordPoint+farChordPoint)
+- tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> Yeni varlık ID'si (veya center+chordPoint)
+- tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> Yeni varlık ID'si
+- tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> Yeni varlık ID'si
+- tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? }) -> Yeni varlık ID'si
+- Ölçüler için drawDim* kullanın; çizgi/ok/metinle taklit etmeyin
 - tx.erase(ids) -> Silinen varlık sayısını döndürür
 - tx.setLayer(ids, layer)
 - tx.move(ids, dx, dy) -> Taşınan varlık sayısını döndürür

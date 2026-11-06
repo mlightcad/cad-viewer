@@ -73,6 +73,28 @@ cad.edit.transaction('画矩形', tx => {
 return 'done'
 ```
 
+## إضافة أبعاد قطر للدوائر
+
+ينشئ كيانات بُعد قطر حقيقية من مركز ونصف قطر كل دائرة.
+
+```javascript
+const dimIds = []
+cad.edit.transaction('أبعاد القطر', tx => {
+  for (const c of cad.entities.where(e => e.type === 'Circle')) {
+    const g = c.geometry
+    dimIds.push(
+      tx.drawDimDiameter({
+        center: g.center,
+        radius: g.radius,
+        angleDeg: 0,
+        leaderLength: Math.max(g.radius * 0.25, 1)
+      })
+    )
+  }
+})
+return { count: dimIds.length, dimIds }
+```
+
 ## نقل جميع الكيانات الموجودة في طبقة معينة
 
 نقل جميع الكيانات الموجودة في طبقة «الأبعاد» بمقدار 1000 وحدة إلى اليمين.

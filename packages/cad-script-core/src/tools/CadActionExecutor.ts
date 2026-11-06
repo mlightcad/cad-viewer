@@ -1,7 +1,12 @@
 import {
+  AcDb3PointAngularDimension,
+  AcDbAlignedDimension,
   AcDbArc,
+  AcDbArcDimension,
   AcDbCircle,
   AcDbDatabase,
+  AcDbDiametricDimension,
+  AcDbDimension,
   AcDbEllipse,
   AcDbEntity,
   AcDbHatch,
@@ -9,9 +14,12 @@ import {
   AcDbHatchStyle,
   AcDbLine,
   AcDbMText,
+  AcDbOrdinateDimension,
   AcDbPoint,
   AcDbPolyline,
+  AcDbRadialDimension,
   AcDbRay,
+  AcDbRotatedDimension,
   AcDbSpline,
   AcDbXline,
   AcGeLine2d,
@@ -28,6 +36,12 @@ import type { CadSession } from '../session/CadSession'
 import { requireDocument, requireView } from '../session/documentAccess'
 import { getScriptEditDepth } from '../session/editDepth'
 import { runSessionEdit } from '../session/runSessionEdit'
+import {
+  applyDimStyle,
+  commitDimBlock,
+  inferLinearRotation,
+  pointOnCircle
+} from './commitDimension'
 import type { Point2dInput, ToolResult } from './types'
 
 export type { Point2dInput, ToolResult } from './types'
@@ -55,6 +69,36 @@ function applyLayer(entity: AcDbEntity, layer?: string): void {
   }
 }
 
+type DimWithBlock = AcDbDimension & {
+  createDimBlock(
+    name: string
+  ): import('@mlightcad/data-model').AcDbBlockTableRecord
+}
+
+interface DimCommonInput {
+  text?: string
+  styleName?: string
+  layer?: string
+}
+
+/**
+ * Applies style/text/layer, builds the anonymous dim block, and appends to model space.
+ */
+function appendDimension(
+  db: AcDbDatabase,
+  dim: DimWithBlock,
+  input: DimCommonInput
+): string {
+  applyDimStyle(dim, db, input.styleName)
+  if (input.text != null) {
+    dim.dimensionText = input.text
+  }
+  applyLayer(dim, input.layer)
+  commitDimBlock(db, dim)
+  db.tables.blockTable.modelSpace.appendEntity(dim)
+  return dim.objectId
+}
+
 const POSITIVE_NORMAL = { x: 0, y: 0, z: 1 }
 
 function degToRad(degrees: number): number {
@@ -75,6 +119,79 @@ function resolveUnitDirection(
     return undefined
   }
   return direction.normalize()
+}
+
+function resolveDiameterPoints(input: {
+  center?: Point2dInput
+  radius?: number
+  angleDeg?: number
+  chordPoint?: Point2dInput
+  farChordPoint?: Point2dInput
+}):
+  | { chordPoint: Point2dInput; farChordPoint: Point2dInput }
+  | { error: ToolResult } {
+  if (input.chordPoint && input.farChordPoint) {
+    return {
+      chordPoint: input.chordPoint,
+      farChordPoint: input.farChordPoint
+    }
+  }
+  if (
+    input.center &&
+    typeof input.radius === 'number' &&
+    Number.isFinite(input.radius) &&
+    input.radius > 0
+  ) {
+    const angleDeg = input.angleDeg ?? 0
+    return {
+      chordPoint: pointOnCircle(input.center, input.radius, angleDeg),
+      farChordPoint: pointOnCircle(input.center, input.radius, angleDeg + 180)
+    }
+  }
+  return {
+    error: {
+      success: false,
+      message:
+        'Diameter requires chordPoint+farChordPoint, or center+radius (> 0)',
+      error: 'invalid_diameter_points'
+    }
+  }
+}
+
+function resolveRadiusChord(input: {
+  center?: Point2dInput
+  chordPoint?: Point2dInput
+  radius?: number
+  angleDeg?: number
+}): { chordPoint: Point2dInput } | { error: ToolResult } {
+  if (!input.center) {
+    return {
+      error: {
+        success: false,
+        message: 'Radius requires center with chordPoint, or center+radius (> 0)',
+        error: 'invalid_radius_points'
+      }
+    }
+  }
+  if (input.chordPoint) {
+    return { chordPoint: input.chordPoint }
+  }
+  if (
+    typeof input.radius === 'number' &&
+    Number.isFinite(input.radius) &&
+    input.radius > 0
+  ) {
+    return {
+      chordPoint: pointOnCircle(input.center, input.radius, input.angleDeg ?? 0)
+    }
+  }
+  return {
+    error: {
+      success: false,
+      message: 'Radius requires chordPoint, or radius (> 0) with center',
+      error: 'invalid_radius_points'
+    }
+  }
 }
 
 /**
@@ -791,6 +908,267 @@ export class CadActionExecutor {
       return {
         success: false,
         message: 'Failed to draw spline',
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
+  }
+
+  /**
+   * Creates an aligned dimension between two definition points.
+   *
+   * @param input - Extension-line ends, dim-line point, optional text/style/layer.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawDimAligned(input: {
+    xLine1Point: Point2dInput
+    xLine2Point: Point2dInput
+    dimLinePoint: Point2dInput
+    text?: string
+    styleName?: string
+    layer?: string
+  }): ToolResult {
+    return this.createDimension(
+      'aligned',
+      'Agent: draw_dim_aligned',
+      input,
+      () =>
+        new AcDbAlignedDimension(
+          toPoint3d(input.xLine1Point),
+          toPoint3d(input.xLine2Point),
+          toPoint3d(input.dimLinePoint)
+        )
+    )
+  }
+
+  /**
+   * Creates a linear (rotated) dimension. Omitting `rotationDeg` picks horizontal
+   * or vertical from the dim-line placement, matching AutoCAD DIMLINEAR.
+   *
+   * @param input - Extension-line ends, dim-line point, optional rotation in degrees.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawDimLinear(input: {
+    xLine1Point: Point2dInput
+    xLine2Point: Point2dInput
+    dimLinePoint: Point2dInput
+    rotationDeg?: number
+    text?: string
+    styleName?: string
+    layer?: string
+  }): ToolResult {
+    return this.createDimension('linear', 'Agent: draw_dim_linear', input, () => {
+      const dim = new AcDbRotatedDimension(
+        toPoint3d(input.xLine1Point),
+        toPoint3d(input.xLine2Point),
+        toPoint3d(input.dimLinePoint)
+      )
+      dim.rotation =
+        input.rotationDeg != null
+          ? degToRad(input.rotationDeg)
+          : inferLinearRotation(
+              input.xLine1Point,
+              input.xLine2Point,
+              input.dimLinePoint
+            )
+      return dim
+    })
+  }
+
+  /**
+   * Creates a diametric dimension on a circle or arc.
+   *
+   * Pass either `chordPoint` + `farChordPoint`, or `center` + `radius` (optional
+   * `angleDeg`, default 0) to place the diameter chord.
+   *
+   * @param input - Diameter definition points or center/radius, optional leader.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawDimDiameter(input: {
+    center?: Point2dInput
+    radius?: number
+    angleDeg?: number
+    chordPoint?: Point2dInput
+    farChordPoint?: Point2dInput
+    leaderLength?: number
+    text?: string
+    styleName?: string
+    layer?: string
+  }): ToolResult {
+    const resolved = resolveDiameterPoints(input)
+    if ('error' in resolved) {
+      return resolved.error
+    }
+    return this.createDimension(
+      'diameter',
+      'Agent: draw_dim_diameter',
+      input,
+      () =>
+        new AcDbDiametricDimension(
+          toPoint3d(resolved.chordPoint),
+          toPoint3d(resolved.farChordPoint),
+          Math.max(0, input.leaderLength ?? 0)
+        )
+    )
+  }
+
+  /**
+   * Creates a radial dimension on a circle or arc.
+   *
+   * Pass `center` plus either `chordPoint`, or `radius` with optional `angleDeg`
+   * (default 0) to place the chord point on the curve.
+   *
+   * @param input - Center and chord (or radius/angle), optional leader length.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawDimRadius(input: {
+    center: Point2dInput
+    chordPoint?: Point2dInput
+    radius?: number
+    angleDeg?: number
+    leaderLength?: number
+    text?: string
+    styleName?: string
+    layer?: string
+  }): ToolResult {
+    const chord = resolveRadiusChord(input)
+    if ('error' in chord) {
+      return chord.error
+    }
+    return this.createDimension('radius', 'Agent: draw_dim_radius', input, () =>
+      new AcDbRadialDimension(
+        toPoint3d(input.center),
+        toPoint3d(chord.chordPoint),
+        Math.max(0, input.leaderLength ?? 0)
+      )
+    )
+  }
+
+  /**
+   * Creates a three-point angular dimension.
+   *
+   * @param input - Angle vertex, two ray points, and a point on the dimension arc.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawDimAngular(input: {
+    center: Point2dInput
+    xLine1Point: Point2dInput
+    xLine2Point: Point2dInput
+    arcPoint: Point2dInput
+    text?: string
+    styleName?: string
+    layer?: string
+  }): ToolResult {
+    return this.createDimension(
+      'angular',
+      'Agent: draw_dim_angular',
+      input,
+      () =>
+        new AcDb3PointAngularDimension(
+          toPoint3d(input.center),
+          toPoint3d(input.xLine1Point),
+          toPoint3d(input.xLine2Point),
+          toPoint3d(input.arcPoint)
+        )
+    )
+  }
+
+  /**
+   * Creates an arc-length dimension.
+   *
+   * @param input - Arc center, start/end points, and a point on the arc.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawDimArc(input: {
+    center: Point2dInput
+    xLine1Point: Point2dInput
+    xLine2Point: Point2dInput
+    arcPoint: Point2dInput
+    text?: string
+    styleName?: string
+    layer?: string
+  }): ToolResult {
+    return this.createDimension('arc', 'Agent: draw_dim_arc', input, () =>
+      new AcDbArcDimension(
+        toPoint3d(input.center),
+        toPoint3d(input.xLine1Point),
+        toPoint3d(input.xLine2Point),
+        toPoint3d(input.arcPoint)
+      )
+    )
+  }
+
+  /**
+   * Creates an ordinate dimension measuring X or Y from an origin.
+   *
+   * When `useXAxis` is omitted, the axis is inferred from which offset between
+   * `definingPoint` and `leaderEndPoint` is larger (X if |dx| >= |dy|).
+   *
+   * @param input - Feature point, leader end, optional axis and origin.
+   * @returns {@link ToolResult} with created entity ids on success.
+   */
+  drawDimOrdinate(input: {
+    definingPoint: Point2dInput
+    leaderEndPoint: Point2dInput
+    useXAxis?: boolean
+    origin?: Point2dInput
+    text?: string
+    styleName?: string
+    layer?: string
+  }): ToolResult {
+    return this.createDimension(
+      'ordinate',
+      'Agent: draw_dim_ordinate',
+      input,
+      () => {
+        const dim = new AcDbOrdinateDimension(
+          toPoint3d(input.definingPoint),
+          toPoint3d(input.leaderEndPoint)
+        )
+        dim.useXAxis =
+          input.useXAxis ??
+          Math.abs(input.leaderEndPoint.x - input.definingPoint.x) >=
+            Math.abs(input.leaderEndPoint.y - input.definingPoint.y)
+        if (input.origin) {
+          dim.origin = toPoint3d(input.origin)
+        }
+        return dim
+      }
+    )
+  }
+
+  /**
+   * Shared create path for every dimension draw tool.
+   */
+  private createDimension(
+    kind: string,
+    label: string,
+    input: DimCommonInput,
+    factory: (db: AcDbDatabase) => DimWithBlock
+  ): ToolResult {
+    const accessError = requireDocument(this.session, true)
+    if (accessError) {
+      return accessError
+    }
+    const layerError = validateLayer(this.session, input.layer)
+    if (layerError) {
+      return layerError
+    }
+    try {
+      const entityIds: string[] = []
+      runEdit(this.session, label, () => {
+        const db = this.session.getDocument()!.database
+        const dim = factory(db)
+        entityIds.push(appendDimension(db, dim, input))
+      })
+      return {
+        success: true,
+        message: `${kind} dimension created`,
+        entityIds
+      }
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to draw ${kind} dimension`,
         error: error instanceof Error ? error.message : String(error)
       }
     }

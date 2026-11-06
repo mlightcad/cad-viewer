@@ -79,6 +79,15 @@ Behavior is unchanged; only the symbol names moved. Update imports when you upgr
 The same rename applies to other HTML-core helpers (for example `captureAcExSavedViewExtents` → `acexHtmlCaptureSavedViewExtents`, `buildOsnapCatalog` → `acexHtmlBuildOsnapCatalog`). Command-level APIs such as `AcApHtmlConvertor` and `chtml` / `-chtml` are unaffected. Development guides that show the new names target **1.8.0+**; on 1.7.x keep using the old symbols.
 :::
 
+::: tip Script host: create real dimension entities (`drawDim*`)
+Starting with the release that follows **1.8.0-preview.2**, `cad.edit.transaction` in `@mlightcad/cad-script-core` can create dimension entities — not only read their snapshots:
+
+- `drawDimAligned`, `drawDimLinear`, `drawDimDiameter`, `drawDimRadius`
+- `drawDimAngular`, `drawDimArc`, `drawDimOrdinate`
+
+Agents and scripts should call these instead of approximating dimensions with lines, arrows, and text. Diameter/radius accept `center` + `radius` so a circle snapshot can feed them directly. See [Script API](../guide/script/api.md).
+:::
+
 ::: info PDF export split into a shared core (browser + Node)
 Starting with **1.8.0**, PDF export uses the same layering as HTML export. Shared logic lives in `@mlightcad/cad-pdf-core` (option model and database → PDF pipeline, **no** `cad-simple-viewer` / DOM dependency). Two front ends consume it:
 

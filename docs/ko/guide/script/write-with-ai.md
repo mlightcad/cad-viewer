@@ -120,6 +120,14 @@ After non-trivial draws prefer: return { ...cad.measure.report([...]), entityIds
 - tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> 새 엔티티 ID 반환
 - tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> 새 엔티티 ID 반환
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> 새 엔티티 ID 반환
+- tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? }) -> 새 엔티티 ID
+- tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? }) -> 새 엔티티 ID
+- tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> 새 엔티티 ID (또는 chordPoint+farChordPoint)
+- tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> 새 엔티티 ID (또는 center+chordPoint)
+- tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> 새 엔티티 ID
+- tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> 새 엔티티 ID
+- tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? }) -> 새 엔티티 ID
+- 치수는 drawDim* 사용. 선·화살표·문자로 치수를 흉내 내지 말 것
 - tx.erase(ids) -> 삭제된 엔티티 수 반환
 - tx.setLayer(ids, layer)
 - tx.move(ids, dx, dy) -> 이동된 엔티티 수 반환

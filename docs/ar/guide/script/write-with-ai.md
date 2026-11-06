@@ -120,6 +120,14 @@ After non-trivial draws prefer: return { ...cad.measure.report([...]), entityIds
 - tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> تُعيد معرّف الكيان الجديد
 - tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> تُعيد معرّف الكيان الجديد
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> تُعيد معرّف الكيان الجديد
+- tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? }) -> معرّف كيان جديد
+- tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? }) -> معرّف كيان جديد
+- tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> معرّف كيان جديد (أو chordPoint+farChordPoint)
+- tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> معرّف كيان جديد (أو center+chordPoint)
+- tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> معرّف كيان جديد
+- tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> معرّف كيان جديد
+- tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? }) -> معرّف كيان جديد
+- للأبعاد استخدم drawDim*؛ لا تقلّدها بخطوط وأسهم ونص
 - tx.erase(ids) -> تُعيد عدد الكيانات المحذوفة
 - tx.setLayer(ids, layer)
 - tx.move(ids, dx, dy) -> تُعيد عدد الكيانات المنقولة

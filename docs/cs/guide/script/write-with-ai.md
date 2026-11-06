@@ -120,6 +120,14 @@ Metody dostupné v transakci:
 - tx.drawXline({ start: {x,y}, through: {x,y}, layer? }) -> vrací ID nové entity
 - tx.drawSpline({ points: [{x,y}...], closed?, layer? }) -> vrací ID nové entity
 - tx.drawText({ position: {x,y}, text, height?, layer? }) -> vrací ID nové entity
+- tx.drawDimAligned({ xLine1Point, xLine2Point, dimLinePoint, text?, styleName?, layer? }) -> ID nové entity
+- tx.drawDimLinear({ xLine1Point, xLine2Point, dimLinePoint, rotationDeg?, text?, styleName?, layer? }) -> ID nové entity
+- tx.drawDimDiameter({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> ID nové entity (nebo chordPoint+farChordPoint)
+- tx.drawDimRadius({ center, radius, angleDeg?, leaderLength?, text?, styleName?, layer? }) -> ID nové entity (nebo center+chordPoint)
+- tx.drawDimAngular({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> ID nové entity
+- tx.drawDimArc({ center, xLine1Point, xLine2Point, arcPoint, text?, styleName?, layer? }) -> ID nové entity
+- tx.drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin?, text?, styleName?, layer? }) -> ID nové entity
+- Pro kóty používejte drawDim*; nenapodobujte je čarami, šipkami a textem
 - tx.erase(ids) -> vrací počet smazaných entit
 - tx.setLayer(ids, layer)
 - tx.move(ids, dx, dy) -> vrací počet přesunutých entit
