@@ -92,6 +92,118 @@ describe('executeCadScript', () => {
     expect(extents).not.toHaveBeenCalled()
   })
 
+  test('counts without snapshotting unmatched geometry', async () => {
+    const { session, db } = createFixture()
+    const line = [...db.tables.blockTable.modelSpace.newIterator()].find(
+      entity => entity.type === 'Line'
+    )
+    if (!line) throw new Error('fixture line missing')
+    const extents = jest.spyOn(line, 'geometricExtents', 'get')
+
+    const result = await executeCadScript(
+      {
+        code: `
+          return {
+            circles: cad.entities.count(e => e.type === 'Circle'),
+            lines: cad.entities.count(e => e.type === 'Line')
+          }
+        `,
+        intent: 'count types'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({ circles: 3, lines: 1 })
+    expect(extents).not.toHaveBeenCalled()
+  })
+
+  test('cad.blocks exposes per-block typeCounts without snapshots', async () => {
+    const { session, db } = createFixture()
+    const line = [...db.tables.blockTable.modelSpace.newIterator()].find(
+      entity => entity.type === 'Line'
+    )
+    if (!line) throw new Error('fixture line missing')
+    const extents = jest.spyOn(line, 'geometricExtents', 'get')
+
+    const block = new AcDbBlockTableRecord({ name: 'Widget' })
+    db.tables.blockTable.add(block)
+    block.appendEntity(new AcDbCircle(new AcGePoint3d(5, 5, 0), 3))
+
+    const result = await executeCadScript(
+      {
+        code: `
+          const model = cad.blocks.find(b => b.isModelSpace)
+          const widget = cad.blocks.find(b => b.name === 'Widget')
+          return {
+            model: { entityCount: model.entityCount, typeCounts: model.typeCounts },
+            widget: { entityCount: widget.entityCount, typeCounts: widget.typeCounts }
+          }
+        `,
+        intent: 'block stats'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({
+      model: { entityCount: 4, typeCounts: { Circle: 3, Line: 1 } },
+      widget: { entityCount: 1, typeCounts: { Circle: 1 } }
+    })
+    expect(extents).not.toHaveBeenCalled()
+  })
+
+  test('stops where when too many entities would be snapshotted', async () => {
+    const { session } = createFixture()
+    const result = await executeCadScript(
+      {
+        code: 'return cad.entities.where(() => true)',
+        intent: 'too many'
+      },
+      session,
+      { limits: { maxWhereMatches: 2 } }
+    )
+    expect(result.success).toBe(false)
+    expect(result.error).toMatch(/^too_many_matches/)
+  })
+
+  test('inBlock with predicate only snapshots matches', async () => {
+    const { session } = createFixture()
+    const result = await executeCadScript(
+      {
+        code: `
+          const model = cad.blocks.find(b => b.isModelSpace)
+          return cad.entities.inBlock(model.id, e => e.type === 'Line')
+            .map(e => e.type)
+        `,
+        intent: 'lines in model'
+      },
+      session
+    )
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual(['Line'])
+  })
+
+  test('refreshes cad.blocks after an edit transaction', async () => {
+    const { session } = createFixture()
+    const result = await executeCadScript(
+      {
+        code: `
+          const before = cad.blocks.find(b => b.isModelSpace).entityCount
+          cad.edit.transaction('add circle', tx => {
+            tx.drawCircle({ center: { x: 0, y: 0 }, radius: 1 })
+          })
+          const after = cad.blocks.find(b => b.isModelSpace).entityCount
+          return { before, after }
+        `,
+        intent: 'blocks cache'
+      },
+      session
+    )
+    expect(result.success).toBe(true)
+    expect(result.data).toEqual({ before: 4, after: 5 })
+  })
+
   test('serializes the host without failing on toJSON', async () => {
     const { session } = createFixture()
     const result = await executeCadScript(
@@ -684,17 +796,18 @@ describe('executeCadScript', () => {
         code: `
           const widget = cad.blocks.find(block => block.name === 'Widget')
           const model = cad.blocks.find(block => block.isModelSpace)
-          const owned = cad.entities.where(entity => entity.ownerId === widget.id)
+          const owned = cad.entities.inBlock(widget.id)
           const paper = cad.entities.where(entity => {
             const owner = cad.blocks.find(block => block.id === entity.ownerId)
             return owner && owner.isPaperSpace
           })
           return {
             names: cad.blocks.map(block => block.name),
-            widgetEntities: widget.entities.map(entity => entity.type),
+            widgetEntities: owned.map(entity => entity.type),
+            widgetEntityCount: widget.entityCount,
             owned: owned.map(entity => ({ type: entity.type, ownerId: entity.ownerId })),
-            modelCount: model.entities.length,
-            allCount: cad.entities.where(() => true).length,
+            modelCount: model.entityCount,
+            layoutCount: cad.entities.count(() => true),
             layers: cad.tables.layerTable.records.map(record => record.name),
             hasPaper: cad.blocks.some(block => block.isPaperSpace),
             paperCount: paper.length
@@ -709,6 +822,7 @@ describe('executeCadScript', () => {
     expect(result.data).toEqual(
       expect.objectContaining({
         widgetEntities: ['Circle'],
+        widgetEntityCount: 1,
         owned: [{ type: 'Circle', ownerId: block.objectId }],
         modelCount: 4,
         hasPaper: true,
@@ -717,13 +831,14 @@ describe('executeCadScript', () => {
     )
     const data = result.data as {
       names: string[]
-      allCount: number
+      layoutCount: number
       layers: string[]
     }
     expect(data.names).toEqual(
       expect.arrayContaining(['*Model_Space', '*Paper_Space', 'Widget'])
     )
-    expect(data.allCount).toBe(6)
+    // where/count skip block definitions — Widget's circle is only via inBlock.
+    expect(data.layoutCount).toBe(5)
     expect(data.layers).toEqual(expect.arrayContaining(['Walls']))
   })
 })

@@ -71,11 +71,12 @@ Anlık görüntüde `ownerId` vardır. Kapsam model alanı, kağıt alanı, blok
 ### cad.tables
 `AcDbDatabase.tables` ile aynı sembol tabloları. Her tablo { id, records: [{ id, name, ... }] } biçimindedir.
 appIdTable, blockTable, dimStyleTable, linetypeTable, textStyleTable, ucsTable, viewTable, layerTable, viewportTable.
-layerTable color, linetype, lineWeight, isOff, isFrozen, isLocked, isPlottable içerir. Blok içindeki varlıklar cad.blocks üzerindedir.
+layerTable color, linetype, lineWeight, isOff, isFrozen, isLocked, isPlottable içerir. Blok içi varlıklar cad.entities.inBlock(id).
 
 ### cad.blocks
-DXF BLOCKS bölümüne karşılık gelir. *Model_Space ve *Paper_Space dahildir.
-Alanlar: id, name, origin, isModelSpace, isPaperSpace, flags, pathName, isXref, layoutId, entities.
+Yalnızca meta veri (*Model_Space / *Paper_Space dahil).
+Alanlar: id, name, origin, isModelSpace, isPaperSpace, flags, pathName, isXref, layoutId, entityCount, typeCounts.
+entities dizisi yok — inBlock(id). Sayımlar entityCount / typeCounts.
 
 ### cad.selection
 Seçim kümesini kontrol etme:

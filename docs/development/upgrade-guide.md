@@ -88,6 +88,10 @@ Starting with the release that follows **1.8.0-preview.2**, `cad.edit.transactio
 Agents and scripts should call these instead of approximating dimensions with lines, arrows, and text. Diameter/radius accept `center` + `radius` so a circle snapshot can feed them directly. See [Script API](../guide/script/api.md).
 :::
 
+::: tip Script host: per-block tallies on `cad.blocks`
+In the release that includes this change, `cad.blocks` exposes per-block `entityCount` / `typeCounts` metadata — no embedded entity arrays. Prefer those fields / `count(pred)` for tallies. Snapshot with `where` / `inBlock(id, pred)` — bare whole-space snapshots stop at ~500 matches (`too_many_matches`). `where` / `count` / `inBox` scan model and paper spaces only (use `inBlock` for block definitions). Block references use `type === 'BlockReference'`.
+:::
+
 ::: info PDF export split into a shared core (browser + Node)
 Starting with **1.8.0**, PDF export uses the same layering as HTML export. Shared logic lives in `@mlightcad/cad-pdf-core` (option model and database → PDF pipeline, **no** `cad-simple-viewer` / DOM dependency). Two front ends consume it:
 

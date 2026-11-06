@@ -88,6 +88,10 @@ Od vydání po **1.8.0-preview.2** umí `cad.edit.transaction` v `@mlightcad/cad
 Agenti a skripty by měli volat tato API místo napodobování kót čarami, šipkami a textem. Průměr/poloměr přijímají `center` + `radius`, takže snapshot kružnice lze předat přímo. Viz [API skriptů](../guide/script/api.md).
 :::
 
+::: tip Skriptový hostitel: statistiky po blocích na `cad.blocks`
+Od vydání s touto změnou `cad.blocks` poskytuje u každého bloku `entityCount` / `typeCounts` bez plného pole `entities`. Pro součty preferujte tato pole nebo `count(pred)`. Snímky přes `where` / `inBlock(id, pred)` — snímek celého prostoru se zastaví kolem 500 s `too_many_matches`. `where` / `count` / `inBox` procházejí jen modelový a výkresový prostor.
+:::
+
 ::: info Export PDF rozdělen do sdíleného jádra (prohlížeč + Node)
 Od verze **1.8.0** používá export PDF stejné vrstvení jako export HTML. Sdílená logika je v `@mlightcad/cad-pdf-core` (model voleb a pipeline database → PDF, **bez** závislosti na `cad-simple-viewer` / DOM). Spotřebovávají ji dvě frontendy:
 

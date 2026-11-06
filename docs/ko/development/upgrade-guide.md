@@ -88,6 +88,10 @@ GitHub 저장소는 여전히 [`mlightcad/cad-viewer`](https://github.com/mlight
 Agent/스크립트는 선·화살표·문자로 치수를 흉내 내지 말고 이 API를 호출하세요. 지름/반지름은 `center` + `radius`를 받으므로 원 스냅샷을 바로 넘길 수 있습니다. 자세한 내용: [스크립트 API](../guide/script/api.md).
 :::
 
+::: tip 스크립트 호스트: 블록별 집계는 `cad.blocks`
+이 변경이 포함된 릴리스부터 `cad.blocks`는 블록별 `entityCount` / `typeCounts` 메타데이터를 제공하며 전체 `entities` 배열은 넣지 않습니다. 집계는 이 필드 또는 `count(pred)`를 쓰세요. 스냅샷은 `where` / `inBlock(id, pred)` — 공간 전체 스냅샷은 약 500개에서 `too_many_matches`로 중단됩니다. `where` / `count` / `inBox`는 모형/도면 공간만 스캔합니다.
+:::
+
 ::: info PDF 내보내기를 공유 코어로 분리(브라우저 + Node)
 **1.8.0**부터 PDF 내보내기는 HTML 내보내기와 같은 계층을 사용합니다. 공유 로직은 `@mlightcad/cad-pdf-core`(옵션 모델과 database → PDF 파이프라인, `cad-simple-viewer` / DOM에 **의존하지 않음**)에 있으며, 다음 두 프론트엔드가 이를 사용합니다.
 

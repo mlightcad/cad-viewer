@@ -59,11 +59,19 @@ cad.log('图层总数:', info.layers.length)
 
 ## cad.entities
 
-查询数据库中的全部实体。范围与 DXF 的 ENTITIES 段同一类数据，但不仅限于模型空间：模型空间、每个图纸空间，以及每个块定义里的实体都会返回。块参照上的属性跟在该参照之后，`ownerId` 指向块参照；其余实体的 `ownerId` 指向所属块表记录。
+`where` / `count` / `inBox` 只扫描**模型空间和图纸空间**（块定义内实体请用 `inBlock(id)`）。块参照上的属性跟在该参照之后，`ownerId` 指向块参照；其余实体的 `ownerId` 指向所属块表记录。块参照的 `type` 为 `BlockReference`。
+
+### `cad.entities.count(predicate)`
+
+只计数、不建快照。统计数量请优先用它——`where(pred).length` 仍会对每个匹配项做完整快照，大图上容易 `script_timeout`。
+
+```javascript
+const n = cad.entities.count(e => e.type === 'Circle')
+```
 
 ### `cad.entities.where(predicate)`
 
-根据条件筛选实体快照，返回匹配的快照数组。
+根据条件筛选实体快照，返回匹配的快照数组。请把过滤条件写进谓词，只对命中项做快照。
 
 ```javascript
 const circles = cad.entities.where(e => e.type === 'Circle')
@@ -80,9 +88,18 @@ if (entity) {
 }
 ```
 
+### `cad.entities.inBlock(blockId)`
+
+快照某一个块定义（或模型/图纸空间）内直接存放的实体。需要块内实体时用它，不要遍历所有 `cad.blocks` 去拉全量实体。
+
+```javascript
+const widget = cad.blocks.find(block => block.name === 'Widget')
+const ents = widget ? cad.entities.inBlock(widget.id) : []
+```
+
 ### `cad.entities.inBox(min, max)`
 
-返回世界坐标范围与指定矩形相交的实体快照。比较的是实体的 `extents`，因此块定义和图纸空间里的实体也会命中。
+返回世界坐标范围与指定矩形相交的实体快照（仅模型空间与图纸空间）。
 
 ```javascript
 const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
@@ -162,7 +179,7 @@ ByLayer / ByBlock 颜色没有 RGB，需要真实颜色时读取 `resolvedColor`
 | 属性             | 内容                                                                                         |
 | ---------------- | -------------------------------------------------------------------------------------------- |
 | `appIdTable`     | 已注册的应用程序名                                                                           |
-| `blockTable`     | 块表记录。这里只有定义信息，块内实体在 `cad.blocks`                                          |
+| `blockTable`     | 块表记录。这里只有定义信息；块内实体用 `cad.entities.inBlock(id)` 加载                        |
 | `dimStyleTable`  | 标注样式，包含 `dimtxt`、`dimscale` 等标注变量                                               |
 | `linetypeTable`  | 线型，包含 `numDashes`、`patternLength`、`comments`                                          |
 | `textStyleTable` | 文字样式，包含 `fileName`、`textSize`、`xScale`                                              |
@@ -182,7 +199,7 @@ return layers
 
 ## cad.blocks
 
-返回数据库中的全部块定义，对应 DXF 的 BLOCKS 段。模型空间 `*Model_Space` 和各个图纸空间 `*Paper_Space` 也在其中。
+返回全部块定义的**元数据**（对应 DXF BLOCKS 段）。模型空间 `*Model_Space` 和各个图纸空间 `*Paper_Space` 也在其中。**不**内嵌实体几何——需要时用 `cad.entities.inBlock(id)`。大图上对每个块做完整实体快照会 `script_timeout`。
 
 | 字段           | 类型                  | 说明                                  |
 | -------------- | --------------------- | ------------------------------------- |
@@ -195,13 +212,15 @@ return layers
 | `pathName`     | `string`              | 外部参照路径，本地块为空字符串        |
 | `isXref`       | `boolean`             | 是否为外部参照                        |
 | `layoutId`     | `string \| undefined` | 关联的布局 ID                         |
-| `entities`     | `EntitySnapshot[]`    | 直接存放在该块中的实体                |
+| `entityCount`  | `number`              | 块内实体数量（不做快照）              |
+| `typeCounts`   | `Record<string, number>` | 块内按类型计数（不做快照）         |
 
 ```javascript
 const widget = cad.blocks.find(block => block.name === 'Widget')
+const ents = widget ? cad.entities.inBlock(widget.id) : []
 return {
-  count: widget ? widget.entities.length : 0,
-  types: widget ? widget.entities.map(entity => entity.type) : []
+  count: widget ? widget.entityCount : 0,
+  types: ents.map(entity => entity.type)
 }
 ```
 

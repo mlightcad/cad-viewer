@@ -11,7 +11,7 @@ import type { Point2dInput, ToolResult } from '../tools/types'
 import { createCadMeasure } from './createCadMeasure'
 import {
   type EntitySnapshot,
-  iterateDatabaseEntities,
+  iterateLayoutEntities,
   openEntityFilterView,
   toEntitySnapshot
 } from './entitySnapshot'
@@ -28,7 +28,11 @@ import {
   normalizePdfSaveRequest
 } from './savePdf'
 import { CAD_EDIT_TX_METHODS, CAD_SCRIPT_API_TREE } from './scriptApi'
-import { toBlockSnapshots, toDatabaseTables } from './tableSnapshot'
+import {
+  type BlockSnapshot,
+  toBlockSnapshots,
+  toDatabaseTables
+} from './tableSnapshot'
 
 /** Queued screenshot request from `cad.view.capturePreview`. */
 export interface CadScriptPreviewRequest {
@@ -66,18 +70,27 @@ export interface CadScriptEffects {
   htmlSaveRequests: CadScriptHtmlSaveRequest[]
 }
 
-/** Limits enforced by `cad.__tick`. */
+/** Limits enforced by `cad.__tick` and snapshot queries. */
 export interface CadScriptLimits {
   /** Maximum tick calls before the script is stopped. */
   maxTicks: number
   /** Maximum wall-clock time in milliseconds. */
   maxMilliseconds: number
+  /**
+   * Maximum entities `where` / bare `inBlock` may snapshot.
+   * Exceeding throws `too_many_matches` so callers narrow the predicate.
+   */
+  maxWhereMatches: number
 }
 
 const DEFAULT_LIMITS: CadScriptLimits = {
   maxTicks: 100_000,
-  maxMilliseconds: 2_000
+  maxMilliseconds: 5_000,
+  maxWhereMatches: 500
 }
+
+const TOO_MANY_MATCHES =
+  'too_many_matches: snapshot query returned too many entities. Narrow the predicate (type + keywords). Use cad.blocks (entityCount/typeCounts) or count(pred) for tallies — never snapshot a whole model/paper space.'
 
 /**
  * Builds the `cad` value injected into a script.
@@ -87,7 +100,8 @@ const DEFAULT_LIMITS: CadScriptLimits = {
  *
  * @param session - Drawing and view access.
  * @param effects - Mutable log, highlight, and created-id collectors.
- * @param limits - Tick budget. Defaults to 100000 statements or 2 seconds.
+ * @param limits - Tick / match budget. Defaults to 100000 ticks, 5 seconds,
+ *   and 500 snapshot matches.
  * @returns The host passed as the `cad` argument.
  */
 export function createCadScriptHost(
@@ -98,6 +112,36 @@ export function createCadScriptHost(
   const executor = new CadActionExecutor(session)
   const startedAt = Date.now()
   let ticks = 0
+  let blocksCache: BlockSnapshot[] | undefined
+  const maxWhereMatches = limits.maxWhereMatches
+
+  /** Shared tick so script loops and long entity walks share one budget. */
+  function hostTick(): void {
+    ticks++
+    if (
+      ticks > limits.maxTicks ||
+      Date.now() - startedAt > limits.maxMilliseconds
+    ) {
+      throw new Error('script_timeout')
+    }
+  }
+
+  function pushMatch(
+    matches: EntitySnapshot[],
+    entity: Parameters<typeof toEntitySnapshot>[0]
+  ): void {
+    if (matches.length >= maxWhereMatches) {
+      throw new Error(TOO_MANY_MATCHES)
+    }
+    matches.push(toEntitySnapshot(entity))
+  }
+
+  function getBlocks(): BlockSnapshot[] {
+    if (!blocksCache) {
+      blocksCache = toBlockSnapshots(requireDocumentRecord(session).database)
+    }
+    return blocksCache
+  }
 
   const entities = {
     where(predicate: (entity: EntitySnapshot) => boolean): EntitySnapshot[] {
@@ -106,7 +150,10 @@ export function createCadScriptHost(
       }
       const doc = requireDocumentRecord(session)
       const matches: EntitySnapshot[] = []
-      for (const entity of iterateDatabaseEntities(doc.database)) {
+      let visited = 0
+      // Layout spaces only — block-definition contents use inBlock(id).
+      for (const entity of iterateLayoutEntities(doc.database)) {
+        if ((++visited & 255) === 0) hostTick()
         const view = openEntityFilterView(entity)
         let matched = false
         try {
@@ -114,12 +161,72 @@ export function createCadScriptHost(
         } finally {
           view.release()
         }
-        if (matched) matches.push(toEntitySnapshot(entity))
+        if (matched) pushMatch(matches, entity)
       }
       return matches
     },
+    /**
+     * Counts layout-space entities matching a predicate without snapshots.
+     * Prefer this for tallies; `where(pred).length` still snapshots every match.
+     * Do not read `e.extents` here on large drawings — use `inBox` instead.
+     */
+    count(predicate: (entity: EntitySnapshot) => boolean): number {
+      if (typeof predicate !== 'function') {
+        throw new Error('cad.entities.count expects a function')
+      }
+      const doc = requireDocumentRecord(session)
+      let matched = 0
+      let visited = 0
+      for (const entity of iterateLayoutEntities(doc.database)) {
+        if ((++visited & 255) === 0) hostTick()
+        const view = openEntityFilterView(entity)
+        try {
+          if (predicate(view.value)) matched++
+        } finally {
+          view.release()
+        }
+      }
+      return matched
+    },
     byId(id: string): EntitySnapshot | undefined {
       return snapshotById(session, id)
+    },
+    /**
+     * Snapshots entities stored in one block (or model/paper space).
+     * Pass a predicate to snapshot only matches. Bare `inBlock(id)` on a large
+     * space hits {@link CadScriptLimits.maxWhereMatches}.
+     */
+    inBlock(
+      blockId: string,
+      predicate?: (entity: EntitySnapshot) => boolean
+    ): EntitySnapshot[] {
+      if (typeof blockId !== 'string' || !blockId) {
+        throw new Error('cad.entities.inBlock expects a block id string')
+      }
+      if (predicate !== undefined && typeof predicate !== 'function') {
+        throw new Error('cad.entities.inBlock predicate must be a function')
+      }
+      const doc = requireDocumentRecord(session)
+      const record = doc.database.tables.blockTable.getIdAt(blockId)
+      if (!record) return []
+      const matches: EntitySnapshot[] = []
+      let visited = 0
+      for (const entity of record.newIterator()) {
+        if ((++visited & 1023) === 0) hostTick()
+        if (!predicate) {
+          pushMatch(matches, entity)
+          continue
+        }
+        const view = openEntityFilterView(entity)
+        let matched = false
+        try {
+          matched = Boolean(predicate(view.value))
+        } finally {
+          view.release()
+        }
+        if (matched) pushMatch(matches, entity)
+      }
+      return matches
     },
     inBox(min: Point2dInput, max: Point2dInput): EntitySnapshot[] {
       const doc = requireDocumentRecord(session)
@@ -128,7 +235,11 @@ export function createCadScriptHost(
       const minY = Math.min(min.y, max.y)
       const maxY = Math.max(min.y, max.y)
       const snapshots: EntitySnapshot[] = []
-      for (const entity of iterateDatabaseEntities(doc.database)) {
+      let visited = 0
+      for (const entity of iterateLayoutEntities(doc.database)) {
+        // Extents are expensive — tick often so large layouts hit the budget
+        // instead of hanging past maxMilliseconds without feedback.
+        if ((++visited & 63) === 0) hostTick()
         const view = openEntityFilterView(entity)
         const extents = view.value.extents
         view.release()
@@ -138,7 +249,7 @@ export function createCadScriptHost(
           extents.min.x <= maxX &&
           extents.max.y >= minY &&
           extents.min.y <= maxY
-        if (hits) snapshots.push(toEntitySnapshot(entity))
+        if (hits) pushMatch(snapshots, entity)
       }
       return snapshots
     }
@@ -286,6 +397,8 @@ export function createCadScriptHost(
           )
         })
       })
+      // Counts may change; do not serve a pre-edit blocks snapshot.
+      blocksCache = undefined
     }
   }
 
@@ -312,7 +425,7 @@ export function createCadScriptHost(
       return toDatabaseTables(requireDocumentRecord(session).database)
     },
     get blocks() {
-      return toBlockSnapshots(requireDocumentRecord(session).database)
+      return getBlocks()
     },
     selection,
     view,
@@ -323,13 +436,7 @@ export function createCadScriptHost(
       effects.log.push(values.map(formatLogValue).join(' '))
     },
     __tick(): void {
-      ticks++
-      if (
-        ticks > limits.maxTicks ||
-        Date.now() - startedAt > limits.maxMilliseconds
-      ) {
-        throw new Error('script_timeout')
-      }
+      hostTick()
     }
   }
 

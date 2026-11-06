@@ -49,6 +49,15 @@ export interface AgentChatOptions {
 }
 
 /**
+ * Max model↔tool steps in one `agent.stream` (one user turn).
+ * Query / edit tasks often need many successive `execute_cad_script` calls;
+ * the old limit of 10 ran out too quickly.
+ */
+export const MAX_AGENT_STEPS_SIMPLE = 50
+/** High inference allows longer incremental draw + fix loops. */
+export const MAX_AGENT_STEPS_HIGH = 80
+
+/**
  * Builds an AI SDK agent configured for CAD drawing with tool calling.
  *
  * @param settings - LLM provider credentials and model selection.
@@ -59,11 +68,15 @@ export function createCadAgent(
   settings: LlmSettings,
   options: AgentChatOptions = { agentMode: 'simple' }
 ) {
+  const maxSteps =
+    options.agentMode === 'high-inference'
+      ? MAX_AGENT_STEPS_HIGH
+      : MAX_AGENT_STEPS_SIMPLE
   return new Agent({
     model: createModelFromSettings(settings),
     system: buildCadAgentSystemPrompt(options.agentMode),
     tools: createCadTools({ agentMode: options.agentMode }),
-    stopWhen: stepCountIs(10)
+    stopWhen: stepCountIs(maxSteps)
   })
 }
 

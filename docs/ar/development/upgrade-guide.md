@@ -88,6 +88,10 @@ import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-ope
 يجب على الوكلاء والسكربتات استدعاء هذه الواجهات بدل تقليد الأبعاد بخطوط وأسهم ونص. القطر/نصف القطر يقبلان `center` + `radius` لتمرير لقطة الدائرة مباشرة. انظر [واجهة السكربت](../guide/script/api.md).
 :::
 
+::: tip مضيف السكربت: إحصاءات لكل كتلة على `cad.blocks`
+بدءًا من الإصدار الذي يتضمن هذا التغيير، يعرض `cad.blocks` لكل كتلة `entityCount` / `typeCounts` دون مصفوفة `entities` كاملة. فضّل هذه الحقول أو `count(pred)` للتعداد. اللقطات عبر `where` / `inBlock(id, pred)` — لقطة مساحة كاملة تتوقف عند نحو 500 بمُعرّف `too_many_matches`. `where` / `count` / `inBox` تمسح مساحة النموذج والورق فقط.
+:::
+
 ::: info تقسيم تصدير PDF إلى نواة مشتركة (المتصفح + Node)
 بدءًا من **1.8.0**، يستخدم تصدير PDF نفس التقسيم الطبقي لتصدير HTML. المنطق المشترك في `@mlightcad/cad-pdf-core` (نموذج الخيارات ومسار database → PDF، **بدون** اعتماد على `cad-simple-viewer` / DOM). يستهلكه واجهتان أماميتان:
 

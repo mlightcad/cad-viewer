@@ -71,11 +71,12 @@ title: AI でスクリプトを作成
 ### cad.tables
 `AcDbDatabase.tables` と同じシンボルテーブルです。各テーブルは { id, records: [{ id, name, ... }] }。
 appIdTable、blockTable、dimStyleTable、linetypeTable、textStyleTable、ucsTable、viewTable、layerTable、viewportTable。
-layerTable には color、linetype、lineWeight、isOff、isFrozen、isLocked、isPlottable があります。ブロック内の図形は cad.blocks を使います。
+layerTable には color、linetype、lineWeight、isOff、isFrozen、isLocked、isPlottable があります。ブロック内の図形は cad.entities.inBlock(id)。
 
 ### cad.blocks
-DXF の BLOCKS セクションに相当します。*Model_Space と *Paper_Space を含みます。
-フィールド: id、name、origin、isModelSpace、isPaperSpace、flags、pathName、isXref、layoutId、entities。
+メタデータのみ（*Model_Space / *Paper_Space 含む）。
+フィールド: id、name、origin、isModelSpace、isPaperSpace、flags、pathName、isXref、layoutId、entityCount、typeCounts。
+entities 配列なし — inBlock(id)。集計は entityCount / typeCounts。
 
 ### cad.selection
 選択セットの制御：

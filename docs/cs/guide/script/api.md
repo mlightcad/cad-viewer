@@ -59,7 +59,15 @@ cad.log('Celkový počet hladin:', info.layers.length)
 
 ## cad.entities
 
-Vrací všechny entity v databázi: modelový prostor, každý výkresový prostor, každou definici bloku a atributy na referencích bloků. `ownerId` atributu je reference bloku, u ostatních entit je to záznam tabulky bloků.
+`where` / `count` / `inBox` procházejí **jen modelový a výkresový prostor** (definice bloků přes `inBlock(id)`). `ownerId` atributu je reference bloku, u ostatních záznam tabulky bloků. Typ reference bloku je `BlockReference`.
+
+### `cad.entities.count(predicate)`
+
+Počítá shody bez sestavování snímků. Pro součty preferujte toto — `where(pred).length` stále vytváří snímky.
+
+```javascript
+const n = cad.entities.count(e => e.type === 'Circle')
+```
 
 ### `cad.entities.where(predicate)`
 
@@ -80,9 +88,18 @@ if (entity) {
 }
 ```
 
+### `cad.entities.inBlock(blockId)`
+
+Snímkuje entity uložené přímo v jedné definici bloku (nebo modelovém/výkresovém prostoru).
+
+```javascript
+const widget = cad.blocks.find(block => block.name === 'Widget')
+const ents = widget ? cad.entities.inBlock(widget.id) : []
+```
+
 ### `cad.entities.inBox(min, max)`
 
-Vrací všechny snímky entit nacházející se v obdélníku WCS.
+Vrací snímky z layout prostorů, jejichž extents protínají obdélník (jen model/výkres).
 
 ```javascript
 const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
@@ -159,7 +176,7 @@ Jen pro čtení, všechny tabulky symbolů jako `AcDbDatabase.tables`. Každá t
 
 ## cad.blocks
 
-Všechny definice bloků, obdobně jako sekce BLOCKS v DXF, včetně `*Model_Space` a `*Paper_Space`.
+**Pouze metadata** definic bloků (jako sekce BLOCKS v DXF, včetně `*Model_Space` a `*Paper_Space`). Bez pole entit — použijte `cad.entities.inBlock(id)`.
 
 | Pole                            | Popis                                              |
 | ------------------------------- | -------------------------------------------------- |
@@ -169,7 +186,8 @@ Všechny definice bloků, obdobně jako sekce BLOCKS v DXF, včetně `*Model_Spa
 | `isModelSpace` / `isPaperSpace` | Modelový / výkresový prostor                       |
 | `flags`                         | Skupinový kód 70 objektu BLOCK                     |
 | `pathName` / `isXref`           | Cesta a příznak externí reference                  |
-| `entities`                      | Snímky entit uložených přímo v bloku               |
+| `entityCount`                   | Počet entit (bez snapshotů)                                    |
+| `typeCounts`                    | Počty podle typu (bez snapshotů)                               |
 
 ## cad.selection
 

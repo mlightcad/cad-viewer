@@ -88,6 +88,10 @@ Diğer HTML-core yardımcıları da aynı şekilde yeniden adlandırıldı (örn
 Agent / betikler ölçüleri çizgi, ok ve metinle taklit etmemeli; bu API’leri kullanmalıdır. Çap/yarıçap `center` + `radius` kabul eder, böylece çember anlık görüntüsü doğrudan verilebilir. Ayrıntılar: [Betik API](../guide/script/api.md).
 :::
 
+::: tip Betik hostu: blok başına özet `cad.blocks` üzerinde
+Bu değişikliği içeren sürümden itibaren `cad.blocks` her blok için `entityCount` / `typeCounts` meta verisi verir; tam `entities` dizisi gömmez. Sayımlarda bu alanları veya `count(pred)` kullanın. Anlık görüntüler `where` / `inBlock(id, pred)` ile — tüm uzay anlık görüntüsü ~500’de `too_many_matches` ile durur. `where` / `count` / `inBox` yalnızca model ve kağıt alanını tarar.
+:::
+
 ::: info PDF dışa aktarma paylaşılan çekirdeğe ayrıldı (tarayıcı + Node)
 **1.8.0** sürümünden itibaren PDF dışa aktarma, HTML dışa aktarma ile aynı katmanlamayı kullanır. Paylaşılan mantık `@mlightcad/cad-pdf-core` içindedir (seçenek modeli ve database → PDF hattı; `cad-simple-viewer` / DOM’a **bağımlı değildir**). Bunu iki ön uç kullanır:
 

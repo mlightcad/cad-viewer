@@ -48,8 +48,11 @@ export const SCRIPT_EXAMPLES: readonly ScriptExample[] = [
   {
     id: 'countByType',
     code: `const counts = {}
-for (const entity of cad.entities.where(() => true)) {
-  counts[entity.type] = (counts[entity.type] || 0) + 1
+for (const block of cad.blocks) {
+  if (!block.isModelSpace && !block.isPaperSpace) continue
+  for (const [type, n] of Object.entries(block.typeCounts)) {
+    counts[type] = (counts[type] || 0) + n
+  }
 }
 cad.log('entity count by type', counts)
 return {
@@ -159,7 +162,8 @@ return {
   isModelSpace: block.isModelSpace,
   isPaperSpace: block.isPaperSpace,
   isXref: block.isXref,
-  entityCount: block.entities.length
+  entityCount: block.entityCount,
+  typeCounts: block.typeCounts
 }))
 return { count: blocks.length, blocks }`
   },

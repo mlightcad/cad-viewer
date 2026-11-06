@@ -59,7 +59,15 @@ cad.log('Toplam katman sayısı:', info.layers.length)
 
 ## cad.entities
 
-Veritabanındaki tüm varlıkları döndürür: model alanı, her kağıt alanı, her blok tanımı ve blok referanslarındaki öznitelikler. Bir özniteliğin `ownerId` değeri blok referansıdır; diğer varlıkların `ownerId` değeri ait oldukları blok tablosu kaydıdır.
+`where` / `count` / `inBox` **yalnızca model ve kağıt alanlarını** tarar (blok tanımları için `inBlock(id)`). Özniteliğin `ownerId` değeri blok referansıdır; diğerlerinde blok tablosu kaydıdır. Blok referansı tipi `BlockReference`’dır.
+
+### `cad.entities.count(predicate)`
+
+Eşleşmeleri anlık görüntü oluşturmadan sayar. Sayımlarda bunu tercih edin — `where(pred).length` her eşleşmeyi hâlâ anlık görüntüler.
+
+```javascript
+const n = cad.entities.count(e => e.type === 'Circle')
+```
 
 ### `cad.entities.where(predicate)`
 
@@ -80,9 +88,18 @@ if (entity) {
 }
 ```
 
+### `cad.entities.inBlock(blockId)`
+
+Tek bir blok tanımında (veya model/kağıt alanında) doğrudan duran varlıkları anlık görüntüler.
+
+```javascript
+const widget = cad.blocks.find(block => block.name === 'Widget')
+const ents = widget ? cad.entities.inBlock(widget.id) : []
+```
+
 ### `cad.entities.inBox(min, max)`
 
-WCS (World Coordinate System) dikdörtgen kutusu içindeki tüm varlık anlık görüntülerini döndürür.
+Extents’i dikdörtgenle kesişen layout-alanı anlık görüntülerini döndürür (yalnızca model/kağıt).
 
 ```javascript
 const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
@@ -161,7 +178,7 @@ data-model içindeki her somut varlık türünün `geometry` alanı vardır: `Ha
 
 ## cad.blocks
 
-DXF BLOCKS bölümüne karşılık gelen tüm blok tanımları. `*Model_Space` ve `*Paper_Space` dahildir.
+DXF BLOCKS’a karşılık gelen **yalnızca meta veri** (`*Model_Space` / `*Paper_Space` dahil). Varlık dizisi yok — `cad.entities.inBlock(id)` kullanın.
 
 | Alan                            | Açıklama                                                          |
 | ------------------------------- | ----------------------------------------------------------------- |
@@ -171,7 +188,8 @@ DXF BLOCKS bölümüne karşılık gelen tüm blok tanımları. `*Model_Space` v
 | `isModelSpace` / `isPaperSpace` | Model alanı / kağıt alanı                                         |
 | `flags`                         | BLOCK grup kodu 70                                                |
 | `pathName` / `isXref`           | Dış referans yolu ve bayrağı                                      |
-| `entities`                      | Blokta doğrudan duran varlık anlık görüntüleri                    |
+| `entityCount`                   | Varlık sayısı (anlık görüntü yok)                              |
+| `typeCounts`                    | Türe göre sayılar (anlık görüntü yok)                          |
 
 ## cad.selection
 

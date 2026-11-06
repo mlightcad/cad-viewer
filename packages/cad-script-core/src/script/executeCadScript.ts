@@ -104,7 +104,8 @@ export async function executeCadScript(
   }
   const host = createCadScriptHost(session, effects, {
     maxTicks: options.limits?.maxTicks ?? 100_000,
-    maxMilliseconds: options.limits?.maxMilliseconds ?? 2_000
+    maxMilliseconds: options.limits?.maxMilliseconds ?? 5_000,
+    maxWhereMatches: options.limits?.maxWhereMatches ?? 500
   })
 
   try {

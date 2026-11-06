@@ -59,7 +59,15 @@ cad.log('레이어 총수:', info.layers.length)
 
 ## cad.entities
 
-데이터베이스의 모든 엔티티를 반환합니다. 모형 공간, 모든 도면 공간, 모든 블록 정의, 그리고 블록 참조의 속성이 포함됩니다. 속성의 `ownerId`는 블록 참조이고, 그 외 엔티티의 `ownerId`는 소속 블록 테이블 레코드입니다.
+`where` / `count` / `inBox`는 **모형 공간과 도면 공간만** 스캔합니다(블록 정의는 `inBlock(id)`). 블록 참조 속성의 `ownerId`는 참조 자체이고, 그 외는 소속 블록 테이블 레코드입니다. 블록 참조 `type`은 `BlockReference`입니다.
+
+### `cad.entities.count(predicate)`
+
+스냅샷 없이 일치 개수를 셉니다. 집계는 이것을 쓰세요(`where(pred).length`는 일치마다 스냅샷).
+
+```javascript
+const n = cad.entities.count(e => e.type === 'Circle')
+```
 
 ### `cad.entities.where(predicate)`
 
@@ -80,9 +88,18 @@ if (entity) {
 }
 ```
 
+### `cad.entities.inBlock(blockId)`
+
+한 블록 정의(또는 모형/도면 공간)에 직접 들어 있는 엔티티를 스냅샷합니다.
+
+```javascript
+const widget = cad.blocks.find(block => block.name === 'Widget')
+const ents = widget ? cad.entities.inBlock(widget.id) : []
+```
+
 ### `cad.entities.inBox(min, max)`
 
-WCS 사각형 영역 내에 있는 모든 엔티티 스냅샷을 반환합니다.
+WCS 사각형과 교차하는 레이아웃 공간 스냅샷을 반환합니다(모형/도면만).
 
 ```javascript
 const inside = cad.entities.inBox({ x: 0, y: 0 }, { x: 100, y: 100 })
@@ -159,7 +176,7 @@ ByLayer / ByBlock 색상에는 RGB가 없습니다. 실제 색상이 필요하�
 
 ## cad.blocks
 
-DXF BLOCKS 섹션에 해당하는 모든 블록 정의입니다. `*Model_Space`와 `*Paper_Space`도 포함됩니다.
+DXF BLOCKS에 해당하는 **메타데이터만**입니다(`*Model_Space` / `*Paper_Space` 포함). 엔티티 배열은 없습니다 — `cad.entities.inBlock(id)`를 쓰세요.
 
 | 필드                            | 설명                                              |
 | ------------------------------- | ------------------------------------------------- |
@@ -169,7 +186,8 @@ DXF BLOCKS 섹션에 해당하는 모든 블록 정의입니다. `*Model_Space`�
 | `isModelSpace` / `isPaperSpace` | 모형 공간 / 도면 공간                             |
 | `flags`                         | BLOCK 그룹 코드 70                                |
 | `pathName` / `isXref`           | 외부 참조 경로와 여부                             |
-| `entities`                      | 그 블록에 직접 들어 있는 엔티티 스냅샷            |
+| `entityCount`                   | 엔티티 수(스냅샷 없음)                                 |
+| `typeCounts`                    | 유형별 개수(스냅샷 없음)                               |
 
 ## cad.selection
 

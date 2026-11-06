@@ -71,12 +71,12 @@ Geometry fields by type:
 Read-only symbol tables, matching AcDbDatabase.tables. Each table is { id, records: [{ id, name, ... }] }.
 - appIdTable, blockTable, dimStyleTable, linetypeTable, textStyleTable, ucsTable, viewTable, layerTable, viewportTable
 - layerTable records include color, linetype, lineWeight, isOff, isFrozen, isLocked, isPlottable
-- blockTable records are definitions only. Use cad.blocks for the entities inside a block
+- blockTable records are definitions only. Load entities with cad.entities.inBlock(id)
 
 ### cad.blocks
-Every block definition, like a DXF BLOCKS section, including *Model_Space and *Paper_Space.
-- Fields: id, name, origin, isModelSpace, isPaperSpace, flags, pathName, isXref, layoutId, entities
-- entities is an array of the same snapshots as cad.entities
+Block metadata only (like a DXF BLOCKS section), including *Model_Space and *Paper_Space.
+- Fields: id, name, origin, isModelSpace, isPaperSpace, flags, pathName, isXref, layoutId, entityCount, typeCounts
+- No entities array — use cad.entities.inBlock(id). Prefer block.entityCount / typeCounts for tallies
 
 ### cad.selection
 Control the selection set:
