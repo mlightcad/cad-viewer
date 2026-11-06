@@ -1,4 +1,7 @@
-import { AcApI18n, type AcApLocale } from '@mlightcad/cad-simple-viewer'
+import {
+  AcApI18n,
+  type AcApLocale
+} from '@mlightcad/cad-simple-viewer/file-open-panel'
 import ar from 'element-plus/es/locale/lang/ar'
 import cs from 'element-plus/es/locale/lang/cs'
 import en from 'element-plus/es/locale/lang/en'
@@ -47,6 +50,10 @@ const ensureLocaleStateListener = () => {
 
 /**
  * Locale composable for cad-viewer.
+ *
+ * Uses the same `@mlightcad/cad-simple-viewer/file-open-panel` {@link AcApI18n}
+ * singleton as `locale/i18n.ts` (vue-i18n host). {@link syncViewerAcApI18n}
+ * mirrors changes onto the full-viewer package singleton for plugins.
  *
  * {@link AcApI18n.setCurrentLocale} is the only write path. vue-i18n is synced
  * from {@link AcApI18n.events.localeChanged} in `locale/i18n.ts`.

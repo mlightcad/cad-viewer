@@ -106,6 +106,10 @@ export const i18n = createI18n({
 /**
  * vue-i18n follows {@link AcApI18n} — never the other way around.
  * All locale changes must go through {@link AcApI18n.setCurrentLocale}.
+ *
+ * The full-viewer package entry may carry a separate {@link AcApI18n}
+ * singleton; {@link syncViewerAcApI18n} (called from {@link MlCadViewer})
+ * mirrors this landing singleton onto it for plugins such as CAD Agent.
  */
 AcApI18n.events.localeChanged.addEventListener(args => {
   i18n.global.locale.value = args.new

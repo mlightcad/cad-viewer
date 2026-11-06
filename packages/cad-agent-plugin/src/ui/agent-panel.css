@@ -9,6 +9,7 @@
 }
 
 .cad-agent-panel-root {
+  --cad-agent-panel-content-inset: 10px;
   position: absolute;
   top: 0;
   right: 0;
@@ -49,6 +50,7 @@
 }
 
 .cad-agent-panel-toolbar {
+  position: relative;
   display: flex;
   justify-content: flex-end;
   gap: 4px;
@@ -58,7 +60,80 @@
   flex-shrink: 0;
 }
 
+.cad-agent-task-prompts {
+  position: relative;
+}
+
+.cad-agent-task-prompts-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: var(--cad-agent-panel-content-inset);
+  right: var(--cad-agent-panel-content-inset);
+  z-index: 30;
+  width: auto;
+  box-sizing: border-box;
+  max-height: min(420px, 60vh);
+  overflow-y: auto;
+  padding: 10px 0;
+  border: 1px solid #4a4a4a;
+  border-radius: 10px;
+  background: #2a2a2a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #e8e8e8;
+}
+
+.cad-agent-task-prompts-popover-header {
+  padding: 2px 14px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #c8c8c8;
+  border-bottom: 1px solid #3a3a3a;
+  margin-bottom: 6px;
+}
+
+.cad-agent-task-prompts-group {
+  padding: 4px 0 6px;
+}
+
+.cad-agent-task-prompts-group + .cad-agent-task-prompts-group {
+  border-top: 1px solid #343434;
+}
+
+.cad-agent-task-prompts-group-label {
+  padding: 6px 14px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #8a8a8a;
+}
+
+.cad-agent-task-prompts-item {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: #e8e8e8;
+  text-align: start;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.cad-agent-task-prompts-item:hover {
+  background: #094771;
+  color: #ffffff;
+}
+
+.cad-agent-task-prompts-item-title {
+  display: block;
+}
+
 .cad-agent-panel-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -343,8 +418,9 @@
 }
 
 .cad-agent-panel-input {
+  position: relative;
   border-top: 1px solid #3a3a3a;
-  padding: 10px;
+  padding: var(--cad-agent-panel-content-inset);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -427,10 +503,12 @@
 
 .cad-agent-context-usage-popover {
   position: absolute;
-  right: 0;
+  left: var(--cad-agent-panel-content-inset);
+  right: var(--cad-agent-panel-content-inset);
   bottom: calc(100% + 8px);
   z-index: 20;
-  width: 280px;
+  width: auto;
+  box-sizing: border-box;
   padding: 12px 14px;
   border: 1px solid #4a4a4a;
   border-radius: 10px;
