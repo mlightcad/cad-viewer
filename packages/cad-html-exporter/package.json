@@ -38,7 +38,7 @@
     "@mlightcad/data-model": "1.15.22",
     "@mlightcad/libredwg-converter": "3.15.22",
     "@mlightcad/libredwg-web": "0.8.2",
-    "@mlightcad/mtext-renderer": "0.13.7",
+    "@mlightcad/mtext-renderer": "0.13.8",
     "@mlightcad/three-renderer": "workspace:*",
     "jpeg-js": "^0.4.4",
     "pngjs": "^7.0.0",
