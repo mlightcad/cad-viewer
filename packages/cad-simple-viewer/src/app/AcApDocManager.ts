@@ -2,7 +2,6 @@ import {
   AcCmColor,
   AcCmEventManager,
   AcDbDatabase,
-  AcDbFileType,
   acdbHostApplicationServices,
   AcDbOpenDatabaseOptions,
   AcDbSystemVariables,
@@ -109,6 +108,7 @@ import {
   acapCollectPaperViewportsBox,
   acapResolveLayoutFrameBox
 } from '../util/AcApLayoutViewFraming'
+import { acapResolveOpenFileType } from '../util/acapResolveOpenFileType'
 import { isScriptQuitCommand, parseScriptLines } from '../util/AcApScriptParser'
 import { acapWithSecondaryDatabase } from '../util/AcApSecondaryDatabase'
 import { AcTrView2d } from '../view'
@@ -1491,12 +1491,11 @@ export class AcApDocManager {
   ): Promise<string> {
     const { targetView, ...dbOptions } = options
     const db = new AcDbDatabase()
-    const fileExtension = fileName.split('.').pop()?.toLocaleLowerCase()
     await acapWithSecondaryDatabase(db, async () => {
       await db.read(
         content,
         { readOnly: true, ...dbOptions },
-        fileExtension === 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
+        acapResolveOpenFileType(fileName)
       )
     })
     return this.registerOverlayDatabase(db, { targetView })

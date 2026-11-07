@@ -171,7 +171,7 @@ function fileNameFromUrl(url: string): string {
   try {
     const pathname = new URL(url, window.location.href).pathname
     const segment = pathname.split('/').filter(Boolean).pop()
-    if (segment && /\.(dwg|dxf)$/i.test(segment)) {
+    if (segment && /\.(dwg|dxf|svg)$/i.test(segment)) {
       return decodeURIComponent(segment)
     }
   } catch {

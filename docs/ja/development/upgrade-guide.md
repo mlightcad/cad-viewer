@@ -92,6 +92,10 @@ Agent / スクリプトは線・矢印・文字で寸法を模倣せず、これ
 この変更を含むリリースから、`cad.blocks` はブロックごとの `entityCount` / `typeCounts` メタデータを公開し、完全な `entities` 配列は埋め込みません。集計はこれらのフィールドまたは `count(pred)` を使ってください。スナップショットは `where` / `inBlock(id, pred)` — 空間全体の裸スナップショットは約 500 件で `too_many_matches` になります。`where` / `count` / `inBox` はモデル／ペーパー空間のみです。
 :::
 
+::: info SVG File → Open
+**1.8.0** から、通常の File → Open / `openDocument` / `openUrl` で `.svg` を図面として開けます。変換は新パッケージ [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter)（`@mlightcad/data-model` のみに依存）にあります。`cad-editor` の `initializeCadViewer` は自動登録します。`cad-simple-viewer` のみの場合は起動時に `registerSvgConverter()` を一度呼び出してください。エクスポートは引き続き `cad-svg-plugin` の `csvg` です。
+:::
+
 ::: info PDF エクスポートを共有コアに分割（ブラウザ + Node）
 **1.8.0** から、PDF エクスポートは HTML エクスポートと同じ階層になります。共有ロジックは `@mlightcad/cad-pdf-core`（オプションモデルと database → PDF パイプライン。`cad-simple-viewer` / DOM に**依存しません**）にあり、次の 2 つのフロントエンドがそれを使います。
 

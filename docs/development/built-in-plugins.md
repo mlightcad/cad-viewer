@@ -18,6 +18,7 @@ For the plugin mechanism itself (`AcApPlugin`, the plugin manager, lazy loading,
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | Export drawings to **self-contained offline HTML** | `chtml` (dialog in `cad-editor`), `-chtml` (command-line) |
 | [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **PDF export and import** (vector pipeline) | `cpdf`, `ipdf` |
 | [`@mlightcad/cad-svg-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin) | **SVG export** and shared vector renderer (also used by PDF export) | `csvg` |
+| [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter) | **SVG File → Open** (basic vector subset → AcDb entities) | Host calls `registerSvgConverter()` (cad-editor does this in `initializeCadViewer`) |
 | [`@mlightcad/cad-onedrive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-onedrive-plugin) | **OneDrive data source** — open DWG/DXF from OneDrive / SharePoint | Registers `AcApDataSource` (`onedrive`); two-step Sign in → Open (popup-safe) |
 | [`@mlightcad/cad-google-drive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-google-drive-plugin) | **Google Drive data source** — open DWG/DXF from Google Drive | Registers `AcApDataSource` (`googledrive`); two-step Sign in → Open (popup-safe) |
 
@@ -110,6 +111,19 @@ One-file **offline viewer** for sharing and archiving — the exported HTML embe
 | Public API | `registerLazySvgPlugin`, `createSvgPlugin`, `AcApSvgConvertor`, SVG renderer utilities |
 
 → **Build output and integration:** [packages/cad-svg-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin/README.md)
+
+### SVG open (`@mlightcad/cad-svg-converter`)
+
+**SVG → AcDbDatabase converter** for File → Open. Not a command plugin — hosts register it once with `registerSvgConverter()` (same pattern as LibreDWG). `cad-editor` registers it inside `initializeCadViewer`. Local open UI accepts `.svg` alongside `.dwg` / `.dxf`.
+
+| Item | Value |
+|------|-------|
+| Converter key | `'svg'` (`ACDB_SVG_FILE_TYPE`) |
+| Public API | `registerSvgConverter`, `AcDbSvgConverter`, `acdbSvgParseDocument` |
+| Supported subset | `line`, `polyline`/`polygon`/`rect`, `circle`, `ellipse` (approx), `path`, `text`, `g` + transforms |
+
+→ **Build output and integration:** [packages/cad-svg-converter/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter/README.md)
+→ **1.8.0 upgrade notes:** [upgrade guide](./upgrade-guide.md)
 
 ---
 
