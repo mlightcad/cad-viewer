@@ -38,6 +38,9 @@ export default {
     style: {
       description: '创建、修改或指定文字与多行文字的文字样式'
     },
+    mleaderstyle: {
+      description: '创建和修改多重引线对象的多重引线样式'
+    },
     attedit: {
       description: '编辑块参照的属性值及其显示特性'
     },

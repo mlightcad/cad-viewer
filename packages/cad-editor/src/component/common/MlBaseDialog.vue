@@ -33,22 +33,24 @@
         </div>
 
         <!-- Footer -->
-        <div class="ml-base-dialog-footer">
-          <div class="ml-base-dialog-footer-actions">
-            <el-button
-              v-if="showApply"
-              :disabled="applyDisabled"
-              @click="handleApply"
-            >
-              {{ t('dialog.baseDialog.apply') }}
-            </el-button>
-            <el-button @click="handleCancel">
-              {{ t('dialog.baseDialog.cancel') }}
-            </el-button>
-            <el-button type="primary" @click="handleOk">
-              {{ t('dialog.baseDialog.ok') }}
-            </el-button>
-          </div>
+        <div v-if="showFooter" class="ml-base-dialog-footer">
+          <slot name="footer">
+            <div class="ml-base-dialog-footer-actions">
+              <el-button
+                v-if="showApply"
+                :disabled="applyDisabled"
+                @click="handleApply"
+              >
+                {{ t('dialog.baseDialog.apply') }}
+              </el-button>
+              <el-button @click="handleCancel">
+                {{ t('dialog.baseDialog.cancel') }}
+              </el-button>
+              <el-button type="primary" @click="handleOk">
+                {{ t('dialog.baseDialog.ok') }}
+              </el-button>
+            </div>
+          </slot>
         </div>
       </div>
     </el-config-provider>
@@ -77,6 +79,11 @@ const props = defineProps({
   showApply: { type: Boolean, default: false },
   /** Disables Apply when there are no pending changes. */
   applyDisabled: { type: Boolean, default: false },
+  /**
+   * When false, the footer (and default OK/Cancel) is hidden so callers can
+   * supply AutoCAD-style Close/Help bars via the body or a `#footer` slot.
+   */
+  showFooter: { type: Boolean, default: true },
   zIndex: { type: Number, default: 2100 }
 })
 
