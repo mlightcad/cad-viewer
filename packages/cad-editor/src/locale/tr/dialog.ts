@@ -4,6 +4,9 @@ export default {
   dimStyleDlg: {
     ...enDialog.dimStyleDlg
   },
+  mleaderStyleDlg: {
+    ...enDialog.mleaderStyleDlg
+  },
   baseDialog: {
     ok: 'Tamam',
     cancel: 'İptal',

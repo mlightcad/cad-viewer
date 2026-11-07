@@ -109,7 +109,9 @@ export const i18n = createI18n({
  *
  * The full-viewer package entry may carry a separate {@link AcApI18n}
  * singleton; {@link syncViewerAcApI18n} (called from {@link MlCadViewer})
- * mirrors this landing singleton onto it for plugins such as CAD Agent.
+ * mirrors this landing singleton's locale and catalogs onto it so the
+ * command line and plugins (e.g. CAD Agent) resolve editor-registered
+ * command descriptions such as `mleaderstyle`.
  */
 AcApI18n.events.localeChanged.addEventListener(args => {
   i18n.global.locale.value = args.new

@@ -27,6 +27,7 @@ import {
   AcApMeasurementPanelCmd,
   AcApMemCmd,
   AcApMissedDataCmd,
+  AcApMLeaderStyleCmd,
   AcApOpenPerfCmd,
   AcApPointStyleCmd,
   AcApPropertiesCmd,
@@ -43,6 +44,7 @@ import {
   MlDrawingUnitsDlg,
   MlExportHtmlDlg,
   MlExportPdfDlg,
+  MlMLeaderStyleDlg,
   MlPointStyleDlg,
   MlQuickSelectDlg,
   MlTextStyleDlg
@@ -182,6 +184,13 @@ export const registerCmds = () => {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'mleaderstyle',
+      'mleaderstyle',
+      new AcApMLeaderStyleCmd(),
+      'mls'
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'attedit',
       'attedit',
       new AcApAttEditCmd(),
@@ -238,6 +247,11 @@ export const registerDialogs = () => {
     registerDialog({
       name: 'DimStyleDlg',
       component: markRaw(MlDimStyleDlg),
+      props: {}
+    })
+    registerDialog({
+      name: 'MLeaderStyleDlg',
+      component: markRaw(MlMLeaderStyleDlg),
       props: {}
     })
     registerDialog({

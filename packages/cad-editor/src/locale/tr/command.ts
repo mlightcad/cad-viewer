@@ -45,6 +45,10 @@ export default {
       description:
         'Metin ve çok satırlı metin için metin stilleri oluşturur, değiştirir veya belirler'
     },
+    mleaderstyle: {
+      description:
+        'Çoklu önder stilleri oluşturur ve çoklu önder nesneleri için değiştirir'
+    },
     attedit: {
       description:
         'Bir blok referansının öznitelik değerlerini ve görüntü özelliklerini düzenler'

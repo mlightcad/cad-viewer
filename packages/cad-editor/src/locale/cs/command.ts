@@ -43,6 +43,10 @@ export default {
       description:
         'Vytváří, upravuje nebo určuje textové styly pro text a víceřádkový text'
     },
+    mleaderstyle: {
+      description:
+        'Vytváří a upravuje styly multiodkazů pro objekty multiodkazů'
+    },
     attedit: {
       description:
         'Upravuje hodnoty atributů a zobrazovací vlastnosti vloženého bloku'

@@ -77,6 +77,11 @@ export default {
         'إنشاء أنماط النص وتعديلها وتحديدها للنص والنص متعدد الأسطر'
     },
 
+    mleaderstyle: {
+      ...enCommand.ACAD.mleaderstyle,
+      description: 'إنشاء وتعديل أنماط الخطوط المتعددة للبيانات'
+    },
+
     attedit: {
       ...enCommand.ACAD.attedit,
       description:

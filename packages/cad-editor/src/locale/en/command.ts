@@ -44,6 +44,10 @@ export default {
       description:
         'Creates, modifies, or specifies text styles for text and multiline text'
     },
+    mleaderstyle: {
+      description:
+        'Creates and modifies multileader styles for multileader objects'
+    },
     attedit: {
       description:
         'Edits attribute values and display properties of a block reference'
