@@ -328,6 +328,18 @@ export default {
     modelbkcolor: {
       description: '设置模型空间绘图区域的背景颜色'
     },
+    leader: {
+      description: '创建将注释连接到特征的引线'
+    },
+    mleader: {
+      description: '创建多重引线对象'
+    },
+    mleaderedit: {
+      description: '向多重引线添加或删除引线'
+    },
+    mleadereditremove: {
+      description: '从多重引线删除引线'
+    },
     mline: {
       description: '创建由多条平行线组成的多线对象'
     },

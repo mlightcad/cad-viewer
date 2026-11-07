@@ -359,6 +359,18 @@ export default {
     modelbkcolor: {
       description: 'Sets the background color of the model-space drawing area'
     },
+    leader: {
+      description: 'Creates a leader line that connects annotation to a feature'
+    },
+    mleader: {
+      description: 'Creates a multileader object'
+    },
+    mleaderedit: {
+      description: 'Adds leader lines to, or removes leader lines from, a multileader'
+    },
+    mleadereditremove: {
+      description: 'Removes leader lines from a multileader'
+    },
     mline: {
       description: 'Creates multiple parallel lines as one multiline object'
     },

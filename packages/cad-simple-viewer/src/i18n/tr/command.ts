@@ -364,6 +364,18 @@ export default {
     modelbkcolor: {
       description: 'Model alanı çizim alanının arka plan rengini ayarlar'
     },
+    leader: {
+      description: 'Creates a leader line that connects annotation to a feature'
+    },
+    mleader: {
+      description: 'Creates a multileader object'
+    },
+    mleaderedit: {
+      description: 'Adds leader lines to, or removes leader lines from, a multileader'
+    },
+    mleadereditremove: {
+      description: 'Removes leader lines from a multileader'
+    },
     mline: {
       description:
         'Tek bir çoklu çizgi nesnesi olarak birden çok paralel çizgi oluşturur'

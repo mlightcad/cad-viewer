@@ -867,6 +867,148 @@ export default {
     invalidSelection: '所选对象不能偏移。',
     offsetFailed: '无法在指定侧创建偏移曲线。'
   },
+  leader: {
+    startPoint: '指定引线起点',
+    nextPoint: '指定下一点',
+    nextPointOrOptions: '指定下一点或 [注释(A)/格式(F)/放弃(U)]',
+    formatPrompt: '输入引线格式选项 [样条曲线(S)/直线(T)/箭头(A)/无(N)]',
+    annotationText: '输入注释文字的第一行或 <选项>',
+    nextAnnotationLine: '输入注释文字的下一行',
+    annotationOptions:
+      '输入注释选项 [公差(Tolerance)/复制(C)/块(B)/无(N)/多行文字(M)]',
+    selectAnnotation: '选择要复制的注释对象',
+    rejectAnnotation: '该对象不能用作引线注释。',
+    toleranceUnavailable: '当前版本尚不支持形位公差对话框。',
+    keywords: {
+      annotation: {
+        display: '注释(A)',
+        local: '注释',
+        global: 'Annotation'
+      },
+      format: { display: '格式(F)', local: '格式', global: 'Format' },
+      undo: { display: '放弃(U)', local: '放弃', global: 'Undo' },
+      spline: {
+        display: '样条曲线(S)',
+        local: '样条曲线',
+        global: 'Spline'
+      },
+      straight: {
+        display: '直线(T)',
+        local: '直线',
+        global: 'STraight'
+      },
+      arrow: { display: '箭头(A)', local: '箭头', global: 'Arrow' },
+      none: { display: '无(N)', local: '无', global: 'None' },
+      tolerance: {
+        display: '公差(Tolerance)',
+        local: '公差',
+        global: 'Tolerance'
+      },
+      copy: { display: '复制(C)', local: '复制', global: 'Copy' },
+      block: { display: '块(B)', local: '块', global: 'Block' },
+      mtext: {
+        display: '多行文字(M)',
+        local: '多行文字',
+        global: 'Mtext'
+      }
+    }
+  },
+  mleader: {
+    arrowheadOrOptions:
+      '指定引线箭头位置或 [引线基线优先(L)/内容优先(C)/选项(O)]',
+    landingLocation: '指定引线基线位置',
+    landingFirstPoint: '指定引线基线位置',
+    arrowheadLocation: '指定引线箭头位置',
+    contentLocation: '指定内容位置',
+    nextPoint: '指定下一点',
+    optionsPrompt:
+      '输入选项 [引线类型(T)/基线(A)/内容类型(C)/最大点数(M)/第一角度(F)/第二角度(S)/退出选项(X)]',
+    leaderTypePrompt: '选择引线类型 [直线(S)/样条曲线(P)/无(N)]',
+    landingPrompt: '是否使用基线 [是(Y)/否(N)]',
+    landingLength: '指定基线距离',
+    contentTypePrompt: '选择内容类型 [块(B)/多行文字(M)/无(N)]',
+    maxPoints: '输入引线的最大点数',
+    firstAngle: '输入第一角度约束',
+    secondAngle: '输入第二角度约束',
+    keywords: {
+      landingFirst: {
+        display: '引线基线优先(L)',
+        local: '引线基线优先',
+        global: 'Landing first'
+      },
+      contentFirst: {
+        display: '内容优先(C)',
+        local: '内容优先',
+        global: 'Content first'
+      },
+      options: { display: '选项(O)', local: '选项', global: 'Options' },
+      leaderType: {
+        display: '引线类型(T)',
+        local: '引线类型',
+        global: 'Leader type'
+      },
+      landing: { display: '基线(A)', local: '基线', global: 'lAnding' },
+      contentType: {
+        display: '内容类型(C)',
+        local: '内容类型',
+        global: 'Content type'
+      },
+      maxpoints: {
+        display: '最大点数(M)',
+        local: '最大点数',
+        global: 'Maxpoints'
+      },
+      firstAngle: {
+        display: '第一角度(F)',
+        local: '第一角度',
+        global: 'First angle'
+      },
+      secondAngle: {
+        display: '第二角度(S)',
+        local: '第二角度',
+        global: 'Second angle'
+      },
+      exitOptions: {
+        display: '退出选项(X)',
+        local: '退出选项',
+        global: 'eXit options'
+      },
+      straight: {
+        display: '直线(S)',
+        local: '直线',
+        global: 'Straight'
+      },
+      spline: {
+        display: '样条曲线(P)',
+        local: '样条曲线',
+        global: 'sPline'
+      },
+      noneLeader: { display: '无(N)', local: '无', global: 'None' },
+      yes: { display: '是(Y)', local: '是', global: 'Yes' },
+      no: { display: '否(N)', local: '否', global: 'No' },
+      block: { display: '块(B)', local: '块', global: 'Block' },
+      mtext: {
+        display: '多行文字(M)',
+        local: '多行文字',
+        global: 'Mtext'
+      },
+      none: { display: '无(N)', local: '无', global: 'None' }
+    }
+  },
+  mleaderedit: {
+    selectMLeader: '选择多重引线',
+    rejectMLeader: '必须选择多重引线。',
+    arrowheadOrRemove: '指定引线箭头位置或 [删除引线(R)]',
+    selectLeaderToRemove: '指定要删除的引线或按 Enter 结束',
+    cannotRemoveLast: '无法删除该多重引线的最后一条引线。',
+    keywords: {
+      remove: {
+        display: '删除引线(R)',
+        local: '删除',
+        global: 'Remove'
+      }
+    }
+  },
   mtext: {
     point: '指定多行文本插入点'
   },

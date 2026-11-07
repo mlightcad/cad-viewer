@@ -890,6 +890,159 @@ export default {
     invalidSelection: 'Selected object cannot be offset.',
     offsetFailed: 'Unable to create an offset curve for the specified side.'
   },
+  leader: {
+    startPoint: 'Specify leader start point',
+    nextPoint: 'Specify next point',
+    nextPointOrOptions:
+      'Specify next point or [Annotation/Format/Undo]',
+    formatPrompt: 'Enter leader format option [Spline/STraight/Arrow/None]',
+    annotationText: 'Enter first line of annotation text or <options>',
+    nextAnnotationLine: 'Enter next line of annotation text',
+    annotationOptions:
+      'Enter an annotation option [Tolerance/Copy/Block/None/Mtext]',
+    selectAnnotation: 'Select an annotation object to copy',
+    rejectAnnotation: 'Object cannot be used as a leader annotation.',
+    toleranceUnavailable:
+      'Geometric Tolerance dialog is not available in this build.',
+    keywords: {
+      annotation: {
+        display: 'Annotation(A)',
+        local: 'Annotation',
+        global: 'Annotation'
+      },
+      format: {
+        display: 'Format(F)',
+        local: 'Format',
+        global: 'Format'
+      },
+      undo: { display: 'Undo(U)', local: 'Undo', global: 'Undo' },
+      spline: {
+        display: 'Spline(S)',
+        local: 'Spline',
+        global: 'Spline'
+      },
+      straight: {
+        display: 'STraight(T)',
+        local: 'STraight',
+        global: 'STraight'
+      },
+      arrow: { display: 'Arrow(A)', local: 'Arrow', global: 'Arrow' },
+      none: { display: 'None(N)', local: 'None', global: 'None' },
+      tolerance: {
+        display: 'Tolerance',
+        local: 'Tolerance',
+        global: 'Tolerance'
+      },
+      copy: { display: 'Copy(C)', local: 'Copy', global: 'Copy' },
+      block: { display: 'Block(B)', local: 'Block', global: 'Block' },
+      mtext: { display: 'Mtext(M)', local: 'Mtext', global: 'Mtext' }
+    }
+  },
+  mleader: {
+    arrowheadOrOptions:
+      'Specify leader arrowhead location or [leader Landing first/Content first/Options]',
+    landingLocation: 'Specify leader landing location',
+    landingFirstPoint: 'Specify leader landing location',
+    arrowheadLocation: 'Specify leader arrowhead location',
+    contentLocation: 'Specify content location',
+    nextPoint: 'Specify next point',
+    optionsPrompt:
+      'Enter an option [Leader type/landing/Content type/Maxpoints/First angle/Second angle/eXit options]',
+    leaderTypePrompt: 'Select a leader type [Straight/sPline/None]',
+    landingPrompt: 'Use landing [Yes/No]',
+    landingLength: 'Specify landing distance',
+    contentTypePrompt: 'Select a content type [Block/Mtext/None]',
+    maxPoints: 'Enter the maximum points for leader line',
+    firstAngle: 'Enter first angle constraint',
+    secondAngle: 'Enter second angle constraint',
+    keywords: {
+      landingFirst: {
+        display: 'Landing first(L)',
+        local: 'Landing first',
+        global: 'Landing first'
+      },
+      contentFirst: {
+        display: 'Content first(C)',
+        local: 'Content first',
+        global: 'Content first'
+      },
+      options: {
+        display: 'Options(O)',
+        local: 'Options',
+        global: 'Options'
+      },
+      leaderType: {
+        display: 'Leader type(T)',
+        local: 'Leader type',
+        global: 'Leader type'
+      },
+      landing: {
+        display: 'lAnding(A)',
+        local: 'lAnding',
+        global: 'lAnding'
+      },
+      contentType: {
+        display: 'Content type(C)',
+        local: 'Content type',
+        global: 'Content type'
+      },
+      maxpoints: {
+        display: 'Maxpoints(M)',
+        local: 'Maxpoints',
+        global: 'Maxpoints'
+      },
+      firstAngle: {
+        display: 'First angle(F)',
+        local: 'First angle',
+        global: 'First angle'
+      },
+      secondAngle: {
+        display: 'Second angle(S)',
+        local: 'Second angle',
+        global: 'Second angle'
+      },
+      exitOptions: {
+        display: 'eXit options(X)',
+        local: 'eXit options',
+        global: 'eXit options'
+      },
+      straight: {
+        display: 'Straight(S)',
+        local: 'Straight',
+        global: 'Straight'
+      },
+      spline: {
+        display: 'sPline(P)',
+        local: 'sPline',
+        global: 'sPline'
+      },
+      noneLeader: {
+        display: 'None(N)',
+        local: 'None',
+        global: 'None'
+      },
+      yes: { display: 'Yes(Y)', local: 'Yes', global: 'Yes' },
+      no: { display: 'No(N)', local: 'No', global: 'No' },
+      block: { display: 'Block(B)', local: 'Block', global: 'Block' },
+      mtext: { display: 'Mtext(M)', local: 'Mtext', global: 'Mtext' },
+      none: { display: 'None(N)', local: 'None', global: 'None' }
+    }
+  },
+  mleaderedit: {
+    selectMLeader: 'Select a multileader',
+    rejectMLeader: 'Must select a multileader.',
+    arrowheadOrRemove:
+      'Specify leader arrowhead location or [Remove leaders]',
+    selectLeaderToRemove: 'Specify a leader to remove or press Enter to finish',
+    cannotRemoveLast: 'Cannot remove the last leader from this multileader.',
+    keywords: {
+      remove: {
+        display: 'Remove leaders(R)',
+        local: 'Remove',
+        global: 'Remove'
+      }
+    }
+  },
   mtext: {
     point: 'Specify mtext insertion point'
   },

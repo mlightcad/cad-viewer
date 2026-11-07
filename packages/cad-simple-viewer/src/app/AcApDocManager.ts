@@ -54,8 +54,11 @@ import {
   AcApLayerUnisoCmd,
   AcApLayerUnlockCmd,
   AcApLayoffCmd,
+  AcApLeaderCmd,
   AcApLineCmd,
   AcApLogCmd,
+  AcApMLeaderCmd,
+  AcApMLeaderEditCmd,
   AcApMLineCmd,
   AcApMoveCmd,
   AcApMTextCmd,
@@ -190,6 +193,7 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   '-LAYER': ['-LA'],
   LINE: ['L'],
   MLINE: ['ML'],
+  MLEADEREDIT: ['MLE'],
   MTEXT: ['T'],
   MOVE: ['M'],
   OFFSET: ['O'],
@@ -1968,6 +1972,18 @@ export class AcApDocManager {
     addSystemCommand('layerp', 'layerp', new AcApLayerPCmd())
     addSystemCommand('layerclose', 'layerclose', new AcApLayerCloseCmd())
     addSystemCommand('line', 'line', new AcApLineCmd())
+    addSystemCommand('leader', 'leader', new AcApLeaderCmd())
+    addSystemCommand('mleader', 'mleader', new AcApMLeaderCmd())
+    addSystemCommand(
+      'mleaderedit',
+      'mleaderedit',
+      new AcApMLeaderEditCmd('add')
+    )
+    addSystemCommand(
+      'mleadereditremove',
+      'mleadereditremove',
+      new AcApMLeaderEditCmd('remove')
+    )
     addSystemCommand('mline', 'mline', new AcApMLineCmd())
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
     addSystemCommand('copy', 'copy', new AcApCopyCmd())
