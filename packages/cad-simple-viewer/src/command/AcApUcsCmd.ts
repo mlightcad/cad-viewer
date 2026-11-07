@@ -4,7 +4,8 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { AcApContext, AcApDocManager } from '../app'
+import type { AcApContext } from '../app/AcApContext'
+import { AcApDocManager } from '../app/AcApDocManager'
 import {
   AcEdCommand,
   AcEdOpenMode,
@@ -15,7 +16,11 @@ import {
   AcEdPromptStringOptions
 } from '../editor'
 import { AcApI18n } from '../i18n'
-import { AcApUcsFrame, AcApUcsService, UCS_WORLD_NAME } from '../service'
+import {
+  AcApUcsFrame,
+  AcApUcsService,
+  UCS_WORLD_NAME
+} from '../service/AcApUcsService'
 
 type UcsKeyword =
   | 'Named'

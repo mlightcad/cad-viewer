@@ -125,6 +125,15 @@ function spaceKey(db: AcDbDatabase): SpaceKey {
   return isModelSpaceDatabase(db) ? 'model' : 'paper'
 }
 
+/** Returns the working database, or null when none is set (getter throws). */
+function tryWorkingDatabase(): AcDbDatabase | null {
+  try {
+    return acdbHostApplicationServices().workingDatabase
+  } catch {
+    return null
+  }
+}
+
 function getPreviousStack(db: AcDbDatabase): AcApUcsFrame[] {
   let bySpace = previousStacks.get(db)
   if (!bySpace) {
@@ -169,7 +178,7 @@ export class AcApUcsService {
   }
 
   static getActiveFrame(database?: AcDbDatabase): AcApUcsFrame {
-    const db = database ?? acdbHostApplicationServices().workingDatabase
+    const db = database ?? tryWorkingDatabase()
     if (!db) return worldFrame()
 
     // Prefer persisted VPORT/layout so undo/redo of UCS edits stays coherent.
