@@ -1,0 +1,43 @@
+{
+  "name": "@mlightcad/cad-svg-converter",
+  "version": "1.8.0-preview.3",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mlightcad/cad-viewer.git"
+  },
+  "files": [
+    "dist",
+    "lib",
+    "README.md",
+    "package.json"
+  ],
+  "main": "./dist/cad-svg-converter.umd.cjs",
+  "module": "./dist/cad-svg-converter.js",
+  "types": "./lib/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./dist/cad-svg-converter.js",
+      "require": "./dist/cad-svg-converter.umd.cjs"
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist lib tsconfig.tsbuildinfo",
+    "build": "tsc && vite build",
+    "lint": "eslint src/",
+    "lint:fix": "eslint --fix --quiet src/"
+  },
+  "devDependencies": {
+    "@mlightcad/data-model": "1.15.23",
+    "@types/svg-parser": "2.0.6"
+  },
+  "peerDependencies": {
+    "@mlightcad/data-model": "1.15.23"
+  },
+  "dependencies": {
+    "svg-parser": "2.1.0"
+  }
+}

@@ -24,6 +24,7 @@
       "@mlightcad/cad-diff-viewer",
       "@mlightcad/cad-diff-viewer-example",
       "@mlightcad/cad-svg-plugin",
+      "@mlightcad/cad-svg-converter",
       "@mlightcad/pdf-renderer",
       "@mlightcad/cad-editor",
       "@mlightcad/cad-editor-demo",

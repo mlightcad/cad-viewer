@@ -287,6 +287,9 @@ importers:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
+      '@mlightcad/cad-svg-converter':
+        specifier: workspace:*
+        version: link:../cad-svg-converter
       '@mlightcad/cad-svg-plugin':
         specifier: workspace:*
         version: link:../cad-svg-plugin
@@ -392,6 +395,9 @@ importers:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
+      '@mlightcad/cad-svg-converter':
+        specifier: workspace:*
+        version: link:../cad-svg-converter
       '@mlightcad/data-model':
         specifier: 1.15.23
         version: 1.15.23
@@ -923,6 +929,9 @@ importers:
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
+      '@mlightcad/cad-svg-converter':
+        specifier: workspace:*
+        version: link:../cad-svg-converter
       '@mlightcad/cad-svg-plugin':
         specifier: workspace:*
         version: link:../cad-svg-plugin
@@ -963,6 +972,19 @@ importers:
       vite-plugin-static-copy:
         specifier: ^4.1.1
         version: 4.1.1(vite@6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3))
+
+  packages/cad-svg-converter:
+    dependencies:
+      svg-parser:
+        specifier: 2.1.0
+        version: 2.1.0
+    devDependencies:
+      '@mlightcad/data-model':
+        specifier: 1.15.23
+        version: 1.15.23
+      '@types/svg-parser':
+        specifier: 2.0.6
+        version: 2.0.6
 
   packages/cad-svg-plugin:
     devDependencies:
@@ -2612,8 +2634,8 @@ packages:
   '@maxim_mazurok/gapi.client.discovery-v1@0.6.20200806':
     resolution: {integrity: sha512-QN6aGmIbLXcJW0SEf8tz9UWCpQTBMy2u4xSuZ04YofzMGknhWwMeUecySLntCZYAEstHzDoSgwxCf5Gb8GqIRQ==}
 
-  '@maxim_mazurok/gapi.client.drive-v3@0.3.20261103':
-    resolution: {integrity: sha512-lrCEjtKCpOM6NJXE14lSxzUZ4AVuXeQy7dsVxatR5hXxhKRSHC0mWmbBMbDsn1av+pzdozliswRXiDWu9tnX2Q==}
+  '@maxim_mazurok/gapi.client.drive-v3@0.3.20261106':
+    resolution: {integrity: sha512-fcJbK5JOhn2FQ91LXgSeBHivx7+6Gbd/1SDGqdYmr+gPkTI9Gga3w3TU7BuwhUXfWyBGiZh5GOHavAzr8Z+pbQ==}
 
   '@mermaid-js/mermaid-mindmap@9.3.0':
     resolution: {integrity: sha512-IhtYSVBBRYviH1Ehu8gk69pMDF8DSRqXBRDMWrEfHoaMruHeaP2DXA3PBnuwsMaCdPQhlUUcy/7DBLAEIXvCAw==}
@@ -3472,6 +3494,9 @@ packages:
 
   '@types/stats.js@0.17.4':
     resolution: {integrity: sha512-jIBvWWShCvlBqBNIZt0KAshWpvSjhkwkEu4ZUcASoAvhmrgAUI2t1dXrjSL4xXVLB4FznPrIsX3nKXFl/Dt4vA==}
+
+  '@types/svg-parser@2.0.6':
+    resolution: {integrity: sha512-xrXwOltwMcLrKy79rv4MoalnD82oYLyXAVeeSyrkvR7XdCH4i7YqLNQWxyZ8KPpawtQShiKOse+pmtLeSLtCfQ==}
 
   '@types/three@0.186.0':
     resolution: {integrity: sha512-mxYSBpDC+D0pLfSP6sW4WZTcT+nrtmZcimMqnVmy36Hte3XpeYSrvgg4TRdaM1GemGog1AWzI5qL2VoIfMXbJQ==}
@@ -6720,6 +6745,10 @@ packages:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
 
+  svg-parser@2.1.0:
+    resolution: {integrity: sha512-bwLf38YmY+TDYHJw1Ex0Co8c4yeXuJAo8YnXGZrscxrvYoVVIvLeniEkV1Ks/54VteMnL4FtyN1+P+TZJdUPmQ==}
+    engines: {node: '>=8'}
+
   svgo@3.3.3:
     resolution: {integrity: sha512-+wn7I4p7YgJhHs38k2TNjy1vCfPIfLIJWR5MnCStsN8WuuTcBnRKcMHQLMM2ijxGZmDoZwNv8ipl5aTTen62ng==}
     engines: {node: '>=14.0.0'}
@@ -9231,7 +9260,7 @@ snapshots:
       '@types/gapi.client': 1.0.8
       '@types/gapi.client.discovery-v1': 0.0.4
 
-  '@maxim_mazurok/gapi.client.drive-v3@0.3.20261103':
+  '@maxim_mazurok/gapi.client.drive-v3@0.3.20261106':
     dependencies:
       '@types/gapi.client': 1.0.8
       '@types/gapi.client.discovery-v1': 0.0.4
@@ -10014,7 +10043,7 @@ snapshots:
 
   '@types/gapi.client.drive-v3@0.0.5':
     dependencies:
-      '@maxim_mazurok/gapi.client.drive-v3': 0.3.20261103
+      '@maxim_mazurok/gapi.client.drive-v3': 0.3.20261106
 
   '@types/gapi.client@1.0.8': {}
 
@@ -10106,6 +10135,8 @@ snapshots:
   '@types/stack-utils@2.0.3': {}
 
   '@types/stats.js@0.17.4': {}
+
+  '@types/svg-parser@2.0.6': {}
 
   '@types/three@0.186.0':
     dependencies:
@@ -13743,6 +13774,8 @@ snapshots:
       has-flag: 4.0.0
 
   supports-preserve-symlinks-flag@1.0.0: {}
+
+  svg-parser@2.1.0: {}
 
   svgo@3.3.3:
     dependencies:

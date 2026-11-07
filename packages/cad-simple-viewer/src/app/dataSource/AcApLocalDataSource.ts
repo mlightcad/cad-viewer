@@ -10,7 +10,7 @@ import { ACAP_LOCAL_DATA_SOURCE_ID } from './AcApDataSourceIds'
 export { ACAP_LOCAL_DATA_SOURCE_ID } from './AcApDataSourceIds'
 
 /** File extensions accepted by the local data source. */
-const SUPPORTED_EXTENSIONS = ['.dxf', '.dwg'] as const
+const SUPPORTED_EXTENSIONS = ['.dxf', '.dwg', '.svg'] as const
 
 let fileInput: HTMLInputElement | undefined
 
@@ -76,7 +76,7 @@ export async function acapPickLocalCadFile(): Promise<AcApDataSourceFile | null>
 }
 
 /**
- * Built-in data source that opens a local `.dwg` / `.dxf` via `<input type="file">`.
+ * Built-in data source that opens a local `.dwg` / `.dxf` / `.svg` via `<input type="file">`.
  */
 export class AcApLocalDataSource implements AcApDataSource {
   readonly id = ACAP_LOCAL_DATA_SOURCE_ID

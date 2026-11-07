@@ -37,6 +37,8 @@ const config: Config = {
     '^lodash-es$': 'lodash',
     '^@mlightcad/cad-pdf-core$':
       '<rootDir>/packages/cad-pdf-core/src/index.ts',
+    '^@mlightcad/cad-svg-converter$':
+      '<rootDir>/packages/cad-svg-converter/src/index.ts',
     '^@mlightcad/cad-html-core$':
       '<rootDir>/packages/cad-html-core/src/index.ts',
     '^@mlightcad/cad-html-plugin$':

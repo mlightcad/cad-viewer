@@ -92,6 +92,10 @@ Agent / betikler ölçüleri çizgi, ok ve metinle taklit etmemeli; bu API’ler
 Bu değişikliği içeren sürümden itibaren `cad.blocks` her blok için `entityCount` / `typeCounts` meta verisi verir; tam `entities` dizisi gömmez. Sayımlarda bu alanları veya `count(pred)` kullanın. Anlık görüntüler `where` / `inBlock(id, pred)` ile — tüm uzay anlık görüntüsü ~500’de `too_many_matches` ile durur. `where` / `count` / `inBox` yalnızca model ve kağıt alanını tarar.
 :::
 
+::: info SVG File → Open
+**1.8.0** sürümünden itibaren `.svg` dosyaları normal File → Open / `openDocument` / `openUrl` ile çizim olarak açılabilir. Dönüştürme yeni [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter) paketindedir (yalnızca `@mlightcad/data-model`). `cad-editor` içindeki `initializeCadViewer` otomatik kaydeder; yalnızca `cad-simple-viewer` kullanıyorsanız başlangıçta bir kez `registerSvgConverter()` çağırın. Dışa aktarma hâlâ `cad-svg-plugin` içindeki `csvg`dir.
+:::
+
 ::: info PDF dışa aktarma paylaşılan çekirdeğe ayrıldı (tarayıcı + Node)
 **1.8.0** sürümünden itibaren PDF dışa aktarma, HTML dışa aktarma ile aynı katmanlamayı kullanır. Paylaşılan mantık `@mlightcad/cad-pdf-core` içindedir (seçenek modeli ve database → PDF hattı; `cad-simple-viewer` / DOM’a **bağımlı değildir**). Bunu iki ön uç kullanır:
 
