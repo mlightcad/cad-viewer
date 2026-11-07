@@ -401,6 +401,19 @@ export async function asyncComplexLineTypeGlyphs(
 
 type GlyphPlacement = { x: number; y: number; z: number; rz: number }
 
+/**
+ * Recompose `matrix` from TRS after mutating position/rotation.
+ *
+ * {@link AcTrGroup} flattens empty glyph shells before shared draw and leaves
+ * `matrixAutoUpdate = false` with placement already in `matrix`. Resetting
+ * position alone then leaves a stale matrix; `collapseInverseParentTransformIntoPlacement`
+ * bakes that placement into children and the caller applies it again → 2P (#856).
+ */
+function syncGlyphTransform(glyph: THREE.Object3D): void {
+  glyph.matrixAutoUpdate = true
+  glyph.updateMatrix()
+}
+
 function snapshotGlyphPlacements(group: AcTrMText[]): GlyphPlacement[] {
   return group.map(g => ({
     x: g.position.x,
@@ -413,6 +426,7 @@ function snapshotGlyphPlacements(group: AcTrMText[]): GlyphPlacement[] {
 function applyGlyphPlacement(glyph: AcTrMText, p: GlyphPlacement): void {
   glyph.position.set(p.x, p.y, p.z)
   glyph.rotation.set(0, 0, p.rz)
+  syncGlyphTransform(glyph)
 }
 
 /**
@@ -423,6 +437,7 @@ function drawSharedTextGroupSync(group: AcTrMText[]): void {
   const template = group[0]
   template.position.set(0, 0, 0)
   template.rotation.set(0, 0, 0)
+  syncGlyphTransform(template)
   template.syncDraw()
   for (let i = 0; i < group.length; i++) {
     applyGlyphPlacement(group[i], placements[i])
@@ -437,6 +452,7 @@ async function drawSharedTextGroupAsync(group: AcTrMText[]): Promise<void> {
   const template = group[0]
   template.position.set(0, 0, 0)
   template.rotation.set(0, 0, 0)
+  syncGlyphTransform(template)
   await template.asyncDraw()
   for (let i = 0; i < group.length; i++) {
     applyGlyphPlacement(group[i], placements[i])
@@ -463,6 +479,7 @@ function applySharedPlacement(
 ): void {
   glyph.position.set(placement.x, placement.y, placement.z)
   glyph.rotation.set(0, 0, placement.rz)
+  syncGlyphTransform(glyph)
 }
 
 function prepareSharedGlyphGroup(group: AcTrGlyphEntity[]): {
@@ -480,6 +497,7 @@ function prepareSharedGlyphGroup(group: AcTrGlyphEntity[]): {
   const template = group[0]
   template.position.set(0, 0, 0)
   template.rotation.set(0, 0, 0)
+  syncGlyphTransform(template)
   return { placements, template }
 }
 
