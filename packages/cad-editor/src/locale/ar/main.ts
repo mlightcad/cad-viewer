@@ -42,6 +42,7 @@ export default {
       annotation: 'تعليقات توضيحية',
       navigate: 'تنقل',
       namedViews: 'طرق عرض مسماة',
+      coordinates: 'Coordinates',
       review: 'مراجعة',
       measurement: 'القياس',
       style: 'النمط',

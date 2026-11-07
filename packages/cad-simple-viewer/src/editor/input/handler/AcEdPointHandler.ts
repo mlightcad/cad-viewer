@@ -1,5 +1,6 @@
 import { AcGePoint3dLike } from '@mlightcad/data-model'
 
+import { AcApUcsService } from '../../../service/AcApUcsService'
 import { AcEdPromptPointOptions } from '../prompt/AcEdPromptPointOptions'
 import { AcEdInputHandler, AcEdPointInputContext } from './AcEdInputHandler'
 
@@ -50,7 +51,7 @@ function splitCartesianPointToken(
  * Supported prefixes (any order, typically `@`/`#` then `*`):
  * - `#` — force absolute (dynamic-input absolute override)
  * - `@` — relative to the last / reference point
- * - `*` — interpret in WCS (UCS and WCS are currently the same frame)
+ * - `*` — interpret in WCS (bypass current UCS)
  */
 function stripCoordinatePrefixes(token: string): {
   body: string
@@ -133,7 +134,7 @@ export class AcEdPointHandler implements AcEdInputHandler<AcGePoint3dLike> {
    * - Cylindrical: `distance<angle,Z` (and `@` / `#` variants)
    * - Spherical: `distance<angle<angle` (XY projection kept; Z stored)
    * - Absolute override: `#…` (dynamic-input absolute prefix)
-   * - WCS force: `*…` / `@*…` / `#*…` (parsed; same as UCS while no UCS transform)
+   * - WCS force: `*…` / `@*…` / `#*…` (bypass current UCS)
    * - Rubber-band distance: plain number when a reference point and cursor
    *   position are available
    */
@@ -141,11 +142,7 @@ export class AcEdPointHandler implements AcEdInputHandler<AcGePoint3dLike> {
     const trimmed = token.trim()
     if (!trimmed) return null
 
-    // useWcs is reserved for a future UCS→WCS transform; prefixes are still
-    // stripped so `*3,4` / `@*2,0` parse while UCS equals WCS.
-    const { body, isRelative, useWcs: _useWcs } = stripCoordinatePrefixes(
-      trimmed
-    )
+    const { body, isRelative, useWcs } = stripCoordinatePrefixes(trimmed)
     if (!body) return null
 
     const reference = context?.referencePoint ?? undefined
@@ -168,6 +165,7 @@ export class AcEdPointHandler implements AcEdInputHandler<AcGePoint3dLike> {
         const xyDist = dist * Math.cos(elevRad)
         return this.resolvePoint(
           isRelative,
+          useWcs,
           reference,
           xyDist * Math.cos(azimRad),
           xyDist * Math.sin(azimRad),
@@ -192,6 +190,7 @@ export class AcEdPointHandler implements AcEdInputHandler<AcGePoint3dLike> {
       const angleRad = degToRad(angleDeg)
       return this.resolvePoint(
         isRelative,
+        useWcs,
         reference,
         dist * Math.cos(angleRad),
         dist * Math.sin(angleRad),
@@ -214,6 +213,7 @@ export class AcEdPointHandler implements AcEdInputHandler<AcGePoint3dLike> {
 
       return this.resolvePoint(
         isRelative,
+        useWcs,
         reference,
         offsetX,
         offsetY,
@@ -235,6 +235,7 @@ export class AcEdPointHandler implements AcEdInputHandler<AcGePoint3dLike> {
       const angleRad = len > 1e-10 ? Math.atan2(dy, dx) : 0
       return this.resolvePoint(
         true,
+        true,
         reference,
         distance * Math.cos(angleRad),
         distance * Math.sin(angleRad),
@@ -247,6 +248,7 @@ export class AcEdPointHandler implements AcEdInputHandler<AcGePoint3dLike> {
 
   private resolvePoint(
     isRelative: boolean,
+    useWcs: boolean,
     reference: AcEdPointReference | null | undefined,
     offsetX: number,
     offsetY: number,
@@ -254,13 +256,36 @@ export class AcEdPointHandler implements AcEdInputHandler<AcGePoint3dLike> {
   ): AcGePoint3dLike | null {
     if (isRelative) {
       if (!reference) return null
+      if (useWcs) {
+        return {
+          x: reference.x + offsetX,
+          y: reference.y + offsetY,
+          z: (reference.z ?? 0) + offsetZ
+        }
+      }
+      // Relative offsets are expressed in the current UCS.
+      const frame = AcApUcsService.getActiveFrame()
+      const x = frame.xAxis
+      const y = frame.yAxis
+      const zx = x.y * y.z - x.z * y.y
+      const zy = x.z * y.x - x.x * y.z
+      const zz = x.x * y.y - x.y * y.x
+      const zLen = Math.hypot(zx, zy, zz)
+      const zxn = zLen > 1e-12 ? zx / zLen : 0
+      const zyn = zLen > 1e-12 ? zy / zLen : 0
+      const zzn = zLen > 1e-12 ? zz / zLen : 1
       return {
-        x: reference.x + offsetX,
-        y: reference.y + offsetY,
-        // AutoCAD relative `@x,y,z` / `@dist<ang,z` offsets Z from the last point.
-        z: (reference.z ?? 0) + offsetZ
+        x: reference.x + offsetX * x.x + offsetY * y.x + offsetZ * zxn,
+        y: reference.y + offsetX * x.y + offsetY * y.y + offsetZ * zyn,
+        z: (reference.z ?? 0) + offsetX * x.z + offsetY * y.z + offsetZ * zzn
       }
     }
-    return { x: offsetX, y: offsetY, z: offsetZ }
+
+    if (useWcs) {
+      return { x: offsetX, y: offsetY, z: offsetZ }
+    }
+
+    const wcs = AcApUcsService.ucsToWcs({ x: offsetX, y: offsetY, z: offsetZ })
+    return { x: wcs.x, y: wcs.y, z: wcs.z }
   }
 }

@@ -34,6 +34,7 @@ import {
   AcApPropertiesCmd,
   AcApQSelectCmd,
   AcApTextStyleCmd,
+  AcApUcsManCmd,
   AcApViewCmd,
   AcApXrefCmd,
   hatchRibbonCommand
@@ -51,6 +52,7 @@ import {
   MlPointStyleDlg,
   MlQuickSelectDlg,
   MlTextStyleDlg,
+  MlUcsManagerDlg,
   MlViewManagerDlg
 } from '../component'
 import { useDialogManager } from '../composable'
@@ -208,6 +210,13 @@ export const registerCmds = () => {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'ucsman',
+      'ucsman',
+      new AcApUcsManCmd(),
+      'dducs'
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'attedit',
       'attedit',
       new AcApAttEditCmd(),
@@ -289,6 +298,11 @@ export const registerDialogs = () => {
     registerDialog({
       name: 'NewViewDlg',
       component: markRaw(MlNewViewDlg),
+      props: {}
+    })
+    registerDialog({
+      name: 'UcsManagerDlg',
+      component: markRaw(MlUcsManagerDlg),
       props: {}
     })
     isDialogRegistered = true

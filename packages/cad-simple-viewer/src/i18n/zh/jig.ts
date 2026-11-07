@@ -1615,5 +1615,96 @@ export default {
         global: 'Monochrome'
       }
     }
+  },
+  ucs: {
+    originOrOptions: '指定 UCS 的原点或',
+    pointOnXAxis: '指定 X 轴上的点或',
+    pointOnXyPlane: '指定 XY 平面上的点或',
+    rotationAngle: '指定绕 {axis} 轴的旋转角度',
+    zAxisOrigin: '指定新的原点',
+    pointOnZAxis: '指定 Z 轴正方向上的点',
+    selectObject: '选择要对齐 UCS 的对象',
+    namedOption: '输入选项',
+    enterName: '输入要恢复的 UCS 名称或 [?]',
+    saveName: '输入用于保存当前 UCS 的名称',
+    deleteName: '输入要删除的 UCS 名称',
+    noPrevious: '当前会话中没有上一个 UCS。',
+    noNamed: '没有命名 UCS 定义。',
+    notFound: '未找到 UCS "{name}"。',
+    invalidName: '无效的 UCS 名称。',
+    invalidObject: '无法将 UCS 对齐到所选对象。',
+    keywords: {
+      named: {
+        display: '命名(A)',
+        local: '命名',
+        global: 'Named'
+      },
+      object: {
+        display: '对象(B)',
+        local: '对象',
+        global: 'Object'
+      },
+      previous: {
+        display: '上一个(P)',
+        local: '上一个',
+        global: 'Previous'
+      },
+      view: {
+        display: '视图(V)',
+        local: '视图',
+        global: 'View'
+      },
+      world: {
+        display: '世界(W)',
+        local: '世界',
+        global: 'World'
+      },
+      x: {
+        display: 'X',
+        local: 'X',
+        global: 'X'
+      },
+      y: {
+        display: 'Y',
+        local: 'Y',
+        global: 'Y'
+      },
+      z: {
+        display: 'Z',
+        local: 'Z',
+        global: 'Z'
+      },
+      zAxis: {
+        display: 'Z 轴(N)',
+        local: 'ZAxis',
+        global: 'ZAxis'
+      },
+      apply: {
+        display: '应用(L)',
+        local: '应用',
+        global: 'Apply'
+      },
+      restore: {
+        display: '恢复(R)',
+        local: '恢复',
+        global: 'Restore'
+      },
+      save: {
+        display: '保存(S)',
+        local: '保存',
+        global: 'Save'
+      },
+      delete: {
+        display: '删除(D)',
+        local: '删除',
+        global: 'Delete'
+      },
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      }
+    }
   }
+
 }

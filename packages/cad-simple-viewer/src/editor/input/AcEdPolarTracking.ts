@@ -19,6 +19,7 @@ import {
   AcGePoint2dLike
 } from '@mlightcad/data-model'
 
+import { AcApUcsService } from '../../service/AcApUcsService'
 import { constrainToOrtho, isOrthoModeEnabled } from './AcEdOrthoMode'
 
 /**
@@ -348,18 +349,29 @@ export function constrainToTracking(
   }
 
   if (ortho && !polar) {
-    return constrainToOrtho(point, reference)
+    return constrainToOrtho(point, reference, db)
   }
 
-  const dx = point.x - reference.x
-  const dy = point.y - reference.y
+  // Polar angles are relative to the current UCS (and ANGBASE).
+  const pU = AcApUcsService.wcsToUcs(
+    { x: point.x, y: point.y, z: 0 },
+    undefined,
+    db
+  )
+  const rU = AcApUcsService.wcsToUcs(
+    { x: reference.x, y: reference.y, z: 0 },
+    undefined,
+    db
+  )
+  const dx = pU.x - rU.x
+  const dy = pU.y - rU.y
   const distance = Math.hypot(dx, dy)
   if (distance < 1e-10) {
     return point
   }
 
-  const wcsAngle = Math.atan2(dy, dx)
-  const displayAngle = toDisplayAngleRadians(wcsAngle, db.angbase, db.angdir)
+  const ucsAngle = Math.atan2(dy, dx)
+  const displayAngle = toDisplayAngleRadians(ucsAngle, db.angbase, db.angdir)
   const candidates = buildTrackingDisplayAnglesRadians(db, {
     includeOrtho: ortho
   })
@@ -369,16 +381,22 @@ export function constrainToTracking(
   }
 
   const lockedDisplay = nearestDisplayAngle(displayAngle, candidates)
-  const lockedWcs = fromDisplayAngleRadians(
+  const lockedUcs = fromDisplayAngleRadians(
     lockedDisplay,
     db.angbase,
     db.angdir
   )
 
-  return {
-    x: reference.x + distance * Math.cos(lockedWcs),
-    y: reference.y + distance * Math.sin(lockedWcs)
-  }
+  const lockedWcs = AcApUcsService.ucsToWcs(
+    {
+      x: rU.x + distance * Math.cos(lockedUcs),
+      y: rU.y + distance * Math.sin(lockedUcs),
+      z: 0
+    },
+    undefined,
+    db
+  )
+  return { x: lockedWcs.x, y: lockedWcs.y }
 }
 
 /**

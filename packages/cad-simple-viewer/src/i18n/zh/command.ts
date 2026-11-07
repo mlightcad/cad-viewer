@@ -521,6 +521,12 @@ export default {
     },
     viewrestore: {
       description: '按名称恢复命名视图'
+    },
+    ucs: {
+      description: '设置当前用户坐标系的原点和方向'
+    },
+    ucsman: {
+      description: '管理命名 UCS 定义和 UCS 图标设置'
     }
   },
   USER: {}

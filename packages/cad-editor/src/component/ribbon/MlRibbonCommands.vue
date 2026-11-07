@@ -153,6 +153,7 @@ import {
   move,
   mtext,
   multiPoints,
+  namedUcs,
   newView,
   offset,
   polygon,
@@ -164,6 +165,15 @@ import {
   revFreeDraw,
   setting,
   splineFitPoints,
+  ucs,
+  ucsObject,
+  ucsOrigin,
+  ucsView,
+  ucsWorld,
+  ucsX,
+  ucsY,
+  ucsZ,
+  ucsZAxis,
   viewManager,
   xline
 } from '../../svg'
@@ -1262,6 +1272,16 @@ const buildBaseTabs = (
     zoomSmart: t('main.ribbon.tooltip.zoomSmart'),
     newView: t('main.ribbon.tooltip.newView'),
     viewManager: t('main.ribbon.tooltip.viewManager'),
+    ucs: t('main.ribbon.tooltip.ucs'),
+    namedUcs: t('main.ribbon.tooltip.namedUcs'),
+    ucsWorld: t('main.ribbon.tooltip.ucsWorld'),
+    ucsOrigin: t('main.ribbon.tooltip.ucsOrigin'),
+    ucsX: t('main.ribbon.tooltip.ucsX'),
+    ucsY: t('main.ribbon.tooltip.ucsY'),
+    ucsZ: t('main.ribbon.tooltip.ucsZ'),
+    ucsZAxis: t('main.ribbon.tooltip.ucsZAxis'),
+    ucsView: t('main.ribbon.tooltip.ucsView'),
+    ucsObject: t('main.ribbon.tooltip.ucsObject'),
     restoreView: t('main.ribbon.tooltip.restoreView'),
     propertyColor: t('main.ribbon.tooltip.propertyColor'),
     propertyLineType: t('main.ribbon.tooltip.propertyLineType'),
@@ -2766,6 +2786,139 @@ const buildBaseTabs = (
         ]
       },
       {
+        id: 'view-coordinates',
+        title: t('main.ribbon.group.coordinates'),
+        orientation: 'row',
+        collections: [
+          {
+            id: 'view-coordinates-main',
+            layout: 'row',
+            items: [
+              {
+                id: 'cmd-ucs',
+                type: 'button',
+                label: t('main.ribbon.command.ucs'),
+                tooltip: ribbonTooltips.ucs,
+                size: 'large',
+                props: {
+                  icon: ucs,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-ucsman',
+                type: 'button',
+                label: t('main.ribbon.command.namedUcs'),
+                tooltip: ribbonTooltips.namedUcs,
+                size: 'large',
+                props: {
+                  icon: namedUcs,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-ucs-world',
+                type: 'button',
+                label: t('main.ribbon.command.ucsWorld'),
+                tooltip: ribbonTooltips.ucsWorld,
+                size: 'large',
+                props: {
+                  icon: ucsWorld,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-ucs-origin',
+                type: 'button',
+                label: t('main.ribbon.command.ucsOrigin'),
+                tooltip: ribbonTooltips.ucsOrigin,
+                size: 'large',
+                props: {
+                  icon: ucsOrigin,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-ucs-x',
+                type: 'button',
+                label: t('main.ribbon.command.ucsX'),
+                tooltip: ribbonTooltips.ucsX,
+                size: 'large',
+                props: {
+                  icon: ucsX,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-ucs-y',
+                type: 'button',
+                label: t('main.ribbon.command.ucsY'),
+                tooltip: ribbonTooltips.ucsY,
+                size: 'large',
+                props: {
+                  icon: ucsY,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-ucs-z',
+                type: 'button',
+                label: t('main.ribbon.command.ucsZ'),
+                tooltip: ribbonTooltips.ucsZ,
+                size: 'large',
+                props: {
+                  icon: ucsZ,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-ucs-zaxis',
+                type: 'button',
+                label: t('main.ribbon.command.ucsZAxis'),
+                tooltip: ribbonTooltips.ucsZAxis,
+                size: 'large',
+                props: {
+                  icon: ucsZAxis,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-ucs-view',
+                type: 'button',
+                label: t('main.ribbon.command.ucsView'),
+                tooltip: ribbonTooltips.ucsView,
+                size: 'large',
+                props: {
+                  icon: ucsView,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-ucs-object',
+                type: 'button',
+                label: t('main.ribbon.command.ucsObject'),
+                tooltip: ribbonTooltips.ucsObject,
+                size: 'large',
+                props: {
+                  icon: ucsObject,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
         id: 'view-named-views',
         title: t('main.ribbon.group.namedViews'),
         orientation: 'row',
@@ -2973,6 +3126,16 @@ const ribbonData = computed(() => {
   commandByItemId.set('zoom-smart', 'zoom\\nsmart')
   commandByItemId.set('cmd-newview', 'newview')
   commandByItemId.set('cmd-view', 'view')
+  commandByItemId.set('cmd-ucs', 'ucs')
+  commandByItemId.set('cmd-ucsman', 'ucsman')
+  commandByItemId.set('cmd-ucs-world', 'ucs\\nWorld')
+  commandByItemId.set('cmd-ucs-origin', 'ucs')
+  commandByItemId.set('cmd-ucs-x', 'ucs\\nX')
+  commandByItemId.set('cmd-ucs-y', 'ucs\\nY')
+  commandByItemId.set('cmd-ucs-z', 'ucs\\nZ')
+  commandByItemId.set('cmd-ucs-zaxis', 'ucs\\nZAxis')
+  commandByItemId.set('cmd-ucs-view', 'ucs\\nView')
+  commandByItemId.set('cmd-ucs-object', 'ucs\\nObject')
 
   namedViewsRevision.value
   let namedViewNames: string[] = []

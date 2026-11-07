@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <path d="M12 19V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M12 7l-2.5 2.5M12 7l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="15" y="14" font-size="8" fill="currentColor" font-family="sans-serif">Z</text>
+  <circle cx="12" cy="19" r="1.5" fill="currentColor"/>
+</svg>

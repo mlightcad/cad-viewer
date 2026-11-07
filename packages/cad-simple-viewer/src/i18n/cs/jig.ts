@@ -1514,5 +1514,95 @@ export default {
         global: 'Monochrome'
       }
     }
+  },
+  ucs: {
+    originOrOptions: 'Specify origin of UCS or',
+    pointOnXAxis: 'Specify point on X-axis or',
+    pointOnXyPlane: 'Specify point on XY plane or',
+    rotationAngle: 'Specify rotation angle about {axis} axis',
+    zAxisOrigin: 'Specify new origin point',
+    pointOnZAxis: 'Specify point on positive portion of Z-axis',
+    selectObject: 'Select object to align UCS',
+    namedOption: 'Enter an option',
+    enterName: 'Enter name of UCS to restore or [?]',
+    saveName: 'Enter name to save current UCS',
+    deleteName: 'Enter UCS name(s) to delete',
+    noPrevious: 'No previous UCS in this session.',
+    noNamed: 'No named UCS definitions.',
+    notFound: 'UCS "{name}" not found.',
+    invalidName: 'Invalid UCS name.',
+    invalidObject: 'Cannot align UCS to the selected object.',
+    keywords: {
+      named: {
+        display: 'NAmed(A)',
+        local: 'Named',
+        global: 'Named'
+      },
+      object: {
+        display: 'OBject(B)',
+        local: 'Object',
+        global: 'Object'
+      },
+      previous: {
+        display: 'Previous(P)',
+        local: 'Previous',
+        global: 'Previous'
+      },
+      view: {
+        display: 'View(V)',
+        local: 'View',
+        global: 'View'
+      },
+      world: {
+        display: 'World(W)',
+        local: 'World',
+        global: 'World'
+      },
+      x: {
+        display: 'X',
+        local: 'X',
+        global: 'X'
+      },
+      y: {
+        display: 'Y',
+        local: 'Y',
+        global: 'Y'
+      },
+      z: {
+        display: 'Z',
+        local: 'Z',
+        global: 'Z'
+      },
+      zAxis: {
+        display: 'ZAxis(N)',
+        local: 'ZAxis',
+        global: 'ZAxis'
+      },
+      apply: {
+        display: 'Apply(L)',
+        local: 'Apply',
+        global: 'Apply'
+      },
+      restore: {
+        display: 'Restore(R)',
+        local: 'Restore',
+        global: 'Restore'
+      },
+      save: {
+        display: 'Save(S)',
+        local: 'Save',
+        global: 'Save'
+      },
+      delete: {
+        display: 'Delete(D)',
+        local: 'Delete',
+        global: 'Delete'
+      },
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      }
+    }
   }
 }
