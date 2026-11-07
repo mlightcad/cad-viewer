@@ -126,6 +126,9 @@ import {
   dimRadius,
   dimStyle,
   editAttribute,
+  mleader,
+  mleaderAdd,
+  mleaderRemove,
   ellipseArc,
   ellipseCenter,
   find,
@@ -1217,6 +1220,9 @@ const buildBaseTabs = (
     dimcontinue: t('main.ribbon.tooltip.dimcontinue'),
     dimbaseline: t('main.ribbon.tooltip.dimbaseline'),
     dimstyle: t('main.ribbon.tooltip.dimstyle'),
+    mleader: t('main.ribbon.tooltip.mleader'),
+    mleaderAdd: t('main.ribbon.tooltip.mleaderAdd'),
+    mleaderRemove: t('main.ribbon.tooltip.mleaderRemove'),
     move: t('main.ribbon.tooltip.move'),
     rotate: t('main.ribbon.tooltip.rotate'),
     copy: t('main.ribbon.tooltip.copy'),
@@ -2358,7 +2364,7 @@ const buildBaseTabs = (
             {
               id: 'home-annotation-dimension',
               layout: 'column',
-              rows: 2,
+              rows: 3,
               items: [
                 {
                   id: 'cmd-dimension',
@@ -2423,6 +2429,37 @@ const buildBaseTabs = (
                         label: t('main.ribbon.command.dimbaseline'),
                         tooltip: ribbonTooltips.dimbaseline,
                         icon: dimBaseline
+                      }
+                    ]
+                  }
+                },
+                {
+                  id: 'cmd-mleader',
+                  type: 'dropdown',
+                  label: t('main.ribbon.command.mleader'),
+                  tooltip: ribbonTooltips.mleader,
+                  size: 'small',
+                  props: {
+                    icon: mleader,
+                    syncLabelWithSelection: true,
+                    options: [
+                      {
+                        value: 'mleader',
+                        label: t('main.ribbon.command.mleader'),
+                        tooltip: ribbonTooltips.mleader,
+                        icon: mleader
+                      },
+                      {
+                        value: 'mleader-add',
+                        label: t('main.ribbon.command.mleaderAdd'),
+                        tooltip: ribbonTooltips.mleaderAdd,
+                        icon: mleaderAdd
+                      },
+                      {
+                        value: 'mleader-remove',
+                        label: t('main.ribbon.command.mleaderRemove'),
+                        tooltip: ribbonTooltips.mleaderRemove,
+                        icon: mleaderRemove
                       }
                     ]
                   }
@@ -2704,6 +2741,10 @@ const ribbonData = computed(() => {
   commandByItemId.set('dimordinate', 'dimordinate')
   commandByItemId.set('dimcontinue', 'dimcontinue')
   commandByItemId.set('dimbaseline', 'dimbaseline')
+  commandByItemId.set('cmd-mleader', 'mleader')
+  commandByItemId.set('mleader', 'mleader')
+  commandByItemId.set('mleader-add', 'mleaderedit')
+  commandByItemId.set('mleader-remove', 'mleadereditremove')
   commandByItemId.set('cmd-dimstyle', 'dimstyle')
   commandByItemId.set('cmd-move', 'move')
   commandByItemId.set('cmd-rotate', 'rotate')
