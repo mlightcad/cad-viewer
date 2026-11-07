@@ -1,4 +1,5 @@
-import { AcApContext, AcApDocManager } from '../app'
+import type { AcApContext } from '../app/AcApContext'
+import { AcApDocManager } from '../app/AcApDocManager'
 import {
   AcEdCommand,
   AcEdOpenMode,
