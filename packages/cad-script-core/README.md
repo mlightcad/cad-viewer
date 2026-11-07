@@ -249,7 +249,8 @@ the `execute_cad_script` description. Adapters should reuse that string.
 Before a script runs, `acorn` parses it and rejects:
 
 - `import`, `import()`, `with`, `eval`, `Function`, `this`
-- identifiers such as `window`, `document`, `globalThis`, and `fetch`
+- free identifiers such as `window`, `document`, `globalThis`, and `fetch`
+  (object keys like `{ window: n }` are allowed)
 - member names `constructor`, `prototype`, and `__proto__`
 - `cad` members that are not in `CAD_SCRIPT_API_TREE`
 - computed access on the host (`cad[name]`)

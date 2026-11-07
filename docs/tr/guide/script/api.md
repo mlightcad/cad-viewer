@@ -24,7 +24,7 @@ Tüm ECMAScript standart yerleşik nesneleri kullanılabilir:
 
 ### Yasaklanan Tarayıcı API'leri
 
-Aşağıdaki içerikler betik doğrulama aşamasında doğrudan reddedilir ve `forbidden_identifier` / `forbidden_syntax` / `forbidden_member` hatalarını tetikler:
+Aşağıdaki içerikler betik doğrulama aşamasında doğrudan reddedilir ve `forbidden_identifier` / `forbidden_syntax` / `forbidden_member` hatalarını tetikler. `{ window: count }` gibi nesne anahtarlarına izin verilir; `window.foo` gibi serbest tanımlayıcılara izin verilmez.
 
 - Sayfa ve DOM: `window`, `document`, `globalThis`
 - Ağ ve iletişim: `fetch`, `XMLHttpRequest`, `WebSocket`, `importScripts`

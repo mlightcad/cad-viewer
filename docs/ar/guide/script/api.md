@@ -24,7 +24,7 @@ title: API البرنامج النصي
 
 ### واجهات المتصفح المحظورة
 
-يتم رفض العناصر التالية مباشرةً في مرحلة التحقق من البرنامج النصي، مما يُطلق أخطاء `forbidden_identifier` / `forbidden_syntax` / `forbidden_member`:
+يتم رفض العناصر التالية مباشرةً في مرحلة التحقق من البرنامج النصي، مما يُطلق أخطاء `forbidden_identifier` / `forbidden_syntax` / `forbidden_member`. يُسمح بمفاتيح الكائنات مثل `{ window: count }`؛ ولا يُسمح بالمُعرّفات الحرة مثل `window.foo`.
 
 - الصفحة وDOM: `window` و`document` و`globalThis`
 - الشبكة والاتصالات: `fetch` و`XMLHttpRequest` و`WebSocket` و`importScripts`

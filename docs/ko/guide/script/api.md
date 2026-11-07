@@ -24,7 +24,7 @@ title: 스크립트 API
 
 ### 금지된 브라우저 API
 
-다음 내용은 스크립트 검증 단계에서 즉시 거부되며, `forbidden_identifier` / `forbidden_syntax` / `forbidden_member` 오류를 발생시킵니다:
+다음 내용은 스크립트 검증 단계에서 즉시 거부되며, `forbidden_identifier` / `forbidden_syntax` / `forbidden_member` 오류를 발생시킵니다. `{ window: count }` 같은 객체 속성 키는 허용되고, `window.foo` 같은 자유 식별자는 거부됩니다.
 
 - 페이지와 DOM: `window`, `document`, `globalThis`
 - 네트워크와 통신: `fetch`, `XMLHttpRequest`, `WebSocket`, `importScripts`

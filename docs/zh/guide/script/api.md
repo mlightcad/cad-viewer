@@ -24,7 +24,7 @@ title: 脚本 API
 
 ### 被禁止的浏览器 API
 
-以下内容会在脚本校验阶段被直接拒绝，触发 `forbidden_identifier` / `forbidden_syntax` / `forbidden_member` 错误：
+以下内容会在脚本校验阶段被直接拒绝，触发 `forbidden_identifier` / `forbidden_syntax` / `forbidden_member` 错误。对象属性名如 `{ window: count }` 允许使用；自由标识符如 `window.foo` 不允许。
 
 - 页面与 DOM：`window`、`document`、`globalThis`
 - 网络与通信：`fetch`、`XMLHttpRequest`、`WebSocket`、`importScripts`

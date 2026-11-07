@@ -247,6 +247,178 @@
   max-width: 92%;
 }
 
+.cad-agent-msg--editing {
+  align-self: stretch;
+  max-width: 100%;
+  background: #2a2a2a;
+}
+
+.cad-agent-msg-footer {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 6px;
+  min-height: 22px;
+}
+
+.cad-agent-msg-copy,
+.cad-agent-msg-edit-trigger {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #9a9a9a;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.55;
+}
+
+.cad-agent-msg:hover .cad-agent-msg-copy,
+.cad-agent-msg:hover .cad-agent-msg-edit-trigger,
+.cad-agent-msg-copy:focus-visible,
+.cad-agent-msg-edit-trigger:focus-visible,
+.cad-agent-msg-copy.is-copied {
+  opacity: 1;
+}
+
+.cad-agent-msg-copy svg,
+.cad-agent-msg-edit-trigger svg {
+  width: 13px;
+  height: 13px;
+}
+
+.cad-agent-msg-copy:hover,
+.cad-agent-msg-edit-trigger:hover {
+  color: #e8e8e8;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #4a4a4a;
+}
+
+.cad-agent-msg-copy.is-copied {
+  color: #89d185;
+  border-color: rgba(137, 209, 133, 0.35);
+}
+
+.cad-agent-msg-time {
+  margin-left: 4px;
+  font-size: 11px;
+  color: #888;
+  line-height: 1;
+  user-select: none;
+}
+
+.cad-agent-msg-edit {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  background: #1a1a1a;
+  color: #e8e8e8;
+  padding: 8px;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.cad-agent-msg-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cad-agent-msg-edit-btn {
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  background: transparent;
+  color: #cccccc;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.cad-agent-msg-edit-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e8e8e8;
+}
+
+.cad-agent-msg-edit-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.cad-agent-msg-edit-btn--primary {
+  background: #0e639c;
+  border-color: #0e639c;
+  color: #fff;
+}
+
+.cad-agent-msg-edit-btn--primary:hover:not(:disabled) {
+  background: #1177bb;
+  border-color: #1177bb;
+  color: #fff;
+}
+
+.cad-agent-queued {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  background: #242424;
+}
+
+.cad-agent-queued-text {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #d4d4d4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 4.5em;
+  overflow: hidden;
+}
+
+.cad-agent-queued-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cad-agent-queued-btn {
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  background: transparent;
+  color: #cccccc;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.cad-agent-queued-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #e8e8e8;
+}
+
+.cad-agent-queued-btn--primary {
+  background: #0e639c;
+  border-color: #0e639c;
+  color: #fff;
+}
+
+.cad-agent-queued-btn--primary:hover {
+  background: #1177bb;
+  border-color: #1177bb;
+  color: #fff;
+}
+
 .cad-agent-msg.error {
   align-self: stretch;
   max-width: 100%;

@@ -38,6 +38,32 @@ export const agentAr = {
 
   toolCopied: 'تم النسخ',
 
+  copyMessage: 'نسخ الرسالة',
+
+  messageCopied: 'تم النسخ',
+
+  editMessage: 'تعديل الرسالة',
+
+  cancelEdit: 'إلغاء',
+
+  resendMessage: 'إرسال',
+
+  relativeTimeJustNow: 'الآن',
+
+  relativeTimeSeconds: 'قبل {n} ث',
+
+  relativeTimeMinutes: 'قبل {n} د',
+
+  relativeTimeHours: 'قبل {n} س',
+
+  relativeTimeDays: 'قبل {n} ي',
+
+  queuedSendNow: 'أرسل الآن',
+
+  queuedEdit: 'تعديل',
+
+  queuedDelete: 'حذف',
+
   inputPlaceholder: 'صف طلبك…',
 
   attachImage: 'إرفاق صورة',
