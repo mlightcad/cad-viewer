@@ -527,7 +527,7 @@ const accessModes = computed(() => [
 ] as const)
 
 const isValidFile = (file: File): boolean => {
-  const validExtensions = ['.dwg', '.dxf']
+  const validExtensions = ['.dwg', '.dxf', '.svg']
   const fileName = file.name.toLowerCase()
   return validExtensions.some(ext => fileName.endsWith(ext))
 }

@@ -1,3 +1,4 @@
+export * from './acapResolveOpenFileType'
 export * from './AcApAciPalette'
 export * from './AcApCommandUtil'
 export * from './AcApCssColor'

@@ -92,6 +92,10 @@ import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-ope
 بدءًا من الإصدار الذي يتضمن هذا التغيير، يعرض `cad.blocks` لكل كتلة `entityCount` / `typeCounts` دون مصفوفة `entities` كاملة. فضّل هذه الحقول أو `count(pred)` للتعداد. اللقطات عبر `where` / `inBlock(id, pred)` — لقطة مساحة كاملة تتوقف عند نحو 500 بمُعرّف `too_many_matches`. `where` / `count` / `inBox` تمسح مساحة النموذج والورق فقط.
 :::
 
+::: info SVG File → Open
+بدءًا من **1.8.0** يمكن فتح `.svg` كرسم عبر File → Open / `openDocument` / `openUrl`. التحويل في الحزمة الجديدة [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter). يسجّله `initializeCadViewer` في `cad-editor` تلقائيًا؛ ومع `cad-simple-viewer` فقط استدعِ `registerSvgConverter()` مرة عند البدء. التصدير يبقى `csvg` في `cad-svg-plugin`.
+:::
+
 ::: info تقسيم تصدير PDF إلى نواة مشتركة (المتصفح + Node)
 بدءًا من **1.8.0**، يستخدم تصدير PDF نفس التقسيم الطبقي لتصدير HTML. المنطق المشترك في `@mlightcad/cad-pdf-core` (نموذج الخيارات ومسار database → PDF، **بدون** اعتماد على `cad-simple-viewer` / DOM). يستهلكه واجهتان أماميتان:
 

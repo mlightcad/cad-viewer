@@ -70,8 +70,8 @@ const onOpenFile = async () => {
 /**
  * Installs the built-in file picker used by the OPEN command.
  *
- * Listens for `open-file` events, prompts for a local `.dxf` / `.dwg` file,
- * and opens it through {@link AcApDocManager.openDocument}.
+ * Listens for `open-file` events, prompts for a local `.dxf` / `.dwg` / `.svg`
+ * file, and opens it through {@link AcApDocManager.openDocument}.
  *
  * @param options - Dialog configuration. When `enabled` is `false`, installation is skipped.
  */

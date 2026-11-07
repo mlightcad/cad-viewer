@@ -92,6 +92,16 @@ Agent / 脚本应调用这些方法，而不是用直线、箭头和文字拼假
 包含此改动的版本起，`cad.blocks` 提供每个块的 `entityCount` / `typeCounts` 元数据，不再内嵌实体数组。统计请用这些字段或 `count(pred)`。快照用 `where` / `inBlock(id, pred)`——整空间裸快照会在约 500 条时以 `too_many_matches` 中止。`where` / `count` / `inBox` 只扫模型/图纸空间（块定义用 `inBlock`）。块参照的 `type` 为 `BlockReference`。
 :::
 
+::: info SVG File → Open
+从 **1.8.0** 起，可通过常规 File → Open / `openDocument` / `openUrl` 打开 `.svg`。矢量转换在新包 [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter)（仅依赖 `@mlightcad/data-model`）。
+
+**使用 `@mlightcad/cad-editor`：** `initializeCadViewer` 会自动注册转换器；请与固定版本组一起安装 `@mlightcad/cad-svg-converter`。
+
+**仅使用 `@mlightcad/cad-simple-viewer`：** 启动时调用一次 `registerSvgConverter()`。
+
+v1 支持子集：`line`、`polyline`/`polygon`/`rect`、`circle`、`ellipse`（非均匀时折线近似）、`path`（细分）、`text`、嵌套 `g` + transform。导出仍用 `@mlightcad/cad-svg-plugin` 的 `csvg`；编辑后保存为 DXF（`cdxf`）或再导出 SVG，无原生 SVG 保存。
+:::
+
 ::: info PDF 导出拆分为共享核心（浏览器 + Node）
 从 **1.8.0** 开始，PDF 导出与 HTML 导出采用相同的分层：共享逻辑放在 `@mlightcad/cad-pdf-core`（选项模型与 database → PDF 管线，**不**依赖 `cad-simple-viewer` / DOM）。两个前端都基于它：
 
@@ -164,6 +174,7 @@ await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
 | `@mlightcad/cad-html-plugin` | 一键导出自包含 HTML |
 | `@mlightcad/cad-pdf-plugin` | 浏览器端 PDF 导出与 PDF 转 CAD 导入 |
 | `@mlightcad/cad-svg-plugin` | SVG 导出 |
+| `@mlightcad/cad-svg-converter` | SVG File → Open（矢量 → AcDb 实体） |
 | `@mlightcad/cad-simple-ui-plugin` | 纯 DOM 工具栏、图层管理器、停靠面板 |
 | `@mlightcad/cad-agent-plugin` | AI 智能体驱动的交互 |
 | `@mlightcad/cad-onedrive-plugin` | OneDrive 集成 |

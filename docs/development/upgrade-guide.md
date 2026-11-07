@@ -92,6 +92,22 @@ Agents and scripts should call these instead of approximating dimensions with li
 In the release that includes this change, `cad.blocks` exposes per-block `entityCount` / `typeCounts` metadata — no embedded entity arrays. Prefer those fields / `count(pred)` for tallies. Snapshot with `where` / `inBlock(id, pred)` — bare whole-space snapshots stop at ~500 matches (`too_many_matches`). `where` / `count` / `inBox` scan model and paper spaces only (use `inBlock` for block definitions). Block references use `type === 'BlockReference'`.
 :::
 
+::: info SVG File → Open
+Starting with **1.8.0**, `.svg` can be opened as a drawing through the normal File → Open / `openDocument` / `openUrl` path. Vector conversion lives in the new package [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter) (depends only on `@mlightcad/data-model`).
+
+**Integrators using `@mlightcad/cad-editor`:** `initializeCadViewer` registers the converter automatically. Install `@mlightcad/cad-svg-converter` next to the other fixed-group packages (same version).
+
+**Integrators using only `@mlightcad/cad-simple-viewer`:** call once at startup:
+
+```ts
+import { registerSvgConverter } from '@mlightcad/cad-svg-converter'
+
+registerSvgConverter()
+```
+
+Supported subset (v1): `line`, `polyline` / `polygon` / `rect`, `circle`, `ellipse` (polyline approx when non-uniform), `path` (tessellated), `text`, nested `g` + transforms. Export remains `csvg` in `@mlightcad/cad-svg-plugin`. Save after editing is still DXF (`cdxf`) or re-export SVG — there is no native SVG save.
+:::
+
 ::: info PDF export split into a shared core (browser + Node)
 Starting with **1.8.0**, PDF export uses the same layering as HTML export. Shared logic lives in `@mlightcad/cad-pdf-core` (option model and database → PDF pipeline, **no** `cad-simple-viewer` / DOM dependency). Two front ends consume it:
 
@@ -164,6 +180,7 @@ Before upgrading, it helps to know which packages belong to the coordinated rele
 | `@mlightcad/cad-html-plugin` | One-click self-contained HTML export |
 | `@mlightcad/cad-pdf-plugin` | Browser PDF export and PDF-to-CAD import |
 | `@mlightcad/cad-svg-plugin` | SVG export |
+| `@mlightcad/cad-svg-converter` | SVG File → Open (vector → AcDb entities) |
 | `@mlightcad/cad-simple-ui-plugin` | Plain-DOM toolbar, layer manager, dock panel |
 | `@mlightcad/cad-agent-plugin` | AI-agent-powered interaction |
 | `@mlightcad/cad-onedrive-plugin` | OneDrive integration |

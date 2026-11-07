@@ -1,6 +1,5 @@
 import {
   AcDbDatabase,
-  AcDbFileType,
   AcDbObjectId,
   AcDbOpenDatabaseError,
   AcDbOpenDatabaseOptions,
@@ -23,6 +22,7 @@ import type {
   AcApLayerIsolationMode
 } from '../service/types'
 import { LAYER_LOCKED_FLAG } from '../service/types'
+import { acapResolveOpenFileType } from '../util/acapResolveOpenFileType'
 import type { AcApLayerPreviousSnapshot } from './AcApLayerSessionState'
 import { AcApOpenDatabaseOptions } from './AcApOpenDatabaseOptions'
 
@@ -138,7 +138,6 @@ export class AcApDocument {
     this._openMode = options?.mode ?? AcEdOpenMode.Read
     const openErrorBefore = this._database.lastOpenError
     try {
-      const fileExtension = fileName.split('.').pop()?.toLocaleLowerCase()
       // Convert to base options for database method. Viewer-only fields
       // (`mode`, `progressiveRendering`, `openViewMode`, deprecated
       // `waitForTextGeometry`) are ignored by `AcDbDatabase`; `sysVars` may
@@ -151,7 +150,7 @@ export class AcApDocument {
       await this._database.read(
         content,
         baseOptions,
-        fileExtension == 'dwg' ? AcDbFileType.DWG : AcDbFileType.DXF
+        acapResolveOpenFileType(fileName)
       )
       this.docTitle = this._fileName
     } catch (error) {

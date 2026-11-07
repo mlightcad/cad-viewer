@@ -6,6 +6,7 @@ import {
   AcApDocManager,
   AcApDocManagerOptions
 } from '@mlightcad/cad-simple-viewer'
+import { registerSvgConverter } from '@mlightcad/cad-svg-converter'
 
 import { registerCadViewerNotificationCenter } from './cadViewerNotificationCenter'
 import {
@@ -58,6 +59,7 @@ export const initializeCadViewer = (
       host: docOptions.busyIndicatorHost ?? docOptions.container
     }
   })
+  registerSvgConverter()
   registerCadViewerNotificationCenter()
   registerCmds()
   registerDialogs()

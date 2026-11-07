@@ -20,6 +20,7 @@ This repository is a `pnpm` + `nx` TypeScript monorepo. The main packages relate
 | [`@mlightcad/cad-simple-viewer-cli`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer-cli) | Headless CLI: drives `cad-simple-viewer` in Playwright / Chromium to run `.scr` scripts |
 | [`@mlightcad/three-renderer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/three-renderer) | Interactive 2D/3D rendering with THREE.js |
 | `svg-renderer` ([`cad-svg-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin)) | SVG vector output via the same rendering interface |
+| [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter) | SVG File → Open (`AcDbDatabaseConverter` for `'svg'`) |
 | [`@mlightcad/pdf-renderer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/pdf-renderer) | Vector PDF output backend via the same rendering interface |
 | [`@mlightcad/cad-html-exporter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-exporter) / [`@mlightcad/cad-pdf-exporter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-exporter) | Headless Node HTML / PDF export (no in-browser viewer required) |
 | `*-plugin` | Optional features (UI, export, scripting, agent, cloud data sources), lazy-loaded by the plugin manager |
@@ -92,7 +93,7 @@ The model layer lives in the separate [`realdwg-web`](https://github.com/mlightc
 - DXF parsing is handled by the built-in conversion pipeline in `data-model` (historically based on [`@mlightcad/dxf-json`](https://github.com/mlightcad/dxf-json)).
 - [`@mlightcad/geometry-engine`](https://github.com/mlightcad/realdwg-web) provides geometry and math (points, lines, polylines, splines, circles/arcs, ellipses, plus vectors and matrices).
 
-Why define `AcDbDatabaseConverter`? Existing DXF/DWG tools are often incomplete. The open-source path uses `libredwg-converter`; for higher fidelity you can register closed-source `dwg-converter` instead without changing upper viewer code. You can also implement the same interface on top of commercial engines such as [ODA](https://www.opendesign.com/products/drawings).
+Why define `AcDbDatabaseConverter`? Existing DXF/DWG tools are often incomplete. The open-source path uses `libredwg-converter`; for higher fidelity you can register closed-source `dwg-converter` instead without changing upper viewer code. You can also implement the same interface on top of commercial engines such as [ODA](https://www.opendesign.com/products/drawings). Custom string keys are allowed (`AcDbConverterType`); [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter) registers `'svg'` the same way hosts register DWG.
 
 ### Rendering layer
 
