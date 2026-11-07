@@ -218,6 +218,7 @@ export default {
       annotation: 'Poznámky',
       navigate: 'Navigace',
       namedViews: 'Pojmenované pohledy',
+      coordinates: 'Coordinates',
       review: 'Kontrola',
       measurement: 'Měření',
       style: 'Styl',

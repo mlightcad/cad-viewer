@@ -90,6 +90,7 @@ import {
   acedNeedsCrossingGeometryRefine
 } from '../editor/view/AcEdSelectionBoxIntersect'
 import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult'
+import { AcApUcsService } from '../service/AcApUcsService'
 import type { AcTrLazySpatialChildren } from '../spatialIndex'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
@@ -107,6 +108,7 @@ import {
   ACAP_READING_MODE_BACKGROUND,
   AcApReadingModeState
 } from './AcApReadingMode'
+import { AcApUcsIconOverlay } from './AcApUcsIconOverlay'
 import {
   trySelectReviewOverlay,
   trySelectReviewOverlaysByBox
@@ -217,6 +219,9 @@ export class AcTrView2d extends AcEdBaseView {
   private _numOfEntitiesToProcess: number
   /** CSS2D renderer for HTML transient overlays */
   private _css2dRenderer: CSS2DRenderer
+  /** Drawing UCS triad overlay (On / at origin). */
+  private _ucsIconOverlay: AcApUcsIconOverlay | null = null
+  private _onUcsChanged?: () => void
   /**
    * Block table record ids of layouts whose entities are currently being
    * batch-converted into the scene. Used by
@@ -1060,6 +1065,13 @@ export class AcTrView2d extends AcEdBaseView {
     this._css2dRenderer.domElement.style.maxWidth = '100%'
     this._css2dRenderer.domElement.style.maxHeight = '100%'
     container.appendChild(this._css2dRenderer.domElement)
+
+    this._ucsIconOverlay = new AcApUcsIconOverlay(container)
+    this._onUcsChanged = () => {
+      this._ucsIconOverlay?.update(this)
+      this._isDirty = true
+    }
+    AcApUcsService.events.ucsChanged.addEventListener(this._onUcsChanged)
 
     this._missedImages = new Map()
     this._layoutViewManager = new AcTrLayoutViewManager()
@@ -3718,6 +3730,12 @@ export class AcTrView2d extends AcEdBaseView {
         this._onLayoutSwitched
       )
     }
+    if (this._onUcsChanged) {
+      AcApUcsService.events.ucsChanged.removeEventListener(this._onUcsChanged)
+      this._onUcsChanged = undefined
+    }
+    this._ucsIconOverlay?.dispose()
+    this._ucsIconOverlay = null
     if (this._onCommandWillStartHitTest) {
       this.editor.events.commandWillStart.removeEventListener(
         this._onCommandWillStartHitTest
@@ -3810,6 +3828,7 @@ export class AcTrView2d extends AcEdBaseView {
       render: this._renderer,
       camera: this.internalCamera
     })
+    this._ucsIconOverlay?.update(this)
 
     const stillLoading = this._numOfEntitiesToProcess > 0
     const sceneBusy = stillLoading || this._pendingGeometryJobs > 0

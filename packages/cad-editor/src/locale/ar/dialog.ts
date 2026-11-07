@@ -416,5 +416,38 @@ export default {
       bottomCenter: 'أسفل وسط',
       bottomRight: 'أسفل يمين'
     }
+  },
+  ucsManagerDlg: {
+    title: 'UCS',
+    tabs: {
+      named: 'Named UCSs',
+      settings: 'Settings'
+    },
+    currentUcs: 'Current UCS: {name}',
+    setCurrent: 'Set Current',
+    details: 'Details',
+    rename: 'Rename',
+    delete: 'Delete',
+    renamePrompt: 'Enter a new UCS name:',
+    renameFailed: 'Could not rename the UCS.',
+    deleteFailed: 'Could not delete the UCS.',
+    help: 'Help',
+    iconSettings: 'UCS icon settings',
+    iconOn: 'On',
+    iconAtOrigin: 'Display at UCS origin point',
+    applyToAllViewports: 'Apply to all active viewports',
+    allowSelectingIcon: 'Allow Selecting UCS icon',
+    ucsSettings: 'UCS settings',
+    saveWithViewport: 'Save UCS with viewport',
+    updateViewToPlan: 'Update view to Plan when UCS is changed'
+  },
+  ucsDetailsDlg: {
+    title: 'UCS Details',
+    name: 'Name',
+    origin: 'Origin',
+    xAxis: 'X Axis',
+    yAxis: 'Y Axis',
+    zAxis: 'Z Axis',
+    relativeTo: 'Relative to'
   }
 }

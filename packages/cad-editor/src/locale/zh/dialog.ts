@@ -723,5 +723,38 @@ export default {
     firstCorner: '指定第一个角点',
     secondCorner: '指定对角点',
     created: '已创建视图“{name}”。'
+  },
+  ucsManagerDlg: {
+    title: 'UCS',
+    tabs: {
+      named: '命名 UCS',
+      settings: '设置'
+    },
+    currentUcs: '当前 UCS: {name}',
+    setCurrent: '置为当前',
+    details: '详细信息',
+    rename: '重命名',
+    delete: '删除',
+    renamePrompt: '输入新的 UCS 名称：',
+    renameFailed: '无法重命名 UCS。',
+    deleteFailed: '无法删除 UCS。',
+    help: '帮助',
+    iconSettings: 'UCS 图标设置',
+    iconOn: '开',
+    iconAtOrigin: '显示于 UCS 原点',
+    applyToAllViewports: '应用到所有活动视口',
+    allowSelectingIcon: '允许选择 UCS 图标',
+    ucsSettings: 'UCS 设置',
+    saveWithViewport: '将 UCS 与视口一起保存',
+    updateViewToPlan: 'UCS 更改时将视图更新为平面视图'
+  },
+  ucsDetailsDlg: {
+    title: 'UCS 详细信息',
+    name: '名称',
+    origin: '原点',
+    xAxis: 'X 轴',
+    yAxis: 'Y 轴',
+    zAxis: 'Z 轴',
+    relativeTo: '相对于'
   }
 }

@@ -566,6 +566,13 @@ export default {
     },
     viewrestore: {
       description: 'Restores a named view by name'
+    },
+    ucs: {
+      description:
+        'Sets the origin and orientation of the current user coordinate system'
+    },
+    ucsman: {
+      description: 'Manages named UCS definitions and UCS icon settings'
     }
   },
   USER: {}

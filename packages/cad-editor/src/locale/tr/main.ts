@@ -219,6 +219,7 @@ export default {
       annotation: 'Açıklama',
       navigate: 'Gezinme',
       namedViews: 'Adlı Görünümler',
+      coordinates: 'Coordinates',
       review: 'İnceleme',
       measurement: 'Ölçüm',
       style: 'Stil',
