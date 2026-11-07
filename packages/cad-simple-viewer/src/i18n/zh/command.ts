@@ -512,6 +512,15 @@ export default {
     },
     zoom: {
       description: '缩放以显示所有对象'
+    },
+    view: {
+      description: '打开视图管理器以创建、恢复和删除命名视图'
+    },
+    newview: {
+      description: '根据当前显示或窗口创建命名视图'
+    },
+    viewrestore: {
+      description: '按名称恢复命名视图'
     }
   },
   USER: {}

@@ -961,6 +961,16 @@ export default {
       ...enCommand.ACAD.zoom,
       description:
         'التكبير أو التصغير لعرض أقصى امتداد لجميع العناصر'
+    },
+    view: {
+      description: 'Opens the View Manager to create, restore, and delete named views'
+    },
+    newview: {
+      description:
+        'Creates a new named view from the current display or a window'
+    },
+    viewrestore: {
+      description: 'Restores a named view by name'
     }
   },
 

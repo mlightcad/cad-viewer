@@ -15,6 +15,7 @@ export default {
     tab: {
       home: 'Home',
       insert: 'Insert',
+      view: 'View',
       review: 'Review',
       measurement: 'Measurement',
       hatchContext: 'Hatch',
@@ -215,6 +216,8 @@ export default {
       properties: 'Properties',
       utilities: 'Utilities',
       annotation: 'Annotation',
+      navigate: 'Navigate',
+      namedViews: 'Named Views',
       review: 'Review',
       measurement: 'Measurement',
       style: 'Style',
@@ -329,6 +332,16 @@ export default {
         'Create an attribute definition for use in a block (ATTDEF).',
       agent:
         'Open the CAD Agent palette tab to draw geometry using natural language.',
+      pan: 'Moves the view of the drawing without changing magnification.',
+      zoom: 'Zooms the drawing display.',
+      zoomExtents: 'Zooms to display the maximum extents of all entities.',
+      zoomWindow: 'Zooms to display an area specified by a window.',
+      zoomPrevious: 'Zooms to display the previous view.',
+      zoomSaved: 'Zooms to the saved VPORT / layout view.',
+      zoomSmart: 'Zooms to the dominant geometry cluster.',
+      newView: 'Creates a new named view from the current display or a window.',
+      viewManager: 'Opens the View Manager to create, restore, and delete named views.',
+      restoreView: 'Restores a named view saved in the drawing.',
       propertyColor:
         'Set the color for newly created objects or selected entities.',
       propertyLineType:
@@ -449,7 +462,17 @@ export default {
       insert: 'Insert',
       editAttributes: 'Edit\nAttributes',
       defineAttribute: 'Define\nAttribute',
-      agent: 'CAD\nAgent'
+      agent: 'CAD\nAgent',
+      pan: 'Pan',
+      zoom: 'Zoom',
+      zoomExtents: 'Extents',
+      zoomWindow: 'Window',
+      zoomPrevious: 'Previous',
+      zoomSaved: 'Saved',
+      zoomSmart: 'Smart',
+      newView: 'New\nView',
+      viewManager: 'View\nManager',
+      restoreView: 'Restore\nView'
     }
   },
   verticalToolbar: {

@@ -1344,6 +1344,10 @@ export default {
   sysvar: {
     prompt: 'Lütfen yeni değeri girin'
   },
+  view: {
+    enterName: 'Enter view name to restore',
+    notFound: 'View "{name}" was not found.'
+  },
   zoom: {
     mainPrompt: 'Pencerenin köşesini belirtin veya',
     firstCorner: 'İlk köşeyi belirtin',

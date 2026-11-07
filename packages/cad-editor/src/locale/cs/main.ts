@@ -15,6 +15,7 @@ export default {
     tab: {
       home: 'Domů',
       insert: 'Vložit',
+      view: 'Pohled',
       review: 'Kontrola',
       measurement: 'Měření',
       hatchContext: 'Šrafování',
@@ -215,6 +216,8 @@ export default {
       properties: 'Vlastnosti',
       utilities: 'Nástroje',
       annotation: 'Poznámky',
+      navigate: 'Navigace',
+      namedViews: 'Pojmenované pohledy',
       review: 'Kontrola',
       measurement: 'Měření',
       style: 'Styl',

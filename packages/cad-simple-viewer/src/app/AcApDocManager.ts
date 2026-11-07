@@ -84,6 +84,7 @@ import {
   AcApSysVarCmd,
   AcApUndoCmd,
   AcApUnisolateObjectsCmd,
+  AcApViewRestoreCmd,
   AcApXAttachCmd,
   AcApXLineCmd,
   AcApZoomCmd,
@@ -2020,6 +2021,7 @@ export class AcApDocManager {
     addSystemCommand('undo', 'undo', new AcApUndoCmd())
     addSystemCommand('redo', 'redo', new AcApRedoCmd())
     addSystemCommand('zoom', 'zoom', new AcApZoomCmd())
+    addSystemCommand('viewrestore', 'viewrestore', new AcApViewRestoreCmd())
 
     // Register system variables as commands
     const sysVars = AcDbSysVarManager.instance().getAllDescriptors()

@@ -15,6 +15,7 @@ export default {
     tab: {
       home: 'Ana Sayfa',
       insert: 'Ekle',
+      view: 'Görünüm',
       review: 'İnceleme',
       measurement: 'Ölçüm',
       hatchContext: 'Tarama',
@@ -216,6 +217,8 @@ export default {
       properties: 'Özellikler',
       utilities: 'Yardımcı Araçlar',
       annotation: 'Açıklama',
+      navigate: 'Gezinme',
+      namedViews: 'Adlı Görünümler',
       review: 'İnceleme',
       measurement: 'Ölçüm',
       style: 'Stil',

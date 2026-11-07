@@ -1442,6 +1442,10 @@ export default {
   sysvar: {
     prompt: '请输入新的值'
   },
+  view: {
+    enterName: '输入要恢复的视图名称',
+    notFound: '未找到视图“{name}”。'
+  },
   zoom: {
     mainPrompt: '指定窗口角点或',
     firstCorner: '指定第一个角点',

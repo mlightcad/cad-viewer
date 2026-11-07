@@ -858,6 +858,10 @@ export default {
     },
   },
 
+  view: {
+    enterName: 'Enter view name to restore',
+    notFound: 'View "{name}" was not found.'
+  },
   zoom: {
     ...enJig.zoom,
 

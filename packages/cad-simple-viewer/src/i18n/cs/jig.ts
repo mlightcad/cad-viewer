@@ -1341,6 +1341,10 @@ export default {
   sysvar: {
     prompt: 'Zadejte novou hodnotu'
   },
+  view: {
+    enterName: 'Enter view name to restore',
+    notFound: 'View "{name}" was not found.'
+  },
   zoom: {
     mainPrompt: 'Zadejte roh okna nebo',
     firstCorner: 'Zadejte první roh',

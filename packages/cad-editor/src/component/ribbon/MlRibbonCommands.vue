@@ -23,6 +23,7 @@ import {
   acapGetMeasurementFontSize,
   acapGetMeasurementTextHeightMode,
   AcApLayerService,
+  AcApNamedViewService,
   AcApOpenCmd,
   AcApQNewCmd,
   acapRunDatabaseEdit,
@@ -93,6 +94,10 @@ import {
   useUndoRedo
 } from '../../composable'
 import { markComponentConfigRaw } from '../../composable/markComponentConfigRaw'
+import {
+  bumpNamedViewsRevision,
+  namedViewsRevision
+} from '../../composable/namedViewsRevision'
 import { LocaleProp } from '../../locale'
 import {
   arcCenterStartAngle,
@@ -148,6 +153,7 @@ import {
   move,
   mtext,
   multiPoints,
+  newView,
   offset,
   polygon,
   polyline,
@@ -158,6 +164,7 @@ import {
   revFreeDraw,
   setting,
   splineFitPoints,
+  viewManager,
   xline
 } from '../../svg'
 import {
@@ -175,10 +182,13 @@ import {
   measureDistance,
   measurementPanel,
   measurePoint,
+  pan as panIcon,
   revCircle,
   revCloud,
   revRect,
-  revText
+  revText,
+  zoomToBox,
+  zoomToExtent
 } from '../../svg/toolbarIcons'
 import MlBlockInsertGallery from '../common/MlBlockInsertGallery.vue'
 import MlLayerSelect from '../common/MlLayerSelect.vue'
@@ -581,6 +591,7 @@ const handleDocumentActivated = () => {
   syncMeasurementUnitControls()
   syncRibbonProperties(AcApDocManager.instance?.curDocument?.database)
   syncHatchSelectionContext(AcApDocManager.instance?.curDocument?.database)
+  bumpNamedViewsRevision()
 }
 
 /**
@@ -1180,7 +1191,7 @@ const applyOpenModeTabVisibility = (
     const visible =
       tab.id === 'measurement'
         ? true
-        : tab.id === 'review'
+        : tab.id === 'review' || tab.id === 'view'
           ? openMode >= AcEdOpenMode.Review
           : openMode === AcEdOpenMode.Write
     return { ...tab, visible }
@@ -1191,7 +1202,8 @@ const buildBaseTabs = (
   openMode: AcEdOpenMode,
   markupVisible: boolean,
   measurementVisible: boolean,
-  agentPluginEnabled: boolean
+  agentPluginEnabled: boolean,
+  namedViewNames: string[] = []
 ): RibbonTabModel[] => {
   const ribbonTooltips = {
     line: t('main.ribbon.tooltip.line'),
@@ -1241,6 +1253,16 @@ const buildBaseTabs = (
     editAttributes: t('main.ribbon.tooltip.editAttributes'),
     defineAttribute: t('main.ribbon.tooltip.defineAttribute'),
     agent: t('main.ribbon.tooltip.agent'),
+    pan: t('main.ribbon.tooltip.pan'),
+    zoom: t('main.ribbon.tooltip.zoom'),
+    zoomExtents: t('main.ribbon.tooltip.zoomExtents'),
+    zoomWindow: t('main.ribbon.tooltip.zoomWindow'),
+    zoomPrevious: t('main.ribbon.tooltip.zoomPrevious'),
+    zoomSaved: t('main.ribbon.tooltip.zoomSaved'),
+    zoomSmart: t('main.ribbon.tooltip.zoomSmart'),
+    newView: t('main.ribbon.tooltip.newView'),
+    viewManager: t('main.ribbon.tooltip.viewManager'),
+    restoreView: t('main.ribbon.tooltip.restoreView'),
     propertyColor: t('main.ribbon.tooltip.propertyColor'),
     propertyLineType: t('main.ribbon.tooltip.propertyLineType'),
     propertyLineWeight: t('main.ribbon.tooltip.propertyLineWeight')
@@ -2653,6 +2675,150 @@ const buildBaseTabs = (
     }
   ]
 
+  const canWriteViews = openMode === AcEdOpenMode.Write
+  const restoreViewOptions =
+    namedViewNames.length > 0
+      ? namedViewNames.map(name => ({
+          id: `named-view:${name}`,
+          label: name,
+          value: `named-view:${name}`
+        }))
+      : [
+          {
+            id: 'named-view-empty',
+            label: t('main.ribbon.command.restoreView'),
+            value: 'named-view-empty',
+            disabled: true
+          }
+        ]
+
+  tabs.push({
+    id: 'view',
+    title: t('main.ribbon.tab.view'),
+    groups: [
+      {
+        id: 'view-navigate',
+        title: t('main.ribbon.group.navigate'),
+        orientation: 'row',
+        collections: [
+          {
+            id: 'view-navigate-main',
+            layout: 'row',
+            items: [
+              {
+                id: 'cmd-pan',
+                type: 'button',
+                label: t('main.ribbon.command.pan'),
+                tooltip: ribbonTooltips.pan,
+                size: 'large',
+                props: {
+                  icon: panIcon,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-zoom',
+                type: 'dropdown',
+                label: t('main.ribbon.command.zoom'),
+                tooltip: ribbonTooltips.zoom,
+                size: 'large',
+                props: {
+                  icon: zoomToExtent,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content',
+                  options: [
+                    {
+                      id: 'zoom-extents',
+                      label: t('main.ribbon.command.zoomExtents'),
+                      value: 'zoom-extents',
+                      tooltip: ribbonTooltips.zoomExtents
+                    },
+                    {
+                      id: 'zoom-window',
+                      label: t('main.ribbon.command.zoomWindow'),
+                      value: 'zoom-window',
+                      tooltip: ribbonTooltips.zoomWindow
+                    },
+                    {
+                      id: 'zoom-previous',
+                      label: t('main.ribbon.command.zoomPrevious'),
+                      value: 'zoom-previous',
+                      tooltip: ribbonTooltips.zoomPrevious
+                    },
+                    {
+                      id: 'zoom-saved',
+                      label: t('main.ribbon.command.zoomSaved'),
+                      value: 'zoom-saved',
+                      tooltip: ribbonTooltips.zoomSaved
+                    },
+                    {
+                      id: 'zoom-smart',
+                      label: t('main.ribbon.command.zoomSmart'),
+                      value: 'zoom-smart',
+                      tooltip: ribbonTooltips.zoomSmart
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'view-named-views',
+        title: t('main.ribbon.group.namedViews'),
+        orientation: 'row',
+        collections: [
+          {
+            id: 'view-named-views-main',
+            layout: 'row',
+            items: [
+              {
+                id: 'cmd-newview',
+                type: 'button',
+                label: t('main.ribbon.command.newView'),
+                tooltip: ribbonTooltips.newView,
+                size: 'large',
+                disabled: !canWriteViews,
+                props: {
+                  icon: newView,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-view',
+                type: 'button',
+                label: t('main.ribbon.command.viewManager'),
+                tooltip: ribbonTooltips.viewManager,
+                size: 'large',
+                props: {
+                  icon: viewManager,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content'
+                }
+              },
+              {
+                id: 'cmd-restore-view',
+                type: 'dropdown',
+                label: t('main.ribbon.command.restoreView'),
+                tooltip: ribbonTooltips.restoreView,
+                size: 'large',
+                props: {
+                  icon: zoomToBox,
+                  labelWrapLines: 2,
+                  labelWrapWidth: 'max-content',
+                  options: restoreViewOptions
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  })
+
   tabs.push({
     id: 'review',
     title: t('main.ribbon.tab.review'),
@@ -2798,12 +2964,34 @@ const ribbonData = computed(() => {
   commandByItemId.set('layer-action-thaw', 'laythw')
   commandByItemId.set('layer-action-unlock', 'layulk')
   commandByItemId.set('layer-action-restore', 'layerp')
+  commandByItemId.set('cmd-pan', 'pan')
+  commandByItemId.set('cmd-zoom', 'zoom\\nall')
+  commandByItemId.set('zoom-extents', 'zoom\\nall')
+  commandByItemId.set('zoom-window', 'zoom\\nwindow')
+  commandByItemId.set('zoom-previous', 'zoom\\nprevious')
+  commandByItemId.set('zoom-saved', 'zoom\\nsaved')
+  commandByItemId.set('zoom-smart', 'zoom\\nsmart')
+  commandByItemId.set('cmd-newview', 'newview')
+  commandByItemId.set('cmd-view', 'view')
+
+  namedViewsRevision.value
+  let namedViewNames: string[] = []
+  try {
+    namedViewNames = AcApNamedViewService.listViews(
+      AcApDocManager.instance.curDocument.database
+    ).map(item => item.name)
+  } catch {
+    namedViewNames = []
+  }
+  // Named-view restore is handled in handleRibbonItemClick (not scripted
+  // `viewrestore\\n…`) so names with spaces stay intact.
 
   const tabs: RibbonTabModel[] = buildBaseTabs(
     openMode,
     markupVisible,
     measurementVisible,
-    store.features.agentPlugin
+    store.features.agentPlugin,
+    namedViewNames
   )
   return {
     tabs,
@@ -2920,6 +3108,23 @@ const handleRibbonItemClick = (payload: {
   }
   if (payload.itemId === 'layer-action-current') {
     handleRibbonSetCurrentLayer()
+    return
+  }
+  if (payload.itemId.startsWith('named-view:')) {
+    const viewName = payload.itemId.slice('named-view:'.length)
+    if (!viewName || viewName === 'empty') return
+    const docManager = AcApDocManager.instance
+    const doc = docManager.curDocument
+    const applyLayers = doc.openMode >= AcEdOpenMode.Write
+    if (applyLayers) {
+      doc.captureLayerPreviousState()
+    }
+    AcApNamedViewService.restoreView(
+      doc.database,
+      docManager.curView,
+      viewName,
+      applyLayers
+    )
     return
   }
   const command = ribbonData.value.commandByItemId.get(payload.itemId)
