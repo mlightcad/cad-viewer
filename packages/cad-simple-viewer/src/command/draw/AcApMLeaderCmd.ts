@@ -24,16 +24,16 @@ import {
 } from '../../editor'
 import { AcApI18n } from '../../i18n'
 import { AcTrView2d } from '../../view'
-import { isInsertableBlockName } from './isInsertableBlockName'
 import {
   acapApplyMLeaderGeometry,
   acapBuildMLeaderGeometry,
   acapMatchKeyword,
-  acapResolveMLeaderContentType,
-  acapResolveMLeaderStyle,
   type AcApMLeaderPlacementMode,
-  type AcApMLeaderSessionOptions
+  type AcApMLeaderSessionOptions,
+  acapResolveMLeaderContentType,
+  acapResolveMLeaderStyle
 } from './AcApMLeaderCmdUtil'
+import { isInsertableBlockName } from './isInsertableBlockName'
 
 const I18N = 'jig.mleader'
 
@@ -111,10 +111,8 @@ export class AcApMLeaderJig extends AcEdPreviewJig<AcGePoint3dLike> {
   }
 
   update(point: AcGePoint3dLike) {
-    const arrow =
-      this._dragMode === 'landingFromArrow' ? this._fixed : point
-    const content =
-      this._dragMode === 'landingFromArrow' ? point : this._fixed
+    const arrow = this._dragMode === 'landingFromArrow' ? this._fixed : point
+    const content = this._dragMode === 'landingFromArrow' ? point : this._fixed
     const geometry = acapBuildMLeaderGeometry(
       arrow,
       content,
@@ -183,11 +181,7 @@ export class AcApMLeaderCmd extends AcEdCommand {
       if (result.status !== AcEdPromptStatus.OK || !result.value) return
 
       // Arrowhead first with first point already picked
-      await this.createFromArrowThenLanding(
-        context,
-        result.value,
-        session
-      )
+      await this.createFromArrowThenLanding(context, result.value, session)
       return
     }
 
@@ -213,17 +207,12 @@ export class AcApMLeaderCmd extends AcEdCommand {
     const arrow = new AcGePoint3d().copy(arrowPoint)
     const intermediate: AcGePoint3d[] = []
     // maxPoints includes arrow + landing; collect points between them.
-    const effectiveMax =
-      maxPoints > 0 ? maxPoints : 2
+    const effectiveMax = maxPoints > 0 ? maxPoints : 2
     while (effectiveMax > 2 && intermediate.length < effectiveMax - 2) {
-      const prompt = new AcEdPromptPointOptions(
-        AcApI18n.t(`${I18N}.nextPoint`)
-      )
+      const prompt = new AcEdPromptPointOptions(AcApI18n.t(`${I18N}.nextPoint`))
       prompt.useBasePoint = true
       prompt.basePoint =
-        intermediate.length > 0
-          ? intermediate[intermediate.length - 1]
-          : arrow
+        intermediate.length > 0 ? intermediate[intermediate.length - 1] : arrow
       prompt.useDashedLine = true
       const next = await editor.getPoint(prompt)
       if (next.status !== AcEdPromptStatus.OK || !next.value) return
@@ -379,8 +368,7 @@ export class AcApMLeaderCmd extends AcEdCommand {
       }
       mleader.doglegEnabled = preview.doglegEnabled
       mleader.doglegLength = preview.doglegLength
-      mleader.leaderLineType =
-        session.leaderLineType ?? preview.leaderLineType
+      mleader.leaderLineType = session.leaderLineType ?? preview.leaderLineType
     } else {
       acapApplyMLeaderGeometry(mleader, geometry, session)
     }
@@ -399,7 +387,8 @@ export class AcApMLeaderCmd extends AcEdCommand {
         ? new AcGePoint3d().copy(preview.textLocation)
         : geometry.textLocation
     } else if (contentType === AcDbMLeaderContentType.BlockContent) {
-      const blockName = session.blockName ?? (await this.promptBlockName(session))
+      const blockName =
+        session.blockName ?? (await this.promptBlockName(session))
       if (!blockName) return
       const btr = db.tables.blockTable.getAt(blockName)
       if (!btr) return
@@ -474,7 +463,10 @@ export class AcApMLeaderCmd extends AcEdCommand {
     const nameResult = await editor.getString(namePrompt)
     if (nameResult.status !== AcEdPromptStatus.OK) return null
     const blockName = String(nameResult.stringResult ?? '').trim()
-    if (!isInsertableBlockName(blockName) || !db.tables.blockTable.has(blockName)) {
+    if (
+      !isInsertableBlockName(blockName) ||
+      !db.tables.blockTable.has(blockName)
+    ) {
       editor.showMessage(
         `${AcApI18n.t('jig.insert.blockNotFound')}: ${blockName}`,
         'warning'
