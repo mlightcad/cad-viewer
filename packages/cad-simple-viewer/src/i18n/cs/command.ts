@@ -543,6 +543,16 @@ export default {
     },
     zoom: {
       description: 'Zvětší na maximální rozsah všech objektů'
+    },
+    view: {
+      description: 'Opens the View Manager to create, restore, and delete named views'
+    },
+    newview: {
+      description:
+        'Creates a new named view from the current display or a window'
+    },
+    viewrestore: {
+      description: 'Restores a named view by name'
     }
   },
   USER: {}

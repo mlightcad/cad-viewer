@@ -685,5 +685,52 @@ export default {
       center: 'Center',
       linedCenter: 'Overline / underline'
     }
+  },
+  viewManagerDlg: {
+    title: 'View Manager',
+    current: 'Current',
+    modelViews: 'Model Views',
+    layoutViews: 'Layout Views',
+    presetViews: 'Preset Views',
+    general: 'General',
+    view: 'View',
+    name: 'Name',
+    layerSnapshot: 'Layer Snapshot',
+    yes: 'Yes',
+    no: 'No',
+    center: 'Center',
+    height: 'Height',
+    width: 'Width',
+    roll: 'Roll angle',
+    setCurrent: 'Set Current',
+    new: 'New…',
+    updateLayers: 'Update Layers',
+    editBoundaries: 'Edit Boundaries',
+    delete: 'Delete',
+    close: 'Close',
+    firstCorner: 'Specify first corner',
+    secondCorner: 'Specify opposite corner',
+    notFound: 'View "{name}" was not found.',
+    layersUpdated: 'Layer snapshot updated.',
+    boundariesUpdated: 'View boundaries updated.',
+    deleted: 'View "{name}" deleted.',
+    topPresetHint: 'Top is already the active plan view in this 2D viewer.'
+  },
+  newViewDlg: {
+    title: 'New View',
+    name: 'View name',
+    boundary: 'Boundary',
+    currentDisplay: 'Current display',
+    defineWindow: 'Define window',
+    saveLayerSnapshot: 'Save layer snapshot with view',
+    nameRequired: 'Enter a view name.',
+    nameInvalid:
+      'View names cannot contain < > / \\ " : ; ? * | , = ` or line breaks.',
+    nameExists: 'A view named "{name}" already exists.',
+    writeRequired: 'Creating named views requires write mode.',
+    createFailed: 'Could not create the named view.',
+    firstCorner: 'Specify first corner',
+    secondCorner: 'Specify opposite corner',
+    created: 'View "{name}" created.'
   }
 }

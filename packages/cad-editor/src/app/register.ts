@@ -28,11 +28,13 @@ import {
   AcApMemCmd,
   AcApMissedDataCmd,
   AcApMLeaderStyleCmd,
+  AcApNewViewCmd,
   AcApOpenPerfCmd,
   AcApPointStyleCmd,
   AcApPropertiesCmd,
   AcApQSelectCmd,
   AcApTextStyleCmd,
+  AcApViewCmd,
   AcApXrefCmd,
   hatchRibbonCommand
 } from '../command'
@@ -45,9 +47,11 @@ import {
   MlExportHtmlDlg,
   MlExportPdfDlg,
   MlMLeaderStyleDlg,
+  MlNewViewDlg,
   MlPointStyleDlg,
   MlQuickSelectDlg,
-  MlTextStyleDlg
+  MlTextStyleDlg,
+  MlViewManagerDlg
 } from '../component'
 import { useDialogManager } from '../composable'
 import { i18n } from '../locale'
@@ -191,6 +195,19 @@ export const registerCmds = () => {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'view',
+      'view',
+      new AcApViewCmd(),
+      'ddview'
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'newview',
+      'newview',
+      new AcApNewViewCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'attedit',
       'attedit',
       new AcApAttEditCmd(),
@@ -262,6 +279,16 @@ export const registerDialogs = () => {
     registerDialog({
       name: 'AttDefDlg',
       component: markRaw(MlAttDefDlg),
+      props: {}
+    })
+    registerDialog({
+      name: 'ViewManagerDlg',
+      component: markRaw(MlViewManagerDlg),
+      props: {}
+    })
+    registerDialog({
+      name: 'NewViewDlg',
+      component: markRaw(MlNewViewDlg),
       props: {}
     })
     isDialogRegistered = true

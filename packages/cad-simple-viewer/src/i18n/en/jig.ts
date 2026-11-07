@@ -1477,6 +1477,10 @@ export default {
   sysvar: {
     prompt: 'Please input new value'
   },
+  view: {
+    enterName: 'Enter view name to restore',
+    notFound: 'View "{name}" was not found.'
+  },
   zoom: {
     mainPrompt: 'Specify corner of window or',
     firstCorner: 'Specify first corner',
