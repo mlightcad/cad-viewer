@@ -24,7 +24,7 @@ Pro výpis informací použijte `cad.log()` a nespoléhejte na `console.log` —
 
 ### Zakázaná API prohlížeče
 
-Následující prvky jsou přímo odmítnuty již při validaci skriptu a vyvolají chybu `forbidden_identifier` / `forbidden_syntax` / `forbidden_member`:
+Následující prvky jsou přímo odmítnuty již při validaci skriptu a vyvolají chybu `forbidden_identifier` / `forbidden_syntax` / `forbidden_member`. Klíče objektů jako `{ window: count }` jsou povoleny; volné identifikátory jako `window.foo` ne.
 
 - Stránka a DOM: `window`, `document`, `globalThis`
 - Síť a komunikace: `fetch`, `XMLHttpRequest`, `WebSocket`, `importScripts`

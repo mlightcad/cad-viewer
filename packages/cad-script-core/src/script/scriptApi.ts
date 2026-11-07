@@ -123,7 +123,8 @@ modest in size; for complex / figurative drawings, use successive short calls (b
 clothes, hair, details) instead of one huge script.
 Prefer it for ALL drawing, queries, statistics, batch edits, selection highlighting, and
 reading drawing context (cad.drawing). Do not expect draw_* or get_drawing_context tools.
-The body may return JSON. Do not import modules or touch the page.
+The body may return JSON. Do not import modules or reference page globals
+(window, document, fetch, …) as free identifiers.
 
 cad.drawing -> { title, currentLayer, units, layers, extents }
 cad.entities.where/count/inBox scan model + paper spaces only (not block definitions).
@@ -199,6 +200,11 @@ tx draw methods: drawLine, drawCircle, drawArc, drawRectangle, drawPolyline, dra
 drawHatch, drawPoint, drawRay, drawXline, drawSpline, drawText,
 drawDimAligned, drawDimLinear, drawDimDiameter, drawDimRadius, drawDimAngular,
 drawDimArc, drawDimOrdinate.
+Common draw inputs (optional layer?): drawLine({start,end}), drawCircle({center,radius}),
+drawArc({center,radius,startAngleDeg,endAngleDeg}), drawRectangle({corner1,corner2}),
+drawPolyline({points,closed?}), drawEllipse({center,majorRadius,minorRadius,rotationDeg?}),
+drawHatch({boundary,patternName?}), drawPoint({position}), drawText({position,text,height?}),
+drawSpline({points,closed?}), drawRay/drawXline({start,through}).
 tx edit methods: erase(ids), setLayer(ids, layer), move(ids, dx, dy), rotate(ids, center, angleDeg),
 createLayer(name), setCurrentLayer(name).
 tx draw methods return the new entity id. Prefer one transaction for related geometry.
@@ -216,7 +222,7 @@ Dimension draw inputs (optional text?, styleName?, layer? on all):
   drawDimOrdinate({ definingPoint, leaderEndPoint, useXAxis?, origin? })
 Omit styleName to use the drawing $DIMSTYLE; cad.tables.dimStyleTable lists names for styleName.
 Snapshots cover every data-model entity type. Extra geometry per type:
-Line { start, end, length, midPoint, direction }.
+Line { start, end, length, midPoint, direction } — no points; guard byId/geometry with ?.
 Circle { center, radius, area, circumference }; Arc adds startPoint, endPoint, midPoint, length, area.
 Ellipse { center, majorRadius, minorRadius, area, isCircular, closed }.
 Polyline / 2dPolyline { points, vertices: [{ bulge, startWidth, endWidth }], bulges, hasBulges, length, area, closed }.

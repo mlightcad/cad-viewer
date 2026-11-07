@@ -53,6 +53,8 @@ interface AstNode {
   name?: string
   value?: unknown
   computed?: boolean
+  shorthand?: boolean
+  key?: AstNode
   object?: AstNode
   property?: AstNode
   callee?: AstNode
@@ -103,13 +105,18 @@ export function validateCadScript(code: string): CadScriptValidation {
 
   let usesEdit = false
   let error: string | undefined
-  walk(ast, node => {
+  walk(ast, (node, parent) => {
     if (error) return
     if (BANNED_NODE_TYPES.has(node.type)) {
       error = `forbidden_syntax:${node.type}`
       return
     }
-    if (node.type === 'Identifier' && node.name && BANNED_IDENTIFIERS.has(node.name)) {
+    if (
+      node.type === 'Identifier' &&
+      node.name &&
+      BANNED_IDENTIFIERS.has(node.name) &&
+      !isHarmlessNameOccurrence(parent, node)
+    ) {
       error = `forbidden_identifier:${node.name}`
       return
     }
@@ -121,7 +128,11 @@ export function validateCadScript(code: string): CadScriptValidation {
     }
     if (node.type === 'CallExpression' || node.type === 'NewExpression') {
       const callee = node.callee
-      if (callee?.type === 'Identifier' && callee.name && BANNED_IDENTIFIERS.has(callee.name)) {
+      if (
+        callee?.type === 'Identifier' &&
+        callee.name &&
+        BANNED_IDENTIFIERS.has(callee.name)
+      ) {
         error = `forbidden_identifier:${callee.name}`
       }
     }
@@ -129,6 +140,32 @@ export function validateCadScript(code: string): CadScriptValidation {
 
   if (error) return { ok: false, error, usesEdit }
   return { ok: true, usesEdit }
+}
+
+/**
+ * Object / class keys and non-computed member names are labels, not free
+ * bindings — allow `{ window: 1 }` while still rejecting `window.foo`.
+ */
+function isHarmlessNameOccurrence(
+  parent: AstNode | undefined,
+  node: AstNode
+): boolean {
+  if (!parent) return false
+  if (
+    (parent.type === 'Property' ||
+      parent.type === 'MethodDefinition' ||
+      parent.type === 'PropertyDefinition') &&
+    parent.key === node &&
+    !parent.computed &&
+    parent.shorthand !== true
+  ) {
+    return true
+  }
+  return (
+    parent.type === 'MemberExpression' &&
+    parent.property === node &&
+    !parent.computed
+  )
 }
 
 /**
@@ -194,18 +231,22 @@ function memberChain(node: AstNode): {
   return undefined
 }
 
-function walk(node: AstNode | undefined, visit: (node: AstNode) => void): void {
+function walk(
+  node: AstNode | undefined,
+  visit: (node: AstNode, parent: AstNode | undefined) => void,
+  parent?: AstNode
+): void {
   if (!node || typeof node.type !== 'string') return
-  visit(node)
+  visit(node, parent)
   for (const key of Object.keys(node)) {
     if (key === 'type' || key === 'start' || key === 'end') continue
     const value = node[key]
     if (Array.isArray(value)) {
       for (const item of value) {
-        if (isAstNode(item)) walk(item, visit)
+        if (isAstNode(item)) walk(item, visit, node)
       }
     } else if (isAstNode(value)) {
-      walk(value, visit)
+      walk(value, visit, node)
     }
   }
 }

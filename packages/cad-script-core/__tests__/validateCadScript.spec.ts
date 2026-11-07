@@ -10,6 +10,18 @@ describe('validateCadScript', () => {
     expect(validateCadScript('return cad.foo()').error).toContain('unknown_api')
   })
 
+  test('allows banned words as object keys but not as free identifiers', () => {
+    expect(
+      validateCadScript('return { window: 1, document: win.length }').ok
+    ).toBe(true)
+    expect(validateCadScript('return window.location').error).toContain(
+      'window'
+    )
+    expect(validateCadScript('const { window } = cad.drawing').error).toContain(
+      'window'
+    )
+  })
+
   test('accepts the circle-count script and marks it as read-only', () => {
     const result = validateCadScript(`
       const counts = {}

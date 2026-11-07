@@ -24,7 +24,8 @@ Use `cad.log()` to output information instead of relying on `console.log` — th
 
 ### Blocked browser APIs
 
-The following are rejected outright during script validation, triggering `forbidden_identifier` / `forbidden_syntax` / `forbidden_member` errors:
+The following are rejected outright during script validation, triggering `forbidden_identifier` / `forbidden_syntax` / `forbidden_member` errors.
+Object property *keys* such as `{ window: count }` are allowed; free identifiers like `window.foo` are not.
 
 - Page and DOM: `window`, `document`, `globalThis`
 - Network and communication: `fetch`, `XMLHttpRequest`, `WebSocket`, `importScripts`

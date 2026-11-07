@@ -24,7 +24,7 @@ title: スクリプト API
 
 ### 禁止されているブラウザー API
 
-以下の内容はスクリプトの検証段階で直接拒否され、`forbidden_identifier` / `forbidden_syntax` / `forbidden_member` エラーが発生します：
+以下の内容はスクリプトの検証段階で直接拒否され、`forbidden_identifier` / `forbidden_syntax` / `forbidden_member` エラーが発生します。`{ window: count }` のようなオブジェクトのプロパティ名は許可されますが、`window.foo` のような自由識別子は拒否されます。
 
 - ページと DOM：`window`、`document`、`globalThis`
 - ネットワークと通信：`fetch`、`XMLHttpRequest`、`WebSocket`、`importScripts`

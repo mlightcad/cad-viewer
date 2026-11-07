@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import '../ui/agent-panel.css'
 
-import type { UIMessage } from 'ai'
+import type { FileUIPart, UIMessage } from 'ai'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import {
@@ -32,6 +32,7 @@ import {
 import { modelLabel } from '../storage/modelCatalog'
 import AgentModelSettings from './AgentModelSettings.vue'
 import { formatChatError } from './formatChatError'
+import { formatRelativeTime } from './formatRelativeTime'
 import { prepareImageAttachments } from './prepareImageAttachments'
 import { providerLabel } from './providerLabels'
 import {
@@ -41,6 +42,25 @@ import {
   type AgentTaskDef
 } from './taskPrompts'
 import { createAgentChatOptions, useAgentChatRef } from './useAgentChat'
+
+/** Prepared composer payload ready for {@link Chat.sendMessage}. */
+interface OutgoingDraft {
+  text: string
+  fileParts: FileUIPart[]
+  /** Original composer text, restored if send fails before chat.error is set. */
+  sourceText: string
+  /** Original File objects for restoring pending attachments after a failed send. */
+  sourceFiles: File[]
+}
+
+/** One message waiting above the composer while the agent is still running. */
+interface QueuedDraft {
+  text: string
+  fileParts: FileUIPart[]
+  /** Original composer text (empty for image-only); used when editing / restoring. */
+  sourceText: string
+  sourceFiles: File[]
+}
 
 /** Image file part on a {@link UIMessage} from the AI SDK. */
 type FilePart = {
@@ -102,6 +122,27 @@ watch(showSettings, open => {
 /** Recently copied tool row keys for brief “copied” feedback. */
 const copiedToolKeys = ref(new Set<string>())
 const copyFeedbackTimers = new Map<string, ReturnType<typeof setTimeout>>()
+/** Recently copied message ids for brief “copied” feedback. */
+const copiedMessageIds = ref(new Set<string>())
+const messageCopyFeedbackTimers = new Map<
+  string,
+  ReturnType<typeof setTimeout>
+>()
+/**
+ * Wall-clock time when each message settled: user send time, or assistant
+ * turn-end time (updated when streaming finishes).
+ */
+const messageTimes = ref(new Map<string, number>())
+/** Ticks so relative timestamps re-render without watching every message. */
+const nowTick = ref(Date.now())
+let relativeTimeTimer: ReturnType<typeof setInterval> | undefined
+/** User message currently open for inline edit / resend. */
+const editingMessageId = ref<string | null>(null)
+const editDraft = ref('')
+/** Message queued above the composer while the agent is busy (Cursor-style). */
+const queuedDraft = ref<QueuedDraft | null>(null)
+/** Guards against overlapping flush / send-now while stop is settling. */
+const flushingQueue = ref(false)
 
 watch(
   pendingImages,
@@ -273,6 +314,9 @@ function onDocumentPointerDown(event: PointerEvent) {
 
 onMounted(async () => {
   document.addEventListener('pointerdown', onDocumentPointerDown)
+  relativeTimeTimer = setInterval(() => {
+    nowTick.value = Date.now()
+  }, 15_000)
   config.value = await loadLlmConfig()
   agentMode.value = loadAgentMode()
   // Do not resetChat() here: getConfig() is live, and replacing the Chat while
@@ -282,9 +326,12 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener('pointerdown', onDocumentPointerDown)
+  if (relativeTimeTimer) clearInterval(relativeTimeTimer)
   pendingPreviewUrls.value.forEach(url => URL.revokeObjectURL(url))
   for (const timer of copyFeedbackTimers.values()) clearTimeout(timer)
   copyFeedbackTimers.clear()
+  for (const timer of messageCopyFeedbackTimers.values()) clearTimeout(timer)
+  messageCopyFeedbackTimers.clear()
 })
 
 const messages = computed(() => chat.value.messages)
@@ -392,15 +439,28 @@ const modelSelectTitle = computed(() =>
   settingsDirty.value ? labels.value.unsavedSettings : labels.value.model
 )
 
-const canSend = computed(
+/** Shared gates for send / queue besides busy state and draft content. */
+const canCompose = computed(
   () =>
     settingsReady.value &&
     !settingsDirty.value &&
     !highInferenceBlocked.value &&
-    activeSettings.value.apiKey.trim().length > 0 &&
-    !isBusy.value &&
-    (input.value.trim().length > 0 ||
-      (supportsVision.value && pendingImages.value.length > 0))
+    activeSettings.value.apiKey.trim().length > 0
+)
+
+const hasComposerContent = computed(
+  () =>
+    input.value.trim().length > 0 ||
+    (supportsVision.value && pendingImages.value.length > 0)
+)
+
+const canSend = computed(
+  () => canCompose.value && !isBusy.value && hasComposerContent.value
+)
+
+/** Enter while the agent is running queues the draft (Cursor-style). */
+const canQueue = computed(
+  () => canCompose.value && isBusy.value && hasComposerContent.value
 )
 
 const inputHint = computed(() => {
@@ -475,7 +535,8 @@ function openFilePicker() {
 
 /** Appends image files to the pending attachment list when vision is available. */
 function appendPendingImages(files: Iterable<File>) {
-  if (!supportsVision.value || isBusy.value) return
+  // Allow attachments while busy so the user can build a queued follow-up.
+  if (!supportsVision.value) return
   const images = [...files].filter(file => file.type.startsWith('image/'))
   if (!images.length) return
   pendingImages.value = [...pendingImages.value, ...images]
@@ -494,7 +555,7 @@ function onFilesSelected(event: Event) {
  * Text paste is left alone; image-only paste is prevented from inserting junk.
  */
 function onPaste(event: ClipboardEvent) {
-  if (!supportsVision.value || isBusy.value) return
+  if (!supportsVision.value) return
 
   const clipboard = event.clipboardData
   if (!clipboard) return
@@ -543,16 +604,17 @@ function clearPendingImages() {
   pendingImages.value = []
 }
 
-/** Sends the current text and optional images to the CAD agent. */
-async function sendMessage() {
-  // Align with the send button: Enter must not bypass settingsReady / canSend.
-  if (!canSend.value) return
-
-  const text = input.value.trim()
-  const files = supportsVision.value ? [...pendingImages.value] : []
+/**
+ * Prepares the composer (or explicit text/files) into a sendable draft.
+ * Returns null when there is nothing to send or image prep failed.
+ */
+async function prepareOutgoingDraft(
+  text: string,
+  files: File[]
+): Promise<OutgoingDraft | null> {
   sendPrepError.value = ''
 
-  let fileParts: Awaited<ReturnType<typeof prepareImageAttachments>> = []
+  let fileParts: FileUIPart[] = []
   if (files.length > 0) {
     try {
       fileParts = await prepareImageAttachments(files)
@@ -561,23 +623,35 @@ async function sendMessage() {
         prepError instanceof Error && prepError.message.trim()
           ? prepError.message
           : labels.value.prepareImageFailed
-      return
+      return null
     }
   }
 
   const requestText =
-    text || (fileParts.length > 0 ? labels.value.imageOnlyRequest : '')
-  if (!requestText && fileParts.length === 0) return
+    text.trim() ||
+    (fileParts.length > 0 ? labels.value.imageOnlyRequest : '')
+  if (!requestText && fileParts.length === 0) return null
 
-  // Clear only after attachments are ready so a prep failure keeps the draft.
-  input.value = ''
-  clearPendingImages()
+  return {
+    text: requestText,
+    fileParts,
+    sourceText: text,
+    sourceFiles: files
+  }
+}
 
+/** Dispatches a prepared draft through the AI SDK chat transport. */
+async function dispatchOutgoingDraft(
+  draft: OutgoingDraft,
+  messageId?: string
+): Promise<boolean> {
   try {
     await chat.value.sendMessage({
-      text: requestText,
-      ...(fileParts.length > 0 ? { files: fileParts } : {})
+      text: draft.text,
+      ...(draft.fileParts.length > 0 ? { files: draft.fileParts } : {}),
+      ...(messageId ? { messageId } : {})
     })
+    return true
   } catch (sendError) {
     // makeRequest errors land on chat.error; restore the draft for the rest.
     if (!chat.value.error) {
@@ -586,9 +660,64 @@ async function sendMessage() {
           ? formatChatError(sendError)
           : labels.value.prepareImageFailed
     }
-    input.value = text
-    if (files.length) pendingImages.value = files
+    return false
   }
+}
+
+/** Sends the current composer contents as a new user turn. */
+async function sendMessage() {
+  if (!canSend.value) return
+
+  const text = input.value.trim()
+  const files = supportsVision.value ? [...pendingImages.value] : []
+  const draft = await prepareOutgoingDraft(text, files)
+  if (!draft) return
+
+  // Clear only after attachments are ready so a prep failure keeps the draft.
+  input.value = ''
+  clearPendingImages()
+  cancelMessageEdit()
+
+  const ok = await dispatchOutgoingDraft(draft)
+  if (!ok) {
+    input.value = draft.sourceText
+    if (draft.sourceFiles.length) pendingImages.value = draft.sourceFiles
+  }
+}
+
+/**
+ * Queues the composer as a follow-up while the agent is still running.
+ * Replaces any existing queued draft (single-slot, like Cursor).
+ */
+async function queueCurrentDraft() {
+  if (!canQueue.value) return
+
+  const text = input.value.trim()
+  const files = supportsVision.value ? [...pendingImages.value] : []
+  const draft = await prepareOutgoingDraft(text, files)
+  if (!draft) return
+
+  input.value = ''
+  clearPendingImages()
+  queuedDraft.value = {
+    text: draft.text,
+    fileParts: draft.fileParts,
+    sourceText: draft.sourceText,
+    sourceFiles: draft.sourceFiles
+  }
+  // Image prep can outlive the in-flight turn; flush if the agent already settled.
+  if (!isBusy.value) {
+    void flushQueuedDraft()
+  }
+}
+
+/** Enter: send when idle, otherwise queue a follow-up. */
+async function sendOrQueueMessage() {
+  if (isBusy.value) {
+    await queueCurrentDraft()
+    return
+  }
+  await sendMessage()
 }
 
 /** Stops the in-flight agent response while keeping partial output. */
@@ -602,16 +731,162 @@ async function stopAgent() {
   }
 }
 
+/**
+ * After stop/ready, send the queued follow-up as a new user message.
+ * Used by both auto-flush and the "Send now" control.
+ */
+async function flushQueuedDraft() {
+  const queued = queuedDraft.value
+  if (!queued || flushingQueue.value || isBusy.value || !canCompose.value) {
+    return
+  }
+
+  flushingQueue.value = true
+  queuedDraft.value = null
+  try {
+    const ok = await dispatchOutgoingDraft({
+      text: queued.text,
+      fileParts: queued.fileParts,
+      sourceText: queued.sourceText,
+      sourceFiles: queued.sourceFiles
+    })
+    if (!ok) {
+      // Restore the original composer contents so the user can retry.
+      input.value = queued.sourceText
+      if (queued.sourceFiles.length) {
+        pendingImages.value = queued.sourceFiles
+      }
+    }
+  } finally {
+    flushingQueue.value = false
+  }
+}
+
+/** Cursor "Send now": abort the current turn, then send the queued message. */
+async function sendQueuedNow() {
+  const queued = queuedDraft.value
+  if (!queued || flushingQueue.value) return
+
+  // Take ownership of the queue so the isBusy→ready watcher does not double-send.
+  flushingQueue.value = true
+  queuedDraft.value = null
+  try {
+    await stopAgent()
+    const ok = await dispatchOutgoingDraft({
+      text: queued.text,
+      fileParts: queued.fileParts,
+      sourceText: queued.sourceText,
+      sourceFiles: queued.sourceFiles
+    })
+    if (!ok) {
+      input.value = queued.sourceText
+      if (queued.sourceFiles.length) {
+        pendingImages.value = queued.sourceFiles
+      }
+    }
+  } finally {
+    flushingQueue.value = false
+  }
+}
+
+/** Moves the queued draft back into the composer for editing. */
+function editQueuedDraft() {
+  const queued = queuedDraft.value
+  if (!queued) return
+  queuedDraft.value = null
+  input.value = queued.sourceText
+  if (queued.sourceFiles.length) {
+    pendingImages.value = queued.sourceFiles
+  }
+  requestAnimationFrame(() => inputRef.value?.focus())
+}
+
+/** Drops the queued follow-up without sending. */
+function deleteQueuedDraft() {
+  queuedDraft.value = null
+}
+
+/** Opens inline edit for a prior user message (resend reverts later turns). */
+function startMessageEdit(message: UIMessage) {
+  if (message.role !== 'user' || isBusy.value) return
+  editingMessageId.value = message.id
+  editDraft.value = partText(message)
+  requestAnimationFrame(() => {
+    const el = document.querySelector(
+      `.cad-agent-msg-edit[data-message-id="${message.id}"]`
+    ) as HTMLTextAreaElement | null
+    el?.focus()
+    el?.setSelectionRange(editDraft.value.length, editDraft.value.length)
+  })
+}
+
+/** Cancels inline edit without changing history. */
+function cancelMessageEdit() {
+  editingMessageId.value = null
+  editDraft.value = ''
+}
+
+/**
+ * Replaces a user message and drops everything after it, then re-runs the
+ * agent from that point (AI SDK `sendMessage({ messageId })`).
+ */
+async function resendEditedMessage() {
+  const messageId = editingMessageId.value
+  if (!messageId || isBusy.value || !canCompose.value) return
+
+  const message = messages.value.find(item => item.id === messageId)
+  if (!message || message.role !== 'user') return
+
+  const text = editDraft.value.trim()
+  const existingFiles = imageParts(message).map(
+    (part): FileUIPart => ({
+      type: 'file',
+      url: part.url,
+      mediaType: part.mediaType ?? 'image/png',
+      filename: part.filename
+    })
+  )
+  const requestText =
+    text || (existingFiles.length > 0 ? labels.value.imageOnlyRequest : '')
+  if (!requestText && existingFiles.length === 0) return
+
+  cancelMessageEdit()
+  queuedDraft.value = null
+  sendPrepError.value = ''
+
+  const ok = await dispatchOutgoingDraft(
+    {
+      text: requestText,
+      fileParts: existingFiles,
+      sourceText: text,
+      sourceFiles: []
+    },
+    messageId
+  )
+  if (!ok) {
+    editingMessageId.value = messageId
+    editDraft.value = text
+    return
+  }
+
+  const nextTimes = new Map(messageTimes.value)
+  nextTimes.set(messageId, Date.now())
+  messageTimes.value = nextTimes
+}
+
 /** Discards the conversation and starts a fresh agent session. */
 function clearChat() {
   input.value = ''
   clearPendingImages()
+  cancelMessageEdit()
+  queuedDraft.value = null
   dismissError()
   showSettings.value = false
   showTaskPrompts.value = false
   showContextUsage.value = false
   contextUsage.value = null
   toolGroupOverrides.value = new Map()
+  messageTimes.value = new Map()
   resetChat()
 }
 
@@ -793,6 +1068,73 @@ function isToolCopied(messageId: string, toolIndex: number): boolean {
   return copiedToolKeys.value.has(`${messageId}-${toolIndex}`)
 }
 
+/** Writes plain text to the clipboard; returns false when the write fails. */
+async function writeClipboardText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text)
+      return true
+    }
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'fixed'
+    textarea.style.left = '-9999px'
+    document.body.appendChild(textarea)
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild(textarea)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Copies a chat message's text parts to the clipboard. */
+async function copyMessage(message: UIMessage) {
+  const text = partText(message)
+  if (!text.trim()) return
+  const ok = await writeClipboardText(text)
+  if (!ok) return
+
+  const next = new Set(copiedMessageIds.value)
+  next.add(message.id)
+  copiedMessageIds.value = next
+
+  const previous = messageCopyFeedbackTimers.get(message.id)
+  if (previous) clearTimeout(previous)
+  messageCopyFeedbackTimers.set(
+    message.id,
+    setTimeout(() => {
+      const cleared = new Set(copiedMessageIds.value)
+      cleared.delete(message.id)
+      copiedMessageIds.value = cleared
+      messageCopyFeedbackTimers.delete(message.id)
+    }, 1500)
+  )
+}
+
+function isMessageCopied(messageId: string): boolean {
+  return copiedMessageIds.value.has(messageId)
+}
+
+const relativeTimeLabels = computed(() => ({
+  justNow: labels.value.relativeTimeJustNow,
+  seconds: labels.value.relativeTimeSeconds,
+  minutes: labels.value.relativeTimeMinutes,
+  hours: labels.value.relativeTimeHours,
+  days: labels.value.relativeTimeDays
+}))
+
+/** Relative age for a message footer; empty until a timestamp is known. */
+function messageRelativeTime(messageId: string): string {
+  // Touch nowTick so the footer re-renders on the interval timer.
+  const now = nowTick.value
+  const then = messageTimes.value.get(messageId)
+  if (then == null) return ''
+  return formatRelativeTime(then, relativeTimeLabels.value, now)
+}
+
 /**
  * Tool groups the user opened or closed by hand, keyed by message id. Groups
  * without an entry follow {@link isMessageInFlight}: open while the response
@@ -809,6 +1151,42 @@ function isMessageInFlight(message: UIMessage): boolean {
     list[list.length - 1]?.id === message.id
   )
 }
+
+/** True when this user message may be edited / resent. */
+function canEditMessage(message: UIMessage): boolean {
+  return message.role === 'user' && !isBusy.value
+}
+
+watch(
+  messages,
+  list => {
+    const next = new Map(messageTimes.value)
+    const ids = new Set(list.map(message => message.id))
+    for (const message of list) {
+      if (!next.has(message.id)) {
+        next.set(message.id, Date.now())
+      }
+    }
+    for (const id of [...next.keys()]) {
+      if (!ids.has(id)) next.delete(id)
+    }
+    messageTimes.value = next
+  },
+  { deep: true }
+)
+
+watch(isBusy, (busy, wasBusy) => {
+  if (wasBusy && !busy) {
+    const last = messages.value[messages.value.length - 1]
+    if (last?.role === 'assistant') {
+      const next = new Map(messageTimes.value)
+      next.set(last.id, Date.now())
+      messageTimes.value = next
+    }
+    // Auto-send a queued follow-up once the current turn settles (Cursor-style).
+    if (!flushingQueue.value) void flushQueuedDraft()
+  }
+})
 
 /** Whether a message's tool-call list is expanded. */
 function isToolGroupOpen(message: UIMessage): boolean {
@@ -1040,108 +1418,214 @@ function isVerificationMessage(message: UIMessage): boolean {
         class="cad-agent-msg"
         :class="[
           message.role,
-          { 'cad-agent-msg--verification': isVerificationMessage(message) }
+          {
+            'cad-agent-msg--verification': isVerificationMessage(message),
+            'cad-agent-msg--editing': editingMessageId === message.id
+          }
         ]"
       >
-        <div class="cad-agent-msg-text">{{ partText(message) }}</div>
-        <div
-          v-if="imageParts(message).length"
-          class="cad-agent-msg-images"
-          :class="{
-            'cad-agent-msg-images--verification': isVerificationMessage(message)
-          }"
-        >
-          <figure
-            v-for="(part, index) in imageParts(message)"
-            :key="`${message.id}-img-${index}`"
-            class="cad-agent-msg-image-wrap"
+        <template v-if="editingMessageId === message.id">
+          <textarea
+            class="cad-agent-msg-edit"
+            :data-message-id="message.id"
+            v-model="editDraft"
+            rows="3"
+            @keydown.enter.exact.prevent="resendEditedMessage"
+            @keydown.escape.prevent="cancelMessageEdit"
+          />
+          <div
+            v-if="imageParts(message).length"
+            class="cad-agent-msg-images"
           >
-            <img
-              class="cad-agent-msg-image"
-              :src="part.url"
-              :alt="part.filename ?? labels.imageAlt"
-            />
-          </figure>
-        </div>
-        <div
-          v-if="toolParts(message).length"
-          class="cad-agent-tool-group"
-          :class="{ 'is-open': isToolGroupOpen(message) }"
-        >
-          <button
-            type="button"
-            class="cad-agent-tool-summary"
-            :aria-expanded="isToolGroupOpen(message)"
-            @click="toggleToolGroup(message)"
-          >
-            <svg
-              class="cad-agent-tool-chevron"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
+            <figure
+              v-for="(part, index) in imageParts(message)"
+              :key="`${message.id}-img-${index}`"
+              class="cad-agent-msg-image-wrap"
             >
-              <path
-                fill="currentColor"
-                d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"
+              <img
+                class="cad-agent-msg-image"
+                :src="part.url"
+                :alt="part.filename ?? labels.imageAlt"
               />
-            </svg>
-            <span class="cad-agent-tool-summary-text">
-              {{ toolGroupSummary(message) }}
-            </span>
-          </button>
-          <template v-if="isToolGroupOpen(message)">
-            <div
-              v-for="(toolCall, toolIndex) in toolParts(message)"
-              :key="`${message.id}-tool-${toolIndex}`"
-              class="cad-agent-tool"
+            </figure>
+          </div>
+          <div class="cad-agent-msg-edit-actions">
+            <button
+              type="button"
+              class="cad-agent-msg-edit-btn"
+              @click="cancelMessageEdit"
             >
-              <div class="cad-agent-tool-body">
-                {{ `${labels.toolPrefix}: ${toolCall.name}` }}
-                <span
-                  v-if="toolCall.state && toolCall.state !== 'output-available'"
-                  class="cad-agent-tool-detail"
-                >
-                  {{ toolCall.state }}
-                </span>
-                <span v-if="toolCall.detail" class="cad-agent-tool-detail">
-                  {{ toolCall.detail }}
-                </span>
-              </div>
-              <button
-                type="button"
-                class="cad-agent-tool-copy"
-                :class="{ 'is-copied': isToolCopied(message.id, toolIndex) }"
-                :title="
-                  isToolCopied(message.id, toolIndex)
-                    ? labels.toolCopied
-                    : labels.copyTool
-                "
-                :aria-label="
-                  isToolCopied(message.id, toolIndex)
-                    ? labels.toolCopied
-                    : labels.copyTool
-                "
-                @click="copyToolCall(message.id, toolIndex, toolCall)"
+              {{ labels.cancelEdit }}
+            </button>
+            <button
+              type="button"
+              class="cad-agent-msg-edit-btn cad-agent-msg-edit-btn--primary"
+              :disabled="!editDraft.trim() && !imageParts(message).length"
+              @click="resendEditedMessage"
+            >
+              {{ labels.resendMessage }}
+            </button>
+          </div>
+        </template>
+        <template v-else>
+          <div class="cad-agent-msg-text">{{ partText(message) }}</div>
+          <div
+            v-if="imageParts(message).length"
+            class="cad-agent-msg-images"
+            :class="{
+              'cad-agent-msg-images--verification':
+                isVerificationMessage(message)
+            }"
+          >
+            <figure
+              v-for="(part, index) in imageParts(message)"
+              :key="`${message.id}-img-${index}`"
+              class="cad-agent-msg-image-wrap"
+            >
+              <img
+                class="cad-agent-msg-image"
+                :src="part.url"
+                :alt="part.filename ?? labels.imageAlt"
+              />
+            </figure>
+          </div>
+          <div
+            v-if="toolParts(message).length"
+            class="cad-agent-tool-group"
+            :class="{ 'is-open': isToolGroupOpen(message) }"
+          >
+            <button
+              type="button"
+              class="cad-agent-tool-summary"
+              :aria-expanded="isToolGroupOpen(message)"
+              @click="toggleToolGroup(message)"
+            >
+              <svg
+                class="cad-agent-tool-chevron"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
               >
-                <svg
-                  v-if="isToolCopied(message.id, toolIndex)"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
+                <path
+                  fill="currentColor"
+                  d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"
+                />
+              </svg>
+              <span class="cad-agent-tool-summary-text">
+                {{ toolGroupSummary(message) }}
+              </span>
+            </button>
+            <template v-if="isToolGroupOpen(message)">
+              <div
+                v-for="(toolCall, toolIndex) in toolParts(message)"
+                :key="`${message.id}-tool-${toolIndex}`"
+                class="cad-agent-tool"
+              >
+                <div class="cad-agent-tool-body">
+                  {{ `${labels.toolPrefix}: ${toolCall.name}` }}
+                  <span
+                    v-if="toolCall.state && toolCall.state !== 'output-available'"
+                    class="cad-agent-tool-detail"
+                  >
+                    {{ toolCall.state }}
+                  </span>
+                  <span v-if="toolCall.detail" class="cad-agent-tool-detail">
+                    {{ toolCall.detail }}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  class="cad-agent-tool-copy"
+                  :class="{ 'is-copied': isToolCopied(message.id, toolIndex) }"
+                  :title="
+                    isToolCopied(message.id, toolIndex)
+                      ? labels.toolCopied
+                      : labels.copyTool
+                  "
+                  :aria-label="
+                    isToolCopied(message.id, toolIndex)
+                      ? labels.toolCopied
+                      : labels.copyTool
+                  "
+                  @click="copyToolCall(message.id, toolIndex, toolCall)"
                 >
-                  <path
-                    fill="currentColor"
-                    d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
-                  />
-                </svg>
-                <svg v-else viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    fill="currentColor"
-                    d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
-                  />
-                </svg>
-              </button>
-            </div>
-          </template>
-        </div>
+                  <svg
+                    v-if="isToolCopied(message.id, toolIndex)"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                    />
+                  </svg>
+                  <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                    <path
+                      fill="currentColor"
+                      d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </template>
+          </div>
+          <div class="cad-agent-msg-footer">
+            <button
+              v-if="partText(message).trim()"
+              type="button"
+              class="cad-agent-msg-copy"
+              :class="{ 'is-copied': isMessageCopied(message.id) }"
+              :title="
+                isMessageCopied(message.id)
+                  ? labels.messageCopied
+                  : labels.copyMessage
+              "
+              :aria-label="
+                isMessageCopied(message.id)
+                  ? labels.messageCopied
+                  : labels.copyMessage
+              "
+              @click="copyMessage(message)"
+            >
+              <svg
+                v-if="isMessageCopied(message.id)"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  fill="currentColor"
+                  d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                />
+              </svg>
+              <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"
+                />
+              </svg>
+            </button>
+            <button
+              v-if="canEditMessage(message)"
+              type="button"
+              class="cad-agent-msg-edit-trigger"
+              :title="labels.editMessage"
+              :aria-label="labels.editMessage"
+              @click="startMessageEdit(message)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+                />
+              </svg>
+            </button>
+            <span
+              v-if="messageRelativeTime(message.id)"
+              class="cad-agent-msg-time"
+            >
+              {{ messageRelativeTime(message.id) }}
+            </span>
+          </div>
+        </template>
       </div>
       <div v-if="hasDisplayError" class="cad-agent-msg error">
         <div class="cad-agent-error-card">
@@ -1178,6 +1662,35 @@ function isVerificationMessage(message: UIMessage): boolean {
     </div>
 
     <div class="cad-agent-panel-input">
+      <div v-if="queuedDraft" class="cad-agent-queued">
+        <div class="cad-agent-queued-text">{{ queuedDraft.text }}</div>
+        <div class="cad-agent-queued-actions">
+          <button
+            type="button"
+            class="cad-agent-queued-btn cad-agent-queued-btn--primary"
+            :title="labels.queuedSendNow"
+            @click="sendQueuedNow"
+          >
+            {{ labels.queuedSendNow }}
+          </button>
+          <button
+            type="button"
+            class="cad-agent-queued-btn"
+            :title="labels.queuedEdit"
+            @click="editQueuedDraft"
+          >
+            {{ labels.queuedEdit }}
+          </button>
+          <button
+            type="button"
+            class="cad-agent-queued-btn"
+            :title="labels.queuedDelete"
+            @click="deleteQueuedDraft"
+          >
+            {{ labels.queuedDelete }}
+          </button>
+        </div>
+      </div>
       <div
         v-if="showContextUsage"
         class="cad-agent-context-usage-popover"
@@ -1258,7 +1771,7 @@ function isVerificationMessage(message: UIMessage): boolean {
         v-model="input"
         :placeholder="labels.inputPlaceholder"
         :disabled="!settingsReady"
-        @keydown.enter.exact.prevent="sendMessage"
+        @keydown.enter.exact.prevent="sendOrQueueMessage"
         @paste="onPaste"
       />
       <input
@@ -1351,7 +1864,7 @@ function isVerificationMessage(message: UIMessage): boolean {
           <button
             type="button"
             class="cad-agent-icon-btn cad-agent-attach-btn"
-            :disabled="isBusy || !supportsVision"
+            :disabled="!supportsVision"
             :title="labels.attachImage"
             @click="openFilePicker"
           >
