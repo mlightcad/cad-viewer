@@ -51,7 +51,6 @@ import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
 import { AcApDocManager, AcApSettingManager } from '../app'
 import { AcApOpenViewMode } from '../app/AcApOpenDatabaseOptions'
-import { AcApUcsService } from '../service/AcApUcsService'
 import { AcApZoomCmd } from '../command/AcApZoomCmd'
 import { isMarkupHtmlTextEditing } from '../command/markup/AcApMarkupTextEdit'
 import { notifyMeasurementLayoutChanged } from '../command/measure/AcApMeasurementStore'
@@ -91,6 +90,7 @@ import {
   acedNeedsCrossingGeometryRefine
 } from '../editor/view/AcEdSelectionBoxIntersect'
 import { isEffectiveSpatialQueryHit } from '../editor/view/AcEdSpatialQueryResult'
+import { AcApUcsService } from '../service/AcApUcsService'
 import type { AcTrLazySpatialChildren } from '../spatialIndex'
 import type { AcTrSpatialSearchOptions } from '../spatialIndex/AcTrSpatialIndex'
 import { AcTrGeometryUtil } from '../util'
@@ -108,6 +108,7 @@ import {
   ACAP_READING_MODE_BACKGROUND,
   AcApReadingModeState
 } from './AcApReadingMode'
+import { AcApUcsIconOverlay } from './AcApUcsIconOverlay'
 import {
   trySelectReviewOverlay,
   trySelectReviewOverlaysByBox
@@ -133,7 +134,6 @@ import { computeIntelligentExtentsAsync } from './AcTrIntelligentExtents'
 import { AcTrLayer } from './AcTrLayer'
 import { AcTrLayerAppearanceController } from './AcTrLayerAppearanceController'
 import { AcTrLayout } from './AcTrLayout'
-import { AcApUcsIconOverlay } from './AcApUcsIconOverlay'
 import { AcTrLayoutView } from './AcTrLayoutView'
 import { AcTrLayoutViewManager } from './AcTrLayoutViewManager'
 import { sortPickResults } from './AcTrPickResultUtil'
