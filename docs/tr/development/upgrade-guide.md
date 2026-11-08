@@ -6,6 +6,12 @@ title: "cad-simple-viewer ve cad-editor Yükseltme"
 
 Bu kılavuz, `@mlightcad/cad-simple-viewer` ve `@mlightcad/cad-editor` paketlerinin güvenli şekilde nasıl yükseltileceğini açıklar — neden tek başlarına yükseltilemeyeceklerini, hangi ilgili paketlerin birlikte hareket etmesi gerektiğini ve belirli bir sürüm için doğru uyumlu sürüm kümesini belirlemenin iki güvenilir yolunu.
 
+::: info AutoCAD grupları (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
+Bu değişikliği içeren sürümden itibaren `@mlightcad/cad-simple-viewer` **GROUP**, **-GROUP**, **UNGROUP** ve **GROUPEDIT** komutlarını kaydeder; `PICKSTYLE` `1` veya `3` iken seçimi genişletir; seçilebilir gruplar için `GROUPDISPLAYMODE` tutamaçlarını uygular. `@mlightcad/cad-editor` **CLASSICGROUP** (Nesne Gruplama iletişim kutusu) ve Giriş → Gruplar şerit panelini ekler.
+
+`PICKSTYLE` (0–3, varsayılan `1`) ve `GROUPDISPLAYMODE` (0–2, varsayılan `2`) sistem değişkenlerini kaydeden `@mlightcad/data-model` gerekir. İlişkili tarama ortak seçimi (`PICKSTYLE` 2/3), `AcDbHatch` üzerinde sınır soft-pointer’ları olana kadar no-op kalır.
+:::
+
 ::: info Hafif dosya açma giriş ekranı girişi
 **1.8.0** sürümünden itibaren `@mlightcad/cad-simple-viewer`, açılış sayfaları için DocManager’sız bir alt yol sunar. **`acuiCreateFileOpenSession`** (tembel `createDocManager` + otomatik açma / `attachSourcesTo`) tercih edin. Çizimleri kendiniz açtığınızda (ör. Vue `MlCadViewer`) `AcUiFileOpenLanding` kullanın:
 

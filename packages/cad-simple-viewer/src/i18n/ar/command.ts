@@ -978,6 +978,23 @@ export default {
     },
     ucsman: {
       description: 'Manages named UCS definitions and UCS icon settings'
+    },
+
+    group: {
+      ...enCommand.ACAD.group,
+      description: 'إنشاء مجموعات كائنات محفوظة وإدارتها'
+    },
+    '-group': {
+      ...enCommand.ACAD['-group'],
+      description: 'إنشاء المجموعات وإدارتها عبر خيارات سطر الأوامر'
+    },
+    groupedit: {
+      ...enCommand.ACAD.groupedit,
+      description: 'إضافة كائنات إلى مجموعة أو إزالتها منها أو إعادة تسمية المجموعة'
+    },
+    ungroup: {
+      ...enCommand.ACAD.ungroup,
+      description: 'إلغاء ارتباط الكائنات بمجموعة'
     }
   },
 

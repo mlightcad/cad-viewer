@@ -7,7 +7,15 @@ import {
 /** Whether the landing → viewer locale bridge is already installed. */
 let isBridgeInstalled = false
 
-const LOCALES: readonly AcApLocale[] = ['en', 'zh', 'tr', 'cs', 'ar']
+const LOCALES: readonly AcApLocale[] = [
+  'en',
+  'zh',
+  'ja',
+  'ko',
+  'tr',
+  'cs',
+  'ar'
+]
 
 /**
  * Copies editor/landing catalogs onto the full-viewer {@link AcApI18n}

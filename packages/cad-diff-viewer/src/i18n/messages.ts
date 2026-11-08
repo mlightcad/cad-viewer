@@ -533,3 +533,6 @@ export const ar = {
   settingsReset: 'إعادة تعيين',
   settingsClose: 'إغلاق'
 }
+
+export const ja = { ...en }
+export const ko = { ...en }

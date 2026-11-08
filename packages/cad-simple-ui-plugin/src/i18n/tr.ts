@@ -68,6 +68,8 @@ export const tr: Record<string, string> = {
   'toolbar.localeCs': 'Čeština',
   'toolbar.localeTr': 'Türkçe',
   'toolbar.localeAr': 'العربية',
+  'toolbar.localeJa': '日本語',
+  'toolbar.localeKo': '한국어',
   'toolbar.collapse': 'Araç çubuğunu daralt',
   'toolbar.moreOverflow': 'Diğer araçlar',
   'toolbar.expand': 'Araç çubuğunu genişlet',

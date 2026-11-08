@@ -23,5 +23,13 @@ export const scriptCommandDescriptions = {
   },
   ar: {
     cadscript: 'يفتح وحدة تحكم سكريبت CAD لتشغيل سكريبت على الرسم الحالي'
+  },
+  ja: {
+    cadscript:
+      '現在の図面でスクリプトを実行するための CAD スクリプトコンソールを開きます'
+  },
+  ko: {
+    cadscript:
+      '현재 도면에서 스크립트를 실행하는 CAD 스크립트 콘솔을 엽니다'
   }
 } as const satisfies Record<AcApLocale, { readonly cadscript: string }>

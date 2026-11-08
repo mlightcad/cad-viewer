@@ -2233,5 +2233,163 @@ export default {
         global: '?'
       }
     }
+  },
+
+  group: {
+    selectOrOption: 'حدد الكائنات أو',
+    createOrOption: 'إنشاء مجموعة أو',
+    selectObjects: 'حدد كائنات المجموعة',
+    enterName: 'أدخل اسم المجموعة',
+    enterDescription: 'أدخل وصف المجموعة',
+    invalidName: 'اسم مجموعة غير صالح',
+    nameExists: 'اسم المجموعة موجود بالفعل',
+    created: 'تم إنشاء المجموعة {name}',
+    keywords: {
+      name: {
+        display: 'اسم(N)',
+        local: 'اسم',
+        global: 'Name'
+      },
+      description: {
+        display: 'وصف(D)',
+        local: 'وصف',
+        global: 'Description'
+      }
+    }
+  },
+  ungroup: {
+    selectOrOption: 'حدد مجموعة أو',
+    selectGroup: 'حدد مجموعة',
+    enterName: 'أدخل اسم المجموعة',
+    notFound: 'لم يتم العثور على المجموعة',
+    notInGroup: 'الكائن ليس عضوًا في مجموعة',
+    multiGroup: 'الكائن عضو في أكثر من مجموعة [{name}]',
+    exploded: 'تم تفجير المجموعة {name}',
+    explodedCount: 'تم تفجير {count} مجموعة/مجموعات',
+    keywords: {
+      name: {
+        display: 'اسم(N)',
+        local: 'اسم',
+        global: 'Name'
+      },
+      all: {
+        display: 'الكل(A)',
+        local: 'الكل',
+        global: 'All'
+      },
+      accept: {
+        display: 'قبول(A)',
+        local: 'قبول',
+        global: 'Accept'
+      },
+      next: {
+        display: 'التالي(N)',
+        local: 'التالي',
+        global: 'Next'
+      }
+    }
+  },
+  groupedit: {
+    selectGroup: 'حدد مجموعة',
+    enterName: 'أدخل اسم المجموعة',
+    notFound: 'لم يتم العثور على المجموعة',
+    multiGroup: 'الكائن عضو في أكثر من مجموعة [{name}]',
+    action: 'أدخل خيارًا للمجموعة {name}',
+    selectToAdd: 'حدد الكائنات لإضافتها إلى المجموعة',
+    selectToRemove: 'حدد الكائنات لإزالتها من المجموعة',
+    newName: 'أدخل اسم المجموعة الجديد',
+    keywords: {
+      add: {
+        display: 'إضافة كائنات(A)',
+        local: 'إضافة',
+        global: 'Add'
+      },
+      remove: {
+        display: 'إزالة كائنات(R)',
+        local: 'إزالة',
+        global: 'Remove'
+      },
+      rename: {
+        display: 'إعادة تسمية(N)',
+        local: 'إعادة تسمية',
+        global: 'Rename'
+      },
+      accept: {
+        display: 'قبول(A)',
+        local: 'قبول',
+        global: 'Accept'
+      },
+      next: {
+        display: 'التالي(N)',
+        local: 'التالي',
+        global: 'Next'
+      }
+    }
+  },
+  dashgroup: {
+    option: 'أدخل خيارًا',
+    empty: 'لا توجد مجموعات معرّفة',
+    listEntry: '{name}  {description}  [{selectable}]  ({count})',
+    yes: 'نعم',
+    no: 'لا',
+    enterNameOrBlank:
+      'أدخل اسم المجموعة أو اضغط Enter لمجموعة غير مسماة',
+    enterGroupName: 'أدخل اسم المجموعة',
+    selectableSet: 'المجموعة {name} قابلة للتحديد = {value}',
+    orderOption: 'أدخل خيار الترتيب',
+    fromPosition: 'أدخل رقم موضع الكائن لإعادة ترتيبه (يبدأ من 0)',
+    toPosition: 'أدخل رقم الموضع الجديد للكائن (يبدأ من 0)',
+    keywords: {
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      },
+      create: {
+        display: 'إنشاء(C)',
+        local: 'إنشاء',
+        global: 'Create'
+      },
+      add: {
+        display: 'إضافة(A)',
+        local: 'إضافة',
+        global: 'Add'
+      },
+      remove: {
+        display: 'إزالة(R)',
+        local: 'إزالة',
+        global: 'Remove'
+      },
+      explode: {
+        display: 'تفجير(X)',
+        local: 'تفجير',
+        global: 'Explode'
+      },
+      rename: {
+        display: 'إعادة تسمية(N)',
+        local: 'إعادة تسمية',
+        global: 'Rename'
+      },
+      selectable: {
+        display: 'قابلة للتحديد(S)',
+        local: 'قابلة للتحديد',
+        global: 'Selectable'
+      },
+      order: {
+        display: 'ترتيب(O)',
+        local: 'ترتيب',
+        global: 'Order'
+      },
+      reverse: {
+        display: 'عكس(R)',
+        local: 'عكس',
+        global: 'Reverse'
+      },
+      position: {
+        display: 'موضع(P)',
+        local: 'موضع',
+        global: 'Position'
+      }
+    }
   }
 }

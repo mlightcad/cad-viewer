@@ -6,6 +6,12 @@ title: "Upgrade cad-simple-viewer a cad-editor"
 
 Tato příručka vysvětluje, jak bezpečně upgradovat `@mlightcad/cad-simple-viewer` a `@mlightcad/cad-editor` — proč je nelze navyšovat izolovaně, které související balíčky se musí posunout společně a jaké existují dva spolehlivé způsoby, jak pro dané vydání určit správnou kompatibilní sadu verzí.
 
+::: info AutoCAD skupiny (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
+Od vydání, které obsahuje tuto změnu, `@mlightcad/cad-simple-viewer` registruje **GROUP**, **-GROUP**, **UNGROUP** a **GROUPEDIT**, rozšiřuje výběr při `PICKSTYLE` `1` nebo `3` a uplatňuje úchyty `GROUPDISPLAYMODE` u volitelných skupin. `@mlightcad/cad-editor` přidává **CLASSICGROUP** (dialog Seskupování objektů) a panel Domů → Skupiny na pásu karet.
+
+Vyžaduje `@mlightcad/data-model` se systémovými proměnnými `PICKSTYLE` (0–3, výchozí `1`) a `GROUPDISPLAYMODE` (0–2, výchozí `2`). Sdílený výběr asociativní šrafy (`PICKSTYLE` 2/3) zůstává no-op, dokud `AcDbHatch` nezíská soft-pointery hranic.
+:::
+
 ::: info Lehký vstup pro úvodní stránku otevření souboru
 Od **1.8.0** nabízí `@mlightcad/cad-simple-viewer` podcestu bez DocManageru pro úvodní stránky. Upřednostněte **`acuiCreateFileOpenSession`** (lazy `createDocManager` + automatické otevření / `attachSourcesTo`). Použijte `AcUiFileOpenLanding`, když otevíráte výkresy sami (např. Vue `MlCadViewer`):
 

@@ -53,6 +53,9 @@ export default {
     },
     attdef: {
       description: 'Vytvoří definici atributu pro blok'
+    },
+    classicgroup: {
+      description: 'Otevře dialog Seskupování objektů pro vytváření a správu skupin'
     }
   },
   USER: {}

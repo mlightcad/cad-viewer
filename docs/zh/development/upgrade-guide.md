@@ -6,6 +6,12 @@ title: "升级 cad-simple-viewer 和 cad-editor"
 
 本指南介绍如何安全地升级 `@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-editor`——为什么它们不能单独升级、哪些相关包必须一起迁移，以及两种可靠的方法来确定任意给定版本的正确兼容版本集。
 
+::: info AutoCAD 编组（`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`）
+自包含本变更的版本起，`@mlightcad/cad-simple-viewer` 注册 **GROUP**、**-GROUP**、**UNGROUP**、**GROUPEDIT**；当 `PICKSTYLE` 为 `1` 或 `3` 时扩展选择；并对可选编组应用 `GROUPDISPLAYMODE` 夹点。`@mlightcad/cad-editor` 增加 **CLASSICGROUP**（对象编组对话框）以及「开始 → 编组」功能区面板。
+
+需要已注册 `PICKSTYLE`（0–3，默认 `1`）和 `GROUPDISPLAYMODE`（0–2，默认 `2`）的 `@mlightcad/data-model`。关联填充共选（`PICKSTYLE` 2/3）在 `AcDbHatch` 具备边界软指针之前仍为 no-op。
+:::
+
 ::: info 轻量文件打开落地页入口
 从 **1.8.0** 起，`@mlightcad/cad-simple-viewer` 为落地页提供不依赖 DocManager 的子路径。请优先使用 **`acuiCreateFileOpenSession`**（延迟 `createDocManager` + 自动打开 / `attachSourcesTo`）。当你自行打开图纸时使用 `AcUiFileOpenLanding`（例如 Vue `MlCadViewer`）：
 

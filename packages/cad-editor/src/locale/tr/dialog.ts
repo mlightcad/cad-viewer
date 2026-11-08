@@ -364,5 +364,50 @@ export default {
     yAxis: 'Y Axis',
     zAxis: 'Z Axis',
     relativeTo: 'Relative to'
+  },
+  classicGroupDlg: {
+    title: 'Nesne Gruplama',
+    groupName: 'Grup Adı',
+    selectable: 'Seçilebilir',
+    identification: 'Grup Tanımlama',
+    description: 'Açıklama',
+    findName: 'Ad Bul <',
+    highlight: 'Vurgula <',
+    includeUnnamed: 'Adsızları Dahil Et',
+    createGroup: 'Grup Oluştur',
+    new: 'Yeni <',
+    unnamed: 'Adsız',
+    changeGroup: 'Grubu Değiştir',
+    remove: 'Kaldır <',
+    add: 'Ekle <',
+    rename: 'Yeniden Adlandır',
+    reOrder: 'Yeniden Sırala...',
+    descriptionBtn: 'Açıklama',
+    explode: 'Patlat',
+    selectableBtn: 'Seçilebilir',
+    yes: 'Evet',
+    no: 'Hayır',
+    pickObject: 'Grubunu bulmak için bir nesne seçin',
+    notInGroup: 'Nesne bir grubun üyesi değil',
+    selectObjects: 'Yeni grup için nesneleri seçin',
+    selectToAdd: 'Eklenecek nesneleri seçin',
+    selectToRemove: 'Kaldırılacak nesneleri seçin',
+    clearSelectableFirst:
+      'Nesneleri kaldırmadan önce grubun Seçilebilir seçeneğini kapatın',
+    invalidName: 'Geçersiz grup adı',
+    nameExists: 'Grup adı zaten var',
+    created: 'Grup {name} oluşturuldu'
+  },
+  orderGroupDlg: {
+    title: 'Grup Sıralama',
+    groupName: 'Grup Adı',
+    description: 'Açıklama',
+    removeFrom: 'Konumdan kaldır (0 tabanlı)',
+    newPosition: 'Nesne için yeni konum numarasını girin',
+    numberOfObjects: 'Nesne sayısı',
+    reOrder: 'Yeniden Sırala',
+    reverseOrder: 'Sırayı Tersine Çevir',
+    highlight: 'Vurgula'
   }
+
 }

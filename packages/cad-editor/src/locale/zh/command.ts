@@ -46,6 +46,9 @@ export default {
     },
     attdef: {
       description: '创建用于块的属性定义'
+    },
+    classicgroup: {
+      description: '打开对象编组对话框以创建和管理编组'
     }
   },
   USER: {}

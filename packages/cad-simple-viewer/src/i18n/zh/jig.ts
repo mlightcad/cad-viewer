@@ -1705,6 +1705,161 @@ export default {
         global: '?'
       }
     }
+  },
+  group: {
+    selectOrOption: '选择对象或',
+    createOrOption: '创建编组或',
+    selectObjects: '选择编组对象',
+    enterName: '输入编组名称',
+    enterDescription: '输入编组说明',
+    invalidName: '无效的编组名称',
+    nameExists: '编组名称已存在',
+    created: '已创建编组 {name}',
+    keywords: {
+      name: {
+        display: '名称(N)',
+        local: '名称',
+        global: 'Name'
+      },
+      description: {
+        display: '说明(D)',
+        local: '说明',
+        global: 'Description'
+      }
+    }
+  },
+  ungroup: {
+    selectOrOption: '选择编组或',
+    selectGroup: '选择编组',
+    enterName: '输入编组名称',
+    notFound: '未找到编组',
+    notInGroup: '对象不是编组成员',
+    multiGroup: '对象属于多个编组 [{name}]',
+    exploded: '已分解编组 {name}',
+    explodedCount: '已分解 {count} 个编组',
+    keywords: {
+      name: {
+        display: '名称(N)',
+        local: '名称',
+        global: 'Name'
+      },
+      all: {
+        display: '全部(A)',
+        local: '全部',
+        global: 'All'
+      },
+      accept: {
+        display: '接受(A)',
+        local: '接受',
+        global: 'Accept'
+      },
+      next: {
+        display: '下一个(N)',
+        local: '下一个',
+        global: 'Next'
+      }
+    }
+  },
+  groupedit: {
+    selectGroup: '选择一个编组',
+    enterName: '输入编组名称',
+    notFound: '未找到编组',
+    multiGroup: '对象属于多个编组 [{name}]',
+    action: '为编组 {name} 输入选项',
+    selectToAdd: '选择要添加到编组的对象',
+    selectToRemove: '选择要从编组中删除的对象',
+    newName: '输入新的编组名称',
+    keywords: {
+      add: {
+        display: '添加对象(A)',
+        local: '添加',
+        global: 'Add'
+      },
+      remove: {
+        display: '删除对象(R)',
+        local: '删除',
+        global: 'Remove'
+      },
+      rename: {
+        display: '重命名(N)',
+        local: '重命名',
+        global: 'Rename'
+      },
+      accept: {
+        display: '接受(A)',
+        local: '接受',
+        global: 'Accept'
+      },
+      next: {
+        display: '下一个(N)',
+        local: '下一个',
+        global: 'Next'
+      }
+    }
+  },
+  dashgroup: {
+    option: '输入选项',
+    empty: '未定义编组',
+    listEntry: '{name}  {description}  [{selectable}]  ({count})',
+    yes: '是',
+    no: '否',
+    enterNameOrBlank: '输入编组名称，或按 Enter 创建未命名编组',
+    enterGroupName: '输入编组名称',
+    selectableSet: '编组 {name} 可选择 = {value}',
+    orderOption: '输入重排选项',
+    fromPosition: '输入要重排对象的位置编号（从 0 开始）',
+    toPosition: '输入对象的新位置编号（从 0 开始）',
+    keywords: {
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      },
+      create: {
+        display: '创建(C)',
+        local: '创建',
+        global: 'Create'
+      },
+      add: {
+        display: '添加(A)',
+        local: '添加',
+        global: 'Add'
+      },
+      remove: {
+        display: '删除(R)',
+        local: '删除',
+        global: 'Remove'
+      },
+      explode: {
+        display: '分解(X)',
+        local: '分解',
+        global: 'Explode'
+      },
+      rename: {
+        display: '重命名(N)',
+        local: '重命名',
+        global: 'Rename'
+      },
+      selectable: {
+        display: '可选择(S)',
+        local: '可选择',
+        global: 'Selectable'
+      },
+      order: {
+        display: '重排(O)',
+        local: '重排',
+        global: 'Order'
+      },
+      reverse: {
+        display: '反向(R)',
+        local: '反向',
+        global: 'Reverse'
+      },
+      position: {
+        display: '位置(P)',
+        local: '位置',
+        global: 'Position'
+      }
+    }
   }
-
 }

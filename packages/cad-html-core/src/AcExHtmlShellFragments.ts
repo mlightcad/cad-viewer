@@ -18,12 +18,16 @@ const LOCALE_LABEL_KEYS: Record<
   AcExHtmlLocale,
   | 'toolbar.localeEn'
   | 'toolbar.localeZh'
+  | 'toolbar.localeJa'
+  | 'toolbar.localeKo'
   | 'toolbar.localeCs'
   | 'toolbar.localeTr'
   | 'toolbar.localeAr'
 > = {
   en: 'toolbar.localeEn',
   zh: 'toolbar.localeZh',
+  ja: 'toolbar.localeJa',
+  ko: 'toolbar.localeKo',
   cs: 'toolbar.localeCs',
   tr: 'toolbar.localeTr',
   ar: 'toolbar.localeAr'
@@ -32,6 +36,8 @@ const LOCALE_LABEL_KEYS: Record<
 const LOCALE_FALLBACK_LABELS: Record<AcExHtmlLocale, string> = {
   en: 'English',
   zh: '中文',
+  ja: '日本語',
+  ko: '한국어',
   cs: 'Čeština',
   tr: 'Türkçe',
   ar: 'العربية'

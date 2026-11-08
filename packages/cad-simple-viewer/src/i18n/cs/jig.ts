@@ -1604,5 +1604,162 @@ export default {
         global: '?'
       }
     }
+  },
+  group: {
+    selectOrOption: 'Vyberte objekty nebo',
+    createOrOption: 'Vytvořit skupinu nebo',
+    selectObjects: 'Vyberte objekty pro skupinu',
+    enterName: 'Zadejte název skupiny',
+    enterDescription: 'Zadejte popis skupiny',
+    invalidName: 'Neplatný název skupiny',
+    nameExists: 'Název skupiny již existuje',
+    created: 'Skupina {name} vytvořena',
+    keywords: {
+      name: {
+        display: 'Název(N)',
+        local: 'Název',
+        global: 'Name'
+      },
+      description: {
+        display: 'Popis(D)',
+        local: 'Popis',
+        global: 'Description'
+      }
+    }
+  },
+  ungroup: {
+    selectOrOption: 'Vyberte skupinu nebo',
+    selectGroup: 'Vyberte skupinu',
+    enterName: 'Zadejte název skupiny',
+    notFound: 'Skupina nenalezena',
+    notInGroup: 'Objekt není členem žádné skupiny',
+    multiGroup: 'Objekt je členem více skupin [{name}]',
+    exploded: 'Skupina {name} rozložena',
+    explodedCount: 'Rozloženo {count} skupin',
+    keywords: {
+      name: {
+        display: 'Název(N)',
+        local: 'Název',
+        global: 'Name'
+      },
+      all: {
+        display: 'Vše(A)',
+        local: 'Vše',
+        global: 'All'
+      },
+      accept: {
+        display: 'Přijmout(A)',
+        local: 'Přijmout',
+        global: 'Accept'
+      },
+      next: {
+        display: 'Další(N)',
+        local: 'Další',
+        global: 'Next'
+      }
+    }
+  },
+  groupedit: {
+    selectGroup: 'Vyberte skupinu',
+    enterName: 'Zadejte název skupiny',
+    notFound: 'Skupina nenalezena',
+    multiGroup: 'Objekt je členem více skupin [{name}]',
+    action: 'Zadejte volbu pro skupinu {name}',
+    selectToAdd: 'Vyberte objekty k přidání do skupiny',
+    selectToRemove: 'Vyberte objekty k odebrání ze skupiny',
+    newName: 'Zadejte nový název skupiny',
+    keywords: {
+      add: {
+        display: 'Přidat objekty(A)',
+        local: 'Přidat',
+        global: 'Add'
+      },
+      remove: {
+        display: 'Odebrat objekty(R)',
+        local: 'Odebrat',
+        global: 'Remove'
+      },
+      rename: {
+        display: 'Přejmenovat(N)',
+        local: 'Přejmenovat',
+        global: 'Rename'
+      },
+      accept: {
+        display: 'Přijmout(A)',
+        local: 'Přijmout',
+        global: 'Accept'
+      },
+      next: {
+        display: 'Další(N)',
+        local: 'Další',
+        global: 'Next'
+      }
+    }
+  },
+  dashgroup: {
+    option: 'Zadejte volbu',
+    empty: 'Nejsou definovány žádné skupiny',
+    listEntry: '{name}  {description}  [{selectable}]  ({count})',
+    yes: 'Ano',
+    no: 'Ne',
+    enterNameOrBlank:
+      'Zadejte název skupiny nebo stiskněte Enter pro bezejmennou',
+    enterGroupName: 'Zadejte název skupiny',
+    selectableSet: 'Skupina {name} výběrová = {value}',
+    orderOption: 'Zadejte volbu pořadí',
+    fromPosition: 'Zadejte číslo pozice objektu k přeuspořádání (od 0)',
+    toPosition: 'Zadejte nové číslo pozice objektu (od 0)',
+    keywords: {
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      },
+      create: {
+        display: 'Vytvořit(C)',
+        local: 'Vytvořit',
+        global: 'Create'
+      },
+      add: {
+        display: 'Přidat(A)',
+        local: 'Přidat',
+        global: 'Add'
+      },
+      remove: {
+        display: 'Odebrat(R)',
+        local: 'Odebrat',
+        global: 'Remove'
+      },
+      explode: {
+        display: 'Rozložit(X)',
+        local: 'Rozložit',
+        global: 'Explode'
+      },
+      rename: {
+        display: 'Přejmenovat(N)',
+        local: 'Přejmenovat',
+        global: 'Rename'
+      },
+      selectable: {
+        display: 'Výběrová(S)',
+        local: 'Výběrová',
+        global: 'Selectable'
+      },
+      order: {
+        display: 'Pořadí(O)',
+        local: 'Pořadí',
+        global: 'Order'
+      },
+      reverse: {
+        display: 'Obrátit(R)',
+        local: 'Obrátit',
+        global: 'Reverse'
+      },
+      position: {
+        display: 'Pozice(P)',
+        local: 'Pozice',
+        global: 'Position'
+      }
+    }
   }
 }

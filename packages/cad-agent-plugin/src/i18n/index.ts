@@ -4,6 +4,8 @@ import { agentAr } from './ar'
 import { agentCommandDescriptions } from './command'
 import { agentCs } from './cs'
 import { agentEn } from './en'
+import { agentJa } from './ja'
+import { agentKo } from './ko'
 import { agentTr } from './tr'
 import { agentZh } from './zh'
 
@@ -20,6 +22,8 @@ export type AgentChatLabels = Record<AgentChatLabelKey, string>
 const agentMessagesByLocale = {
   en: agentEn,
   zh: agentZh,
+  ja: agentJa,
+  ko: agentKo,
   tr: agentTr,
   cs: agentCs,
   ar: agentAr
@@ -28,10 +32,20 @@ const agentMessagesByLocale = {
 /** Guards {@link registerAgentI18n} against duplicate merges. */
 let isRegistered = false
 
+const LOCALES: readonly AcApLocale[] = [
+  'en',
+  'zh',
+  'ja',
+  'ko',
+  'tr',
+  'cs',
+  'ar'
+]
+
 /**
  * Builds the nested vue-i18n message object for one locale.
  *
- * @param locale - Target locale (`en` or `zh`).
+ * @param locale - Target locale.
  * @returns Messages shaped for `mergeLocaleMessage`.
  */
 function buildVueMessages(locale: AcApLocale) {
@@ -57,11 +71,9 @@ function buildVueMessages(locale: AcApLocale) {
 export function registerAgentI18n(): void {
   if (isRegistered) return
 
-  AcApI18n.mergeLocaleMessage('en', buildVueMessages('en'))
-  AcApI18n.mergeLocaleMessage('zh', buildVueMessages('zh'))
-  AcApI18n.mergeLocaleMessage('tr', buildVueMessages('tr'))
-  AcApI18n.mergeLocaleMessage('cs', buildVueMessages('cs'))
-  AcApI18n.mergeLocaleMessage('ar', buildVueMessages('ar'))
+  for (const locale of LOCALES) {
+    AcApI18n.mergeLocaleMessage(locale, buildVueMessages(locale))
+  }
   isRegistered = true
 }
 
@@ -74,11 +86,9 @@ export function mergeAgentI18nIntoVueI18n(
   mergeLocaleMessage: (locale: AcApLocale, message: object) => void
 ): void {
   registerAgentI18n()
-  mergeLocaleMessage('en', buildVueMessages('en'))
-  mergeLocaleMessage('zh', buildVueMessages('zh'))
-  mergeLocaleMessage('tr', buildVueMessages('tr'))
-  mergeLocaleMessage('cs', buildVueMessages('cs'))
-  mergeLocaleMessage('ar', buildVueMessages('ar'))
+  for (const locale of LOCALES) {
+    mergeLocaleMessage(locale, buildVueMessages(locale))
+  }
 }
 
 /**

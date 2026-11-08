@@ -54,6 +54,9 @@ export default {
     },
     attdef: {
       description: 'Creates an attribute definition for a block'
+    },
+    classicgroup: {
+      description: 'Opens the Object Grouping dialog to create and manage groups'
     }
   },
   USER: {}

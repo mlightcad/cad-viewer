@@ -67,6 +67,7 @@ import {
   AcDbHatch,
   AcDbLinearUnits,
   AcDbObjectId,
+  AcDbSystemVariables,
   AcDbSysVarManager,
   AcGiLineWeight
 } from '@mlightcad/data-model'
@@ -134,6 +135,9 @@ import {
   ellipseArc,
   ellipseCenter,
   find,
+  group,
+  groupEdit,
+  groupSelect,
   hatch,
   layerCurrent,
   layerFreeze,
@@ -174,6 +178,7 @@ import {
   ucsY,
   ucsZ,
   ucsZAxis,
+  ungroup,
   viewManager,
   xline
 } from '../../svg'
@@ -273,6 +278,8 @@ const ribbonLineType = ref<string | undefined>('ByLayer')
 const ribbonLineWeight = ref<AcGiLineWeight | undefined>(AcGiLineWeight.ByLayer)
 const ribbonDisplayedLayerName = ref('')
 const activeRibbonTabId = ref('home')
+/** Whether PICKSTYLE group-selection bit is on (values 1 or 3). */
+const pickstyleGroupOn = ref(true)
 const {
   handleCommandWillStart: handleHatchCommandWillStart,
   handleCommandEnded: handleHatchCommandEnded,
@@ -493,6 +500,39 @@ const handleObservedEntityChange = (args: {
  *
  * @param args System variable change payload raised by the CAD runtime.
  */
+const syncPickstyleGroupOn = (database?: AcDbDatabase) => {
+  const db = database ?? getCurrentDatabase()
+  if (!db) {
+    pickstyleGroupOn.value = true
+    return
+  }
+  const raw = AcDbSysVarManager.instance().getVar(
+    AcDbSystemVariables.PICKSTYLE,
+    db
+  )
+  const value = typeof raw === 'number' ? raw : Number(raw)
+  pickstyleGroupOn.value = Number.isFinite(value)
+    ? (Math.trunc(value) & 1) !== 0
+    : true
+}
+
+const togglePickstyleGroupSelection = () => {
+  const db = getCurrentDatabase()
+  if (!db) return
+  const raw = AcDbSysVarManager.instance().getVar(
+    AcDbSystemVariables.PICKSTYLE,
+    db
+  )
+  const current = typeof raw === 'number' ? Math.trunc(raw) : 1
+  const next = (current & 1) !== 0 ? current & ~1 : current | 1
+  AcDbSysVarManager.instance().setVar(
+    AcDbSystemVariables.PICKSTYLE,
+    next,
+    db
+  )
+  pickstyleGroupOn.value = (next & 1) !== 0
+}
+
 const handleSysVarChange = (args: RibbonSysVarChangeEvent) => {
   if (args.database !== observedDatabase) return
 
@@ -504,6 +544,9 @@ const handleSysVarChange = (args: RibbonSysVarChangeEvent) => {
       break
     case 'CLAYER':
       syncRibbonProperties(args.database)
+      break
+    case 'PICKSTYLE':
+      syncPickstyleGroupOn(args.database)
       break
     case 'LUNITS':
     case 'LUPREC':
@@ -600,6 +643,7 @@ const handleDocumentActivated = () => {
   syncMeasurementStyleControls()
   syncMeasurementUnitControls()
   syncRibbonProperties(AcApDocManager.instance?.curDocument?.database)
+  syncPickstyleGroupOn(AcApDocManager.instance?.curDocument?.database)
   syncHatchSelectionContext(AcApDocManager.instance?.curDocument?.database)
   bumpNamedViewsRevision()
 }
@@ -1253,6 +1297,11 @@ const buildBaseTabs = (
     undo: t('main.ribbon.tooltip.undo'),
     redo: t('main.ribbon.tooltip.redo'),
     properties: t('main.ribbon.tooltip.properties'),
+    group: t('main.ribbon.tooltip.group'),
+    ungroup: t('main.ribbon.tooltip.ungroup'),
+    groupEdit: t('main.ribbon.tooltip.groupEdit'),
+    groupSelect: t('main.ribbon.tooltip.groupSelect'),
+    classicGroup: t('main.ribbon.tooltip.classicGroup'),
     quickSelect: t('main.ribbon.tooltip.quickSelect'),
     countList: t('main.ribbon.tooltip.countList'),
     find: t('main.ribbon.tooltip.find'),
@@ -2385,6 +2434,78 @@ const buildBaseTabs = (
           ]
         },
         {
+          id: 'home-groups',
+          title: t('main.ribbon.group.groups'),
+          orientation: 'row',
+          footerMenuItems: [
+            {
+              id: 'cmd-classicgroup',
+              type: 'button',
+              label: t('main.ribbon.command.classicGroup'),
+              tooltip: ribbonTooltips.classicGroup,
+              props: { icon: group }
+            }
+          ],
+          collections: [
+            {
+              id: 'home-groups-button',
+              layout: 'row',
+              items: [
+                {
+                  id: 'cmd-group',
+                  type: 'button',
+                  label: t('main.ribbon.command.group'),
+                  tooltip: ribbonTooltips.group,
+                  size: 'large',
+                  props: { icon: group }
+                }
+              ]
+            },
+            {
+              id: 'home-groups-main',
+              layout: 'column',
+              rows: 3,
+              items: [
+                {
+                  id: 'cmd-ungroup',
+                  type: 'button',
+                  label: t('main.ribbon.command.ungroup'),
+                  tooltip: ribbonTooltips.ungroup,
+                  size: 'small',
+                  hideLabel: true,
+                  props: { icon: ungroup }
+                },
+                {
+                  id: 'cmd-groupedit',
+                  type: 'button',
+                  label: t('main.ribbon.command.groupEdit'),
+                  tooltip: ribbonTooltips.groupEdit,
+                  size: 'small',
+                  hideLabel: true,
+                  props: { icon: groupEdit }
+                },
+                {
+                  id: 'cmd-group-select',
+                  type: 'toggle',
+                  label: t('main.ribbon.command.groupSelect'),
+                  tooltip: ribbonTooltips.groupSelect,
+                  size: 'small',
+                  hideLabel: true,
+                  props: {
+                    modelValue: pickstyleGroupOn.value,
+                    activeIcon: groupSelect,
+                    inactiveIcon: groupSelect,
+                    activeLabel: t('main.ribbon.command.groupSelect'),
+                    inactiveLabel: t('main.ribbon.command.groupSelect'),
+                    activeValue: 'cmd-group-select',
+                    inactiveValue: 'cmd-group-select'
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
           id: 'home-annotation',
           title: t('main.ribbon.group.annotation'),
           orientation: 'row',
@@ -3008,6 +3129,8 @@ const ribbonData = computed(() => {
   measurementAunits.value
   measurementAuprec.value
   measurementLengthUnit.value
+  // Track PICKSTYLE group bit for the Groups panel toggle.
+  pickstyleGroupOn.value
   const commandByItemId = new Map<string, string>()
   commandByItemId.set('cmd-line', 'line')
   commandByItemId.set('cmd-polyline', 'pline')
@@ -3072,6 +3195,10 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-offset', 'offset')
   commandByItemId.set('cmd-layer', 'layer')
   commandByItemId.set('cmd-properties', 'properties')
+  commandByItemId.set('cmd-group', 'group')
+  commandByItemId.set('cmd-ungroup', 'ungroup')
+  commandByItemId.set('cmd-groupedit', 'groupedit')
+  commandByItemId.set('cmd-classicgroup', 'classicgroup')
   commandByItemId.set('cmd-qselect', 'qselect')
   commandByItemId.set('cmd-find', 'find')
   commandByItemId.set('cmd-countlist', 'countlist')
@@ -3262,6 +3389,10 @@ const handleRibbonItemClick = (payload: {
   if (isRibbonDisabled.value) return
   if (handleHatchItem(payload.itemId)) return
   if (handleMTextItem(payload.itemId)) return
+  if (payload.itemId === 'cmd-group-select') {
+    togglePickstyleGroupSelection()
+    return
+  }
   if (
     payload.groupId === 'home-layer' &&
     ribbonLayerOptions.value.some(item => item.value === payload.itemId)

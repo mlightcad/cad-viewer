@@ -6,6 +6,12 @@ title: "cad-simple-viewer 및 cad-editor 업그레이드"
 
 이 가이드는 `@mlightcad/cad-simple-viewer`와 `@mlightcad/cad-editor`를 안전하게 업그레이드하는 방법을 설명합니다. 즉, 왜 이들을 개별적으로 올릴 수 없는지, 어떤 관련 패키지가 함께 이동해야 하는지, 그리고 주어진 릴리스에 대해 올바른 호환 버전 집합을 확인하는 두 가지 신뢰할 수 있는 방법을 다룹니다.
 
+::: info AutoCAD 그룹(`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
+이 변경이 포함된 릴리스부터 `@mlightcad/cad-simple-viewer`는 **GROUP**, **-GROUP**, **UNGROUP**, **GROUPEDIT**를 등록하고, `PICKSTYLE`이 `1` 또는 `3`일 때 선택을 확장하며, 선택 가능한 그룹에 `GROUPDISPLAYMODE` 그립을 적용합니다. `@mlightcad/cad-editor`는 **CLASSICGROUP**(객체 그룹화 대화상자)과 홈 → 그룹 리본 패널을 추가합니다.
+
+`PICKSTYLE`(0–3, 기본 `1`)과 `GROUPDISPLAYMODE`(0–2, 기본 `2`)가 등록된 `@mlightcad/data-model`이 필요합니다. 연관 해치 동시 선택(`PICKSTYLE` 2/3)은 `AcDbHatch`에 경계 soft-pointer가 생길 때까지 no-op입니다.
+:::
+
 ::: info 가벼운 파일 열기 랜딩 엔트리
 **1.8.0**부터 `@mlightcad/cad-simple-viewer`는 DocManager에 의존하지 않는 랜딩용 서브경로를 제공합니다. **`acuiCreateFileOpenSession`**(지연 `createDocManager` + 자동 열기 / `attachSourcesTo`)을 우선하십시오. 도면을 직접 여는 경우(예: Vue `MlCadViewer`)에는 `AcUiFileOpenLanding`을 사용하십시오.
 

@@ -55,6 +55,10 @@ export default {
     },
     attdef: {
       description: 'Bir blok için öznitelik tanımı oluşturur'
+    },
+    classicgroup: {
+      description:
+        'Grup oluşturmak ve yönetmek için Nesne Gruplama iletişim kutusunu açar'
     }
   },
   USER: {}

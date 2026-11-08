@@ -143,6 +143,18 @@ export default {
       description: '从图纸中删除所选对象',
       prompt: '选择对象'
     },
+    group: {
+      description: '创建和管理称为编组的对象集合'
+    },
+    '-group': {
+      description: '通过命令行选项创建和管理编组'
+    },
+    groupedit: {
+      description: '向编组添加或从编组中删除对象，或重命名编组'
+    },
+    ungroup: {
+      description: '取消对象与编组的关联'
+    },
     extmax: {
       description: '存储模型空间图形范围的右上角（只读）'
     },

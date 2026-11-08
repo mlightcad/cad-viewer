@@ -38,6 +38,7 @@ export default {
       modify: 'تعديل',
       layer: 'الطبقات',
       properties: 'الخصائص',
+      groups: 'المجموعات',
       utilities: 'أدوات',
       annotation: 'تعليقات توضيحية',
       navigate: 'تنقل',
@@ -101,6 +102,11 @@ export default {
       undo: 'تراجع',
       redo: 'إعادة',
       properties: 'الخصائص',
+      group: 'مجموعة',
+      ungroup: 'إلغاء المجموعة',
+      groupEdit: 'تحرير المجموعة',
+      groupSelect: 'تحديد المجموعة تشغيل/إيقاف',
+      classicGroup: 'مدير المجموعات',
       find: 'بحث',
       countList: 'العد',
       insert: 'إدراج',
@@ -449,6 +455,14 @@ export default {
 
       properties:
         'افتح لوحة الخصائص للعناصر المحددة حاليًا.',
+
+      group: 'أنشئ مجموعة من الكائنات المحددة (GROUP).',
+      ungroup: 'فجّر تعريف المجموعة (UNGROUP).',
+      groupEdit:
+        'أضف أعضاء المجموعة أو أزلهم أو أعد تسمية المجموعة (GROUPEDIT).',
+      groupSelect:
+        'بدّل تحديد المجموعات تشغيلًا أو إيقافًا (بت مجموعة PICKSTYLE).',
+      classicGroup: 'افتح مربع حوار تجميع الكائنات (CLASSICGROUP).',
 
       quickSelect:
         'افتح التحديد السريع لتصفية العناصر وتحديدها وفق شروط.',

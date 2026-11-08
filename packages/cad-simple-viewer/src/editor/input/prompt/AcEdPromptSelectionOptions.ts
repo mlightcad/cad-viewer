@@ -11,6 +11,13 @@ export class AcEdPromptSelectionOptions extends AcEdPromptOptions<string> {
   /** Whether entities on locked layers are selectable */
   private _allowObjectOnLockedLayer = false
 
+  /**
+   * Whether picking a selectable group member expands to the whole group
+   * (`PICKSTYLE` group bit). Commands such as GROUPEDIT Remove turn this off
+   * so individual members can be picked.
+   */
+  private _allowGroupSelection = true
+
   constructor(message: string, globalKeywords?: string) {
     super(message, globalKeywords)
   }
@@ -36,5 +43,17 @@ export class AcEdPromptSelectionOptions extends AcEdPromptOptions<string> {
 
   set allowObjectOnLockedLayer(value: boolean) {
     this._allowObjectOnLockedLayer = value
+  }
+
+  /**
+   * Gets or sets whether group selection expansion is applied during this
+   * prompt. Defaults to `true`.
+   */
+  get allowGroupSelection(): boolean {
+    return this._allowGroupSelection
+  }
+
+  set allowGroupSelection(value: boolean) {
+    this._allowGroupSelection = value
   }
 }

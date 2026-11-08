@@ -16,7 +16,7 @@ const DEFAULT_COMMAND_GROUP_NAME = 'USER'
  * Language/locale id used in the application.
  * Matches the naming style used by vue-i18n ("Locale").
  */
-export type AcApLocale = 'en' | 'zh' | 'tr' | 'cs' | 'ar'
+export type AcApLocale = 'en' | 'zh' | 'ja' | 'ko' | 'tr' | 'cs' | 'ar'
 
 /**
  * A single locale message tree.
@@ -64,6 +64,8 @@ export class AcApI18n {
   private static _messages: AcApLocaleMessages = {
     en: {},
     zh: {},
+    ja: {},
+    ko: {},
     tr: {},
     cs: {},
     ar: {}

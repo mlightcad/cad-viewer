@@ -178,7 +178,7 @@ The `MlCadViewer` component accepts the following props:
 
 | Property            | Type                        | Default     | Description                                                                                                                                              |
 | ------------------- | --------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `locale`            | `'en' | 'zh' | 'default'` | `'default'` | UI language. `'default'` uses the browser’s locale. Affects both the viewer UI and Element Plus components.                                              |
+| `locale`            | `'en' \| 'zh' \| 'ja' \| 'ko' \| 'tr' \| 'cs' \| 'ar' \| 'default'` | `'default'` | UI language. `'default'` uses the browser’s locale. Affects both the viewer UI and Element Plus components.                                              |
 | `url`               | `string`                    | `undefined` | Remote URL of a CAD file (DWG/DXF). If provided, the file is fetched and opened automatically on mount. Updating this prop reloads the file dynamically. |
 | `localFile`         | `File`                      | `undefined` | Local CAD file as a `File` object. Automatically opened on mount and reloaded when changed. **Takes precedence over `url`** if both are provided.        |
 | `background`        | `number`                    | `undefined` | Background color of the CAD view as a 24-bit hexadecimal RGB value (e.g. `0x000000`). Updates dynamically when changed.                                  |

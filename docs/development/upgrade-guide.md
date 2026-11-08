@@ -6,6 +6,12 @@ title: "Upgrading cad-simple-viewer and cad-editor"
 
 This guide explains how to safely upgrade `@mlightcad/cad-simple-viewer` and`@mlightcad/cad-editor` — why they cannot be bumped in isolation, which related packages must move together, and two reliable ways to determine the correct compatible version set for any given release.
 
+::: info AutoCAD groups (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
+Starting with the release that includes this change, `@mlightcad/cad-simple-viewer` registers **GROUP**, **-GROUP**, **UNGROUP**, and **GROUPEDIT**, expands selection when `PICKSTYLE` is `1` or `3`, and applies `GROUPDISPLAYMODE` grips for selectable groups. `@mlightcad/cad-editor` adds **CLASSICGROUP** (Object Grouping dialog) and a Home → Groups ribbon panel.
+
+Requires `@mlightcad/data-model` that registers `PICKSTYLE` (0–3, default `1`) and `GROUPDISPLAYMODE` (0–2, default `2`). Associative hatch co-selection (`PICKSTYLE` 2/3) remains a no-op until hatch boundary soft-pointers exist on `AcDbHatch`.
+:::
+
 ::: info Lightweight file-open landing entry
 Starting with **1.8.0**, `@mlightcad/cad-simple-viewer` exposes a DocManager-free subpath for landing pages. Prefer **`acuiCreateFileOpenSession`** (lazy `createDocManager` + auto open / `attachSourcesTo`). Use `AcUiFileOpenLanding` when you open drawings yourself (e.g. Vue `MlCadViewer`):
 

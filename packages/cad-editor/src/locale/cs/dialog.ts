@@ -361,5 +361,50 @@ export default {
     yAxis: 'Y Axis',
     zAxis: 'Z Axis',
     relativeTo: 'Relative to'
+  },
+  classicGroupDlg: {
+    title: 'Seskupování objektů',
+    groupName: 'Název skupiny',
+    selectable: 'Výběrová',
+    identification: 'Identifikace skupiny',
+    description: 'Popis',
+    findName: 'Najít název <',
+    highlight: 'Zvýraznit <',
+    includeUnnamed: 'Zahrnout bezejmenné',
+    createGroup: 'Vytvořit skupinu',
+    new: 'Nová <',
+    unnamed: 'Bezejmenná',
+    changeGroup: 'Změnit skupinu',
+    remove: 'Odebrat <',
+    add: 'Přidat <',
+    rename: 'Přejmenovat',
+    reOrder: 'Přeuspořádat...',
+    descriptionBtn: 'Popis',
+    explode: 'Rozložit',
+    selectableBtn: 'Výběrová',
+    yes: 'Ano',
+    no: 'Ne',
+    pickObject: 'Vyberte objekt pro nalezení jeho skupiny',
+    notInGroup: 'Objekt není členem žádné skupiny',
+    selectObjects: 'Vyberte objekty pro novou skupinu',
+    selectToAdd: 'Vyberte objekty k přidání',
+    selectToRemove: 'Vyberte objekty k odebrání',
+    clearSelectableFirst:
+      'Před odebráním objektů zrušte u skupiny volbu Výběrová',
+    invalidName: 'Neplatný název skupiny',
+    nameExists: 'Název skupiny již existuje',
+    created: 'Skupina {name} vytvořena'
+  },
+  orderGroupDlg: {
+    title: 'Pořadí skupiny',
+    groupName: 'Název skupiny',
+    description: 'Popis',
+    removeFrom: 'Odebrat z pozice (od 0)',
+    newPosition: 'Zadejte nové číslo pozice objektu',
+    numberOfObjects: 'Počet objektů',
+    reOrder: 'Přeuspořádat',
+    reverseOrder: 'Obrátit pořadí',
+    highlight: 'Zvýraznit'
   }
+
 }

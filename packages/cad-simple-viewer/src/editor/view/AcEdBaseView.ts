@@ -15,6 +15,7 @@ import { debounce } from 'lodash-es'
 
 import { AcApDocManager } from '../../app'
 import { AcApI18n } from '../../i18n'
+import { acapExpandSelectionByGroups } from '../../service/AcApGroup'
 import { excludeLockedLayerIds } from '../../service/AcApLockedLayer'
 import type { AcTrSpatialSearchOptions } from '../../spatialIndex/AcTrSpatialIndex'
 import type {
@@ -244,6 +245,12 @@ export abstract class AcEdBaseView {
    * only read entities, such as layer isolate and hatch boundaries.
    */
   private _allowSelectOnLockedLayer = false
+  /**
+   * When false, {@link applySelection} skips selectable-group expansion even if
+   * `PICKSTYLE` enables group selection. Selection prompts set this from
+   * `allowGroupSelection` (e.g. GROUPEDIT Remove).
+   */
+  private _allowGroupSelection = true
   /** Input manager for handling user interactions */
   private _editor: AcEditor
   /** Size of selection box in pixels for entity picking */
@@ -965,6 +972,12 @@ export abstract class AcEdBaseView {
   applySelection(ids: AcDbObjectId[], action: AcEdSelectionAction) {
     if (!this.entitySelectionEnabled) return
     ids = this.selectableIds(ids, action)
+    // Expand selectable groups when PICKSTYLE enables group selection (1/3).
+    // Associative hatch co-selection (PICKSTYLE 2/3) is intentionally a no-op
+    // until hatch boundary soft-pointers exist on AcDbHatch.
+    if (action !== 'remove') {
+      ids = this.expandGroupSelectionIds(ids)
+    }
     if (action === 'replace') {
       this.selectionSet.clear()
       const unique = ids.filter(id => !this.selectionSet.has(id))
@@ -981,6 +994,17 @@ export abstract class AcEdBaseView {
       const existing = ids.filter(id => this.selectionSet.has(id))
       if (existing.length > 0) this.selectionSet.delete(existing)
     }
+  }
+
+  /**
+   * Expands ids by selectable group membership when `PICKSTYLE` group bit is on
+   * and {@link allowGroupSelection} is true.
+   */
+  protected expandGroupSelectionIds(ids: AcDbObjectId[]): AcDbObjectId[] {
+    if (!this._allowGroupSelection) return ids
+    const db = AcApDocManager.tryGetInstance?.()?.curDocument?.database
+    if (!db || ids.length === 0) return ids
+    return acapExpandSelectionByGroups(db, ids)
   }
 
   /**
@@ -1240,6 +1264,18 @@ export abstract class AcEdBaseView {
   }
   set allowSelectOnLockedLayer(value: boolean) {
     this._allowSelectOnLockedLayer = value
+  }
+
+  /**
+   * Whether selectable-group expansion runs during {@link applySelection}.
+   * Defaults to `true`; selection prompts may set it from
+   * {@link AcEdPromptSelectionOptions.allowGroupSelection}.
+   */
+  get allowGroupSelection() {
+    return this._allowGroupSelection
+  }
+  set allowGroupSelection(value: boolean) {
+    this._allowGroupSelection = value
   }
 
   /**

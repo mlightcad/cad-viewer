@@ -75,6 +75,8 @@ export const ar: Record<string, string> = {
   'toolbar.localeCs': 'Čeština',
   'toolbar.localeTr': 'Türkçe',
   'toolbar.localeAr': 'العربية',
+  'toolbar.localeJa': '日本語',
+  'toolbar.localeKo': '한국어',
 
   'toolbar.collapse': 'طي شريط الأدوات',
   'toolbar.moreOverflow': 'المزيد من الأدوات',

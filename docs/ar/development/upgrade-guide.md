@@ -6,6 +6,12 @@ title: "ترقية cad-simple-viewer و cad-editor"
 
 يشرح هذا الدليل كيفية ترقية `@mlightcad/cad-simple-viewer` و`@mlightcad/cad-editor` بأمان — ولماذا لا يمكن رفعهما بمعزل عن غيرهما، وأي الحزم ذات الصلة يجب أن تتحرك معًا، وطريقتان موثوقتان لتحديد مجموعة الإصدارات المتوافقة الصحيحة لأي إصدار معين.
 
+::: info مجموعات AutoCAD (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
+بدءًا من الإصدار الذي يتضمن هذا التغيير، يسجّل `@mlightcad/cad-simple-viewer` أوامر **GROUP** و**-GROUP** و**UNGROUP** و**GROUPEDIT**، ويوسّع التحديد عندما يكون `PICKSTYLE` بقيمة `1` أو `3`، ويطبّق مقابض `GROUPDISPLAYMODE` للمجموعات القابلة للتحديد. يضيف `@mlightcad/cad-editor` أمر **CLASSICGROUP** (مربع حوار تجميع الكائنات) ولوحة الشريط الرئيسية → المجموعات.
+
+يتطلب `@mlightcad/data-model` الذي يسجّل `PICKSTYLE` (0–3، الافتراضي `1`) و`GROUPDISPLAYMODE` (0–2، الافتراضي `2`). يبقى التحديد المشترك للتهشير الارتباطي (`PICKSTYLE` 2/3) بدون تنفيذ حتى تتوفر مؤشرات حدود ناعمة على `AcDbHatch`.
+:::
+
 ::: info مدخل خفيف لصفحة فتح الملفات
 بدءًا من **1.8.0**، يوفّر `@mlightcad/cad-simple-viewer` مسارًا فرعيًا خاليًا من DocManager لصفحات الهبوط. فضّل **`acuiCreateFileOpenSession`** (`createDocManager` كسول + فتح تلقائي / `attachSourcesTo`). استخدم `AcUiFileOpenLanding` عندما تفتح الرسومات بنفسك (مثل Vue `MlCadViewer`):
 

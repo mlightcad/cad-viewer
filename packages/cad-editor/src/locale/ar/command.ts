@@ -92,6 +92,11 @@ export default {
       ...enCommand.ACAD.attdef,
       description:
         'إنشاء تعريف سمة لاستخدامه داخل كتلة'
+    },
+    classicgroup: {
+      ...enCommand.ACAD.classicgroup,
+      description:
+        'فتح مربع حوار تجميع الكائنات لإنشاء المجموعات وإدارتها'
     }
   },
 
