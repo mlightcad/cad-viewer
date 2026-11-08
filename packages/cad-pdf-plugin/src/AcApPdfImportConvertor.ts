@@ -25,6 +25,7 @@ import {
 } from './pdfOptionalContent'
 import {
   extractPdfImportSubpaths,
+  PDF_IMPORT_FOREGROUND_COLOR,
   type PdfImportedText,
   type PdfImportOps,
   type PdfImportPoint
@@ -176,7 +177,8 @@ export class AcApPdfImportConvertor {
         pdfjsLib.OPS as unknown as PdfImportOps,
         viewport,
         ocgLayers,
-        fallbackLayerName
+        fallbackLayerName,
+        { remapContrastInk: true, paperTone: 'auto' }
       )
       const entities: PdfVectorEntity[] = []
       const usedLayerNames = new Set<string>()
@@ -294,6 +296,10 @@ export class AcApPdfImportConvertor {
 
 function applyPdfColor(entity: AcDbEntity, color?: string) {
   if (!color) return
+  if (color === PDF_IMPORT_FOREGROUND_COLOR) {
+    entity.color = new AcCmColor().setForeground()
+    return
+  }
   const match = /^#([0-9a-fA-F]{6})$/.exec(color)
   if (!match) return
   const value = Number.parseInt(match[1], 16)

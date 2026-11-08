@@ -147,9 +147,11 @@ await new AcApPdfImportConvertor().convert(context, buffer, 1) // page 1
 
 1. Show a native file picker (`.pdf`).
 2. Use `pdfjs-dist` to read operator lists from the selected page.
-3. Convert path operators (move, line, cubic Bézier, close) into `AcDbLine` / `AcDbPolyline` entities in model space.
+3. Convert path operators (move, line, cubic Bézier, close) into `AcDbLine` / `AcDbPolyline`, and `showText` runs into `AcDbText`, in model space.
+4. Map PDF optional content groups to CAD layers when present.
+5. Remap paper-contrast ink to ACI 7 (AutoCAD foreground): black ink on white PDF paper, or white ink on dark PDF paper. ACI 7 follows the CAD canvas background.
 
-Import is **vector-only**; raster/scanned PDF pages produce no entities. Only the requested page is processed (default: page 1).
+Import is **vector-only**; raster/scanned PDF pages produce no entities. Only the requested page is processed (default: page 1). Form XObject `/Matrix` is applied so nested content keeps its placement.
 
 ## Main exports
 
@@ -164,6 +166,7 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 | `AcApPdfConvertor` | CAD → PDF export utility |
 | `AcApPdfExportOptions`, `AcApPdfColorMode`, `resolveAcApPdfExportOptions` | Export option types and defaults (aliases of `@mlightcad/cad-pdf-core`) |
 | `AcApPdfImportConvertor` | PDF → CAD entities import utility |
+| `extractPdfImportSubpaths`, `PDF_IMPORT_FOREGROUND_COLOR`, `PdfImportExtractOptions`, contrast helpers | Programmatic vector import / ACI 7 remapping |
 
 ## Project layout
 

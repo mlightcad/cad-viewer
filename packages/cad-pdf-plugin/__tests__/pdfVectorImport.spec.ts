@@ -1,7 +1,10 @@
 import { PDF_FALLBACK_LAYER } from '../src/pdfOptionalContent'
 import {
+  detectPdfImportPaperTone,
   extractPdfImportSubpaths,
+  PDF_IMPORT_FOREGROUND_COLOR,
   PDF_PT_TO_MM,
+  remapPdfImportColor,
   type PdfImportOps,
   type PdfImportViewport
 } from '../src/pdfVectorImport'
@@ -45,7 +48,10 @@ const OPS: PdfImportOps = {
   setHScale: 36,
   setTextRise: 37,
   setTextRenderingMode: 38,
-  showText: 39
+  showText: 39,
+  rawFillPath: 40,
+  paintFormXObjectBegin: 41,
+  paintFormXObjectEnd: 42
 }
 
 const DRAW_MOVE_TO = 0
@@ -303,7 +309,278 @@ describe('extractPdfImportSubpaths', () => {
       new Map()
     )
 
+    expect(subpaths[0].color).toBe(PDF_IMPORT_FOREGROUND_COLOR)
+  })
+
+  test('can keep paper-black colors when remapping is disabled', () => {
+    const stream = new Float32Array([
+      DRAW_MOVE_TO,
+      0,
+      0,
+      DRAW_LINE_TO,
+      10,
+      0
+    ])
+    const { subpaths } = extractPdfImportSubpaths(
+      {
+        fnArray: [OPS.constructPath],
+        argsArray: [[OPS.stroke, [stream], null]]
+      },
+      OPS,
+      yUpViewport(100),
+      new Map(),
+      undefined,
+      { remapContrastInk: false }
+    )
+
     expect(subpaths[0].color).toBe('#000000')
+  })
+
+  test('remaps contrast ink to ACI 7 foreground by paper tone', () => {
+    expect(remapPdfImportColor('#000000', 'light')).toBe(
+      PDF_IMPORT_FOREGROUND_COLOR
+    )
+    expect(remapPdfImportColor('#ffffff', 'dark')).toBe(
+      PDF_IMPORT_FOREGROUND_COLOR
+    )
+    expect(remapPdfImportColor('#ffffff', 'light')).toBe('#ffffff')
+    expect(remapPdfImportColor('#000000', 'dark')).toBe('#000000')
+    expect(remapPdfImportColor('#00ff00', 'light')).toBe('#00ff00')
+    expect(
+      detectPdfImportPaperTone([
+        '#ffffff',
+        '#ffffff',
+        '#ffffff',
+        '#ffffff',
+        '#ffffff',
+        '#ffffff',
+        '#ffffff',
+        '#ffffff'
+      ])
+    ).toBe('dark')
+    // White fills plus black linework ⇒ still light paper (do not drop ink).
+    expect(
+      detectPdfImportPaperTone([
+        '#ffffff',
+        '#ffffff',
+        '#ffffff',
+        '#ffffff',
+        '#ffffff',
+        '#ffffff',
+        '#ffffff',
+        '#ffffff',
+        '#000000'
+      ])
+    ).toBe('light')
+    expect(detectPdfImportPaperTone(['#000000', '#000000'])).toBe('light')
+
+    const stream = new Float32Array([
+      DRAW_MOVE_TO,
+      0,
+      0,
+      DRAW_LINE_TO,
+      10,
+      0
+    ])
+    const { subpaths, texts } = extractPdfImportSubpaths(
+      {
+        fnArray: [
+          OPS.constructPath,
+          OPS.beginText,
+          OPS.setFont,
+          OPS.setTextMatrix,
+          OPS.showText,
+          OPS.endText
+        ],
+        argsArray: [
+          [OPS.stroke, [stream], null],
+          [],
+          ['F1', 10],
+          [new Float32Array([1, 0, 0, 1, 0, 0])],
+          [[{ unicode: 'A', width: 500 }]],
+          []
+        ]
+      },
+      OPS,
+      yUpViewport(100),
+      new Map()
+    )
+
+    expect(subpaths[0].color).toBe(PDF_IMPORT_FOREGROUND_COLOR)
+    expect(texts[0].color).toBe(PDF_IMPORT_FOREGROUND_COLOR)
+  })
+
+  test('applies Form XObject matrix between Begin and End', () => {
+    const { subpaths } = extractPdfImportSubpaths(
+      {
+        fnArray: [
+          OPS.paintFormXObjectBegin!,
+          OPS.moveTo,
+          OPS.lineTo,
+          OPS.stroke,
+          OPS.paintFormXObjectEnd!
+        ],
+        argsArray: [
+          [new Float32Array([1, 0, 0, 1, 50, 0]), [0, 0, 100, 100]],
+          [0, 0],
+          [10, 0],
+          [],
+          []
+        ]
+      },
+      OPS,
+      yUpViewport(100),
+      new Map()
+    )
+
+    expect(subpaths[0].points[0].x).toBeCloseTo(mm(50))
+    expect(subpaths[0].points[1].x).toBeCloseTo(mm(60))
+  })
+
+  test('keeps Form End restore separate from nested q/Q', () => {
+    const { subpaths } = extractPdfImportSubpaths(
+      {
+        fnArray: [
+          OPS.setStrokeRGBColor,
+          OPS.paintFormXObjectBegin!,
+          OPS.save,
+          OPS.setStrokeRGBColor,
+          OPS.moveTo,
+          OPS.lineTo,
+          OPS.stroke,
+          OPS.restore,
+          OPS.paintFormXObjectEnd!,
+          OPS.moveTo,
+          OPS.lineTo,
+          OPS.stroke
+        ],
+        argsArray: [
+          ['#00ff00'],
+          [new Float32Array([1, 0, 0, 1, 50, 0]), [0, 0, 100, 100]],
+          [],
+          ['#0000ff'],
+          [0, 0],
+          [10, 0],
+          [],
+          [],
+          [],
+          [0, 0],
+          [10, 0],
+          []
+        ]
+      },
+      OPS,
+      yUpViewport(100),
+      new Map()
+    )
+
+    expect(subpaths).toHaveLength(2)
+    expect(subpaths[0].color).toBe('#0000ff')
+    expect(subpaths[0].points[0].x).toBeCloseTo(mm(50))
+    // After Form End, outer green stroke and identity CTM are restored even
+    // though the form nested a q/Q pair on the graphics stack.
+    expect(subpaths[1].color).toBe('#00ff00')
+    expect(subpaths[1].points[0].x).toBeCloseTo(mm(0))
+  })
+
+  test('approximates PDF curveTo3 (y) with end-point second control', () => {
+    const { subpaths } = extractPdfImportSubpaths(
+      {
+        fnArray: [OPS.moveTo, OPS.curveTo3, OPS.stroke],
+        argsArray: [
+          [0, 0],
+          [10, 20, 30, 0],
+          []
+        ]
+      },
+      OPS,
+      yUpViewport(100),
+      new Map(),
+      undefined,
+      { remapContrastInk: false }
+    )
+
+    expect(subpaths).toHaveLength(1)
+    const pts = subpaths[0].points
+    expect(pts[0]).toEqual({ x: mm(0), y: mm(0) })
+    expect(pts[pts.length - 1]).toEqual({ x: mm(30), y: mm(0) })
+    // Mid samples bend toward the first control (10, 20), not flat on y=0.
+    expect(pts.some(p => p.y > mm(5))).toBe(true)
+  })
+
+  test('applies setHScale to AcDbText widthFactor', () => {
+    const { texts } = extractPdfImportSubpaths(
+      {
+        fnArray: [
+          OPS.beginText,
+          OPS.setFont,
+          OPS.setHScale,
+          OPS.setTextMatrix,
+          OPS.showText,
+          OPS.endText
+        ],
+        argsArray: [
+          [],
+          ['F1', 10],
+          [50],
+          [new Float32Array([1, 0, 0, 1, 0, 0])],
+          [[{ unicode: 'A', width: 500 }]],
+          []
+        ]
+      },
+      OPS,
+      yUpViewport(100),
+      new Map()
+    )
+
+    expect(texts).toHaveLength(1)
+    expect(texts[0].widthFactor).toBeCloseTo(0.5)
+    expect(texts[0].height).toBeCloseTo(mm(10))
+  })
+
+  test('treats rawFillPath like fill and closes the subpath', () => {
+    const stream = new Float32Array([
+      DRAW_MOVE_TO,
+      0,
+      0,
+      DRAW_LINE_TO,
+      10,
+      0,
+      DRAW_LINE_TO,
+      10,
+      10
+    ])
+    const { subpaths } = extractPdfImportSubpaths(
+      {
+        fnArray: [OPS.setFillRGBColor, OPS.constructPath],
+        argsArray: [['#0000ff'], [OPS.rawFillPath!, [stream], null]]
+      },
+      OPS,
+      yUpViewport(100),
+      new Map()
+    )
+
+    expect(subpaths).toHaveLength(1)
+    expect(subpaths[0].color).toBe('#0000ff')
+    const pts = subpaths[0].points
+    expect(pts[0]).toEqual(pts[pts.length - 1])
+  })
+
+  test('does not invent entities from an unpainted leftover path', () => {
+    const { subpaths } = extractPdfImportSubpaths(
+      {
+        fnArray: [OPS.moveTo, OPS.lineTo],
+        argsArray: [
+          [0, 0],
+          [10, 0]
+        ]
+      },
+      OPS,
+      yUpViewport(100),
+      new Map()
+    )
+
+    expect(subpaths).toHaveLength(0)
   })
 
   test('imports a showText run on the glyph baseline', () => {
