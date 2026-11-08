@@ -63,9 +63,9 @@ export const agentZh = {
   agentModeSimple: '简单模式',
   agentModeHighInference: '高推理模式',
   agentModeSimpleHint:
-    '默认。速度快 — 仅用测量 API 自检，不截图、不做视觉验证。',
+    '默认。速度快 — 优先用测量 API 自检，可选用截图；不做自动视觉验证。',
   agentModeHighInferenceHint:
-    '复杂任务可选。可用截图自检，生成后用截图 + 视觉模型验证（最多 5 轮）。需使用支持视觉的模型。',
+    '复杂任务可选。生成后用截图 + 视觉模型自动验证（最多 5 轮）。需使用支持视觉的模型。',
   highInferenceRequiresVision: '高推理模式需要使用支持视觉的模型。',
   verificationTitle: '图纸验证',
   verifying: '正在将图纸截图与您的需求和参考图进行比对…',

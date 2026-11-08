@@ -70,7 +70,7 @@ export const MAX_AGENT_STEPS_HIGH = 80
  * Builds an AI SDK agent configured for CAD drawing with tool calling.
  *
  * @param settings - LLM provider credentials and model selection.
- * @param options - Runtime options (agent mode controls screenshots / verification).
+ * @param options - Runtime options (agent mode controls automatic vision verification).
  * @returns An agent that streams responses and can invoke {@link createCadTools}.
  */
 export function createCadAgent(

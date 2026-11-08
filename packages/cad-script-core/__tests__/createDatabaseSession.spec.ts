@@ -197,6 +197,43 @@ describe('createDatabaseSession', () => {
     )
   })
 
+  test('disables previews when allowPreviewCapture is false even with a renderer', async () => {
+    const capturePreview = jest.fn(async () => ({
+      ok: true as const,
+      dataUrl: 'data:image/png;base64,AAAA'
+    }))
+    const session = {
+      ...createDatabaseSession(new AcDbDatabase()),
+      capturePreview
+    }
+    const [tool] = createCadToolCatalog(session, {
+      allowPreviewCapture: false
+    })
+
+    expect(tool.description).toContain(
+      'cad.view.capturePreview is DISABLED in this session'
+    )
+    expect(tool.description).toContain(
+      'Screenshot capture is disabled\nfor this session.'
+    )
+    expect(tool.description).not.toContain(
+      'do not use capturePreview in Simple mode'
+    )
+
+    const result = (await tool.execute({
+      code: `
+        cad.view.zoomExtents()
+        return cad.view.capturePreview()
+      `
+    })) as ToolResult
+    expect(result.success).toBe(true)
+    expect(result.images).toBeUndefined()
+    expect(capturePreview).not.toHaveBeenCalled()
+    expect(result.log).toContain(
+      'capturePreview skipped: screenshots disabled in this session'
+    )
+  })
+
   test('uses runEdit when the session provides it', async () => {
     const db = new AcDbDatabase()
     const base = createDatabaseSession(db)

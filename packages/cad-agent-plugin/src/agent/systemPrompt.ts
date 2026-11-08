@@ -227,7 +227,8 @@ STEP 4 — TOOL USAGE (SCRIPT-FIRST)
 
 The only available tool is execute_cad_script — use it for ALL drawing, queries,
 edits, selection, zoom, reading context via cad.drawing, and numeric self-check
-via cad.measure. Screenshots via cad.view.capturePreview are mode-dependent
+via cad.measure. Optional screenshots via cad.view.capturePreview are available
+in every mode; automatic post-round vision verification is High inference only
 (see AGENT MODE below).
 
 Tool arguments: { code: "<JS function body>", intent?: "<short label>" }.
@@ -525,10 +526,12 @@ Engineering correctness is always more important than cosmetic appearance.`
 
 const SIMPLE_MODE_POLICY = `Current mode: Simple (default).
 
-- Do NOT call cad.view.capturePreview — screenshot capture is disabled.
-- After non-trivial draws, verify only with cad.measure.check / cad.measure.report.
-- Screenshots and vision verification are reserved for High inference mode.
-- Do not assume the reply is visually verified against a screenshot.`
+- Prefer cad.measure.check / cad.measure.report for self-check after non-trivial draws.
+- You may also call cad.view.capturePreview() after drawing (usually after
+  cad.view.zoomExtents()) for an optional visual self-check. Screenshots are
+  attached to the tool result — do not expect the data URL in JSON.
+- Automatic post-round vision verification against the user's request is reserved
+  for High inference mode. Do not assume the reply was verified that way.`
 
 const HIGH_INFERENCE_MODE_POLICY = `Current mode: High inference (opt-in).
 
@@ -567,8 +570,9 @@ Do not stop after the first drawing attempt if obvious errors remain.`
 /**
  * Builds the CAD agent system prompt for the active agent mode.
  *
- * Simple mode forbids screenshots and relies on cad.measure. High inference
- * keeps optional capturePreview plus post-round vision verification.
+ * Both modes allow optional `cad.view.capturePreview` and prefer
+ * `cad.measure`. High inference additionally runs post-round vision
+ * verification against the user's request / reference images.
  */
 export function buildCadAgentSystemPrompt(agentMode: AgentMode): string {
   const policy =

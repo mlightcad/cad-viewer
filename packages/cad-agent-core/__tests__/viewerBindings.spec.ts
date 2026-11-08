@@ -149,6 +149,9 @@ describe('viewer bindings', () => {
 
     const [tool] = createCadToolCatalog(session)
     expect(tool.description).not.toContain('DISABLED')
+    expect(tool.description).not.toContain(
+      'do not use capturePreview in Simple mode'
+    )
     const result = await tool.execute({ code: DRAW_AND_CAPTURE })
     expect(result.images).toHaveLength(1)
 

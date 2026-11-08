@@ -9,8 +9,9 @@ import type { AgentMode } from '../storage/AgentModeStore'
 /** Options for {@link createCadTools}. */
 export interface CreateCadToolsOptions {
   /**
-   * Controls whether script screenshots are captured and attached for the
-   * model. Simple mode disables both; high-inference keeps them enabled.
+   * Reserved for mode-specific tool wiring. Preview capture is available in
+   * every mode; Simple vs High inference only differs in automatic post-round
+   * vision verification (see {@link createCadAgent}).
    */
   agentMode?: AgentMode
 }
@@ -45,7 +46,7 @@ function toJsonToolValue(value: unknown): unknown {
  *
  * When `attachPreviewImages` is true, screenshots from `cad.view.capturePreview`
  * are sent as `media` parts so the model can see them; the JSON summary omits
- * data URLs. When false, only JSON is returned (Simple mode).
+ * data URLs. When false, only JSON is returned.
  */
 function toCadToolModelOutput(output: unknown, attachPreviewImages: boolean) {
   const result = output as ToolResult
@@ -94,30 +95,32 @@ function toCadToolModelOutput(output: unknown, attachPreviewImages: boolean) {
  *
  * Schemas and execution live in `@mlightcad/cad-agent-core`. This adapter only
  * maps that catalog onto the AI SDK tool format and forwards screenshots via
- * {@link tool}'s `toModelOutput` when High inference mode is active.
+ * {@link tool}'s `toModelOutput`.
  *
- * @param options - Agent mode controls screenshot capture and model attachment.
+ * @param options - Reserved; preview capture is always enabled when the
+ *   session can render. Mode only gates automatic vision verification.
  * @returns AI SDK tool definitions keyed by tool name.
  */
-export function createCadTools(options: CreateCadToolsOptions = {}) {
-  const allowPreviewCapture = options.agentMode === 'high-inference'
+export function createCadTools(_options: CreateCadToolsOptions = {}) {
   return Object.fromEntries(
-    createCadToolCatalog(undefined, { allowPreviewCapture }).map(entry => [
-      entry.name,
-      // Pin OUTPUT so `toModelOutput` is checked against ToolResult. The
-      // schema is cast to the AI SDK's own `Schema` type: letting TS compare
-      // `ZodType<unknown>` against the zod-v4 branch of `FlexibleSchema`
-      // overflows the instantiation depth (TS2589).
-      tool<unknown, ToolResult>({
-        description: entry.description,
-        inputSchema: entry.inputSchema as unknown as Schema<unknown>,
-        execute: async (input: unknown) => entry.execute(input),
-        // AI SDK v5 passes the raw execute() result here, not `{ output }`;
-        // destructuring it sends `null` to the model (see cadTools.spec.ts).
-        toModelOutput: (output: ToolResult) =>
-          toCadToolModelOutput(output, allowPreviewCapture)
-      })
-    ])
+    createCadToolCatalog(undefined, { allowPreviewCapture: true }).map(
+      entry => [
+        entry.name,
+        // Pin OUTPUT so `toModelOutput` is checked against ToolResult. The
+        // schema is cast to the AI SDK's own `Schema` type: letting TS compare
+        // `ZodType<unknown>` against the zod-v4 branch of `FlexibleSchema`
+        // overflows the instantiation depth (TS2589).
+        tool<unknown, ToolResult>({
+          description: entry.description,
+          inputSchema: entry.inputSchema as unknown as Schema<unknown>,
+          execute: async (input: unknown) => entry.execute(input),
+          // AI SDK v5 passes the raw execute() result here, not `{ output }`;
+          // destructuring it sends `null` to the model (see cadTools.spec.ts).
+          toModelOutput: (output: ToolResult) =>
+            toCadToolModelOutput(output, true)
+        })
+      ]
+    )
   )
 }
 
