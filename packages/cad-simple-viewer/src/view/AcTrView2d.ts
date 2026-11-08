@@ -1077,8 +1077,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._layoutViewManager = new AcTrLayoutViewManager()
     this._progressiveOpenFit = new AcTrProgressiveOpenFitController(
       (box, margin) => {
-        this.activeLayoutView.zoomTo(box, margin ?? 1.1)
-        this._isDirty = true
+        this.zoomTo(box, margin ?? 1.1)
       }
     )
     this._entityDisplay = new AcTrEntityDisplayController(layerName =>
@@ -1731,6 +1730,7 @@ export class AcTrView2d extends AcEdBaseView {
   }
   set activeLayoutBtrId(value: string) {
     const previous = this._scene.activeLayoutBtrId
+    this.ensureLayoutView(value)
     this._layoutViewManager.activeLayoutBtrId = value
     this._scene.activeLayoutBtrId = value
     this.htmlTransientManager.setActiveLayoutId(value)
@@ -1745,6 +1745,20 @@ export class AcTrView2d extends AcEdBaseView {
    */
   get activeLayoutView() {
     return this._layoutViewManager.activeLayoutView!
+  }
+
+  /**
+   * Ensures a scene layout and {@link AcTrLayoutView} exist for `layoutBtrId`.
+   *
+   * Open framing and picking require an active layout view. Entity streams
+   * create scene layouts by owner id, but layout views normally come from
+   * `AcDbLayout` dictionary entries — which can point at a stale BTR id while
+   * `currentSpaceId` / entities use the real `*Model_Space` handle.
+   */
+  ensureLayoutView(layoutBtrId: AcDbObjectId) {
+    if (!layoutBtrId) return
+    this._scene.addEmptyLayout(layoutBtrId)
+    this.createLayoutViewIfNeeded(layoutBtrId)
   }
 
   /**
@@ -1904,7 +1918,9 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   zoomTo(box: AcGeBox2d, margin: number = 1.1) {
-    this.activeLayoutView.zoomTo(box, margin)
+    const layoutView = this.activeLayoutView
+    if (!layoutView) return
+    layoutView.zoomTo(box, margin)
     this._isDirty = true
   }
 
@@ -2358,6 +2374,7 @@ export class AcTrView2d extends AcEdBaseView {
     if (!activeLayout) return results
 
     const activeLayoutView = this.activeLayoutView
+    if (!activeLayoutView) return results
     const effectiveHitRadius = hitRadius ?? this.selectionBoxSize
     const paperBox = activeLayoutView.pointToBox(point, effectiveHitRadius)
     const threshold = Math.max(
@@ -3225,7 +3242,23 @@ export class AcTrView2d extends AcEdBaseView {
    */
   clear() {
     this.abortConversion()
+    // Scene.clear keeps active/model BTR ids (regen reuses them). Capture
+    // before layouts are dropped so we can rebind cameras afterward.
+    const activeLayoutBtrId = this._scene.activeLayoutBtrId
+    const modelSpaceBtrId = this._scene.modelSpaceBtrId
     this._scene.clear()
+    // Layout views hold cameras for prior BTR ids — drop them with the
+    // scene so a later open cannot activate a stale handle. Regen and
+    // same-document clear still need an active layout view, so rebind
+    // empty views for the ids the scene retained.
+    this._layoutViewManager = new AcTrLayoutViewManager()
+    if (activeLayoutBtrId) {
+      this.ensureLayoutView(activeLayoutBtrId)
+      this._layoutViewManager.activeLayoutBtrId = activeLayoutBtrId
+    }
+    if (modelSpaceBtrId && modelSpaceBtrId !== activeLayoutBtrId) {
+      this.ensureLayoutView(modelSpaceBtrId)
+    }
     // Scene teardown orphans InstancedMeshes — drop singleton slot maps too.
     AcTrMTextRenderer.getInstance().resetMeshGlyphBatch()
     this._renderer.resetDrawOrderZ()
