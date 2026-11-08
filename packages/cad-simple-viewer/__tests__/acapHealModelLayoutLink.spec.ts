@@ -60,6 +60,18 @@ describe('acapHealModelLayoutLink', () => {
     expect(acapHealModelLayoutLink(db as never)).toBe('ms')
   })
 
+  test('returns model-space id when objects dictionary is missing', () => {
+    const db = {
+      tables: {
+        blockTable: {
+          modelSpace: { objectId: 'ms' }
+        }
+      }
+    }
+
+    expect(acapHealModelLayoutLink(db as never)).toBe('ms')
+  })
+
   test('relinks Model layout and *Model_Space when BTR ids diverge', () => {
     const db = createDatabase({
       modelSpaceId: 'ms-live',
