@@ -19,4 +19,20 @@ export { AcApPdfImportConvertor } from './AcApPdfImportConvertor'
 export type { AcApPdfPluginOptions } from './AcApPdfPlugin'
 export { AcApPdfPlugin } from './AcApPdfPlugin'
 export { createPdfPlugin } from './createPdfPlugin'
+export {
+  applyPdfImportContrastColors,
+  detectPdfImportPaperTone,
+  extractPdfImportSubpaths,
+  PDF_IMPORT_FOREGROUND_COLOR,
+  PDF_PT_TO_MM,
+  remapPdfImportColor,
+  type PdfImportExtractOptions,
+  type PdfImportOps,
+  type PdfImportPageContent,
+  type PdfImportPaperTone,
+  type PdfImportedSubpath,
+  type PdfImportedText,
+  type PdfImportPoint,
+  type PdfImportViewport
+} from './pdfVectorImport'
 export { PDF_PLUGIN_NAME, PDF_PLUGIN_TRIGGERS } from './register'
