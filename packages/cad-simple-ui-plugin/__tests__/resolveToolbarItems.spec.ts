@@ -513,6 +513,8 @@ describe('default toolbar items', () => {
     expect(locale?.children?.map(child => child.id)).toEqual([
       'locale-en',
       'locale-zh',
+      'locale-ja',
+      'locale-ko',
       'locale-cs',
       'locale-tr',
       'locale-ar'
