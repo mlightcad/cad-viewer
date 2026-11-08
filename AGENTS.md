@@ -28,6 +28,7 @@ Single test file: `pnpm jest packages/<pkg>/__tests__/Foo.spec.ts`.
 - `*-plugin` (`cad-simple-ui`, `cad-script`, `cad-agent`, `cad-pdf`, `cad-html`, `cad-svg`, `cad-onedrive`, `cad-google-drive`): optional features, lazy-loaded.
 - `cad-html-core` / `cad-html-exporter` / `cad-simple-viewer-cli` / `cad-mcp-server`: self-contained HTML export, CLI, MCP server.
 - `cad-pdf-core` / `cad-pdf-exporter`: shared PDF export pipeline (no `cad-simple-viewer` / DOM dependency) and the headless Node PDF exporter built on it; `cad-pdf-plugin` uses the same core in the browser.
+- `cad-svg-converter` -> `@mlightcad/cad-svg-converter`: SVG File → Open (`AcDbDatabaseConverter` for `'svg'`). Depends only on `data-model`. Hosts call `registerSvgConverter()` (`cad-editor` does this in `initializeCadViewer`). Export remains `cad-svg-plugin` (`csvg`).
 - `cad-script-core` -> `@mlightcad/cad-script-core`: agent script runtime (`cad.*` host, tool catalog, headless `createDatabaseSession`). Depends on `data-model` + `cad-pdf-core` (`cad.file.savePdf`); HTML export (`cad.file.saveHtml`) uses a `CadSession.exportHtml` hook filled by `cad-agent-core`. ESLint rejects `cad-simple-viewer`, `cad-html-core`, `three`, and `vue` imports there. `cad-agent-core` binds it to `cad-simple-viewer` and re-exports it.
 - `*-demo` / `*-example`: sample apps (not published). `vite-config`: shared Rollup/Vite helpers.
 

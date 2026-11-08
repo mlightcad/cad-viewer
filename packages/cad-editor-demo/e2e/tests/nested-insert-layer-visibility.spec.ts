@@ -28,7 +28,49 @@ async function loadFixture(page: Page) {
   await expect(page.locator('.ml-cad-container')).toBeVisible({
     timeout: 30_000
   })
-  await page.waitForTimeout(1500)
+
+  // `window.AcApDocManager` is assigned in the demo `@create` handler, which
+  // can lag the container becoming visible under CI load. Wait for it before
+  // reading scene state.
+  await page.waitForFunction(
+    () =>
+      Boolean(
+        (window as Window & { AcApDocManager?: { instance?: unknown } })
+          .AcApDocManager?.instance
+      ),
+    undefined,
+    { timeout: 30_000 }
+  )
+
+  // Open-file progress (`.ml-ccl-overlay`) stays up through "Parsing layers…";
+  // a fixed sleep is not enough on slow CI runners.
+  await page.waitForFunction(
+    () => {
+      const overlays = Array.from(
+        document.querySelectorAll<HTMLElement>('.ml-ccl-overlay')
+      )
+      return (
+        overlays.length === 0 ||
+        overlays.every(el => getComputedStyle(el).display === 'none')
+      )
+    },
+    undefined,
+    { timeout: 60_000 }
+  )
+
+  const idle = await page.evaluate(async () => {
+    const mgr = (
+      window as Window & {
+        AcApDocManager: {
+          instance: {
+            curView: { waitUntilIdle: (ms?: number) => Promise<boolean> }
+          }
+        }
+      }
+    ).AcApDocManager.instance
+    return mgr.curView.waitUntilIdle(60_000)
+  })
+  expect(idle).toBe(true)
 }
 
 async function readNestedInsertSceneState(

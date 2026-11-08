@@ -17,7 +17,7 @@ import {
 } from '../editor/global/AcEdUiTheme'
 import { AcApI18n } from '../i18n/AcApI18n'
 
-const SUPPORTED_EXTENSIONS = ['.dxf', '.dwg'] as const
+const SUPPORTED_EXTENSIONS = ['.dxf', '.dwg', '.svg'] as const
 
 const VIEW_LOCAL = 'local'
 const VIEW_URL = 'url'

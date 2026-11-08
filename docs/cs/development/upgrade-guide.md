@@ -92,6 +92,10 @@ Agenti a skripty by měli volat tato API místo napodobování kót čarami, ši
 Od vydání s touto změnou `cad.blocks` poskytuje u každého bloku `entityCount` / `typeCounts` bez plného pole `entities`. Pro součty preferujte tato pole nebo `count(pred)`. Snímky přes `where` / `inBlock(id, pred)` — snímek celého prostoru se zastaví kolem 500 s `too_many_matches`. `where` / `count` / `inBox` procházejí jen modelový a výkresový prostor.
 :::
 
+::: info SVG File → Open
+Od verze **1.8.0** lze `.svg` otevřít jako výkres přes File → Open / `openDocument` / `openUrl`. Konverze je v novém balíčku [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter). `initializeCadViewer` v `cad-editor` jej registruje automaticky; při samotném `cad-simple-viewer` zavolejte jednou `registerSvgConverter()`. Export zůstává `csvg` v `cad-svg-plugin`.
+:::
+
 ::: info Export PDF rozdělen do sdíleného jádra (prohlížeč + Node)
 Od verze **1.8.0** používá export PDF stejné vrstvení jako export HTML. Sdílená logika je v `@mlightcad/cad-pdf-core` (model voleb a pipeline database → PDF, **bez** závislosti na `cad-simple-viewer` / DOM). Spotřebovávají ji dvě frontendy:
 

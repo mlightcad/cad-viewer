@@ -944,12 +944,17 @@ class CadViewerApp {
       // with openprof, or rely on worker mode only when explicitly requested.
       const useWorkers = openProf ? isWorkerOpenMode() : false
       const dwgParserUrl = `./workers/${viewer().LIBREDWG_PARSER_WORKER_FILE}`
-      const [{ registerLibreDwgConverter }, { registerLazyPlugins }] =
-        await Promise.all([
-          import('./registerLibreDwg'),
-          import('./register')
-        ])
+      const [
+        { registerLibreDwgConverter },
+        { registerLazyPlugins },
+        { registerSvgConverter }
+      ] = await Promise.all([
+        import('./registerLibreDwg'),
+        import('./register'),
+        import('@mlightcad/cad-svg-converter')
+      ])
       registerLibreDwgConverter(dwgParserUrl)
+      registerSvgConverter()
       viewer().AcApDocManager.createInstance({
         container: this.container,
         busyIndicatorHost: this.viewerPane,
