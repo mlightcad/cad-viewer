@@ -1508,7 +1508,9 @@ export class AcEdInputManager {
           this.active = true
           this.entitySelectionActive = true
           const previousAllowLocked = this.view.allowSelectOnLockedLayer
+          const previousAllowGroup = this.view.allowGroupSelection
           this.view.allowSelectOnLockedLayer = options.allowObjectOnLockedLayer
+          this.view.allowGroupSelection = options.allowGroupSelection
           const keywordSession = this.startKeywordSession(options, true)
           if (!keywordSession) {
             this._commandLine.setPrompt(options.message)
@@ -1591,15 +1593,15 @@ export class AcEdInputManager {
             disposeGesture = null
             this.view.setNavigationEnabled(true)
             this.view.allowSelectOnLockedLayer = previousAllowLocked
+            this.view.allowGroupSelection = previousAllowGroup
 
             document.removeEventListener('keydown', keyHandler)
             this.view.canvas.removeEventListener('mousedown', mouseDown)
-            this.view.canvas.removeEventListener('mousemove', mouseMove)
-            this.view.canvas.removeEventListener('mouseup', mouseUp)
             this.view.canvas.removeEventListener(
               'contextmenu',
               contextMenuHandler
             )
+            detachDocumentDrag()
             this.view.events.viewChanged.removeEventListener(onViewChanged)
             this.view.events.viewResize.removeEventListener(onViewChanged)
           }
@@ -1707,6 +1709,25 @@ export class AcEdInputManager {
             startCanvas = null
           }
 
+          // Track drag on document so box selection still completes when the
+          // pointer leaves the canvas (common while drawing a window/crossing).
+          let documentDragAttached = false
+          const detachDocumentDrag = () => {
+            if (!documentDragAttached) return
+            documentDragAttached = false
+            document.removeEventListener('mousemove', mouseMove, true)
+            document.removeEventListener('mouseup', mouseUp, true)
+            this.view.setNavigationEnabled(true)
+          }
+
+          const attachDocumentDrag = () => {
+            if (documentDragAttached) return
+            documentDragAttached = true
+            this.view.setNavigationEnabled(false)
+            document.addEventListener('mousemove', mouseMove, true)
+            document.addEventListener('mouseup', mouseUp, true)
+          }
+
           const mouseDown = (e: MouseEvent) => {
             if (e.button === 2) {
               if (this.shouldUseRightClickEnter()) {
@@ -1725,10 +1746,10 @@ export class AcEdInputManager {
             }
 
             beginPreview(e.clientX, e.clientY)
+            attachDocumentDrag()
           }
 
           const mouseMove = (e: MouseEvent) => {
-            if (e.buttons !== 1) return
             if (!startWcs || !previewEl || !startCanvas) return
             if (
               acedIsTouchDerivedMouseEvent(e) ||
@@ -1747,11 +1768,16 @@ export class AcEdInputManager {
 
           const mouseUp = (e: MouseEvent) => {
             if (e.button !== 0) return
-            if (!startWcs || !startCanvas) return
+            if (!startWcs || !startCanvas) {
+              detachDocumentDrag()
+              return
+            }
             if (
               acedIsTouchDerivedMouseEvent(e) ||
               acedShouldIgnoreCompatMouse()
             ) {
+              detachDocumentDrag()
+              clearBoxPreview()
               return
             }
 
@@ -1765,6 +1791,7 @@ export class AcEdInputManager {
             applySelectionAt(endCanvas, endWcs, action, isClick)
             startWcs = null
             startCanvas = null
+            detachDocumentDrag()
           }
 
           disposeGesture = acedAttachMobileBoxGesture({
@@ -1806,8 +1833,6 @@ export class AcEdInputManager {
 
           document.addEventListener('keydown', keyHandler)
           this.view.canvas.addEventListener('mousedown', mouseDown)
-          this.view.canvas.addEventListener('mousemove', mouseMove)
-          this.view.canvas.addEventListener('mouseup', mouseUp)
           this.view.canvas.addEventListener('contextmenu', contextMenuHandler)
           this.view.events.viewChanged.addEventListener(onViewChanged)
           this.view.events.viewResize.addEventListener(onViewChanged)

@@ -364,5 +364,50 @@ export default {
     yAxis: 'Y Axis',
     zAxis: 'Z Axis',
     relativeTo: 'Relative to'
+  },
+  classicGroupDlg: {
+    title: 'Object Grouping',
+    groupName: 'Group Name',
+    selectable: 'Selectable',
+    identification: 'Group Identification',
+    description: 'Description',
+    findName: 'Find Name <',
+    highlight: 'Highlight <',
+    includeUnnamed: 'Include Unnamed',
+    createGroup: 'Create Group',
+    new: 'New <',
+    unnamed: 'Unnamed',
+    changeGroup: 'Change Group',
+    remove: 'Remove <',
+    add: 'Add <',
+    rename: 'Rename',
+    reOrder: 'Re-Order...',
+    descriptionBtn: 'Description',
+    explode: 'Explode',
+    selectableBtn: 'Selectable',
+    yes: 'Yes',
+    no: 'No',
+    pickObject: 'Select an object to find its group',
+    notInGroup: 'Object is not a member of a group',
+    selectObjects: 'Select objects for new group',
+    selectToAdd: 'Select objects to add',
+    selectToRemove: 'Select objects to remove',
+    clearSelectableFirst:
+      'Clear Selectable for the group before removing objects',
+    invalidName: 'Invalid group name',
+    nameExists: 'Group name already exists',
+    created: 'Group {name} created'
+  },
+  orderGroupDlg: {
+    title: 'Order Group',
+    groupName: 'Group Name',
+    description: 'Description',
+    removeFrom: 'Remove from position (0-based)',
+    newPosition: 'Enter new position number for the object',
+    numberOfObjects: 'Number of objects',
+    reOrder: 'Re-Order',
+    reverseOrder: 'Reverse Order',
+    highlight: 'Highlight'
   }
+
 }

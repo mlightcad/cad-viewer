@@ -152,6 +152,19 @@ export default {
       description: 'Deletes selected entities from the drawing',
       prompt: 'Select entities'
     },
+    group: {
+      description: 'Creates and manages saved sets of objects called groups'
+    },
+    '-group': {
+      description:
+        'Creates and manages groups through command-line options'
+    },
+    groupedit: {
+      description: 'Adds and removes objects from a group, or renames a group'
+    },
+    ungroup: {
+      description: 'Disassociates objects from a group'
+    },
     extmax: {
       description:
         'Stores the upper-right corner of the model-space drawing extents (read-only)'

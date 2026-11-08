@@ -151,6 +151,18 @@ export default {
       description: 'Seçili varlıkları çizimden siler',
       prompt: 'Varlıkları seçin'
     },
+    group: {
+      description: 'Grup adı verilen kaydedilmiş nesne kümeleri oluşturur ve yönetir'
+    },
+    '-group': {
+      description: 'Komut satırı seçenekleriyle grup oluşturur ve yönetir'
+    },
+    groupedit: {
+      description: 'Bir gruba nesne ekler/kaldırır veya grubu yeniden adlandırır'
+    },
+    ungroup: {
+      description: 'Nesnelerin bir grupla ilişkisini kaldırır'
+    },
     extmax: {
       description:
         'Model alanı çizim kapsamının sağ üst köşesini saklar (salt okunur)'

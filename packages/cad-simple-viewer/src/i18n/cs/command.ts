@@ -147,6 +147,18 @@ export default {
       description: 'Odstraní vybrané objekty z výkresu',
       prompt: 'Vyberte objekty'
     },
+    group: {
+      description: 'Vytváří a spravuje uložené sady objektů nazývané skupiny'
+    },
+    '-group': {
+      description: 'Vytváří a spravuje skupiny pomocí voleb příkazového řádku'
+    },
+    groupedit: {
+      description: 'Přidává a odebírá objekty ze skupiny nebo ji přejmenuje'
+    },
+    ungroup: {
+      description: 'Zruší asociaci objektů se skupinou'
+    },
     extmax: {
       description:
         'Ukládá pravý horní roh rozsahu výkresu v modelovém prostoru (pouze pro čtení)'

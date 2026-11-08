@@ -23,6 +23,7 @@ import {
   AcApConvertToJpgCmd,
   AcApConvertToPngCmd,
   AcApCopyCmd,
+  AcApDashGroupCmd,
   AcApDimAlignedCmd,
   AcApDimAngularCmd,
   AcApDimArcCmd,
@@ -36,6 +37,8 @@ import {
   AcApEllipseCmd,
   AcApEntityPreviewCmd,
   AcApEraseCmd,
+  AcApGroupCmd,
+  AcApGroupEditCmd,
   AcApHatchCmd,
   AcApHideObjectsCmd,
   AcApImageAttachCmd,
@@ -83,6 +86,7 @@ import {
   AcApSysVarCmd,
   AcApUcsCmd,
   AcApUndoCmd,
+  AcApUngroupCmd,
   AcApUnisolateObjectsCmd,
   AcApViewRestoreCmd,
   AcApXAttachCmd,
@@ -1941,6 +1945,10 @@ export class AcApDocManager {
     addSystemCommand('entout', 'entout', new AcApEntityPreviewCmd())
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
+    addSystemCommand('group', 'group', new AcApGroupCmd())
+    addSystemCommand('-group', '-group', new AcApDashGroupCmd())
+    addSystemCommand('groupedit', 'groupedit', new AcApGroupEditCmd())
+    addSystemCommand('ungroup', 'ungroup', new AcApUngroupCmd())
     addSystemCommand('hideobjects', 'hideobjects', new AcApHideObjectsCmd())
     addSystemCommand('dimlinear', 'dimlinear', new AcApDimLinearCmd())
     addSystemCommand('dimaligned', 'dimaligned', new AcApDimAlignedCmd())

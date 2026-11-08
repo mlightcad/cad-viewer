@@ -70,15 +70,17 @@ export class AcApEntityService {
    * @returns Number of entities successfully transformed.
    */
   transformEntities(entities: AcDbEntity[], matrix: AcGeMatrix3d): number {
-    let count = 0
-    entities.forEach(entity => {
-      if (isEntityOnLockedLayer(this.db, entity)) return
-      const opened = this.db.openEntityForWrite(entity)
-      if (!opened) return
-      opened.transformBy(matrix)
-      count++
+    return this.runEntityEdit(() => {
+      let count = 0
+      entities.forEach(entity => {
+        if (isEntityOnLockedLayer(this.db, entity)) return
+        const opened = this.db.openEntityForWrite(entity)
+        if (!opened) return
+        opened.transformBy(matrix)
+        count++
+      })
+      return count
     })
-    return count
   }
 
   /**

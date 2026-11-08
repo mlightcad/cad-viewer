@@ -1,4 +1,5 @@
 import {
+  AcDbEntity,
   AcDbObjectId,
   AcDbSystemVariables,
   AcDbSysVarManager,
@@ -17,6 +18,17 @@ import {
 import { AcEdGripEditSession, AcEdGripEditTarget } from './AcEdGripEditSession'
 import { AcEdGripHandle } from './AcEdGripHandle'
 import { acedShouldShowGrips } from './AcEdGripPolicy'
+import { AcEdGroupGripEditSession } from './AcEdGroupGripEditSession'
+import {
+  acedCoveredGroupGripUnits,
+  acedEffectiveGroupDisplayMode,
+  acedIdsForEntityGrips,
+  acedSelectionBoundingBox,
+  acedSelectionCenter
+} from './AcEdGroupGripPolicy'
+
+/** Sentinel grip index for the group-center grip. */
+const GROUP_CENTER_GRIP_INDEX = -1
 
 /**
  * Internal record that binds a database grip point to its on-screen handle.
@@ -33,6 +45,18 @@ interface AcEdGripEntry {
   wcsPoint: AcGePoint3dLike
   /** DOM handle rendered in the view container for this grip. */
   handle: AcEdGripHandle
+  /** True when this is the group-center grip (GROUPDISPLAYMODE 1/2). */
+  isGroupCenter?: boolean
+  /** Member ids translated when dragging this group-center grip. */
+  groupMemberIds?: AcDbObjectId[]
+}
+
+interface AcEdGroupBboxOverlay {
+  el: HTMLDivElement
+  wcs: {
+    min: AcGePoint3dLike
+    max: AcGePoint3dLike
+  }
 }
 
 /**
@@ -66,9 +90,12 @@ export class AcEdGripManager {
   /** Active grip entries, one per grip point on each selected entity. */
   private readonly _entries: AcEdGripEntry[] = []
   /** In-progress grip drag session, or `null` when not editing. */
-  private _editSession: AcEdGripEditSession | null = null
+  private _editSession: AcEdGripEditSession | AcEdGroupGripEditSession | null =
+    null
   /** Entry currently under the pointer during mousedown (hot grip), if any. */
   private _hotEntry: AcEdGripEntry | null = null
+  /** Dashed bbox overlays for GROUPDISPLAYMODE 2 (one per covered group). */
+  private _groupBboxes: AcEdGroupBboxOverlay[] = []
 
   /** Stable listener reference for selection/command refresh. */
   private readonly _boundRefresh = () => this.refresh()
@@ -127,18 +154,58 @@ export class AcEdGripManager {
    */
   refresh() {
     this.clearEntries()
+    this.clearGroupBbox()
     this.applyAppearance()
     if (!this.canShowGrips()) {
       return
     }
 
     const doc = AcApDocManager.instance.curDocument
-    const blockTable = doc.database.tables.blockTable
-    const appearance = readGripAppearance(doc.database)
+    const db = doc.database
+    const blockTable = db.tables.blockTable
+    const appearance = readGripAppearance(db)
+    const selectedIds = this._view.selectionSet.ids
+    const groupMode = acedEffectiveGroupDisplayMode(db, selectedIds)
+    const groupUnits =
+      groupMode === 1 || groupMode === 2
+        ? acedCoveredGroupGripUnits(db, selectedIds)
+        : []
 
-    for (const entityId of this._view.selectionSet.ids) {
+    for (const unit of groupUnits) {
+      const center = acedSelectionCenter(db, unit.memberIds)
+      if (center) {
+        const handle = new AcEdGripHandle(this._view.container, appearance)
+        const entry: AcEdGripEntry = {
+          entityId: unit.representativeId,
+          gripIndex: GROUP_CENTER_GRIP_INDEX,
+          wcsPoint: center,
+          handle,
+          isGroupCenter: true,
+          groupMemberIds: unit.memberIds
+        }
+        this.wireHandleEvents(entry)
+        this._entries.push(entry)
+        this.positionEntry(entry)
+      }
+      if (groupMode === 2) {
+        const box = acedSelectionBoundingBox(db, unit.memberIds)
+        if (box) {
+          this.addGroupBbox({
+            min: { x: box.min.x, y: box.min.y, z: box.min.z },
+            max: { x: box.max.x, y: box.max.y, z: box.max.z }
+          })
+        }
+      }
+    }
+
+    const entityGripIds = acedIdsForEntityGrips(
+      selectedIds,
+      groupUnits,
+      groupMode
+    )
+    for (const entityId of entityGripIds) {
       const entity = blockTable.getEntityById(entityId)
-      if (!entity || isEntityOnLockedLayer(doc.database, entity)) continue
+      if (!entity || isEntityOnLockedLayer(db, entity)) continue
 
       const gripPoints = entity.subGetGripPoints()
       for (let gripIndex = 0; gripIndex < gripPoints.length; ++gripIndex) {
@@ -226,7 +293,11 @@ export class AcEdGripManager {
    */
   private onGripSysVarChanged(name: string) {
     const normalized = name.toLowerCase()
-    if (normalized === AcDbSystemVariables.GRIPOBJLIMIT.toLowerCase()) {
+    if (
+      normalized === AcDbSystemVariables.GRIPOBJLIMIT.toLowerCase() ||
+      normalized === AcDbSystemVariables.GROUPDISPLAYMODE.toLowerCase() ||
+      normalized === AcDbSystemVariables.PICKSTYLE.toLowerCase()
+    ) {
       this.refresh()
       return
     }
@@ -308,6 +379,11 @@ export class AcEdGripManager {
    * @param entry - The grip entry that was activated by the user
    */
   private startEdit(entry: AcEdGripEntry) {
+    if (entry.isGroupCenter) {
+      this.startGroupCenterEdit(entry)
+      return
+    }
+
     const entity =
       AcApDocManager.instance.curDocument.database.tables.blockTable.getEntityById(
         entry.entityId
@@ -329,6 +405,31 @@ export class AcEdGripManager {
       this._view,
       entity,
       target,
+      () => this.endEdit()
+    )
+  }
+
+  private startGroupCenterEdit(entry: AcEdGripEntry) {
+    const doc = AcApDocManager.instance.curDocument
+    const blockTable = doc.database.tables.blockTable
+    const memberIds = entry.groupMemberIds ?? this._view.selectionSet.ids
+    const entities: AcDbEntity[] = []
+    for (const id of memberIds) {
+      const entity = blockTable.getEntityById(id)
+      if (!entity || isEntityOnLockedLayer(doc.database, entity)) continue
+      entities.push(entity)
+    }
+    if (entities.length === 0) {
+      this.endEdit()
+      return
+    }
+
+    this.hideEntriesForDrag()
+    this.clearGroupBbox()
+    this._editSession = new AcEdGroupGripEditSession(
+      this._view,
+      entities,
+      entry.wcsPoint,
       () => this.endEdit()
     )
   }
@@ -378,6 +479,7 @@ export class AcEdGripManager {
     for (const entry of this._entries) {
       this.positionEntry(entry)
     }
+    this.repositionGroupBbox()
   }
 
   /**
@@ -394,6 +496,51 @@ export class AcEdGripManager {
     this._hotEntry = null
   }
 
+  private addGroupBbox(wcs: AcEdGroupBboxOverlay['wcs']) {
+    const el = document.createElement('div')
+    el.className = 'ml-group-bbox'
+    el.style.position = 'absolute'
+    el.style.pointerEvents = 'none'
+    el.style.border = '1px dashed var(--ml-grip-color, #96f)'
+    el.style.boxSizing = 'border-box'
+    el.style.zIndex = '5'
+    this._view.container.appendChild(el)
+    const overlay: AcEdGroupBboxOverlay = { el, wcs }
+    this._groupBboxes.push(overlay)
+    this.repositionGroupBboxOverlay(overlay)
+  }
+
+  private repositionGroupBboxOverlay(overlay: AcEdGroupBboxOverlay) {
+    const { min, max } = overlay.wcs
+    const c1 = this._view.canvasToContainer(
+      this._view.worldToScreen({ x: min.x, y: min.y })
+    )
+    const c2 = this._view.canvasToContainer(
+      this._view.worldToScreen({ x: max.x, y: max.y })
+    )
+    const left = Math.min(c1.x, c2.x)
+    const top = Math.min(c1.y, c2.y)
+    const width = Math.abs(c2.x - c1.x)
+    const height = Math.abs(c2.y - c1.y)
+    overlay.el.style.left = `${left}px`
+    overlay.el.style.top = `${top}px`
+    overlay.el.style.width = `${width}px`
+    overlay.el.style.height = `${height}px`
+  }
+
+  private repositionGroupBbox() {
+    for (const overlay of this._groupBboxes) {
+      this.repositionGroupBboxOverlay(overlay)
+    }
+  }
+
+  private clearGroupBbox() {
+    for (const overlay of this._groupBboxes) {
+      overlay.el.remove()
+    }
+    this._groupBboxes.length = 0
+  }
+
   /**
    * Cancels any in-progress edit and removes all grip handles.
    *
@@ -403,5 +550,6 @@ export class AcEdGripManager {
     this._editSession?.cancel()
     this._editSession = null
     this.clearEntries()
+    this.clearGroupBbox()
   }
 }

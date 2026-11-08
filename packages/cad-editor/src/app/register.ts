@@ -15,6 +15,7 @@ import { markRaw } from 'vue'
 import {
   AcApAttDefCmd,
   AcApAttEditCmd,
+  AcApClassicGroupCmd,
   AcApCountListCmd,
   AcApDimStyleCmd,
   AcApDrawingUnitsCmd,
@@ -43,6 +44,7 @@ import {
   createMlColorIndexPickerToolbarFactory,
   MlAttDefDlg,
   MlAttEditDlg,
+  MlClassicGroupDlg,
   MlDimStyleDlg,
   MlDrawingUnitsDlg,
   MlExportHtmlDlg,
@@ -217,6 +219,12 @@ export const registerCmds = () => {
     )
     register.addCommand(
       AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'classicgroup',
+      'classicgroup',
+      new AcApClassicGroupCmd()
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
       'attedit',
       'attedit',
       new AcApAttEditCmd(),
@@ -303,6 +311,11 @@ export const registerDialogs = () => {
     registerDialog({
       name: 'UcsManagerDlg',
       component: markRaw(MlUcsManagerDlg),
+      props: {}
+    })
+    registerDialog({
+      name: 'ClassicGroupDlg',
+      component: markRaw(MlClassicGroupDlg),
       props: {}
     })
     isDialogRegistered = true

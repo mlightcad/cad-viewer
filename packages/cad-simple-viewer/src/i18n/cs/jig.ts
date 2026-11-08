@@ -1604,5 +1604,9 @@ export default {
         global: '?'
       }
     }
-  }
+  },
+  group: { ...enJig.group },
+  ungroup: { ...enJig.ungroup },
+  groupedit: { ...enJig.groupedit },
+  dashgroup: { ...enJig.dashgroup }
 }

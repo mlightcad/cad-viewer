@@ -1740,5 +1740,162 @@ export default {
         global: '?'
       }
     }
+  },
+  group: {
+    selectOrOption: 'Select objects or',
+    createOrOption: 'Create group or',
+    selectObjects: 'Select objects for group',
+    enterName: 'Enter group name',
+    enterDescription: 'Enter group description',
+    invalidName: 'Invalid group name',
+    nameExists: 'Group name already exists',
+    created: 'Group {name} created',
+    keywords: {
+      name: {
+        display: 'Name(N)',
+        local: 'Name',
+        global: 'Name'
+      },
+      description: {
+        display: 'Description(D)',
+        local: 'Description',
+        global: 'Description'
+      }
+    }
+  },
+  ungroup: {
+    selectOrOption: 'Select group or',
+    selectGroup: 'Select group',
+    enterName: 'Enter group name',
+    notFound: 'Group not found',
+    notInGroup: 'Object is not a member of a group',
+    multiGroup: 'Object is a member of more than one group [{name}]',
+    exploded: 'Group {name} exploded',
+    explodedCount: 'Exploded {count} group(s)',
+    keywords: {
+      name: {
+        display: 'Name(N)',
+        local: 'Name',
+        global: 'Name'
+      },
+      all: {
+        display: 'All(A)',
+        local: 'All',
+        global: 'All'
+      },
+      accept: {
+        display: 'Accept(A)',
+        local: 'Accept',
+        global: 'Accept'
+      },
+      next: {
+        display: 'Next(N)',
+        local: 'Next',
+        global: 'Next'
+      }
+    }
+  },
+  groupedit: {
+    selectGroup: 'Select a group',
+    enterName: 'Enter group name',
+    notFound: 'Group not found',
+    multiGroup: 'Object is a member of more than one group [{name}]',
+    action: 'Enter an option for group {name}',
+    selectToAdd: 'Select objects to add to group',
+    selectToRemove: 'Select objects to remove from group',
+    newName: 'Enter new group name',
+    keywords: {
+      add: {
+        display: 'Add objects(A)',
+        local: 'Add',
+        global: 'Add'
+      },
+      remove: {
+        display: 'Remove objects(R)',
+        local: 'Remove',
+        global: 'Remove'
+      },
+      rename: {
+        display: 'REName(N)',
+        local: 'Rename',
+        global: 'Rename'
+      },
+      accept: {
+        display: 'Accept(A)',
+        local: 'Accept',
+        global: 'Accept'
+      },
+      next: {
+        display: 'Next(N)',
+        local: 'Next',
+        global: 'Next'
+      }
+    }
+  },
+  dashgroup: {
+    option: 'Enter an option',
+    empty: 'No groups defined',
+    listEntry:
+      '{name}  {description}  [{selectable}]  ({count})',
+    yes: 'Yes',
+    no: 'No',
+    enterNameOrBlank: 'Enter group name or press Enter for unnamed',
+    enterGroupName: 'Enter group name',
+    selectableSet: 'Group {name} selectable = {value}',
+    orderOption: 'Enter order option',
+    fromPosition: 'Enter position number of object to reorder (0-based)',
+    toPosition: 'Enter new position number for object (0-based)',
+    keywords: {
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      },
+      create: {
+        display: 'Create(C)',
+        local: 'Create',
+        global: 'Create'
+      },
+      add: {
+        display: 'Add(A)',
+        local: 'Add',
+        global: 'Add'
+      },
+      remove: {
+        display: 'Remove(R)',
+        local: 'Remove',
+        global: 'Remove'
+      },
+      explode: {
+        display: 'eXplode(X)',
+        local: 'Explode',
+        global: 'Explode'
+      },
+      rename: {
+        display: 'REName(N)',
+        local: 'Rename',
+        global: 'Rename'
+      },
+      selectable: {
+        display: 'Selectable(S)',
+        local: 'Selectable',
+        global: 'Selectable'
+      },
+      order: {
+        display: 'Order(O)',
+        local: 'Order',
+        global: 'Order'
+      },
+      reverse: {
+        display: 'Reverse(R)',
+        local: 'Reverse',
+        global: 'Reverse'
+      },
+      position: {
+        display: 'Position(P)',
+        local: 'Position',
+        global: 'Position'
+      }
+    }
   }
 }

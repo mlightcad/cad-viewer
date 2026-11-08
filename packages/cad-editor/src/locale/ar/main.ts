@@ -38,6 +38,7 @@ export default {
       modify: 'تعديل',
       layer: 'الطبقات',
       properties: 'الخصائص',
+      groups: 'المجموعات',
       utilities: 'أدوات',
       annotation: 'تعليقات توضيحية',
       navigate: 'تنقل',
