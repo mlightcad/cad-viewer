@@ -305,9 +305,6 @@ importers:
       '@mlightcad/three-renderer':
         specifier: workspace:*
         version: link:../three-renderer
-      '@mlightcad/three-viewcube':
-        specifier: 0.0.9
-        version: 0.0.9(three@0.186.1)
       '@mlightcad/ui-components':
         specifier: 0.1.11
         version: 0.1.11(element-plus@2.13.6(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
@@ -817,9 +814,6 @@ importers:
       '@mlightcad/three-renderer':
         specifier: workspace:*
         version: link:../three-renderer
-      '@mlightcad/three-viewcube':
-        specifier: 0.0.9
-        version: 0.0.9(three@0.186.1)
       '@types/lodash-es':
         specifier: ^4.17.12
         version: 4.17.12
@@ -2717,11 +2711,6 @@ packages:
 
   '@mlightcad/text-box-cursor@0.1.1':
     resolution: {integrity: sha512-Q3uLz+FXG6mLInq/Q1jUNdyjGFdMWZduWA2WO6d+jUqFbWeh4xsn5M/HY+vy1Rs0bvLWZvdRgJeEFVe6nhIihQ==}
-    peerDependencies:
-      three: ^0.186.1
-
-  '@mlightcad/three-viewcube@0.0.9':
-    resolution: {integrity: sha512-oGWC+NrfgfHyCGtO/3NGC3M91qrj9Y1cOVaRKGALEicqCJYg7M4fKUbuag2rCNZLml1BdhpS9JMTZyfbYeAO7Q==}
     peerDependencies:
       three: ^0.186.1
 
@@ -9379,10 +9368,6 @@ snapshots:
   '@mlightcad/shx-parser@1.4.5': {}
 
   '@mlightcad/text-box-cursor@0.1.1(three@0.186.1)':
-    dependencies:
-      three: 0.186.1
-
-  '@mlightcad/three-viewcube@0.0.9(three@0.186.1)':
     dependencies:
       three: 0.186.1
 

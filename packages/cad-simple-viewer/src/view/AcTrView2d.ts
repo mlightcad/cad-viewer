@@ -1898,20 +1898,25 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   screenToWorld(point: AcGePoint2dLike): AcGePoint2d {
-    const activeLayoutView = this.activeLayoutView
-    return activeLayoutView
-      ? activeLayoutView.screenToWorld(point)
-      : new AcGePoint2d(point)
+    const activeLayoutView = this._layoutViewManager.activeLayoutView
+    if (activeLayoutView) {
+      return activeLayoutView.screenToWorld(point)
+    }
+    // No layout camera yet. Screen Y grows downward; invert so orientation
+    // consumers (UCS icon axes) stay upright until setActiveLayout runs.
+    return new AcGePoint2d(point.x, -point.y)
   }
 
   /**
    * @inheritdoc
    */
   worldToScreen(point: AcGePoint2dLike): AcGePoint2d {
-    const activeLayoutView = this.activeLayoutView
-    return activeLayoutView
-      ? activeLayoutView.worldToScreen(point)
-      : new AcGePoint2d(point)
+    const activeLayoutView = this._layoutViewManager.activeLayoutView
+    if (activeLayoutView) {
+      return activeLayoutView.worldToScreen(point)
+    }
+    // See screenToWorld — never pass WCS through as CSS pixels (that flips Y).
+    return new AcGePoint2d(point.x, -point.y)
   }
 
   /**
