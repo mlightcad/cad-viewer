@@ -635,6 +635,9 @@ export class AcApDocManager {
     AcTrMTextRenderer.getInstance().setFontUrl(fontsUrl)
     this.installFontFileLoadTimeout()
     acdbHostApplicationServices().workingDatabase = doc.database
+    // Bind the empty drawing's model space after workingDatabase is set so
+    // worldToScreen / UCS icon have a layout camera during the first db.read.
+    this.setActiveLayout(view, doc.database)
 
     this._commandManager = new AcEdCommandStack()
     this.registerCommands()
@@ -2344,6 +2347,10 @@ export class AcApDocManager {
       this.openProgressView.clear()
     }
     this.openProgressView.bindDrawDatabase(this.context.doc.database)
+    // Activate layout views before db.read streams entities. Otherwise
+    // mid-open UCS / worldToScreen run with no camera and WCS +Y appears
+    // to point down on screen until onAfterOpenDocument.
+    this.setActiveLayout(this.openProgressView, this.context.doc.database)
     // `progressiveRendering` gates both stages: time-sliced mid-open paints
     // in batchConvert, and whether the open overlay waits for deferred text.
     // Camera auto-fit is started separately in onAfter when the open view
@@ -2966,6 +2973,7 @@ export class AcApDocManager {
     this._pluginManager.setContext(context)
     this.bindOpenProgress(doc)
     this.curView.bindDrawDatabase(doc.database)
+    this.setActiveLayout(this.curView, doc.database)
   }
 
   /**

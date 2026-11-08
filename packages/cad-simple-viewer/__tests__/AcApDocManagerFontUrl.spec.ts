@@ -70,6 +70,7 @@ jest.mock('../src/view', () => ({
     zoomToFitDrawing: jest.fn(),
     zoomToSmartExtents: jest.fn(),
     zoomTo: jest.fn(),
+    ensureLayoutView: jest.fn(),
     bindDrawDatabase: jest.fn(),
     syncDisplaySysVars: jest.fn(),
     captureSessionState: jest.fn(() => ({})),

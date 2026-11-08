@@ -71,6 +71,13 @@ export class AcApUcsIconOverlay {
       return
     }
 
+    // Without an active layout camera, worldToScreen is only an orientation
+    // fallback — hide rather than flash a misplaced icon during open.
+    if (!this.hasLayoutCamera(view)) {
+      this._el.style.display = 'none'
+      return
+    }
+
     const frame = AcApUcsService.getActiveFrame()
     const isWorld = AcApUcsService.isWorldFrame(frame)
     this._wLabel.style.display = isWorld ? '' : 'none'
@@ -108,6 +115,13 @@ export class AcApUcsIconOverlay {
   dispose(): void {
     this._disposed = true
     this._el.remove()
+  }
+
+  private hasLayoutCamera(view: AcEdBaseView): boolean {
+    return (
+      'activeLayoutView' in view &&
+      (view as { activeLayoutView?: unknown }).activeLayoutView != null
+    )
   }
 
   private resolveScreenPosition(

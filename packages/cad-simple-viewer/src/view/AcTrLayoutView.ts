@@ -8,7 +8,6 @@ import {
   AcTrViewportView,
   acTrWcsBoxToCssRect
 } from '@mlightcad/three-renderer'
-import { AxesGizmo, ObjectPosition } from '@mlightcad/three-viewcube'
 import * as THREE from 'three'
 
 import { AcEdViewMode } from '../editor/view/AcEdBaseView'
@@ -31,7 +30,6 @@ export interface AcDbEntityEventArgs {
  * - Camera and view controls specific to the layout
  * - Viewport management for paper space layouts
  * - View mode switching (selection, pan, etc.)
- * - Axes gizmo for orientation feedback
  * - Rendering coordination with viewports
  *
  * The layout view coordinates between the layout's data (entities, layers) and the visual
@@ -48,8 +46,6 @@ export interface AcDbEntityEventArgs {
 export class AcTrLayoutView extends AcTrBaseView {
   /** The block table record ID associated with this layout */
   private _layoutBtrId: string
-  /** The axes gizmo for showing coordinate system orientation */
-  private _axesGizmo: AxesGizmo
   /** The current view mode (selection, pan, etc.) */
   private _mode: AcEdViewMode
   /** Map of viewport views indexed by viewport ID */
@@ -74,7 +70,6 @@ export class AcTrLayoutView extends AcTrBaseView {
     super(renderer, width, height)
     this._layoutBtrId = layoutBtrId
     this._mode = AcEdViewMode.SELECTION
-    this._axesGizmo = this.createAxesGizmo()
     this._viewportViews = new Map()
     this._overlayViewport = new AcTrOverlayViewport(renderer)
   }
@@ -202,7 +197,6 @@ export class AcTrLayoutView extends AcTrBaseView {
   /**
    * Renders the scene in this layout view.
    * Performs the main rendering pass and then renders any viewports if present.
-   * Updates the axes gizmo to reflect the current camera orientation.
    *
    * @param scene - The scene containing the layout data to render
    */
@@ -214,27 +208,7 @@ export class AcTrLayoutView extends AcTrBaseView {
       this.drawViewports(modelSpaceLayout.internalObject)
     }
     this.drawOverlay(scene)
-    this._axesGizmo?.update()
     return needsRedraw
-  }
-
-  /**
-   * Creates and configures the axes gizmo for this view.
-   * The gizmo shows the current coordinate system orientation and is positioned
-   * at the bottom-left of the view without a Z-axis (2D view).
-   *
-   * @returns The configured axes gizmo instance
-   */
-  private createAxesGizmo() {
-    const axesGizmo = new AxesGizmo(
-      this._camera.internalCamera,
-      this._renderer.internalRenderer,
-      {
-        hasZAxis: false,
-        pos: ObjectPosition.LEFT_BOTTOM
-      }
-    )
-    return axesGizmo
   }
 
   /**

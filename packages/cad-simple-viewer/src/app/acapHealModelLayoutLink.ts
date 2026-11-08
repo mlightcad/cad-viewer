@@ -14,7 +14,9 @@ import { AcDbDatabase, AcDbObjectId } from '@mlightcad/data-model'
  */
 export function acapHealModelLayoutLink(database: AcDbDatabase): AcDbObjectId {
   const modelSpace = database.tables.blockTable.modelSpace
-  const modelLayout = database.objects.layout.getAt('Model')
+  // Empty / partially mocked DBs (e.g. DocManager construction) may lack the
+  // layout dictionary; treat that like a missing Model layout.
+  const modelLayout = database.objects?.layout?.getAt('Model')
   if (!modelLayout) {
     return modelSpace.objectId
   }

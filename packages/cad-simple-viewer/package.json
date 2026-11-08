@@ -71,7 +71,6 @@
     "@mlightcad/mtext-parser": "1.5.7",
     "@mlightcad/mtext-renderer": "0.13.9",
     "@mlightcad/three-renderer": "workspace:*",
-    "@mlightcad/three-viewcube": "0.0.9",
     "@types/lodash-es": "^4.17.12",
     "@types/rbush": "^3.0.4",
     "@types/three": "^0.186.0",
