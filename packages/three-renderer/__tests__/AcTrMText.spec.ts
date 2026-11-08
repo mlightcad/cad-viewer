@@ -126,7 +126,74 @@ describe('AcTrMText wcsBbox', () => {
     expect(host.wcsBbox.min.toArray()).toEqual([100, 100, 0])
     expect(host.wcsBbox.max.toArray()).toEqual([101, 101, 0])
   })
+
+  it('keeps block-definition renderer boxes block-local under an INSERT', () => {
+    // Block MTEXT is drawn at block-local coordinates under the INSERT group
+    // (entity matrix identity). With mesh-glyph instancing there is no child
+    // geometry, so the renderer box is the only bound. Treating it as world
+    // space and applying the INSERT inverse made AcTrGroup map it back to
+    // block-local coordinates, so window selection of the INSERT failed.
+    const insert = createInsert({ x: 488.8, y: 7916.2 }, 40)
+    const entity = createBlockMText(insert)
+    const blockLocalBox = new THREE.Box3(
+      new THREE.Vector3(1.7, 14.3, 0),
+      new THREE.Vector3(13.7, 16.5, 0)
+    )
+
+    privateMethods.attachRendered.call(entity, createMTextObject(blockLocalBox))
+
+    expectBoxClose(entity.wcsBbox, blockLocalBox)
+  })
+
+  it('maps WCS attribute renderer boxes into block-local space', () => {
+    const insert = createInsert({ x: 488.8, y: 7916.2 }, 40)
+    const entity = createBlockMText(insert)
+    // Attributes carry WCS positions; the rendering cache parents them with
+    // the inverse INSERT matrix so they render in place.
+    entity.matrixAutoUpdate = false
+    entity.matrix.copy(insert.matrixWorld).invert()
+    entity.matrixWorldNeedsUpdate = true
+    entity.updateMatrixWorld(true)
+    const blockLocalBox = new THREE.Box3(
+      new THREE.Vector3(1.7, 14.3, 0),
+      new THREE.Vector3(13.7, 16.5, 0)
+    )
+    const wcsBox = blockLocalBox.clone().applyMatrix4(insert.matrixWorld)
+
+    privateMethods.attachRendered.call(entity, createMTextObject(wcsBox))
+
+    expectBoxClose(entity.wcsBbox, blockLocalBox)
+  })
 })
+
+function createInsert(position: { x: number; y: number }, scale: number) {
+  const insert = new THREE.Object3D()
+  insert.position.set(position.x, position.y, 0)
+  insert.scale.set(scale, scale, 1)
+  insert.updateMatrixWorld(true)
+  return insert
+}
+
+function createBlockMText(insert: THREE.Object3D) {
+  const context = new AcTrRenderContext(new AcTrStyleManager(), batchPolicy)
+  const entity = new AcTrMText(
+    { text: 'AB' } as never,
+    { layer: '0', color: 7 } as never,
+    {} as never,
+    context,
+    true
+  )
+  insert.add(entity)
+  entity.updateMatrixWorld(true)
+  return entity
+}
+
+function expectBoxClose(actual: THREE.Box3, expected: THREE.Box3) {
+  expect(actual.min.x).toBeCloseTo(expected.min.x, 6)
+  expect(actual.min.y).toBeCloseTo(expected.min.y, 6)
+  expect(actual.max.x).toBeCloseTo(expected.max.x, 6)
+  expect(actual.max.y).toBeCloseTo(expected.max.y, 6)
+}
 
 describe('AcTrMText', () => {
   it('keeps precise mtext raycast hits when the renderer reports an intersection', () => {

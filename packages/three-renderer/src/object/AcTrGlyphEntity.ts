@@ -39,8 +39,15 @@ const _identityMatrix = /*@__PURE__*/ new THREE.Matrix4()
 const _collapseMatrix = /*@__PURE__*/ new THREE.Matrix4()
 /** Scratch used to convert mtext-renderer logical boxes into parent-local space. */
 const _logicalBox = /*@__PURE__*/ new THREE.Box3()
-/** Scratch inverse of the parent world matrix for logical-box conversion. */
+/** Scratch inverse of the parent world matrix for mesh-glyph box conversion. */
 const _toParentLocal = /*@__PURE__*/ new THREE.Matrix4()
+/**
+ * Scratch transform from the renderer's logical-box space (local to the
+ * rendered object) into this entity's parent-local space, captured before
+ * {@link AcTrGlyphEntity.collapseInverseParentTransformIntoPlacement} resets
+ * the entity matrix.
+ */
+const _logicalToParent = /*@__PURE__*/ new THREE.Matrix4()
 
 /**
  * Base display object for CAD entities rendered through the shared mtext-renderer
@@ -380,6 +387,17 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
    */
   protected attachRendered(rendered: MTextObject) {
     this.add(rendered)
+    // `rendered.box` is local to `rendered`. Capture its parent-local mapping
+    // now: the collapse below rewrites both this.matrix and the render root.
+    if (this.matrixAutoUpdate) {
+      this.updateMatrix()
+    }
+    if (rendered.matrixAutoUpdate) {
+      rendered.updateMatrix()
+    }
+    const logicalToParent = _logicalToParent
+      .copy(this.matrix)
+      .multiply(rendered.matrix)
     // Fold WCS placement under an inverse INSERT matrix into true block-local
     // space before flatten/unbatch. Must run while the renderer hierarchy is
     // still intact so the placement root can absorb this.matrix.
@@ -435,7 +453,7 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
     this.traverse(object => {
       getSceneDrawableUserData(object).bboxIntersectionCheck = true
     })
-    this.updateSelectionBox(rendered)
+    this.updateSelectionBox(rendered, logicalToParent)
   }
 
   /**
@@ -609,19 +627,32 @@ export abstract class AcTrGlyphEntity extends AcTrEntity {
    * geometry so legitimate spacing is preserved while displaced renderer boxes
    * are ignored.
    *
-   * {@link MTextObject.box} is authored in world space at draw time. When this
-   * glyph is parented (INSERT attributes), convert it to parent-local space
-   * before intersecting or unioning with {@link computeGeometryBox}.
+   * {@link MTextObject.box} is local to the rendered object, so its
+   * parent-local placement is `this.matrix · rendered.matrix` as they were
+   * before {@link collapseInverseParentTransformIntoPlacement}. For INSERT
+   * attributes that is the inverse INSERT matrix (WCS → block-local); for
+   * block-definition text it is identity, because the box is already
+   * block-local. Assuming a world-space box and applying the parent inverse
+   * pushed block-definition text back to block-local coordinates once
+   * {@link AcTrGroup} applied the INSERT transform, so window selection of
+   * the INSERT never contained it.
    *
    * @param rendered Rendered glyph object whose logical box is used as fallback.
+   * @param logicalToParent Maps {@link MTextObject.box} into this entity's
+   *   parent-local space. Omit when the box is already in that space.
    */
-  protected updateSelectionBox(rendered: MTextObject) {
+  protected updateSelectionBox(
+    rendered: MTextObject,
+    logicalToParent?: THREE.Matrix4
+  ) {
     const geometryBox = this.computeGeometryBox()
     _logicalBox.copy(rendered.box)
-    if (!_logicalBox.isEmpty() && this.parent) {
-      this.parent.updateMatrixWorld(true)
-      _toParentLocal.copy(this.parent.matrixWorld).invert()
-      _logicalBox.applyMatrix4(_toParentLocal)
+    if (
+      !_logicalBox.isEmpty() &&
+      logicalToParent &&
+      !logicalToParent.equals(_identityMatrix)
+    ) {
+      _logicalBox.applyMatrix4(logicalToParent)
     }
     if (geometryBox.isEmpty()) {
       this.wcsBbox = _logicalBox.clone()
