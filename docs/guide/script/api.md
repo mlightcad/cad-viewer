@@ -290,16 +290,19 @@ Zooms the view to the model space extents.
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide? })`
+### `cad.view.capturePreview({ longSide?, selection? })`
 
-Queues a PNG screenshot of the drawing extents. Capture runs after the script
-body finishes. Returns `{ queued: true, index }`. In the Agent chat, images are
-attached to the tool result for the model (not returned as JSON data URLs).
+Queues a PNG screenshot after the script body finishes. Returns
+`{ queued: true, index }`. Default frames model-space drawing extents. Pass
+`selection: true` (typically after `cad.selection.replace(ids)`) to extract only
+the current selection via the ENTPREVIEW batch path. In the Agent chat, images
+are attached to the tool result for the model (not returned as JSON data URLs).
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
+// selection only: cad.view.capturePreview({ selection: true })
 ```
 
 ## cad.file

@@ -116,7 +116,7 @@ describe('viewer bindings', () => {
     expect(mockAcapRunDatabaseEdit).toHaveBeenCalledTimes(1)
     expect(mockAcapRunDatabaseEdit.mock.calls[0][0]).toBe(db)
     expect(mockAcapRunDatabaseEdit.mock.calls[0][1]).toBe('agent draw')
-    expect(captureDrawingPreview).toHaveBeenCalledWith(256)
+    expect(captureDrawingPreview).toHaveBeenCalledWith({ longSide: 256 })
     expect(result.images).toEqual([
       { mediaType: 'image/png', dataUrl: 'data:image/png;base64,viewer' }
     ])
@@ -139,7 +139,7 @@ describe('viewer bindings', () => {
     expect(result.success).toBe(true)
     expect(runEdit).toHaveBeenCalledTimes(1)
     expect(mockAcapRunDatabaseEdit).not.toHaveBeenCalled()
-    expect(capturePreview).toHaveBeenCalledWith(256)
+    expect(capturePreview).toHaveBeenCalledWith({ longSide: 256 })
     expect(captureDrawingPreview).not.toHaveBeenCalled()
   })
 

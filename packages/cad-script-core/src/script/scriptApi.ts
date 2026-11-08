@@ -173,11 +173,13 @@ exportFormat is 'single' (default, .html) or 'multi' (.zip). background is
 'black' | 'white' | 'space' (default). Requires a viewer host that provides
 exportHtml (in-app agent / cad-mcp-server); headless database sessions skip it
 with a log note. Returns { queued: true, index, fileName }.
-cad.view.capturePreview({ longSide? }) queues a PNG of drawing extents after the script
-finishes. Returns { queued: true, index }. Images are attached to the tool result for the
-model (not returned as JSON). Capture frames model space (temporarily switches away from
-paper space if needed). Only for High inference / when screenshots are enabled — prefer
-cad.measure for self-check; do not use capturePreview in Simple mode.
+cad.view.capturePreview({ longSide?, selection? }) queues a PNG after the script finishes.
+Returns { queued: true, index }. Images are attached to the tool result for the model
+(not returned as JSON). Default frames model-space drawing extents (temporarily switches
+away from paper space if needed). Pass selection: true to render only the current selection
+(batch-extracted geometry, framed to scene bounds) — use after
+cad.selection.replace(ids). Only for High inference / when screenshots are enabled —
+prefer cad.measure for self-check; do not use capturePreview in Simple mode.
 cad.measure — prefer for numeric self-check (saves tokens vs hand-rolled Math):
   distance(a, b) -> number
   angleDeg(a, b) -> bearing a→b deg (-180,180]; angleDeg(a, b, c) -> interior angle at b [0,180]

@@ -55,7 +55,9 @@ interface CadSession {
   /** Optional: undoable edit. Default `database.runDatabaseEdit(label, fn)`. */
   runEdit?(database: AcDbDatabase, label: string, fn: () => void): void
   /** Optional: PNG for `cad.view.capturePreview`. Without it previews are skipped. */
-  capturePreview?(longSide: number): Promise<CaptureDrawingPreviewResult>
+  capturePreview?(
+    options?: CadCapturePreviewOptions
+  ): Promise<CaptureDrawingPreviewResult>
   /** Optional: PDF for `cad.file.savePdf`. Without it, cad-pdf-core is used. */
   exportPdf?(options: CadScriptPdfExportOptions): Promise<Uint8Array>
   /** Optional: HTML for `cad.file.saveHtml`. Without it, saveHtml is skipped. */
@@ -182,7 +184,7 @@ ids are highlighted; a headless session only records them.
 | `cad.file.saveDxf(path?)`                | After a successful script, export DXF. A path string or `{ path?, fileName? }`. The in-app agent downloads the file; `cad-mcp-server` writes `path` (relative to the server cwd). The tool result lists `savedFiles` and does not include the DXF body |
 | `cad.file.savePdf(path?)`                | After a successful script, export PDF via `cad-pdf-core` (or `session.exportPdf`). Path string or `{ path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }`. Bytes are not returned to the model                                   |
 | `cad.file.saveHtml(path?)`               | After a successful script, export offline HTML/zip via `session.exportHtml`. Path string or `{ path?, fileName?, exportFormat?, exportLayouts?, background? }`. Skipped with a log line when the session has no HTML exporter                          |
-| `cad.view.capturePreview({ longSide? })` | Queue a PNG screenshot fulfilled after the script through `session.capturePreview`; attached as `images` on the tool result. Skipped with a log line when the session has no renderer                                                                  |
+| `cad.view.capturePreview({ longSide?, selection? })` | Queue a PNG screenshot fulfilled after the script through `session.capturePreview`; attached as `images` on the tool result. Pass `selection: true` to render only the current selection (batch geometry). Skipped with a log line when the session has no renderer |
 | `cad.measure.*`                          | `distance`, `angleDeg`, `deltaAngleDeg`, `center`, `radius`, `length`, `area`, `check`, `report` for numeric self-check                                                                                                                                |
 | `cad.log(...)`                           | Lines returned on the tool result                                                                                                                                                                                                                      |
 | `cad.edit.transaction(label, tx => {})`  | One undo group                                                                                                                                                                                                                                         |

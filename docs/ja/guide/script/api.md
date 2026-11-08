@@ -253,14 +253,17 @@ cad.selection.clear()
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide? })`
+### `cad.view.capturePreview({ longSide?, selection? })`
 
 図面範囲の PNG スクリーンショットをキューします。キャプチャはスクリプト本体の終了後に実行されます。戻り値は `{ queued: true, index }` です。Agent チャットでは、画像はツール結果に添付されてモデルへ送られます（JSON の data URL としては返りません）。
+
+`cad.selection.replace(ids)` の後に `selection: true` を渡すと、現在の選択だけをキャプチャします。
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
+// optional: cad.view.capturePreview({ selection: true })
 ```
 
 ## cad.file

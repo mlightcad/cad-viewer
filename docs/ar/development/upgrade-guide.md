@@ -12,6 +12,19 @@ title: "ترقية cad-simple-viewer و cad-editor"
 يتطلب `@mlightcad/data-model` الذي يسجّل `PICKSTYLE` (0–3، الافتراضي `1`) و`GROUPDISPLAYMODE` (0–2، الافتراضي `2`). يبقى التحديد المشترك للتهشير الارتباطي (`PICKSTYLE` 2/3) بدون تنفيذ حتى تتوفر مؤشرات حدود ناعمة على `AcDbHatch`.
 :::
 
+::: info معاينة التحديد في `cad.view.capturePreview`
+بدءًا من الإصدار الذي يتضمن هذا التغيير، يقبل `CadSession.capturePreview` كائن خيارات بدل رقم `longSide` منفرد:
+
+```ts
+capturePreview?(options?: {
+  longSide?: number
+  selection?: boolean
+}): Promise<CaptureDrawingPreviewResult>
+```
+
+في السكربت استخدم `cad.view.capturePreview({ longSide?, selection? })`. بعد `cad.selection.replace(ids)` مرّر `selection: true` لاستخراج الكيانات المحددة عبر مسار معاينة الدفعات نفسه المستخدم في ENTPREVIEW (حدود المشهد، وليس `geometricExtents` في قاعدة البيانات) وإرفاق PNG بنتيجة الأداة. التحديد الفارغ يعيد `reason: 'no-selection'`. ما زال `createDatabaseSession` بدون عارض يتخطى المعاينات.
+:::
+
 ::: info مدخل خفيف لصفحة فتح الملفات
 بدءًا من **1.8.0**، يوفّر `@mlightcad/cad-simple-viewer` مسارًا فرعيًا خاليًا من DocManager لصفحات الهبوط. فضّل **`acuiCreateFileOpenSession`** (`createDocManager` كسول + فتح تلقائي / `attachSourcesTo`). استخدم `AcUiFileOpenLanding` عندما تفتح الرسومات بنفسك (مثل Vue `MlCadViewer`):
 

@@ -7,6 +7,10 @@ import {
   AcGePoint3d
 } from '@mlightcad/data-model'
 
+import type {
+  CadCapturePreviewOptions,
+  CaptureDrawingPreviewResult
+} from '../src/preview/types'
 import { executeCadScript } from '../src/script/executeCadScript'
 import {
   CAD_MCP_DXF_OUTBOX_KEY,
@@ -397,10 +401,75 @@ describe('executeCadScript', () => {
 
     expect(result.success).toBe(true)
     expect(result.data).toEqual({ queued: true, index: 0 })
-    expect(capturePreview).toHaveBeenCalledWith(512)
+    expect(capturePreview).toHaveBeenCalledWith({ longSide: 512 })
     expect(result.images).toEqual([
       { mediaType: 'image/png', dataUrl: 'data:image/png;base64,aaa' }
     ])
+  })
+
+  test('queues selection capturePreview with selection: true', async () => {
+    const { session, capturePreview } = createFixture()
+
+    const result = await executeCadScript(
+      {
+        code: `
+          cad.view.capturePreview({ longSide: 256, selection: true })
+          return { ok: true }
+        `,
+        intent: 'selection screenshot'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(capturePreview).toHaveBeenCalledWith({
+      longSide: 256,
+      selection: true
+    })
+    expect(result.images).toEqual([
+      { mediaType: 'image/png', dataUrl: 'data:image/png;base64,aaa' }
+    ])
+  })
+
+  test('treats a bare capturePreview number as longSide', async () => {
+    const { session, capturePreview } = createFixture()
+
+    const result = await executeCadScript(
+      {
+        code: `
+          cad.view.capturePreview(512)
+          return { ok: true }
+        `,
+        intent: 'legacy longSide'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(capturePreview).toHaveBeenCalledWith({ longSide: 512 })
+  })
+
+  test('logs no-selection when selection capture fails', async () => {
+    const { session, capturePreview } = createFixture()
+    capturePreview.mockImplementationOnce(async () => ({
+      ok: false as const,
+      reason: 'no-selection' as const
+    }))
+
+    const result = await executeCadScript(
+      {
+        code: `
+          cad.view.capturePreview({ selection: true })
+          return { ok: true }
+        `,
+        intent: 'empty selection'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(result.images).toBeUndefined()
+    expect(result.log).toContain('capturePreview failed: no-selection')
   })
 
   test('skips capturePreview when fulfillPreviews is false', async () => {
@@ -873,10 +942,14 @@ function createFixture(openMode: number = CadSessionOpenMode.Write) {
       return []
     }
   }
-  const capturePreview = jest.fn(async (_longSide: number) => ({
-    ok: true as const,
-    dataUrl: 'data:image/png;base64,aaa'
-  }))
+  const capturePreview = jest.fn(
+    async (
+      _options?: CadCapturePreviewOptions
+    ): Promise<CaptureDrawingPreviewResult> => ({
+      ok: true,
+      dataUrl: 'data:image/png;base64,aaa'
+    })
+  )
   const session: CadSession = {
     capturePreview,
     getDocument: () => ({

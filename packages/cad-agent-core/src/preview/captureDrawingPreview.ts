@@ -1,9 +1,12 @@
 import {
+  type CadCapturePreviewOptions,
   type CaptureDrawingPreviewResult,
-  DRAWING_PREVIEW_LONG_SIDE_PX
+  DRAWING_PREVIEW_LONG_SIDE_PX,
+  normalizeCadCapturePreviewOptions
 } from '@mlightcad/cad-script-core'
 import {
   AcApDocManager,
+  AcApEntityPreviewConvertor,
   AcApRasterImageConvertor,
   AcTrView2d,
   resolveDrawingExtents
@@ -30,20 +33,43 @@ export async function waitForDrawingSceneReady(
 }
 
 /**
- * Captures a PNG preview of the current drawing.
+ * Captures a PNG preview of the current drawing, or of the current selection.
  *
  * Renders the live scene via {@link AcApRasterImageConvertor} (cost roughly
  * independent of entity count). Used by high-inference verification and by
  * `cad.view.capturePreview` in scripts.
  *
- * Agent scripts always create entities in model space, so when a paper-space
- * layout is active this temporarily switches to model space for the capture
- * and restores the previous layout afterward.
+ * Default mode frames drawing extents. Agent scripts usually create entities
+ * in model space, so when a paper-space layout is active this temporarily
+ * switches to model space for the capture and restores the previous layout
+ * afterward.
  *
- * @param longSide - Maximum output width or height in pixels.
+ * With `{ selection: true }`, extracts the selected entities through
+ * {@link AcApEntityPreviewConvertor} (batch GPU geometry + scene bounds) so
+ * framing matches what is actually drawn — not database `geometricExtents`,
+ * which can be empty or wrong on real DWGs.
+ *
+ * @param options - Pixel size and optional selection preview mode. A bare
+ *   positive number is treated as `longSide`.
  */
 export async function captureDrawingPreview(
-  longSide = DRAWING_PREVIEW_LONG_SIDE_PX
+  options: CadCapturePreviewOptions | number = {}
+): Promise<CaptureDrawingPreviewResult> {
+  const normalized = normalizeCadCapturePreviewOptions(options)
+  const longSide =
+    typeof normalized.longSide === 'number' && normalized.longSide > 0
+      ? normalized.longSide
+      : DRAWING_PREVIEW_LONG_SIDE_PX
+
+  if (normalized.selection === true) {
+    return captureSelectionPreview(longSide)
+  }
+
+  return captureExtentsPreview(longSide)
+}
+
+async function captureExtentsPreview(
+  longSide: number
 ): Promise<CaptureDrawingPreviewResult> {
   const view = AcApDocManager.instance.curView
   if (!(view instanceof AcTrView2d)) {
@@ -89,4 +115,39 @@ export async function captureDrawingPreview(
       view.activeLayoutBtrId = previousLayoutBtrId
     }
   }
+}
+
+async function captureSelectionPreview(
+  longSide: number
+): Promise<CaptureDrawingPreviewResult> {
+  const view = AcApDocManager.instance.curView
+  if (!(view instanceof AcTrView2d)) {
+    return { ok: false, reason: 'unsupported-view' }
+  }
+
+  const selectedIds = [...view.selectionSet.ids]
+  if (!selectedIds.length) {
+    return { ok: false, reason: 'no-selection' }
+  }
+
+  const sceneReady = await waitForDrawingSceneReady()
+  if (!sceneReady) {
+    return { ok: false, reason: 'scene-not-ready' }
+  }
+
+  // Extract selected batch geometry (same path as ENTPREVIEW). Framing uses
+  // scene/batch bounds, not database geometricExtents — those are often wrong
+  // or incomplete on real DWGs and produced empty / wipeout-only crops.
+  const capture = new AcApEntityPreviewConvertor().capture(
+    selectedIds,
+    longSide
+  )
+  if (!capture.ok) {
+    if (capture.reason === 'no-entities' || capture.reason === 'no-bounds') {
+      return { ok: false, reason: 'no-bounds' }
+    }
+    return { ok: false, reason: 'capture-failed' }
+  }
+
+  return { ok: true, dataUrl: capture.dataUrl }
 }

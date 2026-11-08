@@ -1150,8 +1150,8 @@ const VIEW_MEMBERS: MemberSpec[] = [
   ),
   method(
     'capturePreview',
-    '({ longSide? }?) => { queued, index }',
-    'Queues a PNG screenshot after the script finishes (attached to the result for the model).',
+    '({ longSide?, selection? }?) => { queued, index }',
+    'Queues a PNG after the script finishes (attached to the result). Pass selection: true to capture only the current selection.',
     'unknown',
     'capturePreview()'
   )

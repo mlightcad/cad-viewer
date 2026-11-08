@@ -12,6 +12,19 @@ Od vydání, které obsahuje tuto změnu, `@mlightcad/cad-simple-viewer` registr
 Vyžaduje `@mlightcad/data-model` se systémovými proměnnými `PICKSTYLE` (0–3, výchozí `1`) a `GROUPDISPLAYMODE` (0–2, výchozí `2`). Sdílený výběr asociativní šrafy (`PICKSTYLE` 2/3) zůstává no-op, dokud `AcDbHatch` nezíská soft-pointery hranic.
 :::
 
+::: info Náhled výběru v `cad.view.capturePreview`
+Od vydání, které obsahuje tuto změnu, `CadSession.capturePreview` přijímá objekt voleb místo holého čísla `longSide`:
+
+```ts
+capturePreview?(options?: {
+  longSide?: number
+  selection?: boolean
+}): Promise<CaptureDrawingPreviewResult>
+```
+
+Ve skriptu použijte `cad.view.capturePreview({ longSide?, selection? })`. Po `cad.selection.replace(ids)` předáte `selection: true` pro vykreslení vybraných entit stejnou batch-preview cestou jako ENTPREVIEW (rámování podle scénových bounds, ne databázových `geometricExtents`) a připojení PNG k výsledku nástroje. Prázdný výběr vrací `reason: 'no-selection'`. Bezhlavový `createDatabaseSession` stále přeskočí náhledy (bez rendereru).
+:::
+
 ::: info Lehký vstup pro úvodní stránku otevření souboru
 Od **1.8.0** nabízí `@mlightcad/cad-simple-viewer` podcestu bez DocManageru pro úvodní stránky. Upřednostněte **`acuiCreateFileOpenSession`** (lazy `createDocManager` + automatické otevření / `attachSourcesTo`). Použijte `AcUiFileOpenLanding`, když otevíráte výkresy sami (např. Vue `MlCadViewer`):
 

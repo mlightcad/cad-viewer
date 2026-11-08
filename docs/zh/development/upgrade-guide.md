@@ -12,6 +12,19 @@ title: "升级 cad-simple-viewer 和 cad-editor"
 需要已注册 `PICKSTYLE`（0–3，默认 `1`）和 `GROUPDISPLAYMODE`（0–2，默认 `2`）的 `@mlightcad/data-model`。关联填充共选（`PICKSTYLE` 2/3）在 `AcDbHatch` 具备边界软指针之前仍为 no-op。
 :::
 
+::: info `cad.view.capturePreview` 选中预览出图
+自包含本变更的版本起，`CadSession.capturePreview` 改为接收选项对象，不再使用单独的 `longSide` 数字参数：
+
+```ts
+capturePreview?(options?: {
+  longSide?: number
+  selection?: boolean
+}): Promise<CaptureDrawingPreviewResult>
+```
+
+脚本侧使用 `cad.view.capturePreview({ longSide?, selection? })`。在 `cad.selection.replace(ids)` 之后传入 `selection: true`，会通过与 ENTPREVIEW 相同的 batch 预览路径提取选中图元（按场景包围盒取景，而非数据库 `geometricExtents`），并将 PNG 附加到工具结果。空选中返回 `reason: 'no-selection'`。无渲染器的 `createDatabaseSession` 仍会跳过预览。
+:::
+
 ::: info 轻量文件打开落地页入口
 从 **1.8.0** 起，`@mlightcad/cad-simple-viewer` 为落地页提供不依赖 DocManager 的子路径。请优先使用 **`acuiCreateFileOpenSession`**（延迟 `createDocManager` + 自动打开 / `attachSourcesTo`）。当你自行打开图纸时使用 `AcUiFileOpenLanding`（例如 Vue `MlCadViewer`）：
 
