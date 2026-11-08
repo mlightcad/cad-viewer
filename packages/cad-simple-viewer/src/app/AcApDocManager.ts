@@ -128,6 +128,7 @@ import {
 } from './AcApDocsUrl'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
+import { acapHealModelLayoutLink } from './acapHealModelLayoutLink'
 import {
   AcApOpenDatabaseOptions,
   AcApOpenViewMode
@@ -2306,8 +2307,14 @@ export class AcApDocManager {
   setActiveLayout(view?: AcTrView2d, database?: AcDbDatabase) {
     const currentView = view ?? (this.curView as AcTrView2d)
     const db = database ?? this.curDocument.database
-    currentView.activeLayoutBtrId = db.currentSpaceId
-    currentView.modelSpaceBtrId = db.tables.blockTable.modelSpace.objectId
+    // Heal Model layout → *Model_Space before activating. Stale layout BTR
+    // ids leave `activeLayoutView` undefined (blank canvas + zoomTo crash).
+    const modelSpaceId = acapHealModelLayoutLink(db)
+    const activeSpaceId = db.currentSpaceId || modelSpaceId
+    currentView.ensureLayoutView(activeSpaceId)
+    currentView.ensureLayoutView(modelSpaceId)
+    currentView.activeLayoutBtrId = activeSpaceId
+    currentView.modelSpaceBtrId = modelSpaceId
   }
 
   /**

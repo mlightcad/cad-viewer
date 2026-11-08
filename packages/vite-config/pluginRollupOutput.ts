@@ -267,7 +267,11 @@ function isCadSimpleViewerFileOpenPanelModule(id: string): boolean {
     ) ||
     /\/app\/AcApOpenDatabaseOptions\.ts$/.test(normalized) ||
     /\/i18n\/AcApI18n\.ts$/.test(normalized) ||
-    /\/i18n\/(?:en|zh|tr|cs|ar)\/main\.ts$/.test(normalized) ||
+    // All locale `main.ts` catalogs — must stay together. Omitting any locale
+    // (historically ja/ko) puts it in the fat viewer chunk while
+    // file-open-panel still imports it, creating a circular chunk edge and a
+    // runtime TDZ ("Cannot access … before initialization").
+    /\/i18n\/[^/]+\/main\.ts$/.test(normalized) ||
     /\/editor\/global\/AcEdUiTheme\.ts$/.test(normalized) ||
     /\/editor\/global\/AcEdUiLayout\.ts$/.test(normalized) ||
     /\/editor\/view\/AcEdOpenMode\.ts$/.test(normalized)
