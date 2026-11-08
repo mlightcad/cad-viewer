@@ -66,9 +66,9 @@ export const agentCs = {
   agentModeSimple: 'Jednoduchý',
   agentModeHighInference: 'Vysoká inference',
   agentModeSimpleHint:
-    'Výchozí. Rychlý — pouze sebekontrola přes měřicí API; bez snímků a vizuálního ověření.',
+    'Výchozí. Rychlý — preferuje sebekontrolu přes měřicí API; volitelné snímky jsou v pořádku. Bez automatického vizuálního ověření.',
   agentModeHighInferenceHint:
-    'Volitelné pro složité úlohy. Povolí snímky a ověří výkres snímkem + vizuálním modelem (až 5 kol). Vyžaduje vizuální model.',
+    'Volitelné pro složité úlohy. Po kreslení ověří výkres snímkem + vizuálním modelem (až 5 kol). Vyžaduje vizuální model.',
   highInferenceRequiresVision:
     'Režim vysoké inference vyžaduje model s podporou obrazu.',
   verificationTitle: 'Ověření výkresu',

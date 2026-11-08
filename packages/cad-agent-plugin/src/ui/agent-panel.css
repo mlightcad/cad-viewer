@@ -247,10 +247,13 @@
   max-width: 92%;
 }
 
-.cad-agent-msg--editing {
+/* Match `.cad-agent-msg.user` specificity so editing uses full palette width. */
+.cad-agent-msg.cad-agent-msg--editing {
   align-self: stretch;
   max-width: 100%;
+  width: 100%;
   background: #2a2a2a;
+  box-sizing: border-box;
 }
 
 .cad-agent-msg-footer {

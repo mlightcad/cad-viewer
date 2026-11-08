@@ -178,8 +178,9 @@ Returns { queued: true, index }. Images are attached to the tool result for the 
 (not returned as JSON). Default frames model-space drawing extents (temporarily switches
 away from paper space if needed). Pass selection: true to render only the current selection
 (batch-extracted geometry, framed to scene bounds) — use after
-cad.selection.replace(ids). Only for High inference / when screenshots are enabled —
-prefer cad.measure for self-check; do not use capturePreview in Simple mode.
+cad.selection.replace(ids). Optional visual self-check when screenshots are
+enabled (every agent mode); prefer cad.measure for numeric self-check.
+Automatic post-round vision verification is High inference only.
 cad.measure — prefer for numeric self-check (saves tokens vs hand-rolled Math):
   distance(a, b) -> number
   angleDeg(a, b) -> bearing a→b deg (-180,180]; angleDeg(a, b, c) -> interior angle at b [0,180]

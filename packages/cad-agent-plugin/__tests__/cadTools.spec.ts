@@ -44,24 +44,39 @@ async function modelOutputFor(agentMode: 'simple' | 'high-inference') {
 }
 
 describe('createCadTools toModelOutput', () => {
-  test('Simple mode sends the script result to the model, not null', async () => {
-    const out = await modelOutputFor('simple')
+  test.each(['simple', 'high-inference'] as const)(
+    '%s mode sends JSON text plus screenshots when capturePreview produced images',
+    async agentMode => {
+      const out = await modelOutputFor(agentMode)
+      expect(out.type).toBe('content')
+      const parts = (
+        out as { value: Array<{ type: string; text?: string; data?: string }> }
+      ).value
+      expect(parts[0].type).toBe('text')
+      const summary = JSON.parse(parts[0].text!) as Record<string, unknown>
+      expect(summary).not.toBeNull()
+      expect(summary.success).toBe(true)
+      expect(summary.data).toEqual(SCRIPT_RESULT.data)
+      expect(summary).not.toHaveProperty('images')
+      expect(parts[1]).toMatchObject({ type: 'media', data: 'AAAA' })
+    }
+  )
+
+  test('omits media parts when the script result has no images', async () => {
+    mockExecute.mockResolvedValueOnce({
+      success: true,
+      message: 'ok',
+      data: { total: 1 }
+    })
+    const tool = createCadTools({ agentMode: 'simple' }).execute_cad_script
+    const output = await tool.execute!(
+      { code: 'return 1' },
+      { toolCallId: 't1', messages: [] }
+    )
+    const out = tool.toModelOutput!(output as ToolResult)
     expect(out.type).toBe('json')
     const value = (out as { value: Record<string, unknown> }).value
-    expect(value).not.toBeNull()
     expect(value.success).toBe(true)
-    expect(value.data).toEqual(SCRIPT_RESULT.data)
     expect(value).not.toHaveProperty('images')
-  })
-
-  test('High inference mode sends JSON text plus screenshots', async () => {
-    const out = await modelOutputFor('high-inference')
-    expect(out.type).toBe('content')
-    const parts = (
-      out as { value: Array<{ type: string; text?: string; data?: string }> }
-    ).value
-    expect(parts[0].type).toBe('text')
-    expect(JSON.parse(parts[0].text!).data).toEqual(SCRIPT_RESULT.data)
-    expect(parts[1]).toMatchObject({ type: 'media', data: 'AAAA' })
   })
 })

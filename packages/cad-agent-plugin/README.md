@@ -46,5 +46,6 @@ Tool schemas and execution live in [`@mlightcad/cad-agent-core`](../cad-agent-co
 
 - `execute_cad_script` — all drawing, queries, edits, selection, zoom, context (`cad.drawing`), and file export (`cad.file.saveDxf` / `savePdf` / `saveHtml`)
 
-Agent mode defaults to Simple (no screenshot verification). Enable High inference
-in the panel for opt-in visual verification on complex tasks.
+Agent mode defaults to Simple (optional `cad.view.capturePreview`, no automatic
+vision verification). Enable High inference in the panel for opt-in post-round
+screenshot + vision verification on complex tasks.

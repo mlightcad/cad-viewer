@@ -66,9 +66,9 @@ export const agentTr = {
   agentModeSimple: 'Basit',
   agentModeHighInference: 'Yüksek akıl yürütme',
   agentModeSimpleHint:
-    'Varsayılan. Hızlı — yalnızca ölçüm API’si ile öz kontrol; ekran görüntüsü veya görsel doğrulama yok.',
+    'Varsayılan. Hızlı — ölçüm API’si ile öz kontrol öncelikli; isteğe bağlı ekran görüntüsü kullanılabilir. Otomatik görsel doğrulama yok.',
   agentModeHighInferenceHint:
-    'Karmaşık görevler için isteğe bağlı. Ekran görüntüsüne izin verir; ekran görüntüsü + görsel model ile doğrular (en fazla 5 tur). Görsel destekli model gerekir.',
+    'Karmaşık görevler için isteğe bağlı. Çizimden sonra ekran görüntüsü + görsel model ile doğrular (en fazla 5 tur). Görsel destekli model gerekir.',
   highInferenceRequiresVision:
     'Yüksek akıl yürütme modu görsel destekli bir model gerektirir.',
   verificationTitle: 'Çizim doğrulaması',

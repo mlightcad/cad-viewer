@@ -43,7 +43,7 @@ export function createCadToolCatalog(
   const allowPreviewCapture = options.allowPreviewCapture !== false && canRender
   const scriptLimits = options.scriptLimits
   const reason = canRender
-    ? 'Screenshots are reserved\nfor High inference mode.'
+    ? 'Screenshot capture is disabled\nfor this session.'
     : 'This session has no\nrenderer, so screenshots are not available.'
   const description = allowPreviewCapture
     ? CAD_SCRIPT_API_SUMMARY
