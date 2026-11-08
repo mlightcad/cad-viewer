@@ -4,10 +4,14 @@ import { ar } from './ar'
 import { commandAr } from './command-ar'
 import { commandCs } from './command-cs'
 import { commandEn } from './command-en'
+import { commandJa } from './command-ja'
+import { commandKo } from './command-ko'
 import { commandTr } from './command-tr'
 import { commandZh } from './command-zh'
 import { cs } from './cs'
 import { en } from './en'
+import { ja } from './ja'
+import { ko } from './ko'
 import { tr } from './tr'
 import { zh } from './zh'
 
@@ -59,6 +63,14 @@ export function acuiRegisterSimpleUiI18n(): void {
   AcApI18n.mergeLocaleMessage('zh', {
     command: commandZh,
     [MESSAGE_PREFIX]: flatToNested(zh)
+  })
+  AcApI18n.mergeLocaleMessage('ja', {
+    command: commandJa,
+    [MESSAGE_PREFIX]: flatToNested(ja)
+  })
+  AcApI18n.mergeLocaleMessage('ko', {
+    command: commandKo,
+    [MESSAGE_PREFIX]: flatToNested(ko)
   })
   AcApI18n.mergeLocaleMessage('cs', {
     command: commandCs,

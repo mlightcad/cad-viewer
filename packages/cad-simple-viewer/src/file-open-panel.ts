@@ -9,12 +9,16 @@ import { AcApI18n } from './i18n/AcApI18n'
 import arMain from './i18n/ar/main'
 import csMain from './i18n/cs/main'
 import enMain from './i18n/en/main'
+import jaMain from './i18n/ja/main'
+import koMain from './i18n/ko/main'
 import trMain from './i18n/tr/main'
 import zhMain from './i18n/zh/main'
 
 // Register only `main.*` strings needed by the panel (not command/jig catalogs).
 AcApI18n.mergeLocaleMessage('en', { main: enMain })
 AcApI18n.mergeLocaleMessage('zh', { main: zhMain })
+AcApI18n.mergeLocaleMessage('ja', { main: jaMain })
+AcApI18n.mergeLocaleMessage('ko', { main: koMain })
 AcApI18n.mergeLocaleMessage('tr', { main: trMain })
 AcApI18n.mergeLocaleMessage('cs', { main: csMain })
 AcApI18n.mergeLocaleMessage('ar', { main: arMain })

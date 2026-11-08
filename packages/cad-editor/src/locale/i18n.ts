@@ -17,6 +17,14 @@ import enCommand from './en/command'
 import enDialog from './en/dialog'
 import enEntity from './en/entity'
 import enMain from './en/main'
+import jaCommand from './ja/command'
+import jaDialog from './ja/dialog'
+import jaEntity from './ja/entity'
+import jaMain from './ja/main'
+import koCommand from './ko/command'
+import koDialog from './ko/dialog'
+import koEntity from './ko/entity'
+import koMain from './ko/main'
 import { pluralRules } from './pluralRules'
 import trCommand from './tr/command'
 import trDialog from './tr/dialog'
@@ -36,6 +44,8 @@ const getInitialLocale = (): AcApLocale => {
   if (
     stored === 'en' ||
     stored === 'zh' ||
+    stored === 'ja' ||
+    stored === 'ko' ||
     stored === 'tr' ||
     stored === 'cs' ||
     stored === 'ar'
@@ -46,6 +56,8 @@ const getInitialLocale = (): AcApLocale => {
   const browserLang = navigator.language.toLowerCase()
   const browserLocale = browserLang.substring(0, 2)
   if (browserLocale === 'zh') return 'zh'
+  if (browserLocale === 'ja') return 'ja'
+  if (browserLocale === 'ko') return 'ko'
   if (browserLocale === 'tr') return 'tr'
   if (browserLocale === 'cs') return 'cs'
   if (browserLocale === 'ar') return 'ar'
@@ -64,6 +76,18 @@ const messages = {
     command: zhCommand,
     dialog: zhDialog,
     entity: zhEnity
+  },
+  ja: {
+    main: jaMain,
+    command: jaCommand,
+    dialog: jaDialog,
+    entity: jaEntity
+  },
+  ko: {
+    main: koMain,
+    command: koCommand,
+    dialog: koDialog,
+    entity: koEntity
   },
   tr: {
     main: trMain,
@@ -87,6 +111,8 @@ const messages = {
 
 AcApI18n.mergeLocaleMessage('en', messages.en)
 AcApI18n.mergeLocaleMessage('zh', messages.zh)
+AcApI18n.mergeLocaleMessage('ja', messages.ja)
+AcApI18n.mergeLocaleMessage('ko', messages.ko)
 AcApI18n.mergeLocaleMessage('tr', messages.tr)
 AcApI18n.mergeLocaleMessage('cs', messages.cs)
 AcApI18n.mergeLocaleMessage('ar', messages.ar)

@@ -68,6 +68,8 @@ export const zh: Record<string, string> = {
   'toolbar.localeCs': 'Čeština',
   'toolbar.localeTr': 'Türkçe',
   'toolbar.localeAr': 'العربية',
+  'toolbar.localeJa': '日本語',
+  'toolbar.localeKo': '한국어',
   'toolbar.collapse': '收起工具栏',
   'toolbar.moreOverflow': '更多工具',
   'toolbar.expand': '展开工具栏',

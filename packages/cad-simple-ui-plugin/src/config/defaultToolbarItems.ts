@@ -111,11 +111,21 @@ function acuiCreateToolbarPlacementItem(
   }
 }
 
-const TOOLBAR_LOCALES: AcApLocale[] = ['en', 'zh', 'cs', 'tr', 'ar']
+const TOOLBAR_LOCALES: AcApLocale[] = [
+  'en',
+  'zh',
+  'ja',
+  'ko',
+  'cs',
+  'tr',
+  'ar'
+]
 
 const LOCALE_BADGES: Record<AcApLocale, string> = {
   en: 'EN',
   zh: '中',
+  ja: '日',
+  ko: '한',
   cs: 'CS',
   tr: 'TR',
   ar: 'AR'
@@ -124,6 +134,8 @@ const LOCALE_BADGES: Record<AcApLocale, string> = {
 const LOCALE_LABELS: Record<AcApLocale, string> = {
   en: 'toolbar.localeEn',
   zh: 'toolbar.localeZh',
+  ja: 'toolbar.localeJa',
+  ko: 'toolbar.localeKo',
   cs: 'toolbar.localeCs',
   tr: 'toolbar.localeTr',
   ar: 'toolbar.localeAr'

@@ -6,6 +6,8 @@ import { scriptCommandDescriptions } from './command'
 import { scriptCs } from './cs'
 import { scriptEn } from './en'
 import { scriptExampleCopyByLocale } from './exampleCopy'
+import { scriptJa } from './ja'
+import { scriptKo } from './ko'
 import { scriptTr } from './tr'
 import { scriptZh } from './zh'
 
@@ -22,10 +24,22 @@ export type ScriptLabels = Record<ScriptLabelKey, string>
 const scriptMessagesByLocale = {
   en: scriptEn,
   zh: scriptZh,
+  ja: scriptJa,
+  ko: scriptKo,
   tr: scriptTr,
   cs: scriptCs,
   ar: scriptAr
 } as const satisfies Record<AcApLocale, ScriptLabels>
+
+const LOCALES: readonly AcApLocale[] = [
+  'en',
+  'zh',
+  'ja',
+  'ko',
+  'tr',
+  'cs',
+  'ar'
+]
 
 /** Guards {@link registerScriptI18n} against duplicate merges. */
 let isRegistered = false
@@ -62,11 +76,9 @@ function buildVueMessages(locale: AcApLocale) {
 export function registerScriptI18n(): void {
   if (isRegistered) return
 
-  AcApI18n.mergeLocaleMessage('en', buildVueMessages('en'))
-  AcApI18n.mergeLocaleMessage('zh', buildVueMessages('zh'))
-  AcApI18n.mergeLocaleMessage('tr', buildVueMessages('tr'))
-  AcApI18n.mergeLocaleMessage('cs', buildVueMessages('cs'))
-  AcApI18n.mergeLocaleMessage('ar', buildVueMessages('ar'))
+  for (const locale of LOCALES) {
+    AcApI18n.mergeLocaleMessage(locale, buildVueMessages(locale))
+  }
   isRegistered = true
 }
 
@@ -79,11 +91,9 @@ export function mergeScriptI18nIntoVueI18n(
   mergeLocaleMessage: (locale: AcApLocale, message: object) => void
 ): void {
   registerScriptI18n()
-  mergeLocaleMessage('en', buildVueMessages('en'))
-  mergeLocaleMessage('zh', buildVueMessages('zh'))
-  mergeLocaleMessage('tr', buildVueMessages('tr'))
-  mergeLocaleMessage('cs', buildVueMessages('cs'))
-  mergeLocaleMessage('ar', buildVueMessages('ar'))
+  for (const locale of LOCALES) {
+    mergeLocaleMessage(locale, buildVueMessages(locale))
+  }
 }
 
 /**

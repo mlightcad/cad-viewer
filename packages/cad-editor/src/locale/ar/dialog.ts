@@ -449,5 +449,53 @@ export default {
     yAxis: 'Y Axis',
     zAxis: 'Z Axis',
     relativeTo: 'Relative to'
+  },
+
+  classicGroupDlg: {
+    ...enDialog.classicGroupDlg,
+    title: 'تجميع الكائنات',
+    groupName: 'اسم المجموعة',
+    selectable: 'قابلة للتحديد',
+    identification: 'تعريف المجموعة',
+    description: 'الوصف',
+    findName: 'البحث عن الاسم <',
+    highlight: 'تمييز <',
+    includeUnnamed: 'تضمين غير المسماة',
+    createGroup: 'إنشاء مجموعة',
+    new: 'جديد <',
+    unnamed: 'غير مسمى',
+    changeGroup: 'تغيير المجموعة',
+    remove: 'إزالة <',
+    add: 'إضافة <',
+    rename: 'إعادة تسمية',
+    reOrder: 'إعادة ترتيب...',
+    descriptionBtn: 'الوصف',
+    explode: 'تفجير',
+    selectableBtn: 'قابلة للتحديد',
+    yes: 'نعم',
+    no: 'لا',
+    pickObject: 'حدد كائنًا للعثور على مجموعته',
+    notInGroup: 'الكائن ليس عضوًا في مجموعة',
+    selectObjects: 'حدد كائنات للمجموعة الجديدة',
+    selectToAdd: 'حدد الكائنات لإضافتها',
+    selectToRemove: 'حدد الكائنات لإزالتها',
+    clearSelectableFirst:
+      'ألغِ خيار قابلة للتحديد للمجموعة قبل إزالة الكائنات',
+    invalidName: 'اسم مجموعة غير صالح',
+    nameExists: 'اسم المجموعة موجود بالفعل',
+    created: 'تم إنشاء المجموعة {name}'
+  },
+
+  orderGroupDlg: {
+    ...enDialog.orderGroupDlg,
+    title: 'ترتيب المجموعة',
+    groupName: 'اسم المجموعة',
+    description: 'الوصف',
+    removeFrom: 'إزالة من الموضع (يبدأ من 0)',
+    newPosition: 'أدخل رقم الموضع الجديد للكائن',
+    numberOfObjects: 'عدد الكائنات',
+    reOrder: 'إعادة ترتيب',
+    reverseOrder: 'عكس الترتيب',
+    highlight: 'تمييز'
   }
 }

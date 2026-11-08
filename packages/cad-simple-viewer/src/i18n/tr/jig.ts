@@ -1608,8 +1608,161 @@ export default {
       }
     }
   },
-  group: { ...enJig.group },
-  ungroup: { ...enJig.ungroup },
-  groupedit: { ...enJig.groupedit },
-  dashgroup: { ...enJig.dashgroup }
+  group: {
+    selectOrOption: 'Nesneleri seçin veya',
+    createOrOption: 'Grup oluştur veya',
+    selectObjects: 'Grup için nesneleri seçin',
+    enterName: 'Grup adını girin',
+    enterDescription: 'Grup açıklamasını girin',
+    invalidName: 'Geçersiz grup adı',
+    nameExists: 'Grup adı zaten var',
+    created: 'Grup {name} oluşturuldu',
+    keywords: {
+      name: {
+        display: 'Ad(N)',
+        local: 'Ad',
+        global: 'Name'
+      },
+      description: {
+        display: 'Açıklama(D)',
+        local: 'Açıklama',
+        global: 'Description'
+      }
+    }
+  },
+  ungroup: {
+    selectOrOption: 'Grup seçin veya',
+    selectGroup: 'Grup seçin',
+    enterName: 'Grup adını girin',
+    notFound: 'Grup bulunamadı',
+    notInGroup: 'Nesne bir grubun üyesi değil',
+    multiGroup: 'Nesne birden fazla grubun üyesi [{name}]',
+    exploded: 'Grup {name} patlatıldı',
+    explodedCount: '{count} grup patlatıldı',
+    keywords: {
+      name: {
+        display: 'Ad(N)',
+        local: 'Ad',
+        global: 'Name'
+      },
+      all: {
+        display: 'Tümü(A)',
+        local: 'Tümü',
+        global: 'All'
+      },
+      accept: {
+        display: 'Kabul(A)',
+        local: 'Kabul',
+        global: 'Accept'
+      },
+      next: {
+        display: 'Sonraki(N)',
+        local: 'Sonraki',
+        global: 'Next'
+      }
+    }
+  },
+  groupedit: {
+    selectGroup: 'Bir grup seçin',
+    enterName: 'Grup adını girin',
+    notFound: 'Grup bulunamadı',
+    multiGroup: 'Nesne birden fazla grubun üyesi [{name}]',
+    action: '{name} grubu için bir seçenek girin',
+    selectToAdd: 'Gruba eklenecek nesneleri seçin',
+    selectToRemove: 'Gruptan kaldırılacak nesneleri seçin',
+    newName: 'Yeni grup adını girin',
+    keywords: {
+      add: {
+        display: 'Nesne ekle(A)',
+        local: 'Ekle',
+        global: 'Add'
+      },
+      remove: {
+        display: 'Nesne kaldır(R)',
+        local: 'Kaldır',
+        global: 'Remove'
+      },
+      rename: {
+        display: 'Yeniden adlandır(N)',
+        local: 'Yeniden adlandır',
+        global: 'Rename'
+      },
+      accept: {
+        display: 'Kabul(A)',
+        local: 'Kabul',
+        global: 'Accept'
+      },
+      next: {
+        display: 'Sonraki(N)',
+        local: 'Sonraki',
+        global: 'Next'
+      }
+    }
+  },
+  dashgroup: {
+    option: 'Bir seçenek girin',
+    empty: 'Tanımlı grup yok',
+    listEntry: '{name}  {description}  [{selectable}]  ({count})',
+    yes: 'Evet',
+    no: 'Hayır',
+    enterNameOrBlank:
+      'Grup adını girin veya adsız için Enter tuşuna basın',
+    enterGroupName: 'Grup adını girin',
+    selectableSet: 'Grup {name} seçilebilir = {value}',
+    orderOption: 'Sıralama seçeneğini girin',
+    fromPosition: 'Yeniden sıralanacak nesnenin konum numarasını girin (0 tabanlı)',
+    toPosition: 'Nesne için yeni konum numarasını girin (0 tabanlı)',
+    keywords: {
+      list: {
+        display: '?(?)',
+        local: '?',
+        global: '?'
+      },
+      create: {
+        display: 'Oluştur(C)',
+        local: 'Oluştur',
+        global: 'Create'
+      },
+      add: {
+        display: 'Ekle(A)',
+        local: 'Ekle',
+        global: 'Add'
+      },
+      remove: {
+        display: 'Kaldır(R)',
+        local: 'Kaldır',
+        global: 'Remove'
+      },
+      explode: {
+        display: 'Patlat(X)',
+        local: 'Patlat',
+        global: 'Explode'
+      },
+      rename: {
+        display: 'Yeniden adlandır(N)',
+        local: 'Yeniden adlandır',
+        global: 'Rename'
+      },
+      selectable: {
+        display: 'Seçilebilir(S)',
+        local: 'Seçilebilir',
+        global: 'Selectable'
+      },
+      order: {
+        display: 'Sıra(O)',
+        local: 'Sıra',
+        global: 'Order'
+      },
+      reverse: {
+        display: 'Ters(R)',
+        local: 'Ters',
+        global: 'Reverse'
+      },
+      position: {
+        display: 'Konum(P)',
+        local: 'Konum',
+        global: 'Position'
+      }
+    }
+  }
 }

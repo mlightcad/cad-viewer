@@ -1,17 +1,27 @@
 /** Supported locales in the offline HTML viewer. */
-export type AcExHtmlLocale = 'en' | 'zh' | 'cs' | 'tr' | 'ar'
+export type AcExHtmlLocale = 'en' | 'zh' | 'ja' | 'ko' | 'cs' | 'tr' | 'ar'
 
 /**
  * All locales accepted by the offline viewer, in display order.
  * The language strip lists these options; add a locale here plus a
  * {@link ACEX_HTML_LOCALE_BADGES} entry and a `MESSAGES` tree to support it.
  */
-export const ACEX_HTML_LOCALES: AcExHtmlLocale[] = ['en', 'zh', 'cs', 'tr', 'ar']
+export const ACEX_HTML_LOCALES: AcExHtmlLocale[] = [
+  'en',
+  'zh',
+  'ja',
+  'ko',
+  'cs',
+  'tr',
+  'ar'
+]
 
 /** Short button badge per locale (shown on the language parent and strip). */
 export const ACEX_HTML_LOCALE_BADGES: Record<AcExHtmlLocale, string> = {
   en: 'EN',
   zh: '中',
+  ja: '日',
+  ko: '한',
   cs: 'CS',
   tr: 'TR',
   ar: 'AR'
@@ -77,6 +87,8 @@ export type AcExHtmlMessageKey =
   | 'toolbar.language'
   | 'toolbar.localeEn'
   | 'toolbar.localeZh'
+  | 'toolbar.localeJa'
+  | 'toolbar.localeKo'
   | 'toolbar.localeCs'
   | 'toolbar.localeTr'
   | 'toolbar.localeAr'
@@ -253,7 +265,7 @@ interface AcExMessageTree {
   [key: string]: string | AcExMessageTree
 }
 
-const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
+const BASE_MESSAGES: Record<'en' | 'zh' | 'cs' | 'tr', AcExMessageTree> = {
   en: {
     toolbar: {
       viewerTools: 'Viewer tools',
@@ -308,6 +320,8 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
       localeAr: 'العربية',
+      localeJa: '日本語',
+      localeKo: '한국어',
       collapse: 'Collapse toolbar',
       expand: 'Expand toolbar',
       moreOverflow: 'More tools'
@@ -575,6 +589,9 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeZh: '中文',
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
+      localeAr: 'العربية',
+      localeJa: '日本語',
+      localeKo: '한국어',
       collapse: '收起工具栏',
       expand: '展开工具栏',
       moreOverflow: '更多工具'
@@ -831,6 +848,9 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeZh: '中文',
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
+      localeAr: 'العربية',
+      localeJa: '日本語',
+      localeKo: '한국어',
       collapse: 'Sbalit panel nástrojů',
       expand: 'Rozbalit panel nástrojů',
       moreOverflow: 'Další nástroje'
@@ -1098,6 +1118,9 @@ const BASE_MESSAGES: Record<Exclude<AcExHtmlLocale, 'ar'>, AcExMessageTree> = {
       localeZh: '中文',
       localeCs: 'Čeština',
       localeTr: 'Türkçe',
+      localeAr: 'العربية',
+      localeJa: '日本語',
+      localeKo: '한국어',
       collapse: 'Araç çubuğunu daralt',
       expand: 'Araç çubuğunu genişlet',
       moreOverflow: 'Diğer araçlar'
@@ -1369,6 +1392,8 @@ const AR_MESSAGES: AcExMessageTree = {
     'localeCs': 'Čeština',
     'localeTr': 'Türkçe',
     'localeAr': 'العربية',
+    'localeJa': '日本語',
+    'localeKo': '한국어',
     'collapse': 'طي شريط الأدوات',
     'expand': 'توسيع شريط الأدوات',
     'moreOverflow': 'المزيد من الأدوات'
@@ -1563,8 +1588,14 @@ const AR_MESSAGES: AcExMessageTree = {
   }
 }
 
+function acexHtmlCloneMessages(source: AcExMessageTree): AcExMessageTree {
+  return JSON.parse(JSON.stringify(source)) as AcExMessageTree
+}
+
 const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
   ...BASE_MESSAGES,
+  ja: acexHtmlCloneMessages(BASE_MESSAGES.en),
+  ko: acexHtmlCloneMessages(BASE_MESSAGES.en),
   ar: AR_MESSAGES
 }
 

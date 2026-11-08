@@ -294,5 +294,127 @@ export const scriptExampleCopyByLocale = {
       description:
         'يحرّك الكيانات المحددة 10 وحدات إلى اليمين. حدد كيانات أولًا.'
     }
-  }
+  },
+  ja: {
+    countByType: {
+      title: 'Count entities by type',
+      description:
+        'Walk every entity and return how many of each type are in the drawing, plus the title and current layer.'
+    },
+    circlesByLayer: {
+      title: 'Highlight the layer with the most circles',
+      description:
+        'Count circles on each layer, then select every entity on the busiest layer.'
+    },
+    drawingOverview: {
+      title: 'Drawing summary',
+      description:
+        'Return the title, units, current layer, extents, and whether each layer is on, frozen, or locked.'
+    },
+    textContents: {
+      title: 'List text',
+      description:
+        'Collect Text, MText, and Attribute strings with their layer and entity id.'
+    },
+    selectCurrentLayer: {
+      title: 'Select the current layer',
+      description:
+        'Select every entity that sits on the current layer of the drawing.'
+    },
+    longestLines: {
+      title: 'Longest lines',
+      description: 'Measure each line and select the ten longest ones.'
+    },
+    extentsBox: {
+      title: 'Entities in part of the extents',
+      description:
+        'Select entities whose bounds meet the lower-left half of the drawing extents.'
+    },
+    blockSummary: {
+      title: 'Block definitions',
+      description:
+        'List each block name and how many entities that block contains.'
+    },
+    layerTable: {
+      title: 'Layer table',
+      description:
+        'Read cad.tables.layerTable and return each layer name and id.'
+    },
+    circleGrid: {
+      title: 'Draw a circle grid',
+      description:
+        'In one undo group, create a GRID layer, draw a 4 by 3 grid of circles, and zoom to the extents.'
+    },
+    stampTitle: {
+      title: 'Stamp the drawing title',
+      description:
+        'Create a NOTES layer and place the drawing title as text at the origin.'
+    },
+    moveSelection: {
+      title: 'Move the selection',
+      description:
+        'Move the currently selected entities 10 units to the right. Select entities first.'
+    }
+  },
+  ko: {
+    countByType: {
+      title: 'Count entities by type',
+      description:
+        'Walk every entity and return how many of each type are in the drawing, plus the title and current layer.'
+    },
+    circlesByLayer: {
+      title: 'Highlight the layer with the most circles',
+      description:
+        'Count circles on each layer, then select every entity on the busiest layer.'
+    },
+    drawingOverview: {
+      title: 'Drawing summary',
+      description:
+        'Return the title, units, current layer, extents, and whether each layer is on, frozen, or locked.'
+    },
+    textContents: {
+      title: 'List text',
+      description:
+        'Collect Text, MText, and Attribute strings with their layer and entity id.'
+    },
+    selectCurrentLayer: {
+      title: 'Select the current layer',
+      description:
+        'Select every entity that sits on the current layer of the drawing.'
+    },
+    longestLines: {
+      title: 'Longest lines',
+      description: 'Measure each line and select the ten longest ones.'
+    },
+    extentsBox: {
+      title: 'Entities in part of the extents',
+      description:
+        'Select entities whose bounds meet the lower-left half of the drawing extents.'
+    },
+    blockSummary: {
+      title: 'Block definitions',
+      description:
+        'List each block name and how many entities that block contains.'
+    },
+    layerTable: {
+      title: 'Layer table',
+      description:
+        'Read cad.tables.layerTable and return each layer name and id.'
+    },
+    circleGrid: {
+      title: 'Draw a circle grid',
+      description:
+        'In one undo group, create a GRID layer, draw a 4 by 3 grid of circles, and zoom to the extents.'
+    },
+    stampTitle: {
+      title: 'Stamp the drawing title',
+      description:
+        'Create a NOTES layer and place the drawing title as text at the origin.'
+    },
+    moveSelection: {
+      title: 'Move the selection',
+      description:
+        'Move the currently selected entities 10 units to the right. Select entities first.'
+    }
+  },
 } as const satisfies Record<AcApLocale, ScriptExampleCopyTable>

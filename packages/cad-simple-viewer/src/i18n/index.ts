@@ -9,6 +9,12 @@ import csMain from './cs/main'
 import enCommand from './en/command'
 import enJig from './en/jig'
 import enMain from './en/main'
+import jaCommand from './ja/command'
+import jaJig from './ja/jig'
+import jaMain from './ja/main'
+import koCommand from './ko/command'
+import koJig from './ko/jig'
+import koMain from './ko/main'
 import trCommand from './tr/command'
 import trJig from './tr/jig'
 import trMain from './tr/main'
@@ -26,6 +32,16 @@ AcApI18n.mergeLocaleMessage('zh', {
   command: zhCommand,
   jig: zhJig,
   main: zhMain
+})
+AcApI18n.mergeLocaleMessage('ja', {
+  command: jaCommand,
+  jig: jaJig,
+  main: jaMain
+})
+AcApI18n.mergeLocaleMessage('ko', {
+  command: koCommand,
+  jig: koJig,
+  main: koMain
 })
 AcApI18n.mergeLocaleMessage('tr', {
   command: trCommand,

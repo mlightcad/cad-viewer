@@ -32,7 +32,7 @@ export type AcUiToolbarItemsInput = AcUiToolbarItemConfig[] | 'default'
 export type AcUiDockPanelSide = 'top' | 'bottom' | 'left' | 'right'
 
 /** Supported UI locale codes for plugin strings. */
-export type AcUiLocale = 'en' | 'zh' | 'cs' | 'tr'
+export type AcUiLocale = 'en' | 'zh' | 'ja' | 'ko' | 'cs' | 'tr' | 'ar'
 
 /**
  * Per-layout overrides for {@link AcUiSimpleUiPluginOptions.layouts}.

@@ -21,5 +21,11 @@ export const agentCommandDescriptions = {
   },
   ar: {
     agent: 'يفتح لوحة دردشة وكيل CAD'
+  },
+  ja: {
+    agent: 'CAD エージェントのチャットパネルを開きます'
+  },
+  ko: {
+    agent: 'CAD 에이전트 채팅 패널을 엽니다'
   }
 } as const satisfies Record<AcApLocale, { readonly agent: string }>
