@@ -22,9 +22,8 @@ import type {
   AcDbSvgViewBox
 } from './svgTypes'
 
-const SUPPORTED = new Set([
-  'svg',
-  'g',
+/** Tags that produce geometry or are walked as containers. */
+const GEOMETRY_TAGS = new Set([
   'line',
   'polyline',
   'polygon',
@@ -35,6 +34,23 @@ const SUPPORTED = new Set([
   'text',
   'tspan'
 ])
+
+const CONTAINER_TAGS = new Set(['svg', 'g', 'a', 'switch'])
+
+/** Bulge for a 90° circular arc: tan(θ/4) with θ = π/2. */
+const BULGE_90 = Math.tan(Math.PI / 8)
+
+interface InheritedStyle {
+  stroke?: string
+  fill?: string
+  strokeWidth?: number
+  opacity: number
+  fillOpacity: number
+  strokeOpacity: number
+  strokeDasharray?: number[]
+  textAnchor?: 'start' | 'middle' | 'end'
+  visibility: 'visible' | 'hidden' | 'collapse'
+}
 
 /**
  * Parses an SVG document string into CAD-oriented primitives (Y-up).
@@ -54,30 +70,100 @@ export function acdbSvgParseDocument(svgText: string): AcDbSvgModel {
   const primitives: AcDbSvgPrimitive[] = []
   let skippedElementCount = 0
 
-  const walk = (el: ElementNode, parentCtm: AcGeMatrix2d) => {
+  const idMap = new Map<string, ElementNode>()
+  collectIds(root, idMap)
+
+  const useStack = new Set<string>()
+
+  const walk = (
+    el: ElementNode,
+    parentCtm: AcGeMatrix2d,
+    parentStyle: InheritedStyle,
+    /** When true, `defs`/`symbol` content is still walked for geometry (via `use`). */
+    instantiateMode: boolean
+  ) => {
     const name = (el.tagName ?? '').toLowerCase()
-    if (!SUPPORTED.has(name)) {
+
+    if (isDisplayNone(el)) return
+
+    const localStyle = readLocalStyle(el)
+    const style = mergeInherited(parentStyle, localStyle)
+    if (style.visibility !== 'visible') return
+
+    if (name === 'defs') {
+      // Definitions are collected via idMap; never emit into model space.
+      return
+    }
+
+    if (name === 'symbol' && !instantiateMode) {
+      return
+    }
+
+    if (name === 'use') {
+      emitUse(el, parentCtm, style)
+      return
+    }
+
+    if (name === 'switch') {
+      const local = acdbSvgParseTransform(propString(el, 'transform') ?? null)
+      const ctm = parentCtm.clone().multiply(local)
+      for (const child of elementChildren(el)) {
+        const childName = (child.tagName ?? '').toLowerCase()
+        if (
+          GEOMETRY_TAGS.has(childName) ||
+          CONTAINER_TAGS.has(childName) ||
+          childName === 'use' ||
+          childName === 'svg' ||
+          childName === 'symbol'
+        ) {
+          walk(child, ctm, style, instantiateMode)
+          break
+        }
+      }
+      return
+    }
+
+    if (name === 'a') {
+      const local = acdbSvgParseTransform(propString(el, 'transform') ?? null)
+      const ctm = parentCtm.clone().multiply(local)
+      for (const child of elementChildren(el)) {
+        walk(child, ctm, style, instantiateMode)
+      }
+      return
+    }
+
+    if (name === 'svg') {
+      const nestedCtm = nestedSvgCtm(el, parentCtm, el === root)
+      for (const child of elementChildren(el)) {
+        walk(child, nestedCtm, style, instantiateMode)
+      }
+      return
+    }
+
+    if (name === 'g' || (name === 'symbol' && instantiateMode)) {
+      const local = acdbSvgParseTransform(propString(el, 'transform') ?? null)
+      const ctm = parentCtm.clone().multiply(local)
+      for (const child of elementChildren(el)) {
+        walk(child, ctm, style, instantiateMode)
+      }
+      return
+    }
+
+    if (!GEOMETRY_TAGS.has(name)) {
       skippedElementCount++
       return
     }
 
     const local = acdbSvgParseTransform(propString(el, 'transform') ?? null)
     const ctm = parentCtm.clone().multiply(local)
-    const style = readStyle(el)
-
-    if (name === 'svg' || name === 'g') {
-      for (const child of elementChildren(el)) {
-        walk(child, ctm)
-      }
-      return
-    }
+    const leafStyle = finalizeLeafStyle(style, name)
 
     if (name === 'line') {
       primitives.push({
         kind: 'line',
         start: toCad(ctm, yFlip, propNum(el, 'x1'), propNum(el, 'y1')),
         end: toCad(ctm, yFlip, propNum(el, 'x2'), propNum(el, 'y2')),
-        style
+        style: leafStyle
       })
       return
     }
@@ -89,31 +175,14 @@ export function acdbSvgParseDocument(svgText: string): AcDbSvgModel {
           kind: 'polyline',
           points: pts.map(p => toCad(ctm, yFlip, p.x, p.y)),
           closed: name === 'polygon',
-          style
+          style: leafStyle
         })
       }
       return
     }
 
     if (name === 'rect') {
-      const x = propNum(el, 'x')
-      const y = propNum(el, 'y')
-      const w = propNum(el, 'width')
-      const h = propNum(el, 'height')
-      if (w > 0 && h > 0) {
-        const corners: AcDbSvgPoint[] = [
-          { x, y },
-          { x: x + w, y },
-          { x: x + w, y: y + h },
-          { x, y: y + h }
-        ]
-        primitives.push({
-          kind: 'polyline',
-          points: corners.map(p => toCad(ctm, yFlip, p.x, p.y)),
-          closed: true,
-          style
-        })
-      }
+      emitRect(el, ctm, yFlip, leafStyle, primitives)
       return
     }
 
@@ -128,7 +197,7 @@ export function acdbSvgParseDocument(svgText: string): AcDbSvgModel {
           propNum(el, 'cy'),
           r,
           r,
-          style
+          leafStyle
         )
       }
       return
@@ -146,7 +215,7 @@ export function acdbSvgParseDocument(svgText: string): AcDbSvgModel {
           propNum(el, 'cy'),
           rx,
           ry,
-          style
+          leafStyle
         )
       }
       return
@@ -160,14 +229,14 @@ export function acdbSvgParseDocument(svgText: string): AcDbSvgModel {
           kind: 'polyline',
           points: sub.points.map(p => toCad(ctm, yFlip, p.x, p.y)),
           closed: sub.closed,
-          style
+          style: leafStyle
         })
       }
       return
     }
 
     if (name === 'text') {
-      emitText(el, ctm, yFlip, style, primitives)
+      emitText(el, ctm, yFlip, leafStyle, primitives)
       return
     }
 
@@ -177,8 +246,338 @@ export function acdbSvgParseDocument(svgText: string): AcDbSvgModel {
     }
   }
 
-  walk(root, new AcGeMatrix2d())
+  const emitUse = (
+    el: ElementNode,
+    parentCtm: AcGeMatrix2d,
+    style: InheritedStyle
+  ) => {
+    const href =
+      propString(el, 'href') ??
+      propString(el, 'xlink:href') ??
+      propString(el, 'xlinkHref')
+    if (!href || !href.startsWith('#')) {
+      skippedElementCount++
+      return
+    }
+    const id = href.slice(1)
+    if (!id || useStack.has(id)) {
+      skippedElementCount++
+      return
+    }
+    const target = idMap.get(id)
+    if (!target) {
+      skippedElementCount++
+      return
+    }
+
+    const x = propNum(el, 'x')
+    const y = propNum(el, 'y')
+    const local = acdbSvgParseTransform(propString(el, 'transform') ?? null)
+    const ctm = parentCtm.clone()
+    if (x !== 0 || y !== 0) {
+      ctm.multiply(new AcGeMatrix2d().makeTranslation(x, y))
+    }
+    ctm.multiply(local)
+
+    const targetName = (target.tagName ?? '').toLowerCase()
+    useStack.add(id)
+    try {
+      if (targetName === 'symbol' || targetName === 'svg') {
+        // Include the target's own transform, then optional use width/height viewport.
+        const targetLocal = acdbSvgParseTransform(
+          propString(target, 'transform') ?? null
+        )
+        const withTarget = ctm.clone().multiply(targetLocal)
+        const useViewport = useSymbolCtm(el, target, withTarget)
+        for (const child of elementChildren(target)) {
+          walk(child, useViewport, style, true)
+        }
+      } else {
+        walk(target, ctm, style, true)
+      }
+    } finally {
+      useStack.delete(id)
+    }
+  }
+
+  walk(root, new AcGeMatrix2d(), defaultInherited(), false)
   return { viewBox, primitives, skippedElementCount }
+}
+
+function defaultInherited(): InheritedStyle {
+  return {
+    opacity: 1,
+    fillOpacity: 1,
+    strokeOpacity: 1,
+    visibility: 'visible'
+  }
+}
+
+function finalizeLeafStyle(style: InheritedStyle, tag: string): AcDbSvgStyle {
+  const fillable =
+    tag === 'rect' ||
+    tag === 'circle' ||
+    tag === 'ellipse' ||
+    tag === 'polygon' ||
+    tag === 'path' ||
+    tag === 'polyline' ||
+    tag === 'text'
+
+  const out: AcDbSvgStyle = {
+    opacity: style.opacity,
+    fillOpacity: style.fillOpacity,
+    strokeOpacity: style.strokeOpacity
+  }
+
+  // SVG defaults applied only at leaf: fill black, stroke none.
+  if (style.fill !== undefined) {
+    out.fill = style.fill
+  } else if (fillable) {
+    out.fill = '#000000'
+  } else {
+    out.fill = 'none'
+  }
+
+  if (style.stroke !== undefined) {
+    out.stroke = style.stroke
+  } else {
+    out.stroke = 'none'
+  }
+
+  if (style.strokeWidth != null) out.strokeWidth = style.strokeWidth
+  if (style.strokeDasharray) out.strokeDasharray = style.strokeDasharray
+  if (style.textAnchor) out.textAnchor = style.textAnchor
+
+  // Text is painted with fill by default; expose fill as stroke for visibility checks.
+  if (
+    tag === 'text' &&
+    out.fill &&
+    out.fill !== 'none' &&
+    out.stroke === 'none'
+  ) {
+    out.stroke = out.fill
+  }
+
+  return out
+}
+
+function mergeInherited(
+  parent: InheritedStyle,
+  local: Partial<InheritedStyle> & { opacity?: number }
+): InheritedStyle {
+  return {
+    stroke: local.stroke !== undefined ? local.stroke : parent.stroke,
+    fill: local.fill !== undefined ? local.fill : parent.fill,
+    strokeWidth:
+      local.strokeWidth !== undefined ? local.strokeWidth : parent.strokeWidth,
+    opacity:
+      local.opacity !== undefined
+        ? parent.opacity * local.opacity
+        : parent.opacity,
+    fillOpacity:
+      local.fillOpacity !== undefined
+        ? local.fillOpacity
+        : parent.fillOpacity,
+    strokeOpacity:
+      local.strokeOpacity !== undefined
+        ? local.strokeOpacity
+        : parent.strokeOpacity,
+    strokeDasharray:
+      local.strokeDasharray !== undefined
+        ? local.strokeDasharray
+        : parent.strokeDasharray,
+    textAnchor:
+      local.textAnchor !== undefined ? local.textAnchor : parent.textAnchor,
+    visibility:
+      local.visibility !== undefined ? local.visibility : parent.visibility
+  }
+}
+
+function readLocalStyle(el: ElementNode): Partial<InheritedStyle> {
+  const out: Partial<InheritedStyle> = {}
+
+  const applyPaint = (key: 'stroke' | 'fill', value: string) => {
+    const v = value.trim()
+    if (v === 'none' || v === 'transparent') {
+      out[key] = 'none'
+    } else if (v && !v.startsWith('url(')) {
+      out[key] = v
+    }
+  }
+
+  const stroke = propString(el, 'stroke')
+  if (stroke) applyPaint('stroke', stroke)
+  const fill = propString(el, 'fill')
+  if (fill) applyPaint('fill', fill)
+
+  const sw = parseLength(propString(el, 'stroke-width') ?? undefined)
+  if (sw != null) out.strokeWidth = sw
+  else {
+    const swNum = propNum(el, 'stroke-width', Number.NaN)
+    if (Number.isFinite(swNum)) out.strokeWidth = swNum
+  }
+
+  const op = parseOpacity(propString(el, 'opacity'))
+  if (op != null) out.opacity = op
+  const fo = parseOpacity(propString(el, 'fill-opacity'))
+  if (fo != null) out.fillOpacity = fo
+  const so = parseOpacity(propString(el, 'stroke-opacity'))
+  if (so != null) out.strokeOpacity = so
+
+  const dash = parseDasharray(propString(el, 'stroke-dasharray'))
+  if (dash) out.strokeDasharray = dash
+
+  const anchor = propString(el, 'text-anchor')
+  if (anchor === 'start' || anchor === 'middle' || anchor === 'end') {
+    out.textAnchor = anchor
+  }
+
+  const vis = propString(el, 'visibility')
+  if (vis === 'hidden' || vis === 'collapse' || vis === 'visible') {
+    out.visibility = vis
+  }
+
+  const css = propString(el, 'style')
+  if (css) {
+    for (const part of css.split(';')) {
+      const colon = part.indexOf(':')
+      if (colon < 0) continue
+      const k = part.slice(0, colon).trim()
+      const v = part.slice(colon + 1).trim()
+      if (!k || !v) continue
+      if (k === 'stroke') applyPaint('stroke', v)
+      if (k === 'fill') applyPaint('fill', v)
+      if (k === 'stroke-width') {
+        const n = parseLength(v)
+        if (n != null) out.strokeWidth = n
+      }
+      if (k === 'opacity') {
+        const n = parseOpacity(v)
+        if (n != null) out.opacity = n
+      }
+      if (k === 'fill-opacity') {
+        const n = parseOpacity(v)
+        if (n != null) out.fillOpacity = n
+      }
+      if (k === 'stroke-opacity') {
+        const n = parseOpacity(v)
+        if (n != null) out.strokeOpacity = n
+      }
+      if (k === 'stroke-dasharray') {
+        const d = parseDasharray(v)
+        if (d) out.strokeDasharray = d
+      }
+      if (k === 'text-anchor') {
+        if (v === 'start' || v === 'middle' || v === 'end') out.textAnchor = v
+      }
+      if (k === 'visibility') {
+        if (v === 'hidden' || v === 'collapse' || v === 'visible') {
+          out.visibility = v
+        }
+      }
+      if (k === 'display' && v === 'none') {
+        // Handled separately via isDisplayNone for the attribute; style form too.
+        out.visibility = 'hidden'
+      }
+    }
+  }
+
+  return out
+}
+
+function isDisplayNone(el: ElementNode): boolean {
+  const display = propString(el, 'display')
+  if (display === 'none') return true
+  const css = propString(el, 'style')
+  if (css && /(?:^|;)\s*display\s*:\s*none\s*(?:;|$)/i.test(css)) return true
+  return false
+}
+
+function parseOpacity(value: string | undefined): number | undefined {
+  if (value == null || value === '') return undefined
+  const n = Number.parseFloat(value)
+  if (!Number.isFinite(n)) return undefined
+  return Math.min(1, Math.max(0, n))
+}
+
+function parseDasharray(value: string | undefined): number[] | undefined {
+  if (!value || value.trim() === 'none') return undefined
+  const nums = value
+    .trim()
+    .split(/[\s,]+/)
+    .map(Number.parseFloat)
+    .filter(n => Number.isFinite(n) && n >= 0)
+  if (nums.length === 0) return undefined
+  // SVG: odd-length lists are repeated to even length.
+  if (nums.length % 2 === 1) return [...nums, ...nums]
+  return nums
+}
+
+function collectIds(el: ElementNode, map: Map<string, ElementNode>) {
+  const id = propString(el, 'id')
+  if (id && !map.has(id)) map.set(id, el)
+  for (const child of elementChildren(el)) {
+    collectIds(child, map)
+  }
+}
+
+function nestedSvgCtm(
+  el: ElementNode,
+  parentCtm: AcGeMatrix2d,
+  isRoot: boolean
+): AcGeMatrix2d {
+  const local = acdbSvgParseTransform(propString(el, 'transform') ?? null)
+  const ctm = parentCtm.clone().multiply(local)
+  if (isRoot) return ctm
+
+  const vb = resolveViewBox(el)
+  const x = propNum(el, 'x')
+  const y = propNum(el, 'y')
+  const w = parseLength(propString(el, 'width')) ?? vb.width
+  const h = parseLength(propString(el, 'height')) ?? vb.height
+  if (vb.width <= 0 || vb.height <= 0 || w <= 0 || h <= 0) return ctm
+
+  // Simple "meet" uniform scale into the nested viewport.
+  const sx = w / vb.width
+  const sy = h / vb.height
+  const s = Math.min(sx, sy)
+  const tx = x + (w - vb.width * s) / 2
+  const ty = y + (h - vb.height * s) / 2
+
+  const viewport = new AcGeMatrix2d()
+  viewport.makeTranslation(tx, ty)
+  viewport.multiply(new AcGeMatrix2d().makeScale(s, s))
+  viewport.multiply(new AcGeMatrix2d().makeTranslation(-vb.minX, -vb.minY))
+  return ctm.clone().multiply(viewport)
+}
+
+function useSymbolCtm(
+  useEl: ElementNode,
+  target: ElementNode,
+  baseCtm: AcGeMatrix2d
+): AcGeMatrix2d {
+  const vb = resolveViewBox(target)
+  const w =
+    parseLength(propString(useEl, 'width')) ??
+    parseLength(propString(target, 'width')) ??
+    vb.width
+  const h =
+    parseLength(propString(useEl, 'height')) ??
+    parseLength(propString(target, 'height')) ??
+    vb.height
+  if (vb.width <= 0 || vb.height <= 0 || w <= 0 || h <= 0) return baseCtm
+
+  const sx = w / vb.width
+  const sy = h / vb.height
+  const s = Math.min(sx, sy)
+  const tx = (w - vb.width * s) / 2
+  const ty = (h - vb.height * s) / 2
+
+  const viewport = new AcGeMatrix2d()
+  viewport.makeTranslation(tx, ty)
+  viewport.multiply(new AcGeMatrix2d().makeScale(s, s))
+  viewport.multiply(new AcGeMatrix2d().makeTranslation(-vb.minX, -vb.minY))
+  return baseCtm.clone().multiply(viewport)
 }
 
 function findSvgElement(
@@ -205,6 +604,79 @@ function elementChildren(el: ElementNode): ElementNode[] {
     }
   }
   return out
+}
+
+function emitRect(
+  el: ElementNode,
+  ctm: AcGeMatrix2d,
+  yFlip: AcGeMatrix2d,
+  style: AcDbSvgStyle,
+  primitives: AcDbSvgPrimitive[]
+) {
+  const x = propNum(el, 'x')
+  const y = propNum(el, 'y')
+  const w = propNum(el, 'width')
+  const h = propNum(el, 'height')
+  if (!(w > 0 && h > 0)) return
+
+  let rx = propNum(el, 'rx', Number.NaN)
+  let ry = propNum(el, 'ry', Number.NaN)
+  if (!Number.isFinite(rx) && !Number.isFinite(ry)) {
+    rx = 0
+    ry = 0
+  } else if (!Number.isFinite(rx)) {
+    rx = ry
+  } else if (!Number.isFinite(ry)) {
+    ry = rx
+  }
+  rx = Math.max(0, Math.min(rx, w / 2))
+  ry = Math.max(0, Math.min(ry, h / 2))
+
+  if (rx <= 0 || ry <= 0) {
+    const corners: AcDbSvgPoint[] = [
+      { x, y },
+      { x: x + w, y },
+      { x: x + w, y: y + h },
+      { x, y: y + h }
+    ]
+    primitives.push({
+      kind: 'polyline',
+      points: corners.map(p => toCad(ctm, yFlip, p.x, p.y)),
+      closed: true,
+      style
+    })
+    return
+  }
+
+  // Eight vertices with 90° corner bulges (SVG Y-down clockwise).
+  const ptsSvg: AcDbSvgPoint[] = [
+    { x: x + rx, y },
+    { x: x + w - rx, y },
+    { x: x + w, y: y + ry },
+    { x: x + w, y: y + h - ry },
+    { x: x + w - rx, y: y + h },
+    { x: x + rx, y: y + h },
+    { x, y: y + h - ry },
+    { x, y: y + ry }
+  ]
+  // Bulge on the vertex that starts each corner arc (indices 1,3,5,7).
+  const bulgesSvg = [0, -BULGE_90, 0, -BULGE_90, 0, -BULGE_90, 0, -BULGE_90]
+
+  const full = ctm.clone().premultiply(yFlip)
+  const flipBulge = matrixDeterminant(full) < 0
+  primitives.push({
+    kind: 'polyline',
+    points: ptsSvg.map(p => toCad(ctm, yFlip, p.x, p.y)),
+    bulges: bulgesSvg.map(b => (flipBulge ? -b : b)),
+    closed: true,
+    style
+  })
+}
+
+function matrixDeterminant(matrix: AcGeMatrix2d): number {
+  const e = matrix.elements
+  // Row-major 3x3: [a c e; b d f; 0 0 1] → det = a*d - b*c
+  return e[0] * e[4] - e[1] * e[3]
 }
 
 function emitCircleOrPoly(
@@ -370,28 +842,6 @@ function parsePoints(raw: string): AcDbSvgPoint[] {
     }
   }
   return pts
-}
-
-function readStyle(el: ElementNode): AcDbSvgStyle {
-  const style: AcDbSvgStyle = {}
-  const stroke = propString(el, 'stroke')
-  if (stroke && stroke !== 'none') style.stroke = stroke
-  const sw = propNum(el, 'stroke-width', Number.NaN)
-  if (Number.isFinite(sw)) style.strokeWidth = sw
-
-  const css = propString(el, 'style')
-  if (css) {
-    for (const part of css.split(';')) {
-      const [k, v] = part.split(':').map(s => s.trim())
-      if (!k || v == null) continue
-      if (k === 'stroke' && v !== 'none') style.stroke = v
-      if (k === 'stroke-width') {
-        const n = Number.parseFloat(v)
-        if (Number.isFinite(n)) style.strokeWidth = n
-      }
-    }
-  }
-  return style
 }
 
 function parseFontSize(el: ElementNode): number {

@@ -7,9 +7,22 @@ export interface AcDbSvgPoint {
   y: number
 }
 
+/**
+ * Resolved presentation style for a primitive (after inheritance + SVG defaults).
+ */
 export interface AcDbSvgStyle {
+  /** Stroke paint; `'none'` means no stroke entity. */
   stroke?: string
+  /** Fill paint; `'none'` means no hatch. Defaults to `#000000` for closed shapes. */
+  fill?: string
   strokeWidth?: number
+  /** Combined element opacity in [0, 1]. */
+  opacity?: number
+  fillOpacity?: number
+  strokeOpacity?: number
+  /** Dash lengths in user units (SVG `stroke-dasharray`). */
+  strokeDasharray?: number[]
+  textAnchor?: 'start' | 'middle' | 'end'
 }
 
 export type AcDbSvgPrimitive =
@@ -22,6 +35,8 @@ export type AcDbSvgPrimitive =
   | {
       kind: 'polyline'
       points: AcDbSvgPoint[]
+      /** Per-vertex bulge; length matches `points` when present. */
+      bulges?: number[]
       closed: boolean
       style: AcDbSvgStyle
     }

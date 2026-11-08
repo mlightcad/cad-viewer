@@ -66,7 +66,7 @@ export class AcDbSvgConverter extends AcDbDatabaseConverter<AcDbSvgModel> {
       db.createDefaultData({ layer: true, layout: true })
 
       await emit(ENTITY_START_PCT, 'ENTITY', 'START')
-      const entities = acdbSvgModelToEntities(model)
+      const entities = acdbSvgModelToEntities(model, db)
       const modelSpace = db.tables.blockTable.modelSpace
       const chunkSize = Math.max(1, minimumChunkSize)
       const yieldGate = new AcCmUiYieldGate(ACCM_DEFAULT_UI_YIELD_BUDGET_MS)
