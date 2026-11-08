@@ -1,7 +1,9 @@
 import {
   AcCmEventManager,
+  AcDbBlockTableRecord,
   AcDbEntity,
   AcDbLayout,
+  AcDbObjectId,
   AcDbSystemVariables,
   AcDbSysVarManager
 } from '@mlightcad/data-model'
@@ -88,8 +90,7 @@ export class AcApContext {
       // (ghost dim text at every cursor sample, visible only after pan/flush).
       const pending = asEntityList(args.entity).filter(entity => {
         if (this.view.hasEntity(entity.objectId)) return false
-        const owner = doc.database.tables.blockTable.getIdAt(entity.ownerId)
-        return !!(owner && (owner.isModelSapce || owner.isPaperSapce))
+        return this.isLayoutSpaceOwner(entity.ownerId)
       })
       if (pending.length === 0) {
         return
@@ -234,5 +235,22 @@ export class AcApContext {
       dispose()
     }
     this._disposers.length = 0
+  }
+
+  /**
+   * True when `ownerId` refers to model space or a paper-space layout BTR.
+   *
+   * Prefer {@link AcDbDatabase.getObjectById} over `blockTable.getIdAt`, which
+   * requires the BTR's `ownerId` to equal the BlockTable id. Some DWGs parent
+   * `*Model_Space` under an intermediate object, so `getIdAt` returns
+   * undefined even for a valid model-space BTR and would drop every model
+   * entity on open.
+   */
+  private isLayoutSpaceOwner(ownerId: AcDbObjectId): boolean {
+    const owner = this._doc.database.getObjectById(ownerId)
+    return (
+      owner instanceof AcDbBlockTableRecord &&
+      (owner.isModelSapce || owner.isPaperSapce)
+    )
   }
 }
