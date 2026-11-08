@@ -12,6 +12,19 @@ title: "cad-simple-viewer 및 cad-editor 업그레이드"
 `PICKSTYLE`(0–3, 기본 `1`)과 `GROUPDISPLAYMODE`(0–2, 기본 `2`)가 등록된 `@mlightcad/data-model`이 필요합니다. 연관 해치 동시 선택(`PICKSTYLE` 2/3)은 `AcDbHatch`에 경계 soft-pointer가 생길 때까지 no-op입니다.
 :::
 
+::: info `cad.view.capturePreview` 선택 미리보기
+이 변경이 포함된 릴리스부터 `CadSession.capturePreview`는 단독 `longSide` 숫자 대신 옵션 객체를 받습니다.
+
+```ts
+capturePreview?(options?: {
+  longSide?: number
+  selection?: boolean
+}): Promise<CaptureDrawingPreviewResult>
+```
+
+스크립트에서는 `cad.view.capturePreview({ longSide?, selection? })`를 사용합니다. `cad.selection.replace(ids)` 이후 `selection: true`를 전달하면 ENTPREVIEW와 같은 batch 미리보기 경로로 선택 엔티티를 추출하고(장면 bounds로 프레이밍, 데이터베이스 `geometricExtents` 아님) PNG를 도구 결과에 첨부합니다. 선택이 비어 있으면 `reason: 'no-selection'`을 반환합니다. 렌더러가 없는 `createDatabaseSession`은 여전히 미리보기를 건너뜁니다.
+:::
+
 ::: info 가벼운 파일 열기 랜딩 엔트리
 **1.8.0**부터 `@mlightcad/cad-simple-viewer`는 DocManager에 의존하지 않는 랜딩용 서브경로를 제공합니다. **`acuiCreateFileOpenSession`**(지연 `createDocManager` + 자동 열기 / `attachSourcesTo`)을 우선하십시오. 도면을 직접 여는 경우(예: Vue `MlCadViewer`)에는 `AcUiFileOpenLanding`을 사용하십시오.
 

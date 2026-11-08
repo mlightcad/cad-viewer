@@ -12,6 +12,19 @@ Starting with the release that includes this change, `@mlightcad/cad-simple-view
 Requires `@mlightcad/data-model` that registers `PICKSTYLE` (0–3, default `1`) and `GROUPDISPLAYMODE` (0–2, default `2`). Associative hatch co-selection (`PICKSTYLE` 2/3) remains a no-op until hatch boundary soft-pointers exist on `AcDbHatch`.
 :::
 
+::: info `cad.view.capturePreview` selection preview
+Starting with the release that includes this change, `CadSession.capturePreview` takes an options object instead of a bare `longSide` number (a bare positive number is still accepted as `longSide`):
+
+```ts
+capturePreview?(options?: {
+  longSide?: number
+  selection?: boolean
+}): Promise<CaptureDrawingPreviewResult>
+```
+
+Script callers use `cad.view.capturePreview({ longSide?, selection? })`. Pass `selection: true` after `cad.selection.replace(ids)` to extract the selected entities via the same batch-preview path as ENTPREVIEW (scene bounds, not database `geometricExtents`) and attach a PNG to the tool result. Empty selection returns `reason: 'no-selection'`. Headless `createDatabaseSession` still skips previews (no renderer).
+:::
+
 ::: info Lightweight file-open landing entry
 Starting with **1.8.0**, `@mlightcad/cad-simple-viewer` exposes a DocManager-free subpath for landing pages. Prefer **`acuiCreateFileOpenSession`** (lazy `createDocManager` + auto open / `attachSourcesTo`). Use `AcUiFileOpenLanding` when you open drawings yourself (e.g. Vue `MlCadViewer`):
 

@@ -487,6 +487,53 @@ export class CadScriptPanel {
       this.resultEl.append(section)
     }
 
+    const images = this.result.images ?? []
+    if (images.length) {
+      const section = createSection(
+        `${labels.scriptImages} (${images.length})`
+      )
+      const gallery = document.createElement('div')
+      gallery.className = 'cad-script-images'
+      images.forEach((image, index) => {
+        const card = document.createElement('div')
+        card.className = 'cad-script-image-card'
+
+        const figure = document.createElement('figure')
+        figure.className = 'cad-script-image-wrap'
+        const img = document.createElement('img')
+        img.className = 'cad-script-image'
+        img.src = image.dataUrl
+        img.alt = `${labels.scriptImageAlt} ${index + 1}`
+        img.loading = 'lazy'
+        figure.append(img)
+
+        const actions = document.createElement('div')
+        actions.className = 'cad-script-image-actions'
+
+        const downloadBtn = document.createElement('button')
+        downloadBtn.type = 'button'
+        downloadBtn.className = 'cad-script-btn'
+        downloadBtn.textContent = labels.scriptImageDownload
+        downloadBtn.addEventListener('click', () => {
+          downloadPreviewImage(image.dataUrl, image.mediaType, index + 1)
+        })
+
+        const copyBtn = document.createElement('button')
+        copyBtn.type = 'button'
+        copyBtn.className = 'cad-script-btn'
+        copyBtn.textContent = labels.scriptImageCopy
+        copyBtn.addEventListener('click', () => {
+          void copyPreviewImage(image.dataUrl, image.mediaType, copyBtn, labels)
+        })
+
+        actions.append(downloadBtn, copyBtn)
+        card.append(figure, actions)
+        gallery.append(card)
+      })
+      section.append(gallery)
+      this.resultEl.append(section)
+    }
+
     const highlightText = formatIds(this.result.highlightedIds)
     if (highlightText) {
       const count = this.result.highlightedIds?.length ?? 0
@@ -634,6 +681,78 @@ function createJsonView(value: unknown): HTMLDivElement {
   })
   host.append(formatter.render())
   return host
+}
+
+/**
+ * File extension for a preview media type.
+ */
+function previewFileExtension(mediaType: string): string {
+  if (mediaType === 'image/jpeg') return 'jpg'
+  if (mediaType === 'image/bmp') return 'bmp'
+  if (mediaType === 'image/webp') return 'webp'
+  return 'png'
+}
+
+/**
+ * Triggers a browser download for a preview data URL.
+ */
+function downloadPreviewImage(
+  dataUrl: string,
+  mediaType: string,
+  index: number
+): void {
+  const link = document.createElement('a')
+  link.href = dataUrl
+  link.download = `cad-script-preview-${index}.${previewFileExtension(mediaType)}`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+/**
+ * Decodes a data URL into a {@link Blob}.
+ */
+async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  const response = await fetch(dataUrl)
+  return response.blob()
+}
+
+/**
+ * Copies a preview image to the system clipboard as a PNG (or its source type).
+ *
+ * Shows a brief label on the button for success or failure.
+ */
+async function copyPreviewImage(
+  dataUrl: string,
+  mediaType: string,
+  button: HTMLButtonElement,
+  labels: ScriptLabels
+): Promise<void> {
+  const idleLabel = labels.scriptImageCopy
+  button.disabled = true
+  try {
+    const blob = await dataUrlToBlob(dataUrl)
+    // Browsers commonly accept only PNG on the image clipboard.
+    const type =
+      blob.type === 'image/png' || mediaType === 'image/png'
+        ? 'image/png'
+        : blob.type || mediaType || 'image/png'
+    if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) {
+      throw new Error('clipboard-image-unsupported')
+    }
+    // Pass a Promise so Safari accepts the ClipboardItem payload.
+    await navigator.clipboard.write([
+      new ClipboardItem({ [type]: Promise.resolve(blob) })
+    ])
+    button.textContent = labels.scriptImageCopied
+  } catch {
+    button.textContent = labels.scriptImageCopyFailed
+  } finally {
+    window.setTimeout(() => {
+      button.textContent = idleLabel
+      button.disabled = false
+    }, 1600)
+  }
 }
 
 function createHelpIcon(): SVGSVGElement {

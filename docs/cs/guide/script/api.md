@@ -253,14 +253,17 @@ Přiblíží pohled na rozsah modelového prostoru.
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide? })`
+### `cad.view.capturePreview({ longSide?, selection? })`
 
 Zařadí PNG snímek rozsahu výkresu. Snímek se pořídí až po dokončení těla skriptu. Vrací `{ queued: true, index }`. V Agent chatu se obrázky připojí k výsledku nástroje pro model (nevracejí se jako JSON data URL).
+
+Po `cad.selection.replace(ids)` předáte `selection: true` pro zachycení jen aktuálního výběru.
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
+// optional: cad.view.capturePreview({ selection: true })
 ```
 
 ## cad.file

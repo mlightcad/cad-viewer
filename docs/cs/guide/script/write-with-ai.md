@@ -89,7 +89,7 @@ Ovládání výběru:
 
 ### cad.view
 - cad.view.zoomExtents() -> přiblíží na rozsah modelového prostoru
-- cad.view.capturePreview({ longSide? }) -> zařadí PNG snímek po dokončení skriptu; vrací { queued: true, index }. Použijte při vizuální kontrole; u jednoduchých úprav lze vynechat
+- cad.view.capturePreview({ longSide?, selection? }) -> zařadí PNG snímek po dokončení skriptu; vrací { queued: true, index }. Použijte při vizuální kontrole; u jednoduchých úprav lze vynechat
 
 ### cad.file
 - cad.file.saveDxf(path?) -> Po úspěšném skriptu exportuje DXF. Řetězec cesty nebo { path?, fileName? }. Agent v aplikaci soubor stáhne; cad-mcp-server zapíše path (relativní cesty od pracovního adresáře serveru). Vrací { queued: true, index, fileName }. Text DXF se nevrací. Výsledek nástroje obsahuje savedFiles

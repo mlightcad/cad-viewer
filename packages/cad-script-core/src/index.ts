@@ -19,9 +19,11 @@ export {
   type DrawingContextSnapshot
 } from './context/DrawingContextProvider'
 export {
+  type CadCapturePreviewOptions,
   type CaptureDrawingPreviewFailure,
   type CaptureDrawingPreviewResult,
   DRAWING_PREVIEW_LONG_SIDE_PX,
+  normalizeCadCapturePreviewOptions,
   VERIFICATION_PREVIEW_LONG_SIDE_PX
 } from './preview/types'
 export {

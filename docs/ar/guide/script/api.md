@@ -253,14 +253,17 @@ cad.selection.clear()
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide? })`
+### `cad.view.capturePreview({ longSide?, selection? })`
 
 يضع لقطة PNG لنطاق الرسم في قائمة الانتظار. يُلتقط بعد انتهاء نص السكربت. يُرجع `{ queued: true, index }`. في محادثة Agent تُرفق الصور بنتيجة الأداة للنموذج (لا تُرجع كـ data URL في JSON).
+
+مرّر `selection: true` بعد `cad.selection.replace(ids)` لالتقاط التحديد الحالي فقط.
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
+// optional: cad.view.capturePreview({ selection: true })
 ```
 
 ## cad.file

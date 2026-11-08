@@ -12,6 +12,19 @@ Bu değişikliği içeren sürümden itibaren `@mlightcad/cad-simple-viewer` **G
 `PICKSTYLE` (0–3, varsayılan `1`) ve `GROUPDISPLAYMODE` (0–2, varsayılan `2`) sistem değişkenlerini kaydeden `@mlightcad/data-model` gerekir. İlişkili tarama ortak seçimi (`PICKSTYLE` 2/3), `AcDbHatch` üzerinde sınır soft-pointer’ları olana kadar no-op kalır.
 :::
 
+::: info `cad.view.capturePreview` seçim önizlemesi
+Bu değişikliği içeren sürümden itibaren `CadSession.capturePreview` tek bir `longSide` sayısı yerine bir seçenek nesnesi alır:
+
+```ts
+capturePreview?(options?: {
+  longSide?: number
+  selection?: boolean
+}): Promise<CaptureDrawingPreviewResult>
+```
+
+Betikte `cad.view.capturePreview({ longSide?, selection? })` kullanın. `cad.selection.replace(ids)` sonrasında `selection: true` geçmek, seçili nesneleri ENTPREVIEW ile aynı batch önizleme yolundan çıkarır (sahne sınırlarıyla çerçeveleme; veritabanı `geometricExtents` değil) ve PNG’yi araç sonucuna ekler. Boş seçim `reason: 'no-selection'` döner. Görüntüleyici olmayan `createDatabaseSession` önizlemeleri atlamaya devam eder.
+:::
+
 ::: info Hafif dosya açma giriş ekranı girişi
 **1.8.0** sürümünden itibaren `@mlightcad/cad-simple-viewer`, açılış sayfaları için DocManager’sız bir alt yol sunar. **`acuiCreateFileOpenSession`** (tembel `createDocManager` + otomatik açma / `attachSourcesTo`) tercih edin. Çizimleri kendiniz açtığınızda (ör. Vue `MlCadViewer`) `AcUiFileOpenLanding` kullanın:
 

@@ -180,7 +180,10 @@ async function fulfillPreviewRequests(
       typeof request.longSide === 'number' && request.longSide > 0
         ? request.longSide
         : DRAWING_PREVIEW_LONG_SIDE_PX
-    const capture = await session.capturePreview(longSide)
+    const capture = await session.capturePreview({
+      longSide,
+      ...(request.selection === true ? { selection: true } : {})
+    })
     if (!capture.ok) {
       effects.log.push(`capturePreview failed: ${capture.reason}`)
       continue

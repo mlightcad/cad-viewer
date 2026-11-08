@@ -288,14 +288,15 @@ cad.selection.clear()
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide? })`
+### `cad.view.capturePreview({ longSide?, selection? })`
 
-排队截取图纸范围的 PNG 截图。截图在脚本主体执行结束后异步完成。返回 `{ queued: true, index }`。在 Agent 对话中，图片会作为工具结果附件交给模型（不会以 JSON data URL 返回）。
+脚本主体结束后排队截取 PNG。返回 `{ queued: true, index }`。默认按模型空间图纸范围取景。传入 `selection: true`（通常在 `cad.selection.replace(ids)` 之后）则只提取当前选中图元（ENTPREVIEW 同款 batch 路径）。在 Agent 对话中，图片会作为工具结果附件交给模型（不会以 JSON data URL 返回）。
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // 可选：cad.view.capturePreview({ longSide: 512 })
+// 仅选中：cad.view.capturePreview({ selection: true })
 ```
 
 ## cad.file

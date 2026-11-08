@@ -44,6 +44,6 @@ export function createDocManagerSession(): CadSession {
       }
     },
     runEdit: viewerRunEdit,
-    capturePreview: longSide => captureDrawingPreview(longSide)
+    capturePreview: options => captureDrawingPreview(options)
   }
 }

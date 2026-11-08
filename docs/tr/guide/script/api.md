@@ -255,14 +255,17 @@ Görünümü model alanı sınırlarına sığdırır.
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide? })`
+### `cad.view.capturePreview({ longSide?, selection? })`
 
 Çizim sınırlarının PNG ekran görüntüsünü kuyruğa alır. Yakalama, komut dosyası gövdesi bittikten sonra çalışır. `{ queued: true, index }` döner. Agent sohbetinde görüntüler model için araç sonucuna eklenir (JSON data URL olarak dönmez).
+
+`cad.selection.replace(ids)` sonrasında `selection: true` geçerek yalnızca geçerli seçimi yakalayın.
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
+// optional: cad.view.capturePreview({ selection: true })
 ```
 
 ## cad.file

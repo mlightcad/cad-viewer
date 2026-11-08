@@ -253,14 +253,17 @@ cad.selection.clear()
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide? })`
+### `cad.view.capturePreview({ longSide?, selection? })`
 
 도면 범위의 PNG 스크린샷을 대기열에 넣습니다. 캡처는 스크립트 본문이 끝난 뒤에 실행됩니다. 반환값은 `{ queued: true, index }` 입니다. Agent 채팅에서는 이미지가 도구 결과에 첨부되어 모델로 전달됩니다(JSON data URL로는 반환되지 않음).
+
+`cad.selection.replace(ids)` 이후 `selection: true`를 전달하면 현재 선택만 캡처합니다.
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
+// optional: cad.view.capturePreview({ selection: true })
 ```
 
 ## cad.file

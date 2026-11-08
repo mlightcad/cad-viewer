@@ -1,6 +1,10 @@
 import { AcDbEntity, AcGePoint3d } from '@mlightcad/data-model'
 
 import { getDrawingContext } from '../context/DrawingContextProvider'
+import {
+  type CadCapturePreviewOptions,
+  normalizeCadCapturePreviewOptions
+} from '../preview/types'
 import type { CadSession } from '../session/CadSession'
 import { requireDocument } from '../session/documentAccess'
 import { runInsideScriptEdit } from '../session/editDepth'
@@ -38,6 +42,11 @@ import {
 export interface CadScriptPreviewRequest {
   /** Optional max dimension in pixels for the PNG. */
   longSide?: number
+  /**
+   * When `true`, extract the current selection (batch geometry + scene bounds).
+   * Fulfilled after the script body finishes.
+   */
+  selection?: boolean
 }
 
 /** Side effects collected while a script runs. */
@@ -295,27 +304,31 @@ export function createCadScriptHost(
       if (!result.success) throw new Error(result.message)
     },
     /**
-     * Queues a PNG screenshot of the current drawing extents.
+     * Queues a PNG screenshot of the drawing (or the current selection).
      *
      * Capture runs after the script body finishes (async WebGL). The image is
      * attached to the tool result for the model; it is not returned inline
      * (data URLs exceed the script JSON size limit).
      *
-     * @param options - Optional `longSide` in pixels (default 1024).
+     * @param options - Optional `longSide` in pixels (default 1024). Pass
+     *   `selection: true` to render only selected entities instead of the
+     *   full drawing. A bare positive number is treated as `longSide`.
      * @returns `{ queued: true, index }` identifying this capture.
      */
-    capturePreview(options?: { longSide?: number }): {
+    capturePreview(options?: CadCapturePreviewOptions | number): {
       queued: true
       index: number
     } {
-      const longSide =
-        options && typeof options.longSide === 'number'
-          ? options.longSide
-          : undefined
+      const normalized = normalizeCadCapturePreviewOptions(options)
+      const request: CadScriptPreviewRequest = {}
+      if (typeof normalized.longSide === 'number') {
+        request.longSide = normalized.longSide
+      }
+      if (normalized.selection === true) {
+        request.selection = true
+      }
       const index = effects.previewRequests.length
-      effects.previewRequests.push(
-        longSide !== undefined ? { longSide } : {}
-      )
+      effects.previewRequests.push(request)
       return { queued: true, index }
     }
   }

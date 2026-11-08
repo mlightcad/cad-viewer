@@ -12,6 +12,19 @@ title: "cad-simple-viewer と cad-editor のアップグレード"
 `PICKSTYLE`（0–3、既定 `1`）と `GROUPDISPLAYMODE`（0–2、既定 `2`）を登録した `@mlightcad/data-model` が必要です。連想ハッチの同時選択（`PICKSTYLE` 2/3）は、`AcDbHatch` に境界ソフトポインタが追加されるまで no-op のままです。
 :::
 
+::: info `cad.view.capturePreview` の選択プレビュー
+この変更を含むリリースから、`CadSession.capturePreview` は単独の `longSide` 数値ではなくオプションオブジェクトを受け取ります。
+
+```ts
+capturePreview?(options?: {
+  longSide?: number
+  selection?: boolean
+}): Promise<CaptureDrawingPreviewResult>
+```
+
+スクリプトでは `cad.view.capturePreview({ longSide?, selection? })` を使います。`cad.selection.replace(ids)` の後に `selection: true` を渡すと、ENTPREVIEW と同じ batch プレビュー経路で選択図形を抽出し（シーン境界でフレーミング。データベースの `geometricExtents` ではない）、PNG をツール結果に添付します。選択が空のときは `reason: 'no-selection'` を返します。レンダラのない `createDatabaseSession` では従来どおりプレビューをスキップします。
+:::
+
 ::: info 軽量なファイルオープン用ランディング入口
 **1.8.0** から、`@mlightcad/cad-simple-viewer` はランディングページ向けに DocManager 非依存のサブパスを公開します。**`acuiCreateFileOpenSession`**（遅延 `createDocManager` + 自動オープン / `attachSourcesTo`）を優先してください。図面のオープンを自前で行う場合（例: Vue `MlCadViewer`）は `AcUiFileOpenLanding` を使います。
 

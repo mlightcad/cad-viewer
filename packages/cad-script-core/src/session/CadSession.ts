@@ -5,7 +5,10 @@ import type {
   AcGeBox3d
 } from '@mlightcad/data-model'
 
-import type { CaptureDrawingPreviewResult } from '../preview/types'
+import type {
+  CadCapturePreviewOptions,
+  CaptureDrawingPreviewResult
+} from '../preview/types'
 import type {
   CadScriptHtmlExportOptions,
   CadScriptHtmlExportResult
@@ -153,14 +156,21 @@ export interface CadSession {
    */
   runEdit?(database: AcDbDatabase, label: string, fn: () => void): void
   /**
-   * Renders a PNG of the current drawing for `cad.view.capturePreview`.
+   * Renders a PNG for `cad.view.capturePreview`.
    *
    * Sessions without a renderer leave this out; preview requests are then
    * skipped and a note is written to the script log.
    *
-   * @param longSide - Maximum output width or height in pixels.
+   * Pass `{ selection: true }` to render only the current selection (batch
+   * geometry, scene bounds). Otherwise captures full drawing extents
+   * (typically model space). A bare positive number is treated as `longSide`
+   * for compatibility with older callers.
+   *
+   * @param options - Pixel size and optional selection preview mode.
    */
-  capturePreview?(longSide: number): Promise<CaptureDrawingPreviewResult>
+  capturePreview?(
+    options?: CadCapturePreviewOptions | number
+  ): Promise<CaptureDrawingPreviewResult>
   /**
    * Renders the current drawing to PDF for `cad.file.savePdf`.
    *

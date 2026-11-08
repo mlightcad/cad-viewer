@@ -48,7 +48,7 @@ export function withViewerDefaults(session: CadSession): CadSession {
     runEdit: hasRunEdit ? session.runEdit?.bind(session) : viewerRunEdit,
     capturePreview: hasCapturePreview
       ? session.capturePreview?.bind(session)
-      : longSide => captureDrawingPreview(longSide),
+      : options => captureDrawingPreview(options),
     exportPdf: hasExportPdf
       ? session.exportPdf?.bind(session)
       : options => exportDrawingPdf(options),

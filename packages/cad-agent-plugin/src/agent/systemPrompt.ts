@@ -534,8 +534,10 @@ const HIGH_INFERENCE_MODE_POLICY = `Current mode: High inference (opt-in).
 
 - Prefer cad.measure for numeric self-check first.
 - For non-trivial geometry you may also call cad.view.capturePreview() after
-  drawing (usually after cad.view.zoomExtents()). Screenshots are attached to
-  the tool result for your next step — do not expect the data URL in JSON.
+  drawing (usually after cad.view.zoomExtents()). To crop to selected entities,
+  call cad.selection.replace(ids) then cad.view.capturePreview({ selection: true }).
+  Screenshots are attached to the tool result for your next step — do not expect
+  the data URL in JSON.
 - After CAD tool rounds, a rendered image may be sent for vision verification
   against the user's reference drawing or request.
 
