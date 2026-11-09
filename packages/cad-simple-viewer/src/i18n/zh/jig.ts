@@ -1865,9 +1865,10 @@ export default {
   ipdf: {
     pageNumber: '输入页码 (1-{count})',
     insertionPoint:
-      '指定插入点（比例 {scale}，曲线识别 {curves}）或',
-    curvesOn: '开',
-    curvesOff: '关',
+      '指定插入点（比例 {scale}，模式 {mode}）或',
+    modePrompt: '选择导入方式',
+    modeRecover: '复原图纸',
+    modeVisual: '保留 PDF 视觉效果',
     scaleFactor: '输入比例因子',
     keywords: {
       scale: {
@@ -1875,10 +1876,20 @@ export default {
         local: '比例',
         global: 'Scale'
       },
-      curves: {
-        display: '曲线(C)',
-        local: '曲线',
-        global: 'Curves'
+      mode: {
+        display: '模式(M)',
+        local: '模式',
+        global: 'Mode'
+      },
+      recover: {
+        display: '复原(R)',
+        local: '复原',
+        global: 'Recover'
+      },
+      visual: {
+        display: '视觉(V)',
+        local: '视觉',
+        global: 'Visual'
       }
     }
   },

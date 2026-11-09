@@ -1,11 +1,33 @@
 import type { PdfCurveRecognitionOptions } from './recognition/pdfCurveRecognition'
 
 /**
+ * How `ipdf` turns a PDF page into CAD entities.
+ *
+ * - `recover` — try to rebuild the source drawing: recover circles, arcs,
+ *   ellipses and splines from Bezier paths, drop duplicate outlines, merge
+ *   text runs into lines, turn repeated forms into blocks and map fonts to
+ *   text styles.
+ * - `visual` — keep the page as painted: every PDF path becomes a line or a
+ *   flattened polyline and every text run its own text, as `ipdf` did before
+ *   curve recovery was added. Use it when recovery changes how a page looks.
+ */
+export type AcApPdfImportMode = 'recover' | 'visual'
+
+/**
  * Options for {@link AcApPdfImportConvertor.convert}.
  *
- * Every field is optional; omitted fields fall back to the defaults below.
+ * Every field is optional. Omitted fields fall back to the defaults of the
+ * chosen {@link AcApPdfImportOptions.mode}; the defaults below are those of
+ * `recover` mode.
  */
 export interface AcApPdfImportOptions {
+  /**
+   * Import mode; it sets the defaults of the reconstruction fields below
+   * (`visual` turns off `recognizeCurves`, `removeDuplicates`,
+   * `mergeTextRuns`, `formBlocks` and `textStyles`). Explicit fields still
+   * win. Default `'recover'`.
+   */
+  mode?: AcApPdfImportMode
   /** 1-based page number. Default `1`. */
   pageNumber?: number
   /**
@@ -75,19 +97,22 @@ export function resolveAcApPdfImportOptions(
   options?: AcApPdfImportOptions
 ): AcApResolvedPdfImportOptions {
   const scale = options?.scale
+  const mode = options?.mode === 'visual' ? 'visual' : 'recover'
+  const recover = mode === 'recover'
   return {
+    mode,
     pageNumber: Math.max(1, Math.floor(options?.pageNumber ?? 1)),
     insertionPoint: options?.insertionPoint ?? { x: 0, y: 0 },
     scale:
       scale !== undefined && scale > 0 && Number.isFinite(scale) ? scale : 1,
-    recognizeCurves: options?.recognizeCurves ?? true,
+    recognizeCurves: options?.recognizeCurves ?? recover,
     curveRecognition: options?.curveRecognition,
     lineWeights: options?.lineWeights ?? true,
-    removeDuplicates: options?.removeDuplicates ?? true,
-    mergeTextRuns: options?.mergeTextRuns ?? true,
-    formBlocks: options?.formBlocks ?? true,
+    removeDuplicates: options?.removeDuplicates ?? recover,
+    mergeTextRuns: options?.mergeTextRuns ?? recover,
+    formBlocks: options?.formBlocks ?? recover,
     dashLinetypes: options?.dashLinetypes ?? true,
     fillHatches: options?.fillHatches ?? false,
-    textStyles: options?.textStyles ?? true
+    textStyles: options?.textStyles ?? recover
   }
 }

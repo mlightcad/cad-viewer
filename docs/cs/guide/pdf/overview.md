@@ -22,9 +22,11 @@ Příkazy vyžadují režim **Zápis**. Doporučené pořadí: `ipdf` → `pdfsc
 2. U vícestránkového souboru zadejte číslo stránky.
 3. Určete bod vložení, nebo stiskněte Enter pro počátek. Možnosti:
    - **Měřítko**: jednotné měřítko použité při importu.
-   - **Křivky**: zapne nebo vypne rozpoznávání křivek.
+   - **Režim**: způsob importu.
+     - **Obnovit** (výchozí): pokusí se obnovit původní výkres, viz níže.
+     - **Vzhled**: zachová PDF přesně tak, jak vypadá. Každá cesta se stane úsečkou nebo křivkou (oblouky se rozloží) a každý textový úsek samostatným textem; nic se neslučuje, neodstraňují se duplicity ani nevznikají bloky. Použijte, když obnova změní vzhled stránky.
 
-Co se obnoví automaticky:
+V režimu **Obnovit** se automaticky obnoví:
 
 - **Křivky**: Bézierovy kružnice, oblouky a elipsy se stanou kružnicemi, oblouky a elipsami. Obrysy kombinující úsečky a oblouky se stanou křivkami s obloukovými segmenty. Oblouky, které tvůrce PDF už rozdělil na krátké úsečky, se znovu proloží. Volné křivky se stanou spliny.
 - **Bloky**: obsah nakreslený několikrát ze stejného formuláře PDF se stane jedním blokem (`PDF_FORM_n`) s referencí pro každou kopii, včetně otočených a zrcadlených.

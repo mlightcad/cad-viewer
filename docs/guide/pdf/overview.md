@@ -22,9 +22,11 @@ The commands need **Write** mode. A typical order is `ipdf` → `pdfscale` → `
 2. For a multi-page file, enter the page number.
 3. Specify the insertion point, or press Enter for the origin. Options:
    - **Scale**: a uniform factor applied on import.
-   - **Curves**: turns curve recognition on or off.
+   - **Mode**: how the page is imported.
+     - **Recover** (default): tries to rebuild the original drawing, as described below.
+     - **Visual**: keeps the PDF exactly as it looks. Every path becomes a line or a polyline (curves are flattened) and every text run its own text; nothing is merged, de-duplicated or turned into blocks. Use it when recovery changes how a page looks.
 
-What is rebuilt automatically:
+In **Recover** mode, the following is rebuilt automatically:
 
 - **Curves**: Bézier circles, arcs and ellipses become circles, arcs and ellipses. Outlines mixing lines and arcs become polylines with arc segments. Arcs that the producer already broke into short lines are refitted. Free-form curves become splines.
 - **Blocks**: content drawn several times from the same PDF form becomes one block (`PDF_FORM_n`) with a reference per copy, including rotated and mirrored ones.

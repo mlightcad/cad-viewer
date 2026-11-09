@@ -19,6 +19,13 @@ export {
 } from './AcApPdfExportOptions'
 export { AcApPdfImportConvertor } from './AcApPdfImportConvertor'
 export {
+  acapPdfDefaultImportResourceUrls,
+  acapPdfImportResourceUrls,
+  type AcApPdfImportResourceUrls,
+  acapPdfSetImportResourceUrls
+} from './AcApPdfImportResources'
+export {
+  type AcApPdfImportMode,
   type AcApPdfImportOptions,
   type AcApResolvedPdfImportOptions,
   resolveAcApPdfImportOptions

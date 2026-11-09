@@ -1768,9 +1768,10 @@ export default {
   ipdf: {
     pageNumber: 'Sayfa numarasını girin (1-{count})',
     insertionPoint:
-      'Ekleme noktasını belirtin (ölçek {scale}, eğri tanıma {curves}) veya',
-    curvesOn: 'açık',
-    curvesOff: 'kapalı',
+      'Ekleme noktasını belirtin (ölçek {scale}, mod {mode}) veya',
+    modePrompt: 'İçe aktarma yöntemini seçin',
+    modeRecover: 'çizimi kurtar',
+    modeVisual: 'PDF görünümünü koru',
     scaleFactor: 'Ölçek faktörünü girin',
     keywords: {
       scale: {
@@ -1778,10 +1779,20 @@ export default {
         local: 'Ölçek',
         global: 'Scale'
       },
-      curves: {
-        display: 'Eğriler(C)',
-        local: 'Eğriler',
-        global: 'Curves'
+      mode: {
+        display: 'Mod(M)',
+        local: 'Mod',
+        global: 'Mode'
+      },
+      recover: {
+        display: 'Kurtar(R)',
+        local: 'Kurtar',
+        global: 'Recover'
+      },
+      visual: {
+        display: 'Görünüm(V)',
+        local: 'Görünüm',
+        global: 'Visual'
       }
     }
   },
