@@ -136,12 +136,17 @@ export function acapPdfEnsureDimStyle(
     if (base) writeDimStyleFields(style, readDimStyleFields(base))
   }
   const textHeight = median(candidates.map(c => c.text.height))
-  const arrowSize = median(candidates.map(c => c.arrowSize))
+  // Dimensions drawn without terminators report size 0; they must not
+  // shrink the arrows of the others, and alone fall back to the text height.
+  const arrowSize =
+    median(candidates.map(c => c.arrowSize).filter(s => s > 0)) || textHeight
   const linear = candidates.filter(
     (c): c is Extract<PdfDimensionCandidate, { kind: 'linear' }> =>
       c.kind === 'linear'
   )
   const ticks = linear.filter(c => c.ticks).length > linear.length / 2
+  // Drawn without terminators: keep them arrowless rather than invent arrows.
+  const bare = linear.filter(c => c.arrowSize === 0).length > linear.length / 2
   writeDimStyleFields(style, {
     dimscale: 1,
     dimtxt: textHeight,
@@ -152,7 +157,7 @@ export function acapPdfEnsureDimStyle(
     dimlfac: scale,
     dimdec: decimalsOf(candidates.map(c => c.text.text)),
     dimtad: 1,
-    ...(ticks ? { dimblk: '_ArchTick' } : {})
+    ...(ticks ? { dimblk: '_ArchTick' } : bare ? { dimblk: '_NONE' } : {})
   })
   if (!existing) table.add(style)
   return style

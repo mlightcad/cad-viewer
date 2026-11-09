@@ -71,7 +71,7 @@ export interface PdfLinearDimension<Id = unknown> {
   /** Distance between the terminators. */
   measured: number
   text: PdfDimText<Id>
-  /** Arrow length (or tick half-length). */
+  /** Arrow length (or tick half-length); 0 without terminators. */
   arrowSize: number
   /** How far extension lines run past the dimension line. */
   extensionBeyond: number
@@ -504,6 +504,104 @@ export function recognizePdfDimensions<Id>(
       arrowSize: a.size,
       extensionBeyond: beyond,
       ticks: a.direction === undefined,
+      consumed
+    })
+  }
+
+  results.push(
+    ...recognizeBareLinear(input, usedSegments, usedTexts, refSize, tol, sinTol)
+  )
+  return results
+}
+
+/**
+ * Linear dimensions drawn without arrowheads or ticks: a dimension line
+ * whose two ends lie inside parallel perpendicular extension lines (which
+ * run past it, as DIMEXE does), with a value text beside it. Requiring the
+ * extension lines to continue past the dimension line keeps rectangle
+ * sides, whose corners are segment ends, from matching.
+ */
+function recognizeBareLinear<Id>(
+  input: PdfDimInput<Id>,
+  usedSegments: Set<Id>,
+  usedTexts: Set<Id>,
+  refSize: number,
+  tol: number,
+  sinTol: number
+): PdfLinearDimension<Id>[] {
+  const results: PdfLinearDimension<Id>[] = []
+  const lines = input.segments
+    .map(s => ({ s, length: dist(s.p0, s.p1) }))
+    .filter(({ length }) => length > tol * 4)
+    .sort((p, q) => p.length - q.length)
+  for (const { s: line, length } of lines) {
+    if (usedSegments.has(line.id)) continue
+    const u = unit(sub(line.p1, line.p0))
+    const n = { x: -u.y, y: u.x }
+    const extensionAt = (end: PdfRecPoint) => {
+      for (const s of input.segments) {
+        if (s === line || usedSegments.has(s.id)) continue
+        const su = unit(sub(s.p1, s.p0))
+        if (Math.abs(dot(su, u)) > sinTol) continue
+        if (Math.abs(cross(su, sub(end, s.p0))) > tol * 2) continue
+        const t0 = dot(sub(s.p0, end), n)
+        const t1 = dot(sub(s.p1, end), n)
+        // Both sides of the end must be covered: the extension runs past.
+        if (Math.min(t0, t1) >= -tol * 2 || Math.max(t0, t1) <= tol * 2) {
+          continue
+        }
+        const farIsP0 = Math.abs(t0) >= Math.abs(t1)
+        return {
+          id: s.id,
+          origin: farIsP0 ? s.p0 : s.p1,
+          side: Math.sign(farIsP0 ? t0 : t1),
+          beyond: Math.abs(farIsP0 ? t1 : t0)
+        }
+      }
+      return undefined
+    }
+    const e1 = extensionAt(line.p0)
+    const e2 = extensionAt(line.p1)
+    if (!e1 || !e2 || e1.id === e2.id) continue
+
+    const text = nearestText(
+      input.texts,
+      usedTexts,
+      lerp(line.p0, line.p1, 0.5),
+      Math.max(length * 0.75, refSize * 6),
+      t => {
+        const rel = sub(t.center, line.p0)
+        const along = dot(rel, u)
+        return (
+          parsePdfDimensionValue(t.text) !== undefined &&
+          Math.abs(dot(rel, n)) <= t.height * 2.5 &&
+          along >= -t.height * 4 &&
+          along <= length + t.height * 4
+        )
+      }
+    )
+    if (!text) continue
+
+    usedTexts.add(text.id)
+    const consumed = [line.id, e1.id, e2.id, text.id]
+    for (const id of consumed) usedSegments.add(id)
+    let rotation = Math.atan2(u.y, u.x)
+    if (rotation < 0) rotation += Math.PI
+    if (rotation >= Math.PI - 1e-12) rotation -= Math.PI
+    // The object lies on the far side of the extension lines; when they
+    // disagree, keep the dimension line ends as origins.
+    const sameSide = e1.side === e2.side
+    results.push({
+      kind: 'linear',
+      xLine1: sameSide ? e1.origin : line.p0,
+      xLine2: sameSide ? e2.origin : line.p1,
+      dimLinePoint: line.p0,
+      rotation,
+      measured: length,
+      text,
+      arrowSize: 0,
+      extensionBeyond: sameSide ? Math.max(e1.beyond, e2.beyond) : 0,
+      ticks: false,
       consumed
     })
   }
