@@ -70,6 +70,31 @@ describe('PDF import entities', () => {
     ).toBeUndefined()
   })
 
+  it('fills closed two-vertex outlines that have a bulge', () => {
+    // A rounded tab: a semicircle closed by its chord.
+    expect(
+      acapPdfShapeToLoop({
+        kind: 'polyline',
+        closed: true,
+        vertices: [
+          { x: 0, y: 0, bulge: 1 },
+          { x: 10, y: 0, bulge: 0 }
+        ]
+      })
+    ).toBeDefined()
+    // Two straight vertices enclose nothing.
+    expect(
+      acapPdfShapeToLoop({
+        kind: 'polyline',
+        closed: true,
+        vertices: [
+          { x: 0, y: 0, bulge: 0 },
+          { x: 10, y: 0, bulge: 0 }
+        ]
+      })
+    ).toBeUndefined()
+  })
+
   it('creates a solid hatch with holes from several loops', () => {
     const db = createDb()
     const square = (s: number) =>
@@ -86,6 +111,8 @@ describe('PDF import entities', () => {
     const hatch = acapPdfCreateSolidHatch(db, [square(10), square(4)])!
     expect(hatch.isSolidFill).toBe(true)
     expect(hatch.patternName).toBe('SOLID')
+    // Nothing backs the loops; HPASSOC must not make it associative.
+    expect(hatch.associative).toBe(false)
     expect(acapPdfCreateSolidHatch(db, [])).toBeUndefined()
   })
 

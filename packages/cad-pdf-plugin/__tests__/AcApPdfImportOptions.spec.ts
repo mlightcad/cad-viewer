@@ -9,6 +9,8 @@ describe('resolveAcApPdfImportOptions', () => {
     expect(options.mergeTextRuns).toBe(true)
     expect(options.formBlocks).toBe(true)
     expect(options.textStyles).toBe(true)
+    // A filled PDF area must stay filled, not collapse to its outline.
+    expect(options.fillHatches).toBe(true)
   })
 
   test('visual mode keeps PDF paths and text runs as painted', () => {
@@ -22,7 +24,7 @@ describe('resolveAcApPdfImportOptions', () => {
     // Stroke widths and dashes are how the page looks, so they stay.
     expect(options.lineWeights).toBe(true)
     expect(options.dashLinetypes).toBe(true)
-    expect(options.fillHatches).toBe(false)
+    expect(options.fillHatches).toBe(true)
     expect(options.fitTextWidth).toBe(true)
   })
 
@@ -35,5 +37,11 @@ describe('resolveAcApPdfImportOptions', () => {
     expect(options.recognizeCurves).toBe(true)
     expect(options.lineWeights).toBe(false)
     expect(options.formBlocks).toBe(false)
+  })
+
+  test('fill hatches can still be turned off', () => {
+    expect(
+      resolveAcApPdfImportOptions({ fillHatches: false }).fillHatches
+    ).toBe(false)
   })
 })
