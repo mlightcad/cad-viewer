@@ -187,10 +187,11 @@ export function recognizePdfCurves(
       return [{ kind: 'line', start: prim.p0, end: prim.p1 }]
     }
     if (prim.kind === 'arc') {
-      if (
-        closed &&
-        Math.abs(Math.abs(prim.sweep) - TWO_PI) < FULL_TURN_TOLERANCE
-      ) {
+      // A closed path that is one arc can only be a full turn. Its summed
+      // sweep may still miss 2π by more than FULL_TURN_TOLERANCE on small
+      // circles with rounded control points, which would otherwise leave a
+      // zero-length arc (start angle == end angle).
+      if (closed && Math.abs(prim.sweep) > Math.PI) {
         return [{ kind: 'circle', center: prim.center, radius: prim.radius }]
       }
       return [arcShape(prim)]

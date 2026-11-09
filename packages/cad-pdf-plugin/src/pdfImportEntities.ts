@@ -98,8 +98,13 @@ export function acapPdfShapeToLoop(
       return loop
     }
     case 'polyline': {
-      if (!shape.closed || shape.vertices.length < 3) return undefined
       const v = shape.vertices
+      // Two vertices enclose an area only when a bulge rounds one side
+      // (e.g. a semicircular tab closed by its chord).
+      const encloses =
+        v.length >= 3 ||
+        (v.length === 2 && v.some(vertex => Math.abs(vertex.bulge) > 1e-12))
+      if (!shape.closed || !encloses) return undefined
       for (let i = 0; i < v.length; i++) {
         const a = v[i]
         const b = v[(i + 1) % v.length]

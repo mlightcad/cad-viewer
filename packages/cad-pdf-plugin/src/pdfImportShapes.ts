@@ -107,6 +107,44 @@ export function buildPdfImportShapes(
 }
 
 /**
+ * One CAD paint, in PDF paint order: a single shape (stroke or outline), or
+ * every subpath of one fill operator (becomes one solid hatch).
+ */
+export type PdfImportPaint =
+  | { kind: 'shape'; item: PdfImportShapeItem }
+  | { kind: 'fill'; items: PdfImportShapeItem[] }
+
+/**
+ * Orders shapes and fills as the PDF painted them, so a fill never covers
+ * text or linework painted after it (e.g. white glyphs on a coloured box).
+ *
+ * @param items - Shapes from {@link buildPdfImportShapes}, in paint order.
+ * @param fillHatches - When `false`, fills stay outlines (no `fill` paints).
+ */
+export function orderPdfImportPaints(
+  items: readonly PdfImportShapeItem[],
+  fillHatches: boolean
+): PdfImportPaint[] {
+  const paints: PdfImportPaint[] = []
+  const fills = new Map<number, PdfImportShapeItem[]>()
+  for (const item of items) {
+    if (fillHatches && item.filled && item.paintGroup !== undefined) {
+      const group = fills.get(item.paintGroup)
+      if (group) group.push(item)
+      else {
+        const created = [item]
+        fills.set(item.paintGroup, created)
+        paints.push({ kind: 'fill', items: created })
+      }
+      // A pure fill becomes only a hatch; fill + stroke keeps the outline.
+      if (!item.stroked) continue
+    }
+    paints.push({ kind: 'shape', item })
+  }
+  return paints
+}
+
+/**
  * Folds a duplicate subpath into the item already kept: a fill adds its fill
  * colour and paint group, a stroke marks a fill as stroked.
  */
