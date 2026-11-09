@@ -25,6 +25,16 @@ capturePreview?(options?: {
 في السكربت استخدم `cad.view.capturePreview({ longSide?, selection? })`. بعد `cad.selection.replace(ids)` مرّر `selection: true` لاستخراج الكيانات المحددة عبر مسار معاينة الدفعات نفسه المستخدم في ENTPREVIEW (حدود المشهد، وليس `geometricExtents` في قاعدة البيانات) وإرفاق PNG بنتيجة الأداة. التحديد الفارغ يعيد `reason: 'no-selection'`. ما زال `createDatabaseSession` بدون عارض يتخطى المعاينات.
 :::
 
+::: info معاينة الطبقات في `cad.view.capturePreview`
+ابتداءً من الإصدار الذي يتضمن هذا التغيير، يضيف `CadCapturePreviewOptions` الخيار `layers?: string | string[]`، ويضيف `CaptureDrawingPreviewFailure` القيمة `'no-layers'`:
+
+```ts
+cad.view.capturePreview({ layers: ['WALL', 'DOOR'], longSide: 1024 })
+```
+
+تُرسم عناصر فضاء النموذج الموجودة على هذه الطبقات فقط (يساهم INSERT بأجزائه الموجودة على هذه الطبقات فقط)، وتُؤطَّر الصورة على النطاق المجمّع للطبقات بدلًا من الرسم كله. أسماء الطبقات غير حساسة لحالة الأحرف؛ الأسماء غير الموجودة ترمي خطأ أثناء تشغيل السكربت؛ ولا يمكن الجمع بين `layers` و`selection: true`. يُرجع `normalizeCadCapturePreviewOptions` الآن `NormalizedCadCapturePreviewOptions` (حيث `layers` مصفوفة `string[]` بلا تكرار). يجب على تطبيقات `CadSession.capturePreview` المخصّصة معالجة `options.layers` أو إرجاع `reason: 'no-layers'`. يستخدم تطبيق العارض الدالة الجديدة `AcApEntityPreviewConvertor.captureLayers(layerNames, longSide)`.
+:::
+
 ::: info مدخل خفيف لصفحة فتح الملفات
 بدءًا من **1.8.0**، يوفّر `@mlightcad/cad-simple-viewer` مسارًا فرعيًا خاليًا من DocManager لصفحات الهبوط. فضّل **`acuiCreateFileOpenSession`** (`createDocManager` كسول + فتح تلقائي / `attachSourcesTo`). استخدم `AcUiFileOpenLanding` عندما تفتح الرسومات بنفسك (مثل Vue `MlCadViewer`):
 

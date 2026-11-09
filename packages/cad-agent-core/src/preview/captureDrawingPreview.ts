@@ -49,7 +49,11 @@ export async function waitForDrawingSceneReady(
  * framing matches what is actually drawn — not database `geometricExtents`,
  * which can be empty or wrong on real DWGs.
  *
- * @param options - Pixel size and optional selection preview mode. A bare
+ * With `{ layers: [...] }`, extracts only the model-space geometry bucketed on
+ * those layers and frames the image to the union of their batch bounds, so
+ * the crop fits the layers instead of the whole drawing.
+ *
+ * @param options - Pixel size and optional selection / layer preview mode. A bare
  *   positive number is treated as `longSide`.
  */
 export async function captureDrawingPreview(
@@ -63,6 +67,9 @@ export async function captureDrawingPreview(
 
   if (normalized.selection === true) {
     return captureSelectionPreview(longSide)
+  }
+  if (normalized.layers?.length) {
+    return captureLayersPreview(normalized.layers, longSide)
   }
 
   return captureExtentsPreview(longSide)
@@ -145,6 +152,34 @@ async function captureSelectionPreview(
   if (!capture.ok) {
     if (capture.reason === 'no-entities' || capture.reason === 'no-bounds') {
       return { ok: false, reason: 'no-bounds' }
+    }
+    return { ok: false, reason: 'capture-failed' }
+  }
+
+  return { ok: true, dataUrl: capture.dataUrl }
+}
+
+async function captureLayersPreview(
+  layerNames: string[],
+  longSide: number
+): Promise<CaptureDrawingPreviewResult> {
+  const view = AcApDocManager.instance.curView
+  if (!(view instanceof AcTrView2d)) {
+    return { ok: false, reason: 'unsupported-view' }
+  }
+
+  const sceneReady = await waitForDrawingSceneReady()
+  if (!sceneReady) {
+    return { ok: false, reason: 'scene-not-ready' }
+  }
+
+  const capture = new AcApEntityPreviewConvertor().captureLayers(
+    layerNames,
+    longSide
+  )
+  if (!capture.ok) {
+    if (capture.reason === 'no-layers' || capture.reason === 'no-bounds') {
+      return { ok: false, reason: capture.reason }
     }
     return { ok: false, reason: 'capture-failed' }
   }

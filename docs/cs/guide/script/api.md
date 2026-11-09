@@ -253,17 +253,20 @@ Přiblíží pohled na rozsah modelového prostoru.
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide?, selection? })`
+### `cad.view.capturePreview({ longSide?, selection?, layers? })`
 
 Zařadí PNG snímek rozsahu výkresu. Snímek se pořídí až po dokončení těla skriptu. Vrací `{ queued: true, index }`. V Agent chatu se obrázky připojí k výsledku nástroje pro model (nevracejí se jako JSON data URL).
 
 Po `cad.selection.replace(ids)` předáte `selection: true` pro zachycení jen aktuálního výběru.
+
+Předáním `layers` (název hladiny nebo pole názvů, bez ohledu na velikost písmen) se vykreslí jen geometrie modelového prostoru na těchto hladinách a snímek se ořízne na společný rozsah těchto hladin místo celého výkresu, takže nevznikají velké prázdné okraje. Stav zapnutí/vypnutí hladin se ignoruje; neznámé názvy hladin vyhodí chybu; `layers` nelze kombinovat se `selection`.
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
 // optional: cad.view.capturePreview({ selection: true })
+// optional: cad.view.capturePreview({ layers: ['WALL', 'DOOR'] })
 ```
 
 ## cad.file

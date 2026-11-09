@@ -173,12 +173,14 @@ exportFormat is 'single' (default, .html) or 'multi' (.zip). background is
 'black' | 'white' | 'space' (default). Requires a viewer host that provides
 exportHtml (in-app agent / cad-mcp-server); headless database sessions skip it
 with a log note. Returns { queued: true, index, fileName }.
-cad.view.capturePreview({ longSide?, selection? }) queues a PNG after the script finishes.
-Returns { queued: true, index }. Images are attached to the tool result for the model
-(not returned as JSON). Default frames model-space drawing extents (temporarily switches
-away from paper space if needed). Pass selection: true to render only the current selection
-(batch-extracted geometry, framed to scene bounds) — use after
-cad.selection.replace(ids). Optional visual self-check when screenshots are
+cad.view.capturePreview({ longSide?, selection?, layers? }) queues a PNG after the script
+finishes. Returns { queued: true, index }. Images are attached to the tool result for the
+model (not returned as JSON). Default frames model-space drawing extents (temporarily
+switches away from paper space if needed). Pass selection: true to render only the current
+selection (batch-extracted geometry, framed to scene bounds) — use after
+cad.selection.replace(ids). Pass layers: 'A' or ['A', 'B'] (case-insensitive) to render only
+model-space geometry on those layers, framed to their combined extents (no large empty
+margins; layer on/off ignored). Unknown layer names throw; do not combine with selection. Optional visual self-check when screenshots are
 enabled (every agent mode); prefer cad.measure for numeric self-check.
 Automatic post-round vision verification is High inference only.
 cad.measure — prefer for numeric self-check (saves tokens vs hand-rolled Math):

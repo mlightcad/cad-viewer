@@ -22,7 +22,7 @@ the next tool. On top of the plain data-model behavior it:
 - highlights `cad.selection` ids through the viewer selection set
 - fits the camera for `cad.view.zoomExtents()`
 - uses the scene extents for `cad.drawing.extents`
-- renders `cad.view.capturePreview({ longSide?, selection? })` with `captureDrawingPreview` (WebGL; `selection: true` uses entity-preview extraction)
+- renders `cad.view.capturePreview({ longSide?, selection?, layers? })` with `captureDrawingPreview` (WebGL; `selection: true` uses entity-preview extraction, `layers` extracts those layer batches and frames to their combined extents)
 - fulfills `cad.file.savePdf` with viewer font mapping via `cad-pdf-core`
 - fulfills `cad.file.saveHtml` through `@mlightcad/cad-html-plugin`
 - runs edits through `acapRunDatabaseEdit`, which notifies the UI about the

@@ -592,6 +592,97 @@ describe('AcTrLayout entity preview helpers', () => {
   })
 })
 
+describe('AcTrLayout layer preview helpers', () => {
+  type MockGroup = {
+    computeBoundingBox: jest.Mock
+    getEntityIds: jest.Mock
+    createPreviewSubset: jest.Mock
+  }
+
+  function mockLayer(
+    layout: AcTrLayout,
+    name: string,
+    box: [number, number, number, number] | null,
+    ids: string[],
+    options: { isOff?: boolean } = {}
+  ) {
+    const group = layout.addLayer({
+      ...createLayerInfo(name),
+      isOff: options.isOff ?? false
+    }).internalObject as unknown as MockGroup
+    group.computeBoundingBox = jest.fn((target: THREE.Box3) => {
+      target.makeEmpty()
+      if (box) {
+        target.min.set(box[0], box[1], 0)
+        target.max.set(box[2], box[3], 0)
+      }
+      return target
+    })
+    group.getEntityIds = jest.fn(() => ids)
+    group.createPreviewSubset = jest.fn((subsetIds: string[]) => {
+      const subset = new THREE.Group()
+      subset.name = `subset:${name}`
+      subset.userData.ids = subsetIds
+      subset.add(new THREE.Object3D())
+      return subset
+    })
+    return group
+  }
+
+  it('findLayers matches names case-insensitively and skips unknown ones', () => {
+    const layout = new AcTrLayout()
+    mockLayer(layout, 'Walls', null, [])
+    mockLayer(layout, 'Doors', null, [])
+
+    expect(
+      layout.findLayers(['walls', 'WALLS', 'missing', 'Doors']).map(l => l.name)
+    ).toEqual(['Walls', 'Doors'])
+  })
+
+  it('frames only the requested layers, even when a layer is off', () => {
+    const layout = new AcTrLayout()
+    mockLayer(layout, 'Walls', [0, 0, 10, 5], ['w1'])
+    mockLayer(layout, 'Doors', [20, 2, 30, 8], ['d1'], { isOff: true })
+    mockLayer(layout, 'Far', [1000, 1000, 2000, 2000], ['f1'])
+
+    const box = layout.computeLayerPreviewBoundsBox(['walls', 'doors'])
+
+    expect(box.min.toArray()).toEqual([0, 0, 0])
+    expect(box.max.toArray()).toEqual([30, 8, 0])
+  })
+
+  it('returns an empty box when no requested layer has geometry', () => {
+    const layout = new AcTrLayout()
+    mockLayer(layout, 'Empty', null, [])
+
+    expect(
+      layout.computeLayerPreviewBoundsBox(['Empty', 'missing']).isEmpty()
+    ).toBe(true)
+  })
+
+  it('createLayerPreviewRoot extracts every id of the requested layers only', () => {
+    const layout = new AcTrLayout()
+    const walls = mockLayer(layout, 'Walls', [0, 0, 1, 1], ['w1', 'insert-1'])
+    const other = mockLayer(layout, 'Other', [0, 0, 1, 1], ['insert-1'])
+
+    const root = layout.createLayerPreviewRoot(['Walls'])
+
+    expect(root?.children.map(child => child.name)).toEqual(['subset:Walls'])
+    expect(walls.createPreviewSubset).toHaveBeenCalledWith(['w1', 'insert-1'], {
+      maxSlots: Number.POSITIVE_INFINITY,
+      missingEntity: 'skip'
+    })
+    expect(other.createPreviewSubset).not.toHaveBeenCalled()
+  })
+
+  it('createLayerPreviewRoot returns null when nothing is extracted', () => {
+    const layout = new AcTrLayout()
+    mockLayer(layout, 'Empty', null, [])
+
+    expect(layout.createLayerPreviewRoot(['Empty', 'missing'])).toBeNull()
+  })
+})
+
 describe('AcTrLayout insert layer freeze', () => {
   beforeEach(() => {
     jest.clearAllMocks()

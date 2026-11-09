@@ -25,6 +25,16 @@ capturePreview?(options?: {
 Betikte `cad.view.capturePreview({ longSide?, selection? })` kullanın. `cad.selection.replace(ids)` sonrasında `selection: true` geçmek, seçili nesneleri ENTPREVIEW ile aynı batch önizleme yolundan çıkarır (sahne sınırlarıyla çerçeveleme; veritabanı `geometricExtents` değil) ve PNG’yi araç sonucuna ekler. Boş seçim `reason: 'no-selection'` döner. Görüntüleyici olmayan `createDatabaseSession` önizlemeleri atlamaya devam eder.
 :::
 
+::: info `cad.view.capturePreview` katman önizlemesi
+Bu değişikliği içeren sürümden itibaren `CadCapturePreviewOptions` içine `layers?: string | string[]`, `CaptureDrawingPreviewFailure` içine `'no-layers'` eklenir:
+
+```ts
+cad.view.capturePreview({ layers: ['WALL', 'DOOR'], longSide: 1024 })
+```
+
+Yalnızca bu katmanlardaki model alanı geometrisi çizilir (INSERT yalnızca bu katmanlardaki parçalarıyla katkıda bulunur) ve görüntü tüm çizim yerine katmanların birleşik sınırlarına göre kadrajlanır. Katman adları büyük/küçük harf duyarsızdır; bilinmeyen adlar komut dosyası çalışırken hata fırlatır; `layers`, `selection: true` ile birlikte kullanılamaz. `normalizeCadCapturePreviewOptions` artık `NormalizedCadCapturePreviewOptions` döndürür (`layers` yinelenmeyen bir `string[]`). Özel `CadSession.capturePreview` uygulamaları `options.layers` değerini işlemeli ya da `reason: 'no-layers'` döndürmelidir. Görüntüleyici uygulaması yeni `AcApEntityPreviewConvertor.captureLayers(layerNames, longSide)` işlevini kullanır.
+:::
+
 ::: info Hafif dosya açma giriş ekranı girişi
 **1.8.0** sürümünden itibaren `@mlightcad/cad-simple-viewer`, açılış sayfaları için DocManager’sız bir alt yol sunar. **`acuiCreateFileOpenSession`** (tembel `createDocManager` + otomatik açma / `attachSourcesTo`) tercih edin. Çizimleri kendiniz açtığınızda (ör. Vue `MlCadViewer`) `AcUiFileOpenLanding` kullanın:
 

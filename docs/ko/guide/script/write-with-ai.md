@@ -89,7 +89,7 @@ entities 배열 없음 — inBlock(id). 집계는 entityCount / typeCounts.
 
 ### cad.view
 - cad.view.zoomExtents() -> 모형 공간 범위로 확대/축소
-- cad.view.capturePreview({ longSide?, selection? }) -> 스크립트 종료 후 PNG를 대기열에 넣음. { queued: true, index } 반환. 시각 확인이 필요할 때 사용하고 단순 편집에서는 생략 가능
+- cad.view.capturePreview({ longSide?, selection?, layers? }) -> 스크립트 종료 후 PNG를 대기열에 넣음. { queued: true, index } 반환. 시각 확인이 필요할 때 사용하고 단순 편집에서는 생략 가능. layers: [도면층 이름]으로 해당 도면층만 합친 범위로 캡처
 
 ### cad.file
 - cad.file.saveDxf(path?) -> 스크립트 성공 후 DXF를 내보냄. 경로 문자열 또는 { path?, fileName? }. 앱 안에서는 다운로드, cad-mcp-server에서는 path에 저장(상대 경로는 서버 작업 디렉터리). 반환값 { queued: true, index, fileName }. DXF 본문은 반환하지 않음. 도구 결과에 savedFiles가 포함됨

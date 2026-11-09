@@ -25,6 +25,16 @@ capturePreview?(options?: {
 Ve skriptu použijte `cad.view.capturePreview({ longSide?, selection? })`. Po `cad.selection.replace(ids)` předáte `selection: true` pro vykreslení vybraných entit stejnou batch-preview cestou jako ENTPREVIEW (rámování podle scénových bounds, ne databázových `geometricExtents`) a připojení PNG k výsledku nástroje. Prázdný výběr vrací `reason: 'no-selection'`. Bezhlavový `createDatabaseSession` stále přeskočí náhledy (bez rendereru).
 :::
 
+::: info Náhled hladin v `cad.view.capturePreview`
+Od vydání, které obsahuje tuto změnu, přidává `CadCapturePreviewOptions` volbu `layers?: string | string[]` a `CaptureDrawingPreviewFailure` hodnotu `'no-layers'`:
+
+```ts
+cad.view.capturePreview({ layers: ['WALL', 'DOOR'], longSide: 1024 })
+```
+
+Vykreslí se jen geometrie modelového prostoru na těchto hladinách (INSERT přispěje jen svými částmi na těchto hladinách) a snímek se ořízne na společný rozsah hladin místo celého výkresu. Názvy hladin nerozlišují velikost písmen; neznámé názvy vyhodí chybu během běhu skriptu; `layers` nelze kombinovat se `selection: true`. `normalizeCadCapturePreviewOptions` nyní vrací `NormalizedCadCapturePreviewOptions` (`layers` jako `string[]` bez duplicit). Vlastní implementace `CadSession.capturePreview` by měly zpracovat `options.layers`, nebo vrátit `reason: 'no-layers'`. Implementace prohlížeče používá novou `AcApEntityPreviewConvertor.captureLayers(layerNames, longSide)`.
+:::
+
 ::: info Lehký vstup pro úvodní stránku otevření souboru
 Od **1.8.0** nabízí `@mlightcad/cad-simple-viewer` podcestu bez DocManageru pro úvodní stránky. Upřednostněte **`acuiCreateFileOpenSession`** (lazy `createDocManager` + automatické otevření / `attachSourcesTo`). Použijte `AcUiFileOpenLanding`, když otevíráte výkresy sami (např. Vue `MlCadViewer`):
 

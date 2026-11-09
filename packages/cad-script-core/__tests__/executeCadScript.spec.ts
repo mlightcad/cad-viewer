@@ -449,6 +449,88 @@ describe('executeCadScript', () => {
     expect(capturePreview).toHaveBeenCalledWith({ longSide: 512 })
   })
 
+  test('queues layer capturePreview with drawing layer casing', async () => {
+    const { session, capturePreview } = createFixture()
+
+    const result = await executeCadScript(
+      {
+        code: `
+          cad.view.capturePreview({ longSide: 640, layers: ['walls', ' WALLS ', ''] })
+          cad.view.capturePreview({ layers: 'Walls' })
+          return { ok: true }
+        `,
+        intent: 'layer screenshot'
+      },
+      session
+    )
+
+    expect(result.success).toBe(true)
+    expect(capturePreview).toHaveBeenNthCalledWith(1, {
+      longSide: 640,
+      layers: ['Walls']
+    })
+    expect(capturePreview).toHaveBeenNthCalledWith(2, {
+      longSide: 1024,
+      layers: ['Walls']
+    })
+    expect(result.images).toHaveLength(2)
+  })
+
+  test('rejects unknown layers in capturePreview', async () => {
+    const { session, capturePreview } = createFixture()
+
+    const result = await executeCadScript(
+      {
+        code: `
+          cad.view.capturePreview({ layers: ['Walls', 'Nope'] })
+          return { ok: true }
+        `,
+        intent: 'unknown layer'
+      },
+      session
+    )
+
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('unknown layer(s): Nope')
+    expect(capturePreview).not.toHaveBeenCalled()
+  })
+
+  test('rejects capturePreview with both selection and layers', async () => {
+    const { session } = createFixture()
+
+    const result = await executeCadScript(
+      {
+        code: `
+          cad.view.capturePreview({ selection: true, layers: ['Walls'] })
+          return { ok: true }
+        `,
+        intent: 'conflicting options'
+      },
+      session
+    )
+
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('either selection: true or layers')
+  })
+
+  test('rejects capturePreview with an empty layers list', async () => {
+    const { session } = createFixture()
+
+    const result = await executeCadScript(
+      {
+        code: `
+          cad.view.capturePreview({ layers: [] })
+          return { ok: true }
+        `,
+        intent: 'empty layers'
+      },
+      session
+    )
+
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('layers must name at least one layer')
+  })
+
   test('logs no-selection when selection capture fails', async () => {
     const { session, capturePreview } = createFixture()
     capturePreview.mockImplementationOnce(async () => ({

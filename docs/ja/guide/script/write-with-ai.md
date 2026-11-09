@@ -89,7 +89,7 @@ entities 配列なし — inBlock(id)。集計は entityCount / typeCounts。
 
 ### cad.view
 - cad.view.zoomExtents() -> モデル空間の範囲にズーム
-- cad.view.capturePreview({ longSide?, selection? }) -> スクリプト終了後に PNG をキュー。戻り値は { queued: true, index }。視覚確認が必要なときに使用し、単純な編集では省略可
+- cad.view.capturePreview({ longSide?, selection?, layers? }) -> スクリプト終了後に PNG をキュー。戻り値は { queued: true, index }。視覚確認が必要なときに使用し、単純な編集では省略可。layers: [画層名] で指定画層のみを、その合計範囲でキャプチャ
 
 ### cad.file
 - cad.file.saveDxf(path?) -> スクリプト成功後に DXF を書き出す。パス文字列または { path?, fileName? }。アプリ内ではダウンロード、cad-mcp-server では path に保存（相対パスはサーバーの作業ディレクトリ）。戻り値は { queued: true, index, fileName }。DXF 本文は返さない。ツール結果に savedFiles が付く

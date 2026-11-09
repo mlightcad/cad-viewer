@@ -255,17 +255,20 @@ Görünümü model alanı sınırlarına sığdırır.
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide?, selection? })`
+### `cad.view.capturePreview({ longSide?, selection?, layers? })`
 
 Çizim sınırlarının PNG ekran görüntüsünü kuyruğa alır. Yakalama, komut dosyası gövdesi bittikten sonra çalışır. `{ queued: true, index }` döner. Agent sohbetinde görüntüler model için araç sonucuna eklenir (JSON data URL olarak dönmez).
 
 `cad.selection.replace(ids)` sonrasında `selection: true` geçerek yalnızca geçerli seçimi yakalayın.
+
+`layers` (bir katman adı veya ad dizisi, büyük/küçük harf duyarsız) geçerseniz yalnızca bu katmanlardaki model alanı geometrisi çizilir ve görüntü tüm çizim yerine bu katmanların birleşik sınırlarına göre kadrajlanır; böylece büyük boş kenar boşlukları oluşmaz. Katmanın açık/kapalı durumu yok sayılır; bilinmeyen katman adları hata fırlatır; `layers`, `selection` ile birlikte kullanılamaz.
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
 // optional: cad.view.capturePreview({ selection: true })
+// optional: cad.view.capturePreview({ layers: ['WALL', 'DOOR'] })
 ```
 
 ## cad.file

@@ -25,6 +25,16 @@ capturePreview?(options?: {
 Script callers use `cad.view.capturePreview({ longSide?, selection? })`. Pass `selection: true` after `cad.selection.replace(ids)` to extract the selected entities via the same batch-preview path as ENTPREVIEW (scene bounds, not database `geometricExtents`) and attach a PNG to the tool result. Empty selection returns `reason: 'no-selection'`. Headless `createDatabaseSession` still skips previews (no renderer).
 :::
 
+::: info `cad.view.capturePreview` layer preview
+Starting with the release that includes this change, `CadCapturePreviewOptions` adds `layers?: string | string[]`, and `CaptureDrawingPreviewFailure` adds `'no-layers'`:
+
+```ts
+cad.view.capturePreview({ layers: ['WALL', 'DOOR'], longSide: 1024 })
+```
+
+Only model-space geometry on those layers is rendered (an INSERT contributes just its fragments on those layers), framed to the combined extents of the layers instead of the whole drawing. Names are case-insensitive; unknown names throw while the script runs; `layers` cannot be combined with `selection: true`. `normalizeCadCapturePreviewOptions` now returns `NormalizedCadCapturePreviewOptions` (with `layers` as a de-duplicated `string[]`). Custom `CadSession.capturePreview` implementations should honor `options.layers` or return `reason: 'no-layers'`. The viewer implementation uses the new `AcApEntityPreviewConvertor.captureLayers(layerNames, longSide)`.
+:::
+
 ::: info Lightweight file-open landing entry
 Starting with **1.8.0**, `@mlightcad/cad-simple-viewer` exposes a DocManager-free subpath for landing pages. Prefer **`acuiCreateFileOpenSession`** (lazy `createDocManager` + auto open / `attachSourcesTo`). Use `AcUiFileOpenLanding` when you open drawings yourself (e.g. Vue `MlCadViewer`):
 

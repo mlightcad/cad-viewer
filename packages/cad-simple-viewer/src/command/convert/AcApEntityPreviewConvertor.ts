@@ -1,5 +1,9 @@
 import { AcDbObjectId, AcGeBox2d, AcGeVector2d } from '@mlightcad/data-model'
-import { disposePreviewSubset } from '@mlightcad/three-renderer'
+import {
+  AcTrEntityPreview,
+  disposePreviewSubset
+} from '@mlightcad/three-renderer'
+import * as THREE from 'three'
 
 import { AcApDocManager } from '../../app'
 import { resolveExportDownloadName } from '../../util/AcApExportFileNameUtil'
@@ -23,6 +27,23 @@ export type AcApEntityPreviewCaptureResult =
       skippedCount: number
     }
   | { ok: false; reason: AcApEntityPreviewExportFailure | 'no-entities' }
+
+/**
+ * Result of {@link AcApEntityPreviewConvertor.captureLayers}.
+ *
+ * `no-layers` means none of the requested names has geometry in model space.
+ */
+export type AcApLayerPreviewCaptureResult =
+  | {
+      ok: true
+      dataUrl: string
+      /** Scene layer names that were rendered (actual casing). */
+      layerNames: string[]
+    }
+  | {
+      ok: false
+      reason: 'no-layers' | 'no-bounds' | 'no-preview-root' | 'capture-failed'
+    }
 
 /**
  * Exports one merged preview image for the specified entity ids.
@@ -91,13 +112,6 @@ export class AcApEntityPreviewConvertor {
       return { ok: false, reason: 'no-bounds' }
     }
 
-    const outputSize = this.resolveOutputSize(
-      longSide,
-      this.getBoundsAspect(bounds)
-    )
-    const renderWidth = outputSize.width
-    const renderHeight = outputSize.height
-
     const previewRoot = scene.createEntityPreviewRoot(entityIds, {
       scope: 'all'
     })
@@ -109,12 +123,99 @@ export class AcApEntityPreviewConvertor {
       return { ok: false, reason: 'no-preview-root' }
     }
 
-    const rendererWrapper = view.renderer
+    const rendered = this.renderPreviewRoot(previewRoot, bounds, longSide)
+    if (!rendered.ok) {
+      return rendered
+    }
+    return {
+      ok: true,
+      dataUrl: rendered.dataUrl,
+      exportedCount,
+      skippedCount
+    }
+  }
+
+  /**
+   * Renders all model-space geometry of the given CAD layers into one PNG and
+   * returns a data URL.
+   *
+   * Only geometry bucketed on those layers is extracted (an INSERT contributes
+   * just its fragments on the requested layers), and the image is framed to
+   * the union of those layers' batch bounds, so unrelated drawing content does
+   * not widen the crop. Layer on/off/frozen state is ignored: the layers were
+   * asked for explicitly.
+   *
+   * @param layerNames - CAD layer names (case-insensitive)
+   * @param longSide - Maximum output width or height in pixels
+   */
+  captureLayers(
+    layerNames: readonly string[],
+    longSide: number
+  ): AcApLayerPreviewCaptureResult {
+    if (layerNames.length === 0) {
+      return { ok: false, reason: 'no-layers' }
+    }
+
+    const view = AcApDocManager.instance.curView as AcTrView2d
+    const layout = view.cadScene.modelSpaceLayout
+    if (!layout) {
+      return { ok: false, reason: 'no-layers' }
+    }
+
+    const layers = layout.findLayers(layerNames)
+    if (layers.length === 0) {
+      return { ok: false, reason: 'no-layers' }
+    }
+    const matchedLayerNames = layers.map(layer => layer.name)
+
+    const bounds = AcTrEntityPreview.box3ToBounds2d(
+      layout.computeLayerPreviewBoundsBox(matchedLayerNames),
+      1.1
+    )
+    if (!bounds) {
+      return { ok: false, reason: 'no-bounds' }
+    }
+
+    const previewRoot = layout.createLayerPreviewRoot(matchedLayerNames)
+    if (!previewRoot) {
+      console.warn(
+        '[ENTPREVIEW] Failed to build layer preview geometry',
+        matchedLayerNames
+      )
+      return { ok: false, reason: 'no-preview-root' }
+    }
+
+    const rendered = this.renderPreviewRoot(previewRoot, bounds, longSide)
+    if (!rendered.ok) {
+      return rendered
+    }
+    return {
+      ok: true,
+      dataUrl: rendered.dataUrl,
+      layerNames: matchedLayerNames
+    }
+  }
+
+  /**
+   * Renders one extracted preview root framed to `bounds` and disposes it.
+   */
+  private renderPreviewRoot(
+    previewRoot: THREE.Group,
+    bounds: AcGeBox2d,
+    longSide: number
+  ): { ok: true; dataUrl: string } | { ok: false; reason: 'capture-failed' } {
+    const view = AcApDocManager.instance.curView as AcTrView2d
+    // Output aspect follows the framed bounds so the PNG carries no extra
+    // letterbox padding beyond the bounds margin.
+    const outputSize = this.resolveOutputSize(
+      longSide,
+      this.getBoundsAspect(bounds)
+    )
 
     try {
-      const capture = rendererWrapper.renderEntityPreview(previewRoot, {
-        width: renderWidth,
-        height: renderHeight,
+      const capture = view.renderer.renderEntityPreview(previewRoot, {
+        width: outputSize.width,
+        height: outputSize.height,
         bounds,
         margin: 1,
         viewportSize: { width: view.width, height: view.height },
@@ -127,13 +228,7 @@ export class AcApEntityPreviewConvertor {
       if (!capture) {
         return { ok: false, reason: 'capture-failed' }
       }
-
-      return {
-        ok: true,
-        dataUrl: capture.canvas.toDataURL('image/png'),
-        exportedCount,
-        skippedCount
-      }
+      return { ok: true, dataUrl: capture.canvas.toDataURL('image/png') }
     } catch (error) {
       console.error('[ENTPREVIEW] Failed to render preview image', error)
       return { ok: false, reason: 'capture-failed' }

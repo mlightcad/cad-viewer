@@ -253,17 +253,20 @@ cad.selection.clear()
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide?, selection? })`
+### `cad.view.capturePreview({ longSide?, selection?, layers? })`
 
 図面範囲の PNG スクリーンショットをキューします。キャプチャはスクリプト本体の終了後に実行されます。戻り値は `{ queued: true, index }` です。Agent チャットでは、画像はツール結果に添付されてモデルへ送られます（JSON の data URL としては返りません）。
 
 `cad.selection.replace(ids)` の後に `selection: true` を渡すと、現在の選択だけをキャプチャします。
+
+`layers`（画層名、または画層名の配列。大文字小文字は区別しません）を渡すと、モデル空間のそれらの画層上の図形だけを描画し、図面全体ではなくそれらの画層を合わせた範囲でフレーミングするため、大きな余白が出ません。画層のオン/オフ状態は無視されます。存在しない画層名はエラーになります。`layers` と `selection` は併用できません。
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
 // optional: cad.view.capturePreview({ selection: true })
+// optional: cad.view.capturePreview({ layers: ['WALL', 'DOOR'] })
 ```
 
 ## cad.file

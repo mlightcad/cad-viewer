@@ -25,6 +25,16 @@ capturePreview?(options?: {
 스크립트에서는 `cad.view.capturePreview({ longSide?, selection? })`를 사용합니다. `cad.selection.replace(ids)` 이후 `selection: true`를 전달하면 ENTPREVIEW와 같은 batch 미리보기 경로로 선택 엔티티를 추출하고(장면 bounds로 프레이밍, 데이터베이스 `geometricExtents` 아님) PNG를 도구 결과에 첨부합니다. 선택이 비어 있으면 `reason: 'no-selection'`을 반환합니다. 렌더러가 없는 `createDatabaseSession`은 여전히 미리보기를 건너뜁니다.
 :::
 
+::: info `cad.view.capturePreview` 도면층 미리보기
+이 변경이 포함된 릴리스부터 `CadCapturePreviewOptions`에 `layers?: string | string[]`가, `CaptureDrawingPreviewFailure`에 `'no-layers'`가 추가됩니다.
+
+```ts
+cad.view.capturePreview({ layers: ['WALL', 'DOOR'], longSide: 1024 })
+```
+
+모델 공간에서 해당 도면층의 객체만 렌더링하며(INSERT는 해당 도면층에 있는 부분만), 도면 전체가 아니라 도면층들을 합친 범위로 프레이밍합니다. 도면층 이름은 대소문자를 구분하지 않으며, 존재하지 않는 이름은 스크립트 실행 중 오류를 발생시키고, `layers`는 `selection: true`와 함께 쓸 수 없습니다. `normalizeCadCapturePreviewOptions`는 이제 `NormalizedCadCapturePreviewOptions`(`layers`는 중복 제거된 `string[]`)를 반환합니다. 사용자 정의 `CadSession.capturePreview` 구현은 `options.layers`를 처리하거나 `reason: 'no-layers'`를 반환해야 합니다. 뷰어 구현은 새 `AcApEntityPreviewConvertor.captureLayers(layerNames, longSide)`를 사용합니다.
+:::
+
 ::: info 가벼운 파일 열기 랜딩 엔트리
 **1.8.0**부터 `@mlightcad/cad-simple-viewer`는 DocManager에 의존하지 않는 랜딩용 서브경로를 제공합니다. **`acuiCreateFileOpenSession`**(지연 `createDocManager` + 자동 열기 / `attachSourcesTo`)을 우선하십시오. 도면을 직접 여는 경우(예: Vue `MlCadViewer`)에는 `AcUiFileOpenLanding`을 사용하십시오.
 

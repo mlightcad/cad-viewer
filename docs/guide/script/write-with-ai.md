@@ -89,7 +89,7 @@ Control the selection set:
 
 ### cad.view
 - cad.view.zoomExtents() -> Zoom to model space extents
-- cad.view.capturePreview({ longSide?, selection? }) -> Queue a PNG screenshot after the script finishes; returns { queued: true, index }. Prefer for visual self-check; skip for simple edits
+- cad.view.capturePreview({ longSide?, selection?, layers? }) -> Queue a PNG screenshot after the script finishes; returns { queued: true, index }. Prefer for visual self-check; skip for simple edits. Pass layers: [names] to capture only those layers, framed to their combined extents
 
 ### cad.file
 - cad.file.saveDxf(path?) -> After a successful script, export DXF. Path string or { path?, fileName? }. In-app agent downloads the file; cad-mcp-server writes path (relative to the server cwd). Returns { queued: true, index, fileName }. The DXF text is not returned. The tool result includes savedFiles

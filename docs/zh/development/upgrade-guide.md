@@ -25,6 +25,16 @@ capturePreview?(options?: {
 脚本侧使用 `cad.view.capturePreview({ longSide?, selection? })`。在 `cad.selection.replace(ids)` 之后传入 `selection: true`，会通过与 ENTPREVIEW 相同的 batch 预览路径提取选中图元（按场景包围盒取景，而非数据库 `geometricExtents`），并将 PNG 附加到工具结果。空选中返回 `reason: 'no-selection'`。无渲染器的 `createDatabaseSession` 仍会跳过预览。
 :::
 
+::: info `cad.view.capturePreview` 按图层出图
+自包含本变更的版本起，`CadCapturePreviewOptions` 新增 `layers?: string | string[]`，`CaptureDrawingPreviewFailure` 新增 `'no-layers'`：
+
+```ts
+cad.view.capturePreview({ layers: ['WALL', 'DOOR'], longSide: 1024 })
+```
+
+只渲染模型空间中这些图层上的图元（块参照只贡献其位于这些图层上的部分），并按这些图层叠加后的范围取景，而不是整张图纸。图层名不区分大小写；不存在的图层名会在脚本运行时抛错；`layers` 不能与 `selection: true` 同时使用。`normalizeCadCapturePreviewOptions` 现在返回 `NormalizedCadCapturePreviewOptions`（`layers` 为去重后的 `string[]`）。自定义的 `CadSession.capturePreview` 实现应处理 `options.layers`，或返回 `reason: 'no-layers'`。查看器实现使用新增的 `AcApEntityPreviewConvertor.captureLayers(layerNames, longSide)`。
+:::
+
 ::: info 轻量文件打开落地页入口
 从 **1.8.0** 起，`@mlightcad/cad-simple-viewer` 为落地页提供不依赖 DocManager 的子路径。请优先使用 **`acuiCreateFileOpenSession`**（延迟 `createDocManager` + 自动打开 / `attachSourcesTo`）。当你自行打开图纸时使用 `AcUiFileOpenLanding`（例如 Vue `MlCadViewer`）：
 

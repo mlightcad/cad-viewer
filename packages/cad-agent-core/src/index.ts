@@ -59,6 +59,7 @@ export {
   MAX_SCRIPT_SOURCE_CHARS,
   type MeasureCheck,
   type MeasureReport,
+  type NormalizedCadCapturePreviewOptions,
   normalizeCadCapturePreviewOptions,
   normalizeDxfSaveRequest,
   normalizeHtmlSaveRequest,
