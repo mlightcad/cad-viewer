@@ -35,6 +35,8 @@ In **Recover** mode, the following is rebuilt automatically:
 
 Filled areas import as outlines by default. Integrations can turn them into solid hatches with the `fillHatches` option.
 
+In both modes, text is stretched or squeezed to the width it had in the PDF, because the viewer usually draws it with a different font. Pictures (photos, logos, QR codes) are imported as raster images named `PDF_IMAGE_n.png`; their pixels stay in the open drawing only, because DWG and DXF reference images as separate files. Black-on-transparent pictures such as QR codes are placed on white, as on the PDF page.
+
 ## Calibrate scale (`pdfscale`)
 
 PDFs are usually printed at a scale such as 1:50 or 1:100.

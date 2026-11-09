@@ -50,7 +50,9 @@ const OPS: PdfImportOps = {
   showText: 39,
   rawFillPath: 40,
   paintFormXObjectBegin: 41,
-  paintFormXObjectEnd: 42
+  paintFormXObjectEnd: 42,
+  paintImageXObject: 43,
+  paintInlineImageXObject: 44
 }
 
 const DRAW_MOVE_TO = 0
@@ -620,6 +622,57 @@ describe('extractPdfImportSubpaths', () => {
     expect(texts[0].height).toBeCloseTo(mm(10))
     expect(texts[0].rotation).toBeCloseTo(0)
     expect(texts[0].widthFactor).toBeCloseTo(1)
+  })
+
+  test('records image paints with their unit-square placement', () => {
+    const inline = { width: 2, height: 2, data: new Uint8ClampedArray(12) }
+    const { images } = extractPdfImportSubpaths(
+      {
+        fnArray: [
+          OPS.save,
+          OPS.transform,
+          OPS.paintImageXObject!,
+          OPS.restore,
+          OPS.save,
+          OPS.transform,
+          OPS.paintInlineImageXObject!,
+          OPS.restore
+        ],
+        argsArray: [
+          null,
+          [100, 0, 0, 50, 10, 20],
+          ['img_p0_1', 640, 320],
+          null,
+          null,
+          // 90° rotation: image x axis points up the page.
+          [0, 30, -30, 0, 200, 100],
+          [inline],
+          null
+        ]
+      },
+      OPS,
+      yUpViewport(600),
+      new Map()
+    )
+
+    expect(images).toHaveLength(2)
+    expect(images![0].objId).toBe('img_p0_1')
+    const first = images![0].toCad
+    expect(first.a).toBeCloseTo(mm(100))
+    expect(first.b).toBeCloseTo(0)
+    expect(first.c).toBeCloseTo(0)
+    expect(first.d).toBeCloseTo(mm(50))
+    expect(first.e).toBeCloseTo(mm(10))
+    expect(first.f).toBeCloseTo(mm(20))
+
+    expect(images![1].inline).toBe(inline)
+    const second = images![1].toCad
+    expect(second.a).toBeCloseTo(0)
+    expect(second.b).toBeCloseTo(mm(30))
+    expect(second.c).toBeCloseTo(-mm(30))
+    expect(second.d).toBeCloseTo(0)
+    expect(second.e).toBeCloseTo(mm(200))
+    expect(second.f).toBeCloseTo(mm(100))
   })
 
   test('scales Td / TD / T* offsets by the text matrix', () => {

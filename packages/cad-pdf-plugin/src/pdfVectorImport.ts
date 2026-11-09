@@ -95,6 +95,10 @@ export interface PdfImportOps {
   /** Form XObject begin — args typically `[matrix, bbox]`. */
   paintFormXObjectBegin?: number
   paintFormXObjectEnd?: number
+  /** Image XObject paint — args `[objId, width, height]`. */
+  paintImageXObject?: number
+  /** Inline image paint — args `[imageData]`. */
+  paintInlineImageXObject?: number
 }
 
 /**
@@ -351,9 +355,32 @@ export interface PdfImportFormInstance {
   toCad: { a: number; b: number; c: number; d: number; e: number; f: number }
 }
 
+/**
+ * One raster image paint. PDF draws an image into the unit square of the
+ * current user space, so the placement is that square's affine map.
+ */
+export interface PdfImportedImage {
+  /**
+   * PDF.js object id; resolve it through `page.objs` (or `page.commonObjs`
+   * for ids starting with `g_`).
+   */
+  objId?: string
+  /** Image data of an inline image (`BI … EI`), as PDF.js passes it. */
+  inline?: unknown
+  /**
+   * Unit square → model-space millimeters: `x' = a·u + c·v + e`,
+   * `y' = b·u + d·v + f`. `(0, 0)` is the image's bottom-left corner and
+   * `(0, 1)` its top-left (first pixel row).
+   */
+  toCad: { a: number; b: number; c: number; d: number; e: number; f: number }
+  layerName?: string
+}
+
 export interface PdfImportPageContent {
   subpaths: PdfImportedSubpath[]
   texts: PdfImportedText[]
+  /** Raster image paints, in paint order. */
+  images?: PdfImportedImage[]
   /** Top-level Form XObject paints, referenced by subpath `formInstance`. */
   formInstances?: PdfImportFormInstance[]
 }
@@ -384,6 +411,7 @@ export function extractPdfImportSubpaths(
   const formInstances: PdfImportFormInstance[] = []
   let currentFormInstance: number | undefined
   const textResult: PdfImportedText[] = []
+  const imageResult: PdfImportedImage[] = []
 
   // PDF.js 5.x normally packs path construction into OPS.constructPath.
   // The packed stream uses DrawOPS values from PDF.js shared/util:
@@ -1047,7 +1075,8 @@ export function extractPdfImportSubpaths(
 
       const target = getPdfMarkedContentTarget(rawArgs)
       if (target.kind === 'ocg') {
-        activeLayerName = ocgLayers.get(target.id)?.layerName ?? fallbackLayerName
+        activeLayerName =
+          ocgLayers.get(target.id)?.layerName ?? fallbackLayerName
       } else if (target.kind === 'fallback') {
         activeLayerName = fallbackLayerName
       }
@@ -1056,6 +1085,36 @@ export function extractPdfImportSubpaths(
 
     if (fn === ops.endMarkedContent) {
       activeLayerName = markedContentLayerStack.pop() ?? fallbackLayerName
+      continue
+    }
+
+    if (
+      (ops.paintImageXObject !== undefined && fn === ops.paintImageXObject) ||
+      (ops.paintInlineImageXObject !== undefined &&
+        fn === ops.paintInlineImageXObject)
+    ) {
+      const o = pagePointToCadPoint(0, 0)
+      const ux = pagePointToCadPoint(1, 0)
+      const uy = pagePointToCadPoint(0, 1)
+      const image: PdfImportedImage = {
+        toCad: {
+          a: ux.x - o.x,
+          b: ux.y - o.y,
+          c: uy.x - o.x,
+          d: uy.y - o.y,
+          e: o.x,
+          f: o.y
+        },
+        layerName: activeLayerName
+      }
+      if (fn === ops.paintImageXObject) {
+        if (typeof rawArgs[0] !== 'string') continue
+        image.objId = rawArgs[0]
+      } else {
+        if (!rawArgs[0]) continue
+        image.inline = rawArgs[0]
+      }
+      imageResult.push(image)
       continue
     }
 
@@ -1205,6 +1264,7 @@ export function extractPdfImportSubpaths(
     options
   )
   if (formInstances.length > 0) content.formInstances = formInstances
+  if (imageResult.length > 0) content.images = imageResult
   return content
 
   // Hoisted so the operator loop above can call them.

@@ -35,6 +35,8 @@ Bu komutlar **Yazma** modu gerektirir. Önerilen sıra: `ipdf` → `pdfscale` �
 
 Dolgulu alanlar varsayılan olarak dış hat olarak içe aktarılır. Entegrasyonlar `fillHatches` seçeneğiyle bunları düz taramaya dönüştürebilir.
 
+Her iki modda da görüntüleyici metni genellikle farklı bir yazı tipiyle çizdiğinden, metin PDF'teki genişliğine göre uzatılır veya daraltılır. Resimler (fotoğraflar, logolar, QR kodları) `PDF_IMAGE_n.png` adlı raster görüntüler olarak içe aktarılır; DWG ve DXF görüntülere ayrı dosya olarak başvurduğundan pikseller yalnızca açık çizimde kalır. QR kodları gibi saydam zemin üzerindeki siyah resimler, PDF sayfasındaki gibi beyaz zemine yerleştirilir.
+
 ## Ölçek kalibrasyonu (`pdfscale`)
 
 PDF çizimleri genellikle 1:50 veya 1:100 gibi bir ölçekte basılır.

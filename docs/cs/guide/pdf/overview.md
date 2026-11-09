@@ -35,6 +35,8 @@ V režimu **Obnovit** se automaticky obnoví:
 
 Vyplněné oblasti se ve výchozím stavu importují jako obrysy. Integrace je mohou převést na plné šrafy pomocí volby `fillHatches`.
 
+V obou režimech se text roztáhne nebo zúží na šířku, kterou měl v PDF, protože prohlížeč ho obvykle kreslí jiným písmem. Obrázky (fotografie, loga, QR kódy) se importují jako rastrové obrázky s názvem `PDF_IMAGE_n.png`; jejich pixely zůstávají jen v otevřeném výkresu, protože DWG a DXF odkazují na obrázky jako na samostatné soubory. Černé obrázky na průhledném pozadí, například QR kódy, se umístí na bílý podklad jako na stránce PDF.
+
 ## Kalibrace měřítka (`pdfscale`)
 
 Výkresy PDF jsou obvykle vytištěny v měřítku, například 1:50 nebo 1:100.

@@ -8,6 +8,7 @@ import {
 } from '@mlightcad/mtext-renderer'
 
 import { AcApDocManager } from '../app/AcApDocManager'
+import { acapMeasureTextWidth } from './AcApTextMeasure'
 
 export type {
   FontInfo,
@@ -133,6 +134,44 @@ export class AcApFontUtil {
     if (!dm) return
     if (AcApFontUtil.isFontLoaded(fontName)) return
     await dm.loadFonts([fontName])
+  }
+
+  /**
+   * Loads what {@link measureTextWidth} needs: the given style fonts that the
+   * font catalog lists, plus the default fallback fonts.
+   *
+   * @param fontNames - Text style (and big) font names that will be measured.
+   */
+  static async prepareTextMeasurement(fontNames: string[]): Promise<void> {
+    const dm = AcApDocManager.instance
+    if (!dm) return
+    const wanted = new Set<string>()
+    for (const name of fontNames) {
+      if (AcApFontUtil.findFontInfoByName(name)) wanted.add(name)
+    }
+    for (const name of FontManager.instance.defaultFonts) wanted.add(name)
+    const missing = [...wanted].filter(name => !AcApFontUtil.isFontLoaded(name))
+    if (missing.length > 0) await dm.loadFonts(missing)
+  }
+
+  /**
+   * Advance width of single-line text at width factor 1, laid out like the
+   * TEXT renderer does (style font, then default fonts). Call
+   * {@link prepareTextMeasurement} first so the fonts are loaded.
+   *
+   * @param text - Plain text (no MTEXT codes).
+   * @param fontName - Text style font.
+   * @param height - Text height in drawing units.
+   * @param bigFont - Style big font, tried before the default fonts.
+   * @returns The width, or `undefined` when a glyph is not available.
+   */
+  static measureTextWidth(
+    text: string,
+    fontName: string,
+    height: number,
+    bigFont?: string
+  ): number | undefined {
+    return acapMeasureTextWidth(text, fontName, height, { bigFont })
   }
 
   /**

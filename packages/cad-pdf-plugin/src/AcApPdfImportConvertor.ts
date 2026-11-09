@@ -1,6 +1,7 @@
 import {
   type AcApContext,
   AcApDocManager,
+  AcApFontUtil,
   AcApI18n,
   AcEdCorsorType,
   type AcEdKeyword,
@@ -17,10 +18,13 @@ import {
   AcDbBlockReference,
   AcDbBlockTableRecord,
   AcDbCircle,
+  type AcDbDatabase,
   AcDbEllipse,
   type AcDbEntity,
   AcDbLine,
   AcDbPolyline,
+  AcDbRasterImage,
+  AcDbRasterImageDef,
   AcDbSpline,
   AcDbText,
   AcGePoint2d,
@@ -44,9 +48,11 @@ import {
   acapPdfCreateSolidHatch,
   acapPdfEnsureDashLinetype,
   acapPdfEnsureTextStyle,
+  acapPdfFitWidthFactor,
   acapPdfFontFamily,
   acapPdfShapeToLoop
 } from './pdfImportEntities'
+import { acapPdfRasterizeImage, type PdfJsImageLike } from './pdfImportImages'
 import {
   buildPdfImportShapes,
   type PdfImportShapeItem
@@ -61,6 +67,7 @@ import {
 import {
   extractPdfImportSubpaths,
   PDF_IMPORT_FOREGROUND_COLOR,
+  type PdfImportedImage,
   type PdfImportedText,
   type PdfImportOps
 } from './pdfVectorImport'
@@ -340,8 +347,7 @@ export class AcApPdfImportConvertor {
     const recover = addIpdfKeyword(prompt.keywords, 'recover')
     const visual = addIpdfKeyword(prompt.keywords, 'visual')
     prompt.keywords.default = current === 'visual' ? visual : recover
-    const result =
-      await AcApDocManager.instance.editor.getKeywords(prompt)
+    const result = await AcApDocManager.instance.editor.getKeywords(prompt)
     if (result.status === AcEdPromptStatus.None) return current
     if (
       result.status !== AcEdPromptStatus.OK &&
@@ -532,6 +538,7 @@ export class AcApPdfImportConvertor {
         }
         return styleByFont.get(fontId)
       }
+      const textEntities: { entity: AcDbText; run: PdfImportedText }[] = []
       for (const textRun of texts) {
         if (textRun.layerName) {
           usedLayerNames.add(textRun.layerName)
@@ -540,8 +547,22 @@ export class AcApPdfImportConvertor {
         if (!entity) continue
         const style = styleFor(textRun.fontId)
         if (style) entity.styleName = style
+        textEntities.push({ entity, run: textRun })
         entities.push(entity)
       }
+      if (options.fitTextWidth) {
+        await fitTextWidths(db, textEntities, options.scale)
+      }
+
+      // Images go first so linework and text draw on top of them.
+      const imageEntities =
+        options.images && content.images
+          ? await createImageEntities(page, db, content.images, options)
+          : []
+      for (const image of imageEntities) {
+        if (image.layer && image.layer !== '0') usedLayerNames.add(image.layer)
+      }
+      entities.unshift(...imageEntities)
 
       if (entities.length === 0) {
         log.warn('[PdfImport] No vector geometry found in PDF page.')
@@ -571,7 +592,7 @@ export class AcApPdfImportConvertor {
         `[PdfImport] Imported ${entities.length} entities across ${usedLayerNames.size} CAD layer(s): ` +
           `${stats.line} lines, ${stats.polyline} polylines, ${stats.circle} circles, ` +
           `${stats.arc} arcs, ${stats.ellipse} ellipses, ${stats.spline} splines, ` +
-          `mode ${options.mode}, ${texts.length} texts, ${hatchCount} hatches, ${formBlocks.blocks.length} blocks ` +
+          `mode ${options.mode}, ${texts.length} texts, ${imageEntities.length} images, ${hatchCount} hatches, ${formBlocks.blocks.length} blocks ` +
           `(${referenceCount} references); ${stats.duplicates} duplicates skipped.`
       )
     } catch (err) {
@@ -604,6 +625,169 @@ export class AcApPdfImportConvertor {
     }
     applyPdfColor(text, run.color)
     return text
+  }
+}
+
+/** File name prefix of image definitions created for PDF images. */
+const PDF_IMAGE_PREFIX = 'PDF_IMAGE_'
+
+/** How long to wait for PDF.js to deliver one decoded image. */
+const PDF_IMAGE_TIMEOUT_MS = 10000
+
+/**
+ * Turns PDF image paints into raster images. Each image is redrawn upright
+ * with its rotation / mirroring baked in; the PNG is kept in memory on the
+ * entity (`AcDbRasterImage.image`) and its definition is named
+ * `PDF_IMAGE_<n>.png`.
+ */
+async function createImageEntities(
+  page: PdfPageObjects,
+  db: AcDbDatabase,
+  images: PdfImportedImage[],
+  options: AcApResolvedPdfImportOptions
+): Promise<AcDbRasterImage[]> {
+  const { scale, insertionPoint } = options
+  const decoded = new Map<string, Promise<PdfJsImageLike | undefined>>()
+  const result: AcDbRasterImage[] = []
+  for (const paint of images) {
+    let image: PdfJsImageLike | undefined
+    if (paint.objId) {
+      let pending = decoded.get(paint.objId)
+      if (!pending) {
+        pending = pdfImageObject(page, paint.objId)
+        decoded.set(paint.objId, pending)
+      }
+      image = await pending
+    } else {
+      image = paint.inline as PdfJsImageLike | undefined
+    }
+    if (!image) continue
+
+    const { a, b, c, d, e, f } = paint.toCad
+    let raster
+    try {
+      raster = await acapPdfRasterizeImage(image, {
+        a: a * scale,
+        b: b * scale,
+        c: c * scale,
+        d: d * scale,
+        e: insertionPoint.x + e * scale,
+        f: insertionPoint.y + f * scale
+      })
+    } catch (err) {
+      log.warn('[PdfImport] Skipped an image that could not be drawn:', err)
+      continue
+    }
+    if (!raster) continue
+
+    const fileName = uniqueImageFileName(db)
+    const imageDef = new AcDbRasterImageDef()
+    imageDef.sourceFileName = fileName
+    imageDef.imageSize = new AcGePoint2d(raster.pixelWidth, raster.pixelHeight)
+    imageDef.isLoaded = true
+    db.objects.imageDefinition.setAt(fileName, imageDef)
+
+    const entity = new AcDbRasterImage()
+    entity.position = new AcGePoint3d(raster.box.x, raster.box.y, 0)
+    entity.width = raster.box.width
+    entity.height = raster.box.height
+    entity.imageSize = new AcGePoint2d(raster.pixelWidth, raster.pixelHeight)
+    entity.image = raster.png
+    entity.imageDefId = imageDef.objectId
+    if (paint.layerName) entity.layer = paint.layerName
+    result.push(entity)
+  }
+  return result
+}
+
+/** The parts of a PDF.js page that hold decoded images. */
+interface PdfPageObjects {
+  objs: PdfObjectStore
+  commonObjs: PdfObjectStore
+}
+
+interface PdfObjectStore {
+  get(objId: string, callback: (data: unknown) => void): unknown
+}
+
+/** Waits for PDF.js to deliver a decoded image object. */
+function pdfImageObject(
+  page: PdfPageObjects,
+  objId: string
+): Promise<PdfJsImageLike | undefined> {
+  const store = objId.startsWith('g_') ? page.commonObjs : page.objs
+  return new Promise(resolve => {
+    const timer = setTimeout(() => {
+      log.warn(`[PdfImport] Timed out waiting for image ${objId}.`)
+      resolve(undefined)
+    }, PDF_IMAGE_TIMEOUT_MS)
+    try {
+      store.get(objId, data => {
+        clearTimeout(timer)
+        resolve((data ?? undefined) as PdfJsImageLike | undefined)
+      })
+    } catch (err) {
+      clearTimeout(timer)
+      log.warn(`[PdfImport] Image ${objId} is not available:`, err)
+      resolve(undefined)
+    }
+  })
+}
+
+/** First `PDF_IMAGE_<n>.png` not used by an image definition. */
+function uniqueImageFileName(db: AcDbDatabase) {
+  let index = 1
+  while (db.objects.imageDefinition.has(`${PDF_IMAGE_PREFIX}${index}.png`)) {
+    index++
+  }
+  return `${PDF_IMAGE_PREFIX}${index}.png`
+}
+
+/**
+ * Sets each text's width factor so it spans its PDF advance width in the
+ * font the viewer will actually draw it with (usually a substitute for the
+ * PDF font). Texts whose glyphs cannot be measured keep the PDF factor.
+ */
+async function fitTextWidths(
+  db: AcDbDatabase,
+  texts: { entity: AcDbText; run: PdfImportedText }[],
+  scale: number
+) {
+  const styleTable = db.tables.textStyleTable
+  const fontsOf = (entity: AcDbText) => {
+    const style = styleTable.resolveAt(entity.styleName || db.textstyle)
+    return {
+      font: style?.textStyle.font ?? '',
+      bigFont: style?.textStyle.bigFont ?? ''
+    }
+  }
+  const fontNames = new Set<string>()
+  for (const { entity } of texts) {
+    const { font, bigFont } = fontsOf(entity)
+    if (font) fontNames.add(font)
+    if (bigFont) fontNames.add(bigFont)
+  }
+  try {
+    await AcApFontUtil.prepareTextMeasurement([...fontNames])
+  } catch (err) {
+    // Without fonts there is nothing to measure against; keep PDF factors.
+    log.warn('[PdfImport] Could not load fonts to fit text widths:', err)
+    return
+  }
+  for (const { entity, run } of texts) {
+    if (run.width === undefined) continue
+    const { font, bigFont } = fontsOf(entity)
+    const natural = AcApFontUtil.measureTextWidth(
+      entity.textString,
+      font,
+      entity.height,
+      bigFont
+    )
+    entity.widthFactor = acapPdfFitWidthFactor(
+      entity.widthFactor,
+      run.width * scale,
+      natural
+    )
   }
 }
 
