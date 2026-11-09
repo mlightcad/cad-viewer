@@ -22,6 +22,7 @@ export default {
 
     tab: {
       ...enMain.ribbon.tab,
+      ai: 'AI',
       home: 'الرئيسية',
       insert: 'إدراج',
       view: 'عرض',
@@ -33,6 +34,8 @@ export default {
 
     group: {
       ...enMain.ribbon.group,
+      agent: 'الوكيل',
+      pdf: 'PDF',
       draw: 'رسم',
       dimension: 'أبعاد',
       modify: 'تعديل',
@@ -77,6 +80,9 @@ export default {
 
     command: {
       ...enMain.ribbon.command,
+      importPdf: 'استيراد\nPDF',
+      pdfScale: 'معايرة\nالمقياس',
+      pdfText: 'استعادة\nالنص',
       line: 'خط',
       polyline: 'متعدد الخطوط',
       circle: 'دائرة',
@@ -384,6 +390,9 @@ export default {
 
     tooltip: {
       ...enMain.ribbon.tooltip,
+      importPdf: 'استيراد الهندسة المتجهية من ملف PDF مع إعادة بناء الدوائر والأقواس والمنحنيات (IPDF).',
+      pdfScale: 'تغيير مقياس هندسة PDF المستوردة من نقطتين لمسافة معروفة (PDFSCALE).',
+      pdfText: 'تحويل خطوط نص PDF المفككة إلى كائنات نصية (PDFTEXT).',
 
       line: 'ارسم قطعة خط مستقيم واحدة.',
 

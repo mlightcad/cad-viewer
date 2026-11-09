@@ -13,6 +13,7 @@ export default {
   },
   ribbon: {
     tab: {
+      ai: 'AI',
       home: 'Home',
       insert: 'Insert',
       view: 'View',
@@ -209,6 +210,8 @@ export default {
       }
     },
     group: {
+      agent: 'Agent',
+      pdf: 'PDF',
       draw: 'Draw',
       dimension: 'Dimension',
       modify: 'Modify',
@@ -276,6 +279,9 @@ export default {
       arc: 'Elliptical Arc'
     },
     tooltip: {
+      importPdf: 'Import vector geometry from a PDF file, rebuilding circles, arcs and curves (IPDF).',
+      pdfScale: 'Rescale imported PDF geometry from two points of a known distance (PDFSCALE).',
+      pdfText: 'Convert exploded PDF text strokes back into text objects (PDFTEXT).',
       line: 'Draw a single straight line segment.',
       polyline:
         'Draw a connected series of line or arc segments as one object.',
@@ -430,6 +436,9 @@ export default {
       }
     },
     command: {
+      importPdf: 'Import\nPDF',
+      pdfScale: 'Calibrate\nScale',
+      pdfText: 'Recover\nText',
       line: 'Line',
       polyline: 'Polyline',
       circle: 'Circle',
