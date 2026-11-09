@@ -179,6 +179,12 @@ export default {
       }
     }
   },
+  pdfdim: {
+    noDimensions: '선택 영역에서 치수를 찾지 못했습니다 (화살표 또는 사선, 치수선, 숫자 문자가 필요합니다).',
+    convertAll: '치수 {count}개를 찾았습니다 (도면 축척 1:{scale}). 변환하시겠습니까?',
+    convertOne: '치수 {index}/{count} "{text}": 변환하시겠습니까?',
+    summary: '치수 {count}개를 변환했습니다. 치수 스타일 PDF_DIM의 선형 축척 비율은 {scale}입니다.'
+  },
   pdfblock: {
     basePoint: '블록 기준점 지정 (축척이 다른 사본도 일치: {scale}) 또는',
     scaleOn: '켜기',

@@ -1785,6 +1785,15 @@ export default {
       }
     }
   },
+  pdfdim: {
+    noDimensions:
+      'Seçimde ölçü bulunamadı (oklar veya işaretler, ölçü çizgileri ve değer metinleri gerekir).',
+    convertAll:
+      '{count} ölçü bulundu (çizim ölçeği 1:{scale}). Dönüştürülsün mü?',
+    convertOne: 'Ölçü {index}/{count} "{text}": dönüştürülsün mü?',
+    summary:
+      '{count} ölçü dönüştürüldü; PDF_DIM stili {scale} doğrusal ölçek faktörünü kullanır.'
+  },
   pdfblock: {
     basePoint:
       'Blok taban noktasını belirtin (ölçeklenmiş kopyaları eşleştir: {scale}) veya',

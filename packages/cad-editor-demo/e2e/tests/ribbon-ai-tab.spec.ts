@@ -79,7 +79,8 @@ test('AI tab hosts the CAD Agent and the PDF tools', async ({ page }) => {
     'cmd-ipdf',
     'cmd-pdfscale',
     'cmd-pdftext',
-    'cmd-pdfblock'
+    'cmd-pdfblock',
+    'cmd-pdfdim'
   ]) {
     await expect(ribbonButton(id)).toBeVisible()
   }

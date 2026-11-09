@@ -1272,7 +1272,7 @@ const applyOpenModeTabVisibility = (
 const buildAiTab = (
   agentPluginEnabled: boolean,
   ribbonTooltips: Record<
-    'agent' | 'importPdf' | 'pdfScale' | 'pdfText' | 'pdfBlock',
+    'agent' | 'importPdf' | 'pdfScale' | 'pdfText' | 'pdfBlock' | 'pdfDim',
     string
   >
 ): RibbonTabModel => {
@@ -1348,6 +1348,12 @@ const buildAiTab = (
                 t('main.ribbon.command.pdfBlock'),
                 ribbonTooltips.pdfBlock,
                 CopyDocument
+              ),
+              largeButton(
+                'cmd-pdfdim',
+                t('main.ribbon.command.pdfDim'),
+                ribbonTooltips.pdfDim,
+                dimLinear
               )
             ]
           }
@@ -1421,6 +1427,7 @@ const buildBaseTabs = (
     pdfScale: t('main.ribbon.tooltip.pdfScale'),
     pdfText: t('main.ribbon.tooltip.pdfText'),
     pdfBlock: t('main.ribbon.tooltip.pdfBlock'),
+    pdfDim: t('main.ribbon.tooltip.pdfDim'),
     pan: t('main.ribbon.tooltip.pan'),
     zoom: t('main.ribbon.tooltip.zoom'),
     zoomExtents: t('main.ribbon.tooltip.zoomExtents'),
@@ -3309,6 +3316,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-pdfscale', 'pdfscale')
   commandByItemId.set('cmd-pdftext', 'pdftext')
   commandByItemId.set('cmd-pdfblock', 'pdfblock')
+  commandByItemId.set('cmd-pdfdim', 'pdfdim')
   commandByItemId.set('cmd-tool-markup-panel', 'markuppanel')
   commandByItemId.set('cmd-tool-markup-text', 'markuptext')
   commandByItemId.set('cmd-tool-markup-cloud', 'markupcloud')

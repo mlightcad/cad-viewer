@@ -1882,6 +1882,12 @@ export default {
       }
     }
   },
+  pdfdim: {
+    noDimensions: '所选范围内没有找到标注（需要箭头或斜线标记、尺寸线和数值文字）。',
+    convertAll: '找到 {count} 个标注（图纸比例 1:{scale}）。是否转换？',
+    convertOne: '标注 {index}/{count}“{text}”：是否转换？',
+    summary: '已转换 {count} 个标注；标注样式 PDF_DIM 的测量比例因子为 {scale}。'
+  },
   pdfblock: {
     basePoint: '指定块基点（匹配缩放副本：{scale}）或',
     scaleOn: '开',

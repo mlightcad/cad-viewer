@@ -82,6 +82,7 @@ export default {
       ...enMain.ribbon.command,
       importPdf: 'استيراد\nPDF',
       pdfScale: 'معايرة\nالمقياس',
+      pdfDim: 'استعادة\nالأبعاد',
       pdfBlock: 'إنشاء\nكتلة',
       pdfText: 'استعادة\nالنص',
       line: 'خط',
@@ -393,6 +394,7 @@ export default {
       ...enMain.ribbon.tooltip,
       importPdf: 'استيراد الهندسة المتجهية من ملف PDF مع إعادة بناء الدوائر والأقواس والمنحنيات (IPDF).',
       pdfScale: 'تغيير مقياس هندسة PDF المستوردة من نقطتين لمسافة معروفة (PDFSCALE).',
+      pdfDim: 'تحويل أبعاد PDF المفككة (الأسهم أو العلامات والخطوط وخطوط الامتداد والنصوص) إلى كائنات أبعاد (PDFDIM).',
       pdfBlock: 'تحويل الهندسة المتكررة في PDF إلى كتلة واستبدال كل نسخة بمرجع كتلة (PDFBLOCK).',
       pdfText: 'تحويل خطوط نص PDF المفككة إلى كائنات نصية (PDFTEXT).',
 
