@@ -33,7 +33,7 @@ V režimu **Obnovit** se automaticky obnoví:
 - **Styly**: šířky tahů se stanou tloušťkami čar, přerušované čáry dostanou typ čáry `PDF_DASH_*` a text dostane textový styl `PDF_<písmo>`. Rozdělené úseky textu na jednom řádku se spojí.
 - **Úklid**: přesně duplicitní obrysy se odstraní.
 
-Vyplněné oblasti se ve výchozím stavu importují jako obrysy. Integrace je mohou převést na plné šrafy pomocí volby `fillHatches`.
+Vyplněné oblasti (barevné plochy, vyplněná loga a obrysy textu) se importují jako plné šrafy v barvě výplně, ve stejném pořadí vykreslení jako na stránce. Integrace mohou nastavit volbu `fillHatches` na `false` a importovat je jen jako obrysy.
 
 V obou režimech se text roztáhne nebo zúží na šířku, kterou měl v PDF, protože prohlížeč ho obvykle kreslí jiným písmem. Obrázky (fotografie, loga, QR kódy) se importují jako rastrové obrázky s názvem `PDF_IMAGE_n.png`; jejich pixely zůstávají jen v otevřeném výkresu, protože DWG a DXF odkazují na obrázky jako na samostatné soubory. Černé obrázky na průhledném pozadí, například QR kódy, se umístí na bílý podklad jako na stránce PDF.
 

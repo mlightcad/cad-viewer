@@ -1,5 +1,9 @@
 import { resolveAcApPdfImportOptions } from '../src/AcApPdfImportOptions'
-import { buildPdfImportShapes } from '../src/pdfImportShapes'
+import {
+  buildPdfImportShapes,
+  orderPdfImportPaints,
+  type PdfImportShapeItem
+} from '../src/pdfImportShapes'
 import {
   extractPdfImportSubpaths,
   PDF_PT_TO_MM,
@@ -435,5 +439,53 @@ describe('dash patterns and fills', () => {
     expect(inner.paintGroup).toBe(outer.paintGroup)
     expect(triangle.stroked).toBe(true)
     expect(triangle.paintGroup).not.toBe(outer.paintGroup)
+  })
+})
+
+describe('orderPdfImportPaints', () => {
+  const line = (x: number): PdfImportShapeItem['shape'] => ({
+    kind: 'line',
+    start: { x, y: 0 },
+    end: { x, y: 1 }
+  })
+  const stroke = (x: number): PdfImportShapeItem => ({ shape: line(x) })
+  const fill = (
+    x: number,
+    paintGroup: number,
+    stroked = false
+  ): PdfImportShapeItem => ({
+    shape: line(x),
+    filled: true,
+    stroked,
+    paintGroup
+  })
+
+  test('keeps each fill where the PDF painted it', () => {
+    // Teal box, white glyph drawn on it, then an outline over both.
+    const box = fill(0, 1)
+    const glyphA = fill(1, 2)
+    const glyphB = fill(2, 2)
+    const outline = stroke(3)
+    const paints = orderPdfImportPaints([box, glyphA, glyphB, outline], true)
+    expect(paints).toEqual([
+      { kind: 'fill', items: [box] },
+      { kind: 'fill', items: [glyphA, glyphB] },
+      { kind: 'shape', item: outline }
+    ])
+  })
+
+  test('keeps the outline of a filled and stroked area above its fill', () => {
+    const area = fill(0, 1, true)
+    expect(orderPdfImportPaints([area], true)).toEqual([
+      { kind: 'fill', items: [area] },
+      { kind: 'shape', item: area }
+    ])
+  })
+
+  test('imports fills as outlines when fill hatches are off', () => {
+    const area = fill(0, 1)
+    expect(orderPdfImportPaints([area], false)).toEqual([
+      { kind: 'shape', item: area }
+    ])
   })
 })

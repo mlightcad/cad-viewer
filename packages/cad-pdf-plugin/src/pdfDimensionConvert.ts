@@ -11,6 +11,7 @@ import {
   AcDbDiametricDimension,
   AcDbDimStyleTableRecord,
   type AcDbEntity,
+  AcDbHatch,
   AcDbLine,
   AcDbPolyline,
   AcDbRadialDimension,
@@ -36,8 +37,9 @@ type PdfDimEntity =
 
 /**
  * Describes entities for {@link recognizePdfDimensions}: lines and 2-vertex
- * polylines as segments, closed polylines as possible arrowheads, circles
- * and arcs as radial targets, and texts as dimension values.
+ * polylines as segments, closed polylines and small solid hatches as possible
+ * arrowheads, circles and arcs as radial targets, and texts as dimension
+ * values.
  */
 export function pdfEntitiesToDimInput<Id>(
   entities: Map<Id, AcDbEntity>
@@ -67,6 +69,11 @@ export function pdfEntitiesToDimInput<Id>(
       } else if (vertices.length === 2) {
         input.segments.push({ id, p0: vertices[0], p1: vertices[1] })
       }
+    } else if (entity instanceof AcDbHatch) {
+      // `ipdf` imports a filled arrowhead as a solid hatch; its boundary
+      // vertices (grip points, in loop order) describe the triangle.
+      const vertices = hatchArrowVertices(entity)
+      if (vertices) input.polygons.push({ id, vertices })
     } else if (entity instanceof AcDbCircle || entity instanceof AcDbArc) {
       input.curves.push({
         center: { x: entity.center.x, y: entity.center.y },
@@ -91,6 +98,17 @@ export function pdfEntitiesToDimInput<Id>(
     }
   }
   return input
+}
+
+/**
+ * Boundary of a solid hatch with three or four vertices, the shape of a
+ * filled arrowhead. Larger or curved fills are never arrowheads.
+ */
+function hatchArrowVertices(hatch: AcDbHatch) {
+  if (!hatch.isSolidFill) return undefined
+  const points = hatch.subGetGripPoints()
+  if (points.length < 3 || points.length > 4) return undefined
+  return points.map(p => ({ x: p.x, y: p.y }))
 }
 
 /** Text box center; falls back to an estimate when no font metrics exist. */

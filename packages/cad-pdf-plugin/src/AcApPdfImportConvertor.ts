@@ -55,6 +55,7 @@ import {
 import { acapPdfRasterizeImage, type PdfJsImageLike } from './pdfImportImages'
 import {
   buildPdfImportShapes,
+  orderPdfImportPaints,
   type PdfImportShapeItem
 } from './pdfImportShapes'
 import {
@@ -440,25 +441,15 @@ export class AcApPdfImportConvertor {
       }
 
       const entities: AcDbEntity[] = []
-      const fillGroups = new Map<number, PdfImportShapeItem[]>()
-      for (const item of items) {
-        if (
-          options.fillHatches &&
-          item.filled &&
-          item.paintGroup !== undefined
-        ) {
-          const group = fillGroups.get(item.paintGroup)
-          if (group) group.push(item)
-          else fillGroups.set(item.paintGroup, [item])
-          // A pure fill becomes only a hatch; fill + stroke keeps the outline.
-          if (!item.stroked) continue
-        }
-        const entity = createEntity(item)
-        if (entity) entities.push(entity)
-      }
-      // One solid hatch per fill paint; extra loops are holes (even-odd).
       let hatchCount = 0
-      for (const group of fillGroups.values()) {
+      for (const paint of orderPdfImportPaints(items, options.fillHatches)) {
+        if (paint.kind === 'shape') {
+          const entity = createEntity(paint.item)
+          if (entity) entities.push(entity)
+          continue
+        }
+        // One solid hatch per fill paint; extra loops are holes (even-odd).
+        const group = paint.items
         const loops = group
           .map(item => acapPdfShapeToLoop(item.shape))
           .filter((loop): loop is NonNullable<typeof loop> => !!loop)

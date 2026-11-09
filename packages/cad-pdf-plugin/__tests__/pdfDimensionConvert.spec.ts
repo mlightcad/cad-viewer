@@ -29,6 +29,10 @@ import {
   pdfEntitiesToDimInput
 } from '../src/pdfDimensionConvert'
 import {
+  acapPdfCreateSolidHatch,
+  acapPdfShapeToLoop
+} from '../src/pdfImportEntities'
+import {
   recognizePdfDimensions,
   suggestPdfDimensionScale
 } from '../src/recognition/pdfDimensionPattern'
@@ -85,7 +89,42 @@ function setup() {
   return { db, byId }
 }
 
+/** A solid-filled arrowhead, as `ipdf` imports a filled PDF triangle. */
+function hatchTriangle(db: AcDbDatabase, tip: P, dir: P, size = 2.5) {
+  const poly = triangle(tip, dir, size)
+  const vertices = [0, 1, 2].map(i => {
+    const p = poly.getPoint2dAt(i)
+    return { x: p.x, y: p.y, bulge: 0 }
+  })
+  const loop = acapPdfShapeToLoop({ kind: 'polyline', closed: true, vertices })
+  return acapPdfCreateSolidHatch(db, [loop!])!
+}
+
 describe('PDF dimension conversion', () => {
+  it('reads solid-filled arrowheads from hatches', () => {
+    const db = new AcDbDatabase()
+    db.createDefaultData()
+    acdbHostApplicationServices().workingDatabase = db
+    const entities: AcDbEntity[] = [
+      line({ x: 30, y: 66 }, { x: 30, y: 77 }),
+      line({ x: 100, y: 66 }, { x: 100, y: 77 }),
+      line({ x: 30, y: 75 }, { x: 100, y: 75 }),
+      hatchTriangle(db, { x: 30, y: 75 }, { x: -1, y: 0 }),
+      hatchTriangle(db, { x: 100, y: 75 }, { x: 1, y: 0 }),
+      text('7000', 62.2, 75.8)
+    ]
+    db.tables.blockTable.modelSpace.appendEntity(entities)
+    const byId = new Map(entities.map(e => [e.objectId, e]))
+    const input = pdfEntitiesToDimInput(byId)
+    expect(input.polygons).toHaveLength(2)
+    const candidates = recognizePdfDimensions(input)
+    expect(candidates.map(c => c.kind)).toEqual(['linear'])
+    // Both arrowhead hatches belong to the dimension, so pdfdim erases them.
+    expect(candidates[0].consumed).toEqual(
+      expect.arrayContaining([entities[3].objectId, entities[4].objectId])
+    )
+  })
+
   it('creates a PDF_DIM style and real dimension entities', () => {
     const { db, byId } = setup()
     const candidates = recognizePdfDimensions(pdfEntitiesToDimInput(byId))

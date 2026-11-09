@@ -72,7 +72,7 @@ export interface AcApPdfImportOptions {
   /**
    * Turn filled PDF areas into solid hatches in the fill colour (a pure fill
    * becomes only a hatch; fill + stroke also keeps the outline). When
-   * `false`, fills import as outlines, as before. Default `false`.
+   * `false`, fills import as outlines only. Default `true`.
    */
   fillHatches?: boolean
   /**
@@ -125,7 +125,7 @@ export function resolveAcApPdfImportOptions(
     mergeTextRuns: options?.mergeTextRuns ?? recover,
     formBlocks: options?.formBlocks ?? recover,
     dashLinetypes: options?.dashLinetypes ?? true,
-    fillHatches: options?.fillHatches ?? false,
+    fillHatches: options?.fillHatches ?? true,
     textStyles: options?.textStyles ?? recover,
     fitTextWidth: options?.fitTextWidth ?? true,
     images: options?.images ?? true

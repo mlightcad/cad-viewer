@@ -33,7 +33,7 @@ In **Recover** mode, the following is rebuilt automatically:
 - **Styles**: stroke widths become line weights, dashed lines get a `PDF_DASH_*` linetype, and text gets a `PDF_<font>` text style. Fragmented text runs of one line are joined.
 - **Clean-up**: exact duplicate outlines are dropped.
 
-Filled areas import as outlines by default. Integrations can turn them into solid hatches with the `fillHatches` option.
+Filled areas (coloured panels, filled logos and text outlines) import as solid hatches in their fill colour, drawn in the same order as on the page. Integrations can set the `fillHatches` option to `false` to import them as outlines only.
 
 In both modes, text is stretched or squeezed to the width it had in the PDF, because the viewer usually draws it with a different font. Pictures (photos, logos, QR codes) are imported as raster images named `PDF_IMAGE_n.png`; their pixels stay in the open drawing only, because DWG and DXF reference images as separate files. Black-on-transparent pictures such as QR codes are placed on white, as on the PDF page.
 

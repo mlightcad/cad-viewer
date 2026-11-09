@@ -270,3 +270,44 @@ describe('recognizePdfCurves', () => {
     ).toEqual([])
   })
 })
+
+describe('closed single arcs', () => {
+  test('recovers a small PDF circle whose sweep misses a full turn', () => {
+    // Four cubics of a 1.79 mm filled dot from a real packaging PDF; the
+    // rounded control points leave the summed sweep just short of 2π.
+    const p = (x: number, y: number) => ({ x, y })
+    const segments: PdfImportSegment[] = [
+      {
+        kind: 'cubic',
+        p0: p(67.03328111111111, 91.86502666666667),
+        p1: p(68.01894219059731, 91.86502666666667),
+        p2: p(68.82221725721146, 92.66865448548953),
+        p3: p(68.82221725721146, 93.65396281276703)
+      },
+      {
+        kind: 'cubic',
+        p0: p(68.82221725721146, 93.65396281276703),
+        p1: p(68.82221725721146, 94.63927105593575),
+        p2: p(68.01894219059731, 95.44289895886739),
+        p3: p(67.03328111111111, 95.44289895886739)
+      },
+      {
+        kind: 'cubic',
+        p0: p(67.03328111111111, 95.44289895886739),
+        p1: p(66.04832553604231, 95.44289895886739),
+        p2: p(65.24434496501074, 94.63927105593575),
+        p3: p(65.24434496501074, 93.65396281276703)
+      },
+      {
+        kind: 'cubic',
+        p0: p(65.24434496501074, 93.65396281276703),
+        p1: p(65.24434496501074, 92.66865448548953),
+        p2: p(66.04832553604231, 91.86502666666667),
+        p3: p(67.03328111111111, 91.86502666666667)
+      }
+    ]
+    const shapes = recognizePdfCurves(segments)
+    expect(shapes).toHaveLength(1)
+    expect(shapes[0].kind).toBe('circle')
+  })
+})
