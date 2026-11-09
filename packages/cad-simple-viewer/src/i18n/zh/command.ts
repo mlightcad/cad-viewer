@@ -146,6 +146,10 @@ export default {
     group: {
       description: '创建和管理称为编组的对象集合'
     },
+    '-bsearch': {
+      description: '查找相同的几何图形并将其转换为块（命令行）',
+      prompt: '选择要搜索的对象'
+    },
     '-group': {
       description: '通过命令行选项创建和管理编组'
     },

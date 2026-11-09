@@ -210,6 +210,7 @@ export default {
       }
     },
     group: {
+      smartBlocks: 'Smart Blocks',
       agent: 'Agent',
       pdf: 'PDF',
       draw: 'Draw',
@@ -279,6 +280,8 @@ export default {
       arc: 'Elliptical Arc'
     },
     tooltip: {
+      searchConvert:
+        'Find all copies of the selected objects and convert them into blocks (BSEARCH).',
       importPdf: 'Import vector geometry from a PDF file, rebuilding circles, arcs and curves (IPDF).',
       pdfScale: 'Rescale imported PDF geometry from two points of a known distance (PDFSCALE).',
       pdfDim: 'Turn exploded PDF dimensions (arrows or ticks, lines, extension lines and texts) back into dimension objects (PDFDIM).',
@@ -438,6 +441,7 @@ export default {
       }
     },
     command: {
+      searchConvert: 'Search and\nConvert',
       importPdf: 'Import\nPDF',
       pdfScale: 'Calibrate\nScale',
       pdfDim: 'Recover\nDims',
@@ -520,6 +524,23 @@ export default {
       ucsObject: 'Object',
       restoreView: 'Restore\nView'
     }
+  },
+  bsearch: {
+    title: 'Search and Convert',
+    found: '{count} instances found, {included} included',
+    position: '{index} of {count}',
+    previous: 'Previous instance',
+    next: 'Next instance',
+    includeCurrent: 'Include this instance',
+    convert: 'Convert to block…',
+    cancel: 'Cancel',
+    rotation: 'Rotated',
+    mirror: 'Mirrored',
+    scale: 'Scaled',
+    sameLayer: 'Same layer',
+    existingBlocks: 'Existing blocks',
+    textVariations: 'Text variations',
+    pickPrompt: 'Click an instance to include or exclude it, or'
   },
   verticalToolbar: {
     measure: {

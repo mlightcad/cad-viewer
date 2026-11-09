@@ -196,23 +196,129 @@ export default {
     convertOne: '치수 {index}/{count} "{text}": 변환하시겠습니까?',
     summary: '치수 {count}개를 변환했습니다. 치수 스타일 PDF_DIM의 선형 축척 비율은 {scale}입니다.'
   },
-  pdfblock: {
-    basePoint: '블록 기준점 지정 (축척이 다른 사본도 일치: {scale}) 또는',
-    scaleOn: '켜기',
-    scaleOff: '끄기',
-    name: '블록 이름 입력',
+  bsearch: {
+    unsupported: '선택한 객체 중 일치시킬 수 있는 객체가 없습니다(선, 호, 원, 폴리선, 타원, 스플라인, 문자, 여러 줄 문자, 블록 참조 지원).',
+    skipped: '선택한 객체 {count}개는 일치시킬 수 없어 무시됩니다.',
+    found: '일치하는 인스턴스 {count}개를 찾았습니다({included}개 변환 예정). 선택',
+    noMatches: '다른 인스턴스를 찾지 못했습니다.',
+    reviewOne: '인스턴스 {index}/{count} ({state})',
+    included: '포함됨',
+    excluded: '제외됨',
+    options: '회전 {rotation}, 대칭 {mirror}, 축척 {scale}, 같은 도면층 {layer}, 기존 블록 {blocks}, 문자 변형 {text}. 전환',
+    on: '켜기',
+    off: '끄기',
+    target: '변환 대상',
+    name: '새 블록 이름 입력',
     nameExists: '"{name}" 블록이 이미 있습니다.',
-    unsupported: '선택한 객체를 일치시킬 수 없습니다 (선, 호, 원, 폴리선, 타원, 스플라인, 문자 지원).',
-    noCopies: '다른 사본을 찾지 못했습니다. 선택한 객체만 블록이 됩니다.',
-    replaceAll: '일치하는 사본 {count}개를 찾았습니다. 블록 참조로 바꾸시겠습니까?',
-    replaceOne: '사본 {index}/{count}: 블록 참조로 바꾸시겠습니까?',
-    summary: '블록 "{name}"을(를) 만들었습니다 (참조 {count}개).',
+    nameInvalid: '"{name}"은(는) 유효한 블록 이름이 아닙니다.',
+    basePoint: '삽입점 지정',
+    attributeTag: '문자 "{text}"의 속성 태그 입력',
+    existingName: '기존 블록 이름 입력',
+    blockNotFound: '"{name}" 블록을 찾을 수 없습니다.',
+    rotation: '블록의 회전 각도 지정',
+    scale: '블록의 축척 비율 지정',
+    scope: '찾은 인스턴스 {count}개도 변환하시겠습니까, 아니면 원본 객체만 변환하시겠습니까?',
+    summary: '블록 "{name}"(으)로 변환했습니다: 참조 {count}개.',
     keywords: {
+      convert: {
+        display: '변환(C)',
+        local: '변환',
+        global: 'Convert'
+      },
+      review: {
+        display: '검토(R)',
+        local: '검토',
+        global: 'Review'
+      },
+      options: {
+        display: '옵션(O)',
+        local: '옵션',
+        global: 'Options'
+      },
+      exit: {
+        display: '종료(X)',
+        local: '종료',
+        global: 'eXit'
+      },
+      include: {
+        display: '포함(I)',
+        local: '포함',
+        global: 'Include'
+      },
+      exclude: {
+        display: '제외(E)',
+        local: '제외',
+        global: 'Exclude'
+      },
+      next: {
+        display: '다음(N)',
+        local: '다음',
+        global: 'Next'
+      },
+      previous: {
+        display: '이전(P)',
+        local: '이전',
+        global: 'Previous'
+      },
+      done: {
+        display: '완료(D)',
+        local: '완료',
+        global: 'Done'
+      },
+      rotation: {
+        display: '회전(R)',
+        local: '회전',
+        global: 'Rotation'
+      },
+      mirror: {
+        display: '대칭(M)',
+        local: '대칭',
+        global: 'Mirror'
+      },
       scale: {
         display: '축척(S)',
         local: '축척',
         global: 'Scale'
       },
+      layer: {
+        display: '도면층(L)',
+        local: '도면층',
+        global: 'Layer'
+      },
+      blocks: {
+        display: '블록(B)',
+        local: '블록',
+        global: 'Blocks'
+      },
+      text: {
+        display: '문자(T)',
+        local: '문자',
+        global: 'Text'
+      },
+      new: {
+        display: '새로 만들기(N)',
+        local: '새로 만들기',
+        global: 'New'
+      },
+      existing: {
+        display: '기존(E)',
+        local: '기존',
+        global: 'Existing'
+      },
+      instances: {
+        display: '인스턴스(I)',
+        local: '인스턴스',
+        global: 'Instances'
+      },
+      source: {
+        display: '원본 객체(S)',
+        local: '원본 객체',
+        global: 'Source'
+      }
+    }
+  },
+  pdfblock: {
+    keywords: {
       yes: {
         display: '예(Y)',
         local: '예',

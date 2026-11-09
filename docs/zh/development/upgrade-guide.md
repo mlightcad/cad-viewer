@@ -6,6 +6,21 @@ title: "升级 cad-simple-viewer 和 cad-editor"
 
 本指南介绍如何安全地升级 `@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-editor`——为什么它们不能单独升级、哪些相关包必须一起迁移，以及两种可靠的方法来确定任意给定版本的正确兼容版本集。
 
+::: info 智能块：搜索并转换（`BSEARCH`）
+自包含本变更的版本起，`@mlightcad/cad-simple-viewer` 注册 **-BSEARCH**，`@mlightcad/cad-editor` 增加 **BSEARCH**（别名 `BCONVERT`），提供审阅工具栏和「转换为块」对话框（位于功能区「插入」和「AI」选项卡）。
+
+形状匹配已从 `@mlightcad/cad-pdf-plugin` 移至 `@mlightcad/cad-simple-viewer`，请迁移导入：
+
+| `@mlightcad/cad-pdf-plugin`（已弃用） | `@mlightcad/cad-simple-viewer` |
+| --- | --- |
+| `findPdfShapeMatches` | `acedFindShapeMatches` |
+| `applyPdfAffine` | `acedApplyAffine2d` |
+| `pdfEntityToFeature` | `acedEntityToShapeFeature(entity, id, { matchLayer: false })` |
+| `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
+
+旧名称仍作为已弃用的别名可用。文字内容已从特征的 `kind` 移到 `label`（默认 `ignoreLabels: false` 时仍需一致）。`pdfblock` 现在使用 `-BSEARCH` 的提示顺序（转换 → 新建/现有 → 名称 → 插入点 → 范围），按旧提示应答的脚本需要调整。
+:::
+
 ::: info AutoCAD 编组（`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`）
 自包含本变更的版本起，`@mlightcad/cad-simple-viewer` 注册 **GROUP**、**-GROUP**、**UNGROUP**、**GROUPEDIT**；当 `PICKSTYLE` 为 `1` 或 `3` 时扩展选择；并对可选编组应用 `GROUPDISPLAYMODE` 夹点。`@mlightcad/cad-editor` 增加 **CLASSICGROUP**（对象编组对话框）以及「开始 → 编组」功能区面板。
 

@@ -6,6 +6,21 @@ title: "ترقية cad-simple-viewer و cad-editor"
 
 يشرح هذا الدليل كيفية ترقية `@mlightcad/cad-simple-viewer` و`@mlightcad/cad-editor` بأمان — ولماذا لا يمكن رفعهما بمعزل عن غيرهما، وأي الحزم ذات الصلة يجب أن تتحرك معًا، وطريقتان موثوقتان لتحديد مجموعة الإصدارات المتوافقة الصحيحة لأي إصدار معين.
 
+::: info الكتل الذكية: بحث وتحويل (`BSEARCH`)
+بدءًا من الإصدار الذي يتضمن هذا التغيير، يسجّل `@mlightcad/cad-simple-viewer` الأمر **-BSEARCH** ويضيف `@mlightcad/cad-editor` الأمر **BSEARCH** (الاسم البديل `BCONVERT`) مع شريط مراجعة ومربع حوار التحويل إلى كتلة (في علامتي التبويب إدراج وAI).
+
+انتقلت مطابقة الأشكال من `@mlightcad/cad-pdf-plugin` إلى `@mlightcad/cad-simple-viewer`. انقل الاستيرادات:
+
+| `@mlightcad/cad-pdf-plugin` (مهمل) | `@mlightcad/cad-simple-viewer` |
+| --- | --- |
+| `findPdfShapeMatches` | `acedFindShapeMatches` |
+| `applyPdfAffine` | `acedApplyAffine2d` |
+| `pdfEntityToFeature` | `acedEntityToShapeFeature(entity, id, { matchLayer: false })` |
+| `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
+
+تبقى الأسماء القديمة متاحة كأسماء بديلة مهملة. انتقل نص الكتابة من `kind` إلى `label`. يتبع `pdfblock` الآن ترتيب مطالبات `-BSEARCH` (تحويل ← جديد/موجود ← الاسم ← نقطة الإدراج ← النطاق)، لذا يجب تعديل النصوص البرمجية التي تجيب على المطالبات القديمة.
+:::
+
 ::: info مجموعات AutoCAD (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
 بدءًا من الإصدار الذي يتضمن هذا التغيير، يسجّل `@mlightcad/cad-simple-viewer` أوامر **GROUP** و**-GROUP** و**UNGROUP** و**GROUPEDIT**، ويوسّع التحديد عندما يكون `PICKSTYLE` بقيمة `1` أو `3`، ويطبّق مقابض `GROUPDISPLAYMODE` للمجموعات القابلة للتحديد. يضيف `@mlightcad/cad-editor` أمر **CLASSICGROUP** (مربع حوار تجميع الكائنات) ولوحة الشريط الرئيسية → المجموعات.
 

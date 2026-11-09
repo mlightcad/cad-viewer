@@ -5,6 +5,10 @@ export default {
 
   ACAD: {
     ...enCommand.ACAD,
+    bsearch: {
+      description: 'الكتل الذكية: يبحث عن الأشكال المتطابقة ويحولها إلى كتل',
+      prompt: 'حدد الكائنات المراد البحث عنها'
+    },
 
     hatch: {
       ...enCommand.ACAD.hatch,

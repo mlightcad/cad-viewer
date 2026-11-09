@@ -23,6 +23,7 @@ import {
   AcApConvertToJpgCmd,
   AcApConvertToPngCmd,
   AcApCopyCmd,
+  AcApDashBSearchCmd,
   AcApDashGroupCmd,
   AcApDimAlignedCmd,
   AcApDimAngularCmd,
@@ -1995,6 +1996,7 @@ export class AcApDocManager {
     addSystemCommand('ellipse', 'ellipse', new AcApEllipseCmd())
     addSystemCommand('erase', 'erase', new AcApEraseCmd())
     addSystemCommand('group', 'group', new AcApGroupCmd())
+    addSystemCommand('-bsearch', '-bsearch', new AcApDashBSearchCmd())
     addSystemCommand('-group', '-group', new AcApDashGroupCmd())
     addSystemCommand('groupedit', 'groupedit', new AcApGroupEditCmd())
     addSystemCommand('ungroup', 'ungroup', new AcApUngroupCmd())

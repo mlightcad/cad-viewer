@@ -1938,26 +1938,129 @@ export default {
     summary:
       'Converted {count} dimension(s); style PDF_DIM uses a linear scale factor of {scale}.'
   },
-  pdfblock: {
-    basePoint: 'Specify block base point (match scaled copies: {scale}) or',
-    scaleOn: 'on',
-    scaleOff: 'off',
-    name: 'Enter block name',
+  bsearch: {
+    unsupported: 'None of the selected objects can be matched (lines, arcs, circles, polylines, ellipses, splines, text, mtext and block references are supported).',
+    skipped: '{count} selected object(s) cannot be matched and are ignored.',
+    found: 'Found {count} matching instance(s), {included} to convert. Choose',
+    noMatches: 'No other instances found.',
+    reviewOne: 'Instance {index}/{count} ({state})',
+    included: 'included',
+    excluded: 'excluded',
+    options: 'Rotation {rotation}, mirror {mirror}, scale {scale}, same layer {layer}, existing blocks {blocks}, text variations {text}. Toggle',
+    on: 'on',
+    off: 'off',
+    target: 'Convert to',
+    name: 'Enter new block name',
     nameExists: 'A block named "{name}" already exists.',
-    unsupported:
-      'None of the selected objects can be matched (lines, arcs, circles, polylines, ellipses, splines and text are supported).',
-    noCopies:
-      'No other copies found; only the selected objects become a block.',
-    replaceAll:
-      'Found {count} matching copies. Replace them with block references?',
-    replaceOne: 'Copy {index}/{count}: replace with a block reference?',
-    summary: 'Created block "{name}" with {count} reference(s).',
+    nameInvalid: '"{name}" is not a valid block name.',
+    basePoint: 'Specify insertion point',
+    attributeTag: 'Enter attribute tag for the text "{text}"',
+    existingName: 'Enter existing block name',
+    blockNotFound: 'Block "{name}" not found.',
+    rotation: 'Specify rotation angle of the block',
+    scale: 'Specify scale factor of the block',
+    scope: 'Convert the {count} found instance(s) as well, or only the source objects?',
+    summary: 'Converted into block "{name}": {count} reference(s).',
     keywords: {
+      convert: {
+        display: 'Convert(C)',
+        local: 'Convert',
+        global: 'Convert'
+      },
+      review: {
+        display: 'Review(R)',
+        local: 'Review',
+        global: 'Review'
+      },
+      options: {
+        display: 'Options(O)',
+        local: 'Options',
+        global: 'Options'
+      },
+      exit: {
+        display: 'eXit(X)',
+        local: 'eXit',
+        global: 'eXit'
+      },
+      include: {
+        display: 'Include(I)',
+        local: 'Include',
+        global: 'Include'
+      },
+      exclude: {
+        display: 'Exclude(E)',
+        local: 'Exclude',
+        global: 'Exclude'
+      },
+      next: {
+        display: 'Next(N)',
+        local: 'Next',
+        global: 'Next'
+      },
+      previous: {
+        display: 'Previous(P)',
+        local: 'Previous',
+        global: 'Previous'
+      },
+      done: {
+        display: 'Done(D)',
+        local: 'Done',
+        global: 'Done'
+      },
+      rotation: {
+        display: 'Rotation(R)',
+        local: 'Rotation',
+        global: 'Rotation'
+      },
+      mirror: {
+        display: 'Mirror(M)',
+        local: 'Mirror',
+        global: 'Mirror'
+      },
       scale: {
         display: 'Scale(S)',
         local: 'Scale',
         global: 'Scale'
       },
+      layer: {
+        display: 'Layer(L)',
+        local: 'Layer',
+        global: 'Layer'
+      },
+      blocks: {
+        display: 'Blocks(B)',
+        local: 'Blocks',
+        global: 'Blocks'
+      },
+      text: {
+        display: 'Text(T)',
+        local: 'Text',
+        global: 'Text'
+      },
+      new: {
+        display: 'New(N)',
+        local: 'New',
+        global: 'New'
+      },
+      existing: {
+        display: 'Existing(E)',
+        local: 'Existing',
+        global: 'Existing'
+      },
+      instances: {
+        display: 'Instances(I)',
+        local: 'Instances',
+        global: 'Instances'
+      },
+      source: {
+        display: 'Source(S)',
+        local: 'Source',
+        global: 'Source'
+      }
+    }
+  },
+  pdfblock: {
+    keywords: {
       yes: {
         display: 'Yes(Y)',
         local: 'Yes',

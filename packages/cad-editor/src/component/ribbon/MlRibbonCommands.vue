@@ -125,6 +125,7 @@ import {
   arcThreePoints,
   attachDwg,
   attachImage,
+  bsearch,
   circleCenterDiameter,
   circleCenterRadius,
   circleTanTanRadius,
@@ -1265,14 +1266,21 @@ const applyOpenModeTabVisibility = (
 }
 
 /**
- * AI tab: the CAD Agent (when its plugin is installed) and the PDF to CAD
- * conversion tools from `@mlightcad/cad-pdf-plugin`, which load lazily on
- * first use like their command-line counterparts.
+ * AI tab: the CAD Agent (when its plugin is installed), Smart Blocks
+ * (`BSEARCH`: find repeated geometry and turn it into blocks) and the PDF to
+ * CAD conversion tools from `@mlightcad/cad-pdf-plugin`, which load lazily
+ * on first use like their command-line counterparts.
  */
 const buildAiTab = (
   agentPluginEnabled: boolean,
   ribbonTooltips: Record<
-    'agent' | 'importPdf' | 'pdfScale' | 'pdfText' | 'pdfBlock' | 'pdfDim',
+    | 'agent'
+    | 'searchConvert'
+    | 'importPdf'
+    | 'pdfScale'
+    | 'pdfText'
+    | 'pdfBlock'
+    | 'pdfDim',
     string
   >
 ): RibbonTabModel => {
@@ -1316,6 +1324,25 @@ const buildAiTab = (
             }
           ]
         : []),
+      {
+        id: 'ai-smart-blocks',
+        title: t('main.ribbon.group.smartBlocks'),
+        orientation: 'row' as const,
+        collections: [
+          {
+            id: 'ai-smart-blocks-main',
+            layout: 'row' as const,
+            items: [
+              largeButton(
+                'cmd-ai-bsearch',
+                t('main.ribbon.command.searchConvert'),
+                ribbonTooltips.searchConvert,
+                bsearch
+              )
+            ]
+          }
+        ]
+      },
       {
         id: 'ai-pdf',
         title: t('main.ribbon.group.pdf'),
@@ -1415,6 +1442,7 @@ const buildBaseTabs = (
     classicGroup: t('main.ribbon.tooltip.classicGroup'),
     quickSelect: t('main.ribbon.tooltip.quickSelect'),
     countList: t('main.ribbon.tooltip.countList'),
+    searchConvert: t('main.ribbon.tooltip.searchConvert'),
     find: t('main.ribbon.tooltip.find'),
     drawingUnits: t('main.ribbon.tooltip.drawingUnits'),
     attachDwg: t('main.ribbon.tooltip.attachDwg'),
@@ -2870,6 +2898,18 @@ const buildBaseTabs = (
                     labelWrapLines: 2,
                     labelWrapWidth: 'max-content'
                   }
+                },
+                {
+                  id: 'cmd-bsearch',
+                  type: 'button',
+                  label: t('main.ribbon.command.searchConvert'),
+                  tooltip: ribbonTooltips.searchConvert,
+                  size: 'large',
+                  props: {
+                    icon: bsearch,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
                 }
               ]
             }
@@ -3309,6 +3349,8 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-imageattach', 'imageattach')
   commandByItemId.set('cmd-attedit', 'attedit')
   commandByItemId.set('cmd-attdef', 'attdef')
+  commandByItemId.set('cmd-bsearch', 'bsearch')
+  commandByItemId.set('cmd-ai-bsearch', 'bsearch')
   if (store.features.agentPlugin) {
     commandByItemId.set('cmd-agent', 'agent')
   }

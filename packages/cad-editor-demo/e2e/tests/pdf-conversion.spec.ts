@@ -194,11 +194,17 @@ test('ipdf rebuilds repeated forms as blocks and pdfblock finds copies', async (
   // Select the first flag (pole, triangle, circle) and make it a block.
   expect(await preselect(page, { maxX: 42, maxY: 130 })).toBe(3)
   await ribbonButton(page, 'cmd-pdfblock').click()
-  await waitForPrompt(page, /base point/i)
-  await answer(page, `${100 * PT},${300 * PT}`)
+  // pdfblock runs the -BSEARCH workflow: Convert → New → name → base point
+  // → also convert the found instances.
+  await waitForPrompt(page, /Found 2 matching instance/)
+  await answer(page, '')
+  await waitForPrompt(page, /Convert to/)
+  await answer(page, '')
   await waitForPrompt(page, /PDF_BLOCK_\d+/)
   await answerString(page, 'FLAG')
-  await waitForPrompt(page, /Found 2 matching copies/)
+  await waitForPrompt(page, /insertion point/i)
+  await answer(page, `${100 * PT},${300 * PT}`)
+  await waitForPrompt(page, /Convert the 2 found instance/)
   await answer(page, '')
 
   await expect

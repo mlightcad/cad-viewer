@@ -39,7 +39,7 @@ export {
   PDF_DIM_STYLE,
   pdfEntitiesToDimInput
 } from './pdfDimensionConvert'
-export { pdfEntityToFeature } from './pdfEntityFeatures'
+export { pdfEntityToFeature } from './pdfDeprecatedMatching'
 export { pdfEntityToStroke } from './pdfEntityStrokes'
 export {
   buildPdfImportShapes,
@@ -120,7 +120,7 @@ export {
   type PdfMatchFeature,
   type PdfShapeMatch,
   type PdfShapeMatchOptions
-} from './recognition/pdfShapeMatching'
+} from './pdfDeprecatedMatching'
 export {
   mergePdfTextRuns,
   type PdfTextRunMergeOptions

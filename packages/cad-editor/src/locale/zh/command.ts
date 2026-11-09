@@ -44,6 +44,10 @@ export default {
     attedit: {
       description: '编辑块参照的属性值及其显示特性'
     },
+    bsearch: {
+      description: '智能块：查找相同的几何图形并将其转换为块',
+      prompt: '选择要搜索的对象'
+    },
     attdef: {
       description: '创建用于块的属性定义'
     },

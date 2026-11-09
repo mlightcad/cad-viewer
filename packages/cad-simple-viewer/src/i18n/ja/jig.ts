@@ -196,23 +196,129 @@ export default {
     convertOne: '寸法 {index}/{count}「{text}」: 変換しますか？',
     summary: '{count} 個の寸法を変換しました。寸法スタイル PDF_DIM の長さ尺度は {scale} です。'
   },
-  pdfblock: {
-    basePoint: 'ブロックの基点を指定（尺度違いのコピーも一致: {scale}）または',
-    scaleOn: 'オン',
-    scaleOff: 'オフ',
-    name: 'ブロック名を入力',
-    nameExists: 'ブロック "{name}" は既に存在します。',
-    unsupported: '選択したオブジェクトは照合できません（線分、円弧、円、ポリライン、楕円、スプライン、文字に対応）。',
-    noCopies: '他のコピーは見つかりませんでした。選択したオブジェクトだけをブロックにします。',
-    replaceAll: '一致するコピーが {count} 個見つかりました。ブロック参照に置き換えますか？',
-    replaceOne: 'コピー {index}/{count}: ブロック参照に置き換えますか？',
-    summary: 'ブロック "{name}" を作成しました（参照 {count} 個）。',
+  bsearch: {
+    unsupported: '選択したオブジェクトはどれも照合できません（線分、円弧、円、ポリライン、楕円、スプライン、文字、マルチテキスト、ブロック参照に対応）。',
+    skipped: '選択したオブジェクトのうち {count} 個は照合できないため無視されます。',
+    found: '一致するインスタンスが {count} 個見つかりました（変換対象 {included} 個）。選択',
+    noMatches: '他のインスタンスは見つかりませんでした。',
+    reviewOne: 'インスタンス {index}/{count}（{state}）',
+    included: '含める',
+    excluded: '除外',
+    options: '回転 {rotation}、鏡像 {mirror}、尺度 {scale}、同一画層 {layer}、既存ブロック {blocks}、文字の違い {text}。切り替え',
+    on: 'オン',
+    off: 'オフ',
+    target: '変換先',
+    name: '新しいブロック名を入力',
+    nameExists: 'ブロック「{name}」は既に存在します。',
+    nameInvalid: '「{name}」は有効なブロック名ではありません。',
+    basePoint: '挿入基点を指定',
+    attributeTag: '文字「{text}」の属性名を入力',
+    existingName: '既存のブロック名を入力',
+    blockNotFound: 'ブロック「{name}」が見つかりません。',
+    rotation: 'ブロックの回転角度を指定',
+    scale: 'ブロックの尺度を指定',
+    scope: '見つかった {count} 個のインスタンスも変換しますか、それとも元オブジェクトのみですか？',
+    summary: 'ブロック「{name}」に変換しました：参照 {count} 個。',
     keywords: {
+      convert: {
+        display: '変換(C)',
+        local: '変換',
+        global: 'Convert'
+      },
+      review: {
+        display: '確認(R)',
+        local: '確認',
+        global: 'Review'
+      },
+      options: {
+        display: 'オプション(O)',
+        local: 'オプション',
+        global: 'Options'
+      },
+      exit: {
+        display: '終了(X)',
+        local: '終了',
+        global: 'eXit'
+      },
+      include: {
+        display: '含める(I)',
+        local: '含める',
+        global: 'Include'
+      },
+      exclude: {
+        display: '除外(E)',
+        local: '除外',
+        global: 'Exclude'
+      },
+      next: {
+        display: '次(N)',
+        local: '次',
+        global: 'Next'
+      },
+      previous: {
+        display: '前(P)',
+        local: '前',
+        global: 'Previous'
+      },
+      done: {
+        display: '完了(D)',
+        local: '完了',
+        global: 'Done'
+      },
+      rotation: {
+        display: '回転(R)',
+        local: '回転',
+        global: 'Rotation'
+      },
+      mirror: {
+        display: '鏡像(M)',
+        local: '鏡像',
+        global: 'Mirror'
+      },
       scale: {
         display: '尺度(S)',
         local: '尺度',
         global: 'Scale'
       },
+      layer: {
+        display: '画層(L)',
+        local: '画層',
+        global: 'Layer'
+      },
+      blocks: {
+        display: 'ブロック(B)',
+        local: 'ブロック',
+        global: 'Blocks'
+      },
+      text: {
+        display: '文字(T)',
+        local: '文字',
+        global: 'Text'
+      },
+      new: {
+        display: '新規(N)',
+        local: '新規',
+        global: 'New'
+      },
+      existing: {
+        display: '既存(E)',
+        local: '既存',
+        global: 'Existing'
+      },
+      instances: {
+        display: 'インスタンス(I)',
+        local: 'インスタンス',
+        global: 'Instances'
+      },
+      source: {
+        display: '元オブジェクト(S)',
+        local: '元オブジェクト',
+        global: 'Source'
+      }
+    }
+  },
+  pdfblock: {
+    keywords: {
       yes: {
         display: 'はい(Y)',
         local: 'はい',

@@ -1,6 +1,38 @@
 import enDialog from '../en/dialog'
 
 export default {
+  bconvertDlg: {
+    title: 'Bloğa Dönüştür',
+    newBlock: 'Yeni blok',
+    existingBlock: 'Mevcut blok',
+    name: 'Blok adı',
+    block: 'Blok',
+    matchingBlock: '{name} (aynı geometri)',
+    rotation: 'Döndürme (°)',
+    scale: 'Ölçek',
+    autoPlacement:
+      'Bu blok aynı geometriyi içeriyor; döndürme ve ölçek otomatik eşleştirilir.',
+    insertionPoint: 'Ekleme noktası',
+    pick: 'Seç',
+    center: 'Merkez',
+    attributes: 'Öznitelikler',
+    attributesHint:
+      'Bu metinler örnekler arasında farklıdır ve öznitelik olur.',
+    tag: 'Etiket',
+    prompt: 'İstem',
+    objects: 'Dönüştürülecek nesneler',
+    allInstances: 'Seçili nesneler ve bulunan {count} örnek',
+    sourceOnly: 'Yalnızca seçili nesneler',
+    error: {
+      nameEmpty: 'Bir blok adı girin.',
+      nameInvalid: '"{name}" geçerli bir blok adı değil.',
+      nameExists: '"{name}" adlı bir blok zaten var.',
+      tagInvalid: 'Öznitelik etiketleri boş olamaz ve boşluk içeremez.',
+      tagDuplicate: 'Öznitelik etiketleri benzersiz olmalıdır.',
+      noBlock: 'Mevcut bir blok seçin.',
+      scaleInvalid: 'Ölçek sıfırdan büyük olmalıdır.'
+    }
+  },
   dimStyleDlg: {
     ...enDialog.dimStyleDlg
   },

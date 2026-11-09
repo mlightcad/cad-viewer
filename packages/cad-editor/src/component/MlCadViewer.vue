@@ -129,6 +129,7 @@ import { MlEntityInfo, MlToolBars } from './layout'
 import { MlNotificationCenter } from './notification'
 import { MlPaletteManager } from './palette'
 import { MlRibbonCommands } from './ribbon'
+import { MlBSearchReviewBar } from './smartBlock'
 import { MlStatusBar } from './statusBar'
 
 const emit = defineEmits<{
@@ -659,6 +660,9 @@ const closeNotificationCenter = () => {
 
           <!-- Toolbar with common CAD operations (zoom, pan, select, etc.) -->
           <ml-tool-bars v-if="editorRef" />
+
+          <!-- Review toolbar of BSEARCH (Smart Blocks: Search and Convert) -->
+          <ml-b-search-review-bar v-if="editorRef" />
 
           <!-- Layer manager palette and entity properties palette for controlling entity visibility and properties -->
           <ml-palette-manager v-if="editorRef" :editor="editor" />

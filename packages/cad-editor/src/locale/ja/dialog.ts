@@ -2,6 +2,36 @@ import enDialog from '../en/dialog'
 
 export default {
   ...enDialog,
+  bconvertDlg: {
+    title: 'ブロックに変換',
+    newBlock: '新しいブロック',
+    existingBlock: '既存のブロック',
+    name: 'ブロック名',
+    block: 'ブロック',
+    matchingBlock: '{name}（同一ジオメトリ）',
+    rotation: '回転（°）',
+    scale: '尺度',
+    autoPlacement: 'このブロックは同じジオメトリを持つため、回転と尺度は自動で合わせられます。',
+    insertionPoint: '挿入基点',
+    pick: '指定',
+    center: '中心',
+    attributes: '属性',
+    attributesHint: 'これらの文字はインスタンスごとに異なるため、属性になります。',
+    tag: '名前',
+    prompt: 'プロンプト',
+    objects: '変換するオブジェクト',
+    allInstances: '選択したオブジェクトと見つかった {count} 個のインスタンス',
+    sourceOnly: '選択したオブジェクトのみ',
+    error: {
+      nameEmpty: 'ブロック名を入力してください。',
+      nameInvalid: '「{name}」は有効なブロック名ではありません。',
+      nameExists: 'ブロック「{name}」は既に存在します。',
+      tagInvalid: '属性名は空にできず、空白を含められません。',
+      tagDuplicate: '属性名は重複できません。',
+      noBlock: '既存のブロックを選択してください。',
+      scaleInvalid: '尺度は 0 より大きくする必要があります。'
+    }
+  },
   classicGroupDlg: {
     ...enDialog.classicGroupDlg,
     title: 'オブジェクトグループ',

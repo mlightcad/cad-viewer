@@ -23,6 +23,10 @@ export default {
     group: {
       description: '그룹이라고 하는 저장된 객체 집합을 만들고 관리합니다'
     },
+    '-bsearch': {
+      description: '동일한 형상을 찾아 블록으로 변환합니다(명령행)',
+      prompt: '검색할 객체 선택'
+    },
     '-group': {
       description: '명령행 옵션으로 그룹을 만들고 관리합니다'
     },

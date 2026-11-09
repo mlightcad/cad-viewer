@@ -1,4 +1,21 @@
 export default {
+  bsearch: {
+    title: 'Vyhledat a převést',
+    found: 'Nalezeno {count} instancí, zahrnuto {included}',
+    position: '{index} z {count}',
+    previous: 'Předchozí instance',
+    next: 'Další instance',
+    includeCurrent: 'Zahrnout tuto instanci',
+    convert: 'Převést na blok…',
+    cancel: 'Zrušit',
+    rotation: 'Otočené',
+    mirror: 'Zrcadlené',
+    scale: 'V měřítku',
+    sameLayer: 'Stejná hladina',
+    existingBlocks: 'Existující bloky',
+    textVariations: 'Rozdílný text',
+    pickPrompt: 'Klepnutím na instanci ji zahrňte nebo vylučte, nebo'
+  },
   mainMenu: {
     new: 'Nový výkres',
     open: 'Otevřít výkres',
@@ -210,6 +227,7 @@ export default {
       }
     },
     group: {
+      smartBlocks: 'Chytré bloky',
       agent: 'Agent',
       pdf: 'PDF',
       draw: 'Kreslení',
@@ -279,6 +297,8 @@ export default {
       arc: 'Eliptický oblouk'
     },
     tooltip: {
+      searchConvert:
+        'Vyhledá všechny kopie vybraných objektů a převede je na bloky (BSEARCH).',
       importPdf: 'Importuje vektorovou geometrii ze souboru PDF a obnoví kružnice, oblouky a křivky (IPDF).',
       pdfScale: 'Změní měřítko importované geometrie PDF podle dvou bodů známé vzdálenosti (PDFSCALE).',
       pdfDim: 'Převede rozložené kóty z PDF (šipky nebo značky, čáry, vynášecí čáry a texty) zpět na kótovací objekty (PDFDIM).',
@@ -412,6 +432,7 @@ export default {
       }
     },
     command: {
+      searchConvert: 'Vyhledat a\npřevést',
       importPdf: 'Import\nPDF',
       pdfScale: 'Kalibrovat\nměřítko',
       pdfDim: 'Obnovit\nkóty',

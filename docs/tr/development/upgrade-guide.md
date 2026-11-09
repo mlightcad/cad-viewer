@@ -6,6 +6,21 @@ title: "cad-simple-viewer ve cad-editor Yükseltme"
 
 Bu kılavuz, `@mlightcad/cad-simple-viewer` ve `@mlightcad/cad-editor` paketlerinin güvenli şekilde nasıl yükseltileceğini açıklar — neden tek başlarına yükseltilemeyeceklerini, hangi ilgili paketlerin birlikte hareket etmesi gerektiğini ve belirli bir sürüm için doğru uyumlu sürüm kümesini belirlemenin iki güvenilir yolunu.
 
+::: info Akıllı Bloklar: Ara ve Dönüştür (`BSEARCH`)
+Bu değişikliği içeren sürümden itibaren `@mlightcad/cad-simple-viewer` **-BSEARCH** komutunu kaydeder; `@mlightcad/cad-editor` inceleme araç çubuğu ve Bloğa Dönüştür iletişim kutusuyla **BSEARCH** (diğer adı `BCONVERT`) ekler (şeritte Ekle ve AI sekmeleri).
+
+Şekil eşleştirme `@mlightcad/cad-pdf-plugin` paketinden `@mlightcad/cad-simple-viewer` paketine taşındı. İçe aktarmaları taşıyın:
+
+| `@mlightcad/cad-pdf-plugin` (kullanımdan kalktı) | `@mlightcad/cad-simple-viewer` |
+| --- | --- |
+| `findPdfShapeMatches` | `acedFindShapeMatches` |
+| `applyPdfAffine` | `acedApplyAffine2d` |
+| `pdfEntityToFeature` | `acedEntityToShapeFeature(entity, id, { matchLayer: false })` |
+| `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
+
+Eski adlar kullanımdan kalkmış diğer adlar olarak çalışmaya devam eder. Metin `kind` alanından `label` alanına taşındı. `pdfblock` artık `-BSEARCH` istem sırasını izler (Dönüştür → Yeni/Mevcut → ad → ekleme noktası → kapsam); eski istemlere yanıt veren betikler güncellenmelidir.
+:::
+
 ::: info AutoCAD grupları (`GROUP` / `PICKSTYLE` / `GROUPDISPLAYMODE`)
 Bu değişikliği içeren sürümden itibaren `@mlightcad/cad-simple-viewer` **GROUP**, **-GROUP**, **UNGROUP** ve **GROUPEDIT** komutlarını kaydeder; `PICKSTYLE` `1` veya `3` iken seçimi genişletir; seçilebilir gruplar için `GROUPDISPLAYMODE` tutamaçlarını uygular. `@mlightcad/cad-editor` **CLASSICGROUP** (Nesne Gruplama iletişim kutusu) ve Giriş → Gruplar şerit panelini ekler.
 

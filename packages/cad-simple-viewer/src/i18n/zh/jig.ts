@@ -1899,23 +1899,129 @@ export default {
     convertOne: '标注 {index}/{count}“{text}”：是否转换？',
     summary: '已转换 {count} 个标注；标注样式 PDF_DIM 的测量比例因子为 {scale}。'
   },
-  pdfblock: {
-    basePoint: '指定块基点（匹配缩放副本：{scale}）或',
-    scaleOn: '开',
-    scaleOff: '关',
-    name: '输入块名',
+  bsearch: {
+    unsupported: '所选对象均无法匹配（支持直线、圆弧、圆、多段线、椭圆、样条曲线、文字、多行文字和块参照）。',
+    skipped: '{count} 个所选对象无法匹配，已忽略。',
+    found: '找到 {count} 个匹配实例，将转换 {included} 个。请选择',
+    noMatches: '未找到其他实例。',
+    reviewOne: '实例 {index}/{count}（{state}）',
+    included: '已包含',
+    excluded: '已排除',
+    options: '旋转 {rotation}，镜像 {mirror}，比例 {scale}，相同图层 {layer}，现有块 {blocks}，文字变化 {text}。切换',
+    on: '开',
+    off: '关',
+    target: '转换为',
+    name: '输入新块名',
     nameExists: '名为“{name}”的块已存在。',
-    unsupported: '所选对象都无法匹配（支持直线、圆弧、圆、多段线、椭圆、样条曲线和文字）。',
-    noCopies: '没有找到其他副本，只将所选对象创建为块。',
-    replaceAll: '找到 {count} 个相同的副本。是否替换为块参照？',
-    replaceOne: '副本 {index}/{count}：是否替换为块参照？',
-    summary: '已创建块“{name}”，共 {count} 个块参照。',
+    nameInvalid: '“{name}”不是有效的块名。',
+    basePoint: '指定插入点',
+    attributeTag: '输入文字“{text}”的属性标记',
+    existingName: '输入现有块名',
+    blockNotFound: '未找到块“{name}”。',
+    rotation: '指定块的旋转角度',
+    scale: '指定块的比例因子',
+    scope: '同时转换找到的 {count} 个实例，还是只转换源对象？',
+    summary: '已转换为块“{name}”：{count} 个参照。',
     keywords: {
+      convert: {
+        display: '转换(C)',
+        local: '转换',
+        global: 'Convert'
+      },
+      review: {
+        display: '查看(R)',
+        local: '查看',
+        global: 'Review'
+      },
+      options: {
+        display: '选项(O)',
+        local: '选项',
+        global: 'Options'
+      },
+      exit: {
+        display: '退出(X)',
+        local: '退出',
+        global: 'eXit'
+      },
+      include: {
+        display: '包含(I)',
+        local: '包含',
+        global: 'Include'
+      },
+      exclude: {
+        display: '排除(E)',
+        local: '排除',
+        global: 'Exclude'
+      },
+      next: {
+        display: '下一个(N)',
+        local: '下一个',
+        global: 'Next'
+      },
+      previous: {
+        display: '上一个(P)',
+        local: '上一个',
+        global: 'Previous'
+      },
+      done: {
+        display: '完成(D)',
+        local: '完成',
+        global: 'Done'
+      },
+      rotation: {
+        display: '旋转(R)',
+        local: '旋转',
+        global: 'Rotation'
+      },
+      mirror: {
+        display: '镜像(M)',
+        local: '镜像',
+        global: 'Mirror'
+      },
       scale: {
         display: '比例(S)',
         local: '比例',
         global: 'Scale'
       },
+      layer: {
+        display: '图层(L)',
+        local: '图层',
+        global: 'Layer'
+      },
+      blocks: {
+        display: '块(B)',
+        local: '块',
+        global: 'Blocks'
+      },
+      text: {
+        display: '文字(T)',
+        local: '文字',
+        global: 'Text'
+      },
+      new: {
+        display: '新建(N)',
+        local: '新建',
+        global: 'New'
+      },
+      existing: {
+        display: '现有(E)',
+        local: '现有',
+        global: 'Existing'
+      },
+      instances: {
+        display: '实例(I)',
+        local: '实例',
+        global: 'Instances'
+      },
+      source: {
+        display: '源对象(S)',
+        local: '源对象',
+        global: 'Source'
+      }
+    }
+  },
+  pdfblock: {
+    keywords: {
       yes: {
         display: '是(Y)',
         local: '是',

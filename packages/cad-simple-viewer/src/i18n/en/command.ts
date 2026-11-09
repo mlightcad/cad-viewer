@@ -155,6 +155,10 @@ export default {
     group: {
       description: 'Creates and manages saved sets of objects called groups'
     },
+    '-bsearch': {
+      description: 'Finds identical geometry and converts it into blocks (command line)',
+      prompt: 'Select objects to search for'
+    },
     '-group': {
       description:
         'Creates and manages groups through command-line options'

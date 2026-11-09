@@ -716,6 +716,38 @@ export default {
     deleted: 'View "{name}" deleted.',
     topPresetHint: 'Top is already the active plan view in this 2D viewer.'
   },
+  bconvertDlg: {
+    title: 'Convert to Block',
+    newBlock: 'New block',
+    existingBlock: 'Existing block',
+    name: 'Block name',
+    block: 'Block',
+    matchingBlock: '{name} (same geometry)',
+    rotation: 'Rotation (°)',
+    scale: 'Scale',
+    autoPlacement:
+      'This block holds the same geometry; rotation and scale are matched automatically.',
+    insertionPoint: 'Insertion point',
+    pick: 'Pick',
+    center: 'Center',
+    attributes: 'Attributes',
+    attributesHint:
+      'These texts differ between instances and become attributes.',
+    tag: 'Tag',
+    prompt: 'Prompt',
+    objects: 'Objects to convert',
+    allInstances: 'Selected objects and {count} found instance(s)',
+    sourceOnly: 'Selected objects only',
+    error: {
+      nameEmpty: 'Enter a block name.',
+      nameInvalid: '"{name}" is not a valid block name.',
+      nameExists: 'A block named "{name}" already exists.',
+      tagInvalid: 'Attribute tags must be non-empty and contain no spaces.',
+      tagDuplicate: 'Attribute tags must be unique.',
+      noBlock: 'Choose an existing block.',
+      scaleInvalid: 'The scale must be greater than zero.'
+    }
+  },
   newViewDlg: {
     title: 'New View',
     name: 'View name',

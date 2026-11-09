@@ -1000,6 +1000,10 @@ export default {
       ...enCommand.ACAD.group,
       description: 'إنشاء مجموعات كائنات محفوظة وإدارتها'
     },
+    '-bsearch': {
+      description: 'يبحث عن الأشكال المتطابقة ويحولها إلى كتل (سطر الأوامر)',
+      prompt: 'حدد الكائنات المراد البحث عنها'
+    },
     '-group': {
       ...enCommand.ACAD['-group'],
       description: 'إنشاء المجموعات وإدارتها عبر خيارات سطر الأوامر'

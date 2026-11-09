@@ -1,5 +1,10 @@
 export default {
   ACAD: {
+    bsearch: {
+      description:
+        'Akıllı Bloklar: aynı geometriyi bulur ve bloklara dönüştürür',
+      prompt: 'Aranacak nesneleri seçin'
+    },
     hatch: {
       description:
         'Şerit tabanlı bağlamsal iş akışıyla tarama dolgusu oluşturur'

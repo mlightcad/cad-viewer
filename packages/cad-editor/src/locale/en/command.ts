@@ -52,6 +52,11 @@ export default {
       description:
         'Edits attribute values and display properties of a block reference'
     },
+    bsearch: {
+      description:
+        'Smart Blocks: finds identical geometry and converts it into blocks',
+      prompt: 'Select objects to search for'
+    },
     attdef: {
       description: 'Creates an attribute definition for a block'
     },

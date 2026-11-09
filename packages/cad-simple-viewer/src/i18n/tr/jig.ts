@@ -1805,26 +1805,129 @@ export default {
     summary:
       '{count} ölçü dönüştürüldü; PDF_DIM stili {scale} doğrusal ölçek faktörünü kullanır.'
   },
-  pdfblock: {
-    basePoint:
-      'Blok taban noktasını belirtin (ölçeklenmiş kopyaları eşleştir: {scale}) veya',
-    scaleOn: 'açık',
-    scaleOff: 'kapalı',
-    name: 'Blok adını girin',
-    nameExists: '"{name}" adlı blok zaten var.',
-    unsupported:
-      'Seçilen nesnelerin hiçbiri eşleştirilemez (çizgi, yay, daire, çoklu çizgi, elips, spline ve metin desteklenir).',
-    noCopies: 'Başka kopya bulunamadı; yalnızca seçilen nesneler blok olur.',
-    replaceAll:
-      '{count} eşleşen kopya bulundu. Blok referanslarıyla değiştirilsin mi?',
-    replaceOne: 'Kopya {index}/{count}: blok referansıyla değiştirilsin mi?',
-    summary: '"{name}" bloğu {count} referansla oluşturuldu.',
+  bsearch: {
+    unsupported: 'Seçili nesnelerin hiçbiri eşleştirilemiyor (çizgi, yay, daire, çoklu çizgi, elips, spline, metin, çok satırlı metin ve blok referansları desteklenir).',
+    skipped: 'Seçili {count} nesne eşleştirilemiyor ve yok sayılıyor.',
+    found: '{count} eşleşen örnek bulundu, {included} tanesi dönüştürülecek. Seçin',
+    noMatches: 'Başka örnek bulunamadı.',
+    reviewOne: 'Örnek {index}/{count} ({state})',
+    included: 'dahil',
+    excluded: 'hariç',
+    options: 'Döndürme {rotation}, ayna {mirror}, ölçek {scale}, aynı katman {layer}, mevcut bloklar {blocks}, metin farkları {text}. Değiştir',
+    on: 'açık',
+    off: 'kapalı',
+    target: 'Şuna dönüştür',
+    name: 'Yeni blok adını girin',
+    nameExists: '"{name}" adlı bir blok zaten var.',
+    nameInvalid: '"{name}" geçerli bir blok adı değil.',
+    basePoint: 'Ekleme noktasını belirtin',
+    attributeTag: '"{text}" metni için öznitelik etiketini girin',
+    existingName: 'Mevcut blok adını girin',
+    blockNotFound: '"{name}" bloğu bulunamadı.',
+    rotation: 'Bloğun döndürme açısını belirtin',
+    scale: 'Bloğun ölçek faktörünü belirtin',
+    scope: 'Bulunan {count} örnek de dönüştürülsün mü, yoksa yalnızca kaynak nesneler mi?',
+    summary: '"{name}" bloğuna dönüştürüldü: {count} referans.',
     keywords: {
+      convert: {
+        display: 'Dönüştür(C)',
+        local: 'Dönüştür',
+        global: 'Convert'
+      },
+      review: {
+        display: 'İncele(R)',
+        local: 'İncele',
+        global: 'Review'
+      },
+      options: {
+        display: 'Seçenekler(O)',
+        local: 'Seçenekler',
+        global: 'Options'
+      },
+      exit: {
+        display: 'Çıkış(X)',
+        local: 'Çıkış',
+        global: 'eXit'
+      },
+      include: {
+        display: 'Dahil et(I)',
+        local: 'Dahil et',
+        global: 'Include'
+      },
+      exclude: {
+        display: 'Hariç tut(E)',
+        local: 'Hariç tut',
+        global: 'Exclude'
+      },
+      next: {
+        display: 'Sonraki(N)',
+        local: 'Sonraki',
+        global: 'Next'
+      },
+      previous: {
+        display: 'Önceki(P)',
+        local: 'Önceki',
+        global: 'Previous'
+      },
+      done: {
+        display: 'Bitti(D)',
+        local: 'Bitti',
+        global: 'Done'
+      },
+      rotation: {
+        display: 'Döndürme(R)',
+        local: 'Döndürme',
+        global: 'Rotation'
+      },
+      mirror: {
+        display: 'Ayna(M)',
+        local: 'Ayna',
+        global: 'Mirror'
+      },
       scale: {
         display: 'Ölçek(S)',
         local: 'Ölçek',
         global: 'Scale'
       },
+      layer: {
+        display: 'Katman(L)',
+        local: 'Katman',
+        global: 'Layer'
+      },
+      blocks: {
+        display: 'Bloklar(B)',
+        local: 'Bloklar',
+        global: 'Blocks'
+      },
+      text: {
+        display: 'Metin(T)',
+        local: 'Metin',
+        global: 'Text'
+      },
+      new: {
+        display: 'Yeni(N)',
+        local: 'Yeni',
+        global: 'New'
+      },
+      existing: {
+        display: 'Mevcut(E)',
+        local: 'Mevcut',
+        global: 'Existing'
+      },
+      instances: {
+        display: 'Örnekler(I)',
+        local: 'Örnekler',
+        global: 'Instances'
+      },
+      source: {
+        display: 'Kaynak(S)',
+        local: 'Kaynak',
+        global: 'Source'
+      }
+    }
+  },
+  pdfblock: {
+    keywords: {
       yes: {
         display: 'Evet(Y)',
         local: 'Evet',

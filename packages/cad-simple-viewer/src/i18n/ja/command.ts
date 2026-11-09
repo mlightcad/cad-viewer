@@ -23,6 +23,10 @@ export default {
     group: {
       description: 'グループと呼ばれるオブジェクトの保存セットを作成および管理します'
     },
+    '-bsearch': {
+      description: '同一のジオメトリを検索してブロックに変換します（コマンドライン）',
+      prompt: '検索するオブジェクトを選択'
+    },
     '-group': {
       description: 'コマンドラインオプションでグループを作成および管理します'
     },
