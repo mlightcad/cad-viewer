@@ -4,7 +4,6 @@ import {
   AcApI18n,
   AcEdCommand,
   AcEdOpenMode,
-  AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
   AcEdPromptStatus,
   AcEdPromptStringOptions,
@@ -20,6 +19,7 @@ import {
 } from '@mlightcad/data-model'
 
 import { acapPdfT } from './acapPdfI18n'
+import { acapPdfAskKeyword } from './acapPdfPrompts'
 import { pdfEntityToFeature } from './pdfEntityFeatures'
 import { type PdfMatchFeature } from './recognition/pdfShapeMatching'
 import {
@@ -238,7 +238,7 @@ export class AcApPdfBlockCmd extends AcEdCommand {
     selectionSet.clear()
     selectionSet.add(matches.flatMap(match => match.ids))
 
-    const mode = await this.askKeyword(
+    const mode = await acapPdfAskKeyword(
       acapPdfT('jig.pdfblock.replaceAll', { count: matches.length }),
       ['yes', 'no', 'review'],
       'yes'
@@ -251,7 +251,7 @@ export class AcApPdfBlockCmd extends AcEdCommand {
     for (let i = 0; i < matches.length; i++) {
       selectionSet.clear()
       selectionSet.add(matches[i].ids)
-      const answer = await this.askKeyword(
+      const answer = await acapPdfAskKeyword(
         acapPdfT('jig.pdfblock.replaceOne', {
           index: i + 1,
           count: matches.length
@@ -268,33 +268,5 @@ export class AcApPdfBlockCmd extends AcEdCommand {
       if (answer === 'exit') break
     }
     return accepted
-  }
-
-  private async askKeyword<K extends string>(
-    message: string,
-    keys: K[],
-    defaultKey: K
-  ): Promise<K | undefined> {
-    const prompt = new AcEdPromptKeywordOptions(message)
-    prompt.allowNone = true
-    const globals = new Map<string, K>()
-    for (const key of keys) {
-      const keyword = prompt.keywords.add(
-        AcApI18n.t(`jig.pdfblock.keywords.${key}.display`),
-        AcApI18n.t(`jig.pdfblock.keywords.${key}.global`),
-        AcApI18n.t(`jig.pdfblock.keywords.${key}.local`)
-      )
-      globals.set(AcApI18n.t(`jig.pdfblock.keywords.${key}.global`), key)
-      if (key === defaultKey) prompt.keywords.default = keyword
-    }
-    const result = await AcApDocManager.instance.editor.getKeywords(prompt)
-    if (result.status === AcEdPromptStatus.None) return defaultKey
-    if (
-      result.status !== AcEdPromptStatus.OK &&
-      result.status !== AcEdPromptStatus.Keyword
-    ) {
-      return undefined
-    }
-    return globals.get(result.stringResult ?? '') ?? defaultKey
   }
 }

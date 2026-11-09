@@ -7,6 +7,7 @@
 export { AcApConvertToPdfCmd } from './AcApConvertToPdfCmd'
 export { AcApImportPdfCmd } from './AcApImportPdfCmd'
 export { AcApPdfBlockCmd } from './AcApPdfBlockCmd'
+export { AcApPdfDimCmd } from './AcApPdfDimCmd'
 export { AcApPdfConvertor } from './AcApPdfConvertor'
 export { resolveViewerTextFont } from './AcApPdfFontResolver'
 export {
@@ -24,6 +25,13 @@ export {
 } from './AcApPdfImportOptions'
 export { AcApPdfScaleCmd } from './AcApPdfScaleCmd'
 export { AcApPdfTextCmd } from './AcApPdfTextCmd'
+export {
+  acapPdfCreateDimensions,
+  acapPdfEnsureDimStyle,
+  acapPdfNiceScale,
+  PDF_DIM_STYLE,
+  pdfEntitiesToDimInput
+} from './pdfDimensionConvert'
 export { pdfEntityToFeature } from './pdfEntityFeatures'
 export { pdfEntityToStroke } from './pdfEntityStrokes'
 export {
@@ -72,6 +80,21 @@ export {
   PdfGlyphDictionary,
   pdfGlyphSignature
 } from './recognition/pdfGlyphDictionary'
+export {
+  parsePdfDimensionValue,
+  pdfArrowFromPolygon,
+  type PdfDimCurve,
+  type PdfDimensionCandidate,
+  type PdfDimensionOptions,
+  type PdfDimInput,
+  type PdfDimPolygon,
+  type PdfDimSegment,
+  type PdfDimText,
+  type PdfLinearDimension,
+  type PdfRadialDimension,
+  recognizePdfDimensions,
+  suggestPdfDimensionScale
+} from './recognition/pdfDimensionPattern'
 export {
   buildPdfFormBlocks,
   type PdfFormBlock,

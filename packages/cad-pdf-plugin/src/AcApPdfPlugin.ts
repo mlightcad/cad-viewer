@@ -8,6 +8,7 @@ import packageJson from '../package.json'
 import { AcApConvertToPdfCmd } from './AcApConvertToPdfCmd'
 import { AcApImportPdfCmd } from './AcApImportPdfCmd'
 import { AcApPdfBlockCmd } from './AcApPdfBlockCmd'
+import { AcApPdfDimCmd } from './AcApPdfDimCmd'
 import { AcApPdfScaleCmd } from './AcApPdfScaleCmd'
 import { AcApPdfTextCmd } from './AcApPdfTextCmd'
 
@@ -21,7 +22,7 @@ export interface AcApPdfPluginOptions {
 /**
  * PDF export/import plugin for cad-simple-viewer.
  *
- * Registers `-cpdf`, `ipdf`, `pdfscale`, `pdftext` and `pdfblock` when loaded. Also registers `cpdf` when no UI
+ * Registers `-cpdf`, `ipdf`, `pdfscale`, `pdftext`, `pdfblock` and `pdfdim` when loaded. Also registers `cpdf` when no UI
  * dialog command is already present. Register this plugin lazily via
  * {@link registerLazyPdfPlugin} so the PDF renderer is fetched on demand.
  */
@@ -32,7 +33,7 @@ export class AcApPdfPlugin implements AcApPlugin {
   version = packageJson.version
   /** @inheritdoc */
   description =
-    'PDF export (-cpdf / cpdf), import (ipdf) and PDF clean-up (pdfscale, pdftext, pdfblock) commands'
+    'PDF export (-cpdf / cpdf), import (ipdf) and PDF clean-up (pdfscale, pdftext, pdfblock, pdfdim) commands'
 
   private readonly _disableExport: boolean
 
@@ -79,6 +80,8 @@ export class AcApPdfPlugin implements AcApPlugin {
       new AcApPdfBlockCmd()
     )
     this.registeredCommands.push({ group, name: 'pdfblock' })
+    commandManager.addCommand(group, 'pdfdim', 'pdfdim', new AcApPdfDimCmd())
+    this.registeredCommands.push({ group, name: 'pdfdim' })
   }
 
   /**

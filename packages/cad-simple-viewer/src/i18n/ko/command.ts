@@ -4,6 +4,10 @@ export default {
   ...enCommand,
   ACAD: {
     ...enCommand.ACAD,
+    pdfdim: {
+      description: 'PDF에서 분해된 치수를 치수 객체로 되돌립니다',
+      prompt: '치수가 있는 영역 선택'
+    },
     pdfblock: {
       description: 'PDF의 반복 형상을 블록으로 되돌립니다',
       prompt: '블록 인스턴스 하나의 객체 선택'

@@ -282,6 +282,7 @@ export default {
     tooltip: {
       importPdf: 'PDF dosyasından vektör geometriyi içe aktarır; daireleri, yayları ve eğrileri yeniden oluşturur (IPDF).',
       pdfScale: 'İçe aktarılan PDF geometrisini bilinen bir mesafenin iki noktasına göre ölçekler (PDFSCALE).',
+      pdfDim: 'Patlatılmış PDF ölçülerini (oklar veya işaretler, çizgiler, uzatma çizgileri ve metinler) ölçü nesnelerine geri dönüştürür (PDFDIM).',
       pdfBlock: 'PDF içindeki tekrarlanan geometriyi bloğa dönüştürür ve her kopyayı blok referansıyla değiştirir (PDFBLOCK).',
       pdfText: 'Patlatılmış PDF metin çizgilerini metin nesnelerine geri dönüştürür (PDFTEXT).',
       line: 'Tek bir düz çizgi parçası çizin.',
@@ -422,6 +423,7 @@ export default {
     command: {
       importPdf: 'PDF\nİçe Aktar',
       pdfScale: 'Ölçeği\nKalibre Et',
+      pdfDim: 'Ölçüleri\nKurtar',
       pdfBlock: 'Blok\nOluştur',
       pdfText: 'Metni\nKurtar',
       line: 'Çizgi',

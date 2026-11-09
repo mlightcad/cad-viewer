@@ -179,6 +179,12 @@ export default {
       }
     }
   },
+  pdfdim: {
+    noDimensions: '選択範囲に寸法が見つかりません（矢印または斜線、寸法線、数値文字が必要です）。',
+    convertAll: '寸法が {count} 個見つかりました（図面尺度 1:{scale}）。変換しますか？',
+    convertOne: '寸法 {index}/{count}「{text}」: 変換しますか？',
+    summary: '{count} 個の寸法を変換しました。寸法スタイル PDF_DIM の長さ尺度は {scale} です。'
+  },
   pdfblock: {
     basePoint: 'ブロックの基点を指定（尺度違いのコピーも一致: {scale}）または',
     scaleOn: 'オン',

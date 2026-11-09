@@ -1782,6 +1782,14 @@ export default {
       }
     }
   },
+  pdfdim: {
+    noDimensions:
+      'Ve výběru nebyly nalezeny žádné kóty (jsou potřeba šipky nebo značky, kótovací čáry a texty hodnot).',
+    convertAll: 'Nalezeno {count} kót (měřítko výkresu 1:{scale}). Převést je?',
+    convertOne: 'Kóta {index}/{count} "{text}": převést?',
+    summary:
+      'Převedeno {count} kót; styl PDF_DIM používá lineární měřítko {scale}.'
+  },
   pdfblock: {
     basePoint:
       'Určete základní bod bloku (shoda kopií s jiným měřítkem: {scale}) nebo',

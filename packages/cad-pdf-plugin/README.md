@@ -13,6 +13,7 @@ PDF **export** and **import** plugin for [`@mlightcad/cad-simple-viewer`](../cad
 | `pdfscale` | Calibrate imported PDF geometry: pick two points of a known distance and type its real length |
 | `pdftext` | Convert exploded text (SHX line text, outlined fonts) back into `AcDbText`, semi-automatically |
 | `pdfblock` | Turn repeated geometry back into a block: select one instance, every rotated / mirrored copy is found and replaced |
+| `pdfdim` | Turn exploded dimensions (arrows or ticks, lines, extension lines, texts) back into linear, radius and diameter dimensions |
 
 The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@mlightcad/pdf-renderer`, `pdfjs-dist`) are only downloaded when a user runs `-cpdf` / `cpdf` or `ipdf`.
 
@@ -25,6 +26,7 @@ The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@ml
 - **PDF import** — parses vector paths from a chosen PDF page and appends CAD entities. Bézier chains are rebuilt as true `AcDbCircle` / `AcDbArc` / `AcDbEllipse`, mixed line–arc outlines as bulged `AcDbPolyline`, free-form curves as exact `AcDbSpline`, and arcs a producer already flattened into short lines are refitted. Stroke widths become line weights and exact duplicate outlines are dropped
 - **Scale calibration** — `pdfscale` rescales imported geometry from one known distance, since printed PDFs are rarely 1:1
 - **Block recovery** — `ipdf` turns Form XObjects painted two or more times with identical content into a block definition with one reference per paint (rotation, mirroring and scale come from each paint's form matrix). `pdfblock` handles PDFs that draw repeated symbols inline: select one instance, pick a base point and name, and every copy under rotation and mirroring (optionally scaling) is highlighted for confirmation and replaced by a block reference
+- **Dimension recovery** — `pdfdim` recognizes linear (any angle, inside or outside arrows, architectural ticks, chained), radius and diameter dimensions in a selected area. It infers the drawing scale from the texts and builds a `PDF_DIM` style whose text height, arrow size and DIMLFAC match the PDF, so a 1:100 drawing keeps its real values
 - **Text recovery** — real PDF text runs that continue one line are merged into one `AcDbText`. `pdftext` turns exploded text strokes back into text: it clusters strokes into lines (position, height, rotation), asks for each line's text, and learns every confirmed glyph shape, so lines whose glyphs are all known convert without asking. With an OCR recognizer registered in `AcApTextRecognitionService` (the CAD Agent plugin registers one that uses the configured vision model), each prompt is pre-filled with a suggestion
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyPdfPlugin`
 - **Framework-agnostic** — no Vue/React dependency; works anywhere `cad-simple-viewer` runs
@@ -170,6 +172,19 @@ The pure recognition step is also exported: `recognizePdfCurves(segments)` turns
 4. `recognition/pdfShapeMatching.ts` takes two anchor shapes: the largest one, and the one farthest from it. Each candidate pair of anchors fixes a similarity transform, and a copy counts only if every template shape lands on a free shape of the same kind, size and point set.
 5. All copies are highlighted. Choose `Yes` (replace all), `No` (only the selection becomes a block) or `Review` (Yes / No / All / Exit per copy).
 
+### Dimension recovery (`pdfdim`)
+
+1. Select the area; lines, closed triangles, circles, arcs and texts take part.
+2. `recognition/pdfDimensionPattern.ts` finds the parts:
+   - **Arrowheads**: slender closed triangles. The tip is the sharpest corner, and the direction runs from the base midpoint to the tip.
+   - **Ticks**: short oblique lines at the ends of a longer line.
+   - **Linear dimensions**: two terminators on a common axis pointing apart or together, plus a numeric text beside them. Pairs are taken shortest first, so chained dimensions stay separate. Perpendicular lines through the tips are extension lines and give the definition points; chained dimensions may share them.
+   - **Radius and diameter**: an arrow whose tip touches a circle and points along its radius, plus an `R…` or `Ø…` text.
+3. The most common text / measured-length ratio among linear dimensions is the drawing scale. It is snapped to 1, 2, 2.5 or 5 × 10ⁿ when within 1 %.
+4. Everything found is highlighted. Choose `Yes`, `No` or `Review`.
+5. The `PDF_DIM` style is created or updated. It starts from the current style, then takes the measured text height, arrow size and extension, and DIMLFAC = scale; ticks set `_ArchTick`.
+6. Each accepted dimension becomes `AcDbRotatedDimension`, `AcDbRadialDimension` or `AcDbDiametricDimension`. Texts that are not plain numbers, or that disagree with measurement × scale, are kept as text overrides. The source shapes are erased.
+
 ### Text recovery (`pdftext`)
 
 1. Select the strokes; a window around the text is enough. Strokes much larger than the text (frames, table lines) are ignored.
@@ -203,6 +218,9 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 | `AcApPdfScaleCmd` | `pdfscale` command class |
 | `AcApPdfTextCmd` | `pdftext` command class |
 | `AcApPdfBlockCmd` | `pdfblock` command class |
+| `AcApPdfDimCmd` | `pdfdim` command class |
+| `recognizePdfDimensions`, `suggestPdfDimensionScale`, `pdfArrowFromPolygon`, `parsePdfDimensionValue` | Dimension recognition |
+| `pdfEntitiesToDimInput`, `acapPdfEnsureDimStyle`, `acapPdfCreateDimensions`, `acapPdfNiceScale` | Dimension conversion against a database |
 | `findPdfShapeMatches`, `buildPdfFormBlocks`, `pdfEntityToFeature` | Block recovery building blocks |
 | `clusterPdfTextStrokes`, `PdfGlyphDictionary`, `mergePdfTextRuns`, `pdfEntityToStroke` | Text recovery building blocks |
 | `AcApPdfImportOptions`, `resolveAcApPdfImportOptions` | Import options (page, placement, scale, curve recognition) |
@@ -223,6 +241,9 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 | `src/AcApPdfScaleCmd.ts` | `pdfscale` command |
 | `src/AcApPdfTextCmd.ts` | `pdftext` command |
 | `src/AcApPdfBlockCmd.ts` | `pdfblock` command |
+| `src/AcApPdfDimCmd.ts` | `pdfdim` command |
+| `src/pdfDimensionConvert.ts` | Dimension entities and the `PDF_DIM` style |
+| `src/acapPdfPrompts.ts` | Shared Yes / No / Review prompt |
 | `src/pdfEntityFeatures.ts` | Describes entities for instance matching |
 | `src/pdfEntityStrokes.ts` | Samples curve entities into strokes |
 | `src/AcApPdfImportOptions.ts` | Import option types and defaults |

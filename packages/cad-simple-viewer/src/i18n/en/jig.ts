@@ -1918,6 +1918,15 @@ export default {
       }
     }
   },
+  pdfdim: {
+    noDimensions:
+      'No dimensions found in the selection (arrowheads or ticks, dimension lines and value texts are needed).',
+    convertAll:
+      'Found {count} dimensions (drawing scale 1:{scale}). Convert them?',
+    convertOne: 'Dimension {index}/{count} "{text}": convert?',
+    summary:
+      'Converted {count} dimension(s); style PDF_DIM uses a linear scale factor of {scale}.'
+  },
   pdfblock: {
     basePoint: 'Specify block base point (match scaled copies: {scale}) or',
     scaleOn: 'on',

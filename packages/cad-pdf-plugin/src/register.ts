@@ -13,6 +13,7 @@ export const PDF_PLUGIN_NAME = 'PdfPlugin'
  * - `pdfscale` — calibrate imported PDF geometry from a known distance
  * - `pdftext` — convert exploded PDF text strokes back into text
  * - `pdfblock` — turn repeated PDF geometry back into a block
+ * - `pdfdim` — turn exploded PDF dimensions back into dimensions
  */
 export const PDF_PLUGIN_TRIGGERS = [
   '-cpdf',
@@ -20,7 +21,8 @@ export const PDF_PLUGIN_TRIGGERS = [
   'ipdf',
   'pdfscale',
   'pdftext',
-  'pdfblock'
+  'pdfblock',
+  'pdfdim'
 ] as const
 
 /** Triggers that remain when export is disabled. */
@@ -28,7 +30,8 @@ const PDF_IMPORT_TRIGGERS = [
   'ipdf',
   'pdfscale',
   'pdftext',
-  'pdfblock'
+  'pdfblock',
+  'pdfdim'
 ] as const
 
 /**

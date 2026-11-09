@@ -214,6 +214,10 @@ export default {
       description:
         'Fills an enclosed area or selected objects with a hatch pattern'
     },
+    pdfdim: {
+      description: 'Turns exploded PDF dimensions back into dimension objects',
+      prompt: 'Select the area with dimensions'
+    },
     pdfblock: {
       description: 'Turns repeated PDF geometry back into a block',
       prompt: 'Select the objects of one block instance'
