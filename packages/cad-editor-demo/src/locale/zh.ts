@@ -40,7 +40,7 @@ export default {
       writeHint: '完整权限',
 
       textRendering: '文字渲染',
-      worker: 'Worker',
+      worker: '工作线程',
       workerHint: '更快，占用更多内存',
       mainThread: '主线程',
       mainThreadHint: '更慢，占用更少内存',

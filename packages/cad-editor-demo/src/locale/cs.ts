@@ -15,7 +15,7 @@ export default {
       title: 'Vyberte soubor CAD k zobrazení',
       subtitle: 'Importujte výkresy DWG nebo DXF do prohlížeče',
       fontCdnNotice:
-        'If you are in a country or region with network access restrictions, please turn on a VPN. Default font files are hosted on GitHub; when access is limited they load very slowly, which can make opening drawings slow or cause text not to display correctly.',
+        'Pokud se nacházíte v zemi nebo oblasti s omezeným přístupem k síti, zapněte prosím VPN. Výchozí soubory písem jsou hostovány na GitHubu; při omezeném přístupu se načítají velmi pomalu, což může zpomalit otevírání výkresů nebo způsobit nesprávné zobrazení textu.',
       newDrawing: 'Nový výkres',
       or: 'nebo',
       dropFile: 'Přetáhněte soubor nebo',
@@ -40,7 +40,7 @@ export default {
       writeHint: 'Plný přístup',
 
       textRendering: 'Vykreslování textu',
-      worker: 'Worker',
+      worker: 'Pracovní vlákno',
       workerHint: 'Rychlejší, více paměti',
       mainThread: 'Hlavní vlákno',
       mainThreadHint: 'Pomalejší, méně paměti',
@@ -80,8 +80,7 @@ export default {
       exportDisable: 'Zakázat',
       exportDisableHint: 'Skrýt příkazy exportu a položky nabídky File',
 
-      invalidFileType:
-        'Neplatný typ souboru. Nahrajte soubory DWG nebo DXF.'
+      invalidFileType: 'Neplatný typ souboru. Nahrajte soubory DWG nebo DXF.'
     }
   }
 }

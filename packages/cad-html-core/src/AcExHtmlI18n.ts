@@ -1,10 +1,13 @@
+import { acexHtmlJaMessages } from './i18n/ja'
+import { acexHtmlKoMessages } from './i18n/ko'
+
 /** Supported locales in the offline HTML viewer. */
 export type AcExHtmlLocale = 'en' | 'zh' | 'ja' | 'ko' | 'cs' | 'tr' | 'ar'
 
 /**
  * All locales accepted by the offline viewer, in display order.
  * The language strip lists these options; add a locale here plus a
- * {@link ACEX_HTML_LOCALE_BADGES} entry and a `MESSAGES` tree to support it.
+ * {@link ACEX_HTML_LOCALE_BADGES} entry and an {@link ACEX_HTML_MESSAGES} tree to support it.
  */
 export const ACEX_HTML_LOCALES: AcExHtmlLocale[] = [
   'en',
@@ -35,7 +38,7 @@ export const ACEX_HTML_LOCALE_STORAGE_KEY = 'mlcad-html-locale'
 
 /**
  * Dot-separated message keys resolved by {@link AcExHtmlI18n.t}.
- * Must exist in the internal `MESSAGES` tree for each {@link AcExHtmlLocale}.
+ * Must exist in the {@link ACEX_HTML_MESSAGES} tree for each {@link AcExHtmlLocale}.
  */
 export type AcExHtmlMessageKey =
   | 'toolbar.viewerTools'
@@ -527,8 +530,7 @@ const BASE_MESSAGES: Record<'en' | 'zh' | 'cs' | 'tr', AcExMessageTree> = {
       wrongPassword: 'Incorrect password. Try again.',
       expired: 'This file has expired and can no longer be opened.',
       expiredTitle: 'File expired',
-      expiredDetail:
-        'This file expired on {time} and can no longer be opened.',
+      expiredDetail: 'This file expired on {time} and can no longer be opened.',
       expiresAt: 'Expires: {time}',
       badgeExpires: 'Expires {time}',
       badgeCountdown: 'Expires in {time}',
@@ -713,7 +715,8 @@ const BASE_MESSAGES: Record<'en' | 'zh' | 'cs' | 'tr', AcExMessageTree> = {
       measureDistanceHint: '点击两点以测量距离（已启用对象捕捉）。',
       measureContinuousHint:
         '依次点击多个点测量各段距离，点 ✓ 完成。长按可精确捕捉。',
-      measureAreaHint: '依次点击多边形顶点；至少三点后点 ✓ 完成。长按可精确捕捉。',
+      measureAreaHint:
+        '依次点击多边形顶点；至少三点后点 ✓ 完成。长按可精确捕捉。',
       measureAngleHint: '依次点击顶点与两条边上的点（已启用对象捕捉）。',
       measureArcHint:
         '点击圆或圆弧可沿其测量；否则依次点击弧起点、弧上一点与弧端点（已启用对象捕捉）。锁定后按 Ctrl（Mac 为 Control 或 ⌘）可在大弧与小弧之间切换。',
@@ -775,8 +778,7 @@ const BASE_MESSAGES: Record<'en' | 'zh' | 'cs' | 'tr', AcExMessageTree> = {
       manifestNotFound: '当前页面同级目录未找到 drawing.acex.json。',
       invalidManifest: '包清单无效或版本不受支持：{error}',
       folderMissingManifest: '所选文件夹必须包含 drawing.acex.json。',
-      folderUnsupported:
-        '当前浏览器无法选择本地包文件夹，请改为输入清单 URL。',
+      folderUnsupported: '当前浏览器无法选择本地包文件夹，请改为输入清单 URL。',
       loadFailed: '无法打开图纸包：{error}'
     },
     access: {
@@ -1041,8 +1043,7 @@ const BASE_MESSAGES: Record<'en' | 'zh' | 'cs' | 'tr', AcExMessageTree> = {
       manifestNotFound: 'drawing.acex.json nebyl vedle této stránky nalezen.',
       invalidManifest:
         'Manifest balíčku je neplatný nebo používá nepodporovanou verzi: {error}',
-      folderMissingManifest:
-        'Vybraná složka musí obsahovat drawing.acex.json.',
+      folderMissingManifest: 'Vybraná složka musí obsahovat drawing.acex.json.',
       folderUnsupported:
         'Tento prohlížeč neumí otevřít místní složku balíčku. Zadejte místo toho URL manifestu.',
       loadFailed: 'Nepodařilo se otevřít balíček: {error}'
@@ -1312,8 +1313,7 @@ const BASE_MESSAGES: Record<'en' | 'zh' | 'cs' | 'tr', AcExMessageTree> = {
       manifestNotFound: 'Bu sayfanın yanında drawing.acex.json bulunamadı.',
       invalidManifest:
         'Paket manifestosu geçersiz veya desteklenmeyen bir sürüm kullanıyor: {error}',
-      folderMissingManifest:
-        'Seçilen klasör drawing.acex.json içermelidir.',
+      folderMissingManifest: 'Seçilen klasör drawing.acex.json içermelidir.',
       folderUnsupported:
         'Bu tarayıcı yerel paket klasörü açamıyor. Bunun yerine manifesto URL’si yapıştırın.',
       loadFailed: 'Paket açılamadı: {error}'
@@ -1339,217 +1339,237 @@ const BASE_MESSAGES: Record<'en' | 'zh' | 'cs' | 'tr', AcExMessageTree> = {
 }
 
 const AR_MESSAGES: AcExMessageTree = {
-  'toolbar': {
-    'viewerTools': 'أدوات العارض',
-    'select': 'تحديد',
-    'pan': 'تحريك',
-    'zoom': 'تكبير/تصغير',
-    'zoomExtents': 'ملاءمة',
-    'zoomSmartExtents': 'ذكية',
-    'zoomWindow': 'نافذة',
-    'zoomSaved': 'محفوظ',
-    'zoomOriginal': 'محفوظ',
-    'measureDistance': 'مسافة',
-    'measureContinuous': 'مستمر',
-    'measureAngle': 'زاوية',
-    'measureArc': 'قوس',
-    'measureRadius': 'نصف القطر',
-    'measureArea': 'مساحة',
-    'measureCoordinate': 'إحداثيات',
-    'clearMeasurements': 'مسح',
-    'measureHide': 'إخفاء',
-    'measureShow': 'إظهار',
-    'measureImport': 'استيراد',
-    'measureExport': 'تصدير',
-    'measurementPanel': 'نتائج',
-    'measure': 'قياس',
-    'annotation': 'مراجعة',
-    'markupCloud': 'سحابة',
-    'markupCallout': 'تعليق',
-    'markupText': 'نص',
-    'markupRect': 'مستطيل',
-    'markupCircle': 'دائرة',
-    'markupArrow': 'سهم',
-    'markupStamp': 'ختم',
-    'markupPanel': 'نتائج',
-    'markupHide': 'إخفاء',
-    'markupShow': 'إظهار',
-    'clearMarkups': 'مسح',
-    'markupImport': 'استيراد',
-    'markupExport': 'تصدير',
-    'snap': 'التقاط',
-    'layers': 'طبقات',
-    'layout': 'تخطيط',
-    'settings': 'إعدادات',
-    'simulatedMouseOn': 'ماوس',
-    'simulatedMouseOff': 'عدسة',
-    'themeLight': 'فاتح',
-    'themeDark': 'داكن',
-    'switchBg': 'خلفية',
-    'language': 'اللغة',
-    'localeEn': 'English',
-    'localeZh': '中文',
-    'localeCs': 'Čeština',
-    'localeTr': 'Türkçe',
-    'localeAr': 'العربية',
-    'localeJa': '日本語',
-    'localeKo': '한국어',
-    'collapse': 'طي شريط الأدوات',
-    'expand': 'توسيع شريط الأدوات',
-    'moreOverflow': 'المزيد من الأدوات'
+  toolbar: {
+    viewerTools: 'أدوات العارض',
+    select: 'تحديد',
+    pan: 'تحريك',
+    zoom: 'تكبير/تصغير',
+    zoomExtents: 'ملاءمة',
+    zoomSmartExtents: 'ذكية',
+    zoomWindow: 'نافذة',
+    zoomSaved: 'محفوظ',
+    zoomOriginal: 'محفوظ',
+    measureDistance: 'مسافة',
+    measureContinuous: 'مستمر',
+    measureAngle: 'زاوية',
+    measureArc: 'قوس',
+    measureRadius: 'نصف القطر',
+    measureArea: 'مساحة',
+    measureCoordinate: 'إحداثيات',
+    clearMeasurements: 'مسح',
+    measureHide: 'إخفاء',
+    measureShow: 'إظهار',
+    measureImport: 'استيراد',
+    measureExport: 'تصدير',
+    measurementPanel: 'نتائج',
+    measure: 'قياس',
+    annotation: 'مراجعة',
+    markupCloud: 'سحابة',
+    markupCallout: 'تعليق',
+    markupText: 'نص',
+    markupRect: 'مستطيل',
+    markupCircle: 'دائرة',
+    markupArrow: 'سهم',
+    markupStamp: 'ختم',
+    markupPanel: 'نتائج',
+    markupHide: 'إخفاء',
+    markupShow: 'إظهار',
+    clearMarkups: 'مسح',
+    markupImport: 'استيراد',
+    markupExport: 'تصدير',
+    snap: 'التقاط',
+    layers: 'طبقات',
+    layout: 'تخطيط',
+    settings: 'إعدادات',
+    simulatedMouseOn: 'ماوس',
+    simulatedMouseOff: 'عدسة',
+    themeLight: 'فاتح',
+    themeDark: 'داكن',
+    switchBg: 'خلفية',
+    language: 'اللغة',
+    localeEn: 'English',
+    localeZh: '中文',
+    localeCs: 'Čeština',
+    localeTr: 'Türkçe',
+    localeAr: 'العربية',
+    localeJa: '日本語',
+    localeKo: '한국어',
+    collapse: 'طي شريط الأدوات',
+    expand: 'توسيع شريط الأدوات',
+    moreOverflow: 'المزيد من الأدوات'
   },
-  'settings': {
-    'ortho': 'تبديل الوضع المتعامد',
-    'polar': 'زوايا التتبع القطبي',
-    'polarAngles': 'زوايا التتبع القطبي'
+  settings: {
+    ortho: 'تبديل الوضع المتعامد',
+    polar: 'زوايا التتبع القطبي',
+    polarAngles: 'زوايا التتبع القطبي'
   },
-  'drawStyle': {
-    'color': 'اللون',
-    'fontSize': 'ارتفاع النص',
-    'pickerTitle': 'تحديد اللون',
-    'close': 'إغلاق',
-    'ok': 'موافق',
-    'cancel': 'إلغاء',
-    'index': 'فهرس اللون: ',
-    'rgb': 'RGB: ',
-    'input': 'اللون',
-    'inputPlaceholder': '1-255 أو #RRGGBB'
+  drawStyle: {
+    color: 'اللون',
+    fontSize: 'ارتفاع النص',
+    pickerTitle: 'تحديد اللون',
+    close: 'إغلاق',
+    ok: 'موافق',
+    cancel: 'إلغاء',
+    index: 'فهرس اللون: ',
+    rgb: 'RGB: ',
+    input: 'اللون',
+    inputPlaceholder: '1-255 أو #RRGGBB'
   },
-  'textHeight': {
-    'title': 'ارتفاع النص',
-    'close': 'إغلاق',
-    'ok': 'موافق',
-    'cancel': 'إلغاء',
-    'adaptive': 'ملاءمة الشاشة',
-    'custom': 'ارتفاع نص مخصص',
-    'customPlaceholder': 'ارتفاع العالم',
-    'fromScreen': 'من حجم الشاشة',
-    'fromScreenHint':
+  shortCutToolbar: {
+    more: 'المزيد',
+    undo: 'تراجع',
+    redo: 'إعادة',
+    erase: 'حذف',
+    collapse: 'طي شريط الأدوات',
+    expand: 'توسيع شريط الأدوات'
+  },
+  textHeight: {
+    title: 'ارتفاع النص',
+    close: 'إغلاق',
+    ok: 'موافق',
+    cancel: 'إلغاء',
+    adaptive: 'ملاءمة الشاشة',
+    custom: 'ارتفاع نص مخصص',
+    customPlaceholder: 'ارتفاع العالم',
+    fromScreen: 'من حجم الشاشة',
+    fromScreenHint:
       'أدخل حجم النص المطلوب على الشاشة عند التكبير الحالي. يُحوَّل إلى ارتفاع ثابت في إحداثيات الرسم ويبقى كما هو عند تغيير التكبير لاحقًا.',
-    'screenPxPlaceholder': 'حجم الخط',
-    'screenUnit': 'px',
-    'convert': 'تحويل'
+    screenPxPlaceholder: 'حجم الخط',
+    screenUnit: 'px',
+    convert: 'تحويل'
   },
-  'layers': {
-    'title': 'الطبقات',
-    'close': 'إغلاق الطبقات',
-    'showAll': 'إظهار الكل',
-    'hideAll': 'إخفاء الكل',
-    'zoomTo': 'تكبير إلى {name}'
+  entityPick: {
+    cancel: 'إلغاء التحديد'
   },
-  'review': {
-    'title': 'مراجعة',
-    'close': 'إغلاق المراجعة',
-    'searchPlaceholder': 'البحث في الملاحظات',
-    'empty': 'لا توجد ملاحظات بعد',
-    'type': 'النوع',
-    'status': 'الحالة',
-    'author': 'المؤلف',
-    'summary': 'الملخص',
-    'details': 'التفاصيل',
-    'closeDetails': 'إغلاق التفاصيل',
-    'label': 'التسمية',
-    'comment': 'التعليق',
-    'zoomTo': 'تكبير إلى',
-    'delete': 'حذف',
-    'clear': 'مسح الكل',
-    'statusValues': {
-      'open': 'مفتوح',
-      'question': 'سؤال',
-      'answered': 'تمت الإجابة',
-      'closed': 'مغلق'
+  layers: {
+    title: 'الطبقات',
+    close: 'إغلاق الطبقات',
+    showAll: 'إظهار الكل',
+    hideAll: 'إخفاء الكل',
+    zoomTo: 'تكبير إلى {name}'
+  },
+  review: {
+    title: 'مراجعة',
+    close: 'إغلاق المراجعة',
+    searchPlaceholder: 'البحث في الملاحظات',
+    empty: 'لا توجد ملاحظات بعد',
+    type: 'النوع',
+    status: 'الحالة',
+    author: 'المؤلف',
+    summary: 'الملخص',
+    details: 'التفاصيل',
+    closeDetails: 'إغلاق التفاصيل',
+    label: 'التسمية',
+    comment: 'التعليق',
+    zoomTo: 'تكبير إلى',
+    delete: 'حذف',
+    clear: 'مسح الكل',
+    statusValues: {
+      open: 'مفتوح',
+      question: 'سؤال',
+      answered: 'تمت الإجابة',
+      closed: 'مغلق'
     }
   },
-  'measurePanel': {
-    'title': 'القياسات',
-    'close': 'إغلاق القياسات',
-    'filterGroup': 'التصفية حسب النوع',
-    'filterDistance': 'مسافة',
-    'filterArc': 'قوس',
-    'filterRadius': 'نصف القطر',
-    'filterAngle': 'زاوية',
-    'filterArea': 'مساحة',
-    'empty': 'لا توجد قياسات حتى الآن',
-    'type': 'النوع',
-    'value': 'القيمة',
-    'delete': 'حذف',
-    'clear': 'مسح الكل'
+  measurePanel: {
+    title: 'القياسات',
+    close: 'إغلاق القياسات',
+    filterGroup: 'التصفية حسب النوع',
+    filterDistance: 'مسافة',
+    filterArc: 'قوس',
+    filterRadius: 'نصف القطر',
+    filterAngle: 'زاوية',
+    filterArea: 'مساحة',
+    empty: 'لا توجد قياسات حتى الآن',
+    type: 'النوع',
+    value: 'القيمة',
+    delete: 'حذف',
+    clear: 'مسح الكل'
   },
-  'session': {
-    'length': 'الطول',
-    'angle': 'الزاوية',
-    'dx': 'ΔX',
-    'dy': 'ΔY',
-    'x': 'X',
-    'y': 'Y',
-    'confirm': 'تأكيد',
-    'cancel': 'إلغاء',
-    'help': 'مساعدة',
-    'back': 'رجوع',
-    'collapse': 'طي',
-    'expand': 'توسيع',
-    'undo': 'تراجع'
+  session: {
+    length: 'الطول',
+    angle: 'الزاوية',
+    dx: 'ΔX',
+    dy: 'ΔY',
+    x: 'X',
+    y: 'Y',
+    confirm: 'تأكيد',
+    cancel: 'إلغاء',
+    help: 'مساعدة',
+    back: 'رجوع',
+    collapse: 'طي',
+    expand: 'توسيع',
+    undo: 'تراجع'
   },
-  'touchPointTutorial': {
-    'title': 'كيف أختار النقاط بدقة؟',
-    'description':
+  touchPointTutorial: {
+    title: 'كيف أختار النقاط بدقة؟',
+    description:
       'اضغط مطولاً على الشاشة لمدة نصف ثانية تقريباً. يظهر صليب فوق إصبعك ويتبعه أثناء الحركة ويلتقط إلى الهندسة لاختيار أدق.',
-    'snoozeToday': 'لا تذكرني اليوم',
-    'hideForever': 'لا تذكرني مرة أخرى',
-    'ok': 'فهمت'
+    snoozeToday: 'لا تذكرني اليوم',
+    hideForever: 'لا تذكرني مرة أخرى',
+    ok: 'فهمت'
   },
-  'status': {
-    'ready': 'جاهز',
-    'zoomWindowHint': 'انقر على ركنين لتحديد نافذة التكبير.',
-    'measureDistanceHint': 'انقر على نقطتين لقياس المسافة (التقاط الكائنات مفعّل).',
-    'measureContinuousHint': 'انقر على نقاط متتالية لقياس كل قطعة؛ انقر ✓ للإنهاء. اضغط مطولاً للالتقاط الدقيق.',
-    'measureAngleHint': 'انقر على رأس الزاوية، ثم نقطة على كل ضلع (التقاط الكائنات مفعّل).',
-    'measureArcHint': 'انقر على دائرة أو قوس للقياس عليه، أو انقر على نقطة البداية ثم نقطة على القوس ثم نقطة النهاية (التقاط الكائنات مفعّل). استخدم Ctrl (⌘ على Mac) للتبديل بين القوس الأكبر والأصغر.',
-    'measureRadiusHint': 'انقر على دائرة أو قوس لقياس نصف القطر (التقاط الكائنات مفعّل).',
-    'measureAreaHint': 'انقر على رؤوس المضلع؛ انقر ✓ للإنهاء بعد ثلاث نقاط على الأقل.',
-    'measureCoordinateHint': 'انقر على نقطة لقراءة إحداثيات X/Y الخاصة بها (التقاط الكائنات مفعّل).',
-    'measureExported': 'تم تصدير {count} من القياسات.',
-    'measureImported': 'تم استيراد {count} من القياسات.',
-    'measureImportFailed': 'فشل استيراد القياسات: {error}',
-    'markupCloudHint': 'انقر على ركنين لرسم سحابة مراجعة.',
-    'markupCalloutHint':
+  status: {
+    ready: 'جاهز',
+    zoomWindowHint: 'انقر على ركنين لتحديد نافذة التكبير.',
+    measureDistanceHint:
+      'انقر على نقطتين لقياس المسافة (التقاط الكائنات مفعّل).',
+    measureContinuousHint:
+      'انقر على نقاط متتالية لقياس كل قطعة؛ انقر ✓ للإنهاء. اضغط مطولاً للالتقاط الدقيق.',
+    measureAngleHint:
+      'انقر على رأس الزاوية، ثم نقطة على كل ضلع (التقاط الكائنات مفعّل).',
+    measureArcHint:
+      'انقر على دائرة أو قوس للقياس عليه، أو انقر على نقطة البداية ثم نقطة على القوس ثم نقطة النهاية (التقاط الكائنات مفعّل). استخدم Ctrl (⌘ على Mac) للتبديل بين القوس الأكبر والأصغر.',
+    measureRadiusHint:
+      'انقر على دائرة أو قوس لقياس نصف القطر (التقاط الكائنات مفعّل).',
+    measureAreaHint:
+      'انقر على رؤوس المضلع؛ انقر ✓ للإنهاء بعد ثلاث نقاط على الأقل.',
+    measureCoordinateHint:
+      'انقر على نقطة لقراءة إحداثيات X/Y الخاصة بها (التقاط الكائنات مفعّل).',
+    measureExported: 'تم تصدير {count} من القياسات.',
+    measureImported: 'تم استيراد {count} من القياسات.',
+    measureImportFailed: 'فشل استيراد القياسات: {error}',
+    markupCloudHint: 'انقر على ركنين لرسم سحابة مراجعة.',
+    markupCalloutHint:
       'انقر على طرف خط الإشارة، أو على إطار سحابة/مستطيل/دائرة بدون تعليق توضيحي، ثم موضع النص.',
-    'markupTextHint': 'انقر على نقطة لوضع النص.',
-    'markupRectHint': 'انقر على ركنين لرسم مستطيل.',
-    'markupCircleHint': 'انقر على المركز، ثم على نقطة على المحيط.',
-    'markupArrowHint': 'انقر على نقطة البداية، ثم على رأس السهم.',
-    'markupStampHint': 'انقر لوضع ختم (يتنقل بين معتمد / مرفوض / …).',
-    'markupArrowEndHint': 'انقر على رأس السهم.',
-    'markupRectCornerHint': 'انقر على الركن المقابل.',
-    'markupCloudCornerHint': 'انقر على الركن المقابل.',
-    'markupCalloutAnchorHint': 'انقر على موضع فقاعة النص.',
-    'markupCircleRadiusHint': 'انقر على نقطة على المحيط.',
-    'markupTextPrompt': 'أدخل نص الملاحظة',
-    'markupTextEditHint': 'اكتب النص على مساحة الرسم. اضغط Enter للإنهاء أو Esc للإلغاء.',
-    'markupShapeCalloutHint': 'انقر لوضع مربع النص (يتصل خط الإشارة بالشكل). اضغط Esc لإلغاء التعليق التوضيحي.',
-    'markupDefaultLabel': 'ملاحظة',
-    'markupSelected': 'الملاحظة المحددة: {type}',
-    'markupSelectedCount': 'الملاحظات المحددة: {count}',
-    'markupCount': 'عدد الملاحظات: {count}',
-    'markupExported': 'تم تصدير {count} من الملاحظات.',
-    'markupImported': 'تم استيراد {count} من الملاحظات.',
-    'markupImportFailed': 'فشل استيراد الملاحظات: {error}',
-    'distance': 'المسافة: {value}',
-    'coordinates': 'X: {x} | Y: {y}',
-    'angle': 'الزاوية: {value}',
-    'arcLength':
+    markupTextHint: 'انقر على نقطة لوضع النص.',
+    markupRectHint: 'انقر على ركنين لرسم مستطيل.',
+    markupCircleHint: 'انقر على المركز، ثم على نقطة على المحيط.',
+    markupArrowHint: 'انقر على نقطة البداية، ثم على رأس السهم.',
+    markupStampHint: 'انقر لوضع ختم (يتنقل بين معتمد / مرفوض / …).',
+    markupArrowEndHint: 'انقر على رأس السهم.',
+    markupRectCornerHint: 'انقر على الركن المقابل.',
+    markupCloudCornerHint: 'انقر على الركن المقابل.',
+    markupCalloutAnchorHint: 'انقر على موضع فقاعة النص.',
+    markupCircleRadiusHint: 'انقر على نقطة على المحيط.',
+    markupTextPrompt: 'أدخل نص الملاحظة',
+    markupTextEditHint:
+      'اكتب النص على مساحة الرسم. اضغط Enter للإنهاء أو Esc للإلغاء.',
+    markupShapeCalloutHint:
+      'انقر لوضع مربع النص (يتصل خط الإشارة بالشكل). اضغط Esc لإلغاء التعليق التوضيحي.',
+    markupDefaultLabel: 'ملاحظة',
+    markupSelected: 'الملاحظة المحددة: {type}',
+    markupSelectedCount: 'الملاحظات المحددة: {count}',
+    markupCount: 'عدد الملاحظات: {count}',
+    markupExported: 'تم تصدير {count} من الملاحظات.',
+    markupImported: 'تم استيراد {count} من الملاحظات.',
+    markupImportFailed: 'فشل استيراد الملاحظات: {error}',
+    distance: 'المسافة: {value}',
+    coordinates: 'X: {x} | Y: {y}',
+    angle: 'الزاوية: {value}',
+    arcLength:
       'طول القوس: {length} | نصف القطر: {radius} | الزاوية: {angle} | الوتر: {chord}',
-    'radius': 'نصف القطر: {value}',
-    'continuousTotal': 'إجمالي الطول: {value}',
-    'area': 'المساحة: {value}',
-    'lengthTotal': 'إجمالي الطول: {value}',
-    'areaTotal': 'إجمالي المساحة: {value}',
-    'zoomLayer': 'تكبير: {name}',
-    'loadFailed': 'فشل تحميل الرسم: {error}',
-    'noLayout': 'لا توجد بيانات تخطيط في اللقطة.',
-    'loadingChunks': 'جاري تحميل الهندسة… {loaded}/{total}',
-    'loadingOsnap': 'جاري تحميل الالتقاط… {loaded}/{total}',
-    'buildingOsnap': 'جاري بناء فهرس الالتقاط…'
+    radius: 'نصف القطر: {value}',
+    continuousTotal: 'إجمالي الطول: {value}',
+    area: 'المساحة: {value}',
+    lengthTotal: 'إجمالي الطول: {value}',
+    areaTotal: 'إجمالي المساحة: {value}',
+    zoomLayer: 'تكبير: {name}',
+    loadFailed: 'فشل تحميل الرسم: {error}',
+    noLayout: 'لا توجد بيانات تخطيط في اللقطة.',
+    loadingChunks: 'جاري تحميل الهندسة… {loaded}/{total}',
+    loadingOsnap: 'جاري تحميل الالتقاط… {loaded}/{total}',
+    buildingOsnap: 'جاري بناء فهرس الالتقاط…'
   },
   package: {
     title: 'فتح حزمة الرسم',
@@ -1563,8 +1583,7 @@ const AR_MESSAGES: AcExMessageTree = {
     manifestNotFound: 'لم يتم العثور على drawing.acex.json بجانب هذه الصفحة.',
     invalidManifest:
       'قائمة الحزمة غير صالحة أو تستخدم إصداراً غير مدعوم: {error}',
-    folderMissingManifest:
-      'يجب أن يحتوي المجلد المحدد على drawing.acex.json.',
+    folderMissingManifest: 'يجب أن يحتوي المجلد المحدد على drawing.acex.json.',
     folderUnsupported:
       'لا يمكن لهذا المتصفح فتح مجلد حزمة محلي. الصق عنوان URL للقائمة بدلاً من ذلك.',
     loadFailed: 'تعذر فتح الحزمة: {error}'
@@ -1578,8 +1597,7 @@ const AR_MESSAGES: AcExMessageTree = {
     wrongPassword: 'كلمة المرور غير صحيحة. حاول مرة أخرى.',
     expired: 'انتهت صلاحية هذا الملف ولا يمكن فتحه.',
     expiredTitle: 'انتهت صلاحية الملف',
-    expiredDetail:
-      'انتهت صلاحية هذا الملف في {time} ولا يمكن فتحه.',
+    expiredDetail: 'انتهت صلاحية هذا الملف في {time} ولا يمكن فتحه.',
     expiresAt: 'ينتهي في: {time}',
     badgeExpires: 'ينتهي في {time}',
     badgeCountdown: 'متبقي {time}',
@@ -1588,14 +1606,15 @@ const AR_MESSAGES: AcExMessageTree = {
   }
 }
 
-function acexHtmlCloneMessages(source: AcExMessageTree): AcExMessageTree {
-  return JSON.parse(JSON.stringify(source)) as AcExMessageTree
-}
-
-const MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
+/**
+ * Message trees for every supported locale. Exported for the locale
+ * completeness test only.
+ * @internal
+ */
+export const ACEX_HTML_MESSAGES: Record<AcExHtmlLocale, AcExMessageTree> = {
   ...BASE_MESSAGES,
-  ja: acexHtmlCloneMessages(BASE_MESSAGES.en),
-  ko: acexHtmlCloneMessages(BASE_MESSAGES.en),
+  ja: acexHtmlJaMessages,
+  ko: acexHtmlKoMessages,
   ar: AR_MESSAGES
 }
 
@@ -1740,8 +1759,8 @@ export class AcExHtmlI18n {
    */
   t(key: AcExHtmlMessageKey, params?: Record<string, string | number>): string {
     const template =
-      lookupMessage(MESSAGES[this._locale], key) ??
-      lookupMessage(MESSAGES.en, key) ??
+      lookupMessage(ACEX_HTML_MESSAGES[this._locale], key) ??
+      lookupMessage(ACEX_HTML_MESSAGES.en, key) ??
       key
     return acexHtmlFormatMessage(template, params)
   }

@@ -60,9 +60,19 @@ Always read the actual source when a dependency's behavior matters; do not infer
 
 The full recipe for a new CAD command lives in `packages/cad-simple-viewer/src/command/AGENTS.md` (file -> jig -> command class -> i18n -> register in `AcApDocManager.registerCommands` -> export from `src/command/index.ts`).
 
-- Every user-facing string (command descriptions, prompts, dialogs) must go through i18n — never hardcode English.
-- Core code uses `AcApI18n.t('command.ACAD.line')`; the Vue UI uses `vue-i18n`. Messages live in each package's `src/i18n/<lang>/` and every language must be present: `en`, `zh`, `ja`, `ko`, `ar`, `cs`, `tr` (ESLint `vue-i18n/no-unused-keys` fails otherwise).
-- Key prefixes: `command.*`, `jig.*`, `dialog.*`, `entity.*`, `main.*`.
+- Every user-facing string (command descriptions, prompts, dialogs, ribbon/menu labels, tooltips, palettes, plugin UI, exported HTML viewer) must go through i18n — never hardcode English.
+- Core code uses `AcApI18n.t('command.ACAD.line')`; the Vue UI uses `vue-i18n`. Key prefixes: `command.*`, `jig.*`, `dialog.*`, `entity.*`, `main.*`.
+- **Translate into all supported locales in the same change: `en`, `zh`, `ja`, `ko`, `tr`, `cs`, `ar`.** Whenever you add a key or change the meaning of an English string, write the real translation in every locale file. Do not copy the English text, do not leave a key out and rely on the `en` fallback, and do not fill a locale with `...enX` spreads or `clone(en)`. Each of these falls back to English silently at runtime, which is how the ja/ko UI ended up mostly English.
+- Catalog locations (each language has its own file):
+  - `cad-editor/src/locale/<lang>/{main,command,dialog,entity}.ts`
+  - `cad-simple-viewer/src/i18n/<lang>/{main,command,jig}.ts`
+  - `cad-editor-demo/src/locale/<lang>.ts`
+  - `cad-*-plugin/src/i18n/` (`<lang>.ts`, `command-<lang>.ts`, or per-locale records such as `command.ts` / `exampleCopy.ts`)
+  - `cad-html-core/src/AcExHtmlI18n.ts` plus `src/i18n/<lang>.ts`
+- Use AutoCAD's localized terminology for each language (e.g. zh 图层, ja 画層, ko 도면층). Keep `{placeholders}`, `|` plural parts and `\n` breaks, and never put a raw `@` in vue-i18n messages (write `{'@'}`). In jig keyword objects `{ display, local, global }`, `global` always stays English.
+- `test/i18n/localeCompleteness.spec.ts` fails on any missing key, or any value identical to English, in any locale. Register every new catalog in its `CATALOGS` map. Only add to its `NEUTRAL_VALUES` / `SAME_AS_ENGLISH` allowlists for words that really are the same in that language (brand names, loanwords). Never use the allowlists to skip a translation.
+- When adding a new locale, add it to `AcApLocale`, every catalog above, element-plus locale mapping in `useLocale.ts`, and `LOCALES` in the completeness test.
+- ESLint `vue-i18n/no-unused-keys` also requires every language's files to stay in sync with the keys actually used.
 
 ## Testing
 

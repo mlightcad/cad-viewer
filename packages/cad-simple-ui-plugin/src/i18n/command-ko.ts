@@ -1,19 +1,19 @@
 /**
- * English command message entries merged into {@link AcApI18n} under `command`.
+ * Korean command message entries merged into {@link AcApI18n} under `command`.
  */
 export const commandKo = {
   ACAD: {
     layer: {
-      description: 'Opens or closes the layer manager dock panel'
+      description: '도면층 관리자 도킹 패널을 열거나 닫습니다'
     },
     markuppanel: {
-      description: 'Opens the review palette dock panel'
+      description: '검토 팔레트 도킹 패널을 엽니다'
     },
     measurementpanel: {
-      description: 'Opens the measurement list dock panel'
+      description: '측정 목록 도킹 패널을 엽니다'
     },
     find: {
-      description: 'Opens the text search dock panel'
+      description: '문자 검색 도킹 패널을 엽니다'
     }
   }
 }

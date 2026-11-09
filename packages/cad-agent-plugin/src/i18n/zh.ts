@@ -45,7 +45,7 @@ export const agentZh = {
   contextUsage: '上下文用量',
   contextUsageDetail: '{percent}% · {used} / {limit}',
   contextUsageFull: '{percent}% 已用',
-  contextUsageTokens: '~{used} / {limit} Tokens',
+  contextUsageTokens: '~{used} / {limit} 令牌',
   contextUsageSystemPrompt: '系统提示',
   contextUsageToolDefinitions: '工具定义',
   contextUsageImages: '图片',
@@ -93,7 +93,7 @@ export const agentZh = {
   baseUrlInvalid: 'API 地址须以 http:// 或 https:// 开头。',
   customProvider: '自定义提供商',
   newCustomProvider: '+ 新建自定义 API',
-  providerId: 'Provider ID',
+  providerId: '提供商 ID',
   providerIdHint:
     '以小写字母开头的标识（小写字母、数字和连字符），在请求中唯一标识该提供商，创建后不可修改。',
   providerIdInvalid:
