@@ -93,11 +93,13 @@ test('AI tab hosts the CAD Agent and the PDF tools', async ({ page }) => {
   await chooser.setFiles(pdfFixturePath)
 
   // Insertion point prompt: Enter accepts the origin.
-  const commandLine = page.locator('input[placeholder="Type command"]')
+  // The command line clears its placeholder while a prompt is active, so
+  // address the input by class.
+  const commandLine = page.locator('input.ml-cli-text')
   await expect(page.locator('.ml-cli-recent')).toContainText('Scale', {
     timeout: 20_000
   })
-  await commandLine.click()
+  await commandLine.focus()
   await page.keyboard.press('Enter')
 
   await expect
