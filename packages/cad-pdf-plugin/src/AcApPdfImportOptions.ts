@@ -38,6 +38,11 @@ export interface AcApPdfImportOptions {
    * `AcDbText`. Default `true`.
    */
   mergeTextRuns?: boolean
+  /**
+   * Turn Form XObjects painted two or more times with identical content into
+   * block definitions and references. Default `true`.
+   */
+  formBlocks?: boolean
 }
 
 /** Fully populated {@link AcApPdfImportOptions}. */
@@ -64,6 +69,7 @@ export function resolveAcApPdfImportOptions(
     curveRecognition: options?.curveRecognition,
     lineWeights: options?.lineWeights ?? true,
     removeDuplicates: options?.removeDuplicates ?? true,
-    mergeTextRuns: options?.mergeTextRuns ?? true
+    mergeTextRuns: options?.mergeTextRuns ?? true,
+    formBlocks: options?.formBlocks ?? true
   }
 }

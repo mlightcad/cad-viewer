@@ -137,6 +137,22 @@ describe('recognizePdfCurves', () => {
     expect(shape.radiusRatio).toBeCloseTo(0.5, 3)
   })
 
+  it('closes a small Float32 circle far from the origin', () => {
+    // pdf.js packs page-space points into a Float32Array before they are
+    // converted to mm. For r = 3 pt at (100, 300) pt each quarter sweep then
+    // carries ~1e-6 rad of error, which once kept the last quarter apart.
+    const PT = 25.4 / 72
+    const toMm = (p: P) => ({
+      x: Math.fround(p.x) * PT,
+      y: Math.fround(p.y) * PT
+    })
+    const segments = arcCubics({ x: 100, y: 300 }, 3, 0, 2 * Math.PI, toMm)
+    const last = segments[3] as Extract<PdfImportSegment, { kind: 'cubic' }>
+    last.p3 = (segments[0] as typeof last).p0
+    const shapes = recognizePdfCurves(segments)
+    expect(shapes.map(s => s.kind)).toEqual(['circle'])
+  })
+
   it('rebuilds a circle from a finely flattened polygon', () => {
     const shapes = recognizePdfCurves(lines(polygon({ x: 3, y: 4 }, 20, 64)))
     expect(shapes).toHaveLength(1)

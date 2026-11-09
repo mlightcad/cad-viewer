@@ -11,6 +11,8 @@ import {
 import {
   AcCmColor,
   AcDbArc,
+  AcDbBlockReference,
+  AcDbBlockTableRecord,
   AcDbCircle,
   AcDbEllipse,
   type AcDbEntity,
@@ -33,7 +35,7 @@ import {
   type AcApResolvedPdfImportOptions,
   resolveAcApPdfImportOptions
 } from './AcApPdfImportOptions'
-import { buildPdfImportShapes } from './pdfImportShapes'
+import { buildPdfImportShapes, type PdfImportShapeItem } from './pdfImportShapes'
 import {
   allocatePdfFallbackLayerName,
   collectPdfOcgLayers,
@@ -48,6 +50,7 @@ import {
   type PdfImportOps
 } from './pdfVectorImport'
 import type { PdfRecognizedShape } from './recognition/pdfCurveRecognition'
+import { buildPdfFormBlocks } from './recognition/pdfFormBlocks'
 import { mergePdfTextRuns } from './recognition/pdfTextRunMerge'
 
 /**
@@ -323,13 +326,24 @@ export class AcApPdfImportConvertor {
         fallbackLayerName,
         { remapContrastInk: true, paperTone: 'auto' }
       )
-      const { items, stats } = buildPdfImportShapes(content, options)
+      const formBlocks = options.formBlocks
+        ? buildPdfFormBlocks(content, {
+            curveRecognition: options.curveRecognition
+          })
+        : { blocks: [], consumed: new Set<number>() }
+      const { items, stats } = buildPdfImportShapes(
+        {
+          subpaths: content.subpaths.filter(
+            (_, index) => !formBlocks.consumed.has(index)
+          )
+        },
+        options
+      )
 
-      const entities: AcDbEntity[] = []
       const usedLayerNames = new Set<string>()
-      for (const item of items) {
+      const createEntity = (item: PdfImportShapeItem) => {
         const entity = shapeToEntity(item.shape)
-        if (!entity) continue
+        if (!entity) return null
         if (item.layerName) {
           usedLayerNames.add(item.layerName)
           entity.layer = item.layerName
@@ -338,7 +352,51 @@ export class AcApPdfImportConvertor {
         if (options.lineWeights && item.lineWidth) {
           entity.lineWeight = nearestLineWeight(item.lineWidth)
         }
-        entities.push(entity)
+        return entity
+      }
+
+      const entities: AcDbEntity[] = []
+      for (const item of items) {
+        const entity = createEntity(item)
+        if (entity) entities.push(entity)
+      }
+
+      // Repeated Form XObjects become block definitions plus references.
+      const blockTable = context.doc.database.tables.blockTable
+      let referenceCount = 0
+      for (const block of formBlocks.blocks) {
+        const blockEntities = block.shapes
+          .map(createEntity)
+          .filter((entity): entity is AcDbEntity => entity !== null)
+        if (blockEntities.length === 0) continue
+        const name = uniqueBlockName(context, PDF_FORM_BLOCK_PREFIX)
+        const record = new AcDbBlockTableRecord({
+          name,
+          origin: new AcGePoint3d(0, 0, 0)
+        })
+        blockTable.add(record)
+        record.appendEntity(blockEntities)
+        const { insertionPoint, scale } = options
+        for (const placement of block.references) {
+          const ref = new AcDbBlockReference(name)
+          ref.position = new AcGePoint3d(
+            insertionPoint.x + placement.position.x * scale,
+            insertionPoint.y + placement.position.y * scale,
+            0
+          )
+          ref.rotation = placement.rotation
+          ref.scaleFactors = new AcGePoint3d(
+            placement.scaleX * scale,
+            placement.scaleY * scale,
+            1
+          )
+          if (placement.layerName) {
+            usedLayerNames.add(placement.layerName)
+            ref.layer = placement.layerName
+          }
+          entities.push(ref)
+          referenceCount++
+        }
       }
       const texts = options.mergeTextRuns
         ? mergePdfTextRuns(content.texts)
@@ -379,7 +437,8 @@ export class AcApPdfImportConvertor {
         `[PdfImport] Imported ${entities.length} entities across ${usedLayerNames.size} CAD layer(s): ` +
           `${stats.line} lines, ${stats.polyline} polylines, ${stats.circle} circles, ` +
           `${stats.arc} arcs, ${stats.ellipse} ellipses, ${stats.spline} splines, ` +
-          `${texts.length} texts; ${stats.duplicates} duplicates skipped.`
+          `${texts.length} texts, ${formBlocks.blocks.length} blocks ` +
+          `(${referenceCount} references); ${stats.duplicates} duplicates skipped.`
       )
     } catch (err) {
       log.error('[PdfImport] Failed to import PDF:', err)
@@ -485,6 +544,17 @@ function nearestLineWeight(widthMm: number): AcGiLineWeight {
     }
   }
   return best as AcGiLineWeight
+}
+
+/** Name prefix for blocks recovered from repeated Form XObjects. */
+const PDF_FORM_BLOCK_PREFIX = 'PDF_FORM_'
+
+/** First `<prefix><n>` block name not used in the drawing. */
+function uniqueBlockName(context: AcApContext, prefix: string) {
+  const blockTable = context.doc.database.tables.blockTable
+  let index = 1
+  while (blockTable.has(`${prefix}${index}`)) index++
+  return `${prefix}${index}`
 }
 
 function applyPdfColor(entity: AcDbEntity, color?: string) {

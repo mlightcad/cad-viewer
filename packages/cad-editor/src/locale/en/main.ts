@@ -281,6 +281,8 @@ export default {
     tooltip: {
       importPdf: 'Import vector geometry from a PDF file, rebuilding circles, arcs and curves (IPDF).',
       pdfScale: 'Rescale imported PDF geometry from two points of a known distance (PDFSCALE).',
+      pdfDim: 'Turn exploded PDF dimensions (arrows or ticks, lines, extension lines and texts) back into dimension objects (PDFDIM).',
+      pdfBlock: 'Turn repeated PDF geometry into a block and replace every copy with a block reference (PDFBLOCK).',
       pdfText: 'Convert exploded PDF text strokes back into text objects (PDFTEXT).',
       line: 'Draw a single straight line segment.',
       polyline:
@@ -438,6 +440,8 @@ export default {
     command: {
       importPdf: 'Import\nPDF',
       pdfScale: 'Calibrate\nScale',
+      pdfDim: 'Recover\nDims',
+      pdfBlock: 'Make\nBlock',
       pdfText: 'Recover\nText',
       line: 'Line',
       polyline: 'Polyline',

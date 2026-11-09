@@ -1918,11 +1918,67 @@ export default {
       }
     }
   },
+  pdfdim: {
+    noDimensions:
+      'No dimensions found in the selection (arrowheads or ticks, dimension lines and value texts are needed).',
+    convertAll:
+      'Found {count} dimensions (drawing scale 1:{scale}). Convert them?',
+    convertOne: 'Dimension {index}/{count} "{text}": convert?',
+    summary:
+      'Converted {count} dimension(s); style PDF_DIM uses a linear scale factor of {scale}.'
+  },
+  pdfblock: {
+    basePoint: 'Specify block base point (match scaled copies: {scale}) or',
+    scaleOn: 'on',
+    scaleOff: 'off',
+    name: 'Enter block name',
+    nameExists: 'A block named "{name}" already exists.',
+    unsupported:
+      'None of the selected objects can be matched (lines, arcs, circles, polylines, ellipses, splines and text are supported).',
+    noCopies:
+      'No other copies found; only the selected objects become a block.',
+    replaceAll:
+      'Found {count} matching copies. Replace them with block references?',
+    replaceOne: 'Copy {index}/{count}: replace with a block reference?',
+    summary: 'Created block "{name}" with {count} reference(s).',
+    keywords: {
+      scale: {
+        display: 'Scale(S)',
+        local: 'Scale',
+        global: 'Scale'
+      },
+      yes: {
+        display: 'Yes(Y)',
+        local: 'Yes',
+        global: 'Yes'
+      },
+      no: {
+        display: 'No(N)',
+        local: 'No',
+        global: 'No'
+      },
+      review: {
+        display: 'Review(R)',
+        local: 'Review',
+        global: 'Review'
+      },
+      all: {
+        display: 'All(A)',
+        local: 'All',
+        global: 'All'
+      },
+      exit: {
+        display: 'eXit(X)',
+        local: 'eXit',
+        global: 'eXit'
+      }
+    }
+  },
   pdftext: {
     enterText:
-      'Text line {index}/{count}: enter the highlighted text (Enter skips, Esc stops)',
+      'Text line {index}/{count}: enter the highlighted text (leave empty to skip, Esc to stop)',
     enterTextWithSuggestion:
-      'Text line {index}/{count}: enter the highlighted text <{suggestion}>',
+      'Text line {index}/{count}: enter the highlighted text',
     noCandidates: 'No text-like strokes found in the selection.',
     summary:
       'Converted {converted} text line(s), {automatic} recognized automatically; skipped {skipped}.'

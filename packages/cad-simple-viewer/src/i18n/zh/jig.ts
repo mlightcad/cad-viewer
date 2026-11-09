@@ -1882,11 +1882,61 @@ export default {
       }
     }
   },
+  pdfdim: {
+    noDimensions: '所选范围内没有找到标注（需要箭头或斜线标记、尺寸线和数值文字）。',
+    convertAll: '找到 {count} 个标注（图纸比例 1:{scale}）。是否转换？',
+    convertOne: '标注 {index}/{count}“{text}”：是否转换？',
+    summary: '已转换 {count} 个标注；标注样式 PDF_DIM 的测量比例因子为 {scale}。'
+  },
+  pdfblock: {
+    basePoint: '指定块基点（匹配缩放副本：{scale}）或',
+    scaleOn: '开',
+    scaleOff: '关',
+    name: '输入块名',
+    nameExists: '名为“{name}”的块已存在。',
+    unsupported: '所选对象都无法匹配（支持直线、圆弧、圆、多段线、椭圆、样条曲线和文字）。',
+    noCopies: '没有找到其他副本，只将所选对象创建为块。',
+    replaceAll: '找到 {count} 个相同的副本。是否替换为块参照？',
+    replaceOne: '副本 {index}/{count}：是否替换为块参照？',
+    summary: '已创建块“{name}”，共 {count} 个块参照。',
+    keywords: {
+      scale: {
+        display: '比例(S)',
+        local: '比例',
+        global: 'Scale'
+      },
+      yes: {
+        display: '是(Y)',
+        local: '是',
+        global: 'Yes'
+      },
+      no: {
+        display: '否(N)',
+        local: '否',
+        global: 'No'
+      },
+      review: {
+        display: '逐个确认(R)',
+        local: '逐个确认',
+        global: 'Review'
+      },
+      all: {
+        display: '全部(A)',
+        local: '全部',
+        global: 'All'
+      },
+      exit: {
+        display: '退出(X)',
+        local: '退出',
+        global: 'eXit'
+      }
+    }
+  },
   pdftext: {
     enterText:
-      '文字行 {index}/{count}：输入高亮部分的文字（回车跳过，Esc 结束）',
+      '文字行 {index}/{count}：输入高亮部分的文字（留空跳过，Esc 结束）',
     enterTextWithSuggestion:
-      '文字行 {index}/{count}：输入高亮部分的文字 <{suggestion}>',
+      '文字行 {index}/{count}：输入高亮部分的文字',
     noCandidates: '所选对象中没有找到类似文字的笔画。',
     summary:
       '已转换 {converted} 行文字，其中 {automatic} 行自动识别；跳过 {skipped} 行。'

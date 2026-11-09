@@ -4,6 +4,14 @@ export default {
   ...enCommand,
   ACAD: {
     ...enCommand.ACAD,
+    pdfdim: {
+      description: 'PDF で分解された寸法を寸法オブジェクトに戻します',
+      prompt: '寸法を含む範囲を選択'
+    },
+    pdfblock: {
+      description: 'PDF の繰り返し図形をブロックに戻します',
+      prompt: 'ブロック 1 個分のオブジェクトを選択'
+    },
     pdftext: {
       description: 'PDF で分解された文字のストロークを文字オブジェクトに戻します',
       prompt: '変換する文字ストロークを選択'

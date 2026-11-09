@@ -281,6 +281,8 @@ export default {
     tooltip: {
       importPdf: 'Importuje vektorovou geometrii ze souboru PDF a obnoví kružnice, oblouky a křivky (IPDF).',
       pdfScale: 'Změní měřítko importované geometrie PDF podle dvou bodů známé vzdálenosti (PDFSCALE).',
+      pdfDim: 'Převede rozložené kóty z PDF (šipky nebo značky, čáry, vynášecí čáry a texty) zpět na kótovací objekty (PDFDIM).',
+      pdfBlock: 'Převede opakovanou geometrii z PDF na blok a každou kopii nahradí referencí bloku (PDFBLOCK).',
       pdfText: 'Převede rozložené tahy textu z PDF zpět na textové objekty (PDFTEXT).',
       line: 'Nakreslí jednu úsečku.',
       polyline: 'Nakreslí spojenou řadu úseček nebo oblouků jako jeden objekt.',
@@ -412,6 +414,8 @@ export default {
     command: {
       importPdf: 'Import\nPDF',
       pdfScale: 'Kalibrovat\nměřítko',
+      pdfDim: 'Obnovit\nkóty',
+      pdfBlock: 'Vytvořit\nblok',
       pdfText: 'Obnovit\ntext',
       line: 'Úsečka',
       polyline: 'Křivka',

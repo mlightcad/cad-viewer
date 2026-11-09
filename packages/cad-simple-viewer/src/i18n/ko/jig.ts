@@ -179,11 +179,61 @@ export default {
       }
     }
   },
+  pdfdim: {
+    noDimensions: '선택 영역에서 치수를 찾지 못했습니다 (화살표 또는 사선, 치수선, 숫자 문자가 필요합니다).',
+    convertAll: '치수 {count}개를 찾았습니다 (도면 축척 1:{scale}). 변환하시겠습니까?',
+    convertOne: '치수 {index}/{count} "{text}": 변환하시겠습니까?',
+    summary: '치수 {count}개를 변환했습니다. 치수 스타일 PDF_DIM의 선형 축척 비율은 {scale}입니다.'
+  },
+  pdfblock: {
+    basePoint: '블록 기준점 지정 (축척이 다른 사본도 일치: {scale}) 또는',
+    scaleOn: '켜기',
+    scaleOff: '끄기',
+    name: '블록 이름 입력',
+    nameExists: '"{name}" 블록이 이미 있습니다.',
+    unsupported: '선택한 객체를 일치시킬 수 없습니다 (선, 호, 원, 폴리선, 타원, 스플라인, 문자 지원).',
+    noCopies: '다른 사본을 찾지 못했습니다. 선택한 객체만 블록이 됩니다.',
+    replaceAll: '일치하는 사본 {count}개를 찾았습니다. 블록 참조로 바꾸시겠습니까?',
+    replaceOne: '사본 {index}/{count}: 블록 참조로 바꾸시겠습니까?',
+    summary: '블록 "{name}"을(를) 만들었습니다 (참조 {count}개).',
+    keywords: {
+      scale: {
+        display: '축척(S)',
+        local: '축척',
+        global: 'Scale'
+      },
+      yes: {
+        display: '예(Y)',
+        local: '예',
+        global: 'Yes'
+      },
+      no: {
+        display: '아니요(N)',
+        local: '아니요',
+        global: 'No'
+      },
+      review: {
+        display: '개별 확인(R)',
+        local: '개별 확인',
+        global: 'Review'
+      },
+      all: {
+        display: '모두(A)',
+        local: '모두',
+        global: 'All'
+      },
+      exit: {
+        display: '종료(X)',
+        local: '종료',
+        global: 'eXit'
+      }
+    }
+  },
   pdftext: {
     enterText:
-      '문자 줄 {index}/{count}: 강조 표시된 문자 입력 (Enter 건너뛰기, Esc 종료)',
+      '문자 줄 {index}/{count}: 강조 표시된 문자 입력 (비워 두면 건너뛰기, Esc 종료)',
     enterTextWithSuggestion:
-      '문자 줄 {index}/{count}: 강조 표시된 문자 입력 <{suggestion}>',
+      '문자 줄 {index}/{count}: 강조 표시된 문자 입력',
     noCandidates: '선택 항목에서 문자처럼 보이는 획을 찾지 못했습니다.',
     summary:
       '{converted}줄 변환 ({automatic}줄 자동 인식), {skipped}줄 건너뜀.'
