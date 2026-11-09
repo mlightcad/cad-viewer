@@ -80,6 +80,19 @@ export interface AcApPdfImportOptions {
    * family. Default `true`.
    */
   textStyles?: boolean
+  /**
+   * Set each text's width factor so it spans the width it had in the PDF,
+   * measured in the font the viewer draws it with. The viewer rarely has
+   * the PDF's own font, and substitutes often run wider. Default `true`.
+   */
+  fitTextWidth?: boolean
+  /**
+   * Import raster images (photos, logos, QR codes) as `AcDbRasterImage`
+   * entities named `PDF_IMAGE_<n>.png`. Their pixels live in the drawing
+   * session only; DWG/DXF reference images as external files. Default
+   * `true`.
+   */
+  images?: boolean
 }
 
 /** Fully populated {@link AcApPdfImportOptions}. */
@@ -113,6 +126,8 @@ export function resolveAcApPdfImportOptions(
     formBlocks: options?.formBlocks ?? recover,
     dashLinetypes: options?.dashLinetypes ?? true,
     fillHatches: options?.fillHatches ?? false,
-    textStyles: options?.textStyles ?? recover
+    textStyles: options?.textStyles ?? recover,
+    fitTextWidth: options?.fitTextWidth ?? true,
+    images: options?.images ?? true
   }
 }

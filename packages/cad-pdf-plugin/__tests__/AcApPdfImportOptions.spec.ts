@@ -23,6 +23,7 @@ describe('resolveAcApPdfImportOptions', () => {
     expect(options.lineWeights).toBe(true)
     expect(options.dashLinetypes).toBe(true)
     expect(options.fillHatches).toBe(false)
+    expect(options.fitTextWidth).toBe(true)
   })
 
   test('explicit fields override the mode defaults', () => {

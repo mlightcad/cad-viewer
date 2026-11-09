@@ -211,3 +211,38 @@ export function acapPdfEnsureTextStyle(
   )
   return name
 }
+
+/** Width factors outside this range mean a bad measurement, not real text. */
+const MIN_FIT_WIDTH_FACTOR = 0.1
+const MAX_FIT_WIDTH_FACTOR = 10
+
+/**
+ * Width factor that makes text span its PDF advance width.
+ *
+ * The CAD font usually differs from the PDF font, so text with the PDF's
+ * own width factor runs long or short. Scaling by the measured width keeps
+ * each run inside the space it had on the page.
+ *
+ * @param pdfWidthFactor - Width factor from the PDF text matrix (fallback).
+ * @param pdfWidth - Advance width of the run in the PDF, in drawing units.
+ * @param naturalWidth - Width of the same text in the CAD font at width
+ * factor 1, in drawing units.
+ */
+export function acapPdfFitWidthFactor(
+  pdfWidthFactor: number,
+  pdfWidth: number | undefined,
+  naturalWidth: number | undefined
+): number {
+  if (
+    pdfWidth === undefined ||
+    naturalWidth === undefined ||
+    !(pdfWidth > 0) ||
+    !(naturalWidth > 0)
+  ) {
+    return pdfWidthFactor
+  }
+  return Math.min(
+    MAX_FIT_WIDTH_FACTOR,
+    Math.max(MIN_FIT_WIDTH_FACTOR, pdfWidth / naturalWidth)
+  )
+}

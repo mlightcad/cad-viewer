@@ -153,7 +153,9 @@ await new AcApPdfImportConvertor().convert(context, buffer, {
   removeDuplicates: true,
   dashLinetypes: true, // PDF_DASH_* linetypes for dashed strokes
   textStyles: true, // PDF_<family> text styles
-  fillHatches: false // true: filled areas become solid hatches
+  fillHatches: false, // true: filled areas become solid hatches
+  fitTextWidth: true, // stretch/squeeze text to its PDF width
+  images: true // raster images become AcDbRasterImage (PDF_IMAGE_n.png)
 })
 ```
 
@@ -210,7 +212,10 @@ The pure recognition step is also exported: `recognizePdfCurves(segments)` turns
 7. Map PDF optional content groups to CAD layers when present.
 8. Remap paper-contrast ink to ACI 7 (AutoCAD foreground): black ink on white PDF paper, or white ink on dark PDF paper. ACI 7 follows the CAD canvas background.
 
-Import is **vector-only**; raster/scanned PDF pages produce no entities. Only the requested page is processed (default: page 1). Form XObject `/Matrix` is applied so nested content keeps its placement.
+9. Fit each text to its PDF advance width: the text is measured in the font the viewer will draw it with (`AcApFontUtil.measureTextWidth`, which mirrors the TEXT renderer's style font → big font → default font lookup) and its width factor is set to `pdfWidth / measuredWidth`. Turn this off with `fitTextWidth: false`.
+10. Turn image paints (`paintImageXObject`, inline images) into `AcDbRasterImage` entities (`pdfImportImages.ts`). Each image is redrawn with its full placement (rotation, mirroring, skew) into an upright PNG covering its bounding box, so the entity needs no rotation. Dark ink on transparency (QR codes, stamps) is laid on white, as on the PDF page. The PNG lives in memory on the entity; the `PDF_IMAGE_n.png` definition is a name only, because DWG/DXF reference images as external files. Turn this off with `images: false`. Image masks and clipping paths are not applied.
+
+Only the requested page is processed (default: page 1). Form XObject `/Matrix` is applied so nested content keeps its placement.
 
 ## Main exports
 

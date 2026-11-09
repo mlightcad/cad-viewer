@@ -62,6 +62,7 @@ export {
   type PdfImportPageContent,
   type PdfImportPaperTone,
   type PdfImportedSubpath,
+  type PdfImportedImage,
   type PdfImportedText,
   type PdfImportFormInstance,
   type PdfImportPoint,

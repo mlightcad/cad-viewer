@@ -7,6 +7,7 @@ import {
   acapPdfCreateSolidHatch,
   acapPdfEnsureDashLinetype,
   acapPdfEnsureTextStyle,
+  acapPdfFitWidthFactor,
   acapPdfFontFamily,
   acapPdfShapeToLoop,
   PDF_DASH_LINETYPE_PREFIX
@@ -105,5 +106,23 @@ describe('PDF import entities', () => {
     expect(a).toBe('PDF_SimSun')
     expect(acapPdfEnsureTextStyle(db, 'SimSun')).toBe(a)
     expect(db.tables.textStyleTable.getAt(a)?.textStyle.font).toBe('SimSun')
+  })
+})
+
+describe('acapPdfFitWidthFactor', () => {
+  test('stretches or squeezes text to the PDF advance width', () => {
+    expect(acapPdfFitWidthFactor(1, 80, 100)).toBeCloseTo(0.8)
+    expect(acapPdfFitWidthFactor(1, 120, 100)).toBeCloseTo(1.2)
+  })
+
+  test('keeps the PDF width factor when the width is unknown', () => {
+    expect(acapPdfFitWidthFactor(0.9, undefined, 100)).toBe(0.9)
+    expect(acapPdfFitWidthFactor(0.9, 80, undefined)).toBe(0.9)
+    expect(acapPdfFitWidthFactor(0.9, 80, 0)).toBe(0.9)
+  })
+
+  test('clamps implausible ratios', () => {
+    expect(acapPdfFitWidthFactor(1, 1000, 1)).toBe(10)
+    expect(acapPdfFitWidthFactor(1, 0.001, 100)).toBe(0.1)
   })
 })
