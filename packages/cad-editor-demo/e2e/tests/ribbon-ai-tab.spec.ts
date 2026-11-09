@@ -75,7 +75,12 @@ test('AI tab hosts the CAD Agent and the PDF tools', async ({ page }) => {
   await expect(ribbonButton('cmd-agent')).toHaveCount(0)
 
   await page.getByRole('tab', { name: 'AI' }).click()
-  for (const id of ['cmd-ipdf', 'cmd-pdfscale', 'cmd-pdftext']) {
+  for (const id of [
+    'cmd-ipdf',
+    'cmd-pdfscale',
+    'cmd-pdftext',
+    'cmd-pdfblock'
+  ]) {
     await expect(ribbonButton(id)).toBeVisible()
   }
   await expect(ribbonButton('cmd-ipdf')).toContainText(/Import\s*PDF/)
