@@ -2412,6 +2412,15 @@ export default {
       }
     }
   },
+  pdftext: {
+    enterText:
+      'سطر النص {index}/{count}: أدخل النص المظلل (Enter للتخطي، Esc للإيقاف)',
+    enterTextWithSuggestion:
+      'سطر النص {index}/{count}: أدخل النص المظلل <{suggestion}>',
+    noCandidates: 'لم يتم العثور على خطوط تشبه النص في التحديد.',
+    summary:
+      'تم تحويل {converted} سطر نصي، منها {automatic} تلقائيًا؛ تم تخطي {skipped}.'
+  },
   pdfscale: {
     firstPoint: 'حدد النقطة الأولى لمسافة معروفة',
     secondPoint: 'حدد النقطة الثانية',

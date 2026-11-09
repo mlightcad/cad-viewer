@@ -1785,6 +1785,15 @@ export default {
       }
     }
   },
+  pdftext: {
+    enterText:
+      'Metin satırı {index}/{count}: vurgulanan metni girin (Enter atlar, Esc durdurur)',
+    enterTextWithSuggestion:
+      'Metin satırı {index}/{count}: vurgulanan metni girin <{suggestion}>',
+    noCandidates: 'Seçimde metne benzer çizgi bulunamadı.',
+    summary:
+      '{converted} metin satırı dönüştürüldü, {automatic} tanesi otomatik tanındı; {skipped} atlandı.'
+  },
   pdfscale: {
     firstPoint: 'Bilinen mesafenin ilk noktasını belirtin',
     secondPoint: 'İkinci noktayı belirtin',

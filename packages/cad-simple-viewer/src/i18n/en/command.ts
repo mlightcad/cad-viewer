@@ -214,6 +214,10 @@ export default {
       description:
         'Fills an enclosed area or selected objects with a hatch pattern'
     },
+    pdftext: {
+      description: 'Converts exploded PDF text strokes back into text objects',
+      prompt: 'Select text strokes to convert'
+    },
     pdfscale: {
       description: 'Calibrates imported PDF geometry from a known distance',
       prompt: 'Select objects to scale'

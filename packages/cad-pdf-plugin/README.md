@@ -11,6 +11,7 @@ PDF **export** and **import** plugin for [`@mlightcad/cad-simple-viewer`](../cad
 | `cpdf` | Same as `-cpdf` when no UI command is registered. In [`cad-editor`](../cad-editor), `cpdf` opens an **export options dialog** instead |
 | `ipdf` | Import vector geometry from a PDF file into model space, recovering circles, arcs, ellipses and splines |
 | `pdfscale` | Calibrate imported PDF geometry: pick two points of a known distance and type its real length |
+| `pdftext` | Convert exploded text (SHX line text, outlined fonts) back into `AcDbText`, semi-automatically |
 
 The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@mlightcad/pdf-renderer`, `pdfjs-dist`) are only downloaded when a user runs `-cpdf` / `cpdf` or `ipdf`.
 
@@ -22,6 +23,7 @@ The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@ml
 - **Shared core (1.8.0+)** — export logic lives in [`@mlightcad/cad-pdf-core`](../cad-pdf-core), which the headless [`@mlightcad/cad-pdf-exporter`](../cad-pdf-exporter) also uses so Node can export PDF without a browser ([upgrade guide](../../docs/development/upgrade-guide.md))
 - **PDF import** — parses vector paths from a chosen PDF page and appends CAD entities. Bézier chains are rebuilt as true `AcDbCircle` / `AcDbArc` / `AcDbEllipse`, mixed line–arc outlines as bulged `AcDbPolyline`, free-form curves as exact `AcDbSpline`, and arcs a producer already flattened into short lines are refitted. Stroke widths become line weights and exact duplicate outlines are dropped
 - **Scale calibration** — `pdfscale` rescales imported geometry from one known distance, since printed PDFs are rarely 1:1
+- **Text recovery** — real PDF text runs that continue one line are merged into one `AcDbText`. `pdftext` turns exploded text strokes back into text: it clusters strokes into lines (position, height, rotation), asks for each line's text, and learns every confirmed glyph shape, so lines whose glyphs are all known convert without asking. With an OCR recognizer registered in `AcApTextRecognitionService` (the CAD Agent plugin registers one that uses the configured vision model), each prompt is pre-filled with a suggestion
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyPdfPlugin`
 - **Framework-agnostic** — no Vue/React dependency; works anywhere `cad-simple-viewer` runs
 
@@ -158,6 +160,13 @@ The pure recognition step is also exported: `recognizePdfCurves(segments)` turns
 3. Call `@mlightcad/cad-pdf-core` `acexPdfExportDatabase` (built on `@mlightcad/pdf-renderer`). With layouts enabled, model space and every paper space become one PDF page each. Monochrome paints linework and text black on white paper (solid fills become grey).
 4. Download the resulting PDF bytes.
 
+### Text recovery (`pdftext`)
+
+1. Select the strokes; a window around the text is enough. Strokes much larger than the text (frames, table lines) are ignored.
+2. Strokes within a word gap form phrases. Each phrase gets its baseline direction from the minimum-height oriented bounding box, then splits into rows and lines (`recognition/pdfGlyphClustering.ts`). The cap height and baseline ignore descenders.
+3. Lines whose glyphs are all in the session's glyph dictionary (`recognition/pdfGlyphDictionary.ts`) are converted immediately. For the others, the strokes are highlighted and the prompt shows `<suggestion>` when the dictionary or OCR has one. Enter accepts the suggestion or skips; Esc stops and keeps what was converted.
+4. Typed text whose character count matches the glyph boxes teaches the dictionary: each glyph's normalized, quantized stroke geometry maps to its character.
+
 ### Import (`ipdf`)
 
 1. Show a native file picker (`.pdf`).
@@ -181,6 +190,8 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 | `AcApConvertToPdfCmd` | `-cpdf` / fallback `cpdf` command class |
 | `AcApImportPdfCmd` | `ipdf` command class |
 | `AcApPdfScaleCmd` | `pdfscale` command class |
+| `AcApPdfTextCmd` | `pdftext` command class |
+| `clusterPdfTextStrokes`, `PdfGlyphDictionary`, `mergePdfTextRuns`, `pdfEntityToStroke` | Text recovery building blocks |
 | `AcApPdfImportOptions`, `resolveAcApPdfImportOptions` | Import options (page, placement, scale, curve recognition) |
 | `recognizePdfCurves`, `buildPdfImportShapes`, `PdfRecognizedShape` | Curve recognition and page-level shape building |
 | `AcApPdfConvertor` | CAD → PDF export utility |
@@ -197,6 +208,8 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 | `src/AcApConvertToPdfCmd.ts` | `-cpdf` command (command-line prompts) |
 | `src/AcApImportPdfCmd.ts` | `ipdf` command |
 | `src/AcApPdfScaleCmd.ts` | `pdfscale` command |
+| `src/AcApPdfTextCmd.ts` | `pdftext` command |
+| `src/pdfEntityStrokes.ts` | Samples curve entities into strokes |
 | `src/AcApPdfImportOptions.ts` | Import option types and defaults |
 | `src/pdfImportShapes.ts` | Page-level recognition, placement and de-duplication |
 | `src/recognition/` | Pure geometry: curve recognition and fitting helpers |

@@ -213,6 +213,10 @@ export default {
       description:
         'Kapalı bir alanı veya seçili nesneleri bir tarama deseniyle doldurur'
     },
+    pdftext: {
+      description: 'Patlatılmış PDF metin çizgilerini metin nesnelerine geri dönüştürür',
+      prompt: 'Dönüştürülecek metin çizgilerini seçin'
+    },
     pdfscale: {
       description: 'İçe aktarılan PDF geometrisini bilinen bir mesafeye göre kalibre eder',
       prompt: 'Ölçeklenecek nesneleri seçin'

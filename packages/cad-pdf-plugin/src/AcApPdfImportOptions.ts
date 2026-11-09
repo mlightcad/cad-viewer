@@ -33,6 +33,11 @@ export interface AcApPdfImportOptions {
    * producers often paint the same outline twice. Default `true`.
    */
   removeDuplicates?: boolean
+  /**
+   * Join consecutive text runs that continue the same line into one
+   * `AcDbText`. Default `true`.
+   */
+  mergeTextRuns?: boolean
 }
 
 /** Fully populated {@link AcApPdfImportOptions}. */
@@ -58,6 +63,7 @@ export function resolveAcApPdfImportOptions(
     recognizeCurves: options?.recognizeCurves ?? true,
     curveRecognition: options?.curveRecognition,
     lineWeights: options?.lineWeights ?? true,
-    removeDuplicates: options?.removeDuplicates ?? true
+    removeDuplicates: options?.removeDuplicates ?? true,
+    mergeTextRuns: options?.mergeTextRuns ?? true
   }
 }

@@ -22,6 +22,8 @@ export {
   resolveAcApPdfImportOptions
 } from './AcApPdfImportOptions'
 export { AcApPdfScaleCmd } from './AcApPdfScaleCmd'
+export { AcApPdfTextCmd } from './AcApPdfTextCmd'
+export { pdfEntityToStroke } from './pdfEntityStrokes'
 export {
   buildPdfImportShapes,
   type PdfImportShapeItem,
@@ -54,4 +56,21 @@ export {
   type PdfRecognizedVertex,
   recognizePdfCurves
 } from './recognition/pdfCurveRecognition'
+export {
+  clusterPdfTextStrokes,
+  estimatePdfTextHeight,
+  type PdfTextClusterOptions,
+  type PdfTextClusterResult,
+  type PdfTextGlyph,
+  type PdfTextLineCandidate,
+  type PdfTextStroke
+} from './recognition/pdfGlyphClustering'
+export {
+  PdfGlyphDictionary,
+  pdfGlyphSignature
+} from './recognition/pdfGlyphDictionary'
+export {
+  mergePdfTextRuns,
+  type PdfTextRunMergeOptions
+} from './recognition/pdfTextRunMerge'
 export { PDF_PLUGIN_NAME, PDF_PLUGIN_TRIGGERS } from './register'

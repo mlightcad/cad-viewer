@@ -1918,6 +1918,15 @@ export default {
       }
     }
   },
+  pdftext: {
+    enterText:
+      'Text line {index}/{count}: enter the highlighted text (Enter skips, Esc stops)',
+    enterTextWithSuggestion:
+      'Text line {index}/{count}: enter the highlighted text <{suggestion}>',
+    noCandidates: 'No text-like strokes found in the selection.',
+    summary:
+      'Converted {converted} text line(s), {automatic} recognized automatically; skipped {skipped}.'
+  },
   pdfscale: {
     firstPoint: 'Specify first point of a known distance',
     secondPoint: 'Specify second point',

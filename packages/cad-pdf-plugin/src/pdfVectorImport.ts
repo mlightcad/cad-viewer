@@ -289,6 +289,8 @@ export interface PdfImportedSubpath {
 export interface PdfImportedText {
   text: string
   position: PdfImportPoint
+  /** Advance width of the run along the baseline, in millimeters. */
+  width?: number
   /** CAD text height in millimeters. */
   height: number
   /** Rotation in radians, counterclockwise from +X. */
@@ -1128,10 +1130,12 @@ export function extractPdfImportSubpaths(
       const height = Math.hypot(alongY.x - origin.x, alongY.y - origin.y)
       const unitY = fontSize > 0 ? height / fontSize : 0
       const widthFactor = unitY > 1e-9 ? Math.hypot(dx, dy) / unitY : textHScale
+      const end = textPointToCad(textX + advance * textHScale, textY + textRise)
       if (height > 1e-9) {
         textResult.push({
           text,
           position: origin,
+          width: Math.hypot(end.x - origin.x, end.y - origin.y),
           height,
           rotation: Math.atan2(dy, dx),
           widthFactor,

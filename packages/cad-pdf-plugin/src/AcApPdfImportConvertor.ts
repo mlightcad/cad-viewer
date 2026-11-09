@@ -48,6 +48,7 @@ import {
   type PdfImportOps
 } from './pdfVectorImport'
 import type { PdfRecognizedShape } from './recognition/pdfCurveRecognition'
+import { mergePdfTextRuns } from './recognition/pdfTextRunMerge'
 
 /**
  * PDF.js worker shipped beside this module.
@@ -339,7 +340,10 @@ export class AcApPdfImportConvertor {
         }
         entities.push(entity)
       }
-      for (const textRun of content.texts) {
+      const texts = options.mergeTextRuns
+        ? mergePdfTextRuns(content.texts)
+        : content.texts
+      for (const textRun of texts) {
         if (textRun.layerName) {
           usedLayerNames.add(textRun.layerName)
         }
@@ -375,7 +379,7 @@ export class AcApPdfImportConvertor {
         `[PdfImport] Imported ${entities.length} entities across ${usedLayerNames.size} CAD layer(s): ` +
           `${stats.line} lines, ${stats.polyline} polylines, ${stats.circle} circles, ` +
           `${stats.arc} arcs, ${stats.ellipse} ellipses, ${stats.spline} splines, ` +
-          `${content.texts.length} texts; ${stats.duplicates} duplicates skipped.`
+          `${texts.length} texts; ${stats.duplicates} duplicates skipped.`
       )
     } catch (err) {
       log.error('[PdfImport] Failed to import PDF:', err)

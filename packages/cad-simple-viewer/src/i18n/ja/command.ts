@@ -4,6 +4,10 @@ export default {
   ...enCommand,
   ACAD: {
     ...enCommand.ACAD,
+    pdftext: {
+      description: 'PDF で分解された文字のストロークを文字オブジェクトに戻します',
+      prompt: '変換する文字ストロークを選択'
+    },
     pdfscale: {
       description: '既知の距離から読み込んだ PDF 図形の尺度を校正します',
       prompt: '尺度変更するオブジェクトを選択'

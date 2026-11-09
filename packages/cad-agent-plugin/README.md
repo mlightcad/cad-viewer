@@ -27,6 +27,7 @@ Read more:
 - Vercel AI SDK `Experimental_Agent` with CAD tool calling
 - Vue chat panel (`@ai-sdk/vue` `Chat` + custom transport)
 - Browser-side API key (OpenAI / Anthropic / OpenAI-compatible)
+- Text recognizer for `pdftext`: `registerLazyAgentPlugin` registers `cad-agent` in `AcApTextRecognitionService`. It reads stroke images with the active model when that model accepts images, and returns nothing otherwise, so `pdftext` falls back to manual input
 
 ## Usage in cad-viewer
 

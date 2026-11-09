@@ -179,6 +179,15 @@ export default {
       }
     }
   },
+  pdftext: {
+    enterText:
+      '문자 줄 {index}/{count}: 강조 표시된 문자 입력 (Enter 건너뛰기, Esc 종료)',
+    enterTextWithSuggestion:
+      '문자 줄 {index}/{count}: 강조 표시된 문자 입력 <{suggestion}>',
+    noCandidates: '선택 항목에서 문자처럼 보이는 획을 찾지 못했습니다.',
+    summary:
+      '{converted}줄 변환 ({automatic}줄 자동 인식), {skipped}줄 건너뜀.'
+  },
   pdfscale: {
     firstPoint: '알려진 거리의 첫 번째 점 지정',
     secondPoint: '두 번째 점 지정',
