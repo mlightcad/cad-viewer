@@ -170,6 +170,38 @@ describe('PDF dimension conversion', () => {
     expect(dim.dimensionText || '').toBe('')
   })
 
+  it('converts a dimension drawn without arrowheads', () => {
+    const db = new AcDbDatabase()
+    db.createDefaultData()
+    acdbHostApplicationServices().workingDatabase = db
+    const label = text('44mm', 383.817139, 2761.588189)
+    label.rotation = Math.PI / 2
+    const entities: AcDbEntity[] = [
+      line({ x: 387.25399, y: 2770.718955 }, { x: 383.284534, y: 2770.718955 }),
+      line(
+        { x: 387.081058, y: 2758.714527 },
+        { x: 383.284464, y: 2758.714527 }
+      ),
+      line(
+        { x: 385.004361, y: 2770.718955 },
+        { x: 385.004361, y: 2758.714633 }
+      ),
+      label
+    ]
+    db.tables.blockTable.modelSpace.appendEntity(entities)
+    const byId = new Map(entities.map(e => [e.objectId, e]))
+    const candidates = recognizePdfDimensions(pdfEntitiesToDimInput(byId))
+    expect(candidates).toHaveLength(1)
+
+    const style = acapPdfEnsureDimStyle(db, candidates, 1)
+    expect(style.dimblk.toUpperCase()).toBe('_NONE')
+    expect(style.dimasz).toBeCloseTo(2.5, 9)
+    const [dim] = acapPdfCreateDimensions(db, candidates, 1)
+    expect(dim).toBeInstanceOf(AcDbRotatedDimension)
+    expect(dim.dimensionText).toBe('44mm')
+    expect(dim.dimBlockId).toBeTruthy()
+  })
+
   it('snaps scales to common values', () => {
     expect(acapPdfNiceScale(99.6)).toBe(100)
     expect(acapPdfNiceScale(49.8)).toBe(50)

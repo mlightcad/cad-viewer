@@ -229,6 +229,54 @@ describe('recognizePdfDimensions', () => {
     expect(suggestPdfDimensionScale([dim])).toBeUndefined()
   })
 
+  it('recognizes a dimension without arrowheads or ticks', () => {
+    // Taken from a real PDF import: a vertical dimension line ending on two
+    // horizontal extension lines that run past it, and a rotated text.
+    const input = empty()
+    const ext1 = seg(
+      { x: 387.25399, y: 2770.718955 },
+      { x: 383.284534, y: 2770.718955 }
+    )
+    const ext2 = seg(
+      { x: 387.081058, y: 2758.714527 },
+      { x: 383.284464, y: 2758.714527 }
+    )
+    const dimLine = seg(
+      { x: 385.004361, y: 2770.718955 },
+      { x: 385.004361, y: 2758.714633 }
+    )
+    const label = text('44mm', { x: 382.71, y: 2763.0 }, 2.215868)
+    input.segments.push(ext1, ext2, dimLine)
+    input.texts.push(label)
+    const [dim, ...rest] = recognizePdfDimensions(input)
+    expect(rest).toHaveLength(0)
+    expect(dim.kind).toBe('linear')
+    const linear = dim as PdfLinearDimension<string>
+    expect(linear.measured).toBeCloseTo(12.0043, 3)
+    expect(linear.rotation).toBeCloseTo(Math.PI / 2, 6)
+    expect(linear.text.id).toBe(label.id)
+    expect(linear.xLine1.y).toBeCloseTo(2770.718955, 4)
+    expect(linear.xLine2.y).toBeCloseTo(2758.714527, 4)
+    expect(linear.extensionBeyond).toBeGreaterThan(1)
+    expect(linear.ticks).toBe(false)
+    expect(linear.arrowSize).toBe(0)
+    expect([...linear.consumed].sort()).toEqual(
+      [ext1.id, ext2.id, dimLine.id, label.id].sort()
+    )
+  })
+
+  it('does not take a rectangle side as a terminator-less dimension', () => {
+    const input = empty()
+    input.segments.push(
+      seg({ x: 0, y: 0 }, { x: 40, y: 0 }),
+      seg({ x: 40, y: 0 }, { x: 40, y: 20 }),
+      seg({ x: 40, y: 20 }, { x: 0, y: 20 }),
+      seg({ x: 0, y: 20 }, { x: 0, y: 0 })
+    )
+    input.texts.push(text('12', { x: 20, y: 2 }))
+    expect(recognizePdfDimensions(input)).toHaveLength(0)
+  })
+
   it('ignores arrow pairs without a value text', () => {
     const input = empty()
     addHorizontal(input, 0, 50, '50')
