@@ -6,11 +6,14 @@ import {
   ChatLineSquare,
   Delete,
   DocumentCopy,
+  EditPen,
   Hide,
   RefreshLeft,
   RefreshRight,
   Right,
+  ScaleToOriginal,
   Stamp,
+  Upload,
   View
 } from '@element-plus/icons-vue'
 import {
@@ -80,7 +83,15 @@ import {
   RibbonTabModel
 } from '@mlightcad/ribbon'
 import { ElButton, ElTooltip } from 'element-plus'
-import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
+import {
+  type Component,
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { store } from '../../app'
@@ -1252,6 +1263,93 @@ const applyOpenModeTabVisibility = (
   })
 }
 
+/**
+ * AI tab: the CAD Agent (when its plugin is installed) and the PDF to CAD
+ * conversion tools from `@mlightcad/cad-pdf-plugin`, which load lazily on
+ * first use like their command-line counterparts.
+ */
+const buildAiTab = (
+  agentPluginEnabled: boolean,
+  ribbonTooltips: Record<
+    'agent' | 'importPdf' | 'pdfScale' | 'pdfText',
+    string
+  >
+): RibbonTabModel => {
+  const largeButton = (
+    id: string,
+    label: string,
+    tooltip: string,
+    icon: string | Component
+  ) => ({
+    id,
+    type: 'button' as const,
+    label,
+    tooltip,
+    size: 'large' as const,
+    props: { icon, labelWrapLines: 2, labelWrapWidth: 'max-content' }
+  })
+  return {
+    id: 'ai',
+    title: t('main.ribbon.tab.ai'),
+    groups: [
+      ...(agentPluginEnabled
+        ? [
+            {
+              id: 'ai-agent',
+              title: t('main.ribbon.group.agent'),
+              orientation: 'row' as const,
+              collections: [
+                {
+                  id: 'ai-agent-main',
+                  layout: 'row' as const,
+                  items: [
+                    largeButton(
+                      'cmd-agent',
+                      t('main.ribbon.command.agent'),
+                      ribbonTooltips.agent,
+                      ChatDotRound
+                    )
+                  ]
+                }
+              ]
+            }
+          ]
+        : []),
+      {
+        id: 'ai-pdf',
+        title: t('main.ribbon.group.pdf'),
+        orientation: 'row' as const,
+        collections: [
+          {
+            id: 'ai-pdf-main',
+            layout: 'row' as const,
+            items: [
+              largeButton(
+                'cmd-ipdf',
+                t('main.ribbon.command.importPdf'),
+                ribbonTooltips.importPdf,
+                Upload
+              ),
+              largeButton(
+                'cmd-pdfscale',
+                t('main.ribbon.command.pdfScale'),
+                ribbonTooltips.pdfScale,
+                ScaleToOriginal
+              ),
+              largeButton(
+                'cmd-pdftext',
+                t('main.ribbon.command.pdfText'),
+                ribbonTooltips.pdfText,
+                EditPen
+              )
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+
 const buildBaseTabs = (
   openMode: AcEdOpenMode,
   markupVisible: boolean,
@@ -1312,6 +1410,9 @@ const buildBaseTabs = (
     editAttributes: t('main.ribbon.tooltip.editAttributes'),
     defineAttribute: t('main.ribbon.tooltip.defineAttribute'),
     agent: t('main.ribbon.tooltip.agent'),
+    importPdf: t('main.ribbon.tooltip.importPdf'),
+    pdfScale: t('main.ribbon.tooltip.pdfScale'),
+    pdfText: t('main.ribbon.tooltip.pdfText'),
     pan: t('main.ribbon.tooltip.pan'),
     zoom: t('main.ribbon.tooltip.zoom'),
     zoomExtents: t('main.ribbon.tooltip.zoomExtents'),
@@ -2695,23 +2796,7 @@ const buildBaseTabs = (
                     labelWrapLines: 2,
                     labelWrapWidth: 'max-content'
                   }
-                },
-                ...(agentPluginEnabled
-                  ? [
-                      {
-                        id: 'cmd-agent',
-                        type: 'button' as const,
-                        label: t('main.ribbon.command.agent'),
-                        tooltip: ribbonTooltips.agent,
-                        size: 'large' as const,
-                        props: {
-                          icon: ChatDotRound,
-                          labelWrapLines: 2,
-                          labelWrapWidth: 'max-content'
-                        }
-                      }
-                    ]
-                  : [])
+                }
               ]
             }
           ]
@@ -3105,6 +3190,8 @@ const buildBaseTabs = (
     groups: measurementGroups
   })
 
+  tabs.push(buildAiTab(agentPluginEnabled, ribbonTooltips))
+
   return markComponentConfigRaw(applyOpenModeTabVisibility(tabs, openMode))
 }
 
@@ -3210,6 +3297,9 @@ const ribbonData = computed(() => {
   if (store.features.agentPlugin) {
     commandByItemId.set('cmd-agent', 'agent')
   }
+  commandByItemId.set('cmd-ipdf', 'ipdf')
+  commandByItemId.set('cmd-pdfscale', 'pdfscale')
+  commandByItemId.set('cmd-pdftext', 'pdftext')
   commandByItemId.set('cmd-tool-markup-panel', 'markuppanel')
   commandByItemId.set('cmd-tool-markup-text', 'markuptext')
   commandByItemId.set('cmd-tool-markup-cloud', 'markupcloud')

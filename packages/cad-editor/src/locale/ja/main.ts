@@ -4,12 +4,21 @@ export default {
   ...enMain,
   ribbon: {
     ...enMain.ribbon,
+    tab: {
+      ...enMain.ribbon.tab,
+      ai: 'AI'
+    },
     group: {
       ...enMain.ribbon.group,
+      agent: 'エージェント',
+      pdf: 'PDF',
       groups: 'グループ'
     },
     tooltip: {
       ...enMain.ribbon.tooltip,
+      importPdf: 'PDF ファイルからベクトル図形を読み込み、円・円弧・曲線を復元します (IPDF)。',
+      pdfScale: '既知の距離の 2 点から読み込んだ PDF 図形の尺度を変更します (PDFSCALE)。',
+      pdfText: 'PDF で分解された文字のストロークを文字オブジェクトに戻します (PDFTEXT)。',
       group: '選択したオブジェクトからグループを作成します (GROUP)。',
       ungroup: 'グループ定義を分解します (UNGROUP)。',
       groupEdit:
@@ -21,6 +30,9 @@ export default {
     },
     command: {
       ...enMain.ribbon.command,
+      importPdf: 'PDF\n読み込み',
+      pdfScale: '尺度\n校正',
+      pdfText: '文字\n認識',
       group: 'グループ',
       ungroup: 'グループ解除',
       groupEdit: 'グループ編集',

@@ -13,6 +13,7 @@ export default {
   },
   ribbon: {
     tab: {
+      ai: 'AI',
       home: '常用',
       insert: '插入',
       view: '视图',
@@ -206,6 +207,8 @@ export default {
       }
     },
     group: {
+      agent: '智能体',
+      pdf: 'PDF',
       draw: '绘制',
       dimension: '标注',
       modify: '修改',
@@ -273,6 +276,9 @@ export default {
       arc: '椭圆弧'
     },
     tooltip: {
+      importPdf: '从 PDF 文件导入矢量图形，并还原圆、圆弧和曲线（IPDF）。',
+      pdfScale: '根据两点之间的已知距离缩放导入的 PDF 图形（PDFSCALE）。',
+      pdfText: '将 PDF 中被打散的文字笔画转换回文字对象（PDFTEXT）。',
       line: '绘制单段直线。',
       polyline: '以一个对象绘制由直线或圆弧组成的连续线段。',
       spline: '通过拟合点或控制点绘制平滑样条曲线。',
@@ -393,6 +399,9 @@ export default {
       }
     },
     command: {
+      importPdf: '导入\nPDF',
+      pdfScale: '校准\n比例',
+      pdfText: '识别\n文字',
       line: '直线',
       polyline: '多段线',
       circle: '圆',

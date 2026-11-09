@@ -13,6 +13,7 @@ export default {
   },
   ribbon: {
     tab: {
+      ai: 'AI',
       home: 'Domů',
       insert: 'Vložit',
       view: 'Pohled',
@@ -209,6 +210,8 @@ export default {
       }
     },
     group: {
+      agent: 'Agent',
+      pdf: 'PDF',
       draw: 'Kreslení',
       dimension: 'Kóty',
       modify: 'Úpravy',
@@ -276,6 +279,9 @@ export default {
       arc: 'Eliptický oblouk'
     },
     tooltip: {
+      importPdf: 'Importuje vektorovou geometrii ze souboru PDF a obnoví kružnice, oblouky a křivky (IPDF).',
+      pdfScale: 'Změní měřítko importované geometrie PDF podle dvou bodů známé vzdálenosti (PDFSCALE).',
+      pdfText: 'Převede rozložené tahy textu z PDF zpět na textové objekty (PDFTEXT).',
       line: 'Nakreslí jednu úsečku.',
       polyline: 'Nakreslí spojenou řadu úseček nebo oblouků jako jeden objekt.',
       spline: 'Nakreslí hladkou křivku splajn proložením nebo řídicími body.',
@@ -404,6 +410,9 @@ export default {
       }
     },
     command: {
+      importPdf: 'Import\nPDF',
+      pdfScale: 'Kalibrovat\nměřítko',
+      pdfText: 'Obnovit\ntext',
       line: 'Úsečka',
       polyline: 'Křivka',
       circle: 'Kružnice',

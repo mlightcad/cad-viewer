@@ -13,6 +13,7 @@ export default {
   },
   ribbon: {
     tab: {
+      ai: 'AI',
       home: 'Ana Sayfa',
       insert: 'Ekle',
       view: 'Görünüm',
@@ -210,6 +211,8 @@ export default {
       }
     },
     group: {
+      agent: 'Ajan',
+      pdf: 'PDF',
       draw: 'Çiz',
       dimension: 'Ölçü',
       modify: 'Düzenle',
@@ -277,6 +280,9 @@ export default {
       arc: 'Eliptik Yay'
     },
     tooltip: {
+      importPdf: 'PDF dosyasından vektör geometriyi içe aktarır; daireleri, yayları ve eğrileri yeniden oluşturur (IPDF).',
+      pdfScale: 'İçe aktarılan PDF geometrisini bilinen bir mesafenin iki noktasına göre ölçekler (PDFSCALE).',
+      pdfText: 'Patlatılmış PDF metin çizgilerini metin nesnelerine geri dönüştürür (PDFTEXT).',
       line: 'Tek bir düz çizgi parçası çizin.',
       polyline:
         'Bağlı bir dizi çizgi veya yay parçasını tek bir nesne olarak çizin.',
@@ -413,6 +419,9 @@ export default {
       }
     },
     command: {
+      importPdf: 'PDF\nİçe Aktar',
+      pdfScale: 'Ölçeği\nKalibre Et',
+      pdfText: 'Metni\nKurtar',
       line: 'Çizgi',
       polyline: 'Çoklu Çizgi',
       circle: 'Daire',
