@@ -7,6 +7,7 @@ export * from './find'
 export * from './find/AcApFindNavigator'
 export * from './i18n'
 export * from './plugin'
+export * from './smartBlock'
 export * from './view'
 export * from './ui'
 export {

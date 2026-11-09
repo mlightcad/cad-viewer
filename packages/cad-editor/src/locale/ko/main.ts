@@ -2,6 +2,23 @@ import enMain from '../en/main'
 
 export default {
   ...enMain,
+  bsearch: {
+    title: '검색 및 변환',
+    found: '인스턴스 {count}개 찾음, {included}개 포함',
+    position: '{index}/{count}',
+    previous: '이전 인스턴스',
+    next: '다음 인스턴스',
+    includeCurrent: '이 인스턴스 포함',
+    convert: '블록으로 변환…',
+    cancel: '취소',
+    rotation: '회전',
+    mirror: '대칭',
+    scale: '축척',
+    sameLayer: '같은 도면층',
+    existingBlocks: '기존 블록',
+    textVariations: '문자 변형',
+    pickPrompt: '인스턴스를 클릭하여 포함 또는 제외하거나'
+  },
   ribbon: {
     ...enMain.ribbon,
     tab: {
@@ -10,12 +27,14 @@ export default {
     },
     group: {
       ...enMain.ribbon.group,
+      smartBlocks: '스마트 블록',
       agent: '에이전트',
       pdf: 'PDF',
       groups: '그룹'
     },
     tooltip: {
       ...enMain.ribbon.tooltip,
+      searchConvert: '선택한 객체의 모든 사본을 찾아 블록으로 변환합니다(BSEARCH).',
       importPdf: 'PDF 파일에서 벡터 형상을 가져오고 원, 호, 곡선을 복원합니다 (IPDF).',
       pdfScale: '알려진 거리의 두 점으로 가져온 PDF 형상의 축척을 조정합니다 (PDFSCALE).',
       pdfDim: 'PDF에서 분해된 치수(화살표 또는 사선, 치수선, 치수 보조선, 문자)를 치수 객체로 되돌립니다 (PDFDIM).',
@@ -31,6 +50,7 @@ export default {
     },
     command: {
       ...enMain.ribbon.command,
+      searchConvert: '검색 및\n변환',
       importPdf: 'PDF\n가져오기',
       pdfScale: '축척\n보정',
       pdfDim: '치수\n인식',

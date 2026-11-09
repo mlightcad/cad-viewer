@@ -1,5 +1,10 @@
 export default {
   ACAD: {
+    bsearch: {
+      description:
+        'Chytré bloky: vyhledá shodnou geometrii a převede ji na bloky',
+      prompt: 'Vyberte objekty k vyhledání'
+    },
     hatch: {
       description: 'Vytváří šrafování pomocí kontextového pásu karet'
     },

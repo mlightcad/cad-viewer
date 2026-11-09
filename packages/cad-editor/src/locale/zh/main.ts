@@ -207,6 +207,7 @@ export default {
       }
     },
     group: {
+      smartBlocks: '智能块',
       agent: '智能体',
       pdf: 'PDF',
       draw: '绘制',
@@ -276,6 +277,7 @@ export default {
       arc: '椭圆弧'
     },
     tooltip: {
+      searchConvert: '查找所选对象的所有副本并将其转换为块（BSEARCH）。',
       importPdf: '从 PDF 文件导入矢量图形，并还原圆、圆弧和曲线（IPDF）。',
       pdfScale: '根据两点之间的已知距离缩放导入的 PDF 图形（PDFSCALE）。',
       pdfDim: '将 PDF 中被打散的标注（箭头或斜线、尺寸线、尺寸界线和文字）恢复为标注对象（PDFDIM）。',
@@ -401,6 +403,7 @@ export default {
       }
     },
     command: {
+      searchConvert: '搜索并\n转换',
       importPdf: '导入\nPDF',
       pdfScale: '校准\n比例',
       pdfDim: '识别\n标注',
@@ -483,6 +486,23 @@ export default {
       ucsObject: '对象',
       restoreView: '恢复视图'
     }
+  },
+  bsearch: {
+    title: '搜索并转换',
+    found: '找到 {count} 个实例，已包含 {included} 个',
+    position: '第 {index}/{count} 个',
+    previous: '上一个实例',
+    next: '下一个实例',
+    includeCurrent: '包含此实例',
+    convert: '转换为块…',
+    cancel: '取消',
+    rotation: '旋转',
+    mirror: '镜像',
+    scale: '缩放',
+    sameLayer: '相同图层',
+    existingBlocks: '现有块',
+    textVariations: '文字变化',
+    pickPrompt: '单击实例以包含或排除，或'
   },
   verticalToolbar: {
     measure: {

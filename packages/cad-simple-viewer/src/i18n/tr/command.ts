@@ -154,6 +154,10 @@ export default {
     group: {
       description: 'Grup adı verilen kaydedilmiş nesne kümeleri oluşturur ve yönetir'
     },
+    '-bsearch': {
+      description: 'Aynı geometriyi bulur ve bloklara dönüştürür (komut satırı)',
+      prompt: 'Aranacak nesneleri seçin'
+    },
     '-group': {
       description: 'Komut satırı seçenekleriyle grup oluşturur ve yönetir'
     },

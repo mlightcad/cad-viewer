@@ -2,6 +2,23 @@ import enMain from '../en/main'
 
 export default {
   ...enMain,
+  bsearch: {
+    title: 'بحث وتحويل',
+    found: 'تم العثور على {count} نسخة، {included} مضمّنة',
+    position: '{index} من {count}',
+    previous: 'النسخة السابقة',
+    next: 'النسخة التالية',
+    includeCurrent: 'تضمين هذه النسخة',
+    convert: 'تحويل إلى كتلة…',
+    cancel: 'إلغاء',
+    rotation: 'مدوّرة',
+    mirror: 'معكوسة',
+    scale: 'بمقياس',
+    sameLayer: 'نفس الطبقة',
+    existingBlocks: 'الكتل الموجودة',
+    textVariations: 'اختلاف النص',
+    pickPrompt: 'انقر على نسخة لتضمينها أو استبعادها، أو'
+  },
 
   mainMenu: {
     ...enMain.mainMenu,
@@ -34,6 +51,7 @@ export default {
 
     group: {
       ...enMain.ribbon.group,
+      smartBlocks: 'الكتل الذكية',
       agent: 'الوكيل',
       pdf: 'PDF',
       draw: 'رسم',
@@ -80,6 +98,7 @@ export default {
 
     command: {
       ...enMain.ribbon.command,
+      searchConvert: 'بحث\nوتحويل',
       importPdf: 'استيراد\nPDF',
       pdfScale: 'معايرة\nالمقياس',
       pdfDim: 'استعادة\nالأبعاد',
@@ -392,6 +411,8 @@ export default {
 
     tooltip: {
       ...enMain.ribbon.tooltip,
+      searchConvert:
+        'ابحث عن جميع نسخ الكائنات المحددة وحوّلها إلى كتل (BSEARCH).',
       importPdf: 'استيراد الهندسة المتجهية من ملف PDF مع إعادة بناء الدوائر والأقواس والمنحنيات (IPDF).',
       pdfScale: 'تغيير مقياس هندسة PDF المستوردة من نقطتين لمسافة معروفة (PDFSCALE).',
       pdfDim: 'تحويل أبعاد PDF المفككة (الأسهم أو العلامات والخطوط وخطوط الامتداد والنصوص) إلى كائنات أبعاد (PDFDIM).',

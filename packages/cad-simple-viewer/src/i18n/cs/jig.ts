@@ -1801,27 +1801,129 @@ export default {
     summary:
       'Převedeno {count} kót; styl PDF_DIM používá lineární měřítko {scale}.'
   },
-  pdfblock: {
-    basePoint:
-      'Určete základní bod bloku (shoda kopií s jiným měřítkem: {scale}) nebo',
-    scaleOn: 'zapnuto',
-    scaleOff: 'vypnuto',
-    name: 'Zadejte název bloku',
-    nameExists: 'Blok "{name}" již existuje.',
-    unsupported:
-      'Žádný z vybraných objektů nelze porovnat (podporovány jsou úsečky, oblouky, kružnice, křivky, elipsy, spliny a text).',
-    noCopies:
-      'Nebyly nalezeny další kopie; blokem se stanou jen vybrané objekty.',
-    replaceAll:
-      'Nalezeno {count} shodných kopií. Nahradit je referencemi bloku?',
-    replaceOne: 'Kopie {index}/{count}: nahradit referencí bloku?',
-    summary: 'Vytvořen blok "{name}" s {count} referencemi.',
+  bsearch: {
+    unsupported: 'Žádný z vybraných objektů nelze porovnat (podporovány jsou úsečky, oblouky, kružnice, křivky, elipsy, spliny, text, odstavcový text a reference bloků).',
+    skipped: '{count} vybraných objektů nelze porovnat, budou ignorovány.',
+    found: 'Nalezeno {count} shodných instancí, převede se {included}. Zvolte',
+    noMatches: 'Žádné další instance nenalezeny.',
+    reviewOne: 'Instance {index}/{count} ({state})',
+    included: 'zahrnuta',
+    excluded: 'vyloučena',
+    options: 'Otočení {rotation}, zrcadlení {mirror}, měřítko {scale}, stejná hladina {layer}, existující bloky {blocks}, rozdílný text {text}. Přepnout',
+    on: 'zap',
+    off: 'vyp',
+    target: 'Převést na',
+    name: 'Zadejte název nového bloku',
+    nameExists: 'Blok s názvem "{name}" již existuje.',
+    nameInvalid: '"{name}" není platný název bloku.',
+    basePoint: 'Určete bod vložení',
+    attributeTag: 'Zadejte značku atributu pro text "{text}"',
+    existingName: 'Zadejte název existujícího bloku',
+    blockNotFound: 'Blok "{name}" nebyl nalezen.',
+    rotation: 'Určete úhel otočení bloku',
+    scale: 'Určete měřítko bloku',
+    scope: 'Převést také {count} nalezených instancí, nebo jen zdrojové objekty?',
+    summary: 'Převedeno na blok "{name}": {count} referencí.',
     keywords: {
+      convert: {
+        display: 'Převést(C)',
+        local: 'Převést',
+        global: 'Convert'
+      },
+      review: {
+        display: 'Prohlédnout(R)',
+        local: 'Prohlédnout',
+        global: 'Review'
+      },
+      options: {
+        display: 'Možnosti(O)',
+        local: 'Možnosti',
+        global: 'Options'
+      },
+      exit: {
+        display: 'Konec(X)',
+        local: 'Konec',
+        global: 'eXit'
+      },
+      include: {
+        display: 'Zahrnout(I)',
+        local: 'Zahrnout',
+        global: 'Include'
+      },
+      exclude: {
+        display: 'Vyloučit(E)',
+        local: 'Vyloučit',
+        global: 'Exclude'
+      },
+      next: {
+        display: 'Další(N)',
+        local: 'Další',
+        global: 'Next'
+      },
+      previous: {
+        display: 'Předchozí(P)',
+        local: 'Předchozí',
+        global: 'Previous'
+      },
+      done: {
+        display: 'Hotovo(D)',
+        local: 'Hotovo',
+        global: 'Done'
+      },
+      rotation: {
+        display: 'Otočení(R)',
+        local: 'Otočení',
+        global: 'Rotation'
+      },
+      mirror: {
+        display: 'Zrcadlení(M)',
+        local: 'Zrcadlení',
+        global: 'Mirror'
+      },
       scale: {
         display: 'Měřítko(S)',
         local: 'Měřítko',
         global: 'Scale'
       },
+      layer: {
+        display: 'Hladina(L)',
+        local: 'Hladina',
+        global: 'Layer'
+      },
+      blocks: {
+        display: 'Bloky(B)',
+        local: 'Bloky',
+        global: 'Blocks'
+      },
+      text: {
+        display: 'Text(T)',
+        local: 'Text',
+        global: 'Text'
+      },
+      new: {
+        display: 'Nový(N)',
+        local: 'Nový',
+        global: 'New'
+      },
+      existing: {
+        display: 'Existující(E)',
+        local: 'Existující',
+        global: 'Existing'
+      },
+      instances: {
+        display: 'Instance(I)',
+        local: 'Instance',
+        global: 'Instances'
+      },
+      source: {
+        display: 'Zdroj(S)',
+        local: 'Zdroj',
+        global: 'Source'
+      }
+    }
+  },
+  pdfblock: {
+    keywords: {
       yes: {
         display: 'Ano(Y)',
         local: 'Ano',

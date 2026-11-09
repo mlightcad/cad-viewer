@@ -2432,26 +2432,129 @@ export default {
     summary:
       'تم تحويل {count} بُعد؛ يستخدم النمط PDF_DIM معامل مقياس خطي قدره {scale}.'
   },
-  pdfblock: {
-    basePoint:
-      'حدد نقطة أساس الكتلة (مطابقة النسخ المُغيّرة المقياس: {scale}) أو',
-    scaleOn: 'تشغيل',
-    scaleOff: 'إيقاف',
-    name: 'أدخل اسم الكتلة',
+  bsearch: {
+    unsupported: 'لا يمكن مطابقة أي من الكائنات المحددة (المدعوم: الخطوط والأقواس والدوائر والخطوط المتعددة والقطوع الناقصة والمنحنيات والنصوص والنصوص المتعددة ومراجع الكتل).',
+    skipped: 'تم تجاهل {count} من الكائنات المحددة لأنه لا يمكن مطابقتها.',
+    found: 'تم العثور على {count} نسخة مطابقة، سيتم تحويل {included}. اختر',
+    noMatches: 'لم يتم العثور على نسخ أخرى.',
+    reviewOne: 'النسخة {index}/{count} ({state})',
+    included: 'مضمّنة',
+    excluded: 'مستبعدة',
+    options: 'الدوران {rotation}، الانعكاس {mirror}، المقياس {scale}، نفس الطبقة {layer}، الكتل الموجودة {blocks}، اختلاف النص {text}. تبديل',
+    on: 'تشغيل',
+    off: 'إيقاف',
+    target: 'تحويل إلى',
+    name: 'أدخل اسم الكتلة الجديدة',
     nameExists: 'توجد كتلة باسم "{name}" بالفعل.',
-    unsupported:
-      'لا يمكن مطابقة أي من الكائنات المحددة (المدعوم: الخطوط والأقواس والدوائر والخطوط المتعددة والقطوع الناقصة والمنحنيات والنصوص).',
-    noCopies: 'لم يتم العثور على نسخ أخرى؛ ستصبح الكائنات المحددة فقط كتلة.',
-    replaceAll:
-      'تم العثور على {count} نسخة مطابقة. هل تريد استبدالها بمراجع كتل؟',
-    replaceOne: 'النسخة {index}/{count}: استبدالها بمرجع كتلة؟',
-    summary: 'تم إنشاء الكتلة "{name}" مع {count} مرجع.',
+    nameInvalid: '"{name}" ليس اسم كتلة صالحًا.',
+    basePoint: 'حدد نقطة الإدراج',
+    attributeTag: 'أدخل وسم السمة للنص "{text}"',
+    existingName: 'أدخل اسم كتلة موجودة',
+    blockNotFound: 'لم يتم العثور على الكتلة "{name}".',
+    rotation: 'حدد زاوية دوران الكتلة',
+    scale: 'حدد معامل مقياس الكتلة',
+    scope: 'هل تريد تحويل النسخ الـ {count} التي تم العثور عليها أيضًا، أم الكائنات المصدر فقط؟',
+    summary: 'تم التحويل إلى الكتلة "{name}": {count} مرجع.',
     keywords: {
+      convert: {
+        display: 'تحويل(C)',
+        local: 'تحويل',
+        global: 'Convert'
+      },
+      review: {
+        display: 'مراجعة(R)',
+        local: 'مراجعة',
+        global: 'Review'
+      },
+      options: {
+        display: 'خيارات(O)',
+        local: 'خيارات',
+        global: 'Options'
+      },
+      exit: {
+        display: 'خروج(X)',
+        local: 'خروج',
+        global: 'eXit'
+      },
+      include: {
+        display: 'تضمين(I)',
+        local: 'تضمين',
+        global: 'Include'
+      },
+      exclude: {
+        display: 'استبعاد(E)',
+        local: 'استبعاد',
+        global: 'Exclude'
+      },
+      next: {
+        display: 'التالي(N)',
+        local: 'التالي',
+        global: 'Next'
+      },
+      previous: {
+        display: 'السابق(P)',
+        local: 'السابق',
+        global: 'Previous'
+      },
+      done: {
+        display: 'تم(D)',
+        local: 'تم',
+        global: 'Done'
+      },
+      rotation: {
+        display: 'دوران(R)',
+        local: 'دوران',
+        global: 'Rotation'
+      },
+      mirror: {
+        display: 'انعكاس(M)',
+        local: 'انعكاس',
+        global: 'Mirror'
+      },
       scale: {
         display: 'مقياس(S)',
         local: 'مقياس',
         global: 'Scale'
       },
+      layer: {
+        display: 'طبقة(L)',
+        local: 'طبقة',
+        global: 'Layer'
+      },
+      blocks: {
+        display: 'كتل(B)',
+        local: 'كتل',
+        global: 'Blocks'
+      },
+      text: {
+        display: 'نص(T)',
+        local: 'نص',
+        global: 'Text'
+      },
+      new: {
+        display: 'جديد(N)',
+        local: 'جديد',
+        global: 'New'
+      },
+      existing: {
+        display: 'موجود(E)',
+        local: 'موجود',
+        global: 'Existing'
+      },
+      instances: {
+        display: 'النسخ(I)',
+        local: 'النسخ',
+        global: 'Instances'
+      },
+      source: {
+        display: 'المصدر(S)',
+        local: 'المصدر',
+        global: 'Source'
+      }
+    }
+  },
+  pdfblock: {
+    keywords: {
       yes: {
         display: 'نعم(Y)',
         local: 'نعم',

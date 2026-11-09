@@ -708,6 +708,36 @@ export default {
     deleted: '已删除视图“{name}”。',
     topPresetHint: '在此二维查看器中，俯视（Top）已是当前平面视图。'
   },
+  bconvertDlg: {
+    title: '转换为块',
+    newBlock: '新块',
+    existingBlock: '现有块',
+    name: '块名',
+    block: '块',
+    matchingBlock: '{name}（几何相同）',
+    rotation: '旋转（°）',
+    scale: '比例',
+    autoPlacement: '此块包含相同的几何图形，旋转和比例将自动匹配。',
+    insertionPoint: '插入点',
+    pick: '拾取',
+    center: '中心',
+    attributes: '属性',
+    attributesHint: '这些文字在各实例间不同，将转换为属性。',
+    tag: '标记',
+    prompt: '提示',
+    objects: '要转换的对象',
+    allInstances: '所选对象及找到的 {count} 个实例',
+    sourceOnly: '仅所选对象',
+    error: {
+      nameEmpty: '请输入块名。',
+      nameInvalid: '“{name}”不是有效的块名。',
+      nameExists: '名为“{name}”的块已存在。',
+      tagInvalid: '属性标记不能为空且不能包含空格。',
+      tagDuplicate: '属性标记不能重复。',
+      noBlock: '请选择一个现有块。',
+      scaleInvalid: '比例必须大于零。'
+    }
+  },
   newViewDlg: {
     title: '新建视图',
     name: '视图名称',

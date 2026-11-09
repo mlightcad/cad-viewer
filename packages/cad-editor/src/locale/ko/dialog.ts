@@ -2,6 +2,36 @@ import enDialog from '../en/dialog'
 
 export default {
   ...enDialog,
+  bconvertDlg: {
+    title: '블록으로 변환',
+    newBlock: '새 블록',
+    existingBlock: '기존 블록',
+    name: '블록 이름',
+    block: '블록',
+    matchingBlock: '{name} (동일 형상)',
+    rotation: '회전(°)',
+    scale: '축척',
+    autoPlacement: '이 블록은 동일한 형상을 가지므로 회전과 축척이 자동으로 맞춰집니다.',
+    insertionPoint: '삽입점',
+    pick: '선택',
+    center: '중심',
+    attributes: '속성',
+    attributesHint: '이 문자들은 인스턴스마다 달라 속성으로 변환됩니다.',
+    tag: '태그',
+    prompt: '프롬프트',
+    objects: '변환할 객체',
+    allInstances: '선택한 객체와 찾은 인스턴스 {count}개',
+    sourceOnly: '선택한 객체만',
+    error: {
+      nameEmpty: '블록 이름을 입력하십시오.',
+      nameInvalid: '"{name}"은(는) 유효한 블록 이름이 아닙니다.',
+      nameExists: '"{name}" 블록이 이미 있습니다.',
+      tagInvalid: '속성 태그는 비워 둘 수 없으며 공백을 포함할 수 없습니다.',
+      tagDuplicate: '속성 태그는 고유해야 합니다.',
+      noBlock: '기존 블록을 선택하십시오.',
+      scaleInvalid: '축척은 0보다 커야 합니다.'
+    }
+  },
   classicGroupDlg: {
     ...enDialog.classicGroupDlg,
     title: '객체 그룹',

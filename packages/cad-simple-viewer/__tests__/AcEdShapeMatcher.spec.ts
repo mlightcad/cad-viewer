@@ -1,16 +1,16 @@
 import {
-  applyPdfAffine,
-  findPdfShapeMatches,
-  type PdfAffine,
-  type PdfMatchFeature
-} from '../src/recognition/pdfShapeMatching'
+  type AcEdAffine2d,
+  acedApplyAffine2d,
+  acedFindShapeMatches,
+  type AcEdShapeFeature
+} from '../src/smartBlock/AcEdShapeMatcher'
 
 type P = { x: number; y: number }
 
 /** A door-like symbol: a frame line, a leaf line and a swing marker circle. */
-function symbol(t: PdfAffine, idBase: number): PdfMatchFeature<number>[] {
-  const map = (p: P) => applyPdfAffine(t, p)
-  const line = (a: P, b: P, id: number): PdfMatchFeature<number> => {
+function symbol(t: AcEdAffine2d, idBase: number): AcEdShapeFeature<number>[] {
+  const map = (p: P) => acedApplyAffine2d(t, p)
+  const line = (a: P, b: P, id: number): AcEdShapeFeature<number> => {
     const pa = map(a)
     const pb = map(b)
     return {
@@ -41,7 +41,7 @@ function similarity(
   ty: number,
   scale = 1,
   mirror = false
-): PdfAffine {
+): AcEdAffine2d {
   const sign = mirror ? -1 : 1
   const cos = Math.cos(angle) * scale
   const sin = Math.sin(angle) * scale
@@ -50,14 +50,14 @@ function similarity(
 
 const identity = similarity(0, 0, 0)
 
-describe('findPdfShapeMatches', () => {
+describe('acedFindShapeMatches', () => {
   it('finds translated and rotated copies and reports their transforms', () => {
     const template = symbol(identity, 0)
     const copies = [
       ...symbol(similarity(0, 50, 0), 10),
       ...symbol(similarity(Math.PI / 2, 0, 50), 20)
     ]
-    const matches = findPdfShapeMatches(template, [...template, ...copies])
+    const matches = acedFindShapeMatches(template, [...template, ...copies])
     expect(matches).toHaveLength(2)
     const byFirst = new Map(matches.map(m => [m.ids[0], m]))
     expect(byFirst.get(10)?.rotation).toBeCloseTo(0, 6)
@@ -69,19 +69,19 @@ describe('findPdfShapeMatches', () => {
   it('finds mirrored copies only when mirroring is allowed', () => {
     const template = symbol(identity, 0)
     const mirrored = symbol(similarity(0, 0, 40, 1, true), 10)
-    const matches = findPdfShapeMatches(template, mirrored)
+    const matches = acedFindShapeMatches(template, mirrored)
     expect(matches).toHaveLength(1)
     expect(matches[0].mirrored).toBe(true)
     expect(
-      findPdfShapeMatches(template, mirrored, { allowMirror: false })
+      acedFindShapeMatches(template, mirrored, { allowMirror: false })
     ).toHaveLength(0)
   })
 
   it('ignores scaled copies unless scaling is allowed', () => {
     const template = symbol(identity, 0)
     const scaled = symbol(similarity(0.3, 100, 100, 2), 10)
-    expect(findPdfShapeMatches(template, scaled)).toHaveLength(0)
-    const matches = findPdfShapeMatches(template, scaled, { allowScale: true })
+    expect(acedFindShapeMatches(template, scaled)).toHaveLength(0)
+    const matches = acedFindShapeMatches(template, scaled, { allowScale: true })
     expect(matches).toHaveLength(1)
     expect(matches[0].scale).toBeCloseTo(2, 6)
     expect(matches[0].rotation).toBeCloseTo(0.3, 6)
@@ -93,7 +93,7 @@ describe('findPdfShapeMatches', () => {
     const altered = symbol(similarity(0, 0, 50), 20)
     altered[2] = { ...altered[2], size: 1.5 }
     expect(
-      findPdfShapeMatches(template, [...partial, ...altered])
+      acedFindShapeMatches(template, [...partial, ...altered])
     ).toHaveLength(0)
   })
 
@@ -101,16 +101,16 @@ describe('findPdfShapeMatches', () => {
     const template = symbol(identity, 0)
     const copy = symbol(similarity(0, 50, 0), 10)
     // The same copy listed twice under other ids must not count twice.
-    const matches = findPdfShapeMatches(template, [...copy, ...copy])
+    const matches = acedFindShapeMatches(template, [...copy, ...copy])
     expect(matches).toHaveLength(1)
   })
 
   it('maps every template point onto the copy', () => {
     const template = symbol(identity, 0)
     const t = similarity(1.1, -20, 7, 1, true)
-    const [match] = findPdfShapeMatches(template, symbol(t, 10))
-    const p = applyPdfAffine(match.transform, { x: 10, y: 0 })
-    const expected = applyPdfAffine(t, { x: 10, y: 0 })
+    const [match] = acedFindShapeMatches(template, symbol(t, 10))
+    const p = acedApplyAffine2d(match.transform, { x: 10, y: 0 })
+    const expected = acedApplyAffine2d(t, { x: 10, y: 0 })
     expect(p.x).toBeCloseTo(expected.x, 6)
     expect(p.y).toBeCloseTo(expected.y, 6)
   })

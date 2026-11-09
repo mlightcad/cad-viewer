@@ -2,6 +2,37 @@ import enDialog from '../en/dialog'
 
 export default {
   ...enDialog,
+  bconvertDlg: {
+    title: 'تحويل إلى كتلة',
+    newBlock: 'كتلة جديدة',
+    existingBlock: 'كتلة موجودة',
+    name: 'اسم الكتلة',
+    block: 'الكتلة',
+    matchingBlock: '{name} (نفس الشكل)',
+    rotation: 'الدوران (°)',
+    scale: 'المقياس',
+    autoPlacement:
+      'تحتوي هذه الكتلة على نفس الشكل؛ تتم مطابقة الدوران والمقياس تلقائيًا.',
+    insertionPoint: 'نقطة الإدراج',
+    pick: 'التقاط',
+    center: 'المركز',
+    attributes: 'السمات',
+    attributesHint: 'تختلف هذه النصوص بين النسخ وستصبح سمات.',
+    tag: 'الوسم',
+    prompt: 'المطالبة',
+    objects: 'الكائنات المراد تحويلها',
+    allInstances: 'الكائنات المحددة و{count} نسخة تم العثور عليها',
+    sourceOnly: 'الكائنات المحددة فقط',
+    error: {
+      nameEmpty: 'أدخل اسم الكتلة.',
+      nameInvalid: '"{name}" ليس اسم كتلة صالحًا.',
+      nameExists: 'توجد كتلة باسم "{name}" بالفعل.',
+      tagInvalid: 'يجب ألا تكون أوسام السمات فارغة وألا تحتوي على مسافات.',
+      tagDuplicate: 'يجب أن تكون أوسام السمات فريدة.',
+      noBlock: 'اختر كتلة موجودة.',
+      scaleInvalid: 'يجب أن يكون المقياس أكبر من صفر.'
+    }
+  },
 
   baseDialog: {
     ...enDialog.baseDialog,

@@ -150,6 +150,10 @@ export default {
     group: {
       description: 'Vytváří a spravuje uložené sady objektů nazývané skupiny'
     },
+    '-bsearch': {
+      description: 'Vyhledá shodnou geometrii a převede ji na bloky (příkazový řádek)',
+      prompt: 'Vyberte objekty k vyhledání'
+    },
     '-group': {
       description: 'Vytváří a spravuje skupiny pomocí voleb příkazového řádku'
     },

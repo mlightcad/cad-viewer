@@ -1,4 +1,21 @@
 export default {
+  bsearch: {
+    title: 'Ara ve Dönüştür',
+    found: '{count} örnek bulundu, {included} tanesi dahil',
+    position: '{index}/{count}',
+    previous: 'Önceki örnek',
+    next: 'Sonraki örnek',
+    includeCurrent: 'Bu örneği dahil et',
+    convert: 'Bloğa dönüştür…',
+    cancel: 'İptal',
+    rotation: 'Döndürülmüş',
+    mirror: 'Aynalanmış',
+    scale: 'Ölçeklenmiş',
+    sameLayer: 'Aynı katman',
+    existingBlocks: 'Mevcut bloklar',
+    textVariations: 'Metin farkları',
+    pickPrompt: 'Dahil etmek veya hariç tutmak için bir örneğe tıklayın ya da'
+  },
   mainMenu: {
     new: 'Yeni Çizim',
     open: 'Çizim Aç',
@@ -211,6 +228,7 @@ export default {
       }
     },
     group: {
+      smartBlocks: 'Akıllı Bloklar',
       agent: 'Ajan',
       pdf: 'PDF',
       draw: 'Çiz',
@@ -280,6 +298,8 @@ export default {
       arc: 'Eliptik Yay'
     },
     tooltip: {
+      searchConvert:
+        'Seçili nesnelerin tüm kopyalarını bulur ve bloklara dönüştürür (BSEARCH).',
       importPdf: 'PDF dosyasından vektör geometriyi içe aktarır; daireleri, yayları ve eğrileri yeniden oluşturur (IPDF).',
       pdfScale: 'İçe aktarılan PDF geometrisini bilinen bir mesafenin iki noktasına göre ölçekler (PDFSCALE).',
       pdfDim: 'Patlatılmış PDF ölçülerini (oklar veya işaretler, çizgiler, uzatma çizgileri ve metinler) ölçü nesnelerine geri dönüştürür (PDFDIM).',
@@ -421,6 +441,7 @@ export default {
       }
     },
     command: {
+      searchConvert: 'Ara ve\nDönüştür',
       importPdf: 'PDF\nİçe Aktar',
       pdfScale: 'Ölçeği\nKalibre Et',
       pdfDim: 'Ölçüleri\nKurtar',

@@ -1,6 +1,37 @@
 import enDialog from '../en/dialog'
 
 export default {
+  bconvertDlg: {
+    title: 'Převést na blok',
+    newBlock: 'Nový blok',
+    existingBlock: 'Existující blok',
+    name: 'Název bloku',
+    block: 'Blok',
+    matchingBlock: '{name} (stejná geometrie)',
+    rotation: 'Otočení (°)',
+    scale: 'Měřítko',
+    autoPlacement:
+      'Tento blok obsahuje stejnou geometrii; otočení a měřítko se nastaví automaticky.',
+    insertionPoint: 'Bod vložení',
+    pick: 'Vybrat',
+    center: 'Střed',
+    attributes: 'Atributy',
+    attributesHint: 'Tyto texty se mezi instancemi liší a stanou se atributy.',
+    tag: 'Značka',
+    prompt: 'Výzva',
+    objects: 'Objekty k převedení',
+    allInstances: 'Vybrané objekty a {count} nalezených instancí',
+    sourceOnly: 'Pouze vybrané objekty',
+    error: {
+      nameEmpty: 'Zadejte název bloku.',
+      nameInvalid: '"{name}" není platný název bloku.',
+      nameExists: 'Blok s názvem "{name}" již existuje.',
+      tagInvalid: 'Značky atributů nesmí být prázdné ani obsahovat mezery.',
+      tagDuplicate: 'Značky atributů musí být jedinečné.',
+      noBlock: 'Vyberte existující blok.',
+      scaleInvalid: 'Měřítko musí být větší než nula.'
+    }
+  },
   dimStyleDlg: {
     ...enDialog.dimStyleDlg
   },
