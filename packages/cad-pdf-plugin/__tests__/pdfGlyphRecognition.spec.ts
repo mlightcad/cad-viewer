@@ -182,4 +182,22 @@ describe('PdfGlyphDictionary', () => {
     expect(dict.learn(line, 'HEL')).toBe(0)
     expect(dict.size).toBe(0)
   })
+
+  it('round-trips through JSON and keeps the most recent entries', () => {
+    const dict = new PdfGlyphDictionary()
+    const line = clusterPdfTextStrokes(write('THE', { x: 0, y: 0 }, 2), {
+      textHeight: 2
+    }).lines[0]
+    dict.learn(line, 'THE')
+
+    const restored = new PdfGlyphDictionary()
+    expect(restored.load(JSON.parse(JSON.stringify(dict.toJSON())))).toBe(3)
+    const other = clusterPdfTextStrokes(write('HE', { x: 50, y: 0 }, 2), {
+      textHeight: 2
+    }).lines[0]
+    expect(restored.lookup(other)).toBe('HE')
+
+    expect(dict.toJSON(1)).toEqual([dict.toJSON()[2]])
+    expect(restored.load([['x', 'too long'], 'bad', ['y', 'Z']])).toBe(1)
+  })
 })

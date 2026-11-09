@@ -74,6 +74,7 @@ function canJoin(a: PdfImportedText, b: PdfImportedText) {
   return (
     a.layerName === b.layerName &&
     a.color === b.color &&
+    a.fontId === b.fontId &&
     Math.abs(a.height - b.height) <= Math.max(a.height, b.height) * 0.01 &&
     Math.abs(a.widthFactor - b.widthFactor) <= 0.01 &&
     rotationDiff <= (0.5 * Math.PI) / 180

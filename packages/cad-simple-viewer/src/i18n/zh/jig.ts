@@ -1945,6 +1945,7 @@ export default {
     firstPoint: '指定已知距离的第一点',
     secondPoint: '指定第二点',
     realLength: '输入实际长度（测量值 {measured}）',
+    realLengthFromDimensions: '输入实际长度（测量值 {measured}；标注文字显示比例为 1:{scale}）',
     zeroDistance: '两点重合。',
     applied: '已按比例 {factor} 缩放 {count} 个对象。'
   }

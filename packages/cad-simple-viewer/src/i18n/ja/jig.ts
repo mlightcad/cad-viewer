@@ -242,6 +242,7 @@ export default {
     firstPoint: '既知の距離の 1 点目を指定',
     secondPoint: '2 点目を指定',
     realLength: '実際の長さを入力（測定値 {measured}）',
+    realLengthFromDimensions: '実際の長さを入力（測定値 {measured}、寸法値から推定した尺度 1:{scale}）',
     zeroDistance: '2 点が同じ位置です。',
     applied: '{count} 個のオブジェクトを尺度 {factor} で変更しました。'
   }

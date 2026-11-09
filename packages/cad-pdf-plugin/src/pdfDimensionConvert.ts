@@ -4,6 +4,7 @@ import {
   writeDimStyleFields
 } from '@mlightcad/cad-simple-viewer'
 import {
+  AcDb3PointAngularDimension,
   AcDbArc,
   AcDbCircle,
   type AcDbDatabase,
@@ -31,6 +32,7 @@ type PdfDimEntity =
   | AcDbRotatedDimension
   | AcDbRadialDimension
   | AcDbDiametricDimension
+  | AcDb3PointAngularDimension
 
 /**
  * Describes entities for {@link recognizePdfDimensions}: lines and 2-vertex
@@ -44,7 +46,8 @@ export function pdfEntitiesToDimInput<Id>(
     segments: [],
     polygons: [],
     curves: [],
-    texts: []
+    texts: [],
+    arcs: []
   }
   for (const [id, entity] of entities) {
     if (entity instanceof AcDbLine) {
@@ -69,6 +72,15 @@ export function pdfEntitiesToDimInput<Id>(
         center: { x: entity.center.x, y: entity.center.y },
         radius: entity.radius
       })
+      if (entity instanceof AcDbArc) {
+        input.arcs!.push({
+          id,
+          center: { x: entity.center.x, y: entity.center.y },
+          radius: entity.radius,
+          startAngle: entity.startAngle,
+          endAngle: entity.endAngle
+        })
+      }
     } else if (entity instanceof AcDbText) {
       input.texts.push({
         id,
@@ -169,8 +181,12 @@ export function acapPdfCreateDimensions<Id>(
     const dimension = createDimension(candidate)
     dimension.dimensionStyleName = PDF_DIM_STYLE
     const value = parsePdfDimensionValue(candidate.text.text)
-    const expected = candidate.measured * scale
-    const plain = /^[\s\d.,]*$/.test(candidate.text.text)
+    // Angles are not affected by DIMLFAC; a degree sign is still plain.
+    const angular = candidate.kind === 'angular'
+    const expected = angular ? candidate.measured : candidate.measured * scale
+    const plain = (angular ? /^[\s\d.,°]*$/ : /^[\s\d.,]*$/).test(
+      candidate.text.text
+    )
     const agrees =
       value !== undefined &&
       Math.abs(value - expected) <=
@@ -197,6 +213,14 @@ function createDimension<Id>(
     )
     dimension.rotation = candidate.rotation
     return dimension
+  }
+  if (candidate.kind === 'angular') {
+    return new AcDb3PointAngularDimension(
+      pt(candidate.center),
+      pt(candidate.xLine1),
+      pt(candidate.xLine2),
+      pt(candidate.arcPoint)
+    )
   }
   if (candidate.kind === 'radius') {
     return new AcDbRadialDimension(

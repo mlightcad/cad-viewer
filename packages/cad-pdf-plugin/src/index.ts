@@ -83,6 +83,8 @@ export {
 export {
   parsePdfDimensionValue,
   pdfArrowFromPolygon,
+  type PdfAngularDimension,
+  type PdfDimArc,
   type PdfDimCurve,
   type PdfDimensionCandidate,
   type PdfDimensionOptions,

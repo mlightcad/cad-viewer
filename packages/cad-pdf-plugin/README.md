@@ -23,10 +23,10 @@ The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@ml
 - **Busy indicator** — export shows the same conversion spinner as `chtml` so the browser stays responsive
 - **Export options** — model-space framing (`Extents` / `Display`), optional paper-space layouts, text mode (`Text` / `Vector`) and colour mode (`Color` / `Monochrome` — black content on white paper)
 - **Shared core (1.8.0+)** — export logic lives in [`@mlightcad/cad-pdf-core`](../cad-pdf-core), which the headless [`@mlightcad/cad-pdf-exporter`](../cad-pdf-exporter) also uses so Node can export PDF without a browser ([upgrade guide](../../docs/development/upgrade-guide.md))
-- **PDF import** — parses vector paths from a chosen PDF page and appends CAD entities. Bézier chains are rebuilt as true `AcDbCircle` / `AcDbArc` / `AcDbEllipse`, mixed line–arc outlines as bulged `AcDbPolyline`, free-form curves as exact `AcDbSpline`, and arcs a producer already flattened into short lines are refitted. Stroke widths become line weights and exact duplicate outlines are dropped
-- **Scale calibration** — `pdfscale` rescales imported geometry from one known distance, since printed PDFs are rarely 1:1
+- **PDF import** — parses vector paths from a chosen PDF page and appends CAD entities. Bézier chains are rebuilt as true `AcDbCircle` / `AcDbArc` / `AcDbEllipse`, mixed line–arc outlines as bulged `AcDbPolyline`, free-form curves as exact `AcDbSpline`, and arcs a producer already flattened into short lines are refitted. Stroke widths become line weights, dashed strokes get matching `PDF_DASH_*` linetypes, PDF fonts become `PDF_<family>` text styles, filled areas can become solid hatches (`fillHatches`), and exact duplicate outlines are dropped
+- **Scale calibration** — `pdfscale` rescales imported geometry from one known distance, since printed PDFs are rarely 1:1. When the selection holds exploded dimensions, the scale their texts imply pre-fills the real length
 - **Block recovery** — `ipdf` turns Form XObjects painted two or more times with identical content into a block definition with one reference per paint (rotation, mirroring and scale come from each paint's form matrix). `pdfblock` handles PDFs that draw repeated symbols inline: select one instance, pick a base point and name, and every copy under rotation and mirroring (optionally scaling) is highlighted for confirmation and replaced by a block reference
-- **Dimension recovery** — `pdfdim` recognizes linear (any angle, inside or outside arrows, architectural ticks, chained), radius and diameter dimensions in a selected area. It infers the drawing scale from the texts and builds a `PDF_DIM` style whose text height, arrow size and DIMLFAC match the PDF, so a 1:100 drawing keeps its real values
+- **Dimension recovery** — `pdfdim` recognizes linear (any angle, inside or outside arrows, architectural ticks, chained), radius, diameter and angular dimensions in a selected area. It infers the drawing scale from the texts and builds a `PDF_DIM` style whose text height, arrow size and DIMLFAC match the PDF, so a 1:100 drawing keeps its real values
 - **Text recovery** — real PDF text runs that continue one line are merged into one `AcDbText`. `pdftext` turns exploded text strokes back into text: it clusters strokes into lines (position, height, rotation), asks for each line's text, and learns every confirmed glyph shape, so lines whose glyphs are all known convert without asking. With an OCR recognizer registered in `AcApTextRecognitionService` (the CAD Agent plugin registers one that uses the configured vision model), each prompt is pre-filled with a suggestion
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyPdfPlugin`
 - **Framework-agnostic** — no Vue/React dependency; works anywhere `cad-simple-viewer` runs
@@ -149,7 +149,10 @@ await new AcApPdfImportConvertor().convert(context, buffer, {
   recognizeCurves: true, // default; false = flatten curves like before
   curveRecognition: { tolerance: 0.01, splines: true },
   lineWeights: true,
-  removeDuplicates: true
+  removeDuplicates: true,
+  dashLinetypes: true, // PDF_DASH_* linetypes for dashed strokes
+  textStyles: true, // PDF_<family> text styles
+  fillHatches: false // true: filled areas become solid hatches
 })
 ```
 
@@ -180,6 +183,7 @@ The pure recognition step is also exported: `recognizePdfCurves(segments)` turns
    - **Ticks**: short oblique lines at the ends of a longer line.
    - **Linear dimensions**: two terminators on a common axis pointing apart or together, plus a numeric text beside them. Pairs are taken shortest first, so chained dimensions stay separate. Perpendicular lines through the tips are extension lines and give the definition points; chained dimensions may share them.
    - **Radius and diameter**: an arrow whose tip touches a circle and points along its radius, plus an `R…` or `Ø…` text.
+   - **Angular**: an arc with an arrow at each end pointing along it, a value text near its middle, and radial extension lines. These become `AcDb3PointAngularDimension`; angles are compared without DIMLFAC, and a `°` counts as a plain number.
 3. The most common text / measured-length ratio among linear dimensions is the drawing scale. It is snapped to 1, 2, 2.5 or 5 × 10ⁿ when within 1 %.
 4. Everything found is highlighted. Choose `Yes`, `No` or `Review`.
 5. The `PDF_DIM` style is created or updated. It starts from the current style, then takes the measured text height, arrow size and extension, and DIMLFAC = scale; ticks set `_ArchTick`.
@@ -190,7 +194,7 @@ The pure recognition step is also exported: `recognizePdfCurves(segments)` turns
 1. Select the strokes; a window around the text is enough. Strokes much larger than the text (frames, table lines) are ignored.
 2. Strokes within a word gap form phrases. Each phrase gets its baseline direction from the minimum-height oriented bounding box, then splits into rows and lines (`recognition/pdfGlyphClustering.ts`). The cap height and baseline ignore descenders.
 3. Lines whose glyphs are all in the session's glyph dictionary (`recognition/pdfGlyphDictionary.ts`) are converted immediately. For the others, the strokes are highlighted and the prompt shows `<suggestion>` when the dictionary or OCR has one. Enter accepts the suggestion or skips; Esc stops and keeps what was converted.
-4. Typed text whose character count matches the glyph boxes teaches the dictionary: each glyph's normalized, quantized stroke geometry maps to its character.
+4. Typed text whose character count matches the glyph boxes teaches the dictionary: each glyph's normalized, quantized stroke geometry maps to its character. The 5000 most recently confirmed shapes are kept in `localStorage`, so later sessions and other drawings with the same font benefit.
 
 ### Import (`ipdf`)
 

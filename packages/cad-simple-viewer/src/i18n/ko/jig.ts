@@ -242,6 +242,8 @@ export default {
     firstPoint: '알려진 거리의 첫 번째 점 지정',
     secondPoint: '두 번째 점 지정',
     realLength: '실제 길이 입력 (측정값 {measured})',
+    realLengthFromDimensions:
+      '실제 길이 입력 (측정값 {measured}, 치수 문자 기준 축척 1:{scale})',
     zeroDistance: '두 점이 같습니다.',
     applied: '{count}개 객체를 {factor} 배로 축척했습니다.'
   }

@@ -90,6 +90,8 @@ export interface PdfImportOps {
   showText: number
   /** Line width (`w`). Optional so older op tables still type-check. */
   setLineWidth?: number
+  /** Dash pattern (`d`): args `[dashArray, phase]`. */
+  setDash?: number
   /** Form XObject begin — args typically `[matrix, bbox]`. */
   paintFormXObjectBegin?: number
   paintFormXObjectEnd?: number
@@ -251,7 +253,10 @@ export function applyPdfImportContrastColors(
   return {
     subpaths: content.subpaths.map(subpath => ({
       ...subpath,
-      color: remapPdfImportColor(subpath.color, tone)
+      color: remapPdfImportColor(subpath.color, tone),
+      ...(subpath.fillColor
+        ? { fillColor: remapPdfImportColor(subpath.fillColor, tone) }
+        : {})
     })),
     texts: content.texts.map(text => ({
       ...text,
@@ -275,8 +280,25 @@ export interface PdfImportedSubpath {
   segments?: PdfImportSegment[]
   /** True when the subpath was painted by a fill operator. */
   filled?: boolean
+  /**
+   * True when the paint also stroked the outline (`B`, `b`, ...). Unset for
+   * plain strokes, which are always outlines.
+   */
+  stroked?: boolean
+  /** Fill colour of a filled subpath (`#rrggbb` or foreground). */
+  fillColor?: string
+  /**
+   * Subpaths painted by one operator share this number, so an even-odd fill
+   * with holes can become one hatch with several loops.
+   */
+  paintGroup?: number
   /** Stroke width in millimeters, when the PDF set a positive width. */
   lineWidth?: number
+  /**
+   * Stroke dash pattern in millimeters (alternating dash, gap), when the
+   * PDF stroked this subpath dashed. Always an even number of entries.
+   */
+  dashPattern?: number[]
   /**
    * Index into {@link PdfImportPageContent.formInstances} when the subpath
    * was drawn inside a top-level Form XObject.
@@ -296,6 +318,11 @@ export interface PdfImportedText {
   position: PdfImportPoint
   /** Advance width of the run along the baseline, in millimeters. */
   width?: number
+  /**
+   * PDF.js font resource id (`setFont` argument). Resolve the font name
+   * through `page.commonObjs`.
+   */
+  fontId?: string
   /** CAD text height in millimeters. */
   height: number
   /** Rotation in radians, counterclockwise from +X. */
@@ -383,9 +410,11 @@ export function extractPdfImportSubpaths(
   let fillColor = '#000000'
   let strokeColor = '#000000'
   let lineWidth = 1
+  let dashArray: number[] = []
   // Text state parameters (Tf/Tc/Tw/Tz/TL/Tr/Ts) are graphics-state fields and
   // must round-trip with q/Q. Tm/Tlm and the text cursor are not.
   let fontSize = 0
+  let fontId: string | undefined
   let textHScale = 1
   let textRise = 0
   let leading = 0
@@ -397,7 +426,9 @@ export function extractPdfImportSubpaths(
     fillColor: string
     strokeColor: string
     lineWidth: number
+    dashArray: number[]
     fontSize: number
+    fontId: string | undefined
     textHScale: number
     textRise: number
     leading: number
@@ -410,7 +441,9 @@ export function extractPdfImportSubpaths(
     fillColor,
     strokeColor,
     lineWidth,
+    dashArray,
     fontSize,
+    fontId,
     textHScale,
     textRise,
     leading,
@@ -423,7 +456,9 @@ export function extractPdfImportSubpaths(
     fillColor = restored.fillColor
     strokeColor = restored.strokeColor
     lineWidth = restored.lineWidth
+    dashArray = restored.dashArray
     fontSize = restored.fontSize
+    fontId = restored.fontId
     textHScale = restored.textHScale
     textRise = restored.textRise
     leading = restored.leading
@@ -508,16 +543,42 @@ export function extractPdfImportSubpaths(
     }
   }
 
-  const commit = (color: string = strokeColor, filled = false) => {
+  let paintCount = 0
+  const commit = (
+    color: string = strokeColor,
+    filled = false,
+    stroked = !filled
+  ) => {
     flush()
-    const width = filled ? 0 : strokeWidthMm()
+    const width = stroked ? strokeWidthMm() : 0
+    const dashes = stroked ? dashPatternMm() : undefined
+    const group = paintCount++
     for (const subpath of subpaths) {
       const result: PdfImportedSubpath = { ...subpath, color }
-      if (filled) result.filled = true
+      if (filled) {
+        result.filled = true
+        result.fillColor = fillColor
+        result.paintGroup = group
+        if (stroked) result.stroked = true
+      }
       if (width > 0) result.lineWidth = width
+      if (dashes) result.dashPattern = dashes
       subpathResult.push(result)
     }
     subpaths = []
+  }
+
+  // Dash lengths are in user space like the line width. PDF repeats an odd
+  // array to even length ([3] means 3 on, 3 off). All-zero arrays are solid.
+  const dashPatternMm = (): number[] | undefined => {
+    if (dashArray.length === 0 || dashArray.every(v => !(v > 0))) {
+      return undefined
+    }
+    const scale =
+      Math.sqrt(Math.abs(ctm[0] * ctm[3] - ctm[1] * ctm[2])) * PDF_PT_TO_MM
+    const even =
+      dashArray.length % 2 === 0 ? dashArray : [...dashArray, ...dashArray]
+    return even.map(v => Math.max(0, v) * scale)
   }
 
   // PDF line width is in user space; the CTM scales it to page points. Use
@@ -528,6 +589,14 @@ export function extractPdfImportSubpaths(
     const scale = Math.sqrt(Math.abs(ctm[0] * ctm[3] - ctm[1] * ctm[2]))
     return lineWidth * scale * PDF_PT_TO_MM
   }
+
+  const isStrokePaint = (paintOp: number) =>
+    paintOp === ops.stroke ||
+    paintOp === ops.closeStroke ||
+    paintOp === ops.fillStroke ||
+    paintOp === ops.eoFillStroke ||
+    paintOp === ops.closeFillStroke ||
+    paintOp === ops.closeEOFillStroke
 
   const isFillPaint = (paintOp: number) =>
     paintOp === ops.fill ||
@@ -813,7 +882,7 @@ export function extractPdfImportSubpaths(
       ) {
         closePath()
       }
-      commit(paintColor(paintOp), isFillPaint(paintOp))
+      commit(paintColor(paintOp), isFillPaint(paintOp), isStrokePaint(paintOp))
     } else {
       // Unrecognized paint op — drop the path rather than inventing a stroke
       // at EOF via a trailing commit.
@@ -840,6 +909,14 @@ export function extractPdfImportSubpaths(
     if (fn === ops.setFillRGBColor) {
       const color = readCssColor(rawArgs[0])
       if (color) fillColor = color
+      continue
+    }
+
+    if (ops.setDash !== undefined && fn === ops.setDash) {
+      const list = asNumberList(rawArgs[0])
+      dashArray = list
+        ? Array.from(list, Number).filter(v => Number.isFinite(v))
+        : []
       continue
     }
 
@@ -870,6 +947,7 @@ export function extractPdfImportSubpaths(
     if (fn === ops.setFont) {
       const size = Number(rawArgs[1])
       if (Number.isFinite(size)) fontSize = size
+      if (typeof rawArgs[0] === 'string') fontId = rawArgs[0]
       continue
     }
 
@@ -1097,7 +1175,7 @@ export function extractPdfImportSubpaths(
         if (isFillPaint(fn)) {
           closeOpenSubpaths()
         }
-        commit(paintColor(fn), isFillPaint(fn))
+        commit(paintColor(fn), isFillPaint(fn), isStrokePaint(fn))
         break
 
       case ops.stroke:
@@ -1109,7 +1187,7 @@ export function extractPdfImportSubpaths(
       case ops.fillStroke:
       case ops.eoFillStroke:
         closeOpenSubpaths()
-        commit(paintColor(fn), true)
+        commit(paintColor(fn), true, isStrokePaint(fn))
         break
 
       case ops.endPath:
@@ -1187,7 +1265,8 @@ export function extractPdfImportSubpaths(
           rotation: Math.atan2(dy, dx),
           widthFactor,
           layerName: activeLayerName,
-          color: (textRenderingMode & 3) === 1 ? strokeColor : fillColor
+          color: (textRenderingMode & 3) === 1 ? strokeColor : fillColor,
+          ...(fontId !== undefined ? { fontId } : {})
         })
       }
     }

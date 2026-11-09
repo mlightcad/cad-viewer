@@ -60,6 +60,38 @@ export class PdfGlyphDictionary {
   }
 
   /**
+   * Serializable form: `[signature, character]` pairs, newest last.
+   *
+   * @param limit - Keep at most this many entries (the most recent ones).
+   */
+  toJSON(limit = Infinity): Array<[string, string]> {
+    const entries = [...this.glyphs.entries()]
+    return entries.slice(Math.max(0, entries.length - limit))
+  }
+
+  /**
+   * Adds entries produced by {@link toJSON}; malformed entries are skipped.
+   *
+   * @returns Number of entries loaded.
+   */
+  load(entries: unknown): number {
+    if (!Array.isArray(entries)) return 0
+    let count = 0
+    for (const entry of entries) {
+      if (
+        Array.isArray(entry) &&
+        typeof entry[0] === 'string' &&
+        typeof entry[1] === 'string' &&
+        [...entry[1]].length === 1
+      ) {
+        this.glyphs.set(entry[0], entry[1])
+        count++
+      }
+    }
+    return count
+  }
+
+  /**
    * Records the characters of a confirmed line.
    *
    * Learning only happens when the typed text (spaces removed) has exactly
@@ -71,7 +103,10 @@ export class PdfGlyphDictionary {
     const chars = [...text.replace(/\s+/g, '')]
     if (chars.length === 0 || chars.length !== line.glyphs.length) return 0
     line.glyphs.forEach((glyph, i) => {
-      this.glyphs.set(pdfGlyphSignature(glyph, line), chars[i])
+      const signature = pdfGlyphSignature(glyph, line)
+      // Re-insert so the Map keeps recently confirmed shapes last.
+      this.glyphs.delete(signature)
+      this.glyphs.set(signature, chars[i])
     })
     return chars.length
   }

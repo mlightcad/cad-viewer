@@ -35,7 +35,17 @@ import {
   type AcApResolvedPdfImportOptions,
   resolveAcApPdfImportOptions
 } from './AcApPdfImportOptions'
-import { buildPdfImportShapes, type PdfImportShapeItem } from './pdfImportShapes'
+import {
+  acapPdfCreateSolidHatch,
+  acapPdfEnsureDashLinetype,
+  acapPdfEnsureTextStyle,
+  acapPdfFontFamily,
+  acapPdfShapeToLoop
+} from './pdfImportEntities'
+import {
+  buildPdfImportShapes,
+  type PdfImportShapeItem
+} from './pdfImportShapes'
 import {
   allocatePdfFallbackLayerName,
   collectPdfOcgLayers,
@@ -340,6 +350,7 @@ export class AcApPdfImportConvertor {
         options
       )
 
+      const db = context.doc.database
       const usedLayerNames = new Set<string>()
       const createEntity = (item: PdfImportShapeItem) => {
         const entity = shapeToEntity(item.shape)
@@ -352,17 +363,60 @@ export class AcApPdfImportConvertor {
         if (options.lineWeights && item.lineWidth) {
           entity.lineWeight = nearestLineWeight(item.lineWidth)
         }
+        if (options.dashLinetypes && item.dashPattern) {
+          entity.lineType = acapPdfEnsureDashLinetype(
+            db,
+            item.dashPattern.map(length => length * options.scale)
+          )
+        }
         return entity
       }
 
       const entities: AcDbEntity[] = []
+      const fillGroups = new Map<number, PdfImportShapeItem[]>()
       for (const item of items) {
+        if (
+          options.fillHatches &&
+          item.filled &&
+          item.paintGroup !== undefined
+        ) {
+          const group = fillGroups.get(item.paintGroup)
+          if (group) group.push(item)
+          else fillGroups.set(item.paintGroup, [item])
+          // A pure fill becomes only a hatch; fill + stroke keeps the outline.
+          if (!item.stroked) continue
+        }
         const entity = createEntity(item)
         if (entity) entities.push(entity)
       }
+      // One solid hatch per fill paint; extra loops are holes (even-odd).
+      let hatchCount = 0
+      for (const group of fillGroups.values()) {
+        const loops = group
+          .map(item => acapPdfShapeToLoop(item.shape))
+          .filter((loop): loop is NonNullable<typeof loop> => !!loop)
+        const hatch = acapPdfCreateSolidHatch(db, loops)
+        if (!hatch) {
+          // Nothing closed to fill: keep the outlines instead of dropping them.
+          for (const item of group) {
+            if (item.stroked) continue
+            const entity = createEntity(item)
+            if (entity) entities.push(entity)
+          }
+          continue
+        }
+        const first = group[0]
+        if (first.layerName) {
+          usedLayerNames.add(first.layerName)
+          hatch.layer = first.layerName
+        }
+        applyPdfColor(hatch, first.fillColor ?? first.color)
+        entities.push(hatch)
+        hatchCount++
+      }
 
       // Repeated Form XObjects become block definitions plus references.
-      const blockTable = context.doc.database.tables.blockTable
+      const blockTable = db.tables.blockTable
       let referenceCount = 0
       for (const block of formBlocks.blocks) {
         const blockEntities = block.shapes
@@ -401,12 +455,31 @@ export class AcApPdfImportConvertor {
       const texts = options.mergeTextRuns
         ? mergePdfTextRuns(content.texts)
         : content.texts
+      // PDF fonts become PDF_<family> text styles (font names come from the
+      // fonts PDF.js loaded for this page).
+      const styleByFont = new Map<string, string | undefined>()
+      const styleFor = (fontId?: string) => {
+        if (!options.textStyles || fontId === undefined) return undefined
+        if (!styleByFont.has(fontId)) {
+          const name = pdfFontName(page, fontId)
+          styleByFont.set(
+            fontId,
+            name
+              ? acapPdfEnsureTextStyle(db, acapPdfFontFamily(name))
+              : undefined
+          )
+        }
+        return styleByFont.get(fontId)
+      }
       for (const textRun of texts) {
         if (textRun.layerName) {
           usedLayerNames.add(textRun.layerName)
         }
         const entity = this.textToEntity(textRun, options)
-        if (entity) entities.push(entity)
+        if (!entity) continue
+        const style = styleFor(textRun.fontId)
+        if (style) entity.styleName = style
+        entities.push(entity)
       }
 
       if (entities.length === 0) {
@@ -437,7 +510,7 @@ export class AcApPdfImportConvertor {
         `[PdfImport] Imported ${entities.length} entities across ${usedLayerNames.size} CAD layer(s): ` +
           `${stats.line} lines, ${stats.polyline} polylines, ${stats.circle} circles, ` +
           `${stats.arc} arcs, ${stats.ellipse} ellipses, ${stats.spline} splines, ` +
-          `${texts.length} texts, ${formBlocks.blocks.length} blocks ` +
+          `${texts.length} texts, ${hatchCount} hatches, ${formBlocks.blocks.length} blocks ` +
           `(${referenceCount} references); ${stats.duplicates} duplicates skipped.`
       )
     } catch (err) {
@@ -544,6 +617,20 @@ function nearestLineWeight(widthMm: number): AcGiLineWeight {
     }
   }
   return best as AcGiLineWeight
+}
+
+/** PDF font name for a `setFont` resource id, when PDF.js loaded it. */
+function pdfFontName(
+  page: { commonObjs: { has(id: string): boolean; get(id: string): unknown } },
+  fontId: string
+): string | undefined {
+  try {
+    if (!page.commonObjs.has(fontId)) return undefined
+    const font = page.commonObjs.get(fontId) as { name?: unknown } | undefined
+    return typeof font?.name === 'string' && font.name ? font.name : undefined
+  } catch {
+    return undefined
+  }
 }
 
 /** Name prefix for blocks recovered from repeated Form XObjects. */

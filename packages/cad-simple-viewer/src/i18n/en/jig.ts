@@ -1987,6 +1987,8 @@ export default {
     firstPoint: 'Specify first point of a known distance',
     secondPoint: 'Specify second point',
     realLength: 'Enter the real length (measured {measured})',
+    realLengthFromDimensions:
+      'Enter the real length (measured {measured}; dimension texts suggest 1:{scale})',
     zeroDistance: 'The two points are identical.',
     applied: 'Scaled {count} objects by a factor of {factor}.'
   }

@@ -209,6 +209,9 @@ describe('PDF import segments and shapes', () => {
     )
     expect(items).toHaveLength(1)
     expect(stats.duplicates).toBe(1)
+    // The kept outline remembers both paints (for fill hatches).
+    expect(items[0].filled).toBe(true)
+    expect(items[0].stroked).toBe(true)
   })
 
   test('continues from the subpath start after closePath', () => {
@@ -347,5 +350,90 @@ describe('Form XObject blocks', () => {
       )
     ])
     expect(buildPdfFormBlocks(content).blocks).toHaveLength(0)
+  })
+})
+
+describe('dash patterns and fills', () => {
+  const OPS_D: PdfImportOps = { ...OPS, setDash: 44 }
+
+  test('records dash patterns in mm, scaled by the CTM and reset by Q', () => {
+    const content = extractPdfImportSubpaths(
+      {
+        fnArray: [
+          OPS_D.save,
+          OPS_D.transform,
+          OPS_D.setDash!,
+          OPS_D.constructPath,
+          OPS_D.restore,
+          OPS_D.constructPath
+        ],
+        argsArray: [
+          [],
+          [2, 0, 0, 2, 0, 0],
+          [[3], 0],
+          strokePath([MOVE, 0, 0, LINE, 50, 0]),
+          [],
+          strokePath([MOVE, 0, 10, LINE, 50, 10])
+        ]
+      },
+      OPS_D,
+      viewport,
+      new Map()
+    )
+    // [3] repeats as 3 on, 3 off; CTM scale 2.
+    expect(content.subpaths[0].dashPattern).toEqual([
+      6 * PDF_PT_TO_MM,
+      6 * PDF_PT_TO_MM
+    ])
+    expect(content.subpaths[1].dashPattern).toBeUndefined()
+  })
+
+  test('marks fill + stroke paints and groups even-odd fill subpaths', () => {
+    const OPS_F = { ...OPS_D }
+    const ring = [
+      ...[MOVE, 0, 0, LINE, 40, 0, LINE, 40, 40, LINE, 0, 40, CLOSE],
+      ...[MOVE, 10, 10, LINE, 30, 10, LINE, 30, 30, LINE, 10, 30, CLOSE]
+    ]
+    const content = extractPdfImportSubpaths(
+      {
+        fnArray: [
+          OPS_F.setFillRGBColor,
+          OPS_F.constructPath,
+          OPS_F.constructPath
+        ],
+        argsArray: [
+          ['#ff0000'],
+          [OPS_F.eoFill, [new Float64Array(ring)], null],
+          [
+            OPS_F.fillStroke,
+            [
+              new Float64Array([
+                MOVE,
+                100,
+                0,
+                LINE,
+                120,
+                0,
+                LINE,
+                110,
+                20,
+                CLOSE
+              ])
+            ],
+            null
+          ]
+        ]
+      },
+      OPS_F,
+      viewport,
+      new Map()
+    )
+    const [outer, inner, triangle] = content.subpaths
+    expect(outer.filled).toBe(true)
+    expect(outer.stroked).toBeUndefined()
+    expect(outer.fillColor).toBe('#ff0000')
+    expect(inner.paintGroup).toBe(outer.paintGroup)
+    expect(triangle.stroked).toBe(true)
+    expect(triangle.paintGroup).not.toBe(outer.paintGroup)
   })
 })

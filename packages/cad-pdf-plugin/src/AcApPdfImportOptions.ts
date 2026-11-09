@@ -43,6 +43,21 @@ export interface AcApPdfImportOptions {
    * block definitions and references. Default `true`.
    */
   formBlocks?: boolean
+  /**
+   * Give dashed PDF strokes a matching `PDF_DASH_*` linetype. Default `true`.
+   */
+  dashLinetypes?: boolean
+  /**
+   * Turn filled PDF areas into solid hatches in the fill colour (a pure fill
+   * becomes only a hatch; fill + stroke also keeps the outline). When
+   * `false`, fills import as outlines, as before. Default `false`.
+   */
+  fillHatches?: boolean
+  /**
+   * Give imported text a `PDF_<font family>` text style using the PDF font's
+   * family. Default `true`.
+   */
+  textStyles?: boolean
 }
 
 /** Fully populated {@link AcApPdfImportOptions}. */
@@ -70,6 +85,9 @@ export function resolveAcApPdfImportOptions(
     lineWeights: options?.lineWeights ?? true,
     removeDuplicates: options?.removeDuplicates ?? true,
     mergeTextRuns: options?.mergeTextRuns ?? true,
-    formBlocks: options?.formBlocks ?? true
+    formBlocks: options?.formBlocks ?? true,
+    dashLinetypes: options?.dashLinetypes ?? true,
+    fillHatches: options?.fillHatches ?? false,
+    textStyles: options?.textStyles ?? true
   }
 }

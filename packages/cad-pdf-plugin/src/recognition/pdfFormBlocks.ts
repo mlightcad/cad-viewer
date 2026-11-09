@@ -27,6 +27,7 @@ export interface PdfFormBlockShape {
   layerName?: string
   color?: string
   lineWidth?: number
+  dashPattern?: number[]
 }
 
 /** Placement of one block reference, in model-space millimeters. */
@@ -195,7 +196,8 @@ export function buildPdfFormBlocks(
           shape,
           layerName: subpath.layerName,
           color: subpath.color,
-          lineWidth: subpath.lineWidth
+          lineWidth: subpath.lineWidth,
+          dashPattern: subpath.dashPattern
         })
       }
     }

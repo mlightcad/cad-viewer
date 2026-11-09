@@ -1851,6 +1851,8 @@ export default {
     firstPoint: 'Určete první bod známé vzdálenosti',
     secondPoint: 'Určete druhý bod',
     realLength: 'Zadejte skutečnou délku (změřeno {measured})',
+    realLengthFromDimensions:
+      'Zadejte skutečnou délku (změřeno {measured}; texty kót naznačují 1:{scale})',
     zeroDistance: 'Oba body jsou totožné.',
     applied: 'Změněno měřítko {count} objektů faktorem {factor}.'
   }

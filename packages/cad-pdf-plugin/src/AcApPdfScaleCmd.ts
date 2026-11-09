@@ -12,6 +12,11 @@ import {
 import { AcGeMatrix3d, AcGePoint3d } from '@mlightcad/data-model'
 
 import { acapPdfT } from './acapPdfI18n'
+import { acapPdfNiceScale, pdfEntitiesToDimInput } from './pdfDimensionConvert'
+import {
+  recognizePdfDimensions,
+  suggestPdfDimensionScale
+} from './recognition/pdfDimensionPattern'
 
 /**
  * `pdfscale`: calibrates imported PDF geometry to real-world units.
@@ -19,7 +24,9 @@ import { acapPdfT } from './acapPdfI18n'
  * PDF drawings are usually printed at a scale (1:50, 1:100, ...), so a
  * 1 pt = 25.4/72 mm import is rarely 1:1. The user picks two points of a
  * known distance (typically the ends of a dimension) and types the true
- * length; the selection is scaled uniformly about the first point.
+ * length; the selection is scaled uniformly about the first point. When the
+ * selection contains exploded dimensions, the scale their texts imply
+ * pre-fills the real length.
  */
 export class AcApPdfScaleCmd extends AcEdCommand {
   constructor() {
@@ -43,6 +50,16 @@ export class AcApPdfScaleCmd extends AcEdCommand {
     })
     if (!resolved) return
     const editor = AcApDocManager.instance.editor
+    // Exploded dimensions in the selection reveal the drawing scale: their
+    // texts divided by their measured lengths.
+    const byId = new Map(
+      resolved.ids.map((id, i) => [id, resolved.entities[i]] as const)
+    )
+    const suggested = suggestPdfDimensionScale(
+      recognizePdfDimensions(pdfEntitiesToDimInput(byId))
+    )
+    const dimensionScale =
+      suggested !== undefined ? acapPdfNiceScale(suggested) : undefined
     const selectionSet = context.view.selectionSet
 
     const firstPrompt = new AcEdPromptPointOptions(
@@ -78,17 +95,38 @@ export class AcApPdfScaleCmd extends AcEdCommand {
     }
 
     const lengthPrompt = new AcEdPromptDoubleOptions(
-      acapPdfT('jig.pdfscale.realLength', { measured: formatNumber(measured) })
+      dimensionScale !== undefined
+        ? acapPdfT('jig.pdfscale.realLengthFromDimensions', {
+            measured: formatNumber(measured),
+            scale: formatNumber(dimensionScale)
+          })
+        : acapPdfT('jig.pdfscale.realLength', {
+            measured: formatNumber(measured)
+          })
     )
     lengthPrompt.allowNegative = false
     lengthPrompt.allowZero = false
+    if (dimensionScale !== undefined) {
+      lengthPrompt.defaultValue = Number(
+        (measured * dimensionScale).toPrecision(10)
+      )
+      lengthPrompt.useDefaultValue = true
+      lengthPrompt.allowNone = true
+    }
     const length = await editor.getDouble(lengthPrompt)
-    if (length.status !== AcEdPromptStatus.OK || length.value == null) {
+    const realLength =
+      length.status === AcEdPromptStatus.OK
+        ? length.value
+        : length.status === AcEdPromptStatus.None &&
+            dimensionScale !== undefined
+          ? lengthPrompt.defaultValue
+          : undefined
+    if (realLength == null) {
       selectionSet.clear()
       return
     }
 
-    const factor = AcApPdfScaleCmd.scaleFactor(measured, length.value)
+    const factor = AcApPdfScaleCmd.scaleFactor(measured, realLength)
     if (factor === undefined) {
       selectionSet.clear()
       return
