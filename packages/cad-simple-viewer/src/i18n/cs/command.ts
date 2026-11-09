@@ -208,6 +208,10 @@ export default {
       description:
         'Vyplní uzavřenou oblast nebo vybrané objekty vzorem šrafování'
     },
+    pdfblock: {
+      description: 'Převede opakovanou geometrii z PDF zpět na blok',
+      prompt: 'Vyberte objekty jedné instance bloku'
+    },
     pdftext: {
       description: 'Převede rozložené tahy textu z PDF zpět na textové objekty',
       prompt: 'Vyberte tahy textu k převodu'

@@ -277,6 +277,11 @@ export interface PdfImportedSubpath {
   filled?: boolean
   /** Stroke width in millimeters, when the PDF set a positive width. */
   lineWidth?: number
+  /**
+   * Index into {@link PdfImportPageContent.formInstances} when the subpath
+   * was drawn inside a top-level Form XObject.
+   */
+  formInstance?: number
   layerName?: string
   /**
    * Paint colour: `#rrggbb`, or {@link PDF_IMPORT_FOREGROUND_COLOR} after
@@ -304,9 +309,24 @@ export interface PdfImportedText {
   color?: string
 }
 
+/**
+ * One top-level Form XObject paint. PDF.js inlines form content and does not
+ * say which form it was, so repeated forms are recognized by comparing the
+ * geometry of instances in form-local coordinates.
+ */
+export interface PdfImportFormInstance {
+  /**
+   * Affine map from form space to model-space millimeters:
+   * `x' = a·x + c·y + e`, `y' = b·x + d·y + f`.
+   */
+  toCad: { a: number; b: number; c: number; d: number; e: number; f: number }
+}
+
 export interface PdfImportPageContent {
   subpaths: PdfImportedSubpath[]
   texts: PdfImportedText[]
+  /** Top-level Form XObject paints, referenced by subpath `formInstance`. */
+  formInstances?: PdfImportFormInstance[]
 }
 
 type PdfMatrix = [number, number, number, number, number, number]
@@ -332,6 +352,8 @@ export function extractPdfImportSubpaths(
 ): PdfImportPageContent {
   const { fnArray, argsArray } = opList
   const subpathResult: PdfImportedSubpath[] = []
+  const formInstances: PdfImportFormInstance[] = []
+  let currentFormInstance: number | undefined
   const textResult: PdfImportedText[] = []
 
   // PDF.js 5.x normally packs path construction into OPS.constructPath.
@@ -444,11 +466,15 @@ export function extractPdfImportSubpaths(
 
   const flush = () => {
     if (current.length > 1) {
-      subpaths.push({
+      const subpath: PdfImportedSubpath = {
         points: current,
         segments: currentSegments,
         layerName: currentPathLayerName
-      })
+      }
+      if (currentFormInstance !== undefined) {
+        subpath.formInstance = currentFormInstance
+      }
+      subpaths.push(subpath)
     }
     current = []
     currentSegments = []
@@ -962,6 +988,24 @@ export function extractPdfImportSubpaths(
       if (matrix) {
         ctm = multiplyMatrix(ctm, matrix)
       }
+      if (formStack.length === 1) {
+        // Sample the form-space → model-space map; both the CTM and the
+        // viewport transform are affine.
+        const o = pagePointToCadPoint(0, 0)
+        const ux = pagePointToCadPoint(1, 0)
+        const uy = pagePointToCadPoint(0, 1)
+        formInstances.push({
+          toCad: {
+            a: ux.x - o.x,
+            b: ux.y - o.y,
+            c: uy.x - o.x,
+            d: uy.y - o.y,
+            e: o.x,
+            f: o.y
+          }
+        })
+        currentFormInstance = formInstances.length - 1
+      }
       continue
     }
 
@@ -971,6 +1015,7 @@ export function extractPdfImportSubpaths(
     ) {
       const restored = formStack.pop()
       if (restored) restoreGraphicsState(restored)
+      if (formStack.length === 0) currentFormInstance = undefined
       continue
     }
 
@@ -1075,10 +1120,12 @@ export function extractPdfImportSubpaths(
 
   // Drop any path that never received a paint operator.
   discard()
-  return applyPdfImportContrastColors(
+  const content = applyPdfImportContrastColors(
     { subpaths: subpathResult, texts: textResult },
     options
   )
+  if (formInstances.length > 0) content.formInstances = formInstances
+  return content
 
   // Hoisted so the operator loop above can call them.
   function moveTextLine(tx: number, ty: number) {

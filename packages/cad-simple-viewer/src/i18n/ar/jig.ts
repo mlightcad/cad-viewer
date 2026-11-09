@@ -2412,11 +2412,58 @@ export default {
       }
     }
   },
+  pdfblock: {
+    basePoint:
+      'حدد نقطة أساس الكتلة (مطابقة النسخ المُغيّرة المقياس: {scale}) أو',
+    scaleOn: 'تشغيل',
+    scaleOff: 'إيقاف',
+    name: 'أدخل اسم الكتلة',
+    nameExists: 'توجد كتلة باسم "{name}" بالفعل.',
+    unsupported:
+      'لا يمكن مطابقة أي من الكائنات المحددة (المدعوم: الخطوط والأقواس والدوائر والخطوط المتعددة والقطوع الناقصة والمنحنيات والنصوص).',
+    noCopies: 'لم يتم العثور على نسخ أخرى؛ ستصبح الكائنات المحددة فقط كتلة.',
+    replaceAll:
+      'تم العثور على {count} نسخة مطابقة. هل تريد استبدالها بمراجع كتل؟',
+    replaceOne: 'النسخة {index}/{count}: استبدالها بمرجع كتلة؟',
+    summary: 'تم إنشاء الكتلة "{name}" مع {count} مرجع.',
+    keywords: {
+      scale: {
+        display: 'مقياس(S)',
+        local: 'مقياس',
+        global: 'Scale'
+      },
+      yes: {
+        display: 'نعم(Y)',
+        local: 'نعم',
+        global: 'Yes'
+      },
+      no: {
+        display: 'لا(N)',
+        local: 'لا',
+        global: 'No'
+      },
+      review: {
+        display: 'مراجعة(R)',
+        local: 'مراجعة',
+        global: 'Review'
+      },
+      all: {
+        display: 'الكل(A)',
+        local: 'الكل',
+        global: 'All'
+      },
+      exit: {
+        display: 'خروج(X)',
+        local: 'خروج',
+        global: 'eXit'
+      }
+    }
+  },
   pdftext: {
     enterText:
-      'سطر النص {index}/{count}: أدخل النص المظلل (Enter للتخطي، Esc للإيقاف)',
+      'سطر النص {index}/{count}: أدخل النص المظلل (اتركه فارغًا للتخطي، Esc للإيقاف)',
     enterTextWithSuggestion:
-      'سطر النص {index}/{count}: أدخل النص المظلل <{suggestion}>',
+      'سطر النص {index}/{count}: أدخل النص المظلل',
     noCandidates: 'لم يتم العثور على خطوط تشبه النص في التحديد.',
     summary:
       'تم تحويل {converted} سطر نصي، منها {automatic} تلقائيًا؛ تم تخطي {skipped}.'

@@ -179,11 +179,55 @@ export default {
       }
     }
   },
+  pdfblock: {
+    basePoint: 'ブロックの基点を指定（尺度違いのコピーも一致: {scale}）または',
+    scaleOn: 'オン',
+    scaleOff: 'オフ',
+    name: 'ブロック名を入力',
+    nameExists: 'ブロック "{name}" は既に存在します。',
+    unsupported: '選択したオブジェクトは照合できません（線分、円弧、円、ポリライン、楕円、スプライン、文字に対応）。',
+    noCopies: '他のコピーは見つかりませんでした。選択したオブジェクトだけをブロックにします。',
+    replaceAll: '一致するコピーが {count} 個見つかりました。ブロック参照に置き換えますか？',
+    replaceOne: 'コピー {index}/{count}: ブロック参照に置き換えますか？',
+    summary: 'ブロック "{name}" を作成しました（参照 {count} 個）。',
+    keywords: {
+      scale: {
+        display: '尺度(S)',
+        local: '尺度',
+        global: 'Scale'
+      },
+      yes: {
+        display: 'はい(Y)',
+        local: 'はい',
+        global: 'Yes'
+      },
+      no: {
+        display: 'いいえ(N)',
+        local: 'いいえ',
+        global: 'No'
+      },
+      review: {
+        display: '個別確認(R)',
+        local: '個別確認',
+        global: 'Review'
+      },
+      all: {
+        display: 'すべて(A)',
+        local: 'すべて',
+        global: 'All'
+      },
+      exit: {
+        display: '終了(X)',
+        local: '終了',
+        global: 'eXit'
+      }
+    }
+  },
   pdftext: {
     enterText:
-      '文字行 {index}/{count}: ハイライトされた文字を入力（Enter でスキップ、Esc で終了）',
+      '文字行 {index}/{count}: ハイライトされた文字を入力（空欄でスキップ、Esc で終了）',
     enterTextWithSuggestion:
-      '文字行 {index}/{count}: ハイライトされた文字を入力 <{suggestion}>',
+      '文字行 {index}/{count}: ハイライトされた文字を入力',
     noCandidates: '選択内に文字らしいストロークが見つかりません。',
     summary:
       '{converted} 行を変換しました（自動認識 {automatic} 行）。スキップ {skipped} 行。'

@@ -1785,11 +1785,58 @@ export default {
       }
     }
   },
+  pdfblock: {
+    basePoint:
+      'Blok taban noktasını belirtin (ölçeklenmiş kopyaları eşleştir: {scale}) veya',
+    scaleOn: 'açık',
+    scaleOff: 'kapalı',
+    name: 'Blok adını girin',
+    nameExists: '"{name}" adlı blok zaten var.',
+    unsupported:
+      'Seçilen nesnelerin hiçbiri eşleştirilemez (çizgi, yay, daire, çoklu çizgi, elips, spline ve metin desteklenir).',
+    noCopies: 'Başka kopya bulunamadı; yalnızca seçilen nesneler blok olur.',
+    replaceAll:
+      '{count} eşleşen kopya bulundu. Blok referanslarıyla değiştirilsin mi?',
+    replaceOne: 'Kopya {index}/{count}: blok referansıyla değiştirilsin mi?',
+    summary: '"{name}" bloğu {count} referansla oluşturuldu.',
+    keywords: {
+      scale: {
+        display: 'Ölçek(S)',
+        local: 'Ölçek',
+        global: 'Scale'
+      },
+      yes: {
+        display: 'Evet(Y)',
+        local: 'Evet',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Hayır(N)',
+        local: 'Hayır',
+        global: 'No'
+      },
+      review: {
+        display: 'İncele(R)',
+        local: 'İncele',
+        global: 'Review'
+      },
+      all: {
+        display: 'Tümü(A)',
+        local: 'Tümü',
+        global: 'All'
+      },
+      exit: {
+        display: 'Çıkış(X)',
+        local: 'Çıkış',
+        global: 'eXit'
+      }
+    }
+  },
   pdftext: {
     enterText:
-      'Metin satırı {index}/{count}: vurgulanan metni girin (Enter atlar, Esc durdurur)',
+      'Metin satırı {index}/{count}: vurgulanan metni girin (boş bırakmak atlar, Esc durdurur)',
     enterTextWithSuggestion:
-      'Metin satırı {index}/{count}: vurgulanan metni girin <{suggestion}>',
+      'Metin satırı {index}/{count}: vurgulanan metni girin',
     noCandidates: 'Seçimde metne benzer çizgi bulunamadı.',
     summary:
       '{converted} metin satırı dönüştürüldü, {automatic} tanesi otomatik tanındı; {skipped} atlandı.'

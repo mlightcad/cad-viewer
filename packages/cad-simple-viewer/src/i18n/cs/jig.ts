@@ -1782,11 +1782,59 @@ export default {
       }
     }
   },
+  pdfblock: {
+    basePoint:
+      'Určete základní bod bloku (shoda kopií s jiným měřítkem: {scale}) nebo',
+    scaleOn: 'zapnuto',
+    scaleOff: 'vypnuto',
+    name: 'Zadejte název bloku',
+    nameExists: 'Blok "{name}" již existuje.',
+    unsupported:
+      'Žádný z vybraných objektů nelze porovnat (podporovány jsou úsečky, oblouky, kružnice, křivky, elipsy, spliny a text).',
+    noCopies:
+      'Nebyly nalezeny další kopie; blokem se stanou jen vybrané objekty.',
+    replaceAll:
+      'Nalezeno {count} shodných kopií. Nahradit je referencemi bloku?',
+    replaceOne: 'Kopie {index}/{count}: nahradit referencí bloku?',
+    summary: 'Vytvořen blok "{name}" s {count} referencemi.',
+    keywords: {
+      scale: {
+        display: 'Měřítko(S)',
+        local: 'Měřítko',
+        global: 'Scale'
+      },
+      yes: {
+        display: 'Ano(Y)',
+        local: 'Ano',
+        global: 'Yes'
+      },
+      no: {
+        display: 'Ne(N)',
+        local: 'Ne',
+        global: 'No'
+      },
+      review: {
+        display: 'Revize(R)',
+        local: 'Revize',
+        global: 'Review'
+      },
+      all: {
+        display: 'Vše(A)',
+        local: 'Vše',
+        global: 'All'
+      },
+      exit: {
+        display: 'Konec(X)',
+        local: 'Konec',
+        global: 'eXit'
+      }
+    }
+  },
   pdftext: {
     enterText:
-      'Řádek textu {index}/{count}: zadejte zvýrazněný text (Enter přeskočí, Esc ukončí)',
+      'Řádek textu {index}/{count}: zadejte zvýrazněný text (prázdné přeskočí, Esc ukončí)',
     enterTextWithSuggestion:
-      'Řádek textu {index}/{count}: zadejte zvýrazněný text <{suggestion}>',
+      'Řádek textu {index}/{count}: zadejte zvýrazněný text',
     noCandidates: 'Ve výběru nebyly nalezeny žádné tahy podobné textu.',
     summary:
       'Převedeno {converted} řádků textu, z toho {automatic} automaticky; přeskočeno {skipped}.'

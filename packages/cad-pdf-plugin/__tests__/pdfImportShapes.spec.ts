@@ -6,6 +6,7 @@ import {
   type PdfImportOps,
   type PdfImportViewport
 } from '../src/pdfVectorImport'
+import { buildPdfFormBlocks } from '../src/recognition/pdfFormBlocks'
 
 const OPS: PdfImportOps = {
   save: 1,
@@ -259,5 +260,92 @@ describe('PDF import segments and shapes', () => {
     expect(segment.p1.x).toBeCloseTo((100 / 3) * PDF_PT_TO_MM, 6)
     expect(segment.p1.y).toBeCloseTo((200 / 3) * PDF_PT_TO_MM, 6)
     expect(segment.p3.x).toBeCloseTo(100 * PDF_PT_TO_MM, 6)
+  })
+})
+
+describe('Form XObject blocks', () => {
+  /** A 10×10 square with a circle: one "symbol" in form space. */
+  const symbolOps = () => [
+    [
+      OPS.constructPath,
+      strokePath([MOVE, 0, 0, LINE, 10, 0, LINE, 10, 10, LINE, 0, 10, CLOSE])
+    ],
+    [OPS.constructPath, strokePath(circleStream(5, 5, 3))]
+  ]
+
+  function paintForm(matrix: number[], body: Array<[number, unknown]>) {
+    return [
+      [OPS.paintFormXObjectBegin!, [matrix, [0, 0, 10, 10]]],
+      ...body,
+      [OPS.paintFormXObjectEnd!, []]
+    ] as Array<[number, unknown]>
+  }
+
+  function extract(ops: Array<[number, unknown]>) {
+    return extractPdfImportSubpaths(
+      { fnArray: ops.map(o => o[0]), argsArray: ops.map(o => o[1]) },
+      OPS,
+      viewport,
+      new Map()
+    )
+  }
+
+  test('groups identical form paints into one block with transforms', () => {
+    const content = extract([
+      ...paintForm(
+        [1, 0, 0, 1, 100, 100],
+        symbolOps() as Array<[number, unknown]>
+      ),
+      ...paintForm(
+        [0, 1, -1, 0, 300, 100],
+        symbolOps() as Array<[number, unknown]>
+      ),
+      // A different form drawn once stays plain geometry.
+      ...paintForm(
+        [1, 0, 0, 1, 500, 100],
+        [[OPS.constructPath, strokePath([MOVE, 0, 0, LINE, 20, 0])]]
+      )
+    ])
+    expect(content.formInstances).toHaveLength(3)
+
+    const { blocks, consumed } = buildPdfFormBlocks(content)
+    expect(blocks).toHaveLength(1)
+    expect(consumed.size).toBe(4)
+    const [block] = blocks
+    expect(block.shapes.map(s => s.shape.kind).sort()).toEqual([
+      'circle',
+      'polyline'
+    ])
+    const circle = block.shapes.find(s => s.shape.kind === 'circle')!.shape
+    if (circle.kind !== 'circle') return
+    // Definition keeps model-space millimeters (first instance scale 1).
+    expect(circle.radius).toBeCloseTo(3 * PDF_PT_TO_MM, 6)
+
+    const [first, second] = block.references
+    expect(first.scaleX).toBeCloseTo(1, 9)
+    expect(first.scaleY).toBeCloseTo(1, 9)
+    expect(first.rotation).toBeCloseTo(0, 9)
+    expect(first.position.x).toBeCloseTo(100 * PDF_PT_TO_MM, 6)
+    expect(second.rotation).toBeCloseTo(Math.PI / 2, 9)
+    expect(second.position.x).toBeCloseTo(300 * PDF_PT_TO_MM, 6)
+
+    // Definition point mapped by the second reference lands on the page.
+    const c = circle.center
+    const cos = Math.cos(second.rotation)
+    const sin = Math.sin(second.rotation)
+    const x = second.position.x + (c.x * cos - c.y * sin) * second.scaleX
+    const expected = (300 - 5) * PDF_PT_TO_MM
+    expect(x).toBeCloseTo(expected, 6)
+  })
+
+  test('skips forms painted only once or with shear', () => {
+    const content = extract([
+      ...paintForm([1, 0, 0, 1, 0, 0], symbolOps() as Array<[number, unknown]>),
+      ...paintForm(
+        [1, 0, 0.5, 1, 200, 0],
+        symbolOps() as Array<[number, unknown]>
+      )
+    ])
+    expect(buildPdfFormBlocks(content).blocks).toHaveLength(0)
   })
 })

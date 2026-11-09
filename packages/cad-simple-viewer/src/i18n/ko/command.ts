@@ -4,6 +4,10 @@ export default {
   ...enCommand,
   ACAD: {
     ...enCommand.ACAD,
+    pdfblock: {
+      description: 'PDF의 반복 형상을 블록으로 되돌립니다',
+      prompt: '블록 인스턴스 하나의 객체 선택'
+    },
     pdftext: {
       description: 'PDF에서 분해된 문자 획을 문자 객체로 되돌립니다',
       prompt: '변환할 문자 획 선택'

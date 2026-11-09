@@ -28,6 +28,9 @@ import {
   TWO_PI
 } from './pdfRecGeometry'
 
+/** Angular slack (radians) when deciding an arc chain closes a full turn. */
+const FULL_TURN_TOLERANCE = 1e-3
+
 /** Tuning for {@link recognizePdfCurves}. */
 export interface PdfCurveRecognitionOptions {
   /** Absolute tolerance in millimeters. Default `0.01`. */
@@ -184,7 +187,10 @@ export function recognizePdfCurves(
       return [{ kind: 'line', start: prim.p0, end: prim.p1 }]
     }
     if (prim.kind === 'arc') {
-      if (closed && Math.abs(Math.abs(prim.sweep) - TWO_PI) < 1e-3) {
+      if (
+        closed &&
+        Math.abs(Math.abs(prim.sweep) - TWO_PI) < FULL_TURN_TOLERANCE
+      ) {
         return [{ kind: 'circle', center: prim.center, radius: prim.radius }]
       }
       return [arcShape(prim)]
@@ -380,7 +386,9 @@ function sameCircle(
     Math.sign(a.sweep) === Math.sign(b.sweep) &&
     Math.abs(a.radius - b.radius) <= tol &&
     dist(a.center, b.center) <= tol &&
-    Math.abs(a.sweep + b.sweep) <= TWO_PI + 1e-6
+    // Float32 path coordinates leave ~1e-6 rad of error per small arc, so a
+    // full circle's quarter sweeps can add up to slightly more than 2π.
+    Math.abs(a.sweep + b.sweep) <= TWO_PI + FULL_TURN_TOLERANCE
   )
 }
 
@@ -400,7 +408,7 @@ function joinArcs(
       y: (a.center.y * wa + b.center.y * wb) / w
     },
     radius: (a.radius * wa + b.radius * wb) / w,
-    sweep: a.sweep + b.sweep
+    sweep: Math.max(-TWO_PI, Math.min(TWO_PI, a.sweep + b.sweep))
   }
 }
 

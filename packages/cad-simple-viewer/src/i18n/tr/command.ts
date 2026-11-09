@@ -213,6 +213,10 @@ export default {
       description:
         'Kapalı bir alanı veya seçili nesneleri bir tarama deseniyle doldurur'
     },
+    pdfblock: {
+      description: 'PDF içindeki tekrarlanan geometriyi bloğa geri dönüştürür',
+      prompt: 'Bir blok örneğinin nesnelerini seçin'
+    },
     pdftext: {
       description: 'Patlatılmış PDF metin çizgilerini metin nesnelerine geri dönüştürür',
       prompt: 'Dönüştürülecek metin çizgilerini seçin'

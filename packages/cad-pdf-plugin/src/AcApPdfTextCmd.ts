@@ -114,7 +114,10 @@ export class AcApPdfTextCmd extends AcEdCommand {
       )
       prompt.allowSpaces = true
       prompt.allowEmpty = true
-      if (suggestion) prompt.defaultValue = suggestion
+      if (suggestion) {
+        prompt.defaultValue = suggestion
+        prompt.useDefaultValue = true
+      }
       const result = await editor.getString(prompt)
       if (
         result.status !== AcEdPromptStatus.OK &&

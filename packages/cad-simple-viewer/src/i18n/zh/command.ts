@@ -196,6 +196,10 @@ export default {
     hatch: {
       description: '用填充图案填充封闭区域或所选对象'
     },
+    pdfblock: {
+      description: '将 PDF 中重复的图形恢复为块',
+      prompt: '选择一个块实例的对象'
+    },
     pdftext: {
       description: '将 PDF 中被打散的文字笔画转换回文字对象',
       prompt: '选择要转换的文字笔画'

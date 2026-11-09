@@ -82,6 +82,7 @@ export default {
       ...enMain.ribbon.command,
       importPdf: 'استيراد\nPDF',
       pdfScale: 'معايرة\nالمقياس',
+      pdfBlock: 'إنشاء\nكتلة',
       pdfText: 'استعادة\nالنص',
       line: 'خط',
       polyline: 'متعدد الخطوط',
@@ -392,6 +393,7 @@ export default {
       ...enMain.ribbon.tooltip,
       importPdf: 'استيراد الهندسة المتجهية من ملف PDF مع إعادة بناء الدوائر والأقواس والمنحنيات (IPDF).',
       pdfScale: 'تغيير مقياس هندسة PDF المستوردة من نقطتين لمسافة معروفة (PDFSCALE).',
+      pdfBlock: 'تحويل الهندسة المتكررة في PDF إلى كتلة واستبدال كل نسخة بمرجع كتلة (PDFBLOCK).',
       pdfText: 'تحويل خطوط نص PDF المفككة إلى كائنات نصية (PDFTEXT).',
 
       line: 'ارسم قطعة خط مستقيم واحدة.',
