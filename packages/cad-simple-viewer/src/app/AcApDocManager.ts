@@ -1890,6 +1890,51 @@ export class AcApDocManager {
   }
 
   /**
+   * Returns whether `cmdName` is the trigger of a lazy plugin that has not
+   * registered the command yet.
+   *
+   * Such commands do not exist in the command stack until their plugin loads,
+   * which {@link sendStringToExecute} does on demand. Interactive callers (the
+   * command line) use this to accept them instead of reporting an unknown
+   * command.
+   *
+   * @param cmdName - Command name as typed (case-insensitive).
+   */
+  isLazyPluginCommand(cmdName: string): boolean {
+    const name = cmdName.trim()
+    if (!name) return false
+    return (
+      this._pluginManager.isLazyPluginTrigger(name) &&
+      !this._commandManager.lookupGlobalCmd(name)
+    )
+  }
+
+  /**
+   * Lazy plugin trigger commands not loaded yet whose names start with
+   * `prefix`, for command-line auto-completion next to
+   * {@link searchCommandsByPrefix}.
+   *
+   * Their required open mode is unknown until the plugin loads, so they are
+   * not filtered by the document's mode; running one in a mode it does not
+   * support reports that when the command starts.
+   *
+   * @param prefix - Prefix to match (case-insensitive).
+   * @returns Upper-case trigger names, sorted.
+   */
+  searchLazyCommandsByPrefix(prefix: string): string[] {
+    const normalized = prefix.trim().toUpperCase()
+    if (!normalized) return []
+    return this._pluginManager
+      .getLazyPluginTriggers()
+      .filter(
+        trigger =>
+          trigger.startsWith(normalized) &&
+          !this._commandManager.lookupGlobalCmd(trigger)
+      )
+      .sort()
+  }
+
+  /**
    * Registers all default commands available in the CAD viewer.
    *
    * This method sets up the command system by registering built-in commands including:

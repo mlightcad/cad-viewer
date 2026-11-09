@@ -319,19 +319,24 @@ export class AcEdCommandLine {
     }
 
     const command = this.resolveCommand(cmdLine)
-    if (!command) {
+    // A lazy plugin's commands are registered only once it loads, which
+    // sendStringToExecute does on demand; accept its trigger names too.
+    const lazyName = command ? undefined : this.resolveLazyCommand(cmdLine)
+    if (!command && !lazyName) {
       const unknown = this.localize('main.commandLine.unknownCommand')
       this.showMessage(`${unknown}: ${cmdLine}`, 'warning')
       return
     }
+    const globalName = command?.globalName ?? lazyName!
+    const localName = command?.localName ?? lazyName!
 
-    this.history.push(command.globalName)
+    this.history.push(globalName)
     this.historyIndex = this.history.length
-    this.lastExecuted = command.globalName
+    this.lastExecuted = globalName
 
     this.printHistoryLine(cmdLine)
     const executed = this.localize('main.commandLine.executed')
-    this.showMessage(`${executed}: ${command.localName}`)
+    this.showMessage(`${executed}: ${localName}`)
 
     AcApDocManager.instance.sendStringToExecute(cmdLine)
     this.clearInput()
@@ -859,7 +864,9 @@ export class AcEdCommandLine {
     }
 
     const matches = AcApDocManager.instance.searchCommandsByPrefix(text)
-    if (matches.length) {
+    // Commands of lazy plugins that are not loaded yet.
+    const lazyMatches = AcApDocManager.instance.searchLazyCommandsByPrefix(text)
+    if (matches.length || lazyMatches.length) {
       this.autoCompleteIndex = -1
       this.cmdPopup.innerHTML = ''
       matches.forEach((item, idx) => {
@@ -878,6 +885,19 @@ export class AcEdCommandLine {
         const aliasText = aliases.length ? `(${aliases.join(', ')})` : ''
         div.innerHTML = `<strong>${item.command.globalName}${aliasText} - ${description}</strong>`
         if (idx === this.autoCompleteIndex) div.classList.add('selected')
+        this.cmdPopup.appendChild(div)
+      })
+      lazyMatches.forEach(name => {
+        const div = document.createElement('div')
+        div.className = 'item'
+        div.dataset.value = name
+        const description = AcApI18n.t(
+          AcApI18n.sysCmdKey(name.toLowerCase(), 'description'),
+          { fallback: '' }
+        )
+        const strong = document.createElement('strong')
+        strong.textContent = description ? `${name} - ${description}` : name
+        div.appendChild(strong)
         this.cmdPopup.appendChild(div)
       })
       this.updatePopups({ showCmd: true })
@@ -1017,6 +1037,17 @@ export class AcEdCommandLine {
     const cmdStr = parts[0].toUpperCase()
     // TODO: Should look up local cmd too
     return AcApDocManager.instance.lookupLocalCmd(cmdStr)
+  }
+
+  /**
+   * Returns the upper-case command name when the line starts with the
+   * trigger of a lazy plugin that is not loaded yet.
+   */
+  private resolveLazyCommand(cmdLine: string): string | undefined {
+    const cmdStr = cmdLine.trim().split(/\s+/)[0].toUpperCase()
+    return AcApDocManager.instance.isLazyPluginCommand(cmdStr)
+      ? cmdStr
+      : undefined
   }
 
   /** Show or hide popups */
