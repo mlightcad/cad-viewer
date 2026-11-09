@@ -111,6 +111,8 @@ describe('PDF import entities', () => {
     const hatch = acapPdfCreateSolidHatch(db, [square(10), square(4)])!
     expect(hatch.isSolidFill).toBe(true)
     expect(hatch.patternName).toBe('SOLID')
+    // Nothing backs the loops; HPASSOC must not make it associative.
+    expect(hatch.associative).toBe(false)
     expect(acapPdfCreateSolidHatch(db, [])).toBeUndefined()
   })
 

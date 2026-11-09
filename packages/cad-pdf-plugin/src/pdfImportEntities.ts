@@ -165,6 +165,9 @@ export function acapPdfCreateSolidHatch(
   hatch.patternName = HATCH_PATTERN_SOLID
   hatch.patternType = AcDbHatchPatternType.Predefined
   hatch.isSolidFill = true
+  // No boundary objects back the loops, so the hatch is not associative
+  // (HPASSOC would otherwise apply and hide its boundary grips).
+  hatch.associative = false
   for (const loop of loops) hatch.add(loop)
   return hatch
 }
