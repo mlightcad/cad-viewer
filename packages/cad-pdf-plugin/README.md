@@ -9,7 +9,8 @@ PDF **export** and **import** plugin for [`@mlightcad/cad-simple-viewer`](../cad
 |---------|-------------|
 | `-cpdf` | Export via **command-line prompts** (no dialog; AutoCAD-style `-` prefix) |
 | `cpdf` | Same as `-cpdf` when no UI command is registered. In [`cad-editor`](../cad-editor), `cpdf` opens an **export options dialog** instead |
-| `ipdf` | Import vector geometry from a PDF file into model space |
+| `ipdf` | Import vector geometry from a PDF file into model space, recovering circles, arcs, ellipses and splines |
+| `pdfscale` | Calibrate imported PDF geometry: pick two points of a known distance and type its real length |
 
 The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@mlightcad/pdf-renderer`, `pdfjs-dist`) are only downloaded when a user runs `-cpdf` / `cpdf` or `ipdf`.
 
@@ -19,7 +20,8 @@ The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@ml
 - **Busy indicator** — export shows the same conversion spinner as `chtml` so the browser stays responsive
 - **Export options** — model-space framing (`Extents` / `Display`), optional paper-space layouts, text mode (`Text` / `Vector`) and colour mode (`Color` / `Monochrome` — black content on white paper)
 - **Shared core (1.8.0+)** — export logic lives in [`@mlightcad/cad-pdf-core`](../cad-pdf-core), which the headless [`@mlightcad/cad-pdf-exporter`](../cad-pdf-exporter) also uses so Node can export PDF without a browser ([upgrade guide](../../docs/development/upgrade-guide.md))
-- **PDF import** — parses vector paths from the first page of a PDF (lines, polylines, Bézier curves) and appends CAD entities
+- **PDF import** — parses vector paths from a chosen PDF page and appends CAD entities. Bézier chains are rebuilt as true `AcDbCircle` / `AcDbArc` / `AcDbEllipse`, mixed line–arc outlines as bulged `AcDbPolyline`, free-form curves as exact `AcDbSpline`, and arcs a producer already flattened into short lines are refitted. Stroke widths become line weights and exact duplicate outlines are dropped
+- **Scale calibration** — `pdfscale` rescales imported geometry from one known distance, since printed PDFs are rarely 1:1
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyPdfPlugin`
 - **Framework-agnostic** — no Vue/React dependency; works anywhere `cad-simple-viewer` runs
 
@@ -132,7 +134,20 @@ await new AcApPdfConvertor().convert(
 // Import from bytes
 const buffer: ArrayBuffer = /* PDF file */
 await new AcApPdfImportConvertor().convert(context, buffer, 1) // page 1
+
+// ...or with full options
+await new AcApPdfImportConvertor().convert(context, buffer, {
+  pageNumber: 2,
+  insertionPoint: { x: 1000, y: 0 },
+  scale: 100, // drawing printed at 1:100
+  recognizeCurves: true, // default; false = flatten curves like before
+  curveRecognition: { tolerance: 0.01, splines: true },
+  lineWeights: true,
+  removeDuplicates: true
+})
 ```
+
+The pure recognition step is also exported: `recognizePdfCurves(segments)` turns the exact segments of one `PdfImportedSubpath` into `PdfRecognizedShape`s, and `buildPdfImportShapes(content, options)` runs it over a whole page with placement and de-duplication.
 
 ## How it works
 
@@ -146,10 +161,12 @@ await new AcApPdfImportConvertor().convert(context, buffer, 1) // page 1
 ### Import (`ipdf`)
 
 1. Show a native file picker (`.pdf`).
-2. Use `pdfjs-dist` to read operator lists from the selected page.
-3. Convert path operators (move, line, cubic Bézier, close) into `AcDbLine` / `AcDbPolyline`, and `showText` runs into `AcDbText`, in model space.
-4. Map PDF optional content groups to CAD layers when present.
-5. Remap paper-contrast ink to ACI 7 (AutoCAD foreground): black ink on white PDF paper, or white ink on dark PDF paper. ACI 7 follows the CAD canvas background.
+2. Prompt for the page (multi-page files only), then the insertion point, with `Scale` and `Curves` (curve recognition on/off) options. Enter accepts the origin.
+3. Use `pdfjs-dist` to read operator lists from the selected page.
+4. Keep every path as exact segments (lines and cubic Béziers; quadratics are degree-elevated) in model-space millimeters, and `showText` runs as `AcDbText`.
+5. Recognize CAD curves per subpath (`recognition/pdfCurveRecognition.ts`): a cubic whose samples and end tangents match one circle becomes an arc; consecutive arcs on the same circle merge, and a closed 360° chain becomes a circle. Chains that fit a conic become an ellipse. Runs of at least six short, evenly turning lines (turn ≤ 15°, so octagons stay polygons) are refitted as arcs. Lines plus arcs give a bulged polyline; pure free-form chains give an exact spline (triple interior knots). Default tolerance: max(0.01 mm, 0.2 % of the radius).
+6. Map PDF optional content groups to CAD layers when present.
+7. Remap paper-contrast ink to ACI 7 (AutoCAD foreground): black ink on white PDF paper, or white ink on dark PDF paper. ACI 7 follows the CAD canvas background.
 
 Import is **vector-only**; raster/scanned PDF pages produce no entities. Only the requested page is processed (default: page 1). Form XObject `/Matrix` is applied so nested content keeps its placement.
 
@@ -163,6 +180,9 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 | `AcApPdfPlugin` | `AcApPlugin` implementation |
 | `AcApConvertToPdfCmd` | `-cpdf` / fallback `cpdf` command class |
 | `AcApImportPdfCmd` | `ipdf` command class |
+| `AcApPdfScaleCmd` | `pdfscale` command class |
+| `AcApPdfImportOptions`, `resolveAcApPdfImportOptions` | Import options (page, placement, scale, curve recognition) |
+| `recognizePdfCurves`, `buildPdfImportShapes`, `PdfRecognizedShape` | Curve recognition and page-level shape building |
 | `AcApPdfConvertor` | CAD → PDF export utility |
 | `AcApPdfExportOptions`, `AcApPdfColorMode`, `resolveAcApPdfExportOptions` | Export option types and defaults (aliases of `@mlightcad/cad-pdf-core`) |
 | `AcApPdfImportConvertor` | PDF → CAD entities import utility |
@@ -176,6 +196,10 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 | `src/AcApPdfPlugin.ts` | Plugin lifecycle (`onLoad` / `onUnload`) |
 | `src/AcApConvertToPdfCmd.ts` | `-cpdf` command (command-line prompts) |
 | `src/AcApImportPdfCmd.ts` | `ipdf` command |
+| `src/AcApPdfScaleCmd.ts` | `pdfscale` command |
+| `src/AcApPdfImportOptions.ts` | Import option types and defaults |
+| `src/pdfImportShapes.ts` | Page-level recognition, placement and de-duplication |
+| `src/recognition/` | Pure geometry: curve recognition and fitting helpers |
 | `src/AcApPdfConvertor.ts` | Browser export: view box, fonts, download (rendering via `cad-pdf-core`) |
 | `src/AcApPdfExportOptions.ts` | Export option types and defaults |
 | `src/AcApPdfImportConvertor.ts` | Import pipeline (pdf.js operator parsing) |

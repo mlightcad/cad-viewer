@@ -158,5 +158,32 @@ export default {
         global: 'Position'
       }
     }
+  },
+  ipdf: {
+    pageNumber: '페이지 번호 입력 (1-{count})',
+    insertionPoint:
+      '삽입점 지정 (축척 {scale}, 곡선 인식 {curves}) 또는',
+    curvesOn: '켜기',
+    curvesOff: '끄기',
+    scaleFactor: '축척 비율 입력',
+    keywords: {
+      scale: {
+        display: '축척(S)',
+        local: '축척',
+        global: 'Scale'
+      },
+      curves: {
+        display: '곡선(C)',
+        local: '곡선',
+        global: 'Curves'
+      }
+    }
+  },
+  pdfscale: {
+    firstPoint: '알려진 거리의 첫 번째 점 지정',
+    secondPoint: '두 번째 점 지정',
+    realLength: '실제 길이 입력 (측정값 {measured})',
+    zeroDistance: '두 점이 같습니다.',
+    applied: '{count}개 객체를 {factor} 배로 축척했습니다.'
   }
 }

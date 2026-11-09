@@ -1861,5 +1861,32 @@ export default {
         global: 'Position'
       }
     }
+  },
+  ipdf: {
+    pageNumber: '输入页码 (1-{count})',
+    insertionPoint:
+      '指定插入点（比例 {scale}，曲线识别 {curves}）或',
+    curvesOn: '开',
+    curvesOff: '关',
+    scaleFactor: '输入比例因子',
+    keywords: {
+      scale: {
+        display: '比例(S)',
+        local: '比例',
+        global: 'Scale'
+      },
+      curves: {
+        display: '曲线(C)',
+        local: '曲线',
+        global: 'Curves'
+      }
+    }
+  },
+  pdfscale: {
+    firstPoint: '指定已知距离的第一点',
+    secondPoint: '指定第二点',
+    realLength: '输入实际长度（测量值 {measured}）',
+    zeroDistance: '两点重合。',
+    applied: '已按比例 {factor} 缩放 {count} 个对象。'
   }
 }

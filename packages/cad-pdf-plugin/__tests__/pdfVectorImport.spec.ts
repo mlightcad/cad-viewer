@@ -4,10 +4,9 @@ import {
   extractPdfImportSubpaths,
   PDF_IMPORT_FOREGROUND_COLOR,
   PDF_PT_TO_MM,
-  remapPdfImportColor,
   type PdfImportOps,
-  type PdfImportViewport
-} from '../src/pdfVectorImport'
+  type PdfImportViewport,
+  remapPdfImportColor} from '../src/pdfVectorImport'
 
 const OPS: PdfImportOps = {
   save: 1,

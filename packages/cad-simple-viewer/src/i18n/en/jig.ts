@@ -1897,5 +1897,32 @@ export default {
         global: 'Position'
       }
     }
+  },
+  ipdf: {
+    pageNumber: 'Enter page number (1-{count})',
+    insertionPoint:
+      'Specify insertion point (scale {scale}, curve recognition {curves}) or',
+    curvesOn: 'on',
+    curvesOff: 'off',
+    scaleFactor: 'Enter scale factor',
+    keywords: {
+      scale: {
+        display: 'Scale(S)',
+        local: 'Scale',
+        global: 'Scale'
+      },
+      curves: {
+        display: 'Curves(C)',
+        local: 'Curves',
+        global: 'Curves'
+      }
+    }
+  },
+  pdfscale: {
+    firstPoint: 'Specify first point of a known distance',
+    secondPoint: 'Specify second point',
+    realLength: 'Enter the real length (measured {measured})',
+    zeroDistance: 'The two points are identical.',
+    applied: 'Scaled {count} objects by a factor of {factor}.'
   }
 }

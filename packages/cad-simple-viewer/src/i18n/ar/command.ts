@@ -331,6 +331,10 @@ export default {
         'ملء منطقة مغلقة أو عناصر محددة بنمط تهشير'
     },
 
+    pdfscale: {
+      description: 'معايرة هندسة PDF المستوردة من مسافة معروفة',
+      prompt: 'حدد الكائنات المراد تغيير مقياسها'
+    },
     ipdf: {
       ...enCommand.ACAD.ipdf,
       description:

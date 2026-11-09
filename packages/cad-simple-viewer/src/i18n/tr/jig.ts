@@ -1764,5 +1764,32 @@ export default {
         global: 'Position'
       }
     }
+  },
+  ipdf: {
+    pageNumber: 'Sayfa numarasını girin (1-{count})',
+    insertionPoint:
+      'Ekleme noktasını belirtin (ölçek {scale}, eğri tanıma {curves}) veya',
+    curvesOn: 'açık',
+    curvesOff: 'kapalı',
+    scaleFactor: 'Ölçek faktörünü girin',
+    keywords: {
+      scale: {
+        display: 'Ölçek(S)',
+        local: 'Ölçek',
+        global: 'Scale'
+      },
+      curves: {
+        display: 'Eğriler(C)',
+        local: 'Eğriler',
+        global: 'Curves'
+      }
+    }
+  },
+  pdfscale: {
+    firstPoint: 'Bilinen mesafenin ilk noktasını belirtin',
+    secondPoint: 'İkinci noktayı belirtin',
+    realLength: 'Gerçek uzunluğu girin (ölçülen {measured})',
+    zeroDistance: 'İki nokta aynı.',
+    applied: '{count} nesne {factor} faktörüyle ölçeklendi.'
   }
 }

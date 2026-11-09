@@ -158,5 +158,32 @@ export default {
         global: 'Position'
       }
     }
+  },
+  ipdf: {
+    pageNumber: 'ページ番号を入力 (1-{count})',
+    insertionPoint:
+      '挿入点を指定（尺度 {scale}、曲線認識 {curves}）または',
+    curvesOn: 'オン',
+    curvesOff: 'オフ',
+    scaleFactor: '尺度を入力',
+    keywords: {
+      scale: {
+        display: '尺度(S)',
+        local: '尺度',
+        global: 'Scale'
+      },
+      curves: {
+        display: '曲線(C)',
+        local: '曲線',
+        global: 'Curves'
+      }
+    }
+  },
+  pdfscale: {
+    firstPoint: '既知の距離の 1 点目を指定',
+    secondPoint: '2 点目を指定',
+    realLength: '実際の長さを入力（測定値 {measured}）',
+    zeroDistance: '2 点が同じ位置です。',
+    applied: '{count} 個のオブジェクトを尺度 {factor} で変更しました。'
   }
 }

@@ -4,6 +4,10 @@ export default {
   ...enCommand,
   ACAD: {
     ...enCommand.ACAD,
+    pdfscale: {
+      description: '既知の距離から読み込んだ PDF 図形の尺度を校正します',
+      prompt: '尺度変更するオブジェクトを選択'
+    },
     group: {
       description: 'グループと呼ばれるオブジェクトの保存セットを作成および管理します'
     },
