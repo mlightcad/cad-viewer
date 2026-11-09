@@ -4,6 +4,10 @@ export default {
   ...enCommand,
   ACAD: {
     ...enCommand.ACAD,
+    pdfscale: {
+      description: '알려진 거리로 가져온 PDF 형상의 축척을 보정합니다',
+      prompt: '축척할 객체 선택'
+    },
     group: {
       description: '그룹이라고 하는 저장된 객체 집합을 만들고 관리합니다'
     },

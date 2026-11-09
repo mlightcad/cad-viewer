@@ -17,6 +17,23 @@ const BEZIER_STEPS = 8
 /** 2D point in model-space millimeters. */
 export type PdfImportPoint = { x: number; y: number }
 
+/**
+ * One exact path segment in model-space millimeters.
+ *
+ * Affine maps keep Bezier curves Bezier, so control points transformed
+ * through the CTM and viewport describe the page curve exactly. Quadratic
+ * curves are degree-elevated to cubics.
+ */
+export type PdfImportSegment =
+  | { kind: 'line'; p0: PdfImportPoint; p1: PdfImportPoint }
+  | {
+      kind: 'cubic'
+      p0: PdfImportPoint
+      p1: PdfImportPoint
+      p2: PdfImportPoint
+      p3: PdfImportPoint
+    }
+
 export interface PdfImportViewport {
   height: number
   convertToViewportPoint(x: number, y: number): number[]
@@ -71,6 +88,8 @@ export interface PdfImportOps {
   setTextRise: number
   setTextRenderingMode: number
   showText: number
+  /** Line width (`w`). Optional so older op tables still type-check. */
+  setLineWidth?: number
   /** Form XObject begin — args typically `[matrix, bbox]`. */
   paintFormXObjectBegin?: number
   paintFormXObjectEnd?: number
@@ -247,7 +266,17 @@ export interface PdfImportOperatorList {
 }
 
 export interface PdfImportedSubpath {
+  /** Flattened outline (curves sampled with a fixed step count). */
   points: PdfImportPoint[]
+  /**
+   * Exact segments of the same subpath. Consumers that recover arcs,
+   * circles, ellipses or splines should prefer these over {@link points}.
+   */
+  segments?: PdfImportSegment[]
+  /** True when the subpath was painted by a fill operator. */
+  filled?: boolean
+  /** Stroke width in millimeters, when the PDF set a positive width. */
+  lineWidth?: number
   layerName?: string
   /**
    * Paint colour: `#rrggbb`, or {@link PDF_IMPORT_FOREGROUND_COLOR} after
@@ -314,16 +343,22 @@ export function extractPdfImportSubpaths(
 
   let subpaths: PdfImportedSubpath[] = []
   let current: PdfImportPoint[] = []
+  let currentSegments: PdfImportSegment[] = []
   let currentPathLayerName = fallbackLayerName
   let activeLayerName = fallbackLayerName
   const markedContentLayerStack: Array<string | undefined> = []
 
   let curX = 0
   let curY = 0
+  // Start of the current subpath in user space: `h` returns the current
+  // point there, so a following `l` without `m` starts from it.
+  let startX = 0
+  let startY = 0
 
   let ctm: PdfMatrix = [1, 0, 0, 1, 0, 0]
   let fillColor = '#000000'
   let strokeColor = '#000000'
+  let lineWidth = 1
   // Text state parameters (Tf/Tc/Tw/Tz/TL/Tr/Ts) are graphics-state fields and
   // must round-trip with q/Q. Tm/Tlm and the text cursor are not.
   let fontSize = 0
@@ -337,6 +372,7 @@ export function extractPdfImportSubpaths(
     ctm: PdfMatrix
     fillColor: string
     strokeColor: string
+    lineWidth: number
     fontSize: number
     textHScale: number
     textRise: number
@@ -349,6 +385,7 @@ export function extractPdfImportSubpaths(
     ctm: cloneMatrix(ctm),
     fillColor,
     strokeColor,
+    lineWidth,
     fontSize,
     textHScale,
     textRise,
@@ -361,6 +398,7 @@ export function extractPdfImportSubpaths(
     ctm = restored.ctm
     fillColor = restored.fillColor
     strokeColor = restored.strokeColor
+    lineWidth = restored.lineWidth
     fontSize = restored.fontSize
     textHScale = restored.textHScale
     textRise = restored.textRise
@@ -406,12 +444,17 @@ export function extractPdfImportSubpaths(
     if (current.length > 1) {
       subpaths.push({
         points: current,
+        segments: currentSegments,
         layerName: currentPathLayerName
       })
     }
     current = []
+    currentSegments = []
     currentPathLayerName = activeLayerName
   }
+
+  const samePoint = (a: PdfImportPoint, b: PdfImportPoint) =>
+    a.x === b.x && a.y === b.y
 
   const closeOpenSubpaths = () => {
     // PDF fill/eoFill implicitly close each open subpath; pdf.js does not
@@ -419,8 +462,9 @@ export function extractPdfImportSubpaths(
     if (current.length > 0) {
       const first = current[0]
       const last = current[current.length - 1]
-      if (first.x !== last.x || first.y !== last.y) {
+      if (!samePoint(first, last)) {
         current.push({ ...first })
+        currentSegments.push({ kind: 'line', p0: last, p1: { ...first } })
       }
       flush()
     }
@@ -429,18 +473,32 @@ export function extractPdfImportSubpaths(
       if (pts.length < 2) continue
       const first = pts[0]
       const last = pts[pts.length - 1]
-      if (first.x !== last.x || first.y !== last.y) {
+      if (!samePoint(first, last)) {
         pts.push({ ...first })
+        subpath.segments?.push({ kind: 'line', p0: last, p1: { ...first } })
       }
     }
   }
 
-  const commit = (color: string = strokeColor) => {
+  const commit = (color: string = strokeColor, filled = false) => {
     flush()
+    const width = filled ? 0 : strokeWidthMm()
     for (const subpath of subpaths) {
-      subpathResult.push({ ...subpath, color })
+      const result: PdfImportedSubpath = { ...subpath, color }
+      if (filled) result.filled = true
+      if (width > 0) result.lineWidth = width
+      subpathResult.push(result)
     }
     subpaths = []
+  }
+
+  // PDF line width is in user space; the CTM scales it to page points. Use
+  // the geometric mean of the axis scales, which is exact for similarity
+  // transforms and a reasonable average for skewed ones.
+  const strokeWidthMm = () => {
+    if (!(lineWidth > 0)) return 0
+    const scale = Math.sqrt(Math.abs(ctm[0] * ctm[3] - ctm[1] * ctm[2]))
+    return lineWidth * scale * PDF_PT_TO_MM
   }
 
   const isFillPaint = (paintOp: number) =>
@@ -465,6 +523,7 @@ export function extractPdfImportSubpaths(
 
   const discard = () => {
     current = []
+    currentSegments = []
     subpaths = []
     currentPathLayerName = activeLayerName
   }
@@ -485,18 +544,29 @@ export function extractPdfImportSubpaths(
   const tx = (x: number, y: number) => pagePointToCadPoint(x, y).x
   const ty = (x: number, y: number) => pagePointToCadPoint(x, y).y
 
+  const lastCadPoint = (): PdfImportPoint =>
+    current.length > 0
+      ? current[current.length - 1]
+      : pagePointToCadPoint(curX, curY)
+
   const moveTo = (x: number, y: number) => {
     flush()
     curX = x
     curY = y
+    startX = x
+    startY = y
     currentPathLayerName = activeLayerName
     current = [{ x: tx(x, y), y: ty(x, y) }]
   }
 
   const lineTo = (x: number, y: number) => {
+    const p0 = lastCadPoint()
+    if (current.length === 0) current.push(p0)
     curX = x
     curY = y
-    current.push({ x: tx(x, y), y: ty(x, y) })
+    const p1 = pagePointToCadPoint(x, y)
+    current.push(p1)
+    currentSegments.push({ kind: 'line', p0, p1 })
   }
 
   const curveTo = (
@@ -507,6 +577,8 @@ export function extractPdfImportSubpaths(
     x3: number,
     y3: number
   ) => {
+    const p0 = lastCadPoint()
+    if (current.length === 0) current.push(p0)
     const pts = cubicBezier(
       { x: curX, y: curY },
       { x: x1, y: y1 },
@@ -518,12 +590,33 @@ export function extractPdfImportSubpaths(
     for (const point of pts) {
       current.push({ x: tx(point.x, point.y), y: ty(point.x, point.y) })
     }
+    // Reuse the last sampled point as p3 so segments and points share the
+    // exact same end coordinate.
+    currentSegments.push({
+      kind: 'cubic',
+      p0,
+      p1: pagePointToCadPoint(x1, y1),
+      p2: pagePointToCadPoint(x2, y2),
+      p3: current[current.length - 1]
+    })
 
     curX = x3
     curY = y3
   }
 
   const quadraticCurveTo = (x1: number, y1: number, x2: number, y2: number) => {
+    const p0 = lastCadPoint()
+    if (current.length === 0) current.push(p0)
+    // Degree elevation: a quadratic is the cubic with controls 2/3 of the way
+    // from each end point toward the single quadratic control.
+    const c1 = pagePointToCadPoint(
+      curX + (2 / 3) * (x1 - curX),
+      curY + (2 / 3) * (y1 - curY)
+    )
+    const c2 = pagePointToCadPoint(
+      x2 + (2 / 3) * (x1 - x2),
+      y2 + (2 / 3) * (y1 - y2)
+    )
     for (let step = 1; step <= BEZIER_STEPS; step++) {
       const t = step / BEZIER_STEPS
       const mt = 1 - t
@@ -531,6 +624,13 @@ export function extractPdfImportSubpaths(
       const y = mt * mt * curY + 2 * mt * t * y1 + t * t * y2
       current.push({ x: tx(x, y), y: ty(x, y) })
     }
+    currentSegments.push({
+      kind: 'cubic',
+      p0,
+      p1: c1,
+      p2: c2,
+      p3: current[current.length - 1]
+    })
 
     curX = x2
     curY = y2
@@ -538,8 +638,15 @@ export function extractPdfImportSubpaths(
 
   const closePath = () => {
     if (current.length > 0) {
-      current.push({ ...current[0] })
+      const first = current[0]
+      const last = current[current.length - 1]
+      current.push({ ...first })
+      if (!samePoint(first, last)) {
+        currentSegments.push({ kind: 'line', p0: last, p1: { ...first } })
+      }
     }
+    curX = startX
+    curY = startY
     flush()
   }
 
@@ -678,7 +785,7 @@ export function extractPdfImportSubpaths(
       ) {
         closePath()
       }
-      commit(paintColor(paintOp))
+      commit(paintColor(paintOp), isFillPaint(paintOp))
     } else {
       // Unrecognized paint op — drop the path rather than inventing a stroke
       // at EOF via a trailing commit.
@@ -705,6 +812,12 @@ export function extractPdfImportSubpaths(
     if (fn === ops.setFillRGBColor) {
       const color = readCssColor(rawArgs[0])
       if (color) fillColor = color
+      continue
+    }
+
+    if (ops.setLineWidth !== undefined && fn === ops.setLineWidth) {
+      const value = Number(rawArgs[0])
+      if (Number.isFinite(value) && value >= 0) lineWidth = value
       continue
     }
 
@@ -937,7 +1050,7 @@ export function extractPdfImportSubpaths(
         if (isFillPaint(fn)) {
           closeOpenSubpaths()
         }
-        commit(paintColor(fn))
+        commit(paintColor(fn), isFillPaint(fn))
         break
 
       case ops.stroke:
@@ -949,7 +1062,7 @@ export function extractPdfImportSubpaths(
       case ops.fillStroke:
       case ops.eoFillStroke:
         closeOpenSubpaths()
-        commit(paintColor(fn))
+        commit(paintColor(fn), true)
         break
 
       case ops.endPath:

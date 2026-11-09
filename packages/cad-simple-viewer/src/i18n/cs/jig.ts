@@ -1761,5 +1761,32 @@ export default {
         global: 'Position'
       }
     }
+  },
+  ipdf: {
+    pageNumber: 'Zadejte číslo stránky (1-{count})',
+    insertionPoint:
+      'Určete bod vložení (měřítko {scale}, rozpoznávání křivek {curves}) nebo',
+    curvesOn: 'zapnuto',
+    curvesOff: 'vypnuto',
+    scaleFactor: 'Zadejte měřítko',
+    keywords: {
+      scale: {
+        display: 'Měřítko(S)',
+        local: 'Měřítko',
+        global: 'Scale'
+      },
+      curves: {
+        display: 'Křivky(C)',
+        local: 'Křivky',
+        global: 'Curves'
+      }
+    }
+  },
+  pdfscale: {
+    firstPoint: 'Určete první bod známé vzdálenosti',
+    secondPoint: 'Určete druhý bod',
+    realLength: 'Zadejte skutečnou délku (změřeno {measured})',
+    zeroDistance: 'Oba body jsou totožné.',
+    applied: 'Změněno měřítko {count} objektů faktorem {factor}.'
   }
 }

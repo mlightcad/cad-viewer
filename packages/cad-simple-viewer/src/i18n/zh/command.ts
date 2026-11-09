@@ -196,6 +196,10 @@ export default {
     hatch: {
       description: '用填充图案填充封闭区域或所选对象'
     },
+    pdfscale: {
+      description: '根据已知距离校准导入的 PDF 图形比例',
+      prompt: '选择要缩放的对象'
+    },
     ipdf: {
       description: '从 PDF 文件导入矢量几何'
     },

@@ -208,6 +208,10 @@ export default {
       description:
         'Vyplní uzavřenou oblast nebo vybrané objekty vzorem šrafování'
     },
+    pdfscale: {
+      description: 'Kalibruje importovanou geometrii PDF podle známé vzdálenosti',
+      prompt: 'Vyberte objekty ke změně měřítka'
+    },
     ipdf: {
       description: 'Importuje vektorovou geometrii ze souboru PDF'
     },

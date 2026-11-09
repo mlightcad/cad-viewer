@@ -2,20 +2,38 @@ import {
   type AcApContext,
   AcApDocManager,
   AcApI18n,
-  AcEdCorsorType
+  AcEdCorsorType,
+  AcEdPromptDoubleOptions,
+  AcEdPromptIntegerOptions,
+  AcEdPromptPointOptions,
+  AcEdPromptStatus
 } from '@mlightcad/cad-simple-viewer'
 import {
   AcCmColor,
+  AcDbArc,
+  AcDbCircle,
+  AcDbEllipse,
   type AcDbEntity,
   AcDbLine,
   AcDbPolyline,
+  AcDbSpline,
   AcDbText,
   AcGePoint2d,
   AcGePoint3d,
+  AcGeVector3d,
+  AcGiLineWeight,
   log
 } from '@mlightcad/data-model'
+import type { PDFDocumentProxy } from 'pdfjs-dist'
 import * as pdfjsLib from 'pdfjs-dist'
 
+import { acapPdfT } from './acapPdfI18n'
+import {
+  type AcApPdfImportOptions,
+  type AcApResolvedPdfImportOptions,
+  resolveAcApPdfImportOptions
+} from './AcApPdfImportOptions'
+import { buildPdfImportShapes } from './pdfImportShapes'
 import {
   allocatePdfFallbackLayerName,
   collectPdfOcgLayers,
@@ -27,9 +45,9 @@ import {
   extractPdfImportSubpaths,
   PDF_IMPORT_FOREGROUND_COLOR,
   type PdfImportedText,
-  type PdfImportOps,
-  type PdfImportPoint
+  type PdfImportOps
 } from './pdfVectorImport'
+import type { PdfRecognizedShape } from './recognition/pdfCurveRecognition'
 
 /**
  * PDF.js worker shipped beside this module.
@@ -46,15 +64,14 @@ const PDF_WORKER_URL = new URL(
 )
 pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL.href
 
-type PdfVectorEntity = AcDbPolyline | AcDbLine | AcDbText
-
 /**
  * Converts a PDF file into CAD entities appended to the current document's
  * model space.
  */
 export class AcApPdfImportConvertor {
   /**
-   * Prompts the user to pick a PDF file and imports vector geometry.
+   * Prompts the user to pick a PDF file, asks for page / insertion point /
+   * scale / curve recognition, and imports vector geometry.
    *
    * Returns without database edits when the picker is dismissed. The command
    * undo mark then has no committed changes, so nothing is pushed onto the
@@ -68,7 +85,19 @@ export class AcApPdfImportConvertor {
       if (!file) return
 
       const buffer = await file.arrayBuffer()
-      await this.convert(context, buffer)
+      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise
+      try {
+        // Prompts run after the file dialog so the user sees the page count.
+        const prompted = await this.promptImportOptions(pdf.numPages)
+        if (!prompted) return
+        await this.importDocument(
+          context,
+          pdf,
+          resolveAcApPdfImportOptions(prompted)
+        )
+      } finally {
+        await pdf.destroy()
+      }
     } finally {
       // Chrome drops an SVG data-URI cursor after the native file dialog.
       restoreViewCursor(context)
@@ -129,21 +158,134 @@ export class AcApPdfImportConvertor {
     })
   }
 
-  async convert(context: AcApContext, data: ArrayBuffer, pageNumber = 1) {
+  /**
+   * Imports one PDF page into model space.
+   *
+   * @param context - Application context for the target document
+   * @param data - PDF file bytes
+   * @param pageNumberOrOptions - 1-based page number, or full import options
+   */
+  async convert(
+    context: AcApContext,
+    data: ArrayBuffer,
+    pageNumberOrOptions: number | AcApPdfImportOptions = 1
+  ) {
+    const options = resolveAcApPdfImportOptions(
+      typeof pageNumberOrOptions === 'number'
+        ? { pageNumber: pageNumberOrOptions }
+        : pageNumberOrOptions
+    )
+    const pdf = await pdfjsLib.getDocument({ data }).promise
+    try {
+      await this.importDocument(context, pdf, options)
+    } finally {
+      await pdf.destroy()
+    }
+  }
+
+  private async importDocument(
+    context: AcApContext,
+    pdf: PDFDocumentProxy,
+    options: AcApResolvedPdfImportOptions
+  ) {
     await AcApDocManager.instance.withBusyIndicator(
-      () => this.importPage(context, data, pageNumber),
+      () => this.importPage(context, pdf, options),
       AcApI18n.t('main.message.importingPdf')
     )
   }
 
+  /**
+   * Command-line prompts: page (multi-page files only), then insertion point
+   * with `Scale` and `Curves` options.
+   *
+   * @returns Options to import with, or `undefined` when the user cancels.
+   */
+  private async promptImportOptions(
+    pageCount: number
+  ): Promise<AcApPdfImportOptions | undefined> {
+    const editor = AcApDocManager.instance.editor
+    const options: AcApPdfImportOptions = {}
+
+    if (pageCount > 1) {
+      const pagePrompt = new AcEdPromptIntegerOptions(
+        acapPdfT('jig.ipdf.pageNumber', { count: pageCount }),
+        1,
+        pageCount
+      )
+      pagePrompt.defaultValue = 1
+      pagePrompt.useDefaultValue = true
+      pagePrompt.allowNone = true
+      const pageResult = await editor.getInteger(pagePrompt)
+      if (pageResult.status === AcEdPromptStatus.OK) {
+        options.pageNumber = pageResult.value ?? 1
+      } else if (pageResult.status !== AcEdPromptStatus.None) {
+        return undefined
+      }
+    }
+
+    let scale = 1
+    let recognizeCurves = true
+    while (true) {
+      const pointPrompt = new AcEdPromptPointOptions(
+        acapPdfT('jig.ipdf.insertionPoint', {
+          scale: String(scale),
+          curves: AcApI18n.t(
+            recognizeCurves ? 'jig.ipdf.curvesOn' : 'jig.ipdf.curvesOff'
+          )
+        })
+      )
+      pointPrompt.allowNone = true
+      pointPrompt.keywords.add(
+        AcApI18n.t('jig.ipdf.keywords.scale.display'),
+        AcApI18n.t('jig.ipdf.keywords.scale.global'),
+        AcApI18n.t('jig.ipdf.keywords.scale.local')
+      )
+      pointPrompt.keywords.add(
+        AcApI18n.t('jig.ipdf.keywords.curves.display'),
+        AcApI18n.t('jig.ipdf.keywords.curves.global'),
+        AcApI18n.t('jig.ipdf.keywords.curves.local')
+      )
+      const result = await editor.getPoint(pointPrompt)
+      if (result.status === AcEdPromptStatus.OK && result.value) {
+        options.insertionPoint = { x: result.value.x, y: result.value.y }
+        break
+      }
+      if (result.status === AcEdPromptStatus.None) break
+      if (result.status !== AcEdPromptStatus.Keyword) return undefined
+
+      if (result.stringResult === 'Curves') {
+        recognizeCurves = !recognizeCurves
+        continue
+      }
+      if (result.stringResult === 'Scale') {
+        const scalePrompt = new AcEdPromptDoubleOptions(
+          AcApI18n.t('jig.ipdf.scaleFactor')
+        )
+        scalePrompt.defaultValue = scale
+        scalePrompt.useDefaultValue = true
+        scalePrompt.allowNone = true
+        scalePrompt.allowNegative = false
+        scalePrompt.allowZero = false
+        const scaleResult = await editor.getDouble(scalePrompt)
+        if (scaleResult.status === AcEdPromptStatus.OK) {
+          scale = scaleResult.value ?? scale
+        } else if (scaleResult.status !== AcEdPromptStatus.None) {
+          return undefined
+        }
+      }
+    }
+    options.scale = scale
+    options.recognizeCurves = recognizeCurves
+    return options
+  }
+
   private async importPage(
     context: AcApContext,
-    data: ArrayBuffer,
-    pageNumber: number
+    pdf: PDFDocumentProxy,
+    options: AcApResolvedPdfImportOptions
   ) {
     try {
-      const pdf = await pdfjsLib.getDocument({ data }).promise
-      const page = await pdf.getPage(pageNumber)
+      const page = await pdf.getPage(options.pageNumber)
       const viewport = page.getViewport({ scale: 1 })
 
       const operatorList = await page.getOperatorList()
@@ -172,7 +314,7 @@ export class AcApPdfImportConvertor {
           )
         : undefined
 
-      const { subpaths, texts } = extractPdfImportSubpaths(
+      const content = extractPdfImportSubpaths(
         operatorList,
         pdfjsLib.OPS as unknown as PdfImportOps,
         viewport,
@@ -180,24 +322,28 @@ export class AcApPdfImportConvertor {
         fallbackLayerName,
         { remapContrastInk: true, paperTone: 'auto' }
       )
-      const entities: PdfVectorEntity[] = []
+      const { items, stats } = buildPdfImportShapes(content, options)
+
+      const entities: AcDbEntity[] = []
       const usedLayerNames = new Set<string>()
-      for (const subpath of subpaths) {
-        if (subpath.layerName) {
-          usedLayerNames.add(subpath.layerName)
+      for (const item of items) {
+        const entity = shapeToEntity(item.shape)
+        if (!entity) continue
+        if (item.layerName) {
+          usedLayerNames.add(item.layerName)
+          entity.layer = item.layerName
         }
-        const entity = this.subpathToEntity(
-          subpath.points,
-          subpath.layerName,
-          subpath.color
-        )
-        if (entity) entities.push(entity)
+        applyPdfColor(entity, item.color)
+        if (options.lineWeights && item.lineWidth) {
+          entity.lineWeight = nearestLineWeight(item.lineWidth)
+        }
+        entities.push(entity)
       }
-      for (const textRun of texts) {
+      for (const textRun of content.texts) {
         if (textRun.layerName) {
           usedLayerNames.add(textRun.layerName)
         }
-        const entity = this.textToEntity(textRun)
+        const entity = this.textToEntity(textRun, options)
         if (entity) entities.push(entity)
       }
 
@@ -226,7 +372,10 @@ export class AcApPdfImportConvertor {
       }
 
       log.info(
-        `[PdfImport] Imported ${entities.length} entities across ${usedLayerNames.size} CAD layer(s).`
+        `[PdfImport] Imported ${entities.length} entities across ${usedLayerNames.size} CAD layer(s): ` +
+          `${stats.line} lines, ${stats.polyline} polylines, ${stats.circle} circles, ` +
+          `${stats.arc} arcs, ${stats.ellipse} ellipses, ${stats.spline} splines, ` +
+          `${content.texts.length} texts; ${stats.duplicates} duplicates skipped.`
       )
     } catch (err) {
       log.error('[PdfImport] Failed to import PDF:', err)
@@ -234,54 +383,21 @@ export class AcApPdfImportConvertor {
     }
   }
 
-  private subpathToEntity(
-    pts: PdfImportPoint[],
-    layerName?: string,
-    color?: string
-  ): PdfVectorEntity | null {
-    if (pts.length < 2) return null
-
-    if (pts.length === 2) {
-      const line = new AcDbLine(
-        new AcGePoint3d(pts[0].x, pts[0].y, 0),
-        new AcGePoint3d(pts[1].x, pts[1].y, 0)
-      )
-      if (layerName) {
-        line.layer = layerName
-      }
-      applyPdfColor(line, color)
-      return line
-    }
-
-    const poly = new AcDbPolyline()
-    if (layerName) {
-      poly.layer = layerName
-    }
-    applyPdfColor(poly, color)
-
-    for (let i = 0; i < pts.length; i++) {
-      poly.addVertexAt(i, new AcGePoint2d(pts[i].x, pts[i].y))
-    }
-
-    const first = pts[0]
-    const last = pts[pts.length - 1]
-    const dx = first.x - last.x
-    const dy = first.y - last.y
-
-    if (Math.sqrt(dx * dx + dy * dy) < 1e-6) {
-      poly.closed = true
-    }
-
-    return poly
-  }
-
-  private textToEntity(run: PdfImportedText): AcDbText | null {
+  private textToEntity(
+    run: PdfImportedText,
+    options: AcApResolvedPdfImportOptions
+  ): AcDbText | null {
     if (!run.text || run.height <= 0) return null
 
+    const { insertionPoint, scale } = options
     const text = new AcDbText()
     text.textString = run.text
-    text.position = new AcGePoint3d(run.position.x, run.position.y, 0)
-    text.height = run.height
+    text.position = new AcGePoint3d(
+      insertionPoint.x + run.position.x * scale,
+      insertionPoint.y + run.position.y * scale,
+      0
+    )
+    text.height = run.height * scale
     text.rotation = run.rotation
     if (Number.isFinite(run.widthFactor) && run.widthFactor > 0) {
       text.widthFactor = run.widthFactor
@@ -292,6 +408,79 @@ export class AcApPdfImportConvertor {
     applyPdfColor(text, run.color)
     return text
   }
+}
+
+/** Creates the CAD entity for a recognized shape. */
+function shapeToEntity(shape: PdfRecognizedShape): AcDbEntity | null {
+  switch (shape.kind) {
+    case 'line':
+      return new AcDbLine(
+        new AcGePoint3d(shape.start.x, shape.start.y, 0),
+        new AcGePoint3d(shape.end.x, shape.end.y, 0)
+      )
+    case 'circle':
+      return new AcDbCircle(
+        new AcGePoint3d(shape.center.x, shape.center.y, 0),
+        shape.radius
+      )
+    case 'arc':
+      return new AcDbArc(
+        new AcGePoint3d(shape.center.x, shape.center.y, 0),
+        shape.radius,
+        shape.startAngle,
+        shape.endAngle
+      )
+    case 'ellipse': {
+      const major = Math.hypot(shape.majorAxis.x, shape.majorAxis.y)
+      if (!(major > 0)) return null
+      return new AcDbEllipse(
+        new AcGePoint3d(shape.center.x, shape.center.y, 0),
+        AcGeVector3d.Z_AXIS,
+        new AcGeVector3d(shape.majorAxis.x, shape.majorAxis.y, 0),
+        major,
+        major * shape.radiusRatio,
+        shape.startAngle,
+        shape.endAngle
+      )
+    }
+    case 'polyline': {
+      if (shape.vertices.length < 2) return null
+      const poly = new AcDbPolyline()
+      shape.vertices.forEach((v, i) =>
+        poly.addVertexAt(i, new AcGePoint2d(v.x, v.y), v.bulge)
+      )
+      poly.closed = shape.closed
+      return poly
+    }
+    case 'spline':
+      try {
+        return new AcDbSpline(
+          shape.controlPoints.map(p => new AcGePoint3d(p.x, p.y, 0)),
+          shape.knots
+        )
+      } catch (err) {
+        log.warn('[PdfImport] Skipped invalid spline:', err)
+        return null
+      }
+  }
+}
+
+/** Standard AutoCAD line weights in 1/100 mm. */
+const STANDARD_LINE_WEIGHTS = [
+  0, 5, 9, 13, 15, 18, 20, 25, 30, 35, 40, 50, 53, 60, 70, 80, 90, 100, 106,
+  120, 140, 158, 200, 211
+]
+
+/** Maps a stroke width in millimeters to the nearest standard line weight. */
+function nearestLineWeight(widthMm: number): AcGiLineWeight {
+  const hundredths = widthMm * 100
+  let best = STANDARD_LINE_WEIGHTS[0]
+  for (const weight of STANDARD_LINE_WEIGHTS) {
+    if (Math.abs(weight - hundredths) < Math.abs(best - hundredths)) {
+      best = weight
+    }
+  }
+  return best as AcGiLineWeight
 }
 
 function applyPdfColor(entity: AcDbEntity, color?: string) {

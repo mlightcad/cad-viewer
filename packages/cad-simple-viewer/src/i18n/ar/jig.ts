@@ -2391,5 +2391,32 @@ export default {
         global: 'Position'
       }
     }
+  },
+  ipdf: {
+    pageNumber: 'أدخل رقم الصفحة (1-{count})',
+    insertionPoint:
+      'حدد نقطة الإدراج (المقياس {scale}، التعرف على المنحنيات {curves}) أو',
+    curvesOn: 'تشغيل',
+    curvesOff: 'إيقاف',
+    scaleFactor: 'أدخل معامل المقياس',
+    keywords: {
+      scale: {
+        display: 'مقياس(S)',
+        local: 'مقياس',
+        global: 'Scale'
+      },
+      curves: {
+        display: 'منحنيات(C)',
+        local: 'منحنيات',
+        global: 'Curves'
+      }
+    }
+  },
+  pdfscale: {
+    firstPoint: 'حدد النقطة الأولى لمسافة معروفة',
+    secondPoint: 'حدد النقطة الثانية',
+    realLength: 'أدخل الطول الحقيقي (المقاس {measured})',
+    zeroDistance: 'النقطتان متطابقتان.',
+    applied: 'تم تغيير مقياس {count} كائن بمعامل {factor}.'
   }
 }

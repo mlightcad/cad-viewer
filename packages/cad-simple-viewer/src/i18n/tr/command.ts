@@ -213,6 +213,10 @@ export default {
       description:
         'Kapalı bir alanı veya seçili nesneleri bir tarama deseniyle doldurur'
     },
+    pdfscale: {
+      description: 'İçe aktarılan PDF geometrisini bilinen bir mesafeye göre kalibre eder',
+      prompt: 'Ölçeklenecek nesneleri seçin'
+    },
     ipdf: {
       description: 'Bir PDF dosyasından vektör geometrisini içe aktarır'
     },
