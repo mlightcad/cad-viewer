@@ -9,6 +9,8 @@ jest.mock('../src/app', () => ({
         localName: name
       })),
       searchCommandsByPrefix: jest.fn(() => []),
+      searchLazyCommandsByPrefix: jest.fn(() => []),
+      isLazyPluginCommand: jest.fn(() => false),
       editor: {
         events: {
           commandWillStart: {
