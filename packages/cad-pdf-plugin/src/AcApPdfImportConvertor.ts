@@ -3,8 +3,11 @@ import {
   AcApDocManager,
   AcApI18n,
   AcEdCorsorType,
+  type AcEdKeyword,
+  type AcEdKeywordCollection,
   AcEdPromptDoubleOptions,
   AcEdPromptIntegerOptions,
+  AcEdPromptKeywordOptions,
   AcEdPromptPointOptions,
   AcEdPromptStatus
 } from '@mlightcad/cad-simple-viewer'
@@ -31,10 +34,12 @@ import * as pdfjsLib from 'pdfjs-dist'
 
 import { acapPdfT } from './acapPdfI18n'
 import {
+  type AcApPdfImportMode,
   type AcApPdfImportOptions,
   type AcApResolvedPdfImportOptions,
   resolveAcApPdfImportOptions
 } from './AcApPdfImportOptions'
+import { acapPdfImportResourceUrls } from './AcApPdfImportResources'
 import {
   acapPdfCreateSolidHatch,
   acapPdfEnsureDashLinetype,
@@ -79,6 +84,39 @@ const PDF_WORKER_URL = new URL(
 pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL.href
 
 /**
+ * `getDocument` parameters. CMaps and standard fonts are required for CID
+ * (e.g. Chinese) fonts; without them PDF.js returns empty glyph runs.
+ */
+function pdfDocumentParams(data: ArrayBuffer) {
+  return {
+    data,
+    ...acapPdfImportResourceUrls(pdfjsLib.version),
+    cMapPacked: true
+  }
+}
+
+/** Mode last picked at the `ipdf` prompt; reused as the next default. */
+let lastImportMode: AcApPdfImportMode = 'recover'
+
+/** i18n key of the prompt label for `mode`. */
+function importModeLabelKey(mode: AcApPdfImportMode) {
+  return mode === 'visual' ? 'jig.ipdf.modeVisual' : 'jig.ipdf.modeRecover'
+}
+
+/** Adds the `jig.ipdf.keywords.<name>` keyword to `keywords`. */
+function addIpdfKeyword(
+  keywords: AcEdKeywordCollection,
+  name: 'scale' | 'mode' | 'recover' | 'visual'
+): AcEdKeyword {
+  const base = `jig.ipdf.keywords.${name}`
+  return keywords.add(
+    AcApI18n.t(`${base}.display`),
+    AcApI18n.t(`${base}.global`),
+    AcApI18n.t(`${base}.local`)
+  )
+}
+
+/**
  * Converts a PDF file into CAD entities appended to the current document's
  * model space.
  */
@@ -99,7 +137,7 @@ export class AcApPdfImportConvertor {
       if (!file) return
 
       const buffer = await file.arrayBuffer()
-      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise
+      const pdf = await pdfjsLib.getDocument(pdfDocumentParams(buffer)).promise
       try {
         // Prompts run after the file dialog so the user sees the page count.
         const prompted = await this.promptImportOptions(pdf.numPages)
@@ -189,7 +227,7 @@ export class AcApPdfImportConvertor {
         ? { pageNumber: pageNumberOrOptions }
         : pageNumberOrOptions
     )
-    const pdf = await pdfjsLib.getDocument({ data }).promise
+    const pdf = await pdfjsLib.getDocument(pdfDocumentParams(data)).promise
     try {
       await this.importDocument(context, pdf, options)
     } finally {
@@ -210,7 +248,8 @@ export class AcApPdfImportConvertor {
 
   /**
    * Command-line prompts: page (multi-page files only), then insertion point
-   * with `Scale` and `Curves` options.
+   * with `Scale` and `Mode` (recover the drawing / keep the PDF look)
+   * options.
    *
    * @returns Options to import with, or `undefined` when the user cancels.
    */
@@ -238,27 +277,17 @@ export class AcApPdfImportConvertor {
     }
 
     let scale = 1
-    let recognizeCurves = true
+    let mode = lastImportMode
     while (true) {
       const pointPrompt = new AcEdPromptPointOptions(
         acapPdfT('jig.ipdf.insertionPoint', {
           scale: String(scale),
-          curves: AcApI18n.t(
-            recognizeCurves ? 'jig.ipdf.curvesOn' : 'jig.ipdf.curvesOff'
-          )
+          mode: AcApI18n.t(importModeLabelKey(mode))
         })
       )
       pointPrompt.allowNone = true
-      pointPrompt.keywords.add(
-        AcApI18n.t('jig.ipdf.keywords.scale.display'),
-        AcApI18n.t('jig.ipdf.keywords.scale.global'),
-        AcApI18n.t('jig.ipdf.keywords.scale.local')
-      )
-      pointPrompt.keywords.add(
-        AcApI18n.t('jig.ipdf.keywords.curves.display'),
-        AcApI18n.t('jig.ipdf.keywords.curves.global'),
-        AcApI18n.t('jig.ipdf.keywords.curves.local')
-      )
+      addIpdfKeyword(pointPrompt.keywords, 'scale')
+      addIpdfKeyword(pointPrompt.keywords, 'mode')
       const result = await editor.getPoint(pointPrompt)
       if (result.status === AcEdPromptStatus.OK && result.value) {
         options.insertionPoint = { x: result.value.x, y: result.value.y }
@@ -267,8 +296,10 @@ export class AcApPdfImportConvertor {
       if (result.status === AcEdPromptStatus.None) break
       if (result.status !== AcEdPromptStatus.Keyword) return undefined
 
-      if (result.stringResult === 'Curves') {
-        recognizeCurves = !recognizeCurves
+      if (result.stringResult === 'Mode') {
+        const picked = await this.promptImportMode(mode)
+        if (!picked) return undefined
+        mode = picked
         continue
       }
       if (result.stringResult === 'Scale') {
@@ -289,8 +320,38 @@ export class AcApPdfImportConvertor {
       }
     }
     options.scale = scale
-    options.recognizeCurves = recognizeCurves
+    options.mode = mode
+    lastImportMode = mode
     return options
+  }
+
+  /**
+   * Asks for the import mode; Enter keeps `current`.
+   *
+   * @returns The chosen mode, or `undefined` when the user cancels.
+   */
+  private async promptImportMode(
+    current: AcApPdfImportMode
+  ): Promise<AcApPdfImportMode | undefined> {
+    const prompt = new AcEdPromptKeywordOptions(
+      AcApI18n.t('jig.ipdf.modePrompt')
+    )
+    prompt.allowNone = true
+    const recover = addIpdfKeyword(prompt.keywords, 'recover')
+    const visual = addIpdfKeyword(prompt.keywords, 'visual')
+    prompt.keywords.default = current === 'visual' ? visual : recover
+    const result =
+      await AcApDocManager.instance.editor.getKeywords(prompt)
+    if (result.status === AcEdPromptStatus.None) return current
+    if (
+      result.status !== AcEdPromptStatus.OK &&
+      result.status !== AcEdPromptStatus.Keyword
+    ) {
+      return undefined
+    }
+    if (result.stringResult === 'Visual') return 'visual'
+    if (result.stringResult === 'Recover') return 'recover'
+    return current
   }
 
   private async importPage(
@@ -510,7 +571,7 @@ export class AcApPdfImportConvertor {
         `[PdfImport] Imported ${entities.length} entities across ${usedLayerNames.size} CAD layer(s): ` +
           `${stats.line} lines, ${stats.polyline} polylines, ${stats.circle} circles, ` +
           `${stats.arc} arcs, ${stats.ellipse} ellipses, ${stats.spline} splines, ` +
-          `${texts.length} texts, ${hatchCount} hatches, ${formBlocks.blocks.length} blocks ` +
+          `mode ${options.mode}, ${texts.length} texts, ${hatchCount} hatches, ${formBlocks.blocks.length} blocks ` +
           `(${referenceCount} references); ${stats.duplicates} duplicates skipped.`
       )
     } catch (err) {

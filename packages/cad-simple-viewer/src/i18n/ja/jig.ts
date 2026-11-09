@@ -162,9 +162,10 @@ export default {
   ipdf: {
     pageNumber: 'ページ番号を入力 (1-{count})',
     insertionPoint:
-      '挿入点を指定（尺度 {scale}、曲線認識 {curves}）または',
-    curvesOn: 'オン',
-    curvesOff: 'オフ',
+      '挿入点を指定（尺度 {scale}、モード {mode}）または',
+    modePrompt: 'インポート方式を選択',
+    modeRecover: '図面を復元',
+    modeVisual: 'PDF の見た目を保持',
     scaleFactor: '尺度を入力',
     keywords: {
       scale: {
@@ -172,10 +173,20 @@ export default {
         local: '尺度',
         global: 'Scale'
       },
-      curves: {
-        display: '曲線(C)',
-        local: '曲線',
-        global: 'Curves'
+      mode: {
+        display: 'モード(M)',
+        local: 'モード',
+        global: 'Mode'
+      },
+      recover: {
+        display: '復元(R)',
+        local: '復元',
+        global: 'Recover'
+      },
+      visual: {
+        display: '見た目(V)',
+        local: '見た目',
+        global: 'Visual'
       }
     }
   },

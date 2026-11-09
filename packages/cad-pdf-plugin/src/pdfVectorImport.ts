@@ -139,9 +139,11 @@ export interface PdfImportExtractOptions {
 
 /**
  * Channel ceiling for near-black ink. All RGB components must be below this
- * so CAD primaries (`#0000ff`, …) are not treated as paper black.
+ * so CAD primaries (`#0000ff`, …) are not treated as paper black. High
+ * enough for the "rich black" design tools emit after CMYK conversion
+ * (e.g. `#2c2e35`), which is unreadable on a dark CAD canvas.
  */
-const PDF_PAPER_BLACK_CHANNEL = 48
+const PDF_PAPER_BLACK_CHANNEL = 64
 
 /**
  * Channel floor for near-white ink (dark-paper drawings).
@@ -1207,8 +1209,10 @@ export function extractPdfImportSubpaths(
 
   // Hoisted so the operator loop above can call them.
   function moveTextLine(tx: number, ty: number) {
+    // Td offsets are in text space: Tlm' = [1 0 0 1 tx ty] × Tlm (row form),
+    // so the shift applies before Tlm and is scaled by the font matrix.
     const shift: PdfMatrix = [1, 0, 0, 1, tx, ty]
-    textLineMatrix = multiplyMatrix(shift, textLineMatrix)
+    textLineMatrix = multiplyMatrix(textLineMatrix, shift)
     textMatrix = cloneMatrix(textLineMatrix)
     textX = 0
     textY = 0

@@ -1901,9 +1901,10 @@ export default {
   ipdf: {
     pageNumber: 'Enter page number (1-{count})',
     insertionPoint:
-      'Specify insertion point (scale {scale}, curve recognition {curves}) or',
-    curvesOn: 'on',
-    curvesOff: 'off',
+      'Specify insertion point (scale {scale}, mode {mode}) or',
+    modePrompt: 'Select import mode',
+    modeRecover: 'recover drawing',
+    modeVisual: 'keep PDF appearance',
     scaleFactor: 'Enter scale factor',
     keywords: {
       scale: {
@@ -1911,10 +1912,20 @@ export default {
         local: 'Scale',
         global: 'Scale'
       },
-      curves: {
-        display: 'Curves(C)',
-        local: 'Curves',
-        global: 'Curves'
+      mode: {
+        display: 'Mode(M)',
+        local: 'Mode',
+        global: 'Mode'
+      },
+      recover: {
+        display: 'Recover(R)',
+        local: 'Recover',
+        global: 'Recover'
+      },
+      visual: {
+        display: 'Visual(V)',
+        local: 'Visual',
+        global: 'Visual'
       }
     }
   },

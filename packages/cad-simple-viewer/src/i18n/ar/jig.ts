@@ -2395,9 +2395,10 @@ export default {
   ipdf: {
     pageNumber: 'أدخل رقم الصفحة (1-{count})',
     insertionPoint:
-      'حدد نقطة الإدراج (المقياس {scale}، التعرف على المنحنيات {curves}) أو',
-    curvesOn: 'تشغيل',
-    curvesOff: 'إيقاف',
+      'حدد نقطة الإدراج (المقياس {scale}، الوضع {mode}) أو',
+    modePrompt: 'اختر طريقة الاستيراد',
+    modeRecover: 'استعادة الرسم',
+    modeVisual: 'الحفاظ على مظهر PDF',
     scaleFactor: 'أدخل معامل المقياس',
     keywords: {
       scale: {
@@ -2405,10 +2406,20 @@ export default {
         local: 'مقياس',
         global: 'Scale'
       },
-      curves: {
-        display: 'منحنيات(C)',
-        local: 'منحنيات',
-        global: 'Curves'
+      mode: {
+        display: 'الوضع(M)',
+        local: 'الوضع',
+        global: 'Mode'
+      },
+      recover: {
+        display: 'استعادة(R)',
+        local: 'استعادة',
+        global: 'Recover'
+      },
+      visual: {
+        display: 'مرئي(V)',
+        local: 'مرئي',
+        global: 'Visual'
       }
     }
   },

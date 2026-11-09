@@ -22,9 +22,11 @@ Bu komutlar **Yazma** modu gerektirir. Önerilen sıra: `ipdf` → `pdfscale` �
 2. Çok sayfalı bir dosyada sayfa numarasını girin.
 3. Ekleme noktasını belirtin ya da başlangıç noktası için Enter'a basın. Seçenekler:
    - **Ölçek**: içe aktarırken uygulanan tek tip çarpan.
-   - **Eğriler**: eğri tanımayı açar veya kapatır.
+   - **Mod**: sayfanın nasıl içe aktarılacağı.
+     - **Kurtar** (varsayılan): aşağıda anlatıldığı gibi özgün çizimi yeniden oluşturmaya çalışır.
+     - **Görünüm**: PDF'i göründüğü gibi korur. Her yol bir çizgi veya çoklu çizgi (eğriler parçalanır), her metin parçası ayrı bir metin olur; birleştirme, yineleme temizliği veya blok oluşturma yapılmaz. Kurtarma sayfanın görünümünü değiştirdiğinde kullanın.
 
-Otomatik olarak yeniden oluşturulanlar:
+**Kurtar** modunda otomatik olarak yeniden oluşturulanlar:
 
 - **Eğriler**: Bézier daireler, yaylar ve elipsler daire, yay ve elips olur. Çizgi ve yayları karıştıran dış hatlar yay parçalı çoklu çizgiler olur. Üretici tarafından zaten kısa çizgilere bölünmüş yaylar yeniden uydurulur. Serbest eğriler spline olur.
 - **Bloklar**: aynı PDF formundan birkaç kez çizilen içerik tek bir blok (`PDF_FORM_n`) olur; döndürülmüş ve aynalanmış olanlar dahil her kopya bir blok referansı olur.

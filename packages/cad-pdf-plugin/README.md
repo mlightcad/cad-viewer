@@ -146,7 +146,8 @@ await new AcApPdfImportConvertor().convert(context, buffer, {
   pageNumber: 2,
   insertionPoint: { x: 1000, y: 0 },
   scale: 100, // drawing printed at 1:100
-  recognizeCurves: true, // default; false = flatten curves like before
+  mode: 'recover', // default; 'visual' keeps the PDF look (see below)
+  recognizeCurves: true, // recover mode default; false = flatten curves
   curveRecognition: { tolerance: 0.01, splines: true },
   lineWeights: true,
   removeDuplicates: true,
@@ -155,6 +156,8 @@ await new AcApPdfImportConvertor().convert(context, buffer, {
   fillHatches: false // true: filled areas become solid hatches
 })
 ```
+
+`mode` picks the defaults of the reconstruction options. `'recover'` turns on `recognizeCurves`, `removeDuplicates`, `mergeTextRuns`, `formBlocks` and `textStyles` to rebuild the source drawing. `'visual'` turns them off, so every path becomes a line or flattened polyline and every text run its own `AcDbText`, keeping the page exactly as painted (the behaviour before curve recovery). Line weights and dash linetypes stay on in both modes, and any option passed explicitly overrides the mode.
 
 The pure recognition step is also exported: `recognizePdfCurves(segments)` turns the exact segments of one `PdfImportedSubpath` into `PdfRecognizedShape`s, and `buildPdfImportShapes(content, options)` runs it over a whole page with placement and de-duplication.
 
@@ -199,11 +202,11 @@ The pure recognition step is also exported: `recognizePdfCurves(segments)` turns
 ### Import (`ipdf`)
 
 1. Show a native file picker (`.pdf`).
-2. Prompt for the page (multi-page files only), then the insertion point, with `Scale` and `Curves` (curve recognition on/off) options. Enter accepts the origin.
+2. Prompt for the page (multi-page files only), then the insertion point, with `Scale` and `Mode` options. `Mode` asks for `Recover` (rebuild the drawing, default) or `Visual` (keep the PDF look); the choice is remembered for the next `ipdf`. Enter accepts the origin.
 3. Use `pdfjs-dist` to read operator lists from the selected page.
 4. Keep every path as exact segments (lines and cubic Béziers; quadratics are degree-elevated) in model-space millimeters, and `showText` runs as `AcDbText`.
-5. Recognize CAD curves per subpath (`recognition/pdfCurveRecognition.ts`): a cubic whose samples and end tangents match one circle becomes an arc; consecutive arcs on the same circle merge, and a closed 360° chain becomes a circle. Chains that fit a conic become an ellipse. Runs of at least six short, evenly turning lines (turn ≤ 15°, so octagons stay polygons) are refitted as arcs. Lines plus arcs give a bulged polyline; pure free-form chains give an exact spline (triple interior knots). Default tolerance: max(0.01 mm, 0.2 % of the radius).
-6. Group top-level Form XObject paints whose geometry is identical in form space (`recognition/pdfFormBlocks.ts`; PDF.js inlines forms without naming them). Each group of two or more becomes a `PDF_FORM_n` block, and each paint becomes a reference whose transform comes from its form matrix. Paints with shear stay as plain geometry. Turn this off with `formBlocks: false`.
+5. In `Recover` mode, recognize CAD curves per subpath (`recognition/pdfCurveRecognition.ts`): a cubic whose samples and end tangents match one circle becomes an arc; consecutive arcs on the same circle merge, and a closed 360° chain becomes a circle. Chains that fit a conic become an ellipse. Runs of at least six short, evenly turning lines (turn ≤ 15°, so octagons stay polygons) are refitted as arcs. Lines plus arcs give a bulged polyline; pure free-form chains give an exact spline (triple interior knots). Default tolerance: max(0.01 mm, 0.2 % of the radius).
+6. In `Recover` mode, group top-level Form XObject paints whose geometry is identical in form space (`recognition/pdfFormBlocks.ts`; PDF.js inlines forms without naming them). Each group of two or more becomes a `PDF_FORM_n` block, and each paint becomes a reference whose transform comes from its form matrix. Paints with shear stay as plain geometry. Turn this off with `formBlocks: false`.
 7. Map PDF optional content groups to CAD layers when present.
 8. Remap paper-contrast ink to ACI 7 (AutoCAD foreground): black ink on white PDF paper, or white ink on dark PDF paper. ACI 7 follows the CAD canvas background.
 
@@ -227,7 +230,7 @@ Import is **vector-only**; raster/scanned PDF pages produce no entities. Only th
 | `pdfEntitiesToDimInput`, `acapPdfEnsureDimStyle`, `acapPdfCreateDimensions`, `acapPdfNiceScale` | Dimension conversion against a database |
 | `findPdfShapeMatches`, `buildPdfFormBlocks`, `pdfEntityToFeature` | Block recovery building blocks |
 | `clusterPdfTextStrokes`, `PdfGlyphDictionary`, `mergePdfTextRuns`, `pdfEntityToStroke` | Text recovery building blocks |
-| `AcApPdfImportOptions`, `resolveAcApPdfImportOptions` | Import options (page, placement, scale, curve recognition) |
+| `AcApPdfImportOptions`, `resolveAcApPdfImportOptions` | Import options (mode, page, placement, scale, curve recognition) |
 | `recognizePdfCurves`, `buildPdfImportShapes`, `PdfRecognizedShape` | Curve recognition and page-level shape building |
 | `AcApPdfConvertor` | CAD → PDF export utility |
 | `AcApPdfExportOptions`, `AcApPdfColorMode`, `resolveAcApPdfExportOptions` | Export option types and defaults (aliases of `@mlightcad/cad-pdf-core`) |

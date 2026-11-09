@@ -162,9 +162,10 @@ export default {
   ipdf: {
     pageNumber: '페이지 번호 입력 (1-{count})',
     insertionPoint:
-      '삽입점 지정 (축척 {scale}, 곡선 인식 {curves}) 또는',
-    curvesOn: '켜기',
-    curvesOff: '끄기',
+      '삽입점 지정 (축척 {scale}, 모드 {mode}) 또는',
+    modePrompt: '가져오기 방식 선택',
+    modeRecover: '도면 복원',
+    modeVisual: 'PDF 모양 유지',
     scaleFactor: '축척 비율 입력',
     keywords: {
       scale: {
@@ -172,10 +173,20 @@ export default {
         local: '축척',
         global: 'Scale'
       },
-      curves: {
-        display: '곡선(C)',
-        local: '곡선',
-        global: 'Curves'
+      mode: {
+        display: '모드(M)',
+        local: '모드',
+        global: 'Mode'
+      },
+      recover: {
+        display: '복원(R)',
+        local: '복원',
+        global: 'Recover'
+      },
+      visual: {
+        display: '시각(V)',
+        local: '시각',
+        global: 'Visual'
       }
     }
   },

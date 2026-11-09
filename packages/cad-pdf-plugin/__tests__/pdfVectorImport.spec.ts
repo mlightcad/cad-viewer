@@ -345,6 +345,11 @@ describe('extractPdfImportSubpaths', () => {
     expect(remapPdfImportColor('#ffffff', 'light')).toBe('#ffffff')
     expect(remapPdfImportColor('#000000', 'dark')).toBe('#000000')
     expect(remapPdfImportColor('#00ff00', 'light')).toBe('#00ff00')
+    // Rich "charcoal" black from Illustrator/InDesign CMYK conversion.
+    expect(remapPdfImportColor('#2c2e35', 'light')).toBe(
+      PDF_IMPORT_FOREGROUND_COLOR
+    )
+    expect(remapPdfImportColor('#000080', 'light')).toBe('#000080')
     expect(
       detectPdfImportPaperTone([
         '#ffffff',
@@ -615,6 +620,53 @@ describe('extractPdfImportSubpaths', () => {
     expect(texts[0].height).toBeCloseTo(mm(10))
     expect(texts[0].rotation).toBeCloseTo(0)
     expect(texts[0].widthFactor).toBeCloseTo(1)
+  })
+
+  test('scales Td / TD / T* offsets by the text matrix', () => {
+    // Tm scales text space by 12, so `0 -1.5 Td` moves 18 pt down, not 1.5.
+    const { texts } = extractPdfImportSubpaths(
+      {
+        fnArray: [
+          OPS.beginText,
+          OPS.setFont,
+          OPS.setTextMatrix,
+          OPS.showText,
+          OPS.moveText,
+          OPS.showText,
+          OPS.setLeadingMoveText,
+          OPS.showText,
+          OPS.nextLine,
+          OPS.showText,
+          OPS.endText
+        ],
+        argsArray: [
+          [],
+          ['F1', 1],
+          [new Float32Array([12, 0, 0, 12, 100, 500])],
+          [[{ unicode: 'A', width: 500 }]],
+          [2, -1.5],
+          [[{ unicode: 'B', width: 500 }]],
+          [0, -1],
+          [[{ unicode: 'C', width: 500 }]],
+          [],
+          [[{ unicode: 'D', width: 500 }]],
+          []
+        ]
+      },
+      OPS,
+      yUpViewport(600),
+      new Map()
+    )
+
+    expect(texts.map(t => t.text)).toEqual(['A', 'B', 'C', 'D'])
+    expect(texts[0].position.x).toBeCloseTo(mm(100))
+    expect(texts[0].position.y).toBeCloseTo(mm(500))
+    expect(texts[1].position.x).toBeCloseTo(mm(124))
+    expect(texts[1].position.y).toBeCloseTo(mm(482))
+    expect(texts[2].position.x).toBeCloseTo(mm(124))
+    expect(texts[2].position.y).toBeCloseTo(mm(470))
+    expect(texts[3].position.x).toBeCloseTo(mm(124))
+    expect(texts[3].position.y).toBeCloseTo(mm(458))
   })
 
   test('skips invisible text and rotates with the text matrix', () => {

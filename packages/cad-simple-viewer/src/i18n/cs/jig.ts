@@ -1765,9 +1765,10 @@ export default {
   ipdf: {
     pageNumber: 'Zadejte číslo stránky (1-{count})',
     insertionPoint:
-      'Určete bod vložení (měřítko {scale}, rozpoznávání křivek {curves}) nebo',
-    curvesOn: 'zapnuto',
-    curvesOff: 'vypnuto',
+      'Určete bod vložení (měřítko {scale}, režim {mode}) nebo',
+    modePrompt: 'Vyberte způsob importu',
+    modeRecover: 'obnovit výkres',
+    modeVisual: 'zachovat vzhled PDF',
     scaleFactor: 'Zadejte měřítko',
     keywords: {
       scale: {
@@ -1775,10 +1776,20 @@ export default {
         local: 'Měřítko',
         global: 'Scale'
       },
-      curves: {
-        display: 'Křivky(C)',
-        local: 'Křivky',
-        global: 'Curves'
+      mode: {
+        display: 'Režim(M)',
+        local: 'Režim',
+        global: 'Mode'
+      },
+      recover: {
+        display: 'Obnovit(R)',
+        local: 'Obnovit',
+        global: 'Recover'
+      },
+      visual: {
+        display: 'Vzhled(V)',
+        local: 'Vzhled',
+        global: 'Visual'
       }
     }
   },
