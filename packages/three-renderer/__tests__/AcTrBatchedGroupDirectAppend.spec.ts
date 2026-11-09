@@ -41,10 +41,12 @@ describe('AcTrBatchedGroup direct line append', () => {
     built.geometry.dispose()
 
     expect(group.hasEntity('line-1')).toBe(true)
+    expect(group.getEntityIds()).toEqual(['line-1'])
     expect(group.setEntityVisible('line-1', false)).toBe(true)
     expect(group.getEntityVisible('line-1')).toBe(false)
     expect(group.removeEntity('line-1')).toBe(true)
     expect(group.hasEntity('line-1')).toBe(false)
+    expect(group.getEntityIds()).toEqual([])
   })
 
   it('skips append when visible is false', () => {

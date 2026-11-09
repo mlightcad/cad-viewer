@@ -288,15 +288,16 @@ cad.selection.clear()
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide?, selection? })`
+### `cad.view.capturePreview({ longSide?, selection?, layers? })`
 
-脚本主体结束后排队截取 PNG。返回 `{ queued: true, index }`。默认按模型空间图纸范围取景。传入 `selection: true`（通常在 `cad.selection.replace(ids)` 之后）则只提取当前选中图元（ENTPREVIEW 同款 batch 路径）。在 Agent 对话中，图片会作为工具结果附件交给模型（不会以 JSON data URL 返回）。
+脚本主体结束后排队截取 PNG。返回 `{ queued: true, index }`。默认按模型空间图纸范围取景。传入 `selection: true`（通常在 `cad.selection.replace(ids)` 之后）则只提取当前选中图元（ENTPREVIEW 同款 batch 路径）。传入 `layers`（单个图层名或图层名数组，不区分大小写）则只渲染模型空间中这些图层上的图元，并按这些图层叠加后的范围取景（而不是整张图纸），图片不会有大片留白。忽略图层的开/关状态；图层名不存在时抛错；`layers` 不能与 `selection` 同时使用。在 Agent 对话中，图片会作为工具结果附件交给模型（不会以 JSON data URL 返回）。
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // 可选：cad.view.capturePreview({ longSide: 512 })
 // 仅选中：cad.view.capturePreview({ selection: true })
+// 仅指定图层：cad.view.capturePreview({ layers: ['WALL', 'DOOR'] })
 ```
 
 ## cad.file

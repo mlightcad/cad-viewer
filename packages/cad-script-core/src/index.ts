@@ -23,6 +23,7 @@ export {
   type CaptureDrawingPreviewFailure,
   type CaptureDrawingPreviewResult,
   DRAWING_PREVIEW_LONG_SIDE_PX,
+  type NormalizedCadCapturePreviewOptions,
   normalizeCadCapturePreviewOptions,
   VERIFICATION_PREVIEW_LONG_SIDE_PX
 } from './preview/types'

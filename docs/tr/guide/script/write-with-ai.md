@@ -89,7 +89,7 @@ Seçim kümesini kontrol etme:
 
 ### cad.view
 - cad.view.zoomExtents() -> Görünümü model alanı sınırlarına sığdırır
-- cad.view.capturePreview({ longSide?, selection? }) -> Komut dosyası bittikten sonra PNG kuyruğa alır; { queued: true, index } döner. Görsel kontrol için kullanın; basit düzenlemelerde atlanabilir
+- cad.view.capturePreview({ longSide?, selection?, layers? }) -> Komut dosyası bittikten sonra PNG kuyruğa alır; { queued: true, index } döner. Görsel kontrol için kullanın; basit düzenlemelerde atlanabilir. layers: [adlar] yalnızca bu katmanları birleşik sınırlarıyla yakalar
 
 ### cad.file
 - cad.file.saveDxf(path?) -> Betik başarılı olduktan sonra DXF dışa aktarır. Yol dizesi veya { path?, fileName? }. Uygulama içi ajan indirir; cad-mcp-server path konumuna yazar (göreli yollar sunucu çalışma dizinine göredir). { queued: true, index, fileName } döner. DXF metni dönmez. Araç sonucunda savedFiles vardır

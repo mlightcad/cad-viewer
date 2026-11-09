@@ -539,6 +539,8 @@ const HIGH_INFERENCE_MODE_POLICY = `Current mode: High inference (opt-in).
 - For non-trivial geometry you may also call cad.view.capturePreview() after
   drawing (usually after cad.view.zoomExtents()). To crop to selected entities,
   call cad.selection.replace(ids) then cad.view.capturePreview({ selection: true }).
+  To show only some layers, call cad.view.capturePreview({ layers: ['A', 'B'] })
+  (framed to those layers' combined extents).
   Screenshots are attached to the tool result for your next step — do not expect
   the data URL in JSON.
 - After CAD tool rounds, a rendered image may be sent for vision verification

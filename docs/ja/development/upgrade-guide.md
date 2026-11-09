@@ -25,6 +25,16 @@ capturePreview?(options?: {
 スクリプトでは `cad.view.capturePreview({ longSide?, selection? })` を使います。`cad.selection.replace(ids)` の後に `selection: true` を渡すと、ENTPREVIEW と同じ batch プレビュー経路で選択図形を抽出し（シーン境界でフレーミング。データベースの `geometricExtents` ではない）、PNG をツール結果に添付します。選択が空のときは `reason: 'no-selection'` を返します。レンダラのない `createDatabaseSession` では従来どおりプレビューをスキップします。
 :::
 
+::: info `cad.view.capturePreview` の画層プレビュー
+この変更を含むリリースから、`CadCapturePreviewOptions` に `layers?: string | string[]` が、`CaptureDrawingPreviewFailure` に `'no-layers'` が追加されます。
+
+```ts
+cad.view.capturePreview({ layers: ['WALL', 'DOOR'], longSide: 1024 })
+```
+
+モデル空間のそれらの画層上の図形だけを描画し（INSERT はそれらの画層上の部分のみ）、図面全体ではなく画層を合わせた範囲でフレーミングします。画層名は大文字小文字を区別しません。存在しない画層名はスクリプト実行中にエラーになります。`layers` は `selection: true` と併用できません。`normalizeCadCapturePreviewOptions` は `NormalizedCadCapturePreviewOptions`（`layers` は重複除去済みの `string[]`）を返すようになりました。独自の `CadSession.capturePreview` 実装は `options.layers` を処理するか、`reason: 'no-layers'` を返してください。ビューア実装は新しい `AcApEntityPreviewConvertor.captureLayers(layerNames, longSide)` を使います。
+:::
+
 ::: info 軽量なファイルオープン用ランディング入口
 **1.8.0** から、`@mlightcad/cad-simple-viewer` はランディングページ向けに DocManager 非依存のサブパスを公開します。**`acuiCreateFileOpenSession`**（遅延 `createDocManager` + 自動オープン / `attachSourcesTo`）を優先してください。図面のオープンを自前で行う場合（例: Vue `MlCadViewer`）は `AcUiFileOpenLanding` を使います。
 

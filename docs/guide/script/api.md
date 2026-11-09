@@ -290,19 +290,25 @@ Zooms the view to the model space extents.
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide?, selection? })`
+### `cad.view.capturePreview({ longSide?, selection?, layers? })`
 
 Queues a PNG screenshot after the script body finishes. Returns
 `{ queued: true, index }`. Default frames model-space drawing extents. Pass
 `selection: true` (typically after `cad.selection.replace(ids)`) to extract only
-the current selection via the ENTPREVIEW batch path. In the Agent chat, images
-are attached to the tool result for the model (not returned as JSON data URLs).
+the current selection via the ENTPREVIEW batch path. Pass `layers` (a layer
+name or an array of names, case-insensitive) to render only the model-space
+geometry on those layers, framed to the combined extents of those layers rather
+than the whole drawing, so the image has no large empty margins. Layer on/off
+state is ignored; unknown layer names throw; `layers` cannot be combined with
+`selection`. In the Agent chat, images are attached to the tool result for the
+model (not returned as JSON data URLs).
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
 // selection only: cad.view.capturePreview({ selection: true })
+// layers only: cad.view.capturePreview({ layers: ['WALL', 'DOOR'] })
 ```
 
 ## cad.file

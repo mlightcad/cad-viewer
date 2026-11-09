@@ -1147,6 +1147,21 @@ export class AcTrBatchedGroup extends THREE.Group {
   }
 
   /**
+   * Returns the ids of every entity stored in this group (batched and
+   * unbatched), without duplicates.
+   *
+   * One id may also appear in sibling groups when an INSERT is decomposed
+   * across layers; this only lists ids that own geometry here.
+   */
+  getEntityIds(): string[] {
+    const ids = new Set<string>(this._entitiesMap.keys())
+    for (const id of this._unbatchedEntities.keys()) {
+      ids.add(id)
+    }
+    return [...ids]
+  }
+
+  /**
    * Visits every batched slot recorded for one entity id.
    *
    * Entries hold a bare item while the entity owns exactly one slot, so every

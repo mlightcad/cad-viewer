@@ -253,17 +253,20 @@ cad.selection.clear()
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide?, selection? })`
+### `cad.view.capturePreview({ longSide?, selection?, layers? })`
 
 يضع لقطة PNG لنطاق الرسم في قائمة الانتظار. يُلتقط بعد انتهاء نص السكربت. يُرجع `{ queued: true, index }`. في محادثة Agent تُرفق الصور بنتيجة الأداة للنموذج (لا تُرجع كـ data URL في JSON).
 
 مرّر `selection: true` بعد `cad.selection.replace(ids)` لالتقاط التحديد الحالي فقط.
+
+مرّر `layers` (اسم طبقة أو مصفوفة أسماء، دون تمييز حالة الأحرف) لرسم عناصر فضاء النموذج الموجودة على هذه الطبقات فقط، مع تأطير الصورة على النطاق المجمّع لهذه الطبقات بدلًا من الرسم كله، فلا تظهر هوامش فارغة كبيرة. تُتجاهل حالة تشغيل/إيقاف الطبقة؛ أسماء الطبقات غير الموجودة ترمي خطأ؛ ولا يمكن الجمع بين `layers` و`selection`.
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
 // optional: cad.view.capturePreview({ selection: true })
+// optional: cad.view.capturePreview({ layers: ['WALL', 'DOOR'] })
 ```
 
 ## cad.file

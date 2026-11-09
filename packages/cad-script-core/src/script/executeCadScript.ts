@@ -182,7 +182,8 @@ async function fulfillPreviewRequests(
         : DRAWING_PREVIEW_LONG_SIDE_PX
     const capture = await session.capturePreview({
       longSide,
-      ...(request.selection === true ? { selection: true } : {})
+      ...(request.selection === true ? { selection: true } : {}),
+      ...(request.layers?.length ? { layers: [...request.layers] } : {})
     })
     if (!capture.ok) {
       effects.log.push(`capturePreview failed: ${capture.reason}`)

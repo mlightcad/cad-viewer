@@ -47,6 +47,11 @@ export interface CadScriptPreviewRequest {
    * Fulfilled after the script body finishes.
    */
   selection?: boolean
+  /**
+   * Layer names to render together, framed to their combined bounds.
+   * Names are resolved to the drawing's layer casing when queued.
+   */
+  layers?: string[]
 }
 
 /** Side effects collected while a script runs. */
@@ -304,7 +309,8 @@ export function createCadScriptHost(
       if (!result.success) throw new Error(result.message)
     },
     /**
-     * Queues a PNG screenshot of the drawing (or the current selection).
+     * Queues a PNG screenshot of the drawing, the current selection, or a set
+     * of layers.
      *
      * Capture runs after the script body finishes (async WebGL). The image is
      * attached to the tool result for the model; it is not returned inline
@@ -312,8 +318,12 @@ export function createCadScriptHost(
      *
      * @param options - Optional `longSide` in pixels (default 1024). Pass
      *   `selection: true` to render only selected entities instead of the
-     *   full drawing. A bare positive number is treated as `longSide`.
+     *   full drawing. Pass `layers: ['A', 'B']` to render only geometry on
+     *   those layers, framed to their combined extents. A bare positive
+     *   number is treated as `longSide`.
      * @returns `{ queued: true, index }` identifying this capture.
+     * @throws Error for unknown layer names, an empty `layers` list, or
+     *   `selection` combined with `layers`.
      */
     capturePreview(options?: CadCapturePreviewOptions | number): {
       queued: true
@@ -326,6 +336,9 @@ export function createCadScriptHost(
       }
       if (normalized.selection === true) {
         request.selection = true
+      }
+      if (normalized.layers) {
+        request.layers = resolveDrawingLayerNames(session, normalized.layers)
       }
       const index = effects.previewRequests.length
       effects.previewRequests.push(request)
@@ -759,4 +772,38 @@ function seal<T extends object>(target: T, allowed: readonly string[]): T {
       return false
     }
   })
+}
+
+/**
+ * Maps requested layer names (case-insensitive) to the drawing's layer names.
+ *
+ * Failing fast here, while the script runs, gives the caller an error it can
+ * act on instead of a silent missing screenshot after the script returns.
+ */
+function resolveDrawingLayerNames(
+  session: CadSession,
+  requested: readonly string[]
+): string[] {
+  const doc = session.getDocument()
+  if (!doc) throw new Error('no_document')
+  const byUpperName = new Map<string, string>()
+  for (const layer of doc.layerStore.getLayers()) {
+    byUpperName.set(layer.name.toUpperCase(), layer.name)
+  }
+  const resolved: string[] = []
+  const missing: string[] = []
+  for (const name of requested) {
+    const actual = byUpperName.get(name.toUpperCase())
+    if (actual) {
+      resolved.push(actual)
+    } else {
+      missing.push(name)
+    }
+  }
+  if (missing.length) {
+    throw new Error(
+      `capturePreview: unknown layer(s): ${missing.join(', ')}. Use cad.drawing.layers for valid names.`
+    )
+  }
+  return resolved
 }

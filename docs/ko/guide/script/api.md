@@ -253,17 +253,20 @@ cad.selection.clear()
 cad.view.zoomExtents()
 ```
 
-### `cad.view.capturePreview({ longSide?, selection? })`
+### `cad.view.capturePreview({ longSide?, selection?, layers? })`
 
 도면 범위의 PNG 스크린샷을 대기열에 넣습니다. 캡처는 스크립트 본문이 끝난 뒤에 실행됩니다. 반환값은 `{ queued: true, index }` 입니다. Agent 채팅에서는 이미지가 도구 결과에 첨부되어 모델로 전달됩니다(JSON data URL로는 반환되지 않음).
 
 `cad.selection.replace(ids)` 이후 `selection: true`를 전달하면 현재 선택만 캡처합니다.
+
+`layers`(도면층 이름 또는 이름 배열, 대소문자 구분 없음)를 전달하면 모델 공간에서 해당 도면층의 객체만 렌더링하고, 도면 전체가 아니라 그 도면층들을 합친 범위로 프레이밍하므로 큰 여백이 생기지 않습니다. 도면층 켜기/끄기 상태는 무시됩니다. 존재하지 않는 도면층 이름은 오류를 발생시키며, `layers`는 `selection`과 함께 쓸 수 없습니다.
 
 ```javascript
 cad.view.zoomExtents()
 cad.view.capturePreview()
 // optional: cad.view.capturePreview({ longSide: 512 })
 // optional: cad.view.capturePreview({ selection: true })
+// optional: cad.view.capturePreview({ layers: ['WALL', 'DOOR'] })
 ```
 
 ## cad.file

@@ -162,11 +162,13 @@ export interface CadSession {
    * skipped and a note is written to the script log.
    *
    * Pass `{ selection: true }` to render only the current selection (batch
-   * geometry, scene bounds). Otherwise captures full drawing extents
-   * (typically model space). A bare positive number is treated as `longSide`
-   * for compatibility with older callers.
+   * geometry, scene bounds). Pass `{ layers: [...] }` to render only
+   * model-space geometry on those layers, framed to their combined bounds
+   * (return `reason: 'no-layers'` when none of them has geometry). Otherwise
+   * captures full drawing extents (typically model space). A bare positive
+   * number is treated as `longSide` for compatibility with older callers.
    *
-   * @param options - Pixel size and optional selection preview mode.
+   * @param options - Pixel size and optional selection / layer preview mode.
    */
   capturePreview?(
     options?: CadCapturePreviewOptions | number
