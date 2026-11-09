@@ -1,4 +1,5 @@
 import {
+  AcDb3PointAngularDimension,
   AcDbCircle,
   AcDbDatabase,
   AcDbDiametricDimension,
@@ -143,6 +144,30 @@ describe('PDF dimension conversion', () => {
       acapPdfCreateDimensions(db, candidates, 100)
     })
     expect(db.tables.dimStyleTable.getAt(PDF_DIM_STYLE)?.dimlfac).toBe(100)
+  })
+
+  it('creates an angular dimension without overriding a degree text', () => {
+    const { db } = setup()
+    acapPdfEnsureDimStyle(db, [], 100)
+    const [dim] = acapPdfCreateDimensions(
+      db,
+      [
+        {
+          kind: 'angular',
+          center: { x: 0, y: 0 },
+          xLine1: { x: 5, y: 0 },
+          xLine2: { x: 0, y: 5 },
+          arcPoint: { x: 14.14, y: 14.14 },
+          measured: 90,
+          text: { id: 't', text: '90°', center: { x: 15, y: 15 }, height: 2.5 },
+          arrowSize: 2.5,
+          consumed: []
+        }
+      ],
+      100
+    )
+    expect(dim).toBeInstanceOf(AcDb3PointAngularDimension)
+    expect(dim.dimensionText || '').toBe('')
   })
 
   it('snaps scales to common values', () => {

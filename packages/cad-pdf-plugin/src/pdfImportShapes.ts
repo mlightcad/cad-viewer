@@ -23,6 +23,15 @@ export interface PdfImportShapeItem {
   color?: string
   /** Stroke width in millimeters (unscaled paper width). */
   lineWidth?: number
+  /** Dash pattern in millimeters (unscaled), for dashed strokes. */
+  dashPattern?: number[]
+  /** True when the source subpath was filled. */
+  filled?: boolean
+  /** True when a filled subpath was also stroked. */
+  stroked?: boolean
+  fillColor?: string
+  /** Subpaths painted together share this value (one hatch, many loops). */
+  paintGroup?: number
 }
 
 /** Shape counts, for logging and tests. */
@@ -56,30 +65,61 @@ export function buildPdfImportShapes(
     duplicates: 0
   }
   const items: PdfImportShapeItem[] = []
-  const seen = new Set<string>()
+  const seen = new Map<string, PdfImportShapeItem>()
   const place = createPlacement(options)
 
   for (const subpath of content.subpaths) {
     for (const shape of subpathShapes(subpath, options)) {
       const placed = place(shape)
       if (options.removeDuplicates) {
-        const key = `${subpath.layerName ?? ''}|${subpath.color ?? ''}|${shapeKey(placed)}`
-        if (seen.has(key)) {
+        // Fill state is not part of the key: a fill and a stroke of the same
+        // outline are one shape, whose fill is merged into the kept item.
+        const key = `${subpath.layerName ?? ''}|${subpath.color ?? ''}|${subpath.dashPattern?.join(',') ?? ''}|${shapeKey(placed)}`
+        const existing = seen.get(key)
+        if (existing) {
+          mergeDuplicate(existing, subpath)
           stats.duplicates++
           continue
         }
-        seen.add(key)
       }
       stats[placed.kind]++
-      items.push({
+      const item: PdfImportShapeItem = {
         shape: placed,
         layerName: subpath.layerName,
         color: subpath.color,
-        lineWidth: subpath.lineWidth
-      })
+        lineWidth: subpath.lineWidth,
+        dashPattern: subpath.dashPattern,
+        filled: subpath.filled,
+        stroked: subpath.stroked,
+        fillColor: subpath.fillColor,
+        paintGroup: subpath.paintGroup
+      }
+      items.push(item)
+      if (options.removeDuplicates) {
+        seen.set(
+          `${subpath.layerName ?? ''}|${subpath.color ?? ''}|${subpath.dashPattern?.join(',') ?? ''}|${shapeKey(placed)}`,
+          item
+        )
+      }
     }
   }
   return { items, stats }
+}
+
+/**
+ * Folds a duplicate subpath into the item already kept: a fill adds its fill
+ * colour and paint group, a stroke marks a fill as stroked.
+ */
+function mergeDuplicate(item: PdfImportShapeItem, subpath: PdfImportedSubpath) {
+  if (subpath.filled && !item.filled) {
+    item.filled = true
+    item.stroked = true
+    item.fillColor = subpath.fillColor
+    item.paintGroup = subpath.paintGroup
+  } else if (!subpath.filled && item.filled) {
+    item.stroked = true
+    item.lineWidth = item.lineWidth ?? subpath.lineWidth
+  }
 }
 
 function subpathShapes(

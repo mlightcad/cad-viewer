@@ -186,6 +186,49 @@ describe('recognizePdfDimensions', () => {
     expect(dims.find(d => d.kind === 'diameter')!.measured).toBe(10)
   })
 
+  it('recognizes angular dimensions on a dimension arc', () => {
+    const input = empty()
+    const a = Math.PI / 4
+    input.arcs = [
+      {
+        id: 'arc',
+        center: { x: 0, y: 0 },
+        radius: 20,
+        startAngle: 0,
+        endAngle: a
+      }
+    ]
+    // Arrows at both ends pointing along the arc (outward from its middle).
+    input.polygons.push(arrow({ x: 20, y: 0 }, { x: 0, y: -1 }))
+    input.polygons.push(
+      arrow(
+        { x: 20 * Math.cos(a), y: 20 * Math.sin(a) },
+        { x: -Math.sin(a), y: Math.cos(a) }
+      )
+    )
+    // Radial extension lines from the object (r = 5) past the arc.
+    input.segments.push(seg({ x: 5, y: 0 }, { x: 22, y: 0 }))
+    input.segments.push(
+      seg(
+        { x: 5 * Math.cos(a), y: 5 * Math.sin(a) },
+        { x: 22 * Math.cos(a), y: 22 * Math.sin(a) }
+      )
+    )
+    input.texts.push(
+      text('45°', { x: 21 * Math.cos(a / 2), y: 21 * Math.sin(a / 2) })
+    )
+    const [dim] = recognizePdfDimensions(input)
+    expect(dim.kind).toBe('angular')
+    if (dim.kind !== 'angular') return
+    expect(dim.measured).toBeCloseTo(45, 6)
+    expect(dim.xLine1).toEqual({ x: 5, y: 0 })
+    expect(dim.consumed).toContain('arc')
+    // Arc, 2 arrows, text, 2 extension lines.
+    expect(dim.consumed).toHaveLength(6)
+    // Angles never vote for the drawing scale.
+    expect(suggestPdfDimensionScale([dim])).toBeUndefined()
+  })
+
   it('ignores arrow pairs without a value text', () => {
     const input = empty()
     addHorizontal(input, 0, 50, '50')

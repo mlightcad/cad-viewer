@@ -2481,6 +2481,8 @@ export default {
     firstPoint: 'حدد النقطة الأولى لمسافة معروفة',
     secondPoint: 'حدد النقطة الثانية',
     realLength: 'أدخل الطول الحقيقي (المقاس {measured})',
+    realLengthFromDimensions:
+      'أدخل الطول الحقيقي (المقاس {measured}؛ تشير نصوص الأبعاد إلى 1:{scale})',
     zeroDistance: 'النقطتان متطابقتان.',
     applied: 'تم تغيير مقياس {count} كائن بمعامل {factor}.'
   }

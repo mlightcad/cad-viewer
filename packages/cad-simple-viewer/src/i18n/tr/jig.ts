@@ -1854,6 +1854,8 @@ export default {
     firstPoint: 'Bilinen mesafenin ilk noktasını belirtin',
     secondPoint: 'İkinci noktayı belirtin',
     realLength: 'Gerçek uzunluğu girin (ölçülen {measured})',
+    realLengthFromDimensions:
+      'Gerçek uzunluğu girin (ölçülen {measured}; ölçü metinleri 1:{scale} gösteriyor)',
     zeroDistance: 'İki nokta aynı.',
     applied: '{count} nesne {factor} faktörüyle ölçeklendi.'
   }

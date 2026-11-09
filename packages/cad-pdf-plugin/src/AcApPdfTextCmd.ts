@@ -25,6 +25,12 @@ import {
 } from './recognition/pdfGlyphClustering'
 import { PdfGlyphDictionary } from './recognition/pdfGlyphDictionary'
 
+/** `localStorage` key of the persisted glyph dictionary. */
+export const PDF_GLYPH_STORAGE_KEY = 'mlightcad.pdftext.glyphs.v1'
+
+/** Most glyph shapes kept in storage (the most recently confirmed). */
+const PDF_GLYPH_STORAGE_LIMIT = 5000
+
 /** Height of the rendered text line image sent to a recognizer, in pixels. */
 const OCR_IMAGE_TEXT_HEIGHT = 48
 
@@ -43,11 +49,43 @@ const OCR_IMAGE_TEXT_HEIGHT = 48
  *    from OCR. Enter accepts the suggestion, or skips the line without one.
  * 4. Lines whose glyphs are all known are converted without asking.
  *
- * The dictionary lives for the session, so later `pdftext` runs on the same
- * drawing recognize more and more lines on their own.
+ * The dictionary is kept in `localStorage` (the 5000 most recently
+ * confirmed shapes), so later runs, on this drawing or
+ * another one using the same font, recognize more and more lines on their own.
  */
 export class AcApPdfTextCmd extends AcEdCommand {
   private static readonly dictionary = new PdfGlyphDictionary()
+  private static dictionaryLoaded = false
+
+  /**
+   * The shared glyph dictionary, loaded from `localStorage` on first use so
+   * glyphs taught in earlier sessions are recognized too.
+   */
+  static get glyphDictionary(): PdfGlyphDictionary {
+    if (!AcApPdfTextCmd.dictionaryLoaded) {
+      AcApPdfTextCmd.dictionaryLoaded = true
+      try {
+        const raw = globalThis.localStorage?.getItem(PDF_GLYPH_STORAGE_KEY)
+        if (raw) AcApPdfTextCmd.dictionary.load(JSON.parse(raw))
+      } catch {
+        // Storage unavailable or corrupt: start empty.
+      }
+    }
+    return AcApPdfTextCmd.dictionary
+  }
+
+  private static saveDictionary() {
+    try {
+      globalThis.localStorage?.setItem(
+        PDF_GLYPH_STORAGE_KEY,
+        JSON.stringify(
+          AcApPdfTextCmd.dictionary.toJSON(PDF_GLYPH_STORAGE_LIMIT)
+        )
+      )
+    } catch {
+      // Quota or privacy mode: the session dictionary still works.
+    }
+  }
 
   constructor() {
     super()
@@ -78,7 +116,7 @@ export class AcApPdfTextCmd extends AcEdCommand {
       return
     }
 
-    const dictionary = AcApPdfTextCmd.dictionary
+    const dictionary = AcApPdfTextCmd.glyphDictionary
     const editor = AcApDocManager.instance.editor
     let converted = 0
     let automatic = 0
@@ -141,6 +179,7 @@ export class AcApPdfTextCmd extends AcEdCommand {
     }
 
     selectionSet.clear()
+    AcApPdfTextCmd.saveDictionary()
     this.notify(
       acapPdfT('jig.pdftext.summary', { converted, automatic, skipped })
     )

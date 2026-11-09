@@ -28,6 +28,16 @@ export interface PdfDimCurve {
   radius: number
 }
 
+/** An arc that may be the dimension arc of an angular dimension. */
+export interface PdfDimArc<Id = unknown> {
+  id: Id
+  center: PdfRecPoint
+  radius: number
+  /** Start angle in radians; the arc runs counterclockwise to `endAngle`. */
+  startAngle: number
+  endAngle: number
+}
+
 /** A text that may be a dimension value. */
 export interface PdfDimText<Id = unknown> {
   id: Id
@@ -43,6 +53,8 @@ export interface PdfDimInput<Id = unknown> {
   polygons: PdfDimPolygon<Id>[]
   curves: PdfDimCurve[]
   texts: PdfDimText<Id>[]
+  /** Arcs that may carry angular dimensions. Optional. */
+  arcs?: PdfDimArc<Id>[]
 }
 
 /** A recognized linear (rotated) dimension. */
@@ -85,9 +97,27 @@ export interface PdfRadialDimension<Id = unknown> {
   consumed: Id[]
 }
 
+/** A recognized angular dimension (three-point form). */
+export interface PdfAngularDimension<Id = unknown> {
+  kind: 'angular'
+  center: PdfRecPoint
+  /** A point on the first leg (object side). */
+  xLine1: PdfRecPoint
+  /** A point on the second leg (object side). */
+  xLine2: PdfRecPoint
+  /** Midpoint of the dimension arc. */
+  arcPoint: PdfRecPoint
+  /** Measured angle in degrees. */
+  measured: number
+  text: PdfDimText<Id>
+  arrowSize: number
+  consumed: Id[]
+}
+
 export type PdfDimensionCandidate<Id = unknown> =
   | PdfLinearDimension<Id>
   | PdfRadialDimension<Id>
+  | PdfAngularDimension<Id>
 
 /** Tuning for {@link recognizePdfDimensions}. */
 export interface PdfDimensionOptions {
@@ -203,7 +233,78 @@ export function recognizePdfDimensions<Id>(
   const extensionIds = new Set<Id>()
   const results: PdfDimensionCandidate<Id>[] = []
 
-  // Radial dimensions first: their arrows must not pair up as linear ones.
+  // Angular dimensions first: an arc with an arrow at each end, pointing
+  // along the arc, and a value text near its middle.
+  const tangentTol = Math.sin((10 * Math.PI) / 180)
+  for (const arc of input.arcs ?? []) {
+    if (usedSegments.has(arc.id)) continue
+    const at = (angle: number) => ({
+      x: arc.center.x + arc.radius * Math.cos(angle),
+      y: arc.center.y + arc.radius * Math.sin(angle)
+    })
+    let sweep = arc.endAngle - arc.startAngle
+    if (sweep <= 0) sweep += Math.PI * 2
+    const ends = [at(arc.startAngle), at(arc.startAngle + sweep)]
+    const endArrows = ends.map(end =>
+      arrows.find(a => {
+        if (usedArrows.has(a) || dist(a.tip, end) > tol * 4) return false
+        const radial = unit(sub(end, arc.center))
+        return Math.abs(dot(a.direction!, radial)) <= tangentTol
+      })
+    )
+    if (!endArrows[0] || !endArrows[1] || endArrows[0] === endArrows[1]) {
+      continue
+    }
+    const arcPoint = at(arc.startAngle + sweep / 2)
+    const text = nearestText(
+      input.texts,
+      usedTexts,
+      arcPoint,
+      Math.max(arc.radius * 0.8, refSize * 6),
+      t => parsePdfDimensionValue(t.text) !== undefined
+    )
+    if (!text) continue
+    const consumed: Id[] = [
+      arc.id,
+      ...endArrows[0].ids,
+      ...endArrows[1].ids,
+      text.id
+    ]
+    // Radial extension lines through each end; the end nearer the center
+    // is the object side.
+    const leg = (end: PdfRecPoint): PdfRecPoint => {
+      const radial = unit(sub(end, arc.center))
+      for (const s of input.segments) {
+        if (usedSegments.has(s.id) || consumed.includes(s.id)) continue
+        const su = unit(sub(s.p1, s.p0))
+        if (Math.abs(cross(su, radial)) > sinTol) continue
+        if (Math.abs(cross(radial, sub(s.p0, arc.center))) > tol * 2) continue
+        if (!pointNearSegment(end, s, refSize * 2)) continue
+        consumed.push(s.id)
+        return dist(s.p0, arc.center) <= dist(s.p1, arc.center) ? s.p0 : s.p1
+      }
+      return end
+    }
+    const xLine1 = leg(ends[0])
+    const xLine2 = leg(ends[1])
+    usedArrows.add(endArrows[0])
+    usedArrows.add(endArrows[1])
+    usedTexts.add(text.id)
+    for (const id of consumed) usedSegments.add(id)
+    results.push({
+      kind: 'angular',
+      center: arc.center,
+      xLine1,
+      xLine2,
+      arcPoint,
+      measured: (sweep * 180) / Math.PI,
+      text,
+      arrowSize: endArrows[0].size,
+      consumed
+    })
+  }
+
+  // Radial dimensions next: their arrows must not pair up as linear ones.
   for (const arrow of arrows) {
     for (const curve of input.curves) {
       const radial = sub(arrow.tip, curve.center)
@@ -452,7 +553,11 @@ export function suggestPdfDimensionScale(
   // Linear dimensions are the reliable signal; radial texts are often
   // annotated independently of the drawing scale.
   const linear = dimensions.filter(d => d.kind === 'linear')
-  const ratios = (linear.length > 0 ? linear : dimensions)
+  const radial = dimensions.filter(
+    d => d.kind === 'radius' || d.kind === 'diameter'
+  )
+  // Angles do not scale with the drawing, so they never vote.
+  const ratios = (linear.length > 0 ? linear : radial)
     .map(d => {
       const value = parsePdfDimensionValue(d.text.text)
       return value !== undefined && d.measured > 0 ? value / d.measured : NaN

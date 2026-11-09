@@ -61,6 +61,13 @@ function guideSidebar(prefix: string, labels: Record<string, string>) {
       ]
     },
     {
+      text: labels.pdfGroup,
+      collapsed: false,
+      items: [
+        { text: labels.pdfOverview, link: `${prefix}/guide/pdf/overview` }
+      ]
+    },
+    {
       text: labels.scriptGroup,
       collapsed: false,
       items: [
@@ -383,7 +390,9 @@ export default withMermaid({
               scOverview: '脚本功能说明',
               scApi: '脚本 API',
               scExamples: '脚本示例',
-              scWriteWithAi: '用 AI 编写脚本'
+              scWriteWithAi: '用 AI 编写脚本',
+              pdfGroup: 'PDF 转 CAD',
+              pdfOverview: 'PDF 图纸转换'
             }),
             '/zh/development/': developmentSidebar('/zh', {
               groupGettingStarted: '快速上手',
@@ -468,7 +477,9 @@ export default withMermaid({
               scOverview: 'Script Overview',
               scApi: 'Script API',
               scExamples: 'Script Examples',
-              scWriteWithAi: 'Write Scripts with AI'
+              scWriteWithAi: 'Write Scripts with AI',
+              pdfGroup: 'PDF to CAD',
+              pdfOverview: 'Converting PDF Drawings'
             }),
             '/development/': developmentSidebar('', {
               groupGettingStarted: 'Getting Started',
@@ -553,7 +564,9 @@ export default withMermaid({
               scOverview: 'スクリプト概要',
               scApi: 'スクリプト API',
               scExamples: 'スクリプト例',
-              scWriteWithAi: 'AI でスクリプトを作成'
+              scWriteWithAi: 'AI でスクリプトを作成',
+              pdfGroup: 'PDF から CAD へ',
+              pdfOverview: 'PDF 図面の変換'
             }),
             '/ja/development/': developmentSidebar('/ja', {
               groupGettingStarted: 'はじめに',
@@ -638,7 +651,9 @@ export default withMermaid({
               scOverview: '스크립트 개요',
               scApi: '스크립트 API',
               scExamples: '스크립트 예제',
-              scWriteWithAi: 'AI로 스크립트 작성'
+              scWriteWithAi: 'AI로 스크립트 작성',
+              pdfGroup: 'PDF를 CAD로',
+              pdfOverview: 'PDF 도면 변환'
             }),
             '/ko/development/': developmentSidebar('/ko', {
               groupGettingStarted: '시작하기',
@@ -724,7 +739,9 @@ export default withMermaid({
               scOverview: 'نظرة عامة على البرنامج النصي',
               scApi: 'API البرنامج النصي',
               scExamples: 'أمثلة البرنامج النصي',
-              scWriteWithAi: 'كتابة البرامج النصية باستخدام الذكاء الاصطناعي'
+              scWriteWithAi: 'كتابة البرامج النصية باستخدام الذكاء الاصطناعي',
+              pdfGroup: 'من PDF إلى CAD',
+              pdfOverview: 'تحويل رسومات PDF'
             }),
             '/ar/development/': developmentSidebar('/ar', {
               groupGettingStarted: 'البدء',
@@ -809,7 +826,9 @@ export default withMermaid({
               scOverview: 'Přehled skriptů',
               scApi: 'API skriptů',
               scExamples: 'Příklady skriptů',
-              scWriteWithAi: 'Psaní skriptů pomocí AI'
+              scWriteWithAi: 'Psaní skriptů pomocí AI',
+              pdfGroup: 'PDF do CAD',
+              pdfOverview: 'Převod výkresů PDF'
             }),
             '/cs/development/': developmentSidebar('/cs', {
               groupGettingStarted: 'Začínáme',
@@ -895,7 +914,9 @@ export default withMermaid({
               scOverview: 'Betik Genel Bakış',
               scApi: "Betik API'si",
               scExamples: 'Betik Örnekleri',
-              scWriteWithAi: 'AI ile Betik Yazma'
+              scWriteWithAi: 'AI ile Betik Yazma',
+              pdfGroup: "PDF'ten CAD'e",
+              pdfOverview: 'PDF Çizimlerini Dönüştürme'
             }),
             '/tr/development/': developmentSidebar('/tr', {
               groupGettingStarted: 'Başlangıç',

@@ -44,6 +44,15 @@ describe('mergePdfTextRuns', () => {
     ).toHaveLength(2)
   })
 
+  it('does not join runs across a font switch', () => {
+    expect(
+      mergePdfTextRuns([
+        run('BOLD', 0, 8, { fontId: 'f1' }),
+        run('text', 8.1, 6, { fontId: 'f2' })
+      ])
+    ).toHaveLength(2)
+  })
+
   it('follows rotated baselines', () => {
     const r = Math.PI / 2
     const merged = mergePdfTextRuns([
