@@ -65,22 +65,24 @@ test('AI tab hosts the CAD Agent and the PDF tools', async ({ page }) => {
   })
   const baseline = await entityTypeCounts(page)
 
+  // Ribbon buttons take their tooltip as accessible name, so address them
+  // by their stable item id instead of the visible label.
+  const ribbonButton = (id: string) =>
+    page.locator(`[data-ribbon-button-id="${id}"]:visible`)
+
   // The agent button moved out of Home > Utilities.
   await page.getByRole('tab', { name: 'Home' }).click()
-  await expect(page.getByRole('button', { name: /CAD\s*Agent/ })).toHaveCount(0)
+  await expect(ribbonButton('cmd-agent')).toHaveCount(0)
 
   await page.getByRole('tab', { name: 'AI' }).click()
-  await expect(page.getByRole('button', { name: /Import\s*PDF/ })).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: /Calibrate\s*Scale/ })
-  ).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: /Recover\s*Text/ })
-  ).toBeVisible()
+  for (const id of ['cmd-ipdf', 'cmd-pdfscale', 'cmd-pdftext']) {
+    await expect(ribbonButton(id)).toBeVisible()
+  }
+  await expect(ribbonButton('cmd-ipdf')).toContainText(/Import\s*PDF/)
 
   // Import PDF runs `ipdf` (lazy-loading the PDF plugin) and opens the picker.
   const chooserPromise = page.waitForEvent('filechooser')
-  await page.getByRole('button', { name: /Import\s*PDF/ }).click()
+  await ribbonButton('cmd-ipdf').click()
   const chooser = await chooserPromise
   await chooser.setFiles(pdfFixturePath)
 
