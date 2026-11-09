@@ -11,11 +11,18 @@ export const PDF_PLUGIN_NAME = 'PdfPlugin'
  *   `cpdf` opens the export dialog and loads this plugin on confirm via `-cpdf`
  * - `ipdf` — import vector geometry from PDF
  * - `pdfscale` — calibrate imported PDF geometry from a known distance
+ * - `pdftext` — convert exploded PDF text strokes back into text
  */
-export const PDF_PLUGIN_TRIGGERS = ['-cpdf', 'cpdf', 'ipdf', 'pdfscale'] as const
+export const PDF_PLUGIN_TRIGGERS = [
+  '-cpdf',
+  'cpdf',
+  'ipdf',
+  'pdfscale',
+  'pdftext'
+] as const
 
 /** Triggers that remain when export is disabled. */
-const PDF_IMPORT_TRIGGERS = ['ipdf', 'pdfscale'] as const
+const PDF_IMPORT_TRIGGERS = ['ipdf', 'pdfscale', 'pdftext'] as const
 
 /**
  * Registers the PDF plugin for lazy loading.

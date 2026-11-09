@@ -1882,6 +1882,15 @@ export default {
       }
     }
   },
+  pdftext: {
+    enterText:
+      '文字行 {index}/{count}：输入高亮部分的文字（回车跳过，Esc 结束）',
+    enterTextWithSuggestion:
+      '文字行 {index}/{count}：输入高亮部分的文字 <{suggestion}>',
+    noCandidates: '所选对象中没有找到类似文字的笔画。',
+    summary:
+      '已转换 {converted} 行文字，其中 {automatic} 行自动识别；跳过 {skipped} 行。'
+  },
   pdfscale: {
     firstPoint: '指定已知距离的第一点',
     secondPoint: '指定第二点',

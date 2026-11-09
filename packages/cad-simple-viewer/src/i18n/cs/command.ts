@@ -208,6 +208,10 @@ export default {
       description:
         'Vyplní uzavřenou oblast nebo vybrané objekty vzorem šrafování'
     },
+    pdftext: {
+      description: 'Převede rozložené tahy textu z PDF zpět na textové objekty',
+      prompt: 'Vyberte tahy textu k převodu'
+    },
     pdfscale: {
       description: 'Kalibruje importovanou geometrii PDF podle známé vzdálenosti',
       prompt: 'Vyberte objekty ke změně měřítka'

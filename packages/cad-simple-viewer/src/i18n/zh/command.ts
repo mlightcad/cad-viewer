@@ -196,6 +196,10 @@ export default {
     hatch: {
       description: '用填充图案填充封闭区域或所选对象'
     },
+    pdftext: {
+      description: '将 PDF 中被打散的文字笔画转换回文字对象',
+      prompt: '选择要转换的文字笔画'
+    },
     pdfscale: {
       description: '根据已知距离校准导入的 PDF 图形比例',
       prompt: '选择要缩放的对象'

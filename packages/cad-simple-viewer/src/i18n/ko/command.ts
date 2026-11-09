@@ -4,6 +4,10 @@ export default {
   ...enCommand,
   ACAD: {
     ...enCommand.ACAD,
+    pdftext: {
+      description: 'PDF에서 분해된 문자 획을 문자 객체로 되돌립니다',
+      prompt: '변환할 문자 획 선택'
+    },
     pdfscale: {
       description: '알려진 거리로 가져온 PDF 형상의 축척을 보정합니다',
       prompt: '축척할 객체 선택'

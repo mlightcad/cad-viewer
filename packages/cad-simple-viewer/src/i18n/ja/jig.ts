@@ -179,6 +179,15 @@ export default {
       }
     }
   },
+  pdftext: {
+    enterText:
+      '文字行 {index}/{count}: ハイライトされた文字を入力（Enter でスキップ、Esc で終了）',
+    enterTextWithSuggestion:
+      '文字行 {index}/{count}: ハイライトされた文字を入力 <{suggestion}>',
+    noCandidates: '選択内に文字らしいストロークが見つかりません。',
+    summary:
+      '{converted} 行を変換しました（自動認識 {automatic} 行）。スキップ {skipped} 行。'
+  },
   pdfscale: {
     firstPoint: '既知の距離の 1 点目を指定',
     secondPoint: '2 点目を指定',

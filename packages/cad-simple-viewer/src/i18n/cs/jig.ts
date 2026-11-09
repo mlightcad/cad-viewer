@@ -1782,6 +1782,15 @@ export default {
       }
     }
   },
+  pdftext: {
+    enterText:
+      'Řádek textu {index}/{count}: zadejte zvýrazněný text (Enter přeskočí, Esc ukončí)',
+    enterTextWithSuggestion:
+      'Řádek textu {index}/{count}: zadejte zvýrazněný text <{suggestion}>',
+    noCandidates: 'Ve výběru nebyly nalezeny žádné tahy podobné textu.',
+    summary:
+      'Převedeno {converted} řádků textu, z toho {automatic} automaticky; přeskočeno {skipped}.'
+  },
   pdfscale: {
     firstPoint: 'Určete první bod známé vzdálenosti',
     secondPoint: 'Určete druhý bod',
