@@ -130,12 +130,13 @@ async function answer(page: Page, value: string) {
   await page.keyboard.press('Enter')
 }
 
-/** Answers a string prompt (session text box, committed with Ctrl+Enter). */
+/**
+ * Answers a string prompt. On desktop string prompts are typed on the command
+ * line (Space inserts text when the prompt allows spaces, Enter commits); the
+ * mobile session text box stays hidden.
+ */
 async function answerString(page: Page, value: string) {
-  const box = page.locator('textarea.ml-mobile-cmd-string-input')
-  await expect(box).toBeVisible({ timeout: 20_000 })
-  await box.fill(value)
-  await box.press('Control+Enter')
+  await answer(page, value)
 }
 
 /** Opens a drawing in Write mode and imports a PDF fixture at the origin. */
@@ -195,6 +196,7 @@ test('ipdf rebuilds repeated forms as blocks and pdfblock finds copies', async (
   await ribbonButton(page, 'cmd-pdfblock').click()
   await waitForPrompt(page, /base point/i)
   await answer(page, `${100 * PT},${300 * PT}`)
+  await waitForPrompt(page, /PDF_BLOCK_\d+/)
   await answerString(page, 'FLAG')
   await waitForPrompt(page, /Found 2 matching copies/)
   await answer(page, '')
