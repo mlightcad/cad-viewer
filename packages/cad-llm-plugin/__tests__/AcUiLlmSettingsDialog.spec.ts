@@ -53,9 +53,35 @@ function saveButton(): HTMLButtonElement {
   return buttons[buttons.length - 1]
 }
 
-/** Lets the async save handlers (key encryption, storage) finish. */
-async function settle() {
-  for (let i = 0; i < 20; i++) await new Promise(r => setTimeout(r, 0))
+/**
+ * Waits until `check` returns a truthy value. Loading and saving derive the
+ * API key encryption key with PBKDF2 (100k iterations), which takes real time
+ * on a slow CI runner, so a fixed number of event-loop ticks is not enough.
+ */
+async function waitFor<T>(check: () => T, timeout = 10_000): Promise<T> {
+  const deadline = Date.now() + timeout
+  for (;;) {
+    let value: T | undefined
+    try {
+      value = check()
+    } catch {
+      // Not ready yet (e.g. the dialog is still loading).
+    }
+    if (value) return value
+    if (Date.now() > deadline) throw new Error('waitFor timed out')
+    await new Promise(r => setTimeout(r, 10))
+  }
+}
+
+/** Opens the dialog and waits until it is shown (its config is loaded). */
+async function openDialog() {
+  void AcUiLlmSettingsDialog.open()
+  await waitFor(() => document.querySelector('.ml-llm-settings-dialog'))
+}
+
+/** Waits until a save finished and the dialog shows its status message. */
+async function waitForSaved() {
+  await waitFor(() => dialogEl().querySelector('.ml-llm-status')?.textContent)
 }
 
 describe('AcUiLlmSettingsDialog', () => {
@@ -75,8 +101,7 @@ describe('AcUiLlmSettingsDialog', () => {
   it('saves a built-in provider key and offers its models as the model in use', async () => {
     const saved: AcApLlmConfig[] = []
     const stop = acapLlmOnConfigChange(config => saved.push(config))
-    void AcUiLlmSettingsDialog.open()
-    await settle()
+    await openDialog()
 
     const selects = dialogEl().querySelectorAll<HTMLSelectElement>('select')
     // [0] = model in use, [1] = built-in provider
@@ -89,7 +114,7 @@ describe('AcUiLlmSettingsDialog', () => {
     type(apiKey, '  sk-vl  ')
     expect(save.disabled).toBe(false)
     save.click()
-    await settle()
+    await waitForSaved()
 
     const config = await acapLlmLoadConfig()
     expect(config.activeProviderId).toBe('deepseek-vl')
@@ -129,19 +154,17 @@ describe('AcUiLlmSettingsDialog', () => {
       activeProviderId: 'openai',
       activeModel: 'gpt-a'
     })
-    void AcUiLlmSettingsDialog.open()
-    await settle()
+    await openDialog()
 
     const activeModel = dialogEl().querySelector<HTMLSelectElement>('select')!
     select(activeModel, 'openai\ngpt-b')
-    await settle()
+    await waitForSaved()
 
     expect((await acapLlmLoadConfig()).activeModel).toBe('gpt-b')
   })
 
   it('validates a new custom provider before it can be created', async () => {
-    void AcUiLlmSettingsDialog.open()
-    await settle()
+    await openDialog()
 
     const tabs = dialogEl().querySelectorAll<HTMLButtonElement>(
       '.ml-llm-segmented-item'
@@ -165,8 +188,7 @@ describe('AcUiLlmSettingsDialog', () => {
   })
 
   it('asks before discarding unsaved edits on close', async () => {
-    void AcUiLlmSettingsDialog.open()
-    await settle()
+    await openDialog()
     type(
       dialogEl().querySelector<HTMLInputElement>('input[type="password"]')!,
       'sk-draft'
