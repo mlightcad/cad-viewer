@@ -45,6 +45,14 @@ export interface AcEdShapeFeature<Id = unknown> {
    * shapes (circles) may leave this empty.
    */
   points: AcEdPoint2d[]
+  /**
+   * Outline of the shape as a polyline, curves finely flattened; a closed
+   * outline repeats its first point at the end. When both shapes have one,
+   * they match when every outline vertex of each lies within tolerance of
+   * the other outline, however either was split into vertices or where a
+   * closed one starts. {@link points} then only orient the search.
+   */
+  path?: AcEdPoint2d[]
 }
 
 /** 2D affine map: `x' = a·x + c·y + e`, `y' = b·x + d·y + f`. */
@@ -272,6 +280,66 @@ function extentOf(features: AcEdShapeFeature[]) {
   return Math.max(maxX - minX, maxY - minY, 0)
 }
 
+/**
+ * True when `from`, mapped by `t`, lands on `to` within `tol`: their
+ * outlines lie on each other when both have one ({@link AcEdShapeFeature.path}),
+ * otherwise their characteristic points coincide as sets. Center, size,
+ * kind and label are not checked here.
+ *
+ * @param from - Shape to map.
+ * @param to - Shape it should land on.
+ * @param t - Map from `from`'s coordinates to `to`'s.
+ * @param tol - Absolute tolerance in `to`'s coordinates.
+ */
+export function acedShapeLandsOn(
+  from: AcEdShapeFeature,
+  to: AcEdShapeFeature,
+  t: AcEdAffine2d,
+  tol: number
+): boolean {
+  if (from.path && to.path) {
+    const mapped = from.path.map(p => acedApplyAffine2d(t, p))
+    return pathWithin(mapped, to.path, tol) && pathWithin(to.path, mapped, tol)
+  }
+  if (from.points.length !== to.points.length) return false
+  return pointSetsMatch(
+    from.points.map(p => acedApplyAffine2d(t, p)),
+    to.points,
+    tol
+  )
+}
+
+/** True when every vertex of `path` lies within `tol` of `outline`. */
+function pathWithin(
+  path: AcEdPoint2d[],
+  outline: AcEdPoint2d[],
+  tol: number
+): boolean {
+  const tol2 = tol * tol
+  for (const p of path) {
+    let near = false
+    for (let i = 0; i < outline.length && !near; i++) {
+      const a = outline[i]
+      const b = outline[i + 1] ?? a
+      near = segmentDistance2(p, a, b) <= tol2
+    }
+    if (!near) return false
+  }
+  return true
+}
+
+/** Squared distance from `p` to the segment `ab`. */
+function segmentDistance2(p: AcEdPoint2d, a: AcEdPoint2d, b: AcEdPoint2d) {
+  const vx = b.x - a.x
+  const vy = b.y - a.y
+  const len2 = vx * vx + vy * vy
+  let t = len2 > 0 ? ((p.x - a.x) * vx + (p.y - a.y) * vy) / len2 : 0
+  t = Math.max(0, Math.min(1, t))
+  const dx = a.x + vx * t - p.x
+  const dy = a.y + vy * t - p.y
+  return dx * dx + dy * dy
+}
+
 /** True when `points` (already transformed) coincide with `target` as sets. */
 function pointSetsMatch(
   points: AcEdPoint2d[],
@@ -432,7 +500,6 @@ export function acedFindShapeMatches<Id>(
     const pointTol = tolAt(scale)
     for (const { f, index } of order) {
       const c = acedApplyAffine2d(t, f.center)
-      let mapped: AcEdPoint2d[] | undefined
       let hit: AcEdShapeFeature<Id> | undefined
       grids.get(f.kind)!.forEachNear(c, pointTol, g => {
         if (claimed.has(g.id) || taken.has(g.id)) return false
@@ -440,9 +507,7 @@ export function acedFindShapeMatches<Id>(
         if (!labelOk(f, g) || !sizeOk(f.size * scale, g.size, scale)) {
           return false
         }
-        if (g.points.length !== f.points.length) return false
-        mapped ??= f.points.map(p => acedApplyAffine2d(t, p))
-        if (!pointSetsMatch(mapped, g.points, pointTol)) return false
+        if (!acedShapeLandsOn(f, g, t, pointTol)) return false
         hit = g
         return true
       })
