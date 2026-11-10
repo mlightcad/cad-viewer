@@ -52,10 +52,11 @@ If the selection contains exploded dimensions, the scale their texts imply is fi
 ## Recover text (`pdftext`)
 
 1. Select the area with the text. Frames and other large lines are ignored.
-2. The strokes are grouped into lines, and each line is highlighted in turn. Type its text and confirm; leave it empty to skip the line, or press Esc to stop.
-3. Every confirmed character shape is remembered. Lines made only of known shapes are converted without asking, so the more you type, the less you need to.
+2. The strokes are grouped into lines. Lines made only of character shapes you typed before are read right away.
+3. When an AI model with image support is configured (`LLMSETTINGS`), all other lines are sent to it at once, in a few requests, and the whole selection is converted in one step without asking. If recognition fails, a message tells you why (for example an invalid API key).
+4. Only the lines nothing could read are highlighted one by one. Type the text and confirm; leave it empty to skip the line, or press Esc to stop.
 
-The remembered shapes are kept in the browser, so drawings that use the same font benefit too. When an AI model with image support is configured for the CAD Agent, each line comes with a suggested text.
+Every character shape you type is remembered in the browser, so drawings that use the same font benefit too. Text read by the AI model is not remembered. The whole command is one undo step, and converted texts can be edited like any other text.
 
 ## Make a block (`pdfblock`)
 

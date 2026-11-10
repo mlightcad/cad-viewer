@@ -1,4 +1,7 @@
-import { acapLlmCleanRecognizedText } from '../src/AcApLlmTextRecognizer'
+import {
+  acapLlmCleanRecognizedText,
+  acapLlmParseBatchText
+} from '../src/AcApLlmTextRecognizer'
 
 describe('acapLlmCleanRecognizedText', () => {
   it('keeps plain text', () => {
@@ -13,5 +16,34 @@ describe('acapLlmCleanRecognizedText', () => {
 
   it('returns undefined for empty answers', () => {
     expect(acapLlmCleanRecognizedText('   ')).toBeUndefined()
+  })
+})
+
+describe('acapLlmParseBatchText', () => {
+  it('reads a JSON array, aligned with the images', () => {
+    expect(acapLlmParseBatchText('["平面图", "", "Ø25"]', 3)).toEqual([
+      '平面图',
+      undefined,
+      'Ø25'
+    ])
+  })
+
+  it('accepts code fences and surrounding words', () => {
+    expect(
+      acapLlmParseBatchText('Here:\n```json\n["A-A", "B"]\n```', 2)
+    ).toEqual(['A-A', 'B'])
+  })
+
+  it('pads short answers and drops extra entries', () => {
+    expect(acapLlmParseBatchText('["A"]', 3)).toEqual([
+      'A',
+      undefined,
+      undefined
+    ])
+    expect(acapLlmParseBatchText('["A", "B", "C"]', 2)).toEqual(['A', 'B'])
+  })
+
+  it('throws when the answer is not a JSON array', () => {
+    expect(() => acapLlmParseBatchText('I cannot read it', 2)).toThrow()
   })
 })

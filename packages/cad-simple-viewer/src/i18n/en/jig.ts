@@ -2091,10 +2091,11 @@ export default {
   pdftext: {
     enterText:
       'Text line {index}/{count}: enter the highlighted text (leave empty to skip, Esc to stop)',
-    enterTextWithSuggestion:
-      'Text line {index}/{count}: enter the highlighted text',
     ocrNotConfigured:
       'Text recognition (OCR) is off: no image-capable AI model is configured. Run LLMSETTINGS to set one up.',
+    recognizing: 'Recognizing {count} text line(s)…',
+    ocrFailed:
+      'Text recognition (OCR) failed: {message}. Type the text yourself, or run LLMSETTINGS to check the AI model.',
     noCandidates: 'No text-like strokes found in the selection.',
     summary:
       'Converted {converted} text line(s), {automatic} recognized automatically; skipped {skipped}.'

@@ -1683,45 +1683,71 @@ export class AcTrBatchedGroup extends THREE.Group {
    * Removes one entity from batch/unbatched containers.
    */
   removeEntity(objectId: string) {
-    let result = false
-    let compactedBatches = false
-    if (this._entitiesMap.has(objectId)) {
-      const batchedObjects = new Map<number, AcTrResolvedBatch>()
-      this.forEachEntitySlot(objectId, item => {
-        const batchedObject = this.getOriginBatch(item.batchedObjectId)
-        if (batchedObject) {
-          batchedObject.deleteGeometry(item.batchId)
-          batchedObjects.set(item.batchedObjectId, batchedObject)
-          result = true
-        }
-      })
-      batchedObjects.forEach(batchedObject => batchedObject.optimize())
-      compactedBatches = batchedObjects.size > 0
+    return this.removeEntities([objectId]).length > 0
+  }
+
+  /**
+   * Removes many entities from batch/unbatched containers.
+   *
+   * Every touched batch is compacted once at the end, instead of once per
+   * entity: erasing thousands of entities from a large drawing would
+   * otherwise copy the batch buffers thousands of times.
+   *
+   * @param objectIds - Object ids to remove; unknown ids are ignored.
+   * @returns Ids of the entities that had batched or unbatched content.
+   */
+  removeEntities(objectIds: Iterable<string>): string[] {
+    const removed: string[] = []
+    const batchedObjects = new Map<number, AcTrResolvedBatch>()
+    const unbatchedOnly: string[] = []
+    const cleared: string[] = []
+    for (const objectId of objectIds) {
+      let result = false
+      let batched = false
+      if (this._entitiesMap.has(objectId)) {
+        this.forEachEntitySlot(objectId, item => {
+          const batchedObject = this.getOriginBatch(item.batchedObjectId)
+          if (batchedObject) {
+            batchedObject.deleteGeometry(item.batchId)
+            batchedObjects.set(item.batchedObjectId, batchedObject)
+            result = true
+            batched = true
+          }
+        })
+        cleared.push(objectId)
+      }
+      const unbatchedObjects = this._unbatchedEntities.get(objectId)
+      if (unbatchedObjects) {
+        this.unselect(objectId)
+        this.unhover(objectId)
+        unbatchedObjects.forEach(object => {
+          this.disposeObject(object)
+          this._unbatchedObjects.remove(object)
+        })
+        this._unbatchedEntities.delete(objectId)
+        result = true
+      }
+      if (result) removed.push(objectId)
+      if (result && !batched) unbatchedOnly.push(objectId)
+    }
+    batchedObjects.forEach(batchedObject => batchedObject.optimize())
+    for (const objectId of cleared) {
       this.unselect(objectId)
       this.unhover(objectId)
       this._entitiesMap.delete(objectId)
     }
-    const unbatchedObjects = this._unbatchedEntities.get(objectId)
-    if (unbatchedObjects) {
-      this.unselect(objectId)
-      this.unhover(objectId)
-      unbatchedObjects.forEach(object => {
-        this.disposeObject(object)
-        this._unbatchedObjects.remove(object)
-      })
-      this._unbatchedEntities.delete(objectId)
-      result = true
-    }
     if (this._compareEnabled) {
       // Compact moves remaining slot ranges, so shared overlay draw ranges
-      // must be rebuilt. Unbatched-only deletes only drop this entity's copy.
-      if (compactedBatches) {
+      // must be rebuilt. Unbatched-only deletes only drop their own copies.
+      if (batchedObjects.size > 0) {
         this.refreshCompareOverlay()
       } else {
-        this.removeCompareOverlayForEntity(objectId)
+        unbatchedOnly.forEach(objectId =>
+          this.removeCompareOverlayForEntity(objectId)
+        )
       }
     }
-    return result
+    return removed
   }
 
   /**

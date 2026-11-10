@@ -461,6 +461,20 @@ export class AcTrLayer {
   }
 
   /**
+   * Removes many entities from this layer, compacting its batches once.
+   *
+   * @param objectIds - Object ids to remove.
+   * @returns Ids removed from this layer.
+   */
+  removeEntities(objectIds: Iterable<AcDbObjectId>): AcDbObjectId[] {
+    const removed = this._group.removeEntities(objectIds)
+    if (removed.length > 0) {
+      this._boxDirty = true
+    }
+    return removed
+  }
+
+  /**
    * Update the specified entity in this layer.
    * @param entity Input the entity to update
    * @returns Return true if update the specified entity successfully. Otherwise, return false.
