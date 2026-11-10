@@ -218,7 +218,13 @@ describe('AcApHatchCmd', () => {
     expect(hatch.isSolidFill).toBe(false)
     expect(hatch.definitionLines.length).toBeGreaterThan(0)
     expect(hatch.definitionLines[0].angle).toBeCloseTo(Math.PI / 4)
-    expect(hatch.definitionLines[0].offset.y).toBeCloseTo(3.175 * 2)
+    // Offsets are world-space vectors; ANSI31's 3.175 spacing runs across
+    // the 45° line.
+    const [line] = hatch.definitionLines
+    expect(
+      -Math.sin(line.angle) * line.offset.x +
+        Math.cos(line.angle) * line.offset.y
+    ).toBeCloseTo(3.175 * 2)
   })
 
   test('keeps SOLID hatches as solid fills without pattern definition lines', () => {
