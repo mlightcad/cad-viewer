@@ -24,6 +24,7 @@ interface ViewInternals {
   _scene: {
     hasEntity: (objectId: string) => boolean
     removeEntity: jest.Mock
+    removeEntities: jest.Mock
   }
   _isDirty: boolean
   _claimedConvertObjectIds: Set<string>
@@ -37,7 +38,8 @@ function createBareView(entityInScene = false) {
   const internals = view as unknown as ViewInternals
   internals._scene = {
     hasEntity: () => entityInScene,
-    removeEntity: jest.fn()
+    removeEntity: jest.fn(),
+    removeEntities: jest.fn()
   }
   internals._isDirty = false
   internals._claimedConvertObjectIds = new Set()
@@ -98,8 +100,11 @@ describe('AcTrView2d convert claims after an erase', () => {
 
     ids.forEach(id => {
       expect(internals._claimedConvertObjectIds.has(id)).toBe(false)
-      expect(internals._scene.removeEntity).toHaveBeenCalledWith(id)
     })
+    // One bulk scene removal, so batches are compacted once.
+    expect(internals._scene.removeEntities).toHaveBeenCalledTimes(1)
+    expect(internals._scene.removeEntities).toHaveBeenCalledWith(ids)
+    expect(internals._scene.removeEntity).not.toHaveBeenCalled()
   })
 
   it('releases claims only for entities that leave the scene', () => {

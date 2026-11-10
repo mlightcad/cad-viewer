@@ -2893,10 +2893,13 @@ export class AcTrView2d extends AcEdBaseView {
    */
   removeEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
-    entities.forEach(entity => {
-      this.releaseConvertClaim(entity.objectId)
-      this._scene.removeEntity(entity.objectId)
-    })
+    entities.forEach(entity => this.releaseConvertClaim(entity.objectId))
+    if (entities.length === 1) {
+      this._scene.removeEntity(entities[0].objectId)
+    } else if (entities.length > 1) {
+      // One bulk removal: batches are compacted once, not once per entity.
+      this._scene.removeEntities(entities.map(entity => entity.objectId))
+    }
     this._isDirty = true
   }
 

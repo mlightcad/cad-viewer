@@ -137,9 +137,7 @@ export class AcTrLayout {
    * layers created after {@link setCompareDisplay} so late layer groups
    * still receive role tints.
    */
-  private _compareDisplayOptions?: Parameters<
-    AcTrLayer['setCompareDisplay']
-  >[0]
+  private _compareDisplayOptions?: Parameters<AcTrLayer['setCompareDisplay']>[0]
 
   /**
    * Creates a new layout instance.
@@ -529,6 +527,32 @@ export class AcTrLayout {
       this.invalidateBox()
     }
     return result
+  }
+
+  /**
+   * Removes many entities from this layout, compacting each layer's batches
+   * once instead of once per entity.
+   *
+   * @param objectIds - Object ids to remove.
+   * @returns Ids removed from at least one layer of this layout.
+   */
+  removeEntities(objectIds: AcDbObjectId[]): Set<AcDbObjectId> {
+    const removed = new Set<AcDbObjectId>()
+    if (objectIds.length === 0) return removed
+    for (const [_, layer] of this._layers) {
+      for (const objectId of layer.removeEntities(objectIds)) {
+        removed.add(objectId)
+      }
+    }
+    if (removed.size > 0) {
+      for (const objectId of removed) {
+        this._spatialIndex.removeById(objectId)
+        this._extentExcludedObjectIds.delete(objectId)
+        this._insertLayerByObjectId.delete(objectId)
+      }
+      this.invalidateBox()
+    }
+    return removed
   }
 
   /**

@@ -52,10 +52,11 @@ Pokud výběr obsahuje rozložené kóty, skutečná délka se předvyplní podl
 ## Obnovení textu (`pdftext`)
 
 1. Vyberte oblast s textem. Rámečky a jiné velké čáry se ignorují.
-2. Tahy se seskupí do řádků a každý řádek se postupně zvýrazní. Napište jeho text a potvrďte; prázdný vstup řádek přeskočí, Esc příkaz ukončí.
-3. Tvar každého potvrzeného znaku se zapamatuje. Řádky složené jen ze známých tvarů se převedou bez ptaní, takže čím víc toho napíšete, tím méně musíte psát.
+2. Tahy se seskupí do řádků. Řádky složené jen z tvarů znaků, které jste dříve napsali, se přečtou hned.
+3. Je-li nastaven model AI s podporou obrázků (`LLMSETTINGS`), všechny ostatní řádky se mu odešlou najednou v několika požadavcích a celý výběr se převede v jednom kroku bez ptaní. Pokud rozpoznání selže, zpráva uvede důvod (například neplatný klíč API).
+4. Postupně se zvýrazní jen řádky, které se nepodařilo přečíst. Napište text a potvrďte; prázdný vstup řádek přeskočí, Esc příkaz ukončí.
 
-Zapamatované tvary se ukládají v prohlížeči, takže pomohou i u dalších výkresů se stejným písmem. Je-li pro CAD Agent nastaven model AI s podporou obrázků, každý řádek přijde s navrženým textem.
+Každý napsaný tvar znaku se zapamatuje v prohlížeči, takže pomůže i u dalších výkresů se stejným písmem. Text přečtený modelem AI se nezapamatuje. Celý příkaz lze vrátit jedním krokem a převedené texty lze upravovat jako jakýkoli jiný text.
 
 ## Vytvoření bloku (`pdfblock`)
 

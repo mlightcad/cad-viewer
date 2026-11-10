@@ -890,6 +890,32 @@ export class AcTrScene {
   }
 
   /**
+   * Removes many persistent entities from this scene. Batches are compacted
+   * once per call, so erasing thousands of entities stays fast.
+   *
+   * @param objectIds - Object ids of the entities to remove.
+   * @returns Ids removed from a layout.
+   */
+  removeEntities(objectIds: AcDbObjectId[]): Set<AcDbObjectId> {
+    // Mesh-glyph InstancedMesh slots live outside the entity tree — always
+    // clear them for these ids (layout remove may no-op if already gone).
+    const mtextRenderer = AcTrMTextRenderer.getInstance()
+    objectIds.forEach(objectId =>
+      mtextRenderer.removeMeshGlyphInstances(objectId)
+    )
+    const removed = new Set<AcDbObjectId>()
+    let remaining = objectIds
+    for (const [_, layout] of this._layouts) {
+      if (remaining.length === 0) break
+      const fromLayout = layout.removeEntities(remaining)
+      if (fromLayout.size === 0) continue
+      fromLayout.forEach(objectId => removed.add(objectId))
+      remaining = remaining.filter(objectId => !fromLayout.has(objectId))
+    }
+    return removed
+  }
+
+  /**
    * Update the specified persistent entity (stored in the drawing database) in this scene.
    * @param objectId Input the entity to update
    * @returns Return true if update the specified entity successfully. Otherwise, return false.

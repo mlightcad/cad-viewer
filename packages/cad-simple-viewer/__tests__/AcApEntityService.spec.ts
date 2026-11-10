@@ -1,4 +1,5 @@
 import {
+  AcDbBlockTableRecord,
   AcDbDatabase,
   AcDbLayerTableRecord,
   AcDbLine,
@@ -35,26 +36,58 @@ describe('AcApEntityService', () => {
   })
 
   test('eraseEntities returns the number of erased entities', () => {
-    const erased = new Set<string>()
-    const db = {
-      transactionManager: { hasTransaction: () => true },
-      openEntityForWrite: jest.fn((objectId: string) => {
-        if (objectId === 'missing') return undefined
-        return { erase: () => erased.add(objectId) }
-      })
+    const db = new AcDbDatabase()
+    const a = new AcDbLine(new AcGePoint3d(0, 0, 0), new AcGePoint3d(1, 0, 0))
+    const b = new AcDbLine(new AcGePoint3d(0, 1, 0), new AcGePoint3d(1, 1, 0))
+    db.tables.blockTable.modelSpace.appendEntity([a, b])
+    const service = new AcApEntityService(db)
+
+    expect(service.eraseEntities([a.objectId, b.objectId, 'missing'])).toBe(2)
+    expect(db.tables.blockTable.getEntityById(a.objectId)).toBeUndefined()
+    expect(db.tables.blockTable.getEntityById(b.objectId)).toBeUndefined()
+  })
+
+  test('eraseEntities removes many entities in one pass per block', () => {
+    // Erasing one by one scans the whole block for each entity, which froze
+    // the UI for half a minute on a large drawing.
+    const db = new AcDbDatabase()
+    const lines = Array.from(
+      { length: 50 },
+      (_, i) => new AcDbLine(new AcGePoint3d(0, i, 0), new AcGePoint3d(1, i, 0))
+    )
+    const kept = new AcDbLine(
+      new AcGePoint3d(5, 0, 0),
+      new AcGePoint3d(6, 0, 0)
+    )
+    db.tables.blockTable.modelSpace.appendEntity([...lines, kept])
+    const service = new AcApEntityService(db)
+    const remove = jest.spyOn(AcDbBlockTableRecord.prototype, 'removeEntity')
+    const blockCount = [...db.tables.blockTable.newIterator()].length
+
+    try {
+      expect(service.eraseEntities(lines.map(line => line.objectId))).toBe(50)
+      expect(remove.mock.calls.length).toBeLessThanOrEqual(blockCount)
+    } finally {
+      remove.mockRestore()
     }
-    const service = new AcApEntityService(db as never)
+    expect(
+      lines.every(line => !db.tables.blockTable.getEntityById(line.objectId))
+    ).toBe(true)
+    expect(db.tables.blockTable.getEntityById(kept.objectId)).toBeDefined()
 
-    const count = service.eraseEntities(['a', 'b', 'missing'])
-
-    expect(count).toBe(2)
-    expect(erased).toEqual(new Set(['a', 'b']))
-    expect(db.openEntityForWrite).toHaveBeenCalledTimes(3)
+    // Still one undo step.
+    expect(db.transactionManager.undo()).toBe(true)
+    expect(
+      lines.every(line => db.tables.blockTable.getEntityById(line.objectId))
+    ).toBe(true)
   })
 
   test('eraseEntities records an undoable database change', () => {
     const db = new AcDbDatabase()
-    const line = new AcDbLine(new AcGePoint3d(0, 0, 0), new AcGePoint3d(10, 0, 0))
+    const line = new AcDbLine(
+      new AcGePoint3d(0, 0, 0),
+      new AcGePoint3d(10, 0, 0)
+    )
     db.tables.blockTable.modelSpace.appendEntity(line)
     const objectId = line.objectId
     const service = new AcApEntityService(db)

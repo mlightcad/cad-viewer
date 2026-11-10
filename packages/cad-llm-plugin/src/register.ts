@@ -35,7 +35,10 @@ export function registerLazyLlmPlugin(pluginManager: AcApPluginManager): void {
 
   AcApTextRecognitionService.register({
     id: LLM_SERVICE_ID,
-    recognize: async request => (await loadMain()).acapLlmRecognizeText(request)
+    recognize: async request =>
+      (await loadMain()).acapLlmRecognizeText(request),
+    recognizeBatch: async request =>
+      (await loadMain()).acapLlmRecognizeTextBatch(request)
   })
 
   AcApLlmSettingsService.register({

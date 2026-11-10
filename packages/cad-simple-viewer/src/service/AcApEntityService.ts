@@ -147,24 +147,36 @@ export class AcApEntityService {
   }
 
   /**
-   * Erases entities by object id.
+   * Erases entities by object id. Unknown ids and entities on locked layers
+   * are skipped.
+   *
+   * The entities are removed from each block in one pass: erasing them one
+   * by one scans the block for every entity, which takes many seconds when
+   * thousands of strokes are erased from a large drawing.
    *
    * @param objectIds - Entity ids to erase.
    * @returns Number of entities successfully erased.
    */
   eraseEntities(objectIds: AcDbObjectId[]): number {
     return this.runEntityEdit(() => {
-      let count = 0
-      objectIds.forEach(objectId => {
-        const existing = this.db.tables?.blockTable?.getEntityById(objectId)
-        if (existing && isEntityOnLockedLayer(this.db, existing)) return
+      const blockTable = this.db.tables?.blockTable
+      if (!blockTable) return 0
+      const erasable: AcDbObjectId[] = []
+      new Set(objectIds).forEach(objectId => {
+        const existing = blockTable.getEntityById(objectId)
+        if (!existing || isEntityOnLockedLayer(this.db, existing)) return
         const entity = this.db.openEntityForWrite(objectId)
         if (!entity) return
         if (isEntityOnLockedLayer(this.db, entity)) return
-        entity.erase()
-        count++
+        erasable.push(objectId)
       })
-      return count
+      if (erasable.length === 0) return 0
+      // `blockTable.removeEntity` stops at the first block that removed any
+      // entity, so ask every block for the ids it owns.
+      for (const block of blockTable.newIterator()) {
+        block.removeEntity(erasable)
+      }
+      return erasable.length
     })
   }
 

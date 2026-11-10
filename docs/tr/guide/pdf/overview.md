@@ -52,10 +52,11 @@ Seçimde patlatılmış ölçüler varsa, metinlerinin gösterdiği ölçeğe g�
 ## Metni kurtarma (`pdftext`)
 
 1. Metnin bulunduğu alanı seçin. Çerçeveler ve diğer büyük çizgiler yok sayılır.
-2. Çizgiler satırlara gruplanır ve her satır sırayla vurgulanır. Metnini yazıp onaylayın; satırı atlamak için boş bırakın, durdurmak için Esc'e basın.
-3. Onaylanan her karakter şekli hatırlanır. Yalnızca bilinen şekillerden oluşan satırlar sorulmadan dönüştürülür; ne kadar çok yazarsanız o kadar az yazmanız gerekir.
+2. Çizgiler satırlara gruplanır. Yalnızca daha önce yazdığınız karakter şekillerinden oluşan satırlar hemen okunur.
+3. Görüntü destekli bir yapay zekâ modeli ayarlanmışsa (`LLMSETTINGS`), diğer tüm satırlar ona birkaç istekte birlikte gönderilir ve seçimin tamamı sorulmadan tek adımda dönüştürülür. Tanıma başarısız olursa nedeni (örneğin geçersiz bir API anahtarı) bir mesajla bildirilir.
+4. Yalnızca hiçbir yolla okunamayan satırlar tek tek vurgulanır. Metni yazıp onaylayın; satırı atlamak için boş bırakın, durdurmak için Esc'e basın.
 
-Hatırlanan şekiller tarayıcıda saklanır, böylece aynı yazı tipini kullanan diğer çizimler de bundan yararlanır. CAD Agent için görüntü destekli bir yapay zekâ modeli ayarlanmışsa, her satır önerilen bir metinle gelir.
+Yazdığınız her karakter şekli tarayıcıda hatırlanır, böylece aynı yazı tipini kullanan diğer çizimler de bundan yararlanır. Yapay zekâ modelinin okuduğu metin hatırlanmaz. Komutun tamamı tek adımda geri alınabilir ve dönüştürülen metinler diğer metinler gibi düzenlenebilir.
 
 ## Blok oluşturma (`pdfblock`)
 

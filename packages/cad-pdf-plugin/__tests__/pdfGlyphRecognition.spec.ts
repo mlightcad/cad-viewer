@@ -143,7 +143,79 @@ describe('clusterPdfTextStrokes', () => {
     expect(rejected).toEqual([frame])
     expect(lines).toHaveLength(1)
   })
+
+  it('estimates the height of text exploded into short line segments', () => {
+    // Some PDFs store each glyph stroke as many tiny separate lines, so
+    // single strokes are far smaller than the text.
+    const strokes = explode([
+      ...write('THE HELL', { x: 0, y: 4 }, 1),
+      ...write('LET', { x: 0, y: 2 }, 1)
+    ])
+    expect(estimatePdfTextHeight(strokes)).toBeCloseTo(1, 6)
+    const { lines, rejected } = clusterPdfTextStrokes(strokes)
+    expect(rejected).toHaveLength(0)
+    expect(lines.map(line => line.glyphs.length)).toEqual([7, 3])
+    expect(lines[0].height).toBeCloseTo(1, 6)
+    expect(lines[0].rotation).toBeCloseTo(0, 6)
+  })
+
+  it('keeps the long strokes of a title taller than the body text', () => {
+    // Body text sets the estimated height. As in real PDFs, most title
+    // strokes are short segments but some straight ones stay long.
+    const titleStrokes = write('LET', { x: 0, y: 14 }, 4)
+    const long = titleStrokes[titleStrokes.length - 1]
+    // A piece hanging below the title, split off from it as its own row.
+    const piece: PdfTextStroke<number> = {
+      id: -3,
+      points: [
+        { x: 5, y: 13.1 },
+        { x: 5, y: 13.4 }
+      ]
+    }
+    const title = [...explode(titleStrokes.slice(0, -1)), long, piece]
+    const underline: PdfTextStroke<number> = {
+      id: -2,
+      points: [
+        { x: 0, y: 13.5 },
+        { x: 9, y: 13.5 }
+      ]
+    }
+    const body = [10, 8, 6, 4].flatMap(y => write('THE HELL', { x: 0, y }, 1))
+    const strokes = [
+      ...title,
+      underline,
+      ...explode([...body, ...write('LET', { x: 0, y: 2 }, 1)])
+    ]
+    // Precondition: title strokes are too long for the estimated height.
+    expect(estimatePdfTextHeight(strokes) * 1.5).toBeLessThan(4)
+    const { lines, rejected } = clusterPdfTextStrokes(strokes)
+    expect(rejected).toEqual([underline])
+    expect(lines.map(line => line.glyphs.length)).toEqual([3, 7, 7, 7, 7, 3])
+    expect(lines[0].strokes).toHaveLength(title.length)
+    expect(lines[0].strokes).toEqual(expect.arrayContaining([long, piece]))
+    expect(lines[0].height).toBeCloseTo(4, 6)
+  })
 })
+
+/** Splits every stroke into separate segments about 0.1 long. */
+function explode(strokes: PdfTextStroke<number>[]): PdfTextStroke<number>[] {
+  const out: PdfTextStroke<number>[] = []
+  for (const stroke of strokes) {
+    for (let i = 1; i < stroke.points.length; i++) {
+      const a = stroke.points[i - 1]
+      const b = stroke.points[i]
+      const n = Math.max(1, Math.round(Math.hypot(b.x - a.x, b.y - a.y) / 0.1))
+      for (let k = 0; k < n; k++) {
+        const at = (t: number) => ({
+          x: a.x + (b.x - a.x) * t,
+          y: a.y + (b.y - a.y) * t
+        })
+        out.push({ id: nextId++, points: [at(k / n), at((k + 1) / n)] })
+      }
+    }
+  }
+  return out
+}
 
 describe('PdfGlyphDictionary', () => {
   it('learns glyphs from one line and recognizes them elsewhere', () => {

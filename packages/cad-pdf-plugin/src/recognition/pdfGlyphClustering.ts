@@ -103,18 +103,70 @@ function percentile(sorted: number[], q: number) {
 }
 
 /**
- * Estimates text height from stroke sizes. Strokes far above the median are
- * treated as non-text so a frame in the selection does not skew the result.
+ * Estimates text height from the sizes of glyph parts. Parts far above the
+ * median are treated as non-text so a frame in the selection does not skew
+ * the result.
+ *
+ * Strokes chained end to end are measured together: some PDFs store a glyph
+ * stroke as many tiny separate segments, each far smaller than the text.
  */
 export function estimatePdfTextHeight(strokes: PdfTextStroke[]): number {
-  const sizes = strokes
-    .map(stroke => boxSize(strokeBox(stroke)))
-    .filter(size => size > 0)
-    .sort((a, b) => a - b)
-  if (sizes.length === 0) return 0
+  const sized = strokes.filter(stroke => boxSize(strokeBox(stroke)) > 0)
+  if (sized.length === 0) return 0
+  const strokeMedian = percentile(
+    sized.map(stroke => boxSize(strokeBox(stroke))).sort(byNumber),
+    0.5
+  )
+  const sizes = chainStrokes(sized, strokeMedian * 0.01)
+    .map(group =>
+      boxSize(strokeBox({ id: 0, points: group.flatMap(i => sized[i].points) }))
+    )
+    .sort(byNumber)
   const median = percentile(sizes, 0.5)
   const textLike = sizes.filter(size => size <= median * 4)
   return percentile(textLike, 0.9)
+}
+
+function byNumber(a: number, b: number) {
+  return a - b
+}
+
+/**
+ * Groups strokes whose end points meet within `tolerance` (a stroke split
+ * into consecutive segments), using a hash grid of end points.
+ */
+function chainStrokes(strokes: PdfTextStroke[], tolerance: number): number[][] {
+  const uf = new UnionFind(strokes.length)
+  const cell = Math.max(tolerance, 1e-12)
+  const grid = new Map<string, Array<{ index: number; p: PdfRecPoint }>>()
+  strokes.forEach((stroke, index) => {
+    const ends = [stroke.points[0], stroke.points[stroke.points.length - 1]]
+    for (const p of ends) {
+      const gx = Math.floor(p.x / cell)
+      const gy = Math.floor(p.y / cell)
+      for (let dx = -1; dx <= 1; dx++) {
+        for (let dy = -1; dy <= 1; dy++) {
+          for (const other of grid.get(`${gx + dx},${gy + dy}`) ?? []) {
+            if (Math.hypot(other.p.x - p.x, other.p.y - p.y) <= tolerance) {
+              uf.union(index, other.index)
+            }
+          }
+        }
+      }
+      const key = `${gx},${gy}`
+      const bucket = grid.get(key)
+      if (bucket) bucket.push({ index, p })
+      else grid.set(key, [{ index, p }])
+    }
+  })
+  const groups = new Map<number, number[]>()
+  strokes.forEach((_, i) => {
+    const root = uf.find(i)
+    const group = groups.get(root)
+    if (group) group.push(i)
+    else groups.set(root, [i])
+  })
+  return [...groups.values()]
 }
 
 class UnionFind {
@@ -332,6 +384,71 @@ function median(values: number[]) {
   return percentile(sorted, 0.5)
 }
 
+interface LineBand {
+  minU: number
+  maxU: number
+  minV: number
+  maxV: number
+}
+
+function lineBand<Id>(items: LocalStroke<Id>[]): LineBand {
+  return {
+    minU: Math.min(...items.map(item => item.minU)),
+    maxU: Math.max(...items.map(item => item.maxU)),
+    minV: Math.min(...items.map(item => item.minV)),
+    maxV: Math.max(...items.map(item => item.maxV))
+  }
+}
+
+/**
+ * Whether a stroke fits a text line: inside its band (with a quarter-height
+ * margin) and no larger than about the line height.
+ */
+function fitsBand(item: LineBand, band: LineBand) {
+  const height = band.maxV - band.minV
+  const margin = height * 0.25
+  const size = Math.max(item.maxU - item.minU, item.maxV - item.minV)
+  return (
+    size <= height * 1.5 &&
+    item.minU >= band.minU - margin &&
+    item.maxU <= band.maxU + margin &&
+    item.minV >= band.minV - margin &&
+    item.maxV <= band.maxV + margin
+  )
+}
+
+interface Row<Id> {
+  angle: number
+  items: LocalStroke<Id>[]
+}
+
+/**
+ * Merges rows lying inside the band of a taller row into it: pieces of a
+ * large glyph that were split off where a long stroke, rejected at first,
+ * joined them to the rest.
+ */
+function mergeFragments<Id>(rows: Row<Id>[]): Row<Id>[] {
+  const height = (row: Row<Id>) => {
+    const band = lineBand(row.items)
+    return band.maxV - band.minV
+  }
+  const order = [...rows].sort((a, b) => height(a) - height(b))
+  const removed = new Set<Row<Id>>()
+  order.forEach((row, i) => {
+    const strokes = row.items.map(item => item.stroke)
+    for (let j = order.length - 1; j > i; j--) {
+      const target = order[j]
+      if (!(height(target) > height(row))) continue
+      const local = localStrokes(strokes, target.angle)
+      if (!fitsBand(lineBand(local), lineBand(target.items))) continue
+      target.items.push(...local)
+      removed.add(row)
+      return
+    }
+  })
+  return rows.filter(row => !removed.has(row))
+}
+
 function buildLine<Id>(
   items: LocalStroke<Id>[],
   angle: number,
@@ -411,7 +528,7 @@ export function clusterPdfTextStrokes<Id>(
   const known = angles.filter((a): a is number => a !== undefined)
   const dominant = known.length > 0 ? median(known) : 0
 
-  const merged: Array<{ angle: number; items: LocalStroke<Id>[] }> = []
+  const merged: Row<Id>[] = []
   phrases.forEach((phrase, i) => {
     const angle = angles[i] ?? dominant
     const local = localStrokes(phrase, angle)
@@ -423,14 +540,27 @@ export function clusterPdfTextStrokes<Id>(
     }
   })
 
-  const lines = merged.map(row =>
+  // Strokes too long for the estimated height may belong to taller text (a
+  // title above body text): keep those lying inside the band of such a line.
+  const bands = merged.map(row => lineBand(row.items))
+  const stillRejected = rejected.filter(stroke => {
+    const index = merged.findIndex((row, i) =>
+      fitsBand(localStrokes([stroke], row.angle)[0], bands[i])
+    )
+    if (index < 0) return true
+    merged[index].items.push(...localStrokes([stroke], merged[index].angle))
+    return false
+  })
+  const rows = mergeFragments(merged)
+
+  const lines = rows.map(row =>
     buildLine(row.items, row.angle, textHeight, glyphGap)
   )
   // Reading order: top to bottom, then left to right.
   lines.sort((a, b) => {
     const dy = b.position.y - a.position.y
-    if (Math.abs(dy) > textHeight * 0.5) return dy
+    if (Math.abs(dy) > Math.min(a.height, b.height) * 0.5) return dy
     return a.position.x - b.position.x
   })
-  return { lines, rejected, textHeight }
+  return { lines, rejected: stillRejected, textHeight }
 }
