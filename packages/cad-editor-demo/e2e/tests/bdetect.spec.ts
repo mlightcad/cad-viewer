@@ -109,7 +109,8 @@ test('BDETECT finds repeated symbols and converts them into a block', async ({
   await group.click()
   await expect(group).toHaveClass(/is-selected/)
 
-  await panel.getByTestId('bdetect-name').locator('input').fill('DOOR')
+  // el-input forwards data-testid to its native <input>, not the wrapper.
+  await group.getByTestId('bdetect-name').fill('DOOR')
   await page.getByTestId('bdetect-convert').click()
 
   await expect
