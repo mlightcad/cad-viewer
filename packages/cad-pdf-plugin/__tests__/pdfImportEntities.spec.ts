@@ -1,9 +1,11 @@
 import {
   AcDbDatabase,
+  AcDbHatchPatternType,
   acdbHostApplicationServices
 } from '@mlightcad/data-model'
 
 import {
+  acapPdfCreatePatternHatch,
   acapPdfCreateSolidHatch,
   acapPdfEnsureDashLinetype,
   acapPdfEnsureTextStyle,
@@ -114,6 +116,54 @@ describe('PDF import entities', () => {
     // Nothing backs the loops; HPASSOC must not make it associative.
     expect(hatch.associative).toBe(false)
     expect(acapPdfCreateSolidHatch(db, [])).toBeUndefined()
+  })
+
+  it('creates a pattern hatch that keeps the recognized lines', () => {
+    const db = createDb()
+    const loop = acapPdfShapeToLoop({
+      kind: 'circle',
+      center: { x: 0, y: 0 },
+      radius: 10
+    })!
+    const line = {
+      angle: Math.PI / 4,
+      base: { x: 1, y: 2 },
+      offset: { x: -4.49, y: 4.49 },
+      dashLengths: []
+    }
+    const hatch = acapPdfCreatePatternHatch(
+      db,
+      [loop],
+      { type: 'predefined', name: 'ANSI31', scale: 2, angle: 0.1 },
+      [line]
+    )!
+    expect(hatch.isSolidFill).toBe(false)
+    expect(hatch.patternType).toBe(AcDbHatchPatternType.Predefined)
+    expect(hatch.patternName).toBe('ANSI31')
+    expect(hatch.patternScale).toBe(2)
+    expect(hatch.patternAngle).toBeCloseTo(0.1)
+    expect(hatch.associative).toBe(false)
+    // The library must not replace the lines matched against the PDF.
+    expect(hatch.definitionLines).toHaveLength(1)
+    expect(hatch.definitionLines[0].base).toEqual({ x: 1, y: 2 })
+
+    const user = acapPdfCreatePatternHatch(
+      db,
+      [loop],
+      { type: 'userDefined', angle: 0, spacing: 3, double: true },
+      [line, { ...line, angle: (Math.PI * 3) / 4 }]
+    )!
+    expect(user.patternType).toBe(AcDbHatchPatternType.UserDefined)
+    expect(user.patternDouble).toBe(true)
+    expect(user.definitionLines).toHaveLength(2)
+    const single = {
+      type: 'userDefined' as const,
+      angle: 0,
+      spacing: 3,
+      double: false
+    }
+    expect(acapPdfCreatePatternHatch(db, [], single, [line])).toBeUndefined()
+    expect(acapPdfCreatePatternHatch(db, [loop], single, [])).toBeUndefined()
   })
 
   it.each([

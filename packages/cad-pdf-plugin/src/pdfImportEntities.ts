@@ -9,10 +9,15 @@ import {
   AcGeLine2d,
   AcGeLoop2d,
   AcGePoint2d,
-  HATCH_PATTERN_SOLID
+  HATCH_PATTERN_SOLID,
+  HATCH_PATTERN_USER
 } from '@mlightcad/data-model'
 
 import type { PdfRecognizedShape } from './recognition/pdfCurveRecognition'
+import type {
+  PdfHatchDefinitionLine,
+  PdfRecognizedHatchPattern
+} from './recognition/pdfHatchRecognition'
 import { cubicAt, type PdfRecPoint } from './recognition/pdfRecGeometry'
 
 /** Name prefix for linetypes created from PDF dash patterns. */
@@ -167,6 +172,55 @@ export function acapPdfCreateSolidHatch(
   hatch.isSolidFill = true
   // No boundary objects back the loops, so the hatch is not associative
   // (HPASSOC would otherwise apply and hide its boundary grips).
+  hatch.associative = false
+  for (const loop of loops) hatch.add(loop)
+  return hatch
+}
+
+/**
+ * Pattern hatch over the given loops (even-odd, so inner loops are holes).
+ *
+ * The hatch keeps the recognized definition lines verbatim, the same way a
+ * DXF hatch does, so it draws exactly what was matched against the PDF.
+ *
+ * @param pattern - Pattern name / type, scale and angle to record.
+ * @param lines - Definition lines in drawing coordinates.
+ * @returns The hatch, or `undefined` when no loop is closed.
+ */
+export function acapPdfCreatePatternHatch(
+  db: AcDbDatabase,
+  loops: AcGeLoop2d[],
+  pattern: PdfRecognizedHatchPattern,
+  lines: readonly PdfHatchDefinitionLine[]
+): AcDbHatch | undefined {
+  if (loops.length === 0 || lines.length === 0) return undefined
+  const hatch = new AcDbHatch()
+  hatch.database = db
+  // Explicit lines first: with them in place the pattern name no longer
+  // regenerates lines from the PAT library. A non-predefined type drops any
+  // lines the database defaults (HPNAME) already generated.
+  hatch.patternType = AcDbHatchPatternType.UserDefined
+  hatch.definitionLines.length = 0
+  for (const line of lines) {
+    hatch.definitionLines.push({
+      angle: line.angle,
+      base: { x: line.base.x, y: line.base.y },
+      offset: { x: line.offset.x, y: line.offset.y },
+      dashLengths: [...line.dashLengths]
+    })
+  }
+  if (pattern.type === 'predefined') {
+    hatch.patternType = AcDbHatchPatternType.Predefined
+    hatch.patternName = pattern.name
+    hatch.patternScale = pattern.scale
+  } else {
+    hatch.patternType = AcDbHatchPatternType.UserDefined
+    hatch.patternName = HATCH_PATTERN_USER
+    hatch.patternScale = 1
+    hatch.patternDouble = pattern.double
+  }
+  hatch.patternAngle = pattern.angle
+  hatch.isSolidFill = false
   hatch.associative = false
   for (const loop of loops) hatch.add(loop)
   return hatch

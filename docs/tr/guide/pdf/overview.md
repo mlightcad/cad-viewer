@@ -35,6 +35,8 @@ Bu komutlar **Yazma** modu gerektirir. Önerilen sıra: `ipdf` → `pdfscale` �
 
 Dolgulu alanlar (renkli paneller, dolgulu logolar ve metin dış hatları) dolgu renginde düz tarama olarak, sayfadaki çizim sırasıyla içe aktarılır. Entegrasyonlar yalnızca dış hat almak için `fillHatches` seçeneğini `false` yapabilir.
 
+Desenli taramalar (ANSI31, tuğla, çapraz tarama vb.) PDF'e binlerce kısa çizgi olarak yazılır. **Kurtar** modunda bu çizgiler tarama nesneleri olarak yeniden oluşturulur: çizgiler standart `acadiso.pat` desenleriyle ya da kullanıcı tanımlı tek veya çapraz bir desenle, çizildikleri ölçek, açı ve başlangıç noktasıyla birlikte eşleştirilir. Sınır, çizilmiş kapalı bir dış hattan, PDF kırpma yolundan veya çizgi uçlarından alınır. Tarama yalnızca çizimi sayfadaki çizgileri yeniden ürettiğinde tutulur; diğer her şey çizgi olarak kalır. Entegrasyonlar tüm çizgileri korumak için `recognizeHatches` seçeneğini `false` yapabilir.
+
 Her iki modda da görüntüleyici metni genellikle farklı bir yazı tipiyle çizdiğinden, metin PDF'teki genişliğine göre uzatılır veya daraltılır. Resimler (fotoğraflar, logolar, QR kodları) `PDF_IMAGE_n.png` adlı raster görüntüler olarak içe aktarılır; DWG ve DXF görüntülere ayrı dosya olarak başvurduğundan pikseller yalnızca açık çizimde kalır. QR kodları gibi saydam zemin üzerindeki siyah resimler, PDF sayfasındaki gibi beyaz zemine yerleştirilir.
 
 ## Ölçek kalibrasyonu (`pdfscale`)

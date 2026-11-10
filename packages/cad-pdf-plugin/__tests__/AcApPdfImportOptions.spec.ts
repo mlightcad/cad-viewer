@@ -11,6 +11,7 @@ describe('resolveAcApPdfImportOptions', () => {
     expect(options.textStyles).toBe(true)
     // A filled PDF area must stay filled, not collapse to its outline.
     expect(options.fillHatches).toBe(true)
+    expect(options.recognizeHatches).toBe(true)
   })
 
   test('visual mode keeps PDF paths and text runs as painted', () => {
@@ -25,6 +26,7 @@ describe('resolveAcApPdfImportOptions', () => {
     expect(options.lineWeights).toBe(true)
     expect(options.dashLinetypes).toBe(true)
     expect(options.fillHatches).toBe(true)
+    expect(options.recognizeHatches).toBe(false)
     expect(options.fitTextWidth).toBe(true)
   })
 
