@@ -140,23 +140,33 @@ export class AcApPdfTextCmd extends AcEdCommand {
     // 2. All other lines go to OCR at once, then everything read so far is
     // converted in one database edit (one redraw instead of one per line).
     const recognized = await this.recognizeAll(lines, texts)
-    const resolvedCount = automatic + recognized
+    let resolvedCount = automatic + recognized
     this.convertLines(
       context,
       lines.flatMap((line, i) => (texts[i] ? [{ line, text: texts[i] }] : [])),
       entityById
     )
 
-    // 3. Only lines nothing could read are typed by the user.
-    const typed: Array<{
+    // 3. Only lines nothing could read are typed by the user. Glyphs taught
+    // by a typed line are looked up again, so typing one line can read the
+    // remaining lines that reuse its glyphs.
+    const read: Array<{
       line: PdfTextLineCandidate<AcDbObjectId>
       text: string
     }> = []
     const editor = AcApDocManager.instance.editor
+    let typedCount = 0
     let skipped = 0
     for (let index = 0; index < lines.length; index++) {
       if (texts[index]) continue
       const line = lines[index]
+      const known = dictionary.lookup(line)
+      if (known) {
+        texts[index] = known
+        read.push({ line, text: known })
+        resolvedCount++
+        continue
+      }
       selectionSet.clear()
       selectionSet.add(line.strokes.map(stroke => stroke.id))
       const prompt = new AcEdPromptStringOptions(
@@ -182,15 +192,17 @@ export class AcApPdfTextCmd extends AcEdCommand {
         continue
       }
       dictionary.learn(line, text)
-      typed.push({ line, text })
+      texts[index] = text
+      read.push({ line, text })
+      typedCount++
     }
     selectionSet.clear()
-    this.convertLines(context, typed, entityById)
+    this.convertLines(context, read, entityById)
 
     AcApPdfTextCmd.saveDictionary()
     this.notify(
       acapPdfT('jig.pdftext.summary', {
-        converted: resolvedCount + typed.length,
+        converted: resolvedCount + typedCount,
         automatic: resolvedCount,
         skipped
       })
