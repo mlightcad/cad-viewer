@@ -1,4 +1,5 @@
 import type { PdfCurveRecognitionOptions } from './recognition/pdfCurveRecognition'
+import type { PdfHatchRecognitionOptions } from './recognition/pdfHatchRecognition'
 
 /**
  * How `ipdf` turns a PDF page into CAD entities.
@@ -76,6 +77,15 @@ export interface AcApPdfImportOptions {
    */
   fillHatches?: boolean
   /**
+   * Rebuild pattern hatches (ANSI31, brick, cross-hatch, ...) from the short
+   * strokes PDF producers write for them. A hatch is kept only when drawing
+   * it reproduces the source strokes; anything else stays as lines. Default
+   * `true` in `recover` mode, `false` in `visual` mode.
+   */
+  recognizeHatches?: boolean
+  /** Tuning for pattern hatch recognition. */
+  hatchRecognition?: PdfHatchRecognitionOptions
+  /**
    * Give imported text a `PDF_<font family>` text style using the PDF font's
    * family. Default `true`.
    */
@@ -97,9 +107,9 @@ export interface AcApPdfImportOptions {
 
 /** Fully populated {@link AcApPdfImportOptions}. */
 export type AcApResolvedPdfImportOptions = Required<
-  Omit<AcApPdfImportOptions, 'curveRecognition'>
+  Omit<AcApPdfImportOptions, 'curveRecognition' | 'hatchRecognition'>
 > &
-  Pick<AcApPdfImportOptions, 'curveRecognition'>
+  Pick<AcApPdfImportOptions, 'curveRecognition' | 'hatchRecognition'>
 
 /**
  * Fills defaults for {@link AcApPdfImportOptions}.
@@ -126,6 +136,8 @@ export function resolveAcApPdfImportOptions(
     formBlocks: options?.formBlocks ?? recover,
     dashLinetypes: options?.dashLinetypes ?? true,
     fillHatches: options?.fillHatches ?? true,
+    recognizeHatches: options?.recognizeHatches ?? recover,
+    hatchRecognition: options?.hatchRecognition,
     textStyles: options?.textStyles ?? recover,
     fitTextWidth: options?.fitTextWidth ?? true,
     images: options?.images ?? true

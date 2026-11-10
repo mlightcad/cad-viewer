@@ -122,6 +122,14 @@ export {
   type PdfShapeMatchOptions
 } from './pdfDeprecatedMatching'
 export {
+  acapPdfRecognizeHatches,
+  type PdfHatchDefinitionLine,
+  type PdfHatchRecognitionOptions,
+  type PdfHatchRecognitionResult,
+  type PdfRecognizedHatch,
+  type PdfRecognizedHatchPattern
+} from './recognition/pdfHatchRecognition'
+export {
   mergePdfTextRuns,
   type PdfTextRunMergeOptions
 } from './recognition/pdfTextRunMerge'

@@ -796,3 +796,97 @@ describe('extractPdfImportSubpaths', () => {
     expect(texts[1].height).toBeCloseTo(mm(10))
   })
 })
+
+describe('extractPdfImportSubpaths clip paths', () => {
+  const DRAW_M = 0
+  const DRAW_L = 1
+  const CLIP_OPS = (): PdfImportOps => ({ ...OPS, clip: 50, eoClip: 51 })
+  const viewport: PdfImportViewport = {
+    height: 100,
+    convertToViewportPoint(x, y) {
+      return [x, 100 - y]
+    }
+  }
+
+  test('records a W n clip and tags strokes painted under it', () => {
+    const ops = CLIP_OPS()
+    const content = extractPdfImportSubpaths(
+      {
+        fnArray: [
+          ops.save,
+          ops.rectangle,
+          ops.clip!,
+          ops.endPath,
+          ops.moveTo,
+          ops.lineTo,
+          ops.stroke,
+          ops.restore,
+          ops.moveTo,
+          ops.lineTo,
+          ops.stroke
+        ],
+        argsArray: [
+          [],
+          [0, 0, 100, 50],
+          [],
+          [],
+          [10, 10],
+          [90, 40],
+          [],
+          [],
+          [0, 0],
+          [10, 0],
+          []
+        ]
+      },
+      ops,
+      viewport,
+      new Map()
+    )
+
+    // The clip path itself is not geometry.
+    expect(content.subpaths).toHaveLength(2)
+    expect(content.subpaths[0].clipPath).toBe(0)
+    // Q restores the clip of the outer graphics state.
+    expect(content.subpaths[1].clipPath).toBeUndefined()
+    expect(content.clipPaths).toHaveLength(1)
+    expect(content.clipPaths![0]).toHaveLength(1)
+    expect(content.clipPaths![0][0]).toHaveLength(4)
+  })
+
+  test('captures a clip from a packed constructPath', () => {
+    const ops = CLIP_OPS()
+    const clipStream = new Float32Array([
+      DRAW_M,
+      0,
+      0,
+      DRAW_L,
+      50,
+      0,
+      DRAW_L,
+      50,
+      50,
+      DRAW_L,
+      0,
+      50
+    ])
+    const lineStream = new Float32Array([DRAW_M, 5, 5, DRAW_L, 45, 45])
+    const content = extractPdfImportSubpaths(
+      {
+        fnArray: [ops.eoClip!, ops.constructPath, ops.constructPath],
+        argsArray: [
+          [],
+          [ops.endPath, [clipStream], null],
+          [ops.stroke, [lineStream], null]
+        ]
+      },
+      ops,
+      viewport,
+      new Map()
+    )
+
+    expect(content.subpaths).toHaveLength(1)
+    expect(content.subpaths[0].clipPath).toBe(0)
+    expect(content.clipPaths![0][0]).toHaveLength(4)
+  })
+})

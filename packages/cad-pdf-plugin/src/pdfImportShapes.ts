@@ -32,6 +32,8 @@ export interface PdfImportShapeItem {
   fillColor?: string
   /** Subpaths painted together share this value (one hatch, many loops). */
   paintGroup?: number
+  /** Clip the subpath was painted under (`PdfImportPageContent.clipPaths`). */
+  clipPath?: number
 }
 
 /** Shape counts, for logging and tests. */
@@ -92,7 +94,8 @@ export function buildPdfImportShapes(
         filled: subpath.filled,
         stroked: subpath.stroked,
         fillColor: subpath.fillColor,
-        paintGroup: subpath.paintGroup
+        paintGroup: subpath.paintGroup,
+        clipPath: subpath.clipPath
       }
       items.push(item)
       if (options.removeDuplicates) {

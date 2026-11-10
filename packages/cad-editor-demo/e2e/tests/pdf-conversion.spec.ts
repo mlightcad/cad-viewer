@@ -235,3 +235,18 @@ test('pdfdim turns exploded dimensions into dimension objects', async ({
   // The part outline and the circle stay; every dimension part is gone.
   expect(counts.TEXT ?? 0).toBe(0)
 })
+
+test('ipdf rebuilds pattern hatches from their strokes', async ({ page }) => {
+  await importPdf(page, 'pdf-hatches.pdf')
+
+  // 45° lines inside a drawn rectangle, and a 0°/90° grid with no outline:
+  // both become hatches and none of their strokes stay as lines.
+  await expect
+    .poll(async () => (await entityTypes(page)).HATCH ?? 0, {
+      timeout: 20_000
+    })
+    .toBe(2)
+  const counts = await entityTypes(page)
+  expect(counts.POLYLINE).toBe(1)
+  expect(counts.LINE ?? 0).toBe(0)
+})

@@ -35,6 +35,8 @@ V režimu **Obnovit** se automaticky obnoví:
 
 Vyplněné oblasti (barevné plochy, vyplněná loga a obrysy textu) se importují jako plné šrafy v barvě výplně, ve stejném pořadí vykreslení jako na stránce. Integrace mohou nastavit volbu `fillHatches` na `false` a importovat je jen jako obrysy.
 
+Vzorové šrafy (ANSI31, cihly, křížové šrafování apod.) jsou v PDF uloženy jako tisíce krátkých úseček. V režimu **Obnovit** se znovu sestaví jako objekty šraf: úsečky se porovnají se standardními vzory `acadiso.pat`, případně s uživatelským jednoduchým nebo křížovým vzorem, včetně měřítka, úhlu a počátku, se kterými byly nakresleny. Hranice se vezme z nakresleného uzavřeného obrysu, z ořezové cesty PDF nebo z konců úseček. Šrafa se ponechá jen tehdy, když její vykreslení odpovídá úsečkám na stránce; vše ostatní zůstane jako úsečky. Integrace mohou nastavit `recognizeHatches` na `false` a ponechat všechny úsečky.
+
 V obou režimech se text roztáhne nebo zúží na šířku, kterou měl v PDF, protože prohlížeč ho obvykle kreslí jiným písmem. Obrázky (fotografie, loga, QR kódy) se importují jako rastrové obrázky s názvem `PDF_IMAGE_n.png`; jejich pixely zůstávají jen v otevřeném výkresu, protože DWG a DXF odkazují na obrázky jako na samostatné soubory. Černé obrázky na průhledném pozadí, například QR kódy, se umístí na bílý podklad jako na stránce PDF.
 
 ## Kalibrace měřítka (`pdfscale`)

@@ -45,6 +45,7 @@ import {
 } from './AcApPdfImportOptions'
 import { acapPdfImportResourceUrls } from './AcApPdfImportResources'
 import {
+  acapPdfCreatePatternHatch,
   acapPdfCreateSolidHatch,
   acapPdfEnsureDashLinetype,
   acapPdfEnsureTextStyle,
@@ -74,6 +75,10 @@ import {
 } from './pdfVectorImport'
 import type { PdfRecognizedShape } from './recognition/pdfCurveRecognition'
 import { buildPdfFormBlocks } from './recognition/pdfFormBlocks'
+import {
+  acapPdfRecognizeHatches,
+  type PdfRecognizedHatch
+} from './recognition/pdfHatchRecognition'
 import { mergePdfTextRuns } from './recognition/pdfTextRunMerge'
 
 /**
@@ -418,6 +423,30 @@ export class AcApPdfImportConvertor {
         options
       )
 
+      // Pattern hatches arrive as loose strokes; rebuild them where the
+      // strokes match a pattern exactly.
+      const recognized = options.recognizeHatches
+        ? acapPdfRecognizeHatches(
+            items,
+            {
+              tolerance: PDF_HATCH_TOLERANCE_MM * options.scale,
+              ...options.hatchRecognition
+            },
+            content.clipPaths?.map(loops =>
+              loops.map(loop =>
+                loop.map(p => ({
+                  x: options.insertionPoint.x + p.x * options.scale,
+                  y: options.insertionPoint.y + p.y * options.scale
+                }))
+              )
+            )
+          )
+        : { hatches: [], consumed: new Set<number>() }
+      const itemIndex = new Map<PdfImportShapeItem, number>()
+      items.forEach((item, index) => itemIndex.set(item, index))
+      const hatchAt = new Map<number, PdfRecognizedHatch>()
+      for (const hatch of recognized.hatches) hatchAt.set(hatch.items[0], hatch)
+
       const db = context.doc.database
       const usedLayerNames = new Set<string>()
       const createEntity = (item: PdfImportShapeItem) => {
@@ -442,8 +471,21 @@ export class AcApPdfImportConvertor {
 
       const entities: AcDbEntity[] = []
       let hatchCount = 0
+      let patternHatchCount = 0
       for (const paint of orderPdfImportPaints(items, options.fillHatches)) {
         if (paint.kind === 'shape') {
+          const index = itemIndex.get(paint.item)
+          if (index !== undefined && recognized.consumed.has(index)) {
+            // The hatch takes the paint position of its first stroke.
+            const found = hatchAt.get(index)
+            const hatch = found && createPatternHatch(db, found)
+            if (hatch) {
+              if (found.layerName) usedLayerNames.add(found.layerName)
+              entities.push(hatch)
+              patternHatchCount++
+            }
+            continue
+          }
           const entity = createEntity(paint.item)
           if (entity) entities.push(entity)
           continue
@@ -583,7 +625,8 @@ export class AcApPdfImportConvertor {
         `[PdfImport] Imported ${entities.length} entities across ${usedLayerNames.size} CAD layer(s): ` +
           `${stats.line} lines, ${stats.polyline} polylines, ${stats.circle} circles, ` +
           `${stats.arc} arcs, ${stats.ellipse} ellipses, ${stats.spline} splines, ` +
-          `mode ${options.mode}, ${texts.length} texts, ${imageEntities.length} images, ${hatchCount} hatches, ${formBlocks.blocks.length} blocks ` +
+          `mode ${options.mode}, ${texts.length} texts, ${imageEntities.length} images, ${hatchCount} hatches, ` +
+          `${patternHatchCount} pattern hatches (${recognized.consumed.size} strokes), ${formBlocks.blocks.length} blocks ` +
           `(${referenceCount} references); ${stats.duplicates} duplicates skipped.`
       )
     } catch (err) {
@@ -783,6 +826,33 @@ async function fitTextWidths(
 }
 
 /** Creates the CAD entity for a recognized shape. */
+/**
+ * Distance (paper millimeters, before import scaling) within which a stroke
+ * counts as lying on a recognized hatch line. PDF writers round coordinates
+ * to about 0.01 pt (0.0035 mm), so this leaves ample headroom while staying
+ * far below any real hatch spacing.
+ */
+const PDF_HATCH_TOLERANCE_MM = 0.05
+
+function createPatternHatch(
+  db: AcDbDatabase,
+  found: PdfRecognizedHatch
+): AcDbEntity | undefined {
+  const loops = found.boundary
+    .map(shape => acapPdfShapeToLoop(shape))
+    .filter((loop): loop is NonNullable<typeof loop> => !!loop)
+  const hatch = acapPdfCreatePatternHatch(
+    db,
+    loops,
+    found.pattern,
+    found.definitionLines
+  )
+  if (!hatch) return undefined
+  if (found.layerName) hatch.layer = found.layerName
+  applyPdfColor(hatch, found.color)
+  return hatch
+}
+
 function shapeToEntity(shape: PdfRecognizedShape): AcDbEntity | null {
   switch (shape.kind) {
     case 'line':

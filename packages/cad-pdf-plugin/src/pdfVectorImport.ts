@@ -67,6 +67,10 @@ export interface PdfImportOps {
   fillStroke: number
   eoFillStroke: number
   endPath: number
+  /** Clip (`W`); the path painted next becomes the clip. */
+  clip?: number
+  /** Even-odd clip (`W*`). */
+  eoClip?: number
   /**
    * PDF.js internal fill used for Type3 / mask path compilation. Treat like
    * {@link PdfImportOps.fill} when present in a packed `constructPath`.
@@ -310,6 +314,11 @@ export interface PdfImportedSubpath {
    * was drawn inside a top-level Form XObject.
    */
   formInstance?: number
+  /**
+   * Index into {@link PdfImportPageContent.clipPaths} of the clip in effect
+   * when the subpath was painted (the innermost one).
+   */
+  clipPath?: number
   layerName?: string
   /**
    * Paint colour: `#rrggbb`, or {@link PDF_IMPORT_FOREGROUND_COLOR} after
@@ -383,6 +392,11 @@ export interface PdfImportPageContent {
   images?: PdfImportedImage[]
   /** Top-level Form XObject paints, referenced by subpath `formInstance`. */
   formInstances?: PdfImportFormInstance[]
+  /**
+   * Clip paths (closed loops in millimeters), referenced by subpath
+   * `clipPath`. A clip around many strokes often is a hatch boundary.
+   */
+  clipPaths?: PdfImportPoint[][][]
 }
 
 type PdfMatrix = [number, number, number, number, number, number]
@@ -441,6 +455,10 @@ export function extractPdfImportSubpaths(
   let strokeColor = '#000000'
   let lineWidth = 1
   let dashArray: number[] = []
+  // Innermost clip in effect (graphics state) and whether `W` is pending.
+  let clipId: number | undefined
+  let pendingClip = false
+  const clipPaths: PdfImportPoint[][][] = []
   // Text state parameters (Tf/Tc/Tw/Tz/TL/Tr/Ts) are graphics-state fields and
   // must round-trip with q/Q. Tm/Tlm and the text cursor are not.
   let fontSize = 0
@@ -457,6 +475,7 @@ export function extractPdfImportSubpaths(
     strokeColor: string
     lineWidth: number
     dashArray: number[]
+    clipId: number | undefined
     fontSize: number
     fontId: string | undefined
     textHScale: number
@@ -472,6 +491,7 @@ export function extractPdfImportSubpaths(
     strokeColor,
     lineWidth,
     dashArray,
+    clipId,
     fontSize,
     fontId,
     textHScale,
@@ -487,6 +507,7 @@ export function extractPdfImportSubpaths(
     strokeColor = restored.strokeColor
     lineWidth = restored.lineWidth
     dashArray = restored.dashArray
+    clipId = restored.clipId
     fontSize = restored.fontSize
     fontId = restored.fontId
     textHScale = restored.textHScale
@@ -539,6 +560,7 @@ export function extractPdfImportSubpaths(
       if (currentFormInstance !== undefined) {
         subpath.formInstance = currentFormInstance
       }
+      if (clipId !== undefined) subpath.clipPath = clipId
       subpaths.push(subpath)
     }
     current = []
@@ -646,6 +668,23 @@ export function extractPdfImportSubpaths(
       return fillColor
     }
     return strokeColor
+  }
+
+  // `W` / `W*` make the path of the next paint operator the clip.
+  const captureClip = () => {
+    if (!pendingClip) return
+    pendingClip = false
+    flush()
+    const loops = subpaths
+      .map(subpath => {
+        const pts = subpath.points
+        const closed = pts.length > 1 && samePoint(pts[0], pts[pts.length - 1])
+        return closed ? pts.slice(0, -1) : [...pts]
+      })
+      .filter(loop => loop.length >= 3)
+    if (loops.length === 0) return
+    clipPaths.push(loops)
+    clipId = clipPaths.length - 1
   }
 
   const discard = () => {
@@ -885,6 +924,7 @@ export function extractPdfImportSubpaths(
   }
 
   const finishConstructPath = (paintOp: number) => {
+    captureClip()
     if (paintOp === ops.endPath) {
       // PDF "n" ends the current path without painting it, commonly after
       // clipping. Do not create CAD entities from those paths.
@@ -933,6 +973,14 @@ export function extractPdfImportSubpaths(
     if (fn === ops.restore) {
       const restored = graphicsStack.pop()
       if (restored) restoreGraphicsState(restored)
+      continue
+    }
+
+    if (
+      (ops.clip !== undefined && fn === ops.clip) ||
+      (ops.eoClip !== undefined && fn === ops.eoClip)
+    ) {
+      pendingClip = true
       continue
     }
 
@@ -1232,6 +1280,7 @@ export function extractPdfImportSubpaths(
       case ops.closeStroke:
       case ops.closeFillStroke:
       case ops.closeEOFillStroke:
+        captureClip()
         closePath()
         if (isFillPaint(fn)) {
           closeOpenSubpaths()
@@ -1240,6 +1289,7 @@ export function extractPdfImportSubpaths(
         break
 
       case ops.stroke:
+        captureClip()
         commit(paintColor(fn))
         break
 
@@ -1247,11 +1297,13 @@ export function extractPdfImportSubpaths(
       case ops.eoFill:
       case ops.fillStroke:
       case ops.eoFillStroke:
+        captureClip()
         closeOpenSubpaths()
         commit(paintColor(fn), true, isStrokePaint(fn))
         break
 
       case ops.endPath:
+        captureClip()
         discard()
         break
     }
@@ -1264,6 +1316,7 @@ export function extractPdfImportSubpaths(
     options
   )
   if (formInstances.length > 0) content.formInstances = formInstances
+  if (clipPaths.length > 0) content.clipPaths = clipPaths
   if (imageResult.length > 0) content.images = imageResult
   return content
 
