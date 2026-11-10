@@ -89,5 +89,6 @@ export const llmEn = {
   createProvider: 'Create provider',
   deleteProvider: 'Delete provider',
   deleteProviderConfirm: 'Delete provider "{id}" and its API key?',
+  recognitionTimeout: 'The AI model did not answer within {seconds} seconds',
   close: 'Close'
 } as const

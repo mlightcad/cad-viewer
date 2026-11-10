@@ -1,3 +1,13 @@
+// Only i18n is needed from the viewer; the full package pulls in the
+// renderer and text editor stacks.
+jest.mock('@mlightcad/cad-simple-viewer', () => ({
+  AcApI18n: {
+    t: (key: string, options?: { fallback?: string }) =>
+      options?.fallback ?? key,
+    mergeLocaleMessage: () => undefined
+  }
+}))
+
 import {
   acapLlmCleanRecognizedText,
   acapLlmParseBatchText
