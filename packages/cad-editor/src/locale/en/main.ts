@@ -780,7 +780,7 @@ export default {
       off: 'Turn on polar tracking'
     },
     theme: {
-      dark: 'Switch to light light',
+      dark: 'Switch to light theme',
       light: 'Switch to dark theme'
     },
     warning: {

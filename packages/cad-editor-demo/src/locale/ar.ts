@@ -15,7 +15,7 @@ export default {
       title: 'اختر ملف CAD لعرضه',
       subtitle: 'استورد رسومات DWG أو DXF إلى العارض',
       fontCdnNotice:
-        'If you are in a country or region with network access restrictions, please turn on a VPN. Default font files are hosted on GitHub; when access is limited they load very slowly, which can make opening drawings slow or cause text not to display correctly.',
+        'إذا كنت في بلد أو منطقة تفرض قيودًا على الوصول إلى الشبكة، فيرجى تشغيل VPN. ملفات الخطوط الافتراضية مستضافة على GitHub؛ وعند تقييد الوصول يكون تحميلها بطيئًا جدًا، مما قد يبطئ فتح الرسومات أو يمنع عرض النصوص بشكل صحيح.',
       newDrawing: 'رسم جديد',
       or: 'أو',
       dropFile: 'أسقط الملف هنا أو',
@@ -80,8 +80,7 @@ export default {
       exportDisable: 'تعطيل',
       exportDisableHint: 'إخفاء أوامر التصدير وعناصر قائمة File',
 
-      invalidFileType:
-        'نوع الملف غير صالح. يرجى اختيار ملف DWG أو DXF.'
+      invalidFileType: 'نوع الملف غير صالح. يرجى اختيار ملف DWG أو DXF.'
     }
   }
 }

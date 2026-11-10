@@ -1,6 +1,6 @@
 # How to Create a Command in CAD Viewer
 
-This guide provides step-by-step instructions for creating a new command in the CAD viewer project. 
+This guide provides step-by-step instructions for creating a new command in the CAD viewer project.
 
 ## Step 1: Create the Command File
 
@@ -100,6 +100,8 @@ async execute(context: AcApContext) {
 1. **Add jig prompts** to `src/i18n/[language]/jig.ts`
 2. **Add command description** to `src/i18n/[language]/command.ts`
 
+Do this for **every** locale: `en`, `zh`, `ja`, `ko`, `tr`, `cs`, `ar`. Write real translations, not English copies; `test/i18n/localeCompleteness.spec.ts` fails if a key is missing or left in English (see the root `AGENTS.md`).
+
 ### Example: Jig Prompts (zh/jig.ts)
 
 ```typescript
@@ -196,4 +198,3 @@ export * from './AcAp[CommandName]Cmd'
 3. **Handle user cancellation** gracefully
 4. **Provide clear prompts** using internationalization
 5. **Follow the existing code patterns**
-

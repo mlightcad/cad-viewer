@@ -1,0 +1,270 @@
+/**
+ * Korean strings for the exported HTML viewer.
+ * Mirrors the `en` tree in {@link ../AcExHtmlI18n}.
+ * @internal
+ */
+export const acexHtmlKoMessages = {
+  toolbar: {
+    viewerTools: '뷰어 도구',
+    select: '선택',
+    pan: '초점이동',
+    zoom: '줌',
+    zoomExtents: '범위',
+    zoomSmartExtents: '스마트',
+    zoomWindow: '윈도우',
+    zoomSaved: '저장된 뷰',
+    zoomOriginal: '저장된 뷰',
+    measureDistance: '거리',
+    measureContinuous: '연속',
+    measureAngle: '각도',
+    measureArc: '호',
+    measureRadius: '반지름',
+    measureArea: '면적',
+    measureCoordinate: 'XY',
+    clearMeasurements: '지우기',
+    measureHide: '숨기기',
+    measureShow: '표시',
+    measureImport: '가져오기',
+    measureExport: '내보내기',
+    measurementPanel: '결과',
+    measure: '측정',
+    annotation: '검토',
+    markupCloud: '구름',
+    markupCallout: '설명선',
+    markupText: '문자',
+    markupRect: '직사각형',
+    markupCircle: '원',
+    markupArrow: '화살표',
+    markupStamp: '스탬프',
+    markupPanel: '결과',
+    markupHide: '숨기기',
+    markupShow: '표시',
+    clearMarkups: '지우기',
+    markupImport: '가져오기',
+    markupExport: '내보내기',
+    snap: '스냅',
+    layers: '도면층',
+    layout: '배치',
+    settings: '설정',
+    simulatedMouseOn: '마우스',
+    simulatedMouseOff: '돋보기',
+    themeLight: '밝게',
+    themeDark: '어둡게',
+    switchBg: '배경',
+    language: '언어',
+    localeEn: 'English',
+    localeZh: '中文',
+    localeCs: 'Čeština',
+    localeTr: 'Türkçe',
+    localeAr: 'العربية',
+    localeJa: '日本語',
+    localeKo: '한국어',
+    collapse: '도구막대 접기',
+    expand: '도구막대 펼치기',
+    moreOverflow: '추가 도구'
+  },
+  settings: {
+    ortho: '직교 모드 전환',
+    polar: '극좌표 추적 각도',
+    polarAngles: '극좌표 추적 각도'
+  },
+  drawStyle: {
+    color: '색상',
+    fontSize: '문자 높이',
+    pickerTitle: '색상 선택',
+    close: '닫기',
+    ok: '확인',
+    cancel: '취소',
+    index: '색상 번호: ',
+    rgb: 'RGB: ',
+    input: '색상',
+    inputPlaceholder: '1-255 또는 #RRGGBB'
+  },
+  shortCutToolbar: {
+    more: '더 보기',
+    undo: '명령 취소',
+    redo: '명령 복구',
+    erase: '삭제',
+    collapse: '도구막대 접기',
+    expand: '도구막대 펼치기'
+  },
+  textHeight: {
+    title: '문자 높이',
+    close: '닫기',
+    ok: '확인',
+    cancel: '취소',
+    adaptive: '화면에 맞춤',
+    custom: '사용자 문자 높이',
+    customPlaceholder: '월드 높이',
+    fromScreen: '화면 크기 기준',
+    fromScreenHint:
+      '현재 줌 상태에서 문자가 화면에 표시될 크기를 입력하십시오. 이 값은 고정된 월드 공간 높이로 변환되어 이후 줌해도 일정하게 유지됩니다.',
+    screenPxPlaceholder: '글꼴 크기',
+    screenUnit: 'px',
+    convert: '변환'
+  },
+  entityPick: {
+    cancel: '선택 취소'
+  },
+  layers: {
+    title: '도면층',
+    close: '도면층 닫기',
+    showAll: '모두 표시',
+    hideAll: '모두 숨기기',
+    zoomTo: '{name}(으)로 줌'
+  },
+  review: {
+    title: '검토',
+    close: '검토 닫기',
+    searchPlaceholder: '마크업 검색',
+    empty: '아직 마크업이 없습니다',
+    type: '유형',
+    status: '상태',
+    author: '작성자',
+    summary: '요약',
+    details: '상세 정보',
+    closeDetails: '상세 정보 닫기',
+    label: '레이블',
+    comment: '설명',
+    zoomTo: '줌',
+    delete: '삭제',
+    clear: '모두 지우기',
+    statusValues: {
+      open: '열림',
+      question: '질문',
+      answered: '답변됨',
+      closed: '닫힘'
+    }
+  },
+  measurePanel: {
+    title: '측정',
+    close: '측정 닫기',
+    filterGroup: '유형별 필터',
+    filterDistance: '거리',
+    filterArc: '호',
+    filterRadius: '반지름',
+    filterAngle: '각도',
+    filterArea: '면적',
+    empty: '아직 측정이 없습니다',
+    type: '유형',
+    value: '값',
+    delete: '삭제',
+    clear: '모두 지우기'
+  },
+  session: {
+    length: '길이',
+    angle: '각도',
+    dx: 'ΔX',
+    dy: 'ΔY',
+    x: 'X',
+    y: 'Y',
+    confirm: '확인',
+    cancel: '취소',
+    help: '도움말',
+    back: '뒤로',
+    collapse: '접기',
+    expand: '펼치기',
+    undo: '명령 취소'
+  },
+  touchPointTutorial: {
+    title: '점을 정확하게 선택하려면?',
+    description:
+      '화면을 약 0.5초 동안 길게 누르십시오. 손가락 위에 십자선이 나타나 이동에 따라 움직이며, 형상에 스냅되어 더 정확하게 선택할 수 있습니다.',
+    snoozeToday: '오늘은 다시 알리지 않음',
+    hideForever: '다시 알리지 않음',
+    ok: '확인'
+  },
+  status: {
+    ready: '준비',
+    zoomWindowHint: '두 구석을 클릭하여 윈도우로 줌합니다.',
+    measureDistanceHint: '두 점을 클릭하여 거리를 측정합니다(객체 스냅 사용).',
+    measureContinuousHint:
+      '연속된 점을 탭하여 각 세그먼트를 측정하고, ✓를 탭하여 마칩니다. 정확한 스냅을 위해 길게 누르십시오.',
+    measureAreaHint:
+      '다각형 정점을 탭하고, 세 점 이상 지정한 후 ✓를 탭하여 마칩니다. 정확한 스냅을 위해 길게 누르십시오.',
+    measureAngleHint:
+      '정점을 클릭한 다음 각 변의 점을 클릭합니다(객체 스냅 사용).',
+    measureArcHint:
+      '원 또는 호를 클릭하여 그 길이를 측정하거나, 시작점, 호 위의 점, 끝점을 차례로 클릭합니다(객체 스냅 사용). Ctrl(Mac에서는 ⌘)로 큰 호/작은 호를 전환합니다.',
+    measureRadiusHint:
+      '원 또는 호를 클릭하여 반지름을 측정합니다(객체 스냅 사용).',
+    measureCoordinateHint: '점을 클릭하여 X/Y 좌표를 읽습니다(객체 스냅 사용).',
+    measureExported: '측정 {count}개를 내보냈습니다.',
+    measureImported: '측정 {count}개를 가져왔습니다.',
+    measureImportFailed: '측정을 가져오지 못했습니다: {error}',
+    markupCloudHint: '두 구석을 클릭하여 구름형 수정 기호를 그립니다.',
+    markupCalloutHint:
+      '지시선 끝 또는 설명선이 없는 구름 / 직사각형 / 원의 윤곽을 클릭한 다음, 문자 기준점을 클릭합니다.',
+    markupTextHint: '점을 클릭하여 문자를 배치합니다.',
+    markupRectHint: '두 구석을 클릭하여 직사각형을 그립니다.',
+    markupCircleHint: '중심을 클릭한 다음 원주 위의 점을 클릭합니다.',
+    markupArrowHint: '시작점을 클릭한 다음 화살표 끝을 클릭합니다.',
+    markupStampHint: '클릭하여 스탬프를 배치합니다(승인 / 반려 / … 순환).',
+    markupArrowEndHint: '화살표 끝을 클릭합니다.',
+    markupRectCornerHint: '반대쪽 구석을 클릭합니다.',
+    markupCloudCornerHint: '반대쪽 구석을 클릭합니다.',
+    markupCalloutAnchorHint: '문자 말풍선 위치를 클릭합니다.',
+    markupCircleRadiusHint: '원주 위의 점을 클릭합니다.',
+    markupTextPrompt: '마크업 문자 입력',
+    markupTextEditHint:
+      '캔버스에 문자를 입력하십시오. Enter로 마치고 Esc로 취소합니다.',
+    markupShapeCalloutHint:
+      '클릭하여 문자 상자를 배치합니다(지시선이 도형에 부착됨). Esc로 설명선을 취소합니다.',
+    markupDefaultLabel: '메모',
+    markupSelected: '선택된 마크업: {type}',
+    markupSelectedCount: '선택된 마크업: {count}개',
+    markupCount: '마크업: {count}개',
+    markupExported: '마크업 {count}개를 내보냈습니다.',
+    markupImported: '마크업 {count}개를 가져왔습니다.',
+    markupImportFailed: '마크업을 가져오지 못했습니다: {error}',
+    distance: '거리: {value}',
+    coordinates: 'X: {x} | Y: {y}',
+    angle: '각도: {value}',
+    arcLength:
+      '호 길이: {length} | 반지름: {radius} | 각도: {angle} | 현: {chord}',
+    radius: '반지름: {value}',
+    continuousTotal: '총 길이: {value}',
+    area: '면적: {value}',
+    lengthTotal: '길이 합계: {value}',
+    areaTotal: '면적 합계: {value}',
+    zoomLayer: '줌: {name}',
+    loadFailed: '도면을 로드하지 못했습니다: {error}',
+    noLayout: '스냅샷에 배치 데이터가 없습니다.',
+    loadingChunks: '형상 로드 중… {loaded}/{total}',
+    loadingOsnap: '객체 스냅 로드 중… {loaded}/{total}',
+    buildingOsnap: '객체 스냅 인덱스 작성 중…'
+  },
+  package: {
+    title: '도면 패키지 열기',
+    hint: '이 페이지 옆에서 drawing.acex.json을 찾을 수 없습니다. 로컬 패키지 폴더를 선택하거나 매니페스트 URL을 입력하십시오.',
+    hintUrlOnly:
+      '이 페이지 옆에서 drawing.acex.json을 찾을 수 없습니다. 패키지를 열려면 매니페스트 URL을 입력하십시오.',
+    chooseFolder: '로컬 폴더 선택',
+    urlPlaceholder: 'https://example.com/drawing.acex.json',
+    openUrl: 'URL 열기',
+    urlRequired: '매니페스트 URL을 입력하십시오.',
+    manifestNotFound: '이 페이지 옆에서 drawing.acex.json을 찾을 수 없습니다.',
+    invalidManifest:
+      '패키지 매니페스트가 잘못되었거나 지원되지 않는 버전입니다: {error}',
+    folderMissingManifest: '선택한 폴더에 drawing.acex.json이 있어야 합니다.',
+    folderUnsupported:
+      '이 브라우저에서는 로컬 패키지 폴더를 열 수 없습니다. 대신 매니페스트 URL을 붙여 넣으십시오.',
+    loadFailed: '패키지를 열지 못했습니다: {error}'
+  },
+  access: {
+    title: '보호된 도면',
+    passwordPrompt: '이 파일을 열려면 암호를 입력하십시오.',
+    passwordPlaceholder: '암호',
+    unlock: '잠금 해제',
+    passwordRequired: '암호를 입력하십시오.',
+    wrongPassword: '암호가 올바르지 않습니다. 다시 시도하십시오.',
+    expired: '이 파일은 만료되어 더 이상 열 수 없습니다.',
+    expiredTitle: '파일 만료됨',
+    expiredDetail: '이 파일은 {time}에 만료되어 더 이상 열 수 없습니다.',
+    expiresAt: '만료: {time}',
+    badgeExpires: '{time} 만료',
+    badgeCountdown: '{time} 후 만료',
+    tooManyAttempts:
+      '잘못된 암호 입력 횟수가 너무 많습니다. 다시 시도하려면 페이지를 새로 고치십시오.'
+  }
+}

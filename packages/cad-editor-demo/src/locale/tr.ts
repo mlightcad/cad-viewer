@@ -15,7 +15,7 @@ export default {
       title: 'Görüntülenecek CAD Dosyasını Seçin',
       subtitle: 'DWG veya DXF çizimlerini görüntüleyiciye aktarın',
       fontCdnNotice:
-        'If you are in a country or region with network access restrictions, please turn on a VPN. Default font files are hosted on GitHub; when access is limited they load very slowly, which can make opening drawings slow or cause text not to display correctly.',
+        'Ağ erişimi kısıtlı bir ülke veya bölgedeyseniz lütfen bir VPN açın. Varsayılan yazı tipi dosyaları GitHub üzerinde barındırılır; erişim kısıtlıyken çok yavaş yüklenirler, bu da çizimlerin geç açılmasına veya metinlerin doğru görüntülenmemesine neden olabilir.',
       newDrawing: 'Yeni Çizim',
       or: 'veya',
       dropFile: 'Dosyayı bırakın veya',
@@ -78,7 +78,8 @@ export default {
       exportEnable: 'Etkin',
       exportEnableHint: 'DXF/HTML/PDF/SVG/PNG dışa aktarmaya izin ver',
       exportDisable: 'Devre dışı',
-      exportDisableHint: 'Dışa aktarma komutlarını ve File menü öğelerini gizle',
+      exportDisableHint:
+        'Dışa aktarma komutlarını ve File menü öğelerini gizle',
 
       invalidFileType:
         'Geçersiz dosya türü. Lütfen DWG veya DXF dosyaları yükleyin.'

@@ -1,19 +1,19 @@
 /**
- * English command message entries merged into {@link AcApI18n} under `command`.
+ * Japanese command message entries merged into {@link AcApI18n} under `command`.
  */
 export const commandJa = {
   ACAD: {
     layer: {
-      description: 'Opens or closes the layer manager dock panel'
+      description: '画層マネージャのドッキング パネルを開くか閉じます'
     },
     markuppanel: {
-      description: 'Opens the review palette dock panel'
+      description: 'レビュー パレットのドッキング パネルを開きます'
     },
     measurementpanel: {
-      description: 'Opens the measurement list dock panel'
+      description: '計測一覧のドッキング パネルを開きます'
     },
     find: {
-      description: 'Opens the text search dock panel'
+      description: '文字検索のドッキング パネルを開きます'
     }
   }
 }

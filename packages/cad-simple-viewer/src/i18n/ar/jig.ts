@@ -1,11 +1,5 @@
-import enJig from '../en/jig'
-
 export default {
-  ...enJig,
-
   arc: {
-    ...enJig.arc,
-
     startPointOrCenter: 'حدد نقطة بداية القوس أو',
     secondPointOrOptions: 'حدد النقطة الثانية للقوس أو',
     secondPoint: 'حدد النقطة الثانية للقوس',
@@ -18,31 +12,7 @@ export default {
     chordLength: 'حدد طول الوتر',
     tangentDirection: 'حدد اتجاه المماس عند نقطة بداية القوس',
     radius: 'حدد نصف قطر القوس',
-
-    invalid: {
-      ...enJig.arc.invalid,
-
-      threePoint:
-        'قوس الثلاث نقاط غير صالح: النقاط على استقامة واحدة أو لا يمكنها تعريف قوس.',
-
-      center:
-        'إدخال المركز غير صالح: يجب أن تقع نقطتا البداية والنهاية على الدائرة نفسها.',
-
-      angle:
-        'الزاوية غير صالحة: يجب أن تكون الزاوية المحصورة أكبر من 0 وأقل من 360 درجة.',
-
-      chordLength:
-        'طول الوتر غير صالح: القيمة خارج النطاق المسموح به لنصف القطر الحالي.',
-
-      direction:
-        'الاتجاه غير صالح: لا يمكن إنشاء القوس باستخدام اتجاه المماس المحدد.',
-
-      radius:
-        'نصف القطر غير صالح: لا يمكن لنصف القطر المحدد توصيل نقطتي البداية والنهاية.'
-    }
-  ,
     keywords: {
-      ...enJig.arc.keywords,
       center: {
         display: 'المركز(C)',
         local: 'المركز',
@@ -72,28 +42,35 @@ export default {
         display: 'نصف القطر(R)',
         local: 'نصف القطر',
         global: 'Radius'
-      },
+      }
     },
+    invalid: {
+      threePoint:
+        'قوس الثلاث نقاط غير صالح: النقاط على استقامة واحدة أو لا يمكنها تعريف قوس.',
+      center:
+        'إدخال المركز غير صالح: يجب أن تقع نقطتا البداية والنهاية على الدائرة نفسها.',
+      angle:
+        'الزاوية غير صالحة: يجب أن تكون الزاوية المحصورة أكبر من 0 وأقل من 360 درجة.',
+      chordLength:
+        'طول الوتر غير صالح: القيمة خارج النطاق المسموح به لنصف القطر الحالي.',
+      direction:
+        'الاتجاه غير صالح: لا يمكن إنشاء القوس باستخدام اتجاه المماس المحدد.',
+      radius:
+        'نصف القطر غير صالح: لا يمكن لنصف القطر المحدد توصيل نقطتي البداية والنهاية.'
+    }
   },
-
   circle: {
-    ...enJig.circle,
-
     center: 'حدد مركز الدائرة',
     centerOrOptions: 'حدد نقطة مركز الدائرة أو',
     radius: 'حدد نصف قطر الدائرة',
     radiusOrDiameter: 'حدد نصف قطر الدائرة أو',
     diameter: 'حدد قطر الدائرة',
-
     twoPointFirst: 'حدد نقطة النهاية الأولى لقطر الدائرة',
     twoPointSecond: 'حدد نقطة النهاية الثانية لقطر الدائرة',
-
     threePointFirst: 'حدد النقطة الأولى على الدائرة',
     threePointSecond: 'حدد النقطة الثانية على الدائرة',
-    threePointThird: 'حدد النقطة الثالثة على الدائرة'
-  ,
+    threePointThird: 'حدد النقطة الثالثة على الدائرة',
     keywords: {
-      ...enJig.circle.keywords,
       threeP: {
         display: '3 نقاط(3P)',
         local: '3 نقاط',
@@ -108,27 +85,18 @@ export default {
         display: 'القطر(D)',
         local: 'القطر',
         global: 'Diameter'
-      },
-    },
+      }
+    }
   },
-
   copy: {
-    ...enJig.copy,
-
     basePointOrOptions: 'حدد نقطة الأساس أو',
     displacementOrArray: 'حدد الإزاحة أو',
     secondPointOrArray: 'حدد النقطة الثانية أو',
-
     modePrompt: 'أدخل خيار وضع النسخ',
-
-    arrayItemCount:
-      'أدخل عدد العناصر في المصفوفة بما في ذلك العنصر الأصلي',
-
+    arrayItemCount: 'أدخل عدد العناصر في المصفوفة بما في ذلك العنصر الأصلي',
     arraySecondPointOrFit: 'حدد النقطة الثانية أو',
-    arrayFitSecondPoint: 'حدد النقطة الثانية'
-  ,
+    arrayFitSecondPoint: 'حدد النقطة الثانية',
     keywords: {
-      ...enJig.copy.keywords,
       displacement: {
         display: 'إزاحة(D)',
         local: 'إزاحة',
@@ -158,76 +126,246 @@ export default {
         display: 'ملاءمة(F)',
         local: 'ملاءمة',
         global: 'Fit'
-      },
-    },
-  },
-
-  dimlinear: {
-    ...enJig.dimlinear,
-
-    xLine1Point:
-      'حدد نقطة أصل خط الامتداد الأول',
-
-    xLine2Point:
-      'حدد نقطة أصل خط الامتداد الثاني',
-
-    dimLinePoint:
-      'حدد موقع خط البُعد'
-  },
-  dimaligned: { ...enJig.dimaligned },
-  dimradius: { ...enJig.dimradius },
-  dimdiameter: { ...enJig.dimdiameter },
-  dimangular: { ...enJig.dimangular },
-  dimarc: { ...enJig.dimarc },
-  dimordinate: { ...enJig.dimordinate },
-  dimcontinue: { ...enJig.dimcontinue },
-  dimbaseline: { ...enJig.dimbaseline },
-
-  ellipse: {
-    ...enJig.ellipse,
-
-    axisEndpointOrOptions:
-      'حدد نقطة نهاية محور القطع الناقص أو',
-
-    arcAxisEndpointOrCenter:
-      'حدد نقطة نهاية محور القوس البيضاوي أو',
-
-    center:
-      'حدد مركز القطع الناقص',
-
-    firstAxisEndpoint:
-      'حدد نقطة نهاية المحور الأولى',
-
-    secondAxisEndpoint:
-      'حدد نقطة النهاية الأخرى للمحور',
-
-    otherAxisOrRotation:
-      'حدد المسافة إلى المحور الآخر أو',
-
-    rotationAngle:
-      'حدد زاوية الدوران حول المحور الأكبر',
-
-    arcStartAngle:
-      'حدد زاوية بداية القوس البيضاوي',
-
-    arcEndAngle:
-      'حدد زاوية نهاية القوس البيضاوي',
-
-    invalid: {
-      ...enJig.ellipse.invalid,
-
-      axis:
-        'المحور غير صالح: يجب أن يكون طول المحور أكبر من 0.',
-
-      otherAxis:
-        'المحور الآخر غير صالح: يجب أن تكون المسافة أكبر من 0.',
-
-      rotation:
-        'الدوران غير صالح: يجب أن يكون المحور الأصغر الناتج أكبر من 0.'
+      }
     }
-  ,
+  },
+  dimlinear: {
+    xLine1Point: 'حدد نقطة أصل خط الامتداد الأول',
+    xLine2Point: 'حدد نقطة أصل خط الامتداد الثاني',
+    dimLinePoint: 'حدد موقع خط البُعد',
+    selectObject: 'حدد الكائن المراد قياس أبعاده',
+    rejectObject: 'لا يمكن قياس أبعاد الكائن باستخدام DIMLINEAR.',
+    dimensionText: 'أدخل نص البُعد',
+    textAngle: 'حدد زاوية نص البُعد',
+    rotationAngle: 'حدد زاوية خط البُعد',
     keywords: {
-      ...enJig.ellipse.keywords,
+      mtext: {
+        display: 'نص متعدد الأسطر(M)',
+        local: 'نص متعدد الأسطر',
+        global: 'Mtext'
+      },
+      text: {
+        display: 'نص(T)',
+        local: 'نص',
+        global: 'Text'
+      },
+      angle: {
+        display: 'زاوية(A)',
+        local: 'زاوية',
+        global: 'Angle'
+      },
+      horizontal: {
+        display: 'أفقي(H)',
+        local: 'أفقي',
+        global: 'Horizontal'
+      },
+      vertical: {
+        display: 'رأسي(V)',
+        local: 'رأسي',
+        global: 'Vertical'
+      },
+      rotated: {
+        display: 'مدور(R)',
+        local: 'مدور',
+        global: 'Rotated'
+      }
+    }
+  },
+  dimaligned: {
+    xLine1Point: 'حدد نقطة أصل خط الامتداد الأول أو <تحديد كائن>',
+    xLine2Point: 'حدد نقطة أصل خط الامتداد الثاني',
+    dimLinePoint: 'حدد موقع خط البُعد',
+    selectObject: 'حدد الكائن المراد قياس أبعاده',
+    rejectObject: 'لا يمكن قياس أبعاد الكائن باستخدام DIMALIGNED.',
+    dimensionText: 'أدخل نص البُعد',
+    textAngle: 'حدد زاوية نص البُعد',
+    keywords: {
+      mtext: {
+        display: 'نص متعدد الأسطر(M)',
+        local: 'نص متعدد الأسطر',
+        global: 'Mtext'
+      },
+      text: {
+        display: 'نص(T)',
+        local: 'نص',
+        global: 'Text'
+      },
+      angle: {
+        display: 'زاوية(A)',
+        local: 'زاوية',
+        global: 'Angle'
+      }
+    }
+  },
+  dimradius: {
+    selectObject: 'حدد قوسًا أو دائرة',
+    rejectObject: 'يجب تحديد قوس أو دائرة.',
+    dimLinePoint: 'حدد موقع خط البُعد',
+    dimensionText: 'أدخل نص البُعد',
+    textAngle: 'حدد زاوية نص البُعد',
+    keywords: {
+      mtext: {
+        display: 'نص متعدد الأسطر(M)',
+        local: 'نص متعدد الأسطر',
+        global: 'Mtext'
+      },
+      text: {
+        display: 'نص(T)',
+        local: 'نص',
+        global: 'Text'
+      },
+      angle: {
+        display: 'زاوية(A)',
+        local: 'زاوية',
+        global: 'Angle'
+      }
+    }
+  },
+  dimdiameter: {
+    selectObject: 'حدد قوسًا أو دائرة',
+    rejectObject: 'يجب تحديد قوس أو دائرة.',
+    dimLinePoint: 'حدد موقع خط البُعد',
+    dimensionText: 'أدخل نص البُعد',
+    textAngle: 'حدد زاوية نص البُعد',
+    keywords: {
+      mtext: {
+        display: 'نص متعدد الأسطر(M)',
+        local: 'نص متعدد الأسطر',
+        global: 'Mtext'
+      },
+      text: {
+        display: 'نص(T)',
+        local: 'نص',
+        global: 'Text'
+      },
+      angle: {
+        display: 'زاوية(A)',
+        local: 'زاوية',
+        global: 'Angle'
+      }
+    }
+  },
+  dimangular: {
+    vertexOrSelect: 'حدد رأس الزاوية أو <تحديد خط>',
+    xLine1Point: 'حدد نقطة النهاية الأولى للزاوية',
+    xLine2Point: 'حدد نقطة النهاية الثانية للزاوية',
+    arcPoint: 'حدد موقع قوس البُعد',
+    selectFirstLine: 'حدد الخط الأول',
+    selectSecondLine: 'حدد الخط الثاني',
+    rejectObject: 'يجب تحديد خط.',
+    linesParallel: 'الخطان متوازيان — لا يوجد تقاطع لتكوين زاوية.',
+    dimensionText: 'أدخل نص البُعد',
+    textAngle: 'حدد زاوية نص البُعد',
+    keywords: {
+      mtext: {
+        display: 'نص متعدد الأسطر(M)',
+        local: 'نص متعدد الأسطر',
+        global: 'Mtext'
+      },
+      text: {
+        display: 'نص(T)',
+        local: 'نص',
+        global: 'Text'
+      },
+      angle: {
+        display: 'زاوية(A)',
+        local: 'زاوية',
+        global: 'Angle'
+      }
+    }
+  },
+  dimarc: {
+    selectArc: 'حدد قوسًا',
+    rejectObject: 'يجب تحديد قوس.',
+    arcPoint: 'حدد موقع بُعد طول القوس',
+    dimensionText: 'أدخل نص البُعد',
+    textAngle: 'حدد زاوية نص البُعد',
+    keywords: {
+      mtext: {
+        display: 'نص متعدد الأسطر(M)',
+        local: 'نص متعدد الأسطر',
+        global: 'Mtext'
+      },
+      text: {
+        display: 'نص(T)',
+        local: 'نص',
+        global: 'Text'
+      },
+      angle: {
+        display: 'زاوية(A)',
+        local: 'زاوية',
+        global: 'Angle'
+      }
+    }
+  },
+  dimordinate: {
+    featurePoint: 'حدد موقع المعلم',
+    leaderEndpoint: 'حدد نقطة نهاية خط الإشارة',
+    dimensionText: 'أدخل نص البُعد',
+    textAngle: 'حدد زاوية نص البُعد',
+    keywords: {
+      mtext: {
+        display: 'نص متعدد الأسطر(M)',
+        local: 'نص متعدد الأسطر',
+        global: 'Mtext'
+      },
+      text: {
+        display: 'نص(T)',
+        local: 'نص',
+        global: 'Text'
+      },
+      angle: {
+        display: 'زاوية(A)',
+        local: 'زاوية',
+        global: 'Angle'
+      },
+      xdatum: {
+        display: 'مرجع X(X)',
+        local: 'مرجع X',
+        global: 'Xdatum'
+      },
+      ydatum: {
+        display: 'مرجع Y(Y)',
+        local: 'مرجع Y',
+        global: 'Ydatum'
+      }
+    }
+  },
+  dimcontinue: {
+    nextPoint: 'حدد نقطة أصل خط الامتداد الثاني أو',
+    selectDimension: 'حدد البُعد المراد متابعته',
+    rejectObject: 'يجب تحديد بُعد خطي أو زاوي.',
+    keywords: {
+      select: {
+        display: 'تحديد(S)',
+        local: 'تحديد',
+        global: 'Select'
+      }
+    }
+  },
+  dimbaseline: {
+    nextPoint: 'حدد نقطة أصل خط الامتداد الثاني أو',
+    selectDimension: 'حدد البُعد الأساسي',
+    rejectObject: 'يجب تحديد بُعد خطي أو زاوي.',
+    keywords: {
+      select: {
+        display: 'تحديد(S)',
+        local: 'تحديد',
+        global: 'Select'
+      }
+    }
+  },
+  ellipse: {
+    axisEndpointOrOptions: 'حدد نقطة نهاية محور القطع الناقص أو',
+    arcAxisEndpointOrCenter: 'حدد نقطة نهاية محور القوس البيضاوي أو',
+    center: 'حدد مركز القطع الناقص',
+    firstAxisEndpoint: 'حدد نقطة نهاية المحور الأولى',
+    secondAxisEndpoint: 'حدد نقطة النهاية الأخرى للمحور',
+    otherAxisOrRotation: 'حدد المسافة إلى المحور الآخر أو',
+    rotationAngle: 'حدد زاوية الدوران حول المحور الأكبر',
+    arcStartAngle: 'حدد زاوية بداية القوس البيضاوي',
+    arcEndAngle: 'حدد زاوية نهاية القوس البيضاوي',
+    keywords: {
       arc: {
         display: 'قوس(A)',
         local: 'قوس',
@@ -242,42 +380,25 @@ export default {
         display: 'دوران(R)',
         local: 'دوران',
         global: 'Rotation'
-      },
+      }
     },
+    invalid: {
+      axis: 'المحور غير صالح: يجب أن يكون طول المحور أكبر من 0.',
+      otherAxis: 'المحور الآخر غير صالح: يجب أن تكون المسافة أكبر من 0.',
+      rotation: 'الدوران غير صالح: يجب أن يكون المحور الأصغر الناتج أكبر من 0.'
+    }
   },
-
   hatch: {
-    ...enJig.hatch,
-
-    prompt:
-      'حدد عنصر حدود أو',
-
-    pickPoint:
-      'حدد نقطة داخلية (أو اضغط Enter للإنهاء)',
-
-    select:
-      'حدد العناصر المطلوب تهشيرها',
-
-    patternName:
-      'أدخل اسم نمط التهشير',
-
-    scale:
-      'حدد مقياس نمط التهشير',
-
-    angle:
-      'حدد زاوية نمط التهشير',
-
-    style:
-      'أدخل نمط التهشير',
-
-    associative:
-      'حدد حالة الترابط',
-
-    invalidBoundary:
-      'العناصر المحددة لا تكوّن حدودًا مغلقة.'
-  ,
+    prompt: 'حدد عنصر حدود أو',
+    pickPoint: 'حدد نقطة داخلية (أو اضغط Enter للإنهاء)',
+    select: 'حدد العناصر المطلوب تهشيرها',
+    patternName: 'أدخل اسم نمط التهشير',
+    scale: 'حدد مقياس نمط التهشير',
+    angle: 'حدد زاوية نمط التهشير',
+    style: 'أدخل نمط التهشير',
+    associative: 'حدد حالة الترابط',
+    invalidBoundary: 'العناصر المحددة لا تكوّن حدودًا مغلقة.',
     keywords: {
-      ...enJig.hatch.keywords,
       pick: {
         display: 'اختيار نقاط(P)',
         local: 'اختيار نقاط',
@@ -342,701 +463,49 @@ export default {
         display: 'لا(N)',
         local: 'لا',
         global: 'No'
-      },
-    },
-  },
-
-  line: {
-    ...enJig.line,
-
-    firstPoint:
-      'حدد النقطة الأولى',
-
-    firstPointOrContinue:
-      'حدد النقطة الأولى أو',
-
-    nextPoint:
-      'حدد النقطة التالية',
-
-    nextPointWithOptions:
-      'حدد النقطة التالية أو'
-  ,
-    keywords: {
-      ...enJig.line.keywords,
-      continue: {
-        display: 'متابعة(C)',
-        local: 'متابعة',
-        global: 'Continue'
-      },
-      undo: {
-        display: 'تراجع(U)',
-        local: 'تراجع',
-        global: 'Undo'
-      },
-      close: {
-        display: 'إغلاق(C)',
-        local: 'إغلاق',
-        global: 'Close'
-      },
-    },
-  },
-
-  xline: {
-    ...enJig.xline,
-
-    firstPointOrOptions:
-      'حدد نقطة أو',
-
-    secondPoint:
-      'حدد النقطة الثانية',
-
-    throughPoint:
-      'حدد نقطة يمر بها الخط',
-
-    angle:
-      'أدخل زاوية الخط الإنشائي',
-
-    invalidDirection:
-      'اتجاه XLINE غير صالح.'
-  ,
-    keywords: {
-      ...enJig.xline.keywords,
-      hor: {
-        display: 'أفقي(H)',
-        local: 'أفقي',
-        global: 'Hor'
-      },
-      ver: {
-        display: 'رأسي(V)',
-        local: 'رأسي',
-        global: 'Ver'
-      },
-      ang: {
-        display: 'زاوية(A)',
-        local: 'زاوية',
-        global: 'Ang'
-      },
-    },
-  },
-
-  ray: {
-    ...enJig.ray,
-
-    startPoint:
-      'حدد نقطة البداية',
-
-    throughPoint:
-      'حدد نقطة يمر بها الشعاع'
-  },
-
-  move: {
-    ...enJig.move,
-
-    basePointOrDisplacement:
-      'حدد نقطة الأساس أو',
-
-    secondPointOrDisplacement:
-      'حدد النقطة الثانية أو',
-
-    displacement:
-      'حدد الإزاحة'
-  ,
-    keywords: {
-      ...enJig.move.keywords,
-      displacement: {
-        display: 'إزاحة(D)',
-        local: 'إزاحة',
-        global: 'Displacement'
-      },
-    },
-  },
-
-  offset: {
-    ...enJig.offset,
-
-    distance:
-      'حدد مسافة الإزاحة',
-
-    selectObject:
-      'حدد العنصر المطلوب إزاحته أو اضغط Enter للإنهاء',
-
-    sidePoint:
-      'حدد نقطة في جهة الإزاحة',
-
-    invalidDistance:
-      'يجب أن تكون مسافة الإزاحة أكبر من 0.',
-
-    invalidSelection:
-      'لا يمكن إنشاء إزاحة للعنصر المحدد.',
-
-    offsetFailed:
-      'تعذر إنشاء منحنى إزاحة في الجهة المحددة.'
-  },
-
-  mtext: {
-    ...enJig.mtext,
-
-    point:
-      'حدد نقطة إدراج النص متعدد الأسطر'
-  },
-
-  point: {
-    ...enJig.point,
-
-    point:
-      'حدد نقطة'
-  },
-
-  polygon: {
-    ...enJig.polygon,
-
-    numberOfSides:
-      'أدخل عدد الأضلاع',
-
-    centerOrEdge:
-      'حدد مركز المضلع أو',
-
-    radiusOrType:
-      'أدخل الخيارات',
-
-    edgeStart:
-      'حدد نقطة النهاية الأولى للضلع',
-
-    edgeEnd:
-      'حدد نقطة النهاية الثانية للضلع',
-
-    invalid: {
-      ...enJig.polygon.invalid,
-
-      sides:
-        'عدد الأضلاع غير صالح. أدخل عددًا صحيحًا بين 3 و1024.',
-
-      radius:
-        'نصف القطر غير صالح. يجب أن يكون أكبر من 0.',
-
-      edge:
-        'الضلع غير صالح. يجب أن يكون طول الضلع أكبر من 0.'
+      }
     }
-  ,
-    keywords: {
-      ...enJig.polygon.keywords,
-      edge: {
-        display: 'حافة(E)',
-        local: 'حافة',
-        global: 'Edge'
-      },
-      inscribed: {
-        display: 'داخل الدائرة(I)',
-        local: 'داخل الدائرة',
-        global: 'Inscribed'
-      },
-      circumscribed: {
-        display: 'محيط بالدائرة(C)',
-        local: 'محيط بالدائرة',
-        global: 'Circumscribed'
-      },
-    },
   },
-
-  polyline: {
-    ...enJig.polyline,
-
-    firstPoint:
-      'حدد النقطة الأولى',
-
-    nextPoint:
-      'حدد النقطة التالية (أو اضغط Enter للإنهاء)',
-
-    nextPointWithOptions:
-      'حدد النقطة التالية أو',
-
-    nextPointWithArcOptions:
-      'حدد النقطة التالية أو',
-
-    arcAngle:
-      'حدد زاوية القوس',
-
-    arcCenter:
-      'حدد نقطة مركز القوس',
-
-    arcSecondPoint:
-      'حدد النقطة الثانية على القوس',
-
-    arcEndPoint:
-      'حدد نقطة نهاية القوس',
-
-    arcRadius:
-      'حدد نصف قطر القوس'
-  ,
-    keywords: {
-      ...enJig.polyline.keywords,
-      arc: {
-        display: 'قوس(A)',
-        local: 'قوس',
-        global: 'Arc'
-      },
-      undo: {
-        display: 'تراجع(U)',
-        local: 'تراجع',
-        global: 'Undo'
-      },
-      close: {
-        display: 'إغلاق(C)',
-        local: 'إغلاق',
-        global: 'Close'
-      },
-      line: {
-        display: 'خط(L)',
-        local: 'خط',
-        global: 'Line'
-      },
-      angle: {
-        display: 'زاوية(A)',
-        local: 'زاوية',
-        global: 'Angle'
-      },
-      center: {
-        display: 'المركز(C)',
-        local: 'المركز',
-        global: 'Center'
-      },
-      secondPoint: {
-        display: 'النقطة الثانية(P)',
-        local: 'النقطة الثانية',
-        global: 'SecondPoint'
-      },
-      radius: {
-        display: 'نصف القطر(R)',
-        local: 'نصف القطر',
-        global: 'Radius'
-      },
-    },
-  },
-
-  rect: {
-    ...enJig.rect,
-
-    firstPoint:
-      'حدد نقطة الركن الأول',
-
-    nextPoint:
-      'حدد نقطة الركن المقابل',
-
-    firstPointWithOptions:
-      'حدد نقطة الركن الأول أو',
-
-    otherCornerWithOptions:
-      'حدد نقطة الركن الآخر أو',
-
-    chamferFirst:
-      'حدد مسافة الشطف الأولى',
-
-    chamferSecond:
-      'حدد مسافة الشطف الثانية',
-
-    filletRadius:
-      'حدد نصف قطر التدوير',
-
-    segmentWidth:
-      'حدد عرض خط المستطيل',
-
-    elevationValue:
-      'حدد المنسوب',
-
-    thicknessValue:
-      'حدد السماكة',
-
-    rotationAngle:
-      'حدد زاوية دوران المستطيل',
-
-    dimensionLength:
-      'حدد طول المستطيل',
-
-    dimensionWidth:
-      'حدد عرض المستطيل',
-
-    areaValue:
-      'حدد مساحة المستطيل',
-
-    areaLengthOrWidth:
-      'حدد طول المستطيل',
-
-    areaSpecifyWidth:
-      'حدد عرض المستطيل',
-
-    invalidPositive:
-      'إدخال غير صالح. أدخل قيمة أكبر من 0.',
-
-    invalidRect:
-      'تعذر إنشاء المستطيل. حدد أركانًا أو أبعادًا صالحة.',
-
-    thicknessNotSupported:
-      'سماكة المستطيل لا تُكتب حاليًا إلى بيانات العنصر، لذلك سيتم تجاهل إعداد السماكة.'
-  ,
-    keywords: {
-      ...enJig.rect.keywords,
-      chamfer: {
-        display: 'شطف(C)',
-        local: 'شطف',
-        global: 'Chamfer'
-      },
-      elevation: {
-        display: 'ارتفاع(E)',
-        local: 'ارتفاع',
-        global: 'Elevation'
-      },
-      fillet: {
-        display: 'تقويس(F)',
-        local: 'تقويس',
-        global: 'Fillet'
-      },
-      thickness: {
-        display: 'السماكة(T)',
-        local: 'السماكة',
-        global: 'Thickness'
-      },
-      width: {
-        display: 'العرض(W)',
-        local: 'العرض',
-        global: 'Width'
-      },
-      area: {
-        display: 'مساحة(A)',
-        local: 'مساحة',
-        global: 'Area'
-      },
-      dimensions: {
-        display: 'الأبعاد(D)',
-        local: 'الأبعاد',
-        global: 'Dimensions'
-      },
-      rotation: {
-        display: 'دوران(R)',
-        local: 'دوران',
-        global: 'Rotation'
-      },
-      length: {
-        display: 'طول(L)',
-        local: 'طول',
-        global: 'Length'
-      },
-      rectWidth: {
-        display: 'عرض المستطيل(W)',
-        local: 'عرض المستطيل',
-        global: 'Width'
-      },
-    },
-  },
-
-  rotate: {
-    ...enJig.rotate,
-
-    basePoint:
-      'حدد نقطة الأساس',
-
-    rotationAngleOrOptions:
-      'حدد زاوية الدوران أو',
-
-    referenceAngleOrPoints:
-      'حدد الزاوية المرجعية أو',
-
-    firstReferencePoint:
-      'حدد النقطة الأولى للزاوية المرجعية',
-
-    secondReferencePoint:
-      'حدد النقطة الثانية',
-
-    newAngle:
-      'حدد الزاوية الجديدة',
-
-    invalid: {
-      ...enJig.rotate.invalid,
-
-      referencePoints:
-        'النقاط المرجعية غير صالحة: يجب أن تكون النقطتان مختلفتين.'
-    }
-  ,
-    keywords: {
-      ...enJig.rotate.keywords,
-      copy: {
-        display: 'نسخ(C)',
-        local: 'نسخ',
-        global: 'Copy'
-      },
-      reference: {
-        display: 'مرجع(R)',
-        local: 'مرجع',
-        global: 'Reference'
-      },
-      points: {
-        display: 'نقاط(P)',
-        local: 'نقاط',
-        global: 'Points'
-      },
-    },
-  },
-
-  spline: {
-    ...enJig.spline,
-
-    firstPoint:
-      'حدد النقطة الأولى',
-
-    nextPoint:
-      'حدد النقطة التالية (أو اضغط Enter للإنهاء)',
-
-    firstPointWithOptions:
-      'حدد النقطة الأولى أو',
-
-    nextPointWithFitOptions:
-      'حدد النقطة التالية أو',
-
-    nextPointWithCvOptions:
-      'حدد نقطة التحكم التالية أو',
-
-    methodPrompt:
-      'أدخل طريقة إنشاء Spline',
-
-    knotsPrompt:
-      'أدخل طريقة توزيع العقد',
-
-    degreePrompt:
-      'حدد درجة منحنى Spline'
-  ,
-    keywords: {
-      ...enJig.spline.keywords,
-      method: {
-        display: 'طريقة(M)',
-        local: 'طريقة',
-        global: 'Method'
-      },
-      fit: {
-        display: 'ملاءمة(F)',
-        local: 'ملاءمة',
-        global: 'Fit'
-      },
-      cv: {
-        display: 'نقاط التحكم(C)',
-        local: 'نقاط التحكم',
-        global: 'CV'
-      },
-      knots: {
-        display: 'عُقد(K)',
-        local: 'عُقد',
-        global: 'Knots'
-      },
-      degree: {
-        display: 'درجة(D)',
-        local: 'درجة',
-        global: 'Degree'
-      },
-      undo: {
-        display: 'تراجع(U)',
-        local: 'تراجع',
-        global: 'Undo'
-      },
-      close: {
-        display: 'إغلاق(C)',
-        local: 'إغلاق',
-        global: 'Close'
-      },
-      chord: {
-        display: 'وتر(C)',
-        local: 'وتر',
-        global: 'Chord'
-      },
-      sqrtChord: {
-        display: 'جذر الوتر(S)',
-        local: 'جذر الوتر',
-        global: 'SqrtChord'
-      },
-      uniform: {
-        display: 'منتظم(U)',
-        local: 'منتظم',
-        global: 'Uniform'
-      },
-    },
-  },
-
-  view: {
-    enterName: 'Enter view name to restore',
-    notFound: 'View "{name}" was not found.'
-  },
-  zoom: {
-    ...enJig.zoom,
-
-    mainPrompt:
-      'حدد ركن نافذة التكبير أو',
-
-    firstCorner:
-      'حدد الركن الأول',
-
-    secondCorner:
-      'حدد الركن المقابل',
-
-    centerPoint:
-      'حدد نقطة المركز',
-
-    heightOrScale:
-      'أدخل الارتفاع أو معامل المقياس (nX أو nXP)',
-
-    scaleFactor:
-      'أدخل معامل المقياس (nX أو nXP)'
-  ,
-    keywords: {
-      ...enJig.zoom.keywords,
-      all: {
-        display: 'الكل(A)',
-        local: 'الكل',
-        global: 'All'
-      },
-      center: {
-        display: 'المركز(C)',
-        local: 'المركز',
-        global: 'Center'
-      },
-      extents: {
-        display: 'الحدود(E)',
-        local: 'الحدود',
-        global: 'Extents'
-      },
-      previous: {
-        display: 'السابق(P)',
-        local: 'السابق',
-        global: 'Previous'
-      },
-      original: {
-        display: 'الأصلي(O)',
-        local: 'الأصلي',
-        global: 'Original'
-      },
-      saved: {
-        display: 'المحفوظ(V)',
-        local: 'المحفوظ',
-        global: 'Saved'
-      },
-      smart: {
-        display: 'ذكي(I)',
-        local: 'ذكي',
-        global: 'Smart'
-      },
-      scale: {
-        display: 'مقياس(S)',
-        local: 'مقياس',
-        global: 'Scale'
-      },
-      window: {
-        display: 'نافذة(W)',
-        local: 'نافذة',
-        global: 'Window'
-      },
-    },
-  },
-
   hideobjects: {
-    ...enJig.hideobjects,
     hidden: 'تم إخفاء العناصر',
     restored: 'تمت استعادة العناصر',
     nothingToRestore: 'لا توجد عناصر مخفية لاستعادتها'
   },
-
   entout: {
-    ...enJig.entout,
-
-    longSidePrompt:
-      'أدخل حجم الضلع الأطول للمعاينة بالبكسل',
-
-    exported:
-      'تم تصدير معاينات العناصر',
-
-    skipped:
-      'تم تخطي بعض العناصر',
-
+    longSidePrompt: 'أدخل حجم الضلع الأطول للمعاينة بالبكسل',
+    exported: 'تم تصدير معاينات العناصر',
+    skipped: 'تم تخطي بعض العناصر',
     failed: {
-      ...enJig.entout.failed,
-
-      'no-preview-root':
-        'تعذر إنشاء هندسة المعاينة للعناصر المحددة',
-
-      'no-bounds':
-        'تعذر حساب حدود المعاينة للعناصر المحددة',
-
-      'capture-failed':
-        'تعذر عرض صورة معاينة العناصر',
-
-      'download-failed':
-        'تم إنشاء المعاينة ولكن فشل تنزيل ملف PNG'
+      'no-preview-root': 'تعذر إنشاء هندسة المعاينة للعناصر المحددة',
+      'no-bounds': 'تعذر حساب حدود المعاينة للعناصر المحددة',
+      'capture-failed': 'تعذر عرض صورة معاينة العناصر',
+      'download-failed': 'تم إنشاء المعاينة ولكن فشل تنزيل ملف PNG'
     }
   },
-
   layer: {
-    ...enJig.layer,
-
-    main:
-      'أدخل خيارًا',
-
-    listSummary:
-      'تمت طباعة قائمة الطبقات في وحدة تحكم المتصفح',
-
-    emptyInput:
-      'لم يتم إدخال اسم طبقة.',
-
-    newPrompt:
-      'أدخل اسم الطبقة أو الطبقات الجديدة',
-
-    makePrompt:
-      'أدخل اسم الطبقة المطلوب إنشاؤها وجعلها حالية',
-
-    setPrompt:
-      'أدخل اسم الطبقة المطلوب جعلها حالية',
-
-    onPrompt:
-      'أدخل أسماء الطبقات المطلوب تشغيلها',
-
-    offPrompt:
-      'أدخل أسماء الطبقات المطلوب إيقافها',
-
-    freezePrompt:
-      'أدخل أسماء الطبقات المطلوب تجميدها',
-
-    thawPrompt:
-      'أدخل أسماء الطبقات المطلوب إلغاء تجميدها',
-
-    lockPrompt:
-      'أدخل أسماء الطبقات المطلوب قفلها',
-
-    unlockPrompt:
-      'أدخل أسماء الطبقات المطلوب إلغاء قفلها',
-
-    colorLayerPrompt:
-      'أدخل أسماء الطبقات المطلوب تغيير لونها',
-
+    main: 'أدخل خيارًا',
+    listSummary: 'تمت طباعة قائمة الطبقات في وحدة تحكم المتصفح',
+    emptyInput: 'لم يتم إدخال اسم طبقة.',
+    newPrompt: 'أدخل اسم الطبقة أو الطبقات الجديدة',
+    makePrompt: 'أدخل اسم الطبقة المطلوب إنشاؤها وجعلها حالية',
+    setPrompt: 'أدخل اسم الطبقة المطلوب جعلها حالية',
+    onPrompt: 'أدخل أسماء الطبقات المطلوب تشغيلها',
+    offPrompt: 'أدخل أسماء الطبقات المطلوب إيقافها',
+    freezePrompt: 'أدخل أسماء الطبقات المطلوب تجميدها',
+    thawPrompt: 'أدخل أسماء الطبقات المطلوب إلغاء تجميدها',
+    lockPrompt: 'أدخل أسماء الطبقات المطلوب قفلها',
+    unlockPrompt: 'أدخل أسماء الطبقات المطلوب إلغاء قفلها',
+    colorLayerPrompt: 'أدخل أسماء الطبقات المطلوب تغيير لونها',
     colorValuePrompt:
       'أدخل اللون (ACI من 1 إلى 255، أو RGB مثل 255,0,0، أو اسم لون CSS)',
-
-    invalidColor:
-      'قيمة اللون غير صالحة.',
-
-    descriptionLayerPrompt:
-      'أدخل اسم الطبقة المطلوب تعديل وصفها',
-
-    descriptionValuePrompt:
-      'أدخل وصف الطبقة الجديد',
-
-    created:
-      'عدد الطبقات التي تم إنشاؤها',
-
-    alreadyExists:
-      'الطبقة موجودة بالفعل',
-
-    notFound:
-      'الطبقة غير موجودة',
-
-    cannotChangeCurrent:
-      'لا يمكن إيقاف الطبقة الحالية أو تجميدها.'
-  ,
+    invalidColor: 'قيمة اللون غير صالحة.',
+    descriptionLayerPrompt: 'أدخل اسم الطبقة المطلوب تعديل وصفها',
+    descriptionValuePrompt: 'أدخل وصف الطبقة الجديد',
+    created: 'عدد الطبقات التي تم إنشاؤها',
+    alreadyExists: 'الطبقة موجودة بالفعل',
+    notFound: 'الطبقة غير موجودة',
+    cannotChangeCurrent: 'لا يمكن إيقاف الطبقة الحالية أو تجميدها.',
     keywords: {
-      ...enJig.layer.keywords,
       list: {
         display: 'قائمة(?)',
         local: 'قائمة',
@@ -1096,83 +565,37 @@ export default {
         display: 'وصف(D)',
         local: 'وصف',
         global: 'Description'
-      },
-    },
+      }
+    }
   },
-
   layon: {
-    ...enJig.layon,
-
-    alreadyOn:
-      'جميع الطبقات قيد التشغيل بالفعل.',
-
-    turnedOn:
-      'تم تشغيل الطبقات'
+    alreadyOn: 'جميع الطبقات قيد التشغيل بالفعل.',
+    turnedOn: 'تم تشغيل الطبقات'
   },
-
   laycur: {
-    ...enJig.laycur,
-
-    prompt:
-      'حدد العناصر المطلوب نقلها إلى الطبقة الحالية',
-
-    currentLayerNotFound:
-      'الطبقة الحالية غير موجودة.',
-
-    noObjects:
-      'لم يتم تحديد عناصر صالحة.',
-
-    alreadyCurrent:
-      'العناصر المحددة موجودة بالفعل على الطبقة الحالية.',
-
-    changed:
-      'تم نقل العناصر إلى الطبقة الحالية'
+    prompt: 'حدد العناصر المطلوب نقلها إلى الطبقة الحالية',
+    currentLayerNotFound: 'الطبقة الحالية غير موجودة.',
+    noObjects: 'لم يتم تحديد عناصر صالحة.',
+    alreadyCurrent: 'العناصر المحددة موجودة بالفعل على الطبقة الحالية.',
+    changed: 'تم نقل العناصر إلى الطبقة الحالية'
   },
-
   layfrz: {
-    ...enJig.layfrz,
-
-    prompt:
-      'حدد عنصرًا على الطبقة المطلوب تجميدها أو',
-
-    invalidSelection:
-      'العنصر المحدد غير صالح.',
-
-    settingsPrompt:
-      'أدخل إعداد LAYFRZ المطلوب تغييره',
-
-    viewportPrompt:
-      'حدد سلوك التجميد داخل منفذ العرض',
-
-    blockSelectionPrompt:
-      'حدد سلوك اختيار الكتل المتداخلة',
-
+    prompt: 'حدد عنصرًا على الطبقة المطلوب تجميدها أو',
+    invalidSelection: 'العنصر المحدد غير صالح.',
+    settingsPrompt: 'أدخل إعداد LAYFRZ المطلوب تغييره',
+    viewportPrompt: 'حدد سلوك التجميد داخل منفذ العرض',
+    blockSelectionPrompt: 'حدد سلوك اختيار الكتل المتداخلة',
     vpfreezeFallback:
       'العارض الحالي لا يدعم تجميد الطبقات بشكل مستقل لكل منفذ عرض؛ سيتم استخدام التجميد العادي بدلًا من ذلك.',
-
     nestedSelectionLimited:
       'تم حفظ إعدادات اختيار الكتل المتداخلة، لكن الاختيار الحالي ما زال يعتمد طبقة العنصر ذي المستوى الأعلى.',
-
-    layerNotFound:
-      'الطبقة غير موجودة',
-
-    cannotFreezeCurrent:
-      'لا يمكن تجميد الطبقة الحالية.',
-
-    alreadyFrozen:
-      'الطبقة مجمدة بالفعل',
-
-    frozen:
-      'تم تجميد الطبقة',
-
-    restored:
-      'تمت استعادة الطبقة',
-
-    nothingToUndo:
-      'لا توجد عملية LAYFRZ يمكن التراجع عنها.'
-  ,
+    layerNotFound: 'الطبقة غير موجودة',
+    cannotFreezeCurrent: 'لا يمكن تجميد الطبقة الحالية.',
+    alreadyFrozen: 'الطبقة مجمدة بالفعل',
+    frozen: 'تم تجميد الطبقة',
+    restored: 'تمت استعادة الطبقة',
+    nothingToUndo: 'لا توجد عملية LAYFRZ يمكن التراجع عنها.',
     keywords: {
-      ...enJig.layfrz.keywords,
       settings: {
         display: 'إعدادات(S)',
         local: 'إعدادات',
@@ -1217,42 +640,22 @@ export default {
         display: 'لا شيء(N)',
         local: 'لا شيء',
         global: 'None'
-      },
-    },
+      }
+    }
   },
-
   layiso: {
-    ...enJig.layiso,
-
-    prompt:
-      'حدد عناصر على الطبقة أو الطبقات المطلوب عزلها أو',
-
-    settingsPrompt:
-      'أدخل إعداد الطبقات غير المعزولة',
-
-    offModePrompt:
-      'حدد سلوك إيقاف الطبقات غير المعزولة',
-
-    noLayers:
-      'لم يتم تحديد طبقات صالحة.',
-
-    layerNotFound:
-      'الطبقة غير موجودة',
-
-    isolated:
-      'تم عزل الطبقات',
-
-    affectedLayers:
-      'الطبقات المتأثرة',
-
+    prompt: 'حدد عناصر على الطبقة أو الطبقات المطلوب عزلها أو',
+    settingsPrompt: 'أدخل إعداد الطبقات غير المعزولة',
+    offModePrompt: 'حدد سلوك إيقاف الطبقات غير المعزولة',
+    noLayers: 'لم يتم تحديد طبقات صالحة.',
+    layerNotFound: 'الطبقة غير موجودة',
+    isolated: 'تم عزل الطبقات',
+    affectedLayers: 'الطبقات المتأثرة',
     vpfreezeFallback:
       'العارض الحالي لا يدعم التجميد المستقل لكل منفذ عرض؛ سيتم استخدام الإيقاف بدلًا من ذلك.',
-
     lockFadeFallback:
-      'العارض الحالي لا يدعم إظهار الطبقات بتأثير التلاشي؛ سيتم قفل الطبقات غير المعزولة دون تلاشي.'
-  ,
+      'العارض الحالي لا يدعم إظهار الطبقات بتأثير التلاشي؛ سيتم قفل الطبقات غير المعزولة دون تلاشي.',
     keywords: {
-      ...enJig.layiso.keywords,
       settings: {
         display: 'إعدادات(S)',
         local: 'إعدادات',
@@ -1272,118 +675,50 @@ export default {
         display: 'تجميد إطار العرض(V)',
         local: 'تجميد إطار العرض',
         global: 'Vpfreeze'
-      },
-    },
+      }
+    }
   },
-
   layuniso: {
-    ...enJig.layuniso,
-
-    noPrevious:
-      'لا توجد حالة LAYISO سابقة لاستعادتها.',
-
-    layerNotFound:
-      'الطبقة غير موجودة',
-
-    nothingRestored:
-      'لم تتم استعادة أي تغييرات طبقات من LAYISO.',
-
-    restored:
-      'تمت استعادة الطبقات'
+    noPrevious: 'لا توجد حالة LAYISO سابقة لاستعادتها.',
+    layerNotFound: 'الطبقة غير موجودة',
+    nothingRestored: 'لم تتم استعادة أي تغييرات طبقات من LAYISO.',
+    restored: 'تمت استعادة الطبقات'
   },
-
   laythw: {
-    ...enJig.laythw,
-
-    alreadyThawed:
-      'جميع الطبقات غير مجمدة بالفعل.',
-
-    thawed:
-      'تم إلغاء تجميد الطبقات'
+    alreadyThawed: 'جميع الطبقات غير مجمدة بالفعل.',
+    thawed: 'تم إلغاء تجميد الطبقات'
   },
-
   laylck: {
-    ...enJig.laylck,
-
-    prompt:
-      'حدد عنصرًا على الطبقة المطلوب قفلها',
-
-    invalidSelection:
-      'العنصر المحدد غير صالح.',
-
-    layerNotFound:
-      'الطبقة غير موجودة',
-
-    alreadyLocked:
-      'الطبقة مقفلة بالفعل',
-
-    locked:
-      'تم قفل الطبقة'
+    prompt: 'حدد عنصرًا على الطبقة المطلوب قفلها',
+    invalidSelection: 'العنصر المحدد غير صالح.',
+    layerNotFound: 'الطبقة غير موجودة',
+    alreadyLocked: 'الطبقة مقفلة بالفعل',
+    locked: 'تم قفل الطبقة'
   },
-
   layulk: {
-    ...enJig.layulk,
-
-    prompt:
-      'حدد عنصرًا على الطبقة المطلوب إلغاء قفلها',
-
-    invalidSelection:
-      'العنصر المحدد غير صالح.',
-
-    layerNotFound:
-      'الطبقة غير موجودة',
-
-    alreadyUnlocked:
-      'الطبقة غير مقفلة بالفعل',
-
-    unlocked:
-      'تم إلغاء قفل الطبقة'
+    prompt: 'حدد عنصرًا على الطبقة المطلوب إلغاء قفلها',
+    invalidSelection: 'العنصر المحدد غير صالح.',
+    layerNotFound: 'الطبقة غير موجودة',
+    alreadyUnlocked: 'الطبقة غير مقفلة بالفعل',
+    unlocked: 'تم إلغاء قفل الطبقة'
   },
-
   layoff: {
-    ...enJig.layoff,
-
-    prompt:
-      'حدد عنصرًا على الطبقة المطلوب إيقافها أو',
-
-    invalidSelection:
-      'العنصر المحدد غير صالح.',
-
-    settingsPrompt:
-      'أدخل إعداد LAYOFF المطلوب تغييره',
-
-    viewportPrompt:
-      'حدد سلوك منفذ العرض',
-
-    blockSelectionPrompt:
-      'حدد سلوك اختيار الكتل المتداخلة',
-
+    prompt: 'حدد عنصرًا على الطبقة المطلوب إيقافها أو',
+    invalidSelection: 'العنصر المحدد غير صالح.',
+    settingsPrompt: 'أدخل إعداد LAYOFF المطلوب تغييره',
+    viewportPrompt: 'حدد سلوك منفذ العرض',
+    blockSelectionPrompt: 'حدد سلوك اختيار الكتل المتداخلة',
     vpfreezeFallback:
       'العارض الحالي لا يدعم إيقاف الطبقات بشكل مستقل لكل منفذ عرض؛ سيتم استخدام الإيقاف العادي بدلًا من ذلك.',
-
     nestedSelectionLimited:
       'تم حفظ إعدادات اختيار الكتل المتداخلة، لكن الاختيار الحالي ما زال يعتمد طبقة العنصر ذي المستوى الأعلى.',
-
-    layerNotFound:
-      'الطبقة غير موجودة',
-
-    cannotTurnOffCurrent:
-      'لا يمكن إيقاف الطبقة الحالية.',
-
-    alreadyOff:
-      'الطبقة متوقفة بالفعل',
-
-    turnedOff:
-      'تم إيقاف الطبقة',
-
-    restored:
-      'تمت استعادة الطبقة',
-
-    nothingToUndo:
-      'لا توجد عملية LAYOFF يمكن التراجع عنها.'
-  ,
+    layerNotFound: 'الطبقة غير موجودة',
+    cannotTurnOffCurrent: 'لا يمكن إيقاف الطبقة الحالية.',
+    alreadyOff: 'الطبقة متوقفة بالفعل',
+    turnedOff: 'تم إيقاف الطبقة',
+    restored: 'تمت استعادة الطبقة',
+    nothingToUndo: 'لا توجد عملية LAYOFF يمكن التراجع عنها.',
     keywords: {
-      ...enJig.layoff.keywords,
       settings: {
         display: 'إعدادات(S)',
         local: 'إعدادات',
@@ -1428,49 +763,74 @@ export default {
         display: 'لا شيء(N)',
         local: 'لا شيء',
         global: 'None'
-      },
-    },
+      }
+    }
   },
-
   layerp: {
-    ...enJig.layerp,
-
-    restored:
-      'تمت استعادة حالة الطبقات السابقة.',
-
-    noPreviousState:
-      'لا توجد حالة طبقات سابقة لاستعادتها.'
+    restored: 'تمت استعادة حالة الطبقات السابقة.',
+    noPreviousState: 'لا توجد حالة طبقات سابقة لاستعادتها.'
   },
-
-  mline: {
-    ...enJig.mline,
-
-    startPointWithOptions:
-      'حدد نقطة البداية أو',
-
-    nextPointWithOptions:
-      'حدد النقطة التالية أو',
-
-    justificationPrompt:
-      'أدخل نوع المحاذاة',
-
-    scalePrompt:
-      'حدد مقياس الخط المتعدد',
-
-    stylePrompt:
-      'أدخل اسم نمط الخط المتعدد أو [?] لعرض القائمة',
-
-    styleNotFound:
-      'نمط الخط المتعدد غير موجود',
-
-    styleListHeader:
-      'أنماط الخطوط المتعددة المحملة',
-
-    styleListEmpty:
-      'لا توجد أنماط خطوط متعددة محملة في الرسم الحالي.'
-  ,
+  line: {
+    firstPoint: 'حدد النقطة الأولى',
+    firstPointOrContinue: 'حدد النقطة الأولى أو',
+    nextPoint: 'حدد النقطة التالية',
+    nextPointWithOptions: 'حدد النقطة التالية أو',
     keywords: {
-      ...enJig.mline.keywords,
+      continue: {
+        display: 'متابعة(C)',
+        local: 'متابعة',
+        global: 'Continue'
+      },
+      undo: {
+        display: 'تراجع(U)',
+        local: 'تراجع',
+        global: 'Undo'
+      },
+      close: {
+        display: 'إغلاق(C)',
+        local: 'إغلاق',
+        global: 'Close'
+      }
+    }
+  },
+  xline: {
+    firstPointOrOptions: 'حدد نقطة أو',
+    secondPoint: 'حدد النقطة الثانية',
+    throughPoint: 'حدد نقطة يمر بها الخط',
+    angle: 'أدخل زاوية الخط الإنشائي',
+    invalidDirection: 'اتجاه XLINE غير صالح.',
+    keywords: {
+      hor: {
+        display: 'أفقي(H)',
+        local: 'أفقي',
+        global: 'Hor'
+      },
+      ver: {
+        display: 'رأسي(V)',
+        local: 'رأسي',
+        global: 'Ver'
+      },
+      ang: {
+        display: 'زاوية(A)',
+        local: 'زاوية',
+        global: 'Ang'
+      }
+    }
+  },
+  ray: {
+    startPoint: 'حدد نقطة البداية',
+    throughPoint: 'حدد نقطة يمر بها الشعاع'
+  },
+  mline: {
+    startPointWithOptions: 'حدد نقطة البداية أو',
+    nextPointWithOptions: 'حدد النقطة التالية أو',
+    justificationPrompt: 'أدخل نوع المحاذاة',
+    scalePrompt: 'حدد مقياس الخط المتعدد',
+    stylePrompt: 'أدخل اسم نمط الخط المتعدد أو [?] لعرض القائمة',
+    styleNotFound: 'نمط الخط المتعدد غير موجود',
+    styleListHeader: 'أنماط الخطوط المتعددة المحملة',
+    styleListEmpty: 'لا توجد أنماط خطوط متعددة محملة في الرسم الحالي.',
+    keywords: {
       justification: {
         display: 'محاذاة(J)',
         local: 'محاذاة',
@@ -1510,170 +870,73 @@ export default {
         display: 'أسفل(B)',
         local: 'أسفل',
         global: 'Bottom'
-      },
-    },
-  },
-
-  measureAngle: {
-    ...enJig.measureAngle,
-
-    vertex:
-      'حدد نقطة رأس الزاوية',
-
-    arm1:
-      'حدد نقطة على الضلع الأول',
-
-    arm2:
-      'حدد نقطة على الضلع الثاني'
-  },
-
-  measureArc: {
-    ...enJig.measureArc,
-
-    startPoint:
-      'حدد نقطة بداية القوس',
-
-    throughPoint:
-      'حدد نقطة على القوس',
-
-    endPoint:
-      'حدد نقطة نهاية القوس',
-
-    lockedEndPoint:
-      'حدد نقطة نهاية القوس (استخدم Ctrl للتبديل بين القوس الأكبر والأصغر)',
-
-    invalidPoints:
-      'النقاط الثلاث على استقامة واحدة ولا يمكنها تعريف قوس.'
-  },
-
-  measureArea: {
-    ...enJig.measureArea,
-
-    firstPoint:
-      'حدد النقطة الأولى',
-
-    nextPoint:
-      'حدد النقطة التالية (أو اضغط Enter للإنهاء)'
-  },
-
-  measureDistance: {
-    ...enJig.measureDistance,
-
-    firstPoint:
-      'حدد النقطة الأولى',
-
-    secondPoint:
-      'حدد النقطة الثانية'
-  },
-
-  measureContinuous: {
-    ...enJig.measureContinuous,
-
-    firstPoint:
-      'حدد النقطة الأولى',
-
-    nextPoint:
-      'حدد النقطة التالية (أو اضغط Enter للإنهاء)'
-  },
-
-  measurePoint: {
-    ...enJig.measurePoint,
-
-    point:
-      'حدد نقطة'
-  },
-
-  measurement: {
-    ...enJig.measurement,
-
-    import: {
-      ...enJig.measurement.import,
-
-      chooseFile:
-        'اختر ملف JSON جانبيًا يحتوي على القياسات'
+      }
     }
   },
-
+  measureAngle: {
+    vertex: 'حدد نقطة رأس الزاوية',
+    arm1: 'حدد نقطة على الضلع الأول',
+    arm2: 'حدد نقطة على الضلع الثاني'
+  },
+  measureArc: {
+    startPoint: 'حدد نقطة بداية القوس',
+    throughPoint: 'حدد نقطة على القوس',
+    endPoint: 'حدد نقطة نهاية القوس',
+    lockedEndPoint:
+      'حدد نقطة نهاية القوس (استخدم Ctrl للتبديل بين القوس الأكبر والأصغر)',
+    invalidPoints: 'النقاط الثلاث على استقامة واحدة ولا يمكنها تعريف قوس.'
+  },
+  measureArea: {
+    firstPoint: 'حدد النقطة الأولى',
+    nextPoint: 'حدد النقطة التالية (أو اضغط Enter للإنهاء)'
+  },
+  measureDistance: {
+    firstPoint: 'حدد النقطة الأولى',
+    secondPoint: 'حدد النقطة الثانية'
+  },
+  measureContinuous: {
+    firstPoint: 'حدد النقطة الأولى',
+    nextPoint: 'حدد النقطة التالية (أو اضغط Enter للإنهاء)'
+  },
+  measurePoint: {
+    point: 'حدد نقطة'
+  },
+  measurement: {
+    import: {
+      chooseFile: 'اختر ملف JSON جانبيًا يحتوي على القياسات'
+    }
+  },
   markup: {
-    ...enJig.markup,
-
-    author:
-      'حدد اسم مؤلف المراجعة (سيتم حفظه للاستخدام لاحقًا)',
-
+    author: 'حدد اسم مؤلف المراجعة (سيتم حفظه للاستخدام لاحقًا)',
     text: {
-      ...enJig.markup.text,
-
-      point:
-        'حدد موضع علامة النص',
-
-      content:
-        'أدخل نص علامة المراجعة'
+      point: 'حدد موضع علامة النص',
+      content: 'أدخل نص علامة المراجعة'
     },
-
     line: {
-      ...enJig.markup.line,
-
-      firstPoint:
-        'حدد النقطة الأولى لخط المراجعة',
-
-      secondPoint:
-        'حدد النقطة الثانية لخط المراجعة'
+      firstPoint: 'حدد النقطة الأولى لخط المراجعة',
+      secondPoint: 'حدد النقطة الثانية لخط المراجعة'
     },
-
     arrow: {
-      ...enJig.markup.arrow,
-
-      firstPoint:
-        'حدد نقطة بداية السهم',
-
-      secondPoint:
-        'حدد رأس السهم'
+      firstPoint: 'حدد نقطة بداية السهم',
+      secondPoint: 'حدد رأس السهم'
     },
-
     cloud: {
-      ...enJig.markup.cloud,
-
-      firstCorner:
-        'حدد الركن الأول للسحابة',
-
-      secondCorner:
-        'حدد الركن المقابل للسحابة'
+      firstCorner: 'حدد الركن الأول للسحابة',
+      secondCorner: 'حدد الركن المقابل للسحابة'
     },
-
     rect: {
-      ...enJig.markup.rect,
-
-      firstCorner:
-        'حدد الركن الأول للمستطيل',
-
-      secondCorner:
-        'حدد الركن المقابل للمستطيل'
+      firstCorner: 'حدد الركن الأول للمستطيل',
+      secondCorner: 'حدد الركن المقابل للمستطيل'
     },
-
     circle: {
-      ...enJig.markup.circle,
-
-      center:
-        'حدد مركز الدائرة',
-
-      radius:
-        'حدد نصف قطر الدائرة'
+      center: 'حدد مركز الدائرة',
+      radius: 'حدد نصف قطر الدائرة'
     },
-
     shape: {
-      ...enJig.markup.shape,
-
-      calloutOn:
-        '[وسيلة الشرح مفعلة]',
-
-      calloutOff:
-        '[وسيلة الشرح معطلة]',
-
-      calloutAnchor:
-        'حدد موضع نص وسيلة الشرح'
-    ,
+      calloutOn: '[وسيلة الشرح مفعلة]',
+      calloutOff: '[وسيلة الشرح معطلة]',
+      calloutAnchor: 'حدد موضع نص وسيلة الشرح',
       keywords: {
-        ...enJig.markup.shape.keywords,
         callout: {
           display: 'تعليق توضيحي(C)',
           local: 'تعليق توضيحي',
@@ -1683,215 +946,490 @@ export default {
           display: 'بدون تعليق توضيحي(N)',
           local: 'بدون تعليق توضيحي',
           global: 'NoCallout'
-        },
-      },
+        }
+      }
     },
-
     highlight: {
-      ...enJig.markup.highlight,
-
-      firstCorner:
-        'حدد الركن الأول لمنطقة التمييز',
-
-      secondCorner:
-        'حدد الركن المقابل لمنطقة التمييز'
+      firstCorner: 'حدد الركن الأول لمنطقة التمييز',
+      secondCorner: 'حدد الركن المقابل لمنطقة التمييز'
     },
-
     callout: {
-      ...enJig.markup.callout,
-
-      tip:
-        'حدد رأس خط التوجيه، أو حدد إطار سحابة/مستطيل/دائرة بدون تعليق توضيحي',
-
-      anchor:
-        'حدد موضع نص وسيلة الشرح',
-
-      content:
-        'أدخل نص وسيلة الشرح'
+      tip: 'حدد رأس خط التوجيه، أو حدد إطار سحابة/مستطيل/دائرة بدون تعليق توضيحي',
+      anchor: 'حدد موضع نص وسيلة الشرح',
+      content: 'أدخل نص وسيلة الشرح'
     },
-
     stamp: {
-      ...enJig.markup.stamp,
-
-      kind:
-        'أدخل معرّف الختم [approved/rejected/revised/for-review/custom]',
-
-      imageUrl:
-        'أدخل رابط صورة الختم المخصص (اختياري)',
-
-      caption:
-        'أدخل تسمية الختم (اختياري)',
-
-      point:
-        'حدد نقطة إدراج الختم'
+      kind: 'أدخل معرّف الختم [approved/rejected/revised/for-review/custom]',
+      imageUrl: 'أدخل رابط صورة الختم المخصص (اختياري)',
+      caption: 'أدخل تسمية الختم (اختياري)',
+      point: 'حدد نقطة إدراج الختم'
     },
-
     import: {
-      ...enJig.markup.import,
-
-      chooseFile:
-        'اختر ملف JSON جانبيًا يحتوي على علامات المراجعة'
+      chooseFile: 'اختر ملف JSON جانبيًا يحتوي على علامات المراجعة'
     }
   },
-
-  bmpout: {
-    ...enJig.bmpout,
-
-    boundsFirstCorner:
-      'حدد الركن الأول لحدود الصورة',
-
-    boundsSecondCorner:
-      'حدد الركن المقابل',
-
-    longSidePrompt:
-      'أدخل حجم الضلع الأطول بالبكسل'
-  },
-
-  jpgout: {
-    ...enJig.jpgout,
-
-    boundsFirstCorner:
-      'حدد الركن الأول لحدود الصورة',
-
-    boundsSecondCorner:
-      'حدد الركن المقابل',
-
-    longSidePrompt:
-      'أدخل حجم الضلع الأطول بالبكسل'
-  },
-
-  pngout: {
-    ...enJig.pngout,
-
-    boundsFirstCorner:
-      'حدد الركن الأول لحدود الصورة',
-
-    boundsSecondCorner:
-      'حدد الركن المقابل',
-
-    longSidePrompt:
-      'أدخل حجم الضلع الأطول بالبكسل'
-  },
-
-  imageattach: {
-    ...enJig.imageattach,
-
-    insertionPoint:
-      'حدد نقطة الإدراج:',
-
-    scale:
-      'حدد معامل المقياس:',
-
-    rotation:
-      'حدد زاوية الدوران:',
-
-    invalidScale:
-      'يجب أن يكون معامل المقياس أكبر من 0.',
-
-    decodeFailed:
-      'فشلت قراءة ملف الصورة المحدد.'
-  },
-
-  insert: {
-    ...enJig.insert,
-
-    blockName:
-      'أدخل اسم الكتلة:',
-
-    insertionPoint:
-      'حدد نقطة الإدراج:',
-
-    scale:
-      'حدد معامل المقياس:',
-
-    rotation:
-      'حدد زاوية الدوران:',
-
-    invalidScale:
-      'يجب أن يكون معامل المقياس أكبر من 0.',
-
-    invalidBlockName:
-      'اسم الكتلة غير صالح.',
-
-    blockNotFound:
-      'الكتلة غير موجودة',
-
-    xrefNotAllowed:
-      'لا يمكن إدراج مرجع خارجي باستخدام -INSERT.'
-  },
-
-  xattach: {
-    ...enJig.xattach,
-
-    insertionPoint:
-      'حدد نقطة الإدراج:',
-
-    scale:
-      'حدد معامل المقياس:',
-
-    rotation:
-      'حدد زاوية الدوران:',
-
-    invalidScale:
-      'يجب أن يكون معامل المقياس أكبر من 0.',
-
-    unsupportedFile:
-      'اختر ملف DWG أو DXF.',
-
-    loading:
-      'جارٍ تحميل المرجع الخارجي...',
-
-    loadFailed:
-      'فشلت قراءة ملف الرسم المحدد.'
-  },
-
-  revcloud: {
-    ...enJig.revcloud,
-
-    firstCornerOrOptions:
-      'حدد نقطة الركن الأول أو',
-
-    firstCorner:
-      'حدد نقطة الركن الأول',
-
-    oppositeCorner:
-      'حدد الركن المقابل',
-
-    startPoint:
-      'حدد نقطة البداية',
-
-    nextPoint:
-      'حدد النقطة التالية',
-
-    nextPointOrUndo:
-      'حدد النقطة التالية أو',
-
-    firstPoint:
-      'حدد النقطة الأولى',
-
-    guideCursor:
-      'حرّك المؤشر على مسار السحابة (اضغط Enter للإنهاء)',
-
-    arcLength:
-      'حدد طول القوس',
-
-    selectObject:
-      'حدد عنصرًا',
-
-    style:
-      'أدخل نمط أقواس سحابة المراجعة',
-
-    reverseDirection:
-      'اعكس الاتجاه',
-
-    invalidArcLength:
-      'يجب أن يكون طول القوس أكبر من 0.',
-
-    invalidObject:
-      'لا يمكن تحويل العنصر المحدد إلى سحابة مراجعة.'
-  ,
+  move: {
+    basePointOrDisplacement: 'حدد نقطة الأساس أو',
+    secondPointOrDisplacement: 'حدد النقطة الثانية أو',
+    displacement: 'حدد الإزاحة',
     keywords: {
-      ...enJig.revcloud.keywords,
+      displacement: {
+        display: 'إزاحة(D)',
+        local: 'إزاحة',
+        global: 'Displacement'
+      }
+    }
+  },
+  offset: {
+    distance: 'حدد مسافة الإزاحة',
+    selectObject: 'حدد العنصر المطلوب إزاحته أو اضغط Enter للإنهاء',
+    sidePoint: 'حدد نقطة في جهة الإزاحة',
+    invalidDistance: 'يجب أن تكون مسافة الإزاحة أكبر من 0.',
+    invalidSelection: 'لا يمكن إنشاء إزاحة للعنصر المحدد.',
+    offsetFailed: 'تعذر إنشاء منحنى إزاحة في الجهة المحددة.'
+  },
+  leader: {
+    startPoint: 'حدد نقطة بداية خط الإشارة',
+    nextPoint: 'حدد النقطة التالية',
+    nextPointOrOptions: 'حدد النقطة التالية أو [تعليق توضيحي/تنسيق/تراجع]',
+    formatPrompt: 'أدخل خيار تنسيق خط الإشارة [منحنى/مستقيم/سهم/لا شيء]',
+    annotationText: 'أدخل السطر الأول من نص التعليق التوضيحي أو <خيارات>',
+    nextAnnotationLine: 'أدخل السطر التالي من نص التعليق التوضيحي',
+    annotationOptions:
+      'أدخل خيار التعليق التوضيحي [تفاوت/نسخ/كتلة/لا شيء/نص متعدد الأسطر]',
+    selectAnnotation: 'حدد كائن تعليق توضيحي لنسخه',
+    rejectAnnotation: 'لا يمكن استخدام الكائن كتعليق توضيحي لخط الإشارة.',
+    toleranceUnavailable: 'مربع حوار التفاوت الهندسي غير متوفر في هذا الإصدار.',
+    keywords: {
+      annotation: {
+        display: 'تعليق توضيحي(A)',
+        local: 'تعليق توضيحي',
+        global: 'Annotation'
+      },
+      format: {
+        display: 'تنسيق(F)',
+        local: 'تنسيق',
+        global: 'Format'
+      },
+      undo: {
+        display: 'تراجع(U)',
+        local: 'تراجع',
+        global: 'Undo'
+      },
+      spline: {
+        display: 'منحنى(S)',
+        local: 'منحنى',
+        global: 'Spline'
+      },
+      straight: {
+        display: 'مستقيم(T)',
+        local: 'مستقيم',
+        global: 'STraight'
+      },
+      arrow: {
+        display: 'سهم(A)',
+        local: 'سهم',
+        global: 'Arrow'
+      },
+      none: {
+        display: 'لا شيء(N)',
+        local: 'لا شيء',
+        global: 'None'
+      },
+      tolerance: {
+        display: 'تفاوت',
+        local: 'تفاوت',
+        global: 'Tolerance'
+      },
+      copy: {
+        display: 'نسخ(C)',
+        local: 'نسخ',
+        global: 'Copy'
+      },
+      block: {
+        display: 'كتلة(B)',
+        local: 'كتلة',
+        global: 'Block'
+      },
+      mtext: {
+        display: 'نص متعدد الأسطر(M)',
+        local: 'نص متعدد الأسطر',
+        global: 'Mtext'
+      }
+    }
+  },
+  mleader: {
+    arrowheadOrOptions:
+      'حدد موقع رأس سهم خط الإشارة أو [الكتف أولاً/المحتوى أولاً/خيارات]',
+    landingLocation: 'حدد موقع كتف خط الإشارة',
+    landingFirstPoint: 'حدد موقع كتف خط الإشارة',
+    arrowheadLocation: 'حدد موقع رأس سهم خط الإشارة',
+    contentLocation: 'حدد موقع المحتوى',
+    nextPoint: 'حدد النقطة التالية',
+    optionsPrompt:
+      'أدخل خيارًا [نوع خط الإشارة/الكتف/نوع المحتوى/الحد الأقصى للنقاط/الزاوية الأولى/الزاوية الثانية/الخروج من الخيارات]',
+    leaderTypePrompt: 'حدد نوع خط الإشارة [مستقيم/منحنى/لا شيء]',
+    landingPrompt: 'استخدام الكتف [نعم/لا]',
+    landingLength: 'حدد مسافة الكتف',
+    contentTypePrompt: 'حدد نوع المحتوى [كتلة/نص متعدد الأسطر/لا شيء]',
+    maxPoints: 'أدخل الحد الأقصى لنقاط خط الإشارة',
+    firstAngle: 'أدخل قيد الزاوية الأولى',
+    secondAngle: 'أدخل قيد الزاوية الثانية',
+    keywords: {
+      landingFirst: {
+        display: 'الكتف أولاً(L)',
+        local: 'الكتف أولاً',
+        global: 'Landing first'
+      },
+      contentFirst: {
+        display: 'المحتوى أولاً(C)',
+        local: 'المحتوى أولاً',
+        global: 'Content first'
+      },
+      options: {
+        display: 'خيارات(O)',
+        local: 'خيارات',
+        global: 'Options'
+      },
+      leaderType: {
+        display: 'نوع خط الإشارة(T)',
+        local: 'نوع خط الإشارة',
+        global: 'Leader type'
+      },
+      landing: {
+        display: 'الكتف(A)',
+        local: 'الكتف',
+        global: 'lAnding'
+      },
+      contentType: {
+        display: 'نوع المحتوى(C)',
+        local: 'نوع المحتوى',
+        global: 'Content type'
+      },
+      maxpoints: {
+        display: 'الحد الأقصى للنقاط(M)',
+        local: 'الحد الأقصى للنقاط',
+        global: 'Maxpoints'
+      },
+      firstAngle: {
+        display: 'الزاوية الأولى(F)',
+        local: 'الزاوية الأولى',
+        global: 'First angle'
+      },
+      secondAngle: {
+        display: 'الزاوية الثانية(S)',
+        local: 'الزاوية الثانية',
+        global: 'Second angle'
+      },
+      exitOptions: {
+        display: 'الخروج من الخيارات(X)',
+        local: 'الخروج من الخيارات',
+        global: 'eXit options'
+      },
+      straight: {
+        display: 'مستقيم(S)',
+        local: 'مستقيم',
+        global: 'Straight'
+      },
+      spline: {
+        display: 'منحنى(P)',
+        local: 'منحنى',
+        global: 'sPline'
+      },
+      noneLeader: {
+        display: 'لا شيء(N)',
+        local: 'لا شيء',
+        global: 'None'
+      },
+      yes: {
+        display: 'نعم(Y)',
+        local: 'نعم',
+        global: 'Yes'
+      },
+      no: {
+        display: 'لا(N)',
+        local: 'لا',
+        global: 'No'
+      },
+      block: {
+        display: 'كتلة(B)',
+        local: 'كتلة',
+        global: 'Block'
+      },
+      mtext: {
+        display: 'نص متعدد الأسطر(M)',
+        local: 'نص متعدد الأسطر',
+        global: 'Mtext'
+      },
+      none: {
+        display: 'لا شيء(N)',
+        local: 'لا شيء',
+        global: 'None'
+      }
+    }
+  },
+  mleaderedit: {
+    selectMLeader: 'حدد خط إشارة متعددًا',
+    rejectMLeader: 'يجب تحديد خط إشارة متعدد.',
+    arrowheadOrRemove: 'حدد موقع رأس سهم خط الإشارة أو [إزالة خطوط الإشارة]',
+    selectLeaderToRemove: 'حدد خط إشارة لإزالته أو اضغط Enter للإنهاء',
+    cannotRemoveLast: 'لا يمكن إزالة آخر خط إشارة من خط الإشارة المتعدد هذا.',
+    keywords: {
+      remove: {
+        display: 'إزالة خطوط الإشارة(R)',
+        local: 'إزالة',
+        global: 'Remove'
+      }
+    }
+  },
+  mtext: {
+    point: 'حدد نقطة إدراج النص متعدد الأسطر'
+  },
+  bmpout: {
+    boundsFirstCorner: 'حدد الركن الأول لحدود الصورة',
+    boundsSecondCorner: 'حدد الركن المقابل',
+    longSidePrompt: 'أدخل حجم الضلع الأطول بالبكسل'
+  },
+  jpgout: {
+    boundsFirstCorner: 'حدد الركن الأول لحدود الصورة',
+    boundsSecondCorner: 'حدد الركن المقابل',
+    longSidePrompt: 'أدخل حجم الضلع الأطول بالبكسل'
+  },
+  pngout: {
+    boundsFirstCorner: 'حدد الركن الأول لحدود الصورة',
+    boundsSecondCorner: 'حدد الركن المقابل',
+    longSidePrompt: 'أدخل حجم الضلع الأطول بالبكسل'
+  },
+  imageattach: {
+    insertionPoint: 'حدد نقطة الإدراج:',
+    scale: 'حدد معامل المقياس:',
+    rotation: 'حدد زاوية الدوران:',
+    invalidScale: 'يجب أن يكون معامل المقياس أكبر من 0.',
+    decodeFailed: 'فشلت قراءة ملف الصورة المحدد.'
+  },
+  insert: {
+    blockName: 'أدخل اسم الكتلة:',
+    insertionPoint: 'حدد نقطة الإدراج:',
+    scale: 'حدد معامل المقياس:',
+    rotation: 'حدد زاوية الدوران:',
+    invalidScale: 'يجب أن يكون معامل المقياس أكبر من 0.',
+    invalidBlockName: 'اسم الكتلة غير صالح.',
+    blockNotFound: 'الكتلة غير موجودة',
+    xrefNotAllowed: 'لا يمكن إدراج مرجع خارجي باستخدام -INSERT.'
+  },
+  xattach: {
+    insertionPoint: 'حدد نقطة الإدراج:',
+    scale: 'حدد معامل المقياس:',
+    rotation: 'حدد زاوية الدوران:',
+    invalidScale: 'يجب أن يكون معامل المقياس أكبر من 0.',
+    unsupportedFile: 'اختر ملف DWG أو DXF.',
+    loading: 'جارٍ تحميل المرجع الخارجي...',
+    loadFailed: 'فشلت قراءة ملف الرسم المحدد.'
+  },
+  point: {
+    point: 'حدد نقطة'
+  },
+  polygon: {
+    numberOfSides: 'أدخل عدد الأضلاع',
+    centerOrEdge: 'حدد مركز المضلع أو',
+    radiusOrType: 'أدخل الخيارات',
+    edgeStart: 'حدد نقطة النهاية الأولى للضلع',
+    edgeEnd: 'حدد نقطة النهاية الثانية للضلع',
+    keywords: {
+      edge: {
+        display: 'حافة(E)',
+        local: 'حافة',
+        global: 'Edge'
+      },
+      inscribed: {
+        display: 'داخل الدائرة(I)',
+        local: 'داخل الدائرة',
+        global: 'Inscribed'
+      },
+      circumscribed: {
+        display: 'محيط بالدائرة(C)',
+        local: 'محيط بالدائرة',
+        global: 'Circumscribed'
+      }
+    },
+    invalid: {
+      sides: 'عدد الأضلاع غير صالح. أدخل عددًا صحيحًا بين 3 و1024.',
+      radius: 'نصف القطر غير صالح. يجب أن يكون أكبر من 0.',
+      edge: 'الضلع غير صالح. يجب أن يكون طول الضلع أكبر من 0.'
+    }
+  },
+  polyline: {
+    firstPoint: 'حدد النقطة الأولى',
+    nextPoint: 'حدد النقطة التالية (أو اضغط Enter للإنهاء)',
+    nextPointWithOptions: 'حدد النقطة التالية أو',
+    nextPointWithArcOptions: 'حدد النقطة التالية أو',
+    keywords: {
+      arc: {
+        display: 'قوس(A)',
+        local: 'قوس',
+        global: 'Arc'
+      },
+      undo: {
+        display: 'تراجع(U)',
+        local: 'تراجع',
+        global: 'Undo'
+      },
+      close: {
+        display: 'إغلاق(C)',
+        local: 'إغلاق',
+        global: 'Close'
+      },
+      line: {
+        display: 'خط(L)',
+        local: 'خط',
+        global: 'Line'
+      },
+      angle: {
+        display: 'زاوية(A)',
+        local: 'زاوية',
+        global: 'Angle'
+      },
+      center: {
+        display: 'المركز(C)',
+        local: 'المركز',
+        global: 'Center'
+      },
+      secondPoint: {
+        display: 'النقطة الثانية(P)',
+        local: 'النقطة الثانية',
+        global: 'SecondPoint'
+      },
+      radius: {
+        display: 'نصف القطر(R)',
+        local: 'نصف القطر',
+        global: 'Radius'
+      }
+    },
+    arcAngle: 'حدد زاوية القوس',
+    arcCenter: 'حدد نقطة مركز القوس',
+    arcSecondPoint: 'حدد النقطة الثانية على القوس',
+    arcEndPoint: 'حدد نقطة نهاية القوس',
+    arcRadius: 'حدد نصف قطر القوس'
+  },
+  rect: {
+    firstPoint: 'حدد نقطة الركن الأول',
+    nextPoint: 'حدد نقطة الركن المقابل',
+    firstPointWithOptions: 'حدد نقطة الركن الأول أو',
+    otherCornerWithOptions: 'حدد نقطة الركن الآخر أو',
+    chamferFirst: 'حدد مسافة الشطف الأولى',
+    chamferSecond: 'حدد مسافة الشطف الثانية',
+    filletRadius: 'حدد نصف قطر التدوير',
+    segmentWidth: 'حدد عرض خط المستطيل',
+    elevationValue: 'حدد المنسوب',
+    thicknessValue: 'حدد السماكة',
+    rotationAngle: 'حدد زاوية دوران المستطيل',
+    dimensionLength: 'حدد طول المستطيل',
+    dimensionWidth: 'حدد عرض المستطيل',
+    areaValue: 'حدد مساحة المستطيل',
+    areaLengthOrWidth: 'حدد طول المستطيل',
+    areaSpecifyWidth: 'حدد عرض المستطيل',
+    invalidPositive: 'إدخال غير صالح. أدخل قيمة أكبر من 0.',
+    invalidRect: 'تعذر إنشاء المستطيل. حدد أركانًا أو أبعادًا صالحة.',
+    thicknessNotSupported:
+      'سماكة المستطيل لا تُكتب حاليًا إلى بيانات العنصر، لذلك سيتم تجاهل إعداد السماكة.',
+    keywords: {
+      chamfer: {
+        display: 'شطف(C)',
+        local: 'شطف',
+        global: 'Chamfer'
+      },
+      elevation: {
+        display: 'ارتفاع(E)',
+        local: 'ارتفاع',
+        global: 'Elevation'
+      },
+      fillet: {
+        display: 'تقويس(F)',
+        local: 'تقويس',
+        global: 'Fillet'
+      },
+      thickness: {
+        display: 'السماكة(T)',
+        local: 'السماكة',
+        global: 'Thickness'
+      },
+      width: {
+        display: 'العرض(W)',
+        local: 'العرض',
+        global: 'Width'
+      },
+      area: {
+        display: 'مساحة(A)',
+        local: 'مساحة',
+        global: 'Area'
+      },
+      dimensions: {
+        display: 'الأبعاد(D)',
+        local: 'الأبعاد',
+        global: 'Dimensions'
+      },
+      rotation: {
+        display: 'دوران(R)',
+        local: 'دوران',
+        global: 'Rotation'
+      },
+      length: {
+        display: 'طول(L)',
+        local: 'طول',
+        global: 'Length'
+      },
+      rectWidth: {
+        display: 'عرض المستطيل(W)',
+        local: 'عرض المستطيل',
+        global: 'Width'
+      }
+    }
+  },
+  rotate: {
+    basePoint: 'حدد نقطة الأساس',
+    rotationAngleOrOptions: 'حدد زاوية الدوران أو',
+    referenceAngleOrPoints: 'حدد الزاوية المرجعية أو',
+    firstReferencePoint: 'حدد النقطة الأولى للزاوية المرجعية',
+    secondReferencePoint: 'حدد النقطة الثانية',
+    newAngle: 'حدد الزاوية الجديدة',
+    keywords: {
+      copy: {
+        display: 'نسخ(C)',
+        local: 'نسخ',
+        global: 'Copy'
+      },
+      reference: {
+        display: 'مرجع(R)',
+        local: 'مرجع',
+        global: 'Reference'
+      },
+      points: {
+        display: 'نقاط(P)',
+        local: 'نقاط',
+        global: 'Points'
+      }
+    },
+    invalid: {
+      referencePoints:
+        'النقاط المرجعية غير صالحة: يجب أن تكون النقطتان مختلفتين.'
+    }
+  },
+  revcloud: {
+    firstCornerOrOptions: 'حدد نقطة الركن الأول أو',
+    firstCorner: 'حدد نقطة الركن الأول',
+    oppositeCorner: 'حدد الركن المقابل',
+    startPoint: 'حدد نقطة البداية',
+    nextPoint: 'حدد النقطة التالية',
+    nextPointOrUndo: 'حدد النقطة التالية أو',
+    firstPoint: 'حدد النقطة الأولى',
+    guideCursor: 'حرّك المؤشر على مسار السحابة (اضغط Enter للإنهاء)',
+    arcLength: 'حدد طول القوس',
+    selectObject: 'حدد عنصرًا',
+    style: 'أدخل نمط أقواس سحابة المراجعة',
+    reverseDirection: 'اعكس الاتجاه',
+    invalidArcLength: 'يجب أن يكون طول القوس أكبر من 0.',
+    invalidObject: 'لا يمكن تحويل العنصر المحدد إلى سحابة مراجعة.',
+    keywords: {
       arcLength: {
         display: 'طول القوس(A)',
         local: 'طول القوس',
@@ -1946,36 +1484,18 @@ export default {
         display: 'لا(N)',
         local: 'لا',
         global: 'No'
-      },
-    },
+      }
+    }
   },
-
   sketch: {
-    ...enJig.sketch,
-
-    specifySketch:
-      'حدد الرسم الحر أو',
-
-    sketching:
-      'حرّك المؤشر للرسم (انقر أو اضغط Enter للإيقاف)',
-
-    type:
-      'أدخل نوع الرسم الحر',
-
-    increment:
-      'حدد مقدار زيادة الرسم',
-
-    tolerance:
-      'حدد سماحية منحنى Spline',
-
-    firstPoint:
-      'حدد النقطة الأولى',
-
-    nextPoint:
-      'حدد نقطة النهاية'
-  ,
+    specifySketch: 'حدد الرسم الحر أو',
+    sketching: 'حرّك المؤشر للرسم (انقر أو اضغط Enter للإيقاف)',
+    type: 'أدخل نوع الرسم الحر',
+    increment: 'حدد مقدار زيادة الرسم',
+    tolerance: 'حدد سماحية منحنى Spline',
+    firstPoint: 'حدد النقطة الأولى',
+    nextPoint: 'حدد نقطة النهاية',
     keywords: {
-      ...enJig.sketch.keywords,
       type: {
         display: 'نوع(T)',
         local: 'نوع',
@@ -2005,46 +1525,166 @@ export default {
         display: 'منحنى سبلاين(S)',
         local: 'منحنى سبلاين',
         global: 'Spline'
-      },
-    },
+      }
+    }
   },
-
-  sysvar: {
-    ...enJig.sysvar,
-
-    prompt:
-      'أدخل القيمة الجديدة'
-  },
-
-  chtml: {
-    ...enJig.chtml,
-
-    exportFormat:
-      'تنسيق التصدير',
-
-    exportInvisibleLayers:
-      'تصدير الطبقات غير المرئية',
-
-    exportLayouts:
-      'تصدير المخططات',
-
-    background:
-      'لون الخلفية',
-
-    initialView:
-      'العرض الأولي عند فتح HTML',
-
-    viewerMode:
-      'وضع العارض دون اتصال',
-
-    chunkSizeMiB:
-      'حجم الجزء بالميبيبايت (حزمة متعددة الملفات)',
-
-    compressChunks:
-      'ضغط الأجزاء (حزمة متعددة الملفات)'
-  ,
+  spline: {
+    firstPoint: 'حدد النقطة الأولى',
+    nextPoint: 'حدد النقطة التالية (أو اضغط Enter للإنهاء)',
+    firstPointWithOptions: 'حدد النقطة الأولى أو',
+    nextPointWithFitOptions: 'حدد النقطة التالية أو',
+    nextPointWithCvOptions: 'حدد نقطة التحكم التالية أو',
+    methodPrompt: 'أدخل طريقة إنشاء Spline',
+    knotsPrompt: 'أدخل طريقة توزيع العقد',
+    degreePrompt: 'حدد درجة منحنى Spline',
     keywords: {
-      ...enJig.chtml.keywords,
+      method: {
+        display: 'طريقة(M)',
+        local: 'طريقة',
+        global: 'Method'
+      },
+      fit: {
+        display: 'ملاءمة(F)',
+        local: 'ملاءمة',
+        global: 'Fit'
+      },
+      cv: {
+        display: 'نقاط التحكم(C)',
+        local: 'نقاط التحكم',
+        global: 'CV'
+      },
+      knots: {
+        display: 'عُقد(K)',
+        local: 'عُقد',
+        global: 'Knots'
+      },
+      degree: {
+        display: 'درجة(D)',
+        local: 'درجة',
+        global: 'Degree'
+      },
+      undo: {
+        display: 'تراجع(U)',
+        local: 'تراجع',
+        global: 'Undo'
+      },
+      close: {
+        display: 'إغلاق(C)',
+        local: 'إغلاق',
+        global: 'Close'
+      },
+      chord: {
+        display: 'وتر(C)',
+        local: 'وتر',
+        global: 'Chord'
+      },
+      sqrtChord: {
+        display: 'جذر الوتر(S)',
+        local: 'جذر الوتر',
+        global: 'SqrtChord'
+      },
+      uniform: {
+        display: 'منتظم(U)',
+        local: 'منتظم',
+        global: 'Uniform'
+      }
+    }
+  },
+  objectscale: {
+    action: 'أدخل خيارًا',
+    scaleName: 'أدخل اسم مقياس التعليقات التوضيحية',
+    done: 'الكائنات المحدّثة',
+    none: '(لا شيء)',
+    keywords: {
+      add: {
+        display: 'إضافة(A)',
+        local: 'إضافة',
+        global: 'Add'
+      },
+      delete: {
+        display: 'حذف(D)',
+        local: 'حذف',
+        global: 'Delete'
+      },
+      list: {
+        display: 'قائمة(L)',
+        local: 'قائمة',
+        global: 'List'
+      }
+    }
+  },
+  sysvar: {
+    prompt: 'أدخل القيمة الجديدة'
+  },
+  view: {
+    enterName: 'أدخل اسم العرض المراد استعادته',
+    notFound: 'لم يتم العثور على العرض "{name}".'
+  },
+  zoom: {
+    mainPrompt: 'حدد ركن نافذة التكبير أو',
+    firstCorner: 'حدد الركن الأول',
+    secondCorner: 'حدد الركن المقابل',
+    centerPoint: 'حدد نقطة المركز',
+    heightOrScale: 'أدخل الارتفاع أو معامل المقياس (nX أو nXP)',
+    scaleFactor: 'أدخل معامل المقياس (nX أو nXP)',
+    keywords: {
+      all: {
+        display: 'الكل(A)',
+        local: 'الكل',
+        global: 'All'
+      },
+      center: {
+        display: 'المركز(C)',
+        local: 'المركز',
+        global: 'Center'
+      },
+      extents: {
+        display: 'الحدود(E)',
+        local: 'الحدود',
+        global: 'Extents'
+      },
+      previous: {
+        display: 'السابق(P)',
+        local: 'السابق',
+        global: 'Previous'
+      },
+      original: {
+        display: 'الأصلي(O)',
+        local: 'الأصلي',
+        global: 'Original'
+      },
+      saved: {
+        display: 'المحفوظ(V)',
+        local: 'المحفوظ',
+        global: 'Saved'
+      },
+      smart: {
+        display: 'ذكي(I)',
+        local: 'ذكي',
+        global: 'Smart'
+      },
+      scale: {
+        display: 'مقياس(S)',
+        local: 'مقياس',
+        global: 'Scale'
+      },
+      window: {
+        display: 'نافذة(W)',
+        local: 'نافذة',
+        global: 'Window'
+      }
+    }
+  },
+  chtml: {
+    exportFormat: 'تنسيق التصدير',
+    exportInvisibleLayers: 'تصدير الطبقات غير المرئية',
+    exportLayouts: 'تصدير المخططات',
+    background: 'لون الخلفية',
+    initialView: 'العرض الأولي عند فتح HTML',
+    viewerMode: 'وضع العارض دون اتصال',
+    chunkSizeMiB: 'حجم الجزء بالميبيبايت (حزمة متعددة الملفات)',
+    compressChunks: 'ضغط الأجزاء (حزمة متعددة الملفات)',
+    keywords: {
       single: {
         display: 'ملف واحد(S)',
         local: 'ملف واحد',
@@ -2099,19 +1739,15 @@ export default {
         display: 'حسب المساحة(S)',
         local: 'حسب المساحة',
         global: 'Space'
-      },
-    },
+      }
+    }
   },
-
   cpdf: {
-    ...enJig.cpdf,
-    modelSpaceFit:
-      'إطار مساحة النموذج',
+    modelSpaceFit: 'إطار مساحة النموذج',
     exportLayouts: 'تصدير المخططات',
     textMode: 'عرض النص',
     colorMode: 'وضع الألوان',
     keywords: {
-      ...enJig.cpdf.keywords,
       extents: {
         display: 'الامتدادات(E)',
         local: 'الامتدادات',
@@ -2121,6 +1757,16 @@ export default {
         display: 'العرض(D)',
         local: 'العرض',
         global: 'Display'
+      },
+      text: {
+        display: 'نص(T)',
+        local: 'نص',
+        global: 'Text'
+      },
+      vector: {
+        display: 'متجه(V)',
+        local: 'متجه',
+        global: 'Vector'
       },
       yes: {
         display: 'نعم(Y)',
@@ -2145,46 +1791,46 @@ export default {
     }
   },
   ucs: {
-    originOrOptions: 'Specify origin of UCS or',
-    pointOnXAxis: 'Specify point on X-axis or',
-    pointOnXyPlane: 'Specify point on XY plane or',
-    rotationAngle: 'Specify rotation angle about {axis} axis',
-    zAxisOrigin: 'Specify new origin point',
-    pointOnZAxis: 'Specify point on positive portion of Z-axis',
-    selectObject: 'Select object to align UCS',
-    namedOption: 'Enter an option',
-    enterName: 'Enter name of UCS to restore or [?]',
-    saveName: 'Enter name to save current UCS',
-    deleteName: 'Enter UCS name(s) to delete',
-    noPrevious: 'No previous UCS in this session.',
-    noNamed: 'No named UCS definitions.',
-    notFound: 'UCS "{name}" not found.',
-    invalidName: 'Invalid UCS name.',
-    invalidObject: 'Cannot align UCS to the selected object.',
+    originOrOptions: 'حدد نقطة أصل UCS أو',
+    pointOnXAxis: 'حدد نقطة على المحور X أو',
+    pointOnXyPlane: 'حدد نقطة على المستوى XY أو',
+    rotationAngle: 'حدد زاوية الدوران حول المحور {axis}',
+    zAxisOrigin: 'حدد نقطة الأصل الجديدة',
+    pointOnZAxis: 'حدد نقطة على الجزء الموجب من المحور Z',
+    selectObject: 'حدد كائنًا لمحاذاة UCS معه',
+    namedOption: 'أدخل خيارًا',
+    enterName: 'أدخل اسم UCS المراد استعادته أو [?]',
+    saveName: 'أدخل اسمًا لحفظ UCS الحالي',
+    deleteName: 'أدخل اسم (أسماء) UCS المراد حذفها',
+    noPrevious: 'لا يوجد UCS سابق في هذه الجلسة.',
+    noNamed: 'لا توجد تعريفات UCS مسماة.',
+    notFound: 'لم يتم العثور على UCS "{name}".',
+    invalidName: 'اسم UCS غير صالح.',
+    invalidObject: 'لا يمكن محاذاة UCS مع الكائن المحدد.',
     keywords: {
       named: {
-        display: 'NAmed(A)',
-        local: 'Named',
+        display: 'مسمى(A)',
+        local: 'مسمى',
         global: 'Named'
       },
       object: {
-        display: 'OBject(B)',
-        local: 'Object',
+        display: 'كائن(B)',
+        local: 'كائن',
         global: 'Object'
       },
       previous: {
-        display: 'Previous(P)',
-        local: 'Previous',
+        display: 'سابق(P)',
+        local: 'سابق',
         global: 'Previous'
       },
       view: {
-        display: 'View(V)',
-        local: 'View',
+        display: 'عرض(V)',
+        local: 'عرض',
         global: 'View'
       },
       world: {
-        display: 'World(W)',
-        local: 'World',
+        display: 'عالمي(W)',
+        local: 'عالمي',
         global: 'World'
       },
       x: {
@@ -2203,28 +1849,28 @@ export default {
         global: 'Z'
       },
       zAxis: {
-        display: 'ZAxis(N)',
-        local: 'ZAxis',
+        display: 'المحور Z(N)',
+        local: 'المحور Z',
         global: 'ZAxis'
       },
       apply: {
-        display: 'Apply(L)',
-        local: 'Apply',
+        display: 'تطبيق(L)',
+        local: 'تطبيق',
         global: 'Apply'
       },
       restore: {
-        display: 'Restore(R)',
-        local: 'Restore',
+        display: 'استعادة(R)',
+        local: 'استعادة',
         global: 'Restore'
       },
       save: {
-        display: 'Save(S)',
-        local: 'Save',
+        display: 'حفظ(S)',
+        local: 'حفظ',
         global: 'Save'
       },
       delete: {
-        display: 'Delete(D)',
-        local: 'Delete',
+        display: 'حذف(D)',
+        local: 'حذف',
         global: 'Delete'
       },
       list: {
@@ -2234,7 +1880,6 @@ export default {
       }
     }
   },
-
   group: {
     selectOrOption: 'حدد الكائنات أو',
     createOrOption: 'إنشاء مجموعة أو',
@@ -2332,8 +1977,7 @@ export default {
     listEntry: '{name}  {description}  [{selectable}]  ({count})',
     yes: 'نعم',
     no: 'لا',
-    enterNameOrBlank:
-      'أدخل اسم المجموعة أو اضغط Enter لمجموعة غير مسماة',
+    enterNameOrBlank: 'أدخل اسم المجموعة أو اضغط Enter لمجموعة غير مسماة',
     enterGroupName: 'أدخل اسم المجموعة',
     selectableSet: 'المجموعة {name} قابلة للتحديد = {value}',
     orderOption: 'أدخل خيار الترتيب',
@@ -2394,8 +2038,7 @@ export default {
   },
   ipdf: {
     pageNumber: 'أدخل رقم الصفحة (1-{count})',
-    insertionPoint:
-      'حدد نقطة الإدراج (المقياس {scale}، الوضع {mode}) أو',
+    insertionPoint: 'حدد نقطة الإدراج (المقياس {scale}، الوضع {mode}) أو',
     modePrompt: 'اختر طريقة الاستيراد',
     modeRecover: 'استعادة الرسم',
     modeVisual: 'الحفاظ على مظهر PDF',
@@ -2433,14 +2076,16 @@ export default {
       'تم تحويل {count} بُعد؛ يستخدم النمط PDF_DIM معامل مقياس خطي قدره {scale}.'
   },
   bsearch: {
-    unsupported: 'لا يمكن مطابقة أي من الكائنات المحددة (المدعوم: الخطوط والأقواس والدوائر والخطوط المتعددة والقطوع الناقصة والمنحنيات والنصوص والنصوص المتعددة ومراجع الكتل).',
+    unsupported:
+      'لا يمكن مطابقة أي من الكائنات المحددة (المدعوم: الخطوط والأقواس والدوائر والخطوط المتعددة والقطوع الناقصة والمنحنيات والنصوص والنصوص المتعددة ومراجع الكتل).',
     skipped: 'تم تجاهل {count} من الكائنات المحددة لأنه لا يمكن مطابقتها.',
     found: 'تم العثور على {count} نسخة مطابقة، سيتم تحويل {included}. اختر',
     noMatches: 'لم يتم العثور على نسخ أخرى.',
     reviewOne: 'النسخة {index}/{count} ({state})',
     included: 'مضمّنة',
     excluded: 'مستبعدة',
-    options: 'الدوران {rotation}، الانعكاس {mirror}، المقياس {scale}، نفس الطبقة {layer}، الكتل الموجودة {blocks}، اختلاف النص {text}. تبديل',
+    options:
+      'الدوران {rotation}، الانعكاس {mirror}، المقياس {scale}، نفس الطبقة {layer}، الكتل الموجودة {blocks}، اختلاف النص {text}. تبديل',
     on: 'تشغيل',
     off: 'إيقاف',
     target: 'تحويل إلى',
@@ -2453,7 +2098,8 @@ export default {
     blockNotFound: 'لم يتم العثور على الكتلة "{name}".',
     rotation: 'حدد زاوية دوران الكتلة',
     scale: 'حدد معامل مقياس الكتلة',
-    scope: 'هل تريد تحويل النسخ الـ {count} التي تم العثور عليها أيضًا، أم الكائنات المصدر فقط؟',
+    scope:
+      'هل تريد تحويل النسخ الـ {count} التي تم العثور عليها أيضًا، أم الكائنات المصدر فقط؟',
     summary: 'تم التحويل إلى الكتلة "{name}": {count} مرجع.',
     keywords: {
       convert: {
@@ -2585,8 +2231,7 @@ export default {
   pdftext: {
     enterText:
       'سطر النص {index}/{count}: أدخل النص المظلل (اتركه فارغًا للتخطي، Esc للإيقاف)',
-    enterTextWithSuggestion:
-      'سطر النص {index}/{count}: أدخل النص المظلل',
+    enterTextWithSuggestion: 'سطر النص {index}/{count}: أدخل النص المظلل',
     noCandidates: 'لم يتم العثور على خطوط تشبه النص في التحديد.',
     summary:
       'تم تحويل {converted} سطر نصي، منها {automatic} تلقائيًا؛ تم تخطي {skipped}.'

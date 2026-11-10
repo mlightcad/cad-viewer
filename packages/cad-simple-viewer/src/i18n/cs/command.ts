@@ -14,6 +14,10 @@ export default {
       description:
         'Ukládá identifikátor verze databáze výkresu (pouze pro čtení)'
     },
+    annoallvisible: {
+      description:
+        'Určuje, zda se zobrazují poznámkové objekty, které nepodporují aktuální měřítko poznámek'
+    },
     angbase: {
       description: 'Nastaví směr základního úhlu 0 vzhledem k aktuálnímu USS'
     },
@@ -33,6 +37,9 @@ export default {
     },
     bmpout: {
       description: 'Exportuje do BMP'
+    },
+    cannoscale: {
+      description: 'Nastaví název aktuálního měřítka poznámek'
     },
     cdxf: {
       description: 'Exportuje aktuální výkres do DXF'
@@ -151,7 +158,8 @@ export default {
       description: 'Vytváří a spravuje uložené sady objektů nazývané skupiny'
     },
     '-bsearch': {
-      description: 'Vyhledá shodnou geometrii a převede ji na bloky (příkazový řádek)',
+      description:
+        'Vyhledá shodnou geometrii a převede ji na bloky (příkazový řádek)',
       prompt: 'Vyberte objekty k vyhledání'
     },
     '-group': {
@@ -225,7 +233,8 @@ export default {
       prompt: 'Vyberte tahy textu k převodu'
     },
     pdfscale: {
-      description: 'Kalibruje importovanou geometrii PDF podle známé vzdálenosti',
+      description:
+        'Kalibruje importovanou geometrii PDF podle známé vzdálenosti',
       prompt: 'Vyberte objekty ke změně měřítka'
     },
     ipdf: {
@@ -386,16 +395,16 @@ export default {
       description: 'Nastaví barvu pozadí kreslicí oblasti modelového prostoru'
     },
     leader: {
-      description: 'Creates a leader line that connects annotation to a feature'
+      description: 'Vytvoří odkaz, který spojuje poznámku s prvkem'
     },
     mleader: {
-      description: 'Creates a multileader object'
+      description: 'Vytvoří objekt multiodkazu'
     },
     mleaderedit: {
-      description: 'Adds leader lines to, or removes leader lines from, a multileader'
+      description: 'Přidá do multiodkazu odkazové čáry nebo je z něj odebere'
     },
     mleadereditremove: {
-      description: 'Removes leader lines from a multileader'
+      description: 'Odebere odkazové čáry z multiodkazu'
     },
     mline: {
       description:
@@ -404,6 +413,11 @@ export default {
     move: {
       description: 'Posune vybrané objekty o vektor přemístění',
       prompt: 'Vyberte objekty'
+    },
+    objectscale: {
+      description:
+        'Přidá nebo odstraní podporovaná měřítka poznámek u vybraných poznámkových objektů',
+      prompt: 'Vyberte poznámkové objekty'
     },
     offset: {
       description:
@@ -420,7 +434,8 @@ export default {
         'Řídí, zda se do konzole zaznamenávají časové profily fází otevírání souboru'
     },
     openperf: {
-      description: 'Otevře paletu výkonu otevření s časy z posledního otevření výkresu'
+      description:
+        'Otevře paletu výkonu otevření s časy z posledního otevření výkresu'
     },
     orthomode: {
       description: 'Omezí pohyb kurzoru na vodorovnou nebo svislou osu'
@@ -558,6 +573,10 @@ export default {
     switchbg: {
       description: 'Přepíná pozadí oblasti výkresu mezi bílou a černou'
     },
+    readingmode: {
+      description:
+        'Přepíná režim čtení: černé čáry na bílém plátně pro snazší kontrolu'
+    },
     unisolateobjects: {
       description: 'Znovu zobrazí všechny objekty skryté příkazem HIDEOBJECTS'
     },
@@ -577,21 +596,22 @@ export default {
       description: 'Zvětší na maximální rozsah všech objektů'
     },
     view: {
-      description: 'Opens the View Manager to create, restore, and delete named views'
+      description:
+        'Otevře Správce pohledů pro vytváření, obnovení a odstraňování pojmenovaných pohledů'
     },
     newview: {
       description:
-        'Creates a new named view from the current display or a window'
+        'Vytvoří nový pojmenovaný pohled z aktuálního zobrazení nebo okna'
     },
     viewrestore: {
-      description: 'Restores a named view by name'
+      description: 'Obnoví pojmenovaný pohled podle názvu'
     },
     ucs: {
       description:
-        'Sets the origin and orientation of the current user coordinate system'
+        'Nastaví počátek a orientaci aktuálního uživatelského souřadnicového systému'
     },
     ucsman: {
-      description: 'Manages named UCS definitions and UCS icon settings'
+      description: 'Spravuje pojmenované definice USS a nastavení ikony USS'
     }
   },
   USER: {}

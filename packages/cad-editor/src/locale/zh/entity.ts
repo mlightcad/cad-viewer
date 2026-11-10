@@ -97,7 +97,7 @@ export default {
     floralwhite: '花卉白',
     forestgreen: '森林绿',
     fuchsia: '紫红色',
-    gainsboro: 'Gainsboro',
+    gainsboro: '庚斯博罗灰',
     ghostwhite: '幽灵白',
     gold: '金色',
     goldenrod: '金菊色',
