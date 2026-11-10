@@ -57,6 +57,10 @@ export default {
         'Smart Blocks: finds identical geometry and converts it into blocks',
       prompt: 'Select objects to search for'
     },
+    bdetect: {
+      description:
+        'Smart Blocks: finds repeated objects in the drawing and converts them into blocks'
+    },
     attdef: {
       description: 'Creates an attribute definition for a block'
     },

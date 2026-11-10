@@ -282,6 +282,8 @@ export default {
     tooltip: {
       searchConvert:
         'Find all copies of the selected objects and convert them into blocks (BSEARCH).',
+      detectConvert:
+        'Find repeated objects anywhere in the drawing and convert them into blocks (BDETECT).',
       importPdf: 'Import vector geometry from a PDF file, rebuilding circles, arcs and curves (IPDF).',
       pdfScale: 'Rescale imported PDF geometry from two points of a known distance (PDFSCALE).',
       pdfDim: 'Turn exploded PDF dimensions (arrows or ticks, lines, extension lines and texts) back into dimension objects (PDFDIM).',
@@ -442,6 +444,7 @@ export default {
     },
     command: {
       searchConvert: 'Search and\nConvert',
+      detectConvert: 'Detect and\nConvert',
       importPdf: 'Import\nPDF',
       pdfScale: 'Calibrate\nScale',
       pdfDim: 'Recover\nDims',
@@ -541,6 +544,25 @@ export default {
     existingBlocks: 'Existing blocks',
     textVariations: 'Text variations',
     pickPrompt: 'Click an instance to include or exclude it, or'
+  },
+  bdetect: {
+    detecting: 'Searching the drawing for repeated objects…',
+    foundSoFar: '{count} groups found so far',
+    stop: 'Stop',
+    groups: '{count} groups of repeated objects',
+    none: 'No repeated objects were found.',
+    selectAll: 'Select all',
+    instances: '{count} instances × {objects} objects',
+    layers: 'Layers: {layers}',
+    attributes: 'Attributes',
+    attributesHint: 'Texts that differ between instances become attributes',
+    blockName: 'Block name',
+    review: 'Review and convert this group…',
+    convertSelected: 'Convert selected ({count})',
+    close: 'Close',
+    pickPrompt: 'Click an object to show its group, or',
+    summary: 'Converted {groups} groups into {count} block references',
+    nameDuplicate: 'Block name "{name}" is used by another selected group'
   },
   verticalToolbar: {
     measure: {
@@ -892,6 +914,10 @@ export default {
         leader: 'Leader',
         table: 'Table'
       }
+    },
+    bdetect: {
+      tab: 'Detection',
+      title: 'Detect and Convert'
     },
     countList: {
       tab: 'Count',

@@ -279,6 +279,8 @@ export default {
     tooltip: {
       searchConvert:
         'ابحث عن جميع نسخ الكائنات المحددة وحوّلها إلى كتل (BSEARCH).',
+      detectConvert:
+        'ابحث عن الكائنات المتكررة في أي مكان من الرسم وحوّلها إلى كتل (BDETECT).',
       importPdf:
         'استيراد الهندسة المتجهية من ملف PDF مع إعادة بناء الدوائر والأقواس والمنحنيات (IPDF).',
       pdfScale:
@@ -420,6 +422,7 @@ export default {
     },
     command: {
       searchConvert: 'بحث\nوتحويل',
+      detectConvert: 'اكتشاف\nوتحويل',
       importPdf: 'استيراد\nPDF',
       pdfScale: 'معايرة\nالمقياس',
       pdfDim: 'استعادة\nالأبعاد',
@@ -519,6 +522,25 @@ export default {
     existingBlocks: 'الكتل الموجودة',
     textVariations: 'اختلاف النص',
     pickPrompt: 'انقر على نسخة لتضمينها أو استبعادها، أو'
+  },
+  bdetect: {
+    detecting: 'جارٍ البحث عن الكائنات المتكررة في الرسم…',
+    foundSoFar: 'تم العثور على {count} مجموعة حتى الآن',
+    stop: 'إيقاف',
+    groups: '{count} مجموعة من الكائنات المتكررة',
+    none: 'لم يتم العثور على كائنات متكررة.',
+    selectAll: 'تحديد الكل',
+    instances: '{count} نسخة × {objects} كائن',
+    layers: 'الطبقات: {layers}',
+    attributes: 'السمات',
+    attributesHint: 'تصبح النصوص المختلفة بين النسخ سمات',
+    blockName: 'اسم الكتلة',
+    review: 'مراجعة هذه المجموعة وتحويلها…',
+    convertSelected: 'تحويل المحدد ({count})',
+    close: 'إغلاق',
+    pickPrompt: 'انقر فوق كائن لعرض مجموعته، أو',
+    summary: 'تم تحويل {groups} مجموعة إلى {count} مرجع كتلة',
+    nameDuplicate: 'اسم الكتلة "{name}" مستخدم في مجموعة محددة أخرى'
   },
   verticalToolbar: {
     measure: {
@@ -866,6 +888,10 @@ export default {
         leader: 'خط إشارة',
         table: 'جدول'
       }
+    },
+    bdetect: {
+      tab: 'الاكتشاف',
+      title: 'اكتشاف وتحويل'
     },
     countList: {
       tab: 'العد',

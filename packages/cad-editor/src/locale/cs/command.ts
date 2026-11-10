@@ -5,6 +5,10 @@ export default {
         'Chytré bloky: vyhledá shodnou geometrii a převede ji na bloky',
       prompt: 'Vyberte objekty k vyhledání'
     },
+    bdetect: {
+      description:
+        'Chytré bloky: vyhledá opakující se objekty ve výkresu a převede je na bloky'
+    },
     hatch: {
       description: 'Vytváří šrafování pomocí kontextového pásu karet'
     },

@@ -15,6 +15,7 @@ import { markRaw } from 'vue'
 import {
   AcApAttDefCmd,
   AcApAttEditCmd,
+  AcApBDetectCmd,
   AcApBSearchCmd,
   AcApClassicGroupCmd,
   AcApCountListCmd,
@@ -245,6 +246,12 @@ export const registerCmds = () => {
       'bsearch',
       new AcApBSearchCmd(),
       'bconvert'
+    )
+    register.addCommand(
+      AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME,
+      'bdetect',
+      'bdetect',
+      new AcApBDetectCmd()
     )
     isCommandRegistered = true
   }
