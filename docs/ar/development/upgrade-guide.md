@@ -6,6 +6,26 @@ title: "ترقية cad-simple-viewer و cad-editor"
 
 يشرح هذا الدليل كيفية ترقية `@mlightcad/cad-simple-viewer` و`@mlightcad/cad-editor` بأمان — ولماذا لا يمكن رفعهما بمعزل عن غيرهما، وأي الحزم ذات الصلة يجب أن تتحرك معًا، وطريقتان موثوقتان لتحديد مجموعة الإصدارات المتوافقة الصحيحة لأي إصدار معين.
 
+::: info إعدادات نموذج الذكاء الاصطناعي المشتركة (`@mlightcad/cad-llm-plugin`)
+بدءًا من الإصدار الذي يتضمن هذا التغيير، تنتقل إعدادات مزودي LLM من `@mlightcad/cad-agent-plugin` إلى الحزمة الجديدة **`@mlightcad/cad-llm-plugin`**، فيتشارك وكيل CAD والتعرف على النص في `pdftext` (OCR) إعدادًا واحدًا. تضيف الحزمة الجديدة الأمر **LLMSETTINGS** ومربع حوار إعدادات لا يعتمد على إطار واجهة مستخدم (متاح أيضًا من علامة تبويب AI في الشريط ضمن `@mlightcad/cad-editor`)، وتضيف `@mlightcad/cad-simple-viewer` الخدمة `AcApLlmSettingsService` حتى تتمكن أي ميزة من فتح مربع الحوار أو التحقق من إعداد نموذج يدعم الصور.
+
+ترحيل التطبيقات المضيفة:
+
+- ثبّت `@mlightcad/cad-llm-plugin` (أصبحت تبعية peer للحزمة `@mlightcad/cad-agent-plugin`) واستدعِ `registerLazyLlmPlugin` بجانب `registerLazyAgentPlugin`. تقوم `@mlightcad/cad-editor` بذلك تلقائيًا عند تثبيت الحزمة.
+- لم تعد `registerLazyAgentPlugin` تسجّل أداة التعرف على النص. أصبح معرّف الأداة `cad-llm` (كان `cad-agent`) وتسجّلها `registerLazyLlmPlugin`. أصبحت `acapAgentRecognizeText` / `cleanRecognizedText` الآن `acapLlmRecognizeText` / `acapLlmCleanRecognizedText` في `@mlightcad/cad-llm-plugin`.
+- حلّ مربع الحوار محل بطاقة الإعدادات المضمنة في لوحة الوكيل، ويفتح زر الترس الأمر LLMSETTINGS.
+- تبقى الإعدادات المحفوظة كما هي: لم يتغير مفتاح `localStorage` المسمى `cad-agent-plugin.llm-config`.
+- عندما يدعم النموذج المستخدم النص فقط، يستخدم OCR أول نموذج مُعدّ يدعم الصور.
+
+```ts
+import { registerLazyAgentPlugin } from '@mlightcad/cad-agent-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyLlmPlugin(pluginManager)
+registerLazyAgentPlugin(pluginManager)
+```
+:::
+
 ::: info الكتل الذكية: بحث وتحويل (`BSEARCH`)
 بدءًا من الإصدار الذي يتضمن هذا التغيير، يسجّل `@mlightcad/cad-simple-viewer` الأمر **-BSEARCH** ويضيف `@mlightcad/cad-editor` الأمر **BSEARCH** (الاسم البديل `BCONVERT`) مع شريط مراجعة ومربع حوار التحويل إلى كتلة (في علامتي التبويب إدراج وAI).
 

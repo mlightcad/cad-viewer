@@ -2,6 +2,7 @@ import {
   type AcApContext,
   AcApDocManager,
   AcApI18n,
+  AcApLlmSettingsService,
   AcApTextRecognitionService,
   AcEdCommand,
   AcEdOpenMode,
@@ -56,6 +57,8 @@ const OCR_IMAGE_TEXT_HEIGHT = 48
 export class AcApPdfTextCmd extends AcEdCommand {
   private static readonly dictionary = new PdfGlyphDictionary()
   private static dictionaryLoaded = false
+  /** Set once the "OCR is off" hint was shown, so it does not nag. */
+  private static ocrHintShown = false
 
   /**
    * The shared glyph dictionary, loaded from `localStorage` on first use so
@@ -115,6 +118,8 @@ export class AcApPdfTextCmd extends AcEdCommand {
       this.notify(AcApI18n.t('jig.pdftext.noCandidates'), 'warning')
       return
     }
+
+    await this.hintWhenOcrUnavailable()
 
     const dictionary = AcApPdfTextCmd.glyphDictionary
     const editor = AcApDocManager.instance.editor
@@ -183,6 +188,18 @@ export class AcApPdfTextCmd extends AcEdCommand {
     this.notify(
       acapPdfT('jig.pdftext.summary', { converted, automatic, skipped })
     )
+  }
+
+  /**
+   * Tells the user once per session how to turn on OCR suggestions when the
+   * shared AI model settings report no image-capable model.
+   */
+  private async hintWhenOcrUnavailable() {
+    if (AcApPdfTextCmd.ocrHintShown) return
+    const status = await AcApLlmSettingsService.getStatus()
+    if (!status || status.vision) return
+    AcApPdfTextCmd.ocrHintShown = true
+    this.notify(AcApI18n.t('jig.pdftext.ocrNotConfigured'))
   }
 
   /** Asks registered recognizers for the line text, when any exist. */

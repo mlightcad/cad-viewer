@@ -13,7 +13,7 @@
  * @returns Trimmed URL with `/v1` appended when the path is empty, or
  *   `undefined` when the input is blank.
  */
-export function normalizeLlmBaseUrl(baseUrl: string): string | undefined {
+export function acapLlmNormalizeBaseUrl(baseUrl: string): string | undefined {
   const trimmed = baseUrl.trim().replace(/\/+$/, '')
   if (!trimmed) return undefined
 

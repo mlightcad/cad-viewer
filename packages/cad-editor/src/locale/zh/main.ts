@@ -209,6 +209,7 @@ export default {
     group: {
       smartBlocks: '智能块',
       agent: '智能体',
+      aiModel: 'AI 模型',
       pdf: 'PDF',
       draw: '绘制',
       dimension: '标注',
@@ -337,6 +338,8 @@ export default {
       editAttributes: '打开增强属性编辑器，编辑块属性值与显示特性（ATTEDIT）。',
       defineAttribute: '创建用于块的属性定义（ATTDEF）。',
       agent: '打开 CAD Agent 工具面板，使用自然语言描述并绘制图形。',
+      llmSettings:
+        '配置 CAD 智能体和 PDF 文字识别（OCR）使用的 AI 模型服务商和 API 密钥。',
       pan: '在不改变缩放比例的情况下平移图形显示。',
       zoom: '缩放图形显示。',
       zoomExtents: '缩放到显示所有对象的最大范围。',
@@ -467,6 +470,7 @@ export default {
       editAttributes: '编辑属性',
       defineAttribute: '定义属性',
       agent: 'CAD Agent',
+      llmSettings: '模型设置',
       pan: '平移',
       zoom: '缩放',
       zoomExtents: '范围',

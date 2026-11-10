@@ -1,13 +1,12 @@
 import type { AcApTextRecognitionRequest } from '@mlightcad/cad-simple-viewer'
 import { generateText } from 'ai'
 
+import { acapLlmCreateModel } from './model/AcApLlmModelFactory'
+import { acapLlmSkipDataUrlDownload } from './model/skipDataUrlDownload'
 import {
-  activeModelSupportsVision,
-  loadLlmConfig,
-  resolveActiveSettings
-} from '../storage/LlmSettingsStore'
-import { createModelFromSettings } from './createModel'
-import { skipDataUrlDownload } from './skipDataUrlDownload'
+  acapLlmLoadConfig,
+  acapLlmResolveVisionSettings
+} from './storage/AcApLlmConfigStore'
 
 const TEXT_RECOGNITION_SYSTEM_PROMPT = `You read text from images of CAD drawings.
 
@@ -20,22 +19,21 @@ reply with an empty message.`
 /**
  * Reads the text in a rendered stroke image with the configured LLM.
  *
- * Returns `undefined` when no API key is configured or the active model does
- * not accept images, so callers fall back to manual input. Registered as the
- * `cad-agent` recognizer in `AcApTextRecognitionService` by
- * `registerLazyAgentPlugin`.
+ * Uses the active model when it accepts images, otherwise the first
+ * vision-capable model of a configured provider (see
+ * {@link acapLlmResolveVisionSettings}). Returns `undefined` when there is
+ * none, so callers fall back to manual input. Registered as the `cad-llm`
+ * recognizer in `AcApTextRecognitionService` by `registerLazyLlmPlugin`.
  *
  * @param request - Image, optional context hint, locale and abort signal.
  * @returns Recognized text, or `undefined`.
  */
-export async function acapAgentRecognizeText(
+export async function acapLlmRecognizeText(
   request: AcApTextRecognitionRequest
 ): Promise<string | undefined> {
-  const config = await loadLlmConfig()
-  const settings = resolveActiveSettings(config)
-  if (!settings.apiKey.trim() || !activeModelSupportsVision(config)) {
-    return undefined
-  }
+  const config = await acapLlmLoadConfig()
+  const settings = acapLlmResolveVisionSettings(config)
+  if (!settings) return undefined
 
   const hints = [
     request.locale ? `UI language: ${request.locale}.` : '',
@@ -45,10 +43,10 @@ export async function acapAgentRecognizeText(
   ].filter(Boolean)
 
   const { text } = await generateText({
-    model: createModelFromSettings(settings),
+    model: acapLlmCreateModel(settings),
     system: TEXT_RECOGNITION_SYSTEM_PROMPT,
     abortSignal: request.signal,
-    experimental_download: skipDataUrlDownload,
+    experimental_download: acapLlmSkipDataUrlDownload,
     messages: [
       {
         role: 'user',
@@ -62,11 +60,11 @@ export async function acapAgentRecognizeText(
       }
     ]
   })
-  return cleanRecognizedText(text)
+  return acapLlmCleanRecognizedText(text)
 }
 
 /** Strips wrapping quotes / code fences some models add despite the prompt. */
-export function cleanRecognizedText(text: string): string | undefined {
+export function acapLlmCleanRecognizedText(text: string): string | undefined {
   let cleaned = text.trim()
   cleaned = cleaned.replace(/^```[a-z]*\s*|\s*```$/gi, '').trim()
   if (/^(["'“”‘’`]).*\1$/.test(cleaned) || /^“.*”$/.test(cleaned)) {

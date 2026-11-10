@@ -1,9 +1,9 @@
-import type { LlmApiProtocol } from '../storage/modelCatalog'
-import { ANTHROPIC_BROWSER_ACCESS_HEADER } from './anthropicBrowserAccess'
-import { normalizeLlmBaseUrl } from './normalizeLlmBaseUrl'
+import type { AcApLlmApiProtocol } from '../storage/AcApLlmModelCatalog'
+import { ACAP_LLM_ANTHROPIC_BROWSER_ACCESS_HEADER } from './anthropicBrowserAccess'
+import { acapLlmNormalizeBaseUrl } from './normalizeLlmBaseUrl'
 
 /** One model reported by a provider's model-listing endpoint. */
-export interface DiscoveredModel {
+export interface AcApLlmDiscoveredModel {
   /** Model id the endpoint accepts on requests. */
   id: string
   /** Display name, when the listing discloses one. */
@@ -11,9 +11,9 @@ export interface DiscoveredModel {
 }
 
 /** Endpoint facts needed to ask a provider which models it serves. */
-export interface ModelListingTarget {
+export interface AcApLlmModelListingTarget {
   /** Wire protocol, which decides the listing path and auth headers. */
-  protocol: LlmApiProtocol
+  protocol: AcApLlmApiProtocol
   /** Base URL as entered in the settings form. */
   baseUrl: string
   /** API key as entered in the settings form (may not be saved yet). */
@@ -21,22 +21,22 @@ export interface ModelListingTarget {
 }
 
 /** Why a model listing could not be read. */
-export type ModelListingErrorCode = 'network' | 'http' | 'format'
+export type AcApLlmModelListingErrorCode = 'network' | 'http' | 'format'
 
-/** Failure of {@link fetchAvailableModels}, carrying a UI-localizable code. */
-export class ModelListingError extends Error {
+/** Failure of {@link acapLlmFetchAvailableModels}, carrying a UI-localizable code. */
+export class AcApLlmModelListingError extends Error {
   /**
    * @param code - Failure category.
    * @param url - Listing URL that was requested.
    * @param status - HTTP status for `http` failures.
    */
   constructor(
-    readonly code: ModelListingErrorCode,
+    readonly code: AcApLlmModelListingErrorCode,
     readonly url: string,
     readonly status?: number
   ) {
     super(`Model listing failed (${code}) at ${url}`)
-    this.name = 'ModelListingError'
+    this.name = 'AcApLlmModelListingError'
   }
 }
 
@@ -57,11 +57,11 @@ const ANTHROPIC_MODEL_LIMIT = 1000
  * @param protocol - Wire protocol.
  * @returns Listing URL.
  */
-export function modelListingUrl(
+export function acapLlmModelListingUrl(
   baseUrl: string,
-  protocol: LlmApiProtocol
+  protocol: AcApLlmApiProtocol
 ): string {
-  const base = normalizeLlmBaseUrl(baseUrl) ?? ''
+  const base = acapLlmNormalizeBaseUrl(baseUrl) ?? ''
   if (protocol !== 'anthropic-messages') return `${base}/models`
   const root = base.endsWith('/v1') ? base.slice(0, -3) : base
   return `${root}/v1/models?limit=${ANTHROPIC_MODEL_LIMIT}`
@@ -84,9 +84,12 @@ function firstString(...candidates: unknown[]): string | undefined {
  *
  * @param body - Parsed JSON reply.
  * @returns Discovered models in listing order.
- * @throws {@link ModelListingError} with code `format` for other shapes.
+ * @throws {@link AcApLlmModelListingError} with code `format` for other shapes.
  */
-export function parseModelListing(body: unknown, url = ''): DiscoveredModel[] {
+export function acapLlmParseModelListing(
+  body: unknown,
+  url = ''
+): AcApLlmDiscoveredModel[] {
   const listing = body as { data?: unknown; models?: unknown } | null
   let entries: { key?: string; raw: unknown }[]
   if (Array.isArray(listing?.data)) {
@@ -100,10 +103,10 @@ export function parseModelListing(body: unknown, url = ''): DiscoveredModel[] {
       .filter(([, raw]) => !!raw && typeof raw === 'object')
       .map(([key, raw]) => ({ key, raw }))
   } else {
-    throw new ModelListingError('format', url)
+    throw new AcApLlmModelListingError('format', url)
   }
 
-  const models = new Map<string, DiscoveredModel>()
+  const models = new Map<string, AcApLlmDiscoveredModel>()
   for (const { key, raw } of entries) {
     const entry = (raw ?? {}) as Record<string, unknown>
     const id = firstString(key, entry.id)
@@ -122,21 +125,21 @@ export function parseModelListing(body: unknown, url = ''): DiscoveredModel[] {
  * @param fetchImpl - Fetch implementation (injectable for tests).
  * @param signal - Optional abort signal.
  * @returns Discovered models.
- * @throws {@link ModelListingError} on network, HTTP or format failures.
+ * @throws {@link AcApLlmModelListingError} on network, HTTP or format failures.
  */
-export async function fetchAvailableModels(
-  target: ModelListingTarget,
+export async function acapLlmFetchAvailableModels(
+  target: AcApLlmModelListingTarget,
   fetchImpl: typeof fetch = globalThis.fetch.bind(globalThis),
   signal?: AbortSignal
-): Promise<DiscoveredModel[]> {
-  const url = modelListingUrl(target.baseUrl, target.protocol)
+): Promise<AcApLlmDiscoveredModel[]> {
+  const url = acapLlmModelListingUrl(target.baseUrl, target.protocol)
   const apiKey = target.apiKey.trim()
   const headers: Record<string, string> =
     target.protocol === 'anthropic-messages'
       ? {
           'x-api-key': apiKey,
           'anthropic-version': ANTHROPIC_VERSION,
-          ...ANTHROPIC_BROWSER_ACCESS_HEADER
+          ...ACAP_LLM_ANTHROPIC_BROWSER_ACCESS_HEADER
         }
       : { Authorization: `Bearer ${apiKey}` }
 
@@ -146,17 +149,17 @@ export async function fetchAvailableModels(
   } catch (error) {
     if (signal?.aborted) throw error
     // Browsers report CORS refusals and unreachable hosts identically.
-    throw new ModelListingError('network', url)
+    throw new AcApLlmModelListingError('network', url)
   }
   if (!response.ok) {
-    throw new ModelListingError('http', url, response.status)
+    throw new AcApLlmModelListingError('http', url, response.status)
   }
 
   let body: unknown
   try {
     body = await response.json()
   } catch {
-    throw new ModelListingError('format', url)
+    throw new AcApLlmModelListingError('format', url)
   }
-  return parseModelListing(body, url)
+  return acapLlmParseModelListing(body, url)
 }

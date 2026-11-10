@@ -354,8 +354,27 @@ export const registerMTextColorPicker = () => {
 }
 
 let isLazyPluginRegistered = false
+let isLlmIntegrationStarted = false
 let isAgentIntegrationStarted = false
 let isScriptIntegrationStarted = false
+
+/**
+ * Registers the shared AI model settings (`llmsettings`, LLM text
+ * recognition for `pdftext`) when the optional `@mlightcad/cad-llm-plugin`
+ * peer is installed. The CAD Agent reads its model from these settings.
+ */
+const registerLlmIntegration = async (pluginManager: AcApPluginManager) => {
+  try {
+    const llmRegister = await import('@mlightcad/cad-llm-plugin/register')
+    llmRegister.mergeLlmI18nIntoVueI18n((locale, messages) => {
+      i18n.global.mergeLocaleMessage(locale, messages)
+    })
+    llmRegister.registerLazyLlmPlugin(pluginManager)
+    store.features.llmPlugin = true
+  } catch {
+    // Optional peer `@mlightcad/cad-llm-plugin` is not installed.
+  }
+}
 
 const registerAgentIntegration = async (pluginManager: AcApPluginManager) => {
   try {
@@ -429,8 +448,10 @@ export interface RegisterLazyPluginsOptions {
  * Registers lazy plugins that load on first use of their trigger commands.
  *
  * Currently registers the PDF plugin (`-cpdf`, `ipdf`), the HTML export
- * plugin (`-chtml`), the SVG export plugin (`csvg`), and optionally the CAD
- * Agent plugin (`agent`) when `@mlightcad/cad-agent-plugin` is installed, and the
+ * plugin (`-chtml`), the SVG export plugin (`csvg`), and optionally the AI
+ * model settings (`llmsettings`) when `@mlightcad/cad-llm-plugin` is
+ * installed, the CAD Agent plugin (`agent`) when
+ * `@mlightcad/cad-agent-plugin` is installed, and the
  * script console (`cadscript`) when `@mlightcad/cad-script-plugin` is installed.
  * When {@link AcApDocManager.disableExport} is true, HTML/SVG export plugins
  * are skipped and the PDF plugin only exposes `ipdf`. Host UI commands
@@ -454,6 +475,10 @@ export const registerLazyPlugins = (
     registerLazySvgPlugin(pluginManager)
   }
 
+  if (!isLlmIntegrationStarted) {
+    isLlmIntegrationStarted = true
+    void registerLlmIntegration(pluginManager)
+  }
   if (!isAgentIntegrationStarted) {
     isAgentIntegrationStarted = true
     void registerAgentIntegration(pluginManager)

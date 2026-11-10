@@ -6,6 +6,26 @@ title: "cad-simple-viewer ve cad-editor Yükseltme"
 
 Bu kılavuz, `@mlightcad/cad-simple-viewer` ve `@mlightcad/cad-editor` paketlerinin güvenli şekilde nasıl yükseltileceğini açıklar — neden tek başlarına yükseltilemeyeceklerini, hangi ilgili paketlerin birlikte hareket etmesi gerektiğini ve belirli bir sürüm için doğru uyumlu sürüm kümesini belirlemenin iki güvenilir yolunu.
 
+::: info Paylaşılan yapay zekâ modeli ayarları (`@mlightcad/cad-llm-plugin`)
+Bu değişikliği içeren sürümden itibaren LLM sağlayıcı ayarları `@mlightcad/cad-agent-plugin` paketinden yeni **`@mlightcad/cad-llm-plugin`** paketine taşınır; böylece CAD Ajanı ve `pdftext` metin tanıma (OCR) aynı yapılandırmayı paylaşır. Yeni paket **LLMSETTINGS** komutunu ve UI çatısından bağımsız bir ayar iletişim kutusunu (`@mlightcad/cad-editor` içindeki AI şerit sekmesinden de açılır) ekler; `@mlightcad/cad-simple-viewer` ise herhangi bir özelliğin iletişim kutusunu açabilmesi veya görüntü destekli bir modelin yapılandırılıp yapılandırılmadığını denetleyebilmesi için `AcApLlmSettingsService` ekler.
+
+Ana uygulamaları taşıma:
+
+- `@mlightcad/cad-llm-plugin` paketini kurun (artık `@mlightcad/cad-agent-plugin` için bir peer bağımlılığıdır) ve `registerLazyAgentPlugin` yanında `registerLazyLlmPlugin` çağırın. Paket kuruluysa `@mlightcad/cad-editor` bunu kendisi yapar.
+- `registerLazyAgentPlugin` artık bir metin tanıyıcı kaydetmez. Tanıyıcının kimliği artık `cad-llm` (önceden `cad-agent`) ve `registerLazyLlmPlugin` tarafından kaydedilir. `acapAgentRecognizeText` / `cleanRecognizedText` artık `@mlightcad/cad-llm-plugin` içindeki `acapLlmRecognizeText` / `acapLlmCleanRecognizedText` adlarını taşır.
+- Ajan panelindeki gömülü ayar kartının yerini iletişim kutusu alır; dişli düğmesi LLMSETTINGS komutunu açar.
+- Kaydedilmiş ayarlar korunur: `localStorage` anahtarı `cad-agent-plugin.llm-config` değişmedi.
+- Kullanılan model yalnızca metin destekliyorsa OCR, yapılandırılmış ilk görüntü destekli modeli kullanır.
+
+```ts
+import { registerLazyAgentPlugin } from '@mlightcad/cad-agent-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyLlmPlugin(pluginManager)
+registerLazyAgentPlugin(pluginManager)
+```
+:::
+
 ::: info Akıllı Bloklar: Ara ve Dönüştür (`BSEARCH`)
 Bu değişikliği içeren sürümden itibaren `@mlightcad/cad-simple-viewer` **-BSEARCH** komutunu kaydeder; `@mlightcad/cad-editor` inceleme araç çubuğu ve Bloğa Dönüştür iletişim kutusuyla **BSEARCH** (diğer adı `BCONVERT`) ekler (şeritte Ekle ve AI sekmeleri).
 

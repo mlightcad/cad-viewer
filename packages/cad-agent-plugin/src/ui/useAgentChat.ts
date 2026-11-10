@@ -1,4 +1,5 @@
 import { Chat } from '@ai-sdk/vue'
+import type { AcApLlmSettings } from '@mlightcad/cad-llm-plugin'
 import { shallowRef } from 'vue'
 
 import {
@@ -7,11 +8,10 @@ import {
   createCadAgent
 } from '../agent/createCadAgent'
 import type { AgentMode } from '../storage/AgentModeStore'
-import type { LlmSettings } from '../storage/LlmSettingsStore'
 
 /** Settings and runtime options passed into each chat session. */
 export interface AgentChatSessionConfig {
-  settings: LlmSettings
+  settings: AcApLlmSettings
   options: AgentChatOptions
 }
 

@@ -25,7 +25,8 @@ Single test file: `pnpm jest packages/<pkg>/__tests__/Foo.spec.ts`.
 - `cad-simple-viewer` -> `@mlightcad/cad-simple-viewer`: core logic, **no UI framework** (canvas only) — commands, documents, plugin system, i18n registry.
 - `cad-editor` -> `@mlightcad/cad-editor`: Vue 3 component/app (menus, ribbon, command line, status bar).
 - `three-renderer` / `pdf-renderer`: rendering engines (THREE.js batching, PDF output).
-- `*-plugin` (`cad-simple-ui`, `cad-script`, `cad-agent`, `cad-pdf`, `cad-html`, `cad-svg`, `cad-onedrive`, `cad-google-drive`): optional features, lazy-loaded.
+- `*-plugin` (`cad-simple-ui`, `cad-script`, `cad-llm`, `cad-agent`, `cad-pdf`, `cad-html`, `cad-svg`, `cad-onedrive`, `cad-google-drive`): optional features, lazy-loaded.
+- `cad-llm-plugin` -> `@mlightcad/cad-llm-plugin`: shared AI model (LLM) settings — config store, AI SDK model factory, framework-free settings dialog (`llmsettings`) and the LLM text recognizer. `cad-agent-plugin` depends on it; other features (e.g. `pdftext` OCR) reach it only through `AcApLlmSettingsService` / `AcApTextRecognitionService` in `cad-simple-viewer`, which must never import AI SDK code.
 - `cad-html-core` / `cad-html-exporter` / `cad-simple-viewer-cli` / `cad-mcp-server`: self-contained HTML export, CLI, MCP server.
 - `cad-pdf-core` / `cad-pdf-exporter`: shared PDF export pipeline (no `cad-simple-viewer` / DOM dependency) and the headless Node PDF exporter built on it; `cad-pdf-plugin` uses the same core in the browser.
 - `cad-svg-converter` -> `@mlightcad/cad-svg-converter`: SVG File → Open (`AcDbDatabaseConverter` for `'svg'`). Depends only on `data-model`. Hosts call `registerSvgConverter()` (`cad-editor` does this in `initializeCadViewer`). Export remains `cad-svg-plugin` (`csvg`).

@@ -6,6 +6,26 @@ title: "Upgrading cad-simple-viewer and cad-editor"
 
 This guide explains how to safely upgrade `@mlightcad/cad-simple-viewer` and`@mlightcad/cad-editor` — why they cannot be bumped in isolation, which related packages must move together, and two reliable ways to determine the correct compatible version set for any given release.
 
+::: info Shared AI model settings (`@mlightcad/cad-llm-plugin`)
+Starting with the release that includes this change, the LLM provider settings move out of `@mlightcad/cad-agent-plugin` into the new **`@mlightcad/cad-llm-plugin`**, so the CAD Agent and `pdftext` text recognition (OCR) share one configuration. The new package adds the **LLMSETTINGS** command, a framework-free settings dialog (also on the AI ribbon tab of `@mlightcad/cad-editor`), and `@mlightcad/cad-simple-viewer` adds `AcApLlmSettingsService` so any feature can open the dialog or check whether a vision model is configured.
+
+Migrate hosts:
+
+- Install `@mlightcad/cad-llm-plugin` (now a peer dependency of `@mlightcad/cad-agent-plugin`) and call `registerLazyLlmPlugin` next to `registerLazyAgentPlugin`. `@mlightcad/cad-editor` does this on its own when the package is installed.
+- `registerLazyAgentPlugin` no longer registers a text recognizer. The recognizer is now `cad-llm` (was `cad-agent`) and comes from `registerLazyLlmPlugin`. `acapAgentRecognizeText` / `cleanRecognizedText` are now `acapLlmRecognizeText` / `acapLlmCleanRecognizedText` in `@mlightcad/cad-llm-plugin`.
+- The agent panel's inline settings card is replaced by the dialog; its gear button opens LLMSETTINGS.
+- Saved settings are kept: the `localStorage` key `cad-agent-plugin.llm-config` is unchanged.
+- OCR falls back to the first image-capable configured model when the model in use is text-only.
+
+```ts
+import { registerLazyAgentPlugin } from '@mlightcad/cad-agent-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyLlmPlugin(pluginManager)
+registerLazyAgentPlugin(pluginManager)
+```
+:::
+
 ::: info Smart Blocks: Search and Convert (`BSEARCH`)
 Starting with the release that includes this change, `@mlightcad/cad-simple-viewer` registers **-BSEARCH** and `@mlightcad/cad-editor` adds **BSEARCH** (alias `BCONVERT`) with a review toolbar and a Convert to Block dialog (Insert and AI ribbon tabs).
 

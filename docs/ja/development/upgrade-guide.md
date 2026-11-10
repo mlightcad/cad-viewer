@@ -6,6 +6,26 @@ title: "cad-simple-viewer と cad-editor のアップグレード"
 
 このガイドでは、`@mlightcad/cad-simple-viewer` と`@mlightcad/cad-editor` を安全にアップグレードする方法を説明します。単独でバージョンを上げられない理由、一緒に更新する必要がある関連パッケージ、および任意のリリースに対して正しい互換バージョンのセットを判断する 2 つの信頼できる方法について説明します。
 
+::: info 共有 AI モデル設定（`@mlightcad/cad-llm-plugin`）
+この変更を含むリリースから、LLM プロバイダの設定は `@mlightcad/cad-agent-plugin` から新しい **`@mlightcad/cad-llm-plugin`** に移り、CAD エージェントと `pdftext` の文字認識（OCR）が同じ設定を共有します。新パッケージは **LLMSETTINGS** コマンドと UI フレームワークに依存しない設定ダイアログ（`@mlightcad/cad-editor` の AI リボン タブからも開けます）を提供し、`@mlightcad/cad-simple-viewer` には `AcApLlmSettingsService` が追加され、どの機能からもダイアログを開いたり、画像対応モデルが設定済みか確認したりできます。
+
+ホストの移行：
+
+- `@mlightcad/cad-llm-plugin`（`@mlightcad/cad-agent-plugin` の peer 依存になりました）をインストールし、`registerLazyAgentPlugin` と一緒に `registerLazyLlmPlugin` を呼び出します。パッケージがインストールされていれば、`@mlightcad/cad-editor` は自動的に登録します。
+- `registerLazyAgentPlugin` は文字認識器を登録しなくなりました。認識器の id は `cad-llm`（以前は `cad-agent`）になり、`registerLazyLlmPlugin` が登録します。`acapAgentRecognizeText` / `cleanRecognizedText` は `@mlightcad/cad-llm-plugin` の `acapLlmRecognizeText` / `acapLlmCleanRecognizedText` になりました。
+- エージェント パネル内の設定カードはダイアログに置き換わり、歯車ボタンで LLMSETTINGS が開きます。
+- 保存済みの設定はそのまま使えます。`localStorage` のキー `cad-agent-plugin.llm-config` は変わりません。
+- 使用中のモデルがテキスト専用の場合、OCR は設定済みで最初の画像対応モデルを使用します。
+
+```ts
+import { registerLazyAgentPlugin } from '@mlightcad/cad-agent-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyLlmPlugin(pluginManager)
+registerLazyAgentPlugin(pluginManager)
+```
+:::
+
 ::: info スマート ブロック：検索して変換（`BSEARCH`）
 本変更を含むリリース以降、`@mlightcad/cad-simple-viewer` は **-BSEARCH** を登録し、`@mlightcad/cad-editor` は確認ツールバーと「ブロックに変換」ダイアログを備えた **BSEARCH**（別名 `BCONVERT`）を追加します（リボンの「挿入」と「AI」タブ）。
 

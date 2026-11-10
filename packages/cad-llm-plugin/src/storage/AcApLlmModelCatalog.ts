@@ -2,20 +2,20 @@
  * Wire protocol a provider speaks. Each provider uses exactly one, so a
  * gateway that serves two protocols is configured as two providers.
  */
-export type LlmApiProtocol =
+export type AcApLlmApiProtocol =
   | 'openai-chat'
   | 'openai-responses'
   | 'anthropic-messages'
 
 /** Every protocol the settings UI offers, in display order. */
-export const LLM_API_PROTOCOLS: readonly LlmApiProtocol[] = [
+export const ACAP_LLM_API_PROTOCOLS: readonly AcApLlmApiProtocol[] = [
   'openai-chat',
   'openai-responses',
   'anthropic-messages'
 ]
 
 /** One model a provider serves, as listed in the model selector. */
-export interface LlmModelEntry {
+export interface AcApLlmModelEntry {
   /** Model id sent to the provider API. */
   id: string
   /** Optional human-readable label; the id is shown when absent. */
@@ -25,31 +25,27 @@ export interface LlmModelEntry {
 }
 
 /** Ids of the providers that ship with the plugin. */
-export type BuiltinProviderId =
+export type AcApLlmBuiltinProviderId =
   | 'deepseek'
   | 'deepseek-vl'
   | 'openai'
   | 'anthropic'
 
 /** Static description of a built-in provider. */
-export interface BuiltinProviderInfo {
+export interface AcApLlmBuiltinProviderInfo {
   /** Protocol the provider speaks. */
-  protocol: LlmApiProtocol
+  protocol: AcApLlmApiProtocol
   /** Default REST base URL. */
   baseUrl: string
   /** Models offered when the user has not customized the catalog. */
-  models: readonly LlmModelEntry[]
+  models: readonly AcApLlmModelEntry[]
 }
 
 /** Built-in providers in the order the provider dropdown lists them. */
-export const BUILTIN_PROVIDER_IDS: readonly BuiltinProviderId[] = [
-  'deepseek',
-  'deepseek-vl',
-  'openai',
-  'anthropic'
-]
+export const ACAP_LLM_BUILTIN_PROVIDER_IDS: readonly AcApLlmBuiltinProviderId[] =
+  ['deepseek', 'deepseek-vl', 'openai', 'anthropic']
 
-const OPENAI_MODELS: readonly LlmModelEntry[] = [
+const OPENAI_MODELS: readonly AcApLlmModelEntry[] = [
   { id: 'gpt-5.4-mini', name: 'GPT-5.4 Mini', vision: true },
   { id: 'gpt-5.4', name: 'GPT-5.4', vision: true },
   { id: 'gpt-5.5', name: 'GPT-5.5', vision: true },
@@ -58,9 +54,9 @@ const OPENAI_MODELS: readonly LlmModelEntry[] = [
   { id: 'gpt-5.6-sol', name: 'GPT-5.6 Sol', vision: true }
 ]
 
-/** Registry of built-in providers keyed by {@link BuiltinProviderId}. */
-export const BUILTIN_PROVIDERS: Readonly<
-  Record<BuiltinProviderId, BuiltinProviderInfo>
+/** Registry of built-in providers keyed by {@link AcApLlmBuiltinProviderId}. */
+export const ACAP_LLM_BUILTIN_PROVIDERS: Readonly<
+  Record<AcApLlmBuiltinProviderId, AcApLlmBuiltinProviderInfo>
 > = {
   deepseek: {
     protocol: 'openai-chat',
@@ -122,10 +118,12 @@ export const BUILTIN_PROVIDERS: Readonly<
  * Checks whether a provider id names a built-in provider.
  *
  * @param id - Provider id to test.
- * @returns `true` for ids in {@link BUILTIN_PROVIDER_IDS}.
+ * @returns `true` for ids in {@link ACAP_LLM_BUILTIN_PROVIDER_IDS}.
  */
-export function isBuiltinProviderId(id: string): id is BuiltinProviderId {
-  return (BUILTIN_PROVIDER_IDS as readonly string[]).includes(id)
+export function acapLlmIsBuiltinProviderId(
+  id: string
+): id is AcApLlmBuiltinProviderId {
+  return (ACAP_LLM_BUILTIN_PROVIDER_IDS as readonly string[]).includes(id)
 }
 
 /** Heuristic patterns for vision-capable models not listed in presets. */
@@ -158,7 +156,7 @@ const VISION_MODEL_PATTERNS = [
  * @param modelId - Model id to evaluate.
  * @returns `true` when the id matches a known vision model family.
  */
-export function guessModelVision(modelId: string): boolean {
+export function acapLlmGuessModelVision(modelId: string): boolean {
   return VISION_MODEL_PATTERNS.some(pattern => pattern.test(modelId))
 }
 
@@ -173,12 +171,12 @@ export function guessModelVision(modelId: string): boolean {
  * @param id - Edited model id.
  * @returns Vision flag for the edited row.
  */
-export function visionAfterIdEdit(
-  previous: LlmModelEntry,
+export function acapLlmVisionAfterIdEdit(
+  previous: AcApLlmModelEntry,
   id: string
 ): boolean {
-  return previous.vision === guessModelVision(previous.id)
-    ? guessModelVision(id)
+  return previous.vision === acapLlmGuessModelVision(previous.id)
+    ? acapLlmGuessModelVision(id)
     : previous.vision
 }
 
@@ -188,6 +186,6 @@ export function visionAfterIdEdit(
  * @param entry - Model entry.
  * @returns The entry name, or its id when unnamed.
  */
-export function modelLabel(entry: LlmModelEntry): string {
+export function acapLlmModelLabel(entry: AcApLlmModelEntry): string {
   return entry.name?.trim() || entry.id
 }

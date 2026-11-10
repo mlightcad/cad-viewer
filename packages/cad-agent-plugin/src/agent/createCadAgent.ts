@@ -1,4 +1,9 @@
 import {
+  acapLlmCreateModel,
+  type AcApLlmSettings,
+  acapLlmSkipDataUrlDownload
+} from '@mlightcad/cad-llm-plugin'
+import {
   type ChatTransport,
   convertToModelMessages,
   Experimental_Agent as Agent,
@@ -11,15 +16,10 @@ import {
 
 import { agentT } from '../i18n'
 import type { AgentMode } from '../storage/AgentModeStore'
-import type { LlmSettings } from '../storage/LlmSettingsStore'
 import { createCadTools } from '../tools/cadTools'
 import { formatChatError } from '../ui/formatChatError'
-import {
-  type AgentContextUsage,
-  buildAgentContextUsage
-} from './contextUsage'
+import { type AgentContextUsage, buildAgentContextUsage } from './contextUsage'
 import { extractConversationContext } from './conversationContext'
-import { createModelFromSettings } from './createModel'
 import { captureDrawingPreview } from './drawingPreviewCapture'
 import {
   buildVerificationFeedbackMessage,
@@ -27,7 +27,6 @@ import {
   verifyDrawing
 } from './drawingVerifier'
 import { normalizeInlineFileData } from './normalizeInlineFileData'
-import { skipDataUrlDownload } from './skipDataUrlDownload'
 import { buildCadAgentSystemPrompt } from './systemPrompt'
 import {
   appendAssistantText,
@@ -74,7 +73,7 @@ export const MAX_AGENT_STEPS_HIGH = 80
  * @returns An agent that streams responses and can invoke {@link createCadTools}.
  */
 export function createCadAgent(
-  settings: LlmSettings,
+  settings: AcApLlmSettings,
   options: AgentChatOptions = { agentMode: 'simple' }
 ) {
   const maxSteps =
@@ -82,7 +81,7 @@ export function createCadAgent(
       ? MAX_AGENT_STEPS_HIGH
       : MAX_AGENT_STEPS_SIMPLE
   return new Agent({
-    model: createModelFromSettings(settings),
+    model: acapLlmCreateModel(settings),
     system: buildCadAgentSystemPrompt(options.agentMode),
     tools: createCadTools({ agentMode: options.agentMode }),
     stopWhen: stepCountIs(maxSteps)
@@ -165,7 +164,7 @@ async function streamAgentRound(options: {
     prompt: modelMessages,
     abortSignal,
     // Skip redundant fetch of inline image data URLs (can stall large attachments).
-    experimental_download: skipDataUrlDownload,
+    experimental_download: acapLlmSkipDataUrlDownload,
     // Update the ring after every model step (not only when the round ends).
     onStepFinish: ({ usage }) => {
       reportContextUsage(usage, workingMessages)
@@ -223,7 +222,7 @@ function countCadToolParts(messages: UIMessage[]): number {
  */
 export function createAgentChatTransport(
   getAgent: () => Agent,
-  getSettings: () => LlmSettings,
+  getSettings: () => AcApLlmSettings,
   getOptions: () => AgentChatOptions
 ): ChatTransport<UIMessage> {
   return {

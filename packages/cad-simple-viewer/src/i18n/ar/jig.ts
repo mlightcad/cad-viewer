@@ -2232,6 +2232,8 @@ export default {
     enterText:
       'سطر النص {index}/{count}: أدخل النص المظلل (اتركه فارغًا للتخطي، Esc للإيقاف)',
     enterTextWithSuggestion: 'سطر النص {index}/{count}: أدخل النص المظلل',
+    ocrNotConfigured:
+      'التعرف على النص (OCR) متوقف: لم يتم إعداد نموذج ذكاء اصطناعي يدعم الصور. شغّل LLMSETTINGS لإعداده.',
     noCandidates: 'لم يتم العثور على خطوط تشبه النص في التحديد.',
     summary:
       'تم تحويل {converted} سطر نصي، منها {automatic} تلقائيًا؛ تم تخطي {skipped}.'

@@ -1,9 +1,9 @@
 import {
-  fetchAvailableModels,
-  ModelListingError,
-  modelListingUrl,
-  parseModelListing
-} from '../src/agent/fetchAvailableModels'
+  acapLlmFetchAvailableModels,
+  AcApLlmModelListingError,
+  acapLlmModelListingUrl,
+  acapLlmParseModelListing
+} from '../src/model/AcApLlmModelListing'
 
 function jsonResponse(body: unknown, status = 200): Response {
   return {
@@ -13,32 +13,35 @@ function jsonResponse(body: unknown, status = 200): Response {
   } as Response
 }
 
-describe('modelListingUrl', () => {
+describe('acapLlmModelListingUrl', () => {
   it('lists OpenAI protocols under the base URL', () => {
-    expect(modelListingUrl('https://api.deepseek.com/v1/', 'openai-chat')).toBe(
-      'https://api.deepseek.com/v1/models'
-    )
+    expect(
+      acapLlmModelListingUrl('https://api.deepseek.com/v1/', 'openai-chat')
+    ).toBe('https://api.deepseek.com/v1/models')
     // Host-only URLs get /v1, matching how chat requests are sent.
-    expect(modelListingUrl('https://relay.example', 'openai-responses')).toBe(
-      'https://relay.example/v1/models'
-    )
+    expect(
+      acapLlmModelListingUrl('https://relay.example', 'openai-responses')
+    ).toBe('https://relay.example/v1/models')
   })
 
   it('lists Anthropic under the root /v1/models', () => {
     const expected = 'https://api.anthropic.com/v1/models?limit=1000'
     expect(
-      modelListingUrl('https://api.anthropic.com/v1', 'anthropic-messages')
+      acapLlmModelListingUrl(
+        'https://api.anthropic.com/v1',
+        'anthropic-messages'
+      )
     ).toBe(expected)
     expect(
-      modelListingUrl('https://api.anthropic.com', 'anthropic-messages')
+      acapLlmModelListingUrl('https://api.anthropic.com', 'anthropic-messages')
     ).toBe(expected)
   })
 })
 
-describe('parseModelListing', () => {
+describe('acapLlmParseModelListing', () => {
   it('reads the standard data array, skipping bad and duplicate ids', () => {
     expect(
-      parseModelListing({
+      acapLlmParseModelListing({
         data: [
           { id: 'a', display_name: 'Model A' },
           { id: 'b' },
@@ -52,19 +55,21 @@ describe('parseModelListing', () => {
 
   it('reads a models map keyed by id', () => {
     expect(
-      parseModelListing({ models: { 'x-1': { name: 'X' }, meta: 3 } })
+      acapLlmParseModelListing({ models: { 'x-1': { name: 'X' }, meta: 3 } })
     ).toEqual([{ id: 'x-1', name: 'X' }])
   })
 
   it('rejects unknown shapes', () => {
-    expect(() => parseModelListing({ items: [] })).toThrow(ModelListingError)
+    expect(() => acapLlmParseModelListing({ items: [] })).toThrow(
+      AcApLlmModelListingError
+    )
   })
 })
 
-describe('fetchAvailableModels', () => {
+describe('acapLlmFetchAvailableModels', () => {
   it('sends a bearer token for OpenAI protocols', async () => {
     const fetchMock = jest.fn(async () => jsonResponse({ data: [{ id: 'm' }] }))
-    const models = await fetchAvailableModels(
+    const models = await acapLlmFetchAvailableModels(
       {
         protocol: 'openai-chat',
         baseUrl: 'https://x.example/v1',
@@ -81,7 +86,7 @@ describe('fetchAvailableModels', () => {
 
   it('sends Anthropic headers for Anthropic Messages', async () => {
     const fetchMock = jest.fn(async () => jsonResponse({ data: [] }))
-    await fetchAvailableModels(
+    await acapLlmFetchAvailableModels(
       {
         protocol: 'anthropic-messages',
         baseUrl: 'https://api.anthropic.com/v1',
@@ -108,11 +113,11 @@ describe('fetchAvailableModels', () => {
       apiKey: 'k'
     }
     await expect(
-      fetchAvailableModels(target, (async () =>
+      acapLlmFetchAvailableModels(target, (async () =>
         jsonResponse({}, 401)) as unknown as typeof fetch)
     ).rejects.toMatchObject({ code: 'http', status: 401 })
     await expect(
-      fetchAvailableModels(target, (async () => {
+      acapLlmFetchAvailableModels(target, (async () => {
         throw new TypeError('Failed to fetch')
       }) as unknown as typeof fetch)
     ).rejects.toMatchObject({

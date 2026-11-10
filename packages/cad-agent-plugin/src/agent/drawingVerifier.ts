@@ -1,9 +1,10 @@
+import {
+  acapLlmCreateModel,
+  type AcApLlmSettings,
+  acapLlmSkipDataUrlDownload
+} from '@mlightcad/cad-llm-plugin'
 import { generateObject } from 'ai'
 import { z } from 'zod'
-
-import type { LlmSettings } from '../storage/LlmSettingsStore'
-import { createModelFromSettings } from './createModel'
-import { skipDataUrlDownload } from './skipDataUrlDownload'
 
 /** Maximum number of screenshot verification rounds per user message. */
 export const MAX_VERIFICATION_ATTEMPTS = 5
@@ -43,13 +44,13 @@ export type DrawingVerificationResult = z.infer<typeof verificationSchema>
  * @param drawingImage - PNG data URL of the current drawing.
  */
 export async function verifyDrawing(
-  settings: LlmSettings,
+  settings: AcApLlmSettings,
   userRequest: string,
   referenceImages: string[],
   drawingImage: string,
   abortSignal?: AbortSignal
 ): Promise<DrawingVerificationResult> {
-  const model = createModelFromSettings(settings)
+  const model = acapLlmCreateModel(settings)
   const userContent: Array<
     { type: 'text'; text: string } | { type: 'image'; image: string }
   > = [
@@ -80,7 +81,7 @@ export async function verifyDrawing(
     system: VERIFICATION_SYSTEM_PROMPT,
     schema: verificationSchema,
     abortSignal,
-    experimental_download: skipDataUrlDownload,
+    experimental_download: acapLlmSkipDataUrlDownload,
     messages: [
       {
         role: 'user',

@@ -7,6 +7,7 @@
       "@mlightcad/cad-agent-core",
       "@mlightcad/cad-script-core",
       "@mlightcad/cad-agent-plugin",
+      "@mlightcad/cad-llm-plugin",
       "@mlightcad/cad-script-plugin",
       "@mlightcad/cad-google-drive-plugin",
       "@mlightcad/cad-html-core",

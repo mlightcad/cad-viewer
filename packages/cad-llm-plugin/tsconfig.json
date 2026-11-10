@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "resolveJsonModule": true,
+    "rootDir": "./src",
+    "outDir": "./lib",
+    "skipLibCheck": true,
+    "paths": {
+      "@mlightcad/cad-llm-plugin": [
+        "./src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "src"
+  ]
+}

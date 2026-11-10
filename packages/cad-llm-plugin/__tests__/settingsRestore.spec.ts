@@ -1,39 +1,39 @@
 import {
-  createBuiltinProviderConfig,
-  createDefaultLlmConfig,
-  ensureActiveProvider,
-  restoreModelEntries
-} from '../src/storage/LlmSettingsStore'
+  acapLlmCreateBuiltinProvider,
+  acapLlmCreateDefaultConfig,
+  acapLlmEnsureActiveProvider,
+  acapLlmRestoreModelEntries
+} from '../src/storage/AcApLlmConfigStore'
 import {
-  BUILTIN_PROVIDERS,
-  visionAfterIdEdit
-} from '../src/storage/modelCatalog'
+  ACAP_LLM_BUILTIN_PROVIDERS,
+  acapLlmVisionAfterIdEdit
+} from '../src/storage/AcApLlmModelCatalog'
 
-describe('visionAfterIdEdit', () => {
+describe('acapLlmVisionAfterIdEdit', () => {
   it('follows the id guess while typing a new model id', () => {
     // Typed character by character: "g" alone is not a vision model, but the
     // finished id is, so the flag must not freeze at the first keystroke.
     let row = { id: '', vision: false }
     for (const id of ['g', 'gp', 'gpt-4', 'gpt-4o']) {
-      row = { id, vision: visionAfterIdEdit(row, id) }
+      row = { id, vision: acapLlmVisionAfterIdEdit(row, id) }
     }
     expect(row.vision).toBe(true)
   })
 
   it('keeps a flag the user set explicitly', () => {
     expect(
-      visionAfterIdEdit({ id: 'my-model', vision: true }, 'my-model-2')
+      acapLlmVisionAfterIdEdit({ id: 'my-model', vision: true }, 'my-model-2')
     ).toBe(true)
     expect(
-      visionAfterIdEdit({ id: 'gpt-4o', vision: false }, 'gpt-4o-mini')
+      acapLlmVisionAfterIdEdit({ id: 'gpt-4o', vision: false }, 'gpt-4o-mini')
     ).toBe(false)
   })
 })
 
-describe('restoreModelEntries', () => {
+describe('acapLlmRestoreModelEntries', () => {
   it('drops malformed entries and coerces vision', () => {
     expect(
-      restoreModelEntries([
+      acapLlmRestoreModelEntries([
         { id: 'a', vision: true },
         { id: 'b', name: 'B' },
         { id: '' },
@@ -48,20 +48,23 @@ describe('restoreModelEntries', () => {
   })
 
   it('returns null for a missing catalog', () => {
-    expect(restoreModelEntries(undefined)).toBeNull()
+    expect(acapLlmRestoreModelEntries(undefined)).toBeNull()
   })
 })
 
-describe('ensureActiveProvider', () => {
+describe('acapLlmEnsureActiveProvider', () => {
   it('keeps a known active provider', () => {
-    const config = createDefaultLlmConfig()
-    expect(ensureActiveProvider(config)).toBe(config)
+    const config = acapLlmCreateDefaultConfig()
+    expect(acapLlmEnsureActiveProvider(config)).toBe(config)
   })
 
   it('falls back when the active custom provider no longer exists', () => {
-    const deepseek = { ...createBuiltinProviderConfig('deepseek'), apiKey: 'k' }
+    const deepseek = {
+      ...acapLlmCreateBuiltinProvider('deepseek'),
+      apiKey: 'k'
+    }
     expect(
-      ensureActiveProvider({
+      acapLlmEnsureActiveProvider({
         providers: [deepseek],
         activeProviderId: 'gone-gateway',
         activeModel: 'some-model'
@@ -69,7 +72,7 @@ describe('ensureActiveProvider', () => {
     ).toEqual({
       providers: [deepseek],
       activeProviderId: 'deepseek',
-      activeModel: BUILTIN_PROVIDERS.deepseek.models[0].id
+      activeModel: ACAP_LLM_BUILTIN_PROVIDERS.deepseek.models[0].id
     })
   })
 })
