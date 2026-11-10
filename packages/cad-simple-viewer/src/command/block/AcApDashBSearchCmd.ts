@@ -114,7 +114,7 @@ export class AcApDashBSearchCmd extends AcEdCommand {
       allowScale: false,
       matchLayer: true,
       includeExistingBlocks: false,
-      textVariations: false
+      textVariations: true
     }
   }
 

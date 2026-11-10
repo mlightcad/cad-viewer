@@ -68,7 +68,7 @@ export interface AcEdShapeMatch<Id = unknown> {
 }
 
 /** Tuning for {@link acedFindShapeMatches}. */
-export interface AcEdShapeMatchOptions {
+export interface AcEdShapeMatchOptions<Id = unknown> {
   /** Absolute tolerance. Default: 0.2 % of the template extent. */
   tolerance?: number
   /** Accept rotated copies. Default `true`. */
@@ -82,6 +82,13 @@ export interface AcEdShapeMatchOptions {
    * differ still match. Default `false`.
    */
   ignoreLabels?: boolean
+  /**
+   * Extra check of a found copy, e.g. that it also carries matching texts.
+   * Returning `false` makes the search try the copy's other transforms
+   * (symmetric shapes have several) before giving up on it. Called at most
+   * once per accepted copy with `true`, so it may record state.
+   */
+  accept?: (match: AcEdShapeMatch<Id>) => boolean
 }
 
 /** Applies an affine map to a point. */
@@ -258,7 +265,7 @@ function pointSetsMatch(
 export function acedFindShapeMatches<Id>(
   template: AcEdShapeFeature<Id>[],
   candidates: AcEdShapeFeature<Id>[],
-  options: AcEdShapeMatchOptions = {}
+  options: AcEdShapeMatchOptions<Id> = {}
 ): AcEdShapeMatch<Id>[] {
   if (template.length === 0) return []
   const extent = extentOf(template)
@@ -365,7 +372,9 @@ export function acedFindShapeMatches<Id>(
     if (!allowScale && Math.abs(scale - 1) * lever > tol * 2) return undefined
     if (!allowRotation && Math.abs(r) * lever > tol) return undefined
     const ids = tryTransform(t, scale)
-    return ids ? { transform: t, rotation: r, scale, mirrored, ids } : undefined
+    if (!ids) return undefined
+    const match = { transform: t, rotation: r, scale, mirrored, ids }
+    return !options.accept || options.accept(match) ? match : undefined
   }
 
   const matches: AcEdShapeMatch<Id>[] = []

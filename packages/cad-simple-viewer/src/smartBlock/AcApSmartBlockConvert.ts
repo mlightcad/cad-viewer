@@ -251,8 +251,8 @@ export function acapConvertSmartBlock(
     ref.scaleFactors = new AcGePoint3d(scale, mirrored ? -scale : scale, 1)
     ref.layer = layer
     for (const spec of attributes) {
-      const source =
-        texts[spec.index] ?? (template.entities[spec.index] as AcDbText)
+      const source = texts[spec.index]
+      if (!source) continue
       const attr = new AcDbAttribute()
       copyText(source, attr)
       attr.tag = spec.tag
@@ -273,7 +273,7 @@ export function acapConvertSmartBlock(
     addReference(
       match.transform,
       match.blockReference
-        ? template.entities.map(() => undefined)
+        ? referenceTexts(db, template, match, attributeIndices)
         : textAt(match.ids)
     )
   }
@@ -282,6 +282,73 @@ export function acapConvertSmartBlock(
   const replaced = [...template.ids, ...instances.flatMap(m => m.ids)]
   const erasedCount = new AcApEntityService(db).eraseEntities(replaced)
   return { blockName, references, erasedCount }
+}
+
+/**
+ * Texts that supply the attributes of an existing block reference instance.
+ * It has no loose text of its own, so each attribute takes the reference's
+ * attribute found where the template text lands (its value and placement);
+ * without one, the template text moved onto the reference.
+ */
+function referenceTexts(
+  db: AcDbDatabase,
+  template: AcApSmartBlockTemplate,
+  match: AcApSmartBlockMatch,
+  indices: ReadonlySet<number>
+): (AcDbText | undefined)[] {
+  const ref = db.tables.blockTable.getEntityById(match.ids[0])
+  const own =
+    ref instanceof AcDbBlockReference ? [...ref.attributeIterator()] : []
+  const used = new Set<AcDbAttribute>()
+  const t = match.transform
+  const matrix = new AcGeMatrix3d().set(
+    t.a,
+    t.c,
+    0,
+    t.e,
+    t.b,
+    t.d,
+    0,
+    t.f,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    1
+  )
+  return template.entities.map((entity, i) => {
+    if (!indices.has(i) || !(entity instanceof AcDbText)) return undefined
+    const center = extentsCenter(entity)
+    const expected = {
+      x: t.a * center.x + t.c * center.y + t.e,
+      y: t.b * center.x + t.d * center.y + t.f
+    }
+    let best: AcDbAttribute | undefined
+    let bestDist = entity.height * match.scale
+    for (const attr of own) {
+      if (used.has(attr)) continue
+      const c = extentsCenter(attr)
+      const d = Math.hypot(c.x - expected.x, c.y - expected.y)
+      if (d <= bestDist) {
+        best = attr
+        bestDist = d
+      }
+    }
+    if (best) {
+      used.add(best)
+      return best
+    }
+    return (entity.clone() as AcDbText).transformBy(matrix)
+  })
+}
+
+function extentsCenter(text: AcDbText): AcEdPoint2d {
+  const ext = text.geometricExtents
+  if (ext.isEmpty()) return { x: text.position.x, y: text.position.y }
+  return { x: (ext.min.x + ext.max.x) / 2, y: (ext.min.y + ext.max.y) / 2 }
 }
 
 function isTextSpec(spec: AcApSmartBlockAttributeSpec) {

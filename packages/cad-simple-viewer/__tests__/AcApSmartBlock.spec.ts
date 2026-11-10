@@ -2,6 +2,7 @@
  * @jest-environment node
  */
 import {
+  AcDbArc,
   AcDbAttribute,
   AcDbAttributeDefinition,
   AcDbBlockReference,
@@ -12,7 +13,8 @@ import {
   AcDbLine,
   AcDbText,
   AcGeMatrix3d,
-  AcGePoint3d} from '@mlightcad/data-model'
+  AcGePoint3d
+} from '@mlightcad/data-model'
 
 import {
   acapAllocateBlockName,
@@ -20,7 +22,8 @@ import {
   acapFindEquivalentBlocks,
   acapInvertAffine2d,
   AcApSmartBlockSearch,
-  acapValidateNewBlockName} from '../src/smartBlock'
+  acapValidateNewBlockName
+} from '../src/smartBlock'
 import { acapRunDatabaseEdit } from '../src/util/AcApDatabaseEdit'
 
 /** Door-like symbol: frame, leaf, marker circle and optional label. */
@@ -173,12 +176,14 @@ describe('Smart Blocks search and convert', () => {
     place(db, at(100, 0), '101')
     place(db, at(200, 0), '102')
 
-    const exact = new AcApSmartBlockSearch(db, source)
+    const exact = new AcApSmartBlockSearch(db, source, {
+      textVariations: false
+    })
     expect(exact.matches).toHaveLength(1)
 
-    const search = new AcApSmartBlockSearch(db, source, {
-      textVariations: true
-    })
+    // Text variations are on by default, like AutoCAD's TEXTTOATTRIBUTE.
+    const search = new AcApSmartBlockSearch(db, source)
+    expect(search.options.textVariations).toBe(true)
     expect(search.matches).toHaveLength(2)
     expect(search.variableTexts).toEqual([3])
 
@@ -200,6 +205,103 @@ describe('Smart Blocks search and convert', () => {
       return attrs.map(a => `${a.tag}=${a.textString}`).join()
     })
     expect(values.sort()).toEqual(['NUMBER=101', 'NUMBER=101', 'NUMBER=102'])
+  })
+
+  test('texts are located by place, not matched as geometry', () => {
+    // Axis bubbles: two arcs and a left-aligned label whose insertion point
+    // moves with the string length (as in PDF imports).
+    const bubble = (x: number, label: string, layer = '0') => {
+      const arcs = [
+        new AcDbArc(new AcGePoint3d(x, 0, 0), 20, Math.PI, 2 * Math.PI),
+        new AcDbArc(new AcGePoint3d(x, 0, 0), 20, 0, Math.PI)
+      ]
+      const text = new AcDbText()
+      text.textString = label
+      text.height = 20
+      text.widthFactor = 0.6
+      text.position = new AcGePoint3d(x - 3 * label.length, -4, 0)
+      text.layer = layer
+      const entities = [...arcs, text]
+      db.tables.blockTable.modelSpace.appendEntity(entities)
+      return entities.map(e => e.objectId)
+    }
+    const source = bubble(0, '1')
+    bubble(100, '10')
+    bubble(200, 'B')
+    bubble(300, '1')
+    // Same geometry without a label is not a copy of a labelled bubble.
+    db.tables.blockTable.modelSpace.appendEntity([
+      new AcDbArc(new AcGePoint3d(400, 0, 0), 20, Math.PI, 2 * Math.PI),
+      new AcDbArc(new AcGePoint3d(400, 0, 0), 20, 0, Math.PI)
+    ])
+    // A label far outside its bubble does not belong to it.
+    const far = bubble(500, '7')
+    const farText = db.tables.blockTable.getEntityById(far[2]) as AcDbText
+    farText.position = new AcGePoint3d(560, -4, 0)
+
+    const search = new AcApSmartBlockSearch(db, source)
+    expect(search.matches).toHaveLength(3)
+    expect(search.matches.map(m => m.texts[2])).toEqual(['10', 'B', '1'])
+    expect(search.variableTexts).toEqual([2])
+
+    // TEXTTOATTRIBUTE = 0: only the identical label, still found although
+    // the geometry match does not depend on the text.
+    search.setOptions({ textVariations: false })
+    expect(search.matches.map(m => m.texts[2])).toEqual(['1'])
+
+    search.setOptions({ textVariations: true })
+    const result = acapConvertSmartBlock(db, search.template, search.matches, {
+      target: {
+        kind: 'new',
+        name: 'AXIS',
+        basePoint: { x: 0, y: 0 },
+        attributes: [{ index: 2, tag: 'NO' }]
+      }
+    })
+    const values = result.references.map(ref =>
+      ([...ref.attributeIterator()] as AcDbAttribute[])
+        .map(a => a.textString)
+        .join()
+    )
+    expect(values).toEqual(['1', '10', 'B', '1'])
+  })
+
+  test('existing references keep their own attribute values and places', () => {
+    // An existing ROOMDEF reference at (500, 500), rotated by 90°, whose
+    // attribute reads 201.
+    const defSource = place(db, at(500, 500, Math.PI / 2), '201')
+    const defSearch = new AcApSmartBlockSearch(db, defSource)
+    acapConvertSmartBlock(db, defSearch.template, [], {
+      target: {
+        kind: 'new',
+        name: 'ROOMDEF',
+        basePoint: { x: 500, y: 500 },
+        attributes: [{ index: 3, tag: 'NO' }]
+      }
+    })
+
+    const source = place(db, at(0, 0), '101')
+    const search = new AcApSmartBlockSearch(db, source, {
+      includeExistingBlocks: true
+    })
+    expect(search.matches).toHaveLength(1)
+    expect(search.matches[0].blockReference).toBe(true)
+
+    const result = acapConvertSmartBlock(db, search.template, search.matches, {
+      target: {
+        kind: 'new',
+        name: 'ROOM',
+        basePoint: { x: 0, y: 0 },
+        attributes: [{ index: 3, tag: 'NUMBER' }]
+      }
+    })
+    const [, converted] = result.references
+    const [attr] = [...converted.attributeIterator()] as AcDbAttribute[]
+    expect(attr.textString).toBe('201')
+    // The label at (2, 1) of the symbol, rotated by 90° about (500, 500).
+    expect(attr.position.x).toBeCloseTo(499)
+    expect(attr.position.y).toBeCloseTo(502)
+    expect(attr.rotation).toBeCloseTo(Math.PI / 2)
   })
 
   test('finds references of an equivalent block and converts into it', () => {

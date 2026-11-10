@@ -113,7 +113,13 @@ test('BSEARCH reviews matches and converts them into a block', async ({
   await page.locator('[data-ribbon-button-id="cmd-bsearch"]:visible').click()
 
   const bar = page.getByTestId('bsearch-review-bar')
-  // B and C match; D differs in its text, the decoy in its geometry.
+  // Text variations start on (TEXTTOATTRIBUTE = 1): B, C and D match, the
+  // decoy differs in its geometry.
+  await expect(page.getByTestId('bsearch-count')).toHaveText(
+    '3 instances found, 3 included'
+  )
+  // Without text variations D, whose text differs, drops out.
+  await bar.getByText('Text variations').click()
   await expect(page.getByTestId('bsearch-count')).toHaveText(
     '2 instances found, 2 included'
   )
