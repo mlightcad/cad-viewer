@@ -2126,6 +2126,8 @@ export default {
       'Řádek textu {index}/{count}: zadejte zvýrazněný text (prázdné přeskočí, Esc ukončí)',
     enterTextWithSuggestion:
       'Řádek textu {index}/{count}: zadejte zvýrazněný text',
+    ocrNotConfigured:
+      'Rozpoznávání textu (OCR) je vypnuté: není nakonfigurován žádný model AI s podporou obrázků. Nastavte ho příkazem LLMSETTINGS.',
     noCandidates: 'Ve výběru nebyly nalezeny žádné tahy podobné textu.',
     summary:
       'Převedeno {converted} řádků textu, z toho {automatic} automaticky; přeskočeno {skipped}.'

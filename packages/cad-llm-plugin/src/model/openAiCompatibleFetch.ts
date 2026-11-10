@@ -24,7 +24,7 @@ function convertDeveloperRoles(items: MessageLike[] | undefined): void {
  * @param baseFetch - Underlying fetch implementation (defaults to `globalThis.fetch`).
  * @returns A fetch function that normalizes message roles before sending.
  */
-export function createOpenAiCompatibleFetch(
+export function acapLlmCreateOpenAiCompatibleFetch(
   baseFetch: typeof fetch = globalThis.fetch.bind(globalThis)
 ): typeof fetch {
   return async (input, init) => {

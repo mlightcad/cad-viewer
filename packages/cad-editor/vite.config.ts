@@ -71,7 +71,7 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       },
       minify: true,
       rollupOptions: {
-        // PDF/HTML/SVG/Agent plugins are peers; loaded at runtime via dynamic import
+        // PDF/HTML/SVG/LLM/Agent plugins are peers; loaded at runtime via dynamic import
         external: [
           '@mlightcad/cad-pdf-plugin',
           '@mlightcad/cad-html-plugin',
@@ -79,6 +79,8 @@ export default defineConfig(({ mode }: ConfigEnv) => {
           '@mlightcad/cad-agent-plugin',
           '@mlightcad/cad-agent-plugin/register',
           '@mlightcad/cad-agent-plugin/style.css',
+          '@mlightcad/cad-llm-plugin',
+          '@mlightcad/cad-llm-plugin/register',
           '@mlightcad/cad-script-plugin',
           '@mlightcad/cad-script-plugin/register',
           '@mlightcad/cad-script-plugin/style.css'

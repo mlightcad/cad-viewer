@@ -2131,6 +2131,8 @@ export default {
       '文字行 {index}/{count}: ハイライトされた文字を入力（空欄でスキップ、Esc で終了）',
     enterTextWithSuggestion:
       '文字行 {index}/{count}: ハイライトされた文字を入力',
+    ocrNotConfigured:
+      '文字認識（OCR）は無効です：画像に対応した AI モデルが設定されていません。LLMSETTINGS を実行して設定してください。',
     noCandidates: '選択内に文字らしいストロークが見つかりません。',
     summary:
       '{converted} 行を変換しました（自動認識 {automatic} 行）。スキップ {skipped} 行。'

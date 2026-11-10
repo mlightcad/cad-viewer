@@ -48,14 +48,13 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.0",
-    "@ai-sdk/openai": "^2.0.0",
     "@ai-sdk/vue": "^2.0.0",
     "ai": "^5.0.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
     "@mlightcad/cad-agent-core": "workspace:*",
+    "@mlightcad/cad-llm-plugin": "workspace:*",
     "@mlightcad/cad-script-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
     "@mlightcad/data-model": "1.15.25",
@@ -66,6 +65,7 @@
   },
   "peerDependencies": {
     "@mlightcad/cad-agent-core": "workspace:^",
+    "@mlightcad/cad-llm-plugin": "workspace:^",
     "@mlightcad/cad-script-core": "workspace:^",
     "@mlightcad/cad-simple-viewer": "workspace:^",
     "@mlightcad/data-model": "1.15.25",

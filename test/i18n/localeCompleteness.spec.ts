@@ -11,6 +11,7 @@
  */
 import { agentCommandDescriptions } from '../../packages/cad-agent-plugin/src/i18n/command'
 import { ACEX_HTML_MESSAGES } from '../../packages/cad-html-core/src/AcExHtmlI18n'
+import { llmCommandDescriptions } from '../../packages/cad-llm-plugin/src/i18n/command'
 import { scriptCommandDescriptions } from '../../packages/cad-script-plugin/src/i18n/command'
 import { scriptExampleCopyByLocale } from '../../packages/cad-script-plugin/src/i18n/exampleCopy'
 
@@ -49,6 +50,8 @@ const CATALOGS: Record<string, (locale: Locale) => unknown> = {
     loadDefault(`${PKG}/cad-editor-demo/src/locale/${l}`)(),
   'cad-agent-plugin': l => loadNamed(`${PKG}/cad-agent-plugin/src/i18n/${l}`)(),
   'cad-agent-plugin/command': l => fromRecord(agentCommandDescriptions, l),
+  'cad-llm-plugin': l => loadNamed(`${PKG}/cad-llm-plugin/src/i18n/${l}`)(),
+  'cad-llm-plugin/command': l => fromRecord(llmCommandDescriptions, l),
   'cad-script-plugin': l =>
     loadNamed(`${PKG}/cad-script-plugin/src/i18n/${l}`)(),
   'cad-script-plugin/command': l => fromRecord(scriptCommandDescriptions, l),

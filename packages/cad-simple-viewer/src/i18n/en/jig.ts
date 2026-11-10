@@ -2093,6 +2093,8 @@ export default {
       'Text line {index}/{count}: enter the highlighted text (leave empty to skip, Esc to stop)',
     enterTextWithSuggestion:
       'Text line {index}/{count}: enter the highlighted text',
+    ocrNotConfigured:
+      'Text recognition (OCR) is off: no image-capable AI model is configured. Run LLMSETTINGS to set one up.',
     noCandidates: 'No text-like strokes found in the selection.',
     summary:
       'Converted {converted} text line(s), {automatic} recognized automatically; skipped {skipped}.'

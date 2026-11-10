@@ -2124,6 +2124,8 @@ export default {
     enterText:
       '문자 줄 {index}/{count}: 강조 표시된 문자 입력 (비워 두면 건너뛰기, Esc 종료)',
     enterTextWithSuggestion: '문자 줄 {index}/{count}: 강조 표시된 문자 입력',
+    ocrNotConfigured:
+      '문자 인식(OCR)이 꺼져 있습니다. 이미지를 지원하는 AI 모델이 설정되지 않았습니다. LLMSETTINGS를 실행하여 설정하십시오.',
     noCandidates: '선택 항목에서 문자처럼 보이는 획을 찾지 못했습니다.',
     summary: '{converted}줄 변환 ({automatic}줄 자동 인식), {skipped}줄 건너뜀.'
   },

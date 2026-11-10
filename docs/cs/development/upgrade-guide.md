@@ -6,6 +6,26 @@ title: "Upgrade cad-simple-viewer a cad-editor"
 
 Tato příručka vysvětluje, jak bezpečně upgradovat `@mlightcad/cad-simple-viewer` a `@mlightcad/cad-editor` — proč je nelze navyšovat izolovaně, které související balíčky se musí posunout společně a jaké existují dva spolehlivé způsoby, jak pro dané vydání určit správnou kompatibilní sadu verzí.
 
+::: info Sdílené nastavení modelu AI (`@mlightcad/cad-llm-plugin`)
+Od vydání, které obsahuje tuto změnu, se nastavení poskytovatelů LLM přesouvá z `@mlightcad/cad-agent-plugin` do nového balíčku **`@mlightcad/cad-llm-plugin`**, takže CAD agent i rozpoznávání textu `pdftext` (OCR) sdílejí jednu konfiguraci. Nový balíček přidává příkaz **LLMSETTINGS** a dialog nastavení nezávislý na UI frameworku (dostupný i na kartě AI pásu karet v `@mlightcad/cad-editor`) a `@mlightcad/cad-simple-viewer` přidává `AcApLlmSettingsService`, přes který může jakákoli funkce dialog otevřít nebo zjistit, zda je nakonfigurován model s podporou obrázků.
+
+Migrace hostitelských aplikací:
+
+- Nainstalujte `@mlightcad/cad-llm-plugin` (nyní peer závislost `@mlightcad/cad-agent-plugin`) a vedle `registerLazyAgentPlugin` volejte `registerLazyLlmPlugin`. `@mlightcad/cad-editor` to při nainstalovaném balíčku udělá sám.
+- `registerLazyAgentPlugin` už neregistruje rozpoznávač textu. Rozpoznávač má nyní id `cad-llm` (dříve `cad-agent`) a registruje ho `registerLazyLlmPlugin`. Z `acapAgentRecognizeText` / `cleanRecognizedText` jsou nyní `acapLlmRecognizeText` / `acapLlmCleanRecognizedText` v `@mlightcad/cad-llm-plugin`.
+- Vloženou kartu nastavení v panelu agenta nahrazuje dialog; tlačítko s ozubeným kolem otevře LLMSETTINGS.
+- Uložená nastavení zůstávají: klíč `localStorage` `cad-agent-plugin.llm-config` se nemění.
+- Pokud používaný model podporuje jen text, OCR použije první nakonfigurovaný model s podporou obrázků.
+
+```ts
+import { registerLazyAgentPlugin } from '@mlightcad/cad-agent-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyLlmPlugin(pluginManager)
+registerLazyAgentPlugin(pluginManager)
+```
+:::
+
 ::: info Chytré bloky: Vyhledat a převést (`BSEARCH`)
 Od vydání, které obsahuje tuto změnu, registruje `@mlightcad/cad-simple-viewer` příkaz **-BSEARCH** a `@mlightcad/cad-editor` přidává **BSEARCH** (alias `BCONVERT`) s panelem pro kontrolu a dialogem Převést na blok (karty Vložit a AI na pásu karet).
 

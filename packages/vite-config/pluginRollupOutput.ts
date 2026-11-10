@@ -74,6 +74,7 @@ export const PLUGIN_PACKAGE_IDS = [
   'cad-html-plugin',
   'cad-svg-plugin',
   'cad-simple-ui-plugin',
+  'cad-llm-plugin',
   'cad-agent-plugin',
   'cad-script-plugin',
   'cad-onedrive-plugin',

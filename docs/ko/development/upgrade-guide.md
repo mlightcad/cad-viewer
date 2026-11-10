@@ -6,6 +6,26 @@ title: "cad-simple-viewer 및 cad-editor 업그레이드"
 
 이 가이드는 `@mlightcad/cad-simple-viewer`와 `@mlightcad/cad-editor`를 안전하게 업그레이드하는 방법을 설명합니다. 즉, 왜 이들을 개별적으로 올릴 수 없는지, 어떤 관련 패키지가 함께 이동해야 하는지, 그리고 주어진 릴리스에 대해 올바른 호환 버전 집합을 확인하는 두 가지 신뢰할 수 있는 방법을 다룹니다.
 
+::: info 공유 AI 모델 설정(`@mlightcad/cad-llm-plugin`)
+이 변경이 포함된 릴리스부터 LLM 공급자 설정이 `@mlightcad/cad-agent-plugin`에서 새 **`@mlightcad/cad-llm-plugin`**으로 옮겨져, CAD 에이전트와 `pdftext` 문자 인식(OCR)이 같은 설정을 공유합니다. 새 패키지는 **LLMSETTINGS** 명령과 UI 프레임워크에 의존하지 않는 설정 대화상자(`@mlightcad/cad-editor`의 AI 리본 탭에서도 열 수 있음)를 제공하며, `@mlightcad/cad-simple-viewer`에는 `AcApLlmSettingsService`가 추가되어 어떤 기능에서든 대화상자를 열거나 이미지 지원 모델이 설정되었는지 확인할 수 있습니다.
+
+호스트 마이그레이션:
+
+- `@mlightcad/cad-llm-plugin`(이제 `@mlightcad/cad-agent-plugin`의 peer 의존성)을 설치하고 `registerLazyAgentPlugin`과 함께 `registerLazyLlmPlugin`을 호출합니다. 패키지가 설치되어 있으면 `@mlightcad/cad-editor`가 자동으로 등록합니다.
+- `registerLazyAgentPlugin`은 더 이상 문자 인식기를 등록하지 않습니다. 인식기 id는 `cad-llm`(이전 `cad-agent`)이며 `registerLazyLlmPlugin`이 등록합니다. `acapAgentRecognizeText` / `cleanRecognizedText`는 `@mlightcad/cad-llm-plugin`의 `acapLlmRecognizeText` / `acapLlmCleanRecognizedText`로 바뀌었습니다.
+- 에이전트 패널의 내장 설정 카드는 대화상자로 대체되며, 톱니바퀴 버튼이 LLMSETTINGS를 엽니다.
+- 저장된 설정은 유지됩니다. `localStorage` 키 `cad-agent-plugin.llm-config`는 바뀌지 않습니다.
+- 사용 중인 모델이 텍스트 전용이면 OCR은 설정된 첫 번째 이미지 지원 모델을 사용합니다.
+
+```ts
+import { registerLazyAgentPlugin } from '@mlightcad/cad-agent-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyLlmPlugin(pluginManager)
+registerLazyAgentPlugin(pluginManager)
+```
+:::
+
 ::: info 스마트 블록: 검색 및 변환(`BSEARCH`)
 이 변경이 포함된 릴리스부터 `@mlightcad/cad-simple-viewer`는 **-BSEARCH**를 등록하고, `@mlightcad/cad-editor`는 검토 도구막대와 블록으로 변환 대화상자가 있는 **BSEARCH**(별칭 `BCONVERT`)를 추가합니다(리본의 삽입 및 AI 탭).
 

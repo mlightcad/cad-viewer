@@ -211,6 +211,7 @@ export default {
     group: {
       smartBlocks: 'スマート ブロック',
       agent: 'エージェント',
+      aiModel: 'AI モデル',
       pdf: 'PDF',
       draw: '作成',
       dimension: '寸法',
@@ -356,6 +357,8 @@ export default {
       defineAttribute: 'ブロックで使用する属性定義を作成します (ATTDEF)。',
       agent:
         'CAD エージェント パレット タブを開き、自然言語で図形を作成します。',
+      llmSettings:
+        'CAD エージェントと PDF の文字認識（OCR）で使用する AI モデルのプロバイダと API キーを設定します。',
       pan: '表示倍率を変更せずに図面の表示を移動します。',
       zoom: '図面の表示をズームします。',
       zoomExtents:
@@ -497,6 +500,7 @@ export default {
       editAttributes: '属性\n編集',
       defineAttribute: '属性\n定義',
       agent: 'CAD\nエージェント',
+      llmSettings: 'モデル\n設定',
       pan: '画面移動',
       zoom: 'ズーム',
       zoomExtents: 'オブジェクト範囲',

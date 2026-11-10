@@ -151,12 +151,6 @@ importers:
 
   packages/cad-agent-plugin:
     dependencies:
-      '@ai-sdk/anthropic':
-        specifier: ^2.0.0
-        version: 2.0.84(zod@3.25.76)
-      '@ai-sdk/openai':
-        specifier: ^2.0.0
-        version: 2.0.110(zod@3.25.76)
       '@ai-sdk/vue':
         specifier: ^2.0.0
         version: 2.0.208(vue@3.5.31(typescript@5.9.3))(zod@3.25.76)
@@ -170,6 +164,9 @@ importers:
       '@mlightcad/cad-agent-core':
         specifier: workspace:*
         version: link:../cad-agent-core
+      '@mlightcad/cad-llm-plugin':
+        specifier: workspace:*
+        version: link:../cad-llm-plugin
       '@mlightcad/cad-script-core':
         specifier: workspace:*
         version: link:../cad-script-core
@@ -269,6 +266,9 @@ importers:
       '@mlightcad/cad-html-plugin':
         specifier: workspace:*
         version: link:../cad-html-plugin
+      '@mlightcad/cad-llm-plugin':
+        specifier: workspace:*
+        version: link:../cad-llm-plugin
       '@mlightcad/cad-onedrive-plugin':
         specifier: workspace:*
         version: link:../cad-onedrive-plugin
@@ -374,6 +374,9 @@ importers:
       '@mlightcad/cad-html-plugin':
         specifier: workspace:*
         version: link:../cad-html-plugin
+      '@mlightcad/cad-llm-plugin':
+        specifier: workspace:*
+        version: link:../cad-llm-plugin
       '@mlightcad/cad-onedrive-plugin':
         specifier: workspace:*
         version: link:../cad-onedrive-plugin
@@ -566,6 +569,25 @@ importers:
       three:
         specifier: ^0.186.1
         version: 0.186.1
+
+  packages/cad-llm-plugin:
+    dependencies:
+      '@ai-sdk/anthropic':
+        specifier: ^2.0.0
+        version: 2.0.84(zod@3.25.76)
+      '@ai-sdk/openai':
+        specifier: ^2.0.0
+        version: 2.0.110(zod@3.25.76)
+      ai:
+        specifier: ^5.0.0
+        version: 5.0.208(zod@3.25.76)
+    devDependencies:
+      '@mlightcad/cad-simple-viewer':
+        specifier: workspace:*
+        version: link:../cad-simple-viewer
+      vite:
+        specifier: ^6.4.3
+        version: 6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3)
 
   packages/cad-mcp-server:
     dependencies:
@@ -902,6 +924,9 @@ importers:
       '@mlightcad/cad-html-plugin':
         specifier: workspace:*
         version: link:../cad-html-plugin
+      '@mlightcad/cad-llm-plugin':
+        specifier: workspace:*
+        version: link:../cad-llm-plugin
       '@mlightcad/cad-onedrive-plugin':
         specifier: workspace:*
         version: link:../cad-onedrive-plugin

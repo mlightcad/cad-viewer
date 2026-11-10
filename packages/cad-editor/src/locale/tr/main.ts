@@ -213,6 +213,7 @@ export default {
     group: {
       smartBlocks: 'Akıllı Bloklar',
       agent: 'Ajan',
+      aiModel: 'Yapay Zekâ Modeli',
       pdf: 'PDF',
       draw: 'Çiz',
       dimension: 'Ölçü',
@@ -364,6 +365,8 @@ export default {
         'Bir blokta kullanılacak öznitelik tanımı oluşturun (ATTDEF).',
       agent:
         'Doğal dil kullanarak geometri çizmek için CAD Ajanı panel sekmesini açın.',
+      llmSettings:
+        'CAD Ajanı ve PDF metin tanıma (OCR) tarafından kullanılan yapay zekâ modeli sağlayıcılarını ve API anahtarlarını yapılandırın.',
       pan: 'Büyütmeyi değiştirmeden çizimin görünümünü taşır.',
       zoom: 'Çizim görüntüsünü yakınlaştırır veya uzaklaştırır.',
       zoomExtents:
@@ -519,6 +522,7 @@ export default {
       editAttributes: 'Öznitelikleri\nDüzenle',
       defineAttribute: 'Öznitelik\nTanımla',
       agent: 'CAD\nAjanı',
+      llmSettings: 'Model\nAyarları',
       pan: 'Kaydır',
       zoom: 'Yakınlaştır',
       zoomExtents: 'Sınırlar',

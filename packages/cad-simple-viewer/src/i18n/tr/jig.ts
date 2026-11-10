@@ -2242,6 +2242,8 @@ export default {
       'Metin satırı {index}/{count}: vurgulanan metni girin (boş bırakmak atlar, Esc durdurur)',
     enterTextWithSuggestion:
       'Metin satırı {index}/{count}: vurgulanan metni girin',
+    ocrNotConfigured:
+      'Metin tanıma (OCR) kapalı: görüntü destekli bir yapay zekâ modeli yapılandırılmamış. Ayarlamak için LLMSETTINGS komutunu çalıştırın.',
     noCandidates: 'Seçimde metne benzer çizgi bulunamadı.',
     summary:
       '{converted} metin satırı dönüştürüldü, {automatic} tanesi otomatik tanındı; {skipped} atlandı.'

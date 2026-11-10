@@ -209,6 +209,7 @@ export default {
     group: {
       smartBlocks: 'الكتل الذكية',
       agent: 'الوكيل',
+      aiModel: 'نموذج الذكاء الاصطناعي',
       pdf: 'PDF',
       draw: 'رسم',
       dimension: 'أبعاد',
@@ -348,6 +349,8 @@ export default {
         'افتح محرر السمات المتقدم لتعديل قيم وخصائص عرض سمات الكتلة (ATTEDIT).',
       defineAttribute: 'أنشئ تعريف سمة لاستخدامه داخل كتلة (ATTDEF).',
       agent: 'افتح لوحة CAD Agent لإنشاء هندسة باستخدام اللغة الطبيعية.',
+      llmSettings:
+        'إعداد مزودي نماذج الذكاء الاصطناعي ومفاتيح API التي يستخدمها وكيل CAD والتعرف على النص في PDF (OCR).',
       pan: 'تحريك عرض الرسم دون تغيير التكبير.',
       zoom: 'تكبير عرض الرسم أو تصغيره.',
       zoomExtents: 'التكبير لعرض أقصى امتداد لجميع العناصر.',
@@ -484,6 +487,7 @@ export default {
       editAttributes: 'تعديل\nالسمات',
       defineAttribute: 'تعريف\nسمة',
       agent: 'وكيل\nCAD',
+      llmSettings: 'إعدادات\nالنموذج',
       pan: 'تحريك',
       zoom: 'تكبير',
       zoomExtents: 'الامتداد',

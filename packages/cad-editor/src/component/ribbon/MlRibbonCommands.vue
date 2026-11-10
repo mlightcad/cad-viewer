@@ -164,6 +164,7 @@ import {
   layerUnisolate,
   layerUnlock,
   line,
+  llmSettings,
   mleader,
   mleaderAdd,
   mleaderRemove,
@@ -1267,15 +1268,18 @@ const applyOpenModeTabVisibility = (
 }
 
 /**
- * AI tab: the CAD Agent (when its plugin is installed), Smart Blocks
+ * AI tab: the CAD Agent and the shared AI model settings (when their plugins
+ * are installed), Smart Blocks
  * (`BSEARCH`: find repeated geometry and turn it into blocks) and the PDF to
  * CAD conversion tools from `@mlightcad/cad-pdf-plugin`, which load lazily
  * on first use like their command-line counterparts.
  */
 const buildAiTab = (
   agentPluginEnabled: boolean,
+  llmPluginEnabled: boolean,
   ribbonTooltips: Record<
     | 'agent'
+    | 'llmSettings'
     | 'searchConvert'
     | 'detectConvert'
     | 'importPdf'
@@ -1319,6 +1323,29 @@ const buildAiTab = (
                       t('main.ribbon.command.agent'),
                       ribbonTooltips.agent,
                       ChatDotRound
+                    )
+                  ]
+                }
+              ]
+            }
+          ]
+        : []),
+      ...(llmPluginEnabled
+        ? [
+            {
+              id: 'ai-model',
+              title: t('main.ribbon.group.aiModel'),
+              orientation: 'row' as const,
+              collections: [
+                {
+                  id: 'ai-model-main',
+                  layout: 'row' as const,
+                  items: [
+                    largeButton(
+                      'cmd-llmsettings',
+                      t('main.ribbon.command.llmSettings'),
+                      ribbonTooltips.llmSettings,
+                      llmSettings
                     )
                   ]
                 }
@@ -1403,6 +1430,7 @@ const buildBaseTabs = (
   markupVisible: boolean,
   measurementVisible: boolean,
   agentPluginEnabled: boolean,
+  llmPluginEnabled: boolean,
   namedViewNames: string[] = []
 ): RibbonTabModel[] => {
   const ribbonTooltips = {
@@ -1460,6 +1488,7 @@ const buildBaseTabs = (
     editAttributes: t('main.ribbon.tooltip.editAttributes'),
     defineAttribute: t('main.ribbon.tooltip.defineAttribute'),
     agent: t('main.ribbon.tooltip.agent'),
+    llmSettings: t('main.ribbon.tooltip.llmSettings'),
     importPdf: t('main.ribbon.tooltip.importPdf'),
     pdfScale: t('main.ribbon.tooltip.pdfScale'),
     pdfText: t('main.ribbon.tooltip.pdfText'),
@@ -3266,7 +3295,7 @@ const buildBaseTabs = (
     groups: measurementGroups
   })
 
-  tabs.push(buildAiTab(agentPluginEnabled, ribbonTooltips))
+  tabs.push(buildAiTab(agentPluginEnabled, llmPluginEnabled, ribbonTooltips))
 
   return markComponentConfigRaw(applyOpenModeTabVisibility(tabs, openMode))
 }
@@ -3274,6 +3303,7 @@ const buildBaseTabs = (
 const ribbonData = computed(() => {
   locale.value
   store.features.agentPlugin
+  store.features.llmPlugin
   const openMode = docOpenMode.value
   const markupVisible = isMarkupOverlayVisible.value
   const measurementVisible = isMeasurementOverlayVisible.value
@@ -3377,6 +3407,9 @@ const ribbonData = computed(() => {
   if (store.features.agentPlugin) {
     commandByItemId.set('cmd-agent', 'agent')
   }
+  if (store.features.llmPlugin) {
+    commandByItemId.set('cmd-llmsettings', 'llmsettings')
+  }
   commandByItemId.set('cmd-ipdf', 'ipdf')
   commandByItemId.set('cmd-pdfscale', 'pdfscale')
   commandByItemId.set('cmd-pdftext', 'pdftext')
@@ -3453,6 +3486,7 @@ const ribbonData = computed(() => {
     markupVisible,
     measurementVisible,
     store.features.agentPlugin,
+    store.features.llmPlugin,
     namedViewNames
   )
   return {

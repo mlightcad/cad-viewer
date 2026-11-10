@@ -248,6 +248,7 @@ export default {
     group: {
       smartBlocks: 'Chytré bloky',
       agent: 'Agent AI',
+      aiModel: 'Model AI',
       pdf: 'PDF',
       draw: 'Kreslení',
       dimension: 'Kóty',
@@ -394,6 +395,8 @@ export default {
         'Vytvoří definici atributu pro použití v bloku (ATTDEF).',
       agent:
         'Otevře kartu palety CAD Agent pro kreslení geometrie přirozeným jazykem.',
+      llmSettings:
+        'Nastaví poskytovatele modelů AI a klíče API, které používá CAD agent a rozpoznávání textu v PDF (OCR).',
       pan: 'Posune pohled na výkres beze změny zvětšení.',
       zoom: 'Zvětší nebo zmenší zobrazení výkresu.',
       zoomExtents: 'Zobrazí maximální rozsah všech objektů.',
@@ -544,6 +547,7 @@ export default {
       editAttributes: 'Upravit\natributy',
       defineAttribute: 'Definovat\natribut',
       agent: 'CAD\nagent',
+      llmSettings: 'Nastavení\nmodelu',
       pan: 'Posun',
       zoom: 'Zoom',
       zoomExtents: 'Rozsah',

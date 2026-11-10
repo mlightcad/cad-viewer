@@ -2054,6 +2054,8 @@ export default {
       '文字行 {index}/{count}：输入高亮部分的文字（留空跳过，Esc 结束）',
     enterTextWithSuggestion:
       '文字行 {index}/{count}：输入高亮部分的文字',
+    ocrNotConfigured:
+      '文字识别（OCR）未启用：尚未配置支持图片的 AI 模型。运行 LLMSETTINGS 进行配置。',
     noCandidates: '所选对象中没有找到类似文字的笔画。',
     summary:
       '已转换 {converted} 行文字，其中 {automatic} 行自动识别；跳过 {skipped} 行。'

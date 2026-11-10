@@ -11,12 +11,13 @@ const downloadRemote = createDownload()
  * or fail on large vision payloads. Returning `null` passes the URL through
  * for inline base64 handling.
  */
-export const skipDataUrlDownload: Experimental_DownloadFunction = requested =>
-  Promise.all(
-    requested.map(async req => {
-      if (req.isUrlSupportedByModel || req.url.protocol === 'data:') {
-        return null
-      }
-      return downloadRemote({ url: req.url })
-    })
-  )
+export const acapLlmSkipDataUrlDownload: Experimental_DownloadFunction =
+  requested =>
+    Promise.all(
+      requested.map(async req => {
+        if (req.isUrlSupportedByModel || req.url.protocol === 'data:') {
+          return null
+        }
+        return downloadRemote({ url: req.url })
+      })
+    )

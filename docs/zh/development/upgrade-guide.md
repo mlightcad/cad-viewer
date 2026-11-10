@@ -6,6 +6,26 @@ title: "升级 cad-simple-viewer 和 cad-editor"
 
 本指南介绍如何安全地升级 `@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-editor`——为什么它们不能单独升级、哪些相关包必须一起迁移，以及两种可靠的方法来确定任意给定版本的正确兼容版本集。
 
+::: info 共享的 AI 模型设置（`@mlightcad/cad-llm-plugin`）
+从包含此变更的版本开始，LLM 服务商设置从 `@mlightcad/cad-agent-plugin` 移到新的 **`@mlightcad/cad-llm-plugin`**，CAD 智能体和 `pdftext` 文字识别（OCR）共用同一份配置。新包提供 **LLMSETTINGS** 命令和一个不依赖 UI 框架的设置对话框（`@mlightcad/cad-editor` 的 AI 功能区选项卡中也有入口）；`@mlightcad/cad-simple-viewer` 新增 `AcApLlmSettingsService`，任何功能都可以通过它打开对话框，或检查是否配置了支持图片的模型。
+
+宿主迁移：
+
+- 安装 `@mlightcad/cad-llm-plugin`（现在是 `@mlightcad/cad-agent-plugin` 的 peer 依赖），并在 `registerLazyAgentPlugin` 旁调用 `registerLazyLlmPlugin`。安装该包后，`@mlightcad/cad-editor` 会自动完成注册。
+- `registerLazyAgentPlugin` 不再注册文字识别器。识别器 id 改为 `cad-llm`（原为 `cad-agent`），由 `registerLazyLlmPlugin` 注册。`acapAgentRecognizeText` / `cleanRecognizedText` 改为 `@mlightcad/cad-llm-plugin` 中的 `acapLlmRecognizeText` / `acapLlmCleanRecognizedText`。
+- 智能体面板中内嵌的设置卡片被对话框取代，齿轮按钮会打开 LLMSETTINGS。
+- 已保存的设置不会丢失：`localStorage` 键 `cad-agent-plugin.llm-config` 保持不变。
+- 当前使用的模型只支持文本时，OCR 会改用第一个已配置的支持图片的模型。
+
+```ts
+import { registerLazyAgentPlugin } from '@mlightcad/cad-agent-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
+
+registerLazyLlmPlugin(pluginManager)
+registerLazyAgentPlugin(pluginManager)
+```
+:::
+
 ::: info 智能块：搜索并转换（`BSEARCH`）
 自包含本变更的版本起，`@mlightcad/cad-simple-viewer` 注册 **-BSEARCH**，`@mlightcad/cad-editor` 增加 **BSEARCH**（别名 `BCONVERT`），提供审阅工具栏和「转换为块」对话框（位于功能区「插入」和「AI」选项卡）。
 

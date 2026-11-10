@@ -26,16 +26,24 @@ Read more:
 - Lazy-loaded `AcApPlugin` (trigger command: `agent`)
 - Vercel AI SDK `Experimental_Agent` with CAD tool calling
 - Vue chat panel (`@ai-sdk/vue` `Chat` + custom transport)
-- Browser-side API key (OpenAI / Anthropic / OpenAI-compatible)
-- Text recognizer for `pdftext`: `registerLazyAgentPlugin` registers `cad-agent` in `AcApTextRecognitionService`. It reads stroke images with the active model when that model accepts images, and returns nothing otherwise, so `pdftext` falls back to manual input
+- Model and API keys come from the shared AI model settings in
+  [`@mlightcad/cad-llm-plugin`](../cad-llm-plugin/README.md) (`llmsettings`),
+  which `pdftext` text recognition uses too; the panel's gear button opens
+  that dialog
 
 ## Usage in cad-viewer
 
 ```typescript
 import { registerLazyAgentPlugin } from '@mlightcad/cad-agent-plugin/register'
+import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
 
-registerLazyAgentPlugin(AcApDocManager.instance.pluginManager)
+const { pluginManager } = AcApDocManager.instance
+registerLazyLlmPlugin(pluginManager)
+registerLazyAgentPlugin(pluginManager)
 ```
+
+`@mlightcad/cad-llm-plugin` is a peer dependency: install it next to this
+package.
 
 Run `agent` from the ribbon or command line to open the chat panel.
 

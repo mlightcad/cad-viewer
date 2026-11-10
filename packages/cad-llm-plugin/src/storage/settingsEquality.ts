@@ -1,5 +1,5 @@
-import type { LlmProviderConfig } from './LlmSettingsStore'
-import type { LlmModelEntry } from './modelCatalog'
+import type { AcApLlmProviderConfig } from './AcApLlmConfigStore'
+import type { AcApLlmModelEntry } from './AcApLlmModelCatalog'
 
 /**
  * Compares two model catalogs entry by entry.
@@ -9,8 +9,8 @@ import type { LlmModelEntry } from './modelCatalog'
  * @returns `true` when both hold the same entries in the same order.
  */
 function areModelListsEqual(
-  left: readonly LlmModelEntry[] | null,
-  right: readonly LlmModelEntry[] | null
+  left: readonly AcApLlmModelEntry[] | null,
+  right: readonly AcApLlmModelEntry[] | null
 ): boolean {
   if (left === null || right === null) return left === right
   return (
@@ -31,9 +31,9 @@ function areModelListsEqual(
  * @param right - Second provider config.
  * @returns `true` when all persisted fields match.
  */
-export function areProviderConfigsEqual(
-  left: LlmProviderConfig,
-  right: LlmProviderConfig
+export function acapLlmAreProvidersEqual(
+  left: AcApLlmProviderConfig,
+  right: AcApLlmProviderConfig
 ): boolean {
   return (
     left.id === right.id &&

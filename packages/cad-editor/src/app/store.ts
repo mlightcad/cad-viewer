@@ -22,6 +22,8 @@ export const store = reactive({
   features: {
     /** Set when `@mlightcad/cad-agent-plugin` is installed and registered. */
     agentPlugin: false,
+    /** Set when `@mlightcad/cad-llm-plugin` is installed and registered. */
+    llmPlugin: false,
     /** Set when `@mlightcad/cad-script-plugin` is installed and registered. */
     scriptPlugin: false
   },

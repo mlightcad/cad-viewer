@@ -210,6 +210,7 @@ export default {
     group: {
       smartBlocks: '스마트 블록',
       agent: '에이전트',
+      aiModel: 'AI 모델',
       pdf: 'PDF',
       draw: '그리기',
       dimension: '치수',
@@ -346,6 +347,8 @@ export default {
         '고급 속성 편집기를 열어 블록 속성 값과 표시 특성을 편집합니다(ATTEDIT).',
       defineAttribute: '블록에서 사용할 속성 정의를 작성합니다(ATTDEF).',
       agent: 'CAD 에이전트 팔레트 탭을 열어 자연어로 형상을 그립니다.',
+      llmSettings:
+        'CAD 에이전트와 PDF 문자 인식(OCR)에 사용하는 AI 모델 공급자와 API 키를 설정합니다.',
       pan: '배율을 변경하지 않고 도면의 뷰를 이동합니다.',
       zoom: '도면 표시를 줌합니다.',
       zoomExtents: '모든 객체의 최대 범위를 표시하도록 줌합니다.',
@@ -484,6 +487,7 @@ export default {
       editAttributes: '속성\n편집',
       defineAttribute: '속성\n정의',
       agent: 'CAD\n에이전트',
+      llmSettings: '모델\n설정',
       pan: '초점이동',
       zoom: '줌',
       zoomExtents: '범위',

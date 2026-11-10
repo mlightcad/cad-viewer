@@ -212,6 +212,7 @@ export default {
     group: {
       smartBlocks: 'Smart Blocks',
       agent: 'Agent',
+      aiModel: 'AI Model',
       pdf: 'PDF',
       draw: 'Draw',
       dimension: 'Dimension',
@@ -353,6 +354,8 @@ export default {
         'Create an attribute definition for use in a block (ATTDEF).',
       agent:
         'Open the CAD Agent palette tab to draw geometry using natural language.',
+      llmSettings:
+        'Configure the AI model providers and API keys used by the CAD Agent and by PDF text recognition (OCR).',
       pan: 'Moves the view of the drawing without changing magnification.',
       zoom: 'Zooms the drawing display.',
       zoomExtents: 'Zooms to display the maximum extents of all entities.',
@@ -506,6 +509,7 @@ export default {
       editAttributes: 'Edit\nAttributes',
       defineAttribute: 'Define\nAttribute',
       agent: 'CAD\nAgent',
+      llmSettings: 'Model\nSettings',
       pan: 'Pan',
       zoom: 'Zoom',
       zoomExtents: 'Extents',
