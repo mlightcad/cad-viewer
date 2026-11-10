@@ -58,7 +58,7 @@
     "@mlightcad/cad-agent-core": "workspace:*",
     "@mlightcad/cad-script-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "1.15.23",
+    "@mlightcad/data-model": "1.15.25",
     "@vitejs/plugin-vue": "^6.0.8",
     "vite": "^6.4.3",
     "vue": "^3.4.21",
@@ -68,7 +68,7 @@
     "@mlightcad/cad-agent-core": "workspace:^",
     "@mlightcad/cad-script-core": "workspace:^",
     "@mlightcad/cad-simple-viewer": "workspace:^",
-    "@mlightcad/data-model": "1.15.23",
+    "@mlightcad/data-model": "1.15.25",
     "vue": "^3.4.21"
   }
 }
