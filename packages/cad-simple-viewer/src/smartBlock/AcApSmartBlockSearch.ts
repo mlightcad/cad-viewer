@@ -37,7 +37,10 @@ export interface AcApSmartBlockSearchOptions {
   includeExistingBlocks?: boolean
   /**
    * Accept copies whose text strings differ (`TEXTTOATTRIBUTE`). Varying
-   * texts can later become block attributes. Default `false`.
+   * texts can later become block attributes. When off, selected texts must
+   * read the same in every copy. Either way texts are located by where they
+   * sit in the copy, not matched as geometry. Default `true`, like
+   * AutoCAD's `TEXTTOATTRIBUTE` = 1.
    */
   textVariations?: boolean
   /** Absolute matching tolerance; default is relative to the template size. */
@@ -169,45 +172,92 @@ export function acapFindSmartBlockMatches(
   if (template.entities.length === 0) return []
   const modelSpace = db.tables.blockTable.modelSpace
   const matchLayer = options.matchLayer ?? true
+  const textVariations = options.textVariations ?? true
   // Rebuilt per search: layer matching may have been toggled since the
   // template was built.
   const templateFeatures = template.entities.map(
     entity => cache.get(entity, matchLayer)!
   )
+  // Like AutoCAD, selected single-line texts do not take part in the
+  // geometry match: texts with other strings (room numbers, axis labels)
+  // are rarely placed at exactly the same spot, e.g. left-aligned "1" and
+  // "10" start at different points. Geometry fixes the transform; each
+  // template text then picks up the text found at its place in the copy.
+  // A template made of texts only is matched as plain shapes.
+  const textIndices: number[] = []
+  const shapeIndices: number[] = []
+  templateFeatures.forEach((f, i) =>
+    (f.label === undefined ? shapeIndices : textIndices).push(i)
+  )
+  if (shapeIndices.length === 0) textIndices.length = 0
+  const shapeFeatures = shapeIndices.map(i => templateFeatures[i])
   const templateIds = new Set(template.ids)
-  const kinds = new Set(templateFeatures.map(f => f.kind))
+  const shapeKinds = new Set(shapeFeatures.map(f => f.kind))
+  const textKinds = new Set(textIndices.map(i => templateFeatures[i].kind))
 
   const candidateIds: AcDbObjectId[] = []
   const candidateFeatures = new Map<AcDbObjectId, AcEdShapeFeature<string>>()
+  const textCandidateIds: AcDbObjectId[] = []
   for (const entity of modelSpace.newIterator()) {
     if (templateIds.has(entity.objectId)) continue
     if (!entity.visibility) continue
     const feature = cache.get(entity, matchLayer)
+    if (!feature) continue
     // Only shapes of the template's kinds can take part in a copy.
-    if (!feature || !kinds.has(feature.kind)) continue
-    candidateIds.push(entity.objectId)
+    if (feature.label === undefined || textIndices.length === 0) {
+      if (!shapeKinds.has(feature.kind)) continue
+      candidateIds.push(entity.objectId)
+    } else {
+      if (!textKinds.has(feature.kind)) continue
+      textCandidateIds.push(entity.objectId)
+    }
     candidateFeatures.set(entity.objectId, feature)
   }
   const unlocked = excludeLockedLayerIds(db, candidateIds).ids
   const candidates = unlocked.map(id => candidateFeatures.get(id)!)
 
-  const shapeMatches = acedFindShapeMatches(templateFeatures, candidates, {
+  const texts = new TextPicker(
+    db,
+    textIndices.map(i => ({
+      entity: template.entities[i],
+      feature: templateFeatures[i]
+    })),
+    excludeLockedLayerIds(db, textCandidateIds).ids.map(
+      id => candidateFeatures.get(id)!
+    ),
+    textVariations
+  )
+  const textIdsOf = new Map<AcEdShapeMatch<AcDbObjectId>, AcDbObjectId[]>()
+  const shapeMatches = acedFindShapeMatches(shapeFeatures, candidates, {
     tolerance: options.tolerance,
     allowRotation: options.allowRotation,
     allowMirror: options.allowMirror,
     allowScale: options.allowScale,
-    ignoreLabels: options.textVariations
+    ignoreLabels: textVariations,
+    // A copy must hold every selected text at its place. Checked inside the
+    // search so symmetric geometry tries the transform that fits the texts.
+    accept: match => {
+      const ids = texts.pick(match)
+      if (ids) textIdsOf.set(match, ids)
+      return !!ids
+    }
   })
 
-  const matches: AcApSmartBlockMatch[] = shapeMatches.map(match => ({
-    ...match,
-    included: true,
-    texts: templateFeatures.map((f, i) =>
-      f.label === undefined
-        ? undefined
-        : candidateFeatures.get(match.ids[i])?.label
-    )
-  }))
+  const matches: AcApSmartBlockMatch[] = []
+  for (const match of shapeMatches) {
+    const textIds = textIdsOf.get(match) ?? []
+    const ids = new Array<AcDbObjectId>(templateFeatures.length)
+    shapeIndices.forEach((index, i) => (ids[index] = match.ids[i]))
+    textIndices.forEach((index, i) => (ids[index] = textIds[i]))
+    matches.push({
+      ...match,
+      ids,
+      included: true,
+      texts: templateFeatures.map((f, i) =>
+        f.label === undefined ? undefined : candidateFeatures.get(ids[i])?.label
+      )
+    })
+  }
 
   if (options.includeExistingBlocks) {
     matches.push(...findBlockReferenceMatches(db, template, options))
@@ -270,7 +320,7 @@ export function acapFindEquivalentBlocks(
       allowRotation: true,
       allowMirror: true,
       allowScale: true,
-      ignoreLabels: options.textVariations
+      ignoreLabels: options.textVariations ?? true
     })
     if (match)
       result.push({ blockName: record.name, transform: match.transform })
@@ -424,4 +474,146 @@ function matchOrigin(template: AcApSmartBlockTemplate): AcEdPoint2d {
 
 function applyAffine(t: AcEdAffine2d, p: AcEdPoint2d): AcEdPoint2d {
   return { x: t.a * p.x + t.c * p.y + t.e, y: t.b * p.x + t.d * p.y + t.f }
+}
+
+/** Candidate text with the center of its extents. */
+interface TextCandidate {
+  feature: AcEdShapeFeature<AcDbObjectId>
+  center: AcEdPoint2d
+}
+
+/**
+ * Pairs the template texts with the texts of a geometry copy.
+ *
+ * A text belongs to a copy when it lies where the template text lands under
+ * the copy's transform: its extents center within one text height, with
+ * the same height and orientation (mirrored copies may keep their text
+ * readable, as with `MIRRTEXT` = 0). Extents centers rather than insertion
+ * points are compared so differently long strings still pair up. Strings
+ * must be equal unless text variations are searched. Each text belongs to
+ * one copy only.
+ */
+class TextPicker {
+  private readonly byKind = new Map<string, TextCandidate[]>()
+  private readonly claimed = new Set<AcDbObjectId>()
+  private readonly templateTexts: TextCandidate[]
+
+  /**
+   * @param db - Drawing database.
+   * @param texts - Template texts with their features (search layer mode).
+   * @param candidates - Text features the copies may use.
+   * @param ignoreLabels - Accept texts with other strings.
+   */
+  constructor(
+    db: AcDbDatabase,
+    texts: { entity: AcDbEntity; feature: AcEdShapeFeature<AcDbObjectId> }[],
+    candidates: AcEdShapeFeature<AcDbObjectId>[],
+    private readonly ignoreLabels: boolean
+  ) {
+    const blockTable = db.tables.blockTable
+    this.templateTexts = texts.map(({ entity, feature }) => ({
+      feature,
+      center: textCenter(entity, feature)
+    }))
+    for (const feature of candidates) {
+      const entity = blockTable.getEntityById(feature.id)
+      const candidate = {
+        feature,
+        center: entity ? textCenter(entity, feature) : feature.center
+      }
+      const list = this.byKind.get(feature.kind)
+      if (list) list.push(candidate)
+      else this.byKind.set(feature.kind, [candidate])
+    }
+    // Sorted by x so a lookup only scans a narrow band.
+    for (const list of this.byKind.values()) {
+      list.sort((a, b) => a.center.x - b.center.x)
+    }
+  }
+
+  /**
+   * Ids of the copy's texts in template text order, or `undefined` when a
+   * template text has no counterpart. Found texts are claimed.
+   */
+  pick(match: AcEdShapeMatch<AcDbObjectId>): AcDbObjectId[] | undefined {
+    const ids: AcDbObjectId[] = []
+    const taken = new Set<AcDbObjectId>()
+    for (const source of this.templateTexts) {
+      const found = this.find(source, match, taken)
+      if (!found) return undefined
+      ids.push(found)
+      taken.add(found)
+    }
+    ids.forEach(id => this.claimed.add(id))
+    return ids
+  }
+
+  private find(
+    source: TextCandidate,
+    match: AcEdShapeMatch<AcDbObjectId>,
+    taken: Set<AcDbObjectId>
+  ): AcDbObjectId | undefined {
+    const list = this.byKind.get(source.feature.kind)
+    if (!list) return undefined
+    const t = match.transform
+    const f = source.feature
+    const scale = match.scale
+    const height = f.size * scale
+    const radius = Math.max(height, 1e-9)
+    const center = applyAffine(t, source.center)
+    const dir = textDirection(f)
+    const mapped = normalize({
+      x: t.a * dir.x + t.c * dir.y,
+      y: t.b * dir.x + t.d * dir.y
+    })
+    const cosTol = Math.cos((2 * Math.PI) / 180)
+
+    let best: AcDbObjectId | undefined
+    let bestDist = radius
+    let lo = 0
+    let hi = list.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (list[mid].center.x < center.x - radius) lo = mid + 1
+      else hi = mid
+    }
+    for (let k = lo; k < list.length; k++) {
+      const c = list[k]
+      if (c.center.x > center.x + radius) break
+      const g = c.feature
+      if (this.claimed.has(g.id) || taken.has(g.id)) continue
+      if (!this.ignoreLabels && (g.label ?? '') !== (f.label ?? '')) continue
+      if (Math.abs(g.size - height) > Math.max(height * 0.02, 1e-9)) continue
+      const d = Math.hypot(c.center.x - center.x, c.center.y - center.y)
+      if (d > bestDist) continue
+      const v = textDirection(g)
+      const dot = v.x * mapped.x + v.y * mapped.y
+      if (dot < cosTol && !(match.mirrored && dot <= -cosTol)) continue
+      best = g.id
+      bestDist = d
+    }
+    return best
+  }
+}
+
+/** Center of a text's extents; its insertion point when they are empty. */
+function textCenter(
+  entity: AcDbEntity,
+  feature: AcEdShapeFeature<AcDbObjectId>
+): AcEdPoint2d {
+  const ext = entity.geometricExtents
+  if (ext.isEmpty()) return feature.center
+  return { x: (ext.min.x + ext.max.x) / 2, y: (ext.min.y + ext.max.y) / 2 }
+}
+
+/** Unit baseline direction of a text feature. */
+function textDirection(feature: AcEdShapeFeature): AcEdPoint2d {
+  const [p0, p1] = feature.points
+  if (!p0 || !p1) return { x: 1, y: 0 }
+  return normalize({ x: p1.x - p0.x, y: p1.y - p0.y })
+}
+
+function normalize(v: AcEdPoint2d): AcEdPoint2d {
+  const len = Math.hypot(v.x, v.y)
+  return len > 0 ? { x: v.x / len, y: v.y / len } : { x: 1, y: 0 }
 }

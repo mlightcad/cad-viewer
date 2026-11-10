@@ -54,7 +54,10 @@ export class AcApSmartBlockSearch {
     options: AcApSmartBlockSearchOptions = {}
   ) {
     this.db = db
-    this._options = { ...options }
+    this._options = {
+      ...options,
+      textVariations: options.textVariations ?? true
+    }
     this.template = acapBuildSmartBlockTemplate(db, ids, options)
     this.search()
   }

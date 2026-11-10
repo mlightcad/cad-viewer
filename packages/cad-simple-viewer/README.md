@@ -61,6 +61,8 @@ To learn about the built-in notification center (and how to replace the default 
 
 For the plain-DOM toolbar engine (`AcUiToolbar`, shortcut bar, and host customization), see [docs/toolbar.md](./docs/toolbar.md).
 
+For how Smart Blocks Search and Convert (`BSEARCH`) finds repeated geometry, pairs texts and converts copies into blocks, see [docs/smart-blocks-search-and-convert.md](./docs/smart-blocks-search-and-convert.md).
+
 ### Plugins and data sources
 
 - **`pluginManager`** — load command plugins (`AcApPlugin`) via `loadPlugin` / `registerLazyPlugin`.
