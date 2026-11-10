@@ -17,11 +17,7 @@ function rotate(x: number, y: number, angle: number): { x: number; y: number } {
   return { x: c * x - s * y, y: c * y + s * x }
 }
 
-function pointInEvenOdd(
-  x: number,
-  y: number,
-  loops: AcPdfPoint[][]
-): boolean {
+function pointInEvenOdd(x: number, y: number, loops: AcPdfPoint[][]): boolean {
   let inside = false
   for (const loop of loops) {
     const n = loop.length
@@ -120,11 +116,23 @@ export function clipSegmentToLoops(
   return out
 }
 
+/** Drawn length of a zero-length dash ("dot"); it consumes no period. */
+const DOT_LENGTH = 0.005
+/** Upper bound on dash periods walked per clipped segment. */
+const MAX_DASH_PERIODS = 100000
+
+/**
+ * Splits `a`→`b` into the visible dashes of a pattern line.
+ *
+ * @param startPos Position of `a` along the pattern line, measured from the
+ *   line's own origin (base point shifted by the per-line offset), so dashes
+ *   stay aligned to the pattern instead of to where the boundary clips it.
+ */
 function dashSegment(
   a: AcPdfPoint,
   b: AcPdfPoint,
   dashLengths: number[],
-  phaseShift: number
+  startPos: number
 ): Array<[AcPdfPoint, AcPdfPoint]> {
   const dx = b.x - a.x
   const dy = b.y - a.y
@@ -136,48 +144,36 @@ function dashSegment(
     return [[a, b]]
   }
   let patternLen = 0
-  const absDashes = dashLengths.map(value => {
-    const abs = Math.abs(value) < EPS ? 0.005 : Math.abs(value)
-    patternLen += abs
-    return { signed: value === 0 ? abs : value, abs }
-  })
-  if (!(patternLen > EPS)) {
+  for (const value of dashLengths) {
+    patternLen += Math.abs(value)
+  }
+  if (!(patternLen > EPS) || len / patternLen > MAX_DASH_PERIODS) {
     return [[a, b]]
   }
-  let pos = 0
-  let cursor = ((phaseShift % patternLen) + patternLen) % patternLen
-  let dashIndex = 0
-  let consumed = 0
-  for (let i = 0; i < absDashes.length; i++) {
-    if (cursor < consumed + absDashes[i].abs - EPS) {
-      dashIndex = i
-      cursor -= consumed
-      break
-    }
-    consumed += absDashes[i].abs
-    if (i === absDashes.length - 1) {
-      dashIndex = 0
-      cursor = 0
-    }
-  }
+  const ux = dx / len
+  const uy = dy / len
+  const at = (pos: number): AcPdfPoint => ({
+    x: a.x + ux * pos,
+    y: a.y + uy * pos
+  })
   const out: Array<[AcPdfPoint, AcPdfPoint]> = []
-  while (pos < len - EPS) {
-    const dash = absDashes[dashIndex % absDashes.length]
-    const remaining = dash.abs - cursor
-    const take = Math.min(remaining, len - pos)
-    if (dash.signed >= 0) {
-      const t0 = pos / len
-      const t1 = (pos + take) / len
-      out.push([
-        { x: a.x + dx * t0, y: a.y + dy * t0 },
-        { x: a.x + dx * t1, y: a.y + dy * t1 }
-      ])
-    }
-    pos += take
-    cursor += take
-    if (cursor >= dash.abs - EPS) {
-      cursor = 0
-      dashIndex++
+  // Positions below are relative to `a`; walk whole periods covering [0, len].
+  const phase = ((startPos % patternLen) + patternLen) % patternLen
+  for (let period = -phase; period < len - EPS; period += patternLen) {
+    let cursor = period
+    for (const value of dashLengths) {
+      const abs = Math.abs(value)
+      if (value > 0) {
+        const s0 = Math.max(cursor, 0)
+        const s1 = Math.min(cursor + abs, len)
+        if (s1 - s0 > EPS) {
+          out.push([at(s0), at(s1)])
+        }
+      } else if (abs < EPS && cursor >= -EPS && cursor <= len + EPS) {
+        const s0 = Math.min(Math.max(cursor, 0), len)
+        out.push([at(s0), at(Math.min(s0 + DOT_LENGTH, len))])
+      }
+      cursor += abs
     }
   }
   return out
@@ -225,8 +221,13 @@ export function tessellateHatchPattern(
   for (const line of definitionLines) {
     const angle = (line.angle || 0) + patternAngle
     const base = rotate(line.base?.x ?? 0, line.base?.y ?? 0, patternAngle)
-    const offset = rotate(line.offset?.x ?? 0, line.offset?.y ?? 0, -(line.angle || 0))
-    const spacing = Math.abs(offset.y) > EPS ? offset.y : Math.hypot(offset.x, offset.y)
+    const offset = rotate(
+      line.offset?.x ?? 0,
+      line.offset?.y ?? 0,
+      -(line.angle || 0)
+    )
+    const spacing =
+      Math.abs(offset.y) > EPS ? offset.y : Math.hypot(offset.x, offset.y)
     if (!(Math.abs(spacing) > EPS)) {
       continue
     }
@@ -271,9 +272,11 @@ export function tessellateHatchPattern(
       const a = toWorld(minLX, y)
       const b = toWorld(maxLX, y)
       const clipped = clipSegmentToLoops(a, b, loops)
-      const phase = y * (Math.abs(offset.y) > EPS ? offset.x / offset.y : 0)
+      // Matches the shader: linePosition = localX - localY * offset.x / offset.y
+      const shift = Math.abs(offset.y) > EPS ? (y * offset.x) / offset.y : 0
       for (const [ca, cb] of clipped) {
-        for (const [da, db] of dashSegment(ca, cb, dashes, phase)) {
+        const startPos = toLocal(ca.x, ca.y).x - shift
+        for (const [da, db] of dashSegment(ca, cb, dashes, startPos)) {
           segments.push([da, db])
         }
       }
