@@ -13,8 +13,12 @@ export interface AcEdPoint2d {
   y: number
 }
 
+// Math.hypot is several times slower than sqrt in V8, and matching calls
+// this in its innermost loops.
 function dist(a: AcEdPoint2d, b: AcEdPoint2d): number {
-  return Math.hypot(a.x - b.x, a.y - b.y)
+  const dx = a.x - b.x
+  const dy = a.y - b.y
+  return Math.sqrt(dx * dx + dy * dy)
 }
 
 /** One shape to match. */
@@ -89,6 +93,39 @@ export interface AcEdShapeMatchOptions<Id = unknown> {
    * once per accepted copy with `true`, so it may record state.
    */
   accept?: (match: AcEdShapeMatch<Id>) => boolean
+  /**
+   * Reuses spatial indexes between searches over the same candidates (the
+   * same shapes, template shapes included). Only share a cache while the
+   * candidate set does not change.
+   */
+  gridCache?: AcEdShapeGridCache
+}
+
+/**
+ * Opaque store of spatial indexes for {@link AcEdShapeMatchOptions.gridCache}.
+ * Create one per unchanged candidate set, e.g. per detection run.
+ */
+export class AcEdShapeGridCache {}
+
+const gridStores = new WeakMap<
+  AcEdShapeGridCache,
+  Map<string, KindGrid<unknown>>
+>()
+
+function gridStoreOf<Id>(cache: AcEdShapeGridCache) {
+  let store = gridStores.get(cache)
+  if (!store) gridStores.set(cache, (store = new Map()))
+  return store as unknown as Map<string, KindGrid<Id>>
+}
+
+function groupByKind<Id>(features: AcEdShapeFeature<Id>[]) {
+  const map = new Map<string, AcEdShapeFeature<Id>[]>()
+  for (const f of features) {
+    const list = map.get(f.kind)
+    if (list) list.push(f)
+    else map.set(f.kind, [f])
+  }
+  return map
 }
 
 /** Applies an affine map to a point. */
@@ -148,11 +185,14 @@ class KindGrid<Id> {
     Map<number, AcEdShapeFeature<Id>[]>
   >()
   readonly size: number
+  /** Feature sizes, ascending. */
+  private readonly sizes: Float64Array
   constructor(
     features: AcEdShapeFeature<Id>[],
     private readonly cell: number
   ) {
     this.size = features.length
+    this.sizes = Float64Array.from(features, f => f.size).sort()
     for (const feature of features) {
       const gx = Math.floor(feature.center.x / cell)
       const gy = Math.floor(feature.center.y / cell)
@@ -162,6 +202,13 @@ class KindGrid<Id> {
       if (bucket) bucket.push(feature)
       else column.set(gy, [feature])
     }
+  }
+  /** Number of features whose size is within `tol` of `size`. */
+  countSizes(size: number, tol: number): number {
+    return (
+      lowerBound(this.sizes, size + tol, true) -
+      lowerBound(this.sizes, size - tol, false)
+    )
   }
   /** Calls `visit` for features whose center is within `radius` of `p`. */
   forEachNear(
@@ -192,6 +239,21 @@ class KindGrid<Id> {
   }
 }
 
+/**
+ * First index whose value is `>= value` (or `> value` with `after`) in an
+ * ascending array.
+ */
+function lowerBound(values: Float64Array, value: number, after: boolean) {
+  let lo = 0
+  let hi = values.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (values[mid] < value || (after && values[mid] === value)) lo = mid + 1
+    else hi = mid
+  }
+  return lo
+}
+
 function extentOf(features: AcEdShapeFeature[]) {
   let minX = Infinity
   let minY = Infinity
@@ -218,12 +280,15 @@ function pointSetsMatch(
 ) {
   if (points.length !== target.length) return false
   const used = new Array<boolean>(target.length).fill(false)
+  const tol2 = tol * tol
   for (const p of points) {
     let best = -1
-    let bestDist = tol
+    let bestDist = tol2
     for (let i = 0; i < target.length; i++) {
       if (used[i]) continue
-      const d = dist(p, target[i])
+      const dx = p.x - target[i].x
+      const dy = p.y - target[i].y
+      const d = dx * dx + dy * dy
       if (d <= bestDist) {
         bestDist = d
         best = i
@@ -294,10 +359,35 @@ export function acedFindShapeMatches<Id>(
   // A kind without candidates cannot be matched at all.
   for (const kind of templateKinds) if (!byKind.has(kind)) return []
 
-  const cell = Math.max(extent, tol * 10, 1e-9)
+  let cell = Math.max(extent, tol * 10, 1e-9)
   const grids = new Map<string, KindGrid<Id>>()
-  for (const [kind, list] of byKind) grids.set(kind, new KindGrid(list, cell))
-  const countOf = (f: AcEdShapeFeature<Id>) => grids.get(f.kind)!.size
+  const store = options.gridCache && gridStoreOf<Id>(options.gridCache)
+  if (store) {
+    // Power-of-two cells let templates of similar size share grids. Cached
+    // grids hold every candidate, template shapes included; lookups skip
+    // those.
+    cell = 2 ** Math.ceil(Math.log2(cell))
+    let all: Map<string, AcEdShapeFeature<Id>[]> | undefined
+    for (const kind of byKind.keys()) {
+      const key = `${cell}|${kind}`
+      let grid = store.get(key)
+      if (!grid) {
+        all ??= groupByKind(candidates)
+        grid = new KindGrid(all.get(kind)!, cell)
+        store.set(key, grid)
+      }
+      grids.set(kind, grid)
+    }
+  } else {
+    for (const [kind, list] of byKind) grids.set(kind, new KindGrid(list, cell))
+  }
+  // Without scaling only equally sized shapes can match, so rarity is
+  // counted by size too: one kind (lines of a layer) can hold thousands of
+  // shapes while few have the anchor's length.
+  const countOf = (f: AcEdShapeFeature<Id>) => {
+    const grid = grids.get(f.kind)!
+    return allowScale ? grid.size : grid.countSizes(f.size, tolAt(1))
+  }
 
   // Anchor 0: rarest kind, then largest size (a zero-size anchor cannot
   // give the scale).
@@ -346,6 +436,7 @@ export function acedFindShapeMatches<Id>(
       let hit: AcEdShapeFeature<Id> | undefined
       grids.get(f.kind)!.forEachNear(c, pointTol, g => {
         if (claimed.has(g.id) || taken.has(g.id)) return false
+        if (templateIds.has(g.id)) return false
         if (!labelOk(f, g) || !sizeOk(f.size * scale, g.size, scale)) {
           return false
         }
@@ -398,6 +489,7 @@ export function acedFindShapeMatches<Id>(
       const partners: AcEdShapeFeature<Id>[] = []
       grids.get(a1.kind)!.forEachNear(c0.center, reach + ringTol, g => {
         if (g.id === c0.id || claimed.has(g.id) || !labelOk(a1, g)) return
+        if (templateIds.has(g.id)) return
         if (!sizeOk(a1.size * scale0, g.size, scale0)) return
         if (Math.abs(dist(g.center, c0.center) - reach) <= ringTol) {
           partners.push(g)

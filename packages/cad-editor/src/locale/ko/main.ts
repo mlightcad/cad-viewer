@@ -280,6 +280,7 @@ export default {
     tooltip: {
       searchConvert:
         '선택한 객체의 모든 사본을 찾아 블록으로 변환합니다(BSEARCH).',
+      detectConvert: '도면 전체에서 반복 객체를 찾아 블록으로 변환합니다(BDETECT).',
       importPdf:
         'PDF 파일에서 벡터 형상을 가져오고 원, 호, 곡선을 복원합니다 (IPDF).',
       pdfScale:
@@ -421,6 +422,7 @@ export default {
     },
     command: {
       searchConvert: '검색 및\n변환',
+      detectConvert: '감지 및\n변환',
       importPdf: 'PDF\n가져오기',
       pdfScale: '축척\n보정',
       pdfDim: '치수\n인식',
@@ -520,6 +522,25 @@ export default {
     existingBlocks: '기존 블록',
     textVariations: '문자 변형',
     pickPrompt: '인스턴스를 클릭하여 포함 또는 제외하거나'
+  },
+  bdetect: {
+    detecting: '도면에서 반복 객체를 검색하는 중…',
+    foundSoFar: '지금까지 그룹 {count}개 찾음',
+    stop: '중지',
+    groups: '반복 객체 그룹 {count}개',
+    none: '반복 객체를 찾지 못했습니다.',
+    selectAll: '모두 선택',
+    instances: '인스턴스 {count}개 × 객체 {objects}개',
+    layers: '도면층: {layers}',
+    attributes: '속성',
+    attributesHint: '인스턴스마다 다른 문자는 속성이 됩니다',
+    blockName: '블록 이름',
+    review: '이 그룹 검토 및 변환…',
+    convertSelected: '선택 항목 변환 ({count})',
+    close: '닫기',
+    pickPrompt: '객체를 클릭하여 해당 그룹을 표시하거나',
+    summary: '그룹 {groups}개를 블록 참조 {count}개로 변환했습니다',
+    nameDuplicate: '블록 이름 "{name}"을(를) 선택한 다른 그룹에서 사용 중입니다'
   },
   verticalToolbar: {
     measure: {
@@ -868,6 +889,10 @@ export default {
         leader: '지시선',
         table: '테이블'
       }
+    },
+    bdetect: {
+      tab: '감지',
+      title: '감지 및 변환'
     },
     countList: {
       tab: '개수',

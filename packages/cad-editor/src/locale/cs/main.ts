@@ -16,6 +16,25 @@ export default {
     textVariations: 'Rozdílný text',
     pickPrompt: 'Klepnutím na instanci ji zahrňte nebo vylučte, nebo'
   },
+  bdetect: {
+    detecting: 'Vyhledávání opakujících se objektů ve výkresu…',
+    foundSoFar: 'Zatím nalezeno skupin: {count}',
+    stop: 'Zastavit',
+    groups: 'Skupiny opakujících se objektů: {count}',
+    none: 'Nebyly nalezeny žádné opakující se objekty.',
+    selectAll: 'Vybrat vše',
+    instances: '{count} instancí × {objects} objektů',
+    layers: 'Hladiny: {layers}',
+    attributes: 'Atributy',
+    attributesHint: 'Texty, které se mezi instancemi liší, se stanou atributy',
+    blockName: 'Název bloku',
+    review: 'Zkontrolovat a převést tuto skupinu…',
+    convertSelected: 'Převést vybrané ({count})',
+    close: 'Zavřít',
+    pickPrompt: 'Klepněte na objekt pro zobrazení jeho skupiny, nebo',
+    summary: 'Převedené skupiny: {groups}, vytvořené reference bloků: {count}',
+    nameDuplicate: 'Název bloku „{name}“ používá jiná vybraná skupina'
+  },
   mainMenu: {
     new: 'Nový výkres',
     open: 'Otevřít výkres',
@@ -299,6 +318,8 @@ export default {
     tooltip: {
       searchConvert:
         'Vyhledá všechny kopie vybraných objektů a převede je na bloky (BSEARCH).',
+      detectConvert:
+        'Vyhledá opakující se objekty v celém výkresu a převede je na bloky (BDETECT).',
       importPdf:
         'Importuje vektorovou geometrii ze souboru PDF a obnoví kružnice, oblouky a křivky (IPDF).',
       pdfScale:
@@ -461,6 +482,7 @@ export default {
     },
     command: {
       searchConvert: 'Vyhledat a\npřevést',
+      detectConvert: 'Detekovat a\npřevést',
       importPdf: 'Importovat\nPDF',
       pdfScale: 'Kalibrovat\nměřítko',
       pdfDim: 'Obnovit\nkóty',
@@ -892,6 +914,10 @@ export default {
         leader: 'Odkaz',
         table: 'Tabulka'
       }
+    },
+    bdetect: {
+      tab: 'Detekce',
+      title: 'Detekovat a převést'
     },
     countList: {
       tab: 'Počet',

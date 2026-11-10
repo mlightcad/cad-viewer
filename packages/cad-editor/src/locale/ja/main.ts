@@ -281,6 +281,7 @@ export default {
     tooltip: {
       searchConvert:
         '選択したオブジェクトのすべてのコピーを検索してブロックに変換します（BSEARCH）。',
+      detectConvert: '図面全体から繰り返しオブジェクトを検出してブロックに変換します（BDETECT）。',
       importPdf:
         'PDF ファイルからベクトル図形を読み込み、円・円弧・曲線を復元します (IPDF)。',
       pdfScale:
@@ -434,6 +435,7 @@ export default {
     },
     command: {
       searchConvert: '検索して\n変換',
+      detectConvert: '検出して\n変換',
       importPdf: 'PDF\n読み込み',
       pdfScale: '尺度\n校正',
       pdfDim: '寸法\n認識',
@@ -533,6 +535,25 @@ export default {
     existingBlocks: '既存ブロック',
     textVariations: '文字の違い',
     pickPrompt: 'インスタンスをクリックして含める/除外する、または'
+  },
+  bdetect: {
+    detecting: '図面内の繰り返しオブジェクトを検索しています…',
+    foundSoFar: 'これまでに {count} グループを検出',
+    stop: '停止',
+    groups: '繰り返しオブジェクトのグループ {count} 個',
+    none: '繰り返しオブジェクトは見つかりませんでした。',
+    selectAll: 'すべて選択',
+    instances: '{count} 個のインスタンス × {objects} 個のオブジェクト',
+    layers: '画層: {layers}',
+    attributes: '属性',
+    attributesHint: 'インスタンス間で異なる文字は属性になります',
+    blockName: 'ブロック名',
+    review: 'このグループを確認して変換…',
+    convertSelected: '選択したグループを変換 ({count})',
+    close: '閉じる',
+    pickPrompt: 'オブジェクトをクリックしてグループを表示、または',
+    summary: '{groups} 個のグループを {count} 個のブロック参照に変換しました',
+    nameDuplicate: 'ブロック名「{name}」は選択した別のグループで使用されています'
   },
   verticalToolbar: {
     measure: {
@@ -883,6 +904,10 @@ export default {
         leader: '引出線',
         table: '表'
       }
+    },
+    bdetect: {
+      tab: '検出',
+      title: '検出して変換'
     },
     countList: {
       tab: '集計',

@@ -5,6 +5,10 @@ export default {
         'Akıllı Bloklar: aynı geometriyi bulur ve bloklara dönüştürür',
       prompt: 'Aranacak nesneleri seçin'
     },
+    bdetect: {
+      description:
+        'Akıllı Bloklar: çizimdeki yinelenen nesneleri bulur ve bloklara dönüştürür'
+    },
     hatch: {
       description:
         'Şerit tabanlı bağlamsal iş akışıyla tarama dolgusu oluşturur'

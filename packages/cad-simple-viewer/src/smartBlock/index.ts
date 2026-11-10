@@ -1,4 +1,5 @@
 export * from './AcApSmartBlockConvert'
+export * from './AcApSmartBlockDetect'
 export * from './AcApSmartBlockSearch'
 export * from './AcApSmartBlockSession'
 export * from './AcEdShapeFeatures'

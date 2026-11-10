@@ -278,6 +278,7 @@ export default {
     },
     tooltip: {
       searchConvert: '查找所选对象的所有副本并将其转换为块（BSEARCH）。',
+      detectConvert: '在整个图形中查找重复对象并将其转换为块（BDETECT）。',
       importPdf: '从 PDF 文件导入矢量图形，并还原圆、圆弧和曲线（IPDF）。',
       pdfScale: '根据两点之间的已知距离缩放导入的 PDF 图形（PDFSCALE）。',
       pdfDim: '将 PDF 中被打散的标注（箭头或斜线、尺寸线、尺寸界线和文字）恢复为标注对象（PDFDIM）。',
@@ -404,6 +405,7 @@ export default {
     },
     command: {
       searchConvert: '搜索并\n转换',
+      detectConvert: '检测并\n转换',
       importPdf: '导入\nPDF',
       pdfScale: '校准\n比例',
       pdfDim: '识别\n标注',
@@ -503,6 +505,25 @@ export default {
     existingBlocks: '现有块',
     textVariations: '文字变化',
     pickPrompt: '单击实例以包含或排除，或'
+  },
+  bdetect: {
+    detecting: '正在搜索图形中的重复对象…',
+    foundSoFar: '已找到 {count} 组',
+    stop: '停止',
+    groups: '{count} 组重复对象',
+    none: '未找到重复对象。',
+    selectAll: '全选',
+    instances: '{count} 个实例 × {objects} 个对象',
+    layers: '图层：{layers}',
+    attributes: '属性',
+    attributesHint: '各实例中不同的文字将转换为属性',
+    blockName: '块名',
+    review: '查看并转换此组…',
+    convertSelected: '转换所选 ({count})',
+    close: '关闭',
+    pickPrompt: '单击对象以显示其所在组，或',
+    summary: '已将 {groups} 组转换为 {count} 个块参照',
+    nameDuplicate: '块名“{name}”已被另一个选定组使用'
   },
   verticalToolbar: {
     measure: {
@@ -844,6 +865,10 @@ export default {
         leader: '引线',
         table: '表格'
       }
+    },
+    bdetect: {
+      tab: '检测',
+      title: '检测并转换'
     },
     countList: {
       tab: '计数',

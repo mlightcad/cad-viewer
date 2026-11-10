@@ -78,6 +78,12 @@
           <ml-blocks-palette />
         </div>
         <div
+          v-else-if="store.dialogs.activePaletteTab === 'bdetect'"
+          class="ml-bdetect-palette-wrapper"
+        >
+          <ml-b-detect-palette />
+        </div>
+        <div
           v-else-if="
             store.features.agentPlugin &&
             store.dialogs.activePaletteTab === 'agent'
@@ -118,6 +124,7 @@ import { useI18n } from 'vue-i18n'
 import { store } from '../../app'
 import { useSelectionSet, useViewerRect } from '../../composable'
 import { toolPaletteTabName, toolPaletteTitle } from '../../locale'
+import MlBDetectPalette from './MlBDetectPalette.vue'
 import MlBlocksPalette from './MlBlocksPalette.vue'
 import MlCadScriptPanel from './MlCadScriptPanel.vue'
 import MlCountList from './MlCountList.vue'
@@ -253,6 +260,10 @@ const tabNames = computed((): readonly string[] => {
   if (store.dialogs.openFileProfileTabVisible) {
     names.push('openFileProfile')
   }
+  // Only while BDETECT runs: the list belongs to that command.
+  if (store.dialogs.bdetectTabVisible) {
+    names.push('bdetect')
+  }
   if (store.features.agentPlugin) {
     names.push('agent')
   }
@@ -331,6 +342,7 @@ const propertyEntityLocked = computed(() => propertyRows.value.locked)
   z-index: 7;
 }
 
+.ml-bdetect-palette-wrapper,
 .ml-layer-list-wrapper {
   overflow: hidden;
   width: 100%;

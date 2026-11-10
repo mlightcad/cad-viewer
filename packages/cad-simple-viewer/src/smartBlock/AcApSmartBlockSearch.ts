@@ -17,6 +17,7 @@ import {
   acedFindShapeMatches,
   type AcEdPoint2d,
   type AcEdShapeFeature,
+  AcEdShapeGridCache,
   type AcEdShapeMatch
 } from './AcEdShapeMatcher'
 
@@ -87,6 +88,10 @@ export class AcApSmartBlockFeatureCache {
     AcDbObjectId,
     AcEdShapeFeature<AcDbObjectId> | null
   >()
+  private readonly layered = new Map<
+    AcDbObjectId,
+    AcEdShapeFeature<AcDbObjectId>
+  >()
 
   /**
    * Feature of `entity`, or `undefined` when matching cannot describe it.
@@ -106,10 +111,81 @@ export class AcApSmartBlockFeatureCache {
         }) ?? null
       this.raw.set(entity.objectId, feature)
     }
-    if (!feature) return undefined
-    return matchLayer
-      ? { ...feature, kind: `${entity.layer}|${feature.kind}` }
-      : feature
+    if (!feature || !matchLayer) return feature ?? undefined
+    // Layered copies are cached too: detection searches many times.
+    let layered = this.layered.get(entity.objectId)
+    if (!layered || layered.kind !== `${entity.layer}|${feature.kind}`) {
+      layered = { ...feature, kind: `${entity.layer}|${feature.kind}` }
+      this.layered.set(entity.objectId, layered)
+    }
+    return layered
+  }
+}
+
+/**
+ * Shapes a search may use, grouped by kind. Usually every visible,
+ * describable model-space shape not on a locked layer
+ * ({@link AcApSmartBlockCandidatePool.fromDatabase}); build it once to run
+ * many searches over an unchanged drawing. Detection also builds small
+ * pools around the places copies can be. A search without a pool builds
+ * the full one.
+ */
+export class AcApSmartBlockCandidatePool {
+  /** Spatial indexes shared by the searches over this pool. */
+  readonly gridCache = new AcEdShapeGridCache()
+  private readonly byKind = new Map<string, AcEdShapeFeature<AcDbObjectId>[]>()
+  private readonly byId = new Map<
+    AcDbObjectId,
+    AcEdShapeFeature<AcDbObjectId>
+  >()
+
+  /**
+   * @param features - Shapes to search among; kinds must already carry the
+   * layer prefix when layers are matched.
+   */
+  constructor(features: Iterable<AcEdShapeFeature<AcDbObjectId>>) {
+    for (const feature of features) {
+      this.byId.set(feature.id, feature)
+      const list = this.byKind.get(feature.kind)
+      if (list) list.push(feature)
+      else this.byKind.set(feature.kind, [feature])
+    }
+  }
+
+  /**
+   * Pool of every visible, describable model-space shape that is not on a
+   * locked layer.
+   *
+   * @param db - Drawing database.
+   * @param matchLayer - Prefix kinds with the layer name.
+   * @param cache - Feature cache to fill and reuse.
+   */
+  static fromDatabase(
+    db: AcDbDatabase,
+    matchLayer: boolean,
+    cache: AcApSmartBlockFeatureCache = new AcApSmartBlockFeatureCache()
+  ): AcApSmartBlockCandidatePool {
+    const features = new Map<AcDbObjectId, AcEdShapeFeature<AcDbObjectId>>()
+    for (const entity of db.tables.blockTable.modelSpace.newIterator()) {
+      if (!entity.visibility) continue
+      const feature = cache.get(entity, matchLayer)
+      if (feature) features.set(entity.objectId, feature)
+    }
+    return new AcApSmartBlockCandidatePool(
+      excludeLockedLayerIds(db, [...features.keys()]).ids.map(
+        id => features.get(id)!
+      )
+    )
+  }
+
+  /** Shapes of one kind. */
+  ofKind(kind: string): readonly AcEdShapeFeature<AcDbObjectId>[] {
+    return this.byKind.get(kind) ?? []
+  }
+
+  /** Feature of a pooled shape. */
+  feature(id: AcDbObjectId): AcEdShapeFeature<AcDbObjectId> | undefined {
+    return this.byId.get(id)
   }
 }
 
@@ -167,10 +243,10 @@ export function acapFindSmartBlockMatches(
   db: AcDbDatabase,
   template: AcApSmartBlockTemplate,
   options: AcApSmartBlockSearchOptions = {},
-  cache: AcApSmartBlockFeatureCache = new AcApSmartBlockFeatureCache()
+  cache: AcApSmartBlockFeatureCache = new AcApSmartBlockFeatureCache(),
+  pool?: AcApSmartBlockCandidatePool
 ): AcApSmartBlockMatch[] {
   if (template.entities.length === 0) return []
-  const modelSpace = db.tables.blockTable.modelSpace
   const matchLayer = options.matchLayer ?? true
   const textVariations = options.textVariations ?? true
   // Rebuilt per search: layer matching may have been toggled since the
@@ -195,26 +271,18 @@ export function acapFindSmartBlockMatches(
   const shapeKinds = new Set(shapeFeatures.map(f => f.kind))
   const textKinds = new Set(textIndices.map(i => templateFeatures[i].kind))
 
-  const candidateIds: AcDbObjectId[] = []
-  const candidateFeatures = new Map<AcDbObjectId, AcEdShapeFeature<string>>()
-  const textCandidateIds: AcDbObjectId[] = []
-  for (const entity of modelSpace.newIterator()) {
-    if (templateIds.has(entity.objectId)) continue
-    if (!entity.visibility) continue
-    const feature = cache.get(entity, matchLayer)
-    if (!feature) continue
-    // Only shapes of the template's kinds can take part in a copy.
-    if (feature.label === undefined || textIndices.length === 0) {
-      if (!shapeKinds.has(feature.kind)) continue
-      candidateIds.push(entity.objectId)
-    } else {
-      if (!textKinds.has(feature.kind)) continue
-      textCandidateIds.push(entity.objectId)
-    }
-    candidateFeatures.set(entity.objectId, feature)
-  }
-  const unlocked = excludeLockedLayerIds(db, candidateIds).ids
-  const candidates = unlocked.map(id => candidateFeatures.get(id)!)
+  const source =
+    pool ?? AcApSmartBlockCandidatePool.fromDatabase(db, matchLayer, cache)
+  const ofKinds = (kinds: Set<string>) =>
+    [...kinds].flatMap(kind => source.ofKind(kind))
+  // Only shapes of the template's kinds can take part in a copy. The
+  // matcher skips the template's own shapes itself.
+  const candidates = ofKinds(shapeKinds)
+  const textCandidates =
+    textIndices.length > 0
+      ? ofKinds(textKinds).filter(f => !templateIds.has(f.id))
+      : []
+  const candidateFeatures = { get: (id: AcDbObjectId) => source.feature(id) }
 
   const texts = new TextPicker(
     db,
@@ -222,9 +290,7 @@ export function acapFindSmartBlockMatches(
       entity: template.entities[i],
       feature: templateFeatures[i]
     })),
-    excludeLockedLayerIds(db, textCandidateIds).ids.map(
-      id => candidateFeatures.get(id)!
-    ),
+    textCandidates,
     textVariations
   )
   const textIdsOf = new Map<AcEdShapeMatch<AcDbObjectId>, AcDbObjectId[]>()
@@ -234,6 +300,7 @@ export function acapFindSmartBlockMatches(
     allowMirror: options.allowMirror,
     allowScale: options.allowScale,
     ignoreLabels: textVariations,
+    gridCache: pool?.gridCache,
     // A copy must hold every selected text at its place. Checked inside the
     // search so symmetric geometry tries the transform that fits the texts.
     accept: match => {

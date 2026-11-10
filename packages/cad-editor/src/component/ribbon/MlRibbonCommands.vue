@@ -125,6 +125,7 @@ import {
   arcThreePoints,
   attachDwg,
   attachImage,
+  bdetect,
   bsearch,
   circleCenterDiameter,
   circleCenterRadius,
@@ -1276,6 +1277,7 @@ const buildAiTab = (
   ribbonTooltips: Record<
     | 'agent'
     | 'searchConvert'
+    | 'detectConvert'
     | 'importPdf'
     | 'pdfScale'
     | 'pdfText'
@@ -1338,6 +1340,12 @@ const buildAiTab = (
                 t('main.ribbon.command.searchConvert'),
                 ribbonTooltips.searchConvert,
                 bsearch
+              ),
+              largeButton(
+                'cmd-ai-bdetect',
+                t('main.ribbon.command.detectConvert'),
+                ribbonTooltips.detectConvert,
+                bdetect
               )
             ]
           }
@@ -1443,6 +1451,7 @@ const buildBaseTabs = (
     quickSelect: t('main.ribbon.tooltip.quickSelect'),
     countList: t('main.ribbon.tooltip.countList'),
     searchConvert: t('main.ribbon.tooltip.searchConvert'),
+    detectConvert: t('main.ribbon.tooltip.detectConvert'),
     find: t('main.ribbon.tooltip.find'),
     drawingUnits: t('main.ribbon.tooltip.drawingUnits'),
     attachDwg: t('main.ribbon.tooltip.attachDwg'),
@@ -2910,6 +2919,18 @@ const buildBaseTabs = (
                     labelWrapLines: 2,
                     labelWrapWidth: 'max-content'
                   }
+                },
+                {
+                  id: 'cmd-bdetect',
+                  type: 'button',
+                  label: t('main.ribbon.command.detectConvert'),
+                  tooltip: ribbonTooltips.detectConvert,
+                  size: 'large',
+                  props: {
+                    icon: bdetect,
+                    labelWrapLines: 2,
+                    labelWrapWidth: 'max-content'
+                  }
                 }
               ]
             }
@@ -3351,6 +3372,8 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-attdef', 'attdef')
   commandByItemId.set('cmd-bsearch', 'bsearch')
   commandByItemId.set('cmd-ai-bsearch', 'bsearch')
+  commandByItemId.set('cmd-bdetect', 'bdetect')
+  commandByItemId.set('cmd-ai-bdetect', 'bdetect')
   if (store.features.agentPlugin) {
     commandByItemId.set('cmd-agent', 'agent')
   }

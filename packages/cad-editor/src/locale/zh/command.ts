@@ -48,6 +48,9 @@ export default {
       description: '智能块：查找相同的几何图形并将其转换为块',
       prompt: '选择要搜索的对象'
     },
+    bdetect: {
+      description: '智能块：查找图形中的重复对象并将其转换为块'
+    },
     attdef: {
       description: '创建用于块的属性定义'
     },

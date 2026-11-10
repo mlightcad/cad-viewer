@@ -283,6 +283,8 @@ export default {
     tooltip: {
       searchConvert:
         'Seçili nesnelerin tüm kopyalarını bulur ve bloklara dönüştürür (BSEARCH).',
+      detectConvert:
+        'Çizimin her yerindeki yinelenen nesneleri bulur ve bloklara dönüştürür (BDETECT).',
       importPdf:
         'PDF dosyasından vektör geometriyi içe aktarır; daireleri, yayları ve eğrileri yeniden oluşturur (IPDF).',
       pdfScale:
@@ -455,6 +457,7 @@ export default {
     },
     command: {
       searchConvert: 'Ara ve\nDönüştür',
+      detectConvert: 'Algıla ve\nDönüştür',
       importPdf: 'PDF\nİçe Aktar',
       pdfScale: 'Ölçeği\nKalibre Et',
       pdfDim: 'Ölçüleri\nKurtar',
@@ -554,6 +557,26 @@ export default {
     existingBlocks: 'Mevcut bloklar',
     textVariations: 'Metin farkları',
     pickPrompt: 'Dahil etmek veya hariç tutmak için bir örneğe tıklayın ya da'
+  },
+  bdetect: {
+    detecting: 'Çizimde yinelenen nesneler aranıyor…',
+    foundSoFar: 'Şu ana kadar {count} grup bulundu',
+    stop: 'Durdur',
+    groups: '{count} yinelenen nesne grubu',
+    none: 'Yinelenen nesne bulunamadı.',
+    selectAll: 'Tümünü seç',
+    instances: '{count} örnek × {objects} nesne',
+    layers: 'Katmanlar: {layers}',
+    attributes: 'Öznitelikler',
+    attributesHint: 'Örnekler arasında farklı olan metinler öznitelik olur',
+    blockName: 'Blok adı',
+    review: 'Bu grubu incele ve dönüştür…',
+    convertSelected: 'Seçilenleri dönüştür ({count})',
+    close: 'Kapat',
+    pickPrompt: 'Grubunu göstermek için bir nesneye tıklayın veya',
+    summary: '{groups} grup {count} blok referansına dönüştürüldü',
+    nameDuplicate:
+      '"{name}" blok adı seçili başka bir grup tarafından kullanılıyor'
   },
   verticalToolbar: {
     measure: {
@@ -906,6 +929,10 @@ export default {
         leader: 'Kılavuz',
         table: 'Tablo'
       }
+    },
+    bdetect: {
+      tab: 'Algılama',
+      title: 'Algıla ve Dönüştür'
     },
     countList: {
       tab: 'Sayım',

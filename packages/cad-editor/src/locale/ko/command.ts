@@ -52,6 +52,9 @@ export default {
       description: '스마트 블록: 동일한 형상을 찾아 블록으로 변환합니다',
       prompt: '검색할 객체 선택'
     },
+    bdetect: {
+      description: '스마트 블록: 도면에서 반복 객체를 찾아 블록으로 변환합니다'
+    },
     attdef: {
       description: '블록에 대한 속성 정의를 작성합니다'
     },
