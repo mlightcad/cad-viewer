@@ -45,6 +45,8 @@ export interface AcEdShapeFeatureOptions {
  * polylines (bulges included), 3D polylines, traces and 2D solids, points,
  * hatches, text, mtext and block references. All coordinates are WCS so
  * entities with a flipped extrusion (mirrored arcs) compare correctly.
+ * Open 2D polylines are described by their path, not their vertices, so
+ * copies split into different vertices (e.g. after a PDF round trip) match.
  *
  * @returns The feature, or `undefined` for entity types matching does not
  * support (images, dimensions, tables, ...).
@@ -113,13 +115,7 @@ function describe<Id>(
       { x: 0, y: 0, z: 0 },
       mids
     )
-    return {
-      id,
-      kind: `polyline:${entity.closed ? 'closed' : 'open'}:${vertices.length}`,
-      center: centroid(vertices),
-      size: pathLength(vertices, entity.closed),
-      points: [...vertices, ...mids.map(xy)]
-    }
+    return polylinePathFeature(id, vertices, mids.map(xy), entity.closed)
   }
   if (entity instanceof AcDb2dPolyline) {
     const vertices: AcEdPoint2d[] = []
@@ -129,17 +125,13 @@ function describe<Id>(
       bulges.push(entity.getBulgeAt(i) ?? 0)
     }
     if (vertices.length === 0) return undefined
-    // Same kind and point layout as a light polyline, so both match.
-    return {
+    // Same description as a light polyline, so both match.
+    return polylinePathFeature(
       id,
-      kind: `polyline:${entity.closed ? 'closed' : 'open'}:${vertices.length}`,
-      center: centroid(vertices),
-      size: pathLength(vertices, entity.closed),
-      points: [
-        ...vertices,
-        ...segmentMidpoints(vertices, bulges, entity.closed)
-      ]
-    }
+      vertices,
+      segmentMidpoints(vertices, bulges, entity.closed),
+      entity.closed
+    )
   }
   if (entity instanceof AcDb3dPolyline) {
     const vertices: AcEdPoint2d[] = []
@@ -320,6 +312,234 @@ function textFeature<Id>(
 
 function xy(p: { x: number; y: number }): AcEdPoint2d {
   return { x: p.x, y: p.y }
+}
+
+/**
+ * Samples per polyline path. Enough to tell paths apart; matching compares
+ * them pairwise, so cost grows with the square.
+ */
+const PATH_SAMPLES = 32
+
+/**
+ * Describes a light or heavy 2D polyline by its path rather than its
+ * vertices.
+ *
+ * The same path can be stored with different vertices: a curve flattened
+ * into many short segments or partly rebuilt as arcs (as a PDF round trip
+ * does, differently for each copy), an arc split in two, a straight edge
+ * with an extra vertex, or a closed outline starting at another vertex.
+ * Points sampled at equal path-length steps do not depend on any of that:
+ *
+ * - Open paths are sampled from one end to the other, so a reversed path
+ *   gives the same set.
+ * - Closed paths have no end, so sampling starts at the point farthest from
+ *   the path's centroid. Several equally far points only occur on symmetric
+ *   outlines, where each start gives the same set; on a closed path the
+ *   direction does not matter either.
+ *
+ * @param vertices - WCS vertices.
+ * @param mids - WCS midpoint of each segment (on the arc for bulges).
+ * @param closed - Whether the last vertex connects back to the first.
+ */
+function polylinePathFeature<Id>(
+  id: Id,
+  vertices: AcEdPoint2d[],
+  mids: AcEdPoint2d[],
+  closed: boolean
+): AcEdShapeFeature<Id> {
+  const kind = `polyline:${closed ? 'closed' : 'open'}`
+  const segments: PathSegment[] = []
+  const count = closed ? vertices.length : vertices.length - 1
+  for (let i = 0; i < count; i++) {
+    const a = vertices[i]
+    const b = vertices[(i + 1) % vertices.length]
+    const m = mids[i] ?? { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
+    const segment = pathSegment(a, m, b)
+    if (segment.length > 0) segments.push(segment)
+  }
+  const size = segments.reduce((sum, s) => sum + s.length, 0)
+  if (size === 0) {
+    return { id, kind, center: vertices[0], size: 0, points: [vertices[0]] }
+  }
+  const center = pathCentroid(segments, size)
+  const points: AcEdPoint2d[] = []
+  if (closed) {
+    const start = farthestPosition(segments, center)
+    for (let k = 0; k < PATH_SAMPLES; k++) {
+      points.push(pointAt(segments, (start + (size * k) / PATH_SAMPLES) % size))
+    }
+  } else {
+    for (let k = 0; k < PATH_SAMPLES; k++) {
+      points.push(pointAt(segments, (size * k) / PATH_SAMPLES))
+    }
+    points.push(segments[segments.length - 1].b)
+  }
+  return {
+    id,
+    kind,
+    center,
+    size,
+    points,
+    path: flattenPath(segments, size, closed)
+  }
+}
+
+/** Straight or circular piece of a polyline path. */
+interface PathSegment {
+  /** Start point. */
+  a: AcEdPoint2d
+  /** End point. */
+  b: AcEdPoint2d
+  length: number
+  /** Arc center; `undefined` for straight segments. */
+  center?: AcEdPoint2d
+  /** Start angle of the arc. */
+  angle: number
+  /** Signed sweep of the arc, positive counterclockwise. */
+  sweep: number
+}
+
+/** Segment from `a` to `b` through its midpoint `m`. */
+function pathSegment(
+  a: AcEdPoint2d,
+  m: AcEdPoint2d,
+  b: AcEdPoint2d
+): PathSegment {
+  const chord = Math.hypot(b.x - a.x, b.y - a.y)
+  const straight: PathSegment = { a, b, length: chord, angle: 0, sweep: 0 }
+  if (chord === 0) return straight
+  const cx = (a.x + b.x) / 2
+  const cy = (a.y + b.y) / 2
+  const sagitta = Math.hypot(m.x - cx, m.y - cy)
+  // Below this the arc cannot be told from its chord.
+  if (sagitta <= chord * 1e-9) return straight
+  // tan(sweep / 4) = 2·sagitta / chord (the bulge).
+  const sweepSize = 4 * Math.atan((2 * sagitta) / chord)
+  const radius = (chord * chord) / (8 * sagitta) + sagitta / 2
+  // The center lies on the chord's bisector, away from the midpoint.
+  const k = (sagitta - radius) / sagitta
+  const center = { x: cx + (m.x - cx) * k, y: cy + (m.y - cy) * k }
+  const turn =
+    (a.x - center.x) * (m.y - center.y) - (a.y - center.y) * (m.x - center.x)
+  return {
+    a,
+    b,
+    length: radius * sweepSize,
+    center,
+    angle: Math.atan2(a.y - center.y, a.x - center.x),
+    sweep: turn >= 0 ? sweepSize : -sweepSize
+  }
+}
+
+/**
+ * The path as a polyline for outline matching. Arcs are split so that no
+ * chord strays more than 1e-4 of the path length from the arc, far below
+ * any matching tolerance. A closed path repeats its first point at the end.
+ */
+function flattenPath(
+  segments: PathSegment[],
+  length: number,
+  closed: boolean
+): AcEdPoint2d[] {
+  const sagitta = length * 1e-4
+  const path: AcEdPoint2d[] = []
+  for (const s of segments) {
+    path.push(s.a)
+    if (!s.center) continue
+    const r = s.length / Math.abs(s.sweep)
+    const step = sagitta < r ? 2 * Math.acos(1 - sagitta / r) : Math.PI
+    const pieces = Math.min(64, Math.ceil(Math.abs(s.sweep) / step))
+    for (let i = 1; i < pieces; i++) path.push(segmentPoint(s, i / pieces))
+  }
+  path.push(closed ? segments[0].a : segments[segments.length - 1].b)
+  return path
+}
+
+/** Point of a segment at `t` (0 = start, 1 = end). */
+function segmentPoint(s: PathSegment, t: number): AcEdPoint2d {
+  if (!s.center) {
+    return { x: s.a.x + (s.b.x - s.a.x) * t, y: s.a.y + (s.b.y - s.a.y) * t }
+  }
+  const r = s.length / Math.abs(s.sweep)
+  const angle = s.angle + s.sweep * t
+  return {
+    x: s.center.x + r * Math.cos(angle),
+    y: s.center.y + r * Math.sin(angle)
+  }
+}
+
+/** Point at path length `at` from the start of the first segment. */
+function pointAt(segments: PathSegment[], at: number): AcEdPoint2d {
+  let start = 0
+  for (const s of segments) {
+    if (at <= start + s.length) {
+      return segmentPoint(s, Math.max(0, (at - start) / s.length))
+    }
+    start += s.length
+  }
+  return segments[segments.length - 1].b
+}
+
+/**
+ * Centroid of the path as a curve (each piece weighted by its length), so
+ * it does not depend on how the path is split into vertices.
+ */
+function pathCentroid(segments: PathSegment[], length: number): AcEdPoint2d {
+  let x = 0
+  let y = 0
+  for (const s of segments) {
+    let c: AcEdPoint2d
+    if (s.center) {
+      // An arc's centroid lies toward its midpoint, at r·sin(α)/α from the
+      // center (α = half the sweep).
+      const half = Math.abs(s.sweep) / 2
+      const r = s.length / Math.abs(s.sweep)
+      const d = (r * Math.sin(half)) / half
+      const mid = s.angle + s.sweep / 2
+      c = {
+        x: s.center.x + d * Math.cos(mid),
+        y: s.center.y + d * Math.sin(mid)
+      }
+    } else {
+      c = { x: (s.a.x + s.b.x) / 2, y: (s.a.y + s.b.y) / 2 }
+    }
+    x += c.x * s.length
+    y += c.y * s.length
+  }
+  return { x: x / length, y: y / length }
+}
+
+/**
+ * Path length at which a closed path is farthest from `p`: a segment start,
+ * or the point of an arc that faces away from `p`.
+ */
+function farthestPosition(segments: PathSegment[], p: AcEdPoint2d): number {
+  let best = 0
+  let bestDist = -1
+  let start = 0
+  const consider = (s: PathSegment, t: number) => {
+    const q = segmentPoint(s, t)
+    const d = Math.hypot(q.x - p.x, q.y - p.y)
+    // Ties are left to the first one: equally far points only occur on
+    // symmetric outlines, where every start gives the same samples.
+    if (d > bestDist * (1 + 1e-9)) {
+      bestDist = d
+      best = start + t * s.length
+    }
+  }
+  for (const s of segments) {
+    consider(s, 0)
+    if (s.center) {
+      const away = Math.atan2(s.center.y - p.y, s.center.x - p.x)
+      let t = (away - s.angle) / s.sweep
+      // Bring the angle into the arc's own turn before testing the range.
+      const turn = (Math.PI * 2) / Math.abs(s.sweep)
+      t -= Math.floor(t / turn) * turn
+      if (t > 0 && t < 1) consider(s, t)
+    }
+    start += s.length
+  }
+  return best
 }
 
 /**

@@ -27,8 +27,8 @@ import {
   acedApplyAffine2d,
   acedFindShapeMatches,
   type AcEdPoint2d,
-  type AcEdShapeFeature
-} from './AcEdShapeMatcher'
+  type AcEdShapeFeature,
+  acedShapeLandsOn} from './AcEdShapeMatcher'
 
 /** Options of {@link acapDetectSmartBlocks} (`BDETECT`). */
 export interface AcApSmartBlockDetectOptions extends Pick<
@@ -836,16 +836,7 @@ function lands(
   if (Math.abs(from.feature.size * scale - to.feature.size) > tol) return false
   if (dist(acedApplyAffine2d(t, from.feature.center), to.feature.center) > tol)
     return false
-  const target = to.feature.points
-  if (target.length !== from.feature.points.length) return false
-  const used = new Array<boolean>(target.length).fill(false)
-  for (const p of from.feature.points) {
-    const q = acedApplyAffine2d(t, p)
-    const k = target.findIndex((r, i) => !used[i] && dist(q, r) <= tol)
-    if (k < 0) return false
-    used[k] = true
-  }
-  return true
+  return acedShapeLandsOn(from.feature, to.feature, t, tol)
 }
 
 /**

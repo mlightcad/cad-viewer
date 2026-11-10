@@ -22,7 +22,8 @@ import {
   AcApSmartBlockSearch,
   acedEntityToShapeFeature,
   acedFindShapeMatches,
-  type AcEdShapeFeature} from '../src/smartBlock'
+  type AcEdShapeFeature
+} from '../src/smartBlock'
 
 /** An "L" plate with one rounded corner: a single closed polyline. */
 function plate(): AcDbPolyline {
@@ -111,6 +112,99 @@ describe('Smart Blocks matching: shapes and transforms', () => {
     const matches = acedFindShapeMatches(features([light]), features([heavy]))
     expect(matches).toHaveLength(1)
     expect(Math.abs(matches[0].rotation)).toBeCloseTo(Math.PI)
+  })
+
+  test('open polylines tracing the same path match however they are split', () => {
+    // A PDF round trip rebuilds flattened curves with varying vertex
+    // counts: one copy gets a run of segments as a single arc, another as
+    // several pieces. The path is what matters, not its vertices.
+    const sweepBulge = 0.3
+    const halfBulge = Math.tan(Math.atan(sweepBulge) / 2)
+    const coarse = () => {
+      const pl = new AcDbPolyline()
+      pl.addVertexAt(0, new AcGePoint2d(0, 0), sweepBulge)
+      pl.addVertexAt(1, new AcGePoint2d(10, 0))
+      pl.addVertexAt(2, new AcGePoint2d(10, 5))
+      pl.addVertexAt(3, new AcGePoint2d(15, 5))
+      return pl
+    }
+    const fine = (end = { x: 15, y: 5 }) => {
+      // Same path: the arc as two halves (its midpoint is (5, -1.5)) and the
+      // vertical edge with an extra vertex.
+      const pl = new AcDbPolyline()
+      pl.addVertexAt(0, new AcGePoint2d(0, 0), halfBulge)
+      pl.addVertexAt(1, new AcGePoint2d(5, -1.5), halfBulge)
+      pl.addVertexAt(2, new AcGePoint2d(10, 0))
+      pl.addVertexAt(3, new AcGePoint2d(10, 2.5))
+      pl.addVertexAt(4, new AcGePoint2d(10, 5))
+      pl.addVertexAt(5, new AcGePoint2d(end.x, end.y))
+      return pl
+    }
+    const [source] = add(db, [coarse()])
+    add(db, [fine().transformBy(place(100, 0, Math.PI / 6))])
+    // Drawn backwards: the reversed vertex order is the same path.
+    const reversed = new AcDbPolyline()
+    ;[
+      [15, 5, 0],
+      [10, 5, 0],
+      [10, 0, -sweepBulge],
+      [0, 0, 0]
+    ].forEach(([x, y, b], i) =>
+      reversed.addVertexAt(i, new AcGePoint2d(x, y), b)
+    )
+    add(db, [reversed.transformBy(place(200, 0))])
+    // A different last edge is a different shape.
+    add(db, [fine({ x: 15, y: 6 }).transformBy(place(300, 0))])
+
+    const search = new AcApSmartBlockSearch(db, [source])
+    expect(search.matches).toHaveLength(2)
+  })
+
+  test('closed polylines tracing the same outline match however they are split', () => {
+    // A slot with rounded ends, like the chair outlines a PDF round trip
+    // rebuilt with 8, 11 or 13 vertices: arcs split into pieces, an extra
+    // vertex on a straight edge, and another start vertex.
+    const q = Math.tan(Math.PI / 8) // bulge of a 90° arc
+    const e = Math.tan(Math.PI / 16) // bulge of a 45° arc
+    const r = Math.SQRT1_2 * 2
+    const coarse = () => {
+      const pl = new AcDbPolyline()
+      ;[
+        [0, -2, 0],
+        [8, -2, q],
+        [10, 0, q],
+        [8, 2, 0],
+        [0, 2, q],
+        [-2, 0, q]
+      ].forEach(([x, y, b], i) => pl.addVertexAt(i, new AcGePoint2d(x, y), b))
+      pl.closed = true
+      return pl
+    }
+    const fine = (shift = 0) => {
+      // Starts on the top edge; the right corners are split at 45°.
+      const pl = new AcDbPolyline()
+      ;[
+        [8, 2, 0],
+        [4, 2, 0],
+        [0, 2, q],
+        [-2, 0, q],
+        [0, -2, 0],
+        [8, -2, e],
+        [8 + r, -2 + (2 - r), e],
+        [10 + shift, 0, e],
+        [8 + r, r, e]
+      ].forEach(([x, y, b], i) => pl.addVertexAt(i, new AcGePoint2d(x, y), b))
+      pl.closed = true
+      return pl
+    }
+    const [source] = add(db, [coarse()])
+    add(db, [fine().transformBy(place(100, 0, Math.PI / 4))])
+    add(db, [fine().transformBy(place(200, 0, 0, true))])
+    // A dent at the right end is a different outline.
+    add(db, [fine(-1).transformBy(place(300, 0))])
+
+    const search = new AcApSmartBlockSearch(db, [source])
+    expect(search.matches).toHaveLength(2)
   })
 
   test('full ellipses match regardless of their start parameter', () => {
