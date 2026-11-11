@@ -85,6 +85,11 @@ test('AI tab hosts the CAD Agent and the PDF tools', async ({ page }) => {
     await expect(ribbonButton(id)).toBeVisible()
   }
   await expect(ribbonButton('cmd-pdfimport')).toContainText(/Import\s*PDF/)
+  // The tooltip names the dialog command, not the old `ipdf`.
+  await expect(ribbonButton('cmd-pdfimport')).toHaveAttribute(
+    'aria-label',
+    /\(PDFIMPORT\)/
+  )
 
   // Import PDF runs `pdfimport` (lazy-loading the PDF plugin) and opens the picker.
   const chooserPromise = page.waitForEvent('filechooser')
