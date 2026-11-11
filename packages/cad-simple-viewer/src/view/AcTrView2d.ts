@@ -2884,7 +2884,7 @@ export class AcTrView2d extends AcEdBaseView {
     // many converts in parallel and OOM'd dense drawings (e.g. cathedral.dwg)
     // during "Rendering drawing ...". Progressive mid-open paints stay gated
     // by `_progressiveRendering` inside batchConvert / markProgressiveDirty.
-    this._convertQueue.push(...entities)
+    this.enqueueConvert(entities)
     void this.drainConvertQueue()
   }
 
@@ -3445,6 +3445,17 @@ export class AcTrView2d extends AcEdBaseView {
     }
     const active = document.activeElement
     return active instanceof Node && this.container.contains(active)
+  }
+
+  /**
+   * Appends entities to the convert queue. Not `push(...entities)`: one
+   * commit can carry hundreds of thousands of entities (e.g. a PDF import),
+   * which exceeds the engine's argument limit and throws "Maximum call stack
+   * size exceeded".
+   */
+  private enqueueConvert(entities: readonly AcDbEntity[]) {
+    const queue = this._convertQueue
+    for (let i = 0; i < entities.length; i++) queue.push(entities[i])
   }
 
   /**
@@ -4068,7 +4079,7 @@ export class AcTrView2d extends AcEdBaseView {
       const convert = async () => {
         try {
           if (this._progressiveRendering) {
-            this._convertQueue.push(...entities)
+            this.enqueueConvert(entities)
             await this.drainConvertQueue()
           } else {
             await this.batchConvert(entities)
