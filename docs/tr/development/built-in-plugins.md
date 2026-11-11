@@ -16,7 +16,7 @@ Eklenti mekanizmasının kendisi için (`AcApPlugin`, eklenti yöneticisi, tembe
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **Doğal dil CAD ajanı** (yapay zekâ sohbet paneli + çizim araç çağrıları) | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **Manuel CAD betik konsolu** (çizime karşı denetlenmiş betikler çalıştırır, LLM / API anahtarı gerekmez) | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | Çizimleri **bağımsız çevrimdışı HTML** olarak dışa aktarma | `chtml` (`cad-editor` içinde iletişim kutusu), `-chtml` (komut satırı) |
-| [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **PDF dışa aktarma ve içe aktarma** (vektör hattı) | `cpdf`, `ipdf` |
+| [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **PDF dışa aktarma ve içe aktarma** (vektör hattı) | `cpdf`, `pdfimport`, `-pdfimport` |
 | [`@mlightcad/cad-svg-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin) | **SVG dışa aktarma** ve paylaşılan vektör işleyici (PDF dışa aktarma tarafından da kullanılır) | `csvg` |
 | [`@mlightcad/cad-onedrive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-onedrive-plugin) | **OneDrive veri kaynağı** — OneDrive / SharePoint üzerinden DWG/DXF açma | `AcApDataSource` kaydeder (`onedrive`); iki adımlı Oturum aç → Aç (açılır pencere engelleyiciye uyumlu) |
 | [`@mlightcad/cad-google-drive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-google-drive-plugin) | **Google Drive veri kaynağı** — Google Drive üzerinden DWG/DXF açma | `AcApDataSource` kaydeder (`googledrive`); iki adımlı Oturum aç → Aç (açılır pencere engelleyiciye uyumlu) |
@@ -93,7 +93,7 @@ Paylaşım ve arşivleme için tek dosyalık **çevrimdışı görüntüleyici**
 
 | Öğe | Değer |
 |------|-------|
-| Komutlar | `cpdf` (dışa aktarma), `ipdf` (içe aktarma) |
+| Komutlar | `cpdf` (dışa aktarma), `pdfimport` (içe aktarma) |
 | Genel API | `registerLazyPdfPlugin`, `createPdfPlugin`, `AcApPdfConvertor`, `resolveAcApPdfExportOptions` |
 
 → **Derleme çıktısı ve entegrasyon:** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)

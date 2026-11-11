@@ -1898,7 +1898,7 @@ export default {
       }
     }
   },
-  ipdf: {
+  pdfimport: {
     pageNumber: 'Enter page number (1-{count})',
     insertionPoint:
       'Specify insertion point (scale {scale}, mode {mode}) or',
@@ -1927,6 +1927,33 @@ export default {
         local: 'Visual',
         global: 'Visual'
       }
+    },
+    pickInsertionPoint: 'Specify insertion point',
+    dialog: {
+      title: 'Import PDF',
+      close: 'Close',
+      fileName: 'File name:',
+      browse: 'Browse...',
+      pagesGroup: 'Page to import',
+      page: 'Page:',
+      total: 'Total: {count}',
+      singleView: 'Show page preview',
+      gridView: 'Show page thumbnails',
+      pageLabel: 'Page {page}',
+      pageSize: 'Page size: {width} × {height} mm ({widthIn} × {heightIn} in)',
+      previewError: 'Preview not available',
+      positionGroup: 'Location',
+      onScreen: 'Specify insertion point on-screen',
+      x: 'X:',
+      y: 'Y:',
+      scale: 'Scale:',
+      modeGroup: 'Import mode',
+      modeRecover: 'Recover drawing',
+      recoverHint: 'Rebuild circles, arcs, curves, text, hatches and blocks',
+      modeVisual: 'Keep PDF appearance',
+      visualHint: 'Import paths and text exactly as drawn in the PDF',
+      ok: 'OK',
+      cancel: 'Cancel'
     }
   },
   pdfdim: {

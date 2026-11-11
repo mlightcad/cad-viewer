@@ -125,7 +125,7 @@ export class AcApMyPlugin implements AcApPlugin {
 공식 플러그인도 동일한 패턴을 따릅니다:
 
 - `AcApHtmlPlugin` — `chtml` 등록
-- `AcApPdfPlugin` — `cpdf`, `ipdf` 등록
+- `AcApPdfPlugin` — `cpdf`, `pdfimport`, `-pdfimport` 등록
 - `AcApSvgPlugin` — `csvg` 등록
 
 뷰어 전역 명령(확대, 레이어 등과 동일한 그룹)에는 `AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME`을 사용합니다.
@@ -320,7 +320,7 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## 내장 플러그인 참조
 
-모노레포에는 여러 공식 플러그인이 포함되어 있습니다: `AcApHtmlPlugin`(`chtml`), `AcApPdfPlugin`(`cpdf`, `ipdf`), `AcApSvgPlugin`(`csvg`), 그리고 UI, 에이전트, 스크립트 콘솔, 데이터 소스 플러그인이 있습니다.
+모노레포에는 여러 공식 플러그인이 포함되어 있습니다: `AcApHtmlPlugin`(`chtml`), `AcApPdfPlugin`(`cpdf`, `pdfimport`, `-pdfimport`), `AcApSvgPlugin`(`csvg`), 그리고 UI, 에이전트, 스크립트 콘솔, 데이터 소스 플러그인이 있습니다.
 
 플러그인별 명령, 공개 API, 구성 및 각 패키지 README 링크가 포함된 전체 목록은 [내장 플러그인](./built-in-plugins)을 참조하십시오.
 

@@ -125,7 +125,7 @@ export class AcApMyPlugin implements AcApPlugin {
 تتبع الإضافات الرسمية النمط نفسه:
 
 - `AcApHtmlPlugin` — يسجّل `chtml`
-- `AcApPdfPlugin` — يسجّل `cpdf` و`ipdf`
+- `AcApPdfPlugin` — يسجّل `cpdf` و`pdfimport`
 - `AcApSvgPlugin` — يسجّل `csvg`
 
 استخدم `AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME` للأوامر على مستوى العارض (المجموعة نفسها المستخدمة في التكبير والطبقات وغيرها).
@@ -320,7 +320,7 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## مرجع الإضافات المدمجة
 
-يأتي المستودع الأحادي (monorepo) مع عدة إضافات رسمية: `AcApHtmlPlugin` (`chtml`)، و`AcApPdfPlugin` (`cpdf`، `ipdf`)، و`AcApSvgPlugin` (`csvg`)، بالإضافة إلى إضافات واجهة المستخدم والوكيل ووحدة تحكم النصوص ومصادر البيانات.
+يأتي المستودع الأحادي (monorepo) مع عدة إضافات رسمية: `AcApHtmlPlugin` (`chtml`)، و`AcApPdfPlugin` (`cpdf`، `pdfimport`)، و`AcApSvgPlugin` (`csvg`)، بالإضافة إلى إضافات واجهة المستخدم والوكيل ووحدة تحكم النصوص ومصادر البيانات.
 
 للحصول على القائمة الكاملة مع أوامر كل إضافة وواجهتها العامة وتهيئتها وروابط ملف README لكل حزمة، راجع [الإضافات المدمجة](./built-in-plugins).
 

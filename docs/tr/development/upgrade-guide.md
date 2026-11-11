@@ -26,6 +26,15 @@ registerLazyAgentPlugin(pluginManager)
 ```
 :::
 
+::: info PDF içe aktarma: `ipdf` artık `PDFIMPORT` / `-PDFIMPORT`
+Bu değişikliği içeren sürümden (1.8.0) itibaren `@mlightcad/cad-pdf-plugin` içindeki PDF içe aktarma komutu AutoCAD'deki adları kullanır:
+
+- **PDFIMPORT**, dosya seçildikten sonra bir **PDF İçe Aktar** iletişim kutusu (`AcUiPdfImportDialog`) açar: önizlemeli sayfa, ekleme noktası (X/Y veya ekranda), ölçek ve mod (Çizimi kurtar / PDF görünümünü koru).
+- **-PDFIMPORT**, `ipdf` komutunun komut satırı istemlerini (sayfa, **Ölçek** ve **Mod** seçenekli ekleme noktası) korur. Sınıfı `AcApImportPdfPromptCmd`'dir.
+
+Geçiş: `ipdf` artık yok. `executeCommand('ipdf')` çalıştırıp istemleri yanıtlayan betikler `-pdfimport` kullanmalıdır; kendi şeridini çizen ana uygulamalar `pdfimport` kullanmalıdır (cad-editor şerit öğesi kimliği artık `cmd-pdfimport`). Komut açıklamaları `command.ACAD.ipdf` yerine `command.ACAD.pdfimport` / `command.ACAD.-pdfimport`, istem metinleri `jig.ipdf` yerine `jig.pdfimport` altındadır (iletişim kutusu metinleri `jig.pdfimport.dialog` altında). `AcApPdfImportConvertor.importFromFilePicker` artık iletişim kutusunu gösterir; `importFromCommandLine` istem akışıdır.
+:::
+
 ::: info Akıllı Bloklar: Ara ve Dönüştür (`BSEARCH`)
 Bu değişikliği içeren sürümden itibaren `@mlightcad/cad-simple-viewer` **-BSEARCH** komutunu kaydeder; `@mlightcad/cad-editor` araç paletinde Ara ve Dönüştür sekmesi (bulunan örneklerin listesi) ve Bloğa Dönüştür iletişim kutusuyla **BSEARCH** (diğer adı `BCONVERT`) ekler (şeritte Ekle ve AI sekmeleri).
 
@@ -165,10 +174,10 @@ Bu değişikliği içeren sürümden itibaren `cad.blocks` her blok için `entit
 
 | Paket | Rol |
 | --- | --- |
-| `@mlightcad/cad-pdf-plugin` | Tarayıcıda `cpdf` / `-cpdf` / `ipdf` (ve Vue dışa aktarma iletişim kutusu) |
+| `@mlightcad/cad-pdf-plugin` | Tarayıcıda `cpdf` / `-cpdf` / `pdfimport` (ve Vue dışa aktarma iletişim kutusu) |
 | `@mlightcad/cad-pdf-exporter` | Node’da başsız DXF/DWG → PDF — **tarayıcı gerekmez** |
 
-**Tarayıcı entegratörleri — büyük ölçüde aynı.** `cpdf` / `-cpdf` / `ipdf`, `AcApPdfConvertor`, `AcApPdfExportOptions` ve `resolveAcApPdfExportOptions` kullanmaya devam edin. Yeni peer `@mlightcad/cad-pdf-core`’u eklentiyle aynı sürümde ekleyin.
+**Tarayıcı entegratörleri — büyük ölçüde aynı.** `cpdf` / `-cpdf` / `pdfimport`, `AcApPdfConvertor`, `AcApPdfExportOptions` ve `resolveAcApPdfExportOptions` kullanmaya devam edin. Yeni peer `@mlightcad/cad-pdf-core`’u eklentiyle aynı sürümde ekleyin.
 
 **Kullanıcıyı etkileyen API / davranış farkları:**
 

@@ -286,7 +286,7 @@ export default {
       detectConvert:
         'Find repeated objects anywhere in the drawing and convert them into blocks (BDETECT).',
       importPdf:
-        'Import vector geometry from a PDF file, rebuilding circles, arcs and curves (IPDF).',
+        'Import vector geometry from a PDF file, rebuilding circles, arcs and curves (PDFIMPORT).',
       pdfScale:
         'Rescale imported PDF geometry from two points of a known distance (PDFSCALE).',
       pdfDim:

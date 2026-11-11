@@ -16,7 +16,7 @@ title: "الإضافات المدمجة"
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **وكيل CAD بلغة طبيعية** (لوحة محادثة AI + استدعاءات أدوات الرسم) | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **وحدة تحكم نصوص CAD يدوية** (تشغّل النصوص المُتحقق منها على الرسم، بدون LLM / مفتاح API) | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | تصدير الرسومات إلى **HTML غير متصل مكتفٍ ذاتيًا** | `chtml` (نافذة حوار في `cad-editor`)، `-chtml` (سطر الأوامر) |
-| [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **تصدير واستيراد PDF متجهي** | `cpdf`, `ipdf` |
+| [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **تصدير واستيراد PDF متجهي** | `cpdf`, `pdfimport`, `-pdfimport` |
 | [`@mlightcad/cad-svg-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin) | **تصدير SVG متجهي** والعارض المتجهي المشترك (يُستخدم أيضًا في تصدير PDF) | `csvg` |
 | [`@mlightcad/cad-onedrive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-onedrive-plugin) | **مصدر بيانات OneDrive** — افتح DWG/DXF من OneDrive / SharePoint | يسجّل `AcApDataSource` (`onedrive`)؛ تدفق من خطوتين: تسجيل الدخول ← فتح (آمن ضد حاجب النوافذ المنبثقة) |
 | [`@mlightcad/cad-google-drive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-google-drive-plugin) | **مصدر بيانات Google Drive** — افتح DWG/DXF من Google Drive | يسجّل `AcApDataSource` (`googledrive`)؛ تدفق من خطوتين: تسجيل الدخول ← فتح (آمن ضد حاجب النوافذ المنبثقة) |
@@ -93,7 +93,7 @@ title: "الإضافات المدمجة"
 
 | العنصر | القيمة |
 |------|-------|
-| الأوامر | `cpdf` (تصدير)، `ipdf` (استيراد) |
+| الأوامر | `cpdf` (تصدير)، `pdfimport` (استيراد) |
 | واجهة عامة | `registerLazyPdfPlugin`، `createPdfPlugin`، `AcApPdfConvertor`، `resolveAcApPdfExportOptions` |
 
 → **مخرجات البناء والتكامل:** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)

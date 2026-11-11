@@ -6,6 +6,7 @@
 
 export { AcApConvertToPdfCmd } from './AcApConvertToPdfCmd'
 export { AcApImportPdfCmd } from './AcApImportPdfCmd'
+export { AcApImportPdfPromptCmd } from './AcApImportPdfPromptCmd'
 export { AcApPdfBlockCmd } from './AcApPdfBlockCmd'
 export { AcApPdfDimCmd } from './AcApPdfDimCmd'
 export { AcApPdfConvertor } from './AcApPdfConvertor'
@@ -134,3 +135,14 @@ export {
   type PdfTextRunMergeOptions
 } from './recognition/pdfTextRunMerge'
 export { PDF_PLUGIN_NAME, PDF_PLUGIN_TRIGGERS } from './register'
+export {
+  AcUiPdfImportDialog,
+  type AcUiPdfImportDialogOptions,
+  type AcUiPdfImportDialogResult,
+  type AcUiPdfImportDialogValues,
+  type AcUiPdfImportDocument,
+  type AcUiPdfImportPage,
+  type AcUiPdfImportRenderTask,
+  type AcUiPdfImportSource,
+  type AcUiPdfImportViewport
+} from './ui/AcUiPdfImportDialog'

@@ -26,6 +26,15 @@ registerLazyAgentPlugin(pluginManager)
 ```
 :::
 
+::: info Import PDF: z `ipdf` je `PDFIMPORT` / `-PDFIMPORT`
+Od vydání, které obsahuje tuto změnu (1.8.0), používá příkaz pro import PDF v `@mlightcad/cad-pdf-plugin` názvy z AutoCADu:
+
+- **PDFIMPORT** po výběru souboru otevře dialog **Importovat PDF** (`AcUiPdfImportDialog`): stránka s náhledem, bod vložení (X/Y nebo na obrazovce), měřítko a režim (Obnovit výkres / Zachovat vzhled PDF).
+- **-PDFIMPORT** zachovává výzvy na příkazovém řádku, které mělo `ipdf` (stránka, bod vložení s možnostmi **Měřítko** a **Režim**). Jeho třída je `AcApImportPdfPromptCmd`.
+
+Migrace: `ipdf` již neexistuje. Skripty, které spouštěly `executeCommand('ipdf')` a odpovídaly na výzvy, mají použít `-pdfimport`; hostitelé s vlastním pásem karet mají použít `pdfimport` (ID položky pásu karet v cad-editor je nyní `cmd-pdfimport`). Popisy příkazů se přesouvají z `command.ACAD.ipdf` do `command.ACAD.pdfimport` / `command.ACAD.-pdfimport` a texty výzev z `jig.ipdf` do `jig.pdfimport` (texty dialogu v `jig.pdfimport.dialog`). `AcApPdfImportConvertor.importFromFilePicker` nyní zobrazí dialog; `importFromCommandLine` je postup s výzvami.
+:::
+
 ::: info Chytré bloky: Vyhledat a převést (`BSEARCH`)
 Od vydání, které obsahuje tuto změnu, registruje `@mlightcad/cad-simple-viewer` příkaz **-BSEARCH** a `@mlightcad/cad-editor` přidává **BSEARCH** (alias `BCONVERT`) s kartou Vyhledat a převést v paletě nástrojů (seznam nalezených instancí) a dialogem Převést na blok (karty Vložit a AI na pásu karet).
 
@@ -165,10 +174,10 @@ Od verze **1.8.0** používá export PDF stejné vrstvení jako export HTML. Sd�
 
 | Balíček | Role |
 | --- | --- |
-| `@mlightcad/cad-pdf-plugin` | Prohlížečové `cpdf` / `-cpdf` / `ipdf` (a Vue dialog exportu) |
+| `@mlightcad/cad-pdf-plugin` | Prohlížečové `cpdf` / `-cpdf` / `pdfimport` (a Vue dialog exportu) |
 | `@mlightcad/cad-pdf-exporter` | Headless Node DXF/DWG → PDF — **bez prohlížeče** |
 
-**Integrátoři v prohlížeči — většinou beze změny.** Nadále používejte `cpdf` / `-cpdf` / `ipdf`, `AcApPdfConvertor`, `AcApPdfExportOptions` a `resolveAcApPdfExportOptions`. Nainstalujte nový peer `@mlightcad/cad-pdf-core` vedle pluginu (stejná verze jako `cad-simple-viewer`).
+**Integrátoři v prohlížeči — většinou beze změny.** Nadále používejte `cpdf` / `-cpdf` / `pdfimport`, `AcApPdfConvertor`, `AcApPdfExportOptions` a `resolveAcApPdfExportOptions`. Nainstalujte nový peer `@mlightcad/cad-pdf-core` vedle pluginu (stejná verze jako `cad-simple-viewer`).
 
 **API / chování, které se uživatelů týkají:**
 

@@ -284,7 +284,7 @@ export default {
       detectConvert:
         '도면 전체에서 반복 객체를 찾아 블록으로 변환합니다(BDETECT).',
       importPdf:
-        'PDF 파일에서 벡터 형상을 가져오고 원, 호, 곡선을 복원합니다 (IPDF).',
+        'PDF 파일에서 벡터 형상을 가져오고 원, 호, 곡선을 복원합니다 (PDFIMPORT).',
       pdfScale:
         '알려진 거리의 두 점으로 가져온 PDF 형상의 축척을 조정합니다 (PDFSCALE).',
       pdfDim:

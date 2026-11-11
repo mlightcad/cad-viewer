@@ -238,8 +238,11 @@ export default {
       description: '既知の距離から読み込んだ PDF 図形の尺度を校正します',
       prompt: '尺度変更するオブジェクトを選択'
     },
-    ipdf: {
-      description: 'PDF ファイルからベクトル ジオメトリを読み込みます'
+    pdfimport: {
+      description: '［PDF 読み込み］ダイアログで PDF ファイルからベクトル ジオメトリを読み込みます'
+    },
+    '-pdfimport': {
+      description: 'コマンド ライン オプションで PDF ファイルからベクトル ジオメトリを読み込みます'
     },
     hpang: {
       description:

@@ -8,25 +8,27 @@ PDF çizimleri yalnızca basılı görüntüyü saklar: eğriler Bézier yollar�
 
 | Düğme | Komut | Ne yapar |
 |---|---|---|
-| PDF İçe Aktar | `ipdf` | Bir PDF sayfasını içe aktarır; eğrileri, blokları, çizgi kalınlıklarını ve çizgi tiplerini yeniden oluşturur |
+| PDF İçe Aktar | `pdfimport` / `-pdfimport` | Bir PDF sayfasını içe aktarır; eğrileri, blokları, çizgi kalınlıklarını ve çizgi tiplerini yeniden oluşturur |
 | Ölçeği Kalibre Et | `pdfscale` | Bilinen tek bir mesafeden içe aktarımı gerçek boyuta ölçekler |
 | Metni Kurtar | `pdftext` | Patlatılmış metin çizgilerini yeniden metne dönüştürür |
 | Blok Oluştur | `pdfblock` | Tekrarlanan geometriyi yeniden bloğa dönüştürür |
 | Ölçüleri Kurtar | `pdfdim` | Patlatılmış ölçüleri yeniden ölçü nesnelerine dönüştürür |
 
-Bu komutlar **Yazma** modu gerektirir. Önerilen sıra: `ipdf` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim`.
+Bu komutlar **Yazma** modu gerektirir. Önerilen sıra: `pdfimport` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim`.
 
-## İçe aktarma (`ipdf`)
+## İçe aktarma (`pdfimport`)
 
-1. PDF dosyasını seçin.
-2. Çok sayfalı bir dosyada sayfa numarasını girin.
-3. Ekleme noktasını belirtin ya da başlangıç noktası için Enter'a basın. Seçenekler:
-   - **Ölçek**: içe aktarırken uygulanan tek tip çarpan.
-   - **Mod**: sayfanın nasıl içe aktarılacağı.
-     - **Kurtar** (varsayılan): aşağıda anlatıldığı gibi özgün çizimi yeniden oluşturmaya çalışır.
-     - **Görünüm**: PDF'i göründüğü gibi korur. Her yol bir çizgi veya çoklu çizgi (eğriler parçalanır), her metin parçası ayrı bir metin olur; birleştirme, yineleme temizliği veya blok oluşturma yapılmaz. Kurtarma sayfanın görünümünü değiştirdiğinde kullanın.
+1. PDF dosyasını seçin. **PDF İçe Aktar** iletişim kutusu açılır.
+2. **İçe aktarılacak sayfa** bölümünde sayfayı seçin (yalnızca çok sayfalı dosyalar). Önizleme sayfayı gösterir; yanındaki küçük resim düğmesi tüm sayfaları listeler. **Gözat...** başka bir dosya seçer.
+3. **Konum** bölümüne ekleme noktasının X/Y değerlerini girin (varsayılan başlangıç noktası) ya da Tamam'dan sonra çizimde seçmek için **Ekleme noktasını ekranda belirt** kutusunu işaretleyin. **Ölçek**, içe aktarırken uygulanan tek tip çarpandır.
+4. **İçe aktarma modu** bölümünde sayfanın nasıl içe aktarılacağını seçin:
+   - **Çizimi kurtar** (varsayılan): aşağıda anlatıldığı gibi özgün çizimi yeniden oluşturmaya çalışır.
+   - **PDF görünümünü koru**: PDF'i göründüğü gibi korur. Her yol bir çizgi veya çoklu çizgi (eğriler parçalanır), her metin parçası ayrı bir metin olur; birleştirme, yineleme temizliği veya blok oluşturma yapılmaz. Kurtarma sayfanın görünümünü değiştirdiğinde kullanın.
+5. **Tamam**'a tıklayın. Konum, ölçek ve mod bir sonraki `pdfimport` için hatırlanır.
 
-**Kurtar** modunda otomatik olarak yeniden oluşturulanlar:
+`-pdfimport` iletişim kutusu olmadan içe aktarır: dosya seçildikten sonra komut satırında sayfayı (yalnızca çok sayfalı dosyalar), ardından **Ölçek** ve **Mod** seçenekleriyle ekleme noktasını sorar. Enter başlangıç noktasını kabul eder.
+
+**Çizimi kurtar** modunda otomatik olarak yeniden oluşturulanlar:
 
 - **Eğriler**: Bézier daireler, yaylar ve elipsler daire, yay ve elips olur. Çizgi ve yayları karıştıran dış hatlar yay parçalı çoklu çizgiler olur. Üretici tarafından zaten kısa çizgilere bölünmüş yaylar yeniden uydurulur. Serbest eğriler spline olur.
 - **Bloklar**: aynı PDF formundan birkaç kez çizilen içerik tek bir blok (`PDF_FORM_n`) olur; döndürülmüş ve aynalanmış olanlar dahil her kopya bir blok referansı olur.
@@ -35,7 +37,7 @@ Bu komutlar **Yazma** modu gerektirir. Önerilen sıra: `ipdf` → `pdfscale` �
 
 Dolgulu alanlar (renkli paneller, dolgulu logolar ve metin dış hatları) dolgu renginde düz tarama olarak, sayfadaki çizim sırasıyla içe aktarılır. Entegrasyonlar yalnızca dış hat almak için `fillHatches` seçeneğini `false` yapabilir.
 
-Desenli taramalar (ANSI31, tuğla, çapraz tarama vb.) PDF'e binlerce kısa çizgi olarak yazılır. **Kurtar** modunda bu çizgiler tarama nesneleri olarak yeniden oluşturulur: çizgiler standart `acadiso.pat` desenleriyle ya da kullanıcı tanımlı tek veya çapraz bir desenle, çizildikleri ölçek, açı ve başlangıç noktasıyla birlikte eşleştirilir. Sınır, çizilmiş kapalı bir dış hattan, PDF kırpma yolundan veya çizgi uçlarından alınır. Tarama yalnızca çizimi sayfadaki çizgileri yeniden ürettiğinde tutulur; diğer her şey çizgi olarak kalır. Entegrasyonlar tüm çizgileri korumak için `recognizeHatches` seçeneğini `false` yapabilir.
+Desenli taramalar (ANSI31, tuğla, çapraz tarama vb.) PDF'e binlerce kısa çizgi olarak yazılır. **Çizimi kurtar** modunda bu çizgiler tarama nesneleri olarak yeniden oluşturulur: çizgiler standart `acadiso.pat` desenleriyle ya da kullanıcı tanımlı tek veya çapraz bir desenle, çizildikleri ölçek, açı ve başlangıç noktasıyla birlikte eşleştirilir. Sınır, çizilmiş kapalı bir dış hattan, PDF kırpma yolundan veya çizgi uçlarından alınır. Tarama yalnızca çizimi sayfadaki çizgileri yeniden ürettiğinde tutulur; diğer her şey çizgi olarak kalır. Entegrasyonlar tüm çizgileri korumak için `recognizeHatches` seçeneğini `false` yapabilir.
 
 Her iki modda da görüntüleyici metni genellikle farklı bir yazı tipiyle çizdiğinden, metin PDF'teki genişliğine göre uzatılır veya daraltılır. Resimler (fotoğraflar, logolar, QR kodları) `PDF_IMAGE_n.png` adlı raster görüntüler olarak içe aktarılır; DWG ve DXF görüntülere ayrı dosya olarak başvurduğundan pikseller yalnızca açık çizimde kalır. QR kodları gibi saydam zemin üzerindeki siyah resimler, PDF sayfasındaki gibi beyaz zemine yerleştirilir.
 

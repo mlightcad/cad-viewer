@@ -1930,7 +1930,7 @@ export default {
       }
     }
   },
-  ipdf: {
+  pdfimport: {
     pageNumber: 'Zadejte číslo stránky (1-{count})',
     insertionPoint: 'Určete bod vložení (měřítko {scale}, režim {mode}) nebo',
     modePrompt: 'Vyberte způsob importu',
@@ -1958,6 +1958,36 @@ export default {
         local: 'Vzhled',
         global: 'Visual'
       }
+    },
+    pickInsertionPoint: 'Zadejte bod vložení',
+    dialog: {
+      title: 'Importovat PDF',
+      close: 'Zavřít',
+      fileName: 'Název souboru:',
+      browse: 'Procházet...',
+      pagesGroup: 'Stránka k importu',
+      page: 'Stránka:',
+      total: 'Celkem: {count}',
+      singleView: 'Zobrazit náhled stránky',
+      gridView: 'Zobrazit miniatury stránek',
+      pageLabel: 'Stránka {page}',
+      pageSize:
+        'Velikost stránky: {width} × {height} mm ({widthIn} × {heightIn} palce)',
+      previewError: 'Náhled není k dispozici',
+      positionGroup: 'Umístění',
+      onScreen: 'Zadat bod vložení na obrazovce',
+      x: 'X:',
+      y: 'Y:',
+      scale: 'Měřítko:',
+      modeGroup: 'Režim importu',
+      modeRecover: 'Obnovit výkres',
+      recoverHint:
+        'Znovu sestaví kružnice, oblouky, křivky, text, šrafy a bloky',
+      modeVisual: 'Zachovat vzhled PDF',
+      visualHint:
+        'Importuje cesty a text přesně tak, jak jsou nakresleny v PDF',
+      ok: 'OK',
+      cancel: 'Storno'
     }
   },
   pdfdim: {

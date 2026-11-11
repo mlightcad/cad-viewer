@@ -330,7 +330,7 @@ export default {
       detectConvert:
         'Vyhledá opakující se objekty v celém výkresu a převede je na bloky (BDETECT).',
       importPdf:
-        'Importuje vektorovou geometrii ze souboru PDF a obnoví kružnice, oblouky a křivky (IPDF).',
+        'Importuje vektorovou geometrii ze souboru PDF a obnoví kružnice, oblouky a křivky (PDFIMPORT).',
       pdfScale:
         'Změní měřítko importované geometrie PDF podle dvou bodů známé vzdálenosti (PDFSCALE).',
       pdfDim:

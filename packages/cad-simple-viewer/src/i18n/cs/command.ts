@@ -237,8 +237,13 @@ export default {
         'Kalibruje importovanou geometrii PDF podle známé vzdálenosti',
       prompt: 'Vyberte objekty ke změně měřítka'
     },
-    ipdf: {
-      description: 'Importuje vektorovou geometrii ze souboru PDF'
+    pdfimport: {
+      description:
+        'Importuje vektorovou geometrii ze souboru PDF pomocí dialogu Importovat PDF'
+    },
+    '-pdfimport': {
+      description:
+        'Importuje vektorovou geometrii ze souboru PDF pomocí příkazového řádku'
     },
     hpang: {
       description:

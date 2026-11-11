@@ -16,7 +16,7 @@ O samotném mechanismu pluginů (`AcApPlugin`, správce pluginů, líné načít
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **CAD agent ovládaný přirozeným jazykem** (AI chatovací panel + volání kreslicích nástrojů) | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **Ruční konzole CAD skriptů** (spouští ověřené skripty nad výkresem, nepotřebuje LLM ani API klíč) | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | Export výkresů do **samostatného offline HTML** | `chtml` (dialog v `cad-editor`), `-chtml` (příkazový řádek) |
-| [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **Export a import PDF** (vektorová pipeline) | `cpdf`, `ipdf` |
+| [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **Export a import PDF** (vektorová pipeline) | `cpdf`, `pdfimport`, `-pdfimport` |
 | [`@mlightcad/cad-svg-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin) | **Export SVG** a sdílený vektorový renderer (používaný i exportem PDF) | `csvg` |
 | [`@mlightcad/cad-onedrive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-onedrive-plugin) | **Datový zdroj OneDrive** — otevírání DWG/DXF z OneDrive / SharePoint | Registruje `AcApDataSource` (`onedrive`); dvoukrokový Sign in → Open (bezpečný vůči blokování vyskakovacích oken) |
 | [`@mlightcad/cad-google-drive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-google-drive-plugin) | **Datový zdroj Google Drive** — otevírání DWG/DXF z Google Drive | Registruje `AcApDataSource` (`googledrive`); dvoukrokový Sign in → Open (bezpečný vůči blokování vyskakovacích oken) |
@@ -93,7 +93,7 @@ Jednosouborový **offline prohlížeč** pro sdílení a archivaci — exportova
 
 | Položka | Hodnota |
 |------|-------|
-| Příkazy | `cpdf` (export), `ipdf` (import) |
+| Příkazy | `cpdf` (export), `pdfimport` (import) |
 | Veřejné API | `registerLazyPdfPlugin`, `createPdfPlugin`, `AcApPdfConvertor`, `resolveAcApPdfExportOptions` |
 
 → **Výstup sestavení a integrace:** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)

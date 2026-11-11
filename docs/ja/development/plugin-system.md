@@ -125,7 +125,7 @@ export class AcApMyPlugin implements AcApPlugin {
 公式プラグインも同じパターンに従っています。
 
 - `AcApHtmlPlugin` — `chtml` を登録
-- `AcApPdfPlugin` — `cpdf`、`ipdf` を登録
+- `AcApPdfPlugin` — `cpdf`、`pdfimport` を登録
 - `AcApSvgPlugin` — `csvg` を登録
 
 ビューア全体で使用するコマンド（ズーム、レイヤなどと同じグループ）には `AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME` を使用します。
@@ -320,7 +320,7 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## 組み込みプラグインリファレンス
 
-モノレポには、いくつかのファーストパーティのプラグインが同梱されています：`AcApHtmlPlugin`（`chtml`）、`AcApPdfPlugin`（`cpdf`、`ipdf`）、`AcApSvgPlugin`（`csvg`）、さらに UI、エージェント、スクリプトコンソール、データソースの各プラグインがあります。
+モノレポには、いくつかのファーストパーティのプラグインが同梱されています：`AcApHtmlPlugin`（`chtml`）、`AcApPdfPlugin`（`cpdf`、`pdfimport`）、`AcApSvgPlugin`（`csvg`）、さらに UI、エージェント、スクリプトコンソール、データソースの各プラグインがあります。
 
 プラグインごとのコマンド、パブリック API、設定、各パッケージの README へのリンクを含む完全な一覧については、[組み込みプラグイン](./built-in-plugins)を参照してください。
 

@@ -223,8 +223,11 @@ export default {
       description: '알려진 거리로 가져온 PDF 형상의 축척을 보정합니다',
       prompt: '축척할 객체 선택'
     },
-    ipdf: {
-      description: 'PDF 파일에서 벡터 형상을 가져옵니다'
+    pdfimport: {
+      description: '[PDF 가져오기] 대화상자로 PDF 파일에서 벡터 형상을 가져옵니다'
+    },
+    '-pdfimport': {
+      description: '명령행 옵션을 사용하여 PDF 파일에서 벡터 형상을 가져옵니다'
     },
     hpang: {
       description: '새로 작성하는 해치 패턴의 기본 각도(라디안)를 설정합니다'

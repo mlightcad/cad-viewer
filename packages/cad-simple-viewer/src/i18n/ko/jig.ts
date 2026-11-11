@@ -1927,7 +1927,7 @@ export default {
       }
     }
   },
-  ipdf: {
+  pdfimport: {
     pageNumber: '페이지 번호 입력 (1-{count})',
     insertionPoint: '삽입점 지정 (축척 {scale}, 모드 {mode}) 또는',
     modePrompt: '가져오기 방식 선택',
@@ -1955,6 +1955,33 @@ export default {
         local: '시각',
         global: 'Visual'
       }
+    },
+    pickInsertionPoint: '삽입점 지정',
+    dialog: {
+      title: 'PDF 가져오기',
+      close: '닫기',
+      fileName: '파일 이름:',
+      browse: '찾아보기...',
+      pagesGroup: '가져올 페이지',
+      page: '페이지:',
+      total: '합계: {count}',
+      singleView: '페이지 미리보기 표시',
+      gridView: '페이지 축소판 표시',
+      pageLabel: '페이지 {page}',
+      pageSize: '페이지 크기: {width} × {height} mm ({widthIn} × {heightIn} 인치)',
+      previewError: '미리보기를 표시할 수 없음',
+      positionGroup: '위치',
+      onScreen: '화면상에 삽입점 지정',
+      x: 'X:',
+      y: 'Y:',
+      scale: '축척:',
+      modeGroup: '가져오기 모드',
+      modeRecover: '도면 복원',
+      recoverHint: '원, 호, 곡선, 문자, 해치 및 블록을 재구성합니다',
+      modeVisual: 'PDF 모양 유지',
+      visualHint: 'PDF에 그려진 그대로 경로와 문자를 가져옵니다',
+      ok: '확인',
+      cancel: '취소'
     }
   },
   pdfdim: {

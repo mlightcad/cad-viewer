@@ -2043,7 +2043,7 @@ export default {
       }
     }
   },
-  ipdf: {
+  pdfimport: {
     pageNumber: 'Sayfa numarasını girin (1-{count})',
     insertionPoint:
       'Ekleme noktasını belirtin (ölçek {scale}, mod {mode}) veya',
@@ -2072,6 +2072,35 @@ export default {
         local: 'Görünüm',
         global: 'Visual'
       }
+    },
+    pickInsertionPoint: 'Ekleme noktasını belirtin',
+    dialog: {
+      title: 'PDF İçe Aktar',
+      close: 'Kapat',
+      fileName: 'Dosya adı:',
+      browse: 'Gözat...',
+      pagesGroup: 'İçe aktarılacak sayfa',
+      page: 'Sayfa:',
+      total: 'Toplam: {count}',
+      singleView: 'Sayfa önizlemesini göster',
+      gridView: 'Sayfa küçük resimlerini göster',
+      pageLabel: 'Sayfa {page}',
+      pageSize:
+        'Sayfa boyutu: {width} × {height} mm ({widthIn} × {heightIn} inç)',
+      previewError: 'Önizleme kullanılamıyor',
+      positionGroup: 'Konum',
+      onScreen: 'Ekleme noktasını ekranda belirt',
+      x: 'X:',
+      y: 'Y:',
+      scale: 'Ölçek:',
+      modeGroup: 'İçe aktarma modu',
+      modeRecover: 'Çizimi kurtar',
+      recoverHint:
+        'Daireleri, yayları, eğrileri, metni, taramaları ve blokları yeniden oluşturur',
+      modeVisual: 'PDF görünümünü koru',
+      visualHint: 'Yolları ve metni PDF’te çizildiği gibi içe aktarır',
+      ok: 'Tamam',
+      cancel: 'İptal'
     }
   },
   pdfdim: {

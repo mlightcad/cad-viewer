@@ -125,7 +125,7 @@ export class AcApMyPlugin implements AcApPlugin {
 官方插件遵循相同的模式：
 
 - `AcApHtmlPlugin` — 注册 `chtml`
-- `AcApPdfPlugin` — 注册 `cpdf`、`ipdf`
+- `AcApPdfPlugin` — 注册 `cpdf`、`pdfimport`
 - `AcApSvgPlugin` — 注册 `csvg`
 
 对于查看器全局命令（与缩放、图层等属于同一组），请使用 `AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME`。
@@ -320,7 +320,7 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## 内置插件参考
 
-本仓库随附多个官方插件：`AcApHtmlPlugin`（`chtml`）、`AcApPdfPlugin`（`cpdf`、`ipdf`）、`AcApSvgPlugin`（`csvg`），以及 UI、智能体、脚本控制台和数据源插件。
+本仓库随附多个官方插件：`AcApHtmlPlugin`（`chtml`）、`AcApPdfPlugin`（`cpdf`、`pdfimport`）、`AcApSvgPlugin`（`csvg`），以及 UI、智能体、脚本控制台和数据源插件。
 
 包含各插件命令、公开 API、配置及包 README 链接的完整列表，请参阅[内置插件](./built-in-plugins)。
 

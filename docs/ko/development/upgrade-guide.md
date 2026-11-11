@@ -26,6 +26,15 @@ registerLazyAgentPlugin(pluginManager)
 ```
 :::
 
+::: info PDF 가져오기: `ipdf`가 `PDFIMPORT` / `-PDFIMPORT`로
+이 변경이 포함된 릴리스(1.8.0)부터 `@mlightcad/cad-pdf-plugin`의 PDF 가져오기 명령은 AutoCAD와 같은 이름을 씁니다:
+
+- **PDFIMPORT**는 파일을 고른 뒤 [PDF 가져오기] 대화상자(`AcUiPdfImportDialog`)를 엽니다: 미리보기가 있는 페이지, 삽입점(X/Y 또는 화면상에 지정), 축척, 모드(도면 복원 / PDF 모양 유지).
+- **-PDFIMPORT**는 `ipdf`의 명령행 프롬프트(페이지 번호, [축척]·[모드] 옵션이 있는 삽입점)를 유지합니다. 클래스는 `AcApImportPdfPromptCmd`입니다.
+
+마이그레이션: `ipdf`는 더 이상 없습니다. `executeCommand('ipdf')`로 프롬프트에 답하던 스크립트는 `-pdfimport`를 사용하세요. 리본을 직접 그리는 호스트는 `pdfimport`를 사용합니다(cad-editor 리본 항목 ID는 이제 `cmd-pdfimport`). 명령 설명은 `command.ACAD.ipdf`에서 `command.ACAD.pdfimport` / `command.ACAD.-pdfimport`로, 프롬프트 문자열은 `jig.ipdf`에서 `jig.pdfimport`로 옮겨졌습니다(대화상자 문자열은 `jig.pdfimport.dialog`). `AcApPdfImportConvertor.importFromFilePicker`는 이제 대화상자를 표시하고, `importFromCommandLine`이 프롬프트 흐름입니다.
+:::
+
 ::: info 스마트 블록: 검색 및 변환(`BSEARCH`)
 이 변경이 포함된 릴리스부터 `@mlightcad/cad-simple-viewer`는 **-BSEARCH**를 등록하고, `@mlightcad/cad-editor`는 도구 팔레트의 검색 및 변환 탭(찾은 인스턴스 목록)과 블록으로 변환 대화상자가 있는 **BSEARCH**(별칭 `BCONVERT`)를 추가합니다(리본의 삽입 및 AI 탭).
 
@@ -165,10 +174,10 @@ Agent/스크립트는 선·화살표·문자로 치수를 흉내 내지 말고 �
 
 | 패키지 | 역할 |
 | --- | --- |
-| `@mlightcad/cad-pdf-plugin` | 브라우저 `cpdf` / `-cpdf` / `ipdf`(및 Vue 내보내기 대화상자) |
+| `@mlightcad/cad-pdf-plugin` | 브라우저 `cpdf` / `-cpdf` / `pdfimport`(및 Vue 내보내기 대화상자) |
 | `@mlightcad/cad-pdf-exporter` | Node 헤드리스 DXF/DWG → PDF — **브라우저 불필요** |
 
-**브라우저 통합 측 — 대부분 동일.** `cpdf` / `-cpdf` / `ipdf`, `AcApPdfConvertor`, `AcApPdfExportOptions`, `resolveAcApPdfExportOptions`를 그대로 사용하세요. 새 peer `@mlightcad/cad-pdf-core`를 플러그인과 같은 버전으로 함께 설치하세요.
+**브라우저 통합 측 — 대부분 동일.** `cpdf` / `-cpdf` / `pdfimport`, `AcApPdfConvertor`, `AcApPdfExportOptions`, `resolveAcApPdfExportOptions`를 그대로 사용하세요. 새 peer `@mlightcad/cad-pdf-core`를 플러그인과 같은 버전으로 함께 설치하세요.
 
 **사용자에게 영향을 주는 API / 동작 변경:**
 

@@ -280,7 +280,7 @@ export default {
     tooltip: {
       searchConvert: '查找所选对象的所有副本并将其转换为块（BSEARCH）。',
       detectConvert: '在整个图形中查找重复对象并将其转换为块（BDETECT）。',
-      importPdf: '从 PDF 文件导入矢量图形，并还原圆、圆弧和曲线（IPDF）。',
+      importPdf: '从 PDF 文件导入矢量图形，并还原圆、圆弧和曲线（PDFIMPORT）。',
       pdfScale: '根据两点之间的已知距离缩放导入的 PDF 图形（PDFSCALE）。',
       pdfDim:
         '将 PDF 中被打散的标注（箭头或斜线、尺寸线、尺寸界线和文字）恢复为标注对象（PDFDIM）。',

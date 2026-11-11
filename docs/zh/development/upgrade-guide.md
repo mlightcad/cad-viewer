@@ -26,6 +26,15 @@ registerLazyAgentPlugin(pluginManager)
 ```
 :::
 
+::: info 输入 PDF：`ipdf` 改为 `PDFIMPORT` / `-PDFIMPORT`
+从包含此改动的版本（1.8.0）起，`@mlightcad/cad-pdf-plugin` 的 PDF 导入命令改用 AutoCAD 的名称：
+
+- **PDFIMPORT** 在选择文件后打开“输入 PDF”对话框（`AcUiPdfImportDialog`）：带预览的页面、插入点（X/Y 或在屏幕上指定）、比例和输入方式（复原图纸 / 保留 PDF 视觉效果）。
+- **-PDFIMPORT** 保留原 `ipdf` 的命令行提示（页码，以及带“比例”和“模式”选项的插入点），对应类为 `AcApImportPdfPromptCmd`。
+
+迁移：`ipdf` 已不存在。通过 `executeCommand('ipdf')` 并回答提示的脚本应改用 `-pdfimport`；自行渲染功能区的宿主应使用 `pdfimport`（cad-editor 功能区按钮 ID 现为 `cmd-pdfimport`）。命令说明从 `command.ACAD.ipdf` 移到 `command.ACAD.pdfimport` / `command.ACAD.-pdfimport`，提示文本从 `jig.ipdf` 移到 `jig.pdfimport`（对话框文本位于 `jig.pdfimport.dialog`）。`AcApPdfImportConvertor.importFromFilePicker` 现在显示对话框；`importFromCommandLine` 为命令行流程。
+:::
+
 ::: info 智能块：搜索并转换（`BSEARCH`）
 自包含本变更的版本起，`@mlightcad/cad-simple-viewer` 注册 **-BSEARCH**，`@mlightcad/cad-editor` 增加 **BSEARCH**（别名 `BCONVERT`），提供工具选项板中的「搜索并转换」选项卡（列出找到的实例）和「转换为块」对话框（位于功能区「插入」和「AI」选项卡）。
 
@@ -171,10 +180,10 @@ v1 支持子集：`line`、`polyline`/`polygon`/`rect`、`circle`、`ellipse`（
 
 | 包 | 作用 |
 | --- | --- |
-| `@mlightcad/cad-pdf-plugin` | 浏览器端 `cpdf` / `-cpdf` / `ipdf`（以及 Vue 导出对话框） |
+| `@mlightcad/cad-pdf-plugin` | 浏览器端 `cpdf` / `-cpdf` / `pdfimport`（以及 Vue 导出对话框） |
 | `@mlightcad/cad-pdf-exporter` | Node 无头 DXF/DWG → PDF — **无需浏览器** |
 
-**浏览器集成方——大体不变。** 继续使用 `cpdf` / `-cpdf` / `ipdf`、`AcApPdfConvertor`、`AcApPdfExportOptions`、`resolveAcApPdfExportOptions`。请把新的 peer `@mlightcad/cad-pdf-core` 与插件一起安装（版本与 `cad-simple-viewer` 相同）。
+**浏览器集成方——大体不变。** 继续使用 `cpdf` / `-cpdf` / `pdfimport`、`AcApPdfConvertor`、`AcApPdfExportOptions`、`resolveAcApPdfExportOptions`。请把新的 peer `@mlightcad/cad-pdf-core` 与插件一起安装（版本与 `cad-simple-viewer` 相同）。
 
 **对用户有影响的 API / 行为变化：**
 

@@ -2,14 +2,14 @@ import type { PdfCurveRecognitionOptions } from './recognition/pdfCurveRecogniti
 import type { PdfHatchRecognitionOptions } from './recognition/pdfHatchRecognition'
 
 /**
- * How `ipdf` turns a PDF page into CAD entities.
+ * How `pdfimport` turns a PDF page into CAD entities.
  *
  * - `recover` — try to rebuild the source drawing: recover circles, arcs,
  *   ellipses and splines from Bezier paths, drop duplicate outlines, merge
  *   text runs into lines, turn repeated forms into blocks and map fonts to
  *   text styles.
  * - `visual` — keep the page as painted: every PDF path becomes a line or a
- *   flattened polyline and every text run its own text, as `ipdf` did before
+ *   flattened polyline and every text run its own text, as `pdfimport` did before
  *   curve recovery was added. Use it when recovery changes how a page looks.
  */
 export type AcApPdfImportMode = 'recover' | 'visual'

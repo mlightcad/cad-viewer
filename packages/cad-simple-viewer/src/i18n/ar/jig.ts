@@ -2036,7 +2036,7 @@ export default {
       }
     }
   },
-  ipdf: {
+  pdfimport: {
     pageNumber: 'أدخل رقم الصفحة (1-{count})',
     insertionPoint: 'حدد نقطة الإدراج (المقياس {scale}، الوضع {mode}) أو',
     modePrompt: 'اختر طريقة الاستيراد',
@@ -2064,6 +2064,35 @@ export default {
         local: 'مرئي',
         global: 'Visual'
       }
+    },
+    pickInsertionPoint: 'حدد نقطة الإدراج',
+    dialog: {
+      title: 'استيراد PDF',
+      close: 'إغلاق',
+      fileName: 'اسم الملف:',
+      browse: 'استعراض...',
+      pagesGroup: 'الصفحة المراد استيرادها',
+      page: 'الصفحة:',
+      total: 'الإجمالي: {count}',
+      singleView: 'عرض معاينة الصفحة',
+      gridView: 'عرض الصور المصغرة للصفحات',
+      pageLabel: 'الصفحة {page}',
+      pageSize:
+        'حجم الصفحة: {width} × {height} مم ({widthIn} × {heightIn} بوصة)',
+      previewError: 'المعاينة غير متاحة',
+      positionGroup: 'الموضع',
+      onScreen: 'تحديد نقطة الإدراج على الشاشة',
+      x: 'X:',
+      y: 'Y:',
+      scale: 'المقياس:',
+      modeGroup: 'وضع الاستيراد',
+      modeRecover: 'استعادة الرسم',
+      recoverHint:
+        'إعادة بناء الدوائر والأقواس والمنحنيات والنصوص والتهشيرات والكتل',
+      modeVisual: 'الحفاظ على مظهر PDF',
+      visualHint: 'استيراد المسارات والنصوص كما رُسمت في PDF تمامًا',
+      ok: 'موافق',
+      cancel: 'إلغاء'
     }
   },
   pdfdim: {

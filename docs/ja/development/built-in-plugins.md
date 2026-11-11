@@ -16,7 +16,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **自然言語 CAD エージェント**（AI チャットパネル + 図面ツールの呼び出し） | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **手動 CAD スクリプトコンソール**（チェック済みスクリプトを図面に対して実行、LLM / API キー不要） | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | 図面を**自己完結型のオフライン HTML** にエクスポート | `chtml`（`cad-editor` 内のダイアログ）、`-chtml`（コマンドライン） |
-| [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **PDF エクスポートとインポート**（ベクターパイプライン） | `cpdf`、`ipdf` |
+| [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **PDF エクスポートとインポート**（ベクターパイプライン） | `cpdf`、`pdfimport` |
 | [`@mlightcad/cad-svg-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin) | **SVG エクスポート**と共有ベクターレンダラー（PDF エクスポートでも使用） | `csvg` |
 | [`@mlightcad/cad-onedrive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-onedrive-plugin) | **OneDrive データソース** — OneDrive / SharePoint から DWG/DXF を開く | `AcApDataSource` を登録（`onedrive`）、「サインイン → 開く」の 2 ステップ（ポップアップブロッカーセーフ） |
 | [`@mlightcad/cad-google-drive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-google-drive-plugin) | **Google Drive データソース** — Google Drive から DWG/DXF を開く | `AcApDataSource` を登録（`googledrive`）、「サインイン → 開く」の 2 ステップ（ポップアップブロッカーセーフ） |
@@ -93,7 +93,7 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 
 | 項目 | 値 |
 |------|-------|
-| コマンド | `cpdf`（エクスポート）、`ipdf`（インポート） |
+| コマンド | `cpdf`（エクスポート）、`pdfimport`（インポート） |
 | パブリック API | `registerLazyPdfPlugin`、`createPdfPlugin`、`AcApPdfConvertor`、`resolveAcApPdfExportOptions` |
 
 → **ビルド出力と統合:** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)

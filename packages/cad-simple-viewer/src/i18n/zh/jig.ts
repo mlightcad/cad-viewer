@@ -1862,7 +1862,7 @@ export default {
       }
     }
   },
-  ipdf: {
+  pdfimport: {
     pageNumber: '输入页码 (1-{count})',
     insertionPoint:
       '指定插入点（比例 {scale}，模式 {mode}）或',
@@ -1891,6 +1891,33 @@ export default {
         local: '视觉',
         global: 'Visual'
       }
+    },
+    pickInsertionPoint: '指定插入点',
+    dialog: {
+      title: '输入 PDF',
+      close: '关闭',
+      fileName: '文件名:',
+      browse: '浏览...',
+      pagesGroup: '要输入的页面',
+      page: '页面:',
+      total: '总计: {count}',
+      singleView: '显示页面预览',
+      gridView: '显示页面缩略图',
+      pageLabel: '第 {page} 页',
+      pageSize: '页面大小: {width} × {height} 毫米（{widthIn} × {heightIn} 英寸）',
+      previewError: '无法预览',
+      positionGroup: '位置',
+      onScreen: '在屏幕上指定插入点',
+      x: 'X:',
+      y: 'Y:',
+      scale: '比例:',
+      modeGroup: '输入方式',
+      modeRecover: '复原图纸',
+      recoverHint: '重建圆、圆弧、曲线、文字、填充和块',
+      modeVisual: '保留 PDF 视觉效果',
+      visualHint: '按 PDF 中的原样输入路径和文字',
+      ok: '确定',
+      cancel: '取消'
     }
   },
   pdfdim: {

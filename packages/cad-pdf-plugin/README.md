@@ -9,13 +9,14 @@ PDF **export** and **import** plugin for [`@mlightcad/cad-simple-viewer`](../cad
 |---------|-------------|
 | `-cpdf` | Export via **command-line prompts** (no dialog; AutoCAD-style `-` prefix) |
 | `cpdf` | Same as `-cpdf` when no UI command is registered. In [`cad-editor`](../cad-editor), `cpdf` opens an **export options dialog** instead |
-| `ipdf` | Import vector geometry from a PDF file into model space, recovering circles, arcs, ellipses and splines |
+| `pdfimport` | Import vector geometry from a PDF file into model space through the Import PDF dialog, recovering circles, arcs, ellipses and splines |
+| `-pdfimport` | Same import with command-line prompts (page, insertion point, `Scale`, `Mode`) instead of the dialog |
 | `pdfscale` | Calibrate imported PDF geometry: pick two points of a known distance and type its real length |
 | `pdftext` | Convert exploded text (SHX line text, outlined fonts) back into `AcDbText`, semi-automatically |
 | `pdfblock` | Turn repeated geometry back into a block: select one instance, every rotated / mirrored copy is found and replaced |
 | `pdfdim` | Turn exploded dimensions (arrows or ticks, lines, extension lines, texts) back into linear, radius and diameter dimensions |
 
-The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@mlightcad/pdf-renderer`, `pdfjs-dist`) are only downloaded when a user runs `-cpdf` / `cpdf` or `ipdf`.
+The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@mlightcad/pdf-renderer`, `pdfjs-dist`) are only downloaded when a user runs `-cpdf` / `cpdf` or `pdfimport`.
 
 ## Key features
 
@@ -25,7 +26,7 @@ The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@ml
 - **Shared core (1.8.0+)** — export logic lives in [`@mlightcad/cad-pdf-core`](../cad-pdf-core), which the headless [`@mlightcad/cad-pdf-exporter`](../cad-pdf-exporter) also uses so Node can export PDF without a browser ([upgrade guide](../../docs/development/upgrade-guide.md))
 - **PDF import** — parses vector paths from a chosen PDF page and appends CAD entities. Bézier chains are rebuilt as true `AcDbCircle` / `AcDbArc` / `AcDbEllipse`, mixed line–arc outlines as bulged `AcDbPolyline`, free-form curves as exact `AcDbSpline`, and arcs a producer already flattened into short lines are refitted. Stroke widths become line weights, dashed strokes get matching `PDF_DASH_*` linetypes, PDF fonts become `PDF_<family>` text styles, filled areas become solid hatches in paint order (`fillHatches`), pattern hatches that the PDF holds as short lines are rebuilt as `AcDbHatch` with their `acadiso.pat` pattern, scale and angle (`recognizeHatches`, kept only when re-drawing reproduces the lines), and exact duplicate outlines are dropped
 - **Scale calibration** — `pdfscale` rescales imported geometry from one known distance, since printed PDFs are rarely 1:1. When the selection holds exploded dimensions, the scale their texts imply pre-fills the real length
-- **Block recovery** — `ipdf` turns Form XObjects painted two or more times with identical content into a block definition with one reference per paint (rotation, mirroring and scale come from each paint's form matrix). `pdfblock` handles PDFs that draw repeated symbols inline: select one instance, pick a base point and name, and every copy under rotation and mirroring (optionally scaling) is highlighted for confirmation and replaced by a block reference
+- **Block recovery** — `pdfimport` turns Form XObjects painted two or more times with identical content into a block definition with one reference per paint (rotation, mirroring and scale come from each paint's form matrix). `pdfblock` handles PDFs that draw repeated symbols inline: select one instance, pick a base point and name, and every copy under rotation and mirroring (optionally scaling) is highlighted for confirmation and replaced by a block reference
 - **Dimension recovery** — `pdfdim` recognizes linear (any angle, inside or outside arrows, architectural ticks, chained), radius, diameter and angular dimensions in a selected area. It infers the drawing scale from the texts and builds a `PDF_DIM` style whose text height, arrow size and DIMLFAC match the PDF, so a 1:100 drawing keeps its real values
 - **Text recovery** — real PDF text runs that continue one line are merged into one `AcDbText`. `pdftext` turns exploded text strokes back into text: it clusters strokes into lines (position, height, rotation), reads lines made of known glyph shapes from its glyph dictionary, and, with an OCR recognizer registered in `AcApTextRecognitionService` (`@mlightcad/cad-llm-plugin` registers one that uses the configured vision model), sends all other lines at once via `recognizeBatch` and converts the whole selection in one edit. Only lines nothing could read are prompted; typed glyph shapes are learned.
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyPdfPlugin`
@@ -62,7 +63,7 @@ pnpm --filter @mlightcad/cad-pdf-plugin build
 
 ### Lazy registration (recommended)
 
-Register the plugin with the document manager's plugin manager. Import from the `/register` subpath so only the registration stub enters your initial bundle; the main plugin chunk loads on first use of `-cpdf`, `cpdf`, or `ipdf`:
+Register the plugin with the document manager's plugin manager. Import from the `/register` subpath so only the registration stub enters your initial bundle; the main plugin chunk loads on first use of `-cpdf`, `cpdf`, or `pdfimport`:
 
 ```typescript
 import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
@@ -95,8 +96,8 @@ After registration, users (or your UI) invoke commands through the editor:
 // Export current drawing to PDF (command-line prompts)
 await AcApDocManager.instance.editor.executeCommand('-cpdf')
 
-// Open file picker and import PDF vectors
-await AcApDocManager.instance.editor.executeCommand('ipdf')
+// Open the file picker and the Import PDF dialog, then import PDF vectors
+await AcApDocManager.instance.editor.executeCommand('pdfimport')
 ```
 
 In [`cad-editor`](../cad-editor), use `cpdf` to open the export options dialog; `-cpdf` remains available on the command line for prompt-based export.
@@ -203,10 +204,10 @@ The pure recognition step is also exported: `recognizePdfCurves(segments)` turns
 4. Everything read is converted in one append and one erase. Only lines still unread are highlighted for the user to type; empty skips, Esc stops and keeps what was converted. The run is one undo step.
 5. Typed text whose character count matches the glyph boxes teaches the dictionary: each glyph's normalized, quantized stroke geometry maps to its character. The 5000 most recently confirmed shapes are kept in `localStorage`, so later sessions and other drawings with the same font benefit.
 
-### Import (`ipdf`)
+### Import (`pdfimport`)
 
 1. Show a native file picker (`.pdf`).
-2. Prompt for the page (multi-page files only), then the insertion point, with `Scale` and `Mode` options. `Mode` asks for `Recover` (rebuild the drawing, default) or `Visual` (keep the PDF look); the choice is remembered for the next `ipdf`. Enter accepts the origin.
+2. Open the Import PDF dialog (`AcUiPdfImportDialog`, framework-free, built on `AcUiDialog`): file name with Browse, page number with a page preview or thumbnail grid and the page size, insertion point X/Y or "Specify insertion point on-screen", scale, and import mode (`Recover` rebuilds the drawing, default; `Visual` keeps the PDF look). Location, scale and mode are remembered for the next `pdfimport`. With the on-screen option, OK is followed by one insertion point prompt (Enter accepts the origin). `-pdfimport` skips the dialog and prompts for the page (multi-page files only), then the insertion point with `Scale` and `Mode` options.
 3. Use `pdfjs-dist` to read operator lists from the selected page.
 4. Keep every path as exact segments (lines and cubic Béziers; quadratics are degree-elevated) in model-space millimeters, and `showText` runs as `AcDbText`.
 5. In `Recover` mode, recognize CAD curves per subpath (`recognition/pdfCurveRecognition.ts`): a cubic whose samples and end tangents match one circle becomes an arc; consecutive arcs on the same circle merge, and a closed 360° chain becomes a circle. Chains that fit a conic become an ellipse. Runs of at least six short, evenly turning lines (turn ≤ 15°, so octagons stay polygons) are refitted as arcs. Lines plus arcs give a bulged polyline; pure free-form chains give an exact spline (triple interior knots). Default tolerance: max(0.01 mm, 0.2 % of the radius).
@@ -228,7 +229,9 @@ Only the requested page is processed (default: page 1). Form XObject `/Matrix` i
 | `@mlightcad/cad-pdf-plugin/register` | `registerLazyPdfPlugin` and registration constants |
 | `AcApPdfPlugin` | `AcApPlugin` implementation |
 | `AcApConvertToPdfCmd` | `-cpdf` / fallback `cpdf` command class |
-| `AcApImportPdfCmd` | `ipdf` command class |
+| `AcApImportPdfCmd` | `pdfimport` command class |
+| `AcApImportPdfPromptCmd` | `-pdfimport` command class |
+| `AcUiPdfImportDialog` | Import PDF dialog opened by `pdfimport` (page preview, location, scale, mode) |
 | `AcApPdfScaleCmd` | `pdfscale` command class |
 | `AcApPdfTextCmd` | `pdftext` command class |
 | `AcApPdfBlockCmd` | `pdfblock` command class |
@@ -251,7 +254,7 @@ Only the requested page is processed (default: page 1). Form XObject `/Matrix` i
 | `src/register.ts` | Lazy plugin registration (`/register` entry) and `createPdfPlugin` |
 | `src/AcApPdfPlugin.ts` | Plugin lifecycle (`onLoad` / `onUnload`) |
 | `src/AcApConvertToPdfCmd.ts` | `-cpdf` command (command-line prompts) |
-| `src/AcApImportPdfCmd.ts` | `ipdf` command |
+| `src/AcApImportPdfCmd.ts` | `pdfimport` command |
 | `src/AcApPdfScaleCmd.ts` | `pdfscale` command |
 | `src/AcApPdfTextCmd.ts` | `pdftext` command |
 | `src/AcApPdfBlockCmd.ts` | `pdfblock` command |

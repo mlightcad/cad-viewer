@@ -16,7 +16,7 @@ MLightCAD 随附一组官方插件。每个插件专注于一项职责 —— UI
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **自然语言 CAD 智能体**（AI 聊天面板 + 绘图工具调用） | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **手动 CAD 脚本控制台**（对图纸运行受检脚本，无需 LLM / API 密钥） | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | 将图纸导出为**自包含离线 HTML** | `chtml`（`cad-editor` 中为对话框）、`-chtml`（命令行） |
-| [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **PDF 导出与导入**（矢量管线） | `cpdf`、`ipdf` |
+| [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **PDF 导出与导入**（矢量管线） | `cpdf`、`pdfimport` |
 | [`@mlightcad/cad-svg-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin) | **SVG 导出**及共享矢量渲染器（也被 PDF 导出使用） | `csvg` |
 | [`@mlightcad/cad-onedrive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-onedrive-plugin) | **OneDrive 数据源** — 从 OneDrive / SharePoint 打开 DWG/DXF | 注册 `AcApDataSource`（`onedrive`）；两步 Sign in → Open（防弹窗拦截） |
 | [`@mlightcad/cad-google-drive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-google-drive-plugin) | **Google Drive 数据源** — 从 Google Drive 打开 DWG/DXF | 注册 `AcApDataSource`（`googledrive`）；两步 Sign in → Open（防弹窗拦截） |
@@ -93,7 +93,7 @@ MLightCAD 随附一组官方插件。每个插件专注于一项职责 —— UI
 
 | 项 | 值 |
 |------|-------|
-| 命令 | `cpdf`（导出）、`ipdf`（导入） |
+| 命令 | `cpdf`（导出）、`pdfimport`（导入） |
 | 公开 API | `registerLazyPdfPlugin`、`createPdfPlugin`、`AcApPdfConvertor`、`resolveAcApPdfExportOptions` |
 
 → **构建产物与集成：** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)

@@ -234,8 +234,13 @@ export default {
       description: 'Calibrates imported PDF geometry from a known distance',
       prompt: 'Select objects to scale'
     },
-    ipdf: {
-      description: 'Imports vector geometry from a PDF file'
+    pdfimport: {
+      description:
+        'Imports vector geometry from a PDF file through the Import PDF dialog'
+    },
+    '-pdfimport': {
+      description:
+        'Imports vector geometry from a PDF file using command-line options'
     },
     hpang: {
       description:

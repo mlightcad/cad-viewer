@@ -8,25 +8,27 @@ PDF drawings keep only what was printed: curves are Bézier paths, text is often
 
 | Button | Command | What it does |
 |---|---|---|
-| Import PDF | `ipdf` | Imports a PDF page and rebuilds curves, blocks, line weights and linetypes |
+| Import PDF | `pdfimport` / `-pdfimport` | Imports a PDF page and rebuilds curves, blocks, line weights and linetypes |
 | Calibrate Scale | `pdfscale` | Rescales the import to real-world size from one known distance |
 | Recover Text | `pdftext` | Turns exploded text strokes back into text |
 | Make Block | `pdfblock` | Turns repeated geometry back into a block |
 | Recover Dims | `pdfdim` | Turns exploded dimensions back into dimension objects |
 
-The commands need **Write** mode. A typical order is `ipdf` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim`.
+The commands need **Write** mode. A typical order is `pdfimport` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim`.
 
-## Import (`ipdf`)
+## Import (`pdfimport`)
 
-1. Choose the PDF file.
-2. For a multi-page file, enter the page number.
-3. Specify the insertion point, or press Enter for the origin. Options:
-   - **Scale**: a uniform factor applied on import.
-   - **Mode**: how the page is imported.
-     - **Recover** (default): tries to rebuild the original drawing, as described below.
-     - **Visual**: keeps the PDF exactly as it looks. Every path becomes a line or a polyline (curves are flattened) and every text run its own text; nothing is merged, de-duplicated or turned into blocks. Use it when recovery changes how a page looks.
+1. Choose the PDF file. The **Import PDF** dialog opens.
+2. In **Page to import**, pick the page (multi-page files only). The preview shows the page; the thumbnail button next to it lists every page. **Browse...** picks another file.
+3. In **Location**, enter the insertion point X/Y (the origin by default), or tick **Specify insertion point on-screen** to pick it in the drawing after OK. **Scale** is a uniform factor applied on import.
+4. In **Import mode**, choose how the page is imported:
+   - **Recover drawing** (default): tries to rebuild the original drawing, as described below.
+   - **Keep PDF appearance**: keeps the PDF exactly as it looks. Every path becomes a line or a polyline (curves are flattened) and every text run its own text; nothing is merged, de-duplicated or turned into blocks. Use it when recovery changes how a page looks.
+5. Click **OK**. The dialog remembers the location, scale and mode for the next `pdfimport`.
 
-In **Recover** mode, the following is rebuilt automatically:
+`-pdfimport` imports without the dialog: after the file picker it asks for the page (multi-page files only), then the insertion point with **Scale** and **Mode** options on the command line. Enter accepts the origin.
+
+In **Recover drawing** mode, the following is rebuilt automatically:
 
 - **Curves**: Bézier circles, arcs and ellipses become circles, arcs and ellipses. Outlines mixing lines and arcs become polylines with arc segments. Arcs that the producer already broke into short lines are refitted. Free-form curves become splines.
 - **Blocks**: content drawn several times from the same PDF form becomes one block (`PDF_FORM_n`) with a reference per copy, including rotated and mirrored ones.
@@ -35,7 +37,7 @@ In **Recover** mode, the following is rebuilt automatically:
 
 Filled areas (coloured panels, filled logos and text outlines) import as solid hatches in their fill colour, drawn in the same order as on the page. Integrations can set the `fillHatches` option to `false` to import them as outlines only.
 
-Pattern hatches (ANSI31, brick, cross-hatch, ...) reach a PDF as thousands of short lines. In **Recover** mode they are rebuilt as hatch objects: the lines are matched against the standard `acadiso.pat` patterns, or a user-defined single or crossed pattern, with the scale, angle and origin they were drawn with. The boundary comes from a drawn closed outline, the PDF clip path or the line ends. A hatch is kept only when drawing it reproduces the lines on the page; anything else stays as lines. Integrations can set `recognizeHatches` to `false` to keep every line.
+Pattern hatches (ANSI31, brick, cross-hatch, ...) reach a PDF as thousands of short lines. In **Recover drawing** mode they are rebuilt as hatch objects: the lines are matched against the standard `acadiso.pat` patterns, or a user-defined single or crossed pattern, with the scale, angle and origin they were drawn with. The boundary comes from a drawn closed outline, the PDF clip path or the line ends. A hatch is kept only when drawing it reproduces the lines on the page; anything else stays as lines. Integrations can set `recognizeHatches` to `false` to keep every line.
 
 In both modes, text is stretched or squeezed to the width it had in the PDF, because the viewer usually draws it with a different font. Pictures (photos, logos, QR codes) are imported as raster images named `PDF_IMAGE_n.png`; their pixels stay in the open drawing only, because DWG and DXF reference images as separate files. Black-on-transparent pictures such as QR codes are placed on white, as on the PDF page.
 

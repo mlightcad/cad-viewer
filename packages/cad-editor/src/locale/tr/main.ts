@@ -287,7 +287,7 @@ export default {
       detectConvert:
         'Çizimin her yerindeki yinelenen nesneleri bulur ve bloklara dönüştürür (BDETECT).',
       importPdf:
-        'PDF dosyasından vektör geometriyi içe aktarır; daireleri, yayları ve eğrileri yeniden oluşturur (IPDF).',
+        'PDF dosyasından vektör geometriyi içe aktarır; daireleri, yayları ve eğrileri yeniden oluşturur (PDFIMPORT).',
       pdfScale:
         'İçe aktarılan PDF geometrisini bilinen bir mesafenin iki noktasına göre ölçekler (PDFSCALE).',
       pdfDim:
