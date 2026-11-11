@@ -86,5 +86,6 @@ export const llmTr = {
   createProvider: 'Sağlayıcı oluştur',
   deleteProvider: 'Sağlayıcıyı sil',
   deleteProviderConfirm: '"{id}" sağlayıcısı ve API anahtarı silinsin mi?',
+  recognitionTimeout: 'Yapay zekâ modeli {seconds} saniye içinde yanıt vermedi',
   close: 'Kapat'
 } satisfies Record<keyof typeof llmEn, string>

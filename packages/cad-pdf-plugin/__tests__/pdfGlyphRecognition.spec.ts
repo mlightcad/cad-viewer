@@ -7,8 +7,15 @@ import { PdfGlyphDictionary } from '../src/recognition/pdfGlyphDictionary'
 
 type P = { x: number; y: number }
 
+/** An ellipse filling the 0.6 × 1 cell, as one closed 16-sided stroke. */
+const ROUND: P[] = Array.from({ length: 17 }, (_, i) => {
+  const t = (i / 16) * Math.PI * 2
+  return { x: 0.3 + 0.3 * Math.cos(t), y: 0.5 + 0.5 * Math.sin(t) }
+})
+
 /** Minimal stroke font in a 0.6 × 1 cell (cap height 1). */
 const FONT: Record<string, P[][]> = {
+  O: [ROUND],
   L: [
     [
       { x: 0, y: 1 },
@@ -160,9 +167,12 @@ describe('clusterPdfTextStrokes', () => {
   })
 
   it('keeps the long strokes of a title taller than the body text', () => {
-    // Body text sets the estimated height. As in real PDFs, most title
-    // strokes are short segments but some straight ones stay long.
-    const titleStrokes = write('LET', { x: 0, y: 14 }, 4)
+    // Body text sets the estimated height. As in real PDFs, the title has
+    // round strokes made of short segments, while its straight strokes are
+    // longer than the body text allows (one is even kept as one segment).
+    // Straight strokes are only attached back through the round ones: a
+    // title of nothing but long straight strokes cannot be told from lines.
+    const titleStrokes = write('LOT', { x: 0, y: 14 }, 4)
     const long = titleStrokes[titleStrokes.length - 1]
     // A piece hanging below the title, split off from it as its own row.
     const piece: PdfTextStroke<number> = {
@@ -194,6 +204,43 @@ describe('clusterPdfTextStrokes', () => {
     expect(lines[0].strokes).toHaveLength(title.length)
     expect(lines[0].strokes).toEqual(expect.arrayContaining([long, piece]))
     expect(lines[0].height).toBeCloseTo(4, 6)
+  })
+
+  it('ignores table grid lines exploded into short segments', () => {
+    // A narrow table column: one cell per row. The PDF splits the grid into
+    // segments shorter than the text, which used to glue the cells into one
+    // tall block read as vertical text, one glyph per line.
+    const rows = 5
+    const cellW = 3.5
+    const cellH = 2.5
+    const segment = (a: P, b: P): PdfTextStroke<number> => ({
+      id: nextId++,
+      points: [a, b]
+    })
+    const grid: PdfTextStroke<number>[] = []
+    for (let x = 0; x <= cellW; x += cellW) {
+      for (let y = 0; y < rows * cellH; y += 0.5) {
+        grid.push(segment({ x, y }, { x, y: y + 0.5 }))
+      }
+    }
+    for (let r = 0; r <= rows; r++) {
+      for (let x = 0; x < cellW; x += 0.5) {
+        const y = r * cellH
+        grid.push(segment({ x, y }, { x: Math.min(x + 0.5, cellW), y }))
+      }
+    }
+    const text = Array.from({ length: rows }, (_, r) =>
+      write('LET', { x: 0.5, y: r * cellH + 0.75 }, 1)
+    ).flat()
+
+    const { lines, rejected } = clusterPdfTextStrokes([...grid, ...text])
+    expect(lines).toHaveLength(rows)
+    lines.forEach(line => {
+      expect(line.rotation).toBeCloseTo(0, 6)
+      expect(line.glyphs).toHaveLength(3)
+      expect(line.height).toBeCloseTo(1, 6)
+    })
+    expect(new Set(rejected)).toEqual(new Set(grid))
   })
 })
 

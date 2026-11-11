@@ -4,6 +4,7 @@ import type {
 } from '@mlightcad/cad-simple-viewer'
 import { generateText } from 'ai'
 
+import { llmT } from './i18n'
 import { acapLlmCreateModel } from './model/AcApLlmModelFactory'
 import { acapLlmSkipDataUrlDownload } from './model/skipDataUrlDownload'
 import {
@@ -28,6 +29,50 @@ spaces between words. Do not explain, translate or correct the text.
 
 Reply with only a JSON array of strings, one per image in the given order,
 and exactly as many entries as images. Use "" for an image that is not legible.`
+
+/**
+ * Longest wait for one recognition request, in milliseconds. A provider that
+ * never answers would otherwise keep the busy indicator up forever.
+ */
+export const ACAP_LLM_RECOGNITION_TIMEOUT_MS = 120_000
+
+/**
+ * Runs one model request, limited to
+ * {@link ACAP_LLM_RECOGNITION_TIMEOUT_MS}.
+ *
+ * The request gets its own signal, aborted by the caller's `signal` or by
+ * the timeout. The timeout also rejects the race directly, so it works even
+ * when a provider ignores the abort.
+ *
+ * @throws A localized timeout error when the limit is reached.
+ */
+async function runWithTimeout<T>(
+  signal: AbortSignal | undefined,
+  run: (signal: AbortSignal) => Promise<T>
+): Promise<T> {
+  const controller = new AbortController()
+  const forward = () => controller.abort(signal?.reason)
+  if (signal?.aborted) forward()
+  else signal?.addEventListener('abort', forward, { once: true })
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      const error = new Error(
+        llmT('recognitionTimeout', {
+          seconds: Math.round(ACAP_LLM_RECOGNITION_TIMEOUT_MS / 1000)
+        })
+      )
+      controller.abort(error)
+      reject(error)
+    }, ACAP_LLM_RECOGNITION_TIMEOUT_MS)
+  })
+  try {
+    return await Promise.race([run(controller.signal), timeout])
+  } finally {
+    clearTimeout(timer)
+    signal?.removeEventListener('abort', forward)
+  }
+}
 
 /** Most images sent in one recognition request. */
 const BATCH_SIZE = 20
@@ -61,32 +106,34 @@ export async function acapLlmRecognizeTextBatch(
     chunks.push(request.images.slice(i, i + BATCH_SIZE))
   }
   const readChunk = async (images: string[]) => {
-    const { text } = await generateText({
-      model: acapLlmCreateModel(settings),
-      system: BATCH_TEXT_RECOGNITION_SYSTEM_PROMPT,
-      abortSignal: request.signal,
-      experimental_download: acapLlmSkipDataUrlDownload,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: [
-                `Read the text in these ${images.length} images.`,
-                request.locale ? `UI language: ${request.locale}.` : ''
-              ]
-                .filter(Boolean)
-                .join(' ')
-            },
-            ...images.flatMap((image, i) => [
-              { type: 'text' as const, text: `Image ${i + 1}:` },
-              { type: 'image' as const, image }
-            ])
-          ]
-        }
-      ]
-    })
+    const { text } = await runWithTimeout(request.signal, abortSignal =>
+      generateText({
+        model: acapLlmCreateModel(settings),
+        system: BATCH_TEXT_RECOGNITION_SYSTEM_PROMPT,
+        abortSignal,
+        experimental_download: acapLlmSkipDataUrlDownload,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: [
+                  `Read the text in these ${images.length} images.`,
+                  request.locale ? `UI language: ${request.locale}.` : ''
+                ]
+                  .filter(Boolean)
+                  .join(' ')
+              },
+              ...images.flatMap((image, i) => [
+                { type: 'text' as const, text: `Image ${i + 1}:` },
+                { type: 'image' as const, image }
+              ])
+            ]
+          }
+        ]
+      })
+    )
     return acapLlmParseBatchText(text, images.length)
   }
 
@@ -163,24 +210,26 @@ export async function acapLlmRecognizeText(
       : ''
   ].filter(Boolean)
 
-  const { text } = await generateText({
-    model: acapLlmCreateModel(settings),
-    system: TEXT_RECOGNITION_SYSTEM_PROMPT,
-    abortSignal: request.signal,
-    experimental_download: acapLlmSkipDataUrlDownload,
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: ['Read the text in this image.', ...hints].join(' ')
-          },
-          { type: 'image', image: request.image }
-        ]
-      }
-    ]
-  })
+  const { text } = await runWithTimeout(request.signal, abortSignal =>
+    generateText({
+      model: acapLlmCreateModel(settings),
+      system: TEXT_RECOGNITION_SYSTEM_PROMPT,
+      abortSignal,
+      experimental_download: acapLlmSkipDataUrlDownload,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: ['Read the text in this image.', ...hints].join(' ')
+            },
+            { type: 'image', image: request.image }
+          ]
+        }
+      ]
+    })
+  )
   return acapLlmCleanRecognizedText(text)
 }
 

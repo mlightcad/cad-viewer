@@ -134,8 +134,14 @@ function byNumber(a: number, b: number) {
 /**
  * Groups strokes whose end points meet within `tolerance` (a stroke split
  * into consecutive segments), using a hash grid of end points.
+ *
+ * @param canJoin - Optional extra condition for joining two strokes.
  */
-function chainStrokes(strokes: PdfTextStroke[], tolerance: number): number[][] {
+function chainStrokes(
+  strokes: PdfTextStroke[],
+  tolerance: number,
+  canJoin?: (a: number, b: number) => boolean
+): number[][] {
   const uf = new UnionFind(strokes.length)
   const cell = Math.max(tolerance, 1e-12)
   const grid = new Map<string, Array<{ index: number; p: PdfRecPoint }>>()
@@ -147,7 +153,10 @@ function chainStrokes(strokes: PdfTextStroke[], tolerance: number): number[][] {
       for (let dx = -1; dx <= 1; dx++) {
         for (let dy = -1; dy <= 1; dy++) {
           for (const other of grid.get(`${gx + dx},${gy + dy}`) ?? []) {
-            if (Math.hypot(other.p.x - p.x, other.p.y - p.y) <= tolerance) {
+            if (
+              Math.hypot(other.p.x - p.x, other.p.y - p.y) <= tolerance &&
+              (!canJoin || canJoin(index, other.index))
+            ) {
               uf.union(index, other.index)
             }
           }
@@ -167,6 +176,54 @@ function chainStrokes(strokes: PdfTextStroke[], tolerance: number): number[][] {
     else groups.set(root, [i])
   })
   return [...groups.values()]
+}
+
+/** Sine of the largest angle between segments still treated as collinear. */
+const COLLINEAR_SINE = Math.sin((2 * Math.PI) / 180)
+
+/** Unit direction of a straight stroke, or `undefined` for a curved one. */
+function straightDirection(
+  stroke: PdfTextStroke,
+  tolerance: number
+): PdfRecPoint | undefined {
+  const a = stroke.points[0]
+  const b = stroke.points[stroke.points.length - 1]
+  const length = Math.hypot(b.x - a.x, b.y - a.y)
+  if (!(length > 0)) return undefined
+  const ux = (b.x - a.x) / length
+  const uy = (b.y - a.y) / length
+  for (const p of stroke.points) {
+    if (Math.abs((p.x - a.x) * uy - (p.y - a.y) * ux) > tolerance) {
+      return undefined
+    }
+  }
+  return { x: ux, y: uy }
+}
+
+/**
+ * Size of the straight line each stroke belongs to: straight strokes that
+ * meet end to end in the same direction are measured together. PDFs often
+ * split table grids and frames into segments shorter than the text, which
+ * would otherwise pass as glyph strokes and glue table cells together.
+ */
+function straightRunSizes(
+  strokes: PdfTextStroke[],
+  tolerance: number
+): number[] {
+  const directions = strokes.map(stroke => straightDirection(stroke, tolerance))
+  const runs = chainStrokes(strokes, tolerance, (i, j) => {
+    const a = directions[i]
+    const b = directions[j]
+    return !!a && !!b && Math.abs(a.x * b.y - a.y * b.x) <= COLLINEAR_SINE
+  })
+  const sizes = new Array<number>(strokes.length)
+  for (const run of runs) {
+    const size = boxSize(
+      strokeBox({ id: 0, points: run.flatMap(i => strokes[i].points) })
+    )
+    run.forEach(i => (sizes[i] = size))
+  }
+  return sizes
 }
 
 class UnionFind {
@@ -269,6 +326,223 @@ function principalAngle(points: PdfRecPoint[]): number | undefined {
   // A single glyph or a square block of text has no reliable direction.
   if (!(bestLength > bestHeight * 1.8)) return undefined
   return normalizeTextAngle(bestAngle)
+}
+
+/** Fewest glyph blobs for {@link neighborAngle} to vote on a direction. */
+const NEIGHBOR_MIN_BLOBS = 3
+
+/** Width of one direction histogram bin, in radians. */
+const NEIGHBOR_BIN = Math.PI / 180
+
+/**
+ * Baseline direction of a phrase from the direction between each glyph and
+ * its nearest neighbor, in `(-π/2, π/2]`.
+ *
+ * Characters of a line are closer to each other than lines are, so the most
+ * common nearest-neighbor direction is the baseline. Unlike the phrase
+ * outline, this also works for blocks taller than wide: a narrow column of
+ * table cells or a paragraph of short lines.
+ *
+ * @returns The direction, or `undefined` when the phrase has fewer than
+ * {@link NEIGHBOR_MIN_BLOBS} glyph blobs.
+ */
+function neighborAngle(
+  strokes: PdfTextStroke[],
+  textHeight: number,
+  wordGap: number
+): number | undefined {
+  // Blobs: touching strokes, roughly one glyph or glyph part each.
+  const boxes = strokes.map(strokeBox)
+  const blobs = clusterBoxes(boxes, textHeight * 0.02).map(group => {
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    for (const i of group) {
+      minX = Math.min(minX, boxes[i].minX)
+      minY = Math.min(minY, boxes[i].minY)
+      maxX = Math.max(maxX, boxes[i].maxX)
+      maxY = Math.max(maxY, boxes[i].maxY)
+    }
+    return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
+  })
+  if (blobs.length < NEIGHBOR_MIN_BLOBS) return undefined
+
+  const cell = Math.max(textHeight, 1e-9)
+  const grid = new Map<string, number[]>()
+  blobs.forEach((blob, i) => {
+    const key = `${Math.floor(blob.x / cell)},${Math.floor(blob.y / cell)}`
+    const bucket = grid.get(key)
+    if (bucket) bucket.push(i)
+    else grid.set(key, [i])
+  })
+  const reach = Math.ceil(Math.max(wordGap, 1))
+  const bins = Math.round(Math.PI / NEIGHBOR_BIN)
+  const votes = new Array<number>(bins).fill(0)
+  const angles: number[] = []
+  blobs.forEach((blob, i) => {
+    const gx = Math.floor(blob.x / cell)
+    const gy = Math.floor(blob.y / cell)
+    let best = -1
+    let bestDistance = Infinity
+    for (let dx = -reach; dx <= reach; dx++) {
+      for (let dy = -reach; dy <= reach; dy++) {
+        for (const j of grid.get(`${gx + dx},${gy + dy}`) ?? []) {
+          if (j === i) continue
+          const d = Math.hypot(blobs[j].x - blob.x, blobs[j].y - blob.y)
+          if (d > 0 && d < bestDistance) {
+            bestDistance = d
+            best = j
+          }
+        }
+      }
+    }
+    if (best < 0) return
+    let angle = Math.atan2(blobs[best].y - blob.y, blobs[best].x - blob.x)
+    if (angle < 0) angle += Math.PI
+    if (angle >= Math.PI) angle -= Math.PI
+    angles.push(angle)
+    votes[Math.min(bins - 1, Math.floor(angle / NEIGHBOR_BIN))]++
+  })
+  if (angles.length === 0) return undefined
+
+  // Mode of the histogram, smoothed over neighboring bins (circular).
+  let bestBin = 0
+  let bestScore = -1
+  for (let b = 0; b < bins; b++) {
+    let score = 0
+    for (let k = -2; k <= 2; k++) score += votes[(b + k + bins) % bins]
+    if (score > bestScore) {
+      bestScore = score
+      bestBin = b
+    }
+  }
+  // Refine: mean of the votes near the mode, unwrapped around it.
+  const center = (bestBin + 0.5) * NEIGHBOR_BIN
+  let sum = 0
+  let count = 0
+  for (const angle of angles) {
+    let delta = angle - center
+    if (delta > Math.PI / 2) delta -= Math.PI
+    if (delta < -Math.PI / 2) delta += Math.PI
+    if (Math.abs(delta) <= 3 * NEIGHBOR_BIN) {
+      sum += delta
+      count++
+    }
+  }
+  return normalizeTextAngle(center + (count > 0 ? sum / count : 0))
+}
+
+/** Candidates scoring within this fraction of the best count as a tie. */
+const ANGLE_TIE = 0.05
+
+/**
+ * How much better a tilted direction must score than 0° / 90° to be used:
+ * drawings are mostly axis-aligned, and a few glyphs (`Q1`) can make a
+ * slight tilt score marginally better.
+ */
+const TILT_MARGIN = 0.2
+
+/** How much better than every other direction a clear direction scores. */
+const ANGLE_CLEAR = 0.25
+
+/** Lines shorter than this many times their thickness are not real lines. */
+const MIN_LINE_ASPECT = 1.5
+
+/**
+ * Baseline direction of a phrase: among 0°, 90°, the nearest-neighbor vote
+ * and the outline direction, the one whose lines have the tightest glyph
+ * spacing.
+ *
+ * Along the baseline, glyphs of a line are close together. Read across it,
+ * "lines" are columns of characters whose gaps are the line spacing, or
+ * single glyphs / single characters (not elongated) that count as a word
+ * gap. This holds for single lines, paragraphs, widely spaced titles and
+ * narrow table columns alike, where the phrase outline or nearest neighbors
+ * (often parts of one character) fail. Ties keep the earlier candidate, so
+ * horizontal text stays exactly horizontal.
+ *
+ * @returns The direction, and whether it is clear. It is not when the
+ * phrase reads as fewer than three glyphs, or no direction scores clearly
+ * better than the others: short words like `Q1` look the same as one
+ * character read sideways, so only the rest of the drawing can tell.
+ */
+function bestPhraseAngle(
+  strokes: PdfTextStroke[],
+  textHeight: number,
+  wordGap: number,
+  glyphGap: number
+): { angle: number; clear: boolean } {
+  const candidates = [
+    0,
+    Math.PI / 2,
+    neighborAngle(strokes, textHeight, wordGap),
+    principalAngle(strokes.flatMap(stroke => stroke.points))
+  ].filter(
+    (angle, i, all): angle is number =>
+      angle !== undefined &&
+      all
+        .slice(0, i)
+        .every(
+          other =>
+            other === undefined ||
+            Math.abs(normalizeTextAngle(other) - normalizeTextAngle(angle)) >
+              NEIGHBOR_BIN
+        )
+  )
+  let best = candidates[0]
+  let bestScore = Infinity
+  let bestGlyphs = 0
+  const scores: number[] = []
+  for (const angle of candidates) {
+    let gaps = 0
+    let count = 0
+    let glyphCount = 0
+    const local = localStrokes(strokes, angle)
+    for (const row of splitByGaps(local, 'v', textHeight * 0.1)) {
+      for (const line of splitByGaps(row, 'u', wordGap * textHeight)) {
+        const glyphs = splitByGaps(line, 'u', glyphGap * textHeight)
+        glyphCount += glyphs.length
+        // One glyph, or one character read sideways (its stacked parts),
+        // counts as a word gap.
+        const band = lineBand(line)
+        if (
+          glyphs.length < 2 ||
+          band.maxU - band.minU < (band.maxV - band.minV) * MIN_LINE_ASPECT
+        ) {
+          gaps += wordGap * textHeight
+          count++
+          continue
+        }
+        let reach = -Infinity
+        glyphs.forEach((glyph, i) => {
+          const minU = Math.min(...glyph.map(item => item.minU))
+          if (i > 0) {
+            gaps += minU - reach
+            count++
+          }
+          reach = Math.max(...glyph.map(item => item.maxU))
+        })
+      }
+    }
+    const score = count > 0 ? gaps / count : Infinity
+    scores.push(score)
+    const axis = Math.abs(Math.sin(2 * angle)) < 1e-9
+    if (score < bestScore * (1 - (axis ? ANGLE_TIE : TILT_MARGIN))) {
+      best = angle
+      bestScore = score
+      bestGlyphs = glyphCount
+    }
+  }
+  const runnerUp = Math.min(
+    ...scores.filter((_, i) => candidates[i] !== best),
+    Infinity
+  )
+  return {
+    angle: normalizeTextAngle(best),
+    // Two glyphs cannot tell a line from a column.
+    clear: bestGlyphs >= 3 && bestScore <= runnerUp * (1 - ANGLE_CLEAR)
+  }
 }
 
 /** Andrew's monotone chain convex hull (counterclockwise). */
@@ -417,6 +691,39 @@ function fitsBand(item: LineBand, band: LineBand) {
   )
 }
 
+/**
+ * Whether a rejected stroke can join a text line taller than the estimated
+ * height: across the baseline inside its band (quarter-height margin), along
+ * it within a word gap, and no larger than about the line height.
+ *
+ * @param size - Size to check: the full straight line a segment belongs to,
+ * so pieces of grid lines next to text are not attached.
+ */
+function joinsBand(
+  item: LineBand,
+  band: LineBand,
+  size: number,
+  wordGap: number
+) {
+  const height = band.maxV - band.minV
+  const margin = height * 0.25
+  const gap = height * wordGap
+  return (
+    size <= height * 1.5 &&
+    item.maxU >= band.minU - gap &&
+    item.minU <= band.maxU + gap &&
+    item.minV >= band.minV - margin &&
+    item.maxV <= band.maxV + margin
+  )
+}
+
+function extendBand(band: LineBand, item: LineBand) {
+  band.minU = Math.min(band.minU, item.minU)
+  band.maxU = Math.max(band.maxU, item.maxU)
+  band.minV = Math.min(band.minV, item.minV)
+  band.maxV = Math.max(band.maxV, item.maxV)
+}
+
 interface Row<Id> {
   angle: number
   items: LocalStroke<Id>[]
@@ -507,12 +814,22 @@ export function clusterPdfTextStrokes<Id>(
     return { lines: [], rejected: usable, textHeight: 0 }
   }
 
+  // Straight lines split into short segments (table grids, frames) are
+  // judged by their full length; long strokes of a taller title rejected
+  // here are attached back to their line below.
+  const runSizes = straightRunSizes(usable, textHeight * 0.01)
   const accepted: PdfTextStroke<Id>[] = []
   const rejected: PdfTextStroke<Id>[] = []
-  for (const stroke of usable) {
-    if (boxSize(strokeBox(stroke)) > textHeight * 1.5) rejected.push(stroke)
-    else accepted.push(stroke)
-  }
+  const rejectedSize = new Map<PdfTextStroke<Id>, number>()
+  usable.forEach((stroke, i) => {
+    const size = Math.max(boxSize(strokeBox(stroke)), runSizes[i])
+    if (size > textHeight * 1.5) {
+      rejected.push(stroke)
+      rejectedSize.set(stroke, size)
+    } else {
+      accepted.push(stroke)
+    }
+  })
 
   // Phrases: strokes within a word gap. Lines of a paragraph may join into
   // one phrase; they are split into rows below once the direction is known.
@@ -521,16 +838,31 @@ export function clusterPdfTextStrokes<Id>(
     group.map(i => accepted[i])
   )
 
-  // Direction per phrase; round phrases borrow the dominant direction.
-  const angles = phrases.map(phrase =>
-    principalAngle(phrase.flatMap(stroke => stroke.points))
+  // Direction per phrase: the candidate with the tightest glyph spacing.
+  // Phrases too small or too ambiguous to tell (one glyph, `Q1`, or a title
+  // whose long strokes are attached only later) borrow the dominant
+  // direction of the clear ones.
+  const judged = phrases.map(phrase =>
+    boxSize(strokeBox({ id: 0, points: phrase.flatMap(s => s.points) })) <
+    textHeight * 2
+      ? undefined
+      : bestPhraseAngle(phrase, textHeight, wordGap, glyphGap)
   )
-  const known = angles.filter((a): a is number => a !== undefined)
-  const dominant = known.length > 0 ? median(known) : 0
+  const known = judged.flatMap(result => (result?.clear ? [result.angle] : []))
+  const dominant = known.length > 0 ? median(known) : undefined
+  const angles = phrases.map((phrase, i) => {
+    const result = judged[i]
+    if (result?.clear) return result.angle
+    return (
+      dominant ??
+      result?.angle ??
+      principalAngle(phrase.flatMap(stroke => stroke.points))
+    )
+  })
 
   const merged: Row<Id>[] = []
   phrases.forEach((phrase, i) => {
-    const angle = angles[i] ?? dominant
+    const angle = angles[i] ?? 0
     const local = localStrokes(phrase, angle)
     // Rows: gaps across the baseline. Lines: word gaps along it.
     for (const row of splitByGaps(local, 'v', textHeight * 0.1)) {
@@ -541,16 +873,25 @@ export function clusterPdfTextStrokes<Id>(
   })
 
   // Strokes too long for the estimated height may belong to taller text (a
-  // title above body text): keep those lying inside the band of such a line.
+  // title above body text): attach those lying in the band of such a line.
+  // Bands grow as strokes join, so repeat until nothing changes.
   const bands = merged.map(row => lineBand(row.items))
-  const stillRejected = rejected.filter(stroke => {
-    const index = merged.findIndex((row, i) =>
-      fitsBand(localStrokes([stroke], row.angle)[0], bands[i])
-    )
-    if (index < 0) return true
-    merged[index].items.push(...localStrokes([stroke], merged[index].angle))
-    return false
-  })
+  let stillRejected = rejected
+  for (let changed = true; changed && stillRejected.length > 0; ) {
+    changed = false
+    stillRejected = stillRejected.filter(stroke => {
+      const size = rejectedSize.get(stroke) ?? 0
+      for (let i = 0; i < merged.length; i++) {
+        const item = localStrokes([stroke], merged[i].angle)[0]
+        if (!joinsBand(item, bands[i], size, wordGap)) continue
+        merged[i].items.push(item)
+        extendBand(bands[i], item)
+        changed = true
+        return false
+      }
+      return true
+    })
+  }
   const rows = mergeFragments(merged)
 
   const lines = rows.map(row =>

@@ -87,5 +87,6 @@ export const llmJa = {
   createProvider: 'プロバイダを作成',
   deleteProvider: 'プロバイダを削除',
   deleteProviderConfirm: 'プロバイダ「{id}」とその API キーを削除しますか?',
+  recognitionTimeout: 'AI モデルが {seconds} 秒以内に応答しませんでした',
   close: '閉じる'
 } satisfies Record<keyof typeof llmEn, string>

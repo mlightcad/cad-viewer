@@ -82,5 +82,6 @@ export const llmZh = {
   createProvider: '创建提供商',
   deleteProvider: '删除提供商',
   deleteProviderConfirm: '确定删除提供商“{id}”及其 API 密钥吗？',
+  recognitionTimeout: 'AI 模型在 {seconds} 秒内没有响应',
   close: '关闭'
 } satisfies Record<keyof typeof llmEn, string>
