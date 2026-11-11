@@ -3,7 +3,8 @@ import {
   AcDbMText,
   AcDbText,
   AcDbTextStyleTableRecord,
-  AcGePoint3d
+  AcGePoint3d,
+  AcGiMTextAttachmentPoint
 } from '@mlightcad/data-model'
 
 import {
@@ -18,6 +19,7 @@ import type { PdfTextFontKind } from './recognition/pdfTextFontKind'
 import {
   arePdfTextLinesAdjacent,
   mergePdfTextLines,
+  type PdfTextMergeMeasure,
   type PdfTextMergeParagraph
 } from './recognition/pdfTextMerge'
 
@@ -120,6 +122,8 @@ export class AcApPdfTextSession<Id> {
   readonly rows: PdfTextRow<Id>[]
   private readonly db: AcDbDatabase
   private readonly fontKind: PdfTextFontKindResolver
+  /** Measures text for merging, once fonts are loaded (see setMeasurer). */
+  private measurer?: PdfTextMeasurer
   private readonly choices = new Map<PdfTextFontKind, PdfTextStyleChoice>()
   /** Original fonts of existing styles changed by {@link syncStyles}. */
   private readonly snapshots = new Map<
@@ -285,7 +289,7 @@ export class AcApPdfTextSession<Id> {
       // Unread rows were not typed: partial text (a merge of read and
       // unread characters) is replaced once the whole row can be read.
       if (row.source !== 'unread') return
-      const text = lookupRow(row, lookup)
+      const text = lookupRow(row, lookup, this.mergeMeasure(row.kind))
       if (!text) return
       row.text = text
       row.source = 'dictionary'
@@ -293,6 +297,24 @@ export class AcApPdfTextSession<Id> {
       filled.push(index)
     })
     return filled
+  }
+
+  /**
+   * Sets the text measurer used when merging rows, so gaps between merged
+   * characters become the right number of spaces. Call it once the style
+   * fonts are loaded.
+   */
+  setMeasurer(measure: PdfTextMeasurer | undefined) {
+    this.measurer = measure
+  }
+
+  /** Measures text in a font kind's chosen fonts, for {@link merge}. */
+  private mergeMeasure(kind: PdfTextFontKind) {
+    const measure = this.measurer
+    if (!measure) return undefined
+    const choice = this.choices.get(kind)!
+    return (text: string, height: number) =>
+      measure(text, choice.font, height, choice.bigFont)
   }
 
   /** Includes or skips a line. */
@@ -355,14 +377,17 @@ export class AcApPdfTextSession<Id> {
     if (unique.length < 2) return undefined
     const selected = unique.map(index => this.rows[index])
     const parts = selected.flatMap(row => this.partsOf(row))
-    const result = mergePdfTextLines(parts)
+    const kind = majorityKind(parts)
+    const result = mergePdfTextLines(parts, {
+      measure: this.mergeMeasure(kind)
+    })
     const text = result.text
     const anyUnread = parts.some(
       part => part.source === 'unread' && !part.text.trim()
     )
     const merged: PdfTextRow<Id> = {
       line: result.line,
-      kind: majorityKind(parts),
+      kind,
       text,
       source:
         anyUnread || !text.trim()
@@ -588,10 +613,15 @@ export class AcApPdfTextSession<Id> {
   }
 
   /**
-   * Builds the MTEXT of a merged row: top-left attached at the cap height of
-   * its first line, one paragraph per line, exact line spacing as measured,
-   * no word wrap. With width auto-fit each paragraph gets the `\W` width
-   * factor that makes it span its original width.
+   * Builds the MTEXT of a merged row: one paragraph per line, exact line
+   * spacing as measured, no word wrap. With width auto-fit each paragraph
+   * gets the `\W` width factor that makes it span its original width.
+   *
+   * It is attached bottom-left at the lowest ink of its last line, like a
+   * TEXT at its baseline. The viewer anchors MTEXT on the drawn glyphs, so
+   * this keeps the text where it was even when the glyphs are shorter than
+   * the cap height (a top-left anchor at the cap height moved such text
+   * down); for capitals and CJK the ink bottom also is the baseline.
    */
   createMText(
     row: PdfTextRow<Id>,
@@ -601,7 +631,7 @@ export class AcApPdfTextSession<Id> {
     const choice = this.choices.get(row.kind)!
     const height = row.line.height * choice.heightScale
     const angle = row.line.rotation
-    const first = merge.paragraphs[0]
+    const last = merge.paragraphs[merge.paragraphs.length - 1]
     const minU = Math.min(...merge.paragraphs.map(item => item.minU))
     const lines = row.text.replace(/\s+$/, '').split('\n')
     // Paragraph widths only match while the lines are the merged ones.
@@ -632,7 +662,8 @@ export class AcApPdfTextSession<Id> {
     mtext.height = height
     mtext.width = 0
     mtext.rotation = angle
-    mtext.location = toWorld(minU, first.baseline + height, angle)
+    mtext.attachmentPoint = AcGiMTextAttachmentPoint.BottomLeft
+    mtext.location = toWorld(minU, last.bottom, angle)
     if (lines.length > 1) {
       // AutoCAD single spacing is 5/3 of the text height; "exactly" keeps
       // the measured spacing regardless of the characters.
@@ -689,14 +720,16 @@ export class AcApPdfTextSession<Id> {
  */
 function lookupRow<Id>(
   row: PdfTextRow<Id>,
-  lookup: (line: PdfTextLineCandidate<Id>) => string | undefined
+  lookup: (line: PdfTextLineCandidate<Id>) => string | undefined,
+  measure?: PdfTextMergeMeasure
 ): string | undefined {
   const merge = row.merge
   if (!merge || merge.paragraphs.length === 1) return lookup(row.line)
-  const texts = merge.parts.map(part => lookupRow(part, lookup))
+  const texts = merge.parts.map(part => lookupRow(part, lookup, measure))
   if (texts.some(text => !text)) return undefined
   return mergePdfTextLines(
-    merge.parts.map((part, i) => ({ line: part.line, text: texts[i]! }))
+    merge.parts.map((part, i) => ({ line: part.line, text: texts[i]! })),
+    { measure }
   ).text
 }
 

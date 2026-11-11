@@ -20,10 +20,11 @@ function fakeSource(): AcApTextMeasureFontSource {
 
 describe('acapMeasureTextWidth', () => {
   test('sums glyph advances at height × font scale factor', () => {
-    // size = 10 × 2 = 20; A,B = 10 each, space = 5
+    // Glyphs at 10 × 2 = 20: A, B = 10 each. The renderer advances a space
+    // by the font's space glyph at the plain text height: 0.25 × 10.
     expect(
       acapMeasureTextWidth('A B', 'latin', 10, { source: fakeSource() })
-    ).toBe(25)
+    ).toBe(22.5)
   })
 
   test('resolves a missing style font like the renderer', () => {
@@ -43,20 +44,22 @@ describe('acapMeasureTextWidth', () => {
     const source = fakeSource()
     source.getCharShape = (char, font, size) =>
       char === 'A' ? { width: 0.5 * size } : undefined
-    // mesh fallback blank = 0.3 × size = 6
-    expect(acapMeasureTextWidth('A A', 'latin', 10, { source })).toBe(26)
+    // mesh fallback blank = 0.3 × text height = 3
+    expect(acapMeasureTextWidth('A A', 'latin', 10, { source })).toBe(23)
   })
 
-  test('tries the style big font before the default fonts', () => {
+  test('tries the style big font before the default fonts, at its own scale', () => {
     const source = fakeSource()
     const inner = source.getCharShape
     source.getCharShape = (char, font, size) =>
       font === 'big' && char === '中'
         ? { width: 0.5 * size }
         : inner(char, font, size)
+    // The big font's scale is 1, not the style font's 2 (like the renderer:
+    // a CJK cell of txt.shx + gbcbig.shx is one text height wide, not 4/3).
     expect(
       acapMeasureTextWidth('中', 'latin', 10, { bigFont: 'big', source })
-    ).toBe(10)
+    ).toBe(5)
   })
 
   test('returns undefined when a glyph cannot be resolved', () => {

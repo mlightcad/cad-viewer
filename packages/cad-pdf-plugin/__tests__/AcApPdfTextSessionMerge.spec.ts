@@ -1,4 +1,9 @@
-import { AcDbDatabase, AcDbMText, AcDbText } from '@mlightcad/data-model'
+import {
+  AcDbDatabase,
+  AcDbMText,
+  AcDbText,
+  AcGiMTextAttachmentPoint
+} from '@mlightcad/data-model'
 
 import { AcApPdfTextSession, type PdfTextRow } from '../src/AcApPdfTextSession'
 import { PDF_SHX_TEXT_STYLE } from '../src/pdfImportEntities'
@@ -51,9 +56,11 @@ describe('AcApPdfTextSession merging', () => {
     expect(mtext.contents).toBe('ABC')
     expect(mtext.styleName).toBe(PDF_SHX_TEXT_STYLE)
     expect(mtext.height).toBeCloseTo(1)
-    // Top-left at the cap height of the line.
+    // Bottom-left at the ink bottom of the (last) line, like a TEXT at its
+    // baseline: the viewer anchors MTEXT on the drawn glyphs.
+    expect(mtext.attachmentPoint).toBe(AcGiMTextAttachmentPoint.BottomLeft)
     expect(mtext.location.x).toBeCloseTo(0)
-    expect(mtext.location.y).toBeCloseTo(1)
+    expect(mtext.location.y).toBeCloseTo(0)
     expect(mtext.width).toBe(0)
     // Rows that were not merged stay TEXT.
     expect(s.createEntity(s.rows[0])).toBeInstanceOf(AcDbText)

@@ -44,7 +44,7 @@ export class AcTrVertexBatchDrawVisibilityStrategy extends AcTrBatchDrawVisibili
       }
     }
 
-    positionAttr.needsUpdate = true
+    this.markChanged(positionAttr, baseOffset, count * itemSize)
     return true
   }
 
@@ -60,7 +60,7 @@ export class AcTrVertexBatchDrawVisibilityStrategy extends AcTrBatchDrawVisibili
     const array = positionAttr.array as Float32Array
     const itemSize = positionAttr.itemSize
     array.set(snapshot, info.vertexStart * itemSize)
-    positionAttr.needsUpdate = true
+    this.markChanged(positionAttr, info.vertexStart * itemSize, snapshot.length)
     delete info.hiddenDrawSnapshot
     return true
   }

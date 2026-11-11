@@ -261,6 +261,8 @@ export class AcApPdfTextCmd extends AcEdCommand {
       const measure = await prepareMeasure(fonts)
       // A newer edit (or the end of the review) superseded this one.
       if (current !== generation) return
+      // Merging measures text too: gaps become spaces in the chosen fonts.
+      session.setMeasurer(measure)
       clearPreview()
       previews = session.readyRows.map(row =>
         createRowEntity(session, row, entityById, measure)

@@ -47,7 +47,7 @@ export class AcTrLine2BatchDrawVisibilityStrategy extends AcTrBatchDrawVisibilit
       endArray[offset + 2] = startArray[offset + 2]
     }
 
-    endAttr.needsUpdate = true
+    this.markChanged(endAttr, segmentStart * 3, segmentCount * 3)
     return true
   }
 
@@ -71,8 +71,8 @@ export class AcTrLine2BatchDrawVisibilityStrategy extends AcTrBatchDrawVisibilit
     const segmentStart = info.vertexStart
     startAttr.array.set(snapshot.instanceStart, segmentStart * 3)
     endAttr.array.set(snapshot.instanceEnd, segmentStart * 3)
-    startAttr.needsUpdate = true
-    endAttr.needsUpdate = true
+    this.markChanged(startAttr, segmentStart * 3, snapshot.instanceStart.length)
+    this.markChanged(endAttr, segmentStart * 3, snapshot.instanceEnd.length)
     delete info.hiddenDrawSnapshot
     return true
   }
