@@ -40,6 +40,33 @@ export abstract class AcTrBatchDrawVisibilityStrategy {
   }
 
   /**
+   * Flags the changed part of an attribute for upload.
+   *
+   * The range must be recorded, not only `needsUpdate`: batches record their
+   * appended ranges with `addUpdateRange`, and while any range is pending
+   * three.js uploads just the recorded ranges. A slot change without its own
+   * range then stays on the CPU, so a hidden entity kept drawing until a
+   * later full upload (e.g. the next toggle).
+   *
+   * @param attr - Attribute whose array was written.
+   * @param start - First changed array element.
+   * @param count - Number of changed array elements.
+   */
+  protected markChanged(
+    attr: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
+    start: number,
+    count: number
+  ) {
+    if (attr instanceof THREE.BufferAttribute) {
+      attr.addUpdateRange(start, count)
+    } else {
+      // Interleaved ranges address the shared buffer: upload all of it.
+      attr.data.clearUpdateRanges()
+    }
+    attr.needsUpdate = true
+  }
+
+  /**
    * Copies one typed-array slice for snapshot storage.
    */
   protected copyTypedArraySlice(
