@@ -13,9 +13,7 @@ import {
   AcEdPromptStatus
 } from '@mlightcad/cad-simple-viewer'
 import { type AcDbObjectId, AcDbText, AcGeBox2d } from '@mlightcad/data-model'
-import { watch } from 'vue'
 
-import { store } from '../app'
 import {
   acuiBDetectGroups,
   acuiBeginBDetect,
@@ -34,6 +32,7 @@ import {
 } from '../composable'
 import { i18n } from '../locale'
 import { AcApBSearchCmd } from './AcApBSearchCmd'
+import { acuiOpenCommandPaletteTab } from './acuiCommandPaletteTab'
 
 type DetectInput =
   | { kind: 'action'; action: MlBDetectAction }
@@ -48,8 +47,8 @@ const THUMBNAIL_SIZE = 112
  * Searches the whole drawing for groups of repeated objects, without a
  * selection, and lists them in the Detect and Convert tab of the tool
  * palette, which is shown while the command runs. Click a group (or
- * an object in the drawing) to highlight its instances, review a group with
- * the Search and Convert toolbar, or convert the checked groups into new
+ * an object in the drawing) to highlight its instances, review a group in
+ * the Search and Convert palette, or convert the checked groups into new
  * blocks at once; texts that differ between instances become attributes.
  *
  * AutoCAD's `BDETECT` sends the drawing to a cloud recognition model; this
@@ -76,7 +75,11 @@ export class AcApBDetectCmd extends AcApBSearchCmd {
     const options = this.detectOptions()
     const signal = acuiBeginBDetect()
     let running = true
-    const restorePalette = this.openPalette()
+    // Closing the palette ends the run.
+    const restorePalette = acuiOpenCommandPaletteTab(
+      'bdetect',
+      acuiRequestBDetectClose
+    )
     try {
       let clusters: AcApSmartBlockCluster[]
       try {
@@ -131,36 +134,6 @@ export class AcApBDetectCmd extends AcApBSearchCmd {
       acuiEndBDetect()
       restorePalette()
       view.selectionSet.clear()
-    }
-  }
-
-  /**
-   * Shows the Detect and Convert tab in the tool palette. Closing the
-   * palette ends the run.
-   *
-   * @returns Function that hides the tab again and restores the palette:
-   * closed if it was closed, otherwise on its previous tab.
-   */
-  private openPalette(): () => void {
-    const dialogs = store.dialogs
-    const wasOpen = dialogs.layerManager
-    const previousTab = dialogs.activePaletteTab
-    dialogs.bdetectTabVisible = true
-    dialogs.activePaletteTab = 'bdetect'
-    dialogs.layerManager = true
-    const stopWatching = watch(
-      () => dialogs.layerManager,
-      open => {
-        if (!open) acuiRequestBDetectClose()
-      }
-    )
-    return () => {
-      stopWatching()
-      dialogs.bdetectTabVisible = false
-      if (!wasOpen) dialogs.layerManager = false
-      else if (dialogs.activePaletteTab === 'bdetect') {
-        dialogs.activePaletteTab = previousTab
-      }
     }
   }
 
@@ -288,7 +261,7 @@ export class AcApBDetectCmd extends AcApBSearchCmd {
   }
 
   /**
-   * Reviews one group with the Search and Convert toolbar and dialog.
+   * Reviews one group in the Search and Convert palette and dialog.
    * Copies that belong to other groups start excluded, so converting this
    * group leaves the others intact.
    */

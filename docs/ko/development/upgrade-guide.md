@@ -27,7 +27,7 @@ registerLazyAgentPlugin(pluginManager)
 :::
 
 ::: info 스마트 블록: 검색 및 변환(`BSEARCH`)
-이 변경이 포함된 릴리스부터 `@mlightcad/cad-simple-viewer`는 **-BSEARCH**를 등록하고, `@mlightcad/cad-editor`는 검토 도구막대와 블록으로 변환 대화상자가 있는 **BSEARCH**(별칭 `BCONVERT`)를 추가합니다(리본의 삽입 및 AI 탭).
+이 변경이 포함된 릴리스부터 `@mlightcad/cad-simple-viewer`는 **-BSEARCH**를 등록하고, `@mlightcad/cad-editor`는 도구 팔레트의 검색 및 변환 탭(찾은 인스턴스 목록)과 블록으로 변환 대화상자가 있는 **BSEARCH**(별칭 `BCONVERT`)를 추가합니다(리본의 삽입 및 AI 탭).
 
 형상 일치가 `@mlightcad/cad-pdf-plugin`에서 `@mlightcad/cad-simple-viewer`로 이동했습니다. 가져오기를 옮기십시오:
 

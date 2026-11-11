@@ -27,7 +27,7 @@ registerLazyAgentPlugin(pluginManager)
 :::
 
 ::: info Akıllı Bloklar: Ara ve Dönüştür (`BSEARCH`)
-Bu değişikliği içeren sürümden itibaren `@mlightcad/cad-simple-viewer` **-BSEARCH** komutunu kaydeder; `@mlightcad/cad-editor` inceleme araç çubuğu ve Bloğa Dönüştür iletişim kutusuyla **BSEARCH** (diğer adı `BCONVERT`) ekler (şeritte Ekle ve AI sekmeleri).
+Bu değişikliği içeren sürümden itibaren `@mlightcad/cad-simple-viewer` **-BSEARCH** komutunu kaydeder; `@mlightcad/cad-editor` araç paletinde Ara ve Dönüştür sekmesi (bulunan örneklerin listesi) ve Bloğa Dönüştür iletişim kutusuyla **BSEARCH** (diğer adı `BCONVERT`) ekler (şeritte Ekle ve AI sekmeleri).
 
 Şekil eşleştirme `@mlightcad/cad-pdf-plugin` paketinden `@mlightcad/cad-simple-viewer` paketine taşındı. İçe aktarmaları taşıyın:
 

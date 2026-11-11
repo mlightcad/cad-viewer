@@ -285,11 +285,16 @@ export default {
         'Find all copies of the selected objects and convert them into blocks (BSEARCH).',
       detectConvert:
         'Find repeated objects anywhere in the drawing and convert them into blocks (BDETECT).',
-      importPdf: 'Import vector geometry from a PDF file, rebuilding circles, arcs and curves (IPDF).',
-      pdfScale: 'Rescale imported PDF geometry from two points of a known distance (PDFSCALE).',
-      pdfDim: 'Turn exploded PDF dimensions (arrows or ticks, lines, extension lines and texts) back into dimension objects (PDFDIM).',
-      pdfBlock: 'Turn repeated PDF geometry into a block and replace every copy with a block reference (PDFBLOCK).',
-      pdfText: 'Convert exploded PDF text strokes back into text objects (PDFTEXT).',
+      importPdf:
+        'Import vector geometry from a PDF file, rebuilding circles, arcs and curves (IPDF).',
+      pdfScale:
+        'Rescale imported PDF geometry from two points of a known distance (PDFSCALE).',
+      pdfDim:
+        'Turn exploded PDF dimensions (arrows or ticks, lines, extension lines and texts) back into dimension objects (PDFDIM).',
+      pdfBlock:
+        'Turn repeated PDF geometry into a block and replace every copy with a block reference (PDFBLOCK).',
+      pdfText:
+        'Convert exploded PDF text strokes back into text objects (PDFTEXT).',
       line: 'Draw a single straight line segment.',
       polyline:
         'Draw a connected series of line or arc segments as one object.',
@@ -331,8 +336,7 @@ export default {
       group: 'Create a group from selected objects (GROUP).',
       ungroup: 'Explode a group definition (UNGROUP).',
       groupEdit: 'Add, remove, or rename group members (GROUPEDIT).',
-      groupSelect:
-        'Toggle group selection on or off (PICKSTYLE group bit).',
+      groupSelect: 'Toggle group selection on or off (PICKSTYLE group bit).',
       classicGroup: 'Open the Object Grouping dialog (CLASSICGROUP).',
       quickSelect:
         'Open Quick Select to filter and select entities by criteria.',
@@ -364,7 +368,8 @@ export default {
       zoomSaved: 'Zooms to the saved VPORT / layout view.',
       zoomSmart: 'Zooms to the dominant geometry cluster.',
       newView: 'Creates a new named view from the current display or a window.',
-      viewManager: 'Opens the View Manager to create, restore, and delete named views.',
+      viewManager:
+        'Opens the View Manager to create, restore, and delete named views.',
       ucs: 'Sets the origin and orientation of the current user coordinate system.',
       namedUcs: 'Manages named UCS definitions and UCS icon settings.',
       ucsWorld: 'Sets the UCS to the world coordinate system.',
@@ -508,7 +513,7 @@ export default {
       insert: 'Insert',
       editAttributes: 'Edit\nAttributes',
       defineAttribute: 'Define\nAttribute',
-      agent: 'CAD\nAgent',
+      agent: 'Agent',
       llmSettings: 'Model\nSettings',
       pan: 'Pan',
       zoom: 'Zoom',
@@ -533,12 +538,9 @@ export default {
     }
   },
   bsearch: {
-    title: 'Search and Convert',
     found: '{count} instances found, {included} included',
-    position: '{index} of {count}',
     previous: 'Previous instance',
     next: 'Next instance',
-    includeCurrent: 'Include this instance',
     convert: 'Convert to block…',
     cancel: 'Cancel',
     rotation: 'Rotated',
@@ -547,7 +549,18 @@ export default {
     sameLayer: 'Same layer',
     existingBlocks: 'Existing blocks',
     textVariations: 'Text variations',
-    pickPrompt: 'Click an instance to include or exclude it, or'
+    pickPrompt: 'Click an instance to include or exclude it, or',
+    source: 'Selected objects: {count}',
+    options: 'Search options',
+    none: 'No other instances were found. Change the search options, or convert the selection alone.',
+    includeAll: 'Include all',
+    include: 'Include this instance',
+    instance: 'Instance {index}',
+    blockReference: 'Block reference',
+    rotatedBy: 'Rotated {angle}°',
+    mirrored: 'Mirrored',
+    scaledBy: 'Scale {scale}',
+    hint: 'Click a row to zoom to the instance. Click an instance in the drawing to include or exclude it.'
   },
   bdetect: {
     detecting: 'Searching the drawing for repeated objects…',
@@ -922,6 +935,10 @@ export default {
     bdetect: {
       tab: 'Detection',
       title: 'Detect and Convert'
+    },
+    bsearch: {
+      tab: 'Search',
+      title: 'Search and Convert'
     },
     countList: {
       tab: 'Count',

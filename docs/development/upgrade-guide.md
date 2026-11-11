@@ -27,7 +27,7 @@ registerLazyAgentPlugin(pluginManager)
 :::
 
 ::: info Smart Blocks: Search and Convert (`BSEARCH`)
-Starting with the release that includes this change, `@mlightcad/cad-simple-viewer` registers **-BSEARCH** and `@mlightcad/cad-editor` adds **BSEARCH** (alias `BCONVERT`) with a review toolbar and a Convert to Block dialog (Insert and AI ribbon tabs).
+Starting with the release that includes this change, `@mlightcad/cad-simple-viewer` registers **-BSEARCH** and `@mlightcad/cad-editor` adds **BSEARCH** (alias `BCONVERT`) with a Search and Convert palette tab (list of found instances) and a Convert to Block dialog (Insert and AI ribbon tabs).
 
 Shape matching moved from `@mlightcad/cad-pdf-plugin` to `@mlightcad/cad-simple-viewer`. Migrate imports:
 

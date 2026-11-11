@@ -1,11 +1,8 @@
 export default {
   bsearch: {
-    title: 'Vyhledat a převést',
     found: 'Nalezeno {count} instancí, zahrnuto {included}',
-    position: '{index} z {count}',
     previous: 'Předchozí instance',
     next: 'Další instance',
-    includeCurrent: 'Zahrnout tuto instanci',
     convert: 'Převést na blok…',
     cancel: 'Zrušit',
     rotation: 'Otočené',
@@ -14,7 +11,18 @@ export default {
     sameLayer: 'Stejná hladina',
     existingBlocks: 'Existující bloky',
     textVariations: 'Rozdílný text',
-    pickPrompt: 'Klepnutím na instanci ji zahrňte nebo vylučte, nebo'
+    pickPrompt: 'Klepnutím na instanci ji zahrňte nebo vylučte, nebo',
+    source: 'Vybrané objekty: {count}',
+    options: 'Možnosti hledání',
+    none: 'Žádné další instance nebyly nalezeny. Změňte možnosti hledání, nebo převeďte pouze výběr.',
+    includeAll: 'Zahrnout vše',
+    include: 'Zahrnout tuto instanci',
+    instance: 'Instance č. {index}',
+    blockReference: 'Reference bloku',
+    rotatedBy: 'Otočeno o {angle}°',
+    mirrored: 'Zrcadleno',
+    scaledBy: 'Měřítko {scale}',
+    hint: 'Klepnutím na řádek přiblížíte instanci. Klepnutím na instanci ve výkresu ji zahrnete nebo vyloučíte.'
   },
   bdetect: {
     detecting: 'Vyhledávání opakujících se objektů ve výkresu…',
@@ -546,7 +554,7 @@ export default {
       insert: 'Vložit',
       editAttributes: 'Upravit\natributy',
       defineAttribute: 'Definovat\natribut',
-      agent: 'CAD\nagent',
+      agent: 'Agent AI',
       llmSettings: 'Nastavení\nmodelu',
       pan: 'Posun',
       zoom: 'Zoom',
@@ -922,6 +930,10 @@ export default {
     bdetect: {
       tab: 'Detekce',
       title: 'Detekovat a převést'
+    },
+    bsearch: {
+      tab: 'Hledání',
+      title: 'Vyhledat a převést'
     },
     countList: {
       tab: 'Počet',

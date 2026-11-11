@@ -521,7 +521,7 @@ export default {
       insert: 'Ekle',
       editAttributes: 'Öznitelikleri\nDüzenle',
       defineAttribute: 'Öznitelik\nTanımla',
-      agent: 'CAD\nAjanı',
+      agent: 'Ajan',
       llmSettings: 'Model\nAyarları',
       pan: 'Kaydır',
       zoom: 'Yakınlaştır',
@@ -546,12 +546,9 @@ export default {
     }
   },
   bsearch: {
-    title: 'Ara ve Dönüştür',
     found: '{count} örnek bulundu, {included} tanesi dahil',
-    position: '{index}/{count}',
     previous: 'Önceki örnek',
     next: 'Sonraki örnek',
-    includeCurrent: 'Bu örneği dahil et',
     convert: 'Bloğa dönüştür…',
     cancel: 'İptal',
     rotation: 'Döndürülmüş',
@@ -560,7 +557,18 @@ export default {
     sameLayer: 'Aynı katman',
     existingBlocks: 'Mevcut bloklar',
     textVariations: 'Metin farkları',
-    pickPrompt: 'Dahil etmek veya hariç tutmak için bir örneğe tıklayın ya da'
+    pickPrompt: 'Dahil etmek veya hariç tutmak için bir örneğe tıklayın ya da',
+    source: 'Seçili nesneler: {count}',
+    options: 'Arama seçenekleri',
+    none: 'Başka örnek bulunamadı. Arama seçeneklerini değiştirin veya yalnızca seçimi dönüştürün.',
+    includeAll: 'Tümünü dahil et',
+    include: 'Bu örneği dahil et',
+    instance: 'Örnek {index}',
+    blockReference: 'Blok referansı',
+    rotatedBy: '{angle}° döndürülmüş',
+    mirrored: 'Aynalanmış',
+    scaledBy: 'Ölçek {scale}',
+    hint: 'Örneğe yakınlaştırmak için bir satıra tıklayın. Dahil etmek veya hariç tutmak için çizimde bir örneğe tıklayın.'
   },
   bdetect: {
     detecting: 'Çizimde yinelenen nesneler aranıyor…',
@@ -937,6 +945,10 @@ export default {
     bdetect: {
       tab: 'Algılama',
       title: 'Algıla ve Dönüştür'
+    },
+    bsearch: {
+      tab: 'Arama',
+      title: 'Ara ve Dönüştür'
     },
     countList: {
       tab: 'Sayım',

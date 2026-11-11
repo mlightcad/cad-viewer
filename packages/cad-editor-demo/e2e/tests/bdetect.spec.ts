@@ -109,6 +109,15 @@ test('BDETECT finds repeated symbols and converts them into a block', async ({
   await group.click()
   await expect(group).toHaveClass(/is-selected/)
 
+  // Reviewing a group opens the Search and Convert tab; cancelling returns
+  // to the detection list.
+  await group.getByTestId('bdetect-review').click()
+  const review = page.getByTestId('bsearch-panel')
+  await expect(review.getByTestId('bsearch-match')).toHaveCount(3)
+  await review.getByTestId('bsearch-cancel').click()
+  await expect(review).toBeHidden()
+  await expect(panel).toBeVisible()
+
   // el-input forwards data-testid to its native <input>, not the wrapper.
   await group.getByTestId('bdetect-name').fill('DOOR')
   await page.getByTestId('bdetect-convert').click()

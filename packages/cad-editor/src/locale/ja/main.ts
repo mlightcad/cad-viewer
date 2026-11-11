@@ -282,7 +282,8 @@ export default {
     tooltip: {
       searchConvert:
         '選択したオブジェクトのすべてのコピーを検索してブロックに変換します（BSEARCH）。',
-      detectConvert: '図面全体から繰り返しオブジェクトを検出してブロックに変換します（BDETECT）。',
+      detectConvert:
+        '図面全体から繰り返しオブジェクトを検出してブロックに変換します（BDETECT）。',
       importPdf:
         'PDF ファイルからベクトル図形を読み込み、円・円弧・曲線を復元します (IPDF)。',
       pdfScale:
@@ -499,7 +500,7 @@ export default {
       insert: '挿入',
       editAttributes: '属性\n編集',
       defineAttribute: '属性\n定義',
-      agent: 'CAD\nエージェント',
+      agent: 'エージェント',
       llmSettings: 'モデル\n設定',
       pan: '画面移動',
       zoom: 'ズーム',
@@ -524,12 +525,9 @@ export default {
     }
   },
   bsearch: {
-    title: '検索して変換',
     found: '{count} 個のインスタンス、{included} 個を含める',
-    position: '{index}/{count}',
     previous: '前のインスタンス',
     next: '次のインスタンス',
-    includeCurrent: 'このインスタンスを含める',
     convert: 'ブロックに変換…',
     cancel: 'キャンセル',
     rotation: '回転',
@@ -538,7 +536,18 @@ export default {
     sameLayer: '同一画層',
     existingBlocks: '既存ブロック',
     textVariations: '文字の違い',
-    pickPrompt: 'インスタンスをクリックして含める/除外する、または'
+    pickPrompt: 'インスタンスをクリックして含める/除外する、または',
+    source: '選択オブジェクト: {count} 個',
+    options: '検索オプション',
+    none: '他のインスタンスは見つかりませんでした。検索オプションを変更するか、選択したオブジェクトだけを変換してください。',
+    includeAll: 'すべて含める',
+    include: 'このインスタンスを含める',
+    instance: 'インスタンス {index}',
+    blockReference: 'ブロック参照',
+    rotatedBy: '回転 {angle}°',
+    mirrored: '鏡像',
+    scaledBy: '尺度 {scale}',
+    hint: '行をクリックするとインスタンスにズームします。図面でインスタンスをクリックすると、含めるか除外するかを切り替えます。'
   },
   bdetect: {
     detecting: '図面内の繰り返しオブジェクトを検索しています…',
@@ -557,7 +566,8 @@ export default {
     close: '閉じる',
     pickPrompt: 'オブジェクトをクリックしてグループを表示、または',
     summary: '{groups} 個のグループを {count} 個のブロック参照に変換しました',
-    nameDuplicate: 'ブロック名「{name}」は選択した別のグループで使用されています'
+    nameDuplicate:
+      'ブロック名「{name}」は選択した別のグループで使用されています'
   },
   verticalToolbar: {
     measure: {
@@ -912,6 +922,10 @@ export default {
     bdetect: {
       tab: '検出',
       title: '検出して変換'
+    },
+    bsearch: {
+      tab: '検索',
+      title: '検索して変換'
     },
     countList: {
       tab: '集計',

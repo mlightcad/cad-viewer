@@ -5,14 +5,34 @@ import type {
 } from '@mlightcad/cad-simple-viewer'
 import { reactive, readonly } from 'vue'
 
-/** Actions the review toolbar sends to the running `BSEARCH` command. */
+/** Actions the Search and Convert palette sends to the running `BSEARCH`. */
 export type MlBSearchAction =
   | { type: 'next' }
   | { type: 'prev' }
   | { type: 'toggleCurrent' }
+  /** Makes instance `index` current and zooms to it. */
+  | { type: 'select'; index: number }
+  | { type: 'setIncluded'; index: number; included: boolean }
+  | { type: 'setAllIncluded'; included: boolean }
   | { type: 'options'; options: Partial<AcApSmartBlockSearchOptions> }
   | { type: 'convert' }
   | { type: 'cancel' }
+
+/** One found instance as the palette list shows it. */
+export interface MlBSearchMatchRow {
+  /** Zero-based index into the search's matches. */
+  index: number
+  included: boolean
+  /** Rotation in degrees, `[0, 360)`, rounded to 0.1. */
+  rotation: number
+  mirrored: boolean
+  /** Uniform scale, rounded to 3 decimals. */
+  scale: number
+  /** The instance is an existing block reference. */
+  blockReference: boolean
+  /** Text strings of the instance, in template order. */
+  texts: string[]
+}
 
 /** One varying template text that can become an attribute. */
 export interface MlBSearchAttributeRow {
@@ -62,6 +82,12 @@ const state = reactive({
   options: {} as AcApSmartBlockSearchOptions,
   /** Selection contains text, so the text-variation filter applies. */
   hasText: false,
+  /** Objects in the selected source. */
+  sourceCount: 0,
+  /** PNG data URL of the selected source, once captured. */
+  thumbnail: '',
+  /** Found instances in list order. */
+  matches: [] as MlBSearchMatchRow[],
   /** Dialog inputs; filled by the command before the dialog opens. */
   draft: {
     target: 'new',
@@ -92,6 +118,19 @@ function syncFrom(search: AcApSmartBlockSearch) {
   state.current = search.current
   state.currentIncluded = search.matches[search.current]?.included ?? false
   state.options = { ...search.options }
+  state.matches = search.matches.map((match, index) => {
+    const degrees = (((match.rotation * 180) / Math.PI) % 360) + 360
+    const rotation = Math.round((degrees % 360) * 10) / 10
+    return {
+      index,
+      included: match.included,
+      rotation: rotation >= 360 ? 0 : rotation,
+      mirrored: match.mirrored,
+      scale: Math.round(match.scale * 1000) / 1000,
+      blockReference: !!match.blockReference,
+      texts: match.texts.filter((text): text is string => text !== undefined)
+    }
+  })
 }
 
 /**
@@ -103,15 +142,24 @@ export function acuiBeginBSearch(search: AcApSmartBlockSearch) {
   unsubscribe?.()
   state.active = true
   state.hasText = search.template.texts.some(text => text !== undefined)
+  state.sourceCount = search.template.ids.length
+  state.thumbnail = ''
   syncFrom(search)
   unsubscribe = search.onChange(() => syncFrom(search))
 }
 
-/** Ends the review: hides the toolbar and drops pending requests. */
+/** Stores the captured preview of the selected source. */
+export function acuiSetBSearchThumbnail(thumbnail: string) {
+  state.thumbnail = thumbnail
+}
+
+/** Ends the review: hides the palette and drops pending requests. */
 export function acuiEndBSearch() {
   unsubscribe?.()
   unsubscribe = undefined
   state.active = false
+  state.matches = []
+  state.thumbnail = ''
   pendingAction = undefined
   resolveAction = undefined
   resolveDialog?.({ type: 'cancel' })
@@ -119,7 +167,7 @@ export function acuiEndBSearch() {
 }
 
 /**
- * Next toolbar action. The same promise is returned until an action
+ * Next palette action. The same promise is returned until an action
  * arrives, so a command can race it against a canvas prompt repeatedly.
  */
 export function acuiNextBSearchAction(): Promise<MlBSearchAction> {
@@ -163,7 +211,17 @@ export function acuiPrepareBConvertDialog(data: {
 }
 
 /**
- * Review toolbar and Convert dialog access to the running `BSEARCH`.
+ * Ends the review as if Cancel was clicked (the palette was closed).
+ */
+export function acuiRequestBSearchCancel() {
+  if (!state.active) return
+  if (!resolveAction) void acuiNextBSearchAction()
+  resolveAction?.({ type: 'cancel' })
+}
+
+/**
+ * Search and Convert palette and Convert dialog access to the running
+ * `BSEARCH`.
  */
 export function useBSearch() {
   const send = (action: MlBSearchAction) => {
@@ -179,6 +237,11 @@ export function useBSearch() {
     next: () => send({ type: 'next' }),
     prev: () => send({ type: 'prev' }),
     toggleCurrent: () => send({ type: 'toggleCurrent' }),
+    select: (index: number) => send({ type: 'select', index }),
+    setIncluded: (index: number, included: boolean) =>
+      send({ type: 'setIncluded', index, included }),
+    setAllIncluded: (included: boolean) =>
+      send({ type: 'setAllIncluded', included }),
     setOptions: (options: Partial<AcApSmartBlockSearchOptions>) =>
       send({ type: 'options', options }),
     convert: () => send({ type: 'convert' }),

@@ -27,7 +27,7 @@ registerLazyAgentPlugin(pluginManager)
 :::
 
 ::: info Chytré bloky: Vyhledat a převést (`BSEARCH`)
-Od vydání, které obsahuje tuto změnu, registruje `@mlightcad/cad-simple-viewer` příkaz **-BSEARCH** a `@mlightcad/cad-editor` přidává **BSEARCH** (alias `BCONVERT`) s panelem pro kontrolu a dialogem Převést na blok (karty Vložit a AI na pásu karet).
+Od vydání, které obsahuje tuto změnu, registruje `@mlightcad/cad-simple-viewer` příkaz **-BSEARCH** a `@mlightcad/cad-editor` přidává **BSEARCH** (alias `BCONVERT`) s kartou Vyhledat a převést v paletě nástrojů (seznam nalezených instancí) a dialogem Převést na blok (karty Vložit a AI na pásu karet).
 
 Porovnávání tvarů se přesunulo z `@mlightcad/cad-pdf-plugin` do `@mlightcad/cad-simple-viewer`. Upravte importy:
 
