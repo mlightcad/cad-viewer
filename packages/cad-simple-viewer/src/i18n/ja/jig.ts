@@ -2127,8 +2127,62 @@ export default {
     }
   },
   pdftext: {
-    enterText:
-      '文字行 {index}/{count}: ハイライトされた文字を入力（空欄でスキップ、Esc で終了）',
+    panel: {
+      title: '文字認識',
+      shxGroup: 'SHX 文字（線フォント）',
+      meshGroup: 'TrueType 文字（アウトライン フォント）',
+      style: '文字スタイル',
+      newStyle: '新しい文字スタイル…',
+      newTag: '新規',
+      newStyleName: '新しい文字スタイル名',
+      create: '作成',
+      cancel: 'キャンセル',
+      apply: '適用',
+      nameError: {
+        empty: '名前を入力してください。',
+        invalid: '名前に使用できない文字が含まれています。',
+        exists: '同じ名前の文字スタイルが既に存在します。'
+      },
+      font: 'フォント',
+      bigFont: 'ビッグフォント',
+      noBigFont: '(なし)',
+      shxFonts: 'SHX フォント',
+      ttfFonts: 'TrueType フォント',
+      fontsUsed: '使用フォント: {fonts}',
+      fontMissing: 'フォント「{font}」は使用できないため、「{fallback}」で表示されます。',
+      fontNotShx: 'TrueType フォントです。SHX の線文字のようには表示されません。',
+      fontNotTtf: 'SHX フォントです。TrueType のアウトライン文字のようには表示されません。',
+      styleChanges: '文字スタイル「{style}」のフォントを変更します。このスタイルを使用している既存の文字も変わります。',
+      heightScale: '高さの尺度',
+      widthFactor: '幅係数',
+      autoWidth: '元の幅に合わせる',
+      lines: '文字行',
+      include: 'この行を変換',
+      textPlaceholder: '文字を入力 (空欄の場合はスキップ)',
+      switchKind: 'SHX 文字と TrueType 文字を切り替え',
+      kind: {
+        shx: 'SHX',
+        mesh: 'TrueType'
+      },
+      source: {
+        dictionary: '学習済み',
+        ocr: 'OCR',
+        typed: '編集済み',
+        unread: '未認識'
+      },
+      hideStrokes: '元の線分を非表示',
+      ready: '{count} 行中 {ready} 行が準備完了',
+      merge: 'マルチテキストに結合',
+      mergeTip: '選択した行を 1 つのマルチテキスト（MTEXT）に結合します',
+      split: '分割',
+      splitTip: '選択した結合済みの文字を元の行に分割します',
+      mergeAdjacent: '隣接文字を結合',
+      mergeAdjacentTip: '同じベースライン上で隣り合う文字や単語をマルチテキストに結合します',
+      mergedCount: '{count} 個のマルチテキストに結合しました。',
+      selectHint: 'Ctrl+クリックまたは Shift+クリックで複数の行を選択できます。',
+      mtextTag: 'マルチテキスト'
+    },
+    cancelled: '文字認識をキャンセルしました。変更はありません。',
     ocrNotConfigured:
       '文字認識（OCR）は無効です：画像に対応した AI モデルが設定されていません。LLMSETTINGS を実行して設定してください。',
     recognizing: '{count} 行の文字を認識しています…',

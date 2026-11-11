@@ -1,5 +1,13 @@
 import { reactive } from 'vue'
 
+/** Command panel shown as a palette tab (see `AcApPaletteService`). */
+export interface MlHostedPanel {
+  /** Palette tab name, `hosted:<content id>`. */
+  tab: string
+  title: string
+  element: HTMLElement
+}
+
 export const store = reactive({
   dialogs: {
     layerManager: false,
@@ -16,6 +24,11 @@ export const store = reactive({
      * belongs to that command.
      */
     bdetectTabVisible: false,
+    /**
+     * Panels commands show through `AcApPaletteService` (e.g. `pdftext`).
+     * Each is a palette tab while its command runs.
+     */
+    hostedPanels: [] as MlHostedPanel[],
     /** Bumped by the FIND command so the Find palette focuses its query field. */
     findFocusTick: 0
   },

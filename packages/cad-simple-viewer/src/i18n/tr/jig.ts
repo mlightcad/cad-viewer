@@ -2238,8 +2238,69 @@ export default {
     }
   },
   pdftext: {
-    enterText:
-      'Metin satırı {index}/{count}: vurgulanan metni girin (boş bırakmak atlar, Esc durdurur)',
+    panel: {
+      title: 'Metni Kurtar',
+      shxGroup: 'SHX metin (çizgi yazı tipleri)',
+      meshGroup: 'TrueType metin (anahat yazı tipleri)',
+      style: 'Metin stili',
+      newStyle: 'Yeni metin stili…',
+      newTag: 'yeni',
+      newStyleName: 'Yeni metin stilinin adı',
+      create: 'Oluştur',
+      cancel: 'İptal',
+      apply: 'Uygula',
+      nameError: {
+        empty: 'Bir ad girin.',
+        invalid: 'Ad, izin verilmeyen karakterler içeriyor.',
+        exists: 'Bu ada sahip bir metin stili zaten var.'
+      },
+      font: 'Yazı tipi',
+      bigFont: 'Büyük yazı tipi',
+      noBigFont: '(Yok)',
+      shxFonts: 'SHX yazı tipleri',
+      ttfFonts: 'TrueType yazı tipleri',
+      fontsUsed: 'Kullanılan: {fonts}',
+      fontMissing:
+        '"{font}" yazı tipi kullanılamıyor; "{fallback}" ile çizilir.',
+      fontNotShx:
+        'Bu bir TrueType yazı tipi: metin SHX çizgi metni gibi görünmez.',
+      fontNotTtf:
+        'Bu bir SHX yazı tipi: metin TrueType anahat metni gibi görünmez.',
+      styleChanges:
+        '"{style}" metin stilinin yazı tipleri değişir: bu stili kullanan mevcut metinler de değişir.',
+      heightScale: 'Yükseklik ölçeği',
+      widthFactor: 'Genişlik faktörü',
+      autoWidth: 'Özgün genişliğe sığdır',
+      lines: 'Metin satırları',
+      include: 'Bu satırı dönüştür',
+      textPlaceholder: 'Metni yazın; atlamak için boş bırakın',
+      switchKind: 'SHX ve TrueType metin arasında geçiş yap',
+      kind: {
+        shx: 'SHX',
+        mesh: 'TrueType'
+      },
+      source: {
+        dictionary: 'Öğrenildi',
+        ocr: 'OCR',
+        typed: 'Düzenlendi',
+        unread: 'Okunamadı'
+      },
+      hideStrokes: 'Özgün çizgileri gizle',
+      ready: '{count} satırdan {ready} tanesi hazır',
+      merge: 'MText olarak birleştir',
+      mergeTip:
+        'Seçili satırları tek bir çok satırlı metinde (MText) birleştirir',
+      split: 'Ayır',
+      splitTip: 'Seçili birleştirilmiş metni yeniden satırlarına ayırır',
+      mergeAdjacent: 'Bitişikleri birleştir',
+      mergeAdjacentTip:
+        'Aynı taban çizgisinde yan yana duran karakterleri ve sözcükleri çok satırlı metinde birleştirir',
+      mergedCount: '{count} çok satırlı metinde birleştirildi.',
+      selectHint:
+        'Birden fazla satır seçmek için Ctrl+tıklama veya Shift+tıklama kullanın.',
+      mtextTag: 'MText'
+    },
+    cancelled: 'Metin kurtarma iptal edildi; hiçbir şey değiştirilmedi.',
     ocrNotConfigured:
       'Metin tanıma (OCR) kapalı: görüntü destekli bir yapay zekâ modeli yapılandırılmamış. Ayarlamak için LLMSETTINGS komutunu çalıştırın.',
     recognizing: '{count} metin satırı tanınıyor…',

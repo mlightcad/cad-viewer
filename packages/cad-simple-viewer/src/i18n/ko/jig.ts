@@ -2121,8 +2121,62 @@ export default {
     }
   },
   pdftext: {
-    enterText:
-      '문자 줄 {index}/{count}: 강조 표시된 문자 입력 (비워 두면 건너뛰기, Esc 종료)',
+    panel: {
+      title: '문자 인식',
+      shxGroup: 'SHX 문자(선 글꼴)',
+      meshGroup: 'TrueType 문자(윤곽선 글꼴)',
+      style: '문자 스타일',
+      newStyle: '새 문자 스타일…',
+      newTag: '새로 만들기',
+      newStyleName: '새 문자 스타일 이름',
+      create: '만들기',
+      cancel: '취소',
+      apply: '적용',
+      nameError: {
+        empty: '이름을 입력하십시오.',
+        invalid: '이름에 사용할 수 없는 문자가 있습니다.',
+        exists: '같은 이름의 문자 스타일이 이미 있습니다.'
+      },
+      font: '글꼴',
+      bigFont: '큰 글꼴',
+      noBigFont: '(없음)',
+      shxFonts: 'SHX 글꼴',
+      ttfFonts: 'TrueType 글꼴',
+      fontsUsed: '사용 글꼴: {fonts}',
+      fontMissing: '"{font}" 글꼴을 사용할 수 없어 "{fallback}"(으)로 표시됩니다.',
+      fontNotShx: 'TrueType 글꼴입니다. SHX 선 문자처럼 보이지 않습니다.',
+      fontNotTtf: 'SHX 글꼴입니다. TrueType 윤곽선 문자처럼 보이지 않습니다.',
+      styleChanges: '문자 스타일 "{style}"의 글꼴을 변경합니다. 이 스타일을 사용하는 기존 문자도 바뀝니다.',
+      heightScale: '높이 축척',
+      widthFactor: '폭 비율',
+      autoWidth: '원래 폭에 맞춤',
+      lines: '문자 행',
+      include: '이 행 변환',
+      textPlaceholder: '문자를 입력하십시오(비워 두면 건너뜀)',
+      switchKind: 'SHX 문자와 TrueType 문자 간 전환',
+      kind: {
+        shx: 'SHX',
+        mesh: 'TrueType'
+      },
+      source: {
+        dictionary: '학습됨',
+        ocr: 'OCR',
+        typed: '편집됨',
+        unread: '인식 안 됨'
+      },
+      hideStrokes: '원래 선 숨기기',
+      ready: '{count}개 행 중 {ready}개 준비됨',
+      merge: '여러 줄 문자로 결합',
+      mergeTip: '선택한 행을 하나의 여러 줄 문자(MTEXT)로 결합합니다',
+      split: '분할',
+      splitTip: '선택한 결합 문자를 원래 행으로 분할합니다',
+      mergeAdjacent: '인접 문자 결합',
+      mergeAdjacentTip: '같은 기준선에서 서로 인접한 문자와 단어를 여러 줄 문자로 결합합니다',
+      mergedCount: '여러 줄 문자 {count}개로 결합했습니다.',
+      selectHint: 'Ctrl+클릭 또는 Shift+클릭으로 여러 행을 선택할 수 있습니다.',
+      mtextTag: '여러 줄 문자'
+    },
+    cancelled: '문자 인식을 취소했습니다. 변경된 내용이 없습니다.',
     ocrNotConfigured:
       '문자 인식(OCR)이 꺼져 있습니다. 이미지를 지원하는 AI 모델이 설정되지 않았습니다. LLMSETTINGS를 실행하여 설정하십시오.',
     recognizing: '문자 {count}줄을 인식하는 중…',

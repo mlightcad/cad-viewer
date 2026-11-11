@@ -86,7 +86,9 @@ const NEUTRAL_VALUES = new Set<string>([
   '0-256, BYLAYER, BYBLOCK',
   // DXF entity type names with no localized AutoCAD name.
   'Ole2Frame',
-  'OleFrame'
+  'OleFrame',
+  // Font technology name (pdftext panel).
+  'TrueType'
 ])
 
 /** Values that are legitimately identical to English in one language. */

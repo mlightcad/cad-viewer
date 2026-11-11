@@ -2089,8 +2089,67 @@ export default {
     }
   },
   pdftext: {
-    enterText:
-      'Text line {index}/{count}: enter the highlighted text (leave empty to skip, Esc to stop)',
+    panel: {
+      title: 'Recover Text',
+      shxGroup: 'SHX text (line fonts)',
+      meshGroup: 'TrueType text (outline fonts)',
+      style: 'Text style',
+      newStyle: 'New text style…',
+      newTag: 'new',
+      newStyleName: 'Name of the new text style',
+      create: 'Create',
+      cancel: 'Cancel',
+      apply: 'Apply',
+      nameError: {
+        empty: 'Enter a name.',
+        invalid: 'The name contains characters that are not allowed.',
+        exists: 'A text style with this name already exists.'
+      },
+      font: 'Font',
+      bigFont: 'Big font',
+      noBigFont: '(None)',
+      shxFonts: 'SHX fonts',
+      ttfFonts: 'TrueType fonts',
+      fontsUsed: 'Uses: {fonts}',
+      fontMissing:
+        'Font "{font}" is not available; it is drawn with "{fallback}".',
+      fontNotShx:
+        'This is a TrueType font: the text will not look like SHX line text.',
+      fontNotTtf:
+        'This is an SHX font: the text will not look like TrueType outline text.',
+      styleChanges:
+        'Changes the fonts of text style "{style}": texts already using it change too.',
+      heightScale: 'Height scale',
+      widthFactor: 'Width factor',
+      autoWidth: 'Fit original width',
+      lines: 'Text lines',
+      include: 'Convert this line',
+      textPlaceholder: 'Type the text, or leave empty to skip',
+      switchKind: 'Switch between SHX and TrueType text',
+      kind: {
+        shx: 'SHX',
+        mesh: 'TrueType'
+      },
+      source: {
+        dictionary: 'Learned',
+        ocr: 'OCR',
+        typed: 'Edited',
+        unread: 'Unread'
+      },
+      hideStrokes: 'Hide original strokes',
+      ready: '{ready} of {count} lines ready',
+      merge: 'Merge into MText',
+      mergeTip: 'Merge the selected lines into one multiline text (MTEXT)',
+      split: 'Split',
+      splitTip: 'Split the selected merged text back into its lines',
+      mergeAdjacent: 'Merge adjacent',
+      mergeAdjacentTip:
+        'Merge characters and words that stand next to each other on one baseline into multiline text',
+      mergedCount: 'Merged into {count} multiline text(s).',
+      selectHint: 'Ctrl+click or Shift+click lines to select several.',
+      mtextTag: 'MTEXT'
+    },
+    cancelled: 'Recover Text cancelled; nothing was changed.',
     ocrNotConfigured:
       'Text recognition (OCR) is off: no image-capable AI model is configured. Run LLMSETTINGS to set one up.',
     recognizing: 'Recognizing {count} text line(s)…',

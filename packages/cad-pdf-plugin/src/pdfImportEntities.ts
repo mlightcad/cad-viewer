@@ -274,6 +274,13 @@ export function acapPdfEnsureTextStyle(
   return name
 }
 
+/** Text style created for recovered SHX line text. */
+export const PDF_SHX_TEXT_STYLE = `${PDF_TEXT_STYLE_PREFIX}SHX`
+
+/** SHX font and big font of {@link PDF_SHX_TEXT_STYLE}. */
+export const PDF_SHX_FONT = 'txt'
+export const PDF_SHX_BIG_FONT = 'gbcbig'
+
 /** Width factors outside this range mean a bad measurement, not real text. */
 const MIN_FIT_WIDTH_FACTOR = 0.1
 const MAX_FIT_WIDTH_FACTOR = 10

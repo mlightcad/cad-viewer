@@ -51,10 +51,16 @@ Pokud výběr obsahuje rozložené kóty, skutečná délka se předvyplní podl
 
 ## Obnovení textu (`pdftext`)
 
-1. Vyberte oblast s textem. Rámečky a jiné velké čáry se ignorují.
-2. Tahy se seskupí do řádků. Řádky složené jen z tvarů znaků, které jste dříve napsali, se přečtou hned.
-3. Je-li nastaven model AI s podporou obrázků (`LLMSETTINGS`), všechny ostatní řádky se mu odešlou najednou v několika požadavcích a celý výběr se převede v jednom kroku bez ptaní. Pokud rozpoznání selže, zpráva uvede důvod (například neplatný klíč API).
-4. Postupně se zvýrazní jen řádky, které se nepodařilo přečíst. Napište text a potvrďte; prázdný vstup řádek přeskočí, Esc příkaz ukončí.
+1. Vyberte oblast s textem. Rámečky a další velké čáry se ignorují.
+2. Tahy se seskupí do řádků a u každého řádku se rozpozná, zda jde o text **SHX** (otevřené čárové tahy), nebo text **TrueType** (uzavřené obrysy). Řádky složené jen z tvarů znaků, které jste dříve zadali, se přečtou hned.
+3. Pokud je nastaven model AI s podporou obrázků (`LLMSETTINGS`), všechny ostatní řádky se mu odešlou najednou v několika požadavcích. Pokud rozpoznání selže, zpráva uvede důvod (například neplatný klíč API).
+4. V paletě se otevře panel **Obnovit text** a výsledek se zobrazí jako náhled ve výkresu. Během otevřeného panelu můžete posouvat a zvětšovat.
+   - Pro text SHX a text TrueType zvlášť vyberte existující **styl textu** nebo vytvořte nový a zkontrolujte **písmo** a **velké písmo**, které používá. Pokud neodpovídají originálu, nahraďte je; varování upozorní, když písmo chybí a čím se místo něj kreslí, nebo když změna písem existujícího stylu změní i texty, které jej již používají. Ve výchozím nastavení text SHX používá styl `PDF_SHX` (`txt` + `gbcbig`), takže si zachová vzhled i velikost textu SHX.
+   - Upravte **měřítko výšky** a **faktor šířky** přizpůsobte původní šířce, nebo jej nastavte ručně.
+   - Seznam zobrazuje každý řádek s textem a jeho původem (naučeno, OCR, upraveno, nerozpoznáno); nerozpoznané řádky jsou první. Kliknutím na řádek jej zobrazíte ve výkresu, opravte nebo zadejte jeho text a klávesou Enter přejděte na další nerozpoznaný řádek; zadání jednoho řádku vyplní i další řádky se stejnými znaky. Zrušením zaškrtnutí řádek přeskočíte; chybně rozpoznaný řádek lze přepnout mezi SHX a TrueType.
+   - Znaky, které mají tvořit jeden text, ale byly rozpoznány jako samostatné řádky, lze sloučit do jednoho víceřádkového textu (MTEXT): vyberte řádky klepnutím s klávesou Ctrl nebo Shift a klepněte na **Sloučit do víceřádkového textu**, nebo klepněte na **Sloučit sousední** a sloučí se vše, co stojí vedle sebe na jednom účaří. Řádky na různých účařích se stanou samostatnými řádky víceřádkového textu s původním řádkováním. **Rozdělit** vrátí sloučený text zpět na řádky.
+   - **Skrýt původní čáry** zobrazí jen náhled.
+5. Klepnutím na **Použít** text převedete. **Zrušit** nebo zavření palety nic nezmění.
 
 Každý napsaný tvar znaku se zapamatuje v prohlížeči, takže pomůže i u dalších výkresů se stejným písmem. Text přečtený modelem AI se nezapamatuje. Celý příkaz lze vrátit jedním krokem a převedené texty lze upravovat jako jakýkoli jiný text.
 

@@ -2050,8 +2050,62 @@ export default {
     }
   },
   pdftext: {
-    enterText:
-      '文字行 {index}/{count}：输入高亮部分的文字（留空跳过，Esc 结束）',
+    panel: {
+      title: '识别文字',
+      shxGroup: 'SHX 文字（线条字体）',
+      meshGroup: 'TrueType 文字（轮廓字体）',
+      style: '文字样式',
+      newStyle: '新建文字样式…',
+      newTag: '新建',
+      newStyleName: '新文字样式名',
+      create: '创建',
+      cancel: '取消',
+      apply: '应用',
+      nameError: {
+        empty: '请输入名称。',
+        invalid: '名称包含不允许的字符。',
+        exists: '已存在同名的文字样式。'
+      },
+      font: '字体',
+      bigFont: '大字体',
+      noBigFont: '（无）',
+      shxFonts: 'SHX 字体',
+      ttfFonts: 'TrueType 字体',
+      fontsUsed: '使用：{fonts}',
+      fontMissing: '字体“{font}”不可用，将以“{fallback}”显示。',
+      fontNotShx: '这是 TrueType 字体：文字外观不会像 SHX 线条文字。',
+      fontNotTtf: '这是 SHX 字体：文字外观不会像 TrueType 轮廓文字。',
+      styleChanges: '将修改文字样式“{style}”的字体：已使用该样式的文字也会改变。',
+      heightScale: '高度比例',
+      widthFactor: '宽度因子',
+      autoWidth: '适配原宽度',
+      lines: '文字行',
+      include: '转换此行',
+      textPlaceholder: '输入文字，留空则跳过',
+      switchKind: '在 SHX 和 TrueType 文字之间切换',
+      kind: {
+        shx: 'SHX',
+        mesh: 'TrueType'
+      },
+      source: {
+        dictionary: '已学习',
+        ocr: 'OCR',
+        typed: '已编辑',
+        unread: '未识别'
+      },
+      hideStrokes: '隐藏原始线条',
+      ready: '{ready}/{count} 行就绪',
+      merge: '合并为多行文字',
+      mergeTip: '将选中的行合并为一个多行文字（MTEXT）',
+      split: '拆分',
+      splitTip: '将选中的合并文字拆分回原来的行',
+      mergeAdjacent: '合并相邻字符',
+      mergeAdjacentTip: '把同一基线上相邻的字符和词合并为多行文字',
+      mergedCount: '已合并为 {count} 个多行文字。',
+      selectHint: 'Ctrl+单击或 Shift+单击可选择多行。',
+      mtextTag: '多行文字'
+    },
+    cancelled: '已取消识别文字，未做任何更改。',
     ocrNotConfigured:
       '文字识别（OCR）未启用：尚未配置支持图片的 AI 模型。运行 LLMSETTINGS 进行配置。',
     recognizing: '正在识别 {count} 行文字…',

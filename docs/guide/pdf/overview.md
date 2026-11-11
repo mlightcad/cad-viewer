@@ -52,9 +52,15 @@ If the selection contains exploded dimensions, the scale their texts imply is fi
 ## Recover text (`pdftext`)
 
 1. Select the area with the text. Frames and other large lines are ignored.
-2. The strokes are grouped into lines. Lines made only of character shapes you typed before are read right away.
-3. When an AI model with image support is configured (`LLMSETTINGS`), all other lines are sent to it at once, in a few requests, and the whole selection is converted in one step without asking. If recognition fails, a message tells you why (for example an invalid API key).
-4. Only the lines nothing could read are highlighted one by one. Type the text and confirm; leave it empty to skip the line, or press Esc to stop.
+2. The strokes are grouped into lines. Each line is detected as **SHX** text (open line strokes) or **TrueType** text (closed outlines). Lines made only of character shapes you typed before are read right away.
+3. When an AI model with image support is configured (`LLMSETTINGS`), all other lines are sent to it at once, in a few requests. If recognition fails, a message tells you why (for example an invalid API key).
+4. The **Recover Text** panel opens in the palette, and the result is previewed in the drawing. You can pan and zoom while it is open.
+   - For SHX text and for TrueType text separately, choose an existing **text style** or create a new one, and check the **font** and **big font** it uses. Replace them if they do not match the original; a warning tells you when a font is missing and what is drawn instead, or when changing the fonts of an existing style also changes the texts already using it. By default SHX text uses a `PDF_SHX` style (`txt` + `gbcbig`), so it keeps the look and size of SHX text.
+   - Adjust the **height scale**, and fit the **width factor** to the original width or set it yourself.
+   - The list shows every line with its text and where it came from (learned, OCR, edited or unread). Lines nothing could read come first. Click a line to frame it in the drawing, fix or type its text, and press Enter to go to the next unread line; typing one line also fills other lines that reuse its characters. Clear a line's check box to skip it, or switch a wrongly detected line between SHX and TrueType.
+   - Characters that should be one text but came out as separate lines can be merged into one multiline text (MTEXT): select the lines with Ctrl+click or Shift+click and click **Merge into MText**, or click **Merge adjacent** to merge everything that stands next to each other on one baseline. Lines on different baselines become separate lines of the MTEXT, with the original line spacing. **Split** turns a merged text back into its lines.
+   - **Hide original strokes** shows the preview alone.
+5. Click **Apply** to convert. **Cancel**, or closing the palette, changes nothing.
 
 Every character shape you type is remembered in the browser, so drawings that use the same font benefit too. Text read by the AI model is not remembered. The whole command is one undo step, and converted texts can be edited like any other text.
 

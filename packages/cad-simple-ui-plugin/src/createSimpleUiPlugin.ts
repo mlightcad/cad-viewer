@@ -4,6 +4,8 @@ import {
   AcApDocManager,
   AcApI18n,
   type AcApLocale,
+  type AcApPaletteHost,
+  AcApPaletteService,
   AcApPlugin,
   AcApSettingManager,
   AcEdCommandStack,
@@ -233,6 +235,42 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
     this.dockPanel.open(tab.id)
     return true
+  }
+
+  /**
+   * Shows command panels from `AcApPaletteService` (e.g. `pdftext`) as dock
+   * panel tabs while their command runs. Closing the dock ends the command;
+   * the dock is restored afterwards (closed, or on its previous tab).
+   */
+  private readonly paletteHost: AcApPaletteHost = {
+    show: (content, onUserClose) => {
+      this.ensureDockReady()
+      const dock = this.dockPanel
+      if (!dock) return undefined
+      const tabId = `hosted-${content.id}`
+      const wasOpen = dock.isOpen
+      const previousTab = dock.activeTab
+      dock.removeTab(tabId)
+      if (
+        !dock.addTab({
+          id: tabId,
+          label: content.title,
+          content: content.element
+        })
+      ) {
+        return undefined
+      }
+      dock.open(tabId)
+      const removeListener = dock.addCloseListener(onUserClose)
+      return {
+        close: () => {
+          removeListener()
+          dock.removeTab(tabId)
+          if (!wasOpen) dock.close()
+          else if (previousTab && previousTab !== tabId) dock.open(previousTab)
+        }
+      }
+    }
   }
 
   /** Whether the dock panel is open. */
@@ -532,6 +570,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
     this.themeSync = new AcUiThemeSync(host, () => this.toolbar?.refresh())
     this.themeSync.start()
+    AcApPaletteService.setHost(this.paletteHost)
 
     this.i18n = new AcUiI18n()
     AcApI18n.events.localeChanged.addEventListener(this.handleLocaleChanged)
@@ -1419,6 +1458,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
    * @param commandManager - Command stack used to remove registered commands.
    */
   onUnload(_context: AcApContext, commandManager: AcEdCommandStack): void {
+    AcApPaletteService.setHost(undefined)
     this.unsubscribeLayout?.()
     this.unsubscribeLayout = undefined
 

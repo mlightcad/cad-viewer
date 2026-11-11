@@ -163,25 +163,68 @@ async function importPdf(page: Page, pdf: string) {
     .toBeGreaterThan(0)
 }
 
-test('pdftext converts stroke text, learning glyphs from one line', async ({
+/** Text styles of the texts in model space. */
+async function textStyles(page: Page): Promise<string[]> {
+  return page.evaluate(async url => {
+    const mod = await import(/* @vite-ignore */ url)
+    const db = mod.AcApDocManager.instance.curDocument.database
+    const styles = new Set<string>()
+    for (const entity of db.tables.blockTable.modelSpace.newIterator()) {
+      if (typeof entity.textString === 'string') styles.add(entity.styleName)
+    }
+    return [...styles]
+  }, viewerModuleUrl!)
+}
+
+/** Text inputs of the lines in the pdftext palette. */
+const pdftextLines = (page: Page) => page.locator('.ml-pdftext-text')
+
+test('pdftext converts stroke text in the palette, learning glyphs from one line', async ({
   page
 }) => {
   await importPdf(page, 'pdf-stroke-text.pdf')
   await preselect(page)
   await ribbonButton(page, 'cmd-pdftext').click()
 
+  // The review panel opens in the palette with one row per line.
+  await expect(pdftextLines(page)).toHaveCount(4, { timeout: 20_000 })
+  await expect(page.locator('.ml-pdftext-panel')).toContainText('PDF_SHX')
+
   // Four lines share the glyphs T, H, E, L: typing the first is enough.
-  await waitForPrompt(page, /1\/4/)
-  await answerString(page, 'THE HELL')
+  const first = pdftextLines(page).first()
+  await first.fill('THE HELL')
+  await first.press('Enter')
+  await expect(page.locator('.ml-pdftext-counter')).toContainText('4 of 4')
+  await page.locator('.ml-pdftext-btn:not(.is-secondary)').click()
 
   await expect
     .poll(() => textStrings(page), { timeout: 20_000 })
     .toEqual(['HELL THE', 'LET', 'THE', 'THE HELL'])
+  // SHX line text stays SHX text.
+  expect(await textStyles(page)).toEqual(['PDF_SHX'])
   // Only the frame is left as geometry.
   const counts = await entityTypes(page)
   expect(counts.TEXT).toBe(4)
   expect(counts.POLYLINE).toBe(1)
   expect(counts.LINE ?? 0).toBe(0)
+  await expect(page.locator('.ml-pdftext-panel')).toHaveCount(0)
+})
+
+test('pdftext changes nothing when the palette is cancelled', async ({
+  page
+}) => {
+  await importPdf(page, 'pdf-stroke-text.pdf')
+  const before = await entityTypes(page)
+  await preselect(page)
+  await ribbonButton(page, 'cmd-pdftext').click()
+
+  await expect(pdftextLines(page)).toHaveCount(4, { timeout: 20_000 })
+  await pdftextLines(page).first().fill('THE HELL')
+  await page.locator('.ml-pdftext-btn.is-secondary').last().click()
+
+  await expect(page.locator('.ml-pdftext-panel')).toHaveCount(0)
+  expect(await entityTypes(page)).toEqual(before)
+  expect(await textStrings(page)).toEqual([])
 })
 
 test('ipdf rebuilds repeated forms as blocks and pdfblock finds copies', async ({
