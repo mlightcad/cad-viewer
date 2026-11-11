@@ -282,8 +282,10 @@ export default {
       detectConvert: '在整个图形中查找重复对象并将其转换为块（BDETECT）。',
       importPdf: '从 PDF 文件导入矢量图形，并还原圆、圆弧和曲线（IPDF）。',
       pdfScale: '根据两点之间的已知距离缩放导入的 PDF 图形（PDFSCALE）。',
-      pdfDim: '将 PDF 中被打散的标注（箭头或斜线、尺寸线、尺寸界线和文字）恢复为标注对象（PDFDIM）。',
-      pdfBlock: '将 PDF 中重复出现的图形创建为块，并把每个副本替换为块参照（PDFBLOCK）。',
+      pdfDim:
+        '将 PDF 中被打散的标注（箭头或斜线、尺寸线、尺寸界线和文字）恢复为标注对象（PDFDIM）。',
+      pdfBlock:
+        '将 PDF 中重复出现的图形创建为块，并把每个副本替换为块参照（PDFBLOCK）。',
       pdfText: '将 PDF 中被打散的文字笔画转换回文字对象（PDFTEXT）。',
       line: '绘制单段直线。',
       polyline: '以一个对象绘制由直线或圆弧组成的连续线段。',
@@ -469,7 +471,7 @@ export default {
       insert: '插入',
       editAttributes: '编辑属性',
       defineAttribute: '定义属性',
-      agent: 'CAD Agent',
+      agent: '智能体',
       llmSettings: '模型设置',
       pan: '平移',
       zoom: '缩放',
@@ -494,12 +496,9 @@ export default {
     }
   },
   bsearch: {
-    title: '搜索并转换',
     found: '找到 {count} 个实例，已包含 {included} 个',
-    position: '第 {index}/{count} 个',
     previous: '上一个实例',
     next: '下一个实例',
-    includeCurrent: '包含此实例',
     convert: '转换为块…',
     cancel: '取消',
     rotation: '旋转',
@@ -508,7 +507,18 @@ export default {
     sameLayer: '相同图层',
     existingBlocks: '现有块',
     textVariations: '文字变化',
-    pickPrompt: '单击实例以包含或排除，或'
+    pickPrompt: '单击实例以包含或排除，或',
+    source: '已选择对象：{count} 个',
+    options: '搜索选项',
+    none: '未找到其他实例。请更改搜索选项，或仅转换所选对象。',
+    includeAll: '全部包含',
+    include: '包含此实例',
+    instance: '实例 {index}',
+    blockReference: '块参照',
+    rotatedBy: '旋转 {angle}°',
+    mirrored: '已镜像',
+    scaledBy: '比例 {scale}',
+    hint: '单击列表行可缩放到该实例；在图形中单击实例可包含或排除它。'
   },
   bdetect: {
     detecting: '正在搜索图形中的重复对象…',
@@ -689,7 +699,8 @@ export default {
     },
     zoomSaved: {
       text: '保存的视图',
-      description: '恢复 AutoCAD 保存的视图（VPORT / 布局界限），或打开时的初始视口'
+      description:
+        '恢复 AutoCAD 保存的视图（VPORT / 布局界限），或打开时的初始视口'
     },
     zoomToExtent: {
       text: '范围',
@@ -873,6 +884,10 @@ export default {
     bdetect: {
       tab: '检测',
       title: '检测并转换'
+    },
+    bsearch: {
+      tab: '搜索',
+      title: '搜索并转换'
     },
     countList: {
       tab: '计数',

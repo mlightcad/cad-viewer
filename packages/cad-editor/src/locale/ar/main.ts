@@ -486,7 +486,7 @@ export default {
       insert: 'إدراج',
       editAttributes: 'تعديل\nالسمات',
       defineAttribute: 'تعريف\nسمة',
-      agent: 'وكيل\nCAD',
+      agent: 'الوكيل',
       llmSettings: 'إعدادات\nالنموذج',
       pan: 'تحريك',
       zoom: 'تكبير',
@@ -511,12 +511,9 @@ export default {
     }
   },
   bsearch: {
-    title: 'بحث وتحويل',
     found: 'تم العثور على {count} نسخة، {included} مضمّنة',
-    position: '{index} من {count}',
     previous: 'النسخة السابقة',
     next: 'النسخة التالية',
-    includeCurrent: 'تضمين هذه النسخة',
     convert: 'تحويل إلى كتلة…',
     cancel: 'إلغاء',
     rotation: 'مدوّرة',
@@ -525,7 +522,18 @@ export default {
     sameLayer: 'نفس الطبقة',
     existingBlocks: 'الكتل الموجودة',
     textVariations: 'اختلاف النص',
-    pickPrompt: 'انقر على نسخة لتضمينها أو استبعادها، أو'
+    pickPrompt: 'انقر على نسخة لتضمينها أو استبعادها، أو',
+    source: 'الكائنات المحددة: {count}',
+    options: 'خيارات البحث',
+    none: 'لم يتم العثور على نسخ أخرى. غيّر خيارات البحث، أو حوّل التحديد وحده.',
+    includeAll: 'تضمين الكل',
+    include: 'تضمين هذه النسخة',
+    instance: 'النسخة {index}',
+    blockReference: 'مرجع كتلة',
+    rotatedBy: 'مدوّرة {angle}°',
+    mirrored: 'معكوسة',
+    scaledBy: 'المقياس {scale}',
+    hint: 'انقر على صف للتكبير إلى النسخة. انقر على نسخة في الرسم لتضمينها أو استبعادها.'
   },
   bdetect: {
     detecting: 'جارٍ البحث عن الكائنات المتكررة في الرسم…',
@@ -896,6 +904,10 @@ export default {
     bdetect: {
       tab: 'الاكتشاف',
       title: 'اكتشاف وتحويل'
+    },
+    bsearch: {
+      tab: 'البحث',
+      title: 'بحث وتحويل'
     },
     countList: {
       tab: 'العد',

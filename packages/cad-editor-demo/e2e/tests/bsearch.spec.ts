@@ -112,31 +112,43 @@ test('BSEARCH reviews matches and converts them into a block', async ({
   await page.getByRole('tab', { name: 'Insert' }).click()
   await page.locator('[data-ribbon-button-id="cmd-bsearch"]:visible').click()
 
-  const bar = page.getByTestId('bsearch-review-bar')
+  const panel = page.getByTestId('bsearch-panel')
+  await expect(panel).toBeVisible()
   // Text variations start on (TEXTTOATTRIBUTE = 1): B, C and D match, the
   // decoy differs in its geometry.
   await expect(page.getByTestId('bsearch-count')).toHaveText(
     '3 instances found, 3 included'
   )
+  const rows = panel.getByTestId('bsearch-match')
+  await expect(rows).toHaveCount(3)
+  // Instances are ordered left to right: C (x = 0, rotated), B, D (R2).
+  await expect(rows.nth(0)).toContainText('Rotated 90°')
+  await expect(rows.nth(2)).toContainText('R2')
+
   // Without text variations D, whose text differs, drops out.
-  await bar.getByText('Text variations').click()
+  await panel.getByText('Search options').click()
+  await panel.getByText('Text variations').click()
   await expect(page.getByTestId('bsearch-count')).toHaveText(
     '2 instances found, 2 included'
   )
-  await bar.getByText('Text variations').click()
+  await expect(rows).toHaveCount(2)
+  await panel.getByText('Text variations').click()
   await expect(page.getByTestId('bsearch-count')).toHaveText(
     '3 instances found, 3 included'
   )
 
-  // Instances are ordered left to right: C (x = 0), B, D. Exclude C.
-  await page.getByTestId('bsearch-next').click()
-  await page.getByTestId('bsearch-include-current').click()
+  // Clicking a row makes it current; its check box excludes it. Exclude C.
+  await rows.nth(0).click()
+  await expect(rows.nth(0)).toHaveClass(/is-current/)
+  await rows.nth(0).getByTestId('bsearch-include').click()
   await expect(page.getByTestId('bsearch-count')).toHaveText(
     '3 instances found, 2 included'
   )
 
   await page.getByTestId('bsearch-convert').click()
-  const dialog = page.locator('.ml-base-dialog', { hasText: 'Convert to Block' })
+  const dialog = page.locator('.ml-base-dialog', {
+    hasText: 'Convert to Block'
+  })
   await expect(dialog).toBeVisible()
   await dialog.getByTestId('bconvert-name').fill('DOOR')
   await dialog.locator('.ml-bconvert-dlg__attr input').first().fill('ROOM')
@@ -147,7 +159,7 @@ test('BSEARCH reviews matches and converts them into a block', async ({
       timeout: 20_000
     })
     .toBe(3)
-  await expect(bar).toBeHidden()
+  await expect(panel).toBeHidden()
   expect(await attributeValues(page, 'DOOR')).toEqual([
     'ROOM=R1',
     'ROOM=R1',

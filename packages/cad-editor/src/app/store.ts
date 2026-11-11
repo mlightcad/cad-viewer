@@ -25,6 +25,11 @@ export const store = reactive({
      */
     bdetectTabVisible: false,
     /**
+     * Search and Convert tab. Shown only while BSEARCH reviews its found
+     * instances (also when BDETECT reviews one group).
+     */
+    bsearchTabVisible: false,
+    /**
      * Panels commands show through `AcApPaletteService` (e.g. `pdftext`).
      * Each is a palette tab while its command runs.
      */

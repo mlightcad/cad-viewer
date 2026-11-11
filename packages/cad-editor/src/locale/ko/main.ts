@@ -281,7 +281,8 @@ export default {
     tooltip: {
       searchConvert:
         '선택한 객체의 모든 사본을 찾아 블록으로 변환합니다(BSEARCH).',
-      detectConvert: '도면 전체에서 반복 객체를 찾아 블록으로 변환합니다(BDETECT).',
+      detectConvert:
+        '도면 전체에서 반복 객체를 찾아 블록으로 변환합니다(BDETECT).',
       importPdf:
         'PDF 파일에서 벡터 형상을 가져오고 원, 호, 곡선을 복원합니다 (IPDF).',
       pdfScale:
@@ -486,7 +487,7 @@ export default {
       insert: '삽입',
       editAttributes: '속성\n편집',
       defineAttribute: '속성\n정의',
-      agent: 'CAD\n에이전트',
+      agent: '에이전트',
       llmSettings: '모델\n설정',
       pan: '초점이동',
       zoom: '줌',
@@ -511,12 +512,9 @@ export default {
     }
   },
   bsearch: {
-    title: '검색 및 변환',
     found: '인스턴스 {count}개 찾음, {included}개 포함',
-    position: '{index}/{count}',
     previous: '이전 인스턴스',
     next: '다음 인스턴스',
-    includeCurrent: '이 인스턴스 포함',
     convert: '블록으로 변환…',
     cancel: '취소',
     rotation: '회전',
@@ -525,7 +523,18 @@ export default {
     sameLayer: '같은 도면층',
     existingBlocks: '기존 블록',
     textVariations: '문자 변형',
-    pickPrompt: '인스턴스를 클릭하여 포함 또는 제외하거나'
+    pickPrompt: '인스턴스를 클릭하여 포함 또는 제외하거나',
+    source: '선택한 객체: {count}개',
+    options: '검색 옵션',
+    none: '다른 인스턴스를 찾지 못했습니다. 검색 옵션을 변경하거나 선택한 객체만 변환하십시오.',
+    includeAll: '모두 포함',
+    include: '이 인스턴스 포함',
+    instance: '인스턴스 {index}',
+    blockReference: '블록 참조',
+    rotatedBy: '회전 {angle}°',
+    mirrored: '대칭됨',
+    scaledBy: '축척 {scale}',
+    hint: '행을 클릭하면 해당 인스턴스로 줌합니다. 도면에서 인스턴스를 클릭하면 포함하거나 제외합니다.'
   },
   bdetect: {
     detecting: '도면에서 반복 객체를 검색하는 중…',
@@ -897,6 +906,10 @@ export default {
     bdetect: {
       tab: '감지',
       title: '감지 및 변환'
+    },
+    bsearch: {
+      tab: '검색',
+      title: '검색 및 변환'
     },
     countList: {
       tab: '개수',

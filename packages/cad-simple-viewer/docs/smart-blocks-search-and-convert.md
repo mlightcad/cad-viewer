@@ -16,7 +16,7 @@ This guide explains the algorithm end to end: how entities are described, how co
 Commands built on top:
 
 - **`-BSEARCH`** (`src/command/block/AcApDashBSearchCmd.ts`): the command-line workflow.
-- **`BSEARCH`** / **`BCONVERT`** (`@mlightcad/cad-editor`): the same session with a review toolbar and a Convert to Block dialog.
+- **`BSEARCH`** / **`BCONVERT`** (`@mlightcad/cad-editor`): the same session in a Search and Convert tab of the tool palette (the source preview, the search filters and a list of the found instances) and a Convert to Block dialog.
 - **`pdfblock`** (`@mlightcad/cad-pdf-plugin`): `-BSEARCH` with `matchLayer: false`, used after PDF import.
 
 ---
@@ -232,7 +232,7 @@ All matches are sorted by the image of the first template feature's center under
 
 ## 7. Review session
 
-`AcApSmartBlockSearch` holds the template, the matches, the options and the current index. It does not depend on any UI. `-BSEARCH` drives it with keyword prompts, and the editor drives it with its review toolbar.
+`AcApSmartBlockSearch` holds the template, the matches, the options and the current index. It does not depend on any UI. `-BSEARCH` drives it with keyword prompts, and the editor drives it from its Search and Convert palette tab.
 
 - `setOptions` searches again and resets inclusion.
 - `setIncluded`, `setAllIncluded`, `next` / `prev` / `setCurrent` (wrapping around), and `indexOfEntity` (click to toggle).
@@ -365,7 +365,7 @@ A fresh `AcApSmartBlockSearch` from each of the 12 largest groups finds at least
 
 ### 11.6 `BDETECT` in the editor
 
-`@mlightcad/cad-editor` adds the `BDETECT` command (Insert and AI ribbon tabs, "Detect and Convert"). `AcApBDetectCmd` extends the editor's `AcApBSearchCmd`, so reviewing a single group reuses the Search and Convert toolbar and dialog unchanged.
+`@mlightcad/cad-editor` adds the `BDETECT` command (Insert and AI ribbon tabs, "Detect and Convert"). `AcApBDetectCmd` extends the editor's `AcApBSearchCmd`, so reviewing a single group reuses the Search and Convert palette tab and dialog unchanged.
 
 1. The tool palette opens on a **Detection** tab (palette title: Detect and Convert). The tab exists only while the command runs, like the Count and Find tabs it sits beside. It first shows the detection progress with a **Stop** button.
 2. The tab then lists the groups, largest saving first. Each row shows:
@@ -374,7 +374,7 @@ A fresh `AcApSmartBlockSearch` from each of the 12 largest groups finds at least
    - the instance and object counts and the layers;
    - an **Attributes** tag when texts differ between instances.
 3. Clicking a row, or an object in the drawing, highlights every instance of that group and zooms to its representative.
-4. **Review** (the eye button) opens the Search and Convert toolbar for that group; the list stays visible but inactive meanwhile. Copies that belong to other groups start excluded, so converting one group leaves the others intact. After the review, the list returns without the converted group, and groups that lost instances are updated.
+4. **Review** (the eye button) opens the Search and Convert palette tab for that group; the Detection tab stays open but inactive meanwhile and is shown again afterwards. Copies that belong to other groups start excluded, so converting one group leaves the others intact. After the review, the list returns without the converted group, and groups that lost instances are updated.
 5. **Convert selected** converts every checked group into its own new block. Names are validated first: empty, invalid, already used, or used by two checked groups.
 6. **Close**, Esc, or closing the palette ends the command. The tab disappears and the palette returns to how it was: closed, or open on its previous tab. All conversions of one run undo in one step.
 
@@ -386,4 +386,4 @@ The tab is `MlBDetectPalette` in `MlPaletteManager`, shown through `store.dialog
 - `__tests__/AcApSmartBlockShapes.spec.ts`: shape features and the matcher for each supported entity type and transform, including open and closed polylines that trace the same path with different vertices (split arcs, extra vertices, another start vertex, reversed).
 - `__tests__/AcApSmartBlockDetect.spec.ts`: detection of rotated and mirrored doors without their walls, several disjoint groups, labels with differing text (including near-concentric arcs), parts that do not touch, rejection of dashed line pieces, the `minInstances` / `minSavings` thresholds, async progress and abort, and converting a group into a block with attributes.
 - `packages/cad-editor-demo/e2e/tests/bdetect.spec.ts`: the `BDETECT` workflow in the editor (panel, highlight, renaming, batch conversion with attributes, single-step undo).
-- `packages/cad-editor-demo/e2e/tests/bsearch.spec.ts`: the editor workflow (review toolbar, Convert to Block dialog, attributes, undo).
+- `packages/cad-editor-demo/e2e/tests/bsearch.spec.ts`: the editor workflow (Search and Convert palette, Convert to Block dialog, attributes, undo).

@@ -27,7 +27,7 @@ registerLazyAgentPlugin(pluginManager)
 :::
 
 ::: info الكتل الذكية: بحث وتحويل (`BSEARCH`)
-بدءًا من الإصدار الذي يتضمن هذا التغيير، يسجّل `@mlightcad/cad-simple-viewer` الأمر **-BSEARCH** ويضيف `@mlightcad/cad-editor` الأمر **BSEARCH** (الاسم البديل `BCONVERT`) مع شريط مراجعة ومربع حوار التحويل إلى كتلة (في علامتي التبويب إدراج وAI).
+بدءًا من الإصدار الذي يتضمن هذا التغيير، يسجّل `@mlightcad/cad-simple-viewer` الأمر **-BSEARCH** ويضيف `@mlightcad/cad-editor` الأمر **BSEARCH** (الاسم البديل `BCONVERT`) مع علامة تبويب «بحث وتحويل» في لوحة الأدوات (قائمة بالنسخ التي تم العثور عليها) ومربع حوار التحويل إلى كتلة (في علامتي التبويب إدراج وAI).
 
 انتقلت مطابقة الأشكال من `@mlightcad/cad-pdf-plugin` إلى `@mlightcad/cad-simple-viewer`. انقل الاستيرادات:
 

@@ -27,7 +27,7 @@ registerLazyAgentPlugin(pluginManager)
 :::
 
 ::: info スマート ブロック：検索して変換（`BSEARCH`）
-本変更を含むリリース以降、`@mlightcad/cad-simple-viewer` は **-BSEARCH** を登録し、`@mlightcad/cad-editor` は確認ツールバーと「ブロックに変換」ダイアログを備えた **BSEARCH**（別名 `BCONVERT`）を追加します（リボンの「挿入」と「AI」タブ）。
+本変更を含むリリース以降、`@mlightcad/cad-simple-viewer` は **-BSEARCH** を登録し、`@mlightcad/cad-editor` はツール パレットの「検索して変換」タブ（見つかったインスタンスの一覧）と「ブロックに変換」ダイアログを備えた **BSEARCH**（別名 `BCONVERT`）を追加します（リボンの「挿入」と「AI」タブ）。
 
 形状照合は `@mlightcad/cad-pdf-plugin` から `@mlightcad/cad-simple-viewer` に移動しました。インポートを移行してください：
 

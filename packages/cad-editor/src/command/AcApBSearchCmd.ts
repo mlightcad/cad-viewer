@@ -3,6 +3,7 @@ import {
   type AcApContext,
   AcApDashBSearchCmd,
   AcApDocManager,
+  AcApEntityPreviewConvertor,
   acapFindEquivalentBlocks,
   AcApI18n,
   acapInvertAffine2d,
@@ -21,6 +22,8 @@ import {
   acuiEndBSearch,
   acuiNextBSearchAction,
   acuiPrepareBConvertDialog,
+  acuiRequestBSearchCancel,
+  acuiSetBSearchThumbnail,
   acuiWaitBConvertDialog,
   type MlBConvertResult,
   type MlBSearchAction,
@@ -29,6 +32,9 @@ import {
   useDialogManager
 } from '../composable'
 import { i18n } from '../locale'
+import { acuiOpenCommandPaletteTab } from './acuiCommandPaletteTab'
+
+const THUMBNAIL_SIZE = 112
 
 type PickOutcome =
   | { kind: 'action'; action: MlBSearchAction }
@@ -39,10 +45,11 @@ type PickOutcome =
  * `BSEARCH` — Smart Blocks: Search and Convert (AutoCAD 2026).
  *
  * Select the objects of one instance; every identical copy is found and
- * highlighted, and a review toolbar opens over the canvas. Step through the
- * instances, click an instance in the drawing to include or exclude it,
- * change the search filters, then open the Convert to Block dialog to turn
- * the selection and the included instances into a new or an existing block.
+ * highlighted and listed in the Search and Convert tab of the tool palette.
+ * Click an instance in the list to zoom to it, check or uncheck instances in
+ * the list (or click one in the drawing) to include or exclude them, change
+ * the search filters, then open the Convert to Block dialog to turn the
+ * selection and the included instances into a new or an existing block.
  *
  * The command stays active during the review so the whole conversion is one
  * undo step. `-BSEARCH` offers the same workflow at the command line.
@@ -56,6 +63,13 @@ export class AcApBSearchCmd extends AcApDashBSearchCmd {
   ): Promise<AcApSmartBlockConvertOptions | undefined> {
     const view = context.view
     acuiBeginBSearch(search)
+    // Closing the palette cancels the review.
+    const restorePalette = acuiOpenCommandPaletteTab(
+      'bsearch',
+      acuiRequestBSearchCancel
+    )
+    let running = true
+    void this.captureThumbnail(search, () => running)
     try {
       search.highlight(view)
       while (true) {
@@ -79,8 +93,17 @@ export class AcApBSearchCmd extends AcApDashBSearchCmd {
           if (action.type === 'next') search.next()
           else search.prev()
           search.zoomToCurrent(view)
+        } else if (action.type === 'select') {
+          search.setCurrent(action.index)
+          search.zoomToCurrent(view)
         } else if (action.type === 'toggleCurrent') {
           if (search.current >= 0) search.setIncluded(search.current)
+          search.highlight(view)
+        } else if (action.type === 'setIncluded') {
+          search.setIncluded(action.index, action.included)
+          search.highlight(view)
+        } else if (action.type === 'setAllIncluded') {
+          search.setAllIncluded(action.included)
           search.highlight(view)
         } else if (action.type === 'options') {
           search.setOptions(action.options)
@@ -92,13 +115,34 @@ export class AcApBSearchCmd extends AcApDashBSearchCmd {
         }
       }
     } finally {
+      running = false
+      restorePalette()
       acuiEndBSearch()
+    }
+  }
+
+  /** Captures the preview of the selected source for the palette. */
+  private async captureThumbnail(
+    search: AcApSmartBlockSearch,
+    running: () => boolean
+  ) {
+    // Let the palette render first; capturing renders offscreen.
+    await new Promise(resolve => setTimeout(resolve, 0))
+    if (!running()) return
+    try {
+      const capture = new AcApEntityPreviewConvertor().capture(
+        search.template.ids,
+        THUMBNAIL_SIZE
+      )
+      if (capture.ok && running()) acuiSetBSearchThumbnail(capture.dataUrl)
+    } catch {
+      // A missing preview only leaves the placeholder.
     }
   }
 
   /**
    * Waits for a canvas click (toggles an instance), a command-line keyword
-   * or a toolbar action, whichever comes first.
+   * or a palette action, whichever comes first.
    */
   private async waitForInput(): Promise<PickOutcome> {
     const editor = AcApDocManager.instance.editor
@@ -125,7 +169,7 @@ export class AcApBSearchCmd extends AcApDashBSearchCmd {
       pointPromise.then(result => ({ result }))
     ])
     if ('action' in first) {
-      // The toolbar won: abort the canvas prompt before acting.
+      // The palette won: abort the canvas prompt before acting.
       editor.cancelActiveInput()
       await pointPromise.catch(() => undefined)
       return { kind: 'action', action: first.action }

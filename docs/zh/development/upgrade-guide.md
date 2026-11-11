@@ -27,7 +27,7 @@ registerLazyAgentPlugin(pluginManager)
 :::
 
 ::: info 智能块：搜索并转换（`BSEARCH`）
-自包含本变更的版本起，`@mlightcad/cad-simple-viewer` 注册 **-BSEARCH**，`@mlightcad/cad-editor` 增加 **BSEARCH**（别名 `BCONVERT`），提供审阅工具栏和「转换为块」对话框（位于功能区「插入」和「AI」选项卡）。
+自包含本变更的版本起，`@mlightcad/cad-simple-viewer` 注册 **-BSEARCH**，`@mlightcad/cad-editor` 增加 **BSEARCH**（别名 `BCONVERT`），提供工具选项板中的「搜索并转换」选项卡（列出找到的实例）和「转换为块」对话框（位于功能区「插入」和「AI」选项卡）。
 
 形状匹配已从 `@mlightcad/cad-pdf-plugin` 移至 `@mlightcad/cad-simple-viewer`，请迁移导入：
 

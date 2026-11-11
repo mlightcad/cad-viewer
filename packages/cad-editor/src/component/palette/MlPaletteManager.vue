@@ -10,10 +10,7 @@
       :top-offset="paletteOffsets.top"
       :bottom-offset="paletteOffsets.bottom"
     >
-      <ml-overflow-tabs
-        v-model="store.dialogs.activePaletteTab"
-        :tabs="tabs"
-      >
+      <ml-overflow-tabs v-model="store.dialogs.activePaletteTab" :tabs="tabs">
         <div
           v-if="store.dialogs.activePaletteTab === 'layerManager'"
           class="ml-layer-list-wrapper"
@@ -84,6 +81,12 @@
           <ml-b-detect-palette />
         </div>
         <div
+          v-else-if="store.dialogs.activePaletteTab === 'bsearch'"
+          class="ml-bsearch-palette-wrapper"
+        >
+          <ml-b-search-palette />
+        </div>
+        <div
           v-else-if="
             store.features.agentPlugin &&
             store.dialogs.activePaletteTab === 'agent'
@@ -114,10 +117,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  AcApDocManager,
-  AcApLayerService
-} from '@mlightcad/cad-simple-viewer'
+import { AcApDocManager, AcApLayerService } from '@mlightcad/cad-simple-viewer'
 import { AcDbEntityProperties } from '@mlightcad/data-model'
 import {
   type MlOverflowTab,
@@ -133,6 +133,7 @@ import { useSelectionSet, useViewerRect } from '../../composable'
 import { toolPaletteTabName, toolPaletteTitle } from '../../locale'
 import MlBDetectPalette from './MlBDetectPalette.vue'
 import MlBlocksPalette from './MlBlocksPalette.vue'
+import MlBSearchPalette from './MlBSearchPalette.vue'
 import MlCadScriptPanel from './MlCadScriptPanel.vue'
 import MlCountList from './MlCountList.vue'
 import MlDesignReviewPalette from './MlDesignReviewPalette.vue'
@@ -272,6 +273,10 @@ const tabNames = computed((): readonly string[] => {
   if (store.dialogs.bdetectTabVisible) {
     names.push('bdetect')
   }
+  // Only while BSEARCH reviews its instances.
+  if (store.dialogs.bsearchTabVisible) {
+    names.push('bsearch')
+  }
   if (store.features.agentPlugin) {
     names.push('agent')
   }
@@ -362,6 +367,7 @@ const propertyEntityLocked = computed(() => propertyRows.value.locked)
 }
 
 .ml-bdetect-palette-wrapper,
+.ml-bsearch-palette-wrapper,
 .ml-layer-list-wrapper {
   overflow: hidden;
   width: 100%;
