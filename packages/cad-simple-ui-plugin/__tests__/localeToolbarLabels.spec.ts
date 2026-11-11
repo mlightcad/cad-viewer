@@ -79,6 +79,7 @@ jest.mock('@mlightcad/cad-simple-viewer', () => {
       },
       mergeLocaleMessage: jest.fn()
     },
+    AcApPaletteService: { setHost: jest.fn() },
     AcApSettingManager: {
       instance: {
         get: jest.fn(() => true),

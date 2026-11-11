@@ -5,6 +5,7 @@ import {
 import { registerLazyPdfPlugin } from '@mlightcad/cad-pdf-plugin/register'
 import {
   AcApDocManager,
+  AcApPaletteService,
   type AcApPluginManager,
   AcEdCommandStack,
   AcEdMTextEditor
@@ -62,6 +63,7 @@ import {
 } from '../component'
 import { useDialogManager } from '../composable'
 import { i18n } from '../locale'
+import { mlPaletteHost } from './paletteHost'
 import { store } from './store'
 
 let isCommandRegistered = false
@@ -261,6 +263,7 @@ let isDialogRegistered = false
 export const registerDialogs = () => {
   if (!isDialogRegistered) {
     const { registerDialog } = useDialogManager()
+    AcApPaletteService.setHost(mlPaletteHost)
     const disableExport = AcApDocManager.instance.disableExport
     registerDialog({
       name: 'PointStyleDlg',

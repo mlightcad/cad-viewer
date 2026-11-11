@@ -1,125 +1,63 @@
-const getString = jest.fn()
-
-jest.mock('@mlightcad/cad-simple-viewer', () => {
-  class AcEdCommand {
-    mode = 0
-    notify = jest.fn()
-  }
-  class AcEdPromptStringOptions {
-    allowSpaces = false
-    allowEmpty = false
-    constructor(public message: string) {}
-  }
-  return {
-    AcApDocManager: { instance: { editor: { getString } } },
-    AcApI18n: { t: (key: string) => key, currentLocale: 'en' },
-    AcApLlmSettingsService: { getStatus: async () => undefined },
-    AcApTextRecognitionService: { hasRecognizer: false },
-    AcEdCommand,
-    AcEdOpenMode: { Write: 2 },
-    AcEdPromptStatus: { OK: 'OK', None: 'None', Cancel: 'Cancel' },
-    AcEdPromptStringOptions,
-    resolveSelectedEntities: async (context: { ids: string[] }) => ({
-      ids: context.ids,
-      entities: context.ids.map(() => ({
-        layer: '0',
-        color: new (jest.requireActual('@mlightcad/data-model').AcCmColor)()
-      }))
-    })
-  }
-})
-
+jest.mock('@mlightcad/cad-simple-viewer', () =>
+  jest.requireActual('./helpers/pdfTextCmdTestUtils').viewerMock()
+)
 jest.mock('../src/acapPdfI18n', () => ({
   acapPdfT: (key: string, params?: Record<string, unknown>) =>
     `${key} ${JSON.stringify(params ?? {})}`
 }))
-
-jest.mock('../src/pdfEntityStrokes', () => ({
-  pdfEntityToStroke: (_entity: unknown, id: string) => ({
-    id,
-    points: [{ x: 0, y: 0 }]
-  })
-}))
-
-/** Three lines, each made of one stroke whose id names the line. */
-jest.mock('../src/recognition/pdfGlyphClustering', () => ({
-  clusterPdfTextStrokes: (strokes: Array<{ id: string }>) => ({
-    lines: strokes.map(stroke => ({
-      strokes: [stroke],
-      position: { x: 0, y: 0 },
-      height: 1,
-      width: 1,
-      rotation: 0
-    }))
-  })
-}))
-
-/**
- * Typing line `a` teaches the glyphs of lines `b` and `c`, as when every
- * line reuses the glyphs of the first one.
- */
-jest.mock('../src/recognition/pdfGlyphDictionary', () => {
-  class PdfGlyphDictionary {
-    private known = new Map<string, string>()
-    lookup(line: { strokes: Array<{ id: string }> }) {
-      return this.known.get(line.strokes[0].id)
-    }
-    learn() {
-      this.known.set('b', 'BB')
-      this.known.set('c', 'CC')
-    }
-    load() {}
-    toJSON() {
-      return []
-    }
-  }
-  return { PdfGlyphDictionary }
-})
+jest.mock('../src/pdfEntityStrokes', () =>
+  jest.requireActual('./helpers/pdfTextCmdTestUtils').strokesMock()
+)
+jest.mock('../src/recognition/pdfGlyphClustering', () =>
+  jest.requireActual('./helpers/pdfTextCmdTestUtils').clusteringMock()
+)
+jest.mock('../src/recognition/pdfGlyphDictionary', () =>
+  jest.requireActual('./helpers/pdfTextCmdTestUtils').dictionaryMock()
+)
 
 import { AcApPdfTextCmd } from '../src/AcApPdfTextCmd'
+import { PDF_SHX_TEXT_STYLE } from '../src/pdfImportEntities'
+import {
+  createContext,
+  learned,
+  loadFonts,
+  paletteOpen
+} from './helpers/pdfTextCmdTestUtils'
 
-function createContext(ids: string[]) {
-  const appended: Array<{ textString: string }> = []
-  const erased: string[] = []
-  const context = {
-    ids,
-    view: { selectionSet: { clear: jest.fn(), add: jest.fn() } },
-    doc: {
-      database: {
-        tables: {
-          blockTable: {
-            modelSpace: {
-              appendEntity: (texts: Array<{ textString: string }>) =>
-                appended.push(...texts)
-            }
-          }
-        }
-      },
-      entityService: {
-        eraseEntities: (list: string[]) => erased.push(...list)
-      }
-    }
-  }
-  return { context, appended, erased }
-}
+/** Without a DOM there is no panel: what was read is converted directly. */
+describe('AcApPdfTextCmd (headless)', () => {
+  beforeEach(() => {
+    loadFonts.mockClear()
+    paletteOpen.mockClear()
+    learned.length = 0
+  })
 
-describe('AcApPdfTextCmd', () => {
-  beforeEach(() => getString.mockReset())
-
-  it('reads the remaining lines from glyphs taught by a typed line', async () => {
-    getString.mockResolvedValue({ status: 'OK', stringResult: 'AA' })
-    const { context, appended, erased } = createContext(['a', 'b', 'c'])
+  it('converts read lines, keeping SHX text SHX and outline text TrueType', async () => {
+    const { context, appended, erased, database } = createContext([
+      's1',
+      'm1',
+      'u1'
+    ])
 
     const cmd = new AcApPdfTextCmd()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await cmd.execute(context as any)
 
-    expect(getString).toHaveBeenCalledTimes(1)
-    expect(appended.map(text => text.textString).sort()).toEqual([
-      'AA',
-      'BB',
-      'CC'
-    ])
-    expect(erased.sort()).toEqual(['a', 'b', 'c'])
+    expect(paletteOpen).not.toHaveBeenCalled()
+    const styleOf = (text: string) =>
+      appended.find(item => item.textString === text)?.styleName
+    expect(styleOf('SHX')).toBe(PDF_SHX_TEXT_STYLE)
+    // The current style already draws in a TrueType face: reused.
+    expect(styleOf('MESH')).toBe(database.textstyle)
+    // The unread line is skipped and its strokes kept.
+    expect(appended).toHaveLength(2)
+    expect(erased.sort()).toEqual(['m1', 's1'])
+
+    const shx = database.tables.textStyleTable.getAt(PDF_SHX_TEXT_STYLE)
+    expect(shx?.textStyle.font).toBe('txt')
+    expect(shx?.textStyle.bigFont).toBe('gbcbig')
+    expect(loadFonts).toHaveBeenCalledWith(['txt', 'gbcbig', 'SimKai'])
+    // Nothing was typed, so nothing is learned.
+    expect(learned).toEqual([])
   })
 })

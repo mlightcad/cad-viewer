@@ -2229,8 +2229,64 @@ export default {
     }
   },
   pdftext: {
-    enterText:
-      'سطر النص {index}/{count}: أدخل النص المظلل (اتركه فارغًا للتخطي، Esc للإيقاف)',
+    panel: {
+      title: 'استعادة النص',
+      shxGroup: 'نص SHX (خطوط خطية)',
+      meshGroup: 'نص TrueType (خطوط محددة)',
+      style: 'نمط النص',
+      newStyle: 'نمط نص جديد…',
+      newTag: 'جديد',
+      newStyleName: 'اسم نمط النص الجديد',
+      create: 'إنشاء',
+      cancel: 'إلغاء',
+      apply: 'تطبيق',
+      nameError: {
+        empty: 'أدخل اسمًا.',
+        invalid: 'يحتوي الاسم على أحرف غير مسموح بها.',
+        exists: 'يوجد نمط نص بهذا الاسم بالفعل.'
+      },
+      font: 'الخط',
+      bigFont: 'الخط الكبير',
+      noBigFont: '(بلا)',
+      shxFonts: 'خطوط SHX',
+      ttfFonts: 'خطوط TrueType',
+      fontsUsed: 'المستخدم: {fonts}',
+      fontMissing: 'الخط "{font}" غير متاح؛ سيُرسم بالخط "{fallback}".',
+      fontNotShx: 'هذا خط TrueType: لن يبدو النص مثل نص SHX الخطي.',
+      fontNotTtf: 'هذا خط SHX: لن يبدو النص مثل نص TrueType المحدد.',
+      styleChanges:
+        'سيتم تغيير خطوط نمط النص "{style}": ستتغير أيضًا النصوص التي تستخدمه.',
+      heightScale: 'مقياس الارتفاع',
+      widthFactor: 'معامل العرض',
+      autoWidth: 'ملاءمة العرض الأصلي',
+      lines: 'أسطر النص',
+      include: 'تحويل هذا السطر',
+      textPlaceholder: 'اكتب النص، أو اتركه فارغًا للتخطي',
+      switchKind: 'التبديل بين نص SHX ونص TrueType',
+      kind: {
+        shx: 'SHX',
+        mesh: 'TrueType'
+      },
+      source: {
+        dictionary: 'مُتعلَّم',
+        ocr: 'OCR',
+        typed: 'مُعدَّل',
+        unread: 'غير مقروء'
+      },
+      hideStrokes: 'إخفاء الخطوط الأصلية',
+      ready: '{ready} من {count} أسطر جاهزة',
+      merge: 'دمج في نص متعدد الأسطر',
+      mergeTip: 'دمج الأسطر المحددة في نص متعدد الأسطر واحد (MTEXT)',
+      split: 'تقسيم',
+      splitTip: 'تقسيم النص المدمج المحدد إلى أسطره الأصلية',
+      mergeAdjacent: 'دمج المتجاورة',
+      mergeAdjacentTip:
+        'دمج الأحرف والكلمات المتجاورة على خط أساس واحد في نص متعدد الأسطر',
+      mergedCount: 'تم الدمج في {count} من النصوص متعددة الأسطر.',
+      selectHint: 'استخدم Ctrl+نقر أو Shift+نقر لتحديد عدة أسطر.',
+      mtextTag: 'نص متعدد الأسطر'
+    },
+    cancelled: 'تم إلغاء استعادة النص؛ لم يتم تغيير أي شيء.',
     ocrNotConfigured:
       'التعرف على النص (OCR) متوقف: لم يتم إعداد نموذج ذكاء اصطناعي يدعم الصور. شغّل LLMSETTINGS لإعداده.',
     recognizing: 'جارٍ التعرف على {count} من أسطر النص…',

@@ -52,9 +52,15 @@ Seçimde patlatılmış ölçüler varsa, metinlerinin gösterdiği ölçeğe g�
 ## Metni kurtarma (`pdftext`)
 
 1. Metnin bulunduğu alanı seçin. Çerçeveler ve diğer büyük çizgiler yok sayılır.
-2. Çizgiler satırlara gruplanır. Yalnızca daha önce yazdığınız karakter şekillerinden oluşan satırlar hemen okunur.
-3. Görüntü destekli bir yapay zekâ modeli ayarlanmışsa (`LLMSETTINGS`), diğer tüm satırlar ona birkaç istekte birlikte gönderilir ve seçimin tamamı sorulmadan tek adımda dönüştürülür. Tanıma başarısız olursa nedeni (örneğin geçersiz bir API anahtarı) bir mesajla bildirilir.
-4. Yalnızca hiçbir yolla okunamayan satırlar tek tek vurgulanır. Metni yazıp onaylayın; satırı atlamak için boş bırakın, durdurmak için Esc'e basın.
+2. Çizgiler metin satırlarına gruplanır ve her satırın **SHX** metin (açık çizgi vuruşları) mi yoksa **TrueType** metin (kapalı anahatlar) mi olduğu belirlenir. Yalnızca daha önce yazdığınız karakter şekillerinden oluşan satırlar hemen okunur.
+3. Görüntü destekli bir AI modeli yapılandırılmışsa (`LLMSETTINGS`), diğer tüm satırlar birkaç istekte tek seferde gönderilir. Tanıma başarısız olursa nedeni (örneğin geçersiz bir API anahtarı) bildirilir.
+4. Paletde **Metni Kurtar** paneli açılır ve sonuç çizimde önizlenir. Panel açıkken kaydırma ve yakınlaştırma yapabilirsiniz.
+   - SHX metin ve TrueType metin için ayrı ayrı mevcut bir **metin stili** seçin veya yenisini oluşturun ve kullandığı **yazı tipini** ile **büyük yazı tipini** kontrol edin. Özgün çizimle uyuşmuyorsa değiştirin; bir yazı tipi eksikse yerine neyin çizildiği, mevcut bir stilin yazı tiplerini değiştirmek o stili kullanan metinleri de değiştiriyorsa bu bir uyarıyla bildirilir. Varsayılan olarak SHX metin `PDF_SHX` stilini (`txt` + `gbcbig`) kullanır; böylece SHX metnin görünümü ve boyutu korunur.
+   - **Yükseklik ölçeğini** ayarlayın; **genişlik faktörünü** özgün genişliğe sığdırın veya kendiniz belirleyin.
+   - Liste her satırı metniyle ve kaynağıyla (öğrenildi, OCR, düzenlendi, okunamadı) gösterir; okunamayan satırlar en üstte yer alır. Bir satıra tıklayarak onu çizimde gösterin, metnini düzeltin veya yazın ve sonraki okunamayan satıra geçmek için Enter'a basın; bir satırı yazmak, aynı karakterleri kullanan diğer satırları da doldurur. Bir satırı atlamak için onay kutusunu kaldırın veya yanlış belirlenen bir satırı SHX ile TrueType arasında değiştirin.
+   - Tek bir metin olması gerekirken ayrı satırlar olarak tanınan karakterler tek bir çok satırlı metinde (MText) birleştirilebilir: satırları Ctrl+tıklama veya Shift+tıklama ile seçip **MText olarak birleştir**'e tıklayın ya da aynı taban çizgisinde yan yana duran her şeyi birleştirmek için **Bitişikleri birleştir**'e tıklayın. Farklı taban çizgilerindeki satırlar, özgün satır aralığıyla MText'in ayrı satırları olur. **Ayır**, birleştirilmiş metni yeniden satırlarına ayırır.
+   - **Özgün çizgileri gizle** yalnızca önizlemeyi gösterir.
+5. Dönüştürmek için **Uygula**'ya tıklayın. **İptal** veya paleti kapatmak hiçbir şeyi değiştirmez.
 
 Yazdığınız her karakter şekli tarayıcıda hatırlanır, böylece aynı yazı tipini kullanan diğer çizimler de bundan yararlanır. Yapay zekâ modelinin okuduğu metin hatırlanmaz. Komutun tamamı tek adımda geri alınabilir ve dönüştürülen metinler diğer metinler gibi düzenlenebilir.
 

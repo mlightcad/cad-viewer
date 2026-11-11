@@ -2122,8 +2122,67 @@ export default {
     }
   },
   pdftext: {
-    enterText:
-      'Řádek textu {index}/{count}: zadejte zvýrazněný text (prázdné přeskočí, Esc ukončí)',
+    panel: {
+      title: 'Obnovit text',
+      shxGroup: 'Text SHX (čárová písma)',
+      meshGroup: 'Text TrueType (obrysová písma)',
+      style: 'Styl textu',
+      newStyle: 'Nový styl textu…',
+      newTag: 'nový',
+      newStyleName: 'Název nového stylu textu',
+      create: 'Vytvořit',
+      cancel: 'Zrušit',
+      apply: 'Použít',
+      nameError: {
+        empty: 'Zadejte název.',
+        invalid: 'Název obsahuje nepovolené znaky.',
+        exists: 'Styl textu s tímto názvem již existuje.'
+      },
+      font: 'Písmo',
+      bigFont: 'Velké písmo',
+      noBigFont: '(Žádné)',
+      shxFonts: 'Písma SHX',
+      ttfFonts: 'Písma TrueType',
+      fontsUsed: 'Použito: {fonts}',
+      fontMissing:
+        'Písmo „{font}“ není k dispozici; vykreslí se písmem „{fallback}“.',
+      fontNotShx:
+        'Toto je písmo TrueType: text nebude vypadat jako čárový text SHX.',
+      fontNotTtf:
+        'Toto je písmo SHX: text nebude vypadat jako obrysový text TrueType.',
+      styleChanges:
+        'Změní písma stylu textu „{style}“: změní se i texty, které jej již používají.',
+      heightScale: 'Měřítko výšky',
+      widthFactor: 'Faktor šířky',
+      autoWidth: 'Přizpůsobit původní šířce',
+      lines: 'Řádky textu',
+      include: 'Převést tento řádek',
+      textPlaceholder: 'Zadejte text, nebo jej nechte prázdný pro přeskočení',
+      switchKind: 'Přepnout mezi textem SHX a TrueType',
+      kind: {
+        shx: 'SHX',
+        mesh: 'TrueType'
+      },
+      source: {
+        dictionary: 'Naučeno',
+        ocr: 'OCR',
+        typed: 'Upraveno',
+        unread: 'Nerozpoznáno'
+      },
+      hideStrokes: 'Skrýt původní čáry',
+      ready: 'Připraveno {ready} z {count} řádků',
+      merge: 'Sloučit do víceřádkového textu',
+      mergeTip: 'Sloučí vybrané řádky do jednoho víceřádkového textu (MTEXT)',
+      split: 'Rozdělit',
+      splitTip: 'Rozdělí vybraný sloučený text zpět na řádky',
+      mergeAdjacent: 'Sloučit sousední',
+      mergeAdjacentTip:
+        'Sloučí znaky a slova, která stojí vedle sebe na jednom účaří, do víceřádkového textu',
+      mergedCount: 'Sloučeno do víceřádkových textů: {count}.',
+      selectHint: 'Více řádků vyberete klepnutím s klávesou Ctrl nebo Shift.',
+      mtextTag: 'Víceřádkový text'
+    },
+    cancelled: 'Obnovení textu bylo zrušeno; nic nebylo změněno.',
     ocrNotConfigured:
       'Rozpoznávání textu (OCR) je vypnuté: není nakonfigurován žádný model AI s podporou obrázků. Nastavte ho příkazem LLMSETTINGS.',
     recognizing: 'Rozpoznávání textových řádků: {count}…',

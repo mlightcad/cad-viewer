@@ -79,6 +79,7 @@ export class AcUiDockPanel {
   private readonly sheetGrabber: HTMLDivElement
   private readonly sheetCloseButton: HTMLButtonElement
   private readonly tabs = new Map<string, DockTabRecord>()
+  private readonly closeListeners = new Set<() => void>()
   private activeTabId?: string
   private side: AcUiDockPanelSide
   private isPanelOpen: boolean
@@ -307,6 +308,17 @@ export class AcUiDockPanel {
     this.applyLayoutState()
   }
 
+  /**
+   * Registers a callback run each time the panel is closed (close button,
+   * toggle, or {@link close}).
+   *
+   * @returns Function that removes the callback.
+   */
+  addCloseListener(listener: () => void): () => void {
+    this.closeListeners.add(listener)
+    return () => this.closeListeners.delete(listener)
+  }
+
   /** Whether a tab with the given id is registered. */
   hasTab(tabId: string) {
     return this.tabs.has(tabId)
@@ -461,6 +473,7 @@ export class AcUiDockPanel {
     this.closeSideMenu()
     this.closeOverflowMenu()
     this.applyLayoutState()
+    for (const listener of [...this.closeListeners]) listener()
   }
 
   /**

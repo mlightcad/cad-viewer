@@ -101,6 +101,13 @@
         >
           <ml-cad-script-panel />
         </div>
+        <div
+          v-else-if="activeHostedPanel"
+          :key="activeHostedPanel.tab"
+          class="ml-hosted-panel-wrapper"
+        >
+          <ml-hosted-panel :element="activeHostedPanel.element" />
+        </div>
       </ml-overflow-tabs>
     </ml-tool-palette>
   </el-config-provider>
@@ -131,6 +138,7 @@ import MlCountList from './MlCountList.vue'
 import MlDesignReviewPalette from './MlDesignReviewPalette.vue'
 import MlEntityProperties from './MlEntityProperties.vue'
 import MlFindPalette from './MlFindPalette.vue'
+import MlHostedPanel from './MlHostedPanel.vue'
 import MlLayerList from './MlLayerList.vue'
 import MlMeasurementPalette from './MlMeasurementPalette.vue'
 import MlMemoryProfile from './MlMemoryProfile.vue'
@@ -270,15 +278,25 @@ const tabNames = computed((): readonly string[] => {
   if (store.features.scriptPlugin) {
     names.push('cadScript')
   }
+  for (const panel of store.dialogs.hostedPanels) names.push(panel.tab)
   return names
 })
 
+/** Command panel of the active tab, if that tab is a hosted panel. */
+const activeHostedPanel = computed(() =>
+  store.dialogs.hostedPanels.find(
+    panel => panel.tab === store.dialogs.activePaletteTab
+  )
+)
+
 const tabs = computed<MlOverflowTab[]>(() => {
   return tabNames.value.map(name => {
+    const hosted = store.dialogs.hostedPanels.find(panel => panel.tab === name)
     return {
       name,
-      label:
-        name === 'cadScript'
+      label: hosted
+        ? hosted.title
+        : name === 'cadScript'
           ? t('main.toolPalette.script.scriptTab')
           : toolPaletteTabName(name)
     }
@@ -289,6 +307,7 @@ const activeTabTitle = computed(() => {
   if (store.dialogs.activePaletteTab === 'cadScript') {
     return t('main.toolPalette.script.scriptTitle')
   }
+  if (activeHostedPanel.value) return activeHostedPanel.value.title
   return toolPaletteTitle(store.dialogs.activePaletteTab)
 })
 
@@ -434,7 +453,8 @@ const propertyEntityLocked = computed(() => propertyRows.value.locked)
   flex-direction: column;
 }
 
-.ml-agent-palette-wrapper {
+.ml-agent-palette-wrapper,
+.ml-hosted-panel-wrapper {
   overflow: hidden;
   width: 100%;
   height: 100%;
