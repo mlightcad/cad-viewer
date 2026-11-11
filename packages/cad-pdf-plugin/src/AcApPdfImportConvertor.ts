@@ -44,6 +44,7 @@ import {
   resolveAcApPdfImportOptions
 } from './AcApPdfImportOptions'
 import { acapPdfImportResourceUrls } from './AcApPdfImportResources'
+import { acapPdfAppendEntities } from './pdfImportAppend'
 import {
   acapPdfCreatePatternHatch,
   acapPdfCreateSolidHatch,
@@ -729,9 +730,13 @@ export class AcApPdfImportConvertor {
       for (const image of imageEntities) {
         if (image.layer && image.layer !== '0') usedLayerNames.add(image.layer)
       }
-      entities.unshift(...imageEntities)
+      // Not `unshift(...)`: spreading a large array overflows the stack.
+      const ordered: AcDbEntity[] =
+        imageEntities.length > 0
+          ? (imageEntities as AcDbEntity[]).concat(entities)
+          : entities
 
-      if (entities.length === 0) {
+      if (ordered.length === 0) {
         log.warn('[PdfImport] No vector geometry found in PDF page.')
         return
       }
@@ -750,13 +755,13 @@ export class AcApPdfImportConvertor {
         layerService.setLayerOn(layerInfo.layerName, false)
       }
 
-      const modelSpace = context.doc.database.tables.blockTable.modelSpace
-      for (const entity of entities) {
-        modelSpace.appendEntity(entity)
-      }
+      acapPdfAppendEntities(
+        context.doc.database.tables.blockTable.modelSpace,
+        ordered
+      )
 
       log.info(
-        `[PdfImport] Imported ${entities.length} entities across ${usedLayerNames.size} CAD layer(s): ` +
+        `[PdfImport] Imported ${ordered.length} entities across ${usedLayerNames.size} CAD layer(s): ` +
           `${stats.line} lines, ${stats.polyline} polylines, ${stats.circle} circles, ` +
           `${stats.arc} arcs, ${stats.ellipse} ellipses, ${stats.spline} splines, ` +
           `mode ${options.mode}, ${texts.length} texts, ${imageEntities.length} images, ${hatchCount} hatches, ` +
