@@ -152,10 +152,12 @@ async function importPdf(page: Page, pdf: string) {
 
   await page.getByRole('tab', { name: 'AI' }).click()
   const chooserPromise = page.waitForEvent('filechooser')
-  await ribbonButton(page, 'cmd-ipdf').click()
+  await ribbonButton(page, 'cmd-pdfimport').click()
   await (await chooserPromise).setFiles(fixture(pdf))
-  await waitForPrompt(page, 'Scale')
-  await answer(page, '')
+  // Import PDF dialog: OK imports the first page at the origin.
+  const dialog = page.locator('.ml-pdf-import-dialog')
+  await expect(dialog).toBeVisible({ timeout: 20_000 })
+  await dialog.locator('.ml-pdf-import-ok').click()
   await expect
     .poll(async () => Object.keys(await entityTypes(page)).length, {
       timeout: 30_000
@@ -227,7 +229,7 @@ test('pdftext changes nothing when the palette is cancelled', async ({
   expect(await textStrings(page)).toEqual([])
 })
 
-test('ipdf rebuilds repeated forms as blocks and pdfblock finds copies', async ({
+test('pdfimport rebuilds repeated forms as blocks and pdfblock finds copies', async ({
   page
 }) => {
   await importPdf(page, 'pdf-blocks.pdf')
@@ -279,7 +281,9 @@ test('pdfdim turns exploded dimensions into dimension objects', async ({
   expect(counts.TEXT ?? 0).toBe(0)
 })
 
-test('ipdf rebuilds pattern hatches from their strokes', async ({ page }) => {
+test('pdfimport rebuilds pattern hatches from their strokes', async ({
+  page
+}) => {
   await importPdf(page, 'pdf-hatches.pdf')
 
   // 45° lines inside a drawn rectangle, and a 0°/90° grid with no outline:

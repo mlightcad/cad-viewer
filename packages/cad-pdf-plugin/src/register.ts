@@ -9,7 +9,8 @@ export const PDF_PLUGIN_NAME = 'PdfPlugin'
  * - `-cpdf` — export drawing to PDF via command-line prompts
  * - `cpdf` — same as `-cpdf` when no UI dialog is registered; in cad-viewer,
  *   `cpdf` opens the export dialog and loads this plugin on confirm via `-cpdf`
- * - `ipdf` — import vector geometry from PDF
+ * - `pdfimport` — import vector geometry from PDF through the Import PDF dialog
+ * - `-pdfimport` — same import with command-line prompts
  * - `pdfscale` — calibrate imported PDF geometry from a known distance
  * - `pdftext` — convert exploded PDF text strokes back into text
  * - `pdfblock` — turn repeated PDF geometry back into a block
@@ -18,7 +19,8 @@ export const PDF_PLUGIN_NAME = 'PdfPlugin'
 export const PDF_PLUGIN_TRIGGERS = [
   '-cpdf',
   'cpdf',
-  'ipdf',
+  'pdfimport',
+  '-pdfimport',
   'pdfscale',
   'pdftext',
   'pdfblock',
@@ -27,7 +29,8 @@ export const PDF_PLUGIN_TRIGGERS = [
 
 /** Triggers that remain when export is disabled. */
 const PDF_IMPORT_TRIGGERS = [
-  'ipdf',
+  'pdfimport',
+  '-pdfimport',
   'pdfscale',
   'pdftext',
   'pdfblock',

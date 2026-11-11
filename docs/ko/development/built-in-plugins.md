@@ -16,7 +16,7 @@ MLightCAD는 일련의 공식 플러그인을 제공합니다. 각 플러그인�
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **자연어 CAD 에이전트**(AI 채팅 패널 + 도면 도구 호출) | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **수동 CAD 스크립트 콘솔**(도면에 대해 검증된 스크립트 실행, LLM/API 키 불필요) | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | 도면을 **자체 포함 오프라인 HTML**로 내보내기 | `chtml`(`cad-editor`의 대화상자), `-chtml`(명령줄) |
-| [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **PDF 내보내기 및 가져오기**(벡터 파이프라인) | `cpdf`, `ipdf` |
+| [`@mlightcad/cad-pdf-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin) | **PDF 내보내기 및 가져오기**(벡터 파이프라인) | `cpdf`, `pdfimport`, `-pdfimport` |
 | [`@mlightcad/cad-svg-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-plugin) | **SVG 내보내기** 및 공유 벡터 렌더러(PDF 내보내기에서도 사용) | `csvg` |
 | [`@mlightcad/cad-onedrive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-onedrive-plugin) | **OneDrive 데이터 소스** — OneDrive/SharePoint에서 DWG/DXF 열기 | `AcApDataSource` 등록(`onedrive`); 2단계 로그인 → 열기(팝업 차단 안전) |
 | [`@mlightcad/cad-google-drive-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-google-drive-plugin) | **Google Drive 데이터 소스** — Google Drive에서 DWG/DXF 열기 | `AcApDataSource` 등록(`googledrive`); 2단계 로그인 → 열기(팝업 차단 안전) |
@@ -93,7 +93,7 @@ MLightCAD는 일련의 공식 플러그인을 제공합니다. 각 플러그인�
 
 | 항목 | 값 |
 |------|-------|
-| 명령 | `cpdf`(내보내기), `ipdf`(가져오기) |
+| 명령 | `cpdf`(내보내기), `pdfimport`(가져오기) |
 | 공개 API | `registerLazyPdfPlugin`, `createPdfPlugin`, `AcApPdfConvertor`, `resolveAcApPdfExportOptions` |
 
 → **빌드 출력 및 통합:** [packages/cad-pdf-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-pdf-plugin/README.md)

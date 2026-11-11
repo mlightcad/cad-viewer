@@ -125,7 +125,7 @@ export class AcApMyPlugin implements AcApPlugin {
 Resmi eklentiler aynı deseni izler:
 
 - `AcApHtmlPlugin` — `chtml` komutunu kaydeder
-- `AcApPdfPlugin` — `cpdf`, `ipdf` komutlarını kaydeder
+- `AcApPdfPlugin` — `cpdf`, `pdfimport`, `-pdfimport` komutlarını kaydeder
 - `AcApSvgPlugin` — `csvg` komutunu kaydeder
 
 Görüntüleyici genelindeki komutlar için (yakınlaştırma, katman vb. ile aynı grup) `AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME` kullanın.
@@ -320,7 +320,7 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## Yerleşik eklenti başvurusu
 
-Monorepo birkaç resmi eklenti ile birlikte gelir: `AcApHtmlPlugin` (`chtml`), `AcApPdfPlugin` (`cpdf`, `ipdf`), `AcApSvgPlugin` (`csvg`), ayrıca arayüz, ajan, betik konsolu ve veri kaynağı eklentileri.
+Monorepo birkaç resmi eklenti ile birlikte gelir: `AcApHtmlPlugin` (`chtml`), `AcApPdfPlugin` (`cpdf`, `pdfimport`, `-pdfimport`), `AcApSvgPlugin` (`csvg`), ayrıca arayüz, ajan, betik konsolu ve veri kaynağı eklentileri.
 
 Komutları, genel API'si, yapılandırması ve her paketin README bağlantılarıyla birlikte tam liste için [Yerleşik Eklentiler](./built-in-plugins) sayfasına bakın.
 

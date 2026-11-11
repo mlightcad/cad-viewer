@@ -89,7 +89,7 @@ function setup() {
   return { db, byId }
 }
 
-/** A solid-filled arrowhead, as `ipdf` imports a filled PDF triangle. */
+/** A solid-filled arrowhead, as `pdfimport` imports a filled PDF triangle. */
 function hatchTriangle(db: AcDbDatabase, tip: P, dir: P, size = 2.5) {
   const poly = triangle(tip, dir, size)
   const vertices = [0, 1, 2].map(i => {

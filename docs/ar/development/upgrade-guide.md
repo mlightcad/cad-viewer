@@ -26,6 +26,15 @@ registerLazyAgentPlugin(pluginManager)
 ```
 :::
 
+::: info استيراد PDF: أصبح `ipdf` الآن `PDFIMPORT` / `-PDFIMPORT`
+بدءًا من الإصدار الذي يتضمن هذا التغيير (1.8.0)، يستخدم أمر استيراد PDF في `@mlightcad/cad-pdf-plugin` أسماء AutoCAD:
+
+- يفتح **PDFIMPORT** مربع الحوار **استيراد PDF** (`AcUiPdfImportDialog`) بعد اختيار الملف: الصفحة مع معاينة، ونقطة الإدراج (X/Y أو على الشاشة)، والمقياس، والوضع (استعادة الرسم / الحفاظ على مظهر PDF).
+- يحتفظ **-PDFIMPORT** بمطالبات سطر الأوامر التي كانت في `ipdf` (رقم الصفحة، ونقطة الإدراج مع الخيارين **مقياس** و**الوضع**). فئته هي `AcApImportPdfPromptCmd`.
+
+الترحيل: لم يعد `ipdf` موجودًا. يجب أن تستخدم البرامج النصية التي كانت تشغّل `executeCommand('ipdf')` وتجيب عن المطالبات الأمر `-pdfimport`؛ ويجب أن تستخدم التطبيقات المضيفة التي ترسم شريطها الخاص `pdfimport` (معرّف عنصر الشريط في cad-editor أصبح `cmd-pdfimport`). انتقلت أوصاف الأوامر من `command.ACAD.ipdf` إلى `command.ACAD.pdfimport` / `command.ACAD.-pdfimport`، ونصوص المطالبات من `jig.ipdf` إلى `jig.pdfimport` (نصوص مربع الحوار ضمن `jig.pdfimport.dialog`). يعرض `AcApPdfImportConvertor.importFromFilePicker` الآن مربع الحوار، و`importFromCommandLine` هو مسار المطالبات.
+:::
+
 ::: info الكتل الذكية: بحث وتحويل (`BSEARCH`)
 بدءًا من الإصدار الذي يتضمن هذا التغيير، يسجّل `@mlightcad/cad-simple-viewer` الأمر **-BSEARCH** ويضيف `@mlightcad/cad-editor` الأمر **BSEARCH** (الاسم البديل `BCONVERT`) مع علامة تبويب «بحث وتحويل» في لوحة الأدوات (قائمة بالنسخ التي تم العثور عليها) ومربع حوار التحويل إلى كتلة (في علامتي التبويب إدراج وAI).
 
@@ -165,10 +174,10 @@ import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-ope
 
 | الحزمة | الدور |
 | --- | --- |
-| `@mlightcad/cad-pdf-plugin` | أوامر المتصفح `cpdf` / `-cpdf` / `ipdf` (وحوار التصدير في Vue) |
+| `@mlightcad/cad-pdf-plugin` | أوامر المتصفح `cpdf` / `-cpdf` / `pdfimport` (وحوار التصدير في Vue) |
 | `@mlightcad/cad-pdf-exporter` | DXF/DWG → PDF بلا واجهة في Node — **بدون متصفح** |
 
-**مدمجو المتصفح — دون تغيير يُذكر.** استمر في استخدام `cpdf` / `-cpdf` / `ipdf` و`AcApPdfConvertor` و`AcApPdfExportOptions` و`resolveAcApPdfExportOptions`. ثبّت الـ peer الجديد `@mlightcad/cad-pdf-core` بجانب الإضافة (نفس إصدار `cad-simple-viewer`).
+**مدمجو المتصفح — دون تغيير يُذكر.** استمر في استخدام `cpdf` / `-cpdf` / `pdfimport` و`AcApPdfConvertor` و`AcApPdfExportOptions` و`resolveAcApPdfExportOptions`. ثبّت الـ peer الجديد `@mlightcad/cad-pdf-core` بجانب الإضافة (نفس إصدار `cad-simple-viewer`).
 
 **فروق واجهة / سلوك تؤثر على المستخدم:**
 

@@ -125,7 +125,7 @@ export class AcApMyPlugin implements AcApPlugin {
 Oficiální pluginy dodržují stejný vzor:
 
 - `AcApHtmlPlugin` — registruje `chtml`
-- `AcApPdfPlugin` — registruje `cpdf`, `ipdf`
+- `AcApPdfPlugin` — registruje `cpdf`, `pdfimport`, `-pdfimport`
 - `AcApSvgPlugin` — registruje `csvg`
 
 Pro příkazy platné v celém prohlížeči (stejná skupina jako zoom, hladina atd.) používejte `AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME`.
@@ -320,7 +320,7 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## Přehled vestavěných pluginů
 
-Monorepo přibaluje několik oficiálních pluginů: `AcApHtmlPlugin` (`chtml`), `AcApPdfPlugin` (`cpdf`, `ipdf`), `AcApSvgPlugin` (`csvg`) a dále pluginy pro UI, agenta, konzoli skriptů a datové zdroje.
+Monorepo přibaluje několik oficiálních pluginů: `AcApHtmlPlugin` (`chtml`), `AcApPdfPlugin` (`cpdf`, `pdfimport`, `-pdfimport`), `AcApSvgPlugin` (`csvg`) a dále pluginy pro UI, agenta, konzoli skriptů a datové zdroje.
 
 Úplný seznam s příkazy, veřejným API a konfigurací jednotlivých pluginů a s odkazy na README každého balíčku najdete v části [Vestavěné pluginy](./built-in-plugins).
 

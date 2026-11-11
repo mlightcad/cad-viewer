@@ -1388,7 +1388,7 @@ const buildAiTab = (
             layout: 'row' as const,
             items: [
               largeButton(
-                'cmd-ipdf',
+                'cmd-pdfimport',
                 t('main.ribbon.command.importPdf'),
                 ribbonTooltips.importPdf,
                 Upload
@@ -3410,7 +3410,7 @@ const ribbonData = computed(() => {
   if (store.features.llmPlugin) {
     commandByItemId.set('cmd-llmsettings', 'llmsettings')
   }
-  commandByItemId.set('cmd-ipdf', 'ipdf')
+  commandByItemId.set('cmd-pdfimport', 'pdfimport')
   commandByItemId.set('cmd-pdfscale', 'pdfscale')
   commandByItemId.set('cmd-pdftext', 'pdftext')
   commandByItemId.set('cmd-pdfblock', 'pdfblock')

@@ -450,14 +450,14 @@ export interface RegisterLazyPluginsOptions {
 /**
  * Registers lazy plugins that load on first use of their trigger commands.
  *
- * Currently registers the PDF plugin (`-cpdf`, `ipdf`), the HTML export
+ * Currently registers the PDF plugin (`-cpdf`, `pdfimport`), the HTML export
  * plugin (`-chtml`), the SVG export plugin (`csvg`), and optionally the AI
  * model settings (`llmsettings`) when `@mlightcad/cad-llm-plugin` is
  * installed, the CAD Agent plugin (`agent`) when
  * `@mlightcad/cad-agent-plugin` is installed, and the
  * script console (`cadscript`) when `@mlightcad/cad-script-plugin` is installed.
  * When {@link AcApDocManager.disableExport} is true, HTML/SVG export plugins
- * are skipped and the PDF plugin only exposes `ipdf`. Host UI commands
+ * are skipped and the PDF plugin only exposes `pdfimport`. Host UI commands
  * `chtml` / `cpdf` open export dialogs and load the plugins on confirm.
  * Safe to call multiple times; registration runs once per application lifetime.
  *

@@ -246,8 +246,13 @@ export default {
         'İçe aktarılan PDF geometrisini bilinen bir mesafeye göre kalibre eder',
       prompt: 'Ölçeklenecek nesneleri seçin'
     },
-    ipdf: {
-      description: 'Bir PDF dosyasından vektör geometrisini içe aktarır'
+    pdfimport: {
+      description:
+        'PDF İçe Aktar iletişim kutusuyla bir PDF dosyasından vektör geometrisini içe aktarır'
+    },
+    '-pdfimport': {
+      description:
+        'Komut satırı seçenekleriyle bir PDF dosyasından vektör geometrisini içe aktarır'
     },
     hpang: {
       description:

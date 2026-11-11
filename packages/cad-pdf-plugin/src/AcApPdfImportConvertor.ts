@@ -80,6 +80,12 @@ import {
   type PdfRecognizedHatch
 } from './recognition/pdfHatchRecognition'
 import { mergePdfTextRuns } from './recognition/pdfTextRunMerge'
+import {
+  AcUiPdfImportDialog,
+  type AcUiPdfImportDialogValues,
+  type AcUiPdfImportDocument,
+  type AcUiPdfImportSource
+} from './ui/AcUiPdfImportDialog'
 
 /**
  * PDF.js worker shipped beside this module.
@@ -108,20 +114,22 @@ function pdfDocumentParams(data: ArrayBuffer) {
   }
 }
 
-/** Mode last picked at the `ipdf` prompt; reused as the next default. */
+/** Mode last picked at the `-pdfimport` prompt; reused as the next default. */
 let lastImportMode: AcApPdfImportMode = 'recover'
 
 /** i18n key of the prompt label for `mode`. */
 function importModeLabelKey(mode: AcApPdfImportMode) {
-  return mode === 'visual' ? 'jig.ipdf.modeVisual' : 'jig.ipdf.modeRecover'
+  return mode === 'visual'
+    ? 'jig.pdfimport.modeVisual'
+    : 'jig.pdfimport.modeRecover'
 }
 
-/** Adds the `jig.ipdf.keywords.<name>` keyword to `keywords`. */
-function addIpdfKeyword(
+/** Adds the `jig.pdfimport.keywords.<name>` keyword to `keywords`. */
+function addPdfImportKeyword(
   keywords: AcEdKeywordCollection,
   name: 'scale' | 'mode' | 'recover' | 'visual'
 ): AcEdKeyword {
-  const base = `jig.ipdf.keywords.${name}`
+  const base = `jig.pdfimport.keywords.${name}`
   return keywords.add(
     AcApI18n.t(`${base}.display`),
     AcApI18n.t(`${base}.global`),
@@ -130,13 +138,119 @@ function addIpdfKeyword(
 }
 
 /**
+ * Values last confirmed in the Import PDF dialog; the next `pdfimport` starts
+ * from them (page number excepted, as the next file differs).
+ */
+let lastDialogValues: Partial<AcUiPdfImportDialogValues> = {}
+
+/** Adapts a pdf.js document to what {@link AcUiPdfImportDialog} draws. */
+function pdfDialogDocument(pdf: PDFDocumentProxy): AcUiPdfImportDocument {
+  return {
+    numPages: pdf.numPages,
+    getPage: async pageNumber => {
+      const page = await pdf.getPage(pageNumber)
+      return {
+        getSize: scale => {
+          const viewport = page.getViewport({ scale })
+          return { width: viewport.width, height: viewport.height }
+        },
+        render: (canvas, scale) => {
+          const task = page.render({
+            canvas,
+            viewport: page.getViewport({ scale })
+          })
+          return { promise: task.promise, cancel: () => task.cancel() }
+        }
+      }
+    }
+  }
+}
+
+/**
  * Converts a PDF file into CAD entities appended to the current document's
  * model space.
  */
 export class AcApPdfImportConvertor {
   /**
+   * Prompts the user to pick a PDF file, shows the Import PDF dialog (page,
+   * insertion point, scale, import mode) and imports vector geometry
+   * (`pdfimport`).
+   *
+   * Returns without database edits when the picker or the dialog is
+   * dismissed. The command undo mark then has no committed changes, so
+   * nothing is pushed onto the undo stack.
+   *
+   * @param context - Application context for the target document
+   */
+  async importFromFilePicker(context: AcApContext): Promise<void> {
+    const loaded = new Set<PDFDocumentProxy>()
+    const load = async (): Promise<
+      (AcUiPdfImportSource & { pdf: PDFDocumentProxy }) | undefined
+    > => {
+      const file = await this.pickPdfFile()
+      if (!file) return undefined
+      const buffer = await file.arrayBuffer()
+      const pdf = await pdfjsLib.getDocument(pdfDocumentParams(buffer)).promise
+      loaded.add(pdf)
+      return { pdf, document: pdfDialogDocument(pdf), fileName: file.name }
+    }
+    try {
+      const first = await load()
+      // Chrome drops an SVG data-URI cursor after the native file dialog.
+      restoreViewCursor(context)
+      if (!first) return
+      const pdfBySource = new Map<AcUiPdfImportSource, PDFDocumentProxy>()
+      pdfBySource.set(first, first.pdf)
+
+      const result = await AcUiPdfImportDialog.open({
+        host: context.view?.container ?? document.body,
+        source: first,
+        initial: lastDialogValues,
+        browse: async () => {
+          try {
+            const next = await load()
+            if (next) pdfBySource.set(next, next.pdf)
+            return next
+          } catch (error) {
+            log.warn('[pdfimport] Failed to open PDF:', error)
+            return undefined
+          } finally {
+            restoreViewCursor(context)
+          }
+        }
+      })
+      if (!result) return
+      const { source, ...values } = result
+      lastDialogValues = { ...values, pageNumber: undefined }
+      const pdf = pdfBySource.get(source)
+      if (!pdf) return
+
+      let insertionPoint = values.insertionPoint
+      if (values.specifyOnScreen) {
+        const picked = await this.promptInsertionPoint()
+        if (!picked) return
+        insertionPoint = picked
+      }
+      await this.importDocument(
+        context,
+        pdf,
+        resolveAcApPdfImportOptions({
+          mode: values.mode,
+          pageNumber: values.pageNumber,
+          scale: values.scale,
+          insertionPoint
+        })
+      )
+    } finally {
+      await Promise.all([...loaded].map(pdf => pdf.destroy()))
+      restoreViewCursor(context)
+    }
+  }
+
+  /**
    * Prompts the user to pick a PDF file, asks for page / insertion point /
-   * scale / curve recognition, and imports vector geometry.
+   * scale / mode on the command line, and imports vector geometry
+   * (`-pdfimport`).
    *
    * Returns without database edits when the picker is dismissed. The command
    * undo mark then has no committed changes, so nothing is pushed onto the
@@ -144,7 +258,7 @@ export class AcApPdfImportConvertor {
    *
    * @param context - Application context for the target document
    */
-  async importFromFilePicker(context: AcApContext): Promise<void> {
+  async importFromCommandLine(context: AcApContext): Promise<void> {
     try {
       const file = await this.pickPdfFile()
       if (!file) return
@@ -174,7 +288,7 @@ export class AcApPdfImportConvertor {
    *
    * Resolves `undefined` when the user cancels the picker. `cancel` does not
    * fire for every dismiss path, so closing the dialog (window focus with no
-   * selected file) also settles the promise. Otherwise `ipdf` would stay
+   * selected file) also settles the promise. Otherwise `pdfimport` would stay
    * inside its write transaction.
    */
   private pickPdfFile(): Promise<File | undefined> {
@@ -274,7 +388,7 @@ export class AcApPdfImportConvertor {
 
     if (pageCount > 1) {
       const pagePrompt = new AcEdPromptIntegerOptions(
-        acapPdfT('jig.ipdf.pageNumber', { count: pageCount }),
+        acapPdfT('jig.pdfimport.pageNumber', { count: pageCount }),
         1,
         pageCount
       )
@@ -293,14 +407,14 @@ export class AcApPdfImportConvertor {
     let mode = lastImportMode
     while (true) {
       const pointPrompt = new AcEdPromptPointOptions(
-        acapPdfT('jig.ipdf.insertionPoint', {
+        acapPdfT('jig.pdfimport.insertionPoint', {
           scale: String(scale),
           mode: AcApI18n.t(importModeLabelKey(mode))
         })
       )
       pointPrompt.allowNone = true
-      addIpdfKeyword(pointPrompt.keywords, 'scale')
-      addIpdfKeyword(pointPrompt.keywords, 'mode')
+      addPdfImportKeyword(pointPrompt.keywords, 'scale')
+      addPdfImportKeyword(pointPrompt.keywords, 'mode')
       const result = await editor.getPoint(pointPrompt)
       if (result.status === AcEdPromptStatus.OK && result.value) {
         options.insertionPoint = { x: result.value.x, y: result.value.y }
@@ -317,7 +431,7 @@ export class AcApPdfImportConvertor {
       }
       if (result.stringResult === 'Scale') {
         const scalePrompt = new AcEdPromptDoubleOptions(
-          AcApI18n.t('jig.ipdf.scaleFactor')
+          AcApI18n.t('jig.pdfimport.scaleFactor')
         )
         scalePrompt.defaultValue = scale
         scalePrompt.useDefaultValue = true
@@ -347,11 +461,11 @@ export class AcApPdfImportConvertor {
     current: AcApPdfImportMode
   ): Promise<AcApPdfImportMode | undefined> {
     const prompt = new AcEdPromptKeywordOptions(
-      AcApI18n.t('jig.ipdf.modePrompt')
+      AcApI18n.t('jig.pdfimport.modePrompt')
     )
     prompt.allowNone = true
-    const recover = addIpdfKeyword(prompt.keywords, 'recover')
-    const visual = addIpdfKeyword(prompt.keywords, 'visual')
+    const recover = addPdfImportKeyword(prompt.keywords, 'recover')
+    const visual = addPdfImportKeyword(prompt.keywords, 'visual')
     prompt.keywords.default = current === 'visual' ? visual : recover
     const result = await AcApDocManager.instance.editor.getKeywords(prompt)
     if (result.status === AcEdPromptStatus.None) return current
@@ -364,6 +478,26 @@ export class AcApPdfImportConvertor {
     if (result.stringResult === 'Visual') return 'visual'
     if (result.stringResult === 'Recover') return 'recover'
     return current
+  }
+
+  /**
+   * Asks for the insertion point in the drawing. Enter takes the origin.
+   *
+   * @returns The point, or `undefined` when the user cancels.
+   */
+  private async promptInsertionPoint(): Promise<
+    { x: number; y: number } | undefined
+  > {
+    const prompt = new AcEdPromptPointOptions(
+      AcApI18n.t('jig.pdfimport.pickInsertionPoint')
+    )
+    prompt.allowNone = true
+    const result = await AcApDocManager.instance.editor.getPoint(prompt)
+    if (result.status === AcEdPromptStatus.OK && result.value) {
+      return { x: result.value.x, y: result.value.y }
+    }
+    if (result.status === AcEdPromptStatus.None) return { x: 0, y: 0 }
+    return undefined
   }
 
   private async importPage(

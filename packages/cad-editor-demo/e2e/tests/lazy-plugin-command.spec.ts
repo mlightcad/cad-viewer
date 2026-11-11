@@ -13,7 +13,7 @@ const fixturePath = path.resolve(
 )
 
 /**
- * Commands of lazily loaded plugins (here `ipdf` from the PDF plugin) exist
+ * Commands of lazily loaded plugins (here `pdfimport` from the PDF plugin) exist
  * only after their plugin loads. Typing them on the command line must load
  * the plugin and run the command instead of reporting an unknown command,
  * and auto-completion must offer them before they are loaded.
@@ -29,15 +29,15 @@ test('lazy plugin commands can be typed on the command line', async ({
 
   const commandLine = page.locator('input.ml-cli-text')
   await commandLine.focus()
-  await commandLine.fill('ipd')
+  await commandLine.fill('pdfimp')
   await expect(
-    page.locator('.ml-cli-cmd-popup .item[data-value="IPDF"]')
+    page.locator('.ml-cli-cmd-popup .item[data-value="PDFIMPORT"]')
   ).toBeVisible()
 
   const chooserPromise = page.waitForEvent('filechooser', { timeout: 30_000 })
-  await commandLine.fill('ipdf')
+  await commandLine.fill('pdfimport')
   await page.keyboard.press('Enter')
-  // The PDF plugin loaded and `ipdf` opened its file picker.
+  // The PDF plugin loaded and `pdfimport` opened its file picker.
   const chooser = await chooserPromise
   expect(chooser.isMultiple()).toBe(false)
   await expect(page.locator('.ml-cli-recent')).not.toContainText(

@@ -4,16 +4,16 @@ jest.mock('../src/app', () => ({
   AcApDocManager: {
     instance: {
       sendStringToExecute: jest.fn(),
-      // Only LINE is a registered command; IPDF belongs to a lazy plugin.
+      // Only LINE is a registered command; PDFIMPORT belongs to a lazy plugin.
       lookupLocalCmd: jest.fn((name: string) =>
         name === 'LINE' ? { globalName: 'LINE', localName: 'LINE' } : undefined
       ),
       isLazyPluginCommand: jest.fn(
-        (name: string) => name.toUpperCase() === 'IPDF'
+        (name: string) => name.toUpperCase() === 'PDFIMPORT'
       ),
       searchCommandsByPrefix: jest.fn(() => []),
       searchLazyCommandsByPrefix: jest.fn((prefix: string) =>
-        'IPDF'.startsWith(prefix.toUpperCase()) ? ['IPDF'] : []
+        'PDFIMPORT'.startsWith(prefix.toUpperCase()) ? ['PDFIMPORT'] : []
       ),
       editor: {
         events: {
@@ -37,7 +37,7 @@ jest.mock('../src/app', () => ({
 jest.mock('../src/i18n', () => ({
   AcApI18n: {
     t: (key: string, options?: { fallback?: string }) =>
-      key === 'command.ACAD.ipdf.description'
+      key === 'command.ACAD.pdfimport.description'
         ? 'Imports vector geometry from a PDF file'
         : (options?.fallback ?? key),
     sysCmdKey: (cmdName: string, key: string) =>
@@ -88,9 +88,9 @@ describe('AcEdCommandLine lazy plugin commands', () => {
   const messages = () => container.innerText || container.textContent || ''
 
   it('runs a lazy plugin trigger instead of reporting an unknown command', () => {
-    cli.executeCommand('ipdf')
+    cli.executeCommand('pdfimport')
 
-    expect(sendStringToExecute).toHaveBeenCalledWith('ipdf')
+    expect(sendStringToExecute).toHaveBeenCalledWith('pdfimport')
     expect(messages()).not.toContain('main.commandLine.unknownCommand')
   })
 
@@ -102,22 +102,22 @@ describe('AcEdCommandLine lazy plugin commands', () => {
   })
 
   it('remembers a lazy trigger as the last command', () => {
-    cli.executeCommand('ipdf')
+    cli.executeCommand('pdfimport')
     sendStringToExecute.mockClear()
 
     cli.executeCommand('')
 
-    expect(sendStringToExecute).toHaveBeenCalledWith('IPDF')
+    expect(sendStringToExecute).toHaveBeenCalledWith('PDFIMPORT')
   })
 
   it('suggests lazy plugin commands with their description', () => {
-    input.value = 'ip'
+    input.value = 'pdfi'
     input.dispatchEvent(new Event('input', { bubbles: true }))
 
     const items = [...container.querySelectorAll('.item')] as HTMLElement[]
-    expect(items.map(item => item.dataset.value)).toEqual(['IPDF'])
+    expect(items.map(item => item.dataset.value)).toEqual(['PDFIMPORT'])
     expect(items[0].textContent).toBe(
-      'IPDF - Imports vector geometry from a PDF file'
+      'PDFIMPORT - Imports vector geometry from a PDF file'
     )
   })
 })

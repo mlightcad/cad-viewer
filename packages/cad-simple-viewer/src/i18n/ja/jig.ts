@@ -1932,7 +1932,7 @@ export default {
       }
     }
   },
-  ipdf: {
+  pdfimport: {
     pageNumber: 'ページ番号を入力 (1-{count})',
     insertionPoint: '挿入点を指定（尺度 {scale}、モード {mode}）または',
     modePrompt: 'インポート方式を選択',
@@ -1960,6 +1960,33 @@ export default {
         local: '見た目',
         global: 'Visual'
       }
+    },
+    pickInsertionPoint: '挿入点を指定',
+    dialog: {
+      title: 'PDF 読み込み',
+      close: '閉じる',
+      fileName: 'ファイル名:',
+      browse: '参照...',
+      pagesGroup: '読み込むページ',
+      page: 'ページ:',
+      total: '合計: {count}',
+      singleView: 'ページのプレビューを表示',
+      gridView: 'ページのサムネイルを表示',
+      pageLabel: 'ページ {page}',
+      pageSize: 'ページ サイズ: {width} × {height} mm ({widthIn} × {heightIn} インチ)',
+      previewError: 'プレビューを表示できません',
+      positionGroup: '位置',
+      onScreen: '挿入位置を画面上で指定',
+      x: 'X:',
+      y: 'Y:',
+      scale: '尺度:',
+      modeGroup: '読み込みモード',
+      modeRecover: '図面を復元',
+      recoverHint: '円、円弧、曲線、文字、ハッチング、ブロックを再構築します',
+      modeVisual: 'PDF の見た目を保持',
+      visualHint: 'PDF に描かれたとおりにパスと文字を読み込みます',
+      ok: 'OK',
+      cancel: 'キャンセル'
     }
   },
   pdfdim: {

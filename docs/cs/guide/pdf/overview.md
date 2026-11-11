@@ -8,25 +8,27 @@ Výkres v PDF uchovává jen to, co bylo vytištěno: křivky jsou Bézierovy ce
 
 | Tlačítko | Příkaz | Co dělá |
 |---|---|---|
-| Import PDF | `ipdf` | Importuje stránku PDF a obnoví křivky, bloky, tloušťky a typy čar |
+| Import PDF | `pdfimport` / `-pdfimport` | Importuje stránku PDF a obnoví křivky, bloky, tloušťky a typy čar |
 | Kalibrovat měřítko | `pdfscale` | Změní měřítko importu na skutečnou velikost podle jedné známé vzdálenosti |
 | Obnovit text | `pdftext` | Převede rozložené tahy textu zpět na text |
 | Vytvořit blok | `pdfblock` | Převede opakovanou geometrii zpět na blok |
 | Obnovit kóty | `pdfdim` | Převede rozložené kóty zpět na kótovací objekty |
 
-Příkazy vyžadují režim **Zápis**. Doporučené pořadí: `ipdf` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim`.
+Příkazy vyžadují režim **Zápis**. Doporučené pořadí: `pdfimport` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim`.
 
-## Import (`ipdf`)
+## Import (`pdfimport`)
 
-1. Vyberte soubor PDF.
-2. U vícestránkového souboru zadejte číslo stránky.
-3. Určete bod vložení, nebo stiskněte Enter pro počátek. Možnosti:
-   - **Měřítko**: jednotné měřítko použité při importu.
-   - **Režim**: způsob importu.
-     - **Obnovit** (výchozí): pokusí se obnovit původní výkres, viz níže.
-     - **Vzhled**: zachová PDF přesně tak, jak vypadá. Každá cesta se stane úsečkou nebo křivkou (oblouky se rozloží) a každý textový úsek samostatným textem; nic se neslučuje, neodstraňují se duplicity ani nevznikají bloky. Použijte, když obnova změní vzhled stránky.
+1. Vyberte soubor PDF. Otevře se dialog **Importovat PDF**.
+2. V části **Stránka k importu** zvolte stránku (jen u vícestránkových souborů). Náhled zobrazí stránku; tlačítko miniatur vedle něj vypíše všechny stránky. **Procházet...** vybere jiný soubor.
+3. V části **Umístění** zadejte souřadnice X/Y bodu vložení (výchozí je počátek), nebo zaškrtněte **Zadat bod vložení na obrazovce** a určete ho ve výkresu po stisku OK. **Měřítko** je jednotné měřítko použité při importu.
+4. V části **Režim importu** zvolte způsob importu:
+   - **Obnovit výkres** (výchozí): pokusí se obnovit původní výkres, viz níže.
+   - **Zachovat vzhled PDF**: zachová PDF přesně tak, jak vypadá. Každá cesta se stane úsečkou nebo křivkou (oblouky se rozloží) a každý textový úsek samostatným textem; nic se neslučuje, neodstraňují se duplicity ani nevznikají bloky. Použijte, když obnova změní vzhled stránky.
+5. Klikněte na **OK**. Umístění, měřítko a režim se zapamatují pro příští `pdfimport`.
 
-V režimu **Obnovit** se automaticky obnoví:
+`-pdfimport` importuje bez dialogu: po výběru souboru se na příkazovém řádku zeptá na stránku (jen u vícestránkových souborů) a poté na bod vložení s možnostmi **Měřítko** a **Režim**. Enter přijme počátek.
+
+V režimu **Obnovit výkres** se automaticky obnoví:
 
 - **Křivky**: Bézierovy kružnice, oblouky a elipsy se stanou kružnicemi, oblouky a elipsami. Obrysy kombinující úsečky a oblouky se stanou křivkami s obloukovými segmenty. Oblouky, které tvůrce PDF už rozdělil na krátké úsečky, se znovu proloží. Volné křivky se stanou spliny.
 - **Bloky**: obsah nakreslený několikrát ze stejného formuláře PDF se stane jedním blokem (`PDF_FORM_n`) s referencí pro každou kopii, včetně otočených a zrcadlených.
@@ -35,7 +37,7 @@ V režimu **Obnovit** se automaticky obnoví:
 
 Vyplněné oblasti (barevné plochy, vyplněná loga a obrysy textu) se importují jako plné šrafy v barvě výplně, ve stejném pořadí vykreslení jako na stránce. Integrace mohou nastavit volbu `fillHatches` na `false` a importovat je jen jako obrysy.
 
-Vzorové šrafy (ANSI31, cihly, křížové šrafování apod.) jsou v PDF uloženy jako tisíce krátkých úseček. V režimu **Obnovit** se znovu sestaví jako objekty šraf: úsečky se porovnají se standardními vzory `acadiso.pat`, případně s uživatelským jednoduchým nebo křížovým vzorem, včetně měřítka, úhlu a počátku, se kterými byly nakresleny. Hranice se vezme z nakresleného uzavřeného obrysu, z ořezové cesty PDF nebo z konců úseček. Šrafa se ponechá jen tehdy, když její vykreslení odpovídá úsečkám na stránce; vše ostatní zůstane jako úsečky. Integrace mohou nastavit `recognizeHatches` na `false` a ponechat všechny úsečky.
+Vzorové šrafy (ANSI31, cihly, křížové šrafování apod.) jsou v PDF uloženy jako tisíce krátkých úseček. V režimu **Obnovit výkres** se znovu sestaví jako objekty šraf: úsečky se porovnají se standardními vzory `acadiso.pat`, případně s uživatelským jednoduchým nebo křížovým vzorem, včetně měřítka, úhlu a počátku, se kterými byly nakresleny. Hranice se vezme z nakresleného uzavřeného obrysu, z ořezové cesty PDF nebo z konců úseček. Šrafa se ponechá jen tehdy, když její vykreslení odpovídá úsečkám na stránce; vše ostatní zůstane jako úsečky. Integrace mohou nastavit `recognizeHatches` na `false` a ponechat všechny úsečky.
 
 V obou režimech se text roztáhne nebo zúží na šířku, kterou měl v PDF, protože prohlížeč ho obvykle kreslí jiným písmem. Obrázky (fotografie, loga, QR kódy) se importují jako rastrové obrázky s názvem `PDF_IMAGE_n.png`; jejich pixely zůstávají jen v otevřeném výkresu, protože DWG a DXF odkazují na obrázky jako na samostatné soubory. Černé obrázky na průhledném pozadí, například QR kódy, se umístí na bílý podklad jako na stránce PDF.
 

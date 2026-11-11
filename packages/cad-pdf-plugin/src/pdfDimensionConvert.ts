@@ -70,7 +70,7 @@ export function pdfEntitiesToDimInput<Id>(
         input.segments.push({ id, p0: vertices[0], p1: vertices[1] })
       }
     } else if (entity instanceof AcDbHatch) {
-      // `ipdf` imports a filled arrowhead as a solid hatch; its boundary
+      // `pdfimport` imports a filled arrowhead as a solid hatch; its boundary
       // vertices (grip points, in loop order) describe the triangle.
       const vertices = hatchArrowVertices(entity)
       if (vertices) input.polygons.push({ id, vertices })

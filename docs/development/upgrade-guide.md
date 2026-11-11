@@ -26,6 +26,15 @@ registerLazyAgentPlugin(pluginManager)
 ```
 :::
 
+::: info Import PDF: `ipdf` is now `PDFIMPORT` / `-PDFIMPORT`
+Starting with the release that includes this change (1.8.0), the PDF import command of `@mlightcad/cad-pdf-plugin` takes AutoCAD's names:
+
+- **PDFIMPORT** opens an **Import PDF** dialog (`AcUiPdfImportDialog`) after the file is picked: page with preview, insertion point (X/Y or on-screen), scale and mode (Recover drawing / Keep PDF appearance).
+- **-PDFIMPORT** keeps the command-line prompts `ipdf` had (page, insertion point with `Scale` and `Mode`). Its class is `AcApImportPdfPromptCmd`.
+
+Migrate: `ipdf` no longer exists. Scripts that ran `executeCommand('ipdf')` and answered prompts should run `-pdfimport`; hosts that render their own ribbon should use `pdfimport` (the cad-editor ribbon item id is now `cmd-pdfimport`). The command descriptions move from `command.ACAD.ipdf` to `command.ACAD.pdfimport` / `command.ACAD.-pdfimport`, and the prompt strings from `jig.ipdf` to `jig.pdfimport` (dialog strings under `jig.pdfimport.dialog`). `AcApPdfImportConvertor.importFromFilePicker` now shows the dialog; `importFromCommandLine` is the prompt flow.
+:::
+
 ::: info Smart Blocks: Search and Convert (`BSEARCH`)
 Starting with the release that includes this change, `@mlightcad/cad-simple-viewer` registers **-BSEARCH** and `@mlightcad/cad-editor` adds **BSEARCH** (alias `BCONVERT`) with a Search and Convert palette tab (list of found instances) and a Convert to Block dialog (Insert and AI ribbon tabs).
 
@@ -177,10 +186,10 @@ Starting with **1.8.0**, PDF export uses the same layering as HTML export. Share
 
 | Package | Role |
 | --- | --- |
-| `@mlightcad/cad-pdf-plugin` | Browser `cpdf` / `-cpdf` / `ipdf` (and the Vue export dialog) |
+| `@mlightcad/cad-pdf-plugin` | Browser `cpdf` / `-cpdf` / `pdfimport` (and the Vue export dialog) |
 | `@mlightcad/cad-pdf-exporter` | Headless Node DXF/DWG → PDF — **no browser** |
 
-**Browser integrators — mostly unchanged.** Keep using `cpdf` / `-cpdf` / `ipdf`, `AcApPdfConvertor`, `AcApPdfExportOptions`, and `resolveAcApPdfExportOptions`. Install the new peer `@mlightcad/cad-pdf-core` next to the plugin (same version as `cad-simple-viewer`).
+**Browser integrators — mostly unchanged.** Keep using `cpdf` / `-cpdf` / `pdfimport`, `AcApPdfConvertor`, `AcApPdfExportOptions`, and `resolveAcApPdfExportOptions`. Install the new peer `@mlightcad/cad-pdf-core` next to the plugin (same version as `cad-simple-viewer`).
 
 **User-facing API / behaviour deltas:**
 

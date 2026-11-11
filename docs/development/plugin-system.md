@@ -125,7 +125,7 @@ export class AcApMyPlugin implements AcApPlugin {
 Official plugins follow the same pattern:
 
 - `AcApHtmlPlugin` — registers `chtml`
-- `AcApPdfPlugin` — registers `cpdf`, `ipdf`
+- `AcApPdfPlugin` — registers `cpdf`, `pdfimport`, `-pdfimport`
 - `AcApSvgPlugin` — registers `csvg`
 
 Use `AcEdCommandStack.SYSTEMT_COMMAND_GROUP_NAME` for viewer-wide commands (same group as zoom, layer, etc.).
@@ -320,7 +320,7 @@ await AcApDocManager.instance.pluginManager.unloadPlugin('MyPlugin')
 
 ## Built-in plugin reference
 
-The monorepo ships several first-party plugins: `AcApHtmlPlugin` (`chtml`), `AcApPdfPlugin` (`cpdf`, `ipdf`), `AcApSvgPlugin` (`csvg`), plus UI, agent, script console, and data source plugins.
+The monorepo ships several first-party plugins: `AcApHtmlPlugin` (`chtml`), `AcApPdfPlugin` (`cpdf`, `pdfimport`, `-pdfimport`), `AcApSvgPlugin` (`csvg`), plus UI, agent, script console, and data source plugins.
 
 For the complete list with per-plugin commands, public API, configuration, and links to each package README, see [Built-in Plugins](./built-in-plugins).
 

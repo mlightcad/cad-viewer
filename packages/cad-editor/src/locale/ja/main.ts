@@ -285,7 +285,7 @@ export default {
       detectConvert:
         '図面全体から繰り返しオブジェクトを検出してブロックに変換します（BDETECT）。',
       importPdf:
-        'PDF ファイルからベクトル図形を読み込み、円・円弧・曲線を復元します (IPDF)。',
+        'PDF ファイルからベクトル図形を読み込み、円・円弧・曲線を復元します (PDFIMPORT)。',
       pdfScale:
         '既知の距離の 2 点から読み込んだ PDF 図形の尺度を変更します (PDFSCALE)。',
       pdfDim:

@@ -216,8 +216,11 @@ export default {
       description: '根据已知距离校准导入的 PDF 图形比例',
       prompt: '选择要缩放的对象'
     },
-    ipdf: {
-      description: '从 PDF 文件导入矢量几何'
+    pdfimport: {
+      description: '通过“输入 PDF”对话框从 PDF 文件导入矢量几何'
+    },
+    '-pdfimport': {
+      description: '使用命令行选项从 PDF 文件导入矢量几何'
     },
     hpang: {
       description: '设置新创建填充图案的默认角度（弧度）'
