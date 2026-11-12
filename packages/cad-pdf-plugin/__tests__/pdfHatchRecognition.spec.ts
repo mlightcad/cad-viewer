@@ -340,6 +340,56 @@ describe('acapPdfRecognizeHatches', () => {
     expect(acapPdfRecognizeHatches(items).hatches).toHaveLength(0)
   })
 
+  test('rebuilds AR-CONC, whose dot-only lines leave no strokes', () => {
+    // Like cathedral.dwg handle 6C7C2: AR-CONC at scale 7, plotted at about
+    // 1:170 (so a pattern scale of about 0.04 on paper).
+    const outline = rect(0, 0, 60, 40)
+    const hatchItems = strokes(
+      [outline],
+      patternLines('AR-CONC', 0.04, 0)
+    ).filter(item => {
+      const shape = item.shape
+      if (shape.kind !== 'line') return true
+      return (
+        Math.hypot(shape.end.x - shape.start.x, shape.end.y - shape.start.y) >
+        0.01
+      )
+    })
+    const items = [outlineItem(outline), ...hatchItems]
+
+    const { hatches, consumed } = acapPdfRecognizeHatches(items)
+
+    expectPredefined(only(hatches), 'AR-CONC', 0.04, 0)
+    expect(consumed.size).toBe(hatchItems.length)
+  })
+
+  test('rebuilds one pattern spread over separate rooms', () => {
+    // AR-CONC strokes of several rooms: every room comes back, whether as
+    // one hatch with a loop per room or one hatch per room.
+    const rooms = [
+      rect(0, 0, 60, 40),
+      rect(80, 0, 140, 40),
+      rect(0, 60, 140, 100)
+    ]
+    const dashed = (outline: Point[]) =>
+      strokes([outline], patternLines('AR-CONC', 0.04, 0)).filter(item => {
+        const shape = item.shape
+        if (shape.kind !== 'line') return true
+        return (
+          Math.hypot(shape.end.x - shape.start.x, shape.end.y - shape.start.y) >
+          0.01
+        )
+      })
+    const items = rooms.flatMap(room => [outlineItem(room), ...dashed(room)])
+
+    const { hatches, consumed } = acapPdfRecognizeHatches(items)
+
+    expect(hatches.length).toBeGreaterThan(0)
+    for (const hatch of hatches) expectPredefined(hatch, 'AR-CONC', 0.04, 0)
+    expect(hatches.flatMap(hatch => hatch.boundary)).toHaveLength(3)
+    expect(consumed.size).toBe(items.length - rooms.length)
+  })
+
   test('rebuilds ANSI36 when the PDF dropped its dots', () => {
     const outline = rect(0, 0, 90, 60)
     const hatchItems = strokes([outline], patternLines('ANSI36', 1, 0)).filter(
@@ -525,6 +575,19 @@ describe('acapPdfRecognizeHatches', () => {
         recognize(name, { patterns: [], customPatterns: true })
       )
       expect(hatch.pattern.type).toBe('custom')
+    })
+
+    test('keeps touching hatches of one pattern apart', () => {
+      // A T-shaped ANSI36 hatch whose notches hold a U-shaped one and two
+      // corner squares: their strokes stop on the shared edges.
+      const hatches = recognize('cathedral-ansi36-touching')
+      expect(hatches.length).toBe(4)
+      const sizes = hatches
+        .map(hatch => hatch.items.length)
+        .sort((p, q) => q - p)
+      expect(sizes[0]).toBeGreaterThan(180)
+      expect(sizes[0]).toBeLessThan(230)
+      expect(sizes[1]).toBeGreaterThan(70)
     })
   })
 })

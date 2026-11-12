@@ -260,8 +260,12 @@ export function tessellateHatchPattern(
     }
     minLX -= pad
     maxLX += pad
-    const startK = Math.floor(minLY / spacing) - 1
-    const endK = Math.ceil(maxLY / spacing) + 1
+    // A negative spacing (offset to the right of the line direction, as in
+    // AR-CONC or a mirrored hatch) reverses the line indices of the box.
+    const k0 = minLY / spacing
+    const k1 = maxLY / spacing
+    const startK = Math.floor(Math.min(k0, k1)) - 1
+    const endK = Math.ceil(Math.max(k0, k1)) + 1
     const count = endK - startK + 1
     if (count > MAX_PATTERN_LINES) {
       continue

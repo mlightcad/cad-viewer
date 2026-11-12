@@ -22,7 +22,7 @@ import type { PdfImportShapeItem } from '../pdfImportShapes'
 import type { PdfRecognizedShape } from './pdfCurveRecognition'
 import {
   acapPdfFaceArrangement,
-  acapPdfFaceBoundaryIn,
+  acapPdfFaceBoundaryParts,
   acapPdfShapePolyline,
   type PdfFaceArrangement
 } from './pdfHatchFaces'
@@ -177,20 +177,23 @@ export function acapPdfRecognizeHatches(
 
   for (const group of groupCandidates(items, opts.tolerance)) {
     const accept = (region: Seg[]): boolean => {
-      const hatch = recognizeRegion(region, group.all, context)
-      if (!hatch) return false
-      const kept = hatch.items.filter(index => !consumed.has(index))
-      if (kept.length < opts.minSegments) return false
-      for (const index of kept) consumed.add(index)
-      const first = items[kept[0]]
-      hatches.push({
-        ...hatch,
-        items: kept,
-        layerName: first.layerName,
-        color: first.color,
-        lineWidth: first.lineWidth
-      })
-      return true
+      let any = false
+      for (const found of recognizeRegion(region, group.all, context)) {
+        const { minSegments, ...hatch } = found
+        const kept = hatch.items.filter(index => !consumed.has(index))
+        if (kept.length < (minSegments ?? opts.minSegments)) continue
+        for (const index of kept) consumed.add(index)
+        const first = items[kept[0]]
+        hatches.push({
+          ...hatch,
+          items: kept,
+          layerName: first.layerName,
+          color: first.color,
+          lineWidth: first.lineWidth
+        })
+        any = true
+      }
+      return any
     }
     const regions = findRegions(group.long, opts)
     opts.trace('regions', {
@@ -198,9 +201,21 @@ export function acapPdfRecognizeHatches(
       long: group.long.length,
       sizes: regions.map(region => region.length)
     })
-    for (const region of regions) {
+    const queue = [...regions]
+    const patchesFrom = regions.length
+    for (let k = 0; k < queue.length; k++) {
+      const region = queue[k]
       if (region.some(seg => consumed.has(seg.index))) continue
       if (accept(region)) continue
+      // Hatches of one pattern spread over the drawing (AR-CONC in several
+      // rooms) form one region too large to bound; try each patch, once.
+      if (k < patchesFrom && region.length >= MIN_PATCH_REGION) {
+        const patches = spatialPatches(region, opts)
+        if (patches.length > 1) {
+          queue.push(...patches)
+          continue
+        }
+      }
       // Hatches of one colour that touch can end up in one region; peel
       // off one regular run of parallel lines at a time.
       let rest = region
@@ -626,6 +641,71 @@ function findRegions(segs: Seg[], opts: ResolvedOptions): Seg[][] {
     .filter(region => region.length >= opts.minSegments)
 }
 
+/** Smallest failed region worth splitting into patches. */
+const MIN_PATCH_REGION = 200
+/** Most grid cells a region is split with. */
+const MAX_PATCH_CELLS = 4_000_000
+
+/**
+ * Spatially separate patches of a region: strokes in the same or touching
+ * grid cells, one family spacing wide, belong together.
+ */
+function spatialPatches(region: Seg[], opts: ResolvedOptions): Seg[][] {
+  const families = measureFamilies(region, opts.tolerance)
+  const main = families[0]
+  if (!main) return []
+  // The spacing of the pattern's own families; sparse ones are line work.
+  const link = Math.max(
+    ...families
+      .filter(f => f.segs.length >= main.segs.length * 0.3)
+      .map(f => f.period)
+  )
+  if (!(link > 0)) return []
+  const box = segsBox(region)
+  const nx = Math.floor((box.maxX - box.minX) / link) + 1
+  const ny = Math.floor((box.maxY - box.minY) / link) + 1
+  if (nx * ny > MAX_PATCH_CELLS) return []
+  const cellOf = (p: PdfRecPoint) =>
+    Math.floor((p.x - box.minX) / link) * ny +
+    Math.floor((p.y - box.minY) / link)
+  // Every stroke joins the cells of its ends and midpoint; cells that hold
+  // strokes and touch join each other.
+  const first = new Map<number, number>()
+  const uf = new UnionFind(region.length)
+  region.forEach((seg, i) => {
+    for (const p of [seg.a, seg.b, midpoint(seg)]) {
+      const c = cellOf(p)
+      const j = first.get(c)
+      if (j === undefined) first.set(c, i)
+      else uf.union(i, j)
+    }
+  })
+  for (const [c, i] of first) {
+    const cx = Math.floor(c / ny)
+    const cy = c % ny
+    for (const [dx, dy] of [
+      [1, -1],
+      [1, 0],
+      [1, 1],
+      [0, 1]
+    ]) {
+      const x = cx + dx
+      const y = cy + dy
+      if (x >= nx || y < 0 || y >= ny) continue
+      const j = first.get(x * ny + y)
+      if (j !== undefined) uf.union(i, j)
+    }
+  }
+  const byRoot = new Map<number, Seg[]>()
+  region.forEach((seg, i) => {
+    const root = uf.find(i)
+    const list = byRoot.get(root)
+    if (list) list.push(seg)
+    else byRoot.set(root, [seg])
+  })
+  return [...byRoot.values()].filter(patch => patch.length >= opts.minSegments)
+}
+
 /** Most runs peeled off one mixed region. */
 const MAX_SPLITS = 4
 
@@ -865,6 +945,12 @@ interface PatternGroup {
   angle: number
   period: number
   residues: number
+  /**
+   * Every line of the group draws dots only. PDF writers keep dots as
+   * zero-length strokes the import drops, so such a group may have no
+   * measured family (AR-CONC, AR-SAND).
+   */
+  dotsOnly: boolean
 }
 
 interface PatternSignature {
@@ -905,9 +991,12 @@ function patternSignatures(
       signature.push({
         angle: group.angle,
         period,
-        residues: countResidues(offsets, period, period * 1e-3)
+        residues: countResidues(offsets, period, period * 1e-3),
+        dotsOnly: group.lines.every(l => isDotsOnly(l.dashes))
       })
     }
+    // A pattern of dots only leaves nothing to match.
+    if (signature.every(g => g.dotsOnly)) return
     out.push({
       pattern,
       order,
@@ -916,6 +1005,11 @@ function patternSignatures(
     })
   })
   return out
+}
+
+/** A dash list that draws dots only (zeros and gaps, no dash). */
+function isDotsOnly(dashes: readonly number[]): boolean {
+  return dashes.length > 0 && dashes.every(d => d <= 0)
 }
 
 function normalizeDirection(angle: number): number {
@@ -939,8 +1033,8 @@ interface Hypothesis {
   rotation: number
   scale: number
   lines: AcDbPatPattern['lines']
-  /** Measured family for each pattern line. */
-  families: MeasuredFamily[]
+  /** Measured family for each pattern line; none for dot-only lines. */
+  families: (MeasuredFamily | undefined)[]
   userDefined?: { double: boolean; spacing: number }
   /**
    * Measured custom pattern: its lines are already in drawing coordinates
@@ -960,11 +1054,13 @@ function matchPattern(
   extent: number
 ): Hypothesis[] {
   // Extra families are line work around the hatch (its boundary, other
-  // drawing lines); every pattern group still needs a family of its own.
-  if (sig.groups.length > families.length) return []
+  // drawing lines); every pattern group that draws dashes still needs a
+  // family of its own. Dot-only groups leave no strokes to measure.
+  const required = sig.groups.filter(g => !g.dotsOnly)
+  if (required.length > families.length) return []
   const anchor = families[0]
   const out: Hypothesis[] = []
-  for (const group of sig.groups) {
+  for (const group of required) {
     if (group.residues !== anchor.residues) continue
     const scale = anchor.period / group.period
     const base = anchor.theta - group.angle
@@ -973,7 +1069,7 @@ function matchPattern(
     for (const rotation of rotations) {
       const mapping = new Map<PatternGroup, MeasuredFamily>()
       let ok = true
-      for (const g of sig.groups) {
+      for (const g of required) {
         const family = families.find(
           f =>
             directionDelta(f.theta, g.angle + rotation) < ANGLE_GAP &&
@@ -998,7 +1094,8 @@ function matchPattern(
           const g = sig.groups.find(
             gr => directionDelta(gr.angle, angle) < 1e-4
           )!
-          return mapping.get(g)!
+          // Dot-only lines have no family (see PatternGroup.dotsOnly).
+          return mapping.get(g)
         })
       })
     }
@@ -1137,6 +1234,8 @@ interface LineFrame {
   period: number
   /** Start of each drawn dash within one period. */
   dashes: { start: number; length: number }[]
+  /** The line draws dots only. */
+  dotsOnly: boolean
 }
 
 function lineFrame(line: PdfHatchDefinitionLine): LineFrame {
@@ -1158,7 +1257,8 @@ function lineFrame(line: PdfHatchDefinitionLine): LineFrame {
     spacing,
     shiftPerLine: Math.abs(ly) > 1e-9 ? lx : 0,
     period: cursor,
-    dashes
+    dashes,
+    dotsOnly: isDotsOnly(line.dashLengths)
   }
 }
 
@@ -1175,6 +1275,8 @@ function onLine(
   const y = -frame.uy * dx + frame.ux * dy
   const k = Math.round(y / frame.spacing)
   if (Math.abs(y - k * frame.spacing) > tol) return false
+  // Dots are not strokes; a dot-only line never explains one.
+  if (frame.dotsOnly) return false
   if (frame.dashes.length === 0 || !(frame.period > 0)) return true
   const pos = x - k * frame.shiftPerLine
   const phase = ((pos % frame.period) + frame.period) % frame.period
@@ -1232,6 +1334,8 @@ function estimateTranslation(
   const fulls: PdfRecPoint[] = []
   lines0.forEach((line, i) => {
     const family = hyp.families[i]
+    // Dot-only lines left no strokes to place.
+    if (!family) return
     const frame = lineFrame(line)
     const nx = -frame.uy
     const ny = frame.ux
@@ -1310,6 +1414,45 @@ function estimateTranslation(
     if (score === 1) break
   }
   return best
+}
+
+/**
+ * Places every pattern line on its own family's strokes.
+ *
+ * One translation places all lines only when they share a lattice (ANSI
+ * and most patterns). Lines such as AR-CONC's each have their own spacing
+ * and stagger, so the strokes near the region fix each line separately.
+ * The hatch keeps explicit lines, so it draws the same either way. Dot-only
+ * lines left no strokes and follow the first placed line.
+ */
+function placeLinesSeparately(
+  hyp: Hypothesis,
+  region: Seg[],
+  tol: number
+): { lines: PdfHatchDefinitionLine[]; score: number } | undefined {
+  if (hyp.custom || hyp.userDefined || hyp.lines.length < 2) return undefined
+  const lines0 = definitionLines(hyp, { x: 0, y: 0 })
+  const shifts: (PdfRecPoint | undefined)[] = lines0.map((_, i) => {
+    const family = hyp.families[i]
+    if (!family) return undefined
+    const single: Hypothesis = {
+      ...hyp,
+      lines: [hyp.lines[i]],
+      families: [family]
+    }
+    return estimateTranslation(single, family.segs, tol)?.t
+  })
+  const fallback = shifts.find(t => t !== undefined)
+  if (!fallback) return undefined
+  const lines = lines0.map((line, i) => {
+    const t = shifts[i] ?? fallback
+    return { ...line, base: { x: line.base.x + t.x, y: line.base.y + t.y } }
+  })
+  const frames = lines.map(lineFrame)
+  const sample = sampleSegs(region, SCORE_SAMPLE)
+  if (sample.length === 0) return undefined
+  const hit = sample.filter(seg => segOnPattern(seg, lines, frames, tol))
+  return { lines, score: hit.length / sample.length }
 }
 
 // ---------------------------------------------------------------------------
@@ -1540,6 +1683,7 @@ function boundaryFromEnds(
   const index = lines.findIndex(line => line.dashLengths.length === 0)
   if (index < 0) return undefined
   const family = hyp.families[index]
+  if (!family) return undefined
   const theta = normalizeDirection(lines[index].angle)
   const rows = linesOf(family.segs, theta, tol)
   if (rows.length < 2) return undefined
@@ -1700,10 +1844,17 @@ function boundaryFromFaces(
   all: Seg[],
   lines: PdfHatchDefinitionLine[],
   context: RegionContext
-): Boundary | undefined {
+): Boundary[] | undefined {
   const tol = context.opts.tolerance
   const box = segsBox(region)
-  const pad = tol * 4
+  const frames = lines.map(lineFrame)
+  // The strokes of a sparse pattern (AR-CONC) can stop a whole repeat
+  // short of the boundary: reach one repeat past them.
+  let pad = tol * 4
+  for (const frame of frames) {
+    if (frame.dotsOnly) continue
+    pad = Math.max(pad, Math.abs(frame.spacing), frame.period)
+  }
   const query = {
     minX: box.minX - pad,
     minY: box.minY - pad,
@@ -1714,7 +1865,6 @@ function boundaryFromFaces(
   // Each item gives one segment or more: too much line work is refused
   // before anything is sampled.
   if (near.length - region.length > MAX_FACE_SEGMENTS) return undefined
-  const frames = lines.map(lineFrame)
   const strokes = new Set<number>()
   for (const seg of region) strokes.add(seg.index)
   const candidates = context.faces.segsOf(all)
@@ -1727,9 +1877,21 @@ function boundaryFromFaces(
   }
   edges.sort((p, q) => p - q)
   const arrangement = context.faces.arrangement(context, edges)
-  if (!arrangement) return undefined
-  const polygons = acapPdfFaceBoundaryIn(arrangement, region.map(midpoint))
-  return polygons ? polygonsToBoundary(polygons) : undefined
+  // Hatches of one pattern that touch are told apart by their strokes,
+  // which stop on the shared edge instead of crossing it.
+  const parts = arrangement
+    ? acapPdfFaceBoundaryParts(arrangement, region.map(midpoint), {
+        strokes: region.map(seg => [seg.a, seg.b] as const)
+      })
+    : undefined
+  context.opts.trace('faces', {
+    near: near.length,
+    strokes: strokes.size,
+    edges: edges.length,
+    arranged: !!arrangement,
+    parts: parts?.length ?? 0
+  })
+  return parts?.map(polygonsToBoundary)
 }
 
 function midpoint(seg: Seg): PdfRecPoint {
@@ -2058,6 +2220,7 @@ function verify(
     genCovered += Math.min(len, sourceIndex.coveredBest(genSpans[i]))
   })
   const precision = genCovered / genLength
+
   if (precision < opts.minPrecision) {
     opts.trace('verify', { precision })
     return undefined
@@ -2106,6 +2269,18 @@ interface RegionContext {
   faces: FaceCache
 }
 
+/** Fewest strokes of a part split off a recognized region. */
+const MIN_PART_SEGMENTS = 3
+
+/** A hatch found in one region, before layer and colour are attached. */
+type RegionHatch = Omit<
+  PdfRecognizedHatch,
+  'layerName' | 'color' | 'lineWidth'
+> & {
+  /** Fewest strokes it may keep once shared strokes are taken out. */
+  minSegments?: number
+}
+
 /** Library hypotheses tried with a boundary, best score first. */
 const MAX_VERIFIED = 8
 
@@ -2113,7 +2288,7 @@ function recognizeRegion(
   region: Seg[],
   all: Seg[],
   context: RegionContext
-): Omit<PdfRecognizedHatch, 'layerName' | 'color' | 'lineWidth'> | undefined {
+): RegionHatch[] {
   const { opts } = context
   const tol = opts.tolerance
   const families = measureFamilies(region, tol)
@@ -2127,8 +2302,8 @@ function recognizeRegion(
       segments: f.segs.length
     }))
   })
-  if (families.length === 0) return undefined
-  if (families[0].offsets.length < opts.minLines) return undefined
+  if (families.length === 0) return []
+  if (families[0].offsets.length < opts.minLines) return []
 
   const regionBox = segsBox(region)
   const extent = Math.hypot(
@@ -2146,11 +2321,20 @@ function recognizeRegion(
     t: PdfRecPoint
     score: number
     segs: Seg[]
+    /** Lines placed one by one (see placeLinesSeparately). */
+    lines?: PdfHatchDefinitionLine[]
   }[] = []
   for (const hyp of hypotheses) {
     const segs = hypothesisSegs(hyp)
     const best = estimateTranslation(hyp, segs, tol)
-    if (best && best.score >= MIN_SCORE) scored.push({ hyp, segs, ...best })
+    if (best && best.score >= MIN_SCORE) {
+      scored.push({ hyp, segs, ...best })
+      continue
+    }
+    const placed = placeLinesSeparately(hyp, segs, tol)
+    if (placed && placed.score >= MIN_SCORE) {
+      scored.push({ hyp, segs, t: { x: 0, y: 0 }, ...placed })
+    }
   }
   // Best score first; then the pattern that explains most of the region
   // (a cross-hatch over one of its families), the pattern drawn closest to
@@ -2192,8 +2376,9 @@ function recognizeRegion(
     }))
   })
 
-  for (const { hyp, t, segs } of tries) {
-    const lines = definitionLines(hyp, t)
+  for (const entry of tries) {
+    const { hyp, t, segs } = entry
+    const lines = entry.lines ?? definitionLines(hyp, t)
     const boundaries = [
       () => boundaryFromGiven(segs, opts.boundaries),
       () => boundaryFromShapes(segs, context.closedShapes, tol),
@@ -2205,24 +2390,70 @@ function recognizeRegion(
           : undefined
     ]
     for (const [source, make] of boundaries.entries()) {
-      const boundary = make()
+      const made = make()
       opts.trace('boundary', {
         name: hyp.name ?? (hyp.custom ? 'CUSTOM' : 'USER'),
         source: BOUNDARY_SOURCES[source],
-        found: !!boundary
+        found: !!made
       })
-      if (!boundary) continue
-      const verified = verify(lines, boundary, segs, all, opts)
-      if (!verified) continue
-      return {
-        boundary: boundary.shapes,
-        pattern: hatchPattern(hyp),
-        definitionLines: lines,
-        items: verified.matched
+      if (!made) continue
+      const parts = Array.isArray(made) ? made : [made]
+      const found: RegionHatch[] = []
+      for (const boundary of parts) {
+        // A part holds the strokes inside its own outline.
+        const own =
+          parts.length > 1 ? segsInside(segs, boundary.polygons) : segs
+        // A piece split off a recognized region may be small (a corner
+        // square); the region as a whole already showed the pattern.
+        const minimum = parts.length > 1 ? MIN_PART_SEGMENTS : opts.minSegments
+        if (own.length < minimum) continue
+        const verified = verify(lines, boundary, own, all, opts)
+        if (!verified) continue
+        found.push({
+          boundary: boundary.shapes,
+          pattern: hatchPattern(hyp),
+          definitionLines: lines,
+          items: verified.matched,
+          minSegments: minimum
+        })
       }
+      if (parts.length > 1 && found.length < parts.length) {
+        // Some part did not verify on its own (a split where the strokes
+        // only paused): the whole may still be one hatch.
+        const whole: Boundary = {
+          shapes: parts.flatMap(part => part.shapes),
+          polygons: parts.flatMap(part => part.polygons)
+        }
+        const verified = verify(lines, whole, segs, all, opts)
+        const split = found.reduce((sum, hatch) => sum + hatch.items.length, 0)
+        if (verified && verified.matched.length > split) {
+          return [
+            {
+              boundary: whole.shapes,
+              pattern: hatchPattern(hyp),
+              definitionLines: lines,
+              items: verified.matched
+            }
+          ]
+        }
+      }
+      if (found.length > 0) return found
     }
   }
-  return undefined
+  return []
+}
+
+/** Segments whose midpoint lies inside `polygons` (even-odd). */
+function segsInside(segs: Seg[], polygons: PdfRecPoint[][]): Seg[] {
+  const boxes = polygons.map(pointsBox)
+  return segs.filter(seg => {
+    const m = midpoint(seg)
+    let inside = false
+    polygons.forEach((polygon, i) => {
+      if (inBox(m, boxes[i]) && pointInPolygon(m, polygon)) inside = !inside
+    })
+    return inside
+  })
 }
 
 function hatchPattern(hyp: Hypothesis): PdfRecognizedHatchPattern {
@@ -2249,7 +2480,9 @@ export const CUSTOM_PATTERN_NAME = 'PDF_HATCH'
 /** The segments of the families a hypothesis explains. */
 function hypothesisSegs(hyp: Hypothesis): Seg[] {
   const out: Seg[] = []
-  for (const family of new Set(hyp.families)) out.push(...family.segs)
+  for (const family of new Set(hyp.families)) {
+    if (family) out.push(...family.segs)
+  }
   return out
 }
 

@@ -2,6 +2,7 @@ import {
   acapPdfFaceArrangement,
   acapPdfFaceBoundary,
   acapPdfFaceBoundaryIn,
+  acapPdfFaceBoundaryParts,
   acapPdfShapePolyline
 } from '../src/recognition/pdfHatchFaces'
 
@@ -154,5 +155,81 @@ describe('acapPdfShapePolyline', () => {
     })
     expect(loops).toHaveLength(1)
     expect(Math.abs(area(loops![0]))).toBeCloseTo(0.25, 6)
+  })
+})
+
+describe('acapPdfFaceBoundaryParts', () => {
+  const tol = 0.01
+  /** 45° strokes every `step`, clipped to the x/y ranges. */
+  function strokes(
+    x0: number,
+    x1: number,
+    y0: number,
+    y1: number,
+    step = 0.5
+  ): (readonly [Point, Point])[] {
+    const out: (readonly [Point, Point])[] = []
+    for (let c = x0 - y1; c <= x1 - y0; c += step) {
+      // Line y = x - c, clipped to the box.
+      const a = { x: Math.max(x0, y0 + c), y: Math.max(x0, y0 + c) - c }
+      const b = { x: Math.min(x1, y1 + c), y: Math.min(x1, y1 + c) - c }
+      if (b.x - a.x > 0.05) out.push([a, b])
+    }
+    return out
+  }
+  const mid = ([a, b]: readonly [Point, Point]) => ({
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2
+  })
+  const square = (x0: number, y0: number, x1: number, y1: number) => [
+    line(x0, y0, x1, y0),
+    line(x1, y0, x1, y1),
+    line(x1, y1, x0, y1),
+    line(x0, y1, x0, y0)
+  ]
+
+  test('splits hatches clipped on a shared, bent edge', () => {
+    // An L-shaped hatch and the square in its corner, each clipped to its
+    // own outline.
+    const edges = [
+      line(0, 0, 20, 0),
+      line(20, 0, 20, 20),
+      line(20, 20, 0, 20),
+      line(0, 20, 0, 0),
+      line(10, 10, 20, 10),
+      line(10, 10, 10, 20)
+    ]
+    const l = [...strokes(0, 20, 0, 10), ...strokes(0, 10, 10, 20)]
+    const corner = strokes(10, 20, 10, 20)
+    const all = [...l, ...corner]
+    const arrangement = acapPdfFaceArrangement(edges, { tolerance: tol })!
+    const parts = acapPdfFaceBoundaryParts(arrangement, all.map(mid), {
+      strokes: all
+    })
+    expect(parts).toHaveLength(2)
+  })
+
+  test('keeps one hatch across an axis drawn over it', () => {
+    const edges = [...square(0, 0, 20, 10), line(-5, 5, 25, 5)]
+    // One hatch: the strokes run across the axis.
+    const all = strokes(0, 20, 0, 10)
+    const arrangement = acapPdfFaceArrangement(edges, { tolerance: tol })!
+    const parts = acapPdfFaceBoundaryParts(arrangement, all.map(mid), {
+      strokes: all
+    })
+    expect(parts).toHaveLength(1)
+    expect(Math.abs(area(parts![0][0]))).toBeCloseTo(200, 6)
+  })
+
+  test('keeps one hatch whose loops are clipped at an axis', () => {
+    // The hatch was drawn as two loops meeting at the axis, so the strokes
+    // stop there from both sides; the axis is one straight line.
+    const edges = [...square(0, 0, 20, 10), line(-5, 5, 25, 5)]
+    const all = [...strokes(0, 20, 0, 5), ...strokes(0, 20, 5, 10)]
+    const arrangement = acapPdfFaceArrangement(edges, { tolerance: tol })!
+    const parts = acapPdfFaceBoundaryParts(arrangement, all.map(mid), {
+      strokes: all
+    })
+    expect(parts).toHaveLength(1)
   })
 })

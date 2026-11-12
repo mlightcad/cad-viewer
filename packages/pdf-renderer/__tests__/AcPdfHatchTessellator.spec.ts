@@ -98,3 +98,25 @@ describe('tessellateHatchPattern dash phase', () => {
     starts.forEach((x, i) => expect(x).toBeCloseTo(i + 1))
   })
 })
+
+describe('tessellateHatchPattern offset direction', () => {
+  // AR-CONC and mirrored hatches carry offsets pointing to the right of the
+  // line direction (negative spacing in line space); every family must
+  // still be drawn.
+  const line = (offsetSign: 1 | -1) => ({
+    angle: (50 * Math.PI) / 180,
+    base: { x: 0, y: 0 },
+    offset: {
+      x: offsetSign * -Math.sin((50 * Math.PI) / 180) * 2,
+      y: offsetSign * Math.cos((50 * Math.PI) / 180) * 2
+    },
+    dashLengths: []
+  })
+
+  it('draws the same lines whichever side the offset points to', () => {
+    const positive = tessellateHatchPattern(square, [line(1)], 0)
+    const negative = tessellateHatchPattern(square, [line(-1)], 0)
+    expect(positive.length).toBeGreaterThan(3)
+    expect(negative).toHaveLength(positive.length)
+  })
+})
