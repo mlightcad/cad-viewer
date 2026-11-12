@@ -14,7 +14,8 @@ import {
   type AcApFindDatabaseLike,
   type AcApFindHit,
   type AcApFindOptions,
-  acapFindTextInLayout
+  acapFindTextInLayout,
+  acapResolveFindBlockTableRecord
 } from './findText'
 
 /**
@@ -169,7 +170,7 @@ export function acapFindHitBox(
   layoutBtrId: string,
   hit: AcApFindHit
 ): AcApFindBox {
-  const btr = db.tables.blockTable.getIdAt(layoutBtrId)
+  const btr = acapResolveFindBlockTableRecord(db, layoutBtrId)
   const owner = btr?.getIdAt?.(hit.entityId) as
     | (WithExtents & {
         attributeIterator?: () => Iterable<WithExtents & { objectId: string }>

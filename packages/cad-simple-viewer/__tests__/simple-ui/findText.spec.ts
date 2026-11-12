@@ -1,9 +1,11 @@
 import {
   ACUI_FIND_MAX_RESULTS,
   acuiFindExcerpt,
+  acuiFindText,
   acuiFindTextInLayout,
   acuiMTextToPlainText,
-  acuiNormalizeFindText
+  acuiNormalizeFindText,
+  acuiResolveFindBlockTableRecord
 } from '../../src/find'
 
 type Ent = Record<string, unknown>
@@ -63,6 +65,39 @@ function db(
           id === 'layout' ? { newIterator: () => entities } : undefined
       },
       layerTable: { getAt: (name: string) => layers[name] }
+    }
+  }
+}
+
+/**
+ * Mimics real DWGs where `getIdAt(modelSpaceId)` fails because the BTR's
+ * `ownerId` still points at a displaced block-table handle, while the record
+ * remains reachable via `modelSpace` / `newIterator`.
+ */
+function dbWithStaleOwnerId(entities: Ent[]) {
+  const modelSpace = {
+    objectId: '18',
+    newIterator: () => entities[Symbol.iterator]()
+  }
+  return {
+    tables: {
+      blockTable: {
+        getIdAt: (_id: string) => undefined,
+        modelSpace,
+        newIterator: () => [modelSpace][Symbol.iterator]()
+      },
+      layerTable: { getAt: () => ({}) }
+    },
+    objects: {
+      layout: {
+        newIterator: () => [
+          {
+            layoutName: 'Model',
+            blockTableRecordId: '18',
+            tabOrder: 0
+          }
+        ]
+      }
     }
   }
 }
@@ -198,5 +233,30 @@ describe('acuiFindExcerpt', () => {
     expect(excerpt).toContain('ALVO')
     expect(excerpt.startsWith('…')).toBe(true)
     expect(excerpt.endsWith('…')).toBe(true)
+  })
+})
+
+describe('acuiResolveFindBlockTableRecord', () => {
+  it('falls back to modelSpace when getIdAt rejects a stale ownerId', () => {
+    const database = dbWithStaleOwnerId([text('t1', 'Sala Técnica')])
+    expect(database.tables.blockTable.getIdAt('18')).toBeUndefined()
+    expect(acuiResolveFindBlockTableRecord(database, '18')).toBe(
+      database.tables.blockTable.modelSpace
+    )
+  })
+
+  it('still finds text in model space when getIdAt fails for the layout BTR', () => {
+    const database = dbWithStaleOwnerId([
+      text('t1', 'Sala Técnica'),
+      mtext('m1', 'Alçado Norte')
+    ])
+    expect(
+      acuiFindTextInLayout(database, '18', 'tecnica').hits.map(h => h.text)
+    ).toEqual(['Sala Técnica'])
+    expect(
+      acuiFindText(database, 'sala', { currentLayoutId: '18' }).hits.map(
+        h => h.text
+      )
+    ).toEqual(['Sala Técnica'])
   })
 })

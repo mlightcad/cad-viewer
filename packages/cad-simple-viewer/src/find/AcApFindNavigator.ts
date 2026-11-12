@@ -6,6 +6,7 @@ import {
 
 import type { AcApDocManager } from '../app/AcApDocManager'
 import { acapFindHitBox, type AcApFindLayoutHit } from './findDrawing'
+import { acapResolveFindBlockTableRecord } from './findText'
 
 /** Options for {@link acapNavigateToFindHit}. */
 export interface AcApFindNavigateOptions {
@@ -165,7 +166,9 @@ export async function acapNavigateToFindHit(
 
   if (view.activeLayoutBtrId !== hit.layoutId) {
     if (options.activateLayout === false) return 'layout-mismatch'
-    if (!db.tables.blockTable.getIdAt(hit.layoutId)) return 'layout-missing'
+    if (!acapResolveFindBlockTableRecord(db, hit.layoutId)) {
+      return 'layout-missing'
+    }
 
     if (!view.isLayoutInitialized(hit.layoutId)) {
       // We frame the layout ourselves; keep its first-visit auto zoom from
