@@ -201,5 +201,21 @@ export default {
     selectFile: 'اختيار ملف',
     signInRequired: 'سجّل الدخول أولاً لاختيار ملف.',
     downloading: 'جارٍ تنزيل الملف ...'
+  },
+  dockPanel: {
+    close: 'إغلاق اللوحة',
+    dockSide: 'جهة الإرساء',
+    dockTop: 'إرساء بالأعلى',
+    dockBottom: 'إرساء بالأسفل',
+    dockLeft: 'إرساء باليسار',
+    dockRight: 'إرساء باليمين',
+    moreTabs: 'المزيد من علامات التبويب',
+    resize: 'تغيير حجم اللوحة',
+    tab: {
+      layers: 'الطبقات',
+      review: 'المراجعة',
+      find: 'بحث',
+      measurements: 'القياسات'
+    }
   }
 }

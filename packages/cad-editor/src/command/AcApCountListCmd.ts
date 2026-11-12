@@ -1,6 +1,9 @@
-import { AcApContext, AcEdCommand } from '@mlightcad/cad-simple-viewer'
-
-import { store } from '../app'
+import {
+  ACAP_PALETTE_NAMED_TAB,
+  AcApContext,
+  AcApPaletteService,
+  AcEdCommand
+} from '@mlightcad/cad-simple-viewer'
 
 /**
  * Opens the Count palette (AutoCAD-style COUNTLIST).
@@ -11,7 +14,6 @@ import { store } from '../app'
  */
 export class AcApCountListCmd extends AcEdCommand {
   async execute(_context: AcApContext) {
-    store.dialogs.activePaletteTab = 'countList'
-    store.dialogs.layerManager = true
+    AcApPaletteService.openNamedTab(ACAP_PALETTE_NAMED_TAB.countList)
   }
 }

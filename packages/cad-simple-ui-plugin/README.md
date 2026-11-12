@@ -113,6 +113,8 @@ The built-in theme toggle button updates `COLORTHEME` when a document is open, o
 
 ### Layer manager (dock panel)
 
+Dock panel **chrome** (`AcUiDockPanel`) is provided by `@mlightcad/cad-simple-viewer`. This plugin mounts tab content (layers, find, review, measurements) into that chrome and registers an `AcApPaletteHost` so `AcApPaletteService` / `openNamedTab` use the dock (while `cad-editor` uses its Vue tool palette instead).
+
 The layer list is enabled automatically when the resolved toolbar includes a layer button (`id: 'layer'` or `{ preset: 'layer' }`). Layers always render as a tab in the dock panel.
 
 ```typescript

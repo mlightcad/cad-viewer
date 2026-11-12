@@ -202,5 +202,21 @@ export default {
     selectFile: 'Dosya seç',
     signInRequired: 'Dosya seçmek için önce oturum açın.',
     downloading: 'Dosya indiriliyor ...'
+  },
+  dockPanel: {
+    close: 'Paneli kapat',
+    dockSide: 'Yerleşim kenarı',
+    dockTop: 'Üste yerleştir',
+    dockBottom: 'Alta yerleştir',
+    dockLeft: 'Sola yerleştir',
+    dockRight: 'Sağa yerleştir',
+    moreTabs: 'Diğer sekmeler',
+    resize: 'Panel boyutunu ayarla',
+    tab: {
+      layers: 'Katmanlar',
+      review: 'İnceleme',
+      find: 'Bul',
+      measurements: 'Ölçümler'
+    }
   }
 }

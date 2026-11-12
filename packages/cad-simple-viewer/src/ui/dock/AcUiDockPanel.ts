@@ -1,8 +1,7 @@
 import {
   acedIsMobileUiLayout,
   ML_UI_MOBILE_MEDIA_QUERY
-} from '@mlightcad/cad-simple-viewer'
-
+} from '../../editor/global/AcEdUiLayout'
 import {
   createIconElement,
   ICON_CHEVRON_DOWN,
@@ -12,10 +11,20 @@ import {
   ICON_PLACEMENT_LEFT,
   ICON_PLACEMENT_RIGHT,
   ICON_PLACEMENT_TOP
-} from '../assets/icons'
-import type { AcUiDockPanelSide } from '../config/types'
-import type { AcUiI18n } from '../i18n'
-import { acuiEnsureUiStyles } from './styles'
+} from '../icons'
+import {
+  acuiEnsureDockPanelStyles,
+  acuiRemoveDockPanelStylesIfUnused
+} from './acuiDockPanelStyles'
+
+/** Dock panel edge placement relative to the viewer host element. */
+export type AcUiDockPanelSide = 'top' | 'bottom' | 'left' | 'right'
+
+/**
+ * Translates dock chrome and tab labels. Callers typically pass
+ * `key => AcApI18n.t(key)` so plugin tests can mock the package export.
+ */
+export type AcUiDockPanelTranslate = (key: string) => string
 
 const DOCK_MIN_SIZE = 120
 const DOCK_MAX_SIZE_RATIO = 0.75
@@ -25,7 +34,10 @@ const DOCK_TAB_OVERFLOW_BTN_WIDTH = 28
 export interface AcUiDockPanelTab {
   /** Stable tab identifier. */
   id: string
-  /** i18n key under the `simpleUi` namespace. */
+  /**
+   * Full i18n message key for the tab label
+   * (for example `main.dockPanel.tab.layers`).
+   */
   labelKey?: string
   /** Plain label when no i18n key is provided. */
   label?: string
@@ -37,8 +49,11 @@ export interface AcUiDockPanelTab {
 export interface AcUiDockPanelOptions {
   /** Viewer host element; dock panel is appended as a direct child. */
   host: HTMLElement
-  /** i18n helper for labels. */
-  i18n: AcUiI18n
+  /**
+   * Translates full message keys (chrome under `main.dockPanel.*` and tab
+   * {@link AcUiDockPanelTab.labelKey} values). Defaults to returning the key.
+   */
+  t?: AcUiDockPanelTranslate
   /** Initial dock side. @default 'left' */
   defaultSide?: AcUiDockPanelSide
   /** Whether the panel starts open. @default false */
@@ -65,7 +80,7 @@ interface DockTabRecord {
  */
 export class AcUiDockPanel {
   private host: HTMLElement
-  private readonly i18n: AcUiI18n
+  private readonly translate: AcUiDockPanelTranslate
   private readonly root: HTMLDivElement
   private readonly contentEl: HTMLDivElement
   private readonly tabsWrap: HTMLDivElement
@@ -175,7 +190,7 @@ export class AcUiDockPanel {
    */
   constructor(options: AcUiDockPanelOptions) {
     this.host = options.host
-    this.i18n = options.i18n
+    this.translate = options.t ?? (key => key)
     this.side = options.defaultSide ?? 'left'
     this.isPanelOpen = options.defaultOpen ?? false
     this.defaultHeight = options.defaultHeight ?? 240
@@ -186,7 +201,7 @@ export class AcUiDockPanel {
         ? this.defaultHeight
         : this.defaultWidth
 
-    acuiEnsureUiStyles()
+    acuiEnsureDockPanelStyles()
     this.ensureHostLayout()
 
     this.root = document.createElement('div')
@@ -219,10 +234,10 @@ export class AcUiDockPanel {
     this.overflowButton.className = 'ml-ex-ui-dock-tab-overflow-btn'
     this.overflowButton.hidden = true
     this.overflowButton.textContent = '»'
-    this.overflowButton.title = this.i18n.t('dockPanel.moreTabs')
+    this.overflowButton.title = this.t('moreTabs')
     this.overflowButton.setAttribute(
       'aria-label',
-      this.i18n.t('dockPanel.moreTabs')
+      this.t('moreTabs')
     )
     this.overflowButton.addEventListener('click', event => {
       event.stopPropagation()
@@ -243,10 +258,10 @@ export class AcUiDockPanel {
     this.sideMenuButton = document.createElement('button')
     this.sideMenuButton.type = 'button'
     this.sideMenuButton.className = 'ml-ex-ui-dock-action-btn'
-    this.sideMenuButton.title = this.i18n.t('dockPanel.dockSide')
+    this.sideMenuButton.title = this.t('dockSide')
     this.sideMenuButton.setAttribute(
       'aria-label',
-      this.i18n.t('dockPanel.dockSide')
+      this.t('dockSide')
     )
     this.sideMenuButton.appendChild(createIconElement(ICON_DOCK_SIDE_MENU))
     this.sideMenuButton.addEventListener('click', event => {
@@ -257,8 +272,8 @@ export class AcUiDockPanel {
     this.closeButton = document.createElement('button')
     this.closeButton.type = 'button'
     this.closeButton.className = 'ml-ex-ui-dock-action-btn'
-    this.closeButton.title = this.i18n.t('dockPanel.close')
-    this.closeButton.setAttribute('aria-label', this.i18n.t('dockPanel.close'))
+    this.closeButton.title = this.t('close')
+    this.closeButton.setAttribute('aria-label', this.t('close'))
     this.closeButton.appendChild(createIconElement(ICON_DOCK_CLOSE))
     this.closeButton.addEventListener('click', () => this.close())
 
@@ -281,17 +296,17 @@ export class AcUiDockPanel {
     this.sheetGrabber.className = 'ml-ex-ui-dock-sheet-grabber'
     this.sheetGrabber.setAttribute('role', 'separator')
     this.sheetGrabber.setAttribute('aria-orientation', 'horizontal')
-    this.sheetGrabber.title = this.i18n.t('dockPanel.resize')
-    this.sheetGrabber.setAttribute('aria-label', this.i18n.t('dockPanel.resize'))
+    this.sheetGrabber.title = this.t('resize')
+    this.sheetGrabber.setAttribute('aria-label', this.t('resize'))
     this.sheetGrabber.addEventListener('pointerdown', this.handleResizePointerDown)
 
     this.sheetCloseButton = document.createElement('button')
     this.sheetCloseButton.type = 'button'
     this.sheetCloseButton.className = 'ml-ex-ui-dock-sheet-close'
-    this.sheetCloseButton.title = this.i18n.t('dockPanel.close')
+    this.sheetCloseButton.title = this.t('close')
     this.sheetCloseButton.setAttribute(
       'aria-label',
-      this.i18n.t('dockPanel.close')
+      this.t('close')
     )
     this.sheetCloseButton.appendChild(createIconElement(ICON_CHEVRON_DOWN))
     this.sheetCloseButton.addEventListener('click', () => this.close())
@@ -560,24 +575,24 @@ export class AcUiDockPanel {
     for (const tab of this.tabs.values()) {
       tab.tabButton.textContent = this.getTabLabel(tab)
     }
-    this.sideMenuButton.title = this.i18n.t('dockPanel.dockSide')
+    this.sideMenuButton.title = this.t('dockSide')
     this.sideMenuButton.setAttribute(
       'aria-label',
-      this.i18n.t('dockPanel.dockSide')
+      this.t('dockSide')
     )
-    this.closeButton.title = this.i18n.t('dockPanel.close')
-    this.closeButton.setAttribute('aria-label', this.i18n.t('dockPanel.close'))
-    this.overflowButton.title = this.i18n.t('dockPanel.moreTabs')
+    this.closeButton.title = this.t('close')
+    this.closeButton.setAttribute('aria-label', this.t('close'))
+    this.overflowButton.title = this.t('moreTabs')
     this.overflowButton.setAttribute(
       'aria-label',
-      this.i18n.t('dockPanel.moreTabs')
+      this.t('moreTabs')
     )
-    this.sheetGrabber.title = this.i18n.t('dockPanel.resize')
-    this.sheetGrabber.setAttribute('aria-label', this.i18n.t('dockPanel.resize'))
-    this.sheetCloseButton.title = this.i18n.t('dockPanel.close')
+    this.sheetGrabber.title = this.t('resize')
+    this.sheetGrabber.setAttribute('aria-label', this.t('resize'))
+    this.sheetCloseButton.title = this.t('close')
     this.sheetCloseButton.setAttribute(
       'aria-label',
-      this.i18n.t('dockPanel.close')
+      this.t('close')
     )
     if (this.sideMenuRoot) {
       this.renderSideMenuItems()
@@ -610,6 +625,7 @@ export class AcUiDockPanel {
     this.releaseDockMainWrapper()
     this.clearHostLayoutClasses()
     this.root.remove()
+    acuiRemoveDockPanelStylesIfUnused()
   }
 
   private openPanel(tabId: string) {
@@ -843,20 +859,20 @@ export class AcUiDockPanel {
       labelKey: string
       icon: string
     }> = [
-      { side: 'top', labelKey: 'dockPanel.dockTop', icon: ICON_PLACEMENT_TOP },
+      { side: 'top', labelKey: 'dockTop', icon: ICON_PLACEMENT_TOP },
       {
         side: 'bottom',
-        labelKey: 'dockPanel.dockBottom',
+        labelKey: 'dockBottom',
         icon: ICON_PLACEMENT_BOTTOM
       },
       {
         side: 'left',
-        labelKey: 'dockPanel.dockLeft',
+        labelKey: 'dockLeft',
         icon: ICON_PLACEMENT_LEFT
       },
       {
         side: 'right',
-        labelKey: 'dockPanel.dockRight',
+        labelKey: 'dockRight',
         icon: ICON_PLACEMENT_RIGHT
       }
     ]
@@ -871,7 +887,7 @@ export class AcUiDockPanel {
       }
       button.appendChild(createIconElement(entry.icon))
       const label = document.createElement('span')
-      label.textContent = this.i18n.t(entry.labelKey)
+      label.textContent = this.t(entry.labelKey)
       button.appendChild(label)
       button.addEventListener('click', event => {
         event.stopPropagation()
@@ -1004,8 +1020,13 @@ export class AcUiDockPanel {
 
   private getTabLabel(tab: Pick<DockTabRecord, 'labelKey' | 'label'>) {
     if (tab.label) return tab.label
-    if (tab.labelKey) return this.i18n.t(tab.labelKey)
+    if (tab.labelKey) return this.translate(tab.labelKey)
     return ''
+  }
+
+  /** Translates a chrome string under `main.dockPanel.*`. */
+  private t(key: string): string {
+    return this.translate(`main.dockPanel.${key}`)
   }
 
   private toggleOverflowMenu() {

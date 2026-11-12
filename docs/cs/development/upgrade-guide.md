@@ -6,6 +6,17 @@ title: "Upgrade cad-simple-viewer a cad-editor"
 
 Tato příručka vysvětluje, jak bezpečně upgradovat `@mlightcad/cad-simple-viewer` a `@mlightcad/cad-editor` — proč je nelze navyšovat izolovaně, které související balíčky se musí posunout společně a jaké existují dva spolehlivé způsoby, jak pro dané vydání určit správnou kompatibilní sadu verzí.
 
+::: info Chrome dokovacího panelu se přesouvá do `cad-simple-viewer`
+Od vydání s touto změnou je plain-DOM **chrome dokovacího panelu** (`AcUiDockPanel`) v **`@mlightcad/cad-simple-viewer`**, nikoli v `@mlightcad/cad-simple-ui-plugin`. Plugin stále vlastní obsah karet a registruje `AcApPaletteHost`.
+
+Migrace:
+
+- Importujte `AcUiDockPanel` z `@mlightcad/cad-simple-viewer` (plugin ještě jeden release re-exportuje třídu/typy).
+- i18n klíče `simpleUi.dockPanel.*` → **`main.dockPanel.*`**.
+- Bez hostitele `AcApPaletteService.open` používá `AcUiDockPanel` místo `.ml-palette-fallback`.
+- Pojmenované karty: `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB` — **vyžadují registrovaného hostitele** (bez dock fallbacku).
+:::
+
 ::: info Sdílené nastavení modelu AI (`@mlightcad/cad-llm-plugin`)
 Od vydání, které obsahuje tuto změnu, se nastavení poskytovatelů LLM přesouvá z `@mlightcad/cad-agent-plugin` do nového balíčku **`@mlightcad/cad-llm-plugin`**, takže CAD agent i rozpoznávání textu `pdftext` (OCR) sdílejí jednu konfiguraci. Nový balíček přidává příkaz **LLMSETTINGS** a dialog nastavení nezávislý na UI frameworku (dostupný i na kartě AI pásu karet v `@mlightcad/cad-editor`) a `@mlightcad/cad-simple-viewer` přidává `AcApLlmSettingsService`, přes který může jakákoli funkce dialog otevřít nebo zjistit, zda je nakonfigurován model s podporou obrázků.
 

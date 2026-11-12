@@ -1,3 +1,8 @@
+import {
+  ACAP_PALETTE_NAMED_TAB,
+  AcApPaletteService
+} from '@mlightcad/cad-simple-viewer'
+
 import { store } from '../app/store'
 import { useMissedData } from './useMissedData'
 
@@ -32,7 +37,6 @@ export function resolveMissingResourceTab(
 export function openMissingResourcesPalette(
   preferred?: MissingResourceTab | 'image'
 ) {
-  store.dialogs.activePaletteTab = 'missingResources'
   store.dialogs.activeMissingResourceTab = resolveMissingResourceTab(preferred)
-  store.dialogs.layerManager = true
+  AcApPaletteService.openNamedTab(ACAP_PALETTE_NAMED_TAB.missingResources)
 }

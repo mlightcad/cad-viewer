@@ -202,5 +202,21 @@ export default {
     selectFile: 'Vybrat soubor',
     signInRequired: 'Nejprve se přihlaste a pak vyberte soubor.',
     downloading: 'Stahuji soubor ...'
+  },
+  dockPanel: {
+    close: 'Zavřít panel',
+    dockSide: 'Strana ukotvení',
+    dockTop: 'Ukotvit nahoře',
+    dockBottom: 'Ukotvit dole',
+    dockLeft: 'Ukotvit vlevo',
+    dockRight: 'Ukotvit vpravo',
+    moreTabs: 'Další karty',
+    resize: 'Změnit velikost panelu',
+    tab: {
+      layers: 'Hladiny',
+      review: 'Kontrola',
+      find: 'Hledat',
+      measurements: 'Měření'
+    }
   }
 }

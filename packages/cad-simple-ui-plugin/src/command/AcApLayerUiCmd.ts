@@ -1,10 +1,9 @@
 import {
   AcApContext,
   AcEdCommand,
+  type AcUiDockPanel,
   eventBus
 } from '@mlightcad/cad-simple-viewer'
-
-import type { AcUiDockPanel } from '../ui/AcUiDockPanel'
 
 /** Shared interface for layer UI controllers. */
 export interface AcUiLayerUiController {

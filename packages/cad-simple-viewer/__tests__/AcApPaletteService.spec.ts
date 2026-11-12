@@ -7,6 +7,30 @@ import {
   AcApPaletteService
 } from '../src/app/AcApPaletteService'
 
+class ResizeObserverMock {
+  observe() {}
+  disconnect() {}
+  unobserve() {}
+}
+
+beforeAll(() => {
+  global.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver
+})
+
+jest.mock('../src/i18n/AcApI18n', () => ({
+  AcApI18n: {
+    t: (key: string) => key,
+    mergeLocaleMessage: jest.fn(),
+    events: {
+      localeChanged: {
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }
+    },
+    currentLocale: 'en'
+  }
+}))
+
 function content(id = 'demo') {
   const element = document.createElement('div')
   element.textContent = 'panel'
@@ -14,7 +38,11 @@ function content(id = 'demo') {
 }
 
 describe('AcApPaletteService', () => {
-  afterEach(() => AcApPaletteService.setHost(undefined))
+  afterEach(() => {
+    AcApPaletteService.setHost(undefined)
+    document.body.replaceChildren()
+    document.getElementById('ml-ui-dock-panel-styles')?.remove()
+  })
 
   it('docks the panel in the container when no host is registered', () => {
     const container = document.createElement('div')
@@ -22,19 +50,19 @@ describe('AcApPaletteService', () => {
     const panel = content()
     const handle = AcApPaletteService.open(panel, { container })
 
-    const root = container.querySelector('.ml-palette-fallback')
+    const root = container.querySelector('.ml-ex-ui-dock-panel')
     expect(root).not.toBeNull()
     expect(root?.contains(panel.element)).toBe(true)
+    expect(root?.getAttribute('data-open')).toBe('true')
 
     const closed = jest.fn()
     handle.onClosed(closed)
-    // The × button closes the panel as the user.
     root
-      ?.querySelector<HTMLButtonElement>('.ml-palette-fallback__close')
+      ?.querySelector<HTMLButtonElement>('.ml-ex-ui-dock-action-btn:last-child')
       ?.click()
     expect(closed).toHaveBeenCalledTimes(1)
     expect(handle.closed).toBe(true)
-    expect(container.querySelector('.ml-palette-fallback')).toBeNull()
+    expect(container.querySelector('.ml-ex-ui-dock-panel')).toBeNull()
     container.remove()
   })
 
@@ -63,13 +91,28 @@ describe('AcApPaletteService', () => {
     expect(hostClose).toHaveBeenCalledTimes(1)
   })
 
-  it('falls back to the built-in panel when the host declines', () => {
+  it('falls back to the built-in dock when the host declines', () => {
     AcApPaletteService.setHost({ show: () => undefined })
     const container = document.createElement('div')
+    document.body.append(container)
     const handle = AcApPaletteService.open(content(), { container })
-    expect(container.querySelector('.ml-palette-fallback')).not.toBeNull()
+    expect(container.querySelector('.ml-ex-ui-dock-panel')).not.toBeNull()
     handle.close()
-    expect(container.querySelector('.ml-palette-fallback')).toBeNull()
+    expect(container.querySelector('.ml-ex-ui-dock-panel')).toBeNull()
+  })
+
+  it('openNamedTab delegates to the host when implemented', () => {
+    const openNamedTab = jest.fn(() => true)
+    AcApPaletteService.setHost({
+      show: () => undefined,
+      openNamedTab
+    })
+    expect(AcApPaletteService.openNamedTab('layers')).toBe(true)
+    expect(openNamedTab).toHaveBeenCalledWith('layers')
+  })
+
+  it('openNamedTab returns false without a host', () => {
+    expect(AcApPaletteService.openNamedTab('layers')).toBe(false)
   })
 })
 

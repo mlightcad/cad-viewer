@@ -6,6 +6,17 @@ title: "cad-simple-viewer 및 cad-editor 업그레이드"
 
 이 가이드는 `@mlightcad/cad-simple-viewer`와 `@mlightcad/cad-editor`를 안전하게 업그레이드하는 방법을 설명합니다. 즉, 왜 이들을 개별적으로 올릴 수 없는지, 어떤 관련 패키지가 함께 이동해야 하는지, 그리고 주어진 릴리스에 대해 올바른 호환 버전 집합을 확인하는 두 가지 신뢰할 수 있는 방법을 다룹니다.
 
+::: info Dock 패널 chrome이 `cad-simple-viewer`로 이동
+이 변경이 포함된 릴리스부터 순수 DOM **dock 패널 chrome**(`AcUiDockPanel`)은 `@mlightcad/cad-simple-ui-plugin`이 아니라 **`@mlightcad/cad-simple-viewer`**에 있습니다. 플러그인은 탭 콘텐츠(도면층·찾기·검토·측정)를 유지하고 `AcApPaletteHost`를 등록합니다.
+
+마이그레이션:
+
+- `AcUiDockPanel` 등은 `@mlightcad/cad-simple-viewer`에서 import(플러그인은 한 릴리스 동안 클래스·타입을 re-export; viewer import 권장).
+- i18n 키는 `simpleUi.dockPanel.*` → **`main.dockPanel.*`**.
+- 호스트가 없으면 `AcApPaletteService.open`이 `AcUiDockPanel`을 사용(기존 `.ml-palette-fallback` 대체).
+- 이름 있는 탭은 `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB`이며 **등록된 호스트가 필요**(이름 있는 탭용 dock 폴백 없음).
+:::
+
 ::: info 공유 AI 모델 설정(`@mlightcad/cad-llm-plugin`)
 이 변경이 포함된 릴리스부터 LLM 공급자 설정이 `@mlightcad/cad-agent-plugin`에서 새 **`@mlightcad/cad-llm-plugin`**으로 옮겨져, CAD 에이전트와 `pdftext` 문자 인식(OCR)이 같은 설정을 공유합니다. 새 패키지는 **LLMSETTINGS** 명령과 UI 프레임워크에 의존하지 않는 설정 대화상자(`@mlightcad/cad-editor`의 AI 리본 탭에서도 열 수 있음)를 제공하며, `@mlightcad/cad-simple-viewer`에는 `AcApLlmSettingsService`가 추가되어 어떤 기능에서든 대화상자를 열거나 이미지 지원 모델이 설정되었는지 확인할 수 있습니다.
 

@@ -1,10 +1,11 @@
-import { ML_UI_MOBILE_MAX_WIDTH } from '../editor/global/AcEdUiLayout'
 import {
   acedApplyUiTheme,
   acedSubscribeUiTheme,
   resolveUiTheme
 } from '../editor/global/AcEdUiTheme'
 import type { AcApFindViewInsets } from '../find/AcApFindNavigator'
+import { AcApI18n } from '../i18n/AcApI18n'
+import { AcUiDockPanel } from '../ui/dock/AcUiDockPanel'
 
 /** Panel content a command shows in the host UI's palette. */
 export interface AcApPaletteContent {
@@ -23,8 +24,32 @@ export interface AcApPaletteHostHandle {
 }
 
 /**
- * Host UI integration: shows command panels in the host's palette (the Vue
- * tool palette in `cad-editor`, the dock panel in `cad-simple-ui-plugin`).
+ * Well-known host-owned palette / dock tabs. Hosts map these to their own
+ * tab ids (e.g. cad-editor `layerManager` ↔ {@link ACAP_PALETTE_NAMED_TAB.layers}).
+ */
+export const ACAP_PALETTE_NAMED_TAB = {
+  layers: 'layers',
+  find: 'find',
+  review: 'review',
+  measurements: 'measurements',
+  entityProperties: 'entityProperties',
+  blocks: 'blocks',
+  countList: 'countList',
+  missingResources: 'missingResources',
+  memoryProfile: 'memoryProfile',
+  openFileProfile: 'openFileProfile'
+} as const
+
+/** Named tab id accepted by {@link AcApPaletteService.openNamedTab}. */
+export type AcApPaletteNamedTabId =
+  (typeof ACAP_PALETTE_NAMED_TAB)[keyof typeof ACAP_PALETTE_NAMED_TAB]
+
+/**
+ * Host UI integration for palette tabs. `cad-editor` registers its Vue tool
+ * palette; `cad-simple-ui-plugin` registers the shared {@link AcUiDockPanel}.
+ * Without a host, {@link AcApPaletteService.open} uses a built-in dock fallback;
+ * {@link AcApPaletteService.openNamedTab} still requires a host that implements
+ * {@link openNamedTab}.
  */
 export interface AcApPaletteHost {
   /**
@@ -40,12 +65,21 @@ export interface AcApPaletteHost {
     content: AcApPaletteContent,
     onUserClose: () => void
   ): AcApPaletteHostHandle | undefined
+
+  /**
+   * Opens a host-owned named tab (layers, find, …). Optional: hosts that only
+   * support hosted HTMLElement panels may omit this.
+   *
+   * @param id - Well-known tab id from {@link ACAP_PALETTE_NAMED_TAB}.
+   * @returns `true` when the host opened or focused the tab.
+   */
+  openNamedTab?(id: AcApPaletteNamedTabId | string): boolean
 }
 
 /** Options for {@link AcApPaletteService.open}. */
 export interface AcApPaletteOpenOptions {
   /**
-   * Element the built-in fallback panel is docked in (usually the view
+   * Element the built-in fallback dock is mounted in (usually the view
    * container). Ignored when a host is registered. Defaults to `document.body`.
    */
   container?: HTMLElement
@@ -117,16 +151,17 @@ export class AcApPaletteHandle {
  * UI's palette, while the drawing stays interactive.
  *
  * Host applications register an {@link AcApPaletteHost}; without one, panels
- * are docked on the right of the given container (bottom sheet on phones).
+ * are shown in a built-in {@link AcUiDockPanel} on the right of the given
+ * container (bottom sheet on phones).
  */
 export class AcApPaletteService {
   private static currentHost?: AcApPaletteHost
-  private static readonly fallbackHost = createFallbackHost()
+  private static readonly fallbackHost = createDockFallbackHost()
 
   /**
    * Registers the host palette integration.
    *
-   * @param host - Host, or `undefined` to fall back to the built-in panel.
+   * @param host - Host, or `undefined` to fall back to the built-in dock.
    */
   static setHost(host: AcApPaletteHost | undefined) {
     AcApPaletteService.currentHost = host
@@ -141,7 +176,7 @@ export class AcApPaletteService {
    * Shows a panel in the palette.
    *
    * @param content - Panel to show.
-   * @param options - Fallback-panel options.
+   * @param options - Fallback-dock options.
    * @returns Handle to close the panel and learn when the user closed it.
    */
   static open(
@@ -158,6 +193,19 @@ export class AcApPaletteService {
       )!
     handle.attach(hostHandle)
     return handle
+  }
+
+  /**
+   * Opens a host-owned named tab when the registered host implements
+   * {@link AcApPaletteHost.openNamedTab}. Unlike {@link open}, there is no
+   * built-in fallback — named tabs need host-owned content (Vue palette or
+   * plugin dock tabs).
+   *
+   * @param id - Well-known tab id (see {@link ACAP_PALETTE_NAMED_TAB}).
+   * @returns `true` when the host opened the tab; `false` otherwise.
+   */
+  static openNamedTab(id: AcApPaletteNamedTabId | string): boolean {
+    return AcApPaletteService.currentHost?.openNamedTab?.(id) ?? false
   }
 }
 
@@ -191,120 +239,77 @@ export function acapCoveredInsets(
   return size > 0 ? { [side]: size } : undefined
 }
 
-const FALLBACK_STYLE_ID = 'ml-palette-fallback-styles'
+/** Per-container dock used when no host is registered. */
+interface FallbackDockState {
+  dock: AcUiDockPanel
+  unsubscribeTheme: () => void
+}
 
-/** Built-in host: one docked panel per container, one tab at a time. */
-function createFallbackHost() {
+const fallbackDocks = new WeakMap<HTMLElement, FallbackDockState>()
+
+/** Built-in host: {@link AcUiDockPanel} with one hosted tab per open panel. */
+function createDockFallbackHost() {
   return (container: HTMLElement | undefined): AcApPaletteHost => ({
     show(content, onUserClose) {
-      ensureFallbackStyles()
       const host = container ?? document.body
-      let restorePosition: string | null = null
-      if ((getComputedStyle(host).position || 'static') === 'static') {
-        restorePosition = host.style.position
-        host.style.position = 'relative'
+      const state = ensureFallbackDock(host)
+      const dock = state.dock
+      const tabId = `hosted-${content.id}`
+      const wasOpen = dock.isOpen
+      const previousTab = dock.activeTab
+      dock.removeTab(tabId)
+      if (
+        !dock.addTab({
+          id: tabId,
+          label: content.title,
+          content: content.element
+        })
+      ) {
+        return undefined
       }
-      const root = document.createElement('div')
-      root.className = 'ml-palette-fallback'
-      root.dataset.paletteId = content.id
-      const applyTheme = () =>
-        acedApplyUiTheme(resolveUiTheme(host), root, { isolated: true })
-      applyTheme()
-      const unsubscribe = acedSubscribeUiTheme(applyTheme)
-
-      const header = document.createElement('div')
-      header.className = 'ml-palette-fallback__header'
-      const title = document.createElement('div')
-      title.className = 'ml-palette-fallback__title'
-      title.textContent = content.title
-      const close = document.createElement('button')
-      close.type = 'button'
-      close.className = 'ml-palette-fallback__close'
-      close.textContent = '×'
-      close.setAttribute('aria-label', content.title)
-      close.addEventListener('click', () => onUserClose())
-      header.append(title, close)
-
-      const body = document.createElement('div')
-      body.className = 'ml-palette-fallback__body'
-      body.append(content.element)
-      root.append(header, body)
-      host.append(root)
-
+      dock.open(tabId)
+      const removeListener = dock.addCloseListener(onUserClose)
       return {
         close() {
-          unsubscribe()
-          root.remove()
-          if (restorePosition !== null) host.style.position = restorePosition
+          removeListener()
+          dock.removeTab(tabId)
+          if (!wasOpen) dock.close()
+          else if (previousTab && previousTab !== tabId) dock.open(previousTab)
+          if (!dock.hasTabs) {
+            destroyFallbackDock(host)
+          }
         }
       }
     }
   })
 }
 
-function ensureFallbackStyles() {
-  if (typeof document === 'undefined') return
-  if (document.getElementById(FALLBACK_STYLE_ID)) return
-  const style = document.createElement('style')
-  style.id = FALLBACK_STYLE_ID
-  style.textContent = `
-.ml-palette-fallback {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  bottom: 8px;
-  width: 340px;
-  max-width: calc(100% - 16px);
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  border-radius: 8px;
-  border: 1px solid var(--ml-ui-border, #dcdfe6);
-  background: var(--ml-ui-bg, #ffffff);
-  color: var(--ml-ui-text, #303133);
-  box-shadow: var(--ml-ui-shadow, 0 6px 18px rgba(0, 0, 0, 0.25));
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 12px;
+function ensureFallbackDock(host: HTMLElement): FallbackDockState {
+  const existing = fallbackDocks.get(host)
+  if (existing) return existing
+
+  const applyTheme = () =>
+    acedApplyUiTheme(resolveUiTheme(host), host, { isolated: false })
+  applyTheme()
+  const unsubscribeTheme = acedSubscribeUiTheme(applyTheme)
+
+  const dock = new AcUiDockPanel({
+    host,
+    t: key => AcApI18n.t(key),
+    defaultSide: 'right',
+    defaultOpen: false,
+    defaultWidth: 340,
+    defaultHeight: 280
+  })
+  const state: FallbackDockState = { dock, unsubscribeTheme }
+  fallbackDocks.set(host, state)
+  return state
 }
-.ml-palette-fallback__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--ml-ui-border, #dcdfe6);
-}
-.ml-palette-fallback__title {
-  font-size: 13px;
-  font-weight: 600;
-}
-.ml-palette-fallback__close {
-  border: none;
-  background: transparent;
-  color: var(--ml-ui-text-muted, #606266);
-  cursor: pointer;
-  font-size: 18px;
-  line-height: 1;
-  padding: 2px 6px;
-}
-.ml-palette-fallback__body {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-@media (max-width: ${ML_UI_MOBILE_MAX_WIDTH}px) {
-  .ml-palette-fallback {
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: auto;
-    max-width: none;
-    height: 50%;
-    border-radius: 10px 10px 0 0;
-  }
-}
-`.trim()
-  document.head.appendChild(style)
+
+function destroyFallbackDock(host: HTMLElement) {
+  const state = fallbackDocks.get(host)
+  if (!state) return
+  state.unsubscribeTheme()
+  state.dock.destroy()
+  fallbackDocks.delete(host)
 }

@@ -198,5 +198,21 @@ export default {
     selectFile: '选择文件',
     signInRequired: '请先登录后再选择文件。',
     downloading: '正在下载文件 ...'
+  },
+  dockPanel: {
+    close: '关闭面板',
+    dockSide: '停靠位置',
+    dockTop: '停靠在顶部',
+    dockBottom: '停靠在底部',
+    dockLeft: '停靠在左侧',
+    dockRight: '停靠在右侧',
+    moreTabs: '更多标签页',
+    resize: '调整面板大小',
+    tab: {
+      layers: '图层',
+      review: '批注',
+      find: '查找',
+      measurements: '测量'
+    }
   }
 }

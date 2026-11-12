@@ -30,12 +30,13 @@ All command-triggered plugins are **lazy-loaded**: a small registration stub is 
 
 ### `@mlightcad/cad-simple-ui-plugin` — UI chrome for the simple viewer
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) deliberately ships **no application UI** — only the canvas and CAD core. If you embed the simple viewer in your own web app and want ready-made chrome without adopting the full Vue-based [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) shell, **`cad-simple-ui-plugin` is the intended UI layer**.
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) ships the canvas, CAD core, and shared plain-DOM chrome such as **`AcUiDockPanel`** (also the default host for `AcApPaletteService` when no app UI is registered). If you embed the simple viewer and want ready-made toolbar and palette tabs without adopting the full Vue-based [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) shell, **`cad-simple-ui-plugin` is the intended UI layer**.
 
 It provides:
 
 - A **configurable toolbar** (placement on any edge, default CAD commands, nested menus, custom items)
-- A **dock panel** with a **layer manager** tab (layer on/off, ACI color picker, zoom-to-layer on double-click) and a **review palette** tab (markup list, status, comments)
+- **Dock tab content** for layers, find, review, and measurements, mounted in the shared `AcUiDockPanel` chrome (layer on/off, ACI color picker, zoom-to-layer on double-click; markup list; find; measurements)
+- An **`AcApPaletteHost`** so command panels (and `AcApPaletteService.openNamedTab`) use the dock; `cad-editor` registers a Vue tool-palette host instead and switches automatically
 - **Theme sync** with the `COLORTHEME` sysvar and `--ml-ui-*` CSS tokens on your host element
 - **Locale sync** with `AcApI18n` (English / Chinese / Czech / Turkish)
 

@@ -203,5 +203,21 @@ export default {
     selectFile: '파일 선택',
     signInRequired: '파일을 선택하려면 먼저 로그인하십시오.',
     downloading: '파일 다운로드 중 ...'
+  },
+  dockPanel: {
+    close: '패널 닫기',
+    dockSide: '도킹 위치',
+    dockTop: '위쪽에 도킹',
+    dockBottom: '아래쪽에 도킹',
+    dockLeft: '왼쪽에 도킹',
+    dockRight: '오른쪽에 도킹',
+    moreTabs: '추가 탭',
+    resize: '패널 크기 조정',
+    tab: {
+      layers: '도면층',
+      review: '검토',
+      find: '찾기',
+      measurements: '측정'
+    }
   }
 }

@@ -6,6 +6,17 @@ title: "cad-simple-viewer と cad-editor のアップグレード"
 
 このガイドでは、`@mlightcad/cad-simple-viewer` と`@mlightcad/cad-editor` を安全にアップグレードする方法を説明します。単独でバージョンを上げられない理由、一緒に更新する必要がある関連パッケージ、および任意のリリースに対して正しい互換バージョンのセットを判断する 2 つの信頼できる方法について説明します。
 
+::: info ドックパネルの chrome が `cad-simple-viewer` へ移動
+この変更を含むリリース以降、プレーン DOM の **ドックパネル chrome**（`AcUiDockPanel`）は `@mlightcad/cad-simple-ui-plugin` ではなく **`@mlightcad/cad-simple-viewer`** にあります。プラグインは引き続きタブ内容（画層・検索・レビュー・計測）を持ち、`AcApPaletteHost` を登録してドックに載せます。
+
+移行の要点：
+
+- `AcUiDockPanel` / `AcUiDockPanelTab` / `AcUiDockPanelSide` は `@mlightcad/cad-simple-viewer` から import（プラグインはクラスと型を 1 リリース再エクスポート；viewer からの import を推奨）。
+- i18n キーは `simpleUi.dockPanel.*` から **`main.dockPanel.*`** へ。
+- ホスト未登録時の `AcApPaletteService.open` は `.ml-palette-fallback` ではなく `AcUiDockPanel` を使用。
+- 名前付きタブは `AcApPaletteService.openNamedTab`（`ACAP_PALETTE_NAMED_TAB`）で、**登録済みホストが必須**（名前付きタブにドックフォールバックはない）。エディタは Vue パレット、simple-ui はドックへ自動切替。
+:::
+
 ::: info 共有 AI モデル設定（`@mlightcad/cad-llm-plugin`）
 この変更を含むリリースから、LLM プロバイダの設定は `@mlightcad/cad-agent-plugin` から新しい **`@mlightcad/cad-llm-plugin`** に移り、CAD エージェントと `pdftext` の文字認識（OCR）が同じ設定を共有します。新パッケージは **LLMSETTINGS** コマンドと UI フレームワークに依存しない設定ダイアログ（`@mlightcad/cad-editor` の AI リボン タブからも開けます）を提供し、`@mlightcad/cad-simple-viewer` には `AcApLlmSettingsService` が追加され、どの機能からもダイアログを開いたり、画像対応モデルが設定済みか確認したりできます。
 

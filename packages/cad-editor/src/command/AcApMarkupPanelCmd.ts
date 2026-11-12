@@ -1,13 +1,15 @@
-import { AcApContext, AcEdCommand } from '@mlightcad/cad-simple-viewer'
-
-import { store } from '../app'
+import {
+  ACAP_PALETTE_NAMED_TAB,
+  AcApContext,
+  AcApPaletteService,
+  AcEdCommand
+} from '@mlightcad/cad-simple-viewer'
 
 /**
  * Opens the Design Review markup palette.
  */
 export class AcApMarkupPanelCmd extends AcEdCommand {
   async execute(_context: AcApContext) {
-    store.dialogs.activePaletteTab = 'designReview'
-    store.dialogs.layerManager = true
+    AcApPaletteService.openNamedTab(ACAP_PALETTE_NAMED_TAB.review)
   }
 }

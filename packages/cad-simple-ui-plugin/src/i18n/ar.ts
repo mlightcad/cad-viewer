@@ -109,20 +109,6 @@ export const ar: Record<string, string> = {
   'colorPicker.ok': 'موافق',
   'colorPicker.cancel': 'إلغاء',
 
-  'dockPanel.close': 'إغلاق اللوحة',
-  'dockPanel.dockSide': 'جهة الإرساء',
-  'dockPanel.dockTop': 'إرساء بالأعلى',
-  'dockPanel.dockBottom': 'إرساء بالأسفل',
-  'dockPanel.dockLeft': 'إرساء باليسار',
-  'dockPanel.dockRight': 'إرساء باليمين',
-  'dockPanel.moreTabs': 'المزيد من علامات التبويب',
-
-  'dockPanel.tab.layers': 'الطبقات',
-  'dockPanel.tab.review': 'المراجعة',
-  'dockPanel.tab.find': 'بحث',
-  'dockPanel.tab.measurements': 'القياسات',
-  'dockPanel.resize': 'تغيير ارتفاع اللوحة',
-
   'reviewPalette.searchPlaceholder':
     'البحث في علامات المراجعة',
 

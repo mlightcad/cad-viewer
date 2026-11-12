@@ -6,6 +6,17 @@ title: "Upgrading cad-simple-viewer and cad-editor"
 
 This guide explains how to safely upgrade `@mlightcad/cad-simple-viewer` and`@mlightcad/cad-editor` — why they cannot be bumped in isolation, which related packages must move together, and two reliable ways to determine the correct compatible version set for any given release.
 
+::: info Dock panel chrome moves to `cad-simple-viewer`
+Starting with the release that includes this change, the plain-DOM **dock panel chrome** (`AcUiDockPanel`) lives in **`@mlightcad/cad-simple-viewer`**, not `@mlightcad/cad-simple-ui-plugin`. The plugin still owns tab content (layers, find, review, measurements) and registers an `AcApPaletteHost` that mounts those tabs in the dock.
+
+Migrate hosts / plugins:
+
+- Import `AcUiDockPanel`, `AcUiDockPanelTab`, and `AcUiDockPanelSide` from `@mlightcad/cad-simple-viewer` (the plugin still re-exports the class and tab/side types for one release; prefer the viewer import).
+- Dock chrome i18n keys move from `simpleUi.dockPanel.*` to **`main.dockPanel.*`** (including `main.dockPanel.tab.layers` and friends).
+- `AcApPaletteService.open` without a registered host now uses a real `AcUiDockPanel` (right dock / phone sheet) instead of the old `.ml-palette-fallback` overlay.
+- Named built-in tabs open through **`AcApPaletteService.openNamedTab`** / optional `AcApPaletteHost.openNamedTab` (ids in `ACAP_PALETTE_NAMED_TAB`) and **require a registered host** — there is no dock fallback for named tabs. `cad-editor` maps these to its Vue tool palette; `cad-simple-ui-plugin` maps them to dock tabs. Hosted HTMLElement panels still use `AcApPaletteService.open`.
+:::
+
 ::: info Shared AI model settings (`@mlightcad/cad-llm-plugin`)
 Starting with the release that includes this change, the LLM provider settings move out of `@mlightcad/cad-agent-plugin` into the new **`@mlightcad/cad-llm-plugin`**, so the CAD Agent and `pdftext` text recognition (OCR) share one configuration. The new package adds the **LLMSETTINGS** command, a framework-free settings dialog (also on the AI ribbon tab of `@mlightcad/cad-editor`), and `@mlightcad/cad-simple-viewer` adds `AcApLlmSettingsService` so any feature can open the dialog or check whether a vision model is configured.
 
@@ -254,7 +265,7 @@ Before upgrading, it helps to know which packages belong to the coordinated rele
 | `@mlightcad/cad-pdf-plugin` | Browser PDF export and PDF-to-CAD import |
 | `@mlightcad/cad-svg-plugin` | SVG export |
 | `@mlightcad/cad-svg-converter` | SVG File → Open (vector → AcDb entities) |
-| `@mlightcad/cad-simple-ui-plugin` | Plain-DOM toolbar, layer manager, dock panel |
+| `@mlightcad/cad-simple-ui-plugin` | Plain-DOM toolbar and dock tab content (dock chrome is in `cad-simple-viewer`) |
 | `@mlightcad/cad-agent-plugin` | AI-agent-powered interaction |
 | `@mlightcad/cad-onedrive-plugin` | OneDrive integration |
 | `@mlightcad/cad-google-drive-plugin` | Google Drive integration |

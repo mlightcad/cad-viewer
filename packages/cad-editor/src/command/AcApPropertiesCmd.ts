@@ -1,10 +1,12 @@
-import { AcApContext, AcEdCommand } from '@mlightcad/cad-simple-viewer'
-
-import { store } from '../app'
+import {
+  ACAP_PALETTE_NAMED_TAB,
+  AcApContext,
+  AcApPaletteService,
+  AcEdCommand
+} from '@mlightcad/cad-simple-viewer'
 
 export class AcApPropertiesCmd extends AcEdCommand {
   async execute(_context: AcApContext) {
-    store.dialogs.activePaletteTab = 'entityProperties'
-    store.dialogs.layerManager = true
+    AcApPaletteService.openNamedTab(ACAP_PALETTE_NAMED_TAB.entityProperties)
   }
 }

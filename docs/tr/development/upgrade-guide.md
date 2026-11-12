@@ -6,6 +6,17 @@ title: "cad-simple-viewer ve cad-editor Yükseltme"
 
 Bu kılavuz, `@mlightcad/cad-simple-viewer` ve `@mlightcad/cad-editor` paketlerinin güvenli şekilde nasıl yükseltileceğini açıklar — neden tek başlarına yükseltilemeyeceklerini, hangi ilgili paketlerin birlikte hareket etmesi gerektiğini ve belirli bir sürüm için doğru uyumlu sürüm kümesini belirlemenin iki güvenilir yolunu.
 
+::: info Dock paneli chrome’u `cad-simple-viewer`’a taşındı
+Bu değişikliği içeren sürümden itibaren düz DOM **dock paneli chrome’u** (`AcUiDockPanel`) `@mlightcad/cad-simple-ui-plugin` yerine **`@mlightcad/cad-simple-viewer`** içindedir. Eklenti sekme içeriklerini tutar ve `AcApPaletteHost` kaydeder.
+
+Geçiş:
+
+- `AcUiDockPanel` vb. `@mlightcad/cad-simple-viewer`’dan import edin (eklenti bir sürüm daha sınıf/tip re-export eder).
+- i18n anahtarları `simpleUi.dockPanel.*` → **`main.dockPanel.*`**.
+- Host yokken `AcApPaletteService.open` gerçek `AcUiDockPanel` kullanır.
+- Adlandırılmış sekmeler: `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB` — **kayıtlı host gerekir** (adlandırılmış sekmeler için dock yedek yolu yok).
+:::
+
 ::: info Paylaşılan yapay zekâ modeli ayarları (`@mlightcad/cad-llm-plugin`)
 Bu değişikliği içeren sürümden itibaren LLM sağlayıcı ayarları `@mlightcad/cad-agent-plugin` paketinden yeni **`@mlightcad/cad-llm-plugin`** paketine taşınır; böylece CAD Ajanı ve `pdftext` metin tanıma (OCR) aynı yapılandırmayı paylaşır. Yeni paket **LLMSETTINGS** komutunu ve UI çatısından bağımsız bir ayar iletişim kutusunu (`@mlightcad/cad-editor` içindeki AI şerit sekmesinden de açılır) ekler; `@mlightcad/cad-simple-viewer` ise herhangi bir özelliğin iletişim kutusunu açabilmesi veya görüntü destekli bir modelin yapılandırılıp yapılandırılmadığını denetleyebilmesi için `AcApLlmSettingsService` ekler.
 
@@ -241,7 +252,7 @@ Yükseltmeden önce hangi paketlerin koordineli sürüme ait olduğunu ve hangil
 | `@mlightcad/cad-html-plugin` | Tek tıkla kendi kendine yeten HTML dışa aktarma |
 | `@mlightcad/cad-pdf-plugin` | Tarayıcıda PDF dışa aktarma ve PDF→CAD içe aktarma |
 | `@mlightcad/cad-svg-plugin` | SVG dışa aktarma |
-| `@mlightcad/cad-simple-ui-plugin` | Düz DOM araç çubuğu, katman yöneticisi, dock paneli |
+| `@mlightcad/cad-simple-ui-plugin` | Plain-DOM toolbar and dock tab content (dock chrome is in `cad-simple-viewer`) |
 | `@mlightcad/cad-agent-plugin` | Yapay zeka ajanı destekli etkileşim |
 | `@mlightcad/cad-onedrive-plugin` | OneDrive entegrasyonu |
 | `@mlightcad/cad-google-drive-plugin` | Google Drive entegrasyonu |

@@ -18,10 +18,12 @@ export type CreateCadSimpleViewerMockOptions = {
   includeLayout?: boolean
   /** Spread `ui/toolbar` actuals (default true). */
   includeToolbar?: boolean
+  /** Spread `ui/dock` actuals (default true). */
+  includeDock?: boolean
 }
 
 /**
- * Base mock for `@mlightcad/cad-simple-viewer` with toolbar + layout actuals.
+ * Base mock for `@mlightcad/cad-simple-viewer` with toolbar + layout + dock actuals.
  *
  * @param extras - Test-specific stubs (DocManager, I18n, etc.); win over actuals.
  * @param options - Toggle which actual modules to spread.
@@ -32,6 +34,7 @@ export function createCadSimpleViewerMock(
 ): Record<string, unknown> {
   const includeLayout = options.includeLayout !== false
   const includeToolbar = options.includeToolbar !== false
+  const includeDock = options.includeDock !== false
 
   const layout = includeLayout
     ? (jest.requireActual(
@@ -45,9 +48,16 @@ export function createCadSimpleViewerMock(
       ) as typeof import('../../../cad-simple-viewer/src/ui/toolbar'))
     : {}
 
+  const dock = includeDock
+    ? (jest.requireActual(
+        '../../../cad-simple-viewer/src/ui/dock'
+      ) as typeof import('../../../cad-simple-viewer/src/ui/dock'))
+    : {}
+
   return {
     ...layout,
     ...toolbar,
+    ...dock,
     ...extras
   }
 }
