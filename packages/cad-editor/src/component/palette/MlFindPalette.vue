@@ -1,9 +1,5 @@
 <template>
-  <div
-    ref="host"
-    class="ml-dom-palette-host"
-    data-testid="find-palette"
-  />
+  <div ref="host" class="ml-dom-palette-host" data-testid="find-palette" />
 </template>
 
 <script setup lang="ts">
@@ -28,8 +24,15 @@ const handleLocaleChanged = () => {
   view?.refreshLocale()
 }
 
-const focusInput = () => {
-  nextTick(() => view?.focus())
+const focusInput = async () => {
+  await nextTick()
+  view?.focus()
+  // A ribbon button / overflow popup that triggered FIND takes focus back as
+  // it closes; focus once more after it settles.
+  setTimeout(() => {
+    const input = view?.element.querySelector('input[type="search"]')
+    if (document.activeElement !== input) view?.focus()
+  }, 150)
 }
 
 onMounted(() => {

@@ -122,8 +122,8 @@ async function results(page: Page) {
   const list = await rows(page).evaluateAll(els =>
     els.map(
       el =>
-        `${el.querySelector('.ml-find-layout')?.textContent?.trim()} | ${el
-          .querySelector('.ml-find-text')
+        `${el.querySelector('.ml-ex-ui-find-layout')?.textContent?.trim()} | ${el
+          .querySelector('.ml-ex-ui-find-text')
           ?.textContent?.trim()}`
     )
   )

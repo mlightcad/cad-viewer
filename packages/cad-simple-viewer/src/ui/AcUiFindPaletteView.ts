@@ -142,6 +142,7 @@ export class AcUiFindPaletteView {
     this.inputEl = document.createElement('input')
     this.inputEl.type = 'search'
     this.inputEl.className = 'ml-ex-ui-find-input'
+    this.inputEl.dataset.testid = 'find-input'
     this.inputEl.autocomplete = 'off'
     this.inputEl.spellcheck = false
     this.inputEl.addEventListener('keydown', event => {
@@ -155,6 +156,7 @@ export class AcUiFindPaletteView {
     this.findButton = document.createElement('button')
     this.findButton.type = 'button'
     this.findButton.className = 'ml-ex-ui-measure-btn ml-ex-ui-find-btn'
+    this.findButton.dataset.testid = 'find-button'
     this.findButton.addEventListener('click', () => {
       // Same as the first Enter: list results and jump to the first hit.
       this.runSearch()
@@ -165,6 +167,7 @@ export class AcUiFindPaletteView {
 
     this.matchCaseLabelEl = document.createElement('label')
     this.matchCaseLabelEl.className = 'ml-ex-ui-find-option'
+    this.matchCaseLabelEl.dataset.testid = 'find-match-case'
     this.matchCaseEl = document.createElement('input')
     this.matchCaseEl.type = 'checkbox'
     this.matchCaseEl.addEventListener('change', () => {
@@ -174,6 +177,7 @@ export class AcUiFindPaletteView {
 
     this.layoutOnlyLabelEl = document.createElement('label')
     this.layoutOnlyLabelEl.className = 'ml-ex-ui-find-option'
+    this.layoutOnlyLabelEl.dataset.testid = 'find-current-layout-only'
     this.layoutOnlyEl = document.createElement('input')
     this.layoutOnlyEl.type = 'checkbox'
     this.layoutOnlyEl.dataset.findScope = 'layout'
@@ -188,11 +192,13 @@ export class AcUiFindPaletteView {
 
     this.statusEl = document.createElement('div')
     this.statusEl.className = 'ml-ex-ui-find-status'
+    this.statusEl.dataset.testid = 'find-status'
     this.statusEl.setAttribute('role', 'status')
     this.statusEl.setAttribute('aria-live', 'polite')
 
     this.listEl = document.createElement('ul')
     this.listEl.className = 'ml-ex-ui-find-list'
+    this.listEl.dataset.testid = 'find-list'
     this.listEl.addEventListener('click', event => {
       const target = event.target
       if (!(target instanceof Element)) return
@@ -292,6 +298,9 @@ export class AcUiFindPaletteView {
       const li = document.createElement('li')
       li.className = 'ml-ex-ui-find-row'
       li.dataset.findIndex = String(index)
+      li.dataset.testid = 'find-row'
+      li.dataset.layoutId = hit.layoutId
+      li.dataset.entityId = hit.entityId
       li.tabIndex = 0
       li.addEventListener('keydown', event => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -304,6 +313,7 @@ export class AcUiFindPaletteView {
       const layout = document.createElement('div')
       layout.className = 'ml-ex-ui-find-layout'
       layout.dataset.layoutId = hit.layoutId
+      layout.dataset.testid = 'find-row-layout'
       const layoutName = this.layoutLabel(hit.layoutName)
       layout.textContent = layoutName
       layout.title = layoutName
@@ -356,10 +366,7 @@ export class AcUiFindPaletteView {
     const floating = this.element.closest(
       '.ml-tool-palette-dialog, .ml-layer-manager'
     ) as HTMLElement | null
-    const panel =
-      dock && dock.dataset.open !== 'false'
-        ? dock
-        : floating
+    const panel = dock && dock.dataset.open !== 'false' ? dock : floating
     if (!canvas || !panel) return undefined
     const c = canvas.getBoundingClientRect()
     const p = panel.getBoundingClientRect()

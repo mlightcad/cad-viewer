@@ -62,8 +62,8 @@ test('FIND on a real DWG: Ctrl+F, search, click, layouts', async ({ page }) => {
     .evaluateAll(els =>
       els.map(
         el =>
-          `${el.querySelector('.ml-find-layout')?.textContent?.trim()} | ${el
-            .querySelector('.ml-find-text')
+          `${el.querySelector('.ml-ex-ui-find-layout')?.textContent?.trim()} | ${el
+            .querySelector('.ml-ex-ui-find-text')
             ?.textContent?.trim()}`
       )
     )
@@ -140,8 +140,9 @@ test('FIND on a real DWG: Ctrl+F, search, click, layouts', async ({ page }) => {
   // Paper-space proof: result count and text, not only the LAYOUT label.
   const paperHits = await page.getByTestId('find-row').evaluateAll(els =>
     els.map(el => ({
-      layout: el.querySelector('.ml-find-layout')?.textContent?.trim() ?? '',
-      text: el.querySelector('.ml-find-text')?.textContent?.trim() ?? ''
+      layout:
+        el.querySelector('.ml-ex-ui-find-layout')?.textContent?.trim() ?? '',
+      text: el.querySelector('.ml-ex-ui-find-text')?.textContent?.trim() ?? ''
     }))
   )
   const inPaper = paperHits.filter(h => h.layout === paperText!.layout)
