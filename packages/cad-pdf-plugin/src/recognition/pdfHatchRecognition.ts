@@ -988,10 +988,15 @@ function patternSignatures(
         const c = nx * l.originX + ny * l.originY
         return ((c % period) + period) % period
       })
+      const lattice = latticePeriod(offsets, period)
       signature.push({
         angle: group.angle,
-        period,
-        residues: countResidues(offsets, period, period * 1e-3),
+        period: lattice,
+        residues: countResidues(
+          offsets.map(c => c % lattice),
+          lattice,
+          lattice * 1e-3
+        ),
         dotsOnly: group.lines.every(l => isDotsOnly(l.dashes))
       })
     }
@@ -1005,6 +1010,31 @@ function patternSignatures(
     })
   })
   return out
+}
+
+/**
+ * Smallest period of the line positions of one pattern group.
+ *
+ * Strokes are measured by where their lines lie, not by what the lines
+ * draw, so a group whose lines sit evenly within the pattern repeat (ANSI35:
+ * a solid and a dashed line half a repeat apart) is measured with a shorter
+ * period than the repeat. The signature must use the same period.
+ *
+ * @param offsets - Line offsets in `[0, period)`.
+ * @param period - Repeat of the group.
+ */
+function latticePeriod(offsets: readonly number[], period: number): number {
+  const eps = period * 1e-3
+  const has = (value: number) =>
+    offsets.some(c => {
+      const d = Math.abs(c - value)
+      return Math.min(d, period - d) <= eps
+    })
+  for (let k = offsets.length; k > 1; k--) {
+    const step = period / k
+    if (offsets.every(c => has((c + step) % period))) return step
+  }
+  return period
 }
 
 /** A dash list that draws dots only (zeros and gaps, no dash). */
