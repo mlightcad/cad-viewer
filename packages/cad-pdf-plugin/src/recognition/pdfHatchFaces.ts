@@ -118,6 +118,31 @@ export function acapPdfFaceBoundaryIn(
   hits: readonly PdfRecPoint[],
   options?: Pick<PdfFaceBoundaryOptions, 'minCoverage'>
 ): PdfRecPoint[][] | undefined {
+  return acapPdfFaceBoundaryParts(arrangement, hits, options)?.[0]
+}
+
+/** A hatch stroke, for {@link acapPdfFaceBoundaryParts}. */
+export type PdfFaceStroke = readonly [PdfRecPoint, PdfRecPoint]
+
+/**
+ * Like {@link acapPdfFaceBoundaryIn}, but split into separate hatches.
+ *
+ * Without `strokes` every face holding hits joins one outline. With them,
+ * two such faces join only when strokes run across the edge between them
+ * (a line drawn over one hatch, such as an axis). When strokes stop on the
+ * edge from both sides instead, each side was clipped to its own boundary:
+ * two hatches of one pattern that touch, kept apart.
+ *
+ * @param strokes - The hatch strokes the hits came from.
+ * @returns Outline loops per hatch, the one with the most hits first.
+ */
+export function acapPdfFaceBoundaryParts(
+  arrangement: PdfFaceArrangement,
+  hits: readonly PdfRecPoint[],
+  options?: Pick<PdfFaceBoundaryOptions, 'minCoverage'> & {
+    strokes?: readonly PdfFaceStroke[]
+  }
+): PdfRecPoint[][][] | undefined {
   const minCoverage = options?.minCoverage ?? 0.9
   if (hits.length === 0) return undefined
   const state = arrangement as Arrangement
@@ -151,7 +176,14 @@ export function acapPdfFaceBoundaryIn(
   const selected = new Set<Face>()
   let kept = 0
   for (const [face, count] of hitCount) {
-    if (count < 3 && count / face.area < median * 0.1) continue
+    // A face the hatch covers holds about as many hits as its area says;
+    // a big face with a few stray strokes does not. Small faces (expected
+    // to hold a handful) are judged leniently.
+    const expected = median * face.area
+    const sparse =
+      expected >= 6 ? count < expected * MIN_DENSITY_SHARE : count < 3
+    if (sparse && count / face.area < median * 0.1) continue
+    if (sparse && expected >= 6) continue
     selected.add(face)
     kept += count
   }
@@ -160,8 +192,30 @@ export function acapPdfFaceBoundaryIn(
   // Outer cycles of islands bound the face around them.
   state.owner ??= resolveHoleOwners(faces, bounded, grid)
   const owner = state.owner
-  const isSelected = (face: Face) => selected.has(owner.get(face) ?? face)
-  return unionOutline(graph, faces, isSelected, state.tolerance)
+  const resolve = (face: Face) => owner.get(face) ?? face
+  const parts = splitFaces(
+    graph,
+    faces,
+    resolve,
+    selected,
+    options?.strokes,
+    state.tolerance
+  )
+  const out: { loops: PdfRecPoint[][]; hits: number }[] = []
+  for (const part of parts) {
+    const loops = unionOutline(
+      graph,
+      faces,
+      face => part.has(resolve(face)),
+      state.tolerance
+    )
+    if (!loops) continue
+    let count = 0
+    for (const face of part) count += hitCount.get(face) ?? 0
+    out.push({ loops, hits: count })
+  }
+  if (out.length === 0) return undefined
+  return out.sort((p, q) => q.hits - p.hits).map(part => part.loops)
 }
 
 /**
@@ -710,6 +764,182 @@ function resolveHoleOwners(
     if (best) owner.set(face, best)
   }
   return owner
+}
+
+/** Share of the median hit density a big face needs to be hatched. */
+const MIN_DENSITY_SHARE = 0.25
+
+/** Strokes ending on an edge that mark it as two hatches' shared edge. */
+const MIN_CLIPPED_ENDS = 3
+/** Most edge-stroke pairs tested before splitting is skipped. */
+const MAX_SPLIT_TESTS = 4_000_000
+
+/**
+ * Groups the selected faces into hatches: neighbours join unless the
+ * strokes stop on the edge between them without crossing it.
+ */
+function splitFaces(
+  graph: Graph,
+  faces: Face[],
+  resolve: (face: Face) => Face,
+  selected: Set<Face>,
+  strokes: readonly PdfFaceStroke[] | undefined,
+  tol: number
+): Set<Face>[] {
+  const list = [...selected]
+  if (!strokes || strokes.length === 0 || list.length < 2) return [selected]
+  const index = new Map(list.map((face, i) => [face, i]))
+  const faceOf = new Int32Array(graph.edges.length * 2)
+  faces.forEach((face, i) => {
+    for (const h of face.halfEdges) faceOf[h] = i
+  })
+  const internal: { e: number; a: number; b: number }[] = []
+  for (let e = 0; e < graph.edges.length; e++) {
+    const a = index.get(resolve(faces[faceOf[2 * e]]))
+    const b = index.get(resolve(faces[faceOf[2 * e + 1]]))
+    if (a === undefined || b === undefined || a === b) continue
+    internal.push({ e, a, b })
+  }
+  if (internal.length * strokes.length > MAX_SPLIT_TESTS) return [selected]
+
+  const parent = list.map((_, i) => i)
+  const find = (i: number): number => {
+    while (parent[i] !== i) {
+      parent[i] = parent[parent[i]]
+      i = parent[i]
+    }
+    return i
+  }
+  // Judge each pair of neighbouring faces on all the edges they share: a
+  // short piece of a shared outline may hold too few stroke ends alone.
+  const shared = new Map<string, { a: number; b: number; edges: number[] }>()
+  for (const { e, a, b } of internal) {
+    const key = a < b ? `${a},${b}` : `${b},${a}`
+    const entry = shared.get(key)
+    if (entry) entry.edges.push(e)
+    else shared.set(key, { a, b, edges: [e] })
+  }
+  const cuts: { e: number; a: number; b: number }[] = []
+  for (const { a, b, edges } of shared.values()) {
+    const segments = edges.map(e => {
+      const [u, v] = graph.edges[e]!
+      return [graph.points[u], graph.points[v]] as const
+    })
+    if (separates(segments, strokes, tol)) {
+      for (const e of edges) cuts.push({ e, a, b })
+    } else {
+      parent[find(a)] = find(b)
+    }
+  }
+  // Loops of one hatch picked on both sides of an axis are clipped there
+  // too, but they meet along that one straight line. Two hatches that
+  // touch share a bent piece of outline instead.
+  // Repeat with the merged parts: four loops around a cross of axes join
+  // in pairs first, then the pairs along the other axis.
+  for (let merged = true; merged; ) {
+    merged = false
+    const byPair = new Map<string, number[]>()
+    for (const { e, a, b } of cuts) {
+      const ra = find(a)
+      const rb = find(b)
+      if (ra === rb) continue
+      const key = ra < rb ? `${ra},${rb}` : `${rb},${ra}`
+      const pair = byPair.get(key)
+      if (pair) pair.push(e)
+      else byPair.set(key, [e])
+    }
+    for (const [key, edges] of byPair) {
+      const [ra, rb] = key.split(',').map(Number)
+      if (isStraightCut(graph, edges, tol)) {
+        parent[ra] = rb
+        merged = true
+        break
+      }
+    }
+  }
+  const groups = new Map<number, Set<Face>>()
+  list.forEach((face, i) => {
+    const root = find(i)
+    let group = groups.get(root)
+    if (!group) groups.set(root, (group = new Set()))
+    group.add(face)
+  })
+  return [...groups.values()]
+}
+
+/**
+ * True when `edges` lie on one straight line: an axis or grid line drawn
+ * across the loops of one hatch. Two hatches that touch share a bent piece
+ * of outline (a notch, a recess) instead.
+ */
+function isStraightCut(graph: Graph, edges: number[], tol: number): boolean {
+  let p: PdfRecPoint | undefined
+  let q: PdfRecPoint | undefined
+  let best = 0
+  // The longest edge fixes the direction most reliably.
+  for (const e of edges) {
+    const [u, v] = graph.edges[e]!
+    const a = graph.points[u]
+    const b = graph.points[v]
+    const len = Math.hypot(b.x - a.x, b.y - a.y)
+    if (len > best) {
+      best = len
+      p = a
+      q = b
+    }
+  }
+  if (!p || !q || !(best > 0)) return false
+  const ux = (q.x - p.x) / best
+  const uy = (q.y - p.y) / best
+  for (const e of edges) {
+    for (const v of graph.edges[e]!) {
+      const r = graph.points[v]
+      if (Math.abs(-uy * (r.x - p.x) + ux * (r.y - p.y)) > tol) return false
+    }
+  }
+  return true
+}
+
+/**
+ * True when strokes end on the shared edges from their sides and none
+ * crosses them: the edges are where two hatches were each clipped.
+ */
+function separates(
+  edges: readonly (readonly [PdfRecPoint, PdfRecPoint])[],
+  strokes: readonly PdfFaceStroke[],
+  tol: number
+): boolean {
+  let ends = 0
+  for (const [p, q] of edges) {
+    const minX = Math.min(p.x, q.x) - tol
+    const maxX = Math.max(p.x, q.x) + tol
+    const minY = Math.min(p.y, q.y) - tol
+    const maxY = Math.max(p.y, q.y) + tol
+    for (const [a, b] of strokes) {
+      if (
+        Math.max(a.x, b.x) < minX ||
+        Math.min(a.x, b.x) > maxX ||
+        Math.max(a.y, b.y) < minY ||
+        Math.min(a.y, b.y) > maxY
+      ) {
+        continue
+      }
+      const cross = crossing(a, b, p, q)
+      if (cross) {
+        const len = Math.hypot(b.x - a.x, b.y - a.y)
+        const margin = len > 0 ? tol / len : 1
+        // Crossing away from the stroke's ends: it runs across the edge.
+        if (cross[0] > margin && cross[0] < 1 - margin) return false
+      }
+      if (
+        distanceToSegment(a, p, q) <= tol ||
+        distanceToSegment(b, p, q) <= tol
+      ) {
+        ends++
+      }
+    }
+  }
+  return ends >= MIN_CLIPPED_ENDS
 }
 
 /** Loops along the edges between selected and unselected faces. */
