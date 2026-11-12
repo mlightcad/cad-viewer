@@ -1,21 +1,33 @@
 ---
-title: "Upgrading cad-simple-viewer and cad-editor"
+title: 'Upgrading cad-simple-viewer and cad-editor'
 ---
 
 # Upgrading cad-simple-viewer and cad-editor
 
 This guide explains how to safely upgrade `@mlightcad/cad-simple-viewer` and`@mlightcad/cad-editor` — why they cannot be bumped in isolation, which related packages must move together, and two reliable ways to determine the correct compatible version set for any given release.
 
+::: info Simple UI chrome moves into `cad-simple-viewer`
+Starting with the release that includes this change, **`@mlightcad/cad-simple-ui-plugin` is removed**. Toolbar presets, dock palette tabs (layers / find / review / measurements), theme sync, and the default `AcApPaletteHost` live in **`@mlightcad/cad-simple-viewer`** under `@mlightcad/cad-simple-viewer/simple-ui`.
+
+Migrate hosts:
+
+- Uninstall `@mlightcad/cad-simple-ui-plugin` and drop `acuiRegisterSimpleUiPlugin` / `acuiCreateSimpleUiPlugin` imports from that package.
+- Prefer `AcApDocManager.createInstance({ simpleUi: { … } })` (default **on**). Pass former plugin options through `simpleUi`. Use `simpleUi: false` for `cad-editor`, CLI, MCP, and other headless hosts.
+- Import types/helpers from `@mlightcad/cad-simple-viewer/simple-ui` when you need them outside create options.
+- Await `AcApDocManager.instance.simpleUiReady` (or read `simpleUiPlugin`) instead of `pluginManager.getPlugin('SimpleUiPlugin')`.
+- `cad-editor` keeps its Vue layer manager; find / design-review / measurements use the shared DOM palette views.
+  :::
+
 ::: info Dock panel chrome moves to `cad-simple-viewer`
-Starting with the release that includes this change, the plain-DOM **dock panel chrome** (`AcUiDockPanel`) lives in **`@mlightcad/cad-simple-viewer`**, not `@mlightcad/cad-simple-ui-plugin`. The plugin still owns tab content (layers, find, review, measurements) and registers an `AcApPaletteHost` that mounts those tabs in the dock.
+The plain-DOM **dock panel chrome** (`AcUiDockPanel`) lives in **`@mlightcad/cad-simple-viewer`**. Built-in simple UI chrome mounts tab content (layers, find, review, measurements) and registers an `AcApPaletteHost` on that dock; `cad-editor` registers its Vue tool-palette host instead.
 
 Migrate hosts / plugins:
 
-- Import `AcUiDockPanel`, `AcUiDockPanelTab`, and `AcUiDockPanelSide` from `@mlightcad/cad-simple-viewer` (the plugin still re-exports the class and tab/side types for one release; prefer the viewer import).
-- Dock chrome i18n keys move from `simpleUi.dockPanel.*` to **`main.dockPanel.*`** (including `main.dockPanel.tab.layers` and friends).
-- `AcApPaletteService.open` without a registered host now uses a real `AcUiDockPanel` (right dock / phone sheet) instead of the old `.ml-palette-fallback` overlay.
-- Named built-in tabs open through **`AcApPaletteService.openNamedTab`** / optional `AcApPaletteHost.openNamedTab` (ids in `ACAP_PALETTE_NAMED_TAB`) and **require a registered host** — there is no dock fallback for named tabs. `cad-editor` maps these to its Vue tool palette; `cad-simple-ui-plugin` maps them to dock tabs. Hosted HTMLElement panels still use `AcApPaletteService.open`.
-:::
+- Import `AcUiDockPanel`, `AcUiDockPanelTab`, and `AcUiDockPanelSide` from `@mlightcad/cad-simple-viewer`.
+- Dock chrome i18n keys live under **`main.dockPanel.*`** (including `main.dockPanel.tab.layers` and friends).
+- `AcApPaletteService.open` without a registered host uses a real `AcUiDockPanel` (right dock / phone sheet).
+- Named built-in tabs open through **`AcApPaletteService.openNamedTab`** / optional `AcApPaletteHost.openNamedTab` (ids in `ACAP_PALETTE_NAMED_TAB`) and **require a registered host** — there is no dock fallback for named tabs. Opens requested before a host is registered are queued and flushed when the host arrives (covers the async `simpleUi` load gap). Hosted HTMLElement panels still use `AcApPaletteService.open`.
+  :::
 
 ::: info Shared AI model settings (`@mlightcad/cad-llm-plugin`)
 Starting with the release that includes this change, the LLM provider settings move out of `@mlightcad/cad-agent-plugin` into the new **`@mlightcad/cad-llm-plugin`**, so the CAD Agent and `pdftext` text recognition (OCR) share one configuration. The new package adds the **LLMSETTINGS** command, a framework-free settings dialog (also on the AI ribbon tab of `@mlightcad/cad-editor`), and `@mlightcad/cad-simple-viewer` adds `AcApLlmSettingsService` so any feature can open the dialog or check whether a vision model is configured.
@@ -35,6 +47,7 @@ import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
 registerLazyLlmPlugin(pluginManager)
 registerLazyAgentPlugin(pluginManager)
 ```
+
 :::
 
 ::: info Import PDF: `ipdf` is now `PDFIMPORT` / `-PDFIMPORT`
@@ -51,11 +64,11 @@ Starting with the release that includes this change, `@mlightcad/cad-simple-view
 
 Shape matching moved from `@mlightcad/cad-pdf-plugin` to `@mlightcad/cad-simple-viewer`. Migrate imports:
 
-| `@mlightcad/cad-pdf-plugin` (deprecated) | `@mlightcad/cad-simple-viewer` |
-| --- | --- |
-| `findPdfShapeMatches` | `acedFindShapeMatches` |
-| `applyPdfAffine` | `acedApplyAffine2d` |
-| `pdfEntityToFeature` | `acedEntityToShapeFeature(entity, id, { matchLayer: false })` |
+| `@mlightcad/cad-pdf-plugin` (deprecated)                                   | `@mlightcad/cad-simple-viewer`                                                   |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `findPdfShapeMatches`                                                      | `acedFindShapeMatches`                                                           |
+| `applyPdfAffine`                                                           | `acedApplyAffine2d`                                                              |
+| `pdfEntityToFeature`                                                       | `acedEntityToShapeFeature(entity, id, { matchLayer: false })`                    |
 | `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
 
 The old names still work as deprecated aliases. Text strings moved from the feature `kind` to `label` (compare with `ignoreLabels: false`, the default). `pdfblock` now runs the `-BSEARCH` prompts (Convert → New/Existing → name → insertion point → scope); scripts that answered its old prompts must follow the new order.
@@ -195,10 +208,10 @@ Supported subset (v1): `line`, `polyline` / `polygon` / `rect`, `circle`, `ellip
 ::: info PDF export split into a shared core (browser + Node)
 Starting with **1.8.0**, PDF export uses the same layering as HTML export. Shared logic lives in `@mlightcad/cad-pdf-core` (option model and database → PDF pipeline, **no** `cad-simple-viewer` / DOM dependency). Two front ends consume it:
 
-| Package | Role |
-| --- | --- |
-| `@mlightcad/cad-pdf-plugin` | Browser `cpdf` / `-cpdf` / `pdfimport` (and the Vue export dialog) |
-| `@mlightcad/cad-pdf-exporter` | Headless Node DXF/DWG → PDF — **no browser** |
+| Package                       | Role                                                               |
+| ----------------------------- | ------------------------------------------------------------------ |
+| `@mlightcad/cad-pdf-plugin`   | Browser `cpdf` / `-cpdf` / `pdfimport` (and the Vue export dialog) |
+| `@mlightcad/cad-pdf-exporter` | Headless Node DXF/DWG → PDF — **no browser**                       |
 
 **Browser integrators — mostly unchanged.** Keep using `cpdf` / `-cpdf` / `pdfimport`, `AcApPdfConvertor`, `AcApPdfExportOptions`, and `resolveAcApPdfExportOptions`. Install the new peer `@mlightcad/cad-pdf-core` next to the plugin (same version as `cad-simple-viewer`).
 
@@ -252,72 +265,72 @@ Before upgrading, it helps to know which packages belong to the coordinated rele
 
 ### Core viewer packages
 
-| Package | Role |
-| --- | --- |
+| Package                        | Role                                                                   |
+| ------------------------------ | ---------------------------------------------------------------------- |
 | `@mlightcad/cad-simple-viewer` | Framework-agnostic core (document mgmt, command stack, rendering glue) |
-| `@mlightcad/cad-editor` | Vue 3 + Element Plus UI wrapper built on top of cad-simple-viewer |
+| `@mlightcad/cad-editor`        | Vue 3 + Element Plus UI wrapper built on top of cad-simple-viewer      |
 
 ### Plugins — **must match the cad-simple-viewer version exactly**
 
-| Package | Purpose |
-| --- | --- |
-| `@mlightcad/cad-html-plugin` | One-click self-contained HTML export |
-| `@mlightcad/cad-pdf-plugin` | Browser PDF export and PDF-to-CAD import |
-| `@mlightcad/cad-svg-plugin` | SVG export |
-| `@mlightcad/cad-svg-converter` | SVG File → Open (vector → AcDb entities) |
-| `@mlightcad/cad-simple-ui-plugin` | Plain-DOM toolbar and dock tab content (dock chrome is in `cad-simple-viewer`) |
-| `@mlightcad/cad-agent-plugin` | AI-agent-powered interaction |
-| `@mlightcad/cad-onedrive-plugin` | OneDrive integration |
-| `@mlightcad/cad-google-drive-plugin` | Google Drive integration |
+| Package                                  | Purpose                                                                  |
+| ---------------------------------------- | ------------------------------------------------------------------------ |
+| `@mlightcad/cad-html-plugin`             | One-click self-contained HTML export                                     |
+| `@mlightcad/cad-pdf-plugin`              | Browser PDF export and PDF-to-CAD import                                 |
+| `@mlightcad/cad-svg-plugin`              | SVG export                                                               |
+| `@mlightcad/cad-svg-converter`           | SVG File → Open (vector → AcDb entities)                                 |
+| `@mlightcad/cad-simple-viewer/simple-ui` | Built-in plain-DOM toolbar and dock tab content (enabled via `simpleUi`) |
+| `@mlightcad/cad-agent-plugin`            | AI-agent-powered interaction                                             |
+| `@mlightcad/cad-onedrive-plugin`         | OneDrive integration                                                     |
+| `@mlightcad/cad-google-drive-plugin`     | Google Drive integration                                                 |
 
 > **Rule of thumb:** every plugin in the list above should be pinned to the **exact same version number** as `cad-simple-viewer` you are upgrading to (for example, `1.7.5`).
 
 ### Shared export cores and headless exporters (same version as core)
 
-| Package | Purpose |
-| --- | --- |
-| `@mlightcad/cad-html-core` | Shared HTML snapshot / packaging pipeline (no viewer / DOM) |
-| `@mlightcad/cad-html-exporter` | Headless Node HTML export |
-| `@mlightcad/cad-pdf-core` | Shared PDF option model and database → PDF pipeline (no viewer / DOM) |
-| `@mlightcad/cad-pdf-exporter` | Headless Node DXF/DWG → PDF (no browser) |
+| Package                        | Purpose                                                               |
+| ------------------------------ | --------------------------------------------------------------------- |
+| `@mlightcad/cad-html-core`     | Shared HTML snapshot / packaging pipeline (no viewer / DOM)           |
+| `@mlightcad/cad-html-exporter` | Headless Node HTML export                                             |
+| `@mlightcad/cad-pdf-core`      | Shared PDF option model and database → PDF pipeline (no viewer / DOM) |
+| `@mlightcad/cad-pdf-exporter`  | Headless Node DXF/DWG → PDF (no browser)                              |
 
 ### Internal renderer layer (same version as core, published separately)
 
-| Package | Purpose |
-| --- | --- |
-| `@mlightcad/three-renderer` | THREE.js-based 2D/3D rendering engine |
-| `@mlightcad/pdf-renderer` | PDF content backend used by `cad-pdf-core` |
+| Package                     | Purpose                                    |
+| --------------------------- | ------------------------------------------ |
+| `@mlightcad/three-renderer` | THREE.js-based 2D/3D rendering engine      |
+| `@mlightcad/pdf-renderer`   | PDF content backend used by `cad-pdf-core` |
 
 These are consumed internally by plugins and cad-simple-viewer. You typically do **not** install them directly, but their version must be compatible with the plugins you install.
 
 ### Low-level data & text layer — **must match versions from the release**
 
-| Package | Notes |
-| --- | --- |
-| `@mlightcad/data-model` | Core entity/database types; every release bumps this together with the viewer |
-| `@mlightcad/libredwg-converter` | DWG parsing WebAssembly wrapper — DWG support depends on this |
-| `@mlightcad/mtext-parser` | MTEXT content parser |
-| `@mlightcad/mtext-renderer` | MTEXT → THREE geometry renderer |
-| `@mlightcad/mtext-input-box` | In-canvas MTEXT editor widget |
+| Package                         | Notes                                                                         |
+| ------------------------------- | ----------------------------------------------------------------------------- |
+| `@mlightcad/data-model`         | Core entity/database types; every release bumps this together with the viewer |
+| `@mlightcad/libredwg-converter` | DWG parsing WebAssembly wrapper — DWG support depends on this                 |
+| `@mlightcad/mtext-parser`       | MTEXT content parser                                                          |
+| `@mlightcad/mtext-renderer`     | MTEXT → THREE geometry renderer                                               |
+| `@mlightcad/mtext-input-box`    | In-canvas MTEXT editor widget                                                 |
 
 ### cad-editor-only Vue UI dependencies
 
 These appear in the `pnpm-workspace.yaml` overrides but are only needed when using `@mlightcad/cad-editor` (the full Vue 3 UI). Cad-simple-viewer integrations do not install them directly.
 
-| Package | Purpose |
-| --- | --- |
-| `@mlightcad/ribbon` | Ribbon UI component |
+| Package                    | Purpose                  |
+| -------------------------- | ------------------------ |
+| `@mlightcad/ribbon`        | Ribbon UI component      |
 | `@mlightcad/ui-components` | Shared Vue UI primitives |
 
 ### Third-party peer dependencies (keep versions as pinned in the release)
 
-| Package |
-| --- |
-| `three` |
-| `vue` (for cad-editor only) |
+| Package                              |
+| ------------------------------------ |
+| `three`                              |
+| `vue` (for cad-editor only)          |
 | `element-plus` (for cad-editor only) |
-| `vue-i18n` (for cad-editor only) |
-| `lodash-es` |
+| `vue-i18n` (for cad-editor only)     |
+| `lodash-es`                          |
 
 ---
 
@@ -470,10 +483,8 @@ A: You still need `data-model` and (if you load DWG files) `libredwg-converter` 
 
 **Q: Does semantic versioning protect me?**
 
-A: Semver ranges (`^`, `~`) work fine for patch-level bumping *within* a release series (for example, `^1.7.0` will pick up `1.7.5` automatically), but **the coordinated plugin/data-model/libredwg-converter versions** are not discoverable from semver alone — they are set by the release maintainers. You still need one of the two methods above to know which versions go together for any given minor bump.
+A: Semver ranges (`^`, `~`) work fine for patch-level bumping _within_ a release series (for example, `^1.7.0` will pick up `1.7.5` automatically), but **the coordinated plugin/data-model/libredwg-converter versions** are not discoverable from semver alone — they are set by the release maintainers. You still need one of the two methods above to know which versions go together for any given minor bump.
 
 **Q: I use npm/yarn instead of pnpm. Does this still apply?**
 
 A: Yes. The version coordination is the same regardless of package manager. Use `overrides` (pnpm), `resolutions` (yarn), or `overrides` (npm) with the values from `pnpm-workspace.yaml`, or simply pin the versions from the `cad-simple-viewer-demo` diff in your `package.json`.
-
-

@@ -3,7 +3,7 @@ import {
   scriptT,
   setCadScriptPaletteOpener
 } from '@mlightcad/cad-script-plugin/register'
-import type { AcApSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin'
+import type { AcApSimpleUiPlugin } from '@mlightcad/cad-simple-viewer/simple-ui'
 import { createApp } from 'vue'
 
 export const AGENT_DOCK_TAB_ID = 'agent'

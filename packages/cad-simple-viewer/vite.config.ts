@@ -17,7 +17,8 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
-        'file-open-panel': resolve(__dirname, 'src/file-open-panel.ts')
+        'file-open-panel': resolve(__dirname, 'src/file-open-panel.ts'),
+        'simple-ui': resolve(__dirname, 'src/simple-ui/index.ts')
       },
       name: packageId,
       fileName: (format, entryName) =>

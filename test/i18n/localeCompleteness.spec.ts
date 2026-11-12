@@ -56,10 +56,10 @@ const CATALOGS: Record<string, (locale: Locale) => unknown> = {
     loadNamed(`${PKG}/cad-script-plugin/src/i18n/${l}`)(),
   'cad-script-plugin/command': l => fromRecord(scriptCommandDescriptions, l),
   'cad-script-plugin/examples': l => fromRecord(scriptExampleCopyByLocale, l),
-  'cad-simple-ui-plugin': l =>
-    loadNamed(`${PKG}/cad-simple-ui-plugin/src/i18n/${l}`)(),
-  'cad-simple-ui-plugin/command': l =>
-    loadNamed(`${PKG}/cad-simple-ui-plugin/src/i18n/command-${l}`)(),
+  'cad-simple-viewer/simple-ui': l =>
+    loadNamed(`${PKG}/cad-simple-viewer/src/simple-ui/i18n/${l}`)(),
+  'cad-simple-viewer/simple-ui/command': l =>
+    loadNamed(`${PKG}/cad-simple-viewer/src/simple-ui/i18n/command-${l}`)(),
   'cad-html-core': l => ACEX_HTML_MESSAGES[l]
 }
 

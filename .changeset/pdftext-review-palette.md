@@ -1,7 +1,6 @@
 ---
 '@mlightcad/cad-pdf-plugin': minor
 '@mlightcad/cad-simple-viewer': minor
-'@mlightcad/cad-simple-ui-plugin': minor
 '@mlightcad/cad-editor': minor
 ---
 

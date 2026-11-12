@@ -7,7 +7,7 @@
  * navigate there.
  *
  * Pure TypeScript with no runtime imports (structural database shape), shared
- * by cad-simple-ui-plugin and the Vue cad-viewer.
+ * by simple-ui chrome and the Vue cad-editor.
  */
 import {
   ACAP_FIND_MAX_RESULTS,

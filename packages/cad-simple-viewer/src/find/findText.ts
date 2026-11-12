@@ -1,7 +1,7 @@
 /**
  * Text search over the entities of one layout (FIND).
  *
- * Shared by every UI (cad-simple-ui-plugin, the full Vue cad-viewer) so that
+ * Shared by every UI (simple-ui chrome, the full Vue cad-editor) so that
  * both behave identically. Pure TypeScript with no runtime imports, published
  * as the `@mlightcad/cad-simple-viewer/find` subpath.
  *

@@ -12,7 +12,6 @@ For the plugin mechanism itself (`AcApPlugin`, the plugin manager, lazy loading,
 
 | Package | Role | Commands / capabilities |
 |---------|------|-------------------------|
-| [`@mlightcad/cad-simple-ui-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin) | **Toolbar, layer manager & review palette UI** for `cad-simple-viewer` (plain DOM, no Vue/React) | `layer`, `markuppanel`, default toolbar (view, measure, export, review, theme, locale) |
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **Natural-language CAD agent** (AI chat panel + drawing tool calls) | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **Manual CAD script console** (runs checked scripts against the drawing, no LLM / API key needed) | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | Export drawings to **self-contained offline HTML** | `chtml` (dialog in `cad-editor`), `-chtml` (command-line) |
@@ -26,23 +25,29 @@ All command-triggered plugins are **lazy-loaded**: a small registration stub is 
 
 ---
 
-## UI plugins
+## Built-in simple UI chrome
 
-### `@mlightcad/cad-simple-ui-plugin` — UI chrome for the simple viewer
-
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) ships the canvas, CAD core, and shared plain-DOM chrome such as **`AcUiDockPanel`** (also the default host for `AcApPaletteService` when no app UI is registered). If you embed the simple viewer and want ready-made toolbar and palette tabs without adopting the full Vue-based [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) shell, **`cad-simple-ui-plugin` is the intended UI layer**.
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) ships optional plain-DOM **toolbar + dock palette** chrome (formerly `@mlightcad/cad-simple-ui-plugin`). It is **enabled by default** via `AcApDocManagerOptions.simpleUi` and loaded from `@mlightcad/cad-simple-viewer/simple-ui` so hosts that pass `simpleUi: false` (including `cad-editor`, CLI, and MCP) do not download the chunk.
 
 It provides:
 
 - A **configurable toolbar** (placement on any edge, default CAD commands, nested menus, custom items)
-- **Dock tab content** for layers, find, review, and measurements, mounted in the shared `AcUiDockPanel` chrome (layer on/off, ACI color picker, zoom-to-layer on double-click; markup list; find; measurements)
-- An **`AcApPaletteHost`** so command panels (and `AcApPaletteService.openNamedTab`) use the dock; `cad-editor` registers a Vue tool-palette host instead and switches automatically
+- **Dock tab content** for layers, find, review, and measurements (layer on/off, ACI color picker, zoom-to-layer on double-click; markup list; find; measurements)
+- An **`AcApPaletteHost`** so command panels (and `AcApPaletteService.openNamedTab`) use the dock; `cad-editor` registers a Vue tool-palette host instead (and reuses the shared DOM find / review / measurements views)
 - **Theme sync** with the `COLORTHEME` sysvar and `--ml-ui-*` CSS tokens on your host element
-- **Locale sync** with `AcApI18n` (English / Chinese / Czech / Turkish)
+- **Locale sync** with `AcApI18n`
 
-All widgets are framework-agnostic (plain DOM). The full Vue `cad-editor` app has its own Element Plus UI and does not require this plugin; use `cad-simple-ui-plugin` when you build on `cad-simple-viewer` directly.
+```ts
+AcApDocManager.createInstance({
+  container,
+  simpleUi: {
+    toolbar: { placement: 'right', items: 'default' }
+  }
+})
+// Opt out: simpleUi: false
+```
 
-→ **Quick start, toolbar customization, and options:** [packages/cad-simple-ui-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin/README.md)
+## UI plugins
 
 ### `@mlightcad/cad-agent-plugin` — AI drawing assistant
 
@@ -56,7 +61,7 @@ It provides:
 - **Phase 1 CAD tools** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
 - **English / Chinese / Turkish / Czech** UI strings via the plugin i18n layer
 
-The full Vue `cad-editor` app registers the agent automatically when the package is installed (palette tab). `cad-simple-viewer-demo` wires it into a dock tab via `cad-simple-ui-plugin`. Host apps call `registerLazyAgentPlugin` and `setAgentPaletteOpener` to mount the panel where they want.
+The full Vue `cad-editor` app registers the agent automatically when the package is installed (palette tab). `cad-simple-viewer-demo` wires it into a dock tab via built-in simple UI chrome. Host apps call `registerLazyAgentPlugin` and `setAgentPaletteOpener` to mount the panel where they want.
 
 → **Installation, registration, and tool list:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -167,7 +172,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 | App | Registered plugins |
 |-----|--------------------|
 | `cad-simple-viewer` | None — core only, plugins are optional |
-| `cad-simple-viewer-demo` | Export plugins (HTML/PDF/SVG), `cad-simple-ui-plugin`, `cad-agent-plugin`, `cad-script-plugin` |
+| `cad-simple-viewer-demo` | Export plugins (HTML/PDF/SVG), built-in simple UI chrome, `cad-agent-plugin`, `cad-script-plugin` |
 | `cad-editor` (Vue) | Export plugins (HTML/PDF/SVG); agent and script plugins are registered automatically **when installed** (optional peers) |
 
 ---

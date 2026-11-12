@@ -498,6 +498,7 @@ class HtmlConverterApp {
       autoResize: true,
       baseUrl: CAD_DATA_BASE_URL,
       builtinOpenFileDialog: false,
+      simpleUi: false,
       useMainThreadDraw: false,
       openDocumentDefaults: OPEN_OPTIONS,
       webworkerFileUrls: {

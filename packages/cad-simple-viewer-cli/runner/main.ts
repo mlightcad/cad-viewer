@@ -354,6 +354,7 @@ async function ensureViewer(options: CadViewerCliRunOptions = {}): Promise<void>
     autoResize: false,
     ...(options.baseUrl ? { baseUrl: options.baseUrl } : {}),
     useMainThreadDraw,
+    simpleUi: false,
     webworkerFileUrls: {
       dwgParser: dwgParserUrl,
       mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`

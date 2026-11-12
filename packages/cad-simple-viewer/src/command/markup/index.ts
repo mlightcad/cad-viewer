@@ -1,5 +1,7 @@
-// Side-effect: install per-session markup bag factory before other markup APIs run.
-export * from './AcApMarkupSessionBootstrap'
+// Install per-session markup bag factory before other markup APIs run.
+// Prefer the named export (imported by DocManager) over a side-effect-only
+// re-export — empty `export *` modules are tree-shaken under narrow sideEffects.
+export { acapInstallMarkupSessionBootstrap } from './AcApMarkupSessionBootstrap'
 export * from './AcApMarkupSession'
 export * from './AcApClearMarkupsCmd'
 export * from './AcApMarkupArrowCmd'

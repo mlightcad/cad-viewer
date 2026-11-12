@@ -1,7 +1,7 @@
 /**
  * Shared inline SVG icons for CAD toolbar and menu buttons.
  *
- * Consumed by cad-simple-ui-plugin, cad-html-plugin, cad-diff-viewer, and
+ * Consumed by simple-ui chrome, cad-html-plugin, cad-diff-viewer, and
  * cad-viewer. Import from `@mlightcad/cad-simple-viewer/icons` so HTML
  * viewer bundles do not pull in the full viewer. Each `ICON_*` constant is
  * an SVG snippet using `currentColor` for theming.

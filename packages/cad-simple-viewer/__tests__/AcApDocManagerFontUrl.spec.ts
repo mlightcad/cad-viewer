@@ -57,7 +57,10 @@ jest.mock('../src/view', () => ({
       enqueueScriptInputs: jest.fn(),
       inputManager: {
         isMobilePromptOpen: false,
-        mobileChrome: { prepareAccessory: jest.fn(), clearAccessory: jest.fn() },
+        mobileChrome: {
+          prepareAccessory: jest.fn(),
+          clearAccessory: jest.fn()
+        },
         sessionAccessoryHost: {
           host: {},
           type: 'desktop'
@@ -306,6 +309,7 @@ jest.mock('../src/command', () => {
       ])
     ),
     acapBindMarkupSession: jest.fn(),
+    acapInstallMarkupSessionBootstrap: jest.fn(),
     acapDisposeMarkupSession: jest.fn(),
     resetMarkupSession: jest.fn(),
     resetMeasurementSession: jest.fn()
@@ -377,6 +381,7 @@ describe('AcApDocManager font URL configuration', () => {
     const baseUrl = 'https://cdn.example.com/cad-data/'
 
     const manager = AcApDocManager.createInstance({
+      simpleUi: false,
       baseUrl
     })
 
@@ -387,7 +392,7 @@ describe('AcApDocManager font URL configuration', () => {
   })
 
   it('syncs the default fonts preset to the mtext renderer after worker init', () => {
-    AcApDocManager.createInstance({})
+    AcApDocManager.createInstance({ simpleUi: false })
 
     expect(mockInitialize).toHaveBeenCalled()
     expect(mockSetDefaultFonts).toHaveBeenCalledWith(['simsun', 'hztxt'])
@@ -396,6 +401,7 @@ describe('AcApDocManager font URL configuration', () => {
 
   it('configures main-thread mtext rendering before initializing workers', () => {
     AcApDocManager.createInstance({
+      simpleUi: false,
       useMainThreadDraw: true
     })
 
@@ -418,7 +424,7 @@ describe('AcApDocManager preset fonts for open', () => {
   })
 
   it('loads the full preset into all workers and reuses the promise', async () => {
-    const manager = AcApDocManager.createInstance({})
+    const manager = AcApDocManager.createInstance({ simpleUi: false })
     mockLoadFonts.mockClear()
 
     const first = manager!.ensurePresetFontsForOpen()
@@ -435,9 +441,7 @@ describe('AcApDocManager preset fonts for open', () => {
     const names = call[0]
     const options = call[1]
     expect(names.length).toBeGreaterThan(0)
-    expect(names).toEqual(
-      expect.arrayContaining(['simsun', 'hztxt', 'amgdt'])
-    )
+    expect(names).toEqual(expect.arrayContaining(['simsun', 'hztxt', 'amgdt']))
     expect(options).toEqual({ scope: 'all' })
     expect(manager!.lastPresetFontsForOpen).toEqual(names)
   })
@@ -450,6 +454,7 @@ describe('AcApDocManager preset fonts for open', () => {
     mockGetRenderMode.mockReturnValue('main')
 
     const manager = AcApDocManager.createInstance({
+      simpleUi: false,
       useMainThreadDraw: true
     })
     mockLoadFonts.mockClear()
@@ -465,20 +470,21 @@ describe('AcApDocManager preset fonts for open', () => {
   })
 
   it('kicks ensurePresetFontsForOpen from onBeforeOpenDocument without awaiting it', () => {
-    const manager = AcApDocManager.createInstance({})
+    const manager = AcApDocManager.createInstance({ simpleUi: false })
     let ensureCalled = false
     let ensureSettled = false
     let settleTimer: ReturnType<typeof setTimeout> | undefined
-    ;(manager as unknown as { ensurePresetFontsForOpen: () => Promise<void> }).ensurePresetFontsForOpen =
-      () => {
-        ensureCalled = true
-        return new Promise<void>(resolve => {
-          settleTimer = setTimeout(() => {
-            ensureSettled = true
-            resolve()
-          }, 50)
-        })
-      }
+    ;(
+      manager as unknown as { ensurePresetFontsForOpen: () => Promise<void> }
+    ).ensurePresetFontsForOpen = () => {
+      ensureCalled = true
+      return new Promise<void>(resolve => {
+        settleTimer = setTimeout(() => {
+          ensureSettled = true
+          resolve()
+        }, 50)
+      })
+    }
     ;(
       manager as unknown as {
         _openFileProgress: { setSeeThroughOverlay: (v: boolean) => void }
@@ -489,7 +495,6 @@ describe('AcApDocManager preset fonts for open', () => {
         _openFileProfiler: { begin: (db: unknown) => void }
       }
     )._openFileProfiler.begin = jest.fn()
-
     ;(
       manager as unknown as {
         onBeforeOpenDocument: (options?: unknown, replace?: boolean) => void
@@ -510,7 +515,7 @@ describe('AcApDocManager disableExport', () => {
   })
 
   it('defaults to enabling export commands', () => {
-    const manager = AcApDocManager.createInstance({})
+    const manager = AcApDocManager.createInstance({ simpleUi: false })
     expect(manager?.disableExport).toBe(false)
 
     const addCommand = (
@@ -527,6 +532,7 @@ describe('AcApDocManager disableExport', () => {
 
   it('skips built-in export commands when disableExport is true', () => {
     const manager = AcApDocManager.createInstance({
+      simpleUi: false,
       disableExport: true
     })
     expect(manager?.disableExport).toBe(true)
@@ -552,7 +558,7 @@ describe('AcApDocManager document sessions', () => {
   })
 
   it('starts with one document session', () => {
-    const manager = AcApDocManager.createInstance({})
+    const manager = AcApDocManager.createInstance({ simpleUi: false })
     expect(manager?.documentCount).toBe(1)
     expect(manager?.documents).toHaveLength(1)
     expect(manager?.mdiActiveDocument).toBe(manager?.curDocument)
@@ -560,15 +566,15 @@ describe('AcApDocManager document sessions', () => {
   })
 
   it('activateDocument is a no-op for the current document', async () => {
-    const manager = AcApDocManager.createInstance({})
-    await expect(
-      manager!.activateDocument(manager!.curDocument)
-    ).resolves.toBe(true)
+    const manager = AcApDocManager.createInstance({ simpleUi: false })
+    await expect(manager!.activateDocument(manager!.curDocument)).resolves.toBe(
+      true
+    )
     expect(manager!.documentCount).toBe(1)
   })
 
   it('closeDocument on the last drawing keeps one untitled session', async () => {
-    const manager = AcApDocManager.createInstance({})
+    const manager = AcApDocManager.createInstance({ simpleUi: false })
     const first = manager!.curDocument
     await manager!.closeDocument()
     expect(manager!.documentCount).toBe(1)

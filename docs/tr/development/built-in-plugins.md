@@ -12,7 +12,6 @@ Eklenti mekanizmasının kendisi için (`AcApPlugin`, eklenti yöneticisi, tembe
 
 | Paket | Rol | Komutlar / yetenekler |
 |---------|------|-------------------------|
-| [`@mlightcad/cad-simple-ui-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin) | `cad-simple-viewer` için **araç çubuğu, katman yöneticisi ve inceleme paleti arayüzü** (saf DOM, Vue/React yok) | `layer`, `markuppanel`, varsayılan araç çubuğu (görünüm, ölçüm, dışa aktarma, inceleme, tema, yerel ayar) |
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **Doğal dil CAD ajanı** (yapay zekâ sohbet paneli + çizim araç çağrıları) | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **Manuel CAD betik konsolu** (çizime karşı denetlenmiş betikler çalıştırır, LLM / API anahtarı gerekmez) | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | Çizimleri **bağımsız çevrimdışı HTML** olarak dışa aktarma | `chtml` (`cad-editor` içinde iletişim kutusu), `-chtml` (komut satırı) |
@@ -27,9 +26,9 @@ Komutla tetiklenen tüm eklentiler **tembel yüklenir**: başlangıçta küçük
 
 ## Arayüz eklentileri
 
-### `@mlightcad/cad-simple-ui-plugin` — Basit görüntüleyici için arayüz bileşenleri
+### `@mlightcad/simple-ui (in cad-simple-viewer)` — Basit görüntüleyici için arayüz bileşenleri
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) kasıtlı olarak **uygulama arayüzü olmadan** gelir — yalnızca tuval ve CAD çekirdeği. Basit görüntüleyiciyi kendi web uygulamanıza gömerken tam Vue tabanlı [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) kabuğunu benimsemeden hazır arayüz bileşenleri istiyorsanız, **`cad-simple-ui-plugin` amaçlanan arayüz katmanıdır**.
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) kasıtlı olarak **uygulama arayüzü olmadan** gelir — yalnızca tuval ve CAD çekirdeği. Basit görüntüleyiciyi kendi web uygulamanıza gömerken tam Vue tabanlı [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) kabuğunu benimsemeden hazır arayüz bileşenleri istiyorsanız, **`simple-ui (in cad-simple-viewer)` amaçlanan arayüz katmanıdır**.
 
 Şunları sağlar:
 
@@ -38,9 +37,9 @@ Komutla tetiklenen tüm eklentiler **tembel yüklenir**: başlangıçta küçük
 - Ana öğenizdeki `COLORTHEME` sistem değişkeni ve `--ml-ui-*` CSS belirteçleriyle **tema eşitleme**
 - `AcApI18n` ile **yerel ayar eşitleme** (İngilizce / Çince / Çekçe / Türkçe)
 
-Tüm bileşenler çerçeveden bağımsızdır (saf DOM). Tam Vue `cad-editor` uygulamasının kendi Element Plus arayüzü vardır ve bu eklentiyi gerektirmez; doğrudan `cad-simple-viewer` üzerine geliştirme yapıyorsanız `cad-simple-ui-plugin` kullanın.
+Tüm bileşenler çerçeveden bağımsızdır (saf DOM). Tam Vue `cad-editor` uygulamasının kendi Element Plus arayüzü vardır ve bu eklentiyi gerektirmez; doğrudan `cad-simple-viewer` üzerine geliştirme yapıyorsanız `simple-ui (in cad-simple-viewer)` kullanın.
 
-→ **Hızlı başlangıç, araç çubuğu özelleştirme ve seçenekler:** [packages/cad-simple-ui-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin/README.md)
+→ **Hızlı başlangıç, araç çubuğu özelleştirme ve seçenekler:** [packages/simple-ui (in cad-simple-viewer)/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/simple-ui (in cad-simple-viewer)/README.md)
 
 ### `@mlightcad/cad-agent-plugin` — Yapay zekâ çizim asistanı
 
@@ -54,7 +53,7 @@ Tüm bileşenler çerçeveden bağımsızdır (saf DOM). Tam Vue `cad-editor` uy
 - **Aşama 1 CAD araçları** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
 - Eklenti i18n katmanı aracılığıyla **İngilizce / Çince / Türkçe / Çekçe** arayüz metinleri
 
-Tam Vue `cad-editor` uygulaması, paket kurulduğunda ajanı otomatik olarak kaydeder (palet sekmesi). `cad-simple-viewer-demo`, `cad-simple-ui-plugin` aracılığıyla bunu bir dock sekmesine bağlar. Ana uygulamalar, paneli istedikleri yere monte etmek için `registerLazyAgentPlugin` ve `setAgentPaletteOpener` çağırır.
+Tam Vue `cad-editor` uygulaması, paket kurulduğunda ajanı otomatik olarak kaydeder (palet sekmesi). `cad-simple-viewer-demo`, `simple-ui (in cad-simple-viewer)` aracılığıyla bunu bir dock sekmesine bağlar. Ana uygulamalar, paneli istedikleri yere monte etmek için `registerLazyAgentPlugin` ve `setAgentPaletteOpener` çağırır.
 
 → **Kurulum, kayıt ve araç listesi:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -152,7 +151,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 | Uygulama | Kayıtlı eklentiler |
 |-----|--------------------|
 | `cad-simple-viewer` | Yok — yalnızca çekirdek, eklentiler isteğe bağlıdır |
-| `cad-simple-viewer-demo` | Dışa aktarma eklentileri (HTML/PDF/SVG), `cad-simple-ui-plugin`, `cad-agent-plugin`, `cad-script-plugin` |
+| `cad-simple-viewer-demo` | Dışa aktarma eklentileri (HTML/PDF/SVG), `simple-ui (in cad-simple-viewer)`, `cad-agent-plugin`, `cad-script-plugin` |
 | `cad-editor` (Vue) | Dışa aktarma eklentileri (HTML/PDF/SVG); ajan ve betik eklentileri, **kurulmuşsa** otomatik olarak kaydedilir (isteğe bağlı peer bağımlılıklar) |
 
 ---

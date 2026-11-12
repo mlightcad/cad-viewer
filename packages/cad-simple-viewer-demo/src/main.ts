@@ -1,8 +1,3 @@
-import type {
-  AcApSimpleUiPlugin,
-  AcUiDockPanelSide,
-  AcUiToolbarPlacement
-} from '@mlightcad/cad-simple-ui-plugin'
 import {
   type AcApOpenDatabaseOptions,
   acedApplyUiTheme,
@@ -12,6 +7,11 @@ import {
   type AcUiFileOpenRequest,
   type AcUiFileOpenSession
 } from '@mlightcad/cad-simple-viewer/file-open-panel'
+import type {
+  AcApSimpleUiPlugin,
+  AcUiDockPanelSide,
+  AcUiToolbarPlacement
+} from '@mlightcad/cad-simple-viewer/simple-ui'
 import {
   AcDbSystemVariables,
   AcDbSysVarManager,
@@ -44,15 +44,6 @@ function viewer(): CadSimpleViewerModule {
     throw new Error('CAD viewer runtime is not initialized yet')
   }
   return viewerApi.mod
-}
-
-async function loadSimpleUiPlugin() {
-  const [{ SIMPLE_UI_PLUGIN_NAME }, { acuiRegisterSimpleUiPlugin }] =
-    await Promise.all([
-      import('@mlightcad/cad-simple-ui-plugin'),
-      import('@mlightcad/cad-simple-ui-plugin/register')
-    ])
-  return { SIMPLE_UI_PLUGIN_NAME, acuiRegisterSimpleUiPlugin }
 }
 
 async function loadDemoToolbarPresets() {
@@ -834,13 +825,9 @@ class CadViewerApp {
     this.syncDisplayMenuState()
   }
 
-  private simpleUiPluginName: string | null = null
-
   private getSimpleUiPlugin(): AcApSimpleUiPlugin | undefined {
-    if (!this.isInitialized || !this.simpleUiPluginName) return undefined
-    return viewer().AcApDocManager.instance.pluginManager.getPlugin(
-      this.simpleUiPluginName
-    ) as AcApSimpleUiPlugin | undefined
+    if (!this.isInitialized) return undefined
+    return viewer().AcApDocManager.instance.simpleUiPlugin
   }
 
   private isLineWeightEnabled(): boolean {
@@ -955,6 +942,16 @@ class CadViewerApp {
       ])
       registerLibreDwgConverter(dwgParserUrl)
       registerSvgConverter()
+      const [
+        { AGENT_TOOLBAR_ITEM },
+        { SCRIPT_TOOLBAR_ITEM },
+        { setupAgentIntegration }
+      ] = await Promise.all([
+        import('./agentToolbarItem'),
+        import('./scriptToolbarItem'),
+        import('./agentIntegration')
+      ])
+
       viewer().AcApDocManager.createInstance({
         container: this.container,
         busyIndicatorHost: this.viewerPane,
@@ -967,38 +964,8 @@ class CadViewerApp {
         webworkerFileUrls: {
           mtextRender: `./workers/${viewer().MTEXT_RENDERER_WORKER_FILE}`,
           dwgParser: dwgParserUrl
-        }
-      })
-      this.registerDocumentEvents()
-      if (openProf) {
-        const w = window as Window & { __OPEN_MODE__?: string }
-        w.__OPEN_MODE__ = useWorkers ? 'worker-mtext' : 'main-mtext'
-        console.log(`[openprof] mode=${w.__OPEN_MODE__}`)
-      }
-
-      // Attach before cloud plugins load so they reuse landing MSAL / GIS clients.
-      this.fileOpenSession?.landing.attachSourcesTo(
-        viewer().AcApDocManager.instance.dataSourceManager
-      )
-      await registerLazyPlugins()
-      this.fileOpenSession?.refreshSourceButtons()
-
-      const [
-        { SIMPLE_UI_PLUGIN_NAME, acuiRegisterSimpleUiPlugin },
-        { AGENT_TOOLBAR_ITEM },
-        { SCRIPT_TOOLBAR_ITEM },
-        { setupAgentIntegration }
-      ] = await Promise.all([
-        loadSimpleUiPlugin(),
-        import('./agentToolbarItem'),
-        import('./scriptToolbarItem'),
-        import('./agentIntegration')
-      ])
-      this.simpleUiPluginName = SIMPLE_UI_PLUGIN_NAME
-
-      await acuiRegisterSimpleUiPlugin(
-        viewer().AcApDocManager.instance.pluginManager,
-        {
+        },
+        simpleUi: {
           host: this.viewerPane,
           dockPanel: {
             defaultOpen: false,
@@ -1032,12 +999,25 @@ class CadViewerApp {
             }
           }
         }
-      )
+      })
+      this.registerDocumentEvents()
+      if (openProf) {
+        const w = window as Window & { __OPEN_MODE__?: string }
+        w.__OPEN_MODE__ = useWorkers ? 'worker-mtext' : 'main-mtext'
+        console.log(`[openprof] mode=${w.__OPEN_MODE__}`)
+      }
 
-      const plugin = viewer().AcApDocManager.instance.pluginManager.getPlugin(
-        SIMPLE_UI_PLUGIN_NAME
-      ) as AcApSimpleUiPlugin
-      setupAgentIntegration(plugin)
+      // Attach before cloud plugins load so they reuse landing MSAL / GIS clients.
+      this.fileOpenSession?.landing.attachSourcesTo(
+        viewer().AcApDocManager.instance.dataSourceManager
+      )
+      await registerLazyPlugins()
+      this.fileOpenSession?.refreshSourceButtons()
+
+      const plugin = await viewer().AcApDocManager.instance.simpleUiReady
+      if (plugin) {
+        setupAgentIntegration(plugin)
+      }
 
       this.isInitialized = true
       if (!showChrome) {

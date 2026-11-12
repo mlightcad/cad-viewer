@@ -1,21 +1,25 @@
 ---
-title: "cad-simple-viewer と cad-editor のアップグレード"
+title: 'cad-simple-viewer と cad-editor のアップグレード'
 ---
 
 # cad-simple-viewer と cad-editor のアップグレード
 
 このガイドでは、`@mlightcad/cad-simple-viewer` と`@mlightcad/cad-editor` を安全にアップグレードする方法を説明します。単独でバージョンを上げられない理由、一緒に更新する必要がある関連パッケージ、および任意のリリースに対して正しい互換バージョンのセットを判断する 2 つの信頼できる方法について説明します。
 
+::: info シンプル UI が `cad-simple-viewer` に統合
+この変更を含むリリース以降、**`@mlightcad/cad-simple-ui-plugin` は削除**されました。ツールバー・ドックタブ・デフォルト `AcApPaletteHost` は **`@mlightcad/cad-simple-viewer/simple-ui`** にあります。`simpleUi` オプション（デフォルト有効）で有効化し、`cad-editor` / CLI などは `simpleUi: false` でオプトアウトしてください。
+:::
+
 ::: info ドックパネルの chrome が `cad-simple-viewer` へ移動
-この変更を含むリリース以降、プレーン DOM の **ドックパネル chrome**（`AcUiDockPanel`）は `@mlightcad/cad-simple-ui-plugin` ではなく **`@mlightcad/cad-simple-viewer`** にあります。プラグインは引き続きタブ内容（画層・検索・レビュー・計測）を持ち、`AcApPaletteHost` を登録してドックに載せます。
+プレーン DOM の **ドックパネル chrome**（`AcUiDockPanel`）は **`@mlightcad/cad-simple-viewer`** にあります。組み込み simple UI がドックにタブ内容（画層・検索・レビュー・計測）を載せ `AcApPaletteHost` を登録し、`cad-editor` は Vue ツールパレットホストを登録します。
 
 移行の要点：
 
-- `AcUiDockPanel` / `AcUiDockPanelTab` / `AcUiDockPanelSide` は `@mlightcad/cad-simple-viewer` から import（プラグインはクラスと型を 1 リリース再エクスポート；viewer からの import を推奨）。
-- i18n キーは `simpleUi.dockPanel.*` から **`main.dockPanel.*`** へ。
-- ホスト未登録時の `AcApPaletteService.open` は `.ml-palette-fallback` ではなく `AcUiDockPanel` を使用。
-- 名前付きタブは `AcApPaletteService.openNamedTab`（`ACAP_PALETTE_NAMED_TAB`）で、**登録済みホストが必須**（名前付きタブにドックフォールバックはない）。エディタは Vue パレット、simple-ui はドックへ自動切替。
-:::
+- `AcUiDockPanel` / `AcUiDockPanelTab` / `AcUiDockPanelSide` は `@mlightcad/cad-simple-viewer` から import。
+- i18n キーは **`main.dockPanel.*`**（`main.dockPanel.tab.layers` など）。
+- ホスト未登録時の `AcApPaletteService.open` は `AcUiDockPanel`（右ドック / スマホ sheet）を使用。
+- 名前付きタブは `AcApPaletteService.openNamedTab`（`ACAP_PALETTE_NAMED_TAB`）で、**登録済みホストが必須**（名前付きタブにドックフォールバックはない）。ホスト付き `HTMLElement` パネルは引き続き `AcApPaletteService.open`。
+  :::
 
 ::: info 共有 AI モデル設定（`@mlightcad/cad-llm-plugin`）
 この変更を含むリリースから、LLM プロバイダの設定は `@mlightcad/cad-agent-plugin` から新しい **`@mlightcad/cad-llm-plugin`** に移り、CAD エージェントと `pdftext` の文字認識（OCR）が同じ設定を共有します。新パッケージは **LLMSETTINGS** コマンドと UI フレームワークに依存しない設定ダイアログ（`@mlightcad/cad-editor` の AI リボン タブからも開けます）を提供し、`@mlightcad/cad-simple-viewer` には `AcApLlmSettingsService` が追加され、どの機能からもダイアログを開いたり、画像対応モデルが設定済みか確認したりできます。
@@ -35,6 +39,7 @@ import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
 registerLazyLlmPlugin(pluginManager)
 registerLazyAgentPlugin(pluginManager)
 ```
+
 :::
 
 ::: info PDF 読み込み：`ipdf` は `PDFIMPORT` / `-PDFIMPORT` に
@@ -51,11 +56,11 @@ registerLazyAgentPlugin(pluginManager)
 
 形状照合は `@mlightcad/cad-pdf-plugin` から `@mlightcad/cad-simple-viewer` に移動しました。インポートを移行してください：
 
-| `@mlightcad/cad-pdf-plugin`（非推奨） | `@mlightcad/cad-simple-viewer` |
-| --- | --- |
-| `findPdfShapeMatches` | `acedFindShapeMatches` |
-| `applyPdfAffine` | `acedApplyAffine2d` |
-| `pdfEntityToFeature` | `acedEntityToShapeFeature(entity, id, { matchLayer: false })` |
+| `@mlightcad/cad-pdf-plugin`（非推奨）                                      | `@mlightcad/cad-simple-viewer`                                                   |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `findPdfShapeMatches`                                                      | `acedFindShapeMatches`                                                           |
+| `applyPdfAffine`                                                           | `acedApplyAffine2d`                                                              |
+| `pdfEntityToFeature`                                                       | `acedEntityToShapeFeature(entity, id, { matchLayer: false })`                    |
 | `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
 
 旧名は非推奨の別名として引き続き使えます。文字列は特徴の `kind` から `label` に移りました。`pdfblock` は `-BSEARCH` のプロンプト順（変換 → 新規/既存 → 名前 → 挿入基点 → 範囲）になり、旧プロンプトに応答するスクリプトは調整が必要です。
@@ -183,10 +188,10 @@ Agent / スクリプトは線・矢印・文字で寸法を模倣せず、これ
 ::: info PDF エクスポートを共有コアに分割（ブラウザ + Node）
 **1.8.0** から、PDF エクスポートは HTML エクスポートと同じ階層になります。共有ロジックは `@mlightcad/cad-pdf-core`（オプションモデルと database → PDF パイプライン。`cad-simple-viewer` / DOM に**依存しません**）にあり、次の 2 つのフロントエンドがそれを使います。
 
-| パッケージ | 役割 |
-| --- | --- |
-| `@mlightcad/cad-pdf-plugin` | ブラウザの `cpdf` / `-cpdf` / `pdfimport`（および Vue のエクスポートダイアログ） |
-| `@mlightcad/cad-pdf-exporter` | Node のヘッドレス DXF/DWG → PDF — **ブラウザ不要** |
+| パッケージ                    | 役割                                                                             |
+| ----------------------------- | -------------------------------------------------------------------------------- |
+| `@mlightcad/cad-pdf-plugin`   | ブラウザの `cpdf` / `-cpdf` / `pdfimport`（および Vue のエクスポートダイアログ） |
+| `@mlightcad/cad-pdf-exporter` | Node のヘッドレス DXF/DWG → PDF — **ブラウザ不要**                               |
 
 **ブラウザ統合側 — ほぼ変更なし。** `cpdf` / `-cpdf` / `pdfimport`、`AcApPdfConvertor`、`AcApPdfExportOptions`、`resolveAcApPdfExportOptions` をそのまま使えます。新しい peer `@mlightcad/cad-pdf-core` をプラグインと同じバージョンで追加インストールしてください。
 
@@ -240,71 +245,71 @@ await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
 
 ### コアビューアパッケージ
 
-| パッケージ | 役割 |
-| --- | --- |
+| パッケージ                     | 役割                                                                                   |
+| ------------------------------ | -------------------------------------------------------------------------------------- |
 | `@mlightcad/cad-simple-viewer` | フレームワーク非依存のコア（ドキュメント管理、コマンドスタック、レンダリングの接着層） |
-| `@mlightcad/cad-editor` | cad-simple-viewer の上に構築された Vue 3 + Element Plus の UI ラッパー |
+| `@mlightcad/cad-editor`        | cad-simple-viewer の上に構築された Vue 3 + Element Plus の UI ラッパー                 |
 
 ### プラグイン — **cad-simple-viewer のバージョンと完全に一致させる必要があります**
 
-| パッケージ | 目的 |
-| --- | --- |
-| `@mlightcad/cad-html-plugin` | ワンクリックの自己完結型 HTML エクスポート |
-| `@mlightcad/cad-pdf-plugin` | ブラウザの PDF エクスポートと PDF → CAD インポート |
-| `@mlightcad/cad-svg-plugin` | SVG エクスポート |
-| `@mlightcad/cad-simple-ui-plugin` | プレーン DOM のツールバー、レイヤマネージャー、ドックパネル |
-| `@mlightcad/cad-agent-plugin` | AI エージェントによるインタラクション |
-| `@mlightcad/cad-onedrive-plugin` | OneDrive 統合 |
-| `@mlightcad/cad-google-drive-plugin` | Google Drive 統合 |
+| パッケージ                               | 目的                                                |
+| ---------------------------------------- | --------------------------------------------------- |
+| `@mlightcad/cad-html-plugin`             | ワンクリックの自己完結型 HTML エクスポート          |
+| `@mlightcad/cad-pdf-plugin`              | ブラウザの PDF エクスポートと PDF → CAD インポート  |
+| `@mlightcad/cad-svg-plugin`              | SVG エクスポート                                    |
+| `@mlightcad/cad-simple-viewer/simple-ui` | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
+| `@mlightcad/cad-agent-plugin`            | AI エージェントによるインタラクション               |
+| `@mlightcad/cad-onedrive-plugin`         | OneDrive 統合                                       |
+| `@mlightcad/cad-google-drive-plugin`     | Google Drive 統合                                   |
 
 > **経験則：** 上記のリストのすべてのプラグインは、アップグレード先の `cad-simple-viewer` と**完全に同じバージョン番号**（たとえば `1.7.5`）に固定する必要があります。
 
 ### 共有エクスポートコアとヘッドレスエクスポーター（コアと同じバージョン）
 
-| パッケージ | 目的 |
-| --- | --- |
-| `@mlightcad/cad-html-core` | 共有 HTML スナップショット / パッケージングパイプライン（ビューア / DOM なし） |
-| `@mlightcad/cad-html-exporter` | Node ヘッドレス HTML エクスポート |
-| `@mlightcad/cad-pdf-core` | 共有 PDF オプションモデルと database → PDF パイプライン（ビューア / DOM なし） |
-| `@mlightcad/cad-pdf-exporter` | Node ヘッドレス DXF/DWG → PDF（ブラウザ不要） |
+| パッケージ                     | 目的                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------ |
+| `@mlightcad/cad-html-core`     | 共有 HTML スナップショット / パッケージングパイプライン（ビューア / DOM なし） |
+| `@mlightcad/cad-html-exporter` | Node ヘッドレス HTML エクスポート                                              |
+| `@mlightcad/cad-pdf-core`      | 共有 PDF オプションモデルと database → PDF パイプライン（ビューア / DOM なし） |
+| `@mlightcad/cad-pdf-exporter`  | Node ヘッドレス DXF/DWG → PDF（ブラウザ不要）                                  |
 
 ### 内部レンダラー層（コアと同じバージョン、別途公開）
 
-| パッケージ | 目的 |
-| --- | --- |
-| `@mlightcad/three-renderer` | THREE.js ベースの 2D/3D レンダリングエンジン |
-| `@mlightcad/pdf-renderer` | `cad-pdf-core` が使う PDF コンテンツバックエンド |
+| パッケージ                  | 目的                                             |
+| --------------------------- | ------------------------------------------------ |
+| `@mlightcad/three-renderer` | THREE.js ベースの 2D/3D レンダリングエンジン     |
+| `@mlightcad/pdf-renderer`   | `cad-pdf-core` が使う PDF コンテンツバックエンド |
 
 これらはプラグインと cad-simple-viewer によって内部的に使用されます。通常は直接インストールする**必要はありません**が、そのバージョンはインストールするプラグインと互換性がある必要があります。
 
 ### 低レベルデータ & テキスト層 — **リリースのバージョンと一致させる必要があります**
 
-| パッケージ | 備考 |
-| --- | --- |
-| `@mlightcad/data-model` | コアのエンティティ/データベース型。各リリースでビューアと一緒に更新されます |
-| `@mlightcad/libredwg-converter` | DWG 解析の WebAssembly ラッパー — DWG サポートはこれに依存します |
-| `@mlightcad/mtext-parser` | MTEXT コンテンツパーサー |
-| `@mlightcad/mtext-renderer` | MTEXT → THREE ジオメトリのレンダラー |
-| `@mlightcad/mtext-input-box` | キャンバス内の MTEXT エディターウィジェット |
+| パッケージ                      | 備考                                                                        |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| `@mlightcad/data-model`         | コアのエンティティ/データベース型。各リリースでビューアと一緒に更新されます |
+| `@mlightcad/libredwg-converter` | DWG 解析の WebAssembly ラッパー — DWG サポートはこれに依存します            |
+| `@mlightcad/mtext-parser`       | MTEXT コンテンツパーサー                                                    |
+| `@mlightcad/mtext-renderer`     | MTEXT → THREE ジオメトリのレンダラー                                        |
+| `@mlightcad/mtext-input-box`    | キャンバス内の MTEXT エディターウィジェット                                 |
 
 ### cad-editor 専用の Vue UI 依存関係
 
 これらは `pnpm-workspace.yaml` のオーバーライドに含まれていますが、`@mlightcad/cad-editor`（完全な Vue 3 UI）を使用する場合にのみ必要です。cad-simple-viewer の統合では直接インストールしません。
 
-| パッケージ | 目的 |
-| --- | --- |
-| `@mlightcad/ribbon` | リボン UI コンポーネント |
+| パッケージ                 | 目的                     |
+| -------------------------- | ------------------------ |
+| `@mlightcad/ribbon`        | リボン UI コンポーネント |
 | `@mlightcad/ui-components` | 共有 Vue UI プリミティブ |
 
 ### サードパーティのピア依存関係（リリースで固定されたバージョンを維持）
 
-| パッケージ |
-| --- |
-| `three` |
-| `vue`（cad-editor 専用） |
+| パッケージ                        |
+| --------------------------------- |
+| `three`                           |
+| `vue`（cad-editor 専用）          |
 | `element-plus`（cad-editor 専用） |
-| `vue-i18n`（cad-editor 専用） |
-| `lodash-es` |
+| `vue-i18n`（cad-editor 専用）     |
+| `lodash-es`                       |
 
 ---
 

@@ -17,7 +17,6 @@
 '@mlightcad/cad-pdf-plugin': minor
 '@mlightcad/cad-script-core': minor
 '@mlightcad/cad-script-plugin': minor
-'@mlightcad/cad-simple-ui-plugin': minor
 '@mlightcad/cad-simple-viewer': minor
 '@mlightcad/cad-simple-viewer-cli': minor
 '@mlightcad/cad-simple-viewer-demo': minor

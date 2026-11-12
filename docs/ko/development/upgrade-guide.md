@@ -1,21 +1,25 @@
 ---
-title: "cad-simple-viewer 및 cad-editor 업그레이드"
+title: 'cad-simple-viewer 및 cad-editor 업그레이드'
 ---
 
 # cad-simple-viewer 및 cad-editor 업그레이드
 
 이 가이드는 `@mlightcad/cad-simple-viewer`와 `@mlightcad/cad-editor`를 안전하게 업그레이드하는 방법을 설명합니다. 즉, 왜 이들을 개별적으로 올릴 수 없는지, 어떤 관련 패키지가 함께 이동해야 하는지, 그리고 주어진 릴리스에 대해 올바른 호환 버전 집합을 확인하는 두 가지 신뢰할 수 있는 방법을 다룹니다.
 
+::: info 심플 UI가 `cad-simple-viewer`로 통합됨
+이 변경이 포함된 릴리스부터 **`@mlightcad/cad-simple-ui-plugin`이 제거**됩니다. 툴바·도크 탭·기본 `AcApPaletteHost`는 **`@mlightcad/cad-simple-viewer/simple-ui`**에 있습니다. `simpleUi`(기본 켜짐)로 설정하고, `cad-editor`/CLI 등은 `simpleUi: false`로 끄세요.
+:::
+
 ::: info Dock 패널 chrome이 `cad-simple-viewer`로 이동
-이 변경이 포함된 릴리스부터 순수 DOM **dock 패널 chrome**(`AcUiDockPanel`)은 `@mlightcad/cad-simple-ui-plugin`이 아니라 **`@mlightcad/cad-simple-viewer`**에 있습니다. 플러그인은 탭 콘텐츠(도면층·찾기·검토·측정)를 유지하고 `AcApPaletteHost`를 등록합니다.
+순수 DOM **dock 패널 chrome**(`AcUiDockPanel`)은 **`@mlightcad/cad-simple-viewer`**에 있습니다. 내장 simple UI가 dock에 탭 콘텐츠(도면층·찾기·검토·측정)를 올리고 `AcApPaletteHost`를 등록하며, `cad-editor`는 Vue 도구 팔레트 호스트를 등록합니다.
 
 마이그레이션:
 
-- `AcUiDockPanel` 등은 `@mlightcad/cad-simple-viewer`에서 import(플러그인은 한 릴리스 동안 클래스·타입을 re-export; viewer import 권장).
-- i18n 키는 `simpleUi.dockPanel.*` → **`main.dockPanel.*`**.
-- 호스트가 없으면 `AcApPaletteService.open`이 `AcUiDockPanel`을 사용(기존 `.ml-palette-fallback` 대체).
-- 이름 있는 탭은 `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB`이며 **등록된 호스트가 필요**(이름 있는 탭용 dock 폴백 없음).
-:::
+- `AcUiDockPanel` 등은 `@mlightcad/cad-simple-viewer`에서 import.
+- i18n 키는 **`main.dockPanel.*`**(예: `main.dockPanel.tab.layers`).
+- 호스트가 없으면 `AcApPaletteService.open`이 `AcUiDockPanel`(오른쪽 dock / 폰 sheet)을 사용.
+- 이름 있는 탭은 `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB`이며 **등록된 호스트가 필요**(이름 있는 탭용 dock 폴백 없음). 호스팅된 `HTMLElement` 패널은 계속 `AcApPaletteService.open`.
+  :::
 
 ::: info 공유 AI 모델 설정(`@mlightcad/cad-llm-plugin`)
 이 변경이 포함된 릴리스부터 LLM 공급자 설정이 `@mlightcad/cad-agent-plugin`에서 새 **`@mlightcad/cad-llm-plugin`**으로 옮겨져, CAD 에이전트와 `pdftext` 문자 인식(OCR)이 같은 설정을 공유합니다. 새 패키지는 **LLMSETTINGS** 명령과 UI 프레임워크에 의존하지 않는 설정 대화상자(`@mlightcad/cad-editor`의 AI 리본 탭에서도 열 수 있음)를 제공하며, `@mlightcad/cad-simple-viewer`에는 `AcApLlmSettingsService`가 추가되어 어떤 기능에서든 대화상자를 열거나 이미지 지원 모델이 설정되었는지 확인할 수 있습니다.
@@ -35,6 +39,7 @@ import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
 registerLazyLlmPlugin(pluginManager)
 registerLazyAgentPlugin(pluginManager)
 ```
+
 :::
 
 ::: info PDF 가져오기: `ipdf`가 `PDFIMPORT` / `-PDFIMPORT`로
@@ -51,11 +56,11 @@ registerLazyAgentPlugin(pluginManager)
 
 형상 일치가 `@mlightcad/cad-pdf-plugin`에서 `@mlightcad/cad-simple-viewer`로 이동했습니다. 가져오기를 옮기십시오:
 
-| `@mlightcad/cad-pdf-plugin`(사용 중단) | `@mlightcad/cad-simple-viewer` |
-| --- | --- |
-| `findPdfShapeMatches` | `acedFindShapeMatches` |
-| `applyPdfAffine` | `acedApplyAffine2d` |
-| `pdfEntityToFeature` | `acedEntityToShapeFeature(entity, id, { matchLayer: false })` |
+| `@mlightcad/cad-pdf-plugin`(사용 중단)                                     | `@mlightcad/cad-simple-viewer`                                                   |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `findPdfShapeMatches`                                                      | `acedFindShapeMatches`                                                           |
+| `applyPdfAffine`                                                           | `acedApplyAffine2d`                                                              |
+| `pdfEntityToFeature`                                                       | `acedEntityToShapeFeature(entity, id, { matchLayer: false })`                    |
 | `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
 
 이전 이름은 사용 중단된 별칭으로 계속 동작합니다. 문자열은 특징의 `kind`에서 `label`로 옮겨졌습니다. `pdfblock`은 이제 `-BSEARCH` 프롬프트 순서(변환 → 새로 만들기/기존 → 이름 → 삽입점 → 범위)를 따르므로 이전 프롬프트에 응답하던 스크립트는 수정해야 합니다.
@@ -183,10 +188,10 @@ Agent/스크립트는 선·화살표·문자로 치수를 흉내 내지 말고 �
 ::: info PDF 내보내기를 공유 코어로 분리(브라우저 + Node)
 **1.8.0**부터 PDF 내보내기는 HTML 내보내기와 같은 계층을 사용합니다. 공유 로직은 `@mlightcad/cad-pdf-core`(옵션 모델과 database → PDF 파이프라인, `cad-simple-viewer` / DOM에 **의존하지 않음**)에 있으며, 다음 두 프론트엔드가 이를 사용합니다.
 
-| 패키지 | 역할 |
-| --- | --- |
-| `@mlightcad/cad-pdf-plugin` | 브라우저 `cpdf` / `-cpdf` / `pdfimport`(및 Vue 내보내기 대화상자) |
-| `@mlightcad/cad-pdf-exporter` | Node 헤드리스 DXF/DWG → PDF — **브라우저 불필요** |
+| 패키지                        | 역할                                                              |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `@mlightcad/cad-pdf-plugin`   | 브라우저 `cpdf` / `-cpdf` / `pdfimport`(및 Vue 내보내기 대화상자) |
+| `@mlightcad/cad-pdf-exporter` | Node 헤드리스 DXF/DWG → PDF — **브라우저 불필요**                 |
 
 **브라우저 통합 측 — 대부분 동일.** `cpdf` / `-cpdf` / `pdfimport`, `AcApPdfConvertor`, `AcApPdfExportOptions`, `resolveAcApPdfExportOptions`를 그대로 사용하세요. 새 peer `@mlightcad/cad-pdf-core`를 플러그인과 같은 버전으로 함께 설치하세요.
 
@@ -240,71 +245,71 @@ await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
 
 ### 코어 뷰어 패키지
 
-| 패키지 | 역할 |
-| --- | --- |
-| `@mlightcad/cad-simple-viewer` | 프레임워크 독립적 코어(문서 관리, 명령 스택, 렌더링 연결) |
-| `@mlightcad/cad-editor` | cad-simple-viewer 위에 구축된 Vue 3 + Element Plus UI 래퍼 |
+| 패키지                         | 역할                                                       |
+| ------------------------------ | ---------------------------------------------------------- |
+| `@mlightcad/cad-simple-viewer` | 프레임워크 독립적 코어(문서 관리, 명령 스택, 렌더링 연결)  |
+| `@mlightcad/cad-editor`        | cad-simple-viewer 위에 구축된 Vue 3 + Element Plus UI 래퍼 |
 
 ### 플러그인 — **cad-simple-viewer 버전과 정확히 일치해야 함**
 
-| 패키지 | 목적 |
-| --- | --- |
-| `@mlightcad/cad-html-plugin` | 원클릭 자체 포함 HTML 내보내기 |
-| `@mlightcad/cad-pdf-plugin` | 브라우저 PDF 내보내기 및 PDF→CAD 가져오기 |
-| `@mlightcad/cad-svg-plugin` | SVG 내보내기 |
-| `@mlightcad/cad-simple-ui-plugin` | 순수 DOM 툴바, 레이어 관리자, 도킹 패널 |
-| `@mlightcad/cad-agent-plugin` | AI 에이전트 기반 상호 작용 |
-| `@mlightcad/cad-onedrive-plugin` | OneDrive 통합 |
-| `@mlightcad/cad-google-drive-plugin` | Google Drive 통합 |
+| 패키지                                   | 목적                                                |
+| ---------------------------------------- | --------------------------------------------------- |
+| `@mlightcad/cad-html-plugin`             | 원클릭 자체 포함 HTML 내보내기                      |
+| `@mlightcad/cad-pdf-plugin`              | 브라우저 PDF 내보내기 및 PDF→CAD 가져오기           |
+| `@mlightcad/cad-svg-plugin`              | SVG 내보내기                                        |
+| `@mlightcad/cad-simple-viewer/simple-ui` | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
+| `@mlightcad/cad-agent-plugin`            | AI 에이전트 기반 상호 작용                          |
+| `@mlightcad/cad-onedrive-plugin`         | OneDrive 통합                                       |
+| `@mlightcad/cad-google-drive-plugin`     | Google Drive 통합                                   |
 
 > **경험칙:** 위 목록의 모든 플러그인은 업그레이드 대상인 `cad-simple-viewer`와 **정확히 동일한 버전 번호**(예: `1.7.5`)로 고정해야 합니다.
 
 ### 공유 내보내기 코어 및 헤드리스 내보내기(코어와 동일 버전)
 
-| 패키지 | 목적 |
-| --- | --- |
-| `@mlightcad/cad-html-core` | 공유 HTML 스냅샷 / 패키징 파이프라인(뷰어 / DOM 없음) |
-| `@mlightcad/cad-html-exporter` | Node 헤드리스 HTML 내보내기 |
-| `@mlightcad/cad-pdf-core` | 공유 PDF 옵션 모델 및 database → PDF 파이프라인(뷰어 / DOM 없음) |
-| `@mlightcad/cad-pdf-exporter` | Node 헤드리스 DXF/DWG → PDF(브라우저 불필요) |
+| 패키지                         | 목적                                                             |
+| ------------------------------ | ---------------------------------------------------------------- |
+| `@mlightcad/cad-html-core`     | 공유 HTML 스냅샷 / 패키징 파이프라인(뷰어 / DOM 없음)            |
+| `@mlightcad/cad-html-exporter` | Node 헤드리스 HTML 내보내기                                      |
+| `@mlightcad/cad-pdf-core`      | 공유 PDF 옵션 모델 및 database → PDF 파이프라인(뷰어 / DOM 없음) |
+| `@mlightcad/cad-pdf-exporter`  | Node 헤드리스 DXF/DWG → PDF(브라우저 불필요)                     |
 
 ### 내부 렌더러 계층(코어와 동일 버전, 별도 게시)
 
-| 패키지 | 목적 |
-| --- | --- |
-| `@mlightcad/three-renderer` | THREE.js 기반 2D/3D 렌더링 엔진 |
-| `@mlightcad/pdf-renderer` | `cad-pdf-core`가 사용하는 PDF 콘텐츠 백엔드 |
+| 패키지                      | 목적                                        |
+| --------------------------- | ------------------------------------------- |
+| `@mlightcad/three-renderer` | THREE.js 기반 2D/3D 렌더링 엔진             |
+| `@mlightcad/pdf-renderer`   | `cad-pdf-core`가 사용하는 PDF 콘텐츠 백엔드 |
 
 이들은 플러그인과 cad-simple-viewer에서 내부적으로 사용됩니다. 일반적으로 직접 설치하지 **않지만**, 해당 버전은 설치하는 플러그인과 호환되어야 합니다.
 
 ### 저수준 데이터 및 텍스트 계층 — **릴리스의 버전과 일치해야 함**
 
-| 패키지 | 비고 |
-| --- | --- |
-| `@mlightcad/data-model` | 코어 엔티티/데이터베이스 타입; 모든 릴리스가 뷰어와 함께 이 패키지를 올립니다 |
-| `@mlightcad/libredwg-converter` | DWG 파싱 WebAssembly 래퍼 — DWG 지원이 이에 의존합니다 |
-| `@mlightcad/mtext-parser` | MTEXT 콘텐츠 파서 |
-| `@mlightcad/mtext-renderer` | MTEXT → THREE 형상 렌더러 |
-| `@mlightcad/mtext-input-box` | 캔버스 내 MTEXT 편집기 위젯 |
+| 패키지                          | 비고                                                                          |
+| ------------------------------- | ----------------------------------------------------------------------------- |
+| `@mlightcad/data-model`         | 코어 엔티티/데이터베이스 타입; 모든 릴리스가 뷰어와 함께 이 패키지를 올립니다 |
+| `@mlightcad/libredwg-converter` | DWG 파싱 WebAssembly 래퍼 — DWG 지원이 이에 의존합니다                        |
+| `@mlightcad/mtext-parser`       | MTEXT 콘텐츠 파서                                                             |
+| `@mlightcad/mtext-renderer`     | MTEXT → THREE 형상 렌더러                                                     |
+| `@mlightcad/mtext-input-box`    | 캔버스 내 MTEXT 편집기 위젯                                                   |
 
 ### cad-editor 전용 Vue UI 의존성
 
 이들은 `pnpm-workspace.yaml` overrides에 나타나지만 `@mlightcad/cad-editor`(전체 Vue 3 UI)를 사용할 때만 필요합니다. Cad-simple-viewer 통합에서는 직접 설치하지 않습니다.
 
-| 패키지 | 목적 |
-| --- | --- |
-| `@mlightcad/ribbon` | 리본 UI 컴포넌트 |
+| 패키지                     | 목적                   |
+| -------------------------- | ---------------------- |
+| `@mlightcad/ribbon`        | 리본 UI 컴포넌트       |
 | `@mlightcad/ui-components` | 공유 Vue UI 프리미티브 |
 
 ### 서드파티 피어 의존성(릴리스에 고정된 버전 유지)
 
-| 패키지 |
-| --- |
-| `three` |
-| `vue`(cad-editor 전용) |
+| 패키지                          |
+| ------------------------------- |
+| `three`                         |
+| `vue`(cad-editor 전용)          |
 | `element-plus`(cad-editor 전용) |
-| `vue-i18n`(cad-editor 전용) |
-| `lodash-es` |
+| `vue-i18n`(cad-editor 전용)     |
+| `lodash-es`                     |
 
 ---
 

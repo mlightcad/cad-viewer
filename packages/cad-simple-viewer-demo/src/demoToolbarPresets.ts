@@ -1,12 +1,12 @@
 import type {
   AcApSimpleUiPlugin,
   AcUiToolbarItemsInput
-} from '@mlightcad/cad-simple-ui-plugin'
+} from '@mlightcad/cad-simple-viewer/simple-ui'
 import {
   acuiCreateToolbarLayoutSwitcher,
   acuiCreateToolbarSeparator,
   acuiToolbarPreset
-} from '@mlightcad/cad-simple-ui-plugin'
+} from '@mlightcad/cad-simple-viewer/simple-ui'
 
 import { DEMO_TOOLBAR_LAYOUTS } from './demoToolbarLayouts'
 

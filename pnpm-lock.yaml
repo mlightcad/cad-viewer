@@ -810,15 +810,6 @@ importers:
         specifier: ^6.4.3
         version: 6.4.3(@types/node@24.12.4)(sass@1.98.0)(yaml@2.8.3)
 
-  packages/cad-simple-ui-plugin:
-    devDependencies:
-      '@mlightcad/cad-simple-viewer':
-        specifier: workspace:*
-        version: link:../cad-simple-viewer
-      '@mlightcad/data-model':
-        specifier: 1.15.26
-        version: 1.15.26
-
   packages/cad-simple-viewer:
     devDependencies:
       '@mlightcad/data-model':
@@ -942,9 +933,6 @@ importers:
       '@mlightcad/cad-script-plugin':
         specifier: workspace:*
         version: link:../cad-script-plugin
-      '@mlightcad/cad-simple-ui-plugin':
-        specifier: workspace:*
-        version: link:../cad-simple-ui-plugin
       '@mlightcad/cad-simple-viewer':
         specifier: workspace:*
         version: link:../cad-simple-viewer
