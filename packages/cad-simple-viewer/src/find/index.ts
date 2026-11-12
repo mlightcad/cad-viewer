@@ -15,6 +15,7 @@ import {
 } from './findDrawing'
 import {
   ACAP_FIND_MAX_RESULTS,
+  type AcApFindBlockTableRecordLike,
   type AcApFindDatabaseLike,
   acapFindExcerpt,
   type AcApFindHit,
@@ -23,7 +24,8 @@ import {
   type AcApFindResult,
   acapFindTextInLayout,
   acapMTextToPlainText,
-  acapNormalizeFindText
+  acapNormalizeFindText,
+  acapResolveFindBlockTableRecord
 } from './findText'
 
 /**
@@ -32,6 +34,7 @@ import {
  */
 export {
   ACAP_FIND_MAX_RESULTS as ACUI_FIND_MAX_RESULTS,
+  type AcApFindBlockTableRecordLike as AcUiFindBlockTableRecordLike,
   type AcApFindBox as AcUiFindBox,
   type AcApFindDatabaseLike as AcUiFindDatabaseLike,
   type AcApFindDrawingOptions as AcUiFindDrawingOptions,
@@ -49,5 +52,6 @@ export {
   acapFindTextInLayout as acuiFindTextInLayout,
   acapListFindLayouts as acuiListFindLayouts,
   acapMTextToPlainText as acuiMTextToPlainText,
-  acapNormalizeFindText as acuiNormalizeFindText
+  acapNormalizeFindText as acuiNormalizeFindText,
+  acapResolveFindBlockTableRecord as acuiResolveFindBlockTableRecord
 }
