@@ -284,3 +284,22 @@ export interface AcUiToolbarOptions extends AcUiToolbarChromeOptions {
    */
   subToolbar?: AcUiSubToolbarOptions
 }
+
+/**
+ * Callbacks supplied when building the default toolbar (theme, locale, and
+ * placement). Used by {@link acuiCreateDefaultToolbarItems}.
+ */
+export interface AcUiDefaultToolbarContext {
+  /** Returns the current UI theme. */
+  getTheme: () => import('../../editor/global/AcEdUiTheme').AcEdUiTheme
+  /** Applies a UI theme change. */
+  setTheme: (theme: import('../../editor/global/AcEdUiTheme').AcEdUiTheme) => void
+  /** Returns the active application locale. */
+  getLocale: () => import('../../i18n/AcApI18n').AcApLocale
+  /** Sets the application locale. */
+  setLocale: (locale: import('../../i18n/AcApI18n').AcApLocale) => void
+  /** Returns the current toolbar edge placement. */
+  getPlacement: () => AcUiToolbarPlacement
+  /** Moves the toolbar to the given host edge. */
+  setPlacement: (placement: AcUiToolbarPlacement) => void
+}

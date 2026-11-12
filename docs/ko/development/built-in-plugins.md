@@ -12,7 +12,6 @@ MLightCAD는 일련의 공식 플러그인을 제공합니다. 각 플러그인�
 
 | 패키지 | 역할 | 명령 / 기능 |
 |---------|------|-------------------------|
-| [`@mlightcad/cad-simple-ui-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin) | `cad-simple-viewer`를 위한 **툴바, 레이어 관리자 및 리뷰 팔레트 UI**(순수 DOM, Vue/React 없음) | `layer`, `markuppanel`, 기본 툴바(뷰, 측정, 내보내기, 리뷰, 테마, 로캘) |
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **자연어 CAD 에이전트**(AI 채팅 패널 + 도면 도구 호출) | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **수동 CAD 스크립트 콘솔**(도면에 대해 검증된 스크립트 실행, LLM/API 키 불필요) | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | 도면을 **자체 포함 오프라인 HTML**로 내보내기 | `chtml`(`cad-editor`의 대화상자), `-chtml`(명령줄) |
@@ -29,7 +28,7 @@ MLightCAD는 일련의 공식 플러그인을 제공합니다. 각 플러그인�
 
 ### `@mlightcad/cad-simple-ui-plugin` — simple viewer를 위한 UI 프레임
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer)는 의도적으로 **애플리케이션 UI 없이** 출시됩니다 — 캔버스와 CAD 코어만 제공합니다. simple viewer를 자신의 웹 앱에 포함시키면서 완전한 Vue 기반 [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) 셸을 채택하지 않고 바로 사용할 수 있는 UI를 원한다면, **`cad-simple-ui-plugin`이 의도된 UI 레이어입니다**.
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer)는 캔버스, CAD 코어, 그리고 **`AcUiDockPanel`** 같은 공유 순수 DOM chrome(앱 UI가 없을 때 `AcApPaletteService` 기본 호스트)을 제공합니다. simple viewer를 임베드하면서 완전한 Vue [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor) 셸 없이 툴바·팔레트를 쓰려면, **`cad-simple-ui-plugin`이 예전의 의도된 UI 레이어**였습니다.
 
 제공하는 기능:
 
@@ -40,7 +39,27 @@ MLightCAD는 일련의 공식 플러그인을 제공합니다. 각 플러그인�
 
 모든 위젯은 프레임워크에 종속되지 않습니다(순수 DOM). 완전한 Vue `cad-editor` 앱은 자체 Element Plus UI를 갖고 있어 이 플러그인이 필요하지 않습니다. `cad-simple-viewer`를 직접 기반으로 빌드할 때 `cad-simple-ui-plugin`을 사용하십시오.
 
-→ **빠른 시작, 툴바 사용자 정의 및 옵션:** [packages/cad-simple-ui-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-ui-plugin/README.md)
+→ **1.8.0 이후 사용법과 마이그레이션:** [업그레이드 가이드](./upgrade-guide)
+
+::: tip 1.8.0부터 — `cad-simple-viewer`로 통합
+**1.8.0**부터 별도 npm 패키지 **`@mlightcad/cad-simple-ui-plugin`이 제거**됩니다. 동일한 툴바 / 도크 탭 / 팔레트 호스트는 **`@mlightcad/cad-simple-viewer`**의 `@mlightcad/cad-simple-viewer`에 있습니다.
+
+- **기본 켜짐:** `AcApDocManager.createInstance({ simpleUi: { … } })`로 옵션을 전달하거나 `simpleUi`를 생략해 기본값을 사용합니다. 청크는 지연 로드되므로 `simpleUi: false`인 호스트(`cad-editor`, CLI, MCP 등)는 다운로드하지 않습니다.
+- **타입 / 헬퍼:** `@mlightcad/cad-simple-viewer`에서 import.
+- **준비 대기:** `simpleUiReady` / `simpleUi`을 사용하고 `pluginManager.getPlugin('SimpleUiPlugin')`은 사용하지 않습니다.
+
+```ts
+AcApDocManager.createInstance({
+  container,
+  simpleUi: {
+    toolbar: { placement: 'right', items: 'default' }
+  }
+})
+// 끄기: simpleUi: false
+```
+
+전체 마이그레이션은 [업그레이드 가이드](./upgrade-guide)를 참고하세요.
+:::
 
 ### `@mlightcad/cad-agent-plugin` — AI 도면 어시스턴트
 
@@ -54,7 +73,7 @@ MLightCAD는 일련의 공식 플러그인을 제공합니다. 각 플러그인�
 - **1단계 CAD 도구** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
 - 플러그인 i18n 레이어를 통한 **영어/중국어/터키어/체코어** UI 문자열
 
-완전한 Vue `cad-editor` 앱은 패키지가 설치되어 있으면 에이전트를 자동으로 등록합니다(팔레트 탭). `cad-simple-viewer-demo`은 `cad-simple-ui-plugin`을 통해 도크 탭에 연결합니다. 호스트 앱은 `registerLazyAgentPlugin`과 `setAgentPaletteOpener`를 호출하여 패널을 원하는 위치에 마운트합니다.
+완전한 Vue `cad-editor` 앱은 패키지가 설치되어 있으면 에이전트를 자동으로 등록합니다(팔레트 탭). `cad-simple-viewer-demo`은 `simpleUi`를 통해 도크 탭에 연결합니다. 호스트 앱은 `registerLazyAgentPlugin`과 `setAgentPaletteOpener`를 호출하여 패널을 원하는 위치에 마운트합니다.
 
 → **설치, 등록 및 도구 목록:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -152,7 +171,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 | 앱 | 등록된 플러그인 |
 |-----|--------------------|
 | `cad-simple-viewer` | 없음 — 코어만 포함하며 플러그인은 선택 사항 |
-| `cad-simple-viewer-demo` | 내보내기 플러그인(HTML/PDF/SVG), `cad-simple-ui-plugin`, `cad-agent-plugin`, `cad-script-plugin` |
+| `cad-simple-viewer-demo` | 내보내기 플러그인(HTML/PDF/SVG), 내장 simple UI(`simpleUi`, 이전 `cad-simple-ui-plugin`), `cad-agent-plugin`, `cad-script-plugin` |
 | `cad-editor`(Vue) | 내보내기 플러그인(HTML/PDF/SVG); 에이전트 및 스크립트 플러그인은 **설치된 경우** 자동으로 등록됩니다(선택적 피어) |
 
 ---

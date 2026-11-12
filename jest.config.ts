@@ -33,7 +33,7 @@ const config: Config = {
     // three@0.186's CJS entry re-exports ESM (`three.module.js` / `three.core.js`).
     '/node_modules/(?!.*(mtext-parser|rbush|quickselect|three/build/three))'
   ],
-  testPathIgnorePatterns: ['/e2e/', '/__tests__/helpers/'],
+  testPathIgnorePatterns: ['/e2e/', '/__tests__/helpers/', '/__tests__/simple-ui/helpers/'],
   moduleNameMapper: {
     '^lodash-es$': 'lodash',
     '^@mlightcad/cad-pdf-core$':
@@ -58,8 +58,6 @@ const config: Config = {
       '<rootDir>/packages/cad-simple-viewer/src/index.ts',
     '^@mlightcad/cad-simple-viewer/icons$':
       '<rootDir>/packages/cad-simple-viewer/src/ui/icons.ts',
-    '^@mlightcad/cad-simple-viewer/find$':
-      '<rootDir>/packages/cad-simple-viewer/src/find/index.ts',
     '^three/examples/jsm/lines/LineMaterial\\.js$':
       '<rootDir>/test/mocks/three/LineMaterial.js',
     '^three/examples/jsm/lines/LineSegments2\\.js$':

@@ -17,7 +17,6 @@
 '@mlightcad/cad-pdf-plugin': patch
 '@mlightcad/cad-script-core': patch
 '@mlightcad/cad-script-plugin': patch
-'@mlightcad/cad-simple-ui-plugin': patch
 '@mlightcad/cad-simple-viewer': patch
 '@mlightcad/cad-simple-viewer-cli': patch
 '@mlightcad/cad-simple-viewer-demo': patch

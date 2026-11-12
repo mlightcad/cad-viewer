@@ -8,7 +8,7 @@
 | **`AcUiShortCutToolbar`** | Top-right undo / redo / erase bar with an accessory slot and optional collapse |
 | **`AcUiSimpleToolbar`** | Low-level icon strip with overflow “⋯” menu (building block for the shortcut bar) |
 
-Hosts such as `@mlightcad/cad-simple-ui-plugin` compose **preset buttons** and layout defaults on top of `AcUiToolbar`. This guide focuses on the engine APIs in `cad-simple-viewer` so you can mount your own toolbar or customize one without the plugin.
+Built-in simple UI chrome (`AcApDocManagerOptions.simpleUi`) composes **preset buttons** and layout defaults on top of `AcUiToolbar`. This guide also covers mounting your own toolbar without that chrome.
 
 ---
 
@@ -211,7 +211,7 @@ When the submenu depends on the active document (e.g. layouts), attach a **gette
 
 ### 4.6 Config composition helpers
 
-When building lists from presets / append / exclude (as the simple-ui plugin does), use:
+When building lists from presets / append / exclude (as built-in simple UI chrome does), use:
 
 | Helper | Purpose |
 |---|---|
@@ -220,7 +220,7 @@ When building lists from presets / append / exclude (as the simple-ui plugin doe
 | `acuiCreateToolbarSeparator()` | Separator factory |
 | `acuiFilterVisibleToolbarItems(items, openMode)` | Apply open-mode / visibility rules |
 
-Preset **catalogs** (concrete button definitions for `'select'`, `'measure'`, …) live in host packages such as `@mlightcad/cad-simple-ui-plugin`, not in the engine.
+Preset **catalogs** (concrete button definitions for `'select'`, `'measure'`, …) live in `cad-simple-viewer` under `src/ui/toolbar/` (e.g. `defaultToolbarItems`).
 
 ---
 
@@ -313,43 +313,49 @@ AcApSettingManager.instance.isShowShortCutToolbar = false
 
 ---
 
-## 8. Using `@mlightcad/cad-simple-ui-plugin`
+## 8. Using built-in simple UI chrome
 
-For a batteries-included toolbar (measure, markup, layer, layout, theme, …), register the plugin and pass `toolbar` / `layouts` options. The plugin builds items, mounts `AcUiToolbar`, and binds DocManager for you:
+For a batteries-included toolbar (measure, markup, layer, layout, theme, …), enable `simpleUi` and pass `toolbar` / `layouts` options. Chrome builds items, mounts `AcUiToolbar`, and binds DocManager for you:
 
 ```ts
-import { acuiRegisterSimpleUiPlugin } from '@mlightcad/cad-simple-ui-plugin'
+import { AcApDocManager } from '@mlightcad/cad-simple-viewer'
 
-acuiRegisterSimpleUiPlugin({
-  toolbar: {
-    placement: 'right',
-    collapsible: true,
-    overflow: 'menu',
-    appendItems: [
-      {
-        id: 'my-tool',
-        label: 'toolbar.myTool',
-        icon: MY_ICON,
-        command: 'MYCMD'
+AcApDocManager.createInstance({
+  container,
+  simpleUi: {
+    toolbar: {
+      placement: 'right',
+      collapsible: true,
+      overflow: 'menu',
+      appendItems: [
+        {
+          id: 'my-tool',
+          label: 'toolbar.myTool',
+          icon: MY_ICON,
+          command: 'MYCMD'
+        }
+      ],
+      excludeItems: ['reading-mode']
+    },
+    layouts: {
+      phone: {
+        toolbar: { placement: 'bottom', showLabels: true, size: 'stretch' }
       }
-    ],
-    excludeItems: ['reading-mode']
-  },
-  layouts: {
-    phone: {
-      toolbar: { placement: 'bottom', showLabels: true, size: 'stretch' }
     }
   }
 })
+
+const chrome = await AcApDocManager.instance.simpleUiReady
+chrome?.setToolbarItems('default')
 ```
 
-Runtime (plugin instance):
+Runtime (`AcApSimpleUiChrome` via `simpleUi` / `simpleUiReady`):
 
 - `setToolbarItems(items | 'default')`
 - `setToolbarPlacement(placement)`
 - `setToolbarCollapsed(collapsed)`
 
-Prefer the plugin when you want the default CAD chrome; drop to `AcUiToolbar` directly when you need a minimal or fully custom button set.
+Prefer built-in chrome when you want the default CAD UI; drop to `AcUiToolbar` directly when you need a minimal or fully custom button set.
 
 ---
 

@@ -46,6 +46,8 @@ const CATALOGS: Record<string, (locale: Locale) => unknown> = {
     loadDefault(`${PKG}/cad-simple-viewer/src/i18n/${l}/command`)(),
   'cad-simple-viewer/jig': l =>
     loadDefault(`${PKG}/cad-simple-viewer/src/i18n/${l}/jig`)(),
+  'cad-simple-viewer/simpleUi': l =>
+    loadDefault(`${PKG}/cad-simple-viewer/src/i18n/${l}/simpleUi`)(),
   'cad-editor-demo': l =>
     loadDefault(`${PKG}/cad-editor-demo/src/locale/${l}`)(),
   'cad-agent-plugin': l => loadNamed(`${PKG}/cad-agent-plugin/src/i18n/${l}`)(),
@@ -56,10 +58,6 @@ const CATALOGS: Record<string, (locale: Locale) => unknown> = {
     loadNamed(`${PKG}/cad-script-plugin/src/i18n/${l}`)(),
   'cad-script-plugin/command': l => fromRecord(scriptCommandDescriptions, l),
   'cad-script-plugin/examples': l => fromRecord(scriptExampleCopyByLocale, l),
-  'cad-simple-ui-plugin': l =>
-    loadNamed(`${PKG}/cad-simple-ui-plugin/src/i18n/${l}`)(),
-  'cad-simple-ui-plugin/command': l =>
-    loadNamed(`${PKG}/cad-simple-ui-plugin/src/i18n/command-${l}`)(),
   'cad-html-core': l => ACEX_HTML_MESSAGES[l]
 }
 

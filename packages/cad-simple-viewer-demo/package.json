@@ -30,7 +30,6 @@
     "@mlightcad/cad-pdf-core": "workspace:*",
     "@mlightcad/cad-pdf-plugin": "workspace:*",
     "@mlightcad/pdf-renderer": "workspace:*",
-    "@mlightcad/cad-simple-ui-plugin": "workspace:*",
     "@mlightcad/cad-svg-plugin": "workspace:*",
     "@mlightcad/cad-svg-converter": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",

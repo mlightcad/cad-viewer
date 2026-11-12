@@ -46,7 +46,7 @@ export type AcApPaletteNamedTabId =
 
 /**
  * Host UI integration for palette tabs. `cad-editor` registers its Vue tool
- * palette; `cad-simple-ui-plugin` registers the shared {@link AcUiDockPanel}.
+ * palette; built-in simple UI chrome registers the shared {@link AcUiDockPanel}.
  * Without a host, {@link AcApPaletteService.open} uses a built-in dock fallback;
  * {@link AcApPaletteService.openNamedTab} still requires a host that implements
  * {@link openNamedTab}.
@@ -157,6 +157,11 @@ export class AcApPaletteHandle {
 export class AcApPaletteService {
   private static currentHost?: AcApPaletteHost
   private static readonly fallbackHost = createDockFallbackHost()
+  /**
+   * Named-tab opens requested before a host with {@link AcApPaletteHost.openNamedTab}
+   * is registered (e.g. while built-in simple UI loads asynchronously).
+   */
+  private static pendingNamedTabs: string[] = []
 
   /**
    * Registers the host palette integration.
@@ -165,6 +170,16 @@ export class AcApPaletteService {
    */
   static setHost(host: AcApPaletteHost | undefined) {
     AcApPaletteService.currentHost = host
+    if (
+      !host?.openNamedTab ||
+      AcApPaletteService.pendingNamedTabs.length === 0
+    ) {
+      return
+    }
+    const pending = AcApPaletteService.pendingNamedTabs.splice(0)
+    for (const id of pending) {
+      host.openNamedTab(id)
+    }
   }
 
   /** Whether a host UI registered its own palette. */
@@ -198,14 +213,25 @@ export class AcApPaletteService {
   /**
    * Opens a host-owned named tab when the registered host implements
    * {@link AcApPaletteHost.openNamedTab}. Unlike {@link open}, there is no
-   * built-in fallback — named tabs need host-owned content (Vue palette or
-   * plugin dock tabs).
+   * built-in dock fallback — named tabs need host-owned content (Vue palette
+   * or simple-ui dock tabs).
+   *
+   * When no host is registered yet, the request is queued and flushed on the
+   * next {@link setHost} that implements {@link AcApPaletteHost.openNamedTab}
+   * (covers the async built-in `simpleUi` load gap).
    *
    * @param id - Well-known tab id (see {@link ACAP_PALETTE_NAMED_TAB}).
-   * @returns `true` when the host opened the tab; `false` otherwise.
+   * @returns `true` when the host opened the tab, or when the open was queued;
+   * `false` when a host is present but does not support named tabs.
    */
   static openNamedTab(id: AcApPaletteNamedTabId | string): boolean {
-    return AcApPaletteService.currentHost?.openNamedTab?.(id) ?? false
+    const host = AcApPaletteService.currentHost
+    if (host) {
+      if (!host.openNamedTab) return false
+      return host.openNamedTab(id)
+    }
+    AcApPaletteService.pendingNamedTabs.push(id)
+    return true
   }
 }
 

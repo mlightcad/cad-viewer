@@ -95,6 +95,7 @@ async function ensureViewer(options: { baseUrl?: string } = {}): Promise<void> {
     autoResize: true,
     ...(options.baseUrl ? { baseUrl: options.baseUrl } : {}),
     useMainThreadDraw: true,
+    simpleUi: false,
     webworkerFileUrls: {
       dwgParser: dwgParserUrl,
       mtextRender: `./workers/${MTEXT_RENDERER_WORKER_FILE}`

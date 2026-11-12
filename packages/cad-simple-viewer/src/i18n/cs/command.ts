@@ -137,6 +137,12 @@ export default {
     dwgname: {
       description: 'Ukládá název aktuálního souboru výkresu (pouze pro čtení)'
     },
+    find: {
+      description: 'Otevře dokovací panel hledání textu'
+    },
+    layer: {
+      description: 'Otevře nebo zavře dokovací panel správce hladin'
+    },
     loginname: {
       description: 'Zobrazí přihlašovací jméno uživatele (pouze pro čtení)'
     },

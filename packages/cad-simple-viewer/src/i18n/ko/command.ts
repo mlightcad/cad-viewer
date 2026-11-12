@@ -130,6 +130,12 @@ export default {
     dwgname: {
       description: '현재 도면 파일의 이름을 저장합니다(읽기 전용)'
     },
+    find: {
+      description: '문자 검색 도킹 패널을 엽니다'
+    },
+    layer: {
+      description: '도면층 관리자 도킹 패널을 열거나 닫습니다'
+    },
     loginname: {
       description: '사용자의 로그인 이름을 표시합니다(읽기 전용)'
     },

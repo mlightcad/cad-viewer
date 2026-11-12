@@ -22,10 +22,10 @@ Single test file: `pnpm jest packages/<pkg>/__tests__/Foo.spec.ts`.
 
 ## Package layout (directory -> package name)
 
-- `cad-simple-viewer` -> `@mlightcad/cad-simple-viewer`: core logic, **no UI framework** (canvas only) — commands, documents, plugin system, i18n registry.
+- `cad-simple-viewer` -> `@mlightcad/cad-simple-viewer`: core logic, **no UI framework** (canvas only) — commands, documents, plugin system, i18n registry, and built-in plain-DOM simple UI chrome (`AcApDocManager` option `simpleUi`, types under `src/ui/`).
 - `cad-editor` -> `@mlightcad/cad-editor`: Vue 3 component/app (menus, ribbon, command line, status bar).
 - `three-renderer` / `pdf-renderer`: rendering engines (THREE.js batching, PDF output).
-- `*-plugin` (`cad-simple-ui`, `cad-script`, `cad-llm`, `cad-agent`, `cad-pdf`, `cad-html`, `cad-svg`, `cad-onedrive`, `cad-google-drive`): optional features, lazy-loaded.
+- `*-plugin` (`cad-script`, `cad-llm`, `cad-agent`, `cad-pdf`, `cad-html`, `cad-svg`, `cad-onedrive`, `cad-google-drive`): optional features, lazy-loaded.
 - `cad-llm-plugin` -> `@mlightcad/cad-llm-plugin`: shared AI model (LLM) settings — config store, AI SDK model factory, framework-free settings dialog (`llmsettings`) and the LLM text recognizer. `cad-agent-plugin` depends on it; other features (e.g. `pdftext` OCR) reach it only through `AcApLlmSettingsService` / `AcApTextRecognitionService` in `cad-simple-viewer`, which must never import AI SDK code.
 - `cad-html-core` / `cad-html-exporter` / `cad-simple-viewer-cli` / `cad-mcp-server`: self-contained HTML export, CLI, MCP server.
 - `cad-pdf-core` / `cad-pdf-exporter`: shared PDF export pipeline (no `cad-simple-viewer` / DOM dependency) and the headless Node PDF exporter built on it; `cad-pdf-plugin` uses the same core in the browser.
@@ -66,7 +66,7 @@ The full recipe for a new CAD command lives in `packages/cad-simple-viewer/src/c
 - **Translate into all supported locales in the same change: `en`, `zh`, `ja`, `ko`, `tr`, `cs`, `ar`.** Whenever you add a key or change the meaning of an English string, write the real translation in every locale file. Do not copy the English text, do not leave a key out and rely on the `en` fallback, and do not fill a locale with `...enX` spreads or `clone(en)`. Each of these falls back to English silently at runtime, which is how the ja/ko UI ended up mostly English.
 - Catalog locations (each language has its own file):
   - `cad-editor/src/locale/<lang>/{main,command,dialog,entity}.ts`
-  - `cad-simple-viewer/src/i18n/<lang>/{main,command,jig}.ts`
+  - `cad-simple-viewer/src/i18n/<lang>/{main,command,jig,simpleUi}.ts`
   - `cad-editor-demo/src/locale/<lang>.ts`
   - `cad-*-plugin/src/i18n/` (`<lang>.ts`, `command-<lang>.ts`, or per-locale records such as `command.ts` / `exampleCopy.ts`)
   - `cad-html-core/src/AcExHtmlI18n.ts` plus `src/i18n/<lang>.ts`

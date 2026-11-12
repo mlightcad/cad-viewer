@@ -17,7 +17,6 @@
       "@mlightcad/cad-pdf-core",
       "@mlightcad/cad-pdf-exporter",
       "@mlightcad/cad-pdf-plugin",
-      "@mlightcad/cad-simple-ui-plugin",
       "@mlightcad/cad-simple-viewer",
       "@mlightcad/cad-simple-viewer-cli",
       "@mlightcad/cad-mcp-server",

@@ -504,6 +504,7 @@ export class AcApDiffViewer {
       autoResize: true,
       baseUrl: options.baseUrl,
       builtinOpenFileDialog: false,
+      simpleUi: false,
       openDocumentDefaults: openDefaults,
       webworkerFileUrls: options.webworkerFileUrls
     })

@@ -5,7 +5,7 @@
 
 This package provides the **high-performance** core components of a CAD viewer such as document management, command handling, and collaboration between the UI and rendering engines. It's designed for optimal performance when handling large CAD files.
 
-This module doesn't depend on any UI framework and doesn't provide any UI except canvas. If you want to integrate a high-performance CAD viewer into a web application with your own UI, this module is the correct choice. It fully supports **mobile layout and touch interaction**—responsive chrome for phones and tablets, plus pinch-to-zoom, single-finger pan, and tap-to-select—so hosts can ship a mobile-friendly viewer without a separate mobile stack.
+This module doesn't depend on any UI framework. Besides the canvas it can optionally mount plain-DOM **simple UI chrome** (toolbar + dock palettes for layers / find / review / measurements) via `AcApDocManagerOptions.simpleUi` (default **on**; types and helpers from `@mlightcad/cad-simple-viewer`). Pass `simpleUi: false` when you bring your own UI (e.g. Vue `cad-editor`) or run headless. It fully supports **mobile layout and touch interaction**—responsive chrome for phones and tablets, plus pinch-to-zoom, single-finger pan, and tap-to-select—so hosts can ship a mobile-friendly viewer without a separate mobile stack.
 
 ## Key Features
 - Document management optimized for large files

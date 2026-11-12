@@ -1,12 +1,12 @@
 import type {
-  AcApSimpleUiPlugin,
+  AcApSimpleUiChrome,
   AcUiToolbarItemsInput
-} from '@mlightcad/cad-simple-ui-plugin'
+} from '@mlightcad/cad-simple-viewer'
 import {
   acuiCreateToolbarLayoutSwitcher,
   acuiCreateToolbarSeparator,
   acuiToolbarPreset
-} from '@mlightcad/cad-simple-ui-plugin'
+} from '@mlightcad/cad-simple-viewer'
 
 import { DEMO_TOOLBAR_LAYOUTS } from './demoToolbarLayouts'
 
@@ -120,7 +120,7 @@ let currentDemoToolbarLayoutId = 'default'
  * @param presetId - Layout preset id from {@link DEMO_TOOLBAR_LAYOUTS}.
  */
 export function applyDemoToolbarLayout(
-  plugin: AcApSimpleUiPlugin,
+  chrome: AcApSimpleUiChrome,
   presetId: string
 ) {
   const items = DEMO_TOOLBAR_PRESET_ITEMS[presetId]
@@ -128,16 +128,16 @@ export function applyDemoToolbarLayout(
 
   currentDemoToolbarLayoutId = presetId
   if (presetId === 'default') {
-    plugin.setToolbarItems(items)
+    chrome.setToolbarItems(items)
     return
   }
 
   const layoutSwitcher = acuiCreateToolbarLayoutSwitcher({
     presets: [...DEMO_TOOLBAR_LAYOUTS],
     currentId: presetId,
-    onSelect: id => applyDemoToolbarLayout(plugin, id)
+    onSelect: id => applyDemoToolbarLayout(chrome, id)
   })
-  plugin.setToolbarItems(items, layoutSwitcher)
+  chrome.setToolbarItems(items, layoutSwitcher)
 }
 
 /** Returns the active demo toolbar layout id. */

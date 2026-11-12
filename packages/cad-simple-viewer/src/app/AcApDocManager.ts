@@ -44,6 +44,7 @@ import {
   AcApHideObjectsCmd,
   AcApImageAttachCmd,
   AcApInsertCmd,
+  acapInstallMarkupSessionBootstrap,
   AcApLayerCloseCmd,
   AcApLayerCmd,
   AcApLayerCurCmd,
@@ -96,9 +97,7 @@ import {
   resetMarkupSession,
   resetMeasurementSession
 } from '../command'
-import {
-  acapGetDrawStyleSessionAccessory
-} from '../command/AcApDrawStyleSession'
+import { acapGetDrawStyleSessionAccessory } from '../command/AcApDrawStyleSession'
 import { registerMarkupCommands } from '../command/markup/AcApRegisterMarkupCommands'
 import { registerMeasureCommands } from '../command/measure/AcApRegisterMeasureCommands'
 import {
@@ -123,10 +122,7 @@ import { AcApBusyIndicator } from './AcApBusyIndicator'
 import { acapBindCommandServices } from './AcApCommandServices'
 import { AcApContext } from './AcApContext'
 import { AcApDocSession } from './AcApDocSession'
-import {
-  ACAP_DEFAULT_DOCS_BASE_URL,
-  acapSetDocsBaseUrl
-} from './AcApDocsUrl'
+import { ACAP_DEFAULT_DOCS_BASE_URL, acapSetDocsBaseUrl } from './AcApDocsUrl'
 import { AcApDocument } from './AcApDocument'
 import { AcApFontLoader } from './AcApFontLoader'
 import { acapHealModelLayoutLink } from './acapHealModelLayoutLink'
@@ -456,6 +452,16 @@ export interface AcApDocManagerOptions {
          */
         placement?: AcUiNotificationBellPlacement
       }
+
+  /**
+   * Built-in plain-DOM toolbar + dock palette chrome (formerly
+   * Built-in plain-DOM chrome (toolbar + dock palettes).
+   *
+   * - omitted / `true`: enable with default toolbar/dock options
+   * - `false`: do not load (use for `cad-editor`, CLI, headless)
+   * - object: enable with those {@link AcUiSimpleUiOptions}
+   */
+  simpleUi?: boolean | import('../ui/AcUiSimpleUiOptions').AcUiSimpleUiOptions
 }
 
 /**
@@ -502,6 +508,12 @@ export class AcApDocManager {
   private _commandManager: AcEdCommandStack
   /** Plugin manager */
   private _pluginManager: AcApPluginManager
+  /** Resolved when built-in simple UI chrome finishes loading (or skipped). */
+  private _simpleUiReady: Promise<
+    import('../ui/AcApSimpleUiChrome').AcApSimpleUiChrome | undefined
+  > = Promise.resolve(undefined)
+  /** Built-in simple UI chrome when {@link simpleUi} is enabled. */
+  private _simpleUiChrome?: import('../ui/AcApSimpleUiChrome').AcApSimpleUiChrome
   /** Data source manager (local, URL, cloud plugins) */
   private _dataSourceManager: AcApDataSourceManager
   /**
@@ -622,6 +634,8 @@ export class AcApDocManager {
       context
     )
     this._sessions = [this._activeSession]
+    // Hard value import keeps the factory alive under narrow package sideEffects.
+    acapInstallMarkupSessionBootstrap()
     acapBindMarkupSession(this._activeSession.id)
 
     this._fontLoader = new AcApFontLoader()
@@ -720,6 +734,12 @@ export class AcApDocManager {
         enableBridge: true
       })
     }
+
+    if (options.simpleUi !== false) {
+      const simpleUiOptions =
+        typeof options.simpleUi === 'object' ? options.simpleUi : {}
+      this._simpleUiReady = this.loadSimpleUi(simpleUiOptions)
+    }
   }
 
   /**
@@ -777,6 +797,12 @@ export class AcApDocManager {
     // entity commits do not read a torn-down singleton.
     this._mainView.abortConversion()
     this._splitView?.abortConversion()
+
+    // Chrome is no longer an AcApPlugin; tear it down before plugins/docs.
+    const chrome = await this._simpleUiReady.catch(() => undefined)
+    chrome?.dispose(this._commandManager)
+    this._simpleUiChrome = undefined
+    this._simpleUiReady = Promise.resolve(undefined)
 
     await this._pluginManager.unloadAllPlugins()
     for (const session of [...this._sessions]) {
@@ -1141,6 +1167,22 @@ export class AcApDocManager {
    */
   get pluginManager() {
     return this._pluginManager
+  }
+
+  /**
+   * Built-in simple UI chrome when {@link AcApDocManagerOptions.simpleUi} is
+   * enabled; `undefined` until {@link simpleUiReady} resolves or when opted out.
+   */
+  get simpleUi() {
+    return this._simpleUiChrome
+  }
+
+  /**
+   * Resolves when built-in simple UI chrome has finished loading, or with
+   * `undefined` when {@link AcApDocManagerOptions.simpleUi} is `false`.
+   */
+  get simpleUiReady() {
+    return this._simpleUiReady
   }
 
   /**
@@ -2497,10 +2539,7 @@ export class AcApDocManager {
         view.requestOpenLineworkFrame()
       }
 
-      if (
-        isPaperSpaceActive &&
-        openViewMode === AcApOpenViewMode.Saved
-      ) {
+      if (isPaperSpaceActive && openViewMode === AcApOpenViewMode.Saved) {
         const layoutExtents = activeLayout?.extents
         const paperFrame = acapResolveLayoutFrameBox({
           limits: layoutLimits,
@@ -2814,9 +2853,25 @@ export class AcApDocManager {
     mtextRenderer.initialize(
       webworkerFileUrls?.mtextRender ?? DEFAULT_WEBWORKER_FILE_URLS.mtextRender
     )
-    void mtextRenderer.setDefaultFonts([
-      ...FontManager.instance.defaultFonts
-    ])
+    void mtextRenderer.setDefaultFonts([...FontManager.instance.defaultFonts])
+  }
+
+  /**
+   * Dynamically loads built-in simple UI chrome (`toolbar` + dock palettes).
+   */
+  private async loadSimpleUi(
+    options: import('../ui/AcUiSimpleUiOptions').AcUiSimpleUiOptions
+  ) {
+    try {
+      const { AcApSimpleUiChrome } = await import('../ui/AcApSimpleUiChrome')
+      const chrome = new AcApSimpleUiChrome(options)
+      chrome.start(this.commandManager)
+      this._simpleUiChrome = chrome
+      return chrome
+    } catch (error) {
+      log.error('[AcApDocManager] Error loading simple UI chrome:', error)
+      return undefined
+    }
   }
 
   /**

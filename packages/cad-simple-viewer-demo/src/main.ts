@@ -1,8 +1,8 @@
 import type {
-  AcApSimpleUiPlugin,
+  AcApSimpleUiChrome,
   AcUiDockPanelSide,
   AcUiToolbarPlacement
-} from '@mlightcad/cad-simple-ui-plugin'
+} from '@mlightcad/cad-simple-viewer'
 import {
   type AcApOpenDatabaseOptions,
   acedApplyUiTheme,
@@ -44,15 +44,6 @@ function viewer(): CadSimpleViewerModule {
     throw new Error('CAD viewer runtime is not initialized yet')
   }
   return viewerApi.mod
-}
-
-async function loadSimpleUiPlugin() {
-  const [{ SIMPLE_UI_PLUGIN_NAME }, { acuiRegisterSimpleUiPlugin }] =
-    await Promise.all([
-      import('@mlightcad/cad-simple-ui-plugin'),
-      import('@mlightcad/cad-simple-ui-plugin/register')
-    ])
-  return { SIMPLE_UI_PLUGIN_NAME, acuiRegisterSimpleUiPlugin }
 }
 
 async function loadDemoToolbarPresets() {
@@ -483,7 +474,7 @@ class CadViewerApp {
   private async toggleDockPanelOpen() {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -510,7 +501,7 @@ class CadViewerApp {
   private async addDemoDockTab() {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -539,7 +530,7 @@ class CadViewerApp {
   private async applyDockPanelSize() {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -564,7 +555,7 @@ class CadViewerApp {
   }
 
   private syncDockMenuState() {
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     const enabled = this.isDevToolbarEnabled() && Boolean(plugin)
     const isOpen = plugin?.isDockPanelOpen() ?? false
     const side = plugin?.getDockPanelSide()
@@ -671,7 +662,7 @@ class CadViewerApp {
   private async applyViewerToolbarPlacement(placement: AcUiToolbarPlacement) {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -689,7 +680,7 @@ class CadViewerApp {
   private async toggleViewerToolbarVisibility() {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -711,7 +702,7 @@ class CadViewerApp {
   private async toggleViewerToolbarCollapsed() {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -733,7 +724,7 @@ class CadViewerApp {
   private async applyViewerToolbarEdgeOffset() {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -756,7 +747,7 @@ class CadViewerApp {
   }
 
   private syncViewerToolbarMenuState() {
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     const enabled = this.isDevToolbarEnabled() && Boolean(plugin)
     const placement = plugin?.getToolbarPlacement() ?? 'right'
     const visible = plugin?.isToolbarVisible() ?? true
@@ -802,7 +793,7 @@ class CadViewerApp {
   private async applyToolbarLayout(presetId: string) {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -834,13 +825,9 @@ class CadViewerApp {
     this.syncDisplayMenuState()
   }
 
-  private simpleUiPluginName: string | null = null
-
-  private getSimpleUiPlugin(): AcApSimpleUiPlugin | undefined {
-    if (!this.isInitialized || !this.simpleUiPluginName) return undefined
-    return viewer().AcApDocManager.instance.pluginManager.getPlugin(
-      this.simpleUiPluginName
-    ) as AcApSimpleUiPlugin | undefined
+  private getSimpleUiChrome(): AcApSimpleUiChrome | undefined {
+    if (!this.isInitialized) return undefined
+    return viewer().AcApDocManager.instance.simpleUi
   }
 
   private isLineWeightEnabled(): boolean {
@@ -911,7 +898,7 @@ class CadViewerApp {
         { persist: false }
       )
     }
-    this.getSimpleUiPlugin()?.setToolbarVisible(visible)
+    this.getSimpleUiChrome()?.setToolbarVisible(visible)
   }
 
   private async initialize() {
@@ -955,6 +942,16 @@ class CadViewerApp {
       ])
       registerLibreDwgConverter(dwgParserUrl)
       registerSvgConverter()
+      const [
+        { AGENT_TOOLBAR_ITEM },
+        { SCRIPT_TOOLBAR_ITEM },
+        { setupAgentIntegration }
+      ] = await Promise.all([
+        import('./agentToolbarItem'),
+        import('./scriptToolbarItem'),
+        import('./agentIntegration')
+      ])
+
       viewer().AcApDocManager.createInstance({
         container: this.container,
         busyIndicatorHost: this.viewerPane,
@@ -967,38 +964,8 @@ class CadViewerApp {
         webworkerFileUrls: {
           mtextRender: `./workers/${viewer().MTEXT_RENDERER_WORKER_FILE}`,
           dwgParser: dwgParserUrl
-        }
-      })
-      this.registerDocumentEvents()
-      if (openProf) {
-        const w = window as Window & { __OPEN_MODE__?: string }
-        w.__OPEN_MODE__ = useWorkers ? 'worker-mtext' : 'main-mtext'
-        console.log(`[openprof] mode=${w.__OPEN_MODE__}`)
-      }
-
-      // Attach before cloud plugins load so they reuse landing MSAL / GIS clients.
-      this.fileOpenSession?.landing.attachSourcesTo(
-        viewer().AcApDocManager.instance.dataSourceManager
-      )
-      await registerLazyPlugins()
-      this.fileOpenSession?.refreshSourceButtons()
-
-      const [
-        { SIMPLE_UI_PLUGIN_NAME, acuiRegisterSimpleUiPlugin },
-        { AGENT_TOOLBAR_ITEM },
-        { SCRIPT_TOOLBAR_ITEM },
-        { setupAgentIntegration }
-      ] = await Promise.all([
-        loadSimpleUiPlugin(),
-        import('./agentToolbarItem'),
-        import('./scriptToolbarItem'),
-        import('./agentIntegration')
-      ])
-      this.simpleUiPluginName = SIMPLE_UI_PLUGIN_NAME
-
-      await acuiRegisterSimpleUiPlugin(
-        viewer().AcApDocManager.instance.pluginManager,
-        {
+        },
+        simpleUi: {
           host: this.viewerPane,
           dockPanel: {
             defaultOpen: false,
@@ -1032,12 +999,25 @@ class CadViewerApp {
             }
           }
         }
-      )
+      })
+      this.registerDocumentEvents()
+      if (openProf) {
+        const w = window as Window & { __OPEN_MODE__?: string }
+        w.__OPEN_MODE__ = useWorkers ? 'worker-mtext' : 'main-mtext'
+        console.log(`[openprof] mode=${w.__OPEN_MODE__}`)
+      }
 
-      const plugin = viewer().AcApDocManager.instance.pluginManager.getPlugin(
-        SIMPLE_UI_PLUGIN_NAME
-      ) as AcApSimpleUiPlugin
-      setupAgentIntegration(plugin)
+      // Attach before cloud plugins load so they reuse landing MSAL / GIS clients.
+      this.fileOpenSession?.landing.attachSourcesTo(
+        viewer().AcApDocManager.instance.dataSourceManager
+      )
+      await registerLazyPlugins()
+      this.fileOpenSession?.refreshSourceButtons()
+
+      const plugin = await viewer().AcApDocManager.instance.simpleUiReady
+      if (plugin) {
+        setupAgentIntegration(plugin)
+      }
 
       this.isInitialized = true
       if (!showChrome) {

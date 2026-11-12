@@ -53,6 +53,8 @@ export const initializeCadViewer = (
     options
   AcApDocManager.createInstance({
     ...docOptions,
+    // Vue ribbon / tool palette replace the built-in simple-ui chrome.
+    simpleUi: false,
     // Keep the shared event bridge; Vue panel replaces the built-in DOM UI.
     notificationCenter: {
       showDefaultUi: false,

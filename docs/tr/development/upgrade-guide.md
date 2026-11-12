@@ -1,21 +1,25 @@
 ---
-title: "cad-simple-viewer ve cad-editor Yükseltme"
+title: 'cad-simple-viewer ve cad-editor Yükseltme'
 ---
 
 # cad-simple-viewer ve cad-editor Yükseltme
 
 Bu kılavuz, `@mlightcad/cad-simple-viewer` ve `@mlightcad/cad-editor` paketlerinin güvenli şekilde nasıl yükseltileceğini açıklar — neden tek başlarına yükseltilemeyeceklerini, hangi ilgili paketlerin birlikte hareket etmesi gerektiğini ve belirli bir sürüm için doğru uyumlu sürüm kümesini belirlemenin iki güvenilir yolunu.
 
+::: info Basit UI `cad-simple-viewer` içine alındı
+Bu değişikliği içeren sürümden itibaren **`@mlightcad/cad-simple-ui-plugin` kaldırıldı**. Araç çubuğu, dock sekmeleri ve varsayılan `AcApPaletteHost` artık **`@mlightcad/cad-simple-viewer`** içindedir. `simpleUi` (varsayılan açık); `cad-editor` / CLI için `simpleUi: false`. `@mlightcad/cad-simple-viewer/find` alt yolu kaldırıldı; bulma API’lerini `@mlightcad/cad-simple-viewer` üzerinden import edin. `/simple-ui` ve `/find` alt yolları kaldırıldı.
+:::
+
 ::: info Dock paneli chrome’u `cad-simple-viewer`’a taşındı
-Bu değişikliği içeren sürümden itibaren düz DOM **dock paneli chrome’u** (`AcUiDockPanel`) `@mlightcad/cad-simple-ui-plugin` yerine **`@mlightcad/cad-simple-viewer`** içindedir. Eklenti sekme içeriklerini tutar ve `AcApPaletteHost` kaydeder.
+Düz DOM **dock paneli chrome’u** (`AcUiDockPanel`) **`@mlightcad/cad-simple-viewer`** içindedir. Yerleşik simple UI bu dock’a sekme içeriğini (katmanlar / bul / inceleme / ölçümler) monte eder ve `AcApPaletteHost` kaydeder; `cad-editor` Vue araç paleti host’unu kaydeder.
 
 Geçiş:
 
-- `AcUiDockPanel` vb. `@mlightcad/cad-simple-viewer`’dan import edin (eklenti bir sürüm daha sınıf/tip re-export eder).
-- i18n anahtarları `simpleUi.dockPanel.*` → **`main.dockPanel.*`**.
-- Host yokken `AcApPaletteService.open` gerçek `AcUiDockPanel` kullanır.
-- Adlandırılmış sekmeler: `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB` — **kayıtlı host gerekir** (adlandırılmış sekmeler için dock yedek yolu yok).
-:::
+- `AcUiDockPanel` vb. `@mlightcad/cad-simple-viewer`’dan import edin.
+- i18n anahtarları **`main.dockPanel.*`** altındadır.
+- Host yokken `AcApPaletteService.open` gerçek `AcUiDockPanel` kullanır (sağ dock / telefon sheet).
+- Adlandırılmış sekmeler: `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB` — **kayıtlı host gerekir** (adlandırılmış sekmeler için dock yedek yolu yok). Hostlanan `HTMLElement` panelleri hâlâ `AcApPaletteService.open` kullanır.
+  :::
 
 ::: info Paylaşılan yapay zekâ modeli ayarları (`@mlightcad/cad-llm-plugin`)
 Bu değişikliği içeren sürümden itibaren LLM sağlayıcı ayarları `@mlightcad/cad-agent-plugin` paketinden yeni **`@mlightcad/cad-llm-plugin`** paketine taşınır; böylece CAD Ajanı ve `pdftext` metin tanıma (OCR) aynı yapılandırmayı paylaşır. Yeni paket **LLMSETTINGS** komutunu ve UI çatısından bağımsız bir ayar iletişim kutusunu (`@mlightcad/cad-editor` içindeki AI şerit sekmesinden de açılır) ekler; `@mlightcad/cad-simple-viewer` ise herhangi bir özelliğin iletişim kutusunu açabilmesi veya görüntü destekli bir modelin yapılandırılıp yapılandırılmadığını denetleyebilmesi için `AcApLlmSettingsService` ekler.
@@ -35,6 +39,7 @@ import { registerLazyLlmPlugin } from '@mlightcad/cad-llm-plugin/register'
 registerLazyLlmPlugin(pluginManager)
 registerLazyAgentPlugin(pluginManager)
 ```
+
 :::
 
 ::: info PDF içe aktarma: `ipdf` artık `PDFIMPORT` / `-PDFIMPORT`
@@ -51,11 +56,11 @@ Bu değişikliği içeren sürümden itibaren `@mlightcad/cad-simple-viewer` **-
 
 Şekil eşleştirme `@mlightcad/cad-pdf-plugin` paketinden `@mlightcad/cad-simple-viewer` paketine taşındı. İçe aktarmaları taşıyın:
 
-| `@mlightcad/cad-pdf-plugin` (kullanımdan kalktı) | `@mlightcad/cad-simple-viewer` |
-| --- | --- |
-| `findPdfShapeMatches` | `acedFindShapeMatches` |
-| `applyPdfAffine` | `acedApplyAffine2d` |
-| `pdfEntityToFeature` | `acedEntityToShapeFeature(entity, id, { matchLayer: false })` |
+| `@mlightcad/cad-pdf-plugin` (kullanımdan kalktı)                           | `@mlightcad/cad-simple-viewer`                                                   |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `findPdfShapeMatches`                                                      | `acedFindShapeMatches`                                                           |
+| `applyPdfAffine`                                                           | `acedApplyAffine2d`                                                              |
+| `pdfEntityToFeature`                                                       | `acedEntityToShapeFeature(entity, id, { matchLayer: false })`                    |
 | `PdfMatchFeature` / `PdfAffine` / `PdfShapeMatch` / `PdfShapeMatchOptions` | `AcEdShapeFeature` / `AcEdAffine2d` / `AcEdShapeMatch` / `AcEdShapeMatchOptions` |
 
 Eski adlar kullanımdan kalkmış diğer adlar olarak çalışmaya devam eder. Metin `kind` alanından `label` alanına taşındı. `pdfblock` artık `-BSEARCH` istem sırasını izler (Dönüştür → Yeni/Mevcut → ad → ekleme noktası → kapsam); eski istemlere yanıt veren betikler güncellenmelidir.
@@ -183,10 +188,10 @@ Bu değişikliği içeren sürümden itibaren `cad.blocks` her blok için `entit
 ::: info PDF dışa aktarma paylaşılan çekirdeğe ayrıldı (tarayıcı + Node)
 **1.8.0** sürümünden itibaren PDF dışa aktarma, HTML dışa aktarma ile aynı katmanlamayı kullanır. Paylaşılan mantık `@mlightcad/cad-pdf-core` içindedir (seçenek modeli ve database → PDF hattı; `cad-simple-viewer` / DOM’a **bağımlı değildir**). Bunu iki ön uç kullanır:
 
-| Paket | Rol |
-| --- | --- |
-| `@mlightcad/cad-pdf-plugin` | Tarayıcıda `cpdf` / `-cpdf` / `pdfimport` (ve Vue dışa aktarma iletişim kutusu) |
-| `@mlightcad/cad-pdf-exporter` | Node’da başsız DXF/DWG → PDF — **tarayıcı gerekmez** |
+| Paket                         | Rol                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------- |
+| `@mlightcad/cad-pdf-plugin`   | Tarayıcıda `cpdf` / `-cpdf` / `pdfimport` (ve Vue dışa aktarma iletişim kutusu) |
+| `@mlightcad/cad-pdf-exporter` | Node’da başsız DXF/DWG → PDF — **tarayıcı gerekmez**                            |
 
 **Tarayıcı entegratörleri — büyük ölçüde aynı.** `cpdf` / `-cpdf` / `pdfimport`, `AcApPdfConvertor`, `AcApPdfExportOptions` ve `resolveAcApPdfExportOptions` kullanmaya devam edin. Yeni peer `@mlightcad/cad-pdf-core`’u eklentiyle aynı sürümde ekleyin.
 
@@ -240,71 +245,71 @@ Yükseltmeden önce hangi paketlerin koordineli sürüme ait olduğunu ve hangil
 
 ### Temel görüntüleyici paketleri
 
-| Paket | Rol |
-| --- | --- |
+| Paket                          | Rol                                                                               |
+| ------------------------------ | --------------------------------------------------------------------------------- |
 | `@mlightcad/cad-simple-viewer` | Çerçeveden bağımsız çekirdek (belge yönetimi, komut yığını, işleme yapıştırıcısı) |
-| `@mlightcad/cad-editor` | cad-simple-viewer üzerine kurulu Vue 3 + Element Plus arayüz sarmalayıcısı |
+| `@mlightcad/cad-editor`        | cad-simple-viewer üzerine kurulu Vue 3 + Element Plus arayüz sarmalayıcısı        |
 
 ### Eklentiler — **cad-simple-viewer sürümüyle tam olarak eşleşmelidir**
 
-| Paket | Amaç |
-| --- | --- |
-| `@mlightcad/cad-html-plugin` | Tek tıkla kendi kendine yeten HTML dışa aktarma |
-| `@mlightcad/cad-pdf-plugin` | Tarayıcıda PDF dışa aktarma ve PDF→CAD içe aktarma |
-| `@mlightcad/cad-svg-plugin` | SVG dışa aktarma |
-| `@mlightcad/cad-simple-ui-plugin` | Plain-DOM toolbar and dock tab content (dock chrome is in `cad-simple-viewer`) |
-| `@mlightcad/cad-agent-plugin` | Yapay zeka ajanı destekli etkileşim |
-| `@mlightcad/cad-onedrive-plugin` | OneDrive entegrasyonu |
-| `@mlightcad/cad-google-drive-plugin` | Google Drive entegrasyonu |
+| Paket                                    | Amaç                                                |
+| ---------------------------------------- | --------------------------------------------------- |
+| `@mlightcad/cad-html-plugin`             | Tek tıkla kendi kendine yeten HTML dışa aktarma     |
+| `@mlightcad/cad-pdf-plugin`              | Tarayıcıda PDF dışa aktarma ve PDF→CAD içe aktarma  |
+| `@mlightcad/cad-svg-plugin`              | SVG dışa aktarma                                    |
+| `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
+| `@mlightcad/cad-agent-plugin`            | Yapay zeka ajanı destekli etkileşim                 |
+| `@mlightcad/cad-onedrive-plugin`         | OneDrive entegrasyonu                               |
+| `@mlightcad/cad-google-drive-plugin`     | Google Drive entegrasyonu                           |
 
 > **Genel kural:** yukarıdaki listedeki her eklenti, yükselttiğiniz `cad-simple-viewer` sürümüyle **tam olarak aynı sürüm numarasına** sabitlenmelidir (örneğin `1.7.5`).
 
 ### Paylaşılan dışa aktarma çekirdekleri ve başsız dışa aktarıcılar (çekirdekle aynı sürüm)
 
-| Paket | Amaç |
-| --- | --- |
-| `@mlightcad/cad-html-core` | Paylaşılan HTML anlık görüntü / paketleme hattı (görüntüleyici / DOM yok) |
-| `@mlightcad/cad-html-exporter` | Node başsız HTML dışa aktarma |
-| `@mlightcad/cad-pdf-core` | Paylaşılan PDF seçenek modeli ve database → PDF hattı (görüntüleyici / DOM yok) |
-| `@mlightcad/cad-pdf-exporter` | Node başsız DXF/DWG → PDF (tarayıcı yok) |
+| Paket                          | Amaç                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------- |
+| `@mlightcad/cad-html-core`     | Paylaşılan HTML anlık görüntü / paketleme hattı (görüntüleyici / DOM yok)       |
+| `@mlightcad/cad-html-exporter` | Node başsız HTML dışa aktarma                                                   |
+| `@mlightcad/cad-pdf-core`      | Paylaşılan PDF seçenek modeli ve database → PDF hattı (görüntüleyici / DOM yok) |
+| `@mlightcad/cad-pdf-exporter`  | Node başsız DXF/DWG → PDF (tarayıcı yok)                                        |
 
 ### Dahili işleyici katmanı (çekirdekle aynı sürüm, ayrı yayımlanır)
 
-| Paket | Amaç |
-| --- | --- |
-| `@mlightcad/three-renderer` | THREE.js tabanlı 2D/3D işleme motoru |
-| `@mlightcad/pdf-renderer` | `cad-pdf-core` tarafından kullanılan PDF içerik arka ucu |
+| Paket                       | Amaç                                                     |
+| --------------------------- | -------------------------------------------------------- |
+| `@mlightcad/three-renderer` | THREE.js tabanlı 2D/3D işleme motoru                     |
+| `@mlightcad/pdf-renderer`   | `cad-pdf-core` tarafından kullanılan PDF içerik arka ucu |
 
 Bunlar eklentiler ve cad-simple-viewer tarafından dahili olarak tüketilir. Genellikle bunları doğrudan **kurmanız gerekmez**, ancak sürümleri kurduğunuz eklentilerle uyumlu olmalıdır.
 
 ### Düşük seviyeli veri ve metin katmanı — **sürümdeki sürümlerle eşleşmelidir**
 
-| Paket | Notlar |
-| --- | --- |
-| `@mlightcad/data-model` | Temel varlık/veritabanı tipleri; her sürüm bunu görüntüleyiciyle birlikte yükseltir |
-| `@mlightcad/libredwg-converter` | DWG ayrıştırma WebAssembly sarmalayıcısı — DWG desteği buna bağlıdır |
-| `@mlightcad/mtext-parser` | MTEXT içerik ayrıştırıcısı |
-| `@mlightcad/mtext-renderer` | MTEXT → THREE geometri işleyicisi |
-| `@mlightcad/mtext-input-box` | Tuval içi MTEXT düzenleyici bileşeni |
+| Paket                           | Notlar                                                                              |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| `@mlightcad/data-model`         | Temel varlık/veritabanı tipleri; her sürüm bunu görüntüleyiciyle birlikte yükseltir |
+| `@mlightcad/libredwg-converter` | DWG ayrıştırma WebAssembly sarmalayıcısı — DWG desteği buna bağlıdır                |
+| `@mlightcad/mtext-parser`       | MTEXT içerik ayrıştırıcısı                                                          |
+| `@mlightcad/mtext-renderer`     | MTEXT → THREE geometri işleyicisi                                                   |
+| `@mlightcad/mtext-input-box`    | Tuval içi MTEXT düzenleyici bileşeni                                                |
 
 ### Yalnızca cad-editor'a özel Vue arayüz bağımlılıkları
 
 Bunlar `pnpm-workspace.yaml` override'larında görünür ancak yalnızca `@mlightcad/cad-editor` (tam Vue 3 arayüzü) kullanılırken gereklidir. Cad-simple-viewer entegrasyonları bunları doğrudan kurmaz.
 
-| Paket | Amaç |
-| --- | --- |
-| `@mlightcad/ribbon` | Şerit arayüz bileşeni |
+| Paket                      | Amaç                            |
+| -------------------------- | ------------------------------- |
+| `@mlightcad/ribbon`        | Şerit arayüz bileşeni           |
 | `@mlightcad/ui-components` | Paylaşılan Vue arayüz temelleri |
 
 ### Üçüncü taraf eş bağımlılıklar (sürümleri sürümde sabitlendiği gibi tutun)
 
-| Paket |
-| --- |
-| `three` |
-| `vue` (yalnızca cad-editor için) |
+| Paket                                     |
+| ----------------------------------------- |
+| `three`                                   |
+| `vue` (yalnızca cad-editor için)          |
 | `element-plus` (yalnızca cad-editor için) |
-| `vue-i18n` (yalnızca cad-editor için) |
-| `lodash-es` |
+| `vue-i18n` (yalnızca cad-editor için)     |
+| `lodash-es`                               |
 
 ---
 
@@ -457,7 +462,7 @@ C: Yine de `data-model` ve (DWG dosyaları yüklüyorsanız) `libredwg-converter
 
 **S: Anlamsal sürümlendirme beni korur mu?**
 
-C: Semver aralıkları (`^`, `~`) bir sürüm serisi *içinde* yama düzeyinde yükseltme için sorunsuz çalışır (örneğin `^1.7.0` otomatik olarak `1.7.5` sürümünü alır), ancak **koordineli eklenti/data-model/libredwg-converter sürümleri** yalnızca semver'den keşfedilemez — bunlar sürüm bakımcıları tarafından belirlenir. Belirli bir küçük sürüm yükseltmesi için hangi sürümlerin birlikte gittiğini bilmek için yine de yukarıdaki iki yöntemden birine ihtiyacınız vardır.
+C: Semver aralıkları (`^`, `~`) bir sürüm serisi _içinde_ yama düzeyinde yükseltme için sorunsuz çalışır (örneğin `^1.7.0` otomatik olarak `1.7.5` sürümünü alır), ancak **koordineli eklenti/data-model/libredwg-converter sürümleri** yalnızca semver'den keşfedilemez — bunlar sürüm bakımcıları tarafından belirlenir. Belirli bir küçük sürüm yükseltmesi için hangi sürümlerin birlikte gittiğini bilmek için yine de yukarıdaki iki yöntemden birine ihtiyacınız vardır.
 
 **S: pnpm yerine npm/yarn kullanıyorum. Bu yine de geçerli mi?**
 

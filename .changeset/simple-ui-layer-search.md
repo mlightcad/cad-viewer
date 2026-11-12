@@ -1,5 +1,4 @@
 ---
-'@mlightcad/cad-simple-ui-plugin': patch
 ---
 
 feat: search layers by name in the simple UI layer panel

@@ -20,7 +20,6 @@
     "@mlightcad/cad-pdf-plugin": "1.7.8",
     "@mlightcad/cad-script-core": "1.7.8",
     "@mlightcad/cad-script-plugin": "1.7.8",
-    "@mlightcad/cad-simple-ui-plugin": "1.7.8",
     "@mlightcad/cad-simple-viewer": "1.7.8",
     "@mlightcad/cad-simple-viewer-cli": "1.7.8",
     "@mlightcad/cad-simple-viewer-demo": "1.7.8",

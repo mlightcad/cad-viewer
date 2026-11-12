@@ -39,6 +39,11 @@ function content(id = 'demo') {
 
 describe('AcApPaletteService', () => {
   afterEach(() => {
+    // Drain any queued named-tab opens before clearing the host.
+    AcApPaletteService.setHost({
+      show: () => undefined,
+      openNamedTab: () => true
+    })
     AcApPaletteService.setHost(undefined)
     document.body.replaceChildren()
     document.getElementById('ml-ui-dock-panel-styles')?.remove()
@@ -111,7 +116,18 @@ describe('AcApPaletteService', () => {
     expect(openNamedTab).toHaveBeenCalledWith('layers')
   })
 
-  it('openNamedTab returns false without a host', () => {
+  it('openNamedTab queues until a host with openNamedTab is set', () => {
+    expect(AcApPaletteService.openNamedTab('layers')).toBe(true)
+    const openNamedTab = jest.fn(() => true)
+    AcApPaletteService.setHost({
+      show: () => undefined,
+      openNamedTab
+    })
+    expect(openNamedTab).toHaveBeenCalledWith('layers')
+  })
+
+  it('openNamedTab returns false when the host omits openNamedTab', () => {
+    AcApPaletteService.setHost({ show: () => undefined })
     expect(AcApPaletteService.openNamedTab('layers')).toBe(false)
   })
 })
