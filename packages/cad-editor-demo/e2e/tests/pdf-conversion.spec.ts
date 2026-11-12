@@ -297,3 +297,38 @@ test('pdfimport rebuilds pattern hatches from their strokes', async ({
   expect(counts.POLYLINE).toBe(1)
   expect(counts.LINE ?? 0).toBe(0)
 })
+
+test('pdfhatch rebuilds a hatch that a PDF left as strokes', async ({
+  page
+}) => {
+  // ANSI36 strokes (dots dropped) and the walls around them, as PDFIMPORT
+  // leaves them for a hatch in cathedral.pdf.
+  await page.goto('/')
+  await uploadFixture(page, fixture('pdf-hatch-strokes.dxf'), {
+    accessMode: 'Write'
+  })
+  await expect(page.locator('.ml-cad-container')).toBeVisible({
+    timeout: 30_000
+  })
+  await expect
+    .poll(async () => (await entityTypes(page)).LINE ?? 0, { timeout: 30_000 })
+    .toBeGreaterThan(200)
+  const before = await entityTypes(page)
+
+  await page.getByRole('tab', { name: 'AI' }).click()
+  await preselect(page)
+  await ribbonButton(page, 'cmd-pdfhatch').click()
+  await waitForPrompt(page, /Found 1 hatches \(ANSI36\)/)
+  await answer(page, '')
+
+  await expect
+    .poll(async () => (await entityTypes(page)).HATCH ?? 0, {
+      timeout: 20_000
+    })
+    .toBe(1)
+  const after = await entityTypes(page)
+  // About 200 strokes go; the walls and column outlines stay.
+  expect(before.LINE - (after.LINE ?? 0)).toBeGreaterThan(150)
+  expect(after.LINE ?? 0).toBeGreaterThan(10)
+  expect(after.ARC).toBe(before.ARC)
+})

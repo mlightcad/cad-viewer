@@ -1998,6 +1998,13 @@ export default {
     summary:
       'Převedeno {count} kót; styl PDF_DIM používá lineární měřítko {scale}.'
   },
+  pdfhatch: {
+    noHatches:
+      'Ve výběru nebyla nalezena žádná šrafa (jsou potřeba pravidelné rovnoběžné čáry a čáry, které je ohraničují).',
+    convertAll: 'Nalezeno {count} šraf ({patterns}). Převést je?',
+    convertOne: 'Šrafa {index}/{count} ({pattern}): převést?',
+    summary: 'Převedeno {count} šraf ({patterns}), nahrazeno {strokes} objektů.'
+  },
   bsearch: {
     unsupported:
       'Žádný z vybraných objektů nelze porovnat (podporovány jsou úsečky, oblouky, kružnice, křivky, elipsy, spliny, text, odstavcový text a reference bloků).',

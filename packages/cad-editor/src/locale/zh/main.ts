@@ -284,6 +284,8 @@ export default {
       pdfScale: '根据两点之间的已知距离缩放导入的 PDF 图形（PDFSCALE）。',
       pdfDim:
         '将 PDF 中被打散的标注（箭头或斜线、尺寸线、尺寸界线和文字）恢复为标注对象（PDFDIM）。',
+      pdfHatch:
+        '将 PDF 中被打散成线段的图案填充恢复为带图案、比例和角度的图案填充（PDFHATCH）。',
       pdfBlock:
         '将 PDF 中重复出现的图形创建为块，并把每个副本替换为块参照（PDFBLOCK）。',
       pdfText: '将 PDF 中被打散的文字笔画转换回文字对象（PDFTEXT）。',
@@ -414,6 +416,7 @@ export default {
       importPdf: '导入\nPDF',
       pdfScale: '校准\n比例',
       pdfDim: '识别\n标注',
+      pdfHatch: '识别\n填充',
       pdfBlock: '创建\n块',
       pdfText: '识别\n文字',
       line: '直线',

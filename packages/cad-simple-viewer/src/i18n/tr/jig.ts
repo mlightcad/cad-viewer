@@ -2112,6 +2112,14 @@ export default {
     summary:
       '{count} ölçü dönüştürüldü; PDF_DIM stili {scale} doğrusal ölçek faktörünü kullanır.'
   },
+  pdfhatch: {
+    noHatches:
+      'Seçimde tarama bulunamadı (düzenli paralel çizgiler ve onları sınırlayan çizgiler gerekir).',
+    convertAll: '{count} tarama bulundu ({patterns}). Dönüştürülsün mü?',
+    convertOne: 'Tarama {index}/{count} ({pattern}): dönüştürülsün mü?',
+    summary:
+      '{count} tarama dönüştürüldü ({patterns}); {strokes} nesne değiştirildi.'
+  },
   bsearch: {
     unsupported:
       'Seçili nesnelerin hiçbiri eşleştirilemiyor (çizgi, yay, daire, çoklu çizgi, elips, spline, metin, çok satırlı metin ve blok referansları desteklenir).',

@@ -224,6 +224,10 @@ export default {
       description: 'Převede rozložené kóty z PDF zpět na kótovací objekty',
       prompt: 'Vyberte oblast s kótami'
     },
+    pdfhatch: {
+      description: 'Převede rozložené čáry šrafy z PDF zpět na objekt šrafy',
+      prompt: 'Vyberte šrafovanou oblast i s čarami kolem ní'
+    },
     pdfblock: {
       description: 'Převede opakovanou geometrii z PDF zpět na blok',
       prompt: 'Vyberte objekty jedné instance bloku'

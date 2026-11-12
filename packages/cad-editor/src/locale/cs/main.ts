@@ -335,6 +335,8 @@ export default {
         'Změní měřítko importované geometrie PDF podle dvou bodů známé vzdálenosti (PDFSCALE).',
       pdfDim:
         'Převede rozložené kóty z PDF (šipky nebo značky, čáry, vynášecí čáry a texty) zpět na kótovací objekty (PDFDIM).',
+      pdfHatch:
+        'Převede rozložené čáry šrafy z PDF zpět na šrafu se vzorem, měřítkem a úhlem (PDFHATCH).',
       pdfBlock:
         'Převede opakovanou geometrii z PDF na blok a každou kopii nahradí referencí bloku (PDFBLOCK).',
       pdfText:
@@ -497,6 +499,7 @@ export default {
       importPdf: 'Importovat\nPDF',
       pdfScale: 'Kalibrovat\nměřítko',
       pdfDim: 'Obnovit\nkóty',
+      pdfHatch: 'Obnovit\nšrafy',
       pdfBlock: 'Vytvořit\nblok',
       pdfText: 'Obnovit\ntext',
       line: 'Úsečka',

@@ -1965,6 +1965,14 @@ export default {
     summary:
       'Converted {count} dimension(s); style PDF_DIM uses a linear scale factor of {scale}.'
   },
+  pdfhatch: {
+    noHatches:
+      'No hatch found in the selection (regular parallel strokes and the lines bounding them are needed).',
+    convertAll: 'Found {count} hatches ({patterns}). Convert them?',
+    convertOne: 'Hatch {index}/{count} ({pattern}): convert?',
+    summary:
+      'Converted {count} hatch(es) ({patterns}), replacing {strokes} object(s).'
+  },
   bsearch: {
     unsupported: 'None of the selected objects can be matched (lines, arcs, circles, polylines, ellipses, splines, text, mtext and block references are supported).',
     skipped: '{count} selected object(s) cannot be matched and are ignored.',

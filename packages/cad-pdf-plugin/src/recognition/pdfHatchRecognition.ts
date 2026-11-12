@@ -20,6 +20,12 @@ import { tessellateHatchPattern } from '@mlightcad/pdf-renderer'
 
 import type { PdfImportShapeItem } from '../pdfImportShapes'
 import type { PdfRecognizedShape } from './pdfCurveRecognition'
+import {
+  acapPdfFaceArrangement,
+  acapPdfFaceBoundaryIn,
+  acapPdfShapePolyline,
+  type PdfFaceArrangement
+} from './pdfHatchFaces'
 import type { PdfRecPoint } from './pdfRecGeometry'
 
 /**
@@ -52,6 +58,14 @@ export type PdfRecognizedHatchPattern =
       spacing: number
       /** Second family at 90 degrees (cross-hatch). */
       double: boolean
+    }
+  | {
+      /**
+       * A regular pattern no library entry explains, measured from the
+       * strokes; the definition lines are the whole pattern.
+       */
+      type: 'custom'
+      name: string
     }
 
 /** A hatch rebuilt from PDF segments. */
@@ -91,7 +105,37 @@ export interface PdfHatchRecognitionOptions {
   minPrecision?: number
   /** Pattern library to match. Default `acadiso.pat`. */
   patterns?: readonly AcDbPatPattern[]
+  /**
+   * Measure a custom pattern (line families, spacing, stagger and dashes)
+   * when neither the library nor a user-defined pattern fits. Default
+   * `false`.
+   */
+  customPatterns?: boolean
+  /**
+   * Look for a boundary among the faces the surrounding line work encloses
+   * (lines, arcs and polylines that cross or meet in T-junctions). Default
+   * `true`; turn it off for the cheaper boundary sources only (closed
+   * outlines, clip paths and stroke ends).
+   */
+  faceBoundaries?: boolean
+  /**
+   * Boundaries the caller already knows (closed polygons in drawing
+   * coordinates). A region whose strokes lie inside one or more of them
+   * uses those, ahead of every other boundary source.
+   */
+  boundaries?: readonly (readonly PdfRecPoint[])[]
+  /**
+   * Receives one event per recognition stage (regions, families,
+   * hypotheses, boundaries, verification), for diagnostics and tests.
+   */
+  trace?: PdfHatchTrace
 }
+
+/** Callback for {@link PdfHatchRecognitionOptions.trace}. */
+export type PdfHatchTrace = (
+  stage: string,
+  detail: Record<string, unknown>
+) => void
 
 /** Result of {@link acapPdfRecognizeHatches}. */
 export interface PdfHatchRecognitionResult {
@@ -121,18 +165,19 @@ export function acapPdfRecognizeHatches(
   const consumed = new Set<number>()
   const library = patternSignatures(opts.patterns)
   const closedShapes = collectClosedShapes(items)
+  const context: RegionContext = {
+    library,
+    closedShapes,
+    clipPaths,
+    items,
+    itemIndex: new ItemIndex(items),
+    opts,
+    faces: new FaceCache()
+  }
 
   for (const group of groupCandidates(items, opts.tolerance)) {
     const accept = (region: Seg[]): boolean => {
-      const hatch = recognizeRegion(
-        region,
-        group.all,
-        library,
-        closedShapes,
-        clipPaths,
-        opts,
-        items
-      )
+      const hatch = recognizeRegion(region, group.all, context)
       if (!hatch) return false
       const kept = hatch.items.filter(index => !consumed.has(index))
       if (kept.length < opts.minSegments) return false
@@ -147,7 +192,13 @@ export function acapPdfRecognizeHatches(
       })
       return true
     }
-    for (const region of findRegions(group.long, opts)) {
+    const regions = findRegions(group.long, opts)
+    opts.trace('regions', {
+      candidates: group.all.length,
+      long: group.long.length,
+      sizes: regions.map(region => region.length)
+    })
+    for (const region of regions) {
       if (region.some(seg => consumed.has(seg.index))) continue
       if (accept(region)) continue
       // Hatches of one colour that touch can end up in one region; peel
@@ -171,10 +222,14 @@ export function acapPdfRecognizeHatches(
 // Options and shared types
 
 type ResolvedOptions = Required<
-  Omit<PdfHatchRecognitionOptions, 'patterns'>
+  Omit<PdfHatchRecognitionOptions, 'patterns' | 'trace' | 'boundaries'>
 > & {
   patterns: readonly AcDbPatPattern[]
+  trace: PdfHatchTrace
+  boundaries: readonly (readonly PdfRecPoint[])[]
 }
+
+const NO_TRACE: PdfHatchTrace = () => {}
 
 function resolveOptions(options?: PdfHatchRecognitionOptions): ResolvedOptions {
   const tolerance = options?.tolerance
@@ -184,7 +239,11 @@ function resolveOptions(options?: PdfHatchRecognitionOptions): ResolvedOptions {
     minLines: Math.max(2, options?.minLines ?? 3),
     minRecall: options?.minRecall ?? 0.9,
     minPrecision: options?.minPrecision ?? 0.95,
-    patterns: options?.patterns ?? AcDbPredefinedAcadIsoPat.patterns
+    patterns: options?.patterns ?? AcDbPredefinedAcadIsoPat.patterns,
+    customPatterns: options?.customPatterns ?? false,
+    faceBoundaries: options?.faceBoundaries ?? true,
+    boundaries: options?.boundaries ?? [],
+    trace: options?.trace ?? NO_TRACE
   }
 }
 
@@ -822,9 +881,9 @@ function patternSignatures(
 ): PatternSignature[] {
   const out: PatternSignature[] = []
   patterns.forEach((pattern, order) => {
+    // Dots (zero dashes) are allowed: PDF writers often drop them, and a
+    // hatch re-draws them as points that verification does not count.
     if (pattern.lines.length === 0) return
-    // Dots need point strokes the import does not keep as lines.
-    if (pattern.lines.some(line => line.dashes.some(d => d === 0))) return
     const groups: { angle: number; lines: typeof pattern.lines }[] = []
     for (const line of pattern.lines) {
       const angle = normalizeDirection(line.angle * DEG)
@@ -883,6 +942,11 @@ interface Hypothesis {
   /** Measured family for each pattern line. */
   families: MeasuredFamily[]
   userDefined?: { double: boolean; spacing: number }
+  /**
+   * Measured custom pattern: its lines are already in drawing coordinates
+   * (rotation 0, scale 1), so no translation is searched.
+   */
+  custom?: boolean
 }
 
 function relClose(p: number, q: number, rel: number, abs: number): boolean {
@@ -895,7 +959,9 @@ function matchPattern(
   tol: number,
   extent: number
 ): Hypothesis[] {
-  if (sig.groups.length !== families.length) return []
+  // Extra families are line work around the hatch (its boundary, other
+  // drawing lines); every pattern group still needs a family of its own.
+  if (sig.groups.length > families.length) return []
   const anchor = families[0]
   const out: Hypothesis[] = []
   for (const group of sig.groups) {
@@ -941,14 +1007,30 @@ function matchPattern(
 }
 
 /** Single or crossed parallel lines that no library pattern explains. */
-function userDefinedHypothesis(
+function userDefinedHypotheses(
   families: MeasuredFamily[],
   tol: number,
   extent: number
-): Hypothesis | undefined {
-  if (families.some(f => f.residues !== 1)) return undefined
-  const [first, second] = families
-  const line = (angle: number) => ({
+): Hypothesis[] {
+  const first = families[0]
+  if (!first || first.residues !== 1) return []
+  const out: Hypothesis[] = []
+  // A perpendicular family of the same spacing makes it a cross-hatch.
+  const second = families.find(
+    f =>
+      f !== first &&
+      f.residues === 1 &&
+      Math.abs(directionDelta(first.theta, f.theta) - Math.PI / 2) <
+        ANGLE_GAP &&
+      relClose(first.period, f.period, 0.03, tol * 2)
+  )
+  if (second) out.push(userDefinedPair(first, second, tol, extent))
+  out.push(userDefinedSingle(first, tol, extent))
+  return out
+}
+
+function userDefinedLine(angle: number) {
+  return {
     angle,
     originX: 0,
     originY: 0,
@@ -956,36 +1038,40 @@ function userDefinedHypothesis(
     deltaY: 1,
     dashes: [] as number[],
     sourceLine: 0
-  })
-  if (families.length === 1) {
-    return {
-      order: Infinity,
-      rotation: snapAngle(first.theta, tol, extent),
-      scale: first.period,
-      lines: [line(0)],
-      families: [first],
-      userDefined: { double: false, spacing: first.period }
-    }
   }
-  if (
-    families.length === 2 &&
-    Math.abs(directionDelta(first.theta, second.theta) - Math.PI / 2) <
-      ANGLE_GAP &&
-    relClose(first.period, second.period, 0.03, tol * 2)
-  ) {
-    const rotation = snapAngle(Math.min(first.theta, second.theta), tol, extent)
-    const lower = first.theta <= second.theta ? first : second
-    const upper = lower === first ? second : first
-    return {
-      order: Infinity,
-      rotation,
-      scale: lower.period,
-      lines: [line(0), line(90)],
-      families: [lower, upper],
-      userDefined: { double: true, spacing: lower.period }
-    }
+}
+
+function userDefinedSingle(
+  first: MeasuredFamily,
+  tol: number,
+  extent: number
+): Hypothesis {
+  return {
+    order: Infinity,
+    rotation: snapAngle(first.theta, tol, extent),
+    scale: first.period,
+    lines: [userDefinedLine(0)],
+    families: [first],
+    userDefined: { double: false, spacing: first.period }
   }
-  return undefined
+}
+
+function userDefinedPair(
+  first: MeasuredFamily,
+  second: MeasuredFamily,
+  tol: number,
+  extent: number
+): Hypothesis {
+  const lower = first.theta <= second.theta ? first : second
+  const upper = lower === first ? second : first
+  return {
+    order: Infinity,
+    rotation: snapAngle(lower.theta, tol, extent),
+    scale: lower.period,
+    lines: [userDefinedLine(0), userDefinedLine(90)],
+    families: [lower, upper],
+    userDefined: { double: true, spacing: lower.period }
+  }
 }
 
 /**
@@ -1502,6 +1588,313 @@ function boundaryFromEnds(
 }
 
 /**
+ * The caller's boundaries around the region: those holding its strokes,
+ * plus the ones nested inside them (holes).
+ */
+function boundaryFromGiven(
+  region: Seg[],
+  given: readonly (readonly PdfRecPoint[])[]
+): Boundary | undefined {
+  if (given.length === 0) return undefined
+  const mids = region.map(midpoint)
+  const polygons = given.filter(p => p.length >= 3).map(p => [...p])
+  const boxes = polygons.map(pointsBox)
+  const chosen = new Set<number>()
+  polygons.forEach((polygon, i) => {
+    if (mids.some(m => inBox(m, boxes[i]) && pointInPolygon(m, polygon))) {
+      chosen.add(i)
+    }
+  })
+  if (chosen.size === 0) return undefined
+  polygons.forEach((polygon, i) => {
+    if (chosen.has(i)) return
+    const inside = [...chosen].some(
+      j =>
+        boxInside(boxes[i], boxes[j]) && pointInPolygon(polygon[0], polygons[j])
+    )
+    if (inside) chosen.add(i)
+  })
+  const picked = [...chosen].map(i => polygons[i])
+  const covered = mids.filter(
+    m => picked.filter(polygon => pointInPolygon(m, polygon)).length % 2 === 1
+  ).length
+  if (covered < mids.length * 0.9) return undefined
+  return polygonsToBoundary(picked)
+}
+
+/** Most edge segments a face arrangement is built from. */
+const MAX_FACE_SEGMENTS = 20000
+
+/**
+ * Face arrangements and sampled polylines, shared by the hypotheses and
+ * regions of one recognition run.
+ */
+class FaceCache {
+  /** Recent arrangements by their sorted edge item indices. */
+  private recent: {
+    edges: number[]
+    arrangement: PdfFaceArrangement | undefined
+  }[] = []
+  private polylines = new Map<number, PdfRecPoint[]>()
+  private groups = new WeakMap<readonly Seg[], Map<number, Seg>>()
+
+  /** Candidate segments of a group by item index. */
+  segsOf(all: readonly Seg[]): Map<number, Seg> {
+    let map = this.groups.get(all)
+    if (!map) {
+      map = new Map(all.map(seg => [seg.index, seg]))
+      this.groups.set(all, map)
+    }
+    return map
+  }
+
+  polyline(context: RegionContext, index: number): PdfRecPoint[] {
+    let polyline = this.polylines.get(index)
+    if (!polyline) {
+      polyline = acapPdfShapePolyline(
+        context.items[index].shape,
+        context.opts.tolerance * 0.25
+      )
+      this.polylines.set(index, polyline)
+    }
+    return polyline
+  }
+
+  /**
+   * The arrangement of the given items. Hypotheses of one region mostly
+   * leave the same strokes out, so the line work repeats.
+   */
+  arrangement(
+    context: RegionContext,
+    edges: number[]
+  ): PdfFaceArrangement | undefined {
+    const hit = this.recent.find(entry => sameIndices(entry.edges, edges))
+    if (hit) return hit.arrangement
+    const polylines: PdfRecPoint[][] = []
+    for (const index of edges) {
+      const polyline = this.polyline(context, index)
+      if (polyline.length >= 2) polylines.push(polyline)
+    }
+    const arrangement = acapPdfFaceArrangement(polylines, {
+      tolerance: context.opts.tolerance,
+      maxSegments: MAX_FACE_SEGMENTS
+    })
+    this.recent.unshift({ edges, arrangement })
+    if (this.recent.length > 4) this.recent.pop()
+    return arrangement
+  }
+}
+
+function sameIndices(p: readonly number[], q: readonly number[]): boolean {
+  if (p.length !== q.length) return false
+  for (let i = 0; i < p.length; i++) if (p[i] !== q[i]) return false
+  return true
+}
+
+/**
+ * Faces of the line work around the region that hold its strokes. The
+ * strokes the pattern re-draws are left out of the line work.
+ */
+function boundaryFromFaces(
+  region: Seg[],
+  all: Seg[],
+  lines: PdfHatchDefinitionLine[],
+  context: RegionContext
+): Boundary | undefined {
+  const tol = context.opts.tolerance
+  const box = segsBox(region)
+  const pad = tol * 4
+  const query = {
+    minX: box.minX - pad,
+    minY: box.minY - pad,
+    maxX: box.maxX + pad,
+    maxY: box.maxY + pad
+  }
+  const near = context.itemIndex.query(query)
+  // Each item gives one segment or more: too much line work is refused
+  // before anything is sampled.
+  if (near.length - region.length > MAX_FACE_SEGMENTS) return undefined
+  const frames = lines.map(lineFrame)
+  const strokes = new Set<number>()
+  for (const seg of region) strokes.add(seg.index)
+  const candidates = context.faces.segsOf(all)
+  const edges: number[] = []
+  for (const index of near) {
+    if (strokes.has(index)) continue
+    const seg = candidates.get(index)
+    if (seg && segOnPattern(seg, lines, frames, tol)) continue
+    edges.push(index)
+  }
+  edges.sort((p, q) => p - q)
+  const arrangement = context.faces.arrangement(context, edges)
+  if (!arrangement) return undefined
+  const polygons = acapPdfFaceBoundaryIn(arrangement, region.map(midpoint))
+  return polygons ? polygonsToBoundary(polygons) : undefined
+}
+
+function midpoint(seg: Seg): PdfRecPoint {
+  return { x: (seg.a.x + seg.b.x) / 2, y: (seg.a.y + seg.b.y) / 2 }
+}
+
+function inBox(p: PdfRecPoint, box: Box): boolean {
+  return (
+    p.x >= box.minX && p.x <= box.maxX && p.y >= box.minY && p.y <= box.maxY
+  )
+}
+
+function boxInside(inner: Box, outer: Box): boolean {
+  return (
+    inner.minX >= outer.minX &&
+    inner.minY >= outer.minY &&
+    inner.maxX <= outer.maxX &&
+    inner.maxY <= outer.maxY
+  )
+}
+
+function boxTouches(p: Box, q: Box): boolean {
+  return !(
+    p.maxX < q.minX ||
+    q.maxX < p.minX ||
+    p.maxY < q.minY ||
+    q.maxY < p.minY
+  )
+}
+
+function pointInPolygon(p: PdfRecPoint, polygon: readonly PdfRecPoint[]) {
+  let inside = false
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i]
+    const b = polygon[j]
+    if (
+      a.y > p.y !== b.y > p.y &&
+      p.x < ((b.x - a.x) * (p.y - a.y)) / (b.y - a.y) + a.x
+    ) {
+      inside = !inside
+    }
+  }
+  return inside
+}
+
+/** Uniform grid over the item boxes, built on first use. */
+class ItemIndex {
+  private cells?: Map<number, number[]>
+  private stride = 1
+  private boxes: Box[] = []
+  private originX = 0
+  private originY = 0
+  private size = 1
+
+  constructor(private readonly items: readonly PdfImportShapeItem[]) {}
+
+  /** Items whose box meets `box`. */
+  query(box: Box): number[] {
+    const cells = this.build()
+    // Cells lie in [0, stride - 1]; clamping keeps numeric keys unique.
+    const last = this.stride - 1
+    const cellOf = (v: number, origin: number) =>
+      Math.min(last, Math.max(0, Math.floor((v - origin) / this.size)))
+    const x0 = cellOf(box.minX, this.originX)
+    const x1 = cellOf(box.maxX, this.originX)
+    const y0 = cellOf(box.minY, this.originY)
+    const y1 = cellOf(box.maxY, this.originY)
+    const out = new Set<number>()
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) > cells.size) {
+      // A query wider than the grid: scan the boxes instead.
+      this.boxes.forEach((b, i) => {
+        if (boxTouches(b, box)) out.add(i)
+      })
+      return [...out]
+    }
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
+        for (const i of cells.get(x * this.stride + y) ?? []) {
+          if (!out.has(i) && boxTouches(this.boxes[i], box)) out.add(i)
+        }
+      }
+    }
+    return [...out]
+  }
+
+  private build(): Map<number, number[]> {
+    if (this.cells) return this.cells
+    this.boxes = this.items.map(item => shapeBox(item.shape))
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    for (const b of this.boxes) {
+      if (!Number.isFinite(b.minX)) continue
+      minX = Math.min(minX, b.minX)
+      minY = Math.min(minY, b.minY)
+      maxX = Math.max(maxX, b.maxX)
+      maxY = Math.max(maxY, b.maxY)
+    }
+    const cells = new Map<number, number[]>()
+    this.cells = cells
+    if (!Number.isFinite(minX)) return cells
+    const n = Math.max(1, Math.ceil(Math.sqrt(this.boxes.length / 4)))
+    this.originX = minX
+    this.originY = minY
+    this.size = Math.max((maxX - minX) / n, (maxY - minY) / n, 1e-9)
+    this.stride = n + 2
+    this.boxes.forEach((b, i) => {
+      if (!Number.isFinite(b.minX)) return
+      const x0 = Math.floor((b.minX - minX) / this.size)
+      const x1 = Math.floor((b.maxX - minX) / this.size)
+      const y0 = Math.floor((b.minY - minY) / this.size)
+      const y1 = Math.floor((b.maxY - minY) / this.size)
+      for (let x = x0; x <= x1; x++) {
+        for (let y = y0; y <= y1; y++) {
+          const key = x * this.stride + y
+          const list = cells.get(key)
+          if (list) list.push(i)
+          else cells.set(key, [i])
+        }
+      }
+    })
+    return cells
+  }
+}
+
+function shapeBox(shape: PdfRecognizedShape): Box {
+  switch (shape.kind) {
+    case 'line':
+      return pointsBox([shape.start, shape.end])
+    case 'circle':
+    case 'arc':
+      return {
+        minX: shape.center.x - shape.radius,
+        minY: shape.center.y - shape.radius,
+        maxX: shape.center.x + shape.radius,
+        maxY: shape.center.y + shape.radius
+      }
+    case 'ellipse': {
+      const r = Math.hypot(shape.majorAxis.x, shape.majorAxis.y)
+      return {
+        minX: shape.center.x - r,
+        minY: shape.center.y - r,
+        maxX: shape.center.x + r,
+        maxY: shape.center.y + r
+      }
+    }
+    case 'polyline': {
+      const box = pointsBox(shape.vertices)
+      // Bulges can bow past the vertices; half the box is a safe margin.
+      if (!shape.vertices.some(v => Math.abs(v.bulge) > 1e-12)) return box
+      const pad = Math.max(box.maxX - box.minX, box.maxY - box.minY) / 2
+      return {
+        minX: box.minX - pad,
+        minY: box.minY - pad,
+        maxX: box.maxX + pad,
+        maxY: box.maxY + pad
+      }
+    }
+    case 'spline':
+      return pointsBox(shape.controlPoints)
+  }
+}
+
+/**
  * Drops vertices that lie on the line between their kept neighbours
  * (one pass with a stack, then the seam where the ring closes).
  */
@@ -1643,8 +2036,10 @@ function verify(
     })),
     0
   ).filter(seg => Math.hypot(seg[1].x - seg[0].x, seg[1].y - seg[0].y) > tol)
-  if (generated.length === 0) return undefined
-  if (generated.length > region.length * 4 + 100) return undefined
+  if (generated.length === 0 || generated.length > region.length * 4 + 100) {
+    opts.trace('verify', { generated: generated.length, region: region.length })
+    return undefined
+  }
 
   const frames = lines.map(lineFrame)
   const spansOf = (a: PdfRecPoint, b: PdfRecPoint) =>
@@ -1662,7 +2057,11 @@ function verify(
     genLength += len
     genCovered += Math.min(len, sourceIndex.coveredBest(genSpans[i]))
   })
-  if (genCovered / genLength < opts.minPrecision) return undefined
+  const precision = genCovered / genLength
+  if (precision < opts.minPrecision) {
+    opts.trace('verify', { precision })
+    return undefined
+  }
 
   let srcLength = 0
   let srcCovered = 0
@@ -1670,7 +2069,9 @@ function verify(
     srcLength += seg.len
     srcCovered += Math.min(seg.len, genIndex.coveredBest(regionSpans[i]))
   })
-  if (srcCovered / srcLength < opts.minRecall) return undefined
+  const recall = srcCovered / srcLength
+  opts.trace('verify', { precision, recall })
+  if (recall < opts.minRecall) return undefined
 
   // Every segment the hatch re-draws goes, short corner stubs included.
   const box = segsBox(region)
@@ -1694,72 +2095,128 @@ function verify(
 // ---------------------------------------------------------------------------
 // Region driver
 
+/** Shared inputs of {@link recognizeRegion}, built once per call. */
+interface RegionContext {
+  library: PatternSignature[]
+  closedShapes: ClosedShape[]
+  clipPaths: readonly (readonly PdfRecPoint[][])[] | undefined
+  items: readonly PdfImportShapeItem[]
+  itemIndex: ItemIndex
+  opts: ResolvedOptions
+  faces: FaceCache
+}
+
+/** Library hypotheses tried with a boundary, best score first. */
+const MAX_VERIFIED = 8
+
 function recognizeRegion(
   region: Seg[],
   all: Seg[],
-  library: PatternSignature[],
-  closedShapes: ClosedShape[],
-  clipPaths: readonly (readonly PdfRecPoint[][])[] | undefined,
-  opts: ResolvedOptions,
-  items: readonly PdfImportShapeItem[]
+  context: RegionContext
 ): Omit<PdfRecognizedHatch, 'layerName' | 'color' | 'lineWidth'> | undefined {
+  const { opts } = context
   const tol = opts.tolerance
   const families = measureFamilies(region, tol)
+  opts.trace('families', {
+    segments: region.length,
+    families: families.map(f => ({
+      angle: f.theta / DEG,
+      lines: f.offsets.length,
+      period: f.period,
+      residues: f.residues,
+      segments: f.segs.length
+    }))
+  })
   if (families.length === 0) return undefined
-  const anchorLines = families[0].offsets.length
-  if (anchorLines < opts.minLines) return undefined
-  const familySegs = families.flatMap(f => f.segs)
+  if (families[0].offsets.length < opts.minLines) return undefined
 
-  const box = segsBox(familySegs)
-  const extent = Math.hypot(box.maxX - box.minX, box.maxY - box.minY)
+  const regionBox = segsBox(region)
+  const extent = Math.hypot(
+    regionBox.maxX - regionBox.minX,
+    regionBox.maxY - regionBox.minY
+  )
   const hypotheses: Hypothesis[] = []
-  for (const sig of library) {
+  for (const sig of context.library) {
     hypotheses.push(...matchPattern(sig, families, tol, extent))
   }
-  const user = userDefinedHypothesis(families, tol, extent)
-  if (user) hypotheses.push(user)
+  hypotheses.push(...userDefinedHypotheses(families, tol, extent))
 
-  const scored: { hyp: Hypothesis; t: PdfRecPoint; score: number }[] = []
+  const scored: {
+    hyp: Hypothesis
+    t: PdfRecPoint
+    score: number
+    segs: Seg[]
+  }[] = []
   for (const hyp of hypotheses) {
-    const best = estimateTranslation(hyp, familySegs, tol)
-    if (best && best.score >= MIN_SCORE) scored.push({ hyp, ...best })
+    const segs = hypothesisSegs(hyp)
+    const best = estimateTranslation(hyp, segs, tol)
+    if (best && best.score >= MIN_SCORE) scored.push({ hyp, segs, ...best })
   }
-  // Best score first; then the pattern drawn closest to its own angle, and
-  // library patterns (in library order) over user-defined lines.
+  // Best score first; then the pattern that explains most of the region
+  // (a cross-hatch over one of its families), the pattern drawn closest to
+  // its own angle, and library patterns (in library order) over
+  // user-defined lines.
   scored.sort(
     (p, q) =>
       Math.round((q.score - p.score) * 50) ||
+      Math.round(((q.segs.length - p.segs.length) / region.length) * 20) ||
       Math.round(rotationRank(p.hyp.rotation) - rotationRank(q.hyp.rotation)) ||
       p.hyp.order - q.hyp.order
   )
+  const tries = scored.slice(0, MAX_VERIFIED)
+  // A measured pattern is the last resort, tried after every library and
+  // user-defined candidate.
+  const custom = opts.customPatterns
+    ? customHypothesis(families, opts)
+    : undefined
+  if (custom) {
+    const segs = hypothesisSegs(custom)
+    const lines = definitionLines(custom, { x: 0, y: 0 })
+    const frames = lines.map(lineFrame)
+    const sample = sampleSegs(segs, SCORE_SAMPLE)
+    const hit = sample.filter(seg => segOnPattern(seg, lines, frames, tol))
+    tries.push({
+      hyp: custom,
+      segs,
+      t: { x: 0, y: 0 },
+      score: hit.length / sample.length
+    })
+  }
+  opts.trace('hypotheses', {
+    tried: hypotheses.map(h => h.name ?? 'USER'),
+    scored: tries.map(s => ({
+      name: s.hyp.name ?? (s.hyp.custom ? 'CUSTOM' : 'USER'),
+      score: s.score,
+      scale: s.hyp.scale,
+      angle: s.hyp.rotation / DEG
+    }))
+  })
 
-  for (const { hyp, t } of scored.slice(0, 4)) {
+  for (const { hyp, t, segs } of tries) {
     const lines = definitionLines(hyp, t)
     const boundaries = [
-      () => boundaryFromShapes(familySegs, closedShapes, tol),
-      () => boundaryFromClip(familySegs, items, clipPaths),
-      () => boundaryFromEnds(hyp, lines, tol)
+      () => boundaryFromGiven(segs, opts.boundaries),
+      () => boundaryFromShapes(segs, context.closedShapes, tol),
+      () => boundaryFromClip(segs, context.items, context.clipPaths),
+      () => boundaryFromEnds(hyp, lines, tol),
+      () =>
+        opts.faceBoundaries
+          ? boundaryFromFaces(segs, all, lines, context)
+          : undefined
     ]
-    for (const make of boundaries) {
+    for (const [source, make] of boundaries.entries()) {
       const boundary = make()
+      opts.trace('boundary', {
+        name: hyp.name ?? (hyp.custom ? 'CUSTOM' : 'USER'),
+        source: BOUNDARY_SOURCES[source],
+        found: !!boundary
+      })
       if (!boundary) continue
-      const verified = verify(lines, boundary, familySegs, all, opts)
+      const verified = verify(lines, boundary, segs, all, opts)
       if (!verified) continue
       return {
         boundary: boundary.shapes,
-        pattern: hyp.userDefined
-          ? {
-              type: 'userDefined',
-              angle: hyp.rotation,
-              spacing: hyp.userDefined.spacing,
-              double: hyp.userDefined.double
-            }
-          : {
-              type: 'predefined',
-              name: hyp.name ?? '',
-              scale: hyp.scale,
-              angle: hyp.rotation
-            },
+        pattern: hatchPattern(hyp),
         definitionLines: lines,
         items: verified.matched
       }
@@ -1768,7 +2225,246 @@ function recognizeRegion(
   return undefined
 }
 
+function hatchPattern(hyp: Hypothesis): PdfRecognizedHatchPattern {
+  if (hyp.custom) return { type: 'custom', name: CUSTOM_PATTERN_NAME }
+  if (hyp.userDefined) {
+    return {
+      type: 'userDefined',
+      angle: hyp.rotation,
+      spacing: hyp.userDefined.spacing,
+      double: hyp.userDefined.double
+    }
+  }
+  return {
+    type: 'predefined',
+    name: hyp.name ?? '',
+    scale: hyp.scale,
+    angle: hyp.rotation
+  }
+}
+
+/** Pattern name recorded on measured custom hatches. */
+export const CUSTOM_PATTERN_NAME = 'PDF_HATCH'
+
+/** The segments of the families a hypothesis explains. */
+function hypothesisSegs(hyp: Hypothesis): Seg[] {
+  const out: Seg[] = []
+  for (const family of new Set(hyp.families)) out.push(...family.segs)
+  return out
+}
+
+const BOUNDARY_SOURCES = ['given', 'shapes', 'clip', 'ends', 'faces']
+
 function rotationRank(angle: number): number {
   const deg = angle / DEG
   return Math.min(deg, 360 - deg)
+}
+
+// ---------------------------------------------------------------------------
+// Custom patterns: measured from the strokes when nothing else fits
+
+/** Most line families a measured custom pattern may have. */
+const MAX_CUSTOM_FAMILIES = 3
+
+/**
+ * A custom pattern measured from the region: per family its spacing, the
+ * offset lines within one spacing, the dash sequence along the lines and
+ * the stagger from one line to the next. The pattern lines come out in
+ * drawing coordinates (rotation 0, scale 1).
+ */
+function customHypothesis(
+  families: MeasuredFamily[],
+  opts: ResolvedOptions
+): Hypothesis | undefined {
+  const tol = opts.tolerance
+  const main = families[0]
+  if (!main) return undefined
+  const picked = families
+    .filter(
+      f =>
+        f === main ||
+        // Other families must be as regular and nearly as dense as the
+        // main one; sparse ones are the line work around the hatch.
+        (f.offsets.length >= opts.minLines &&
+          f.residues <= 4 &&
+          f.segs.length >= Math.max(4, main.segs.length * 0.3))
+    )
+    .slice(0, MAX_CUSTOM_FAMILIES)
+  const lines: AcDbPatPattern['lines'] = []
+  const owners: MeasuredFamily[] = []
+  for (const family of picked) {
+    const measured = measureCustomFamily(family, tol)
+    if (!measured) {
+      if (family === main) return undefined
+      continue
+    }
+    for (const line of measured) {
+      lines.push(line)
+      owners.push(family)
+    }
+  }
+  if (lines.length === 0) return undefined
+  return {
+    order: Infinity,
+    rotation: 0,
+    scale: 1,
+    lines,
+    families: owners,
+    custom: true
+  }
+}
+
+interface Interval {
+  s0: number
+  s1: number
+}
+
+function measureCustomFamily(
+  family: MeasuredFamily,
+  tol: number
+): AcDbPatPattern['lines'] | undefined {
+  const theta = family.theta
+  const ux = Math.cos(theta)
+  const uy = Math.sin(theta)
+  const period = family.period
+  const rows = linesOf(family.segs, theta, tol)
+  if (rows.length < 2) return undefined
+
+  // Rows by offset within one spacing (patterns may hold several lines).
+  const c0 = rows[0].c
+  const classes: { residue: number; rows: LinePos[] }[] = []
+  for (const row of rows) {
+    const r = (((row.c - c0) % period) + period) % period
+    const found = classes.find(cls => {
+      const d = Math.abs(cls.residue - r)
+      return Math.min(d, period - d) <= tol * 2
+    })
+    if (found) found.rows.push(row)
+    else classes.push({ residue: r, rows: [row] })
+  }
+  const most = Math.max(...classes.map(cls => cls.rows.length))
+  const out: AcDbPatPattern['lines'] = []
+  for (const cls of classes) {
+    if (cls.rows.length < Math.max(2, most * 0.3)) continue
+    const line = measureCustomLine(cls.rows, period, tol)
+    if (!line) return undefined
+    const { s, c, shift, dashes } = line
+    out.push({
+      angle: theta / DEG,
+      originX: ux * s - uy * c,
+      originY: uy * s + ux * c,
+      deltaX: shift,
+      deltaY: period,
+      dashes,
+      sourceLine: 0
+    })
+  }
+  return out.length > 0 ? out : undefined
+}
+
+/**
+ * Dash sequence, phase and stagger of one set of parallel lines one
+ * spacing apart.
+ */
+function measureCustomLine(
+  rows: LinePos[],
+  period: number,
+  tol: number
+): { s: number; c: number; shift: number; dashes: number[] } | undefined {
+  const intervals = rows.map(row => mergeIntervals(row, tol))
+  // Repeat length along the lines, from the rows with several dashes.
+  const repeats: number[] = []
+  for (const list of intervals) {
+    if (list.length < 3) continue
+    const along = fundamentalPeriod(
+      list.map(i => i.s0),
+      tol
+    )
+    if (along) repeats.push(along)
+  }
+  if (repeats.length === 0) {
+    // Continuous lines; rows that break up must do so at holes, not at a
+    // regular rhythm (no repeat was found).
+    return { s: 0, c: rows[0].c, shift: 0, dashes: [] }
+  }
+  repeats.sort((p, q) => p - q)
+  const along = repeats[Math.floor(repeats.length / 2)]
+
+  // One full repeat from an inner dash of the row with the most dashes
+  // (outer dashes may be cut by the boundary).
+  let best = -1
+  intervals.forEach((list, i) => {
+    if (best < 0 || list.length > intervals[best].length) best = i
+  })
+  const list = intervals[best]
+  if (list.length < 3) return undefined
+  const first = list[1]
+  const s = first.s0
+  const dashes: number[] = []
+  let cursor = s
+  for (const interval of list.slice(1)) {
+    if (interval.s0 >= s + along - tol) break
+    if (interval.s0 > cursor + tol) dashes.push(-(interval.s0 - cursor))
+    dashes.push(interval.s1 - interval.s0)
+    cursor = interval.s1
+  }
+  if (s + along - cursor > tol) dashes.push(-(s + along - cursor))
+  if (dashes.length < 2 || dashes[0] <= 0) return undefined
+  const total = dashes.reduce((sum, d) => sum + Math.abs(d), 0)
+  if (Math.abs(total - along) > tol * 4) return undefined
+
+  // Stagger: where the same dash starts on the next line, voted over every
+  // pair of neighbouring lines.
+  const dashLength = first.s1 - first.s0
+  const bin = tol * 2
+  const votes = new Map<number, number[]>()
+  for (let i = 0; i + 1 < rows.length; i++) {
+    const k = Math.round((rows[i + 1].c - rows[i].c) / period)
+    if (k !== 1) continue
+    const here = intervals[i].filter(
+      v => Math.abs(v.s1 - v.s0 - dashLength) <= tol * 2
+    )
+    const next = intervals[i + 1].filter(
+      v => Math.abs(v.s1 - v.s0 - dashLength) <= tol * 2
+    )
+    if (here.length === 0 || next.length === 0) continue
+    const ref = here[Math.floor(here.length / 2)].s0
+    for (const v of next) {
+      const shift = (((v.s0 - ref) % along) + along) % along
+      const key = Math.round(shift / bin)
+      const listed = votes.get(key)
+      if (listed) listed.push(shift)
+      else votes.set(key, [shift])
+    }
+  }
+  let shift = 0
+  let count = 0
+  for (const [key, values] of votes) {
+    // Bins at both ends of the repeat are one value split by the wrap.
+    const merged = [
+      ...values,
+      ...(votes.get(key + 1) ?? []),
+      ...(votes.get(key - 1) ?? [])
+    ]
+    if (merged.length > count) {
+      count = merged.length
+      const mean = values.reduce((sum, v) => sum + v, 0) / values.length
+      shift = mean
+    }
+  }
+  return { s, c: rows[best].c, shift, dashes }
+}
+
+/** Collinear pieces of one row joined where they touch. */
+function mergeIntervals(row: LinePos, tol: number): Interval[] {
+  const out: Interval[] = []
+  for (const entry of row.segs) {
+    const last = out[out.length - 1]
+    if (last && entry.s0 <= last.s1 + tol) {
+      last.s1 = Math.max(last.s1, entry.s1)
+    } else {
+      out.push({ s0: entry.s0, s1: entry.s1 })
+    }
+  }
+  return out
 }
