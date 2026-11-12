@@ -6,6 +6,17 @@ title: "升级 cad-simple-viewer 和 cad-editor"
 
 本指南介绍如何安全地升级 `@mlightcad/cad-simple-viewer` 和 `@mlightcad/cad-editor`——为什么它们不能单独升级、哪些相关包必须一起迁移，以及两种可靠的方法来确定任意给定版本的正确兼容版本集。
 
+::: info Dock 面板 chrome 迁入 `cad-simple-viewer`
+从包含此变更的版本开始，纯 DOM 的 **dock 面板 chrome**（`AcUiDockPanel`）位于 **`@mlightcad/cad-simple-viewer`**，而不再位于 `@mlightcad/cad-simple-ui-plugin`。插件仍负责标签页内容（图层、查找、批注、测量），并注册 `AcApPaletteHost`，把这些标签挂到 dock 上。
+
+宿主 / 插件迁移：
+
+- 从 `@mlightcad/cad-simple-viewer` 导入 `AcUiDockPanel`、`AcUiDockPanelTab`、`AcUiDockPanelSide`（插件仍会 re-export 类与类型一个版本；请优先从 viewer 导入）。
+- Dock chrome 的 i18n 键从 `simpleUi.dockPanel.*` 改为 **`main.dockPanel.*`**（含 `main.dockPanel.tab.layers` 等）。
+- 未注册宿主时，`AcApPaletteService.open` 使用真正的 `AcUiDockPanel`（右侧停靠 / 手机底部 sheet），不再使用旧的 `.ml-palette-fallback` 浮层。
+- 内置命名标签通过 **`AcApPaletteService.openNamedTab`** / 可选的 `AcApPaletteHost.openNamedTab` 打开（id 见 `ACAP_PALETTE_NAMED_TAB`），且**必须已注册宿主**——命名标签没有 dock 回退。`cad-editor` 映射到 Vue 工具选项板；`cad-simple-ui-plugin` 映射到 dock 标签。托管的 `HTMLElement` 面板仍使用 `AcApPaletteService.open`。
+:::
+
 ::: info 共享的 AI 模型设置（`@mlightcad/cad-llm-plugin`）
 从包含此变更的版本开始，LLM 服务商设置从 `@mlightcad/cad-agent-plugin` 移到新的 **`@mlightcad/cad-llm-plugin`**，CAD 智能体和 `pdftext` 文字识别（OCR）共用同一份配置。新包提供 **LLMSETTINGS** 命令和一个不依赖 UI 框架的设置对话框（`@mlightcad/cad-editor` 的 AI 功能区选项卡中也有入口）；`@mlightcad/cad-simple-viewer` 新增 `AcApLlmSettingsService`，任何功能都可以通过它打开对话框，或检查是否配置了支持图片的模型。
 

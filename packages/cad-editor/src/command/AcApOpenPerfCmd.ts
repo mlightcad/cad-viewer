@@ -1,6 +1,8 @@
 import {
+  ACAP_PALETTE_NAMED_TAB,
   AcApContext,
   AcApOpenFileProfiler,
+  AcApPaletteService,
   AcEdCommand
 } from '@mlightcad/cad-simple-viewer'
 
@@ -17,8 +19,6 @@ export class AcApOpenPerfCmd extends AcEdCommand {
   async execute(_context: AcApContext) {
     publishOpenFileProfile(AcApOpenFileProfiler.getLastSnapshot())
     store.openFileProfileTick++
-    store.dialogs.openFileProfileTabVisible = true
-    store.dialogs.activePaletteTab = 'openFileProfile'
-    store.dialogs.layerManager = true
+    AcApPaletteService.openNamedTab(ACAP_PALETTE_NAMED_TAB.openFileProfile)
   }
 }

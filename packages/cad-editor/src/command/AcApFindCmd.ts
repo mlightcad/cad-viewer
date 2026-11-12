@@ -1,6 +1,9 @@
-import { AcApContext, AcEdCommand } from '@mlightcad/cad-simple-viewer'
-
-import { store } from '../app'
+import {
+  ACAP_PALETTE_NAMED_TAB,
+  AcApContext,
+  AcApPaletteService,
+  AcEdCommand
+} from '@mlightcad/cad-simple-viewer'
 
 /**
  * Opens the Find palette (FIND).
@@ -21,9 +24,7 @@ export class AcApFindCmd extends AcEdCommand {
  * the FIND command, the ribbon button and the Ctrl/Cmd+F shortcut.
  */
 export function openFindPalette() {
-  store.dialogs.activePaletteTab = 'find'
-  store.dialogs.layerManager = true
-  store.dialogs.findFocusTick++
+  AcApPaletteService.openNamedTab(ACAP_PALETTE_NAMED_TAB.find)
 }
 
 /**

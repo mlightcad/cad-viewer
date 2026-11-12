@@ -6,6 +6,17 @@ title: "ترقية cad-simple-viewer و cad-editor"
 
 يشرح هذا الدليل كيفية ترقية `@mlightcad/cad-simple-viewer` و`@mlightcad/cad-editor` بأمان — ولماذا لا يمكن رفعهما بمعزل عن غيرهما، وأي الحزم ذات الصلة يجب أن تتحرك معًا، وطريقتان موثوقتان لتحديد مجموعة الإصدارات المتوافقة الصحيحة لأي إصدار معين.
 
+::: info نقل واجهة لوحة الإرساء إلى `cad-simple-viewer`
+بدءًا من الإصدار الذي يتضمن هذا التغيير، تعيش واجهة **لوحة الإرساء** (`AcUiDockPanel`) في **`@mlightcad/cad-simple-viewer`** وليس في `@mlightcad/cad-simple-ui-plugin`. تظل الإضافة مسؤولة عن محتوى التبويبات وتسجّل `AcApPaletteHost`.
+
+الترحيل:
+
+- استورد `AcUiDockPanel` من `@mlightcad/cad-simple-viewer` (الإضافة ما زالت تعيد تصدير الصنف/الأنواع لإصدار واحد).
+- مفاتيح الترجمة من `simpleUi.dockPanel.*` إلى **`main.dockPanel.*`**.
+- بدون مضيف يستخدم `AcApPaletteService.open` لوحة `AcUiDockPanel` بدل `.ml-palette-fallback`.
+- التبويبات المسماة عبر `AcApPaletteService.openNamedTab` / `ACAP_PALETTE_NAMED_TAB` و**تتطلب مضيفاً مسجّلاً** (لا يوجد مسار احتياطي للإرساء للتبويبات المسماة).
+:::
+
 ::: info إعدادات نموذج الذكاء الاصطناعي المشتركة (`@mlightcad/cad-llm-plugin`)
 بدءًا من الإصدار الذي يتضمن هذا التغيير، تنتقل إعدادات مزودي LLM من `@mlightcad/cad-agent-plugin` إلى الحزمة الجديدة **`@mlightcad/cad-llm-plugin`**، فيتشارك وكيل CAD والتعرف على النص في `pdftext` (OCR) إعدادًا واحدًا. تضيف الحزمة الجديدة الأمر **LLMSETTINGS** ومربع حوار إعدادات لا يعتمد على إطار واجهة مستخدم (متاح أيضًا من علامة تبويب AI في الشريط ضمن `@mlightcad/cad-editor`)، وتضيف `@mlightcad/cad-simple-viewer` الخدمة `AcApLlmSettingsService` حتى تتمكن أي ميزة من فتح مربع الحوار أو التحقق من إعداد نموذج يدعم الصور.
 

@@ -1,12 +1,22 @@
 /** @jest-environment jsdom */
 
+const openNamedTab = jest.fn((id: string) => {
+  if (id !== 'find') return false
+  mockStore.dialogs.activePaletteTab = 'find'
+  mockStore.dialogs.layerManager = true
+  mockStore.dialogs.findFocusTick++
+  return true
+})
+
 const mockStore = {
   dialogs: { activePaletteTab: '', layerManager: false, findFocusTick: 0 }
 }
 
 jest.mock('@mlightcad/cad-simple-viewer', () => ({
   AcEdCommand: class {},
-  AcApContext: class {}
+  AcApContext: class {},
+  ACAP_PALETTE_NAMED_TAB: { find: 'find' },
+  AcApPaletteService: { openNamedTab }
 }))
 jest.mock('../src/app', () => ({ store: mockStore }))
 
@@ -69,8 +79,16 @@ describe('isFindShortcutInViewer', () => {
 })
 
 describe('openFindPalette', () => {
-  it('shows the Find tab and asks it to focus its field', () => {
+  beforeEach(() => {
+    openNamedTab.mockClear()
+    mockStore.dialogs.activePaletteTab = ''
+    mockStore.dialogs.layerManager = false
+    mockStore.dialogs.findFocusTick = 0
+  })
+
+  it('opens the Find named palette tab and focuses its field', () => {
     openFindPalette()
+    expect(openNamedTab).toHaveBeenCalledWith('find')
     expect(mockStore.dialogs.activePaletteTab).toBe('find')
     expect(mockStore.dialogs.layerManager).toBe(true)
     expect(mockStore.dialogs.findFocusTick).toBe(1)

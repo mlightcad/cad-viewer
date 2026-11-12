@@ -1,10 +1,12 @@
 import {
+  ACAP_PALETTE_NAMED_TAB,
   acapBindToolbarDocState,
   AcApContext,
   AcApDocManager,
   AcApI18n,
   type AcApLocale,
   type AcApPaletteHost,
+  type AcApPaletteNamedTabId,
   AcApPaletteService,
   AcApPlugin,
   AcApSettingManager,
@@ -13,6 +15,8 @@ import {
   acedSubscribeUiLayout,
   type AcEdUiLayoutKind,
   type AcEdUiTheme,
+  AcUiDockPanel,
+  type AcUiDockPanelTab,
   AcUiToolbar
 } from '@mlightcad/cad-simple-viewer'
 
@@ -46,7 +50,6 @@ import {
 } from './config/types'
 import { AcUiI18n, acuiRegisterSimpleUiI18n } from './i18n'
 import { AcUiThemeSync } from './theme/AcUiThemeSync'
-import { AcUiDockPanel, type AcUiDockPanelTab } from './ui/AcUiDockPanel'
 import { AcUiFindPaletteView } from './ui/AcUiFindPaletteView'
 import { AcUiLayerListView } from './ui/AcUiLayerListView'
 import { AcUiMeasurementPaletteView } from './ui/AcUiMeasurementPaletteView'
@@ -269,6 +272,31 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
           if (!wasOpen) dock.close()
           else if (previousTab && previousTab !== tabId) dock.open(previousTab)
         }
+      }
+    },
+    openNamedTab: (id: AcApPaletteNamedTabId | string) => {
+      switch (id) {
+        case ACAP_PALETTE_NAMED_TAB.layers:
+          this.prepareLayerDockForCommand()
+          this.layerUiControllerHolder.toggleFromCommand()
+          return this.dockPanel?.hasTab(LAYERS_TAB_ID) ?? false
+        case ACAP_PALETTE_NAMED_TAB.review:
+          this.prepareReviewDockForCommand()
+          this.dockPanel?.open(REVIEW_TAB_ID)
+          return this.dockPanel?.hasTab(REVIEW_TAB_ID) ?? false
+        case ACAP_PALETTE_NAMED_TAB.measurements:
+          this.prepareMeasurementDockForCommand()
+          this.dockPanel?.open(MEASUREMENTS_TAB_ID)
+          return this.dockPanel?.hasTab(MEASUREMENTS_TAB_ID) ?? false
+        case ACAP_PALETTE_NAMED_TAB.find:
+          this.mountFindDockUi()
+          this.tryUpgradeDockMountTarget()
+          if (!this.dockPanel?.hasTab(FIND_TAB_ID)) return false
+          this.dockPanel.open(FIND_TAB_ID)
+          this.findPaletteView?.focus()
+          return true
+        default:
+          return false
       }
     }
   }
@@ -1207,7 +1235,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
 
     this.dockPanel = new AcUiDockPanel({
       host: mountEl,
-      i18n: this.i18n,
+      t: key => AcApI18n.t(key),
       defaultSide: this.dockPanelDefaults.defaultSide,
       defaultOpen: this.dockPanelDefaults.defaultOpen,
       defaultHeight: this.dockPanelDefaults.defaultHeight,
@@ -1285,7 +1313,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     })
     const added = this.dockPanel.addTab({
       id: LAYERS_TAB_ID,
-      labelKey: 'dockPanel.tab.layers',
+      labelKey: 'main.dockPanel.tab.layers',
       content: this.layerListView.element
     })
     if (!added) {
@@ -1332,7 +1360,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     })
     const added = this.dockPanel.addTab({
       id: REVIEW_TAB_ID,
-      labelKey: 'dockPanel.tab.review',
+      labelKey: 'main.dockPanel.tab.review',
       content: this.reviewPaletteView.element
     })
     if (!added) {
@@ -1366,7 +1394,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     })
     const added = this.dockPanel.addTab({
       id: MEASUREMENTS_TAB_ID,
-      labelKey: 'dockPanel.tab.measurements',
+      labelKey: 'main.dockPanel.tab.measurements',
       content: this.measurementPaletteView.element
     })
     if (!added) {
@@ -1400,7 +1428,7 @@ export class AcApSimpleUiPlugin implements AcApPlugin {
     })
     const added = this.dockPanel.addTab({
       id: FIND_TAB_ID,
-      labelKey: 'dockPanel.tab.find',
+      labelKey: 'main.dockPanel.tab.find',
       content: this.findPaletteView.element
     })
     if (!added) {

@@ -1,9 +1,7 @@
 /** @jest-environment jsdom */
 
-import { ML_UI_MOBILE_MEDIA_QUERY } from '@mlightcad/cad-simple-viewer'
-
-import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../src/i18n'
-import { AcUiDockPanel } from '../src/ui/AcUiDockPanel'
+import { ML_UI_MOBILE_MEDIA_QUERY } from '../src/editor/global/AcEdUiLayout'
+import { AcUiDockPanel } from '../src/ui/dock/AcUiDockPanel'
 
 class ResizeObserverMock {
   observe() {}
@@ -15,41 +13,28 @@ beforeAll(() => {
   global.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver
 })
 
-jest.mock('@mlightcad/cad-simple-viewer', () => {
-  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
-  const layout = jest.requireActual(
-    '../../cad-simple-viewer/src/editor/global/AcEdUiLayout'
-  ) as typeof import('../../cad-simple-viewer/src/editor/global/AcEdUiLayout')
-
-  return createCadSimpleViewerMock({
-    acedIsMobileUiLayout: () =>
-      window.matchMedia?.(layout.ML_UI_MOBILE_MEDIA_QUERY).matches ?? false,
-    acedIsCompactUiLayout: () =>
-      window.matchMedia?.(layout.ML_UI_COMPACT_MEDIA_QUERY).matches ?? false,
-    AcApI18n: {
-      t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
-      mergeLocaleMessage: jest.fn(),
-      events: {
-        localeChanged: {
-          addEventListener: jest.fn(),
-          removeEventListener: jest.fn()
-        }
-      },
-      currentLocale: 'en'
-    }
-  })
-})
+jest.mock('../src/i18n/AcApI18n', () => ({
+  AcApI18n: {
+    t: (key: string) => key,
+    mergeLocaleMessage: jest.fn(),
+    events: {
+      localeChanged: {
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }
+    },
+    currentLocale: 'en'
+  }
+}))
 
 function createPanel(
   options?: Partial<ConstructorParameters<typeof AcUiDockPanel>[0]>
 ) {
-  acuiRegisterSimpleUiI18n()
   const host = document.createElement('div')
   document.body.appendChild(host)
 
   const panel = new AcUiDockPanel({
     host,
-    i18n: new AcUiI18n(),
     defaultSide: 'left',
     defaultOpen: false,
     defaultHeight: 240,
@@ -69,7 +54,7 @@ function createTabContent(label = 'content') {
 describe('AcUiDockPanel', () => {
   afterEach(() => {
     document.body.replaceChildren()
-    document.getElementById('ml-ex-ui-styles')?.remove()
+    document.getElementById('ml-ui-dock-panel-styles')?.remove()
   })
 
   it('addTab returns false for duplicate or invalid tabs', () => {
@@ -282,10 +267,8 @@ describe('AcUiDockPanel', () => {
     host.appendChild(canvasParent)
     document.body.appendChild(host)
 
-    acuiRegisterSimpleUiI18n()
     const panel = new AcUiDockPanel({
       host,
-      i18n: new AcUiI18n(),
       defaultSide: 'left',
       defaultOpen: false
     })
@@ -307,10 +290,8 @@ describe('AcUiDockPanel', () => {
     host.appendChild(canvasParent)
     document.body.appendChild(host)
 
-    acuiRegisterSimpleUiI18n()
     const panel = new AcUiDockPanel({
       host,
-      i18n: new AcUiI18n(),
       defaultSide: 'left',
       defaultOpen: false
     })
@@ -330,10 +311,8 @@ describe('AcUiDockPanel', () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
 
-    acuiRegisterSimpleUiI18n()
     const panel = new AcUiDockPanel({
       host,
-      i18n: new AcUiI18n(),
       defaultSide: 'left',
       defaultOpen: false
     })
@@ -365,10 +344,8 @@ describe('AcUiDockPanel', () => {
     const host = document.createElement('div')
     document.body.appendChild(host)
 
-    acuiRegisterSimpleUiI18n()
     const panel = new AcUiDockPanel({
       host,
-      i18n: new AcUiI18n(),
       defaultSide: 'left',
       defaultOpen: false
     })
@@ -473,18 +450,13 @@ describe('AcUiDockPanel', () => {
     expect(host.classList.contains('ml-ex-ui-host-dock-sheet')).toBe(true)
     expect(host.querySelector('.ml-ex-ui-dock-sheet-grabber')).toBeTruthy()
     expect(host.querySelector('.ml-ex-ui-dock-sheet-close')).toBeTruthy()
-    expect(document.getElementById('ml-ex-ui-styles')?.textContent).toContain(
+    const styles = document.getElementById('ml-ui-dock-panel-styles')?.textContent
+    expect(styles).toContain(
       ".ml-ex-ui-dock-panel[data-phone-sheet='true'] .ml-ex-ui-dock-header"
     )
-    expect(document.getElementById('ml-ex-ui-styles')?.textContent).toContain(
-      '.ml-ex-ui-host-dock-sheet {'
-    )
-    expect(document.getElementById('ml-ex-ui-styles')?.textContent).toContain(
-      '.ml-ex-ui-dock-sheet-grabber::before'
-    )
-    expect(document.getElementById('ml-ex-ui-styles')?.textContent).toContain(
-      'transform: translate(-50%, -50%);'
-    )
+    expect(styles).toContain('.ml-ex-ui-host-dock-sheet {')
+    expect(styles).toContain('.ml-ex-ui-dock-sheet-grabber::before')
+    expect(styles).toContain('transform: translate(-50%, -50%);')
 
     panel.setPanelSize(800)
     expect(panel.getSize()).toBe(525)

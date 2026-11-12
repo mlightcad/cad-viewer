@@ -34,7 +34,7 @@ Komutla tetiklenen tüm eklentiler **tembel yüklenir**: başlangıçta küçük
 Şunları sağlar:
 
 - Yapılandırılabilir bir **araç çubuğu** (herhangi bir kenara yerleştirme, varsayılan CAD komutları, iç içe menüler, özel öğeler)
-- **Katman yöneticisi** sekmesi (katman aç/kapat, ACI renk seçici, çift tıklamada katmana yakınlaştırma) ve **inceleme paleti** sekmesi (işaretleme listesi, durum, yorumlar) içeren bir **dock paneli**
+- **Dock sekme içeriği** (katmanlar, bul, inceleme, ölçümler); paylaşılan `AcUiDockPanel` chrome (`cad-simple-viewer`) üzerinde; `AcApPaletteHost` ile `cad-editor` Vue paleti ve `AcApPaletteService` paylaşılır
 - Ana öğenizdeki `COLORTHEME` sistem değişkeni ve `--ml-ui-*` CSS belirteçleriyle **tema eşitleme**
 - `AcApI18n` ile **yerel ayar eşitleme** (İngilizce / Çince / Çekçe / Türkçe)
 

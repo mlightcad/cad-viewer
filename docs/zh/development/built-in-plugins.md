@@ -34,7 +34,7 @@ MLightCAD 随附一组官方插件。每个插件专注于一项职责 —— UI
 它提供：
 
 - **可配置的工具栏**（可放置在任意边缘、默认 CAD 命令、嵌套菜单、自定义项）
-- 一个**停靠面板**，包含**图层管理器**标签页（图层开关、ACI 颜色选择器、双击缩放到图层）和**审阅面板**标签页（批注列表、状态、评论）
+- **停靠面板标签内容**（图层、查找、批注、测量），挂载在 `cad-simple-viewer` 提供的共享 `AcUiDockPanel` chrome 上；并通过 `AcApPaletteHost` 与 `cad-editor` 的 Vue 工具选项板共用 `AcApPaletteService`
 - 与 `COLORTHEME` 系统变量及宿主元素上的 `--ml-ui-*` CSS 变量**主题同步**
 - 与 `AcApI18n` **语言同步**（英语 / 中文 / 捷克语 / 土耳其语）
 

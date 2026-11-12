@@ -1,6 +1,9 @@
-import { AcApContext, AcEdCommand } from '@mlightcad/cad-simple-viewer'
-
-import { store } from '../app'
+import {
+  ACAP_PALETTE_NAMED_TAB,
+  AcApContext,
+  AcApPaletteService,
+  AcEdCommand
+} from '@mlightcad/cad-simple-viewer'
 
 /**
  * `INSERT` — opens the Blocks palette (AutoCAD Blocks palette / BLOCKSPALETTE).
@@ -12,7 +15,6 @@ import { store } from '../app'
  */
 export class AcApInsertPaletteCmd extends AcEdCommand {
   async execute(_context: AcApContext) {
-    store.dialogs.activePaletteTab = 'blocks'
-    store.dialogs.layerManager = true
+    AcApPaletteService.openNamedTab(ACAP_PALETTE_NAMED_TAB.blocks)
   }
 }

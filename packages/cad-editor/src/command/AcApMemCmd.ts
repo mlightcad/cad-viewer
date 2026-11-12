@@ -1,7 +1,9 @@
 import {
+  ACAP_PALETTE_NAMED_TAB,
   AcApContext,
   AcApI18n,
   AcApMemoryProfiler,
+  AcApPaletteService,
   AcEdCommand,
   AcTrView2d
 } from '@mlightcad/cad-simple-viewer'
@@ -28,7 +30,6 @@ export class AcApMemCmd extends AcEdCommand {
 
     publishMemorySnapshot(snapshot)
     store.memoryProfileTick++
-    store.dialogs.activePaletteTab = 'memoryProfile'
-    store.dialogs.layerManager = true
+    AcApPaletteService.openNamedTab(ACAP_PALETTE_NAMED_TAB.memoryProfile)
   }
 }

@@ -203,5 +203,21 @@ export default {
     selectFile: 'Select file',
     signInRequired: 'Sign in first to select a file.',
     downloading: 'Downloading file ...'
+  },
+  dockPanel: {
+    close: 'Close panel',
+    dockSide: 'Dock side',
+    dockTop: 'Dock to top',
+    dockBottom: 'Dock to bottom',
+    dockLeft: 'Dock to left',
+    dockRight: 'Dock to right',
+    moreTabs: 'More tabs',
+    resize: 'Resize panel',
+    tab: {
+      layers: 'Layers',
+      review: 'Review',
+      find: 'Find',
+      measurements: 'Measurements'
+    }
   }
 }

@@ -204,5 +204,21 @@ export default {
     selectFile: 'ファイルを選択',
     signInRequired: 'ファイルを選択するには、先にサインインしてください。',
     downloading: 'ファイルをダウンロードしています...'
+  },
+  dockPanel: {
+    close: 'パネルを閉じる',
+    dockSide: 'ドッキング位置',
+    dockTop: '上にドッキング',
+    dockBottom: '下にドッキング',
+    dockLeft: '左にドッキング',
+    dockRight: '右にドッキング',
+    moreTabs: 'その他のタブ',
+    resize: 'パネルのサイズを変更',
+    tab: {
+      layers: '画層',
+      review: 'レビュー',
+      find: '検索',
+      measurements: '計測'
+    }
   }
 }

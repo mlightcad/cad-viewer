@@ -34,7 +34,7 @@ Všechny pluginy spouštěné příkazy jsou **líně načítané**: nejprve se 
 Poskytuje:
 
 - **Konfigurovatelný panel nástrojů** (umístění na libovolné hraně, výchozí CAD příkazy, vnořené nabídky, vlastní položky)
-- **Dokovací panel** s kartou **správce hladin** (zapnutí/vypnutí hladin, výběr barvy ACI, přiblížení na hladinu dvojitým kliknutím) a kartou **recenzní palety** (seznam značek, stav, komentáře)
+- **Obsah dokovacích karet** (hladiny, hledání, kontrola, měření) ve sdíleném chrome `AcUiDockPanel` (`cad-simple-viewer`); přes `AcApPaletteHost` sdílí `AcApPaletteService` s Vue paletou v `cad-editor`
 - **Synchronizaci motivu** se systémovou proměnnou `COLORTHEME` a CSS tokeny `--ml-ui-*` na hostitelském prvku
 - **Synchronizaci jazyka** s `AcApI18n` (angličtina / čínština / čeština / turečtina)
 

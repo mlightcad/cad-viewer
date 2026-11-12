@@ -9,7 +9,9 @@ export {
   AcApSimpleUiPlugin,
   acuiCreateSimpleUiPlugin
 } from './createSimpleUiPlugin'
-export type { AcUiDockPanelTab } from './ui/AcUiDockPanel'
+/** @deprecated Import from `@mlightcad/cad-simple-viewer` instead. */
+export { AcUiDockPanel } from '@mlightcad/cad-simple-viewer'
+export type { AcUiDockPanelTab } from '@mlightcad/cad-simple-viewer'
 export {
   acuiRegisterSimpleUiPlugin,
   registerSimpleUiPlugin

@@ -2,12 +2,14 @@ import type {
   AcApLocale,
   AcEdUiLayoutKind,
   AcEdUiTheme,
+  AcUiDockPanelSide,
   AcUiToolbarItemConfig,
   AcUiToolbarOptions,
   AcUiToolbarPlacement
 } from '@mlightcad/cad-simple-viewer'
 
 export type {
+  AcUiDockPanelSide,
   AcUiSubToolbarOptions,
   AcUiSubToolbarPosition,
   AcUiToolbarChildIconMode,
@@ -27,9 +29,6 @@ export type {
 
 /** Toolbar item list passed to {@link AcApSimpleUiPlugin.setToolbarItems}. */
 export type AcUiToolbarItemsInput = AcUiToolbarItemConfig[] | 'default'
-
-/** Dock panel edge placement relative to the viewer host element. */
-export type AcUiDockPanelSide = 'top' | 'bottom' | 'left' | 'right'
 
 /** Supported UI locale codes for plugin strings. */
 export type AcUiLocale = 'en' | 'zh' | 'ja' | 'ko' | 'cs' | 'tr' | 'ar'
