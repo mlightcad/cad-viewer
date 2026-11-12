@@ -48,12 +48,12 @@ import {
 } from './deps'
 import { AcUiI18n, acuiRegisterSimpleUiI18n } from './i18n'
 import { AcUiThemeSync } from './theme/AcUiThemeSync'
-import { ACUI_SIMPLE_UI_VERSION } from './version'
 import { AcUiFindPaletteView } from './ui/AcUiFindPaletteView'
 import { AcUiLayerListView } from './ui/AcUiLayerListView'
 import { AcUiMeasurementPaletteView } from './ui/AcUiMeasurementPaletteView'
 import { AcUiReviewPaletteView } from './ui/AcUiReviewPaletteView'
 import { acuiRemoveUiStylesIfUnused } from './ui/styles'
+import { ACUI_SIMPLE_UI_VERSION } from './version'
 
 const LAYERS_TAB_ID = 'layers'
 const REVIEW_TAB_ID = 'review'
