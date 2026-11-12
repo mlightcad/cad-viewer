@@ -213,13 +213,20 @@ export function acapPdfCreatePatternHatch(
     hatch.patternType = AcDbHatchPatternType.Predefined
     hatch.patternName = pattern.name
     hatch.patternScale = pattern.scale
-  } else {
+    hatch.patternAngle = pattern.angle
+  } else if (pattern.type === 'userDefined') {
     hatch.patternType = AcDbHatchPatternType.UserDefined
     hatch.patternName = HATCH_PATTERN_USER
     hatch.patternScale = 1
     hatch.patternDouble = pattern.double
+    hatch.patternAngle = pattern.angle
+  } else {
+    // A measured pattern: the definition lines already hold angle and size.
+    hatch.patternType = AcDbHatchPatternType.Custom
+    hatch.patternName = pattern.name
+    hatch.patternScale = 1
+    hatch.patternAngle = 0
   }
-  hatch.patternAngle = pattern.angle
   hatch.isSolidFill = false
   hatch.associative = false
   for (const loop of loops) hatch.add(loop)

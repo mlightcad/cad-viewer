@@ -228,6 +228,11 @@ export default {
       description: 'Turns exploded PDF dimensions back into dimension objects',
       prompt: 'Select the area with dimensions'
     },
+    pdfhatch: {
+      description:
+        'Turns the loose strokes of a PDF hatch back into a hatch object',
+      prompt: 'Select the hatched area with the lines around it'
+    },
     pdfblock: {
       description: 'Turns repeated PDF geometry back into a block',
       prompt: 'Select the objects of one block instance'

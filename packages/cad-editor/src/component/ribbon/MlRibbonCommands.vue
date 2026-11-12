@@ -1286,7 +1286,8 @@ const buildAiTab = (
     | 'pdfScale'
     | 'pdfText'
     | 'pdfBlock'
-    | 'pdfDim',
+    | 'pdfDim'
+    | 'pdfHatch',
     string
   >
 ): RibbonTabModel => {
@@ -1416,6 +1417,12 @@ const buildAiTab = (
                 t('main.ribbon.command.pdfDim'),
                 ribbonTooltips.pdfDim,
                 dimLinear
+              ),
+              largeButton(
+                'cmd-pdfhatch',
+                t('main.ribbon.command.pdfHatch'),
+                ribbonTooltips.pdfHatch,
+                hatch
               )
             ]
           }
@@ -1494,6 +1501,7 @@ const buildBaseTabs = (
     pdfText: t('main.ribbon.tooltip.pdfText'),
     pdfBlock: t('main.ribbon.tooltip.pdfBlock'),
     pdfDim: t('main.ribbon.tooltip.pdfDim'),
+    pdfHatch: t('main.ribbon.tooltip.pdfHatch'),
     pan: t('main.ribbon.tooltip.pan'),
     zoom: t('main.ribbon.tooltip.zoom'),
     zoomExtents: t('main.ribbon.tooltip.zoomExtents'),
@@ -3415,6 +3423,7 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-pdftext', 'pdftext')
   commandByItemId.set('cmd-pdfblock', 'pdfblock')
   commandByItemId.set('cmd-pdfdim', 'pdfdim')
+  commandByItemId.set('cmd-pdfhatch', 'pdfhatch')
   commandByItemId.set('cmd-tool-markup-panel', 'markuppanel')
   commandByItemId.set('cmd-tool-markup-text', 'markuptext')
   commandByItemId.set('cmd-tool-markup-cloud', 'markupcloud')

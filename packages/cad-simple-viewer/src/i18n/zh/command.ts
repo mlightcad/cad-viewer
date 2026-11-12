@@ -210,6 +210,10 @@ export default {
       description: '将 PDF 中被打散的标注恢复为标注对象',
       prompt: '选择包含标注的区域'
     },
+    pdfhatch: {
+      description: '将 PDF 中被打散成线段的图案填充恢复为图案填充对象',
+      prompt: '选择填充区域及其周围的边界线'
+    },
     pdfblock: {
       description: '将 PDF 中重复的图形恢复为块',
       prompt: '选择一个块实例的对象'

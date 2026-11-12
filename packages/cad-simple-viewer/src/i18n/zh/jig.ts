@@ -1926,6 +1926,12 @@ export default {
     convertOne: '标注 {index}/{count}“{text}”：是否转换？',
     summary: '已转换 {count} 个标注；标注样式 PDF_DIM 的测量比例因子为 {scale}。'
   },
+  pdfhatch: {
+    noHatches: '所选范围内没有找到图案填充（需要规则排列的平行线段及其边界线）。',
+    convertAll: '找到 {count} 个图案填充（{patterns}）。是否转换？',
+    convertOne: '图案填充 {index}/{count}（{pattern}）：是否转换？',
+    summary: '已转换 {count} 个图案填充（{patterns}），替换了 {strokes} 个对象。'
+  },
   bsearch: {
     unsupported: '所选对象均无法匹配（支持直线、圆弧、圆、多段线、椭圆、样条曲线、文字、多行文字和块参照）。',
     skipped: '{count} 个所选对象无法匹配，已忽略。',

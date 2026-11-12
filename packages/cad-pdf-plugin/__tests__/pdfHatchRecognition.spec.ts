@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { AcDbPredefinedAcadIsoPat } from '@mlightcad/data-model'
 import { tessellateHatchPattern } from '@mlightcad/pdf-renderer'
 
@@ -335,5 +338,256 @@ describe('acapPdfRecognizeHatches', () => {
     ).map(item => ({ ...item, dashPattern: [1, 1] }))
 
     expect(acapPdfRecognizeHatches(items).hatches).toHaveLength(0)
+  })
+
+  test('rebuilds AR-CONC, whose dot-only lines leave no strokes', () => {
+    // Like cathedral.dwg handle 6C7C2: AR-CONC at scale 7, plotted at about
+    // 1:170 (so a pattern scale of about 0.04 on paper).
+    const outline = rect(0, 0, 60, 40)
+    const hatchItems = strokes(
+      [outline],
+      patternLines('AR-CONC', 0.04, 0)
+    ).filter(item => {
+      const shape = item.shape
+      if (shape.kind !== 'line') return true
+      return (
+        Math.hypot(shape.end.x - shape.start.x, shape.end.y - shape.start.y) >
+        0.01
+      )
+    })
+    const items = [outlineItem(outline), ...hatchItems]
+
+    const { hatches, consumed } = acapPdfRecognizeHatches(items)
+
+    expectPredefined(only(hatches), 'AR-CONC', 0.04, 0)
+    expect(consumed.size).toBe(hatchItems.length)
+  })
+
+  test('rebuilds one pattern spread over separate rooms', () => {
+    // AR-CONC strokes of several rooms: every room comes back, whether as
+    // one hatch with a loop per room or one hatch per room.
+    const rooms = [
+      rect(0, 0, 60, 40),
+      rect(80, 0, 140, 40),
+      rect(0, 60, 140, 100)
+    ]
+    const dashed = (outline: Point[]) =>
+      strokes([outline], patternLines('AR-CONC', 0.04, 0)).filter(item => {
+        const shape = item.shape
+        if (shape.kind !== 'line') return true
+        return (
+          Math.hypot(shape.end.x - shape.start.x, shape.end.y - shape.start.y) >
+          0.01
+        )
+      })
+    const items = rooms.flatMap(room => [outlineItem(room), ...dashed(room)])
+
+    const { hatches, consumed } = acapPdfRecognizeHatches(items)
+
+    expect(hatches.length).toBeGreaterThan(0)
+    for (const hatch of hatches) expectPredefined(hatch, 'AR-CONC', 0.04, 0)
+    expect(hatches.flatMap(hatch => hatch.boundary)).toHaveLength(3)
+    expect(consumed.size).toBe(items.length - rooms.length)
+  })
+
+  test('rebuilds ANSI36 when the PDF dropped its dots', () => {
+    const outline = rect(0, 0, 90, 60)
+    const hatchItems = strokes([outline], patternLines('ANSI36', 1, 0)).filter(
+      item => {
+        const shape = item.shape
+        if (shape.kind !== 'line') return true
+        return (
+          Math.hypot(shape.end.x - shape.start.x, shape.end.y - shape.start.y) >
+          0.01
+        )
+      }
+    )
+    const items = [outlineItem(outline), ...hatchItems]
+
+    const { hatches } = acapPdfRecognizeHatches(items)
+
+    expectPredefined(only(hatches), 'ANSI36', 1, 0)
+  })
+
+  test('finds a boundary drawn as separate lines that run past it', () => {
+    // A cross-shaped room: its walls are single lines that cross each other
+    // and continue past the corners (T- and X-junctions), as a plan drawn
+    // with LINE and exported to PDF looks.
+    const room = [
+      { x: 20, y: 0 },
+      { x: 60, y: 0 },
+      { x: 60, y: 20 },
+      { x: 80, y: 20 },
+      { x: 80, y: 60 },
+      { x: 60, y: 60 },
+      { x: 60, y: 80 },
+      { x: 20, y: 80 },
+      { x: 20, y: 60 },
+      { x: 0, y: 60 },
+      { x: 0, y: 20 },
+      { x: 20, y: 20 }
+    ]
+    const wall = (x0: number, y0: number, x1: number, y1: number) =>
+      ({
+        shape: { kind: 'line', start: { x: x0, y: y0 }, end: { x: x1, y: y1 } },
+        color: '#000000',
+        lineWidth: 0.35
+      }) as PdfImportShapeItem
+    const walls = [
+      wall(-10, 20, 90, 20),
+      wall(-10, 60, 90, 60),
+      wall(20, -10, 20, 90),
+      wall(60, -10, 60, 90),
+      wall(20, 0, 60, 0),
+      wall(20, 80, 60, 80),
+      wall(0, 20, 0, 60),
+      wall(80, 20, 80, 60),
+      // A dimension tick ending inside the room.
+      wall(30, 40, 45, 40)
+    ]
+    const hatchItems = strokes([room], patternLines('ANSI31', 1, 0))
+    const items = [...walls, ...hatchItems]
+
+    // Only the faces of the line work bound this hatch.
+    expect(
+      acapPdfRecognizeHatches(items, { faceBoundaries: false }).hatches
+    ).toHaveLength(0)
+    const { hatches, consumed } = acapPdfRecognizeHatches(items)
+
+    const hatch = only(hatches)
+    expectPredefined(hatch, 'ANSI31', 1, 0)
+    expect(hatch.boundary).toHaveLength(1)
+    for (let i = 0; i < walls.length; i++) expect(consumed.has(i)).toBe(false)
+    expect(consumed.size).toBe(hatchItems.length)
+  })
+
+  test('keeps an island drawn inside the boundary as a hole', () => {
+    const outline = rect(0, 0, 100, 60)
+    const island = rect(30, 20, 60, 40)
+    const hatchItems = strokes([outline, island], patternLines('ANSI31', 1, 0))
+    const sides = (loop: Point[]) =>
+      loop.map(
+        (p, i) =>
+          ({
+            shape: { kind: 'line', start: p, end: loop[(i + 1) % loop.length] },
+            color: '#000000',
+            lineWidth: 0.35
+          }) as PdfImportShapeItem
+      )
+    const items = [...sides(outline), ...sides(island), ...hatchItems]
+
+    const { hatches } = acapPdfRecognizeHatches(items, { faceBoundaries: true })
+
+    const hatch = only(hatches)
+    expectPredefined(hatch, 'ANSI31', 1, 0)
+    expect(hatch.boundary).toHaveLength(2)
+  })
+
+  test('uses boundaries the caller passes in', () => {
+    const outline = rect(0, 0, 70, 40)
+    const items = strokes([outline], patternLines('ANSI32', 1, 0))
+
+    const { hatches } = acapPdfRecognizeHatches(items, {
+      boundaries: [outline]
+    })
+
+    const hatch = only(hatches)
+    expectPredefined(hatch, 'ANSI32', 1, 0)
+    expect(hatch.boundary).toEqual([
+      {
+        kind: 'polyline',
+        vertices: outline.map(p => ({ ...p, bulge: 0 })),
+        closed: true
+      }
+    ])
+  })
+
+  test('measures a custom dashed pattern no library entry explains', () => {
+    const outline = rect(0, 0, 80, 50)
+    const angle = 30 * DEG
+    const custom: PdfHatchDefinitionLine[] = [
+      {
+        angle,
+        base: { x: 0.4, y: 0.3 },
+        // Spacing 2.5, staggered by 1.1 along the line.
+        offset: {
+          x: Math.cos(angle) * 1.1 - Math.sin(angle) * 2.5,
+          y: Math.sin(angle) * 1.1 + Math.cos(angle) * 2.5
+        },
+        dashLengths: [4, -1, 1.5, -1]
+      }
+    ]
+    const items = [outlineItem(outline), ...strokes([outline], custom)]
+
+    expect(
+      acapPdfRecognizeHatches(items, { patterns: [] }).hatches
+    ).toHaveLength(0)
+    const { hatches, consumed } = acapPdfRecognizeHatches(items, {
+      patterns: [],
+      customPatterns: true
+    })
+
+    const hatch = only(hatches)
+    expect(hatch.pattern).toEqual({ type: 'custom', name: 'PDF_HATCH' })
+    expect(hatch.definitionLines).toHaveLength(1)
+    const line = hatch.definitionLines[0]
+    expect(line.angle / DEG).toBeCloseTo(30, 1)
+    expect(
+      line.dashLengths.reduce((sum, d) => sum + Math.abs(d), 0)
+    ).toBeCloseTo(7.5, 1)
+    expect(consumed.size).toBe(items.length - 1)
+  })
+
+  describe('cathedral.pdf hatches (AutoCAD plot, imported at scale 1)', () => {
+    // Drawing units -> PDF millimetres of this plot.
+    const plotScale = 0.0059157
+    const fixture = (name: string): PdfImportShapeItem[] =>
+      JSON.parse(
+        readFileSync(join(__dirname, 'fixtures', `${name}.json`), 'utf8')
+      ) as PdfImportShapeItem[]
+    const recognize = (name: string, extra = {}) =>
+      acapPdfRecognizeHatches(fixture(name), {
+        tolerance: 0.05,
+        faceBoundaries: true,
+        ...extra
+      }).hatches
+
+    test.each([
+      ['cathedral-ansi36', 'ANSI36', 30],
+      ['cathedral-ansi32-wall', 'ANSI32', 10],
+      ['cathedral-ansi32-arch', 'ANSI32', 10]
+    ])('%s is rebuilt as %s at scale %d', (name, pattern, scale) => {
+      const hatch = only(recognize(name))
+      expect(hatch.pattern.type).toBe('predefined')
+      if (hatch.pattern.type !== 'predefined') return
+      expect(hatch.pattern.name).toBe(pattern)
+      expect(hatch.pattern.scale / (scale * plotScale)).toBeCloseTo(1, 2)
+      expect(hatch.pattern.angle).toBeCloseTo(0, 6)
+      expect(hatch.items.length).toBeGreaterThan(100)
+    })
+
+    test.each([
+      'cathedral-ansi36',
+      'cathedral-ansi32-wall',
+      'cathedral-ansi32-arch'
+    ])('%s becomes a custom pattern without the library', name => {
+      const hatch = only(
+        recognize(name, { patterns: [], customPatterns: true })
+      )
+      expect(hatch.pattern.type).toBe('custom')
+    })
+
+    test('keeps touching hatches of one pattern apart', () => {
+      // A T-shaped ANSI36 hatch whose notches hold a U-shaped one and two
+      // corner squares: their strokes stop on the shared edges.
+      const hatches = recognize('cathedral-ansi36-touching')
+      expect(hatches.length).toBe(4)
+      const sizes = hatches
+        .map(hatch => hatch.items.length)
+        .sort((p, q) => q - p)
+      expect(sizes[0]).toBeGreaterThan(180)
+      expect(sizes[0]).toBeLessThan(230)
+      expect(sizes[1]).toBeGreaterThan(70)
+    })
   })
 })

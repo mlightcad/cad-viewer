@@ -13,8 +13,9 @@ Výkres v PDF uchovává jen to, co bylo vytištěno: křivky jsou Bézierovy ce
 | Obnovit text | `pdftext` | Převede rozložené tahy textu zpět na text |
 | Vytvořit blok | `pdfblock` | Převede opakovanou geometrii zpět na blok |
 | Obnovit kóty | `pdfdim` | Převede rozložené kóty zpět na kótovací objekty |
+| Obnovit šrafy | `pdfhatch` | Převede šrafu rozloženou na krátké čáry zpět na šrafu se vzorem |
 
-Příkazy vyžadují režim **Zápis**. Doporučené pořadí: `pdfimport` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim`.
+Příkazy vyžadují režim **Zápis**. Doporučené pořadí: `pdfimport` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim` → `pdfhatch`.
 
 ## Import (`pdfimport`)
 
@@ -87,3 +88,14 @@ Kóty používají styl `PDF_DIM`, jehož výška textu a velikost šipek odpov�
 ::: tip
 Chcete-li geometrii ve skutečné velikosti, spusťte nejprve `pdfscale`. `pdfdim` pak zjistí měřítko 1:1.
 :::
+
+## Obnovení šraf (`pdfhatch`)
+
+PDF uchovává vzorovou šrafu jen jako mnoho krátkých čar, již oříznutých hranicí.
+
+1. Vyberte šrafovanou oblast i s čarami kolem ní. Stačí křížové okno přes oblast.
+2. Pravidelné čáry se nejprve porovnají se vzory `acadiso.pat` (ANSI31, ANSI36, AR-B816, ...), potom s uživatelskými jednoduchými nebo křížovými čarami. Když nic nesedí, změří se rozteč, posun a čárkování a šrafa dostane vlastní vzor `PDF_HATCH`.
+3. Hranice se vezme z uzavřených obrysů ve výběru nebo z oblasti, kterou uzavírají vybrané úsečky, oblouky a křivky, i když se kříží nebo přesahují. Ostrovy zůstanou otvory.
+4. Šrafy se zobrazí místo svých čar. Zvolte **Ano**, **Ne** nebo **Revize**, stejně jako u bloků.
+
+Šrafa se přijme jen tehdy, když její nové vykreslení zopakuje původní čáry, a smažou se jen objekty, které vykreslí celé. Měřítko a úhel vzoru jsou v jednotkách výkresu, takže šrafa importovaná v měřítku 1 má malé měřítko; pro skutečné hodnoty nejprve spusťte `pdfscale`.

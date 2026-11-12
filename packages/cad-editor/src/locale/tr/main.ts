@@ -292,6 +292,8 @@ export default {
         'İçe aktarılan PDF geometrisini bilinen bir mesafenin iki noktasına göre ölçekler (PDFSCALE).',
       pdfDim:
         'Patlatılmış PDF ölçülerini (oklar veya işaretler, çizgiler, uzatma çizgileri ve metinler) ölçü nesnelerine geri dönüştürür (PDFDIM).',
+      pdfHatch:
+        'PDF taramasının dağınık çizgilerini deseni, ölçeği ve açısıyla birlikte taramaya geri dönüştürür (PDFHATCH).',
       pdfBlock:
         'PDF içindeki tekrarlanan geometriyi bloğa dönüştürür ve her kopyayı blok referansıyla değiştirir (PDFBLOCK).',
       pdfText:
@@ -464,6 +466,7 @@ export default {
       importPdf: 'PDF\nİçe Aktar',
       pdfScale: 'Ölçeği\nKalibre Et',
       pdfDim: 'Ölçüleri\nKurtar',
+      pdfHatch: 'Taramaları\nKurtar',
       pdfBlock: 'Blok\nOluştur',
       pdfText: 'Metni\nKurtar',
       line: 'Çizgi',

@@ -13,8 +13,9 @@ PDF drawings keep only what was printed: curves are Bézier paths, text is often
 | Recover Text | `pdftext` | Turns exploded text strokes back into text |
 | Make Block | `pdfblock` | Turns repeated geometry back into a block |
 | Recover Dims | `pdfdim` | Turns exploded dimensions back into dimension objects |
+| Recover Hatch | `pdfhatch` | Turns the loose strokes of a hatch back into a hatch with its pattern |
 
-The commands need **Write** mode. A typical order is `pdfimport` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim`.
+The commands need **Write** mode. A typical order is `pdfimport` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim` → `pdfhatch`.
 
 ## Import (`pdfimport`)
 
@@ -87,3 +88,14 @@ The dimensions use a `PDF_DIM` style whose text height and arrow size match the 
 ::: tip
 Run `pdfscale` first if you want the geometry at real size. `pdfdim` then finds a scale of 1:1.
 :::
+
+## Recover hatches (`pdfhatch`)
+
+A PDF keeps a pattern hatch only as many short strokes, already cut to the boundary.
+
+1. Select the hatched area together with the lines around it. A crossing window over the area is enough.
+2. Regular strokes are matched against the `acadiso.pat` patterns (ANSI31, ANSI36, AR-B816, ...), then against user-defined single or crossed lines. If nothing fits, the spacing, stagger and dashes are measured and the hatch gets a custom `PDF_HATCH` pattern.
+3. The boundary comes from closed outlines in the selection, or from the area the selected lines, arcs and polylines enclose, even where they cross or run past each other. Islands stay holes.
+4. The hatches are shown in place of their strokes. Choose **Yes**, **No** or **Review**, as with blocks.
+
+A hatch is only accepted when drawing it again reproduces its strokes, and only objects it redraws completely are erased. Pattern scale and angle are given in drawing units, so a hatch imported at scale 1 has a small scale; run `pdfscale` first to get real values.
