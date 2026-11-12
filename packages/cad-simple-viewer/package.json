@@ -22,11 +22,9 @@
     "dist",
     "lib",
     "icons.ts",
-    "find.ts",
     "file-open-panel.ts",
     "simple-ui.ts",
     "src/ui/icons.ts",
-    "src/find",
     "src/simple-ui",
     "src/file-open-panel.ts",
     "README.md",
@@ -58,11 +56,6 @@
       "import": "./src/ui/icons.ts",
       "default": "./lib/ui/icons.js"
     },
-    "./find": {
-      "types": "./src/find/index.ts",
-      "import": "./src/find/index.ts",
-      "default": "./lib/find/index.js"
-    },
     "./simple-ui": {
       "development": {
         "types": "./lib/simple-ui/index.d.ts",
@@ -70,8 +63,8 @@
         "default": "./src/simple-ui/index.ts"
       },
       "types": "./lib/simple-ui/index.d.ts",
-      "import": "./dist/cad-simple-viewer-simple-ui.js",
-      "default": "./dist/cad-simple-viewer-simple-ui.js"
+      "import": "./dist/cad-simple-ui.js",
+      "default": "./dist/cad-simple-ui.js"
     }
   },
   "scripts": {

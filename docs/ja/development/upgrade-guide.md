@@ -7,7 +7,7 @@ title: 'cad-simple-viewer と cad-editor のアップグレード'
 このガイドでは、`@mlightcad/cad-simple-viewer` と`@mlightcad/cad-editor` を安全にアップグレードする方法を説明します。単独でバージョンを上げられない理由、一緒に更新する必要がある関連パッケージ、および任意のリリースに対して正しい互換バージョンのセットを判断する 2 つの信頼できる方法について説明します。
 
 ::: info シンプル UI が `cad-simple-viewer` に統合
-この変更を含むリリース以降、**`@mlightcad/cad-simple-ui-plugin` は削除**されました。ツールバー・ドックタブ・デフォルト `AcApPaletteHost` は **`@mlightcad/cad-simple-viewer/simple-ui`** にあります。`simpleUi` オプション（デフォルト有効）で有効化し、`cad-editor` / CLI などは `simpleUi: false` でオプトアウトしてください。
+この変更を含むリリース以降、**`@mlightcad/cad-simple-ui-plugin` は削除**されました。ツールバー・ドックタブ・デフォルト `AcApPaletteHost` は **`@mlightcad/cad-simple-viewer/simple-ui`** にあります。`simpleUi` オプション（デフォルト有効）で有効化し、`cad-editor` / CLI などは `simpleUi: false` でオプトアウトしてください。`@mlightcad/cad-simple-viewer/find` サブパスは削除済みのため、検索 API は `@mlightcad/cad-simple-viewer` から import してください。simple-ui の配布ファイル名は `dist/cad-simple-ui.js` です（`/simple-ui` の export マップは変更なし）。
 :::
 
 ::: info ドックパネルの chrome が `cad-simple-viewer` へ移動

@@ -9,7 +9,7 @@ title: '升级 cad-simple-viewer 和 cad-editor'
 ::: info 简易 UI 已并入 `cad-simple-viewer`
 从包含此变更的版本开始，**`@mlightcad/cad-simple-ui-plugin` 已移除**。工具栏、停靠面板标签（图层 / 查找 / 审阅 / 测量）与默认 `AcApPaletteHost` 位于 **`@mlightcad/cad-simple-viewer/simple-ui`**。
 
-迁移：卸载该插件；用 `AcApDocManager.createInstance({ simpleUi: { … } })`（默认开启）；`cad-editor` / CLI / 无头环境传 `simpleUi: false`；类型与辅助 API 从 `@mlightcad/cad-simple-viewer/simple-ui` 导入；用 `simpleUiReady` / `simpleUiPlugin` 代替 `getPlugin('SimpleUiPlugin')`。`cad-editor` 仍使用 Vue 图层管理器，查找 / 审阅 / 测量复用共享 DOM 视图。
+迁移：卸载该插件；用 `AcApDocManager.createInstance({ simpleUi: { … } })`（默认开启）；`cad-editor` / CLI / 无头环境传 `simpleUi: false`；类型与辅助 API 从 `@mlightcad/cad-simple-viewer/simple-ui` 导入；用 `simpleUiReady` / `simpleUiPlugin` 代替 `getPlugin('SimpleUiPlugin')`。`cad-editor` 仍使用 Vue 图层管理器，查找 / 审阅 / 测量复用共享 DOM 视图。`@mlightcad/cad-simple-viewer/find` 子路径已移除，请从主包 `@mlightcad/cad-simple-viewer` 导入查找 API；simple-ui 产物文件现为 `dist/cad-simple-ui.js`（`/simple-ui` 导出映射不变）。
 :::
 
 ::: info Dock 面板 chrome 迁入 `cad-simple-viewer`

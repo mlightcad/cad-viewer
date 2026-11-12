@@ -16,6 +16,7 @@ Migrate hosts:
 - Import types/helpers from `@mlightcad/cad-simple-viewer/simple-ui` when you need them outside create options.
 - Await `AcApDocManager.instance.simpleUiReady` (or read `simpleUiPlugin`) instead of `pluginManager.getPlugin('SimpleUiPlugin')`.
 - `cad-editor` keeps its Vue layer manager; find / design-review / measurements use the shared DOM palette views.
+- The `@mlightcad/cad-simple-viewer/find` subpath is removed; import find APIs (`acapFindText`, …) from `@mlightcad/cad-simple-viewer`. The published simple-ui bundle file is now `dist/cad-simple-ui.js` (the `/simple-ui` export map is unchanged).
   :::
 
 ::: info Dock panel chrome moves to `cad-simple-viewer`

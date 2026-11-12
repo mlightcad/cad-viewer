@@ -21,8 +21,14 @@ export default defineConfig({
         'simple-ui': resolve(__dirname, 'src/simple-ui/index.ts')
       },
       name: packageId,
-      fileName: (format, entryName) =>
-        createLibEntryFileName(packageId, format, entryName)
+      fileName: (format, entryName) => {
+        // Keep the published simple-ui artifact short (`cad-simple-ui.js`)
+        // instead of `cad-simple-viewer-simple-ui.js`.
+        if (entryName === 'simple-ui') {
+          return format === 'es' ? 'cad-simple-ui.js' : 'cad-simple-ui.umd.cjs'
+        }
+        return createLibEntryFileName(packageId, format, entryName)
+      }
     },
     minify: true,
     rollupOptions: {

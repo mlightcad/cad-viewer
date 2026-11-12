@@ -7,7 +7,7 @@ title: 'Upgrade cad-simple-viewer a cad-editor'
 Tato příručka vysvětluje, jak bezpečně upgradovat `@mlightcad/cad-simple-viewer` a `@mlightcad/cad-editor` — proč je nelze navyšovat izolovaně, které související balíčky se musí posunout společně a jaké existují dva spolehlivé způsoby, jak pro dané vydání určit správnou kompatibilní sadu verzí.
 
 ::: info Jednoduché UI je součástí `cad-simple-viewer`
-Od vydání s touto změnou je **`@mlightcad/cad-simple-ui-plugin` odstraněn**. Panel nástrojů, dokovací karty a výchozí `AcApPaletteHost` jsou v **`@mlightcad/cad-simple-viewer/simple-ui`**. Zapněte přes `simpleUi` (výchozí zapnuto); pro `cad-editor` / CLI použijte `simpleUi: false`.
+Od vydání s touto změnou je **`@mlightcad/cad-simple-ui-plugin` odstraněn**. Panel nástrojů, dokovací karty a výchozí `AcApPaletteHost` jsou v **`@mlightcad/cad-simple-viewer/simple-ui`**. Zapněte přes `simpleUi` (výchozí zapnuto); pro `cad-editor` / CLI použijte `simpleUi: false`. Subcesta `@mlightcad/cad-simple-viewer/find` je odstraněna — API hledání importujte z `@mlightcad/cad-simple-viewer`. Soubor simple-ui je nyní `dist/cad-simple-ui.js` (export mapa `/simple-ui` beze změny).
 :::
 
 ::: info Chrome dokovacího panelu se přesouvá do `cad-simple-viewer`

@@ -7,7 +7,7 @@ title: 'cad-simple-viewer ve cad-editor Yükseltme'
 Bu kılavuz, `@mlightcad/cad-simple-viewer` ve `@mlightcad/cad-editor` paketlerinin güvenli şekilde nasıl yükseltileceğini açıklar — neden tek başlarına yükseltilemeyeceklerini, hangi ilgili paketlerin birlikte hareket etmesi gerektiğini ve belirli bir sürüm için doğru uyumlu sürüm kümesini belirlemenin iki güvenilir yolunu.
 
 ::: info Basit UI `cad-simple-viewer` içine alındı
-Bu değişikliği içeren sürümden itibaren **`@mlightcad/cad-simple-ui-plugin` kaldırıldı**. Araç çubuğu, dock sekmeleri ve varsayılan `AcApPaletteHost` artık **`@mlightcad/cad-simple-viewer/simple-ui`** içindedir. `simpleUi` (varsayılan açık); `cad-editor` / CLI için `simpleUi: false`.
+Bu değişikliği içeren sürümden itibaren **`@mlightcad/cad-simple-ui-plugin` kaldırıldı**. Araç çubuğu, dock sekmeleri ve varsayılan `AcApPaletteHost` artık **`@mlightcad/cad-simple-viewer/simple-ui`** içindedir. `simpleUi` (varsayılan açık); `cad-editor` / CLI için `simpleUi: false`. `@mlightcad/cad-simple-viewer/find` alt yolu kaldırıldı; bulma API’lerini `@mlightcad/cad-simple-viewer` üzerinden import edin. simple-ui dağıtım dosyası artık `dist/cad-simple-ui.js` (`/simple-ui` export haritası aynı).
 :::
 
 ::: info Dock paneli chrome’u `cad-simple-viewer`’a taşındı

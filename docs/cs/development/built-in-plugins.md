@@ -12,6 +12,7 @@ O samotném mechanismu pluginů (`AcApPlugin`, správce pluginů, líné načít
 
 | Balíček | Účel | Příkazy / schopnosti |
 |---------|------|-------------------------|
+| `@mlightcad/cad-simple-ui-plugin` (**v 1.8.0 sloučeno do `cad-simple-viewer/simple-ui`**) | **UI s panelem nástrojů, správcem hladin a recenzní paletou** pro `cad-simple-viewer` (čistý DOM) | `simpleUi` / `layer`, `markuppanel`, výchozí panel nástrojů |
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **CAD agent ovládaný přirozeným jazykem** (AI chatovací panel + volání kreslicích nástrojů) | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **Ruční konzole CAD skriptů** (spouští ověřené skripty nad výkresem, nepotřebuje LLM ani API klíč) | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | Export výkresů do **samostatného offline HTML** | `chtml` (dialog v `cad-editor`), `-chtml` (příkazový řádek) |
@@ -26,9 +27,9 @@ Všechny pluginy spouštěné příkazy jsou **líně načítané**: nejprve se 
 
 ## UI pluginy
 
-### `@mlightcad/simple-ui (in cad-simple-viewer)` — UI rozhraní pro simple viewer
+### `@mlightcad/cad-simple-ui-plugin` — UI rozhraní pro simple viewer
 
-[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) záměrně nepřibaluje **žádné aplikační UI** — jen plátno a CAD jádro. Pokud vkládáte simple viewer do vlastní webové aplikace a chcete hotové rozhraní, aniž byste museli přijmout kompletní Vue základnu [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor), **`simple-ui (in cad-simple-viewer)` je zamýšlená UI vrstva**.
+[`cad-simple-viewer`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-simple-viewer) dodává plátno, CAD jádro a sdílený plain-DOM chrome jako **`AcUiDockPanel`** (výchozí hostitel `AcApPaletteService`, když není registrováno aplikační UI). Pokud vkládáte simple viewer a chcete panel nástrojů a karty palety bez kompletního Vue [`cad-editor`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-editor), **`cad-simple-ui-plugin` byla zamýšlená UI vrstva**.
 
 Poskytuje:
 
@@ -37,9 +38,29 @@ Poskytuje:
 - **Synchronizaci motivu** se systémovou proměnnou `COLORTHEME` a CSS tokeny `--ml-ui-*` na hostitelském prvku
 - **Synchronizaci jazyka** s `AcApI18n` (angličtina / čínština / čeština / turečtina)
 
-Všechny widgety jsou nezávislé na frameworku (čistý DOM). Kompletní Vue aplikace `cad-editor` má vlastní UI Element Plus a tento plugin nevyžaduje; `simple-ui (in cad-simple-viewer)` použijte, když stavíte přímo na `cad-simple-viewer`.
+Všechny widgety jsou nezávislé na frameworku (čistý DOM). Kompletní Vue aplikace `cad-editor` má vlastní UI Element Plus a tento plugin nevyžaduje; `cad-simple-ui-plugin` použijte, když stavíte přímo na `cad-simple-viewer`.
 
-→ **Rychlý start, přizpůsobení panelu nástrojů a možnosti:** [packages/simple-ui (in cad-simple-viewer)/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/simple-ui (in cad-simple-viewer)/README.md)
+→ **Použití a migrace od 1.8.0:** [průvodce upgradem](./upgrade-guide)
+
+::: tip Od 1.8.0 — sloučeno do `cad-simple-viewer`
+Od **1.8.0** je samostatný npm balíček **`@mlightcad/cad-simple-ui-plugin` odstraněn**. Stejný panel nástrojů / dokovací karty / hostitel palety jsou v **`@mlightcad/cad-simple-viewer`** pod `@mlightcad/cad-simple-viewer/simple-ui`.
+
+- **Výchozí zapnuto:** předejte volby přes `AcApDocManager.createInstance({ simpleUi: { … } })` (nebo `simpleUi` vynechte). Chunk se načítá líně, takže hostitelé se `simpleUi: false` (`cad-editor`, CLI, MCP, …) jej nestahují.
+- **Typy / pomocníci:** import z `@mlightcad/cad-simple-viewer/simple-ui` (soubor `dist/cad-simple-ui.js`).
+- **Čekání na připravenost:** použijte `simpleUiReady` / `simpleUiPlugin` místo `pluginManager.getPlugin('SimpleUiPlugin')`.
+
+```ts
+AcApDocManager.createInstance({
+  container,
+  simpleUi: {
+    toolbar: { placement: 'right', items: 'default' }
+  }
+})
+// Vypnout: simpleUi: false
+```
+
+Kompletní migrace je v [průvodci upgradem](./upgrade-guide).
+:::
 
 ### `@mlightcad/cad-agent-plugin` — AI asistent pro kreslení
 
@@ -53,7 +74,7 @@ Poskytuje:
 - **CAD nástroje fáze 1** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
 - Řetězce UI v **angličtině / čínštině / turečtině / češtině** prostřednictvím vrstvy i18n pluginu
 
-Kompletní Vue aplikace `cad-editor` registruje agenta automaticky, jakmile je balíček nainstalován (karta palety). `cad-simple-viewer-demo` jej přes `simple-ui (in cad-simple-viewer)` zapojuje do dokovací karty. Hostitelské aplikace volají `registerLazyAgentPlugin` a `setAgentPaletteOpener`, aby panel umístily tam, kde chtějí.
+Kompletní Vue aplikace `cad-editor` registruje agenta automaticky, jakmile je balíček nainstalován (karta palety). `cad-simple-viewer-demo` jej přes `cad-simple-ui-plugin` zapojuje do dokovací karty. Hostitelské aplikace volají `registerLazyAgentPlugin` a `setAgentPaletteOpener`, aby panel umístily tam, kde chtějí.
 
 → **Instalace, registrace a seznam nástrojů:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 
@@ -151,7 +172,7 @@ await registerGoogleDrivePlugin(AcApDocManager.instance.pluginManager, {
 | Aplikace | Registrované pluginy |
 |-----|--------------------|
 | `cad-simple-viewer` | Žádné — pouze jádro, pluginy jsou volitelné |
-| `cad-simple-viewer-demo` | Exportní pluginy (HTML/PDF/SVG), `simple-ui (in cad-simple-viewer)`, `cad-agent-plugin`, `cad-script-plugin` |
+| `cad-simple-viewer-demo` | Exportní pluginy (HTML/PDF/SVG), vestavěné simple UI (`simpleUi`, dříve `cad-simple-ui-plugin`), `cad-agent-plugin`, `cad-script-plugin` |
 | `cad-editor` (Vue) | Exportní pluginy (HTML/PDF/SVG); pluginy agenta a skriptů se registrují automaticky, **pokud jsou nainstalovány** (volitelné peer závislosti) |
 
 ---

@@ -7,7 +7,7 @@ title: 'cad-simple-viewer 및 cad-editor 업그레이드'
 이 가이드는 `@mlightcad/cad-simple-viewer`와 `@mlightcad/cad-editor`를 안전하게 업그레이드하는 방법을 설명합니다. 즉, 왜 이들을 개별적으로 올릴 수 없는지, 어떤 관련 패키지가 함께 이동해야 하는지, 그리고 주어진 릴리스에 대해 올바른 호환 버전 집합을 확인하는 두 가지 신뢰할 수 있는 방법을 다룹니다.
 
 ::: info 심플 UI가 `cad-simple-viewer`로 통합됨
-이 변경이 포함된 릴리스부터 **`@mlightcad/cad-simple-ui-plugin`이 제거**됩니다. 툴바·도크 탭·기본 `AcApPaletteHost`는 **`@mlightcad/cad-simple-viewer/simple-ui`**에 있습니다. `simpleUi`(기본 켜짐)로 설정하고, `cad-editor`/CLI 등은 `simpleUi: false`로 끄세요.
+이 변경이 포함된 릴리스부터 **`@mlightcad/cad-simple-ui-plugin`이 제거**됩니다. 툴바·도크 탭·기본 `AcApPaletteHost`는 **`@mlightcad/cad-simple-viewer/simple-ui`**에 있습니다. `simpleUi`(기본 켜짐)로 설정하고, `cad-editor`/CLI 등은 `simpleUi: false`로 끄세요. `@mlightcad/cad-simple-viewer/find` 서브경로는 제거되었으므로 찾기 API는 `@mlightcad/cad-simple-viewer`에서 import하세요. simple-ui 배포 파일명은 `dist/cad-simple-ui.js`입니다(`/simple-ui` export 맵은 동일).
 :::
 
 ::: info Dock 패널 chrome이 `cad-simple-viewer`로 이동
