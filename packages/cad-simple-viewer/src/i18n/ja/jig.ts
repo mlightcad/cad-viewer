@@ -1998,6 +1998,12 @@ export default {
     summary:
       '{count} 個の寸法を変換しました。寸法スタイル PDF_DIM の長さ尺度は {scale} です。'
   },
+  pdfhatch: {
+    noHatches: '選択範囲にハッチングが見つかりません（規則的な平行線分とその境界線が必要です）。',
+    convertAll: 'ハッチングが {count} 個見つかりました（{patterns}）。変換しますか？',
+    convertOne: 'ハッチング {index}/{count}（{pattern}）: 変換しますか？',
+    summary: '{count} 個のハッチングを変換しました（{patterns}）。{strokes} 個のオブジェクトを置き換えました。'
+  },
   bsearch: {
     unsupported:
       '選択したオブジェクトはどれも照合できません（線分、円弧、円、ポリライン、楕円、スプライン、文字、マルチテキスト、ブロック参照に対応）。',

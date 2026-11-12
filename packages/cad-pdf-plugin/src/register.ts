@@ -15,6 +15,7 @@ export const PDF_PLUGIN_NAME = 'PdfPlugin'
  * - `pdftext` — convert exploded PDF text strokes back into text
  * - `pdfblock` — turn repeated PDF geometry back into a block
  * - `pdfdim` — turn exploded PDF dimensions back into dimensions
+ * - `pdfhatch` — turn the loose strokes of a PDF hatch back into a hatch
  */
 export const PDF_PLUGIN_TRIGGERS = [
   '-cpdf',
@@ -24,7 +25,8 @@ export const PDF_PLUGIN_TRIGGERS = [
   'pdfscale',
   'pdftext',
   'pdfblock',
-  'pdfdim'
+  'pdfdim',
+  'pdfhatch'
 ] as const
 
 /** Triggers that remain when export is disabled. */
@@ -34,7 +36,8 @@ const PDF_IMPORT_TRIGGERS = [
   'pdfscale',
   'pdftext',
   'pdfblock',
-  'pdfdim'
+  'pdfdim',
+  'pdfhatch'
 ] as const
 
 /**

@@ -291,6 +291,8 @@ export default {
         'Rescale imported PDF geometry from two points of a known distance (PDFSCALE).',
       pdfDim:
         'Turn exploded PDF dimensions (arrows or ticks, lines, extension lines and texts) back into dimension objects (PDFDIM).',
+      pdfHatch:
+        'Turn the loose strokes of a PDF hatch back into a hatch with its pattern, scale and angle (PDFHATCH).',
       pdfBlock:
         'Turn repeated PDF geometry into a block and replace every copy with a block reference (PDFBLOCK).',
       pdfText:
@@ -456,6 +458,7 @@ export default {
       importPdf: 'Import\nPDF',
       pdfScale: 'Calibrate\nScale',
       pdfDim: 'Recover\nDims',
+      pdfHatch: 'Recover\nHatch',
       pdfBlock: 'Make\nBlock',
       pdfText: 'Recover\nText',
       line: 'Line',

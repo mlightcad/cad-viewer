@@ -9,6 +9,7 @@ export { AcApImportPdfCmd } from './AcApImportPdfCmd'
 export { AcApImportPdfPromptCmd } from './AcApImportPdfPromptCmd'
 export { AcApPdfBlockCmd } from './AcApPdfBlockCmd'
 export { AcApPdfDimCmd } from './AcApPdfDimCmd'
+export { AcApPdfHatchCmd } from './AcApPdfHatchCmd'
 export { AcApPdfConvertor } from './AcApPdfConvertor'
 export { resolveViewerTextFont } from './AcApPdfFontResolver'
 export {
@@ -123,10 +124,29 @@ export {
   type PdfShapeMatchOptions
 } from './pdfDeprecatedMatching'
 export {
+  acapPdfCreateRecoveredHatch,
+  acapPdfHatchPatternLabel,
+  acapPdfRecoverHatches,
+  type PdfHatchInput,
+  type PdfHatchRecovery,
+  pdfEntitiesToHatchInput,
+  type PdfRecoveredHatch
+} from './pdfHatchRecover'
+export {
+  acapPdfFaceArrangement,
+  acapPdfFaceBoundary,
+  acapPdfFaceBoundaryIn,
+  acapPdfShapePolyline,
+  type PdfFaceArrangement,
+  type PdfFaceBoundaryOptions
+} from './recognition/pdfHatchFaces'
+export {
   acapPdfRecognizeHatches,
+  CUSTOM_PATTERN_NAME,
   type PdfHatchDefinitionLine,
   type PdfHatchRecognitionOptions,
   type PdfHatchRecognitionResult,
+  type PdfHatchTrace,
   type PdfRecognizedHatch,
   type PdfRecognizedHatchPattern
 } from './recognition/pdfHatchRecognition'

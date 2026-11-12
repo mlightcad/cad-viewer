@@ -1993,6 +1993,12 @@ export default {
     summary:
       '치수 {count}개를 변환했습니다. 치수 스타일 PDF_DIM의 선형 축척 비율은 {scale}입니다.'
   },
+  pdfhatch: {
+    noHatches: '선택 영역에서 해치를 찾지 못했습니다 (규칙적인 평행 선분과 그 경계선이 필요합니다).',
+    convertAll: '해치 {count}개를 찾았습니다 ({patterns}). 변환하시겠습니까?',
+    convertOne: '해치 {index}/{count} ({pattern}): 변환하시겠습니까?',
+    summary: '해치 {count}개를 변환했습니다 ({patterns}). 객체 {strokes}개를 대체했습니다.'
+  },
   bsearch: {
     unsupported:
       '선택한 객체 중 일치시킬 수 있는 객체가 없습니다(선, 호, 원, 폴리선, 타원, 스플라인, 문자, 여러 줄 문자, 블록 참조 지원).',

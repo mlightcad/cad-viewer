@@ -211,6 +211,10 @@ export default {
       description: 'PDF에서 분해된 치수를 치수 객체로 되돌립니다',
       prompt: '치수가 있는 영역 선택'
     },
+    pdfhatch: {
+      description: 'PDF에서 선분으로 분해된 해치를 해치 객체로 되돌립니다',
+      prompt: '해치 영역과 주변 경계선 선택'
+    },
     pdfblock: {
       description: 'PDF의 반복 형상을 블록으로 되돌립니다',
       prompt: '블록 인스턴스 하나의 객체 선택'

@@ -10,12 +10,13 @@ import { AcApImportPdfCmd } from './AcApImportPdfCmd'
 import { AcApImportPdfPromptCmd } from './AcApImportPdfPromptCmd'
 import { AcApPdfBlockCmd } from './AcApPdfBlockCmd'
 import { AcApPdfDimCmd } from './AcApPdfDimCmd'
+import { AcApPdfHatchCmd } from './AcApPdfHatchCmd'
 import { AcApPdfScaleCmd } from './AcApPdfScaleCmd'
 import { AcApPdfTextCmd } from './AcApPdfTextCmd'
 
 export interface AcApPdfPluginOptions {
   /**
-   * When true, only the import and clean-up commands (`pdfimport`, `-pdfimport`, `pdfscale`, `pdftext`, `pdfblock`, `pdfdim`) are registered. Defaults to false.
+   * When true, only the import and clean-up commands (`pdfimport`, `-pdfimport`, `pdfscale`, `pdftext`, `pdfblock`, `pdfdim`, `pdfhatch`) are registered. Defaults to false.
    */
   disableExport?: boolean
 }
@@ -23,7 +24,7 @@ export interface AcApPdfPluginOptions {
 /**
  * PDF export/import plugin for cad-simple-viewer.
  *
- * Registers `-cpdf`, `pdfimport`, `-pdfimport`, `pdfscale`, `pdftext`, `pdfblock` and `pdfdim` when loaded. Also registers `cpdf` when no UI
+ * Registers `-cpdf`, `pdfimport`, `-pdfimport`, `pdfscale`, `pdftext`, `pdfblock`, `pdfdim` and `pdfhatch` when loaded. Also registers `cpdf` when no UI
  * dialog command is already present. Register this plugin lazily via
  * {@link registerLazyPdfPlugin} so the PDF renderer is fetched on demand.
  */
@@ -34,7 +35,7 @@ export class AcApPdfPlugin implements AcApPlugin {
   version = packageJson.version
   /** @inheritdoc */
   description =
-    'PDF export (-cpdf / cpdf), import (pdfimport / -pdfimport) and PDF clean-up (pdfscale, pdftext, pdfblock, pdfdim) commands'
+    'PDF export (-cpdf / cpdf), import (pdfimport / -pdfimport) and PDF clean-up (pdfscale, pdftext, pdfblock, pdfdim, pdfhatch) commands'
 
   private readonly _disableExport: boolean
 
@@ -95,6 +96,13 @@ export class AcApPdfPlugin implements AcApPlugin {
     this.registeredCommands.push({ group, name: 'pdfblock' })
     commandManager.addCommand(group, 'pdfdim', 'pdfdim', new AcApPdfDimCmd())
     this.registeredCommands.push({ group, name: 'pdfdim' })
+    commandManager.addCommand(
+      group,
+      'pdfhatch',
+      'pdfhatch',
+      new AcApPdfHatchCmd()
+    )
+    this.registeredCommands.push({ group, name: 'pdfhatch' })
   }
 
   /**

@@ -13,8 +13,9 @@ PDF çizimleri yalnızca basılı görüntüyü saklar: eğriler Bézier yollar�
 | Metni Kurtar | `pdftext` | Patlatılmış metin çizgilerini yeniden metne dönüştürür |
 | Blok Oluştur | `pdfblock` | Tekrarlanan geometriyi yeniden bloğa dönüştürür |
 | Ölçüleri Kurtar | `pdfdim` | Patlatılmış ölçüleri yeniden ölçü nesnelerine dönüştürür |
+| Taramaları Kurtar | `pdfhatch` | Kısa çizgilere ayrılmış taramayı deseniyle birlikte yeniden taramaya dönüştürür |
 
-Bu komutlar **Yazma** modu gerektirir. Önerilen sıra: `pdfimport` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim`.
+Bu komutlar **Yazma** modu gerektirir. Önerilen sıra: `pdfimport` → `pdfscale` → `pdftext` → `pdfblock` → `pdfdim` → `pdfhatch`.
 
 ## İçe aktarma (`pdfimport`)
 
@@ -87,3 +88,14 @@ Yazdığınız her karakter şekli tarayıcıda hatırlanır, böylece aynı yaz
 ::: tip
 Geometriyi gerçek boyutta istiyorsanız önce `pdfscale` komutunu çalıştırın; ardından `pdfdim` 1:1 ölçeği bulur.
 :::
+
+## Taramaları kurtarma (`pdfhatch`)
+
+PDF bir desen taramasını yalnızca sınıra göre kesilmiş çok sayıda kısa çizgi olarak saklar.
+
+1. Taralı alanı çevresindeki çizgilerle birlikte seçin. Alanın üzerinden bir kesişme penceresi yeterlidir.
+2. Düzenli çizgiler önce `acadiso.pat` desenleriyle (ANSI31, ANSI36, AR-B816, ...), sonra kullanıcı tanımlı tek veya çapraz çizgilerle karşılaştırılır. Hiçbiri uymazsa aralık, kaydırma ve kesikler ölçülür ve tarama özel bir `PDF_HATCH` deseni alır.
+3. Sınır, seçimdeki kapalı konturlardan veya seçili çizgi, yay ve çoklu çizgilerin çevrelediği alandan bulunur; bunlar birbirini kesse ya da sınırın dışına uzasa bile. Adalar delik olarak kalır.
+4. Taramalar çizgilerin yerinde önizlenir. Bloklarda olduğu gibi **Evet**, **Hayır** veya **İncele**'yi seçin.
+
+Bir tarama yalnızca yeniden çizildiğinde çizgilerini aynen oluşturuyorsa kabul edilir ve yalnızca tamamen yeniden çizilen nesneler silinir. Desen ölçeği ve açısı çizim birimindedir; 1 ölçeğiyle içe aktarılan bir taramanın ölçeği küçük olur. Gerçek değerler için önce `pdfscale` çalıştırın.
