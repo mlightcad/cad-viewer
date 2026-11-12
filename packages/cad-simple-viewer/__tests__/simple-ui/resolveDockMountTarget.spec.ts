@@ -1,7 +1,7 @@
 /** Unit tests for dock mount target resolution. */
 const mockCurView: { container?: { parentElement?: HTMLElement | null } } = {}
 
-jest.mock('../../src/simple-ui/deps', () => ({
+jest.mock('../../src/app', () => ({
   AcApDocManager: {
     instance: {
       get curView() {
@@ -11,7 +11,7 @@ jest.mock('../../src/simple-ui/deps', () => ({
   }
 }))
 
-import { acuiResolveDockMountTarget } from '../../src/simple-ui/config/resolveDockMountTarget'
+import { acuiResolveDockMountTarget } from '../../src/ui/toolbar/resolveDockMountTarget'
 
 describe('acuiResolveDockMountTarget', () => {
   afterEach(() => {

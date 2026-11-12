@@ -12,7 +12,6 @@ MLightCAD는 일련의 공식 플러그인을 제공합니다. 각 플러그인�
 
 | 패키지 | 역할 | 명령 / 기능 |
 |---------|------|-------------------------|
-| `@mlightcad/cad-simple-ui-plugin`(**1.8.0에서 `cad-simple-viewer/simple-ui`로 통합**) | `cad-simple-viewer`를 위한 **툴바, 레이어 관리자 및 리뷰 팔레트 UI**(순수 DOM) | `simpleUi` / `layer`, `markuppanel`, 기본 툴바 |
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **자연어 CAD 에이전트**(AI 채팅 패널 + 도면 도구 호출) | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **수동 CAD 스크립트 콘솔**(도면에 대해 검증된 스크립트 실행, LLM/API 키 불필요) | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | 도면을 **자체 포함 오프라인 HTML**로 내보내기 | `chtml`(`cad-editor`의 대화상자), `-chtml`(명령줄) |
@@ -43,11 +42,11 @@ MLightCAD는 일련의 공식 플러그인을 제공합니다. 각 플러그인�
 → **1.8.0 이후 사용법과 마이그레이션:** [업그레이드 가이드](./upgrade-guide)
 
 ::: tip 1.8.0부터 — `cad-simple-viewer`로 통합
-**1.8.0**부터 별도 npm 패키지 **`@mlightcad/cad-simple-ui-plugin`이 제거**됩니다. 동일한 툴바 / 도크 탭 / 팔레트 호스트는 **`@mlightcad/cad-simple-viewer`**의 `@mlightcad/cad-simple-viewer/simple-ui`에 있습니다.
+**1.8.0**부터 별도 npm 패키지 **`@mlightcad/cad-simple-ui-plugin`이 제거**됩니다. 동일한 툴바 / 도크 탭 / 팔레트 호스트는 **`@mlightcad/cad-simple-viewer`**의 `@mlightcad/cad-simple-viewer`에 있습니다.
 
 - **기본 켜짐:** `AcApDocManager.createInstance({ simpleUi: { … } })`로 옵션을 전달하거나 `simpleUi`를 생략해 기본값을 사용합니다. 청크는 지연 로드되므로 `simpleUi: false`인 호스트(`cad-editor`, CLI, MCP 등)는 다운로드하지 않습니다.
-- **타입 / 헬퍼:** `@mlightcad/cad-simple-viewer/simple-ui`에서 import(배포 파일은 `dist/cad-simple-ui.js`).
-- **준비 대기:** `simpleUiReady` / `simpleUiPlugin`을 사용하고 `pluginManager.getPlugin('SimpleUiPlugin')`은 사용하지 않습니다.
+- **타입 / 헬퍼:** `@mlightcad/cad-simple-viewer`에서 import.
+- **준비 대기:** `simpleUiReady` / `simpleUi`을 사용하고 `pluginManager.getPlugin('SimpleUiPlugin')`은 사용하지 않습니다.
 
 ```ts
 AcApDocManager.createInstance({
@@ -74,7 +73,7 @@ AcApDocManager.createInstance({
 - **1단계 CAD 도구** — `get_drawing_context`; `draw_line`, `draw_circle`, `draw_arc`, `draw_rectangle`, `draw_polyline`, `draw_text`; `set_current_layer`, `create_layer`, `zoom_extents`
 - 플러그인 i18n 레이어를 통한 **영어/중국어/터키어/체코어** UI 문자열
 
-완전한 Vue `cad-editor` 앱은 패키지가 설치되어 있으면 에이전트를 자동으로 등록합니다(팔레트 탭). `cad-simple-viewer-demo`은 `cad-simple-ui-plugin`을 통해 도크 탭에 연결합니다. 호스트 앱은 `registerLazyAgentPlugin`과 `setAgentPaletteOpener`를 호출하여 패널을 원하는 위치에 마운트합니다.
+완전한 Vue `cad-editor` 앱은 패키지가 설치되어 있으면 에이전트를 자동으로 등록합니다(팔레트 탭). `cad-simple-viewer-demo`은 `simpleUi`를 통해 도크 탭에 연결합니다. 호스트 앱은 `registerLazyAgentPlugin`과 `setAgentPaletteOpener`를 호출하여 패널을 원하는 위치에 마운트합니다.
 
 → **설치, 등록 및 도구 목록:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 

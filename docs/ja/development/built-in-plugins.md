@@ -12,7 +12,6 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 
 | パッケージ | 役割 | コマンド / 機能 |
 |---------|------|-------------------------|
-| `@mlightcad/cad-simple-ui-plugin`（**1.8.0 で `cad-simple-viewer/simple-ui` に統合**） | `cad-simple-viewer` 用の**ツールバー、レイヤマネージャー、レビューパレット UI**（プレーンな DOM） | `simpleUi` / `layer`、`markuppanel`、デフォルトツールバー |
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **自然言語 CAD エージェント**（AI チャットパネル + 図面ツールの呼び出し） | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **手動 CAD スクリプトコンソール**（チェック済みスクリプトを図面に対して実行、LLM / API キー不要） | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | 図面を**自己完結型のオフライン HTML** にエクスポート | `chtml`（`cad-editor` 内のダイアログ）、`-chtml`（コマンドライン） |
@@ -43,11 +42,11 @@ MLightCAD には、ファーストパーティのプラグインが同梱され�
 → **1.8.0 以降の使い方と移行:** [アップグレードガイド](./upgrade-guide)
 
 ::: tip 1.8.0 以降 — `cad-simple-viewer` に統合
-**1.8.0** 以降、独立 npm パッケージ **`@mlightcad/cad-simple-ui-plugin` は削除**されました。同じツールバー / ドックタブ / パレットホストは **`@mlightcad/cad-simple-viewer`** の `@mlightcad/cad-simple-viewer/simple-ui` にあります。
+**1.8.0** 以降、独立 npm パッケージ **`@mlightcad/cad-simple-ui-plugin` は削除**されました。同じツールバー / ドックタブ / パレットホストは **`@mlightcad/cad-simple-viewer`** の `@mlightcad/cad-simple-viewer` にあります。
 
 - **デフォルト有効:** `AcApDocManager.createInstance({ simpleUi: { … } })` でオプションを渡す（または `simpleUi` を省略して既定値）。チャンクは遅延読み込みのため、`simpleUi: false` のホスト（`cad-editor` / CLI / MCP など）はダウンロードしません。
-- **型 / ヘルパー:** `@mlightcad/cad-simple-viewer/simple-ui` から import（配布ファイルは `dist/cad-simple-ui.js`）。
-- **準備完了待ち:** `simpleUiReady` / `simpleUiPlugin` を使い、`pluginManager.getPlugin('SimpleUiPlugin')` は使わない。
+- **型 / ヘルパー:** `@mlightcad/cad-simple-viewer` から import。
+- **準備完了待ち:** `simpleUiReady` / `simpleUi` を使い、`pluginManager.getPlugin('SimpleUiPlugin')` は使わない。
 
 ```ts
 AcApDocManager.createInstance({
@@ -74,7 +73,7 @@ AcApDocManager.createInstance({
 - **フェーズ 1 の CAD ツール** — `get_drawing_context`；`draw_line`、`draw_circle`、`draw_arc`、`draw_rectangle`、`draw_polyline`、`draw_text`；`set_current_layer`、`create_layer`、`zoom_extents`
 - プラグイン i18n レイヤーによる**英語 / 中国語 / トルコ語 / チェコ語**の UI 文字列
 
-完全な Vue アプリである `cad-editor` は、パッケージがインストールされるとエージェントを自動的に登録します（パレットタブ）。`cad-simple-viewer-demo` は `cad-simple-ui-plugin` を介してドックタブに組み込みます。ホストアプリは `registerLazyAgentPlugin` と `setAgentPaletteOpener` を呼び出して、パネルを任意の場所にマウントします。
+完全な Vue アプリである `cad-editor` は、パッケージがインストールされるとエージェントを自動的に登録します（パレットタブ）。`cad-simple-viewer-demo` は 組み込み `simpleUi` を介してドックタブに組み込みます。ホストアプリは `registerLazyAgentPlugin` と `setAgentPaletteOpener` を呼び出して、パネルを任意の場所にマウントします。
 
 → **インストール、登録、ツール一覧:** [packages/cad-agent-plugin/README.md](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin/README.md)
 

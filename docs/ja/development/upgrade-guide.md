@@ -7,7 +7,7 @@ title: 'cad-simple-viewer と cad-editor のアップグレード'
 このガイドでは、`@mlightcad/cad-simple-viewer` と`@mlightcad/cad-editor` を安全にアップグレードする方法を説明します。単独でバージョンを上げられない理由、一緒に更新する必要がある関連パッケージ、および任意のリリースに対して正しい互換バージョンのセットを判断する 2 つの信頼できる方法について説明します。
 
 ::: info シンプル UI が `cad-simple-viewer` に統合
-この変更を含むリリース以降、**`@mlightcad/cad-simple-ui-plugin` は削除**されました。ツールバー・ドックタブ・デフォルト `AcApPaletteHost` は **`@mlightcad/cad-simple-viewer/simple-ui`** にあります。`simpleUi` オプション（デフォルト有効）で有効化し、`cad-editor` / CLI などは `simpleUi: false` でオプトアウトしてください。`@mlightcad/cad-simple-viewer/find` サブパスは削除済みのため、検索 API は `@mlightcad/cad-simple-viewer` から import してください。simple-ui の配布ファイル名は `dist/cad-simple-ui.js` です（`/simple-ui` の export マップは変更なし）。
+この変更を含むリリース以降、**`@mlightcad/cad-simple-ui-plugin` は削除**されました。ツールバー・ドックタブ・デフォルト `AcApPaletteHost` は **`@mlightcad/cad-simple-viewer`** にあります。`simpleUi` オプション（デフォルト有効）で有効化し、`cad-editor` / CLI などは `simpleUi: false` でオプトアウトしてください。`@mlightcad/cad-simple-viewer/find` サブパスは削除済みのため、検索 API は `@mlightcad/cad-simple-viewer` から import してください。`/simple-ui` と `/find` サブパスは削除済みです。
 :::
 
 ::: info ドックパネルの chrome が `cad-simple-viewer` へ移動
@@ -257,7 +257,7 @@ await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
 | `@mlightcad/cad-html-plugin`             | ワンクリックの自己完結型 HTML エクスポート          |
 | `@mlightcad/cad-pdf-plugin`              | ブラウザの PDF エクスポートと PDF → CAD インポート  |
 | `@mlightcad/cad-svg-plugin`              | SVG エクスポート                                    |
-| `@mlightcad/cad-simple-viewer/simple-ui` | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
+| `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
 | `@mlightcad/cad-agent-plugin`            | AI エージェントによるインタラクション               |
 | `@mlightcad/cad-onedrive-plugin`         | OneDrive 統合                                       |
 | `@mlightcad/cad-google-drive-plugin`     | Google Drive 統合                                   |

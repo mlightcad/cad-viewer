@@ -1,7 +1,7 @@
 /** Unit tests for toolbar mount target resolution. */
 const mockCurView: { container?: HTMLElement | null } = {}
 
-jest.mock('../../src/simple-ui/deps', () => ({
+jest.mock('../../src/app', () => ({
   AcApDocManager: {
     instance: {
       get curView() {
@@ -13,7 +13,7 @@ jest.mock('../../src/simple-ui/deps', () => ({
   }
 }))
 
-import { acuiResolveToolbarMountTarget } from '../../src/simple-ui/config/resolveToolbarMountTarget'
+import { acuiResolveToolbarMountTarget } from '../../src/ui/toolbar/resolveToolbarMountTarget'
 
 describe('acuiResolveToolbarMountTarget', () => {
   afterEach(() => {

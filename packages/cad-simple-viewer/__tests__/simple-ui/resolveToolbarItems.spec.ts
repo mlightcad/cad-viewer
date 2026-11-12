@@ -1,42 +1,67 @@
 /** Unit tests for toolbar item resolution and open-mode visibility filtering. */
-jest.mock('../../src/simple-ui/deps', () => {
-  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
-  const openMode = jest.requireActual(
-    '../../src/editor/view/AcEdOpenMode'
-  ) as typeof import('../../src/editor/view/AcEdOpenMode')
-
-  return createCadSimpleViewerMock({
-    AcApDocManager: {
-      instance: {
-        curDocument: undefined,
-        isReadingModeEnabled: () => false
-      }
-    },
-    AcApSettingManager: {
-      instance: {
-        get: () => true,
-        toggle: jest.fn()
-      }
-    },
-    /** Minimal mock used by {@link acuiCreateDefaultToolbarItems} markup visibility toggle. */
-    isMarkupVisible: () => true,
-    isMeasurementVisible: () => true,
-    AcEdOpenMode: openMode.AcEdOpenMode
-  })
+jest.mock('../../src/app/dataSource/acapBuildDataSourceMenu', () => {
+  const { mockDataSourceMenuModules } = require('./helpers/mockDataSourceMenu')
+  const m = mockDataSourceMenuModules()
+  return {
+    acapBuildDataSourceMenu: m.acapBuildDataSourceMenu,
+    acapIsSingleLocalOpen: m.acapIsSingleLocalOpen
+  }
+})
+jest.mock('../../src/app/dataSource/acapRunDataSourceMenuAction', () => {
+  const { mockDataSourceMenuModules } = require('./helpers/mockDataSourceMenu')
+  return {
+    acapRunDataSourceMenuAction: mockDataSourceMenuModules().acapRunDataSourceMenuAction
+  }
 })
 
-jest.mock('@mlightcad/data-model', () => ({
-  acdbHostApplicationServices: () => ({
-    layoutManager: {
-      setCurrentLayoutBtrId: jest.fn()
+jest.mock('../../src/app', () => ({
+  AcApDocManager: {
+    instance: {
+      curDocument: undefined,
+      isReadingModeEnabled: () => false
     }
-  })
+  },
+  AcApSettingManager: {
+    instance: {
+      get: () => true,
+      toggle: jest.fn()
+    }
+  }
 }))
 
-import { AcEdOpenMode } from '../../src/simple-ui/deps'
+jest.mock('../../src/command', () => ({
+  isMarkupVisible: () => true,
+  isMeasurementVisible: () => true
+}))
 
-import { acuiCreateDefaultToolbarItems } from '../../src/simple-ui/config/defaultToolbarItems'
-import { acuiMergeToolbarOptionsForLayout } from '../../src/simple-ui/config/mergeToolbarOptionsForLayout'
+jest.mock('../../src/editor', () => {
+  const openMode = jest.requireActual('../../src/editor/view/AcEdOpenMode')
+  const layout = jest.requireActual('../../src/editor/global/AcEdUiLayout')
+  return {
+    ...layout,
+    AcEdOpenMode: openMode.AcEdOpenMode,
+    AcEdCommandStack: class {},
+    eventBus: { on: jest.fn(), off: jest.fn(), emit: jest.fn() },
+    acedApplyUiTheme: jest.fn(),
+    acedGetUiLayout: () => 'desktop',
+    acedSubscribeUiLayout: () => () => undefined,
+    isLightColorTheme: () => true
+  }
+})
+
+jest.mock('@mlightcad/data-model', () => {
+  const { createDataModelMock } = require('./helpers/mockDataModel')
+  return createDataModelMock()
+})
+
+jest.mock('../../src/ui/AcUiSimpleUiStyles', () => ({
+  acuiEnsureToolbarStyles: jest.fn()
+}))
+
+import { AcEdOpenMode } from '../../src/editor'
+
+import { acuiCreateDefaultToolbarItems } from '../../src/ui/toolbar/defaultToolbarItems'
+import { acuiMergeToolbarOptionsForLayout } from '../../src/ui/toolbar/mergeToolbarOptionsForLayout'
 import {
   acuiCreateDefaultToolbarPresetMap,
   acuiFilterVisibleToolbarItems,
@@ -45,11 +70,11 @@ import {
   acuiResolveParentToolbarDisplay,
   acuiResolveSelectedChildItem,
   acuiResolveToolbarItems
-} from '../../src/simple-ui/config/resolveToolbarItems'
+} from '../../src/ui/toolbar/resolveToolbarItems'
 import {
   acuiCreateToolbarSeparator,
   acuiIsDynamicToolbarChildren
-} from '../../src/simple-ui/config/toolbarItemUtils'
+} from '../../src/ui/toolbar/toolbarItemUtils'
 
 describe('acuiResolveToolbarItems', () => {
   it('returns default items when items is default', () => {

@@ -1,11 +1,32 @@
-import { ar } from '../../src/simple-ui/i18n/ar'
-import { cs } from '../../src/simple-ui/i18n/cs'
-import { en } from '../../src/simple-ui/i18n/en'
-import { tr } from '../../src/simple-ui/i18n/tr'
-import { zh } from '../../src/simple-ui/i18n/zh'
+import ar from '../../src/i18n/ar/simpleUi'
+import cs from '../../src/i18n/cs/simpleUi'
+import en from '../../src/i18n/en/simpleUi'
+import tr from '../../src/i18n/tr/simpleUi'
+import zh from '../../src/i18n/zh/simpleUi'
 
-const locales: Record<string, Record<string, string>> = { ar, cs, en, tr, zh }
-const findKeys = Object.keys(en).filter(key => key.startsWith('findPalette.'))
+type Tree = { [key: string]: string | Tree }
+
+function flatten(tree: Tree, prefix = ''): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [key, value] of Object.entries(tree)) {
+    const path = prefix ? `${prefix}.${key}` : key
+    if (typeof value === 'string') out[path] = value
+    else Object.assign(out, flatten(value, path))
+  }
+  return out
+}
+
+const locales: Record<string, Record<string, string>> = {
+  ar: flatten(ar as Tree),
+  cs: flatten(cs as Tree),
+  en: flatten(en as Tree),
+  tr: flatten(tr as Tree),
+  zh: flatten(zh as Tree)
+}
+const enFlat = locales.en
+const findKeys = Object.keys(enFlat).filter(key =>
+  key.startsWith('findPalette.')
+)
 
 describe('Find palette locale messages', () => {
   it('defines every hit type, including block, dimension, leader and table', () => {
@@ -38,25 +59,18 @@ describe('Find palette locale messages', () => {
     '%s keeps the {count} / {layouts} / {layout} placeholders of the English messages',
     code => {
       const placeholders = (text: string) =>
-        (text.match(/\{\w+\}/g) ?? []).sort().join(',')
+        [...text.matchAll(/\{[a-zA-Z]+\}/g)].map(m => m[0]).sort()
       for (const key of findKeys) {
-        expect(placeholders(locales[code][key])).toBe(placeholders(en[key]))
+        expect(placeholders(locales[code][key])).toEqual(
+          placeholders(enFlat[key])
+        )
       }
     }
   )
 
-  it.each(['hint', 'hintLayout'])(
-    'the %s message names the text found in blocks, dimensions, leaders and tables',
-    name => {
-      expect(en[`findPalette.${name}`]).toMatch(
-        /blocks, dimensions, leaders and tables/
-      )
-    }
-  )
-
-  it('Arabic wording does not depend on a plural form (the plugin has no plural rules)', () => {
-    for (const key of ['count', 'countLayouts', 'countTruncated']) {
-      expect(ar[`findPalette.${key}`]).not.toContain('|')
+  it('documents Enter-to-search in the English hint', () => {
+    for (const name of ['hint', 'hintLayout'] as const) {
+      expect(enFlat[`findPalette.${name}`]).toMatch(/Enter/i)
     }
   })
 })

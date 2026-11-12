@@ -1,8 +1,8 @@
-import { acuiNormalizePluginOptions } from '../../src/simple-ui/config/normalizePluginOptions'
+import { acuiNormalizeSimpleUiOptions } from '../../src/ui/acuiNormalizeSimpleUiOptions'
 
-describe('acuiNormalizePluginOptions', () => {
+describe('acuiNormalizeSimpleUiOptions', () => {
   it('does not create dock panel by default', () => {
-    const resolved = acuiNormalizePluginOptions({})
+    const resolved = acuiNormalizeSimpleUiOptions({})
     expect(resolved.shouldCreateDockPanel).toBe(false)
     expect(resolved.dockPanel.defaultSide).toBe('left')
     expect(resolved.dockPanel.defaultOpen).toBe(false)
@@ -11,14 +11,14 @@ describe('acuiNormalizePluginOptions', () => {
   })
 
   it('creates dock panel when explicitly enabled', () => {
-    const resolved = acuiNormalizePluginOptions({
+    const resolved = acuiNormalizeSimpleUiOptions({
       dockPanel: { enabled: true }
     })
     expect(resolved.shouldCreateDockPanel).toBe(true)
   })
 
   it('applies dock panel option overrides', () => {
-    const resolved = acuiNormalizePluginOptions({
+    const resolved = acuiNormalizeSimpleUiOptions({
       dockPanel: {
         enabled: true,
         defaultOpen: true,
@@ -34,20 +34,20 @@ describe('acuiNormalizePluginOptions', () => {
   })
 
   it('defaults toolbar edge offset and button border', () => {
-    const resolved = acuiNormalizePluginOptions({})
+    const resolved = acuiNormalizeSimpleUiOptions({})
     expect(resolved.toolbar.edgeOffset).toBe(8)
     expect(resolved.toolbar.inCanvasParent).toBe(false)
     expect(resolved.toolbar.showButtonBorder).toBe(false)
   })
 
   it('defaults layout mode to auto', () => {
-    const resolved = acuiNormalizePluginOptions({})
+    const resolved = acuiNormalizeSimpleUiOptions({})
     expect(resolved.layout).toBe('auto')
     expect(resolved.layouts).toEqual({})
   })
 
   it('passes through toolbar excludeItems', () => {
-    const resolved = acuiNormalizePluginOptions({
+    const resolved = acuiNormalizeSimpleUiOptions({
       toolbar: { excludeItems: ['select', 'pan'] }
     })
     expect(resolved.toolbar.excludeItems).toEqual(['select', 'pan'])

@@ -1,4 +1,4 @@
-import type { AcUiToolbarItemConfig } from '@mlightcad/cad-simple-viewer/simple-ui'
+import type { AcUiToolbarItemConfig } from '@mlightcad/cad-simple-viewer'
 
 import { ICON_SCRIPT } from './icons'
 

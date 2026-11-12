@@ -22,27 +22,24 @@ const mockLayouts = [
 
 let currentSpaceId = 'btr-model'
 
-jest.mock('../../src/simple-ui/deps', () => {
-  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
-  return createCadSimpleViewerMock({
-    AcApDocManager: {
-      instance: {
-        get curDocument() {
-          return {
-            database: {
-              currentSpaceId,
-              objects: {
-                layout: {
-                  newIterator: () => mockLayouts
-                }
+jest.mock('../../src/app', () => ({
+  AcApDocManager: {
+    instance: {
+      get curDocument() {
+        return {
+          database: {
+            currentSpaceId,
+            objects: {
+              layout: {
+                newIterator: () => mockLayouts
               }
             }
           }
         }
       }
     }
-  })
-})
+  }
+}))
 
 jest.mock('@mlightcad/data-model', () => ({
   acdbHostApplicationServices: () => ({
@@ -57,8 +54,8 @@ import {
   acuiCreateLayoutToolbarItem,
   acuiListDocumentLayouts,
   acuiSwitchCurrentLayout
-} from '../../src/simple-ui/config/createLayoutToolbarItem'
-import { acuiIsDynamicToolbarChildren } from '../../src/simple-ui/config/toolbarItemUtils'
+} from '../../src/ui/toolbar/createLayoutToolbarItem'
+import { acuiIsDynamicToolbarChildren } from '../../src/ui/toolbar/toolbarItemUtils'
 
 describe('acuiCreateLayoutToolbarItem', () => {
   beforeEach(() => {

@@ -7,7 +7,7 @@ title: 'cad-simple-viewer ve cad-editor Yükseltme'
 Bu kılavuz, `@mlightcad/cad-simple-viewer` ve `@mlightcad/cad-editor` paketlerinin güvenli şekilde nasıl yükseltileceğini açıklar — neden tek başlarına yükseltilemeyeceklerini, hangi ilgili paketlerin birlikte hareket etmesi gerektiğini ve belirli bir sürüm için doğru uyumlu sürüm kümesini belirlemenin iki güvenilir yolunu.
 
 ::: info Basit UI `cad-simple-viewer` içine alındı
-Bu değişikliği içeren sürümden itibaren **`@mlightcad/cad-simple-ui-plugin` kaldırıldı**. Araç çubuğu, dock sekmeleri ve varsayılan `AcApPaletteHost` artık **`@mlightcad/cad-simple-viewer/simple-ui`** içindedir. `simpleUi` (varsayılan açık); `cad-editor` / CLI için `simpleUi: false`. `@mlightcad/cad-simple-viewer/find` alt yolu kaldırıldı; bulma API’lerini `@mlightcad/cad-simple-viewer` üzerinden import edin. simple-ui dağıtım dosyası artık `dist/cad-simple-ui.js` (`/simple-ui` export haritası aynı).
+Bu değişikliği içeren sürümden itibaren **`@mlightcad/cad-simple-ui-plugin` kaldırıldı**. Araç çubuğu, dock sekmeleri ve varsayılan `AcApPaletteHost` artık **`@mlightcad/cad-simple-viewer`** içindedir. `simpleUi` (varsayılan açık); `cad-editor` / CLI için `simpleUi: false`. `@mlightcad/cad-simple-viewer/find` alt yolu kaldırıldı; bulma API’lerini `@mlightcad/cad-simple-viewer` üzerinden import edin. `/simple-ui` ve `/find` alt yolları kaldırıldı.
 :::
 
 ::: info Dock paneli chrome’u `cad-simple-viewer`’a taşındı
@@ -257,7 +257,7 @@ Yükseltmeden önce hangi paketlerin koordineli sürüme ait olduğunu ve hangil
 | `@mlightcad/cad-html-plugin`             | Tek tıkla kendi kendine yeten HTML dışa aktarma     |
 | `@mlightcad/cad-pdf-plugin`              | Tarayıcıda PDF dışa aktarma ve PDF→CAD içe aktarma  |
 | `@mlightcad/cad-svg-plugin`              | SVG dışa aktarma                                    |
-| `@mlightcad/cad-simple-viewer/simple-ui` | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
+| `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
 | `@mlightcad/cad-agent-plugin`            | Yapay zeka ajanı destekli etkileşim                 |
 | `@mlightcad/cad-onedrive-plugin`         | OneDrive entegrasyonu                               |
 | `@mlightcad/cad-google-drive-plugin`     | Google Drive entegrasyonu                           |

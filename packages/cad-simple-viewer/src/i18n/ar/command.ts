@@ -131,6 +131,12 @@ export default {
     dwgname: {
       description: 'عرض اسم ملف الرسم الحالي (للقراءة فقط)'
     },
+    find: {
+      description: 'فتح لوحة البحث عن النص'
+    },
+    layer: {
+      description: 'فتح أو إغلاق لوحة مدير الطبقات'
+    },
     loginname: {
       description: 'عرض اسم تسجيل دخول المستخدم (للقراءة فقط)'
     },

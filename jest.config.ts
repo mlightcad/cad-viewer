@@ -58,8 +58,6 @@ const config: Config = {
       '<rootDir>/packages/cad-simple-viewer/src/index.ts',
     '^@mlightcad/cad-simple-viewer/icons$':
       '<rootDir>/packages/cad-simple-viewer/src/ui/icons.ts',
-    '^@mlightcad/cad-simple-viewer/simple-ui$':
-      '<rootDir>/packages/cad-simple-viewer/src/simple-ui/index.ts',
     '^three/examples/jsm/lines/LineMaterial\\.js$':
       '<rootDir>/test/mocks/three/LineMaterial.js',
     '^three/examples/jsm/lines/LineSegments2\\.js$':

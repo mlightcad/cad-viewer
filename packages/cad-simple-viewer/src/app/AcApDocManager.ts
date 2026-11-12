@@ -455,16 +455,13 @@ export interface AcApDocManagerOptions {
 
   /**
    * Built-in plain-DOM toolbar + dock palette chrome (formerly
-   * `@mlightcad/cad-simple-ui-plugin`).
-   *
-   * Loaded via dynamic import of `@mlightcad/cad-simple-viewer/simple-ui` so
-   * hosts that opt out do not pay for the chunk.
+   * Built-in plain-DOM chrome (toolbar + dock palettes).
    *
    * - omitted / `true`: enable with default toolbar/dock options
    * - `false`: do not load (use for `cad-editor`, CLI, headless)
-   * - object: enable with those {@link AcUiSimpleUiPluginOptions}
+   * - object: enable with those {@link AcUiSimpleUiOptions}
    */
-  simpleUi?: boolean | import('../simple-ui').AcUiSimpleUiPluginOptions
+  simpleUi?: boolean | import('../ui/AcUiSimpleUiOptions').AcUiSimpleUiOptions
 }
 
 /**
@@ -513,10 +510,10 @@ export class AcApDocManager {
   private _pluginManager: AcApPluginManager
   /** Resolved when built-in simple UI chrome finishes loading (or skipped). */
   private _simpleUiReady: Promise<
-    import('../simple-ui').AcApSimpleUiPlugin | undefined
+    import('../ui/AcApSimpleUiChrome').AcApSimpleUiChrome | undefined
   > = Promise.resolve(undefined)
-  /** Built-in simple UI plugin instance when {@link simpleUi} is enabled. */
-  private _simpleUiPlugin?: import('../simple-ui').AcApSimpleUiPlugin
+  /** Built-in simple UI chrome when {@link simpleUi} is enabled. */
+  private _simpleUiChrome?: import('../ui/AcApSimpleUiChrome').AcApSimpleUiChrome
   /** Data source manager (local, URL, cloud plugins) */
   private _dataSourceManager: AcApDataSourceManager
   /**
@@ -800,6 +797,12 @@ export class AcApDocManager {
     // entity commits do not read a torn-down singleton.
     this._mainView.abortConversion()
     this._splitView?.abortConversion()
+
+    // Chrome is no longer an AcApPlugin; tear it down before plugins/docs.
+    const chrome = await this._simpleUiReady.catch(() => undefined)
+    chrome?.dispose(this._commandManager)
+    this._simpleUiChrome = undefined
+    this._simpleUiReady = Promise.resolve(undefined)
 
     await this._pluginManager.unloadAllPlugins()
     for (const session of [...this._sessions]) {
@@ -1167,30 +1170,19 @@ export class AcApDocManager {
   }
 
   /**
-   * Built-in simple UI chrome plugin when {@link AcApDocManagerOptions.simpleUi}
-   * is enabled; `undefined` until {@link simpleUiReady} resolves or when opted out.
+   * Built-in simple UI chrome when {@link AcApDocManagerOptions.simpleUi} is
+   * enabled; `undefined` until {@link simpleUiReady} resolves or when opted out.
    */
-  get simpleUiPlugin() {
-    return this._simpleUiPlugin
+  get simpleUi() {
+    return this._simpleUiChrome
   }
 
   /**
    * Resolves when built-in simple UI chrome has finished loading, or with
-   * `undefined` when {@link AcApDocManagerOptions.simpleUi} is `false` and no
-   * plugin was bound via {@link bindSimpleUiPlugin}.
+   * `undefined` when {@link AcApDocManagerOptions.simpleUi} is `false`.
    */
   get simpleUiReady() {
     return this._simpleUiReady
-  }
-
-  /**
-   * Keeps {@link simpleUiPlugin} / {@link simpleUiReady} in sync when chrome is
-   * loaded outside {@link AcApDocManagerOptions.simpleUi} (for example
-   * {@link acuiRegisterSimpleUiPlugin} or `plugins.fromConfig`).
-   */
-  bindSimpleUiPlugin(plugin: import('../simple-ui').AcApSimpleUiPlugin) {
-    this._simpleUiPlugin = plugin
-    this._simpleUiReady = Promise.resolve(plugin)
   }
 
   /**
@@ -2868,34 +2860,14 @@ export class AcApDocManager {
    * Dynamically loads built-in simple UI chrome (`toolbar` + dock palettes).
    */
   private async loadSimpleUi(
-    options: import('../simple-ui').AcUiSimpleUiPluginOptions
+    options: import('../ui/AcUiSimpleUiOptions').AcUiSimpleUiOptions
   ) {
     try {
-      const { SIMPLE_UI_PLUGIN_NAME, acuiCreateSimpleUiPlugin } =
-        await import('../simple-ui')
-      const existing = this._pluginManager.getPlugin(SIMPLE_UI_PLUGIN_NAME) as
-        | import('../simple-ui').AcApSimpleUiPlugin
-        | undefined
-      if (existing) {
-        this.bindSimpleUiPlugin(existing)
-        return existing
-      }
-      const plugin = acuiCreateSimpleUiPlugin(options)
-      try {
-        await this._pluginManager.loadPlugin(plugin)
-      } catch (error) {
-        // Concurrent plugins.fromConfig / register may have won the race.
-        const raced = this._pluginManager.getPlugin(SIMPLE_UI_PLUGIN_NAME) as
-          | import('../simple-ui').AcApSimpleUiPlugin
-          | undefined
-        if (raced) {
-          this.bindSimpleUiPlugin(raced)
-          return raced
-        }
-        throw error
-      }
-      this.bindSimpleUiPlugin(plugin)
-      return plugin
+      const { AcApSimpleUiChrome } = await import('../ui/AcApSimpleUiChrome')
+      const chrome = new AcApSimpleUiChrome(options)
+      chrome.start(this.commandManager)
+      this._simpleUiChrome = chrome
+      return chrome
     } catch (error) {
       log.error('[AcApDocManager] Error loading simple UI chrome:', error)
       return undefined

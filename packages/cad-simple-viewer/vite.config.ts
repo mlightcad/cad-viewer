@@ -17,18 +17,11 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
-        'file-open-panel': resolve(__dirname, 'src/file-open-panel.ts'),
-        'simple-ui': resolve(__dirname, 'src/simple-ui/index.ts')
+        'file-open-panel': resolve(__dirname, 'src/file-open-panel.ts')
       },
       name: packageId,
-      fileName: (format, entryName) => {
-        // Keep the published simple-ui artifact short (`cad-simple-ui.js`)
-        // instead of `cad-simple-viewer-simple-ui.js`.
-        if (entryName === 'simple-ui') {
-          return format === 'es' ? 'cad-simple-ui.js' : 'cad-simple-ui.umd.cjs'
-        }
-        return createLibEntryFileName(packageId, format, entryName)
-      }
+      fileName: (format, entryName) =>
+        createLibEntryFileName(packageId, format, entryName)
     },
     minify: true,
     rollupOptions: {

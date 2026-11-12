@@ -7,16 +7,15 @@ title: 'Upgrading cad-simple-viewer and cad-editor'
 This guide explains how to safely upgrade `@mlightcad/cad-simple-viewer` and`@mlightcad/cad-editor` — why they cannot be bumped in isolation, which related packages must move together, and two reliable ways to determine the correct compatible version set for any given release.
 
 ::: info Simple UI chrome moves into `cad-simple-viewer`
-Starting with the release that includes this change, **`@mlightcad/cad-simple-ui-plugin` is removed**. Toolbar presets, dock palette tabs (layers / find / review / measurements), theme sync, and the default `AcApPaletteHost` live in **`@mlightcad/cad-simple-viewer`** under `@mlightcad/cad-simple-viewer/simple-ui`.
+Starting with the release that includes this change, **`@mlightcad/cad-simple-ui-plugin` is removed**. Toolbar presets, dock palette tabs (layers / find / review / measurements), theme sync, and the default `AcApPaletteHost` live in **`@mlightcad/cad-simple-viewer`** (types under `src/ui/`).
 
 Migrate hosts:
 
 - Uninstall `@mlightcad/cad-simple-ui-plugin` and drop `acuiRegisterSimpleUiPlugin` / `acuiCreateSimpleUiPlugin` imports from that package.
 - Prefer `AcApDocManager.createInstance({ simpleUi: { … } })` (default **on**). Pass former plugin options through `simpleUi`. Use `simpleUi: false` for `cad-editor`, CLI, MCP, and other headless hosts.
-- Import types/helpers from `@mlightcad/cad-simple-viewer/simple-ui` when you need them outside create options.
-- Await `AcApDocManager.instance.simpleUiReady` (or read `simpleUiPlugin`) instead of `pluginManager.getPlugin('SimpleUiPlugin')`.
+- Import types/helpers from `@mlightcad/cad-simple-viewer` (the `/simple-ui` and `/find` package subpaths are removed).
+- Await `AcApDocManager.instance.simpleUiReady` (or read `simpleUi`) instead of `pluginManager.getPlugin('SimpleUiPlugin')` / the former `simpleUiPlugin` getter.
 - `cad-editor` keeps its Vue layer manager; find / design-review / measurements use the shared DOM palette views.
-- The `@mlightcad/cad-simple-viewer/find` subpath is removed; import find APIs (`acapFindText`, …) from `@mlightcad/cad-simple-viewer`. The published simple-ui bundle file is now `dist/cad-simple-ui.js` (the `/simple-ui` export map is unchanged).
   :::
 
 ::: info Dock panel chrome moves to `cad-simple-viewer`
@@ -279,7 +278,7 @@ Before upgrading, it helps to know which packages belong to the coordinated rele
 | `@mlightcad/cad-pdf-plugin`              | Browser PDF export and PDF-to-CAD import                                 |
 | `@mlightcad/cad-svg-plugin`              | SVG export                                                               |
 | `@mlightcad/cad-svg-converter`           | SVG File → Open (vector → AcDb entities)                                 |
-| `@mlightcad/cad-simple-viewer/simple-ui` | Built-in plain-DOM toolbar and dock tab content (enabled via `simpleUi`) |
+| `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar and dock tab content (enabled via `simpleUi`) |
 | `@mlightcad/cad-agent-plugin`            | AI-agent-powered interaction                                             |
 | `@mlightcad/cad-onedrive-plugin`         | OneDrive integration                                                     |
 | `@mlightcad/cad-google-drive-plugin`     | Google Drive integration                                                 |

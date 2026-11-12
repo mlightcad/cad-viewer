@@ -140,6 +140,12 @@ export default {
     dwgname: {
       description: 'Geçerli çizim dosyasının adını saklar (salt okunur)'
     },
+    find: {
+      description: 'Metin arama yerleştirme panelini açar'
+    },
+    layer: {
+      description: 'Katman yöneticisi yerleştirme panelini açar veya kapatır'
+    },
     loginname: {
       description: 'Kullanıcının oturum açma adını görüntüler (salt okunur)'
     },

@@ -22,7 +22,7 @@ Single test file: `pnpm jest packages/<pkg>/__tests__/Foo.spec.ts`.
 
 ## Package layout (directory -> package name)
 
-- `cad-simple-viewer` -> `@mlightcad/cad-simple-viewer`: core logic, **no UI framework** (canvas only) — commands, documents, plugin system, i18n registry, and built-in plain-DOM simple UI chrome (`simpleUi` / `@mlightcad/cad-simple-viewer/simple-ui`).
+- `cad-simple-viewer` -> `@mlightcad/cad-simple-viewer`: core logic, **no UI framework** (canvas only) — commands, documents, plugin system, i18n registry, and built-in plain-DOM simple UI chrome (`AcApDocManager` option `simpleUi`, types under `src/ui/`).
 - `cad-editor` -> `@mlightcad/cad-editor`: Vue 3 component/app (menus, ribbon, command line, status bar).
 - `three-renderer` / `pdf-renderer`: rendering engines (THREE.js batching, PDF output).
 - `*-plugin` (`cad-script`, `cad-llm`, `cad-agent`, `cad-pdf`, `cad-html`, `cad-svg`, `cad-onedrive`, `cad-google-drive`): optional features, lazy-loaded.
@@ -66,10 +66,9 @@ The full recipe for a new CAD command lives in `packages/cad-simple-viewer/src/c
 - **Translate into all supported locales in the same change: `en`, `zh`, `ja`, `ko`, `tr`, `cs`, `ar`.** Whenever you add a key or change the meaning of an English string, write the real translation in every locale file. Do not copy the English text, do not leave a key out and rely on the `en` fallback, and do not fill a locale with `...enX` spreads or `clone(en)`. Each of these falls back to English silently at runtime, which is how the ja/ko UI ended up mostly English.
 - Catalog locations (each language has its own file):
   - `cad-editor/src/locale/<lang>/{main,command,dialog,entity}.ts`
-  - `cad-simple-viewer/src/i18n/<lang>/{main,command,jig}.ts`
+  - `cad-simple-viewer/src/i18n/<lang>/{main,command,jig,simpleUi}.ts`
   - `cad-editor-demo/src/locale/<lang>.ts`
   - `cad-*-plugin/src/i18n/` (`<lang>.ts`, `command-<lang>.ts`, or per-locale records such as `command.ts` / `exampleCopy.ts`)
-  - `cad-simple-viewer/src/simple-ui/i18n/` (`<lang>.ts`, `command-<lang>.ts`) for built-in simple UI chrome
   - `cad-html-core/src/AcExHtmlI18n.ts` plus `src/i18n/<lang>.ts`
 - Use AutoCAD's localized terminology for each language (e.g. zh 图层, ja 画層, ko 도면층). Keep `{placeholders}`, `|` plural parts and `\n` breaks, and never put a raw `@` in vue-i18n messages (write `{'@'}`). In jig keyword objects `{ display, local, global }`, `global` always stays English.
 - `test/i18n/localeCompleteness.spec.ts` fails on any missing key, or any value identical to English, in any locale. Register every new catalog in its `CATALOGS` map. Only add to its `NEUTRAL_VALUES` / `SAME_AS_ENGLISH` allowlists for words that really are the same in that language (brand names, loanwords). Never use the allowlists to skip a translation.

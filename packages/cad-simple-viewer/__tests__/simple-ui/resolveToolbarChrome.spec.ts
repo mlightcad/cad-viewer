@@ -1,9 +1,9 @@
-jest.mock('../../src/simple-ui/deps', () => {
+jest.mock('../../src/app', () => {
   const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
   return createCadSimpleViewerMock()
 })
 
-import { acuiResolveToolbarChrome } from '../../src/simple-ui/config/resolveToolbarChrome'
+import { acuiResolveToolbarChrome } from '../../src/ui/toolbar/resolveToolbarChrome'
 
 describe('acuiResolveToolbarChrome', () => {
   it('applies built-in defaults', () => {

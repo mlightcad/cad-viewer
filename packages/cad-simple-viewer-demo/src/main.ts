@@ -1,3 +1,8 @@
+import type {
+  AcApSimpleUiChrome,
+  AcUiDockPanelSide,
+  AcUiToolbarPlacement
+} from '@mlightcad/cad-simple-viewer'
 import {
   type AcApOpenDatabaseOptions,
   acedApplyUiTheme,
@@ -7,11 +12,6 @@ import {
   type AcUiFileOpenRequest,
   type AcUiFileOpenSession
 } from '@mlightcad/cad-simple-viewer/file-open-panel'
-import type {
-  AcApSimpleUiPlugin,
-  AcUiDockPanelSide,
-  AcUiToolbarPlacement
-} from '@mlightcad/cad-simple-viewer/simple-ui'
 import {
   AcDbSystemVariables,
   AcDbSysVarManager,
@@ -474,7 +474,7 @@ class CadViewerApp {
   private async toggleDockPanelOpen() {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -501,7 +501,7 @@ class CadViewerApp {
   private async addDemoDockTab() {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -530,7 +530,7 @@ class CadViewerApp {
   private async applyDockPanelSize() {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -555,7 +555,7 @@ class CadViewerApp {
   }
 
   private syncDockMenuState() {
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     const enabled = this.isDevToolbarEnabled() && Boolean(plugin)
     const isOpen = plugin?.isDockPanelOpen() ?? false
     const side = plugin?.getDockPanelSide()
@@ -662,7 +662,7 @@ class CadViewerApp {
   private async applyViewerToolbarPlacement(placement: AcUiToolbarPlacement) {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -680,7 +680,7 @@ class CadViewerApp {
   private async toggleViewerToolbarVisibility() {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -702,7 +702,7 @@ class CadViewerApp {
   private async toggleViewerToolbarCollapsed() {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -724,7 +724,7 @@ class CadViewerApp {
   private async applyViewerToolbarEdgeOffset() {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -747,7 +747,7 @@ class CadViewerApp {
   }
 
   private syncViewerToolbarMenuState() {
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     const enabled = this.isDevToolbarEnabled() && Boolean(plugin)
     const placement = plugin?.getToolbarPlacement() ?? 'right'
     const visible = plugin?.isToolbarVisible() ?? true
@@ -793,7 +793,7 @@ class CadViewerApp {
   private async applyToolbarLayout(presetId: string) {
     await this.initialize()
 
-    const plugin = this.getSimpleUiPlugin()
+    const plugin = this.getSimpleUiChrome()
     if (!plugin) {
       this.showMessage('Simple UI plugin is not loaded', 'error')
       return
@@ -825,9 +825,9 @@ class CadViewerApp {
     this.syncDisplayMenuState()
   }
 
-  private getSimpleUiPlugin(): AcApSimpleUiPlugin | undefined {
+  private getSimpleUiChrome(): AcApSimpleUiChrome | undefined {
     if (!this.isInitialized) return undefined
-    return viewer().AcApDocManager.instance.simpleUiPlugin
+    return viewer().AcApDocManager.instance.simpleUi
   }
 
   private isLineWeightEnabled(): boolean {
@@ -898,7 +898,7 @@ class CadViewerApp {
         { persist: false }
       )
     }
-    this.getSimpleUiPlugin()?.setToolbarVisible(visible)
+    this.getSimpleUiChrome()?.setToolbarVisible(visible)
   }
 
   private async initialize() {

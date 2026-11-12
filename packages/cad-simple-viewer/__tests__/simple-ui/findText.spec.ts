@@ -4,7 +4,7 @@ import {
   acuiFindTextInLayout,
   acuiMTextToPlainText,
   acuiNormalizeFindText
-} from '../../src/simple-ui/find/findText'
+} from '../../src/find'
 
 type Ent = Record<string, unknown>
 

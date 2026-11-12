@@ -35,76 +35,95 @@ const localeLabels: Record<string, Record<string, string>> = {
 
 let currentLocale = 'en'
 
-jest.mock('../../src/simple-ui/deps', () => {
-  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
+jest.mock('../../src/app/dataSource/acapBuildDataSourceMenu', () => {
+  const { mockDataSourceMenuModules } = require('./helpers/mockDataSourceMenu')
+  const m = mockDataSourceMenuModules()
+  return {
+    acapBuildDataSourceMenu: m.acapBuildDataSourceMenu,
+    acapIsSingleLocalOpen: m.acapIsSingleLocalOpen
+  }
+})
+jest.mock('../../src/app/dataSource/acapRunDataSourceMenuAction', () => {
+  const { mockDataSourceMenuModules } = require('./helpers/mockDataSourceMenu')
+  return {
+    acapRunDataSourceMenuAction: mockDataSourceMenuModules().acapRunDataSourceMenuAction
+  }
+})
 
-  return createCadSimpleViewerMock({
-    AcApDocManager: {
-      instance: {
-        curDocument: { openMode: 8 },
-        events: {
-          documentActivated: {
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn()
-          },
-          documentToBeOpened: {
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn()
-          }
-        }
+jest.mock('../../src/i18n/AcApI18n', () => ({
+  AcApI18n: {
+    get currentLocale() {
+      return currentLocale
+    },
+    setCurrentLocale(locale: string) {
+      currentLocale = locale
+    },
+    t(key: string, opts?: { fallback?: string }) {
+      return localeLabels[currentLocale]?.[key] ?? opts?.fallback ?? key
+    },
+    events: {
+      localeChanged: {
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
       }
     },
-    AcEdOpenMode: {
-      Read: 0,
-      Review: 4,
-      Write: 8
-    },
-    AcApI18n: {
-      get currentLocale() {
-        return currentLocale
-      },
-      setCurrentLocale(locale: string) {
-        currentLocale = locale
-      },
-      t(key: string, opts?: { fallback?: string }) {
-        return (
-          localeLabels[currentLocale]?.[key] ?? opts?.fallback ?? key
-        )
-      },
+    mergeLocaleMessage: jest.fn()
+  }
+}))
+
+jest.mock('../../src/app', () => ({
+  AcApDocManager: {
+    instance: {
+      curDocument: { openMode: 8 },
       events: {
-        localeChanged: {
+        documentActivated: {
+          addEventListener: jest.fn(),
+          removeEventListener: jest.fn()
+        },
+        documentToBeOpened: {
           addEventListener: jest.fn(),
           removeEventListener: jest.fn()
         }
-      },
-      mergeLocaleMessage: jest.fn()
-    },
-    AcApPaletteService: { setHost: jest.fn() },
-    AcApSettingManager: {
-      instance: {
-        get: jest.fn(() => true),
-        toggle: jest.fn(),
-        set: jest.fn(),
-        clearSessionOverride: jest.fn()
       }
-    },
-    isMarkupVisible: () => true,
-    isMeasurementVisible: () => true
-  })
-})
-
-jest.mock('@mlightcad/data-model', () => ({
-  acdbHostApplicationServices: () => ({
-    layoutManager: {
-      setCurrentLayoutBtrId: jest.fn()
     }
-  })
+  },
+  AcApSettingManager: {
+    instance: {
+      get: jest.fn(() => true),
+      toggle: jest.fn(),
+      set: jest.fn(),
+      clearSessionOverride: jest.fn()
+    }
+  }
 }))
 
-import { AcApI18n, AcUiToolbar } from '../../src/simple-ui/deps'
+jest.mock('../../src/command', () => ({
+  isMarkupVisible: () => true,
+  isMeasurementVisible: () => true
+}))
 
-import { acuiCreatePhoneToolbarItems } from '../../src/simple-ui/config/defaultToolbarItems'
-import { AcUiI18n } from '../../src/simple-ui/i18n'
+jest.mock('../../src/editor', () => {
+  const openMode = jest.requireActual('../../src/editor/view/AcEdOpenMode')
+  return {
+    AcEdOpenMode: openMode.AcEdOpenMode
+  }
+})
+
+jest.mock('@mlightcad/data-model', () => {
+  const { createDataModelMock } = require('./helpers/mockDataModel')
+  return createDataModelMock()
+})
+
+jest.mock('../../src/ui/AcUiSimpleUiStyles', () => ({
+  acuiEnsureToolbarStyles: jest.fn(),
+  acuiEnsureUiStyles: jest.fn()
+}))
+
+import { AcApI18n } from '../../src/i18n'
+import { AcUiToolbar } from '../../src/ui/toolbar/AcUiToolbar'
+
+import { acuiCreatePhoneToolbarItems } from '../../src/ui/toolbar/defaultToolbarItems'
+import { AcUiI18n } from '../../src/i18n/AcUiI18n'
 
 function getLayerLabel(host: HTMLElement) {
   return host.querySelector(

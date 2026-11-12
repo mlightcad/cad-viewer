@@ -52,37 +52,42 @@ const editor = {
   events: { documentActivated }
 }
 
-jest.mock('../../src/simple-ui/deps', () => {
-  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
-  return createCadSimpleViewerMock({
-    AcApDocManager: {
-      instance: {
-        curView: undefined
-      }
-    },
-    AcApI18n: {
-      t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
-      mergeLocaleMessage: jest.fn(),
-      events: {
-        localeChanged: {
-          addEventListener: jest.fn(),
-          removeEventListener: jest.fn()
-        }
-      },
-      currentLocale: 'en'
-    },
-    AcApLayerStore: class {}
-  })
-})
-
-jest.mock('@mlightcad/data-model', () => ({
-  AcCmColor: {
-    fromString: jest.fn(() => null)
+jest.mock('../../src/app', () => ({
+  AcApDocManager: {
+    instance: editor
   }
 }))
 
-import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../../src/simple-ui/i18n'
-import { AcUiLayerListView } from '../../src/simple-ui/ui/AcUiLayerListView'
+jest.mock('../../src/service', () => ({
+  AcApLayerStore: class {}
+}))
+
+jest.mock('@mlightcad/data-model', () => {
+  const { createDataModelMock } = require('./helpers/mockDataModel')
+  return createDataModelMock()
+})
+
+jest.mock('../../src/ui/AcUiSimpleUiStyles', () => ({
+  acuiEnsureUiStyles: jest.fn()
+}))
+
+jest.mock('../../src/i18n/AcApI18n', () => ({
+  AcApI18n: {
+    t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
+    mergeLocaleMessage: jest.fn(),
+    events: {
+      localeChanged: {
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn()
+      }
+    },
+    currentLocale: 'en',
+    setCurrentLocale: jest.fn()
+  }
+}))
+
+import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../../src/i18n/AcUiI18n'
+import { AcUiLayerListView } from '../../src/ui/AcUiLayerListView'
 
 function createView() {
   acuiRegisterSimpleUiI18n()

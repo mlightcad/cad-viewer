@@ -67,81 +67,54 @@ const mockDoc = {
 let blocks: Record<string, Ent[]> = {}
 let hasDocument = true
 
-jest.mock('../../src/simple-ui/deps', () => {
-  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
-  const { acapNavigateToFindHit } = jest.requireActual(
-    '../../src/find/AcApFindNavigator'
-  )
-  return createCadSimpleViewerMock({
-    acapNavigateToFindHit,
-    AcApDocManager: {
-      instance: {
-        get curView() {
-          return hasDocument ? mockView : undefined
-        },
-        get curDocument() {
-          return hasDocument ? mockDoc : undefined
-        }
+jest.mock('../../src/app', () => ({
+  AcApDocManager: {
+    instance: {
+      get curView() {
+        return hasDocument ? mockView : undefined
+      },
+      get curDocument() {
+        return hasDocument ? mockDoc : undefined
       }
-    },
-    // Message registry like the real AcApI18n: current locale only, no
-    // fallback to English (that is AcUiI18n's job).
-    AcApI18n: (() => {
-      type Tree = { [key: string]: string | Tree }
-      const messages: Record<string, Tree> = {}
-      const merge = (target: Tree, source: Tree) => {
-        for (const key of Object.keys(source)) {
-          const src = source[key]
-          const tgt = target[key]
-          if (typeof src === 'object' && typeof tgt === 'object') {
-            merge(tgt, src)
-          } else target[key] = src
-        }
-      }
-      return {
-        currentLocale: 'en',
-        t(key: string, opts?: { fallback?: string }) {
-          let cur: string | Tree | undefined = messages[this.currentLocale]
-          for (const part of key.split('.')) {
-            if (!cur || typeof cur !== 'object') break
-            cur = cur[part]
-          }
-          return typeof cur === 'string' ? cur : (opts?.fallback ?? key)
-        },
-        mergeLocaleMessage(locale: string, tree: Tree) {
-          merge((messages[locale] ??= {}), tree)
-        }
-      }
-    })()
-  })
-})
-
-// The real data-model bundle needs TextDecoder, which jsdom does not provide.
-jest.mock('@mlightcad/data-model', () => ({
-  acdbHostApplicationServices: () => ({
-    layoutManager: {
-      setCurrentLayoutBtrId: (id: string) => mockSwitchLayout(id)
     }
-  }),
-  AcGePoint2d: class {
-    constructor(
-      public x: number,
-      public y: number
-    ) {}
-  },
-  AcGeBox2d: class {
-    constructor(
-      public min: { x: number; y: number },
-      public max: { x: number; y: number }
-    ) {}
   }
 }))
 
-import { AcApDocManager, AcApI18n } from '../../src/simple-ui/deps'
+// The real data-model bundle needs TextDecoder, which jsdom does not provide.
+jest.mock('@mlightcad/data-model', () => {
+  const { createDataModelMock } = require('./helpers/mockDataModel')
+  return createDataModelMock({
+    acdbHostApplicationServices: () => ({
+      layoutManager: {
+        setCurrentLayoutBtrId: (id: any) => mockSwitchLayout(id)
+      }
+    })
+  })
+})
 
-import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../../src/simple-ui/i18n'
-import { en } from '../../src/simple-ui/i18n/en'
-import { AcUiFindPaletteView } from '../../src/simple-ui/ui/AcUiFindPaletteView'
+jest.mock('../../src/ui/AcUiSimpleUiStyles', () => ({
+  acuiEnsureUiStyles: jest.fn()
+}))
+
+import { AcApDocManager } from '../../src/app'
+import { AcApI18n } from '../../src/i18n/AcApI18n'
+import enNested from '../../src/i18n/en/simpleUi'
+
+import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../../src/i18n/AcUiI18n'
+import { AcUiFindPaletteView } from '../../src/ui/AcUiFindPaletteView'
+
+type Tree = { [key: string]: string | Tree }
+function flatten(tree: Tree, prefix = ''): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [key, value] of Object.entries(tree)) {
+    const path = prefix ? `${prefix}.${key}` : key
+    if (typeof value === 'string') out[path] = value
+    else Object.assign(out, flatten(value, path))
+  }
+  return out
+}
+const en = flatten(enNested as Tree)
+
 
 function text(id: string, textString: string, x: number): Ent {
   return {
@@ -176,7 +149,7 @@ describe('AcUiFindPaletteView', () => {
     blocks = {}
     layouts = []
     hasDocument = true
-    ;(AcApI18n as unknown as { currentLocale: string }).currentLocale = 'en'
+    AcApI18n.setCurrentLocale('en')
     mockView.activeLayoutBtrId = 'layout-a'
     jest.clearAllMocks()
   })
@@ -502,7 +475,7 @@ describe('AcUiFindPaletteView', () => {
 
   describe('localization', () => {
     const setLocale = (locale: string) => {
-      ;(AcApI18n as unknown as { currentLocale: string }).currentLocale = locale
+      AcApI18n.setCurrentLocale(locale as 'en' | 'zh' | 'ja' | 'ko' | 'tr' | 'cs' | 'ar')
     }
     const meta = (view: AcUiFindPaletteView, index: number) =>
       rows(view)[index].querySelector('.ml-ex-ui-find-meta')?.textContent
@@ -550,7 +523,7 @@ describe('AcUiFindPaletteView', () => {
 
     it('falls back to English for messages the active locale does not have', () => {
       entities = [leader]
-      setLocale('xx') // a locale with no messages at all
+      AcApI18n.setCurrentLocale('xx' as 'en') // a locale with no messages at all
       const view = createView()
       expect(status(view)).toBe(en['findPalette.hint'])
       view.search('nota')
@@ -560,7 +533,7 @@ describe('AcUiFindPaletteView', () => {
     })
 
     it('keeps the key only when no locale has the message', () => {
-      setLocale('xx')
+      AcApI18n.setCurrentLocale('xx' as 'en')
       expect(new AcUiI18n().t('findPalette.doesNotExist')).toBe(
         'findPalette.doesNotExist'
       )

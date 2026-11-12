@@ -7,7 +7,7 @@ title: 'ترقية cad-simple-viewer و cad-editor'
 يشرح هذا الدليل كيفية ترقية `@mlightcad/cad-simple-viewer` و`@mlightcad/cad-editor` بأمان — ولماذا لا يمكن رفعهما بمعزل عن غيرهما، وأي الحزم ذات الصلة يجب أن تتحرك معًا، وطريقتان موثوقتان لتحديد مجموعة الإصدارات المتوافقة الصحيحة لأي إصدار معين.
 
 ::: info واجهة Simple UI أصبحت داخل `cad-simple-viewer`
-بدءًا من الإصدار الذي يتضمن هذا التغيير، **تمت إزالة `@mlightcad/cad-simple-ui-plugin`**. شريط الأدوات وعلامات الإرساء و`AcApPaletteHost` الافتراضي موجودة في **`@mlightcad/cad-simple-viewer/simple-ui`**. فعّل عبر `simpleUi` (مفعّل افتراضيًا)؛ ولـ `cad-editor` / CLI استخدم `simpleUi: false`. تمت إزالة المسار الفرعي `@mlightcad/cad-simple-viewer/find`؛ استورد واجهات البحث من `@mlightcad/cad-simple-viewer`. ملف simple-ui المنشور أصبح `dist/cad-simple-ui.js` (خريطة تصدير `/simple-ui` دون تغيير).
+بدءًا من الإصدار الذي يتضمن هذا التغيير، **تمت إزالة `@mlightcad/cad-simple-ui-plugin`**. شريط الأدوات وعلامات الإرساء و`AcApPaletteHost` الافتراضي موجودة في **`@mlightcad/cad-simple-viewer`**. فعّل عبر `simpleUi` (مفعّل افتراضيًا)؛ ولـ `cad-editor` / CLI استخدم `simpleUi: false`. تمت إزالة المسار الفرعي `@mlightcad/cad-simple-viewer/find`؛ استورد واجهات البحث من `@mlightcad/cad-simple-viewer`. أُزيلت المسارات الفرعية `/simple-ui` و`/find`.
 :::
 
 ::: info نقل واجهة لوحة الإرساء إلى `cad-simple-viewer`
@@ -257,7 +257,7 @@ await exportFileToPdf('drawing.dwg', 'drawing.pdf', {
 | `@mlightcad/cad-html-plugin`             | تصدير HTML مكتفٍ ذاتيًا بنقرة واحدة                 |
 | `@mlightcad/cad-pdf-plugin`              | تصدير PDF في المتصفح واستيراد PDF إلى CAD           |
 | `@mlightcad/cad-svg-plugin`              | تصدير SVG                                           |
-| `@mlightcad/cad-simple-viewer/simple-ui` | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
+| `@mlightcad/cad-simple-viewer` (`simpleUi`) | Built-in plain-DOM toolbar / dock tabs (`simpleUi`) |
 | `@mlightcad/cad-agent-plugin`            | تفاعل مدعوم بوكيل ذكاء اصطناعي                      |
 | `@mlightcad/cad-onedrive-plugin`         | تكامل OneDrive                                      |
 | `@mlightcad/cad-google-drive-plugin`     | تكامل Google Drive                                  |

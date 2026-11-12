@@ -127,6 +127,12 @@ export default {
     dwgname: {
       description: '存储当前图形文件的名称（只读）'
     },
+    find: {
+      description: '打开文字查找面板'
+    },
+    layer: {
+      description: '打开或关闭图层管理器停靠面板'
+    },
     loginname: {
       description: '显示当前用户的登录名（只读）'
     },

@@ -13,7 +13,7 @@ import {
   AcUiFindPaletteView,
   AcUiI18n,
   acuiRegisterSimpleUiI18n
-} from '@mlightcad/cad-simple-viewer/simple-ui'
+} from '@mlightcad/cad-simple-viewer'
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { store } from '../../app'

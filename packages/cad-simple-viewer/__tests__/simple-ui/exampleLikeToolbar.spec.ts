@@ -12,130 +12,76 @@ beforeAll(() => {
 
 const mockCurView: { container?: HTMLElement } = {}
 
-jest.mock('../../src/simple-ui/deps', () => {
-  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
+jest.mock('../../src/app/dataSource/acapBuildDataSourceMenu', () => {
+  const { mockDataSourceMenuModules } = require('./helpers/mockDataSourceMenu')
+  const m = mockDataSourceMenuModules()
+  return {
+    acapBuildDataSourceMenu: m.acapBuildDataSourceMenu,
+    acapIsSingleLocalOpen: m.acapIsSingleLocalOpen
+  }
+})
+jest.mock('../../src/app/dataSource/acapRunDataSourceMenuAction', () => {
+  const { mockDataSourceMenuModules } = require('./helpers/mockDataSourceMenu')
+  return {
+    acapRunDataSourceMenuAction: mockDataSourceMenuModules().acapRunDataSourceMenuAction
+  }
+})
+
+jest.mock('../../src/editor', () => {
+  const { getChromeMockExtras } = require('./helpers/chromeMockExtras')
+  const { mockEditorModule } = require('./helpers/mockCadSimpleViewer')
   const layout = jest.requireActual(
     '../../src/editor/global/AcEdUiLayout'
   ) as typeof import('../../src/editor/global/AcEdUiLayout')
-
-  return createCadSimpleViewerMock({
+  const { extras } = getChromeMockExtras()
+  return mockEditorModule({
+    ...extras,
     acedIsMobileUiLayout: () =>
       window.matchMedia?.(layout.ML_UI_MOBILE_MEDIA_QUERY).matches ?? false,
     acedIsCompactUiLayout: () =>
-      window.matchMedia?.(layout.ML_UI_COMPACT_MEDIA_QUERY).matches ?? false,
-    AcApContext: class {},
-    AcApDocManager: {
-      instance: {
-        get curView() {
-          return mockCurView.container
-            ? { container: mockCurView.container }
-            : undefined
-        },
-        get curDocument() {
-          return { openMode: 8 }
-        },
-        events: {
-          documentActivated: {
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn()
-          },
-          documentToBeOpened: {
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn()
-          }
-        },
-        sendStringToExecute: jest.fn()
-      }
-    },
-    AcApI18n: {
-      t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
-      mergeLocaleMessage: jest.fn(),
-      events: {
-        localeChanged: {
-          addEventListener: jest.fn(),
-          removeEventListener: jest.fn()
-        }
-      },
-      currentLocale: 'en',
-      setCurrentLocale: jest.fn()
-    },
-    AcApPlugin: class {},
-    AcApPaletteService: { setHost: jest.fn() },
-    AcApSettingManager: {
-      instance: {
-        set: jest.fn(),
-        clearSessionOverride: jest.fn()
-      }
-    },
-    isMarkupVisible: () => true,
-    isMeasurementVisible: () => true,
-    AcEdCommand: class {},
-    AcEdCommandStack: class {
-      static SYSTEMT_COMMAND_GROUP_NAME = 'SYSTEM'
-      addCommand() {}
-      removeCmd() {}
-    },
-    AcEdOpenMode: { Read: 0, Write: 8 },
-    acapBindToolbarDocState: (tb: { setDocState: (s: object) => void }) => {
-      tb.setDocState({
-        hasDocument: true,
-        isOpening: false,
-        openMode: 8
-      })
-      return () => undefined
-    },
-    acedApplyUiTheme: jest.fn(),
-    isLightColorTheme: jest.fn(() => false),
-    eventBus: { on: jest.fn(), off: jest.fn() },
-    getMarkupStore: () => ({
-      list: () => [],
-      subscribe: () => () => undefined,
-      updateMeta: jest.fn()
-    }),
-    getMarkupPresenter: () => ({
-      select: jest.fn(),
-      focus: jest.fn(),
-      unpublish: jest.fn(),
-      publish: jest.fn(),
-      clearVisuals: jest.fn()
-    }),
-    runMarkupEdit: (_view: unknown, _label: string, mutate: () => void) => {
-      mutate()
-    },
-    MARKUP_STATUSES: ['open', 'question', 'answered', 'closed'],
-    listLayoutMeasurements: () => [],
-    getMeasurementValueText: () => '',
-    getSelectedMeasurementId: () => undefined,
-    subscribeMeasurements: () => () => undefined,
-    subscribeMeasurementSelection: () => () => undefined,
-    focusMeasurement: jest.fn(),
-    removeMeasurement: jest.fn(),
-    clearLayoutMeasurements: jest.fn()
+      window.matchMedia?.(layout.ML_UI_COMPACT_MEDIA_QUERY).matches ?? false
   })
 })
-
-jest.mock('@mlightcad/data-model', () => ({
-  AcCmColor: { fromString: jest.fn(() => null) },
-  AcDbDatabase: class {},
-  AcDbSystemVariables: { COLORTHEME: 'COLORTHEME' },
-  AcDbSysVarManager: {
-    instance: () => ({
-      events: {
-        sysVarChanged: {
-          addEventListener: jest.fn(),
-          removeEventListener: jest.fn()
-        }
-      },
-      getVar: jest.fn(),
-      setVar: jest.fn()
-    })
-  }
+jest.mock('../../src/command', () => {
+  const { getChromeMockExtras } = require('./helpers/chromeMockExtras')
+  const { mockCommandModule } = require('./helpers/mockCadSimpleViewer')
+  return mockCommandModule(getChromeMockExtras().extras)
+})
+jest.mock('../../src/i18n', () => {
+  const { getChromeMockExtras } = require('./helpers/chromeMockExtras')
+  const { mockI18nModule } = require('./helpers/mockCadSimpleViewer')
+  return mockI18nModule(getChromeMockExtras().extras)
+})
+jest.mock('../../src/ui/AcUiSimpleUiStyles', () => ({
+  acuiEnsureUiStyles: jest.fn(),
+  acuiRemoveUiStylesIfUnused: jest.fn()
 }))
 
-import { AcEdCommandStack } from '../../src/simple-ui/deps'
+jest.mock('../../src/command/AcApToolbarDocBind', () => {
+  const { getChromeMockExtras } = require('./helpers/chromeMockExtras')
+  const { mockToolbarDocBindModule } = require('./helpers/mockCadSimpleViewer')
+  return mockToolbarDocBindModule(getChromeMockExtras().extras)
+})
+jest.mock('../../src/app', () => {
+  const { mockAppModule } = require('./helpers/mockCadSimpleViewer')
+  const { getChromeMockExtras } = require('./helpers/chromeMockExtras')
+  const { extras } = getChromeMockExtras()
+  Object.defineProperty(extras.AcApDocManager.instance, 'curDocument', {
+    get: () => ({ openMode: 8 })
+  })
+  return mockAppModule(extras)
+})
 
-import { acuiNormalizePluginOptions } from '../../src/simple-ui/config/normalizePluginOptions'
-import { AcApSimpleUiPlugin } from '../../src/simple-ui/createSimpleUiPlugin'
+
+jest.mock('@mlightcad/data-model', () => {
+  const { createDataModelMock } = require('./helpers/mockDataModel')
+  return createDataModelMock()
+})
+
+import { AcEdCommandStack } from '../../src/editor'
+
+import { acuiNormalizeSimpleUiOptions } from '../../src/ui/acuiNormalizeSimpleUiOptions'
+import { AcApSimpleUiChrome } from '../../src/ui/AcApSimpleUiChrome'
 
 function createExampleDom() {
   const viewerPane = document.createElement('main')
@@ -169,7 +115,7 @@ describe('example-like toolbar mount', () => {
   })
 
   it('normalizes example toolbar.enabled to true', () => {
-    const normalized = acuiNormalizePluginOptions({
+    const normalized = acuiNormalizeSimpleUiOptions({
       host: document.createElement('main'),
       dockPanel: {
         defaultOpen: false,
@@ -189,7 +135,7 @@ describe('example-like toolbar mount', () => {
 
   it('creates toolbar when host is viewerPane like cad-simple-viewer-demo', () => {
     const { viewerPane, cadContainer, canvasArea } = createExampleDom()
-    const plugin = new AcApSimpleUiPlugin({
+    const plugin = new AcApSimpleUiChrome({
       host: viewerPane,
       dockPanel: {
         defaultOpen: false,
@@ -204,12 +150,12 @@ describe('example-like toolbar mount', () => {
         collapsible: true
       }
     })
-    plugin.onLoad({} as never, new AcEdCommandStack())
+    plugin.start(new AcEdCommandStack())
 
     expect(document.querySelectorAll('.ml-ex-ui-toolbar').length).toBe(1)
-    expect(canvasArea.querySelector('.ml-ex-ui-toolbar')).not.toBeNull()
+    expect(viewerPane.querySelector('.ml-ex-ui-toolbar')).not.toBeNull()
     expect(
-      canvasArea.querySelector('[data-toolbar-item-id="select"]')
+      viewerPane.querySelector('[data-toolbar-item-id="select"]')
     ).not.toBeNull()
     expect(plugin.getToolbarPlacement()).toBe('right')
     expect(plugin.isToolbarVisible()).toBe(true)

@@ -135,6 +135,12 @@ export default {
     dwgname: {
       description: 'Stores the name of the current drawing file (read-only)'
     },
+    find: {
+      description: 'Opens the text search dock panel'
+    },
+    layer: {
+      description: 'Opens or closes the layer manager dock panel'
+    },
     loginname: {
       description: 'Displays the user\'s login name (read-only)'
     },

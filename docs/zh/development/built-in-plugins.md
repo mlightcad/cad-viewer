@@ -12,7 +12,6 @@ MLightCAD 随附一组官方插件。每个插件专注于一项职责 —— UI
 
 | 包 | 职责 | 命令 / 能力 |
 |---------|------|-------------------------|
-| `@mlightcad/cad-simple-ui-plugin`（**1.8.0 起并入 `cad-simple-viewer/simple-ui`**） | 为 `cad-simple-viewer` 提供**工具栏、图层管理器与审阅面板 UI**（纯 DOM） | `simpleUi` / `layer`、`markuppanel`、默认工具栏 |
 | [`@mlightcad/cad-agent-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-agent-plugin) | **自然语言 CAD 智能体**（AI 聊天面板 + 绘图工具调用） | `agent` |
 | [`@mlightcad/cad-script-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-script-plugin) | **手动 CAD 脚本控制台**（对图纸运行受检脚本，无需 LLM / API 密钥） | `cadscript` |
 | [`@mlightcad/cad-html-plugin`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-html-plugin) | 将图纸导出为**自包含离线 HTML** | `chtml`（`cad-editor` 中为对话框）、`-chtml`（命令行） |
@@ -43,11 +42,11 @@ MLightCAD 随附一组官方插件。每个插件专注于一项职责 —— UI
 → **1.8.0 起的用法与迁移：** [升级指南](./upgrade-guide)
 
 ::: tip 自 1.8.0 起 — 已并入 `cad-simple-viewer`
-从 **1.8.0** 起，独立 npm 包 **`@mlightcad/cad-simple-ui-plugin` 已移除**。相同的工具栏 / 停靠标签 / 选项板宿主现位于 **`@mlightcad/cad-simple-viewer`** 的 `@mlightcad/cad-simple-viewer/simple-ui`。
+从 **1.8.0** 起，独立 npm 包 **`@mlightcad/cad-simple-ui-plugin` 已移除**。相同的工具栏 / 停靠标签 / 选项板宿主现位于 **`@mlightcad/cad-simple-viewer`** （无 `/simple-ui` 子路径）。
 
 - **默认开启：** 通过 `AcApDocManager.createInstance({ simpleUi: { … } })` 传入选项（或省略 `simpleUi` 使用默认值）。该 chunk 延迟加载，因此设置 `simpleUi: false` 的宿主（`cad-editor`、CLI、MCP 等）不会下载它。
-- **类型 / 辅助 API：** 从 `@mlightcad/cad-simple-viewer/simple-ui` 导入（产物为 `dist/cad-simple-ui.js`）。
-- **等待就绪：** 使用 `simpleUiReady` / `simpleUiPlugin`，不再使用 `pluginManager.getPlugin('SimpleUiPlugin')`。
+- **类型 / 辅助 API：** 从 `@mlightcad/cad-simple-viewer` 导入。
+- **等待就绪：** 使用 `simpleUiReady` / `simpleUi`，不再使用 `pluginManager.getPlugin('SimpleUiPlugin')`。
 
 ```ts
 AcApDocManager.createInstance({

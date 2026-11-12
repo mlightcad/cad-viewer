@@ -23,9 +23,7 @@
     "lib",
     "icons.ts",
     "file-open-panel.ts",
-    "simple-ui.ts",
     "src/ui/icons.ts",
-    "src/simple-ui",
     "src/file-open-panel.ts",
     "README.md",
     "package.json"
@@ -34,7 +32,7 @@
   "module": "./dist/cad-simple-viewer.js",
   "types": "./lib/index.d.ts",
   "sideEffects": [
-    "**/simple-ui/ui/styles.ts",
+    "**/ui/AcUiSimpleUiStyles.ts",
     "**/command/markup/AcApMarkupSessionBootstrap.ts"
   ],
   "exports": {
@@ -55,16 +53,6 @@
       "types": "./src/ui/icons.ts",
       "import": "./src/ui/icons.ts",
       "default": "./lib/ui/icons.js"
-    },
-    "./simple-ui": {
-      "development": {
-        "types": "./lib/simple-ui/index.d.ts",
-        "import": "./src/simple-ui/index.ts",
-        "default": "./src/simple-ui/index.ts"
-      },
-      "types": "./lib/simple-ui/index.d.ts",
-      "import": "./dist/cad-simple-ui.js",
-      "default": "./dist/cad-simple-ui.js"
     }
   },
   "scripts": {

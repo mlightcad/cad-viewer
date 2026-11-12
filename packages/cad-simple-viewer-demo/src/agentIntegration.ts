@@ -3,7 +3,7 @@ import {
   scriptT,
   setCadScriptPaletteOpener
 } from '@mlightcad/cad-script-plugin/register'
-import type { AcApSimpleUiPlugin } from '@mlightcad/cad-simple-viewer/simple-ui'
+import type { AcApSimpleUiChrome } from '@mlightcad/cad-simple-viewer'
 import { createApp } from 'vue'
 
 export const AGENT_DOCK_TAB_ID = 'agent'
@@ -14,7 +14,7 @@ export const SCRIPT_DOCK_TAB_ID = 'cad-script'
  *
  * Each panel comes from its own plugin. The script console does not load the agent.
  */
-export function setupAgentIntegration(plugin: AcApSimpleUiPlugin): void {
+export function setupAgentIntegration(plugin: AcApSimpleUiChrome): void {
   const ensureAgentMount = createLazyMount(async mountEl => {
     await import('@mlightcad/cad-agent-plugin/style.css')
     const { AgentChatPanel } = await import('@mlightcad/cad-agent-plugin')
@@ -79,7 +79,7 @@ function createLazyMount(
  * @param content - Mounted panel element.
  */
 function toggleDockTab(
-  plugin: AcApSimpleUiPlugin,
+  plugin: AcApSimpleUiChrome,
   id: string,
   label: string,
   content: HTMLElement

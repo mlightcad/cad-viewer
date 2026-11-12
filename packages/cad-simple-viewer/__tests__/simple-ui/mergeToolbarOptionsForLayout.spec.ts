@@ -1,4 +1,4 @@
-import { acuiMergeToolbarOptionsForLayout } from '../../src/simple-ui/config/mergeToolbarOptionsForLayout'
+import { acuiMergeToolbarOptionsForLayout } from '../../src/ui/toolbar/mergeToolbarOptionsForLayout'
 
 describe('acuiMergeToolbarOptionsForLayout', () => {
   it('uses phone built-in defaults', () => {

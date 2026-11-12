@@ -136,6 +136,12 @@ export default {
     dwgname: {
       description: '現在の図面ファイルの名前を保存します (読み込み専用)'
     },
+    find: {
+      description: '文字検索のドッキング パネルを開きます'
+    },
+    layer: {
+      description: '画層マネージャのドッキング パネルを開くか閉じます'
+    },
     loginname: {
       description: 'ユーザのログイン名を表示します (読み込み専用)'
     },

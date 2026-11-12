@@ -10,47 +10,8 @@ beforeAll(() => {
   global.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver
 })
 
-jest.mock('../../src/simple-ui/deps', () => {
-  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
-  const openMode = jest.requireActual(
-    '../../src/editor/view/AcEdOpenMode'
-  ) as typeof import('../../src/editor/view/AcEdOpenMode')
-
-  return createCadSimpleViewerMock({
-    AcApDocManager: {
-      instance: {
-        curDocument: { openMode: 8 },
-        events: {
-          documentActivated: {
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn()
-          },
-          documentToBeOpened: {
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn()
-          }
-        }
-      },
-      tryGetInstance() {
-        return this.instance
-      }
-    },
-    AcEdOpenMode: openMode.AcEdOpenMode,
-    acapBindToolbarDocState: (tb: { setDocState: (s: object) => void }) => {
-      tb.setDocState({
-        hasDocument: true,
-        isOpening: false,
-        openMode: openMode.AcEdOpenMode.Write
-      })
-      return () => undefined
-    },
-    AcApI18n: {
-      t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key
-    }
-  })
-})
-
 jest.mock('@mlightcad/data-model', () => ({
+  AcCmEventManager: class { addEventListener() {} removeEventListener() {} dispatch() {} },
   acdbHostApplicationServices: () => ({
     layoutManager: {
       setCurrentLayoutBtrId: jest.fn()
@@ -58,9 +19,9 @@ jest.mock('@mlightcad/data-model', () => ({
   })
 }))
 
-import type { AcUiToolbarItem } from '../../src/simple-ui/config/types'
-import { AcUiI18n } from '../../src/simple-ui/i18n'
-import { AcUiToolbar } from '../../src/simple-ui/deps'
+import type { AcUiToolbarItem } from '../../src/ui/AcUiSimpleUiOptions'
+import { AcUiI18n } from '../../src/i18n/AcUiI18n'
+import { AcUiToolbar } from '../../src/ui/toolbar/AcUiToolbar'
 
 function createToolbar(items: AcUiToolbarItem[]) {
   const host = document.createElement('div')

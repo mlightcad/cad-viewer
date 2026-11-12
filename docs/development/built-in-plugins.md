@@ -42,11 +42,11 @@ It provides:
 All widgets are framework-agnostic (plain DOM). The full Vue `cad-editor` app has its own Element Plus UI and does not require this chrome; use it when you build on `cad-simple-viewer` directly.
 
 ::: tip Since 1.8.0 — merged into `cad-simple-viewer`
-Starting with **1.8.0**, the separate npm package **`@mlightcad/cad-simple-ui-plugin` is removed**. The same toolbar / dock tabs / palette host live inside **`@mlightcad/cad-simple-viewer`** as `@mlightcad/cad-simple-viewer/simple-ui`.
+Starting with **1.8.0**, the separate npm package **`@mlightcad/cad-simple-ui-plugin` is removed**. The same toolbar / dock tabs / palette host live inside **`@mlightcad/cad-simple-viewer`** (no `/simple-ui` subpath).
 
-- **Default on:** pass options through `AcApDocManager.createInstance({ simpleUi: { … } })` (or omit `simpleUi` to enable defaults). The chunk loads lazily so hosts that set `simpleUi: false` (`cad-editor`, CLI, MCP, …) do not download it.
-- **Types / helpers:** import from `@mlightcad/cad-simple-viewer/simple-ui` (published artifact `dist/cad-simple-ui.js`).
-- **Await ready:** use `simpleUiReady` / `simpleUiPlugin` instead of `pluginManager.getPlugin('SimpleUiPlugin')`.
+- **Default on:** pass options through `AcApDocManager.createInstance({ simpleUi: { … } })` (or omit `simpleUi` to enable defaults). Chrome loads via a dynamic import so hosts that set `simpleUi: false` (`cad-editor`, CLI, MCP, …) do not download that chunk.
+- **Types / helpers:** import from `@mlightcad/cad-simple-viewer`.
+- **Await ready:** use `simpleUiReady` / `simpleUi` instead of `pluginManager.getPlugin('SimpleUiPlugin')`.
 
 ```ts
 AcApDocManager.createInstance({

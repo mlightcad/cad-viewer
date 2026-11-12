@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-import type { AcApMeasurementRecord } from '../../src/simple-ui/deps'
+import type { AcApMeasurementRecord } from '../../src/command/measure/AcApMeasurementTypes'
 
 const records: AcApMeasurementRecord[] = []
 let selectedId: string | undefined
@@ -34,50 +34,55 @@ const mockClear = jest.fn((_view?: unknown) => {
   selectionListener?.()
 })
 
-jest.mock('../../src/simple-ui/deps', () => {
-  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
-  return createCadSimpleViewerMock({
-    AcApDocManager: {
-      instance: {
-        curView: mockView,
-        curDocument: { database: {} },
-        events: { documentActivated }
-      }
-    },
-    AcApI18n: {
-      t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
-      mergeLocaleMessage: jest.fn()
-    },
-    listLayoutMeasurements: () =>
-      records.filter(
-        record =>
-          record.layoutId == null ||
-          record.layoutId === mockView.activeLayoutBtrId
-      ),
-    getMeasurementValueText: (id: string) => valueById.get(id) ?? '',
-    getSelectedMeasurementId: () => selectedId,
-    subscribeMeasurements: (listener: () => void) => {
-      listListener = listener
-      return () => {
-        listListener = undefined
-      }
-    },
-    subscribeMeasurementSelection: (listener: () => void) => {
-      selectionListener = listener
-      return () => {
-        selectionListener = undefined
-      }
-    },
-    focusMeasurement: (...args: unknown[]) => mockFocus(...args),
-    removeMeasurement: (view: unknown, id: string) => mockRemove(view, id),
-    clearLayoutMeasurements: (view: unknown) => mockClear(view)
-  })
+jest.mock('../../src/app', () => ({
+  AcApDocManager: {
+    instance: {
+      curView: mockView,
+      curDocument: { database: {} },
+      events: { documentActivated }
+    }
+  }
+}))
+
+jest.mock('../../src/command', () => ({
+  listLayoutMeasurements: () =>
+    records.filter(
+      record =>
+        record.layoutId == null ||
+        record.layoutId === mockView.activeLayoutBtrId
+    ),
+  getMeasurementValueText: (id: string) => valueById.get(id) ?? '',
+  getSelectedMeasurementId: () => selectedId,
+  subscribeMeasurements: (listener: () => void) => {
+    listListener = listener
+    return () => {
+      listListener = undefined
+    }
+  },
+  subscribeMeasurementSelection: (listener: () => void) => {
+    selectionListener = listener
+    return () => {
+      selectionListener = undefined
+    }
+  },
+  focusMeasurement: (...args: unknown[]) => mockFocus(...args),
+  removeMeasurement: (view: unknown, id: string) => mockRemove(view, id),
+  clearLayoutMeasurements: (view: unknown) => mockClear(view)
+}))
+
+jest.mock('@mlightcad/data-model', () => {
+  const { createDataModelMock } = require('./helpers/mockDataModel')
+  return createDataModelMock()
 })
 
-import { AcApDocManager } from '../../src/simple-ui/deps'
+jest.mock('../../src/ui/AcUiSimpleUiStyles', () => ({
+  acuiEnsureUiStyles: jest.fn()
+}))
 
-import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../../src/simple-ui/i18n'
-import { AcUiMeasurementPaletteView } from '../../src/simple-ui/ui/AcUiMeasurementPaletteView'
+import { AcApDocManager } from '../../src/app'
+
+import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../../src/i18n/AcUiI18n'
+import { AcUiMeasurementPaletteView } from '../../src/ui/AcUiMeasurementPaletteView'
 
 function createRecord(
   overrides: Partial<AcApMeasurementRecord> & Pick<AcApMeasurementRecord, 'id'>

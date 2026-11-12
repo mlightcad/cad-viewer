@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 
-import type { AcApMarkupRecord } from '../../src/simple-ui/deps'
+import type { AcApMarkupRecord } from '../../src/command/markup/AcApMarkupTypes'
 
 const records: AcApMarkupRecord[] = []
 const otherRecords: AcApMarkupRecord[] = []
@@ -91,32 +91,37 @@ const mockPresenter = {
   })
 }
 
-jest.mock('../../src/simple-ui/deps', () => {
-  const { createCadSimpleViewerMock } = require('./helpers/mockCadSimpleViewer')
-  return createCadSimpleViewerMock({
-    AcApDocManager: {
-      instance: {
-        curView: mockView,
-        events: { documentActivated }
-      }
-    },
-    AcApI18n: {
-      t: (_key: string, opts?: { fallback?: string }) => opts?.fallback ?? _key,
-      mergeLocaleMessage: jest.fn()
-    },
-    getMarkupStore: () => (activeStore === 'primary' ? mockStore : otherStore),
-    getMarkupPresenter: () => mockPresenter,
-    runMarkupEdit: (_view: unknown, _label: string, mutate: () => void) => {
-      mutate()
-    },
-    MARKUP_STATUSES: ['open', 'question', 'answered', 'closed']
-  })
+jest.mock('../../src/app', () => ({
+  AcApDocManager: {
+    instance: {
+      curView: mockView,
+      events: { documentActivated }
+    }
+  }
+}))
+
+jest.mock('../../src/command', () => ({
+  getMarkupStore: () => (activeStore === 'primary' ? mockStore : otherStore),
+  getMarkupPresenter: () => mockPresenter,
+  runMarkupEdit: (_view: unknown, _label: string, mutate: () => void) => {
+    mutate()
+  },
+  MARKUP_STATUSES: ['open', 'question', 'answered', 'closed']
+}))
+
+jest.mock('@mlightcad/data-model', () => {
+  const { createDataModelMock } = require('./helpers/mockDataModel')
+  return createDataModelMock()
 })
 
-import { AcApDocManager } from '../../src/simple-ui/deps'
+jest.mock('../../src/ui/AcUiSimpleUiStyles', () => ({
+  acuiEnsureUiStyles: jest.fn()
+}))
 
-import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../../src/simple-ui/i18n'
-import { AcUiReviewPaletteView } from '../../src/simple-ui/ui/AcUiReviewPaletteView'
+import { AcApDocManager } from '../../src/app'
+
+import { AcUiI18n, acuiRegisterSimpleUiI18n } from '../../src/i18n/AcUiI18n'
+import { AcUiReviewPaletteView } from '../../src/ui/AcUiReviewPaletteView'
 
 function createRecord(
   overrides: Partial<AcApMarkupRecord> & Pick<AcApMarkupRecord, 'id' | 'type'>
