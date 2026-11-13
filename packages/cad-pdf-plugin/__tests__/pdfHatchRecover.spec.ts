@@ -20,7 +20,10 @@ describe('acapPdfRecoverHatches', () => {
   test.each([
     ['cathedral-ansi36', 'ANSI36'],
     ['cathedral-ansi32-wall', 'ANSI32'],
-    ['cathedral-ansi32-arch', 'ANSI32']
+    ['cathedral-ansi32-arch', 'ANSI32'],
+    // A solid and a dashed line half a repeat apart: the strokes repeat at
+    // half the pattern's line spacing.
+    ['cathedral-ansi35', 'ANSI35']
   ])('finds %s without being told the tolerance', (name, pattern) => {
     const input = fixtureInput(name)
 
