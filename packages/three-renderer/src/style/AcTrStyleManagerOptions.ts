@@ -29,10 +29,12 @@ export interface AcTrStyleManagerOptions {
   resolution: THREE.Vector2
 
   /**
-   * Whether to render entity lineweights using fat-line materials.
+   * Whether to display authored entity lineweights (AutoCAD LWDISPLAY).
    *
-   * - `true`: render lineweights (AutoCAD-like lineweight display on)
-   * - `false`: force basic line materials with 1px width
+   * - `false` at convert time: solid strokes use cheap `GL_LINES`
+   * - `true` at convert time: weighted strokes use fat-line geometry
+   * - Toggling off later only forces fat `linewidth` to hairline `1`
+   *   (geometry is kept so re-enabling stays cheap)
    */
   showLineWeight: boolean
 

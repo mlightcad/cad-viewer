@@ -47,6 +47,17 @@ export interface AcTrMaterialMetadata extends AcTrByLayerBindingFlags {
    * layer-0 INSERT inheritance.
    */
   hasColorProvenance?: boolean
+  /**
+   * Pixel linewidth to use when LWDISPLAY is on ({@link LineMaterial} only).
+   * {@link applyShowLineWeight} restores this value; when display is off the
+   * material uses hairline width `1` instead.
+   */
+  lineWeightPixels?: number
+  /**
+   * When true, linewidth ignores LWDISPLAY (forced fat / antialiased strokes
+   * such as overlay markup and complex linetype strokes).
+   */
+  lockLineWeightDisplay?: boolean
 }
 
 /**

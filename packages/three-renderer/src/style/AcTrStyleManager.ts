@@ -91,7 +91,9 @@ export class AcTrStyleManager {
     layerColor?: AcCmColor,
     layerColorRgb?: number
   ): THREE.Material {
-    if (fatLines) {
+    // Overlay conversion (`forceShowLineWeight`) and explicit fat-line callers
+    // share a locked-width cache entry so LWDISPLAY cannot thin them out.
+    if (fatLines || this._forceShowLineWeight) {
       return this.lineMgr.getMaterial(
         traits,
         { fatLines: true },
@@ -102,9 +104,9 @@ export class AcTrStyleManager {
     const hasLinePattern = !!(
       traits.lineType.pattern && traits.lineType.pattern.length > 0
     )
-    const showLineWeight =
-      this.options.showLineWeight || this._forceShowLineWeight
-    const forceBasicMaterial = !showLineWeight && !hasLinePattern
+    // When LWDISPLAY is off, prefer cheap GL_LINES for solid strokes. Fat
+    // geometry is created only while display is on (or via fatLines above).
+    const forceBasicMaterial = !this.options.showLineWeight && !hasLinePattern
     return this.lineMgr.getMaterial(
       traits,
       {
@@ -123,10 +125,16 @@ export class AcTrStyleManager {
   }
 
   /**
-   * Sets whether lineweights are displayed.
+   * Sets whether lineweights are displayed and updates cached fat-line widths.
+   *
+   * Does not rebuild geometry — callers decide whether a one-shot upgrade
+   * regen is required. Batch-owned clones still need
+   * {@link applyLineWeightDisplay} via the scene.
    */
   set showLineWeight(value: boolean) {
+    if (this.options.showLineWeight === value) return
     this.options.showLineWeight = value
+    this.lineMgr.applyShowLineWeight(value)
   }
 
   /**

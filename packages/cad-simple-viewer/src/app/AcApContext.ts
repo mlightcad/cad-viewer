@@ -158,11 +158,15 @@ export class AcApContext {
         const currentView = this._view as AcTrView2d
         const showLineWeight = !!args.database.lwdisplay
         if (currentView.renderer.showLineWeight !== showLineWeight) {
-          currentView.renderer.showLineWeight = showLineWeight
-          // Existing line objects may need different geometry/material classes.
-          // Regenerate to rebuild scene content using the new display mode.
-          currentView.clear()
-          args.database.regen()
+          // Off / re-on after fat geometry: linewidth only. First on while the
+          // scene is still GL_LINES: one camera-preserving upgrade regen.
+          const needsGeometryUpgrade =
+            currentView.setShowLineWeight(showLineWeight)
+          if (needsGeometryUpgrade) {
+            currentView.clearForRegen()
+            args.database.regen()
+            currentView.markLineWeightGeometryReady()
+          }
         }
       }
     })

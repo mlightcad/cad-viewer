@@ -615,9 +615,11 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
   }
 
   /**
-   * Sets whether entity lineweights are displayed.
+   * Sets whether entity lineweights are displayed (LWDISPLAY).
    *
-   * When disabled, line entities are rendered with basic 1px materials.
+   * Updates cached fat-line widths in place. Callers that own batch material
+   * clones must also run {@link applyLineWeightDisplay} on the scene, and may
+   * need one upgrade regen when the scene is still on cheap `GL_LINES`.
    */
   set showLineWeight(value: boolean) {
     this._context.styleManager.showLineWeight = value

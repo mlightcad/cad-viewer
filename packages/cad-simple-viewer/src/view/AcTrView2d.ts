@@ -267,6 +267,20 @@ export class AcTrView2d extends AcEdBaseView {
    * **first visit** to every other layout the user has not framed yet.
    */
   private _openViewMode: AcApOpenViewMode = AcApOpenViewMode.Extents
+  /**
+   * Layout cameras captured by {@link clearForRegen}. Each entry is applied
+   * (and dropped) when the regen recreates that layout's view.
+   */
+  private _regenCameras = new Map<
+    AcDbObjectId,
+    { center: AcGePoint2dLike; zoom: number }
+  >()
+  /**
+   * True once this document's scene has fat-line geometry for LWDISPLAY.
+   * Opening with LWDISPLAY off keeps cheap `GL_LINES`; the first enable may
+   * need one upgrade regen, after which toggles only flip `linewidth`.
+   */
+  private _lineWeightGeometryReady = false
   /** Progressive camera framing while entities batch-convert at document open. */
   private readonly _progressiveOpenFit: AcTrProgressiveOpenFitController
   /** Entity display policy for layer-aware conversion skipping. */
@@ -1491,6 +1505,38 @@ export class AcTrView2d extends AcEdBaseView {
    */
   set backgroundColor(value: number) {
     this.applyCanvasBackground(value)
+  }
+
+  /**
+   * Applies AutoCAD LWDISPLAY.
+   *
+   * - Off: keep fat geometry (if any) and force hairline `linewidth`.
+   * - On, geometry already fat: restore authored `linewidth`.
+   * - On, scene still on cheap `GL_LINES`: returns `true` so the caller can
+   *   run one camera-preserving upgrade regen.
+   *
+   * @param show - Whether entity lineweights should be displayed
+   * @returns `true` when the caller must rebuild line geometry for display-on
+   */
+  setShowLineWeight(show: boolean): boolean {
+    this._renderer.showLineWeight = show
+    this._scene.applyShowLineWeight(show)
+    this._isDirty = true
+    if (!show) {
+      return false
+    }
+    if (this._lineWeightGeometryReady) {
+      return false
+    }
+    return true
+  }
+
+  /**
+   * Records that the active scene now has fat-line geometry for LWDISPLAY.
+   * Call after open-with-display-on or after an upgrade regen.
+   */
+  markLineWeightGeometryReady() {
+    this._lineWeightGeometryReady = true
   }
 
   /**
@@ -3249,6 +3295,39 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   clear() {
+    this._regenCameras.clear()
+    this._lineWeightGeometryReady = false
+    this.resetScene()
+  }
+
+  /**
+   * Clears converted content before `database.regen()` while keeping what
+   * the user is looking at.
+   *
+   * Unlike {@link clear}, which is meant for document open / close, every
+   * layout keeps its camera (re-applied when the regen recreates its view)
+   * and already-framed layouts are not auto-zoomed again on their next visit.
+   */
+  clearForRegen() {
+    this._layoutViewManager.forEach(layoutView => {
+      const camera = layoutView.internalCamera
+      this._regenCameras.set(layoutView.layoutBtrId, {
+        center: { x: camera.position.x, y: camera.position.y },
+        zoom: camera.zoom
+      })
+    })
+    const initializedLayouts = new Set(this._initializedLayouts)
+    const openViewMode = this._openViewMode
+    this.resetScene()
+    this._initializedLayouts = initializedLayouts
+    this._openViewMode = openViewMode
+  }
+
+  /**
+   * Tears down scene content and layout views shared by {@link clear} and
+   * {@link clearForRegen}.
+   */
+  private resetScene() {
     this.abortConversion()
     // Scene.clear keeps active/model BTR ids (regen reuses them). Capture
     // before layouts are dropped so we can rebind cameras afterward.
@@ -3299,6 +3378,7 @@ export class AcTrView2d extends AcEdBaseView {
       missedImages: this._missedImages,
       missedFonts: this._renderer.snapshotMissedFonts(),
       selectionIds: this.selectionSet.ids,
+      lineWeightGeometryReady: this._lineWeightGeometryReady,
       // Detach so the next document cannot pick/highlight this one's glyphs.
       meshGlyphBatch: AcTrMTextRenderer.getInstance().detachMeshGlyphBatch()
     }
@@ -3321,6 +3401,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._entityConvertGeneration.clear()
     this.resetDeferredGeometryQueue()
     this._entityProcessingIdleAt = 0
+    this._regenCameras.clear()
     this._scene = state.scene
     this._layoutViewManager = state.layoutViewManager
     this._initializedLayouts = state.initializedLayouts
@@ -3328,6 +3409,7 @@ export class AcTrView2d extends AcEdBaseView {
     this._openViewMode = state.openViewMode ?? AcApOpenViewMode.Extents
     this._loadingLayouts = state.loadingLayouts
     this._missedImages = state.missedImages
+    this._lineWeightGeometryReady = state.lineWeightGeometryReady ?? false
     this._renderer.replaceMissedFonts(state.missedFonts ?? {})
     AcTrMTextRenderer.getInstance().attachMeshGlyphBatch(state.meshGlyphBatch)
     this.rebindLayerAppearance()
@@ -3357,6 +3439,8 @@ export class AcTrView2d extends AcEdBaseView {
     this._entityConvertGeneration.clear()
     this.resetDeferredGeometryQueue()
     this._entityProcessingIdleAt = 0
+    this._regenCameras.clear()
+    this._lineWeightGeometryReady = false
     this._scene = this.createScene()
     this._layoutViewManager = new AcTrLayoutViewManager()
     this._initializedLayouts = new Set()
@@ -3968,6 +4052,11 @@ export class AcTrView2d extends AcEdBaseView {
         this.events.viewChanged.dispatch()
         this.clearHover()
       })
+      const regenCamera = this._regenCameras.get(layoutBtrId)
+      if (regenCamera) {
+        this._regenCameras.delete(layoutBtrId)
+        layoutView.flyTo(regenCamera.center, regenCamera.zoom)
+      }
       this._layoutViewManager.add(layoutView)
     }
     // Viewport entities may already have been converted while this view was

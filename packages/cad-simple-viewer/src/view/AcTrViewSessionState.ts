@@ -44,4 +44,9 @@ export interface AcTrViewSessionState {
    * aligned with the parked layer groups.
    */
   meshGlyphBatch: AcTrMeshGlyphWorldBatch
+  /**
+   * Whether this document's scene already has fat-line geometry for LWDISPLAY.
+   * Lets later toggles flip `linewidth` without regenerating.
+   */
+  lineWeightGeometryReady: boolean
 }

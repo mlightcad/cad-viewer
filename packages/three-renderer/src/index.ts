@@ -30,6 +30,10 @@ export * from './object/AcTrPreviewOverlayManager'
 export * from './renderer'
 export * from './viewport'
 export * from './style/AcTrMaterialMetadata'
+export {
+  applyLineWeightDisplay,
+  AcTrLineMaterialManager
+} from './style/AcTrLineMaterialManager'
 export { AcTrLinePatternShaders } from './style/AcTrLinePatternShaders'
 export { AcTrStyleManager, type AcTrStyleManagerStats } from './style/AcTrStyleManager'
 export {
