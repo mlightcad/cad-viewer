@@ -22,6 +22,7 @@ import type { PdfImportShapeItem } from '../pdfImportShapes'
 import type { PdfRecognizedShape } from './pdfCurveRecognition'
 import {
   acapPdfFaceArrangement,
+  acapPdfFaceBoundaryIn,
   acapPdfFaceBoundaryParts,
   acapPdfShapePolyline,
   type PdfFaceArrangement
@@ -2219,8 +2220,29 @@ function verify(
   opts: ResolvedOptions
 ): Verified | undefined {
   const tol = opts.tolerance
-  const generated = tessellateHatchPattern(
-    boundary.polygons,
+  const generated = generateStrokes(lines, boundary.polygons, tol)
+  if (generated.length === 0 || generated.length > region.length * 4 + 100) {
+    opts.trace('verify', { generated: generated.length, region: region.length })
+    return undefined
+  }
+  const match = measureMatch(lines, generated, region, all, tol)
+  if (match.precision < opts.minPrecision) {
+    opts.trace('verify', { precision: match.precision })
+    return undefined
+  }
+  opts.trace('verify', { precision: match.precision, recall: match.recall })
+  if (match.recall < opts.minRecall) return undefined
+  return { matched: match.items }
+}
+
+/** Strokes a hatch draws inside `polygons`, without hairline pieces. */
+function generateStrokes(
+  lines: readonly PdfHatchDefinitionLine[],
+  polygons: PdfRecPoint[][],
+  tol: number
+): PdfRecPoint[][] {
+  return tessellateHatchPattern(
+    polygons,
     lines.map(line => ({
       ...line,
       base: { ...line.base },
@@ -2228,11 +2250,23 @@ function verify(
     })),
     0
   ).filter(seg => Math.hypot(seg[1].x - seg[0].x, seg[1].y - seg[0].y) > tol)
-  if (generated.length === 0 || generated.length > region.length * 4 + 100) {
-    opts.trace('verify', { generated: generated.length, region: region.length })
-    return undefined
-  }
+}
 
+/**
+ * How well `generated` (the strokes a hatch draws) and `region` (the source
+ * strokes) cover each other, and which segments of `all` the hatch re-draws
+ * completely.
+ */
+function measureMatch(
+  lines: PdfHatchDefinitionLine[],
+  generated: readonly PdfRecPoint[][],
+  region: Seg[],
+  all: Seg[],
+  tol: number
+): PdfHatchMatch {
+  if (generated.length === 0 || region.length === 0) {
+    return { precision: 0, recall: 0, items: [] }
+  }
   const frames = lines.map(lineFrame)
   const spansOf = (a: PdfRecPoint, b: PdfRecPoint) =>
     patternSpans(a, b, lines, frames, tol)
@@ -2249,12 +2283,7 @@ function verify(
     genLength += len
     genCovered += Math.min(len, sourceIndex.coveredBest(genSpans[i]))
   })
-  const precision = genCovered / genLength
-
-  if (precision < opts.minPrecision) {
-    opts.trace('verify', { precision })
-    return undefined
-  }
+  const precision = genLength > 0 ? genCovered / genLength : 0
 
   let srcLength = 0
   let srcCovered = 0
@@ -2262,9 +2291,7 @@ function verify(
     srcLength += seg.len
     srcCovered += Math.min(seg.len, genIndex.coveredBest(regionSpans[i]))
   })
-  const recall = srcCovered / srcLength
-  opts.trace('verify', { precision, recall })
-  if (recall < opts.minRecall) return undefined
+  const recall = srcLength > 0 ? srcCovered / srcLength : 0
 
   // Every segment the hatch re-draws goes, short corner stubs included.
   const box = segsBox(region)
@@ -2282,7 +2309,7 @@ function verify(
     const covered = genIndex.coveredBest(spansOf(seg.a, seg.b))
     if (covered >= seg.len - tol * 2) matched.push(seg.index)
   }
-  return { matched: matched.sort((p, q) => p - q) }
+  return { precision, recall, items: matched.sort((p, q) => p - q) }
 }
 
 // ---------------------------------------------------------------------------
@@ -2366,17 +2393,7 @@ function recognizeRegion(
       scored.push({ hyp, segs, t: { x: 0, y: 0 }, ...placed })
     }
   }
-  // Best score first; then the pattern that explains most of the region
-  // (a cross-hatch over one of its families), the pattern drawn closest to
-  // its own angle, and library patterns (in library order) over
-  // user-defined lines.
-  scored.sort(
-    (p, q) =>
-      Math.round((q.score - p.score) * 50) ||
-      Math.round(((q.segs.length - p.segs.length) / region.length) * 20) ||
-      Math.round(rotationRank(p.hyp.rotation) - rotationRank(q.hyp.rotation)) ||
-      p.hyp.order - q.hyp.order
-  )
+  scored.sort((p, q) => compareScored(p, q, region.length))
   const tries = scored.slice(0, MAX_VERIFIED)
   // A measured pattern is the last resort, tried after every library and
   // user-defined candidate.
@@ -2521,6 +2538,25 @@ const BOUNDARY_SOURCES = ['given', 'shapes', 'clip', 'ends', 'faces']
 function rotationRank(angle: number): number {
   const deg = angle / DEG
   return Math.min(deg, 360 - deg)
+}
+
+/**
+ * Order of placed hypotheses: best score first; then the pattern that
+ * explains most of the region (a cross-hatch over one of its families), the
+ * pattern drawn closest to its own angle, and library patterns (in library
+ * order) over user-defined lines.
+ */
+function compareScored(
+  p: { hyp: Hypothesis; score: number; segs: readonly Seg[] },
+  q: { hyp: Hypothesis; score: number; segs: readonly Seg[] },
+  regionSize: number
+): number {
+  return (
+    Math.round((q.score - p.score) * 50) ||
+    Math.round(((q.segs.length - p.segs.length) / regionSize) * 20) ||
+    Math.round(rotationRank(p.hyp.rotation) - rotationRank(q.hyp.rotation)) ||
+    p.hyp.order - q.hyp.order
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -2730,4 +2766,485 @@ function mergeIntervals(row: LinePos, tol: number): Interval[] {
     }
   }
   return out
+}
+
+// ---------------------------------------------------------------------------
+// Editing: score, refit and add hatches in the review
+
+/** How well a hatch re-draws the strokes inside its boundary. */
+export interface PdfHatchMatch {
+  /** Share of the re-drawn length that lies on source strokes, `[0, 1]`. */
+  precision: number
+  /** Share of the source stroke length the hatch re-draws, `[0, 1]`. */
+  recall: number
+  /** Items the hatch re-draws completely (the ones it replaces), ascending. */
+  items: number[]
+}
+
+/**
+ * Pattern the user chose for {@link acapPdfFitHatch}. With both size
+ * (`scale` / `spacing`) and `angle` set the pattern is placed as given and
+ * only its origin is searched; otherwise size and angle are measured too.
+ */
+export type PdfHatchPatternRequest =
+  | {
+      type: 'predefined'
+      /** Pattern name in the library (e.g. `ANSI37`). */
+      name: string
+      scale?: number
+      /** Pattern angle in radians. */
+      angle?: number
+    }
+  | {
+      type: 'userDefined'
+      double: boolean
+      /** Distance between lines in drawing units. */
+      spacing?: number
+      /** Line angle in radians. */
+      angle?: number
+    }
+
+/** Options of {@link acapPdfFitHatch}. */
+export interface PdfHatchFitOptions {
+  /** Distance tolerance in drawing units (as used by the recognition). */
+  tolerance: number
+  /** Pattern library. Default `acadiso.pat`. */
+  patterns?: readonly AcDbPatPattern[]
+  /**
+   * Without a requested pattern, also try a pattern measured from the
+   * strokes. Default `true`.
+   */
+  customPatterns?: boolean
+}
+
+/** Result of {@link acapPdfFitHatch}. */
+export interface PdfHatchFit {
+  /** The hatch; its `items` are the ones {@link PdfHatchFit.match} re-draws. */
+  hatch: PdfRecognizedHatch
+  match: PdfHatchMatch
+  /**
+   * `false` when the strokes show no trace of the requested pattern and it
+   * was placed at a guessed size and angle.
+   */
+  fitted: boolean
+}
+
+/** Most strokes an edited hatch may draw (a far too small scale). */
+const MAX_EDIT_STROKES = 200_000
+
+const NO_MATCH: PdfHatchMatch = { precision: 0, recall: 0, items: [] }
+
+/** Direction slack for short stroke pieces (radians). */
+const SHORT_ANGLE_GAP = (15 * Math.PI) / 180
+
+/** Fewest line repeats a family spans to count as a pattern, not walls. */
+const MIN_PATTERN_REPEATS = 4
+
+/** Strokes inside one boundary, of the style that has the most of them. */
+interface EditRegion {
+  shapes: PdfRecognizedShape[]
+  polygons: PdfRecPoint[][]
+  /** Source strokes inside the boundary (not on it). */
+  region: Seg[]
+  /** Every candidate stroke of the same style (what may be replaced). */
+  all: Seg[]
+  extent: number
+}
+
+function editRegion(
+  items: readonly PdfImportShapeItem[],
+  boundary: readonly PdfRecognizedShape[],
+  tol: number
+): EditRegion | undefined {
+  const polygons = boundary
+    .map(shapeOutline)
+    .filter((outline): outline is PdfRecPoint[] => !!outline)
+  if (polygons.length === 0) return undefined
+  let best: { region: Seg[]; all: Seg[]; length: number } | undefined
+  for (const group of groupCandidates(items, tol)) {
+    const region = segsInside(group.all, polygons).filter(
+      seg => !polygons.some(outline => onOutline(midpoint(seg), outline, tol))
+    )
+    const length = region.reduce((sum, seg) => sum + seg.len, 0)
+    if (length > 0 && (!best || length > best.length)) {
+      best = { region, all: group.all, length }
+    }
+  }
+  const box = pointsBox(polygons.flat())
+  return {
+    shapes: [...boundary],
+    polygons,
+    region: best?.region ?? [],
+    all: best?.all ?? [],
+    extent: Math.hypot(box.maxX - box.minX, box.maxY - box.minY)
+  }
+}
+
+/** Rough count of the strokes `lines` draw across a region of `extent`. */
+function strokeEstimate(
+  lines: readonly PdfHatchDefinitionLine[],
+  extent: number
+): number {
+  let count = 0
+  for (const line of lines) {
+    const frame = lineFrame(line)
+    const spacing = Math.abs(frame.spacing)
+    if (!(spacing > 0)) return Infinity
+    const rows = extent / spacing + 1
+    const perRow =
+      frame.dashes.length > 0 && frame.period > 0
+        ? (extent / frame.period + 1) * frame.dashes.length
+        : 1
+    count += rows * perRow
+  }
+  return count
+}
+
+function matchIn(
+  edit: EditRegion,
+  lines: PdfHatchDefinitionLine[],
+  tol: number
+): PdfHatchMatch {
+  if (lines.length === 0) return NO_MATCH
+  if (strokeEstimate(lines, edit.extent) > MAX_EDIT_STROKES) return NO_MATCH
+  const generated = generateStrokes(lines, edit.polygons, tol)
+  return measureMatch(lines, generated, edit.region, edit.all, tol)
+}
+
+/** Harmonic mean of precision and recall. */
+function matchQuality(match: PdfHatchMatch): number {
+  const sum = match.precision + match.recall
+  return sum > 0 ? (2 * match.precision * match.recall) / sum : 0
+}
+
+/**
+ * Scores a hatch against the strokes inside its boundary.
+ *
+ * @param items - The shape items the hatch was recognized from.
+ * @param hatch - Boundary and definition lines to score.
+ * @param tolerance - Tolerance the hatch was recognized with.
+ */
+export function acapPdfMatchHatch(
+  items: readonly PdfImportShapeItem[],
+  hatch: Pick<PdfRecognizedHatch, 'boundary' | 'definitionLines'>,
+  tolerance: number
+): PdfHatchMatch {
+  const edit = editRegion(items, hatch.boundary, tolerance)
+  return edit ? matchIn(edit, hatch.definitionLines, tolerance) : NO_MATCH
+}
+
+/**
+ * Fits a pattern to the strokes inside `boundary`.
+ *
+ * Without `request` every library pattern, user-defined lines and (unless
+ * turned off) a measured custom pattern compete, as in the recognition.
+ * With a pattern its size, angle and origin are measured; with size and
+ * angle given as well only the origin is.
+ *
+ * @param items - Shape items (from `pdfEntitiesToHatchInput`).
+ * @param boundary - Closed shapes; the hatch fills them even-odd.
+ * @returns The best placement, or `undefined` when the boundary has no
+ * closed shape or the pattern name is unknown.
+ */
+export function acapPdfFitHatch(
+  items: readonly PdfImportShapeItem[],
+  boundary: readonly PdfRecognizedShape[],
+  request: PdfHatchPatternRequest | undefined,
+  options: PdfHatchFitOptions
+): PdfHatchFit | undefined {
+  const tol = options.tolerance
+  const edit = editRegion(items, boundary, tol)
+  if (!edit) return undefined
+  const families =
+    edit.region.length > 0 ? measureFamilies(edit.region, tol) : []
+  const library = options.patterns ?? AcDbPredefinedAcadIsoPat.patterns
+  const hypotheses = fitHypotheses(request, families, library, tol, edit)
+  const placed = hypotheses.map(({ hyp, guessed }) => ({
+    hyp,
+    guessed,
+    segs: hypothesisSegs(hyp),
+    ...placeHypothesis(hyp, tol)
+  }))
+  placed.sort((p, q) => compareScored(p, q, Math.max(edit.region.length, 1)))
+  const tries = placed.slice(0, MAX_VERIFIED)
+  // A measured pattern is the last resort, as in the recognition.
+  if (!request && options.customPatterns !== false) {
+    const opts = resolveOptions({ tolerance: tol, customPatterns: true })
+    const custom = customHypothesis(families, opts)
+    if (custom) {
+      tries.push({
+        hyp: custom,
+        guessed: false,
+        segs: hypothesisSegs(custom),
+        ...placeHypothesis(custom, tol)
+      })
+    }
+  }
+  let best: (typeof placed)[number] | undefined
+  let bestMatch = NO_MATCH
+  for (const entry of tries) {
+    const match = matchIn(edit, entry.lines, tol)
+    // Earlier entries win ties: the order prefers simpler explanations.
+    if (!best || matchQuality(match) > matchQuality(bestMatch) + 1e-3) {
+      best = entry
+      bestMatch = match
+    }
+  }
+  if (!best) return undefined
+  return {
+    hatch: {
+      boundary: edit.shapes,
+      pattern: hatchPattern(best.hyp),
+      definitionLines: best.lines,
+      items: bestMatch.items
+    },
+    match: bestMatch,
+    fitted: !best.guessed
+  }
+}
+
+/** Definition lines of a hypothesis placed on its strokes, with a score. */
+function placeHypothesis(
+  hyp: Hypothesis,
+  tol: number
+): { lines: PdfHatchDefinitionLine[]; score: number } {
+  // Measured custom lines are already in place.
+  if (hyp.custom) {
+    return { lines: definitionLines(hyp, { x: 0, y: 0 }), score: 1 }
+  }
+  const segs = hypothesisSegs(hyp)
+  if (segs.length === 0) {
+    return { lines: definitionLines(hyp, { x: 0, y: 0 }), score: 0 }
+  }
+  const one = estimateTranslation(hyp, segs, tol)
+  if (one && one.score >= MIN_SCORE) {
+    return { lines: definitionLines(hyp, one.t), score: one.score }
+  }
+  const separate = placeLinesSeparately(hyp, segs, tol)
+  if (separate && separate.score > (one?.score ?? 0)) return separate
+  return {
+    lines: definitionLines(hyp, one?.t ?? { x: 0, y: 0 }),
+    score: one?.score ?? 0
+  }
+}
+
+/** Families with each of the first few as the anchor of a match. */
+function anchoredFamilies(families: MeasuredFamily[]): MeasuredFamily[][] {
+  return families
+    .slice(0, 4)
+    .map(anchor => [anchor, ...families.filter(f => f !== anchor)])
+}
+
+function fitHypotheses(
+  request: PdfHatchPatternRequest | undefined,
+  families: MeasuredFamily[],
+  library: readonly AcDbPatPattern[],
+  tol: number,
+  edit: EditRegion
+): { hyp: Hypothesis; guessed: boolean }[] {
+  const extent = edit.extent
+  const anchored = anchoredFamilies(families)
+  const found = (hyps: Hypothesis[]) =>
+    hyps.map(hyp => ({ hyp, guessed: false }))
+
+  if (!request) {
+    const hyps: Hypothesis[] = []
+    for (const sig of patternSignatures(library)) {
+      for (const list of anchored) {
+        hyps.push(...matchPattern(sig, list, tol, extent))
+      }
+    }
+    for (const list of anchored) {
+      hyps.push(...userDefinedHypotheses(list, tol, extent))
+    }
+    return found(hyps)
+  }
+
+  if (request.type === 'userDefined') {
+    const make = (angle: number, spacing: number): Hypothesis =>
+      fixedHypothesis(
+        request.double
+          ? [userDefinedLine(0), userDefinedLine(90)]
+          : [userDefinedLine(0)],
+        angle,
+        spacing,
+        families,
+        { order: Infinity, userDefined: { double: request.double, spacing } }
+      )
+    if (request.spacing !== undefined && request.angle !== undefined) {
+      return [{ hyp: make(request.angle, request.spacing), guessed: false }]
+    }
+    const hyps = anchored
+      .flatMap(list => userDefinedHypotheses(list, tol, extent))
+      .filter(hyp => hyp.userDefined?.double === request.double)
+    if (hyps.length > 0) return found(hyps)
+    const main = families[0]
+    const spacing = main?.period ?? Math.max(extent / 20, tol)
+    return [{ hyp: make(main?.theta ?? 0, spacing), guessed: true }]
+  }
+
+  const order = library.findIndex(p => p.name === request.name)
+  if (order < 0) return []
+  const pattern = library[order]
+  const make = (angle: number, scale: number) =>
+    fixedHypothesis(pattern.lines, angle, scale, families, {
+      name: pattern.name,
+      order
+    })
+  if (request.scale !== undefined && request.angle !== undefined) {
+    return [{ hyp: make(request.angle, request.scale), guessed: false }]
+  }
+  const sig = patternSignatures([pattern])[0]
+  const hyps = sig
+    ? anchored.flatMap(list =>
+        matchPattern({ ...sig, order }, list, tol, extent)
+      )
+    : []
+  if (hyps.length > 0) return found(hyps)
+  // No trace of the pattern: size its first group on the main family.
+  const group = sig?.groups.find(g => !g.dotsOnly)
+  const main = families[0]
+  const scale = group && main ? main.period / group.period : 1
+  const angle = group && main ? main.theta - group.angle : 0
+  return [{ hyp: make(angle, scale), guessed: true }]
+}
+
+/** A hypothesis at a given rotation and scale, its lines on the families. */
+function fixedHypothesis(
+  lines: AcDbPatPattern['lines'],
+  rotation: number,
+  scale: number,
+  families: MeasuredFamily[],
+  extra: Pick<Hypothesis, 'order'> & Partial<Hypothesis>
+): Hypothesis {
+  return {
+    rotation,
+    scale,
+    lines,
+    families: lines.map(line => {
+      if (isDotsOnly(line.dashes)) return undefined
+      const direction = line.angle * DEG + rotation
+      return families.find(f => directionDelta(f.theta, direction) < ANGLE_GAP)
+    }),
+    ...extra
+  }
+}
+
+/**
+ * Boundary of the area around `point` that the selected line work encloses,
+ * with the strokes of regular patterns left out (they would cut the area
+ * into strips). Islands inside the area belong to it.
+ *
+ * @param items - Shape items (from `pdfEntitiesToHatchInput`).
+ * @param point - A point inside the area, in drawing coordinates.
+ * @param tolerance - Snap tolerance for the line work.
+ * @returns Closed boundary shapes, or `undefined` when no closed area
+ * holds the point.
+ */
+export function acapPdfBoundaryAt(
+  items: readonly PdfImportShapeItem[],
+  point: PdfRecPoint,
+  tolerance: number
+): PdfRecognizedShape[] | undefined {
+  const opts = resolveOptions({ tolerance })
+  const strokes = new Set<number>()
+  const candidates = new Map<number, Seg>()
+  for (const group of groupCandidates(items, tolerance)) {
+    for (const seg of group.all) candidates.set(seg.index, seg)
+    for (const region of findRegions(group.long, opts)) {
+      // Only the regular, dense families: walls drawn like the strokes join
+      // the region too, and a few evenly spaced walls (a room's sides) also
+      // form a family, but one only a couple of repeats deep.
+      const measured = measureFamilies(region, tolerance)
+      const main = measured[0]
+      const families = measured.filter(
+        family =>
+          family.offsets.length >= opts.minLines &&
+          family.offsets[family.offsets.length - 1] - family.offsets[0] >=
+            family.period * MIN_PATTERN_REPEATS &&
+          (family === main ||
+            family.segs.length >= Math.max(4, main.segs.length * 0.3))
+      )
+      for (const family of families) {
+        for (const seg of family.segs) strokes.add(seg.index)
+        // Strokes clipped short at the boundary (or left out of the region)
+        // still lie on the family's lines; between two walls they would cut
+        // the area into strips. Short pieces have a rough direction, but the
+        // tiny steps of an outline seldom run along the pattern.
+        const box = segsBox(family.segs)
+        const pad = family.period + tolerance
+        const longest = Math.max(...family.segs.map(seg => seg.len))
+        for (const seg of group.all) {
+          if (strokes.has(seg.index)) continue
+          if (seg.len > longest + tolerance) continue
+          const angleTol =
+            seg.len >= tolerance * SHORT_FACTOR ? ANGLE_GAP : SHORT_ANGLE_GAP
+          if (directionDelta(seg.theta, family.theta) > angleTol) continue
+          const m = midpoint(seg)
+          if (
+            m.x < box.minX - pad ||
+            m.x > box.maxX + pad ||
+            m.y < box.minY - pad ||
+            m.y > box.maxY + pad
+          ) {
+            continue
+          }
+          if (onFamilyLattice(m, family, tolerance)) strokes.add(seg.index)
+        }
+      }
+    }
+  }
+  const polylines: PdfRecPoint[][] = []
+  items.forEach((item, index) => {
+    if (strokes.has(index)) return
+    const polyline = acapPdfShapePolyline(item.shape, tolerance * 0.25)
+    if (polyline.length >= 2) polylines.push(polyline)
+  })
+  const arrangement = acapPdfFaceArrangement(polylines, {
+    tolerance,
+    maxSegments: MAX_FACE_SEGMENTS
+  })
+  if (!arrangement) return undefined
+  // Faces split by a line drawn across a hatch (an axis) are one area where
+  // strokes run over the line; areas whose strokes stop on it stay apart.
+  const strokeSegs = [...strokes]
+    .map(index => candidates.get(index))
+    .filter((seg): seg is Seg => !!seg)
+  const parts = acapPdfFaceBoundaryParts(
+    arrangement,
+    [point, ...strokeSegs.map(midpoint)],
+    { minCoverage: 0, strokes: strokeSegs.map(seg => [seg.a, seg.b] as const) }
+  )
+  const part = parts?.find(loops => insideLoops(point, loops))
+  const polygons =
+    part ??
+    acapPdfFaceBoundaryIn(arrangement, [point], {
+      minCoverage: 1
+    })
+  return polygons && polygons.length > 0
+    ? polygonsToBoundary(polygons).shapes
+    : undefined
+}
+
+/** Whether `p` lies inside `loops` (even-odd). */
+function insideLoops(p: PdfRecPoint, loops: readonly PdfRecPoint[][]): boolean {
+  let inside = false
+  for (const loop of loops) if (pointInPolygon(p, loop)) inside = !inside
+  return inside
+}
+
+/** True when `p` lies on one of the lines of `family` or their repeats. */
+function onFamilyLattice(
+  p: PdfRecPoint,
+  family: MeasuredFamily,
+  tol: number
+): boolean {
+  const ux = Math.cos(family.theta)
+  const uy = Math.sin(family.theta)
+  const c = -uy * p.x + ux * p.y
+  const period = family.period
+  return family.offsets.some(offset => {
+    const r = (((c - offset) % period) + period) % period
+    return Math.min(r, period - r) <= tol
+  })
 }
