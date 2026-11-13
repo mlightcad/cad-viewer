@@ -30,6 +30,10 @@ Options:
   --format single|multi     Default: single
   --zip                     Multi-file: write one .zip (default)
   --no-zip                  Multi-file: write package files into <output>
+  --layouts                 Include paper-space layouts (default)
+  --no-layouts              Export model space only
+  --export-empty-layouts    Include empty paper-space layouts
+  --no-export-empty-layouts Skip empty paper-space layouts (default)
   --fonts-dir <path>        Local font library (folder, fonts.json, or cad-data root)
   --fonts-url <url>         Remote font library base URL (ignored when --fonts-dir is set)
   --viewer-mode view|measure   Default: measure (view omits snap and measure)
@@ -47,6 +51,8 @@ function parseArgs(argv) {
   const options = {
     format: 'single',
     zipPackage: true,
+    exportLayouts: true,
+    exportEmptyLayouts: false,
     viewerMode: 'measure',
     background: undefined,
     compressChunks: true
@@ -61,6 +67,14 @@ function parseArgs(argv) {
       options.zipPackage = false
     } else if (arg === '--zip') {
       options.zipPackage = true
+    } else if (arg === '--layouts') {
+      options.exportLayouts = true
+    } else if (arg === '--no-layouts') {
+      options.exportLayouts = false
+    } else if (arg === '--export-empty-layouts') {
+      options.exportEmptyLayouts = true
+    } else if (arg === '--no-export-empty-layouts') {
+      options.exportEmptyLayouts = false
     } else if (arg === '--fonts-dir') {
       options.fontsDir = argv[++i]
     } else if (arg === '--fonts-url') {
@@ -144,6 +158,8 @@ const started = performance.now()
 const result = await exportFileToHtml(input, output, {
   exportFormat: options.format,
   zipPackage: options.zipPackage,
+  exportLayouts: options.exportLayouts,
+  exportEmptyLayouts: options.exportEmptyLayouts,
   viewerMode: options.viewerMode,
   background: options.background,
   fontsDir: options.fontsDir,

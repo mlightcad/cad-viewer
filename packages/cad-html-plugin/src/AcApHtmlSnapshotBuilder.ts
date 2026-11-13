@@ -46,6 +46,11 @@ export interface AcApHtmlSnapshotBuilderOptions {
    */
   exportLayouts?: boolean
   /**
+   * When `true`, empty paper-space layouts are still written into the
+   * snapshot. Defaults to `false`.
+   */
+  exportEmptyLayouts?: boolean
+  /**
    * Initial framing when the exported HTML is opened. Defaults to `'fit'`.
    */
   initialView?: AcExHtmlInitialViewMode
@@ -119,6 +124,7 @@ function toCoreOptions(
     locale: options.locale ?? AcApI18n.currentLocale,
     exportInvisibleLayers: options.exportInvisibleLayers,
     exportLayouts: options.exportLayouts,
+    exportEmptyLayouts: options.exportEmptyLayouts,
     initialView: options.initialView,
     viewState: options.viewState,
     viewerMode: options.viewerMode,

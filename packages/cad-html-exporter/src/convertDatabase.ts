@@ -8,9 +8,11 @@ import {
   acexHtmlBuildSnapshotFromExportScene,
   type AcExHtmlExportLayoutInput,
   type AcExHtmlExportSceneInput,
+  acexHtmlIsEmptyPaperSpaceLayout,
   acexHtmlListDatabaseLayouts,
   acexHtmlResolveBackground,
-  type AcExHtmlSnapshot} from '@mlightcad/cad-html-core'
+  type AcExHtmlSnapshot
+} from '@mlightcad/cad-html-core'
 import {
   type AcDbDatabase,
   type AcDbEntity,
@@ -100,6 +102,7 @@ async function convertOpenDatabaseToSnapshot(
 ): Promise<AcExHtmlSnapshot> {
   const exportInvisibleLayers = options.exportInvisibleLayers !== false
   const exportLayouts = options.exportLayouts !== false
+  const exportEmptyLayouts = options.exportEmptyLayouts === true
   const width = options.width ?? 1920
   const height = options.height ?? 1080
 
@@ -142,9 +145,22 @@ async function convertOpenDatabaseToSnapshot(
     for (const layout of tableLayouts) {
       if (seen.has(layout.blockTableRecordId)) continue
       seen.add(layout.blockTableRecordId)
+      if (
+        !exportEmptyLayouts &&
+        acexHtmlIsEmptyPaperSpaceLayout(
+          database,
+          layout.blockTableRecordId,
+          modelSpaceBtrId
+        )
+      ) {
+        continue
+      }
       layoutBtrIds.push(layout.blockTableRecordId)
     }
-    if (!seen.has(modelSpaceBtrId)) {
+    // Prefer membership in the export list over `seen`: empty paper tabs
+    // are marked seen before they are skipped, and some drawings omit the
+    // Model layout row entirely.
+    if (!layoutBtrIds.includes(modelSpaceBtrId)) {
       layoutBtrIds.unshift(modelSpaceBtrId)
     }
   }
@@ -244,6 +260,7 @@ async function convertOpenDatabaseToSnapshot(
     locale: options.locale ?? 'en',
     exportInvisibleLayers,
     exportLayouts,
+    exportEmptyLayouts,
     initialView: options.initialView,
     viewerMode: options.viewerMode ?? 'measure',
     canvasAspectRatio: width / height

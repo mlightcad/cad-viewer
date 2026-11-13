@@ -28,6 +28,7 @@ export async function exportDrawingPdf(
     modelSpaceFit === 'display' ? captureFitBox(docManager.curView) : undefined
   return acexPdfExportDatabase(doc.database, {
     exportLayouts: options.exportLayouts,
+    exportEmptyLayouts: options.exportEmptyLayouts,
     colorMode: options.colorMode,
     textMode: options.textMode,
     modelSpaceFit,

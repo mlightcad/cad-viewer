@@ -185,6 +185,12 @@ Agent/스크립트는 선·화살표·문자로 치수를 흉내 내지 말고 �
 **1.8.0**부터 일반 File → Open / `openDocument` / `openUrl`로 `.svg`를 도면으로 열 수 있습니다. 변환은 새 패키지 [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter)(`@mlightcad/data-model`만 의존)에 있습니다. `cad-editor`의 `initializeCadViewer`가 자동 등록합니다. `cad-simple-viewer`만 쓰는 경우 시작 시 `registerSvgConverter()`를 한 번 호출하세요. 보내기는 계속 `cad-svg-plugin`의 `csvg`입니다.
 :::
 
+::: info HTML/PDF 내보내기는 기본적으로 빈 배치를 건너뜀
+이 변경이 포함된 릴리스부터 HTML·PDF 내보내기에 **`exportEmptyLayouts`**(기본값 **`false`**)가 추가됩니다. AutoCAD 기본 `*Paper_Space` 뷰포트만 있는 도면 공간 배치는 옵션을 `true`로 켜지 않으면 생략됩니다. 배치를 내보낼 때 모형 공간은 항상 유지됩니다.
+
+마이그레이션: 빈 도면 공간 탭도 결과에 포함하려면 `exportEmptyLayouts: true`를 전달하세요(내보내기 대화상자 토글, `-chtml` / `-cpdf` 프롬프트, 스크립트 `cad.file.saveHtml` / `savePdf`, 또는 exporter CLI의 `--export-empty-layouts`).
+:::
+
 ::: info PDF 내보내기를 공유 코어로 분리(브라우저 + Node)
 **1.8.0**부터 PDF 내보내기는 HTML 내보내기와 같은 계층을 사용합니다. 공유 로직은 `@mlightcad/cad-pdf-core`(옵션 모델과 database → PDF 파이프라인, `cad-simple-viewer` / DOM에 **의존하지 않음**)에 있으며, 다음 두 프론트엔드가 이를 사용합니다.
 

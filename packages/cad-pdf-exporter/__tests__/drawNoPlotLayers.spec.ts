@@ -15,6 +15,7 @@ jest.mock('@mlightcad/cad-pdf-core', () => ({
   acexPdfResolveExportOptions: jest.fn((options: object) => ({
     modelSpaceFit: 'extents',
     exportLayouts: true,
+    exportEmptyLayouts: false,
     textMode: 'text',
     colorMode: 'color',
     ...options

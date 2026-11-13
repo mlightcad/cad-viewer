@@ -493,6 +493,9 @@ export default {
     exportLayouts: 'Exportovat rozvržení',
     exportLayoutsHint:
       'Zahrnout rozvržení výkresového prostoru do exportovaného souboru',
+    exportEmptyLayouts: 'Exportovat prázdná rozvržení',
+    exportEmptyLayoutsHint:
+      'Zahrnout rozvržení výkresového prostoru bez kreslicího obsahu',
     yes: 'Ano',
     no: 'Ne',
     background: 'Pozadí',
@@ -544,6 +547,9 @@ export default {
     exportLayouts: 'Exportovat rozvržení',
     exportLayoutsHint:
       'Zahrnout rozvržení výkresového prostoru jako další stránky PDF',
+    exportEmptyLayouts: 'Exportovat prázdná rozvržení',
+    exportEmptyLayoutsHint:
+      'Zahrnout rozvržení výkresového prostoru bez kreslicího obsahu jako prázdné stránky PDF',
     textModeSection: 'Text',
     textMode: 'Vykreslení textu',
     textModeText: 'Textové objekty',

@@ -96,6 +96,9 @@ export default {
     layoutsSection: 'レイアウト',
     exportLayouts: 'レイアウトを書き出す',
     exportLayoutsHint: 'ペーパー空間のレイアウトを書き出しファイルに含めます',
+    exportEmptyLayouts: '空のレイアウトを書き出す',
+    exportEmptyLayoutsHint:
+      '図形のないペーパー空間レイアウトも含めます',
     yes: 'はい',
     no: 'いいえ',
     background: '背景',
@@ -146,6 +149,9 @@ export default {
     exportLayouts: 'レイアウトを書き出す',
     exportLayoutsHint:
       'ペーパー空間のレイアウトを追加の PDF ページとして含めます',
+    exportEmptyLayouts: '空のレイアウトを書き出す',
+    exportEmptyLayoutsHint:
+      '図形のないペーパー空間レイアウトを空白の PDF ページとして含めます',
     textModeSection: '文字',
     textMode: '文字の描画',
     textModeText: '文字オブジェクト',

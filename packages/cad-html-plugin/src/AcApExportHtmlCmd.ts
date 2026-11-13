@@ -81,6 +81,18 @@ export class AcApExportHtmlCmd extends AcEdCommand {
       return undefined
     }
 
+    let exportEmptyLayouts = defaults.exportEmptyLayouts
+    if (exportLayouts) {
+      const emptyLayouts = await this.promptYesNo(
+        'jig.chtml.exportEmptyLayouts',
+        defaults.exportEmptyLayouts
+      )
+      if (emptyLayouts === undefined) {
+        return undefined
+      }
+      exportEmptyLayouts = emptyLayouts
+    }
+
     const background = await this.promptBackground()
     if (background === undefined) {
       return undefined
@@ -117,6 +129,7 @@ export class AcApExportHtmlCmd extends AcEdCommand {
       exportFormat,
       exportInvisibleLayers,
       exportLayouts,
+      exportEmptyLayouts,
       background,
       initialView,
       viewerMode,

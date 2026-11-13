@@ -24,6 +24,7 @@ export async function exportDrawingHtml(
     {
       exportFormat: options.exportFormat,
       exportLayouts: options.exportLayouts,
+      exportEmptyLayouts: options.exportEmptyLayouts,
       background: options.background
     }
   )

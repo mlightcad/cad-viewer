@@ -97,6 +97,9 @@ export default {
     exportLayouts: 'Export layouts',
     exportLayoutsHint:
       'Include paper-space layouts in the exported file',
+    exportEmptyLayouts: 'Export empty layouts',
+    exportEmptyLayoutsHint:
+      'Include paper-space layouts that have no drawing content',
     yes: 'Yes',
     no: 'No',
     background: 'Background',
@@ -146,6 +149,9 @@ export default {
     paperSpaceSection: 'Paper space',
     exportLayouts: 'Export layouts',
     exportLayoutsHint: 'Include paper-space layouts as additional PDF pages',
+    exportEmptyLayouts: 'Export empty layouts',
+    exportEmptyLayoutsHint:
+      'Include paper-space layouts that have no drawing content as blank PDF pages',
     textModeSection: 'Text',
     textMode: 'Text rendering',
     textModeText: 'Text objects',

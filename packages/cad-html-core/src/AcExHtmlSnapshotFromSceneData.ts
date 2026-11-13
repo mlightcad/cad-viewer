@@ -2,6 +2,7 @@ import type { AcDbDatabase } from '@mlightcad/data-model'
 import type * as THREE from 'three'
 
 import { acexHtmlGetDocsBaseUrl } from './AcExHtmlDocsUrl'
+import { acexHtmlIsEmptyPaperSpaceLayout } from './AcExHtmlEmptyLayout'
 import { acexHtmlComputeLayoutViewExtents } from './AcExHtmlLayerExtents'
 import { acexHtmlBuildOsnapCatalog } from './AcExHtmlOsnapPrimitiveBuilder'
 import { acexHtmlCollectLayoutViewports } from './AcExHtmlPaperViewportCollector'
@@ -70,6 +71,13 @@ export interface AcExHtmlBuildSnapshotOptions {
   locale?: string
   exportInvisibleLayers?: boolean
   exportLayouts?: boolean
+  /**
+   * When `true`, empty paper-space layouts are still written into the
+   * snapshot. When `false` (default), paper tabs with no content other than
+   * the default `*Paper_Space` viewport are skipped. Model space is always
+   * kept when {@link AcExHtmlBuildSnapshotOptions.exportLayouts} is `true`.
+   */
+  exportEmptyLayouts?: boolean
   initialView?: AcExHtmlInitialViewMode
   viewState?: AcExHtmlViewState
   viewerMode?: AcExHtmlViewerMode
@@ -141,6 +149,7 @@ export async function acexHtmlBuildSnapshotFromExportSceneAsync(
 
   const exportInvisibleLayers = options.exportInvisibleLayers !== false
   const exportLayouts = options.exportLayouts !== false
+  const exportEmptyLayouts = options.exportEmptyLayouts === true
   const includeLayer = exportInvisibleLayers
     ? undefined
     : (layerName: string) =>
@@ -156,8 +165,19 @@ export async function acexHtmlBuildSnapshotFromExportSceneAsync(
   const layoutNames = new Map(
     tableLayouts.map(layout => [layout.blockTableRecordId, layout.name])
   )
-  const activeLayoutBtrId = resolveExportActiveLayoutBtrId(scene, exportLayouts)
-  const layoutInputs = listExportLayouts(scene, tableLayouts, exportLayouts)
+  const activeLayoutBtrId = resolveExportActiveLayoutBtrId(
+    database,
+    scene,
+    exportLayouts,
+    exportEmptyLayouts
+  )
+  const layoutInputs = listExportLayouts(
+    database,
+    scene,
+    tableLayouts,
+    exportLayouts,
+    exportEmptyLayouts
+  )
 
   const layouts: AcExHtmlLayoutSnapshot[] = []
   for (const layoutInput of layoutInputs) {
@@ -192,6 +212,7 @@ function buildSnapshotSync(
 ): AcExHtmlSnapshot {
   const exportInvisibleLayers = options.exportInvisibleLayers !== false
   const exportLayouts = options.exportLayouts !== false
+  const exportEmptyLayouts = options.exportEmptyLayouts === true
   const includeLayer = exportInvisibleLayers
     ? undefined
     : (layerName: string) =>
@@ -207,8 +228,19 @@ function buildSnapshotSync(
   const layoutNames = new Map(
     tableLayouts.map(layout => [layout.blockTableRecordId, layout.name])
   )
-  const activeLayoutBtrId = resolveExportActiveLayoutBtrId(scene, exportLayouts)
-  const layoutInputs = listExportLayouts(scene, tableLayouts, exportLayouts)
+  const activeLayoutBtrId = resolveExportActiveLayoutBtrId(
+    database,
+    scene,
+    exportLayouts,
+    exportEmptyLayouts
+  )
+  const layoutInputs = listExportLayouts(
+    database,
+    scene,
+    tableLayouts,
+    exportLayouts,
+    exportEmptyLayouts
+  )
 
   const layouts: AcExHtmlLayoutSnapshot[] = []
   for (const layoutInput of layoutInputs) {
@@ -301,9 +333,11 @@ function shouldExportLayer(
 }
 
 function listExportLayouts(
+  database: AcDbDatabase,
   scene: AcExHtmlExportSceneInput,
   tableLayouts: AcExHtmlDatabaseLayoutInfo[],
-  exportLayouts: boolean
+  exportLayouts: boolean,
+  exportEmptyLayouts: boolean
 ): AcExHtmlExportLayoutInput[] {
   if (!exportLayouts) {
     const model = scene.layouts.find(
@@ -319,6 +353,16 @@ function listExportLayouts(
   for (const table of tableLayouts) {
     if (seen.has(table.blockTableRecordId)) continue
     seen.add(table.blockTableRecordId)
+    if (
+      !exportEmptyLayouts &&
+      acexHtmlIsEmptyPaperSpaceLayout(
+        database,
+        table.blockTableRecordId,
+        scene.modelSpaceBtrId
+      )
+    ) {
+      continue
+    }
     const existing = byId.get(table.blockTableRecordId)
     result.push(
       existing ?? {
@@ -333,20 +377,56 @@ function listExportLayouts(
   for (const layout of scene.layouts) {
     if (seen.has(layout.btrId)) continue
     seen.add(layout.btrId)
+    if (
+      !exportEmptyLayouts &&
+      acexHtmlIsEmptyPaperSpaceLayout(
+        database,
+        layout.btrId,
+        scene.modelSpaceBtrId
+      )
+    ) {
+      continue
+    }
     result.push(layout)
+  }
+
+  // Guarantee model space stays in the snapshot even when the layout table
+  // omitted it or only empty paper tabs remained after filtering.
+  if (!result.some(layout => layout.btrId === scene.modelSpaceBtrId)) {
+    const model = byId.get(scene.modelSpaceBtrId)
+    result.unshift(
+      model ?? {
+        btrId: scene.modelSpaceBtrId,
+        isModelSpace: true,
+        layers: []
+      }
+    )
   }
 
   return result
 }
 
 function resolveExportActiveLayoutBtrId(
+  database: AcDbDatabase,
   scene: AcExHtmlExportSceneInput,
-  exportLayouts: boolean
+  exportLayouts: boolean,
+  exportEmptyLayouts: boolean
 ): string {
   if (!exportLayouts) {
     return scene.modelSpaceBtrId
   }
-  return scene.activeLayoutBtrId || scene.modelSpaceBtrId
+  const preferred = scene.activeLayoutBtrId || scene.modelSpaceBtrId
+  if (
+    exportEmptyLayouts ||
+    !acexHtmlIsEmptyPaperSpaceLayout(
+      database,
+      preferred,
+      scene.modelSpaceBtrId
+    )
+  ) {
+    return preferred
+  }
+  return scene.modelSpaceBtrId
 }
 
 function collectLayoutSnapshot(

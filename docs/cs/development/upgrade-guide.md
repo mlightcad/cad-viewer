@@ -185,6 +185,12 @@ Od vydání s touto změnou `cad.blocks` poskytuje u každého bloku `entityCoun
 Od verze **1.8.0** lze `.svg` otevřít jako výkres přes File → Open / `openDocument` / `openUrl`. Konverze je v novém balíčku [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter). `initializeCadViewer` v `cad-editor` jej registruje automaticky; při samotném `cad-simple-viewer` zavolejte jednou `registerSvgConverter()`. Export zůstává `csvg` v `cad-svg-plugin`.
 :::
 
+::: info Export HTML/PDF ve výchozím nastavení přeskakuje prázdná rozvržení
+Od vydání, které obsahuje tuto změnu, mají export HTML a PDF novou volbu **`exportEmptyLayouts`** (výchozí **`false`**). Rozvržení výkresového prostoru, která obsahují jen výchozí AutoCAD viewport `*Paper_Space`, se vynechají, dokud volbu nenastavíte na `true`. Modelový prostor se při exportu rozvržení vždy zachová.
+
+Migrace: pokud v výstupu potřebujete prázdné karty papíru, předejte `exportEmptyLayouts: true` (přepínač v dialogu exportu, výzva `-chtml` / `-cpdf`, skript `cad.file.saveHtml` / `savePdf` nebo CLI příznak exporteru `--export-empty-layouts`).
+:::
+
 ::: info Export PDF rozdělen do sdíleného jádra (prohlížeč + Node)
 Od verze **1.8.0** používá export PDF stejné vrstvení jako export HTML. Sdílená logika je v `@mlightcad/cad-pdf-core` (model voleb a pipeline database → PDF, **bez** závislosti na `cad-simple-viewer` / DOM). Spotřebovávají ji dvě frontendy:
 

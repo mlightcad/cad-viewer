@@ -75,6 +75,13 @@ export interface AcPdfExportOptions {
    */
   layouts?: 'current' | 'all'
   /**
+   * When `true`, empty paper-space layouts are still exported as blank
+   * pages. When `false` (default), paper tabs with no content other than
+   * the default `*Paper_Space` viewport are skipped. Model space is always
+   * kept when {@link AcPdfExportOptions.layouts} is `'all'`.
+   */
+  exportEmptyLayouts?: boolean
+  /**
    * Optional glyph engine for MTEXT / SHAPE. When omitted, text entities
    * produce no visible geometry (ActualText may still be reserved later).
    */

@@ -1168,14 +1168,14 @@ const FILE_MEMBERS: MemberSpec[] = [
   method(
     'savePdf',
     '(path?) => { queued, index, fileName }',
-    'Queues a PDF export after the script succeeds. Path string or { path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }.',
+    'Queues a PDF export after the script succeeds. Path string or { path?, fileName?, exportLayouts?, exportEmptyLayouts?, colorMode?, textMode?, modelSpaceFit? }.',
     'unknown',
     'savePdf(\'${path}\')'
   ),
   method(
     'saveHtml',
     '(path?) => { queued, index, fileName }',
-    'Queues an offline HTML (or multi zip) export after success. Needs a viewer host. Path string or { path?, fileName?, exportFormat?, exportLayouts?, background? }.',
+    'Queues an offline HTML (or multi zip) export after success. Needs a viewer host. Path string or { path?, fileName?, exportFormat?, exportLayouts?, exportEmptyLayouts?, background? }.',
     'unknown',
     'saveHtml(\'${path}\')'
   )

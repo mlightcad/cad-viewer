@@ -28,6 +28,8 @@ Options:
   --text-mode text|vector   Default: text (selectable text, smaller file)
   --layouts                 Export model space and every layout (default)
   --no-layouts              Export the current space only
+  --export-empty-layouts    Include empty paper-space layouts as blank pages
+  --no-export-empty-layouts Skip empty paper-space layouts (default)
   --title <title>           PDF title. Default: input file name
   --fonts-dir <path>        Local font library (folder, fonts.json, or cad-data root)
   --fonts-url <url>         Remote font library base URL (ignored when --fonts-dir is set)
@@ -45,7 +47,7 @@ const CHOICES = {
 
 function parseArgs(argv) {
   const positional = []
-  const options = { exportLayouts: true }
+  const options = { exportLayouts: true, exportEmptyLayouts: false }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     if (arg === '--help' || arg === '-h') {
@@ -58,6 +60,10 @@ function parseArgs(argv) {
       options.exportLayouts = true
     } else if (arg === '--no-layouts') {
       options.exportLayouts = false
+    } else if (arg === '--export-empty-layouts') {
+      options.exportEmptyLayouts = true
+    } else if (arg === '--no-export-empty-layouts') {
+      options.exportEmptyLayouts = false
     } else if (arg === '--title') {
       options.title = argv[++i]
     } else if (arg === '--fonts-dir') {

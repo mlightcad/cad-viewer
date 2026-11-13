@@ -23,6 +23,7 @@ describe('acexPdfResolveExportOptions', () => {
     expect(acexPdfResolveExportOptions()).toEqual({
       modelSpaceFit: 'extents',
       exportLayouts: true,
+      exportEmptyLayouts: false,
       textMode: 'text',
       colorMode: 'color'
     })
@@ -33,12 +34,14 @@ describe('acexPdfResolveExportOptions', () => {
       acexPdfResolveExportOptions({
         modelSpaceFit: 'display',
         exportLayouts: false,
+        exportEmptyLayouts: true,
         textMode: 'vector',
         colorMode: 'monochrome'
       })
     ).toEqual({
       modelSpaceFit: 'display',
       exportLayouts: false,
+      exportEmptyLayouts: true,
       textMode: 'vector',
       colorMode: 'monochrome'
     })

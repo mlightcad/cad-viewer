@@ -41,6 +41,13 @@ export interface AcExHtmlExporterOptions {
   exportInvisibleLayers?: boolean
   exportLayouts?: boolean
   /**
+   * When `true`, empty paper-space layouts are still written into the
+   * snapshot. When `false` (default), paper tabs with no content other than
+   * the default `*Paper_Space` viewport are skipped. Model space is always
+   * kept when {@link AcExHtmlExporterOptions.exportLayouts} is `true`.
+   */
+  exportEmptyLayouts?: boolean
+  /**
    * Canvas background written into the HTML.
    * `'black'` (default), `'white'`, or `'space'`.
    *

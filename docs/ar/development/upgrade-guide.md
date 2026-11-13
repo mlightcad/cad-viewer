@@ -185,6 +185,12 @@ import { acuiCreateFileOpenSession } from '@mlightcad/cad-simple-viewer/file-ope
 بدءًا من **1.8.0** يمكن فتح `.svg` كرسم عبر File → Open / `openDocument` / `openUrl`. التحويل في الحزمة الجديدة [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter). يسجّله `initializeCadViewer` في `cad-editor` تلقائيًا؛ ومع `cad-simple-viewer` فقط استدعِ `registerSvgConverter()` مرة عند البدء. التصدير يبقى `csvg` في `cad-svg-plugin`.
 :::
 
+::: info تصدير HTML/PDF يتخطى المخططات الفارغة افتراضيًا
+بدءًا من الإصدار الذي يتضمن هذا التغيير، يضيف تصدير HTML وPDF الخيار **`exportEmptyLayouts`** (الافتراضي **`false`**). تُحذف مخططات مساحة الورق التي تحتوي فقط على منفذ العرض الافتراضي لـ AutoCAD `*Paper_Space` ما لم تضبط الخيار على `true`. تُبقى مساحة النموذج دائمًا عند تصدير المخططات.
+
+الترحيل: مرّر `exportEmptyLayouts: true` (مفتاح مربع حوار التصدير، مطالبة `-chtml` / `-cpdf`، أو السكربت `cad.file.saveHtml` / `savePdf`، أو علم CLI للمصدّر `--export-empty-layouts`) إذا احتجت علامات تبويب ورق فارغة في الناتج.
+:::
+
 ::: info تقسيم تصدير PDF إلى نواة مشتركة (المتصفح + Node)
 بدءًا من **1.8.0**، يستخدم تصدير PDF نفس التقسيم الطبقي لتصدير HTML. المنطق المشترك في `@mlightcad/cad-pdf-core` (نموذج الخيارات ومسار database → PDF، **بدون** اعتماد على `cad-simple-viewer` / DOM). يستهلكه واجهتان أماميتان:
 

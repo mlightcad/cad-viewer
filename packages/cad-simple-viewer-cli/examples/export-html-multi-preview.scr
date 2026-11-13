@@ -1,6 +1,7 @@
 ; Zoom extents, export a multi-file ACEX package zip (-chtml Multi),
 ; then export a JPEG preview of the extents view.
 ; Prompts for -chtml: export format / export invisible layers / export layouts /
+; export empty layouts (only when layouts=Yes) /
 ; background (Black / White / Space) / initial view / viewer mode / chunk size MiB / compress chunks.
 ; Usage:
 ;   cad-simple-viewer-cli -i drawing.dwg -s examples/export-html-multi-preview.scr -o ./out
@@ -10,6 +11,7 @@ e
 Multi
 Yes
 Yes
+No
 Black
 Extents
 Measure

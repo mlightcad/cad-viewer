@@ -287,7 +287,7 @@ cad.file.saveDxf('./plan-out.dxf')
 
 ### `cad.file.savePdf(path?)`
 
-Queues a PDF export after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Returns `{ queued: true, index, fileName }`.
+Queues a PDF export after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, exportEmptyLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Returns `{ queued: true, index, fileName }`.
 
 ```javascript
 cad.file.savePdf('./plan.pdf')
@@ -295,7 +295,7 @@ cad.file.savePdf('./plan.pdf')
 
 ### `cad.file.saveHtml(path?)`
 
-Queues offline HTML (or a multi-file `.zip`) after success. Pass a path string or `{ path?, fileName?, exportFormat?, exportLayouts?, background? }`. Requires a viewer host (`exportHtml`). Headless sessions skip with a log note.
+Queues offline HTML (or a multi-file `.zip`) after success. Pass a path string or `{ path?, fileName?, exportFormat?, exportLayouts?, exportEmptyLayouts?, background? }`. Requires a viewer host (`exportHtml`). Headless sessions skip with a log note.
 
 ```javascript
 cad.file.saveHtml('./plan.html')

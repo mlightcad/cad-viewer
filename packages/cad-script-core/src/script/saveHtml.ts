@@ -17,6 +17,11 @@ export type CadScriptHtmlSaveOptions =
       exportFormat?: 'single' | 'multi'
       /** When `true` (default), include paper-space layouts. */
       exportLayouts?: boolean
+      /**
+       * When `true`, empty paper-space layouts are included.
+       * Defaults to `false`.
+       */
+      exportEmptyLayouts?: boolean
       /** Canvas background: `'black'`, `'white'`, or `'space'` (per layout). */
       background?: 'black' | 'white' | 'space'
     }
@@ -27,6 +32,7 @@ export interface CadScriptHtmlSaveRequest {
   fileName: string
   exportFormat: 'single' | 'multi'
   exportLayouts: boolean
+  exportEmptyLayouts: boolean
   background: 'black' | 'white' | 'space'
 }
 
@@ -34,6 +40,7 @@ export interface CadScriptHtmlSaveRequest {
 export interface CadScriptHtmlExportOptions {
   exportFormat?: 'single' | 'multi'
   exportLayouts?: boolean
+  exportEmptyLayouts?: boolean
   background?: 'black' | 'white' | 'space'
   title?: string
 }
@@ -59,6 +66,7 @@ export function normalizeHtmlSaveRequest(
   let requestedName: string | undefined
   let exportFormat: 'single' | 'multi' = 'single'
   let exportLayouts = true
+  let exportEmptyLayouts = false
   let background: 'black' | 'white' | 'space' = 'space'
 
   if (typeof options === 'string') {
@@ -82,6 +90,7 @@ export function normalizeHtmlSaveRequest(
     requestedName = options.fileName?.trim() || undefined
     if (options.exportFormat === 'multi') exportFormat = 'multi'
     if (options.exportLayouts === false) exportLayouts = false
+    if (options.exportEmptyLayouts === true) exportEmptyLayouts = true
     if (
       options.background === 'black' ||
       options.background === 'white' ||
@@ -112,9 +121,16 @@ export function normalizeHtmlSaveRequest(
         fileName,
         exportFormat,
         exportLayouts,
+        exportEmptyLayouts,
         background
       }
-    : { fileName, exportFormat, exportLayouts, background }
+    : {
+        fileName,
+        exportFormat,
+        exportLayouts,
+        exportEmptyLayouts,
+        background
+      }
 }
 
 /**
@@ -144,6 +160,7 @@ export async function fulfillHtmlSaveRequests(
       const result = await session.exportHtml({
         exportFormat: request.exportFormat,
         exportLayouts: request.exportLayouts,
+        exportEmptyLayouts: request.exportEmptyLayouts,
         background: request.background,
         // Prefer the script-requested name so savedFiles matches the path.
         title:

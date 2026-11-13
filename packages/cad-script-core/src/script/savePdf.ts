@@ -18,6 +18,11 @@ export type CadScriptPdfSaveOptions =
       fileName?: string
       /** When `true` (default), every layout becomes a PDF page. */
       exportLayouts?: boolean
+      /**
+       * When `true`, empty paper-space layouts are exported as blank pages.
+       * Defaults to `false`.
+       */
+      exportEmptyLayouts?: boolean
       /** `'color'` (default) or `'monochrome'`. */
       colorMode?: 'color' | 'monochrome'
       /** `'text'` (default) or `'vector'`. */
@@ -34,6 +39,7 @@ export interface CadScriptPdfSaveRequest {
   path?: string
   fileName: string
   exportLayouts: boolean
+  exportEmptyLayouts: boolean
   colorMode: 'color' | 'monochrome'
   textMode: 'text' | 'vector'
   modelSpaceFit: 'extents' | 'display'
@@ -42,6 +48,7 @@ export interface CadScriptPdfSaveRequest {
 /** Options passed to {@link CadSession.exportPdf}. */
 export interface CadScriptPdfExportOptions {
   exportLayouts?: boolean
+  exportEmptyLayouts?: boolean
   colorMode?: 'color' | 'monochrome'
   textMode?: 'text' | 'vector'
   modelSpaceFit?: 'extents' | 'display'
@@ -58,6 +65,7 @@ export function normalizePdfSaveRequest(
   let requestedPath: string | undefined
   let requestedName: string | undefined
   let exportLayouts = true
+  let exportEmptyLayouts = false
   let colorMode: 'color' | 'monochrome' = 'color'
   let textMode: 'text' | 'vector' = 'text'
   let modelSpaceFit: 'extents' | 'display' = 'extents'
@@ -82,6 +90,7 @@ export function normalizePdfSaveRequest(
     requestedPath = options.path?.trim() || undefined
     requestedName = options.fileName?.trim() || undefined
     if (options.exportLayouts === false) exportLayouts = false
+    if (options.exportEmptyLayouts === true) exportEmptyLayouts = true
     if (options.colorMode === 'monochrome') colorMode = 'monochrome'
     if (options.textMode === 'vector') textMode = 'vector'
     if (options.modelSpaceFit === 'display') modelSpaceFit = 'display'
@@ -108,11 +117,19 @@ export function normalizePdfSaveRequest(
         path: pathOut,
         fileName,
         exportLayouts,
+        exportEmptyLayouts,
         colorMode,
         textMode,
         modelSpaceFit
       }
-    : { fileName, exportLayouts, colorMode, textMode, modelSpaceFit }
+    : {
+        fileName,
+        exportLayouts,
+        exportEmptyLayouts,
+        colorMode,
+        textMode,
+        modelSpaceFit
+      }
 }
 
 /**
@@ -138,6 +155,7 @@ export async function fulfillPdfSaveRequests(
     try {
       const exportOptions: CadScriptPdfExportOptions = {
         exportLayouts: request.exportLayouts,
+        exportEmptyLayouts: request.exportEmptyLayouts,
         colorMode: request.colorMode,
         textMode: request.textMode,
         modelSpaceFit: request.modelSpaceFit,
@@ -148,6 +166,7 @@ export async function fulfillPdfSaveRequests(
           ? await session.exportPdf(exportOptions)
           : await acexPdfExportDatabase(database, {
               exportLayouts: exportOptions.exportLayouts,
+              exportEmptyLayouts: exportOptions.exportEmptyLayouts,
               colorMode: exportOptions.colorMode,
               textMode: exportOptions.textMode,
               // Without a display fit box, extents framing is the only safe

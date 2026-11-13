@@ -1554,6 +1554,7 @@ export default {
     exportFormat: 'Export format',
     exportInvisibleLayers: 'Export invisible layers',
     exportLayouts: 'Export layouts',
+    exportEmptyLayouts: 'Export empty layouts',
     background: 'Background color',
     initialView: 'Initial view when opening HTML',
     viewerMode: 'Offline viewer mode',
@@ -1620,6 +1621,7 @@ export default {
   cpdf: {
     modelSpaceFit: 'Model space frame',
     exportLayouts: 'Export layouts',
+    exportEmptyLayouts: 'Export empty layouts',
     textMode: 'Text rendering',
     colorMode: 'Color mode',
     keywords: {

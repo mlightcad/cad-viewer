@@ -334,7 +334,10 @@ describe('exportDatabaseToPdf', () => {
 
     const bytes = await exportDatabaseToPdf(db, {
       title: 'model-handle-missing',
-      layouts: 'all'
+      layouts: 'all',
+      // Keep the empty paper page so this regression still covers Model when
+      // its handle is missing from the registry.
+      exportEmptyLayouts: true
     })
     const doc = await PDFDocument.load(bytes)
     // Model page (with content) plus the empty paper layout page — the old
@@ -367,10 +370,54 @@ describe('exportDatabaseToPdf', () => {
 
     const bytes = await exportDatabaseToPdf(db, {
       title: 'deduped-layouts',
-      layouts: 'all'
+      layouts: 'all',
+      exportEmptyLayouts: true
     })
     const doc = await PDFDocument.load(bytes)
-    // Model + the alias share one block; the empty paper layout stays.
+    // Model + the alias share one block; the empty paper layout stays when
+    // exportEmptyLayouts is true.
     expect(doc.getPageCount()).toBe(2)
+
+    const skipped = await exportDatabaseToPdf(db, {
+      title: 'deduped-layouts-skip-empty',
+      layouts: 'all'
+    })
+    const skippedDoc = await PDFDocument.load(skipped)
+    // Default skips the empty paper tab; only model remains.
+    expect(skippedDoc.getPageCount()).toBe(1)
+  })
+
+  it('keeps model space when the layout table has only empty paper tabs', async () => {
+    const db = createDb()
+    // Intentionally omit the Model layout row — only an empty paper tab.
+    db.tables.blockTable.modelSpace.appendEntity(
+      new AcDbLine(new AcGePoint3d(0, 0, 0), new AcGePoint3d(100, 0, 0))
+    )
+
+    const paperBtr = new AcDbBlockTableRecord()
+    paperBtr.name = '*Paper_Space0'
+    db.tables.blockTable.add(paperBtr)
+    const paperLayout = new AcDbLayout()
+    paperLayout.layoutName = 'Layout1'
+    paperLayout.tabOrder = 0
+    paperLayout.blockTableRecordId = paperBtr.objectId
+    db.objects.layout.setAt(paperLayout.layoutName, paperLayout)
+    db.currentSpaceId = paperBtr.objectId
+
+    const withEmpty = await exportDatabaseToPdf(db, {
+      title: 'paper-only-keep-empty',
+      layouts: 'all',
+      exportEmptyLayouts: true
+    })
+    // Injected model page + the empty paper tab.
+    expect((await PDFDocument.load(withEmpty)).getPageCount()).toBe(2)
+
+    const skipped = await exportDatabaseToPdf(db, {
+      title: 'paper-only-skip-empty',
+      layouts: 'all'
+    })
+    // Empty paper filtered out; injected model remains (must not fall back
+    // to the active empty paper tab via currentSpaceId).
+    expect((await PDFDocument.load(skipped)).getPageCount()).toBe(1)
   })
 })

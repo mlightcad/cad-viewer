@@ -1588,6 +1588,7 @@ export default {
     exportFormat: '書き出し形式',
     exportInvisibleLayers: '非表示の画層を書き出す',
     exportLayouts: 'レイアウトを書き出す',
+    exportEmptyLayouts: '空のレイアウトを書き出す',
     background: '背景色',
     initialView: 'HTML を開いたときの初期ビュー',
     viewerMode: 'オフライン ビューアのモード',
@@ -1654,6 +1655,7 @@ export default {
   cpdf: {
     modelSpaceFit: 'モデル空間の範囲',
     exportLayouts: 'レイアウトを書き出す',
+    exportEmptyLayouts: '空のレイアウトを書き出す',
     textMode: '文字のレンダリング',
     colorMode: '色モード',
     keywords: {

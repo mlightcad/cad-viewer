@@ -57,6 +57,7 @@ export async function convertDatabaseToPdf(
     withDrawNoPlotLayers(database, drawNoPlotLayers, async () => {
       const resolved = acexPdfResolveExportOptions({
         exportLayouts: options.exportLayouts,
+        exportEmptyLayouts: options.exportEmptyLayouts,
         textMode: options.textMode,
         colorMode: options.colorMode
       })

@@ -54,6 +54,18 @@ export class AcApConvertToPdfCmd extends AcEdCommand {
       return undefined
     }
 
+    let exportEmptyLayouts = defaults.exportEmptyLayouts
+    if (exportLayouts) {
+      const emptyLayouts = await this.promptYesNo(
+        'jig.cpdf.exportEmptyLayouts',
+        defaults.exportEmptyLayouts
+      )
+      if (emptyLayouts === undefined) {
+        return undefined
+      }
+      exportEmptyLayouts = emptyLayouts
+    }
+
     const textMode = await this.promptTextMode()
     if (textMode === undefined) {
       return undefined
@@ -67,6 +79,7 @@ export class AcApConvertToPdfCmd extends AcEdCommand {
     return resolveAcApPdfExportOptions({
       modelSpaceFit,
       exportLayouts,
+      exportEmptyLayouts,
       textMode,
       colorMode
     })

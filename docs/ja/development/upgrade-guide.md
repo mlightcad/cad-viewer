@@ -185,6 +185,12 @@ Agent / スクリプトは線・矢印・文字で寸法を模倣せず、これ
 **1.8.0** から、通常の File → Open / `openDocument` / `openUrl` で `.svg` を図面として開けます。変換は新パッケージ [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter)（`@mlightcad/data-model` のみに依存）にあります。`cad-editor` の `initializeCadViewer` は自動登録します。`cad-simple-viewer` のみの場合は起動時に `registerSvgConverter()` を一度呼び出してください。エクスポートは引き続き `cad-svg-plugin` の `csvg` です。
 :::
 
+::: info HTML/PDF エクスポートは空のレイアウトを既定でスキップ
+この変更を含むリリースから、HTML / PDF エクスポートに **`exportEmptyLayouts`**（既定 **`false`**）が追加されます。AutoCAD 既定の `*Paper_Space` ビューポートだけを含むペーパー空間レイアウトは、オプションを `true` にしない限り省略されます。レイアウトを書き出すときはモデル空間は常に残ります。
+
+移行：空白のペーパー タブも出力に含める場合は `exportEmptyLayouts: true` を渡します（書き出しダイアログのトグル、`-chtml` / `-cpdf` のプロンプト、スクリプトの `cad.file.saveHtml` / `savePdf`、またはエクスポーター CLI の `--export-empty-layouts`）。
+:::
+
 ::: info PDF エクスポートを共有コアに分割（ブラウザ + Node）
 **1.8.0** から、PDF エクスポートは HTML エクスポートと同じ階層になります。共有ロジックは `@mlightcad/cad-pdf-core`（オプションモデルと database → PDF パイプライン。`cad-simple-viewer` / DOM に**依存しません**）にあり、次の 2 つのフロントエンドがそれを使います。
 

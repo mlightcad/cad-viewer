@@ -96,6 +96,9 @@ export default {
     layoutsSection: 'المخططات',
     exportLayouts: 'تصدير المخططات',
     exportLayoutsHint: 'تضمين مخططات مساحة الورق في الملف المُصدّر',
+    exportEmptyLayouts: 'تصدير المخططات الفارغة',
+    exportEmptyLayoutsHint:
+      'تضمين مخططات مساحة الورق التي لا تحتوي على محتوى رسم',
     yes: 'نعم',
     no: 'لا',
     background: 'الخلفية',
@@ -145,6 +148,9 @@ export default {
     paperSpaceSection: 'مساحة الورق',
     exportLayouts: 'تصدير المخططات',
     exportLayoutsHint: 'تضمين مخططات مساحة الورق كصفحات PDF إضافية',
+    exportEmptyLayouts: 'تصدير المخططات الفارغة',
+    exportEmptyLayoutsHint:
+      'تضمين مخططات مساحة الورق بلا محتوى رسم كصفحات PDF فارغة',
     textModeSection: 'النص',
     textMode: 'عرض النص',
     textModeText: 'كائنات نصية',

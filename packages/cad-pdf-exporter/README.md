@@ -18,6 +18,7 @@ Uses `@mlightcad/data-model` + `@mlightcad/pdf-renderer` through
 | `colorMode`     | `color` / `monochrome`  | `color`   | `monochrome`: white paper, all drawing content black |
 | `textMode`      | `text` / `vector`       | `text`    | `text` embeds fonts so text stays selectable |
 | `exportLayouts` | `true` / `false`        | `true`    | `true`: model space and every paper-space layout, one page each |
+| `exportEmptyLayouts` | `true` / `false`   | `false`   | `false`: skip empty paper-space layouts; model space is always kept |
 | `title`         | string                  | file stem | PDF document title |
 | `fontsDir`      | path                    | —         | Local font library (takes precedence over `fontsUrl`) |
 | `fontsUrl`      | URL                     | jsDelivr  | Remote font library base URL |

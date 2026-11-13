@@ -93,8 +93,8 @@ Seçim kümesini kontrol etme:
 
 ### cad.file
 - cad.file.saveDxf(path?) -> Betik başarılı olduktan sonra DXF dışa aktarır. Yol dizesi veya { path?, fileName? }. Uygulama içi ajan indirir; cad-mcp-server path konumuna yazar (göreli yollar sunucu çalışma dizinine göredir). { queued: true, index, fileName } döner. DXF metni dönmez. Araç sonucunda savedFiles vardır
-- cad.file.savePdf(path?) -> After a successful script, export PDF. Path string or { path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }. Bytes are not returned. The tool result includes savedFiles
-- cad.file.saveHtml(path?) -> After a successful script, export offline HTML (or multi zip). Path string or { path?, fileName?, exportFormat?, exportLayouts?, background? }. Requires a viewer host; skipped on headless sessions. Bytes are not returned. The tool result includes savedFiles
+- cad.file.savePdf(path?) -> After a successful script, export PDF. Path string or { path?, fileName?, exportLayouts?, exportEmptyLayouts?, colorMode?, textMode?, modelSpaceFit? }. Bytes are not returned. The tool result includes savedFiles
+- cad.file.saveHtml(path?) -> After a successful script, export offline HTML (or multi zip). Path string or { path?, fileName?, exportFormat?, exportLayouts?, exportEmptyLayouts?, background? }. Requires a viewer host; skipped on headless sessions. Bytes are not returned. The tool result includes savedFiles
 
 ### cad.measure
 - cad.measure.distance(a, b) -> Distance between {x,y} points
