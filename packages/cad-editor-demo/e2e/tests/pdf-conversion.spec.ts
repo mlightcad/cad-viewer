@@ -298,9 +298,8 @@ test('pdfimport rebuilds pattern hatches from their strokes', async ({
   expect(counts.LINE ?? 0).toBe(0)
 })
 
-test('pdfhatch rebuilds a hatch that a PDF left as strokes', async ({
-  page
-}) => {
+/** Opens the hatch strokes fixture and runs PDFHATCH over everything. */
+async function startPdfHatch(page: Page) {
   // ANSI36 strokes (dots dropped) and the walls around them, as PDFIMPORT
   // leaves them for a hatch in cathedral.pdf.
   await page.goto('/')
@@ -318,8 +317,30 @@ test('pdfhatch rebuilds a hatch that a PDF left as strokes', async ({
   await page.getByRole('tab', { name: 'AI' }).click()
   await preselect(page)
   await ribbonButton(page, 'cmd-pdfhatch').click()
-  await waitForPrompt(page, /Found 1 hatches \(ANSI36\)/)
-  await answer(page, '')
+  // The review panel opens in the palette with one row per hatch.
+  await expect(page.locator('.ml-pdfhatch-row')).toHaveCount(1, {
+    timeout: 20_000
+  })
+  return before
+}
+
+test('pdfhatch rebuilds a hatch that a PDF left as strokes', async ({
+  page
+}) => {
+  const before = await startPdfHatch(page)
+  const row = page.locator('.ml-pdfhatch-row')
+  await expect(row).toContainText('ANSI36')
+  await expect(row).not.toHaveClass(/is-poor/)
+
+  // Another pattern is refitted and flagged; switching back restores it.
+  const pattern = page.locator('.ml-pdfhatch-pattern')
+  await pattern.selectOption('predefined:ANSI31')
+  await expect(row).toHaveClass(/is-poor/)
+  await pattern.selectOption('predefined:ANSI36')
+  await expect(row).not.toHaveClass(/is-poor/)
+
+  await page.locator('.ml-pdfhatch-btn:not(.is-secondary)').click()
+  await expect(page.locator('.ml-pdfhatch-panel')).toHaveCount(0)
 
   await expect
     .poll(async () => (await entityTypes(page)).HATCH ?? 0, {
@@ -331,4 +352,19 @@ test('pdfhatch rebuilds a hatch that a PDF left as strokes', async ({
   expect(before.LINE - (after.LINE ?? 0)).toBeGreaterThan(150)
   expect(after.LINE ?? 0).toBeGreaterThan(10)
   expect(after.ARC).toBe(before.ARC)
+})
+
+test('pdfhatch changes nothing when the palette is cancelled', async ({
+  page
+}) => {
+  const before = await startPdfHatch(page)
+
+  await page
+    .locator('.ml-pdfhatch-buttons .ml-pdfhatch-btn.is-secondary')
+    .click()
+  await expect(page.locator('.ml-pdfhatch-panel')).toHaveCount(0)
+
+  const after = await entityTypes(page)
+  expect(after.HATCH ?? 0).toBe(0)
+  expect(after.LINE).toBe(before.LINE)
 })

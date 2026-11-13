@@ -96,6 +96,11 @@ PDF bir desen taramasını yalnızca sınıra göre kesilmiş çok sayıda kısa
 1. Taralı alanı çevresindeki çizgilerle birlikte seçin. Alanın üzerinden bir kesişme penceresi yeterlidir.
 2. Düzenli çizgiler önce `acadiso.pat` desenleriyle (ANSI31, ANSI36, AR-B816, ...), sonra kullanıcı tanımlı tek veya çapraz çizgilerle karşılaştırılır. Hiçbiri uymazsa aralık, kaydırma ve kesikler ölçülür ve tarama özel bir `PDF_HATCH` deseni alır.
 3. Sınır, seçimdeki kapalı konturlardan veya seçili çizgi, yay ve çoklu çizgilerin çevrelediği alandan bulunur; bunlar birbirini kesse ya da sınırın dışına uzasa bile. Adalar delik olarak kalır.
-4. Taramalar çizgilerin yerinde önizlenir. Bloklarda olduğu gibi **Evet**, **Hayır** veya **İncele**'yi seçin.
+4. Palette **Taramaları Kurtar** paneli açılır ve taramalar çizgilerin yerinde önizlenir. Panel açıkken kaydırma ve yakınlaştırma yapabilirsiniz.
+   - Listede her taramanın deseni, ölçeği ve açısı, eşleşme puanı ve kaç nesnenin yerini alacağı gösterilir. Çizgilerini iyi yeniden çizemeyen taramalar işaretlenir. Çizimde göstermek için bir taramaya tıklayın; atlamak için onay kutusunu temizleyin.
+   - Başka bir **desen** seçtiğinizde (`acadiso.pat` desenleri veya kullanıcı tanımlı tek ya da çift çizgiler) ölçeği ve açısı çizgilerden yeniden ölçülür. **Ölçeği** (veya **aralığı**) ve **açıyı** kendiniz de girebilirsiniz; **Otomatik uydur** bunları yeniden ölçer.
+   - **Alan ekle**, tanımanın kaçırdığı bir alanın içinde bir nokta seçmenizi sağlar: o noktayı çevreleyen kapalı alandaki çizgilere en uygun desen uydurulur.
+   - **Özgün çizgileri gizle** (varsayılan olarak açık), sonucu yerini aldığı çizgiler olmadan gösterir.
+5. Dönüştürmek için **Uygula**'ya tıklayın. **İptal** veya paleti kapatmak hiçbir şeyi değiştirmez.
 
-Bir tarama yalnızca yeniden çizildiğinde çizgilerini aynen oluşturuyorsa kabul edilir ve yalnızca tamamen yeniden çizilen nesneler silinir. Desen ölçeği ve açısı çizim birimindedir; 1 ölçeğiyle içe aktarılan bir taramanın ölçeği küçük olur. Gerçek değerler için önce `pdfscale` çalıştırın.
+Bir tarama yalnızca yeniden çizildiğinde çizgilerini aynen oluşturuyorsa bulunur ve deseni değiştirdikten sonra da yalnızca taramanın tamamen yeniden çizdiği nesneler silinir. Desen ölçeği ve açısı çizim birimindedir; 1 ölçeğiyle içe aktarılan bir taramanın ölçeği küçük olur. Gerçek değerler için önce `pdfscale` çalıştırın.

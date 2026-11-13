@@ -141,9 +141,16 @@ export {
   type PdfFaceBoundaryOptions
 } from './recognition/pdfHatchFaces'
 export {
+  acapPdfBoundaryAt,
+  acapPdfFitHatch,
+  acapPdfMatchHatch,
   acapPdfRecognizeHatches,
   CUSTOM_PATTERN_NAME,
   type PdfHatchDefinitionLine,
+  type PdfHatchFit,
+  type PdfHatchFitOptions,
+  type PdfHatchMatch,
+  type PdfHatchPatternRequest,
   type PdfHatchRecognitionOptions,
   type PdfHatchRecognitionResult,
   type PdfHatchTrace,

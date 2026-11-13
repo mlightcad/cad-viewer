@@ -96,6 +96,11 @@ PDF uchovává vzorovou šrafu jen jako mnoho krátkých čar, již oříznutýc
 1. Vyberte šrafovanou oblast i s čarami kolem ní. Stačí křížové okno přes oblast.
 2. Pravidelné čáry se nejprve porovnají se vzory `acadiso.pat` (ANSI31, ANSI36, AR-B816, ...), potom s uživatelskými jednoduchými nebo křížovými čarami. Když nic nesedí, změří se rozteč, posun a čárkování a šrafa dostane vlastní vzor `PDF_HATCH`.
 3. Hranice se vezme z uzavřených obrysů ve výběru nebo z oblasti, kterou uzavírají vybrané úsečky, oblouky a křivky, i když se kříží nebo přesahují. Ostrovy zůstanou otvory.
-4. Šrafy se zobrazí místo svých čar. Zvolte **Ano**, **Ne** nebo **Revize**, stejně jako u bloků.
+4. V paletě se otevře panel **Obnovit šrafy** a šrafy se zobrazí v náhledu místo svých čar. Během otevřeného panelu můžete posouvat a zvětšovat.
+   - Seznam ukazuje u každé šrafy vzor, měřítko a úhel, míru shody a počet objektů, které nahradí. Šrafy, které své čáry dobře nepřekreslí, jsou označeny. Kliknutím na šrafu ji zobrazíte ve výkresu; zrušením zaškrtnutí ji vynecháte.
+   - Zvolíte-li jiný **vzor** (z `acadiso.pat` nebo uživatelské jednoduché či dvojité čáry), jeho měřítko a úhel se znovu změří z čar. **Měřítko** (nebo **rozteč**) a **úhel** můžete zadat i sami; **Automaticky přizpůsobit** je změří znovu.
+   - **Přidat oblast** určí bod uvnitř oblasti, kterou rozpoznání vynechalo: na čáry v uzavřené oblasti kolem bodu se použije nejlépe odpovídající vzor.
+   - **Skrýt původní čáry** (ve výchozím stavu zapnuto) ukáže výsledek bez čar, které nahradí.
+5. Klikněte na **Použít** pro převod. **Zrušit** nebo zavření palety nic nezmění.
 
-Šrafa se přijme jen tehdy, když její nové vykreslení zopakuje původní čáry, a smažou se jen objekty, které vykreslí celé. Měřítko a úhel vzoru jsou v jednotkách výkresu, takže šrafa importovaná v měřítku 1 má malé měřítko; pro skutečné hodnoty nejprve spusťte `pdfscale`.
+Šrafa se najde jen tehdy, když její nové vykreslení zopakuje původní čáry, a i po změně vzoru se smažou jen objekty, které šrafa vykreslí celé. Měřítko a úhel vzoru jsou v jednotkách výkresu, takže šrafa importovaná v měřítku 1 má malé měřítko; pro skutečné hodnoty nejprve spusťte `pdfscale`.
