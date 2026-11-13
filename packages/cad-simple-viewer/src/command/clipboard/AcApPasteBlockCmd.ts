@@ -6,6 +6,7 @@ import {
 
 import { AcApContext } from '../../app'
 import { AcEdCommand, AcEdOpenMode } from '../../editor'
+import { AcApI18n } from '../../i18n'
 import { acapPromptPastePoint, acapReadClipboard } from './AcApClipboardUtils'
 
 /**
@@ -54,13 +55,15 @@ export class AcApPasteBlockCmd extends AcEdCommand {
     if (!point) return
 
     const db = context.doc.database
-    const blockName = acapPasteBlockName(db)
-    const blockId = db.insert(blockName, content.database)
-    const block = db.getObjectById(blockId) as AcDbBlockTableRecord
-    block.origin = content.basePoint
+    await this.withBusyIndicator(() => {
+      const blockName = acapPasteBlockName(db)
+      const blockId = db.insert(blockName, content.database)
+      const block = db.getObjectById(blockId) as AcDbBlockTableRecord
+      block.origin = content.basePoint
 
-    const insert = new AcDbBlockReference(blockName)
-    insert.position = point
-    db.tables.blockTable.modelSpace.appendEntity(insert)
+      const insert = new AcDbBlockReference(blockName)
+      insert.position = point
+      db.tables.blockTable.modelSpace.appendEntity(insert)
+    }, AcApI18n.t('main.message.pastingFromClipboard'))
   }
 }

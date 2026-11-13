@@ -7,7 +7,8 @@ jest.mock('../src/app', () => {
         editor: {
           getPoint: jest.fn(),
           showMessage: jest.fn()
-        }
+        },
+        withBusyIndicator: async <T>(work: () => T | Promise<T>) => work()
       }
     }
   }
@@ -22,6 +23,10 @@ jest.mock('../src/editor', () => {
 
     showMessage(message: string, type: string = 'info') {
       AcApDocManager.instance.editor.showMessage(message, type)
+    }
+
+    async withBusyIndicator<T>(work: () => T | Promise<T>) {
+      return work()
     }
   }
 

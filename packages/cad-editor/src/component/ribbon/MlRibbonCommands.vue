@@ -7,7 +7,6 @@ import {
   Delete,
   DocumentCopy,
   Hide,
-  RefreshLeft,
   RefreshRight,
   Right,
   ScaleToOriginal,
@@ -221,10 +220,12 @@ import {
   measurementPanel,
   measurePoint,
   pan as panIcon,
+  redo as redoIcon,
   revCircle,
   revCloud,
   revRect,
   revText,
+  undo as undoIcon,
   zoomToBox,
   zoomToExtent
 } from '../../svg/toolbarIcons'
@@ -3825,7 +3826,7 @@ const handleFileMenuSelect = async (command: string) => {
             <el-button
               class="ml-ribbon-tabs-after__button"
               :disabled="disabled || !canUndo"
-              :icon="RefreshLeft"
+              :icon="undoIcon"
               @click="handleHeaderUndo"
             />
           </el-tooltip>
@@ -3837,7 +3838,7 @@ const handleFileMenuSelect = async (command: string) => {
             <el-button
               class="ml-ribbon-tabs-after__button"
               :disabled="disabled || !canRedo"
-              :icon="RefreshRight"
+              :icon="redoIcon"
               @click="handleHeaderRedo"
             />
           </el-tooltip>

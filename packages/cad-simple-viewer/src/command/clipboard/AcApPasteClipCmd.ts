@@ -1,5 +1,6 @@
 import { AcApContext } from '../../app'
 import { AcEdCommand, AcEdOpenMode } from '../../editor'
+import { AcApI18n } from '../../i18n'
 import {
   acapPasteTransform,
   acapPromptPastePoint,
@@ -32,9 +33,13 @@ export class AcApPasteClipCmd extends AcEdCommand {
     )
     if (!point) return
 
-    context.doc.database.insert(
-      acapPasteTransform(content, point),
-      content.database
+    await this.withBusyIndicator(
+      () =>
+        context.doc.database.insert(
+          acapPasteTransform(content, point),
+          content.database
+        ),
+      AcApI18n.t('main.message.pastingFromClipboard')
     )
   }
 }

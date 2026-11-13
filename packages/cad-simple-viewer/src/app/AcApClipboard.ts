@@ -88,16 +88,19 @@ export class AcApClipboard {
   /**
    * Copies entities to the clipboard.
    *
+   * Runs `wblock` and system-clipboard DXF serialization before resolving so
+   * callers can keep a busy overlay up for the whole blocking stretch.
+   *
    * @param sourceDb - Database that owns the entities.
    * @param objectIds - Ids of the entities to copy.
    * @param basePoint - Base point used when pasting.
    * @returns The new clipboard content.
    */
-  set(
+  async set(
     sourceDb: AcDbDatabase,
     objectIds: AcDbObjectId[],
     basePoint: AcGePoint3dLike
-  ): AcApClipboardContent {
+  ): Promise<AcApClipboardContent> {
     const content: AcApClipboardContent = {
       database: sourceDb.wblock(objectIds),
       basePoint: new AcGePoint3d(basePoint),
@@ -105,7 +108,7 @@ export class AcApClipboard {
     }
     this._content = content
     this._stamp = createStamp()
-    void this.writeSystemClipboard(content, this._stamp)
+    await this.writeSystemClipboard(content, this._stamp)
     return content
   }
 
