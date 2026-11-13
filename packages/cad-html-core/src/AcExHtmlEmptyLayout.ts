@@ -20,7 +20,11 @@ export function acexHtmlIsEmptyPaperSpaceLayout(
   if (blockTableRecordId === modelSpaceBtrId) {
     return false
   }
-  const block = database.tables.blockTable.getIdAt(blockTableRecordId)
+  const blockTable = database.tables?.blockTable
+  const block =
+    typeof blockTable?.getIdAt === 'function'
+      ? blockTable.getIdAt(blockTableRecordId)
+      : undefined
   if (!block?.newIterator) {
     return true
   }

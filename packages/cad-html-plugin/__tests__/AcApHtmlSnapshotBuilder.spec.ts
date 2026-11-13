@@ -15,8 +15,25 @@ function fakeDatabase(
     layoutName: string
     tabOrder: number
     blockTableRecordId: string
-  }>
+  }>,
+  options: { emptyPaperBtrIds?: string[] } = {}
 ) {
+  const emptyPaper = new Set(options.emptyPaperBtrIds ?? [])
+  const blocks = new Map(
+    layouts.map(layout => {
+      const isEmptyPaper = emptyPaper.has(layout.blockTableRecordId)
+      return [
+        layout.blockTableRecordId,
+        {
+          // Non-empty paper stubs keep a placeholder entity so
+          // `acexHtmlIsEmptyPaperSpaceLayout` does not drop the tab when
+          // `exportEmptyLayouts` is false (default).
+          newIterator: () =>
+            (isEmptyPaper ? [] : [{ type: 'LINE' }])[Symbol.iterator]()
+        }
+      ] as const
+    })
+  )
   return {
     objects: {
       layout: {
@@ -25,7 +42,8 @@ function fakeDatabase(
     },
     tables: {
       blockTable: {
-        newIterator: () => [][Symbol.iterator]()
+        newIterator: () => [][Symbol.iterator](),
+        getIdAt: (id: string) => blocks.get(id)
       }
     },
     extmin: { x: 0, y: 0 },
@@ -70,11 +88,9 @@ describe('acexHtmlListDatabaseLayouts', () => {
       { layoutName: 'Layout2', tabOrder: 3, blockTableRecordId: 'ps2' }
     ])
 
-    expect(acexHtmlListDatabaseLayouts(database).map(layout => layout.name)).toEqual([
-      'Model',
-      'Layout1',
-      'Layout2'
-    ])
+    expect(
+      acexHtmlListDatabaseLayouts(database).map(layout => layout.name)
+    ).toEqual(['Model', 'Layout1', 'Layout2'])
   })
 })
 
@@ -122,5 +138,32 @@ describe('AcApHtmlSnapshotBuilder', () => {
     expect(snapshot.layouts[0]?.isModelSpace).toBe(true)
     expect(snapshot.activeLayoutBtrId).toBe('ms')
     expect(snapshot.meta.exportLayouts).toBe(false)
+  })
+
+  it('ignores orphan scene layout keys absent from the layout table', () => {
+    // Browser scenes can keep empty layout groups keyed by displaced bootstrap
+    // BTR handles (e.g. "17") that are not real layout-table tabs.
+    const database = fakeDatabase([
+      { layoutName: 'Model', tabOrder: 1, blockTableRecordId: 'ms' },
+      { layoutName: '布局1', tabOrder: 2, blockTableRecordId: 'ps1' },
+      { layoutName: '布局2', tabOrder: 3, blockTableRecordId: 'ps2' }
+    ])
+    const scene = fakeScene(['ms', 'ps1', 'ps2', '17'], 'ps1', 'ms')
+    const snapshot = new AcApHtmlSnapshotBuilder().build(scene, database, {
+      viewerMode: 'view',
+      exportEmptyLayouts: true
+    })
+
+    expect(snapshot.layouts.map(layout => layout.btrId)).toEqual([
+      'ms',
+      'ps1',
+      'ps2'
+    ])
+    expect(snapshot.layouts.map(layout => layout.name)).toEqual([
+      'Model',
+      '布局1',
+      '布局2'
+    ])
+    expect(snapshot.layouts.some(layout => layout.name === '17')).toBe(false)
   })
 })

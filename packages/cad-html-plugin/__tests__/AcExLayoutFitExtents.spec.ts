@@ -28,6 +28,20 @@ function lineObject(minX: number, minY: number, maxX: number, maxY: number) {
 }
 
 function fakeDatabase(): AcDbDatabase {
+  // Layout-table + block stubs so default empty-layout filtering keeps both
+  // tabs (scene geometry alone is not consulted by acexHtmlIsEmptyPaperSpaceLayout).
+  const layouts = [
+    { layoutName: 'Model', tabOrder: 1, blockTableRecordId: 'ms' },
+    { layoutName: 'Layout1', tabOrder: 2, blockTableRecordId: 'ps' }
+  ]
+  const blocks = new Map(
+    layouts.map(layout => [
+      layout.blockTableRecordId,
+      {
+        newIterator: () => [{ type: 'LINE' }][Symbol.iterator]()
+      }
+    ] as const)
+  )
   return {
     extmin: { x: -5000, y: -5000 },
     extmax: { x: 5000, y: 5000 },
@@ -40,9 +54,14 @@ function fakeDatabase(): AcDbDatabase {
     ltscale: 1,
     angbase: 0,
     angdir: 0,
-    objects: { layout: { newIterator: () => [][Symbol.iterator]() } },
+    objects: {
+      layout: { newIterator: () => layouts[Symbol.iterator]() }
+    },
     tables: {
-      blockTable: { newIterator: () => [][Symbol.iterator]() }
+      blockTable: {
+        newIterator: () => [][Symbol.iterator](),
+        getIdAt: (id: string) => blocks.get(id)
+      }
     }
   } as unknown as AcDbDatabase
 }

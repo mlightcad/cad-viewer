@@ -374,21 +374,11 @@ function listExportLayouts(
     )
   }
 
-  for (const layout of scene.layouts) {
-    if (seen.has(layout.btrId)) continue
-    seen.add(layout.btrId)
-    if (
-      !exportEmptyLayouts &&
-      acexHtmlIsEmptyPaperSpaceLayout(
-        database,
-        layout.btrId,
-        scene.modelSpaceBtrId
-      )
-    ) {
-      continue
-    }
-    result.push(layout)
-  }
+  // Do not merge scene-only layout keys. The live Three.js scene can retain
+  // orphan empty layout groups for displaced bootstrap BTR handles (e.g. "17")
+  // after DWG open / handle collision. With `exportEmptyLayouts: true` those
+  // would surface as phantom tabs named after the raw handle. The layout
+  // dictionary is the source of truth for exported tabs.
 
   // Guarantee model space stays in the snapshot even when the layout table
   // omitted it or only empty paper tabs remained after filtering.
@@ -418,11 +408,7 @@ function resolveExportActiveLayoutBtrId(
   const preferred = scene.activeLayoutBtrId || scene.modelSpaceBtrId
   if (
     exportEmptyLayouts ||
-    !acexHtmlIsEmptyPaperSpaceLayout(
-      database,
-      preferred,
-      scene.modelSpaceBtrId
-    )
+    !acexHtmlIsEmptyPaperSpaceLayout(database, preferred, scene.modelSpaceBtrId)
   ) {
     return preferred
   }
