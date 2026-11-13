@@ -144,6 +144,7 @@ export default {
     input: 'Aranacak metin',
     find: 'Bul',
     matchCase: 'Büyük/küçük harf duyarlı',
+    dimensionOverrideOnly: 'Ölçülerde yalnızca geçersiz kılınan metin',
     currentLayoutOnly: 'Yalnızca geçerli yerleşim',
     hint: 'Tüm çizimde (tüm yerleşimler) metin, çok satırlı metin, öznitelikler ile blok, ölçü, kılavuz ve tablolardaki metni aramak için Enter tuşuna basın.',
     hintLayout: 'Geçerli yerleşimde metin, çok satırlı metin, öznitelikler ile blok, ölçü, kılavuz ve tablolardaki metni aramak için Enter tuşuna basın.',

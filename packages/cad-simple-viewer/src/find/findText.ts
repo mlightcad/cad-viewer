@@ -15,8 +15,11 @@
  *   legends and labels are usually drawn this way
  * - constant `ATTDEF` values inside block definitions (the only ATTDEFs that
  *   are drawn inside a block; templates get their value from an `ATTRIB`)
- * - `DIMENSION` — the text of its dimension block when that block has a
- *   match, otherwise the override text (`dimensionText`)
+ * - `DIMENSION` — the text of its dimension block (the displayed text,
+ *   measured value included) when that block has a match, otherwise the
+ *   override text (`dimensionText`). With
+ *   {@link AcApFindOptions.dimensionOverrideOnly} only the override text is
+ *   searched, like AutoCAD FIND.
  * - `MULTILEADER` — its MTEXT contents
  * - `ACAD_TABLE` — the cell text (from the table block when present,
  *   otherwise the cell strings)
@@ -52,6 +55,12 @@ export interface AcApFindOptions {
    * (default) case, accents (diacritics) and runs of whitespace are ignored.
    */
   matchCase?: boolean
+  /**
+   * When true a dimension only matches its override text (`dimensionText`),
+   * like AutoCAD FIND, so a measured value such as `422` is not found. When
+   * false (default) the displayed text of the dimension block is searched too.
+   */
+  dimensionOverrideOnly?: boolean
   /** Maximum hits to return; defaults to {@link ACAP_FIND_MAX_RESULTS}. */
   maxResults?: number
 }
@@ -368,6 +377,7 @@ export function acapFindTextInLayout(
   options: AcApFindOptions = {}
 ): AcApFindResult {
   const matchCase = options.matchCase === true
+  const dimensionOverrideOnly = options.dimensionOverrideOnly === true
   const max = options.maxResults ?? ACAP_FIND_MAX_RESULTS
   const needle = acapNormalizeFindText(query, matchCase)
   const result: AcApFindResult = { hits: [], truncated: false }
@@ -517,11 +527,18 @@ export function acapFindTextInLayout(
       const table = entity.blockTableRecord
       if (table?.newIterator)
         return table as { newIterator(): Iterable<EntityLike> }
-      const id = entity.dimBlockId
-      const byId = id ? acapResolveFindBlockTableRecord(db, id) : undefined
-      if (byId) return byId
-      const name = entity.blockName
-      return name ? db.tables.blockTable.getAt?.(name) : undefined
+      // `dimBlockId` holds the block *name* (data-model draws the dimension
+      // with `blockTable.getAt(dimBlockId)`); an annotative dimension draws
+      // the block of its current annotation scale instead.
+      const ref: string | undefined =
+        entity.resolveAnnotativePresentation?.()?.dimBlockId ??
+        entity.dimBlockId ??
+        entity.blockName
+      if (!ref) return undefined
+      return (
+        db.tables.blockTable.getAt?.(ref) ??
+        acapResolveFindBlockTableRecord(db, ref)
+      )
     } catch {
       return undefined
     }
@@ -578,7 +595,10 @@ export function acapFindTextInLayout(
     if (type === 'DIMENSION' || type === 'ACAD_TABLE') {
       const kind = type === 'DIMENSION' ? 'dimension' : 'table'
       const owner: Owner = { entity, kind, layer: entity.layer }
-      const block = ownBlock(entity)
+      const block =
+        type === 'DIMENSION' && dimensionOverrideOnly
+          ? undefined
+          : ownBlock(entity)
       const before = result.hits.length
       if (block) {
         // Dimension / table blocks are already in WCS.

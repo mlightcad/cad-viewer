@@ -144,6 +144,7 @@ export default {
     input: '検索文字列',
     find: '検索',
     matchCase: '大文字と小文字を区別',
+    dimensionOverrideOnly: '寸法は寸法値の優先のみ検索',
     currentLayoutOnly: '現在のレイアウトのみ',
     hint: 'Enter キーを押すと、図面全体 (すべてのレイアウト) の文字、マルチテキスト、属性、およびブロック、寸法、引出線、表に含まれる文字を検索します。',
     hintLayout: 'Enter キーを押すと、現在のレイアウトの文字、マルチテキスト、属性、およびブロック、寸法、引出線、表に含まれる文字を検索します。',

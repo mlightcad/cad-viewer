@@ -144,6 +144,7 @@ export default {
     input: 'Hledaný text',
     find: 'Hledat',
     matchCase: 'Rozlišovat velikost písmen',
+    dimensionOverrideOnly: 'U kót pouze přepsaný text',
     currentLayoutOnly: 'Pouze aktuální layout',
     hint: 'Stiskněte Enter pro hledání textu, víceřádkového textu, atributů a textu v blocích, kótách, odkazech a tabulkách v celém výkresu (všechny layouty).',
     hintLayout: 'Stiskněte Enter pro hledání textu, víceřádkového textu, atributů a textu v blocích, kótách, odkazech a tabulkách v aktuálním layoutu.',

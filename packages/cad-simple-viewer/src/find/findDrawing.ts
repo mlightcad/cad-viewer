@@ -130,6 +130,7 @@ export function acapFindText(
   for (const target of targets) {
     const found = acapFindTextInLayout(db, target.btrId, query, {
       matchCase: options.matchCase,
+      dimensionOverrideOnly: options.dimensionOverrideOnly,
       maxResults: max - result.hits.length
     })
     for (const hit of found.hits) {
