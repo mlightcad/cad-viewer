@@ -1,15 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-  <!-- AutoCAD ATTDEF: filled diagonal tag, eyelet + 3 text-line cutouts -->
-  <g transform="translate(10 10) rotate(-48) translate(-10 -10)">
-    <path
-      fill-rule="evenodd"
-      d="
-        M2.4 10 L7 5 H16.5 A1 1 0 0 1 17.5 6 V14 A1 1 0 0 1 16.5 15 H7 Z
-        M6.35 10 m-1.35 0 a1.35 1.35 0 1 0 2.7 0 a1.35 1.35 0 1 0 -2.7 0
-        M9.1 7.7 h5.6 v1.15 H9.1 Z
-        M9.1 9.55 h4.6 v1.15 H9.1 Z
-        M9.1 11.4 h3.4 v1.15 H9.1 Z
-      "
-    />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="none">
+  <!-- AutoCAD ATTDEF: outlined diagonal tag with eyelet and text lines -->
+  <g transform="translate(10 10) rotate(-48) translate(-10 -10)" stroke="currentColor" stroke-width="1.25">
+    <path stroke-linejoin="round" d="M3 10 7.2 5.6H16.3A.9.9 0 0 1 17.2 6.5V13.5A.9.9 0 0 1 16.3 14.4H7.2Z" />
+    <circle cx="6.7" cy="10" r="1.05" />
+    <path stroke-linecap="round" d="M9.7 8.6h4.9M9.7 11.4h3.5" />
   </g>
 </svg>

@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
   <!-- Extension bars (geometry) -->
-  <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="butt"
+  <path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="butt"
     d="M2.2 5.4v9.2M17.8 5.4v9.2"/>
   <!-- Dimension line -->
-  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.8" stroke-linecap="butt"
+  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.25" stroke-linecap="butt"
     d="M7.6 10h4.8"/>
   <!-- Arrowheads -->
   <path fill="var(--el-color-primary)" d="M3 10 7.6 8v4Z"/>

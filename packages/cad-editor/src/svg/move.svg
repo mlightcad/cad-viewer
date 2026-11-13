@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-<rect x="9.6" y="5" width=".8" height="10"></rect>
-<rect x="5" y="9.6" width="10" height=".8"></rect>
-<polygon points="10 3 12.31 7 10 5.67 7.69 7 10 3"></polygon>
-<polygon points="10 17 7.69 13 10 14.33 12.31 13 10 17"></polygon>
-<polygon points="3 10 7 7.69 5.67 10 7 12.31 3 10"></polygon>
-<polygon points="17 10 13 12.31 14.33 10 13 7.69 17 10"></polygon>
+<rect x="9.6" y="5" width=".8" height="10" stroke="currentColor" stroke-width=".45" stroke-linejoin="round"></rect>
+<rect x="5" y="9.6" width="10" height=".8" stroke="currentColor" stroke-width=".45" stroke-linejoin="round"></rect>
+<polygon points="10 3 12.31 7 10 5.67 7.69 7 10 3" stroke="currentColor" stroke-width=".45" stroke-linejoin="round"></polygon>
+<polygon points="10 17 7.69 13 10 14.33 12.31 13 10 17" stroke="currentColor" stroke-width=".45" stroke-linejoin="round"></polygon>
+<polygon points="3 10 7 7.69 5.67 10 7 12.31 3 10" stroke="currentColor" stroke-width=".45" stroke-linejoin="round"></polygon>
+<polygon points="17 10 13 12.31 14.33 10 13 7.69 17 10" stroke="currentColor" stroke-width=".45" stroke-linejoin="round"></polygon>
 </svg>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <!-- Antenna -->
+  <path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" d="M10 3.2v1.8"/>
+  <circle cx="10" cy="2.2" r="1.1" fill="currentColor"/>
+  <!-- Head with side "ears" -->
+  <rect x="3.6" y="5" width="12.8" height="9.6" rx="2.8" fill="none" stroke="currentColor" stroke-width="1.25"/>
+  <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M1.9 8.6v2.6M18.1 8.6v2.6"/>
+  <!-- Eyes and mouth -->
+  <circle cx="7.6" cy="9.2" r="1.25" fill="currentColor"/>
+  <circle cx="12.4" cy="9.2" r="1.25" fill="currentColor"/>
+  <path fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" d="M8.2 12.2h3.6"/>
+  <!-- Shoulders -->
+  <path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" d="M5.6 18.6c.4-1.6 2.2-2.6 4.4-2.6s4 1 4.4 2.6"/>
+  <!-- AI sparkle -->
+  <path fill="currentColor" d="M16.6.6l.45 1.35 1.35.45-1.35.45-.45 1.35-.45-1.35-1.35-.45 1.35-.45z"/>
+</svg>

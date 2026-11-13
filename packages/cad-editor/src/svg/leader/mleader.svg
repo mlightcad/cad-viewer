@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
   <!-- Landing node -->
-  <circle cx="14.5" cy="4.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+  <circle cx="14.5" cy="4.5" r="1.6" fill="none" stroke="currentColor" stroke-width="1.25"/>
   <!-- Leader path with landing -->
-  <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+  <path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"
     d="M13 4.5 H8.5 L4.2 14.2"/>
   <!-- Arrowhead -->
   <path fill="currentColor" d="M4.2 14.2 7.1 13.1 5.4 11.2 Z"/>
