@@ -185,6 +185,47 @@ describe('AcUiFindPaletteView', () => {
     view.destroy()
   })
 
+  it('"Dimensions: override text only" hides measured dimension values', () => {
+    entities = [
+      {
+        objectId: 'd1',
+        dxfTypeName: 'DIMENSION',
+        layer: 'DIM',
+        dimBlockId: '*D1',
+        dimensionText: '',
+        textPosition: { x: 5, y: 5 }
+      }
+    ]
+    blocks = {
+      '*D1': [
+        {
+          objectId: 'm',
+          dxfTypeName: 'MTEXT',
+          contents: '\\A1;422',
+          layer: '0',
+          location: { x: 5, y: 5 }
+        }
+      ]
+    }
+    const view = createView()
+    const label = view.element.querySelector(
+      '[data-testid="find-dimension-override-only"]'
+    )!
+    expect(label.textContent).toBe(en['findPalette.dimensionOverrideOnly'])
+    const box = label.querySelector('input')!
+    expect(box.checked).toBe(false)
+
+    view.search('422')
+    expect(view.hits.map(h => [h.kind, h.entityId])).toEqual([
+      ['dimension', 'd1']
+    ])
+
+    box.click()
+    expect(view.hits).toHaveLength(0)
+    expect(status(view)).toBe('No text found')
+    view.destroy()
+  })
+
   it('reports a missing document instead of throwing', () => {
     hasDocument = false
     const view = createView()
@@ -238,6 +279,11 @@ describe('AcUiFindPaletteView', () => {
     const button = view.element.querySelector(
       'button.ml-ex-ui-find-btn'
     ) as HTMLButtonElement
+    // Icon-only button: the label is the tooltip and accessible name.
+    expect(button.querySelector('svg')).not.toBeNull()
+    expect(button.textContent).toBe('')
+    expect(button.title).toBe(en['findPalette.find'])
+    expect(button.getAttribute('aria-label')).toBe(en['findPalette.find'])
     input.value = 'beta'
     button.click()
     expect(rows(view)).toHaveLength(2)

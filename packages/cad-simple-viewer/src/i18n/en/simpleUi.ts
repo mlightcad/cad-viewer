@@ -144,6 +144,7 @@ export default {
     input: 'Search text',
     find: 'Find',
     matchCase: 'Match case',
+    dimensionOverrideOnly: 'Dimensions: override text only',
     currentLayoutOnly: 'Current layout only',
     hint: 'Press Enter to search text, multiline text, attributes and the text in blocks, dimensions, leaders and tables in the whole drawing (all layouts).',
     hintLayout: 'Press Enter to search text, multiline text, attributes and the text in blocks, dimensions, leaders and tables in the current layout.',

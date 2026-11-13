@@ -11,6 +11,7 @@ import {
 } from '../find/AcApFindNavigator'
 import type { AcUiI18n } from '../i18n/AcUiI18n'
 import { acuiEnsureUiStyles } from './AcUiSimpleUiStyles'
+import { ICON_FIND } from './icons'
 
 /** Constructor options for {@link AcUiFindPaletteView}. */
 export interface AcUiFindPaletteViewOptions {
@@ -44,6 +45,8 @@ export class AcUiFindPaletteView {
   private findButton!: HTMLButtonElement
   private matchCaseEl!: HTMLInputElement
   private matchCaseLabelEl!: HTMLLabelElement
+  private dimensionOverrideOnlyEl!: HTMLInputElement
+  private dimensionOverrideOnlyLabelEl!: HTMLLabelElement
   private layoutOnlyEl!: HTMLInputElement
   private layoutOnlyLabelEl!: HTMLLabelElement
   private statusEl!: HTMLDivElement
@@ -60,6 +63,7 @@ export class AcUiFindPaletteView {
   private searched?: {
     query: string
     matchCase: boolean
+    dimensionOverrideOnly: boolean
     scope: AcUiFindScope
     layoutId: string
   }
@@ -85,9 +89,14 @@ export class AcUiFindPaletteView {
   refreshLocale() {
     this.inputEl.placeholder = this.i18n.t('findPalette.placeholder')
     this.inputEl.setAttribute('aria-label', this.i18n.t('findPalette.input'))
-    this.findButton.textContent = this.i18n.t('findPalette.find')
+    const findLabel = this.i18n.t('findPalette.find')
+    this.findButton.title = findLabel
+    this.findButton.setAttribute('aria-label', findLabel)
     this.matchCaseLabelEl.lastChild!.textContent = this.i18n.t(
       'findPalette.matchCase'
+    )
+    this.dimensionOverrideOnlyLabelEl.lastChild!.textContent = this.i18n.t(
+      'findPalette.dimensionOverrideOnly'
     )
     this.layoutOnlyLabelEl.lastChild!.textContent = this.i18n.t(
       'findPalette.currentLayoutOnly'
@@ -108,15 +117,19 @@ export class AcUiFindPaletteView {
    *
    * @param scope - `drawing` (default: all layouts) or `layout` (active layout
    * only); defaults to the state of the "Current layout only" checkbox.
+   * @param dimensionOverrideOnly - Search only dimension override text, like
+   * AutoCAD FIND; defaults to the state of its checkbox.
    */
   search(
     query: string,
     matchCase = this.matchCaseEl.checked,
-    scope: AcUiFindScope = this.scope
+    scope: AcUiFindScope = this.scope,
+    dimensionOverrideOnly = this.dimensionOverrideOnlyEl.checked
   ) {
     this.inputEl.value = query
     this.matchCaseEl.checked = matchCase
     this.layoutOnlyEl.checked = scope === 'layout'
+    this.dimensionOverrideOnlyEl.checked = dimensionOverrideOnly
     this.runSearch()
   }
 
@@ -157,6 +170,7 @@ export class AcUiFindPaletteView {
     this.findButton.type = 'button'
     this.findButton.className = 'ml-ex-ui-measure-btn ml-ex-ui-find-btn'
     this.findButton.dataset.testid = 'find-button'
+    this.findButton.innerHTML = ICON_FIND
     this.findButton.addEventListener('click', () => {
       // Same as the first Enter: list results and jump to the first hit.
       this.runSearch()
@@ -174,6 +188,20 @@ export class AcUiFindPaletteView {
       if (this.searched) this.runSearch()
     })
     this.matchCaseLabelEl.append(this.matchCaseEl, document.createTextNode(''))
+
+    this.dimensionOverrideOnlyLabelEl = document.createElement('label')
+    this.dimensionOverrideOnlyLabelEl.className = 'ml-ex-ui-find-option'
+    this.dimensionOverrideOnlyLabelEl.dataset.testid =
+      'find-dimension-override-only'
+    this.dimensionOverrideOnlyEl = document.createElement('input')
+    this.dimensionOverrideOnlyEl.type = 'checkbox'
+    this.dimensionOverrideOnlyEl.addEventListener('change', () => {
+      if (this.searched) this.runSearch()
+    })
+    this.dimensionOverrideOnlyLabelEl.append(
+      this.dimensionOverrideOnlyEl,
+      document.createTextNode('')
+    )
 
     this.layoutOnlyLabelEl = document.createElement('label')
     this.layoutOnlyLabelEl.className = 'ml-ex-ui-find-option'
@@ -207,13 +235,15 @@ export class AcUiFindPaletteView {
       this.navigateTo(Number(row.dataset.findIndex))
     })
 
-    this.element.append(
-      form,
+    const optionsEl = document.createElement('div')
+    optionsEl.className = 'ml-ex-ui-find-options'
+    optionsEl.append(
       this.matchCaseLabelEl,
-      this.layoutOnlyLabelEl,
-      this.statusEl,
-      this.listEl
+      this.dimensionOverrideOnlyLabelEl,
+      this.layoutOnlyLabelEl
     )
+
+    this.element.append(form, optionsEl, this.statusEl, this.listEl)
   }
 
   private handleEnter(backwards: boolean) {
@@ -222,6 +252,8 @@ export class AcUiFindPaletteView {
       this.searched &&
       this.searched.query === query &&
       this.searched.matchCase === this.matchCaseEl.checked &&
+      this.searched.dimensionOverrideOnly ===
+        this.dimensionOverrideOnlyEl.checked &&
       this.searched.scope === this.scope
     if (!same || this.result.hits.length === 0) {
       this.runSearch()
@@ -252,13 +284,21 @@ export class AcUiFindPaletteView {
     }
     const layoutId = view.activeLayoutBtrId
     const matchCase = this.matchCaseEl.checked
+    const dimensionOverrideOnly = this.dimensionOverrideOnlyEl.checked
     const scope = this.scope
     this.result = acuiFindText(db, query, {
       matchCase,
+      dimensionOverrideOnly,
       scope,
       currentLayoutId: layoutId
     })
-    this.searched = { query, matchCase, scope, layoutId }
+    this.searched = {
+      query,
+      matchCase,
+      dimensionOverrideOnly,
+      scope,
+      layoutId
+    }
     this.searchState = 'done'
     this.renderResults()
   }

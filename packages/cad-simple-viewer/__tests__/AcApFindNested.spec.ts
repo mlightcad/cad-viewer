@@ -226,6 +226,78 @@ describe('acapFindText inside blocks, dimensions, leaders and tables', () => {
     ])
   })
 
+  describe('dimension block referenced by name (data-model dimBlockId)', () => {
+    const measured = (extra: Ent = {}): Ent => ({
+      objectId: '172A8',
+      dxfTypeName: 'DIMENSION',
+      layer: '0',
+      dimBlockId: '*D382',
+      dimensionText: '',
+      measurement: 422,
+      textPosition: { x: 50, y: 5 },
+      ...extra
+    })
+    const blockText = (id: string, contents: string): Ent => ({
+      objectId: id,
+      dxfTypeName: 'MTEXT',
+      contents,
+      layer: '0',
+      location: { x: 50, y: 5 }
+    })
+    const findWith = (
+      db: ReturnType<typeof createDb>,
+      query: string,
+      dimensionOverrideOnly?: boolean
+    ) =>
+      acapFindText(db, query, {
+        currentLayoutId: 'btr-model',
+        dimensionOverrideOnly
+      }).hits
+
+    it('finds the measured value shown by the dimension block', () => {
+      const db = createDb([measured()], {
+        '*D382': [blockText('m', '\\A1;422')]
+      })
+      expect(findWith(db, '422')).toEqual([
+        expect.objectContaining({
+          entityId: '172A8',
+          textEntityId: '172A8/m',
+          kind: 'dimension',
+          text: '422'
+        })
+      ])
+    })
+
+    it('searches only the override text when dimensionOverrideOnly is set', () => {
+      const db = createDb(
+        [
+          measured(),
+          measured({ objectId: 'd2', dimensionText: '<> TYP', measurement: 7 })
+        ],
+        { '*D382': [blockText('m', '\\A1;422')] }
+      )
+      expect(findWith(db, '422', true)).toEqual([])
+      expect(findWith(db, 'typ', true).map(h => [h.entityId, h.text])).toEqual([
+        ['d2', 'TYP']
+      ])
+    })
+
+    it('uses the block of the current annotation scale', () => {
+      const db = createDb(
+        [
+          measured({
+            resolveAnnotativePresentation: () => ({ dimBlockId: '*D900' })
+          })
+        ],
+        {
+          '*D382': [blockText('m', 'scale 1:1')],
+          '*D900': [blockText('a', 'scale 1:50')]
+        }
+      )
+      expect(findWith(db, 'scale').map(h => h.text)).toEqual(['scale 1:50'])
+    })
+  })
+
   it('falls back to the dimension override text without a block', () => {
     const db = createDb(
       [

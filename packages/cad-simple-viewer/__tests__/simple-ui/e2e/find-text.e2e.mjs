@@ -93,7 +93,7 @@ assert.match(await page.locator('.ml-ex-ui-find-status').innerText(), /Enter/)
 step('toolbar button opens the Find tab and focuses the field')
 
 const search = async (query, matchCase = false) => {
-  const box = page.locator('.ml-ex-ui-find-option input:not([data-find-scope])')
+  const box = page.locator('[data-testid="find-match-case"] input')
   if ((await box.isChecked()) !== matchCase) await box.click()
   await input.fill(query)
   await page.locator('.ml-ex-ui-find-btn').click()

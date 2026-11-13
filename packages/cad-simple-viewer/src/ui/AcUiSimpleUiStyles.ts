@@ -658,11 +658,35 @@ export function acuiEnsureUiStyles() {
       padding: 4px 8px;
     }
 
+    .ml-ex-ui-find-btn {
+      /* Icon button as tall as the query field (about 30px). */
+      align-self: stretch;
+      width: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .ml-ex-ui-find-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .ml-ex-ui-find-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 16px;
+      flex: 0 0 auto;
+    }
+
     .ml-ex-ui-find-option {
       display: flex;
       gap: 6px;
       align-items: center;
-      flex: 0 0 auto;
+      /* Shrinks (and wraps its label) only when alone on a too narrow row. */
+      flex: 0 1 auto;
+      min-width: 0;
       cursor: pointer;
     }
 

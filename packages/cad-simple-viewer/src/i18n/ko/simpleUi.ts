@@ -144,6 +144,7 @@ export default {
     input: '검색 문자',
     find: '찾기',
     matchCase: '대소문자 구분',
+    dimensionOverrideOnly: '치수는 문자 재지정만 검색',
     currentLayoutOnly: '현재 배치만',
     hint: 'Enter 키를 눌러 전체 도면(모든 배치)에서 문자, 여러 줄 문자, 속성 및 블록, 치수, 지시선, 테이블 내 문자를 검색합니다.',
     hintLayout: 'Enter 키를 눌러 현재 배치에서 문자, 여러 줄 문자, 속성 및 블록, 치수, 지시선, 테이블 내 문자를 검색합니다.',
