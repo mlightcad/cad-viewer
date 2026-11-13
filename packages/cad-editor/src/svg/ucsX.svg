@@ -2,5 +2,5 @@
   <path d="M4 18h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M16 18l2.5-2.5M16 18l2.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
   <text x="10" y="14" font-size="8" fill="currentColor" font-family="sans-serif">X</text>
-  <path d="M4 18V8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" opacity=".45"/>
+  <path d="M4 18V8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".45"/>
 </svg>

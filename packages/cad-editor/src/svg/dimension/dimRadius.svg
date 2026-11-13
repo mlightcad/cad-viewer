@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
   <!-- Arc geometry -->
-  <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="butt"
+  <path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="butt"
     d="M2.7 18.4A15.7 15.7 0 0 1 18.4 2.7"/>
   <!-- Radius line from center toward the arc -->
-  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.8" stroke-linecap="butt"
+  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.25" stroke-linecap="butt"
     d="M17.6 17.6 9.9 9.9"/>
   <!-- Arrowhead at the arc -->
   <path fill="var(--el-color-primary)" d="M7.5 7.5 11 8.9 8.9 11Z"/>

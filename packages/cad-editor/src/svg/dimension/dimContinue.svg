@@ -3,10 +3,10 @@
   <circle cx="2.6" cy="2.2" r="1.5" fill="var(--el-color-primary)"/>
   <circle cx="10" cy="2.2" r="1.5" fill="var(--el-color-primary)"/>
   <circle cx="17.4" cy="2.2" r="1.5" fill="var(--el-color-primary)"/>
-  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.8" stroke-dasharray="2 1.9"
+  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.25" stroke-dasharray="2 1.9"
     d="M2.6 5.2v13.4M10 5.2v13.4M17.4 5.2v13.4"/>
   <!-- Continue dimension line -->
-  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.9" stroke-linecap="butt"
+  <path fill="none" stroke="var(--el-color-primary)" stroke-width="1.25" stroke-linecap="butt"
     d="M5.3 16.4h9.4"/>
   <!-- Arrowheads -->
   <path fill="var(--el-color-primary)" d="M0.6 16.4 5.3 14.3v4.2Z"/>

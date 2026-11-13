@@ -1,0 +1,5 @@
+export { default as agent } from './agent.svg'
+export { default as pdfBlock } from './pdfBlock.svg'
+export { default as pdfDimRecognize } from './pdfDimRecognize.svg'
+export { default as pdfHatchRecognize } from './pdfHatchRecognize.svg'
+export { default as pdfTextRecognize } from './pdfTextRecognize.svg'

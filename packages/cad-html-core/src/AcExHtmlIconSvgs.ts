@@ -12,9 +12,7 @@
  * @param pathDs - Path `d` attributes from `@element-plus/icons-vue`.
  */
 function elementPlusIcon(...pathDs: string[]): string {
-  const paths = pathDs
-    .map(d => `<path fill="currentColor" d="${d}"/>`)
-    .join('')
+  const paths = pathDs.map(d => `<path fill="currentColor" d="${d}"/>`).join('')
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 1024 1024">${paths}</svg>`
 }
 
@@ -31,8 +29,7 @@ const ZOOM_EXTENT_GLYPH =
   '<path fill="currentColor" d="M9.3333 14.125 5.875 10.6667V14.125H9.3333Zm4.7917-3.4583-3.4583 3.4583H14.125V10.6667ZM10.6667 5.875 14.125 9.3333V5.875H10.6667ZM5.875 9.3333 9.3333 5.875H5.875V9.3333Zm9.2083 5.475c1.2333-1.3 1.9083-3.0333 1.9083-4.825-.0083-3.325-2.35-6.1833-5.6083-6.8417C8.125 2.4833 4.85 4.2 3.55 7.2583c-1.3 3.0583-.275 6.6083 2.4583 8.5 2.725 1.8917 6.4167 1.6 8.8167-.6917.0917-.0833.175-.175.2583-.2583Zm1.2583.5917 2.575 2.575c-.3167.3167-.625.625-.9417.9417-.8583-.8583-1.7167-1.7167-2.575-2.575-3.4083 2.9-8.4917 2.5917-11.525-.6917S.9417 7.275 4.1083 4.1083C7.2667.9417 12.3667.8417 15.65 3.875s3.5917 8.1167.6917 11.525Z"/>'
 
 /** Zoom extents icon. */
-export const ICON_ZOOM_EXTENT =
-  `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20">${ZOOM_EXTENT_GLYPH}</svg>`
+export const ICON_ZOOM_EXTENT = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20">${ZOOM_EXTENT_GLYPH}</svg>`
 
 /** Zoom window icon. */
 export const ICON_ZOOM_WINDOW =
@@ -51,59 +48,62 @@ export const ICON_MEASURE =
   '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="currentColor" fill-rule="evenodd" d="M1.5 7h17v6h-17ZM4.25 7h1v2.5h-1ZM7.5 7h.75v1.5H7.5ZM10.25 7h1v2.5h-1ZM13.5 7h.75v1.5H13.5ZM16.25 7h1v2.5h-1Z"/></svg>'
 
 /**
- * Shared ruler strip under each measure-tool glyph.
- * Tick marks are evenodd cutouts so they stay visible on light and dark toolbars.
+ * Shared ruler strip under each measure-tool glyph, occupying y 15–19 of the
+ * 20×20 box. Glyphs must stay above y 15. Tick marks are notches cut into the
+ * top edge so they stay visible on light and dark toolbars.
  */
 const MEASURE_ICON_RULER =
-  '<path fill="currentColor" fill-rule="evenodd" d="M2.25 15h15.5v3.4H2.25Zm1.5 0h.7v1.45h-.7Zm2.95 0h.7v1.45h-.7Zm2.95 0h.7v1.45h-.7Zm2.95 0h.7v1.45h-.7Zm2.95 0h.7v1.45h-.7Z"/>'
+  '<polygon fill="currentColor" points="17 15 17 17 16 17 16 15 14 15 14 18 13 18 13 15 11 15 11 17 10 17 10 15 8 15 8 18 7 18 7 15 5 15 5 17 4 17 4 15 2 15 2 19 18 19 18 15 17 15"/>'
 
 /**
- * Accent for measure/markup grips and highlighted glyph parts.
+ * Accent for markup grips and highlighted glyph parts. Measure-tool icons stay
+ * monochrome (`currentColor`) so they follow the theme like other toolbar icons.
  *
  * `--el-color-primary` is set by Element Plus in cad-viewer. cad-simple-viewer
  * maps it through `--ml-ui-accent`. Exported HTML aliases both to `--mlcad-accent`.
  */
-const TOOL_ICON_ACCENT =
-  'var(--el-color-primary, var(--ml-ui-accent, #409eff))'
+const TOOL_ICON_ACCENT = 'var(--el-color-primary, var(--ml-ui-accent, #409eff))'
 
 /** Composes a measure-tool icon: unique glyph on top, shared ruler on the bottom. */
 function measureToolIcon(glyph: string): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20">${glyph}${MEASURE_ICON_RULER}</svg>`
 }
 
+/** Dimension line with arrows between two extension lines, shared by the distance icons. */
+const MEASURE_DISTANCE_GLYPH =
+  '<rect fill="currentColor" x="2" y="5" width="1" height="8"/><rect fill="currentColor" x="17" y="5" width="1" height="8"/><polygon fill="currentColor" points="3 8.5 7 11 5.67 8.5 7 6 3 8.5"/><polygon fill="currentColor" points="17 8.5 13 11 14.33 8.5 13 6 17 8.5"/><rect fill="currentColor" x="5" y="8" width="10" height="1"/>'
+
 /** Measure distance icon (dimension arrows over a ruler). */
-export const ICON_MEASURE_DISTANCE = measureToolIcon(
-  `<rect fill="${TOOL_ICON_ACCENT}" x="2.9" y="2.5" width="1.25" height="8.8" rx=".2"/><rect fill="${TOOL_ICON_ACCENT}" x="15.85" y="2.5" width="1.25" height="8.8" rx=".2"/><path fill="${TOOL_ICON_ACCENT}" d="M4.4 6.9 7.2 5.05v3.7Z"/><path fill="${TOOL_ICON_ACCENT}" d="M15.6 6.9 12.8 5.05v3.7Z"/><rect fill="${TOOL_ICON_ACCENT}" x="6.7" y="6.25" width="6.6" height="1.3"/>`
-)
+export const ICON_MEASURE_DISTANCE = measureToolIcon(MEASURE_DISTANCE_GLYPH)
 
-/** Continuous distance icon (distance glyph with an "n" badge for n segments). */
+/** Continuous distance icon (distance glyph with a letter "n" above the dimension line for n segments). */
 export const ICON_MEASURE_CONTINUOUS = measureToolIcon(
-  `<rect fill="${TOOL_ICON_ACCENT}" x="2.9" y="2.5" width="1.25" height="8.8" rx=".2"/><rect fill="${TOOL_ICON_ACCENT}" x="15.85" y="2.5" width="1.25" height="8.8" rx=".2"/><path fill="${TOOL_ICON_ACCENT}" d="M4.4 6.9 7.2 5.05v3.7Z"/><path fill="${TOOL_ICON_ACCENT}" d="M15.6 6.9 12.8 5.05v3.7Z"/><rect fill="${TOOL_ICON_ACCENT}" x="6.7" y="6.25" width="6.6" height="1.3"/><circle fill="currentColor" cx="10" cy="3.45" r="2.2"/><text x="10" y="4.42" text-anchor="middle" font-size="3.15" font-weight="700" font-family="Arial,Helvetica,sans-serif" fill="${TOOL_ICON_ACCENT}">n</text>`
+  `${MEASURE_DISTANCE_GLYPH}<path fill="none" stroke="currentColor" d="M8.5 7V3M8.5 5a1.5 1.5 0 0 1 3 0v2"/>`
 )
 
-/** Measure angle icon (two rays and a dimension arc over a ruler). */
+/** Measure angle icon (right-angle corner with an arrowed dimension arc over a ruler). */
 export const ICON_MEASURE_ANGLE = measureToolIcon(
-  `<g fill="none" stroke="${TOOL_ICON_ACCENT}" stroke-linejoin="miter"><path stroke-width="1.55" stroke-linecap="butt" d="M16.9 12.25H4.9L11.6 3.03"/><path stroke-width="1.7" stroke-linecap="butt" d="M11.05 12.25A6.15 6.15 0 0 0 8.51 7.27"/></g><path fill="${TOOL_ICON_ACCENT}" d="M11.05 12.25 9.85 10.55h2.4Z"/><path fill="${TOOL_ICON_ACCENT}" d="M8.51 7.27 10.46 7.39 9.23 9.09Z"/>`
+  '<polygon fill="currentColor" points="5.74 3.63 7 6 4.15 4.22 3.2 3.62 3 3.5 7 1 6.17 2.55 5.67 3.5 5.74 3.63"/><polygon fill="currentColor" points="16 9 13.5 13 12.66 11.65 11.92 10.47 11 9 12 9.53 12.98 10.05 13.5 10.33 16 9"/><path fill="currentColor" d="M2,6.08v1a5.65,5.65,0,0,1,1,.26v-1A6.59,6.59,0,0,0,2,6.08Z"/><rect fill="currentColor" x="2" y="1" width="1" height="13"/><rect fill="currentColor" x="3" y="13" width="15" height="1"/><path fill="currentColor" d="M14,9.5c0,.18,0,.37,0,.55v0a6.82,6.82,0,0,1-.32,1.57l-.74-1.18L13,10c0-.14,0-.31,0-.47v0a6,6,0,0,0-6-6,6.74,6.74,0,0,0-1.26.13l-.29.07a5.61,5.61,0,0,0-1.3.52l-1-.6a7.07,7.07,0,0,1,2-.88,6.78,6.78,0,0,1,1-.19A7.7,7.7,0,0,1,7,2.5,7,7,0,0,1,14,9.5Z"/>'
 )
 
-/** Measure area icon (filled quarter-circle sector over a ruler). */
+/** Measure area icon (filled trapezoid over a ruler). */
 export const ICON_MEASURE_AREA = measureToolIcon(
-  `<path fill="${TOOL_ICON_ACCENT}" d="M5 12V4.2A7.8 7.8 0 0 1 12.8 12Z"/>`
+  '<polygon fill="currentColor" points="2 4 18 9 18 13 2 13"/>'
 )
 
-/** Measure arc length icon (quarter-arc with grips and a right-angle vertex over a ruler). */
+/** Measure arc length icon (arc between two lines with an arrowed dimension arc over a ruler). */
 export const ICON_MEASURE_ARC = measureToolIcon(
-  `<g fill="none" stroke-linejoin="miter"><path stroke="currentColor" stroke-width="1.5" stroke-linecap="butt" d="M4.9 11.6A8.3 8.3 0 0 1 13.2 3.3"/><path stroke="currentColor" stroke-width="1.35" stroke-linecap="square" d="M10.4 11.6H13.2V8.8"/><path stroke="currentColor" stroke-width="1.35" stroke-linecap="butt" d="M13.2 11.6v1.7"/><rect stroke="${TOOL_ICON_ACCENT}" stroke-width="1.15" x="3.65" y="10.35" width="2.5" height="2.5"/><rect stroke="${TOOL_ICON_ACCENT}" stroke-width="1.15" x="11.95" y="2.05" width="2.5" height="2.5"/></g>`
+  '<rect fill="currentColor" x="17" y="1" width="1" height="7"/><rect fill="currentColor" x="2" y="13" width="8" height="1"/><path fill="currentColor" d="M18,6l-.26,1a7.53,7.53,0,0,0-.95,0h-.08a9.46,9.46,0,0,0-8.08,5.69,6.36,6.36,0,0,0-.35.95l-1-.26a7.51,7.51,0,0,1,.34-.94A10.5,10.5,0,0,1,17,6h0A6.68,6.68,0,0,1,18,6Z"/><path fill="currentColor" d="M16.46,3.16l0,0L13,1l1.18,2.23a11.56,11.56,0,0,0-9.09,6.89l-.54-.29L3,9l2.5,4,.12-.2.6-1L8,9l-1.53.81a10.47,10.47,0,0,1,7.39-5.42L13.53,5,13,6l1.47-.92,1.18-.74.19-.12L16.25,4,17,3.5Z"/>'
 )
 
-/** Measure radius icon (circle with a radial dimension line over a ruler). */
+/** Measure radius icon (half circle with an arrowed radial line over a ruler). */
 export const ICON_MEASURE_RADIUS = measureToolIcon(
-  `<circle fill="none" stroke="${TOOL_ICON_ACCENT}" stroke-width="1.4" cx="9.1" cy="7.3" r="4.7"/><circle fill="${TOOL_ICON_ACCENT}" cx="9.1" cy="7.3" r="1.05"/><path fill="none" stroke="${TOOL_ICON_ACCENT}" stroke-width="1.35" stroke-linecap="round" d="M9.1 7.3 13.35 3.7"/><path fill="${TOOL_ICON_ACCENT}" d="M13.35 3.7 11.15 4.2 12.55 5.7Z"/>`
+  '<polygon fill="currentColor" points="5.51 6.63 6.71 11.09 7.4 8.51 9.97 7.82 5.51 6.63"/><path fill="none" stroke="currentColor" d="M10.46 11.58 6.93 8.04"/><path fill="currentColor" d="M3.14 11.9a6.86 6.86 0 0 1 13.71 0H18a8 8 0 0 0-16 0Z"/>'
 )
 
-/** Measure point / coordinates icon (axes, dashed projections, and a point over a ruler). */
+/** Measure point / coordinates icon (point box with a leader to X/Y labels over a ruler). */
 export const ICON_MEASURE_POINT = measureToolIcon(
-  `<g fill="none" stroke="${TOOL_ICON_ACCENT}" stroke-linecap="round" stroke-linejoin="round"><path stroke-width="1.4" d="M4 4.8v7.4h7.6"/><path stroke-width="1.2" stroke-dasharray="1.7 1.2" d="M4 6.9h7M11 12.2V6.9"/></g><path fill="${TOOL_ICON_ACCENT}" d="M4 2.5 2.45 4.8h3.1ZM13.8 12.2 11.5 10.7v3Z"/><circle fill="${TOOL_ICON_ACCENT}" cx="11" cy="6.9" r="1.3"/>`
+  '<text fill="currentColor" x="12.26" y="6" font-size="6.09" font-family="Arial,Helvetica,sans-serif">X</text><text fill="currentColor" x="12.35" y="13" font-size="6.09" font-family="Arial,Helvetica,sans-serif">Y</text><path fill="currentColor" d="M6,10v3H3V10H6M7,9H2v5H7V9Z"/><path fill="currentColor" d="M17.5,7H10.56a.47.47,0,0,0-.35.15L6.15,11.21a.5.5,0,1,0,.7.7L10.76,8H17.5a.5.5,0,0,0,0-1Z"/>'
 )
 
 /**
@@ -126,18 +126,18 @@ export const ICON_READING_MODE =
 
 /** Review tools parent icon (pencil on a rounded square). */
 export const ICON_ANNOTATION =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20" fill="none" style="fill:none"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12.4 3.25H5.5A2.25 2.25 0 0 0 3.25 5.5v9A2.25 2.25 0 0 0 5.5 16.75h9A2.25 2.25 0 0 0 16.75 14.5V8.6"/><g transform="rotate(45 13.2 6.7)"><rect x="11.7" y="1.55" width="3" height="7.45" rx="1.45"/><path d="M11.7 3.2h3"/><path d="M11.7 9 13.2 12.15 14.7 9"/><rect x="12.8" y="7.05" width="0.8" height="1.2" rx="0.4"/></g></g></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20" fill="none" style="fill:none"><g fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12.4 3.25H5.5A2.25 2.25 0 0 0 3.25 5.5v9A2.25 2.25 0 0 0 5.5 16.75h9A2.25 2.25 0 0 0 16.75 14.5V8.6"/><g transform="rotate(45 13.2 6.7)"><rect x="11.7" y="1.55" width="3" height="7.45" rx="1.45"/><path d="M11.7 3.2h3"/><path d="M11.7 9 13.2 12.15 14.7 9"/><rect x="12.8" y="7.05" width="0.8" height="1.2" rx="0.4"/></g></g></svg>'
 
 /**
  * Shared callout-corner base under each markup-tool glyph
  * (L-stroke with a speech-bubble notch).
  */
 const MARKUP_ICON_BASE =
-  '<path fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="butt" stroke-linejoin="miter" d="M2.6 6.8v8.5h5.2l2.2 2.4 2.2-2.4h5.2"/>'
+  '<path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="butt" stroke-linejoin="miter" d="M2.6 6.8v8.5h5.2l2.2 2.4 2.2-2.4h5.2"/>'
 
 /** Compact pencil used beside rectangle and ellipse markup glyphs. */
 const MARKUP_ICON_PENCIL =
-  '<g fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" transform="rotate(46 14.8 9)"><rect x="13.65" y="4.7" width="2.3" height="5.6" rx="1.05"/><path d="M13.65 10.3 14.8 12.9 15.95 10.3"/></g>'
+  '<g fill="none" stroke="currentColor" stroke-width="1.25" stroke-linejoin="round" transform="rotate(46 14.8 9)"><rect x="13.65" y="4.7" width="2.3" height="5.6" rx="1.05"/><path d="M13.65 10.3 14.8 12.9 15.95 10.3"/></g>'
 
 /** Composes a markup-tool icon: unique glyph on top of the shared callout base. */
 function markupToolIcon(glyph: string): string {
@@ -151,17 +151,17 @@ export const ICON_REV_CLOUD = markupToolIcon(
 
 /** Markup rectangle icon (outlined rect, corner grips, and pencil over a callout base). */
 export const ICON_REV_RECT = markupToolIcon(
-  `<rect fill="none" stroke="currentColor" stroke-width="1.35" x="5" y="2.8" width="8.2" height="7.2"/><rect fill="${TOOL_ICON_ACCENT}" x="4.2" y="2" width="2" height="2"/><rect fill="${TOOL_ICON_ACCENT}" x="12.2" y="9" width="2" height="2"/>${MARKUP_ICON_PENCIL}`
+  `<rect fill="none" stroke="currentColor" stroke-width="1.25" x="5" y="2.8" width="8.2" height="7.2"/><rect fill="${TOOL_ICON_ACCENT}" x="4.2" y="2" width="2" height="2"/><rect fill="${TOOL_ICON_ACCENT}" x="12.2" y="9" width="2" height="2"/>${MARKUP_ICON_PENCIL}`
 )
 
 /** Markup circle icon (outlined ellipse, quadrant grips, and pencil over a callout base). */
 export const ICON_REV_CIRCLE = markupToolIcon(
-  `<ellipse fill="none" stroke="currentColor" stroke-width="1.35" cx="9" cy="6.6" rx="4" ry="3.6"/><rect fill="${TOOL_ICON_ACCENT}" x="8" y="2.1" width="2" height="2"/><rect fill="${TOOL_ICON_ACCENT}" x="4" y="5.6" width="2" height="2"/>${MARKUP_ICON_PENCIL}`
+  `<ellipse fill="none" stroke="currentColor" stroke-width="1.25" cx="9" cy="6.6" rx="4" ry="3.6"/><rect fill="${TOOL_ICON_ACCENT}" x="8" y="2.1" width="2" height="2"/><rect fill="${TOOL_ICON_ACCENT}" x="4" y="5.6" width="2" height="2"/>${MARKUP_ICON_PENCIL}`
 )
 
 /** Markup callout / leader icon (text box and leader over a callout base). */
 export const ICON_MARKUP_CALLOUT = markupToolIcon(
-  '<path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M4.4 12.6 10.2 7"/><rect fill="currentColor" x="10.2" y="1.2" width="7.8" height="5.8" rx=".35"/>'
+  '<path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" d="M4.4 12.6 10.2 7"/><rect fill="currentColor" x="10.2" y="1.2" width="7.8" height="5.8" rx=".35"/>'
 )
 
 /** Markup text icon (capital A over a callout base). */
@@ -171,7 +171,7 @@ export const ICON_MARKUP_TEXT = markupToolIcon(
 
 /** Markup line icon (diagonal segment with endpoints). */
 export const ICON_MARKUP_LINE =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M4 16 16 4"/><circle cx="4" cy="16" r="1.6" fill="currentColor"/><circle cx="16" cy="4" r="1.6" fill="currentColor"/></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" d="M4 16 16 4"/><circle cx="4" cy="16" r="1.6" fill="currentColor"/><circle cx="16" cy="4" r="1.6" fill="currentColor"/></svg>'
 
 /** Markup highlight icon (filled rounded rectangle). */
 export const ICON_MARKUP_HIGHLIGHT =
@@ -188,18 +188,20 @@ export const ICON_MARKUP_STAMP = elementPlusIcon(
 )
 
 /** Markup / review panel icon (list page with a search loupe). */
-export const ICON_MARKUP_PANEL =
-  `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><rect x="3.5" y="3" width="13" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M3.5 6.5h13"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M6.5 9.5h7M6.5 12h7M6.5 14.5h3.2"/><g fill="none" stroke="${TOOL_ICON_ACCENT}" stroke-width="1.7" stroke-linecap="round"><circle cx="14.5" cy="14.7" r="4.2"/><path d="M17.5 17.7 19.5 19.7"/></g></svg>`
+export const ICON_MARKUP_PANEL = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20"><rect x="3.5" y="3" width="13" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.25"/><path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" d="M3.5 6.5h13"/><path fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" d="M6.5 9.5h7M6.5 12h7M6.5 14.5h3.2"/><g fill="none" stroke="${TOOL_ICON_ACCENT}" stroke-width="1.25" stroke-linecap="round"><circle cx="14.5" cy="14.7" r="4.2"/><path d="M17.5 17.7 19.5 19.7"/></g></svg>`
 
 /** Measurement list panel icon (same list glyph as the review panel). */
-export const ICON_MEASUREMENT_PANEL = ICON_MARKUP_PANEL
+export const ICON_MEASUREMENT_PANEL = ICON_MARKUP_PANEL.replace(
+  TOOL_ICON_ACCENT,
+  'currentColor'
+)
 
 /**
  * Import icon (document + down arrow).
  * Inspired by Noun Project “import” 8131171 (Web Buttons by Elin Erkani).
  */
 export const ICON_MARKUP_IMPORT =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" d="M4.5 2h6.4L15.5 6.6V16.5A1.5 1.5 0 0 1 14 18H4.5A1.5 1.5 0 0 1 3 16.5V3.5A1.5 1.5 0 0 1 4.5 2z"/><path stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" d="M10.9 2v4.6h4.6"/><path stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M10 5.8v6M7.2 9.6 10 12.5l2.8-2.9"/></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-width="1.25" stroke-linejoin="round" stroke-linecap="round" d="M4.5 2h6.4L15.5 6.6V16.5A1.5 1.5 0 0 1 14 18H4.5A1.5 1.5 0 0 1 3 16.5V3.5A1.5 1.5 0 0 1 4.5 2z"/><path stroke="currentColor" stroke-width="1.25" stroke-linejoin="round" stroke-linecap="round" d="M10.9 2v4.6h4.6"/><path stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" d="M10 5.8v6M7.2 9.6 10 12.5l2.8-2.9"/></svg>'
 
 /**
  * Open drawing file toolbar icon (open folder).
@@ -213,7 +215,7 @@ export const ICON_OPEN =
  * Inspired by Noun Project “export file” 8131193 (Web Buttons by Elin Erkani).
  */
 export const ICON_MARKUP_EXPORT =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" d="M15.5 2H9.1L4.5 6.6V16.5A1.5 1.5 0 0 0 6 18h9.5A1.5 1.5 0 0 0 17 16.5V3.5A1.5 1.5 0 0 0 15.5 2z"/><path stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" d="M9.1 2v4.6H4.5"/><path stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M10 14.2V8M7.2 10.4 10 7.5l2.8 2.9"/></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-width="1.25" stroke-linejoin="round" stroke-linecap="round" d="M15.5 2H9.1L4.5 6.6V16.5A1.5 1.5 0 0 0 6 18h9.5A1.5 1.5 0 0 0 17 16.5V3.5A1.5 1.5 0 0 0 15.5 2z"/><path stroke="currentColor" stroke-width="1.25" stroke-linejoin="round" stroke-linecap="round" d="M9.1 2v4.6H4.5"/><path stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" d="M10 14.2V8M7.2 10.4 10 7.5l2.8 2.9"/></svg>'
 
 /** Clear markups toolbar icon. */
 export const ICON_CLEAR_MARKUPS = ICON_CLEAR
@@ -305,8 +307,7 @@ export const ICON_ZOOM_ORIGINAL =
  * Material-style AutoAwesome sparkle pair (common “smart / AI” cue) overlaid at
  * top-right so the badge stays readable at toolbar size.
  */
-export const ICON_ZOOM_SMART =
-  `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20">${ZOOM_EXTENT_GLYPH}<path fill="${TOOL_ICON_ACCENT}" d="M14.85 0.85 15.95 4.05 19.15 5.15 15.95 6.25 14.85 9.45 13.75 6.25 10.55 5.15 13.75 4.05Z"/><path fill="${TOOL_ICON_ACCENT}" d="M17.55 8.35 18.15 10.15 19.95 10.75 18.15 11.35 17.55 13.15 16.95 11.35 15.15 10.75 16.95 10.15Z"/></svg>`
+export const ICON_ZOOM_SMART = `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 20 20">${ZOOM_EXTENT_GLYPH}<path fill="${TOOL_ICON_ACCENT}" d="M14.85 0.85 15.95 4.05 19.15 5.15 15.95 6.25 14.85 9.45 13.75 6.25 10.55 5.15 13.75 4.05Z"/><path fill="${TOOL_ICON_ACCENT}" d="M17.55 8.35 18.15 10.15 19.95 10.75 18.15 11.35 17.55 13.15 16.95 11.35 15.15 10.75 16.95 10.15Z"/></svg>`
 
 /** Settings / gear parent icon for compact toolbars. */
 export const ICON_SETTINGS =

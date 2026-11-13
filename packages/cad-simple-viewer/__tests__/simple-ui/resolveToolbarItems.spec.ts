@@ -10,7 +10,8 @@ jest.mock('../../src/app/dataSource/acapBuildDataSourceMenu', () => {
 jest.mock('../../src/app/dataSource/acapRunDataSourceMenuAction', () => {
   const { mockDataSourceMenuModules } = require('./helpers/mockDataSourceMenu')
   return {
-    acapRunDataSourceMenuAction: mockDataSourceMenuModules().acapRunDataSourceMenuAction
+    acapRunDataSourceMenuAction:
+      mockDataSourceMenuModules().acapRunDataSourceMenuAction
   }
 })
 
@@ -86,7 +87,11 @@ describe('acuiResolveToolbarItems', () => {
   })
 
   it('returns phone default items when layout is phone', () => {
-    const items = acuiResolveToolbarItems({ items: 'default' }, undefined, 'phone')
+    const items = acuiResolveToolbarItems(
+      { items: 'default' },
+      undefined,
+      'phone'
+    )
     expect(items.map(item => item.id)).toEqual([
       'zoom',
       'find',
@@ -314,9 +319,9 @@ describe('default toolbar items', () => {
     expect(readingMode?.toggle?.getValue()).toBe(false)
 
     expect(switchBg?.disabled).toEqual(expect.any(Function))
-    expect(typeof switchBg?.disabled === 'function' && switchBg.disabled()).toBe(
-      false
-    )
+    expect(
+      typeof switchBg?.disabled === 'function' && switchBg.disabled()
+    ).toBe(false)
   })
 
   it('places toolbar placement before theme inside settings', () => {
@@ -332,7 +337,9 @@ describe('default toolbar items', () => {
     const layerIndex = items.findIndex(item => item.id === 'layer')
     expect(items[layerIndex + 1]?.id).toBe('layout')
     expect(items[layerIndex + 1]?.childrenUi).toBe('menu')
-    expect(items[layerIndex + 1]?.icon).toContain('rect x="2" y="2" width="8.2"')
+    expect(items[layerIndex + 1]?.icon).toContain(
+      'rect x="2" y="2" width="8.2"'
+    )
     expect(items[layerIndex + 2]?.id).toBe('measure')
   })
 
@@ -432,7 +439,9 @@ describe('default toolbar items', () => {
   it('uses dismissible sub-toolbars for measure, review, export, and settings', () => {
     const items = acuiCreateDefaultToolbarItems()
     const settings = items.find(item => item.id === 'settings')
-    expect(items.find(item => item.id === 'measure')?.childrenUi).toBe('toolbar')
+    expect(items.find(item => item.id === 'measure')?.childrenUi).toBe(
+      'toolbar'
+    )
     expect(items.find(item => item.id === 'annotation')?.childrenUi).toBe(
       'toolbar'
     )
@@ -495,22 +504,32 @@ describe('default toolbar items', () => {
     const iconOf = (id: string) =>
       measure?.children?.find(child => child.id === id)?.icon
 
-    expect(iconOf('measure-distance')).toContain('M4.4 6.9 7.2 5.05v3.7Z')
-    expect(iconOf('measure-distance')).toContain('--el-color-primary')
-    expect(iconOf('measure-continuous')).toContain('M4.4 6.9 7.2 5.05v3.7Z')
-    expect(iconOf('measure-continuous')).toContain('>n</text>')
-    expect(iconOf('measure-continuous')).toContain('--el-color-primary')
-    expect(iconOf('measure-angle')).toContain('M16.9 12.25H4.9L11.6 3.03')
-    expect(iconOf('measure-angle')).toContain('--el-color-primary')
-    expect(iconOf('measure-area')).toContain('M5 12V4.2A7.8 7.8 0 0 1 12.8 12Z')
-    expect(iconOf('measure-area')).toContain('--el-color-primary')
-    expect(iconOf('measure-arc')).toContain('M4.9 11.6A8.3 8.3 0 0 1 13.2 3.3')
-    expect(iconOf('measure-arc')).toContain('--el-color-primary')
-    expect(iconOf('measure-point')).toContain('M4 4.8v7.4h7.6')
-    expect(iconOf('measure-point')).toContain('--el-color-primary')
+    expect(iconOf('measure-distance')).toContain(
+      'points="3 8.5 7 11 5.67 8.5 7 6 3 8.5"'
+    )
+    expect(iconOf('measure-continuous')).toContain(
+      'points="3 8.5 7 11 5.67 8.5 7 6 3 8.5"'
+    )
+    expect(iconOf('measure-continuous')).toContain(
+      'M8.5 7V3M8.5 5a1.5 1.5 0 0 1 3 0v2'
+    )
+    expect(iconOf('measure-angle')).toContain('x="3" y="13" width="15"')
+    expect(iconOf('measure-area')).toContain('points="2 4 18 9 18 13 2 13"')
+    expect(iconOf('measure-arc')).toContain('M16.46,3.16l0,0L13,1')
+    expect(iconOf('measure-point')).toContain('M6,10v3H3V10H6M7,9H2v5H7V9Z')
     expect(iconOf('measurement-panel')).toContain('M3.5 6.5h13')
     expect(iconOf('measurement-panel')).toContain('cx="14.5" cy="14.7" r="4.2"')
-    expect(iconOf('measurement-panel')).toContain('--el-color-primary')
+    for (const id of [
+      'measure-distance',
+      'measure-continuous',
+      'measure-angle',
+      'measure-area',
+      'measure-arc',
+      'measure-point',
+      'measurement-panel'
+    ]) {
+      expect(iconOf(id)).not.toContain('--el-color-primary')
+    }
     expect(iconOf('clear-measurements')).toContain('viewBox="0 0 512 512"')
     expect(iconOf('clear-measurements')).toContain('M 459.5 0')
     expect(iconOf('measurement-import')).toContain('M4.5 2h6.4L15.5 6.6')
