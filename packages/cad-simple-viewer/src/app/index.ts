@@ -1,4 +1,5 @@
 export * from './AcApBrand'
+export * from './AcApClipboard'
 export * from './AcApDocsUrl'
 export * from './AcApContext'
 export * from './AcApDocSession'

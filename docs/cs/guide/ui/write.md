@@ -23,6 +23,7 @@ Ribbon plně zobrazuje všechny karty ve stylu AutoCAD:
 | Soubor | Otevřít, Exportovat DXF, Exportovat PNG, Exportovat samostatné HTML |
 | Kreslení | Čára, Kružnice, Oblouk, Obdélník, Polylinie, Šrafování, Text, MText, Vložení bloku atd. |
 | Úpravy | Přesun, Kopírovat, Odsazení, Oříznout, Prodloužit, Otočit, Měnit měřítko, Zrcadlit, Pole atd. |
+| Schránka | Vložit (Ctrl+V), Vložit na původní souřadnice, Vložit jako blok (Ctrl+Shift+V), Vyjmout (Ctrl+X), Kopírovat (Ctrl+C), Kopírovat se základním bodem (Ctrl+Shift+C); objekty lze vložit i do jiného otevřeného výkresu nebo karty prohlížeče |
 | Vrstvy | Správa vrstev (zapnuto/vypnuto, zmrazit/rozmrazit, uzamknout, izolovat, nová, smazat) |
 | Vlastnosti | Barva, typ čáry, tloušťka čáry, výběr vrstvy |
 | Měření | Všechny příkazy měření |

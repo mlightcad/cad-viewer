@@ -126,6 +126,19 @@ export default {
       }
     }
   },
+  copybase: {
+    basePoint: '기준점 지정'
+  },
+  pasteclip: {
+    insertionPoint: '삽입점 지정',
+    empty: '클립보드에 도면 객체가 없습니다'
+  },
+  pasteorig: {
+    sameDrawing: 'PASTEORIG는 객체를 복사한 원본 도면에는 붙여넣을 수 없습니다'
+  },
+  pasteblock: {
+    insertionPoint: '삽입점 지정'
+  },
   dimlinear: {
     xLine1Point: '첫 번째 치수보조선 원점 지정 또는 <객체 선택>',
     xLine2Point: '두 번째 치수보조선 원점 지정',

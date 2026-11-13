@@ -135,6 +135,9 @@ export default {
     undo: '撤销',
     redo: '重做',
     erase: '删除',
+    copy: '复制',
+    cut: '剪切',
+    paste: '粘贴',
     collapse: '收起工具栏',
     expand: '展开工具栏'
   },

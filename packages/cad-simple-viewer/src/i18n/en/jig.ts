@@ -130,6 +130,20 @@ export default {
       }
     }
   },
+  copybase: {
+    basePoint: 'Specify base point'
+  },
+  pasteclip: {
+    insertionPoint: 'Specify insertion point',
+    empty: 'The clipboard contains no drawing objects'
+  },
+  pasteorig: {
+    sameDrawing:
+      'PASTEORIG cannot paste into the drawing the objects were copied from'
+  },
+  pasteblock: {
+    insertionPoint: 'Specify insertion point'
+  },
   dimlinear: {
     xLine1Point: 'Specify first extension line origin or <select object>',
     xLine2Point: 'Specify second extension line origin',

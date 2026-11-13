@@ -138,6 +138,9 @@ export default {
     undo: 'تراجع',
     redo: 'إعادة',
     erase: 'حذف',
+    copy: 'نسخ',
+    cut: 'قص',
+    paste: 'لصق',
     collapse: 'طي شريط الأدوات',
     expand: 'توسيع شريط الأدوات'
   },

@@ -89,6 +89,27 @@ export default {
       description: 'نسخ العناصر المحددة إلى مواضع جديدة',
       prompt: 'حدد العناصر'
     },
+    copybase: {
+      description: 'ينسخ الكائنات المحددة إلى الحافظة مع نقطة أساس محددة',
+      prompt: 'حدد العناصر'
+    },
+    copyclip: {
+      description: 'ينسخ الكائنات المحددة إلى الحافظة',
+      prompt: 'حدد العناصر'
+    },
+    cutclip: {
+      description: 'ينسخ الكائنات المحددة إلى الحافظة ويزيلها من الرسم',
+      prompt: 'حدد العناصر'
+    },
+    pasteblock: {
+      description: 'يلصق الكائنات من الحافظة ككتلة'
+    },
+    pasteclip: {
+      description: 'يلصق الكائنات من الحافظة في الرسم الحالي'
+    },
+    pasteorig: {
+      description: 'يلصق الكائنات من الحافظة باستخدام إحداثيات الرسم الأصلي'
+    },
     csvg: {
       description: 'تحويل الرسم الحالي إلى SVG'
     },

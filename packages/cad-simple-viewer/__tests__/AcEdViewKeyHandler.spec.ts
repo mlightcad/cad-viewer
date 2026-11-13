@@ -72,6 +72,10 @@ function createMockView(
 describe('AcEdViewKeyHandler', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    // Some tests switch lookupGlobalCmd to "not found"; restore the default.
+    ;(AcApDocManager.instance.lookupGlobalCmd as jest.Mock).mockImplementation(
+      () => ({})
+    )
   })
 
   test('handleKeyDown maps platform undo/redo keys to commands', () => {
@@ -211,5 +215,179 @@ describe('AcEdViewKeyHandler', () => {
     expect(sendCommand).not.toHaveBeenCalled()
     expect(lookup).not.toHaveBeenCalled()
     expect(event.preventDefault).toHaveBeenCalled()
+  })
+
+  describe('clipboard shortcuts', () => {
+    const cases: [Partial<KeyboardEvent>, string][] = [
+      [{ code: 'KeyC', ctrlKey: true }, 'copyclip'],
+      [{ code: 'KeyC', metaKey: true }, 'copyclip'],
+      [{ code: 'KeyX', ctrlKey: true }, 'cutclip'],
+      [{ code: 'KeyX', metaKey: true }, 'cutclip'],
+      [{ code: 'KeyV', ctrlKey: true }, 'pasteclip'],
+      [{ code: 'KeyV', metaKey: true }, 'pasteclip'],
+      [{ code: 'KeyC', ctrlKey: true, shiftKey: true }, 'copybase'],
+      [{ code: 'KeyC', metaKey: true, shiftKey: true }, 'copybase'],
+      [{ code: 'KeyV', ctrlKey: true, shiftKey: true }, 'pasteblock'],
+      [{ code: 'KeyV', metaKey: true, shiftKey: true }, 'pasteblock']
+    ]
+
+    test.each(cases)('%p dispatches %s', (partial, command) => {
+      const handler = new AcEdViewKeyHandler(createMockView())
+      const sendCommand = AcApDocManager.instance
+        .sendStringToExecute as jest.Mock
+      const lookup = AcApDocManager.instance.lookupGlobalCmd as jest.Mock
+      const event = keyboardEvent(partial)
+
+      expect(handler.handleKeyDown(event)).toBe(true)
+      expect(lookup).toHaveBeenCalledWith(command)
+      expect(sendCommand).toHaveBeenCalledTimes(1)
+      expect(sendCommand).toHaveBeenCalledWith(command)
+      expect(event.preventDefault).toHaveBeenCalled()
+    })
+
+    test('ignores clipboard keys without Ctrl/Cmd', () => {
+      const handler = new AcEdViewKeyHandler(createMockView())
+      const sendCommand = AcApDocManager.instance
+        .sendStringToExecute as jest.Mock
+
+      handler.handleKeyDown(keyboardEvent({ code: 'KeyC' }))
+      handler.handleKeyDown(
+        keyboardEvent({ code: 'KeyX', ctrlKey: true, shiftKey: true })
+      )
+
+      expect(sendCommand).not.toHaveBeenCalled()
+    })
+
+    test.each(['INPUT', 'TEXTAREA'])(
+      'keeps native copy/paste in a focused %s',
+      tagName => {
+        const handler = new AcEdViewKeyHandler(createMockView())
+        const sendCommand = AcApDocManager.instance
+          .sendStringToExecute as jest.Mock
+        const target = {
+          tagName,
+          isContentEditable: false,
+          classList: { contains: () => false },
+          value: '',
+          readOnly: false
+        } as unknown as EventTarget
+        const event = keyboardEvent({ code: 'KeyV', ctrlKey: true, target })
+
+        expect(handler.handleKeyDown(event)).toBe(false)
+        expect(sendCommand).not.toHaveBeenCalled()
+        expect(event.preventDefault).not.toHaveBeenCalled()
+      }
+    )
+
+    test('keeps native copy/paste in a contenteditable element', () => {
+      const handler = new AcEdViewKeyHandler(createMockView())
+      const sendCommand = AcApDocManager.instance
+        .sendStringToExecute as jest.Mock
+      const target = {
+        tagName: 'DIV',
+        isContentEditable: true
+      } as unknown as EventTarget
+      const event = keyboardEvent({ code: 'KeyC', metaKey: true, target })
+
+      expect(handler.handleKeyDown(event)).toBe(false)
+      expect(sendCommand).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
+    })
+
+    test('skips clipboard shortcuts while a command is active', () => {
+      const handler = new AcEdViewKeyHandler(createMockView(true))
+      const sendCommand = AcApDocManager.instance
+        .sendStringToExecute as jest.Mock
+      const event = keyboardEvent({ code: 'KeyC', ctrlKey: true })
+
+      expect(handler.handleKeyDown(event)).toBe(false)
+      expect(sendCommand).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
+    })
+
+    test('leaves the event alone when the command is not registered', () => {
+      const lookup = AcApDocManager.instance.lookupGlobalCmd as jest.Mock
+      lookup.mockReturnValue(undefined)
+      const handler = new AcEdViewKeyHandler(createMockView())
+      const sendCommand = AcApDocManager.instance
+        .sendStringToExecute as jest.Mock
+      const event = keyboardEvent({ code: 'KeyV', ctrlKey: true })
+
+      expect(handler.handleKeyDown(event)).toBe(false)
+      expect(lookup).toHaveBeenCalledWith('pasteclip')
+      expect(sendCommand).not.toHaveBeenCalled()
+      expect(event.preventDefault).not.toHaveBeenCalled()
+    })
+
+    describe('in the empty command line', () => {
+      const commandLine = () =>
+        ({
+          tagName: 'INPUT',
+          isContentEditable: false,
+          classList: {
+            contains: (name: string) => name === 'ml-cli-text'
+          },
+          value: '',
+          readOnly: false
+        }) as unknown as EventTarget
+      const docManager = AcApDocManager.instance as unknown as {
+        clipboard?: { hasContent: boolean }
+      }
+
+      beforeEach(() => {
+        ;(AcApDocManager.instance.lookupGlobalCmd as jest.Mock).mockReturnValue(
+          {}
+        )
+      })
+
+      afterEach(() => {
+        delete docManager.clipboard
+      })
+
+      test('keeps native text paste while the app clipboard is empty', () => {
+        docManager.clipboard = { hasContent: false }
+        const handler = new AcEdViewKeyHandler(createMockView())
+        const sendCommand = AcApDocManager.instance
+          .sendStringToExecute as jest.Mock
+        const event = keyboardEvent({
+          code: 'KeyV',
+          ctrlKey: true,
+          target: commandLine()
+        })
+
+        expect(handler.handleKeyDown(event)).toBe(false)
+        expect(sendCommand).not.toHaveBeenCalled()
+        expect(event.preventDefault).not.toHaveBeenCalled()
+      })
+
+      test('pastes drawing objects when the app clipboard has them', () => {
+        docManager.clipboard = { hasContent: true }
+        const handler = new AcEdViewKeyHandler(createMockView())
+        const sendCommand = AcApDocManager.instance
+          .sendStringToExecute as jest.Mock
+        const event = keyboardEvent({
+          code: 'KeyV',
+          ctrlKey: true,
+          target: commandLine()
+        })
+
+        expect(handler.handleKeyDown(event)).toBe(true)
+        expect(sendCommand).toHaveBeenCalledWith('pasteclip')
+      })
+
+      test('copies the selection even from the command line', () => {
+        const handler = new AcEdViewKeyHandler(createMockView())
+        const sendCommand = AcApDocManager.instance
+          .sendStringToExecute as jest.Mock
+        const event = keyboardEvent({
+          code: 'KeyC',
+          ctrlKey: true,
+          target: commandLine()
+        })
+
+        expect(handler.handleKeyDown(event)).toBe(true)
+        expect(sendCommand).toHaveBeenCalledWith('copyclip')
+      })
+    })
   })
 })

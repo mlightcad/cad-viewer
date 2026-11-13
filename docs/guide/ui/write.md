@@ -23,6 +23,7 @@ The Ribbon fully displays all AutoCAD-style tabs:
 | File | Open, Export DXF, Export PNG, Export Self-contained HTML |
 | Draw | Line, Circle, Arc, Rect, Polyline, Hatch, Text, MText, Block Insert, etc. |
 | Modify | Move, Copy, Offset, Trim, Extend, Rotate, Scale, Mirror, Array, etc. |
+| Clipboard | Paste (Ctrl+V), Paste to Original Coordinates, Paste as Block (Ctrl+Shift+V), Cut (Ctrl+X), Copy (Ctrl+C), Copy with Base Point (Ctrl+Shift+C); objects can also be pasted into another open drawing or browser tab |
 | Layers | Layer management (on/off, freeze/thaw, lock, isolate, new, delete) |
 | Properties | Color, linetype, lineweight, layer selector |
 | Measure | All measurement commands |

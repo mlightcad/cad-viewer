@@ -128,6 +128,19 @@ export default {
       }
     }
   },
+  copybase: {
+    basePoint: 'Taban noktasını belirtin'
+  },
+  pasteclip: {
+    insertionPoint: 'Ekleme noktasını belirtin',
+    empty: 'Panoda çizim nesnesi yok'
+  },
+  pasteorig: {
+    sameDrawing: 'PASTEORIG, nesnelerin kopyalandığı çizime yapıştıramaz'
+  },
+  pasteblock: {
+    insertionPoint: 'Ekleme noktasını belirtin'
+  },
   dimlinear: {
     xLine1Point: 'İlk uzatma çizgisinin başlangıç noktasını belirtin',
     xLine2Point: 'İkinci uzatma çizgisinin başlangıç noktasını belirtin',

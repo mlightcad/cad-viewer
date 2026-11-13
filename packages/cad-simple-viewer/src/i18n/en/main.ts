@@ -140,6 +140,9 @@ export default {
     undo: 'Undo',
     redo: 'Redo',
     erase: 'Delete',
+    copy: 'Copy',
+    cut: 'Cut',
+    paste: 'Paste',
     collapse: 'Collapse toolbar',
     expand: 'Expand toolbar'
   },

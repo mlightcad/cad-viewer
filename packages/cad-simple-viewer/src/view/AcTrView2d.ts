@@ -2741,16 +2741,18 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
-   * Add the specified transient entity or entities into this view
+   * Add the specified transient entity or entities into this view.
+   *
+   * Transients are jig previews of drawing entities (PASTECLIP, MOVE, grip
+   * edits, ...), so they follow the drawing's lineweight display (LWDISPLAY)
+   * like the entities they preview. Markups and measurements draw through
+   * {@link htmlTransientManager} instead.
+   *
    * @param entity Input one or multiple transient entities
    */
   addTransientEntity(entity: AcDbEntity | AcDbEntity[]) {
     const entities = Array.isArray(entity) ? entity : [entity]
     const epoch = this._convertEpoch
-    // Overlay transients (markup / measurement / jigs) must honor entity
-    // lineweight even when LWDISPLAY is off; otherwise ribbon style is a no-op.
-    const previousForce = this._renderer.forceShowLineWeight
-    this._renderer.forceShowLineWeight = true
     // Force merge-mode glyphs on the transient tree (see AcTrMText). Keep the
     // context flag raised for the whole sync convert so nested MTEXT never
     // enqueue world InstancedMesh placements that flush after the command.
@@ -2812,7 +2814,6 @@ export class AcTrView2d extends AcEdBaseView {
         }
       }
     } finally {
-      this._renderer.forceShowLineWeight = previousForce
       releaseSkipMeshGlyph()
     }
   }

@@ -23,6 +23,7 @@ Ribbon, tüm AutoCAD tarzı sekmeleri tam olarak görüntüler:
 | File | Aç, Export DXF, Export PNG, Export Self-contained HTML |
 | Draw | Line, Circle, Arc, Rect, Polyline, Hatch, Text, MText, Block Insert, vb. |
 | Modify | Move, Copy, Offset, Trim, Extend, Rotate, Scale, Mirror, Array, vb. |
+| Clipboard | Yapıştır (Ctrl+V), Özgün koordinatlara yapıştır, Blok olarak yapıştır (Ctrl+Shift+V), Kes (Ctrl+X), Kopyala (Ctrl+C), Taban noktasıyla kopyala (Ctrl+Shift+C); nesneler açık başka bir çizime veya tarayıcı sekmesine de yapıştırılabilir |
 | Layers | Katman yönetimi (açma/kapama, dondurma/çözme, kilitleme, yalıtma, yeni, silme) |
 | Properties | Renk, çizgi tipi, çizgi kalınlığı, katman seçici |
 | Measure | Tüm ölçüm komutları |

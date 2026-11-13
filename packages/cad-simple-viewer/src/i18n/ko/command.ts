@@ -88,6 +88,27 @@ export default {
       description: '선택한 객체를 새 위치에 복제하여 복사합니다',
       prompt: '객체 선택'
     },
+    copybase: {
+      description: '지정한 기준점과 함께 선택한 객체를 클립보드로 복사',
+      prompt: '객체 선택'
+    },
+    copyclip: {
+      description: '선택한 객체를 클립보드로 복사',
+      prompt: '객체 선택'
+    },
+    cutclip: {
+      description: '선택한 객체를 클립보드로 복사하고 도면에서 제거',
+      prompt: '객체 선택'
+    },
+    pasteblock: {
+      description: '클립보드의 객체를 블록으로 붙여넣기'
+    },
+    pasteclip: {
+      description: '클립보드의 객체를 현재 도면에 붙여넣기'
+    },
+    pasteorig: {
+      description: '원본 도면의 좌표를 사용하여 클립보드의 객체를 붙여넣기'
+    },
     csvg: {
       description: '현재 도면을 SVG로 변환합니다'
     },

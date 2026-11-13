@@ -216,6 +216,7 @@ export default {
       draw: '作成',
       dimension: '寸法',
       modify: '修正',
+      clipboard: 'クリップボード',
       layer: '画層',
       properties: 'プロパティ',
       groups: 'グループ',
@@ -331,6 +332,18 @@ export default {
       rotate: '選択したオブジェクトを基点を中心に回転します。',
       copy: '選択したオブジェクトを新しい位置に複写します。',
       erase: '選択したオブジェクトを図面から削除します。',
+      pasteClip:
+        'クリップボードのオブジェクトを現在の図面に貼り付けます (PASTECLIP)。',
+      pasteOrig:
+        '元の図面の座標を使用してクリップボードのオブジェクトを貼り付けます (PASTEORIG)。',
+      pasteBlock:
+        'クリップボードのオブジェクトをブロックとして現在の図面に貼り付けます (PASTEBLOCK)。',
+      cutClip:
+        '選択したオブジェクトを削除してクリップボードにコピーします (CUTCLIP)。',
+      copyClip:
+        '選択したオブジェクトをクリップボードにコピーします (COPYCLIP)。',
+      copyBase:
+        '指定した基点で選択したオブジェクトをクリップボードにコピーします (COPYBASE)。',
       offset: '指定した距離にオブジェクトの平行コピーを作成します。',
       undo: '直前の編集操作を元に戻します。',
       redo: '元に戻した直前の編集操作をやり直します。',
@@ -485,6 +498,12 @@ export default {
       rotate: '回転',
       copy: '複写',
       erase: '削除',
+      pasteClip: '貼り付け',
+      pasteOrig: '元の座標に貼り付け',
+      pasteBlock: 'ブロックとして貼り付け',
+      cutClip: '切り取り',
+      copyClip: 'コピー',
+      copyBase: '基点コピー',
       offset: 'オフセット',
       undo: '元に戻す',
       redo: 'やり直し',

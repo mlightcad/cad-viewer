@@ -17,6 +17,22 @@ import type { AcTrView2d } from './AcTrView2d'
 export type AcEdUndoRedoShortcut = 'undo' | 'redo'
 
 /**
+ * AutoCAD clipboard command resolved from a keyboard event.
+ *
+ * - Ctrl/Cmd+C: COPYCLIP
+ * - Ctrl/Cmd+X: CUTCLIP
+ * - Ctrl/Cmd+V: PASTECLIP
+ * - Ctrl/Cmd+Shift+C: COPYBASE
+ * - Ctrl/Cmd+Shift+V: PASTEBLOCK
+ */
+export type AcEdClipboardShortcut =
+  | 'copyclip'
+  | 'cutclip'
+  | 'pasteclip'
+  | 'copybase'
+  | 'pasteblock'
+
+/**
  * Handles global keyboard shortcuts for a CAD view.
  *
  * Shortcuts are suppressed while the user is typing in editable fields, during
@@ -39,13 +55,18 @@ export class AcEdViewKeyHandler {
    */
   handleKeyDown(e: KeyboardEvent): boolean {
     const undoRedoShortcut = this.resolveUndoRedoShortcut(e)
+    const clipboardShortcut = undoRedoShortcut
+      ? null
+      : this.resolveClipboardShortcut(e)
+    const commandShortcut = undoRedoShortcut ?? clipboardShortcut
     const ignoreEditableTarget = this.shouldIgnoreEditableTargetShortcut(e)
 
-    if (ignoreEditableTarget && !undoRedoShortcut) {
+    if (ignoreEditableTarget && !commandShortcut) {
       return false
     }
 
-    if (undoRedoShortcut) {
+    if (commandShortcut) {
+      // Editable fields keep their native undo/copy/paste behavior.
       if (
         !this.shouldHandleUndoRedoShortcut(e) ||
         AcEdMTextEditor.getActiveInputBox() ||
@@ -54,7 +75,28 @@ export class AcEdViewKeyHandler {
         return false
       }
 
-      AcApDocManager.instance.sendStringToExecute(undoRedoShortcut)
+      // lookupGlobalCmd returns undefined when the clipboard command is not
+      // registered or not allowed in the current open mode; leave the event
+      // alone then.
+      if (
+        clipboardShortcut &&
+        !AcApDocManager.instance.lookupGlobalCmd(clipboardShortcut)
+      ) {
+        return false
+      }
+
+      // Focus in the (empty) command line: without drawing data on the app
+      // clipboard, Ctrl+V should paste text into the command line instead.
+      if (
+        (clipboardShortcut === 'pasteclip' ||
+          clipboardShortcut === 'pasteblock') &&
+        ignoreEditableTarget &&
+        !AcApDocManager.instance.clipboard?.hasContent
+      ) {
+        return false
+      }
+
+      AcApDocManager.instance.sendStringToExecute(commandShortcut)
       e.preventDefault()
       return true
     }
@@ -171,6 +213,25 @@ export class AcEdViewKeyHandler {
     }
 
     return null
+  }
+
+  private resolveClipboardShortcut(
+    e: Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'metaKey' | 'shiftKey'>
+  ): AcEdClipboardShortcut | null {
+    if (!e.ctrlKey && !e.metaKey) {
+      return null
+    }
+
+    switch (e.code) {
+      case 'KeyC':
+        return e.shiftKey ? 'copybase' : 'copyclip'
+      case 'KeyX':
+        return e.shiftKey ? null : 'cutclip'
+      case 'KeyV':
+        return e.shiftKey ? 'pasteblock' : 'pasteclip'
+      default:
+        return null
+    }
   }
 
   private shouldIgnoreEditableTargetShortcut(

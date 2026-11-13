@@ -93,6 +93,29 @@ export default {
         'Kopíruje vybrané objekty vytvořením kopií na nových pozicích',
       prompt: 'Vyberte objekty'
     },
+    copybase: {
+      description:
+        'Zkopíruje vybrané objekty do schránky se zadaným základním bodem',
+      prompt: 'Vyberte objekty'
+    },
+    copyclip: {
+      description: 'Zkopíruje vybrané objekty do schránky',
+      prompt: 'Vyberte objekty'
+    },
+    cutclip: {
+      description:
+        'Zkopíruje vybrané objekty do schránky a odstraní je z výkresu',
+      prompt: 'Vyberte objekty'
+    },
+    pasteblock: {
+      description: 'Vloží objekty ze schránky jako blok'
+    },
+    pasteclip: {
+      description: 'Vloží objekty ze schránky do aktuálního výkresu'
+    },
+    pasteorig: {
+      description: 'Vloží objekty ze schránky se souřadnicemi původního výkresu'
+    },
     csvg: {
       description: 'Převede aktuální výkres na SVG'
     },

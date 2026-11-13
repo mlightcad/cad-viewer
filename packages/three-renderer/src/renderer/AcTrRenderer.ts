@@ -271,8 +271,7 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
     width?: number
     height?: number
   }): AcTrRenderer {
-    const width =
-      options?.width ?? AcTrRenderer.DEFAULT_EXPORT_VIEWPORT.width
+    const width = options?.width ?? AcTrRenderer.DEFAULT_EXPORT_VIEWPORT.width
     const height =
       options?.height ?? AcTrRenderer.DEFAULT_EXPORT_VIEWPORT.height
     return new AcTrRenderer(createExportWebGlStub(width, height), {
@@ -635,6 +634,15 @@ export class AcTrRenderer implements AcGiRenderer<AcTrEntity> {
 
   set forceShowLineWeight(value: boolean) {
     this._context.styleManager.forceShowLineWeight = value
+  }
+
+  /**
+   * Renderer state that changes block graphics; see
+   * {@link AcTrStyleManager.cacheVariant}. `AcDbRenderingCache` keeps block
+   * templates apart per variant.
+   */
+  get cacheVariant(): string {
+    return this._context.styleManager.cacheVariant
   }
 
   updateLayerMaterial(

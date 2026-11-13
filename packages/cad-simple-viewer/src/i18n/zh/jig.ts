@@ -123,6 +123,19 @@ export default {
       }
     }
   },
+  copybase: {
+    basePoint: '指定基点'
+  },
+  pasteclip: {
+    insertionPoint: '指定插入点',
+    empty: '剪贴板中没有图形对象'
+  },
+  pasteorig: {
+    sameDrawing: 'PASTEORIG 不能粘贴到复制对象的源图形中'
+  },
+  pasteblock: {
+    insertionPoint: '指定插入点'
+  },
   dimlinear: {
     xLine1Point: '指定第一条尺寸界线原点或 <选择对象>',
     xLine2Point: '指定第二条尺寸界线原点',

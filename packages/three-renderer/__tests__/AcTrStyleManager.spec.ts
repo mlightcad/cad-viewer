@@ -14,6 +14,21 @@ import { AcTrStyleManager } from '../src/style/AcTrStyleManager'
 import { AcTrSubEntityTraitsUtil } from '../src/util/AcTrEntityTraitsUtil'
 
 describe('AcTrStyleManager', () => {
+  it('reports a cache variant whenever line materials honor lineweights', () => {
+    const styleManager = new AcTrStyleManager()
+    expect(styleManager.cacheVariant).toBe('')
+
+    // Block templates built while lineweights are forced on must not be
+    // reused once the flag is restored.
+    styleManager.forceShowLineWeight = true
+    expect(styleManager.cacheVariant).toBe('lw')
+    styleManager.forceShowLineWeight = false
+    expect(styleManager.cacheVariant).toBe('')
+
+    styleManager.showLineWeight = true
+    expect(styleManager.cacheVariant).toBe('lw')
+  })
+
   it('preserves entity color when updateLayerMaterial receives layer name only', () => {
     const styleManager = new AcTrStyleManager()
     const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()

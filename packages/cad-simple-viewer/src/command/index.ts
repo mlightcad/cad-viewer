@@ -1,5 +1,6 @@
 export * from './AcApDrawStyleDrawCmd'
 export * from './AcApDrawStyleSession'
+export * from './clipboard'
 export * from './convert'
 export * from './layer'
 export * from './draw'

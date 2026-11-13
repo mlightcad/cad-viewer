@@ -22,7 +22,10 @@ import {
   AcApConvertToDxfCmd,
   AcApConvertToJpgCmd,
   AcApConvertToPngCmd,
+  AcApCopyBaseCmd,
+  AcApCopyClipCmd,
   AcApCopyCmd,
+  AcApCutClipCmd,
   AcApDashBSearchCmd,
   AcApDashGroupCmd,
   AcApDimAlignedCmd,
@@ -70,6 +73,9 @@ import {
   AcApOffsetCmd,
   AcApOpenCmd,
   AcApPanCmd,
+  AcApPasteBlockCmd,
+  AcApPasteClipCmd,
+  AcApPasteOrigCmd,
   AcApPointCmd,
   AcApPolygonCmd,
   AcApPolylineCmd,
@@ -119,6 +125,7 @@ import { AcTrView2d } from '../view'
 import type { AcApCompareDisplayOptions } from '../view/AcApCompareDisplay'
 import type { AcTrLayout } from '../view/AcTrLayout'
 import { AcApBusyIndicator } from './AcApBusyIndicator'
+import { AcApClipboard } from './AcApClipboard'
 import { acapBindCommandServices } from './AcApCommandServices'
 import { AcApContext } from './AcApContext'
 import { AcApDocSession } from './AcApDocSession'
@@ -479,6 +486,8 @@ export interface AcApDocManagerOptions {
 export class AcApDocManager {
   /** Open document sessions (MDI). The shared view shows {@link _activeSession}. */
   private _sessions: AcApDocSession[] = []
+  /** Drawing clipboard shared by every open document (COPYCLIP / PASTECLIP). */
+  private readonly _clipboard = new AcApClipboard()
   /** Session currently bound to the shared view and working database. */
   private _activeSession!: AcApDocSession
   /** View created at construct time (left pane in split layout). */
@@ -912,6 +921,17 @@ export class AcApDocManager {
    */
   sessionFor(doc: AcApDocument): AcApDocSession | undefined {
     return this._sessions.find(session => session.doc === doc)
+  }
+
+  /**
+   * Gets the drawing clipboard used by COPYCLIP, CUTCLIP, COPYBASE and the
+   * PASTE* commands.
+   *
+   * It is shared by every open document so objects can be pasted into another
+   * drawing.
+   */
+  get clipboard() {
+    return this._clipboard
   }
 
   /**
@@ -2089,6 +2109,12 @@ export class AcApDocManager {
     addSystemCommand('mline', 'mline', new AcApMLineCmd())
     addSystemCommand('mtext', 'mtext', new AcApMTextCmd())
     addSystemCommand('copy', 'copy', new AcApCopyCmd())
+    addSystemCommand('copyclip', 'copyclip', new AcApCopyClipCmd())
+    addSystemCommand('copybase', 'copybase', new AcApCopyBaseCmd())
+    addSystemCommand('cutclip', 'cutclip', new AcApCutClipCmd())
+    addSystemCommand('pasteclip', 'pasteclip', new AcApPasteClipCmd())
+    addSystemCommand('pasteorig', 'pasteorig', new AcApPasteOrigCmd())
+    addSystemCommand('pasteblock', 'pasteblock', new AcApPasteBlockCmd())
     addSystemCommand('move', 'move', new AcApMoveCmd())
     addSystemCommand('offset', 'offset', new AcApOffsetCmd())
     addSystemCommand('rotate', 'rotate', new AcApRotateCmd())
