@@ -142,6 +142,19 @@ export class AcTrStyleManager {
   }
 
   /**
+   * Material state that changes the graphics of the same entities: `'lw'`
+   * while line materials honor lineweights ({@link showLineWeight} or
+   * {@link forceShowLineWeight}), `''` otherwise.
+   *
+   * Exposed as {@link AcTrRenderer.cacheVariant} so block templates built
+   * with fat lines (for example for a transient preview) are cached apart
+   * from regular 1px templates.
+   */
+  get cacheVariant(): string {
+    return this.options.showLineWeight || this._forceShowLineWeight ? 'lw' : ''
+  }
+
+  /**
    * Current canvas background colour tracked by the style manager.
    *
    * See `AcTrStyleManagerOptions.currentBackgroundColor` for the full
