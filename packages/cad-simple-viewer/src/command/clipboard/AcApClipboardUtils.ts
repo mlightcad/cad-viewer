@@ -62,16 +62,20 @@ export async function acapCopySelectionToClipboard(
   options?: AcApCopySelectionToClipboardOptions
 ): Promise<AcDbObjectId[] | undefined> {
   const resolved = await resolveSelectedEntities(context, { promptKey })
-  context.view.selectionSet.clear()
-  if (!resolved) return undefined
+  if (!resolved) {
+    context.view.selectionSet.clear()
+    return undefined
+  }
 
-  // wblock + DXF serialize can freeze the UI on large selections.
+  // wblock + DXF serialize can freeze the UI on large selections. Clear the
+  // selection only after the write succeeds so a failed copy keeps the pick.
   const work = async () => {
     await AcApDocManager.instance.clipboard.set(
       context.doc.database,
       resolved.ids,
       basePoint ?? acapClipboardBasePoint(resolved.entities)
     )
+    context.view.selectionSet.clear()
     await options?.afterCopy?.(resolved.ids)
   }
 
@@ -95,7 +99,11 @@ export async function acapCopySelectionToClipboard(
 export async function acapReadClipboard(
   showMessage: (message: string) => void
 ): Promise<AcApClipboardContent | undefined> {
-  const content = await AcApDocManager.instance.clipboard.get()
+  // Cross-tab paste may read + deserialize a large DXF on the main thread.
+  const content = await AcApDocManager.instance.withBusyIndicator(
+    () => AcApDocManager.instance.clipboard.get(),
+    AcApI18n.t('main.message.pastingFromClipboard')
+  )
   const isEmpty =
     !content ||
     content.database.tables.blockTable.modelSpace.newIterator().count === 0

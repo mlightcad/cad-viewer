@@ -12,6 +12,7 @@
 import { AcApDocManager } from '../app/AcApDocManager'
 import { eventBus } from '../editor/global/eventBus'
 import type { AcEdBaseView } from '../editor/view/AcEdBaseView'
+import { AcEdOpenMode } from '../editor/view/AcEdOpenMode'
 import type {
   AcUiShortCutToolbar,
   AcUiShortCutToolbarActionState
@@ -45,12 +46,15 @@ export function acapBindShortCutToolbarDocState(
         erase: false,
         copy: false,
         cut: false,
-        paste: false
+        paste: false,
+        showClipboard: false
       }
     }
     const doc = dm.curDocument
     const view = dm.curView
     const db = doc?.database
+    const isWriteMode =
+      (doc?.openMode ?? AcEdOpenMode.Read) >= AcEdOpenMode.Write
     const canUndo = db != null ? getSessionUndo().canUndo(db) : false
     const canRedo = db != null ? getSessionUndo().canRedo(db) : false
     const canErase = Boolean(
@@ -67,7 +71,10 @@ export function acapBindShortCutToolbarDocState(
       erase: canErase,
       copy: hasEntitySelection,
       cut: hasEntitySelection,
-      paste: db != null
+      paste: db != null,
+      // Clipboard chrome is Write-only (CUTCLIP / PASTECLIP require Write;
+      // COPYCLIP is hidden with them so the bar stays consistent).
+      showClipboard: isWriteMode
     }
   }
 

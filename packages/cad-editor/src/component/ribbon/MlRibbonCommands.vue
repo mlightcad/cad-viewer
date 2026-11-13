@@ -1248,8 +1248,9 @@ const handleRibbonLayerStateToggle = (payload: {
 }
 
 /**
- * Read: measurement only. Review: measurement + review. Write: all tabs.
- * Contextual tabs keep the visibility their builders already set.
+ * Read: measurement only. Review: measurement + review. Write: all tabs
+ * (including View). Contextual tabs keep the visibility their builders
+ * already set.
  */
 const applyOpenModeTabVisibility = (
   tabs: RibbonTabModel[],
@@ -1260,7 +1261,7 @@ const applyOpenModeTabVisibility = (
     const visible =
       tab.id === 'measurement'
         ? true
-        : tab.id === 'review' || tab.id === 'view'
+        : tab.id === 'review'
           ? openMode >= AcEdOpenMode.Review
           : openMode === AcEdOpenMode.Write
     return { ...tab, visible }

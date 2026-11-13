@@ -190,6 +190,12 @@ export interface AcUiShortCutToolbarActionState {
   cut?: boolean
   /** Paste from clipboard (PASTECLIP). Treated as enabled when omitted. */
   paste?: boolean
+  /**
+   * When false, hides copy / cut / paste even if their actions are wired.
+   * Hosts use this for Write-mode-only clipboard chrome. Omitted means show
+   * whenever the corresponding action is supplied.
+   */
+  showClipboard?: boolean
 }
 
 /** Options for {@link AcUiShortCutToolbar}. */
@@ -268,9 +274,7 @@ export class AcUiShortCutToolbar {
   ) => void
   private readonly onLocaleChanged = () => this.relabel()
   private actions: NonNullable<AcUiShortCutToolbarOptions['actions']>
-  private getActionState:
-    | (() => AcUiShortCutToolbarActionState)
-    | undefined
+  private getActionState: (() => AcUiShortCutToolbarActionState) | undefined
   private offTheme: (() => void) | null = null
   private disposed = false
 
@@ -365,7 +369,9 @@ export class AcUiShortCutToolbar {
    *
    * @param actions - Partial action map.
    */
-  setActions(actions: NonNullable<AcUiShortCutToolbarOptions['actions']>): void {
+  setActions(
+    actions: NonNullable<AcUiShortCutToolbarOptions['actions']>
+  ): void {
     this.actions = { ...this.actions, ...actions }
     this.toolbar.setItems(this.buildCoreItems())
     this.syncActionState()
@@ -446,10 +452,18 @@ export class AcUiShortCutToolbar {
     this.toolbar.updateItem('shortcut-undo', { disabled: !state.undo })
     this.toolbar.updateItem('shortcut-redo', { disabled: !state.redo })
     this.toolbar.updateItem('shortcut-erase', { disabled: !state.erase })
-    this.toolbar.updateItem('shortcut-copy', { disabled: state.copy === false })
-    this.toolbar.updateItem('shortcut-cut', { disabled: state.cut === false })
+    const showClipboard = state.showClipboard !== false
+    this.toolbar.updateItem('shortcut-copy', {
+      disabled: state.copy === false,
+      visible: showClipboard && this.actions.copy != null
+    })
+    this.toolbar.updateItem('shortcut-cut', {
+      disabled: state.cut === false,
+      visible: showClipboard && this.actions.cut != null
+    })
     this.toolbar.updateItem('shortcut-paste', {
-      disabled: state.paste === false
+      disabled: state.paste === false,
+      visible: showClipboard && this.actions.paste != null
     })
   }
 
@@ -460,8 +474,14 @@ export class AcUiShortCutToolbar {
       this.setActionState(this.getActionState())
       return
     }
-    // No provider yet (DocManager bind pending): keep controls usable.
-    this.setActionState({ undo: true, redo: true, erase: true })
+    // No provider yet (DocManager bind pending): keep undo/redo/erase
+    // usable, but keep clipboard chrome hidden until open mode is known.
+    this.setActionState({
+      undo: true,
+      redo: true,
+      erase: true,
+      showClipboard: false
+    })
   }
 
   /** Reloads core button labels from i18n. */

@@ -143,6 +143,26 @@ describe('clipboard commands', () => {
     expect(modelSpace(source)).toHaveLength(1)
   })
 
+  it('COPYCLIP keeps the selection when the clipboard write fails', async () => {
+    const { context, clearSelection } = createContext(source)
+    selectEntities([line])
+    const clipboard = (
+      AcApDocManager.instance as unknown as {
+        clipboard: { set: jest.Mock }
+      }
+    ).clipboard
+    const setSpy = jest
+      .spyOn(clipboard, 'set')
+      .mockRejectedValueOnce(new Error('serialize failed'))
+
+    await expect(new AcApCopyClipCmd().execute(context)).rejects.toThrow(
+      'serialize failed'
+    )
+
+    expect(clearSelection).not.toHaveBeenCalled()
+    setSpy.mockRestore()
+  })
+
   it('COPYBASE uses the picked base point', async () => {
     const { context } = createContext(source)
     pickPoint(6, 8)
