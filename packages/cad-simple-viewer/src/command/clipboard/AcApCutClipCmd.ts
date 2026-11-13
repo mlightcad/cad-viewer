@@ -1,5 +1,6 @@
 import { AcApContext } from '../../app'
 import { AcEdCommand, AcEdOpenMode } from '../../editor'
+import { AcApI18n } from '../../i18n'
 import { acapCopySelectionToClipboard } from './AcApClipboardUtils'
 
 /**
@@ -13,9 +14,13 @@ export class AcApCutClipCmd extends AcEdCommand {
   }
 
   async execute(context: AcApContext) {
-    const ids = await acapCopySelectionToClipboard(context, 'cutclip')
-    if (ids && ids.length > 0) {
-      context.doc.entityService.eraseEntities(ids)
-    }
+    // One busy overlay covers clipboard write and erase so the UI does not
+    // flash between two overlays on large selections.
+    await acapCopySelectionToClipboard(context, 'cutclip', undefined, {
+      busyMessage: AcApI18n.t('main.message.cuttingToClipboard'),
+      afterCopy: ids => {
+        context.doc.entityService.eraseEntities(ids)
+      }
+    })
   }
 }

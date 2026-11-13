@@ -30,6 +30,9 @@ export class AcApPasteOrigCmd extends AcEdCommand {
       return
     }
 
-    context.doc.database.insert(new AcGeMatrix3d(), content.database)
+    await this.withBusyIndicator(
+      () => context.doc.database.insert(new AcGeMatrix3d(), content.database),
+      AcApI18n.t('main.message.pastingFromClipboard')
+    )
   }
 }

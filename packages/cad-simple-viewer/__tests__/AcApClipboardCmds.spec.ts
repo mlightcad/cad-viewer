@@ -7,7 +7,8 @@ jest.mock('../src/app', () => {
         editor: {
           getPoint: jest.fn(),
           showMessage: jest.fn()
-        }
+        },
+        withBusyIndicator: async <T>(work: () => T | Promise<T>) => work()
       }
     }
   }
@@ -22,6 +23,10 @@ jest.mock('../src/editor', () => {
 
     showMessage(message: string, type: string = 'info') {
       AcApDocManager.instance.editor.showMessage(message, type)
+    }
+
+    async withBusyIndicator<T>(work: () => T | Promise<T>) {
+      return work()
     }
   }
 
@@ -136,6 +141,26 @@ describe('clipboard commands', () => {
     expect(pasted.startPoint.toArray()).toEqual([12, 13, 0])
     expect(pasted.endPoint.toArray()).toEqual([16, 18, 0])
     expect(modelSpace(source)).toHaveLength(1)
+  })
+
+  it('COPYCLIP keeps the selection when the clipboard write fails', async () => {
+    const { context, clearSelection } = createContext(source)
+    selectEntities([line])
+    const clipboard = (
+      AcApDocManager.instance as unknown as {
+        clipboard: { set: jest.Mock }
+      }
+    ).clipboard
+    const setSpy = jest
+      .spyOn(clipboard, 'set')
+      .mockRejectedValueOnce(new Error('serialize failed'))
+
+    await expect(new AcApCopyClipCmd().execute(context)).rejects.toThrow(
+      'serialize failed'
+    )
+
+    expect(clearSelection).not.toHaveBeenCalled()
+    setSpy.mockRestore()
   })
 
   it('COPYBASE uses the picked base point', async () => {

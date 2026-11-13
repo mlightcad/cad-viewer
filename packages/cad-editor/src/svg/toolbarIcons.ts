@@ -32,8 +32,10 @@ import {
   ICON_MEASUREMENT_PANEL,
   ICON_PAN,
   ICON_READING_MODE,
+  ICON_REDO,
   ICON_SELECT,
   ICON_SWITCH_BG,
+  ICON_UNDO,
   ICON_ZOOM_EXTENT,
   ICON_ZOOM_WINDOW
 } from '@mlightcad/cad-simple-viewer/icons'
@@ -47,6 +49,8 @@ export const zoomToBox = acapSvgIcon(ICON_ZOOM_WINDOW, 'IconZoomToBox')
 export const layer = acapSvgIcon(ICON_LAYER, 'IconLayer')
 export const switchBg = acapSvgIcon(ICON_SWITCH_BG, 'IconSwitchBg')
 export const readingMode = acapSvgIcon(ICON_READING_MODE, 'IconReadingMode')
+export const undo = acapSvgIcon(ICON_UNDO, 'IconUndo')
+export const redo = acapSvgIcon(ICON_REDO, 'IconRedo')
 export const measure = acapSvgIcon(ICON_MEASURE, 'IconMeasure')
 export const measureDistance = acapSvgIcon(
   ICON_MEASURE_DISTANCE,

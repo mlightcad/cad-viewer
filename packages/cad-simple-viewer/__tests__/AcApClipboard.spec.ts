@@ -38,8 +38,6 @@ class MemorySystemClipboard implements AcApSystemClipboard {
   }
 }
 
-const flush = () => new Promise(resolve => setTimeout(resolve, 0))
-
 describe('AcApClipboard', () => {
   let source: AcDbDatabase
   let line: AcDbLine
@@ -57,7 +55,7 @@ describe('AcApClipboard', () => {
     const clipboard = new AcApClipboard(null)
     expect(await clipboard.get()).toBeUndefined()
 
-    clipboard.set(source, [line.objectId], new AcGePoint3d(1, 2, 0))
+    await clipboard.set(source, [line.objectId], new AcGePoint3d(1, 2, 0))
     const content = await clipboard.get()
 
     expect(content?.sourceDatabase).toBe(source)
@@ -82,7 +80,7 @@ describe('AcApClipboard', () => {
     source.tables.blockTable.modelSpace.appendEntity(ref)
 
     const clipboard = new AcApClipboard(null)
-    clipboard.set(source, [line.objectId, ref.objectId], new AcGePoint3d())
+    await clipboard.set(source, [line.objectId, ref.objectId], new AcGePoint3d())
     const content = (await clipboard.get())!
 
     const target = createDb()
@@ -102,8 +100,7 @@ describe('AcApClipboard', () => {
   it('round-trips through the system clipboard as DXF text', async () => {
     const system = new MemorySystemClipboard()
     const writer = new AcApClipboard(system)
-    writer.set(source, [line.objectId], new AcGePoint3d(1, 2, 0))
-    await flush()
+    await writer.set(source, [line.objectId], new AcGePoint3d(1, 2, 0))
 
     expect(system.writes).toBe(1)
     expect(system.text.startsWith('999\nMLIGHTCAD_CLIPBOARD v1 ')).toBe(true)
@@ -128,8 +125,7 @@ describe('AcApClipboard', () => {
   it('prefers its own in-memory copy over the same data on the system clipboard', async () => {
     const system = new MemorySystemClipboard()
     const clipboard = new AcApClipboard(system)
-    const set = clipboard.set(source, [line.objectId], new AcGePoint3d())
-    await flush()
+    const set = await clipboard.set(source, [line.objectId], new AcGePoint3d())
 
     expect(await clipboard.get()).toBe(set)
   })
@@ -139,8 +135,7 @@ describe('AcApClipboard', () => {
       writeText: () => Promise.reject(new Error('denied')),
       readText: () => Promise.reject(new Error('denied'))
     })
-    const set = clipboard.set(source, [line.objectId], new AcGePoint3d())
-    await flush()
+    const set = await clipboard.set(source, [line.objectId], new AcGePoint3d())
 
     expect(await clipboard.get()).toBe(set)
   })

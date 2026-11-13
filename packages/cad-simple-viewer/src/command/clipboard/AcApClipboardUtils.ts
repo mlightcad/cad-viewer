@@ -31,27 +31,62 @@ export function acapClipboardBasePoint(entities: AcDbEntity[]): AcGePoint3d {
 }
 
 /**
+ * Options for {@link acapCopySelectionToClipboard}.
+ */
+export interface AcApCopySelectionToClipboardOptions {
+  /**
+   * Busy-overlay message. Pass `false` to skip the overlay (caller owns it).
+   * Defaults to {@link AcApI18n} `main.message.copyingToClipboard`.
+   */
+  busyMessage?: string | false
+  /**
+   * Runs inside the same busy overlay after the clipboard write succeeds
+   * (e.g. erase for CUTCLIP).
+   */
+  afterCopy?: (ids: AcDbObjectId[]) => void | Promise<void>
+}
+
+/**
  * Copies the current selection (or a prompted one) to the clipboard.
  *
  * @param context - Command context.
  * @param promptKey - `command.ACAD.<key>.prompt` used when nothing is preselected.
  * @param basePoint - Base point; defaults to {@link acapClipboardBasePoint}.
+ * @param options - Busy-overlay and post-copy hooks.
  * @returns Ids of the copied entities, or `undefined` when nothing was selected.
  */
 export async function acapCopySelectionToClipboard(
   context: AcApContext,
   promptKey: string,
-  basePoint?: AcGePoint3dLike
+  basePoint?: AcGePoint3dLike,
+  options?: AcApCopySelectionToClipboardOptions
 ): Promise<AcDbObjectId[] | undefined> {
   const resolved = await resolveSelectedEntities(context, { promptKey })
-  context.view.selectionSet.clear()
-  if (!resolved) return undefined
+  if (!resolved) {
+    context.view.selectionSet.clear()
+    return undefined
+  }
 
-  AcApDocManager.instance.clipboard.set(
-    context.doc.database,
-    resolved.ids,
-    basePoint ?? acapClipboardBasePoint(resolved.entities)
-  )
+  // wblock + DXF serialize can freeze the UI on large selections. Clear the
+  // selection only after the write succeeds so a failed copy keeps the pick.
+  const work = async () => {
+    await AcApDocManager.instance.clipboard.set(
+      context.doc.database,
+      resolved.ids,
+      basePoint ?? acapClipboardBasePoint(resolved.entities)
+    )
+    context.view.selectionSet.clear()
+    await options?.afterCopy?.(resolved.ids)
+  }
+
+  if (options?.busyMessage === false) {
+    await work()
+  } else {
+    await AcApDocManager.instance.withBusyIndicator(
+      work,
+      options?.busyMessage ?? AcApI18n.t('main.message.copyingToClipboard')
+    )
+  }
   return resolved.ids
 }
 
@@ -64,7 +99,11 @@ export async function acapCopySelectionToClipboard(
 export async function acapReadClipboard(
   showMessage: (message: string) => void
 ): Promise<AcApClipboardContent | undefined> {
-  const content = await AcApDocManager.instance.clipboard.get()
+  // Cross-tab paste may read + deserialize a large DXF on the main thread.
+  const content = await AcApDocManager.instance.withBusyIndicator(
+    () => AcApDocManager.instance.clipboard.get(),
+    AcApI18n.t('main.message.pastingFromClipboard')
+  )
   const isEmpty =
     !content ||
     content.database.tables.blockTable.modelSpace.newIterator().count === 0
@@ -90,7 +129,12 @@ export async function acapPromptPastePoint(
   promptKey: string
 ): Promise<AcGePoint3d | undefined> {
   const prompt = new AcEdPromptPointOptions(AcApI18n.t(promptKey))
-  prompt.jig = new AcApPastePreviewJig(context.view, content)
+  // Cloning every clipboard entity for the cursor preview is costly on large
+  // pastes; show the busy overlay before the pick loop starts.
+  prompt.jig = await AcApDocManager.instance.withBusyIndicator(
+    () => new AcApPastePreviewJig(context.view, content),
+    AcApI18n.t('main.message.pastingFromClipboard')
+  )
   const result = await AcApDocManager.instance.editor.getPoint(prompt)
   if (result.status !== AcEdPromptStatus.OK || !result.value) return undefined
   return new AcGePoint3d(result.value)

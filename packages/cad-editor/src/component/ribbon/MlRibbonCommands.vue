@@ -7,7 +7,6 @@ import {
   Delete,
   DocumentCopy,
   Hide,
-  RefreshLeft,
   RefreshRight,
   Right,
   ScaleToOriginal,
@@ -221,10 +220,12 @@ import {
   measurementPanel,
   measurePoint,
   pan as panIcon,
+  redo as redoIcon,
   revCircle,
   revCloud,
   revRect,
   revText,
+  undo as undoIcon,
   zoomToBox,
   zoomToExtent
 } from '../../svg/toolbarIcons'
@@ -1247,8 +1248,9 @@ const handleRibbonLayerStateToggle = (payload: {
 }
 
 /**
- * Read: measurement only. Review: measurement + review. Write: all tabs.
- * Contextual tabs keep the visibility their builders already set.
+ * Read: measurement only. Review: measurement + review. Write: all tabs
+ * (including View). Contextual tabs keep the visibility their builders
+ * already set.
  */
 const applyOpenModeTabVisibility = (
   tabs: RibbonTabModel[],
@@ -1259,7 +1261,7 @@ const applyOpenModeTabVisibility = (
     const visible =
       tab.id === 'measurement'
         ? true
-        : tab.id === 'review' || tab.id === 'view'
+        : tab.id === 'review'
           ? openMode >= AcEdOpenMode.Review
           : openMode === AcEdOpenMode.Write
     return { ...tab, visible }
@@ -3825,7 +3827,7 @@ const handleFileMenuSelect = async (command: string) => {
             <el-button
               class="ml-ribbon-tabs-after__button"
               :disabled="disabled || !canUndo"
-              :icon="RefreshLeft"
+              :icon="undoIcon"
               @click="handleHeaderUndo"
             />
           </el-tooltip>
@@ -3837,7 +3839,7 @@ const handleFileMenuSelect = async (command: string) => {
             <el-button
               class="ml-ribbon-tabs-after__button"
               :disabled="disabled || !canRedo"
-              :icon="RefreshRight"
+              :icon="redoIcon"
               @click="handleHeaderRedo"
             />
           </el-tooltip>
