@@ -185,6 +185,12 @@ Bu değişikliği içeren sürümden itibaren `cad.blocks` her blok için `entit
 **1.8.0** sürümünden itibaren `.svg` dosyaları normal File → Open / `openDocument` / `openUrl` ile çizim olarak açılabilir. Dönüştürme yeni [`@mlightcad/cad-svg-converter`](https://github.com/mlightcad/cad-viewer/tree/main/packages/cad-svg-converter) paketindedir (yalnızca `@mlightcad/data-model`). `cad-editor` içindeki `initializeCadViewer` otomatik kaydeder; yalnızca `cad-simple-viewer` kullanıyorsanız başlangıçta bir kez `registerSvgConverter()` çağırın. Dışa aktarma hâlâ `cad-svg-plugin` içindeki `csvg`dir.
 :::
 
+::: info HTML/PDF dışa aktarma varsayılan olarak boş yerleşimleri atlar
+Bu değişikliği içeren sürümden itibaren HTML ve PDF dışa aktarmaya **`exportEmptyLayouts`** (varsayılan **`false`**) eklenir. Yalnızca AutoCAD’in varsayılan `*Paper_Space` görüntü penceresini içeren kağıt alanı yerleşimleri, seçenek `true` yapılmadıkça atlanır. Yerleşimler dışa aktarılırken model alanı her zaman korunur.
+
+Geçiş: Çıktıda boş kağıt sekmeleri istiyorsanız `exportEmptyLayouts: true` geçin (dışa aktarma iletişim kutusu anahtarı, `-chtml` / `-cpdf` istemi, betik `cad.file.saveHtml` / `savePdf` veya dışa aktarıcı CLI’deki `--export-empty-layouts`).
+:::
+
 ::: info PDF dışa aktarma paylaşılan çekirdeğe ayrıldı (tarayıcı + Node)
 **1.8.0** sürümünden itibaren PDF dışa aktarma, HTML dışa aktarma ile aynı katmanlamayı kullanır. Paylaşılan mantık `@mlightcad/cad-pdf-core` içindedir (seçenek modeli ve database → PDF hattı; `cad-simple-viewer` / DOM’a **bağımlı değildir**). Bunu iki ön uç kullanır:
 

@@ -163,12 +163,15 @@ on disk (relative paths use the server process cwd). The DXF text is not
 returned to the model. Returns { queued: true, index, fileName }.
 The tool result then includes savedFiles: [{ path, fileName, bytes, delivery }].
 cad.file.savePdf(path?) writes the current drawing as PDF after the script succeeds.
-Pass a path string or { path?, fileName?, exportLayouts?, colorMode?, textMode?,
-modelSpaceFit? }. .pdf is appended when missing. Defaults: exportLayouts true,
+Pass a path string or { path?, fileName?, exportLayouts?, exportEmptyLayouts?,
+  colorMode?, textMode?, modelSpaceFit? }. .pdf is appended when missing.
+  Defaults: exportLayouts true, exportEmptyLayouts false,
 colorMode 'color', textMode 'text', modelSpaceFit 'extents'. File bytes are not
 returned to the model. Returns { queued: true, index, fileName }.
 cad.file.saveHtml(path?) writes offline HTML (or a multi-file zip) after success.
-Pass a path string or { path?, fileName?, exportFormat?, exportLayouts?, background? }.
+Pass a path string or { path?, fileName?, exportFormat?, exportLayouts?,
+  exportEmptyLayouts?, background? }. Defaults: exportLayouts true,
+  exportEmptyLayouts false.
 exportFormat is 'single' (default, .html) or 'multi' (.zip). background is
 'black' | 'white' | 'space' (default). Requires a viewer host that provides
 exportHtml (in-app agent / cad-mcp-server); headless database sessions skip it

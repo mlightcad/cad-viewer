@@ -1692,6 +1692,7 @@ export default {
     exportFormat: 'تنسيق التصدير',
     exportInvisibleLayers: 'تصدير الطبقات غير المرئية',
     exportLayouts: 'تصدير المخططات',
+    exportEmptyLayouts: 'تصدير المخططات الفارغة',
     background: 'لون الخلفية',
     initialView: 'العرض الأولي عند فتح HTML',
     viewerMode: 'وضع العارض دون اتصال',
@@ -1758,6 +1759,7 @@ export default {
   cpdf: {
     modelSpaceFit: 'إطار مساحة النموذج',
     exportLayouts: 'تصدير المخططات',
+    exportEmptyLayouts: 'تصدير المخططات الفارغة',
     textMode: 'عرض النص',
     colorMode: 'وضع الألوان',
     keywords: {

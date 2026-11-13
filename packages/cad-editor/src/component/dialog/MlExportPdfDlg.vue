@@ -154,6 +154,25 @@
             inline-prompt
           />
         </div>
+        <div
+          v-if="form.exportLayouts"
+          class="ml-export-pdf-dlg__toggle-row ml-export-pdf-dlg__toggle-row--nested"
+        >
+          <div class="ml-export-pdf-dlg__toggle-copy">
+            <span class="ml-export-pdf-dlg__toggle-label">{{
+              t('dialog.exportPdfDlg.exportEmptyLayouts')
+            }}</span>
+            <span class="ml-export-pdf-dlg__toggle-hint">{{
+              t('dialog.exportPdfDlg.exportEmptyLayoutsHint')
+            }}</span>
+          </div>
+          <el-switch
+            v-model="form.exportEmptyLayouts"
+            :active-text="t('dialog.exportPdfDlg.yes')"
+            :inactive-text="t('dialog.exportPdfDlg.no')"
+            inline-prompt
+          />
+        </div>
       </ml-fieldset-group>
     </div>
   </ml-base-dialog>
@@ -205,6 +224,10 @@ export interface MlExportPdfDlgForm {
    */
   exportLayouts: boolean
   /**
+   * When `true`, empty paper-space layouts are exported as blank pages.
+   */
+  exportEmptyLayouts: boolean
+  /**
    * How MTEXT/TEXT are painted: real PDF text objects or vector outlines.
    */
   textMode: 'vector' | 'text'
@@ -238,6 +261,7 @@ const visible = computed({
 const form = reactive<MlExportPdfDlgForm>({
   modelSpaceFit: 'extents',
   exportLayouts: true,
+  exportEmptyLayouts: false,
   textMode: 'text',
   colorMode: 'color'
 })
@@ -248,6 +272,7 @@ const form = reactive<MlExportPdfDlgForm>({
 function resetForm() {
   form.modelSpaceFit = 'extents'
   form.exportLayouts = true
+  form.exportEmptyLayouts = false
   form.textMode = 'text'
   form.colorMode = 'color'
 }
@@ -267,6 +292,9 @@ async function handleOk() {
   const options: AcApPdfExportOptions = {
     modelSpaceFit: form.modelSpaceFit,
     exportLayouts: form.exportLayouts,
+    exportEmptyLayouts: form.exportLayouts
+      ? form.exportEmptyLayouts
+      : false,
     textMode: form.textMode,
     colorMode: form.colorMode
   }
@@ -313,6 +341,10 @@ async function handleOk() {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.ml-export-pdf-dlg__toggle-row--nested {
+  margin-top: 10px;
 }
 
 .ml-export-pdf-dlg__toggle-row :deep(.el-switch) {

@@ -205,6 +205,12 @@ registerSvgConverter()
 Supported subset (v1): `line`, `polyline` / `polygon` / `rect`, `circle`, `ellipse` (polyline approx when non-uniform), `path` (tessellated), `text`, nested `g` + transforms. Export remains `csvg` in `@mlightcad/cad-svg-plugin`. Save after editing is still DXF (`cdxf`) or re-export SVG — there is no native SVG save.
 :::
 
+::: info HTML/PDF export skips empty paper layouts by default
+Starting with the release that includes this change, HTML and PDF export gain **`exportEmptyLayouts`** (default **`false`**). Paper-space layouts that contain only AutoCAD's default `*Paper_Space` viewport are omitted unless you set the option to `true`. Model space is always kept when layouts are exported.
+
+Migrate: pass `exportEmptyLayouts: true` (export dialog toggle, `-chtml` / `-cpdf` prompt, script `cad.file.saveHtml` / `savePdf`, or exporter CLI flags `--export-empty-layouts`) if you need blank paper tabs in the output.
+:::
+
 ::: info PDF export split into a shared core (browser + Node)
 Starting with **1.8.0**, PDF export uses the same layering as HTML export. Shared logic lives in `@mlightcad/cad-pdf-core` (option model and database → PDF pipeline, **no** `cad-simple-viewer` / DOM dependency). Two front ends consume it:
 

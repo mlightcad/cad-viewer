@@ -1,6 +1,7 @@
 import type { AcExHtmlSnapshot } from '@mlightcad/cad-html-core'
 import {
   acexHtmlApplyBackground,
+  acexHtmlIsEmptyPaperSpaceLayout,
   acexHtmlProtectEncodedSnapshot,
   acexHtmlResolveExpiresAt
 } from '@mlightcad/cad-html-core'
@@ -19,7 +20,7 @@ import {
   getDrawingExportBaseName,
   resolveExportDownloadName
 } from '@mlightcad/cad-simple-viewer'
-import { accmYieldForPaint } from '@mlightcad/data-model'
+import { accmYieldForPaint, type AcDbDatabase } from '@mlightcad/data-model'
 
 import {
   type AcApHtmlExportOptions,
@@ -45,6 +46,38 @@ export interface AcApHtmlExportResult {
   bytes: Uint8Array
   /** IANA media type (`text/html;charset=utf-8` or `application/zip`). */
   mediaType: string
+}
+
+/**
+ * Whether the live camera should be written into the snapshot for
+ * `initialView: 'current'`. Empty paper tabs remapped to model space must
+ * not keep paper-space pan/zoom.
+ */
+function shouldCaptureAcApHtmlViewState(
+  resolved: ReturnType<typeof resolveAcApHtmlExportOptions>,
+  exportView: AcTrView2d,
+  database: AcDbDatabase
+): boolean {
+  if (resolved.initialView !== 'current') {
+    return false
+  }
+  const activeIsModel =
+    exportView.activeLayoutBtrId === exportView.modelSpaceBtrId
+  if (!resolved.exportLayouts && !activeIsModel) {
+    return false
+  }
+  if (
+    !resolved.exportEmptyLayouts &&
+    !activeIsModel &&
+    acexHtmlIsEmptyPaperSpaceLayout(
+      database,
+      exportView.activeLayoutBtrId,
+      exportView.modelSpaceBtrId
+    )
+  ) {
+    return false
+  }
+  return true
 }
 
 /**
@@ -180,14 +213,19 @@ export class AcApHtmlConvertor {
         background: exportView.backgroundColor,
         exportInvisibleLayers: resolved.exportInvisibleLayers,
         exportLayouts: resolved.exportLayouts,
+        exportEmptyLayouts: resolved.exportEmptyLayouts,
         initialView: resolved.initialView,
         viewerMode: resolved.viewerMode,
-        viewState:
-          resolved.initialView === 'current' &&
-          (resolved.exportLayouts ||
-            exportView.activeLayoutBtrId === exportView.modelSpaceBtrId)
-            ? captureAcApHtmlViewState(exportView)
-            : undefined,
+        // Skip camera capture when the active empty paper tab will be
+        // remapped to model space — otherwise `initialView: 'current'`
+        // would open model with paper-space pan/zoom.
+        viewState: shouldCaptureAcApHtmlViewState(
+          resolved,
+          exportView,
+          document.database
+        )
+          ? captureAcApHtmlViewState(exportView)
+          : undefined,
         canvasAspectRatio: exportView.width / Math.max(exportView.height, 1)
       }
     )

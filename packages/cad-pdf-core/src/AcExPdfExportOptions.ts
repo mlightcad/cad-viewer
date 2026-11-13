@@ -42,6 +42,13 @@ export interface AcExPdfExportOptions {
    * When `false`, only the current space is exported. Defaults to `true`.
    */
   exportLayouts?: boolean
+  /**
+   * When `true`, empty paper-space layouts (no entities other than the
+   * default `*Paper_Space` viewport) are still exported as blank pages.
+   * When `false` (default), those layouts are skipped. Model space is
+   * always kept when {@link AcExPdfExportOptions.exportLayouts} is `true`.
+   */
+  exportEmptyLayouts?: boolean
   /** How MTEXT/TEXT are painted. Defaults to `'text'`. */
   textMode?: AcExPdfTextMode
   /**
@@ -58,6 +65,7 @@ export const ACEXPDF_DEFAULT_EXPORT_OPTIONS: Readonly<
 > = Object.freeze({
   modelSpaceFit: 'extents',
   exportLayouts: true,
+  exportEmptyLayouts: false,
   textMode: 'text',
   colorMode: 'color'
 })
@@ -75,6 +83,7 @@ export function acexPdfResolveExportOptions(
   return {
     modelSpaceFit: options.modelSpaceFit === 'display' ? 'display' : 'extents',
     exportLayouts: options.exportLayouts !== false,
+    exportEmptyLayouts: options.exportEmptyLayouts === true,
     textMode: options.textMode === 'vector' ? 'vector' : 'text',
     colorMode: options.colorMode === 'monochrome' ? 'monochrome' : 'color'
   }

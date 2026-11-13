@@ -1518,6 +1518,7 @@ export default {
     exportFormat: '导出格式',
     exportInvisibleLayers: '是否导出不可见图层',
     exportLayouts: '是否导出布局',
+    exportEmptyLayouts: '是否导出空布局',
     background: '背景颜色',
     initialView: '打开 HTML 时的初始视图',
     viewerMode: '离线查看器模式',
@@ -1584,6 +1585,7 @@ export default {
   cpdf: {
     modelSpaceFit: '模型空间范围',
     exportLayouts: '是否导出布局',
+    exportEmptyLayouts: '是否导出空布局',
     textMode: '文字渲染方式',
     colorMode: '颜色模式',
     keywords: {

@@ -188,6 +188,7 @@ export {
   type AcExHtmlExportLayoutLayerGeometry,
   type AcExHtmlExportSceneInput
 } from './AcExHtmlSnapshotFromSceneData'
+export { acexHtmlIsEmptyPaperSpaceLayout } from './AcExHtmlEmptyLayout'
 
 export {
   ACEX_COORDINATE_BADGE_LIFT_EM,

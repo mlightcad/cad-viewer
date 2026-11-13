@@ -100,6 +100,25 @@
                     inline-prompt
                   />
                 </div>
+                <div
+                  v-if="form.exportLayouts"
+                  class="ml-export-html-dlg__toggle-row ml-export-html-dlg__toggle-row--nested"
+                >
+                  <div class="ml-export-html-dlg__toggle-copy">
+                    <span class="ml-export-html-dlg__toggle-label">{{
+                      t('dialog.exportHtmlDlg.exportEmptyLayouts')
+                    }}</span>
+                    <span class="ml-export-html-dlg__toggle-hint">{{
+                      t('dialog.exportHtmlDlg.exportEmptyLayoutsHint')
+                    }}</span>
+                  </div>
+                  <el-switch
+                    v-model="form.exportEmptyLayouts"
+                    :active-text="t('dialog.exportHtmlDlg.yes')"
+                    :inactive-text="t('dialog.exportHtmlDlg.no')"
+                    inline-prompt
+                  />
+                </div>
               </ml-fieldset-group>
             </div>
 
@@ -471,6 +490,10 @@ export interface MlExportHtmlDlgForm {
    */
   exportLayouts: boolean
   /**
+   * When `true`, empty paper-space layouts are included in the snapshot.
+   */
+  exportEmptyLayouts: boolean
+  /**
    * Canvas background written into the exported HTML.
    */
   background: AcExHtmlBackground
@@ -539,6 +562,7 @@ const form = reactive<MlExportHtmlDlgForm>({
   exportFormat: 'single',
   exportInvisibleLayers: true,
   exportLayouts: true,
+  exportEmptyLayouts: false,
   background: 'black',
   initialView: 'fit',
   viewerMode: 'measure',
@@ -568,6 +592,7 @@ function resetForm() {
   form.exportFormat = 'single'
   form.exportInvisibleLayers = true
   form.exportLayouts = true
+  form.exportEmptyLayouts = false
   form.background = 'black'
   form.initialView = 'fit'
   form.viewerMode = 'measure'
@@ -699,6 +724,9 @@ async function handleOk() {
     exportFormat: form.exportFormat,
     exportInvisibleLayers: form.exportInvisibleLayers,
     exportLayouts: form.exportLayouts,
+    exportEmptyLayouts: form.exportLayouts
+      ? form.exportEmptyLayouts
+      : false,
     background: form.background,
     initialView: form.initialView,
     viewerMode: form.viewerMode,
@@ -784,6 +812,10 @@ async function handleOk() {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.ml-export-html-dlg__toggle-row--nested {
+  margin-top: 10px;
 }
 
 .ml-export-html-dlg__package-row + .ml-export-html-dlg__toggle-row {

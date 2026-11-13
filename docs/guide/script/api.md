@@ -329,7 +329,7 @@ cad.file.saveDxf('./plan-out.dxf')
 
 ### `cad.file.savePdf(path?)`
 
-Queues a PDF export that runs after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Defaults: `exportLayouts: true`, `colorMode: 'color'`, `textMode: 'text'`, `modelSpaceFit: 'extents'`. Returns `{ queued: true, index, fileName }`.
+Queues a PDF export that runs after the script succeeds. Pass a path string or `{ path?, fileName?, exportLayouts?, exportEmptyLayouts?, colorMode?, textMode?, modelSpaceFit? }`. `.pdf` is appended when missing. Defaults: `exportLayouts: true`, `exportEmptyLayouts: false`, `colorMode: 'color'`, `textMode: 'text'`, `modelSpaceFit: 'extents'`. Returns `{ queued: true, index, fileName }`.
 
 Delivery matches `saveDxf` (browser download or MCP disk write).
 
@@ -340,7 +340,7 @@ cad.file.savePdf('./plan.pdf')
 
 ### `cad.file.saveHtml(path?)`
 
-Queues an offline HTML export (or a multi-file `.zip` package) after the script succeeds. Pass a path string or `{ path?, fileName?, exportFormat?, exportLayouts?, background? }`.
+Queues an offline HTML export (or a multi-file `.zip` package) after the script succeeds. Pass a path string or `{ path?, fileName?, exportFormat?, exportLayouts?, exportEmptyLayouts?, background? }`. Defaults include `exportLayouts: true` and `exportEmptyLayouts: false`.
 
 - `exportFormat`: `'single'` (default, `.html`) or `'multi'` (`.zip`)
 - `background`: `'black'`, `'white'`, or `'space'` (default)

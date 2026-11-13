@@ -1586,6 +1586,7 @@ export default {
     exportFormat: 'Formát exportu',
     exportInvisibleLayers: 'Exportovat neviditelné hladiny',
     exportLayouts: 'Exportovat rozvržení',
+    exportEmptyLayouts: 'Exportovat prázdná rozvržení',
     background: 'Barva pozadí',
     initialView: 'Počáteční pohled při otevření HTML',
     viewerMode: 'Režim offline prohlížeče',
@@ -1652,6 +1653,7 @@ export default {
   cpdf: {
     modelSpaceFit: 'Rám modelového prostoru',
     exportLayouts: 'Exportovat rozvržení',
+    exportEmptyLayouts: 'Exportovat prázdná rozvržení',
     textMode: 'Vykreslení textu',
     colorMode: 'Barevný režim',
     keywords: {

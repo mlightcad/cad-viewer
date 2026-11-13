@@ -1698,6 +1698,7 @@ export default {
     exportFormat: 'Dışa aktarma biçimi',
     exportInvisibleLayers: 'Görünmez katmanları dışa aktar',
     exportLayouts: 'Yerleşimleri dışa aktar',
+    exportEmptyLayouts: 'Boş yerleşimleri dışa aktar',
     background: 'Arka plan rengi',
     initialView: 'HTML açılırken başlangıç görünümü',
     viewerMode: 'Çevrimdışı görüntüleyici modu',
@@ -1764,6 +1765,7 @@ export default {
   cpdf: {
     modelSpaceFit: 'Model alanı çerçevesi',
     exportLayouts: 'Yerleşimleri dışa aktar',
+    exportEmptyLayouts: 'Boş yerleşimleri dışa aktar',
     textMode: 'Metin işleme',
     colorMode: 'Renk modu',
     keywords: {

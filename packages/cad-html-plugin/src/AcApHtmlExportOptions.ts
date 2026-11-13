@@ -57,6 +57,13 @@ export interface AcApHtmlExportOptions {
    */
   exportLayouts?: boolean
   /**
+   * When `true`, empty paper-space layouts are still written into the snapshot.
+   * When `false` (default), paper tabs with no content other than the default
+   * `*Paper_Space` viewport are skipped. Model space is always kept when
+   * {@link AcApHtmlExportOptions.exportLayouts} is `true`.
+   */
+  exportEmptyLayouts?: boolean
+  /**
    * Canvas background written into the exported HTML.
    * `'black'` (default), `'white'`, or `'space'`.
    *
@@ -163,6 +170,7 @@ export function resolveAcApHtmlExportOptions(
     exportFormat,
     exportInvisibleLayers: options.exportInvisibleLayers !== false,
     exportLayouts: options.exportLayouts !== false,
+    exportEmptyLayouts: options.exportEmptyLayouts === true,
     background: acexHtmlResolveBackground(options.background),
     initialView: options.initialView ?? 'fit',
     viewerMode: options.viewerMode ?? 'measure',

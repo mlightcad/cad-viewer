@@ -97,6 +97,9 @@ export default {
     exportLayouts: 'Yerleşimleri dışa aktar',
     exportLayoutsHint:
       'Kağıt alanı yerleşimlerini dışa aktarılan dosyaya dahil et',
+    exportEmptyLayouts: 'Boş yerleşimleri dışa aktar',
+    exportEmptyLayoutsHint:
+      'Çizim içeriği olmayan kağıt alanı yerleşimlerini de dahil et',
     yes: 'Evet',
     no: 'Hayır',
     background: 'Arka plan',
@@ -152,6 +155,9 @@ export default {
     exportLayouts: 'Yerleşimleri dışa aktar',
     exportLayoutsHint:
       'Kağıt alanı yerleşimlerini ek PDF sayfaları olarak dahil et',
+    exportEmptyLayouts: 'Boş yerleşimleri dışa aktar',
+    exportEmptyLayoutsHint:
+      'Çizim içeriği olmayan kağıt alanı yerleşimlerini boş PDF sayfaları olarak dahil et',
     textModeSection: 'Metin',
     textMode: 'Metin işleme',
     textModeText: 'Metin nesneleri',

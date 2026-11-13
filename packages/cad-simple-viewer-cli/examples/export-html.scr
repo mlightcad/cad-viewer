@@ -1,5 +1,6 @@
 ; Export a self-contained offline HTML viewer (-chtml).
 ; Prompts: export format / export invisible layers / export layouts /
+; export empty layouts (only when layouts=Yes) /
 ; background (Black / White / Space) / initial view / viewer mode.
 ; Usage:
 ;   cad-simple-viewer-cli -i drawing.dwg -s examples/export-html.scr -o ./out
@@ -7,6 +8,7 @@
 Single
 Yes
 Yes
+No
 Black
 Extents
 Measure

@@ -93,8 +93,8 @@ title: 用 AI 编写脚本
 
 ### cad.file
 - cad.file.saveDxf(path?) -> 脚本成功后导出 DXF。路径字符串或 { path?, fileName? }。应用内 Agent 触发下载；cad-mcp-server 把文件写到 path（相对路径相对于服务器工作目录）。返回 { queued: true, index, fileName }。不返回 DXF 正文。工具结果包含 savedFiles
-- cad.file.savePdf(path?) -> 脚本成功后导出 PDF。路径字符串或 { path?, fileName?, exportLayouts?, colorMode?, textMode?, modelSpaceFit? }。不返回文件正文。工具结果包含 savedFiles
-- cad.file.saveHtml(path?) -> 脚本成功后导出离线 HTML（或多文件 zip）。路径字符串或 { path?, fileName?, exportFormat?, exportLayouts?, background? }。需要 viewer 宿主；无头会话会跳过。不返回文件正文。工具结果包含 savedFiles
+- cad.file.savePdf(path?) -> 脚本成功后导出 PDF。路径字符串或 { path?, fileName?, exportLayouts?, exportEmptyLayouts?, colorMode?, textMode?, modelSpaceFit? }。不返回文件正文。工具结果包含 savedFiles
+- cad.file.saveHtml(path?) -> 脚本成功后导出离线 HTML（或多文件 zip）。路径字符串或 { path?, fileName?, exportFormat?, exportLayouts?, exportEmptyLayouts?, background? }。需要 viewer 宿主；无头会话会跳过。不返回文件正文。工具结果包含 savedFiles
 
 ### cad.measure
 - cad.measure.distance(a, b) -> 两点距离

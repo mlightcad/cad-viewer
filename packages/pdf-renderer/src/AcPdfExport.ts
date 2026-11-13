@@ -25,6 +25,7 @@ import {
   collectModelSpaceRoots,
   isPaperSpaceBlock
 } from './viewport/AcPdfPaperSpaceExport'
+import { isDefaultPaperSpaceViewport } from './viewport/AcPdfPaperViewport'
 
 /**
  * Renders a drawing database to a vector PDF.
@@ -38,7 +39,7 @@ export async function exportDatabaseToPdf(
 ): Promise<Uint8Array> {
   const layouts =
     options.layouts === 'all' && !options.blockName && !options.blockId
-      ? collectExportLayouts(db)
+      ? collectExportLayouts(db, options.exportEmptyLayouts === true)
       : undefined
 
   AcPdfRenderer.prepareExport()
@@ -70,8 +71,15 @@ interface ExportLayoutEntry {
 /**
  * Lists layouts ordered by tab, or `null` when the database does not expose a
  * layout table (single-layout export then runs as before).
+ *
+ * When `exportEmptyLayouts` is `false`, empty paper-space tabs are omitted.
+ * Model space is always kept. After filtering, a single remaining layout is
+ * still returned so an empty current paper tab cannot replace model space.
  */
-function collectExportLayouts(db: AcDbDatabase): ExportLayoutEntry[] | null {
+function collectExportLayouts(
+  db: AcDbDatabase,
+  exportEmptyLayouts: boolean
+): ExportLayoutEntry[] | null {
   const layoutTable = (
     db as {
       objects?: {
@@ -98,9 +106,60 @@ function collectExportLayouts(db: AcDbDatabase): ExportLayoutEntry[] | null {
       continue
     }
     seen.add(layout.blockTableRecordId)
+    if (
+      !exportEmptyLayouts &&
+      isEmptyPaperSpaceLayout(db, layout.blockTableRecordId)
+    ) {
+      continue
+    }
     unique.push(layout)
   }
-  return unique.length > 1 ? unique : null
+  // Some drawings omit the Model row from the layout table. After empty
+  // paper tabs are filtered out the list can be empty — or contain only
+  // paper — and falling back to `currentSpaceId` would paint a blank tab
+  // instead of model space. Always keep model when exporting all layouts.
+  const modelSpaceId = db.tables.blockTable.modelSpace.objectId
+  if (!unique.some(layout => layout.blockTableRecordId === modelSpaceId)) {
+    const modelLayout = layouts.find(
+      layout => layout.blockTableRecordId === modelSpaceId
+    )
+    unique.unshift(
+      modelLayout ?? {
+        layoutName: 'Model',
+        blockTableRecordId: modelSpaceId,
+        tabOrder: -1
+      }
+    )
+  }
+  return unique.length > 0 ? unique : null
+}
+
+/**
+ * True when a paper-space block has no content other than AutoCAD's default
+ * `*Paper_Space` viewport. Model space is never treated as empty here.
+ */
+function isEmptyPaperSpaceLayout(
+  db: AcDbDatabase,
+  blockTableRecordId: string
+): boolean {
+  const modelSpaceId = db.tables.blockTable.modelSpace.objectId
+  if (blockTableRecordId === modelSpaceId) {
+    return false
+  }
+  const block = db.tables.blockTable.getIdAt(blockTableRecordId)
+  if (!block?.newIterator) {
+    return true
+  }
+  for (const entity of block.newIterator()) {
+    if (entity instanceof AcDbViewport) {
+      if (isDefaultPaperSpaceViewport(entity)) {
+        continue
+      }
+      return false
+    }
+    return false
+  }
+  return true
 }
 
 function createConfiguredRenderer(

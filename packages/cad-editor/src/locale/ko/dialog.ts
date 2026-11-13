@@ -96,6 +96,8 @@ export default {
     layoutsSection: '배치',
     exportLayouts: '배치 내보내기',
     exportLayoutsHint: '도면 공간 배치를 내보낸 파일에 포함합니다',
+    exportEmptyLayouts: '빈 배치 내보내기',
+    exportEmptyLayoutsHint: '도면 내용이 없는 도면 공간 배치도 포함합니다',
     yes: '예',
     no: '아니요',
     background: '배경',
@@ -144,6 +146,9 @@ export default {
     paperSpaceSection: '도면 공간',
     exportLayouts: '배치 내보내기',
     exportLayoutsHint: '도면 공간 배치를 추가 PDF 페이지로 포함',
+    exportEmptyLayouts: '빈 배치 내보내기',
+    exportEmptyLayoutsHint:
+      '도면 내용이 없는 도면 공간 배치를 빈 PDF 페이지로 포함',
     textModeSection: '문자',
     textMode: '문자 렌더링',
     textModeText: '문자 객체',

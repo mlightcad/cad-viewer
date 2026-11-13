@@ -193,6 +193,12 @@ Agent / 脚本应调用这些方法，而不是用直线、箭头和文字拼假
 v1 支持子集：`line`、`polyline`/`polygon`/`rect`、`circle`、`ellipse`（非均匀时折线近似）、`path`（细分）、`text`、嵌套 `g` + transform。导出仍用 `@mlightcad/cad-svg-plugin` 的 `csvg`；编辑后保存为 DXF（`cdxf`）或再导出 SVG，无原生 SVG 保存。
 :::
 
+::: info HTML/PDF 导出默认跳过空布局
+从包含此改动的版本起，HTML 与 PDF 导出新增 **`exportEmptyLayouts`**（默认 **`false`**）。仅含 AutoCAD 默认 `*Paper_Space` 视口的图纸空间布局会被省略，除非将该选项设为 `true`。在导出布局时始终保留模型空间。
+
+迁移：若输出中仍需空白图纸空间选项卡，请传入 `exportEmptyLayouts: true`（导出对话框开关、`-chtml` / `-cpdf` 提示、脚本 `cad.file.saveHtml` / `savePdf`，或导出器 CLI 的 `--export-empty-layouts`）。
+:::
+
 ::: info PDF 导出拆分为共享核心（浏览器 + Node）
 从 **1.8.0** 开始，PDF 导出与 HTML 导出采用相同的分层：共享逻辑放在 `@mlightcad/cad-pdf-core`（选项模型与 database → PDF 管线，**不**依赖 `cad-simple-viewer` / DOM）。两个前端都基于它：
 

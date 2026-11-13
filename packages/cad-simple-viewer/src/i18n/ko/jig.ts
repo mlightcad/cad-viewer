@@ -1582,6 +1582,7 @@ export default {
     exportFormat: '내보내기 형식',
     exportInvisibleLayers: '보이지 않는 도면층 내보내기',
     exportLayouts: '배치 내보내기',
+    exportEmptyLayouts: '빈 배치 내보내기',
     background: '배경색',
     initialView: 'HTML을 열 때의 초기 뷰',
     viewerMode: '오프라인 뷰어 모드',
@@ -1648,6 +1649,7 @@ export default {
   cpdf: {
     modelSpaceFit: '모형 공간 프레임',
     exportLayouts: '배치 내보내기',
+    exportEmptyLayouts: '빈 배치 내보내기',
     textMode: '문자 렌더링',
     colorMode: '색상 모드',
     keywords: {
