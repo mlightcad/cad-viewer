@@ -129,6 +129,19 @@ export default {
       }
     }
   },
+  copybase: {
+    basePoint: 'حدد نقطة الأساس'
+  },
+  pasteclip: {
+    insertionPoint: 'حدد نقطة الإدراج',
+    empty: 'لا تحتوي الحافظة على كائنات رسم'
+  },
+  pasteorig: {
+    sameDrawing: 'لا يمكن لـ PASTEORIG اللصق في الرسم الذي نُسخت منه الكائنات'
+  },
+  pasteblock: {
+    insertionPoint: 'حدد نقطة الإدراج'
+  },
   dimlinear: {
     xLine1Point: 'حدد نقطة أصل خط الامتداد الأول',
     xLine2Point: 'حدد نقطة أصل خط الامتداد الثاني',

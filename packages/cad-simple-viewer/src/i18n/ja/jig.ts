@@ -125,6 +125,19 @@ export default {
       }
     }
   },
+  copybase: {
+    basePoint: '基点を指定'
+  },
+  pasteclip: {
+    insertionPoint: '挿入点を指定',
+    empty: 'クリップボードに図面オブジェクトがありません'
+  },
+  pasteorig: {
+    sameDrawing: 'PASTEORIG はコピー元の図面には貼り付けできません'
+  },
+  pasteblock: {
+    insertionPoint: '挿入点を指定'
+  },
   dimlinear: {
     xLine1Point: '1 本目の寸法補助線の起点を指定 または <オブジェクトを選択>',
     xLine2Point: '2 本目の寸法補助線の起点を指定',

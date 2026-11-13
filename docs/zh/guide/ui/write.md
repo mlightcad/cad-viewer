@@ -23,6 +23,7 @@ Ribbon 完整展示 AutoCAD 风格的所有选项卡：
 | 文件 | 打开、导出 DXF、导出 PNG、导出自包含 HTML |
 | 绘制 | Line、Circle、Arc、Rect、Polyline、Hatch、Text、MText、Block Insert 等 |
 | 修改 | Move、Copy、Offset、Trim、Extend、Rotate、Scale、Mirror、Array 等 |
+| 剪贴板 | 粘贴（Ctrl+V）、粘贴到原坐标、粘贴为块（Ctrl+Shift+V）、剪切（Ctrl+X）、复制（Ctrl+C）、带基点复制（Ctrl+Shift+C）；对象也可以粘贴到另一个已打开的图形或浏览器标签页 |
 | 图层 | 图层管理（开/关、冻结/解冻、锁定、隔离、新建、删除） |
 | 特性 | 颜色、线型、线宽、图层选择器 |
 | 测量 | 全部测量命令 |

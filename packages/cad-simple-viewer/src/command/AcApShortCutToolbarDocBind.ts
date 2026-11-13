@@ -39,7 +39,14 @@ export function acapBindShortCutToolbarDocState(
   const resolveActionState = (): AcUiShortCutToolbarActionState => {
     const dm = AcApDocManager.tryGetInstance()
     if (!dm) {
-      return { undo: false, redo: false, erase: false }
+      return {
+        undo: false,
+        redo: false,
+        erase: false,
+        copy: false,
+        cut: false,
+        paste: false
+      }
     }
     const doc = dm.curDocument
     const view = dm.curView
@@ -51,7 +58,17 @@ export function acapBindShortCutToolbarDocState(
         (view.selectionSet.count > 0 ||
           view.htmlTransientManager.hasSelection())
     )
-    return { undo: canUndo, redo: canRedo, erase: canErase }
+    // COPYCLIP / CUTCLIP only act on drawing entities, not markup or
+    // measurement overlays, so they follow the CAD selection set alone.
+    const hasEntitySelection = Boolean(view && view.selectionSet.count > 0)
+    return {
+      undo: canUndo,
+      redo: canRedo,
+      erase: canErase,
+      copy: hasEntitySelection,
+      cut: hasEntitySelection,
+      paste: db != null
+    }
   }
 
   const runErase = () => {
@@ -119,7 +136,10 @@ export function acapBindShortCutToolbarDocState(
   toolbar.setActions({
     undo: () => AcApDocManager.instance.sendStringToExecute('undo'),
     redo: () => AcApDocManager.instance.sendStringToExecute('redo'),
-    erase: runErase
+    erase: runErase,
+    copy: () => AcApDocManager.instance.sendStringToExecute('copyclip'),
+    cut: () => AcApDocManager.instance.sendStringToExecute('cutclip'),
+    paste: () => AcApDocManager.instance.sendStringToExecute('pasteclip')
   })
   toolbar.setActionStateProvider(resolveActionState)
 

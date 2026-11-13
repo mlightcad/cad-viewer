@@ -139,6 +139,9 @@ export default {
     undo: 'Geri al',
     redo: 'Yinele',
     erase: 'Sil',
+    copy: 'Kopyala',
+    cut: 'Kes',
+    paste: 'Yapıştır',
     collapse: 'Araç çubuğunu daralt',
     expand: 'Araç çubuğunu genişlet'
   },

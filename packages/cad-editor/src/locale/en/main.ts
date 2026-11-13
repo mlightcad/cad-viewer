@@ -217,6 +217,7 @@ export default {
       draw: 'Draw',
       dimension: 'Dimension',
       modify: 'Modify',
+      clipboard: 'Clipboard',
       layer: 'Layer',
       properties: 'Properties',
       groups: 'Groups',
@@ -331,6 +332,17 @@ export default {
       rotate: 'Rotate selected objects around a base point.',
       copy: 'Copy selected objects to a new location.',
       erase: 'Delete selected objects from the drawing.',
+      pasteClip:
+        'Paste objects from the clipboard into the current drawing (PASTECLIP).',
+      pasteOrig:
+        'Paste clipboard objects using the coordinates from the original drawing (PASTEORIG).',
+      pasteBlock:
+        'Paste clipboard objects into the current drawing as a block (PASTEBLOCK).',
+      cutClip:
+        'Remove the selected objects and copy them to the clipboard (CUTCLIP).',
+      copyClip: 'Copy the selected objects to the clipboard (COPYCLIP).',
+      copyBase:
+        'Copy the selected objects to the clipboard with a specified base point (COPYBASE).',
       offset: 'Create a parallel copy of an object at a specified distance.',
       undo: 'Undo the last editing operation.',
       redo: 'Redo the last undone editing operation.',
@@ -498,6 +510,12 @@ export default {
       rotate: 'Rotate',
       copy: 'Copy',
       erase: 'Erase',
+      pasteClip: 'Paste',
+      pasteOrig: 'Paste to Original Coordinates',
+      pasteBlock: 'Paste as Block',
+      cutClip: 'Cut',
+      copyClip: 'Copy',
+      copyBase: 'Copy with Base Point',
       offset: 'Offset',
       undo: 'Undo',
       redo: 'Redo',

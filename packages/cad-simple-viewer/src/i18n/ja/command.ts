@@ -92,6 +92,27 @@ export default {
       description: '選択したオブジェクトを新しい位置に複写します',
       prompt: 'オブジェクトを選択'
     },
+    copybase: {
+      description: '指定した基点とともに選択したオブジェクトをクリップボードにコピー',
+      prompt: 'オブジェクトを選択'
+    },
+    copyclip: {
+      description: '選択したオブジェクトをクリップボードにコピー',
+      prompt: 'オブジェクトを選択'
+    },
+    cutclip: {
+      description: '選択したオブジェクトをクリップボードにコピーし、図面から削除',
+      prompt: 'オブジェクトを選択'
+    },
+    pasteblock: {
+      description: 'クリップボードのオブジェクトをブロックとして貼り付け'
+    },
+    pasteclip: {
+      description: 'クリップボードのオブジェクトを現在の図面に貼り付け'
+    },
+    pasteorig: {
+      description: '元の図面の座標を使用してクリップボードのオブジェクトを貼り付け'
+    },
     csvg: {
       description: '現在の図面を SVG に変換します'
     },

@@ -139,6 +139,9 @@ export default {
     undo: 'Zpět',
     redo: 'Znovu',
     erase: 'Smazat',
+    copy: 'Kopírovat',
+    cut: 'Vyjmout',
+    paste: 'Vložit',
     collapse: 'Sbalit panel nástrojů',
     expand: 'Rozbalit panel nástrojů'
   },

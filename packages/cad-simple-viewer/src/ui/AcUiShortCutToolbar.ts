@@ -1,5 +1,6 @@
 /**
- * Floating shortcut toolbar (undo / redo / erase) with an extension slot for
+ * Floating shortcut toolbar (undo / redo / erase, plus copy / cut / paste when
+ * the host supplies clipboard actions) with an extension slot for
  * selection accessories.
  *
  * Keep this module free of {@link AcApDocManager} / markup / measure imports so
@@ -29,7 +30,10 @@ import {
   createIconElement,
   ICON_CHEVRON_LEFT,
   ICON_CHEVRON_RIGHT,
+  ICON_COPY,
+  ICON_CUT,
   ICON_ERASE,
+  ICON_PASTE,
   ICON_REDO,
   ICON_UNDO
 } from './icons'
@@ -180,6 +184,12 @@ export interface AcUiShortCutToolbarActionState {
   undo: boolean
   redo: boolean
   erase: boolean
+  /** Copy to clipboard (COPYCLIP). Treated as enabled when omitted. */
+  copy?: boolean
+  /** Cut to clipboard (CUTCLIP). Treated as enabled when omitted. */
+  cut?: boolean
+  /** Paste from clipboard (PASTECLIP). Treated as enabled when omitted. */
+  paste?: boolean
 }
 
 /** Options for {@link AcUiShortCutToolbar}. */
@@ -205,11 +215,16 @@ export interface AcUiShortCutToolbarOptions {
   /**
    * Command runners. Hosts without DocManager (HTML export) must supply these.
    * When omitted, clicks are no-ops until {@link setActions} is called.
+   * Copy / cut / paste buttons are shown only once their action is supplied,
+   * so hosts without a clipboard (HTML export) never show them.
    */
   actions?: {
     undo?: () => void
     redo?: () => void
     erase?: () => void
+    copy?: () => void
+    cut?: () => void
+    paste?: () => void
   }
   /**
    * Enabled-state provider. When omitted, buttons stay enabled until
@@ -222,6 +237,9 @@ export interface AcUiShortCutToolbarOptions {
     undo?: string
     redo?: string
     erase?: string
+    copy?: string
+    cut?: string
+    paste?: string
     collapse?: string
     expand?: string
   }
@@ -419,7 +437,8 @@ export class AcUiShortCutToolbar {
   }
 
   /**
-   * Applies enabled/disabled state for undo / redo / erase.
+   * Applies enabled/disabled state for undo / redo / erase / copy / cut /
+   * paste.
    *
    * @param state - Per-action enabled flags.
    */
@@ -427,6 +446,11 @@ export class AcUiShortCutToolbar {
     this.toolbar.updateItem('shortcut-undo', { disabled: !state.undo })
     this.toolbar.updateItem('shortcut-redo', { disabled: !state.redo })
     this.toolbar.updateItem('shortcut-erase', { disabled: !state.erase })
+    this.toolbar.updateItem('shortcut-copy', { disabled: state.copy === false })
+    this.toolbar.updateItem('shortcut-cut', { disabled: state.cut === false })
+    this.toolbar.updateItem('shortcut-paste', {
+      disabled: state.paste === false
+    })
   }
 
   /** Recomputes action enabled state from the configured provider. */
@@ -505,7 +529,9 @@ export class AcUiShortCutToolbar {
   }
 
   private buildCoreItems(): AcUiSimpleToolbarItem[] {
-    const run = (name: 'undo' | 'redo' | 'erase') => {
+    const run = (
+      name: 'undo' | 'redo' | 'erase' | 'copy' | 'cut' | 'paste'
+    ) => {
       this.actions[name]?.()
     }
     return [
@@ -530,6 +556,31 @@ export class AcUiShortCutToolbar {
           this.options.labels?.erase ??
           AcApI18n.t('main.shortCutToolbar.erase'),
         onClick: () => run('erase')
+      },
+      {
+        id: 'shortcut-copy',
+        icon: ICON_COPY,
+        label:
+          this.options.labels?.copy ?? AcApI18n.t('main.shortCutToolbar.copy'),
+        visible: this.actions.copy != null,
+        onClick: () => run('copy')
+      },
+      {
+        id: 'shortcut-cut',
+        icon: ICON_CUT,
+        label:
+          this.options.labels?.cut ?? AcApI18n.t('main.shortCutToolbar.cut'),
+        visible: this.actions.cut != null,
+        onClick: () => run('cut')
+      },
+      {
+        id: 'shortcut-paste',
+        icon: ICON_PASTE,
+        label:
+          this.options.labels?.paste ??
+          AcApI18n.t('main.shortCutToolbar.paste'),
+        visible: this.actions.paste != null,
+        onClick: () => run('paste')
       }
     ]
   }

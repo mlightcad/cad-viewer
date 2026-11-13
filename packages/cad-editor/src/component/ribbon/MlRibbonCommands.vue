@@ -2,17 +2,22 @@
 import '@mlightcad/ribbon/style.css'
 
 import {
+  Aim,
+  Box,
   ChatDotRound,
   ChatLineSquare,
   CopyDocument,
   Delete,
+  DocumentAdd,
   DocumentCopy,
   EditPen,
   Hide,
+  Position,
   RefreshLeft,
   RefreshRight,
   Right,
   ScaleToOriginal,
+  Scissor,
   Stamp,
   Upload,
   View
@@ -1474,6 +1479,12 @@ const buildBaseTabs = (
     rotate: t('main.ribbon.tooltip.rotate'),
     copy: t('main.ribbon.tooltip.copy'),
     erase: t('main.ribbon.tooltip.erase'),
+    pasteClip: t('main.ribbon.tooltip.pasteClip'),
+    pasteOrig: t('main.ribbon.tooltip.pasteOrig'),
+    pasteBlock: t('main.ribbon.tooltip.pasteBlock'),
+    cutClip: t('main.ribbon.tooltip.cutClip'),
+    copyClip: t('main.ribbon.tooltip.copyClip'),
+    copyBase: t('main.ribbon.tooltip.copyBase'),
     offset: t('main.ribbon.tooltip.offset'),
     undo: t('main.ribbon.tooltip.undo'),
     redo: t('main.ribbon.tooltip.redo'),
@@ -2354,6 +2365,80 @@ const buildBaseTabs = (
                   hideLabel: true,
                   size: 'small',
                   props: { icon: hatch }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'home-clipboard',
+          title: t('main.ribbon.group.clipboard'),
+          orientation: 'row',
+          collections: [
+            {
+              id: 'home-clipboard-main',
+              layout: 'row',
+              items: [
+                {
+                  id: 'cmd-pasteclip',
+                  type: 'dropdown',
+                  label: t('main.ribbon.command.pasteClip'),
+                  tooltip: ribbonTooltips.pasteClip,
+                  size: 'large',
+                  props: {
+                    icon: DocumentAdd,
+                    options: [
+                      {
+                        value: 'paste-clip',
+                        label: t('main.ribbon.command.pasteClip'),
+                        tooltip: ribbonTooltips.pasteClip,
+                        icon: DocumentAdd
+                      },
+                      {
+                        value: 'paste-orig',
+                        label: t('main.ribbon.command.pasteOrig'),
+                        tooltip: ribbonTooltips.pasteOrig,
+                        icon: Position
+                      },
+                      {
+                        value: 'paste-block',
+                        label: t('main.ribbon.command.pasteBlock'),
+                        tooltip: ribbonTooltips.pasteBlock,
+                        icon: Box
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              id: 'home-clipboard-secondary',
+              layout: 'column',
+              rows: 3,
+              items: [
+                {
+                  id: 'cmd-cutclip',
+                  type: 'button',
+                  label: t('main.ribbon.command.cutClip'),
+                  tooltip: ribbonTooltips.cutClip,
+                  size: 'small',
+                  props: { icon: Scissor }
+                },
+                {
+                  id: 'cmd-copyclip',
+                  type: 'button',
+                  label: t('main.ribbon.command.copyClip'),
+                  tooltip: ribbonTooltips.copyClip,
+                  size: 'small',
+                  props: { icon: CopyDocument }
+                },
+                {
+                  id: 'cmd-copybase',
+                  type: 'button',
+                  label: t('main.ribbon.command.copyBase'),
+                  tooltip: ribbonTooltips.copyBase,
+                  size: 'small',
+                  props: { icon: Aim }
                 }
               ]
             }
@@ -3393,6 +3478,13 @@ const ribbonData = computed(() => {
   commandByItemId.set('cmd-rotate', 'rotate')
   commandByItemId.set('cmd-copy', 'copy')
   commandByItemId.set('cmd-erase', 'erase')
+  commandByItemId.set('cmd-pasteclip', 'pasteclip')
+  commandByItemId.set('paste-clip', 'pasteclip')
+  commandByItemId.set('paste-orig', 'pasteorig')
+  commandByItemId.set('paste-block', 'pasteblock')
+  commandByItemId.set('cmd-cutclip', 'cutclip')
+  commandByItemId.set('cmd-copyclip', 'copyclip')
+  commandByItemId.set('cmd-copybase', 'copybase')
   commandByItemId.set('cmd-offset', 'offset')
   commandByItemId.set('cmd-layer', 'layer')
   commandByItemId.set('cmd-properties', 'properties')

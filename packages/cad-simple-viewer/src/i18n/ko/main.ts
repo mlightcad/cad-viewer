@@ -140,6 +140,9 @@ export default {
     undo: '명령 취소',
     redo: '명령 복구',
     erase: '삭제',
+    copy: '복사',
+    cut: '잘라내기',
+    paste: '붙여넣기',
     collapse: '도구막대 접기',
     expand: '도구막대 펼치기'
   },

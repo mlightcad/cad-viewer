@@ -141,6 +141,9 @@ export default {
     undo: '元に戻す',
     redo: 'やり直し',
     erase: '削除',
+    copy: 'コピー',
+    cut: '切り取り',
+    paste: '貼り付け',
     collapse: 'ツールバーを折りたたむ',
     expand: 'ツールバーを展開'
   },

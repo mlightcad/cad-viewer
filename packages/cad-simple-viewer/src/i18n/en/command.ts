@@ -93,6 +93,30 @@ export default {
       description: 'Copies selected entities by cloning them to new positions',
       prompt: 'Select entities'
     },
+    copybase: {
+      description:
+        'Copies selected objects to the clipboard with a specified base point',
+      prompt: 'Select entities'
+    },
+    copyclip: {
+      description: 'Copies selected objects to the clipboard',
+      prompt: 'Select entities'
+    },
+    cutclip: {
+      description:
+        'Copies selected objects to the clipboard and removes them from the drawing',
+      prompt: 'Select entities'
+    },
+    pasteblock: {
+      description: 'Pastes objects from the clipboard as a block'
+    },
+    pasteclip: {
+      description: 'Pastes objects from the clipboard into the current drawing'
+    },
+    pasteorig: {
+      description:
+        'Pastes objects from the clipboard using the coordinates of the original drawing'
+    },
     csvg: {
       description: 'Converts current drawing to SVG'
     },

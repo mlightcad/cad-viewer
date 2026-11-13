@@ -218,6 +218,7 @@ export default {
       draw: 'Çiz',
       dimension: 'Ölçü',
       modify: 'Düzenle',
+      clipboard: 'Pano',
       layer: 'Katman',
       properties: 'Özellikler',
       groups: 'Gruplar',
@@ -335,6 +336,15 @@ export default {
       rotate: 'Seçili nesneleri bir taban noktası etrafında döndürün.',
       copy: 'Seçili nesneleri yeni bir konuma kopyalayın.',
       erase: 'Seçili nesneleri çizimden silin.',
+      pasteClip: 'Panodaki nesneleri geçerli çizime yapıştırır (PASTECLIP).',
+      pasteOrig:
+        'Panodaki nesneleri özgün çizimdeki koordinatlarla yapıştırır (PASTEORIG).',
+      pasteBlock:
+        'Panodaki nesneleri geçerli çizime blok olarak yapıştırır (PASTEBLOCK).',
+      cutClip: 'Seçili nesneleri kaldırır ve panoya kopyalar (CUTCLIP).',
+      copyClip: 'Seçili nesneleri panoya kopyalar (COPYCLIP).',
+      copyBase:
+        'Seçili nesneleri belirtilen bir temel noktayla panoya kopyalar (COPYBASE).',
       offset:
         'Bir nesnenin belirtilen mesafede paralel bir kopyasını oluşturun.',
       undo: 'Son düzenleme işlemini geri alın.',
@@ -506,6 +516,12 @@ export default {
       rotate: 'Döndür',
       copy: 'Kopyala',
       erase: 'Sil',
+      pasteClip: 'Yapıştır',
+      pasteOrig: 'Orijinal Koordinatlara Yapıştır',
+      pasteBlock: 'Blok Olarak Yapıştır',
+      cutClip: 'Kes',
+      copyClip: 'Kopyala',
+      copyBase: 'Temel Noktayla Kopyala',
       offset: 'Ötele',
       undo: 'Geri Al',
       redo: 'Yinele',

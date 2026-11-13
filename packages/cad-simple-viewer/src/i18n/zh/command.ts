@@ -85,6 +85,27 @@ export default {
       description: '通过克隆将所选图元复制到新位置',
       prompt: '选择对象'
     },
+    copybase: {
+      description: '将选定对象与指定的基点一起复制到剪贴板',
+      prompt: '选择对象'
+    },
+    copyclip: {
+      description: '将选定对象复制到剪贴板',
+      prompt: '选择对象'
+    },
+    cutclip: {
+      description: '将选定对象复制到剪贴板并从图形中删除',
+      prompt: '选择对象'
+    },
+    pasteblock: {
+      description: '将剪贴板中的对象作为块粘贴'
+    },
+    pasteclip: {
+      description: '将剪贴板中的对象粘贴到当前图形'
+    },
+    pasteorig: {
+      description: '使用原图形的坐标粘贴剪贴板中的对象'
+    },
     csvg: {
       description: '转换当前图纸为SVG格式'
     },

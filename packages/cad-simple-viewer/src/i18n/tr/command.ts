@@ -96,6 +96,29 @@ export default {
       description: 'Seçili varlıkları klonlayarak yeni konumlara kopyalar',
       prompt: 'Varlıkları seçin'
     },
+    copybase: {
+      description:
+        'Seçili nesneleri belirtilen bir taban noktasıyla panoya kopyalar',
+      prompt: 'Varlıkları seçin'
+    },
+    copyclip: {
+      description: 'Seçili nesneleri panoya kopyalar',
+      prompt: 'Varlıkları seçin'
+    },
+    cutclip: {
+      description: 'Seçili nesneleri panoya kopyalar ve çizimden kaldırır',
+      prompt: 'Varlıkları seçin'
+    },
+    pasteblock: {
+      description: 'Panodaki nesneleri blok olarak yapıştırır'
+    },
+    pasteclip: {
+      description: 'Panodaki nesneleri geçerli çizime yapıştırır'
+    },
+    pasteorig: {
+      description:
+        'Panodaki nesneleri özgün çizimin koordinatlarını kullanarak yapıştırır'
+    },
     csvg: {
       description: 'Geçerli çizimi SVG\'ye dönüştürür'
     },

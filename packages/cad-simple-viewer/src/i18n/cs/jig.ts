@@ -128,6 +128,20 @@ export default {
       }
     }
   },
+  copybase: {
+    basePoint: 'Určete základní bod'
+  },
+  pasteclip: {
+    insertionPoint: 'Určete bod vložení',
+    empty: 'Schránka neobsahuje žádné objekty výkresu'
+  },
+  pasteorig: {
+    sameDrawing:
+      'PASTEORIG nemůže vložit objekty do výkresu, ze kterého byly zkopírovány'
+  },
+  pasteblock: {
+    insertionPoint: 'Určete bod vložení'
+  },
   dimlinear: {
     xLine1Point: 'Zadejte počátek první pomocné čáry',
     xLine2Point: 'Zadejte počátek druhé pomocné čáry',
