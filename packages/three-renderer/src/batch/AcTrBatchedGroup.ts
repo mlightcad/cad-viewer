@@ -14,6 +14,7 @@ import {
 } from '../draw/AcTrBatchDrawPolicy'
 import { AcTrPointSymbolCreator } from '../geometry/AcTrPointSymbolCreator'
 import { AcTrEntity } from '../object'
+import { applyLineWeightDisplay } from '../style/AcTrLineMaterialManager'
 import {
   followsLayerStyle,
   getMaterialMetadata,
@@ -3142,6 +3143,48 @@ export class AcTrBatchedGroup extends THREE.Group {
       if (getMaterialMetadata(material).isForeground === true) {
         AcTrMaterialUtil.setMaterialColor(material, threeColor)
       }
+    }
+
+    for (const group of this.groups) {
+      group.forEach(batches => {
+        batches.forEach(batch => {
+          const material = batch.material
+          if (Array.isArray(material)) {
+            material.forEach(paint)
+          } else if (material) {
+            paint(material)
+          }
+        })
+      })
+    }
+
+    this._unbatchedObjects.traverse(object => {
+      if (!('material' in object)) {
+        return
+      }
+      const material = (
+        object as THREE.Mesh | THREE.Line | THREE.LineSegments | THREE.Points
+      ).material
+      if (Array.isArray(material)) {
+        material.forEach(paint)
+      } else if (material) {
+        paint(material)
+      }
+    })
+  }
+
+  /**
+   * Applies LWDISPLAY to every owned batch material clone.
+   *
+   * Style-manager cache entries are updated by
+   * {@link AcTrStyleManager.showLineWeight}; batch containers keep private
+   * clones so they must be updated separately.
+   *
+   * @param show - Whether lineweights should be displayed
+   */
+  applyShowLineWeight(show: boolean) {
+    const paint = (material: THREE.Material) => {
+      applyLineWeightDisplay(material, show)
     }
 
     for (const group of this.groups) {

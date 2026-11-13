@@ -397,6 +397,13 @@ export class AcTrLayout {
   }
 
   /**
+   * Applies LWDISPLAY to owned batch material clones in this layout.
+   */
+  applyShowLineWeight(show: boolean) {
+    this._layers.forEach(layer => layer.applyShowLineWeight(show))
+  }
+
+  /**
    * Updates wipeout / background-fill materials after a canvas theme flip.
    */
   repaintBackgroundMaterials(color: number) {

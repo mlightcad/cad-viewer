@@ -1813,7 +1813,7 @@ export class AcApDocManager {
    * for missed fonts so that the drawing can apply new fonts.
    */
   regen() {
-    this.curView.clear()
+    this.curView.clearForRegen()
     this.context.doc.database.regen()
   }
 
@@ -2976,6 +2976,11 @@ export class AcApDocManager {
       view.ltscale = doc.database.ltscale
       view.celtscale = doc.database.celtscale
       view.renderer.showLineWeight = doc.database.lwdisplay
+      // Open-with-LWDISPLAY-on converts fat geometry up front; later toggles
+      // can flip linewidth without another upgrade regen.
+      if (doc.database.lwdisplay) {
+        view.markLineWeightGeometryReady()
+      }
     })
   }
 

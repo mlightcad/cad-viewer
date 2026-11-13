@@ -732,7 +732,33 @@ describe('AcTrStyleManager', () => {
     expect(metadata.isBackgroundFill).toBe(false)
   })
 
-  it('uses fat line materials when forceShowLineWeight is on even if LWDISPLAY is off', () => {
+  it('uses cheap basic materials when LWDISPLAY is off at convert time', () => {
+    const styleManager = new AcTrStyleManager()
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.lineWeight = AcGiLineWeight.LineWeight211
+
+    const hairline = styleManager.getLineMaterial(traits)
+    expect(hairline).toBeInstanceOf(THREE.LineBasicMaterial)
+  })
+
+  it('restores fat linewidth when LWDISPLAY is toggled off after convert-on', () => {
+    const styleManager = new AcTrStyleManager()
+    styleManager.showLineWeight = true
+    const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
+    traits.lineWeight = AcGiLineWeight.LineWeight211
+
+    const fat = styleManager.getLineMaterial(traits)
+    expect(fat).toBeInstanceOf(LineMaterial)
+    expect((fat as LineMaterial).linewidth).toBeCloseTo(211 / 40)
+
+    styleManager.showLineWeight = false
+    expect((fat as LineMaterial).linewidth).toBe(1)
+
+    styleManager.showLineWeight = true
+    expect((fat as LineMaterial).linewidth).toBeCloseTo(211 / 40)
+  })
+
+  it('uses locked fat line materials when forceShowLineWeight is on even if LWDISPLAY is off', () => {
     const styleManager = new AcTrStyleManager()
     const traits = AcTrSubEntityTraitsUtil.createDefaultTraits()
     traits.lineWeight = AcGiLineWeight.LineWeight211
@@ -743,6 +769,11 @@ describe('AcTrStyleManager', () => {
     styleManager.forceShowLineWeight = true
     const fat = styleManager.getLineMaterial(traits)
     expect(fat).toBeInstanceOf(LineMaterial)
+    expect((fat as LineMaterial).linewidth).toBeCloseTo(211 / 40)
+
+    // Locked overlay strokes ignore LWDISPLAY.
+    styleManager.showLineWeight = true
+    styleManager.showLineWeight = false
     expect((fat as LineMaterial).linewidth).toBeCloseTo(211 / 40)
   })
 })

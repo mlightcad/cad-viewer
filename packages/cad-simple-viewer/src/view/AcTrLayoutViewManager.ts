@@ -86,6 +86,15 @@ export class AcTrLayoutViewManager {
   }
 
   /**
+   * Iterates every layout view managed by this manager.
+   *
+   * @param callback - Invoked once per layout view, in insertion order
+   */
+  forEach(callback: (layoutView: AcTrLayoutView) => void) {
+    this._layoutViews.forEach(layoutView => callback(layoutView))
+  }
+
+  /**
    * Resize all of layout views managed by layout view manager.
    * This is typically called when the viewport or container size changes
    * and all layouts need to update their dimensions.
