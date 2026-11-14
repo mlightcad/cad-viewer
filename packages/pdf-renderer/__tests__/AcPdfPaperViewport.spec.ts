@@ -260,6 +260,66 @@ describe('AcPdfPaperViewport', () => {
     ).toBe(true)
   })
 
+  it('still exports viewport model content when the viewport layer is frozen', async () => {
+    // AutoCAD workflow: put the viewport border on a frozen layer to hide the
+    // frame; model content through the viewport must still plot.
+    const db = createDb()
+    ensureModelLayout(db)
+
+    const vportLayer = new AcDbLayerTableRecord({ name: 'VPORT' })
+    vportLayer.isFrozen = true
+    db.tables.layerTable.add(vportLayer)
+
+    db.tables.blockTable.modelSpace.appendEntity(
+      new AcDbLine(new AcGePoint3d(-40, 0, 0), new AcGePoint3d(40, 0, 0))
+    )
+
+    const paperBtr = new AcDbBlockTableRecord()
+    paperBtr.name = '*Paper_Space0'
+    db.tables.blockTable.add(paperBtr)
+
+    const userVp = new AcDbViewport()
+    userVp.layer = 'VPORT'
+    userVp.centerPoint = new AcGePoint3d(100, 80, 0)
+    userVp.width = 200
+    userVp.height = 160
+    userVp.viewCenter = new AcGePoint3d(0, 0, 0)
+    userVp.viewHeight = 80
+    userVp.viewTarget = new AcGePoint3d(0, 0, 0)
+    paperBtr.appendEntity(userVp)
+
+    const paperLayout = new AcDbLayout()
+    paperLayout.layoutName = 'Layout1'
+    paperLayout.tabOrder = 1
+    paperLayout.blockTableRecordId = paperBtr.objectId
+    db.objects.layout.setAt(paperLayout.layoutName, paperLayout)
+
+    const bytes = await exportDatabaseToPdf(db, {
+      title: 'frozen-viewport-layer',
+      layouts: 'current',
+      blockId: paperBtr.objectId,
+      embedEntityMarkedContent: true
+    })
+    const streams: string[] = []
+    const doc = await PDFDocument.load(bytes)
+    for (const [, obj] of doc.context.enumerateIndirectObjects()) {
+      if (obj instanceof PDFRawStream) {
+        let text: string
+        try {
+          text = new TextDecoder('latin1').decode(pako.inflate(obj.contents))
+        } catch {
+          text = new TextDecoder('latin1').decode(obj.contents)
+        }
+        streams.push(text)
+      }
+    }
+    expect(
+      streams.some(text =>
+        text.includes(pdfEntityText('VIEWPORT_CONTENT') ?? '')
+      )
+    ).toBe(true)
+  })
+
   it('keeps async MTEXT glyphs when cloning model content into a viewport', async () => {
     const db = createDb()
     ensureModelLayout(db)

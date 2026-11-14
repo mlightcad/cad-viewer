@@ -161,13 +161,7 @@ export function createNodeTextFontResolver(
       }
     }
     if (!entry || entry.info.type !== 'mesh') {
-      // Called at most once per unique font name (the renderer caches
-      // negative results), so this cannot flood the log.
-      console.warn(
-        `${LOG_PREFIX} No embeddable font for "${fontName}" ` +
-          `(catalog=${entry ? entry.info.type : 'miss'}); ` +
-          'texts using it are painted as vector glyphs'
-      )
+      // SHX / catalog misses intentionally fall back to vector glyphs.
       return undefined
     }
     try {

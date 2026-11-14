@@ -23,13 +23,8 @@ import type { AcPdfTextFontResolver } from '@mlightcad/pdf-renderer'
 export const resolveViewerTextFont: AcPdfTextFontResolver = async fontName => {
   const info = findEmbeddableInfo(fontName)
   if (!info || info.type !== 'mesh' || !info.url) {
-    // Called at most once per unique font name (negative results are cached
-    // by the renderer's font manager), so this cannot flood the log.
-    console.warn(
-      `[cad-pdf-plugin] No embeddable font for "${fontName}" ` +
-        `(catalog=${info ? info.type : 'miss'}, url=${info?.url ? 'yes' : 'no'}); ` +
-        'texts using it are painted as vector glyphs'
-    )
+    // SHX / catalog misses intentionally fall back to vector glyphs — that is
+    // expected, not a warning. Keep quiet so exports do not spam the console.
     return undefined
   }
 

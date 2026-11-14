@@ -25,23 +25,33 @@ const DWG_CONVERTER_VERSION =
 const DATA_MODEL_VERSION = '../../../realdwg-web/packages/data-model'
 
 function replaceLibreDwgParserWorkerFile(content) {
-  if (
-    content.includes('DWG_PARSER_WORKER_FILE') &&
-    !content.includes('LIBREDWG_PARSER_WORKER_FILE')
-  ) {
-    console.log('  already using DWG_PARSER_WORKER_FILE')
+  if (!content.includes('LIBREDWG_PARSER_WORKER_FILE')) {
+    // Already switched, or this file never referenced the worker (e.g.
+    // cad-editor-demo main.ts after registration moved to App.vue).
     return null
   }
 
-  const next = content.replaceAll(
+  return content.replaceAll(
     'LIBREDWG_PARSER_WORKER_FILE',
     'DWG_PARSER_WORKER_FILE'
   )
+}
 
-  if (next === content) {
-    throw new Error('No LIBREDWG_PARSER_WORKER_FILE found to replace')
+/** Replace worker symbol + registerLibreDwgConverter → registerDwgConverter. */
+function replaceHostRegisterAndWorker(content) {
+  let next = replaceLibreDwgParserWorkerFile(content)
+  if (next == null) {
+    next = content
   }
-  return next
+  const replaced = next.replaceAll(
+    'registerLibreDwgConverter',
+    'registerDwgConverter'
+  )
+  if (replaced === content && next === content) {
+    console.log('  already switched')
+    return null
+  }
+  return replaced
 }
 
 function replacePackageDep(content) {
@@ -241,21 +251,7 @@ const targets = [
       'main.ts'
     ),
     label: 'cad-diff-viewer-example/src/main.ts',
-    transform(content) {
-      let next = replaceLibreDwgParserWorkerFile(content)
-      if (next == null) {
-        next = content
-      }
-      const replaced = next.replaceAll(
-        'registerLibreDwgConverter',
-        'registerDwgConverter'
-      )
-      if (replaced === content && next === content) {
-        console.log('  already switched')
-        return null
-      }
-      return replaced
-    }
+    transform: replaceHostRegisterAndWorker
   },
   {
     path: join(
@@ -266,21 +262,7 @@ const targets = [
       'main.ts'
     ),
     label: 'cad-simple-viewer-demo/src/main.ts',
-    transform(content) {
-      let next = replaceLibreDwgParserWorkerFile(content)
-      if (next == null) {
-        next = content
-      }
-      const replaced = next.replaceAll(
-        'registerLibreDwgConverter',
-        'registerDwgConverter'
-      )
-      if (replaced === content && next === content) {
-        console.log('  already switched')
-        return null
-      }
-      return replaced
-    }
+    transform: replaceHostRegisterAndWorker
   },
   {
     path: join(
@@ -291,40 +273,13 @@ const targets = [
       'htmlConverter.ts'
     ),
     label: 'cad-simple-viewer-demo/src/htmlConverter.ts',
-    transform(content) {
-      let next = replaceLibreDwgParserWorkerFile(content)
-      if (next == null) {
-        next = content
-      }
-      const replaced = next.replaceAll(
-        'registerLibreDwgConverter',
-        'registerDwgConverter'
-      )
-      if (replaced === content && next === content) {
-        console.log('  already switched')
-        return null
-      }
-      return replaced
-    }
+    transform: replaceHostRegisterAndWorker
   },
   {
-    path: join(rootDir, 'packages', 'cad-editor-demo', 'src', 'main.ts'),
-    label: 'cad-editor-demo/src/main.ts',
-    transform(content) {
-      let next = replaceLibreDwgParserWorkerFile(content)
-      if (next == null) {
-        next = content
-      }
-      const replaced = next.replaceAll(
-        'registerLibreDwgConverter',
-        'registerDwgConverter'
-      )
-      if (replaced === content && next === content) {
-        console.log('  already switched')
-        return null
-      }
-      return replaced
-    }
+    // DWG registration lives in App.vue (lazy viewer runtime), not main.ts.
+    path: join(rootDir, 'packages', 'cad-editor-demo', 'src', 'App.vue'),
+    label: 'cad-editor-demo/src/App.vue',
+    transform: replaceHostRegisterAndWorker
   },
   {
     path: join(

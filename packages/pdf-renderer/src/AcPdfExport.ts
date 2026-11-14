@@ -16,8 +16,7 @@ import { AcPdfEntity } from './renderer/AcPdfEntity'
 import { AcPdfRenderer } from './renderer/AcPdfRenderer'
 import {
   acPdfApplyLayerVisibility,
-  acPdfCollectDatabaseLayerVisibility,
-  acPdfIsLayerClosed
+  acPdfCollectDatabaseLayerVisibility
 } from './viewport/AcPdfLayerVisibility'
 import {
   buildViewportModelContent,
@@ -277,10 +276,13 @@ async function collectLayoutRoots(
   if (viewportEntities.length > 0) {
     const modelRoots = await getModelRoots(db, renderer, modelCache)
     for (const viewport of viewportEntities) {
-      // AutoCAD: Off/Frozen viewport layer hides border and model content.
-      if (acPdfIsLayerClosed(viewport.layer, layerVisibility)) {
-        continue
-      }
+      // AutoCAD puts viewport borders on a frozen / off layer to hide the
+      // frame while still showing and plotting model content through it
+      // (see Autodesk “Prevent viewport borders from being displayed or
+      // plotted”). Never skip the viewport content for a closed layer —
+      // only the border respects Off/Frozen via applyLayerVisibility below.
+      // Matches the interactive viewer (`ensureViewportViews`) and HTML
+      // export, which also attach viewports regardless of layer freeze.
       const built = buildViewportModelContent(
         viewport,
         () => modelRoots,

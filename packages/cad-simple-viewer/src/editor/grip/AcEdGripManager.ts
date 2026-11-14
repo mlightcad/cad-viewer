@@ -41,8 +41,16 @@ interface AcEdGripEntry {
   entityId: AcDbObjectId
   /** Zero-based index into the entity's grip point array. */
   gripIndex: number
-  /** Grip location in world (WCS) coordinates at creation time. */
+  /**
+   * Grip location in the entity's native WCS (model space for entities
+   * selected through a paper-space viewport).
+   */
   wcsPoint: AcGePoint3dLike
+  /**
+   * Paper-space viewport that shows this model-space entity, when grips
+   * must be mapped with {@link AcEdViewportCoordinateMapper}.
+   */
+  viewportId?: AcDbObjectId
   /** DOM handle rendered in the view container for this grip. */
   handle: AcEdGripHandle
   /** True when this is the group-center grip (GROUPDISPLAYMODE 1/2). */
@@ -57,6 +65,8 @@ interface AcEdGroupBboxOverlay {
     min: AcGePoint3dLike
     max: AcGePoint3dLike
   }
+  /** Maps model bbox corners into paper WCS when set. */
+  viewportId?: AcDbObjectId
 }
 
 /**
@@ -173,12 +183,14 @@ export class AcEdGripManager {
 
     for (const unit of groupUnits) {
       const center = acedSelectionCenter(db, unit.memberIds)
+      const viewportId = this.resolveViewportId(unit.representativeId)
       if (center) {
         const handle = new AcEdGripHandle(this._view.container, appearance)
         const entry: AcEdGripEntry = {
           entityId: unit.representativeId,
           gripIndex: GROUP_CENTER_GRIP_INDEX,
           wcsPoint: center,
+          viewportId,
           handle,
           isGroupCenter: true,
           groupMemberIds: unit.memberIds
@@ -190,10 +202,13 @@ export class AcEdGripManager {
       if (groupMode === 2) {
         const box = acedSelectionBoundingBox(db, unit.memberIds)
         if (box) {
-          this.addGroupBbox({
-            min: { x: box.min.x, y: box.min.y, z: box.min.z },
-            max: { x: box.max.x, y: box.max.y, z: box.max.z }
-          })
+          this.addGroupBbox(
+            {
+              min: { x: box.min.x, y: box.min.y, z: box.min.z },
+              max: { x: box.max.x, y: box.max.y, z: box.max.z }
+            },
+            viewportId
+          )
         }
       }
     }
@@ -207,6 +222,7 @@ export class AcEdGripManager {
       const entity = blockTable.getEntityById(entityId)
       if (!entity || isEntityOnLockedLayer(db, entity)) continue
 
+      const viewportId = this.resolveViewportId(entityId)
       const gripPoints = entity.subGetGripPoints()
       for (let gripIndex = 0; gripIndex < gripPoints.length; ++gripIndex) {
         const wcsPoint = gripPoints[gripIndex]
@@ -215,6 +231,7 @@ export class AcEdGripManager {
           entityId,
           gripIndex,
           wcsPoint,
+          viewportId,
           handle
         }
         this.wireHandleEvents(entry)
@@ -398,7 +415,8 @@ export class AcEdGripManager {
     const target: AcEdGripEditTarget = {
       entityId: entry.entityId,
       gripIndex: entry.gripIndex,
-      gripBaseWcs: entry.wcsPoint
+      gripBaseWcs: entry.wcsPoint,
+      viewportId: entry.viewportId
     }
 
     this._editSession = new AcEdGripEditSession(
@@ -430,7 +448,8 @@ export class AcEdGripManager {
       this._view,
       entities,
       entry.wcsPoint,
-      () => this.endEdit()
+      () => this.endEdit(),
+      entry.viewportId
     )
   }
 
@@ -457,15 +476,42 @@ export class AcEdGripManager {
   }
 
   /**
+   * Resolves the paper-space viewport that should own grip mapping for a
+   * model-space entity (or `undefined` in model space / paper entities).
+   */
+  private resolveViewportId(entityId: AcDbObjectId): AcDbObjectId | undefined {
+    return this._view.findViewportMapperForModelEntity(entityId)?.viewportId
+  }
+
+  /**
+   * Maps a native (often model-space) WCS point into the active layout's
+   * display WCS when the grip is shown through a paper-space viewport.
+   */
+  private toDisplayWcs(
+    wcsPoint: AcGePoint3dLike,
+    viewportId?: AcDbObjectId
+  ): AcGePoint3dLike {
+    if (viewportId == null) return wcsPoint
+    const mapper = this._view.getViewportCoordinateMapper(viewportId)
+    if (!mapper) return wcsPoint
+    const paper = mapper.modelToPaper(wcsPoint)
+    return { x: paper.x, y: paper.y, z: wcsPoint.z ?? 0 }
+  }
+
+  /**
    * Updates a single grip handle's screen position from its WCS point.
    *
    * Converts world coordinates to canvas, then to container-local pixels,
-   * and applies the result to the handle's DOM element.
+   * and applies the result to the handle's DOM element. Model-space grips
+   * selected through a viewport are mapped to paper WCS first so
+   * {@link AcEdBaseView.worldToScreen} (active layout camera) places them
+   * on the entity as drawn inside the viewport.
    *
    * @param entry - The grip entry to reposition
    */
   private positionEntry(entry: AcEdGripEntry) {
-    const canvasPos = this._view.worldToScreen(entry.wcsPoint)
+    const displayWcs = this.toDisplayWcs(entry.wcsPoint, entry.viewportId)
+    const canvasPos = this._view.worldToScreen(displayWcs)
     const containerPos = this._view.canvasToContainer(canvasPos)
     entry.handle.setPosition(containerPos)
   }
@@ -496,7 +542,10 @@ export class AcEdGripManager {
     this._hotEntry = null
   }
 
-  private addGroupBbox(wcs: AcEdGroupBboxOverlay['wcs']) {
+  private addGroupBbox(
+    wcs: AcEdGroupBboxOverlay['wcs'],
+    viewportId?: AcDbObjectId
+  ) {
     const el = document.createElement('div')
     el.className = 'ml-group-bbox'
     el.style.position = 'absolute'
@@ -505,18 +554,20 @@ export class AcEdGripManager {
     el.style.boxSizing = 'border-box'
     el.style.zIndex = '5'
     this._view.container.appendChild(el)
-    const overlay: AcEdGroupBboxOverlay = { el, wcs }
+    const overlay: AcEdGroupBboxOverlay = { el, wcs, viewportId }
     this._groupBboxes.push(overlay)
     this.repositionGroupBboxOverlay(overlay)
   }
 
   private repositionGroupBboxOverlay(overlay: AcEdGroupBboxOverlay) {
     const { min, max } = overlay.wcs
+    const displayMin = this.toDisplayWcs(min, overlay.viewportId)
+    const displayMax = this.toDisplayWcs(max, overlay.viewportId)
     const c1 = this._view.canvasToContainer(
-      this._view.worldToScreen({ x: min.x, y: min.y })
+      this._view.worldToScreen({ x: displayMin.x, y: displayMin.y })
     )
     const c2 = this._view.canvasToContainer(
-      this._view.worldToScreen({ x: max.x, y: max.y })
+      this._view.worldToScreen({ x: displayMax.x, y: displayMax.y })
     )
     const left = Math.min(c1.x, c2.x)
     const top = Math.min(c1.y, c2.y)

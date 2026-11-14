@@ -2425,8 +2425,9 @@ export class AcApDocManager {
   setActiveLayout(view?: AcTrView2d, database?: AcDbDatabase) {
     const currentView = view ?? (this.curView as AcTrView2d)
     const db = database ?? this.curDocument.database
-    // Heal Model layout → *Model_Space before activating. Stale layout BTR
-    // ids leave `activeLayoutView` undefined (blank canvas + zoomTo crash).
+    // Heal Model / paper layout → BTR links before activating. Stale or empty
+    // layout BTR ids leave `activeLayoutView` undefined (blank canvas + zoomTo
+    // crash) and hide paper tabs (R14 DWGs with empty BLOCK_RECORD.layout).
     const modelSpaceId = acapHealModelLayoutLink(db)
     const activeSpaceId = db.currentSpaceId || modelSpaceId
     currentView.ensureLayoutView(activeSpaceId)
@@ -2521,12 +2522,26 @@ export class AcApDocManager {
       session.doc.destroy()
       const doc = session.doc
       const db = doc.database
+      // Heal layout→BTR links before `$TILEMODE` sync / tab snapshot so paper
+      // layouts with an empty blockTableRecordId (R14 LibreDWG) are visible and
+      // selectable. setActiveLayout heals again (idempotent) before activate.
+      acapHealModelLayoutLink(db)
       // Header parsing stores `$TILEMODE` but leaves currentSpaceId on model.
       // Sync once at open (not in setActiveLayout) so later Model-tab visits
       // survive session reactivation. Do this before documentActivated so
       // layout tabs snapshot the correct active layout.
       syncCurrentSpaceFromTileMode(db)
       this.setActiveLayout(view, db)
+      // Open-into-paper does not fire `layoutSwitched`, and model entities may
+      // land under a remapped *Model_Space id. Load both spaces from the BTR
+      // here — not inside setActiveLayout, which also runs during
+      // createInstance before the DocManager singleton exists.
+      const modelSpaceIdForLoad = db.tables.blockTable.modelSpace.objectId
+      const activeSpaceIdForLoad = db.currentSpaceId || modelSpaceIdForLoad
+      view.ensureLayoutEntitiesLoaded(activeSpaceIdForLoad)
+      if (modelSpaceIdForLoad !== activeSpaceIdForLoad) {
+        view.ensureLayoutEntitiesLoaded(modelSpaceIdForLoad)
+      }
       view.syncDisplaySysVars(db)
       this.events.documentActivated.dispatch({
         doc,
@@ -2616,6 +2631,34 @@ export class AcApDocManager {
       if (framedSynchronously) {
         AcApZoomCmd.rememberOriginalView(view, db.currentSpaceId)
       }
+      // R14 / remapped-handle opens can leave the active sheet with `isLoaded`
+      // set but zero scene entities. After the open drain, force a BTR reload
+      // and re-fit when the canvas would otherwise stay blank.
+      void view.waitUntilIdle(120_000).then(async idle => {
+        if (!idle) return
+        const activeId = db.currentSpaceId
+        const modelId = db.tables.blockTable.modelSpace.objectId
+        const activeLayout = view.cadScene?.layouts.get(activeId)
+        const dbBlock = db.tables.blockTable.getIdAt(activeId)
+        let dbEntityCount = 0
+        if (dbBlock?.newIterator) {
+          for (const _ of dbBlock.newIterator()) dbEntityCount++
+        }
+        const sceneEmpty = !activeLayout || activeLayout.entityCount === 0
+        if (!(dbEntityCount > 0 && sceneEmpty)) return
+
+        view.ensureLayoutEntitiesLoaded(activeId, { forceIfEmpty: true })
+        if (modelId !== activeId) {
+          view.ensureLayoutEntitiesLoaded(modelId, { forceIfEmpty: true })
+        }
+        const reloaded = await view.waitUntilIdle(60_000)
+        if (!reloaded) return
+        const box = view.getDrawingExtents()
+        if (box) {
+          view.zoomTo(box)
+          AcApZoomCmd.rememberOriginalView(view, activeId)
+        }
+      })
       // Headless multi-layout export: convert paper tabs the open stream did
       // not already claim. `ensureEntitiesConvertedForExport` waits for the
       // open drain first, so this must not be a second full pass over
