@@ -12,7 +12,6 @@ import {
   ScaleToOriginal,
   Scissor,
   Stamp,
-  Upload,
   View
 } from '@element-plus/icons-vue'
 import {
@@ -181,6 +180,7 @@ import {
   pdfBlock,
   pdfDimRecognize,
   pdfHatchRecognize,
+  pdfImport,
   pdfTextRecognize,
   polygon,
   polyline,
@@ -1393,7 +1393,7 @@ const buildAiTab = (
                 'cmd-pdfimport',
                 t('main.ribbon.command.importPdf'),
                 ribbonTooltips.importPdf,
-                Upload
+                pdfImport
               ),
               largeButton(
                 'cmd-pdfscale',
