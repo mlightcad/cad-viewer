@@ -2119,13 +2119,39 @@ export default {
     }
   },
   pdfdim: {
+    cancelled: 'Ölçü tanıma iptal edildi; hiçbir şey değiştirilmedi.',
     noDimensions:
       'Seçimde ölçü bulunamadı (oklar veya işaretler, ölçü çizgileri ve değer metinleri gerekir).',
-    convertAll:
-      '{count} ölçü bulundu (çizim ölçeği 1:{scale}). Dönüştürülsün mü?',
-    convertOne: 'Ölçü {index}/{count} "{text}": dönüştürülsün mü?',
     summary:
-      '{count} ölçü dönüştürüldü; PDF_DIM stili {scale} doğrusal ölçek faktörünü kullanır.'
+      '{count} ölçü dönüştürüldü; {style} stili {scale} doğrusal ölçek faktörünü kullanır.',
+    panel: {
+      title: 'Ölçüleri Tanı',
+      style: 'Ölçü stili',
+      dimStyle: 'Stil',
+      newStyle: 'Yeni ölçü stili…',
+      newStyleName: 'Yeni ölçü stilinin adı',
+      createStyle: 'Oluştur',
+      nameEmpty: 'Bir ad girin.',
+      nameInvalid: 'Ad izin verilmeyen karakterler içeriyor.',
+      nameExists: 'Bu adda bir ölçü stili zaten var.',
+      scale: 'Çizim ölçeği',
+      stylePreview: 'Seçili ölçü stilinin önizlemesi (tanınan boyutlarla)',
+      dimensions: 'Ölçüler',
+      selectHint:
+        'Bir ölçü seçerek ona yakınlaştırın; Uygula öncesinde değeri düzenleyebilirsiniz.',
+      empty: 'Seçimde ölçü bulunamadı.',
+      include: 'Bu ölçüyü dönüştür',
+      kindLinear: 'Doğrusal',
+      kindRadius: 'Yarıçap',
+      kindDiameter: 'Çap',
+      kindAngular: 'Açısal',
+      textTip: 'Ölçü metni (geçersiz kılma)',
+      measured: 'Ölçülen {value}',
+      hideStrokes: 'Orijinal çizgileri gizle',
+      ready: '{ready}/{count} ölçü hazır',
+      cancel: 'İptal',
+      apply: 'Uygula'
+    }
   },
   pdfhatch: {
     cancelled: 'Tarama kurtarma iptal edildi; hiçbir şey değiştirilmedi.',

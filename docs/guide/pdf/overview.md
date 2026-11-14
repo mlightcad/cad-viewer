@@ -76,14 +76,17 @@ Every character shape you type is remembered in the browser, so drawings that us
 
 ## Recover dimensions (`pdfdim`)
 
-1. Select the area with the dimensions.
+1. Select the area with the dimensions. Value text may be TEXT, or still exploded strokes (before `pdftext`): digits and CAD symbols are read with a built-in template matcher — no LLM. If strokes still cannot be read, linear dimensions fall back to the measured length.
 2. These are recognized:
    - **Linear**: any angle, arrows inside or outside, architectural ticks, and chained dimensions.
    - **Radius and diameter**: an arrow touching a circle, with an `R…` or `Ø…` text.
    - **Angular**: an arc with an arrow at each end.
-3. Choose **Yes**, **No** or **Review**, as with blocks.
+3. The **Recover Dimensions** panel opens in the palette, with dimensions previewed in place of their strokes. You can pan and zoom while it is open.
+   - Edit each value, clear a check box to skip a dimension, and pick or create a dim style (the preview shows recovered sizes with that style's appearance).
+   - **Hide original strokes** (on by default) shows the result without the strokes it replaces.
+4. Click **Apply** to convert. **Cancel**, or closing the palette, changes nothing.
 
-The dimensions use a `PDF_DIM` style whose text height and arrow size match the PDF. Its linear scale factor equals the drawing scale read from the texts, so a 1:100 drawing still shows its real values. Texts that differ from the measurement, or carry extra symbols, are kept as written.
+The dimensions use a `PDF_DIM` style (or a name you create) whose paper sizes match the PDF; entity overrides keep those sizes even if another style's DIMSCALE is large. Its linear scale factor equals the drawing scale read from the texts, so a 1:100 drawing still shows its real values. Texts that differ from the measurement, or carry extra symbols, are kept as written.
 
 ::: tip
 Run `pdfscale` first if you want the geometry at real size. `pdfdim` then finds a scale of 1:1.

@@ -2111,13 +2111,38 @@ export default {
     }
   },
   pdfdim: {
+    cancelled: 'تم إلغاء استعادة الأبعاد؛ لم يتم تغيير أي شيء.',
     noDimensions:
       'لم يتم العثور على أبعاد في التحديد (يلزم وجود رؤوس أسهم أو علامات وخطوط أبعاد ونصوص قيم).',
-    convertAll:
-      'تم العثور على {count} بُعد (مقياس الرسم 1:{scale}). هل تريد تحويلها؟',
-    convertOne: 'البُعد {index}/{count} "{text}": تحويل؟',
     summary:
-      'تم تحويل {count} بُعد؛ يستخدم النمط PDF_DIM معامل مقياس خطي قدره {scale}.'
+      'تم تحويل {count} بُعد؛ يستخدم النمط {style} معامل مقياس خطي قدره {scale}.',
+    panel: {
+      title: 'استعادة الأبعاد',
+      style: 'نمط البعد',
+      dimStyle: 'النمط',
+      newStyle: 'نمط بعد جديد…',
+      newStyleName: 'اسم نمط البعد الجديد',
+      createStyle: 'إنشاء',
+      nameEmpty: 'أدخل اسمًا.',
+      nameInvalid: 'يحتوي الاسم على أحرف غير مسموح بها.',
+      nameExists: 'يوجد بالفعل نمط بعد بهذا الاسم.',
+      scale: 'مقياس الرسم',
+      stylePreview: 'معاينة نمط البُعد المحدد مع الأحجام المُستعادة',
+      dimensions: 'الأبعاد',
+      selectHint: 'حدد بُعدًا للتكبير إليه؛ يمكنك تعديل القيمة قبل التطبيق.',
+      empty: 'لم يتم العثور على أبعاد في التحديد.',
+      include: 'تحويل هذا البُعد',
+      kindLinear: 'خطي',
+      kindRadius: 'نصف القطر',
+      kindDiameter: 'القطر',
+      kindAngular: 'زاوي',
+      textTip: 'نص البُعد (تجاوز)',
+      measured: 'المقاس {value}',
+      hideStrokes: 'إخفاء الخطوط الأصلية',
+      ready: '{ready} من {count} أبعاد جاهزة',
+      cancel: 'إلغاء',
+      apply: 'تطبيق'
+    }
   },
   pdfhatch: {
     cancelled: 'تم إلغاء استعادة التهشير؛ لم يتم تغيير أي شيء.',

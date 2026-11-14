@@ -76,14 +76,17 @@ Každý napsaný tvar znaku se zapamatuje v prohlížeči, takže pomůže i u d
 
 ## Obnovení kót (`pdfdim`)
 
-1. Vyberte oblast s kótami.
+1. Vyberte oblast s kótami. Text hodnoty může být TEXT, nebo stále rozložené tahy (před `pdftext`): číslice a CAD symboly se čtou vestavěnou šablonou lokálně, bez LLM. Pokud tahy nelze přečíst, lineární kóty použijí naměřenou délku.
 2. Rozpoznají se:
    - **Lineární kóty**: v libovolném úhlu, se šipkami uvnitř i vně, s architektonickými značkami i řetězové kóty.
    - **Kóty poloměru a průměru**: šipka dotýkající se kružnice s textem `R…` nebo `Ø…`.
    - **Úhlové kóty**: oblouk se šipkou na každém konci.
-3. Zvolte **Ano**, **Ne** nebo **Revize**, stejně jako u bloků.
+3. Panel **Obnovit kóty** se otevře v paletě a místo tahů ukáže náhled kót. Během otevření můžete posouvat a zoomovat.
+   - Upravte každou hodnotu, zrušte zaškrtnutí pro přeskočení kóty a vyberte nebo vytvořte styl kót (náhled ukáže obnovené velikosti s vzhledem zvoleného stylu).
+   - **Skrýt původní tahy** (ve výchozím stavu zapnuto) zobrazí výsledek bez nahrazovaných tahů.
+4. Klepnutím na **Použít** provedete převod. **Zrušit** nebo zavření palety nic nezmění.
 
-Kóty používají styl `PDF_DIM`, jehož výška textu a velikost šipek odpovídají PDF. Jeho lineární měřítko se rovná měřítku výkresu přečtenému z textů, takže výkres 1:100 stále ukazuje skutečné hodnoty. Texty, které se od měření liší nebo obsahují další symboly, zůstanou tak, jak byly napsány.
+Kóty používají styl `PDF_DIM` (nebo vámi vytvořený název) s papírovými velikostmi podle PDF; přepsání na entitě tato velikost uchová i při velkém DIMSCALE jiného stylu. Lineární měřítko se rovná měřítku výkresu přečtenému z textů, takže výkres 1:100 stále ukazuje skutečné hodnoty. Texty, které se od měření liší nebo obsahují další symboly, zůstanou tak, jak byly napsány.
 
 ::: tip
 Chcete-li geometrii ve skutečné velikosti, spusťte nejprve `pdfscale`. `pdfdim` pak zjistí měřítko 1:1.

@@ -14,7 +14,7 @@ PDF **export** and **import** plugin for [`@mlightcad/cad-simple-viewer`](../cad
 | `pdfscale` | Calibrate imported PDF geometry: pick two points of a known distance and type its real length |
 | `pdftext` | Convert exploded text (SHX line text, outlined fonts) back into `AcDbText`, semi-automatically |
 | `pdfblock` | Turn repeated geometry back into a block: select one instance, every rotated / mirrored copy is found and replaced |
-| `pdfdim` | Turn exploded dimensions (arrows or ticks, lines, extension lines, texts) back into linear, radius and diameter dimensions |
+| `pdfdim` | Turn exploded dimensions (arrows or ticks, lines, extension lines, texts — including stroke digits) back into linear, radius, diameter and angular dimensions via a review palette |
 
 The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@mlightcad/pdf-renderer`, `pdfjs-dist`) are only downloaded when a user runs `-cpdf` / `cpdf` or `pdfimport`.
 
@@ -27,7 +27,7 @@ The plugin is designed for **lazy loading** so PDF libraries (`pdf-lib` via `@ml
 - **PDF import** — parses vector paths from a chosen PDF page and appends CAD entities. Bézier chains are rebuilt as true `AcDbCircle` / `AcDbArc` / `AcDbEllipse`, mixed line–arc outlines as bulged `AcDbPolyline`, free-form curves as exact `AcDbSpline`, and arcs a producer already flattened into short lines are refitted. Stroke widths become line weights, dashed strokes get matching `PDF_DASH_*` linetypes, PDF fonts become `PDF_<family>` text styles, filled areas become solid hatches in paint order (`fillHatches`), pattern hatches that the PDF holds as short lines are rebuilt as `AcDbHatch` with their `acadiso.pat` pattern, scale and angle (`recognizeHatches`, kept only when re-drawing reproduces the lines), and exact duplicate outlines are dropped
 - **Scale calibration** — `pdfscale` rescales imported geometry from one known distance, since printed PDFs are rarely 1:1. When the selection holds exploded dimensions, the scale their texts imply pre-fills the real length
 - **Block recovery** — `pdfimport` turns Form XObjects painted two or more times with identical content into a block definition with one reference per paint (rotation, mirroring and scale come from each paint's form matrix). `pdfblock` handles PDFs that draw repeated symbols inline: select one instance, pick a base point and name, and every copy under rotation and mirroring (optionally scaling) is highlighted for confirmation and replaced by a block reference
-- **Dimension recovery** — `pdfdim` recognizes linear (any angle, inside or outside arrows, architectural ticks, chained), radius, diameter and angular dimensions in a selected area. It infers the drawing scale from the texts and builds a `PDF_DIM` style whose text height, arrow size and DIMLFAC match the PDF, so a 1:100 drawing keeps its real values
+- **Dimension recovery** — `pdfdim` recognizes linear (any angle, inside or outside arrows, architectural ticks, chained), radius, diameter and angular dimensions in a selected area, including value text still drawn as strokes (grid template matcher, no LLM). A review palette lets you edit values, pick or create a dim style (shared style preview), then Apply; Cancel leaves the drawing unchanged. It infers the drawing scale from the texts and pins paper sizes via entity overrides on the chosen style (existing styles are left unchanged in the table; `PDF_DIM` / newly created styles get the recovered metrics written in) so a large inherited DIMSCALE cannot hide extensions, and a 1:100 drawing keeps its real values
 - **Text recovery** — real PDF text runs that continue one line are merged into one `AcDbText`. `pdftext` turns exploded text strokes back into text: it clusters strokes into lines (position, height, rotation), reads lines made of known glyph shapes from its glyph dictionary, and, with an OCR recognizer registered in `AcApTextRecognitionService` (`@mlightcad/cad-llm-plugin` registers one that uses the configured vision model), sends all other lines at once via `recognizeBatch` and converts the whole selection in one edit. Only lines nothing could read are prompted; typed glyph shapes are learned.
 - **Plugin API** — implements `AcApPlugin`; register once with `registerLazyPdfPlugin`
 - **Framework-agnostic** — no Vue/React dependency; works anywhere `cad-simple-viewer` runs
@@ -184,16 +184,16 @@ The pure recognition step is also exported: `recognizePdfCurves(segments)` turns
 
 ### Dimension recovery (`pdfdim`)
 
-1. Select the area; lines, closed triangles, circles, arcs and texts take part.
+1. Select the area; lines, closed triangles, circles, arcs and texts take part. Exploded stroke text (before `pdftext`) is included: the glyph dictionary and a built-in digit/symbol template matcher read it locally — no LLM. When strokes still cannot be read, linear dimensions fall back to the measured length.
 2. `recognition/pdfDimensionPattern.ts` finds the parts:
    - **Arrowheads**: slender closed triangles. The tip is the sharpest corner, and the direction runs from the base midpoint to the tip.
    - **Ticks**: short oblique lines at the ends of a longer line.
    - **Linear dimensions**: two terminators on a common axis pointing apart or together, plus a numeric text beside them. Pairs are taken shortest first, so chained dimensions stay separate. Perpendicular lines through the tips are extension lines and give the definition points; chained dimensions may share them.
    - **Radius and diameter**: an arrow whose tip touches a circle and points along its radius, plus an `R…` or `Ø…` text.
    - **Angular**: an arc with an arrow at each end pointing along it, a value text near its middle, and radial extension lines. These become `AcDb3PointAngularDimension`; angles are compared without DIMLFAC, and a `°` counts as a plain number.
-3. The most common text / measured-length ratio among linear dimensions is the drawing scale. It is snapped to 1, 2, 2.5 or 5 × 10ⁿ when within 1 %.
-4. Everything found is highlighted. Choose `Yes`, `No` or `Review`.
-5. The `PDF_DIM` style is created or updated. It starts from the current style, then takes the measured text height, arrow size and extension, and DIMLFAC = scale; ticks set `_ArchTick`.
+3. The most common text / measured-length ratio among linear dimensions is the drawing scale. It is snapped to 1, 2, 2.5 or 5 × 10ⁿ when within 1 %. Stroke misreadings such as a run of `1`s are replaced by the measured length when they disagree with that scale.
+4. A palette review opens (like `pdftext` / `pdfhatch`): edit each value, include or skip rows, pick an existing dim style or create a new one, then Apply. Without a DOM, every dimension found is converted directly.
+5. The chosen style is created or updated when it is `PDF_DIM` or brand-new. It starts from the current style, then takes the measured text height, arrow size and extension, forces both extension lines on, sets arrow fit from inside/outside tips, and DIMLFAC = scale; ticks set `_ArchTick`. Other existing styles are left unchanged.
 6. Each accepted dimension becomes `AcDbRotatedDimension`, `AcDbRadialDimension` or `AcDbDiametricDimension`. Texts that are not plain numbers, or that disagree with measurement × scale, are kept as text overrides. The source shapes are erased.
 
 ### Text recovery (`pdftext`)
@@ -236,7 +236,8 @@ Only the requested page is processed (default: page 1). Form XObject `/Matrix` i
 | `AcApPdfTextCmd` | `pdftext` command class |
 | `AcApPdfBlockCmd` | `pdfblock` command class |
 | `AcApPdfDimCmd` | `pdfdim` command class |
-| `recognizePdfDimensions`, `suggestPdfDimensionScale`, `pdfArrowFromPolygon`, `parsePdfDimensionValue` | Dimension recognition |
+| `AcApPdfDimSession`, `AcUiPdfDimPanel` | Review state and palette UI for `pdfdim` |
+| `recognizePdfDimensions`, `suggestPdfDimensionScale`, `pdfArrowFromPolygon`, `parsePdfDimensionValue`, `recognizePdfDimStrokeText` | Dimension recognition (including lightweight stroke digits) |
 | `pdfEntitiesToDimInput`, `acapPdfEnsureDimStyle`, `acapPdfCreateDimensions`, `acapPdfNiceScale` | Dimension conversion against a database |
 | `findPdfShapeMatches`, `buildPdfFormBlocks`, `pdfEntityToFeature` | Block recovery building blocks |
 | `clusterPdfTextStrokes`, `PdfGlyphDictionary`, `mergePdfTextRuns`, `pdfEntityToStroke` | Text recovery building blocks |

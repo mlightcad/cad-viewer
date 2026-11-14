@@ -2005,13 +2005,38 @@ export default {
     }
   },
   pdfdim: {
+    cancelled: '寸法認識をキャンセルしました。変更はありません。',
     noDimensions:
       '選択範囲に寸法が見つかりません（矢印または斜線、寸法線、数値文字が必要です）。',
-    convertAll:
-      '寸法が {count} 個見つかりました（図面尺度 1:{scale}）。変換しますか？',
-    convertOne: '寸法 {index}/{count}「{text}」: 変換しますか？',
     summary:
-      '{count} 個の寸法を変換しました。寸法スタイル PDF_DIM の長さ尺度は {scale} です。'
+      '{count} 個の寸法を変換しました。寸法スタイル {style} の長さ尺度は {scale} です。',
+    panel: {
+      title: '寸法認識',
+      style: '寸法スタイル',
+      dimStyle: 'スタイル',
+      newStyle: '新しい寸法スタイル…',
+      newStyleName: '新しい寸法スタイルの名前',
+      createStyle: '作成',
+      nameEmpty: '名前を入力してください。',
+      nameInvalid: '名前に使用できない文字が含まれています。',
+      nameExists: '同じ名前の寸法スタイルが既に存在します。',
+      scale: '図面尺度',
+      stylePreview: '選択した寸法スタイルのプレビュー（認識したサイズを反映）',
+      dimensions: '寸法',
+      selectHint: '寸法を選択するとズームします。適用前に値を編集できます。',
+      empty: '選択範囲に寸法が見つかりません。',
+      include: 'この寸法を変換',
+      kindLinear: '長さ',
+      kindRadius: '半径',
+      kindDiameter: '直径',
+      kindAngular: '角度',
+      textTip: '寸法値（上書き）',
+      measured: '測定値 {value}',
+      hideStrokes: '元の線を非表示',
+      ready: '{ready}/{count} 個の寸法が準備完了',
+      cancel: 'キャンセル',
+      apply: '適用'
+    }
   },
   pdfhatch: {
     cancelled: 'ハッチング認識をキャンセルしました。変更はありません。',

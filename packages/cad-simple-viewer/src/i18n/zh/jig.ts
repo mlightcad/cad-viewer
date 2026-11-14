@@ -1936,10 +1936,36 @@ export default {
     }
   },
   pdfdim: {
+    cancelled: '已取消识别标注，未做任何更改。',
     noDimensions: '所选范围内没有找到标注（需要箭头或斜线标记、尺寸线和数值文字）。',
-    convertAll: '找到 {count} 个标注（图纸比例 1:{scale}）。是否转换？',
-    convertOne: '标注 {index}/{count}“{text}”：是否转换？',
-    summary: '已转换 {count} 个标注；标注样式 PDF_DIM 的测量比例因子为 {scale}。'
+    summary: '已转换 {count} 个标注；标注样式 {style} 的测量比例因子为 {scale}。',
+    panel: {
+      title: '识别标注',
+      style: '标注样式',
+      dimStyle: '样式',
+      newStyle: '新建标注样式…',
+      newStyleName: '新标注样式的名称',
+      createStyle: '创建',
+      nameEmpty: '请输入名称。',
+      nameInvalid: '名称包含不允许的字符。',
+      nameExists: '已存在同名的标注样式。',
+      scale: '图纸比例',
+      stylePreview: '所选标注样式的预览（已套用识别到的尺寸）',
+      dimensions: '标注',
+      selectHint: '选择一个标注可缩放到该处；应用前可修改文字。',
+      empty: '所选范围内没有找到标注。',
+      include: '转换此标注',
+      kindLinear: '线性',
+      kindRadius: '半径',
+      kindDiameter: '直径',
+      kindAngular: '角度',
+      textTip: '标注文字（替代）',
+      measured: '测量值 {value}',
+      hideStrokes: '隐藏原始线条',
+      ready: '{ready}/{count} 个标注就绪',
+      cancel: '取消',
+      apply: '应用'
+    }
   },
   pdfhatch: {
     cancelled: '已取消识别填充，未做任何更改。',
