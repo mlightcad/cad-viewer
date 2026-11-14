@@ -14,7 +14,8 @@ import { AcPdfEntity } from '../src/renderer/AcPdfEntity'
 import { AcPdfRenderer } from '../src/renderer/AcPdfRenderer'
 import {
   acPdfApplyLayerVisibility,
-  acPdfCollectDatabaseLayerVisibility
+  acPdfCollectDatabaseLayerVisibility,
+  acPdfRevealFrozenLayersForOcg
 } from '../src/viewport/AcPdfLayerVisibility'
 import { collectModelSpaceRoots } from '../src/viewport/AcPdfPaperSpaceExport'
 
@@ -148,6 +149,25 @@ describe('acPdfApplyLayerVisibility', () => {
 
     expect(insert.visible).toBe(false)
     // Children are not visited once the INSERT is frozen-hidden.
+    expect(nestedOn.visible).toBe(true)
+  })
+
+  it('reveals frozen INSERTs for OCG painting after extents', () => {
+    const insert = new AcPdfEntity()
+    insert.layerName = 'Frozen'
+    insert.entityType = 'INSERT'
+    insert.insertName = 'BLK'
+    const nestedOn = strokeEntity('On')
+    insert.addChild(nestedOn)
+
+    acPdfApplyLayerVisibility([insert], {
+      offLayers: new Set(),
+      frozenLayers: new Set(['Frozen'])
+    })
+    expect(insert.visible).toBe(false)
+
+    acPdfRevealFrozenLayersForOcg([insert], new Set(['Frozen']))
+    expect(insert.visible).toBe(true)
     expect(nestedOn.visible).toBe(true)
   })
 

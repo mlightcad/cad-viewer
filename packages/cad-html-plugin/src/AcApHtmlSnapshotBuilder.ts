@@ -152,6 +152,9 @@ function mapAcTrSceneToExportInput(scene: AcTrScene): AcExHtmlExportSceneInput {
     color: layer.color.RGB ?? 0xffffff,
     visible: !layer.isOff && !layer.isFrozen
   }))
+  const frozenLayers = [...scene.layers.values()]
+    .filter(layer => layer.isFrozen)
+    .map(layer => layer.name)
 
   const layouts = [...scene.layouts.entries()].map(([btrId, layout]) => ({
     btrId,
@@ -159,11 +162,13 @@ function mapAcTrSceneToExportInput(scene: AcTrScene): AcExHtmlExportSceneInput {
     layers: [...layout.layers.values()].map(layer => ({
       name: layer.name,
       root: layer.internalObject
-    }))
+    })),
+    insertLayerByObjectId: layout.insertLayerByObjectId
   }))
 
   return {
     layers,
+    frozenLayers,
     layouts,
     activeLayoutBtrId: scene.activeLayoutBtrId || scene.modelSpaceBtrId,
     modelSpaceBtrId: scene.modelSpaceBtrId

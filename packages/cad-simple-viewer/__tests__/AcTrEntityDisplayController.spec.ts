@@ -97,6 +97,26 @@ describe('AcTrEntityDisplayController', () => {
     expect(controllerFrozen.shouldConvert(insert)).toBe(false)
   })
 
+  it('includes frozen INSERTs for export when invisible layers are included', () => {
+    const frozenLayer = {
+      name: 'Wall',
+      isOff: false,
+      isFrozen: true,
+      color: new AcCmColor()
+    }
+    const controllerFrozen = new AcTrEntityDisplayController(() => frozenLayer)
+
+    const insert = createBlockReference('insert-a', 'Wall')
+    const line = createDbEntity('line-a', 'Wall')
+
+    // HTML layers are only visible/invisible: freeze maps to initially
+    // invisible, so frozen INSERT geometry must still be converted.
+    expect(controllerFrozen.shouldConvertForExport(insert, true)).toBe(true)
+    expect(controllerFrozen.shouldConvertForExport(line, true)).toBe(true)
+    expect(controllerFrozen.shouldConvertForExport(insert, false)).toBe(false)
+    expect(controllerFrozen.shouldConvertForExport(line, false)).toBe(false)
+  })
+
   it('matches AcTrLayer visibility resolution for drawable layers', () => {
     const layerInfo = {
       name: '0',

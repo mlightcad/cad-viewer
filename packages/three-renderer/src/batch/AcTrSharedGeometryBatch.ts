@@ -237,6 +237,16 @@ export class AcTrSharedGeometryBatch extends THREE.Object3D {
   }
 
   /**
+   * Database object id of the INSERT that owns one instance slot.
+   *
+   * Used by HTML export to reparent frozen-INSERT fragments onto the INSERT
+   * layer when nested geometry was bucketed onto other layers.
+   */
+  getObjectIdAt(geometryId: number): string | undefined {
+    return this._objectIds[geometryId]
+  }
+
+  /**
    * Hides one slot and drops its highlight. The shared geometry stays.
    *
    * @param geometryId - Slot index to remove.
@@ -557,6 +567,11 @@ export class AcTrSharedGeometryBatch extends THREE.Object3D {
     bboxOnly.set(this._bboxOnly)
     this._alive = alive
     this._bboxOnly = bboxOnly
+    const objectIds = new Array<string | undefined>(next)
+    for (let i = 0; i < this._objectIds.length; i++) {
+      objectIds[i] = this._objectIds[i]
+    }
+    this._objectIds = objectIds
     if (this._cpuRelative) {
       const relative = new Float32Array(next * 16)
       relative.set(this._cpuRelative)
@@ -640,7 +655,17 @@ export class AcTrSharedGeometryBatch extends THREE.Object3D {
     line.matrixAutoUpdate = false
     line.matrixWorldNeedsUpdate = true
     line.frustumCulled = false
-    getSceneDrawableUserData(line).sharesTemplateGeometry = true
+    const userData = getSceneDrawableUserData(line)
+    userData.sharesTemplateGeometry = true
+    // Plain HTML export walks these leaves. Do not stamp `userData.objectId`
+    // — that flag is treated as a highlight clone by
+    // {@link isHighlightCloneDrawable}. Use a dedicated field instead.
+    const objectId = this._objectIds[index]
+    if (objectId != null) {
+      ;(
+        line.userData as { sharedInstanceObjectId?: string }
+      ).sharedInstanceObjectId = objectId
+    }
     this.add(line)
     return line
   }

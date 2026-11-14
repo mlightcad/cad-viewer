@@ -3,6 +3,7 @@ import { PDFDocument, PDFImage } from 'pdf-lib'
 
 import type { AcPdfEntity } from '../renderer/AcPdfEntity'
 import type { AcPdfColorMode } from '../renderer/AcPdfStyle'
+import { acPdfRevealFrozenLayersForOcg } from '../viewport/AcPdfLayerVisibility'
 import type { AcPdfFormRegistry } from './AcPdfContentWriter'
 import { AcPdfContentWriter } from './AcPdfContentWriter'
 import type { AcPdfFontManager } from './AcPdfFontManager'
@@ -34,6 +35,12 @@ export interface AcPdfWriteOptions extends AcPdfPageLayoutInput {
    * afterwards by parsing finished page bytes.
    */
   ocg?: AcPdfOcgManager
+  /**
+   * Globally frozen layer names. After page extents are computed from the
+   * visibility-hidden tree, these entities are re-shown so their geometry can
+   * be painted into OCGs that start OFF in Acrobat's Layers panel.
+   */
+  revealFrozenLayersForOcg?: ReadonlySet<string>
   /**
    * Shared embedded-image cache across pages of one document. Keyed by the
    * image byte buffer so transformed paint copies still resolve, and an
@@ -99,6 +106,11 @@ export class AcPdfDocumentWriter {
       ? boxFromFit(options.fitBox)
       : unionBbox
     const layout = computePageLayout(bbox, options)
+    // Extents already exclude frozen geometry. Re-show it so OCG layers that
+    // start OFF still contain paint operators Acrobat can toggle back on.
+    if (options.revealFrozenLayersForOcg?.size) {
+      acPdfRevealFrozenLayersForOcg(entities, options.revealFrozenLayersForOcg)
+    }
     const page = doc.addPage([layout.pageWidth, layout.pageHeight])
 
     if (typeof options.background === 'number') {
