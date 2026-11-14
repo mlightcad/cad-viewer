@@ -7,7 +7,10 @@
 export { exportDatabaseToPdf } from './AcPdfExport'
 export type { AcPdfExportOptions } from './AcPdfExportOptions'
 export type { AcPdfColorMode } from './renderer/AcPdfStyle'
-export { AcPdfFontManager } from './pdf/AcPdfFontManager'
+export {
+  AcPdfFontManager,
+  acPdfTrueTypeGlyfLooksHealthy
+} from './pdf/AcPdfFontManager'
 export type { AcPdfTextFontResolver } from './pdf/AcPdfFontManager'
 export type { AcPdfFormRegistry } from './pdf/AcPdfContentWriter'
 export { AcPdfEntity } from './renderer/AcPdfEntity'

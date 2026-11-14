@@ -40,7 +40,7 @@
     "@mlightcad/cad-pdf-core": "workspace:*",
     "@mlightcad/cad-script-core": "workspace:*",
     "@mlightcad/cad-simple-viewer": "workspace:*",
-    "@mlightcad/data-model": "1.15.27",
+    "@mlightcad/data-model": "1.15.28",
     "@mlightcad/mtext-parser": "1.5.7",
     "@mlightcad/pdf-renderer": "workspace:*",
     "@mlightcad/three-renderer": "workspace:*"
@@ -50,7 +50,7 @@
     "@mlightcad/cad-pdf-core": "workspace:^",
     "@mlightcad/cad-script-core": "workspace:^",
     "@mlightcad/cad-simple-viewer": "workspace:^",
-    "@mlightcad/data-model": "1.15.27",
+    "@mlightcad/data-model": "1.15.28",
     "@mlightcad/mtext-parser": "1.5.7",
     "@mlightcad/pdf-renderer": "workspace:^",
     "@mlightcad/three-renderer": "workspace:^"

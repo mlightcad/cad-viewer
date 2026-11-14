@@ -1,5 +1,6 @@
 import {
   AcDbEntity,
+  AcDbObjectId,
   AcGePoint3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
@@ -16,6 +17,7 @@ export class AcEdGroupGripEditSession {
   private readonly _entities: AcDbEntity[]
   private readonly _baseWcs: AcGePoint3dLike
   private readonly _onEnd: () => void
+  private readonly _viewportId?: AcDbObjectId
 
   private _boundMouseMove = (e: MouseEvent) => this.onMouseMove(e)
   private _boundMouseUp = (e: MouseEvent) => this.onMouseUp(e)
@@ -25,12 +27,14 @@ export class AcEdGroupGripEditSession {
     view: AcEdBaseView,
     entities: AcDbEntity[],
     baseWcs: AcGePoint3dLike,
-    onEnd: () => void
+    onEnd: () => void,
+    viewportId?: AcDbObjectId
   ) {
     this._view = view
     this._entities = entities
     this._baseWcs = { x: baseWcs.x, y: baseWcs.y, z: baseWcs.z ?? 0 }
     this._onEnd = onEnd
+    this._viewportId = viewportId
 
     document.addEventListener('mousemove', this._boundMouseMove)
     document.addEventListener('mouseup', this._boundMouseUp)
@@ -42,8 +46,14 @@ export class AcEdGroupGripEditSession {
       x: e.clientX,
       y: e.clientY
     })
-    const wcs = this._view.screenToWorld(canvas)
-    return { x: wcs.x, y: wcs.y, z: 0 }
+    const paper = this._view.screenToWorld(canvas)
+    const cursorPaper = { x: paper.x, y: paper.y, z: 0 }
+    if (this._viewportId == null) return cursorPaper
+
+    const mapper = this._view.getViewportCoordinateMapper(this._viewportId)
+    if (!mapper) return cursorPaper
+    const model = mapper.paperToModel(cursorPaper)
+    return { x: model.x, y: model.y, z: 0 }
   }
 
   private onMouseMove(_e: MouseEvent) {

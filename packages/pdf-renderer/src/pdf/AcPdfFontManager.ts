@@ -145,6 +145,94 @@ function decodeFontProgram(bytes: Uint8Array): Uint8Array {
 }
 
 /**
+ * True when a TrueType `glyf`/`loca` program looks structurally valid.
+ *
+ * pdf-lib's `{ subset: true }` path can succeed while writing garbage
+ * contour counts (e.g. Noto Sans KR Thin Hangul). Viewers then paint blank
+ * glyphs even though ToUnicode still lists the characters. CFF/OTF programs
+ * have no `glyf` table and are treated as healthy.
+ */
+export function acPdfTrueTypeGlyfLooksHealthy(ttfBytes: Uint8Array): boolean {
+  if (ttfBytes.byteLength < 12) {
+    return false
+  }
+  const dv = new DataView(
+    ttfBytes.buffer,
+    ttfBytes.byteOffset,
+    ttfBytes.byteLength
+  )
+  const numTables = dv.getUint16(4)
+  if (numTables <= 0 || numTables > 64) {
+    return false
+  }
+  let head: { offset: number; length: number } | undefined
+  let loca: { offset: number; length: number } | undefined
+  let glyf: { offset: number; length: number } | undefined
+  for (let i = 0; i < numTables; i++) {
+    const off = 12 + i * 16
+    if (off + 16 > ttfBytes.byteLength) {
+      return false
+    }
+    const tag = String.fromCharCode(
+      ttfBytes[off],
+      ttfBytes[off + 1],
+      ttfBytes[off + 2],
+      ttfBytes[off + 3]
+    )
+    const entry = {
+      offset: dv.getUint32(off + 8),
+      length: dv.getUint32(off + 12)
+    }
+    if (tag === 'head') head = entry
+    else if (tag === 'loca') loca = entry
+    else if (tag === 'glyf') glyf = entry
+  }
+  if (!head || !loca || !glyf) {
+    // No glyf (CFF/OTF) — subset corruption we know about is TrueType-only.
+    return true
+  }
+  if (
+    head.offset + 52 > ttfBytes.byteLength ||
+    loca.offset + loca.length > ttfBytes.byteLength ||
+    glyf.offset + glyf.length > ttfBytes.byteLength
+  ) {
+    return false
+  }
+  const indexToLocFormat = dv.getInt16(head.offset + 50)
+  const numGlyphs =
+    indexToLocFormat === 0 ? loca.length / 2 - 1 : loca.length / 4 - 1
+  if (!Number.isFinite(numGlyphs) || numGlyphs < 0 || numGlyphs > 100000) {
+    return false
+  }
+  for (let gid = 0; gid < numGlyphs; gid++) {
+    let start: number
+    let end: number
+    if (indexToLocFormat === 0) {
+      start = dv.getUint16(loca.offset + gid * 2) * 2
+      end = dv.getUint16(loca.offset + (gid + 1) * 2) * 2
+    } else {
+      start = dv.getUint32(loca.offset + gid * 4)
+      end = dv.getUint32(loca.offset + (gid + 1) * 4)
+    }
+    if (end < start || end > glyf.length) {
+      return false
+    }
+    if (end === start) {
+      continue
+    }
+    if (start + 2 > glyf.length) {
+      return false
+    }
+    const nContours = dv.getInt16(glyf.offset + start)
+    // Simple: nContours >= 0; composite: -1. Anything else is corrupt.
+    if (nContours < -1 || nContours > 64) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
  * Document-scoped registry for fonts used by `textMode: 'text'` PDF exports.
  *
  * The manager is deliberately split across the two phases of an export:
@@ -154,9 +242,10 @@ function decodeFontProgram(bytes: Uint8Array): Uint8Array {
  *   layout engine's metric questions ({@link widthOfText}, glyph encoding).
  * - **Write phase** ({@link AcPdfDocumentWriter.writePage}): {@link bindDoc}
  *   registers fontkit with the pdf-lib document and {@link embedOp} embeds
- *   each used font (subset preferred, full program as fallback) and fills the
- *   op's `hex` through `PDFFont.encodeText` — required so pdf-lib's subset
- *   embedder sees exactly the glyphs the export paints.
+ *   each used font (subset for Latin/CJK-Han; full program for Hangul faces
+ *   whose pdf-lib subsets corrupt `glyf`) and fills the op's `hex` through
+ *   `PDFFont.encodeText` — required so pdf-lib's subset embedder sees exactly
+ *   the glyphs the export paints.
  *
  * SHX fonts have no embeddable font program, so the resolver is expected to
  * return `undefined` for them and the renderer falls back to vector glyphs.
@@ -398,10 +487,22 @@ export class AcPdfFontManager {
     if (!doc || !font) {
       return null
     }
+    // pdf-lib's `{ subset: true }` path corrupts glyf outlines for Hangul
+    // faces we ship (Noto Sans KR Thin / `malgun`): single-syllable subsets
+    // can look structurally fine, but multi-glyph Hangul FontFile2 programs
+    // paint blank while ToUnicode still lists the characters. Latin and
+    // CJK-Han faces (Arial, SimSun, YaHei, …) subset cleanly. Full embed of
+    // the KR stand-in is ~0.5MB — acceptable for correctness.
+    const preferSubset = !font.fk.hasGlyphForCodePoint(0xac00)
     try {
-      const pdfFont = await doc.embedFont(font.bytes, { subset: true })
+      const pdfFont = await doc.embedFont(font.bytes, {
+        subset: preferSubset
+      })
       return this.trackEmbedded(fontName, pdfFont)
     } catch {
+      if (!preferSubset) {
+        return null
+      }
       try {
         const pdfFont = await doc.embedFont(font.bytes, { subset: false })
         return this.trackEmbedded(fontName, pdfFont)

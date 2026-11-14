@@ -63,7 +63,7 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
-    "@mlightcad/data-model": "1.15.27",
+    "@mlightcad/data-model": "1.15.28",
     "@mlightcad/mtext-input-box": "0.3.9",
     "@mlightcad/mtext-parser": "1.5.7",
     "@mlightcad/mtext-renderer": "0.13.9",
@@ -77,7 +77,7 @@
     "three": "^0.186.1"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "1.15.27",
+    "@mlightcad/data-model": "1.15.28",
     "@mlightcad/mtext-parser": "1.5.7",
     "@mlightcad/mtext-renderer": "0.13.9",
     "@mlightcad/three-renderer": "workspace:^",

@@ -26,6 +26,11 @@ import {
 export interface AcEdViewportBoxProjection {
   /** Viewport border in paper-space WCS (`AcGiViewport.box`). */
   paperBox: AcGeBox2d
+  /**
+   * Paper-space viewport object id. When set, box-selection callers can
+   * remember which viewport claimed each model entity (grip mapping).
+   */
+  viewportId?: AcDbObjectId
   /** Layer names frozen in this viewport (VPLAYER / DXF group 331). */
   frozenLayers?: readonly string[]
   /** Paper-space WCS → model-space WCS through this viewport. */
@@ -65,6 +70,11 @@ export interface AcEdViewportBoxSelectionArgs {
   ) => readonly AcEdSpatialQueryResultItemEx[]
   /** Entity behind one spatial hit id, or `undefined` when unavailable. */
   entityOf: (id: AcDbObjectId) => AcDbEntity | undefined
+  /**
+   * Invoked once per newly selected model entity with the viewport that
+   * claimed it (first match wins when viewports overlap).
+   */
+  onHit?: (entityId: AcDbObjectId, viewport: AcEdViewportBoxProjection) => void
 }
 
 /**
@@ -95,7 +105,7 @@ export interface AcEdViewportBoxSelectionArgs {
 export function acedCollectViewportBoxSelectionIds(
   args: AcEdViewportBoxSelectionArgs
 ): AcDbObjectId[] {
-  const { selectionBox, mode, viewports, searchModel, entityOf } = args
+  const { selectionBox, mode, viewports, searchModel, entityOf, onHit } = args
   if (selectionBox.isEmpty()) return []
 
   const ids: AcDbObjectId[] = []
@@ -196,6 +206,7 @@ export function acedCollectViewportBoxSelectionIds(
 
       seen.add(item.id)
       ids.push(item.id)
+      onHit?.(item.id, viewport)
     }
   }
 

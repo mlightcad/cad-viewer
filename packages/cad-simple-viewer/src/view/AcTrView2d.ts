@@ -86,6 +86,10 @@ import {
 } from '../editor/global/AcEdUiColor'
 import { ML_UI_Z_CANVAS_HTML_OVERLAY } from '../editor/global/AcEdUiLayout'
 import {
+  type AcEdGripViewportCandidate,
+  acedPickViewportForModelExtents
+} from '../editor/grip/AcEdGripViewport'
+import {
   acedEntityIntersectsSelectionBox,
   acedNeedsCrossingGeometryRefine
 } from '../editor/view/AcEdSelectionBoxIntersect'
@@ -1782,6 +1786,9 @@ export class AcTrView2d extends AcEdBaseView {
     this.htmlTransientManager.setActiveLayoutId(value)
     this._isDirty = true
     if (previous !== value) {
+      // Viewport drill-through hints are layout-local; drop them on switch so
+      // grips do not reuse a paper viewport id from the previous sheet.
+      this.clearModelEntityViewportHints()
       notifyMeasurementLayoutChanged()
     }
   }
@@ -2538,6 +2545,60 @@ export class AcTrView2d extends AcEdBaseView {
   }
 
   /**
+   * @inheritdoc
+   *
+   * Resolves a user viewport that shows the model-space entity so grips can
+   * be positioned in paper WCS (and drag deltas mapped back to model WCS).
+   */
+  override findViewportMapperForModelEntity(
+    entityId: AcDbObjectId
+  ):
+    | { viewportId: AcDbObjectId; mapper: AcEdViewportCoordinateMapper }
+    | undefined {
+    const activeLayoutView = this.activeLayoutView
+    if (!activeLayoutView) return undefined
+    if (activeLayoutView.layoutBtrId === this._scene.modelSpaceBtrId) {
+      return undefined
+    }
+
+    const database = AcApDocManager.tryGetInstance()?.curDocument?.database
+    const entity = database?.tables.blockTable.getEntityById(entityId)
+    if (!entity || entity.ownerId !== this._scene.modelSpaceBtrId) {
+      return undefined
+    }
+
+    const candidates: AcEdGripViewportCandidate[] = []
+    for (const vpView of activeLayoutView.viewportViews) {
+      const viewBox = vpView.viewport.viewBox
+      candidates.push({
+        viewportId: vpView.viewport.id,
+        viewBox: {
+          min: { x: viewBox.min.x, y: viewBox.min.y },
+          max: { x: viewBox.max.x, y: viewBox.max.y }
+        }
+      })
+    }
+    if (candidates.length === 0) return undefined
+
+    const extents = entity.geometricExtents
+    const viewportId = acedPickViewportForModelExtents(
+      extents
+        ? {
+            min: { x: extents.min.x, y: extents.min.y },
+            max: { x: extents.max.x, y: extents.max.y }
+          }
+        : undefined,
+      candidates,
+      this.getModelEntityViewportHint(entityId)
+    )
+    if (viewportId == null) return undefined
+
+    const mapper = this.getViewportCoordinateMapper(viewportId)
+    if (!mapper) return undefined
+    return { viewportId, mapper }
+  }
+
+  /**
    * Resolves hits against the model-space layout for each viewport the
    * click drills through. Appends the matches into `results` (caller
    * sorts/dedups). Kept private and separate from `pick` so the main
@@ -2603,7 +2664,12 @@ export class AcTrView2d extends AcEdBaseView {
   select(point?: AcGePoint2dLike) {
     const idsAdded: Array<AcDbObjectId> = []
     const results = this.pick(point)
-    results.forEach(item => idsAdded.push(item.id))
+    results.forEach(item => {
+      idsAdded.push(item.id)
+      // Remember which viewport the click drilled through so grips map
+      // through the same viewport when several overlap the entity.
+      this.rememberModelEntityViewportHint(item.id, item.viewportId)
+    })
     const selectable = this.selectableIds(idsAdded, 'add')
     if (selectable.length > 0) this.selectionSet.add(selectable)
   }
@@ -2638,6 +2704,7 @@ export class AcTrView2d extends AcEdBaseView {
     const viewports: AcEdViewportBoxProjection[] = []
     for (const vpView of activeLayoutView.viewportViews) {
       viewports.push({
+        viewportId: vpView.viewport.id,
         paperBox: vpView.viewport.box,
         frozenLayers: vpView.viewport.frozenLayers,
         paperPointToModel: point => vpView.paperPointToModel(point),
@@ -2653,7 +2720,13 @@ export class AcTrView2d extends AcEdBaseView {
       viewports,
       searchModel: (modelBox, selectionMode) =>
         modelLayout.search(modelBox, { selectionMode }),
-      entityOf: id => database?.tables.blockTable.getEntityById(id) ?? undefined
+      entityOf: id =>
+        database?.tables.blockTable.getEntityById(id) ?? undefined,
+      // Mirror click-pick hints so grips map through the same viewport when
+      // several overlap the entity after a window/crossing select.
+      onHit: (entityId, viewport) => {
+        this.rememberModelEntityViewportHint(entityId, viewport.viewportId)
+      }
     })
   }
 
@@ -3123,9 +3196,45 @@ export class AcTrView2d extends AcEdBaseView {
    * @inheritdoc
    */
   addLayout(layout: AcDbLayout) {
-    this._scene.addEmptyLayout(layout.blockTableRecordId)
-    this.createLayoutViewIfNeeded(layout.blockTableRecordId)
+    const btrId = layout.blockTableRecordId
+    // Converters can emit a layout before its BTR link is healed (empty
+    // blockTableRecordId). Skip until a real id exists — otherwise the scene
+    // grows a junk layout under `''` and paper tabs stay missing.
+    if (!btrId) return
+    this._scene.addEmptyLayout(btrId)
+    this.createLayoutViewIfNeeded(btrId)
     this._isDirty = true
+  }
+
+  /**
+   * Ensures entities for `layoutBtrId` are queued for convert / already loaded.
+   *
+   * Open-into-paper (`$TILEMODE = 0`) activates the sheet via
+   * {@link AcApDocManager.setActiveLayout} without a `layoutSwitched` event, so
+   * the first-visit loader must be invoked explicitly or the canvas stays blank.
+   *
+   * @param layoutBtrId - Layout block table record id.
+   * @param options.forceIfEmpty - When true, clear a stale `isLoaded` flag if
+   *   the scene layout still has no entities so the BTR is scanned again.
+   */
+  ensureLayoutEntitiesLoaded(
+    layoutBtrId: AcDbObjectId,
+    options?: { forceIfEmpty?: boolean }
+  ) {
+    if (!layoutBtrId) return
+    this.ensureLayoutView(layoutBtrId)
+    if (options?.forceIfEmpty) {
+      const layout = this._scene.layouts.get(layoutBtrId)
+      if (
+        layout &&
+        layout.isLoaded &&
+        layout.entityCount === 0 &&
+        !this._loadingLayouts.has(layoutBtrId)
+      ) {
+        layout.isLoaded = false
+      }
+    }
+    this.loadLayoutEntitiesIfNeeded(layoutBtrId)
   }
 
   /**
@@ -4089,7 +4198,14 @@ export class AcTrView2d extends AcEdBaseView {
    */
   private loadLayoutEntitiesIfNeeded(layoutBtrId: AcDbObjectId) {
     try {
-      const db = AcApDocManager.instance.curDocument.database
+      // Prefer tryGetInstance: setActiveLayout used to call this during
+      // createInstance before the singleton was assigned.
+      const db =
+        AcApDocManager.tryGetInstance()?.curDocument?.database ??
+        this._renderer.context.database
+      if (!db) {
+        return
+      }
       const blockTableRecord = db.tables.blockTable.getIdAt(layoutBtrId)
       if (!blockTableRecord) {
         return

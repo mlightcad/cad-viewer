@@ -234,6 +234,11 @@ export abstract class AcEdBaseView {
   /** Set of currently selected entities */
   private _selectionSet: AcEdSelectionSet
   /**
+   * Click-pick viewport id per model-space entity selected through a
+   * paper-space viewport. Used by grip display when several viewports overlap.
+   */
+  private _modelEntityViewportHints = new Map<AcDbObjectId, AcDbObjectId>()
+  /**
    * When false, pointer hover and click/box gestures do not select or
    * highlight CAD entities. Markup overlays can still be picked.
    */
@@ -706,6 +711,50 @@ export abstract class AcEdBaseView {
   abstract getViewportCoordinateMapper(
     viewportId: AcDbObjectId
   ): AcEdViewportCoordinateMapper | undefined
+
+  /**
+   * When the active layout is paper space and `entityId` belongs to model
+   * space (typically selected through a viewport drill-through), returns the
+   * viewport id + coordinate mapper used to convert that entity's model-space
+   * WCS grips into paper-space WCS for on-screen display, and the inverse for
+   * grip edits.
+   *
+   * Default returns `undefined` (model-space layouts, or hosts without
+   * viewport drill-through). {@link AcTrView2d} overrides this.
+   */
+  findViewportMapperForModelEntity(
+    _entityId: AcDbObjectId
+  ):
+    | { viewportId: AcDbObjectId; mapper: AcEdViewportCoordinateMapper }
+    | undefined {
+    return undefined
+  }
+
+  /**
+   * Remembers which paper-space viewport a model-space entity was last
+   * selected through (click pick). Grip display uses this when multiple
+   * viewports could claim the same entity extents.
+   */
+  rememberModelEntityViewportHint(
+    entityId: AcDbObjectId,
+    viewportId: AcDbObjectId | undefined
+  ) {
+    if (viewportId) {
+      this._modelEntityViewportHints.set(entityId, viewportId)
+    } else {
+      this._modelEntityViewportHints.delete(entityId)
+    }
+  }
+
+  /** Clears {@link rememberModelEntityViewportHint} associations. */
+  clearModelEntityViewportHints() {
+    this._modelEntityViewportHints.clear()
+  }
+
+  /** Last click-pick viewport id for a model-space entity, if any. */
+  getModelEntityViewportHint(entityId: AcDbObjectId): AcDbObjectId | undefined {
+    return this._modelEntityViewportHints.get(entityId)
+  }
 
   /**
    * Select entities intersected with the specified bounding box in the world

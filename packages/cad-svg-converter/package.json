@@ -31,11 +31,11 @@
     "lint:fix": "eslint --fix --quiet src/"
   },
   "devDependencies": {
-    "@mlightcad/data-model": "1.15.27",
+    "@mlightcad/data-model": "1.15.28",
     "@types/svg-parser": "2.0.6"
   },
   "peerDependencies": {
-    "@mlightcad/data-model": "1.15.27"
+    "@mlightcad/data-model": "1.15.28"
   },
   "dependencies": {
     "svg-parser": "2.1.0"
