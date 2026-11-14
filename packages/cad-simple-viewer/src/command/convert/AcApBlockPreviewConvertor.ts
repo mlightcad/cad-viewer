@@ -3,7 +3,8 @@ import {
   AcDbBlockReference,
   AcDbBlockTableRecord,
   acdbPreviewIconToDataUrl,
-  AcDbRenderingCache} from '@mlightcad/data-model'
+  AcDbRenderingCache
+} from '@mlightcad/data-model'
 import { AcTrEntity, type AcTrRenderer } from '@mlightcad/three-renderer'
 
 import { AcApDocManager } from '../../app'
@@ -23,6 +24,14 @@ const DEFAULT_PREVIEW_SIZE = 64
  * cleared on document activation. Callers that need fresh thumbnails after an
  * in-place block edit (same object id) should call {@link clearCache} before
  * capturing again.
+ *
+ * Geometry fallback draws through the live view renderer. TrueType MTEXT may
+ * otherwise enqueue scene-level mesh-glyph InstancedMesh placements (keyed by
+ * block-definition entity ids) that flush into the drawing after the next
+ * INSERT convert — e.g. opening the Insert gallery on a title-block-heavy DWG
+ * then inserting an unrelated stamp. The same
+ * {@link AcTrRenderContext.skipMeshGlyphInstancing} guard used by jig
+ * transients prevents that leak.
  */
 export class AcApBlockPreviewConvertor {
   private static readonly _cache = new Map<string, string>()
@@ -105,6 +114,11 @@ export class AcApBlockPreviewConvertor {
     size: number
   ): string | undefined {
     const renderer = view.renderer as AcTrRenderer
+    const renderContext = renderer.context
+    // Nested INSERT compact may syncDraw MTEXT before a root userData flag
+    // exists; raise the context flag for the whole off-scene draw.
+    const previousSkip = renderContext.skipMeshGlyphInstancing
+    renderContext.skipMeshGlyphInstancing = true
     let root: AcTrEntity | null = null
 
     try {
@@ -130,6 +144,8 @@ export class AcApBlockPreviewConvertor {
       }
 
       if (!root) return undefined
+      // Belt-and-suspenders for any post-draw attach that walks ancestors.
+      root.userData.skipMeshGlyphInstancing = true
       root.syncDraw()
 
       const capture = renderer.renderEntityPreview(root, {
@@ -148,6 +164,7 @@ export class AcApBlockPreviewConvertor {
       console.warn('[BlockPreview] Failed to capture', btr.name, error)
       return undefined
     } finally {
+      renderContext.skipMeshGlyphInstancing = previousSkip
       root?.dispose()
     }
   }
