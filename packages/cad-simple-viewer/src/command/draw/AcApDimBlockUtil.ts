@@ -168,6 +168,10 @@ function ensureOverrideStyle(
     record.name = OVERRIDE_STYLE
     db.tables.dimStyleTable.add(record)
   }
+  // During a command transaction every symbol-table write needs an open handle,
+  // including a record that was just added in this same edit.
+  record =
+    db.openObjectForWrite<AcDbDimStyleTableRecord>(record.objectId) ?? record
   if (base) writeDimStyleFields(record, readDimStyleFields(base))
   writeDimStyleFields(record, values)
   return record
@@ -190,7 +194,8 @@ export function applyCurrentDimStyle(dim: AcDbDimension, db: AcDbDatabase) {
  * dim command's undo transaction commits, those orphans were notified as
  * `entityAppended` and converted into the scene.
  */
-function disposeDimBlock(db: AcDbDatabase, blockName: string) {
+/** Drop an anonymous dim block and erase its entities (preview or undo). */
+export function disposeDimBlock(db: AcDbDatabase, blockName: string) {
   const btr = db.tables.blockTable.getAt(blockName)
   if (!btr) return
   const ids: string[] = []

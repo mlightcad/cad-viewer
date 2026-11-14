@@ -2007,12 +2007,39 @@ export default {
     }
   },
   pdfdim: {
+    cancelled: 'Obnovení kót bylo zrušeno; nic se nezměnilo.',
     noDimensions:
       'Ve výběru nebyly nalezeny žádné kóty (jsou potřeba šipky nebo značky, kótovací čáry a texty hodnot).',
-    convertAll: 'Nalezeno {count} kót (měřítko výkresu 1:{scale}). Převést je?',
-    convertOne: 'Kóta {index}/{count} "{text}": převést?',
     summary:
-      'Převedeno {count} kót; styl PDF_DIM používá lineární měřítko {scale}.'
+      'Převedeno {count} kót; styl {style} používá lineární měřítko {scale}.',
+    panel: {
+      title: 'Obnovit kóty',
+      style: 'Styl kót',
+      dimStyle: 'Styl',
+      newStyle: 'Nový styl kót…',
+      newStyleName: 'Název nového stylu kót',
+      createStyle: 'Vytvořit',
+      nameEmpty: 'Zadejte název.',
+      nameInvalid: 'Název obsahuje nepovolené znaky.',
+      nameExists: 'Styl kót s tímto názvem už existuje.',
+      scale: 'Měřítko výkresu',
+      stylePreview: 'Náhled vybraného stylu kót s rozpoznanými velikostmi',
+      dimensions: 'Kóty',
+      selectHint:
+        'Vyberte kótu pro přiblížení; před použitím můžete upravit hodnotu.',
+      empty: 'Ve výběru nebyly nalezeny žádné kóty.',
+      include: 'Převést tuto kótu',
+      kindLinear: 'Lineární',
+      kindRadius: 'Poloměr',
+      kindDiameter: 'Průměr',
+      kindAngular: 'Úhlová',
+      textTip: 'Text kóty (přepsání)',
+      measured: 'Naměřeno {value}',
+      hideStrokes: 'Skrýt původní čáry',
+      ready: '{ready} z {count} kót připraveno',
+      cancel: 'Zrušit',
+      apply: 'Použít'
+    }
   },
   pdfhatch: {
     cancelled: 'Obnovení šraf bylo zrušeno; nic se nezměnilo.',

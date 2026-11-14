@@ -76,14 +76,17 @@ Yazdığınız her karakter şekli tarayıcıda hatırlanır, böylece aynı yaz
 
 ## Ölçüleri kurtarma (`pdfdim`)
 
-1. Ölçülerin bulunduğu alanı seçin.
+1. Ölçülerin bulunduğu alanı seçin. Değer metni TEXT olabilir veya hâlâ patlatılmış çizgiler (`pdftext` öncesi) olabilir: rakamlar ve CAD sembolleri yerleşik şablonla yerel okunur, LLM kullanılmaz. Çizgiler okunamazsa doğrusal ölçüler ölçülen uzunluğu değer olarak kullanır.
 2. Şunlar tanınır:
    - **Doğrusal ölçüler**: her açıda, içte veya dışta oklarla, mimari işaretlerle ve zincir ölçüler.
    - **Yarıçap ve çap ölçüleri**: bir daireye değen ok ve `R…` veya `Ø…` metni.
    - **Açısal ölçüler**: iki ucunda ok bulunan bir yay.
-3. Bloklarda olduğu gibi **Evet**, **Hayır** veya **İncele**'yi seçin.
+3. **Ölçüleri Kurtar** paneli palette açılır ve çizgilerin yerine ölçü önizlemesi gösterilir. Panel açıkken kaydırıp yakınlaştırabilirsiniz.
+   - Her değeri düzenleyin, bir ölçüyü atlamak için onay kutusunu kaldırın ve bir ölçü stili seçin veya oluşturun (önizleme, kurtarılan boyutları seçilen stilin görünümüyle gösterir).
+   - **Orijinal çizgileri gizle** (varsayılan açık) değiştirilecek çizgileri gizleyerek sonucu gösterir.
+4. Dönüştürmek için **Uygula**'ya tıklayın. **İptal** veya paneli kapatmak hiçbir şeyi değiştirmez.
 
-Ölçüler, metin yüksekliği ve ok boyutu PDF ile aynı olan `PDF_DIM` stilini kullanır. Doğrusal ölçek çarpanı metinlerden okunan çizim ölçeğine eşittir; bu yüzden 1:100 bir çizim gerçek değerlerini göstermeye devam eder. Ölçümden farklı olan veya ek semboller taşıyan metinler yazıldığı gibi kalır.
+Ölçüler, kağıt boyutları PDF ile aynı olan `PDF_DIM` stilini (veya oluşturduğunuz adı) kullanır; varlık üzerine yazmalar, başka bir stilin DIMSCALE'i büyük olsa bile bu boyutları sabitler. Doğrusal ölçek çarpanı metinlerden okunan çizim ölçeğine eşittir; bu yüzden 1:100 bir çizim gerçek değerlerini göstermeye devam eder. Ölçümden farklı olan veya ek semboller taşıyan metinler yazıldığı gibi kalır.
 
 ::: tip
 Geometriyi gerçek boyutta istiyorsanız önce `pdfscale` komutunu çalıştırın; ardından `pdfdim` 1:1 ölçeği bulur.

@@ -1973,13 +1973,38 @@ export default {
     }
   },
   pdfdim: {
+    cancelled: 'Recover Dimensions cancelled; nothing was changed.',
     noDimensions:
       'No dimensions found in the selection (arrowheads or ticks, dimension lines and value texts are needed).',
-    convertAll:
-      'Found {count} dimensions (drawing scale 1:{scale}). Convert them?',
-    convertOne: 'Dimension {index}/{count} "{text}": convert?',
     summary:
-      'Converted {count} dimension(s); style PDF_DIM uses a linear scale factor of {scale}.'
+      'Converted {count} dimension(s); style {style} uses a linear scale factor of {scale}.',
+    panel: {
+      title: 'Recover Dimensions',
+      style: 'Dimension style',
+      dimStyle: 'Style',
+      newStyle: 'New dim style…',
+      newStyleName: 'Name of the new dim style',
+      createStyle: 'Create',
+      nameEmpty: 'Enter a name.',
+      nameInvalid: 'The name contains characters that are not allowed.',
+      nameExists: 'A dim style with this name already exists.',
+      scale: 'Drawing scale',
+      stylePreview: 'Preview of the selected dim style with recovered sizes',
+      dimensions: 'Dimensions',
+      selectHint: 'Select a dimension to zoom to it; edit the value before Apply.',
+      empty: 'No dimensions found in the selection.',
+      include: 'Convert this dimension',
+      kindLinear: 'Linear',
+      kindRadius: 'Radius',
+      kindDiameter: 'Diameter',
+      kindAngular: 'Angular',
+      textTip: 'Dimension text (override)',
+      measured: 'Measured {value}',
+      hideStrokes: 'Hide original strokes',
+      ready: '{ready} of {count} dimensions ready',
+      cancel: 'Cancel',
+      apply: 'Apply'
+    }
   },
   pdfhatch: {
     cancelled: 'Recover Hatch cancelled; nothing was changed.',

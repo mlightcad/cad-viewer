@@ -12,7 +12,9 @@ import {
 import { AcGeMatrix3d, AcGePoint3d } from '@mlightcad/data-model'
 
 import { acapPdfT } from './acapPdfI18n'
+import { AcApPdfTextCmd } from './AcApPdfTextCmd'
 import { acapPdfNiceScale, pdfEntitiesToDimInput } from './pdfDimensionConvert'
+import { acapPdfPrepareDimStrokeTexts } from './pdfDimStrokeTexts'
 import {
   recognizePdfDimensions,
   suggestPdfDimensionScale
@@ -55,8 +57,14 @@ export class AcApPdfScaleCmd extends AcEdCommand {
     const byId = new Map(
       resolved.ids.map((id, i) => [id, resolved.entities[i]] as const)
     )
+    const dimInput = pdfEntitiesToDimInput(byId)
+    acapPdfPrepareDimStrokeTexts(
+      dimInput,
+      byId,
+      AcApPdfTextCmd.glyphDictionary
+    )
     const suggested = suggestPdfDimensionScale(
-      recognizePdfDimensions(pdfEntitiesToDimInput(byId))
+      recognizePdfDimensions(dimInput)
     )
     const dimensionScale =
       suggested !== undefined ? acapPdfNiceScale(suggested) : undefined

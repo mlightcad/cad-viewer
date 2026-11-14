@@ -2000,13 +2000,38 @@ export default {
     }
   },
   pdfdim: {
+    cancelled: '치수 인식을 취소했습니다. 변경된 내용이 없습니다.',
     noDimensions:
       '선택 영역에서 치수를 찾지 못했습니다 (화살표 또는 사선, 치수선, 숫자 문자가 필요합니다).',
-    convertAll:
-      '치수 {count}개를 찾았습니다 (도면 축척 1:{scale}). 변환하시겠습니까?',
-    convertOne: '치수 {index}/{count} "{text}": 변환하시겠습니까?',
     summary:
-      '치수 {count}개를 변환했습니다. 치수 스타일 PDF_DIM의 선형 축척 비율은 {scale}입니다.'
+      '치수 {count}개를 변환했습니다. 치수 스타일 {style}의 선형 축척 비율은 {scale}입니다.',
+    panel: {
+      title: '치수 인식',
+      style: '치수 스타일',
+      dimStyle: '스타일',
+      newStyle: '새 치수 스타일…',
+      newStyleName: '새 치수 스타일 이름',
+      createStyle: '만들기',
+      nameEmpty: '이름을 입력하십시오.',
+      nameInvalid: '이름에 사용할 수 없는 문자가 있습니다.',
+      nameExists: '같은 이름의 치수 스타일이 이미 있습니다.',
+      scale: '도면 축척',
+      stylePreview: '선택한 치수 스타일 미리보기(인식된 크기 반영)',
+      dimensions: '치수',
+      selectHint: '치수를 선택하면 해당 위치로 확대됩니다. 적용 전에 값을 수정할 수 있습니다.',
+      empty: '선택 영역에서 치수를 찾지 못했습니다.',
+      include: '이 치수 변환',
+      kindLinear: '선형',
+      kindRadius: '반지름',
+      kindDiameter: '지름',
+      kindAngular: '각도',
+      textTip: '치수 문자(재정의)',
+      measured: '측정값 {value}',
+      hideStrokes: '원본 선 숨기기',
+      ready: '{ready}/{count}개 치수 준비됨',
+      cancel: '취소',
+      apply: '적용'
+    }
   },
   pdfhatch: {
     cancelled: '해치 인식을 취소했습니다. 변경된 내용이 없습니다.',

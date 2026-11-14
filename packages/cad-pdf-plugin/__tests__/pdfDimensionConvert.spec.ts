@@ -138,6 +138,15 @@ describe('PDF dimension conversion', () => {
     expect(style.dimlfac).toBe(100)
     expect(style.dimtxt).toBeCloseTo(2.5, 9)
     expect(style.dimasz).toBeCloseTo(2.5, 9)
+    // Always show both extension lines; inside arrows stay between them.
+    expect(style.dimse1).toBe(0)
+    expect(style.dimse2).toBe(0)
+    expect(style.dimatfit).toBe(3)
+    const linearCandidate = candidates.find(c => c.kind === 'linear')
+    expect(linearCandidate && linearCandidate.kind === 'linear').toBe(true)
+    if (linearCandidate && linearCandidate.kind === 'linear') {
+      expect(linearCandidate.arrowsOut).toBe(false)
+    }
 
     const dims = acapPdfCreateDimensions(db, candidates, scale)
     const linear = dims.find(

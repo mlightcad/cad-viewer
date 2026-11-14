@@ -45,6 +45,22 @@ export interface PdfDimText<Id = unknown> {
   /** Center of the text box. */
   center: PdfRecPoint
   height: number
+  /**
+   * Extra entity ids that form exploded stroke text beyond {@link id}
+   * (each stroke is its own line/polyline).
+   */
+  extraIds?: Id[]
+}
+
+/**
+ * Exploded stroke text whose characters are not yet known. Linear recognition
+ * may still claim it and use the measured length as the value.
+ */
+export interface PdfDimUnreadText<Id = unknown> {
+  id: Id
+  extraIds: Id[]
+  center: PdfRecPoint
+  height: number
 }
 
 /** Shapes to search, in model-space coordinates. */
@@ -55,6 +71,11 @@ export interface PdfDimInput<Id = unknown> {
   texts: PdfDimText<Id>[]
   /** Arcs that may carry angular dimensions. Optional. */
   arcs?: PdfDimArc<Id>[]
+  /**
+   * Stroke clusters that look like dimension text but have no readable
+   * value yet. Used only as a linear-dimension fallback.
+   */
+  unreadTexts?: PdfDimUnreadText<Id>[]
 }
 
 /** A recognized linear (rotated) dimension. */
@@ -77,6 +98,11 @@ export interface PdfLinearDimension<Id = unknown> {
   extensionBeyond: number
   /** True when the terminators are architectural ticks. */
   ticks: boolean
+  /**
+   * True when the arrowheads sit outside the extension lines (tips point
+   * toward each other). False for the usual inside arrows (pointing apart).
+   */
+  arrowsOut: boolean
   /** Source shapes the dimension replaces. */
   consumed: Id[]
 }
@@ -268,7 +294,7 @@ export function recognizePdfDimensions<Id>(
       arc.id,
       ...endArrows[0].ids,
       ...endArrows[1].ids,
-      text.id
+      ...pdfDimTextIds(text)
     ]
     // Radial extension lines through each end; the end nearer the center
     // is the object side.
@@ -289,7 +315,7 @@ export function recognizePdfDimensions<Id>(
     const xLine2 = leg(ends[1])
     usedArrows.add(endArrows[0])
     usedArrows.add(endArrows[1])
-    usedTexts.add(text.id)
+    for (const id of pdfDimTextIds(text)) usedTexts.add(id)
     for (const id of consumed) usedSegments.add(id)
     results.push({
       kind: 'angular',
@@ -328,7 +354,7 @@ export function recognizePdfDimensions<Id>(
             pointNearSegment(arrow.tip, s, tol * 2))
       )
       for (const s of leaders) usedSegments.add(s.id)
-      usedTexts.add(text.id)
+      for (const id of pdfDimTextIds(text)) usedTexts.add(id)
       usedArrows.add(arrow)
       results.push({
         kind,
@@ -339,7 +365,11 @@ export function recognizePdfDimensions<Id>(
         measured: kind === 'diameter' ? curve.radius * 2 : curve.radius,
         text,
         arrowSize: arrow.size,
-        consumed: [...arrow.ids, ...leaders.map(s => s.id), text.id]
+        consumed: [
+          ...arrow.ids,
+          ...leaders.map(s => s.id),
+          ...pdfDimTextIds(text)
+        ]
       })
       break
     }
@@ -413,26 +443,56 @@ export function recognizePdfDimensions<Id>(
     const u = unit(sub(b.tip, a.tip))
     const n = { x: -u.y, y: u.x }
     const mid = lerp(a.tip, b.tip, 0.5)
-    const text = nearestText(
+    const acceptLinearText = (t: {
+      center: PdfRecPoint
+      height: number
+      text?: string
+    }) => {
+      if (
+        t.text !== undefined &&
+        parsePdfDimensionValue(t.text) === undefined
+      ) {
+        return false
+      }
+      const rel = sub(t.center, a.tip)
+      const along = dot(rel, u)
+      const across = Math.abs(dot(rel, n))
+      return (
+        across <= t.height * 2.5 &&
+        along >= -length * 0.5 - t.height * 4 &&
+        along <= length * 1.5 + t.height * 4
+      )
+    }
+    let text = nearestText(
       input.texts,
       usedTexts,
       mid,
       Math.max(length * 0.75, refSize * 6),
-      t => {
-        const rel = sub(t.center, a.tip)
-        const along = dot(rel, u)
-        const across = Math.abs(dot(rel, n))
-        return (
-          parsePdfDimensionValue(t.text) !== undefined &&
-          across <= t.height * 2.5 &&
-          along >= -length * 0.5 - t.height * 4 &&
-          along <= length * 1.5 + t.height * 4
-        )
-      }
+      t => acceptLinearText(t)
     )
+    if (!text) {
+      text = claimUnreadText(
+        input.unreadTexts,
+        usedTexts,
+        mid,
+        Math.max(length * 0.75, refSize * 6),
+        length,
+        t => acceptLinearText(t)
+      )
+    }
     if (!text) continue
+    text = reconcileLinearDimText(text, length)
 
-    const consumed: Id[] = [...a.ids, ...b.ids, text.id]
+    // Inside arrows point apart (away from the span centre); outside arrows
+    // point toward each other.
+    const arrowsOut =
+      a.direction !== undefined && dot(a.direction, u) > 0
+
+    const consumed: Id[] = [
+      ...a.ids,
+      ...b.ids,
+      ...pdfDimTextIds(text)
+    ]
     // Dimension line pieces: collinear segments overlapping the span.
     for (const s of input.segments) {
       if (usedSegments.has(s.id) || consumed.includes(s.id)) continue
@@ -451,9 +511,28 @@ export function recognizePdfDimensions<Id>(
     }
 
     // Extension lines: perpendicular segments through each tip.
+    // Rank 0: tip-near stubs with real object reach (full PDF extension length).
+    // Rank 1: mid-crossing edges — keep the text-side endpoint (object side).
+    // Rank 2: tiny tip-only stubs (DIMEXE overhang) — last resort only.
+    // Never let a 1-unit beyond stub beat a 40-unit object-side edge.
     let beyond = 0
+    const maxTipGap = Math.max(refSize * 2, a.size * 2, text.height * 1.5)
+    const minReach = Math.max(a.size * 2, text.height, refSize * 2)
+    const textSide =
+      Math.sign(
+        (text.center.x - mid.x) * n.x + (text.center.y - mid.y) * n.y
+      ) || 1
     const extension = (tip: PdfRecPoint): PdfRecPoint => {
-      let best: { origin: PdfRecPoint; id: Id; beyond: number } | undefined
+      let best:
+        | {
+            origin: PdfRecPoint
+            id: Id
+            beyond: number
+            proximity: number
+            reach: number
+            rank: number
+          }
+        | undefined
       for (const s of input.segments) {
         const shared = extensionIds.has(s.id)
         if ((usedSegments.has(s.id) && !shared) || consumed.includes(s.id)) {
@@ -466,15 +545,54 @@ export function recognizePdfDimensions<Id>(
         const t1 = dot(sub(s.p1, tip), n)
         // The tip must lie on (or just past) the segment.
         if (Math.min(t0, t1) > tol * 2 || Math.max(t0, t1) < -tol * 2) {
-          if (Math.min(Math.abs(t0), Math.abs(t1)) > refSize) continue
+          if (Math.min(Math.abs(t0), Math.abs(t1)) > maxTipGap) continue
         }
-        const far = Math.abs(t0) >= Math.abs(t1) ? s.p0 : s.p1
-        const near = far === s.p0 ? t1 : t0
-        const sideFar = far === s.p0 ? t0 : t1
-        // Extension beyond the dimension line, on the side away from the object.
-        const over = Math.sign(near) !== Math.sign(sideFar) ? Math.abs(near) : 0
-        if (!best || dist(far, tip) > dist(best.origin, tip)) {
-          best = { origin: far, id: s.id, beyond: over }
+        const d0 = Math.abs(t0)
+        const d1 = Math.abs(t1)
+        const tipNear0 = d0 <= maxTipGap
+        const tipNear1 = d1 <= maxTipGap
+        let origin: PdfRecPoint
+        let nearT: number
+        let farT: number
+        let proximity: number
+        let rank: number
+        if (tipNear0 || tipNear1) {
+          // Tip near an end → that end is the dim-line foot; other end is origin.
+          const nearIs0 = tipNear0 && (!tipNear1 || d0 <= d1)
+          nearT = nearIs0 ? t0 : t1
+          farT = nearIs0 ? t1 : t0
+          origin = nearIs0 ? s.p1 : s.p0
+          proximity = Math.abs(nearT)
+          // Tiny tip stubs are overhang only; real extensions reach the object.
+          rank = Math.abs(farT) >= minReach ? 0 : 2
+        } else {
+          // Mid-segment long edge: keep the text-side endpoint (object side).
+          const on0 = Math.sign(t0) === textSide
+          const on1 = Math.sign(t1) === textSide
+          if (!on0 && !on1) continue
+          const use0 = on0 && (!on1 || d0 >= d1)
+          origin = use0 ? s.p0 : s.p1
+          farT = use0 ? t0 : t1
+          nearT = use0 ? t1 : t0
+          proximity = Math.abs(nearT)
+          rank = 1
+        }
+        const reach = Math.abs(farT)
+        if (!(reach > tol)) continue
+        const over =
+          Math.sign(nearT) !== Math.sign(farT) && Math.sign(nearT) !== 0
+            ? Math.min(Math.abs(nearT), maxTipGap)
+            : 0
+        // Prefer better rank, then longer object reach (match PDF length).
+        if (
+          !best ||
+          rank < best.rank ||
+          (rank === best.rank && reach > best.reach + tol) ||
+          (rank === best.rank &&
+            Math.abs(reach - best.reach) <= tol &&
+            proximity < best.proximity)
+        ) {
+          best = { origin, id: s.id, beyond: over, proximity, reach, rank }
         }
       }
       if (!best) return tip
@@ -488,7 +606,7 @@ export function recognizePdfDimensions<Id>(
 
     usedArrows.add(a)
     usedArrows.add(b)
-    usedTexts.add(text.id)
+    for (const id of pdfDimTextIds(text)) usedTexts.add(id)
     for (const id of consumed) usedSegments.add(id)
     let rotation = Math.atan2(u.y, u.x)
     if (rotation < 0) rotation += Math.PI
@@ -504,6 +622,7 @@ export function recognizePdfDimensions<Id>(
       arrowSize: a.size,
       extensionBeyond: beyond,
       ticks: a.direction === undefined,
+      arrowsOut,
       consumed
     })
   }
@@ -564,26 +683,47 @@ function recognizeBareLinear<Id>(
     const e2 = extensionAt(line.p1)
     if (!e1 || !e2 || e1.id === e2.id) continue
 
-    const text = nearestText(
+    const mid = lerp(line.p0, line.p1, 0.5)
+    const acceptBareText = (t: {
+      center: PdfRecPoint
+      height: number
+      text?: string
+    }) => {
+      if (
+        t.text !== undefined &&
+        parsePdfDimensionValue(t.text) === undefined
+      ) {
+        return false
+      }
+      const rel = sub(t.center, line.p0)
+      const along = dot(rel, u)
+      return (
+        Math.abs(dot(rel, n)) <= t.height * 2.5 &&
+        along >= -t.height * 4 &&
+        along <= length + t.height * 4
+      )
+    }
+    let text = nearestText(
       input.texts,
       usedTexts,
-      lerp(line.p0, line.p1, 0.5),
+      mid,
       Math.max(length * 0.75, refSize * 6),
-      t => {
-        const rel = sub(t.center, line.p0)
-        const along = dot(rel, u)
-        return (
-          parsePdfDimensionValue(t.text) !== undefined &&
-          Math.abs(dot(rel, n)) <= t.height * 2.5 &&
-          along >= -t.height * 4 &&
-          along <= length + t.height * 4
-        )
-      }
+      t => acceptBareText(t)
     )
+    if (!text) {
+      text = claimUnreadText(
+        input.unreadTexts,
+        usedTexts,
+        mid,
+        Math.max(length * 0.75, refSize * 6),
+        length,
+        t => acceptBareText(t)
+      )
+    }
     if (!text) continue
 
-    usedTexts.add(text.id)
-    const consumed = [line.id, e1.id, e2.id, text.id]
+    for (const id of pdfDimTextIds(text)) usedTexts.add(id)
+    const consumed = [line.id, e1.id, e2.id, ...pdfDimTextIds(text)]
     for (const id of consumed) usedSegments.add(id)
     let rotation = Math.atan2(u.y, u.x)
     if (rotation < 0) rotation += Math.PI
@@ -598,10 +738,11 @@ function recognizeBareLinear<Id>(
       dimLinePoint: line.p0,
       rotation,
       measured: length,
-      text,
+      text: reconcileLinearDimText(text, length),
       arrowSize: 0,
       extensionBeyond: sameSide ? Math.max(e1.beyond, e2.beyond) : 0,
       ticks: false,
+      arrowsOut: false,
       consumed
     })
   }
@@ -638,6 +779,97 @@ function nearestText<Id>(
     }
   }
   return best
+}
+
+/**
+ * Claims the nearest unread stroke-text cluster and turns it into a
+ * dimension text whose value is the measured length (paper 1:1 fallback
+ * when OCR / the glyph dictionary could not read the strokes).
+ */
+function claimUnreadText<Id>(
+  unread: PdfDimUnreadText<Id>[] | undefined,
+  used: Set<Id>,
+  near: PdfRecPoint,
+  maxDistance: number,
+  measured: number,
+  accept: (text: PdfDimUnreadText<Id>) => boolean
+): PdfDimText<Id> | undefined {
+  if (!unread || unread.length === 0) return undefined
+  let best: PdfDimUnreadText<Id> | undefined
+  let bestDistance = maxDistance
+  for (const text of unread) {
+    if (used.has(text.id) || !accept(text)) continue
+    const d = dist(text.center, near)
+    if (d <= bestDistance) {
+      bestDistance = d
+      best = text
+    }
+  }
+  if (!best) return undefined
+  used.add(best.id)
+  for (const id of best.extraIds) used.add(id)
+  return {
+    id: best.id,
+    text: formatMeasuredLength(measured),
+    center: best.center,
+    height: best.height,
+    extraIds: best.extraIds
+  }
+}
+
+/** Entity ids that a dimension value text replaces. */
+export function pdfDimTextIds<Id>(text: PdfDimText<Id>): Id[] {
+  return text.extraIds && text.extraIds.length > 0
+    ? [text.id, ...text.extraIds]
+    : [text.id]
+}
+
+/** Compact decimal for a measured length used as a stroke-text fallback. */
+function formatMeasuredLength(length: number): string {
+  if (!Number.isFinite(length) || length <= 0) return '0'
+  const rounded = Math.round(length)
+  if (Math.abs(length - rounded) <= Math.max(length * 1e-6, 1e-6)) {
+    return String(rounded)
+  }
+  const text = length.toFixed(4).replace(/\.?0+$/, '')
+  return text.length > 0 ? text : String(length)
+}
+
+/**
+ * Keeps a stroke-read value only when it agrees with the measured length or
+ * a clear drawing scale. Over-segmented outline digits often read as "111"
+ * and must not become DIMLFAC = 2.
+ */
+function reconcileLinearDimText<Id>(
+  text: PdfDimText<Id>,
+  measured: number
+): PdfDimText<Id> {
+  if (!(measured > 0)) return text
+  // Leave annotated values alone (`44mm`, tolerances, …); only rewrite plain
+  // numeric / R / Ø / ° readings that look like a bad stroke OCR.
+  if (!/^[Øø⌀R]?\s*\d+([.,]\d+)?\s*°?$/i.test(text.text.trim())) return text
+  const value = parsePdfDimensionValue(text.text)
+  const digits = text.text.replace(/\D/g, '')
+  if (value === undefined || (digits.length >= 2 && /^1+$/.test(digits))) {
+    return { ...text, text: formatMeasuredLength(measured) }
+  }
+  const ratio = value / measured
+  if (Math.abs(ratio - 1) <= 0.05) return text
+  if (isNiceScaleRatio(ratio)) return text
+  return { ...text, text: formatMeasuredLength(measured) }
+}
+
+/** Whether `ratio` is within 1 % of 1, 2, 2.5 or 5 × 10ⁿ. */
+function isNiceScaleRatio(ratio: number): boolean {
+  if (!(ratio > 0)) return false
+  const exponent = Math.floor(Math.log10(ratio))
+  for (const e of [exponent - 1, exponent, exponent + 1]) {
+    for (const m of [1, 2, 2.5, 5]) {
+      const nice = m * 10 ** e
+      if (Math.abs(nice - ratio) <= ratio * 0.01) return true
+    }
+  }
+  return false
 }
 
 /**
