@@ -77,6 +77,8 @@ describe('AcApPdfDimSession', () => {
     session.selectStyle('ISO-25')
     expect(session.styleName).toBe('ISO-25')
     expect(session.isNewStyle).toBe(false)
+    expect(session.workingStyleName).toBe('ISO-25')
+    expect(session.ensureStyle()).toBe('ISO-25')
 
     session.beginNewStyle()
     expect(session.validateNewStyleName('')).toBe('empty')
@@ -84,6 +86,7 @@ describe('AcApPdfDimSession', () => {
     expect(session.commitNewStyleName('Mine')).toBeUndefined()
     expect(session.styleName).toBe('Mine')
     expect(session.isNewStyle).toBe(true)
+    expect(session.workingStyleName).toBe('Mine')
 
     const name = session.ensureStyle()
     expect(name).toBe('Mine')
@@ -93,7 +96,8 @@ describe('AcApPdfDimSession', () => {
 
     session.selectStyle('ISO-25')
     const before = db.tables.dimStyleTable.getAt('ISO-25')!.dimtxt
-    session.ensureStyle()
+    expect(session.ensureStyle()).toBe('ISO-25')
+    // Picking an existing style must not rewrite its recovered sizes.
     expect(db.tables.dimStyleTable.getAt('ISO-25')!.dimtxt).toBe(before)
   })
 
@@ -102,18 +106,20 @@ describe('AcApPdfDimSession', () => {
     const iso = db.tables.dimStyleTable.getAt('ISO-25')!
     iso.dimclrd = 1
     iso.dimtxt = 99
+    iso.dimblk = '_ArchTick'
     const session = new AcApPdfDimSession({
       db,
       candidates: [linear('55')]
     })
     session.selectStyle('ISO-25')
-    expect(session.workingStyleName).toBe(PDF_DIM_STYLE)
-    expect(session.appearanceFromStyle).toBe('ISO-25')
+    expect(session.workingStyleName).toBe('ISO-25')
+    expect(session.appearanceFromStyle).toBeUndefined()
     const preview = session.previewStyleRecord()
     // Recovered paper size, not the table record's 99.
     expect(preview.dimtxt).toBeCloseTo(2.5, 5)
     expect(preview.dimscale).toBe(1)
-    // Appearance comes from the selected style.
+    // Appearance (colour and arrow head) comes from the selected style.
     expect(preview.dimclrd).toBe(1)
+    expect(preview.dimblk.toUpperCase()).toBe('_ARCHTICK')
   })
 })

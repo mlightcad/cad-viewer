@@ -46,6 +46,13 @@ export class AcUiPdfDimPanel<Id> {
   private readonly applyButton: HTMLButtonElement
   private selected?: PdfDimRow<Id>
   private naming = false
+  /** Style section starts collapsed so the dimension list gets the space. */
+  private styleCollapsed = true
+  private readonly styleSection: HTMLDivElement
+  private readonly styleHeader: HTMLButtonElement
+  private readonly styleSummary: HTMLSpanElement
+  private readonly styleBody: HTMLDivElement
+  private readonly styleChevron: HTMLSpanElement
   private readonly unsubscribeTheme: () => void
 
   constructor(options: AcUiPdfDimPanelOptions<Id>) {
@@ -59,14 +66,28 @@ export class AcUiPdfDimPanel<Id> {
     applyTheme()
     this.unsubscribeTheme = acedSubscribeUiTheme(applyTheme)
 
-    const styleSection = h('div', 'ml-pdfdim-section')
-    styleSection.append(h('div', 'ml-pdfdim-section-title', t('style')))
+    this.styleSection = h('div', 'ml-pdfdim-section')
+    this.styleHeader = h('button', 'ml-pdfdim-section-header')
+    this.styleHeader.type = 'button'
+    this.styleChevron = h('span', 'ml-pdfdim-chevron', '▶')
+    this.styleChevron.setAttribute('aria-hidden', 'true')
+    this.styleSummary = h('span', 'ml-pdfdim-section-summary')
+    this.styleHeader.append(
+      this.styleChevron,
+      h('span', 'ml-pdfdim-section-title', t('style')),
+      this.styleSummary
+    )
+    this.styleHeader.addEventListener('click', () => {
+      this.styleCollapsed = !this.styleCollapsed
+      this.syncStyleCollapsed()
+    })
+    this.styleBody = h('div', 'ml-pdfdim-section-body')
     const styleField = h('div', 'ml-pdfdim-field')
     styleField.append(h('span', 'ml-pdfdim-label', t('dimStyle')))
     this.styleSelect = h('select', 'ml-pdfdim-input')
     this.styleSelect.addEventListener('change', () => this.onStyleChange())
     styleField.append(this.styleSelect)
-    styleSection.append(styleField)
+    this.styleBody.append(styleField)
 
     this.namingEl = h('div', 'ml-pdfdim-naming')
     this.namingEl.hidden = true
@@ -82,20 +103,22 @@ export class AcUiPdfDimPanel<Id> {
     const nameOk = button(t('createStyle'), 'primary', () => this.commitName())
     this.nameError = h('div', 'ml-pdfdim-warning')
     this.namingEl.append(this.nameInput, nameOk, this.nameError)
-    styleSection.append(this.namingEl)
+    this.styleBody.append(this.namingEl)
 
     const scaleField = h('div', 'ml-pdfdim-field')
     scaleField.append(h('span', 'ml-pdfdim-label', t('scale')))
     this.scaleEl = h('span', 'ml-pdfdim-scale')
     scaleField.append(this.scaleEl)
-    styleSection.append(scaleField)
+    this.styleBody.append(scaleField)
 
     this.previewHost = h('div', 'ml-pdfdim-preview')
     this.previewHost.title = t('stylePreview')
     this.previewSvg = acedRenderDimStylePreview()
     this.previewSvg.classList.add('ml-pdfdim-preview-svg')
     this.previewHost.append(this.previewSvg)
-    styleSection.append(this.previewHost)
+    this.styleBody.append(this.previewHost)
+    this.styleSection.append(this.styleHeader, this.styleBody)
+    this.syncStyleCollapsed()
 
     this.listEl = h('div', 'ml-pdfdim-list')
     this.listEl.setAttribute('role', 'list')
@@ -116,7 +139,7 @@ export class AcUiPdfDimPanel<Id> {
     footer.append(hide, this.counterEl, buttons)
 
     this.element.append(
-      styleSection,
+      this.styleSection,
       h('div', 'ml-pdfdim-section-title', t('dimensions')),
       h('div', 'ml-pdfdim-hint', t('selectHint')),
       this.listEl,
@@ -125,6 +148,16 @@ export class AcUiPdfDimPanel<Id> {
     this.renderStyle()
     this.renderList()
     this.updateCounter()
+  }
+
+  private syncStyleCollapsed() {
+    this.styleSection.classList.toggle('is-collapsed', this.styleCollapsed)
+    this.styleBody.hidden = this.styleCollapsed
+    this.styleChevron.textContent = this.styleCollapsed ? '▶' : '▼'
+    this.styleHeader.setAttribute(
+      'aria-expanded',
+      String(!this.styleCollapsed)
+    )
   }
 
   selectFirst() {
@@ -155,10 +188,13 @@ export class AcUiPdfDimPanel<Id> {
     if (value === NEW_STYLE_VALUE) {
       this.naming = true
       this.session.beginNewStyle()
+      this.styleCollapsed = false
+      this.syncStyleCollapsed()
       this.namingEl.hidden = false
       this.nameInput.value = ''
       this.nameError.textContent = ''
       this.nameInput.focus()
+      this.updateStyleSummary()
       this.updateCounter()
       return
     }
@@ -207,7 +243,14 @@ export class AcUiPdfDimPanel<Id> {
       this.namingEl.hidden = true
     }
     this.scaleEl.textContent = `1:${formatScale(this.session.scale)}`
+    this.updateStyleSummary()
     this.renderPreview()
+  }
+
+  private updateStyleSummary() {
+    const name = this.session.styleName.trim()
+    const scale = `1:${formatScale(this.session.scale)}`
+    this.styleSummary.textContent = name ? `${name} · ${scale}` : scale
   }
 
   private renderPreview() {
@@ -242,6 +285,7 @@ export class AcUiPdfDimPanel<Id> {
       this.session.setIncluded(row, include.checked)
       el.classList.toggle('is-skipped', !row.included)
       this.scaleEl.textContent = `1:${formatScale(this.session.scale)}`
+      this.updateStyleSummary()
       this.renderPreview()
       this.updateCounter()
       this.options.onChange()
@@ -256,6 +300,7 @@ export class AcUiPdfDimPanel<Id> {
     text.addEventListener('input', () => {
       this.session.setText(row, text.value)
       this.scaleEl.textContent = `1:${formatScale(this.session.scale)}`
+      this.updateStyleSummary()
       this.renderPreview()
       this.updateCounter()
       this.options.onChange()
@@ -356,10 +401,7 @@ function checkbox(
 
 function ensureStyles() {
   if (typeof document === 'undefined') return
-  if (document.getElementById(STYLE_ID)) return
-  const style = document.createElement('style')
-  style.id = STYLE_ID
-  style.textContent = `
+  const css = `
 .ml-pdfdim-panel {
   display: flex;
   flex-direction: column;
@@ -375,12 +417,64 @@ function ensureStyles() {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 6px 8px;
+  padding: 4px 8px 6px;
   border: 1px solid var(--ml-ui-border, #dcdfe6);
   border-radius: 6px;
+  flex-shrink: 0;
+}
+.ml-pdfdim-section.is-collapsed {
+  padding-bottom: 4px;
+}
+.ml-pdfdim-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 -2px;
+  padding: 2px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ml-pdfdim-section-header:hover {
+  background: var(--ml-ui-hover, rgba(144, 147, 153, 0.12));
+}
+.ml-pdfdim-chevron {
+  flex: 0 0 auto;
+  width: 1em;
+  color: var(--ml-ui-text-muted, #606266);
+  font-size: 10px;
+  text-align: center;
 }
 .ml-pdfdim-section-title {
+  flex: 0 1 auto;
   font-weight: 600;
+  min-width: 0;
+}
+.ml-pdfdim-section-summary {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ml-ui-text-muted, #606266);
+  font-weight: 400;
+  text-align: right;
+}
+.ml-pdfdim-section:not(.is-collapsed) .ml-pdfdim-section-summary {
+  display: none;
+}
+.ml-pdfdim-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* Author display:flex would otherwise override the UA [hidden] rule. */
+.ml-pdfdim-section-body[hidden] {
+  display: none;
 }
 .ml-pdfdim-field {
   display: grid;
@@ -511,5 +605,11 @@ function ensureStyles() {
   cursor: default;
 }
 `.trim()
-  document.head.appendChild(style)
+  let style = document.getElementById(STYLE_ID) as HTMLStyleElement | null
+  if (!style) {
+    style = document.createElement('style')
+    style.id = STYLE_ID
+    document.head.appendChild(style)
+  }
+  style.textContent = css
 }

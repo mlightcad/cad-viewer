@@ -92,30 +92,23 @@ export class AcApPdfDimSession<Id> {
   }
 
   /**
-   * Style name written on created dimensions. Picking an existing style only
-   * copies its colours / text style onto {@link PDF_DIM}; sizes always come
-   * from the recovered geometry.
+   * Style name written on created dimensions (preview and Apply). Recovered
+   * paper sizes are pinned via entity overrides, so picking an existing style
+   * does not rewrite that style's table record.
    */
   get workingStyleName(): string {
-    if (this._isNewStyle) {
-      return this._styleName.trim() || PDF_DIM_STYLE
-    }
-    if (this._styleName === PDF_DIM_STYLE || !this._styleName.trim()) {
-      return PDF_DIM_STYLE
-    }
-    // Existing styles are not mutated; geometry uses PDF_DIM with their look.
-    return PDF_DIM_STYLE
+    return this._styleName.trim() || PDF_DIM_STYLE
   }
 
   /**
-   * Style whose appearance should be blended for preview / ensure. Undefined
-   * when the working style itself already holds that look (or is being created).
+   * Style whose appearance is blended while baking dim blocks when the working
+   * style is not in the table yet (a newly named style before Apply). Existing
+   * picks use the style itself — no separate blend source.
    */
   get appearanceFromStyle(): string | undefined {
-    if (this._isNewStyle) return undefined
-    const picked = this._styleName.trim()
-    if (!picked || picked === this.workingStyleName) return undefined
-    return picked
+    const working = this.workingStyleName
+    if (this.db.tables.dimStyleTable.getAt(working)) return undefined
+    return this._baseStyleName
   }
 
   /** Existing dim style names (skip anonymous `*…` records). */
@@ -182,9 +175,10 @@ export class AcApPdfDimSession<Id> {
   }
 
   /**
-   * Style record for the palette SVG: recovered paper sizes plus the selected
-   * style's appearance (colours / text style). Switching styles updates the
-   * preview even when every table record shares the same DIMTXT/DIMASZ.
+   * Style record for the palette SVG: the selected style's full appearance
+   * (arrows, colours, text placement) with only recovered paper sizes blended
+   * in. Metrics that encode recovered terminators (dimblk, dimtad, …) are not
+   * applied here — otherwise every style would look identical in the preview.
    */
   previewStyleRecord(): AcDbDimStyleTableRecord {
     const record = new AcDbDimStyleTableRecord()
@@ -196,33 +190,47 @@ export class AcApPdfDimSession<Id> {
     if (appearance) writeDimStyleFields(record, readDimStyleFields(appearance))
     const ready = this.candidatesForApply()
     if (ready.length > 0) {
-      writeDimStyleFields(record, acapPdfDimStyleMetrics(ready, this.scale))
+      const metrics = acapPdfDimStyleMetrics(ready, this.scale)
+      writeDimStyleFields(record, {
+        dimscale: metrics.dimscale,
+        dimtxt: metrics.dimtxt,
+        dimasz: metrics.dimasz,
+        dimgap: metrics.dimgap,
+        dimexo: metrics.dimexo,
+        dimexe: metrics.dimexe,
+        dimlfac: metrics.dimlfac,
+        dimdec: metrics.dimdec
+      })
     }
     record.name = name
     return record
   }
 
   /**
-   * Ensures the working dim style exists with recovered sizes (and the picked
-   * style's appearance when an existing style was selected). Returns the style
-   * name to assign on new dimensions.
+   * Ensures the working dim style exists when it is {@link PDF_DIM_STYLE} or a
+   * newly created name (recovered sizes written into that record). An existing
+   * style the user picked is left untouched — sizes go on entity overrides.
+   * Returns the style name to assign on new dimensions.
    */
   ensureStyle(): string {
     const candidates = this.candidatesForApply()
     const working = this.workingStyleName
     if (candidates.length === 0) return working
-    if (this._isNewStyle && !this.db.tables.dimStyleTable.getAt(working)) {
-      this.createStyleFromBase(working)
+    const existing = this.db.tables.dimStyleTable.getAt(working)
+    // Existing user styles stay as-is; only PDF_DIM / brand-new get metrics.
+    if (existing && !this._isNewStyle && working !== PDF_DIM_STYLE) {
+      return working
     }
+    if (!existing) this.createStyleFromBase(working)
     acapPdfEnsureDimStyle(
       this.db,
       candidates,
       this.scale,
       working,
-      this.appearanceFromStyle
+      this._baseStyleName
     )
     this._isNewStyle = false
-    if (working !== PDF_DIM_STYLE) this._styleName = working
+    this._styleName = working
     return working
   }
 

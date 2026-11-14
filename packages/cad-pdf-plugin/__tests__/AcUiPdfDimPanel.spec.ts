@@ -106,6 +106,8 @@ describe('AcUiPdfDimPanel', () => {
 
   test('offers existing dim styles and a create-new option', () => {
     const { root, session } = mount()
+    // Style section starts collapsed; expand to reach the picker.
+    root.querySelector<HTMLButtonElement>('.ml-pdfdim-section-header')!.click()
     const select = root.querySelector<HTMLSelectElement>(
       'select.ml-pdfdim-input'
     )!
@@ -125,5 +127,42 @@ describe('AcUiPdfDimPanel', () => {
     create.click()
     expect(session.styleName).toBe('Mine')
     expect(session.isNewStyle).toBe(true)
+  })
+
+  test('updates style preview when the selected dim style changes', () => {
+    const { root, session } = mount()
+    const iso = session.db.tables.dimStyleTable.getAt('ISO-25')!
+    iso.dimblk = '_ArchTick'
+    const standard = session.db.tables.dimStyleTable.getAt('Standard')!
+    standard.dimblk = ''
+    root.querySelector<HTMLButtonElement>('.ml-pdfdim-section-header')!.click()
+    const select = root.querySelector<HTMLSelectElement>(
+      'select.ml-pdfdim-input'
+    )!
+    select.value = 'Standard'
+    select.dispatchEvent(new Event('change'))
+    const svgA = root.querySelector('.ml-pdfdim-preview-svg')!.innerHTML
+    select.value = 'ISO-25'
+    select.dispatchEvent(new Event('change'))
+    const svgB = root.querySelector('.ml-pdfdim-preview-svg')!.innerHTML
+    expect(session.styleName).toBe('ISO-25')
+    expect(svgA).not.toBe(svgB)
+  })
+
+  test('collapses the dim style section by default', () => {
+    const { root } = mount()
+    const section = root.querySelector('.ml-pdfdim-section')!
+    const body = root.querySelector<HTMLElement>('.ml-pdfdim-section-body')!
+    expect(section.classList.contains('is-collapsed')).toBe(true)
+    expect(body.hidden).toBe(true)
+    // display:flex on the body must not defeat [hidden]
+    expect(getComputedStyle(body).display).toBe('none')
+    root.querySelector<HTMLButtonElement>('.ml-pdfdim-section-header')!.click()
+    expect(section.classList.contains('is-collapsed')).toBe(false)
+    expect(body.hidden).toBe(false)
+    expect(getComputedStyle(body).display).toBe('flex')
+    root.querySelector<HTMLButtonElement>('.ml-pdfdim-section-header')!.click()
+    expect(body.hidden).toBe(true)
+    expect(getComputedStyle(body).display).toBe('none')
   })
 })

@@ -275,7 +275,10 @@ test('pdfdim turns exploded dimensions into dimension objects', async ({
   page
 }) => {
   await startPdfDim(page)
-  await page.locator('.ml-pdfdim-btn:not(.is-secondary)').click()
+  // Scope to the footer: the style-name "Create" button shares ml-pdfdim-btn.
+  await page
+    .locator('.ml-pdfdim-buttons .ml-pdfdim-btn:not(.is-secondary)')
+    .click()
   await expect(page.locator('.ml-pdfdim-panel')).toHaveCount(0)
 
   await expect

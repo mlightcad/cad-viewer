@@ -59,6 +59,7 @@ jest.mock('../src/ui/AcUiPdfDimPanel', () => ({
 
 import {
   AcDbDatabase,
+  AcDbDimStyleTableRecord,
   AcDbLine,
   AcDbText,
   type AcDbEntity,
@@ -216,5 +217,27 @@ describe('AcApPdfDimCmd review panel', () => {
       true
     )
     expect(notify).toHaveBeenCalledWith('jig.pdfdim.cancelled')
+  })
+
+  test('Apply uses the dim style selected in the review panel', async () => {
+    mockPalette()
+    const { run, db, appended } = start(selectionWithText())
+    const iso = new AcDbDimStyleTableRecord()
+    iso.name = 'ISO-25'
+    db.tables.dimStyleTable.add(iso)
+    await settle()
+
+    const { session, onClose } = panels[0].options
+    session.selectStyle('ISO-25')
+    onClose(true)
+    await run
+
+    expect(appended).toHaveLength(1)
+    expect(
+      (appended[0] as { dimensionStyleName?: string }).dimensionStyleName
+    ).toBe('ISO-25')
+    // Existing styles are not rewritten with recovered sizes.
+    expect(db.tables.dimStyleTable.getAt('ISO-25')!.dimtxt).toBe(iso.dimtxt)
+    expect(db.tables.dimStyleTable.getAt(PDF_DIM_STYLE)).toBeUndefined()
   })
 })
