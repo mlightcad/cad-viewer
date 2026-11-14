@@ -20,8 +20,8 @@ import { AcApPdfTextCmd } from './AcApPdfTextCmd'
 import {
   acapPdfCreateDimensions,
   acapPdfDisposeDimensionPreviews,
-  pdfEntitiesToDimInput,
-  type PdfDimEntity
+  type PdfDimEntity,
+  pdfEntitiesToDimInput
 } from './pdfDimensionConvert'
 import { acapPdfPrepareDimStrokeTexts } from './pdfDimStrokeTexts'
 import { recognizePdfDimensions } from './recognition/pdfDimensionPattern'
