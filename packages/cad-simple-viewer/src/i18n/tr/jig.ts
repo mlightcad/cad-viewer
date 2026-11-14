@@ -898,7 +898,17 @@ export default {
     endPoint: 'Yayın bitiş noktasını belirtin',
     lockedEndPoint:
       'Yayın bitiş noktasını belirtin (Ctrl ile büyük/küçük yay arasında geçiş)',
-    invalidPoints: 'Üç nokta doğrusal ve bir yay tanımlamıyor.'
+    invalidPoints: 'Üç nokta doğrusal ve bir yay tanımlamıyor.',
+    pickArc: 'Bir daire, yay veya çoklu çizgi yayı seçin',
+    noArc:
+      'Burada daire veya yay yok. Bir eğriye tıklayın ya da Üç Nokta\'yı seçin.',
+    keywords: {
+      threePoint: {
+        display: 'ÜçNokta(T)',
+        local: 'ÜçNokta',
+        global: 'ThreePoint'
+      }
+    }
   },
   measureArea: {
     firstPoint: 'İlk noktayı belirtin',

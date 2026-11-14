@@ -771,7 +771,16 @@ export default {
     throughPoint: '指定弧上的一个点',
     endPoint: '指定弧的终点',
     lockedEndPoint: '指定弧的终点（按 Ctrl 在大弧与小弧之间切换）',
-    invalidPoints: '三点共线，无法测量弧长。'
+    invalidPoints: '三点共线，无法测量弧长。',
+    pickArc: '选择圆、圆弧或多段线圆弧',
+    noArc: '此处没有圆或圆弧。请单击曲线，或选择三点。',
+    keywords: {
+      threePoint: {
+        display: '三点(T)',
+        local: '三点',
+        global: 'ThreePoint'
+      }
+    }
   },
   measureAngle: {
     vertex: '指定顶点',

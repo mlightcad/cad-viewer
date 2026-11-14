@@ -9,6 +9,7 @@ import {
 
 import {
   lockCurvesFromEntity,
+  mapLockCurve,
   pickLockOnEntities,
   pointLiesOnCircle
 } from '../src/command/measure/AcApMeasureArcLock'
@@ -171,5 +172,34 @@ describe('pickLockOnEntities', () => {
         { cx: second.center.x, cy: second.center.y, r: second.radius }
       )
     ).toBe(true)
+  })
+})
+
+describe('mapLockCurve', () => {
+  // Viewport-like similarity: scale 0.5, then shift by (100, 50).
+  const toPaper = (p: { x: number; y: number }) => ({
+    x: p.x * 0.5 + 100,
+    y: p.y * 0.5 + 50
+  })
+
+  it('maps a full circle to a scaled full circle', () => {
+    const [circle] = lockCurvesFromEntity(
+      new AcDbCircle(new AcGePoint3d(10, 20, 0), 8)
+    )
+    const mapped = mapLockCurve(circle!, toPaper)!
+    expect(mapped.center.x).toBeCloseTo(105)
+    expect(mapped.center.y).toBeCloseTo(60)
+    expect(mapped.radius).toBeCloseTo(4)
+    expect(mapped.closed).toBe(true)
+  })
+
+  it('keeps the drawn side of an arc', () => {
+    const [arc] = lockCurvesFromEntity(
+      new AcDbArc(new AcGePoint3d(0, 0, 0), 10, 0, Math.PI / 2)
+    )
+    const mapped = mapLockCurve(arc!, toPaper)!
+    expect(mapped.radius).toBeCloseTo(5)
+    expect(mapped.midPoint.x).toBeCloseTo(toPaper(arc!.midPoint).x)
+    expect(mapped.midPoint.y).toBeCloseTo(toPaper(arc!.midPoint).y)
   })
 })

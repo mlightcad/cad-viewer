@@ -3,6 +3,7 @@ import {
   AcDbCircle,
   AcDbPolyline,
   AcGeCircArc2d,
+  AcGePoint2dLike,
   AcGePoint3dLike,
   TAU
 } from '@mlightcad/data-model'
@@ -177,6 +178,31 @@ function polylineVertices(entity: AcDbPolyline): Array<{
  * Circular curves on `entity` that arc-length measure can lock onto:
  * CIRCLE, ARC, and polyline bulge segments (not straight chords).
  */
+/**
+ * Maps a lock curve through a point transform, e.g. a paper-space viewport's
+ * model-to-paper mapping. That mapping is a similarity, so the curve stays
+ * circular; the arc is rebuilt from its mapped start, mid and end points so a
+ * viewport twist or mirror keeps the drawn side.
+ *
+ * @returns The mapped curve, or `null` when it degenerates.
+ */
+export function mapLockCurve(
+  curve: AcGeCircArc2d,
+  map: (point: AcGePoint2dLike) => AcGePoint2dLike
+): AcGeCircArc2d | null {
+  const center = map(curve.center)
+  if (curve.closed) {
+    const rim = map(curve.startPoint)
+    const radius = Math.hypot(rim.x - center.x, rim.y - center.y)
+    return radius > 0 ? new AcGeCircArc2d(center, radius, 0, TAU, false) : null
+  }
+  return AcGeCircArc2d.tryCreateByThreePoints(
+    map(curve.startPoint),
+    map(curve.midPoint),
+    map(curve.endPoint)
+  )
+}
+
 export function lockCurvesFromEntity(entity: unknown): AcGeCircArc2d[] {
   if (entity instanceof AcDbCircle) {
     if (!(entity.radius > 0)) return []
