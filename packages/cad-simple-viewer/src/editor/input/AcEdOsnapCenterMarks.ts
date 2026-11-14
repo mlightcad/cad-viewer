@@ -206,6 +206,31 @@ function fullInsertionTransform(blockRef: AcDbBlockReference): AcGeMatrix3d {
 }
 
 /**
+ * Center of a spatial-index child box, used as the `hintPoint` of
+ * {@link resolveBlockSubEntity} to prefer the INSERT instance under the cursor.
+ */
+export function blockChildBoxHint(child: {
+  minX?: number
+  minY?: number
+  maxX?: number
+  maxY?: number
+}): AcGePoint3dLike | undefined {
+  if (
+    child.minX == null ||
+    child.minY == null ||
+    child.maxX == null ||
+    child.maxY == null
+  ) {
+    return undefined
+  }
+  return {
+    x: (child.minX + child.maxX) / 2,
+    y: (child.minY + child.maxY) / 2,
+    z: 0
+  }
+}
+
+/**
  * Resolves a block-reference sub-entity identified by a spatial-index gsMark.
  *
  * Returns the leaf entity and the cumulative transform that maps its local

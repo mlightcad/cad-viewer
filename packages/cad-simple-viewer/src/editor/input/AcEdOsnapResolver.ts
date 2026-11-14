@@ -25,6 +25,7 @@ import {
 } from '../view/AcEdSpatialQueryResult'
 import {
   type AcEdOsnapCenterMark,
+  blockChildBoxHint,
   centerMarksCoincide,
   collectCenterMarksFromEntity,
   mergeAcquiredCenterMarks,
@@ -436,27 +437,6 @@ export class AcEdOsnapResolver {
     }
   }
 
-  private static childBoxHint(child: {
-    minX?: number
-    minY?: number
-    maxX?: number
-    maxY?: number
-  }): AcGePoint3dLike | undefined {
-    if (
-      child.minX == null ||
-      child.minY == null ||
-      child.maxX == null ||
-      child.maxY == null
-    ) {
-      return undefined
-    }
-    return {
-      x: (child.minX + child.maxX) / 2,
-      y: (child.minY + child.maxY) / 2,
-      z: 0
-    }
-  }
-
   private collectIntersectionOsnapPoints(
     pickResults: AcEdSpatialQueryResultItemEx[],
     db: ReturnType<typeof acdbHostApplicationServices>['workingDatabase'],
@@ -504,7 +484,7 @@ export class AcEdOsnapResolver {
               entity,
               child.id,
               new AcGeMatrix3d(),
-              AcEdOsnapResolver.childBoxHint(child)
+              blockChildBoxHint(child)
             )
             if (!found) continue
             tryAdd({
@@ -640,7 +620,7 @@ export class AcEdOsnapResolver {
               entity,
               child.id,
               new AcGeMatrix3d(),
-              AcEdOsnapResolver.childBoxHint(child)
+              blockChildBoxHint(child)
             )
             if (found) {
               this.collectOsnapPointsFromResolvedSubEntity(

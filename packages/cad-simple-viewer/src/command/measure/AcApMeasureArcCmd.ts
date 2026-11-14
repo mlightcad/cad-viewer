@@ -1,8 +1,11 @@
 import {
   AcCmColor,
+  AcDbBlockReference,
   AcDbDatabase,
+  AcDbObjectId,
   AcGeCircArc2d,
   AcGeMathUtil,
+  AcGeMatrix3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 import {
@@ -19,6 +22,10 @@ import {
   AcEdPromptPointOptions,
   AcEdPromptStatus
 } from '../../editor'
+import {
+  blockChildBoxHint,
+  resolveBlockSubEntity
+} from '../../editor/input/AcEdOsnapCenterMarks'
 import { AcApI18n } from '../../i18n'
 import {
   acapAdaptiveMeasureBadgeFontSize,
@@ -41,7 +48,7 @@ import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
 import {
   inwardLockAlignment,
   isBetterLockCandidate,
-  lockCurvesFromEntity,
+  lockCurvesInSpace,
   mapLockCurve,
   pointLiesOnCircle,
   sameCircleGeom
@@ -118,6 +125,56 @@ function snapToCircle(
   return { x: g.cx + dx * s, y: g.cy + dy * s, z: 0 }
 }
 
+interface AcApArcLockSource {
+  entity: unknown
+  /** Cumulative INSERT transform for a block sub-entity. */
+  transform?: AcGeMatrix3d
+  viewportId?: AcDbObjectId
+}
+
+/**
+ * Entities whose curves the first pick may lock onto. INSERT hits resolve
+ * their aperture-hit children to the leaf entity plus INSERT transform, the
+ * same way OSNAP does; a bare INSERT hit is skipped rather than expanding
+ * the whole block definition.
+ */
+function lockSourcesFromHits(
+  context: AcApContext,
+  hits: ReturnType<AcEdBaseView['pick']>
+): AcApArcLockSource[] {
+  const blockTable = context.doc.database.tables.blockTable
+  const seen = new Set<string>()
+  const sources: AcApArcLockSource[] = []
+  for (const hit of hits) {
+    const entity = blockTable.getEntityById(hit.id)
+    if (!entity) continue
+    if (!(entity instanceof AcDbBlockReference)) {
+      if (seen.has(hit.id)) continue
+      seen.add(hit.id)
+      sources.push({ entity, viewportId: hit.viewportId })
+      continue
+    }
+    for (const child of hit.children ?? []) {
+      const key = `${hit.id}:${child.id}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      const found = resolveBlockSubEntity(
+        entity,
+        child.id,
+        new AcGeMatrix3d(),
+        blockChildBoxHint(child)
+      )
+      if (!found) continue
+      sources.push({
+        entity: found.entity,
+        transform: found.transform,
+        viewportId: hit.viewportId
+      })
+    }
+  }
+  return sources
+}
+
 /**
  * Picks the CIRCLE / ARC / polyline-bulge stroke closest to `p` in screen space.
  *
@@ -130,19 +187,13 @@ function pickCircleGeomAtPoint(
   context: AcApContext,
   p: AcGePoint3dLike
 ): { geom: AcApMeasureCircleGeom; snapped: AcGePoint3dLike } | null {
-  const blockTable = context.doc.database.tables.blockTable
   // OSNAP may have pulled `p` onto a shared polyline vertex. Score against
   // the live cursor so the lock follows whichever arc the mouse is nearer.
   const mouse = context.view.curPos
-  const seen = new Set<string>()
-  const hits = [
+  const sources = lockSourcesFromHits(context, [
     ...context.view.pick(mouse, SNAP_SCREEN_PX),
     ...context.view.pick(p, SNAP_SCREEN_PX)
-  ].filter(hit => {
-    if (seen.has(hit.id)) return false
-    seen.add(hit.id)
-    return true
-  })
+  ])
   const cursorScreen = context.view.worldToScreen(mouse)
   const pick = { x: mouse.x, y: mouse.y, z: 0 }
 
@@ -151,17 +202,15 @@ function pickCircleGeomAtPoint(
   let bestScreen = SNAP_SCREEN_PX
   let bestAlign = -Infinity
 
-  for (const hit of hits) {
-    const entity = blockTable.getEntityById(hit.id)
-    if (!entity) continue
+  for (const source of sources) {
     // Drill-through hits from a paper-space viewport carry model-space
     // geometry; map it onto the paper-space cursor's coordinates.
     const mapper =
-      hit.viewportId != null
-        ? context.view.getViewportCoordinateMapper(hit.viewportId)
+      source.viewportId != null
+        ? context.view.getViewportCoordinateMapper(source.viewportId)
         : undefined
-    if (hit.viewportId != null && !mapper) continue
-    for (const local of lockCurvesFromEntity(entity)) {
+    if (source.viewportId != null && !mapper) continue
+    for (const local of lockCurvesInSpace(source.entity, source.transform)) {
       const curve = mapper
         ? mapLockCurve(local, pt => mapper.modelToPaper(pt))
         : local

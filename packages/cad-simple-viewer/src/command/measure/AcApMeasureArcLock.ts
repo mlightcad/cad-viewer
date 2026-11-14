@@ -3,7 +3,9 @@ import {
   AcDbCircle,
   AcDbPolyline,
   AcGeCircArc2d,
+  AcGeMatrix3d,
   AcGePoint2dLike,
+  AcGePoint3d,
   AcGePoint3dLike,
   TAU
 } from '@mlightcad/data-model'
@@ -175,10 +177,6 @@ function polylineVertices(entity: AcDbPolyline): Array<{
 }
 
 /**
- * Circular curves on `entity` that arc-length measure can lock onto:
- * CIRCLE, ARC, and polyline bulge segments (not straight chords).
- */
-/**
  * Maps a lock curve through a point transform, e.g. a paper-space viewport's
  * model-to-paper mapping. That mapping is a similarity, so the curve stays
  * circular; the arc is rebuilt from its mapped start, mid and end points so a
@@ -203,6 +201,10 @@ export function mapLockCurve(
   )
 }
 
+/**
+ * Circular curves on `entity` that arc-length measure can lock onto:
+ * CIRCLE, ARC, and polyline bulge segments (not straight chords).
+ */
 export function lockCurvesFromEntity(entity: unknown): AcGeCircArc2d[] {
   if (entity instanceof AcDbCircle) {
     if (!(entity.radius > 0)) return []
@@ -236,6 +238,50 @@ export function lockCurvesFromEntity(entity: unknown): AcGeCircArc2d[] {
     if (curve.radius > 0) curves.push(curve)
   }
   return curves
+}
+
+/** Relative tolerance for {@link isPlanSimilarity}. */
+const SIMILARITY_EPS = 1e-6
+
+/**
+ * True when `m` maps the XY plane onto the XY plane as a similarity, so a
+ * circle stays a circle in plan. Non-uniform INSERT scales and tilted
+ * extrusions turn circles into ellipses, which arc-length lock cannot follow.
+ */
+export function isPlanSimilarity(m: AcGeMatrix3d): boolean {
+  const e = m.elements
+  const xLen = Math.hypot(e[0]!, e[1]!, e[2]!)
+  const yLen = Math.hypot(e[4]!, e[5]!, e[6]!)
+  if (!(xLen > 0) || !(yLen > 0)) return false
+  return (
+    Math.abs(e[2]!) <= SIMILARITY_EPS * xLen &&
+    Math.abs(e[6]!) <= SIMILARITY_EPS * yLen &&
+    Math.abs(xLen - yLen) <= SIMILARITY_EPS * Math.max(xLen, yLen) &&
+    Math.abs(e[0]! * e[4]! + e[1]! * e[5]!) <= SIMILARITY_EPS * xLen * yLen
+  )
+}
+
+/**
+ * Lock curves of `entity` in caller space, e.g. a block sub-entity mapped by
+ * its cumulative INSERT transform.
+ *
+ * @returns No curves when `transform` would not keep them circular.
+ */
+export function lockCurvesInSpace(
+  entity: unknown,
+  transform?: AcGeMatrix3d
+): AcGeCircArc2d[] {
+  const local = lockCurvesFromEntity(entity)
+  if (!transform || local.length === 0) return local
+  if (!isPlanSimilarity(transform)) return []
+  const map = (p: AcGePoint2dLike) => {
+    const w = new AcGePoint3d(p.x, p.y, 0).applyMatrix4(transform)
+    return { x: w.x, y: w.y }
+  }
+  return local.flatMap(curve => {
+    const mapped = mapLockCurve(curve, map)
+    return mapped && mapped.radius > 0 ? [mapped] : []
+  })
 }
 
 /**

@@ -1,18 +1,26 @@
 import {
   AcDbArc,
+  AcDbBlockReference,
+  AcDbBlockTableRecord,
   AcDbCircle,
+  AcDbDatabase,
   AcDbPolyline,
   AcGeCircArc2d,
+  AcGeMatrix3d,
   AcGePoint2d,
-  AcGePoint3d
+  AcGePoint3d,
+  AcGeVector3d
 } from '@mlightcad/data-model'
 
 import {
+  isPlanSimilarity,
   lockCurvesFromEntity,
+  lockCurvesInSpace,
   mapLockCurve,
   pickLockOnEntities,
   pointLiesOnCircle
 } from '../src/command/measure/AcApMeasureArcLock'
+import { resolveBlockSubEntity } from '../src/editor/input/AcEdOsnapCenterMarks'
 
 describe('lockCurvesFromEntity', () => {
   it('returns a full circle for AcDbCircle', () => {
@@ -201,5 +209,117 @@ describe('mapLockCurve', () => {
     expect(mapped.radius).toBeCloseTo(5)
     expect(mapped.midPoint.x).toBeCloseTo(toPaper(arc!.midPoint).x)
     expect(mapped.midPoint.y).toBeCloseTo(toPaper(arc!.midPoint).y)
+  })
+})
+
+describe('lockCurvesInSpace', () => {
+  /** Model space INSERT of a block holding `entity`, resolved like OSNAP. */
+  function insertOf(
+    entity: AcDbArc | AcDbCircle,
+    setup: (ref: AcDbBlockReference) => void,
+    name: string
+  ) {
+    const db = new AcDbDatabase()
+    db.createDefaultData()
+    const block = new AcDbBlockTableRecord()
+    block.name = name
+    db.tables.blockTable.add(block)
+    block.appendEntity(entity)
+    const ref = new AcDbBlockReference(name)
+    setup(ref)
+    db.tables.blockTable.modelSpace.appendEntity(ref)
+    return resolveBlockSubEntity(ref, entity.objectId)!
+  }
+
+  it('returns local curves when there is no transform', () => {
+    const circle = new AcDbCircle(new AcGePoint3d(1, 2, 0), 3)
+    expect(lockCurvesInSpace(circle)[0]!.radius).toBeCloseTo(3)
+  })
+
+  it('maps a circle in a uniformly scaled, rotated INSERT', () => {
+    const found = insertOf(
+      new AcDbCircle(new AcGePoint3d(10, 0, 0), 5),
+      ref => {
+        ref.position = new AcGePoint3d(100, 50, 0)
+        ref.scaleFactors = new AcGePoint3d(2, 2, 2)
+        ref.rotation = Math.PI / 2
+      },
+      'ARC_LOCK_UNIFORM'
+    )
+    const [curve] = lockCurvesInSpace(found.entity, found.transform)
+    expect(curve!.center.x).toBeCloseTo(100)
+    expect(curve!.center.y).toBeCloseTo(70)
+    expect(curve!.radius).toBeCloseTo(10)
+  })
+
+  it('keeps the drawn side of an arc in a mirrored INSERT', () => {
+    const found = insertOf(
+      new AcDbArc(new AcGePoint3d(0, 0, 0), 10, 0, Math.PI / 2),
+      ref => {
+        ref.scaleFactors = new AcGePoint3d(-1, 1, 1)
+      },
+      'ARC_LOCK_MIRROR'
+    )
+    const [curve] = lockCurvesInSpace(found.entity, found.transform)
+    expect(curve!.radius).toBeCloseTo(10)
+    expect(curve!.midPoint.x).toBeCloseTo(-10 * Math.SQRT1_2)
+    expect(curve!.midPoint.y).toBeCloseTo(10 * Math.SQRT1_2)
+  })
+
+  it('maps through nested INSERTs', () => {
+    const db = new AcDbDatabase()
+    db.createDefaultData()
+    const inner = new AcDbBlockTableRecord()
+    inner.name = 'ARC_LOCK_INNER'
+    db.tables.blockTable.add(inner)
+    const circle = new AcDbCircle(new AcGePoint3d(0, 0, 0), 1)
+    inner.appendEntity(circle)
+    const outer = new AcDbBlockTableRecord()
+    outer.name = 'ARC_LOCK_OUTER'
+    db.tables.blockTable.add(outer)
+    const nested = new AcDbBlockReference('ARC_LOCK_INNER')
+    nested.position = new AcGePoint3d(5, 0, 0)
+    nested.scaleFactors = new AcGePoint3d(3, 3, 3)
+    outer.appendEntity(nested)
+    const ref = new AcDbBlockReference('ARC_LOCK_OUTER')
+    ref.position = new AcGePoint3d(0, 20, 0)
+    ref.scaleFactors = new AcGePoint3d(2, 2, 2)
+    db.tables.blockTable.modelSpace.appendEntity(ref)
+
+    const found = resolveBlockSubEntity(ref, circle.objectId)!
+    const [curve] = lockCurvesInSpace(found.entity, found.transform)
+    expect(curve!.center.x).toBeCloseTo(10)
+    expect(curve!.center.y).toBeCloseTo(20)
+    expect(curve!.radius).toBeCloseTo(6)
+  })
+
+  it('does not lock when a non-uniform scale turns the circle into an ellipse', () => {
+    const found = insertOf(
+      new AcDbCircle(new AcGePoint3d(0, 0, 0), 5),
+      ref => {
+        ref.scaleFactors = new AcGePoint3d(2, 1, 1)
+      },
+      'ARC_LOCK_NON_UNIFORM'
+    )
+    expect(lockCurvesInSpace(found.entity, found.transform)).toHaveLength(0)
+  })
+
+  it('does not lock a circle in a tilted INSERT', () => {
+    const found = insertOf(
+      new AcDbCircle(new AcGePoint3d(0, 0, 0), 5),
+      ref => {
+        ref.normal = new AcGeVector3d(1, 0, 1).normalize()
+      },
+      'ARC_LOCK_TILTED'
+    )
+    expect(isPlanSimilarity(found.transform)).toBe(false)
+    expect(lockCurvesInSpace(found.entity, found.transform)).toHaveLength(0)
+  })
+
+  it('accepts a -Z extrusion, which only mirrors the plan', () => {
+    const m = new AcGeMatrix3d().setFromExtrusionDirection(
+      new AcGeVector3d(0, 0, -1)
+    )
+    expect(isPlanSimilarity(m)).toBe(true)
   })
 })
