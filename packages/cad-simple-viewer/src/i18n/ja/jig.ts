@@ -826,7 +826,16 @@ export default {
     throughPoint: '円弧上の点を指定',
     endPoint: '円弧の終点を指定',
     lockedEndPoint: '円弧の終点を指定 (Ctrl キーで優弧/劣弧を切り替え)',
-    invalidPoints: '3 点が同一直線上にあるため、円弧を定義できません。'
+    invalidPoints: '3 点が同一直線上にあるため、円弧を定義できません。',
+    pickArc: '円、円弧、またはポリライン円弧を選択',
+    noArc: 'ここに円または円弧はありません。曲線をクリックするか、3 点を選択してください。',
+    keywords: {
+      threePoint: {
+        display: '3点(T)',
+        local: '3点',
+        global: 'ThreePoint'
+      }
+    }
   },
   measureArea: {
     firstPoint: '1 点目を指定',
