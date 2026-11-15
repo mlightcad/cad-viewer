@@ -293,6 +293,7 @@ jest.mock('../src/command', () => {
     'AcApRevCloudCmd',
     'AcApRedoCmd',
     'AcApRotateCmd',
+    'AcApScaleCmd',
     'AcApSelectCmd',
     'AcApSketchCmd',
     'AcApSplineCmd',

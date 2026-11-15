@@ -1,4 +1,5 @@
 import {
+  AcDbDimension,
   AcDbEntity,
   AcDbObjectId,
   AcGePoint3dLike
@@ -84,6 +85,10 @@ export class AcEdGripEditSession {
       const entity = db.openEntityForWrite(this._entity)
       if (!entity || isEntityOnLockedLayer(db, entity)) return
       entity.subMoveGripPointsAt([this._target.gripIndex], offset)
+      // Dimensions draw from an anonymous block; regenerate it so the edited
+      // definition points, text and measurement show up (and undo restores
+      // the previous block reference).
+      if (entity instanceof AcDbDimension) entity.recomputeDimBlock()
     })
     this.finish()
   }

@@ -589,6 +589,11 @@ export default {
       description: 'Otočí vybrané objekty kolem základního bodu',
       prompt: 'Vyberte objekty'
     },
+    scale: {
+      description:
+        'Zvětší nebo zmenší vybrané objekty se zachováním jejich proporcí',
+      prompt: 'Vyberte objekty'
+    },
     select: {
       description: 'Vybírá objekty'
     },

@@ -330,7 +330,7 @@ export default {
       mleaderRemove: '既存のマルチ引出線から引出線を削除します。',
       move: '選択したオブジェクトを新しい位置に移動します。',
       rotate: '選択したオブジェクトを基点を中心に回転します。',
-      copy: '選択したオブジェクトを新しい位置に複写します。',
+      scale: '選択したオブジェクトを縦横比を保ったまま拡大または縮小します。',
       erase: '選択したオブジェクトを図面から削除します。',
       pasteClip:
         'クリップボードのオブジェクトを現在の図面に貼り付けます (PASTECLIP)。',
@@ -496,7 +496,7 @@ export default {
       mleaderRemove: '引出線を削除',
       move: '移動',
       rotate: '回転',
-      copy: '複写',
+      scale: '尺度変更',
       erase: '削除',
       pasteClip: '貼り付け',
       pasteOrig: '元の座標に貼り付け',

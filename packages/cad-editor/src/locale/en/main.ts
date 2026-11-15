@@ -330,7 +330,8 @@ export default {
       mleaderRemove: 'Remove a leader line from an existing multileader.',
       move: 'Move selected objects to a new position.',
       rotate: 'Rotate selected objects around a base point.',
-      copy: 'Copy selected objects to a new location.',
+      scale:
+        'Enlarge or reduce selected objects, keeping the proportions the same after scaling.',
       erase: 'Delete selected objects from the drawing.',
       pasteClip:
         'Paste objects from the clipboard into the current drawing (PASTECLIP).',
@@ -508,7 +509,7 @@ export default {
       mleaderRemove: 'Remove Leader',
       move: 'Move',
       rotate: 'Rotate',
-      copy: 'Copy',
+      scale: 'Scale',
       erase: 'Erase',
       pasteClip: 'Paste',
       pasteOrig: 'Paste to Original Coordinates',
