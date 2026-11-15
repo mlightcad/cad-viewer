@@ -69,6 +69,7 @@ export {
   PDF_PT_TO_MM,
   remapPdfImportColor,
   type PdfImportExtractOptions,
+  type PdfImportOcgLayer,
   type PdfImportOps,
   type PdfImportPageContent,
   type PdfImportPaperTone,

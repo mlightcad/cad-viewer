@@ -245,6 +245,79 @@ describe('extractPdfImportSubpaths', () => {
     ])
   })
 
+  test('keeps geometry nested in a hidden OCG on that hidden layer', () => {
+    // Exported frozen INSERT: `/OC VEGA BDC … /OC FRAME BDC … EMC … EMC`.
+    // Viewers hide nested content when any enclosing group is OFF, so the
+    // inner ON group must not pull the geometry onto a visible layer.
+    const { subpaths } = extractPdfImportSubpaths(
+      {
+        fnArray: [
+          OPS.beginMarkedContentProps,
+          OPS.beginMarkedContentProps,
+          OPS.moveTo,
+          OPS.lineTo,
+          OPS.stroke,
+          OPS.beginMarkedContentProps,
+          OPS.moveTo,
+          OPS.lineTo,
+          OPS.stroke,
+          OPS.endMarkedContent,
+          OPS.endMarkedContent,
+          OPS.moveTo,
+          OPS.lineTo,
+          OPS.stroke,
+          OPS.endMarkedContent,
+          OPS.beginMarkedContentProps,
+          OPS.beginMarkedContentProps,
+          OPS.moveTo,
+          OPS.lineTo,
+          OPS.stroke,
+          OPS.endMarkedContent,
+          OPS.endMarkedContent
+        ],
+        argsArray: [
+          ['OC', 'vega'],
+          ['OC', 'frame'],
+          [0, 0],
+          [1, 0],
+          [],
+          ['OC', { type: 'OCMD', ids: ['a', 'b'] }],
+          [0, 1],
+          [1, 1],
+          [],
+          [],
+          [],
+          [0, 2],
+          [1, 2],
+          [],
+          [],
+          ['OC', 'frame'],
+          ['OC', 'walls'],
+          [0, 3],
+          [1, 3],
+          [],
+          [],
+          []
+        ]
+      },
+      OPS,
+      yUpViewport(100),
+      new Map([
+        ['vega', { layerName: 'VEGA', visible: false }],
+        ['frame', { layerName: 'FRAME0_5', visible: true }],
+        ['walls', { layerName: 'A_WALL', visible: true }]
+      ]),
+      PDF_FALLBACK_LAYER
+    )
+
+    expect(subpaths.map(subpath => subpath.layerName)).toEqual([
+      'VEGA',
+      'VEGA',
+      'VEGA',
+      'A_WALL'
+    ])
+  })
+
   test('puts a multi-group OCMD on the fallback layer', () => {
     const { subpaths } = extractPdfImportSubpaths(
       {
