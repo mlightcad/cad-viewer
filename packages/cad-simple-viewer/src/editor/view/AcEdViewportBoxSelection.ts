@@ -1,13 +1,16 @@
 import {
+  AcDbBlockReference,
   AcDbEntity,
   AcDbObjectId,
   AcGeBox2d,
-  AcGePoint2dLike
+  AcGePoint2dLike,
+  AcGePoint3dLike
 } from '@mlightcad/data-model'
 
 import { isFiniteSpatialBBox } from '../../view/AcTrGroupWcsBboxAssert'
 import type { AcEdSelectionMode } from './AcEdBaseView'
 import {
+  acedBlockReferenceIntersectsSelectionBox,
   acedEntityIntersectsSelectionBox,
   acedNeedsCrossingGeometryRefine
 } from './AcEdSelectionBoxIntersect'
@@ -193,13 +196,22 @@ export function acedCollectViewportBoxSelectionIds(
         // against `modelBox` (the rotated rectangle's AABB) would be a
         // superset and select geometry that is not under the pick box.
         const entity = entityOf(item.id)
-        if (
-          entity &&
-          acedNeedsCrossingGeometryRefine(item) &&
-          !acedEntityIntersectsSelectionBox(entity, visibleBox, point =>
-            viewport.modelPointToPaper(point)
+        const toPaper = (point: AcGePoint3dLike) =>
+          viewport.modelPointToPaper(point)
+        if (entity && acedNeedsCrossingGeometryRefine(item)) {
+          if (!acedEntityIntersectsSelectionBox(entity, visibleBox, toPaper)) {
+            continue
+          }
+        } else if (
+          entity instanceof AcDbBlockReference &&
+          !acedBlockReferenceIntersectsSelectionBox(
+            entity,
+            boxes,
+            visibleBox,
+            toPaper
           )
         ) {
+          // Same AutoCAD rule as model space: empty block interior is no hit.
           continue
         }
       }

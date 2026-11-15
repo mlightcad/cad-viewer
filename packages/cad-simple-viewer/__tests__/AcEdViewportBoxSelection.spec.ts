@@ -1,4 +1,12 @@
-import { AcDbEntity, AcGeBox2d } from '@mlightcad/data-model'
+import {
+  AcDbBlockReference,
+  AcDbBlockTableRecord,
+  AcDbDatabase,
+  AcDbEntity,
+  AcDbPolyline,
+  AcGeBox2d,
+  AcGePoint2d
+} from '@mlightcad/data-model'
 
 import type { AcEdSelectionMode } from '../src/editor/view/AcEdBaseView'
 import type { AcEdSpatialQueryResultItemEx } from '../src/editor/view/AcEdSpatialQueryResult'
@@ -403,6 +411,65 @@ describe('acedCollectViewportBoxSelectionIds', () => {
     })
 
     expect(ids).toEqual([])
+  })
+
+  it('drops a frame block when the crossing box sits in its empty interior', () => {
+    const db = new AcDbDatabase()
+    db.createDefaultData()
+    const frame = new AcDbBlockTableRecord()
+    frame.name = 'VP_FRAME'
+    db.tables.blockTable.add(frame)
+    const border = new AcDbPolyline()
+    border.addVertexAt(0, new AcGePoint2d(0, 0))
+    border.addVertexAt(1, new AcGePoint2d(100, 0))
+    border.addVertexAt(2, new AcGePoint2d(100, 100))
+    border.addVertexAt(3, new AcGePoint2d(0, 100))
+    border.closed = true
+    frame.appendEntity(border)
+    const ref = new AcDbBlockReference('VP_FRAME')
+    db.tables.blockTable.modelSpace.appendEntity(ref)
+
+    const items: AcEdSpatialQueryResultItemEx[] = [
+      {
+        id: ref.objectId,
+        minX: 0,
+        minY: 0,
+        maxX: 100,
+        maxY: 100,
+        children: [
+          { id: border.objectId, minX: 0, minY: 0, maxX: 100, maxY: 100 }
+        ]
+      }
+    ]
+    const viewports = [createViewport([0, 0, 10, 10], [0, 0, 100, 100])]
+
+    expect(
+      collect({
+        mode: 'crossing',
+        pick: [4, 4, 6, 6],
+        items,
+        entities: [ref],
+        viewports
+      })
+    ).toEqual([])
+    expect(
+      collect({
+        mode: 'crossing',
+        pick: [9, 4, 9.9, 6],
+        items,
+        entities: [ref],
+        viewports
+      })
+    ).toEqual([])
+    expect(
+      collect({
+        mode: 'crossing',
+        pick: [9.5, 4, 10, 6],
+        items,
+        entities: [ref],
+        viewports
+      })
+    ).toEqual([ref.objectId])
   })
 
   it('returns nothing for an empty (unset) pick box', () => {
