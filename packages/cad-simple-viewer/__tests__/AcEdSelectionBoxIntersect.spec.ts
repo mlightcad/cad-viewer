@@ -181,6 +181,41 @@ describe('acedBlockReferenceIntersectsSelectionBox', () => {
     )
   })
 
+  it('tests real geometry behind anonymous child boxes (wide polyline fill)', () => {
+    // Real drawing: the frame's inner border is a wide polyline whose fill
+    // band is indexed with an empty / missing id, which used to keep the
+    // whole frame selected for any crossing box inside it.
+    const { ref, border } = setup('FRAME_ANON')
+    const children = [
+      { minX: 0, minY: 0, maxX: 100, maxY: 100 } as unknown as ReturnType<
+        typeof childOf
+      >,
+      childOf('', 0, 0, 100, 100)
+    ]
+    expect(
+      acedBlockReferenceIntersectsSelectionBox(
+        ref,
+        children,
+        new AcGeBox2d({ x: 40, y: 40 }, { x: 60, y: 60 })
+      )
+    ).toBe(false)
+    expect(
+      acedBlockReferenceIntersectsSelectionBox(
+        ref,
+        children,
+        new AcGeBox2d({ x: 95, y: 40 }, { x: 105, y: 60 })
+      )
+    ).toBe(true)
+    // Named child next to anonymous ones: still resolved and tested.
+    expect(
+      acedBlockReferenceIntersectsSelectionBox(
+        ref,
+        [...children, childOf(border.objectId, 0, 0, 100, 100)],
+        new AcGeBox2d({ x: 40, y: 40 }, { x: 60, y: 60 })
+      )
+    ).toBe(false)
+  })
+
   it('tests a frame drawn in a nested block through both transforms', () => {
     const { db, border } = setup('FRAME_NESTED_INNER')
     const outer = new AcDbBlockTableRecord()

@@ -177,6 +177,7 @@ export function acedBlockReferenceIntersectsSelectionBox(
   outerTransform?: (point: AcGePoint3dLike) => { x: number; y: number }
 ): boolean {
   const ids = new Set<string>()
+  let anonymous = false
   for (const child of children) {
     // Without an outer mapping the child box is already in the selection
     // space, so full containment means a hit without touching geometry.
@@ -191,27 +192,39 @@ export function acedBlockReferenceIntersectsSelectionBox(
     ) {
       return true
     }
-    ids.add(canonicalGsMark(child.id))
+    if (child.id) {
+      ids.add(canonicalGsMark(child.id))
+    } else {
+      anonymous = true
+    }
   }
-  if (ids.size === 0) return false
+  if (ids.size === 0 && !anonymous) return false
 
   const unresolved = new Set(ids)
   const hit = blockGeometryIntersectsBox(blockRef, new AcGeMatrix3d(), {
     ids,
     unresolved,
+    testAllOverlapping: anonymous,
     box,
     outerTransform,
     activeBlocks: new Set()
   })
-  // Children that are not in the block definition (attributes, anonymous
-  // hatch-island boxes) keep the AABB result rather than silently dropping a
-  // selection the user can see.
+  // Named children that are not in the block definition (attributes) keep
+  // the AABB result rather than silently dropping a selection the user can
+  // see.
   return hit || unresolved.size > 0
 }
 
 interface BlockWalkState {
   ids: ReadonlySet<string>
   unresolved: Set<string>
+  /**
+   * Some child boxes carry no id (the fill band of a wide polyline, hatch
+   * fill islands), so they cannot be matched to a block entity. Test every
+   * leaf whose extents overlap the box instead, which covers the entity that
+   * produced the anonymous box.
+   */
+  testAllOverlapping: boolean
   box: AcGeBox2d
   outerTransform?: (point: AcGePoint3dLike) => { x: number; y: number }
   activeBlocks: Set<unknown>
@@ -238,16 +251,19 @@ function blockGeometryIntersectsBox(
       return outerTransform ? outerTransform(point) : point
     }
     for (const entity of record.newIterator()) {
-      if (state.ids.has(entity.objectId)) {
-        state.unresolved.delete(entity.objectId)
-        if (acedEntityIntersectsSelectionBox(entity, state.box, transform)) {
-          return true
-        }
-      }
+      const isBlock = entity instanceof AcDbBlockReference
+      const listed = state.ids.has(entity.objectId)
+      if (listed) state.unresolved.delete(entity.objectId)
       if (
-        entity instanceof AcDbBlockReference &&
-        blockGeometryIntersectsBox(entity, matrix, state)
+        (listed ||
+          (!isBlock &&
+            state.testAllOverlapping &&
+            extentsOverlapBox(entity, transform, state.box))) &&
+        acedEntityIntersectsSelectionBox(entity, state.box, transform)
       ) {
+        return true
+      }
+      if (isBlock && blockGeometryIntersectsBox(entity, matrix, state)) {
         return true
       }
     }
@@ -255,6 +271,24 @@ function blockGeometryIntersectsBox(
   } finally {
     state.activeBlocks.delete(record)
   }
+}
+
+/** Mapped XY extents of `entity` overlap `box` (cheap pre-filter). */
+function extentsOverlapBox(
+  entity: AcDbEntity,
+  transform: (point: AcGePoint3dLike) => { x: number; y: number },
+  box: AcGeBox2d
+): boolean {
+  const extents = entity.geometricExtents
+  if (extents.isEmpty()) return false
+  const { min, max } = extents
+  const mapped = new AcGeBox2d()
+  for (const x of [min.x, max.x]) {
+    for (const y of [min.y, max.y]) {
+      mapped.expandByPoint(transform({ x, y, z: min.z }))
+    }
+  }
+  return mapped.intersectsBox(box)
 }
 
 /**
