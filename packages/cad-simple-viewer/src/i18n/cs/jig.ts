@@ -826,7 +826,17 @@ export default {
     endPoint: 'Zadejte koncový bod oblouku',
     lockedEndPoint:
       'Zadejte koncový bod oblouku (Ctrl přepne velký/malý oblouk)',
-    invalidPoints: 'Tři body jsou kolineární a nedefinují oblouk.'
+    invalidPoints: 'Tři body jsou kolineární a nedefinují oblouk.',
+    pickArc: 'Vyberte kružnici, oblouk nebo oblouk křivky',
+    noArc:
+      'Zde není kružnice ani oblouk. Klikněte na křivku nebo zvolte Tři body.',
+    keywords: {
+      threePoint: {
+        display: 'TřiBody(T)',
+        local: 'TřiBody',
+        global: 'ThreePoint'
+      }
+    }
   },
   measureArea: {
     firstPoint: 'Zadejte první bod',

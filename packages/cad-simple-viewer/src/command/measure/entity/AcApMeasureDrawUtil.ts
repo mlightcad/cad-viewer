@@ -16,6 +16,9 @@ import { measureAngleArcRadiusWcs } from '../AcApMeasureAngleArc'
 
 export { MEASURE_ANGLE_ARC_RADIUS_FRACTION } from '../AcApMeasureAngleArc'
 
+/** Arc end-dot radius as a fraction of the overlay arrow-head length. */
+const ARC_END_DOT_RADIUS_FRACTION = 0.35
+
 /**
  * Circle geometry in world XY used by arc-length measurement overlays.
  */
@@ -259,6 +262,8 @@ export function drawMeasureAreaOnCanvas(
  * @param lineWidth - Stroke width in CSS pixels
  * @param through - Optional point on the measured sweep
  * @param strokeWidthWcs - Optional imported world-space stroke width
+ * @param endMarkSizePx - Endpoint dot size in CSS pixels; omit for live
+ *   previews, which draw no end dots
  */
 export function strokeMeasureArcOnContext(
   ctx: CanvasRenderingContext2D,
@@ -269,7 +274,8 @@ export function strokeMeasureArcOnContext(
   color: AcCmColor,
   lineWidth: number,
   through?: Point2,
-  strokeWidthWcs?: number
+  strokeWidthWcs?: number,
+  endMarkSizePx?: number
 ): void {
   const sc = view.worldToScreen({ x: g.cx, y: g.cy })
   const ss = view.worldToScreen(start)
@@ -289,16 +295,30 @@ export function strokeMeasureArcOnContext(
     ? !measured.clockwise
     : AcGeMathUtil.normalizeAngle(ea - sa) > Math.PI
 
-  ctx.beginPath()
-  ctx.arc(sc.x, sc.y, screenR, sa, ea, antiClockwise)
-  ctx.strokeStyle = acapCssColor(color)
-  ctx.lineWidth = acapScaledOverlayLineWidth(
+  const css = acapCssColor(color)
+  const strokeWidth = acapScaledOverlayLineWidth(
     lineWidth,
     ctx.canvas,
     view,
     strokeWidthWcs
   )
+  ctx.beginPath()
+  ctx.arc(sc.x, sc.y, screenR, sa, ea, antiClockwise)
+  ctx.strokeStyle = css
+  ctx.lineWidth = strokeWidth
   ctx.stroke()
+
+  // An arc has no direction to point an arrow at, so committed arcs get end
+  // dots sized like the distance arrow heads. Live previews skip them so they
+  // do not hide the snap indicator.
+  if (!(endMarkSizePx != null && endMarkSizePx > 0)) return
+  const dotRadius = endMarkSizePx * ARC_END_DOT_RADIUS_FRACTION
+  ctx.fillStyle = css
+  for (const p of [ss, se]) {
+    ctx.beginPath()
+    ctx.arc(p.x, p.y, dotRadius, 0, Math.PI * 2)
+    ctx.fill()
+  }
 }
 
 /**
@@ -339,7 +359,8 @@ export function drawMeasureArcOnCanvas(
     color,
     lineWidth,
     through,
-    strokeWidthWcs
+    strokeWidthWcs,
+    acapScaledOverlayArrowSize(canvas, view)
   )
   prepared.ctx.restore()
 }

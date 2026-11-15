@@ -1,8 +1,11 @@
 import {
   AcCmColor,
+  AcDbBlockReference,
   AcDbDatabase,
+  AcDbObjectId,
   AcGeCircArc2d,
   AcGeMathUtil,
+  AcGeMatrix3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 import {
@@ -19,6 +22,10 @@ import {
   AcEdPromptPointOptions,
   AcEdPromptStatus
 } from '../../editor'
+import {
+  blockChildBoxHint,
+  resolveBlockSubEntity
+} from '../../editor/input/AcEdOsnapCenterMarks'
 import { AcApI18n } from '../../i18n'
 import {
   acapAdaptiveMeasureBadgeFontSize,
@@ -41,7 +48,8 @@ import { acapSyncLiveOverlayTextHeight } from '../overlay/AcApOverlayDrawUtil'
 import {
   inwardLockAlignment,
   isBetterLockCandidate,
-  lockCurvesFromEntity,
+  lockCurvesInSpace,
+  mapLockCurve,
   pointLiesOnCircle,
   sameCircleGeom
 } from './AcApMeasureArcLock'
@@ -59,6 +67,8 @@ type Point2 = { x: number; y: number }
 const SNAP_SCREEN_PX = 20
 /** Minimum angular move (radians) before the locked-arc sweep direction is chosen. */
 const DIR_LOCK_RAD = 0.02
+/** Global name of the keyword that switches to the free three-point arc. */
+const THREE_POINT_KEYWORD = 'ThreePoint'
 
 /**
  * Wraps an angle delta into (−π, π].
@@ -115,6 +125,56 @@ function snapToCircle(
   return { x: g.cx + dx * s, y: g.cy + dy * s, z: 0 }
 }
 
+interface AcApArcLockSource {
+  entity: unknown
+  /** Cumulative INSERT transform for a block sub-entity. */
+  transform?: AcGeMatrix3d
+  viewportId?: AcDbObjectId
+}
+
+/**
+ * Entities whose curves the first pick may lock onto. INSERT hits resolve
+ * their aperture-hit children to the leaf entity plus INSERT transform, the
+ * same way OSNAP does; a bare INSERT hit is skipped rather than expanding
+ * the whole block definition.
+ */
+function lockSourcesFromHits(
+  context: AcApContext,
+  hits: ReturnType<AcEdBaseView['pick']>
+): AcApArcLockSource[] {
+  const blockTable = context.doc.database.tables.blockTable
+  const seen = new Set<string>()
+  const sources: AcApArcLockSource[] = []
+  for (const hit of hits) {
+    const entity = blockTable.getEntityById(hit.id)
+    if (!entity) continue
+    if (!(entity instanceof AcDbBlockReference)) {
+      if (seen.has(hit.id)) continue
+      seen.add(hit.id)
+      sources.push({ entity, viewportId: hit.viewportId })
+      continue
+    }
+    for (const child of hit.children ?? []) {
+      const key = `${hit.id}:${child.id}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      const found = resolveBlockSubEntity(
+        entity,
+        child.id,
+        new AcGeMatrix3d(),
+        blockChildBoxHint(child)
+      )
+      if (!found) continue
+      sources.push({
+        entity: found.entity,
+        transform: found.transform,
+        viewportId: hit.viewportId
+      })
+    }
+  }
+  return sources
+}
+
 /**
  * Picks the CIRCLE / ARC / polyline-bulge stroke closest to `p` in screen space.
  *
@@ -127,19 +187,13 @@ function pickCircleGeomAtPoint(
   context: AcApContext,
   p: AcGePoint3dLike
 ): { geom: AcApMeasureCircleGeom; snapped: AcGePoint3dLike } | null {
-  const blockTable = context.doc.database.tables.blockTable
   // OSNAP may have pulled `p` onto a shared polyline vertex. Score against
   // the live cursor so the lock follows whichever arc the mouse is nearer.
   const mouse = context.view.curPos
-  const seen = new Set<string>()
-  const hits = [
+  const sources = lockSourcesFromHits(context, [
     ...context.view.pick(mouse, SNAP_SCREEN_PX),
     ...context.view.pick(p, SNAP_SCREEN_PX)
-  ].filter(hit => {
-    if (seen.has(hit.id)) return false
-    seen.add(hit.id)
-    return true
-  })
+  ])
   const cursorScreen = context.view.worldToScreen(mouse)
   const pick = { x: mouse.x, y: mouse.y, z: 0 }
 
@@ -148,11 +202,19 @@ function pickCircleGeomAtPoint(
   let bestScreen = SNAP_SCREEN_PX
   let bestAlign = -Infinity
 
-  for (const hit of hits) {
-    const entity = blockTable.getEntityById(hit.id)
-    if (!entity) continue
-    for (const curve of lockCurvesFromEntity(entity)) {
-      if (!(curve.radius > 0)) continue
+  for (const source of sources) {
+    // Drill-through hits from a paper-space viewport carry model-space
+    // geometry; map it onto the paper-space cursor's coordinates.
+    const mapper =
+      source.viewportId != null
+        ? context.view.getViewportCoordinateMapper(source.viewportId)
+        : undefined
+    if (source.viewportId != null && !mapper) continue
+    for (const local of lockCurvesInSpace(source.entity, source.transform)) {
+      const curve = mapper
+        ? mapLockCurve(local, pt => mapper.modelToPaper(pt))
+        : local
+      if (!curve || !(curve.radius > 0)) continue
       const nearest = curve.nearestPoint(pick)
       const nearScreen = context.view.worldToScreen(nearest)
       const screenDist = Math.hypot(
@@ -240,12 +302,11 @@ class AcApArcSnapJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   update(p: AcGePoint3dLike) {
     const hit = pickCircleGeomAtPoint(this._ctx, p)
-    if (hit) {
-      this._indicator.setPosition(hit.snapped)
-      this._indicator.object.visible = true
-      return
-    }
-    this._indicator.object.visible = false
+    if (hit) this._indicator.setPosition(hit.snapped)
+    this._indicator.object.visible = !!hit
+    // No CAD transient here, so nothing else repaints the HTML layer when
+    // generic OSNAP markers are off.
+    ;(this._ctx.view as AcTrView2d).isHtmlDirty = true
   }
 
   end() {
@@ -643,29 +704,27 @@ export class AcApMeasureArcCmd extends AcApMeasureDrawCmd {
     await this.withMeasureInput(context, async () => {
       editor.resetInputToggles()
 
-      const startPrompt = new AcEdPromptPointOptions(
-        AcApI18n.t('jig.measureArc.startPoint')
-      )
-      startPrompt.jig = new AcApArcSnapJig(context, color)
-      const startResult = await editor.getPoint(startPrompt)
-      if (startResult.status !== AcEdPromptStatus.OK) return
-
-      const start = startResult.value!
-      const lock = pickCircleGeomAtPoint(context, start)
-      if (lock) {
-        const startOnLock = pointLiesOnCircle(toPoint2(start), lock.geom)
-          ? start
-          : lock.snapped
+      const lock = await this.pickLockedStart(context, color)
+      if (!lock) return
+      if (lock !== THREE_POINT_KEYWORD) {
         await this.commitLockedArc(
           context,
           view,
           db,
           color,
           lock.geom,
-          startOnLock
+          lock.start
         )
         return
       }
+
+      const startPrompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.measureArc.startPoint')
+      )
+      const startResult = await editor.getPoint(startPrompt)
+      if (startResult.status !== AcEdPromptStatus.OK) return
+      const start = startResult.value!
+
       const throughPrompt = new AcEdPromptPointOptions(
         AcApI18n.t('jig.measureArc.throughPoint')
       )
@@ -716,6 +775,52 @@ export class AcApMeasureArcCmd extends AcApMeasureDrawCmd {
         acapGetCurrentMeasurementStyle(db)
       )
     })
+  }
+
+  /**
+   * First pick of the locked-arc flow. Only CIRCLE / ARC / polyline-bulge
+   * strokes are accepted: generic OSNAP is off so it cannot pull the pick onto
+   * other entities, and clicks that miss a curve are ignored and re-prompted.
+   * The free three-point arc is reachable through the `ThreePoint` keyword.
+   */
+  private async pickLockedStart(
+    context: AcApContext,
+    color: AcCmColor
+  ): Promise<
+    | { geom: AcApMeasureCircleGeom; start: AcGePoint3dLike }
+    | typeof THREE_POINT_KEYWORD
+    | undefined
+  > {
+    const editor = context.view.editor
+    for (;;) {
+      const prompt = new AcEdPromptPointOptions(
+        AcApI18n.t('jig.measureArc.pickArc')
+      )
+      prompt.disableOSnap = true
+      prompt.keywords.add(
+        AcApI18n.t('jig.measureArc.keywords.threePoint.display'),
+        AcApI18n.t('jig.measureArc.keywords.threePoint.global'),
+        AcApI18n.t('jig.measureArc.keywords.threePoint.local')
+      )
+      prompt.jig = new AcApArcSnapJig(context, color)
+      const result = await editor.getPoint(prompt)
+      if (result.status === AcEdPromptStatus.Keyword) {
+        return result.stringResult === THREE_POINT_KEYWORD
+          ? THREE_POINT_KEYWORD
+          : undefined
+      }
+      if (result.status !== AcEdPromptStatus.OK) return undefined
+
+      const picked = result.value!
+      const lock = pickCircleGeomAtPoint(context, picked)
+      if (lock) {
+        const start = pointLiesOnCircle(toPoint2(picked), lock.geom)
+          ? picked
+          : lock.snapped
+        return { geom: lock.geom, start }
+      }
+      this.showMessage(AcApI18n.t('jig.measureArc.noArc'), 'warning')
+    }
   }
 
   /**

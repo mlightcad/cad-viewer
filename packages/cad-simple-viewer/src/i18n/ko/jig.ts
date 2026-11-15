@@ -821,7 +821,16 @@ export default {
     throughPoint: '호 위의 점 지정',
     endPoint: '호의 끝점 지정',
     lockedEndPoint: '호의 끝점 지정 (Ctrl 키로 큰 호/작은 호 전환)',
-    invalidPoints: '세 점이 동일 선상에 있어 호를 정의할 수 없습니다.'
+    invalidPoints: '세 점이 동일 선상에 있어 호를 정의할 수 없습니다.',
+    pickArc: '원, 호 또는 폴리선 호 선택',
+    noArc: '여기에 원이나 호가 없습니다. 곡선을 클릭하거나 3점을 선택하세요.',
+    keywords: {
+      threePoint: {
+        display: '3점(T)',
+        local: '3점',
+        global: 'ThreePoint'
+      }
+    }
   },
   measureArea: {
     firstPoint: '첫 번째 점 지정',

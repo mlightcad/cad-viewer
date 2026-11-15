@@ -799,7 +799,16 @@ export default {
     throughPoint: 'Specify a point on the arc',
     endPoint: 'Specify arc end point',
     lockedEndPoint: 'Specify arc end point (Ctrl to switch major/minor arc)',
-    invalidPoints: 'The three points are collinear and do not define an arc.'
+    invalidPoints: 'The three points are collinear and do not define an arc.',
+    pickArc: 'Select a circle, arc or polyline arc',
+    noArc: 'No circle or arc here. Click on a curve, or choose ThreePoint.',
+    keywords: {
+      threePoint: {
+        display: 'ThreePoint(T)',
+        local: 'ThreePoint',
+        global: 'ThreePoint'
+      }
+    }
   },
   measureArea: {
     firstPoint: 'Specify first point',
