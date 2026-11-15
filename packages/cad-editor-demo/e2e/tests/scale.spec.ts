@@ -52,7 +52,9 @@ async function selectAll(page: Page) {
 }
 
 async function enterInput(page: Page, value: string) {
-  const commandInput = page.getByRole('textbox', { name: 'Type command' })
+  // Not by role name: the "Type command" placeholder is cleared while a
+  // command prompt is active, so the accessible name changes mid-command.
+  const commandInput = page.locator('input.ml-cli-text')
   await commandInput.fill(value)
   await commandInput.press('Enter')
   await page.waitForTimeout(300)
@@ -62,10 +64,14 @@ test.describe('SCALE command', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     await selectAccessMode(page, 'Write')
-    await page.getByRole('button', { name: 'New Drawing' }).click()
-    await expect(page.locator('.ml-cad-container')).toBeVisible({
-      timeout: 30_000
-    })
+    // Retried: on a cold dev server the first click can land before the
+    // page has hydrated and is lost.
+    await expect(async () => {
+      await page.getByRole('button', { name: 'New Drawing' }).click()
+      await expect(page.locator('.ml-cad-container')).toBeVisible({
+        timeout: 10_000
+      })
+    }).toPass({ timeout: 60_000 })
     // A single LINE from (0,0) to (100,0).
     await enterInput(page, 'line')
     await enterInput(page, '0,0')
