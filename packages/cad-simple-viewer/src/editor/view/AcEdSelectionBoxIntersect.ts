@@ -1,6 +1,9 @@
 import {
   AcDbBlockReference,
   AcDbEntity,
+  AcDbHatch,
+  AcDbRasterImage,
+  AcDbTrace,
   AcGeBox2d,
   AcGeMatrix3d,
   AcGePoint2dLike,
@@ -8,7 +11,10 @@ import {
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { resolveBlockSubEntity } from '../input/AcEdOsnapCenterMarks'
+import {
+  acedBlockReferenceInsertionMatrix,
+  canonicalGsMark
+} from '../input/AcEdOsnapCenterMarks'
 import type { AcEdSpatialQueryResultItem } from './AcEdSpatialQueryResult'
 
 /**
@@ -105,6 +111,11 @@ export function acedPrimitiveIntersectsSelectionBox(
  * against the box so long thin AABBs do not false-positive when the pick
  * rectangle sits in empty space inside a large closed boundary.
  *
+ * Filled areas (hatch, 2D solid / trace, raster image / wipeout) only expose
+ * their boundary edges. When no edge touches the box, the box lies entirely
+ * inside or outside the area, so one box corner decides: inside the fill is a
+ * hit, like a click on the fill and like AutoCAD.
+ *
  * @param entity - Entity whose drawable curves are tested.
  * @param box - Selection box in the coordinate system `transform` produces.
  * @param transform - Optional point mapping applied to each curve point first.
@@ -123,6 +134,14 @@ export function acedEntityIntersectsSelectionBox(
       return true
     }
   }
+  if (isFilledArea(entity)) {
+    // Every primitive is a line here: any other kind already returned true.
+    return lineLoopsContainPoint(
+      curves as SelectionIntersectLinePrimitive[],
+      box.min,
+      transform
+    )
+  }
   return false
 }
 
@@ -136,6 +155,11 @@ export function acedEntityIntersectsSelectionBox(
  * The spatial index only filters sub-entities by their AABB, so a closed
  * border polyline would otherwise make every crossing box inside the frame
  * select the whole INSERT.
+ *
+ * The block definition is walked once (nested INSERTs included) and every
+ * leaf whose id appears among `children` is tested. All `#n` occurrences of
+ * an id belong to this INSERT, so testing each of them answers the
+ * INSERT-level question without resolving occurrences one child at a time.
  *
  * @param blockRef - Block reference that produced the spatial hit.
  * @param children - Child boxes returned by the hierarchical spatial query
@@ -152,6 +176,7 @@ export function acedBlockReferenceIntersectsSelectionBox(
   box: AcGeBox2d,
   outerTransform?: (point: AcGePoint3dLike) => { x: number; y: number }
 ): boolean {
+  const ids = new Set<string>()
   for (const child of children) {
     // Without an outer mapping the child box is already in the selection
     // space, so full containment means a hit without touching geometry.
@@ -166,32 +191,70 @@ export function acedBlockReferenceIntersectsSelectionBox(
     ) {
       return true
     }
+    ids.add(canonicalGsMark(child.id))
+  }
+  if (ids.size === 0) return false
 
-    const found = resolveBlockSubEntity(
-      blockRef,
-      child.id,
-      new AcGeMatrix3d(),
-      {
-        x: (child.minX + child.maxX) / 2,
-        y: (child.minY + child.maxY) / 2,
-        z: 0
-      }
+  const unresolved = new Set(ids)
+  const hit = blockGeometryIntersectsBox(blockRef, new AcGeMatrix3d(), {
+    ids,
+    unresolved,
+    box,
+    outerTransform,
+    activeBlocks: new Set()
+  })
+  // Children that are not in the block definition (attributes, anonymous
+  // hatch-island boxes) keep the AABB result rather than silently dropping a
+  // selection the user can see.
+  return hit || unresolved.size > 0
+}
+
+interface BlockWalkState {
+  ids: ReadonlySet<string>
+  unresolved: Set<string>
+  box: AcGeBox2d
+  outerTransform?: (point: AcGePoint3dLike) => { x: number; y: number }
+  activeBlocks: Set<unknown>
+}
+
+function blockGeometryIntersectsBox(
+  blockRef: AcDbBlockReference,
+  parentMat: AcGeMatrix3d,
+  state: BlockWalkState
+): boolean {
+  const record = blockRef.blockTableRecord
+  // Guard against self-referencing block definitions in damaged drawings.
+  if (!record || state.activeBlocks.has(record)) return false
+  state.activeBlocks.add(record)
+  try {
+    const matrix = new AcGeMatrix3d().multiplyMatrices(
+      parentMat,
+      acedBlockReferenceInsertionMatrix(blockRef)
     )
-    // Unresolvable child: keep the AABB result rather than silently dropping
-    // a selection the user can see.
-    if (!found) return true
-
-    const matrix = found.transform
+    const { outerTransform } = state
     // A fresh point per call: segment tests hold start and end at once.
     const transform = (p: AcGePoint3dLike) => {
       const point = new AcGePoint3d(p).applyMatrix4(matrix)
       return outerTransform ? outerTransform(point) : point
     }
-    if (acedEntityIntersectsSelectionBox(found.entity, box, transform)) {
-      return true
+    for (const entity of record.newIterator()) {
+      if (state.ids.has(entity.objectId)) {
+        state.unresolved.delete(entity.objectId)
+        if (acedEntityIntersectsSelectionBox(entity, state.box, transform)) {
+          return true
+        }
+      }
+      if (
+        entity instanceof AcDbBlockReference &&
+        blockGeometryIntersectsBox(entity, matrix, state)
+      ) {
+        return true
+      }
     }
+    return false
+  } finally {
+    state.activeBlocks.delete(record)
   }
-  return false
 }
 
 /**
@@ -205,6 +268,38 @@ export function acedNeedsCrossingGeometryRefine(item: {
   children?: unknown
 }): boolean {
   return item.children === undefined
+}
+
+function isFilledArea(entity: AcDbEntity): boolean {
+  // AcDbSolid extends AcDbTrace; AcDbWipeout extends AcDbRasterImage.
+  return (
+    entity instanceof AcDbHatch ||
+    entity instanceof AcDbTrace ||
+    entity instanceof AcDbRasterImage
+  )
+}
+
+/**
+ * Even-odd point-in-area test over closed line loops, so hatch islands
+ * toggle the fill the same way the renderer does.
+ */
+function lineLoopsContainPoint(
+  lines: readonly SelectionIntersectLinePrimitive[],
+  point: AcGePoint2dLike,
+  transform?: (point: AcGePoint3dLike) => { x: number; y: number }
+): boolean {
+  let inside = false
+  for (const { line } of lines) {
+    const a = transform ? transform(line.startPoint) : line.startPoint
+    const b = transform ? transform(line.endPoint) : line.endPoint
+    if (
+      a.y > point.y !== b.y > point.y &&
+      point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x
+    ) {
+      inside = !inside
+    }
+  }
+  return inside
 }
 
 function segmentsIntersect(

@@ -2,8 +2,11 @@ import {
   AcDbBlockReference,
   AcDbBlockTableRecord,
   AcDbDatabase,
+  AcDbLine,
   AcDbPolyline,
+  AcDbSolid,
   AcDbText,
+  AcDbTrace,
   AcGeBox2d,
   AcGePoint2d,
   AcGePoint3d
@@ -11,6 +14,7 @@ import {
 
 import {
   acedBlockReferenceIntersectsSelectionBox,
+  acedEntityIntersectsSelectionBox,
   acedLineSegmentIntersectsBox2d,
   acedNeedsCrossingGeometryRefine
 } from '../src/editor/view/AcEdSelectionBoxIntersect'
@@ -175,5 +179,139 @@ describe('acedBlockReferenceIntersectsSelectionBox', () => {
     expect(acedBlockReferenceIntersectsSelectionBox(ref, children, pick)).toBe(
       true
     )
+  })
+
+  it('tests a frame drawn in a nested block through both transforms', () => {
+    const { db, border } = setup('FRAME_NESTED_INNER')
+    const outer = new AcDbBlockTableRecord()
+    outer.name = 'FRAME_NESTED_OUTER'
+    db.tables.blockTable.add(outer)
+    const inner = new AcDbBlockReference('FRAME_NESTED_INNER')
+    inner.position = new AcGePoint3d(10, 0, 0)
+    outer.appendEntity(inner)
+    const ref = new AcDbBlockReference('FRAME_NESTED_OUTER')
+    ref.scaleFactors = new AcGePoint3d(2, 2, 1)
+    db.tables.blockTable.modelSpace.appendEntity(ref)
+
+    // Frame spans x 20..220, y 0..200 in WCS.
+    const children = [childOf(border.objectId, 20, 0, 220, 200)]
+    expect(
+      acedBlockReferenceIntersectsSelectionBox(
+        ref,
+        children,
+        new AcGeBox2d({ x: 100, y: 90 }, { x: 120, y: 110 })
+      )
+    ).toBe(false)
+    expect(
+      acedBlockReferenceIntersectsSelectionBox(
+        ref,
+        children,
+        new AcGeBox2d({ x: 210, y: 90 }, { x: 230, y: 110 })
+      )
+    ).toBe(true)
+  })
+
+  it('hits a duplicate nested occurrence (#n gsMark)', () => {
+    const db = new AcDbDatabase()
+    db.createDefaultData()
+    const cell = new AcDbBlockTableRecord()
+    cell.name = 'CELL_DUP'
+    db.tables.blockTable.add(cell)
+    const line = new AcDbLine(
+      new AcGePoint3d(0, 0, 0),
+      new AcGePoint3d(10, 0, 0)
+    )
+    cell.appendEntity(line)
+    const row = new AcDbBlockTableRecord()
+    row.name = 'ROW_DUP'
+    db.tables.blockTable.add(row)
+    for (const x of [0, 100]) {
+      const nested = new AcDbBlockReference('CELL_DUP')
+      nested.position = new AcGePoint3d(x, 0, 0)
+      row.appendEntity(nested)
+    }
+    const ref = new AcDbBlockReference('ROW_DUP')
+    db.tables.blockTable.modelSpace.appendEntity(ref)
+
+    const children = [childOf(`${line.objectId}#1`, 100, 0, 110, 0)]
+    expect(
+      acedBlockReferenceIntersectsSelectionBox(
+        ref,
+        children,
+        new AcGeBox2d({ x: 104, y: -1 }, { x: 106, y: 1 })
+      )
+    ).toBe(true)
+    expect(
+      acedBlockReferenceIntersectsSelectionBox(
+        ref,
+        children,
+        new AcGeBox2d({ x: 104, y: 1 }, { x: 106, y: 2 })
+      )
+    ).toBe(false)
+  })
+
+  it('selects a filled solid when the box sits inside its fill', () => {
+    const { ref, frameBlock } = setup('FRAME_FILL')
+    // Title strip filled with a 2D solid (AutoCAD vertex order 0,1,3,2).
+    const solid = new AcDbSolid()
+    solid.setPointAt(0, new AcGePoint3d(60, 0, 0))
+    solid.setPointAt(1, new AcGePoint3d(100, 0, 0))
+    solid.setPointAt(2, new AcGePoint3d(60, 20, 0))
+    solid.setPointAt(3, new AcGePoint3d(100, 20, 0))
+    frameBlock.appendEntity(solid)
+    const children = [childOf(solid.objectId, 60, 0, 100, 20)]
+
+    expect(
+      acedBlockReferenceIntersectsSelectionBox(
+        ref,
+        children,
+        new AcGeBox2d({ x: 70, y: 5 }, { x: 80, y: 15 })
+      )
+    ).toBe(true)
+    // Child AABB overlaps, but the box is outside the fill.
+    expect(
+      acedBlockReferenceIntersectsSelectionBox(
+        ref,
+        children,
+        new AcGeBox2d({ x: 50, y: 5 }, { x: 59, y: 15 })
+      )
+    ).toBe(false)
+  })
+})
+
+describe('acedEntityIntersectsSelectionBox', () => {
+  it('treats the inside of a filled area as a hit, the empty side as a miss', () => {
+    const trace = new AcDbTrace()
+    trace.setPointAt(0, new AcGePoint3d(0, 0, 0))
+    trace.setPointAt(1, new AcGePoint3d(100, 0, 0))
+    trace.setPointAt(2, new AcGePoint3d(0, 100, 0))
+    trace.setPointAt(3, new AcGePoint3d(100, 100, 0))
+    expect(
+      acedEntityIntersectsSelectionBox(
+        trace,
+        new AcGeBox2d({ x: 40, y: 40 }, { x: 60, y: 60 })
+      )
+    ).toBe(true)
+    expect(
+      acedEntityIntersectsSelectionBox(
+        trace,
+        new AcGeBox2d({ x: 140, y: 40 }, { x: 160, y: 60 })
+      )
+    ).toBe(false)
+  })
+
+  it('still misses the empty interior of an unfilled closed polyline', () => {
+    const border = new AcDbPolyline()
+    border.addVertexAt(0, new AcGePoint2d(0, 0))
+    border.addVertexAt(1, new AcGePoint2d(100, 0))
+    border.addVertexAt(2, new AcGePoint2d(100, 100))
+    border.addVertexAt(3, new AcGePoint2d(0, 100))
+    border.closed = true
+    expect(
+      acedEntityIntersectsSelectionBox(
+        border,
+        new AcGeBox2d({ x: 40, y: 40 }, { x: 60, y: 60 })
+      )
+    ).toBe(false)
   })
 })
