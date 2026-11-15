@@ -87,6 +87,7 @@ import {
   AcApRegenCmd,
   AcApRevCloudCmd,
   AcApRotateCmd,
+  AcApScaleCmd,
   AcApSelectCmd,
   AcApSketchCmd,
   AcApSplineCmd,
@@ -210,6 +211,7 @@ const DEFAULT_COMMAND_ALIASES: Record<string, string[]> = {
   OFFSET: ['O'],
   COPY: ['CO'],
   ROTATE: ['RO'],
+  SCALE: ['SC'],
   OPEN: ['OP'],
   PAN: ['P'],
   POINT: ['PO'],
@@ -2118,6 +2120,7 @@ export class AcApDocManager {
     addSystemCommand('move', 'move', new AcApMoveCmd())
     addSystemCommand('offset', 'offset', new AcApOffsetCmd())
     addSystemCommand('rotate', 'rotate', new AcApRotateCmd())
+    addSystemCommand('scale', 'scale', new AcApScaleCmd())
     addSystemCommand('log', 'log', new AcApLogCmd())
     addSystemCommand('objectscale', 'objectscale', new AcApObjectScaleCmd())
     addSystemCommand('open', 'open', new AcApOpenCmd())

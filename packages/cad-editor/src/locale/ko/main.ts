@@ -326,7 +326,8 @@ export default {
       mleaderRemove: '기존 다중 지시선에서 지시선을 제거합니다.',
       move: '선택한 객체를 새 위치로 이동합니다.',
       rotate: '선택한 객체를 기준점을 중심으로 회전합니다.',
-      copy: '선택한 객체를 새 위치에 복사합니다.',
+      scale:
+        '선택한 객체를 축척 후에도 비율이 유지되도록 확대 또는 축소합니다.',
       erase: '도면에서 선택한 객체를 지웁니다.',
       pasteClip: '클립보드의 객체를 현재 도면에 붙여넣습니다(PASTECLIP).',
       pasteOrig:
@@ -480,7 +481,7 @@ export default {
       mleaderRemove: '지시선 제거',
       move: '이동',
       rotate: '회전',
-      copy: '복사',
+      scale: '축척',
       erase: '지우기',
       pasteClip: '붙여넣기',
       pasteOrig: '원래 좌표에 붙여넣기',

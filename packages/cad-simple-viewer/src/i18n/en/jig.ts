@@ -798,8 +798,7 @@ export default {
     startPoint: 'Specify arc start point',
     throughPoint: 'Specify a point on the arc',
     endPoint: 'Specify arc end point',
-    lockedEndPoint:
-      'Specify arc end point (Ctrl to switch major/minor arc)',
+    lockedEndPoint: 'Specify arc end point (Ctrl to switch major/minor arc)',
     invalidPoints: 'The three points are collinear and do not define an arc.'
   },
   measureArea: {
@@ -907,8 +906,7 @@ export default {
   leader: {
     startPoint: 'Specify leader start point',
     nextPoint: 'Specify next point',
-    nextPointOrOptions:
-      'Specify next point or [Annotation/Format/Undo]',
+    nextPointOrOptions: 'Specify next point or [Annotation/Format/Undo]',
     formatPrompt: 'Enter leader format option [Spline/STraight/Arrow/None]',
     annotationText: 'Enter first line of annotation text or <options>',
     nextAnnotationLine: 'Enter next line of annotation text',
@@ -1045,10 +1043,10 @@ export default {
   mleaderedit: {
     selectMLeader: 'Select a multileader',
     rejectMLeader: 'Must select a multileader.',
-    arrowheadOrRemove:
-      'Specify leader arrowhead location or [Remove leaders]',
+    arrowheadOrRemove: 'Specify leader arrowhead location or [Remove leaders]',
     selectLeaderToRemove: 'Specify a leader to remove or press Enter to finish',
     cannotRemoveLast: 'Cannot remove the last leader from this multileader.',
+    noLeaderAtPoint: 'No leader found at that point.',
     keywords: {
       remove: {
         display: 'Remove leaders(R)',
@@ -1287,6 +1285,35 @@ export default {
     },
     invalid: {
       referencePoints: 'Invalid reference points: points must be different.'
+    }
+  },
+  scale: {
+    basePoint: 'Specify base point',
+    scaleFactorOrOptions: 'Specify scale factor or',
+    referenceLength: 'Specify reference length',
+    newLengthOrPoints: 'Specify new length or',
+    newLengthFirstPoint: 'Specify first point',
+    copyMessage: 'Scaling a copy of the selected objects.',
+    keywords: {
+      copy: {
+        display: 'Copy(C)',
+        local: 'Copy',
+        global: 'Copy'
+      },
+      reference: {
+        display: 'Reference(R)',
+        local: 'Reference',
+        global: 'Reference'
+      },
+      points: {
+        display: 'Points(P)',
+        local: 'Points',
+        global: 'Points'
+      }
+    },
+    invalid: {
+      factor: 'Value must be positive and nonzero.',
+      length: 'Value must be positive and nonzero.'
     }
   },
   revcloud: {
@@ -1851,8 +1878,7 @@ export default {
   dashgroup: {
     option: 'Enter an option',
     empty: 'No groups defined',
-    listEntry:
-      '{name}  {description}  [{selectable}]  ({count})',
+    listEntry: '{name}  {description}  [{selectable}]  ({count})',
     yes: 'Yes',
     no: 'No',
     enterNameOrBlank: 'Enter group name or press Enter for unnamed',
@@ -1916,8 +1942,7 @@ export default {
   },
   pdfimport: {
     pageNumber: 'Enter page number (1-{count})',
-    insertionPoint:
-      'Specify insertion point (scale {scale}, mode {mode}) or',
+    insertionPoint: 'Specify insertion point (scale {scale}, mode {mode}) or',
     modePrompt: 'Select import mode',
     modeRecover: 'recover drawing',
     modeVisual: 'keep PDF appearance',
@@ -1991,7 +2016,8 @@ export default {
       scale: 'Drawing scale',
       stylePreview: 'Preview of the selected dim style with recovered sizes',
       dimensions: 'Dimensions',
-      selectHint: 'Select a dimension to zoom to it; edit the value before Apply.',
+      selectHint:
+        'Select a dimension to zoom to it; edit the value before Apply.',
       empty: 'No dimensions found in the selection.',
       include: 'Convert this dimension',
       kindLinear: 'Linear',
@@ -2013,7 +2039,8 @@ export default {
       title: 'Recover Hatch',
       hatches: 'Hatches',
       addArea: 'Add area',
-      addAreaTip: 'Pick a point inside an area the recognition missed; the best fitting pattern is matched to its strokes.',
+      addAreaTip:
+        'Pick a point inside an area the recognition missed; the best fitting pattern is matched to its strokes.',
       picking: 'Pick a point inside the area in the drawing…',
       noBoundary: 'No closed area was found around that point.',
       noStrokes: 'No regular pattern was found in that area.',
@@ -2029,10 +2056,13 @@ export default {
       spacing: 'Spacing',
       angle: 'Angle',
       autoFit: 'Auto fit',
-      autoFitTip: 'Measure the scale, angle and origin of this pattern from the strokes again.',
+      autoFitTip:
+        'Measure the scale, angle and origin of this pattern from the strokes again.',
       match: 'Pattern on strokes: {precision} · strokes re-drawn: {recall}',
-      noEntities: 'This pattern re-draws no object completely; nothing would be replaced.',
-      guessed: 'The strokes show no trace of this pattern; its scale and angle are a guess.',
+      noEntities:
+        'This pattern re-draws no object completely; nothing would be replaced.',
+      guessed:
+        'The strokes show no trace of this pattern; its scale and angle are a guess.',
       poorMatch: 'Poor match: strokes the hatch does not re-draw are kept.',
       userSingle: 'User defined',
       userDouble: 'User defined, double',
@@ -2048,14 +2078,16 @@ export default {
       'Converted {count} hatch(es) ({patterns}), replacing {strokes} object(s).'
   },
   bsearch: {
-    unsupported: 'None of the selected objects can be matched (lines, arcs, circles, polylines, ellipses, splines, text, mtext and block references are supported).',
+    unsupported:
+      'None of the selected objects can be matched (lines, arcs, circles, polylines, ellipses, splines, text, mtext and block references are supported).',
     skipped: '{count} selected object(s) cannot be matched and are ignored.',
     found: 'Found {count} matching instance(s), {included} to convert. Choose',
     noMatches: 'No other instances found.',
     reviewOne: 'Instance {index}/{count} ({state})',
     included: 'included',
     excluded: 'excluded',
-    options: 'Rotation {rotation}, mirror {mirror}, scale {scale}, same layer {layer}, existing blocks {blocks}, text variations {text}. Toggle',
+    options:
+      'Rotation {rotation}, mirror {mirror}, scale {scale}, same layer {layer}, existing blocks {blocks}, text variations {text}. Toggle',
     on: 'on',
     off: 'off',
     target: 'Convert to',
@@ -2068,7 +2100,8 @@ export default {
     blockNotFound: 'Block "{name}" not found.',
     rotation: 'Specify rotation angle of the block',
     scale: 'Specify scale factor of the block',
-    scope: 'Convert the {count} found instance(s) as well, or only the source objects?',
+    scope:
+      'Convert the {count} found instance(s) as well, or only the source objects?',
     summary: 'Converted into block "{name}": {count} reference(s).',
     keywords: {
       convert: {

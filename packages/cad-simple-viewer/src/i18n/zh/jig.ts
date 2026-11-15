@@ -1014,6 +1014,7 @@ export default {
     arrowheadOrRemove: '指定引线箭头位置或 [删除引线(R)]',
     selectLeaderToRemove: '指定要删除的引线或按 Enter 结束',
     cannotRemoveLast: '无法删除该多重引线的最后一条引线。',
+    noLeaderAtPoint: '在该点未找到引线。',
     keywords: {
       remove: {
         display: '删除引线(R)',
@@ -1177,6 +1178,35 @@ export default {
     },
     invalid: {
       referencePoints: '参考点输入无效：两点必须不同。'
+    }
+  },
+  scale: {
+    basePoint: '指定基点',
+    scaleFactorOrOptions: '指定比例因子或',
+    referenceLength: '指定参照长度',
+    newLengthOrPoints: '指定新的长度或',
+    newLengthFirstPoint: '指定第一点',
+    copyMessage: '缩放一组选定对象。',
+    keywords: {
+      copy: {
+        display: '复制(C)',
+        local: '复制',
+        global: 'Copy'
+      },
+      reference: {
+        display: '参照(R)',
+        local: '参照',
+        global: 'Reference'
+      },
+      points: {
+        display: '点(P)',
+        local: '点',
+        global: 'Points'
+      }
+    },
+    invalid: {
+      factor: '需要正的非零值。',
+      length: '需要正的非零值。'
     }
   },
   rect: {
@@ -1879,8 +1909,7 @@ export default {
   },
   pdfimport: {
     pageNumber: '输入页码 (1-{count})',
-    insertionPoint:
-      '指定插入点（比例 {scale}，模式 {mode}）或',
+    insertionPoint: '指定插入点（比例 {scale}，模式 {mode}）或',
     modePrompt: '选择导入方式',
     modeRecover: '复原图纸',
     modeVisual: '保留 PDF 视觉效果',
@@ -1919,7 +1948,8 @@ export default {
       singleView: '显示页面预览',
       gridView: '显示页面缩略图',
       pageLabel: '第 {page} 页',
-      pageSize: '页面大小: {width} × {height} 毫米（{widthIn} × {heightIn} 英寸）',
+      pageSize:
+        '页面大小: {width} × {height} 毫米（{widthIn} × {heightIn} 英寸）',
       previewError: '无法预览',
       positionGroup: '位置',
       onScreen: '在屏幕上指定插入点',
@@ -1937,8 +1967,10 @@ export default {
   },
   pdfdim: {
     cancelled: '已取消识别标注，未做任何更改。',
-    noDimensions: '所选范围内没有找到标注（需要箭头或斜线标记、尺寸线和数值文字）。',
-    summary: '已转换 {count} 个标注；标注样式 {style} 的测量比例因子为 {scale}。',
+    noDimensions:
+      '所选范围内没有找到标注（需要箭头或斜线标记、尺寸线和数值文字）。',
+    summary:
+      '已转换 {count} 个标注；标注样式 {style} 的测量比例因子为 {scale}。',
     panel: {
       title: '识别标注',
       style: '标注样式',
@@ -1974,7 +2006,8 @@ export default {
       title: '识别填充',
       hatches: '图案填充',
       addArea: '添加区域',
-      addAreaTip: '在识别遗漏的区域内拾取一点，将为其中的线条匹配最合适的图案。',
+      addAreaTip:
+        '在识别遗漏的区域内拾取一点，将为其中的线条匹配最合适的图案。',
       picking: '请在图形中拾取区域内部的一点…',
       noBoundary: '该点周围没有找到封闭区域。',
       noStrokes: '该区域内没有找到规则的图案。',
@@ -2003,18 +2036,22 @@ export default {
       cancel: '取消',
       apply: '应用'
     },
-    noHatches: '所选范围内没有找到图案填充（需要规则排列的平行线段及其边界线）。',
-    summary: '已转换 {count} 个图案填充（{patterns}），替换了 {strokes} 个对象。'
+    noHatches:
+      '所选范围内没有找到图案填充（需要规则排列的平行线段及其边界线）。',
+    summary:
+      '已转换 {count} 个图案填充（{patterns}），替换了 {strokes} 个对象。'
   },
   bsearch: {
-    unsupported: '所选对象均无法匹配（支持直线、圆弧、圆、多段线、椭圆、样条曲线、文字、多行文字和块参照）。',
+    unsupported:
+      '所选对象均无法匹配（支持直线、圆弧、圆、多段线、椭圆、样条曲线、文字、多行文字和块参照）。',
     skipped: '{count} 个所选对象无法匹配，已忽略。',
     found: '找到 {count} 个匹配实例，将转换 {included} 个。请选择',
     noMatches: '未找到其他实例。',
     reviewOne: '实例 {index}/{count}（{state}）',
     included: '已包含',
     excluded: '已排除',
-    options: '旋转 {rotation}，镜像 {mirror}，比例 {scale}，相同图层 {layer}，现有块 {blocks}，文字变化 {text}。切换',
+    options:
+      '旋转 {rotation}，镜像 {mirror}，比例 {scale}，相同图层 {layer}，现有块 {blocks}，文字变化 {text}。切换',
     on: '开',
     off: '关',
     target: '转换为',
@@ -2182,7 +2219,8 @@ export default {
       fontMissing: '字体“{font}”不可用，将以“{fallback}”显示。',
       fontNotShx: '这是 TrueType 字体：文字外观不会像 SHX 线条文字。',
       fontNotTtf: '这是 SHX 字体：文字外观不会像 TrueType 轮廓文字。',
-      styleChanges: '将修改文字样式“{style}”的字体：已使用该样式的文字也会改变。',
+      styleChanges:
+        '将修改文字样式“{style}”的字体：已使用该样式的文字也会改变。',
       heightScale: '高度比例',
       widthFactor: '宽度因子',
       autoWidth: '适配原宽度',
@@ -2226,7 +2264,8 @@ export default {
     firstPoint: '指定已知距离的第一点',
     secondPoint: '指定第二点',
     realLength: '输入实际长度（测量值 {measured}）',
-    realLengthFromDimensions: '输入实际长度（测量值 {measured}；标注文字显示比例为 1:{scale}）',
+    realLengthFromDimensions:
+      '输入实际长度（测量值 {measured}；标注文字显示比例为 1:{scale}）',
     zeroDistance: '两点重合。',
     applied: '已按比例 {factor} 缩放 {count} 个对象。'
   }

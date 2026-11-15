@@ -20,17 +20,30 @@ import {
   acapCountMLeaderLines,
   acapFindNearestMLeaderLine,
   acapMatchKeyword,
-  acapRemoveMLeaderLine,
-  acapResolveMLeaderStyle
+  acapRemoveMLeaderLine
 } from './AcApMLeaderCmdUtil'
 
 const I18N = 'jig.mleaderedit'
 
+/** Screen-pixel aperture for picking a leader line to remove. */
+const PICK_APERTURE_PX = 10
+
 /**
- * Transient preview while adding a new leader branch to an existing mleader.
+ * Converts {@link PICK_APERTURE_PX} into drawing units at `point`, so the
+ * pick feels the same at every zoom level.
+ */
+function pickTolerance(view: AcEdBaseView, point: AcGePoint3dLike) {
+  const a = view.worldToScreen(point)
+  const b = view.worldToScreen({ x: point.x + 1, y: point.y })
+  const pixelsPerUnit = Math.hypot(b.x - a.x, b.y - a.y)
+  return pixelsPerUnit > 0 ? PICK_APERTURE_PX / pixelsPerUnit : Infinity
+}
+
+/**
+ * Transient preview while adding a new leader line to an existing mleader.
  */
 class AcApMLeaderEditAddJig extends AcEdPreviewJig<AcGePoint3dLike> {
-  private readonly _preview: AcDbMLeader
+  private _preview: AcDbMLeader
   private readonly _source: AcDbMLeader
   private readonly _view: AcEdBaseView
 
@@ -38,7 +51,7 @@ class AcApMLeaderEditAddJig extends AcEdPreviewJig<AcGePoint3dLike> {
     super(view)
     this._view = view
     this._source = source
-    this._preview = this.cloneMLeader(source)
+    this._preview = this.cloneSource()
   }
 
   get entity(): AcDbMLeader {
@@ -47,61 +60,17 @@ class AcApMLeaderEditAddJig extends AcEdPreviewJig<AcGePoint3dLike> {
 
   update(point: AcGePoint3dLike) {
     this._view.removeTransientEntity(this._preview.objectId)
-    const next = this.cloneMLeader(this._source)
-    const style = acapResolveMLeaderStyle(
-      AcApDocManager.instance.curDocument.database
-    )
-    acapAddMLeaderBranch(next, point, style)
-    // Replace internal preview entity by mutating through a rebuild:
-    // clear leaders on _preview and copy from next.
-    while (this._preview.numberOfLeaders > 0) {
-      this._preview.removeLeader(0)
-    }
-    for (const leader of next.leaders) {
-      this._preview.addLeader({
-        landingPoint: leader.landingPoint,
-        doglegVector: leader.doglegVector,
-        doglegVectorSet: leader.doglegVectorSet,
-        doglegLength: leader.doglegLength,
-        directionType: leader.directionType,
-        lastLeaderLinePoint: leader.lastLeaderLinePoint,
-        lastLeaderLinePointSet: leader.lastLeaderLinePointSet,
-        leaderLines: leader.leaderLines.map(line => ({
-          vertices: line.vertices.map(p => p.clone())
-        }))
-      })
-    }
-    this._preview.contents = this._source.contents
-    this._preview.textLocation = this._source.textLocation
-    this._preview.contentType = this._source.contentType
-    this._preview.doglegEnabled = this._source.doglegEnabled
-    this._preview.doglegLength = this._source.doglegLength
-    this._preview.leaderLineType = this._source.leaderLineType
+    // A full clone keeps text height, style, colors and content of the
+    // original so the preview looks exactly like the edited result.
+    this._preview = this.cloneSource()
+    acapAddMLeaderBranch(this._preview, point)
     this._view.addTransientEntity(this._preview)
   }
 
-  private cloneMLeader(source: AcDbMLeader) {
-    const clone = new AcDbMLeader()
-    clone.contentType = source.contentType
-    clone.contents = source.contents
-    clone.textLocation = source.textLocation
-    clone.doglegEnabled = source.doglegEnabled
-    clone.doglegLength = source.doglegLength
-    clone.leaderLineType = source.leaderLineType
-    clone.mleaderStyleId = source.mleaderStyleId
-    for (const leader of source.leaders) {
-      clone.addLeader({
-        landingPoint: leader.landingPoint,
-        doglegVector: leader.doglegVector,
-        doglegVectorSet: leader.doglegVectorSet,
-        doglegLength: leader.doglegLength,
-        directionType: leader.directionType,
-        lastLeaderLinePoint: leader.lastLeaderLinePoint,
-        lastLeaderLinePointSet: leader.lastLeaderLinePointSet,
-        leaderLines: leader.leaderLines.map(line => ({
-          vertices: line.vertices.map(p => p.clone())
-        }))
-      })
+  private cloneSource() {
+    const clone = this._source.clone()
+    if (!(clone instanceof AcDbMLeader)) {
+      throw new Error('Failed to clone multileader for preview.')
     }
     return clone
   }
@@ -128,7 +97,9 @@ export class AcApMLeaderEditCmd extends AcEdCommand {
     const picked = await editor.getEntity(entityPrompt)
     if (picked.status !== AcEdPromptStatus.OK || !picked.objectId) return
 
-    const entity = db.tables.blockTable.getEntityById(picked.objectId)
+    // Open through the command's transaction so the edit gets an undo
+    // snapshot; mutating the entity looked up from the block table would not.
+    const entity = db.openEntityForWrite(picked.objectId)
     if (!(entity instanceof AcDbMLeader)) return
 
     if (this.initialMode === 'remove') {
@@ -140,7 +111,6 @@ export class AcApMLeaderEditCmd extends AcEdCommand {
 
   private async addLoop(context: AcApContext, mleader: AcDbMLeader) {
     const editor = AcApDocManager.instance.editor
-    const style = acapResolveMLeaderStyle(context.doc.database)
 
     for (;;) {
       const jig = new AcApMLeaderEditAddJig(context.view, mleader)
@@ -177,7 +147,7 @@ export class AcApMLeaderEditCmd extends AcEdCommand {
         return
       }
 
-      acapAddMLeaderBranch(mleader, result.value, style)
+      acapAddMLeaderBranch(mleader, result.value)
       context.view.updateEntity(mleader)
     }
   }
@@ -210,22 +180,13 @@ export class AcApMLeaderEditCmd extends AcEdCommand {
         return
       }
 
-      // ~ relative pick tolerance in WCS (generous for annotation tips)
-      const extents = mleader.geometricExtents
-      const diag = extents.isEmpty()
-        ? 1
-        : Math.hypot(
-            extents.max.x - extents.min.x,
-            extents.max.y - extents.min.y
-          )
-      const pickTol = Math.max(diag * 0.05, 1e-3)
       const nearest = acapFindNearestMLeaderLine(
         mleader,
         result.value,
-        pickTol
+        pickTolerance(context.view, result.value)
       )
       if (!nearest) {
-        editor.showMessage(AcApI18n.t(`${I18N}.rejectMLeader`), 'warning')
+        editor.showMessage(AcApI18n.t(`${I18N}.noLeaderAtPoint`), 'warning')
         continue
       }
 

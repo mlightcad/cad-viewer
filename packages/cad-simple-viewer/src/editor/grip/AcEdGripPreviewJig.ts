@@ -1,4 +1,7 @@
 import {
+  AcDbDatabase,
+  AcDbDimension,
+  acdbDisposeDimBlock,
   AcDbEntity,
   AcGePoint3d,
   AcGePoint3dLike,
@@ -7,6 +10,12 @@ import {
 
 import { AcEdPreviewJig } from '../input/AcEdPreviewJig'
 import { AcEdBaseView } from '../view/AcEdBaseView'
+
+/**
+ * Temporary anonymous block used to preview a dimension being grip-edited.
+ * Never committed; removed when the drag ends.
+ */
+export const ACED_GRIP_DIM_PREVIEW_BLOCK = '*UGRIPDIM'
 
 /**
  * Preview jig that applies {@link AcDbEntity.subMoveGripPointsAt} on a clone
@@ -18,6 +27,8 @@ export class AcEdGripPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
   private readonly _gripIndex: number
   private readonly _gripBaseWcs: AcGePoint3d
   private _previewEntity: AcDbEntity | null = null
+  private _usesDimPreviewBlock = false
+  private readonly _database: AcDbDatabase
 
   constructor(
     view: AcEdBaseView,
@@ -32,6 +43,7 @@ export class AcEdGripPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
       throw new Error('Failed to clone entity for grip preview.')
     }
     this._sourceClone = sourceClone
+    this._database = entity.database
     this._gripIndex = gripIndex
     this._gripBaseWcs = new AcGePoint3d(gripBaseWcs)
   }
@@ -50,6 +62,12 @@ export class AcEdGripPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
     if (!preview) return
 
     preview.subMoveGripPointsAt([this._gripIndex], this.computeOffset(point))
+    // The clone still references the original dimension block; draw it from
+    // a regenerated preview block instead.
+    if (preview instanceof AcDbDimension) {
+      preview.recomputeDimBlock(ACED_GRIP_DIM_PREVIEW_BLOCK)
+      this._usesDimPreviewBlock = true
+    }
     this._previewEntity = preview
   }
 
@@ -71,6 +89,10 @@ export class AcEdGripPreviewJig extends AcEdPreviewJig<AcGePoint3dLike> {
     if (this._previewEntity) {
       this._view.removeTransientEntity(this._previewEntity.objectId)
       this._previewEntity = null
+    }
+    if (this._usesDimPreviewBlock) {
+      acdbDisposeDimBlock(this._database, ACED_GRIP_DIM_PREVIEW_BLOCK)
+      this._usesDimPreviewBlock = false
     }
   }
 }

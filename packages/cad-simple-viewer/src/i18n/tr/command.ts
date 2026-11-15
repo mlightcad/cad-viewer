@@ -605,6 +605,11 @@ export default {
       description: 'Seçili varlıkları bir taban noktası etrafında döndürür',
       prompt: 'Varlıkları seçin'
     },
+    scale: {
+      description:
+        'Seçili varlıkları, ölçeklemeden sonra oranlarını koruyarak büyütür veya küçültür',
+      prompt: 'Varlıkları seçin'
+    },
     select: {
       description: 'Varlıkları seçer'
     },

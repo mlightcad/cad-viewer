@@ -1,9 +1,11 @@
 import {
   AcDbDatabase,
+  acdbFindScale,
   AcDbMLeader,
   AcDbMLeaderContentType,
   AcDbMLeaderDirectionType,
   AcDbMLeaderLineType,
+  AcDbMLeaderPropertyOverrideFlag,
   AcDbMLeaderStyle,
   AcGePoint3d,
   AcGePoint3dLike
@@ -36,6 +38,10 @@ export interface AcApMLeaderGeometry {
   doglegLength: number
   enableLanding: boolean
   directionType: AcDbMLeaderDirectionType
+  /**
+   * Leader-line vertices: arrowhead and intermediate points. The line ends
+   * at `doglegStart`, stored as the branch's last leader point.
+   */
   vertices: AcGePoint3d[]
   textLocation: AcGePoint3d
 }
@@ -47,10 +53,90 @@ export function acapResolveMLeaderStyle(
   db: AcDbDatabase
 ): AcDbMLeaderStyle | undefined {
   const name = db.cmleaderstyle || DEFAULT_STYLE_NAME
-  return (
-    db.objects.mleaderStyle.getAt(name) ??
-    db.objects.mleaderStyle.getAt(DEFAULT_STYLE_NAME)
+  const dictionary = db.objects.mleaderStyle
+  if (!dictionary.getAt(name)) {
+    // New drawings get their "Standard" style lazily on the first MLEADER
+    // append; create it now so the preview already follows the style.
+    db.ensureEntityStyleDefaults(new AcDbMLeader())
+  }
+  return dictionary.getAt(name) ?? dictionary.getAt(DEFAULT_STYLE_NAME)
+}
+
+/**
+ * Current annotation scale factor (drawing units per paper unit) from
+ * CANNOSCALE, e.g. `50` for `1:50`.
+ */
+export function acapAnnotationScaleFactor(db: AcDbDatabase): number {
+  const factor = acdbFindScale(db, db.cannoscale)?.scaleFactor
+  return factor != null && factor > 0 ? factor : 1
+}
+
+/**
+ * Creates a multileader that follows the current multileader style, with
+ * the MLEADER Options overrides of this session applied on top (stored as
+ * entity property overrides, like AutoCAD).
+ */
+export function acapCreateMLeader(
+  db: AcDbDatabase,
+  session: AcApMLeaderSessionOptions = {}
+): AcDbMLeader {
+  const mleader = new AcDbMLeader()
+  const style = acapResolveMLeaderStyle(db)
+  if (style) {
+    mleader.applyMLeaderStyle(style, acapAnnotationScaleFactor(db))
+  }
+  let overrides = mleader.propertyOverrideFlag ?? 0
+  if (session.leaderLineType != null) {
+    mleader.leaderLineType = session.leaderLineType
+    overrides |= AcDbMLeaderPropertyOverrideFlag.LeaderLineType
+  }
+  if (session.enableLanding != null) {
+    mleader.doglegEnabled = session.enableLanding
+    overrides |= AcDbMLeaderPropertyOverrideFlag.DoglegEnabled
+  }
+  if (session.doglegLength != null) {
+    mleader.doglegLength = session.doglegLength
+    overrides |= AcDbMLeaderPropertyOverrideFlag.DoglegLength
+  }
+  mleader.propertyOverrideFlag = overrides
+  mleader.contentType = acapResolveMLeaderContentType(style, session)
+  return mleader
+}
+
+/**
+ * Lays out the first leader of `mleader` from an arrowhead to a landing /
+ * content point and attaches the content next to the landing.
+ *
+ * `mleader` must come from {@link acapCreateMLeader}: its landing settings
+ * (already scaled by the style) drive the geometry.
+ */
+export function acapLayoutMLeader(
+  mleader: AcDbMLeader,
+  arrowPoint: AcGePoint3dLike,
+  contentPoint: AcGePoint3dLike,
+  session: AcApMLeaderSessionOptions = {},
+  intermediatePoints: AcGePoint3dLike[] = []
+) {
+  const geometry = acapBuildMLeaderGeometry(
+    arrowPoint,
+    contentPoint,
+    undefined,
+    {
+      ...session,
+      enableLanding: mleader.doglegEnabled,
+      doglegLength: mleader.doglegEnabled ? mleader.doglegLength : 0
+    },
+    intermediatePoints
   )
+  acapApplyMLeaderGeometry(mleader, geometry, session)
+  if (
+    mleader.contentType === AcDbMLeaderContentType.MTextContent &&
+    !mleader.mtextContent
+  ) {
+    mleader.contents = ''
+  }
+  mleader.attachContentToLanding(0)
+  return geometry
 }
 
 const DEFAULT_STYLE_NAME = 'Standard'
@@ -115,15 +201,11 @@ export function acapBuildMLeaderGeometry(
   let content = new AcGePoint3d().copy(contentPoint)
   const enableLanding =
     session.enableLanding ??
-    style?.enableLanding ??
-    style?.landingEnabled ??
-    true
-  const styleDogleg = style?.doglegLength ?? 8
+    (style ? style.enableLanding && style.enableDogleg : true)
+  const styleScale = style && style.scale > 0 ? style.scale : 1
   const resolvedDogleg =
     session.doglegLength ??
-    (enableLanding && (style?.doglegEnabled ?? style?.enableDogleg ?? true)
-      ? styleDogleg
-      : 0)
+    (enableLanding ? (style?.doglegLength ?? 8) * styleScale : 0)
 
   const mids = intermediatePoints.map(p => new AcGePoint3d().copy(p))
   if (session.firstAngle != null && mids.length === 0) {
@@ -160,7 +242,7 @@ export function acapBuildMLeaderGeometry(
       doglegLength: resolvedDogleg,
       enableLanding: true,
       directionType,
-      vertices: [arrow.clone(), ...mids.map(p => p.clone()), doglegStart.clone()],
+      vertices: [arrow.clone(), ...mids.map(p => p.clone())],
       textLocation: content.clone()
     }
   }
@@ -173,7 +255,7 @@ export function acapBuildMLeaderGeometry(
     doglegLength: 0,
     enableLanding: false,
     directionType,
-    vertices: [arrow.clone(), ...mids.map(p => p.clone()), content.clone()],
+    vertices: [arrow.clone(), ...mids.map(p => p.clone())],
     textLocation: content.clone()
   }
 }
@@ -190,18 +272,22 @@ export function acapApplyMLeaderGeometry(
     mleader.removeLeader(0)
   }
 
-  const leaderType =
-    session.leaderLineType ?? AcDbMLeaderLineType.StraightLeader
-  mleader.leaderLineType = leaderType
+  if (session.leaderLineType != null) {
+    mleader.leaderLineType = session.leaderLineType
+  }
   mleader.doglegEnabled = geometry.enableLanding
   mleader.doglegLength = geometry.doglegLength
   mleader.doglegVector = geometry.doglegVector
-  mleader.landingPoint = geometry.landingPoint
 
-  if (leaderType === AcDbMLeaderLineType.InvisibleLeader) {
-    mleader.textLocation = geometry.textLocation
+  if (mleader.leaderLineType === AcDbMLeaderLineType.InvisibleLeader) {
+    // No leader branch: the landing lives on the entity itself.
+    mleader.landingPoint = geometry.landingPoint
+    if (mleader.contentType === AcDbMLeaderContentType.MTextContent) {
+      mleader.textLocation = geometry.textLocation
+    }
     return
   }
+  mleader.landingPoint = undefined
 
   const leaderIndex = mleader.addLeader({
     landingPoint: geometry.landingPoint,
@@ -213,43 +299,30 @@ export function acapApplyMLeaderGeometry(
     lastLeaderLinePointSet: true
   })
   mleader.addLeaderLine(leaderIndex, geometry.vertices)
-  mleader.textLocation = geometry.textLocation
+  if (mleader.contentType === AcDbMLeaderContentType.MTextContent) {
+    mleader.textLocation = geometry.textLocation
+  }
 }
 
 /**
- * Adds an extra leader branch aimed at the same content location.
+ * Adds a leader line with its arrowhead at `arrowPoint` (MLEADEREDIT Add
+ * leader): it joins the landing on the side of the content facing the
+ * point, or gets a new landing on the other side of the content.
+ *
+ * @param mleader Multileader to edit.
+ * @param arrowPoint Arrowhead location of the new leader line.
+ * @param _style Ignored; kept for backward compatibility. The landing now
+ *   follows the multileader itself.
+ * @param _session Ignored; kept for backward compatibility.
+ * @returns Index of the branch that received the new line.
  */
 export function acapAddMLeaderBranch(
   mleader: AcDbMLeader,
   arrowPoint: AcGePoint3dLike,
-  style: AcDbMLeaderStyle | undefined,
-  session: AcApMLeaderSessionOptions = {}
+  _style?: AcDbMLeaderStyle,
+  _session?: AcApMLeaderSessionOptions
 ) {
-  const content =
-    mleader.textLocation ??
-    mleader.landingPoint ??
-    (mleader.leaders[0]?.landingPoint
-      ? mleader.leaders[0].landingPoint
-      : undefined)
-  if (!content) return -1
-
-  const geometry = acapBuildMLeaderGeometry(arrowPoint, content, style, {
-    ...session,
-    enableLanding: session.enableLanding ?? mleader.doglegEnabled,
-    doglegLength: session.doglegLength ?? mleader.doglegLength
-  })
-
-  const leaderIndex = mleader.addLeader({
-    landingPoint: geometry.landingPoint,
-    doglegVector: geometry.doglegVector,
-    doglegVectorSet: true,
-    doglegLength: geometry.doglegLength,
-    directionType: geometry.directionType,
-    lastLeaderLinePoint: geometry.doglegStart,
-    lastLeaderLinePointSet: true
-  })
-  mleader.addLeaderLine(leaderIndex, geometry.vertices)
-  return leaderIndex
+  return mleader.addLeaderLineAtPoint(arrowPoint).leaderIndex
 }
 
 /**
@@ -263,9 +336,34 @@ export function acapCountMLeaderLines(mleader: AcDbMLeader): number {
 }
 
 /**
- * Finds the leader/line indexes whose tip is nearest to a pick point.
+ * Distance in XY from `p` to the segment `a`–`b`.
+ */
+function distanceToSegment(
+  p: AcGePoint3dLike,
+  a: AcGePoint3dLike,
+  b: AcGePoint3dLike
+) {
+  const dx = b.x - a.x
+  const dy = b.y - a.y
+  const lengthSq = dx * dx + dy * dy
+  const t =
+    lengthSq > 0
+      ? Math.min(
+          1,
+          Math.max(0, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lengthSq)
+        )
+      : 0
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
+}
+
+/**
+ * Finds the leader line nearest to a pick point.
  *
- * @param maxDistance When set, returns null if the nearest tip is farther.
+ * The distance is measured to the whole drawn line — arrowhead, intermediate
+ * vertices and the point where it meets its landing — so the user can pick a
+ * leader anywhere along it, like AutoCAD's MLEADEREDIT *Remove leaders*.
+ *
+ * @param maxDistance When set, returns null if the nearest line is farther.
  */
 export function acapFindNearestMLeaderLine(
   mleader: AcDbMLeader,
@@ -278,11 +376,25 @@ export function acapFindNearestMLeaderLine(
 
   const leaders = mleader.leaders
   for (let leaderIndex = 0; leaderIndex < leaders.length; leaderIndex++) {
-    const lines = leaders[leaderIndex].leaderLines
+    const leader = leaders[leaderIndex]
+    // Stored vertices stop before the landing; the drawn line ends there.
+    const end =
+      leader.lastLeaderLinePoint ??
+      leader.landingPoint ??
+      mleader.landingPoint ??
+      mleader.contentBasePosition
+    const lines = leader.leaderLines
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-      const tip = lines[lineIndex].vertices[0]
-      if (!tip) continue
-      const distance = Math.hypot(tip.x - pick.x, tip.y - pick.y)
+      const points: AcGePoint3dLike[] = [...lines[lineIndex].vertices]
+      if (points.length === 0) continue
+      if (end) points.push(end)
+      let distance = Math.hypot(points[0].x - pick.x, points[0].y - pick.y)
+      for (let i = 1; i < points.length; i++) {
+        distance = Math.min(
+          distance,
+          distanceToSegment(pick, points[i - 1], points[i])
+        )
+      }
       if (distance < bestDistance) {
         bestDistance = distance
         bestLeaderIndex = leaderIndex
@@ -326,36 +438,17 @@ export function acapRemoveMLeaderLine(
     return true
   }
 
-  // Rebuild the branch without the selected line.
-  const remaining = leader.leaderLines
-    .filter((_, index) => index !== lineIndex)
-    .map(line => ({
-      vertices: line.vertices.map(p => p.clone()),
-      breakPointIndexes: [...line.breakPointIndexes],
-      breaks: line.breaks.map(b => ({
-        index: b.index,
-        start: b.start.clone(),
-        end: b.end.clone()
-      }))
-    }))
-
-  mleader.removeLeader(leaderIndex)
-  const newIndex = mleader.addLeader({
-    landingPoint: leader.landingPoint,
-    doglegVector: leader.doglegVector,
-    doglegVectorSet: leader.doglegVectorSet,
-    doglegLength: leader.doglegLength,
-    directionType: leader.directionType,
-    lastLeaderLinePoint: leader.lastLeaderLinePoint,
-    lastLeaderLinePointSet: leader.lastLeaderLinePointSet,
-    breaks: leader.breaks.map(b => ({
-      index: b.index,
-      start: b.start.clone(),
-      end: b.end.clone()
-    })),
-    leaderLines: remaining
-  })
-  return newIndex >= 0
+  // AcDbMLeader has no per-line removal: rebuild this branch and the ones
+  // after it (the getter returns deep clones) so branch order — and with it
+  // which landing the content follows — stays the same.
+  leader.leaderLines.splice(lineIndex, 1)
+  while (mleader.numberOfLeaders > leaderIndex) {
+    mleader.removeLeader(leaderIndex)
+  }
+  for (const rest of leaders.slice(leaderIndex)) {
+    mleader.addLeader(rest)
+  }
+  return true
 }
 
 /**
@@ -374,4 +467,38 @@ export function acapResolveMLeaderContentType(
     return AcDbMLeaderContentType.NoneContent
   }
   return AcDbMLeaderContentType.MTextContent
+}
+
+export type AcApMLeaderJigDragMode = 'landingFromArrow' | 'arrowFromLanding'
+
+/**
+ * Arrowhead and landing points of a multileader being placed.
+ */
+export interface AcApMLeaderPlacement {
+  arrow: AcGePoint3d
+  landing: AcGePoint3d
+}
+
+/**
+ * Resolves the arrowhead / landing pair for a placement step.
+ *
+ * In content-first mode the fixed point is where the text goes: the landing
+ * ends one landing gap before it, on the side facing the arrowhead.
+ */
+export function acapResolveMLeaderPlacement(
+  fixedPoint: AcGePoint3dLike,
+  point: AcGePoint3dLike,
+  dragMode: AcApMLeaderJigDragMode,
+  contentGap?: number
+): AcApMLeaderPlacement {
+  const fixed = new AcGePoint3d().copy(fixedPoint)
+  const moving = new AcGePoint3d().copy(point)
+  if (dragMode === 'landingFromArrow') {
+    return { arrow: fixed, landing: moving }
+  }
+  const landing = fixed.clone()
+  if (contentGap != null && contentGap > 0) {
+    landing.x -= (fixed.x >= moving.x ? 1 : -1) * contentGap
+  }
+  return { arrow: moving, landing }
 }

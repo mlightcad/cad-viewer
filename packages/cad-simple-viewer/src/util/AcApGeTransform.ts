@@ -22,3 +22,23 @@ export function createRotationMatrix(
       )
     )
 }
+
+/**
+ * Builds a world-space uniform scale matrix around a given base point.
+ *
+ * @param basePoint - Scale origin, which stays fixed.
+ * @param factor - Uniform scale factor (must be positive).
+ * @returns Composite transform that scales around `basePoint`.
+ */
+export function createScaleMatrix(basePoint: AcGePoint3dLike, factor: number) {
+  return new AcGeMatrix3d()
+    .makeTranslation(basePoint.x, basePoint.y, basePoint.z)
+    .multiply(new AcGeMatrix3d().makeScale(factor, factor, factor))
+    .multiply(
+      new AcGeMatrix3d().makeTranslation(
+        -basePoint.x,
+        -basePoint.y,
+        -basePoint.z
+      )
+    )
+}

@@ -1,12 +1,16 @@
 import {
   AcDbDatabase,
+  AcDbDimension,
   AcDbEntity,
   AcDbObjectId,
   AcGeMatrix3d,
   AcGePoint3dLike
 } from '@mlightcad/data-model'
 
-import { createRotationMatrix } from '../util/AcApGeTransform'
+import {
+  createRotationMatrix,
+  createScaleMatrix
+} from '../util/AcApGeTransform'
 import { isEntityOnLockedLayer } from './AcApLockedLayer'
 import { acapRunServiceEdit, ENTITY_EDIT_LABEL } from './AcApServiceEdit'
 
@@ -16,6 +20,31 @@ import { acapRunServiceEdit, ENTITY_EDIT_LABEL } from './AcApServiceEdit'
 export interface AcApCloneAndTransformOptions {
   /** Append clones to model space. Default `true`. */
   append?: boolean
+  /**
+   * Regenerate the anonymous blocks of transformed dimensions. Default `false`.
+   * See {@link AcApTransformOptions.regenerateDimensions}.
+   */
+  regenerateDimensions?: boolean
+}
+
+/**
+ * Options for {@link AcApEntityService.transformEntities}.
+ */
+export interface AcApTransformOptions {
+  /**
+   * Regenerate the anonymous `*D` block of every transformed dimension, like
+   * AutoCAD after SCALE: the cached block would otherwise scale its text and
+   * arrowheads together with the definition points, while AutoCAD keeps them
+   * at their dimension-style (DIMSCALE) size. Default `false`.
+   */
+  regenerateDimensions?: boolean
+}
+
+/**
+ * Regenerates the dimension block of `entity` when it is a dimension.
+ */
+function regenerateDimension(entity: AcDbEntity) {
+  if (entity instanceof AcDbDimension) entity.recomputeDimBlock()
 }
 
 /**
@@ -67,9 +96,14 @@ export class AcApEntityService {
    *
    * @param entities - Entities to transform.
    * @param matrix - Transform to apply via {@link AcDbEntity.transformBy}.
+   * @param options - Post-transform behavior.
    * @returns Number of entities successfully transformed.
    */
-  transformEntities(entities: AcDbEntity[], matrix: AcGeMatrix3d): number {
+  transformEntities(
+    entities: AcDbEntity[],
+    matrix: AcGeMatrix3d,
+    options: AcApTransformOptions = {}
+  ): number {
     return this.runEntityEdit(() => {
       let count = 0
       entities.forEach(entity => {
@@ -77,6 +111,7 @@ export class AcApEntityService {
         const opened = this.db.openEntityForWrite(entity)
         if (!opened) return
         opened.transformBy(matrix)
+        if (options.regenerateDimensions) regenerateDimension(opened)
         count++
       })
       return count
@@ -120,6 +155,27 @@ export class AcApEntityService {
   }
 
   /**
+   * Uniformly scales entities around a base point. Dimensions get their
+   * blocks regenerated so text and arrowheads keep their style size, like
+   * AutoCAD SCALE.
+   *
+   * @param entities - Entities to scale.
+   * @param basePoint - Scale origin in WCS, which stays fixed.
+   * @param factor - Uniform scale factor (must be positive).
+   * @returns Number of entities successfully scaled.
+   */
+  scaleEntities(
+    entities: AcDbEntity[],
+    basePoint: AcGePoint3dLike,
+    factor: number
+  ): number {
+    const matrix = createScaleMatrix(basePoint, factor)
+    return this.transformEntities(entities, matrix, {
+      regenerateDimensions: true
+    })
+  }
+
+  /**
    * Clones entities, transforms them, and optionally appends to model space.
    *
    * @param sourceEntities - Entities to clone.
@@ -137,7 +193,10 @@ export class AcApEntityService {
       .map(entity => entity.clone())
       .filter((entity): entity is AcDbEntity => !!entity)
 
-    clones.forEach(entity => entity.transformBy(matrix))
+    clones.forEach(entity => {
+      entity.transformBy(matrix)
+      if (options.regenerateDimensions) regenerateDimension(entity)
+    })
 
     if (append && clones.length > 0) {
       this.db.tables.blockTable.modelSpace.appendEntity(clones)
